@@ -362,6 +362,7 @@ typedef struct globus_gfs_stat_info_s
 typedef struct globus_gfs_session_info_s
 {
     gss_cred_id_t                       del_cred;
+    globus_bool_t                       free_cred;
     char *                              username;
     char *                              password;
     char *                              subject;

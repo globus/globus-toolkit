@@ -268,6 +268,10 @@ globus_l_gfs_auth_session_cb(
     }
     globus_free(auth_info->session_info->username);
     globus_free(auth_info->session_info->password);
+    if(auth_info->session_info->subject != NULL)
+    {
+        globus_free(auth_info->session_info->subject);
+    }
     globus_free(auth_info->session_info);
     globus_free(auth_info);
 }
@@ -1195,7 +1199,7 @@ globus_l_gfs_get_data_info(
         &data_info->subject,
         &data_info->dcau,
         &data_info->prot,
-        &data_info->del_cred);
+        NULL);
     globus_assert(result == GLOBUS_SUCCESS);
 
     data_info->blocksize = globus_i_gfs_config_int("blocksize");

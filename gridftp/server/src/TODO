@@ -45,7 +45,6 @@ cleanup:
 
 -----------------------------------------------------------------------
 known bugs:
--- op used in data_session_start isn't freed
 -- we don't chdir to the users home directory on successful auth, which 
     should at least be an option.  There is no way to set a cwd in the 
     server-lib though?
@@ -53,3 +52,8 @@ known bugs:
 -- ipc local mode doesn't work (besides no way to initiate it)
 -- not calling _finish() in data.c for some request funcs that fail before
     the dsi call. 
+-- in server_lib globus_gsc_959_finished_command chain the message gets freed
+    in instances that it should not be, everyone that calls into it frees their
+    own messages.
+    
+    

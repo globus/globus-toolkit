@@ -390,6 +390,8 @@ globus_l_gfs_ipc_request_destroy(
     globus_gfs_data_info_t *            data_info;
     globus_gfs_stat_info_t *            stat_info;
     int                                 ctr;
+    OM_uint32                           min_rc;
+
 
     /* if there is a reply struch clean it up */
     if(request->reply != NULL)
@@ -528,6 +530,10 @@ globus_l_gfs_ipc_request_destroy(
                     }
                     globus_free(data_info->contact_strings);
                 }
+                if(data_info->del_cred != NULL)
+                {
+                    //gss_release_cred(&min_rc, &data_info->del_cred);
+                }
                 globus_free(data_info);
                 break;
 
@@ -620,6 +626,8 @@ void
 globus_l_gfs_session_info_free(
     globus_gfs_session_info_t *         session_info)
 {
+    OM_uint32                           min_rc;
+
     if(session_info)
     {
         if(session_info->username)
@@ -642,7 +650,10 @@ globus_l_gfs_session_info_free(
         {
             globus_free(session_info->host_id);
         }
-    
+        if(session_info->free_cred && session_info->del_cred != NULL)
+        {
+            gss_release_cred(&min_rc, &session_info->del_cred);
+        }
         globus_free(session_info);
     }
 }
@@ -804,8 +815,8 @@ globus_l_gfs_ipc_unpack_cred(
     globus_size_t                       len,
     gss_cred_id_t *                     out_cred)
 {
-    OM_uint32                           maj_stat;
-    OM_uint32                           min_stat;
+    OM_uint32                           maj_rc;
+    OM_uint32                           min_rc;
     OM_uint32                           time_rec;
     gss_buffer_desc                     gsi_buffer;
     gss_cred_id_t                       cred;
@@ -815,9 +826,9 @@ globus_l_gfs_ipc_unpack_cred(
     {
         gsi_buffer.value = buffer;
 
-        maj_stat = gss_import_cred(
-            &min_stat, &cred, GSS_C_NO_OID, 0, &gsi_buffer, 0, &time_rec);
-        if(maj_stat != GSS_S_COMPLETE)
+        maj_rc = gss_import_cred(
+            &min_rc, &cred, GSS_C_NO_OID, 0, &gsi_buffer, 0, &time_rec);
+        if(maj_rc != GSS_S_COMPLETE)
         {
             goto decode_err;
         }
@@ -969,6 +980,7 @@ globus_l_gfs_ipc_reply_ss_body_cb(
     {
         goto decode_err;
     }
+    ipc->session_info->free_cred = GLOBUS_TRUE;
         
     ipc->state = GLOBUS_GFS_IPC_STATE_IN_CB;
     ipc->error_cb = ipc->reply_error_cb;
@@ -1152,6 +1164,7 @@ globus_l_gfs_ipc_send_start_session(
 {
     OM_uint32                           maj_rc;
     OM_uint32                           min_rc;
+    int                                 ndx;
     gss_buffer_desc                     gsi_buffer;
     globus_result_t                     res;
     globus_byte_t *                     buffer = NULL;
@@ -1189,11 +1202,14 @@ globus_l_gfs_ipc_send_start_session(
         {
             if(ptr - buffer + gsi_buffer.length >= ipc->buffer_size)
             {
+                ndx = ptr - buffer;
                 ipc->buffer_size += gsi_buffer.length;
                 buffer = globus_libc_realloc(buffer, ipc->buffer_size);
+                ptr = buffer + ndx;
             }
             memcpy(ptr, gsi_buffer.value, gsi_buffer.length);
             ptr += gsi_buffer.length;
+            gss_release_buffer(&min_rc, &gsi_buffer);
         }
     }
 
@@ -4949,8 +4965,10 @@ globus_l_gfs_ipc_pack_data(
             ptr = buffer + ndx;
         }
         memcpy(ptr, gsi_buffer.value, gsi_buffer.length);
+        ptr += gsi_buffer.length;
+        gss_release_buffer(&min_rc, &gsi_buffer);
     }
-    msg_size = ptr - buffer + gsi_buffer.length;
+    msg_size = ptr - buffer;
     /* now that we know size, add it in */
     ptr = buffer + GFS_IPC_HEADER_SIZE_OFFSET;
     
