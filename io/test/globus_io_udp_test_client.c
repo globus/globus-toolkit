@@ -42,6 +42,8 @@ test1(int argc, char **argv)
     char                                c;
     globus_bool_t                       mc_enabled = GLOBUS_FALSE;
     char *                              mc_interface = INADDR_ANY;
+
+    setbuf(stdout, NULL);
     
     globus_io_udpattr_init(&attr);
 

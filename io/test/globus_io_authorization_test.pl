@@ -7,6 +7,7 @@
 use strict;
 use POSIX;
 use Test;
+use Cwd;
 
 my @tests;
 my @todo;
@@ -20,11 +21,12 @@ sub basic_func
    my ($errors,$rc) = ("",0);
    my $args = shift;
    my $result;
+   my $expect_failure = shift;
    
    unlink('core');
    chomp($result = `$test_prog $args`);
 
-   if($rc != 0)
+   if($rc != 0 && !$expect_failure)
    {
       $errors .= "Test exited with $rc. ";
    }
@@ -35,18 +37,28 @@ sub basic_func
    }
    else
    {
-       ok($result, 'ok');
+       if(!$expect_failure)
+       {
+           ok($result, 'ok');
+       }
+       else
+       {
+           ok($result, 'Could not accept connection');
+       }
    }
 }
 
-my $id = `$ENV{GLOBUS_LOCATION}/bin/grid-cert-info -subject`;
-$id =~ s/^\s+//;
-chomp($id);
+$ENV{X509_CERT_DIR} = cwd();
+$ENV{X509_USER_PROXY} = "testcred.pem";
 
-push(@tests, "basic_func('self');");
-push(@tests, "basic_func('identity \"$id\"')");
-push(@tests, "basic_func('callback');");
-push(@tests, "basic_func('-callback');");
+my $identity = `grid-proxy-info -subject`;
+chomp($identity);
+
+push(@tests, "basic_func('self',0);");
+push(@tests, "basic_func('identity \"$identity\"',0)");
+push(@tests, "basic_func('identity \"/CN=bad DN\"',1)");
+push(@tests, "basic_func('callback',0);");
+push(@tests, "basic_func('-callback',0);");
 
 # Now that the tests are defined, set up the Test to deal with them.
 plan tests => scalar(@tests), todo => \@todo;

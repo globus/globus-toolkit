@@ -1,82 +1,93 @@
 #!/usr/bin/env perl
 
-=pod
-
-=head1 Tests for the globus IO file code
-
-Tests to exercise the file IO functionality of the globus IO library.
+=head1 Tests for the globus IO authorization modes
 
 =cut
 
 use strict;
 use POSIX;
+use POSIX "sys_wait_h";
 use Test;
+use Cwd;
 
-my $test_prog = 'globus_io_file_test';
+my @tests;
+my @todo;
 
-my $diff = 'diff'
+my $server_prog = 'globus_io_udp_test_server';
+my $client_prog = 'globus_io_udp_test_client';
 
 sub basic_func
 {
    my ($errors,$rc) = ("",0);
-   
-   $rc = system("$test_prog 1>$test_prog.log.stdout 2>$test_prog.log.stderr") / 256;
+   my $port;
+   my $server_pid;
+   my $client_pid;
 
-   if($rc != 0)
+   unlink('core');
+
+   $server_pid = open(SERVER, "$server_prog|");
+
+   if($server_pid == -1)
    {
-      $errors .= "Test exited with $rc. ";
+       $errors .= "Unable to start server";
+       return;
    }
+
+   $port = <SERVER>;
+   $port = <SERVER>;
+   $port = <SERVER>;
+   $port =~ s/Binding to //;
+   chomp($port);
+
+   $client_pid = open(CLIENT, "$client_prog -h localhost -p $port|");
+
+   if($client_pid == -1)
+   {
+       $errors .= "Unable to start client";
+       return;
+   }
+   
+   waitpid($server_pid,0);
+
+   if($? != 0)
+   {
+       $errors .= "Server exited abnormally. \n The following output was generated:\n";
+       while(<SERVER>)
+       {
+           $errors .= $_;
+       }
+   }
+
+   waitpid($client_pid,0);
+
+   if($? != 0)
+   {
+       $errors .= "Client exited abnormally. \n The following output was generated:\n";
+       while(<CLIENT>)
+       {
+           $errors .= $_;
+       }
+   }
+   
+   close(CLIENT);
+   close(SERVER);
 
    if(-r 'core')
    {
-      $errors .= "\n# Core file generated.";
-   }
-   
-   $rc = system("$diff $test_prog.log.stdout $test_prog.stdout") / 256;
-   
-   if($rc != 0)
-   {
-      $errors .= "Test produced unexpected output, see $test_prog.log.stdout";
+      ok("Core file generated.", 'ok');
    }
 
-
-   $rc = system("$diff $test_prog.log.stderr $test_prog.stderr") / 256;
-   
-   if($rc != 0)
-   {
-      $errors .= "Test produced unexpected output, see $test_prog.log.stderr";
-   }
-   
    if($errors eq "")
    {
-      if( -e "$test_prog.log.stdout" )
-      {
-	 unlink("$test_prog.log.stdout");
-      }
-      
-      if( -e "$test_prog.log.stderr" )
-      {
-	 unlink("$test_prog.log.stderr");
-      } 
+       ok('success', 'success');
+   }
+   else
+   {
+       ok($errors, 'success');
    }
 }
 
-sub sig_handler
-{
-   if( -e "$test_prog.log.stdout" )
-   {
-      unlink("$test_prog.log.stdout");
-   }
 
-   if( -e "$test_prog.log.stderr" )
-   {
-      unlink("$test_prog.log.stderr");
-   }
-}
-
-$SIG{'INT'}  = 'sig_handler';
-$SIG{'QUIT'} = 'sig_handler';
-$SIG{'KILL'} = 'sig_handler';
 
 push(@tests, "basic_func();");
 

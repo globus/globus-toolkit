@@ -62,6 +62,8 @@ test1(int argc, char **argv)
     static char *                       myname = "test1";
     char                                c;
 
+    setbuf(stdout, NULL);
+    
     globus_libc_printf("%s() : start\n", myname);
  
     globus_io_udpattr_init(&attr);
@@ -151,7 +153,7 @@ void print_usage()
 {
     globus_libc_printf("globus_io_udp_test_server\n");
     globus_libc_printf("-------------------------\n");
-    globus_libc_printf("globus_io_udp_test_server [-h <multicast address> -p <multicast port> -c <count]\n");
+    globus_libc_printf("globus_io_udp_test_server [-h <multicast address> -p <multicast port> -c <count>]\n");
 }
 
 static void 

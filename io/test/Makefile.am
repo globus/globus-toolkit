@@ -3,16 +3,22 @@ include $(top_srcdir)/globus_automake_pre_top
 
 # SUBDIRS is an automake macro which contains 
 # the list of subdirectories that have Makefile.am's
-SUBDIRS= \
+SUBDIRS = \
 	pkgdata \
 	doxygen
 
-Scripts= \
+Scripts = \
 	globus_io_authorization_test.pl \
         globus_io_file_test.pl \
         globus_io_tcp_test.pl \
         globus_io_udp_test.pl \
         run-io-tests.pl
+
+Data = \
+	dc31a685.0 \
+	dc31a685.signing_policy \
+	testcred.pem
+
 
 # INCLUDES is an automake macro which contains 
 # the include directives (-I..) for the compiler.
@@ -31,7 +37,9 @@ INCLUDES += $(GPT_INCLUDES)
 # You can also use any directory defined by a macro of the form 
 # <directory_name>dir
 
-test_PROGRAMS= \
+test_DATA = $(Data) 
+
+test_PROGRAMS = \
 	globus_io_tcp_test \
 	globus_io_tcp_test_server \
 	globus_io_tcp_test_client \
@@ -41,7 +49,7 @@ test_PROGRAMS= \
 	globus_io_udp_test \
 	globus_io_authorization_test
 
-test_SCRIPTS= $(Scripts)
+test_SCRIPTS = $(Scripts)
 
 globus_io_tcp_test_SOURCES = globus_io_tcp_test.c
 globus_io_tcp_test_LDFLAGS = $(GPT_LDFLAGS)
@@ -75,7 +83,7 @@ globus_io_authorization_test_SOURCES = globus_io_authorization_test.c
 globus_io_authorization_test_LDFLAGS = $(GPT_LDFLAGS)
 globus_io_authorization_test_LDADD = $(GPT_PGM_LINKS)
 
-EXTRA_DIST = $(Scripts)
+EXTRA_DIST = $(Scripts) $(Data)
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top
