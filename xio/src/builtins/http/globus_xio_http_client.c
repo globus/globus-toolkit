@@ -331,6 +331,14 @@ globus_i_xio_http_client_write_request(
                     free_iovecs_exit);
         }
     }
+    if (http_handle->request_info.headers.connection_close)
+    {
+        GLOBUS_XIO_HTTP_COPY_BLOB(&iovecs,
+                "Connection: close\r\n",
+                19,
+                free_iovecs_exit);
+
+    }
 
     GLOBUS_XIO_HTTP_COPY_BLOB(&iovecs,
             "\r\n",
