@@ -26,20 +26,27 @@ CVS Information:
 #define debug_printf(a) printf a
 #undef globus_l_gass_transfer_http_lock()
 #undef globus_l_gass_transfer_http_unlock()
+static int globus_l_gass_lock_line=0;
+static int globus_l_gass_lock_tmp=0;
+
 #define globus_l_gass_transfer_http_lock() \
         printf("Thread [%d] acquiring mutex at %s:%d\n", \
                (int) globus_thread_self(), \
 	       __FILE__, \
 	       __LINE__), \
 	fflush(stdout), \
-	globus_mutex_lock(&globus_l_gass_transfer_http_mutex)
+	globus_l_gass_lock_tmp = \
+		globus_mutex_lock(&globus_l_gass_transfer_http_mutex), \
+	globus_l_gass_lock_line=__LINE__, \
+	globus_l_gass_lock_tmp
 #define globus_l_gass_transfer_http_unlock() \
         printf("Thread [%d] releasing mutex at %s:%d\n", \
                (int) globus_thread_self(), \
 	       __FILE__, \
 	       __LINE__), \
 	fflush(stdout), \
-	globus_mutex_unlock(&globus_l_gass_transfer_http_mutex)
+	globus_l_gass_lock_line = 0 \
+	globus_mutex_unlock(&globus_l_gass_transfer_http_mutex) \
 #else
 #define debug_printf(a)
 #endif
@@ -485,6 +492,7 @@ globus_l_gass_transfer_http_write_callback(
 		&proto->handle,
 		globus_l_gass_transfer_http_close_callback,
 		proto);
+	    globus_l_gass_transfer_http_unlock();
 	    if(result != GLOBUS_SUCCESS)
 	    {
 		globus_l_gass_transfer_http_close_callback(proto,
@@ -3165,7 +3173,7 @@ globus_l_gass_transfer_http_response_callback(
 	    globus_l_gass_transfer_http_close_callback,
 	    proto);
 
-	globus_assert(result);
+	globus_assert(result == GLOBUS_SUCCESS);
 	
 	if(result != GLOBUS_SUCCESS)
 	{
