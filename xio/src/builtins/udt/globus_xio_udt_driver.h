@@ -4,7 +4,7 @@
 #include "globus_xio_system.h"
 #include "globus_xio_udp_driver.h"
 
-// udt constants
+/* udt constants */
 
 #define GLOBUS_L_XIO_UDT_SYN_INTERVAL 		10000
 #define GLOBUS_L_XIO_UDT_CLOSE_TIMEOUT 		300000

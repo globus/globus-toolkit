@@ -1084,7 +1084,7 @@ static
 globus_bool_t 
 globus_l_xio_udt_find_read_data_pos(
     globus_l_xio_udt_read_buf_t*	read_buf,
-    char** 				data, 
+    unsigned char**                 	data, 
     int 				offset, 
     int 				len)
 {
@@ -1118,8 +1118,9 @@ globus_l_xio_udt_find_read_data_pos(
 	    if (ack_ptr + offset + len <= iovec_offset + 
 		read_buf->user_iovec[src_iovec_num].iov_len)
             {  
-	        *data = read_buf->user_iovec[src_iovec_num].iov_base + ack_ptr 
-			+ offset - iovec_offset;
+	        *data = (unsigned char *)
+                    read_buf->user_iovec[src_iovec_num].iov_base +
+                    ack_ptr + offset - iovec_offset;
             }
 	    else
             {
@@ -1250,7 +1251,7 @@ globus_l_xio_udt_add_data_to_read_buf(
 	        rem_iov_len = read_buf->user_iovec[src_iovec_num].iov_len - 
                               src_base_offset;	
                 data_size = (rem_iov_len > total) ? total : rem_iov_len;
-                memcpy(read_buf->user_iovec[src_iovec_num].iov_base + 
+                memcpy((char *) read_buf->user_iovec[src_iovec_num].iov_base + 
                        src_base_offset, data, data_size);
                 src_base_offset = (src_base_offset + data_size) % 
                                    read_buf->user_iovec[src_iovec_num].iov_len;
@@ -1366,10 +1367,10 @@ error:
 
 
 /* 
- * This static inline function to find the minimum among 3 numbers 
+ * This static function to find the minimum among 3 numbers 
  */
 
-static inline
+static
 int
 globus_l_xio_udt_min3(
     int			a,
@@ -1435,7 +1436,7 @@ globus_l_xio_udt_compact_read_buf(
 	    int last_ack_pos = read_buf->last_ack_pos;
 	    int udt_buf_size = read_buf->udt_buf_size;
 	    int max_offset = read_buf->max_offset;
-	    char* dst_ptr;
+	    unsigned char* dst_ptr;
 
             src_iovec_num = read_buf->user_buf_ack->iovec_num;
 	    while (ack_ptr + offset  > iovec_offset + 
@@ -1514,9 +1515,10 @@ globus_l_xio_udt_compact_read_buf(
 	            len2 = read_buf->user_iovec[dst_iovec_num].iov_len - 
 			   dst_base_offset;
 	            data_size = globus_l_xio_udt_min3(len1, len2, total);
-	            memmove(read_buf->user_iovec[src_iovec_num].iov_base + 
+	            memmove((char *)
+                        read_buf->user_iovec[src_iovec_num].iov_base + 
 			    src_base_offset, 
-                            read_buf->user_iovec[dst_iovec_num].iov_base + 
+                        (char *) read_buf->user_iovec[dst_iovec_num].iov_base + 
 			    dst_base_offset, data_size);
 	            dst_base_offset = (dst_base_offset + data_size) % 
 				   read_buf->user_iovec[dst_iovec_num].iov_len;
@@ -1528,7 +1530,8 @@ globus_l_xio_udt_compact_read_buf(
 	        else	
 	        {
 	            data_size = (len1 > total) ? total : len1;	
-	            memcpy(read_buf->user_iovec[src_iovec_num].iov_base + 
+	            memcpy((char *)
+                        read_buf->user_iovec[src_iovec_num].iov_base + 
 			   src_base_offset, dst_ptr, data_size);
 	            dst_ptr += data_size;	
 	        } 
@@ -1579,7 +1582,8 @@ globus_l_xio_udt_compact_read_buf(
                     len1 = read_buf->user_iovec[src_iovec_num].iov_len - 
 			   src_base_offset;
                     data_size = (len1 > total2) ? total2 : len1;
-                    memcpy(read_buf->user_iovec[src_iovec_num].iov_base + 
+                    memcpy((char *)
+                        read_buf->user_iovec[src_iovec_num].iov_base + 
 			   src_base_offset, dst_ptr, data_size);
                     src_base_offset = (src_base_offset + data_size) % 
 				read_buf->user_iovec[src_iovec_num].iov_len;
@@ -1597,7 +1601,7 @@ globus_l_xio_udt_compact_read_buf(
                 len1 = read_buf->user_iovec[src_iovec_num].iov_len - 
 		       src_base_offset;
 		data_size = (len1 > total3) ? total3 : len1; 
-                memcpy(read_buf->user_iovec[src_iovec_num].iov_base + 
+                memcpy((char *) read_buf->user_iovec[src_iovec_num].iov_base + 
 		       src_base_offset, dst_ptr, data_size);
                 src_base_offset = (src_base_offset + data_size) % 
 				  read_buf->user_iovec[src_iovec_num].iov_len;
@@ -1786,7 +1790,7 @@ globus_l_xio_udt_copy_data_to_user_buf(
             data_size = iovec[i-1].iov_len - base_ptr;
             if (total2 < data_size)
 		data_size = total2;
-            memcpy(iovec[i-1].iov_base + base_ptr, read_buf->udt_buf, 
+            memcpy((char *) iovec[i-1].iov_base + base_ptr, read_buf->udt_buf, 
 		   data_size);
             read_buf->start_pos = data_size;
 	    total2 -= data_size;
@@ -2026,7 +2030,7 @@ globus_l_xio_udt_register_user_read_buf(
 		 * memcpy below would copy only from read_buf->udt_buf till   
 	         * read_buf->udt_buf + curr_write_pos - 1 
                  */ 
-   	        memcpy(iovec[i].iov_base + temp_len, read_buf->udt_buf, 
+   	        memcpy((char *) iovec[i].iov_base + temp_len, read_buf->udt_buf,
 		       iovec[i].iov_len - temp_len);
 	        temp += iovec[i].iov_len - temp_len;
 	        ++i;
@@ -2071,9 +2075,10 @@ globus_l_xio_udt_register_user_read_buf(
 			 * data length exceeds the physical boundary, read twice
  			 */
 			data_size = udt_buf_size - temp;
-                        memcpy(iovec[i].iov_base, read_buf->udt_buf + temp, 
+                        memcpy((char *)
+                            iovec[i].iov_base, read_buf->udt_buf + temp, 
 			    data_size);
-                        memcpy(iovec[i].iov_base + data_size, 
+                        memcpy((char *) iovec[i].iov_base + data_size, 
 			    read_buf->udt_buf, iovec[i].iov_len - 
                             data_size);
                         temp = iovec[i].iov_len - data_size;
@@ -2144,13 +2149,13 @@ globus_l_xio_udt_register_user_read_buf(
 
 
 /* 
- * the following are the inline functions used in 3 lists (writer_loss, 
+ * the following are the functions used in 3 lists (writer_loss, 
  * reader_loss, irregular_pkt) 
  */
 
 /* Definition of >, <, >=, and <= with sequence number wrap */
 
-static inline 
+static 
 globus_bool_t 
 globus_l_xio_udt_greater_than(
     int 			seqno1, 
@@ -2170,7 +2175,7 @@ globus_l_xio_udt_greater_than(
     return GLOBUS_FALSE;
 }
 
-static inline 
+static 
 globus_bool_t 
 globus_l_xio_udt_less_than(
     int 			seqno1, 
@@ -2180,7 +2185,7 @@ globus_l_xio_udt_less_than(
     return globus_l_xio_udt_greater_than(seqno2, seqno1);
 }
 
-static inline 
+static 
 globus_bool_t 
 globus_l_xio_udt_not_less_than(
     int 				seqno1,
@@ -2193,7 +2198,7 @@ globus_l_xio_udt_not_less_than(
    return globus_l_xio_udt_greater_than(seqno1, seqno2);
 }
 
-static inline 
+static 
 globus_bool_t 
 globus_l_xio_udt_not_greater_than(
     int 				seqno1, 
@@ -2206,7 +2211,7 @@ globus_l_xio_udt_not_greater_than(
     return globus_l_xio_udt_less_than(seqno1, seqno2);
 }
 
-static inline
+static 
 int
 globus_l_xio_udt_min_seqno(
     int				seqno1,
@@ -2218,7 +2223,7 @@ globus_l_xio_udt_min_seqno(
     return seqno2;
 }
 
-static inline
+static 
 int
 globus_l_xio_udt_max_seqno(
     int				seqno1,
@@ -2230,7 +2235,7 @@ globus_l_xio_udt_max_seqno(
     return seqno2;
 }
 
-static inline 
+static 
 int 
 globus_l_xio_udt_get_length(
     int 			seqno1, 
@@ -2263,7 +2268,7 @@ globus_l_xio_udt_get_length(
 
 /*Definition of ++, and -- with sequence number wrap */
 
-static inline 
+static 
 int 
 globus_l_xio_udt_inc_seqno(
     int 			seqno)
@@ -2272,7 +2277,7 @@ globus_l_xio_udt_inc_seqno(
     return (seqno + 1) % GLOBUS_L_XIO_UDT_MAX_SEQ_NO;
 }
 
-static inline 
+static 
 int 
 globus_l_xio_udt_dec_seqno(
     int 			seqno)
@@ -2741,7 +2746,7 @@ globus_l_xio_udt_reader_loss_list_remove(
 
 
 
-// better make use of priority queue here
+/* better make use of priority queue here */
 
       /*
        *  Functionality:
@@ -6396,7 +6401,7 @@ globus_i_xio_udt_read(
 	handle->read_cntl->next_slot_found = 
 	    globus_l_xio_udt_find_read_data_pos(
 		handle->read_buf, 
-		(char**)&handle->read_iovec[1].iov_base, 
+		(unsigned char**)&handle->read_iovec[1].iov_base, 
 		offset * payload_size - 
 		globus_l_xio_udt_get_error_size(
 		    handle->irregular_pkt_info, offset + last_ack), 
@@ -8485,7 +8490,7 @@ globus_l_xio_udt_server_cntl(
             globus_l_xio_udt_server_udp_driver,
             GLOBUS_XIO_UDP_GET_HANDLE,
             out_handle);
-//        *out_handle = GLOBUS_XIO_UDT_INVALID_HANDLE;
+/*        *out_handle = GLOBUS_XIO_UDT_INVALID_HANDLE; */
         break;
 
       /* char **                        contact_string_out */
@@ -8570,7 +8575,7 @@ globus_result_t
 globus_l_xio_udt_server_destroy(
     void *                              driver_server)
 {
-//    globus_l_server_t *                 server;
+/*    globus_l_server_t *                 server; */
     GlobusXIOName(globus_l_xio_udt_server_destroy);
 
     GlobusXIOUdtDebugEnter();
@@ -8620,7 +8625,7 @@ globus_l_xio_udt_link_cntl(
             globus_l_xio_udt_udp_driver,
             GLOBUS_XIO_UDP_GET_HANDLE,
             out_handle);
-//        *out_handle = GLOBUS_XIO_UDT_INVALID_HANDLE;
+/*        *out_handle = GLOBUS_XIO_UDT_INVALID_HANDLE; */
         break;
 
       /* char **                        contact_string_out */

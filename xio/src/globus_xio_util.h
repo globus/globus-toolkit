@@ -3,6 +3,38 @@
 
 #include "globus_xio.h"
 
+globus_bool_t
+globus_xio_error_is_eof(
+    globus_result_t                     res);
+
+globus_bool_t
+globus_xio_error_is_canceled(
+    globus_result_t                     res);
+
+globus_bool_t
+globus_xio_driver_error_match(
+    globus_xio_driver_t                 driver,
+    globus_object_t *                   error,
+    int                                 type);
+
+void
+globus_xio_contact_destroy(
+    globus_xio_contact_t *              contact_info);
+
+globus_result_t
+globus_xio_contact_parse(
+    globus_xio_contact_t *              contact_info,
+    const char *                        contact_string);
+
+globus_result_t
+globus_xio_contact_info_to_string(
+    const globus_xio_contact_t *        contact_info,
+    char **                             contact_string);
+
+/**
+ * Utility macros
+ */
+
 /* all macros in this file require each function to 'declare' their name with
  * this
  */
@@ -321,27 +353,5 @@
             _ndx += (iov)[_i].iov_len;                                      \
         }                                                                   \
     } while(0)
-
-globus_bool_t
-globus_xio_error_is_eof(
-    globus_result_t                     res);
-
-globus_bool_t
-globus_xio_error_is_canceled(
-    globus_result_t                     res);
-
-void
-globus_xio_contact_destroy(
-    globus_xio_contact_t *              contact_info);
-
-globus_result_t
-globus_xio_contact_parse(
-    globus_xio_contact_t *              contact_info,
-    const char *                        contact_string);
-
-globus_result_t
-globus_xio_contact_info_to_string(
-    const globus_xio_contact_t *        contact_info,
-    char **                             contact_string);
 
 #endif

@@ -1036,41 +1036,72 @@ globus_l_xio_tcp_create_listener(
     {
         if(GlobusLibcProtocolFamilyIsIP(addrinfo->ai_family))
         {
-            fd = socket(
-                addrinfo->ai_family,
-                addrinfo->ai_socktype,
-                addrinfo->ai_protocol);
-            if(fd < 0)
-            {
-                save_errno = errno;
-                continue;
-            }
+            globus_bool_t               found = GLOBUS_FALSE;
             
-            result = globus_l_xio_tcp_apply_handle_attrs(
-                attr, fd, GLOBUS_TRUE, GLOBUS_FALSE);
-            if(result != GLOBUS_SUCCESS)
+            do
             {
-                result = GlobusXIOErrorWrapFailed(
-                    "globus_l_xio_tcp_apply_handle_attrs", result);
-                GlobusIXIOTcpCloseFd(fd);
-                continue;
-            }
+                fd = socket(
+                    addrinfo->ai_family,
+                    addrinfo->ai_socktype,
+                    addrinfo->ai_protocol);
+                if(fd < 0)
+                {
+                    save_errno = errno;
+                    break;
+                }
+                
+                result = globus_l_xio_tcp_apply_handle_attrs(
+                    attr, fd, GLOBUS_TRUE, GLOBUS_FALSE);
+                if(result != GLOBUS_SUCCESS)
+                {
+                    result = GlobusXIOErrorWrapFailed(
+                        "globus_l_xio_tcp_apply_handle_attrs", result);
+                    GlobusIXIOTcpCloseFd(fd);
+                    break;
+                }
+                
+                result = globus_l_xio_tcp_bind(
+                    fd,
+                    addrinfo->ai_addr,
+                    addrinfo->ai_addrlen,
+                    attr->restrict_port ? attr->listener_min_port : 0,
+                    attr->restrict_port ? attr->listener_max_port : 0);
+                if(result != GLOBUS_SUCCESS)
+                {
+                    result = GlobusXIOErrorWrapFailed(
+                        "globus_l_xio_tcp_bind", result);
+                    GlobusIXIOTcpCloseFd(fd);
+                    break;
+                }
+                
+                if(listen(
+                    fd, 
+                    attr->listener_backlog < 0 
+                        ? SOMAXCONN : attr->listener_backlog) < 0)
+                {
+                    save_errno = errno;
+                    GlobusIXIOTcpCloseFd(fd);
+                    
+                    if(save_errno == EADDRINUSE)
+                    {
+                        /* there's a race between bind and listen, let's try
+                         * this all over again
+                         */
+                        continue;
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+                
+                found = GLOBUS_TRUE;
+            } while(!found);
             
-            result = globus_l_xio_tcp_bind(
-                fd,
-                addrinfo->ai_addr,
-                addrinfo->ai_addrlen,
-                attr->restrict_port ? attr->listener_min_port : 0,
-                attr->restrict_port ? attr->listener_max_port : 0);
-            if(result != GLOBUS_SUCCESS)
+            if(found)
             {
-                result = GlobusXIOErrorWrapFailed(
-                    "globus_l_xio_tcp_bind", result);
-                GlobusIXIOTcpCloseFd(fd);
-                continue;
+                break;
             }
-            
-            break;
         }
     }
     
@@ -1084,19 +1115,12 @@ globus_l_xio_tcp_create_listener(
             }
             else
             {
-                result = GlobusXIOErrorSystemError("socket", save_errno);
+                result = GlobusXIOErrorSystemError(
+                    "socket/listen", save_errno);
             }
         }
         
         goto error_no_addrinfo;
-    }
-    
-    if(listen(
-        fd, 
-        (attr->listener_backlog < 0 ? SOMAXCONN : attr->listener_backlog)) < 0)
-    {
-        result = GlobusXIOErrorSystemError("listen", errno);
-        goto error_listen;
     }
     
     fcntl(fd, F_SETFD, FD_CLOEXEC);
@@ -1107,9 +1131,6 @@ globus_l_xio_tcp_create_listener(
     GlobusXIOTcpDebugExit();
     return GLOBUS_SUCCESS;
 
-error_listen:
-    GlobusIXIOTcpCloseFd(fd);
-    
 error_no_addrinfo:
     globus_libc_freeaddrinfo(save_addrinfo);
 

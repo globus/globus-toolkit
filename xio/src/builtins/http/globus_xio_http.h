@@ -237,7 +237,7 @@ typedef enum
      * version being used.
      * @hideinitializer
      */
-    GLOBUS_XIO_HTTP_ERROR_INVALID_HEADER = 1024,
+    GLOBUS_XIO_HTTP_ERROR_INVALID_HEADER,
     /**
      * Error parsing HTTP protocol
      */

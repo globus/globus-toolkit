@@ -19,6 +19,12 @@
  * @defgroup globus_xio_gsi_datatypes Datatypes
  */
 
+typedef enum
+{
+    GLOBUS_XIO_GSI_ERROR_INVALID_PROTECTION_LEVEL,
+    GLOBUS_XIO_GSI_ERROR_WRAP_GSSAPI
+} globus_xio_gsi_error_t;
+
 /**
  * Globus XIO GSI cntl operation types
  * @ingroup globus_xio_gsi_datatypes

@@ -1,10 +1,6 @@
-
+#include "globus_gass_copy.h"
 #include <glob.h>
 #include <fnmatch.h>
-#include "globus_gass_copy.h"
-#include "version.h"
-
-
 
 /************************************************************
  * glob support

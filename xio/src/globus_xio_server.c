@@ -1545,11 +1545,14 @@ globus_l_xio_decode_hex(
  * else
  *     if(^ "file:")
  *         -path (up till end)
- *     else if(":" before end)
+ *     else if(":" before end and no invalid host chars)
  *         -host (up till ":")
  *         -port (up till end)
  *     else
  *         -path (up till end)
+ * 
+ * XXX if its possible for plain filenames to contain a :, it really should be
+ * preceded with file:
  */
 
 globus_result_t
@@ -1757,7 +1760,7 @@ globus_xio_contact_parse(
                     goto error_alloc;
                 }
             }
-            else if((s = strrchr(working, ':')))
+            else if((s = strrchr(working, ':')) && !strpbrk(working, "\\/"))
             {
                 *(s++) = 0;
                 if(*s)

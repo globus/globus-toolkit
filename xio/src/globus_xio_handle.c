@@ -1704,6 +1704,8 @@ globus_l_xio_register_open(
 
     globus_mutex_lock(&handle->context->mutex);
     {
+        handle->state = GLOBUS_XIO_HANDLE_STATE_OPEN_FAILED;
+        
         GlobusXIOOpDec(op); /* dec for the register */
         globus_assert(op->ref > 0);
 

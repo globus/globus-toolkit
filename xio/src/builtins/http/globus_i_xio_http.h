@@ -368,7 +368,7 @@ extern
 globus_result_t
 globus_i_xio_http_copy_blob(
     globus_fifo_t *                     fifo,
-    const unsigned char *               blob,
+    const char *                        blob,
     size_t                              len);
 
 extern
@@ -674,9 +674,12 @@ globus_i_xio_http_close_callback(
     globus_result_t                     result,
     void *                              handle);
 
+extern globus_module_descriptor_t       globus_i_xio_http_module;
+#define GLOBUS_XIO_HTTP_MODULE &globus_i_xio_http_module
+
 #define GlobusXIOHttpErrorObjParse(token, context)                          \
         globus_error_construct_error(                                       \
-            GLOBUS_XIO_MODULE,                                              \
+            GLOBUS_XIO_HTTP_MODULE,                                              \
             GLOBUS_NULL,                                                    \
             GLOBUS_XIO_HTTP_ERROR_PARSE,                                    \
             __FILE__,                                                       \
@@ -691,7 +694,7 @@ globus_i_xio_http_close_callback(
 
 #define GlobusXIOHttpErrorObjInvalidHeader(name, value)                     \
         globus_error_construct_error(                                       \
-            GLOBUS_XIO_MODULE,                                              \
+            GLOBUS_XIO_HTTP_MODULE,                                              \
             GLOBUS_NULL,                                                    \
             GLOBUS_XIO_HTTP_ERROR_INVALID_HEADER,                           \
             __FILE__,                                                       \
@@ -706,7 +709,7 @@ globus_i_xio_http_close_callback(
 
 #define GlobusXIOHttpErrorObjNoEntity()                                     \
     globus_error_construct_error(                                           \
-            GLOBUS_XIO_MODULE,                                              \
+            GLOBUS_XIO_HTTP_MODULE,                                              \
             GLOBUS_NULL,                                                    \
             GLOBUS_XIO_HTTP_ERROR_NO_ENTITY,                                \
             __FILE__,                                                       \

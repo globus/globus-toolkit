@@ -59,6 +59,7 @@ LIBS=@LIBS@                                 \
      @GSSAPI_LIBS@                          \
      @AFS_LDFLAGS@                          \
      @AFS_LIBS@                             \
+     $(GLOBUS_DATA_LDFLAGS)                 \
      $(GLOBUS_DATA_LIBS)
 
 UTIL_SRC  = COPYRIGHT.c vers.c

@@ -708,7 +708,8 @@ globus_l_xio_http_copy_residue(
         http_handle->read_buffer_valid -= to_copy;
         http_handle->read_buffer_offset += to_copy;
         http_handle->read_operation.iov[i].iov_len -= to_copy;
-        http_handle->read_operation.iov[i].iov_base += to_copy;
+        http_handle->read_operation.iov[i].iov_base =
+          (char *) http_handle->read_operation.iov[i].iov_base + to_copy;
         http_handle->read_operation.nbytes += to_copy;
         if (http_handle->read_operation.wait_for >= to_copy)
         {
@@ -910,7 +911,7 @@ globus_l_xio_http_read_chunk_header_callback(
  *
  * @retval GLOBUS_SUCCESS
  *     No parsing errors encountered.
- * @retval GLOBUS_XIO_HTTP_ERROR_PARSE
+ * @retval <driver>::GLOBUS_XIO_HTTP_ERROR_PARSE
  *     Improperly formed chunk header.
  * @retval GLOBUS_XIO_ERROR_EOF
  *     Final chunk footer was read.
@@ -1120,7 +1121,7 @@ globus_l_xio_http_parse_chunk_header(
  * @retval GLOBUS_SUCCESS
  *     Write handled successfully. At some point later,
  *     globus_xio_driver_finished_read() will be called.
- * @retval GLOBUS_XIO_HTTP_ERROR_NO_ENTITY
+ * @retval <driver>::GLOBUS_XIO_HTTP_ERROR_NO_ENTITY
  *     A write was attempted for an operation which does not require a
  *     message body (such as a "GET" request) or after the end of the
  *     entity has already been sent.

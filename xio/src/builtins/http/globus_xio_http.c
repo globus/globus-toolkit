@@ -22,7 +22,7 @@ static
 int
 globus_l_xio_http_deactivate(void);
 
-static globus_module_descriptor_t  globus_i_xio_http_module =
+globus_module_descriptor_t  globus_i_xio_http_module =
 {
     "globus_xio_http",                  /*module name*/
     globus_l_xio_http_activate,         /*activate*/
@@ -149,7 +149,7 @@ globus_l_xio_http_deactivate(void)
 globus_result_t
 globus_i_xio_http_copy_blob(
     globus_fifo_t *                     iovecs,
-    const unsigned char *               data,
+    const char *                        data,
     size_t                              datalen)
 {
     globus_xio_iovec_t *                iov = NULL;
@@ -189,7 +189,7 @@ globus_i_xio_http_copy_blob(
             to_copy = datalen;
         }
 
-        memcpy(iov->iov_base + iov->iov_len, data, to_copy);
+        memcpy((char *) iov->iov_base + iov->iov_len, data, to_copy);
 
         iov->iov_len += to_copy;
         datalen -= to_copy;
@@ -362,7 +362,7 @@ globus_i_xio_http_clean_read_buffer(
          * and reuse part of the buffer
          */
         memmove(http_handle->read_buffer.iov_base,
-                http_handle->read_buffer.iov_base
+                (char *) http_handle->read_buffer.iov_base
                     + http_handle->read_buffer_offset,
                 http_handle->read_buffer_valid);
         http_handle->read_buffer_offset = 0;
@@ -391,7 +391,8 @@ globus_i_xio_http_clean_read_buffer(
      * Set read iovec to point to part of the buffer without any
      * data in it.
      */
-    http_handle->read_iovec.iov_base = http_handle->read_buffer.iov_base
+    http_handle->read_iovec.iov_base = (char *)
+        http_handle->read_buffer.iov_base
             + http_handle->read_buffer_offset
             + http_handle->read_buffer_valid;
 

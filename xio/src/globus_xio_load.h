@@ -38,12 +38,6 @@ globus_result_t
 globus_xio_driver_unload(
     globus_xio_driver_t                 driver);
 
-globus_bool_t
-globus_xio_driver_error_match(
-    globus_xio_driver_t                 driver,
-    globus_object_t *                   error,
-    int                                 type);
-
 /**
  * GlobusXIODefineDriver(
  *      label                           driver_name,

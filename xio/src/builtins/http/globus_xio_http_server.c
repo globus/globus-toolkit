@@ -828,7 +828,7 @@ error_exit:
  *     No parsing errors occurred while parsing the status line or headers.
  *     Parsing may still be incomplete, depending on the final value of @a
  *     done.
- * @retval GLOBUS_XIO_HTTP_ERROR_PARSE
+ * @retval <driver>::GLOBUS_XIO_HTTP_ERROR_PARSE
  *     Parse error reading the HTTP request line
  * @retval GLOBUS_XIO_ERROR_MEMORY
  *     Parsing failed because of memory constraints.

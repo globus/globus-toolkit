@@ -106,7 +106,7 @@ globus_i_xio_http_header_copy(
  *     by @a done.
  * @retval GLOBUS_XIO_ERROR_MEMORY
  *     Parsing failed because of insufficient memory.
- * @retval GLOBUS_XIO_HTTP_ERROR_PARSE
+ * @retval <driver>::GLOBUS_XIO_HTTP_ERROR_PARSE
  *     Error parsing a header.
  */
 globus_result_t
