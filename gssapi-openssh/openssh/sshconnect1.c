@@ -53,8 +53,7 @@ RCSID("$OpenBSD: sshconnect1.c,v 1.48 2002/02/11 16:15:46 markus Exp $");
 
 /*modified by binhe*/
 #ifdef GSSAPI
-#include <gssapi.h>
-#include <openssl/md5.h>
+#include "ssh-gss.h"
 #include "bufaux.h"
 static char gssapi_patch_version[] = GSSAPI_PATCH_VERSION;
 /*
@@ -1108,11 +1107,11 @@ int try_gssapi_authentication(char *host, Options *options)
   /* Do mutual authentication */
   req_flags |= GSS_C_MUTUAL_FLAG;
 
-#ifdef GSSAPI_KRB5
+#ifdef KRB5
 
   gssapi_auth_type = "GSSAPI/Kerberos 5";
 
-#endif /* GSSAPI_KRB5 */
+#endif
 
 #ifdef GSI
 
@@ -1145,12 +1144,12 @@ int try_gssapi_authentication(char *host, Options *options)
 
   /* Forward credentials? */
 
-#ifdef GSSAPI_KRB5
+#ifdef KRB5
   if (options->kerberos_tgt_passing) {
       debug("Forwarding Kerberos credentials");
       req_flags |= GSS_C_DELEG_FLAG;
   }
-#endif /* GSSAPI_KRB5 */
+#endif /* KRB5 */
 
 #ifdef GSSAPI
   if(options->gss_deleg_creds) {
