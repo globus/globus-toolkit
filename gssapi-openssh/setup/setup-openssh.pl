@@ -236,7 +236,8 @@ sub fixpaths
 
     if ( ! -f "$f" )
     {
-        die("Cannot find $f!");
+        printf("Cannot find $f!");
+        return;
     }
 
     #
@@ -303,12 +304,15 @@ sub alterFileGlobusLocation
 {
     my ($in, $out) = @_;
 
-    if ( ! -e $out )
+    if ( -r $in )
     {
-        $data = readFile($in);
-        $data =~ s|\@GLOBUS_LOCATION\@|$gpath|g;
-        writeFile($out, $data);
-        action("chmod 755 $out");
+        if ( ( -w $out ) || ( ! -e $out ) )
+        {
+            $data = readFile($in);
+            $data =~ s|\@GLOBUS_LOCATION\@|$gpath|g;
+            writeFile($out, $data);
+            action("chmod 755 $out");
+        }
     }
 }
 
