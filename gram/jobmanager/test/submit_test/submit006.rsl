@@ -1,2 +1,0 @@
-&(executable=/bin/echo)
- (arguments=hello world "quoted ""string""")
