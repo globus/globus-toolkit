@@ -656,7 +656,7 @@ input_gssapi_exchange_complete(int type, u_int32_t plen, void *ctxt)
  * could cause serious security problems if we think we set them.
  */
 void
-gssapi_clean_env(void)
+ssh_gssapi_clean_env(void)
 {
   char *envstr;
   int envstr_index;

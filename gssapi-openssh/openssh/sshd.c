@@ -822,7 +822,7 @@ main(int ac, char **av)
 		exit(0);
 
 #ifdef GSSAPI
-  gssapi_clean_env();
+	ssh_gssapi_clean_env();
 #endif /* GSSAPI */
 
 #ifdef HAVE_SCO_PROTECTED_PW
