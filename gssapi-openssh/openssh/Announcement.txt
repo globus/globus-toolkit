@@ -4,20 +4,6 @@ on OpenSSH 3.7.1p2 and NCSA's latest GSI patch for that version of
 OpenSSH.  A summary of the major changes found in this version is given
 at the end of this document.
 
-In response to interest members of the user community have shown in 
-a mode where GSI-OpenSSH does not override a previously-installed system 
-SSH, we have redesigned the main package so that the default behaviour is 
-to make available in $GLOBUS_LOCATION/bin/ only the commands 'gsissh', 
-'gsisftp', and 'gsiscp'.  Those users who wish for GSI-OpenSSH to also 
-install 'ssh' and the rest of the standard SSH commands into 
-$GLOBUS_LOCATION/bin/ should add the new "compatibility package" 
-onto their installation.
-
-It is our understanding that OpenSSH 3.8 will soon be released.  We would 
-solicit feedback on our package's new structure and will incorporate 
-useful comments and suggestions (perhaps when we address moving to OpenSSH 
-3.8).
-
 GSI-OpenSSH 3.0 is available for download from
 
   <ftp://ftp.ncsa.uiuc.edu/aces/gssapi-openssh/bundle/3.0/>
@@ -46,7 +32,6 @@ GSI-OpenSSH 3.0 Major changes
       * Added gsisftp install target.
 
       * Enable -static to link statically with Globus GSI libraries.  
-        YMMV.
 
    Bugs fixed
 
@@ -55,4 +40,4 @@ GSI-OpenSSH 3.0 Major changes
         problems between GSSAPI mechanisms.
 
       * Fixed misleading "Protocol error: didn't expect packet type 34" 
-        message.  Changed to "packet type 35".
+        message.
