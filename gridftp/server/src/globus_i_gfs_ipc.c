@@ -4941,7 +4941,7 @@ globus_gfs_ipc_request_data_destroy(
                 msg_size,
                 msg_size,
                 NULL,
-                globus_l_gfs_ipc_write_cb,
+                globus_l_gfs_ipc_no_read_write_cb,
                 request);
             if(res != GLOBUS_SUCCESS)
             {
