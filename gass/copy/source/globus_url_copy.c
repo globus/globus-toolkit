@@ -71,7 +71,7 @@ typedef struct
     int                                 restart_retries;
     int                                 restart_interval;
     int                                 restart_timeout;
-    int                                 stripe_bs;
+    globus_size_t                       stripe_bs;
     globus_bool_t			striped;
     globus_bool_t			rfc1738;
     globus_off_t			partial_offset;
@@ -348,12 +348,13 @@ this feature has not yet been implemented.
     exit(1); \
 }
 
+static 
 int
 test_integer( char *   value,
               void *   ignored,
               char **  errmsg )
 {
-    int  res = (atoi(value) < 0);
+    int  res = !(isdigit(*value) || *value == '-');
     if (res)
         *errmsg = strdup(_GASCSL("argument is not a positive integer"));
     return res;
@@ -1314,7 +1315,8 @@ globus_l_guc_parse_arguments(
     globus_args_option_instance_t *                 instance = NULL;
     globus_list_t *                                 list = NULL;
     globus_l_guc_src_dst_pair_t *                   ent;
-
+    int                                             rc;
+    globus_off_t                                    tmp_off;
 
     guc_info->no_3pt = GLOBUS_FALSE;
     guc_info->no_dcau = GLOBUS_FALSE;
@@ -1395,13 +1397,27 @@ globus_l_guc_parse_arguments(
             g_verbose_flag = GLOBUS_TRUE;
             break;
         case arg_bs:
-            guc_info->block_size = atoi(instance->values[0]);
+            rc = globus_args_bytestr_to_num(instance->values[0], &tmp_off);
+            if(rc != 0)
+            {
+                globus_url_copy_l_args_error(
+                    "invalid value for block size");
+                return -1;
+            }                  
+            guc_info->block_size = (globus_size_t) tmp_off;
             break;
         case arg_f:
             file_name = globus_libc_strdup(instance->values[0]);
             break;
         case arg_tcp_bs:
-            guc_info->tcp_buffer_size = atoi(instance->values[0]);
+            rc = globus_args_bytestr_to_num(instance->values[0], &tmp_off);
+            if(rc != 0)
+            {
+                globus_url_copy_l_args_error(
+                    "invalid value for tcp buffer size");
+                return -1;
+            }                  
+            guc_info->tcp_buffer_size = (globus_size_t) tmp_off;
             break;
         case arg_s:
             subject = globus_libc_strdup(instance->values[0]);
@@ -1453,7 +1469,14 @@ globus_l_guc_parse_arguments(
             guc_info->rfc1738 = GLOBUS_TRUE;
             break;
 	case arg_stripe_bs:
-	    guc_info->stripe_bs = atoi(instance->values[0]);
+            rc = globus_args_bytestr_to_num(instance->values[0], &tmp_off);
+            if(rc != 0)
+            {
+                globus_url_copy_l_args_error(
+                    "invalid value for stripe blocksize");
+                return -1;
+            }                  
+            guc_info->stripe_bs = (globus_size_t) tmp_off;
 	    break;
 	case arg_striped:
 	    guc_info->striped = GLOBUS_TRUE;
@@ -1462,16 +1485,24 @@ globus_l_guc_parse_arguments(
 	    guc_info->ipv6 = GLOBUS_TRUE;
 	    break;
 	case arg_partial_offset:
-            globus_libc_scan_off_t(
-                instance->values[0],
-                &guc_info->partial_offset,
-                GLOBUS_NULL);
+            rc = globus_args_bytestr_to_num(instance->values[0], &tmp_off);
+            if(rc != 0)
+            {
+                globus_url_copy_l_args_error(
+                    "invalid value for offset");
+                return -1;
+            }                  
+            guc_info->partial_offset = tmp_off;
 	    break;
 	case arg_partial_length:
-            globus_libc_scan_off_t(
-                instance->values[0],
-                &guc_info->partial_length,
-                GLOBUS_NULL);
+            rc = globus_args_bytestr_to_num(instance->values[0], &tmp_off);
+            if(rc != 0)
+            {
+                globus_url_copy_l_args_error(
+                    "invalid value for length");
+                return -1;
+            }                  
+            guc_info->partial_length = tmp_off;
             if(guc_info->partial_offset == -1)
             {
                 guc_info->partial_offset = 0;
@@ -1579,6 +1610,7 @@ globus_l_guc_parse_arguments(
         return -1;
     }
     return 0;
+    
 }
 
 static

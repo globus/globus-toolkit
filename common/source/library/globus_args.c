@@ -638,7 +638,7 @@ globus_args_bytestr_to_num(
     int                                 consumed;
     int                                 rc;
     
-    if(str == NULL || !isdigit(*str))
+    if(str == NULL || !(isdigit(*str) || *str == '-'))
     {
         return 1;
     }
