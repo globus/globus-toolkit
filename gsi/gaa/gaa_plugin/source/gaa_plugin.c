@@ -26,6 +26,27 @@ static gaa_status
 gaa_l_plugin_parse_valinfo(gaa_valinfo_ptr *	    valinfo,
 			   gaa_plugin_valinfo_args *viargs);
 
+
+struct gaa_l_plugin_subst_t
+{
+    char label;
+    char *value;
+};
+
+static gaa_status
+gaa_l_plugin_expand_name(char *				inname,
+			 char *				outname,
+			 int				outnamesize,
+			 const struct gaa_l_plugin_subst_t *	substitutions);
+
+
+static const struct gaa_l_plugin_subst_t substitutions[] =
+{
+    {'f', GAA_FLAVOR_NAME},
+    {0, 0},
+};
+
+
 static gaa_status
 gaa_l_plugin_init_mutex();
 
@@ -47,6 +68,7 @@ gaa_plugin_add_libdir(char *		libdir)
 {
     int					err;
     gaa_status				status;
+    char				tlibdir[8192];
 
     /* always lock firstent with libtool_mutex */
     static int				firstent = 1;
@@ -57,11 +79,14 @@ gaa_plugin_add_libdir(char *		libdir)
     if ((status = gaa_l_plugin_init_mutex()) != GAA_S_SUCCESS)
 	return(status);
 
+    if ((status = gaa_l_plugin_expand_name(libdir, tlibdir, sizeof(tlibdir),
+					   substitutions)) != GAA_S_SUCCESS)
+	return(status);
     gaacore_mutex_lock(libtool_mutex);
     if (firstent)
-	err = lt_dlsetsearchpath(libdir);
+	err = lt_dlsetsearchpath(tlibdir);
     else
-	err = lt_dladdsearchdir(libdir);
+	err = lt_dladdsearchdir(tlibdir);
     firstent = 0;
     gaacore_mutex_unlock(libtool_mutex);
     return(err ? GAA_STATUS(GAA_S_SYSTEM_ERR, 0) : GAA_S_SUCCESS);
@@ -197,6 +222,7 @@ gaa_l_plugin_find_symbol(lt_ptr *		 sym,
     int					err;
     lt_dlhandle				dlh;
     char				errstr[8192];
+    char				libname[8192];
     const char *			s;
     gaa_status				status;
 
@@ -212,15 +238,18 @@ gaa_l_plugin_find_symbol(lt_ptr *		 sym,
 	else
 	    return(GAA_STATUS(GAA_S_INVALID_ARG, 0));
     }
-    
+    if ((status = gaa_l_plugin_expand_name(symdesc->libname, libname,
+					   sizeof(libname),
+					   substitutions)) != GAA_S_SUCCESS)
+	return(status);
     gaacore_mutex_lock(libtool_mutex);
-    dlh = lt_dlopen(symdesc->libname);
+    dlh = lt_dlopen(libname);
     gaacore_mutex_unlock(libtool_mutex);
     if (dlh == 0)
     {
 	snprintf(errstr, sizeof(errstr),
 		 "gaa_l_plugin_find_symbol: couldn't dlopen %s: %s",
-		 (symdesc->libname ? symdesc->libname : "(self)"),
+		 (libname ? libname : "(self)"),
 		 ((s = lt_dlerror()) ? s : ""));
 	gaacore_set_err(errstr);
 	return(GAA_STATUS(GAA_S_SYSTEM_ERR, 0));
@@ -233,7 +262,7 @@ gaa_l_plugin_find_symbol(lt_ptr *		 sym,
 	snprintf(errstr, sizeof(errstr),
 		 "gaa_l_plugin_find_symbol: couldn't find symbol %s in %s: %s",
 		 symdesc->symname,
-		 (symdesc->libname ? symdesc->libname : "(self)"),
+		 (libname ? libname : "(self)"),
 		 ((s = lt_dlerror()) ? s : ""));
 	gaacore_set_err(errstr);
 	return(GAA_STATUS(GAA_S_SYSTEM_ERR, 0));
@@ -795,4 +824,69 @@ gaa_cleanup(gaa_ptr		gaa,
 	    void *		params)
 {
     gaa_free_gaa(gaa);
+}
+
+static gaa_status
+gaa_l_plugin_expand_name(char *				inname,
+			 char *				outname,
+			 int				outnamesize,
+			 const struct gaa_l_plugin_subst_t *	substitutions)
+{
+    char *in;
+    char *out;
+    int i;
+    char *val;
+    char c;
+    int found;
+    char errstr[2048];
+
+    if (inname == 0)
+	return GAA_S_SUCCESS;
+    if (outname == 0)
+	return(GAA_S_INTERNAL_ERR);
+
+    if (substitutions == 0)
+	for (in = inname, out = outname; *in && (outnamesize > 1); in++, out++)
+	{
+	    *out = *in;
+	    outnamesize--;
+	}
+    else
+	for (in = inname, out = outname; *in && (outnamesize > 1); in++)
+	{
+	    found = 0;
+	    if (*in == '$')
+	    {
+		for (i = 0; substitutions[i].label && ! found; i++)
+		    if (*(in+1) == substitutions[i].label)
+		    {
+			found = 1;
+			in++;
+			for (val = substitutions[i].value;
+			     *val && (outnamesize > 1);
+			     val++, out++)
+			{
+			    *out = *val;
+			    outnamesize--;
+			}
+			
+		    }
+	    }
+	    if (! found)
+	    {
+		*out++ = *in;
+		outnamesize--;
+	    }
+	}
+    if (outnamesize > 0)
+    {
+	*out = '\0';
+	return(GAA_S_SUCCESS);
+    }
+    else
+    {
+	strcpy(errstr, "gaa_l_plugin_expand_name: name too long");
+	gaacore_set_err(errstr);
+	return(GAA_S_INTERNAL_ERR);
+    }
 }

@@ -18,8 +18,7 @@ setup_DATA = \
 
 INCLUDES += $(GPT_INCLUDES)
 
-EXTRA_DIST = \
-	globus_gaa.conf
+CFLAGS += -DGAA_FLAVOR_NAME=\"@GLOBUS_FLAVOR_NAME@\"
 
 flavorinclude_HEADERS= \
 	gaa_plugin.h
