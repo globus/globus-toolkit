@@ -2286,6 +2286,9 @@ globus_l_xio_blocking_iov_cb(
 
     globus_mutex_lock(&info->mutex);
     {
+        info->res = result;
+        info->data_desc = data_desc;
+        info->nbytes = nbytes;
         info->done = GLOBUS_TRUE;
         globus_cond_signal(&info->cond);
     }

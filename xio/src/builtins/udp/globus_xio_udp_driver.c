@@ -1427,6 +1427,7 @@ globus_l_xio_udp_cntl(
         }
         break;
       
+      /* char *                         contact_string */
       case GLOBUS_XIO_UDP_CONNECT:
         in_string = va_arg(ap, char *);
         if(in_string)
