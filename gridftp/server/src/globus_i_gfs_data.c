@@ -2843,6 +2843,7 @@ globus_l_gfs_data_begin_cb(
             /* this happens when a finished comes right after a begin,
                 usually because 0 bytes were written.  we need to send
                 the transfer_connected event and then finish. */
+            case GLOBUS_L_GFS_DATA_FINISH_WITH_ERROR:
             case GLOBUS_L_GFS_DATA_FINISH:
                 op->stripe_connections_pending--;
                 if(!op->stripe_connections_pending)
