@@ -6,10 +6,10 @@
 #ifndef __GLOBUS_AUTH_H_
 #define __GLOBUS_AUTH_H_
 
+#include "gssapi.h"
 #include "gaa.h"
 #include "gaa_core.h"
 #include "globus_auth_error.h"
-#include "gssapi.h"
 #include "gaa_simple.h"
 
 #ifndef _HAVE_GSI_EXTENDED_GSSAPI
