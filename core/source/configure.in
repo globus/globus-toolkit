@@ -81,6 +81,7 @@ AC_SUBST(AUTOMAKE_OPTS)
 
 save_LD=$LD
 LD=
+enable_libtool_lock="no"
 AM_PROG_LIBTOOL
 mv ./libtool libtool-$GLOBUS_FLAVOR_NAME
 LD=$save_LD
