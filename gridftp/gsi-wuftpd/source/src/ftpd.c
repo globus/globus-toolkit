@@ -80,6 +80,7 @@
 #define VA_START(f)	va_start(ap, f)
 #define VA_END		va_end(ap)
 
+#include "globus_common.h"
 
 /**** added by JB **********/
 #if defined(THROUGHPUT)
@@ -831,7 +832,7 @@ int i = 0;
 	    break;
 
 	case 'G':
-	    setenv("GLOBUS_LOCATION", optarg, 1);
+	    globus_libc_setenv("GLOBUS_LOCATION", optarg, 1);
 	    break;
 
 	default:
