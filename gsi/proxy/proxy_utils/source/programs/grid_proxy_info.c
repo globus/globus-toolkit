@@ -598,10 +598,16 @@ main(
         printf("\n");
     }
 
+    #ifdef WIN32
+    OPENSSL_free(subject);
+    OPENSSL_free(issuer);
+    OPENSSL_free(identity);
+    #else
     free(subject);
     free(issuer);
     free(identity);
-
+    #endif
+    
     globus_module_deactivate(GLOBUS_OPENSSL_MODULE);
     globus_module_deactivate(GLOBUS_GSI_PROXY_MODULE);
 
