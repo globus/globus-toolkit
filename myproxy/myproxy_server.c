@@ -1018,27 +1018,6 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
 	   }
 	   break;
 
-#if defined(HAVE_LIBSASL2)
-       case AUTHORIZETYPE_SASL: /* retrieval */
-	   myproxy_debug("SASL authorization mechanism.");
-	   /* check per-credential policy */
-	   if (creds.retrievers) {
-	       authorization_ok =
-		   myproxy_server_check_policy(creds.retrievers, client_name);
-	       if (authorization_ok != 1) {
-		   verror_put_string("\"%s\" not authorized by credential's retriever policy", client_name);
-		   goto end;
-	       }
-	   }
-	   authorization_ok =
-	       authorization_check(&auth_data, &creds, client_name);
-	   if (authorization_ok != 1) {
-	       verror_put_string("invalid SASL authorization");
-	       goto end;
-	   }
-	   break;
-#endif
-
        case AUTHORIZETYPE_CERT:	/* renewal */
 	   /* check server-wide policy */
 	   myproxy_debug("cert authorization mechanism.\n");
