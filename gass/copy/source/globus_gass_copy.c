@@ -3479,7 +3479,7 @@ globus_l_gass_copy_io_read_callback(
 
     if(result != GLOBUS_SUCCESS)
     {
-	err = globus_error_get(result);
+	err = globus_error_peek(result);
 	last_data=globus_io_eof(err);
 
 #ifdef GLOBUS_I_GASS_COPY_DEBUG
@@ -5701,7 +5701,7 @@ globus_l_gass_copy_target_cancel(
                 globus_libc_fprintf(stderr,
                    "target_cancel(): _ftp_client_abort()  returned an error\n");
 		globus_libc_fprintf(stderr, "target_cancel(): error = %s\n",
-		   globus_object_printable_to_string(globus_error_get(result)));
+		   globus_object_printable_to_string(globus_error_peek(result)));
                 globus_libc_fprintf(stderr, "    resetting to SUCCESS\n");
 #endif
                  result = GLOBUS_SUCCESS;

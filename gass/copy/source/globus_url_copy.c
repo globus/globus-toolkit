@@ -74,6 +74,7 @@ typedef struct
     globus_size_t                       stripe_bs;
     globus_bool_t			striped;
     globus_bool_t			rfc1738;
+    globus_bool_t			create_dest;
     globus_off_t			partial_offset;
     globus_off_t			partial_length;
     globus_bool_t                       list_uses_data_mode;
@@ -237,6 +238,8 @@ const char * long_usage =
 "       <sourceURL> <destURL>\n"
 "       Enclose URLs with spaces in double qoutes (\").\n"
 "       Blank lines and lines beginning with # will be ignored.\n"
+"  -cd | -create-dest\n" 
+"       Create destination directory if needed\n"
 "  -r | -recurse\n" 
 "       Copy files in subdirectories\n"
    
@@ -388,6 +391,7 @@ enum
     arg_partial_offset,
     arg_partial_length,
     arg_rfc1738,
+    arg_create_dest,
     arg_fast,
     arg_ipv6,
     arg_stripe_bs,
@@ -428,6 +432,7 @@ flagdef(arg_data_private, "-dcpriv", "-data-channel-private");
 flagdef(arg_recurse, "-r", "-recurse");
 flagdef(arg_striped, "-stripe", "-striped");
 flagdef(arg_rfc1738, "-rp", "-relative-paths");
+flagdef(arg_create_dest, "-cd", "-create-dest");
 flagdef(arg_fast, "-fast", "-fast-data-channels");
 flagdef(arg_ipv6, "-ipv6","-IPv6");
 
@@ -477,6 +482,7 @@ static globus_args_option_descriptor_t args_options[arg_num];
     setupopt(arg_partial_offset);	\
     setupopt(arg_partial_length);	\
     setupopt(arg_rfc1738);      	\
+    setupopt(arg_create_dest);          \
     setupopt(arg_fast);	                \
     setupopt(arg_ipv6);         	\
     setupopt(arg_stripe_bs);         	\
@@ -1339,7 +1345,8 @@ globus_l_guc_parse_arguments(
     guc_info->rfc1738 = GLOBUS_FALSE;
     guc_info->list_uses_data_mode = GLOBUS_FALSE;
     guc_info->ipv6 = GLOBUS_FALSE;
-
+    guc_info->create_dest = GLOBUS_FALSE;
+ 
     /* determine the program name */
     
     program = strrchr(argv[0],'/');
@@ -1468,7 +1475,10 @@ globus_l_guc_parse_arguments(
         case arg_rfc1738:
             guc_info->rfc1738 = GLOBUS_TRUE;
             break;
-	case arg_stripe_bs:
+        case arg_create_dest:
+            guc_info->create_dest = GLOBUS_TRUE;
+            break;	
+        case arg_stripe_bs:
             rc = globus_args_bytestr_to_num(instance->values[0], &tmp_off);
             if(rc != 0)
             {
@@ -1616,18 +1626,21 @@ globus_l_guc_parse_arguments(
 static
 globus_result_t
 globus_l_guc_expand_urls(
-    globus_l_guc_info_t *                        guc_info,
-    globus_gass_copy_attr_t *                    gass_copy_attr,   
-    globus_gass_copy_attr_t *                    dest_gass_copy_attr,   
-    globus_gass_copy_handle_t *                  gass_copy_handle)
+    globus_l_guc_info_t *               guc_info,
+    globus_gass_copy_attr_t *           gass_copy_attr,   
+    globus_gass_copy_attr_t *           dest_gass_copy_attr,   
+    globus_gass_copy_handle_t *         gass_copy_handle)
 {
-    char *                                       src_url;
-    char *                                       dst_url;
-    globus_l_guc_src_dst_pair_t *                user_url_pair;
-    globus_result_t                              result;
-    globus_bool_t                                no_matches = GLOBUS_TRUE;
-    globus_bool_t                                was_error = GLOBUS_FALSE;
-    globus_bool_t                                stdin_used = GLOBUS_FALSE;
+    char *                              src_url;
+    char *                              dst_url;
+    globus_l_guc_src_dst_pair_t *       user_url_pair;
+    globus_l_guc_src_dst_pair_t *       expanded_url_pair;
+    globus_result_t                     result;
+    globus_bool_t                       no_matches = GLOBUS_TRUE;
+    globus_bool_t                       was_error = GLOBUS_FALSE;
+    globus_bool_t                       no_expand = GLOBUS_FALSE;
+    char *                              dst_basedir;
+    char *                              dst_filename;
             
     while(!globus_fifo_empty(&guc_info->user_url_list))
     {
@@ -1637,15 +1650,48 @@ globus_l_guc_expand_urls(
         src_url = user_url_pair->src_url;
         dst_url = user_url_pair->dst_url;
         
-        stdin_used = GLOBUS_FALSE;
+        no_expand = GLOBUS_FALSE;
         if(strcmp("-", src_url) == 0)
         {
+            expanded_url_pair = (globus_l_guc_src_dst_pair_t *)
+                    globus_malloc(sizeof(globus_l_guc_src_dst_pair_t));
+        
+            expanded_url_pair->src_url = globus_libc_strdup(src_url);
+            expanded_url_pair->dst_url = globus_libc_strdup(dst_url);          
+
             globus_fifo_enqueue(
                 &guc_info->expanded_url_list, 
-                user_url_pair);
-            stdin_used = GLOBUS_TRUE;
+                expanded_url_pair);
+            no_expand = GLOBUS_TRUE;
         }
-
+        
+        if(guc_info->create_dest)
+        {
+            dst_basedir = globus_libc_strdup(dst_url);
+            dst_filename = strrchr(dst_basedir, '/');
+            if(dst_filename && *(++dst_filename))
+            {
+                *dst_filename = '\0';
+            }
+                    
+            globus_ftp_client_operationattr_init(&guc_info->dest_ftp_attr);
+            globus_l_guc_gass_attr_init(
+                dest_gass_copy_attr,
+                &guc_info->dest_gass_attr,
+                &guc_info->dest_ftp_attr,
+                guc_info,
+                dst_url,
+                guc_info->dest_subject);
+                
+            globus_gass_copy_mkdir(
+                gass_copy_handle,
+                dst_basedir,
+                dest_gass_copy_attr);
+                
+            globus_ftp_client_operationattr_destroy(&guc_info->dest_ftp_attr);
+            globus_free(dst_basedir);
+        }
+        
         globus_hashtable_init(
             &guc_info->recurse_hash,
             256,
@@ -1662,7 +1708,7 @@ globus_l_guc_expand_urls(
             src_url,
             guc_info->source_subject);
 
-        if(!stdin_used)
+        if(!no_expand)
         {                    
             result = globus_l_guc_expand_single_url(
                 user_url_pair,
