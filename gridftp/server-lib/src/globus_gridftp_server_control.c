@@ -345,6 +345,10 @@ globus_i_gsc_op_destroy(
         {
             globus_free(op->mod_parms);
         }
+        if(op->stat_info != NULL)
+        {
+            globus_free(op->stat_info);
+        }
         if(op->cs != NULL)
         {
             for(ctr = 0; op->cs[ctr] != NULL; ctr++)
@@ -691,6 +695,7 @@ globus_i_gsc_terminate(
             globus_l_gsc_flush_reads(
                 server_handle,
                 "421 Service not available, closing control connection.\r\n");
+//            res = globus_l_gsc_final_reply(server_handle, msg);
             globus_xio_handle_cancel_operations(
                 server_handle->xio_handle,
                 GLOBUS_XIO_CANCEL_READ);
@@ -815,6 +820,13 @@ globus_l_gsc_finished_op(
             break;
 
         case GLOBUS_L_GSC_STATE_ABORTING_STOPPING:
+            res = globus_l_gsc_final_reply(
+                    server_handle,
+                    "421 Server terminated\r\n");
+            if(res != GLOBUS_SUCCESS)
+            {
+                goto err;
+            }
             server_handle->outstanding_op = NULL;
             server_handle->state = GLOBUS_L_GSC_STATE_STOPPING;
             globus_i_gsc_op_destroy(op);
@@ -2261,12 +2273,6 @@ globus_gridftp_server_control_stop(
 
     globus_mutex_lock(&server_handle->mutex);
     {
-        if(server_handle->state != GLOBUS_L_GSC_STATE_OPEN)
-        {
-            globus_mutex_unlock(&server_handle->mutex);
-            res = GlobusGridFTPServerErrorParameter("server");
-            goto err;
-        }
         globus_i_gsc_terminate(server_handle);
     }
     globus_mutex_unlock(&server_handle->mutex);
@@ -3532,6 +3538,7 @@ globus_l_gsc_internal_cb_kickout(
     void *                              user_arg)
 {
     globus_i_gsc_op_t *                 op;
+    int                                 ctr;
 
     op = (globus_i_gsc_op_t *) user_arg;
 
@@ -3555,6 +3562,7 @@ globus_l_gsc_internal_cb_kickout(
                 op->stat_count,
                 op->uid,
                 op->user_arg);
+
             break;
 
         case GLOBUS_L_GSC_OP_TYPE_CREATE_PASV:
@@ -3666,7 +3674,7 @@ globus_gridftp_server_control_finished_resource(
         op->response_msg = strdup(msg);
     }
     
-    if(res == GLOBUS_SUCCESS)
+    if(res == GLOBUS_SUCCESS && op->stat_cb != NULL)
     {
         op->stat_info = (globus_gridftp_server_control_stat_t *)
             globus_malloc(sizeof(globus_gridftp_server_control_stat_t) *
@@ -3679,13 +3687,13 @@ globus_gridftp_server_control_finished_resource(
                 &op->stat_info[ctr], &stat_info_array[ctr]);
         }
     }
+    else
+    {
+        op->stat_info = NULL;
+    }
     if(op->stat_cb != NULL)
     {
         GlobusLGSCRegisterInternalCB(op);
-    }
-    else
-    {
-        res = GLOBUS_FAILURE;
     }
 
     return GLOBUS_SUCCESS;

@@ -156,20 +156,22 @@ globus_l_gsc_event_done_cb(
 {
     globus_i_gsc_op_t *                 op;
     globus_i_gsc_event_data_t *         event;
+    globus_i_gsc_server_handle_t *      server_handle;
 
     op = (globus_i_gsc_op_t *) user_arg;
     event = &op->event;
+    server_handle = op->server_handle;
 
     event->user_cb(
         op,
         GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_TRANSFER_COMPLETE,
         event->user_arg);
 
-    globus_mutex_lock(&op->server_handle->mutex);
+    globus_mutex_lock(&server_handle->mutex);
     {
         globus_i_gsc_op_destroy(op);
     }
-    globus_mutex_unlock(&op->server_handle->mutex);
+    globus_mutex_unlock(&server_handle->mutex);
 }
 
 void

@@ -374,10 +374,6 @@ globus_l_gsc_cmd_mdtm_cb(
     tmp_ptr = globus_i_gsc_string_to_959(code, msg);
     globus_gsc_959_finished_command(op, tmp_ptr);
     globus_free(tmp_ptr);
-    if(stat_info != NULL)
-    {
-        globus_free(stat_info);
-    }
     globus_free(msg);
 }
 
@@ -817,10 +813,6 @@ globus_l_gsc_cmd_stat_cb(
     tmp_ptr = globus_i_gsc_string_to_959(code, msg);
     globus_gsc_959_finished_command(op, tmp_ptr);
     globus_free(tmp_ptr);
-    if(stat_info != NULL)
-    {
-        globus_free(stat_info);
-    }
     globus_free(msg);
 }
 

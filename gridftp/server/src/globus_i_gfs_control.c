@@ -29,6 +29,40 @@ typedef struct
     int                                 transfer_id;
 } globus_l_gfs_request_info_t;
 
+static globus_bool_t                     globus_l_gfs_control_active = GLOBUS_FALSE;
+static globus_list_t *                  globus_l_gfs_server_handle_list;
+static globus_mutex_t                   globus_l_gfs_control_mutex;
+
+void
+globus_i_gfs_control_init()
+{
+    globus_l_gfs_server_handle_list = NULL;
+    globus_mutex_init(&globus_l_gfs_control_mutex, NULL);
+    globus_l_gfs_control_active = GLOBUS_TRUE;
+}
+
+void
+globus_i_gfs_control_stop()
+{
+    globus_list_t *                     list;
+    globus_l_gfs_server_instance_t *    instance;
+
+    globus_mutex_lock(&globus_l_gfs_control_mutex);
+    {
+        globus_l_gfs_control_active = GLOBUS_FALSE;
+
+        for(list = globus_l_gfs_server_handle_list;
+            !globus_list_empty(list);
+            list = globus_list_rest(list))
+        {
+            instance = (globus_l_gfs_server_instance_t *) 
+                globus_list_first(list);
+
+            globus_gridftp_server_control_stop(instance->server_handle);
+        }
+    }
+    globus_mutex_unlock(&globus_l_gfs_control_mutex);
+}
 
 static
 globus_result_t
@@ -157,6 +191,13 @@ globus_l_gfs_done_cb(
     instance = (globus_l_gfs_server_instance_t *) user_arg;
 
     globus_gridftp_server_control_destroy(instance->server_handle);
+
+    globus_mutex_lock(&globus_l_gfs_control_mutex);
+    {
+        globus_list_remove(&globus_l_gfs_server_handle_list,
+            globus_list_search(globus_l_gfs_server_handle_list, instance));
+    }
+    globus_mutex_unlock(&globus_l_gfs_control_mutex);
 
     if(result != GLOBUS_SUCCESS)
     {
@@ -1495,7 +1536,6 @@ globus_i_gfs_control_start(
     char *                              banner;
     char *                              login_msg;
 
-
     instance = (globus_l_gfs_server_instance_t *)
         globus_calloc(1, sizeof(globus_l_gfs_server_instance_t));
     if(!instance)
@@ -1650,25 +1690,35 @@ globus_i_gfs_control_start(
         goto error_add_commands;
     }
 
-    result = globus_gridftp_server_control_start(
-        instance->server_handle,
-        attr,
-        system_handle,
-        globus_l_gfs_done_cb,
-        instance);
-    if(result != GLOBUS_SUCCESS)
+    globus_mutex_lock(&globus_l_gfs_control_mutex);
     {
-        globus_l_gfs_done_cb(instance->server_handle, result, instance);
-        globus_gridftp_server_control_attr_destroy(attr);
-        goto error_start;
+        if(!globus_l_gfs_control_active)
+        {
+            goto error_start;
+        }
+        result = globus_gridftp_server_control_start(
+            instance->server_handle,
+            attr,
+            system_handle,
+            globus_l_gfs_done_cb,
+            instance);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error_start;
+        }
+        globus_list_insert(&globus_l_gfs_server_handle_list, instance);
     }
+    globus_mutex_unlock(&globus_l_gfs_control_mutex);
 
     globus_gridftp_server_control_attr_destroy(attr);
 
     return GLOBUS_SUCCESS;
 
+error_start:
+    globus_mutex_unlock(&globus_l_gfs_control_mutex);
 error_add_commands:
 error_init:
+    globus_gridftp_server_control_destroy(instance->server_handle);
 error_attr_setup:
     globus_gridftp_server_control_attr_destroy(attr);
 
@@ -1677,7 +1727,6 @@ error_attr:
 
 error_strdup:
     globus_free(instance);
-error_start:
 error_malloc:
     return result;
 }

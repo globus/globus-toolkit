@@ -125,6 +125,7 @@ globus_ftp_control_handle_init(
 
     /* control_client.c specific init */
 
+    handle->cc_handle.cc_state = GLOBUS_FTP_CONTROL_UNCONNECTED;   
     globus_fifo_init(&handle->cc_handle.readers);
     globus_fifo_init(&handle->cc_handle.writers);
     globus_l_ftp_control_response_init(
@@ -3318,7 +3319,7 @@ globus_ftp_control_force_close(
     
     globus_i_ftp_control_debug_printf(1,
         (stderr, "globus_ftp_control_force_close() entering\n"));
-        
+    
     globus_mutex_lock(&(handle->cc_handle.mutex));
     {
 	if(handle->cc_handle.cc_state != GLOBUS_FTP_CONTROL_CONNECTED &&

@@ -33,6 +33,12 @@ void
 globus_i_gfs_monitor_signal(
     globus_i_gfs_monitor_t *            monitor);
 
+void
+globus_i_gfs_control_stop();
+
+void
+globus_i_gfs_control_init();
+
 #include "globus_i_gfs_log.h"
 #include "globus_i_gfs_control.h"
 #include "globus_i_gfs_ipc.h"
