@@ -172,7 +172,7 @@ struct mon_table mon_dispatch_proto20[] = {
     {MONITOR_REQ_AUTH2_READ_BANNER, MON_ONCE, mm_answer_auth2_read_banner},
     {MONITOR_REQ_AUTHPASSWORD, MON_AUTH, mm_answer_authpassword},
 #ifdef USE_PAM
-    {MONITOR_REQ_PAM_START, MON_ONCE, mm_answer_pam_start},
+    {MONITOR_REQ_PAM_START, MON_ISAUTH, mm_answer_pam_start},
 #endif
 #ifdef BSD_AUTH
     {MONITOR_REQ_BSDAUTHQUERY, MON_ISAUTH, mm_answer_bsdauthquery},
@@ -235,7 +235,7 @@ struct mon_table mon_dispatch_proto15[] = {
     {MONITOR_REQ_GSIGRIDMAP, MON_PERMIT, mm_answer_gsi_gridmap},
 #endif
 #ifdef USE_PAM
-    {MONITOR_REQ_PAM_START, MON_ONCE, mm_answer_pam_start},
+    {MONITOR_REQ_PAM_START, MON_ISAUTH, mm_answer_pam_start},
 #endif
     {0, 0, NULL}
 };
