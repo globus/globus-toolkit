@@ -1,0 +1,33 @@
+#! /bin/sh
+
+. ${GLOBUS_LOCATION}/libexec/globus-script-initializer
+globus_source ${libexecdir}/globus-sh-tools.sh
+
+if test ! -f ${sysconfdir}/globus-gatekeeper.conf; then
+    ${GLOBUS_SH_PRINTF-printf} "Creating gatekeeper configuration file..."
+    cat > ${sysconfdir}/globus-gatekeeper.conf <<-EOF
+	-x509_cert_dir /etc/grid-security/certificates
+	-x509_user_cert /etc/grid-security/hostcert.pem
+	-x509_user_key /etc/grid-security/hostkey.pem
+	-gridmap /etc/grid-security/grid-mapfile
+	-home $GLOBUS_LOCATION
+	-e libexec
+	-logfile var/globus-gatekeeper.log
+	-port 2911
+	-grid-services etc/grid-services
+	-inetd
+EOF
+    ${GLOBUS_SH_PRINTF-printf} "done\n"
+fi
+
+if test ! -d ${localstatedir}; then
+    ${GLOBUS_SH_PRINTF-printf} "Creating gatekeeper log directory..."
+    ${GLOBUS_SH_MKDIR-mkdir} -p ${localstatedir}
+    ${GLOBUS_SH_PRINTF-printf} "done\n"
+fi
+
+if test ! -d ${sysconfdir}/grid-services; then
+    ${GLOBUS_SH_PRINTF-printf} "Creating grid services directory..."
+    ${GLOBUS_SH_MKDIR-mkdir} -p ${sysconfdir}/grid-services
+    ${GLOBUS_SH_PRINTF-printf} "done\n"
+fi
