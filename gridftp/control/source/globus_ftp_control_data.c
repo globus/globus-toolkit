@@ -7639,7 +7639,7 @@ globus_l_ftp_stream_write_callback(
                 &dc_handle->nl_ftp_handle,
                 GFTP_NL_EVENT_SENT_DATA,
                 "GFTPC",
-                3,
+                "Important",
                 tag_str);
         }
     }
@@ -7840,7 +7840,7 @@ globus_l_ftp_stream_read_callback(
                     &dc_handle->nl_ftp_handle,
                     GFTP_NL_EVENT_RECEIVED_DATA,
                     "GFTPC",
-                    3,
+                    "Important",
                     tag_str);
             }
         }
@@ -8601,7 +8601,7 @@ globus_l_ftp_eb_read_callback(
                     &dc_handle->nl_ftp_handle,
                     GFTP_NL_EVENT_RECEIVED_DATA,
                     "GFTPC",
-                    3,
+                    "Important",
                     tag_str);
             }
         }
@@ -9057,7 +9057,7 @@ globus_l_ftp_eb_write_callback(
                 &dc_handle->nl_ftp_handle,
                 GFTP_NL_EVENT_SENT_DATA,
                 "GFTPC",
-                3,
+                "Important",
                 tag_str);
         }
     }
