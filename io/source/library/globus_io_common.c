@@ -90,8 +90,8 @@ globus_io_register_close(
     static char *			myname="globus_io_register_close";
 
     globus_i_io_debug_printf(2,
-		            ("%s(): entering: handle=%p, handle->state = %d, fd=%d\n",
-			     myname, handle, handle->state, handle->fd));
+		            (stderr, "%s(): entering: handle=%p, handle->state = %d, fd=%d\n",
+			     myname, (void *)handle, handle->state, handle->fd));
     if(handle == GLOBUS_NULL)
     {
 	err = globus_io_error_construct_null_parameter(
@@ -251,6 +251,7 @@ globus_io_cancel(
 {
     globus_i_io_monitor_t		monitor;
     globus_result_t			result;
+    globus_callback_space_t             saved_space;
     
     globus_mutex_init(&monitor.mutex, GLOBUS_NULL);
     globus_cond_init(&monitor.cond, GLOBUS_NULL);
@@ -258,6 +259,10 @@ globus_io_cancel(
     monitor.err = GLOBUS_NULL;
     monitor.use_err = GLOBUS_FALSE;
     
+    /* we're going to poll on global space, save users space */
+    saved_space = handle->space;
+    handle->space = GLOBUS_CALLBACK_GLOBAL_SPACE;
+
     result = globus_io_register_cancel(handle,
 				      perform_callbacks,
 				      globus_i_io_monitor_callback,
@@ -276,6 +281,8 @@ globus_io_cancel(
 	globus_cond_wait(&monitor.cond, &monitor.mutex);
     }
     globus_mutex_unlock(&monitor.mutex);
+
+    handle->space = saved_space;
 
     globus_mutex_destroy(&monitor.mutex);
 
@@ -330,12 +337,17 @@ globus_io_close(
 {
     globus_i_io_monitor_t		monitor;
     globus_result_t			result;
+    globus_callback_space_t             saved_space;
     
     globus_mutex_init(&monitor.mutex, GLOBUS_NULL);
     globus_cond_init(&monitor.cond, GLOBUS_NULL);
     monitor.done = GLOBUS_FALSE;
     monitor.err = GLOBUS_NULL;
     monitor.use_err = GLOBUS_FALSE;
+
+    /* we're going to poll on global space, save users space */
+    saved_space = handle->space;
+    handle->space = GLOBUS_CALLBACK_GLOBAL_SPACE;
     
     result = globus_io_register_close(handle,
 				      globus_i_io_monitor_callback,
@@ -354,6 +366,8 @@ globus_io_close(
 	globus_cond_wait(&monitor.cond, &monitor.mutex);
     }
     globus_mutex_unlock(&monitor.mutex);
+
+    handle->space = saved_space;
 
     globus_mutex_destroy(&monitor.mutex);
 
@@ -486,12 +500,17 @@ globus_io_listen(
 {
     globus_i_io_monitor_t		monitor;
     globus_result_t			result;
+    globus_callback_space_t             saved_space;
     
     globus_mutex_init(&monitor.mutex, GLOBUS_NULL);
     globus_cond_init(&monitor.cond, GLOBUS_NULL);
     monitor.done = GLOBUS_FALSE;
     monitor.err = GLOBUS_NULL;
     monitor.use_err = GLOBUS_FALSE;
+
+    /* we're going to poll on global space, save users space */
+    saved_space = handle->space;
+    handle->space = GLOBUS_CALLBACK_GLOBAL_SPACE;
     
     result = globus_io_register_listen(handle,
 				       globus_i_io_monitor_callback,
@@ -511,6 +530,8 @@ globus_io_listen(
 	globus_cond_wait(&monitor.cond, &monitor.mutex);
     }
     globus_mutex_unlock(&monitor.mutex);
+
+    handle->space = saved_space;
 
     globus_mutex_destroy(&monitor.mutex);
 
@@ -830,6 +851,8 @@ globus_i_io_initialize_handle(
     handle->type = type;
     handle->state = GLOBUS_IO_HANDLE_STATE_INVALID;
     handle->user_pointer = GLOBUS_NULL;
-
+    
+    handle->space = GLOBUS_CALLBACK_GLOBAL_SPACE;
+    
     return GLOBUS_SUCCESS;
 }
