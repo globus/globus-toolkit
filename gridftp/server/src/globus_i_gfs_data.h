@@ -7,6 +7,7 @@ typedef void
 (*globus_i_gfs_data_command_cb_t)(
     globus_i_gfs_server_instance_t *    instance,
     globus_result_t                     result,
+    globus_i_gfs_cmd_attr_t *           cmd_attr,
     void *                              user_arg);
 
 typedef void

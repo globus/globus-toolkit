@@ -15,6 +15,7 @@ static char*                            option_list[][7] =
     {"fork",                "0",    "fork",                 "",                                  "-fork",               "-f",   "1"},
     {"inetd",               "0",    "inetd",                "",                                  "-inetd",              "-i",   "1"},
     {"no_gssapi",           "0",    "no_gssapi",            "",                                  "-no-gssapi",          "-ng",  "1"},
+    {"allow_clear",           "0",    "allow_clear",            "",                              "-allow-clear",        "-ac",  "1"},
     {"uid",                 "0",    "",                     "",                                  "-uid",                "-u",   "0"},
     {"data_node",           "0",    "data_node",            "",                                  "-data-node",          "-d",   "1"}
 };

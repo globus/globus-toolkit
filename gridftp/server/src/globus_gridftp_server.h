@@ -42,7 +42,8 @@ globus_gridftp_server_finished_resource(
 void
 globus_gridftp_server_finished_command(
     globus_gridftp_server_operation_t   op,
-    globus_result_t                     result);
+    globus_result_t                     result,
+    const char *                        command_data);
 
 void
 globus_gridftp_server_finished_transfer(

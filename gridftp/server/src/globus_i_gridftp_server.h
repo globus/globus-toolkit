@@ -8,6 +8,7 @@ typedef struct
 {
     globus_xio_handle_t             xio_handle;
     char *                          remote_contact;
+    char *                          rnfr_pathname;
     
     union
     {
@@ -66,7 +67,15 @@ typedef struct
 {
     globus_i_gfs_command_t              command;
     char *                              pathname;
+
+    globus_off_t                        cksm_offset;
+    globus_off_t                        cksm_length;
+    char *                              cksm_alg;
+    char *                              cksm_response;
     
+    mode_t                              chmod_mode;
+    
+    char *                              rnfr_pathname;    
 /* XXX use a union here when we get into commands with different args */
             
 } globus_i_gfs_cmd_attr_t;

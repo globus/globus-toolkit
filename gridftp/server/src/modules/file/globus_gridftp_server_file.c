@@ -2,6 +2,7 @@
 #include "globus_gridftp_server.h"
 #include "globus_xio.h"
 #include "globus_xio_file_driver.h"
+#include <openssl/md5.h>
 
 typedef struct
 {
@@ -287,17 +288,210 @@ globus_l_gfs_file_mkdir(
     if(rc != 0)
     {
         result = GlobusGFSErrorSystemError("mkdir", errno);
-        goto error_mkdir;
+        goto error;
     }
     
-    globus_gridftp_server_finished_command(op, GLOBUS_SUCCESS);
+    globus_gridftp_server_finished_command(op, GLOBUS_SUCCESS, GLOBUS_NULL);
         
     return GLOBUS_SUCCESS;
     
-error_mkdir:
+error:
     return result;
 }
 
+globus_result_t
+globus_l_gfs_file_rmdir(
+    globus_gridftp_server_operation_t   op,
+    const char *                        pathname)
+{
+    int                                 rc;
+    globus_result_t                     result;
+    GlobusGFSName(globus_l_gfs_file_rmdir);
+
+    rc = rmdir(pathname);
+    if(rc != 0)
+    {
+        result = GlobusGFSErrorSystemError("rmdir", errno);
+        goto error;
+    }
+    
+    globus_gridftp_server_finished_command(op, GLOBUS_SUCCESS, GLOBUS_NULL);
+        
+    return GLOBUS_SUCCESS;
+    
+error:
+    return result;
+}
+
+globus_result_t
+globus_l_gfs_file_delete(
+    globus_gridftp_server_operation_t   op,
+    const char *                        pathname)
+{
+    int                                 rc;
+    globus_result_t                     result;
+    GlobusGFSName(globus_l_gfs_file_delete);
+
+    rc = unlink(pathname);
+    if(rc != 0)
+    {
+        result = GlobusGFSErrorSystemError("unlink", errno);
+        goto error;
+    }
+    
+    globus_gridftp_server_finished_command(op, GLOBUS_SUCCESS, GLOBUS_NULL);
+        
+    return GLOBUS_SUCCESS;
+    
+error:
+    return result;
+}
+
+globus_result_t
+globus_l_gfs_file_rename(
+    globus_gridftp_server_operation_t   op,
+    const char *                        from_pathname,
+    const char *                        to_pathname)
+{
+    int                                 rc;
+    globus_result_t                     result;
+    GlobusGFSName(globus_l_gfs_file_rename);
+
+    rc = rename(from_pathname, to_pathname);
+    if(rc != 0)
+    {
+        result = GlobusGFSErrorSystemError("rename", errno);
+        goto error;
+    }
+    
+    globus_gridftp_server_finished_command(op, GLOBUS_SUCCESS, GLOBUS_NULL);
+        
+    return GLOBUS_SUCCESS;
+    
+error:
+    return result;
+}
+
+globus_result_t
+globus_l_gfs_file_chmod(
+    globus_gridftp_server_operation_t   op,
+    const char *                        pathname,
+    mode_t                              mode)
+{
+    int                                 rc;
+    globus_result_t                     result;
+    GlobusGFSName(globus_l_gfs_file_chmod);
+
+    rc = chmod(pathname, mode);
+    if(rc != 0)
+    {
+        result = GlobusGFSErrorSystemError("chmod", errno);
+        goto error;
+    }
+    
+    globus_gridftp_server_finished_command(op, GLOBUS_SUCCESS, GLOBUS_NULL);
+        
+    return GLOBUS_SUCCESS;
+    
+error:
+    return result;
+}
+
+#define GFS_CKSM_BUFSIZE 1024*1024
+
+globus_result_t
+globus_l_gfs_file_cksm(
+    globus_gridftp_server_operation_t   op,
+    const char *                        pathname,
+    const char *                        algorithm,
+    globus_off_t                        offset,
+    globus_off_t                        length)
+{
+    int                                 rc;
+    globus_result_t                     result;
+    GlobusGFSName(globus_l_gfs_file_cksm);
+    
+    MD5_CTX                             mdctx;
+    char *                              md5ptr;
+    unsigned char                       md[MD5_DIGEST_LENGTH];
+    char                                md5sum[MD5_DIGEST_LENGTH * 2 + 1];
+    char                                buf[GFS_CKSM_BUFSIZE];
+
+    int                                 i;
+    int                                 fd;
+    int                                 n;
+    globus_off_t                        count;
+    globus_off_t                        read_left;
+    
+
+    if(offset < 0)
+    {
+        goto param_error;
+    }
+       
+    if(length >= 0)
+    {
+        read_left = length;
+        count = (read_left > GFS_CKSM_BUFSIZE) ? GFS_CKSM_BUFSIZE : read_left;
+    }
+    else
+    {
+        count = GFS_CKSM_BUFSIZE;
+    }
+    
+    fd = open(pathname, O_RDONLY);        
+    if(fd < 0)
+    {
+        goto fd_error;
+    }
+
+    if (lseek(fd, offset, SEEK_SET) == -1)
+    {
+        goto seek_error;
+    }
+
+    
+    MD5_Init(&mdctx);        
+
+    while((n = read(fd, buf, count)) > 0)
+    {
+        if(length >= 0)
+        {
+            read_left -= n;
+            count = (read_left > GFS_CKSM_BUFSIZE) ? GFS_CKSM_BUFSIZE : read_left;
+        }
+
+        MD5_Update(&mdctx, buf, n);
+    }
+
+    MD5_Final(md, &mdctx);
+    
+    close(fd);
+        
+    md5ptr = md5sum;
+    for(i = 0; i < MD5_DIGEST_LENGTH; i++)
+    {
+       sprintf(md5ptr, "%02x", md[i]);
+       md5ptr++;
+       md5ptr++;
+    }
+    md5ptr = '\0';
+    
+    /* reply(213, "%s", md5sum); */
+    
+    globus_gridftp_server_finished_command(op, GLOBUS_SUCCESS, md5sum);
+        
+    return GLOBUS_SUCCESS;
+        
+seek_error:
+    close(fd);
+fd_error:
+param_error:
+error:
+     /* reply(501, "Error calculating checksum"); */
+
+    return result;
+}
 
 
 

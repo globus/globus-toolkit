@@ -110,7 +110,8 @@ globus_l_gfs_auth_request(
     struct passwd *                     pwent;
 
 /* XXX add error responses */
-    if(!globus_i_gfs_config_bool("no_gssapi"))
+    if((!globus_i_gfs_config_bool("no_gssapi") && !globus_i_gfs_config_bool("allow_clear")) ||
+    (!strcmp(user_name, ":globus-mapping:") && globus_i_gfs_config_bool("allow_clear")))
     {
         rc = globus_gss_assist_gridmap((char *) subject, &local_name);
         if(rc != 0)
@@ -214,13 +215,44 @@ void
 globus_l_gfs_ipc_command_cb(
     globus_i_gfs_server_instance_t *    instance,
     globus_result_t                     result,
+    globus_i_gfs_cmd_attr_t *           cmd_attr,
     void *                              user_arg)
 {
     globus_gridftp_server_control_op_t  op;
+    char *                              msg;
     
     op = (globus_gridftp_server_control_op_t) user_arg;
-    
-    globus_gsc_959_finished_command(op, "200 OK\r\n");    
+
+    switch(cmd_attr->command)
+    {
+      case GLOBUS_I_GFS_CMD_RMD:
+      case GLOBUS_I_GFS_CMD_DELE:
+      case GLOBUS_I_GFS_CMD_RNTO:
+      case GLOBUS_I_GFS_CMD_SITE_CHMOD:
+        globus_gsc_959_finished_command(op, "250 OK.\r\n"); 
+        break;
+      case GLOBUS_I_GFS_CMD_MKD:
+        msg = globus_common_create_string(
+            "257 Directory \"%s\" created successfully.\r\n", 
+            cmd_attr->pathname);
+        globus_gsc_959_finished_command(op, msg);
+        globus_free(msg);
+        break;      
+      case GLOBUS_I_GFS_CMD_RNFR:
+        globus_gsc_959_finished_command(op, "350 Waiting for RNTO.\r\n"); 
+        break;
+      case GLOBUS_I_GFS_CMD_CKSM:
+        msg = globus_common_create_string(
+            "213 %s\r\n", cmd_attr->cksm_response);
+        globus_gsc_959_finished_command(op, msg); 
+        globus_free(msg);
+        break;
+      
+      default:
+        globus_gsc_959_finished_command(op, "500 Unknown error.\r\n"); 
+        break;
+    }
+       
 }
 
 static
@@ -238,7 +270,9 @@ globus_l_gfs_command_request(
 
     GlobusGFSName(globus_l_gfs_command_request);
     GlobusGridFTPServerName(globus_l_gsc_cmd_cwd);
-
+    
+    instance = (globus_i_gfs_server_instance_t *) user_arg;
+    
     if(strcmp(cmd_array[0], "MKD") == 0)
     {
         cmd_attr.command = GLOBUS_I_GFS_CMD_MKD;
@@ -268,12 +302,17 @@ globus_l_gfs_command_request(
     }
     else if(strcmp(cmd_array[0], "RNFR") == 0)
     {
+        /* XXX */
         cmd_attr.command = GLOBUS_I_GFS_CMD_RNFR;
         cmd_attr.pathname = globus_libc_strdup(cmd_array[1]);
+        instance->rnfr_pathname = globus_libc_strdup(cmd_array[1]);
         if(cmd_attr.pathname == NULL)
         {
             goto err;
         }
+        globus_gsc_959_finished_command(op,
+            "200 OK.\r\n");
+        return;
     }
     else if(strcmp(cmd_array[0], "RNTO") == 0)
     {
@@ -283,25 +322,42 @@ globus_l_gfs_command_request(
         {
             goto err;
         }
+        if(instance->rnfr_pathname == GLOBUS_NULL)
+        {
+            goto err;
+        }
+        cmd_attr.rnfr_pathname = instance->rnfr_pathname;
+        instance->rnfr_pathname = GLOBUS_NULL;
     }
     else if(strcmp(cmd_array[0], "CKSM") == 0)
     {
         cmd_attr.command = GLOBUS_I_GFS_CMD_CKSM;
-        cmd_attr.pathname = globus_libc_strdup(cmd_array[1]);
+        cmd_attr.pathname = globus_libc_strdup(cmd_array[4]);
         if(cmd_attr.pathname == NULL)
         {
             goto err;
         }
+        cmd_attr.cksm_alg = globus_libc_strdup(cmd_array[1]);
+        globus_libc_scan_off_t(
+            cmd_array[2],
+            &cmd_attr.cksm_offset,
+            GLOBUS_NULL);
+        globus_libc_scan_off_t(
+            cmd_array[3],
+            &cmd_attr.cksm_length,
+            GLOBUS_NULL);
+   
     }
     else if(strcmp(cmd_array[0], "SITE") == 0 && 
-        strcmp(cmd_array[0], "CHMOD") == 0)
+        strcmp(cmd_array[1], "CHMOD") == 0)
     {
         cmd_attr.command = GLOBUS_I_GFS_CMD_SITE_CHMOD;
-        cmd_attr.pathname = globus_libc_strdup(cmd_array[1]);
+        cmd_attr.pathname = globus_libc_strdup(cmd_array[3]);
         if(cmd_attr.pathname == NULL)
         {
             goto err;
         }
+        cmd_attr.chmod_mode = strtol(cmd_array[2], NULL, 8);
     }
     else
     {
@@ -322,7 +378,6 @@ globus_l_gfs_command_request(
     
     return;
 err:
-error_parse:
 error_ipc:  
     globus_gsc_959_finished_command(op,
         "501 Invalid command arguments.\r\n");
@@ -733,6 +788,7 @@ globus_l_gfs_data_destroy(
 static
 globus_result_t
 globus_l_gfs_add_commands(
+    globus_i_gfs_server_instance_t *    instance,
     globus_gridftp_server_control_t     control_handle)
 {
     globus_result_t                     result;
@@ -746,6 +802,84 @@ globus_l_gfs_add_commands(
         2,
         "214 Syntax: MKD <sp> pathname\r\n",
         GLOBUS_NULL);    
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+    result = globus_gsc_959_command_add(
+        control_handle,
+        "RMD",
+        globus_l_gfs_command_request,
+        GLOBUS_GSC_COMMAND_POST_AUTH,
+        2,
+        2,
+        "214 Syntax: RMD <sp> pathname\r\n",
+        GLOBUS_NULL);    
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+    result = globus_gsc_959_command_add(
+        control_handle,
+        "DELE",
+        globus_l_gfs_command_request,
+        GLOBUS_GSC_COMMAND_POST_AUTH,
+        2,
+        2,
+        "214 Syntax: DELE <sp> pathname\r\n",
+        GLOBUS_NULL);    
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+    result = globus_gsc_959_command_add(
+        control_handle,
+        "SITE",
+        globus_l_gfs_command_request,
+        GLOBUS_GSC_COMMAND_POST_AUTH,
+        4,
+        4,
+        "214 Syntax: SITE <sp> CHMOD <sp> mode <sp> pathname\r\n",
+        GLOBUS_NULL);    
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+    result = globus_gsc_959_command_add(
+        control_handle,
+        "CKSM",
+        globus_l_gfs_command_request,
+        GLOBUS_GSC_COMMAND_POST_AUTH,
+        5,
+        5,
+        "214 Syntax: CKSM <sp> algorithm <sp> offset <sp> length <sp> pathname\r\n",
+        GLOBUS_NULL);    
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+    result = globus_gsc_959_command_add(
+        control_handle,
+        "RNFR",
+        globus_l_gfs_command_request,
+        GLOBUS_GSC_COMMAND_POST_AUTH,
+        2,
+        2,
+        "214 Syntax: RNFR <sp> pathname\r\n",
+        instance);    
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+    result = globus_gsc_959_command_add(
+        control_handle,
+        "RNTO",
+        globus_l_gfs_command_request,
+        GLOBUS_GSC_COMMAND_POST_AUTH,
+        2,
+        2,
+        "214 Syntax: RNTO <sp> pathname\r\n",
+        instance);    
     if(result != GLOBUS_SUCCESS)
     {
         goto error;
@@ -777,6 +911,7 @@ globus_i_gfs_control_start(
     }
     
     instance->xio_handle = handle;
+    instance->rnfr_pathname = GLOBUS_NULL;
     instance->remote_contact = globus_libc_strdup(remote_contact);
     if(!instance->remote_contact)
     {
@@ -793,8 +928,11 @@ globus_i_gfs_control_start(
     result = globus_gridftp_server_control_attr_set_security(
         attr, 
         (globus_i_gfs_config_bool("no_gssapi")) ?
-        GLOBUS_GRIDFTP_SERVER_LIBRARY_NONE :
-        GLOBUS_GRIDFTP_SERVER_LIBRARY_GSSAPI);
+        GLOBUS_GRIDFTP_SERVER_LIBRARY_NONE : 
+        GLOBUS_GRIDFTP_SERVER_LIBRARY_GSSAPI |
+        ((globus_i_gfs_config_bool("allow_clear")) ?
+        GLOBUS_GRIDFTP_SERVER_LIBRARY_NONE : 0));
+
     if(result != GLOBUS_SUCCESS)
     {
         goto error_attr_setup;
@@ -865,7 +1003,7 @@ globus_i_gfs_control_start(
         goto error_init;
     }
 
-    result = globus_l_gfs_add_commands(instance->u.control.server);
+    result = globus_l_gfs_add_commands(instance, instance->u.control.server);
     if(result != GLOBUS_SUCCESS)
     {
         goto error_add_commands;
@@ -881,7 +1019,6 @@ globus_i_gfs_control_start(
     {
         goto error_start;
     }
-
     
     globus_gridftp_server_control_attr_destroy(attr);
     

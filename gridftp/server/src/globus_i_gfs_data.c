@@ -30,7 +30,8 @@ typedef struct globus_l_gfs_data_operation_s
     globus_i_gfs_data_handle_t *        data_handle;
     globus_bool_t                       sending;
     globus_i_gfs_op_attr_t *            op_attr;
-
+    globus_i_gfs_cmd_attr_t *           cmd_attr;
+    
     globus_i_gfs_data_command_cb_t      command_callback;
     globus_i_gfs_data_resource_cb_t     resource_callback;
     globus_i_gfs_data_transfer_cb_t     transfer_callback;
@@ -180,7 +181,8 @@ globus_l_gfs_data_resource_kickout(
 void
 globus_gridftp_server_finished_command(
     globus_gridftp_server_operation_t   op,
-    globus_result_t                     result)
+    globus_result_t                     result,
+    const char *                        command_data)
 {
     GlobusGFSName(globus_gridftp_server_finished_command);
     
@@ -189,10 +191,26 @@ globus_gridftp_server_finished_command(
         op->state = GLOBUS_L_GFS_DATA_COMPLETE;
     }
     globus_mutex_unlock(&op->lock);
-    
+
+    switch(op->cmd_attr->command)
+    {
+      case GLOBUS_I_GFS_CMD_CKSM:
+        op->cmd_attr->cksm_response = globus_libc_strdup(command_data);
+        break;      
+      case GLOBUS_I_GFS_CMD_MKD:
+      case GLOBUS_I_GFS_CMD_RMD:
+      case GLOBUS_I_GFS_CMD_DELE:
+      case GLOBUS_I_GFS_CMD_RNTO:
+      case GLOBUS_I_GFS_CMD_SITE_CHMOD:
+      default:
+        break;
+      
+    }
+
     op->command_callback(
         op->instance,
         result,
+        op->cmd_attr,
         op->user_arg);
         
     globus_l_gfs_data_operation_destroy(op);
@@ -288,6 +306,31 @@ globus_result_t
 globus_l_gfs_file_mkdir(
     globus_gridftp_server_operation_t   op,
     const char *                        pathname);
+globus_result_t
+globus_l_gfs_file_rmdir(
+    globus_gridftp_server_operation_t   op,
+    const char *                        pathname);
+globus_result_t
+globus_l_gfs_file_delete(
+    globus_gridftp_server_operation_t   op,
+    const char *                        pathname);
+globus_result_t
+globus_l_gfs_file_rename(
+    globus_gridftp_server_operation_t   op,
+    const char *                        from_pathname,
+    const char *                        to_pathname);
+globus_result_t
+globus_l_gfs_file_chmod(
+    globus_gridftp_server_operation_t   op,
+    const char *                        pathname,
+    mode_t                              mode);
+globus_result_t
+globus_l_gfs_file_cksm(
+    globus_gridftp_server_operation_t   op,
+    const char *                        pathname,
+    const char *                        algorithm,
+    globus_off_t                        offset,
+    globus_off_t                        length);
     
 globus_result_t
 globus_i_gfs_data_command_request(
@@ -311,12 +354,35 @@ globus_i_gfs_data_command_request(
     op->state = GLOBUS_L_GFS_DATA_REQUESTING;
     op->command_callback = callback;
     op->user_arg = user_arg;
+    op->cmd_attr = cmd_attr;
     
     switch(cmd_attr->command)
     {
       
       case GLOBUS_I_GFS_CMD_MKD:
         result = globus_l_gfs_file_mkdir(op, cmd_attr->pathname);
+        break;
+      case GLOBUS_I_GFS_CMD_RMD:
+        result = globus_l_gfs_file_rmdir(op, cmd_attr->pathname);
+        break;
+      case GLOBUS_I_GFS_CMD_DELE:
+        result = globus_l_gfs_file_delete(op, cmd_attr->pathname);
+        break;
+      case GLOBUS_I_GFS_CMD_RNTO:
+        result = globus_l_gfs_file_rename(
+            op, cmd_attr->rnfr_pathname, cmd_attr->pathname);
+        break;
+      case GLOBUS_I_GFS_CMD_SITE_CHMOD:
+        result = globus_l_gfs_file_chmod(
+            op, cmd_attr->pathname, cmd_attr->chmod_mode);
+        break;
+      case GLOBUS_I_GFS_CMD_CKSM:
+        result = globus_l_gfs_file_cksm(
+            op, 
+            cmd_attr->pathname, 
+            cmd_attr->cksm_alg,
+            cmd_attr->cksm_offset,
+            cmd_attr->cksm_length);
         break;
       
       default:
@@ -905,7 +971,7 @@ globus_l_gfs_file_send(
 globus_result_t
 globus_i_gfs_data_send_request(
     globus_i_gfs_server_instance_t *    instance,
-    globus_i_gfs_op_attr_t *    op_attr,
+    globus_i_gfs_op_attr_t *            op_attr,
     globus_i_gfs_data_handle_t *        data_handle,
     const char *                        pathname,
     const char *                        module_name,
