@@ -180,15 +180,15 @@ int GSI_SOCKET_delegation_init_ext(GSI_SOCKET *gsi_socket,
  *
  * Accept delegated credentials from the peer.
  *
- * target_credentials should point to a string indicating the
- * desired location for the credentials to be stored (this is
- * mechanism-specific but probably a file path). If NULL then
- * the default location for the current context will be used.
+ * delegated_credentials will be filled in with the location of
+ * the delegated credentials. This is mechanism-specific but
+ * probably a file path.
  *
  * Returns GSI_SOCKET_SUCCESS on success, GSI_SOCKET_ERROR otherwise.
  */
 int GSI_SOCKET_delegation_accept_ext(GSI_SOCKET *gsi_socket,
-				     char *target_credentials);
+				     char *delegated_credentials,
+				     int delegated_credentials_len);
 
 
 #endif /* !__GSI_SOCKET_H */

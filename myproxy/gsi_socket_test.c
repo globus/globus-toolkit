@@ -188,6 +188,17 @@ do_receive()
 	return -1;
     }
 
+    if (GSI_SOCKET_delegation_accept_ext(gsi_socket, data, sizeof(data)) == GSI_SOCKET_ERROR)
+    {
+	GSI_SOCKET_get_error_string(gsi_socket, error_string,
+				    sizeof(error_string));
+	fprintf(stderr, "Error accepting delegated credentials: %s\n",
+		error_string);
+	return -1;
+    }
+
+    printf("Accepted delegation: %s\n", data);
+    
     GSI_SOCKET_destroy(gsi_socket);
     
     close(sock);
@@ -271,6 +282,19 @@ do_transmit()
 
     printf("Server message: %s\n", data);
 
+    if (GSI_SOCKET_delegation_init_ext(gsi_socket, NULL,
+				       0 /* flags */,
+				       0 /* lifetime */,
+				       NULL /* restrictions */) == GSI_SOCKET_ERROR)
+    {
+	GSI_SOCKET_get_error_string(gsi_socket, error_string,
+				    sizeof(error_string));
+	fprintf(stderr, "Error delegating credentials: %s\n", error_string);
+	return -1;
+    }
+
+    printf("Delegated credentials\n");
+    
     GSI_SOCKET_destroy(gsi_socket);
     
     close(sock);
