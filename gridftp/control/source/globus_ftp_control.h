@@ -139,6 +139,16 @@ typedef enum
 } globus_ftp_control_protection_t;
 
 /**
+ * delayed passive flags
+ */
+typedef enum
+{
+    GLOBUS_FTP_CONTROL_DELAYED_PASSIVE = 'D',
+    GLOBUS_FTP_CONTROL_NORMAL_PASSIVE = 'N'
+} globus_ftp_control_protection_t;
+
+
+/**
  * control striping attribute union
  */
 typedef union globus_ftp_control_layout_u
