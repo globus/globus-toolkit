@@ -584,13 +584,18 @@ globus_i_io_try_read(
 	}
 	else if (n_read == 0)
 	{
-	    err =
-		globus_io_error_construct_eof(
-		    GLOBUS_IO_MODULE,
-		    GLOBUS_NULL,
-		    handle);
-	    
-	    goto error_exit;
+	    if (*nbytes_read == 0)
+	    {
+		err =
+		    globus_io_error_construct_eof(
+			GLOBUS_IO_MODULE,
+			GLOBUS_NULL,
+			handle);
+		
+		goto error_exit;
+	    }
+	    else
+		return GLOBUS_SUCCESS;
 	}
 	else /* n_read < 0 */
 	{
