@@ -17,7 +17,7 @@ globus_l_gfs_op_attr_init(
         result = GlobusGFSErrorMemory("attr");
         goto error_alloc;
     }
-    
+    attr->control_op = GLOBUS_NULL;
     attr->partial_offset = 0;
     attr->partial_length = -1;
     attr->range_list = GLOBUS_NULL;
@@ -492,7 +492,9 @@ globus_l_gfs_send_request(
             "globus_l_gfs_op_attr_init", result);
         goto error_attr;
     }
-
+    
+    op_attr->control_op = op;
+    op_attr->range_list = range_list;
     if(mod_name && strcmp("P", mod_name) == 0)
     {
         args = sscanf(
@@ -503,9 +505,7 @@ globus_l_gfs_send_request(
             
         globus_assert(args == 2);
     } 
-    
-    op_attr->range_list = range_list;
-    
+        
     result = globus_i_gfs_ipc_send_request(
         instance,
         op_attr,
@@ -561,6 +561,8 @@ globus_l_gfs_recv_request(
         goto error_attr;
     }
 
+    op_attr->control_op = op;
+    op_attr->range_list = range_list;
     if(mod_name && strcmp("A", mod_name) == 0)
     {
         args = sscanf(
@@ -570,9 +572,6 @@ globus_l_gfs_recv_request(
             
         globus_assert(args == 1);
     }            
-
-    op_attr->range_list = range_list;
-    op_attr->control_op = op;
 
     result = globus_i_gfs_ipc_recv_request(
         instance,
