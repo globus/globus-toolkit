@@ -543,7 +543,7 @@ globus_xio_data_descriptor_copy(
             }
             globus_memory_push_node(&op_dst->_op_context->op_memory, op_dst);
 
-            goto err;
+            goto err_destroy_op;
         }
     }
 
@@ -553,6 +553,9 @@ globus_xio_data_descriptor_copy(
 
     return GLOBUS_SUCCESS;
 
+  err_destroy_op:
+    globus_xio_data_descriptor_destroy(op_dst);
+    
   err:
 
     GlobusXIODebugExitWithError();

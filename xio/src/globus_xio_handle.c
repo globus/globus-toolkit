@@ -373,7 +373,8 @@ globus_l_xio_handle_pre_close(
     return GLOBUS_SUCCESS;
 
   err:
-    op->_op_handle = NULL; /* null this out for next call */
+    handle->ref++;
+        /* so destroy handle can't be true (will be removed in next call) */
     op->ref = 0;
     globus_i_xio_op_destroy(op, &destroy_handle);
 
@@ -388,6 +389,7 @@ globus_i_xio_close_handles(
     globus_list_t *                     tmp_list;
     globus_list_t *                     c_handles = NULL;
     globus_xio_handle_t                 handle;
+    globus_i_xio_context_t *            context;
     globus_xio_server_t                 server;
     globus_i_xio_op_t *                 dd;
     globus_xio_attr_t                   attr;
@@ -402,7 +404,7 @@ globus_i_xio_close_handles(
     GlobusXIODebugPrintf(
         GLOBUS_XIO_DEBUG_INFO, 
         ("[globus_i_xio_close_handles]: closing driver @0x%x, %s\n", 
-        driver, driver->name));
+        driver, driver ? driver->name : "(null)"));
         
     globus_i_xio_monitor_init(&monitor);
     
@@ -413,12 +415,12 @@ globus_i_xio_close_handles(
         while(!globus_list_empty(tmp_list))
         {
             dd = (globus_i_xio_op_t *) globus_list_remove(&tmp_list, tmp_list);
-            handle = dd->_op_handle;
-            globus_mutex_lock(&handle->context->mutex);
+            context = dd->_op_context;
+            globus_mutex_lock(&context->mutex);
             {
                 found = GLOBUS_FALSE;
                 for(ctr = 0; 
-                    ctr < handle->context->stack_size && !found; 
+                    ctr < context->stack_size && !found; 
                     ctr++)
                 {
                     GlobusXIODebugPrintf(
@@ -426,11 +428,11 @@ globus_i_xio_close_handles(
                         ("[globus_i_xio_close_handles]: checking dd @0x%x "
                             "driver @0x%x, %s\n", 
                         dd,
-                        handle->context->entry[ctr].driver,
-                        handle->context->entry[ctr].driver->name));
+                        context->entry[ctr].driver,
+                        context->entry[ctr].driver->name));
         
                     if(driver == NULL || 
-                        handle->context->entry[ctr].driver == driver)
+                        context->entry[ctr].driver == driver)
                     {
                         GlobusXIODebugPrintf(
                             GLOBUS_XIO_DEBUG_INFO, 
@@ -442,7 +444,7 @@ globus_i_xio_close_handles(
                     }
                 }
             }
-            globus_mutex_unlock(&handle->context->mutex);
+            globus_mutex_unlock(&context->mutex);
         }
     }
     globus_mutex_unlock(&globus_i_xio_mutex);

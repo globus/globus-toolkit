@@ -1504,6 +1504,7 @@ globus_xio_driver_merge_handle(
             GLOBUS_XIO_CONTEXT_STATE_OPEN);
     }
 
+/* XXX need to remove references on src context so it can be destroyed */
     GlobusXIODebugExit();
     return GLOBUS_SUCCESS;
   err:
