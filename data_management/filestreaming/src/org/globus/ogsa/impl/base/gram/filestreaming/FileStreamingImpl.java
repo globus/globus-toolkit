@@ -87,7 +87,11 @@ public class FileStreamingImpl extends SecureNotificationServiceSkeleton
                 try {
                     _outputFollower.join();
                     joined = true;
+                    if (out != null) {
+                        out.close();
+                    }
                 } catch (InterruptedException ie) {
+                } catch (IOException ioe) {
                 }
             }
             this.managedJobImpl.callBack();
@@ -142,24 +146,6 @@ public class FileStreamingImpl extends SecureNotificationServiceSkeleton
         startStreaming(cred);
     }
     
-    /* Close your eyes now */
-    /*
-    public void postCreate(GSSCredential credential, CallBackInterface callback)
-            throws GridServiceException {
-        setNotifyProps(credential, Constants.SIGNATURE);
-
-        try {
-            this.managedJobImpl = callback;
-            this.managedJobImpl.register(this);
-
-            startStreaming(credential);
-        } catch (Exception e) {
-            throw new GridServiceException("Error in fake postCreate", e);
-        }
-    }
-    */
-    /* Ok to reopen eyes */
-
     public void postCreate(GridContext context) throws GridServiceException {
         super.postCreate(context);
 	MessageContext ctx = (MessageContext)context.getMessageContext();
@@ -210,7 +196,7 @@ public class FileStreamingImpl extends SecureNotificationServiceSkeleton
             return openUrl(url);
         } catch(Exception e) {
 	    logger.debug("Failed to open remote URL", e);
-            throw new RemoteException("Failed to open remote URL");
+            throw new RemoteException("Failed to open remote URL", e);
         }
     }
 
