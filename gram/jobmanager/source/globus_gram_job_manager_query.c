@@ -155,6 +155,14 @@ globus_gram_job_manager_query_reply(
     globus_gram_jobmanager_request_t *	request,
     globus_gram_job_manager_query_t *	query)
 {
+    if(query->type == GLOBUS_GRAM_JOB_MANAGER_CANCEL ||
+       query->signal == GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_CANCEL)
+    {
+	if(query->failure_code == GLOBUS_GRAM_PROTOCOL_ERROR_USER_CANCELLED)
+	{
+	    query->failure_code = GLOBUS_SUCCESS;
+	}
+    }
     globus_l_gram_job_manager_query_reply(request,
 	                                  query->handle,
 					  request->status,
