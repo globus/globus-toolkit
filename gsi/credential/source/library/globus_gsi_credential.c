@@ -10,26 +10,26 @@
 #endif
 
 #include "globus_i_gsi_credential.h"
-#include "globus_gsi_cred_system_config.h"
+#include "globus_gsi_system_config.h"
 #include "globus_gsi_cert_utils.h"
-#include "globus_gsi_proxy.h"
 #include "version.h"
 #include <openssl/pem.h>
 #include <openssl/x509.h>
+#include <openssl/pkcs12.h>
+#include <openssl/err.h>
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
-
-extern int pci_NID;
 
 static int globus_l_gsi_credential_activate(void);
 static int globus_l_gsi_credential_deactivate(void);
 
-int globus_i_gsi_cred_debug_level = 0;
+int                                     globus_i_gsi_cred_debug_level = 0;
+FILE *                                  globus_i_gsi_cred_debug_fstream = NULL;
 
 /**
  * Module descriptor static initializer.
  */
-globus_module_descriptor_t globus_i_credential_module =
+globus_module_descriptor_t globus_i_gsi_credential_module =
 {
     "globus_credential",
     globus_l_gsi_credential_activate,
@@ -80,9 +80,10 @@ globus_l_gsi_credential_activate(void)
 
     GLOBUS_I_GSI_CRED_DEBUG_ENTER;
 
-    result = globus_module_activate(GLOBUS_GSI_PROXY_MODULE);
-    OpenSSL_add_ssl_algorithms();
+    globus_module_activate(GLOBUS_GSI_SYSCONFIG_MODULE);
 
+    OpenSSL_add_all_algorithms();
+    
  exit:
 
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
@@ -103,11 +104,16 @@ globus_l_gsi_credential_deactivate(void)
 
     GLOBUS_I_GSI_CRED_DEBUG_ENTER;
 
-    result = globus_module_deactivate(GLOBUS_GSI_PROXY_MODULE);
+    EVP_cleanup();
+
+    globus_module_deactivate(GLOBUS_GSI_SYSCONFIG_MODULE);
 
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
 
-    fclose(globus_i_gsi_cred_debug_fstream);
+    if(globus_i_gsi_cred_debug_fstream != stderr)
+    {
+        fclose(globus_i_gsi_cred_debug_fstream);
+    }
     return result;
 }
 /* globus_l_gsi_credential_deactivate() */
@@ -185,7 +191,7 @@ globus_result_t globus_gsi_cred_read(
         switch(handle->attrs->search_order[index])
         {
             case GLOBUS_PROXY:
-                result = GLOBUS_GSI_CRED_GET_PROXY_FILENAME(
+                result = GLOBUS_GSI_SYSCONFIG_GET_PROXY_FILENAME(
                              & proxy, 
                              GLOBUS_PROXY_FILE_INPUT);
                 if(result != GLOBUS_SUCCESS)
@@ -228,7 +234,8 @@ globus_result_t globus_gsi_cred_read(
             case GLOBUS_USER:
             case GLOBUS_HOST:
 
-                result = GLOBUS_GSI_CRED_GET_HOST_CERT_FILENAME(&cert, &key);
+                result = 
+                    GLOBUS_GSI_SYSCONFIG_GET_HOST_CERT_FILENAME(&cert, &key);
                 if(result != GLOBUS_SUCCESS)
                 {
                     GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
@@ -237,8 +244,7 @@ globus_result_t globus_gsi_cred_read(
                     break;
                 }                    
 
-                result = globus_gsi_cred_read_cert_and_key(handle, cert,
-                                                           key, NULL);
+                result = globus_gsi_cred_read_cert(handle, cert);
                 if(result != GLOBUS_SUCCESS)
                 {
                     GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
@@ -246,7 +252,26 @@ globus_result_t globus_gsi_cred_read(
                         GLOBUS_GSI_CRED_ERROR_READING_HOST_CRED);
                     break;
                 }
-            
+
+                result = globus_gsi_cred_read_key(handle, key, NULL);
+                if(result != GLOBUS_SUCCESS)
+                {
+                    GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
+                        result,
+                        GLOBUS_GSI_CRED_ERROR_READING_HOST_CRED);
+                }
+
+                result = globus_i_gsi_cred_goodtill(
+                    handle,
+                    &(handle->goodtill));
+                if(result != GLOBUS_SUCCESS)
+                {
+                    GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
+                        result,
+                        GLOBUS_GSI_CRED_ERROR_WITH_CRED);
+                    break;
+                }
+
                 result = globus_gsi_cred_get_subject_name(handle, 
                                                           &found_subject);
                 if(result != GLOBUS_SUCCESS)
@@ -271,7 +296,7 @@ globus_result_t globus_gsi_cred_read(
             
                 if(service_name)
                 {
-                    result = GLOBUS_GSI_CRED_GET_SERVICE_CERT_FILENAME(
+                    result = GLOBUS_GSI_SYSCONFIG_GET_SERVICE_CERT_FILENAME(
                                  service_name, &cert, &key);
                     if(result != GLOBUS_SUCCESS)
                     {
@@ -281,8 +306,7 @@ globus_result_t globus_gsi_cred_read(
                         break;
                     }                    
 
-                    result = globus_gsi_cred_read_cert_and_key(handle, cert,
-                                                               key, NULL);
+                    result = globus_gsi_cred_read_cert(handle, cert);
                     if(result != GLOBUS_SUCCESS)
                     {
                         GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
@@ -290,7 +314,27 @@ globus_result_t globus_gsi_cred_read(
                             GLOBUS_GSI_CRED_ERROR_READING_SERVICE_CRED);
                         break;
                     }
-            
+                    
+                    result = globus_gsi_cred_read_key(handle, key, NULL);
+                    if(result != GLOBUS_SUCCESS)
+                    {
+                        GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
+                            result,
+                            GLOBUS_GSI_CRED_ERROR_READING_SERVICE_CRED);
+                        break;
+                    }
+                    
+                    result = globus_i_gsi_cred_goodtill(
+                        handle,
+                        &(handle->goodtill));
+                    if(result != GLOBUS_SUCCESS)
+                    {
+                        GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
+                            result,
+                            GLOBUS_GSI_CRED_ERROR_WITH_CRED);
+                        break;
+                    }
+
                     result = globus_gsi_cred_get_subject_name(handle, 
                                                               &found_subject);
                     if(result != GLOBUS_SUCCESS)
@@ -329,7 +373,6 @@ globus_result_t globus_gsi_cred_read(
     }
 
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
-
     return result;
 }
 /* @} */
@@ -353,7 +396,6 @@ globus_result_t globus_gsi_cred_read_proxy(
     globus_gsi_cred_handle_t            handle,
     char *                              proxy_filename)
 {
-    X509 *                              tmp_cert = NULL;
     BIO *                               proxy_bio;
     globus_result_t                     result;
     
@@ -382,77 +424,13 @@ globus_result_t globus_gsi_cred_read_proxy(
         goto exit;
     }
 
-    /* read in the certificate of the handle */
-    
-    if(handle->cert != NULL)
+    result = globus_gsi_cred_read_proxy_bio(handle, proxy_bio);
+    if(result != GLOBUS_SUCCESS)
     {
-        X509_free(handle->cert);
-    }
-    
-    if(!PEM_read_bio_X509(proxy_bio, & handle->cert, NULL, NULL))
-    {
-        GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
+        GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
             result,
-            GLOBUS_GSI_CRED_ERROR_READING_PROXY_CRED,
-            ("Couldn't read X509 proxy cert from bio"));
+            GLOBUS_GSI_CRED_ERROR_READING_PROXY_CRED);
         goto exit;
-    }
-
-    /* read in the private key of the handle */
-
-    if(handle->key != NULL)
-    {
-        EVP_PKEY_free(handle->key);
-    }
-
-    if((handle->key = PEM_read_bio_PrivateKey(proxy_bio, NULL, NULL, NULL))
-       == NULL)
-    {
-        GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
-            result,
-            GLOBUS_GSI_CRED_ERROR_READING_PROXY_CRED,
-            ("Couldn't read proxy's private key from bio"));
-        goto exit;
-    }
-
-    /* read in the certificate chain of the handle */
-
-    if(handle->cert_chain != NULL)
-    {
-        sk_X509_pop_free(handle->cert_chain, X509_free);
-    }
-
-    if((handle->cert_chain = sk_X509_new_null()) == NULL)
-    {
-        GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
-            result,
-            GLOBUS_GSI_CRED_ERROR_READING_PROXY_CRED,
-            ("Can't initialize cert chain"));
-        goto exit;
-    }
-
-    while(!BIO_eof(proxy_bio))
-    {
-        if(!PEM_read_bio_X509(proxy_bio, &tmp_cert, NULL, NULL))
-        {
-            GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
-                result,
-                GLOBUS_GSI_CRED_ERROR_READING_PROXY_CRED,
-                ("Couldn't read proxy's cert chain certificate from bio"));
-            goto exit;
-        }
-        
-        if(!sk_X509_push(handle->cert_chain, tmp_cert))
-        {
-            X509_free(tmp_cert);
-            GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
-                result,
-                GLOBUS_GSI_CRED_ERROR_READING_PROXY_CRED,
-                ("Error adding certificate to proxy's cert chain"));
-            goto exit;
-        }
-
-        X509_free(tmp_cert);
     }
 
     BIO_free(proxy_bio);
@@ -460,116 +438,9 @@ globus_result_t globus_gsi_cred_read_proxy(
  exit:
 
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
-
-    return GLOBUS_SUCCESS;
-}
-/* @} */
-
-/**
- * Read Cert and Key
- * @ingroup globus_gsi_cred_operations
- */
-/* @{ */
-/**
- * Read a cert and key from a the file locations specified in the
- * handle attributes.  Cert and key should be in PEM format.
- *
- * @param handle
- *        the handle to set the values of
- *
- * @return
- *        GLOBUS_SUCCESS or an error object identifier
- */
-globus_result_t globus_gsi_cred_read_cert_and_key(
-    globus_gsi_cred_handle_t            handle,
-    char *                              cert_filename,
-    char *                              key_filename,
-    int                                 (*pw_cb)())
-{
-    BIO *                               cert_bio = NULL;
-    BIO *                               key_bio = NULL;
-    globus_result_t                     result;
-
-    static char *                       _function_name_ =
-        "globus_gsi_cred_read_cert_and_key";
-
-    GLOBUS_I_GSI_CRED_DEBUG_ENTER;
-
-    if(handle == NULL)
-    {
-        GLOBUS_GSI_CRED_ERROR_RESULT(
-            result,
-            GLOBUS_GSI_CRED_ERROR_READING_CRED,
-            ("NULL handle passed to function: %s", _function_name_));
-       goto exit;
-    }
-
-    if(!(cert_bio = BIO_new_file(cert_filename, "r")))
-    {
-        GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
-            result,
-            GLOBUS_GSI_CRED_ERROR_READING_CRED,
-            ("Can't open cert file: %s for reading", cert_filename));
-        goto exit;
-    }
-
-    if(!(key_bio = BIO_new_file(key_filename, "r")))
-    {
-        GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
-            result,
-            GLOBUS_GSI_CRED_ERROR_READING_CRED,
-            ("Can't open bio stream for "
-             "key file: %s for reading", key_filename));
-        goto exit;
-    }
-    
-    /* read in the cert and key */
-    
-    if(handle->cert != NULL)
-    {
-        X509_free(handle->cert);
-    }
-
-    if(handle->key != NULL)
-    {
-        EVP_PKEY_free(handle->key);
-    }
-
-    if(!PEM_read_bio_X509(cert_bio, & handle->cert, NULL, NULL))
-    {
-        GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
-            result,
-            GLOBUS_GSI_CRED_ERROR_READING_CRED,
-            ("Can't read credential cert from bio stream"));
-        goto exit;
-    }
-
-    if(!PEM_read_bio_PrivateKey(key_bio, & handle->key, pw_cb, NULL))
-    {
-        GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
-            result,
-            GLOBUS_GSI_CRED_ERROR_READING_CRED,
-            ("Can't read credential private key from bio stream"));
-        goto exit;
-    }
-
-    BIO_free(cert_bio);
-    BIO_free(key_bio);
-
-    if(handle->cert_chain != NULL)
-    {
-        sk_X509_pop_free(handle->cert_chain, X509_free);
-        handle->cert_chain = NULL;
-    }
-
-    result = GLOBUS_SUCCESS;
-
- exit:
-
-    GLOBUS_I_GSI_CRED_DEBUG_EXIT;
-
     return result;
 }
+/* @} */
 
 /**
  * Read Credential
@@ -593,11 +464,11 @@ globus_result_t globus_gsi_cred_read_cert_and_key(
  *        case an error object is returned
  */
 globus_result_t globus_gsi_cred_read_proxy_bio(
-    globus_gsi_cred_handle_t *          handle,
+    globus_gsi_cred_handle_t            handle,
     BIO *                               bio)
 {
+    int                                 i = 0;
     globus_result_t                     result;
-    globus_gsi_cred_handle_t            hand;
     X509 *                              tmp_cert = NULL;
 
     static char *                       _function_name_ =
@@ -623,35 +494,52 @@ globus_result_t globus_gsi_cred_read_proxy_bio(
         goto exit;
     }
 
-    *handle = (globus_gsi_cred_handle_t)
-        globus_malloc(sizeof(globus_i_gsi_cred_handle_t));
-
-    hand = *handle;
+    /* read in the certificate of the handle */
     
-    if(!PEM_read_bio_X509(bio, & hand->cert, NULL, NULL))
+    if(handle->cert != NULL)
+    {
+        X509_free(handle->cert);
+    }
+    
+    if(!PEM_read_bio_X509(bio, & handle->cert, NULL, NULL))
     {
         GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
             result,
             GLOBUS_GSI_CRED_ERROR_READING_PROXY_CRED,
-            ("Can't read X509 cert from BIO stream"));
+            ("Couldn't read X509 proxy cert from bio"));
         goto exit;
     }
 
-    if(!PEM_read_bio_PrivateKey(bio, & hand->key, NULL, NULL))
+    /* read in the private key of the handle */
+
+    if(handle->key != NULL)
+    {
+        EVP_PKEY_free(handle->key);
+    }
+
+    if((handle->key = PEM_read_bio_PrivateKey(bio, NULL, NULL, NULL))
+       == NULL)
     {
         GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
             result,
             GLOBUS_GSI_CRED_ERROR_READING_PROXY_CRED,
-            ("Can't read private key from BIO stream"));
+            ("Couldn't read proxy's private key from bio"));
         goto exit;
     }
 
-    if((hand->cert_chain = sk_X509_new_null()) == NULL)
+    /* read in the certificate chain of the handle */
+
+    if(handle->cert_chain != NULL)
+    {
+        sk_X509_pop_free(handle->cert_chain, X509_free);
+    }
+
+    if((handle->cert_chain = sk_X509_new_null()) == NULL)
     {
         GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
             result,
             GLOBUS_GSI_CRED_ERROR_READING_PROXY_CRED,
-            ("Can't create empty X509 cert chain"));
+            ("Can't initialize cert chain"));
         goto exit;
     }
 
@@ -659,24 +547,31 @@ globus_result_t globus_gsi_cred_read_proxy_bio(
     {
         if(!PEM_read_bio_X509(bio, &tmp_cert, NULL, NULL))
         {
-            GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
-                result,
-                GLOBUS_GSI_CRED_ERROR_READING_PROXY_CRED,
-                ("Can't read X509 cert from BIO stream"));
-            goto exit;
+            /* appears to continue reading after EOF and
+             * so an error occurs here
+             */
+            break;
         }
         
-        if(!sk_X509_push(hand->cert_chain, tmp_cert))
+        if(!sk_X509_insert(handle->cert_chain, tmp_cert, i))
         {
             X509_free(tmp_cert);
             GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_CRED_ERROR_READING_PROXY_CRED,
-                ("Can't add X509 cert to cert chain"));
+                ("Error adding certificate to proxy's cert chain"));
             goto exit;
         }
+        ++i;
+    }
 
-        X509_free(tmp_cert);
+    result = globus_i_gsi_cred_goodtill(handle, &(handle->goodtill));
+    if(result != GLOBUS_SUCCESS)
+    {
+        GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
+            result,
+            GLOBUS_GSI_CRED_ERROR_WITH_CRED);
+        goto exit;
     }
 
     result = GLOBUS_SUCCESS;
@@ -688,6 +583,383 @@ globus_result_t globus_gsi_cred_read_proxy_bio(
 }
 /* @} */
 
+/**
+ * Read Key
+ * @ingroup globus_gsi_cred_operations
+ */
+/* @{ */
+/**
+ * Read a key from a the file locations specified in the
+ * handle attributes.  Cert and key should be in PEM format.
+ *
+ * @param handle
+ *        the handle to set based on the key that is read
+ * @param key_filename
+ *        the filename of the key to read
+ * @param pw_cb
+ *        the callback for the password to read in the key
+ * @return
+ *        GLOBUS_SUCCESS or an error object identifier
+ */
+globus_result_t globus_gsi_cred_read_key(
+    globus_gsi_cred_handle_t            handle,
+    char *                              key_filename,
+    int                                 (*pw_cb)())
+{
+    BIO *                               key_bio = NULL;
+    globus_result_t                     result;
+
+    static char *                       _function_name_ =
+        "globus_gsi_cred_read_key";
+
+    GLOBUS_I_GSI_CRED_DEBUG_ENTER;
+
+    if(handle == NULL)
+    {
+        GLOBUS_GSI_CRED_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_CRED_ERROR_READING_CRED,
+            ("NULL handle passed to function: %s", _function_name_));
+       goto exit;
+    }
+
+    if(!(key_bio = BIO_new_file(key_filename, "r")))
+    {
+        GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_CRED_ERROR_READING_CRED,
+            ("Can't open bio stream for "
+             "key file: %s for reading", key_filename));
+        goto exit;
+    }
+    
+    /* read in the key */
+
+    if(handle->key != NULL)
+    {
+        EVP_PKEY_free(handle->key);
+    }
+
+    if(!PEM_read_bio_PrivateKey(key_bio, & handle->key, pw_cb, NULL))
+    {
+        if(ERR_GET_REASON(ERR_peek_error()) == EVP_R_BAD_DECRYPT)
+        {
+            GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
+                result,
+                GLOBUS_GSI_CRED_ERROR_READING_CRED,
+                ("Bad passphrase for private key."));
+        }
+        else
+        {
+            GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
+                result,
+                GLOBUS_GSI_CRED_ERROR_READING_CRED,
+                ("Can't read credential's private key from PEM"));
+        }
+        goto exit;
+    }
+
+    BIO_free(key_bio);
+
+    result = GLOBUS_SUCCESS;
+
+ exit:
+
+    GLOBUS_I_GSI_CRED_DEBUG_EXIT;
+    return result;
+}
+/* @} */
+
+/**
+ * Read Cert
+ * @ingroup globus_gsi_cred_operations
+ */
+/* @{ */
+/**
+ * Read a cert from a the file locations specified in the
+ * handle attributes.  Cert should be in PEM format.
+ *
+ * @param handle
+ *        the handle to set based on the certificate that is read
+ * @param cert_filename
+ *        the filename of the certificate to read
+ * @return
+ *        GLOBUS_SUCCESS or an error object identifier
+ */
+globus_result_t globus_gsi_cred_read_cert(
+    globus_gsi_cred_handle_t            handle,
+    char *                              cert_filename)
+{
+    BIO *                               cert_bio = NULL;
+    globus_result_t                     result;
+
+    static char *                       _function_name_ =
+        "globus_gsi_cred_read_cert";
+
+    GLOBUS_I_GSI_CRED_DEBUG_ENTER;
+
+    if(handle == NULL)
+    {
+        GLOBUS_GSI_CRED_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_CRED_ERROR_READING_CRED,
+            ("NULL handle passed to function: %s", _function_name_));
+       goto exit;
+    }
+
+    if(!(cert_bio = BIO_new_file(cert_filename, "r")))
+    {
+        GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_CRED_ERROR_READING_CRED,
+            ("Can't open cert file: %s for reading", cert_filename));
+        goto exit;
+    }
+    
+    /* read in the cert */
+    
+    if(handle->cert != NULL)
+    {
+        X509_free(handle->cert);
+    }
+
+    if(!PEM_read_bio_X509(cert_bio, & handle->cert, NULL, NULL))
+    {
+        GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_CRED_ERROR_READING_CRED,
+            ("Can't read credential cert from bio stream"));
+        goto exit;
+    }
+
+    BIO_free(cert_bio);
+
+    if(handle->cert_chain != NULL)
+    {
+        sk_X509_pop_free(handle->cert_chain, X509_free);
+        handle->cert_chain = NULL;
+    }
+
+    result = GLOBUS_SUCCESS;
+
+ exit:
+
+    GLOBUS_I_GSI_CRED_DEBUG_EXIT;
+    return result;
+}
+/* @} */
+
+globus_result_t globus_gsi_cred_read_pkcs12(
+    globus_gsi_cred_handle_t            handle,
+    char *                              pkcs12_filename)
+{
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    char                                password[100];
+    STACK_OF(X509) *                    pkcs12_certs = NULL;
+    PKCS12 *                            pkcs12 = NULL;
+    PKCS12_SAFEBAG *                    bag = NULL;
+    STACK_OF(PKCS12_SAFEBAG) *          pkcs12_safebags = NULL;
+    PKCS7 *                             pkcs7 = NULL;
+    STACK_OF(PKCS7) *                   auth_safes = NULL;
+    PKCS8_PRIV_KEY_INFO *               pkcs8 = NULL;
+    BIO *                               pkcs12_bio = NULL;
+    int                                 i, j, bag_NID;
+    static char *                       _function_name_ =
+        "globus_gsi_cred_read_pkcs12";
+    GLOBUS_I_GSI_CRED_DEBUG_ENTER;
+
+    if(handle == NULL)
+    {
+        GLOBUS_GSI_CRED_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_CRED_ERROR_READING_CRED,
+            ("NULL handle passed to function: %s", _function_name_));
+       goto exit;
+    }
+    
+    pkcs12_bio = BIO_new_file(pkcs12_filename, "r");
+    if(!pkcs12_bio)
+    {
+        GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_CRED_ERROR_READING_CRED,
+            ("Couldn't create BIO for file: %s", pkcs12_filename));
+        goto exit;
+    }
+
+    d2i_PKCS12_bio(pkcs12_bio, &pkcs12);
+    if(!pkcs12)
+    {
+        GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_CRED_ERROR_READING_CRED,
+            ("Couldn't read in PKCS12 credential from BIO"));
+        goto exit;
+    }
+
+    EVP_read_pw_string(password, 100, NULL, 0);
+
+    if(!PKCS12_verify_mac(pkcs12, password, -1))
+    {
+        GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_CRED_ERROR_READING_CRED,
+            ("Couldn't verify the PKCS12 MAC using the specified password"));
+        goto exit;
+    }
+
+    auth_safes = M_PKCS12_unpack_authsafes(pkcs12);
+    
+    if(!auth_safes)
+    {
+        GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_CRED_ERROR_READING_CRED,
+            ("Couldn't dump cert and key from PKCS12 credential"));
+        goto exit;
+    }
+
+    pkcs12_certs = sk_X509_new_null();
+    
+    for (i = 0; i < sk_PKCS7_num(auth_safes); i++)
+    {
+        pkcs7 = sk_PKCS7_value(auth_safes, i);
+        
+        bag_NID = OBJ_obj2nid(pkcs7->type);
+        
+        if(bag_NID == NID_pkcs7_data)
+        {
+            pkcs12_safebags = M_PKCS12_unpack_p7data(pkcs7);
+        }
+        else if(bag_NID == NID_pkcs7_encrypted)
+        {
+            pkcs12_safebags = M_PKCS12_unpack_p7encdata (pkcs7, password, -1);
+        }
+        else
+        {
+            GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
+                result,
+                GLOBUS_GSI_CRED_ERROR_READING_CRED,
+                ("Couldn't get NID from PKCS7 that matched "
+                 "{NID_pkcs7_data, NID_pkcs7_encrypted}"));
+            goto exit;
+        }
+
+        if(!pkcs12_safebags)
+        {
+            GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
+                result,
+                GLOBUS_GSI_CRED_ERROR_READING_CRED,
+                ("Couldn't unpack the PKCS12 safebags from "
+                 "the PKCS7 credential"));
+            goto exit;
+        }
+
+        for (j = 0; j < sk_PKCS12_SAFEBAG_num(pkcs12_safebags); j++)
+        {
+            bag = sk_PKCS12_SAFEBAG_value(pkcs12_safebags, j);
+            
+            if(M_PKCS12_bag_type(bag) == NID_certBag &&
+               M_PKCS12_cert_bag_type(bag) == NID_x509Certificate)
+            {
+                sk_X509_push(pkcs12_certs, 
+                             M_PKCS12_certbag2x509(bag));
+            }
+            else if(M_PKCS12_bag_type(bag) == NID_keyBag &&
+                    handle->key == NULL)
+            {
+                pkcs8 = bag->value.keybag;
+                handle->key = EVP_PKCS82PKEY(pkcs8);
+                if (!handle->key)
+                {
+                    GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
+                        result,
+                        GLOBUS_GSI_CRED_ERROR_READING_CRED,
+                        ("Couldn't get the private key from the"
+                         "PKCS12 credential"));
+                    goto exit;
+                }
+            }
+            else if(M_PKCS12_bag_type(bag) == 
+                    NID_pkcs8ShroudedKeyBag &&
+                    handle->key == NULL)
+            {
+                pkcs8 = M_PKCS12_decrypt_skey(bag,
+                                              password,
+                                              strlen(password));
+                if(!pkcs8)
+                {
+                    GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
+                        result,
+                        GLOBUS_GSI_CRED_ERROR_READING_CRED,
+                        ("Couldn't get PKCS8 key from PKCS12 credential"));
+                    goto exit;
+                }
+            
+                handle->key = EVP_PKCS82PKEY(pkcs8);
+                if (!handle->key)
+                {
+                    GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
+                        result,
+                        GLOBUS_GSI_CRED_ERROR_READING_CRED,
+                        ("Couldn't get private key from PKCS12 credential"));
+                    goto exit;
+                }
+                
+                PKCS8_PRIV_KEY_INFO_free(pkcs8);
+            }
+        }
+    }
+
+    if(!handle->key)
+    {
+        GLOBUS_GSI_CRED_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_CRED_ERROR_READING_CRED,
+            ("Couldn't read private key from PKCS12 credential "
+             "for unknown reason"));
+        goto exit;
+    }
+
+    for(i = 0 ; i < sk_X509_num(pkcs12_certs); i++)
+    {
+        handle->cert = sk_X509_pop(pkcs12_certs);
+
+        if(X509_check_private_key(handle->cert, handle->key)) 
+        {
+            sk_X509_pop_free(pkcs12_certs, X509_free);
+            break;
+        }
+        else
+        {
+            X509_free(handle->cert);
+            handle->cert = NULL;
+        }
+    }
+
+    if(!handle->cert)
+    {
+        GLOBUS_GSI_CRED_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_CRED_ERROR_READING_CRED,
+            ("Couldn't read X509 certificate from PKCS12 credential"));
+        goto exit;
+    }
+
+    result = globus_i_gsi_cred_goodtill(handle, &(handle->goodtill));
+    if(result != GLOBUS_SUCCESS)
+    {
+        GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
+            result,
+            GLOBUS_GSI_CRED_ERROR_WITH_CRED);
+        goto exit;
+    }
+
+ exit:
+
+    GLOBUS_I_GSI_CRED_DEBUG_EXIT;
+    return result;
+}
 
 /**
  * Write Credential
@@ -713,7 +985,7 @@ globus_result_t globus_gsi_cred_write(
     BIO *                               bio)
 {
     int                                 i;
-    globus_result_t                     result;
+    globus_result_t                     result = GLOBUS_SUCCESS;
     static char *                       _function_name_ =
         "globus_gsi_cred_write";
 
@@ -786,8 +1058,7 @@ globus_result_t globus_gsi_cred_write_proxy(
     globus_gsi_cred_handle_t            handle,
     char *                              proxy_filename)
 {
-    globus_result_t                     result;
-    int                                 i;
+    globus_result_t                     result = GLOBUS_SUCCESS;
     BIO *                               proxy_bio = NULL;
 
     static char *                       _function_name_ =
@@ -813,51 +1084,14 @@ globus_result_t globus_gsi_cred_write_proxy(
         goto exit;
     }
 
-    if(handle->cert == NULL || handle->key == NULL)
+    result = globus_gsi_cred_write(handle, proxy_bio);
+    if(result != GLOBUS_SUCCESS)
     {
-        GLOBUS_GSI_CRED_ERROR_RESULT(
+        GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
             result,
-            GLOBUS_GSI_CRED_ERROR_WRITING_PROXY_CRED,
-            ("NULL fields in credential handle"));
+            GLOBUS_GSI_CRED_ERROR_WRITING_PROXY_CRED);
         goto close_proxy_bio;
     }
-
-    if(!PEM_write_bio_X509(proxy_bio, handle->cert) ||
-       !PEM_ASN1_write_bio(i2d_PrivateKey, PEM_STRING_RSA,
-                           proxy_bio, (char *) handle->key, 
-                           NULL, NULL, 0, NULL, NULL))
-    {
-        GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
-            result,
-            GLOBUS_GSI_CRED_ERROR_WRITING_PROXY_CRED,
-            ("Can't write X509 cert or Private Key to bio stream"));
-        goto close_proxy_bio;
-    }
-
-    if(handle->cert_chain == NULL)
-    {
-        GLOBUS_GSI_CRED_ERROR_RESULT(
-            result,
-            GLOBUS_GSI_CRED_ERROR_WRITING_PROXY_CRED,
-            ("NULL cert_chain field in cred handle"));
-        goto close_proxy_bio;
-    }
-
-    for(i = 0; i < sk_X509_num(handle->cert_chain); ++i)
-    {
-        if(!PEM_write_bio_X509(proxy_bio, 
-                               sk_X509_value(handle->cert_chain, i)))
-        {
-            GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
-                result,
-                GLOBUS_GSI_CRED_ERROR_WRITING_PROXY_CRED,
-                ("Can't write PEM formatted X509 cert "
-                 "in cert chain to bio stream"));
-            goto close_proxy_bio;
-        }
-    }
-
-    result = GLOBUS_SUCCESS;
 
  close_proxy_bio:
 
@@ -925,6 +1159,7 @@ globus_i_gsi_cred_get_proxycertinfo(
     PROXYCERTINFO **                    proxycertinfo)
 {
     globus_result_t                     result;
+    int                                 pci_NID;
     X509_EXTENSION *                    pci_extension = NULL;
     ASN1_OCTET_STRING *                 ext_data;
     int                                 extension_loc;
@@ -933,12 +1168,12 @@ globus_i_gsi_cred_get_proxycertinfo(
     
     GLOBUS_I_GSI_CRED_DEBUG_ENTER;
 
-    if(pci_NID == 0)
+    pci_NID = OBJ_sn2nid(PROXYCERTINFO_SN);
+    if(pci_NID != NID_undef)
     {
-        GLOBUS_GSI_CRED_ERROR_RESULT(
+        GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
             result,
-            GLOBUS_GSI_CRED_ERROR_WITH_CRED,
-            ("No numeric ID defined for the PROXYCERTINFO struct"));
+            GLOBUS_GSI_CRED_ERROR_WITH_CRED);
         goto exit;
     }
 
@@ -952,8 +1187,9 @@ globus_i_gsi_cred_get_proxycertinfo(
         goto exit;
     }
 
-    if((extension_loc = X509_get_ext_by_NID(cert, 
-                                            pci_NID, -1)) == -1)
+    if((extension_loc = X509_get_ext_by_NID(
+            cert, 
+            pci_NID, -1)) == -1)
     {
         /* no proxycertinfo extension found in cert */
         *proxycertinfo = NULL;

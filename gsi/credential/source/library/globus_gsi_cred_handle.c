@@ -17,11 +17,13 @@
 #include <openssl/err.h>
 #include <math.h>
 
-/**
- * the numeric id of the proxycertinfo extension
- * defined in proxy_ssl code
- */
-extern int pci_NID;
+#define GLOBUS_GSI_CRED_HANDLE_MALLOC_ERROR(_LENGTH_) \
+    globus_error_put(globus_error_wrap_errno_error( \
+        GLOBUS_GSI_CREDENTIAL_MODULE, \
+        errno, \
+        GLOBUS_GSI_CRED_ERROR_ERRNO, \
+        "%s:%d: Could not allocate enough memory: %d bytes", \
+        __FILE__, __LINE__, _LENGTH_))
 
 /**
  * Initialize Handle
@@ -214,7 +216,7 @@ globus_result_t globus_gsi_cred_get_lifetime(
     }
 
     asn1_time = ASN1_UTCTIME_new();
-    X509_gmtime_adj(asn1_time,0);
+    X509_gmtime_adj(asn1_time, 0);
     globus_gsi_cert_utils_make_time(asn1_time, &time_now);
 
     *lifetime = cred_handle->goodtill - time_now;
@@ -267,7 +269,7 @@ globus_result_t globus_gsi_cred_handle_destroy(
             globus_gsi_cred_handle_attrs_destroy(handle->attrs);
         }
 
-        globus_free(handle);
+        globus_libc_free(handle);
     }
     
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
@@ -371,9 +373,9 @@ globus_result_t globus_gsi_cred_set_key(
     globus_gsi_cred_handle_t            handle,
     EVP_PKEY *                          key)
 {
-    unsigned char *                     der_encoded;
     int                                 len;
     globus_result_t                     result;
+    BIO *                               inout_bio = NULL;
 
     static char *                       _function_name_ =
         "globus_gsi_cred_set_key";
@@ -404,24 +406,34 @@ globus_result_t globus_gsi_cred_set_key(
         handle->key = NULL;
     }
 
-    len = i2d_PrivateKey(handle->key, &der_encoded);
+    inout_bio = BIO_new(BIO_s_mem());
+    if(!inout_bio)
+    {
+        GLOBUS_GSI_CRED_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_CRED_ERROR_WITH_CRED,
+            ("Couldn't create memory BIO"));
+    }
 
-    if(!d2i_PrivateKey(handle->key->type, 
-                       &key, 
-                       &der_encoded, len))
+    len = i2d_PrivateKey_bio(inout_bio, key);
+    if(len <= 0)
     {
         GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
             result,
-            GLOBUS_GSI_CRED_ERROR_WITH_CRED_PRIVATE_KEY,
-            ("Error converting DER encoded private key to internal form"));
+            GLOBUS_GSI_CRED_ERROR_WITH_CRED,
+            ("Couldn't get length of DER encoding for private key"));
         goto error_exit;
     }
 
-    globus_free(der_encoded);
-
+    handle->key = d2i_PrivateKey_bio(inout_bio, &handle->key);
     result = GLOBUS_SUCCESS;
 
  error_exit:
+
+    if(inout_bio)
+    {
+        BIO_free(inout_bio);
+    }
 
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
 
@@ -449,7 +461,7 @@ globus_result_t globus_gsi_cred_set_cert_chain(
     globus_gsi_cred_handle_t            handle,
     STACK_OF(X509) *                    cert_chain)
 {
-    int                                 i;
+    int                                 i = 0;
     int                                 numcerts;
     X509 *                              tmp_cert  = NULL;
     X509 *                              prev_cert = NULL;
@@ -475,17 +487,26 @@ globus_result_t globus_gsi_cred_set_cert_chain(
         handle->cert_chain = NULL;
     }
 
-    if(cert_chain != NULL && 
-       (handle->cert_chain = sk_X509_dup(cert_chain)) == NULL)
+    if(!cert_chain)
     {
         GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
             result,
             GLOBUS_GSI_CRED_ERROR_WITH_CRED_CERT_CHAIN,
-            ("Couldn't copy cert chain to cred handle"));
+            ("Null cert chain passed in to function"));
         goto error_exit;
     }
 
     numcerts = sk_X509_num(cert_chain);
+
+    handle->cert_chain = sk_X509_new_null();
+    if(!handle->cert_chain)
+    {
+        GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_CRED_ERROR_WITH_CRED_CERT_CHAIN,
+            ("Couldn't initialize credential's cert chain"));
+        goto error_exit;
+    }
 
     if(handle->cert != NULL)
     {
@@ -524,7 +545,7 @@ globus_result_t globus_gsi_cred_set_cert_chain(
         } while(++i < numcerts);
     }
 
-    for(i = 0; i < sk_X509_num(cert_chain); ++i)
+    for(i = 0; i < numcerts; ++i)
     {
         if((tmp_cert = X509_dup(sk_X509_value(cert_chain, i))) == NULL)
         {
@@ -534,7 +555,7 @@ globus_result_t globus_gsi_cred_set_cert_chain(
                 ("Couldn't copy X509 cert from credential's cert chain"));
             goto error_exit;
         }
-        sk_X509_push(handle->cert_chain, tmp_cert);
+        sk_X509_insert(handle->cert_chain, tmp_cert, i);
     }
 
     /* resetting goodtill */
@@ -552,7 +573,7 @@ globus_result_t globus_gsi_cred_set_cert_chain(
  error_exit:
 
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
-    return GLOBUS_SUCCESS;
+    return result;
 }
 /* @} */
 
@@ -637,10 +658,7 @@ globus_result_t globus_gsi_cred_get_key(
     globus_gsi_cred_handle_t            handle,
     EVP_PKEY **                         key)
 {
-    int                                 len;
-    unsigned char *                     der_encoded;
     globus_result_t                     result;
-
     static char *                       _function_name_ = 
         "globus_gsi_cred_get_key";
 
@@ -664,25 +682,13 @@ globus_result_t globus_gsi_cred_get_key(
         goto error_exit;
     }
 
-    len = i2d_PrivateKey(handle->key, & der_encoded);
-
-    if(!d2i_PrivateKey(handle->key->type, 
-                       key, 
-                       & der_encoded, len))
-    {
-        GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
-            result,
-            GLOBUS_GSI_CRED_ERROR_WITH_CRED_PRIVATE_KEY,
-            ("Error converting DER encoded private key to internal form"));
-        goto error_exit;
-    }
-
+    *key = handle->key;
     result = GLOBUS_SUCCESS;
 
  error_exit:
 
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
-    return GLOBUS_SUCCESS;
+    return result;
 }
 /* @} */
     
@@ -953,7 +959,7 @@ globus_result_t globus_gsi_cred_get_group_names(
     }
 
     data_string_length = 
-        (int) ceil(((float)sk_X509_num(handle->cert_chain)) / 8);
+        ((int) (((float)sk_X509_num(handle->cert_chain)) / 8)) + 1;
     if((data_string = malloc(data_string_length)) == NULL)
     {
         result = globus_error_put(
@@ -1462,7 +1468,7 @@ globus_result_t globus_gsi_cred_get_issuer_name(
 /* @} */
 
 globus_result_t
-globus_gsi_cred_verify_proxy_cert_chain(
+globus_gsi_cred_verify_cert_chain(
     globus_gsi_cred_handle_t            cred_handle,
     globus_gsi_callback_data_t          callback_data)
 {
@@ -1477,7 +1483,7 @@ globus_gsi_cred_verify_proxy_cert_chain(
     int                                 callback_data_index;
     globus_result_t                     result = GLOBUS_SUCCESS;
     static char *                       _function_name_ =
-        "globus_gsi_callback_verify_proxy_cert_chain";
+        "globus_gsi_cred_verify_proxy_cert_chain";
 
     GLOBUS_I_GSI_CRED_DEBUG_ENTER;
     
@@ -1647,7 +1653,7 @@ globus_i_gsi_cred_goodtill(
 
  exit:
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
-    return GLOBUS_SUCCESS;
+    return result;
 }
 /* @} */
 

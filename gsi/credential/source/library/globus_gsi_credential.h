@@ -144,10 +144,6 @@ globus_result_t
 globus_gsi_cred_handle_init_ssl_context(
     globus_gsi_cred_handle_t            cred_handle);
 
-/* acquire a credential from a filesystem location. The search order
- * is there to allow people to specify what kind of credential should
- * looked for first. I'm not quite sure whether I like this yet.
- */
 globus_result_t globus_gsi_cred_read(
     globus_gsi_cred_handle_t            handle,
     char *                              desired_subject,
@@ -157,11 +153,22 @@ globus_result_t globus_gsi_cred_read_proxy(
     globus_gsi_cred_handle_t            handle,
     char *                              proxy_filename);
 
-globus_result_t globus_gsi_cred_read_cert_and_key(
+globus_result_t globus_gsi_cred_read_proxy_bio(
     globus_gsi_cred_handle_t            handle,
-    char *                              cert_filename,
+    BIO *                               bio);
+
+globus_result_t globus_gsi_cred_read_key(
+    globus_gsi_cred_handle_t            handle,
     char *                              key_filename,
     int                                 (*pw_cb)());
+
+globus_result_t globus_gsi_cred_read_cert(
+    globus_gsi_cred_handle_t            handle,
+    char *                              cert_filename);
+
+globus_result_t globus_gsi_cred_read_pkcs12(
+    globus_gsi_cred_handle_t            handle,
+    char *                              pkcs12_filename);
 
 /* Read a credential from a BIO. IE: read cert, read key, read cert
  * chain.
@@ -194,7 +201,7 @@ globus_result_t globus_gsi_cred_write_proxy(
 
 
 globus_result_t
-globus_gsi_cred_verify_proxy_cert_chain(
+globus_gsi_cred_verify_cert_chain(
     globus_gsi_cred_handle_t            cred_handle,
     globus_gsi_callback_data_t          callback_data);
 
@@ -258,11 +265,6 @@ globus_result_t globus_gsi_cred_get_handle_attrs(
     globus_gsi_cred_handle_t            handle,
     globus_gsi_cred_handle_attrs_t *    handle_attrs);
 
-globus_result_t globus_gsi_cred_check_proxy_name(
-    globus_gsi_cred_handle_t            handle,
-    globus_gsi_cert_utils_proxy_type_t *      
-                                        type);
-
 globus_result_t globus_gsi_cred_get_lifetime(
     globus_gsi_cred_handle_t            handle,
     time_t *                            lifetime);
@@ -271,7 +273,7 @@ globus_result_t globus_gsi_cred_get_goodtill(
     globus_gsi_cred_handle_t            handle,
     time_t *                            goodtill);
  
-globus_result_t globus_gsi_cred_get_check_proxy(
+globus_result_t globus_gsi_cred_check_proxy(
     globus_gsi_cred_handle_t               handle,
     globus_gsi_cert_utils_proxy_type_t *   type);
 

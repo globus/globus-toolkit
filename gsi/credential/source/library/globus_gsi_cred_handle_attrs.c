@@ -10,9 +10,8 @@
 #endif
 
 #include "globus_i_gsi_credential.h"
-#include "globus_gsi_cred_system_config.h"
+#include "globus_gsi_system_config.h"
 #include "globus_error_generic.h"
-#include "globus_gsi_proxy.h"
 #include <openssl/pem.h>
 #include <openssl/x509.h>
 
@@ -67,7 +66,7 @@ globus_gsi_cred_handle_attrs_init(
     }
 
     if((*handle_attrs = (globus_gsi_cred_handle_attrs_t)
-        globus_malloc(sizeof(globus_i_gsi_cred_handle_attrs_t))) == NULL)
+        malloc(sizeof(globus_i_gsi_cred_handle_attrs_t))) == NULL)
     {
         GLOBUS_I_GSI_CRED_HANDLE_ATTRS_MALLOC_ERROR(result);
         goto exit;
@@ -78,7 +77,7 @@ globus_gsi_cred_handle_attrs_init(
            (int) NULL, 
            sizeof(globus_i_gsi_cred_handle_attrs_t));
     
-    if((result = GLOBUS_GSI_CRED_GET_CERT_DIR(
+    if((result = GLOBUS_GSI_SYSCONFIG_GET_CERT_DIR(
         &(*handle_attrs)->ca_cert_dir)) != GLOBUS_SUCCESS)
     {
         error_string = __FILE__":""__LINE__"
@@ -88,7 +87,7 @@ globus_gsi_cred_handle_attrs_init(
 
     (*handle_attrs)->search_order = 
         (globus_gsi_cred_type_t *) 
-        globus_malloc(sizeof(globus_gsi_cred_type_t) * 5);
+        malloc(sizeof(globus_gsi_cred_type_t) * 5);
 
     (*handle_attrs)->search_order[0] = GLOBUS_HOST;
     (*handle_attrs)->search_order[1] = GLOBUS_PROXY;
@@ -144,14 +143,14 @@ globus_result_t globus_gsi_cred_handle_attrs_destroy(
     {
         if(handle_attrs->ca_cert_dir != NULL)
         {
-            globus_free(handle_attrs->ca_cert_dir);
+            globus_libc_free(handle_attrs->ca_cert_dir);
         }
         if(handle_attrs->search_order != NULL)
         {
-            globus_free(handle_attrs->search_order);
+            globus_libc_free(handle_attrs->search_order);
         }
 
-        globus_free(handle_attrs);
+        globus_libc_free(handle_attrs);
     }
     
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;

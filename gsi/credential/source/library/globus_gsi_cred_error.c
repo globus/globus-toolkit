@@ -15,7 +15,7 @@
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 
-static char * 
+char * 
 globus_l_gsi_cred_error_strings[GLOBUS_GSI_CRED_ERROR_LAST] =
 {
 
