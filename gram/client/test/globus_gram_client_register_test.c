@@ -52,6 +52,7 @@ typedef struct
     globus_mutex_t mutex;
     globus_cond_t cond;
     globus_bool_t done;
+    char * job_contact;
     int simple_install_test;
 } my_monitor_t;
 
@@ -136,6 +137,7 @@ int main(int argc, char ** argv)
 
     /* Change the value of Monitor.done to false, initializing it */	
     Monitor.done = GLOBUS_FALSE;
+    Monitor.job_contact = GLOBUS_NULL;
 
     /* Releasing the lock on the monitor, letting anything else access it */
     globus_mutex_unlock(&Monitor.mutex);
@@ -158,11 +160,12 @@ int main(int argc, char ** argv)
      * this function
      */
 
-    rc = globus_gram_client_job_request(rm_contact,
+    rc = globus_gram_client_register_job_request(rm_contact,
                          specification,
 	                 job_state_mask,
 		         callback_contact,
-                         &job_contact);
+		         callback_func,
+			 &Monitor);
 
     if (rc != 0) /* if there is an error */
     {
@@ -172,6 +175,14 @@ int main(int argc, char ** argv)
                 globus_gram_client_error_string(rc));
         return(1);
     }
+
+    globus_mutex_lock(&Monitor.mutex);
+    while((Monitor.job_contact == GLOBUS_NULL) && (!Monitor.done))
+    {
+	globus_cond_wait(&Monitor.cond, &Monitor.mutex);
+    }
+    job_contact = Monitor.job_contact;
+    globus_mutex_unlock(&Monitor.mutex);
 
 #ifdef SIGNAL
     printf("\tTEST: waiting 3 seconds before signaling job manager...\n");
@@ -283,6 +294,13 @@ callback_func(void * user_callback_arg,
 {
     my_monitor_t * Monitor = (my_monitor_t *) user_callback_arg;
 
+    if(Monitor->job_contact == GLOBUS_NULL)
+    {
+        globus_mutex_lock(&Monitor->mutex);
+	Monitor->job_contact = globus_libc_strdup(job_contact);
+        globus_cond_signal(&Monitor->cond);
+        globus_mutex_unlock(&Monitor->mutex);
+    }
     switch(state)
     {
     case GLOBUS_GRAM_PROTOCOL_JOB_STATE_PENDING:

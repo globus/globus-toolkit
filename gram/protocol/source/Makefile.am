@@ -16,7 +16,10 @@ SUBDIRS= \
 Sources= \
 	globus_gram_protocol.c \
 	globus_gram_protocol.h \
-	globus_gram_protocol_error.c
+	globus_gram_protocol_io.c \
+	globus_gram_protocol_frame.c \
+	globus_gram_protocol_error.c \
+	globus_gram_protocol_pack.c
 
 BUILT_SOURCES = globus_gram_protocol_constants.h
 EXTRA_DIST = globus-gram-protocol-constants.sh
@@ -33,6 +36,8 @@ INCLUDES += $(GPT_INCLUDES)
 flavorinclude_HEADERS= \
 	globus_gram_protocol_constants.h \
 	globus_gram_protocol.h 
+
+noinst_HEADERS = globus_i_gram_protocol.h
 
 libexec_SCRIPTS = globus-gram-protocol-constants.sh
 

@@ -63,6 +63,16 @@ globus_gram_client_callback_allow(
 			  void * user_callback_arg,
 			  char ** callback_contact);
 
+extern
+int
+globus_gram_client_register_job_request(
+    const char *			resource_manager_contact,
+    const char *			description,
+    int					job_state_mask,
+    const char *			callback_contact,
+    globus_gram_client_callback_func_t	register_callback,
+    void *				register_callback_arg);
+
 extern int 
 globus_gram_client_job_request(char * resource_manager_contact,
 			       const char * description,
@@ -108,7 +118,7 @@ extern int
 globus_gram_client_job_contact_free(char * job_contact);
 
 extern const char *
-globus_gram_client_protocol_string(int error_code);
+globus_gram_client_error_string(int error_code);
 
 extern int
 globus_gram_client_version(void);
