@@ -15,6 +15,7 @@ usage () {
 	echo "With no arguments, checkout and build all of GT3."
 	echo "		$0 -p grim		Build package-list/grim"
 	echo "		$0 -t my_tag	Use \"-r my_tag\" in cvs commands"
+	echo "		$0 -i dir	Install into dir"
 	echo "		$0 -n 		Don't update the CVS checkout"
 	echo "		$0 -h		Print this help message"
 	echo "		$0 -c		Just build C bindings"
@@ -250,29 +251,41 @@ collate_packages() {
 	cp install-alpha2-src package-output
 }
 
+install_bundle() {
+	echo Installing into $dir
+
+	$GPT_LOCATION/sbin/gpt-build --installdir=$dir package-output/gpt_bundle_src.tar.gz gcc32dbg
+
+}
 
 read_args() {
+	dir=""
+	install=-1
 	tag=""
 	update=1
 	package=""
-	onlyc=-1;
+	onlyc=-1
 
 	while [ x$1 != "x" ]; do
 		if [ $1 = "-t" ]; then
 			export tag=$2;
 			shift; shift;
-		elif [ $1 = "-n" ]; then
-			update=-1;
-			shift;
 		elif [ $1 = "-p" ]; then
 			package=$2;
 			shift; shift;
-		elif [ $1 = "-c" ]; then
-			onlyc=1;
+		elif [ $1 = "-n" ]; then
+			update=-1;
 			shift;
+		elif [ $1 = "-i" ]; then
+			install=1;
+			dir=$2;
+			shift; shift;
 		elif [ $1 = "-h" ]; then
 			usage
 			exit
+		elif [ $1 = "-c" ]; then
+			onlyc=1;
+			shift;
 		else
 			echo "Unrecognized option $1"
 			usage
@@ -280,7 +293,7 @@ read_args() {
 		fi
 	done
 
-	export tag update package onlyc;
+	export install tag update package onlyc;
 }
 
 
@@ -327,3 +340,7 @@ install_gt2
 # dir_iter package-list-cdeps
 
 collate_packages
+
+if [ $install = 1 ]; then
+	install_bundle
+fi
