@@ -24,6 +24,9 @@ CVS Information:
 #endif
 #endif
 
+#include "globus_common.h"
+#include "globus_rsl.h"
+
 char*
 globus_rsl_assist_get_rm_contact(char* resource);
 int
