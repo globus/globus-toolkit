@@ -325,27 +325,38 @@ ${bsub} < $LSF_JOB_SCRIPT 1>$LSF_JOB_OUT 2>$LSF_JOB_ERR
 
 if (test "$?" -eq "0") then
    job_id=`cat $LSF_JOB_OUT | ${awk} '{sub(/</,"",$2);sub(/>/,"",$2);print $2}'`
-   echo "grami_job_id=${job_id}" >> $arg_file
-   $DEBUG_ECHO "JM_SCRIPT: job submitted successfully!" >> $grami_logfile
-   $DEBUG_ECHO "JM_SCRIPT: returning job state: $GLOBUS_GRAM_CLIENT_JOB_STATE_PENDING" >> $grami_logfile
-   echo "GRAM_SCRIPT_JOB_ID:$job_id"
-   echo "GRAM_SCRIPT_SUCCESS:$GLOBUS_GRAM_CLIENT_JOB_STATE_PENDING"
+
+   if [ "${job_id}" = "" ] ; then
+      $DEBUG_ECHO "job *NOT* submitted successfully!" >> $grami_logfile
+      $DEBUG_ECHO "failed getting the pbs jobid for the job!" >> $grami_logfile
+      echo "GRAM_SCRIPT_ERROR:$GLOBUS_GRAM_CLIENT_ERROR_GETTING_JOBID"
+   else
+      echo "grami_job_id=${job_id}" >> $arg_file
+      $DEBUG_ECHO "JM_SCRIPT: job submitted successfully!" >> $grami_logfile
+      $DEBUG_ECHO "JM_SCRIPT: returning job state: $GLOBUS_GRAM_CLIENT_JOB_STATE_PENDING" >> $grami_logfile
+      echo "GRAM_SCRIPT_JOB_ID:$job_id"
+      echo "GRAM_SCRIPT_SUCCESS:$GLOBUS_GRAM_CLIENT_JOB_STATE_PENDING"
+      # Remove temporary job script file
+      ${rm} $LSF_JOB_SCRIPT $LSF_JOB_OUT $LSF_JOB_ERR
+      $DEBUG_ECHO "JM_SCRIPT: exiting gram_script_lsf_submit\n\n" >> $grami_logfile
+      exit
+   fi
 else
    $DEBUG_ECHO "JM_SCRIPT: job *NOT* submitted successfully!" >> $grami_logfile
    echo "GRAM_SCRIPT_ERROR:$GLOBUS_GRAM_CLIENT_ERROR_JOB_EXECUTION_FAILED"
-
-   echo ""                                                   >> ${grami_stderr}
-   echo "-------- output from scheduler submission --------" >> ${grami_stderr}
-   cat ${LSF_JOB_ERR}                                        >> ${grami_stderr}
-   echo "--------------------------------------------------" >> ${grami_stderr}
-   echo ""                                                   >> ${grami_stderr}
-
 fi
 
-# Remove temporary job script file
+# We got problems if we get this far
 
+echo ""                                                   >> ${grami_stderr}
+echo "-------- output from scheduler submission --------" >> ${grami_stderr}
+cat ${LSF_JOB_ERR}                                        >> ${grami_stderr}
+echo "--------------------------------------------------" >> ${grami_stderr}
+echo ""                                                   >> ${grami_stderr}
+
+# Remove temporary job script file
 ${rm} $LSF_JOB_SCRIPT $LSF_JOB_OUT $LSF_JOB_ERR
 
 $DEBUG_ECHO "JM_SCRIPT: exiting gram_script_lsf_submit\n\n" >> $grami_logfile
 
-exit
+exit 1
