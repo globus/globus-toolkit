@@ -62,3 +62,11 @@ contains the GSI-OpenSSH code.  Consider it a living document.
         - original base: OPENSSH_3_4P1_GSI_20020924
         - new base: OPENSSH_3_4P1_GSI_20020926
       Conflicts: 0
+
+    2002/10/08
+    ----------
+      Action: Merge
+        - occurred on: GPT branch (OPENSSH_3_1P1_GSSAPI_GPT-branch)
+        - original base: OPENSSH_3_4P1_GSI_20020926
+        - new base: OPENSSH_3_4P1_GSI_20021008
+      Conflicts: 0
