@@ -36,7 +36,8 @@ globus_mutex_t mutex;
 globus_cond_t cond;
 
 #if defined(BUILD_LITE)
-static int globus_sleepy_callback(int can_block)
+static int globus_sleepy_callback(globus_time_t time_can_block,
+				  void *        user_args)
 {
     globus_libc_usleep(10000);
 
@@ -182,7 +183,13 @@ int main(int argc, char **argv)
     
 #   if defined(BUILD_LITE)
     {
-        globus_poll_add(globus_sleepy_callback, 1);
+        globus_callback_register_periodic(GLOBUS_NULL,
+					  0,
+					  0,
+					  globus_sleepy_callback,
+					  GLOBUS_NULL,
+					  GLOBUS_NULL,
+					  GLOBUS_NULL);
     }
 #   endif
     rc = globus_gass_server_ez_init(
