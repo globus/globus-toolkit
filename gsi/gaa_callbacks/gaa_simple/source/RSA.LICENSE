@@ -1,0 +1,34 @@
+CAS uses the Security Assertion Markup Language (SAML).  RSA Security
+has identified four patents ("RSA Patents") it believes could be
+relevant to implementing certain operational modes of the OASIS SAML
+specifications.  For information regarding a royalty-free reciprocal
+license to the RSA patents, see
+http://www.rsasecurity.com/solutions/standards/saml. 
+
+The University of Chicago, as operator of Argonne National Laboratory
+("Argonne") and RSA Security have entered into a modified license
+agreement which enables Argonne to sublicense rights in the RSA
+Patents.  Under rights granted by RSA Security and sublicensed under
+the Globus Toolkit Public License ("GTPL"), Argonne grants rights to
+the RSA Patents subject to this limitation:  If a licensee uses the
+Globus Toolkit, including use to develop a product, that use must
+represent significant functional and value enhancement in addition to
+any SAML functionality, such that the primary reason for using the
+Globus Toolkit is other than to SAML-enable the licensee's use or
+product.  A licensee under the GTPL may further sublicense the RSA
+Patents so long as the licensee's product represents significant
+functional and value enhancement in addition to any SAML
+functionality, such that the primary reason for an end user to license
+the licensee's product is other than to SAML-enable the end user's
+product.
+
+Any sublicense to the RSA Patents under the Globus Toolkit Public
+License shall continue for the life of the Globus Toolkit or the life
+of the RSA Patents, whichever is shorter, despite termination of the
+license agreement between Argonne and RSA Security.
+
+If a party desires to license the Globus Toolkit for the primary
+reason of adding SAML functionality to a product, a royalty-free
+reciprocal license is available directly from RSA Security that can be
+accessed at www.rsasecurity.com/solutions/standards/saml.
+

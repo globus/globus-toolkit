@@ -1,0 +1,21 @@
+#! /bin/sh
+
+. $GLOBUS_LOCATION/libexec/globus-sh-tools.sh
+
+echo "
+***************************************************************************
+
+Note: If you wish to complete the setup of the Globus GAA Authorization
+Callout, you will need to run the following script as root:
+
+$GLOBUS_LOCATION/setup/globus/setup-globus-gaa-authz-callout
+
+This script will create the /etc/grid-security/gsi-authz.conf file if it does 
+not already exist and register the callout.
+For further information on using the setup-globus-gaa_authz-callout script, 
+use the -help option.  The -nonroot can be used on systems where root access
+is not available.
+
+***************************************************************************
+"
+exit 0

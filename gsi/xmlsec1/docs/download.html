@@ -1,0 +1,129 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<title>XML Security Library: Download</title>
+</head>
+<body><table witdh="100%" valign="top"><tr valign="top">
+<td valign="top" align="left" width="210">
+<img src="images/logo.gif" alt="XML Security Library" border="0"><p></p>
+<ul>
+<li><a href="index.html">Home</a></li>
+<li><a href="download.html">Download</a></li>
+<li><a href="news.html">News</a></li>
+<li><a href="documentation.html">Documentation</a></li>
+<ul>
+<li><a href="faq.html">FAQ</a></li>
+<li><a href="api/xmlsec-notes.html">Tutorial</a></li>
+<li><a href="api/xmlsec-reference.html">API reference</a></li>
+<li><a href="api/xmlsec-examples.html">Examples</a></li>
+</ul>
+<li><a href="xmldsig.html">XML Digital Signature</a></li>
+<ul><li><a href="http://www.aleksey.com/xmlsec/xmldsig-verifier.html">Online Verifier</a></li></ul>
+<li><a href="xmlenc.html">XML Encryption</a></li>
+<li><a href="c14n.html">XML Canonicalization</a></li>
+<li><a href="bugs.html">Reporting Bugs</a></li>
+<li><a href="http://www.aleksey.com/pipermail/xmlsec">Mailing list</a></li>
+<li><a href="related.html">Related</a></li>
+<li><a href="authors.html">Authors</a></li>
+</ul>
+<table width="100%">
+<tr>
+<td width="15"></td>
+<td><a href="http://xmlsoft.org/"><img src="images/libxml2-logo.png" alt="LibXML2" border="0"></a></td>
+</tr>
+<tr>
+<td width="15"></td>
+<td><a href="http://xmlsoft.org/XSLT"><img src="images/libxslt-logo.png" alt="LibXSLT" border="0"></a></td>
+</tr>
+<tr>
+<td width="15"></td>
+<td><a href="http://www.openssl.org/"><img src="images/openssl-logo.png" alt="OpenSSL" border="0"></a></td>
+</tr>
+</table>
+</td>
+<td valign="top"><table width="100%" valign="top">
+<tr><td valign="top" align="left" id="xmlsecContent">
+<div align="Center">       
+      <h1>Download</h1>
+      </div>
+<h2>Stable releases.</h2>
+<p>The latest stable XML Security Library version is <b>1.2.1</b>:</p>
+<ul>
+<li>
+	<a href="http://www.aleksey.com/xmlsec/download/xmlsec1-1.2.1.tar.gz">Sources for latest version</a> 
+	    (<a href="ftp://ftp.xmlsoft.org/xmlsec/releases">XMLSoft.org</a> and 
+ 	     <a href="ftp://ftp.rpmfind.net/pub/XML/xmlsec/releases">RPMFind.net</a> 
+	     mirrors).
+    </li>
+    <li>Red Hat 9 RPM 
+	<a href="http://rpmfind.net/linux/rpm2html/search.php?query=xmlsec1">xmlsec1</a> 
+	and <a href="http://rpmfind.net/linux/rpm2html/search.php?query=xmlsec1-devel">xmlsec1-devel</a>
+	packages.
+    </li>
+    <li>
+	<a href="http://www.zlatkovic.com/projects/libxml/index.html">Windows 
+	binaries</a> for XMLSec Library (as well as LibXML2, LibXSLT and OpenSSL)
+	from <a href="mailto:igor@zlatkovic.com">Igor Zlatkovic</a>.
+    </li>
+    <li>XMLSec Library is included as part of Debian GNU/Linux. For more 
+	information see the <a href="http://memebeam.org/toys/DebianXmlsec">coordination page</a>. 
+    </li>
+    <li>XMLSec Library <a href="http://www.freebsd.org/cgi/cvsweb.cgi/ports/security/xmlsec/">FreeBSD</a>
+	and <a href="http://www.openbsd.org/cgi-bin/cvsweb/ports/security/xmlsec/">OpenBSD</a>
+	ports.	
+    </li>
+</ul>
+<p>The <a href="ftp://ftp.aleksey.com/pub/xmlsec/releases/">previous releases</a>
+and <a href="ftp://ftp.aleksey.com/pub/xmlsec/snapshots/">daily snapshots</a>
+are also available (the daily snapshots are not promised to be stable or even 
+compile).</p>
+<h2>Requirements</h2>
+<p>
+    The XML Security Library requires:
+    </p>
+<ul>
+<li><a href="http://xmlsoft.org/downloads.html">LibXML</a></li>
+    <li>
+<a href="http://xmlsoft.org/XSLT/downloads.html">LibXSLT</a> (optional)</li>
+</ul>
+<p>and one of the following cryptographic libraries:</p>
+<ul>
+<li>
+<a href="http://www.openssl.org/">OpenSSL</a> version 0.9.7 
+	(it also should work with 0.9.6 but some features 
+	would be disabled).
+        </li>
+	<li>
+<a href="http://www.gnu.org/software/gnutls/">GnuTLS</a>
+	and <a href="http://www.gnu.org/directory/security/libgcrypt.html">Libgcrypt</a> - 
+	GNU SSL and cryptographic libraries.
+	</li>
+        <li>
+<a href="http://www.mozilla.org/projects/security/pki/nss/">NSS</a> -
+	Mozilla cryptographic library.
+	</li>
+    </ul>
+<h2>Installation (source archive)</h2>
+<p>
+      All steps are usual:<br>
+</p>
+<blockquote>
+<code>gunzip -c xmlsec1-xxx.tar.gz | tar xvf -</code><br><code>cd xmlsec1-xxxx</code><br><code>./configure --help</code><br><code>./configure [possible options] </code><br><code>make</code><br><code>make install</code><br><code>make check</code>
+</blockquote>
+<p>
+       The last step is optional and requires Internet connection to execute
+       some tests.<br>
+</p>
+<h2>CVS</h2>
+<p>XML Security Library is available from the 
+<a href="http://developer.gnome.org/tools/cvs.html">Gnome CVS</a>
+(the module name is <b>xmlsec</b>). The online source browser: 
+<a href="http://cvs.gnome.org/bonsai/rview.cgi?cvsroot=/cvs/gnome&amp;dir=xmlsec">Gnome CVS base</a>
+</p>
+</td></tr>
+<tr><td>
+<br><br><p><a href="bugs.html">Aleksey Sanin</a></p>
+</td></tr>
+</table></td>
+</tr></table></body>
+</html>

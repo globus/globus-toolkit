@@ -1,0 +1,4 @@
+gssapi_delegation_compat_test.c:213: Successfully established initial security context
+gssapi_delegation_compat_test.c:420: Successfully delegated credential
+gssapi_delegation_compat_test.c:470: Successfully exported/imported the delegated credential
+gssapi_delegation_compat_test.c:618: Successfully established security context with delegated credential

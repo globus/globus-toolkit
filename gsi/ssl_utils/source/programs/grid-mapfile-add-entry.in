@@ -1,0 +1,286 @@
+#!/bin/sh
+#
+# grid-mapfile-add-entry
+#
+
+if test -z "${GLOBUS_LOCATION}"; then
+    echo ""
+    echo "ERROR: Please set GLOBUS_LOCATION to the Globus installation directory before"
+    echo "running this script"
+    echo ""
+    exit 1
+fi
+
+. ${GLOBUS_LOCATION}/libexec/globus-script-initializer
+globus_source ${GLOBUS_LOCATION}/libexec/globus-sh-tools.sh
+
+PROGRAM_NAME=`echo $0 | ${GLOBUS_SH_SED-sed} 's|.*/||g'`
+
+PROGRAM_VERSION=`echo '$Revision$'| ${GLOBUS_SH_SED-sed} -e 's|\\$||g' -e 's|Revision: \(.*\)|\1|'`
+
+VERSION="@VERSION@"
+
+PACKAGE="@PACKAGE@"
+
+DIRT_TIMESTAMP="@DIRT_TIMESTAMP@"
+DIRT_BRANCH_ID="@DIRT_BRANCH_ID@"
+
+
+short_usage="$PROGRAM_NAME -dn DN -ln LN 
+[-help] [-d] [-f mapfile FILE]"
+
+long_usage() {
+    ${GLOBUS_SH_CAT-cat} >&2 <<EOF
+
+${short_usage}
+
+    $PROGRAM_NAME adds an entry to a Grid mapfile.
+
+    Options:
+      -help, -usage           Displays help
+      -version                Displays version
+      -dn DN                  Distuingished Name (DN) to add
+      -ln LN		      Local login name(s) to map DN to
+      -dryrun, -d             Shows what would be done but will not add the entry
+      -mapfile FILE, -f FILE  Path of Grid map file to be used
+
+EOF
+}
+
+globus_source $libexecdir/globus-args-parser-header $@
+
+##############################################
+Cleanup()
+{
+
+if [ -f $CONSISTANCY_CHECK ]
+then
+	rm $CONSISTANCY_CHECK
+fi
+
+if [ -f $GRID_MAP_FILE_COPY ]
+then
+	rm $GRID_MAP_FILE_COPY
+fi
+
+if [ -f $EXISTING_DN_ENTRIES ]
+then
+	rm $EXISTING_DN_ENTRIES
+fi
+
+${GLOBUS_SH_CHMOD-chmod} 644 $GRID_MAP_FILE
+if [ $? -ne 0 ]
+then
+	echo "ERROR: Could not change mode of $GRID_MAP_FILE back to 644" >&2
+    exit 1
+fi
+
+
+}
+##############################################
+
+# Main Logic
+
+secconfdir="/etc/grid-security"
+GRID_MAP_FILE=${secconfdir}/grid-mapfile
+GRID_MAP_FILE_COPY=${tmpdir}/mapfile.copy.$$
+CONSISTANCY_CHECK=${tmpdir}/consistancy_check.$$
+EXISTING_DN_ENTRIES=${tmpdir}/existing_dn_entries.$$
+ECHO_DRYRUN=:
+
+
+	# Parse command line arguments
+
+if [ $# -lt 4 ] ; then
+    globus_args_short_usage
+    exit 1
+fi
+
+while [ -n "$1" ]; do
+    case "$1" in
+        -dn) 
+	    shift
+            if [ $# -ge 1 ] ; then
+		dn=$1
+                shift
+	    else
+                globus_args_option_error "-dn" "needs a DN argument"
+	    fi
+        ;;
+        -ln )
+            shift
+            if [ $# -ge 1 ] ; then
+		ln=$1
+		shift
+		if [ $# -ge 1 ] ; then
+		    while [ "$1" != "-dn" -a "$1" != "-d" \
+			    -a "$1" != "-dryrun" -a "$1" != "-f" \
+			    -a "$1" != "-mapfile" ] ; do
+			ln=$ln" "$1
+			shift
+			if [ $# -eq 0 ] ; then
+			    break
+			fi
+		    done
+		fi
+	    else
+                globus_args_option_error "-ln" "needs a list of user login names"
+		exit 1
+	    fi
+	    ;;
+       -d | -dryrun )
+	    ECHO_DRYRUN=echo
+	    shift
+	    ;;
+        -f | -mapfile )
+	    opt=$1
+	    shift
+	    GRID_MAP_FILE=$1
+	    shift
+	    ;;
+			
+        * )
+	    globus_args_unrecognized_option "$1"
+	    ;;
+    esac
+
+done
+
+    # Verify mapfile existance
+
+if [ ! -f $GRID_MAP_FILE ] ; then
+    echo "$GRID_MAP_FILE does not exist... Attempting to create $GRID_MAP_FILE"
+    ${GLOBUS_SH_TOUCH-touch} $GRID_MAP_FILE
+    if [ $? -ne 0 ] ; then
+        echo "ERROR: Could not create $GRID_MAP_FILE" >&2
+        exit 1
+    fi
+
+    ${GLOBUS_SH_CHMOD-chmod} 644 $GRID_MAP_FILE
+    if [ $? -ne 0 ] ; then
+        echo "ERROR: Could not set proper access mode of $GRID_MAP_FILE" >&2
+        exit 1
+    fi
+else
+    if [ ! -r $GRID_MAP_FILE ] ; then
+        globus_args_option_error "$opt" "\"${GRID_MAP_FILE}\" is not readable."
+        exit 1
+    fi
+
+    if [ ! -w $GRID_MAP_FILE ] ; then
+        globus_args_option_error "$opt" "\"${GRID_MAP_FILE}\" is not writeable."
+	exit 1
+    fi
+fi
+
+if [ -z "$ln" -o -z "$dn" ] ; then
+    echo "Both the -dn and the -ln arguments must be provided"
+    globus_args_short_usage
+    exit 1
+fi
+
+        # Make a copy of production map file for comparison to original later
+
+${GLOBUS_SH_CP-cp} $GRID_MAP_FILE $GRID_MAP_FILE_COPY
+if [ $? -ne 0 ] ; then
+    echo "ERROR: Could not make a copy of $GRID_MAP_FILE" >&2
+    Cleanup
+    exit 1
+fi
+
+        # Change mode of existing map file to read only (logical UNIX lock)
+
+${GLOBUS_SH_CHMOD-chmod} 400 $GRID_MAP_FILE
+if [ $? -ne 0 ] ; then
+    echo "ERROR: Could not change mode of $GRID_MAP_FILE" >&2
+    Cleanup
+    exit 1
+fi
+
+	# Compare requested DN to existing DNs
+
+while read line ;
+do
+existing_dn=`echo $line | cut -c2- | cut -f1 -d\"`
+if [ "$dn" = "$existing_dn" ]
+	then
+	echo $dn > $EXISTING_DN_ENTRIES
+fi
+done < $GRID_MAP_FILE_COPY
+
+if [ ! -s $EXISTING_DN_ENTRIES ]  ; then
+    $ECHO_DRYRUN
+    $ECHO_DRYRUN "The Grid Map File does not contain an entry with"
+    $ECHO_DRYRUN "Distinguished Name=$dn"
+    $ECHO_DRYRUN "Therefore, a new entry will be added if the local name(s) are legitimate"
+    $ECHO_DRYRUN
+    $ECHO_DRYRUN "Verifying that Local Name(s)=($ln) are legitimate local accounts."
+
+    for name in $ln ; do
+	$ECHO_DRYRUN "Checking ln(s)=$name"
+        ${libexecdir}/globus-is-local-user $name
+	if  [ "$?" -eq 0 ] ; then
+	    $ECHO_DRYRUN "Local Name=$name does exist"
+	else
+            echo "entry not added because the LN(s) is/are not legitimate"
+	    $ECHO_DRYRUN "Local Name=$name does *NOT* exist"
+	    $ECHO_DRYRUN "Entry *NOT* added"
+	    Cleanup
+	    exit 1
+	fi
+    done
+
+    $ECHO_DRYRUN "Local Name(s)=($ln) is/are valid. Requested entry will be added."
+    if [ "$ECHO_DRYRUN" = "echo" ] ; then
+        echo "Since ( dryrun, -d ) option was used no actions were carried out"
+        Cleanup
+        exit 0
+    fi
+
+	# format new entry of dn and ln 
+ 
+    new_ln_entry=`echo $ln | ${GLOBUS_SH_SED-sed} -e 's/ /,/g'`
+    new_mapfile_entry="\"$dn\" $new_ln_entry"
+
+	# Verify that no changes to original map file
+	# during the execution of this program
+
+    ${GLOBUS_SH_DIFF-diff} $GRID_MAP_FILE_COPY $GRID_MAP_FILE > $CONSISTANCY_CHECK
+    if  [ -s $CONSISTANCY_CHECK ] ; then
+	echo "ERROR: $GRID_MAP_FILE has changed since this program started" >&2
+	echo "No changes will be made." >&2
+    else
+	    # Restore proper permissions to original grid map file
+	${GLOBUS_SH_CHMOD-chmod} 644 $GRID_MAP_FILE
+	if [ $? -ne 0 ] ; then
+	    echo "ERROR: Could not change mode of $GRID_MAP_FILE" >&2
+	else
+	    # Append new entry to original grid map file
+	    $ECHO_DRYRUN "Appending new entry $new_mapfile_entry"
+	    echo $new_mapfile_entry >> $GRID_MAP_FILE
+	    if [ $? -ne 0 ] ; then
+		echo "ERROR: Could not add new entry to $GRID_MAP_FILE" >&2
+		Cleanup
+		exit 1
+            else
+                echo "(1) entry added"
+	    fi
+	fi
+
+	${GLOBUS_SH_CP-cp} $GRID_MAP_FILE_COPY $GRID_MAP_FILE.old
+	if [ $? -ne 0 ] ; then
+	    echo "ERROR: Could not create a copy of $GRID_MAP_FILE" >&2
+	fi
+    fi
+else
+    echo "entry not added because it already exists."
+    $ECHO_DRYRUN "One or more entries containing"
+    $ECHO_DRYRUN "Distinguished Name=$dn"
+    $ECHO_DRYRUN "already exists. No action will be taken."
+    $ECHO_DRYRUN "Use the grid-mapfile-delete-entry tool to remove an entry."
+fi
+
+Cleanup
+
+exit 0
+

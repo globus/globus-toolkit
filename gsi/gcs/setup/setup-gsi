@@ -1,0 +1,8 @@
+#! /bin/sh
+
+if [ "$GLOBUS_LOCATION" = "" ]; then
+  echo "Set GLOBUS_LOCATION before running this script"
+  exit 1
+fi
+
+perl $GLOBUS_LOCATION/setup/globus_gcs_b38b4d8c_setup/setup-gsi.pl $@

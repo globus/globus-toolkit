@@ -1,0 +1,11 @@
+;
+; Definition file for the DLL version of the Callout Library
+;
+
+LIBRARY         LIBTEST
+
+DESCRIPTION     'Globus Callout Test Module'
+
+EXPORTS
+    test_callout                          @1
+

@@ -1,0 +1,16 @@
+AC_REVISION($Revision$)
+AC_INIT(globus-script-pbs-queue.in)
+
+# checking for the GLOBUS_LOCATION
+
+if test "x$GLOBUS_LOCATION" = "x"; then
+    echo "ERROR Please specify GLOBUS_LOCATION" >&2
+    exit 1
+fi
+
+AC_PATH_PROG(QSTAT, qstat, no)
+if test "$QSTAT" = "no" ; then
+    AC_MSG_ERROR("Cannot locate qstat")
+fi
+
+AC_OUTPUT( $GLOBUS_LOCATION/libexec/globus-script-pbs-queue:globus-script-pbs-queue.in )

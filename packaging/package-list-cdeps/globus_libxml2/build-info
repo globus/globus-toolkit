@@ -1,0 +1,4 @@
+name=globus_libxml2
+subdir=ogsa-c/build_tools/source_packages/
+build="custom"
+output=globus_libxml2-*.tar.gz

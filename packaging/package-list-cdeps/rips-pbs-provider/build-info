@@ -1,0 +1,4 @@
+name=rips_pbs_provider_setup
+subdir=information_services/rips-pbs-provider-setup
+build="custom"
+output=rips_pbs_provider_setup-*.tar.gz

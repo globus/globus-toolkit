@@ -1,0 +1,36 @@
+
+Error, argument #2 (0xAB) : value is larger than allowed max=64
+
+Syntax : globus_args_test [-foo] [-replicate file N] [-host hn] [-file file]
+
+Use -help to display full usage.
+
+Error, argument #2 (0101) : value is larger than allowed max=64
+
+Syntax : globus_args_test [-foo] [-replicate file N] [-host hn] [-file file]
+
+Use -help to display full usage.
+
+Error, argument #2 (-1) : value is smaller than allowed min=0
+
+Syntax : globus_args_test [-foo] [-replicate file N] [-host hn] [-file file]
+
+Use -help to display full usage.
+
+Error, argument #2 (65) : value is larger than allowed max=64
+
+Syntax : globus_args_test [-foo] [-replicate file N] [-host hn] [-file file]
+
+Use -help to display full usage.
+
+Error, argument #2 (does/not/exist) : No such file or directory
+
+Syntax : globus_args_test [-foo] [-replicate file N] [-host hn] [-file file]
+
+Use -help to display full usage.
+
+Error, argument #2 (smutt.mqs.anl.gov) : (no error message)
+
+Syntax : globus_args_test [-foo] [-replicate file N] [-host hn] [-file file]
+
+Use -help to display full usage.

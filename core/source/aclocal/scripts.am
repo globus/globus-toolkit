@@ -1,0 +1,70 @@
+## automake - create Makefile.in from Makefile.am
+## Copyright (C) 1994, 1995, 1996, 1998 Free Software Foundation, Inc.
+
+## This program is free software; you can redistribute it and/or modify
+## it under the terms of the GNU General Public License as published by
+## the Free Software Foundation; either version 2, or (at your option)
+## any later version.
+
+## This program is distributed in the hope that it will be useful,
+## but WITHOUT ANY WARRANTY; without even the implied warranty of
+## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+## GNU General Public License for more details.
+
+## You should have received a copy of the GNU General Public License
+## along with this program; if not, write to the Free Software
+## Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
+## 02111-1307, USA.
+link-@DIR@SCRIPTS: $(@DIR@_SCRIPTS)
+	@$(NORMAL_INSTALL)
+	@$(mkinstalldirs) $(DESTDIR)$(@DIR@dir)
+## Funny invocation because Makefile variable can be empty, leading to
+## a syntax error in sh.
+	@list='$(@DIR@_SCRIPTS)'; for p in $$list; do \
+	  mydir=`pwd`; \
+	  target_p=$(DESTDIR)$(@DIR@dir)/`echo $$p|sed '$(transform)'`; \
+	  if test -f $$p; then \
+		if test -f $$target_p -a ! -h $$target_p; then \
+			echo "mv $$target_p $$target_p.$(LINK_BAK)"; \
+			mv $$target_p $$target_p.$(LINK_BAK); \
+		fi; \
+		if test ! -h $$target_p; then \
+			echo "ln -s $$mydir/$$p $$target_p"; \
+			ln -s $$mydir/$$p $$target_p; \
+		fi; \
+	  else if test -f $(srcdir)/$$p; then \
+		cd $(srcdir); \
+		fullsrcdir=`pwd`; \
+		cd $$mydir; \
+		if test -f $$target_p -a ! -h $$target_p; then \
+			echo "mv $$target_p $$target_p.$(LINK_BAK)"; \
+			mv $$target_p $$target_p.$(LINK_BAK); \
+		fi; \
+		if test ! -h $$target_p; then \
+			echo "ln -s $$fullsrcdir/$$p $$target_p"; \
+			ln -s $$fullsrcdir/$$p $$target_p; \
+		fi; \
+	  else :; fi; fi; \
+	done
+
+unlink-@DIR@SCRIPTS:
+	@$(NORMAL_UNINSTALL)
+	@list='$(@DIR@_SCRIPTS)'; for p in $$list; do \
+	    	target_p=$(DESTDIR)$(@DIR@dir)/`echo $$p|sed '$(transform)'`; \
+		if test -h $$target_p; then \
+			echo "rm $$target_p"; \
+			rm $$target_p; \
+		fi; \
+		if test -f $$target_p.$(LINK_BAK); then \
+			echo "mv $$target_p.$(LINK_BAK) $$target_p"; \
+			mv $$target_p.$(LINK_BAK) $$target_p; \
+		fi; \
+	done
+
+filelist-@DIR@SCRIPTS:
+## Funny invocation because Makefile variable can be empty, leading to
+## a syntax error in sh.
+	@list='$(@DIR@_SCRIPTS)'; for p in $$list; do \
+	  echo "$(DESTDIR)$(@DIR@dir)/$$p" >> $(FILELIST_FILE); \
+	done
+

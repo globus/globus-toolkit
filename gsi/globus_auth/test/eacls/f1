@@ -1,0 +1,21 @@
+pos_access_right file execute
+cond_access_id assertion mei
+
+neg_access_right file read
+cond_group_id unix griduser
+
+pos_access_right file write
+cond_group_id unix griduser
+
+neg_access_right file read
+cond_access_id assertion laura
+
+pos_access_right file write
+cond_access_id assertion laura
+
+neg_access_right file write
+cond_access_id assertion mei
+
+pos_access_right file read
+cond_access_id assertion mei
+

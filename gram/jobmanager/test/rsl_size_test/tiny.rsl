@@ -1,0 +1,5 @@
+&
+(rsl_substitution = 
+    (var0000 val0000)
+)
+(executable=/bin/echo)(arguments=$(var0000))

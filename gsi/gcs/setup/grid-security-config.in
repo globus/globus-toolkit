@@ -1,0 +1,96 @@
+#! @SH@
+
+if test -z "${GLOBUS_LOCATION}"; then
+    echo ""
+    echo "ERROR: Please set GLOBUS_LOCATION to the Globus installation directory before"
+    echo "running this script"
+    echo ""
+    exit 1
+fi
+
+. ${GLOBUS_LOCATION}/libexec/globus-script-initializer
+
+#
+# Should this go into the initializer:
+#
+
+secconfdir=${TRUSTED_CA_DIR-/etc/grid-security/certificates/}
+
+
+trap '${GLOBUS_SH_RM-rm} -f ${TEMP_FILE1} ' 0
+PROGRAM_NAME=`echo $0 | ${GLOBUS_SH_SED-sed} -e 's|.*/||g'`
+
+# The file we are modifying
+security_conf_file=${secconfdir}/grid-security.conf.b38b4d8c
+
+# get the initial values from the grid-security.conf script
+. ${security_conf_file}
+
+_GSI_HOST_BASE_DN="${GSI_HOST_BASE_DN}"
+_GSI_USER_BASE_DN="${GSI_USER_BASE_DN}"
+_GSI_CA_NAME="${GSI_CA_NAME}"
+_GSI_CA_EMAIL_ADDR="${GSI_CA_EMAIL_ADDR}"
+
+
+
+#################################################################
+#
+# File: grid-security-config
+#
+# Purpose: This script updates the grid-security.conf file with
+#          the appropriate site-specific variables
+#
+#################################################################
+TEMP_FILE1=${tmpdir}/grid-security-config_1.$$
+
+field () {
+   if [ "${GLOBUS_SH_CUT-cut}" != "" ]
+   then
+         ${GLOBUS_SH_CUT-cut} -d" " -f$1 
+   fi
+ }
+
+get_user_dn() {
+    echo "Enter the Base Distinguish Name (DN) for user certificates [ ${_GSI_USER_BASE_DN} ] :"
+    read _GSI_USER_BASE_DN
+}
+
+get_host_dn() {
+    echo "Enter the Base Distinguish Name (DN) for host certificates [ ${_GSI_HOST_BASE_DN} ] :"
+    read _GSI_HOST_BASE_DN
+
+}
+
+env_replace () {
+   _env="$1"
+   eval _value="\$_${_env}"
+
+   ${GLOBUS_SH_SED-sed} -e "s%^SETUP_${_env}=.*%SETUP_${_env}=\"$_value\"%"
+}
+
+
+save_settings() {
+
+    cat ${security_conf_file}      |\
+    env_replace GSI_HOST_BASE_DN   |\
+    env_replace GSI_USER_BASE_DN   |\
+    env_replace GSI_CA_NAME        |\
+    env_replace GSI_CA_EMAIL_ADDR  >${TEMP_FILE1}
+
+    if [ -w ${security_conf_file} ] ; then 
+      ${GLOBUS_SH_CP-cp} ${TEMP_FILE1} ${security_conf_file}
+      ${GLOBUS_SH_CHMOD-chmod} 644 ${security_conf_file}
+    else
+      ${GLOBUS_SH_PRINTF-printf} "You don't have sufficient privileges"
+    fi
+    ${GLOBUS_SH_RM-rm} -f ${TEMP_FILE1}
+}
+
+##############################################################################
+# 
+# main
+#
+
+save_settings
+${exec_prefix}/setup/globus_gcs_b38b4d8c_setup/grid-cert-request-config
+exit

@@ -1,0 +1,44 @@
+#! /usr/bin/env perl
+
+use strict;
+use Test::Harness;
+use Cwd;
+require 5.005;
+use vars qw(@tests);
+
+my $test_result=1;
+
+$|=1;
+
+my $globus_location = $ENV{GLOBUS_LOCATION};
+my $contact;
+
+@tests = qw(
+    globus-gram-protocol-allow-attach-test.pl
+    globus-gram-protocol-error-test.pl
+    globus-gram-protocol-io-test.pl
+    globus-gram-protocol-pack-test.pl
+);
+
+chdir "$globus_location/test/@PACKAGE@";
+
+if(0 != system("grid-proxy-info -exists -hours 2 2>/dev/null") / 255)
+{
+    $ENV{X509_CERT_DIR} = cwd();
+    $ENV{X509_USER_PROXY} = "testcred.pem";
+    system('chmod go-rw testcred.pem'); 
+}
+
+$test_result = eval { runtests(@tests); };
+
+if(!defined($test_result))
+{
+    print $@;
+    $test_result=1;
+}
+else
+{
+    $test_result=0;
+}
+
+exit($test_result);

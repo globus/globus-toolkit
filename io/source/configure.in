@@ -1,0 +1,82 @@
+dnl
+
+AC_REVISION($Revision$)
+AC_INIT(Makefile.am)
+
+dnl Needed for the $target test below for <netinet/tcp.h>
+AC_CANONICAL_SYSTEM
+
+GLOBUS_INIT
+
+
+AM_PROG_LIBTOOL
+
+dnl check for -lsocket -lnsl
+
+CHECK_NEED_LNSL
+
+CHECK_NEED_LSOCKET
+
+GPT_SET_LIBS(["$EXTERNAL_LIBS"])
+
+dnl Initialize the automake rules the last argument
+AM_INIT_AUTOMAKE($GPT_NAME, $GPT_VERSION)
+
+AM_CONFIG_HEADER(config.h)
+
+dnl Broken IRIX 6.5.3 headers
+dnl The compile check fails on Irix 6.5 because you must
+dnl include other system headers before netinet/tcp.h.
+dnl This case sets the result of the check so that the next
+dnl call to AC_CHECK_HEADERS just uses the cached value.
+case $target in
+    *irix*6.*)
+        ac_cv_header_netinet_tcp_h=yes
+    ;;
+esac
+
+AC_CHECK_HEADERS(netinet/tcp.h)
+
+AC_CHECK_HEADERS(sys/select.h)
+AC_CHECK_HEADERS(string.h)
+AC_CHECK_HEADERS(dce/cma_ux.h)
+AC_CHECK_FUNCS(sysconf)
+
+GLOBUS_FINALIZE
+
+LAC_DOXYGEN(["../library"])
+
+
+NETLOGGER_INCLUDES=
+NETLOGGER_LIBS=
+
+AC_ARG_WITH(netlogger,
+	[  --with-netlogger=PATH		build target with netlogger],
+	[
+        netlogger_prefix="$withval"
+        AC_DEFINE(GLOBUS_BUILD_WITH_NETLOGGER)
+        ])
+
+if test "x$netlogger_prefix" != "x"; then
+
+        NETLOGGER_INCLUDES="-I$netlogger_prefix/include"
+        NETLOGGER_LIBS="-L$netlogger_prefix/lib -lnetlogger"
+fi
+
+AC_SUBST(NETLOGGER_INCLUDES)
+AC_SUBST(NETLOGGER_LIBS)
+
+
+AC_OUTPUT(
+	Makefile
+	pkgdata/Makefile
+	pkgdata/pkg_data_src.gpt
+	library/Makefile
+	doxygen/Makefile
+	doxygen/Doxyfile 
+	doxygen/Doxyfile-internal
+	version.h
+)
+
+
+

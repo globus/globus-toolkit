@@ -1,0 +1,10 @@
+
+# External Library Dependencies
+LibDependencies = \
+    libglobus_common_$(GLOBUS_FLAVOR_NAME).lib \
+    libglobus_gssapi_gsi_$(GLOBUS_FLAVOR_NAME).lib \
+    libglobus_gss_assist_$(GLOBUS_FLAVOR_NAME).lib \
+    libglobus_gridmap_callout_error_$(GLOBUS_FLAVOR_NAME).lib \
+    libgssapi_error_$(GLOBUS_FLAVOR_NAME).lib
+
+

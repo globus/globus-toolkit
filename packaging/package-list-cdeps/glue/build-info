@@ -1,0 +1,4 @@
+name=glue
+subdir=information_services/glue/hostinfo
+build="custom"
+output=gt3_hostinfo*.tar.gz

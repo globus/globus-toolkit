@@ -1,0 +1,12 @@
+#!/bin/sh
+
+dir=$1; shift
+GPT_LOCATION=$1
+GLOBUS_LOCATION=$2
+FLAVOR=$3
+export GPT_LOCATION GLOBUS_LOCATION
+
+cd $dir
+./bootstrap
+$GPT_LOCATION/sbin/gpt-build -static $FLAVOR
+make dist

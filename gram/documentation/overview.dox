@@ -1,0 +1,133 @@
+/**
+@page gram_general_overview GRAM Overview
+
+
+The Globus Resource Allocation Manager (GRAM) is the lowest level of Globus
+resource management architecture. GRAM allows you to run jobs remotely,
+providing an API for submitting, monitoring, and terminating your job.
+
+When a job is submitted, the request is sent to the gatekeeper of the remote
+computer. The gatekeeper handles the request and creates a job manager for the
+job. The job manager starts and monitors the remote program, communicating
+state changes back to the user on the local machine. When the remote
+application terminates, normally or by failing, the job manager terminates as
+well.
+
+GRAM is responsible for
+
+
+- Parsing and processing the Resource Specification Language (RSL)
+  specifications that outline job requests. The request specifies resource
+  selection, job process creation, and job control. This is accomplished by
+  either denying the request or creating one or more processes (jobs) to
+  satisfy the request. 
+- Enabling remote monitoring and managing of jobs already created. 
+
+The <b>Resource Specification Language</b> (RSL) is a structured language by
+which resource requirements and parameters can be outlined by a user. 
+
+To run a job remotely, a GRAM gatekeeper (server) must be running on a remote computer, listening at a port; and the application needs to be compiled on that remote machine. The execution begins when a GRAM user application runs on the local machine, sending a job request to the remote computer. The executable, stdin and stdout, as well as the name and port of the remote computer, are specified as part of the job request. The job request is handled by the gatekeeper, which creates a job manager for the new job. The job manager handles the execution of the job, as well as any communication with the user.
+
+The architecture of GRAM is diagrammed below:
+
+@dotfile "architecture.dot"
+
+
+@par Resource
+
+An entity capable of running one or more processes on behalf of a
+user.
+
+@par Client
+The process that is using the resource allocation client-side API.
+
+@par Job
+A process or set of processes resulting from a job request. Jobs are
+grouped, so any error in one job results in the mutual termination of all
+others in the group. If the job is killed by the client, all processes are
+terminated, and the job itself is finally terminated as well.
+
+@par Job Request
+
+A request to gatekeeper to create one or more job processes,
+expressed in the supplied Resource Specification Language. This request guides
+- resource selection (when and where to create the job processes)
+- job process creation (what job processes to create)
+- job control (how the processes should execute
+
+@par Gatekeeper
+
+A process, running as root, which begins the process of
+handling allocation requests. It exists on the remote computer before any
+request is submitted. When the gatekeeper receives an allocation request from a
+client, it
+- mutually authenticates with the client,
+- maps the requestor to a local user,
+- starts a job manager on the local host as the local user, and
+- passes the allocation arguments to the newly created job manager.
+
+@par Job Manager
+One job manager is created by the gatekeeper to fulfill every request
+submitted to the gatekeeper. It starts the job on the local system, and handles
+all further communication with the client. It is made up of two components:
+- <em>Common Component</em> - translates messages received from the
+  gatekeeper and client into an internal API that is implemented by the machine
+  specific component. It also translates callback requests from the machine
+  specific components through the internal API into messages to the application
+  manager.
+- <em>Machine-Specific Component</em> - implements the internal API in the
+  local environment. This includes calls to the local system, messages to the
+  resource monitor, and inquiries to the MDS.
+
+@subsection gram_scheduling_model Scheduling Model
+
+The GRAM supports the following scheduling model. A user or resource broker
+submits a job request, which initially registers as a pending job. The job then
+undergoes state changes according to this state diagram:
+
+@dotfile "states.dot"
+
+@par Unsubmitted
+
+The job has not yet been submitted to the scheduler. A job state callback
+for this state is never sent; rather it was introduced for the case when
+the job manager is stopped and restarted before the job is submitted.
+<em>This state was introduced in GRAM 1.5 (Globus 2.0).</em>
+
+@par StageIn
+The job manager is staging executable, input, or data files to the
+job. Jobs which do not involve any staging will not
+enter this state. <em>This state was introduced in GRAM 1.6.</em>
+
+@par Pending
+
+The job has been submitted to the scheduler, but resources have not yet
+been allocated for the job.
+
+@par Active
+
+The job has received all of it's resources, and the application is
+executing.
+
+@par Suspended
+
+The job has been stopped temporarily by the scheduler. Only some
+schedulers will cause a job to enter the <em>Suspended</em> state.
+<em>This state was introduced in GRAM 1.5 (Globus 2.0).</em>
+
+@par StageOut
+
+The job manager is staging output files from the job manager host to 
+remote storage. Jobs which do not involve any staging will not enter this
+state. <em>This state was introduced in GRAM 1.6.</em>
+
+@par Done
+
+The job completed successfully.
+
+@par Failed
+
+The job terminated before completion, as a result of an error, or a user
+or system cancel.
+
+*/

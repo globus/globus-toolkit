@@ -1,0 +1,29 @@
+The gss-server and gss-client programs are modified versions of the
+programs in ../../Security/tests.  To use them, first create a
+configuration file to configure GAA for the gss-server program (an
+example config file is in ../gaa/gaa_plugin/examples/gaa.linux.cf).
+Make sure all the pathnames (for the directories where callback
+libraries, EACLs, and group files are found) are correct.  Then invoke
+the server program as:
+
+  ./gss-server -cf <config_file>
+
+and the client as:
+
+  ./gss-client <gss-server host> <gss-server credential identity>
+
+Several commands can be specified to gss-client:
+
+  print sc		print GAA security context
+  getpolicy <file>	Read policy information from the EACL contained
+                        in <policydir>/<file> (where <policydir> is the
+                        directory specified in the config file used by
+                        gss-server).
+  print policy		print the current policy
+  request <auth> <val>  request the right described by the specified
+                        authority and value (e.g. "request file read").
+  assert <name>         if the assertion mechanism is specified in the
+                        gss-server configuration file, add an assertion
+                        credential (with the specified name) to the security
+                        context.
+  clear sc		clear the GAA security context.

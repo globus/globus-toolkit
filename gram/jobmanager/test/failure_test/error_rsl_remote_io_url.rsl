@@ -1,0 +1,3 @@
+(* GLOBUS_GRAM_PROTOCOL_ERROR_RSL_REMOTE_IO_URL *)
+&(executable=/bin/true)
+ (remote_io_url = (bad format))

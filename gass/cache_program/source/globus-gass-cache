@@ -1,0 +1,6 @@
+#! /bin/sh
+
+. ${GLOBUS_LOCATION}/libexec/globus-script-initializer
+globus_source ${libexecdir}/globus-sh-tools.sh
+
+exec $GLOBUS_SH_PERL ${libexecdir}/globus-gass-cache-util.pl ${1+"$@"}

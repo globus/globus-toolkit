@@ -1,0 +1,9 @@
+&(executable = /bin/ls)
+ (arguments = -1 $(SCRATCH_DIRECTORY) )
+ (scratch_dir = . )
+ (file_stage_in = ( $(GLOBUSRUN_GASS_URL) # "/etc/group" 
+                    $(SCRATCH_DIRECTORY) # "/group.1" )
+                  ( $(GLOBUSRUN_GASS_URL) # "/etc/group" 
+                    $(SCRATCH_DIRECTORY) # "/group.2" )
+
+ )

@@ -1,0 +1,58 @@
+AC_REVISION($Revision$)
+AC_INIT(remote.in)
+
+# checking for the GLOBUS_LOCATION
+
+if test "x$GLOBUS_LOCATION" = "x"; then
+    echo "ERROR Please specify GLOBUS_LOCATION" >&2
+    exit 1
+fi
+
+AC_PATH_PROGS(REMOTE_SHELL, ssh rsh, no)
+if test "$REMOTE_SHELL" = "no" ; then
+    AC_MSG_ERROR("Cannot locate a remote shell program")
+fi
+AC_PATH_PROGS(REMOTE_COPY, scp rcp, no)
+if test "$REMOTE_COPY" = "no" ; then
+    AC_MSG_ERROR("Cannot locate remote copy program")
+fi
+
+AC_ARG_WITH(host,
+[  --with-host=HOST        Name of host with the scheduler interface],
+    REMOTE_HOST=$withval,
+    REMOTE_HOST=no)
+
+if test "$REMOTE_HOST" = "no" -o "$REMOTE_HOST" = "yes"; then
+    AC_MSG_ERROR("Use --with-host=HOST to define scheduler host")
+    AC_SUBST(REMOTE_HOST)
+fi
+
+AC_ARG_WITH(location,
+[  --with-location=PATH    Path to Globus on the scheduler host],
+    REMOTE_GLOBUS_LOCATION=$withval,
+    REMOTE_GLOBUS_LOCATION=no)
+
+if test "$REMOTE_GLOBUS_LOCATION" = "no" -o "$REMOTE_GLOBUS_LOCATION" = "yes";
+then
+    AC_MSG_ERROR("Use --with-location=PATH to define GLOBUS_LOCATION on scheduler host")
+    AC_SUBST(REMOTE_GLOBUS_LOCATION)
+fi
+
+
+AC_ARG_WITH(manager,
+[  --with-manager=type     Type of scheduler on remote host],
+    REMOTE_JOB_MANAGER_TYPE=$withval,
+    REMOTE_JOB_MANAGER_TYPE=no)
+
+if test "$REMOTE_JOB_MANAGER_TYPE" = "no" -o "$REMOTE_JOB_MANAGER_TYPE" = "yes";
+then
+    AC_MSG_ERROR("Use --with-manager=TYPE to define the type of scheduler used on the scheduler host")
+    AC_SUBST(REMOTE_JOB_MANAGER_TYPE)
+fi
+prefix='$(GLOBUS_LOCATION)'
+exec_prefix='$(GLOBUS_LOCATION)'
+libexecdir=${prefix}/libexec
+
+AC_OUTPUT(
+  $GLOBUS_LOCATION/lib/perl/Globus/GRAM/JobManager/remote.pm:remote.in
+)

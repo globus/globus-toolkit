@@ -1,0 +1,11 @@
+prefix=$(GLOBUS_LOCATION)
+exec_prefix=$(GLOBUS_LOCATION)
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: xmlsec1-openssl
+Version: 1.4
+Description: XML Security Library implements XML Signature and XML Encryption standards
+Requires: libxml-2.0 >= @LIBXML_MIN_VERSION@ libxslt >= @LIBXSLT_MIN_VERSION@ 
+Cflags: -DXMLSEC_CRYPTO=\\\"openssl\\\"  -D__XMLSEC_FUNCTION__=__FUNCTION__ -DXMLSEC_NO_XSLT=1 -DXMLSEC_NO_XKMS=1 -I${prefix}/include/xmlsec1   -DXMLSEC_CRYPTO_OPENSSL=1
+Libs: -L${exec_prefix}/lib -lxmlsec1-openssl -lxmlsec1  -ldl  

@@ -1,0 +1,62 @@
+
+LibDependencies = \
+    Ws2_32.lib \
+    libeay32.lib \
+    ssleay32.lib \
+    libglobus_common_$(GLOBUS_FLAVOR_NAME).lib \
+    libglobus_openssl_$(GLOBUS_FLAVOR_NAME).lib \
+    libglobus_openssl_error_$(GLOBUS_FLAVOR_NAME).lib
+
+# Export Exclusions Found By Linker
+ExportExclusions = \
+    globus_gsi_sysconfig_check_certfile_unix \
+    globus_gsi_sysconfig_check_keyfile_unix \
+    globus_gsi_sysconfig_dir_exists_unix \
+    globus_gsi_sysconfig_file_exists_unix \
+    globus_gsi_sysconfig_get_authz_conf_filename_unix \
+    globus_gsi_sysconfig_get_ca_cert_files_unix \
+    globus_gsi_sysconfig_get_cert_dir_unix \
+    globus_gsi_sysconfig_get_current_working_dir_unix \
+    globus_gsi_sysconfig_get_gridmap_filename_unix \
+    globus_gsi_sysconfig_get_home_dir_unix \
+    globus_gsi_sysconfig_get_host_cert_filename_unix \
+    globus_gsi_sysconfig_get_proc_id_string_unix \
+    globus_gsi_sysconfig_get_proxy_filename_unix \
+    globus_gsi_sysconfig_get_service_cert_filename_unix \
+    globus_gsi_sysconfig_get_signing_policy_filename_unix \
+    globus_gsi_sysconfig_get_user_cert_filename_unix \
+    globus_gsi_sysconfig_get_user_id_string_unix \
+    globus_gsi_sysconfig_get_username_unix \
+    globus_gsi_sysconfig_is_superuser_unix \
+    globus_gsi_sysconfig_make_absolute_path_for_filename_unix \
+    globus_gsi_sysconfig_remove_all_owned_files_unix \
+    globus_gsi_sysconfig_set_key_permissions_unix \
+    globus_gsi_sysconfig_split_dir_and_filename_unix \
+    globus_gsi_sysconfig_get_authz_lib_conf_filename_unix \
+    globus_gsi_sysconfig_get_gaa_conf_filename_unix
+
+# Windows Only Exports
+WinExports = \
+    globus_gsi_sysconfig_check_certfile_win32 \
+    globus_gsi_sysconfig_check_keyfile_win32 \
+    globus_gsi_sysconfig_dir_exists_win32 \
+    globus_gsi_sysconfig_file_exists_win32 \
+    globus_gsi_sysconfig_get_authz_conf_filename_win32 \
+    globus_gsi_sysconfig_get_ca_cert_files_win32 \
+    globus_gsi_sysconfig_get_cert_dir_win32 \
+    globus_gsi_sysconfig_get_current_working_dir_win32 \
+    globus_gsi_sysconfig_get_gridmap_filename_win32 \
+    globus_gsi_sysconfig_get_home_dir_win32 \
+    globus_gsi_sysconfig_get_host_cert_filename_win32 \
+    globus_gsi_sysconfig_get_proc_id_string_win32 \
+    globus_gsi_sysconfig_get_proxy_filename_win32 \
+    globus_gsi_sysconfig_get_service_cert_filename_win32 \
+    globus_gsi_sysconfig_get_signing_policy_filename_win32 \
+    globus_gsi_sysconfig_get_user_cert_filename_win32 \
+    globus_gsi_sysconfig_get_user_id_string_win32 \
+    globus_gsi_sysconfig_get_username_win32 \
+    globus_gsi_sysconfig_is_superuser_win32 \
+    globus_gsi_sysconfig_make_absolute_path_for_filename_win32 \
+    globus_gsi_sysconfig_remove_all_owned_files_win32 \
+    globus_gsi_sysconfig_set_key_permissions_win32 \
+    globus_gsi_sysconfig_split_dir_and_filename_win32 

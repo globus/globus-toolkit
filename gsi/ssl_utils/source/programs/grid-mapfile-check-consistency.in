@@ -1,0 +1,175 @@
+#!/bin/sh
+#
+# grid-mapfile-check-consistency
+#
+
+if test -z "${GLOBUS_LOCATION}"; then
+    echo ""
+    echo "ERROR: Please set GLOBUS_LOCATION to the Globus installation directory before"
+    echo "running this script"
+    echo ""
+    exit 1
+fi
+
+. ${GLOBUS_LOCATION}/libexec/globus-script-initializer
+globus_source ${GLOBUS_LOCATION}/libexec/globus-sh-tools.sh
+
+PROGRAM_NAME=`echo $0 |${GLOBUS_SH_SED-sed} 's|.*/||g'`
+
+PROGRAM_VERSION=`echo '$Revision$'| ${GLOBUS_SH_SED-sed} -e 's|\\$||g' -e 's|Revision: \(.*\)|\1|'`
+
+VERSION="@VERSION@"
+
+PACKAGE="@PACKAGE@"
+
+DIRT_TIMESTAMP="@DIRT_TIMESTAMP@"
+DIRT_BRANCH_ID="@DIRT_BRANCH_ID@"
+
+short_usage="$PROGRAM_NAME [-help] [-mapfile FILE]"
+
+long_usage() {
+    ${GLOBUS_SH_CAT-cat} >&2 <<EOF
+
+${short_usage}
+
+    $PROGRAM_NAME checks the consistency of the Grid mapfile.
+
+    Options:
+      -help, -usage           Displays help
+      -version                Displays version
+      -mapfile FILE, -f FILE  Path of gridmap to be used
+
+EOF
+}
+
+globus_source $libexecdir/globus-args-parser-header $@
+
+##############################################
+
+secconfdir="/etc/grid-security"
+GRID_MAP_FILE=${secconfdir}/grid-mapfile
+ECHO_DRYRUN=:
+
+
+	# Parse command line arguments
+
+while [ -n "$1" ]; do
+    case "$1" in
+        -f | -mapfile )
+	    opt=$1
+	    shift
+	    GRID_MAP_FILE=$1
+	    shift
+	    ;;
+			
+        * )
+	    globus_args_unrecognized_option "$1"
+	    ;;
+    esac
+
+done
+
+
+#DONE - 1. Legal login names
+#2. comma seprated login name list
+#3. at least one login name
+#DONE - 4. duplicate entries
+#5. Each line contains some DN/Ln pair
+#DONE - 6. Check for minimum of C=, O=, and CN= fields
+
+
+    # Verify mapfile existance
+
+if [ ! -f $GRID_MAP_FILE ] ; then 
+    ${GLOBUS_SH_TOUCH-touch} $GRID_MAP_FILE
+    ${GLOBUS_SH_CHMOD-chmod} 644 $GRID_MAP_FILE
+else
+    if [ ! -r $GRID_MAP_FILE ] ; then
+        globus_args_option_error "$opt" "\"${GRID_MAP_FILE}\" is not readable."
+        exit 1
+    fi
+    
+    if [ ! -w $GRID_MAP_FILE ] ; then
+        globus_args_option_error "$opt" "\"${GRID_MAP_FILE}\" is not writeable."
+        exit 1
+    fi
+fi
+
+
+    # Check for duplicate entries
+
+duplicates=`${GLOBUS_SH_CAT-cat} $GRID_MAP_FILE | ${GLOBUS_SH_SORT-sort} | ${GLOBUS_SH_UNIQ-uniq} -d`
+if [ -n "$duplicates" ] ; then
+    echo "The following entry(s) is/are duplicated"
+    echo "$duplicates"
+fi
+
+
+    # Read Grid Map File for further processing
+
+while read line ;
+do
+
+    # Extract DN and LN fields
+
+    # Check for double quote delimitor
+    delim=`echo $line | cut -c1`
+    if [ "X$delim" = "X\"" ]; then
+        # DN is double quote delimited
+        
+        # Check for terminating double quote
+        term_check=`echo $line | cut -c2- | grep \"`
+        if [ -z "$term_check" ]; then
+            echo "The following entry is missing a closing double quote"
+            echo "$line"
+        fi
+
+        dn=`echo $line | cut -f2 -d\"`
+        remaining_line=`echo $line | cut -f3- -d\"`
+
+    else
+        # No double quote delimitor on DN
+        dn=`echo $line | ${GLOBUS_SH_SED-sed} -e 's/\([^	 ]*\)[	 ]*.*/\1/'`
+        remaining_line=`echo $line | ${GLOBUS_SH_SED-sed} -e 's/[^	 ]*[	 ]*//'`
+    fi
+
+    ln_string=`echo $remaining_line | ${GLOBUS_SH_SED-sed} -e 's/\([^	 ]*\)[	 ]*.*/\1/'`
+    remaining_line=`echo $remaining_line | ${GLOBUS_SH_SED-sed} -e 's/[^	 ]*[	 ]*//'`
+    ln_list=`echo $ln_string | ${GLOBUS_SH_SED-sed} -e 's/,/ /g'`
+
+    if [ -n "$remaining_line" ]; then
+      echo "The following entry has extra text at the end and may be malformed"
+      echo "$line"
+    fi
+
+    # Check for DN / LN pairs
+    # Not yet implemented
+
+    # Check for at least 1 login name
+    # Not yet implemented
+
+    # Check for existance of O=,CN= fields
+
+    check_fields=`echo $line | ${GLOBUS_SH_GREP-grep} "O=" | ${GLOBUS_SH_GREP-grep} "CN="`
+    if [ -z "$check_fields" ]
+    then
+        echo "The following entry is missing a O= or CN= field"
+        echo "$line"
+    fi
+
+
+        # Check for valid login names
+
+    for name in $ln_list ; do
+        ${libexecdir}/globus-is-local-user $name
+        if [ "$?" -eq 1 ] ; then
+            echo "The following entry contains an invalid login name"
+            echo "$line"
+            echo "The login name not found is: $name"
+        fi                
+    done
+
+done < $GRID_MAP_FILE
+
+exit 0
+

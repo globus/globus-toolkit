@@ -1,0 +1,4 @@
+name=globus_grim_exec
+subdir=program_execution/globus_grim/programs
+build="custom"
+output=globus_grim-*.tar.gz

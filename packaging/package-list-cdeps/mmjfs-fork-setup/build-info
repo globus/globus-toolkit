@@ -1,0 +1,4 @@
+name=mmjfs_fork_setup
+subdir=program_execution/mmjfs-fork-setup
+build="custom"
+output=mmjfs_fork_setup-*.tar.gz

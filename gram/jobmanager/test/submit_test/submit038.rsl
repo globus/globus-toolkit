@@ -1,0 +1,4 @@
+&(executable = $(GLOBUS_LOCATION) # "/bin/globus-sh-exec")
+ (environment = (GLOBUSRUN_GASS_URL $(GLOBUSRUN_GASS_URL)))
+ (remote_io_url = $(GLOBUSRUN_GASS_URL))
+ (arguments  = -e '$GLOBUS_SH_PERL -e ''open(FILE, "<" . $ENV{GLOBUS_REMOTE_IO_URL}); chomp($data = <FILE>); if($data eq $ENV{GLOBUSRUN_GASS_URL}) { print "1\n"; } else { print "0\n"; }''')

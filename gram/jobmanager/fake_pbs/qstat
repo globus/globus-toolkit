@@ -1,0 +1,125 @@
+#! /bin/sh
+
+hostname=$HOSTNAME
+my_username=`id -u -n`
+my_data_file="$HOME/.globus/uhe-$hostname/fake_qsub_data"
+
+if test -r $my_data_file; then
+    job_list=`cat $my_data_file`
+fi
+
+#=====================================
+fake_pbsnodes () {
+cat <<EOF
+dg0n2
+     state = down
+     np = 2
+     ntype = cluster
+     jobs = 1/28013.dg0cm.mcs.anl.gov
+
+dg0n2
+     state = down,job-exclusive
+     np = 2
+     ntype = cluster
+     jobs = 0/28010.dg0cm.mcs.anl.gov, 1/28011.dg0cm.mcs.anl.gov
+
+dg0n3
+     state = free
+     np = 1
+     ntype = cluster
+
+dg0n4
+     state = free
+     np = 2
+     ntype = cluster
+
+dg0n5
+     state = free
+     np = 2
+     ntype = cluster
+EOF
+} #====================================
+
+#=====================================
+fake_qstat_q () {
+
+echo "server: ${hostname}"
+cat <<EOF
+
+Queue            Memory CPU Time Walltime Node Run Que Lm  State
+---------------- ------ -------- -------- ---- --- --- --  -----
+default            --      --       --     --    5   0 10   E R
+${my_username}          --      --       --     --    0   0 --   E R
+                                               --- ---
+                                                 5   0
+EOF
+
+} #====================================
+
+#=====================================
+fake_qstat_a () {
+
+echo ""
+echo "${hostname}:"
+cat <<EOF
+                                                            Req'd  Req'd   Elap
+Job ID          Username Queue    Jobname    SessID NDS TSK Memory Time  S Time
+--------------- -------- -------- ---------- ------ --- --- ------ ----- - -----
+EOF
+
+outputline="${my_username}  default  STDIN  1184   1  --    --  25:00 E 01:37"
+
+#y=0
+#while [ $y -lt $job_list ] ; do
+for job_id in ${job_list} ; do
+   echo "${job_id} ${outputline}"
+   #y=`expr $y + 1`
+done
+
+} #====================================
+
+#=====================================
+fake_qstat_f () {
+
+job_id=$1
+
+for some_job_id in ${job_list} ; do
+
+    if [ ${some_job_id} = ${job_id} ]; then
+
+cat <<EOF
+	Job Id: ${job_id}
+	Job_Name = pbs_job
+	Job_Owner = ${my_username}@dg0n20.mcs.anl.gov
+	job_state = R
+EOF
+
+exit 0
+
+    fi
+
+done
+
+echo "Unknown job Id $2" 1>&2
+exit 153
+
+} #====================================
+
+#=====================================
+#MAIN
+#=====================================
+if [ $# -gt 0 ]; then
+    if [ $1 = "-x" ] ; then
+      fake_pbsnodes
+    elif [ $1 = "-q" ] ; then
+      fake_qstat_q
+    elif [ $1 = "-a" ] ; then
+      fake_qstat_a
+    elif [ $1 = "-f" ]; then
+      fake_qstat_f $2
+    else
+      echo "bad argument: first arg must be -x -q or -a"
+    fi
+else
+      echo "bad argument: first arg must be -x -q or -a"
+fi

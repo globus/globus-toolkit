@@ -1,0 +1,25 @@
+#
+# ftpservers file:
+# 
+# Format of the file is:
+#    ipaddr/hostname   directory-containing-configuration-files
+#
+#    10.196.145.10   /etc/ftpd/ftpaccess.somedomain/
+#    10.196.145.200  /etc/ftpd/ftpaccess.someotherdomain/
+#    some.domain      INTERNAL
+# 
+# The server parses the file and tries to match the IP address connected
+# to one found in the ftpservers file.  If a match is found then the path
+# to the specified directory that contains the configuration files
+# for that specific domain is returned.  If a match is not found, or 
+# an invalid directory path is encountered like above, default 
+# paths to the configuration files to use are returned.
+#
+# You can use the actual IP address or a specific hostname.
+#
+#    10.196.145.20 	/etc/ftpd/config/faqs.org/
+#    ftp.some.domain 	/etc/ftpd/config/faqs.org/
+#
+# As usual, comments and blanklines are ignored.
+#
+####

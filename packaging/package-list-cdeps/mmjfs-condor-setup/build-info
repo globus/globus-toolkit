@@ -1,0 +1,4 @@
+name=mmjfs_condor_setup
+subdir=program_execution/mmjfs-condor-setup
+build="custom"
+output=mmjfs_condor_setup-*.tar.gz

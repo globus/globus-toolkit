@@ -1,0 +1,344 @@
+The following individuals and organizations have contributed, directly or
+indirectly to the development of WU-FTPD.
+
+While attempts were made to be as complete as possible, it is inevitable
+that some contributors have been omitted.  For that, please accept our
+humble appologies.
+
+Please remember, when reading through this list, that email addresses
+change.  Some shown below will be in excess of ten years old.  It is
+unlikely all the addresses shown below are deliverable.  Under no
+circustances should you attempt to contact these individuals.  Any email
+concerning the WU-FTPD daemon should be addressed to
+wuftpd-questions@wu-ftpd.org.
+
+100326.567@CompuServe.COM
+aaron@onr.com
+abe@vic.cc.purdue.edu
+ache@nagual.pp.ru (Andrey A. Chernov)
+achurch@dragonfire.net (Andy Church)
+ae@is.dal.ca
+ai@vsu.ru (Andy Igoshin)
+ajudge@maths.tcd.ie
+alain.magloire@rcsm.ee.mcgill.ca (Alain Magloire)
+alann@ihs.com (Alan Neiman)
+Albert-Lunde@nwu.edu (Albert Lunde)
+alden@math.ohio-state.edu
+alexis@dawn.ww.net
+amoss@cs.huji.ac.il
+Anders.X.Thulin@telia.se
+andras@is.co.za (Andras Salamon)
+antonio@ifi.unizh.ch
+archive-admins@uunet.uu.net (UUNET Technologies)
+are@communique.no (Are Bryne)
+aris@ccs.neu.edu (Aris Yannopoulos)
+auscert@auscert.org.au (AUSCERT)
+awyskow@uswest.com (Alan Wyskowski)
+ayamura@ayamura.org (Ayamura Kikuchi)
+babina@pex.net
+bartm@cv.ruu.nl (Bart Muyzer)
+bat@xdiv.lanl.gov
+beckers@josephus.furph.com (Becki Kain)
+beck@ugrad.cs.ualberta.ca (Bob Beck)
+bergman@hercules.PHRI.NYU.EDU (Mark Bergman)
+ (Berkeley Software Design, Inc.)
+bero@redhat.com (Bernhard Rosenkraenzer)
+b.g.leighfield@blcmp.org.uk
+bill@netagw.com (Bill Aten)
+bjkramer@pluto.njcc.com (Brian Kramer)
+blayne@geom.umn.edu (Blayne Puklich)
+bob@ti.com (Bob Luckin)
+bozy@fiona.com.cy
+bret@rehost.com (Bret McDanel)
+bristgt@haven.msfc.nasa.gov (Tom Brister)
+brmeijer@worldonline.nl (Bas Meijer)
+brown@ftms.COM (Vidiot)
+bryan@fegmania.wustl.edu (Bryan D. O'Connor)
+c15o@zfn.uni-bremen.de
+canuck@caam.rice.edu (Mike Pearlman)
+carrier@ced.berkeley.edu (Stephen P. Carrier)
+cert@cert.org (CERT Coordination Center)
+cfuga@colossus.rhon.itam.mx
+chrisb@siggy.iceonline.com (Chris Brown)
+Christer.Holgersson@UMDAC.UmU.SE (Christer Holgersson)
+christos@zoulas.com (Christos Zoulas)
+chris@westnet.com
+chris@wugate.wustl.edu (Chris Myers)
+cj10@cam.ac.uk (C.J. Jardine)
+cky@bryanadams.ml.org (Chris K. Young)
+claude@infobiogen.fr
+cmyers@kiski.net (Chris Myers)
+corrigan@ucsd.edu
+cprice@molbio.unmc.edu (Chad Price)
+crosser@average.org
+daleg@orion.digex.net (Dale Ghent)
+ (Dan Thorson)
+dangona@nist.gov (Steve D'Angona)
+datta@cs.uwp.edu (Dave Datta)
+David.Capshaw@SEMATECH.Org (David Capshaw)
+davidp@cableol.net (David Pesticcio)
+dbaker@jeep.ops.neosoft.com (Daniel Baker)
+Debbie.Pomerance@mail.house.gov (Debbie Pomerance)
+dewitt@williams.edu (DeWitt Clinton)
+dg@root.com
+dg@ulysium.net
+distler@golem.ph.utexas.edu (Jacques Distler)
+dlq@mail.RATH.PeachNet.EDU (David Quarterman)
+drl@vuse.vanderbilt.edu (David R. Linn)
+dsf@frontiernet.net
+duncan@MCS.VUW.AC.NZ (Duncan McEwan)
+dupuis@lei.ucl.ac.be (Pascal A. Dupuis)
+eduard.vopicka@vse.cs (Eduard Vopicka)
+eiji@papanui.ddt.or.jp (Eiji Kuramoto)
+eilon@aristo.tau.ac.il (Eilon Gishri)
+e.j.r.leyssens@student.utwente.nl (Eli-Jean Leyssens)
+emil.isberg@mds.mdh.se (Emil Isberg)
+ener@firehouse.net
+enout@eurecom.fr (Alain ENOUT)
+eric@sendmail.org (Eric P. Allman)
+ernestm@mindspring.com (Ernest Mueller)
+evanc@synapse.net (Evan Champion)
+explorer@iastate.edu
+facq@U-Bordeaux.FR (Laurent FACQ)
+fangchin@azc.com (Chin Fang)
+fcusack@iconnet.net (Frank Cusack)
+felicity@kluge.net (Theo Van Dinter)
+fishbowl@netcomi.com
+flaps@dgp.toronto.edu (Alan J Rosenthal)
+fmouse@fmp.com
+frank@Kirk.NetUnlimited.net (Frank Mogaddedi)
+ (Free Software Foundation, Inc.)
+fxa@boombox.micro.umn.edu (Farhad Anklesaria)
+gafton@redhat.com (Cristian Gafton)
+GBaysing@HiWAAY.net (Geoff Baysinger)
+ghelmer@dsuvax.dsu.edu
+gilles_ciselet@be.ibm.com
+gjermund@nextel.no (Gjermund Sxrseth)
+glenn@cs.hmc.edu (Glenn Matthew Gebhart)
+glenn@more.net (Glenn Nielsen)
+greg@ceylon.ragnet.com (Greg)
+greg@waughs.com (Greg Waugh)
+gruner@informatik.tu-muenchen.de
+gryphon@healer.com (Coranth Gryphon)
+guenther@ira.uka.de
+gunnar@bitcon.no (Gunnar Helliesen)
+gustavo@movicom.movi.com.ar (Gustavo Zacarias)
+gwynp@artware.qc.ca (Philip Gwyn)
+handley@admin.microserve.net (Mike Handley)
+helm@fionn.es.net (Michael Helm)
+hilgert@powerpc.lion.de (Thomas Hilgert)
+hmarson@ibm.net (Hamish N Marson)
+hobbit@AVIAN.ORG (Al Walker)
+hogden@rge.com (Brett M Hogden)
+ianw@sco.com (Ian Willis)
+I.A.Saez.Scheihing@urc.tue.nl
+icculus@visi.net
+ioresult@usa.net (P. Kearney III)
+isf55@tid.es
+ (J. Zawinski)
+ (Jaakko Hyvatti)
+james@corp.netcom.net.uk
+james@tiger.hcht.edu.tw (Chun-Hsiung Chiu)
+jbf@schubert.telepac.pt
+ (Jeff Laing)
+jeff@onion.rain.com
+jfw@jfwhome.funhouse.com (John F. Woods)
+jgross@uiuc.edu (Joe Gross)
+jieff@odie.mcom.fr (Jean-Francois Monnet)
+Jim_Marnell@cca-int.com
+Jim.Stosick@Forsythe.Stanford.EDU (Jim Stosick)
+jlewis@inorganic5.fdt.net (Jon Lewis)
+jms@uic.edu (John Schulien)
+joge@stud.ntnu.no (Geir Johannessen)
+john.ladwig@soils.umn.edu
+john@nexnix.co.uk (John Marshall)
+jose@haulpak.com (Jose Santiago)
+joshua@ednet.co.uk (Joshua Goodall)
+jos@xos.nl (Jos Vos)
+jpr5@netect.com (Jordan Ritter)
+jwhite@codeweavers.com (Jeremy White)
+JWHITFIELD@wwcc.cc.wy.us
+karl@hci.national-physical-lab.co.uk
+kaspar@soften.ktu.lt (Aidas Kasparas)
+kazuhiko@mars.club.or.jp (Wakui Kazuhiko)
+ (kazushi Marukawa)
+kdb@unx.sas.com
+keller@bfg.com (Ted Keller)
+kent@landfield.com (Kent Landfield)
+kero@elite.watt.rhno.columbia.edu (Ueber Sheep)
+kir@rus.net
+klmitch@MIT.EDU (Kevin L. Mitchell)
+komine@cc.meisei-u.ac.jp (Kazuyoshi Komine)
+koos@kzdoos.xs4all.nl (Koos van den Hout)
+kroz@cs.columbia.edu (Fred Korz)
+kshipley@jh-kvi.com (Kirk Shipley)
+kuersch@ita.uni-heidelberg.de (Rainer Kuerschner)
+lamont@cranston.fc.hp.com (LaMont Jones)
+lamont@security.hp.com
+Laurent.Ghys@ircam.fr (Laurent Ghys)
+leavitt@webcom.com
+leif@imho.net (Leif Ericksen)
+lenny@icus.com
+libove@felines.org (Jay Vassos-Libove)
+lmjm@icparc.ic.ac.uk (Lee McLoughlin)
+logic@shell.break.com.au
+Luc.Beurton@fnet.fr (Luc Beurton)
+luc@scylla.math.mcgill.ca (Luc Lalonde)
+lundberg@vr.net (Gregory A Lundberg)
+luomat@peak.org (Timothy J. Luoma)
+mahadi@mtk.kpm.my
+Marc.Baudoin@hsc.fr.net (Marc Baudoin)
+Marc.Baudoin@solsoft.com (Marc Baudoin)
+marcs@znep.com (Marc Slemko)
+marc@www.destek.net (Marc Evans)
+marekm@i17linuxb.ists.pwr.wroc.pl (Marek Michalkiewicz)
+ (Mark Galbraith)
+marta@mdp.edu.ar (Marta Ferreyra)
+ (Massachusetts Institute of Technology)
+mats.petersson@mbox301.swipnet.se
+matt.soffen@beasys.com (Matt Soffen)
+mau@ipifidpt.difi.unipi.it
+maw@paradigm.co.za
+mbrennen@fni.com (Michael Brennen)
+mcb@compaq.com
+mcbride@gdwest.gd.com
+mdavis@cts.com
+mding@hcia.com
+metcalf@cag.lcs.mit.edu (Chris Metcalf)
+mhpower@mit.edu (Matt Power)
+michael@ra.TSS.PeachNet.EDU
+migi@zuo.dec.com (Miguel Mena)
+mike@atlas.physchem.chemie.uni-tuebingen.de
+mikedoug@texas.net
+mjl@squid.jpl.nasa.gov (Mark Lysek)
+mjo@fmsrl7.srl.ford.com (Mike J. O'Connor)
+mmclagan@invlogic.com (Mike McLagan)
+mr@cica.indiana.edu (Mike Regoli)
+mrichard@mtt.ca (Maurice Richard)
+mschmidt@Fh-Koblenz.DE (Michael Schmidt)
+muewi@Informatik.Uni-Bremen.DE (Wilhelm Mueller)
+myers@umich.edu (Eric Myers)
+nagasima@sdd.siznes.nec.co.jp (Syunji NAGASIMA)
+neighorn@quatloo.scn.rain.com (Steven C Neighorn)
+nick@null.net (Nicholas Crawford)
+nik@acs.bu.edu (Nik Conwell)
+nikm@cyberflunk.com (Nikos Mouat)
+nmm1@cus.cam.ac.uk (Nick Maclaren)
+nneul@umr.edu (Nathan Neulinger)
+noid@cyborg.larc.nasa.gov
+nrjw@chevron.com
+ofer@stat.Berkeley.EDU (Ofer Licht)
+okir@caldera.de (Olaf Kirch)
+Ole.H.Nielsen@fysik.dtu.dk (Ole Holm Nielsen)
+oliver@billix.franken.de (Oliver Billmann)
+oneill@cs.uml.edu (Brian O'Neill)
+palmieri@quadrix.com (Thomas Palmieri)
+paulf@aphrodite.com (Paul Forgey)
+paul@obs.net (Paul Whittenburg)
+pauls@locust.etext.org (Paul Southworth)
+pb@techno.org (Patrik Backstrom)
+perf@efd.lth.se
+perrot@francenet.fr (Gildas Perrot)
+perry@news.IAEhv.nl
+Peter.Newman@hcn.net.au (Peter Newman)
+pguyot@cvf.fr
+phil@cgrg.ohio-state.edu (Phil Ritzenthaler)
+philip@intercon.com (Philip Kearney III)
+Philippe.Langlois@INTRINsec.com (Philippe Langlois)
+philipp@enteka.com
+pi@aztec.co.za (Pieter Immelman)
+Piete.Brooks@cl.cam.ac.uk (Piete Brooks)
+pkern@utcc.utoronto.ca (P Kern)
+prb@bsdi.com (Paul Borman)
+pschwan@cmu.edu (Phil Schwan)
+rah@lynx.lz.att.com (Roger Hanke)
+ra@hp.is (Richard Allen)
+rand@aero.und.nodak.edu
+randall.blahut@langley.af.mil (Randy Blahut)
+rfg@segfault.monkeys.com
+rh@idle.trapdoor.vip.at (Rene Hexel)
+ric@Artisoft.COM
+richard@atheist.tamu.edu
+richard@swansong.stg.brown.edu
+richmond@k2.llnl.gov (George H Richmond)
+rich@Rice.edu
+rkw@creek.bsd.att.com (Roger K. Winters)
+robin@is.co.za
+rob@mainstream-tech.com (Rob Nichols)
+rodrigo@dc.ufscar.br (Rodrigo Costa Colossi)
+rog@therion.lamc.utexas.edu
+ronald@demon.net
+root@anubis.science.unitn.it (Valter Cavecchia)
+root@cwo.com (Jorg Bielak)
+root@internexus.net
+root@kirk.vossnet.de
+root@startrek.in-trier.de
+root@univ.uniyar.ac.ru (Alexander)
+rosc@fbn.dandy.net (Roscinante)
+rosen@eosdata.gsfc.nasa.gov (Wayne Rosen)
+roy@atlantic.net (Jonathan Roy)
+rparry@hydrolab.arsusda.gov (Rob Parry)
+rse@engelschall.com (Ralf S. Engelschall)
+rsw@Glue.umd.edu (Randall S. Winchester)
+samkaski@cs.helsinki.fi (Samuli Kaski)
+sblair@dell.com
+schoepf@uni-mainz.de
+schultz@science.widener.edu (Marty Schultz)
+scott@galileo.cuug.ab.ca
+scott_mackay@mail.rte.com
+Scott.Parmenter@trw.com (Scott Parmenter)
+scrappy@ki.net (Marc G. Fournier)
+security@kinch.ark.com
+semdmail@sendmail.com (Sendmail, Inc.)
+serge@genesyslab.com (Sergey Zhuk)
+sgarrett@technomancer.com
+shadow@johnstown.andrew.cmu.edu (Derrick J. Brashear)
+shibata@isc.chubu.ac.jp (Shoichi Shibata)
+shingo@fla.fujitsu.com (Shingo Fujimoto)
+sinder@thp.Uni-Koeln.DE
+s-isoda@ricelabo.com (Shigeharu Isoda)
+sob@academ.com (Stan Olan Barber)
+sohos@enviro-eng.com
+Speier.Guy@cnf.com (Guy J Speier)
+sr@inri.com
+staikos@0wned.org (George Staikos)
+stanonik@nprdc.navy.mil
+stevecs@chaven.com (Stephen Costaras)
+steve@sccsi.com
+stpiera@awl.com (Aaron St. Pierre)
+sullivan@odysseus.gonzaga.pvt.k12.dc.us
+suse@wavenet.it (Simone Castellaneta)
+swcxt@boco.co.gov
+sxk13@psu.edu
+sylvain@nasirc.hq.nasa.gov (Greg Sylvain)
+tchrist@jhereg.perl.com
+thianlengvictor.tan@bnpgroup.com
+thogard@not.abnormal.com
+tin@smsc.sony.com
+tkevans@eplrx7.es.dupont.com (Tim Evans)
+torben.leifsen@astro.uio.no
+trosmus@nwnexus.net (Tim Rosmus)
+tsurmacz@ict.pwr.wroc.pl (Tomasz R. Surmacz)
+ttsg@ttsg.com (Scott J Ellentuch)
+tundra@nnenews.com
+tyw@deltanet.com (T.Y. Wu)
+ (University of California, Berkeley and its contributors)
+urishe@mail.inter.net.il (Uri)
+vic@perceptive.net (Vic Summerour)
+viljar@ats.cyber.ee (Viljar Tulit)
+vmsapiro@tigr.org (Vadim M. Sapiro)
+vogel@physik.unizh.ch (Stefan Vogel)
+volker@Illuminatus.MZ.Rhein-Main.DE (Volker Schmidt)
+wally.winzer@ChampUSA.COM (Auteria Wally Winzer Jr)
+ (Washington University in Saint Louis and its contributors)
+wfp5p@tigger.itc.virginia.edu (Bill Pemberton)
+whatis@yyz.com (Steven Boswell)
+whitakek@baileys-emh5.army.mil (Kenneth Whitaker)
+whn@topelo.lopi.com
+wls@astro.umd.edu
+Wolfram.Schmidt@iao.fhg.de (Wolfram Schmidt)
+wymanm@is.rice.edu (Wyman Eric Miles)
+x920031@rubb.rz.ruhr-uni-bochum.de
+yjh@styx.cabel.net (Iouri Kharon)
+y-koga@ccs.mt.nec.co.jp (Koga Youichirou)
+yua@artlover.com (Alex Yu)

@@ -1,0 +1,2 @@
+(* GLOBUS_GRAM_PROTOCOL_ERROR_UNDEFINED_EXE *)
+&(arguments=hello)(stdout=output)

@@ -1,0 +1,4 @@
+name=mmjfs_pbs_setup
+subdir=program_execution/mmjfs-pbs-setup
+build="custom"
+output=mmjfs_pbs_setup-*.tar.gz

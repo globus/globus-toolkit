@@ -1,0 +1,86 @@
+#! /usr/bin/env perl
+
+BEGIN { push(@INC, $ENV{GLOBUS_LOCATION} . "/lib/perl"); }
+
+use strict;
+use Test::Harness;
+use Cwd;
+use Globus::Core::Paths;
+
+require 5.005;
+use vars qw(@tests);
+$|=1;
+
+my $globus_location = $ENV{GLOBUS_LOCATION};
+my $contact;
+my $test_result=1;
+my $kill_gatekeeper=0;
+
+@tests = qw(
+    globus-gram-client-activate-test.pl
+    globus-gram-client-callback-contact-test.pl
+    globus-gram-client-cancel-test.pl
+    globus-gram-client-nonblocking-register-test.pl
+    globus-gram-client-refresh-credentials-test.pl
+    globus-gram-client-register-test.pl
+    globus-gram-client-register-callback-test.pl
+    globus-gram-client-register-cancel-test.pl
+    globus-gram-client-ping-test.pl
+    globus-gram-client-status-test.pl
+    globus-gram-client-stop-manager-test.pl
+    globus-gram-client-two-phase-commit-test.pl
+    globus-gram-client-register-ping-test.pl
+    globus-gram-client-stdio-size-test.pl
+);
+
+chdir "$globus_location/test/@PACKAGE@";
+$ENV{PATH} .= ":$globus_location/test/@PACKAGE@";
+
+if(0 != system("grid-proxy-info -exists -hours 2 2>/dev/null") / 255)
+{
+    $ENV{X509_CERT_DIR} = cwd();
+    $ENV{X509_USER_PROXY} = "testcred.pem";
+    system('chmod go-rw testcred.pem'); 
+}
+
+if(exists($ENV{CONTACT_STRING}))
+{
+    print "Using gatekeeper at " . $ENV{CONTACT_STRING} . "\n";
+    $kill_gatekeeper = 0;
+}
+else
+{
+    my $personal_gatekeeper = $Globus::Core::Paths::bindir
+                            . "/globus-personal-gatekeeper";
+
+    system("$personal_gatekeeper -killall >/dev/null 2>&1");
+    system("$personal_gatekeeper -start -log never >/dev/null 2>&1");
+    chomp($contact = `$personal_gatekeeper -list`);
+    if($? != 0)
+    {
+	print "Could not start gatekeeper\n";
+	exit 1;
+    }
+    $ENV{CONTACT_STRING} = $contact;
+    $kill_gatekeeper = 1;
+}
+
+$test_result = eval { runtests(@tests) };
+if(!defined($test_result))
+{
+    print $@;
+    $test_result=1;
+}
+else
+{
+    $test_result=0;
+}
+
+
+sub END {
+    if($kill_gatekeeper)
+    {
+	system("globus-personal-gatekeeper -kill \"$contact\" >/dev/null 2>&1");
+    }
+    exit $test_result;
+}

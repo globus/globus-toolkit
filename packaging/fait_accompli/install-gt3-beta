@@ -1,0 +1,116 @@
+#!/bin/sh
+
+if [ x$1 = "x" ]; then
+	echo $0: Usage: $0 install-directory
+	exit;
+fi
+
+mkdir -p $1
+if [ $? -ne 0 ]; then
+	echo Unable to make directory $1.  Exiting.
+	exit
+fi
+
+ant -h > /dev/null
+if [ $? -ne 0 ]; then
+	echo You need a working version of ant.
+	ant -h
+	exit
+fi
+	
+echo Build environment:
+type ant
+type java
+type gcc
+echo
+
+MYDIR=`pwd`
+
+cd $1
+
+INSDIR=`pwd`
+GPT_LOCATION="$INSDIR"
+GLOBUS_LOCATION="$INSDIR"
+GT3_LOCATION="$INSDIR"
+GPT_BUILD="$GPT_LOCATION"/sbin/gpt-build
+GPT_INSTALL="$GPT_LOCATION"/sbin/gpt-install
+
+cd $MYDIR
+
+export GPT_LOCATION GLOBUS_LOCATION GT3_LOCATION
+
+case "`uname`" in
+   HP-UX)
+	FLAVOR=vendorcc32dbg
+	;;
+   OSF1)
+	FLAVOR=vendorcc64dbg
+	;;
+   *)
+	FLAVOR=gcc32dbg
+	;;
+esac
+
+THREAD=pthr
+
+echo Building GPT ...
+gzip -dc gpt-2.2.9-src.tar.gz | tar xf -
+
+cd gpt-2.2.9
+./build_gpt
+cd ..
+
+if [ -d BUILD ]; then
+	rm -fr BUILD
+fi
+
+$GPT_BUILD gt3-all-src-1.0-src_bundle.tar.gz $FLAVOR
+
+$GPT_INSTALL globus-all-2.4.0-i686-pc-linux-gnu-bin.tar.gz
+$GPT_INSTALL gssapi_error*
+$GPT_BUILD ogsa_cbindings_src_bundle_src.tar.gz $FLAVOR
+$GPT_BUILD ogsa_client_findServiceData-0.1.tar.gz $FLAVOR
+$GPT_LOCATION/sbin/gpt-postinstall
+
+#$GPT_BUILD globus-data-management-client-2.4.0-src_bundle.tar.gz $FLAVOR
+#$GPT_BUILD globus-data-management-sdk-2.4.0-src_bundle.tar.gz $FLAVOR
+#$GPT_BUILD globus-data-management-server-2.4.0-src_bundle.tar.gz $FLAVOR
+
+$GPT_BUILD -force globus_proxy_wrapper-1.0.tar.gz
+$GPT_BUILD gt3_hostinfo-1.0.tar.gz $FLAVOR
+
+$GPT_BUILD globus_libxml2-0.2.tar.gz gcc32dbg
+
+$GPT_BUILD -force -static globus_grim_devel-0.2.tar.gz $FLAVOR
+$GPT_BUILD -force -static globus_grim-0.1.tar.gz $FLAVOR
+$GPT_BUILD *_setup-0.0.tar.gz
+
+
+#$GPT_BUILD globus-information-services-client-2.4.0-src_bundle.tar.gz ${FLAVOR}${THREAD}
+
+#if [ $? -ne 0 ]; then
+	#echo An information services bundle failed to build.
+	#echo Check for gcc version 3.2
+	#echo See http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=488
+#fi
+
+#$GPT_BUILD globus-information-services-sdk-2.4.0-src_bundle.tar.gz ${FLAVOR}${THREAD}
+#$GPT_BUILD globus-information-services-server-2.4.0-src_bundle.tar.gz ${FLAVOR}${THREAD}
+#$GPT_BUILD globus-resource-management-client-2.4.0-src_bundle.tar.gz $FLAVOR
+#$GPT_BUILD globus-resource-management-sdk-2.4.0-src_bundle.tar.gz $FLAVOR
+#$GPT_BUILD globus-resource-management-server-2.4.0-src_bundle.tar.gz $FLAVOR
+
+
+if [ x$GLOBUS_IODBC_PATH = "x" ]; then
+	echo GLOBUS_IODBC_PATH not set, skipping RLS build.
+else
+	$GPT_BUILD globus_rls_server-2.0.7.tar.gz $FLAVOR
+	$GPT_BUILD globus_rls_server_setup-2.0.7.tar.gz $FLAVOR
+fi
+
+
+mkdir -p $1/contrib
+(cp OGSI.NET.zip $1/contrib; cd $1/contrib; unzip OGSI.NET.zip)
+
+$GPT_LOCATION/sbin/gpt-postinstall
+$GLOBUS_LOCATION/setup/globus/setup-mmjfs-fork

@@ -1,0 +1,142 @@
+#! @SH@
+
+if test -z "${GLOBUS_LOCATION}"; then
+    echo ""
+    echo "ERROR: Please set GLOBUS_LOCATION to the Globus installation directory before"
+    echo "running this script"
+    echo ""
+    exit 1
+fi
+
+. ${GLOBUS_LOCATION}/libexec/globus-script-initializer
+
+#
+# Should this go into the initializer:
+#
+
+secconfdir=${TRUSTED_CA_DIR-/etc/grid-security/certificates/}
+
+
+trap '${GLOBUS_SH_RM-rm} -f ${TEMP_FILE1} ' 0
+PROGRAM_NAME=`echo $0 | ${GLOBUS_SH_SED-sed} -e 's|.*/||g'`
+
+# The file we are modifying
+security_conf_file=${secconfdir}/grid-security.conf.__CACERT_HASH__
+
+# get the initial values from the grid-security.conf script
+. ${security_conf_file}
+
+_GSI_HOST_BASE_DN="${GSI_HOST_BASE_DN}"
+_GSI_USER_BASE_DN="${GSI_USER_BASE_DN}"
+_GSI_CA_NAME="${GSI_CA_NAME}"
+_GSI_CA_EMAIL_ADDR="${GSI_CA_EMAIL_ADDR}"
+
+
+
+#################################################################
+#
+# File: grid-security-config
+#
+# Purpose: This script updates the grid-security.conf file with
+#          the appropriate site-specific variables
+#
+#################################################################
+TEMP_FILE1=${tmpdir}/grid-security-config_1.$$
+
+help() {
+
+${GLOBUS_SH_MORE-cat} << EOF
+    
+   G S I   :   C O N F I G U R A T I O N   P R O C E D U R E 
+
+
+Before you use the Grid Security Infrastructure, you should first
+define the DN (distinguished name) that should be used for your
+organization's X509 certificates.  If you do not define a DN,
+a default DN will be assigned to you.
+
+This script will ask some questions about site specific
+information. This information is used to configure
+the Grid Security Infrastructure for your site. 
+
+For some questions, a default response is given in [].
+Pressing RETURN in response to such a question will enable the default.
+This script will overwrite the file --
+
+     ${security_conf_file}
+
+
+EOF
+
+    return
+}
+
+
+field () {
+   if [ "${GLOBUS_SH_CUT-cut}" != "" ]
+   then
+         ${GLOBUS_SH_CUT-cut} -d" " -f$1 
+   fi
+ }
+
+get_user_dn() {
+    echo "Enter the Base Distinguish Name (DN) for user certificates [ ${_GSI_USER_BASE_DN} ] :"
+    read _GSI_USER_BASE_DN
+}
+
+get_host_dn() {
+    echo "Enter the Base Distinguish Name (DN) for host certificates [ ${_GSI_HOST_BASE_DN} ] :"
+    read _GSI_HOST_BASE_DN
+
+}
+
+env_replace () {
+   _env="$1"
+   eval _value="\$_${_env}"
+
+   ${GLOBUS_SH_SED-sed} -e "s/^SETUP_${_env}=.*/SETUP_${_env}=\"$_value\"/"
+}
+
+
+save_settings() {
+
+    cat ${security_conf_file}      |\
+    env_replace GSI_HOST_BASE_DN   |\
+    env_replace GSI_USER_BASE_DN   |\
+    env_replace GSI_CA_NAME        |\
+    env_replace GSI_CA_EMAIL_ADDR  >${TEMP_FILE1}
+
+    if [ -w ${security_conf_file} ] ; then 
+      ${GLOBUS_SH_CP-cp} ${TEMP_FILE1} ${security_conf_file}
+      ${GLOBUS_SH_CHMOD-chmod} 644 ${security_conf_file}
+    else
+      ${GLOBUS_SH_PRINTF-printf} "You don't have sufficient privileges"
+    fi
+    ${GLOBUS_SH_RM-rm} -f ${TEMP_FILE1}
+}
+
+continue_with_return () {
+  ${GLOBUS_SH_PRINTF-printf}  "Continue with RETURN"
+  read ans
+}
+
+
+error () {
+  echo ERROR: $1
+  continue_with_return 
+}
+
+warning () {
+  echo WARNING: $1
+  continue_with_return 
+}
+
+##############################################################################
+# 
+# main
+#
+
+save_settings
+${exec_prefix}/setup/globus_simple_ca___CACERT_HASH___setup/grid-cert-request-config
+
+exit
