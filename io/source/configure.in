@@ -20,11 +20,19 @@ AC_CHECK_HEADERS(sys/select.h)
 AC_CHECK_HEADERS(string.h)
 AC_CHECK_HEADERS(dce/cma_ux.h)
 
+LAC_DOXYGEN(["Globus IO"],
+	    ["../library"],
+	    ["./doc/doxygen"])
+
+
 AC_OUTPUT(
 	Makefile
 	pkgdata/Makefile
 	pkgdata/pkg_data_src.gpt
 	library/Makefile
+	doxygen/Makefile
+	doxygen/Doxyfile 
+	doxygen/Doxyfile-internal
 	,
 	$GPT_LOCATION/sbin/gpt_generate_bin_pkg_data \
 	--flavor=$GLOBUS_FLAVOR_NAME "./pkgdata/pkg_data_src.gpt"
