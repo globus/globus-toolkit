@@ -7,6 +7,9 @@ Sources= \
 	globus_i18n.c \
 	globus_i18n.h
 
+bin_SCRIPTS= \
+	 globus-i18n-resource-create
+
 
 flavorinclude_HEADERS = \
 	globus_i18n.h

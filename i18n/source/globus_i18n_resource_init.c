@@ -9,6 +9,7 @@ main(int argc, char *argv[])
     char		keyline[1024];
     char *		newlineptr;
     char *		it;
+    char * 		out;
     int			hash;
 
     fptr = fopen(argv[1], "r");
@@ -20,12 +21,51 @@ main(int argc, char *argv[])
 
     while(fgets(line, sizeof(line), fptr) != NULL)
     {
-    strncpy(keyline,line, 1024);
+   /* strncpy(keyline,line, 1024);*/
+    /*sprintf(&keyline, "%s", line);
+    fprintf(outptr, "%s", line);*/
 
-    printf("Keyline is:\n %s\n", keyline);
     /*convert non-invariant characters to "_" for key*/
-    it=&keyline; 
-    while (it[0]!=0)
+    it=line; 
+    out=keyline;
+
+    /*get rid of trailing \n*/
+    while (it[0]!='\n')
+    {
+	it++;
+    }
+    it[0]='\0';
+    it=line;
+    /*collapse \n to return line char*/
+    while (it[0]!='\0')
+    {
+	switch (it[0])
+	{
+                case '\\':
+
+		    if (it[1]=='n')
+		    {
+		        out[0]='\n';
+		        it++;
+		    }
+		    else
+		    {
+			out[0]=it[0];
+		    }
+		    break;
+                default:
+		    out[0]=it[0];
+                        /*we don't need to do anything*/
+                        break;
+        }
+	it++;
+	out++;
+    }
+    out[0]='\0';  /* need the NULL termination*/
+	    
+	hash=globus_hashtable_string_hash(keyline, 35535);
+	it=keyline;
+    while (it[0]!='\0')
     {   
         switch (it[0])
         {
@@ -40,10 +80,14 @@ main(int argc, char *argv[])
                 case '|':
                 case '}':
                 case '~':
+                case ' ':
+		case '\n':
+
 
                 it[0]= '_';
 
-                        break;
+                   break;
+
                 default:
                         /*we don't need to do anything*/
                         break;
@@ -63,9 +107,9 @@ main(int argc, char *argv[])
 		*newlineptr=NULL;
 	}
 
-	hash=globus_hashtable_string_hash(line, 35535);
-	fprintf(outptr, "%s_%d     {%s}\n", keyline, hash, line);
+	fprintf(outptr, "\"%s_%d\"     {\"%s\"}\n", keyline, hash, line);
     }
     fprintf(outptr, "}");
 
+    return GLOBUS_SUCCESS;
 }
