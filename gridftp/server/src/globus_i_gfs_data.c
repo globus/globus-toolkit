@@ -271,13 +271,11 @@ void
 globus_l_gfs_data_operation_destroy(
     globus_l_gfs_data_operation_t *     op)
 {
-/*
-    if(op->if(op->recvd_ranges)
+    if(op->recvd_ranges)
     {
         globus_range_list_destroy(op->recvd_ranges);
     }
     globus_free(op);
-*/
 }
 
     
