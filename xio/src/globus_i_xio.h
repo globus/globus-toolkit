@@ -176,12 +176,12 @@ do                                                                          \
     /* see globus_i_xio_operation_cancel                     */             \
     if(_op->canceled)                                                       \
     {                                                                       \
-        globus_mutex_lock(&_op->_op_context->mutex);                        \
+        globus_mutex_lock(&_op->_op_context->cancel_mutex);                 \
         if(_op->canceled == _op->ndx + 1)                                   \
         {                                                                   \
             _op->canceled = 0;                                              \
         }                                                                   \
-        globus_mutex_unlock(&_op->_op_context->mutex);                      \
+        globus_mutex_unlock(&_op->_op_context->cancel_mutex);               \
     }                                                                       \
 } while(0)
 
