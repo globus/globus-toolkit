@@ -2862,7 +2862,7 @@ globus_io_register_init_delegation(
 
     if(handle == GLOBUS_NULL)
     {
-	rc = globus_error_put(
+        rc = globus_error_put(
             globus_io_error_construct_null_parameter(
                 GLOBUS_IO_MODULE,
                 GLOBUS_NULL,
@@ -2870,12 +2870,12 @@ globus_io_register_init_delegation(
                 1,
                 myname));
 	
-	return rc;
+        return rc;
     }
 
     if(cred_handle == GSS_C_NO_CREDENTIAL)
     {
-	rc = globus_error_put(
+        rc = globus_error_put(
             globus_io_error_construct_null_parameter(
                 GLOBUS_IO_MODULE,
                 GLOBUS_NULL,
@@ -2883,12 +2883,12 @@ globus_io_register_init_delegation(
                 1,
                 myname));
 	
-	return rc;
+        return rc;
     }
 
     if(callback == GLOBUS_NULL)
     {
-	rc = globus_error_put(
+        rc = globus_error_put(
             globus_io_error_construct_null_parameter(
                 GLOBUS_IO_MODULE,
                 GLOBUS_NULL,
@@ -2896,9 +2896,23 @@ globus_io_register_init_delegation(
                 1,
                 myname));
 	
-	return rc;
+        return rc;
     }
 
+    if(handle->securesocket_attr.authentication_mode ==
+       GLOBUS_IO_SECURE_AUTHENTICATION_MODE_NONE)
+    {
+        rc = globus_error_put(
+            globus_io_error_construct_bad_parameter(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                "handle",
+                1,
+                myname));
+	
+        return rc;
+
+    }
     
     init_info = (globus_io_authentication_info_t *) globus_malloc(
         sizeof(globus_io_authentication_info_t));
@@ -3076,20 +3090,20 @@ globus_io_register_accept_delegation(
 
     if(handle == GLOBUS_NULL)
     {
-	rc = globus_error_put(
+        rc = globus_error_put(
             globus_io_error_construct_null_parameter(
                 GLOBUS_IO_MODULE,
                 GLOBUS_NULL,
                 "handle",
                 1,
                 myname));
-	
-	return rc;
+        
+        return rc;
     }
 
     if(callback == GLOBUS_NULL)
     {
-	rc = globus_error_put(
+        rc = globus_error_put(
             globus_io_error_construct_null_parameter(
                 GLOBUS_IO_MODULE,
                 GLOBUS_NULL,
@@ -3097,9 +3111,24 @@ globus_io_register_accept_delegation(
                 1,
                 myname));
 	
-	return rc;
+        return rc;
     }
 
+    if(handle->securesocket_attr.authentication_mode ==
+       GLOBUS_IO_SECURE_AUTHENTICATION_MODE_NONE)
+    {
+        rc = globus_error_put(
+            globus_io_error_construct_bad_parameter(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                "handle",
+                1,
+                myname));
+	
+        return rc;
+
+    }
+    
     accept_info = (globus_io_authentication_info_t *) globus_malloc(
         sizeof(globus_io_authentication_info_t));
 
