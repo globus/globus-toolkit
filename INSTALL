@@ -43,22 +43,26 @@ Step 1: Run './configure'
 
    You may also want to provide one or more of the following
    arguments:
+
+	--prefix=<PATH>
+		Set the default installation prefix, ${prefix}, which
+		other installation paths are based off of by default.
 	
 	--with-myproxy-server-path=<PATH>
 		Specify myproxy-server install prefix. This is the
 		prefix under which the server binaries and configuration
 		files will be installed. By default this is
-		/usr/local/myproxy-server
+		${prefix}/myproxy-server
 
 	--with-myproxy-tools-path=<PATH>
   		Specify myproxy tools install prefix. This is the prefix
 		under which the portal tools binaries will be installed.
-		By default this is /usr/local
+		By default this is ${prefix}
 
 	--with-myproxy-client-path=<PATH>
 		Specify myproxy client intall prefix. This is the prefix
 		under which the client binaries will be installed.
-		By default this is /usr/local
+		By default this is ${prefix}
 
 Step 2: Run 'make'
 
