@@ -376,12 +376,12 @@ print "\n";
 print "You are required to set the following variables in your environment\n";
 print "to ensure that the gsi_ssh package works correctly:\n";
 print "\n";
-print "\$GSI_SCP_LOC = \"${bindir}/scp.real\"\n";
-print "\$GSI_SFTP_LOC = \"${bindir}/sftp.real\"\n";
-print "\$GSI_SSH_LOC = \"${bindir}/ssh\"\n";
-print "\$GSI_SSHD_LOC = \"${sbindir}/sshd.real\"\n";
-print "\$GSI_SSH_CONFIG_LOC = \"${sysconfdir}/ssh_config\"\n";
-print "\$GSI_SSHD_CONFIG_LOC = \"${sysconfdir}/sshd_config\"\n";
+print "\GSI_SCP_LOC=\"${bindir}/scp.real\"\n";
+print "\GSI_SFTP_LOC=\"${bindir}/sftp.real\"\n";
+print "\GSI_SSH_LOC=\"${bindir}/ssh\"\n";
+print "\GSI_SSHD_LOC=\"${sbindir}/sshd.real\"\n";
+print "\GSI_SSH_CONFIG_LOC=\"${sysconfdir}/ssh_config\"\n";
+print "\GSI_SSHD_CONFIG_LOC=\"${sysconfdir}/sshd_config\"\n";
 print "---------------------------------------------------------------\n";
 
 #
