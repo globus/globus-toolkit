@@ -16,5 +16,4 @@ man/man5/ftphosts.5
 man/man5/ftpconversions.5
 man/man5/ftpservers.5
 man/man5/xferlog.5
-etc/ftpaccess
 etc/ftpconversions
