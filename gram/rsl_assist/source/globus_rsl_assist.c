@@ -14,6 +14,8 @@
  *   $Revision$
  *   $Author$
  *****************************************************************************/
+#include "globus_common.h"
+#include "globus_libc_setenv.h"
 #include "globus_rsl_assist.h"
 #include "globus_i_rsl_assist.h"
 
