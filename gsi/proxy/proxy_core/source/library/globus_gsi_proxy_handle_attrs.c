@@ -232,7 +232,7 @@ globus_gsi_proxy_handle_attrs_set_init_prime(
 
     GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
     return GLOBUS_SUCCESS;
-};
+}
 /* @} */
 
 
@@ -269,7 +269,7 @@ globus_gsi_proxy_handle_attrs_get_init_prime(
     
     GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
     return GLOBUS_SUCCESS;
-};
+}
 /* @} */
 
 /**
@@ -321,7 +321,7 @@ globus_gsi_proxy_handle_attrs_set_signing_algorithm(
 
     GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
     return result;
-};
+}
 /* @} */
 
 
@@ -374,7 +374,7 @@ globus_gsi_proxy_handle_attrs_get_signing_algorithm(
     
     GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
     return result;
-};
+}
 /* @} */
 
 
@@ -424,7 +424,7 @@ globus_gsi_proxy_handle_attrs_set_time_valid(
 
     GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
     return result;
-};
+}
 /* @} */
 
 
@@ -524,7 +524,7 @@ globus_gsi_proxy_handle_attrs_set_clock_skew_allowable(
 
     GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
     return result;
-};
+}
 /* @} */
 
 /**
@@ -573,7 +573,7 @@ globus_gsi_proxy_handle_attrs_get_clock_skew_allowable(
     
     GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
     return result;
-};
+}
 /* @} */
 
 /**
@@ -622,7 +622,7 @@ globus_gsi_proxy_handle_attrs_get_key_gen_callback(
     
     GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
     return result;
-};
+}
 /* @} */
 
 /**
@@ -671,7 +671,7 @@ globus_gsi_proxy_handle_attrs_set_key_gen_callback(
     
     GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
     return result;
-};
+}
 /* @} */
 
 /**
