@@ -352,11 +352,11 @@ globus_l_rsl_assist_simple_query_ldap(
     
     *job_contact_list = GLOBUS_NULL;
 
-    if (port=globus_libc_getenv("GLOBUS_MDS_PORT") == GLOBUS_NULL)
+    if ((port=globus_libc_getenv("GLOBUS_MDS_PORT")) == GLOBUS_NULL)
     {
 	port=atoi(GLOBUS_MDS_PORT);
     }
-    if (server=globus_libc_getenv("GLOBUS_MDS_HOST") == GLOBUS_NULL)
+    if ((server=globus_libc_getenv("GLOBUS_MDS_HOST")) == GLOBUS_NULL)
     {
 	server=GLOBUS_MDS_HOST;
     }
