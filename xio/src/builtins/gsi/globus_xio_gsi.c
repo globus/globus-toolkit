@@ -1290,6 +1290,14 @@ globus_l_xio_gsi_read_token_cb(
     {
         /* get the wrap size limit and peer and local names */
         handle->done = GLOBUS_TRUE;
+
+        if(handle->attr->prot_level ==
+           GLOBUS_XIO_GSI_PROTECTION_LEVEL_PRIVACY &&
+           !(handle->ret_flags & GSS_C_CONF_FLAG))
+        {
+            result = GlobusXioGSIErrorBadProtectionLevel();
+            goto error_pass_close;
+        }
         
         major_status = gss_wrap_size_limit(
             &minor_status,

@@ -41,6 +41,8 @@
 
 /* macro for wrapping gssapi errors */
 
+#define GLOBUS_XIO_GSI_ERROR_INVALID_PROTECTION_LEVEL 1
+
 #define GlobusXIOErrorWrapGSSFailed(failed_func, major_status, minor_status) \
     globus_error_put(                                                        \
         globus_error_wrap_gssapi_error(                                      \
@@ -53,6 +55,18 @@
             __LINE__,                                                        \
             "%s failed.",                                                    \
             (failed_func)))
+
+
+#define GlobusXioGSIErrorBadProtectionLevel()                                \
+    globus_error_put(                                                        \
+        globus_error_construct_error(                                        \
+            GLOBUS_XIO_GSI_DRIVER_MODULE,                                    \
+            GLOBUS_NULL,                                                     \
+            GLOBUS_XIO_GSI_ERROR_INVALID_PROTECTION_LEVEL,                   \
+            __FILE__,                                                        \
+            _xio_name,                                                       \
+            __LINE__,                                                        \
+            "Peer specified lower protection level"))
 
 /* XIO debug stuff */
 
