@@ -1300,13 +1300,11 @@ static void doit()
     {
 
 #ifdef GAA_GATEKEEPER
-		failure3(FAILED_AUTHORIZATION,
-				"gatekeeper_gaa_check_policy_assist() failed authorization.",
-				" rc = %d", rc);
+		failure2(FAILED_AUTHORIZATION,
+				"gatekeeper_gaa_check_policy_assist() failed authorization. rc = %d", rc);
 #else
-		failure3(FAILED_AUTHORIZATION,
-				"globus_gss_assist_gridmap() failed authorization.",
-                " rc = %d", rc);
+		failure2(FAILED_AUTHORIZATION,
+				"globus_gss_assist_gridmap() failed authorization. rc = %d", rc);
 #endif
  
     }
