@@ -51,6 +51,14 @@ module that contains the GSI-OpenSSH code.  Consider it a living document.
 
   [ History ]
 
+    2004/03/05
+    ----------
+      Action: Merge
+        - occurred on: GPT branch
+        - orig base: OPENSSH_3_8P1_GSSAPI_20040304
+        - new base: OPENSSH_3_8P1_GSSAPI_20040305
+      Conflicts: 0
+
     2004/03/04
     ----------
       Action: Merge
