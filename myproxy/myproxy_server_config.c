@@ -270,7 +270,7 @@ regex_compare(const char *regex,
     char		*bufp;
 
     /*
-     e First we convert the regular expression from the human-readable
+     * First we convert the regular expression from the human-readable
      * form (e.g. *.domain.com) to the machine-readable form
      * (e.g. ^.*\.domain\.com$).
      *
@@ -510,64 +510,32 @@ myproxy_server_config_read(myproxy_server_context_t *context)
 
 
 int
-myproxy_server_check_cred(myproxy_server_context_t *context,
-			  const char *client_name)
+myproxy_server_check_policy_list(const char **dn_list, const char *client_name)
 {
     int return_code = -1;
     
-    if ((context == NULL) ||
-	(client_name == NULL))
-    {
+    if ((dn_list == NULL) || (client_name == NULL)) {
 	verror_put_errno(EINVAL);
 	goto error;
     }
 
-    /* Why is this cast needed? */
-    return_code = is_name_in_list((const char **) context->accepted_credential_dns,
-				  client_name);
-
-  error:
-    return return_code;
-}
-
-
-int
-myproxy_server_check_retriever(myproxy_server_context_t *context,
-			       const char *service_name)
-{
-    int return_code = -1;
-    
-    if ((context == NULL) ||
-	(service_name == NULL))
-    {
-	verror_put_errno(EINVAL);
-	goto error;
-    }
-
-    /* Why is this cast needed? */
-    return_code = is_name_in_list((const char **) context->authorized_retriever_dns,
-				  service_name);
+    return_code = is_name_in_list(dn_list, client_name);
 
   error:
     return return_code;
 }
 
 int
-myproxy_server_check_renewer(myproxy_server_context_t *context,
-			   const char *service_name)
+myproxy_server_check_policy(const char *dn_regex, const char *client_name)
 {
     int return_code = -1;
     
-    if ((context == NULL) ||
-	(service_name == NULL))
-    {
+    if ((dn_regex == NULL) || (client_name == NULL)) {
 	verror_put_errno(EINVAL);
 	goto error;
     }
 
-    /* Why is this cast needed? */
-    return_code = is_name_in_list((const char **) context->authorized_renewer_dns,
-				  service_name);
+    return_code = regex_compare(dn_regex, client_name);
 
   error:
     return return_code;
