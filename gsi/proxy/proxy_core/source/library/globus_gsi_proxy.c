@@ -183,7 +183,6 @@ globus_gsi_proxy_create_req(
 {
     X509_NAME *                         req_name = NULL;
     X509_NAME_ENTRY *                   req_name_entry = NULL;
-
     RSA *                               rsa_key = NULL;
     globus_result_t                     result;
 
@@ -409,7 +408,7 @@ globus_gsi_proxy_create_req(
                                               handle->proxy_cert_info);
         GLOBUS_I_GSI_PROXY_DEBUG_PRINT(3, "******  END PROXYCERTINFO  ******\n");
     }
-
+    
     if (!X509_REQ_sign(handle->req, handle->proxy_key, EVP_md5()))
     {
         GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
@@ -694,6 +693,8 @@ globus_gsi_proxy_sign_req(
     X509 *                              new_pc = NULL;
     X509 *                              issuer_cert = NULL;
     X509_EXTENSION *                    pci_ext = NULL;
+    X509_EXTENSION *                    extension;
+    int                                 position;
     EVP_PKEY *                          issuer_pkey = NULL;
     EVP_PKEY *                          req_pubkey = NULL;
     globus_result_t                     result = GLOBUS_SUCCESS;
@@ -742,7 +743,7 @@ globus_gsi_proxy_sign_req(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_X509_REQ,
             ("Error verifying X509_REQ struct"));
-        goto free_req_pubkey;
+        goto done;
     }
 
     result = globus_gsi_cred_get_cert(issuer_credential, &issuer_cert);
@@ -751,7 +752,7 @@ globus_gsi_proxy_sign_req(
         result = GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_CREDENTIAL);
-        goto free_new_pc;
+        goto done;
     }
 
     if((new_pc = X509_new()) == NULL)
@@ -790,7 +791,7 @@ globus_gsi_proxy_sign_req(
                 result,
                 GLOBUS_GSI_PROXY_ERROR_WITH_PROXYCERTINFO,
                 ("No valid PROXYCERTINFO numeric identifier found"));
-            goto free_issuer_cert;
+            goto done;
         }
         
         pci_DER_length = i2d_PROXYCERTINFO(handle->proxy_cert_info, 
@@ -802,7 +803,7 @@ globus_gsi_proxy_sign_req(
                 GLOBUS_GSI_PROXY_ERROR_WITH_PROXYCERTINFO,
                 ("Couldn't convert PROXYCERTINFO struct from internal"
                  " to DER encoded form"));
-            goto free_issuer_cert;
+            goto done;
         }
         
         pci_DER = malloc(pci_DER_length);
@@ -810,7 +811,7 @@ globus_gsi_proxy_sign_req(
         if(!pci_DER)
         {
             GLOBUS_GSI_PROXY_MALLOC_ERROR(pci_DER_length);
-            goto free_issuer_cert;
+            goto done;
         }
         
         mod_pci_DER = pci_DER;
@@ -823,7 +824,7 @@ globus_gsi_proxy_sign_req(
                 GLOBUS_GSI_PROXY_ERROR_WITH_PROXYCERTINFO,
                 ("Couldn't convert PROXYCERTINFO struct from internal"
                  " to DER encoded form"));
-            goto free_pci_DER;
+            goto done;
         }
         
         pci_DER_string = ASN1_OCTET_STRING_new();
@@ -834,7 +835,7 @@ globus_gsi_proxy_sign_req(
                 GLOBUS_GSI_PROXY_ERROR_WITH_PROXYCERTINFO,
                 ("Couldn't creat new ASN.1 octet string for the DER encoding"
                  " of a PROXYCERTINFO struct"));
-            goto free_pci_DER;
+            goto done;
         }
         
         pci_DER_string->data = pci_DER;
@@ -853,7 +854,7 @@ globus_gsi_proxy_sign_req(
                 GLOBUS_GSI_PROXY_ERROR_WITH_X509_EXTENSIONS,
                 ("Couldn't create X509 extension list "
                  "to hold PROXYCERTINFO extension"));
-            goto free_pci_DER_string;
+            goto done;
         }
 
         if(!X509_add_ext(new_pc, pci_ext, 0))
@@ -862,6 +863,7 @@ globus_gsi_proxy_sign_req(
                 result,
                 GLOBUS_GSI_PROXY_ERROR_WITH_X509_EXTENSIONS,
                 ("Couldn't add X509 extension to new proxy cert"));
+            goto done;
         }
     }
     else if(handle->type == GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_LIMITED_PROXY)
@@ -875,6 +877,158 @@ globus_gsi_proxy_sign_req(
         serial_number = X509_get_serialNumber(issuer_cert);
     }
 
+    /* add any keyUsage and extendedKeyUsage extensions present in the issuer
+     * cert
+     */
+
+    if((position = X509_get_ext_by_NID(issuer_cert, NID_key_usage, -1)) > -1)
+    {
+        ASN1_BIT_STRING *               usage;
+        ASN1_OCTET_STRING *             ku_DER_string;
+        unsigned char *                 ku_DER;
+        unsigned char *                 mod_ku_DER;
+        int                             ku_DER_length;
+
+        if(!(extension = X509_get_ext(issuer_cert, position)))
+        {
+            GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
+                result,
+                GLOBUS_GSI_PROXY_ERROR_WITH_X509_EXTENSIONS,
+                ("Couldn't get keyUsage extension form issuer cert"));
+            goto done;            
+        }
+        
+        if(!(usage = X509_get_ext_d2i(issuer_cert, NID_key_usage, NULL, NULL)))
+        {
+            GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
+                result,
+                GLOBUS_GSI_PROXY_ERROR_WITH_X509_EXTENSIONS,
+                ("Couldn't convert keyUsage struct from DER encoded form"
+                 " to internal form"));
+            goto done;
+        }
+
+        /* clear bits specified in draft */
+        
+        ASN1_BIT_STRING_set_bit(usage, 1, 0); /* Non Repudiation */
+        ASN1_BIT_STRING_set_bit(usage, 5, 0); /* Certificate Sign */
+        
+        ku_DER_length = i2d_ASN1_BIT_STRING(usage,
+                                            NULL);
+        if(ku_DER_length < 0)
+        {
+            GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
+                result,
+                GLOBUS_GSI_PROXY_ERROR_WITH_X509_EXTENSIONS,
+                ("Couldn't convert keyUsage struct from internal"
+                 " to DER encoded form"));
+            ASN1_BIT_STRING_free(usage);
+            goto done;
+        }
+        
+        ku_DER = malloc(ku_DER_length);
+
+        if(!ku_DER)
+        {
+            GLOBUS_GSI_PROXY_MALLOC_ERROR(ku_DER_length);
+            ASN1_BIT_STRING_free(usage);
+            goto done;
+        }
+        
+        mod_ku_DER = ku_DER;
+
+        ku_DER_length = i2d_ASN1_BIT_STRING(usage,
+                                            &mod_ku_DER);
+
+        if(ku_DER_length < 0)
+        {
+            GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
+                result,
+                GLOBUS_GSI_PROXY_ERROR_WITH_X509_EXTENSIONS,
+                ("Couldn't convert keyUsage from internal"
+                 " to DER encoded form"));
+            ASN1_BIT_STRING_free(usage);
+            goto done;
+        }
+
+        ASN1_BIT_STRING_free(usage);        
+        
+        ku_DER_string = ASN1_OCTET_STRING_new();
+        if(ku_DER_string == NULL)
+        {
+            GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
+                result,
+                GLOBUS_GSI_PROXY_ERROR_WITH_X509_EXTENSIONS,
+                ("Couldn't creat new ASN.1 octet string for the DER encoding"
+                 " of the keyUsage"));
+            free(ku_DER);
+            goto done;
+        }
+        
+        ku_DER_string->data = ku_DER;
+        ku_DER_string->length = ku_DER_length;
+
+        extension = X509_EXTENSION_create_by_NID(
+            NULL,
+            NID_key_usage,
+            1,
+            ku_DER_string);
+
+        if(extension == NULL)
+        {
+            GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
+                result,
+                GLOBUS_GSI_PROXY_ERROR_WITH_X509_EXTENSIONS,
+                ("Couldn't create new keyUsage extension"));
+            ASN1_OCTET_STRING_free(ku_DER_string);
+            goto done;
+        }
+        
+        if(!X509_add_ext(new_pc, extension, 0))
+        {
+            GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
+                result,
+                GLOBUS_GSI_PROXY_ERROR_WITH_X509_EXTENSIONS,
+                ("Couldn't add X509 keyUsage extension to new proxy cert"));
+            X509_EXTENSION_free(extension);
+            goto done;
+        }
+
+        X509_EXTENSION_free(extension);
+    }
+
+    if(position = X509_get_ext_by_NID(issuer_cert, NID_ext_key_usage, -1) > -1)
+    {
+        if(!(extension = X509_get_ext(issuer_cert, position)))
+        {
+            GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
+                result,
+                GLOBUS_GSI_PROXY_ERROR_WITH_X509_EXTENSIONS,
+                ("Couldn't get extendedKeyUsage extension form issuer cert"));
+            goto done;            
+        }
+
+        extension = X509_EXTENSION_dup(extension);
+
+        if(extension == NULL)
+        {
+            GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
+                result,
+                GLOBUS_GSI_PROXY_ERROR_WITH_X509_EXTENSIONS,
+                ("Couldn't copy extendedKeyUsage extension"));
+            goto done;
+        }
+
+        if(!X509_add_ext(new_pc, extension, 0))
+        {
+            GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
+                result,
+                GLOBUS_GSI_PROXY_ERROR_WITH_X509_EXTENSIONS,
+                ("Couldn't add X509 extendedKeyUsage extension to new proxy cert"));
+            goto done;
+        }
+    }
+    
     /* create proxy subject name */
     result = globus_i_gsi_proxy_set_subject(new_pc, issuer_cert, common_name);
     if(result != GLOBUS_SUCCESS)
@@ -882,7 +1036,7 @@ globus_gsi_proxy_sign_req(
         result = GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_X509);
-        goto free_issuer_cert;
+        goto done;
     }
 
     if(!X509_set_issuer_name(new_pc, X509_get_subject_name(issuer_cert)))
@@ -891,7 +1045,7 @@ globus_gsi_proxy_sign_req(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_X509,
             ("Error setting issuer's subject of X509"));
-        goto free_issuer_cert;
+        goto done;
     }
 
     if(!X509_set_version(new_pc, 3))
@@ -900,7 +1054,7 @@ globus_gsi_proxy_sign_req(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_X509,
             ("Error setting version number of X509"));
-        goto free_issuer_cert;
+        goto done;
     }
 
     if(!X509_set_serialNumber(new_pc, serial_number))
@@ -909,7 +1063,7 @@ globus_gsi_proxy_sign_req(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_X509,
             ("Error setting serial number of X509"));
-        goto free_issuer_cert;
+        goto done;
     }
 
     result = globus_i_gsi_proxy_set_pc_times(new_pc, issuer_cert, 
@@ -920,7 +1074,7 @@ globus_gsi_proxy_sign_req(
         result = GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_X509);
-        goto free_issuer_cert;
+        goto done;
     }
     
     if(!X509_set_pubkey(new_pc, req_pubkey))
@@ -929,7 +1083,7 @@ globus_gsi_proxy_sign_req(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_X509,
             ("Couldn't set pubkey of X509 cert"));
-        goto free_issuer_cert;
+        goto done;
     }
 
     /* sign the new certificate */
@@ -939,7 +1093,7 @@ globus_gsi_proxy_sign_req(
         result = GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_CREDENTIAL);
-        goto free_pci_ext;
+        goto done;
     }
     
     /* right now if MD5 isn't requested as the signing algorithm,
@@ -953,7 +1107,7 @@ globus_gsi_proxy_sign_req(
             ("The signing algorithm: %s is not currently allowed."
              "\nUse MD5 to sign certificate requests",
              OBJ_nid2sn(EVP_MD_type(handle->attrs->signing_algorithm))));
-        goto free_issuer_pkey;
+        goto done;
     }
     
     if(!X509_sign(new_pc, issuer_pkey, handle->attrs->signing_algorithm))
@@ -962,7 +1116,7 @@ globus_gsi_proxy_sign_req(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_X509,
             ("Error signing proxy cert"));
-        goto free_issuer_pkey;
+        goto done;
     }
 
     /* write out the X509 certificate in DER encoded format to the BIO */
@@ -973,7 +1127,7 @@ globus_gsi_proxy_sign_req(
             GLOBUS_GSI_PROXY_ERROR_WITH_X509,
             ("Error converting X509 proxy cert from internal "
              "to DER encoded form"));
-        goto free_issuer_pkey;
+        goto done;
     }
         
     GLOBUS_I_GSI_PROXY_DEBUG_PRINT(3, "****** START SIGNED CERT ******\n");
@@ -981,52 +1135,45 @@ globus_gsi_proxy_sign_req(
     GLOBUS_I_GSI_PROXY_DEBUG_PRINT(3, "******  END SIGNED CERT  ******\n");
 
     result = GLOBUS_SUCCESS;
-    
- free_issuer_pkey:
+
+ done:
+
     if(issuer_pkey)
     {
         EVP_PKEY_free(issuer_pkey);
     }
 
- free_pci_ext:
-    if(pci_ext)
-    {
-        X509_EXTENSION_free(pci_ext);
-    }
-    
- free_pci_DER_string:
-    if(pci_DER_string)
-    {
-        free(pci_DER_string);
-    }
-
- free_pci_DER:
-    if(pci_DER)
-    {
-        free(pci_DER);
-    }
-
- free_issuer_cert:
     if(issuer_cert)
     {
         X509_free(issuer_cert);
     }
 
- free_new_pc:
     if(new_pc)
     {
         X509_free(new_pc); 
     }
     
- free_req_pubkey:
     if(req_pubkey)
     {
         EVP_PKEY_free(req_pubkey);
     }
 
- done:  
     if(GLOBUS_GSI_CERT_UTILS_IS_GSI_3_PROXY(handle->type))
     {
+        if(pci_ext)
+        {
+            X509_EXTENSION_free(pci_ext);
+        }
+        
+        if(pci_DER_string)
+        {
+            ASN1_OCTET_STRING_free(pci_DER_string);
+        }
+        else if(pci_DER)
+        {
+            free(pci_DER);
+        }
+        
         if(serial_number)
         {
             ASN1_INTEGER_free(serial_number);
@@ -1037,7 +1184,7 @@ globus_gsi_proxy_sign_req(
             free(common_name);
         }
     }
-    
+
     GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
     return result;
 }
