@@ -109,3 +109,7 @@ ws -a \
 	ws-mds\
 	ws-transfer\
 	wsrf
+
+wsc -a \
+	ogsa-c\
+        chosting
