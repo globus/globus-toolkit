@@ -226,5 +226,12 @@ typedef GLOBUS_OFF_T                                    globus_off_t;
 	#define GLOBUS_DUMP_STACK()
 #endif
 
+/* now defined in globus_error.h: #define GLOBUS_SUCCESS  0 */
+
+#define GLOBUS_TRUE    1
+#define GLOBUS_FALSE   0
+#define GLOBUS_NULL    0
+#define GLOBUS_FAILURE  -1
+
 #endif  /* GLOBUS_COMMON_INCLUDE_H */
 

@@ -124,19 +124,6 @@ typedef struct globus_barrier_s
 			       Define constants
 ******************************************************************************/
 
-/* now defined in globus_error.h: #define GLOBUS_SUCCESS  0 */
-
-#define GLOBUS_TRUE	1
-#define GLOBUS_FALSE	0
-
-#define GLOBUS_NULL	0
-
-#ifdef GLOBUS_FAILURE
-#undef GLOBUS_FAILURE
-#endif
-
-#define GLOBUS_FAILURE  -1
-
 #ifndef SWIG
  
 /******************************************************************************
