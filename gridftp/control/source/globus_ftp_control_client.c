@@ -261,9 +261,11 @@ globus_ftp_control_handle_destroy(
         {
             globus_object_free(handle->cc_handle.close_result);
         }
+        
+        globus_fifo_destroy(&handle->cc_handle.readers);
+        globus_fifo_destroy(&handle->cc_handle.writers);
     
         /* control_data.c specific destroy */
-        globus_io_tcpattr_destroy(&handle->cc_handle.io_attr);
         return globus_i_ftp_control_data_cc_destroy(handle);
     }
 

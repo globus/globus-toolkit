@@ -4812,7 +4812,9 @@ globus_X_ftp_control_local_layout(
             name);
     }
     globus_mutex_unlock(&globus_l_ftp_control_data_mutex);
-
+    
+    globus_free(name);
+    
     if(layout_info == GLOBUS_NULL)
     {
         return globus_error_put(globus_error_construct_string(

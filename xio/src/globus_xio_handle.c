@@ -518,11 +518,9 @@ globus_l_xio_activate()
     globus_i_xio_load_init();
 
     GlobusDebugInit(GLOBUS_XIO,
-        GLOBUS_XIO_DEBUG_INFO
-        GLOBUS_XIO_DEBUG_INFO_VERBOSE
-        GLOBUS_XIO_DEBUG_WARNING
-        GLOBUS_XIO_DEBUG_ERROR);
+        ERROR WARNING TRACE INTERNAL_TRACE INFO STATE INFO_VERBOSE);
     
+    GlobusXIODebugInternalExit();
     return GLOBUS_SUCCESS;
 }
 

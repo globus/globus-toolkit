@@ -103,6 +103,11 @@ globus_debug_init(
 {
     char *                              tmp;
 
+    if(*out_file)
+    {
+        return;
+    }
+    
     *debug_level = 0;
     *out_file = stderr;
     *using_file = GLOBUS_FALSE;

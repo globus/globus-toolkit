@@ -82,8 +82,8 @@ globus_debug_init(
         if(globus_i_##module_name##_using_file)                             \
         {                                                                   \
             fclose(globus_i_##module_name##_debug_file);                    \
-            globus_i_##module_name##_debug_file = GLOBUS_NULL;              \
         }                                                                   \
+        globus_i_##module_name##_debug_file = GLOBUS_NULL;                  \
     } while(0)
 
 /* most likely wrap this with your own macro,
