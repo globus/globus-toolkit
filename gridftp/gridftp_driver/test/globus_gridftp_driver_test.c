@@ -5,6 +5,7 @@
 
 #define CHUNK_SIZE 5000
 #define FILE_NAME_LEN 25
+#define ALG_NAME_LEN 25
 
 void
 test_res(
@@ -54,8 +55,10 @@ main(
     globus_bool_t                           partial_xfer = GLOBUS_FALSE;
     globus_bool_t                           seek = GLOBUS_FALSE;
     globus_bool_t                           append = GLOBUS_FALSE;
+    globus_bool_t                           eret_esto = GLOBUS_FALSE;
     int                                     rc;
     char                                    filename[FILE_NAME_LEN];
+    char				    eret_esto_alg_str[ALG_NAME_LEN];
     FILE *                                  fp;
     globus_ftp_client_handle_t              ftp_handle;
 
@@ -125,6 +128,15 @@ main(
         {
             partial_xfer = GLOBUS_TRUE;
         }
+        else if(strcmp(argv[ctr], "-e") == 0)
+        {
+            if (ctr + 1 < argc)
+            {
+	    	strcpy(eret_esto_alg_str, argv[ctr + 1]);
+                ctr++;
+		eret_esto = GLOBUS_TRUE;
+            }
+        }
         else if(strcmp(argv[ctr], "-s") == 0)
         {
             seek = GLOBUS_TRUE;
@@ -163,6 +175,20 @@ main(
     {
         res = globus_xio_attr_cntl(attr, gridftp_driver, 
             GLOBUS_XIO_GRIDFTP_SET_APPEND, GLOBUS_TRUE);
+        test_res(res);
+    }
+    if (eret_esto)
+    {
+	if (read)
+	{
+            res = globus_xio_attr_cntl(attr, gridftp_driver, 
+                GLOBUS_XIO_GRIDFTP_SET_ERET, eret_esto_alg_str);
+	}
+	else
+	{
+            res = globus_xio_attr_cntl(attr, gridftp_driver, 
+                GLOBUS_XIO_GRIDFTP_SET_ESTO, eret_esto_alg_str);
+	}
         test_res(res);
     }
     res = globus_xio_open(xio_handle, cs, attr);
