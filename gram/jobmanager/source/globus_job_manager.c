@@ -4013,6 +4013,9 @@ globus_l_jm_http_query_callback( void *               arg,
 	     &query );
      }
 
+     /* The "user" callback has to free the read buffer */
+     globus_libc_free(buf);
+
     globus_io_handle_get_user_pointer( handle,
 				       (void **) &request );
 
