@@ -3450,7 +3450,6 @@ globus_ftp_control_force_close(
 	if(handle->cc_handle.cc_state != GLOBUS_FTP_CONTROL_CONNECTED &&
 	    handle->cc_handle.cc_state != GLOBUS_FTP_CONTROL_CONNECTING)
 	{
-	    globus_mutex_unlock(&(handle->cc_handle.mutex));
 	    rc = globus_error_put(
 		globus_error_construct_string(
 		    GLOBUS_FTP_CONTROL_MODULE,
