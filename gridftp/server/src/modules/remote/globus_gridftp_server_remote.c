@@ -136,7 +136,8 @@ globus_l_gfs_remote_node_request_kickout(
         node_info,
         result,
         bounce_info->user_arg);
-        
+    
+    globus_free(bounce_info);
     return;    
 }
                 
