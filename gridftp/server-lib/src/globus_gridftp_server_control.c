@@ -2106,6 +2106,7 @@ globus_i_gsc_mlsx_line_single(
                 break;
         }
         tmp_ptr += strlen(tmp_ptr);
+        sprintf(tmp_ptr, " %s", stat_info->name);
     }
     return out_buf;
 }
