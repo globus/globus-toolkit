@@ -208,6 +208,17 @@ grami_ggg_send_token_nexus( void *arg,  void *buf, int size)
 }
 
 /******************************************************************************
+Function:	gram_init()
+Description:
+Parameters:
+Returns:
+******************************************************************************/
+int 
+gram_init()
+{
+} /* gram_init() */
+
+/******************************************************************************
 Function:	gram_job_request()
 Description:
 Parameters:
