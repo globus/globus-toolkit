@@ -323,7 +323,7 @@ globus_io_register_write(
 	/* No security wrapping was done, so we can send the buffer
 	 * with a single write
 	 */
-	    rc = globus_i_io_register_operation(
+        rc = globus_i_io_register_operation(
             handle,
             globus_l_io_write_callback,
             info,
@@ -336,7 +336,7 @@ globus_io_register_write(
 	/* Security wrapping was done, so the data may be spread over
 	 * multiple GSSAPI tokens in the iovec array.
 	 */
-	    rc = globus_i_io_register_operation(
+        rc = globus_i_io_register_operation(
             handle,
             globus_l_io_writev_callback,
             info,
@@ -2216,6 +2216,10 @@ globus_l_io_write_callback(
     }
     if(write_info->nbytes_written >= write_info->nbytes)
     {
+        globus_i_io_mutex_lock();
+        globus_i_io_end_operation(handle, GLOBUS_I_IO_WRITE_OPERATION);
+        globus_i_io_mutex_unlock();
+        
 	/* Write is satisfied, call back to user */
 	(*write_info->buf_callback)(write_info->arg,
 				    handle,
@@ -2250,6 +2254,11 @@ globus_l_io_write_callback(
     return;
     
   error_exit:
+    
+    globus_i_io_mutex_lock();
+    globus_i_io_end_operation(handle, GLOBUS_I_IO_WRITE_OPERATION);
+    globus_i_io_mutex_unlock();
+        
     (*write_info->buf_callback)(write_info->arg,
 				handle,
 				globus_error_put(err),
@@ -2328,6 +2337,10 @@ globus_l_io_send_callback(
     }
     if(write_info->nbytes_written >= write_info->nbytes)
     {
+        globus_i_io_mutex_lock();
+        globus_i_io_end_operation(handle, GLOBUS_I_IO_WRITE_OPERATION);
+        globus_i_io_mutex_unlock();
+        
 	/* Write is satisfied, call back to user */
 	(*write_info->buf_callback)(write_info->arg,
 				    handle,
@@ -2362,6 +2375,10 @@ globus_l_io_send_callback(
     return;
     
   error_exit:
+    globus_i_io_mutex_lock();
+    globus_i_io_end_operation(handle, GLOBUS_I_IO_WRITE_OPERATION);
+    globus_i_io_mutex_unlock();
+    
     (*write_info->buf_callback)(write_info->arg,
 				handle,
 				globus_error_put(err),
@@ -2465,6 +2482,11 @@ globus_l_io_writev_callback(
 	{
 	    report_amt = writev_info->nbytes;
 	}
+	
+	globus_i_io_mutex_lock();
+        globus_i_io_end_operation(handle, GLOBUS_I_IO_WRITE_OPERATION);
+        globus_i_io_mutex_unlock();
+    
 	if(writev_info->iov_callback)
 	{
 	    (*writev_info->iov_callback)(writev_info->arg,
@@ -2508,6 +2530,10 @@ globus_l_io_writev_callback(
     return;
 
   error_exit:
+    globus_i_io_mutex_lock();
+    globus_i_io_end_operation(handle, GLOBUS_I_IO_WRITE_OPERATION);
+    globus_i_io_mutex_unlock();
+    
     /* Hmm... we may write more than the original IOVs
      * add up to, if we are using security wrapping,
      * so we will just say we wrote what were expected
@@ -2636,6 +2662,11 @@ globus_l_io_sendmsg_callback(
 	{
 	    report_amt = writev_info->nbytes;
 	}
+	
+	globus_i_io_mutex_lock();
+        globus_i_io_end_operation(handle, GLOBUS_I_IO_WRITE_OPERATION);
+        globus_i_io_mutex_unlock();
+    
 	if(writev_info->iov_callback)
 	{
 	    (*writev_info->iov_callback)(writev_info->arg,
@@ -2679,6 +2710,10 @@ globus_l_io_sendmsg_callback(
     return;
 
   error_exit:
+    globus_i_io_mutex_lock();
+    globus_i_io_end_operation(handle, GLOBUS_I_IO_WRITE_OPERATION);
+    globus_i_io_mutex_unlock();
+    
     /* Hmm... we may write more than the original IOVs
      * add up to, if we are using security wrapping,
      * so we will just say we wrote what were expected

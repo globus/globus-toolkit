@@ -852,6 +852,10 @@ globus_l_io_read_callback(
 	    read_info->nbytes_read += n_read;
 	    if (read_info->nbytes_read >= read_info->wait_for_nbytes)
 	    {
+	        globus_i_io_mutex_lock();
+	        globus_i_io_end_operation(handle, GLOBUS_I_IO_READ_OPERATION);
+	        globus_i_io_mutex_unlock();
+	        
 		(*read_info->callback)(read_info->arg,
 				       handle,
 				       GLOBUS_SUCCESS,
@@ -913,12 +917,12 @@ globus_l_io_read_callback(
 		globus_i_io_mutex_lock();
 		
 		result = globus_i_io_register_operation(
-            handle,
-            globus_l_io_read_callback,
-            read_info,
-            globus_i_io_default_destructor,
-            GLOBUS_TRUE,
-            GLOBUS_I_IO_READ_OPERATION);
+                    handle,
+                    globus_l_io_read_callback,
+                    read_info,
+                    globus_i_io_default_destructor,
+                    GLOBUS_TRUE,
+                    GLOBUS_I_IO_READ_OPERATION);
 		
 		globus_i_io_mutex_unlock();
 		
@@ -947,6 +951,10 @@ globus_l_io_read_callback(
     return;
     
   error_exit: 
+    globus_i_io_mutex_lock();
+    globus_i_io_end_operation(handle, GLOBUS_I_IO_READ_OPERATION);
+    globus_i_io_mutex_unlock();
+	        
     (*read_info->callback)(read_info->arg,
 			   handle,
 			   globus_error_put(err),

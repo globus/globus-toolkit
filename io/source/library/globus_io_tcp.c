@@ -125,6 +125,7 @@ globus_io_tcp_register_connect(
     globus_result_t			rc;
     globus_object_t *			err;
     unsigned short			myport = 0;
+    globus_i_io_callback_info_t *       info;
     static char *			myname=
 	                                "globus_io_tcp_register_connect";
 
@@ -295,47 +296,26 @@ globus_io_tcp_register_connect(
 
     handle->state = GLOBUS_IO_HANDLE_STATE_CONNECTING;
     
+    info = (globus_i_io_callback_info_t *)
+            globus_malloc(sizeof(globus_i_io_callback_info_t));
+    info->callback = callback;
+    info->callback_arg = callback_arg;
+        
     globus_i_io_mutex_lock();
-
+    
     if(handle->securesocket_attr.authentication_mode ==
        GLOBUS_IO_SECURE_AUTHENTICATION_MODE_NONE)
     {
-        globus_i_io_callback_info_t *   info;
-        
-        info = (globus_i_io_callback_info_t *)
-            globus_malloc(sizeof(globus_i_io_callback_info_t));
-        info->callback = callback;
-        info->callback_arg = callback_arg;
-        
-        rc = globus_i_io_start_operation(
+        rc = globus_i_io_register_quick_operation(
             handle,
+            globus_i_io_connect_callback,
+            info,
+            globus_i_io_default_destructor,
+            GLOBUS_TRUE,
             GLOBUS_I_IO_WRITE_OPERATION);
-        
-        if(rc == GLOBUS_SUCCESS)
-        {
-            rc = globus_i_io_register_operation(
-                handle,
-                globus_i_io_connect_callback,
-                info,
-                globus_i_io_default_destructor,
-                GLOBUS_TRUE,
-                GLOBUS_I_IO_WRITE_OPERATION);
-            
-            if(rc != GLOBUS_SUCCESS)
-            {
-                globus_i_io_end_operation(handle, GLOBUS_I_IO_WRITE_OPERATION);
-            }
-        }
     }
     else
     {
-        globus_i_io_callback_info_t *   info;
-        
-        info = (globus_i_io_callback_info_t *)
-            globus_malloc(sizeof(globus_i_io_callback_info_t));
-        info->callback = callback;
-        info->callback_arg = callback_arg;
-        
         rc = globus_i_io_start_operation(
             handle,
             GLOBUS_I_IO_READ_OPERATION | GLOBUS_I_IO_WRITE_OPERATION);
@@ -352,7 +332,9 @@ globus_io_tcp_register_connect(
             
             if(rc != GLOBUS_SUCCESS)
             {
-                globus_i_io_end_operation(handle, GLOBUS_I_IO_WRITE_OPERATION);
+                globus_i_io_end_operation(
+                    handle, 
+                    GLOBUS_I_IO_READ_OPERATION | GLOBUS_I_IO_WRITE_OPERATION);
             }
         }
     }
@@ -361,6 +343,7 @@ globus_io_tcp_register_connect(
 
     if(rc != GLOBUS_SUCCESS)
     {
+        globus_free(info);
         err = globus_error_get(rc);
         goto error_exit;
     }
@@ -963,26 +946,13 @@ globus_io_tcp_register_accept(
     {
         new_handle->state = GLOBUS_IO_HANDLE_STATE_CONNECTED;
         
-        rc = globus_i_io_start_operation(
+        rc = globus_i_io_register_quick_operation(
             new_handle,
+            callback,
+            callback_arg,
+            GLOBUS_NULL,
+            GLOBUS_TRUE,
             GLOBUS_I_IO_WRITE_OPERATION);
-        
-        if(rc == GLOBUS_SUCCESS)
-        {
-            rc = globus_i_io_register_operation(
-                new_handle,
-                callback,
-                callback_arg,
-                GLOBUS_NULL,
-                GLOBUS_TRUE,
-                GLOBUS_I_IO_WRITE_OPERATION);
-            
-            if(rc != GLOBUS_SUCCESS)
-            {
-                globus_i_io_end_operation(
-                    new_handle, GLOBUS_I_IO_WRITE_OPERATION);
-            }
-        }
     }
     else
     {
@@ -993,23 +963,10 @@ globus_io_tcp_register_accept(
         info->callback = callback;
         info->callback_arg = callback_arg;
         
-        rc = globus_i_io_start_operation(
+        rc = globus_i_io_securesocket_register_accept(
             new_handle,
-            GLOBUS_I_IO_READ_OPERATION | GLOBUS_I_IO_WRITE_OPERATION);
-        
-        if(rc == GLOBUS_SUCCESS)
-        {
-            rc = globus_i_io_securesocket_register_accept(
-                new_handle,
-                globus_i_io_accept_callback,
-                info);
-            
-            if(rc != GLOBUS_SUCCESS)
-            {
-                globus_i_io_end_operation(
-                    new_handle, GLOBUS_I_IO_WRITE_OPERATION);
-            }
-        }
+            globus_i_io_accept_callback,
+            info);
     }
     
     if(rc != GLOBUS_SUCCESS)

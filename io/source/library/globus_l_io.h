@@ -275,6 +275,15 @@ globus_i_io_register_operation(
     globus_bool_t                       needs_select,
     globus_i_io_operation_type_t        op);
 
+globus_result_t
+globus_i_io_register_quick_operation(
+    globus_io_handle_t *                handle,
+    globus_io_callback_t                callback_func,
+    void *                              callback_arg,
+    globus_io_destructor_t              arg_destructor,
+    globus_bool_t                       needs_select,
+    globus_i_io_operation_type_t        op);
+
 /* internal functions defined in globus_io_read.c */
 globus_result_t
 globus_i_io_register_read(

@@ -459,35 +459,17 @@ globus_io_register_listen(
 	goto error_exit;
     }
     
-    rc = globus_i_io_start_operation(
+    rc = globus_i_io_register_quick_operation(
         handle,
+        callback,
+        callback_arg,
+        GLOBUS_NULL,
+        GLOBUS_TRUE,
         GLOBUS_I_IO_READ_OPERATION);
-    
-    if(rc == GLOBUS_SUCCESS)
-    {
-        rc = globus_i_io_register_operation(
-            handle,
-            callback,
-            callback_arg,
-            GLOBUS_NULL,
-            GLOBUS_TRUE,
-            GLOBUS_I_IO_READ_OPERATION);
-        
-        if(rc != GLOBUS_SUCCESS)
-        {
-            globus_i_io_end_operation(handle, GLOBUS_I_IO_READ_OPERATION);
-        }
-    }
 
-    if(rc != GLOBUS_SUCCESS)
-    {
-	err = globus_error_get(rc);
-	goto error_exit;
-    }
-    
     globus_i_io_mutex_unlock();
 
-    return GLOBUS_SUCCESS;
+    return rc;
 
   error_exit:
     globus_i_io_mutex_unlock();
@@ -774,20 +756,14 @@ globus_i_io_connect_callback(
     }
     if(result == GLOBUS_SUCCESS)
     {
-	    handle->state = GLOBUS_IO_HANDLE_STATE_CONNECTED;
-
-	    info->callback(info->callback_arg,
-		           handle,
-		           result);
+        handle->state = GLOBUS_IO_HANDLE_STATE_CONNECTED;
     }
     else
     {
 	handle->state = GLOBUS_IO_HANDLE_STATE_INVALID;
-
-	info->callback(info->callback_arg,
-		       handle,
-		       result);
     }
+    
+    info->callback(info->callback_arg, handle, result);
 
     globus_free(info);
 }
@@ -866,6 +842,10 @@ globus_i_io_initialize_handle(
     handle->blocking_write = GLOBUS_FALSE;
     handle->blocking_except = GLOBUS_FALSE;
     handle->blocking_cancel = GLOBUS_FALSE;
+    
+    handle->read_operation = GLOBUS_NULL;
+    handle->write_operation = GLOBUS_NULL;
+    handle->except_operation = GLOBUS_NULL;
     
     return GLOBUS_SUCCESS;
 }

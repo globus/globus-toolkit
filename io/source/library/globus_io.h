@@ -887,6 +887,10 @@ struct globus_io_handle_s
     globus_bool_t                               blocking_except;
     globus_bool_t                               blocking_cancel;
     
+    struct globus_io_operation_info_s *         read_operation;
+    struct globus_io_operation_info_s *         write_operation;
+    struct globus_io_operation_info_s *         except_operation;
+    
     /* 
      *  NETLOGGER
      */

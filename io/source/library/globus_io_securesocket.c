@@ -289,6 +289,7 @@ globus_i_io_securesocket_register_accept(
     OM_uint32                   maj_stat;
     OM_uint32                   min_stat;
     globus_object_t *               err;
+    globus_result_t                 result;
     
     info = (globus_i_io_callback_info_t *)
         globus_malloc(sizeof(globus_i_io_callback_info_t));
@@ -404,13 +405,29 @@ globus_i_io_securesocket_register_accept(
      */
     accept_info->maj_stat = GSS_S_CONTINUE_NEEDED;
     
-    return globus_i_io_register_operation(
+    rc = globus_i_io_start_operation(
         handle,
-        globus_l_io_read_auth_token,
-        accept_info,
-        GLOBUS_NULL,
-        GLOBUS_TRUE,
-        GLOBUS_I_IO_READ_OPERATION);
+        GLOBUS_I_IO_READ_OPERATION | GLOBUS_I_IO_WRITE_OPERATION);
+    
+    if(rc == GLOBUS_SUCCESS)
+    {
+        rc = globus_i_io_register_operation(
+            handle,
+            globus_l_io_read_auth_token,
+            accept_info,
+            GLOBUS_NULL,
+            GLOBUS_TRUE,
+            GLOBUS_I_IO_READ_OPERATION);
+        
+        if(rc != GLOBUS_SUCCESS)
+        {
+            globus_i_io_end_operation(
+                handle, 
+                GLOBUS_I_IO_READ_OPERATION | GLOBUS_I_IO_WRITE_OPERATION);
+        }
+    }
+    
+    return rc;
 }
 /* globus_i_io_securesocket_register_accept() */
 
@@ -725,6 +742,9 @@ globus_i_io_securesocket_register_connect_callback(
     return;
 
 error_exit:
+    globus_i_io_end_operation(
+        handle, 
+        GLOBUS_I_IO_READ_OPERATION | GLOBUS_I_IO_WRITE_OPERATION);
     globus_i_io_close(handle);
     globus_i_io_mutex_unlock();
     info->callback(info->callback_arg,
@@ -1937,6 +1957,11 @@ globus_l_io_init_sec_context(
                     goto error_exit;
                 }
             }
+            
+            globus_i_io_end_operation(
+                handle, 
+                GLOBUS_I_IO_READ_OPERATION | GLOBUS_I_IO_WRITE_OPERATION);
+        
             globus_i_io_mutex_unlock();
 
             /* completed */
@@ -1973,6 +1998,10 @@ error_exit:
         (int) init_info->maj_stat,
         (int) init_info->min_stat,
         0);
+    
+    globus_i_io_end_operation(
+        handle, 
+        GLOBUS_I_IO_READ_OPERATION | GLOBUS_I_IO_WRITE_OPERATION);
         
     globus_i_io_close(handle);
 
@@ -2080,6 +2109,10 @@ globus_l_io_accept_sec_context(
         }
         else
         {
+            globus_i_io_end_operation(
+                handle, 
+                GLOBUS_I_IO_READ_OPERATION | GLOBUS_I_IO_WRITE_OPERATION);
+        
             globus_i_io_mutex_unlock();
             /* completed */
             accept_info->callback(accept_info->callback_arg,
@@ -2115,7 +2148,11 @@ error_exit:
         (int) accept_info->maj_stat,
         (int) accept_info->min_stat,
         0);
-
+    
+    globus_i_io_end_operation(
+        handle, 
+        GLOBUS_I_IO_READ_OPERATION | GLOBUS_I_IO_WRITE_OPERATION);
+        
     globus_i_io_mutex_unlock();
 
     accept_info->callback(accept_info->callback_arg,
@@ -2263,7 +2300,11 @@ globus_l_io_write_auth_token(
                 globus_i_io_close(handle);
             }
         }
-
+        
+        globus_i_io_end_operation(
+            handle, 
+            GLOBUS_I_IO_READ_OPERATION | GLOBUS_I_IO_WRITE_OPERATION);
+                
         globus_i_io_mutex_unlock();
 
         init_info->callback(init_info->callback_arg,
@@ -2338,7 +2379,11 @@ error_exit:
         (int) init_info->maj_stat,
         (int) init_info->min_stat,
         0);
-
+    
+    globus_i_io_end_operation(
+        handle, 
+        GLOBUS_I_IO_READ_OPERATION | GLOBUS_I_IO_WRITE_OPERATION);
+            
     globus_i_io_mutex_unlock();
 
     init_info->callback(init_info->callback_arg,
@@ -2439,7 +2484,13 @@ error_exit:
             (int) init_info->min_stat,
             0);
     }
-
+    
+    globus_i_io_mutex_lock();
+    globus_i_io_end_operation(
+        handle, 
+        GLOBUS_I_IO_READ_OPERATION | GLOBUS_I_IO_WRITE_OPERATION);
+    globus_i_io_mutex_unlock();
+    
     init_info->callback(init_info->callback_arg,
                         handle,
                         globus_error_put(err),
@@ -2506,7 +2557,7 @@ globus_l_io_secure_connect_callback(
     }
 
     handle->state = GLOBUS_IO_HANDLE_STATE_CONNECTED;
-
+    
     callback_info->callback(callback_info->callback_arg,
                             handle,
                             GLOBUS_SUCCESS);
@@ -2525,7 +2576,7 @@ error_exit:
             (int) init_info->min_stat,
             0);
     }
-
+    `
     callback_info->callback(callback_info->callback_arg,
                             handle,
                             globus_error_put(err));
@@ -3005,7 +3056,9 @@ globus_io_register_init_delegation(
         
         if(rc != GLOBUS_SUCCESS)
         {
-            globus_i_io_end_operation(handle, GLOBUS_I_IO_READ_OPERATION);
+            globus_i_io_end_operation(
+                handle, 
+                GLOBUS_I_IO_READ_OPERATION | GLOBUS_I_IO_WRITE_OPERATION);
         }
     }
     
@@ -3251,7 +3304,9 @@ globus_io_register_accept_delegation(
         
         if(rc != GLOBUS_SUCCESS)
         {
-            globus_i_io_end_operation(handle, GLOBUS_I_IO_READ_OPERATION);
+            globus_i_io_end_operation(
+                handle, 
+                GLOBUS_I_IO_READ_OPERATION | GLOBUS_I_IO_WRITE_OPERATION);
         }
     }
     
@@ -3478,6 +3533,10 @@ globus_l_io_init_delegation(
         }
         else
         {
+            globus_i_io_end_operation(
+                handle, 
+                GLOBUS_I_IO_READ_OPERATION | GLOBUS_I_IO_WRITE_OPERATION);
+                
             globus_i_io_mutex_unlock();
 
             /* completed */
@@ -3510,7 +3569,11 @@ error_exit:
         (int) init_info->maj_stat,
         (int) init_info->min_stat,
         0);
-
+    
+    globus_i_io_end_operation(
+        handle, 
+        GLOBUS_I_IO_READ_OPERATION | GLOBUS_I_IO_WRITE_OPERATION);
+                
     globus_i_io_mutex_unlock();
     init_info->callback(init_info->callback_arg,
                         handle,
@@ -3618,6 +3681,10 @@ globus_l_io_accept_delegation(
         }
         else
         {
+            globus_i_io_end_operation(
+                handle, 
+                GLOBUS_I_IO_READ_OPERATION | GLOBUS_I_IO_WRITE_OPERATION);
+        
             globus_i_io_mutex_unlock();
 
             /* completed */
@@ -3648,7 +3715,11 @@ error_exit:
         (int) accept_info->maj_stat,
         (int) accept_info->min_stat,
         0);
-
+    
+    globus_i_io_end_operation(
+        handle, 
+        GLOBUS_I_IO_READ_OPERATION | GLOBUS_I_IO_WRITE_OPERATION);
+        
     globus_i_io_mutex_unlock();
     accept_info->callback(accept_info->callback_arg,
                           handle,
