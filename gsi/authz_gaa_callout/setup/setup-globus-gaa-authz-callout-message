@@ -2,20 +2,16 @@
 
 . $GLOBUS_LOCATION/libexec/globus-sh-tools.sh
 
-echo "
-***************************************************************************
+GPATH=$GPT_LOCATION
 
-Note: If you wish to complete the setup of the Globus GAA Authorization
-Callout, you will need to run the following script as root:
+if [ "$GPATH" = "" ]; then
+    GPATH=$GLOBUS_LOCATION
+fi
 
-$GLOBUS_LOCATION/setup/globus/setup-globus-gaa-authz-callout
+if [ "$GPATH" = "" ]; then
+    echo "GPT_LOCATION or GLOBUS_LOCATION needs to be set before running this script."
+fi
 
-This script will create the /etc/grid-security/gsi-authz.conf file if it does 
-not already exist and register the callout.
-For further information on using the setup-globus-gaa_authz-callout script, 
-use the -help option.  The -nonroot can be used on systems where root access
-is not available.
+$GLOBUS_SH_PERL -I${GPATH}/lib/perl ${GLOBUS_LOCATION}/setup/globus/setup-globus-gaa-authz-callout-message.pl "$@"
 
-***************************************************************************
-"
 exit 0
