@@ -329,7 +329,7 @@ main(int argc, char **argv)
 
     globus_url_copy_i_args_init();
 
-    if ( 0 > globus_args_scan( &argc,
+    if ( 0 > (rc = globus_args_scan( &argc,
                                &argv,
                                arg_num,
                                args_options,
@@ -338,10 +338,10 @@ main(int argc, char **argv)
                                oneline_usage,
                                long_usage,
                                &options_found,
-                               GLOBUS_NULL   ) )  /* error on argument line */
+                               GLOBUS_NULL   )) )  /* error on argument line */
     {
         globus_module_deactivate_all();
-        exit(1);
+        exit(rc == GLOBUS_FAILURE ? 1 : 0);
     }
 
     /* globus_libc_fprintf(stdout, "after args scan\n"); */

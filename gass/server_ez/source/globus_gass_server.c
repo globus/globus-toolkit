@@ -213,7 +213,7 @@ int main(int argc, char **argv)
 
     globus_i_gass_server_args_init();
 
-    if ( 0 > globus_args_scan( &argc,
+    if ( 0 > (rc = globus_args_scan( &argc,
 			       &argv,
 			       arg_num,
 			       args_options,
@@ -222,10 +222,10 @@ int main(int argc, char **argv)
 			       oneline_usage,
 			       long_usage,
 			       &options_found,
-			       GLOBUS_NULL   ) )  /* error to stderr */
+			       GLOBUS_NULL   ) ))  /* error to stderr */
     {	 
 	globus_module_deactivate_all();
-	exit(1);
+	exit(rc == GLOBUS_FAILURE ? 1 : 0);
     }
 
     for (list = options_found; 
