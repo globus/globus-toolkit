@@ -28,6 +28,7 @@ RCSID("$OpenBSD: ssh-keyscan.c,v 1.36 2002/06/16 21:30:58 itojun Exp $");
 #include "log.h"
 #include "atomicio.h"
 #include "misc.h"
+#include "pathnames.h"
 
 /* Flag indicating whether IPv4 or IPv6.  This can be set on the command line.
    Default value is AF_UNSPEC means both IPv4 and IPv6. */
@@ -700,6 +701,7 @@ main(int argc, char **argv)
 	extern char *optarg;
 
 	__progname = get_progname(argv[0]);
+	init_pathnames();
 	init_rng();
 	seed_rng();
 	TAILQ_INIT(&tq);
