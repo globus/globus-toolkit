@@ -250,5 +250,14 @@ int GSI_SOCKET_delegation_accept_ext(GSI_SOCKET *gsi_socket,
 				     char *delegated_credentials,
 				     int delegated_credentials_len);
 
+/*
+ * GSI_SOCKET_allow_anonymous()
+ *
+ * If value=1, allow anonymous GSSAPI/SSL authentication.
+ * Otherwise, the client must have a valid GSSAPI/SSL credential.
+ * Default is to *not* allow anonymous authentication.
+ *
+ */
+int GSI_SOCKET_allow_anonymous(GSI_SOCKET *self, const int value);
 
 #endif /* !__GSI_SOCKET_H */
