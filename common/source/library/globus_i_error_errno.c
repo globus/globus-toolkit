@@ -91,10 +91,14 @@ globus_l_error_errno_printable(
     int                                 length = 4 + strlen(sys_failed);
     char *                              printable;
 
-    globus_libc_lock();
 
-    sys_error = strerror(
+    sys_error = globus_libc_system_error_string(
         *((int *) globus_object_get_local_instance_data(error)));
+
+    if(sys_error == NULL)
+    {
+        sys_error = "(null)";
+    }
     
     length += strlen(sys_error);
     
@@ -118,8 +122,6 @@ globus_l_error_errno_printable(
                              sys_failed,
                              sys_error);
     }
-    
-    globus_libc_unlock();
     
     return printable;
     
