@@ -66,6 +66,9 @@
           GSICFG="$GSICFG --with-globus-static"
         fi
 
+	GLOBUS_FLAVOR_NAME=FLAVOR_GPTMACRO
+	export GLOBUS_FLAVOR_NAME
+
         CONFIGENV_GPTMACRO ./configure GSI_OPENSSH_GPTMACRO $GSICFG
       </Build_Step>
 
