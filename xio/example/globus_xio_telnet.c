@@ -149,6 +149,11 @@ main(
                         strlen(line), strlen(line), NULL, NULL);
                 test_res(res);
             }
+
+            if(strcmp(line, "QUIT\r\n") == 0)
+            {
+                done = GLOBUS_TRUE;
+            }
         }
 
         ndx = 0;
@@ -161,6 +166,7 @@ main(
                 fprintf(stdout, "done globus_xio_read\n");
             test_res(res);
             ndx += nbytes;
+            read_buffer[ndx] = '\0';
             if(strstr(read_buffer, "\r\n") != NULL)
             {
                 reading = GLOBUS_FALSE;
