@@ -27,7 +27,7 @@
             
             <Dependency Name="globus_openssl">
                 <Version>
-                    <Simple_Version Major="0"/>
+                    <Simple_Version Major="1"/>
                 </Version>
             </Dependency>   
         </Source_Dependencies>
@@ -41,7 +41,7 @@
 
             <Dependency Name="globus_openssl">
                 <Version>
-                    <Simple_Version Major="0"/>
+                    <Simple_Version Major="1"/>
                 </Version>
             </Dependency>   
         </Source_Dependencies>
