@@ -628,6 +628,12 @@ globus_xio_register_writev(
     globus_xio_iovec_callback_t                 cb,
     void *                                      user_arg);
 
+
+globus_result_t
+globus_xio_handle_cancel_operations(
+    globus_xio_handle_t                     handle,
+    globus_xio_attr_t                       attr);
+
 /**
  *  Close a handle
  *  @ingroup GLOBUS_XIO_API

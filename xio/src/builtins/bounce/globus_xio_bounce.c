@@ -176,11 +176,12 @@ test_bounce_next_op(
 
 void
 bounce_cb(
-    globus_xio_operation_t              op,
-    globus_result_t                     result,
-    void *                              user_arg)
+    globus_xio_operation_t                  op,
+    globus_result_t                         result,
+    void *                                  user_arg)
 {
-    bounce_info_t *      info;
+    bounce_info_t *                         info;
+    globus_result_t                         res;
 
     info = (bounce_info_t *) user_arg;
     info->res = result;
@@ -195,17 +196,23 @@ bounce_cb(
         info->next_op = TEST_FINISH;
     }
 
-    test_bounce_next_op(info, op);
+    res = test_bounce_next_op(info, op);
+    if(res != GLOBUS_SUCCESS)
+    {
+        info->res = res;
+        test_bounce_finish_op(info, op);
+    }
 }
 
 void
 bounce_data_cb(
-    globus_xio_operation_t              op,
-    globus_result_t                     result,
-    globus_size_t                       nbytes,
-    void *                              user_arg)
+    globus_xio_operation_t                  op,
+    globus_result_t                         result,
+    globus_size_t                           nbytes,
+    void *                                  user_arg)
 {
-    bounce_info_t *      info;
+    bounce_info_t *                         info;
+    globus_result_t                         res;
 
     info = (bounce_info_t *) user_arg;
     info->res = result;
@@ -216,7 +223,12 @@ bounce_data_cb(
         info->next_op = TEST_FINISH;
     }
 
-    test_bounce_next_op(info, op);
+    res = test_bounce_next_op(info, op);
+    if(res != GLOBUS_SUCCESS)
+    {
+        info->res = res;
+        test_bounce_finish_op(info, op);
+    }
 }
 
 static

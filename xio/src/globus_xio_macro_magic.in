@@ -24,6 +24,7 @@
     globus_i_xio_op_entry_t *               _my_op;                         \
     int                                     _caller_ndx;                    \
     globus_result_t                         _res;                           \
+    globus_bool_t                           _destroy_handle = GLOBUS_FALSE; \
     globus_xio_driver_t                     _driver;                        \
     GlobusXIOName(GlobusXIODriverPassOpen);                                 \
                                                                             \
@@ -60,6 +61,9 @@
         _my_op->caller_ndx = _caller_ndx;                                   \
         /* at time that stack is built this will be varified */             \
         globus_assert(_op->ndx <= _context->stack_size);                    \
+                                                                            \
+        /* ok to do this unlocked because no one else has it yet */         \
+        _op->ref++; /* gotta count the pass */                              \
         if(_op->ndx == _op->stack_size)                                     \
         {                                                                   \
             _res = _driver->transport_open_func(                            \
@@ -76,6 +80,25 @@
                         _op);                                               \
         }                                                                   \
         _my_op->in_register = GLOBUS_FALSE;                                 \
+        globus_mutex_lock(&_context->mutex);                                \
+        {                                                                   \
+            /* it is possible that the operations finished completely by    \
+               this point.  if finishing with an error it is possible that  \
+                we need to free the handle */                               \
+            _op->ref--;                                                     \
+            if(_op->ref == 0)                                               \
+            {                                                               \
+                GlobusXIOOperationDestroy(_op);                             \
+                GlobusIXIOHandleDec(_destroy_handle, _handle);              \
+            }                                                               \
+        }                                                                   \
+        globus_mutex_unlock(&_context->mutex);                              \
+                                                                            \
+        if(_destroy_handle)                                                 \
+        {                                                                   \
+            GlobusXIOHandleDestroy(_handle);                                \
+        }                                                                   \
+                                                                            \
         GlobusXIODebugSetOut(_out_context, _my_context);                    \
         GlobusXIODebugSetOut(_out_res, _res);                               \
     }                                                                       \
@@ -355,6 +378,7 @@
     int                                     _caller_ndx;                    \
     globus_result_t                         _res = GLOBUS_SUCCESS;          \
     globus_xio_driver_t                     _driver;                        \
+    globus_bool_t                           _destroy_handle = GLOBUS_FALSE; \
     GlobusXIOName(GlobusXIODriverPassWrite);                                \
                                                                             \
     _op = (_in_op);                                                         \
@@ -400,6 +424,7 @@
         globus_mutex_lock(&_context->mutex);                                \
         {                                                                   \
             _my_context->outstanding_operations++;                          \
+            _op->ref++;                                                     \
         }                                                                   \
         globus_mutex_unlock(&_context->mutex);                              \
         _res = _driver->write_func(                                         \
@@ -410,9 +435,19 @@
                                                                             \
         /* flip the callstack flag */                                       \
         _my_op->in_register = GLOBUS_FALSE;                                 \
-        if(_res != GLOBUS_SUCCESS)                                          \
+        globus_mutex_lock(&_context->mutex);                                \
         {                                                                   \
-            globus_mutex_lock(&_context->mutex);                            \
+            _op->ref--;                                                     \
+            if(_op->ref == 0)                                               \
+            {                                                               \
+                GlobusXIOOperationDestroy(_op);                             \
+                GlobusIXIOHandleDec(_destroy_handle, _op->_op_handle);      \
+                /* we cannot be set to destroy yet, because handle has not  \
+                    yet finished the close process */                       \
+                globus_assert(!_destroy_handle);                            \
+            }                                                               \
+                                                                            \
+            if(_res != GLOBUS_SUCCESS)                                      \
             {                                                               \
                 _my_context->outstanding_operations--;                      \
                 /*there is an off chance that we could need to close here*/ \
@@ -425,8 +460,8 @@
                     _close = GLOBUS_TRUE;                                   \
                 }                                                           \
             }                                                               \
-            globus_mutex_unlock(&_context->mutex);                          \
         }                                                                   \
+        globus_mutex_unlock(&_context->mutex);                              \
     }                                                                       \
                                                                             \
     if(_close)                                                              \
@@ -602,15 +637,16 @@
 2             _in_iovec_count, _in_wait_for, _in_cb, _in_user_arg)          \
 2 do                                                                        \
 {                                                                           \
-    globus_i_xio_op_t *                             _op;                    \
-    globus_i_xio_op_entry_t *                       _my_op;                 \
-    globus_i_xio_context_entry_t *                  _next_context;          \
-    globus_i_xio_context_entry_t *                  _my_context;            \
-    globus_i_xio_context_t *                        _context;               \
-    int                                             _caller_ndx;            \
-    globus_result_t                                 _res;                   \
-    globus_bool_t                                   _close = GLOBUS_FALSE;  \
-    globus_xio_driver_t                             _driver;                \
+    globus_i_xio_op_t *                     _op;                            \
+    globus_i_xio_op_entry_t *               _my_op;                         \
+    globus_i_xio_context_entry_t *          _next_context;                  \
+    globus_i_xio_context_entry_t *          _my_context;                    \
+    globus_i_xio_context_t *                _context;                       \
+    int                                     _caller_ndx;                    \
+    globus_result_t                         _res;                           \
+    globus_bool_t                           _close = GLOBUS_FALSE;          \
+    globus_xio_driver_t                     _driver;                        \
+    globus_bool_t                           _destroy_handle = GLOBUS_FALSE; \
     GlobusXIOName(GlobusXIODriverPassRead);                                 \
                                                                             \
     _op = (_in_op);                                                         \
@@ -663,6 +699,7 @@
         {                                                                   \
             _my_context->outstanding_operations++;                          \
             _my_context->read_operations++;                                 \
+            _op->ref++;                                                     \
         }                                                                   \
         globus_mutex_unlock(&_context->mutex);                              \
         _my_op->in_register = GLOBUS_TRUE;                                  \
@@ -675,9 +712,19 @@
                                                                             \
         /* flip the callstack flag */                                       \
         _my_op->in_register = GLOBUS_FALSE;                                 \
-        if(_res != GLOBUS_SUCCESS)                                          \
+        globus_mutex_lock(&_context->mutex);                                \
         {                                                                   \
-            globus_mutex_lock(&_context->mutex);                            \
+            _op->ref--;                                                     \
+            if(_op->ref == 0)                                               \
+            {                                                               \
+                GlobusXIOOperationDestroy(_op);                             \
+                GlobusIXIOHandleDec(_destroy_handle, _op->_op_handle);      \
+                /* we cannot be set to destroy yet, because handle has not  \
+                    yet finished the close process */                       \
+                globus_assert(!_destroy_handle);                            \
+            }                                                               \
+                                                                            \
+            if(_res != GLOBUS_SUCCESS)                                      \
             {                                                               \
                 _my_context->outstanding_operations--;                      \
                 _my_context->read_operations--;                             \
@@ -690,8 +737,8 @@
                     _close = GLOBUS_TRUE;                                   \
                 }                                                           \
             }                                                               \
-            globus_mutex_unlock(&_context->mutex);                          \
         }                                                                   \
+        globus_mutex_unlock(&_context->mutex);                              \
     }                                                                       \
                                                                             \
     if(_close)                                                              \
@@ -859,6 +906,9 @@
     globus_bool_t                                   _purge;                 \
     globus_bool_t                                   _close = GLOBUS_FALSE;  \
     globus_i_xio_context_t *                        _context;               \
+    GlobusXIOName(GlobusIXIODriverReadDeliver);                             \
+                                                                            \
+    GlobusXIODebugInternalEnter();                                          \
                                                                             \
     _op = (op);                                                             \
     _context = _op->_op_context;                                            \
@@ -938,6 +988,7 @@
         globus_i_xio_driver_start_close(_my_context->close_op,              \
                 GLOBUS_FALSE);                                              \
     }                                                                       \
+    GlobusXIODebugInternalExit();                                           \
 }                                                                           \
 2 while(0)
 

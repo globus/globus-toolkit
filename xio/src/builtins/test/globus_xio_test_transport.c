@@ -452,6 +452,7 @@ globus_l_xio_test_open(
 
     if(dh->failure == GLOBUS_XIO_TEST_FAIL_PASS_OPEN)
     {
+        globus_l_xio_test_attr_destroy(dh);
         return GlobusXIOErrorTestError(GLOBUS_XIO_TEST_FAIL_PASS_OPEN);
     }
     else if(dh->failure == GLOBUS_XIO_TEST_FAIL_FINISH_OPEN)

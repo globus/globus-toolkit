@@ -86,7 +86,6 @@ do                                                                          \
     }                                                                       \
     globus_mutex_unlock(&globus_l_mutex);                                   \
     globus_assert(_h->ref == 0);                                            \
-    globus_mutex_destroy(&_h->mutex);                                       \
     globus_free(_h);                                                        \
 } while(0)
 
@@ -263,7 +262,6 @@ typedef struct globus_i_xio_server_s
 
 typedef struct globus_i_xio_handle_s
 {
-    globus_mutex_t                          mutex;
     globus_mutex_t                          cancel_mutex;
     int                                     ref;
     int                                     stack_size;

@@ -152,12 +152,8 @@ globus_l_xio_server_accept_kickout(
         xio_op->ref--;
         if(xio_op->ref == 0)
         {
-            xio_op->ref--;
             globus_free(xio_op);
-            if(xio_server->ref == 0)
-            {
-                GlobusIXIOServerDec(destroy_server, xio_server);
-            }
+            GlobusIXIOServerDec(destroy_server, xio_server);
         }
     }
     globus_mutex_unlock(&xio_server->mutex);
@@ -221,21 +217,7 @@ globus_i_xio_server_accept_callback(
     /* we may be delaying the callback until cancel returns */
     if(accept)
     {
-        if(xio_server->space != GLOBUS_CALLBACK_GLOBAL_SPACE)
-        {
-            /* register a oneshot callback */
-            globus_callback_space_register_oneshot(
-                NULL,
-                NULL,
-                globus_l_xio_server_accept_kickout,
-                (void *)xio_op,
-                xio_server->space);
-        }
-        /* in all other cases we can just call callback */
-        else
-        {
-            globus_l_xio_server_accept_kickout((void *)xio_op);
-        }
+        globus_l_xio_server_accept_kickout((void *)xio_op);
     }
 
     GlobusXIODebugInternalExit();
@@ -276,11 +258,7 @@ globus_l_xio_accept_timeout_callback(
                 if(xio_op->ref == 0)
                 {
                     /* remove the reference for the target on the server */
-                    xio_server->ref--;
-                    if(xio_server->ref == 0)
-                    {
-                        GlobusIXIOServerDec(destroy_server, xio_server);
-                    }
+                    GlobusIXIOServerDec(destroy_server, xio_server);
                 }
 
                 /* remove it from the timeout list */
@@ -597,6 +575,7 @@ globus_xio_server_register_accept(
     globus_result_t                         res = GLOBUS_SUCCESS;
     globus_i_xio_server_t *                 xio_server;
     globus_i_xio_op_t *                     xio_op;
+    globus_bool_t                           free_server = GLOBUS_FALSE;
     GlobusXIOName(globus_xio_server_register_accept);
 
     GlobusXIODebugEnter();
@@ -665,11 +644,14 @@ globus_xio_server_register_accept(
                 &xio_server->accept_timeout_period);
         }
 
-        /* add a reference to the server for this target */
+        /* add a reference to the server for the op */
         xio_server->ref++;
     }
     globus_mutex_unlock(&xio_server->mutex);
 
+    /* add reference count for the pass.  does not need to be done locked
+       since no one has op until it is passed  */
+    xio_op->ref++;
     GlobusXIODriverPassAccept(res, xio_op, \
             globus_i_xio_server_accept_callback, NULL);
 
@@ -678,6 +660,18 @@ globus_xio_server_register_accept(
         goto err;
     }
 
+    globus_mutex_lock(&xio_server->mutex);
+    {
+        xio_op->ref--;
+        if(xio_op->ref == 0)
+        {
+            GlobusIXIOServerDec(free_server, xio_server);
+            globus_assert(!free_server);
+            globus_free(xio_op);
+        }
+    }
+    globus_mutex_unlock(&xio_server->mutex);
+
     GlobusXIODebugExit();
     return GLOBUS_SUCCESS;
 
@@ -685,6 +679,9 @@ globus_xio_server_register_accept(
 
     globus_mutex_lock(&xio_server->mutex);
     {
+        xio_op->ref--; /* dec for the register */
+        globus_assert(xio_op->ref > 0);
+
         /* set target to invalid type */
         xio_op->state = GLOBUS_XIO_OP_STATE_FINISHED;
 
@@ -701,7 +698,8 @@ globus_xio_server_register_accept(
         xio_op->ref--;
         if(xio_op == 0)
         {
-            xio_server->ref--;  /* remove the targets reference */
+            GlobusIXIOServerDec(free_server, xio_server);
+            globus_assert(!free_server);
             globus_free(xio_op);
         }
     }
@@ -800,22 +798,23 @@ globus_xio_server_destroy(
             xio_server->state = GLOBUS_XIO_SERVER_STATE_CLOSED;
             for(ctr = 0; ctr < xio_server->stack_size; ctr++)
             {
-                /* possible to lose a driver res, but you know.. so what? */
-                tmp_res = xio_server->entry[ctr].driver->server_destroy_func(
-                        xio_server->entry[ctr].server_handle);
-                if(tmp_res != GLOBUS_SUCCESS)
+                if(xio_server->entry[ctr].driver->server_destroy_func != NULL)
                 {
-                    res = GlobusXIOErrorWrapFailed("server_destroy", tmp_res);
+                    /* possible to lose a driver res, but you know.. so what? */
+                    tmp_res = 
+                        xio_server->entry[ctr].driver->server_destroy_func(
+                            xio_server->entry[ctr].server_handle);
+                    if(tmp_res != GLOBUS_SUCCESS)
+                    {
+                        res = GlobusXIOErrorWrapFailed(
+                                "server_destroy", tmp_res);
+                    }
                 }
             }
 
             /* dec refrence count then free.  this makes sure we don't free
                while in a user callback */
-            xio_server->ref--;
-            if(xio_server->ref == 0)
-            {
-                GlobusIXIOServerDec(destroy_server, xio_server);
-            }
+            GlobusIXIOServerDec(destroy_server, xio_server);
         }
     }
     globus_mutex_unlock(&xio_server->mutex);
@@ -845,7 +844,7 @@ globus_xio_target_destroy(
     globus_xio_target_t                     target)
 {   
     globus_i_xio_target_t *                 xio_target;
-    globus_result_t                         res;
+    globus_result_t                         res = GLOBUS_SUCCESS;
     globus_result_t                         tmp_res;
     int                                     ctr;
     GlobusXIOName(globus_xio_target_destroy);
@@ -869,12 +868,15 @@ globus_xio_target_destroy(
 
     for(ctr = 0; ctr < xio_target->stack_size; ctr++)
     {
-        tmp_res = xio_target->entry[ctr].driver->target_destroy_func(
-            xio_target->entry[ctr].target);
-        /* this will effectively report the last error detected */
-        if(tmp_res != GLOBUS_SUCCESS)
+        if(xio_target->entry[ctr].driver->target_destroy_func != NULL)
         {
-            res = tmp_res;
+            tmp_res = xio_target->entry[ctr].driver->target_destroy_func(
+                xio_target->entry[ctr].target);
+            /* this will effectively report the last error detected */
+            if(tmp_res != GLOBUS_SUCCESS)
+            {
+                res = tmp_res;
+            }
         }
     }
     globus_free((void*)xio_target);
@@ -1079,7 +1081,6 @@ globus_xio_target_init(
 
   err:
 
-    *target = NULL;
     GlobusXIODebugExitWithError();
     return res;
 }

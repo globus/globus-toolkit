@@ -17,3 +17,12 @@ globus_xio_error_is_canceled(
     return globus_error_match(
         globus_error_peek(res), GLOBUS_XIO_MODULE, GLOBUS_XIO_ERROR_CANCELED);
 }
+
+globus_bool_t
+globus_xio_error_is_timeout(
+    globus_result_t                             res)
+{
+    return globus_error_match(
+        globus_error_peek(res), GLOBUS_XIO_MODULE, GLOBUS_XIO_ERROR_TIMEDOUT);
+}
+

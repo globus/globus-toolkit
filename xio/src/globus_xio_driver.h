@@ -79,7 +79,7 @@ do                                                                          \
     }                                                                       \
     else                                                                    \
     {                                                                       \
-        _mutex = &_op->_op_handle->mutex;                                   \
+        _mutex = &_op->_op_context->mutex;                                  \
     }                                                                       \
     globus_mutex_lock(_mutex);                                              \
     {                                                                       \
@@ -106,7 +106,7 @@ do                                                                          \
     }                                                                       \
     else                                                                    \
     {                                                                       \
-        _mutex = &_op->_op_handle->mutex;                                   \
+        _mutex = &_op->_op_context->mutex;                                  \
     }                                                                       \
     globus_mutex_lock(_mutex);                                              \
     {                                                                       \

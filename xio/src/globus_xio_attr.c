@@ -47,6 +47,7 @@ globus_xio_attr_init(
 
     if(xio_attr->entry == NULL)
     {
+        *attr = GLOBUS_NULL;
         globus_free(xio_attr);
         res = GlobusXIOErrorMemory("attr->entry");
         goto err;
@@ -64,7 +65,6 @@ globus_xio_attr_init(
     return GLOBUS_SUCCESS;
 
   err:
-    *attr = GLOBUS_NULL;
 
     GlobusXIODebugExitWithError();
     return res;
@@ -198,6 +198,19 @@ globus_xio_attr_cntl(
 
                 attr->accept_timeout_cb = server_timeout_cb;
                 GlobusTimeReltimeCopy(attr->accept_timeout_period, *delay_time);
+                break;
+
+            case GLOBUS_XIO_ATTR_SET_CANCEL_OPEN:
+                attr->cancel_open = va_arg(ap, globus_bool_t);
+                break;
+            case GLOBUS_XIO_ATTR_SET_CANCEL_CLOSE:
+                attr->cancel_close = va_arg(ap, globus_bool_t);
+                break;
+            case GLOBUS_XIO_ATTR_SET_CANCEL_READ:
+                attr->cancel_read = va_arg(ap, globus_bool_t);
+                break;
+            case GLOBUS_XIO_ATTR_SET_CANCEL_WRITE:
+                attr->cancel_write = va_arg(ap, globus_bool_t);
                 break;
         } 
 
@@ -392,7 +405,7 @@ globus_xio_data_descriptor_init(
     }
 
     context = handle->context;
-    globus_mutex_lock(&handle->mutex);
+    globus_mutex_lock(&context->mutex);
     {
         GlobusXIOOperationCreate(op, context);
         if(op != NULL)
@@ -405,7 +418,7 @@ globus_xio_data_descriptor_init(
             res = GlobusXIOErrorMemory("xio_dd");
         }
     }
-    globus_mutex_unlock(&handle->mutex);
+    globus_mutex_unlock(&context->mutex);
 
     if(res != GLOBUS_SUCCESS)
     {
@@ -464,12 +477,12 @@ globus_xio_data_descriptor_destroy(
         }
     }
 
-    globus_mutex_lock(&handle->mutex);
+    globus_mutex_lock(&handle->context->mutex);
     {
         GlobusXIOOperationDestroy(op);
         GlobusIXIOHandleDec(destroy_handle, handle);
     }
-    globus_mutex_unlock(&handle->mutex);
+    globus_mutex_unlock(&handle->context->mutex);
 
     if(destroy_handle)
     {

@@ -120,6 +120,7 @@ globus_l_xio_verify_target_destroy(
     {
         globus_assert(!"Target string doesn't match");
     }
+    free(tst_str);
 
     return GLOBUS_SUCCESS;
 }
@@ -263,6 +264,8 @@ globus_l_xio_verify_close(
 
     GlobusXIODriverPassClose(res, op,   \
         globus_l_xio_verify_close_cb, NULL);
+
+    globus_free(tst_str);
 
     return res;
 }
