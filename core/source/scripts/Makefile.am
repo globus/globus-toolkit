@@ -1,5 +1,3 @@
-bin_SCRIPTS= globus_build_config.pl
+libexec_SCRIPTS= globus-args-parser-header
 
 
-all-local:
-	chmod 755 globus_build_config.pl
