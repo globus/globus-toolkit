@@ -159,8 +159,6 @@ BUNDLE globus-data-management-server
 	globus_ftp_control
 	globus_gridftp_server
         globus_libxml2
-        globus_libxml25
-	globus_libxslt
         globus_xmlsec1
         gaa_util
 	gaa_core
@@ -460,8 +458,6 @@ BUNDLE gt2-unthreaded
 	globus_io
 	globus_libtool
 	globus_libxml2
-	globus_libxml25
-	globus_libxslt
 	globus_mp
 	globus_nexus
 	globus_openssl
@@ -522,3 +518,17 @@ BUNDLE gt2-threaded THREADED
 	globus_user_env
         globus_xio
 	gssapi_error
+
+BUNDLE globus-simple-ca
+	globus_core
+	globus_common
+	globus_common_setup
+	globus_openssl
+	globus_libtool
+	globus_icu4c
+	globus_gsi_openssl_error
+	globus_openssl_module
+	globus_gsi_proxy_ssl
+	globus_gsi_cert_utils
+	globus_simple_ca
+	globus_simple_ca_setup
