@@ -8034,6 +8034,7 @@ void do_daemon(int argc, char **argv, char **envp)
     int one = 1;
     FILE *pidfile;
     int i;
+    int port;
 
     /* Some of this is "borrowed" from inn - lots of it isn't */
 
@@ -8167,7 +8168,14 @@ void do_daemon(int argc, char **argv, char **envp)
 	exit(1);
     }
     
-    daemon_port = ntohs(server.sin_port);
+    port = ntohs(server.sin_port);
+
+    if(daemon_port == 0)
+    {
+        fprintf(stdout, "Accepting connections on port %i\n", port);
+    }
+
+    daemon_port = port;
     
     sprintf(proctitle, "accepting connections on port %i", daemon_port);
     setproctitle("%s", proctitle);
