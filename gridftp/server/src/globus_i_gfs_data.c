@@ -2836,32 +2836,36 @@ globus_l_gfs_data_send_eof(
     
     globus_mutex_lock(&op->session_handle->mutex);
     {
-        if(op->state == GLOBUS_L_GFS_DATA_FINISH)
+        switch(op->state)
         {
-            op->eof_ready = GLOBUS_TRUE;
-            result = globus_ftp_control_data_write(
-                &op->data_handle->data_channel,
-                "",
-                0,
-                0,
-                GLOBUS_TRUE,
-                globus_l_gfs_data_write_eof_cb,
-                op);
-            if(result != GLOBUS_SUCCESS)
-            {
-                globus_i_gfs_log_result(
-                    "send_eof error", result);
-                op->cached_res = result;
-                globus_callback_register_oneshot(
-                    NULL,
-                    NULL,
-                    globus_l_gfs_data_end_transfer_kickout,
+            case GLOBUS_L_GFS_DATA_FINISH:
+                op->eof_ready = GLOBUS_TRUE;
+                result = globus_ftp_control_data_write(
+                    &op->data_handle->data_channel,
+                    "",
+                    0,
+                    0,
+                    GLOBUS_TRUE,
+                    globus_l_gfs_data_write_eof_cb,
                     op);
-            }
-        }
-        else
-        {
-            op->eof_ready = GLOBUS_TRUE;
+                if(result != GLOBUS_SUCCESS)
+                {
+                    globus_i_gfs_log_result(
+                        "send_eof error", result);
+                    op->cached_res = result;
+                    globus_callback_register_oneshot(
+                        NULL,
+                        NULL,
+                        globus_l_gfs_data_end_transfer_kickout,
+                        op);
+                }
+                break;
+            case GLOBUS_L_GFS_DATA_CONNECTED:
+                op->eof_ready = GLOBUS_TRUE;
+                break;
+            default:
+                /* figure out what needs to happen in other states */
+                break;
         }
     }
     globus_mutex_unlock(&op->session_handle->mutex);
