@@ -69,7 +69,8 @@ globus_gram_callout(
     gss_ctx_id_t                        job_initiator_ctx;
     gss_ctx_id_t                        requester_ctx;
     char *                              job_id;
-    char *                              action;
+    char *                              action = NULL;
+    char *                              rest;
     globus_rsl_t *                      rsl;
     globus_result_t                     result = GLOBUS_SUCCESS;
     OM_uint32                           major_status;
@@ -87,8 +88,13 @@ globus_gram_callout(
     requester_ctx = va_arg(ap, gss_ctx_id_t);
     job_id = va_arg(ap, char *);
     rsl = va_arg(ap, globus_rsl_t *);
-    action = va_arg(ap, char *);
+    action = strdup(va_arg(ap, char *));
+    
+    rest = strchr(action,' ');
+    if (rest)
+	*rest++ = '\0';
 
+    
     dump_file = fopen("authz_callout.txt","w");
 
     fprintf(dump_file, "Job ID: %s\nAction: %s\n",
@@ -158,6 +164,11 @@ globus_gram_callout(
 
     
  exit:
+    if(action)
+    { 
+        free(action);
+    }
+    
     return result;
 }
 /* @} */
