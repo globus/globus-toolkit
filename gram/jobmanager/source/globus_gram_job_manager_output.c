@@ -19,6 +19,7 @@ typedef enum
     GLOBUS_GRAM_JOB_MANAGER_DESTINATION_OPEN,
     GLOBUS_GRAM_JOB_MANAGER_DESTINATION_VALID,
     GLOBUS_GRAM_JOB_MANAGER_DESTINATION_CLOSE,
+    GLOBUS_GRAM_JOB_MANAGER_DESTINATION_FAILED,
     GLOBUS_GRAM_JOB_MANAGER_DESTINATION_INVALID
 }
 globus_gram_job_manager_output_destination_state_t;
@@ -37,7 +38,6 @@ typedef struct globus_l_gram_job_manager_output_info_t
     globus_callback_handle_t		callback_handle;
     globus_bool_t			close_flag;
     int					pending_opens;
-    int					pending_closes;
     int					open_failure_code;
 }
 globus_l_gram_job_manager_output_info_t;
@@ -61,6 +61,7 @@ globus_gram_job_manager_output_which_t;
 
 typedef struct
 {
+    globus_gram_jobmanager_request_t *	request;
     globus_gram_job_manager_output_destination_type_t
 					type;
     globus_gram_job_manager_output_destination_state_t
@@ -107,6 +108,11 @@ globus_l_gram_job_manager_output_get_positions(
 static
 void
 globus_l_gram_job_manager_output_poll(
+    void *				user_arg);
+
+static
+void
+globus_l_gram_job_manager_output_close_kickout(
     void *				user_arg);
 
 static
@@ -200,12 +206,6 @@ globus_l_gram_job_manager_output_gass_close_callback(
 
 static
 void
-globus_l_gram_job_manager_output_gass_fail_callback(
-    void *				arg,
-    globus_gass_transfer_request_t 	gass_request);
-
-static
-void
 globus_l_gram_job_manager_output_ftp_close_callback(
     void *				arg,
     globus_ftp_client_handle_t *	handle,
@@ -237,6 +237,11 @@ globus_l_gram_job_manager_output_close_done(
     globus_l_gram_job_manager_output_destination_t *
 					destination);
 
+/**
+ * Initialize the output information structure. This structure
+ * is used to keep track of the destinations where we will be sending stdout
+ * and stderr.
+ */
 int
 globus_gram_job_manager_output_init(
     globus_gram_jobmanager_request_t *	request)
@@ -255,7 +260,6 @@ globus_gram_job_manager_output_init(
     request->output->stderr_destinations = NULL;
     request->output->callback_handle = GLOBUS_HANDLE_TABLE_NO_HANDLE;
     request->output->pending_opens = 0;
-    request->output->pending_closes = 0;
     request->output->close_flag = GLOBUS_FALSE;
     request->output->open_failure_code = 0;
 
@@ -556,55 +560,50 @@ globus_gram_job_manager_output_close(
     {
 	fstat(request->output->stdout_fd, &file_status);
 	request->output->stdout_size = file_status.st_size;
+    }
 
-	tmp_list = request->output->stdout_destinations;
-	while(!globus_list_empty(tmp_list))
+    tmp_list = request->output->stdout_destinations;
+    while(!globus_list_empty(tmp_list))
+    {
+	node = tmp_list;
+	destination = globus_list_first(tmp_list);
+	tmp_list = globus_list_rest(tmp_list);
+
+	if(destination->state == 
+	       GLOBUS_GRAM_JOB_MANAGER_DESTINATION_INVALID ||
+	   destination->state ==
+	       GLOBUS_GRAM_JOB_MANAGER_DESTINATION_NEW)
 	{
-	    node = tmp_list;
-	    destination = globus_list_first(tmp_list);
-	    tmp_list = globus_list_rest(tmp_list);
-
-	    if(destination->state == 
-	           GLOBUS_GRAM_JOB_MANAGER_DESTINATION_INVALID)
-	    {
-		globus_list_remove(
-			&request->output->stdout_destinations,
-			node);
-	    }
-	    else if(destination->state != 
-	           GLOBUS_GRAM_JOB_MANAGER_DESTINATION_CLOSE)
-	    {
-		request->output->pending_closes++;
-	    }
+	    globus_list_remove(
+		    &request->output->stdout_destinations,
+		    node);
 	}
     }
     if(request->output->stderr_fd != -1)
     {
 	fstat(request->output->stderr_fd, &file_status);
 	request->output->stderr_size = file_status.st_size;
+    }
 
-	tmp_list = request->output->stderr_destinations;
-	while(!globus_list_empty(tmp_list))
+    tmp_list = request->output->stderr_destinations;
+    while(!globus_list_empty(tmp_list))
+    {
+	node = tmp_list;
+	destination = globus_list_first(tmp_list);
+	tmp_list = globus_list_rest(tmp_list);
+
+	if(destination->state == 
+	       GLOBUS_GRAM_JOB_MANAGER_DESTINATION_INVALID ||
+	   destination->state ==
+	       GLOBUS_GRAM_JOB_MANAGER_DESTINATION_NEW)
 	{
-	    node = tmp_list;
-	    destination = globus_list_first(tmp_list);
-	    tmp_list = globus_list_rest(tmp_list);
-
-	    if(destination->state == 
-	           GLOBUS_GRAM_JOB_MANAGER_DESTINATION_INVALID)
-	    {
-		globus_list_remove(
-			&request->output->stderr_destinations,
-			node);
-	    }
-	    else if(destination->state != 
-	           GLOBUS_GRAM_JOB_MANAGER_DESTINATION_CLOSE)
-	    {
-		request->output->pending_closes++;
-	    }
+	    globus_list_remove(
+		    &request->output->stderr_destinations,
+		    node);
 	}
     }
-    if(request->output->pending_closes == 0)
+    if(globus_list_empty(request->output->stdout_destinations) &&
+       globus_list_empty(request->output->stderr_destinations))
     {
 	GlobusTimeReltimeSet(delay, 0, 0);
 
@@ -784,21 +783,13 @@ globus_gram_job_manager_output_check_size(
 /* globus_gram_job_manager_output_check_size() */
 
 /**
- * Poll output files for new data to send to destinations.
+ * Periodically poll output destinations.
  *
- * This function checks the destinations for stdout and stderr
- * being handled by the job manager, and if the stdout or stderr files
- * generated by the job are larger than what has been sent to the
- * destination, new data will be sent. This is invoked as a 
- * periodic event by the callback code, so we must handle locking
- * the request ourselves here.
- *
- * @param time_stop
- *        Absolute time indicating when the callback should return by,
- *        if it is to be friendly to other registered events.
- * @param user_arg
- *        A void * casting of the job request structure.
- *
+ * This function is called periodically as the job manager is running.
+ * It locks the request mutex and calls the
+ * globus_l_gram_job_manager_output_poll_locked() which coordinates the
+ * real work.
+ * @param user_arg a void * casting of the job request structure.
  */
 static
 void
@@ -817,6 +808,20 @@ globus_l_gram_job_manager_output_poll(
 }
 /* globus_gram_job_manager_output_poll() */
 
+/**
+ * Poll output files for new data to send to destinations.
+ *
+ * This function checks the destinations for stdout and stderr
+ * being handled by the job manager, and if the stdout or stderr files
+ * generated by the job are larger than what has been sent to the
+ * destination, new data will be sent. This is invoked as a 
+ * periodic event by the callback code, so we must handle locking
+ * the request ourselves here.
+ *
+ * @param request
+ *        The job request structure for the job we are monitoring.
+ *
+ */
 static
 void
 globus_l_gram_job_manager_output_poll_locked(
@@ -966,6 +971,7 @@ globus_gram_job_manager_output_read_state(
 		sizeof(globus_l_gram_job_manager_output_destination_t));
 
 	fgets(buffer, bufsize, fp);
+	destination->request = request;
 	destination->url = globus_libc_strdup(buffer); 
 
 	fgets(buffer, bufsize, fp);
@@ -995,6 +1001,7 @@ globus_gram_job_manager_output_read_state(
 		sizeof(globus_l_gram_job_manager_output_destination_t));
 
 	fgets(buffer, bufsize, fp);
+	destination->request = request;
 	destination->url = globus_libc_strdup(buffer); 
 
 	fgets(buffer, bufsize, fp);
@@ -1107,6 +1114,7 @@ globus_l_gram_job_manager_output_insert_urls(
 
 	destination = globus_libc_malloc(
 		sizeof(globus_l_gram_job_manager_output_destination_t));
+	destination->request = request;
 	destination->tag = tag ? globus_libc_strdup(tag) : NULL;
 	destination->position = 0;
 	destination->callback_count = 0;
@@ -1235,7 +1243,6 @@ globus_l_gram_job_manager_url_is_dev_null(
 
 /**
  * Flush data to output destinations.
- *
  */
 static
 int
@@ -1313,17 +1320,8 @@ globus_l_gram_job_manager_output_destination_flush(
 		    }
 		    else
 		    {
-			if(!request->output->close_flag)
-			{
-			    destination->state =
-				GLOBUS_GRAM_JOB_MANAGER_DESTINATION_INVALID;
-			    request->output->pending_closes++;
-			}
-
-			result = globus_io_register_close(
-				&destination->handle.file,
-				globus_l_gram_job_manager_file_close_callback,
-				request);
+			destination->state =
+			    GLOBUS_GRAM_JOB_MANAGER_DESTINATION_FAILED;
 
 			read_amt = 0;
 		    }
@@ -1344,17 +1342,9 @@ globus_l_gram_job_manager_output_destination_flush(
 		    }
 		    else
 		    {
-			if(!request->output->close_flag)
-			{
-			    destination->state =
-				GLOBUS_GRAM_JOB_MANAGER_DESTINATION_INVALID;
-			    request->output->pending_closes++;
-			}
+			destination->state =
+			    GLOBUS_GRAM_JOB_MANAGER_DESTINATION_FAILED;
 
-			globus_gass_transfer_fail(
-				destination->handle.gass,
-				globus_l_gram_job_manager_output_gass_fail_callback,
-				request);
 			read_amt = 0;
 		    }
 		    break;
@@ -1374,14 +1364,9 @@ globus_l_gram_job_manager_output_destination_flush(
 		    }
 		    else
 		    {
-			if(!request->output->close_flag)
-			{
-			    destination->state =
-				GLOBUS_GRAM_JOB_MANAGER_DESTINATION_INVALID;
-			    request->output->pending_closes++;
-			}
+			destination->state =
+			    GLOBUS_GRAM_JOB_MANAGER_DESTINATION_FAILED;
 
-			globus_ftp_client_abort(&destination->handle.ftp);
 			read_amt = 0;
 		    }
 		default:
@@ -1398,11 +1383,31 @@ globus_l_gram_job_manager_output_destination_flush(
 	globus_libc_free(buffer);
     }
 
-    if(destination->callback_count == 0 &&
-       destination->state == GLOBUS_GRAM_JOB_MANAGER_DESTINATION_VALID &&
-       request->output->close_flag &&
-       destination->position == size)
+    switch(destination->state)
     {
+      case GLOBUS_GRAM_JOB_MANAGER_DESTINATION_NEW:
+      case GLOBUS_GRAM_JOB_MANAGER_DESTINATION_OPEN:
+      case GLOBUS_GRAM_JOB_MANAGER_DESTINATION_CLOSE:
+      case GLOBUS_GRAM_JOB_MANAGER_DESTINATION_INVALID:
+	/* Nothing to see here. */
+        break;
+      case GLOBUS_GRAM_JOB_MANAGER_DESTINATION_VALID:
+	/* If we've already pushed all of the data to the server, and
+	 * close_flag is set, then it's time to close this destination
+	 */
+	if(destination->callback_count == 0 &&
+	   request->output->close_flag &&
+	   destination->position == size)
+	{
+	    globus_l_gram_job_manager_output_destination_close(
+		    request,
+		    destination);
+	}
+	break;
+      case GLOBUS_GRAM_JOB_MANAGER_DESTINATION_FAILED:
+	/* If the send failed above, then we should close this destination
+	 * as well.
+	 */
 	globus_l_gram_job_manager_output_destination_close(
 		request,
 		destination);
@@ -1411,6 +1416,15 @@ globus_l_gram_job_manager_output_destination_flush(
 }
 /* globus_l_gram_job_manager_output_destination_flush() */
 
+/**
+ * Open a new destination for stdout or stderr.
+ *
+ * @param request
+ *        The job request structure for the job we are monitoring.
+ * @param destination
+ *        The information about the output destination, including
+ *        the URL for that destination.
+ */
 static
 int
 globus_l_gram_job_manager_output_destination_open(
@@ -1594,11 +1608,14 @@ globus_l_gram_job_manager_output_destination_close(
 {
     globus_result_t			result;
     int					rc;
+    globus_reltime_t			delay;
 
     globus_gram_job_manager_request_log(
 	    request,
 	    "closing destination %s\n",
 	    destination->url);
+
+    GlobusTimeReltimeSet(delay, 0, 0);
 
     switch(destination->type)
     {
@@ -1608,15 +1625,16 @@ globus_l_gram_job_manager_output_destination_close(
 		&destination->handle.file,
 		globus_l_gram_job_manager_file_close_callback,
 		request);
-	if(result == GLOBUS_SUCCESS)
+
+	destination->state = GLOBUS_GRAM_JOB_MANAGER_DESTINATION_CLOSE;
+
+	if(result != GLOBUS_SUCCESS)
 	{
-	    destination->state = GLOBUS_GRAM_JOB_MANAGER_DESTINATION_CLOSE;
-	}
-	else
-	{
-	    globus_l_gram_job_manager_output_file_close(
-		    request,
-		    destination);
+	    globus_callback_register_oneshot(
+		NULL,
+		&delay,
+		globus_l_gram_job_manager_output_close_kickout,
+		destination);
 	}
 	break;
 
@@ -1628,16 +1646,18 @@ globus_l_gram_job_manager_output_destination_close(
 		GLOBUS_TRUE,
 		globus_l_gram_job_manager_output_gass_close_callback,
 		request);
+	destination->state = GLOBUS_GRAM_JOB_MANAGER_DESTINATION_CLOSE;
 	if(rc == GLOBUS_SUCCESS)
 	{
-	    destination->state = GLOBUS_GRAM_JOB_MANAGER_DESTINATION_CLOSE;
 	    destination->callback_count++;
 	}
 	else
 	{
-	    globus_l_gram_job_manager_output_gass_close(
-		    request,
-		    destination);
+	    globus_callback_register_oneshot(
+		NULL,
+		&delay,
+		globus_l_gram_job_manager_output_close_kickout,
+		destination);
 	}
 	break;
 
@@ -1653,12 +1673,15 @@ globus_l_gram_job_manager_output_destination_close(
 
 	if(result == GLOBUS_SUCCESS)
 	{
-	    destination->state = GLOBUS_GRAM_JOB_MANAGER_DESTINATION_CLOSE;
 	    destination->callback_count++;
 	}
 	else
 	{
-	    globus_l_gram_job_manager_output_ftp_close(request, destination);
+	    globus_callback_register_oneshot(
+		NULL,
+		&delay,
+		globus_l_gram_job_manager_output_close_kickout,
+		destination);
 	}
 	break;
 
@@ -2005,29 +2028,6 @@ globus_l_gram_job_manager_output_gass_close(
 
 static
 void
-globus_l_gram_job_manager_output_gass_fail_callback(
-    void *				arg,
-    globus_gass_transfer_request_t 	gass_request)
-{
-    globus_gram_jobmanager_request_t *	request;
-    globus_l_gram_job_manager_output_destination_t *
-    					destination;
-
-    request = arg;
-
-    globus_mutex_lock(&request->mutex);
-    destination = globus_gass_transfer_request_get_user_pointer(gass_request);
-
-    globus_gass_transfer_request_destroy(gass_request);
-
-    globus_l_gram_job_manager_output_close_done(request, destination);
-
-    globus_mutex_unlock(&request->mutex);
-}
-/* globus_l_gram_job_manager_output_gass_close_callback() */
-
-static
-void
 globus_l_gram_job_manager_output_ftp_close_callback(
     void *				arg,
     globus_ftp_client_handle_t *	handle,
@@ -2112,8 +2112,6 @@ globus_l_gram_job_manager_output_close_done(
 
     if(request->output->close_flag)
     {
-	request->output->pending_closes--;
-
 	if((request->jobmanager_state ==
 		GLOBUS_GRAM_JOB_MANAGER_STATE_CLOSE_OUTPUT ||
 	    request->jobmanager_state ==
@@ -2124,7 +2122,8 @@ globus_l_gram_job_manager_output_close_done(
 		GLOBUS_GRAM_JOB_MANAGER_STATE_STDIO_UPDATE_CLOSE ||
 	    request->jobmanager_state ==
 		GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_CLOSE_OUTPUT) &&
-	    request->output->pending_closes == 0)
+	    globus_list_empty(request->output->stdout_destinations) &&
+	    globus_list_empty(request->output->stderr_destinations))
 	{
 	    globus_callback_unregister(request->output->callback_handle,
 	                               NULL,
@@ -2192,3 +2191,41 @@ globus_l_gram_job_manager_output_get_type(
     }
 }
 /* globus_l_gram_job_manager_output_get_type() */
+
+static
+void
+globus_l_gram_job_manager_output_close_kickout(
+    void *				user_arg)
+{
+    globus_gram_jobmanager_request_t *	request;
+    globus_l_gram_job_manager_output_destination_t *
+					destination;
+    destination = user_arg;
+    request = destination->request;
+
+    globus_mutex_lock(&request->mutex);
+    switch(destination->type)
+    {
+      case GLOBUS_GRAM_JOB_MANAGER_OUTPUT_UNKNOWN:
+        /* ! */
+	break;
+      case GLOBUS_GRAM_JOB_MANAGER_OUTPUT_CACHE:
+      case GLOBUS_GRAM_JOB_MANAGER_OUTPUT_FILE:
+	globus_l_gram_job_manager_output_file_close(
+		request,
+		destination);
+	break;
+      case GLOBUS_GRAM_JOB_MANAGER_OUTPUT_GASS:
+	globus_l_gram_job_manager_output_gass_close(
+		request,
+		destination);
+	break;
+      case GLOBUS_GRAM_JOB_MANAGER_OUTPUT_FTP:
+	globus_l_gram_job_manager_output_ftp_close(
+		request,
+		destination);
+	break;
+    }
+    globus_mutex_unlock(&request->mutex);
+}
+/* globus_l_gram_job_manager_output_close_kickout() */

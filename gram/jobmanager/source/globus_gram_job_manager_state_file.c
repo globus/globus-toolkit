@@ -114,6 +114,7 @@ globus_gram_job_manager_state_file_write(
     fprintf(fp, "%s\n", request->job_id ? request->job_id : " ");
     fprintf(fp, "%s\n", request->rsl_spec);
     fprintf(fp, "%s\n", request->cache_tag);
+    fprintf(fp, "%d\n", request->two_phase_commit);
     fprintf(fp, "%s\n", request->scratchdir ? request->scratchdir : " ");
 
     globus_gram_job_manager_output_write_state(request, fp);
@@ -228,6 +229,9 @@ globus_gram_job_manager_state_file_read(
     fgets( buffer, sizeof(buffer), fp );
     buffer[strlen(buffer)-1] = '\0';
     request->cache_tag = globus_libc_strdup( buffer );
+    fgets( buffer, sizeof(buffer), fp );
+    buffer[strlen(buffer)-1] = '\0';
+    request->two_phase_commit = atoi(buffer);
     fgets( buffer, sizeof(buffer), fp );
     buffer[strlen(buffer)-1] = '\0';
     if(strcmp(buffer, " ") != 0)

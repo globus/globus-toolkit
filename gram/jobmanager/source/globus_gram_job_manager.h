@@ -363,7 +363,6 @@ typedef struct
     globus_gram_jobmanager_state_t	jobmanager_state;
     globus_gram_jobmanager_state_t	restart_state;
     globus_bool_t			unsent_status_change;
-    globus_callback_handle_t		two_phase_commit_timer;
     globus_callback_handle_t		poll_timer;
     globus_callback_handle_t		proxy_expiration_timer;
     globus_callback_handle_t		reporting_file_cleanup_timer;
