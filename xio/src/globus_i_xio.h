@@ -47,6 +47,11 @@
         GLOBUS_XIO_DEBUG_INTERNAL_TRACE,                                    \
         ("[%s] I Exiting with error\n", _xio_name))
 
+#define GlobusXIODebugInregisterOneShot()                                   \
+    GlobusXIODebugPrintf(                                                   \
+        GLOBUS_XIO_DEBUG_INFO,                                              \
+        ("[%s] Registering one shot due to in_register.\n", _xio_name))
+
 
 #define GlobusXIOHandleDestroy(_in_h)                                       \
 do                                                                          \

@@ -356,8 +356,8 @@ globus_xio_server_cntl(
 
 typedef void
 (*globus_xio_accept_callback_t)(
+    globus_xio_server_t                         server,
     globus_xio_target_t                         target,
-    globus_xio_operation_t                      op,
     globus_result_t                             result,
     void *                                      user_arg);
 

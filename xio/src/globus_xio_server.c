@@ -122,8 +122,8 @@ globus_l_xio_server_accept_kickout(
 
     /* call the users callback */
     xio_op->_op_accept_cb(
+        xio_server,
         xio_target,
-        xio_op,
         xio_op->cached_res,
         xio_op->user_arg);
 

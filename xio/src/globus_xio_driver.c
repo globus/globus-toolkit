@@ -83,11 +83,11 @@ globus_i_xio_driver_start_close(
                     my_op->attr,
                     my_context,
                     op);
+    my_op->in_register = GLOBUS_FALSE;
     if(res != GLOBUS_SUCCESS && !can_fail)
     {
         GlobusXIODriverFinishedClose(op, res);
     }
-    my_op->in_register = GLOBUS_FALSE;
 
     GlobusXIODebugInternalExit();
     return res;
