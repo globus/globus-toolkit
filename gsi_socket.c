@@ -15,7 +15,7 @@
 #include <netinet/in.h>
 #include <errno.h>
 #include <netdb.h>
-
+#include <unistd.h>
 
 struct _gsi_socket 
 {
@@ -27,7 +27,7 @@ struct _gsi_socket
     int				error_number;
     OM_uint32			major_status;
     OM_uint32			minor_status;
-    char			*client_name;
+    char			*peer_name;
     /* Buffer to hold unread, unwrapped data */
     char			*input_buffer;
     char			*input_buffer_index;
@@ -180,10 +180,10 @@ write_all(const int sock,
 static int
 read_length(const int sock)
 {
-    int length_array[4];
+    unsigned char length_array[4];
     int length = 0;
     
-    if (read_all(sock, (char *) length_array, sizeof(length_array)) < 0)
+    if (read_all(sock, length_array, sizeof(length_array)) < 0)
     {
 	return -1;
     }
@@ -205,14 +205,14 @@ static int
 write_length(const int sock,
 	     const int length)
 {
-    int length_array[4];
+    unsigned char length_array[4];
     
     length_array[0] = (length >> 24) & 0xFF;
     length_array[1] = (length >> 16) & 0xFF;
     length_array[2] = (length >> 8) & 0xFF;
     length_array[3] = length & 0xFF;
     
-    return write_all(sock, (char *) length_array, sizeof(length_array));
+    return write_all(sock, length_array, sizeof(length_array));
 }
 
 
@@ -252,7 +252,7 @@ read_token(const int sock,
 	return -1;
     }
     
-    *((int *)p_buffer_size) = buffer_len;
+    *p_buffer_size = (size_t) buffer_len;
     
     return buffer_len;
 }
@@ -270,6 +270,10 @@ assist_read_token(void *p_sock,
 		  size_t *p_buffer_size)
 {
     int return_value;
+    
+    assert(p_sock != NULL);
+    assert(p_buffer != NULL);
+    assert(p_buffer_size != NULL);
     
     return_value = read_token(*((int *) p_sock),
 			      (char **) p_buffer,
@@ -291,6 +295,8 @@ write_token(const int sock,
 	    const size_t buffer_size)
 {
     int return_value;
+
+    assert(buffer != NULL);
     
     if (write_length(sock, buffer_size) < 0)
     {
@@ -308,7 +314,97 @@ assist_write_token(void *sock,
 		   void *buffer,
 		   size_t buffer_size)
 {
+    assert(sock != NULL);
+    assert(buffer != NULL);
+    
     return write_token(*((int *) sock), (char *) buffer, buffer_size);
+}
+
+/*
+ * Wrapper around setenv() function
+ */
+static int
+mysetenv(const char *var,
+	 const char *value,
+	 int override)
+{
+#ifdef HAVE_SETENV
+
+    return setenv(name, value, overwrite);
+
+#else /* !HAVE_SETENV */
+
+    char *envstr = NULL;
+    int status;
+
+
+    assert(var != NULL);
+    assert(value != NULL);
+    
+    /* If we're not overriding and it's already set, then return */
+    if (!override && getenv(var))
+	return 0;
+
+    envstr = malloc(strlen(var) + strlen(value) + 2 /* '=' and NUL */);
+
+    if (envstr == NULL)
+    {
+	return -1;
+    }
+    
+    sprintf(envstr, "%s=%s", var, value);
+
+    status = putenv(envstr);
+
+    /* Don't free envstr as it may still be in use */
+  
+    return status;
+#endif /* !HAVE_SETENV */
+}
+
+
+static void
+myunsetenv(const char *var)
+
+{
+#ifdef HAVE_UNSETENV
+    unsetenv(var);
+
+    return;
+    
+#else /* !HAVE_UNSETENV */
+    extern char **environ;
+    char **p1 = environ;	/* New array list */
+    char **p2 = environ;	/* Current array list */
+    int len = strlen(var);
+
+    assert(var != NULL);
+    
+    /*
+     * Walk through current environ array (p2) copying each pointer
+     * to new environ array (p1) unless the pointer is to the item
+     * we want to delete. Copy happens in place.
+     */
+    while (*p2) {
+	if ((strncmp(*p2, var, len) == 0) &&
+	    ((*p2)[len] == '=')) {
+	    /*
+	     * *p2 points at item to be deleted, just skip over it
+	     */
+	    p2++;
+	} else {
+	    /*
+	     * *p2 points at item we want to save, so copy it
+	     */
+	    *p1 = *p2;
+	    p1++;
+	    p2++;
+	}
+    }
+
+    /* And make sure new array is NULL terminated */
+    *p1 = NULL;
+#endif /* HAVE_UNSETENV */
 }
 
 	    
@@ -363,9 +459,9 @@ GSI_SOCKET_destroy(GSI_SOCKET *self)
 	free(self->input_buffer);
     }
 
-    if (self->client_name != NULL)
+    if (self->peer_name != NULL)
     {
-	free(self->client_name);
+	free(self->peer_name);
     }
     
     if (self->error_string)
@@ -403,7 +499,7 @@ GSI_SOCKET_get_error_string(GSI_SOCKET *self,
 	
 	if (chars == -1)
 	{
-	    return -1;
+	    goto truncated;
 	}
 	
 	total_chars += chars;
@@ -417,7 +513,7 @@ GSI_SOCKET_get_error_string(GSI_SOCKET *self,
 
 	if (chars == -1)
 	{
-	    return -1;
+	    goto truncated;
 	}
 		
 	total_chars += chars;
@@ -433,23 +529,20 @@ GSI_SOCKET_get_error_string(GSI_SOCKET *self,
 
 	if (chars == -1)
 	{
-	    return -1;
+	    goto truncated;
 	}
 		
 	total_chars += chars;
 	buffer = &buffer[chars];
 	bufferlen -= chars;
-    }
 
-    if (self->minor_status)
-    {
 	chars = append_gss_status(buffer, bufferlen,
 				  self->minor_status,
 				  GSS_C_MECH_CODE);
 
 	if (chars == -1)
 	{
-	    return -1;
+	    goto truncated;
 	}
 		
 	total_chars += chars;
@@ -464,6 +557,9 @@ GSI_SOCKET_get_error_string(GSI_SOCKET *self,
     }
     
     return total_chars;
+
+  truncated:
+    return -1;
 }
 
 void
@@ -495,7 +591,8 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self)
     int				server_addr_len = sizeof(server_addr);
     struct hostent		*server_info;
     OM_uint32			req_flags = 0;
-
+    int				return_value = GSI_SOCKET_ERROR;
+    
     if (self == NULL)
     {
 	return GSI_SOCKET_ERROR;
@@ -504,7 +601,7 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self)
     if (self->gss_context != GSS_C_NO_CONTEXT)
     {
 	self->error_string = strdup("GSI_SOCKET already authenticated");
-	return GSI_SOCKET_ERROR;
+	goto error;
     }
 
     self->major_status = globus_gss_assist_acquire_cred(&self->minor_status,
@@ -572,10 +669,10 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self)
     }
 
     /* Success */
-    gss_release_cred(&self->minor_status, &creds);
-    free(server_name);
-    
-    return GSI_SOCKET_SUCCESS;
+    self->peer_name = server_name;
+    server_name = NULL;		/* To prevent free() below */
+
+    return_value = GSI_SOCKET_SUCCESS;
     
   error:
     if (server_name != NULL)
@@ -590,7 +687,7 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self)
 	gss_release_cred(&minor_status, &creds);
     }
     
-    return GSI_SOCKET_ERROR;
+    return return_value;
 }
 
 
@@ -599,6 +696,7 @@ GSI_SOCKET_authentication_accept(GSI_SOCKET *self)
 {
     gss_cred_id_t		creds = GSS_C_NO_CREDENTIAL;
     int				token_status;
+    int				return_value = GSI_SOCKET_ERROR;
 
 
     if (self == NULL)
@@ -609,7 +707,7 @@ GSI_SOCKET_authentication_accept(GSI_SOCKET *self)
     if (self->gss_context != GSS_C_NO_CONTEXT)
     {
 	self->error_string = strdup("GSI_SOCKET already authenticated");
-	return GSI_SOCKET_ERROR;
+	goto error;
     }
 	
     self->major_status = globus_gss_assist_acquire_cred(&self->minor_status,
@@ -625,7 +723,7 @@ GSI_SOCKET_authentication_accept(GSI_SOCKET *self)
 	globus_gss_assist_accept_sec_context(&self->minor_status,
 					     &self->gss_context,
 					     creds,
-					     &self->client_name,
+					     &self->peer_name,
 					     NULL, /* ret_flags */
 					     NULL, /* u2u flag */
 					     &token_status,
@@ -640,9 +738,7 @@ GSI_SOCKET_authentication_accept(GSI_SOCKET *self)
     }
     
     /* Success */
-    gss_release_cred(&self->minor_status, &creds);
-
-    return GSI_SOCKET_SUCCESS;
+    return_value = GSI_SOCKET_SUCCESS;
     
   error:
     if (creds != GSS_C_NO_CREDENTIAL)
@@ -652,8 +748,8 @@ GSI_SOCKET_authentication_accept(GSI_SOCKET *self)
 	gss_release_cred(&minor_status, &creds);
     }
     
-    return GSI_SOCKET_ERROR;
-}
+    return return_value;
+ }
 
 
 int
@@ -661,7 +757,7 @@ GSI_SOCKET_get_client_name(GSI_SOCKET *self,
 			   char *buffer,
 			   const int buffer_len)
 {
-    int return_value;
+    int return_value = GSI_SOCKET_ERROR;
     
     if (self == NULL)
     {
@@ -674,19 +770,24 @@ GSI_SOCKET_get_client_name(GSI_SOCKET *self,
 	return GSI_SOCKET_ERROR;
     }
     
-    if (self->client_name == NULL)
+    if (self->peer_name == NULL)
     {
 	self->error_string = strdup("Client not authenticated");
-	return GSI_SOCKET_ERROR;
+	goto error;
     }
     
-    return_value = snprintf(buffer, buffer_len, self->client_name);
+    return_value = snprintf(buffer, buffer_len, self->peer_name);
 
     if (return_value == -1)
     {
-	return GSI_SOCKET_TRUNCATED;
+	return_value = GSI_SOCKET_TRUNCATED;
+	goto error;
     }
+
+    /* SUCCESS */
+    return_value = GSI_SOCKET_SUCCESS;
     
+  error:
     return return_value;
 }
 
@@ -696,7 +797,7 @@ GSI_SOCKET_write_buffer(GSI_SOCKET *self,
 			const char *buffer,
 			const size_t buffer_len)
 {
-    int return_value;
+    int return_value = GSI_SOCKET_ERROR;
     
     if (self == NULL)
     {
@@ -755,10 +856,8 @@ GSI_SOCKET_write_buffer(GSI_SOCKET *self,
 	gss_release_buffer(&self->minor_status, &wrapped_buffer);
     }
 
-    return return_value;
-    
   error:
-    return GSI_SOCKET_ERROR;
+    return return_value;
 }
 
 int
@@ -766,7 +865,7 @@ GSI_SOCKET_read_buffer(GSI_SOCKET *self,
 		       char *buffer,
 		       size_t buffer_len)
 {
-    int return_value;
+    int return_value = GSI_SOCKET_ERROR;
     
     if (self == NULL)
     {
@@ -803,16 +902,18 @@ GSI_SOCKET_read_buffer(GSI_SOCKET *self,
 
 	    wrapped_buffer.value = self->input_buffer;
 	    wrapped_buffer.length = self->input_buffer_length;
-	    	
+
 	    self->major_status = gss_unwrap(&self->minor_status,
 					    self->gss_context,
 					    &wrapped_buffer,
 					    &unwrapped_buffer,
 					    &conf_state,
 					    &qop_state);
-	
+
 	    free(self->input_buffer);
-	    
+	    self->input_buffer = NULL;
+	    self->input_buffer_length = 0;
+
 	    if (self->major_status != GSS_S_COMPLETE)
 	    {
 		OM_uint32 minor_status;
@@ -820,8 +921,6 @@ GSI_SOCKET_read_buffer(GSI_SOCKET *self,
 		gss_release_buffer(&minor_status, &wrapped_buffer);
 		goto error;
 	    }
-	
-	    gss_release_buffer(&self->minor_status, &wrapped_buffer);
 	
 	    self->input_buffer = unwrapped_buffer.value;
 	    self->input_buffer_length = unwrapped_buffer.length;
@@ -845,7 +944,7 @@ GSI_SOCKET_read_buffer(GSI_SOCKET *self,
     }
     else
     {
-	/* User buffer is large enought to hold all data */
+	/* User buffer is large enough to hold all data */
 	memcpy(buffer, self->input_buffer_index, self->input_buffer_length);
 	return_value = self->input_buffer_length;
 	    
@@ -855,10 +954,251 @@ GSI_SOCKET_read_buffer(GSI_SOCKET *self,
 	self->input_buffer_index = NULL;
 	self->input_buffer_length = 0;
     }
-        
-    return return_value;
 
-  error:
-    return GSI_SOCKET_ERROR;
+  error:        
+    return return_value;
+}
+
+int GSI_SOCKET_delegation_init_ext(GSI_SOCKET *self,
+				   const char *source_credentials,
+				   int flags,
+				   int lifetime,
+				   const void *restrictions)
+{
+    gss_ctx_id_t		tmp_gss_context = GSS_C_NO_CONTEXT;
+    gss_cred_id_t		creds = GSS_C_NO_CREDENTIAL;
+    int				token_status;
+    OM_uint32			req_flags = 0;
+    int				return_value = GSI_SOCKET_ERROR;
+#ifdef GSI_SOCKET_SSLEAY
+    char			*x509_user_proxy_save = NULL;
+#endif /* GSI_SOCKET_SSLEAY */
+
+    if (self == NULL)
+    {
+	return GSI_SOCKET_ERROR;
+    }
+
+    if (self->gss_context == GSS_C_NO_CONTEXT)
+    {
+	self->error_string = strdup("GSI_SOCKET not authenticated");
+	return GSI_SOCKET_ERROR;
+    }
+
+    /*
+     * None of these are currently supported.
+     */
+    if ((flags != 0) ||
+	(lifetime != 0) ||
+	(restrictions != NULL))
+    {
+	self->error_number = EINVAL;
+	return GSI_SOCKET_ERROR;
+    }
+
+    /*
+     * This this is all currently a hack. What we do is reauthenticate
+     * and delegate as this is currently the only way to do this through
+     * the gssapi.
+     */
+
+#ifdef GSI_SOCKET_SSLEAY
+    if (source_credentials != NULL)
+    {
+	/*
+	 * Set X509_USER_PROXY so that we are using the requested
+	 * credentials.
+	 */
+	x509_user_proxy_save = getenv("X509_USER_PROXY");
+	mysetenv("X509_USER_PROXY", source_credentials, 1);
+    }
+#endif /* GSI_SOCKET_SSLEAY */    
+	
+    self->major_status = globus_gss_assist_acquire_cred(&self->minor_status,
+							GSS_C_INITIATE,
+							&creds);
+
+#ifdef GSI_SOCKET_SSLEAY
+    if (source_credentials != NULL)
+    {
+	/* Restore the previous setting of X509_USER_PROXY */
+	if (x509_user_proxy_save == NULL)
+	{
+	    myunsetenv("X509_USER_PROXY");
+	}
+	else
+	{
+	    mysetenv("X509_USER_PROXY", x509_user_proxy_save, 1);
+	}
+    }
+#endif /* GSI_SOCKET_SSLEAY */
+
+    if (self->major_status != GSS_S_COMPLETE)
+    {
+	goto error;
+    }
+
+    req_flags |= GSS_C_DELEG_FLAG;
+
+    self->major_status =
+	globus_gss_assist_init_sec_context(&self->minor_status,
+					   creds,
+					   &tmp_gss_context,
+					   self->peer_name,
+					   req_flags,
+					   NULL, /* ret_flags */
+					   &token_status,
+					   assist_read_token,
+					   &self->sock,
+					   assist_write_token,
+					   &self->sock);
+
+    if (self->major_status != GSS_S_COMPLETE)
+    {
+	goto error;
+    }
+
+    /* Success */
+    return_value = GSI_SOCKET_SUCCESS;
     
+  error:
+    if (creds != GSS_C_NO_CREDENTIAL)
+    {
+	OM_uint32 minor_status;
+	
+	gss_release_cred(&minor_status, &creds);
+    }
+
+    if (tmp_gss_context != GSS_C_NO_CONTEXT)
+    {
+	gss_buffer_desc output_token_desc  = GSS_C_EMPTY_BUFFER;
+	OM_uint32 minor_status;
+
+	gss_delete_sec_context(&minor_status,
+			       &tmp_gss_context,
+			       &output_token_desc);
+	
+	/* XXX Should deal with output_token_desc here */
+    }
+
+    return return_value;
+}
+
+
+int
+GSI_SOCKET_delegation_accept_ext(GSI_SOCKET *self,
+				 char *delegated_credentials,
+				 int delegated_credentials_len)
+{
+    gss_ctx_id_t		tmp_gss_context = GSS_C_NO_CONTEXT;
+    gss_cred_id_t		creds = GSS_C_NO_CREDENTIAL;
+    int				token_status;
+    int				return_value = GSI_SOCKET_ERROR;
+#ifdef GSI_SOCKET_SSLEAY
+    char			*x509_user_deleg_proxy_save = NULL;
+#endif /* GSI_SOCKET_SSLEAY */
+    char			*delegated_creds;
+    
+    if (self == NULL)
+    {	
+	return GSI_SOCKET_ERROR;
+    }
+
+    if ((delegated_credentials == NULL) ||
+	(delegated_credentials_len == 0))
+    {
+	self->error_number = EINVAL;
+	goto error;
+    }
+    
+    if (self->gss_context == GSS_C_NO_CONTEXT)
+    {
+	self->error_string = strdup("GSI_SOCKET not authenticated");
+	return GSI_SOCKET_ERROR;
+    }
+	
+    self->major_status = globus_gss_assist_acquire_cred(&self->minor_status,
+							GSS_C_ACCEPT,
+							&creds);
+
+    if (self->major_status != GSS_S_COMPLETE)
+    {
+	goto error;
+    }
+
+#ifdef GSI_SOCKET_SSLEAY
+    /* Save current value of X509_USER_DELEG_PROXY */
+    x509_user_deleg_proxy_save = getenv("X509_USER_DELEG_PROXY");
+#endif /* GSI_SOCKET_SSLEAY */
+
+    self->major_status =
+	globus_gss_assist_accept_sec_context(&self->minor_status,
+					     &tmp_gss_context,
+					     creds,
+					     NULL, /* peer name */
+					     NULL, /* ret_flags */
+					     NULL, /* u2u flag */
+					     &token_status,
+					     assist_read_token,
+					     &self->sock,
+					     assist_write_token,
+					     &self->sock);
+
+    
+#ifdef GSI_SOCKET_SSLEAY
+    /* Get location of delegated proxy and restore X509_USER_DELEG_PROXY */
+    delegated_creds = getenv("X509_USER_DELEG_PROXY");
+    
+    if (x509_user_deleg_proxy_save == NULL)
+    {
+	myunsetenv("X509_USER_DELEG_PROXY");
+    }
+    else
+    {
+	mysetenv("X509_USER_DELEG_PROXY", x509_user_deleg_proxy_save, 1);
+    }
+#endif /* GSI_SOCKET_SSLEAY */
+
+    if (self->major_status != GSS_S_COMPLETE)
+    {
+	goto error;
+    }
+
+    if (delegated_creds == NULL)
+    {
+	self->error_string =  strdup("No credentials received.");
+	goto error;
+    }
+    
+    if (snprintf(delegated_credentials, delegated_credentials_len,
+		 "%s", delegated_creds) == -1)
+    {
+	self->error_string = strdup("Delegated credentials buffer too small.");
+	goto error;
+    }
+    
+    /* Success */
+    return_value = GSI_SOCKET_SUCCESS;
+    
+  error:
+    if (creds != GSS_C_NO_CREDENTIAL)
+    {
+	OM_uint32 minor_status;
+
+	gss_release_cred(&minor_status, &creds);
+    }
+
+    if (tmp_gss_context != GSS_C_NO_CONTEXT)
+    {
+	gss_buffer_desc output_token_desc  = GSS_C_EMPTY_BUFFER;
+	OM_uint32 minor_status;
+
+	gss_delete_sec_context(&minor_status,
+			       &tmp_gss_context,
+			       &output_token_desc);
+	
+	/* XXX Should deal with output_token_desc here */
+    }
+
+    return return_value;
 }
