@@ -92,9 +92,9 @@ globus_xio_attr_init(
     }
 
     /* zero it out */
-    memset(xio_attr, 0, sizeof(globus_i_xio_attr_t));
-    memset(xio_attr->entry, 0, sizeof(globus_i_xio_attr_ent_t) *
+    memset((xio_attr->entry), '\0', sizeof(globus_i_xio_attr_ent_t) *
         GLOBUS_XIO_ATTR_ARRAY_BASE_SIZE);
+    memset(xio_attr, '\0', sizeof(globus_i_xio_attr_t));
     xio_attr->max = GLOBUS_XIO_ATTR_ARRAY_BASE_SIZE;
     
     *attr = xio_attr;

@@ -1,5 +1,6 @@
 #include "globus_xio_driver.h"
 #include "globus_common.h"
+#include "globus_xio_test_transport.h"
 
 #define XIOTestCreateOpWraper(ow, dh, op, res, nb)                      \
 {                                                                       \
@@ -18,27 +19,6 @@
             NULL,                                                       \
             5000000,                                                    \
             "I am soooo lazy"))
-
-enum
-{
-    GLOBUS_XIO_TEST_SET_INLINE,
-    GLOBUS_XIO_TEST_SET_FAILURES,
-    GLOBUS_XIO_TEST_SET_USECS,
-    GLOBUS_XIO_TEST_READ_EOF_BYTES,
-    GLOBUS_XIO_TEST_CHUNK_SIZE,
-};
-
-typedef enum globus_xio_test_failure_e
-{
-    GLOBUS_XIO_TEST_FAIL_PASS_OPEN = 0x01,
-    GLOBUS_XIO_TEST_FAIL_FINISH_OPEN = 0x02,
-    GLOBUS_XIO_TEST_FAIL_PASS_CLOSE = 0x04,
-    GLOBUS_XIO_TEST_FAIL_FINISH_CLOSE = 0x08,
-    GLOBUS_XIO_TEST_FAIL_PASS_READ = 0x10,
-    GLOBUS_XIO_TEST_FAIL_FINISH_READ = 0x20,
-    GLOBUS_XIO_TEST_FAIL_PASS_WRITE = 0x40,
-    GLOBUS_XIO_TEST_FAIL_FINISH_WRITE = 0x80,
-} globus_xio_test_failure_t;
 
 static int
 globus_l_xio_test_activate();
