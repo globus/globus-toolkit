@@ -435,7 +435,6 @@ globus_l_gsc_cmd_cwd_cb(
 
     globus_gsc_959_finished_command(op, msg);
     globus_free(msg);
-    globus_free(path);
 
     return;
 
@@ -449,7 +448,6 @@ globus_l_gsc_cmd_cwd_cb(
     {
         globus_free(msg);
     }
-    globus_free(path);
 }
 
 static void
@@ -501,6 +499,7 @@ globus_l_gsc_cmd_cwd(
     {
         goto err;
     }
+    globus_free(path);
 
     return;
 
@@ -627,7 +626,6 @@ globus_l_gsc_cmd_size_cb(
     char *                                  msg = NULL;
     GlobusGridFTPServerName(globus_l_gsc_cmd_size_cb);
 
-    globus_free(path);
     if(result != GLOBUS_SUCCESS || stat_count < 1)
     {
         msg = globus_libc_strdup("550 Command failed.\r\n");
@@ -685,6 +683,7 @@ globus_l_gsc_cmd_size(
         globus_i_gsc_command_panic(op);
         goto err;
     }
+    globus_free(path);
 
     return;
 
