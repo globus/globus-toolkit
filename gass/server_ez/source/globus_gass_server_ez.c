@@ -176,9 +176,9 @@ globus_gass_server_ez_init(globus_gass_transfer_listener_t * listener,
             rc = GLOBUS_GASS_ERROR_MALLOC_FAILED;
             goto error_exit;
         }
-	globus_nexus_stdio_lock();
+	globus_libc_lock();
         sprintf(scheme, "https");
-        globus_nexus_stdio_unlock();
+        globus_libc_unlock();
     }
 
     if(reqattr==GLOBUS_NULL)
