@@ -2686,62 +2686,40 @@ globus_gsi_sysconfig_split_dir_and_filename_unix(
     }
     else
     {
-        char *                          temp_pathname = NULL;
-        char *                          temp_filename = NULL;
-
-        temp_pathname = malloc(strlen(full_filename) + 1);
-        if(!temp_pathname)
-        {
-            result = GLOBUS_GSI_SYSTEM_CONFIG_MALLOC_ERROR;
-            goto free_filename_string;
-        }
-        
-        globus_libc_snprintf(temp_pathname, (strlen(full_filename) + 1), 
-                             "%s", full_filename);
-
-        temp_pathname[(split_index - full_filename) + 1] = '\0';
-        dir_string_length = strlen(temp_pathname) + 1;
+        dir_string_length = split_index - full_filename + 1;
         
         *dir_string = malloc(dir_string_length);
+        
         if(!*dir_string)
         {
             result = GLOBUS_GSI_SYSTEM_CONFIG_MALLOC_ERROR;
-            free(temp_pathname);
-            goto free_filename_string;
+            goto exit;
         }
-
-        globus_libc_snprintf(*dir_string,
-                             dir_string_length, "%s", temp_pathname);
         
-        free(temp_pathname);
-
-        temp_filename = full_filename + ((split_index - full_filename) + 1);
-        filename_string_length = strlen(temp_filename) + 1;
+        globus_libc_snprintf(*dir_string,
+                             dir_string_length, "%s", full_filename);
+        
+        filename_string_length = strlen(full_filename) - dir_string_length + 1;
         
         *filename_string = malloc(filename_string_length);
+        
         if(!*filename_string)
         {
             result = GLOBUS_GSI_SYSTEM_CONFIG_MALLOC_ERROR;
-            goto free_dir_string;
+            if(*dir_string)
+            {
+                free(*dir_string);
+            }
+            goto exit;
         }
-    }
-
- free_filename_string:
-
-    if(*filename_string)
-    {
-        free(*filename_string);
-    }
-
- free_dir_string:
-
-    if(*dir_string)
-    {
-        free(*dir_string);
+        
+        globus_libc_snprintf(*filename_string,
+                             filename_string_length, "%s",
+                             &full_filename[dir_string_length]);
     }
 
  exit:
-
+    
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_EXIT;
     return result;
 }
