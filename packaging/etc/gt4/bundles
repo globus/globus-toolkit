@@ -81,6 +81,8 @@ BUNDLE gt4-rft
         globus_wsrf_rft_common_java
         globus_wsrf_rft_common_schema
         globus_database_common
+        globus_wsrf_servicegroup
+        globus_wsrf_servicegroup_schema
 
 BUNDLE gt4-rft-test
         globus_wsrf_rft_test
