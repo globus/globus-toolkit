@@ -21,7 +21,7 @@ import org.globus.exec.generated.StateEnumeration;
  * The JSM also contains a soft-state cache of SEG events which aren't
  * yet associated with MJR keys in its registry. Events in this cache are
  * replayed if and when the MJS creates an association between a local Job
- * ID and an Object key. Events which aren't used for some 
+ * ID and an Object key. Events which aren't used for some
  * interval are automatically discarded by the JSM.
  * </p>
  * <p>
@@ -139,7 +139,7 @@ public class JobStateMonitor {
         this.recoveryTask = null;
 
         this.seg = new SchedulerEventGenerator(segPath, userName,
-                schedulerName, this); 
+                schedulerName, this);
     }
 
     /**
@@ -187,9 +187,9 @@ public class JobStateMonitor {
      * well as some background tasks to flush cache of old job
      * events and to update the persistent timestamp used for restarting
      * the JobStateMonitor.
-     * 
      *
-     * @param timestamp 
+     *
+     * @param timestamp
      *     Date from which to start processing events. If <b>null</b>, then
      *     the SEG will process events generated from the time the function
      *     is called.
@@ -237,7 +237,7 @@ public class JobStateMonitor {
         logger.debug("Exiting start()");
     }
 
-    /** 
+    /**
      * Stop processing SEG events.
      *
      * Blocks the current thread until the SEG has terminated. No furthur
@@ -402,6 +402,9 @@ public class JobStateMonitor {
     }
 
     void addEvent(SchedulerEvent e) {
+        if (logger.isDebugEnabled()) {
+            logger.debug(" JSM receiving scheduler event " + e);
+        }
         String localId = e.getLocalId();
 
         ResourceKey mapping = getMapping(localId);
