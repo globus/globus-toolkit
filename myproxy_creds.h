@@ -19,14 +19,11 @@ struct myproxy_creds {
     char *owner_name;
     char *location;
     char *retrievers;
-    int retriever_expr_type;
     char *renewers;
-    int renewer_expr_type;
     int lifetime;
     char *credname;
     char *creddesc;
     int force_credential_overwrite;
-    void *restrictions;
     time_t start_time;
     time_t end_time;
 };
