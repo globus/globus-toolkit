@@ -13,7 +13,6 @@ use Globus::GRAM::JobManager;
 use Globus::GRAM::StdioMerger;
 use Globus::Core::Paths;
 
-#use Fcntl;
 use Config;
 
 # NOTE: This package name must match the name of the .pm file!!

@@ -244,14 +244,14 @@ sub submit
 
     $requirements  = "OpSys == \"" . $description->condor_os() . "\" ";
     $requirements .= " && Arch == \"" . $description->condor_arch() . "\" ";
-    if($description->min_memory() ne "")
+    if($description->min_memory() ne '')
     {
 	$requirements .= " && Memory >= " . $description->min_memory();
 	$rank = "rank = Memory\n";
     }
 
     print SCRIPT_FILE "Requirements = $requirements\n";
-    if($rank ne "")
+    if($rank ne '')
     {
 	print SCRIPT_FILE "$rank\n";
     }
@@ -335,11 +335,20 @@ sub poll
     $self->log("polling job " . $description->jobid());
 
     local(*CONDOR_LOG_FILE);
-    open(CONDOR_LOG_FILE, "<".$self->{condor_logfile})
-        || return { Globus::GRAM::JobState::DONE };
 
-    @status = grep(/^[0-9]* \(0*${job_id}/, <CONDOR_LOG_FILE>);
-    close(CONDOR_LOG_FILE);
+    if ( open(CONDOR_LOG_FILE, '<' . $self->{condor_logfile}) )
+    {
+        @status = grep(/^[0-9]* \(0*${job_id}/, <CONDOR_LOG_FILE>);
+        close(CONDOR_LOG_FILE);
+    }
+    else
+    {
+        $self->nfssync( $description->stdout(), 0 )
+            if $description->stdout() ne '';
+        $self->nfssync( $description->stderr(), 0 )
+            if $description->stderr() ne '';
+        return { JOB_STATE => Globus::GRAM::JobState::DONE };
+    }
 
     $num_done = scalar(grep(/^005/, @status));
     $num_run = scalar(grep(/^001/, @status));
