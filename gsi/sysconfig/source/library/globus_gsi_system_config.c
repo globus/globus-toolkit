@@ -4831,7 +4831,7 @@ globus_gsi_sysconfig_get_ca_cert_files_unix(
         goto exit;
     }
 
-    while((tmp_entry = globus_libc_readdir_r(dir_handle)) != NULL)
+    while(globus_libc_readdir_r(dir_handle,&tmp_entry) == 0)
     {
         file_length = strlen(tmp_entry->d_name);
         /* check the following:
@@ -4854,6 +4854,7 @@ globus_gsi_sysconfig_get_ca_cert_files_unix(
             
             if(full_filename_path == NULL)
             {
+                globus_free(tmp_entry);
                 GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
                     result,
                     GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_CA_CERT_FILENAMES,
@@ -4861,6 +4862,8 @@ globus_gsi_sysconfig_get_ca_cert_files_unix(
                 goto exit;
             }
 
+            globus_free(tmp_entry);
+            
             globus_fifo_enqueue(ca_cert_list, (void *)full_filename_path);
         }
     }
@@ -4906,7 +4909,7 @@ globus_gsi_sysconfig_remove_all_owned_files_unix(
         goto exit;
     }
 
-    while((dir_entry = globus_libc_readdir_r(secure_tmp_dir)))
+    while(globus_libc_readdir_r(secure_tmp_dir, &dir_entry) == 0)
     {
         if((default_filename && 
             !strcmp(dir_entry->d_name, default_filename)) ||
@@ -4922,6 +4925,7 @@ globus_gsi_sysconfig_remove_all_owned_files_unix(
 
             if(stat(full_filename, &stx) == -1)
             {
+                globus_free(dir_entry);
                 continue;
             }
 
@@ -4958,6 +4962,7 @@ globus_gsi_sysconfig_remove_all_owned_files_unix(
 
             free(full_filename);
         }
+        globus_free(dir_entry);
     }
 
  exit:
