@@ -26,7 +26,6 @@ CVS Information:
 #include <sys/types.h>
 #ifndef TARGET_ARCH_WIN32
 #include <unistd.h>
-#include <pwd.h>
 #endif
 #include <ctype.h>
 #include "version.h"
@@ -156,12 +155,9 @@ globus_gass_server_ez_init(globus_gass_transfer_listener_t * listener,
 			   unsigned long options,
 			   globus_gass_server_ez_client_shutdown_t callback)
 {
-    char host[1024];
-    size_t url_length;
     int rc;
-    unsigned short port;
-    void * user_arg;
     globus_l_gass_server_ez_t *server;
+    globus_bool_t free_scheme=GLOBUS_FALSE;
 
 
     if(scheme==GLOBUS_NULL)
@@ -172,6 +168,7 @@ globus_gass_server_ez_init(globus_gass_transfer_listener_t * listener,
             rc = GLOBUS_GASS_TRANSFER_ERROR_MALLOC_FAILED;
             goto error_exit;
         }
+        free_scheme=GLOBUS_TRUE;
 	globus_libc_lock();
         sprintf(scheme, "https");
         globus_libc_unlock();
@@ -201,6 +198,7 @@ globus_gass_server_ez_init(globus_gass_transfer_listener_t * listener,
 					sizeof (globus_l_gass_server_ez_t));
     if(server==GLOBUS_NULL)
     {
+        rc = GLOBUS_GASS_TRANSFER_ERROR_MALLOC_FAILED;
 	goto error_exit;
     }
 
@@ -216,13 +214,11 @@ globus_gass_server_ez_init(globus_gass_transfer_listener_t * listener,
     rc=globus_gass_transfer_register_listen(*listener,
 				globus_l_gass_server_ez_listen_callback,
 					(void *)reqattr);
-
 /* insert error handling here*/
 
-
-    return GLOBUS_SUCCESS;
-
     error_exit:
+
+    if (free_scheme) globus_free(scheme);
 
     return rc;
 } /* globus_gass_server_ez_init() */
@@ -240,7 +236,6 @@ int
 globus_gass_server_ez_shutdown(globus_gass_transfer_listener_t listener)
 {
     int rc;
-    globus_l_gass_server_ez_t *server;
     void * user_arg = GLOBUS_NULL;
 
 
@@ -269,10 +264,8 @@ globus_gass_server_ez_put_memory_done(void * arg,
 				       globus_bool_t last_data)
 {
     globus_gass_server_ez_request_t *r=GLOBUS_NULL;
-    globus_gass_transfer_request_t req;
     globus_size_t max_length;
     unsigned long lastnl, x;
-    int outstanding;
     int status;
     const int buffer_length=1024;
     
@@ -393,12 +386,9 @@ globus_l_gass_server_ez_close_callback(
 				void * user_arg,
 				globus_gass_transfer_listener_t listener)
 {
-    int rc;
-
-	/* should be cleaning up things related to the listener here
-	 * get rid of server struct stuff (hashtable) etc.
-	*/ 
-
+    /* should be cleaning up things related to the listener here
+     * get rid of server struct stuff (hashtable) etc.
+    */ 
 }
 
 static void
@@ -436,19 +426,14 @@ globus_l_gass_server_ez_register_accept_callback(
 {
     int rc;
     char * subjectname;
-    char * message;
-    char * path;
+    char * path=GLOBUS_NULL;
     char * url;
     globus_url_t parsed_url;
-    globus_gass_transfer_request_type_t type;
-    globus_gass_transfer_request_status_t status;
     globus_l_gass_server_ez_t * s;
     globus_gass_server_ez_request_t *r;
-    globus_size_t total_length;
     struct stat	statstruct;
     globus_byte_t * buf;
     int amt;
-    int reason;
     int flags=0;
 
     
@@ -463,20 +448,15 @@ globus_l_gass_server_ez_register_accept_callback(
     url=globus_gass_transfer_request_get_url(request);
     rc = globus_url_parse(url, &parsed_url);
     if(rc != GLOBUS_SUCCESS ||
-       parsed_url.url_path == GLOBUS_NULL)
+       parsed_url.url_path == GLOBUS_NULL || strlen(parsed_url.url_path) == 0U)
     {
         globus_gass_transfer_deny(request, 404, "File Not Found");
         globus_gass_transfer_request_destroy(request);
-        globus_url_destroy(&parsed_url);
-	goto reregister;
+        if (rc == GLOBUS_SUCCESS)
+            globus_url_destroy(&parsed_url);
+	goto reregister_nourl;
     }
-    if(strlen(parsed_url.url_path) == 0U)
-    {
-        globus_gass_transfer_deny(request, 404, "File Not Found");
-        globus_gass_transfer_request_destroy(request);
-        globus_url_destroy(&parsed_url);
-        goto reregister;
-    }
+
     if(globus_gass_transfer_request_get_type(request) ==
        GLOBUS_GASS_TRANSFER_REQUEST_TYPE_APPEND)
     {
@@ -503,9 +483,6 @@ globus_l_gass_server_ez_register_accept_callback(
 		goto deny;
             }
 	
-	    globus_url_parse(url,
-                             &parsed_url);
-
 	    /* Expand ~ and ~user prefix if enaabled in options */
     	    rc = globus_l_gass_server_ez_tilde_expand(s->options,
                                               parsed_url.url_path,
@@ -519,7 +496,6 @@ globus_l_gass_server_ez_register_accept_callback(
     	    }
     	    else if(strcmp(path, "/dev/stdout") == 0)
     	    {
-        	globus_url_destroy(&parsed_url);
 		goto deny;
     	    }
     	    else if(strcmp(path, "/dev/stderr") == 0 &&
@@ -530,7 +506,6 @@ globus_l_gass_server_ez_register_accept_callback(
     	    }
     	    else if(strcmp(path, "/dev/stderr") == 0)
     	    {
-        	globus_url_destroy(&parsed_url);
 		goto deny;
     	    }
     	    else if(strcmp(path, "/dev/globus_gass_client_shutdown") == 0)
@@ -540,7 +515,7 @@ globus_l_gass_server_ez_register_accept_callback(
         	{
             	    s->callback();
         	}
-                globus_url_destroy(&parsed_url);
+
 		goto deny;
     	    }
 #ifdef TARGET_ARCH_WIN32
@@ -549,7 +524,7 @@ globus_l_gass_server_ez_register_accept_callback(
 			flags |= O_BINARY;
 #endif
             rc = globus_libc_open(path, flags, 0600);
-            globus_url_destroy(&parsed_url);
+
             if(rc < 0)
             {
                 goto deny;
@@ -587,8 +562,6 @@ globus_l_gass_server_ez_register_accept_callback(
 
           case GLOBUS_GASS_TRANSFER_REQUEST_TYPE_GET:
             flags = O_RDONLY;
-            globus_url_parse(url,
-                             &parsed_url);
 
 			/* Expand ~ and ~user prefix if enaabled in options */
             rc = globus_l_gass_server_ez_tilde_expand(s->options,
@@ -609,13 +582,11 @@ globus_l_gass_server_ez_register_accept_callback(
 #endif
                 rc = globus_libc_open(path, flags, 0600);
 		fstat(rc, &statstruct);
-		globus_url_destroy(&parsed_url);
 	    }
 	    else
 	    {
 		globus_gass_transfer_deny(request, 404, "File Not Found");
 		globus_gass_transfer_request_destroy(request);
-                globus_url_destroy(&parsed_url);
 		goto reregister;
 	    }
 
@@ -643,12 +614,16 @@ globus_l_gass_server_ez_register_accept_callback(
 
 	}
 
-    reregister:
-      globus_gass_transfer_register_listen(
+  reregister:
+    globus_url_destroy(&parsed_url);
+
+  reregister_nourl:
+    globus_gass_transfer_register_listen(
 				(globus_gass_transfer_listener_t) listener,
 				globus_l_gass_server_ez_listen_callback,
 				s->reqattr);
 
+    if (path != GLOBUS_NULL) globus_free(path);
 
 } /*globus_l_gass_server_ez_register_accept_callback*/
 
@@ -725,7 +700,6 @@ globus_l_gass_server_ez_put_callback(
 				    globus_bool_t       last_data)
 {
     int fd;
-    globus_size_t amt;
 
     fd = (int) arg;
 
@@ -766,9 +740,6 @@ globus_l_gass_server_ez_tilde_expand(unsigned long options,
 			     char **outpath)
 {
 #ifndef TARGET_ARCH_WIN32   
-    struct passwd pwd;
-    char buf[1024];
-
     /*
      * If this is a relative path, the strip off the leading /./
      */
@@ -856,8 +827,6 @@ static int
 globus_l_gass_server_ez_activate(void)
 {
     int rc;
-    int i;
-
    
     rc = globus_module_activate(GLOBUS_COMMON_MODULE); 
     if(rc != GLOBUS_SUCCESS)
