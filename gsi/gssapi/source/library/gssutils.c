@@ -730,6 +730,8 @@ gss_create_and_fill_cred
 		newcred->pcd->upkey = upkey;
 	}
 	if (cert_chain) {
+    		/* Delegated credential is a proxy */
+                newcred->pcd->type = CRED_TYPE_PROXY;   
 		newcred->pcd->cert_chain = sk_X509_new_null();
 		for(i=0;i<sk_X509_num(cert_chain);i++) {
 			 sk_X509_insert(newcred->pcd->cert_chain,
