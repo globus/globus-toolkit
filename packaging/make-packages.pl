@@ -17,8 +17,7 @@ use Pod::Usage;
 
 # Where do things go?
 chomp(my $top_dir = `dirname $0`);
-chdir $top_dir or die "Can't cd to $top_dir: $!\n";
-$top_dir = cwd();
+$top_dir = cwd() . "/$top_dir";
 my $cvs_prefix = $top_dir . "/source-trees/";
 my $log_dir = $top_dir . "/log-output";
 my $pkglog = $log_dir . "/package-logs";
@@ -79,7 +78,7 @@ my ($install, $installer, $anonymous, $force,
    (0, 0, 0, 0,
     0, 0, 0, 0, 0, 
     0, 0, 1, "1.0", 0, 
-    0, 0, 0, 0, "", "", 0,
+    0, 0, "no", 0, "", "", 0,
     1, 0, 0, 0, 0,
     "", 1, "");
 
@@ -107,7 +106,7 @@ GetOptions( 'i|install=s' => \$install,
 	    'paranoia!' => \$paranoia,
 	    'version=s' => \$version,
 	    'uncool!' => \$uncool,
-	    'inplace!' => \$inplace,
+	    'inplace:s' => \$inplace,
             'deporder!' => \$deporder,
             'restart=s' => \$restart_package,
 	    'doxygen!' => \$doxygen,
@@ -131,6 +130,33 @@ if ( $help or $man ) {
 @user_packages = split(/,/,join(',',@user_packages));
 @user_bundles = split(/,/,join(',',@user_bundles));
 @cvs_build_list = split(/,/,join(',',@cvs_build_list));
+
+if($inplace eq "no")
+{
+    $inplace = 0;
+}
+else
+{
+    if($inplace)
+    {
+        if(substr($inplace, 0, 1) ne '/')
+        {
+            $inplace = cwd() . "/$inplace";
+        }
+
+        $cvs_archives{gt2}[2] = $inplace;
+        $cvs_archives{autotools}[2] = $inplace;
+        $cvs_archives{gt3}[2] = $inplace;
+        $cvs_archives{cbindings}[2] = $inplace;
+    }
+    
+    $inplace = 1;
+}
+
+if($inplace && !$install)
+{
+    $install = cwd() . "/INSTALL";
+}
 
 if ( $gt2dir )
 {
@@ -184,12 +210,6 @@ if ( not $noupdates )
 }
 
 build_prerequisites();
-
-if( $inplace && !$install )
-{
-    print "ERROR: -inplace requires -install\n";
-    exit 1;
-}
 
 if ( not $skippackage )
 {
@@ -1803,6 +1823,8 @@ Options:
     --deps		   Automatically include dependencies
     --trees="t1,t2,..."    Work on trees t1,t2,... Default "gt2,gt3,gt4,cbindings"
     --noparanoia           Don't exit at first error.
+    --inplace[=<dir>]      Build inplace. <dir> overrides the cvs directory
+                           for all trees. (ie, a dir you did a 'cvs co all' in)
     --help                 Print usage message
     --man                  Print verbose usage page
 
