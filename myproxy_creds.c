@@ -24,11 +24,11 @@
 #include <stdlib.h>
 
 /* Files should only be readable by me */
-#define FILE_MODE		0600
+#define FILE_MODE               0600
 
 /* Where to store our files */
 #ifndef CREDS_STORAGE_DIRECTORY
-#define CREDS_STORAGE_DIRECTORY		MYPROXY_SERVER_DIR "/store/"
+#define CREDS_STORAGE_DIRECTORY         MYPROXY_SERVER_DIR "/store/"
 #endif /* CREDS_STORAGE_DIRECTORY */
 
 /**********************************************************************
@@ -61,14 +61,14 @@ mystrdup(const char *string)
     
     if (dup == NULL)
     {
-	verror_put_errno(errno);
-	verror_put_string("strdup() failed");
+        verror_put_errno(errno);
+        verror_put_string("strdup() failed");
     }
     
     return dup;
 }
 
-	
+        
 /*
  * check_storage_directory()
  *
@@ -85,30 +85,30 @@ check_storage_directory(const char *path)
     
     if (stat(path, &statbuf) == -1)
     {
-	verror_put_errno(errno);
-	verror_put_string("could not stat directory %s", path);
-	goto error;
+        verror_put_errno(errno);
+        verror_put_string("could not stat directory %s", path);
+        goto error;
     }
     
     if (!S_ISDIR(statbuf.st_mode))
     {
-	verror_put_string("%s is not a directory", path);
-	goto error;
+        verror_put_string("%s is not a directory", path);
+        goto error;
     }
     
     /* Make sure it's owned by me */
     if (statbuf.st_uid != getuid())
     {
-	verror_put_string("bad ownership on %s", path);
-	goto error;
+        verror_put_string("bad ownership on %s", path);
+        goto error;
     }
     
     /* Make sure it's not readable or writable by anyone else */
     if ((statbuf.st_mode & S_IRWXG) ||
-	(statbuf.st_mode & S_IRWXO))
+        (statbuf.st_mode & S_IRWXO))
     {
-	verror_put_string("bad permissions on %s", path);
-	goto error;
+        verror_put_string("bad permissions on %s", path);
+        goto error;
     }
     
     /* Success */
@@ -138,24 +138,24 @@ sterilize_string(char *string)
     /* No '.' as first character */
     if (*string == '.')
     {
-	*string = replacement_char;
+        *string = replacement_char;
     }
     
     /* Replace any bad characters with replacement_char */
     while (*string != '\0')
     {
-	if (strchr(bad_chars, *string) != NULL)
-	{
-	    *string = replacement_char;
-	}
+        if (strchr(bad_chars, *string) != NULL)
+        {
+            *string = replacement_char;
+        }
 
-	string++;
+        string++;
     }
 
     return;
 }
 
-	
+        
     
 /*
  * get_storage_locations()
@@ -168,10 +168,10 @@ sterilize_string(char *string)
  */
 static int
 get_storage_locations(const char *username,
-		      char *creds_path,
-		      const int creds_path_len,
-		      char *data_path,
-		      const int data_path_len)
+                      char *creds_path,
+                      const int creds_path_len,
+                      char *data_path,
+                      const int data_path_len)
 {
     int return_code = -1;
     char *sterile_username = NULL;
@@ -185,32 +185,32 @@ get_storage_locations(const char *username,
     
     if (check_storage_directory(storage_dir) == -1)
     {
-	goto error;
+        goto error;
     }
     
     sterile_username = mystrdup(username);
 
     if (sterile_username == NULL)
     {
-	goto error;
+        goto error;
     }
     
     sterilize_string(sterile_username);
     
     if (snprintf(creds_path, creds_path_len, "%s/%s%s",
-		 storage_dir, sterile_username, creds_suffix) == -1)
+                 storage_dir, sterile_username, creds_suffix) == -1)
     {
-	verror_put_string("Internal error: creds_path too small: %s line %s",
-			  __FILE__, __LINE__);
-	goto error;
+        verror_put_string("Internal error: creds_path too small: %s line %s",
+                          __FILE__, __LINE__);
+        goto error;
     }
 
     if (snprintf(data_path, data_path_len, "%s/%s%s",
-		 storage_dir, sterile_username, data_suffix) == -1)
+                 storage_dir, sterile_username, data_suffix) == -1)
     {
-	verror_put_string("Internal error: data_path too small: %s line %s",
-			  __FILE__, __LINE__);
-	goto error;
+        verror_put_string("Internal error: data_path too small: %s line %s",
+                          __FILE__, __LINE__);
+        goto error;
     }
 
     /* Success */
@@ -219,7 +219,7 @@ get_storage_locations(const char *username,
   error:
     if (sterile_username != NULL)
     {
-	free(sterile_username);
+        free(sterile_username);
     }
     
     return return_code;
@@ -235,8 +235,8 @@ get_storage_locations(const char *username,
  */
 static int
 copy_file(const char *source,
-	  const char *dest,
-	  const mode_t mode)
+          const char *dest,
+          const mode_t mode)
 {
     int src_fd = -1;
     int dst_fd = -1;
@@ -253,60 +253,60 @@ copy_file(const char *source,
     
     if (src_fd == -1)
     {
-	verror_put_errno(errno);
-	verror_put_string("opening %s for reading", source);
-	goto error;
+        verror_put_errno(errno);
+        verror_put_string("opening %s for reading", source);
+        goto error;
     }
     
     dst_fd = open(dest, dst_flags, mode);
     
     if (dst_fd == -1)
     {
-	verror_put_errno(errno);
-	verror_put_string("opening %s for writing", dest);
-	goto error;
+        verror_put_errno(errno);
+        verror_put_string("opening %s for writing", dest);
+        goto error;
     }
     
     do 
     {
-	bytes_read = read(src_fd, buffer, sizeof(buffer));
-	
-	if (bytes_read == -1)
-	{
-	    verror_put_errno(errno);
-	    verror_put_string("reading %s", source);
-	    goto error;
-	}
+        bytes_read = read(src_fd, buffer, sizeof(buffer));
+        
+        if (bytes_read == -1)
+        {
+            verror_put_errno(errno);
+            verror_put_string("reading %s", source);
+            goto error;
+        }
 
-	if (bytes_read != 0)
-	{
-	    if (write(dst_fd, buffer, bytes_read) == -1)
-	    {
-		verror_put_errno(errno);
-		verror_put_string("writing %s", dest);
-		goto error;
-	    }
-	}
+        if (bytes_read != 0)
+        {
+            if (write(dst_fd, buffer, bytes_read) == -1)
+            {
+                verror_put_errno(errno);
+                verror_put_string("writing %s", dest);
+                goto error;
+            }
+        }
     }
     while (bytes_read > 0);
     
     /* Success */
     return_code = 0;
-	
+        
   error:
     if (src_fd != -1)
     {
-	close(src_fd);
+        close(src_fd);
     }
     
     if (dst_fd != -1)
     {
-	close(dst_fd);
+        close(dst_fd);
 
-	if (return_code == -1)
-	{
-	    unlink(dest);
-	}
+        if (return_code == -1)
+        {
+            unlink(dest);
+        }
     }
     
     return return_code;
@@ -322,13 +322,14 @@ copy_file(const char *source,
  */
 static int
 write_data_file(const struct myproxy_creds *creds,
-		const char *data_file_path,
-		const mode_t data_file_mode)
+                const char *data_file_path,
+                const mode_t data_file_mode)
 {
     int data_fd = -1;
     FILE *data_stream = NULL;
     int data_file_open_flags = O_WRONLY | O_CREAT | O_TRUNC;
     int return_code = -1;
+        char *tmp1;
     
     /*
      * Open with open() first to minimize any race condition with
@@ -338,9 +339,9 @@ write_data_file(const struct myproxy_creds *creds,
     
     if (data_fd == -1)
     {
-	verror_put_errno(errno);
-	verror_put_string("opening storage file %s", data_file_path);
-	goto error;
+        verror_put_errno(errno);
+        verror_put_string("opening storage file %s", data_file_path);
+        goto error;
     }
 
     /* Now open as stream for easier IO */
@@ -348,14 +349,20 @@ write_data_file(const struct myproxy_creds *creds,
     
     if (data_stream == NULL)
     {
-	verror_put_errno(errno);
-	verror_put_string("reopening storage file %s", data_file_path);
-	goto error;
+        verror_put_errno(errno);
+        verror_put_string("reopening storage file %s", data_file_path);
+        goto error;
     }
 
-    /* Write out all the extra data associated with these credentials */
+    /* Write out all the extra data associated with these credentials 
+     * support for crypt() added btemko /6/16/00
+     * Please, don't try to free tmp1 - crypt() uses one 
+     * static string space, a la getenv()
+     */
+    tmp1=(char *)crypt(creds->pass_phrase, 
+	&creds->owner_name[strlen(creds->owner_name)-3]);
     fprintf(data_stream, "OWNER=%s\n", creds->owner_name);
-    fprintf(data_stream, "PASSPHRASE=%s\n", creds->pass_phrase);
+    fprintf(data_stream, "PASSPHRASE=%s\n", tmp1);
     fprintf(data_stream, "LIFETIME=%d\n", creds->lifetime);
     fprintf(data_stream, "END_OPTIONS\n");
 
@@ -367,17 +374,17 @@ write_data_file(const struct myproxy_creds *creds,
   error:
     if (data_fd != -1)
     {
-	close(data_fd);
-	
-	if (return_code == -1)
-	{
-	    unlink(data_file_path);
-	}
+        close(data_fd);
+        
+        if (return_code == -1)
+        {
+            unlink(data_file_path);
+        }
     }
 
     if (data_stream != NULL)
     {
-	fclose(data_stream);
+        fclose(data_stream);
     }
     
     return return_code;
@@ -393,7 +400,7 @@ write_data_file(const struct myproxy_creds *creds,
  */
 static int
 read_data_file(struct myproxy_creds *creds,
-	       const char *datafile_path)
+               const char *datafile_path)
 {
     FILE *data_stream = NULL;
     char *data_stream_mode = "r";
@@ -408,106 +415,106 @@ read_data_file(struct myproxy_creds *creds,
     
     if (data_stream == NULL)
     {
-	verror_put_errno(errno);
-	verror_put_string("opening %s for reading", datafile_path);
-	goto error;
+        verror_put_errno(errno);
+        verror_put_string("opening %s for reading", datafile_path);
+        goto error;
     }
 
     while (!done)
     {
-	char buffer[512];
-	char *variable;
-	char *value;
-	int len;
-	
-	if (fgets(buffer, sizeof(buffer), data_stream) == NULL)
-	{
-	    int errno_save = errno;
-	    
-	    if (feof(data_stream))
-	    {
-		verror_put_string("unexpected EOF reading %s", datafile_path);
-		goto error;
-	    }
-	    else
-	    {
-		verror_put_errno(errno_save);
-		verror_put_string("reading %s", datafile_path);
-		goto error;
-	    }
-	    /* Not reached */
-	}
+        char buffer[512];
+        char *variable;
+        char *value;
+        int len;
+        
+        if (fgets(buffer, sizeof(buffer), data_stream) == NULL)
+        {
+            int errno_save = errno;
+            
+            if (feof(data_stream))
+            {
+                verror_put_string("unexpected EOF reading %s", datafile_path);
+                goto error;
+            }
+            else
+            {
+                verror_put_errno(errno_save);
+                verror_put_string("reading %s", datafile_path);
+                goto error;
+            }
+            /* Not reached */
+        }
 
-	/* Remove carriage return from credentials */
-	len = strlen(buffer);
-	
-	if (buffer[len - 1] == '\n')
-	{
-	    buffer[len - 1] = '\0';
-	}
+        /* Remove carriage return from credentials */
+        len = strlen(buffer);
+        
+        if (buffer[len - 1] == '\n')
+        {
+            buffer[len - 1] = '\0';
+        }
 
-	line_number++;
-	
-	variable = buffer;
-	
-	value = strchr(buffer, '=');
-	
-	if (value != NULL)
-	{
-	    /* NUL-terminate variable name */
-	    *value = '\0';
+        line_number++;
+        
+        variable = buffer;
+        
+        value = strchr(buffer, '=');
+        
+        if (value != NULL)
+        {
+            /* NUL-terminate variable name */
+            *value = '\0';
 
-	    /* ...and advance value to point at value */
-	    value++;
-	}
+            /* ...and advance value to point at value */
+            value++;
+        }
 
-	if (strcmp(variable, "END_OPTIONS") == 0) 
-	{
-	    done = 1;
-	    break;
-	}
-	
-	/* Everything else requires values to be non-NULL */
-	if (value == NULL)
-	{
-	    verror_put_string("malformed line: %s line %d",
-			      datafile_path, line_number);
-	    goto error;
-	}
-	
-	if (strcmp(variable, "OWNER") == 0)
-	{
-	    creds->owner_name = mystrdup(value);
-	    
-	    if (creds->owner_name == NULL)
-	    {
-		goto error;
-	    }
-	    continue;
-	}
+        if (strcmp(variable, "END_OPTIONS") == 0) 
+        {
+            done = 1;
+            break;
+        }
+        
+        /* Everything else requires values to be non-NULL */
+        if (value == NULL)
+        {
+            verror_put_string("malformed line: %s line %d",
+                              datafile_path, line_number);
+            goto error;
+        }
+        
+        if (strcmp(variable, "OWNER") == 0)
+        {
+            creds->owner_name = mystrdup(value);
+            
+            if (creds->owner_name == NULL)
+            {
+                goto error;
+            }
+            continue;
+        }
 
-	if (strcmp(variable, "PASSPHRASE") == 0)
-	{
-	    creds->pass_phrase = mystrdup(value);
-	    
-	    if (creds->pass_phrase == NULL)
-	    {
-		goto error;
-	    }
-	    continue;
-	}
-	
-	if (strcmp(variable, "LIFETIME") == 0)
-	{
-	    creds->lifetime = (int) strtol(value, NULL, 10);
-	    
-	    continue;
-	}
-	
-	/* Unrecognized varibale */
-	verror_put_string("unrecognized line: %s line %d",
-			  datafile_path, line_number);
-	goto error;
+        if (strcmp(variable, "PASSPHRASE") == 0)
+        {
+            creds->pass_phrase = mystrdup(value);
+            
+            if (creds->pass_phrase == NULL)
+            {
+                goto error;
+            }
+            continue;
+        }
+        
+        if (strcmp(variable, "LIFETIME") == 0)
+        {
+            creds->lifetime = (int) strtol(value, NULL, 10);
+            
+            continue;
+        }
+        
+        /* Unrecognized varibale */
+        verror_put_string("unrecognized line: %s line %d",
+                          datafile_path, line_number);
+        goto error;
     }
 
     /* Success */
@@ -516,7 +523,7 @@ read_data_file(struct myproxy_creds *creds,
   error:
     if (data_stream != NULL)
     {
-	fclose(data_stream);
+        fclose(data_stream);
     }
     
     return return_code;
@@ -540,21 +547,21 @@ myproxy_creds_store(const struct myproxy_creds *creds)
     int return_code = -1;
     
     if ((creds == NULL) ||
-	(creds->user_name == NULL) ||
-	(creds->pass_phrase == NULL) ||
-	(creds->owner_name == NULL) ||
-	(creds->location == NULL) ||
-	(creds->restrictions != NULL))
+        (creds->user_name == NULL) ||
+        (creds->pass_phrase == NULL) ||
+        (creds->owner_name == NULL) ||
+        (creds->location == NULL) ||
+        (creds->restrictions != NULL))
     {
-	verror_put_errno(EINVAL);
-	return -1;
+        verror_put_errno(EINVAL);
+        return -1;
     }
   
     if (get_storage_locations(creds->user_name,
-			      creds_path, sizeof(creds_path),
-			      data_path, sizeof(data_path)) == -1)
+                              creds_path, sizeof(creds_path),
+                              data_path, sizeof(data_path)) == -1)
     {
-	goto error;
+        goto error;
     }
 
     /*
@@ -564,12 +571,12 @@ myproxy_creds_store(const struct myproxy_creds *creds)
 
     if (write_data_file(creds, data_path, data_file_mode) == -1)
     {
-	goto error;
+        goto error;
     }
 
     if (copy_file(creds->location, creds_path, creds_file_mode) == -1)
     {
-	goto error;
+        goto error;
     }
 
     /* Success */
@@ -580,8 +587,8 @@ myproxy_creds_store(const struct myproxy_creds *creds)
     /* Remove files on error */
     if (return_code == -1)
     {
-	unlink(data_path);
-	unlink(creds_path);
+        unlink(data_path);
+        unlink(creds_path);
     }
 
     return return_code;
@@ -595,43 +602,48 @@ myproxy_creds_retrieve(struct myproxy_creds *creds)
     struct myproxy_creds retrieved_creds;
     int return_code = -1;
     int authorization_ok = 0;
+        char *tmp1=NULL;
     
     if ((creds == NULL) ||
-	(creds->user_name == NULL) ||
-	(creds->pass_phrase == NULL))
+        (creds->user_name == NULL) ||
+        (creds->pass_phrase == NULL))
     {
-	verror_put_errno(EINVAL);
-	return -1;
+        verror_put_errno(EINVAL);
+        return -1;
     }
 
     memset(&retrieved_creds, 0, sizeof(retrieved_creds));
     
     if (get_storage_locations(creds->user_name,
-			      creds_path, sizeof(creds_path),
-			      data_path, sizeof(data_path)) == -1)
+                              creds_path, sizeof(creds_path),
+                              data_path, sizeof(data_path)) == -1)
     {
-	goto error;
+        goto error;
     }
 
     if (read_data_file(&retrieved_creds, data_path) == -1)
     {
-	goto error;
+        goto error;
     }
 
     /*
      * Check pass phrase
+         * support for crypt() added btemko /6/16/00
+         * Please, don't try to free tmp1 - crypt() uses one 
+         * static string space, a la getenv()
      */
     if ((retrieved_creds.pass_phrase != NULL) &&
-	(creds->pass_phrase != NULL) &&
-	(strcmp(retrieved_creds.pass_phrase, creds->pass_phrase) == 0))
+        (creds->pass_phrase != NULL) && (tmp1=(char *)crypt(creds->pass_phrase, 
+&retrieved_creds.owner_name[strlen(retrieved_creds.owner_name)-3]))!=NULL &&
+        (strcmp(retrieved_creds.pass_phrase, tmp1) == 0))
     {
-	authorization_ok = 1;
+        authorization_ok = 1;
     }
     
     if (authorization_ok == 0)
     {
-	verror_put_string("bad pass phrase");
-	goto error;
+        verror_put_string("bad pass phrase");
+        goto error;
     }
     
     /* Copy creds */
@@ -641,9 +653,9 @@ myproxy_creds_retrieve(struct myproxy_creds *creds)
     creds->restrictions = NULL;
     
     if ((creds->owner_name == NULL) ||
-	(creds->location == NULL))
+        (creds->location == NULL))
     {
-	goto error;
+        goto error;
     }
     
     /* Success */
@@ -652,21 +664,21 @@ myproxy_creds_retrieve(struct myproxy_creds *creds)
   error:
     if (return_code < 0)
     {
-	/*
-	 * Don't want to free user_name or pass_phrase as caller supplied
-	 * these.
-	 */
-	if (creds->owner_name != NULL)
-	{
-	    free(creds->owner_name);
-	    creds->owner_name = NULL;
-	}
-	if (creds->location != NULL)
-	{
-	    free(creds->location);
-	    creds->location = NULL;
-	}
-	creds->lifetime = 0;
+        /*
+         * Don't want to free user_name or pass_phrase as caller supplied
+         * these.
+         */
+        if (creds->owner_name != NULL)
+        {
+            free(creds->owner_name);
+            creds->owner_name = NULL;
+        }
+        if (creds->location != NULL)
+        {
+            free(creds->location);
+            creds->location = NULL;
+        }
+        creds->lifetime = 0;
     }
 
     myproxy_creds_free_contents(&retrieved_creds);
@@ -683,62 +695,68 @@ myproxy_creds_delete(const struct myproxy_creds *creds)
     struct myproxy_creds tmp_creds;
     int return_code = -1;
     int authorization_ok = 0;
+        char *tmp1=NULL;
     
     if ((creds == NULL) ||
-	(creds->user_name == NULL))
+        (creds->user_name == NULL))
     {
-	verror_put_errno(EINVAL);
-	return -1;
+        verror_put_errno(EINVAL);
+        return -1;
     }
     
     if (get_storage_locations(creds->user_name,
-			      creds_path, sizeof(creds_path),
-			      data_path, sizeof(data_path)) == -1)
+                              creds_path, sizeof(creds_path),
+                              data_path, sizeof(data_path)) == -1)
     {
-	goto error;
+        goto error;
     }
 
     if (read_data_file(&tmp_creds, data_path) == -1)
     {
-	goto error;
+        goto error;
     }
     
     /*
      * Either the pass phrase needs to match or the
      * owner name needs to match.
+         * support for crypt() added btemko /6/16/00
+         * Please, don't try to free tmp1 - crypt() uses one 
+         * static string space, a la getenv()
      */
     if ((tmp_creds.pass_phrase != NULL) &&
-	(creds->pass_phrase != NULL) &&
-	(strcmp(tmp_creds.pass_phrase, creds->pass_phrase) == 0))
+        (creds->pass_phrase != NULL) && (tmp1=(char 
+*)crypt(tmp_creds.pass_phrase, 
+&creds->owner_name[strlen(creds->owner_name)-3]))!=NULL &&
+        (strcmp(tmp1, creds->pass_phrase) == 0))
     {
-	authorization_ok = 1;
+        authorization_ok = 1;
     }
     
     if ((tmp_creds.owner_name != NULL) &&
-	(creds->owner_name != NULL) &&
-	(strcmp(tmp_creds.owner_name, creds->owner_name) == 0))
+        (creds->owner_name != NULL) &&
+        (strcmp(tmp_creds.owner_name, creds->owner_name) == 0))
     {
-	authorization_ok = 1;
+        authorization_ok = 1;
     }
 
     if (authorization_ok == 0)
     {
-	verror_put_string("authorization failed");
-	goto error;
+        verror_put_string("authorization failed");
+        goto error;
     }
 
     if (unlink(creds_path) == -1)
     {
-	verror_put_errno(errno);
-	verror_put_string("deleting credentials file %s", creds_path);
-	goto error;
+        verror_put_errno(errno);
+        verror_put_string("deleting credentials file %s", creds_path);
+        goto error;
     }
     
     if (unlink(data_path) == -1)
     {
-	verror_put_errno(errno);
-	verror_put_string("deleting credentials data file %s", creds_path);
-	goto error;
+        verror_put_errno(errno);
+        verror_put_string("deleting credentials data file %s", creds_path);
+        goto error;
     }
 
     /* Success */
@@ -752,33 +770,31 @@ void myproxy_creds_free_contents(struct myproxy_creds *creds)
 {
     if (creds == NULL)
     {
-	return;
+        return;
     }
     
     if (creds->user_name != NULL)
     {
-	free(creds->user_name);
-	creds->user_name = NULL;
+        free(creds->user_name);
+        creds->user_name = NULL;
     }
 
     if (creds->pass_phrase != NULL)
     {
-	free(creds->pass_phrase);
-	creds->pass_phrase = NULL;
+        free(creds->pass_phrase);
+        creds->pass_phrase = NULL;
     }
 
     if (creds->owner_name != NULL)
     {
-	free(creds->owner_name);
-	creds->owner_name = NULL;
+        free(creds->owner_name);
+        creds->owner_name = NULL;
     }
     
     if (creds->location != NULL)
     {
-	free(creds->location);
-	creds->location = NULL;
+        free(creds->location);
+        creds->location = NULL;
     }
 }
 
-
-	
