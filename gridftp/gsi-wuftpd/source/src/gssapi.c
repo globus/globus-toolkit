@@ -308,9 +308,10 @@ gssapi_identity()
 	return(identity);
     }
 
-#else
+#endif /* GLOBUS_AUTHORIZATION */    
+
     return (char *)client_name.value;
-#endif /* GLOBUS_AUTHORIZATION */
+
 }
 
 /*
