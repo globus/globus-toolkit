@@ -47,7 +47,7 @@ provides it with some default settings.  An example conf file follows:
     <conf cert_filename="/homes/bresnaha/.globus/usercert.pem"/>
     <conf key_filename="/tmp/x509up_u589"/>
     <conf gridmap_filename="/etc/grid-security/grid-mapfile"/>
-    <conf port_type_filename="/etc/grid-security/port_type.xml"/>
+    <conf port_type_filename="/etc/grid-security/grim-port-type.xml"/>
 </grim_conf>
 
 If no configuration file is found grim will use the following settings:
@@ -56,7 +56,7 @@ If no configuration file is found grim will use the following settings:
     ca_cert_directory       /etc/grid-security/certificates/
     certificate file         /etc/grid-security/hostcert.pem
     key file                /etc/grid-security/hostkey.pem
-    port type file          /etc/grid-security/port_type.xml || 
+    port type file          /etc/grid-security/grim-port-type.xml ||
                             ~/.globus/grim-port-types.xml
     max time                14400 [10 days in minutes]
     default time            1440  [1 day in minutes]
