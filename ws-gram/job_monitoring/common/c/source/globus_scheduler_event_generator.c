@@ -587,6 +587,15 @@ error:
 /* globus_scheduler_event_generator_set_timestamp() */
 
 /**
+ * Load a scheduler event generator module.
+ *
+ * If the module name begins with "/" then it is interpreted as a path name;
+ * otherwise, the name is constructed using the convention:
+ * @code $GLOBUS_LOCATION/lib/libglobus_seg_$MODULE_NAME_$FLAVOR.so@endcode,
+ * where $GLOBUS_LOCATION is determined from the environment, $MODULE_NAME is
+ * determined from the @a module_name parameter to the function, and $FLAVOR
+ * is determined at compile time.
+ *
  * @param module_name
  *     Name of the shared object to load.
  * @retval GLOBUS_SEG_ERROR_ALREADY_SET
@@ -602,8 +611,11 @@ globus_scheduler_event_generator_load_module(
 {
     globus_result_t                     result;
     int                                 rc;
+    const char *                        flavor_name = GLOBUS_FLAVOR_NAME;
     const char *                        symbol_name
             = "globus_scheduler_event_module_ptr";
+    char *                              globus_loc = NULL;
+    char *                              module_path = NULL;
 
     globus_mutex_lock(&globus_l_seg_mutex);
     if (globus_l_seg_scheduler_handle != NULL)
@@ -612,14 +624,44 @@ globus_scheduler_event_generator_load_module(
 
         goto unlock_error;
     }
-    globus_l_seg_scheduler_handle = lt_dlopen(module_name);
+
+    if (module_name[0] != '/')
+    {
+        result = globus_location(&globus_loc);
+
+        if (result != GLOBUS_SUCCESS)
+        {
+            result = GLOBUS_SEG_ERROR_OUT_OF_MEMORY;
+
+            goto unlock_error;
+        }
+
+        module_path = globus_libc_malloc(strlen(globus_loc) +
+                strlen("%s/lib/libglobus_seg_%s_%s.so") + strlen(module_name) +
+                strlen(flavor_name));
+
+        if (module_path == NULL)
+        {
+            result = GLOBUS_SEG_ERROR_OUT_OF_MEMORY;
+
+            goto free_globus_location_error;
+        }
+
+        sprintf(module_path, "%s/lib/libglobus_seg_%s_%s.so",
+                globus_loc, module_name, flavor_name);
+        globus_l_seg_scheduler_handle = lt_dlopen(module_path);
+    }
+    else
+    {
+        globus_l_seg_scheduler_handle = lt_dlopen(module_name);
+    }
 
     if (globus_l_seg_scheduler_handle == NULL)
     {
         result = GLOBUS_SEG_ERROR_LOADING_MODULE(module_name,
                 lt_dlerror());
 
-        goto unlock_error;
+        goto free_module_path_error;
     }
     globus_l_seg_scheduler_module = (globus_module_descriptor_t *)
             lt_dlsym(globus_l_seg_scheduler_handle, symbol_name);
@@ -644,12 +686,25 @@ globus_scheduler_event_generator_load_module(
 
     globus_mutex_unlock(&globus_l_seg_mutex);
 
+    globus_libc_free(globus_loc);
+    globus_libc_free(module_path);
+
     return GLOBUS_SUCCESS;
 
 dlclose_error:
     lt_dlclose(globus_l_seg_scheduler_handle);
     globus_l_seg_scheduler_handle = NULL;
     globus_l_seg_scheduler_module = NULL;
+free_module_path_error:
+    if (module_path != NULL)
+    {
+        globus_libc_free(module_path);
+    }
+free_globus_location_error:
+    if (globus_loc != NULL)
+    {
+        globus_libc_free(globus_location);
+    }
 unlock_error:
     globus_mutex_unlock(&globus_l_seg_mutex);
     return result;

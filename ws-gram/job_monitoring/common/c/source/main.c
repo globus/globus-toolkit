@@ -42,10 +42,10 @@ static globus_bool_t shutdown_called = GLOBUS_FALSE;
  * @ref seg_protocol "SEG Protocol" section of this document on the standard
  * output of the process.
  * 
- * When begun, it loads the scheduler module named on the command line and
- * then defers to it for most functionality. When it detects an error writing
- * to stdout or reading stdin, it terminates. The scheduler specific
- * code uses the SEG API to emit events to the JSM.
+ * When begun, it loads the scheduler module for the scheduler named on the
+ * command line and then defers to it for most functionality. When it detects
+ * an error writing to stdout or reading stdin, it terminates. The scheduler
+ * specific code uses the SEG API to emit events to the JSM.
  *
  * Scheduler implementations use the @ref seg_api "SEG API" to send messages
  * to the JSM.
