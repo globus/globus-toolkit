@@ -59,11 +59,13 @@ auth1_gss_protocol_error(int type, u_int32_t plen, void *ctxt)
           "Unknown packet type %d", type);
 }
 
+#ifdef GSI
 int
 gsi_gridmap(char *subject_name, char **mapped_name)
 {
     return(globus_gss_assist_gridmap(subject_name, mapped_name) == 0);
 }
+#endif
 
 /*
  * SSH1 GSSAPI clients may send us a user name of the form:

@@ -38,6 +38,7 @@
 #include "log.h"
 #include "compat.h"
 #include "monitor_wrap.h"
+#include "canohost.h"
 
 #include <netdb.h>
 
@@ -103,6 +104,7 @@ ssh_gssapi_mechanisms(int server,char *host) {
 	Buffer		buf;
 	int 		i = 0;
 	int		present;
+	int		mech_count=0;
 	char *		mechs;
 	Gssctxt *	ctx = NULL;	
 
@@ -128,13 +130,25 @@ ssh_gssapi_mechanisms(int server,char *host) {
 		    	 			       &supported_mechs[i].oid,
 		    	 			       host)))) {
 				/* Append gss_group1_sha1_x to our list */
+				if (++mech_count > 1) {
+				    buffer_append(&buf, ",", 1);
+				}
 				buffer_append(&buf, gssprefix,
 					      strlen(gssprefix));
 		        	buffer_append(&buf, 
 		        		      supported_mechs[i].enc_name,
 	        	      		      strlen(supported_mechs[i].enc_name));
-	               }
- 		}
+				debug("GSSAPI mechanism %s (%s%s) supported",
+				      supported_mechs[i].name, gssprefix,
+				      supported_mechs[i].enc_name);
+			} else {
+			    debug("no credentials for GSSAPI mechanism %s",
+				  supported_mechs[i].name);
+			}
+ 		} else {
+		    debug("GSSAPI mechanism %s not supported",
+			  supported_mechs[i].name);
+		}
 	} while (supported_mechs[++i].name != NULL);
 	
 	buffer_put_char(&buf,'\0');
@@ -196,13 +210,14 @@ void ssh_gssapi_set_oid(Gssctxt *ctx, gss_OID oid) {
 enum ssh_gss_id ssh_gssapi_get_ctype(Gssctxt *ctxt) {
 	enum ssh_gss_id i=0;
 	
-	while(supported_mechs[i].name!=NULL &&
-	      	supported_mechs[i].oid.length != ctxt->oid->length &&
-	      	(memcmp(supported_mechs[i].oid.elements,
-	      	       ctxt->oid->elements,ctxt->oid->length) !=0)) {
+	while(supported_mechs[i].name!=NULL) {
+	   if (supported_mechs[i].oid.length == ctxt->oid->length &&
+	       (memcmp(supported_mechs[i].oid.elements,
+		       ctxt->oid->elements,ctxt->oid->length) == 0))
+	       return i;
 	   i++;
 	}
-	return(i);
+	return(GSS_LAST_ENTRY);
 }
 
 /* Set the GSS context's OID to the oid indicated by the given key exchange
@@ -226,6 +241,9 @@ gss_OID ssh_gssapi_id_kex(Gssctxt *ctx, char *name) {
 
   if (ctx) ssh_gssapi_set_oid(ctx,&supported_mechs[i].oid);
 
+  debug("using GSSAPI mechanism %s (%s%s)", supported_mechs[i].name,
+	gssprefix, supported_mechs[i].enc_name);
+
   return &supported_mechs[i].oid;
 }
 
@@ -235,7 +253,7 @@ static void
 ssh_gssapi_error_ex(OM_uint32 major_status,OM_uint32 minor_status,
 		    int send_packet) {
 	OM_uint32 lmaj, lmin;
-        gss_buffer_desc msg;
+        gss_buffer_desc msg = {0,NULL};
         OM_uint32 ctx;
         
         ctx = 0;
@@ -306,6 +324,7 @@ ssh_gssapi_delete_ctx(Gssctxt **ctx)
 	if ((*ctx)==NULL)
 		return;
 		
+#if !defined(MECHGLUE) /* mechglue has some memory management issues */
 	if ((*ctx)->context != GSS_C_NO_CONTEXT) 
 		gss_delete_sec_context(&ms,&(*ctx)->context,GSS_C_NO_BUFFER);
 	if ((*ctx)->name != GSS_C_NO_NAME)
@@ -321,6 +340,7 @@ ssh_gssapi_delete_ctx(Gssctxt **ctx)
 		gss_release_name(&ms,&(*ctx)->client);	
 	if ((*ctx)->client_creds != GSS_C_NO_CREDENTIAL)
 		gss_release_cred(&ms,&(*ctx)->client_creds);
+#endif
 	
 	xfree(*ctx);
 	*ctx=NULL; 
@@ -421,27 +441,22 @@ OM_uint32 ssh_gssapi_accept_ctx(Gssctxt *ctx,gss_buffer_desc *recv_tok,
 /* Create a service name for the given host */
 OM_uint32
 ssh_gssapi_import_name(Gssctxt *ctx, const char *host) {
-	gss_buffer_desc gssbuf;
+	gss_buffer_desc gssbuf = {0,NULL};
 	OM_uint32 maj_status, min_status;
-	struct hostent *hostinfo = NULL;
 	char *xhost;
 	
 	/* Make a copy of the host name, in case it was returned by a
 	 * previous call to gethostbyname(). */	
 	xhost = xstrdup(host);
 
-	/* Make sure we have the FQDN. Some GSSAPI implementations don't do
+	/* If xhost is the loopback interface, switch it to our
+	   true local hostname. */
+	resolve_localhost(&xhost);
+
+	/* Make sure we have the FQHN. Some GSSAPI implementations don't do
 	 * this for us themselves */
-	
-	hostinfo = gethostbyname(xhost);
-	
-	if ((hostinfo == NULL) || (hostinfo->h_name == NULL)) {
-		debug("Unable to get FQDN for \"%s\"", xhost);
-	} else {
-		xfree(xhost);
-		xhost = xstrdup(hostinfo->h_name);
-	}
-		
+	make_fqhn(&xhost);
+
         gssbuf.length = sizeof("host@")+strlen(xhost);
 
         gssbuf.value = xmalloc(gssbuf.length);
@@ -556,7 +571,7 @@ ssh_gssapi_server_ctx(Gssctxt **ctx,gss_OID oid) {
 
 OM_uint32 
 ssh_gssapi_client_ctx(Gssctxt **ctx,gss_OID oid, char *host) {
-	gss_buffer_desc token;
+	gss_buffer_desc token = {0,NULL};
 	OM_uint32 major,minor;
 	
 	if (*ctx) ssh_gssapi_delete_ctx(ctx);

@@ -198,6 +198,9 @@
 /* Define if compiler implements __func__ */
 #undef HAVE___func__
 
+/* Define this if you're building with GSSAPI MechGlue */
+#undef MECHGLUE
+
 /* Define this is you want GSSAPI support in the version 2 protocol */
 #undef GSSAPI
 

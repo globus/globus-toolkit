@@ -1600,8 +1600,10 @@ int
 mm_answer_gss_setup_ctx(int socket, Buffer *m) {
         gss_OID_desc oid;
         OM_uint32 major;
+	int len;
 
-        oid.elements=buffer_get_string(m,&oid.length);
+        oid.elements=buffer_get_string(m,&len);
+	oid.length=len;
                 
         major=ssh_gssapi_server_ctx(&gsscontext,&oid);
 

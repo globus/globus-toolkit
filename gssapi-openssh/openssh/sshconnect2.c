@@ -519,11 +519,15 @@ userauth_gssapi(Authctxt *authctxt)
 	authctxt->methoddata=(void *)gssctxt;
 		
 	packet_start(SSH2_MSG_USERAUTH_REQUEST);
+#ifdef GSI
         if(options.implicit && !(datafellows & SSH_BUG_GSS_EMPTYUSER)) {
 	    packet_put_cstring("");
 	} else {
+#endif
 	    packet_put_cstring(authctxt->server_user);
+#ifdef GSI
 	}
+#endif
 	packet_put_cstring(authctxt->service);
         packet_put_cstring(authctxt->method->name);
 
@@ -591,12 +595,14 @@ input_gssapi_token(int type, u_int32_t plen, void *ctxt)
 	Gssctxt *gssctxt;
 	gss_buffer_desc send_tok,recv_tok;
 	OM_uint32 status;
+	u_int slen;
 	
 	if (authctxt == NULL)
 		fatal("input_gssapi_response: no authentication context");
 	gssctxt = authctxt->methoddata;
 	
-	recv_tok.value=packet_get_string(&recv_tok.length);
+	recv_tok.value=packet_get_string(&slen);
+	recv_tok.length=slen;	/* safe typecast */
 
 	status=ssh_gssapi_init_ctx(gssctxt, options.gss_deleg_creds,
 				   &recv_tok, &send_tok, NULL);
@@ -634,11 +640,15 @@ userauth_external(Authctxt *authctxt)
                                 
         debug2("userauth_external");
         packet_start(SSH2_MSG_USERAUTH_REQUEST);
+#ifdef GSI
         if(options.implicit && !(datafellows & SSH_BUG_GSS_EMPTYUSER)) {
 	    packet_put_cstring("");
 	} else {
+#endif
 	    packet_put_cstring(authctxt->server_user);
+#ifdef GSI
 	}
+#endif
         packet_put_cstring(authctxt->service);
         packet_put_cstring(authctxt->method->name);
         packet_send();

@@ -36,7 +36,6 @@ RCSID("$OpenBSD: auth2.c,v 1.93 2002/05/31 11:35:15 markus Exp $");
 #include "dispatch.h"
 #include "pathnames.h"
 #include "monitor_wrap.h"
-#include "misc.h"
 
 #ifdef GSSAPI
 #include "ssh-gss.h"
@@ -161,26 +160,29 @@ input_userauth_request(int type, u_int32_t seq, void *ctxt)
 
 #ifdef GSSAPI
 	if (strcmp(user, "") == 0) {
-	    char *lname = NULL;
-	    debug("gssapi received empty username");
-	    PRIVSEP(ssh_gssapi_localname(&lname));
-	    if (lname && lname[0] != '\0') {
-		xfree(user);
-		user = lname;
-		debug("gssapi successfully set username to %s", user);
-	    } else if (authctxt->valid) {
-		debug("failed to set username from gssapi context");
-		goto finish;
+	    debug("received empty username for %s", method);
+	    if (strcmp(method, "external-keyx") == 0) {
+		char *lname = NULL;
+		PRIVSEP(ssh_gssapi_localname(&lname));
+		if (lname && lname[0] != '\0') {
+		    xfree(user);
+		    user = lname;
+		    debug("set username to %s from gssapi context", user);
+		} else if (authctxt->valid) {
+		    debug("failed to set username from gssapi context");
+		}
 	    }
 	}
 #endif
 
-	debug("userauth-request for user %s service %s method %s", user, service, method);
+	debug("userauth-request for user %s service %s method %s",
+	      (user && user[0]) ? user : "<implicit>", service, method);
 	debug("attempt %d failures %d", authctxt->attempt, authctxt->failures);
 
 	if ((style = strchr(user, ':')) != NULL)
 		*style++ = 0;
 
+	authctxt->attempt++;
 	if (!authctxt->user ||
 	    strcmp(user, authctxt->user) != 0) {
 		/* setup auth context */
@@ -196,6 +198,16 @@ input_userauth_request(int type, u_int32_t seq, void *ctxt)
 		    xfree(authctxt->style);
 		    authctxt->style = NULL;
 		}
+#ifdef GSSAPI
+		/* We'll verify the username after we set it from the
+		   GSSAPI context. */
+		if ((strcmp(user, "") == 0) &&
+		    ((strcmp(method, "gssapi") == 0) ||
+		     (strcmp(method, "external-keyx") == 0))) {
+		    authctxt->pw = NULL;
+		    authctxt->valid = 1;
+		} else {
+#endif
 		authctxt->pw = PRIVSEP(getpwnamallow(user));
 		if (authctxt->pw && strcmp(service, "ssh-connection")==0) {
 			authctxt->valid = 1;
@@ -210,12 +222,15 @@ input_userauth_request(int type, u_int32_t seq, void *ctxt)
 			PRIVSEP(start_pam("NOUSER"));
 #endif
 		}
+#ifdef GSSAPI
+		}
+#endif
 		setproctitle("%s%s", authctxt->pw ? user : "unknown",
 		    use_privsep ? " [net]" : "");
 		authctxt->user = xstrdup(user);
 		authctxt->service = xstrdup(service);
 		authctxt->style = style ? xstrdup(style) : NULL;
-		if (use_privsep)
+		if (use_privsep && (authctxt->attempt == 1))
 			mm_inform_authserv(service, style);
 	}
 	/* reset state */
@@ -234,7 +249,7 @@ input_userauth_request(int type, u_int32_t seq, void *ctxt)
 		debug2("input_userauth_request: try method %s", method);
 		authenticated =	m->userauth(authctxt);
 	}
-finish:
+
 	userauth_finish(authctxt, authenticated, method);
 
 	xfree(service);

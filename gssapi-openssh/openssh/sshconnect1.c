@@ -1044,13 +1044,14 @@ char * get_gss_our_name()
     return NULL;
   }
 
-  maj_stat = gss_export_name(&min_stat,
-                             pname,
-                             tmpnamed);
+  maj_stat = gss_display_name(&min_stat,
+	                      pname,
+			      tmpnamed,
+			      NULL);
   if (maj_stat != GSS_S_COMPLETE) {
-    return NULL;
+     return NULL;
   }
-  debug("gss_export_name finsished");
+  debug("gss_display_name finsished");
   retname = (char *)malloc(tmpname.length + 1);
   if (!retname) {
     return NULL;
@@ -1085,18 +1086,20 @@ int try_gssapi_authentication(char *host, Options *options)
   OM_uint32 ret_flags;
   int type;
   char *gssapi_auth_type = NULL;
-  struct hostent *hostinfo;
+  char *xhost;
+  unsigned int slen;
 
+  /* Make a copy of the host name, in case it was returned by a
+   * previous call to gethostbyname(). */	
+  xhost = xstrdup(host);
 
-  /*
-   * host is not guarenteed to be a FQDN, so we need to make sure it is.
-   */
-  hostinfo = gethostbyname(host);
+  /* If xhost is the loopback interface, switch it to our
+     true local hostname. */
+  resolve_localhost(&xhost);
 
-  if ((hostinfo == NULL) || (hostinfo->h_name == NULL)) {
-      debug("GSSAPI authentication: Unable to get FQDN for \"%s\"", host);
-      goto cleanup;
-  }
+  /* Make sure we have the FQHN. Some GSSAPI implementations don't do
+   * this for us themselves */
+  make_fqhn(&xhost);
 
   /*
    * Default flags
@@ -1125,17 +1128,14 @@ int try_gssapi_authentication(char *host, Options *options)
 
   debug("Attempting %s authentication", gssapi_auth_type);
 
-  service_name = (char *) malloc(strlen("host") +
-                                 strlen(hostinfo->h_name) +
-                                 2 /* 1 for '@', 1 for NUL */);
+  service_name = (char *) xmalloc(strlen("host") +
+				  strlen(xhost) +
+				  2 /* 1 for '@', 1 for NUL */);
 
-  if (service_name == NULL) {
-    debug("malloc() failed");
-    goto cleanup;
-  }
+  sprintf(service_name, "host@%s", xhost);
 
-
-  sprintf(service_name, "host@%s", hostinfo->h_name);
+  xfree(xhost);
+  xhost = NULL;
 
   name_type = GSS_C_NT_HOSTBASED_SERVICE;
 
@@ -1165,7 +1165,7 @@ int try_gssapi_authentication(char *host, Options *options)
 
 #endif /* GSSAPI */
 
-  debug("req_flags = %lu", req_flags);
+  debug("req_flags = %u", (unsigned int)req_flags);
 
   name_tok.value = service_name;
   name_tok.length = strlen(service_name) + 1;
@@ -1224,7 +1224,8 @@ int try_gssapi_authentication(char *host, Options *options)
   }
 
   /* Read the mechanism the server returned */
-  mech_oid.elements = packet_get_string((unsigned int *) &(mech_oid.length));
+  mech_oid.elements = packet_get_string(&slen);
+  mech_oid.length = slen;	/* safe typecast */
   packet_get_all();
 
   /*
@@ -1310,7 +1311,8 @@ int try_gssapi_authentication(char *host, Options *options)
         /* Does not return */
       }
 
-      recv_tok.value = packet_get_string((unsigned int *) &recv_tok.length);
+      recv_tok.value = packet_get_string(&slen);
+      recv_tok.length=slen;	/* safe typecast */
       packet_get_all();
       token_ptr = &recv_tok;
     }
@@ -1341,7 +1343,8 @@ int try_gssapi_authentication(char *host, Options *options)
     gss_qop_t qop_state;
 
 
-    wrapped_buf.value = packet_get_string(&(wrapped_buf.length));
+    wrapped_buf.value = packet_get_string(&slen);
+    wrapped_buf.length=slen;	/* safe typecast */
     packet_get_all();
 
     maj_stat = gss_unwrap(&min_stat,
@@ -1361,7 +1364,8 @@ int try_gssapi_authentication(char *host, Options *options)
     if (unwrapped_buf.length != sizeof(ssh_key_digest)) {
       packet_disconnect("Verification of SSHD keys through GSSAPI-secured channel failed: "
                         "Size of key hashes do not match (%d != %d)!",
-                        unwrapped_buf.length, sizeof(ssh_key_digest));
+                        (int)unwrapped_buf.length,
+			(int)sizeof(ssh_key_digest));
     }
 
     if (memcmp(ssh_key_digest, unwrapped_buf.value, sizeof(ssh_key_digest)) != 0) {
