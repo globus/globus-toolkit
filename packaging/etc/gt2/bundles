@@ -466,6 +466,7 @@ BUNDLE gt2-unthreaded
 	gssapi_error
         globus_gridftp_server_control
         globus_gridftp_server2
+        globus_gridftp_driver
 
 BUNDLE gt2-threaded THREADED
 	globus_callout
