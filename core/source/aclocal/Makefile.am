@@ -15,4 +15,3 @@ EXTRA_DIST = $(aclocal_DATA) \
 	progs.am \
 	scripts.am \
 	subdirs.am
-

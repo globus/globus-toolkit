@@ -56,10 +56,17 @@ fi
 prefix='$(GLOBUS_INSTALL_PATH)'
 exec_prefix='$(GLOBUS_INSTALL_PATH)'
 
+dnl check for perl
+
+AC_PATH_PROGS(PERL, perl)
+
 
 AC_OUTPUT(Makefile
        	globus-build-env-${globus_cv_flavor}.sh:globus-build-env.sh.in
 	globus-sh-tools.sh
+	scripts/Makefile
+	scripts/globus_build_config.pl
 	aclocal/Makefile
 	config/Makefile
+	tests/Makefile
 	)

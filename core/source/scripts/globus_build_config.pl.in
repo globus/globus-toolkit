@@ -1,0 +1,130 @@
+#! @PERL@ -w
+use strict;
+
+my ($rawldflags, @deppackages, $flavor);
+
+my $prefix = $ENV{'GLOBUS_INSTALL_PATH'};
+
+if (!defined($prefix)) {
+  die "Please set GLOBUS_INSTALL_PATH\n";
+}
+
+
+
+for (@ARGV) {
+  if (/^--ldflags="(.+)"/) {
+    $rawldflags=$1;
+  } elsif (/^--flavor=(\w+)/) {
+    $flavor=$1;
+  } else {
+    push @deppackages, $_;
+  }
+}
+
+if (!defined($flavor)) {
+  print "ERROR: Need to specify flavor\n";
+  usage();
+}
+
+if (!defined($rawldflags)) {
+  $rawldflags="";
+}
+# remove leading space
+$rawldflags =~ s/^\s*//g;
+
+
+for (@deppackages) {
+  scan_package($_);
+}
+
+my @flaglist = split /\s+/, $rawldflags;
+my (%lib_dir_map, @libs_reversed, $currentlib_dir);
+
+for (@flaglist) {
+  my $lib;
+  if (/(-l\w+)/) {
+    $lib = $1;
+    unshift @libs_reversed, $1;
+    if (defined($currentlib_dir)) {
+      $lib_dir_map{$lib} = $currentlib_dir;
+    }
+  }
+
+  if (/(-L[\w\/]+)/) {
+   $currentlib_dir = $1;
+  }
+}
+
+
+my $resulting_libline = "";
+$currentlib_dir = "";
+my %added_libs;
+
+for (@libs_reversed) {
+  my  $add_libdir = "";
+
+  next if (defined($added_libs{$_}));
+
+  if (defined($lib_dir_map{$_})) {
+    if ($lib_dir_map{$_} ne $currentlib_dir) {
+      $add_libdir = $currentlib_dir = $lib_dir_map{$_};
+    }    
+  }
+
+  $resulting_libline = "$add_libdir $_ $resulting_libline";
+  $added_libs{$_} = 1;
+}
+
+print "$resulting_libline\n";
+
+my %scanned_packages;
+
+sub scan_package
+  {
+    my $package= shift;
+
+    if (defined($scanned_packages{$package})) {
+      return;
+    }
+
+    my @deps;
+    my $parameter_filename = 
+      "$prefix/etc/globus_packages/$package/build_parameters_$flavor";
+
+    if (! -f $parameter_filename ) {
+      die "Error: missing file $parameter_filename. $package does not seem to be installed for flavor $flavor\n";  
+    }
+
+    open(PARAMETERS, $parameter_filename) || die "Error: $parameter_filename could not be opened\n";
+
+    # Look for the lines specifying the dependent packages and the libraries
+    while (<PARAMETERS>) {
+      if (/_libraries=(.+)$/) {
+	my $libline = $1;
+	#eliminate quotes
+	$libline =~ s/[\"\']//g;
+	$rawldflags .= " $libline";
+      }
+      if (/_requires_build=(.+)$/) {
+	my $depsline=$1;
+	# remove leading specs
+	$depsline =~ s/^\s*//g;
+	# remove quotes
+	$depsline =~ s/[\"\']//g;
+	@deps = split /\s+/, $depsline;
+      }
+    }
+    close(PARAMETERS);
+
+    # register the package as scanned
+    $scanned_packages{$package} = 1;
+
+    for (@deps) {
+      scan_package($_);
+    }
+  }
+
+
+sub usage {
+  print "globus_build_config \[--ldflags=\"<extra ld flags>\"\] --flavor=<globus_flavor_name> <dependent packages list>\n";
+}
