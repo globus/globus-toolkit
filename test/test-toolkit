@@ -28,9 +28,9 @@ GetOptions (
     'color'             => \$color,
     'debug'             => \$debug,
     'version'           => \$version,
-    'globus'            => \$globus,
-    'remote'            => \$remote,
-    'directory'         => \$directory
+    'globus=s'          => \$globus,
+    'remote=s'          => \$remote,
+    'directory=s'       => \$directory
 );
 
 if (defined $help)        { help(); exit; }
