@@ -80,7 +80,6 @@ EXTERN_C_BEGIN
  */
 struct PROXYCERTINFO_st
 {
-    ASN1_INTEGER *                      version;
     ASN1_INTEGER *                      path_length;       /* [ OPTIONAL ] */
     PROXYPOLICY *                       policy;
 };
@@ -123,13 +122,6 @@ int PROXYCERTINFO_print(
 
 int PROXYCERTINFO_print_fp(
     FILE *                              fp,
-    PROXYCERTINFO *                     cert_info);
-
-int PROXYCERTINFO_set_version(
-    PROXYCERTINFO *                     cert_info,
-    long                                version);
-
-long PROXYCERTINFO_get_version(
     PROXYCERTINFO *                     cert_info);
 
 int PROXYCERTINFO_set_policy(

@@ -124,14 +124,14 @@ PROXYPOLICY * PROXYPOLICY_dup(
  * This function first compares the policy language numeric
  * id's, if they're equal, it then compares the two policies.
  *
- * @return 1 if equal, 0 if not
+ * @return 0 if equal, nonzero if not
  */
 int PROXYPOLICY_cmp(
     const PROXYPOLICY *                 a,
     const PROXYPOLICY *                 b)
 {
     
-    if((a->policy_language->nid == b->policy_language->nid) &&
+    if((a->policy_language->nid != b->policy_language->nid) ||
        ASN1_STRING_cmp((ASN1_STRING *)a->policy, (ASN1_STRING *)b->policy))
     {
         return 1;

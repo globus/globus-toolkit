@@ -69,8 +69,6 @@ PROXYCERTINFO * PROXYCERTINFO_new()
 
     M_ASN1_New_Malloc(ret, PROXYCERTINFO);
     memset(ret, (int) NULL, sizeof(PROXYCERTINFO));
-    ret->version          = ASN1_INTEGER_new();
-    ASN1_INTEGER_set(ret->version, 1);  /* current first version of protocol */
     ret->path_length      = NULL;
     ret->policy           = PROXYPOLICY_new();
     return (ret);
@@ -95,7 +93,6 @@ void PROXYCERTINFO_free(
     PROXYCERTINFO *                     cert_info)
 {
     if(cert_info == NULL) return;
-    ASN1_INTEGER_free(cert_info->version);
     ASN1_INTEGER_free(cert_info->path_length);
     PROXYPOLICY_free(cert_info->policy);
     OPENSSL_free(cert_info);
@@ -142,15 +139,14 @@ PROXYCERTINFO * PROXYCERTINFO_dup(
  *
  * @return an integer - the result of the comparison.  
  * The comparison compares each of the fields, so if any of those
- * fields are not equal 0 is returned.  a nonzero value is returned
- * otherwise.
+ * fields are not equal then a nonzero value is returned. Equality
+ * is indicated by returning a 0.
  */
 int PROXYCERTINFO_cmp(
     const PROXYCERTINFO *               a,
     const PROXYCERTINFO *               b)
 {
-    if(ASN1_INTEGER_cmp(a->version, b->version) && 
-       ASN1_INTEGER_cmp(a->path_length, b->path_length) &&
+    if(ASN1_INTEGER_cmp(a->path_length, b->path_length) ||
        PROXYPOLICY_cmp(a->policy, b->policy))
     {
         return 1;
@@ -226,56 +222,6 @@ int PROXYCERTINFO_print_fp(
 }   
 /* PROXYCERTINFO_print_fp() */
 /* @} */
-
-
-/**
- * @name Set the Version Field
- */
-/* @{ */
-/** 
- * @ingroup proxycertinfo
- *
- * Sets the version of the PROXYCERTINFO struct
- * 
- * @param cert_info the PROXYCERTINFO to set the version of
- * @param version the version to set it to
- *
- * @return 1 on success, 0 on error
- */
-int PROXYCERTINFO_set_version(
-    PROXYCERTINFO *                     cert_info,
-    long                                version)
-{
-    return ASN1_INTEGER_set(cert_info->version, version);
-}
-/* PROXYCERTINFO_set_version */
-/* @} */
-
-/**
- * @name Get the Version Field
- */
-/* @{ */
-/**
- * @ingroup proxycertinfo
- *
- * Gets the version of the PROXYCERTINFO structure
- *
- * @param cert_info the PROXYCERTINFO to get the version of
- *
- * @return the version
- */
-long PROXYCERTINFO_get_version(
-    PROXYCERTINFO *                     cert_info)
-{
-    if(cert_info)
-    {
-        return ASN1_INTEGER_get(cert_info->version);
-    }
-    return -1;
-}
-/* PROXYCERTINFO_get_version() */
-/* @} */
-
 
 /**
  * @name Set the Policy Field
@@ -451,8 +397,6 @@ int i2d_PROXYCERTINFO(
     
     v1 = 0;
 
-    M_ASN1_I2D_len(cert_info->version, i2d_ASN1_INTEGER);
-
     M_ASN1_I2D_len(cert_info->policy,      
                    i2d_PROXYPOLICY);
 
@@ -460,7 +404,6 @@ int i2d_PROXYCERTINFO(
                            i2d_ASN1_INTEGER,
                            1, v1);
     M_ASN1_I2D_seq_total();
-    M_ASN1_I2D_put(cert_info->version, i2d_ASN1_INTEGER);
     M_ASN1_I2D_put(cert_info->policy, i2d_PROXYPOLICY);
     M_ASN1_I2D_put_EXP_opt(cert_info->path_length, i2d_ASN1_INTEGER, 1, v1);
     M_ASN1_I2D_finish();
@@ -495,8 +438,6 @@ PROXYCERTINFO * d2i_PROXYCERTINFO(
     M_ASN1_D2I_Init();
     M_ASN1_D2I_start_sequence();
 
-    M_ASN1_D2I_get(ret->version, d2i_ASN1_INTEGER);
-    
     M_ASN1_D2I_get(ret->policy,d2i_PROXYPOLICY);
 
     M_ASN1_D2I_get_EXP_opt(ret->path_length, 
@@ -542,13 +483,7 @@ STACK_OF(CONF_VALUE) * i2v_PROXYCERTINFO(
         extlist = NULL;
         return extlist;
     }
-
-    BIO_snprintf(tmp_string, len, " %lu (0x%lx)", 
-                 PROXYCERTINFO_get_version(ext),
-                 PROXYCERTINFO_get_version(ext));
-
-    X509V3_add_value("Version", tmp_string, &extlist);
-
+    
     if(PROXYCERTINFO_get_path_length(ext) > -1)
     {
         memset(tmp_string, 0, len);
