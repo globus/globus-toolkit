@@ -335,6 +335,7 @@ globus_l_gsc_cmd_mdtm_cb(
     char *                                  path,
     globus_gridftp_server_control_stat_t *  stat_info,
     int                                     stat_count,
+    uid_t                                   uid,
     void *                                  user_arg)
 {
     int                                     code;
@@ -526,6 +527,7 @@ globus_l_gsc_cmd_cwd_cb(
     char *                                  path,
     globus_gridftp_server_control_stat_t *  stat_info,
     int                                     stat_count,
+    uid_t                                   uid,
     void *                                  user_arg)
 {
     int                                     code;
@@ -568,7 +570,7 @@ globus_l_gsc_cmd_cwd_cb(
     else
     {
         if(!(S_IXOTH & stat_info->mode && S_IROTH & stat_info->mode) &&
-            !(stat_info->uid == op->server_handle->uid && 
+            !(stat_info->uid == uid && 
                 S_IXUSR & stat_info->mode && S_IRUSR & stat_info->mode))
         {
             code = 550;
@@ -698,6 +700,7 @@ globus_l_gsc_cmd_stat_cb(
     char *                                  path,
     globus_gridftp_server_control_stat_t *  stat_info,
     int                                     stat_count,
+    uid_t                                   uid,
     void *                                  user_arg)
 {
     int                                     code;
@@ -736,8 +739,7 @@ globus_l_gsc_cmd_stat_cb(
         else
         {
             tmp_ptr = globus_i_gsc_mlsx_line_single(
-                op->server_handle->opts.mlsx_fact_str, op->server_handle->uid, 
-                stat_info);
+                op->server_handle->opts.mlsx_fact_str, uid, stat_info);
         }
         code = 213;
         msg =  globus_common_create_string(
@@ -830,6 +832,7 @@ globus_l_gsc_cmd_size_cb(
     char *                                  path,
     globus_gridftp_server_control_stat_t *  stat_info,
     int                                     stat_count,
+    uid_t                                   uid,
     void *                                  user_arg)
 {
     int                                     code;

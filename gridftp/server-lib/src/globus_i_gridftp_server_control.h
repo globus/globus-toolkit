@@ -94,6 +94,7 @@ typedef void
     char *                                  path,
     globus_gridftp_server_control_stat_t *  stat_info,
     int                                     stat_count,
+    uid_t                                   uid,
     void *                                  user_arg);
 
 typedef void
@@ -314,7 +315,6 @@ typedef struct globus_i_gsc_server_handle_s
     char *                              username;
     char *                              pw;
     char *                              subject;
-    uid_t                               uid;
     char                                dcau;
     char *                              dcau_subject;
     char                                prot;
@@ -493,15 +493,16 @@ globus_i_gsc_nlst_line(
 
 char *
 globus_i_gsc_mlsx_line_single(
-    const char *                        mlsx_fact_string,
+    const char *                        mlsx_fact_str,
     int                                 uid,
     globus_gridftp_server_control_stat_t *  stat_info);
 
 char *
 globus_i_gsc_mlsx_line(
-    globus_i_gsc_server_handle_t *      server_handle,
     globus_gridftp_server_control_stat_t *  stat_info,
-    int                                 stat_count);
+    int                                 stat_count,
+    const char *                        mlsx_fact_string,
+    uid_t                               uid);
 
 char *
 globus_i_gsc_string_to_959(
