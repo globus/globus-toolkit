@@ -83,20 +83,20 @@
 
 /**** added by JB **********/
 #if defined(THROUGHPUT)
-#   define SEND_DATA(__name, __instr, __outstr, __blksize, __logical_offset, __length)    \
-        send_data(__name, __instr, __outstr, __blksize, __logical_offset, __length)
+#   define SEND_DATA(__name, __instr, __outstr, __blksize, __length)    \
+        send_data(__name, __instr, __outstr, __blksize, __length)
 #else
-#   define SEND_DATA(__name, __instr, __outstr, __blksize, __logical_offset, __length)    \
+#   define SEND_DATA(__name, __instr, __outstr, __blksize, __length)    \
         send_data(__instr, __outstr, __blksize, __length)
 #endif
 
 #ifdef USE_GLOBUS_DATA_CODE
 #   if defined(THROUGHPUT)
-#       define G_SEND_DATA(__name, __instr, __h, __off, __logical_offset, __length, __size)  \
-            g_send_data(__name, __instr, __h, __off, (off_t) __logical_offset, (off_t)__length, __size)
+#       define G_SEND_DATA(__name, __instr, __h, __off, __blksize, __length, __size)  \
+            g_send_data(__name, __instr, __h, __off,(off_t) __blksize, (off_t)__length, __size)
 #   else
-#       define G_SEND_DATA(__name, __instr, __h, __off, __logical_offset, __length, __size)  \
-            g_send_data(__instr, __h, __off, (off_t) __logical_offset, (off_t)__length, __size)
+#       define G_SEND_DATA(__name, __instr, __h, __off, __blksize, __length, __size)  \
+            g_send_data(__instr, __h, __off, (off_t)__blksize, (off_t)__length, __size)
 #   endif
 #endif
 
@@ -2215,8 +2215,7 @@ void user(char *name)
 		 * so we always send back 331, even though we may just
 		 * need a dummy password.
 		 */
-        reply(331, 
-			  "GSSAPI user %s is%s authorized as %s%s",
+		reply(331, "GSSAPI user %s is%s authorized as %s%s",
 		      gssapi_name,
 		      (gssapi_user_is_good ? "" : " not"),
 		      name,
@@ -4255,7 +4254,7 @@ retrieve(
     char realname[MAXPATHLEN];
     int stat_ret = -1;
 
-    int                            tmp_restart = 0; /* added by JB */
+    int                            tmp_restart; /* added by JB */
 
     extern int checknoretrieve(char *);
 
@@ -4536,11 +4535,10 @@ retrieve(
     if(restart_point)
     {
         tmp_restart = restart_point;
-        if(offset != -1) tmp_restart += offset;
     }
     else if(offset != -1)
     {
-        tmp_restart += offset;
+        tmp_restart = offset;
     }
     else
     {
@@ -4550,14 +4548,21 @@ retrieve(
 
 #   if defined(USE_GLOBUS_DATA_CODE)
     {
-            TransferComplete = G_SEND_DATA(
-                                   name, 
-                                   fin, 
-                                   &g_data_handle, 
-                                   tmp_restart,
-                                   offset==-1?0:offset, 
-                                   length, 
-                                   st.st_size);
+#       ifdef BUFFER_SIZE
+            TransferComplete = G_SEND_DATA(name, fin, 
+                                   &g_data_handle, tmp_restart,
+                                   BUFFER_SIZE, length, st.st_size);
+#       else
+#           ifdef HAVE_ST_BLKSIZE
+                TransferComplete = G_SEND_DATA(name, fin, &g_data_handle, 
+                                       tmp_restart, st.st_blksize * 2, length,
+				       st.st_size);
+#           else
+                TransferComplete = G_SEND_DATA(name, fin, 
+                                       &g_data_handle, tmp_restart, BUFSIZ, 
+                                       length, st.st_size);
+#           endif
+#       endif
     }
 #   else
     {
@@ -5007,7 +5012,6 @@ store(
     if(restart_point)
     {
         tmp_restart = restart_point;
-        if(offset != -1) tmp_restart += offset;
     }
     else if(offset != -1)
     {
@@ -5058,7 +5062,7 @@ store(
  */
 #   if defined(USE_GLOBUS_DATA_CODE)
     {
-        TransferIncomplete = g_receive_data(&g_data_handle, fout, tmp_restart, name);
+        TransferIncomplete = g_receive_data(&g_data_handle, fout, offset, name);
     }
 #   else
     {
