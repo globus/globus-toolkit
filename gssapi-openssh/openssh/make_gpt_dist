@@ -53,6 +53,12 @@ if ( (!defined($srcdir)) || length($srcdir) le 0 )
     die;
 }
 
+if ( (!defined($srcpkg)) || length($srcpkg) le 0 )
+{
+    printf("\$srcpkg must be defined to a usable value!\n");
+    die;
+}
+
 if ( -e "../$srcdir" )
 {
     printf("found existing '../$srcdir'... please remove before continuing\n");
