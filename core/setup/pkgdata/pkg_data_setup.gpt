@@ -19,9 +19,7 @@
 
 <Setup_Requirements_Message>
 $GLOBUS_LOCATION/setup/globus/setup_globus_core needs to be run to complete this installation.
-<Setup_Requirements_Message>
-
-
+</Setup_Requirements_Message>
 
 </setup_pkg>
 </gpt_package_metadata>

@@ -25,8 +25,6 @@ if test "x$GLOBUS_LOCATION" = "x"; then
     exit 1
 fi
 
-config="-I ./config"
-
 #if test ! -f "$GLOBUS_LOCATION/share/globus_aclocal/gpt_autoconf_macros.m4"; then
 #    if test "x$GPT_LOCATION" = "x"; then
 #        echo "ERROR Globus Packaging Tools not found" >&2
@@ -39,9 +37,8 @@ config="-I ./config"
 #    config="$config -I $GLOBUS_LOCATION/share/globus_aclocal"
 #fi
 
-echo "running aclocal $config"
-aclocal $config || error
-
 echo "running autoconf"
-autoconf findshelltools.in || error
+autoconf findshelltools.in > findshelltools || error
+chmod 755 findshelltools
+
 exit 0
