@@ -31,8 +31,13 @@ globus_l_gsi_gss_assist_error_strings[GLOBUS_GSI_GSS_ASSIST_ERROR_LAST] =
 /* 8 */   "Error during message wrap",
 /* 9 */   "Error with token",
 /* 10 */  "Error exporting context",
-/* 11 */  "Error importing context"
-
+/* 11 */  "Error importing context",
+/* 12 */  "Error initializing callout handle",
+/* 13 */  "Error reading callout configuration",
+/* 14 */  "Error invoking callout",
+/* 15 */  "A GSSAPI returned an error",
+/* 16 */  "Gridmap lookup failure",
+/* 17 */   "Caller provided insufficient buffer space for local identity"
 };
 
 globus_result_t

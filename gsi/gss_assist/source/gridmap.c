@@ -11,6 +11,7 @@
 
 #include "globus_i_gss_assist.h"
 #include "globus_gsi_system_config.h"
+#include "globus_callout.h"
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
@@ -35,6 +36,9 @@ typedef struct _gridmap_line_s {
 #ifndef NUL
 #define NUL				'\0'
 #endif
+
+#define GLOBUS_GENERIC_MAPPING_TYPE     "globus_mapping"
+#define GLOBUS_GENERIC_AUTHZ_TYPE       "globus_authorization"
 
 /*
  * Number of user id slots to allocate at a time
@@ -79,6 +83,16 @@ globus_i_gss_assist_gridmap_parse_globusid(
 static int 
 globus_i_gss_assist_xdigit_to_value(
     char                                xdigit);
+
+static
+globus_result_t
+globus_l_gss_assist_gridmap_lookup(
+    gss_ctx_id_t                        context,
+    char *                              service,
+    char *                              desired_identity,
+    char *                              identity_buffer,
+    unsigned int                        identity_buffer_length);
+  
 
 #endif
 
@@ -1223,6 +1237,9 @@ globus_i_gss_assist_xdigit_to_value(
 /* xdigit_to_value() */
 /* @} */
 
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
+
+
 /**
  * Look up all globus ids associated with a given user id.
  *
@@ -1347,4 +1364,268 @@ globus_gss_assist_lookup_all_globusid(
 }
 /* globus_gss_assist_lookup_all_globusid() */
 
-#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
+
+globus_result_t
+globus_gss_assist_map_and_authorize(
+    gss_ctx_id_t                        context,
+    char *                              service,
+    char *                              desired_identity,
+    char *                              identity_buffer,
+    unsigned int                        identity_buffer_length)
+{
+    globus_object_t *                   error;
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    char *                              filename;
+    globus_callout_handle_t             authz_handle;
+
+    static char *                       _function_name_ =
+        "globus_gss_assist_map_and_authorize";
+    
+    result = GLOBUS_GSI_SYSCONFIG_GET_AUTHZ_CONF_FILENAME(&filename);
+    
+    if(result != GLOBUS_SUCCESS)
+    {
+        error = globus_error_get(result);
+        
+        if(globus_error_match(
+               error,
+               GLOBUS_GSI_SYSCONFIG_MODULE,
+               GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_AUTHZ_FILENAME)
+           == GLOBUS_TRUE)
+        {
+            globus_object_free(error);
+            return globus_l_gss_assist_gridmap_lookup(
+                context,
+                service,
+                desired_identity,
+                identity_buffer,
+                identity_buffer_length);
+        }
+        else
+        {
+            result = globus_error_put(error);
+            return result;
+        }
+    }
+    else
+    {
+        result = globus_callout_handle_init(&authz_handle);
+            
+        if(result != GLOBUS_SUCCESS)
+        {
+            free(filename);
+            GLOBUS_GSI_GSS_ASSIST_ERROR_CHAIN_RESULT(
+                result,
+                GLOBUS_GSI_GSS_ASSIST_ERROR_WITH_CALLOUT_CONFIG);
+            goto error;
+        }
+            
+        result = globus_callout_read_config(authz_handle, filename);
+
+        free(filename);
+            
+        if(result != GLOBUS_SUCCESS)
+        {
+            GLOBUS_GSI_GSS_ASSIST_ERROR_CHAIN_RESULT(
+                result,
+                GLOBUS_GSI_GSS_ASSIST_ERROR_INITIALIZING_CALLOUT_HANDLE);
+            goto destroy_handle;
+        }
+            
+        result = globus_callout_call_type(authz_handle,
+                                          GLOBUS_GENERIC_MAPPING_TYPE,
+                                          context,
+                                          service,
+                                          desired_identity,
+                                          identity_buffer,
+                                          identity_buffer_length);
+        
+        if(result != GLOBUS_SUCCESS)
+        {
+            error = globus_error_get(result);
+            
+            if(globus_error_match(
+                   error,
+                   GLOBUS_CALLOUT_MODULE,
+                   GLOBUS_CALLOUT_ERROR_TYPE_NOT_REGISTERED)
+               == GLOBUS_TRUE)
+            {
+                globus_object_free(error);
+                result = globus_l_gss_assist_gridmap_lookup(
+                    context,
+                    service,
+                    desired_identity,
+                    identity_buffer,
+                    identity_buffer_length);
+                goto destroy_handle;
+            }
+            else
+            {
+                result = globus_error_put(error);
+                GLOBUS_GSI_GSS_ASSIST_ERROR_CHAIN_RESULT(
+                    result,
+                    GLOBUS_GSI_GSS_ASSIST_CALLOUT_ERROR);
+                goto destroy_handle;
+            }
+        }
+
+        result = globus_callout_call_type(authz_handle,
+                                          GLOBUS_GENERIC_AUTHZ_TYPE,
+                                          context,
+                                          service);        
+        if(result != GLOBUS_SUCCESS)
+        {
+            error = globus_error_get(result);
+            
+            if(globus_error_match(
+                   error,
+                   GLOBUS_CALLOUT_MODULE,
+                   GLOBUS_CALLOUT_ERROR_TYPE_NOT_REGISTERED)
+               == GLOBUS_FALSE)
+            {
+                result = globus_error_put(error);
+                GLOBUS_GSI_GSS_ASSIST_ERROR_CHAIN_RESULT(
+                    result,
+                    GLOBUS_GSI_GSS_ASSIST_CALLOUT_ERROR);
+                goto destroy_handle;
+            }
+            else
+            {
+                result = GLOBUS_SUCCESS;
+            }
+
+            globus_object_free(error);
+        }
+    }
+    
+ destroy_handle:
+    globus_callout_handle_destroy(authz_handle);    
+ error:
+    return result;
+}
+/* globus_gss_assist_map_and_authorize */
+
+static
+globus_result_t
+globus_l_gss_assist_gridmap_lookup(
+    gss_ctx_id_t                        context,
+    char *                              service,
+    char *                              desired_identity,
+    char *                              identity_buffer,
+    unsigned int                        identity_buffer_length)
+{
+    gss_name_t                          peer;
+    gss_buffer_desc                     peer_name_buffer;
+    OM_uint32                           major_status;
+    OM_uint32                           minor_status;
+    int                                 initiator;
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    int                                 rc;
+    char *                              local_identity;
+    static char *                       _function_name_ =
+        "globus_l_gss_assist_gridmap_lookup";
+    
+    major_status = gss_inquire_context(&minor_status,
+                                       context,
+                                       GLOBUS_NULL,
+                                       GLOBUS_NULL,
+                                       GLOBUS_NULL,
+                                       GLOBUS_NULL,
+                                       GLOBUS_NULL,
+                                       &initiator,
+                                       GLOBUS_NULL);
+
+    if(GSS_ERROR(major_status))
+    {
+        result = (void *) minor_status;
+        GLOBUS_GSI_GSS_ASSIST_ERROR_CHAIN_RESULT(
+            result,
+            GLOBUS_GSI_GSS_ASSIST_GSSAPI_ERROR);
+        goto error;
+    }
+
+    major_status = gss_inquire_context(&minor_status,
+                                       context,
+                                       initiator ? GLOBUS_NULL : &peer,
+                                       initiator ? &peer : GLOBUS_NULL,
+                                       GLOBUS_NULL,
+                                       GLOBUS_NULL,
+                                       GLOBUS_NULL,
+                                       GLOBUS_NULL,
+                                       GLOBUS_NULL);
+
+    if(GSS_ERROR(major_status))
+    {
+        result = (void *) minor_status;
+        GLOBUS_GSI_GSS_ASSIST_ERROR_CHAIN_RESULT(
+            result,
+            GLOBUS_GSI_GSS_ASSIST_GSSAPI_ERROR);
+        goto error;
+    }
+    
+    major_status = gss_display_name(&minor_status,
+                                    peer,
+                                    &peer_name_buffer,
+                                    GLOBUS_NULL);
+    if(GSS_ERROR(major_status))
+    {
+        result = (void *) minor_status;
+        GLOBUS_GSI_GSS_ASSIST_ERROR_CHAIN_RESULT(
+            result,
+            GLOBUS_GSI_GSS_ASSIST_GSSAPI_ERROR);
+        gss_release_name(&minor_status, &peer);
+        goto error;
+    }
+
+    gss_release_name(&minor_status, &peer);        
+    
+    if(desired_identity == NULL)
+    {
+        rc = globus_gss_assist_gridmap(
+            peer_name_buffer.value, 
+            &local_identity);
+        
+        if(rc != 0)
+        {
+            GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
+                result,
+                GLOBUS_GSI_GSS_ASSIST_GRIDMAP_LOOKUP_FAILED,
+                ("Could not map %s\n", peer_name_buffer.value));
+            gss_release_buffer(&minor_status, &peer_name_buffer);
+            goto error;
+        }
+
+        if(strlen(local_identity) + 1 > identity_buffer_length)
+        {
+            GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
+                result,
+                GLOBUS_GSI_GSS_ASSIST_BUFFER_TOO_SMALL,
+                ("Local identity length: %d Buffer length: %d\n",
+                 strlen(local_identity), identity_buffer_length));
+        }
+        else
+        {
+            strcpy(identity_buffer, local_identity);
+        }
+        free(local_identity);
+    }
+    else
+    {
+        rc = globus_gss_assist_userok(peer_name_buffer.value,
+                                      desired_identity);
+        if(rc != 0)
+        {
+            GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
+                result,
+                GLOBUS_GSI_GSS_ASSIST_GRIDMAP_LOOKUP_FAILED,
+                ("Could not map %s to %s\n",
+                 peer_name_buffer.value,
+                 desired_identity));
+        }
+    }
+
+    gss_release_buffer(&minor_status, &peer_name_buffer);
+
+ error:
+    return result;
+}

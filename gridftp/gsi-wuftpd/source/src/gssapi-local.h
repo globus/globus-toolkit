@@ -15,13 +15,11 @@ int gssapi_unwrap_message();
 int gssapi_wrap_message();
 int gssapi_can_encrypt();
 int gssapi_handle_auth_data();
+gss_ctx_id_t gssapi_get_gss_ctx_id_t(void);
 
 #ifdef GSSAPI_GLOBUS
-char *globus_local_name();
 
-#ifdef GLOBUS_AUTHORIZATION
-gss_ctx_id_t gssapi_get_gss_ctx_id_t(void);
-#endif /* GLOBUS_AUTHORIZATION */
+char *globus_local_name();
 
 #endif /* GSSAPI_GLOBUS */
 

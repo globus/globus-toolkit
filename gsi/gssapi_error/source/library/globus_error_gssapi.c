@@ -38,8 +38,8 @@ globus_object_t *
 globus_error_construct_gssapi_error(
     globus_module_descriptor_t *        base_source,
     globus_object_t *                   base_cause,
-    const OM_uint32                      major_status,
-    const OM_uint32                      minor_status)
+    const OM_uint32                     major_status,
+    const OM_uint32                     minor_status)
 {
     globus_object_t *                   error;
     globus_object_t *                   newerror;

@@ -49,7 +49,11 @@ EXTERN_C_BEGIN
  * - It provides a API function for registering callouts
  * - All callouts are assumed to have the function signature
  *   globus_result_t callout_func(va_list ap)
- * - It provides a function for calling a callout given a abstract type.
+ * - It provides a function for calling a callout given a abstract type. If
+ *   multiple callouts are defined for the same abstract type then all callouts
+ *   for the abstract type will be called. Implementers should not rely on any
+ *   correlation between the order of configuration and the order of invocation
+ *   of callouts of the same abstract type.
  *
  * Any program that uses Globus Callout functions must include
  * "globus_callout.h".  

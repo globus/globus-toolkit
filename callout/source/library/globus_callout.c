@@ -544,10 +544,10 @@ globus_callout_register(
  * Call a callout of specified abstract type
  * @ingroup globus_callout_call
  *
- * This function looks up the callout corresponding to the given type and
- * invokes it with the passed arguments. If the invoked callout returns an
+ * This function looks up the callouts corresponding to the given type and
+ * invokes them with the passed arguments. If a invoked callout returns an
  * error it will be chained to a error of the type
- * GLOBUS_CALLOUT_ERROR_CALLOUT_ERROR.
+ * GLOBUS_CALLOUT_ERROR_CALLOUT_ERROR and no more callouts will be called.
  *
  * @param handle
  *        A configured callout handle

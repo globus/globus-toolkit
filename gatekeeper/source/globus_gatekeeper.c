@@ -1130,57 +1130,61 @@ Returns:
 ******************************************************************************/
 static void doit()
 {
-    int                 p1[2];
-    int                 pid;
-    int                 n;
-    int                 i;
-    int                 service_uid;
-    int                 service_gid;
-    int                 close_on_exec_read_fd;
-    int                 close_on_exec_write_fd;
-    char                buf[1024];
-    char *              s;
-    char **             args;
-    char *              argnp;
-    char *              execp;
-    char **             argi;
-    int                 num_service_args = SERVICE_ARGS_MAX;
-    char *              service_args[SERVICE_ARGS_MAX];
-    int                 num_service_options = SERVICE_OPTIONS_MAX;
-    char *              service_options[SERVICE_OPTIONS_MAX];
-    int                 service_option_local_cred = 0;
-    int                 service_option_stderr_log = 0;
-    int                 service_option_accept_limited = 0;
-    unsigned char       int_buf[4];
-    struct stat         statbuf;
-    char *              service_line = NULL;
-    char *              service_path;
-    char *              gram_k5_path; 
-    struct sockaddr_in  peer;
-    netlen_t            peerlen;
-    char *              peernum;
-    char *              x509_delegate;
-    size_t              length;
-    char *              http_message;
-    size_t              http_length;
-    char *              http_body;
-    FILE *              http_body_file;
+    int                                 p1[2];
+    int                                 pid;
+    int                                 n;
+    int                                 i;
+    int                                 service_uid;
+    int                                 service_gid;
+    int                                 close_on_exec_read_fd;
+    int                                 close_on_exec_write_fd;
+    char                                buf[1024];
+    char *                              s;
+    char **                             args;
+    char *                              argnp;
+    char *                              execp;
+    char **                             argi;
+    int                                 num_service_args = SERVICE_ARGS_MAX;
+    char *                              service_args[SERVICE_ARGS_MAX];
+    int                                 num_service_options =
+        SERVICE_OPTIONS_MAX;
+    char *                              service_options[SERVICE_OPTIONS_MAX];
+    int                                 service_option_local_cred = 0;
+    int                                 service_option_stderr_log = 0;
+    int                                 service_option_accept_limited = 0;
+    unsigned char                       int_buf[4];
+    struct stat                         statbuf;
+    char *                              service_line = NULL;
+    char *                              service_path;
+    char *                              gram_k5_path; 
+    struct sockaddr_in                  peer;
+    netlen_t                            peerlen;
+    char *                              peernum;
+    char *                              x509_delegate;
+    size_t                              length;
+    char *                              http_message;
+    size_t                              http_length;
+    char *                              http_body;
+    FILE *                              http_body_file;
     /* GSSAPI assist variables */
-    OM_uint32           major_status = 0;
-    OM_uint32           minor_status = 0;
-    int                 token_status = 0;
-    OM_uint32           ret_flags = 0;
-    gss_buffer_desc     context_token = GSS_C_EMPTY_BUFFER;
+    OM_uint32                           major_status = 0;
+    OM_uint32                           minor_status = 0;
+    int                                 token_status = 0;
+    OM_uint32                           ret_flags = 0;
+    gss_buffer_desc                     context_token = GSS_C_EMPTY_BUFFER;
 #if 0
-    gss_buffer_desc     option_token = GSS_C_EMPTY_BUFFER;
+    gss_buffer_desc                     option_token = GSS_C_EMPTY_BUFFER;
+    gss_OID_set_desc                    extension_oids;
 #endif
-    FILE *              context_tmpfile = NULL;
+    FILE *                              context_tmpfile = NULL;
 
     /* Authorization variables */
-    int                 rc;
-    char *              client_name;
-    char *              userid;
-    struct passwd *     pw;
+    int                                 rc;
+    globus_result_t                     result;
+    char *                              client_name;
+    char                                identity_buffer[256];
+    char *                              userid = NULL;
+    struct passwd *                     pw;
 
 
     /* Now do stdout, so it points at the socket too */
@@ -1348,33 +1352,6 @@ static void doit()
 
     notice2(LOG_NOTICE, "Authenticated globus user: %s", client_name);
 
-    /*
-     * now do authorization  i.e. globus userid must be in the 
-     * in the gridmap file. 
-     */
-
-    rc = globus_gss_assist_gridmap(client_name, &userid);
-
-    if (rc != 0)
-    {
-        failure2(FAILED_AUTHORIZATION,
-                 "globus_gss_assist_gridmap() failed authorization."
-                 " rc = %d", rc);
- 
-    }
-    
-#ifdef TARGET_ARCH_CRAYT3E
-    if (gatekeeper_uid == 0)
-    {
-        get_udbent(userid);
-        if (unicos_access_denied())
-        {
-            failure2(FAILED_AUTHORIZATION,
-                     "UNICOS denied access to user %s.", userid);
-        }
-    }
-#endif /* TARGET_ARCH_CRAYT3E */
-
     /* End of authentication */
 
     /* 
@@ -1413,7 +1390,6 @@ static void doit()
         failure2(FAILED_SERVICELOOKUP,
                  "Incoming message has invalid first-line length %ld\n",
                  (long) length);
-
     }
 
     {
@@ -1437,6 +1413,43 @@ static void doit()
         free(tmpbuf);
     }
 
+
+    /*
+     * now that we know the desired service, do authorization
+     * i.e. globus userid must be in the in the gridmap file. 
+     */
+
+    result = globus_gss_assist_map_and_authorize(context_handle,
+                                                 service_name,
+                                                 NULL,
+                                                 identity_buffer, 256);
+
+    if (result != GLOBUS_SUCCESS)
+    {
+        globus_object_t *               error;
+        char *                          error_message = NULL;
+
+        error = globus_error_get(result);
+        error_message = globus_error_print_chain(error);
+        globus_object_free(error);
+        failure2(FAILED_AUTHORIZATION,
+                 "globus_gss_assist_gridmap() failed authorization."
+                 " %s\n", error_message);
+    }
+
+    userid = identity_buffer;
+    
+#ifdef TARGET_ARCH_CRAYT3E
+    if (gatekeeper_uid == 0)
+    {
+        get_udbent(userid);
+        if (unicos_access_denied())
+        {
+            failure2(FAILED_AUTHORIZATION,
+                     "UNICOS denied access to user %s.", userid);
+        }
+    }
+#endif /* TARGET_ARCH_CRAYT3E */
 
     /* find body of message and forward it to the service */
     {
@@ -1869,7 +1882,7 @@ static void doit()
         unsetenv("X509_USER_CERT"); /* unset it */
 
 	/* SLANG - can't unset this, otherwise jobmanager won't know where to look. */
-	/* unsetenv("X509_USER_PROXY"); */
+	/* unsetenv("X509_USER_PROXY"); */ /* unset it  */
     }
 
     /* for tranition, if gatekeeper has the path, set it
