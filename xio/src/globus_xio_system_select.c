@@ -48,8 +48,13 @@ typedef enum
 
 typedef enum
 {
+    /* initial state */
+    GLOBUS_L_OPERATION_NEW,
+    /* transition to this requires fdset lock */
     GLOBUS_L_OPERATION_PENDING,
+    /* transition to this requires cancel lock */
     GLOBUS_L_OPERATION_COMPLETE,
+    /* transition to this requires fdset and cancel lock */
     GLOBUS_L_OPERATION_CANCELED
 } globus_l_operation_state_t;
 
@@ -369,7 +374,7 @@ globus_xio_system_register_open(
     }
 
     op_info->type = GLOBUS_L_OPERATION_OPEN;
-    op_info->state = GLOBUS_L_OPERATION_PENDING;
+    op_info->state = GLOBUS_L_OPERATION_NEW;
     op_info->op = op;
     op_info->fd = fd;
     op_info->user_arg = user_arg;
@@ -415,6 +420,7 @@ globus_xio_system_register_connect(
     int                                 rc;
     globus_result_t                     result;
     globus_l_operation_info_t *         op_info;
+    int                                 len;
 
     GlobusIXIOSystemAddNonBlocking(fd, rc);
     if(rc < 0)
@@ -423,11 +429,10 @@ globus_xio_system_register_connect(
             "globus_xio_system_register_connect", errno);
         goto error_nonblocking;
     }
-
+    
+    GlobusLibcSizeofSockaddr(*addr, len);
     done = GLOBUS_FALSE;
-    while(!done && 
-        connect(
-            fd, (const struct sockaddr *) addr, sizeof(globus_sockaddr_t)) < 0)
+    while(!done && connect(fd, (const struct sockaddr *) addr, len) < 0)
     {
         switch(errno)
         {
@@ -459,7 +464,7 @@ globus_xio_system_register_connect(
     }
 
     op_info->type = GLOBUS_L_OPERATION_CONNECT;
-    op_info->state = GLOBUS_L_OPERATION_PENDING;
+    op_info->state = GLOBUS_L_OPERATION_NEW;
     op_info->op = op;
     op_info->fd = fd;
     op_info->user_arg = user_arg;
@@ -505,7 +510,7 @@ globus_xio_system_register_accept(
     }
 
     op_info->type = GLOBUS_L_OPERATION_ACCEPT;
-    op_info->state = GLOBUS_L_OPERATION_PENDING;
+    op_info->state = GLOBUS_L_OPERATION_NEW;
     op_info->op = op;
     op_info->fd = listener_fd;
     op_info->user_arg = user_arg;
@@ -575,7 +580,7 @@ globus_xio_system_register_read(
         op_info->_op_iovec.iovc = u_iovc;
     }
     
-    op_info->state = GLOBUS_L_OPERATION_PENDING;
+    op_info->state = GLOBUS_L_OPERATION_NEW;
     op_info->op = op;
     op_info->fd = fd;
     op_info->user_arg = user_arg;
@@ -669,8 +674,16 @@ globus_xio_system_register_read_ex(
         }
 
         GlobusIXIOSystemTransferIovec(iov, u_iov, u_iovc);
-        msghdr->msg_name = from;
-        msghdr->msg_namelen = sizeof(globus_sockaddr_t);
+        
+        if(from)
+        {
+            int                         len;
+            
+            GlobusLibcSizeofSockaddr(*from, len);
+            msghdr->msg_name = from;
+            msghdr->msg_namelen = len;
+        }
+        
         msghdr->msg_iov = iov;
         msghdr->msg_iovlen = u_iovc;
 
@@ -681,7 +694,7 @@ globus_xio_system_register_read_ex(
         op_info->_op_msg.flags = flags;
     }
     
-    op_info->state = GLOBUS_L_OPERATION_PENDING;
+    op_info->state = GLOBUS_L_OPERATION_NEW;
     op_info->op = op;
     op_info->fd = fd;
     op_info->user_arg = user_arg;
@@ -758,7 +771,7 @@ globus_xio_system_register_write(
         op_info->_op_iovec.iovc = u_iovc;
     }
     
-    op_info->state = GLOBUS_L_OPERATION_PENDING;
+    op_info->state = GLOBUS_L_OPERATION_NEW;
     op_info->op = op;
     op_info->fd = fd;
     op_info->user_arg = user_arg;
@@ -850,8 +863,16 @@ globus_xio_system_register_write_ex(
         }
 
         GlobusIXIOSystemTransferIovec(iov, u_iov, u_iovc);
-        msghdr->msg_name = to;
-        msghdr->msg_namelen = sizeof(globus_sockaddr_t);
+        
+        if(to)
+        {
+            int                         len;
+            
+            GlobusLibcSizeofSockaddr(*to, len);
+            msghdr->msg_name = to;
+            msghdr->msg_namelen = len;
+        }
+
         msghdr->msg_iov = iov;
         msghdr->msg_iovlen = u_iovc;
 
@@ -862,7 +883,7 @@ globus_xio_system_register_write_ex(
         op_info->_op_msg.flags = flags;
     }
     
-    op_info->state = GLOBUS_L_OPERATION_PENDING;
+    op_info->state = GLOBUS_L_OPERATION_NEW;
     op_info->op = op;
     op_info->fd = fd;
     op_info->user_arg = user_arg;
@@ -981,104 +1002,92 @@ globus_l_xio_system_cancel_cb(
     
     globus_mutex_lock(&globus_l_xio_system_cancel_mutex);
     {
-        globus_mutex_lock(&globus_l_xio_system_fdset_mutex);
+        if(op_info->state != GLOBUS_L_OPERATION_COMPLETE)
         {
-            if(op_info->state == GLOBUS_L_OPERATION_COMPLETE)
-            {
-                if(reason == GLOBUS_XIO_CANCEL_TIMEOUT)
-                {
-                    /* I completed before the timeout, clear it */
-                    GlobusXIOOperationCancelClear(op);
-                }
-            }
-            else
+            globus_mutex_lock(&globus_l_xio_system_fdset_mutex);
             {
                 globus_bool_t           pend;
-                globus_bool_t           read_op;
                 
-                if(globus_l_xio_system_select_active)
+                if(op_info->state == GLOBUS_L_OPERATION_NEW)
                 {
                     op_info->state = GLOBUS_L_OPERATION_CANCELED;
-                    
-                    /* pend the cancel for after select wakes up */
-                    if(!globus_l_xio_system_wakeup_pending)
-                    {
-                        globus_l_xio_system_select_wakeup();
-                    }
-                    
-                    pend = GLOBUS_TRUE;
                 }
                 else
                 {
-                    globus_result_t     result;
-                    
-                    op_info->state = GLOBUS_L_OPERATION_COMPLETE;
-                    
-                    /* unregister and kickout now */
-                    op_info->result =
-                        GLOBUS_I_XIO_SYSTEM_CONSTRUCT_OPERATION_CANCELED(
-                            "globus_l_xio_system_cancel_cb");
-    
-                    result = globus_callback_register_oneshot(
-                        GLOBUS_NULL,
-                        GLOBUS_NULL,
-                        globus_l_xio_system_kickout,
-                        op_info);
-                    /* really cant do anything else */
-                    globus_assert(result == GLOBUS_SUCCESS);
-                    
-                    pend = GLOBUS_FALSE;
-                }
-                
-                read_op = GLOBUS_FALSE;
-                switch(op_info->type)
-                {
-                  case GLOBUS_L_OPERATION_OPEN:
-                    if(FD_ISSET(fd, globus_l_xio_system_read_fds))
+                    if(globus_l_xio_system_select_active)
                     {
-                        read_op = GLOBUS_TRUE;
-                    }
-                    break;
-                  
-                  case GLOBUS_L_OPERATION_READ:
-                  case GLOBUS_L_OPERATION_READV:
-                  case GLOBUS_L_OPERATION_RECV:
-                  case GLOBUS_L_OPERATION_RECVFROM:
-                  case GLOBUS_L_OPERATION_RECVMSG:
-                    read_op = GLOBUS_TRUE;
-                    break;
-                  
-                  default:
-                    break;
-                }
-                
-                if(read_op)
-                {
-                    if(pend)
-                    {
-                        globus_list_insert(
-                            &globus_l_xio_system_canceled_reads, (void *) fd);
+                        op_info->state = GLOBUS_L_OPERATION_CANCELED;
+                        
+                        /* pend the cancel for after select wakes up */
+                        if(!globus_l_xio_system_wakeup_pending)
+                        {
+                            globus_l_xio_system_select_wakeup();
+                        }
+                        
+                        pend = GLOBUS_TRUE;
                     }
                     else
                     {
-                        globus_l_xio_system_unregister_read(fd);
+                        globus_result_t     result;
+                        
+                        op_info->state = GLOBUS_L_OPERATION_COMPLETE;
+                        
+                        /* unregister and kickout now */
+                        op_info->result =
+                            GLOBUS_I_XIO_SYSTEM_CONSTRUCT_OPERATION_CANCELED(
+                                "globus_l_xio_system_cancel_cb");
+        
+                        result = globus_callback_register_oneshot(
+                            GLOBUS_NULL,
+                            GLOBUS_NULL,
+                            globus_l_xio_system_kickout,
+                            op_info);
+                        /* really cant do anything else */
+                        globus_assert(result == GLOBUS_SUCCESS);
+                        
+                        pend = GLOBUS_FALSE;
                     }
-                }
-                else
-                {
-                    if(pend)
+                    
+                    /* I can access op_info even though I oneshoted above
+                     * because the CancelDisallow() call in the kickout will 
+                     * block until I leave this function
+                     */
+                    if((op_info->type == GLOBUS_L_OPERATION_OPEN        &&
+                        FD_ISSET(fd, globus_l_xio_system_read_fds))     ||
+                        op_info->type == GLOBUS_L_OPERATION_READ        ||
+                        op_info->type == GLOBUS_L_OPERATION_READV       ||
+                        op_info->type == GLOBUS_L_OPERATION_RECV        ||
+                        op_info->type == GLOBUS_L_OPERATION_RECVFROM    ||
+                        op_info->type == GLOBUS_L_OPERATION_RECVMSG)
                     {
-                        globus_list_insert(
-                            &globus_l_xio_system_canceled_writes, (void *) fd);
+                        if(pend)
+                        {
+                            globus_list_insert(
+                                &globus_l_xio_system_canceled_reads,
+                                (void *) fd);
+                        }
+                        else
+                        {
+                            globus_l_xio_system_unregister_read(fd);
+                        }
                     }
                     else
                     {
-                        globus_l_xio_system_unregister_write(fd);
+                        if(pend)
+                        {
+                            globus_list_insert(
+                                &globus_l_xio_system_canceled_writes,
+                                (void *) fd);
+                        }
+                        else
+                        {
+                            globus_l_xio_system_unregister_write(fd);
+                        }
                     }
                 }
             }
+            globus_mutex_unlock(&globus_l_xio_system_fdset_mutex);
         }
-        globus_mutex_unlock(&globus_l_xio_system_fdset_mutex);
     }
     globus_mutex_unlock(&globus_l_xio_system_cancel_mutex);
 }
@@ -1131,6 +1140,8 @@ globus_l_xio_system_register_read(
         {
             globus_l_xio_system_select_wakeup();
         }
+        
+        read_info->state = GLOBUS_L_OPERATION_PENDING;
     }
     globus_mutex_unlock(&globus_l_xio_system_fdset_mutex);
     
@@ -1139,8 +1150,9 @@ globus_l_xio_system_register_read(
 error_canceled:
 error_already_registered:
 error_too_many_fds:
-    GlobusXIOOperationCancelDisallow(read_info->op);
+    read_info->state = GLOBUS_L_OPERATION_COMPLETE;
     globus_mutex_unlock(&globus_l_xio_system_fdset_mutex);
+    GlobusXIOOperationCancelDisallow(read_info->op);
     return result;
 }
 
@@ -1192,6 +1204,8 @@ globus_l_xio_system_register_write(
         {
             globus_l_xio_system_select_wakeup();
         }
+        
+        write_info->state = GLOBUS_L_OPERATION_PENDING;
     }
     globus_mutex_unlock(&globus_l_xio_system_fdset_mutex);
 
@@ -1200,8 +1214,9 @@ globus_l_xio_system_register_write(
 error_canceled:
 error_already_registered:
 error_too_many_fds:
-    GlobusXIOOperationCancelDisallow(write_info->op);
+    write_info->state = GLOBUS_L_OPERATION_COMPLETE;
     globus_mutex_unlock(&globus_l_xio_system_fdset_mutex);
+    GlobusXIOOperationCancelDisallow(write_info->op);
     return result;
 }
 
@@ -1322,6 +1337,7 @@ globus_l_xio_system_handle_read(
     globus_l_operation_info_t *         read_info;
     globus_ssize_t                      nbytes;
     globus_result_t                     result;
+    int                                 len;
 
     nbytes = 0;
     handled_it = GLOBUS_FALSE;
@@ -1396,6 +1412,15 @@ globus_l_xio_system_handle_read(
         break;
 
       case GLOBUS_L_OPERATION_RECVFROM:
+        if(read_info->_op_single.ex.addr)
+        {
+            GlobusLibcSizeofSockaddr(*read_info->_op_single.ex.addr, len);
+        }
+        else
+        {
+            len = 0;
+        }
+        
         do
         {
             nbytes = recvfrom(
@@ -1404,7 +1429,7 @@ globus_l_xio_system_handle_read(
                 read_info->_op_single.bufsize,
                 read_info->_op_single.ex.flags,
                 (const struct sockaddr *) read_info->_op_single.ex.addr,
-                sizeof(globus_sockaddr_t));
+                len);
         } while(nbytes < 0 && errno == EINTR);
 
         if(nbytes > 0)
@@ -1460,6 +1485,7 @@ globus_l_xio_system_handle_read(
     if(read_info->_op_nbytes >= read_info->waitforbytes ||
         result != GLOBUS_SUCCESS)
     {
+error_canceled:
         handled_it = GLOBUS_TRUE;
         read_info->result = result;
         read_info->state = GLOBUS_L_OPERATION_COMPLETE;
@@ -1489,6 +1515,7 @@ globus_l_xio_system_handle_write(
     globus_ssize_t                      nbytes;
     globus_result_t                     result;
     int                                 work_remaining;
+    int                                 len;
 
     nbytes = 0;
     work_remaining = 1;
@@ -1630,6 +1657,15 @@ globus_l_xio_system_handle_write(
         break;
 
       case GLOBUS_L_OPERATION_SENDTO:
+        if(write_info->_op_single.ex.addr)
+        {
+            GlobusLibcSizeofSockaddr(*write_info->_op_single.ex.addr, len);
+        }
+        else
+        {
+            len = 0;
+        }
+        
         do
         {
             nbytes = sendto(
@@ -1638,7 +1674,7 @@ globus_l_xio_system_handle_write(
                 write_info->_op_single.bufsize,
                 write_info->_op_single.ex.flags,
                 (const struct sockaddr *) write_info->_op_single.ex.addr,
-                sizeof(globus_sockaddr_t));
+                len);
         } while(nbytes < 0 && errno == EINTR);
 
         if(nbytes > 0)
@@ -1790,7 +1826,7 @@ globus_l_xio_system_poll(
                 nready = 0;
             }
             
-            while(globus_l_xio_system_canceled_reads)
+            while(!globus_list_empty(globus_l_xio_system_canceled_reads))
             {
                 fd = (int) globus_list_remove(
                     &globus_l_xio_system_canceled_reads,
@@ -1803,7 +1839,7 @@ globus_l_xio_system_poll(
                 }
             }
             
-            while(globus_l_xio_system_canceled_writes)
+            while(!globus_list_empty(globus_l_xio_system_canceled_writes))
             {
                 fd = (int) globus_list_remove(
                     &globus_l_xio_system_canceled_writes,

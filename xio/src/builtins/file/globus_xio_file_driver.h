@@ -15,8 +15,6 @@ typedef enum
     GLOBUS_XIO_FILE_GET_MODE,
     GLOBUS_XIO_FILE_SET_FLAGS,
     GLOBUS_XIO_FILE_GET_FLAGS,
-    GLOBUS_XIO_FILE_SET_TYPE,
-    GLOBUS_XIO_FILE_GET_TYPE,
     GLOBUS_XIO_FILE_SET_HANDLE,
     GLOBUS_XIO_FILE_GET_HANDLE
 } globus_xio_file_attr_cmd_t;
@@ -29,7 +27,14 @@ typedef enum
     GLOBUS_XIO_FILE_WRONLY              = O_WRONLY,
     GLOBUS_XIO_FILE_RDWR                = O_RDWR,
     GLOBUS_XIO_FILE_TRUNC               = O_TRUNC,
-    GLOBUS_XIO_FILE_APPEND              = O_APPEND
+    GLOBUS_XIO_FILE_APPEND              = O_APPEND,
+#ifdef TARGET_ARCH_CYGWIN
+    GLOBUS_XIO_FILE_BINARY              = O_BINARY,
+    GLOBUS_XIO_FILE_TEXT                = O_TEXT
+#else
+    GLOBUS_XIO_FILE_BINARY              = 0,
+    GLOBUS_XIO_FILE_TEXT                = 0
+#endif
 } globus_xio_file_flag_t;
 
 typedef enum
@@ -47,12 +52,6 @@ typedef enum
     GLOBUS_XIO_FILE_IWGRP               = S_IWGRP,
     GLOBUS_XIO_FILE_IXGRP               = S_IXGRP
 } globus_xio_file_mode_t;
-
-typedef enum
-{
-    GLOBUS_XIO_FILE_TYPE_TEXT,
-    GLOBUS_XIO_FILE_TYPE_BINARY
-} globus_xio_file_type_t;
 
 typedef enum
 {
