@@ -20,9 +20,7 @@ striping:
 ** verify _get_read_range()
     
 ipc:
-** encryption
 XX connect backwards
-** use handle_tables for psuedo-passing void *
 
 logging:
 -- instrument code
@@ -71,4 +69,5 @@ DONE
 ** file trunc issue
     send first _ipc_request_recv() with trunc set, wait for BEGIN,
     then send the rest with no trunc.  
-
+** use handle_tables for psuedo-passing void *
+** encryption

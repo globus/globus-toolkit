@@ -29,6 +29,7 @@ static const globus_l_gfs_config_option_t option_list[] =
  {"max_connections", "max_connections", NULL, "-max-connections", "-mc", GLOBUS_L_GFS_CONFIG_INT, 0},
  {"port", "port", "GLOBUS_GRIDFTP_SERVER_PORT", "-port", "-p", GLOBUS_L_GFS_CONFIG_INT, 0},
  {"daemon", "daemon", NULL, "-daemon", "-s", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE},
+ {"node_authorizes", NULL, NULL, "--node-authorizes", NULL, GLOBUS_L_GFS_CONFIG_INT, -1},
  {"detach", "detach", NULL, "-detach", "-S", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE},
  {"inetd", "inetd", NULL, "-inetd", "-i", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE},
  {"no_security", "no_security", NULL, "-no-security", "-ns", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE},
@@ -36,7 +37,7 @@ static const globus_l_gfs_config_option_t option_list[] =
  {"anonymous_user", "anonymous_user", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL},
  {"anonymous_group", "anonymous_group", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL},
  {"data_node", "data_node", NULL, "-data-node", "-dn", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE},
- {"ipc_gsi", "ipc_gsi", NULL, "-ipc-gsi", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE},
+ {"ipc_gsi", "ipc_gsi", NULL, "--ipc-gsi", "-IG", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE},
  {"terse_banner", "terse_banner", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE},
  {"cas",           "cas",         NULL, "-cas", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_TRUE},
  {"banner", "banner", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL},
@@ -431,7 +432,7 @@ globus_l_gfs_config_load_defaults()
         {
             /* XXX error, log something */
         }
-    }  
+    }
 
     return GLOBUS_SUCCESS; 
 }
@@ -653,6 +654,19 @@ globus_i_gfs_config_init(
     globus_l_gfs_config_set("argv", 0, argv);
     globus_l_gfs_config_set("argc", argc, NULL);
 
+    /* if node_authorizes is -1 it means it has not yet been touched */
+    if(globus_i_gfs_config_int("node_authorizes") == -1)
+    {
+        if(globus_i_gfs_config_bool("data_node"))
+        {
+            globus_l_gfs_config_set("node_authorizes", 0, NULL);
+        }
+        else
+        {
+            globus_l_gfs_config_set("node_authorizes", 1, NULL);
+        }
+    }
+
     globus_free(local_config_file);
         
 }
@@ -711,5 +725,5 @@ globus_i_gfs_config_is_anonymous(
     {
         return GLOBUS_TRUE;
     }
-    return GLOBUS_TRUE;
+    return GLOBUS_FALSE;
 }

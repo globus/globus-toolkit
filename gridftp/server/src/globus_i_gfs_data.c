@@ -3442,7 +3442,14 @@ globus_i_gfs_data_session_start(
     op->user_arg = user_arg;
     op->info_struct = session_info;
 
-    globus_l_gfs_data_authorize(op, context, session_info);
+    if(globus_i_gfs_config_bool("node_authorizes"))
+    {
+        globus_l_gfs_data_authorize(op, context, session_info);
+    }
+    else
+    {
+        globus_l_gfs_data_auth_init_cb(NULL, op, GLOBUS_SUCCESS);
+    }
 }
 
 void
