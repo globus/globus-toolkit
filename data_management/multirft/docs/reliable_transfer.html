@@ -82,7 +82,7 @@ GridFTP servers on one machine using different ports.
 GridFTP. See the Alpha Admin Guide, Security Configuration for details.<!-- --------------------------- --> </p>
 <h3>Run a GridFTP Server</h3>
 <b>As root</b>, start a GridFTP server as follows:
-<pre>    $GLOBUS_LOCATION/sbin/in.ftpd -S [-p &lt;port&gt;]<p></p>
+<pre>    $GLOBUS_LOCATION/sbin/in.ftpd -a -S [-p &lt;port&gt;]<p></p>
 </pre>
 GLOBUS_LOCATION is an environment variable set to the root directory of
 your Globus Core Installation.
@@ -91,7 +91,7 @@ The -p specifies an available port that GridFTP will listen on. If it's
 in use, try another. </p>
 <p> <b>Testing GridFTP - Moving a test file</b> </p>
 <p>Create a file named <code>/tmp/file1</code> and run the following
-command: </p>
+command(this should be run as non root): </p>
 <pre>    globus-url-copy -s "`grid-cert-info -subject`" \<br>        gsiftp://localhost:5678/tmp/file1 \<br>        file:///tmp/file2<br></pre>
 <p>Check to make sure that /tmp/file2 now exists.<!-- --------------------------- --> </p>
 <h3>Configure a GridFTP Server</h3>
