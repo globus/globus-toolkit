@@ -82,4 +82,29 @@ class SegEvent
             }
         }
     }
+    
+    public String toString() {
+        StringBuffer sb = new StringBuffer();
+
+        sb.append(localId);
+        sb.append(" [");
+        sb.append(timestamp.toString());
+        sb.append("] ");
+
+        switch (state) {
+            case 1:
+                sb.append("PENDING");
+                break;
+            case 2:
+                sb.append("ACTIVE");
+                break;
+            case 4:
+                sb.append("FAILED");
+                break;
+            case 8:
+                sb.append("DONE");
+                break;
+        }
+        return sb.toString();
+    }
 }

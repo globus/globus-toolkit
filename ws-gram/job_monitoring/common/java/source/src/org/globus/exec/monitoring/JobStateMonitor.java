@@ -175,6 +175,8 @@ public class JobStateMonitor {
                 while (eventIt.hasNext()) {
                     e = (SegEvent) eventIt.next();
 
+                    logger.debug("Replaying event: " + e);
+
                     dispatchEvent(resourceKey, e);
                 }
             }
@@ -251,7 +253,7 @@ public class JobStateMonitor {
 
         while (!done) {
             try {
-                seg.wait();
+                seg.join();
                 done = true;
             } catch (InterruptedException ie) {
             }
@@ -272,12 +274,15 @@ public class JobStateMonitor {
         logger.debug("Entering dispatchEvent()");
 
         synchronized (mapping) {
+            logger.debug("dispatching " + e.toString());
             listener.jobStateChange(resourceKey, e.getTimeStamp(),
                     e.getState(), e.getExitCode());
             synchronized (cachedEvents) {
                 if (cachedEvents.isEmpty()) {
-                    synchronized (recoveryTask) {
-                        lastEventTimestamp = e.getTimeStamp();
+                    if (recoveryTask != null) {
+                        synchronized (recoveryTask) {
+                            lastEventTimestamp = e.getTimeStamp();
+                        }
                     }
                 }
             }
@@ -289,6 +294,7 @@ public class JobStateMonitor {
     {
         logger.debug("Entering cacheEvent()");
         synchronized (cachedEvents) {
+            logger.debug("caching " + e.toString());
             cachedEvents.add(e);
         }
         logger.debug("Exiting cacheEvent()");
@@ -328,8 +334,10 @@ public class JobStateMonitor {
                     /* Newer than the oldest safe recovery point, so we'll
                      * update that date
                      */
-                    synchronized (recoveryTask) {
-                        lastEventTimestamp = d;
+                    if (recoveryTask != null) {
+                        synchronized (recoveryTask) {
+                            lastEventTimestamp = d;
+                        }
                     }
                 }
             }
