@@ -40,7 +40,7 @@ $DEBUG_ECHO "JM_SCRIPT: in easymcs_submit">> $grami_logfile
 #arguments.  While assembling var/value pairs add the specific syntax
 #required for this scheduling system.
 #
-DEBUG_ECHO "JM_SCRIPT: getting environment variable">> $grami_logfile
+$DEBUG_ECHO "JM_SCRIPT: getting environment variable">> $grami_logfile
 new_grami_env=""
 if [ ! -z "${grami_env}" ] ; then
    eval set -- ${grami_env}
@@ -58,53 +58,14 @@ if [ ! -z "${grami_env}" ] ; then
    done
 fi
 
-DEBUG_ECHO "JM_SCRIPT: getting program arguments">> $grami_logfile
-new_grami_args=""
-if [ ! -z "${grami_args}" ] ; then
-   eval set -- ${grami_args}
-   while [ "$#" -ne 0 ]; do
-     
-      args_string=`echo $1 | awk -F\' '{print $1; exit;}'`
-      if [ "$1" = "${args_string}" ] ; then
-         $DEBUG_ECHO "JM_SCRIPT: no quote found, use single "\
-                     "quotes">> $grami_logfile
-         if [ -z "${new_grami_args}" ] ; then
-            new_grami_args="'$1'"
-         else
-            new_grami_args="${new_grami_args} '$1'"
-         fi
-      else
-         $DEBUG_ECHO "JM_SCRIPT: single quote found.">> $grami_logfile
-         args_string=`echo $1 | awk -F$ '{print $1; exit;}'`
-         if [ "$1" = "${args_string}" ] ; then
-            $DEBUG_ECHO "JM_SCRIPT: no dollar sign found">> $grami_logfile
-
-            args_string=`echo $1 | awk -F\" '{print $1; exit;}'`
-            if [ "$1" = "${args_string}" ] ; then
-               $DEBUG_ECHO "JM_SCRIPT: no double quote found, "\
-                           "use double quotes">> $grami_logfile
-               if [ -z "${new_grami_args}" ] ; then
-                  new_grami_args="\"$1\""
-               else
-                  new_grami_args="${new_grami_args} \"$1\""
-               fi
-            else
-               $DEBUG_ECHO "JM_SCRIPT: Found double quotes." >> $grami_logfile
-               $DEBUG_ECHO "JM_SCRIPT: argument cannot have both double "\
-                   "and single quotes, returning with error." >> $grami_logfile
-               echo "GRAM_SCRIPT_ERROR:@GLOBUS_GRAM_CLIENT_ERROR_BAD_ARGUMENTS@"
-            fi
-         else
-            $DEBUG_ECHO "JM_SCRIPT: Found dollar sign." >> $grami_logfile
-            $DEBUG_ECHO "JM_SCRIPT: argument cannot have both dollar sign "\
-                "and single quotes, returning with error." >> $grami_logfile
-            echo "GRAM_SCRIPT_ERROR:@GLOBUS_GRAM_CLIENT_ERROR_BAD_ARGUMENTS@"
-         fi
-      fi
-
-      shift
-   done
-fi
+new_grami_args="${grami_args}"
+# Handle single quote escaping
+new_grami_args=`@ECHO@ "${new_grami_args}" | @SED@ -e "s/'/'\\\\\"'\\\\\"'/g"`
+new_grami_args=`@ECHO@ "${new_grami_args}" | @SED@ -e "s/'/'\\\\\"'\\\\\"'/g"`
+# Handle \ escaping
+new_grami_args=`@ECHO@ "${new_grami_args}" | @SED@ -e "s/\\\\\\\\\\\\\/\\\\\/g"`
+# Handle $ escaping
+new_grami_args=`@ECHO@ "${new_grami_args}" | @SED@ -e "s/\\\\\\\\\\\\$/$/g"`
 
 # 4 jobtypes exist               easymcs progtype
 # -----------------              -------------------
@@ -171,11 +132,11 @@ $DEBUG_ECHO "" >> $grami_logfile
 
 $DEBUG_ECHO "JM_SCRIPT: executing spsubmit command" >> $grami_logfile
 
-status=`${spsubmit} -np ${grami_count} ${new_grami_env} \
+status=`eval "${spsubmit} -np ${grami_count} ${new_grami_env} \
          -progtype ${sp_progtype} -nomail \
          -stdin ${grami_stdin} -stdout ${grami_stdout} \
          -stderr ${grami_stderr} ${grami_maxtime} ${grami_program} \
-         ${new_grami_args} </dev/null 2>/dev/null \
+         \\''${new_grami_args}'\\' "</dev/null 2>/dev/null \
          | head -1 | ${grep}  '^[^\.]*\.[0-9][0-9]*\.[0-9][0-9]*$'`
 
 if test -n "${status}"; then
