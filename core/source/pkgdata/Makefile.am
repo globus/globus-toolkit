@@ -1,5 +1,4 @@
-include $(top_srcdir)/globus_automake_config
-include $(top_srcdir)/globus_automake_targets
+include $(top_srcdir)/aclocal/globus_automake_targets
 
 FILELIST_FILES = noflavor_data.filelist \
 	$(GLOBUS_FLAVOR_NAME)_dev.filelist \
