@@ -225,41 +225,49 @@ sub runKeyGen
     return 0;
 }
 
+### fixpaths( )
+#
+# this subroutine 'edits' the paths in sshd_config to suit them to the current environment
+# in which the setup script is being run.
+#
+
 sub fixpaths
 {
-    my $g, $h;
+    my($fileInput, $fileOutput);
+    my($mode, $uid, $gid);
+    my($line, $newline);
 
-    print "Fixing sftp-server path in sshd_config...\n";
+    print "Fixing paths in sshd_config...\n";
 
-    $f = "$gpath/etc/ssh/sshd_config";
-    $g = "$f.tmp";
+    $fileInput = "$setupdir/sshd_config.in";
+    $fileOutput = "$sysconfdir/sshd_config";
 
-    if ( ! -f "$f" )
+    if ( ! -f "$fileInput" )
     {
-        printf("Cannot find $f!\n");
-        return;
+        printf("Cannot find $fileInput!\n");
+        die();
+    }
+
+    if ( -e "$fileOutput" )
+    {
+        printf("$fileOutput already exists!\n");
+        die();
     }
 
     #
     # Grab the current mode/uid/gid for use later
     #
 
-    $mode = (stat($f))[2];
-    $uid = (stat($f))[4];
-    $gid = (stat($f))[5];
+    $mode = (stat($fileInput))[2];
+    $uid = (stat($fileInput))[4];
+    $gid = (stat($fileInput))[5];
 
     #
-    # Move $f into a .tmp file for the translation step
+    # Open the files for reading and writing, and loop over the input's contents
     #
 
-    $result = system("mv $f $g 2>&1");
-    if ($result or $?)
-    {
-        die "ERROR: Unable to execute command: $!\n";
-    }
-
-    open(IN, "<$g") || die ("$0: input file $g missing!\n");
-    open(OUT, ">$f") || die ("$0: unable to open output file $f!\n");
+    open(IN, "<$fileInput") || die ("$0: input file $fileInput missing!\n");
+    open(OUT, ">$fileOutput") || die ("$0: unable to open output file $fileOutput!\n");
 
     while (<IN>)
     {
@@ -290,25 +298,28 @@ sub fixpaths
     close(IN);
 
     #
-    # Remove the old .tmp file
-    #
-
-    $result = system("rm $g 2>&1");
-
-    if ($result or $?)
-    {
-        die "ERROR: Unable to execute command: $!\n";
-    }
-
-    #
     # An attempt to revert the new file back to the original file's
     # mode/uid/gid
     #
 
-    chmod($mode, $f);
-    chown($uid, $gid, $f);
+    chmod($mode, $fileOutput);
+    chown($uid, $gid, $fileOutput);
 
     return 0;
+}
+
+### copyConfigFiles( )
+#
+# subroutine that copies some extra config files to their proper location in
+# $GLOBUS_LOCATION/etc/ssh.
+#
+
+sub copyConfigFiles
+{
+    print "Copying ssh_config and moduli to their proper location...\n";
+
+    action("cp $setupdir/ssh_config $sysconfdir/ssh_config");
+    action("cp $setupdir/moduli $sysconfdir/moduli");
 }
 
 sub alterFileGlobusLocation
@@ -410,6 +421,7 @@ $keyhash = determineKeys();
 runKeyGen($keyhash->{gen});
 copyKeyFiles($keyhash->{copy});
 fixpaths();
+copyConfigFiles();
 alterFiles();
 
 my $metadata = new Grid::GPT::Setup(package_name => "gsi_openssh_setup");
@@ -427,13 +439,7 @@ print "\n";
 print "    Remember to keep this variable set (correctly) when you want to\n";
 print "    use the executables that came with this package.\n";
 print "\n";
-print "  o You may need to set LD_LIBRARY_PATH to point to the location in\n";
-print "    which your globus libraries reside.  For example:\n";
-print "\n";
-print "    \t\$ LD_LIBRARY_PATH=\"$gpath/lib:\$LD_LIBRARY_PATH\"; \\\n";
-print "    \t     export LD_LIBRARY_PATH\n";
-print "\n";
-print "    If you wish, you may run, e.g.:\n";
+print "    After that you may run, e.g.:\n";
 print "\n";
 print "    \t\$ . \$GLOBUS_LOCATION/etc/globus-user-env.sh\n";
 print "\n";

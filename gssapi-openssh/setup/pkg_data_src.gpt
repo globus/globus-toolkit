@@ -3,8 +3,8 @@
 
 <gpt_package_metadata Format_Version="0.02" Name="gsi_openssh_setup" >
 
-  <Aging_Version Major="0" Minor="4" Age="0" />
-  <Description>GSI-OpenSSH 3.1p1 setup package</Description>
+  <Aging_Version Major="0" Minor="5" Age="0" />
+  <Description>GSI-OpenSSH 3.2.3p1 setup package</Description>
   <Functional_Group >gsi_openssh</Functional_Group>
   <Version_Stability Release="beta" />
 
@@ -20,6 +20,9 @@
       <Build_Step>cp ./setup-openssh INSTALLDIR_GPTMACRO/setup/gsi_openssh_setup/setup-openssh</Build_Step>
       <Build_Step>cp ./setup-openssh.pl INSTALLDIR_GPTMACRO/setup/gsi_openssh_setup/setup-openssh.pl</Build_Step>
       <Build_Step>cp ./SXXsshd.in INSTALLDIR_GPTMACRO/setup/gsi_openssh_setup/SXXsshd.in</Build_Step>
+      <Build_Step>cp ./ssh_config INSTALLDIR_GPTMACRO/setup/gsi_openssh_setup/ssh_config</Build_Step>
+      <Build_Step>cp ./sshd_config.in INSTALLDIR_GPTMACRO/setup/gsi_openssh_setup/sshd_config.in</Build_Step>
+      <Build_Step>cp ./moduli INSTALLDIR_GPTMACRO/setup/gsi_openssh_setup/moduli</Build_Step>
 
     </Build_Instructions>
 
@@ -32,7 +35,7 @@
     </Post_Install_Message>
 
     <Setup Name="gsi_openssh_setup">
-      <Aging_Version Age="0" Major="4" Minor="0" />
+      <Aging_Version Age="0" Major="5" Minor="0" />
     </Setup>
 
   </src_pkg >
