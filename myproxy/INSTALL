@@ -89,6 +89,13 @@ Step 1: Run './configure'
 		GSSAPI code (i.e., with --disable-anonymous-auth).  By
 		default, all myproxy communication is encrypted.
 
+	--disable-multicred-feature
+		Disable multiple credentials per user feature. 
+		This allows a user to have multiple credentials
+		stored with credential names. The user can retrieve, renew
+		and destroy any of the credentials. This support requires
+		a backend database.
+
 Step 2: Run 'make'
 
 Step 3: After a hopefully successful make you are ready to install. You
@@ -97,7 +104,10 @@ Step 3: After a hopefully successful make you are ready to install. You
 	or 'make client-install'. You probably will need root access.
 
 Step 4: Configuring MySQL
-	
+
+	Skip this step if you have chosen to disable multiple credential
+	feature with --disable-multicred-feature above.
+
 	The present version of myproxy requires creation of a default 
 	database. 
 
@@ -320,7 +330,8 @@ default_database_name <database name>
 	This line specifies the default database to be used if one is not
 	specified by the myproxy-server command line. There can be several
 	such lines but only the database name specified in the last line is 
-	considered.
+	considered. This is ignored if --disable-multicred-feature is specified
+	in 'configure'. 
 
 6. Using myproxy-get-delegation from a trusted service
 ---------------------------------
