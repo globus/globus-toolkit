@@ -57,8 +57,7 @@ sub new
     }
 
 
-    $self->{condor_logfile} = "$log_dir/gram_condor_log."
-			    . $self->{JobDescription}->uniq_id();
+    $self->{condor_logfile} = "$log_dir/gram_condor_log";
 
     bless $self, $class;
     return $self;
@@ -252,6 +251,7 @@ sub submit
     print SCRIPT_FILE "InitialDir = " . $description->directory() . "\n";
     print SCRIPT_FILE "Input = " . $description->stdin() . "\n";
     print SCRIPT_FILE "Log = " . $self->{condor_logfile} . "\n";
+    print SCRIPT_FILE "log_xml = True\n";
     print SCRIPT_FILE "#Extra attributes specified by client\n";
     print SCRIPT_FILE "$submit_attrs_string\n";
 
@@ -364,6 +364,7 @@ sub poll
     my $description = $self->{JobDescription};
     my $state;
     my $job_id = $description->job_id();
+    my ($cluster, $proc, $subproc) = ($job_id, 0, 0);
     my $num_done;
     my $num_run;
     my $num_evict;
@@ -375,6 +376,60 @@ sub poll
 
     if ( open(CONDOR_LOG_FILE, '<' . $self->{condor_logfile}) )
     {
+        while (<CONDOR_LOG_FILE>)
+        {
+            if (/<c>/) {
+                if (defined($record)) {
+                    if ($record->{Cluster} == $cluster)
+                    {
+                        # record Matches our job id
+                        if ($record->{EventTypeNumber} == 1)
+                        {
+                            # execute event
+                            $num_run++;
+                        } elsif ($record->{EventTypeNumber} == 4) {
+                            $num_evict++;
+                        } elsif ($record->{EventTypeNumber} == 5) {
+                            $num_done++;
+                        } elsif ($record->{EventTypeNumber} == 9) {
+                            $num_abort++;
+                        }
+                    }
+                } 
+                $record = {};
+            } elsif (/<a n="([^"]+)">/) {
+                my $attr = $1;
+
+                if (/<s>([^<]+)<\/s>/) {
+                    $record->{$attr} = $1;
+                } elsif (/<i>([^<]+)<\/i>/) {
+                    $record->{$attr} = int($1);
+                } elsif (/<b v="([tf])"\/>/) {
+                    $record->{$attr} = ($1 eq 't');
+                } elsif (/<r>([^<]+)<\/r>/) {
+                    $record->{$attr} = $1;
+                }
+            } elsif (</c>) {
+            }
+        }
+
+        if (defined($record)) {
+            if ($record->{Cluster} == $cluster)
+            {
+                # record Matches our job id
+                if ($record->{EventTypeNumber} == 1)
+                {
+                    # execute event
+                    $num_run++;
+                } elsif ($record->{EventTypeNumber} == 4) {
+                    $num_evict++;
+                } elsif ($record->{EventTypeNumber} == 5) {
+                    $num_done++;
+                } elsif ($record->{EventTypeNumber} == 9) {
+                    $num_abort++;
+                }
+            }
+        } 
         @status = grep(/^[0-9]* \(0*${job_id}/, <CONDOR_LOG_FILE>);
         close(CONDOR_LOG_FILE);
     }
@@ -387,15 +442,9 @@ sub poll
         return { JOB_STATE => Globus::GRAM::JobState::DONE };
     }
 
-    $num_done = scalar(grep(/^005/, @status));
-    $num_run = scalar(grep(/^001/, @status));
-    $num_evict = scalar(grep(/^004/, @status));
-    $num_abort = scalar(grep(/^009/, @status));
-
     if($num_abort > 0)
     {
 	$state = Globus::GRAM::JobState::FAILED;
-	unlink($self->{condor_logfile});
     }
     elsif($num_done == $description->count())
     {
@@ -405,7 +454,6 @@ sub poll
 	    if $description->stderr() ne '';
 
 	$state = Globus::GRAM::JobState::DONE;
-	unlink($self->{condor_logfile});
     }
     elsif($num_run == 0)
     {
