@@ -1609,8 +1609,6 @@ globus_l_gsc_intermediate_reply(
     char *                                  tmp_ptr;
     GlobusGridFTPServerName(globus_l_gsc_intermediate_reply);
 
-    globus_assert(globus_fifo_empty(&server_handle->reply_q));
-
     tmp_ptr = globus_libc_strdup(message);
     /*TODO: check state */
     res = globus_xio_register_write(
