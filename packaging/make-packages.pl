@@ -63,17 +63,20 @@ my %cvs_build_hash;
 my $flavor = "gcc32dbg";
 my $thread = "pthr";
 
-my ($install, $buildjava, $buildc, $anonymous, $noupdates, $force,
-    $help, $man, $verbose, $skippackage, $skipbundle, $faster,
-    $paranoia, $version, $uncool, $binary) =
-   (0, 1, 1, 0, 0, 0,
-    0, 0, 0, 0, 0, 0,
-    0, "1.0", 0, 0);
+my ($install, $installer, $buildjava, $buildc, $anonymous,
+    $noupdates, $force, $help, $man, $verbose, $skippackage,
+    $skipbundle, $faster, $paranoia, $version, $uncool,
+    $binary) =
+   (0, 0, 1, 1, 0,
+    0, 0, 0, 0, 0, 0, 
+    0, 0, 0, "1.0", 0, 
+    0);
 
 my @user_bundles;
 my @user_packages;
 
 GetOptions( 'i|install=s' => \$install,
+	    'installer=s' => \$installer,
 	    'j|build-java!' => \$buildjava,
 	    'c|build-c!' => \$buildc,
 	    'a|anonymous!' => \$anonymous,
@@ -151,14 +154,21 @@ if ( $install )
     install_bundles();
 
 } else {
-    print "Not installing bundle without -install= set.\n";
+    print "Not installing bundle because -install= not set.\n";
+}
+
+if ( $installer )
+{
+    create_installer();
+} else {
+    print "Not creating installer because --installer= not set.\n";
 }
 
 if ( $binary )
 {
     generate_bin_packages();
 } else {
-    print "Not generating binary packages without -binary set.\n";
+    print "Not generating binary packages because -binary not set.\n";
 }
 
 exit 0;
@@ -1063,6 +1073,119 @@ sub bundle_sources()
 	paranoia("Bundling of $bundle failed.  See $bundlelog/$bundle.");
     }
 }
+
+# --------------------------------------------------------------------
+sub create_installer()
+# --------------------------------------------------------------------
+{
+    open(INS, ">$bundle_output/$installer") or die "Can't open $bundle_output/$installer: $!\n";
+
+    print INS << "EOF";
+#!/bin/sh
+
+if [ x\$1 = "x" ]; then
+        echo \$0: Usage: \$0 install-directory
+        exit;
+fi
+
+mkdir -p \$1
+if [ \$? -ne 0 ]; then
+        echo Unable to make directory \$1.  Exiting.
+        exit
+fi
+EOF
+
+if ($cvs_build_hash{'gt3'} eq 1)
+{
+    print INS << "EOF";
+ant -h > /dev/null
+if [ \$? -ne 0 ]; then
+   echo You need a working version of ant.
+   ant -h
+   exit
+fi
+EOF
+}
+
+print INS "echo Build environment:\n";
+
+if ($cvs_build_hash{'gt3'} eq 1)
+{
+    print INS << "EOF";
+type ant
+type java
+EOF
+}
+
+ if ($cvs_build_hash{'gt2'} eq 1)
+{
+print INS "type gcc\n"
+}
+
+print INS "echo\n\n";
+
+print INS << "EOF";
+MYDIR=`pwd`
+
+cd $1
+
+INSDIR=`pwd`
+GPT_LOCATION="\$INSDIR"
+GLOBUS_LOCATION="\$INSDIR"
+GT3_LOCATION="\$INSDIR"
+GPT_BUILD="\$GPT_LOCATION"/sbin/gpt-build
+GPT_INSTALL="\$GPT_LOCATION"/sbin/gpt-install
+
+cd \$MYDIR
+
+export GPT_LOCATION GLOBUS_LOCATION GT3_LOCATION
+
+case "`uname`" in
+   HP-UX)
+        FLAVOR=vendorcc32dbg
+        ;;
+   OSF1)
+        FLAVOR=vendorcc64dbg
+        ;;
+   *)
+        case "`uname -m`" in
+            alpha|ia64)
+                FLAVOR=gcc64dbg
+                ;;
+            *)
+                FLAVOR=gcc32dbg
+                ;;
+        esac
+        ;;
+esac
+
+THREAD=pthr
+
+EOF
+
+
+my $flavorstring;
+for my $bundle ( @bundle_build_list )
+{
+    next if $bundle eq "" or $bundle eq "user_def";
+	
+    my ($flava, $flags, @packages) = @{$bundle_list{$bundle}};
+
+    if ( $flava eq $flavor . $thread )
+    {
+	$flavorstring = "\$FLAVOR\$THREAD";
+    } else {
+	$flavorstring = "\$FLAVOR";
+    }
+	
+   print INS "\$GPT_BUILD $flags $bundle.tar.gz $flavorstring\n";
+}
+
+print INS "\$GPT_LOCATION/sbin/gpt-postinstall\n";
+
+print "Wrote installer $bundle_output/$installer.\n";
+}
+
 
 #TODO: Allow users to specify pre-existing binary bundles too.
 # --------------------------------------------------------------------
