@@ -40,9 +40,9 @@ int myproxy_creds_retrieve(struct myproxy_creds *creds);
  * myproxy_creds_delete()
  *
  * Delete any stored credentials held for the given user as indiciated
- * by the user_name field in the given myproxy_creds structure. The
- * pass_phrase field in the structure should also be filled in and will
- * be checked.
+ * by the user_name field in the given myproxy_creds structure.
+ * Either the pass_phrase or the owner_name field in the structure should
+ * be filled in and match those in the credentials.
  *
  * Returns -1 on error, 0 on success.
  */
