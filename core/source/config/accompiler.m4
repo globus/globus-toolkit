@@ -410,10 +410,9 @@ case ${host}--$1 in
 	fi
       ;;
     *-dec-osf4* | *-dec-osf5* )
-        dnl No 64bit support yet
-        if test "$lac_cv_build_64bit" = "yes"; then
-                AC_MSG_ERROR(64 bits not supported on this platform)
-                exit 1
+        if test "$lac_cv_build_64bit" = "no"; then
+            AC_MSG_ERROR(32 bits not supported on this platform)
+            exit 1
         fi
 	AC_PATH_PROGS(lac_cv_CC, $CC cc gcc)
 	AC_PATH_PROGS(lac_cv_CXX, $CXX CC cxx c++ g++ gcc)
