@@ -7,7 +7,8 @@ SUBDIRS= \
 
 Sources = \
 	gaa_test_with_assertion_file.c \
-	gaa_test_utils.c
+	gaa_test_utils.c \
+	gaa_test_utils.h
 
 INCLUDES += $(GPT_INCLUDES)
 
@@ -18,7 +19,8 @@ gaa_test_with_assertion_file_LDADD = $(GPT_PGM_LINKS)
 gaa_cred_test_SOURCES =	gaa_cred_test.c \
 			gssapi_test_utils.c \
 			gssapi_test_utils.h \
-			gaa_test_utils.c
+			gaa_test_utils.c \
+			gaa_test_utils.h
 
 gaa_cred_test_LDFLAGS = $(GPT_LDFLAGS)
 

@@ -1,7 +1,7 @@
 #include "gaa.h"
 #include "gaa_simple.h"
 #include "gaa_debug.h"
-#include "gaa_test_utils.h"
+/* #include "gaa_test_utils.h" */
 #include <string.h>
 #include <strings.h>
 #include <sys/types.h>
