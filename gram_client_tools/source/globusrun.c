@@ -630,7 +630,7 @@ static int arg_f_mode = O_RDONLY;
 					      * (len + 1));
 	    i=0;
 
-	    while ( (i<=len)  && read(fd, &c, 1) > 0)
+	    while ( (i<len)  && read(fd, &c, 1) > 0)
 	    {
 		request_string[i] = c;
 		i++;
