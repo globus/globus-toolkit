@@ -4238,7 +4238,8 @@ d2i_integer_bio(
     BIO *                               bp,
     long *                              v)
 {
-    ASN1_INTEGER *                      asn1_int;
+    ASN1_INTEGER *                      asn1_int = NULL;
+    
     ASN1_d2i_bio((char *(*)())ASN1_INTEGER_new,
                  (char *(*)())d2i_ASN1_INTEGER,
                  (bp),
