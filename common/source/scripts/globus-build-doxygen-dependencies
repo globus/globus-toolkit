@@ -26,7 +26,7 @@ if (!defined($gpath))
 
 @INC = (@INC, "$gpath/lib/perl");
 
-require Grid::GPT::Package;
+require Grid::GPT::V1::Package;
 
 use Cwd;
 
@@ -72,7 +72,7 @@ sub process_package($)
     {
         croak("Failed dependency check for $pkgname");
     }
-    $pkg = new Grid::GPT::Package;
+    $pkg = new Grid::GPT::V1::Package;
     $pkg->read_metadata_file($pkgfile);
 
     # oop?
