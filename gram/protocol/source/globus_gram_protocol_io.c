@@ -779,6 +779,8 @@ globus_l_gram_protocol_listen_callback(
     {
         goto free_attrs_exit;
     }
+    globus_io_tcpattr_destroy(&accept_attrs);
+
     /* If this fails, not much we can do. Disallow attach will
      * be called eventually to clean this listener up.
      */
@@ -2557,25 +2559,42 @@ globus_l_gram_protocol_setup_accept_attr(
     globus_result_t                        res;
     globus_io_secure_authorization_data_t  auth_data;
 
-    /* acquire mutex */
-    if ((res = globus_io_secure_authorization_data_initialize(&auth_data))
-        || (res = globus_io_secure_authorization_data_set_callback(
+    res = globus_io_secure_authorization_data_initialize(&auth_data);
+
+    if (res != GLOBUS_SUCCESS)
+    {
+        goto error_exit;
+    }
+    res = globus_io_secure_authorization_data_set_callback(
                 &auth_data,
                 globus_l_gram_protocol_authorization_callback,
-                (void *) connection))
-        || (res = globus_io_attr_set_secure_authorization_mode(
-                attr,
-                GLOBUS_IO_SECURE_AUTHORIZATION_MODE_CALLBACK,
-                &auth_data)))
+                (void *) connection);
+    if (res != GLOBUS_SUCCESS)
     {
-	globus_object_t *  err = globus_error_get(res);
-	globus_object_free(err);
-	/* release mutex */
-	return GLOBUS_GRAM_PROTOCOL_ERROR_CONNECTION_FAILED;
+        goto destroy_auth_data;
     }
 
-    /* release mutex */
+    res = globus_io_attr_set_secure_authorization_mode(
+                attr,
+                GLOBUS_IO_SECURE_AUTHORIZATION_MODE_CALLBACK,
+                &auth_data)
+
+    if (res != GLOBUS_SUCCESS)
+    {
+        goto destroy_auth_data;
+    }
+
+    globus_io_secure_authorization_data_destroy(&auth_data);
+
     return GLOBUS_SUCCESS;
+
+destroy_auth_data:
+    globus_io_secure_authorization_data_destroy(&auth_data);
+error_exit:
+    globus_object_t *  err = globus_error_get(res);
+    globus_object_free(err);
+
+    return GLOBUS_GRAM_PROTOCOL_ERROR_CONNECTION_FAILED;
 }
 
 static int
