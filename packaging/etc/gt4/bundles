@@ -33,7 +33,6 @@ BUNDLE gt4-mds
         globus_wsrf_mds_usefulrp
         globus_wsrf_mds_usefulrp_schema
         globus_wsrf_servicegroup
-        globus_wsrf_mds_archive
 
 BUNDLE gt4-rft
         globus_wsrf_rft_client_java
