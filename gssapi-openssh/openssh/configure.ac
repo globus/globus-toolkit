@@ -467,6 +467,15 @@ AC_ARG_WITH(globus,
 	]
 )
 
+# Check whether the user has a Globus flavor type
+globus_flavor_type="no"
+AC_ARG_WITH(globus-flavor,
+	[  --with-globus-flavor=TYPE         Describe Globus flavor type (ex: gcc32dbg, etc.)],
+	[
+		globus_flavor_type="$withval"
+	]
+)
+
 if test "x$gsi_path" != "xno" ; then
 	# Globus GSSAPI configuration
 	AC_DEFINE(GSSAPI)
@@ -527,9 +536,26 @@ if test "x$gsi_path" != "xno" ; then
 	fi
 	AC_MSG_RESULT($globus_dev_dir)
 
-	GSI_LIBS="-lglobus_gss_assist -lglobus_gss -lglobus_gaa -lssl -lcrypto"
-	GSI_LDFLAGS="-L${globus_dev_dir}/lib"
-	GSI_CFLAGS="-I${globus_dev_dir}/include"
+	# Find GLOBUS/GSI flavor Directory
+	AC_MSG_CHECKING(for Globus flavor type)
+
+        if test "x$globus_flavor_type" = "xno" ; then
+		GSI_LIBS="-lglobus_gss_assist -lglobus_gss -lglobus_gaa"
+		GSI_LDFLAGS="-L${globus_dev_dir}/lib"
+		GSI_CFLAGS="-I${globus_dev_dir}/include"
+		AC_MSG_RESULT(none)
+	else
+                GLOBUS_FLAVOR_TYPE_INCL_DIR="${globus_dev_dir}/include/${globus_flavor_type}"
+
+		if test ! -d "$GLOBUS_FLAVOR_TYPE_INCL_DIR" ; then
+			AC_MSG_ERROR(Cannot find Globus flavor-specific include directory: ${GLOBUS_FLAVOR_TYPE_INCL_DIR})
+                fi
+
+		AC_MSG_RESULT($globus_flavor_type)
+		GSI_LIBS="-lglobus_gss_assist_${globus_flavor_type} -lglobus_gssapi_gsi_${globus_flavor_type}"
+		GSI_LDFLAGS="-L${globus_dev_dir}/lib"
+		GSI_CFLAGS="-I${GLOBUS_FLAVOR_TYPE_INCL_DIR}"
+	fi
 
 	LIBS="$LIBS $GSI_LIBS"
 	LDFLAGS="$LDFLAGS $GSI_LDFLAGS"
@@ -777,6 +803,11 @@ AC_ARG_WITH(ssl-dir,
 saved_LIBS="$LIBS"
 saved_LDFLAGS="$LDFLAGS"
 saved_CPPFLAGS="$CPPFLAGS"
+if test "x$globus_flavor_type" != "xno" ; then
+LIBS="$saved_LIBS -lglobus_ssl_utils_${globus_flavor_type} -lssl_${globus_flavor_type} -lcrypto_${globus_flavor_type}"
+LDFLAGS="$saved_LDFLAGS"
+CPPFLAGS="$saved_CPPFLAGS"
+else
 if test "x$prefix" != "xNONE" ; then
 	tryssldir="$tryssldir $prefix"
 fi
@@ -875,7 +906,12 @@ if (test ! -z "$ac_cv_openssldir" && test "x$ac_cv_openssldir" != "x(system)") ;
 		fi
 	fi
 fi
+if test "x$gsi_path" == "xno" ; then
 LIBS="$saved_LIBS -lcrypto"
+else
+LIBS="$saved_LIBS -lssl -lcrypto"
+fi
+fi # globus_flavor_type
 
 # Now test RSA support
 saved_LIBS="$LIBS"
