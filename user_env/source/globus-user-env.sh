@@ -88,7 +88,7 @@ if [ -n "${LD_LIBRARYN32_PATH}" ]; then
     export LD_LIBRARYN32_PATH
 fi
 
-if [ $?LD_LIBRARY64_PATH ]; then
+if [ -n "${LD_LIBRARY64_PATH}" ]; then
     DELIM=""
     if [ "X${LD_LIBRARY64_PATH}" != "X" ]; then
         DELIM=:
