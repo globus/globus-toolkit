@@ -1,2 +1,0 @@
-&(executable=/bin/true)
- (arguments=$(GLOBUS_HOST_OSNAME))
