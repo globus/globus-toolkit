@@ -951,7 +951,7 @@ globus_i_ftp_client_response_callback(
 	globus_error_construct_string(\
 		GLOBUS_FTP_CLIENT_MODULE,\
 		err,\
-		"an internal error occurred")
+		"an internal error occurred in globus_ftp_client")
 #define GLOBUS_I_FTP_CLIENT_ERROR_OBJECT_IN_USE(obj) \
 	globus_error_construct_string(\
 		GLOBUS_FTP_CLIENT_MODULE,\
