@@ -15,6 +15,23 @@ int *                                           g_restart_offset;
 int *                                           g_restart_length;
 int                                             g_restart_count = 0;
 
+static globus_bool_t                            g_send_perf_update;
+static globus_bool_t                            g_send_range;
+
+/*
+ *  The enter and exit macros need to be around any code that will
+ *  cause globus to poll, ex: globus_cond_wait(), globus_poll().
+ *  Otherwise the SIGPIPE handler in wuftpd can cause errors in
+ *  the globus_io callback mecanism.
+ */
+#define G_ENTER()                  \
+{                                  \
+}
+
+#define G_EXIT()                   \
+{                                  \
+}
+
 typedef struct
 {
     globus_size_t		offset;
@@ -121,11 +138,19 @@ globus_l_wu_insert_range(globus_fifo_t * ranges,
 static char *
 globus_l_wu_create_range_string(globus_fifo_t * ranges);
 
-static
-globus_bool_t
-globus_l_wu_perf_update(
+static globus_bool_t
+globus_l_wu_perf_update_callback(
     globus_abstime_t *			time_stop,
     void *				user_args);
+
+static globus_bool_t
+globus_l_wu_perf_update(
+    globus_i_wu_montor_t *              mon);
+
+void
+send_range(
+    globus_i_wu_montor_t *                      monitor);
+
 /*************************************************************
  *   global vairables 
  ************************************************************/
@@ -235,12 +260,8 @@ g_end()
 {
     globus_i_wu_montor_t                            monitor;
     globus_result_t                                 res;
-    int i = 0;
 
-    while(i)
-    {
-        usleep(1);
-    }
+    G_ENTER();
 
     wu_monitor_init(&monitor);
     /*
@@ -267,6 +288,8 @@ g_end()
 
     globus_ftp_control_handle_destroy(&g_data_handle);
     globus_module_deactivate(GLOBUS_FTP_CONTROL_MODULE);
+
+    G_EXIT();
 }
 
 void
@@ -446,6 +469,8 @@ g_send_data(
     time_t                                          t2;
 #endif
 
+    G_ENTER();
+
 #ifdef THROUGHPUT
     throughput_calc(name, &bps, &bpsmult);
 #endif
@@ -508,6 +533,11 @@ g_send_data(
     {
         goto connect_err;
     }
+
+    G_EXIT();
+    reply(150, "Opening %s mode data connection.",
+          type == TYPE_A ? "ASCII" : "BINARY");
+    G_ENTER();
 
     transflag++;
     switch (type) 
@@ -572,6 +602,8 @@ g_send_data(
                 if ((buf = (char *) globus_malloc(blksize)) == NULL)  
                 {
                     transflag = 0;
+ 
+                    G_EXIT();
                     perror_reply(451, "Local resource failure: malloc");
                     retrieve_is_data = 1;
                     return (0);
@@ -639,12 +671,6 @@ g_send_data(
                 }
             }
             globus_mutex_unlock(&g_monitor.mutex);
-
-            /*
-             *  reset the alarm  when data comes in
-            (void) signal(SIGALRM, g_alarm_signal);
-            alarm(timeout_data);
-             */
 
             byte_count += cnt;
 #           ifdef TRANSFER_COUNT
@@ -717,6 +743,7 @@ g_send_data(
     
             g_force_close(cb_count);
 
+            G_EXIT();
             return 0;
         }
 
@@ -729,7 +756,10 @@ g_send_data(
          *  unset alarm 
          */
         alarm(0);
+
+        G_EXIT();
         reply(226, "Transfer complete.");
+        G_ENTER();
 
 #       ifdef TRANSFER_COUNT
         {
@@ -753,10 +783,12 @@ g_send_data(
 
     default:
         transflag = 0;
+
+        G_EXIT();
         reply(550, "Unimplemented TYPE %d in send_data", type);
         retrieve_is_data = 1;
 
-        goto clean_exit;
+        return 1;
     }
 
   /* 
@@ -773,7 +805,9 @@ g_send_data(
         globus_free(buf);
     }
 
+    G_EXIT();
     perror_reply(426, "Data connection");
+ 
     retrieve_is_data = 1;
 
     return (0);
@@ -782,6 +816,7 @@ g_send_data(
     alarm(0);
     transflag = 0;
 
+    G_EXIT();
     return (0);
 
   /*
@@ -790,6 +825,7 @@ g_send_data(
   file_err:
     alarm(0);
     transflag = 0;
+    G_EXIT();
     perror_reply(551, "Error on input file");
     retrieve_is_data = 1;
 
@@ -797,6 +833,7 @@ g_send_data(
 
   clean_exit:
 
+    G_EXIT();
     return (1);
 }
 
@@ -810,6 +847,8 @@ g_force_close(
     int                                     cb_count)
 {
     globus_result_t                         res;
+
+    G_ENTER();
 
     g_monitor.done = GLOBUS_FALSE;
     res = globus_ftp_control_data_force_close(
@@ -831,6 +870,8 @@ g_force_close(
         }
         globus_mutex_unlock(&g_monitor.mutex);
     }
+
+    G_EXIT();
 }
 
 void 
@@ -870,7 +911,6 @@ data_write_callback(
     {
         monitor->count--;
         globus_cond_signal(&monitor->cond);
-
     }
     globus_mutex_unlock(&monitor->mutex);
 
@@ -909,8 +949,7 @@ g_receive_data(
     size_t                                   buffer_size = BUFSIZ;
 #endif
 
-    int i = 1;
-
+    G_ENTER();
     wu_monitor_reset(&g_monitor);
     g_monitor.offset = offset;
 
@@ -940,7 +979,12 @@ g_receive_data(
     {
         goto data_err;
     }
-        
+
+    G_EXIT();
+    reply(150, "Opening %s mode data connection.",
+          type == TYPE_A ? "ASCII" : "BINARY");
+    G_ENTER();
+    
     transflag++;
     switch (type) 
     {
@@ -972,14 +1016,15 @@ g_receive_data(
             data_connection_count = 2;
         }
 
-
 	GlobusTimeReltimeSet(five_seconds, 5, 0);
 
+        g_send_range = GLOBUS_FALSE;
+        g_send_perf_update = GLOBUS_FALSE;
 	globus_callback_register_periodic(
 	    &g_monitor.callback_handle,
 	    &five_seconds,
 	    &five_seconds,
-	    globus_l_wu_perf_update,
+	    globus_l_wu_perf_update_callback,
 	    &g_monitor,
 	    GLOBUS_NULL,
 	    GLOBUS_NULL);
@@ -990,6 +1035,8 @@ g_receive_data(
             {
                 transflag = 0;
 		globus_callback_unregister(g_monitor.callback_handle);
+
+                G_EXIT();
                 perror_reply(451, "Local resource failure: malloc");
                 return (-1);
             }
@@ -1016,6 +1063,17 @@ g_receive_data(
             {
                 globus_cond_wait(&g_monitor.cond, &g_monitor.mutex);
             }
+            if(g_send_perf_update)
+            {
+                g_send_perf_update = GLOBUS_FALSE;
+                globus_l_wu_perf_update(&g_monitor);
+            }
+            if(g_send_range)
+            {
+                g_send_range = GLOBUS_FALSE;
+                send_range(&g_monitor);
+            }
+
             l_timed_out = g_monitor.timed_out;
             l_error = g_monitor.done;
             aborted = g_monitor.abort;
@@ -1027,8 +1085,9 @@ g_receive_data(
         {
             alarm(0);
             g_force_close(cb_count);
-
 	    globus_callback_unregister(g_monitor.callback_handle);
+
+            G_EXIT();
             return -1;
         }
 
@@ -1051,11 +1110,15 @@ g_receive_data(
         goto clean_exit;
 
     case TYPE_E:
+
+        G_EXIT();
         reply(553, "TYPE E not implemented.");
         transflag = 0;
         return (-1);
 
     default:
+
+        G_EXIT();
         reply(550, "Unimplemented TYPE %d in receive_data", type);
         transflag = 0;
         return (-1);
@@ -1069,6 +1132,8 @@ g_receive_data(
 
     alarm(0);
     transflag = 0;
+   
+    G_EXIT();
     perror_reply(426, "Data Connection");
     return (-1);
 
@@ -1077,12 +1142,16 @@ g_receive_data(
 
     alarm(0);
     transflag = 0;
+
+    G_EXIT();
     perror_reply(452, "Error writing file");
+
     return (-1);
 
   clean_exit:
     globus_callback_unregister(g_monitor.callback_handle);
 
+    G_EXIT();
     return (0);
 }
 
@@ -1099,13 +1168,27 @@ connect_callback(
 
     globus_mutex_lock(&monitor->mutex);
     {
-         reply(150, "Opening %s mode data connection.",
-               type == TYPE_A ? "ASCII" : "BINARY");
-
          monitor->done = GLOBUS_TRUE;
          globus_cond_signal(&monitor->cond);
     }
     globus_mutex_unlock(&monitor->mutex);
+}
+
+void
+send_range(
+    globus_i_wu_montor_t *                      monitor)
+{
+    char *		                        range_str;
+
+    G_EXIT();
+
+    range_str =
+        globus_l_wu_create_range_string(&monitor->ranges);
+		    
+    reply(111, "Range Marker %s", range_str);
+    globus_libc_free(range_str);
+
+    G_ENTER();
 }
 
 void
@@ -1162,7 +1245,6 @@ data_read_callback(
 	if(g_send_restart_info)
 	{
 	    time_t				t;
-	    char *				range_str;
 
 	    t = time(NULL);
 
@@ -1170,12 +1252,9 @@ data_read_callback(
 
 	    if(t - monitor->last_range_update > 10)
 	    {
-		range_str =
-		    globus_l_wu_create_range_string(&monitor->ranges);
-		    
-		reply(111, "Range Marker %s", range_str);
-		globus_libc_free(range_str);
-		monitor->last_range_update = t;
+                g_send_range = GLOBUS_TRUE;
+                monitor->last_range_update = t;
+                globus_cond_signal(&monitor->cond);
 	    }
 	}
 	monitor->accum_bytes += length;
@@ -1213,8 +1292,7 @@ data_read_callback(
     globus_mutex_unlock(&monitor->mutex);
 }
 
-static
-void
+static void
 globus_l_wu_insert_range(
     globus_fifo_t *				ranges,
     globus_size_t				offset,
@@ -1306,7 +1384,8 @@ globus_l_wu_count_digits(int num)
 }
 
 static char *
-globus_l_wu_create_range_string(globus_fifo_t * ranges)
+globus_l_wu_create_range_string(
+    globus_fifo_t *                     ranges)
 {
     int					length = 0, mylen;
     char *				buf = GLOBUS_NULL;
@@ -1333,17 +1412,33 @@ globus_l_wu_create_range_string(globus_fifo_t * ranges)
     return buf;
 }
 
-static
-globus_bool_t
-globus_l_wu_perf_update(
+static globus_bool_t
+globus_l_wu_perf_update_callback(
     globus_abstime_t *			time_stop,
     void *				user_args)
+{
+    globus_i_wu_montor_t *		monitor;
+
+    monitor = (globus_i_wu_montor_t *) user_args;
+
+    globus_mutex_lock(&monitor->mutex);
+    {
+        g_send_perf_update = GLOBUS_TRUE;
+        globus_cond_signal(&monitor->cond);
+    }
+    globus_mutex_lock(&monitor->mutex);
+
+    return GLOBUS_TRUE;
+}
+
+static globus_bool_t 
+globus_l_wu_perf_update(
+    globus_i_wu_montor_t *		monitor)
 {
     struct timeval tv;
     unsigned int 			num_channels;
     double 				elapsed;
     double 				throughput;
-    globus_i_wu_montor_t *		monitor;
     globus_ftp_control_handle_t *	handle;
     time_t				time;
     struct tm *				tm;
@@ -1352,7 +1447,6 @@ globus_l_wu_perf_update(
     {
 	return GLOBUS_TRUE;
     }
-    monitor = (globus_i_wu_montor_t *) user_args;
     handle = monitor->handle;
 
     gettimeofday(&tv, NULL);
@@ -1365,7 +1459,8 @@ globus_l_wu_perf_update(
     elapsed += (double)((tv.tv_usec - monitor->last_perf_update.tv_usec))
 	               / (double) 1000000.0;
     throughput = ((double)monitor->accum_bytes) / elapsed;
-	
+
+    G_EXIT();	
     lreply(112,
 	   "Perf Marker %04d%02d%02d%02d%02d%02d.%06d",
 	   tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday,
@@ -1379,7 +1474,8 @@ globus_l_wu_perf_update(
     lreply(0, " StripeConnections: 0 %u", num_channels);
     lreply(0, " StripeThroughput: 0 %f", throughput);
     reply(112, "End");
-	
+    G_ENTER();
+
     monitor->accum_bytes = 0;
     monitor->last_perf_update = tv;
 
