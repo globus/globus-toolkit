@@ -140,6 +140,9 @@ typedef struct globus_l_gfs_data_operation_s
     globus_off_t                        recvd_bytes[1];
     globus_range_list_t                 recvd_ranges;
     
+    int                                 stripe_count;
+    int *                               eof_count;
+    
     /* command stuff */
     globus_gfs_command_type_t           command;
     char *                              pathname;
@@ -1111,7 +1114,6 @@ globus_i_gfs_data_request_active(
             }
         }
         
-        
         if(data_info->cs_count == 1)
         {
             result = globus_ftp_control_local_port(
@@ -1129,6 +1131,15 @@ globus_i_gfs_data_request_active(
             goto error_control;
         }
         
+        result = globus_ftp_control_local_send_eof(
+            &handle->data_channel, GLOBUS_FALSE);
+        if(result != GLOBUS_SUCCESS)
+        {
+            result = GlobusGFSErrorWrapFailed(
+                "globus_ftp_control_local_send_eof", result);
+            goto error_control;
+        }
+
         bounce_info = (globus_l_gfs_data_active_bounce_t *)
             globus_malloc(sizeof(globus_l_gfs_data_active_bounce_t));
         if(!bounce_info)
@@ -1508,11 +1519,19 @@ error_hook1:
 error_op:
     return result;
 }
+static
+void
+globus_l_gfs_data_send_eof_cb(
+    void *                              user_arg,
+    struct globus_ftp_control_handle_s * handle,
+    globus_object_t *			error)
+{
 
+}
 
 void
 globus_gridftp_server_begin_transfer(
-    globus_gfs_operation_t   op)
+    globus_gfs_operation_t              op)
 {
     globus_result_t                     result;
     GlobusGFSName(globus_gridftp_server_begin_transfer);
@@ -1521,6 +1540,18 @@ globus_gridftp_server_begin_transfer(
     {
         result = globus_ftp_control_data_connect_write(
             &op->data_handle->data_channel, GLOBUS_NULL, GLOBUS_NULL);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error_connect;
+        }
+
+        result = globus_ftp_control_data_send_eof(
+            &op->data_handle->data_channel,
+            op->eof_count,
+            op->stripe_count,
+            GLOBUS_FALSE,
+            globus_l_gfs_data_send_eof_cb,
+            op);
     }
     else
     {

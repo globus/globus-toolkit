@@ -929,7 +929,7 @@ static globus_gfs_storage_iface_t       globus_l_gfs_remote_dsi_iface =
 
 GlobusExtensionDefineModule(globus_gridftp_server_remote) =
 {
-    "globus_gridftp_remote",
+    "globus_gridftp_server_remote",
     globus_l_gfs_remote_activate,
     globus_l_gfs_remote_deactivate,
     GLOBUS_NULL,
