@@ -86,11 +86,22 @@ struct globus_gass_copy_handle_s
  */
 struct globus_gass_copy_attr_s
 {
-    globus_gass_transfer_requestattr_t	gass;
-    globus_io_attr_t	                io;
-    globus_ftp_attr_t	                ftp;
+    /* globus_gass_transfer_requestattr_t	gass; */
+    globus_io_file_type                 file_type;
+    globus_io_authorization_t	        io_auth;
+    globus_io_secure_channel_t          secure_channel_info;
+    globus_ftp_control_striping_t       stripe_info;
+    globus_ftp_control_parallel_t       parallel_info;
+    globus_ftp_control_tcpbuffer_t      tcpbuffer_info;
 } globus_gass_copy_attr_t;
 
+/*  ????
+ *   globus_size_t                       block_size;
+ *   globus_bool_t                       connection_reuse;
+ *   int                                 sndbuf;
+ *   int                                 rcvbuf;
+ *   globus_bool_t                       nodelay;
+ */
 
 /**
  * Signature of a callback from globus_gass_copy_register_*() functions.

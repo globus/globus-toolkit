@@ -1,4 +1,6 @@
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/** valid URL schemes */
 enum
 {
     GLOBUS_I_GASS_COPY_URL_SCHEME_UNSUPPORTED,
@@ -7,7 +9,23 @@ enum
     GLOBUS_I_GASS_COPY_URL_SCHEME_FILE,
 } globus_i_gass_copy_url_scheme_t;
 
+/** valid target modes */
+enum
+{
+    GLOBUS_I_GASS_COPY_TARGET_MODE_FTP,
+    GLOBUS_I_GASS_COPY_TARGET_MODE_GASS,
+    GLOBUS_I_GASS_COPY_TARGET_MODE_IO,
+} globus_i_gass_copy_target_mode_t;
 
+/** valid state states, but since that can be confusing let's call them
+  * numbers.
+  */
+enum
+{
+    GLOBUS_I_GASS_COPY_STATE_INITIAL,
+} globus_i_gass_copy_state_number_t;
+
+/** GASS copy target (e.g. source, destination) transfer information. */
 struct globus_i_gass_copy_target_s
 {
     globus_i_gass_copy_target_mode_t		mode;
@@ -21,6 +39,7 @@ struct globus_i_gass_copy_target_s
 	{
 	    globus_ftp_handle *			handle;
 	    int					n_channels;
+            globus_ftp_client_attr_t		attr;
 	} ftp;
 	
 	struct /* GLOBUS_I_GASS_COPY_TARGET_MODE_GASS */
@@ -37,14 +56,8 @@ struct globus_i_gass_copy_target_s
     } data;
 } globus_i_gass_copy_target_t;
 
-enum
-{
-    GLOBUS_I_GASS_COPY_TARGET_MODE_FTP,
-    GLOBUS_I_GASS_COPY_TARGET_MODE_GASS,
-    GLOBUS_I_GASS_COPY_TARGET_MODE_IO,
-} globus_i_gass_copy_target_mode_t;
 
-
+/** The state structure */
 typedef struct globus_i_gass_copy_state_s
 {
     globus_gass_copy_handle_t *		handle;
@@ -52,23 +65,19 @@ typedef struct globus_i_gass_copy_state_s
     globus_i_gass_copy_state_target_t	dest;
     globus_i_gass_copy_state_number_t	number;
     globus_i_gass_copy_monitor_t        monitor;
+    int                                 writes_pending;
+    int                                 simultaneous_writes;
 } globus_i_gass_copy_state_t;
 
-enum
-{
-    GLOBUS_I_GASS_COPY_STATE_INITIAL,
-} globus_i_gass_copy_state_number_t;
-
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/** The buffer structure used for write queue entries */
 typedef struct
 {
     globus_byte_t *                     bytes;
     globus_size_t                       nbytes;
     globus_size_t                       offset;
 } globus_i_gass_copy_buffer_t;
-#endif
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/** The state monitor struct */
 typedef struct
 {
     globus_mutex_t                      mutex;
