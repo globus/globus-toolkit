@@ -524,16 +524,16 @@ globus_l_cache_remote_op( globus_l_cache_op_t op,
 			  char *              name,
 			  char *              rm_contact)
 {
-    char *           callback_contact;
-    char *           job_contact;
-    char             spec[1024];
-    char *           server_url;
-    unsigned short   port                = 0;
-    int              rc;
-    globus_gass_transfer_listener_t  listener;
-    globus_gass_transfer_listenerattr_t * attr;
-    char * scheme;
-    globus_gass_transfer_requestattr_t * reqattr;
+    int                                       rc;
+    char *                                    callback_contact;
+    char *                                    job_contact;
+    char                                      spec[1024];
+    char *                                    server_url;
+    char *                                    scheme            = GLOBUS_NULL;
+    unsigned short                            port              = 0;
+    globus_gass_transfer_listener_t           listener;
+    globus_gass_transfer_listenerattr_t *     attr              = GLOBUS_NULL;
+    globus_gass_transfer_requestattr_t *      reqattr           = GLOBUS_NULL;
     
     
 
