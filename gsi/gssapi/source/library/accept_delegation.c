@@ -221,6 +221,8 @@ GSS_CALLCONV gss_accept_delegation(
                                                 cert_chain,
                                                 NULL);
         sk_X509_pop_free(cert_chain, X509_free);
+
+        context->dpkey = NULL;
         
         /* reset state machine */
         
@@ -228,13 +230,10 @@ GSS_CALLCONV gss_accept_delegation(
 
         if(major_status != GSS_S_COMPLETE)
         {
-            X509_free(dcert);
-            EVP_PKEY_free(context->dpkey);
-            context->dpkey = NULL;
             goto err;
         }
 
-        context->dpkey = NULL;
+
 
         if (time_rec != NULL)
         {

@@ -166,6 +166,11 @@ GSS_CALLCONV gss_import_cred(
                                             NULL,
                                             bp);
 
+    if(major_status != GSS_S_COMPLETE)
+    {
+        goto err;
+    }
+    
     /* If I understand this right, time_rec should contain the time
      * until the cert expires */
     
