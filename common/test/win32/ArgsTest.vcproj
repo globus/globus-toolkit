@@ -111,7 +111,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\source\win32;..\..\source\library;..\..\..\core\source\win32\nonthreaded;$(CORE)"
+				AdditionalIncludeDirectories="..\..\source\win32;..\..\source\library;..\..\..\core\source\win32\nonthreaded;&quot;$(CORE)&quot;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="0"

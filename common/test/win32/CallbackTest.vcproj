@@ -134,7 +134,7 @@
 				SuppressStartupBanner="TRUE"
 				AdditionalLibraryDirectories="$(GLOBUS_LOCATION)\lib\"
 				GenerateDebugInformation="TRUE"
-				ProgramDatabaseFile="$(OutDir)/TestCommon.pdb"
+				ProgramDatabaseFile="$(OutDir)/CallbackTest.pdb"
 				SubSystem="1"
 				TargetMachine="1"/>
 			<Tool
@@ -142,8 +142,8 @@
 				TargetEnvironment="1"/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="copy $(OutDir)\*.exe \bin\*.*
-copy $(OutDir)\*.pdb \bin\*.*
+				CommandLine="copy $(OutDir)\$(TargetName).exe \bin\*.*
+copy $(OutDir)\$(TargetName).pdb \bin\*.*
 "/>
 			<Tool
 				Name="VCPreBuildEventTool"/>
