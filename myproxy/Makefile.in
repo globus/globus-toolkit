@@ -15,7 +15,7 @@ INSTALL		=	$(srcdir)/install-sh
 INSTALL_OWNER	=	root
 
 # All of these values come fromthe makefile_header sourced above
-GLOBUS_CFLAGS	=	$(INSTALL_INCLUDE) $(BASE_CFLAGS)
+GLOBUS_CFLAGS	=	$(INSTALL_INCLUDE) $(GLOBUS_INCLUDES) $(BASE_CFLAGS)
 
 DEFS		=	@DEFS@
 CFLAGS		=	-g $(DEFS) $(GLOBUS_CFLAGS) $(GLOBUS_GSSAPI_CFLAGS) \
@@ -54,33 +54,37 @@ tools:		$(TOOL_PROGS)
 library:	$(MYPROXY_LIB)
 
 gsi-socket-test: gsi_socket_test.o gsi_socket.o
-	$(LINK) $(LDFLAGS) $(GLOBUS_GSSAPI_LDFLAGS) \
-		-o $@ gsi_socket_test.o gsi_socket.o $(GLOBUS_GSSAPI_LIBS) \
-		$(SYSLIBS)
+	$(LINK) $(LDFLAGS) $(GLOBUS_LDFLAGS) $(GLOBUS_GSSAPI_LDFLAGS) \
+		-o $@ gsi_socket_test.o gsi_socket.o $(GLOBUS_PKG_LIBS) \
+		$(GLOBUS_GSSAPI_LIBS) $(SYSLIBS)
 
 ssl_test: ssl_test.o ssl_utils.o verror.o
-	$(CC) -g $(LDFLAGS) $(GLOBUS_GSSAPI_LDFLAGS) \
+	$(CC) -g $(LDFLAGS) $(GLOBUS_LDFLAGS) $(GLOBUS_GSSAPI_LDFLAGS) \
 		-o $@ ssl_test.o ssl_utils.o verror.o \
-		$(GLOBUS_GSSAPI_LIBS) $(SYSLIBS)
+		$(GLOBUS_PKG_LIBS) $(GLOBUS_GSSAPI_LIBS) $(SYSLIBS)
 
 gsi_socket.o: gsi_socket.c
 	$(CC) $(GSI_SOCKET_CFLAGS) -c $<
 
 myproxy-init: $(INIT_OBJS)
-	$(LINK) $(LDFLAGS) $(GLOBUS_GSSAPI_LDFLAGS) \
-		-o $@ $(INIT_OBJS) $(GLOBUS_GSSAPI_LIBS) $(SYSLIBS)
+	$(LINK) $(LDFLAGS) $(GLOBUS_LDFLAGS) $(GLOBUS_GSSAPI_LDFLAGS) \
+		-o $@ $(INIT_OBJS) $(GLOBUS_PKG_LIBS) $(GLOBUS_GSSAPI_LIBS) \
+		$(SYSLIBS)
 
 myproxy-destroy: $(DESTROY_OBJS)
-	$(CC) $(LDFLAGS) $(GLOBUS_GSSAPI_LDFLAGS) \
-		-o $@ $(DESTROY_OBJS) $(GLOBUS_GSSAPI_LIBS) $(SYSLIBS)
+	$(CC) $(LDFLAGS) $(GLOBUS_LDFLAGS) $(GLOBUS_GSSAPI_LDFLAGS) \
+		-o $@ $(DESTROY_OBJS) $(GLOBUS_PKG_LIBS) \
+		$(GLOBUS_GSSAPI_LIBS) $(SYSLIBS)
 
 myproxy-get-delegation: $(GET_OBJS)
-	$(CC) $(LDFLAGS) $(GLOBUS_GSSAPI_LDFLAGS) \
-		-o $@ $(GET_OBJS) $(GLOBUS_GSSAPI_LIBS) $(SYSLIBS)
+	$(CC) $(LDFLAGS) $(GLOBUS_LDFLAGS) $(GLOBUS_GSSAPI_LDFLAGS) \
+		-o $@ $(GET_OBJS) $(GLOBUS_PKG_LIBS) \
+		$(GLOBUS_GSSAPI_LIBS) $(SYSLIBS)
 
 myproxy-server: $(SERVER_OBJS)
-	$(CC) $(LDFLAGS) $(GLOBUS_GSSAPI_LDFLAGS) \
-		-o $@ $(SERVER_OBJS) $(GLOBUS_GSSAPI_LIBS) $(SYSLIBS)
+	$(CC) $(LDFLAGS) $(GLOBUS_LDFLAGS) $(GLOBUS_GSSAPI_LDFLAGS) \
+		-o $@ $(SERVER_OBJS) $(GLOBUS_PKG_LIBS) \
+		$(GLOBUS_GSSAPI_LIBS) $(SYSLIBS)
 
 libmyproxy.a: $(LIB_OBJS)
 	$(AR) rsc $@ $^
