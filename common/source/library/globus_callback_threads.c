@@ -1397,19 +1397,16 @@ globus_callback_space_poll(
         globus_bool_t                   unregister;
         
         globus_mutex_lock(&i_space->lock);
-        {
-            callback_info = globus_l_callback_get_next(
-                &i_space->queue, &time_now, &next_ready_time);
-            
-            if(callback_info)
-            {
-                callback_info->running_count++;
-            }
-        }
-        globus_mutex_unlock(&i_space->lock);
+        
+        callback_info = globus_l_callback_get_next(
+            &i_space->queue, &time_now, &next_ready_time);
         
         if(callback_info)
         {
+            callback_info->running_count++;
+            
+            globus_mutex_unlock(&i_space->lock);
+            
             /* we got a callback, kick it out */
             if(globus_abstime_cmp(timestop, &next_ready_time) > 0)
             {
@@ -1478,33 +1475,31 @@ globus_callback_space_poll(
         }
         else
         {
-            globus_mutex_lock(&i_space->lock);
+            /* no callbacks were ready */
+            if(globus_abstime_cmp(timestop, &next_ready_time) > 0)
             {
-                /* no callbacks were ready */
-                if(globus_abstime_cmp(timestop, &next_ready_time) > 0)
-                {
-                    /* I dont think it matters that I dont check the shutdown
-                     * after sleeping... the poll is either called from
-                     * one of my threads (blocking it) or it is called from
-                     * the main threadm in which case, he shouldnt be calling
-                     * for a shutdown
-                     */
-                    globus_cond_timedwait(
-                        &i_space->cond, &i_space->lock, &next_ready_time);
-                }
-                else if(globus_time_abstime_is_infinity(timestop))
-                {
-                    /* we can only get here if queue is empty
-                     * and we are blocking forever. 
-                     */
-                     globus_cond_wait(&i_space->cond, &i_space->lock);
-                }
-                else
-                {
-                    /* wont be any ready before our time is up */
-                    done = GLOBUS_TRUE;
-                }
+                /* I dont think it matters that I dont check the shutdown
+                 * after sleeping... the poll is either called from
+                 * one of my threads (blocking it) or it is called from
+                 * the main threadm in which case, he shouldnt be calling
+                 * for a shutdown
+                 */
+                globus_cond_timedwait(
+                    &i_space->cond, &i_space->lock, &next_ready_time);
             }
+            else if(globus_time_abstime_is_infinity(timestop))
+            {
+                /* we can only get here if queue is empty
+                 * and we are blocking forever. 
+                 */
+                 globus_cond_wait(&i_space->cond, &i_space->lock);
+            }
+            else
+            {
+                /* wont be any ready before our time is up */
+                done = GLOBUS_TRUE;
+            }
+                
             globus_mutex_unlock(&i_space->lock);
         }
 
