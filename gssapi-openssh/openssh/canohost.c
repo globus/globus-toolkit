@@ -359,3 +359,29 @@ get_local_port(void)
 {
 	return get_port(1);
 }
+
+void
+resolve_hostname(char **host)
+{
+    struct hostent *hostinfo;
+
+    hostinfo = gethostbyname(*host);
+    if (hostinfo == NULL || hostinfo->h_name == NULL) {
+	debug("gethostbyname(%s) failed", *host);
+	return;
+    }
+    if (hostinfo->h_addrtype == AF_INET) { /* check for localhost */
+	struct in_addr addr;
+	addr = *(struct in_addr *)(hostinfo->h_addr);
+	if (ntohl(addr.s_addr) == INADDR_LOOPBACK) {
+	    char buf[MAXHOSTNAMELEN];
+	    if (gethostname(buf, sizeof(buf)) < 0) {
+		debug("gethostname() failed");
+		return;
+	    }
+	    hostinfo = gethostbyname(buf);
+	}
+    }
+    free(*host);
+    *host = strdup(hostinfo->h_name);
+}

@@ -51,6 +51,17 @@ RCSID("$OpenBSD: sshconnect1.c,v 1.52 2002/08/08 13:50:23 aaron Exp $");
 #include "canohost.h"
 #include "auth.h"
 
+#ifdef GSSAPI
+#include "ssh-gss.h"
+#include "bufaux.h"
+
+/*
+ * MD5 hash of host and session keys for verification. This is filled
+ * in in ssh_login() and then checked in try_gssapi_authentication().
+ */
+unsigned char ssh_key_digest[16];
+#endif /* GSSAPI */
+
 /* Session id for the current session. */
 u_char session_id[16];
 u_int supported_authentications = 0;
@@ -947,6 +958,405 @@ try_password_authentication(char *prompt)
 	return 0;
 }
 
+#ifdef GSSAPI
+#ifdef GSI
+char * get_gsi_name()
+{
+  OM_uint32 maj_stat;
+  OM_uint32 min_stat;
+  gss_name_t pname = GSS_C_NO_NAME;
+  gss_buffer_desc tmpname;
+  gss_buffer_t tmpnamed = &tmpname;
+  char *retname;
+  gss_OID_set oidset;
+  gss_cred_id_t gss_cred = GSS_C_NO_CREDENTIAL;
+
+  gss_create_empty_oid_set(&min_stat,&oidset);
+  gss_add_oid_set_member(&min_stat,&supported_mechs[GSS_GSI].oid,&oidset);
+  maj_stat = gss_acquire_cred(&min_stat,
+                              GSS_C_NO_NAME,
+                              GSS_C_INDEFINITE,
+                              oidset,
+                              GSS_C_INITIATE,
+                              &gss_cred,
+                              NULL,
+                              NULL);
+
+  if (maj_stat != GSS_S_COMPLETE) {
+      goto error;
+  }
+
+  debug("calling gss_inquire_cred");
+  maj_stat = gss_inquire_cred(&min_stat,
+                              gss_cred,
+                              &pname,
+                              NULL,
+                              NULL,
+                              NULL);
+  if (maj_stat != GSS_S_COMPLETE) {
+      goto error;
+  }
+
+  maj_stat = gss_display_name(&min_stat,
+	                      pname,
+			      tmpnamed,
+			      NULL);
+  if (maj_stat != GSS_S_COMPLETE) {
+      goto error;
+  }
+  debug("gss_display_name finsished");
+  retname = (char *)malloc(tmpname.length + 1);
+  if (!retname) {
+      goto error;
+  }
+  memcpy(retname, tmpname.value, tmpname.length);
+  retname[tmpname.length] = '\0';
+
+  gss_release_name(&min_stat, &pname);
+  gss_release_buffer(&min_stat, tmpnamed);
+
+  return retname;
+
+ error:
+  debug("Failed to set GSI username from credentials");
+  ssh_gssapi_error(&supported_mechs[GSS_GSI].oid, maj_stat, min_stat);
+  return NULL;
+}
+#endif /* GSI */
+
+int try_gssapi_authentication(char *host, Options *options)
+{
+  char *service_name = NULL;
+  gss_buffer_desc name_tok;
+  gss_buffer_desc send_tok;
+  gss_buffer_desc recv_tok;
+  gss_buffer_desc *token_ptr;
+  gss_name_t target_name = NULL;
+  gss_ctx_id_t gss_context;
+  gss_OID_desc mech_oid;
+  gss_OID name_type;
+  gss_OID_set gss_mechs, my_mechs;
+  int my_mech_num, i, present;
+  OM_uint32 maj_stat;
+  OM_uint32 min_stat;
+  int ret_stat = 0;                             /* 1 == success */
+  OM_uint32 req_flags = 0;
+  OM_uint32 ret_flags;
+  int type;
+  char *xhost;
+  unsigned int slen;
+  Gssctxt *ctx = NULL;
+
+  /* Make a copy of the host name, in case it was returned by a
+   * previous call to gethostbyname(). */	
+  xhost = xstrdup(host);
+
+  /* Make sure we have the FQHN. Some GSSAPI implementations don't do
+   * this for us themselves */
+  resolve_hostname(&xhost);
+
+  /*
+   * Default flags
+   */
+  req_flags |= GSS_C_REPLAY_FLAG;
+
+  /* Do mutual authentication */
+  req_flags |= GSS_C_MUTUAL_FLAG;
+
+  service_name = (char *) xmalloc(strlen("host") +
+				  strlen(xhost) +
+				  2 /* 1 for '@', 1 for NUL */);
+
+  sprintf(service_name, "host@%s", xhost);
+
+  xfree(xhost);
+  xhost = NULL;
+
+  name_type = GSS_C_NT_HOSTBASED_SERVICE;
+
+  debug("Service name is %s", service_name);
+
+  /* Forward credentials? */
+
+#ifdef GSSAPI
+  if(options->gss_deleg_creds) {
+    debug("Delegating GSSAPI credentials");
+    req_flags |= GSS_C_DELEG_FLAG;
+  }
+#endif /* GSSAPI */
+
+  debug("req_flags = %u", (unsigned int)req_flags);
+
+  name_tok.value = service_name;
+  name_tok.length = strlen(service_name) + 1;
+  maj_stat = gss_import_name(&min_stat, &name_tok,
+                             name_type, &target_name);
+
+  free(service_name);
+  service_name = NULL;
+
+  if (maj_stat != GSS_S_COMPLETE) {
+    ssh_gssapi_error(GSS_C_NO_OID, maj_stat, min_stat);
+    goto cleanup;
+  }
+
+  maj_stat = gss_indicate_mechs(&min_stat, &gss_mechs);
+
+  if (maj_stat != GSS_S_COMPLETE) {
+    ssh_gssapi_error(GSS_C_NO_OID, maj_stat, min_stat);
+    goto cleanup;
+  }
+
+  /* The GSSAPI supports the mechs in gss_mechs, but which ones do
+     we have credentials for?  We only get one try, so we don't want
+     to propose a mechanism we know is going to fail. */
+  maj_stat = gss_create_empty_oid_set(&min_stat, &my_mechs);
+  for (i=0; supported_mechs[i].name != NULL; i++) {
+      maj_stat = gss_test_oid_set_member(&min_stat, &supported_mechs[i].oid,
+					 gss_mechs, &present);
+      if (present) {
+	  if (!GSS_ERROR(ssh_gssapi_client_ctx(&ctx, &supported_mechs[i].oid,
+					       host))) {
+	      maj_stat = gss_add_oid_set_member(&min_stat,
+						&supported_mechs[i].oid,
+						&my_mechs);
+	      debug("GSSAPI mechanism %s supported", supported_mechs[i].name);
+	  } else {
+	      debug("no credentials for GSSAPI mechanism %s",
+		    supported_mechs[i].name);
+	  }
+      } else {
+	  debug("GSSAPI mechanism %s not supported", supported_mechs[i].name);
+      }
+  }
+
+  /*
+   * Send over a packet to the daemon, letting it know we're doing
+   * GSSAPI and our mech_oid(s).
+   */
+  debug("Sending mech oid(s) to server");
+  packet_start(SSH_CMSG_AUTH_GSSAPI);
+  packet_put_int(my_mechs->count); /* Number of mechs we're sending */
+#ifdef GSI
+  /* Send GSI before Kerberos, because if GSI fails, we can always fall
+     back and try regular Kerberos authentication with our Kerberos cred. */
+  maj_stat = gss_test_oid_set_member(&min_stat, &supported_mechs[GSS_GSI].oid,
+				     my_mechs, &present);
+  if (present) {
+      packet_put_string(supported_mechs[GSS_GSI].oid.elements,
+                        supported_mechs[GSS_GSI].oid.length);
+  }
+#endif
+  for (my_mech_num = 0; my_mech_num < my_mechs->count; my_mech_num++) {
+#ifdef GSI
+      /* Skip GSI.  We already sent it above. */
+      if ((my_mechs->elements[my_mech_num].length ==
+	   supported_mechs[GSS_GSI].oid.length) &&
+	  memcmp(my_mechs->elements[my_mech_num].elements,
+		 supported_mechs[GSS_GSI].oid.elements,
+		 my_mechs->elements[my_mech_num].length) == 0) {
+	  continue;
+      }
+#endif
+      packet_put_string(my_mechs->elements[my_mech_num].elements,
+                        my_mechs->elements[my_mech_num].length);
+  }
+  packet_send();
+  packet_write_wait();
+
+  /*
+   * Get reply from the daemon to see if our mech was acceptable
+   */
+  type = packet_read();
+
+  switch (type) {
+  case SSH_SMSG_AUTH_GSSAPI_RESPONSE:
+      debug("Server accepted mechanism");
+      /* Successful negotiation */
+      break;
+
+  case SSH_MSG_AUTH_GSSAPI_ABORT:
+      debug("Unable to negotiate GSSAPI mechanism type with server");
+      packet_get_all();
+      goto cleanup;
+
+  default:
+      packet_disconnect("Protocol error during GSSAPI authentication:"
+                        " packet type %d received",
+                        type);
+      /* Does not return */
+  }
+
+  /* Read the mechanism the server returned */
+  mech_oid.elements = packet_get_string(&slen);
+  mech_oid.length = slen;	/* safe typecast */
+  packet_get_all();
+
+  /*
+   * Perform the context-establishement loop.
+   *
+   * On each pass through the loop, token_ptr points to the token
+   * to send to the server (or GSS_C_NO_BUFFER on the first pass).
+   * Every generated token is stored in send_tok which is then
+   * transmitted to the server; every received token is stored in
+   * recv_tok, which token_ptr is then set to, to be processed by
+   * the next call to gss_init_sec_context.
+   *
+   * GSS-API guarantees that send_tok's length will be non-zero
+   * if and only if the server is expecting another token from us,
+   * and that gss_init_sec_context returns GSS_S_CONTINUE_NEEDED if
+   * and only if the server has another token to send us.
+   */
+
+  token_ptr = GSS_C_NO_BUFFER;
+  gss_context = GSS_C_NO_CONTEXT;
+
+  do {
+    maj_stat =
+      gss_init_sec_context(&min_stat,
+                           GSS_C_NO_CREDENTIAL,
+                           &gss_context,
+                           target_name,
+                           &mech_oid,
+                           req_flags,
+                           0,
+                           NULL,        /* no channel bindings */
+                           token_ptr,
+                           NULL,        /* ignore mech type */
+                           &send_tok,
+                           &ret_flags,
+                           NULL);       /* ignore time_rec */
+
+    if (token_ptr != GSS_C_NO_BUFFER)
+      (void) gss_release_buffer(&min_stat, &recv_tok);
+
+    if (maj_stat != GSS_S_COMPLETE && maj_stat != GSS_S_CONTINUE_NEEDED) {
+      ssh_gssapi_error(&mech_oid, maj_stat, min_stat);
+
+      /* Send an abort message */
+      packet_start(SSH_MSG_AUTH_GSSAPI_ABORT);
+      packet_send();
+      packet_write_wait();
+
+      goto cleanup;
+    }
+
+    if (send_tok.length != 0) {
+      debug("Sending authenticaton token...");
+      packet_start(SSH_MSG_AUTH_GSSAPI_TOKEN);
+      packet_put_string((char *) send_tok.value, send_tok.length);
+      packet_send();
+      packet_write_wait();
+
+      (void) gss_release_buffer(&min_stat, &send_tok);
+    }
+
+    if (maj_stat == GSS_S_CONTINUE_NEEDED) {
+
+      debug("Continue needed. Reading response...");
+
+      type = packet_read();
+
+      switch(type) {
+
+      case SSH_MSG_AUTH_GSSAPI_TOKEN:
+        /* This is what we expected */
+        break;
+
+      case SSH_MSG_AUTH_GSSAPI_ABORT:
+        debug("Server aborted GSSAPI authentication.");
+        packet_get_all();
+        goto cleanup;
+
+      default:
+        packet_disconnect("Protocol error during GSSAPI authentication:"
+                          " packet type %d received",
+                          type);
+        /* Does not return */
+      }
+
+      recv_tok.value = packet_get_string(&slen);
+      recv_tok.length=slen;	/* safe typecast */
+      packet_get_all();
+      token_ptr = &recv_tok;
+    }
+  } while (maj_stat == GSS_S_CONTINUE_NEEDED);
+
+  /* Success */
+  ret_stat = 1;
+
+  debug("GSSAPI authentication successful");
+
+  /*
+   * Read hash of host and server keys and make sure it
+   * matches what we got earlier.
+   */
+  debug("Reading hash of server and host keys...");
+  type = packet_read();
+
+  if (type == SSH_MSG_AUTH_GSSAPI_ABORT) {
+    debug("Server aborted GSSAPI authentication.");
+    packet_get_all();
+    ret_stat = 0;
+    goto cleanup;
+
+  } else if (type == SSH_SMSG_AUTH_GSSAPI_HASH) {
+    gss_buffer_desc wrapped_buf;
+    gss_buffer_desc unwrapped_buf;
+    int conf_state;
+    gss_qop_t qop_state;
+
+
+    wrapped_buf.value = packet_get_string(&slen);
+    wrapped_buf.length=slen;	/* safe typecast */
+    packet_get_all();
+
+    maj_stat = gss_unwrap(&min_stat,
+                          gss_context,
+                          &wrapped_buf,
+                          &unwrapped_buf,
+                          &conf_state,
+                          &qop_state);
+
+    if (maj_stat != GSS_S_COMPLETE) {
+      ssh_gssapi_error(&mech_oid, maj_stat, min_stat);
+      packet_disconnect("Verification of SSHD keys through GSSAPI-secured channel failed: "
+                        "Unwrapping of hash failed.");
+    }
+
+    if (unwrapped_buf.length != sizeof(ssh_key_digest)) {
+      packet_disconnect("Verification of SSHD keys through GSSAPI-secured channel failed: "
+                        "Size of key hashes do not match (%d != %d)!",
+                        (int)unwrapped_buf.length,
+			(int)sizeof(ssh_key_digest));
+    }
+
+    if (memcmp(ssh_key_digest, unwrapped_buf.value, sizeof(ssh_key_digest)) != 0) {
+      packet_disconnect("Verification of SSHD keys through GSSAPI-secured channel failed: "
+                        "Hashes don't match!");
+    }
+
+    debug("Verified SSHD keys through GSSAPI-secured channel.");
+
+    gss_release_buffer(&min_stat, &unwrapped_buf);
+
+  } else {
+      packet_disconnect("Protocol error during GSSAPI authentication:"
+                        "packet type %d received", type);
+      /* Does not return */
+  }
+
+
+ cleanup:
+  if (target_name != NULL)
+      (void) gss_release_name(&min_stat, &target_name);
+
+  return ret_stat;
+}
+
+#endif /* GSSAPI */
+
+
 /*
  * SSH1 key exchange
  */
@@ -997,6 +1407,45 @@ ssh_kex(char *host, struct sockaddr *hostaddr)
 		    "actual size is %d bits vs. announced %d.", rbits, bits);
 		log("Warning: This may be due to an old implementation of ssh.");
 	}
+
+#ifdef GSSAPI
+  {
+    MD5_CTX md5context;
+    Buffer buf;
+    unsigned char *data;
+    unsigned int data_len;
+
+    /*
+     * Hash the server and host keys. Later we will check them against
+     * a hash sent over a secure channel to make sure they are legit.
+     */
+    debug("Calculating MD5 hash of server and host keys...");
+
+    /* Write all the keys to a temporary buffer */
+    buffer_init(&buf);
+
+    /* Server key */
+    buffer_put_bignum(&buf, server_key->rsa->e);
+    buffer_put_bignum(&buf, server_key->rsa->n);
+
+    /* Host key */
+    buffer_put_bignum(&buf, host_key->rsa->e);
+    buffer_put_bignum(&buf, host_key->rsa->n);
+
+    /* Get the resulting data */
+    data = (unsigned char *) buffer_ptr(&buf);
+    data_len = buffer_len(&buf);
+
+    /* And hash it */
+    MD5_Init(&md5context);
+    MD5_Update(&md5context, data, data_len);
+    MD5_Final(ssh_key_digest, &md5context);
+
+    /* Clean up */
+    buffer_clear(&buf);
+    buffer_free(&buf);
+  }
+#endif /* GSSAPI */
 
 	/* Get protocol flags. */
 	server_flags = packet_get_int();
@@ -1140,6 +1589,12 @@ void
 ssh_userauth1(const char *local_user, const char *server_user, char *host,
     Sensitive *sensitive)
 {
+#ifdef GSSAPI
+#ifdef GSI
+  	const char *save_server_user = NULL;
+#endif /* GSI */
+#endif /* GSSAPI */
+
 #ifdef KRB5
 	krb5_context context = NULL;
 	krb5_auth_context auth_context = NULL;
@@ -1149,12 +1604,56 @@ ssh_userauth1(const char *local_user, const char *server_user, char *host,
 	if (supported_authentications == 0)
 		fatal("ssh_userauth1: server supports no auth methods");
 
+#ifdef GSSAPI
+#ifdef GSI
+  /* if no user given, tack on the subject name after the server_user.
+   * This will allow us to run gridmap early to get real user
+   * This name will start with /C=
+   */
+  if ((supported_authentications & (1 << SSH_AUTH_GSSAPI)) &&
+      options.gss_authentication) {
+      char * retname;
+      char * newname;
+
+
+      save_server_user = server_user;
+
+      retname = get_gsi_name();
+
+      if (retname) {
+        debug("passing gssapi name '%s'", retname);
+        if (server_user) {
+          newname = (char *) malloc(strlen(retname) + strlen(server_user) + 4);
+          if (newname) {
+            strcpy(newname, server_user);
+            if(options.implicit) {
+                strcat(newname,":i:");
+	    } else {
+                strcat(newname,":x:");
+	    }
+            strcat(newname, retname);
+            server_user = newname;
+            free(retname);
+          }
+        }
+      }
+      debug("server_user %s", server_user);
+  }
+#endif /* GSI */
+#endif /* GSSAPI */
+
 	/* Send the name of the user to log in as on the server. */
 	packet_start(SSH_CMSG_USER);
 	packet_put_cstring(server_user);
 	packet_send();
 	packet_write_wait();
 
+#if defined(GSI)
+  if(save_server_user)
+    {
+      server_user = save_server_user;
+    }
+#endif
 	/*
 	 * The server should respond with success if no authentication is
 	 * needed (the user has no password).  Otherwise the server responds
@@ -1168,6 +1667,31 @@ ssh_userauth1(const char *local_user, const char *server_user, char *host,
 	if (type != SSH_SMSG_FAILURE)
 		packet_disconnect("Protocol error: got %d in response to SSH_CMSG_USER", type);
 
+#ifdef GSSAPI
+  /* Try GSSAPI authentication */
+  if ((supported_authentications & (1 << SSH_AUTH_GSSAPI)) &&
+      options.gss_authentication)
+    {
+      debug("Trying GSSAPI authentication...");
+      try_gssapi_authentication(host, &options);
+
+      /*
+       * XXX Hmmm. Kerberos authentication only reads a packet if it thinks
+       * the authentication went OK, but the server seems to always send
+       * a packet back. So I'm not sure if I'm missing something or
+       * the Kerberos code is broken. - vwelch 1/27/99
+       */
+
+      type = packet_read();
+      if (type == SSH_SMSG_SUCCESS)
+        return; /* Successful connection. */
+      if (type != SSH_SMSG_FAILURE)
+        packet_disconnect("Protocol error: got %d in response to Kerberos auth", type);
+
+      debug("GSSAPI authentication failed");
+    }
+#endif /* GSSAPI */
+	
 #ifdef KRB5
 	if ((supported_authentications & (1 << SSH_AUTH_KERBEROS)) &&
 	    options.kerberos_authentication) {
