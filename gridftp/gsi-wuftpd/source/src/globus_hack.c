@@ -196,6 +196,12 @@ g_end()
 {
     globus_i_wu_montor_t                            monitor;
     globus_result_t                                 res;
+    int i = 0;
+
+    while(i)
+    {
+        usleep(1);
+    }
 
     wu_monitor_init(&monitor);
     /*
