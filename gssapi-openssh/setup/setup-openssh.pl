@@ -102,7 +102,7 @@ sub runkeygen
     else
     {
         # if $sysconfdir/ssh_host_key doesn't exist..
-        system("$bindir/ssh-keygen -t rsa1 -f $sysconfdir/ssh_host_key -N \"\"");
+        action("$bindir/ssh-keygen -t rsa1 -f $sysconfdir/ssh_host_key -N \"\"");
     }
 
     if ( -e "${sysconfdir}/ssh_host_dsa_key" )
@@ -112,7 +112,7 @@ sub runkeygen
     else
     {
         # if $sysconfdir/ssh_host_dsa_key doesn't exist..
-        system("$bindir/ssh-keygen -t dsa -f $sysconfdir/ssh_host_dsa_key -N \"\"");
+        action("$bindir/ssh-keygen -t dsa -f $sysconfdir/ssh_host_dsa_key -N \"\"");
     }
 
     if ( -e "${sysconfdir}/ssh_host_rsa_key" )
@@ -122,7 +122,7 @@ sub runkeygen
     else
     {
         # if $sysconfdir/ssh_host_rsa_key doesn't exist..
-        system("$bindir/ssh-keygen -t rsa -f $sysconfdir/ssh_host_rsa_key -N \"\"");
+        action("$bindir/ssh-keygen -t rsa -f $sysconfdir/ssh_host_rsa_key -N \"\"");
     }
 
     return 0;
@@ -161,21 +161,21 @@ sub fixpaths
     #
 
     %files = (
-        "${bindir}/scp", 0
-        "${bindir}/sftp", 0
-        "${sbindir}/sshd", 0
-        "${sysconfdir}/ssh_config", 1
-        "${sysconfdir}/sshd_config", 1
-        "${sysconfdir}/moduli", 1
-        "${mandir}/${mansubdir}1/scp.1", 0
-        "${mandir}/${mansubdir}1/ssh-add.1", 0
-        "${mandir}/${mansubdir}1/ssh-agent.1", 0
-        "${mandir}/${mansubdir}1/ssh-keygen.1", 0
-        "${mandir}/${mansubdir}1/ssh-keyscan.1", 0
-        "${mandir}/${mansubdir}1/ssh.1", 0
-        "${mandir}/${mansubdir}8/sshd.8", 0
-        "${mandir}/${mansubdir}8/sftp-server.8", 0
-        "${mandir}/${mansubdir}1/sftp.1", 0
+        "${bindir}/scp" => 0,
+        "${bindir}/sftp" => 0,
+        "${sbindir}/sshd" => 0,
+        "${sysconfdir}/ssh_config" => 1,
+        "${sysconfdir}/sshd_config" => 1,
+        "${sysconfdir}/moduli" => 1,
+        "${mandir}/${mansubdir}1/scp.1" => 0,
+        "${mandir}/${mansubdir}1/ssh-add.1" => 0,
+        "${mandir}/${mansubdir}1/ssh-agent.1" => 0,
+        "${mandir}/${mansubdir}1/ssh-keygen.1" => 0,
+        "${mandir}/${mansubdir}1/ssh-keyscan.1" => 0,
+        "${mandir}/${mansubdir}1/ssh.1" => 0,
+        "${mandir}/${mansubdir}8/sshd.8" => 0,
+        "${mandir}/${mansubdir}8/sftp-server.8" => 0,
+        "${mandir}/${mansubdir}1/sftp.1" => 0,
         );
 
     print "Translating strings in config/man files...\n";
@@ -236,8 +236,9 @@ sub fixpaths
     return 0;
 }
 
-fixpaths();
+copy_setup_files();
 runkeygen();
+fixpaths();
 
 my $metadata = new Grid::GPT::Setup(package_name => "gsi_openssh_setup");
 
