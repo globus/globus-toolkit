@@ -761,8 +761,9 @@ main(
         {
             globus_libc_fprintf(
                 stderr,
-                "\n\nERROR: Couldn't read user key\n"
-                "key file location: %s\n\n", 
+                "\n\nERROR: Couldn't read user key. This is likely caused by\n"
+                "either giving the wrong passphrase or bad file permissions\n" 
+                "key file location: %s\n\n",
                 user_key_filename);
             GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
         }
