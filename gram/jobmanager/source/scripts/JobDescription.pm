@@ -74,12 +74,23 @@ sub new
 {
     my $proto = shift;
     my $class = ref($proto) || $proto;
-    my $desc_fn = shift;
+    my $desc = shift;
     my $desc_values;
     my $self;
 
-    $self = require "$desc_fn";
-    $self->{_description_file} = $desc_fn;
+    if ( ref ( $desc ) eq "HASH" )
+    {
+	foreach my $Key ( %{$desc} )
+	{
+	    $self->{$Key} = $desc->{$Key};
+	}
+    }
+    else
+    {
+	my $desc_fn = $desc;
+	$self = require "$desc_fn";
+	$self->{_description_file} = $desc_fn;
+    }
 
     bless $self, $class;
 
@@ -122,7 +133,7 @@ the object.
 sub save
 {
     my $self = shift;
-    my $filename = shift or "$self->{_description_file}.new";
+    my $filename = shift or $filename = "$self->{_description_file}.new";
     my $file = new IO::File(">$filename");
 
     $file->print("\$description = {\n");

@@ -330,24 +330,26 @@ globus_l_gram_job_manager_cancel(
           request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
           request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_USER_CANCELLED;
           request->unsent_status_change = GLOBUS_TRUE;
-              if(request->poll_timer != GLOBUS_HANDLE_TABLE_NO_HANDLE)
+          if(request->poll_timer != GLOBUS_HANDLE_TABLE_NO_HANDLE)
+          {
+              result = globus_callback_unregister(
+                  request->poll_timer,
+                  NULL,
+                  NULL,
+                  &active);
+              if(result == GLOBUS_SUCCESS && !active)
               {
-                  result = globus_callback_unregister(
-                      request->poll_timer,
-                      NULL,
-                      NULL,
-                      &active);
-                  if(result == GLOBUS_SUCCESS && !active)
-                  {
-                      GlobusTimeReltimeSet(delay, 0, 0);
-                      globus_callback_register_oneshot(
-                              &request->poll_timer,
-                              &delay,
-                              globus_gram_job_manager_state_machine_callback,
-                              request);
-                  }
+                  GlobusTimeReltimeSet(delay, 0, 0);
+                  globus_callback_register_oneshot(
+                          &request->poll_timer,
+                          &delay,
+                          globus_gram_job_manager_state_machine_callback,
+                          request);
               }
-          break;
+          }
+
+          return GLOBUS_SUCCESS;
+
       case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_COMMITTED:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_STAGE_IN:
           request->jobmanager_state
@@ -710,23 +712,17 @@ globus_l_gram_job_manager_signal(
 	{
 	    if(out_size >= 0)
 	    {
-		if(!globus_gram_job_manager_output_check_size(
+		rc = globus_gram_job_manager_output_check_size(
 			request,
 			GLOBUS_GRAM_PROTOCOL_STDOUT_PARAM,
-			out_size))
-		{
-		    rc = GLOBUS_GRAM_PROTOCOL_ERROR_STDIO_SIZE;
-		}
+			out_size);
 	    }
-	    if(err_size >= 0)
+	    if(rc == GLOBUS_SUCCESS && err_size >= 0)
 	    {
-		if(!globus_gram_job_manager_output_check_size(
+		rc = globus_gram_job_manager_output_check_size(
 			request,
 			GLOBUS_GRAM_PROTOCOL_STDERR_PARAM,
-			err_size))
-		{
-		    rc = GLOBUS_GRAM_PROTOCOL_ERROR_STDIO_SIZE;
-		}
+			err_size);
 	    }
 	}
 	else
@@ -813,6 +809,7 @@ globus_l_gram_job_manager_query_stop_manager(
 	  request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_JM_STOPPED;
 	  request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_STOP;
 	  break;
+	case GLOBUS_GRAM_JOB_MANAGER_STATE_PRE_CLOSE_OUTPUT:
 	case GLOBUS_GRAM_JOB_MANAGER_STATE_CLOSE_OUTPUT:
 	case GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_CLOSE_OUTPUT:
 	  request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;

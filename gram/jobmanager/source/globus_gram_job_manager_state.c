@@ -2485,6 +2485,8 @@ globus_l_gram_job_manager_set_restart_state(
 	request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_POLL1;
 	changed = GLOBUS_TRUE;
 	break;
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_CLOSE_OUTPUT:
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_PRE_CLOSE_OUTPUT:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_STAGE_OUT:
 	request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE;
 	request->unsent_status_change = GLOBUS_TRUE;

@@ -1,6 +1,9 @@
 #include "globus_common.h"
 #include "globus_gram_job_manager.h"
 #include "globus_gram_job_manager_validation.h"
+#include "version.h"
+
+#include <string.h>
 
 #define COMMAND "globus-gram-rsl-reporter" 
 #define CLASS "Mds-Service-Gram-Rsl-Attribute"
@@ -100,7 +103,7 @@ main(int argc, char *argv[])
 
     globus_module_activate(GLOBUS_COMMON_MODULE);
     rc = globus_args_scan(&argc, &argv, ARRAY_COUNT(globus_l_args),
-	                  globus_l_args, COMMAND, VERSION,
+	                  globus_l_args, COMMAND, &local_version,
 	                  globus_l_oneline_usage, globus_l_long_usage,
 		          &options_found, NULL);
 

@@ -519,7 +519,7 @@ globus_gram_job_manager_output_read_state(
     globus_gram_jobmanager_request_t *	request,
     FILE *				fp);
 
-globus_bool_t
+int
 globus_gram_job_manager_output_check_size(
     globus_gram_jobmanager_request_t *	request,
     const char *			type,

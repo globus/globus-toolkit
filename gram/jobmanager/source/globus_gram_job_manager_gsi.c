@@ -531,6 +531,7 @@ globus_l_gram_job_manager_proxy_expiration(
 
       case GLOBUS_GRAM_JOB_MANAGER_STATE_STAGE_OUT:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_CLOSE_OUTPUT:
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_PRE_CLOSE_OUTPUT:
         if(request->save_state)
         {
 	    request->jobmanager_state =

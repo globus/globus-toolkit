@@ -344,6 +344,11 @@ sub remove_scratchdir
     $scratch_directory = $description->scratch_directory();
     $self->log(
         "Entering Job Manager default implementation of remove_scratchdir");
+    if (!  defined $scratch_directory )
+    {
+	$self->log("Scratch directory not defined");
+	return {};
+    }
     $self->log("Removing $scratch_directory");
     $count = File::Path::rmtree($scratch_directory);
     $self->log("Removed $count files");
@@ -396,7 +401,7 @@ sub rewrite_urls
     my $self = shift;
     my $description = $self->{JobDescription};
     my $cache_pgm = "$Globus::Core::Paths::bindir/globus-gass-cache";
-    my $tag = $description->cache_tag() or $ENV{GLOBUS_GRAM_JOB_CONTACT};
+    my $tag = $description->cache_tag() or $tag = $ENV{GLOBUS_GRAM_JOB_CONTACT};
     my $url;
     my $filename;
 
@@ -438,7 +443,7 @@ sub stage_in
     my $description = $self->{JobDescription};
     my $cache_pgm = "$Globus::Core::Paths::bindir/globus-gass-cache";
     my $url_copy = "$Globus::Core::Paths::bindir/globus-url-copy";
-    my $tag = $description->cache_tag() or $ENV{GLOBUS_GRAM_JOB_CONTACT};
+    my $tag = $description->cache_tag() or $tag = $ENV{GLOBUS_GRAM_JOB_CONTACT};
     my ($remote, $local, $local_resolved, $cached);
 
     if($description->executable() =~ m|^[a-zA-Z]+://|)
@@ -529,7 +534,7 @@ sub stage_out
     my $description = $self->{JobDescription};
     my $cache_pgm = "$Globus::Core::Paths::bindir/globus-gass-cache";
     my $url_copy = "$Globus::Core::Paths::bindir/globus-url-copy";
-    my $tag = $description->cache_tag() or $ENV{GLOBUS_GRAM_JOB_CONTACT};
+    my $tag = $description->cache_tag() or $tag = $ENV{GLOBUS_GRAM_JOB_CONTACT};
     my $local_path;
 
     foreach ($description->file_stage_out())
@@ -580,7 +585,13 @@ sub cache_cleanup
     my $self = shift;
     my $description = $self->{JobDescription};
     my $cache_pgm = "$Globus::Core::Paths::bindir/globus-gass-cache";
-    my $tag = $description->cache_tag() or $ENV{GLOBUS_GRAM_JOB_CONTACT};
+    my $tag = $description->cache_tag() or $tag = $ENV{GLOBUS_GRAM_JOB_CONTACT};
+
+    if ( ! defined $tag )
+    {
+	$self->log( "No cache tag defined to cleanup" );
+	return {};
+    }
 
     system("$cache_pgm -cleanup-tag -t $tag > /dev/null 2>/dev/null");
 
@@ -599,7 +610,7 @@ sub remote_io_file_create
     my $self = shift;
     my $description = $self->{JobDescription};
     my $cache_pgm = "$Globus::Core::Paths::bindir/globus-gass-cache";
-    my $tag = $description->cache_tag() or $ENV{GLOBUS_GRAM_JOB_CONTACT};
+    my $tag = $description->cache_tag() or $tag = $ENV{GLOBUS_GRAM_JOB_CONTACT};
     my $filename = "${tag}dev/remote_io_url";
     my $fh;
     my $result;

@@ -775,12 +775,14 @@ globus_gram_job_manager_output_get_cache_name(
  * @param size
  *        The size to compare against.
  *
- * @retval GLOBUS_TRUE
+ * @retval GLOBUS_SUCCESS
  *         The size matches.
- * @retval GLOBUS_FALSE
- *         The size does not match.
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_STDIO_SIZE
+ *         The size does not match and the file has been completely streamed.
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_STILL_STREAMING
+ *         The job manager is still streaming output for that file.
  */
-globus_bool_t
+int
 globus_gram_job_manager_output_check_size(
     globus_gram_jobmanager_request_t *	request,
     const char *			type,
@@ -789,19 +791,44 @@ globus_gram_job_manager_output_check_size(
     globus_off_t			actual_size;
     globus_l_gram_job_manager_output_info_t *
 					info;
+    globus_list_t *                     destinations;
+    globus_l_gram_job_manager_output_destination_t *
+                                        dest;
 
     info = request->output;
 
     if(strcmp(type, "stdout") == 0)
     {
 	actual_size = info->stdout_size;
+        destinations = info->stdout_destinations;
     }
     else
     {
 	globus_assert(strcmp(type, "stderr") == 0);
 	actual_size = info->stderr_size;
+        destinations = info->stderr_destinations;
     }
-    return (size == actual_size);
+
+    while (!globus_list_empty(destinations))
+    {
+        dest = globus_list_first(destinations);
+        destinations = globus_list_rest(destinations);
+
+        if (dest->state != GLOBUS_GRAM_JOB_MANAGER_DESTINATION_FAILED &&
+            dest->state != GLOBUS_GRAM_JOB_MANAGER_DESTINATION_INVALID)
+        {
+            return GLOBUS_GRAM_PROTOCOL_ERROR_STILL_STREAMING;
+        }
+    }
+
+    if (size == actual_size)
+    {
+        return GLOBUS_SUCCESS;
+    }
+    else
+    {
+        return GLOBUS_GRAM_PROTOCOL_ERROR_STDIO_SIZE;
+    }
 }
 /* globus_gram_job_manager_output_check_size() */
 
