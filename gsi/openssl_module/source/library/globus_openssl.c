@@ -63,6 +63,9 @@ globus_l_openssl_activate(void)
 
     CRYPTO_set_locking_callback(globus_l_openssl_locking_cb);
     CRYPTO_set_id_callback(globus_l_openssl_thread_id);
+
+    OBJ_create("0.9.2342.19200300.100.1.1","USERID","userId");
+    
     return GLOBUS_SUCCESS;
 }
 /* globus_l_openssl_activate() */
@@ -76,6 +79,8 @@ int
 globus_l_openssl_deactivate(void)
 {
     int                                 i;
+
+    OBJ_cleanup();
     
     CRYPTO_set_id_callback(NULL);
     CRYPTO_set_locking_callback(NULL);

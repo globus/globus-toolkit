@@ -296,7 +296,8 @@ GSS_CALLCONV gss_init_sec_context(
         context->ret_flags |= GSS_C_PROT_READY_FLAG; 
         context->ret_flags |= GSS_C_INTEG_FLAG
             | GSS_C_REPLAY_FLAG
-            | GSS_C_SEQUENCE_FLAG;
+            | GSS_C_SEQUENCE_FLAG
+            | GSS_C_ANON_FLAG;
         if (proxy_type == GLOBUS_LIMITED_PROXY)
         {
             context->ret_flags |= GSS_C_GLOBUS_RECEIVED_LIMITED_PROXY_FLAG;
