@@ -157,12 +157,14 @@ set_non_default_ca()
         index=1
         
         for cert in ${trusted_certs_dir}/*.0; do
-            eval "CA${index}=${cert}"
-            TEMP_SUBJECT=`openssl x509 -in ${cert} -noout -subject`
-            eval "CA_SUBJECT${index}=\"`echo ${TEMP_SUBJECT} | ${GLOBUS_SH_SED-sed} -e \"s|subject= ||\"`\""
-            eval "CA_HASH${index}=`openssl x509 -in ${cert} -noout -hash`"
-            eval "echo \"$index)  \${CA_HASH${index}} - \${CA_SUBJECT${index}}\""
-            index=`expr $index + 1`
+            if test -r "${cert}" ; then
+                eval "CA${index}=${cert}"
+                TEMP_SUBJECT=`openssl x509 -in ${cert} -noout -subject`
+                eval "CA_SUBJECT${index}=\"`echo ${TEMP_SUBJECT} | ${GLOBUS_SH_SED-sed} -e \"s|subject= ||\"`\""
+                eval "CA_HASH${index}=`openssl x509 -in ${cert} -noout -hash`"
+                eval "echo \"$index)  \${CA_HASH${index}} - \${CA_SUBJECT${index}}\""
+                index=`expr $index + 1`
+            fi
         done
     
         echo
@@ -179,6 +181,13 @@ set_non_default_ca()
 
     elif [ ! -z "${nondefaultca}" ] ; then
         CA_HASH=${nondefaultca}
+        if test ! -r "${trusted_certs_dir}/${CA_HASH}.0" ; then
+            echo
+            echo "Cannot find a CA with hash ${CA_HASH}."
+            echo "Use grid-cert-request -ca to pick a CA interactively."
+            echo 
+            exit 1
+        fi
         TEMP_SUBJECT=`openssl x509 -in ${trusted_certs_dir}/${CA_HASH}.0 -noout -subject`
         eval "CA_SUBJECT=\"`echo ${TEMP_SUBJECT} | ${GLOBUS_SH_SED-sed} -e \"s|subject= ||\"`\""
     fi

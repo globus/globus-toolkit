@@ -101,14 +101,15 @@ ca_list() {
         echo
 
         for cert in ${cert_hashes}; do
-    
-            eval "CA${index}=${cert}"
-            TEMP_SUBJECT=`openssl x509 -in ${cert} -noout -subject`
-            eval "CA_SUBJECT${index}=\"`echo ${TEMP_SUBJECT} | ${GLOBUS_SH_SED-sed} -e \"s|subject= ||\"`\""
-            TEMP_HASH=`echo ${cert} | ${GLOBUS_SH_SED-sed} -e  "s|.*/\([^/]*\)\.0|\1|"`
-            eval "CA_HASH${index}=$TEMP_HASH"
-            eval "echo \"$index) \${CA_HASH${index}} -  \${CA_SUBJECT${index}}\""
-            index=`expr $index + 1`
+            if test -r "${cert}" ; then 
+                eval "CA${index}=${cert}"
+                TEMP_SUBJECT=`openssl x509 -in ${cert} -noout -subject`
+                eval "CA_SUBJECT${index}=\"`echo ${TEMP_SUBJECT} | ${GLOBUS_SH_SED-sed} -e \"s|subject= ||\"`\""
+                TEMP_HASH=`echo ${cert} | ${GLOBUS_SH_SED-sed} -e  "s|.*/\([^/]*\)\.0|\1|"`
+                eval "CA_HASH${index}=$TEMP_HASH"
+                eval "echo \"$index) \${CA_HASH${index}} -  \${CA_SUBJECT${index}}\""
+                index=`expr $index + 1`
+            fi
         done
 
         echo
@@ -296,6 +297,14 @@ if [ -z "$ca_to_use" ]; then
 else
     CA_CERT_DIR=`find_ca_dir $ca_to_use`
     CA_CERT="$CA_CERT_DIR/$ca_to_use.0"
+    if test ! -r "${CA_CERT}" ; then
+        echo
+        echo "Cannot find a CA with hash ${ca_to_use}."
+        echo "Use grid-default-ca -list to see a list of CA hashes "
+        echo "available on this machine."
+        echo 
+        exit 1
+    fi
     TMP_SUBJECT=`openssl x509 -in ${CA_CERT} -noout -subject`
     CA_SUBJECT=`echo ${TMP_SUBJECT} | ${GLOBUS_SH_SED-sed} -e "s|subject= ||"`
 fi
@@ -304,8 +313,7 @@ secconfdir=`get_security_dir ${CA_CERT_DIR}`
 
 if [ ! -w "${secconfdir}" ]; then
     echo
-    echo "You do not have permission to set"
-    echo "the default CA configuration at"
+    echo "You do not have permission to set the default CA configuration at"
     echo 
     echo $secconfdir
     echo
