@@ -5,14 +5,15 @@
 
 void
 test_res(
-    globus_result_t                         res)
+    globus_result_t                         res,
+    int                                     line)
 {
     if(res == GLOBUS_SUCCESS)
     {
         return;
     }
 
-    fprintf(stderr, "ERROR: %s\n", globus_object_printable_to_string(
+    fprintf(stderr, "ERROR @ %d: %s\n", line, globus_error_print_chain(
         globus_error_get(res)));
 
     globus_assert(0);
@@ -43,7 +44,7 @@ globus_l_xio_read_cb(
     res = globus_xio_register_read(handle, buffer, 
             LINE_LEN, 1, NULL, 
             globus_l_xio_read_cb, NULL);
-    test_res(res);
+    test_res(res, __LINE__);
 }
 
 void
@@ -84,11 +85,14 @@ main(
     globus_module_activate(GLOBUS_XIO_MODULE);
 
     res = globus_xio_driver_load("tcp", &tcp_driver);
-    test_res(res);
-    globus_xio_stack_init(&stack, NULL);
-    globus_xio_stack_push_driver(stack, tcp_driver);
+    test_res(res, __LINE__);
+    res = globus_xio_stack_init(&stack, NULL);
+    test_res(res, __LINE__);
+    res = globus_xio_stack_push_driver(stack, tcp_driver);
+    test_res(res, __LINE__);
 
-    globus_xio_attr_init(&attr);
+    res = globus_xio_attr_init(&attr);
+    test_res(res, __LINE__);
 
     if(argc < 2)
     {
@@ -118,18 +122,18 @@ main(
 
     cs = argv[argc - 1];
     res = globus_xio_target_init(&target, NULL, cs, stack);
-    test_res(res);
+    test_res(res, __LINE__);
 
     res = globus_xio_attr_cntl(
         attr,
         driver,
         GLOBUS_XIO_GSSAPI_ATTR_TYPE_SUBJECT,
         "/O=Grid/O=Globus/OU=mcs.anl.gov/CN=John Bresnahan");
-    test_res(res);
+    test_res(res, __LINE__);
 
 
     res = globus_xio_open(&xio_handle, attr, target);
-    test_res(res);
+    test_res(res, __LINE__);
 
     fprintf(stderr, "open\n");
     while(!done)
@@ -141,7 +145,7 @@ main(
         {
             res = globus_xio_read(
                 xio_handle, &read_buffer[ndx], LINE_LEN-ndx, 1, &nbytes, NULL);
-            test_res(res);
+            test_res(res, __LINE__);
             ndx += nbytes;
             read_buffer[ndx] = '\0';
             if(strstr(read_buffer, "\r\n") != NULL)
@@ -181,7 +185,7 @@ main(
                 line[ndx+1] = '\0';
                 res = globus_xio_write(xio_handle, line, 
                         strlen(line), strlen(line), NULL, NULL);
-                test_res(res);
+                test_res(res, __LINE__);
             }
         }
 
@@ -189,10 +193,10 @@ main(
     }
 
     res = globus_xio_close(xio_handle, NULL);
-    test_res(res);
+    test_res(res, __LINE__);
 
     res = globus_xio_driver_unload(tcp_driver);
-    test_res(res);
+    test_res(res, __LINE__);
 
     rc = globus_module_activate(GLOBUS_XIO_MODULE);
     globus_assert(rc == GLOBUS_SUCCESS);
