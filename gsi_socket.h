@@ -142,24 +142,22 @@ int GSI_SOCKET_write_buffer(GSI_SOCKET *gsi_socket,
 /*
  * GSI_SOCKET_read_buffer()
  *
- * Read the given buffer from the peer. If authentication has been done,
- * the buffer will be protected via the GSI.
- *
- * buffer should be pointing at an allocated buffer bufferlen bytes
- * in length.
+ * Read a message from the peer, returning an allocated buffer
+ * of appropriate size.  It is the caller's responsibility to
+ * free() the buffer after use.
  *
  * Note that data is read like individual datagrams and not like a 
  * stream. So if three writes are done of 150, 75 and 50 bytes, and
- * then reads are done into a 100 byte buffer, the first read will
- * read 100 bytes and return GSI_SOCKET_TRUNCATED, the second will
- * read 50 bytes, the third 75 bytes and the fourth 50 bytes.
+ * then reads are done, the first read will
+ * read 150 bytes, the second 75 bytes and the third 50 bytes.
  *
- * Returns number of bytes put into buffer, GSI_SOCKET_ERROR on error,
- * GSI_SOCKET_TRUNCATED if are more bytes to be returned.
+ * NB: The datagram implementation assumes application-level messages
+ * correspond to SSL records but that is not guaranteed by SSL!!!
+ *
+ * Returns number of bytes put into buffer, GSI_SOCKET_ERROR on error.
  */
 int GSI_SOCKET_read_buffer(GSI_SOCKET *gsi_socket,
-			   char *buffer,
-			   size_t buffer_len);
+			   char **buffer);
 
 /*
  * GSI_SOCKET_read_token()

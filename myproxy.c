@@ -1349,34 +1349,47 @@ myproxy_send(myproxy_socket_attrs_t *attrs,
 
 int 
 myproxy_recv(myproxy_socket_attrs_t *attrs,
-             char *data, const int datalen) 
+             char *data, const int datalen)
 {
-   char error_string[1024];
-   int readlen;
+    char *buffer = NULL;
+    char error_string[1024];
+    int readlen;
 
-   assert(data != NULL);
+    assert(data != NULL);
    
-   readlen = GSI_SOCKET_read_buffer(attrs->gsi_socket, data, datalen);
-   if (readlen == GSI_SOCKET_ERROR)
-   {
-       GSI_SOCKET_get_error_string(attrs->gsi_socket, error_string,
+    readlen = GSI_SOCKET_read_buffer(attrs->gsi_socket, &buffer);
+    if (readlen == GSI_SOCKET_ERROR) {
+	GSI_SOCKET_get_error_string(attrs->gsi_socket, error_string,
 				    sizeof(error_string));
-       verror_put_string("Error reading: %s\n", error_string);
-       return -1;
-   } else if (readlen == GSI_SOCKET_TRUNCATED) {
-       verror_put_string("Response was truncated\n");
-       return -2;
-   }
-   return readlen;
-} 
+	verror_put_string("Error reading: %s\n", error_string);
+	return -1;
+    }
+    if (readlen > datalen) {
+	memcpy(data, buffer, datalen);
+	free(buffer);
+	verror_put_string("Response was truncated\n");
+	return -2;
+    }
+    memcpy(data, buffer, readlen);
+    free(buffer);
+    return readlen;
+}
 
 int
-myproxy_recv_response(myproxy_socket_attrs_t *attrs, myproxy_response_t *response) {
+myproxy_recv_ex(myproxy_socket_attrs_t *attrs, char **data)
+{
+    return GSI_SOCKET_read_buffer(attrs->gsi_socket, data);
+}
+
+int
+myproxy_recv_response(myproxy_socket_attrs_t *attrs,
+		      myproxy_response_t *response)
+{
     int responselen;
-    char response_buffer[10240];
+    char *response_buffer = NULL;
 
     /* Receive a response from the server */
-    responselen = myproxy_recv(attrs, response_buffer, sizeof(response_buffer));
+    responselen = myproxy_recv_ex(attrs, &response_buffer);
     if (responselen < 0) {
         return(-1);
     }
@@ -1387,9 +1400,13 @@ myproxy_recv_response(myproxy_socket_attrs_t *attrs, myproxy_response_t *respons
     }
 
     /* Make a response object from the response buffer */
-    if (myproxy_deserialize_response(response, response_buffer, responselen) < 0) {
-      return(-1);
+    if (myproxy_deserialize_response(response, response_buffer,
+				     responselen) < 0) {
+	free(response_buffer);
+	return(-1);
     }
+    free(response_buffer);
+    response_buffer = NULL;
 
     /* Check version */
     if (strcmp(response->version, MYPROXY_VERSION) != 0) {

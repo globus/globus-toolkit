@@ -17,10 +17,6 @@ struct _gsi_socket
     OM_uint32			major_status;
     OM_uint32			minor_status;
     char			*peer_name;
-    /* Buffer to hold unread, unwrapped data */
-    char			*input_buffer;
-    char			*input_buffer_index;
-    int				input_buffer_length;
 };
 
 #define DEFAULT_SERVICE_NAME		"host"
@@ -168,8 +164,7 @@ write_all(const int sock,
  */
 static int
 read_token(const int sock,
-	   char **p_buffer,
-	   size_t *p_buffer_size)
+	   char **p_buffer)
 {
     enum header_fields 
     {
@@ -187,7 +182,6 @@ read_token(const int sock,
     
 
     assert(p_buffer != NULL);
-    assert(p_buffer_size != NULL);
     
     if (read_all(sock, header, sizeof(header)) < 0) 
     {
@@ -229,8 +223,6 @@ read_token(const int sock,
 	return -1;
     }
     
-    *p_buffer_size = buffer_len;
-
     return buffer_len;
 }
 
@@ -253,8 +245,9 @@ assist_read_token(void *p_sock,
     assert(p_buffer_size != NULL);
     
     return_value = read_token(*((int *) p_sock),
-			      (char **) p_buffer,
-			      p_buffer_size);
+			      (char **) p_buffer);
+
+    *p_buffer_size = return_value;
 
     return (return_value == -1 ? -1 : 0);
 }
@@ -448,11 +441,6 @@ GSI_SOCKET_destroy(GSI_SOCKET *self)
 	
 	/* XXX Should deal with output_token_desc here */
 	gss_release_buffer(&self->minor_status, &output_token_desc);
-    }
-
-    if (self->input_buffer != NULL)
-    {
-	free(self->input_buffer);
     }
 
     if (self->peer_name != NULL)
@@ -1005,95 +993,56 @@ GSI_SOCKET_write_buffer(GSI_SOCKET *self,
 
 int
 GSI_SOCKET_read_buffer(GSI_SOCKET *self,
-		       char *buffer,
-		       size_t buffer_len)
+		       char **buffer)
 {
     int return_value = GSI_SOCKET_ERROR;
+    int len;
     
-    if (self == NULL)
-    {
+    if (self == NULL) {
 	return GSI_SOCKET_ERROR;
     }
     
-    if (buffer == NULL)
-    {
+    if (buffer == NULL) {
 	self->error_number = EINVAL;
 	return GSI_SOCKET_ERROR;
     }
 
-    if (self->input_buffer == NULL) 
-    {
-	/* No data in input buffer, so read it */
-
-	return_value = read_token(self->sock,
-				  &(self->input_buffer),
-				  (size_t *)&(self->input_buffer_length));
+    len = read_token(self->sock, buffer);
 	
-	if (return_value == -1)
-	{
-	    self->error_number = errno;
+    if (len == -1) {
+	self->error_number = errno;
+	goto error;
+    }
+
+    if (self->gss_context != GSS_C_NO_CONTEXT) {
+	/* Need to unwrap read data */
+	gss_buffer_desc unwrapped_buffer;
+	gss_buffer_desc wrapped_buffer;
+	int conf_state;
+	gss_qop_t qop_state;
+
+	wrapped_buffer.value = *buffer;
+	wrapped_buffer.length = len;
+
+	self->major_status = gss_unwrap(&self->minor_status,
+					self->gss_context,
+					&wrapped_buffer,
+					&unwrapped_buffer,
+					&conf_state,
+					&qop_state);
+
+	free(*buffer);
+	*buffer = NULL;
+
+	if (self->major_status != GSS_S_COMPLETE) {
 	    goto error;
 	}
-
-	if (self->gss_context != GSS_C_NO_CONTEXT)
-	{
-	    /* Need to unwrap read data */
-	    gss_buffer_desc unwrapped_buffer;
-	    gss_buffer_desc wrapped_buffer;
-	    int conf_state;
-	    gss_qop_t qop_state;
-
-	    wrapped_buffer.value = self->input_buffer;
-	    wrapped_buffer.length = self->input_buffer_length;
-
-	    self->major_status = gss_unwrap(&self->minor_status,
-					    self->gss_context,
-					    &wrapped_buffer,
-					    &unwrapped_buffer,
-					    &conf_state,
-					    &qop_state);
-
-	    free(self->input_buffer);
-	    self->input_buffer = NULL;
-	    self->input_buffer_length = 0;
-
-	    if (self->major_status != GSS_S_COMPLETE)
-	    {
-		goto error;
-	    }
 	
-	    self->input_buffer = unwrapped_buffer.value;
-	    self->input_buffer_length = unwrapped_buffer.length;
-	}
-
-	self->input_buffer_index = self->input_buffer;
+	*buffer = unwrapped_buffer.value;
+	len = unwrapped_buffer.length;
     }
     
-    /*
-     * Now copy data from input_buffer to user buffer
-     */
-    if (self->input_buffer_length > buffer_len) 
-    {
-	/* User buffer is too small */
-	memcpy(buffer, self->input_buffer_index, buffer_len);
-	self->input_buffer_index = &self->input_buffer_index[buffer_len];
-	self->input_buffer_length -= buffer_len;
-	
-	return_value = GSI_SOCKET_TRUNCATED;
-	
-    }
-    else
-    {
-	/* User buffer is large enough to hold all data */
-	memcpy(buffer, self->input_buffer_index, self->input_buffer_length);
-	return_value = self->input_buffer_length;
-	    
-	/* Input buffer all read, so deallocate */
-	free(self->input_buffer);
-	self->input_buffer = NULL;
-	self->input_buffer_index = NULL;
-	self->input_buffer_length = 0;
-    }
+    return_value = len;		/* success */
 
   error:        
     return return_value;
@@ -1105,12 +1054,10 @@ int GSI_SOCKET_read_token(GSI_SOCKET *self,
 {
     int			bytes_read;
     unsigned char	*buffer;
-    size_t		buffer_len;
     int			return_status = GSI_SOCKET_ERROR;
     
     bytes_read = read_token(self->sock,
-			    (char **) &buffer,
-			    &buffer_len);
+			    (char **) &buffer);
     
     if (bytes_read == -1)
     {
@@ -1127,7 +1074,7 @@ int GSI_SOCKET_read_token(GSI_SOCKET *self,
 	gss_qop_t qop_state;
 
 	wrapped_buffer.value = buffer;
-	wrapped_buffer.length = buffer_len;
+	wrapped_buffer.length = bytes_read;
 
 	self->major_status = gss_unwrap(&self->minor_status,
 					self->gss_context,
@@ -1144,12 +1091,12 @@ int GSI_SOCKET_read_token(GSI_SOCKET *self,
 	}
 	
 	buffer = unwrapped_buffer.value;
-	buffer_len = unwrapped_buffer.length;
+	bytes_read = unwrapped_buffer.length;
     }
 
     /* Success */
     *pbuffer = buffer;
-    *pbuffer_len = buffer_len;
+    *pbuffer_len = bytes_read;
     return_status = GSI_SOCKET_SUCCESS;
     
   error:

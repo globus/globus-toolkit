@@ -246,7 +246,7 @@ handle_client(myproxy_socket_attrs_t *attrs,
 	      myproxy_server_context_t *context) 
 {
     char  client_name[1024];
-    char  client_buffer[4096];
+    char  *client_buffer = NULL;
     int   requestlen;
     time_t now;
 
@@ -284,10 +284,10 @@ handle_client(myproxy_socket_attrs_t *attrs,
     myproxy_log("Authenticated client %s", client_name); 
     
     /* Receive client request */
-    requestlen = myproxy_recv(attrs, client_buffer, sizeof(client_buffer));
+    requestlen = myproxy_recv_ex(attrs, &client_buffer);
     if (requestlen <= 0) {
         myproxy_log_verror();
-	respond_with_error_and_die(attrs, "Error in myproxy_recv()");
+	respond_with_error_and_die(attrs, "Error in myproxy_recv_ex()");
     }
    
     /* Deserialize client request */
@@ -296,6 +296,8 @@ handle_client(myproxy_socket_attrs_t *attrs,
 	myproxy_log_verror();
         respond_with_error_and_die(attrs, "error parsing request");
     }
+    free(client_buffer);
+    client_buffer = NULL;
 
     /* Check client version */
     if (strcmp(client_request->version, MYPROXY_VERSION) != 0) {
@@ -1190,7 +1192,7 @@ get_client_authdata(myproxy_socket_attrs_t *attrs,
 		    authorization_data_t *auth_data)
 {
    myproxy_response_t server_response;
-   char  client_buffer[4096];
+   char  *client_buffer = NULL;
    int   client_length;
    int   return_status = -1;
    authorization_data_t *client_auth_data = NULL;
@@ -1215,7 +1217,7 @@ get_client_authdata(myproxy_socket_attrs_t *attrs,
    /* Wait for client's response. Its first four bytes are supposed to
       contain a specification of the method that the client chose to
       authorization. */
-   client_length = myproxy_recv(attrs, client_buffer, sizeof(client_buffer));
+   client_length = myproxy_recv_ex(attrs, &client_buffer);
    if (client_length <= 0)
       goto end;
 
@@ -1245,6 +1247,7 @@ get_client_authdata(myproxy_socket_attrs_t *attrs,
 
 end:
    authorization_data_free(server_response.authorization_data);
+   if (client_buffer) free(client_buffer);
 
    return return_status;
 }
