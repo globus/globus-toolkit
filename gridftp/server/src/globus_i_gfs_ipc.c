@@ -1223,6 +1223,7 @@ globus_gfs_ipc_reply_session(
     void *                              user_arg)
 {
     globus_byte_t *                     buffer;
+    globus_byte_t *                     new_buf;
     globus_byte_t *                     ptr;
     int                                 msg_size;
     globus_result_t                     res;
@@ -1265,6 +1266,23 @@ globus_gfs_ipc_reply_session(
                 {
                     goto xio_error;
                 }
+                new_buf = globus_malloc(GFS_IPC_HEADER_SIZE);
+                if(new_buf == NULL)
+                {
+                    goto xio_error;
+                }
+                result = globus_xio_register_read(
+                    ipc->xio_handle,
+                    new_buf,
+                    GFS_IPC_HEADER_SIZE,
+                    GFS_IPC_HEADER_SIZE,
+                    NULL,
+                    globus_l_gfs_ipc_reply_read_header_cb,
+                    ipc);
+                if(result != GLOBUS_SUCCESS)
+                {
+                    goto mem_error;
+                }
 
                 ipc->user_arg = user_arg;
                 ipc->state = GLOBUS_GFS_IPC_STATE_IN_USE;
@@ -1285,6 +1303,8 @@ globus_gfs_ipc_reply_session(
     globus_mutex_unlock(&ipc->mutex);
 
     return;
+mem_error:
+    globus_free(new_buf);
 xio_error:
     globus_free(buffer);
 error:
@@ -2539,6 +2559,7 @@ globus_l_gfs_ipc_request_read_body_cb(
     globus_xio_data_descriptor_t        data_desc,
     void *                              user_arg)
 {
+    globus_byte_t *                     new_buf;
     globus_gfs_ipc_request_t *          request;
     globus_i_gfs_ipc_handle_t *         ipc;
     globus_gfs_ipc_reply_t *            reply;
@@ -2580,6 +2601,24 @@ globus_l_gfs_ipc_request_read_body_cb(
             event_reply->id = request->id;
             request->event_reply = event_reply;
             globus_l_gfs_ipc_event_reply_kickout(request);
+
+            new_buf = globus_malloc(GFS_IPC_HEADER_SIZE);
+            if(new_buf == NULL)
+            {
+                goto error;
+            }
+            result = globus_xio_register_read(
+                ipc->xio_handle,
+                new_buf,
+                GFS_IPC_HEADER_SIZE,
+                GFS_IPC_HEADER_SIZE,
+                NULL,
+                globus_l_gfs_ipc_request_read_header_cb,
+                ipc);
+            if(result != GLOBUS_SUCCESS)
+            {
+                goto mem_error;
+            }
             break;
 
         default:
@@ -2588,6 +2627,8 @@ globus_l_gfs_ipc_request_read_body_cb(
     }
     return;
 
+mem_error:
+    globus_free(new_buf);
 error:
     globus_free(buffer);
     ipc->cached_res = result;
@@ -2713,6 +2754,7 @@ globus_l_gfs_ipc_reply_read_body_cb(
     globus_xio_data_descriptor_t        data_desc,
     void *                              user_arg)
 {
+    globus_byte_t *                     new_buf;
     globus_gfs_ipc_request_t *          request;
     globus_i_gfs_ipc_handle_t *         ipc;
     globus_gfs_command_info_t *         cmd_info;
@@ -2925,8 +2967,28 @@ globus_l_gfs_ipc_reply_read_body_cb(
         default:
             break;
     }
+    new_buf = globus_malloc(GFS_IPC_HEADER_SIZE);
+    if(new_buf == NULL)
+    {
+        goto err;
+    }
+    result = globus_xio_register_read(
+        ipc->xio_handle,
+        new_buf,
+        GFS_IPC_HEADER_SIZE,
+        GFS_IPC_HEADER_SIZE,
+        NULL,
+        globus_l_gfs_ipc_reply_read_header_cb,
+        ipc);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto mem_error;
+    }
 
     return;
+
+mem_error:
+    globus_free(new_buf);
 err:
     globus_free(buffer);
     ipc->cached_res = result;
@@ -3318,7 +3380,6 @@ globus_l_gfs_ipc_reply_cb(
     globus_xio_data_descriptor_t        data_desc,
     void *                              user_arg)
 {
-    globus_byte_t *                     new_buf;
     globus_i_gfs_ipc_handle_t *         ipc;
 
     ipc = (globus_i_gfs_ipc_handle_t *) user_arg;
@@ -3330,30 +3391,11 @@ globus_l_gfs_ipc_reply_cb(
         {
             goto error;
         }
-        new_buf = globus_malloc(GFS_IPC_HEADER_SIZE);
-        if(new_buf == NULL)
-        {
-            goto error;
-        }
-        result = globus_xio_register_read(
-            ipc->xio_handle,
-            new_buf,
-            GFS_IPC_HEADER_SIZE,
-            GFS_IPC_HEADER_SIZE,
-            NULL,
-            globus_l_gfs_ipc_reply_read_header_cb,
-            ipc);
-        if(result != GLOBUS_SUCCESS)
-        {
-            goto mem_error;
-        }
     }
     globus_mutex_unlock(&ipc->mutex);
 
     return;
 
-mem_error:
-    globus_free(new_buf);
 error:
     globus_l_gfs_ipc_error_close(ipc);
     globus_mutex_unlock(&ipc->mutex);
@@ -3722,7 +3764,6 @@ globus_l_gfs_ipc_no_read_write_cb(
     globus_xio_data_descriptor_t        data_desc,
     void *                              user_arg)
 {
-    globus_byte_t *                     new_buf;
     globus_gfs_ipc_request_t *          request;
     globus_i_gfs_ipc_handle_t *         ipc;
 
