@@ -25,7 +25,9 @@ INCLUDES += $(GPT_INCLUDES)
 test_PROGRAMS=                          \
 	framework_test			\
 	http_header_test		\
-	http_post_test
+	http_post_test			\
+	http_put_test			\
+	http_get_test
 
 pkgdata_DATA =				\
 	headers				\
@@ -49,6 +51,14 @@ http_header_test_LDADD = $(GPT_PGM_LINKS)
 http_post_test_SOURCES = http_post_test.c $(HTTP_COMMON_Sources)
 http_post_test_LDFLAGS = $(GPT_LDFLAGS)
 http_post_test_LDADD = $(GPT_PGM_LINKS) 
+
+http_put_test_SOURCES = http_put_test.c $(HTTP_COMMON_Sources)
+http_put_test_LDFLAGS = $(GPT_LDFLAGS)
+http_put_test_LDADD = $(GPT_PGM_LINKS) 
+
+http_get_test_SOURCES = http_get_test.c $(HTTP_COMMON_Sources)
+http_get_test_LDFLAGS = $(GPT_LDFLAGS)
+http_get_test_LDADD = $(GPT_PGM_LINKS) 
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top
