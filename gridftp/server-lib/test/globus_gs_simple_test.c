@@ -1,5 +1,6 @@
 #include "globus_xio.h"
 #include "globus_gridftp_server.h"
+#include "globus_xio_tcp_driver.h"
 
 void
 test_res(
@@ -30,7 +31,9 @@ main(
     globus_xio_stack_t                      stack;
     globus_xio_handle_t                     xio_handle;
     globus_xio_target_t                     target;
+    globus_xio_server_t                     server;
     globus_result_t                         res;
+    char *                                  cs;
 
     globus_module_activate(GLOBUS_XIO_MODULE);
 
@@ -49,11 +52,28 @@ main(
 
     res = globus_xio_server_create(&server, NULL, stack);
     test_res(res, __LINE__);
+
+    res = globus_xio_server_cntl(
+            server,
+            tcp_driver,
+            GLOBUS_XIO_TCP_GET_LOCAL_CONTACT,
+            &cs);
+    test_res(res, __LINE__);
+
+    fprintf(stdout, "%s\n", cs);
+
     res = globus_xio_server_accept(&target, server, NULL);
     test_res(res, __LINE__);
 
+    fprintf(stdout, "opening handle\n");
     res = globus_xio_open(&xio_handle, NULL, target);
     test_res(res, __LINE__);
+
+    fprintf(stdout, "closing handle\n");
+    res = globus_xio_close(xio_handle, NULL);
+    test_res(res, __LINE__);
+
+    globus_module_deactivate(GLOBUS_XIO_MODULE);
 
     return 0;
 }
