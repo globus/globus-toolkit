@@ -56,6 +56,7 @@ else
    $target_dir = "/etc/grid-security";
 }
 
+umask(022);
 open(CONF, "+>> $target_dir/gsi-authz.conf") ||
     die("Error while trying to open $target_dir/gsi-authz.conf. Check your permissions\n");
 
