@@ -167,7 +167,7 @@ sub store_state
 
     foreach(@{$self->{STDOUT_FILES}}, @{$self->{STDERR_FILES}})
     {
-	print TMP sprintf($format, $_->[0], $_->[1], $_->[2]);
+	printf TMP $format, $_->[0], $_->[1], $_->[2];
     }
     close(TMP);
 
@@ -265,14 +265,7 @@ sub lookup_or_add_in_cache
         $result = pipe_out_cmd($cache_pgm, '-query', '-t', $tag, $url);
     }
         
-    if($result eq '')
-    {
-	return undef;
-    }
-    else
-    {
-	return $result;
-    }
+    return ($result eq '') ? undef : $result;
 }
 
 1;

@@ -13,6 +13,7 @@ use Globus::GRAM::JobSignal;
 use Globus::Core::Paths;
 
 use POSIX;
+use Errno;
 use File::Path;
 use File::Copy;
 
@@ -31,6 +32,7 @@ Globus::GRAM::JobManager - Base class for all Job Manager scripts
  $manager = new Globus::GRAM::JobManager($job_description);
 
  $manager->log("Starting new operation");
+ $manager->nfssync($fileobj,$createflag);
  $manager->respond($hashref);
  $hashref = $manager->submit();
  $hashref = $manager->poll();
@@ -45,6 +47,9 @@ Globus::GRAM::JobManager - Base class for all Job Manager scripts
  $hashref = $manager->remote_io_file_create();
  $hashref = $manager->proxy_relocate();
  $hashref = $manager->proxy_update();
+ $scalar  = $manager->pipe_out_cmd(@arglist);
+ ($stderr, $rc) = $manager->pipe_err_cmd(@arglist);
+ $status  = $manager->fork_and_exec_cmd(@arglist);
  $manager->append_path($hash, $variable, $path);
 
 =head1 DESCRIPTION
@@ -115,6 +120,33 @@ sub log
     }
 
     return;
+}
+
+=item $manager->nfssync($object,$create)
+
+Send an NFS update by touching the file (or directory) in question. If the
+$create is true, a file will be created. If it is false, the $object will
+not be created.
+
+=cut
+
+sub nfssync
+{
+    my $self = shift;
+    my $object = shift;
+    my $create_p = shift;
+
+    my $now = time();
+    unless ( utime( $now, $now, $object ) ) 
+    {
+	# object did not exist
+	if ( $create_p ) 
+	{
+	    local(*TEMP);
+	    close(TEMP) if ( open( TEMP, ">$object" ) );
+	}
+    }
+    $self->log( "Sent NFS sync for $object" );
 }
 
 =item $manager->respond($message)
@@ -272,7 +304,7 @@ sub make_scratchdir
     my @acceptable=split(//, "abcdefghijklmnopqrstuvwxyz".
                              "ABCDEFGHIJKLMNOPQRSTUVWXYZ".
 			     "0123456789");
-    
+
     srand();
 
     $self->log(
@@ -299,7 +331,8 @@ sub make_scratchdir
 	return Globus::GRAM::Error::INVALID_SCRATCH;
     }
 
-    while(!$created)
+    my $Loops = 0;
+    while( (!$created) && ($Loops++ < 100) )
     {
         # Files with names comprised of Ascii values 48-122 should be
 	# relatively easy to remove from the shell if things go bad.
@@ -320,6 +353,7 @@ sub make_scratchdir
 	$created = mkdir($dirname, 0700);
 	if($created)
 	{
+	    $self->nfssync( $dirname, 0 );
 	    $self->log("I think it was made.... verifying");
 	    if (-l $dirname || ! -d $dirname || ! -o $dirname)
 	    {
@@ -327,7 +361,22 @@ sub make_scratchdir
 		$created = 0;
 	    }
 	}
+	elsif( $!{EEXIST} )
+	{
+	    $self->log("Already exist; trying again");
+	}
+	else
+	{
+	    last;
+	}
     }
+
+    # We give up
+    if (!$created)
+    {
+	return Globus::GRAM::Error::INVALID_SCRATCH;
+    }
+
     $self->log("Using $dirname as the scratch directory for this job.");
 
     return {SCRATCH_DIR => $dirname};
@@ -416,7 +465,8 @@ sub rewrite_urls
 	chomp($url = $description->$_());
 	if($url =~ m|^[a-zA-Z]+://|)
 	{
-            $filename = pipe_out_cmd($cache_pgm, '-query', '-t', $tag, $url);
+	    my @arg = ($cache_pgm, '-query', '-t', $tag, $url);
+            $filename = $self->pipe_out_cmd(@arg);
 	    if($filename ne '')
 	    {
 		$description->add($_, $filename);
@@ -457,7 +507,7 @@ sub stage_in
     {
         @arg = ($cache_pgm, '-add', '-t', $tag, $description->executable());
 
-        ($stderr, $rc) = pipe_err_cmd(@arg);
+        ($stderr, $rc) = $self->pipe_err_cmd(@arg);
 
         if ($rc != 0) {
             $self->log("executable staging failed with $stderr");
@@ -468,13 +518,25 @@ sub stage_in
                 'GT3_FAILURE_SOURCE' => $description->executable()
             });
 
-            return GLOBUS::GRAM::Error::STAGING_EXECUTABLE;
+            return Globus::GRAM::Error::STAGING_EXECUTABLE;
         }
+        $local = $self->pipe_out_cmd($cache_pgm, '-q', '-t', $tag,
+                $description->executable());
+        if ($local eq '') {
+            $self->respond( {
+                'GT3_FAILURE_TYPE' => 'executable',
+                'GT3_FAILURE_MESSAGE' => $stderr,
+                'GT3_FAILURE_SOURCE' => $description->executable()
+            });
+
+            return Globus::GRAM::Error::STAGING_EXECUTABLE;
+        }
+        $self->nfssync($local, 0);
     }
     if($description->stdin() =~ m|^[a-zA-Z]+://|)
     {
         @arg = ($cache_pgm, '-add', '-t', $tag, $description->stdin());
-        ($stderr, $rc) = pipe_err_cmd(@arg);
+        ($stderr, $rc) = $self->pipe_err_cmd(@arg);
 
         if ($rc != 0) {
             $self->log("stdin staging failed with $stderr");
@@ -487,6 +549,18 @@ sub stage_in
 
             return Globus::GRAM::Error::STAGING_STDIN
         }
+        $local = $self->pipe_out_cmd($cache_pgm, '-q', '-t', $tag,
+                $description->stdin());
+        if ($local eq '') {
+            $self->respond( {
+                'GT3_FAILURE_TYPE' => 'stdin',
+                'GT3_FAILURE_MESSAGE' => $stderr,
+                'GT3_FAILURE_SOURCE' => $description->stdin()
+            });
+
+            return Globus::GRAM::Error::STAGING_STDIN;
+        }
+        $self->nfssync($local, 0);
     }
     foreach ($description->file_stage_in())
     {
@@ -505,7 +579,7 @@ sub stage_in
 
         @arg = ($url_copy_pgm, $remote, 'file://' . $local_resolved);
 
-        ($stderr, $rc) = pipe_err_cmd(@arg);
+        ($stderr, $rc) = $self->pipe_err_cmd(@arg);
         if($rc != 0) {
             $self->log("filestagein staging failed with $stderr");
 
@@ -517,6 +591,7 @@ sub stage_in
             });
             return Globus::GRAM::Error::STAGE_IN_FAILED
         }
+        $self->nfssync($local_resolved);
 	$self->respond({'STAGED_IN' => "$remote $local"});
     }
     foreach($description->file_stage_in_shared())
@@ -536,7 +611,7 @@ sub stage_in
 
         @arg = ($cache_pgm, '-add', '-t', $tag, $remote);
 
-        ($stderr, $rc) = pipe_err_cmd(@arg);
+        ($stderr, $rc) = $self->pipe_err_cmd(@arg);
         if($rc != 0) {
             $self->log("filestagein staging failed with $stderr");
 
@@ -550,7 +625,7 @@ sub stage_in
         }
 
         @arg = ($cache_pgm, '-query', '-t', $tag, $remote);
-        $cached = pipe_out_cmd(@arg);
+        $cached = $self->pipe_out_cmd(@arg);
 
         return Globus::GRAM::Error::STAGE_IN_FAILED
             if($cached eq '');
@@ -558,6 +633,10 @@ sub stage_in
         symlink($cached, $local_resolved);
 
 	$self->respond({'STAGED_IN_SHARED' => "$remote $local"});
+
+	$self->log( "local=$local" );
+	$self->log( "local_resolved=$local_resolved" );
+	$self->nfssync( $local_resolved, 0 );
     }
     $self->log("stage_in(exit)");
     return {};
@@ -585,6 +664,12 @@ sub stage_out
     my @arg;
 
     $self->log("stage_out(enter)");
+
+    $self->nfssync( $description->stdout(), 0 )
+	if defined $description->stdout();
+    $self->nfssync( $description->stderr(), 0 )
+	if defined $description->stderr();
+
     foreach ($description->file_stage_out())
     {
         next unless defined $_;
@@ -596,7 +681,7 @@ sub stage_out
 	if($local_path =~ m|^x-gass-cache://|)
 	{
             @arg = ($cache_pgm, '-query', '-t', $tag, $local_path);
-            $local_path = pipe_out_cmd(@arg);
+            $local_path = $self->pipe_out_cmd(@arg);
 
             return Globus::GRAM::Error::STAGE_OUT_FAILED
                 if($local_path eq '');
@@ -610,9 +695,10 @@ sub stage_out
 	    $local_path = $description->directory() . '/' . $local;
 	}
 
+        $self->nfssync($local_path, 0);
         @arg = ($url_copy_pgm, 'file://' . $local_path, $remote);
 
-        ($stderr, $rc) = pipe_err_cmd(@arg);
+        ($stderr, $rc) = $self->pipe_err_cmd(@arg);
         if($rc != 0) {
             $self->log("filestageout staging failed with $stderr");
 
@@ -651,7 +737,11 @@ sub cache_cleanup
 	return {};
     }
 
-    fork_and_exec_cmd($cache_pgm, '-cleanup-tag', '-t', $tag);
+    ($stderr, $rc) = $self->pipe_err_cmd($cache_pgm, '-cleanup-tag', '-t', $tag);
+
+    if ($rc != 0) {
+        $self->log("cache cleanup failed with $stderr");
+    }
 
     $self->log("cache_cleanup(exit)");
     return {};
@@ -672,12 +762,14 @@ sub remote_io_file_create
         or $tag = $ENV{'GLOBUS_GRAM_JOB_CONTACT'};
     my $filename = "${tag}dev/remote_io_url";
     my $result;
+    my $stderr;
+    my $rc;
 
     $self->log("remote_io_file_create(enter)");
 
     local(*FH);
 
-    $result = pipe_out_cmd($cache_pgm, '-query', '-t', $tag, $filename);
+    $result = $self->pipe_out_cmd($cache_pgm, '-query', '-t', $tag, $filename);
 
     if($result eq '')
     {
@@ -688,11 +780,18 @@ sub remote_io_file_create
 	print FH $description->remote_io_url(), "\n";
         close FH;
 
-        fork_and_exec_cmd($cache_pgm, '-add', '-t', $tag, '-n', $filename,
-            "file:$tmpname");
+        ($stderr, $rc) = $self->pipe_err_cmd($cache_pgm, '-add', '-t', $tag, '-n',
+                $filename, "file:$tmpname");
+        if ($rc != 0) {
+            $self->log("remote I/O file create failed with $stderr");
+            $self->respond( {
+                'GT3_FAILURE_TYPE' => 'remoteiofile',
+                'GT3_FAILURE_MESSAGE' => $stderr,
+            });
+        }
 	unlink($tmpname);
 
-        $result = pipe_out_cmd($cache_pgm, '-query', '-t', $tag, $filename);
+        $result = $self->pipe_out_cmd($cache_pgm, '-query', '-t', $tag, $filename);
     }
     else
     {
@@ -730,7 +829,7 @@ sub proxy_relocate
     return { X509_USER_PROXY => $ENV{'X509_USER_PROXY'} }
         if exists($ENV{'X509_USER_PROXY'});
 
-    $proxy_filename = pipe_out_cmd($info_pgm, '-path');
+    $proxy_filename = $self->pipe_out_cmd($info_pgm, '-path');
     return Globus::GRAM::Error::OPENING_USER_PROXY
         if($proxy_filename eq '');
 
@@ -773,8 +872,24 @@ sub append_path
     }
 }
 
+=item $manager->pipe_out_cmd(@arg)
+
+Create a new process to run the first argument application with the 
+remaining arguments (which may be empty). No shell metacharacter will
+be evaluated, avoiding a shell invocation. Stderr is redirected to 
+/dev/null and stdout is being captured by the parent process, which
+is also the result returned. Use this function as more efficient
+backticks, if you can do not need shell metacharacter evaluation. 
+
+A child error code with an exit code of 127 indicates that the application
+could not be run. The scalar result returned by this function is usually
+undef'ed in this case.
+
+=cut
+
 sub pipe_out_cmd
 {
+    my $self = shift;
     my $result;
     local(*READ);
 
@@ -799,8 +914,21 @@ sub pipe_out_cmd
     $result;
 }
 
+=item ($stder, $rc) = $manager->pipe_err_cmd(@arg)
+
+Create a new process to run the first argument application with the 
+remaining arguments (which may be empty). No shell metacharacter will
+be evaluated, avoiding a shell invocation.
+
+This method returns a list of two items, the standard error of the program, and
+the exit code of the program.  If the error code is 127, then the application
+could not be run.  Standard output is discarded.
+
+=cut
+
 sub pipe_err_cmd
 {
+    my $self = shift;
     my $result;
     local(*READ);
 
@@ -827,8 +955,24 @@ sub pipe_err_cmd
     ($result, $?);
 }
 
+=item $manager->fork_and_exec_cmd(@arg)
+
+Fork off a child to run the first argument in the list. Remaining arguments
+will be passed, but shell interpolation is avoided. Signals SIGINT and
+SIGQUIT are ignored in the child process. Stdout is appended to /dev/null,
+and stderr is dup2 from stdout. The parent waits for the child to finish,
+and returns the value for the CHILD_ERROR variable as result. Use this
+function as more efficient system() call, if you can do not need shell
+metacharacter evaluation.
+
+Note that the inability to execute the program will result in a status code
+of 127.
+
+=cut
+
 sub fork_and_exec_cmd
 {
+    my $self = shift;
     my $pid = fork();
 
     return undef unless defined $pid;

@@ -17,7 +17,9 @@ Globus::GRAM::JobDescription - GRAM Job Description
 
     use Globus::GRAM::JobDescription;
 
+    $hash = { executable => [ '/bin/echo' ], arguments => [ 'hello' ] };
     $description = new Globus::GRAM::JobDescription($filename);
+    $description = new Globus::GRAM::JobDescription($hash);
     $executable = $description->executable();
     $description->add($new_attribute, $new_value);
     $description->save();
@@ -131,7 +133,7 @@ the object.
 sub save
 {
     my $self = shift;
-    my $filename = shift || "$self->{_description_file}.new";
+    my $filename = shift or $filename = "$self->{_description_file}.new";
     local(*OUT);	     	# protect
 
     if ( open( OUT, '>' . $filename ) ) 
