@@ -25,7 +25,7 @@ AC_SUBST(SERVER_CERTDIR)
 CA_CERTDIR=${srcdir}/test-certdir
 AC_SUBST(CA_CERTDIR)
 
-BUILD_TARGETS="gss-server gss-client"
+BUILD_TARGETS="gss-server gss-client gssapi-om-uint-size-test"
 if test "$globus_cv_nexus_enable" = "yes"; then
 	BUILD_TARGETS="$BUILD_TARGETS gss-assist-client"
 fi
@@ -34,7 +34,7 @@ AC_SUBST(BUILD_TARGETS)
 # set-perms must come before any other test that expects the
 # permissions on the client and server keys to be set correctly
 TEST_SCRIPTS="set-perms.sh gssapi-auth-test.sh"
-TEST_EXECS="$TEST_SCRIPTS"
+TEST_EXECS="$TEST_SCRIPTS gssapi-om-uint-size-test"
 AC_SUBST(TEST_EXECS)
 
 GSSAPI_SSLEAY_BUILD_DIR=${topbuilddir}/Security/gssapi_ssleay
@@ -50,7 +50,7 @@ AC_OUTPUT(Makefile run-tests $TEST_SCRIPTS $lac_makefiles
 
 chmod +x run-tests
 
-for script in $TEST_SCRIPTS ; do
+for script in ${TEST_SCRIPTS} ; do
 	chmod +x ${script}
 done
 
