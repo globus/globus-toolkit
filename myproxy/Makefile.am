@@ -6,7 +6,8 @@ include $(top_srcdir)/globus_automake_pre_top
 SUBDIRS= \
 	pkgdata \
 	doxygen \
-	web
+	web \
+	man
 
 LibSources= \
 	gnu_getopt.c \
