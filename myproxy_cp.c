@@ -24,7 +24,7 @@ static char usage[] = \
 "                                         (DN) as the default username,\n"
 "                                         instead of the LOGNAME env. var.\n"
 "       -k | --credname        <name>     Specify credential name\n"
-"       -S | --stdin_pass                 Read passphrase from stdin\n"
+"       -S | --stdin_pass                 Read pass phrase from stdin\n"
 "\n";
 
 struct option long_options[] =
@@ -105,27 +105,29 @@ main(int argc, char *argv[])
     init_arguments(argc, argv, socket_attrs, client_request);
 
     /*Accept credential passphrase*/
-    fprintf (stdout, "Credential Passphrase:\n");
     if (read_passwd_from_stdin) {
 	rval = myproxy_read_passphrase_stdin(client_request->passphrase,
-					     sizeof(client_request->passphrase));
+					     sizeof(client_request->passphrase),
+					     "Enter (current) MyProxy pass phrase:");
     } else {
 	rval = myproxy_read_passphrase(client_request->passphrase,
-				       sizeof(client_request->passphrase));
+				       sizeof(client_request->passphrase),
+				       "Enter (current) MyProxy pass phrase:");
     }
     if (rval == -1) {
-	fprintf(stderr, "Error reading passphrase\n");
+	fprintf(stderr, "Error reading pass phrase.\n");
 	return 1;
     }
 
     /* Accept new passphrase */
-    fprintf (stdout, "\nNew Passphrase:\n");
     if (read_passwd_from_stdin) {
 	rval = myproxy_read_passphrase_stdin(client_request->new_passphrase,
-					     sizeof(client_request->new_passphrase));
+					     sizeof(client_request->new_passphrase),
+					     "Enter new MyProxy pass phrase:");
     } else {
 	rval = myproxy_read_verified_passphrase(client_request->new_passphrase,
-						sizeof(client_request->new_passphrase));
+						sizeof(client_request->new_passphrase),
+						"Enter new MyProxy pass phrase:");
     }
     if (rval == -1) {
 	fprintf (stderr, "%s\n", verror_get_string());
@@ -202,13 +204,13 @@ main(int argc, char *argv[])
     /*Check response */
     switch (server_response->response_type) {
 	    case MYPROXY_ERROR_RESPONSE:
-		    fprintf (stderr, "Error: %s\nPassphrase unchanged.\n", 
+		    fprintf (stderr, "Error: %s\nPass phrase unchanged.\n", 
 			     server_response->error_string);
 		    
 		    return 1;
 
 	    case MYPROXY_OK_RESPONSE:
-    		    printf("Passphrase changed.\n");
+    		    printf("Pass phrase changed.\n");
 		    break;
 	
 	    default:
