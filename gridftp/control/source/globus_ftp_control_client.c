@@ -4396,7 +4396,10 @@ globus_i_ftp_control_client_deactivate(void)
             handle = (globus_ftp_control_handle_t *) globus_list_remove(
                 &globus_l_ftp_cc_handle_list, globus_l_ftp_cc_handle_list);
             
-            globus_io_close(&handle->cc_handle.io_handle);
+            if(handle->cc_handle.cc_state != GLOBUS_FTP_CONTROL_UNCONNECTED)
+            {
+                globus_io_close(&handle->cc_handle.io_handle);
+            }
             if(handle->cc_handle.response.response_buffer)
 	    {
 	        globus_libc_free(handle->cc_handle.response.response_buffer);
