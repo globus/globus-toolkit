@@ -3,14 +3,12 @@ PBSZ
 
 TREV
 
-Timeouts
--- configuarable
-
 clear text attr for gssapi
 -- currently it will automatically allow clear text commands until AUTH
    is received.  need to add an attr to allow users to disable this.
 
 merge _init() with _start() and _destroy() with _stop()
+-- deal with adding commands
 
 data object destroy
 -- need a function that commands can call to destroy data channel on

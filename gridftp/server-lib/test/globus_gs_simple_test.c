@@ -173,8 +173,6 @@ transfer(
     globus_gridftp_server_control_finished_transfer(op, GLOBUS_SUCCESS);
 }
 
-
-
 void
 auth_func(
     globus_gridftp_server_control_op_t      op,
@@ -253,7 +251,8 @@ main(
     if(argc > 1)
     {
         globus_gridftp_server_control_attr_set_security(
-            ftp_attr, GLOBUS_GRIDFTP_SERVER_LIBRARY_GSSAPI);
+            ftp_attr, GLOBUS_GRIDFTP_SERVER_LIBRARY_GSSAPI | 
+                GLOBUS_GRIDFTP_SERVER_LIBRARY_NONE);
     }
     else
     {
@@ -270,6 +269,10 @@ main(
 
     res = globus_gridftp_server_control_attr_set_list(
         ftp_attr, list_cb);
+    test_res(res, __LINE__);
+
+    res = globus_gridftp_server_control_attr_set_idle_time(
+        ftp_attr, 15);
     test_res(res, __LINE__);
 
     res = globus_gridftp_server_control_attr_data_functions(

@@ -297,6 +297,7 @@ typedef struct globus_i_gsc_server_handle_s
      *  authentication information
      */
     int                                 ref;
+    globus_bool_t                       timeout;
 
     char *                              username;
     char *                              pw;
@@ -323,9 +324,6 @@ typedef struct globus_i_gsc_server_handle_s
     char *                              modes;
     char *                              types;
     int                                 stripe_count;
-
-    int                                 idle_timeout;
-    globus_callback_handle_t            idle_handle;
 
     /* opts state */
     globus_i_gsc_handle_opts_t          opts;
