@@ -526,6 +526,9 @@ typedef struct globus_i_ftp_client_handle_t
 
     /** Pointer to user's size buffer */
     globus_off_t *				size_pointer;
+    
+    /** Pointer to user's features buffer */
+    globus_i_ftp_client_features_t *		features_pointer;
 
     /** Thread safety */
     globus_mutex_t                              mutex;
