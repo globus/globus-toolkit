@@ -3,7 +3,7 @@
 setupdir = $(GLOBUS_LOCATION)/setup/globus
 ## setup = [ DATA,PROGRAMS,SCRIPTS ]
 
-testdir = $(GLOBUS_LOCATION)/test
+testdir = $(GLOBUS_LOCATION)/test/$(PACKAGE)
 ## test = [ DATA,PROGRAMS,SCRIPTS ]
 
 scriptsysconfdir = $(GLOBUS_LOCATION)/etc
