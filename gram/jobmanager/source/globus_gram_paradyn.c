@@ -11,7 +11,6 @@
 #include "globus_nexus.h"
 #include "globus_gram_job_manager.h"
 #include "globus_gram_client.h"
-#include "globus_i_gram_jm.h"
 
 /******************************************************************************
                                Type definitions
