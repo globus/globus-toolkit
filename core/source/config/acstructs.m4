@@ -70,6 +70,7 @@ AC_MSG_CHECKING(for maximum length of iovec array)
 #                   if HAVE_LIMITS_H
 #                       include <limits.h>
 #                   endif
+#                   include <stdio.h>
                 ],
 	        [
                     int foo = IOV_MAX;
