@@ -72,7 +72,7 @@ globus_l_gsc_cmd_pbsz(
     }
     else
     {
-        msg = globus_common_create_string("200 PBSZ= %s.\r\n", cmd_a[1]);
+        msg = globus_common_create_string("200 PBSZ=%s\r\n", cmd_a[1]);
     }
     globus_gsc_959_finished_command(op, msg);
     globus_free(msg);
@@ -2589,9 +2589,7 @@ globus_i_gsc_add_commands(
     globus_gridftp_server_control_add_feature(server_handle, "REST STREAM");
     globus_gridftp_server_control_add_feature(server_handle, "ESTO");
     globus_gridftp_server_control_add_feature(server_handle, "ERET");
-    globus_gridftp_server_control_add_feature(server_handle, "MDTM");    
     globus_gridftp_server_control_add_feature(server_handle, "MLST Type*;Size*;Modify*;Perm*;Charset;UNIX.mode*;Unique*;");    
     globus_gridftp_server_control_add_feature(server_handle, "SIZE");    
     globus_gridftp_server_control_add_feature(server_handle, "PARALLEL");    
-    globus_gridftp_server_control_add_feature(server_handle, "DCAU");  
 }
