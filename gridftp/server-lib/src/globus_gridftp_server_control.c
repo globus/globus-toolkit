@@ -1604,16 +1604,7 @@ globus_gridftp_server_control_start(
             goto err;
         }
 
-        if(i_attr->security == GLOBUS_GRIDFTP_SERVER_LIBRARY_GSSAPI)
-        {
-            res = globus_xio_handle_cntl(
-                server_handle->xio_handle,
-                globus_l_gsc_gssapi_ftp_driver,
-                GLOBUS_XIO_DRIVER_GSSAPI_FTP_GET_DATA_CRED,
-                &server_handle->cred,
-                &server_handle->del_cred,
-                &server_handle->subject);
-        }
+        server_handle->security_type = i_attr->security;
         globus_xio_stack_destroy(xio_stack);
         globus_xio_attr_destroy(xio_attr);
                                                                                 
@@ -2609,6 +2600,17 @@ globus_i_gsc_authenticate(
         op->password = globus_libc_strdup(pass);
     }
 
+    if(op->server_handle->security_type == GLOBUS_GRIDFTP_SERVER_LIBRARY_GSSAPI)
+    {
+        /* if this fails the values are just left null */
+        globus_xio_handle_cntl(
+            op->server_handle->xio_handle,
+            globus_l_gsc_gssapi_ftp_driver,
+            GLOBUS_XIO_DRIVER_GSSAPI_FTP_GET_DATA_CRED,
+            &op->server_handle->cred,
+            &op->server_handle->del_cred,
+            &op->server_handle->subject);
+    }
     /* call out to user */
     if(op->server_handle->funcs.auth_cb != NULL)
     {

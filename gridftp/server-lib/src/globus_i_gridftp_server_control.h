@@ -384,6 +384,7 @@ typedef struct globus_i_gsc_server_handle_s
 
     gss_cred_id_t                           cred;
     gss_cred_id_t                           del_cred;
+    globus_gridftp_server_control_security_type_t   security_type;
 
     /*
      *  state information  
