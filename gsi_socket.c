@@ -1013,6 +1013,10 @@ int GSI_SOCKET_delegation_init_ext(GSI_SOCKET *self,
     int				token_status;
     OM_uint32			req_flags = 0;
     int				return_value = GSI_SOCKET_ERROR;
+    gss_buffer_desc		output_token;
+    gss_buffer_desc		input_token;
+    gss_buffer_desc		*input_token_ptr = GSS_C_NO_BUFFER;
+
 #ifdef GSI_SOCKET_SSLEAY
     char			*x509_user_proxy_save = NULL;
 #endif /* GSI_SOCKET_SSLEAY */
@@ -1083,23 +1087,59 @@ int GSI_SOCKET_delegation_init_ext(GSI_SOCKET *self,
 
     req_flags |= GSS_C_DELEG_FLAG;
 
-    self->major_status =
-	globus_gss_assist_init_sec_context(&self->minor_status,
-					   creds,
-					   &tmp_gss_context,
-					   self->peer_name,
-					   req_flags,
-					   NULL, /* ret_flags */
-					   &token_status,
-					   assist_read_token,
-					   &self->sock,
-					   assist_write_token,
-					   &self->sock);
+    do {
+	OM_uint32 min_stat;
+	
+	self->major_status =
+	    gss_init_sec_context(&self->minor_status,
+				 creds,
+				 &tmp_gss_context,
+				 NULL,	/* No need to do mutual auth */
+				 NULL,	/* No mech type specified */
+				 req_flags,
+				 lifetime,
+				 NULL,	/* no channel bindings */
+				 input_token_ptr,
+				 NULL,	/* ignore mech type */
+				 &output_token,
+				 NULL,	/* ret_flags */
+				 NULL);	/* ignore time_rec */
 
-    if (self->major_status != GSS_S_COMPLETE)
-    {
-	goto error;
-    }
+	if (input_token_ptr != GSS_C_NO_BUFFER)
+	{
+	    (void) gss_release_buffer(&min_stat, input_token_ptr);
+	}
+
+	if ((self->major_status != GSS_S_COMPLETE) &&
+	    (self->major_status != GSS_S_CONTINUE_NEEDED))
+	{
+	    goto error;
+	}
+
+	if (output_token.length != 0)
+	{
+	    if (write_token(self->sock,
+			    output_token.value,
+			    output_token.length) == -1)
+	    {
+		goto error;
+	    }
+	    
+	    (void) gss_release_buffer(&min_stat, &output_token);
+	}
+	  
+	if (self->major_status == GSS_S_CONTINUE_NEEDED)
+	{
+	    if (read_token(self->sock,
+			   (char **) &input_token.value,
+			   &input_token.length) == -1)
+	    {
+		goto error;
+	    }
+
+	    input_token_ptr = &input_token;
+	}
+    } while (self->major_status == GSS_S_CONTINUE_NEEDED);
 
     /* Success */
     return_value = GSI_SOCKET_SUCCESS;
