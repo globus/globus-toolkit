@@ -12,10 +12,6 @@ lib/sasl/libplain.so.1.0.15
 lib/sasl/libplain.so
 lib/sasl/libplain.so.1
 lib/sasl/libplain.la
-lib/sasl/libgssapiv2_gsi.la
-lib/sasl/libgssapiv2_gsi.so
-lib/sasl/libgssapiv2_gsi.so.0
-lib/sasl/libgssapiv2_gsi.so.0.0.0
 sbin/saslpasswd
 sbin/sasldblistusers
 man/man8/saslpasswd.8
