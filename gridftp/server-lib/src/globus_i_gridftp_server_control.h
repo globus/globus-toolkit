@@ -194,6 +194,8 @@ typedef void
 (*globus_i_gsc_passive_callback_t)(
     struct globus_i_gsc_op_s *              op,
     globus_result_t                         result,
+    const char **                           cs,
+    int                                     addr_count,
     void *                                  user_arg);
 
 typedef void
@@ -347,6 +349,10 @@ typedef struct globus_i_gsc_server_handle_s
     globus_size_t                           receive_buf;
     globus_bool_t                           refresh;
     globus_size_t                           packet_size;
+    globus_bool_t                           delayed_passive;
+    int                                     pasv_prt;
+    int                                     pasv_max;
+    globus_bool_t                           passive_only;
     globus_bool_t                           opts_delayed_passive;
     int                                     opts_pasv_prt;
     int                                     opts_pasv_max;
@@ -473,6 +479,15 @@ globus_i_gsc_passive(
     int                                     max,
     int                                     net_prt,
     globus_i_gsc_passive_callback_t         cb,
+    void *                                  user_arg);
+
+globus_result_t
+globus_i_gsc_port(
+    globus_i_gsc_op_t *                     op,
+    const char **                           contact_strings,
+    int                                     stripe_count,
+    int                                     net_prt,
+    globus_i_gsc_port_callback_t            cb,
     void *                                  user_arg);
 
 void
