@@ -401,6 +401,7 @@ init_arguments(int argc,
 	    }
 	    request->renewers = strdup ("*");
 	    myproxy_debug("anonymous renewers allowed");
+	    use_empty_passwd = 1;
 	    break;
 	case 'k':  /*credential name*/
 	    request->credname = strdup (gnu_optarg);
