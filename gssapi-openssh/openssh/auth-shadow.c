@@ -32,6 +32,9 @@ RCSID("$Id$");
 #include "buffer.h"
 #include "log.h"
 
+#ifdef DAY
+# undef DAY
+#endif
 #define DAY	(24L * 60 * 60) /* 1 day in seconds */
 
 extern Buffer loginmsg;

@@ -369,7 +369,7 @@ fmtstr(char *buffer, size_t *currlen, size_t maxlen,
 	if (value == 0) 
 		value = "<NULL>";
 
-	for (strln = 0; value[strln]; ++strln); /* strlen */
+	for (strln = 0; strln < max && value[strln]; ++strln); /* strlen */
 	padlen = min - strln;
 	if (padlen < 0) 
 		padlen = 0;

@@ -1,7 +1,7 @@
 /* $Id$ */
 
 /*
- * Copyright (c) 2000, 2001, Corinna Vinschen <vinschen@cygnus.com>
+ * Copyright (c) 2004, 2005 Darren Tucker.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -22,36 +22,35 @@
  * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- * Created: Sat Sep 02 12:17:00 2000 cv
- *
- * This file contains functions for forcing opened file descriptors to
- * binary mode on Windows systems.
  */
 
-#ifndef _BSD_CYGWIN_UTIL_H
-#define _BSD_CYGWIN_UTIL_H
+#include "auth.h"
 
-#ifdef HAVE_CYGWIN
+#ifndef _SSH_AUDIT_H
+# define _SSH_AUDIT_H
+enum ssh_audit_event_type {
+	SSH_LOGIN_EXCEED_MAXTRIES,
+	SSH_LOGIN_ROOT_DENIED,
+	SSH_AUTH_SUCCESS,
+	SSH_AUTH_FAIL_NONE,
+	SSH_AUTH_FAIL_PASSWD,
+	SSH_AUTH_FAIL_KBDINT,	/* keyboard-interactive or challenge-response */
+	SSH_AUTH_FAIL_PUBKEY,	/* ssh2 pubkey or ssh1 rsa */
+	SSH_AUTH_FAIL_HOSTBASED,	/* ssh2 hostbased or ssh1 rhostsrsa */
+	SSH_AUTH_FAIL_GSSAPI,
+	SSH_INVALID_USER,
+	SSH_NOLOGIN,		/* denied by /etc/nologin, not implemented */
+	SSH_CONNECTION_CLOSE,	/* closed after attempting auth or session */
+	SSH_CONNECTION_ABANDON,	/* closed without completing auth */
+	SSH_AUDIT_UNKNOWN
+};
+typedef enum ssh_audit_event_type ssh_audit_event_t;
 
-#undef ERROR
-#define is_winnt       (GetVersion() < 0x80000000)
+void	audit_connection_from(const char *, int);
+void	audit_event(ssh_audit_event_t);
+void	audit_session_open(const char *);
+void	audit_session_close(const char *);
+void	audit_run_command(const char *);
+ssh_audit_event_t audit_classify_auth(const char *);
 
-#include <windows.h>
-#include <sys/cygwin.h>
-#include <io.h>
-
-int binary_open(const char *, int , ...);
-int binary_pipe(int fd[2]);
-int check_nt_auth(int, struct passwd *);
-int check_ntsec(const char *);
-void register_9x_service(void);
-char **fetch_windows_environment(void);
-void free_windows_environment(char **);
-
-#define open binary_open
-#define pipe binary_pipe
-
-#endif /* HAVE_CYGWIN */
-
-#endif /* _BSD_CYGWIN_UTIL_H */
+#endif /* _SSH_AUDIT_H */
