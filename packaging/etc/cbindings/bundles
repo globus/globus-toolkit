@@ -23,3 +23,4 @@ BUNDLE	ogsi-cbindings
 	globus_ogsi_core
 	globus_ogsi_notification
 	globus_ogsa_samples_counter_bindings
+	globus_grim_devel
