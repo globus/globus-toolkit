@@ -4595,6 +4595,18 @@ globus_gsi_sysconfig_get_proxy_filename_unix(
             & env_user_proxy,
             & status,
             env_value);
+        if(proxy_file_type == GLOBUS_PROXY_FILE_OUTPUT &&
+           status == GLOBUS_FILE_DOES_NOT_EXIST)
+        {
+            globus_object_t *           error_obj;
+            error_obj = globus_error_get(result);
+            globus_object_free(error_obj);
+            
+            *user_proxy = env_user_proxy;
+            status = GLOBUS_FILE_VALID;
+            result = GLOBUS_SUCCESS;
+        }
+
         if(result != GLOBUS_SUCCESS)
         {
             GLOBUS_GSI_SYSCONFIG_ERROR_CHAIN_RESULT(
