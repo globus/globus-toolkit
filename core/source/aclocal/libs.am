@@ -24,7 +24,7 @@ link-@DIR@LIBRARIES: $(@DIR@_LIBRARIES)
 	  if test -f $$p; then \
 		mydir=`pwd`; \
 		target_p=$(DESTDIR)$(@DIR@dir)/$$p; \
-		if test -f $$target_p; then \
+		if test -f $$target_p -a ! -h $$target_p; then \
 			echo "mv $$target_p $$target_p.$(LINK_BAK)"; \
 			mv $$target_p $$target_p.$(LINK_BAK); \
 		fi; \

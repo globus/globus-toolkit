@@ -27,7 +27,7 @@ link-@DIR@DATA: $(@DIR@_DATA)
 		cd $(srcdir); \
 		fullsrcdir=`pwd`; \
 		cd $$mydir; \
-		if test -f $$target_p; then \
+		if test -f $$target_p -a ! -h $$target_p; then \
 			echo "mv $$target_p $$target_p.$(LINK_BAK)"; \
 			mv $$target_p $$target_p.$(LINK_BAK); \
 		fi; \
@@ -36,7 +36,7 @@ link-@DIR@DATA: $(@DIR@_DATA)
 			ln -s $$fullsrcdir/$$p $$target_p; \
 		fi; \
 	  else if test -f $$p; then \
-		if test -f $$target_p; then \
+		if test -f $$target_p -a ! -h $$target_p; then \
 			echo "mv $$target_p $$target_p.$(LINK_BAK)"; \
 			mv $$target_p $$target_p.$(LINK_BAK); \
 		fi; \

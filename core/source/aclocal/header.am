@@ -27,7 +27,7 @@ link-@DIR@HEADERS: $(@DIR@_HEADERS)
 		fullsrcdir=`pwd`; \
 		cd $$mydir; \
 		if test -f "$$p"; then d="$$mydir/"; else d="$$fullsrcdir/"; fi; \
-		if test -f $$target_p; then \
+		if test -f $$target_p -a ! -h $$target_p; then \
 			echo "mv $$target_p $$target_p.$(LINK_BAK)"; \
 			mv $$target_p $$target_p.$(LINK_BAK); \
 		fi; \

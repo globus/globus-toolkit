@@ -32,7 +32,7 @@ link-@DIR@LTLIBRARIES: $(@DIR@_LTLIBRARIES)
 				so_list="$$so_list $$so_name"; \
 			fi; \
 		done; \
-		if test -f $$target_p; then \
+		if test -f $$target_p -a ! -h $$target_p; then \
 			echo "mv $$target_p $$target_p.$(LINK_BAK)"; \
 			mv $$target_p $$target_p.$(LINK_BAK); \
 			for so in $$so_list; do \
