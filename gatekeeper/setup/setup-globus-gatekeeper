@@ -14,7 +14,7 @@ if test ! -f ${sysconfdir}/globus-gatekeeper.conf; then
 	-e libexec
 	-logfile var/globus-gatekeeper.log
 	-port 2911
-	-grid-services etc/grid-services
+	-grid_services etc/grid-services
 	-inetd
 EOF
     ${GLOBUS_SH_PRINTF-printf} "done\n"
