@@ -1192,7 +1192,7 @@ int try_gssapi_authentication(char *host, Options *options)
 
 #endif /* GSSAPI */
 
-  debug("req_flags = %u", req_flags);
+  debug("req_flags = %u", (unsigned int)req_flags);
 
   name_tok.value = service_name;
   name_tok.length = strlen(service_name) + 1;
