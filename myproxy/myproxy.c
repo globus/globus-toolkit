@@ -207,8 +207,8 @@ myproxy_init_client(myproxy_socket_attrs_t *attrs) {
    command-line with gethostbyname(), ignoring concerns about DNS
    spoofing.
 */
-static void
-resolve_hostname(char **host)
+void
+myproxy_resolve_hostname(char **host)
 {
     struct hostent *hostinfo;
 
@@ -262,7 +262,7 @@ myproxy_authenticate_init(myproxy_socket_attrs_t *attrs,
    } else {
        char *fqhn, *buf;
        fqhn = strdup(attrs->pshost);
-       resolve_hostname(&fqhn);
+       myproxy_resolve_hostname(&fqhn);
        buf = malloc(strlen(fqhn)+strlen("myproxy@")+1);
        sprintf(buf, "myproxy@%s", fqhn);
        accepted_peer_names[0] = buf;
