@@ -119,10 +119,6 @@ void ssh_gssapi_delete_ctx(Gssctxt **ctx);
 OM_uint32 ssh_gssapi_client_ctx(Gssctxt **ctx,gss_OID oid,char *host);
 OM_uint32 ssh_gssapi_server_ctx(Gssctxt **ctx,gss_OID oid);
 
-/* In the client */
-void ssh_gssapi_client(Kex *kex, char *host, struct sockaddr *hostaddr,
-                       Buffer *client_kexinit, Buffer *server_kexinit);
-
 /* In the server */
 int ssh_gssapi_userok(char *name);
 int ssh_gssapi_localname(char **lname);
