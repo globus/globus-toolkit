@@ -664,7 +664,7 @@ void destroy_proxy(myproxy_creds_t *creds, myproxy_response_t *response) {
     if (myproxy_creds_delete(creds) < 0) { 
 	myproxy_log_verror();
         response->response_type =  MYPROXY_ERROR_RESPONSE; 
-        strcat(response->error_string, "Unable to store credentials.\n"); 
+        strcat(response->error_string, "Unable to delete credential.\n"); 
     } else {
 	response->response_type = MYPROXY_OK_RESPONSE;
     }
