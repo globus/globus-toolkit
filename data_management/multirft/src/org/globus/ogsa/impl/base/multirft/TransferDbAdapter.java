@@ -764,6 +764,40 @@ public class TransferDbAdapter {
         return transferJob;
     }
 
+    public Vector getTransferJob( int requestId,int concurrency)
+             throws RftDBException {
+
+        Connection c = getDBConnection();
+        TransferJob transferJob = null;
+        Vector transferJobs = new Vector();
+
+        try {
+
+            Statement st = c.createStatement();
+            st.setMaxRows( concurrency );
+            StringBuffer query = new StringBuffer( 5000 );
+            query.append( "SELECT * FROM transfer where request_id=" );
+            query.append( requestId );
+            query.append(" order by id" );
+            logger.debug(
+                    "Getting TransferJob from Database:" + query.toString() );
+
+            ResultSet rs = st.executeQuery( query.toString() );
+            transferJob = getTransferJobFromRS( rs );
+            transferJobs.add( transferJob );
+        } catch ( SQLException e ) {
+            logger.error(
+                    "Unable to retrieve transfers for requestid:" +
+                    requestId );
+            returnDBConnection( c );
+            throw new RftDBException( "Unable to retrieve transfers for requestid",
+                    e );
+        }
+
+        returnDBConnection( c );
+
+        return transferJobs;
+    }
 
     /**
      *  Sets the restartMarker attribute of the TransferDbAdapter object

@@ -631,7 +631,7 @@ public class TransferClient {
      *
      *@param  sourcePath  DOCUMENT ME!
      */
-    public void setSourcePath( String sourcePath ) {
+    public synchronized void setSourcePath( String sourcePath ) {
         this.sourcePath = "/" + sourcePath;
         this.markerListener = null;
         try {

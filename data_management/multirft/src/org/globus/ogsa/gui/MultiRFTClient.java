@@ -27,7 +27,13 @@ import org.globus.ogsa.base.multirft.RFTPortType;
 import org.globus.ogsa.base.multirft.TransferRequestElement;
 import org.globus.ogsa.base.multirft.TransferRequestType;
 import org.globus.ogsa.base.multirft.TransferType;
+import org.globus.ogsa.base.multirft.OverallStatus;
+import org.globus.ogsa.base.multirft.TransfersFinished;
 import org.globus.ogsa.base.multirft.TransferStatusType;
+import org.globus.ogsa.base.multirft.TransfersActive;
+import org.globus.ogsa.base.multirft.TransfersPending;
+import org.globus.ogsa.base.multirft.TransfersRestarted;
+import org.globus.ogsa.base.multirft.TransfersFailed;
 import org.globus.ogsa.base.multirft.FileTransferStatusElement;
 import org.globus.ogsa.base.multirft.FileTransferJobStatusType;
 import org.globus.ogsa.impl.security.authentication.Constants;
@@ -91,7 +97,7 @@ public class MultiRFTClient
         org.globus.gsi.gssapi.auth.NoAuthorization.getInstance());
 	map.put(GSIConstants.GSI_MODE, GSIConstants.GSI_MODE_FULL_DELEG);
 	map.put(Constants.GSI_SEC_CONV, Constants.SIGNATURE);
-    map.put(Constants.GRIM_POLICY_HANDLER, new IgnoreProxyPolicyHandler());
+        map.put(Constants.GRIM_POLICY_HANDLER, new IgnoreProxyPolicyHandler());
 	nm = NotificationSinkManager.getManager();
 	nm.init(map);
 
@@ -172,7 +178,7 @@ public class MultiRFTClient
                     destinationSubjectName);
             } 
             System.out.println(
-                    "Request Data Size " + requestData.size() + " " + 
+                    "Number of transfers in this request:"+
                     transferCount);
 
 
@@ -183,7 +189,6 @@ public class MultiRFTClient
                 transfers1[j].setDestinationUrl(
                         (String)requestData.elementAt(i++));
 
-		        requests.put(transfers1[j].getDestinationUrl(), TransferStatusType.Pending);
             }
 
             TransferRequestType transferRequest = new TransferRequestType();
@@ -210,7 +215,7 @@ public class MultiRFTClient
             System.out.println("Created an instance of Multi-RFT");
 
     	    GSR reference = GSR.newInstance(locator);
-	        sink = nm.addListener("SingleFileTransferStatus", null, reference.getHandle(), this);
+	        sink = nm.addListener("OverallStatus", null, reference.getHandle(), this);
 
 
             MultiFileRFTServiceGridLocator loc = new MultiFileRFTServiceGridLocator();
@@ -226,8 +231,10 @@ public class MultiRFTClient
 
             int requestid = rftPort.start();
             System.out.println("Request id: " + requestid);
+            System.out.println("Overall Status in form of :");
+            System.out.println("Finished:Active:Pending:Restarted:Failed");
 	        System.in.read();
-	        printAndExit();
+	        //printAndExit();
 
         } catch (Exception e) {
             System.err.println(MessageUtils.toString(e));
@@ -275,23 +282,38 @@ public class MultiRFTClient
    }
     
     public void deliverNotification(ExtensibilityType ext) throws RemoteException {
-    	ServiceDataValuesType serviceData = (ServiceDataValuesType)
+    	
+        ServiceDataValuesType serviceData = (ServiceDataValuesType)
             AnyHelper.getAsServiceDataValues(ext);
-	    FileTransferStatusElement sftse = (FileTransferStatusElement)
-            AnyHelper.getAsSingleObject(serviceData, FileTransferStatusElement.class);
-	    FileTransferJobStatusType jstat = sftse.getRequestStatus();
-    	TransferStatusType status = jstat.getStatus();
-	    String destination = jstat.getDestinationUrl();
-    	synchronized(requests) {
-	        requests.put(destination, status);
-	        if (status == TransferStatusType.Finished || 
-                status == TransferStatusType.Failed || 
-                status == TransferStatusType.Cancelled) {
+	    OverallStatus overallStatus = (OverallStatus)
+            AnyHelper.getAsSingleObject(serviceData, OverallStatus.class);
+	    TransfersFinished transfersFinished = overallStatus.getTransfersFinished();
+            TransfersActive transfersActive = overallStatus.getTransfersActive();
+            TransfersPending transfersPending = overallStatus.getTransfersPending();
+            TransfersRestarted transfersRestarted = overallStatus.getTransfersRestarted();
+            TransfersFailed transfersFailed = overallStatus.getTransfersFailed();
+            synchronized(requests) {
+	    //    requests.put(destination, status);
+            
+            System.out.println(transfersFinished.getNumberFinished() + ":"+
+                transfersActive.getNumberActive()+":"+transfersPending.getNumberPending() +
+                ":"+transfersRestarted.getNumberRestarted()+
+                ":"+ transfersFailed.getNumberFailed());
+            
+	        /*if (transfersFinished.getNumberFinished() !=0 ){
 		    numDone++;
-	        }
+                    
+	        }*/
 	    }
-	    if (numDone == transferCount) {
-	        printAndExit();
+	    if (transfersFinished.getNumberFinished() == transferCount) {
+	       System.out.println("Done");
+           try {
+	            nm.removeListener(sink);
+	        } catch (Exception e) {
+	            System.out.println("Unable to remove listener");
+	        }
+
+                // printAndExit();
 	    }
     }
 

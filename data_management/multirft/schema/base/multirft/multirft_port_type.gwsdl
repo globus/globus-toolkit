@@ -82,13 +82,6 @@ ogsi:NotificationSource">
                              mutability="mutable">
 </gwsdl:serviceData>
 
-<gwsdl:serviceData name="FileTransferJobStatusElement"
-                             type="rft-types:FileTransferStatusElement"
-                             minOccurs="1"
-                             maxOccurs="unbounded"
-                             mutability="mutable">
-</gwsdl:serviceData> 
-
 <gwsdl:serviceData name="FileTransferStatusElement"
                              type="rft-types:FileTransferStatusElement"
                              minOccurs="1"
@@ -115,6 +108,13 @@ ogsi:NotificationSource">
                              minOccurs="1"
                              maxOccurs="1"
                              mutability="constant">
+</gwsdl:serviceData>
+
+<gwsdl:serviceData name="OverallStatus"
+                             type="rft-types:OverallStatus"
+                             minOccurs="1"
+                             maxOccurs="1"
+                             mutability="mutable">
 </gwsdl:serviceData>
 
 </grid:portType>

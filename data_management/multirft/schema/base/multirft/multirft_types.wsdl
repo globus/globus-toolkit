@@ -78,6 +78,53 @@
     </xsd:sequence>
 </xsd:complexType>
 
+<xsd:complexType name="TransfersFinished">
+    <xsd:sequence>
+        <xsd:element name="numberFinished" type="int"/>
+    </xsd:sequence>
+</xsd:complexType>
+
+<xsd:complexType name="TransfersActive">
+    <xsd:sequence>
+        <xsd:element name="numberActive" type="int"/>
+    </xsd:sequence>
+</xsd:complexType>
+
+<xsd:complexType name="TransfersPending">
+    <xsd:sequence>
+        <xsd:element name="numberPending" type="int"/>
+    </xsd:sequence>
+</xsd:complexType>
+
+<xsd:complexType name="TransfersFailed">
+    <xsd:sequence>
+        <xsd:element name="numberFailed" type="int"/>
+    </xsd:sequence>
+</xsd:complexType>
+
+<xsd:complexType name="TransfersRestarted">
+    <xsd:sequence>
+        <xsd:element name="numberRestarted" type="int"/>
+    </xsd:sequence>
+</xsd:complexType>
+
+<xsd:complexType name="TransfersCancelled">
+    <xsd:sequence>
+        <xsd:element name="numberCancelled" type="int"/>
+    </xsd:sequence>
+</xsd:complexType>
+
+<xsd:complexType name="OverallStatus">
+    <xsd:sequence>
+        <xsd:element name="transfersFinished" type="rft-types:TransfersFinished"/>
+        <xsd:element name="transfersActive" type="rft-types:TransfersActive"/>
+        <xsd:element name="transfersPending" type="rft-types:TransfersPending"/>
+        <xsd:element name="transfersFailed" type="rft-types:TransfersFailed"/>
+        <xsd:element name="transfersRestarted" type="rft-types:TransfersRestarted"/>
+        <xsd:element name="transfersCancelled" type="rft-types:TransfersCancelled"/>
+    </xsd:sequence>
+</xsd:complexType>
+
 <xsd:complexType name="GridFTPRestartMarkerType">
     <xsd:sequence>
         <xsd:element name="transferId" type="int"/>
