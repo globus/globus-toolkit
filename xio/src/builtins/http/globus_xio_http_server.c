@@ -596,6 +596,18 @@ globus_l_xio_http_server_parse_request(
 
     if (http_handle->parse_state == GLOBUS_XIO_HTTP_REQUEST_LINE)
     {
+        /*
+         * Make sure any old request info has been freed so we don't leak here
+         * when reusing a handle (or have old headers around)
+         */
+        globus_i_xio_http_request_destroy(&http_handle->request_info);
+        result = globus_i_xio_http_request_init(&http_handle->request_info);
+
+        if (result != GLOBUS_SUCCESS)
+        {
+            goto error_exit;
+        }
+
         /* Parse the request line:
          *
          * Method SP Request-URI SP HTTP-Version CRLF
