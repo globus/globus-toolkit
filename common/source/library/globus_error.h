@@ -34,13 +34,15 @@ typedef void * globus_result_t;
  **********************************************************************/
 
 extern globus_object_t *
-globus_error_initialize_base (globus_object_t *            error,
-			      globus_module_descriptor_t * source_module,
-			      globus_object_t *            causal_error);
+globus_error_initialize_base (
+    globus_object_t *                   error,
+    globus_module_descriptor_t *        source_module,
+    globus_object_t *                   causal_error);
 
 extern globus_object_t *
-globus_error_construct_base (globus_module_descriptor_t * source_module,
-			     globus_object_t *            causal_error);
+globus_error_construct_base (
+    globus_module_descriptor_t *        source_module,
+    globus_object_t *                   causal_error);
 
 #define globus_error_type_static_initializer(parent_type,                   \
                                              copy_func,                     \
@@ -75,12 +77,14 @@ extern globus_object_t GLOBUS_ERROR_BASE_STATIC_PROTOTYPE;
  **********************************************************************/
 
 extern globus_object_t *
-globus_error_get (globus_result_t result);
+globus_error_get(
+    globus_result_t                     result);
 /* returns corresponding object for result,
  * may return GLOBUS_ERROR_NO_INFO */
 
 extern globus_result_t
-globus_error_put (globus_object_t * error);
+globus_error_put(
+    globus_object_t *                   error);
 /* does nothing if error is NULL */
 
 /**********************************************************************
@@ -88,18 +92,22 @@ globus_error_put (globus_object_t * error);
  **********************************************************************/
 
 extern globus_module_descriptor_t *
-globus_error_base_get_source (globus_object_t * error);
+globus_error_base_get_source (
+    globus_object_t *                   error);
 
 extern void
-globus_error_base_set_source (globus_object_t *            error,
-			 globus_module_descriptor_t * source_module);
+globus_error_base_set_source (
+    globus_object_t *                   error,
+    globus_module_descriptor_t *        source_module);
 
 extern globus_object_t *
-globus_error_base_get_cause (globus_object_t * error);
+globus_error_base_get_cause (
+    globus_object_t *                   error);
 
 extern void
-globus_error_base_set_cause (globus_object_t * error,
-			globus_object_t * causal_error);
+globus_error_base_set_cause (
+    globus_object_t *                   error,
+    globus_object_t *                   causal_error);
 
 
 
@@ -109,22 +117,26 @@ globus_error_base_set_cause (globus_object_t * error,
  **********************************************************************/
 
 typedef void
-(*globus_error_callback_func_t) (globus_module_descriptor_t * source,
-				 globus_object_t *            error,
-				 void *                       user_data);
+(*globus_error_callback_func_t)(
+    globus_module_descriptor_t *        source,
+    globus_object_t *                   error,
+    void *                              user_data);
 
 extern void
-globus_error_callback_register (globus_module_descriptor_t * source,
-				globus_error_callback_func_t callback,
-				void *                       user_data,
-				long *                       registered_id);
+globus_error_callback_register(
+    globus_module_descriptor_t *        source,
+    globus_error_callback_func_t        callback,
+    void *                              user_data,
+    long *                              registered_id);
 
 extern void
-globus_error_callback_unregister (long registered_id);
+globus_error_callback_unregister(
+    long                                registered_id);
 
 extern void
-globus_error_signal_fault (globus_module_descriptor_t * source,
-			   globus_object_t *            error);
+globus_error_signal_fault (
+    globus_module_descriptor_t *        source,
+    globus_object_t *                   error);
 #endif /* 0 */
 
 
