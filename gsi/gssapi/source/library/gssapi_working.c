@@ -298,23 +298,29 @@ OM_uint32 GSS_CALLCONV gss_import_sec_context
  ) { return GSS_S_FAILURE ; }
 */
 
+/*
 OM_uint32 GSS_CALLCONV gss_create_empty_oid_set
 (OM_uint32 *              minor_status ,
  gss_OID_set *             oid_set 
  ) { return GSS_S_FAILURE ; }
+*/
 
+/*
 OM_uint32 GSS_CALLCONV gss_add_oid_set_member
 (OM_uint32 *              minor_status ,
  const gss_OID            member_oid ,
  gss_OID_set *             oid_set 
  ) { return GSS_S_FAILURE ; }
+*/
 
+/*
 OM_uint32 GSS_CALLCONV gss_test_oid_set_member
 (OM_uint32 *              minor_status ,
  const gss_OID            member ,
  const gss_OID_set        set ,
  int *                     present 
  ) { return GSS_S_FAILURE ; }
+*/
 
 OM_uint32 GSS_CALLCONV gss_inquire_names_for_mech
 (OM_uint32 *              minor_status ,

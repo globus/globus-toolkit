@@ -37,64 +37,6 @@ static char *rcsid = "$Header$";
                        Define module specific variables
 **********************************************************************/
 
-/* we define the oid values here which are required */
-
-static gss_OID_desc  GSS_C_NT_USER_NAME_desc = 
-		{10, (void *)"\x2a\x86\x48\x86\xf7\x12\x01\x02\x01\x01"};
-gss_OID GSS_C_NT_USER_NAME = &GSS_C_NT_USER_NAME_desc;
-
-static gss_OID_desc   GSS_C_NT_MACHINE_UID_NAME_desc = 
-		{10, (void *)"\x2a\x86\x48\x86\xf7\x12\x01\x02\x01\x02"};
-gss_OID GSS_C_NT_MACHINE_UID_NAME = &GSS_C_NT_MACHINE_UID_NAME_desc;
-
-static gss_OID_desc  GSS_C_NT_STRING_UID_NAME_desc = 
-		{10, (void *)"\x2a\x86\x48\x86\xf7\x12\x01\x02\x01\x03"};
-gss_OID GSS_C_NT_STRING_UID_NAME = &GSS_C_NT_STRING_UID_NAME_desc;
-
-static gss_OID_desc  GSS_C_NT_HOSTBASED_SERVICE_X_desc = 
-		{6, (void *)"\x2b\x06\x01\x05\x06\x02"};
-gss_OID GSS_C_NT_HOSTBASED_SERVICE_X = &GSS_C_NT_HOSTBASED_SERVICE_X_desc;
-
-static gss_OID_desc  GSS_C_NT_HOSTBASED_SERVICE_desc = 
-		{10, (void *)"\x2a\x86\x48\x86\xf7\x12\x01\x02\x01\x04"};
-gss_OID GSS_C_NT_HOSTBASED_SERVICE = &GSS_C_NT_HOSTBASED_SERVICE_desc;
-
-static gss_OID_desc  GSS_C_NT_ANONYMOUS_desc = 
-		{6, (void *)"\x2b\x06\01\x05\x06\x03"};
-gss_OID GSS_C_NT_ANONYMOUS = &GSS_C_NT_ANONYMOUS_desc;
-
-static gss_OID_desc  GSS_C_NT_EXPORT_NAME_desc = 
-		{6, (void *)"\x2b\x06\x01\x05\x06\x04"};
-gss_OID GSS_C_NT_EXPORT_NAME = &GSS_C_NT_EXPORT_NAME_desc;
-
-/*
- * for backwards compatability, also define the V1 constant OID
- * pointing the V2 OIDs. This is done mostly for DLL compatability
- */
-
-gss_OID gss_nt_user_name =        &GSS_C_NT_USER_NAME_desc;
-gss_OID gss_nt_machine_uid_name = &GSS_C_NT_MACHINE_UID_NAME_desc;
-gss_OID gss_nt_string_uid_name =  &GSS_C_NT_STRING_UID_NAME_desc;
-gss_OID gss_nt_service_name = 	  &GSS_C_NT_HOSTBASED_SERVICE_desc;
-
-/*
- * define the Globus object ids
- * This is regestered as a private enterprise
- * via IANA
- *  http://www.isi.edu/in-notes/iana/assignments/enterprise-numbers
- *
- * iso.org.dod.internet.private.enterprise (1.3.6.1.4.1)
- * globus 3536 
- * security 1
- * gssapi_ssleay 1
- */
-
-static const gss_OID_desc gss_mech_oid_globus_gssapi_ssleay = 
-	{9, "\x2b\x06\x01\x04\x01\x9b\x50\x01\x01"};
- 
-const gss_OID_desc * const gss_mech_globus_gssapi_ssleay = 
-		&gss_mech_oid_globus_gssapi_ssleay;
-
 /*
  * DEE? Need to add the callback using this: 
  * user can override this to point to thier routines  
@@ -102,60 +44,6 @@ const gss_OID_desc * const gss_mech_globus_gssapi_ssleay =
  * callback 
  */
 char * (*tis_gss_user_supplied_getpass)(char *);
-
-/**********************************************************************
-Function:   gss_indicate_mech()
-
-Description:
-	Passes back the mech set of available mechs.
-	We only have one for now. 
-
-Returns:
-**********************************************************************/
-
-OM_uint32 
-GSS_CALLCONV gss_indicate_mechs
-(OM_uint32 *              minor_status ,
- gss_OID_set *             mech_set
-)
-{
-	gss_OID_set_desc  * set;
-
-	*minor_status = 0;
-	set = (gss_OID_set_desc *)malloc(sizeof(gss_OID_set_desc));
-	if (!set) {
-		return GSS_S_FAILURE;
-	}
-	set->count = 1;
-		/* problems with const, so cast to a non-const */
-	set->elements = (gss_OID) gss_mech_globus_gssapi_ssleay;
-
-	*mech_set = set;
-	return GSS_S_COMPLETE;
-}
-
-/**********************************************************************
-Function:   gss_release_oid_set()
-
-Description:
-	Release the OID set. 
-
-Returns:
-**********************************************************************/
-OM_uint32 
-GSS_CALLCONV gss_release_oid_set
-(OM_uint32 *              minor_status ,
- gss_OID_set *             mech_set
-)
-{
-
-	*minor_status = 0;
-	if (mech_set && *mech_set && *mech_set != GSS_C_NO_OID_SET) {
-		free(*mech_set);
-		*mech_set = GSS_C_NO_OID_SET;
-	}
-	return GSS_S_COMPLETE;
-}
 
 /**********************************************************************
 Function:   gss_acquire_cred()
