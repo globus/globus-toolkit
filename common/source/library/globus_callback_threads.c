@@ -2631,8 +2631,6 @@ globus_l_callback_signal_thread_cleanup(
     } 
 
     globus_mutex_unlock(&globus_l_callback_thread_lock);
-    
-    globus_free(locked);
 }
 
 static
@@ -2642,22 +2640,16 @@ globus_l_callback_thread_signal_poll(
 {
 #ifndef TARGET_ARCH_WIN32
     sigset_t                            current_sigset;
-    globus_bool_t *                     locked;
+    globus_bool_t                       locked;
     
-    locked = (globus_bool_t *) globus_malloc(sizeof(globus_bool_t));
-    if(!locked)
-    {
-        /* should panic here */
-        return NULL;
-    }
     
-    *locked = GLOBUS_FALSE;
+    locked = GLOBUS_FALSE;
     globus_thread_cleanup_push(
-        globus_l_callback_signal_thread_cleanup, locked);
+        globus_l_callback_signal_thread_cleanup, &locked);
     
     /* loop can only exit as a result of cancelation */
     globus_mutex_lock(&globus_l_callback_thread_lock);
-    *locked = GLOBUS_TRUE;
+    locked = GLOBUS_TRUE;
     while(1)
     {
         globus_l_callback_signal_handler_t *handler;
@@ -2690,7 +2682,7 @@ globus_l_callback_thread_signal_poll(
             continue;
         }
         
-        *locked = GLOBUS_FALSE;
+        locked = GLOBUS_FALSE;
         globus_mutex_unlock(&globus_l_callback_thread_lock);
         
         do
@@ -2709,7 +2701,7 @@ globus_l_callback_thread_signal_poll(
         } while(rc < 0 || !sigismember(&current_sigset, signum));
         
         globus_mutex_lock(&globus_l_callback_thread_lock);
-        *locked = GLOBUS_TRUE;
+        locked = GLOBUS_TRUE;
         
         globus_assert(signum >= 0 &&
             signum < globus_l_callback_signal_handlers_size);
@@ -2758,7 +2750,7 @@ globus_l_callback_thread_signal_poll(
     
     /* never reached */
     globus_mutex_unlock(&globus_l_callback_thread_lock);
-    *locked = GLOBUS_FALSE;
+    locked = GLOBUS_FALSE;
     
     globus_thread_cleanup_pop(1);
 #endif    
