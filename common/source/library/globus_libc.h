@@ -81,40 +81,41 @@ EXTERN_C_BEGIN
         extern void globus_libc_closedir(DIR *dirp);
 
 #   else  /* HAVE_THREAD_SAFE_SELECT */
-#       define globus_libc_open    open
-#       define globus_libc_close   close
-#       define globus_libc_read    read
-#       define globus_libc_write   write
+#       define globus_libc              open
+#       define globus_libc_close        close
+#       define globus_libc_read         read
+#       define globus_libc_write        write
 #       if defined(HAVE_WRITEV)
-#           define globus_libc_writev writev
+#           define globus_libc_writev   writev
 #       else
 #           define globus_libc_writev(fd,iov,iovcnt) \
 	            write(fd,iov[0].iov_base,iov[0].iov_len)
 #       endif
-#       define globus_libc_fstat fstat
-#       define globus_libc_opendir opendir
-#       define globus_libc_telldir telldir
-#       define globus_libc_seekdir seekdir
-#       define globus_libc_rewinddir rewinddir
-#       define globus_libc_closedir closedir
+#       define globus_libc_fstat        fstat
+#       define globus_libc_opendir      opendir
+#       define globus_libc_telldir      telldir
+#       define globus_libc_seekdir      seekdir
+#       define globus_libc_rewinddir    rewinddir
+#       define globus_libc_closedir     closedir
 #    endif /* HAVE_THREAD_SAFE_SELECT */
      int 
      globus_libc_getpwuid_r(
-        uid_t                                                   uid,
-        struct passwd *                                         pwd,
-	    char *                                                  buffer,
-	    int                                                     bufsize,
-	    struct passwd **                                        result);
+        uid_t                           uid,
+        struct passwd *                 pwd,
+	    char *                          buffer,
+	    int                             bufsize,
+	    struct passwd **                result);
 
     int 
     globus_libc_readdir_r(
-        DIR *                                                   dirp,
-        struct dirent **                                        result);
+        DIR *                           dirp,
+        struct dirent **                result);
+
 #else /* TARGET_ARCH_WIN32 */
-#    define globus_libc_open    _open
-#    define globus_libc_close   _close
-#    define globus_libc_read    _read
-#    define globus_libc_write   _write
+#    define globus_libc_open            _open
+#    define globus_libc_close           _close
+#    define globus_libc_read            _read
+#    define globus_libc_write           _write
 #endif /* TARGET_ARCH_WIN32 */
 
 /*

@@ -60,6 +60,7 @@
 #if defined(TARGET_ARCH_WIN32)
 #   include <Winsock2.h>
 #   include <process.h>
+#   include <io.h>
 #endif
 
 /*
