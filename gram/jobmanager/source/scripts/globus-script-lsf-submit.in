@@ -215,7 +215,9 @@ fi
 
 $DEBUG_ECHO "JM_SCRIPT: starting to build LSF job script" >> $grami_logfile
 
-echo "# LSF batch job script built by Globus job manager\n\n" >> $LSF_JOB_SCRIPT
+echo "# LSF batch job script built by Globus job manager" >> $LSF_JOB_SCRIPT
+echo "" >> $LSF_JOB_SCRIPT
+echo "" >> $LSF_JOB_SCRIPT
 
 echo "#! ${SH}" >> $LSF_JOB_SCRIPT
 
@@ -357,6 +359,8 @@ echo ""                                                   >> ${grami_stderr}
 # Remove temporary job script file
 ${rm} $LSF_JOB_SCRIPT $LSF_JOB_OUT $LSF_JOB_ERR
 
-$DEBUG_ECHO "JM_SCRIPT: exiting gram_script_lsf_submit\n\n" >> $grami_logfile
+$DEBUG_ECHO "JM_SCRIPT: exiting gram_script_lsf_submit" >> $grami_logfile
+$DEBUG_ECHO "" >> $grami_logfile
+$DEBUG_ECHO "" >> $grami_logfile
 
 exit 1

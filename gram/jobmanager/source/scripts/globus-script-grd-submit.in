@@ -238,7 +238,9 @@ fi
 $DEBUG_ECHO "JM_SCRIPT: starting to build GRD job script" >> $grami_logfile
 echo "#!${SH}" >> $GRD_JOB_SCRIPT
 
-echo "# GRD batch job script built by Globus job manager\n\n" >> $GRD_JOB_SCRIPT
+echo "# GRD batch job script built by Globus job manager" >> $GRD_JOB_SCRIPT
+echo "" >> $GRD_JOB_SCRIPT
+echo "" >> $GRD_JOB_SCRIPT
 
 echo "#$ -S ${SH}" >> $GRD_JOB_SCRIPT
 
@@ -395,6 +397,8 @@ fi
 # Remove temporary job script file
 ${rm} $GRD_JOB_SCRIPT
 
-$DEBUG_ECHO "JM_SCRIPT: exiting gram_script_grd_submit\n\n" >> $grami_logfile
+$DEBUG_ECHO "JM_SCRIPT: exiting gram_script_grd_submit" >> $grami_logfile
+$DEBUG_ECHO ""
+$DEBUG_ECHO ""
 
 exit

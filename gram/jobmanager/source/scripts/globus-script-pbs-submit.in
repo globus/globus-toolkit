@@ -171,7 +171,8 @@ fi
 
 $DEBUG_ECHO starting to build PBS job script >> $grami_logfile
 
-echo "# PBS batch job script built by Globus job manager\n" > $PBS_JOB_SCRIPT
+echo "# PBS batch job script built by Globus job manager" > $PBS_JOB_SCRIPT
+echo "" >> $PBS_JOB_SCRIPT
 
 if [ ! -z "${grami_queue}" ] ; then
     echo "#PBS -q $grami_queue" >> $PBS_JOB_SCRIPT
@@ -244,11 +245,15 @@ fi
 
 # Determine directory to be used as working directory 
 
-echo "\n# Changing to directory as requested by user\n" >> $PBS_JOB_SCRIPT
+echo "" >> $PBS_JOB_SCRIPT
+echo "# Changing to directory as requested by user" >> $PBS_JOB_SCRIPT
+echo "" >> $PBS_JOB_SCRIPT
 echo "cd $grami_directory" >> $PBS_JOB_SCRIPT
 # Determining job request type
 
-echo "\n# Executing job as requested by user\n" >> $PBS_JOB_SCRIPT
+echo "" >> $PBS_JOB_SCRIPT
+echo "# Executing job as requested by user" >> $PBS_JOB_SCRIPT
+echo "" >> $PBS_JOB_SCRIPT 
 if [ $pbs_jobtype = "mpi" ] ; then
    if ${is_cluster} ; then
       echo "${mpirun} -np $grami_count "\
@@ -329,5 +334,7 @@ echo ""                                                   >> ${grami_stderr}
 # Remove temporary job script file
 ${rm} $PBS_JOB_SCRIPT $PBS_JOB_OUT $PBS_JOB_ERR
 
-$DEBUG_ECHO "exiting gram_script_pbs_submit\n\n" >> $grami_logfile
+$DEBUG_ECHO "exiting gram_script_pbs_submit" >> $grami_logfile
+$DEBUG_ECHO "" >> $grami_logfile
+$DEBUG_ECHO "" >> $grami_logfile
 exit 1
