@@ -138,6 +138,16 @@ static gss_cred_id_t credential_handle = GSS_C_NO_CREDENTIAL;
 static gss_cred_id_t delegated_cred_handle = GSS_C_NO_CREDENTIAL;
 static gss_ctx_id_t  context_handle    = GSS_C_NO_CONTEXT;
 
+/*
+ * local definition of restrictions oid
+ *
+ */
+
+static const gss_OID_desc gss_restrictions_extension_oid =
+     {11, "\x2b\x06\x01\x04\x01\x9b\x50\x01\x01\x01\x03"}; 
+const gss_OID_desc * const gss_restrictions_extension = 
+                &gss_restrictions_extension_oid;
+
 /******************************************************************************
                        Define module specific variables
 ******************************************************************************/
@@ -145,13 +155,13 @@ static gss_ctx_id_t  context_handle    = GSS_C_NO_CONTEXT;
 #define DEFAULT_PORT 754
 #define MAX_MESSAGE_LENGTH 100000
 #ifndef GRAM_K5_EXE
-#	define GRAM_K5_EXE "globus-k5"
+#       define GRAM_K5_EXE "globus-k5"
 #endif
 #ifndef GLOBUS_LIBEXECDIR
 #  define GLOBUS_LIBEXECDIR "libexec"
 #endif
 #ifndef GLOBUS_GATEKEEPER_HOME
-#	define GLOBUS_GATEKEEPER_HOME "/etc"
+#       define GLOBUS_GATEKEEPER_HOME "/etc"
 #endif
 #ifndef LOGFILE
 #define LOGFILE ""
@@ -201,7 +211,7 @@ static int      foreground;
 static int      krb5flag;
 static int      run_from_inetd;
 static char *   gatekeeperhome = NULL;
-static char *	job_manager_exe = "globus-job-manager";
+static char *   job_manager_exe = "globus-job-manager";
 static char *   jm_conf_path = NULL;
 static char *   libexecdir = NULL;
 static char *   libexecdirr = GLOBUS_LIBEXECDIR;
@@ -242,16 +252,16 @@ get_globusid()
     OM_uint32         minor_status2 = 0;
 
     if ((major_status = gss_inquire_cred(&minor_status,
-                                        credential_handle,
-                                        &server_name,
-                                        NULL,
-                                        NULL,
-                                        NULL)) == GSS_S_COMPLETE)
+                                         credential_handle,
+                                         &server_name,
+                                         NULL,
+                                         NULL,
+                                         NULL)) == GSS_S_COMPLETE)
     {
         major_status = gss_display_name(&minor_status,
-                                       server_name,
-                                       server_buffer,
-									   NULL);
+                                        server_name,
+                                        server_buffer,
+                                        NULL);
         gss_release_name(&minor_status2, &server_name);
     }
     /*
@@ -279,40 +289,40 @@ get_globusid()
 /******************************************************************************
 Function:       terminate()
 Description:    Handle a  SIGTERM, and specificly close the listener_fd
-				This should avoid problems when the gatekeeper
-				is shutdown. 
+                                This should avoid problems when the gatekeeper
+                                is shutdown. 
 Parameters:
 Returns:
 ******************************************************************************/
 void 
 terminate(int s)
 {
-	notice2(LOG_NOTICE,"Gatekeeper received signal:%d",s);
-	if (listener_fd > 0)
-	{
+    notice2(LOG_NOTICE,"Gatekeeper received signal:%d",s);
+    if (listener_fd > 0)
+    {
 
 #if 0
 /* may need to add code for unicos MLS to get socket closed */
 #     if defined(TARGET_ARCH_CRAYT3E)
-      {
-		if(gatekeeper_uid == 0)
-          {
-          close_unicos_socket(listener_fd);
-          }
-      }
+        {
+            if(gatekeeper_uid == 0)
+            {
+                close_unicos_socket(listener_fd);
+            }
+        }
 #     endif
 #endif
 
-		if (close(listener_fd) == -1)
-		{
-			notice3(LOG_ERR, "Shutdown of %d: %.100s",
-					listener_fd, strerror(errno));
-					
-		}
-		listener_fd = -1;
-	}
-	failure2(FAILED_SERVER,"Gatekeeper shutdown on signal:%d",s)
-}
+        if (close(listener_fd) == -1)
+        {
+            notice3(LOG_ERR, "Shutdown of %d: %.100s",
+                    listener_fd, strerror(errno));
+                                        
+        }
+        listener_fd = -1;
+    }
+    failure2(FAILED_SERVER,"Gatekeeper shutdown on signal:%d",s)
+        }
 /******************************************************************************
 Function:       reaper()
 Description:    Wait for any child processes that have terminated.
@@ -324,15 +334,15 @@ reaper(int s)
 {
     int pid;
 #   ifdef HAS_WAIT_UNION_WAIT
-      union wait status;
+    union wait status;
 #   else
-      int status;
+    int status;
 #   endif
 
 #   ifdef HAS_WAIT3
-      while ((pid = wait3(&status, WNOHANG, NULL)) > 0) ;
+    while ((pid = wait3(&status, WNOHANG, NULL)) > 0) ;
 #   else
-      while ((pid = waitpid(-1, &status, WNOHANG)) > 0) ;
+    while ((pid = waitpid(-1, &status, WNOHANG)) > 0) ;
 #   endif
 } /* reaper() */
 
@@ -342,7 +352,7 @@ Description:    generate an absolute file name given a starting prefix,
                 a relative or absolute path, and a sufix
                 Only use prefix if path is relative.
 Parameters:
-Returns:		a pointer to a string which could be freeded.
+Returns:                a pointer to a string which could be freeded.
 ******************************************************************************/
 
 static char *
@@ -375,7 +385,7 @@ genfilename(char * prefixp, char * pathp, char * sufixp)
         if ((pathl  != 0) &&
             (sufixl != 0) && 
             (path[pathl-1] != '/') && 
-             sufix[0] != '/')
+            sufix[0] != '/')
         {
             strcat(newfilename, "/");
         }
@@ -400,10 +410,10 @@ main(int xargc,
     int    fd;
     int    pid;
     int    ttyfd;
-	int    rc;
+    int    rc;
     netlen_t   namelen;
     struct sockaddr_in name;
-	struct stat         statbuf;
+    struct stat         statbuf;
 
     /* GSSAPI status vaiables */
     OM_uint32 major_status = 0;
@@ -413,16 +423,16 @@ main(int xargc,
     unicos_init();
 #endif
 
-	/* 
-	 * Don't allow logins of /etc/nologins is defined. 
-	 * Silently ignore them, as the sysadmin
-	 * must have other problems.
-	 */
+    /* 
+     * Don't allow logins of /etc/nologins is defined. 
+     * Silently ignore them, as the sysadmin
+     * must have other problems.
+     */
 
-	if ((rc = stat("/etc/nologin",&statbuf)) == 0 )
-	{
-		exit (1);
-	}
+    if ((rc = stat("/etc/nologin",&statbuf)) == 0 )
+    {
+        exit (1);
+    }
 
     gatekeeper_uid = getuid();
     if (gatekeeper_uid == 0)
@@ -456,21 +466,21 @@ main(int xargc,
          */
 #if defined(TARGET_ARCH_LINUX) || defined(TARGET_ARCH_SOLARIS)
         /*
-	 * There is a memory corruption bug in the getcwd in
+         * There is a memory corruption bug in the getcwd in
          * glibc-2.1.1 and earlier
-	 *
-	 * Solaris 2.5.1 does not have a correct implementation
-	 * of getcwd either.
-	 *
+         *
+         * Solaris 2.5.1 does not have a correct implementation
+         * of getcwd either.
+         *
          */
-	{
-	    char tmppath[PATH_MAX];
+        {
+            char tmppath[PATH_MAX];
 
-	    if(getwd(tmppath))
-	    {
-		gatekeeperhome = strdup(tmppath);
-	    }
-	}
+            if(getwd(tmppath))
+            {
+                gatekeeperhome = strdup(tmppath);
+            }
+        }
 #else
         {
             char *tmppath = NULL;
@@ -523,13 +533,13 @@ main(int xargc,
     if ( argc == 3 &&
          (!strcmp(argv[1],"-c") ||
           !strcmp(argv[1],"-conf"))
-       )
+        )
     {
         char ** newargv;
-        char * newbuf; 	
+        char * newbuf;  
         int newargc = 52;
         int  pfd;
-	  
+          
         newargv = (char**) malloc(newargc * sizeof(char *)); /* not freeded */
         newbuf = (char *) malloc(BUFSIZ);  /* dont free */
         newargv[0] = argv[0];
@@ -543,9 +553,9 @@ main(int xargc,
         newargv[0] = argv[0];
         newargc--;
         globus_gatekeeper_util_tokenize(newbuf, 
-							&newargv[1],
-							&newargc,
-							" \t\n");
+                                        &newargv[1],
+                                        &newargc,
+                                        " \t\n");
         argv = newargv;
         argc = newargc + 1;
     }
@@ -561,18 +571,18 @@ main(int xargc,
         else if (strcmp(argv[i], "-inetd") == 0)
         {
             if(!run_from_inetd)
-	    {
-		if(!gatekeeper_test)
-		{
-		    fprintf(stderr, "Gatekeeper running as daemon, ignoring -inetd!\n");
-		}
-	    }
-	    else
-	    {
-		run_from_inetd = 1;
-		foreground = 0;
-	    }
-	    
+            {
+                if(!gatekeeper_test)
+                {
+                    fprintf(stderr, "Gatekeeper running as daemon, ignoring -inetd!\n");
+                }
+            }
+            else
+            {
+                run_from_inetd = 1;
+                foreground = 0;
+            }
+            
         }
         else if (((strcmp(argv[i], "-p") == 0) ||
                   (strcmp(argv[i], "-port") == 0))
@@ -583,34 +593,34 @@ main(int xargc,
         }
         else if (((strcmp(argv[i], "-l") == 0) ||
                   (strcmp(argv[i], "-logfile") == 0))
-                && (i + 1 < argc))
+                 && (i + 1 < argc))
         {
             logfile =  argv[i+1];
             i++;
         }
         else if ((strcmp(argv[i], "-home") == 0)
-                && (i + 1 < argc))
+                 && (i + 1 < argc))
         {
-			/* Also known as the ${deploy_prefix} */
+            /* Also known as the ${deploy_prefix} */
             gatekeeperhome = argv[i+1];
             i++;
         }
         else if ((strcmp(argv[i], "-e") == 0)
-                && (i + 1 < argc))
+                 && (i + 1 < argc))
         {
             libexecdirr = argv[i+1];
             i++;
         }
         else if ((strcmp(argv[i], "-grid_services") == 0)
-                && (i + 1 < argc))
+                 && (i + 1 < argc))
         {
             grid_services = argv[i+1];
             i++;
         }
-		/* The jmconf and -jm are left here during the 
-	 	 * cutover to the 1.1 so as to not have to change
-		 * the deploy scripts just yet. 
-		 */
+        /* The jmconf and -jm are left here during the 
+         * cutover to the 1.1 so as to not have to change
+         * the deploy scripts just yet. 
+         */
         else if ((strcmp(argv[i], "-jmconf") == 0)
                  && (i + 1 < argc))
         {
@@ -633,9 +643,9 @@ main(int xargc,
         {
             gatekeeper_test++;
         }
-		
+                
         else if ((strcmp(argv[i], "-globusid") == 0)
-                && (i + 1 < argc))
+                 && (i + 1 < argc))
         {
             setenv("GLOBUSID", argv[i+1],1);
             i++;
@@ -653,60 +663,60 @@ main(int xargc,
             i++;
         }
         else if ((strcmp(argv[i], "-globuskeydir") == 0)
-                && (i + 1 < argc))
+                 && (i + 1 < argc))
         {
             globuskeydir = argv[i+1];
             i++;
         }
         else if ((strcmp(argv[i], "-globuscertdir") == 0)
-                && (i + 1 < argc))
+                 && (i + 1 < argc))
         {
             globuscertdir = argv[i+1];
             i++;
         }
-	
+        
         /* set environment variables used by gssapi_ssleay */
 
         else if ((strcmp(argv[i], "-x509_cert_dir") == 0)
-                && (i + 1 < argc))
+                 && (i + 1 < argc))
         {
             x509_cert_dir = argv[i+1];
             i++;
         }
         else if ((strcmp(argv[i], "-x509_cert_file") == 0)
-                && (i + 1 < argc))
+                 && (i + 1 < argc))
         {
             x509_cert_file = argv[i+1];
             i++;
         }
         else if ((strcmp(argv[i], "-x509_user_proxy") == 0)
-                && (i + 1 < argc))
+                 && (i + 1 < argc))
         {
             x509_user_proxy = argv[i+1];
             i++;
         }
         else if ((strcmp(argv[i], "-x509_user_cert") == 0)
-                && (i + 1 < argc))
+                 && (i + 1 < argc))
         {
             x509_user_cert = argv[i+1];
             i++;
         }
         else if ((strcmp(argv[i], "-x509_user_key") == 0)
-                && (i + 1 < argc))
+                 && (i + 1 < argc))
         {
             x509_user_key = argv[i+1];
             i++;
         }
         
         else if ((strcmp(argv[i], "-desired_name") == 0)
-                && (i + 1 < argc))
+                 && (i + 1 < argc))
         {
             desired_name_char = argv[i+1];
             i++;
         }
 
         else if ((strcmp(argv[i], "-globuskmap") == 0)
-                && (i + 1 < argc))
+                 && (i + 1 < argc))
         {
             globuskmap = argv[i+1];
             krb5flag = 1;
@@ -719,14 +729,14 @@ main(int xargc,
         else if ((strcmp(argv[i], "-f") == 0) ||
                  (strcmp(argv[i], "-foreground") == 0))
         {
-	    if(!run_from_inetd)
-	    {
-		/* make the daemon run in the Foreground */
-		
-		foreground = 1;
-		run_from_inetd = 0;
-	    }
-	}
+            if(!run_from_inetd)
+            {
+                /* make the daemon run in the Foreground */
+                
+                foreground = 1;
+                run_from_inetd = 0;
+            }
+        }
         else
         {
 
@@ -735,24 +745,24 @@ main(int xargc,
                     argv[0], 
                     "{-conf parmfile [-test]} | {[-d[ebug] [-inetd | -f] [-p[ort] port] ",
                     "[-home path] [-l[ogfile] logfile] [-e path] ",
-					"[-grid_services file] ",
+                    "[-grid_services file] ",
                     "[-globusid globusid] [-gridmap file] [-globuspwd file]",
                     "[-x509_cert_dir path] [-x509_cert_file file]",
                     "[-x509_user_cert file] [-x509_user_key file]",
                     "[-x509_user_proxy file]",
                     "[-k] [-globuskmap file]",
                     "[-test]}"
-                   );
+                );
             exit(1);
         }
     }
 
-	/* 
-	 * define libexec relative to home
-	 * if needed
-	 */
+    /* 
+     * define libexec relative to home
+     * if needed
+     */
 
-	libexecdir = genfilename(gatekeeperhome, libexecdirr, NULL);
+    libexecdir = genfilename(gatekeeperhome, libexecdirr, NULL);
 
     /*
      * Dont use default env proxy cert for gatekeeper if run as root
@@ -761,7 +771,7 @@ main(int xargc,
 
     if (gatekeeper_uid == 0)
     {
-    unsetenv("X509_USER_PROXY");
+        unsetenv("X509_USER_PROXY");
     }
 
     if (gatekeeper_test)
@@ -775,20 +785,20 @@ main(int xargc,
         {
             fprintf(stderr,"Local user id (uid)      : root\n");
         }
-	fprintf(stderr,"Home directory           : %s\n", 
-			(gatekeeperhome) ? gatekeeperhome : "(not defined)");
-	fprintf(stderr,"Libexec directory        : %s\n",
-				(libexecdir) ? libexecdir : "(not defined)");
+        fprintf(stderr,"Home directory           : %s\n", 
+                (gatekeeperhome) ? gatekeeperhome : "(not defined)");
+        fprintf(stderr,"Libexec directory        : %s\n",
+                (libexecdir) ? libexecdir : "(not defined)");
 
         run_from_inetd = 0;
         foreground = 1;
     }
 
-	if (gatekeeperhome)
-	{
-		setenv("GLOBUS_LOCATION",gatekeeperhome,1);
-	}
-	
+    if (gatekeeperhome)
+    {
+        setenv("GLOBUS_LOCATION",gatekeeperhome,1);
+    }
+        
     setenv("GRIDMAP", genfilename(gatekeeperhome,gridmap,NULL),1);
     if (globuspwd) 
     {
@@ -798,39 +808,39 @@ main(int xargc,
     if (x509_cert_dir)
     {
         setenv("X509_CERT_DIR",
-                     genfilename(gatekeeperhome,x509_cert_dir,NULL),
-                     1);
+               genfilename(gatekeeperhome,x509_cert_dir,NULL),
+               1);
     }
     if (x509_cert_file)
     {
         setenv("X509_CERT_FILE",
-                     genfilename(gatekeeperhome,x509_cert_file,NULL),
-                     1);
+               genfilename(gatekeeperhome,x509_cert_file,NULL),
+               1);
     }
     if (x509_user_proxy)
     {
         setenv("X509_USER_PROXY",
-                     genfilename(gatekeeperhome,x509_user_proxy,NULL),
-                     1);
+               genfilename(gatekeeperhome,x509_user_proxy,NULL),
+               1);
     }
 
     if (x509_user_cert)
     {
         setenv("X509_USER_CERT",
-                     genfilename(gatekeeperhome,x509_user_cert,NULL),
-                     1);
+               genfilename(gatekeeperhome,x509_user_cert,NULL),
+               1);
     }
     if (x509_user_key)
     {
         setenv("X509_USER_KEY", 
-                     genfilename(gatekeeperhome,x509_user_key,NULL),
-                     1);
+               genfilename(gatekeeperhome,x509_user_key,NULL),
+               1);
     }
     if (krb5flag) 
     {
         setenv("GLOBUSKMAP",
-                     genfilename(gatekeeperhome,globuskmap,NULL),
-                     1);
+               genfilename(gatekeeperhome,globuskmap,NULL),
+               1);
     }
 
     if (run_from_inetd)
@@ -845,7 +855,7 @@ main(int xargc,
     }
 
     notice4(LOG_INFO, "%s pid=%d starting at %s",
-        argv[0], getpid(), timestamp());
+            argv[0], getpid(), timestamp());
 
     /*
      * Setup SIGCHLD signal handler to reap processes that we create
@@ -857,14 +867,14 @@ main(int xargc,
         sigaddset(&act.sa_mask, SIGCHLD);
         act.sa_flags = 0;
         sigaction(SIGCHLD, &act, NULL);
-		if (!run_from_inetd)
-		{
-			act.sa_handler = terminate;
-			sigemptyset(&act.sa_mask);
-			sigaddset(&act.sa_mask, SIGTERM);
-			act.sa_flags = 0;
-			sigaction(SIGTERM, &act, NULL);
-		}
+        if (!run_from_inetd)
+        {
+            act.sa_handler = terminate;
+            sigemptyset(&act.sa_mask);
+            sigaddset(&act.sa_mask, SIGTERM);
+            act.sa_flags = 0;
+            sigaction(SIGTERM, &act, NULL);
+        }
     }
 
     if (run_from_inetd)
@@ -880,21 +890,21 @@ main(int xargc,
      * have any prompts
      */
     major_status = globus_gss_assist_acquire_cred_ext(&minor_status,
-                              desired_name_char,
-                              GSS_C_INDEFINITE,
-                              GSS_C_NO_OID_SET,
-                              GSS_C_ACCEPT,
-                              &credential_handle,
-                              NULL,
-                              NULL);
+                                                      desired_name_char,
+                                                      GSS_C_INDEFINITE,
+                                                      GSS_C_NO_OID_SET,
+                                                      GSS_C_ACCEPT,
+                                                      &credential_handle,
+                                                      NULL,
+                                                      NULL);
 
     if (major_status != GSS_S_COMPLETE)
     {
         globus_gss_assist_display_status(stderr,
-                              "GSS failed getting server credentials: ",
-                              major_status,
-                              minor_status,
-                              0);
+                                         "GSS failed getting server credentials: ",
+                                         major_status,
+                                         minor_status,
+                                         0);
 
         failure(FAILED_SERVER, "GSS failed to get server credentials\n");
     }
@@ -902,75 +912,75 @@ main(int xargc,
     if (gatekeeper_test) 
     {
         fprintf(stderr,"Gatekeeper subject name  : \"%s\"\n",
-        get_globusid());
+                get_globusid());
         fprintf(stderr,"Gatekeeper test complete : Success!\n\n");
         fprintf(stderr,"Gatekeeper shutting down!\n");
         exit(0);
     }
 
     {
-      char hostname[255];
-      char *globusid;
-      struct hostent *hp;
-      char *fqdn;
-      char * contact_string;
+        char hostname[255];
+        char *globusid;
+        struct hostent *hp;
+        char *fqdn;
+        char * contact_string;
       
-      gethostname(hostname, sizeof(hostname)-1);
+        gethostname(hostname, sizeof(hostname)-1);
       
-      if ((hp = gethostbyname(hostname)))
-      {
-          fqdn = (char *) hp->h_name;
-      }
-      else
-      {
-          fqdn = (hostname ? hostname : "HOSTNAME");
-      }
+        if ((hp = gethostbyname(hostname)))
+        {
+            fqdn = (char *) hp->h_name;
+        }
+        else
+        {
+            fqdn = (hostname ? hostname : "HOSTNAME");
+        }
       
-      globusid = get_globusid();
+        globusid = get_globusid();
 
 
-      if (!run_from_inetd)
-      {
-	  logging_phase2(); /* now set stderr to logfile after gss prompts */
+        if (!run_from_inetd)
+        {
+            logging_phase2(); /* now set stderr to logfile after gss prompts */
 
-	  net_setup_listener(2, &daemon_port, &listener_fd);
-	  
+            net_setup_listener(2, &daemon_port, &listener_fd);
+          
 #         if defined(TARGET_ARCH_CRAYT3E)
-	  {
-	      if(gatekeeper_uid == 0)
-	      {
-		  set_unicos_sockopts(listener_fd);
-	      }
-	  }
+            {
+                if(gatekeeper_uid == 0)
+                {
+                    set_unicos_sockopts(listener_fd);
+                }
+            }
 #         endif
-      }
+        }
       
-      /* ajr,vs --changed printf to sprintf, and added setenv
-       * This is considered to be a temporary change */
-      if ((contact_string = (char *)malloc(strlen(fqdn) 
-                + strlen(globusid) + 40))) 
-      {
-	
-          sprintf(contact_string, "%s:%d:%s",
-                  fqdn, daemon_port, globusid);
-          if (!run_from_inetd)
-              printf("GRAM contact: %s\n", contact_string);
-          setenv("GLOBUS_GATEKEEPER_CONTACT_STRING",
-                  contact_string,
-                  1);
+        /* ajr,vs --changed printf to sprintf, and added setenv
+         * This is considered to be a temporary change */
+        if ((contact_string = (char *)malloc(strlen(fqdn) 
+                                             + strlen(globusid) + 40))) 
+        {
+        
+            sprintf(contact_string, "%s:%d:%s",
+                    fqdn, daemon_port, globusid);
+            if (!run_from_inetd)
+                printf("GRAM contact: %s\n", contact_string);
+            setenv("GLOBUS_GATEKEEPER_CONTACT_STRING",
+                   contact_string,
+                   1);
      
-          if (!run_from_inetd && strlen(contact_string)<sizeof(tmpbuf)-15)
-              notice2(LOG_INFO, "GRAM contact: %s\n", contact_string);
+            if (!run_from_inetd && strlen(contact_string)<sizeof(tmpbuf)-15)
+                notice2(LOG_INFO, "GRAM contact: %s\n", contact_string);
 
-          free(contact_string);
-      }
-      free(globusid);
+            free(contact_string);
+        }
+        free(globusid);
     }
 
 
     if (run_from_inetd)
     {
-	(void) setsid();
+        (void) setsid();
         doit();
     }
     else
@@ -997,44 +1007,44 @@ main(int xargc,
                 defined(__hpux) || \
                 defined(CRAY) || \
                 defined(TARGET_ARCH_CYGWIN))
-	    {
-		
-    	char fname[256];
+            {
+                
+                char fname[256];
 
-		/* mod here (variable "fname") no longer in use. --milne */
-		sprintf(fname, "/dev/console"); 
-		fd = open (fname, O_RDWR);
-		notice2(0, "open dev console fd = %d\n", fd);
-		if (fd < 0)
-		{
-		    sprintf(fname, "/dev/tty");
-		    fd = open (fname, O_RDWR);
-		}
-		notice2(0, "open dev tty fd = %d\n", fd);
-		if (fd < 0)
-		{
-		    sprintf(fname, "/dev/null");
-		    fd = open (fname, O_RDWR);
-		}
-		notice3(0, "open %s fd = %d\n", fname, fd);
-		(void) dup2(2, 1); /* point out at stderr or log */
+                /* mod here (variable "fname") no longer in use. --milne */
+                sprintf(fname, "/dev/console"); 
+                fd = open (fname, O_RDWR);
+                notice2(0, "open dev console fd = %d\n", fd);
+                if (fd < 0)
+                {
+                    sprintf(fname, "/dev/tty");
+                    fd = open (fname, O_RDWR);
+                }
+                notice2(0, "open dev tty fd = %d\n", fd);
+                if (fd < 0)
+                {
+                    sprintf(fname, "/dev/null");
+                    fd = open (fname, O_RDWR);
+                }
+                notice3(0, "open %s fd = %d\n", fname, fd);
+                (void) dup2(2, 1); /* point out at stderr or log */
 
-#		if HAVE_SETSID
-		(void) setsid();
-#		endif
-		(void) setpgrp();
-	    }
+#               if HAVE_SETSID
+                (void) setsid();
+#               endif
+                (void) setpgrp();
+            }
 #           else
-	    {
-		(void) open("/dev/null", O_RDONLY);
-		(void) dup2(2, 1); /* point stdout to stderr */
-		fd = open("/dev/tty", O_RDWR);
-		if (fd >= 0)
-		{
-		    ioctl(fd, TIOCNOTTY, 0);
-		    (void) close(fd);
-		}
-	    }
+            {
+                (void) open("/dev/null", O_RDONLY);
+                (void) dup2(2, 1); /* point stdout to stderr */
+                fd = open("/dev/tty", O_RDWR);
+                if (fd >= 0)
+                {
+                    ioctl(fd, TIOCNOTTY, 0);
+                    (void) close(fd);
+                }
+            }
 #           endif
         }
 
@@ -1054,30 +1064,30 @@ main(int xargc,
 
             if (pid == 0)
             {
-				(void) setsid();
+                (void) setsid();
 #               if defined(__hpux) || defined(TARGET_ARCH_SOLARIS)
-		{
-		    (void) setpgrp();
-		}
+                {
+                    (void) setpgrp();
+                }
 #               else
-		{
-		    ttyfd = open("/dev/tty",O_RDWR);
-		    if (ttyfd >= 0)
-		    {
+                {
+                    ttyfd = open("/dev/tty",O_RDWR);
+                    if (ttyfd >= 0)
+                    {
 #                       if !defined(CRAY) && !defined(TARGET_ARCH_CYGWIN)
-			{
-			    ioctl(ttyfd, TIOCNOTTY, 0);
-			}
+                        {
+                            ioctl(ttyfd, TIOCNOTTY, 0);
+                        }
 #                       endif
-			close(ttyfd);
-		    }
+                        close(ttyfd);
+                    }
                 }
 #               endif
-		
+                
                 fclose(stdin); /* take care of stream buffers too */
                 close(0);
                 close(listener_fd);
-				listener_fd = -1;
+                listener_fd = -1;
 
                 dup2(connection_fd, 0);
                 /* this should work, but not sure !? */
@@ -1117,27 +1127,27 @@ static void doit()
     char **             args;
     char *              argnp;
     char *              execp;
-    char **		argi;
-    int			num_service_args = SERVICE_ARGS_MAX;
-    char *		service_args[SERVICE_ARGS_MAX];
-    int			num_service_options = SERVICE_OPTIONS_MAX;
-    char *		service_options[SERVICE_OPTIONS_MAX];
-    int			service_option_local_cred = 0;
-    int			service_option_stderr_log = 0;
-    int			service_option_accept_limited = 0;
+    char **             argi;
+    int                 num_service_args = SERVICE_ARGS_MAX;
+    char *              service_args[SERVICE_ARGS_MAX];
+    int                 num_service_options = SERVICE_OPTIONS_MAX;
+    char *              service_options[SERVICE_OPTIONS_MAX];
+    int                 service_option_local_cred = 0;
+    int                 service_option_stderr_log = 0;
+    int                 service_option_accept_limited = 0;
     unsigned char       int_buf[4];
     char                tmp_version[64];
     struct stat         statbuf;
-    char *		service_line = NULL;
+    char *              service_line = NULL;
     char *              service_path;
     char *              gram_k5_path; 
     struct sockaddr_in  peer;
     netlen_t            peerlen;
     char *              peernum;
     char *              x509_delegate;
-    size_t	        length;
+    size_t              length;
     char *              http_message;
-    size_t	        http_length;
+    size_t              http_length;
     char *              http_body;
     size_t              http_body_length;
     FILE *              http_body_file;
@@ -1147,8 +1157,11 @@ static void doit()
     OM_uint32           minor_status2 = 0;
     int                 token_status = 0;
     OM_uint32           ret_flags = 0;
-    gss_buffer_desc 	context_token = GSS_C_EMPTY_BUFFER;
-    FILE *		context_tmpfile = NULL;
+    gss_buffer_desc     context_token = GSS_C_EMPTY_BUFFER;
+    gss_buffer_desc     option_token = GSS_C_EMPTY_BUFFER;
+    gss_buffer_set_desc restriction_buffers = GSS_C_EMPTY_BUFFER_SET;
+    gss_OID_set_desc    extension_oids;
+    FILE *              context_tmpfile = NULL;
     char *              delcname = NULL;
 
     /* Authorization variables */
@@ -1158,19 +1171,19 @@ static void doit()
     struct passwd *     pw;
 
 
-	/* Now do stdout, so it points at the socket too */
-	/* needed for the grid-services */
-			
-	fclose(stdout);
-	close(1);
-	dup2(0,1);
-	*stdout = *fdopen(1,"w");
+    /* Now do stdout, so it points at the socket too */
+    /* needed for the grid-services */
+                        
+    fclose(stdout);
+    close(1);
+    dup2(0,1);
+    *stdout = *fdopen(1,"w");
     (void) setbuf(stdout,NULL);
 
 #if defined(TARGET_ARCH_CRAYT3E)
     if(gatekeeper_uid == 0)
     {
-	get_unicos_connect_info(0);
+        get_unicos_connect_info(0);
     }
 #endif
 
@@ -1189,82 +1202,111 @@ static void doit()
     notice3(LOG_INFO, "Got connection %s at %s", peernum, timestamp());
 
 #ifdef TARGET_ARCH_CRAYT3E
-         /* Need to lookup hostname -- provide for use in udb updates. */
-          {
-            struct sockaddr_in from;
-            int fromlen;
-            struct hostent *hp;
-            char hostname[256];
+    /* Need to lookup hostname -- provide for use in udb updates. */
+    {
+        struct sockaddr_in from;
+        int fromlen;
+        struct hostent *hp;
+        char hostname[256];
 
-            /* Get IP address of client. */
-            fromlen = sizeof(from);
-            memset(&from, 0, sizeof(from));
-            if (getpeername(connection_fd, (struct sockaddr *)&from,
-                            &fromlen) < 0)
-            {
-              notice2(LOG_ERR,"getpeername failed: %.100s", strerror(errno));
-              strcpy(hostname, "UNKNOWN");
-            }
-            else
-            {
-              /* Map the IP address to a host name. */
-              hp = gethostbyaddr((char *)&from.sin_addr, 
-                                 sizeof(struct in_addr), from.sin_family);
-              if (hp)
+        /* Get IP address of client. */
+        fromlen = sizeof(from);
+        memset(&from, 0, sizeof(from));
+        if (getpeername(connection_fd, (struct sockaddr *)&from,
+                        &fromlen) < 0)
+        {
+            notice2(LOG_ERR,"getpeername failed: %.100s", strerror(errno));
+            strcpy(hostname, "UNKNOWN");
+        }
+        else
+        {
+            /* Map the IP address to a host name. */
+            hp = gethostbyaddr((char *)&from.sin_addr, 
+                               sizeof(struct in_addr), from.sin_family);
+            if (hp)
                 strncpy(hostname, hp->h_name, sizeof(hostname));
-              else
+            else
                 strncpy(hostname, inet_ntoa(from.sin_addr), sizeof(hostname));
-            }
+        }
 
-            set_connection_hostname (hostname);
-          }
+        set_connection_hostname (hostname);
+    }
 #endif /* TARGET_ARCH_CRAYT3E */
 
     /* Do gss authentication here */
 
-	/* 
-	 * if globus nologin is set, error message and exit
-	 */
-	
-	if (stat(genfilename(gatekeeperhome,"etc",globusnologin),
-				&statbuf) == 0)
-	{
-		failure(FAILED_NOLOGIN, 
-			"Not accepting connections at this time");
-	}
+    /* 
+     * if globus nologin is set, error message and exit
+     */
+        
+    if (stat(genfilename(gatekeeperhome,"etc",globusnologin),
+             &statbuf) == 0)
+    {
+        failure(FAILED_NOLOGIN, 
+                "Not accepting connections at this time");
+    }
 
-	if (stat(genfilename(gatekeeperhome,"var",globusnologin),
-				&statbuf) == 0)
-	{
-		failure(FAILED_NOLOGIN, 
-			"Not accepting connections at this time");
-	}
+    if (stat(genfilename(gatekeeperhome,"var",globusnologin),
+             &statbuf) == 0)
+    {
+        failure(FAILED_NOLOGIN, 
+                "Not accepting connections at this time");
+    }
 
     /* We will use the assist functions here since we 
      * don't need any special processing
      */
-	
-	/* 
-	 * We will not accept limited proxies for authentication, as
-	 * they may have been stolen. This enforces part of the 
-	 * Globus security policy.
-	 * This check will be made later, after the service is
-	 * is determined. This is done to allow limited proxies
-	 * to be used for some services, like GARA
-	 */
 
-    major_status = globus_gss_assist_accept_sec_context(&minor_status,
-                       &context_handle,
-                       credential_handle,
-                       &client_name,
-                       &ret_flags,
-                       NULL,            /* don't need user_to_user */
-                       &token_status,
-					   &delegated_cred_handle,
-                       globus_gss_assist_token_get_fd,
-                       (void *)stdin,
-                       globus_gss_assist_token_send_fd,
-                       (void *)fdout);
+    extension_oids.elements = (gss_OID) gss_restrictions_extension;
+    extension_oids.count = 1;
+    
+    option_token.value = (void *) &extension_oids;
+
+    major_status = gss_set_sec_context_option(
+        &minor_status,
+        &context_handle,
+        (gss_OID) GSS_APPLICATION_WILL_HANDLE_EXTENSIONS,
+        &option_token);
+
+    if (major_status != GSS_S_COMPLETE)
+    {
+        if (logging_usrlog) 
+        {
+            globus_gss_assist_display_status(usrlog_fp,
+                                             "GSS authentication failure ",
+                                             major_status,
+                                             minor_status,
+                                             token_status);
+        }
+
+        failure4(FAILED_AUTHENTICATION,
+                 "GSS failed Major:%8.8x Minor:%8.8x Token:%8.8x\n",
+                 major_status,minor_status,token_status);
+    }
+
+    
+    /* 
+     * We will not accept limited proxies for authentication, as
+     * they may have been stolen. This enforces part of the 
+     * Globus security policy.
+     * This check will be made later, after the service is
+     * is determined. This is done to allow limited proxies
+     * to be used for some services, like GARA
+     */
+    
+    major_status = globus_gss_assist_accept_sec_context(
+        &minor_status,
+        &context_handle,
+        credential_handle,
+        &client_name,
+        &ret_flags,
+        NULL,            /* don't need user_to_user */
+        &token_status,
+        &delegated_cred_handle,
+        globus_gss_assist_token_get_fd,
+        (void *)stdin,
+        globus_gss_assist_token_send_fd,
+        (void *)fdout);
 
 
     if (major_status != GSS_S_COMPLETE)
@@ -1272,18 +1314,26 @@ static void doit()
         if (logging_usrlog) 
         {
             globus_gss_assist_display_status(usrlog_fp,
-                "GSS authentication failure ",
-                major_status,
-                minor_status,
-                token_status);
+                                             "GSS authentication failure ",
+                                             major_status,
+                                             minor_status,
+                                             token_status);
         }
 
         failure4(FAILED_AUTHENTICATION,
-		 "GSS failed Major:%8.8x Minor:%8.8x Token:%8.8x\n",
-            major_status,minor_status,token_status);
+                 "GSS failed Major:%8.8x Minor:%8.8x Token:%8.8x\n",
+                 major_status,minor_status,token_status);
     }
 
-	/* now OK to send wrapped error message */
+    /* check if the peer cert has any restrictions in it */
+/*
+    maj_stat = gss_inquire_sec_context_by_oid(&min_stat,
+                                              context_handle,
+                                              gss_restrictions_extension,
+                                              &restriction_buffers);
+*/
+    
+    /* now OK to send wrapped error message */
     ok_to_send_errmsg = 1;
 
     /* client_name is the globusID of the client, we need to check 
@@ -1294,38 +1344,38 @@ static void doit()
     notice2(LOG_NOTICE, "Authenticated globus user: %s", client_name);
 
 #ifdef CLASS_ADD
-	{
-		/* This is only a sample to show the class adds */
-		 gss_buffer_desc * class_add_array = NULL;
-		 gss_buffer_desc * class_add_array_entry = NULL;
+    {
+        /* This is only a sample to show the class adds */
+        gss_buffer_desc * class_add_array = NULL;
+        gss_buffer_desc * class_add_array_entry = NULL;
 
-		minor_status = 0xdee0;
-		major_status = gss_inquire_context(&minor_status,
-					context_handle,
-					NULL,
-					(gss_name_t) &class_add_array,
-					NULL,
-					NULL,
-					NULL,
-					NULL,
-					NULL);
-		if (minor_status == 0xdee1) {
-			fprintf(stderr,"ClassADD strings:\n");
-			class_add_array_entry = class_add_array;
-			while(class_add_array_entry->length != -1) {
-				if (class_add_array_entry->length) { 
-					fprintf(stderr,"   %5d %*s\n", 
-						class_add_array_entry->length,
-						class_add_array_entry->length,
-						class_add_array_entry->value);
-					free(class_add_array_entry->value);
-				} else
-					fprintf(stderr,"      0\n");
-				class_add_array_entry++;	
-			}
-			free(class_add_array);     
-		}
-	}
+        minor_status = 0xdee0;
+        major_status = gss_inquire_context(&minor_status,
+                                           context_handle,
+                                           NULL,
+                                           (gss_name_t) &class_add_array,
+                                           NULL,
+                                           NULL,
+                                           NULL,
+                                           NULL,
+                                           NULL);
+        if (minor_status == 0xdee1) {
+            fprintf(stderr,"ClassADD strings:\n");
+            class_add_array_entry = class_add_array;
+            while(class_add_array_entry->length != -1) {
+                if (class_add_array_entry->length) { 
+                    fprintf(stderr,"   %5d %*s\n", 
+                            class_add_array_entry->length,
+                            class_add_array_entry->length,
+                            class_add_array_entry->value);
+                    free(class_add_array_entry->value);
+                } else
+                    fprintf(stderr,"      0\n");
+                class_add_array_entry++;        
+            }
+            free(class_add_array);     
+        }
+    }
 #endif
 
     /*
@@ -1338,7 +1388,7 @@ static void doit()
     if (rc != 0)
     {
         failure2(FAILED_AUTHORIZATION,
-		 "globus_gss_assist_gridmap() failed authorization."
+                 "globus_gss_assist_gridmap() failed authorization."
                  " rc = %d", rc);
  
     }
@@ -1347,11 +1397,11 @@ static void doit()
     if (gatekeeper_uid == 0)
     {
         get_udbent(userid);
-	if (unicos_access_denied())
-	{
-	    failure2(FAILED_AUTHORIZATION,
-		     "UNICOS denied access to user %s.", userid);
-	}
+        if (unicos_access_denied())
+        {
+            failure2(FAILED_AUTHORIZATION,
+                     "UNICOS denied access to user %s.", userid);
+        }
     }
 #endif /* TARGET_ARCH_CRAYT3E */
 
@@ -1368,96 +1418,96 @@ static void doit()
      * read HTTP message, extract service name from the header.
      */
     major_status = globus_gss_assist_get_unwrap(&minor_status,
-				 		context_handle,
-						&http_message,
-						&http_length,
-						&token_status,
-						globus_gss_assist_token_get_fd,
-						stdin,
-						logging_usrlog?usrlog_fp:NULL);
+                                                context_handle,
+                                                &http_message,
+                                                &http_length,
+                                                &token_status,
+                                                globus_gss_assist_token_get_fd,
+                                                stdin,
+                                                logging_usrlog?usrlog_fp:NULL);
     
     if (major_status != GSS_S_COMPLETE)
     {
-	failure4(FAILED_SERVICELOOKUP,
-		 "Reading incoming message GSS failed Major:%8.8x "
-		 "Minor:%8.8x Token:%8.8x\n",
-		 major_status,
-		 minor_status,
-		 token_status);
+        failure4(FAILED_SERVICELOOKUP,
+                 "Reading incoming message GSS failed Major:%8.8x "
+                 "Minor:%8.8x Token:%8.8x\n",
+                 major_status,
+                 minor_status,
+                 token_status);
     }
 
     for (length=0; length<http_length && http_message[length]!='\n'; length++)
-	;
+        ;
 
     if ((length==0) || (length>=http_length))
     {
-	failure2(FAILED_SERVICELOOKUP,
-		 "Incoming message has invalid first-line length %ld\n",
-		 length);
+        failure2(FAILED_SERVICELOOKUP,
+                 "Incoming message has invalid first-line length %ld\n",
+                 length);
 
     }
 
     {
-	char    save = http_message[length];
-	char *  tmpbuf = (char *) malloc(length);
-	char *  p;
+        char    save = http_message[length];
+        char *  tmpbuf = (char *) malloc(length);
+        char *  p;
 
-	http_message[length] = '\0';
-	if ((1 != sscanf(http_message, "POST %s", tmpbuf)) ||
-	    (! (p = strchr(tmpbuf, '/'))))
-	{
-	    failure(FAILED_SERVICELOOKUP, 
-		    "Unable to extract service name from incoming message\n");
-	}
-	http_message[length] = save;
+        http_message[length] = '\0';
+        if ((1 != sscanf(http_message, "POST %s", tmpbuf)) ||
+            (! (p = strchr(tmpbuf, '/'))))
+        {
+            failure(FAILED_SERVICELOOKUP, 
+                    "Unable to extract service name from incoming message\n");
+        }
+        http_message[length] = save;
 
-	if (strncmp(tmpbuf,"ping/",5)==0)
-	    got_ping_request = 1;
+        if (strncmp(tmpbuf,"ping/",5)==0)
+            got_ping_request = 1;
 
-	service_name = strdup(++p);
-	free(tmpbuf);
+        service_name = strdup(++p);
+        free(tmpbuf);
     }
 
     /* find body of message and forward it to the service */
     {
-	char    lastchar;
-	char *  end_of_header = "\015\012\015\012";
+        char    lastchar;
+        char *  end_of_header = "\015\012\015\012";
 
-	lastchar = http_message[http_length];
-	http_message[http_length]='\0';
-	http_body = strstr(http_message, end_of_header);
-	http_message[http_length]=lastchar;
-	
-	if (!http_body)
-	{
-	    failure(FAILED_SERVER, "Could not find http message body");
-	}
+        lastchar = http_message[http_length];
+        http_message[http_length]='\0';
+        http_body = strstr(http_message, end_of_header);
+        http_message[http_length]=lastchar;
+        
+        if (!http_body)
+        {
+            failure(FAILED_SERVER, "Could not find http message body");
+        }
 
-	http_body += 4;  /* CR LF CR LF */
+        http_body += 4;  /* CR LF CR LF */
 
-	if (! got_ping_request)
-	{
-	    http_body_file = tmpfile();
-	    if (http_body_file)
-	    {
-		setbuf(http_body_file,NULL);
-		fcntl(fileno(http_body_file), F_SETFD, 0);
-		sprintf(buf, "%d", fileno(http_body_file));
-		setenv("GRID_SECURITY_HTTP_BODY_FD", buf, 1);
-		notice2(0,"GRID_SECURITY_HTTP_BODY_FD=%s",buf);
+        if (! got_ping_request)
+        {
+            http_body_file = tmpfile();
+            if (http_body_file)
+            {
+                setbuf(http_body_file,NULL);
+                fcntl(fileno(http_body_file), F_SETFD, 0);
+                sprintf(buf, "%d", fileno(http_body_file));
+                setenv("GRID_SECURITY_HTTP_BODY_FD", buf, 1);
+                notice2(0,"GRID_SECURITY_HTTP_BODY_FD=%s",buf);
 
-		fwrite(http_body,
-		       1,
-		       (size_t)(&http_message[http_length] - http_body),
-		       http_body_file);
-		
-		lseek(fileno(http_body_file), 0, SEEK_SET);
-	    }    
-	    else
-	    {
-		failure(FAILED_SERVER, "Unable to create http body tmpfile");
-	    }
-	}
+                fwrite(http_body,
+                       1,
+                       (size_t)(&http_message[http_length] - http_body),
+                       http_body_file);
+                
+                lseek(fileno(http_body_file), 0, SEEK_SET);
+            }    
+            else
+            {
+                failure(FAILED_SERVER, "Unable to create http body tmpfile");
+            }
+        }
     }
     
     free(http_message);
@@ -1465,94 +1515,94 @@ static void doit()
     
     if (length > 256)
     {
-	failure(FAILED_SERVICELOOKUP, "Service name malformed");
+        failure(FAILED_SERVICELOOKUP, "Service name malformed");
     }
 
     notice3(LOG_NOTICE,
-	    "Requested service: %s %s",
-	    service_name,
-	    (got_ping_request) ? "[PING ONLY]" : "");
+            "Requested service: %s %s",
+            service_name,
+            (got_ping_request) ? "[PING ONLY]" : "");
 
     if ((rc = globus_gatekeeper_util_globusxmap(
-		genfilename(gatekeeperhome,grid_services,service_name), 
-		NULL, 
-		&service_line)) != 0)
-      {
-	    failure3(FAILED_SERVICELOOKUP,
-		     "Failed to find requested service: %s: %d", 
-		     service_name, rc);
-      }
+             genfilename(gatekeeperhome,grid_services,service_name), 
+             NULL, 
+             &service_line)) != 0)
+    {
+        failure3(FAILED_SERVICELOOKUP,
+                 "Failed to find requested service: %s: %d", 
+                 service_name, rc);
+    }
     
     /* 
      * Parse the command line.
      */ 
     
     if (globus_gatekeeper_util_tokenize(service_line,
-					service_args, 
-					&num_service_args,
-					" \t\n"))
-      {
-	notice(LOG_ERR, "ERROR:Tokenize failed for services");
-	failure(FAILED_SERVER, "ERROR: gatekeeper misconfigured");
-      }
+                                        service_args, 
+                                        &num_service_args,
+                                        " \t\n"))
+    {
+        notice(LOG_ERR, "ERROR:Tokenize failed for services");
+        failure(FAILED_SERVER, "ERROR: gatekeeper misconfigured");
+    }
     
     if (num_service_args < SERVICE_ARG0_INDEX)
-      {
-	notice(LOG_ERR, "ERROR:To few service arguments");
-	failure(FAILED_SERVER, "ERROR: gatekeeper misconfigured");
-      }
+    {
+        notice(LOG_ERR, "ERROR:To few service arguments");
+        failure(FAILED_SERVER, "ERROR: gatekeeper misconfigured");
+    }
 
-	/* now check for options */
-	if (globus_gatekeeper_util_tokenize(
-					service_args[SERVICE_OPTIONS_INDEX],
-					service_options,
-					&num_service_options,
-					","))
-	{
-		notice(LOG_ERR, "ERROR:Tokenize failed for services options");
-		failure(FAILED_SERVER, "ERROR: gatekeeper misconfigured");
-	}
-	
+    /* now check for options */
+    if (globus_gatekeeper_util_tokenize(
+            service_args[SERVICE_OPTIONS_INDEX],
+            service_options,
+            &num_service_options,
+            ","))
+    {
+        notice(LOG_ERR, "ERROR:Tokenize failed for services options");
+        failure(FAILED_SERVER, "ERROR: gatekeeper misconfigured");
+    }
+        
     for (i = 0; i < num_service_options; i++)
     {
         if (strcmp(service_options[i], "local_cred") == 0)
         {
             service_option_local_cred = 1;
-		}
-		else if (strcmp(service_options[i], "stderr_log") == 0)
-		{
-			service_option_stderr_log = 1;
-		}
-		else if (strcmp(service_options[i], "accept_limited") == 0)
-		{
-			service_option_accept_limited = 1;
-		}
-		else if (strcmp(service_options[i], "-") == 0)
-		{
-		}
-		else
-		{
-			notice2(LOG_ERR, "ERROR:Invalid service option %s",
-						service_options[i]);
-			failure(FAILED_SERVER, 
-				"ERROR: gatekeeper misconfigured");
-		}
-	}
+        }
+        else if (strcmp(service_options[i], "stderr_log") == 0)
+        {
+            service_option_stderr_log = 1;
+        }
+        else if (strcmp(service_options[i], "accept_limited") == 0)
+        {
+            service_option_accept_limited = 1;
+        }
+        else if (strcmp(service_options[i], "-") == 0)
+        {
+        }
+        else
+        {
+            notice2(LOG_ERR, "ERROR:Invalid service option %s",
+                    service_options[i]);
+            failure(FAILED_SERVER, 
+                    "ERROR: gatekeeper misconfigured");
+        }
+    }
 
-	/*
-	 * most services will not acceot a limited proxy
-	 * for authentication. We will check now. This
-	 * only works with the Globus GSSAPI but is a noop
-	 * for the Kerberos GSSAPI
-	 */
+    /*
+     * most services will not acceot a limited proxy
+     * for authentication. We will check now. This
+     * only works with the Globus GSSAPI but is a noop
+     * for the Kerberos GSSAPI
+     */
 #ifdef GSS_C_GLOBUS_LIMITED_PROXY_FLAG
-	 if ((service_option_accept_limited == 0)
-		&& (ret_flags & GSS_C_GLOBUS_LIMITED_PROXY_FLAG))
-		{
-			failure(FAILED_AUTHORIZATION, 
-				"Attempt to use limited proxy for service");
+    if ((service_option_accept_limited == 0)
+        && (ret_flags & GSS_C_GLOBUS_LIMITED_PROXY_FLAG))
+    {
+        failure(FAILED_AUTHORIZATION, 
+                "Attempt to use limited proxy for service");
 
-		}
+    }
 #endif
 
 
@@ -1562,16 +1612,16 @@ static void doit()
      */
     
     if (strcmp(service_args[SERVICE_USER_INDEX],"-"))
-      {
-	userid = service_args[SERVICE_USER_INDEX];
-      }
+    {
+        userid = service_args[SERVICE_USER_INDEX];
+    }
     
     notice2(LOG_NOTICE, "Authorized as local user: %s", userid);
     
     if ((pw = getpwnam(userid)) == NULL)
-      {
+    {
         failure2(FAILED_SERVER, "getpwname() failed to find %s",userid);
-      }
+    }
 
     service_uid = pw->pw_uid;
 #   if defined(TARGET_ARCH_CRAYT3E)
@@ -1592,74 +1642,74 @@ static void doit()
      */
     if (got_ping_request)
     {
-	char *     proxyfile;
-	int        fd, i;
-	size_t     len, bufsize;
+        char *     proxyfile;
+        int        fd, i;
+        size_t     len, bufsize;
 
-	/*
-	 * DEE this is no longer needed as the delegated cred is
-	 * returned, and proxy is still in memory
-	 * failure will cleanup the delegated cred. 
-	 */
+        /*
+         * DEE this is no longer needed as the delegated cred is
+         * returned, and proxy is still in memory
+         * failure will cleanup the delegated cred. 
+         */
 #if 0
         if ( ((proxyfile = getenv("X509_USER_DELEG_PROXY")) != NULL)
-	     && ((fd = open(proxyfile, O_RDWR, 0600) >= 0))  )
+             && ((fd = open(proxyfile, O_RDWR, 0600) >= 0))  )
         {
-	    len = lseek(fd, 0, SEEK_END);
-	    lseek(fd, 0, SEEK_SET);
-	    bufsize = sizeof(tmpbuf);
-	    for (i=0; i<bufsize; i++)
-		tmpbuf[i] = 0;
+            len = lseek(fd, 0, SEEK_END);
+            lseek(fd, 0, SEEK_SET);
+            bufsize = sizeof(tmpbuf);
+            for (i=0; i<bufsize; i++)
+                tmpbuf[i] = 0;
 
-	    for (i=0; i<len; )
-		i += write(fd, tmpbuf, MIN(bufsize, len-i));
+            for (i=0; i<len; )
+                i += write(fd, tmpbuf, MIN(bufsize, len-i));
 
-	    close(fd);
+            close(fd);
             unlink(proxyfile);
         }
 #endif
-	failure(FAILED_PING, "ping successful");
+        failure(FAILED_PING, "ping successful");
     }
 
-	/*
-	 * The old Kerberos (with mods) and the old GSI both
-	 * set environment variables to point at the delegated cred. 
-	 * Keberos 1.1 and the new GSI now both return a cred handle
-	 * which allows the application to to deal with the 
-	 * delegated cred. Unfortunatly, the GSSAPI does not define
-	 * a gss_export_cred. So in the new GSI we have overloaded
-	 * the gss_inquire_cred to write out the delegated
-	 * cred and return a string  which can be used for the
-	 * setenv. Mods for Kerberos 1.1 have been sent to MIT 
-	 * as well. 
-	 * The string returned is ready for a putenv
-	 * The GSI returns X509_USER_DELEG_PROXY=...,
-	 * Kerberos returns KRB5CCNAME=FILE:... 
-	 */
+    /*
+     * The old Kerberos (with mods) and the old GSI both
+     * set environment variables to point at the delegated cred. 
+     * Keberos 1.1 and the new GSI now both return a cred handle
+     * which allows the application to to deal with the 
+     * delegated cred. Unfortunatly, the GSSAPI does not define
+     * a gss_export_cred. So in the new GSI we have overloaded
+     * the gss_inquire_cred to write out the delegated
+     * cred and return a string  which can be used for the
+     * setenv. Mods for Kerberos 1.1 have been sent to MIT 
+     * as well. 
+     * The string returned is ready for a putenv
+     * The GSI returns X509_USER_DELEG_PROXY=...,
+     * Kerberos returns KRB5CCNAME=FILE:... 
+     */
 
-	if (delegated_cred_handle)
-	{
-		minor_status = 0xdee0;
-		major_status = gss_inquire_cred(&minor_status,
-						delegated_cred_handle,
-						(gss_name_t *) &delcname,
-						NULL,
-						NULL,
-						NULL);
-		if (major_status == GSS_S_COMPLETE )
-		{
-			if  ( minor_status == 0xdee1 && delcname)
-			{
-				char * cp;
+    if (delegated_cred_handle)
+    {
+        minor_status = 0xdee0;
+        major_status = gss_inquire_cred(&minor_status,
+                                        delegated_cred_handle,
+                                        (gss_name_t *) &delcname,
+                                        NULL,
+                                        NULL,
+                                        NULL);
+        if (major_status == GSS_S_COMPLETE )
+        {
+            if  ( minor_status == 0xdee1 && delcname)
+            {
+                char * cp;
 
-				cp = strchr(delcname,'=');
-				*cp = '\0';
-				cp++;
-				setenv(delcname,cp,1);
-				delcname = NULL;
-			}
-		}
-	}
+                cp = strchr(delcname,'=');
+                *cp = '\0';
+                cp++;
+                setenv(delcname,cp,1);
+                delcname = NULL;
+            }
+        }
+    }
 
     /* for gssapi_ssleay if we received delegated proxy certificate
      * they will be in a file in tmp pointed at by the 
@@ -1678,43 +1728,43 @@ static void doit()
         }
     }
 
-	/* For the Kerberos GSSAPI  prior to 1.1 with the mode to 
-	 * src/lib/gssapi/krb5/accept_sec_context.c 
-	 * to setenv KRB5CCNAME, the KRB5CCANME will be 
-	 * owned by root, and we need to change the ownership. 
-	 */
-	{
-		char *ccname;
-		if ((ccname = getenv("KRB5CCNAME")) != NULL
-			&& strlen(ccname) > 5 
-			&& !strncmp(ccname,"FILE:",5))
-		{
-			chown(ccname+5,service_uid,service_gid);
-		}
-	}
+    /* For the Kerberos GSSAPI  prior to 1.1 with the mode to 
+     * src/lib/gssapi/krb5/accept_sec_context.c 
+     * to setenv KRB5CCNAME, the KRB5CCANME will be 
+     * owned by root, and we need to change the ownership. 
+     */
+    {
+        char *ccname;
+        if ((ccname = getenv("KRB5CCNAME")) != NULL
+            && strlen(ccname) > 5 
+            && !strncmp(ccname,"FILE:",5))
+        {
+            chown(ccname+5,service_uid,service_gid);
+        }
+    }
 
-	service_path = genfilename(libexecdir,
-			service_args[SERVICE_PATH_INDEX],NULL);
-	
-	/*
-	 * Replace the unused arg0 much like wrapper does
-	 * generate a arg0 from the path later
-	 * arg0 is really only there since inetd.conf has it. 
-	 */
+    service_path = genfilename(libexecdir,
+                               service_args[SERVICE_PATH_INDEX],NULL);
+        
+    /*
+     * Replace the unused arg0 much like wrapper does
+     * generate a arg0 from the path later
+     * arg0 is really only there since inetd.conf has it. 
+     */
 
-	service_args[SERVICE_ARG0_INDEX] = service_path; 
+    service_args[SERVICE_ARG0_INDEX] = service_path; 
 
     if (stat(service_path, &statbuf) != 0)
     {
         notice2(LOG_ERR, "ERROR: Cannot stat globus service %s.",
-                          service_path);
+                service_path);
         failure(FAILED_SERVER, "ERROR: gatekeeper misconfigured");
     }
 
     if (!(statbuf.st_mode & 0111))
     {
         notice2(LOG_ERR, "ERROR: Cannot execute globus service %s.",
-                          service_path);
+                service_path);
         failure(FAILED_SERVER, "ERROR: gatekeeper misconfigured");
     }
 
@@ -1726,36 +1776,36 @@ static void doit()
      * otherwise they are in the current directory. 
      * we need absolute path, since we will do a chdir($HOME)
      */
-	
+        
 
     gram_k5_path = genfilename(libexecdir, GRAM_K5_EXE, NULL);
 
     /* need k5 plus the number of args in the service_args + NULL */
-	/* we will overlay the previous service arg to do this. */
-	/* this should be the SERVICE_PATH_INDEX */
+    /* we will overlay the previous service arg to do this. */
+    /* this should be the SERVICE_PATH_INDEX */
 
     args = &service_args[SERVICE_ARG0_INDEX];
 
     if (krb5flag && service_option_local_cred)
     {
-		args--;
+        args--;
 #       ifdef TARGET_ARCH_CRAYT3E
-		/*DEE Not sure what is not complient, maybe some one could
-		 * be more specific about this test
-		 */
+        /*DEE Not sure what is not complient, maybe some one could
+         * be more specific about this test
+         */
         {
             if(gatekeeper_uid == 0)
             {
                 failure(FAILED_SERVER,
-			"Gatekeeper Kerberos code is not UNICOS compliant.");
+                        "Gatekeeper Kerberos code is not UNICOS compliant.");
             }
         }
 #       endif
-		if (stat(gram_k5_path, &statbuf) != 0)
-	    	failure2(FAILED_SERVER, "Cannot stat %s",gram_k5_path);
-		if (!(statbuf.st_mode & 0111))
-	    	failure2(FAILED_SERVER, "Cannot execute %s", gram_k5_path);
-		*args = gram_k5_path;
+        if (stat(gram_k5_path, &statbuf) != 0)
+            failure2(FAILED_SERVER, "Cannot stat %s",gram_k5_path);
+        if (!(statbuf.st_mode & 0111))
+            failure2(FAILED_SERVER, "Cannot execute %s", gram_k5_path);
+        *args = gram_k5_path;
     }
 
     notice2(0, "executing %s", args[0]);
@@ -1763,61 +1813,61 @@ static void doit()
     /*
      * Create two pipes to connect us to the servic:
      *   One is used with close-on-exec to sense child creation
-     *		and pass back any error messages from the child
-     *		to the parent.
-	 *DEE The above is obsolete, as gram_k5 gets execed next. 
+     *          and pass back any error messages from the child
+     *          to the parent.
+     *DEE The above is obsolete, as gram_k5 gets execed next. 
      *   One is connected to the child's stdin, for passing a
-     *		the message from the partent to the child.
+     *          the message from the partent to the child.
      */
 
     if (pipe(p1) != 0)
     {
-	failure2(FAILED_SERVER, "Cannot create pipe: %s", sys_errlist[errno]);
+        failure2(FAILED_SERVER, "Cannot create pipe: %s", sys_errlist[errno]);
     }
     close_on_exec_read_fd = p1[0];
     close_on_exec_write_fd = p1[1];
 
     if (fcntl(close_on_exec_write_fd, F_SETFD, 1) != 0)
     {
-	failure2(FAILED_SERVER, "fcntl F_SETFD failed: %s", sys_errlist[errno]);
+        failure2(FAILED_SERVER, "fcntl F_SETFD failed: %s", sys_errlist[errno]);
     }
 
     setenv("GLOBUS_ID",client_name,1);
     setenv("GRID_ID",client_name,1);
-	setenv("GRID_AUTH_METHOD","TO_FILLED_IN_LATER",1);
+    setenv("GRID_AUTH_METHOD","TO_FILLED_IN_LATER",1);
 
     /*
      * Become the appropriate user
      */
     if (gatekeeper_uid == 0)
     {
-	setenv("USER",userid,1);
-	setenv("LOGNAME",userid,1);
-	setenv("LOGIN",userid,1);
-	setenv("HOME",pw->pw_dir,1);
-	setenv("SHELL",pw->pw_shell,1);
-	/* 
-	 * Could set path, and other variables as well 
-	 * Unset many of the gssapi set env variables. 
-	 * If not present won't hurt to unset. 
-	 * Leave the X509_CERT_DIR of trusted certs
-	 * for the user to use. 
-	 */
-	unsetenv("GRIDMAP"); /* unset it */
-	unsetenv("GLOBUSCERTDIR"); /* unset it */
-	unsetenv("GLOBUSKEYDIR"); /* unset it */
-	unsetenv("X509_USER_KEY"); /* unset it */
-	unsetenv("X509_USER_CERT"); /* unset it */
-	unsetenv("X509_USER_PROXY"); /* unset it */
+        setenv("USER",userid,1);
+        setenv("LOGNAME",userid,1);
+        setenv("LOGIN",userid,1);
+        setenv("HOME",pw->pw_dir,1);
+        setenv("SHELL",pw->pw_shell,1);
+        /* 
+         * Could set path, and other variables as well 
+         * Unset many of the gssapi set env variables. 
+         * If not present won't hurt to unset. 
+         * Leave the X509_CERT_DIR of trusted certs
+         * for the user to use. 
+         */
+        unsetenv("GRIDMAP"); /* unset it */
+        unsetenv("GLOBUSCERTDIR"); /* unset it */
+        unsetenv("GLOBUSKEYDIR"); /* unset it */
+        unsetenv("X509_USER_KEY"); /* unset it */
+        unsetenv("X509_USER_CERT"); /* unset it */
+        unsetenv("X509_USER_PROXY"); /* unset it */
     }
 
-	/* for tranition, if gatekeeper has the path, set it
-	 * for the grid_services to use 
-	 */
-	if (jm_conf_path && !strncmp(service_name,"jobmanager",10))
-	{
-		setenv("JM_CONF_PATH",jm_conf_path,1);
-	} 
+    /* for tranition, if gatekeeper has the path, set it
+     * for the grid_services to use 
+     */
+    if (jm_conf_path && !strncmp(service_name,"jobmanager",10))
+    {
+        setenv("JM_CONF_PATH",jm_conf_path,1);
+    } 
     /* 
      * If the gssapi_ssleay did delegation, promote the
      * delegated proxy file to the user proxy file
@@ -1828,144 +1878,144 @@ static void doit()
         unsetenv("X509_USER_DELEG_PROXY");
     }
 
-	/*
-	 * finally do environment variable substitution 
-	 * on the args
-	 */
-	
-	for (argi = &service_args[SERVICE_ARG1_INDEX]; *argi; argi++)
-	{
-		if(globus_gatekeeper_util_envsub(argi))
-		{
-			notice(LOG_ERR,"ERROR: Failed env substitution in services");
-			failure(FAILED_SERVER, "ERROR: gatekeeper misconfigured");
-		}
-	}
-			
+    /*
+     * finally do environment variable substitution 
+     * on the args
+     */
+        
+    for (argi = &service_args[SERVICE_ARG1_INDEX]; *argi; argi++)
+    {
+        if(globus_gatekeeper_util_envsub(argi))
+        {
+            notice(LOG_ERR,"ERROR: Failed env substitution in services");
+            failure(FAILED_SERVER, "ERROR: gatekeeper misconfigured");
+        }
+    }
+                        
 
     if (gatekeeper_uid == 0)
     {
 
-		/* do all the work to run as user, unless gram_k5 will do it for us */
+        /* do all the work to run as user, unless gram_k5 will do it for us */
 
-		if (!(krb5flag && service_option_local_cred))
-		{
-			char * errmsg = NULL;
-			int rc;
-			if ((rc = globus_gatekeeper_util_trans_to_user(pw, userid, &errmsg)) != 0)
-			{
-				failure3(FAILED_SERVER, 
-					 "trans_to_user: %d: %s", rc, errmsg);
-			}
-    	}
-	}
+        if (!(krb5flag && service_option_local_cred))
+        {
+            char * errmsg = NULL;
+            int rc;
+            if ((rc = globus_gatekeeper_util_trans_to_user(pw, userid, &errmsg)) != 0)
+            {
+                failure3(FAILED_SERVER, 
+                         "trans_to_user: %d: %s", rc, errmsg);
+            }
+        }
+    }
 
-	/* 
-	 * export the security context which will destroy it. 
-	 * This will also destroy the ability to wrap any error
-	 * messages, so we do this very late. 
-	 * First we get an temp file, open it, and delete it. 
-	 */
+    /* 
+     * export the security context which will destroy it. 
+     * This will also destroy the ability to wrap any error
+     * messages, so we do this very late. 
+     * First we get an temp file, open it, and delete it. 
+     */
 
-	context_tmpfile = tmpfile();
-	if (context_tmpfile) 
-	{
-		setbuf(context_tmpfile,NULL);
-		fcntl(fileno(context_tmpfile), F_SETFD, 0);
-		sprintf(buf, "%d", fileno(context_tmpfile));
-		setenv("GRID_SECURITY_CONTEXT_FD", buf, 1);
-		notice2(0,"GRID_SECURITY_CONTEXT_FD=%s",buf)
-	}
-	else
-	{
-		failure(FAILED_SERVER, "Unable to create context tmpfile");
-	}
+    context_tmpfile = tmpfile();
+    if (context_tmpfile) 
+    {
+        setbuf(context_tmpfile,NULL);
+        fcntl(fileno(context_tmpfile), F_SETFD, 0);
+        sprintf(buf, "%d", fileno(context_tmpfile));
+        setenv("GRID_SECURITY_CONTEXT_FD", buf, 1);
+        notice2(0,"GRID_SECURITY_CONTEXT_FD=%s",buf)
+            }
+    else
+    {
+        failure(FAILED_SERVER, "Unable to create context tmpfile");
+    }
 
-	major_status = gss_export_sec_context(&minor_status,
-					      &context_handle, 
-					      &context_token);
+    major_status = gss_export_sec_context(&minor_status,
+                                          &context_handle, 
+                                          &context_token);
 
-	if (major_status != GSS_S_COMPLETE) 
-	{
+    if (major_status != GSS_S_COMPLETE) 
+    {
         globus_gss_assist_display_status(stderr,
-                              "GSS failed exporting context: ",
-                              major_status,
-                              minor_status,
-                              0);
-		failure(FAILED_SERVER, "GSS Failed exporting context");
-	}
-	
-  	int_buf[0] = (unsigned char)(((context_token.length)>>24)&0xff);
-	int_buf[1] = (unsigned char)(((context_token.length)>>16)&0xff);
-	int_buf[2] = (unsigned char)(((context_token.length)>> 8)&0xff);
-	int_buf[3] = (unsigned char)(((context_token.length)    )&0xff);
+                                         "GSS failed exporting context: ",
+                                         major_status,
+                                         minor_status,
+                                         0);
+        failure(FAILED_SERVER, "GSS Failed exporting context");
+    }
+        
+    int_buf[0] = (unsigned char)(((context_token.length)>>24)&0xff);
+    int_buf[1] = (unsigned char)(((context_token.length)>>16)&0xff);
+    int_buf[2] = (unsigned char)(((context_token.length)>> 8)&0xff);
+    int_buf[3] = (unsigned char)(((context_token.length)    )&0xff);
     
-	if (fwrite(int_buf,4,1,context_tmpfile) != 1)
-	{
-		failure(FAILED_SERVER, "Failure writing context length");
-	}
-	if (fwrite(context_token.value,
-		   context_token.length,
-		   1,
-		   context_tmpfile) != 1)
-	{
-		 failure(FAILED_SERVER, "Failure writing context token");
-	}
+    if (fwrite(int_buf,4,1,context_tmpfile) != 1)
+    {
+        failure(FAILED_SERVER, "Failure writing context length");
+    }
+    if (fwrite(context_token.value,
+               context_token.length,
+               1,
+               context_tmpfile) != 1)
+    {
+        failure(FAILED_SERVER, "Failure writing context token");
+    }
 
-	gss_release_buffer(&minor_status,&context_token);
+    gss_release_buffer(&minor_status,&context_token);
 
-	/* reposition so service can read */
+    /* reposition so service can read */
 
-	lseek(fileno(context_tmpfile), 0, SEEK_SET);
+    lseek(fileno(context_tmpfile), 0, SEEK_SET);
 
-	chdir(pw->pw_dir);
+    chdir(pw->pw_dir);
 
     pid = fork();
     if (pid < 0)
     {
-		failure2(FAILED_SERVER, "fork failed: %s", sys_errlist[errno]);
+        failure2(FAILED_SERVER, "fork failed: %s", sys_errlist[errno]);
     }
 
     if (pid == 0)
     {
-		close(close_on_exec_read_fd);
-	
-		/* stderr is still set to logfile, user's stderr or /dev/null */
+        close(close_on_exec_read_fd);
+        
+        /* stderr is still set to logfile, user's stderr or /dev/null */
 
-		/*
-	 	 * convert arg[0] to path and simple name for exec
-		 */
+        /*
+         * convert arg[0] to path and simple name for exec
+         */
 
-		execp = args[0];
-		argnp = strrchr(args[0], '/'); 
-	
-		if (argnp)
-	    	argnp++;
-		else
-			argnp = execp;
-		args[0] = argnp;
-	
-		/*
-		 * If grid_service wanted stderr pointing at our log 
-		 * skip this part
-		 * otherwise point it at the socket
-		 */
+        execp = args[0];
+        argnp = strrchr(args[0], '/'); 
+        
+        if (argnp)
+            argnp++;
+        else
+            argnp = execp;
+        args[0] = argnp;
+        
+        /*
+         * If grid_service wanted stderr pointing at our log 
+         * skip this part
+         * otherwise point it at the socket
+         */
 
-		if (service_option_stderr_log == 0)
-		{
-			fclose(stderr);
-			close(2);
-			dup2(0,2);
-			*stderr = *fdopen(2,"w");
-    		(void) setbuf(stderr,NULL);
-		}
+        if (service_option_stderr_log == 0)
+        {
+            fclose(stderr);
+            close(2);
+            dup2(0,2);
+            *stderr = *fdopen(2,"w");
+            (void) setbuf(stderr,NULL);
+        }
 
-		if (execv(execp, args) != 0)
-		{
-			sprintf(tmpbuf, "Exec failed: %s\n", sys_errlist[errno]);
-	    	write(close_on_exec_write_fd, tmpbuf, strlen(tmpbuf));
-	    	exit(0);
-		}
+        if (execv(execp, args) != 0)
+        {
+            sprintf(tmpbuf, "Exec failed: %s\n", sys_errlist[errno]);
+            write(close_on_exec_write_fd, tmpbuf, strlen(tmpbuf));
+            exit(0);
+        }
     }
 
     close(close_on_exec_write_fd);
@@ -1980,15 +2030,15 @@ static void doit()
      */
     if ((n = read(close_on_exec_read_fd, buf, sizeof(buf))) > 0)
     {
-	buf[n] = '\0';
-	s = index(buf, '\n');
-	if (s)
-	    *s = 0;
-	failure2(FAILED_SERVER, "child failed: %s", buf);
+        buf[n] = '\0';
+        s = index(buf, '\n');
+        if (s)
+            *s = 0;
+        failure2(FAILED_SERVER, "child failed: %s", buf);
     }
     if (n < 0)
     {
-	failure(FAILED_SERVER, "child failed: error reading child fd");
+        failure(FAILED_SERVER, "child failed: error reading child fd");
     }
     close(close_on_exec_read_fd);
 
@@ -2015,16 +2065,16 @@ net_accept(int skt)
     gotit = 0;
     while (!gotit)
     {
-	skt2 = accept(skt, (struct sockaddr *) &from, &fromlen);
-	if (skt2 == -1)
-	{
-	    if (errno == EINTR)
-		continue;
-	    else
-		error_check(skt2, "net_accept accept");
-	}
-	else
-	    gotit = 1;
+        skt2 = accept(skt, (struct sockaddr *) &from, &fromlen);
+        if (skt2 == -1)
+        {
+            if (errno == EINTR)
+                continue;
+            else
+                error_check(skt2, "net_accept accept");
+        }
+        else
+            gotit = 1;
     }
 
     return(skt2);
@@ -2055,7 +2105,7 @@ net_setup_listener(int backlog,
     sinlen = sizeof(sin);
 
     error_check(bind(*skt,(struct sockaddr *) &sin,sizeof(sin)),
-		   "net_setup_anon_listener bind");
+                "net_setup_anon_listener bind");
 
 
     error_check(listen(*skt, backlog), "net_setup_anon_listener listen");
@@ -2093,12 +2143,12 @@ logging_startup(void)
 
         if (strlen(logfile) > 0) 
         {
-	    char * logfilename;
+            char * logfilename;
             /*
              * Open the user specified logfile
              */
-			
-	    logfilename = genfilename(gatekeeperhome, logfile, NULL);
+                        
+            logfilename = genfilename(gatekeeperhome, logfile, NULL);
             if ((usrlog_fp = fopen(logfilename, "a")) == NULL)
             {
                 fprintf(stderr, "Cannot open logfile %s: %s\n",
@@ -2107,7 +2157,7 @@ logging_startup(void)
 
                 return(1);
             }
-	    free(logfilename);
+            free(logfilename);
             logging_usrlog = 1;
         }
     }
@@ -2125,25 +2175,25 @@ logging_phase2(void)
 {
 
     if (logging_usrlog) 
-    {
-	/*
-	 * set stderr to the log file, to catch all fprintf(stderr,...
-	 * and catch some from gram_k5, and job_manager
-	 * But if testing gatekeeper, write to stderr instead. 
-	 */
+{
+    /*
+     * set stderr to the log file, to catch all fprintf(stderr,...
+     * and catch some from gram_k5, and job_manager
+     * But if testing gatekeeper, write to stderr instead. 
+     */
 
-	if (!gatekeeper_test) {
-		(void) fflush(usrlog_fp);
-		(void) dup2(fileno(usrlog_fp),2);
-		(void) fclose(usrlog_fp);
-	}
-	usrlog_fp = stderr;
-
-	/*
-	 * Set output to non-buffered mode
-	 */
-	setbuf(stderr, NULL);
+    if (!gatekeeper_test) {
+        (void) fflush(usrlog_fp);
+        (void) dup2(fileno(usrlog_fp),2);
+        (void) fclose(usrlog_fp);
     }
+    usrlog_fp = stderr;
+
+    /*
+     * Set output to non-buffered mode
+     */
+    setbuf(stderr, NULL);
+}
     return(0);
 } /* logging_phase2() */
 
@@ -2158,7 +2208,7 @@ failure(short failure_type, char * s)
 {
 
     OM_uint32        minor_status = 0;
-    int		     token_status = 0;
+    int              token_status = 0;
 
     fprintf(stderr,"Failure: %s\n", s);
     if (logging_syslog)
@@ -2175,61 +2225,61 @@ failure(short failure_type, char * s)
      */
     if (ok_to_send_errmsg)
     {
-	char * response;
-	
-	switch (failure_type)
-	{
-	case FAILED_AUTHORIZATION: 
-	    response = ("HTTP/1.1 403 Forbidden\015\012"
-			"Connection: close\015\012"
-			"\015\012");
-	    break;
+        char * response;
+        
+        switch (failure_type)
+        {
+        case FAILED_AUTHORIZATION: 
+            response = ("HTTP/1.1 403 Forbidden\015\012"
+                        "Connection: close\015\012"
+                        "\015\012");
+            break;
 
-	case FAILED_SERVICELOOKUP:
-	    response = ("HTTP/1.1 404 Not Found\015\012"
-			"Connection: close\015\012"
-			"\015\012");
-	    break;
+        case FAILED_SERVICELOOKUP:
+            response = ("HTTP/1.1 404 Not Found\015\012"
+                        "Connection: close\015\012"
+                        "\015\012");
+            break;
 
-	case FAILED_PING:
-	    response = ("HTTP/1.1 200 OK\015\012"
+        case FAILED_PING:
+            response = ("HTTP/1.1 200 OK\015\012"
                         "Content-Type: application/x-globus-gram\015\012"
                         "Content-Length: 0\015\012"
-			"\015\012");
-	    break;
+                        "\015\012");
+            break;
 
-	case FAILED_SERVER:
-	case FAILED_NOLOGIN:
-	case FAILED_AUTHENTICATION:
-	default: 
-	    response = ("HTTP/1.1 500 Internal Server Error\015\012"
-			"Connection: close\015\012"
-			"\015\012");
-	    break;
-	}
-	
-	/* don't care about errors here */
-	globus_gss_assist_wrap_send(&minor_status,
-				    context_handle,
-				    response,
-				    strlen(response) + 1,
-				    &token_status,
-				    globus_gss_assist_token_send_fd,
-				    fdout,
-				    logging_usrlog?usrlog_fp:NULL);
+        case FAILED_SERVER:
+        case FAILED_NOLOGIN:
+        case FAILED_AUTHENTICATION:
+        default: 
+            response = ("HTTP/1.1 500 Internal Server Error\015\012"
+                        "Connection: close\015\012"
+                        "\015\012");
+            break;
+        }
+        
+        /* don't care about errors here */
+        globus_gss_assist_wrap_send(&minor_status,
+                                    context_handle,
+                                    response,
+                                    strlen(response) + 1,
+                                    &token_status,
+                                    globus_gss_assist_token_send_fd,
+                                    fdout,
+                                    logging_usrlog?usrlog_fp:NULL);
     }
     if (gatekeeper_test)
     {
         fprintf(stderr,"Gatekeeper test complete : Failure!\n");
     }
 
-	/* Cleanup any delegated credential */
+    /* Cleanup any delegated credential */
 
-	if (delegated_cred_handle)
-	{
-		OM_uint32 minor_status2;
-		gss_release_cred(&minor_status2, &delegated_cred_handle);
-	}
+    if (delegated_cred_handle)
+    {
+        OM_uint32 minor_status2;
+        gss_release_cred(&minor_status2, &delegated_cred_handle);
+    }
 
     exit(1);
 } /* failure() */
@@ -2257,12 +2307,12 @@ notice(int prty, char * s)
 /* Make callable entries to failure() and notice() */
 void gatekeeper_failure(short failure_type, char * s)
 {
-  failure(failure_type, s);
+    failure(failure_type, s);
 }
 
 void gatekeeper_notice(int prty, char * s)
 {
-  notice(prty, s);
+    notice(prty, s);
 }
 #endif
 
@@ -2281,12 +2331,12 @@ error_check(int val,
     if (val < 0)
     {
         failure3(FAILED_SERVER, 
-		 "error check %s: %s\n", str, sys_errlist[errno]);
+                 "error check %s: %s\n", str, sys_errlist[errno]);
 /*
-	fprintf(usrlog_fp, "%s: %s\n",
-		str,
-		sys_errlist[errno]);
-	exit(1);
+  fprintf(usrlog_fp, "%s: %s\n",
+  str,
+  sys_errlist[errno]);
+  exit(1);
 */
     }
 } /* error_check() */
