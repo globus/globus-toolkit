@@ -1988,9 +1988,9 @@ globus_l_gass_transfer_http_new_request(
     proto->eof_read	= GLOBUS_FALSE;
     proto->client_side	= GLOBUS_TRUE;
     proto->connected_subject	= GLOBUS_NULL;
+    proto->proxy_connect = proxy ? GLOBUS_TRUE : GLOBUS_FALSE;
 
     /* Open the handle */
-#   if 0
     if(proxy)
     {
 	if(proto->proxy_url.scheme_type == GLOBUS_URL_SCHEME_HTTP &&
@@ -2007,12 +2007,11 @@ globus_l_gass_transfer_http_new_request(
 	    proto->proxy_url.host,
 	    proto->proxy_url.port,
 	    &tcp_attr,
-	    globus_l_gass_transfer_http_proxy_callback,
+	    globus_l_gass_transfer_http_connect_callback,
 	    proto,
 	    &proto->handle);
     }
     else
-#   endif
     {
 	if(proto->url.scheme_type == GLOBUS_URL_SCHEME_HTTP &&
 	   proto->url.port == 0)
@@ -3986,11 +3985,21 @@ globus_l_gass_transfer_http_construct_request(
     globus_size_t				cmd_len;
     char *					cmd = GLOBUS_NULL;
     globus_size_t				length;
+    char *					url = GLOBUS_NULL;
 
     /* Construct the request string to send to the server */
     cmd_len = 3;			/* for CRLF\0 termination */
-    cmd_len += strlen(proto->url.url_path); /* What we want */
     cmd_len += strlen(proto->url.host); /* Required for http/1.1*/
+    if(proto->proxy_connect)
+    {
+	cmd_len += strlen(proto->url_string);
+	url = proto->url_string;
+    }
+    else
+    {
+	cmd_len += strlen(proto->url.url_path); /* What we want */
+	url = proto->url.url_path;
+    }
 
     switch(proto->type)
     {
@@ -4005,7 +4014,7 @@ globus_l_gass_transfer_http_construct_request(
 	
 	sprintf(cmd,
 		GLOBUS_L_GET_COMMAND,
-		proto->url.url_path,
+		url,
 		proto->url.host);
 
 	strcat(cmd,
@@ -4050,7 +4059,7 @@ globus_l_gass_transfer_http_construct_request(
 	    
 	    sprintf((char *) cmd,
 		    GLOBUS_L_PUT_COMMAND,
-		    proto->url.url_path,
+		    url,
 		    proto->url.host);
 
 	    sprintf(cmd + strlen(cmd),
@@ -4081,7 +4090,7 @@ globus_l_gass_transfer_http_construct_request(
 	    
 	    sprintf((char *) cmd,
 		    GLOBUS_L_PUT_COMMAND,
-		    proto->url.url_path,
+		    url,
 		    proto->url.host);
 	    
 	    strcat(cmd,
@@ -4138,7 +4147,7 @@ globus_l_gass_transfer_http_construct_request(
 	    
 	    sprintf((char *) cmd,
 		    GLOBUS_L_APPEND_COMMAND,
-		    proto->url.url_path,
+		    url,
 		    proto->url.host);
 	    sprintf((char *) cmd + strlen(cmd),
 		    GLOBUS_L_CONTENT_LENGTH_HEADER,
@@ -5008,8 +5017,7 @@ globus_bool_t
 ischar(
     char 					byte)
 {
-    return(byte >= (char) 0 &&
-	   byte <= (char) 127);
+    return( (unsigned char) byte <= 127 );
 }
 /* ischar() */
 

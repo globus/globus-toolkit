@@ -125,7 +125,7 @@ globus_i_gass_transfer_close_listener(
     switch(l->status)
     {
       case GLOBUS_GASS_TRANSFER_LISTENER_INVALID:
-	rc = GLOBUS_GASS_ERROR_INVALID_USE;
+	rc = GLOBUS_GASS_ERROR_NOT_INITIALIZED;
 	break;
 
       case GLOBUS_GASS_TRANSFER_LISTENER_STARTING:
@@ -227,10 +227,15 @@ globus_gass_transfer_register_listen(
 	rc =  GLOBUS_GASS_ERROR_INVALID_USE;
 	goto error_exit;
     }
+    else if(callback == GLOBUS_NULL)
+    {
+        rc = GLOBUS_GASS_ERROR_NULL_POINTER;
+	goto error_exit;
+    }
     switch(l->status)
     {
       case GLOBUS_GASS_TRANSFER_LISTENER_INVALID:
-	rc = GLOBUS_GASS_ERROR_INVALID_USE;
+	rc = GLOBUS_GASS_ERROR_NOT_INITIALIZED;
 	goto error_exit;
       case GLOBUS_GASS_TRANSFER_LISTENER_STARTING:
 	l->status = GLOBUS_GASS_TRANSFER_LISTENER_LISTENING;
@@ -282,10 +287,15 @@ globus_gass_transfer_register_accept(
 	rc =  GLOBUS_GASS_ERROR_INVALID_USE;
 	goto error_exit;
     }
+    else if(request == GLOBUS_NULL || callback == GLOBUS_NULL)
+    {
+        rc = GLOBUS_GASS_ERROR_NULL_POINTER;
+	goto error_exit;
+    }
     switch(l->status)
     {
       case GLOBUS_GASS_TRANSFER_LISTENER_INVALID:
-	rc = GLOBUS_GASS_ERROR_INVALID_USE;
+	rc = GLOBUS_GASS_ERROR_NOT_INITIALIZED;
 	goto error_exit;
       case GLOBUS_GASS_TRANSFER_LISTENER_READY:
 	globus_i_gass_transfer_request_init(request,
@@ -421,13 +431,22 @@ globus_gass_transfer_refer(
     req = globus_handle_table_lookup(&globus_i_gass_transfer_request_handles,
 				     request);
 
-    if(req== GLOBUS_NULL)
+    if(req == GLOBUS_NULL)
     {
 	rc = GLOBUS_GASS_ERROR_INVALID_USE;
 	goto error_exit;
     }
-
-    if(req->proto->refer == GLOBUS_NULL)
+    else if(req->client_side == GLOBUS_TRUE)
+    {
+        rc = GLOBUS_GASS_ERROR_INVALID_USE;
+	goto error_exit;
+    }
+    else if(urls == GLOBUS_NULL)
+    {
+        rc = GLOBUS_GASS_ERROR_NULL_POINTER;
+	goto error_exit;
+    }
+    else if(req->proto->refer == GLOBUS_NULL)
     {
 	rc = GLOBUS_GASS_ERROR_NOT_IMPLEMENTED;
 	goto error_exit;
@@ -509,7 +528,7 @@ globus_gass_transfer_authorize(
     req = globus_handle_table_lookup(&globus_i_gass_transfer_request_handles,
 				     request);
 
-    if(req== GLOBUS_NULL)
+    if(req == GLOBUS_NULL)
     {
 	rc = GLOBUS_GASS_ERROR_INVALID_USE;
 	goto error_exit;
@@ -590,7 +609,7 @@ globus_gass_transfer_deny(
     req = globus_handle_table_lookup(&globus_i_gass_transfer_request_handles,
 				     request);
 
-    if(req== GLOBUS_NULL)
+    if(req == GLOBUS_NULL)
     {
 	rc = GLOBUS_GASS_ERROR_INVALID_USE;
 	goto error_exit;
