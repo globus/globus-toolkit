@@ -963,11 +963,20 @@ GSS_CALLCONV GSS_FUNC(gss_get_group)
 
 GSS_MAKE_TYPEDEF
 OM_uint32
-GSS_CALLCONV GSS_FUNC(gss_cred_sign)
+GSS_CALLCONV GSS_FUNC(gss_policy_sign)
    (OM_uint32 *,                        /* minor-status */
     gss_cred_id_t,                      /* credential */
     gss_buffer_t,                       /* input_token */
     gss_buffer_t);                      /* output_token */
+
+GSS_MAKE_TYPEDEF
+OM_uint32
+GSS_CALLCONV GSS_FUNC(gss_policy_verify)
+   (OM_uint32 *,                        /* minor-status */
+    gss_ctx_id_t,                       /* context */
+    gss_buffer_t,                       /* input_token */
+    gss_buffer_t,                       /* output_token */
+    gss_name_t *);                      /* signing_identity */
 
 
 extern const gss_OID_desc * const GSS_DISALLOW_ENCRYPTION;
