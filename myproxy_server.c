@@ -223,7 +223,9 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
     char  client_name[1024];
     char  client_buffer[1024], server_buffer[1024];
     int   requestlen, responselen;
-
+    int   authorization_ok = 0;
+    int   rc;
+    
     myproxy_creds_t *client_creds;          
     myproxy_request_t *client_request;
     myproxy_response_t *server_response;
@@ -286,8 +288,45 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
     strcpy(client_creds->user_name, client_request->username);
     client_creds->pass_phrase = malloc(strlen(client_request->passphrase) + 1);
     strcpy(client_creds->pass_phrase, client_request->passphrase);
+
+    /* Check authorization for request */
+    switch (client_request->command_type)	
+    {	
+      case MYPROXY_GET_PROXY:
+	/* Only servers are allowed to retrieve proxies */
+	authorization_ok = myproxy_server_check_service(context,
+							client_name);
+	break;
+	
+      case MYPROXY_PUT_PROXY:
+      case MYPROXY_INFO_PROXY:
+      case MYPROXY_DESTROY_PROXY:
+	/* Either a service or a client can do these operations */
+	authorization_ok = myproxy_server_check_client(context, client_name);
+	
+	if (authorization_ok != 1)
+	{
+	    authorization_ok = myproxy_server_check_service(context,
+							    client_name);
+	}
+	break;
+    }
+
+    if (authorization_ok == -1)
+    {
+	myproxy_log("Error checking authorization");
+	myproxy_log_verror();
+	exit(1);
+    }
     
-    
+    if (authorization_ok != 1)
+    {
+	/* Authorization failed */
+	myproxy_log("Authorization failed for %s", client_name);
+	/* XXX */
+	exit(1);
+    }
+
     /* Handle client request */
     switch (client_request->command_type) {
     case MYPROXY_GET_PROXY:
