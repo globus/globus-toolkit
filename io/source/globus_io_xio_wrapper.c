@@ -185,6 +185,9 @@ typedef struct
 static globus_xio_driver_t              globus_l_io_file_driver;
 static globus_xio_driver_t              globus_l_io_tcp_driver;
 static globus_xio_driver_t              globus_l_io_gsi_driver;
+static globus_xio_stack_t               globus_l_io_file_stack;
+static globus_xio_stack_t               globus_l_io_tcp_stack;
+static globus_xio_stack_t               globus_l_io_gsi_stack;
 
 static
 int
@@ -210,6 +213,8 @@ static
 int
 globus_l_io_activate(void)
 {
+    globus_result_t                     result;
+    
     if(globus_module_activate(GLOBUS_XIO_MODULE) != GLOBUS_SUCCESS)
     {
         goto error_activate;
@@ -233,8 +238,68 @@ globus_l_io_activate(void)
         goto error_load_gsi;
     }
     
+    result = globus_xio_stack_init(&globus_l_io_file_stack, GLOBUS_NULL);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_file_stack;
+    }
+    
+    result = globus_xio_stack_push_driver(
+        globus_l_io_file_stack, globus_l_io_file_driver);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_file_push;
+    }
+    
+    result = globus_xio_stack_init(&globus_l_io_tcp_stack, GLOBUS_NULL);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_tcp_stack;
+    }
+    
+    result = globus_xio_stack_push_driver(
+        globus_l_io_tcp_stack, globus_l_io_tcp_driver);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_tcp_push;
+    }
+    
+    result = globus_xio_stack_init(&globus_l_io_gsi_stack, GLOBUS_NULL);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_gsi_stack;
+    }
+    
+    result = globus_xio_stack_push_driver(
+        globus_l_io_gsi_stack, globus_l_io_tcp_driver);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_gsi_push;
+    }
+    
+    result = globus_xio_stack_push_driver(
+        globus_l_io_gsi_stack, globus_l_io_gsi_driver);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_gsi_push;
+    }
+    
     return GLOBUS_SUCCESS;
 
+error_gsi_push:
+    globus_xio_stack_destroy(globus_l_io_gsi_stack);
+    
+error_gsi_stack:
+error_tcp_push:
+    globus_xio_stack_destroy(globus_l_io_tcp_stack);
+    
+error_tcp_stack:
+error_file_push:
+    globus_xio_stack_destroy(globus_l_io_file_stack);
+    
+error_file_stack:
+    globus_xio_driver_unload(globus_l_io_gsi_driver);
+    
 error_load_gsi:
     globus_xio_driver_unload(globus_l_io_tcp_driver);
 
@@ -252,9 +317,13 @@ static
 int
 globus_l_io_deactivate(void)
 {
-    globus_xio_driver_unload(globus_l_io_file_driver);
-    globus_xio_driver_unload(globus_l_io_tcp_driver);
+    globus_xio_stack_destroy(globus_l_io_gsi_stack);
+    globus_xio_stack_destroy(globus_l_io_tcp_stack);
+    globus_xio_stack_destroy(globus_l_io_file_stack);
+    
     globus_xio_driver_unload(globus_l_io_gsi_driver);
+    globus_xio_driver_unload(globus_l_io_tcp_driver);
+    globus_xio_driver_unload(globus_l_io_file_driver);
     
     return globus_module_deactivate(GLOBUS_XIO_MODULE);
 }
@@ -1515,7 +1584,6 @@ globus_l_io_file_open(
 {
     globus_result_t                     result;
     globus_l_io_handle_t *              ihandle;
-    globus_xio_stack_t                  stack;
     globus_xio_target_t                 target;
     GlobusIOName(globus_l_io_file_open);
     
@@ -1528,22 +1596,10 @@ globus_l_io_file_open(
         goto error_alloc;
     }
     
-    result = globus_xio_stack_init(&stack, GLOBUS_NULL);
-    if(result != GLOBUS_SUCCESS)
-    {
-        goto error_stack;
-    }
-    
-    result = globus_xio_stack_push_driver(
-        stack, globus_l_io_file_driver);
-    if(result != GLOBUS_SUCCESS)
-    {
-        goto error_push;
-    }
-
     if(path)
     {
-        result = globus_xio_target_init(&target, GLOBUS_NULL, path, stack);
+        result = globus_xio_target_init(
+            &target, GLOBUS_NULL, path, globus_l_io_file_stack);
     }
     else
     {
@@ -1566,7 +1622,8 @@ globus_l_io_file_open(
             goto error_target;
         }
         
-        result = globus_xio_target_init(&target, target_attr, "", stack);
+        result = globus_xio_target_init(
+            &target, target_attr, "", globus_l_io_file_stack);
         globus_xio_attr_destroy(target_attr);
     }
     if(result != GLOBUS_SUCCESS)
@@ -1585,16 +1642,10 @@ globus_l_io_file_open(
     
     *handle = ihandle;
     
-    globus_xio_stack_destroy(stack);
-    
     return GLOBUS_SUCCESS;
 
 error_open:
 error_target:
-error_push:
-    globus_xio_stack_destroy(stack);
-    
-error_stack:
     globus_l_io_handle_destroy(ihandle);
 
 error_alloc:
@@ -1720,10 +1771,10 @@ globus_l_io_tcp_register_connect(
 {
     globus_result_t                     result;
     globus_l_io_handle_t *              ihandle;
-    globus_xio_stack_t                  stack;
     globus_xio_target_t                 target;
     char                                buf[MAXHOSTNAMELEN + 10];
     globus_l_io_bounce_t *              bounce_info;
+    globus_xio_stack_t                  stack;
     GlobusIOName(globus_l_io_tcp_register_connect);
     
     GlobusLIOCheckNullParam(handle);
@@ -1745,20 +1796,8 @@ globus_l_io_tcp_register_connect(
     {
         goto error_handle;
     }
-
-    result = globus_xio_stack_init(&stack, GLOBUS_NULL);
-    if(result != GLOBUS_SUCCESS)
-    {
-        goto error_stack;
-    }
     
-    result = globus_xio_stack_push_driver(
-        stack, globus_l_io_tcp_driver);
-    if(result != GLOBUS_SUCCESS)
-    {
-        goto error_push;
-    }
-
+    stack = globus_l_io_tcp_stack;
     if(attr)
     {
         result = globus_io_attr_get_secure_authorization_mode(
@@ -1767,18 +1806,13 @@ globus_l_io_tcp_register_connect(
             &ihandle->authz_data);
         if(result != GLOBUS_SUCCESS)
         {
-            goto error_push;
+            goto error_gsi;
         }
         
         if(ihandle->authorization_mode !=
            GLOBUS_IO_SECURE_AUTHENTICATION_MODE_NONE)
         {
-            result =  globus_xio_stack_push_driver(
-                stack, globus_l_io_gsi_driver);
-            if(result != GLOBUS_SUCCESS)
-            {
-                goto error_push;
-            }
+            stack = globus_l_io_gsi_stack;
         }
     }
 
@@ -1841,16 +1875,11 @@ globus_l_io_tcp_register_connect(
     }
     globus_mutex_unlock(&ihandle->pending_lock);
     
-    globus_xio_stack_destroy(stack);
-    
     return GLOBUS_SUCCESS;
 
 error_open:
 error_target:
-error_push:
-    globus_xio_stack_destroy(stack);
-    
-error_stack:
+error_gsi:
     globus_l_io_handle_destroy(ihandle);
     
 error_handle:
@@ -2026,28 +2055,13 @@ globus_l_io_tcp_create_listener(
         goto error_alloc;
     }
     
-    result = globus_xio_stack_init(&stack, GLOBUS_NULL);
-    if(result != GLOBUS_SUCCESS)
+    if(iattr->authentication_mode == GLOBUS_IO_SECURE_AUTHENTICATION_MODE_NONE)
     {
-        goto error_stack;
+        stack = globus_l_io_tcp_stack;
     }
-    
-    result = globus_xio_stack_push_driver(
-        stack, globus_l_io_tcp_driver);
-    if(result != GLOBUS_SUCCESS)
+    else
     {
-        goto error_push;
-    }
-
-    if(iattr->authentication_mode !=
-       GLOBUS_IO_SECURE_AUTHENTICATION_MODE_NONE)
-    {
-        result =  globus_xio_stack_push_driver(
-            stack, globus_l_io_gsi_driver);
-        if(result != GLOBUS_SUCCESS)
-        {
-            goto error_push;
-        }
+        stack = globus_l_io_gsi_stack;
     }
     
     result = globus_xio_server_create(
@@ -2083,18 +2097,12 @@ globus_l_io_tcp_create_listener(
     globus_free(iattr);
     *handle = ihandle;
     
-    globus_xio_stack_destroy(stack);
-    
     return GLOBUS_SUCCESS;
 
 error_server_cntl:
     globus_xio_server_close(ihandle->xio_server);
     
 error_server:
-error_push:
-    globus_xio_stack_destroy(stack);
-    
-error_stack:
     globus_l_io_handle_destroy(ihandle);
     
 error_alloc:
