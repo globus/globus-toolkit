@@ -58,19 +58,22 @@ WinCVSBuild.pl %GlobusLocation% win32relmtthr 14.2
 call WinCVSBuildLibs-win32relmtthr.bat
 call WinCVSBuildExes-win32relmtthr.bat
 
-echo .
-echo . Create And Execute Build For Dynamic Debug Threaded Libraries (win32dbgmddthr)
-echo .
-WinCVSBuild.pl %GlobusLocation% win32dbgmddthr 14.2
-call WinCVSBuildLibs-win32dbgmddthr.bat
-call WinCVSBuildExes-win32dbgmddthr.bat
+rem  **************************************************************************************
+rem  Skip This Until DLL Problems Are Fixed
+rem  echo .
+rem  echo . Create And Execute Build For Dynamic Debug Threaded Libraries (win32dbgmddthr)
+rem  echo .
+rem  WinCVSBuild.pl %GlobusLocation% win32dbgmddthr 14.2
+rem  call WinCVSBuildLibs-win32dbgmddthr.bat
+rem  call WinCVSBuildExes-win32dbgmddthr.bat
 
-echo .
-echo . Create And Execute Build For Dynamic Release Threaded Libraries (win32relmdthr)
-echo .
-WinCVSBuild.pl %GlobusLocation% win32relmdthr 14.2
-call WinCVSBuildLibs-win32relmdthr.bat
-call WinCVSBuildExes-win32relmdthr.bat
+rem  echo .
+rem  echo . Create And Execute Build For Dynamic Release Threaded Libraries (win32relmdthr)
+rem  echo .
+rem  WinCVSBuild.pl %GlobusLocation% win32relmdthr 14.2
+rem  call WinCVSBuildLibs-win32relmdthr.bat
+rem  call WinCVSBuildExes-win32relmdthr.bat
+rem  **************************************************************************************
 
 echo .
 echo . Put A Closing Time Stamp In BuildResults.log
