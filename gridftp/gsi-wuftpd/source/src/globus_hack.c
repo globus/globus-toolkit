@@ -11,6 +11,9 @@ extern globus_ftp_control_parallelism_t		g_parallelism;
 extern globus_bool_t				g_send_restart_info;
 extern int mode;
 
+extern SIGNAL_TYPE         
+lostconn(int sig);
+
 int *                                           g_restart_offset;
 int *                                           g_restart_length;
 int                                             g_restart_count = 0;
@@ -26,10 +29,12 @@ static globus_bool_t                            g_send_range;
  */
 #define G_ENTER()                  \
 {                                  \
+    signal(SIGPIPE, SIG_IGN);      \
 }
 
 #define G_EXIT()                   \
 {                                  \
+    signal(SIGPIPE, lostconn);     \
 }
 
 typedef struct
