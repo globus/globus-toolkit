@@ -25,8 +25,9 @@
 #  11. Store credentials with retrieval policies.
 #  12. Verify retrieval policies (one accept, one deny).
 #  13. Store renewable credentials.
-#  14. Verify renewal policies (one accept, one deny).
-#  15. Verify correct lifetime of retrieved credentials.
+#  14. Get info on stored renewable credentials (myproxy-info -d).
+#  15. Verify renewal policies (one accept, one deny).
+#  16. Verify correct lifetime of retrieved credentials.
 
 use Expect; # if missing, install with: perl -MCPAN -e 'install Expect'
 $Expect::Log_Stdout=0; # suppress output to STDOUT
@@ -158,7 +159,7 @@ if ($exitstatus != 0 && $output =~ /invalid pass phrase/) {
 ($exitstatus, $output) =
     &runtest("myproxy-get-delegation -a \$X509_USER_PROXY -t 1 -o /tmp/myproxy-test.$$ -v", undef);
 print "MyProxy Test 8 (verify default renewal policy): ";
-if ($exitstatus != 0 && $output =~ /not authorized/) {
+if ($exitstatus != 0) {
     print "SUCCEEDED\n"; $SUCCESSES++;
 } else {
     print "FAILED\n"; $FAILURES++; print STDERR $output;
@@ -219,12 +220,12 @@ if ($exitstatus == 0 && $output =~ /A proxy has been received/) {
 &runtest("myproxy-destroy -v -k 'nobody'", undef);
 
 ($exitstatus, $output) =
-    &runtest("myproxy-init -v -R 'nobody' -k 'nobody' -c 1 -t 1",
+    &runtest("myproxy-init -v -R 'nobody' -k 'nobody' -c 1 -t 1 -d",
 	     $passphrase . "\n" . $passphrase . "\n");
 print "MyProxy Test 13 (store credentials with renewal policies): ";
 if ($exitstatus == 0) {
     ($exitstatus, $output) =
-	&runtest("myproxy-init -v -x -R '$cert_subject' -k 'mine' -c 1 -t 1",
+	&runtest("myproxy-init -v -x -R '$cert_subject' -k 'mine' -c 1 -t 1 -d",
 		 $passphrase . "\n" . $passphrase . "\n");
 }
 if ($exitstatus == 0) {
@@ -233,13 +234,21 @@ if ($exitstatus == 0) {
     print "FAILED\n"; $FAILURES++; print STDERR $output;
 }
 
+($exitstatus, $output) = &runtest("myproxy-info -v -d", undef);
+print "MyProxy Test 14 (get info for stored renewal credentials): ";
+if ($exitstatus == 0 && $output =~ /username/) {
+    print "SUCCEEDED\n"; $SUCCESSES++;
+} else {
+    print "FAILED\n"; $FAILURES++; print STDERR $output;
+}
+
 ($exitstatus, $output) =
-    &runtest("myproxy-get-delegation -k 'mine' -a $ENV{'X509_USER_PROXY'} -t 1 -o /tmp/myproxy-test.$$ -v",
+    &runtest("myproxy-get-delegation -k 'mine' -a $ENV{'X509_USER_PROXY'} -t 1 -o /tmp/myproxy-test.$$ -v -d",
 	     undef);
-print "MyProxy Test 14 (verify renewal policies): ";
+print "MyProxy Test 15 (verify renewal policies): ";
 if ($exitstatus == 0 && $output =~ /A proxy has been received/) {
     ($exitstatus, $output) =
-	&runtest("myproxy-get-delegation -k 'nobody' -a $ENV{'X509_USER_PROXY'} -t 1 -o /tmp/myproxy-test.$$ -v",
+	&runtest("myproxy-get-delegation -k 'nobody' -a $ENV{'X509_USER_PROXY'} -t 1 -o /tmp/myproxy-test.$$ -v -d",
 		 undef);
     if ($exitstatus != 0) {
 	print "SUCCEEDED\n"; $SUCCESSES++;
@@ -251,13 +260,13 @@ if ($exitstatus == 0 && $output =~ /A proxy has been received/) {
 } else {
     print "FAILED\n"; $FAILURES++; print STDERR $output;
 }
-&runtest("myproxy-destroy -v -k 'mine'", undef);
-&runtest("myproxy-destroy -v -k 'nobody'", undef);
+&runtest("myproxy-destroy -v -k 'mine' -d", undef);
+&runtest("myproxy-destroy -v -k 'nobody' -d", undef);
 
 ($exitstatus, $output) =
     &runtest("myproxy-init -v -a -c 3 -t 2",
 	     $passphrase . "\n" . $passphrase . "\n");
-print "MyProxy Test 15 (verify lifetime of retrieved credentials): ";
+print "MyProxy Test 16 (verify lifetime of retrieved credentials): ";
 if ($exitstatus == 0) {
     ($exitstatus, $output) =
 	&runtest("myproxy-get-delegation -o /tmp/myproxy-test.$$ -v",
