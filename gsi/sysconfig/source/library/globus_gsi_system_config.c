@@ -1945,6 +1945,10 @@ globus_gsi_sysconfig_get_service_cert_filename_win32(
 
     if(!(*service_cert) || !(*service_key))
     {
+        if (home) {
+            free(home);
+            home = NULL;
+        }
         if(GLOBUS_I_GSI_SYSCONFIG_GET_HOME_DIR(&home) == GLOBUS_SUCCESS)
         {
             if((result = globus_i_gsi_sysconfig_create_cert_string(
@@ -2065,6 +2069,10 @@ globus_gsi_sysconfig_get_service_cert_filename_win32(
     if(default_service_key && default_service_key != service_key)
     {
         globus_libc_free(default_service_key);
+    }
+    if (home) {
+        free(home);
+        home = NULL;
     }
 
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_EXIT;
@@ -3476,6 +3484,11 @@ globus_gsi_sysconfig_get_cert_dir_unix(
     {
         globus_libc_free(default_cert_dir);
     }
+    if(home)
+    {
+        free(home);
+        home = NULL;
+    }
 
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_EXIT;
 
@@ -4145,6 +4158,11 @@ globus_gsi_sysconfig_get_host_cert_filename_unix(
     {
         globus_libc_free(default_host_key);
     }
+    if(home)
+    {
+        free(home);
+        home = NULL;
+    }
 
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_EXIT;
     return result;
@@ -4416,6 +4434,11 @@ globus_gsi_sysconfig_get_service_cert_filename_unix(
     
     if(!(*service_cert) || !(*service_key))
     {
+        if(home)
+        {
+            free(home);
+            home = NULL;
+        }
         result = GLOBUS_GSI_SYSCONFIG_GET_HOME_DIR(&home, &status);
         if(result != GLOBUS_SUCCESS)
         {
@@ -4561,6 +4584,11 @@ globus_gsi_sysconfig_get_service_cert_filename_unix(
     if(default_service_key && default_service_key != *service_key)
     {
         globus_libc_free(default_service_key);
+    }
+    if(home)
+    {
+        free(home);
+        home = NULL;
     }
 
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_EXIT;
