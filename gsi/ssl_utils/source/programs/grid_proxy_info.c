@@ -264,11 +264,18 @@ main(int argc, char* argv[])
 	/* initialize SSLeay and the error strings */
 	ERR_load_prxyerr_strings(0);
 	SSLeay_add_ssl_algorithms();
-
+    
+    pcd = proxy_cred_desc_new();
+    
+    if (!pcd)
+    {
+	    fprintf(stderr,"ERROR: problem during internal initialization\n");
+	    return STATUS_INTERNAL;
+    }
 
     /* Load proxy */
     if (!proxy_file) 
-	proxy_get_filenames(1, NULL, NULL, &proxy_file, NULL, NULL);
+	proxy_get_filenames(pcd, 1, NULL, NULL, &proxy_file, NULL, NULL);
 
     if (!proxy_file)
     {
@@ -286,12 +293,7 @@ main(int argc, char* argv[])
 	return STATUS_NOT_FOUND;
     }
 		
-    pcd = proxy_cred_desc_new();
-    if (!pcd)
-    {
-	fprintf(stderr,"ERROR: problem during internal initialization\n");
-	return STATUS_INTERNAL;
-    }
+    
 
     pcd->type=CRED_TYPE_PROXY;
 
