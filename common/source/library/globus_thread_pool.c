@@ -71,6 +71,7 @@ globus_module_descriptor_t              globus_i_thread_pool_module =
     globus_i_thread_pool_activate,
     globus_i_thread_pool_deactivate,
     GLOBUS_NULL,
+    GLOBUS_NULL,
     &local_version
 };
 

@@ -317,6 +317,7 @@ globus_module_descriptor_t globus_i_error_module =
   s_error_cache_init,
   s_error_cache_destroy,
   GLOBUS_NULL,
+  GLOBUS_NULL,
   &local_version
 };
 
