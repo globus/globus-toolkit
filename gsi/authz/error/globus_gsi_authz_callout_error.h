@@ -57,7 +57,7 @@ extern char * globus_gsi_authz_callout_error_strings[];
 #define GLOBUS_GSI_AUTHZ_CALLOUT_ERROR(__RESULT, __TYPE, __ERRSTR) \
 {                                                                        \
     char *                          _tmp_str_ =                          \
-        globus_common_create_string (__ERRSTR);                            \
+        globus_common_create_string __ERRSTR;                            \
     (__RESULT) = globus_error_put(                                       \
         globus_error_construct_error(                                    \
             GLOBUS_GSI_AUTHZ_CALLOUT_ERROR_MODULE,                 \
