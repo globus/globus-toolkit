@@ -1218,7 +1218,17 @@ globus_callback_space_poll(
                  * GLOBUS_L_CALLBACK_POST_STOP_ONESHOTS oneshots
                  * that are ready to go
                  */
-                GlobusICallbackReadyPeak(&i_space->ready_queue, peek);
+                peek = GLOBUS_NULL;
+                if(i_space)
+                {
+                    GlobusICallbackReadyPeak(&i_space->ready_queue, peek);
+                }
+                if(!peek)
+                {
+                    GlobusICallbackReadyPeak(
+                        &globus_l_callback_global_space.ready_queue, peek);
+                }
+                
                 if(!peek || peek->is_periodic || post_stop_counter-- == 0)
                 {
                     done = GLOBUS_TRUE;
