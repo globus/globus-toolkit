@@ -105,24 +105,14 @@ static int globus_l_gsi_authz_activate(void)
 
     result = GLOBUS_GSI_SYSCONFIG_GET_AUTHZ_CONF_FILENAME(&filename);
 
+
+/*
+ * Todo -- return an error if this error means anything other than
+ * that the authz config file is not found.
+ */
     if(result != GLOBUS_SUCCESS)
     {
-        error = globus_error_get(result);
         filename = NULL;
-        
-        if(globus_error_match(
-               error,
-               GLOBUS_GSI_SYSCONFIG_MODULE,
-               GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_AUTHZ_FILENAME)
-           == GLOBUS_TRUE)
-        {
-            globus_object_free(error);
-        }
-        else
-        {
-            rc = (int) globus_error_put(error);
-            goto deactivate_callout_error;
-        }
     }
     
     /* initialize a globus callout handle */
@@ -140,17 +130,17 @@ static int globus_l_gsi_authz_activate(void)
             goto free_handle;
         }
         free(filename);
-    }
 
-    /* call authz system init callout */
-    /* the callout type is "GLOBUS_GSI_AUTHZ_SYSTEM_INIT" */
-    /* arguments are: void ** authz_system_state, ie &authz_system_state */
-    rc = (int)globus_callout_call_type(callout_handle,
-                                       "GLOBUS_GSI_AUTHZ_SYSTEM_INIT",
-                                       &authz_system_state);
-    if(rc != (int)GLOBUS_SUCCESS)
-    {
-        goto exit;
+	/* call authz system init callout */
+	/* the callout type is "GLOBUS_GSI_AUTHZ_SYSTEM_INIT" */
+	/* arguments are: void ** authz_system_state, ie &authz_system_state */
+	rc = (int)globus_callout_call_type(callout_handle,
+					   "GLOBUS_GSI_AUTHZ_SYSTEM_INIT",
+					   &authz_system_state);
+	if(rc != (int)GLOBUS_SUCCESS)
+	{
+	    goto exit;
+	}
     }
 
     GLOBUS_I_GSI_AUTHZ_DEBUG_EXIT;
