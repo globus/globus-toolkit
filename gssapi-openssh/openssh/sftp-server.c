@@ -1060,7 +1060,9 @@ main(int ac, char **av)
 	/* XXX should use getopt */
 
 	__progname = get_progname(av[0]);
-	init_pathnames();
+	/* NB: No call to init_pathnames() here. The sftp-server doesn't
+	   use any fixed paths, which is good, because GLOBUS_LOCATION
+	   isn't defined in our environment. */
 	handle_init();
 
 #ifdef DEBUG_SFTP_SERVER
