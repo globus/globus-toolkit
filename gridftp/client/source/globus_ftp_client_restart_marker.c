@@ -573,7 +573,14 @@ globus_ftp_client_restart_marker_to_string(
 	    mylen += globus_i_ftp_client_count_digits(range->end_offset);
 	    mylen++;
 
-	    tbuf = realloc(buf, length + mylen + 1);
+            if(buf)
+            {
+               tbuf = realloc(buf, length + mylen + 1);
+            }
+            else
+            {
+                tbuf = malloc(length + mylen + 1);
+            }
 
 	    if(!tbuf)
 	    {
