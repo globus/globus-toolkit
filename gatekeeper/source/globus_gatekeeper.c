@@ -1534,7 +1534,7 @@ static void doit()
 
 		/* do all the work to run as user, unless gram_k5 will do it for us */
 
-		if (krb5flag == 0)
+		if (!(krb5flag && service_option_local_cred))
 		{
 			char * errmsg = NULL;
 			int rc;
