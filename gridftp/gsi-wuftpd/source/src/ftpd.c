@@ -4501,7 +4501,7 @@ void store(char *name, char *mode, int unique, int offset)
     int f_mode = -1, match_value = -1;
     int valid = 0;
     open_flags = (O_RDWR | O_CREAT |
-		  ((mode != NULL && *mode == 'a') ? O_APPEND : O_TRUNC));
+		  ((mode != NULL && *mode == 'a') ? O_APPEND : (offset==-1) ? O_TRUNC : 0));
 #endif /* UPLOAD */
 
     wu_realpath(name, realname, chroot_path);
