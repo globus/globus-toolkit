@@ -37,15 +37,16 @@ if test "$globus_cv_flavor" = "notset" \
     AC_MSG_ERROR([A flavor description string must be specified!])
 fi
 
+LAC_COMPILERS
+LAC_TARGET_ARCH
 CHECK_HEADERS
 CHECK_FUNCS
-
 AC_SYS_LARGEFILE
-
 CHECK_FOR_TIMESPEC
 CHECK_FOR_IOVEC
 CHECK_FOR_ATEXIT
 CHECK_SIZES
+
 
 GLOBUS_FLAVOR_NAME=$globus_cv_flavor
 AC_SUBST(GLOBUS_FLAVOR_NAME)
@@ -60,7 +61,6 @@ if test "x$PERL" = "x"; then
         AC_PATH_PROG(PERL,perl)
 fi
 
-LAC_COMPILERS
 
 AC_ARG_ENABLE(internal-doc,
 [  --enable-am-depends		Enable automake dependency caching.
@@ -78,7 +78,6 @@ AC_ARG_ENABLE(internal-doc,
 
 AC_SUBST(AUTOMAKE_OPTS)
 
-LAC_TARGET_ARCH
 
 save_LD=$LD
 LD=
