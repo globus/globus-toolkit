@@ -828,7 +828,6 @@ genfilename(char * prefixp, char * pathp, char * sufixp)
         prefixl = strlen(prefix);
         pathl   =  strlen(path);
         sufixl  =  strlen(sufix);
-
         newfilename = (char *) calloc(1, (prefixl + pathl + sufixl + 3));
         if (newfilename)
         {
@@ -839,7 +838,9 @@ genfilename(char * prefixp, char * pathp, char * sufixp)
               strcat(newfilename, "/");
           }
           strcat(newfilename, path);
-          if ((pathl != 0) && (path[pathl-1] != '/') && sufix[0] != '/')
+          if ((pathl != 0)
+              && (sufixl != 0)
+              && (path[pathl-1] != '/') && sufix[0] != '/')
             strcat(newfilename, "/");
           strcat(newfilename, sufix);
         }
