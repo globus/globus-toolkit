@@ -2662,6 +2662,13 @@ globus_i_gsc_send(
                 return GlobusGridFTPServerErrorParameter("op");
             }
         }
+        op->restart_marker = op->server_handle->restart_marker;
+        op->server_handle->restart_marker = NULL;
+        if(op->restart_marker == NULL)
+        {
+            op->restart_marker = globus_i_gsc_restart_create();
+            globus_i_gsc_restart_add(op->restart_marker, 0, -1);
+        }
     }
     globus_mutex_unlock(&op->server_handle->mutex);
 
@@ -2677,8 +2684,6 @@ globus_i_gsc_send(
     }
     op->transfer_cb = transfer_cb;
     op->user_arg = user_arg;
-    op->restart_marker = op->server_handle->restart_marker;
-    op->server_handle->restart_marker = NULL;
 
     if(user_cb != NULL)
     {
@@ -2739,6 +2744,13 @@ globus_i_gsc_recv(
                 return GlobusGridFTPServerErrorParameter("op");
             }
         }
+        op->restart_marker = op->server_handle->restart_marker;
+        op->server_handle->restart_marker = NULL;
+        if(op->restart_marker == NULL)
+        {
+            op->restart_marker = globus_i_gsc_restart_create();
+            globus_i_gsc_restart_add(op->restart_marker, 0, -1);
+        }
     }
     globus_mutex_unlock(&op->server_handle->mutex);
 
@@ -2754,8 +2766,6 @@ globus_i_gsc_recv(
     }
     op->transfer_cb = transfer_cb;
     op->user_arg = user_arg;
-    op->restart_marker = op->server_handle->restart_marker;
-    op->server_handle->restart_marker = NULL;
 
     if(user_cb != NULL)
     {
@@ -3148,6 +3158,7 @@ globus_gridftp_server_control_finished_transfer(
                 op,
                 NULL);
         }
+        globus_i_gsc_restart_destroy(op->restart_marker);
     }
     globus_mutex_unlock(&op->server_handle->mutex);
 
