@@ -67,6 +67,18 @@ void throughput_plugin_begin_cb(
 
     info = (throughput_nl_plugin_info_t *) user_arg;
 
+    if(info->source_url)
+    {
+        globus_libc_free(info->source_url);
+        info->source_url = GLOBUS_NULL;
+    }
+
+    if(info->dest_url)
+    {
+        globus_libc_free(info->dest_url);
+        info->dest_url = GLOBUS_NULL;
+    }
+
     if(source_url)
     {
         info->source_url = globus_libc_strdup(source_url);
