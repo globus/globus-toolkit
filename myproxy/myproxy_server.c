@@ -869,7 +869,18 @@ void put_proxy(myproxy_socket_attrs_t *attrs,
 }
 
 void info_proxy(myproxy_creds_t *creds, myproxy_response_t *response) {
-    response->response_type = MYPROXY_OK_RESPONSE;
+    if (myproxy_creds_info(creds) < 0) {
+       myproxy_log_verror();
+       response->response_type =  MYPROXY_ERROR_RESPONSE;
+       strcat(response->error_string, "Unable to check credential.\n");
+    } else { 
+       response->response_type = MYPROXY_OK_RESPONSE;
+       response->cred_start_time = creds->start_time;
+       response->cred_end_time = creds->end_time;
+       if (creds->owner_name && strlen(creds->owner_name) > 0)
+	  strncpy(response->cred_owner, creds->owner_name,
+	          sizeof(response->cred_owner));
+    }
 }
 
 void destroy_proxy(myproxy_creds_t *creds, myproxy_response_t *response) {

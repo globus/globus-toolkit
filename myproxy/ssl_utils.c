@@ -2505,3 +2505,38 @@ end:
 
    return return_status;
 }
+
+
+
+int
+ssl_get_times(const char *path, time_t *not_before, time_t *not_after)
+{
+   FILE         *cert_file = NULL;
+   X509         *cert = NULL;
+
+   assert(path != NULL);
+
+   cert_file = fopen(path, "r");
+   if (cert_file == NULL) {
+      verror_put_string("Failure opening file \"%s\"", cert_file);
+      verror_put_errno(errno);
+      return -1;
+   }
+
+   if (PEM_read_X509(cert_file, &cert, PEM_NO_CALLBACK) == NULL) {
+      fclose(cert_file);
+      verror_put_string("Failed reading proxy");
+      ssl_error_to_verror();
+      return -1;
+   }
+
+   if (not_before)
+      *not_before = ASN1_UTCTIME_mktime(X509_get_notBefore(cert));
+   if (not_after)
+      *not_after = ASN1_UTCTIME_mktime(X509_get_notAfter(cert));
+
+   X509_free(cert);
+   fclose(cert_file);
+
+   return 0;
+}

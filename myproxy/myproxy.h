@@ -32,6 +32,9 @@
 #define MYPROXY_AUTHORIZATION_STRING "AUTHORIZATION_DATA="
 #define MYPROXY_AUTH_SERVICE_STRING "AUTHORIZED_SERVICE="
 #define MYPROXY_AUTH_CLIENT_STRING  "AUTHORIZED_CLIENT="
+#define MYPROXY_START_TIME_STRING   "CRED_START_TIME="
+#define MYPROXY_END_TIME_STRING     "CRED_END_TIME="
+#define MYPROXY_CRED_OWNER_STRING   "CRED_OWNER="
 
 /* myproxy server protocol information */
 #define MYPROXY_RESPONSE_STRING     "RESPONSE="
@@ -98,6 +101,9 @@ typedef struct
   char                          error_string[2048];
   authorization_data_t          **authorization_data; 
   /* NULL-terminated array describing acceptable authorization methods */
+  time_t                        cred_start_time;
+  time_t                        cred_end_time;
+  char                          cred_owner[2048];
 } myproxy_response_t;
 
 
