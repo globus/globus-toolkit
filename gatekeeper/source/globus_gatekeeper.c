@@ -1019,25 +1019,25 @@ static void doit()
     char **             args;
     char *              argnp;
     char *              execp;
-	char **				argi;
-	int					num_service_args = SERVICE_ARGS_MAX;
-	char *				service_args[SERVICE_ARGS_MAX];
-	int					num_service_options = SERVICE_OPTIONS_MAX;
-	char *				service_options[SERVICE_OPTIONS_MAX];
-	int					service_option_local_cred = 0;
-	int					service_option_stderr_log = 0;
+    char **		argi;
+    int			num_service_args = SERVICE_ARGS_MAX;
+    char *		service_args[SERVICE_ARGS_MAX];
+    int			num_service_options = SERVICE_OPTIONS_MAX;
+    char *		service_options[SERVICE_OPTIONS_MAX];
+    int			service_option_local_cred = 0;
+    int			service_option_stderr_log = 0;
     unsigned char       int_buf[4];
     char                tmp_version[64];
     struct stat         statbuf;
-	char *				service_line = NULL;
+    char *		service_line = NULL;
     char *              service_path;
     char *              gram_k5_path; 
     struct sockaddr_in  peer;
     netlen_t            peerlen;
     char *              peernum;
     char *              x509_delegate;
-	size_t				length;
-
+    size_t				length;
+    
 #ifdef GSS_AUTHENTICATION
     /* GSSAPI assist variables */
     OM_uint32           major_status = 0;

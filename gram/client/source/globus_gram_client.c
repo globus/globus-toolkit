@@ -90,7 +90,7 @@ FILE *			globus_l_print_fp;
 static globus_mutex_t	globus_l_mutex;
 static int		globus_l_is_initialized = 0;
 
-#define GLOBUS_L_CHECK_IF_INITIALIZED assert(globus_l_is_initialized==1); \
+#define GLOBUS_L_CHECK_IF_INITIALIZED assert(globus_l_is_initialized==1)
 
 #ifdef GSS_AUTHENTICATION
 /*
@@ -207,8 +207,6 @@ globus_i_gram_client_deactivate(void)
 			     &credential_handle);
 	}
 	
-	err = globus_mutex_destroy(&globus_l_mutex);
-	assert (!err);
 	globus_l_is_initialized = 0;
     }
     
@@ -405,7 +403,7 @@ globus_gram_client_ping(char * gatekeeper_contact)
 
     rc = globus_l_gram_client_setup_attr_t( 
 	&attr,
-	GLOBUS_IO_SECURE_DELEGATION_MODE_NO_PROXY,
+	GLOBUS_IO_SECURE_DELEGATION_MODE_NONE,
 	dn );
 
     if (rc != GLOBUS_SUCCESS)
@@ -478,7 +476,7 @@ globus_gram_client_job_request(char * gatekeeper_url,
 #ifdef GSS_C_GLOBUS_LIMITED_PROXY_FLAG
 		    GLOBUS_IO_SECURE_DELEGATION_MODE_LIMITED_PROXY,
 #else
-		    GLOBUS_IO_SECURE_DELEGATION_MODE_NO_PROXY,
+		    GLOBUS_IO_SECURE_DELEGATION_MODE_NONE,
 #endif
 		    &attr) ) {
       return rc;
