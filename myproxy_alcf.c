@@ -89,6 +89,7 @@ int main(int argc, char *argv[])
 {
 	SSL_CREDENTIALS *creds;
 	myproxy_creds_t *my_creds;
+	char proxyfile[64] = "";
 
 	my_creds = (myproxy_creds_t *) malloc(sizeof(*my_creds));
 	memset (my_creds, 0, sizeof(*my_creds));
@@ -110,7 +111,6 @@ int main(int argc, char *argv[])
 
 	if (ssl_certificate_load_from_file(creds, certfile) == SSL_SUCCESS)
 	{
-	    	char proxyfile[64];
 		char passphrase[MAX_PASS_LEN+1];
 
 
@@ -146,7 +146,14 @@ int main(int argc, char *argv[])
 		}
 
 	    	sprintf(proxyfile, "%s.%u", MYPROXY_DEFAULT_PROXY, (unsigned) getuid());
-		ssl_proxy_store_to_file(creds, proxyfile, my_creds->passphrase);
+		/* Remove proxyfile if it already exists. */
+		ssl_proxy_file_destroy(proxyfile);
+		verror_clear();
+		
+		if (ssl_proxy_store_to_file(creds, proxyfile, my_creds->passphrase) != SSL_SUCCESS) {
+		    fprintf(stderr, "%s\n", verror_get_string());
+		    goto cleanup;
+		}
 
     		if (my_creds->username == NULL) { /* set default username */
 			if (dn_as_username) {
@@ -189,6 +196,7 @@ int main(int argc, char *argv[])
 	}
 
 	cleanup:
+	if (proxyfile[0]) ssl_proxy_file_destroy(proxyfile);
 	free (my_creds);
 	exit(0);
 }
