@@ -666,19 +666,48 @@ cmd: USER SP username CRLF
 	}
     | NLST check_login CRLF
 	=	{
+#if USE_GLOBUS_DATA_CODE
+	    if (log_commands)
+		syslog(LOG_INFO, "NLST");
+	    if ($2 && !restrict_check(".")) 
+            {
+		retrieve_is_data = 0;
+#ifndef INTERNAL_LS
+                retrieve("/bin/ls -c1", "", -1, -1);
+#else
+		ls(NULL, 0);
+#endif
+            }
+#else /* USE_GLOBUS_DATA_CODE */
 	    if (log_commands)
 		syslog(LOG_INFO, "NLST");
 	    if ($2 && !restrict_check("."))
 		send_file_list("");
+#endif
 	}
     | NLST check_login SP STRING CRLF
 	=	{
+
+#if USE_GLOBUS_DATA_CODE
+	    if (log_commands)
+		syslog(LOG_INFO, "NLST %s", $4);
+	    if ($2 && $4 && !restrict_check($4))
+            {
+		retrieve_is_data = 0;
+#ifndef INTERNAL_LS
+                retrieve("/bin/ls -c1", $4, -1, -1);
+#else
+		ls(NULL, 0);
+#endif
+            }
+#else /* USE_GLOBUS_DATA_CODE */
 	    if (log_commands)
 		syslog(LOG_INFO, "NLST %s", $4);
 	    if ($2 && $4 && !restrict_check($4))
 		send_file_list($4);
 	    if ($4 != NULL)
 		free($4);
+#endif
 	}
     | LIST check_login CRLF
 	=	{

@@ -1640,11 +1640,11 @@ connect_callback(
          monitor->done = GLOBUS_TRUE; 
          if(reuse) 
          {
-             monitor->code = 150;
+             monitor->code = 125;
          }
          else
          {
-             monitor->code = 125;
+             monitor->code = 150;
          }
          globus_cond_signal(&monitor->cond);
     }
