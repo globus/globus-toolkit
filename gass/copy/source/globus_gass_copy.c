@@ -1005,7 +1005,7 @@ globus_gass_copy_register_performance_cb(
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 
 static
-int
+globus_bool_t
 globus_l_gass_copy_perf_local_cb(
     globus_abstime_t *                      time_stop,
     void *                                  user_arg)
@@ -1060,7 +1060,8 @@ globus_l_gass_copy_perf_local_cb(
         instantaneous_throughput,
         avg_throughput);
 
-    return 0;
+    /* user may have changed something */
+    return GLOBUS_TRUE;
 }
 
 static
