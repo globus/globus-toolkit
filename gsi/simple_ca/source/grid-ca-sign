@@ -33,7 +33,7 @@ globus_source ${libexecdir}/globus-sh-tools.sh
 
 PROGRAM_NAME=`echo $0 | ${GLOBUS_SH_SED-sed} 's|.*/||g'`
 
-short_usage="$PROGRAM_NAME [-help] [ options ...]"
+short_usage="$PROGRAM_NAME [-help] -in <req> -out <cert> [ options ...]"
 
 openssl_options=""
 
@@ -49,15 +49,15 @@ ${short_usage}
     -force                   : Sign a certificate request with subject that
                                matches an already signed certificate.
     -dir <cadir>             : Set the configure directory of the CA
-    -in  <cert req>          : The cert request to sign, if not 
-                               given a request is expected from stdin
-    -out <signed cert>       : The newly signed cert.  If not given,
-                               the cert is written to stdout
+    -in  <cert req>          : The cert request to sign.
+    -out <signed cert>       : The newly signed cert.  
     -<openssl option>        : Any of the options alllowed with the openssl ca command
     -openssl-help            : List possible options to the openssl ca command and exit
     -passin pass:<password>  : This is an openssl option.  Specify the password
                                for the CA private key if you don't care about
-                               security
+                               security.  Other -passin options also exist,
+			       see openssl manpage for further details.
+
 EOF
 }
 
@@ -147,9 +147,21 @@ if test -z "$GRID_CA_DIR"; then
     GRID_CA_DIR=${HOME}/.globus/simpleCA/
 fi
 
+if test ! -d ${GRID_CA_DIR}; then
+    echo ""
+    echo "ERROR: No simple CA directory"
+    echo "found at ${GRID_CA_DIR}"
+    echo "Either specify a directory with -dir, or run"
+    echo "setup-simple-ca to create a CA"
+    echo ""
+    exit 1
+fi
+
 if test ! -f ${GRID_CA_DIR}/cacert.pem; then
     echo ""
-    echo "No simple CA directory found.  Run setup-simple-ca before"
+    echo "ERROR: No simple CA setup found at ${GRID_CA_DIR}."
+    echo "The CA certificate is missing!"
+    echo "Please run setup-simple-ca before"
     echo "signing certificates."
     echo ""
     exit 1
