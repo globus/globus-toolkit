@@ -3484,11 +3484,6 @@ globus_gsi_sysconfig_get_cert_dir_unix(
     {
         globus_libc_free(default_cert_dir);
     }
-    if(home)
-    {
-        free(home);
-        home = NULL;
-    }
 
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_EXIT;
 
@@ -4026,6 +4021,7 @@ globus_gsi_sysconfig_get_host_cert_filename_unix(
             GLOBUS_GSI_SYSCONFIG_ERROR_CHAIN_RESULT(
                 result,
                 GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_CERT_STRING);
+            home = NULL;
             goto done;
         }
 
@@ -4158,10 +4154,10 @@ globus_gsi_sysconfig_get_host_cert_filename_unix(
     {
         globus_libc_free(default_host_key);
     }
+
     if(home)
     {
         free(home);
-        home = NULL;
     }
 
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_EXIT;
@@ -4292,6 +4288,7 @@ globus_gsi_sysconfig_get_service_cert_filename_unix(
             GLOBUS_GSI_SYSCONFIG_ERROR_CHAIN_RESULT(
                 result,
                 GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_CERT_STRING);
+            home = NULL;
             goto done;
         }
 
@@ -4434,17 +4431,20 @@ globus_gsi_sysconfig_get_service_cert_filename_unix(
     
     if(!(*service_cert) || !(*service_key))
     {
+        /* need to change this if I ever fix the status mess */
         if(home)
         {
             free(home);
             home = NULL;
         }
+
         result = GLOBUS_GSI_SYSCONFIG_GET_HOME_DIR(&home, &status);
         if(result != GLOBUS_SUCCESS)
         {
             GLOBUS_GSI_SYSCONFIG_ERROR_CHAIN_RESULT(
                 result,
                 GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_CERT_STRING);
+            home = NULL;
             goto done;
         }
         
@@ -4585,10 +4585,10 @@ globus_gsi_sysconfig_get_service_cert_filename_unix(
     {
         globus_libc_free(default_service_key);
     }
+
     if(home)
     {
         free(home);
-        home = NULL;
     }
 
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_EXIT;
