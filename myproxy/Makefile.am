@@ -49,7 +49,7 @@ Scripts= \
 	myproxy.cron
 
 sbin_SCRIPTS = $(Scripts)
-EXTRA_DIST = $(Scripts)
+
 include_HEADERS= \
 	myproxy.h \
 	myproxy_creds.h
@@ -103,7 +103,9 @@ gsi_socket_test_LDADD = $(GPT_PGM_LINKS)  ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la
 
 sysconf_DATA = myproxy-server.config
 
-pkgdata_DATA = LICENSE README INSTALL VERSION
+pkgdata_DATA = README INSTALL LICENSE VERSION
+
+EXTRA_DIST = $(Scripts) LICENSE VERSION myproxy-server.config
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top
