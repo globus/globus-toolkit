@@ -112,10 +112,10 @@ typedef int globus_thread_once_t;
 	(time(GLOBUS_NULL) >= (T)->tv_sec) ? ETIMEDOUT : 0 )
 
 #define globus_macro_cond_signal(C) \
-    (globus_callback_signal_poll(), *(C) = 0)
+    (globus_callback_signal_poll(), 0)
     
 #define globus_macro_cond_broadcast(C) \
-    (globus_callback_signal_poll(), *(C) = 0)
+    (globus_callback_signal_poll(), 0)
 
 #define globus_macro_condattr_init(A) \
     ((*(A) = GLOBUS_CALLBACK_GLOBAL_SPACE), 0)
