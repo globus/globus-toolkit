@@ -1133,8 +1133,9 @@ globus_l_gsc_user_close_kickout(
     {
         if(server_handle->funcs.data_destroy_cb != NULL)
         {
-            globus_l_gsc_user_data_destroy_cb_kickout(
-                server_handle->data_object);
+            server_handle->funcs.data_destroy_cb(
+                server_handle->data_object->user_handle,
+                server_handle->funcs.data_destroy_arg);
         }
         else
         {
@@ -2126,7 +2127,7 @@ globus_gridftp_server_control_start(
         globus_xio_attr_destroy(xio_attr);
         if(res != GLOBUS_SUCCESS)
         {
-            goto err;
+            goto err_unlock;
         }
     }
     globus_mutex_unlock(&server_handle->mutex);
