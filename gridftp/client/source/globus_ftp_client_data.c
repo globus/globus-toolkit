@@ -256,7 +256,6 @@ globus_ftp_client_register_read(
 		    GLOBUS_NULL);
 
 	    }
-	    err = GLOBUS_I_FTP_CLIENT_ERROR_INTERNAL_ERROR(err);
 
 	    goto unlock_error;
 	}
@@ -457,7 +456,6 @@ globus_ftp_client_register_write(
 		    GLOBUS_NULL);
 
 	    }
-	    err = GLOBUS_I_FTP_CLIENT_ERROR_INTERNAL_ERROR(err);
 
 	    goto unlock_error;
     	}
