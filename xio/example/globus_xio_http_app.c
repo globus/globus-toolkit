@@ -50,12 +50,17 @@ main(
     globus_hashtable_t*			            hashtable = (globus_hashtable_t*) globus_malloc(sizeof(globus_hashtable_t));
     globus_hashtable_t*			            user_table = (globus_hashtable_t*) globus_malloc(sizeof(globus_hashtable_t));
     globus_xio_http_string_pair_t           *string_pair;
+    globus_xio_iovec_t                      iovec;
+
 
     int                                     rc;
     FILE*				    fp;
     char				    buffer[SIZE];
     globus_xio_http_string_pair_t*			length;
     int					    nbytes;
+
+    iovec.iov_base = cs;
+    iovec.iov_len = 512;
 
     memset(buffer, 0, SIZE);
     rc = globus_module_activate(GLOBUS_XIO_MODULE);
@@ -119,9 +124,16 @@ main(
                                          xio_handle,
                                          http_driver,
                                          GLOBUS_XIO_HTTP_GET_CONTACT,
-                                         cs);
+                                         &iovec);
             test_res(res);
             fprintf(stdout, "contact: %s\n", cs);
+            res = globus_xio_handle_cntl(
+                                         xio_handle,
+                                         http_driver,
+                                         GLOBUS_XIO_HTTP_GET_REQUEST_TYPE,
+                                         &iovec);
+            test_res(res);
+            fprintf(stdout, "Request type: %s\n", cs);
             globus_free(cs);
             res = globus_xio_handle_cntl(
                                          xio_handle,
