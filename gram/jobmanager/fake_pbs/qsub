@@ -1,0 +1,6 @@
+#! /usr/bin/perl
+
+my $hostname = $ENV{"HOSTNAME"};
+my $now = time;
+
+print sprintf("%010d%010d.$hostname\n",$now,$$);
