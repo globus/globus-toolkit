@@ -326,6 +326,7 @@ sub import_package_dependencies
 		 ( $dep ne "trusted_ca_setup") and
 		 ( $dep ne "globus_gram_job_manager_service_setup") and
 		 ( $dep ne "mmjfs_service_setup") and
+		 ( $dep ne "simple_ca_setup") and
 		 ( $dep ne "mjs_service_setup") )
 	    {
 		$package_build_hash{$dep} = 1;
