@@ -1274,6 +1274,11 @@ globus_xio_operation_get_data_descriptor(
     globus_xio_operation_t              op,
     globus_bool_t                       force_create);
 
+globus_result_t
+globus_xio_operation_copy_stack(
+    globus_xio_operation_t              op,
+    globus_xio_stack_t *                stack);
+
 EXTERN_C_END
 
 #endif /* GLOBUS_XIO_DRIVER_H */

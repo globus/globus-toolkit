@@ -41,7 +41,8 @@ typedef enum globus_i_xio_op_type_e
     GLOBUS_XIO_OPERATION_TYPE_WRITE,
     GLOBUS_XIO_OPERATION_TYPE_ACCEPT,
     GLOBUS_XIO_OPERATION_TYPE_DRIVER,
-    GLOBUS_XIO_OPERATION_TYPE_DD
+    GLOBUS_XIO_OPERATION_TYPE_DD,
+    GLOBUS_XIO_OPERATION_TYPE_SERVER_INIT
 } globus_xio_operation_type_t;
 
 typedef enum globus_i_xio_signal_type_e

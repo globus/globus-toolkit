@@ -2068,3 +2068,69 @@ globus_xio_operation_get_data_descriptor(
     
     return op->entry[op->ndx - 1].dd;
 }
+
+globus_result_t
+globus_xio_operation_copy_stack(
+    globus_xio_operation_t              op,
+    globus_xio_stack_t *                stack)
+{
+    globus_result_t                     result;
+    globus_i_xio_server_t *             server;
+    globus_i_xio_context_t *            context;
+    globus_i_xio_stack_t *              istack;
+    int                                 ndx;
+    GlobusXIOName(globus_xio_operation_copy_stack);
+
+    GlobusXIODebugEnter();
+
+    result = globus_xio_stack_init(stack, NULL);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_init;
+    }
+    
+    istack = *stack;
+    
+    switch(op->type)
+    {
+      case GLOBUS_XIO_OPERATION_TYPE_SERVER_INIT:
+        server = op->_op_server;
+        
+        for(ndx = op->stack_size - 1; ndx > op->ndx; ndx--)
+        {
+            istack->size++;
+            globus_list_insert(
+                &istack->driver_stack, server->entry[ndx].driver);
+        }
+        break;
+      
+      case GLOBUS_XIO_OPERATION_TYPE_ACCEPT:
+        server = op->_op_server;
+        
+        for(ndx = op->stack_size - 1; ndx >= op->ndx; ndx--)
+        {
+            istack->size++;
+            globus_list_insert(
+                &istack->driver_stack, server->entry[ndx].driver);
+        }
+        break;
+        
+      default:
+        context = op->_op_context;
+        
+        for(ndx = op->stack_size - 1; ndx >= op->ndx; ndx--)
+        {
+            istack->size++;
+            globus_list_insert(
+                &istack->driver_stack, context->entry[ndx].driver);
+        }
+        break;
+    }
+    
+    GlobusXIODebugExit();
+    return GLOBUS_SUCCESS;
+    
+error_init:
+    GlobusXIODebugExitWithError();
+    return result;
+}

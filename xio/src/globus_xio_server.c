@@ -897,10 +897,11 @@ globus_xio_server_create(
     }
     globus_callback_space_reference(xio_server->space);
     
-    /* Only using this op for its index, really... things like type
-     * and state don't matter to me.  I will also be using the open_attr
+    /* Only using this op for its index, really... things like state 
+     * don't matter to me.  I will also be using the open_attr
      * field for the server attr.
      */
+    xio_op->type = GLOBUS_XIO_OPERATION_TYPE_SERVER_INIT;
     xio_op->_op_server = xio_server;
     xio_op->stack_size = xio_server->stack_size;
     
