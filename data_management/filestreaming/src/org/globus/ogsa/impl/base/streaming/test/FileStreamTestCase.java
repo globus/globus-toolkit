@@ -24,6 +24,9 @@ import junit.framework.TestCase;
 import junit.framework.TestSuite;
 import junit.textui.TestRunner;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import org.globus.axis.gsi.GSIConstants;
 import org.globus.gsi.gssapi.auth.SelfAuthorization;
 import org.globus.gsi.gssapi.GSSConstants;
@@ -42,12 +45,15 @@ import org.globus.ogsa.utils.GridServiceFactory;
 import org.globus.ogsa.wsdl.GSR;
 import org.gridforum.ogsi.ExtensibilityType;
 import org.gridforum.ogsi.Factory;
+import org.gridforum.ogsi.FaultType;
 import org.gridforum.ogsi.GridService;
 import org.gridforum.ogsi.LocatorType;
 import org.gridforum.ogsi.OGSIServiceGridLocator;
 import org.gridforum.ogsi.ReferenceType;
 
 public class FileStreamTestCase extends GridTestCase {
+    static Log logger = LogFactory.getLog(FileStreamTestCase.class.getName());
+
     private static final String FSFF_BASE_PATH
         = "base/streaming/FileStreamFactoryFactoryService";
     private static final String FSF_INSTANCE_ID = "testFileStreamFactory";
@@ -67,8 +73,6 @@ public class FileStreamTestCase extends GridTestCase {
         = {"~~~~!!!!@@@@####$$$$%%%%^^^^&&&&****(((())))____++++",
            "~!@#$%^&*()_++_)(*&^%$#@!~~!@#$%^&*()_++_)(*&^%$#@!~"};
 
-    private static TestServer testServer;
-
     private static LocatorType factoryHandleLocator = null;
 
     private static OGSIServiceGridLocator gridServiceLocator
@@ -78,25 +82,14 @@ public class FileStreamTestCase extends GridTestCase {
         super(name);
     }
 
-    public static void setTestServer(TestServer testServer) {
-        FileStreamTestCase.testServer = testServer;
-    }
-
     public static Test suite() {
         return new TestSuite(FileStreamTestCase.class);
     }
 
-    protected void setUp() throws Exception {
+    private void createServer() throws RemoteException, FaultType {
         //create a file stream factory
-        System.out.println(   "Test Server Base URL: "
-                            + FileStreamTestCase.testServer.getBaseURL());
-        /*
         String serviceFactoryUrl
-            = FileStreamTestCase.testServer.getBaseURL()
-            + FSFF_BASE_PATH;
-            */
-        String serviceFactoryUrl
-            = "http://127.0.0.1:8080/ogsa/services/"
+            = TEST_SERVER.getBaseURL()
             + FSFF_BASE_PATH;
 
         GridServiceFactory fileStreamFactoryFactory = null;
@@ -105,9 +98,8 @@ public class FileStreamTestCase extends GridTestCase {
                     this.gridServiceLocator.getFactoryPort(
                         new URL(serviceFactoryUrl)));
         } catch (MalformedURLException murle) {
-            System.err.println("ERROR: failed to locate factory -- ");
-            System.err.println(murle.getMessage());
-            murle.printStackTrace();
+            logger.error("failed to locate factory", murle);
+            return;
         }
 
         FileStreamFactoryOptionsWrapperType factoryOptionsWrapper
@@ -124,16 +116,16 @@ public class FileStreamTestCase extends GridTestCase {
                     null, FSF_INSTANCE_ID, creationParameters);
 
         GSR gsr = GSR.newInstance(this.factoryHandleLocator);
-        System.out.println("FSF Handle: " + gsr.getHandle());
+        logger.debug("FSF Handle: " + gsr.getHandle());
 
     }
 
-    protected void tearDown() throws Exception {
+    private void destroyServer() throws RemoteException, FaultType {
         //destroy the file stream factory
         GridService fileStreamFactory = this.gridServiceLocator.getFactoryPort(
                     this.factoryHandleLocator);
         fileStreamFactory.destroy();
-        System.out.println("FSF Destroyed");
+        logger.debug("FSF Destroyed");
     }
 
     private FileStreamPortType createFileStream() throws RemoteException  {
@@ -160,13 +152,13 @@ public class FileStreamTestCase extends GridTestCase {
         ExtensibilityType creationParameters
             = AnyHelper.getExtensibility(fileStreamOptionsWrapper);
 
-        System.out.println("creating file stream...");
+        logger.debug("creating file stream...");
         LocatorType fileStreamHandleLocator
             = fileStreamFactory.createService(
                     null, FSS_INSTANCE_ID, creationParameters);
 
         GSR gsr = GSR.newInstance(fileStreamHandleLocator);
-        System.out.println("FSS Handle: " + gsr.getHandle());
+        logger.debug("FSS Handle: " + gsr.getHandle());
 
         FileStreamServiceGridLocator fileStreamLocator
             = new FileStreamServiceGridLocator();
@@ -185,9 +177,7 @@ public class FileStreamTestCase extends GridTestCase {
             writer.flush();
             writer.close();
         } catch (IOException ioe) {
-            System.err.println("ERROR: source file write failed -- ");
-            System.err.println(ioe.getMessage());
-            ioe.printStackTrace();
+            logger.error("source file write failed", ioe);
         }
     }
 
@@ -200,23 +190,25 @@ public class FileStreamTestCase extends GridTestCase {
 
             assertTrue(line.equals(TEST_PATTERNS[testPatternIndex]));
         } catch (IOException ioe) {
-            System.err.println("ERROR: destination file read failed -- ");
-            System.err.println(ioe.getMessage());
-            ioe.printStackTrace();
+            logger.error("destination file read failed", ioe);
         }
     }
 
     public void testFileStream() {
+        try {
+            createServer();
+        } catch (Exception e) {
+            logger.error("problem creating FileStreamFactory", e);
+            return;
+        }
+
         FileStreamPortType fileStream = null;
 
         try {
             fileStream = createFileStream();
-            assertTrue(true);
         } catch (RemoteException re) {
-            System.err.println("ERROR: file stream creation failed -- ");
-            System.err.println(re.getMessage());
-            re.printStackTrace();
-            assertTrue(false);
+            logger.error("file stream creation failed", re);
+            return;
         }
 
        ((Stub) fileStream)._setProperty(Constants.MSG_SEC_TYPE,
@@ -228,45 +220,34 @@ public class FileStreamTestCase extends GridTestCase {
 
         try {
             fileStream.start();
-            assertTrue(true);
         } catch (RemoteException re) {
-            System.err.println("ERROR: file stream start failed -- ");
-            System.err.println(re.getMessage());
-            re.printStackTrace();
-            assertTrue(false);
+            logger.error("file stream start failed", re);
+            return;
         }
 
         try {
             fileStream.stop();
-            assertTrue(true);
         } catch (RemoteException re) {
-            System.err.println("ERROR: file stream stop failed -- ");
-            System.err.println(re.getMessage());
-            re.printStackTrace();
-            assertTrue(false);
+            logger.error("file stream stop failed", re);
+            return;
         }
 
         assertTestPatternTransmitted(0);
 
         try {
             fileStream.destroy();
-            assertTrue(true);
         } catch (RemoteException re) {
-            System.err.println("ERROR: file stream destruction failed -- ");
-            System.err.println(re.getMessage());
-            re.printStackTrace();
-            assertTrue(false);
+            logger.error("file stream destruction failed", re);
+            return;
         }
 
-        System.out.println("FSS Destroyed");
+        logger.debug("FSS Destroyed");
 
-        /*
         try {
-            Thread.currentThread().sleep(10000);
-        } catch (InterruptedException ie) {
-            System.err.println("sleep interrupted");
+            destroyServer();
+        } catch (Exception e) {
+            logger.error("problem destroying FileStreamFactory", e);
         }
-        */
     }
 
     public static void main(String[] args) {

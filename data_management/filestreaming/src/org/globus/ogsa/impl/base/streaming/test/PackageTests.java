@@ -144,21 +144,6 @@ public class PackageTests extends GridTestSuite {
         super(name);
     }
 
-    public void run(TestResult result) {
-       try {
-           testServer = new TestServer();
-           testServer.start();
-           FileStreamTestCase.setTestServer(testServer);
-
-           super.run(result);
-
-           testServer.stop();
-       } catch (Exception e) {
-           e.printStackTrace();
-           result.addError(this, e);
-       }
-    }
-
     public static Test suite() throws Exception {
         TestSuite suite = new PackageTests("File Stream Tests");
         suite.addTest(new FileStreamTestCase("testFileStream"));

@@ -36,6 +36,9 @@ Southern California. All Rights Reserved.
   <property name="build.lib" value="${build.dir}/lib"/>
   <property name="build.javadocs" value="${build.dir}/javadocs"/>
   <property name="build.services" value="${ogsa.root}/build-services.xml"/>
+  <property name="server.deploy" value="server-deploy.wsdd"/>
+  <property name="server.config" value="server-config.wsdd"/>
+  <property name="core.config" value="${ogsa.root}/${server.config}"/>
   <property name="stubs.dir" value="./src/org/globus/ogsa/base"/>
   <property name="schema.dir" value="schema"/>
   <property name="build.schema" value="${schema.dir}"/>
@@ -201,9 +204,7 @@ Southern California. All Rights Reserved.
     <ant antfile="${ogsa.root}/${build.packages}" target="makeGar">
       <property name="gar.name" value="${build.lib}/${gar.file}"/>
       <property name="garlib.dir" value="${build.lib}"/>
-      <property name="garserverdeployment.file" value="server-config.wsdd"/>
-      <!--<property name="garclientdeployment.file" value="client-config.wsdd"/>
-      -->
+      <property name="garserverdeployment.file" value="${server.deploy}"/>
       <property name="garschema.origin" value="./schema/base/streaming"/>
       <property name="garschema.path" value="base/streaming"/>
     </ant>
@@ -229,11 +230,24 @@ Southern California. All Rights Reserved.
     </javac>
   </target>
 
+  <!-- merge the core server config and local server
+       deployment descriptor for use with the test server -->
+  <target name="deployServer">
+    <copy file="${core.config}" toFile="${server.config}"/>
+    <java classname="org.apache.axis.utils.Admin"
+          classpathref="classpath"
+          fork="yes"
+          failonerror="true">
+      <arg value="server"/>
+      <arg value="server-deploy.wsdd"/>
+    </java>
+  </target>
+
   <!-- =================================================================== -->
   <!-- Runs the JUnit testcases                                            -->
   <!-- =================================================================== -->
 
-  <target name="test" depends="buildTest">
+  <target name="test" depends="buildTest,deployServer">
     <ant target="cleanTest"/>
     <mkdir dir="${basedir}/${test-reports.dir}" />
       
