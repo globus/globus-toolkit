@@ -410,8 +410,9 @@ globus_gram_client_ping(char * gatekeeper_contact)
     if (rc != GLOBUS_SUCCESS)
 	goto globus_gram_client_ping_attr_failed;
 
-    ping_service = strcat("ping", service);
-    
+    ping_service = globus_libc_malloc(strlen(service) + 5);
+    globus_libc_sprintf(ping_service, "ping%s", service);
+			 
     rc = globus_gram_http_post_and_get(
 	         url,
 		 ping_service,
