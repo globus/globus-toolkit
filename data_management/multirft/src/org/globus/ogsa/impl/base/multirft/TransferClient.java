@@ -42,6 +42,7 @@ import org.globus.ogsa.base.multirft.GridFTPRestartMarkerElement;
 import org.globus.ogsa.base.multirft.RFTOptionsType;
 import org.globus.ogsa.impl.base.multirft.MyMarkerListener;
 import org.globus.ogsa.impl.base.multirft.TransferDbOptions;
+import org.globus.ogsa.impl.base.multirft.TransferJob;
 import org.globus.ogsa.impl.base.multirft.util.FileSystemUtil;
 import org.globus.ogsa.impl.base.multirft.util.URLExpander;
 import org.globus.ogsa.utils.MessageUtils;
@@ -111,7 +112,7 @@ public class TransferClient {
         try {
             this.sourceGlobusURL = new GlobusURL( sourceURL );
         } catch ( Exception e ) {
-            setStatus( 2 );
+            setStatus( TransferJob.STATUS_FAILED );
             logger.debug( "Invalid Source URL" );
             throw new RemoteException( MessageUtils.toString( e ) );
         }
@@ -129,7 +130,7 @@ public class TransferClient {
         try {
             this.destinationGlobusURL = new GlobusURL( destinationURL );
         } catch ( Exception e ) {
-            setStatus( 2 );
+            setStatus( TransferJob.STATUS_FAILED );
             logger.debug( "Invalid Destination URL" );
             throw new RemoteException( MessageUtils.toString( e ) );
         }
@@ -169,7 +170,7 @@ public class TransferClient {
             this.sourceHost = new GridFTPClient( this.sourceGlobusURL.getHost(),
                     this.sourceGlobusURL.getPort() );
         } catch ( Exception e ) {
-            setStatus( 2 );
+            setStatus( TransferJob.STATUS_FAILED );
             logger.debug( "Unable to create GridFTP Client to : " + this.sourceGlobusURL.getHost() );
             throw new RemoteException( MessageUtils.toString( e ) );
         }
@@ -189,7 +190,7 @@ public class TransferClient {
             this.destinationHost = new GridFTPClient( this.destinationGlobusURL.getHost(),
                     this.destinationGlobusURL.getPort() );
         } catch ( Exception e ) {
-            setStatus( 2 );
+            setStatus( TransferJob.STATUS_FAILED );
             logger.debug( "Unable to create GridFTP Client to : " + this.destinationGlobusURL.getHost() );
             throw new RemoteException( MessageUtils.toString( e ) );
         }
@@ -446,11 +447,12 @@ public class TransferClient {
             if ( this.sourcePath.endsWith( "/" ) ) {
                 logger.debug( "Source url contains a directory" );
                 logger.debug( "More processing needs to be done" );
-                this.setStatus( 6 );
+                this.setStatus( TransferJob.STATUS_EXPANDING );
                 this.urlExpander = new URLExpander
-                        ( this.sourceHost, this.destinationHost, sourceGlobusURL, destinationGlobusURL );
+                        ( this.sourceHost, this.destinationHost, sourceGlobusURL
+                        , destinationGlobusURL );
                 this.urlExpander.start();
-            } else if ( this.status != 2 ) {
+            } else if ( this.status != TransferJob.STATUS_FAILED ) {
                 size = sourceHost.getSize( sourcePath );
                 this.markerListener = new MyMarkerListener( transferProgress,
                         serviceData,
@@ -465,10 +467,10 @@ public class TransferClient {
                 logger.debug( "Transfer Id in TransferClient : " + transferid );
             }
         } catch ( MalformedURLException mue ) {
-            setStatus( 2 );
+            setStatus( TransferJob.STATUS_FAILED );
             logger.error( "Error in TransferClient:Invalid URLs", mue );
         } catch ( Exception e ) {
-            setStatus( 2 );
+            setStatus( TransferJob.STATUS_FAILED );
             logger.error( "Error in TransferClient", e );
             throw new RemoteException( MessageUtils.toString( e ) );
         }
@@ -636,7 +638,7 @@ public class TransferClient {
             this.size = sourceHost.getSize( this.sourcePath );
         } catch ( Exception e ) {
             logger.error( "Unable to get size of : " + sourcePath, e );
-            setStatus( 2 );
+            setStatus( TransferJob.STATUS_FAILED );
         }
 
     }
@@ -694,7 +696,7 @@ public class TransferClient {
             }
         } catch ( Exception e ) {
             logger.debug( "Error in setting Params", e );
-            setStatus( 2 );
+            setStatus( TransferJob.STATUS_FAILED );
 
         }
     }
@@ -777,12 +779,12 @@ public class TransferClient {
                     this.destinationHost, this.destinationPath, false, this.markerListener );
             logger.debug( "Transfer done" );
             this.markerListener = null;
-            setStatus( 0 );
+            setStatus( TransferJob.STATUS_FINISHED );
         } catch ( Exception e ) {
             logger.debug( "Exception in transfer", e );
 
-            if ( status != 2 ) {
-                setStatus( 1 );
+            if ( status != TransferJob.STATUS_FAILED ) {
+                setStatus( TransferJob.STATUS_RETRYING );
             }
         }
     }
@@ -813,12 +815,12 @@ public class TransferClient {
             destinationHost.put( destinationPath, source,
                     this.markerListener );
             destinationHost.close();
-            setStatus( 0 );
+            setStatus( TransferJob.STATUS_FINISHED );
         } catch ( FTPException e ) {
             logger.debug( "Exception in noTpt", e );
 
-            if ( status != 2 ) {
-                setStatus( 1 );
+            if ( status != TransferJob.STATUS_FAILED ) {
+                setStatus( TransferJob.STATUS_RETRYING );
             }
         } catch ( IOException ioe ) {
             logger.debug( "IOException in noTpt", ioe );
@@ -840,12 +842,12 @@ public class TransferClient {
                     this.destinationPath, this.markerListener );
             logger.debug( "Transfer done" );
             this.markerListener = null;
-            setStatus( 0 );
+            setStatus( TransferJob.STATUS_FINISHED );
         } catch ( Exception e ) {
             logger.debug( "Exception in transfer", e );
 
-            if ( status != 2 ) {
-                setStatus( 1 );
+            if ( status != TransferJob.STATUS_FAILED ) {
+                setStatus( TransferJob.STATUS_RETRYING );
             }
         }
     }
@@ -876,25 +878,16 @@ public class TransferClient {
             destinationHost.extendedPut( destinationPath, source,
                     this.markerListener );
             destinationHost.close();
-            setStatus( 0 );
+            setStatus( TransferJob.STATUS_FINISHED );
         } catch ( FTPException e ) {
             logger.debug( "Exception in noTpt", e );
 
-            if ( status != 2 ) {
-                setStatus( 1 );
+            if ( status != TransferJob.STATUS_FAILED ) {
+                setStatus( TransferJob.STATUS_RETRYING );
             }
         } catch ( IOException ioe ) {
             logger.debug( "IOException in noTpt", ioe );
         }
-    }
-
-
-    /**
-     *  DOCUMENT ME!
-     *
-     *@param  as  DOCUMENT ME!
-     */
-    public static void main( String[] as ) {
     }
 }
 
