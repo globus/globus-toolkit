@@ -20,7 +20,6 @@
 
 /* Must be included after stdio.h */
 #include "ssl_utils.h"
-#include "gsi_proxy.h"
 
 #if SSLEAY_VERSION_NUMBER > 0x0903
 
@@ -102,11 +101,6 @@ struct _ssl_proxy_restrictions
  * Internal variables.
  *
  */
-
-/*
- * Holder for pass phrase so callback function can find it.
- */
-static const char *_ssl_pass_phrase = NULL;
 
 /**********************************************************************
  *
@@ -201,7 +195,7 @@ buffer_from_file(const char			*path,
  *
  * Transfer an error description out of the ssl error handler to verror.
  */
-static void
+void
 ssl_error_to_verror()
 {
     while (ERR_peek_error() != 0)
@@ -338,7 +332,7 @@ ssl_cert_chain_free(STACK			*cert_chain)
 {
     if (cert_chain != NULL)
     {
-	sk_pop_free(cert_chain, X509_free);
+	sk_pop_free(cert_chain, (void (*)(void *))X509_free);
     }
 }
 
@@ -612,35 +606,6 @@ my_init()
 }
 
 	
-/*
- * my_pass_phrase_callback()
- *
- * Callback from PEM_read_PrivateKey() in ssl_load_user_key()
- * to return the passphrase stored in _ssl_pass_phrase.
- */
-static int
-my_pass_phrase_callback(char			*buffer,
-			 int			buffer_len,
-			 int			verify /* Ignored */)
-{
-    /* SSL libs supply these, make sure they are reasonable */
-    assert(buffer != NULL);
-    assert(buffer_len > 0);
-    
-    if (_ssl_pass_phrase == NULL)
-    {
-	strcpy(buffer, "");
-    }
-    else
-    {
-	strncpy(buffer, _ssl_pass_phrase, buffer_len);
-	buffer[buffer_len - 1] = '\0';
-    }
-
-    return strlen(buffer);
-}
-	     
-
 /*
  * ssl_keys_check_match()
  *
@@ -929,7 +894,7 @@ ssl_x509_request_generate(SSL_CREDENTIALS	**p_creds,
 			  X509_REQ		**p_request,
 			  X509_NAME		*requested_name,
 			  int			requested_bits,
-			  void			(*callback)(int,int,char *))
+			  void			 (*callback)(int,int,void *))
 {
     const int			default_key_size = 512;	/* bits */
     SSL_CREDENTIALS		*creds = NULL;
@@ -1419,11 +1384,6 @@ ssl_private_key_load_from_file(SSL_CREDENTIALS	*creds,
     
     my_init();
     
-    /* 
-     * Put pass phrase where the callback function can find it.
-     */
-    _ssl_pass_phrase = pass_phrase;
-    
     key_file = fopen(path, "r");
     
     if (key_file == NULL)
@@ -1434,7 +1394,7 @@ ssl_private_key_load_from_file(SSL_CREDENTIALS	*creds,
     }
 
     if (PEM_read_PrivateKey(key_file, &(key),
-			    PEM_CALLBACK(my_pass_phrase_callback)) == NULL)
+			    NULL, (char *)pass_phrase) == NULL)
     {
 	unsigned long error;
 	
@@ -1493,8 +1453,6 @@ ssl_proxy_from_pem(SSL_CREDENTIALS		*creds,
     /* 
      * Put pass phrase where the callback function can find it.
      */
-    _ssl_pass_phrase = pass_phrase;
-
     bio = bio_from_buffer(buffer, buffer_len);
 
     if (bio == NULL)
@@ -1517,7 +1475,7 @@ ssl_proxy_from_pem(SSL_CREDENTIALS		*creds,
 
     /* Read proxy private key */
     if (PEM_read_bio_PrivateKey(bio, &(key),
-				PEM_CALLBACK(my_pass_phrase_callback)) == NULL)
+				NULL, (char *)pass_phrase) == NULL)
     {
 	unsigned long error;
 	
@@ -1886,7 +1844,7 @@ ssl_proxy_delegation_init(SSL_CREDENTIALS	**new_creds,
 			  unsigned char		**buffer,
 			  int			*buffer_length,
 			  int			requested_bits,
-			  void			(*callback)(int,int,char *))
+			  void			(*callback)(int,int,void *))
 {
     SSL_CREDENTIALS		*creds = NULL;
     X509_REQ			*request = NULL;
@@ -2278,7 +2236,8 @@ ssl_get_base_subject_file(const char *proxyfile, char **subject)
    if (proxyfile == NULL) {
       char *user_cert = NULL;
       
-      myproxy_get_filenames(NULL, 0, NULL, NULL, NULL, &user_cert, NULL);
+      GLOBUS_GSI_SYSCONFIG_GET_USER_CERT_FILENAME(&user_cert,
+						  GLOBUS_PROXY_FILE_INPUT);
       strncpy(path, user_cert, sizeof(path));
       free(user_cert);
    } else
@@ -2299,7 +2258,7 @@ ssl_get_base_subject_file(const char *proxyfile, char **subject)
       return -1;
    }
 
-   proxy_get_base_name(client_subject);
+   globus_gsi_cert_utils_get_base_name(client_subject);
    X509_NAME_oneline(client_subject, client, sizeof(client));
    *subject = strdup(client);
    X509_free(cert);
@@ -2332,7 +2291,6 @@ ssl_creds_from_buffer(unsigned char *buffer, int buffer_length,
                       SSL_CREDENTIALS **creds)
 {
    BIO  *bio = NULL;
-   int return_status = SSL_ERROR;
 
    bio = bio_from_buffer(buffer, buffer_length);
    if (bio == NULL)
@@ -2403,14 +2361,13 @@ ssl_verify_gsi_chain(SSL_CREDENTIALS *chain, X509 **peer)
    X509_LOOKUP           *lookup = NULL;
    X509_STORE            *cert_store = NULL;
    X509_STORE_CTX        csc;
-   proxy_verify_desc     pvd;
    SSL                   *ssl;
    SSL_CTX               *sslContext = NULL;
 
-   memset(&pvd, 0, sizeof(pvd));
    memset(&csc, 0, sizeof(csc));
    cert_store=X509_STORE_new();
-   X509_STORE_set_verify_cb_func(cert_store, proxy_verify_callback);
+   X509_STORE_set_verify_func(cert_store,
+			      globus_gsi_callback_X509_verify_cert);
    if (chain->certificate_chain != NULL) {
       for (i = 0; i < sk_X509_num(chain->certificate_chain); i++) {
 	 xcert = sk_X509_value(chain->certificate_chain, i);
@@ -2436,18 +2393,15 @@ ssl_verify_gsi_chain(SSL_CREDENTIALS *chain, X509 **peer)
       goto end;
    }
 
-   myproxy_get_filenames(NULL, 0, NULL, &certdir, NULL, NULL, NULL);
+   GLOBUS_GSI_SYSCONFIG_GET_CERT_DIR(&certdir);
    if (certdir == NULL) {
-      verror_put_string("proxy_get_filenames()");
+      verror_put_string("failed to find GSI CA cert directory");
       ssl_error_to_verror();
       goto end;
    }
    X509_LOOKUP_add_dir(lookup, certdir, X509_FILETYPE_PEM);
    X509_STORE_CTX_init(&csc, cert_store, chain->certificate, NULL);
    
-   proxy_pvd_init(certdir, &pvd);
-
-#if 1
    sslContext = SSL_CTX_new(SSLv3_server_method());
    if (sslContext == NULL) {
       verror_put_string("Initializing SSL_CTX");
@@ -2468,18 +2422,11 @@ ssl_verify_gsi_chain(SSL_CREDENTIALS *chain, X509 **peer)
 
 #if SSLEAY_VERSION_NUMBER >=  0x0090600fL
    /* override the check_issued with our version */
-   csc.check_issued = proxy_check_issued;
+   csc.check_issued = globus_gsi_callback_check_issued;
 #endif
 
    X509_STORE_CTX_set_app_data(&csc, (void*)ssl);
-   SSL_set_ex_data(ssl, PVD_SSL_EX_DATA_IDX, (char *)&pvd);
 
-#else
-   /* this works only for the GSI v. 1.1.3b14 (the latest version) */
-   X509_STORE_CTX_set_ex_data(&csc,
-	 6 /* XXX */, (void *)&pvd);
-#endif 
-   
    if(!X509_verify_cert(&csc)) {
       verror_put_string("X509_verify_cert() failed");
       ssl_error_to_verror();
@@ -2492,7 +2439,6 @@ ssl_verify_gsi_chain(SSL_CREDENTIALS *chain, X509 **peer)
    return_status = SSL_SUCCESS;
 
 end:
-   proxy_pvd_destroy(&pvd);
    X509_STORE_CTX_cleanup(&csc);
    if (ssl)
       SSL_free(ssl);
@@ -2531,9 +2477,9 @@ ssl_get_times(const char *path, time_t *not_before, time_t *not_after)
    }
 
    if (not_before)
-      *not_before = ASN1_UTCTIME_mktime(X509_get_notBefore(cert));
+      globus_gsi_cert_utils_make_time(X509_get_notBefore(cert), not_before);
    if (not_after)
-      *not_after = ASN1_UTCTIME_mktime(X509_get_notAfter(cert));
+      globus_gsi_cert_utils_make_time(X509_get_notAfter(cert), not_after);
 
    X509_free(cert);
    fclose(cert_file);
