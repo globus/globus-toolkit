@@ -646,7 +646,6 @@ globus_l_ftp_client_data_callback(
        client_handle->op == GLOBUS_FTP_CLIENT_NLST)
     {
 	ptarget = &client_handle->source;
-	
     }
     else
     {
@@ -661,14 +660,10 @@ globus_l_ftp_client_data_callback(
     {
         offset += client_handle->base_offset;
     }
-    if(client_handle->partial_offset != -1)
-    {
-	user_offset = offset + client_handle->partial_offset;
-    }
-    else
-    {
-	user_offset = offset;
-    }
+    
+    user_offset = (client_handle->partial_offset != -1)
+        ? offset + client_handle->partial_offset
+        : offset;
 
     /* Don't update the stream_offset on 0 length buffers; these may come in
      * with an offset of 0 when an error occurs or during restart,
@@ -868,8 +863,7 @@ globus_l_ftp_client_read_all_callback(
     globus_i_ftp_client_target_t *		target;
     globus_ftp_client_data_callback_t		read_all_callback = GLOBUS_NULL;
     void *					read_all_callback_arg = GLOBUS_NULL;
-    globus_off_t				base_offset;
-    globus_off_t				biggest_offset;
+    globus_off_t				total_bytes_read;
     globus_off_t				user_offset;
 
     client_handle = (globus_i_ftp_client_handle_t *) callback_arg;
@@ -888,26 +882,27 @@ globus_l_ftp_client_read_all_callback(
         "globus_l_ftp_client_read_all_callback() entering\n"));
     globus_i_ftp_client_debug_states(4, client_handle);
 
+    if(target->mode == GLOBUS_FTP_CONTROL_MODE_STREAM)
+    {
+        offset_read += client_handle->base_offset;
+    }
+    
     if(bytes_read > 0 &&
        offset_read + bytes_read > client_handle->read_all_biggest_offset)
     {
 	client_handle->read_all_biggest_offset = offset_read + bytes_read;
     }
-
-    base_offset = client_handle->base_offset;
-    biggest_offset = client_handle->read_all_biggest_offset;
-    user_offset = offset_read +
-	(client_handle->partial_offset == -1)
-	    ? 0
-	    : client_handle->partial_offset;
+    
+    user_offset =  (client_handle->partial_offset == -1)
+	    ? offset_read
+	    : offset_read + client_handle->partial_offset;
 
     /* Notify plugins that this data block has been processed. */
     globus_i_ftp_client_plugin_notify_data(client_handle,
 					   error,
-					   buffer
-					     + user_offset,
+					   buffer + offset_read,
 					   bytes_read,
-					   offset_read,
+					   user_offset,
 					   eof);
 
     if(!eof)
@@ -1035,14 +1030,9 @@ globus_l_ftp_client_read_all_callback(
 	read_all_callback_arg =
 	    target->attr->read_all_intermediate_callback_arg;
     }
+    
+    total_bytes_read = client_handle->read_all_biggest_offset;
 
-    /* Call back to the user */
-    if(client_handle->partial_offset != -1)
-    {
-	offset_read += client_handle->partial_offset;
-	biggest_offset += client_handle->partial_offset;
-	base_offset += client_handle->partial_offset;
-    }
     globus_i_ftp_client_handle_unlock(client_handle);
 
     if(read_all_callback)
@@ -1052,20 +1042,25 @@ globus_l_ftp_client_read_all_callback(
 			     error,
 			     buffer + offset_read,
 			     bytes_read,
-			     offset_read,
+			     user_offset,
 			     eof);
     }
-
+    
+    user_offset = (client_handle->partial_offset == -1)
+        ? 0
+        : client_handle->partial_offset;
+        
     if(eof)
     {
-	data->callback(data->callback_arg,
-		       client_handle->handle,
-		       error,
-		       buffer,
-		       biggest_offset,
-		       base_offset,
-		       eof);
-	globus_l_ftp_client_data_delete(data);
+        data->callback(
+            data->callback_arg,
+            client_handle->handle,
+            error,
+            buffer,
+            total_bytes_read,
+            user_offset,
+            eof);
+        globus_l_ftp_client_data_delete(data);
     }
     
     if(dispatch_final)

@@ -663,7 +663,8 @@ int i = 0;
 #ifndef DAEMON
     struct servent *serv;
 #endif
-
+    extern char **environ;
+    
 #ifdef GLOBUS_AUTHORIZATION
     char *globus_authorization_config_file = NULL /* Use Default */;
 #endif /* GLOBUS_AUTHORIZATION */
@@ -877,7 +878,7 @@ int i = 0;
 	    break;
 	}
     }
-    initsetproctitle(argc, argv, envp);
+    initsetproctitle(argc, argv, environ);
     (void) freopen(_PATH_DEVNULL, "w", stderr);
 
     /* Checking for random signals ... */
@@ -1097,7 +1098,7 @@ int i = 0;
 
 #ifdef DAEMON
     if (be_daemon != 0)
-	do_daemon(argc, argv, envp);
+	do_daemon(argc, argv, environ);
     addrlen = sizeof(his_addr);
     if (getpeername(0, (struct sockaddr *) &his_addr, &addrlen) < 0) {
 	syslog(LOG_ERR, "getpeername (%s): %m", argv[0]);
@@ -2766,6 +2767,20 @@ void pass(char *passwd)
 	return;
     }
     askpasswd = 0;
+    
+#ifdef GSSAPI
+    if (gssapi_authentication_required)
+    {
+	/*
+	 * Disallow login unless gssapi authentication has been done.
+	 */
+	if (gssapi_identity() == NULL)
+	{
+	    reply(530, "Must perform GSSAPI authentication");
+	    return;
+	}
+    }
+#endif /* GSSAPI */
 
     /* Disable lreply() if the first character of the password is '-' since
      * some hosts don't understand continuation messages and hang... */
@@ -4325,7 +4340,7 @@ retrieve(
     char realname[MAXPATHLEN];
     int stat_ret = -1;
 
-    int                            tmp_restart = 0; /* added by JB */
+    off_t                            tmp_restart = 0; /* added by JB */
 
     extern int checknoretrieve(char *);
 
@@ -4797,7 +4812,7 @@ store(
     int                                       TransferIncomplete = 1;
     char *                                    gunique(char *local);
     time_t                                    start_time = time(NULL);
-    int                                       tmp_restart; /* added by JB */
+    off_t                                       tmp_restart; /* added by JB */
 
     struct aclmember *                        entry = NULL;
 

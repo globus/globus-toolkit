@@ -1029,7 +1029,8 @@ globusl_url_get_path(const char **stringp,
 	   globusl_url_isextra((*stringp)[pos]) ||
 	   globusl_url_isscheme_special((*stringp)[pos]) ||
 	   (*stringp)[pos] == '~' || /* incorrect, but de facto */
-	   (*stringp)[pos] == '/')
+	   (*stringp)[pos] == '/'||
+	   (*stringp)[pos] == ' ') /* to be nice */
 	{
 	    pos++;
 	}
