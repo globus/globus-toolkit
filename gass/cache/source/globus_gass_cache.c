@@ -1073,6 +1073,7 @@ globus_l_gass_cache_lock_file(char* file_to_be_locked,
 {
     char   lock_file[PATH_MAX+1];
     int    lock_file_fd;
+    int    temp_file_fd;
     char   uniq_lock_file[PATH_MAX+1];
     int    uniq_lock_file_fd;
     struct stat file_stat, tmp_file_stat;
@@ -1087,7 +1088,6 @@ globus_l_gass_cache_lock_file(char* file_to_be_locked,
     /* build the name of the file used to lock "file_to_be_locked" */
     strcpy(lock_file, file_to_be_locked);
     strcat(lock_file, GLOBUS_L_GASS_CACHE_LOCK_EXT);
-    /* !!! need to handle multi threaded !!! */
     globus_libc_gethostname(hname,sizeof(hname));
 
     globus_libc_sprintf(uniq_lock_file,"%s_%s_%ld:%ld",
@@ -1149,11 +1149,29 @@ globus_l_gass_cache_lock_file(char* file_to_be_locked,
 		    {
 			CACHE_TRACE2("could not get stat of file %s",
 				     temp_file);
-			/* If this has occurred, then the lock file
-			   has either been broken by another process/thread
-			   or has been released, so we'll try again to
-			   acquire the lock
-			 */
+			/* If this has occurred, then either :
+                           1/ the lock file has either been broken by another 
+                             process/thread
+			   2/ the lock has been has been released, 
+                           3/ the locking process crashed just when the temp 
+                              file was not here (before creation or after 
+                              rename/deletion) but when the lock was 
+                              already/still there.	
+                           In case 1 and 2 I should try again to
+			   acquire the lock. In case 3 the lock will never be 
+                           released if I do not do some thing. I will create
+                           an empty "temp" file (no trunc) so next time I 
+                           timeout. I could see that this file is old (or not)
+			*/
+                        temp_file_fd = open(temp_file,
+			                     O_WRONLY |O_CREAT,
+		                             GLOBUS_L_GASS_CACHE_STATE_MODE );
+                        if (temp_file_fd == -1 )
+			{
+			    return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_CREATE);
+			}
+
+			/* let wait again */
 			lock_tout = 0;
 
 			goto end_of_while;
