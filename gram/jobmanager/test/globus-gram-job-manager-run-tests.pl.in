@@ -9,6 +9,7 @@ use vars qw(@tests);
 use Globus::Core::Paths;
 
 my $test_result = 1;
+my $kill_gatekeeper = 0;
 $|=1;
 
 my $contact;
@@ -36,6 +37,7 @@ if(@ARGV)
 if(exists($ENV{CONTACT_STRING}))
 {
     print "Using gatekeeper at " . $ENV{CONTACT_STRING} . "\n";
+    $kill_gatekeeper = 0;
 }
 else
 {
@@ -50,9 +52,10 @@ else
 	exit 1;
     }
     $ENV{CONTACT_STRING} = $contact;
+    $kill_gatekeeper = 1;
 }
 
-$test_result = eval "runtests(\@tests);";
+$test_result = eval { runtests(@tests) };
 if(!defined($test_result))
 {
     print $@;
@@ -65,6 +68,9 @@ else
 
 
 sub END {
-    system("globus-personal-gatekeeper -kill \"$contact\" >/dev/null 2>&1");
+    if($kill_gatekeeper)
+    {
+	system("globus-personal-gatekeeper -kill \"$contact\" >/dev/null 2>&1");
+    }
     exit $test_result;
 }
