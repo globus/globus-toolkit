@@ -107,19 +107,9 @@ typedef struct
     globus_bool_t                       wrap_tokens;
     globus_size_t                       buffer_size;
     globus_xio_gsi_protection_level_t   prot_level;
-} globus_l_attr_t;
-
-/*
- * target structure
- */
-
-typedef struct
-{
     gss_name_t                          target_name;
-    globus_l_attr_t *                   attr;
-    /* init or accept flag */
     globus_bool_t                       init;
-} globus_l_target_t;
+} globus_l_attr_t;
 
 /*
  * driver handle structure
@@ -128,7 +118,6 @@ typedef struct
 typedef struct
 {
     globus_l_attr_t *                   attr;
-    globus_l_target_t *                 target;
     OM_uint32                           ret_flags;
     OM_uint32                           time_rec;
     OM_uint32                           max_wrap_size;

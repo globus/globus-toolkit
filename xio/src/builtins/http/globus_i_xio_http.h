@@ -571,7 +571,6 @@ extern
 globus_result_t
 globus_i_xio_http_accept(
     void *                              driver_server,
-    void *                              driver_attr,
     globus_xio_operation_t              accept_op);
 
 extern
@@ -598,10 +597,8 @@ globus_i_xio_http_server_read_next_request(
 extern
 globus_result_t
 globus_i_xio_http_target_init(
-    void **                             out_driver_target,
-    globus_xio_operation_t              target_op,
-    const globus_xio_contact_t *        contact_info,
-    void *                              driver_attr);
+    globus_i_xio_http_target_t **       out_target,
+    const globus_xio_contact_t *        contact_info);
 
 extern
 globus_result_t
@@ -616,7 +613,8 @@ extern globus_mutex_t                   globus_i_xio_http_cached_handle_mutex;
 extern
 globus_result_t
 globus_i_xio_http_open(
-    void *                              target,
+    const globus_xio_contact_t *        contact_info,
+    void *                              link,
     void *                              attr,
     globus_xio_operation_t              op);
 
@@ -662,7 +660,6 @@ globus_result_t
 globus_i_xio_http_close(
     void *                              handle,
     void *                              attr,
-    globus_xio_driver_handle_t          driver_handle,
     globus_xio_operation_t              op);
 
 extern 

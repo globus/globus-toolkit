@@ -13,7 +13,9 @@ static globus_l_attr_t                  globus_l_xio_gsi_attr_default =
     GSS_C_NO_CHANNEL_BINDINGS,
     GLOBUS_FALSE,
     131072, /* 128K default read buffer */
-    GLOBUS_XIO_GSI_PROTECTION_LEVEL_INTEGRITY
+    GLOBUS_XIO_GSI_PROTECTION_LEVEL_INTEGRITY,
+    GSS_C_NO_NAME,
+    GLOBUS_TRUE
 };
 
 static int                              connection_count = 0;
@@ -22,10 +24,10 @@ static globus_mutex_t                   connection_mutex;
 static
 void
 globus_l_xio_gsi_read_token_cb(
-    struct globus_i_xio_op_s *              op,
-    globus_result_t                         result,
-    globus_size_t                           nbytes,
-    void *                                  user_arg);
+    struct globus_i_xio_op_s *          op,
+    globus_result_t                     result,
+    globus_size_t                       nbytes,
+    void *                              user_arg);
 
 
 static
@@ -43,11 +45,6 @@ globus_l_xio_gsi_close_cb(
     globus_result_t                     result,
     void *                              user_arg);
 
-static
-globus_result_t
-globus_l_xio_gsi_target_destroy(
-    void *                              driver_target);
-
 static int
 globus_l_xio_gsi_activate();
 
@@ -55,7 +52,7 @@ static int
 globus_l_xio_gsi_deactivate();
 
 
-static globus_module_descriptor_t  globus_i_xio_gsi_module =
+static globus_module_descriptor_t       globus_i_xio_gsi_module =
 {
     "globus_xio_gsi",
     globus_l_xio_gsi_activate,
@@ -123,6 +120,8 @@ globus_l_xio_gsi_attr_cntl(
     globus_l_attr_t *                   attr;
     gss_cred_id_t *                     out_cred;
     OM_uint32 *                         out_flags;
+    OM_uint32                           minor_status;
+    OM_uint32                           major_status;
     globus_bool_t *                     out_bool;
     globus_xio_gsi_protection_level_t * out_prot_level;
     globus_xio_gsi_proxy_mode_t *       out_proxy_mode;
@@ -131,6 +130,9 @@ globus_l_xio_gsi_attr_cntl(
     globus_xio_gsi_delegation_mode_t    delegation_mode;
     globus_result_t                     result;
     globus_size_t *                     out_size;
+    gss_name_t *                        out_name;
+    gss_name_t                          in_name;
+    globus_bool_t                       in_bool;
     GlobusXIOName(globus_l_xio_gsi_attr_cntl);
     GlobusXIOGSIDebugEnter();
 
@@ -143,6 +145,38 @@ globus_l_xio_gsi_attr_cntl(
     attr = (globus_l_attr_t *) driver_attr;
     switch(cmd) 
     {
+      case GLOBUS_XIO_GSI_GET_TARGET_NAME:
+        out_name = va_arg(ap, gss_name_t *);
+        *out_name = attr->target_name;
+        break;
+      case GLOBUS_XIO_GSI_SET_TARGET_NAME:
+        if(attr->target_name != GSS_C_NO_NAME)
+        {
+            gss_release_name(&minor_status,
+                             &attr->target_name);
+            attr->target_name = GSS_C_NO_NAME;
+        }
+
+        in_name = va_arg(ap, gss_name_t);
+        if(in_name != GSS_C_NO_NAME)
+        {
+            major_status = gss_duplicate_name(&minor_status,
+                                              in_name,
+                                              &attr->target_name);
+            if(GSS_ERROR(major_status))
+            {
+                result = GlobusXIOErrorWrapGSSFailed("gss_duplicate_name",
+                                                     major_status,
+                                                     minor_status);
+            }
+        }
+        break;
+      
+      case GLOBUS_XIO_GSI_FORCE_SERVER_MODE:
+        in_bool = va_arg(ap, globus_bool_t);
+        attr->init = !in_bool;
+        break;
+        
         /*
          * Credential
          */
@@ -360,7 +394,25 @@ globus_l_xio_gsi_attr_copy(
     }
     
     memcpy(attr, src, sizeof(globus_l_attr_t));
-
+    
+    if(attr->target_name != GSS_C_NO_NAME)
+    {
+        OM_uint32                       major_status;
+        OM_uint32                       minor_status;
+    
+        major_status = gss_duplicate_name(&minor_status,
+                                          attr->target_name,
+                                          &attr->target_name);
+        if(GSS_ERROR(major_status))
+        {
+            free(attr);
+            result = GlobusXIOErrorWrapGSSFailed("gss_duplicate_name",
+                                                 major_status,
+                                                 minor_status);
+            goto error_attr;
+        }
+    }
+    
     *dst = attr;
 
     GlobusXIOGSIDebugExit();
@@ -398,256 +450,21 @@ globus_l_xio_gsi_attr_destroy(
 }
 
 /*
- *  initialize target structure
+ *  destroy the link structure
  */
 static
 globus_result_t
-globus_l_xio_gsi_target_init(
-    void **                                 out_target,
-    globus_xio_operation_t                  target_op,
-    const globus_xio_contact_t *            contact_info,
-    void *                                  driver_attr)
+globus_l_xio_gsi_link_destroy(
+    void *                              driver_link)
 {
-    globus_l_target_t *                 target;
-    globus_result_t                     result;
-    GlobusXIOName(globus_l_xio_gsi_target_init);
-    GlobusXIOGSIDebugEnter();
-
-    if(!out_target)
-    {
-        result = GlobusXIOErrorParameter("out_target");
-        goto error_target;
-    }
-
-    /* create the target structure */
-    target = (globus_l_target_t *) malloc(sizeof(globus_l_target_t));
-    if(!target)
-    {
-        result = GlobusXIOErrorMemory("target");
-        goto error_target;
-    }
-
-    /* initialize the target structure */
-    target->target_name = GSS_C_NO_NAME;
-    target->init = GLOBUS_TRUE;
-
-    if(driver_attr)
-    { 
-        result = globus_l_xio_gsi_attr_copy((void **) &target->attr,
-                                            driver_attr);
-        if(result != GLOBUS_SUCCESS)
-        {
-            target->attr = NULL;
-            goto error_target;
-        }
-    }
-    else
-    {
-        target->attr = NULL;
-    }
-
-    /* might be called with target_op = NULL by accept_cb */
-    if(target_op)
-    {
-        result = globus_xio_driver_client_target_pass(target_op, contact_info);
-        if(result != GLOBUS_SUCCESS)
-        {
-            goto error_target;
-        }
-    }
-
-    *out_target = target;
-
-    GlobusXIOGSIDebugExit();
-    return GLOBUS_SUCCESS;
-    
- error_target:
-    
-    if(target)
-    {
-        if(target->attr)
-        {
-            globus_l_xio_gsi_attr_destroy(target->attr);
-        }
-        globus_free(target);
-    }
-
-    GlobusXIOGSIDebugExitWithError();
-    return result;
+    return driver_link 
+        ? globus_l_xio_gsi_attr_destroy(driver_link) : GLOBUS_SUCCESS;
 }
 
 /*
- *  copy target structure
+ * Accept callback - just copies server into link if not null
+ * (server is just the attr passed to server init)
  */
-static
-globus_result_t
-globus_l_xio_gsi_target_copy(
-    globus_l_target_t **                dst,
-    globus_l_target_t *                 src)
-{
-    globus_result_t                     result;
-    OM_uint32                           major_status;
-    OM_uint32                           minor_status;
-    GlobusXIOName(globus_l_xio_gsi_target_copy);
-    GlobusXIOGSIDebugEnter();
-
-    result = globus_l_xio_gsi_target_init((void **) dst, NULL,
-                                          NULL, (void *) src->attr);
-
-    if(result != GLOBUS_SUCCESS)
-    {
-        result = GlobusXIOErrorWrapFailed(
-            "globus_l_xio_gsi_target_init", result);
-        goto error;
-    }
-
-    if(src->target_name != GSS_C_NO_NAME)
-    {
-        major_status = gss_duplicate_name(&minor_status,
-                                          src->target_name,
-                                          &((*dst)->target_name));
-        if(GSS_ERROR(major_status))
-        {
-            globus_l_xio_gsi_target_destroy(*dst);
-            result = GlobusXIOErrorWrapGSSFailed("gss_duplicate_name",
-                                                 major_status,
-                                                 minor_status);
-            goto error;
-        }
-    }
-
-    (*dst)->init = src->init;
-    
-    
- error:
-    GlobusXIOGSIDebugExit();
-    return result;
-}
-
-/*
- * modify the target structure
- */
-
-static
-globus_result_t
-globus_l_xio_gsi_target_cntl(
-    void *                              driver_target,
-    int                                 cmd,
-    va_list                             ap)
-{
-    globus_l_target_t *                 target;
-    globus_result_t                     result;
-    gss_name_t *                        out_name;
-    gss_name_t                          in_name;
-    globus_bool_t                       in_bool;
-    OM_uint32                           major_status;
-    OM_uint32                           minor_status;
-    GlobusXIOName(globus_l_xio_gsi_target_cntl);
-    GlobusXIOGSIDebugEnter();
-
-    if(!driver_target)
-    {
-        result = GlobusXIOErrorParameter("driver_target");
-        goto error_invalid;
-    }
-
-    target = (globus_l_target_t *) driver_target;
-
-    switch(cmd)
-    {
-        /*
-         * Get and set the expected target/peer name
-         */
-      case GLOBUS_XIO_GSI_GET_TARGET_NAME:
-        out_name = va_arg(ap, gss_name_t *);
-        *out_name = target->target_name;
-        break;
-      case GLOBUS_XIO_GSI_SET_TARGET_NAME:
-        if(target->target_name != GSS_C_NO_NAME)
-        {
-            gss_release_name(&minor_status,
-                             &target->target_name);
-            target->target_name = GSS_C_NO_NAME;
-        }
-
-
-        in_name = va_arg(ap, gss_name_t);
-
-        if(in_name != GSS_C_NO_NAME)
-        {
-            major_status = gss_duplicate_name(&minor_status,
-                                              in_name,
-                                              &target->target_name);
-            if(GSS_ERROR(major_status))
-            {
-                result = GlobusXIOErrorWrapGSSFailed("gss_duplicate_name",
-                                                     major_status,
-                                                     minor_status);
-            }
-        }
-        break;
-      
-      case GLOBUS_XIO_GSI_FORCE_SERVER_MODE:
-        in_bool = va_arg(ap, globus_bool_t);
-        target->init = !in_bool;
-        break;
-        
-      default:
-        result = GlobusXIOErrorInvalidCommand(cmd);
-        goto error_invalid;
-        break;
-    }
-
-    GlobusXIOGSIDebugExit();
-    return GLOBUS_SUCCESS;
-    
- error_invalid:
-    GlobusXIOGSIDebugExitWithError();
-    return result;
-}
-
-/*
- *  destroy the target structure
- */
-static
-globus_result_t
-globus_l_xio_gsi_target_destroy(
-    void *                              driver_target)
-{
-    globus_l_target_t *                 target;
-    OM_uint32                           minor_status;
-    
-    GlobusXIOName(globus_l_xio_gsi_target_destroy);
-    GlobusXIOGSIDebugEnter();
-
-    if(!driver_target)
-    {
-        GlobusXIOGSIDebugExitWithError();
-        return GlobusXIOErrorParameter("driver_target");
-    }
-
-    target = (globus_l_target_t *) driver_target;
-    
-    if(target->target_name != GSS_C_NO_NAME)
-    {
-        gss_release_name(&minor_status,
-                         &target->target_name);
-    }
-
-    if(target->attr)
-    {
-        globus_l_xio_gsi_attr_destroy(target->attr);
-    }
-    
-    free(target);
-
-    GlobusXIOGSIDebugExit();
-    return GLOBUS_SUCCESS;
-}
-
-/*
- * Accept callback - just intializes the target structure
- */ 
 
 void
 globus_l_xio_gsi_accept_cb(
@@ -655,19 +472,16 @@ globus_l_xio_gsi_accept_cb(
     globus_result_t                     result,
     void *                              user_arg)
 {
-    globus_l_target_t *                 target;
     GlobusXIOName(globus_l_xio_gsi_accept_cb);
     GlobusXIOGSIDebugInternalEnter();
 
-    target = (globus_l_target_t *) user_arg;
-    
     if(result != GLOBUS_SUCCESS)
     {
-        globus_l_xio_gsi_target_destroy(target);
+        globus_l_xio_gsi_attr_destroy(user_arg);
         goto error;
     }
     
-    globus_xio_driver_finished_accept(op, target, result);
+    globus_xio_driver_finished_accept(op, user_arg, result);
     
     GlobusXIOGSIDebugInternalExit();
     return;
@@ -681,40 +495,65 @@ globus_l_xio_gsi_accept_cb(
 /*
  * Accept - pass to callback
  */
-
-
 static globus_result_t
 globus_l_xio_gsi_accept(
     void *                              driver_server,
-    void *                              driver_attr,
     globus_xio_operation_t              accept_op)
 {
     globus_result_t                     result = GLOBUS_SUCCESS;
-    globus_l_target_t *                 target;
-    
+    globus_l_attr_t *                   attr;
     GlobusXIOName(globus_l_xio_gsi_accept);
     GlobusXIOGSIDebugEnter();
-
-    result = globus_l_xio_gsi_target_init((void **) &target, NULL,
-                                          NULL, driver_attr);
-
+    
+    if(driver_server)
+    {
+        result = globus_l_xio_gsi_attr_copy((void **) &attr, driver_server);
+    }
+    else
+    {
+        result = globus_l_xio_gsi_attr_init((void **) &attr);
+    }
     if(result != GLOBUS_SUCCESS)
     {
         result = GlobusXIOErrorWrapFailed(
-            "globus_l_xio_gsi_target_init", result);
+            "globus_l_xio_gsi_attr_init/copy", result);
         goto error;
     }
 
     /* since we are on the accept side set init to false */
     
-    target->init = GLOBUS_FALSE;
-    
-    result = globus_xio_driver_pass_accept(accept_op,
-                              globus_l_xio_gsi_accept_cb, target);
+    attr->init = GLOBUS_FALSE;
+    result = globus_xio_driver_pass_accept(
+        accept_op, globus_l_xio_gsi_accept_cb, attr);
 
  error:
     GlobusXIOGSIDebugExit();
     return result;
+}
+
+static
+globus_result_t
+globus_l_xio_gsi_server_init(
+    void **                             out_server,
+    void *                              driver_attr)
+{
+    if(driver_attr)
+    {
+        return globus_l_xio_gsi_attr_copy(out_server, driver_attr);
+    }
+    else
+    {
+        *out_server = NULL;
+        return GLOBUS_SUCCESS;
+    }
+}
+
+static
+globus_result_t
+globus_l_xio_gsi_server_destroy(
+    void *                              server)
+{
+    return server ? globus_l_xio_gsi_attr_destroy(server) : GLOBUS_SUCCESS;
 }
 
 /*
@@ -735,11 +574,6 @@ globus_l_xio_gsi_handle_destroy(
         globus_l_xio_gsi_attr_destroy(handle->attr);
     }
 
-    if(handle->target != NULL)
-    {
-        globus_l_xio_gsi_target_destroy(handle->target);
-    }
-    
     if(handle->context != GSS_C_NO_CONTEXT)
     {
         gss_delete_sec_context(&minor_status,
@@ -1026,7 +860,7 @@ globus_l_xio_gsi_write_token_cb(
             ("[%s:%d] Done with security handshake\n", _xio_name,
              handle->connection_id));
         
-        globus_xio_driver_finished_open(NULL, handle, op, result);
+        globus_xio_driver_finished_open(handle, op, result);
         GlobusXIOGSIDebugInternalExit();
         return;
     }
@@ -1069,7 +903,7 @@ globus_l_xio_gsi_write_token_cb(
         handle->result_obj = NULL;
     
         globus_l_xio_gsi_handle_destroy(handle);
-        globus_xio_driver_finished_open(NULL, NULL, op, result);
+        globus_xio_driver_finished_open(NULL, op, result);
 
     }
     GlobusXIOGSIDebugInternalExitWithError();
@@ -1215,13 +1049,13 @@ globus_l_xio_gsi_read_token_cb(
     
         /* init/accept sec context */
     
-        if(handle->target->init == GLOBUS_TRUE)
+        if(handle->attr->init == GLOBUS_TRUE)
         {
             major_status = gss_init_sec_context(
                 &minor_status,
                 handle->attr->credential,
                 &handle->context,
-                handle->target->target_name,
+                handle->attr->target_name,
                 handle->attr->mech_type,
                 handle->attr->req_flags,
                 handle->attr->time_req, 
@@ -1256,7 +1090,7 @@ globus_l_xio_gsi_read_token_cb(
         if(GSS_ERROR(major_status))
         {
             result = GlobusXIOErrorWrapGSSFailed(
-                handle->target->init == GLOBUS_TRUE ? "gss_init_sec_context" :
+                handle->attr->init == GLOBUS_TRUE ? "gss_init_sec_context" :
                 "gss_accept_sec_context",
                 major_status,
                 minor_status);
@@ -1307,7 +1141,7 @@ globus_l_xio_gsi_read_token_cb(
             goto error_pass_close;
         }
         
-        if(handle->target->init == GLOBUS_TRUE)
+        if(handle->attr->init == GLOBUS_TRUE)
         { 
             major_status = gss_inquire_context(&minor_status,
                                                handle->context,
@@ -1402,7 +1236,7 @@ globus_l_xio_gsi_read_token_cb(
             ("[%s:%d] Done with security handshake\n", _xio_name,
              handle->connection_id));
 
-        globus_xio_driver_finished_open(NULL, handle, op, result);
+        globus_xio_driver_finished_open(handle, op, result);
     }
     else
     {
@@ -1447,8 +1281,7 @@ globus_l_xio_gsi_read_token_cb(
         handle->result_obj = NULL;
         
         globus_l_xio_gsi_handle_destroy(handle);
-        globus_xio_driver_finished_open(
-            NULL, NULL, op, result);
+        globus_xio_driver_finished_open(NULL, op, result);
     }
     GlobusXIOGSIDebugInternalExitWithError();
     return;
@@ -1480,16 +1313,16 @@ globus_l_xio_gsi_open_cb(
         goto error_destroy_handle;
     }
     
-    if(handle->target->init == GLOBUS_TRUE)
+    if(handle->attr->init == GLOBUS_TRUE)
     {
-        OM_uint32                           major_status;
-        OM_uint32                           minor_status;
-        gss_buffer_desc 		    output_token = GSS_C_EMPTY_BUFFER;
+        OM_uint32                       major_status;
+        OM_uint32                       minor_status;
+        gss_buffer_desc 	        output_token = GSS_C_EMPTY_BUFFER;
         
         major_status = gss_init_sec_context(&minor_status,
                                             handle->attr->credential,
                                             &handle->context,
-                                            handle->target->target_name,
+                                            handle->attr->target_name,
                                             handle->attr->mech_type,
                                             handle->attr->req_flags,
                                             handle->attr->time_req, 
@@ -1637,7 +1470,7 @@ globus_l_xio_gsi_open_cb(
     
  error_destroy_handle:
     globus_l_xio_gsi_handle_destroy(handle);
-    globus_xio_driver_finished_open(NULL, NULL, op, result);
+    globus_xio_driver_finished_open(NULL, op, result);
     GlobusXIOGSIDebugInternalExitWithError();
     return;
 }   
@@ -1647,54 +1480,38 @@ globus_l_xio_gsi_open_cb(
 static
 globus_result_t
 globus_l_xio_gsi_open(
-    void *                              driver_target,
+    const globus_xio_contact_t *        contact_info,
+    void *                              driver_link,
     void *                              driver_attr,
     globus_xio_operation_t              op)
 {
     globus_result_t                     result;
     globus_l_handle_t *                 handle;
-    globus_l_target_t *                 target;
     
     GlobusXIOName(globus_l_xio_gsi_open);
     GlobusXIOGSIDebugEnter();
-
-    if(!driver_target)
-    {
-        result = GlobusXIOErrorParameter("driver_target");
-        goto error;
-    }
-
-    target = (globus_l_target_t *) driver_target;
-
+    
     handle = malloc(sizeof(globus_l_handle_t));
-
     if(!handle)
     {
         result = GlobusXIOErrorMemory("handle");
         goto error;
     }
-
     memset(handle, 0, sizeof(globus_l_handle_t));
-
-    result = globus_l_xio_gsi_target_copy(&handle->target, target);
-
-    if(result != GLOBUS_SUCCESS)
-    {
-        free(handle);
-        result = GlobusXIOErrorWrapFailed(
-            "globus_l_xio_gsi_attr_copy", result);
-        goto error;
-    }
-
+    
     if(driver_attr)
     {
         result = globus_l_xio_gsi_attr_copy((void **) &handle->attr,
                                             driver_attr);
+        if(result == GLOBUS_SUCCESS && driver_link)
+        {
+            handle->attr->init = GLOBUS_FALSE;
+        }
     }
-    else if(target->attr)
+    else if(driver_link)
     {
-        handle->attr = handle->target->attr;
-        handle->target->attr = NULL;
+        result = globus_l_xio_gsi_attr_copy((void **) &handle->attr,
+                                            driver_link);
     }
     else
     {
@@ -1702,11 +1519,10 @@ globus_l_xio_gsi_open(
             (void **) &handle->attr,
             (void *) &globus_l_xio_gsi_attr_default);        
     }
-
+    
     if(result != GLOBUS_SUCCESS)
     {
         free(handle);
-        globus_l_xio_gsi_target_destroy(handle->target);
         result = GlobusXIOErrorWrapFailed(
             "globus_l_xio_gsi_attr_copy", result);
         goto error;
@@ -1740,13 +1556,14 @@ globus_l_xio_gsi_open(
     handle->read_iovec[1].iov_len = handle->attr->buffer_size;
     handle->read_iovec[1].iov_base = handle->read_buffer;
     
-    if(target->init == GLOBUS_FALSE)
+    if(handle->attr->init == GLOBUS_FALSE)
     {
         handle->ret_flags = handle->attr->req_flags;
     }
     
-    result = globus_xio_driver_pass_open(&handle->xio_driver_handle, op,
-                            globus_l_xio_gsi_open_cb, handle);
+    handle->xio_driver_handle = GlobusXIOOperationGetDriverHandle(op);
+    result = globus_xio_driver_pass_open(
+        op, contact_info, globus_l_xio_gsi_open_cb, handle);
 
     if(result != GLOBUS_SUCCESS)
     {
@@ -1785,7 +1602,7 @@ globus_l_xio_gsi_close_cb(
         handle->result_obj = NULL;
     }
     
-    globus_xio_driver_finished_open(NULL, NULL, op, result);
+    globus_xio_driver_finished_open(NULL, op, result);
 
     globus_l_xio_gsi_handle_destroy(handle);
     GlobusXIOGSIDebugInternalExit();
@@ -1801,7 +1618,6 @@ globus_result_t
 globus_l_xio_gsi_close(
     void *                              driver_specific_handle,
     void *                              attr,
-    globus_xio_driver_handle_t          driver_handle,
     globus_xio_operation_t              op)
 {
     globus_result_t                     result = GLOBUS_SUCCESS;
@@ -2304,7 +2120,7 @@ globus_l_xio_gsi_read(
 
         if(wait_for > handle->attr->buffer_size)
         {
-            unsigned char *                 tmp_ptr;
+            unsigned char *             tmp_ptr;
             
             tmp_ptr = realloc(handle->read_buffer,
                               wait_for);
@@ -3465,17 +3281,12 @@ globus_l_xio_gsi_load(
 
     globus_xio_driver_set_server(
         driver,
-        NULL,
+        globus_l_xio_gsi_server_init,
         globus_l_xio_gsi_accept,
+        globus_l_xio_gsi_server_destroy,
         NULL,
         NULL,
-        globus_l_xio_gsi_target_destroy);
-
-    globus_xio_driver_set_client(
-        driver,
-        globus_l_xio_gsi_target_init,
-        globus_l_xio_gsi_target_cntl,
-        globus_l_xio_gsi_target_destroy);
+        globus_l_xio_gsi_link_destroy);
 
     globus_xio_driver_set_attr(
         driver,

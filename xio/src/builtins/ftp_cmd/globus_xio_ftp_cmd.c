@@ -7,27 +7,24 @@
 
 #define GLOBUS_L_XIO_FTP_CMD_DEFAULT_BUFFER_SIZE    1024
 
-typedef struct globus_l_xio_ftp_cmd_target_s
-{
-    globus_bool_t                           client;
-    globus_bool_t                           create_buffer_mode;
-} globus_l_xio_ftp_cmd_target_t;
-
-
 typedef struct globus_l_xio_ftp_cmd_handle_s
 {
-    globus_byte_t *                         buffer;
-    globus_size_t                           buffer_length;
-    globus_size_t                           buffer_ndx;
-    globus_fifo_t                           read_q;
-    globus_bool_t                           client;
-    globus_bool_t                           create_buffer_mode;
-    globus_mutex_t                          mutex;
-    globus_xio_iovec_t                      iovec;
-    globus_xio_iovec_t *                    out_iovec;
-    globus_bool_t                           create_buffer;
+    globus_byte_t *                     buffer;
+    globus_size_t                       buffer_length;
+    globus_size_t                       buffer_ndx;
+    globus_fifo_t                       read_q;
+    globus_bool_t                       client;
+    globus_bool_t                       create_buffer_mode;
+    globus_mutex_t                      mutex;
+    globus_xio_iovec_t                  iovec;
+    globus_xio_iovec_t *                out_iovec;
+    globus_bool_t                       create_buffer;
 } globus_l_xio_ftp_cmd_handle_t;
 
+typedef struct
+{
+    globus_bool_t                       create_buffer_mode;
+} globus_l_xio_ftp_cmd_attr_t;
 /**************************************************************************
  *                    function prototypes
  *                    -------------------
@@ -40,17 +37,17 @@ globus_l_xio_ftp_cmd_deactivate();
 
 static void
 globus_l_xio_ftp_cmd_read_cb(
-    globus_xio_operation_t                  op,
-    globus_result_t                         result,
-    globus_size_t                           nbytes,
-    void *                                  user_arg);
+    globus_xio_operation_t              op,
+    globus_result_t                     result,
+    globus_size_t                       nbytes,
+    void *                              user_arg);
 /**************************************************************************
  *                    global data
  *                    -----------
  *************************************************************************/
 #include "version.h"
 
-static globus_module_descriptor_t  globus_i_xio_ftp_cmd_module =
+static globus_module_descriptor_t       globus_i_xio_ftp_cmd_module =
 {
     "globus_xio_ftp_cmd",
     globus_l_xio_ftp_cmd_activate,
@@ -72,13 +69,13 @@ static globus_module_descriptor_t  globus_i_xio_ftp_cmd_module =
  */
 globus_bool_t
 globus_l_xio_ftp_cmd_complete_command(
-    globus_byte_t *                         buffer,
-    globus_size_t                           length,
-    globus_bool_t                           client,
-    globus_size_t *                         end_offset)
+    globus_byte_t *                     buffer,
+    globus_size_t                       length,
+    globus_bool_t                       client,
+    globus_size_t *                     end_offset)
 {
-    globus_byte_t *                         tmp_ptr;
-    globus_size_t                           end_off;
+    globus_byte_t *                     tmp_ptr;
+    globus_size_t                       end_off;
 
     /* all a 0 length to be passed */
     if(length == 0)
@@ -128,51 +125,76 @@ globus_l_xio_ftp_cmd_complete_command(
     return GLOBUS_FALSE;
 }
 
-/************************************************************************
- *                  target handling
- *                  ---------------
- ***********************************************************************/
 static globus_result_t
-globus_l_xio_ftp_cmd_target_init(
-    void **                                 out_target,
-    globus_xio_operation_t                  target_op,
-    const globus_xio_contact_t *            contact_info,
-    void *                                  driver_attr)
+globus_l_xio_ftp_cmd_attr_init(
+    void **                             out_driver_attr)
 {
-    globus_l_xio_ftp_cmd_target_t *         target;
-    globus_result_t                         result;
-
-    target = (globus_l_xio_ftp_cmd_target_t *) globus_malloc(
-        sizeof(globus_l_xio_ftp_cmd_target_t));
-    target->client = GLOBUS_TRUE;
-    target->create_buffer_mode = GLOBUS_FALSE;
-    *out_target = target;
-
-    result = globus_xio_driver_client_target_pass(target_op, contact_info);
-    if(result != GLOBUS_SUCCESS)
+    globus_l_xio_ftp_cmd_attr_t *       attr;
+    globus_result_t                     res;
+    GlobusXIOName(globus_l_xio_ftp_cmd_attr_init);
+    
+    attr = (globus_l_xio_ftp_cmd_attr_t *)
+        globus_malloc(sizeof(globus_l_xio_ftp_cmd_attr_t));
+    if(!attr)
     {
-        globus_free(target);
+        res = GlobusXIOErrorMemory("attr");
+        goto error;
     }
     
-    return result;	
+    attr->create_buffer_mode = GLOBUS_FALSE;
+    
+    return GLOBUS_SUCCESS;
+
+error:
+    return res;
 }
 
 static globus_result_t
-globus_l_xio_ftp_cmd_target_cntl(
-    void *                                  driver_target,
-    int                                     cmd,
-    va_list                                 ap)
+globus_l_xio_ftp_cmd_attr_copy(
+    void **                             out_driver_attr,
+    void *                              src_driver_attr)
 {
-    globus_l_xio_ftp_cmd_target_t *         target;
-    globus_result_t                         res;
-    GlobusXIOName(globus_l_xio_ftp_cmd_target_cntl);
+    globus_l_xio_ftp_cmd_attr_t *       src_attr;
+    globus_l_xio_ftp_cmd_attr_t *       dest_attr;
+    globus_result_t                     res;
+    GlobusXIOName(globus_l_xio_ftp_cmd_attr_init);
+    
+    res = globus_l_xio_ftp_cmd_attr_init((void **) &dest_attr);
+    if(res == GLOBUS_SUCCESS)
+    {
+        src_attr = (globus_l_xio_ftp_cmd_attr_t *) src_driver_attr;
+        dest_attr->create_buffer_mode = src_attr->create_buffer_mode;
+        
+        *out_driver_attr = dest_attr;
+    }
+    
+    return res;
+}
 
-    target = (globus_l_xio_ftp_cmd_target_t *) driver_target;
+static globus_result_t
+globus_l_xio_ftp_cmd_attr_destroy(
+    void *                              driver_attr)
+{
+    globus_free(driver_attr);
+    return GLOBUS_SUCCESS;
+}
+
+static globus_result_t
+globus_l_xio_ftp_cmd_attr_cntl(
+    void *                              driver_attr,
+    int                                 cmd,
+    va_list                             ap)
+{
+    globus_l_xio_ftp_cmd_attr_t *       attr;
+    globus_result_t                     res;
+    GlobusXIOName(globus_l_xio_ftp_cmd_attr_cntl);
+
+    attr = (globus_l_xio_ftp_cmd_attr_t *) driver_attr;
 
     switch(cmd)
     {
         case GLOBUS_XIO_DRIVER_FTP_CMD_BUFFER:
-            target->create_buffer_mode = va_arg(ap, globus_bool_t);
+            attr->create_buffer_mode = va_arg(ap, globus_bool_t);
             break;
 
         default:
@@ -183,38 +205,21 @@ globus_l_xio_ftp_cmd_target_cntl(
     return GLOBUS_SUCCESS;
 }
 
-globus_result_t
-globus_l_xio_ftp_cmd_target_destroy(
-    void *                                  driver_target)
-{
-    globus_free(driver_target);
-
-    return GLOBUS_SUCCESS;
-}
-
 static void
 globus_l_xio_ftp_cmd_accept_cb(
-    globus_i_xio_op_t *                     op,
-    globus_result_t                         result,
-    void *                                  user_arg)
+    globus_i_xio_op_t *                 op,
+    globus_result_t                     result,
+    void *                              user_arg)
 {
-    globus_l_xio_ftp_cmd_target_t *          target;
-
-    target = (globus_l_xio_ftp_cmd_target_t *) globus_malloc(
-        sizeof(globus_l_xio_ftp_cmd_target_t));
-    target->client = GLOBUS_FALSE;
-    target->create_buffer_mode = GLOBUS_FALSE;
-
-    globus_xio_driver_finished_accept(op, target, result);
+    globus_xio_driver_finished_accept(op, (void *) 0x01, result);
 }
 
 static globus_result_t
 globus_l_xio_ftp_cmd_accept(
-    void *                                  driver_server,
-    void *                                  driver_attr,
-    globus_xio_operation_t                  accept_op)
+    void *                              driver_server,
+    globus_xio_operation_t              accept_op)
 {
-    globus_result_t                         res;
+    globus_result_t                     res;
 
     res = globus_xio_driver_pass_accept(
         accept_op, globus_l_xio_ftp_cmd_accept_cb, NULL);
@@ -229,11 +234,11 @@ globus_l_xio_ftp_cmd_accept(
  ***********************************************************************/
 static void
 globus_l_xio_ftp_cmd_open_cb(
-    globus_xio_operation_t                  op,
-    globus_result_t                         result,
-    void *                                  user_arg)
+    globus_xio_operation_t              op,
+    globus_result_t                     result,
+    void *                              user_arg)
 {
-    globus_l_xio_ftp_cmd_handle_t *          handle;
+    globus_l_xio_ftp_cmd_handle_t *     handle;
 
     handle = (globus_l_xio_ftp_cmd_handle_t *) user_arg;
 
@@ -243,22 +248,23 @@ globus_l_xio_ftp_cmd_open_cb(
         globus_free(handle);
     }
 
-    globus_xio_driver_finished_open(NULL, handle, op, result);
+    globus_xio_driver_finished_open(handle, op, result);
 }
 
 static globus_result_t
 globus_l_xio_ftp_cmd_open(
-    void *                                  driver_target,
-    void *                                  driver_attr,
-    globus_xio_operation_t                  op)
+    const globus_xio_contact_t *        contact_info,
+    void *                              driver_link,
+    void *                              driver_attr,
+    globus_xio_operation_t              op)
 {
-    globus_result_t                         res;
-    globus_l_xio_ftp_cmd_handle_t *         handle;
-    globus_l_xio_ftp_cmd_target_t *         target;
+    globus_result_t                     res;
+    globus_l_xio_ftp_cmd_attr_t *       attr;
+    globus_l_xio_ftp_cmd_handle_t *     handle;
     GlobusXIOName(globus_l_xio_ftp_cmd_open);
 
-    target = (globus_l_xio_ftp_cmd_target_t *) driver_target;
-
+    attr = (globus_l_xio_ftp_cmd_attr_t *) driver_attr;
+    
     handle = (globus_l_xio_ftp_cmd_handle_t *) globus_malloc(
         sizeof(globus_l_xio_ftp_cmd_handle_t));
     if(handle == NULL)
@@ -266,9 +272,10 @@ globus_l_xio_ftp_cmd_open(
         res = GlobusXIOErrorMemory("handle");
         return res;
     }
-
-    handle->create_buffer_mode = target->create_buffer_mode;
-    handle->client = target->client;
+    
+    handle->client = driver_link ? GLOBUS_FALSE : GLOBUS_TRUE;
+    handle->create_buffer_mode = attr 
+        ? attr->create_buffer_mode : GLOBUS_FALSE;
 
     handle->buffer_length = GLOBUS_L_XIO_FTP_CMD_DEFAULT_BUFFER_SIZE;
     handle->buffer = globus_malloc(handle->buffer_length);
@@ -282,8 +289,8 @@ globus_l_xio_ftp_cmd_open(
     globus_fifo_init(&handle->read_q);
 
     res = globus_xio_driver_pass_open(
-        NULL,
-        op, 
+        op,
+        contact_info,
         globus_l_xio_ftp_cmd_open_cb,
         handle);
 
@@ -292,10 +299,10 @@ globus_l_xio_ftp_cmd_open(
 
 globus_result_t
 globus_l_xio_ftp_cmd_request_data(
-    globus_l_xio_ftp_cmd_handle_t *          handle,
-    globus_xio_operation_t                  op)
+    globus_l_xio_ftp_cmd_handle_t *     handle,
+    globus_xio_operation_t              op)
 {
-    globus_result_t                         res = GLOBUS_SUCCESS;
+    globus_result_t                     res = GLOBUS_SUCCESS;
 
     /*
      *  if the queue is empty repass a request for more data down
@@ -334,18 +341,18 @@ globus_l_xio_ftp_cmd_request_data(
 
 static void
 globus_l_xio_ftp_cmd_read_cb(
-    globus_xio_operation_t                  op,
-    globus_result_t                         result,
-    globus_size_t                           nbytes,
-    void *                                  user_arg)
+    globus_xio_operation_t              op,
+    globus_result_t                     result,
+    globus_size_t                       nbytes,
+    void *                              user_arg)
 {
-    globus_bool_t                           complete;
-    globus_result_t                         res;
-    globus_l_xio_ftp_cmd_handle_t *         handle;
-    globus_size_t                           end_offset;
-    globus_size_t                           remain;
-    char *                                  tmp_ptr;
-    char *                                  done_buf;
+    globus_bool_t                       complete;
+    globus_result_t                     res;
+    globus_l_xio_ftp_cmd_handle_t *     handle;
+    globus_size_t                       end_offset;
+    globus_size_t                       remain;
+    char *                              tmp_ptr;
+    char *                              done_buf;
 
     handle = (globus_l_xio_ftp_cmd_handle_t *) user_arg;
 
@@ -406,13 +413,13 @@ globus_l_xio_ftp_cmd_read_cb(
 
 static globus_result_t
 globus_l_xio_ftp_cmd_read(
-    void *                                  driver_specific_handle,
-    const globus_xio_iovec_t *              iovec,
-    int                                     iovec_count,
-    globus_xio_operation_t                  op)
+    void *                              driver_specific_handle,
+    const globus_xio_iovec_t *          iovec,
+    int                                 iovec_count,
+    globus_xio_operation_t              op)
 {
-    globus_result_t                         res;
-    globus_l_xio_ftp_cmd_handle_t *         handle;
+    globus_result_t                     res;
+    globus_l_xio_ftp_cmd_handle_t *     handle;
 
     handle = (globus_l_xio_ftp_cmd_handle_t *) driver_specific_handle;
 
@@ -428,11 +435,11 @@ globus_l_xio_ftp_cmd_read(
 
 static void
 globus_l_xio_ftp_cmd_close_cb(
-    globus_xio_operation_t                  op,
-    globus_result_t                         result,
-    void *                                  user_arg)
+    globus_xio_operation_t              op,
+    globus_result_t                     result,
+    void *                              user_arg)
 {
-    globus_l_xio_ftp_cmd_handle_t *         handle;
+    globus_l_xio_ftp_cmd_handle_t *     handle;
 
     handle = (globus_l_xio_ftp_cmd_handle_t *) user_arg;
 
@@ -446,13 +453,12 @@ globus_l_xio_ftp_cmd_close_cb(
 
 static globus_result_t
 globus_l_xio_ftp_cmd_close(
-    void *                                  driver_specific_handle,
-    void *                                  attr,
-    globus_xio_driver_handle_t              driver_handle,
-    globus_xio_operation_t                  op)
+    void *                              driver_specific_handle,
+    void *                              attr,
+    globus_xio_operation_t              op)
 {
-    globus_result_t                         res;
-    globus_l_xio_ftp_cmd_handle_t *         handle;
+    globus_result_t                     res;
+    globus_l_xio_ftp_cmd_handle_t *     handle;
 
     handle = (globus_l_xio_ftp_cmd_handle_t *) driver_specific_handle;
 
@@ -464,11 +470,11 @@ globus_l_xio_ftp_cmd_close(
 
 static globus_result_t
 globus_l_xio_ftp_cmd_load(
-    globus_xio_driver_t *                   out_driver,
-    va_list                                 ap)
+    globus_xio_driver_t *               out_driver,
+    va_list                             ap)
 {
-    globus_xio_driver_t                     driver;
-    globus_result_t                         res;
+    globus_xio_driver_t                 driver;
+    globus_result_t                     res;
     GlobusXIOName(globus_l_xio_ftp_cmd_load);
 
     res = globus_xio_driver_init(&driver, "ftp_cmd", NULL);
@@ -486,20 +492,22 @@ globus_l_xio_ftp_cmd_load(
         NULL,
         NULL);
 
-    globus_xio_driver_set_client(
-        driver,
-        globus_l_xio_ftp_cmd_target_init,
-        globus_l_xio_ftp_cmd_target_cntl,
-        globus_l_xio_ftp_cmd_target_destroy);
-
     globus_xio_driver_set_server(
         driver,
         NULL,
         globus_l_xio_ftp_cmd_accept,
         NULL,
         NULL,
-        globus_l_xio_ftp_cmd_target_destroy);
-
+        NULL,
+        NULL);
+    
+    globus_xio_driver_set_attr(
+        driver,
+        globus_l_xio_ftp_cmd_attr_init,
+        globus_l_xio_ftp_cmd_attr_copy,
+        globus_l_xio_ftp_cmd_attr_cntl,
+        globus_l_xio_ftp_cmd_attr_destroy);
+    
     *out_driver = driver;
 
     return GLOBUS_SUCCESS;
@@ -509,7 +517,7 @@ globus_l_xio_ftp_cmd_load(
 
 static void
 globus_l_xio_ftp_cmd_unload(
-    globus_xio_driver_t                     driver)
+    globus_xio_driver_t                 driver)
 {
     GlobusXIOName(globus_l_xio_ftp_cmd_unload);
     globus_xio_driver_destroy(driver);
@@ -519,7 +527,7 @@ globus_l_xio_ftp_cmd_unload(
 static int
 globus_l_xio_ftp_cmd_activate(void)
 {
-    int                                     rc;
+    int                                 rc;
     GlobusXIOName(globus_l_xio_ftp_cmd_activate);
 
     rc = globus_module_activate(GLOBUS_COMMON_MODULE);

@@ -78,8 +78,8 @@ globus_module_descriptor_t       globus_i_xio_test_module =
 
 static void
 cancel_cb(
-    globus_xio_operation_t                      op,
-    void *                                      user_arg)
+    globus_xio_operation_t              op,
+    void *                              user_arg)
 {
     globus_l_xio_test_op_wrapper_t *    ow;
     globus_bool_t                       active;
@@ -124,10 +124,10 @@ cancel_cb(
 
 static void
 test_l_delay_register(
-    globus_l_xio_test_op_wrapper_t *        ow,
-    globus_reltime_t *                      delay)
+    globus_l_xio_test_op_wrapper_t *    ow,
+    globus_reltime_t *                  delay)
 {
-    globus_result_t                         res;
+    globus_result_t                     res;
     GlobusXIOName(test_l_delay_register);
 
     GlobusXIODebugInternalEnter();
@@ -154,12 +154,12 @@ test_l_delay_register(
 
 static void
 test_inline_blocker(
-    globus_reltime_t *                          delay)
+    globus_reltime_t *                  delay)
 {
-    globus_abstime_t                            timeout;
-    globus_reltime_t                            zero;
-    int                                         sec;
-    int                                         usec;
+    globus_abstime_t                    timeout;
+    globus_reltime_t                    zero;
+    int                                 sec;
+    int                                 usec;
     GlobusXIOName(test_inline_blocker);
 
     GlobusXIODebugInternalEnter();
@@ -311,30 +311,6 @@ globus_l_xio_test_attr_destroy(
     return GLOBUS_SUCCESS;
 }
 
-/*
- *  initialize target structure
- */
-static
-globus_result_t
-globus_l_xio_test_target_init(
-    void **                                 out_driver_target,
-    globus_xio_operation_t                  target_op,
-    const globus_xio_contact_t *            contact_info,
-    void *                                  driver_attr)
-{
-    return GLOBUS_SUCCESS;
-}
-
-/*
- *  destroy the target structure
- */
-static globus_result_t
-globus_l_xio_test_target_destroy(
-    void *                              driver_target)
-{
-    return GLOBUS_SUCCESS;
-}
-
 static void 
 globus_l_xio_operation_kickout(
     void *                              user_arg)
@@ -360,7 +336,7 @@ globus_l_xio_operation_kickout(
         {
             case GLOBUS_XIO_OPERATION_TYPE_OPEN:
                 globus_xio_driver_finished_open(
-                    NULL, ow->dh, ow->op, ow->res);
+                    ow->dh, ow->op, ow->res);
                 if(ow->res != GLOBUS_SUCCESS)
                 {
                     globus_l_xio_test_attr_destroy(ow->dh);
@@ -423,7 +399,6 @@ globus_l_xio_test_server_init(
 static globus_result_t
 globus_l_xio_test_accept(
     void *                              driver_server,
-    void *                              driver_attr,
     globus_xio_operation_t              accept_op)
 {
     globus_reltime_t                    end_time;
@@ -450,9 +425,9 @@ globus_l_xio_test_accept(
     }
     else
     {
-        globus_l_xio_test_op_wrapper_t *    ow;
-        globus_reltime_t *                  delay;
-        globus_bool_t                       canceled;
+        globus_l_xio_test_op_wrapper_t * ow;
+        globus_reltime_t *              delay;
+        globus_bool_t                   canceled;
 
         XIOTestCreateOpWraper(ow, server, accept_op, res, 0);
         ow->type = GLOBUS_XIO_OPERATION_TYPE_ACCEPT;
@@ -507,7 +482,8 @@ globus_l_xio_test_server_destroy(
 static
 globus_result_t
 globus_l_xio_test_open(
-    void *                              driver_target,
+    const globus_xio_contact_t *        contact_info,
+    void *                              driver_link,
     void *                              driver_attr,
     globus_xio_operation_t              op)
 {
@@ -541,7 +517,7 @@ globus_l_xio_test_open(
     if(dh->inline_finish)
     {
         test_inline_blocker(&dh->delay);
-        globus_xio_driver_finished_open(NULL, dh, op, res);
+        globus_xio_driver_finished_open(dh, op, res);
         if(res != GLOBUS_SUCCESS)
         {
             globus_l_xio_test_attr_destroy(dh);
@@ -549,8 +525,8 @@ globus_l_xio_test_open(
     }
     else
     {
-        globus_l_xio_test_op_wrapper_t *    ow;
-        globus_bool_t                       canceled;
+        globus_l_xio_test_op_wrapper_t * ow;
+        globus_bool_t                   canceled;
 
         XIOTestCreateOpWraper(ow, dh, op, res, 0);
         ow->type = GLOBUS_XIO_OPERATION_TYPE_OPEN;
@@ -585,7 +561,6 @@ globus_result_t
 globus_l_xio_test_close(
     void *                              driver_specific_handle,
     void *                              attr,
-    globus_xio_driver_handle_t          driver_handle,
     globus_xio_operation_t              op)
 {
     globus_l_xio_test_handle_t *        dh;
@@ -614,10 +589,10 @@ globus_l_xio_test_close(
     }
     else
     {
-        globus_l_xio_test_op_wrapper_t *    ow;
-        globus_reltime_t *                  delay;
-        globus_bool_t                       canceled;
-        globus_reltime_t                    end_time;
+        globus_l_xio_test_op_wrapper_t * ow;
+        globus_reltime_t *              delay;
+        globus_bool_t                   canceled;
+        globus_reltime_t                end_time;
 
         XIOTestCreateOpWraper(ow, dh, op, res, 0);
         ow->type = GLOBUS_XIO_OPERATION_TYPE_CLOSE;
@@ -709,10 +684,10 @@ globus_l_xio_test_read(
     }
     else
     {
-        globus_l_xio_test_op_wrapper_t *    ow;
-        globus_reltime_t *                  delay;
-        globus_bool_t                       canceled;
-        globus_reltime_t                    end_time;
+        globus_l_xio_test_op_wrapper_t * ow;
+        globus_reltime_t *              delay;
+        globus_bool_t                   canceled;
+        globus_reltime_t                end_time;
 
         XIOTestCreateOpWraper(ow, dh, op, res, nbytes);
         ow->type = GLOBUS_XIO_OPERATION_TYPE_READ;
@@ -795,10 +770,10 @@ globus_l_xio_test_write(
     }
     else
     {
-        globus_l_xio_test_op_wrapper_t *    ow;
-        globus_reltime_t *                  delay;
-        globus_bool_t                       canceled;
-        globus_reltime_t                    end_time;
+        globus_l_xio_test_op_wrapper_t * ow;
+        globus_reltime_t *              delay;
+        globus_bool_t                   canceled;
+        globus_reltime_t                end_time;
 
         XIOTestCreateOpWraper(ow, dh, op, res, nbytes);
         ow->type = GLOBUS_XIO_OPERATION_TYPE_WRITE;
@@ -857,19 +832,14 @@ globus_l_xio_test_transport_load(
         globus_l_xio_test_write,
         globus_l_xio_test_cntl);
 
-    globus_xio_driver_set_client(
-        driver,
-        globus_l_xio_test_target_init,
-        NULL,
-        globus_l_xio_test_target_destroy);
-
     globus_xio_driver_set_server(
         driver,
         globus_l_xio_test_server_init,
         globus_l_xio_test_accept,
         globus_l_xio_test_server_destroy,
         globus_l_xio_test_server_cntl,
-        globus_l_xio_test_target_destroy);
+        NULL,
+        NULL);
 
     globus_xio_driver_set_attr(
         driver,

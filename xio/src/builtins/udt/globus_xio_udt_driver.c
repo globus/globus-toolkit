@@ -161,9 +161,9 @@ static globus_module_descriptor_t       globus_i_xio_udt_module =
 
 typedef struct
 {
-    /* target/server attrs */
+    /* handle/server attrs */
     globus_xio_system_handle_t          handle;
-
+    
     /* server attrs */
     char *                              listener_serv;
     int                                 listener_port;
@@ -537,7 +537,7 @@ typedef struct
     globus_xio_data_descriptor_t        read_data_desc;
     globus_xio_data_descriptor_t        write_data_desc;
     globus_fifo_t			handshake_write_q;
-    globus_xio_operation_t		target_op;
+    globus_xio_operation_t		op;
     globus_mutex_t			mutex;
     globus_mutex_t			write_mutex;
     globus_bool_t			write_pending;
@@ -628,16 +628,6 @@ typedef struct
     globus_abstime_t				timestamp;
 
 } globus_l_xio_udt_connection_info_t;
-
-
-/*
- *  target structure
- */
-typedef struct
-{
-    globus_l_handle_t *				handle;			
-
-} globus_l_target_t;
 
 
 static
@@ -3746,7 +3736,7 @@ globus_l_xio_udt_attr_cntl(
     switch(cmd)
     {
       /**
-       *  target/server attrs
+       *  handle/server attrs
        */
       /* globus_xio_system_handle_t     handle */
       case GLOBUS_XIO_UDT_SET_HANDLE:
@@ -5589,8 +5579,7 @@ globus_l_xio_udt_open_failed(
     
     handle = (globus_l_handle_t*) user_arg;
     res = GlobusXIOUdtErrorOpenFailed();
-    globus_xio_driver_finished_open(handle->driver_handle, handle, op, 
-	res);
+    globus_xio_driver_finished_open(handle, op, res);
     globus_free(handle->read_iovec[1].iov_base);
     globus_free(handle->cntl_write_iovec);
     globus_free(handle->attr);
@@ -5717,8 +5706,7 @@ globus_l_xio_udt_finished_open(
     handle->cntl_write_iovec[0].iov_base = NULL;
     handle->cntl_write_iovec[1].iov_base = NULL;
     globus_i_xio_udt_read(handle);
-    globus_xio_driver_finished_open(handle->driver_handle, handle, 
-	handle->open_op, GLOBUS_SUCCESS); 
+    globus_xio_driver_finished_open(handle, handle->open_op, GLOBUS_SUCCESS); 
 
     GlobusXIOUdtDebugExit();
     return;
@@ -6266,7 +6254,7 @@ error:
        *     Does the first step in opening a udt connection - does some 
        *     initialization and opens a udp connection  
        *  Parameters:
-       *     1) [in] driver_target: udt driver target structure
+       *     1) [in] driver_link: udt driver handle structure
        *     2) [in] driver_attr: udt driver attribute structure
        *     3) [in] op: xio operation
        *  Returned value:
@@ -6276,20 +6264,31 @@ error:
 static
 globus_result_t
 globus_l_xio_udt_open(
-    void *                              driver_target,
+    const globus_xio_contact_t *        contact_info,
+    void *                              driver_link,
     void *                              driver_attr,
     globus_xio_operation_t              op)
 {
     globus_l_handle_t *                 handle;
-    globus_l_target_t *                 target;
     const globus_l_attr_t *             attr;
     globus_result_t                     result;
     GlobusXIOName(globus_l_xio_udt_open);
 
     GlobusXIOUdtDebugEnter();
-
-    target = (globus_l_target_t *) driver_target;  
-    handle = target->handle; 	
+    
+    handle = (globus_l_handle_t *) driver_link;
+    if(!handle)
+    {
+        handle = (globus_l_handle_t *) 
+            globus_malloc(sizeof(globus_l_handle_t));
+        if (!handle)
+        {
+            result = GlobusXIOErrorMemory("handle");
+            goto error_handle;
+        }
+        handle->server = NULL;
+    }
+    
     attr = (globus_l_attr_t *)
         (driver_attr ? driver_attr : &globus_l_xio_udt_attr_default);
   
@@ -6321,11 +6320,35 @@ globus_l_xio_udt_open(
     {	
 	goto error_open;	
     }
-    result = globus_xio_driver_pass_open(
-	&handle->driver_handle, 
-	op,
-	globus_l_xio_udt_open_cb, 
-	handle);
+    
+    handle->driver_handle = GlobusXIOOperationGetDriverHandle(op);
+    if(handle->server)
+    {
+        globus_xio_contact_t            new_contact_info;
+        char *                          cs;
+        
+        memset(&new_contact_info, 0, sizeof(globus_xio_contact_t));
+        cs = globus_libc_strdup(handle->remote_cs);
+        new_contact_info.host = cs;
+        new_contact_info.port = strrchr(cs, ':');
+        *new_contact_info.port = 0;
+        new_contact_info.port++;
+        
+        result = globus_xio_driver_pass_open(
+            op,
+            &new_contact_info,
+            globus_l_xio_udt_open_cb, 
+            handle);
+        globus_free(cs);
+    }
+    else
+    {
+        result = globus_xio_driver_pass_open(
+            op,
+            contact_info,
+            globus_l_xio_udt_open_cb, 
+            handle);
+    }
     
     if(result != GLOBUS_SUCCESS)
     {	
@@ -6340,6 +6363,7 @@ error_open:
 error_cntl_write_iovec:
     globus_free(handle->attr);
 error_attr:
+error_handle:
     GlobusXIOUdtDebugExitWithError();
     return result;
 }
@@ -7721,7 +7745,6 @@ globus_result_t
 globus_l_xio_udt_close(
     void *                              driver_specific_handle,
     void *                              attr,
-    globus_xio_driver_handle_t          driver_handle,
     globus_xio_operation_t              op)
 {
     globus_l_handle_t*                  handle;
@@ -8033,10 +8056,9 @@ globus_l_xio_udt_server_read_cb(
 {
     globus_l_server_t *			    server;
     globus_l_handle_t *			    handle;
+    globus_l_handle_t *			    new_handle = NULL;
     globus_l_xio_udt_handshake_t *	    handshake;
     globus_l_xio_udt_connection_info_t *  connection_info;	
-    globus_xio_contact_t		    contact_info;
-    globus_l_target_t *			    target;	
     globus_xio_operation_t		    op;
     unsigned char                      	    ipnum[GLOBUS_L_XIO_UDT_IP_LEN];
     char                                    ipstr[GLOBUS_L_XIO_UDT_IP_LEN];
@@ -8106,22 +8128,12 @@ globus_l_xio_udt_server_read_cb(
         connection_info->handle = handle;
 	handle->remote_cs = cs;
         handle->remote_handshake = handshake;
-	if (server->target_op)
+	if (server->op)
 	{
-	    op = server->target_op;	
-	    server->target_op = NULL;	
-	    target = (globus_l_target_t*)globus_malloc
-		(sizeof(globus_l_target_t));
-	    target->handle = handle;
+	    op = server->op;	
+	    server->op = NULL;	
 	    handle->state = GLOBUS_L_XIO_UDT_PROCESSING;
-	    memset(&contact_info, 0, sizeof(globus_xio_contact_t));
-	    contact_info.host = ipstr;
-	    contact_info.port = port;
-	    result = globus_xio_driver_client_target_pass(op, &contact_info);
-	    if (result != GLOBUS_SUCCESS)
-	    {
-		goto error;
-	    }	
+	    new_handle = handle;
 	}
 	else
 	{
@@ -8139,7 +8151,8 @@ globus_l_xio_udt_server_read_cb(
 	handshake = (globus_l_xio_udt_handshake_t*)
 	    globus_malloc(sizeof(globus_l_xio_udt_handshake_t));
     }
-   
+    
+    /* XXX why destroy and re-init? can't you just reuse it */
     result = globus_xio_data_descriptor_destroy(server->read_data_desc);
     if (result != GLOBUS_SUCCESS)
     {
@@ -8165,9 +8178,9 @@ globus_l_xio_udt_server_read_cb(
 	goto error;
 	
     globus_mutex_unlock(&server->mutex);
-    if (op)	
+    if (new_handle)	
     {	
-        globus_xio_driver_finished_accept(op, target, GLOBUS_SUCCESS);
+        globus_xio_driver_finished_accept(op, new_handle, GLOBUS_SUCCESS);
     }	
     GlobusXIOUdtDebugExit(); 
     return;
@@ -8190,7 +8203,6 @@ globus_l_xio_udt_server_init(
     globus_l_handle_t *			handle;
     globus_l_server_t *                 server;
     globus_l_attr_t *                   server_attr;
-    globus_xio_target_t			target;
     globus_xio_attr_t			attr = NULL;
     globus_result_t                     result;
     int					res;	
@@ -8229,25 +8241,25 @@ globus_l_xio_udt_server_init(
     {
         goto error_attr_cntl;
     }
-    result = globus_xio_target_init(
-		&target, 
-		NULL, 
-		NULL, 
-		globus_l_xio_udt_server_stack);
-    if (result != GLOBUS_SUCCESS)
-    {
-	goto error_target_init;
-    }	
+    
     server = (globus_l_server_t *) globus_malloc(sizeof(globus_l_server_t));
     if(!server)
     {
         result = GlobusXIOErrorMemory("server");
         goto error_server;
     }
-    result = globus_xio_open(
+    result = globus_xio_handle_create(
 		&server->xio_handle, 
-		attr, 
-		target);
+		globus_l_xio_udt_server_stack);
+    if (result != GLOBUS_SUCCESS)
+    {
+	goto error_handle_init;
+    }	
+    
+    result = globus_xio_open(
+		server->xio_handle,
+		NULL,
+		attr);
 
     if (result != GLOBUS_SUCCESS)
     {
@@ -8308,7 +8320,7 @@ globus_l_xio_udt_server_init(
         goto error_handshake_write_q;
     } 
     server->write_pending = GLOBUS_FALSE;
-    server->target_op = NULL;
+    server->op = NULL;
     globus_mutex_init(&server->mutex, NULL);
     globus_mutex_init(&server->write_mutex, NULL);
     handle = (globus_l_handle_t*) globus_malloc (sizeof(globus_l_handle_t));
@@ -8364,16 +8376,14 @@ error_dd_init:
     globus_xio_data_descriptor_destroy(server->read_data_desc);
 
 error_read_dd_init:
-    globus_xio_close(server->xio_handle, NULL);
-
 error_handle_cntl:
 error_open:
+    globus_xio_close(server->xio_handle, NULL);
+    
+error_handle_init:
     globus_free(server);
-
 error_server:
-    globus_xio_target_destroy(target);
 
-error_target_init:
 error_attr_cntl:
     globus_xio_attr_destroy(attr);
 
@@ -8388,15 +8398,11 @@ static
 globus_result_t
 globus_l_xio_udt_server_accept(
     void *					driver_server,
-    void *					driver_attr,
-    globus_xio_operation_t			target_op)
+    globus_xio_operation_t			op)
 {
     globus_l_server_t *				server;
-    globus_l_target_t *				target;
-    globus_result_t				result;
+    globus_l_handle_t *                         handle;
     globus_l_xio_udt_connection_info_t *   	connection_info;
-    char *					cs;
-    globus_xio_contact_t			contact_info;
     globus_abstime_t				current_time;	
     globus_abstime_t*				timestamp;	
     globus_reltime_t				max_ttl;	
@@ -8418,6 +8424,7 @@ globus_l_xio_udt_server_accept(
 	    globus_priority_q_dequeue(&server->clients_priority_q);
 	globus_free(connection_info->handle);
 	globus_free(connection_info); 	
+	/* XXX Shouldn't connection_info be removed from hash table? */
     }
     connection_info = NULL;
     
@@ -8425,39 +8432,21 @@ globus_l_xio_udt_server_accept(
     {	
 	connection_info = (globus_l_xio_udt_connection_info_t*)
 	    globus_priority_q_dequeue(&server->clients_priority_q);
-	target = (globus_l_target_t*)globus_malloc(sizeof(globus_l_target_t));
-	target->handle = connection_info->handle;
-	memset(&contact_info, 0, sizeof(globus_xio_contact_t));
-	cs = globus_libc_strdup(connection_info->handle->remote_cs);
-	contact_info.host = cs;
-	contact_info.port = strrchr(cs, ':');
-	*contact_info.port = 0;
-	contact_info.port++;
-	result = globus_xio_driver_client_target_pass(
-	    target_op, &contact_info);
-	if (result != GLOBUS_SUCCESS)
-	{
-	    goto error;
-	}
-	connection_info->handle->state = GLOBUS_L_XIO_UDT_PROCESSING;
+	handle = connection_info->handle;
+	handle->state = GLOBUS_L_XIO_UDT_PROCESSING;
     }
     else
     {
-	server->target_op = target_op;
+	server->op = op;
     }
 			
     globus_mutex_unlock(&server->mutex);
     if (connection_info)
     {
-	globus_xio_driver_finished_accept(target_op, target,
-	    GLOBUS_SUCCESS);
+	globus_xio_driver_finished_accept(op, handle, GLOBUS_SUCCESS);
     }			
     GlobusXIOUdtDebugExit();
     return GLOBUS_SUCCESS;	
-
-error:
-    GlobusXIOUdtDebugExit();
-    return result;	
 }
 
 
@@ -8594,76 +8583,32 @@ globus_l_xio_udt_server_destroy(
 }
 
 
-/*
- *  initialize target structure
- */
 static
 globus_result_t
-globus_l_xio_udt_target_init(
-    void **					out_driver_target,
-    globus_xio_operation_t                 	target_op,
-    const globus_xio_contact_t *            	contact_info,
-    void *                                  	driver_attr)
-{
-    globus_l_target_t * 	                target;
-    globus_l_handle_t *				handle;	
-    globus_result_t             	        result;
-    GlobusXIOName(globus_l_xio_udt_target_init);
-
-    GlobusXIOUdtDebugEnter();
-
-    target = (globus_l_target_t *) globus_malloc(sizeof(globus_l_target_t));
-    if (!target)
-    {
-        result = GlobusXIOErrorMemory("target");
-        goto error_target;
-    }
-    handle = (globus_l_handle_t *) globus_malloc(sizeof(globus_l_handle_t));
-    if (!handle)
-    {
-        result = GlobusXIOErrorMemory("handle");
-        goto error_handle;
-    }
-    handle->server = NULL;
-    target->handle = handle;
-    *out_driver_target = target;
-    globus_xio_driver_client_target_pass(target_op, contact_info);
-
-    GlobusXIOUdtDebugExit();
-    return GLOBUS_SUCCESS;
-
-error_handle:
-    globus_free(target);
-
-error_target:
-    GlobusXIOUdtDebugExitWithError();
-    return result;
-}
-
-
-static
-globus_result_t
-globus_l_xio_udt_target_cntl(
-    void *                              driver_target,
+globus_l_xio_udt_link_cntl(
+    void *                              driver_link,
     int                                 cmd,
     va_list                             ap)
 {
-    globus_l_target_t *                 target;
+    globus_l_handle_t *                 handle;
     globus_result_t                     result = GLOBUS_SUCCESS;
     char **                             out_string;
     globus_xio_system_handle_t *        out_handle;
-    GlobusXIOName(globus_l_xio_udt_target_cntl);
+    GlobusXIOName(globus_l_xio_udt_link_cntl);
 
     GlobusXIOUdtDebugEnter();
-    target = (globus_l_target_t *) driver_target;
-
+    handle = (globus_l_handle_t *) driver_link;
+    
+    /* XXX not sure how any of these can work.  this function is only called
+     * before a link is opened.  In this case, handle->driver_handle is bogus
+     */
     switch(cmd)
     {
       /* globus_xio_system_handle_t *   handle_out */
       case GLOBUS_XIO_UDT_GET_HANDLE:
         out_handle = va_arg(ap, globus_xio_system_handle_t *);
         result = globus_xio_driver_handle_cntl(
-            target->handle->driver_handle,
+            handle->driver_handle,
             globus_l_xio_udt_udp_driver,
             GLOBUS_XIO_UDP_GET_HANDLE,
             out_handle);
@@ -8674,7 +8619,7 @@ globus_l_xio_udt_target_cntl(
       case GLOBUS_XIO_UDT_GET_LOCAL_NUMERIC_CONTACT:
         out_string = va_arg(ap, char **);
         result = globus_xio_driver_handle_cntl(
-            target->handle->driver_handle,
+            handle->driver_handle,
             globus_l_xio_udt_udp_driver,
             GLOBUS_XIO_UDP_GET_NUMERIC_CONTACT,
             out_string);
@@ -8682,7 +8627,7 @@ globus_l_xio_udt_target_cntl(
       case GLOBUS_XIO_UDT_GET_LOCAL_CONTACT:
         out_string = va_arg(ap, char **);
         result = globus_xio_driver_handle_cntl(
-            target->handle->driver_handle,
+            handle->driver_handle,
             globus_l_xio_udt_udp_driver,
             GLOBUS_XIO_UDP_GET_CONTACT,
             out_string);
@@ -8690,7 +8635,7 @@ globus_l_xio_udt_target_cntl(
       case GLOBUS_XIO_UDT_GET_REMOTE_NUMERIC_CONTACT:
       case GLOBUS_XIO_UDT_GET_REMOTE_CONTACT:
         out_string = va_arg(ap, char **);
-	*out_string = globus_libc_strdup(target->handle->remote_cs);
+	*out_string = globus_libc_strdup(handle->remote_cs);
         break;
 
       default:
@@ -8716,22 +8661,20 @@ error_contact:
 
 
 
-/*
- *  destroy the target structure
- */
 static
 globus_result_t
-globus_l_xio_udt_target_destroy(
-    void *                              driver_target)
+globus_l_xio_udt_link_destroy(
+    void *                              driver_link)
 {
-    globus_l_target_t *                 target;
-    GlobusXIOName(globus_l_xio_udt_target_destroy);
+    globus_l_handle_t *                 handle;
+    GlobusXIOName(globus_l_xio_udt_link_destroy);
 
     GlobusXIOUdtDebugEnter();
 
-    target = (globus_l_target_t *)driver_target;
-    globus_free(target);
-
+    handle = (globus_l_handle_t *)driver_link;
+    /* XXX need some kind of reference counting on this handle since it can
+     * exist as a link, handle, in the connection hash, etc
+     */
     GlobusXIOUdtDebugExit();
     return GLOBUS_SUCCESS;
 }
@@ -8768,19 +8711,14 @@ globus_l_xio_udt_init(
         globus_l_xio_udt_cntl,
 	globus_l_xio_udt_push_driver);
 
-    globus_xio_driver_set_client(
-        driver,
-        globus_l_xio_udt_target_init,
-	globus_l_xio_udt_target_cntl,
-        globus_l_xio_udt_target_destroy);
-
     globus_xio_driver_set_server(
         driver,
         globus_l_xio_udt_server_init,
         globus_l_xio_udt_server_accept,
         globus_l_xio_udt_server_destroy,
         globus_l_xio_udt_server_cntl,
-        globus_l_xio_udt_target_destroy);
+        globus_l_xio_udt_link_cntl,
+        globus_l_xio_udt_link_destroy);
 
     globus_xio_driver_set_attr(
         driver,

@@ -468,7 +468,7 @@ globus_error_construct_openssl_error(
     globus_module_descriptor_t *        base_source,
     globus_object_t *                   base_cause)
 {
-    globus_object_t *                   error;
+    globus_object_t *                   error = base_cause;
     globus_object_t *                   newerror;
     globus_openssl_error_handle_t       openssl_error_handle;
 
@@ -477,33 +477,37 @@ globus_error_construct_openssl_error(
 
     GLOBUS_I_GSI_OPENSSL_ERROR_DEBUG_ENTER;
 
-    newerror = globus_object_construct(GLOBUS_ERROR_TYPE_OPENSSL);
-    openssl_error_handle = globus_i_openssl_error_handle_init();
-    
-    openssl_error_handle->error_code =
-        ERR_get_error_line_data((const char **)&openssl_error_handle->filename, 
-                                &openssl_error_handle->linenumber,
-                                &openssl_error_handle->data,
-                                &openssl_error_handle->flags);
+    do
+    {
+        openssl_error_handle = globus_i_openssl_error_handle_init();
+        openssl_error_handle->error_code =
+            ERR_get_error_line_data(
+                (const char **)&openssl_error_handle->filename, 
+                &openssl_error_handle->linenumber,
+                &openssl_error_handle->data,
+                &openssl_error_handle->flags);
         
-    if((openssl_error_handle->flags & ERR_TXT_MALLOCED)
-       && (openssl_error_handle->flags & ERR_TXT_STRING))
-    {
-        openssl_error_handle->data = strdup(openssl_error_handle->data);
-        assert(openssl_error_handle->data);
-    }
+        if(openssl_error_handle->error_code != 0)
+        {
+            newerror = globus_object_construct(GLOBUS_ERROR_TYPE_OPENSSL);
+            
+            if((openssl_error_handle->flags & ERR_TXT_MALLOCED)
+               && (openssl_error_handle->flags & ERR_TXT_STRING))
+            {
+                openssl_error_handle->data = strdup(
+                    openssl_error_handle->data);
+                assert(openssl_error_handle->data);
+            }
+            
+            error = globus_error_initialize_openssl_error(
+                newerror,
+                base_source,
+                error,
+                openssl_error_handle);
+        }
+    } while(openssl_error_handle->error_code != 0);
     
-    error = globus_error_initialize_openssl_error(
-        newerror,
-        base_source,
-        base_cause,
-        openssl_error_handle);
-    
-    if (error == NULL)
-    {
-        globus_object_free(newerror);
-        globus_i_openssl_error_handle_destroy(openssl_error_handle);        
-    }
+    globus_i_openssl_error_handle_destroy(openssl_error_handle);        
 
     GLOBUS_I_GSI_OPENSSL_ERROR_DEBUG_EXIT;
     return error;
@@ -546,39 +550,9 @@ globus_error_initialize_openssl_error(
 
     GLOBUS_I_GSI_OPENSSL_ERROR_DEBUG_ENTER;
 
-    if(openssl_error_handle->error_code == 0)
-    {
-        /* no more errors in the static openssl stack exist,
-         * so delete newly created error and return base_cause
-         * this should shut down the recursive building of the 
-         * openssl error chain
-         */
-        globus_i_openssl_error_handle_destroy(openssl_error_handle);
-        if(base_cause)
-        {
-            globus_object_free(error);
-            error = base_cause;
-        }
-        
-        goto done;
-    }
-
     globus_object_set_local_instance_data(error, 
                                           (void *) openssl_error_handle);
     globus_error_initialize_base(error, base_source, base_cause);
-
-    if(!(openssl_error_handle->error_code == 0 && base_cause == NULL))
-    {
-        /* need to check if more errors exist in the static
-         * openssl error stack - this will recurse until
-         * all errors are found.
-         */        
-        error = globus_error_construct_openssl_error(
-            base_source,
-            error);
-    }
-
- done:
 
     GLOBUS_I_GSI_OPENSSL_ERROR_DEBUG_EXIT;
     return error;
@@ -1099,8 +1073,6 @@ globus_error_wrap_openssl_error(
     {
         globus_object_free(causal_error);
     }
-
- done:
 
     GLOBUS_I_GSI_OPENSSL_ERROR_DEBUG_EXIT;
     return error;

@@ -191,7 +191,7 @@
  */
 globus_result_t
 globus_xio_attr_init(
-    globus_xio_attr_t *                     attr);
+    globus_xio_attr_t *                 attr);
 
 /**
  *  @ingroup GLOBUS_XIO_API
@@ -221,9 +221,9 @@ globus_xio_attr_init(
  */
 globus_result_t
 globus_xio_attr_cntl(
-    globus_xio_attr_t                       attr,
-    globus_xio_driver_t                     driver,
-    int                                     cmd,
+    globus_xio_attr_t                   attr,
+    globus_xio_driver_t                 driver,
+    int                                 cmd,
     ...);
 
 /**
@@ -233,8 +233,8 @@ globus_xio_attr_cntl(
  */
 globus_result_t
 globus_xio_attr_copy(
-    globus_xio_attr_t *                     dst,
-    globus_xio_attr_t                       src);
+    globus_xio_attr_t *                 dst,
+    globus_xio_attr_t                   src);
 
 /**
  *  @ingroup GLOBUS_XIO_API
@@ -247,7 +247,7 @@ globus_xio_attr_copy(
  */
 globus_result_t
 globus_xio_attr_destroy(
-    globus_xio_attr_t                       attr);
+    globus_xio_attr_t                   attr);
 
 /*************************************************************************
  *                      Stack functions
@@ -260,8 +260,8 @@ globus_xio_attr_destroy(
  */
 globus_result_t
 globus_xio_stack_init(
-    globus_xio_stack_t *                    stack,
-    globus_xio_attr_t                       stack_attr);
+    globus_xio_stack_t *                stack,
+    globus_xio_attr_t                  stack_attr);
 
 /**
  *  @ingroup GLOBUS_XIO_API
@@ -273,8 +273,8 @@ globus_xio_stack_init(
  */
 globus_result_t
 globus_xio_stack_push_driver(
-    globus_xio_stack_t                      stack,
-    globus_xio_driver_t                     driver);
+    globus_xio_stack_t                  stack,
+    globus_xio_driver_t                 driver);
 
 /**
  *  @ingroup GLOBUS_XIO_API
@@ -282,7 +282,7 @@ globus_xio_stack_push_driver(
  */
 globus_result_t
 globus_xio_stack_destroy(
-    globus_xio_stack_t                      stack);
+    globus_xio_stack_t                  stack);
 
 /*************************************************************************
  *  server 
@@ -297,8 +297,8 @@ globus_xio_stack_destroy(
  *  @param server
  *         The server object on which the accept was registered.
  *
- *  @param target
- *         The newly created target that was created by the accept 
+ *  @param handle
+ *         The newly created handle that was created by the accept 
  *         operation.
  *
  *  @param result
@@ -311,10 +311,10 @@ globus_xio_stack_destroy(
  */
 typedef void
 (*globus_xio_accept_callback_t)(
-    globus_xio_server_t                     server,
-    globus_xio_target_t                     target,
-    globus_result_t                         result,
-    void *                                  user_arg);
+    globus_xio_server_t                 server,
+    globus_xio_handle_t                 handle,
+    globus_result_t                     result,
+    void *                              user_arg);
 
 /**
  *  @ingroup GLOBUS_XIO_API
@@ -325,8 +325,8 @@ typedef void
  */
 typedef void
 (*globus_xio_server_callback_t)(
-    globus_xio_server_t                     server,
-    void *                                  user_arg);
+    globus_xio_server_t                 server,
+    void *                              user_arg);
 
 /**
  *  @ingroup GLOBUS_XIO_API
@@ -348,9 +348,9 @@ typedef void
  */
 globus_result_t
 globus_xio_server_create(
-    globus_xio_server_t *                   server,
-    globus_xio_attr_t                       server_attr,
-    globus_xio_stack_t                      stack);
+    globus_xio_server_t *               server,
+    globus_xio_attr_t                   server_attr,
+    globus_xio_stack_t                  stack);
 
 /**
  *  @ingroup GLOBUS_XIO_API
@@ -361,9 +361,9 @@ globus_xio_server_create(
  */
 globus_result_t
 globus_xio_server_register_close(
-    globus_xio_server_t                     server,
-    globus_xio_server_callback_t            cb,
-    void *                                  user_arg);
+    globus_xio_server_t                 server,
+    globus_xio_server_callback_t        cb,
+    void *                              user_arg);
 
 /**
  *  @ingroup GLOBUS_XIO_API
@@ -371,7 +371,7 @@ globus_xio_server_register_close(
  */
 globus_result_t
 globus_xio_server_close(
-    globus_xio_server_t                     server);
+    globus_xio_server_t                 server);
 
 /**
  *  @ingroup GLOBUS_XIO_API
@@ -383,9 +383,9 @@ globus_xio_server_close(
  */
 globus_result_t
 globus_xio_server_cntl(
-    globus_xio_server_t                     server,
-    globus_xio_driver_t                     driver,
-    int                                     cmd,
+    globus_xio_server_t                 server,
+    globus_xio_driver_t                 driver,
+    int                                 cmd,
     ...);
 
 /**
@@ -393,14 +393,13 @@ globus_xio_server_cntl(
  *  Accept a connection
  *
  *  This function will accept a connetion on the given server object
- *  and the parameter out_target will be valid if the function returns
+ *  and the parameter out_handle will be valid if the function returns
  *  successfully.
  */
 globus_result_t
 globus_xio_server_accept(
-    globus_xio_target_t *                   out_target,
-    globus_xio_server_t                     server,
-    globus_xio_attr_t                       accept_attr);
+    globus_xio_handle_t *               out_handle,
+    globus_xio_server_t                 server);
 
 /**
  *  @ingroup GLOBUS_XIO_API
@@ -411,83 +410,22 @@ globus_xio_server_accept(
  */
 globus_result_t
 globus_xio_server_register_accept(
-    globus_xio_server_t                     server,
-    globus_xio_attr_t                       accept_attr,
-    globus_xio_accept_callback_t            cb,
-    void *                                  user_arg);
+    globus_xio_server_t                 server,
+    globus_xio_accept_callback_t        cb,
+    void *                              user_arg);
 
 /**
  *  @ingroup GLOBUS_XIO_API
- *  Initialize a target for client opens
+ *  Initialize a handle for client opens
  *
- *  This funtion will initialize a target for active opens (client side 
+ *  This funtion will initialize a handle for active opens (client side 
  *  connections).
  * 
- *  @param contact_string
- *     An url describing the resource.  NULL is allowed.
- *     Drivers interpret the various parts
- *     of this url as descibed in their documentation.  An alternative
- *     form is also supported:  if contact_string does not specify a scheme
- *     (e.g. http://) and it contains a ':', it will be parsed as a host:port
- *     pair.  if it does not contain a ':', it will be parsed as the path
- * 
- *  the following are examples of valid formats:
- *  <pre>
- *    &lt;path to file&gt;
- *    host-name ":" &lt;service or port&gt;
- *    "file:" &lt;path to file&gt;
- *    &lt;scheme&gt; "://" [ "/" [ &lt;path to resource&gt; ]  ]
- *    &lt;scheme&gt; "://" location [ "/" [ &lt;path to resource&gt; ] ]
- *      location:
- *          [ auth-part ] host-part
- *      auth-part:
- *          &lt;user&gt; [ ":" &lt;password&gt; ] "@" 
- *      host-part:
- *          [ "<" &lt;subject&gt; ">" ] host-name [ ":" &lt;port or service&gt; ]
- *      host-name:
- *          &lt;hostname&rt; | &lt;dotted quad&rt; | "[" &lt;ipv6 address&gt; "]"
- *    </pre>
- *
- *    Except for use as the above delimeters, the following special characters
- *    MUST be encoded with the \%HH format where H == hex char.
- *    
- *    <pre>
- *    "/" and "@" in location except subject
- *    "<" and ">" in location
- *    ":" everywhere except subject
- *    "%" everywhere (can be encoded with %HH or %%)
- *    </pre>
  */
 globus_result_t
-globus_xio_target_init(
-    globus_xio_target_t *                   target,
-    globus_xio_attr_t                       target_attr,
-    const char *                            contact_string,
-    globus_xio_stack_t                      stack);
-
-/**
- *  @ingroup GLOBUS_XIO_API
- *  Touch driver specific information in a target object.
- *
- *  This function allows the user to comunicate directly with a driver
- *  in association with a target object.  The driver defines what operations
- *  can be preformed.
- */
-globus_result_t
-globus_xio_target_cntl(
-    globus_xio_target_t                     target,
-    globus_xio_driver_t                     driver,
-    int                                     cmd,
-    ...);
-
-/**
- *  @ingroup GLOBUS_XIO_API
- *  This only needs to be called if the target object is not passed
- *  to globus_xio_open. 
- */
-globus_result_t
-globus_xio_target_destroy(
-    globus_xio_target_t                     target);
+globus_xio_handle_create(
+    globus_xio_handle_t *               handle,
+    globus_xio_stack_t                  stack);
 
 /******************************************************************
  *                      handle construction
@@ -530,13 +468,13 @@ enum globus_xio_handle_attr_cmd_t
 
 typedef globus_bool_t
 (*globus_xio_timeout_callback_t)(
-    globus_xio_handle_t                     handle,
-    globus_xio_operation_type_t             type);
+    globus_xio_handle_t                 handle,
+    globus_xio_operation_type_t         type);
 
 typedef globus_bool_t
 (*globus_xio_timeout_server_callback_t)(
-    globus_xio_server_t                     server,
-    globus_xio_operation_type_t             type);
+    globus_xio_server_t                 server,
+    globus_xio_operation_type_t         type);
 
 
 /******************************************************************
@@ -557,8 +495,8 @@ typedef globus_bool_t
  */
 globus_result_t
 globus_xio_data_descriptor_init(
-    globus_xio_data_descriptor_t *          data_desc,
-    globus_xio_handle_t                     handle);
+    globus_xio_data_descriptor_t *      data_desc,
+    globus_xio_handle_t                 handle);
 
 /**
  *  @ingroup GLOBUS_XIO_API
@@ -566,16 +504,16 @@ globus_xio_data_descriptor_init(
  */
 globus_result_t
 globus_xio_data_descriptor_destroy(
-    globus_xio_data_descriptor_t            data_desc);
+    globus_xio_data_descriptor_t        data_desc);
 
 /**
  *  @ingroup GLOBUS_XIO_API
  */
 globus_result_t
 globus_xio_data_descriptor_cntl(
-    globus_xio_data_descriptor_t            data_desc,
-    globus_xio_driver_t                     driver,
-    int                                     cmd,
+    globus_xio_data_descriptor_t        data_desc,
+    globus_xio_driver_t                 driver,
+    int                                 cmd,
     ...);
 
 /*********************************************************************
@@ -589,9 +527,9 @@ globus_xio_data_descriptor_cntl(
  *   operations.
  */
 typedef void (*globus_xio_callback_t)(
-    globus_xio_handle_t                     handle,
-    globus_result_t                         result,
-    void *                                  user_arg);
+    globus_xio_handle_t                 handle,
+    globus_result_t                     result,
+    void *                              user_arg);
 
 /**
  *  globus_xio_data_callback_t 
@@ -603,13 +541,13 @@ typedef void (*globus_xio_callback_t)(
  *  on eof, result_t will be of type GLOBUS_XIO_ERROR_EOF
  */
 typedef void (*globus_xio_data_callback_t)(
-    globus_xio_handle_t                     handle, 
-    globus_result_t                         result,
-    globus_byte_t *                         buffer,
-    globus_size_t                           len,
-    globus_size_t                           nbytes, 
-    globus_xio_data_descriptor_t            data_desc,
-    void *                                  user_arg);
+    globus_xio_handle_t                 handle, 
+    globus_result_t                     result,
+    globus_byte_t *                     buffer,
+    globus_size_t                       len,
+    globus_size_t                       nbytes, 
+    globus_xio_data_descriptor_t        data_desc,
+    void *                              user_arg);
 
 /**
  *  globus_xio_iovec_callback_t 
@@ -621,13 +559,13 @@ typedef void (*globus_xio_data_callback_t)(
  *  on eof, result_t will be of type GLOBUS_XIO_ERROR_EOF
  */
 typedef void (*globus_xio_iovec_callback_t)(
-    globus_xio_handle_t                     handle,
-    globus_result_t                         result,
-    globus_xio_iovec_t *                    iovec,
-    int                                     count,
-    globus_size_t                           nbytes,
-    globus_xio_data_descriptor_t            data_desc,
-    void *                                  user_arg);
+    globus_xio_handle_t                 handle,
+    globus_result_t                     result,
+    globus_xio_iovec_t *                iovec,
+    int                                 count,
+    globus_size_t                       nbytes,
+    globus_xio_data_descriptor_t        data_desc,
+    void *                              user_arg);
 
 /**
  *  @ingroup GLOBUS_XIO_API
@@ -639,9 +577,9 @@ typedef void (*globus_xio_iovec_callback_t)(
  */
 globus_result_t
 globus_xio_handle_cntl(
-    globus_xio_handle_t                     handle,
-    globus_xio_driver_t                     driver,
-    int                                     cmd,
+    globus_xio_handle_t                 handle,
+    globus_xio_driver_t                 driver,
+    int                                 cmd,
     ...);
 
 /**
@@ -654,14 +592,49 @@ globus_xio_handle_cntl(
  * No operation can be preformed on a handle until it is opened.  If 
  * an already open handle used the information contaned in that handle
  * will be destoyed.
- */ 
+ * 
+ * @param contact_string
+ *     An url describing the resource.  NULL is allowed.
+ *     Drivers interpret the various parts
+ *     of this url as descibed in their documentation.  An alternative
+ *     form is also supported:  if contact_string does not specify a scheme
+ *     (e.g. http://) and it contains a ':', it will be parsed as a host:port
+ *     pair.  if it does not contain a ':', it will be parsed as the path
+ * 
+ *  the following are examples of valid formats:
+ *  <pre>
+ *    &lt;path to file&gt;
+ *    host-name ":" &lt;service or port&gt;
+ *    "file:" &lt;path to file&gt;
+ *    &lt;scheme&gt; "://" [ "/" [ &lt;path to resource&gt; ]  ]
+ *    &lt;scheme&gt; "://" location [ "/" [ &lt;path to resource&gt; ] ]
+ *      location:
+ *          [ auth-part ] host-part
+ *      auth-part:
+ *          &lt;user&gt; [ ":" &lt;password&gt; ] "@" 
+ *      host-part:
+ *          [ "<" &lt;subject&gt; ">" ] host-name [ ":" &lt;port or service&gt; ]
+ *      host-name:
+ *          &lt;hostname&rt; | &lt;dotted quad&rt; | "[" &lt;ipv6 address&gt; "]"
+ *    </pre>
+ *
+ *    Except for use as the above delimeters, the following special characters
+ *    MUST be encoded with the \%HH format where H == hex char.
+ *    
+ *    <pre>
+ *    "/" and "@" in location except subject
+ *    "<" and ">" in location
+ *    ":" everywhere except subject
+ *    "%" everywhere (can be encoded with %HH or %%)
+ *    </pre>
+ */
 globus_result_t
 globus_xio_register_open(
-    globus_xio_handle_t *                   handle,
-    globus_xio_attr_t                       attr,
-    globus_xio_target_t                     target,
-    globus_xio_callback_t                   cb,
-    void *                                  user_arg);
+    globus_xio_handle_t                 handle,
+    const char *                        contact_string,
+    globus_xio_attr_t                   attr,
+    globus_xio_callback_t               cb,
+    void *                              user_arg);
 
 /** 
  *  blocking open
@@ -669,9 +642,9 @@ globus_xio_register_open(
  */
 globus_result_t
 globus_xio_open(
-    globus_xio_handle_t *                   user_handle,
-    globus_xio_attr_t                       user_attr,
-    globus_xio_target_t                     user_target);
+    globus_xio_handle_t                 handle,
+    const char *                        contact_string,
+    globus_xio_attr_t                   attr);
 
 /**
  *  Read data from a handle
@@ -679,13 +652,13 @@ globus_xio_open(
  */
 globus_result_t
 globus_xio_register_read(
-    globus_xio_handle_t                     handle,
-    globus_byte_t *                         buffer,
-    globus_size_t                           buffer_length,
-    globus_size_t                           waitforbytes,
-    globus_xio_data_descriptor_t            data_desc,
-    globus_xio_data_callback_t              cb,
-    void *                                  user_arg);
+    globus_xio_handle_t                 handle,
+    globus_byte_t *                     buffer,
+    globus_size_t                       buffer_length,
+    globus_size_t                       waitforbytes,
+    globus_xio_data_descriptor_t        data_desc,
+    globus_xio_data_callback_t          cb,
+    void *                              user_arg);
 
 /**
  *  Read data from a handle
@@ -693,12 +666,12 @@ globus_xio_register_read(
  */
 globus_result_t
 globus_xio_read(
-    globus_xio_handle_t                     user_handle,
-    globus_byte_t *                         buffer,
-    globus_size_t                           buffer_length,
-    globus_size_t                           waitforbytes,
-    globus_size_t *                         nbytes,
-    globus_xio_data_descriptor_t            data_desc);
+    globus_xio_handle_t                 handle,
+    globus_byte_t *                     buffer,
+    globus_size_t                       buffer_length,
+    globus_size_t                       waitforbytes,
+    globus_size_t *                     nbytes,
+    globus_xio_data_descriptor_t        data_desc);
 
 /**
  * Read data from a handle into a globus_xio_iovec_t (struct iovec)
@@ -706,13 +679,13 @@ globus_xio_read(
  */
 globus_result_t
 globus_xio_register_readv(
-    globus_xio_handle_t                     handle,
-    globus_xio_iovec_t *                    iovec,
-    int                                     iovec_count,
-    globus_size_t                           waitforbytes,
-    globus_xio_data_descriptor_t            data_desc,
-    globus_xio_iovec_callback_t             cb,
-    void *                                  user_arg);
+    globus_xio_handle_t                 handle,
+    globus_xio_iovec_t *                iovec,
+    int                                 iovec_count,
+    globus_size_t                       waitforbytes,
+    globus_xio_data_descriptor_t        data_desc,
+    globus_xio_iovec_callback_t         cb,
+    void *                              user_arg);
 
 /**
  * Read data from a handle into a globus_xio_iovec_t (struct iovec)
@@ -720,12 +693,12 @@ globus_xio_register_readv(
  */
 globus_result_t
 globus_xio_readv( 
-    globus_xio_handle_t                     user_handle,
-    globus_xio_iovec_t *                    iovec,
-    int                                     iovec_count,
-    globus_size_t                           waitforbytes,
-    globus_size_t *                         nbytes,
-    globus_xio_data_descriptor_t            data_desc);
+    globus_xio_handle_t                 handle,
+    globus_xio_iovec_t *                iovec,
+    int                                 iovec_count,
+    globus_size_t                       waitforbytes,
+    globus_size_t *                     nbytes,
+    globus_xio_data_descriptor_t        data_desc);
 
 /**
  * Write data to a handle
@@ -733,13 +706,13 @@ globus_xio_readv(
  */
 globus_result_t
 globus_xio_register_write(
-    globus_xio_handle_t                     handle,
-    globus_byte_t *                         buffer,
-    globus_size_t                           buffer_length,
-    globus_size_t                           waitforbytes,
-    globus_xio_data_descriptor_t            data_desc,
-    globus_xio_data_callback_t              cb,
-    void *                                  user_arg);
+    globus_xio_handle_t                 handle,
+    globus_byte_t *                     buffer,
+    globus_size_t                       buffer_length,
+    globus_size_t                       waitforbytes,
+    globus_xio_data_descriptor_t        data_desc,
+    globus_xio_data_callback_t          cb,
+    void *                              user_arg);
 
 /**
  * Write data to a handle
@@ -747,12 +720,12 @@ globus_xio_register_write(
  */
 globus_result_t
 globus_xio_write(
-    globus_xio_handle_t                     user_handle,
-    globus_byte_t *                         buffer,
-    globus_size_t                           buffer_length,
-    globus_size_t                           waitforbytes,
-    globus_size_t *                         nbytes,
-    globus_xio_data_descriptor_t            data_desc);
+    globus_xio_handle_t                 handle,
+    globus_byte_t *                     buffer,
+    globus_size_t                       buffer_length,
+    globus_size_t                       waitforbytes,
+    globus_size_t *                     nbytes,
+    globus_xio_data_descriptor_t        data_desc);
 
 /**
  * Write data to a handle from a globus_xio_iovec_t (struct iovec)
@@ -760,13 +733,13 @@ globus_xio_write(
  */
 globus_result_t
 globus_xio_register_writev(
-    globus_xio_handle_t                     handle,
-    globus_xio_iovec_t *                    iovec,
-    int                                     iovec_count,
-    globus_size_t                           waitforbytes,
-    globus_xio_data_descriptor_t            data_desc,
-    globus_xio_iovec_callback_t             cb,
-    void *                                  user_arg);
+    globus_xio_handle_t                 handle,
+    globus_xio_iovec_t *                iovec,
+    int                                 iovec_count,
+    globus_size_t                       waitforbytes,
+    globus_xio_data_descriptor_t        data_desc,
+    globus_xio_iovec_callback_t         cb,
+    void *                              user_arg);
 
 /**
  * Write data to a handle from a globus_xio_iovec_t (struct iovec)
@@ -774,12 +747,12 @@ globus_xio_register_writev(
  */
 globus_result_t
 globus_xio_writev(
-    globus_xio_handle_t                     user_handle,
-    globus_xio_iovec_t *                    iovec,
-    int                                     iovec_count,
-    globus_size_t                           waitforbytes,
-    globus_size_t *                         nbytes,
-    globus_xio_data_descriptor_t            data_desc);
+    globus_xio_handle_t                 handle,
+    globus_xio_iovec_t *                iovec,
+    int                                 iovec_count,
+    globus_size_t                       waitforbytes,
+    globus_size_t *                     nbytes,
+    globus_xio_data_descriptor_t        data_desc);
 
 
 /**
@@ -787,12 +760,12 @@ globus_xio_writev(
  */
 globus_result_t
 globus_xio_handle_cancel_operations(
-    globus_xio_handle_t                     handle,
-    int                                     mask);
+    globus_xio_handle_t                 handle,
+    int                                 mask);
 
 globus_result_t
 globus_xio_server_cancel_accept(
-    globus_xio_server_t                     server);
+    globus_xio_server_t                 server);
 
 /**
  *  Close a handle
@@ -816,10 +789,10 @@ globus_xio_server_cancel_accept(
  */
 globus_result_t
 globus_xio_register_close(
-    globus_xio_handle_t                     handle,
-    globus_xio_attr_t                       attr,
-    globus_xio_callback_t                   cb,
-    void *                                  user_arg);
+    globus_xio_handle_t                 handle,
+    globus_xio_attr_t                   attr,
+    globus_xio_callback_t               cb,
+    void *                              user_arg);
 
 /**
  *  Blocking close
@@ -827,8 +800,8 @@ globus_xio_register_close(
  */
 globus_result_t
 globus_xio_close(
-    globus_xio_handle_t                     handle,
-    globus_xio_attr_t                       attr);
+    globus_xio_handle_t                 handle,
+    globus_xio_attr_t                   attr);
 
 /*
  *                         signal stuff
@@ -952,7 +925,7 @@ globus_xio_server_register_signal_handler(
     void *                                  user_arg);
  */
 
-extern globus_module_descriptor_t           globus_i_xio_module;
+extern globus_module_descriptor_t       globus_i_xio_module;
 #define GLOBUS_XIO_MODULE &globus_i_xio_module
 
 #endif

@@ -24,24 +24,24 @@ typedef enum
 
 typedef struct l_smtp_info_s
 {
-    l_smtp_state_t                          state;
-    char                                    return_address[256];
-    char                                    to_address[256];
-    char                                    message[1024];
-    int                                     buf_len;
-    int                                     read_offset;
-    globus_xio_iovec_t                      iovec;
+    l_smtp_state_t                      state;
+    char                                return_address[256];
+    char                                to_address[256];
+    char                                message[1024];
+    int                                 buf_len;
+    int                                 read_offset;
+    globus_xio_iovec_t                  iovec;
 } l_smtp_info_t;
 
-static char *                               globus_l_return_address = NULL;
-static char                                 globus_l_hostname[MAXHOSTNAMELEN];
+static char *                           globus_l_return_address = NULL;
+static char                             globus_l_hostname[MAXHOSTNAMELEN];
 
 static void
 globus_l_xio_smtp_write_header_cb(
-    globus_xio_operation_t                  op,
-    globus_result_t                         result,
-    globus_size_t                           nbytes,
-    void *                                  user_arg);
+    globus_xio_operation_t              op,
+    globus_result_t                     result,
+    globus_size_t                       nbytes,
+    void *                              user_arg);
 
 
 static int
@@ -52,7 +52,7 @@ globus_l_xio_smtp_deactivate();
 
 #include "version.h"
 
-static globus_module_descriptor_t  globus_i_xio_smtp_module =
+static globus_module_descriptor_t       globus_i_xio_smtp_module =
 {
     "globus_xio_smtp",
     globus_l_xio_smtp_activate,
@@ -65,7 +65,7 @@ static globus_module_descriptor_t  globus_i_xio_smtp_module =
 l_smtp_info_t *
 l_smtp_create_new_info()
 {
-    l_smtp_info_t *                         info;
+    l_smtp_info_t *                     info;
 
     info = (l_smtp_info_t *) globus_malloc(sizeof(l_smtp_info_t));
     info->state = SMTP_HELO;
@@ -81,13 +81,6 @@ l_smtp_create_new_info()
 /*
  *  used as attr and handle
  */
-
-globus_result_t
-globus_l_xio_smtp_target_destroy(
-    void *                                  driver_target)
-{
-    return GLOBUS_SUCCESS;
-}
 
 static globus_result_t
 globus_l_xio_smtp_attr_init(
@@ -150,10 +143,10 @@ globus_l_xio_smtp_attr_destroy(
 
 void
 next_state(
-    l_smtp_info_t *                         info,
-    globus_xio_operation_t                  op)
+    l_smtp_info_t *                     info,
+    globus_xio_operation_t              op)
 {
-    globus_result_t                         res;
+    globus_result_t                     res;
 
     switch(info->state)
     {
@@ -178,7 +171,7 @@ next_state(
             break;
 
         case SMTP_MESSAGE:
-            globus_xio_driver_finished_open(NULL, info, op, GLOBUS_SUCCESS);
+            globus_xio_driver_finished_open(info, op, GLOBUS_SUCCESS);
             return;
             break;
     }
@@ -191,19 +184,19 @@ next_state(
 
     if(res != GLOBUS_SUCCESS)
     {
-        globus_xio_driver_finished_open(NULL, info, op, res);
+        globus_xio_driver_finished_open(info, op, res);
     }
 }
 
 static void
 globus_l_xio_smtp_read_header_cb(
-    globus_xio_operation_t                  op,
-    globus_result_t                         result,
-    globus_size_t                           nbytes,
-    void *                                  user_arg)
+    globus_xio_operation_t              op,
+    globus_result_t                     result,
+    globus_size_t                       nbytes,
+    void *                              user_arg)
 {
-    l_smtp_info_t *                         info;
-    globus_result_t                         res;
+    l_smtp_info_t *                     info;
+    globus_result_t                     res;
 
     info = (l_smtp_info_t *) user_arg;
    /*
@@ -211,7 +204,7 @@ globus_l_xio_smtp_read_header_cb(
      */
     if(result != GLOBUS_SUCCESS)
     {
-        globus_xio_driver_finished_open(NULL, info, op, result);
+        globus_xio_driver_finished_open(info, op, result);
     }
     else
     {
@@ -228,13 +221,13 @@ globus_l_xio_smtp_read_header_cb(
                 globus_l_xio_smtp_read_header_cb, (void *)  info);
             if(res != GLOBUS_SUCCESS)
             {
-                globus_xio_driver_finished_open(NULL, info, op, res);
+                globus_xio_driver_finished_open(info, op, res);
             }
         }
         /* if we have the entire message */
         else
         {
-            int                             response_code;
+            int                         response_code;
 
             sscanf(info->message, "%d", &response_code);
             info->read_offset = 0;
@@ -249,7 +242,7 @@ globus_l_xio_smtp_read_header_cb(
                     "SMTP Error: %s.",
                     info->message));
 
-                globus_xio_driver_finished_open(NULL, info, op, res);
+                globus_xio_driver_finished_open(info, op, res);
             }
             /* ,ove to next state */
             else
@@ -262,13 +255,13 @@ globus_l_xio_smtp_read_header_cb(
 
 static void
 globus_l_xio_smtp_write_header_cb(
-    globus_xio_operation_t                  op,
-    globus_result_t                         result,
-    globus_size_t                           nbytes,
-    void *                                  user_arg)
+    globus_xio_operation_t              op,
+    globus_result_t                     result,
+    globus_size_t                       nbytes,
+    void *                              user_arg)
 {
-    globus_result_t                         res;
-    l_smtp_info_t *                         info;
+    globus_result_t                     res;
+    l_smtp_info_t *                     info;
 
     info = (l_smtp_info_t *) user_arg;
 
@@ -277,7 +270,7 @@ globus_l_xio_smtp_write_header_cb(
      */
     if(result != GLOBUS_SUCCESS)
     {
-        globus_xio_driver_finished_open(NULL, info, op, result);
+        globus_xio_driver_finished_open(info, op, result);
     }
     /*
      *  read the response
@@ -295,17 +288,17 @@ globus_l_xio_smtp_write_header_cb(
  */
 void
 globus_l_xio_smtp_open_cb(
-    globus_xio_operation_t                  op,
-    globus_result_t                         result,
-    void *                                  user_arg)
+    globus_xio_operation_t              op,
+    globus_result_t                     result,
+    void *                              user_arg)
 {
-    l_smtp_info_t *                         info;
+    l_smtp_info_t *                     info;
 
     info = (l_smtp_info_t *) user_arg;
 
     if(result != GLOBUS_SUCCESS)
     {
-        globus_xio_driver_finished_open(NULL, info, op, result);
+        globus_xio_driver_finished_open(info, op, result);
     }
     else
     {
@@ -316,12 +309,13 @@ globus_l_xio_smtp_open_cb(
 static
 globus_result_t
 globus_l_xio_smtp_open(
-    void *                                  driver_target,
-    void *                                  driver_attr,
-    globus_xio_operation_t                  op)
+    const globus_xio_contact_t *        contact_info,
+    void *                              driver_link,
+    void *                              driver_attr,
+    globus_xio_operation_t              op)
 {
-    globus_result_t                         res;
-    l_smtp_info_t *                         info;
+    globus_result_t                     res;
+    l_smtp_info_t *                     info;
 
     if(driver_attr == NULL)
     {
@@ -330,7 +324,8 @@ globus_l_xio_smtp_open(
 
     globus_l_xio_smtp_attr_copy((void **)&info, driver_attr);
 
-    globus_xio_driver_pass_open(NULL, op, globus_l_xio_smtp_open_cb, info);
+    globus_xio_driver_pass_open(
+        op, contact_info, globus_l_xio_smtp_open_cb, info);
 
     return res;
 }
@@ -349,12 +344,12 @@ globus_l_xio_smtp_close_cb(
 
 void
 globus_l_xio_smtp_write_close_cb(
-    globus_xio_operation_t                  op,
-    globus_result_t                         result,
-    globus_size_t                           nbytes,
-    void *                                  user_arg)
+    globus_xio_operation_t              op,
+    globus_result_t                     result,
+    globus_size_t                       nbytes,
+    void *                              user_arg)
 {
-    globus_result_t                         res;
+    globus_result_t                     res;
 
     res = globus_xio_driver_pass_close(
             op, globus_l_xio_smtp_close_cb, user_arg);
@@ -365,13 +360,12 @@ globus_l_xio_smtp_write_close_cb(
  */
 static globus_result_t
 globus_l_xio_smtp_close(
-    void *                                  driver_specific_handle,
-    void *                                  attr,
-    globus_xio_driver_handle_t              driver_handle,
-    globus_xio_operation_t                  op)
+    void *                              driver_specific_handle,
+    void *                              attr,
+    globus_xio_operation_t              op)
 {
-    globus_result_t                         res;
-    l_smtp_info_t *                         info;
+    globus_result_t                     res;
+    l_smtp_info_t *                     info;
 
     info = (l_smtp_info_t *) driver_specific_handle;
 
@@ -389,10 +383,10 @@ globus_l_xio_smtp_close(
  */
 void
 globus_l_xio_smtp_write_cb(
-    globus_xio_operation_t                  op,
-    globus_result_t                         result,
-    globus_size_t                           nbytes,
-    void *                                  user_arg)
+    globus_xio_operation_t              op,
+    globus_result_t                     result,
+    globus_size_t                       nbytes,
+    void *                              user_arg)
 {
     globus_xio_driver_finished_write(op, result, nbytes);
 }
@@ -403,14 +397,14 @@ globus_l_xio_smtp_write_cb(
 static
 globus_result_t
 globus_l_xio_smtp_write(
-    void *                                  driver_specific_handle,
-    const globus_xio_iovec_t *              iovec,
-    int                                     iovec_count,
-    globus_xio_operation_t                  op)
+    void *                              driver_specific_handle,
+    const globus_xio_iovec_t *          iovec,
+    int                                 iovec_count,
+    globus_xio_operation_t              op)
 {
-    globus_result_t                         res;
-    globus_size_t                           wait_for;
-    l_smtp_info_t *                         info;
+    globus_result_t                     res;
+    globus_size_t                       wait_for;
+    l_smtp_info_t *                     info;
 
     info = (l_smtp_info_t *) driver_specific_handle;
 
@@ -425,21 +419,21 @@ globus_l_xio_smtp_write(
 
 static globus_result_t
 globus_l_xio_smtp_read(
-    void *                                  driver_specific_handle,
-    const globus_xio_iovec_t *              iovec,
-    int                                     iovec_count,
-    globus_xio_operation_t                  op)
+    void *                              driver_specific_handle,
+    const globus_xio_iovec_t *          iovec,
+    int                                 iovec_count,
+    globus_xio_operation_t              op)
 {
     return ErrorWriteOnly();
 }
 
 static globus_result_t
 globus_l_xio_smtp_load(
-    globus_xio_driver_t *                   out_driver,
-    va_list                                 ap)
+    globus_xio_driver_t *               out_driver,
+    va_list                             ap)
 {
-    globus_xio_driver_t                     driver;
-    globus_result_t                         res;
+    globus_xio_driver_t                 driver;
+    globus_result_t                     res;
 
     res = globus_xio_driver_init(&driver, "smtp", NULL);
     if(res != GLOBUS_SUCCESS)
@@ -472,7 +466,7 @@ globus_l_xio_smtp_load(
 
 static void
 globus_l_xio_smtp_unload(
-    globus_xio_driver_t                     driver)
+    globus_xio_driver_t                 driver)
 {
     globus_xio_driver_destroy(driver);
 }
@@ -482,8 +476,8 @@ static
 int
 globus_l_xio_smtp_activate(void)
 {
-    int                                     rc;
-    struct passwd *                         pw_ent;
+    int                                 rc;
+    struct passwd *                     pw_ent;
 
     rc = globus_module_activate(GLOBUS_COMMON_MODULE);
 

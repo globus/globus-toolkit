@@ -18,7 +18,6 @@ blocking_dd_main(
     int                                     ctr;
     globus_xio_stack_t                      stack;
     globus_xio_handle_t                     handle;
-    globus_xio_target_t                     target;
     globus_result_t                         res;
     globus_xio_attr_t                       attr;
     globus_byte_t *                         buffer;
@@ -46,10 +45,10 @@ blocking_dd_main(
     globus_mutex_init(&globus_l_mutex, NULL);
     globus_cond_init(&globus_l_cond, NULL);
 
-    res = globus_xio_target_init(&target, NULL, "whatever", stack);
+    res = globus_xio_handle_create(&handle, stack);
     test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
 
-    res = globus_xio_open(&handle, NULL, target);
+    res = globus_xio_open(handle, "whatever", NULL);
     test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
 
     buffer = globus_l_test_info.buffer;

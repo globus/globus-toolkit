@@ -11,7 +11,6 @@ attr_main(
 {
     int                                     rc;
     globus_xio_stack_t                      stack;
-    globus_xio_target_t                     target;
     globus_result_t                         res;
     globus_xio_attr_t                       attr;
     globus_xio_attr_t                       cp_attr;
@@ -45,15 +44,15 @@ attr_main(
     {
         failed_exit("bad parameter init() should have failed.\n");
     }
-    res = globus_xio_target_init(NULL, NULL, "whatever", NULL);
+    res = globus_xio_handle_create(NULL, NULL);
     if(res == GLOBUS_SUCCESS)
     {
-        failed_exit("bad parameter init() should have failed.\n");
+        failed_exit("bad parameter create() should have failed.\n");
     }
-    res = globus_xio_target_init(&target, NULL, "whatever", NULL);
+    res = globus_xio_handle_create(&handle, NULL);
     if(res == GLOBUS_SUCCESS)
     {
-        failed_exit("bad parameter init() should have failed.\n");
+        failed_exit("bad parameter create() should have failed.\n");
     }
     
     res = globus_xio_attr_init(&attr);
@@ -62,10 +61,10 @@ attr_main(
     res = globus_xio_stack_init(&stack, NULL);
     test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
 
-    res = globus_xio_target_init(&target, NULL, "whatever", stack);
+    res = globus_xio_handle_create(&handle, stack);
     if(res == GLOBUS_SUCCESS)
     {
-        failed_exit("target_init() should have failed. empty stack\n");
+        failed_exit("handle_create() should have failed. empty stack\n");
     }
 
     res = globus_xio_stack_push_driver(stack, debug_driver);
@@ -86,11 +85,13 @@ attr_main(
     res = globus_xio_stack_push_driver(stack, debug_driver);
     test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
 
-    res = globus_xio_target_init(&target, NULL, "whatever", stack);
+    res = globus_xio_handle_create(&handle, stack);
     test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
-    res = globus_xio_target_destroy(target);
+    res = globus_xio_close(handle, NULL);
     test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
-    res = globus_xio_target_init(&target, NULL, "whatever", stack);
+    res = globus_xio_handle_create(&handle, stack);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
+    res = globus_xio_register_close(handle, NULL, NULL, NULL);
     test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
     /*
      *  do some operations
@@ -131,12 +132,6 @@ attr_main(
         failed_exit("bad parameter init() should have failed.\n");
     }
 
-    res = globus_xio_target_destroy(NULL);
-    if(res == GLOBUS_SUCCESS)
-    {
-        failed_exit("bad parameter init() should have failed.\n");
-    }
-
     res = globus_xio_stack_destroy(NULL);
     if(res == GLOBUS_SUCCESS)
     {
@@ -151,20 +146,11 @@ attr_main(
     {
         failed_exit("bad parameter init() should have failed.\n");
     }
-
-    res = globus_xio_open(NULL, NULL, target);
-    if(res == GLOBUS_SUCCESS)
-    {
-        failed_exit("bad parameter init() should have failed.\n");
-    }
-
-    res = globus_xio_open(&handle, NULL, NULL);
-    if(res == GLOBUS_SUCCESS)
-    {
-        failed_exit("bad parameter init() should have failed.\n");
-    }
-
-    res = globus_xio_open(&handle, NULL, target);
+    
+    res = globus_xio_handle_create(&handle, stack);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
+    
+    res = globus_xio_open(handle, "whatever", NULL);
     test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
 
     /* reads */

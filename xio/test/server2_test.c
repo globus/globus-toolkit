@@ -26,7 +26,7 @@ close_cb(
 static void
 accept_close_cb(
     globus_xio_server_t                         server,
-    globus_xio_target_t                         target,
+    globus_xio_handle_t                         handle,
     globus_result_t                             result,
     void *                                      user_arg)
 {
@@ -55,13 +55,13 @@ accept_close_cb(
 static void
 accept_cb(
     globus_xio_server_t                         server,
-    globus_xio_target_t                         target,
+    globus_xio_handle_t                         handle,
     globus_result_t                             result,
     void *                                      user_arg)
 {
-    globus_xio_target_t *                       t;
+    globus_xio_handle_t *                       h;
 
-    t = (globus_xio_target_t *) user_arg;
+    h = (globus_xio_handle_t *) user_arg;
 
     if(globus_l_closed)
     {
@@ -71,7 +71,7 @@ accept_cb(
     globus_mutex_lock(&globus_l_mutex);
     {
         globus_l_cb_cnt++;
-        *t = target;
+        *h = handle;
         globus_l_accepted++;
         globus_cond_signal(&globus_l_cond);
     }
@@ -85,10 +85,10 @@ server2_main(
 {
     int                                     rc;
     globus_xio_stack_t                      stack;
-    globus_xio_target_t                     target;
     globus_result_t                         res;
     globus_xio_server_t                     server;
     globus_xio_attr_t                       attr;
+    globus_xio_handle_t                     handle;
     int                                     accept_count = 0;
 
     globus_l_cb_cnt = 0;
@@ -116,24 +116,22 @@ server2_main(
     test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
 
     /* blocking */
-    res = globus_xio_server_accept(&target, server, NULL);
+    res = globus_xio_server_accept(&handle, server);
 
     globus_mutex_lock(&globus_l_mutex);
     {
         /* non blocking */
         res = globus_xio_server_register_accept(
                 server,
-                NULL,
                 accept_cb,
-                &target);
+                &handle);
         test_res(GLOBUS_XIO_TEST_FAIL_PASS_ACCEPT, res, __LINE__, __FILE__);
         accept_count++;
         /* should fail */
         res = globus_xio_server_register_accept(
                 server,
-                NULL,
                 accept_cb,
-                &target);
+                &handle);
         if(res == GLOBUS_SUCCESS)
         {
 #           if defined(BUILD_LITE)
@@ -160,9 +158,8 @@ server2_main(
         globus_l_cb_cnt = 0;
         res = globus_xio_server_register_accept(
                 server,
-                NULL,
                 accept_cb,
-                &target);
+                &handle);
         test_res(GLOBUS_XIO_TEST_FAIL_PASS_ACCEPT, res, __LINE__, __FILE__);
         res = globus_xio_server_register_close(
                 server,
@@ -180,9 +177,8 @@ server2_main(
         globus_l_cb_cnt = 0;
         res = globus_xio_server_register_accept(
                 server,
-                NULL,
                 accept_close_cb,
-                &target);
+                &handle);
         test_res(GLOBUS_XIO_TEST_FAIL_PASS_ACCEPT, res, __LINE__, __FILE__);
         while(globus_l_cb_cnt < 2)
         {

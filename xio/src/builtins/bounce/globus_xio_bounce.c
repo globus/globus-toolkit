@@ -14,7 +14,7 @@ globus_l_xio_bounce_deactivate();
 
 #include "version.h"
 
-globus_module_descriptor_t  globus_i_xio_bounce_module =
+globus_module_descriptor_t              globus_i_xio_bounce_module =
 {
     "globus_xio_bounce",
     globus_l_xio_bounce_activate,
@@ -111,7 +111,7 @@ test_bounce_finish_op(
             break;
     
         case TEST_OPEN:
-            globus_xio_driver_finished_open(NULL,
+            globus_xio_driver_finished_open(
                 info->handle, op, info->res);
             break;
 
@@ -219,12 +219,12 @@ test_bounce_next_op(
 
 void
 bounce_cb(
-    globus_xio_operation_t                  op,
-    globus_result_t                         result,
-    void *                                  user_arg)
+    globus_xio_operation_t              op,
+    globus_result_t                     result,
+    void *                              user_arg)
 {
-    bounce_info_t *                         info;
-    globus_result_t                         res;
+    bounce_info_t *                     info;
+    globus_result_t                     res;
     GlobusXIOName(bounce_cb);
 
     GlobusXIODebugInternalEnter();
@@ -254,13 +254,13 @@ bounce_cb(
 
 void
 bounce_data_cb(
-    globus_xio_operation_t                  op,
-    globus_result_t                         result,
-    globus_size_t                           nbytes,
-    void *                                  user_arg)
+    globus_xio_operation_t              op,
+    globus_result_t                     result,
+    globus_size_t                       nbytes,
+    void *                              user_arg)
 {
-    bounce_info_t *                         info;
-    globus_result_t                         res;
+    bounce_info_t *                     info;
+    globus_result_t                     res;
     GlobusXIOName(bounce_data_cb);
 
     GlobusXIODebugInternalEnter();
@@ -286,11 +286,11 @@ bounce_data_cb(
 
 static void
 close_bounce_cb(
-    globus_xio_operation_t                  op,
-    globus_result_t                         result,
-    void *                                  user_arg)
+    globus_xio_operation_t              op,
+    globus_result_t                     result,
+    void *                              user_arg)
 {
-    bounce_info_t *                         info;
+    bounce_info_t *                     info;
 
     info = (bounce_info_t *) user_arg;
     /* verify close callback isn't called twice */
@@ -302,11 +302,11 @@ close_bounce_cb(
 
 static void
 open_bounce_cb(
-    globus_xio_operation_t                  op,
-    globus_result_t                         result,
-    void *                                  user_arg)
+    globus_xio_operation_t              op,
+    globus_result_t                     result,
+    void *                              user_arg)
 {
-    bounce_info_t *                         info;
+    bounce_info_t *                     info;
 
     info = (bounce_info_t *) user_arg;
     /* verify open callback isn't called twice */
@@ -318,7 +318,8 @@ open_bounce_cb(
 
 globus_result_t
 globus_l_xio_bounce_open(
-    void *                              driver_target,
+    const globus_xio_contact_t *        contact_info,
+    void *                              driver_link,
     void *                              driver_attr,
     globus_xio_operation_t              op)
 {
@@ -340,8 +341,8 @@ globus_l_xio_bounce_open(
     info->handle->closed_cb = GLOBUS_FALSE;
     info->handle->open_cb = GLOBUS_FALSE;
 
-    res = globus_xio_driver_pass_open(NULL, op, 
-                open_bounce_cb, (void*)info);
+    res = globus_xio_driver_pass_open(
+        op, contact_info, open_bounce_cb, (void*)info);
     if(res != GLOBUS_SUCCESS)
     {
         bounce_handle_destroy(info->handle);
@@ -361,7 +362,6 @@ static globus_result_t
 globus_l_xio_bounce_close(
     void *                              driver_handle,
     void *                              attr,
-    globus_xio_driver_handle_t          dh,
     globus_xio_operation_t              op)
 {
     bounce_info_t *                     info;

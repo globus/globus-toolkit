@@ -12,9 +12,9 @@ globus_l_xio_op_deactivate();
 
 void
 globus_l_xio_op_close_cb(
-    globus_xio_operation_t                  op,
-    globus_result_t                         result,
-    void *                                  user_arg);
+    globus_xio_operation_t              op,
+    globus_result_t                     result,
+    void *                              user_arg);
 
 void
 globus_l_xio_op_obb_read_cb(
@@ -25,13 +25,13 @@ globus_l_xio_op_obb_read_cb(
 
 typedef struct globus_l_xio_op_handle_s
 {
-    int                                     count;
-    globus_mutex_t                          mutex;
-    globus_xio_iovec_t                      iovec;
-    globus_byte_t                           bs_buf[1];
+    int                                 count;
+    globus_mutex_t                      mutex;
+    globus_xio_iovec_t                  iovec;
+    globus_byte_t                       bs_buf[1];
 
-    globus_xio_operation_t                  close_op;
-    globus_xio_driver_handle_t              driver_handle;
+    globus_xio_operation_t              close_op;
+    globus_xio_driver_handle_t          driver_handle;
 } globus_l_xio_op_handle_t;
 
 #include "version.h"
@@ -45,14 +45,6 @@ globus_module_descriptor_t  globus_i_xio_op_module =
     GLOBUS_NULL,
     &local_version
 };
-
-globus_result_t
-globus_l_xio_op_target_destroy(
-    void *                              driver_target)
-{
-    return GLOBUS_SUCCESS;
-}
-
 
 /*
  *  read
@@ -172,19 +164,20 @@ globus_l_xio_op_open_cb(
         }
     }
 
-    globus_xio_driver_finished_open(NULL, op_handle, op, result);
+    globus_xio_driver_finished_open(op_handle, op, result);
 }   
 
 static
 globus_result_t
 globus_l_xio_op_open(
-    void *                              driver_target,
+    const globus_xio_contact_t *        contact_info,
+    void *                              driver_link,
     void *                              driver_attr,
     globus_xio_operation_t              op)
 {
     globus_result_t                     res;
   
-    res = globus_xio_driver_pass_open(NULL, op,
+    res = globus_xio_driver_pass_open(op, contact_info,
         globus_l_xio_op_open_cb, NULL);
 
     return res;
@@ -207,7 +200,6 @@ globus_result_t
 globus_l_xio_op_close(
     void *                              driver_specific_handle,
     void *                              attr,
-    globus_xio_driver_handle_t          driver_handle,
     globus_xio_operation_t              op)
 {
     globus_result_t                     res = GLOBUS_SUCCESS;

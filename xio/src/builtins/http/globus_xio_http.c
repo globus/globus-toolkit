@@ -56,16 +56,11 @@ globus_l_xio_http_load(
         globus_i_xio_http_handle_cntl,
 	NULL);
 
-    globus_xio_driver_set_client(
-        driver,
-        globus_i_xio_http_target_init,
-        NULL,
-        globus_i_xio_http_target_destroy);
-
     globus_xio_driver_set_server(
         driver,
         NULL,
         globus_i_xio_http_accept,
+        NULL,
         NULL,
         NULL,
         globus_i_xio_http_target_destroy);

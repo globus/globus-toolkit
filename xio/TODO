@@ -1,12 +1,11 @@
 
-attr only on server init and open
-
-get rid of context in transport
-get rid of context close
-
 need clean method of getting contact string
 
 get rid of macros so we can hide types
+
+add globus_io_register_select
+
+make drivers use their own error macros
 
 --------------------
 
@@ -20,12 +19,13 @@ also, if something like target init or server accept fails somewhere along the w
 
 6) add globus_assert(result != success || prev_res == success)
 
--- take ref on driver handle to prevent close barrier
+-- take ref on driver handle to enable close barrier (http driver could use
+   this while writing eof
 -- something to do with target destroy
 
 should pass close respect cancel?  definitely not when TOP LEVEL op is open
 
-caching shit needs to be finished
+caching needs to be finished
 
 dont do unnecessary error_get/puts
 

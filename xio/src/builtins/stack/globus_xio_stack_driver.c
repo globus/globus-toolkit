@@ -24,16 +24,16 @@ globus_module_descriptor_t  globus_i_xio_stack_module =
 
 typedef struct globus_l_xio_stack_info_s
 {
-    globus_xio_driver_t                     debug_driver;
-    globus_xio_driver_t                     test_driver;
+    globus_xio_driver_t                 debug_driver;
+    globus_xio_driver_t                 test_driver;
 } globus_l_xio_stack_info_t;
 
 static globus_result_t
 globus_l_xio_stack_push(
-    globus_xio_driver_t                     driver,
-    globus_xio_stack_t                      stack)
+    globus_xio_driver_t                 driver,
+    globus_xio_stack_t                  stack)
 {
-    globus_l_xio_stack_info_t *             stack_info;
+    globus_l_xio_stack_info_t *         stack_info;
 
     globus_xio_driver_get_user_data(driver, (void **)&stack_info);
 
@@ -73,6 +73,7 @@ globus_l_xio_stack_load(
 
     globus_xio_driver_set_server(
         driver,
+        NULL,
         NULL,
         NULL,
         NULL,

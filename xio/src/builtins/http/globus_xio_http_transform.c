@@ -28,6 +28,7 @@ globus_l_xio_http_reopen(
 static
 globus_result_t
 globus_l_xio_http_open(
+    const globus_xio_contact_t *        contact_info,
     void *                              target,
     void *                              attr,
     globus_xio_operation_t              op);
@@ -92,14 +93,25 @@ globus_l_xio_http_server_close_kickout(
  */
 globus_result_t
 globus_i_xio_http_open(
-    void *                              target,
+    const globus_xio_contact_t *        contact_info,
+    void *                              link,
     void *                              attr,
     globus_xio_operation_t              op)
 {
     globus_result_t                     result;
+    globus_i_xio_http_target_t *        target = NULL;
     globus_i_xio_http_handle_t *        http_handle;
     GlobusXIOName(globus_i_xio_http_open);
-
+    
+    if(link)
+    {
+        target = (globus_i_xio_http_target_t *) link;
+    }
+    else
+    {
+        result = globus_i_xio_http_target_init(&target, contact_info);
+    }
+    
     http_handle = globus_l_xio_http_find_cached_handle(target, attr);
 
     if (http_handle != NULL)
@@ -108,9 +120,14 @@ globus_i_xio_http_open(
     }
     else
     {
-        result = globus_l_xio_http_open(target, attr, op);
+        result = globus_l_xio_http_open(contact_info, target, attr, op);
     }
-
+    
+    if(!link && target)
+    {
+        globus_i_xio_http_target_destroy(target);
+    }
+    
     return result;
 }
 /* globus_i_xio_http_open() */
@@ -174,6 +191,7 @@ error_exit:
 static
 globus_result_t
 globus_l_xio_http_open(
+    const globus_xio_contact_t *        contact_info,
     void *                              target,
     void *                              attr,
     globus_xio_operation_t              op)
@@ -182,6 +200,8 @@ globus_l_xio_http_open(
     globus_i_xio_http_handle_t *        http_handle;
     globus_i_xio_http_attr_t *          http_attr = attr;
     globus_xio_driver_callback_t        open_callback;
+    globus_xio_contact_t                new_contact_info;
+    char                                port_buf[12];
     GlobusXIOName(globus_l_xio_http_open);
 
     http_handle = globus_libc_calloc(1, sizeof(globus_i_xio_http_handle_t));
@@ -227,10 +247,16 @@ globus_l_xio_http_open(
         open_callback = globus_i_xio_http_server_open_callback;
         http_handle->send_state = GLOBUS_XIO_HTTP_STATUS_LINE;
     }
+    
+    memcpy(&new_contact_info, contact_info, sizeof(new_contact_info));
+    snprintf(port_buf, sizeof(port_buf), "%hu", http_handle->target_info.port);
+    new_contact_info.port = port_buf;
+    
+    http_handle->handle = GlobusXIOOperationGetDriverHandle(op);
 
     result = globus_xio_driver_pass_open(
-        &http_handle->handle,
         op,
+        &new_contact_info,
         open_callback,
         http_handle);
 
@@ -1399,10 +1425,6 @@ globus_i_xio_http_write_callback(
  *     Void pointer to a #globus_i_xio_http_handle_t.
  * @param attr
  *     Close attributes. (Ignored by the HTTP driver).
- * @param driver_handle
- *     XIO driver handle associated with this handle which we are closing.
- *     We ignore this now, as we receive this value when we open the 
- *     handle and store it in the HTTP handle.
  * @param op
  *     Operation associated with the close.
  *
@@ -1416,7 +1438,6 @@ globus_result_t
 globus_i_xio_http_close(
     void *                              handle,
     void *                              attr,
-    globus_xio_driver_handle_t          driver_handle,
     globus_xio_operation_t              op)
 {
     globus_result_t                     result;

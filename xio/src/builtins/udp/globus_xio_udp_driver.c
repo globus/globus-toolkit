@@ -65,10 +65,8 @@ static globus_module_descriptor_t       globus_i_xio_udp_module =
  */
 typedef struct
 {
-    /* target attrs */
-    globus_xio_system_handle_t          handle;
-    
     /* handle attrs */
+    globus_xio_system_handle_t          handle;
     char *                              listener_serv;
     int                                 listener_port;
     int                                 listener_min_port;
@@ -104,16 +102,6 @@ static globus_l_attr_t                  globus_l_xio_udp_attr_default =
     GLOBUS_FALSE,                       /* use_addr */
     {0}                                 /* addr */
 };
-
-/*
- *  target structure
- */
-typedef struct
-{
-    char *                              host;
-    char *                              port;
-    globus_xio_system_handle_t          handle;
-} globus_l_target_t;
 
 /*
  *  handle structure
@@ -269,7 +257,7 @@ globus_l_xio_udp_attr_cntl(
     switch(cmd)
     {
       /**
-       *  target attrs
+       *  handle attrs
        */
       /* globus_xio_system_handle_t     handle */
       case GLOBUS_XIO_UDP_SET_HANDLE:
@@ -282,9 +270,6 @@ globus_l_xio_udp_attr_cntl(
         *out_handle = attr->handle;
         break;
        
-      /**
-       *  handle attrs
-       */
       /* char *                         service_name */
       case GLOBUS_XIO_UDP_SET_SERVICE:
         if(attr->listener_serv)
@@ -678,127 +663,6 @@ error_sockopt:
     return result;
 }
 
-/*
- *  initialize target structure
- */
-static
-globus_result_t
-globus_l_xio_udp_target_init(
-    void **                                 out_target,
-    globus_xio_operation_t                  target_op,
-    const globus_xio_contact_t *            contact_info,
-    void *                                  driver_attr)
-{
-    globus_l_target_t *                 target;
-    globus_l_attr_t *                   attr;
-    globus_result_t                     result;
-    GlobusXIOName(globus_l_xio_udp_target_init);
-    
-    attr = (globus_l_attr_t *) driver_attr;
-    
-    /* create the target structure and copy the contact string into it */
-    target = (globus_l_target_t *) globus_malloc(sizeof(globus_l_target_t));
-    if(!target)
-    {
-        result = GlobusXIOErrorMemory("target");
-        goto error_target;
-    }
-    
-    target->handle = GLOBUS_XIO_UDP_INVALID_HANDLE;
-    target->host = GLOBUS_NULL;
-    target->port = GLOBUS_NULL;
-    
-    if(!attr || attr->handle == GLOBUS_XIO_UDP_INVALID_HANDLE)
-    {
-        if(contact_info->host && contact_info->port)
-        {
-            target->host = globus_libc_strdup(contact_info->host);
-            if(!target->host)
-            {
-                result = GlobusXIOErrorMemory("host");
-                goto error_contact_string;
-            }
-            
-            target->port = globus_libc_strdup(contact_info->port);
-            if(!target->port)
-            {
-                result = GlobusXIOErrorMemory("port");
-                goto error_contact_string2;
-            }
-        }
-    }
-    else
-    {
-        target->handle = attr->handle;
-    }
-    
-    *out_target = target;
-
-    return GLOBUS_SUCCESS;
-
-error_contact_string2:
-    globus_free(target->host);
-    
-error_contact_string:
-    globus_free(target);
-    
-error_target:
-    return result;
-}
-
-static
-globus_result_t
-globus_l_xio_udp_target_cntl(
-    void *                              driver_target,
-    int                                 cmd,
-    va_list                             ap)
-{
-    globus_l_target_t *                 target;
-    globus_result_t                     result;
-    GlobusXIOName(globus_l_xio_udp_target_cntl);
-
-    target = (globus_l_target_t *) driver_target;
-    switch(cmd)
-    {
-      default:
-        result = GlobusXIOErrorInvalidCommand(cmd);
-        goto error_invalid;
-        break;
-    }
-
-    return GLOBUS_SUCCESS;
-
-error_invalid:
-    return result;
-}
-
-/*
- *  destroy the target structure
- */
-static
-globus_result_t
-globus_l_xio_udp_target_destroy(
-    void *                              driver_target)
-{
-    globus_l_target_t *                 target;
-    GlobusXIOName(globus_l_xio_udp_target_destroy);
-    
-    target = (globus_l_target_t *) driver_target;
-    
-    if(target->host)
-    {
-        globus_free(target->host);
-    }
-    if(target->port)
-    {
-        globus_free(target->port);
-    }
-    
-    globus_free(target);
-
-    return GLOBUS_SUCCESS;
-}
-
 static
 globus_result_t
 globus_l_xio_udp_bind(
@@ -1089,17 +953,16 @@ error_getaddrinfo:
 static
 globus_result_t
 globus_l_xio_udp_open(
-    void *                              driver_target,
+    const globus_xio_contact_t *        contact_info,
+    void *                              driver_link,
     void *                              driver_attr,
     globus_xio_operation_t              op)
 {
     globus_l_handle_t *                 handle;
-    globus_l_target_t *                 target;
     const globus_l_attr_t *             attr;
     globus_result_t                     result;
     GlobusXIOName(globus_l_xio_udp_open);
     
-    target = (globus_l_target_t *) driver_target;
     attr = (globus_l_attr_t *) 
         (driver_attr ? driver_attr : &globus_l_xio_udp_attr_default);
     
@@ -1111,7 +974,7 @@ globus_l_xio_udp_open(
         goto error_handle;
     }
     
-    if(target->handle == GLOBUS_XIO_UDP_INVALID_HANDLE)
+    if(attr->handle == GLOBUS_XIO_UDP_INVALID_HANDLE)
     {
         /* setup the local side */
         result = globus_l_xio_udp_create_listener(handle, attr);
@@ -1124,7 +987,7 @@ globus_l_xio_udp_open(
     }
     else
     {
-        handle->handle = target->handle;
+        handle->handle = attr->handle;
         handle->converted = GLOBUS_TRUE;
         result = globus_l_xio_udp_apply_handle_attrs(
             attr, handle->handle, GLOBUS_TRUE);
@@ -1138,9 +1001,10 @@ globus_l_xio_udp_open(
     
     /* if a peer has been chosen, bind them */
     /* XXX need to check into ipv4/6 mismatches between local and remote */
-    if(target->host && target->port)
+    if(contact_info->host && contact_info->port)
     {
-        result = globus_l_xio_udp_connect(handle, target->host, target->port);
+        result = globus_l_xio_udp_connect(
+            handle, contact_info->host, contact_info->port);
         if(result != GLOBUS_SUCCESS)
         {
             result = GlobusXIOErrorWrapFailed(
@@ -1149,7 +1013,7 @@ globus_l_xio_udp_open(
         }
     }
     
-    globus_xio_driver_finished_open(GLOBUS_NULL, handle, op, GLOBUS_SUCCESS);
+    globus_xio_driver_finished_open(handle, op, GLOBUS_SUCCESS);
     
     return GLOBUS_SUCCESS;
 
@@ -1193,7 +1057,6 @@ globus_result_t
 globus_l_xio_udp_close(
     void *                              driver_specific_handle,
     void *                              attr,
-    globus_xio_driver_handle_t          driver_handle,
     globus_xio_operation_t              op)
 {
     globus_l_handle_t *                 handle;
@@ -1399,6 +1262,7 @@ globus_l_xio_udp_cntl(
     globus_size_t                       len;
     int                                 flags;
     char **                             out_string;
+    globus_xio_system_handle_t *        out_handle;
     globus_xio_contact_t                contact_info;
     GlobusXIOName(globus_l_xio_udp_cntl);
 
@@ -1408,6 +1272,12 @@ globus_l_xio_udp_cntl(
     
     switch(cmd)
     {
+      /* globus_xio_system_handle_t *   handle_out */
+      case GLOBUS_XIO_UDP_GET_HANDLE:
+        out_handle = va_arg(ap, globus_xio_system_handle_t *);
+        *out_handle = fd;
+        break;
+        
       /* int                            sndbuf */
       case GLOBUS_XIO_UDP_SET_SNDBUF:
         in_int = va_arg(ap, int);
@@ -1570,12 +1440,6 @@ globus_l_xio_udp_init(
         globus_l_xio_udp_read,
         globus_l_xio_udp_write,
         globus_l_xio_udp_cntl);
-
-    globus_xio_driver_set_client(
-        driver,
-        globus_l_xio_udp_target_init,
-        globus_l_xio_udp_target_cntl,
-        globus_l_xio_udp_target_destroy);
     
     globus_xio_driver_set_attr(
         driver,

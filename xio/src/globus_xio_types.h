@@ -9,7 +9,6 @@
  ************************************************************************/
 typedef struct globus_i_xio_handle_s *          globus_xio_handle_t;
 typedef struct globus_i_xio_context_entry_s *   globus_xio_driver_handle_t;
-typedef struct globus_i_xio_op_s *              globus_xio_target_t;
 typedef struct globus_i_xio_op_s *              globus_xio_operation_t;
 typedef struct globus_i_xio_driver_s *          globus_xio_driver_t;
 typedef struct globus_i_xio_attr_s *            globus_xio_attr_t;
@@ -39,7 +38,6 @@ typedef enum globus_i_xio_op_type_e
     GLOBUS_XIO_OPERATION_TYPE_READ,
     GLOBUS_XIO_OPERATION_TYPE_WRITE,
     GLOBUS_XIO_OPERATION_TYPE_ACCEPT,
-    GLOBUS_XIO_OPERATION_TYPE_CLIENT,
     GLOBUS_XIO_OPERATION_TYPE_DRIVER,
     GLOBUS_XIO_OPERATION_TYPE_DD
 } globus_xio_operation_type_t;
@@ -104,14 +102,14 @@ typedef enum
 
 typedef struct
 {
-    char *                                  unparsed;
-    char *                                  resource;
-    char *                                  host;
-    char *                                  port;
-    char *                                  scheme;
-    char *                                  user;
-    char *                                  pass;
-    char *                                  subject;
+    char *                              unparsed;
+    char *                              resource;
+    char *                              host;
+    char *                              port;
+    char *                              scheme;
+    char *                              user;
+    char *                              pass;
+    char *                              subject;
 } globus_xio_contact_t;
 
 #endif

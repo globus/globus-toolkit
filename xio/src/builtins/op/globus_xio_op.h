@@ -3,7 +3,7 @@
 
 #include "globus_common.h"
 
-extern globus_module_descriptor_t  globus_i_xio_op_module;
+extern globus_module_descriptor_t       globus_i_xio_op_module;
 
 #define GLOBUS_XIO_DRIVER_OP_MODULE &globus_i_xio_op_module
 

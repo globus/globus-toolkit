@@ -51,9 +51,6 @@ globus_i_xio_http_server_read_next_request_callback(
  *
  * @param driver_server
  *     Void * pointing to a server structure. Not used yet.
- * @param driver_attr
- *     Void * pointing to a driver-specific target attribute structure. Target
- *     attributes are not implemented in the HTTP driver, so this is ignored.
  * @param accept_op
  *     Operation associated with the accept.
  *
@@ -64,7 +61,6 @@ globus_i_xio_http_server_read_next_request_callback(
 globus_result_t
 globus_i_xio_http_accept(
     void *                              driver_server,
-    void *                              driver_attr,
     globus_xio_operation_t              accept_op)
 {
     return globus_xio_driver_pass_accept(accept_op,
@@ -150,14 +146,12 @@ globus_i_xio_http_server_open_callback(
     void *                              user_arg)
 {
     globus_i_xio_http_handle_t *        http_handle = user_arg;
-    globus_xio_driver_handle_t          handle;
     globus_bool_t                       pass_close_on_error = GLOBUS_TRUE;
     globus_result_t                     result2;
     GlobusXIOName(globus_i_xio_http_server_open_callback);
 
     globus_mutex_lock(&http_handle->mutex);
 
-    handle = http_handle->handle;
     if (result != GLOBUS_SUCCESS)
     {
         pass_close_on_error = GLOBUS_FALSE;
@@ -244,7 +238,6 @@ destroy_handle_exit:
     }
 
     globus_xio_driver_finished_open(
-            handle,
             http_handle,
             op,
             result);
@@ -768,7 +761,6 @@ globus_i_xio_http_server_read_request_callback(
     globus_mutex_unlock(&http_handle->mutex);
 
     globus_xio_driver_finished_open(
-            http_handle->handle,
             http_handle,
             op,
             result);
@@ -809,7 +801,6 @@ error_exit:
     globus_mutex_unlock(&http_handle->mutex);
 
     globus_xio_driver_finished_open(
-            http_handle->handle,
             http_handle,
             op,
             result);

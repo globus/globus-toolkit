@@ -18,16 +18,10 @@ typedef enum
 typedef enum
 {
     /**
-     *  target attrs
+     *  handle attrs
      */
     /* globus_xio_system_handle_t       handle */
     GLOBUS_XIO_UDP_SET_HANDLE,
-    /* globus_xio_system_handle_t *     handle_out */
-    GLOBUS_XIO_UDP_GET_HANDLE,
-    
-    /**
-     *  handle attrs
-     */
     /* const char *                     service_name */
     GLOBUS_XIO_UDP_SET_SERVICE,
     /* char **                          service_name_out */
@@ -62,6 +56,8 @@ typedef enum
     /**
      *  handle attrs/cntls
      */
+    /* globus_xio_system_handle_t *     handle_out */
+    GLOBUS_XIO_UDP_GET_HANDLE,
     /* int                              sndbuf */
     GLOBUS_XIO_UDP_SET_SNDBUF,
     /* int *                            sndbuf_out */

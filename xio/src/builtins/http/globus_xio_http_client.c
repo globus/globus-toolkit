@@ -62,12 +62,10 @@ globus_i_xio_http_client_open_callback(
     void *                              user_arg)
 {
     globus_i_xio_http_handle_t *        http_handle = user_arg;
-    globus_xio_driver_handle_t          handle;
     globus_result_t                     result2;
 
     globus_mutex_lock(&http_handle->mutex);
 
-    handle = http_handle->handle;
     if (result != GLOBUS_SUCCESS)
     {
         http_handle->send_state = GLOBUS_XIO_HTTP_CLOSE;
@@ -127,7 +125,6 @@ destroy_handle_exit:
         http_handle = NULL;
     }
     globus_xio_driver_finished_open(
-            handle,
             http_handle,
             op,
             result);
@@ -510,7 +507,6 @@ globus_l_xio_http_client_write_request_callback(
     globus_mutex_unlock(&http_handle->mutex);
 
     globus_xio_driver_finished_open(
-            http_handle->handle,
             http_handle,
             op,
             result);
@@ -528,7 +524,6 @@ error_exit:
     globus_mutex_unlock(&http_handle->mutex);
 
     globus_xio_driver_finished_open(
-            http_handle->handle,
             http_handle,
             op,
             result);

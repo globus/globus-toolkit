@@ -12,7 +12,6 @@ stack_main(
     globus_xio_driver_t                     stack_driver;
     globus_xio_stack_t                      stack;
     globus_xio_handle_t                     handle;
-    globus_xio_target_t                     target;
     globus_result_t                         res;
     globus_byte_t                           buffer[1024];
 
@@ -29,13 +28,13 @@ stack_main(
     res = globus_xio_stack_push_driver(stack, stack_driver);
     test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
 
-    res = globus_xio_target_init(&target, NULL, "whatever", stack);
+    res = globus_xio_handle_create(&handle, stack);
     test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
 
     res = globus_xio_open(
-        &handle,
-        NULL,
-        target);
+        handle,
+        "whatever",
+        NULL);
     test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
 
     res = globus_xio_write(

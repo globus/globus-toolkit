@@ -22,7 +22,7 @@ static
 void
 http_l_test_server_accept_callback(
     globus_xio_server_t                 server,
-    globus_xio_target_t                 target,
+    globus_xio_handle_t                 handle,
     globus_result_t                     result,
     void *                              user_arg);
 
@@ -311,7 +311,6 @@ http_test_server_run(
         {
             result = globus_xio_server_register_accept(
                     server->server,
-                    NULL,
                     http_l_test_server_accept_callback,
                     server);
 
@@ -459,7 +458,7 @@ static
 void
 http_l_test_server_accept_callback(
     globus_xio_server_t                 server,
-    globus_xio_target_t                 target,
+    globus_xio_handle_t                 handle,
     globus_result_t                     result,
     void *                              user_arg)
 {
@@ -501,11 +500,12 @@ http_l_test_server_accept_callback(
         goto destroy_attr_exit;
     }
     */
-
+    
+    test_server->handle = handle;
     result = globus_xio_register_open(
-            &test_server->handle,
+            test_server->handle,
+            NULL,
             attr,
-            target,
             http_l_test_server_open_callback,
             test_server);
 
@@ -614,7 +614,6 @@ http_test_client_request(
 {
     char *                              url;
     char *                              fmt = "http://%s/%s";
-    globus_xio_target_t                 target;
     globus_xio_attr_t                   attr;
     int                                 i;
     globus_result_t                     result = GLOBUS_SUCCESS;
@@ -630,7 +629,7 @@ http_test_client_request(
 
     sprintf(url, fmt, contact, uri);
 
-    result = globus_xio_target_init(&target, NULL, url, stack);
+    result = globus_xio_handle_create(new_handle, stack);
 
     if (result != GLOBUS_SUCCESS)
     {
@@ -708,21 +707,13 @@ http_test_client_request(
     }
 
     result = globus_xio_open(
-            new_handle,
-            attr,
-            target);
-
-    if (result == GLOBUS_SUCCESS)
-    {
-        target = NULL;
-    }
+            *new_handle,
+            url, 
+            attr);
 
 destroy_attr_exit:
     globus_xio_attr_destroy(attr);
-    if (target)
-    {
-        globus_xio_target_destroy(target);
-    }
+
 free_url_exit:
     globus_libc_free(url);
 error_exit:

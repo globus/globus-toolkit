@@ -68,15 +68,6 @@ static const globus_l_attr_t            globus_l_xio_file_attr_default =
 };
 
 /*
- *  target structure
- */
-typedef struct
-{
-    char *                              pathname;
-    globus_xio_system_handle_t          handle;
-} globus_l_target_t;
-
-/*
  *  handle structure
  */
 typedef struct
@@ -276,95 +267,6 @@ globus_l_xio_file_attr_destroy(
     return GLOBUS_SUCCESS;
 }
 
-/*
- *  initialize target structure
- */
-static
-globus_result_t
-globus_l_xio_file_target_init(
-    void **                             out_target,
-    globus_xio_operation_t              target_op,
-    const globus_xio_contact_t *        contact_info,
-    void *                              driver_attr)
-{
-    globus_l_target_t *                 target;
-    globus_l_attr_t *                   attr;
-    globus_result_t                     result;
-    GlobusXIOName(globus_l_xio_file_target_init);
-    
-    GlobusXIOFileDebugEnter();
-    
-    attr = (globus_l_attr_t *) driver_attr;
-    
-    /* create the target structure and copy the contact string into it */
-    target = (globus_l_target_t *) globus_malloc(sizeof(globus_l_target_t));
-    if(!target)
-    {
-        result = GlobusXIOErrorMemory("target");
-        goto error_target;
-    }
-    
-    target->pathname = GLOBUS_NULL;
-    target->handle = GLOBUS_XIO_FILE_INVALID_HANDLE;
-    
-    if(!attr || attr->handle == GLOBUS_XIO_FILE_INVALID_HANDLE)
-    {
-        if(!contact_info->resource)
-        {
-            result = GlobusXIOErrorContactString("missing path");
-            goto error_pathname;
-        }
-    
-        target->pathname = globus_libc_strdup(contact_info->resource);
-        if(!target->pathname)
-        {
-            result = GlobusXIOErrorMemory("pathname");
-            goto error_pathname;
-        }
-    }
-    else
-    {
-        target->handle = attr->handle;
-    }
-    
-    *out_target = target;
-
-    GlobusXIOFileDebugExit();
-    return GLOBUS_SUCCESS;
-
-error_pathname:
-    globus_free(target);
-    
-error_target:
-    GlobusXIOFileDebugExitWithError();
-    return result;
-}
-
-/*
- *  destroy the target structure
- */
-static
-globus_result_t
-globus_l_xio_file_target_destroy(
-    void *                              driver_target)
-{
-    globus_l_target_t *                 target;
-    GlobusXIOName(globus_l_xio_file_target_destroy);
-    
-    GlobusXIOFileDebugEnter();
-    
-    target = (globus_l_target_t *) driver_target;
-    
-    if(target->pathname)
-    {
-        globus_free(target->pathname);
-    }
-    globus_free(target);
-    
-    GlobusXIOFileDebugExit();
-    return GLOBUS_SUCCESS;
-}
-
 static
 globus_result_t
 globus_l_xio_file_handle_init(
@@ -436,7 +338,6 @@ globus_l_xio_file_system_open_cb(
     }
     
     globus_xio_driver_finished_open(
-        GlobusXIOOperationGetDriverHandle(open_info->op),
         open_info->handle,
         open_info->op,
         result);
@@ -452,12 +353,12 @@ globus_l_xio_file_system_open_cb(
 static
 globus_result_t
 globus_l_xio_file_open(
-    void *                              driver_target,
+    const globus_xio_contact_t *        contact_info,
+    void *                              driver_link,
     void *                              driver_attr,
     globus_xio_operation_t              op)
 {
     globus_l_handle_t *                 handle;
-    const globus_l_target_t *           target;
     const globus_l_attr_t *             attr;
     globus_result_t                     result;
     globus_l_open_info_t *              open_info;
@@ -465,7 +366,6 @@ globus_l_xio_file_open(
     
     GlobusXIOFileDebugEnter();
     
-    target = (globus_l_target_t *) driver_target;
     attr = (globus_l_attr_t *) 
         driver_attr ? driver_attr : &globus_l_xio_file_attr_default;
     
@@ -477,8 +377,14 @@ globus_l_xio_file_open(
         goto error_handle;
     }
     
-    if(target->handle == GLOBUS_XIO_FILE_INVALID_HANDLE)
+    if(attr->handle == GLOBUS_XIO_FILE_INVALID_HANDLE)
     {
+        if(!contact_info->resource)
+        {
+            result = GlobusXIOErrorContactString("missing path");
+            goto error_pathname;
+        }
+        
         open_info = (globus_l_open_info_t *)
             globus_malloc(sizeof(globus_l_open_info_t));
         if(!open_info)
@@ -492,7 +398,7 @@ globus_l_xio_file_open(
         
         result = globus_xio_system_register_open(
             op,
-            target->pathname,
+            contact_info->resource,
             attr->flags,
             attr->mode,
             &handle->handle,
@@ -507,10 +413,9 @@ globus_l_xio_file_open(
     }
     else
     {
-        handle->handle = target->handle;
+        handle->handle = attr->handle;
         handle->converted = GLOBUS_TRUE;
-        globus_xio_driver_finished_open(
-            GLOBUS_NULL, handle, op, GLOBUS_SUCCESS);
+        globus_xio_driver_finished_open(handle, op, GLOBUS_SUCCESS);
     }
     
     GlobusXIOFileDebugExit();
@@ -518,8 +423,9 @@ globus_l_xio_file_open(
     
 error_register:
     globus_free(open_info);
-    
+
 error_info:
+error_pathname:
     globus_l_xio_file_handle_destroy(handle);
 
 error_handle:
@@ -557,7 +463,6 @@ globus_result_t
 globus_l_xio_file_close(
     void *                              driver_specific_handle,
     void *                              attr,
-    globus_xio_driver_handle_t          driver_handle,
     globus_xio_operation_t              op)
 {
     globus_l_handle_t *                 handle;
@@ -736,6 +641,7 @@ globus_l_xio_file_cntl(
     va_list                             ap)
 {
     globus_l_handle_t *                 handle;
+    globus_xio_system_handle_t *        out_handle;
     globus_off_t *                      offset;
     int                                 whence;
     GlobusXIOName(globus_l_xio_file_cntl);
@@ -755,6 +661,12 @@ globus_l_xio_file_cntl(
         {
             return GlobusXIOErrorSystemError("lseek", errno);
         }
+        break;
+      
+      /* globus_xio_system_handle_t *   handle */
+      case GLOBUS_XIO_FILE_GET_HANDLE:
+        out_handle = va_arg(ap, globus_xio_system_handle_t *);
+        *out_handle = handle->handle;
         break;
 
       default:
@@ -795,12 +707,6 @@ globus_l_xio_file_init(
         globus_l_xio_file_read,
         globus_l_xio_file_write,
         globus_l_xio_file_cntl);
-
-    globus_xio_driver_set_client(
-        driver,
-        globus_l_xio_file_target_init,
-        GLOBUS_NULL,
-        globus_l_xio_file_target_destroy);
 
     globus_xio_driver_set_attr(
         driver,

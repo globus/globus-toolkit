@@ -17,18 +17,6 @@ typedef enum
 typedef enum
 {
     /**
-     *  target/server attrs
-     */
-    /* globus_xio_system_handle_t       handle */
-    GLOBUS_XIO_TCP_SET_HANDLE,
-    
-    /**
-     *  target/server attrs cntls, handle cntl
-     */
-    /* globus_xio_system_handle_t *     handle_out */
-    GLOBUS_XIO_TCP_GET_HANDLE,
-    
-    /**
      *  server attrs
      */
     /* const char *                     service_name */
@@ -51,8 +39,16 @@ typedef enum
     GLOBUS_XIO_TCP_GET_LISTEN_RANGE,
     
     /**
+     *  handle/server attrs, handle cntl
+     */
+    /* globus_xio_system_handle_t *     handle_out */
+    GLOBUS_XIO_TCP_GET_HANDLE,
+    
+    /**
      *  handle/server attrs
      */
+    /* globus_xio_system_handle_t       handle */
+    GLOBUS_XIO_TCP_SET_HANDLE,
     /* const char *                     interface */
     GLOBUS_XIO_TCP_SET_INTERFACE,
     /* char **                          interface_out */
@@ -119,7 +115,7 @@ typedef enum
     GLOBUS_XIO_TCP_GET_SEND_FLAGS,
     
     /**
-     * handle/server/target cntls
+     * handle/server/link cntls
      */
     /* char **                          contact_string_out */
     GLOBUS_XIO_TCP_GET_LOCAL_CONTACT,

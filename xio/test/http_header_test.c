@@ -422,7 +422,7 @@ headers_match(
 
         if (current_header == NULL)
         {
-            fprintf(stderr, "Header \"%s\" not found\n", current_header->name);
+            fprintf(stderr, "Header \"%s\" not found\n", test_headers[i].name);
             return GLOBUS_FALSE;
         }
         src_value = test_headers[i].value;
