@@ -10,6 +10,7 @@ AC_MSG_CHECKING(for -lsocket)
 
 AC_TRY_LINK(
     [
+        #include <sys/types.h>
 	#include <sys/socket.h>
     ],
     [
