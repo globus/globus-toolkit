@@ -21,9 +21,55 @@
 #include <netdb.h> 
 #include <unistd.h>
 #include <assert.h>
+#include <limits.h>
 
-int convert_message(const char *buffer, const char *varname, 
-                    char *line, const int linelen);
+/**********************************************************************
+ *
+ * Internal functions
+ *
+ */
+static int convert_message(const char		*buffer,
+			   int			buffer_len,
+			   const char		*varname, 
+			   int			flags,
+			   char			*line,
+			   int			linelen);
+
+/* Values for convert_message() flags */
+#define CONVERT_MESSAGE_NO_FLAGS		0x0000
+#define CONVERT_MESSAGE_ALLOW_MULTIPLE		0x0001
+
+#define CONVERT_MESSAGE_DEFAULT_FLAGS		CONVERT_MESSAGE_NO_FLAGS
+#define CONVERT_MESSAGE_KNOWN_FLAGS		CONVERT_MESSAGE_ALLOW_MULTIPLE
+
+
+static int parse_command(const char			*command_str,
+			 myproxy_proto_response_type_t	*command_value);
+
+
+static int
+parse_lifetime(const char			*lifetime_str,
+	       int				*lifetime_value);
+
+static int
+parse_response_type(const char				*type_str,
+		    myproxy_proto_response_type_t	*type_value);
+
+static int
+string_to_int(const char			*string,
+	      int				*integer);
+
+/* Values for string_to_int() */
+#define STRING_TO_INT_SUCCESS		1
+#define STRING_TO_INT_ERROR		-1
+#define STRING_TO_INT_NONNUMERIC	0
+
+
+/**********************************************************************
+ *
+ * Exported functions
+ *
+ */
 
 int 
 myproxy_init_client(myproxy_socket_attrs_t *attrs) {
@@ -221,48 +267,91 @@ myproxy_deserialize_request(const char *data, const int datalen,
     assert(request != NULL);
     assert(data != NULL);
     
-    len = convert_message(data, (const char*)MYPROXY_VERSION_STRING, version_str, sizeof(version_str));
-    if (len > 0) {
-      request->version = (char *)malloc((len+1)*sizeof(char));
-      strcpy(request->version, version_str);
-    } else {
-      return -1;
+    len = convert_message(data, datalen,
+			  MYPROXY_VERSION_STRING,
+			  CONVERT_MESSAGE_DEFAULT_FLAGS,
+			  version_str, sizeof(version_str));
+
+    if (len == -1)
+    {
+	verror_prepend_string("Error parsing version from client request");
+	return -1;
     }
 
-    len = convert_message(data, (const char*)MYPROXY_COMMAND_STRING, command_str, sizeof(command_str));
-    if (len > 0) {
-      request->command_type = (myproxy_proto_response_type_t)atoi(command_str);
-    } else {
-      return -1;
+    request->version = strdup(version_str);
+    
+    if (request->version == NULL)
+    {
+	verror_put_string("strdup() failed");
+	verror_put_errno(errno);
     }
 
-    len = convert_message(data, (const char*)MYPROXY_USERNAME_STRING, username_str, sizeof(username_str));
-    if (len > 0) {
-      request->username = (char *)malloc((len+1)*sizeof(char));
-      strcpy(request->username, username_str);
-    } else {
-      return -1;
+
+    len = convert_message(data, datalen,
+			  MYPROXY_COMMAND_STRING,
+			  CONVERT_MESSAGE_DEFAULT_FLAGS,
+			  command_str, sizeof(command_str));
+
+    if (len == -1)
+    {
+	verror_prepend_string("Error parsing command from client request");
+	return -1;
+    }
+    
+    if (parse_command(command_str, &request->command_type) == -1)
+    {
+	return -1;
     }
 
-    len = convert_message(data, MYPROXY_PASSPHRASE_STRING, 
+    len = convert_message(data, datalen,
+			  MYPROXY_USERNAME_STRING,
+			  CONVERT_MESSAGE_DEFAULT_FLAGS,
+			  username_str, sizeof(username_str));
+    if (len == -1)
+    {
+	verror_prepend_string("Error parsing usename from client request");
+	return -1;
+    }
+    
+    request->username = strdup(username_str);
+
+    if (request->username == NULL)
+    {
+	verror_put_string("strdup() failed");
+	verror_put_errno(errno);
+    }
+
+
+    len = convert_message(data, datalen,
+			  MYPROXY_PASSPHRASE_STRING, 
+			  CONVERT_MESSAGE_DEFAULT_FLAGS,
                           passphrase_str, sizeof(passphrase_str));
-    if (len > 0) {
-      if ((sizeof(passphrase_str) < MIN_PASS_LEN) && (sizeof(passphrase_str) > MAX_PASS_LEN)) {
-        return -1;
-      } else {
-        strncpy(request->passphrase, passphrase_str, sizeof(request->passphrase));
-      }
-    } else {
-      return -1;
+
+    if (len == -1) 
+    {
+	verror_prepend_string("Error parsing passphrase from client request");
+	return -1;
+    }
+    
+    /* XXX request_passphrase is a static buffer. Why? */
+    strncpy(request->passphrase, passphrase_str, sizeof(request->passphrase));
+
+    len = convert_message(data, datalen,
+			  MYPROXY_LIFETIME_STRING,
+			  CONVERT_MESSAGE_DEFAULT_FLAGS,
+                          lifetime_str, sizeof(lifetime_str));
+    if (len == -1)
+    {
+	verror_prepend_string("Error parsing passphrase from client request");
+	return -1;
+    }
+    
+    if (parse_lifetime(lifetime_str, &request->portal_lifetime) == -1)
+    {
+	return -1;
     }
 
-    len = convert_message(data, MYPROXY_LIFETIME_STRING, 
-                          lifetime_str, sizeof(lifetime_str));
-    if (len > 0) {
-      request->portal_lifetime = atoi(lifetime_str);
-    } else {
-      return -1;
-    }
+    /* Success */
     return 0;
 } 
 
@@ -316,27 +405,49 @@ myproxy_deserialize_response(myproxy_response_t *response,
       
     strcpy(response->error_string, "");
 
-    len = convert_message(data, (const char*)MYPROXY_VERSION_STRING, version_str, sizeof(version_str));
-    if (len > 0) {
-      response->version = (char *)malloc((len+1)*sizeof(char));
-      strcpy(response->version, version_str);
-    } else {
-      return -1;
+    len = convert_message(data, datalen,
+			  MYPROXY_VERSION_STRING,
+			  CONVERT_MESSAGE_DEFAULT_FLAGS,
+			  version_str, sizeof(version_str));
+
+    if (len == -1)
+    {
+	verror_prepend_string("Error parsing version from server response");
+	return -1;
     }
 
-    len = convert_message(data, (const char*)MYPROXY_RESPONSE_STRING, response_str, sizeof(response_str));
-    if (len > 0) {
-      response->response_type = (myproxy_proto_response_type_t)atoi(response_str);
-    } else {
-      return -1;
+    response->version = strdup(version_str);
+
+    if (response->version == NULL)
+    {
+	verror_put_string("strdup() failed");
+	verror_put_errno(errno);
+    }
+
+    len = convert_message(data, datalen,
+			  MYPROXY_RESPONSE_STRING,
+			  CONVERT_MESSAGE_DEFAULT_FLAGS,
+			  response_str, sizeof(response_str));
+
+    if (len == -1)
+    {
+	verror_prepend_string("Error_parsing response type from server response");
+	return -1;
+    }
+
+    if (parse_response_type(response_str, &response->response_type) == -1)
+    {
+	return -1;
     }
 
     /* It's ok if ERROR not present */
-    len = convert_message(data, MYPROXY_ERROR_STRING, 
-                          response->error_string, sizeof(response->error_string));
-    if (len > 0) {
-      response->error_string[len] = '\0';
-    }
+    len = convert_message(data, datalen,
+			  MYPROXY_ERROR_STRING, 
+			  CONVERT_MESSAGE_ALLOW_MULTIPLE,
+                          response->error_string,
+			  sizeof(response->error_string));
+
+    /* Success */
     return 0;
 }
 
@@ -415,41 +526,323 @@ myproxy_destroy(myproxy_socket_attrs_t *attrs,
  *
  * Searches a buffer and locates varname. Stores contents of varname into line
  * e.g. convert_message(buf, "VERSION=", version, sizeof(version));
- * If multiple varnames exist, the contents are concatenated following a newline
  *
- * return the number of characters copied into the line 
- * (not including the terminating '\0'), or -1 if varname not found or error
+ * flags is a bitwise or of the following values:
+ *     CONVERT_MESSAGE_ALLOW_MULTIPLE      Allow a multiple instances of
+ *                                         varname, in which case the rvalues
+ *                                         are concatenated.
+ *
+ * Returns the number of characters copied into the line (not including the
+ * terminating '\0'). On error returns -1, setting verror.
  */
-int convert_message(const char *buffer, const char *varname, 
-		    char *line, const int linelen) {
+static int
+convert_message(const char			*buffer,
+		const int			buffer_len,
+		const char			*varname, 
+		const int			flags,
+		char				*line,
+		const int			line_len)
+{
+    int				foundone = 0;
+    char			*varname_start;
+    int				return_value = -1;
+    int				line_index = 0;
+    char			*buffer_copy = NULL;
+    const char			*buffer_p;
 
-    int i = 0;
-    int j = 0;
-    int foundone = 0;
-    char *ptr, *find;
     assert(buffer != NULL);
+    assert(buffer_len > 0);
+    
     assert(varname != NULL);
     assert(line != NULL);
-    
-    while ((find = strstr(&buffer[j], varname)) != NULL) {
-        /* find start of varname value */
-        find += strlen(varname);
-        j = strlen(buffer) - strlen(find);
-        /* loop through until LF or NUL */
-        for (ptr = find; ((*ptr != '\n') && (*ptr != '\0')); ptr++, j++) {
-            if (i > linelen-1) {
-                return -1;
-            }
-            line[i] = *ptr;
-            i++; 
-        }
-        /* add LF */
-        line[i] = '\n';
-        i++;
-        foundone = 1;
+
+    if ((flags & ~CONVERT_MESSAGE_KNOWN_FLAGS) != 0)
+    {
+	verror_put_string("Illegal flags value (%d)", flags);
+	goto error;
     }
-    if (!foundone) return -1;
-    /* replace final LF with NUL */
-    line[i-1] = '\0';
-    return i -1;
+
+    /*
+     * XXX
+     *
+     * Be very paranoid parsing this. buffer should be a NUL-terminated,
+     * but since we don't know that for sure, we're going to make sure it
+     * is by making a copy (since the copy we have is a const) and NUL-
+     * terminating it.
+     *
+     * Yes, this needs complete revamping.
+     */
+    buffer_copy = malloc(buffer_len);
+    
+    if (buffer_copy == NULL)
+    {
+	verror_put_string("malloc(%d) failed", buffer_len);
+	verror_put_errno(errno);
+	goto error;
+    }
+
+    memcpy(buffer_copy, buffer, buffer_len);
+    
+    /*
+     * Our current position in buffer is in buffer_p. Since we're
+     * done modifying buffer buffer_p can be a const.
+     */
+    buffer_p = buffer_copy;
+    
+    while ((varname_start = strstr(buffer_p, varname)) != NULL)
+    {
+	char			*value_start;
+	int			value_length;
+	
+	/* Have is this the first varname we've found? */
+	if (foundone == 1)
+	{
+	    /* No. Is that OK? */
+	    if (flags * CONVERT_MESSAGE_ALLOW_MULTIPLE)
+	    {
+		/* Yes. Add carriage return to existing line and concatenate */
+
+		if (line_index + 2 > line_len)
+		{
+		    verror_put_string("Internal buffer (line) too small");
+		    goto error;
+		}
+
+		line[line_index] = '\n';
+		line_index++;
+		line[line_index] = '\0';
+	    }
+	    else
+	    {
+		/* No. That's an error */
+		verror_put_string("Multiple values found");
+		goto error;
+	    }
+	}
+	
+	/* Find start of value */
+	value_start = &varname_start[strlen(varname)];
+
+	/* Find length of value (might be zero) */
+	value_length = strcspn(value_start, "\n");
+
+	/* Is there room in line for this value */
+	if ((line_index + value_length + 1 /* for NUL */) > line_len)
+	{
+	    verror_put_string("Internal buffer (line) too small");
+	    goto error;
+	}
+	
+	/* Copy it over */
+	strncpy(&line[line_index], value_start, value_length);
+	line_index += value_length;
+	
+	/* Make sure line stays NULL-terminated */
+	line[line_index] = '\0';
+
+	/* Indicate we've found a match */
+        foundone = 1;
+
+	/* Advance our buffer position pointer */
+	buffer_p = &value_start[value_length];
+    }
+	
+    /* Did we find anything */
+    if (foundone == 0)
+    {
+	verror_put_string("No value found");
+	goto error;
+    }
+
+    /* Success */
+    return_value = strlen(line);
+    
+  error:
+    if (return_value == -1)
+    {
+	/* Don't return anything in line on error */
+	line[0] = '\0';
+    }
+
+    return return_value;
+}
+
+/*
+ * parse_command()
+ *
+ * Parse command_str return the respresentation of the command in
+ * command_value.
+ *
+ * Returns 0 on success, -1 on error setting verror.
+ */
+static int
+parse_command(const char			*command_str,
+	      myproxy_proto_response_type_t	*command_value)
+{
+    int				value;
+    int				return_value = -1;
+    
+    assert(command_str != NULL);
+    assert(command_value != NULL);
+    
+    /* XXX Should also handle string commands */
+
+    switch (string_to_int(command_str, &value))
+    {
+      case STRING_TO_INT_SUCCESS:
+	return_value = 0;
+	*command_value = (myproxy_proto_request_type_t) value;
+	break;
+	
+      case STRING_TO_INT_NONNUMERIC:
+	verror_put_string("Non-numeric characters in command string \"%s\"",
+			  command_str);
+	break;
+	
+      case STRING_TO_INT_ERROR:
+	break;
+    }
+    
+    return return_value;
+}
+
+
+/*
+ * parse_lifetime()
+ *
+ * Given a string representation of a proxy lifetime, fill in the given
+ * integer with the lifetime in seconds.
+ *
+ * Currently the string is just an ascii representation of the integer.
+ *
+ * Returns 0 on success, -1 on error setting verror.
+ */
+static int
+parse_lifetime(const char			*lifetime_str,
+	       int				*lifetime_value)
+{
+    int				value;
+    int				return_value = -1;
+    
+    assert(lifetime_str != NULL);
+    assert(lifetime_value != NULL);
+    
+    /* XXX Should also handle string commands */
+
+    switch (string_to_int(lifetime_str, &value))
+    {
+      case STRING_TO_INT_SUCCESS:
+	return_value = 0;
+	*lifetime_value = value;
+	break;
+	
+      case STRING_TO_INT_NONNUMERIC:
+	verror_put_string("Non-numeric characters in lifetime string \"%s\"",
+			  lifetime_str);
+	break;
+	
+      case STRING_TO_INT_ERROR:
+	break;
+    }
+    
+    return return_value;
+}
+
+
+/*
+ * parse_response_type()
+ *
+ * Given a string representation of a response_type, fill in type_value
+ * with the value.
+ *
+ * Currently the string is just an ascii representation of the value.
+ *
+ * Returns 0 on success, -1 on error setting verror.
+ */
+static int
+parse_response_type(const char				*type_str,
+		    myproxy_proto_response_type_t	*type_value)
+{
+    int				value;
+    int				return_value = -1;
+    
+    assert(type_str != NULL);
+    assert(type_value != NULL);
+    
+    /* XXX Should also handle string representations */
+
+    switch (string_to_int(type_str, &value))
+    {
+      case STRING_TO_INT_SUCCESS:
+	return_value = 0;
+	*type_value = (myproxy_proto_response_type_t) value;
+	break;
+	
+      case STRING_TO_INT_NONNUMERIC:
+	verror_put_string("Non-numeric characters in string \"%s\"",
+			  type_str);
+	break;
+	
+      case STRING_TO_INT_ERROR:
+	break;
+    }
+    
+    return return_value;
+}
+
+
+/*
+ * string_to_int()
+ *
+ * Convert a string representation of an integer into an integer.
+ *
+ * Returns 1 on success, 0 if string contains non-numeric characters,
+ * -1 on error setting verror.
+ */
+static int
+string_to_int(const char			*string,
+	      int				*integer)
+{
+    char			*parse_end = NULL;
+    int				base = 0 /* Any */;
+    long int			value;
+    int				return_value = -1;
+    
+    assert(string != NULL);
+    assert(integer != NULL);
+    
+    /* Check for empty string */
+    if (strlen(string) == 0)
+    {
+	verror_put_string("Zero-length string");
+	goto error;
+    }
+    
+    value = strtol(string, &parse_end, base);
+    
+    if (value == LONG_MIN)
+    {
+	verror_put_string("Underflow error");
+	goto error;
+    }
+    
+    if (value == LONG_MAX)
+    {
+	verror_put_string("Overflow error");
+	goto error;
+    }
+    
+    /* Make sure we parsed all the characters in string */
+    if (*parse_end != '\0')
+    {
+	return_value = 0;
+	goto error;
+    }
+    
+    /* Success */
+    *integer = (int) value;
+    return_value = 1;
+    
+  error:
+    return return_value;
 }
