@@ -227,7 +227,7 @@ sub generate_dependency_tree()
 
     if ( not defined(@cvs_build_list) )
     {
-	@cvs_build_list = ("autotools", "gt2", "gt3", "cbindings");
+	@cvs_build_list = ("autotools", "gt2", "gt3", "gt4", "cbindings");
     }
 
     foreach my $tree (@cvs_build_list)
@@ -261,6 +261,19 @@ sub generate_dependency_tree()
 	    print GRAPH "}";
 	    close GRAPH;
         }
+	
+	# To interact well with installs, need to make
+	# a new bundle that contains everything that was
+	# pulled in via --deps, so that GPT may sort them
+	# for us.  Otherwise we install in the wrong order.
+        push @{$bundle_list{"custom-deps"}}, $flavor;
+        push @{$bundle_list{"custom-deps"}}, "";  # No flags
+        for my $pk (keys %package_build_hash)
+        {
+           push @{$bundle_list{"custom-deps"}}, $pk;
+        }
+
+	@bundle_build_list = ( "custom-deps" );
     }
 }
 
@@ -1107,7 +1120,7 @@ sub package_source_gpt()
     
     if ( ! -d $subdir )
     {
-	print "$subdir does not exist, skipping\n";
+	die "$subdir does not exist, for package $package in tree $tree\n";
     } else {
 	#This causes GPT not to worry about whether dependencies
 	#have been installed while doing configure/make dist.
@@ -1245,7 +1258,7 @@ sub package_source_tar()
     
     if ( ! -d $subdir )
     {
-	print "$subdir does not exist, skipping\n";
+	print "$subdir does not exist for package $package.\n";
     } else {
 	print "Creating source directory for $package\n";
 	log_system("rm -fr $destdir", "$pkglog/$package");
