@@ -39,7 +39,8 @@ test_PROGRAMS= \
 	globus_io_file_test \
 	globus_io_udp_test_server \
 	globus_io_udp_test_client \
-	globus_io_udp_test 
+	globus_io_udp_test \
+	globus_io_authorization_test
 
 globus_io_tcp_test_SOURCES = globus_io_tcp_test.c
 globus_io_tcp_test_LDFLAGS = $(GPT_LDFLAGS)
