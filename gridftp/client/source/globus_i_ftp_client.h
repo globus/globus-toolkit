@@ -550,6 +550,7 @@ typedef struct globus_i_ftp_client_target_s
     /** Current settings */
     globus_ftp_control_dcau_t			dcau;
     globus_ftp_control_protection_t		data_prot;
+    unsigned long                               pbsz;
     globus_ftp_control_type_t			type;
     globus_ftp_control_tcpbuffer_t		tcp_buffer;
     globus_ftp_control_mode_t			mode;

@@ -1241,11 +1241,6 @@ redo:
 	    goto skip_pbsz;
 	}
 
-	/* changing PBSZ forces us to trash our old data connections */
-	memset(&target->cached_data_conn,
-	       '\0',
-	       sizeof(globus_i_ftp_client_data_target_t));
-
 	result = globus_ftp_control_get_pbsz(
 		    target->control_handle,
 		    &pbsz);
@@ -1253,6 +1248,15 @@ redo:
 	{
 	    goto result_fault;
 	}
+	if(target->pbsz == pbsz)
+	{
+	    goto skip_pbsz;
+	}
+
+	/* changing PBSZ forces us to trash our old data connections */
+	memset(&target->cached_data_conn,
+	       '\0',
+	       sizeof(globus_i_ftp_client_data_target_t));
 
 	target->mask = GLOBUS_FTP_CLIENT_CMD_MASK_TRANSFER_PARAMETERS;
 	globus_i_ftp_client_plugin_notify_command(
@@ -1299,12 +1303,13 @@ redo:
 	if((!error) &&
 	   response->response_class == GLOBUS_FTP_POSITIVE_COMPLETION_REPLY)
 	{
-
 	    pbsz = 0;
 	    sscanf(response->response_buffer, "PBSZ=%lu", &pbsz);
 
 	    if(pbsz != 0)
 	    {
+	        target->pbsz = pbsz;
+	        
 		result = globus_ftp_control_local_pbsz(target->control_handle,
 						       pbsz);
 		if(result != GLOBUS_SUCCESS)
@@ -1671,7 +1676,7 @@ redo:
 	     */
 	    if(client_handle->op == GLOBUS_FTP_CLIENT_TRANSFER)
 	    {
-		memset(&client_handle->dest->cached_data_conn,
+		memset(&client_handle->source->cached_data_conn,
 		       '\0',
 		       sizeof(globus_i_ftp_client_data_target_t));
 	    }
