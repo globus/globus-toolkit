@@ -10,21 +10,22 @@
 version="0.3"
 
 usage () {
-	echo $0: Usage:  $0 "[-p \"p1 p2 ...\"] [-t tag] [-i dir [-r] ] [-n] [-h] [-c | -j] [-a] [-s | -b] [-v] [-f]"
-	echo
+	echo $0: Usage:  
+	echo $0 "[-p \"p1 p2 ...\"] [-t tag] [-i dir [-r] ] [-n] [-h] [-c | -j] [-a] [-s | -b] [-v] [-f]"
 	echo "With no arguments, checkout and build all of GT3."
-	echo "	$0 -p \"p1 p2 ...\" 	Build packages p1, p2, ..."
-	echo "	$0 -t my_tag	Use \"-r my_tag\" in cvs commands"
-	echo "	$0 -i dir		Install into dir"
-	echo "	$0 -r		Make a release candidate.  Requires -i"
-	echo "	$0 -n 		Don't update the CVS checkout"
-	echo "	$0 -a		Use anonymous CVS checkouts"
-	echo "	$0 -h		Print this help message"
-	echo "	$0 -c		Just build C bindings"
-	echo "	$0 -j		Just build Java"
-	echo "	$0 -b		Install GT2 binaries, not source."
-	echo "	$0 -v		Pass -verbose to gpt-build."
-	echo "	$0 -f		Pass -force to gpt-build."
+	echo
+	echo "$0 -p \"p1 p2 ...\" 	Build packages p1, p2, ..."
+	echo "$0 -t my_tag	Use \"-r my_tag\" in cvs commands"
+	echo "$0 -i dir		Install into dir"
+	echo "$0 -r		Make a release candidate.  Requires -i"
+	echo "$0 -n 		Don't update the CVS checkout"
+	echo "$0 -a		Use anonymous CVS checkouts"
+	echo "$0 -h		Print this help message"
+	echo "$0 -c		Just build C and C bindings"
+	echo "$0 -j		Just build Java"
+	echo "$0 -b		Install GT2 binaries, not source."
+	echo "$0 -v		Pass -verbose to gpt-build."
+	echo "$0 -f		Pass -force to gpt-build."
 	echo
 }
 
@@ -79,18 +80,20 @@ checkout_cvs_generic() {
 	fi
 
 	if [ ! -d $checkoutdir ]; then
-		echo Making fresh CVS checkout of $1
+		echo Making fresh CVS checkout of $1 "[module $module]"
+		echo "Logging to logs/$2.log"
 		mkdir $checkoutdir
 		cd $checkoutdir
 		cvs co $cvs_opts $module > ../logs/$2.log 2>&1
 		cd ..
 	elif [ $update = 1 ]; then
 		echo "Updating CVS checkout of $1"
+		echo "Logging to logs/$2-$f.log"
 		# cvs stat ogsa-cvs/ogsa/impl/java/build.xml | grep Tag
 		cd $checkoutdir
 		for f in *; do
 			cd $f
-			cvs -z3 -qq up > ../../logs/$2-$f.log 2>&1
+			cvs -z3 -qq up -dP > ../../logs/$2-$f.log 2>&1
 			cd ..
 		done
 		cd ..
@@ -124,6 +127,7 @@ build_gt2_autotools() {
 		cd gt2-autotools
 
 		echo Building GT2 autotools now
+		echo Logging to logs/gt2-autotools.log
 		./side_tools/build-autotools > ../logs/gt2-autotools.log 2>&1
 	else
 		echo Using existing GT2 autotools installation
@@ -149,6 +153,7 @@ install_gpt_generic() {
 		export GPT_LOCATION=`pwd`/$installdir
 	else
 		echo Installing gpt
+		echo Logging to logs/$1.log
 		tar xzf $bundle
 		cd $installdir
 		export GPT_LOCATION=`pwd`
@@ -187,7 +192,7 @@ install_gt2_source() {
 	else
 		cd side_tools
 		echo Building GT2 using ./cvs-build -noupdates -builddir=.. -installdir=$GLOBUS_LOCATION -everything $flavor
-		echo Log goes to logsa/gt2-installation.log
+		echo Logging to logs/gt2-installation.log
         	./cvs-build -noupdates -builddir=.. -installdir=$GLOBUS_LOCATION -everything $flavor > ../../logs/gt2-installation.log 2>&1
 		cd ..
 	fi
@@ -228,6 +233,7 @@ install_cdeps() {
 make_source_package() {
 	if [ "$build" = "custom" ]; then
 		echo Following custom build instructions for $name
+		echo Logging to logs/${name}.log
 		pwd
 		$1/custom-build ogsa-cvs/$subdir $GPT_LOCATION $GLOBUS_LOCATION gcc32dbg > logs/${name}.log 2>&1
 		echo
@@ -236,10 +242,10 @@ make_source_package() {
 
 	export destdir=`pwd`/${name}-${version}-src/
 
-    if [ x"$force" != "x" ]; then
-        echo Rebuild forced, overwritting $destdir
-        rm -rf $destdir
-    fi
+    	if [ x"$force" != "x" ]; then
+        	echo Rebuild forced, overwriting $destdir
+        	rm -rf $destdir
+	fi
 
 	if [ -d $destdir ]; then
 		echo Skipping package $name;
@@ -295,9 +301,17 @@ unset_env() {
 #iter_generic dir
 #dir should contain a file called build-info
 iter_generic() {
-	if [ -e $1/IGNORE ]; then
-		echo "$1/IGNORE exists, skipping $1"
-	elif [ -e $1/build-info ]; then
+	if [ -e $1/build-info ]; then
+		if [ x$force = "x" ]; then
+			if [ -e $1/IGNORE ]; then
+				echo "$1/IGNORE exists, skipping $1"
+			fi
+		else
+			if [ -e $1/IGNORE ]; then
+				echo "$1/IGNORE exists, but -force is set.  Forcing anyway."
+			fi
+		fi
+
 		source $1/build-info
 		make_source_package $1
 		unset_env
