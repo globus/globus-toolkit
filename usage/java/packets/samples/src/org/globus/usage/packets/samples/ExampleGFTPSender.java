@@ -32,6 +32,23 @@ public class ExampleGFTPSender {
         readCommandLine to set port and addresses.*/
     }
 
+    public ExampleGFTPSender(InetAddress addr, int port) throws SocketException { 
+
+        socket = new DatagramSocket(); 
+	setDestinationAddress(addr);
+	setPort(port);
+    }
+
+    public void setDestinationAddress(InetAddress addr) {
+	this.addressArray = new InetAddress[1];
+	this.addressArray[0] = addr;
+
+    }
+    public void setPort(int port) {
+	this.port = port;
+    }
+
+    
     /*Function to send a GridFTPusage packet with all the given data*/
     public void sendPacket(byte opType, Date start, Date end,
                            long bytes, long stripes, long streams,

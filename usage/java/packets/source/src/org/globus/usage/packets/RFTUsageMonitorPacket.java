@@ -3,6 +3,9 @@ package org.globus.usage.packets;
 import java.net.Inet6Address;
 import java.nio.ReadOnlyBufferException;
 import java.sql.Timestamp;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.sql.Connection;
 import java.util.Date;
 
 import org.apache.commons.logging.Log;
@@ -99,19 +102,20 @@ public class RFTUsageMonitorPacket extends IPTimeMonitorPacket {
         log.info("RFT Factory start time : " + this.factoryStartTime);
     }
 
-    public String toSQL() {
-        StringBuffer buffer = new StringBuffer("(");
-        buffer.append("request_type,number_of_files,");
-        buffer.append("number_of_bytes,number_of_resources,");
-        buffer.append("creation_time,factory_start_time)");
-        buffer.append(" VALUES ('");
-        buffer.append(this.requestType).append("','");
-        buffer.append(this.numberOfFiles).append("','");
-        buffer.append(this.numberOfBytes).append("','");
-        buffer.append(this.numberOfResources).append("','");
-        buffer.append(this.resourceCreationTime).append("','");
-        buffer.append(this.factoryStartTime).append("')");
-        // Is everything string ?
-        return buffer.toString();
+
+    public PreparedStatement toSQL(Connection con, String tablename) throws SQLException{
+
+	PreparedStatement ps;
+	ps = con.prepareStatement("INSERT INTO "+tablename+" (request_type, number_of_files, number_of_bytes, number_of_resources, creation_time, factory_start_time) VALUES(?, ?, ?, ?, ?, ?);");
+
+	
+	ps.setByte(1, this.requestType);
+	ps.setLong(2, this.numberOfFiles);
+	ps.setLong(3, this.numberOfBytes);
+	ps.setLong(4, this.numberOfResources);
+	ps.setLong(5, this.resourceCreationTime.getTime());
+	ps.setLong(6, this.factoryStartTime.getTime());
+
+	return ps;
     }
 } 

@@ -44,7 +44,11 @@
     </target>
 
     <target name="jar" depends="compile">
-        <copy file="${properties.dir}/receiver.properties" todir="${build.dest}"/>
+        <copy todir="${build.dest}">
+	<fileset dir="${properties.dir}">
+		<include name="*.properties"/>
+	</fileset>
+	</copy> 
         <jar destfile="${build.lib.dir}/${jar.name}" basedir="${build.dest}"/>
     </target>
 

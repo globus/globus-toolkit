@@ -3,6 +3,10 @@ package org.globus.usage.receiver.samples;
 import java.io.InputStream;
 import java.io.IOException;
 import java.util.Properties;
+import java.net.DatagramSocket;
+import java.net.SocketException;
+import java.net.DatagramPacket;
+import java.net.SocketAddress;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -58,7 +62,7 @@ public class ExampleReceiver {
               the database connection class to use, the url to connect to your
               database, and the database table where default packets will be
 	      written if no other handler takes them:*/
-	    log.info("Starting receiver on port "+port+"; will write to database at "+databaseURL+".");
+	    System.out.println("Starting receiver on port "+port+"; will write to database at "+databaseURL+".");
             receiver = new Receiver(port, 
                                     databaseDriverClass, 
                                     databaseURL,
@@ -73,7 +77,11 @@ public class ExampleReceiver {
                                                    gftpTable);
             receiver.registerHandler(gftpHandler);
 
-            
+
+	    //Register other handlers here.
+
+	    //start the control socket thread:
+	    new ControlSocketThread(receiver, 4811).start();
         }
         catch (IOException e) {
             log.fatal("An IOException occurred when trying to create Receiver:" +e.getMessage());
@@ -85,4 +93,59 @@ public class ExampleReceiver {
         /*That's all... this thread ends, but the receiver has started listener
           and handler threads which will write incoming packets to the database.*/
     }
+}
+
+
+/*Thread used for interprocess communication, so that the receiver can be
+  started/stopped/monitored remotely.*/
+class ControlSocketThread extends Thread {
+
+    private boolean shutDown;
+    private Receiver receiver;
+    private int controlPort;
+    private DatagramSocket inSock, outSock;
+
+    public ControlSocketThread (Receiver receiver, int controlPort) throws SocketException {
+	this.receiver = receiver;
+	this.controlPort = controlPort;
+	this.shutDown = false;
+	inSock = new DatagramSocket(controlPort);
+	outSock = new DatagramSocket();
+    }
+
+    public void run() {
+	/*When we get a packet on the control socket, either respond with
+	  the receiver.getStatus(), or shut down the receiver.*/
+	DatagramPacket inPacket, outPacket;
+	byte[] outBuffer;
+	byte[] inBuffer = new byte[100];
+	SocketAddress remoteAddr;
+
+	while (!shutDown) {
+	    //receive packet on controlPort.
+	    try {
+		inPacket = new DatagramPacket(inBuffer, inBuffer.length);
+		inSock.receive(inPacket);
+
+		if (true == false/*packet is shutdown packet*/) {
+		    receiver.shutDown();
+		    shutDown = true;
+		}
+		else {
+		    //send back packet with receiver.getStatus();
+		    remoteAddr = inPacket.getSocketAddress();
+		    outBuffer = receiver.getStatus().getBytes();
+		    outPacket = new DatagramPacket(outBuffer, outBuffer.length, remoteAddr);
+		    outSock.send(outPacket);
+		}
+	    }
+	    catch (Exception e) {}
+	}
+
+	try {
+	    inSock.close();
+	    outSock.close();
+	} catch (Exception e) {}
+    }
+
 }

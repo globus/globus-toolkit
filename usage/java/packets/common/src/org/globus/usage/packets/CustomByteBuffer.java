@@ -31,13 +31,21 @@ public class CustomByteBuffer {
     private CustomByteBuffer() {
     }
 
+    public static CustomByteBuffer fitToData(byte[] existingArray, int size) {
+	/*Makes a new array of just size bytes, and copies the first size
+	  bytes of the existing array into it.*/
+	CustomByteBuffer newBuf = new CustomByteBuffer(size);
+	System.arraycopy(existingArray, 0, newBuf.internalArray, 0, size);
+	newBuf.bytesUsed = size;
+	return newBuf;
+    }
+
     public static CustomByteBuffer wrap(byte[] existingArray) {
         
         CustomByteBuffer newByteBuffer = new CustomByteBuffer();
         newByteBuffer.internalArray = existingArray;
         newByteBuffer.maxSize = newByteBuffer.bytesUsed = existingArray.length;
-        newByteBuffer.shrink();
-        newByteBuffer.pointer = 0;
+	newByteBuffer.pointer = 0;
 
         return newByteBuffer;
     }
@@ -86,6 +94,10 @@ public class CustomByteBuffer {
                          dataGoesHere, offset, 
                          numBytes);
         this.pointer += numBytes;
+    }
+
+    public void getBytes(byte[] dataGoesHere) {
+	get(dataGoesHere, 0, dataGoesHere.length);
     }
 
     public long getLong() {

@@ -88,6 +88,7 @@ public class IPTimeMonitorPacket extends UsageMonitorPacket {
 
         if (addressByteArray == null) {
             log.error("IP version code neither 4 nor 6; can't proceed");
+	    this.senderAddress = null;
         } else {
             try {
                 this.senderAddress = 

@@ -4,7 +4,7 @@ CREATE TABLE  unknown_packets(
     id SERIAL,
     componentcode SMALLINT NOT NULL,
     versioncode SMALLINT NOT NULL,
-    contents OID,  
+    contents BYTEA NOT NULL,  
     PRIMARY KEY (id)
 );
 
@@ -14,17 +14,20 @@ CREATE TABLE gftp_packets(
     version_code SMALLINT NOT NULL,
     send_time DATETIME,
     ip_version SMALLINT,
-    ip_address VARCHAR(32),
-    gftp_version VARCHAR(20),
+    ip_address VARCHAR(64) NOT NULL,
+    gftp_version VARCHAR(64),
     stor_or_retr SMALLINT,
-    start_time DATETIME,
-    end_time DATETIME,
+    start_time BIGINT NOT NULL,
+    end_time BIGINT NOT NULL,
     num_bytes BIGINT,
-    num_stripes BIGINT,
-    num_streams BIGINT,
-    buffer_size BIGINT,
-    block_size BIGINT,
-    ftp_return_code BIGINT,
+    num_stripes INT,
+    num_streams INT,
+    buffer_size INT,
+    block_size  INT,
+    ftp_return_code INT,
     sequence_number BIGINT,
+    src_id BIGINT,
+    dest_id BIGINT,
+    reserved BIGINT,
     PRIMARY KEY (id)
 );

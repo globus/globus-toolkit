@@ -1,9 +1,14 @@
 package org.globus.usage.packets;
 
+import java.net.InetAddress;
 import java.net.Inet6Address;
 import java.nio.ReadOnlyBufferException;
 import java.sql.Timestamp;
+import java.sql.PreparedStatement;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.Date;
+import java.util.Calendar;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -29,18 +34,19 @@ public class GFTPMonitorPacket extends IPTimeMonitorPacket {
     public final static byte RETR_CODE = 1;
     /*This fixes the number of bytes used to write the GridFTP version
       string:*/
-    private final static int BYTES_FOR_VERSION = 20;
+    protected final static int BYTES_FOR_VERSION = 20;
 
     public static short COMPONENT_CODE = 0;
     public static short VERSION_CODE = 0;
 
-    private byte storOrRetr;
-    private Date startTime, endTime;
-    private long numBytes;
-    private long numStripes, numStreams;
-    private long bufferSize, blockSize;
-    private long ftpReturnCode;
-    private String gridFTPVersion;
+    protected byte storOrRetr;
+    protected Date startTime, endTime;
+    protected long numBytes;
+    protected long numStripes, numStreams;
+    protected long bufferSize, blockSize;
+    protected long ftpReturnCode;
+    protected String gridFTPVersion;
+    protected String hostname;
 
     public boolean isStorOperation() {
         return storOrRetr == STOR_CODE;
@@ -146,19 +152,21 @@ public class GFTPMonitorPacket extends IPTimeMonitorPacket {
 
         super.unpackCustomFields(buf);
 
-        buf.get(fixedNumberOfBytes);
-        gridFTPVersion = new String(fixedNumberOfBytes);
+	buf.get(fixedNumberOfBytes);
+	gridFTPVersion = new String(fixedNumberOfBytes);
 
-        storOrRetr = buf.get();
-        startTime = new Date(buf.getLong());
-        endTime = new Date(buf.getLong());
-        numBytes = buf.getLong();
-        numStripes = buf.getLong();
-        numStreams  = buf.getLong();
-        bufferSize = buf.getLong();
-        blockSize = buf.getLong();
-        ftpReturnCode = buf.getLong();
+	storOrRetr = buf.get();
+	startTime = new Date(buf.getLong());
+	endTime = new Date(buf.getLong());
+	numBytes = buf.getLong();
+	numStripes = buf.getLong();
+	numStreams  = buf.getLong();
+	bufferSize = buf.getLong();
+	blockSize = buf.getLong();
+	ftpReturnCode = buf.getLong();
+
     }
+
 
     public void display() {
         log.info(super.toString());
@@ -174,28 +182,39 @@ public class GFTPMonitorPacket extends IPTimeMonitorPacket {
         log.info("ftpReturnCode = "+ftpReturnCode);
     }
 
-    public String toSQL() {
+    public PreparedStatement toSQL(Connection con, String tablename) throws SQLException{
 
-        /*I'm sure this is a naiive way of making SQL... it works for
-          now but should be replaced with something less brittle.*/
-        return new String(
-            " (component_code, version_code, send_time, ip_version, ip_address, gftp_version, stor_or_retr, start_time, end_time, num_bytes, num_stripes, num_streams, buffer_size, block_size, ftp_return_code) VALUES('" +
-            getComponentCode() + "','" +
-            getPacketVersion() + "','" +
-            new Timestamp(timeSent).toString() + "','" +
-            getIPVersion() + "','" +
-            senderAddress.toString() + "','" +
-            gridFTPVersion + "','" +
-            storOrRetr + "','" +
-            new Timestamp(startTime.getTime()).toString() + "','" +
-            new Timestamp(endTime.getTime()).toString() + "','" +
-            numBytes + "','" +
-            numStripes + "','" +
-            numStreams + "','" +
-            bufferSize + "','" +
-            blockSize + "','" +
-            ftpReturnCode
-            + "')");
+	PreparedStatement ps;
+	ps = con.prepareStatement("INSERT INTO "+tablename+" (component_code, version_code, send_time, ip_version, ip_address, gftp_version, stor_or_retr, start_time, end_time, num_bytes, num_stripes, num_streams, buffer_size, block_size, ftp_return_code) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);");
+
+	ps.setShort(1, getComponentCode());
+	ps.setShort(2, getPacketVersion());
+	ps.setTimestamp(3, new Timestamp(timeSent));
+	ps.setByte(4, (byte)getIPVersion());
+	if (senderAddress == null) {
+	    ps.setString(5, "unknown");
+	}
+	else {
+	    ps.setString(5, senderAddress.toString());
+	}
+	ps.setString(6, gridFTPVersion);
+	ps.setByte(7, storOrRetr);
+	if (startTime == null)
+	    ps.setLong(8, 0L);
+	else
+	    ps.setLong(8, startTime.getTime());
+	if (endTime == null)
+	    ps.setLong(9, 0L);
+	else
+	    ps.setLong(9, endTime.getTime());
+	ps.setLong(10, numBytes);
+	ps.setLong(11, numStripes);
+	ps.setLong(12, numStreams);
+	ps.setLong(13, bufferSize);
+	ps.setLong(14, blockSize);
+	ps.setLong(15, ftpReturnCode);
+	
+	return ps;
 
     }
 }

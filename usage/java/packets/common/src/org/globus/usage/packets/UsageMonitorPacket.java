@@ -94,7 +94,7 @@ public class UsageMonitorPacket {
         this.packetVersion = buf.getShort();
         
         unpackCustomFields(buf);
-        
+
         this.binaryContents = input; //save this... it'll go into database.
     }
     

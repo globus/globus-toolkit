@@ -4,15 +4,19 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import org.globus.usage.packets.CustomByteBuffer;
-import org.globus.transfer.reliable.service.usage.RFTUsageMonitorPacket;
+import org.globus.usage.packets.RFTUsageMonitorPacket;
+//import org.globus.transfer.reliable.service.usage.RFTUsageMonitorPacket;
 import org.globus.usage.packets.UsageMonitorPacket;
+
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 
 /*Handler which writes RFTUsageMonitor packets to database.*/
 public class RFTPacketHandler extends DefaultPacketHandler {
 
     private static Log log = LogFactory.getLog(RFTPacketHandler.class);
 
-    public RFTPacketHandler(String driverClass, String db, String table) {
+    public RFTPacketHandler(String driverClass, String db, String table) throws SQLException, ClassNotFoundException {
         super(driverClass, db, table);
     }
 
@@ -26,14 +30,14 @@ public class RFTPacketHandler extends DefaultPacketHandler {
    
     //uses DefaultPacketHandler's handlePacket().
 
-    protected String makeSQLInsert(UsageMonitorPacket pack) {
+    protected PreparedStatement makeSQLInsert(UsageMonitorPacket pack) throws SQLException{
         if (!(pack instanceof RFTUsageMonitorPacket)) {
             log.error("Something is seriously wrong: RFTUsageMonitorPacket got a packet which was not a RFTUsageMonitorPacket.");
-            return "";
+            throw new SQLException();
         }
 
         RFTUsageMonitorPacket rft= (RFTUsageMonitorPacket)pack;
         
-        return rft.toSQL();
+        return rft.toSQL(con, table);
     }
 }

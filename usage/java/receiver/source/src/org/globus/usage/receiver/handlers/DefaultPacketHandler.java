@@ -3,7 +3,7 @@ package org.globus.usage.receiver.handlers;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.PreparedStatement;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -18,17 +18,28 @@ public class DefaultPacketHandler implements PacketHandler {
 
     private static Log log = LogFactory.getLog(DefaultPacketHandler.class);
 
-    String dburl;
-    String table;
-    String driverClass;
-
+    protected String dburl;
+    protected String table;
+    protected String driverClass;
+    protected Connection con;
     /*Pass in for example ("org.gjt.mm.mysql.Driver", "jdbc:mysql://localhost/menagerie?user=javaprog&password=letmein")*/
 
-    public DefaultPacketHandler(String driverClass, String dburl, String table) {
+    public DefaultPacketHandler(String driverClass, String dburl, String table) throws SQLException, ClassNotFoundException {
         //this should be full JDBC URL for the database.
         this.dburl = dburl;
         this.table = table;
         this.driverClass = driverClass;
+
+	Class.forName(driverClass);
+	con = DriverManager.getConnection(dburl);
+    }
+
+    public void finalize() {
+
+	if( con != null ) {
+	    try { con.close(  ); }                
+	    catch( Exception e ) { }
+	}
     }
 
     public boolean doCodesMatch(short componentCode, short versionCode) {
@@ -41,7 +52,7 @@ public class DefaultPacketHandler implements PacketHandler {
    
     public void handlePacket(UsageMonitorPacket pack) {
         Connection con = null;
-        Statement stmt;
+        PreparedStatement stmt;
 
         try {
             
@@ -50,40 +61,29 @@ public class DefaultPacketHandler implements PacketHandler {
 
             log.info(pack.toString());
 
-
-            Class.forName(driverClass);
-            con = DriverManager.getConnection(dburl);
-
-            stmt = con.createStatement();
-            stmt.executeUpdate("INSERT INTO "+ table +
-                               makeSQLInsert(pack) +";");
-
+            stmt = makeSQLInsert(pack);
+            stmt.executeUpdate();
             stmt.close();
         }
         
         catch( SQLException e ) {
-            e.printStackTrace(  );
-        }
-        catch(ClassNotFoundException e) {
-            log.error("Can't find driver class " + driverClass);
+            log.error(e.getMessage());
+	    log.error("Packet contents:"+ new String(pack.getBinaryContents()));
         }
 
-        finally {
-            if( con != null ) {
-                try { con.close(  ); }                
-                catch( Exception e ) { }
-            }
-        }
     }
 
     /*If you want to write a handler that writes packets into a database,
       subclass DefaultPacketHandler and just override makeSQLInsert to
-      return the right SQL string.*/
-    protected String makeSQLInsert(UsageMonitorPacket pack) {
-        return new String(
-            " (componentcode, versioncode, contents) VALUES('" +
-            pack.getComponentCode() + "','" +
-            pack.getPacketVersion() + "','" +
-            pack.getBinaryContents() + "')");
+      return the right SQL statement..*/
+    protected PreparedStatement makeSQLInsert(UsageMonitorPacket pack) throws SQLException{
+	/*For better performance, save this statement and reuse it.*/
+	PreparedStatement ps = con.prepareStatement("INSERT INTO "+ table +  " (componentcode, versioncode, contents) VALUES(?, ?, ?);");
+           
+	ps.setShort(1, pack.getComponentCode());
+	ps.setShort(2, pack.getPacketVersion());
+	ps.setBytes(3, pack.getBinaryContents());
+
+	return ps;
     }
 }

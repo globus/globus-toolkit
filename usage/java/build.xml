@@ -25,18 +25,50 @@
     </target>
         
     <target name="receiver"> 
+            <echo message="${deploy.dir}/lib"/>
          <java classname="org.globus.usage.receiver.samples.ExampleReceiver" 
               dir="${deploy.dir}"
               fork="true" 
               failonerror="true">
+
             <classpath>
                <pathelement location="${deploy.dir}"/>
                <fileset dir="${deploy.dir}/lib">
+                 <include name="*.jar"/>
+               </fileset>
+               <fileset dir="../../lib">
                  <include name="*.jar"/>
                </fileset>
             </classpath>
             <arg value="4810"/>
         </java>
     </target>
+
+
+ <target name="do-junit">
+    <mkdir dir="./tests/dist"/>
+    <javac srcdir="./tests/src" destdir="./tests/dist">
+      <classpath>
+         <fileset dir="${deploy.dir}/lib">
+           <include name="*.jar"/>
+         </fileset>
+         <fileset dir="../../lib">
+           <include name="*.jar"/>
+         </fileset>
+      </classpath>
+    </javac>
+    <java classname="org.globus.usage.UnitTester">
+      <classpath>
+         <pathelement location="./tests/dist"/>
+         <fileset dir="${deploy.dir}/lib">
+           <include name="*.jar"/>
+         </fileset>
+         <fileset dir="../../lib">
+           <include name="*.jar"/>
+         </fileset>
+      </classpath>
+    </java>
+  </target>
+
 
 </project>

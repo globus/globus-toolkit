@@ -31,7 +31,6 @@ public class Receiver {
     HandlerThread theHandleThread;
     private final static int RING_BUFFER_SIZE = 100;
 
-
     /*Creates a receiver which will listen on the given port and write
       packets to the given database.*/
     public Receiver(int port, String driver, String db,
@@ -98,6 +97,31 @@ public class Receiver {
         return packet;
     }
 
+    public String getStatus() {
+	/*Return a string with the following metadata:
+	  --Number of packets logged/ number dropped since last call
+	  --Number of packets in the ring buffer/size of ring buffer
+	*/
+	StringBuffer buf = new StringBuffer();
+	int packetsDropped = theHandleThread.getPacketsDropped();
+	int packetsLogged = theHandleThread.getPacketsLogged();
+
+	buf.append(packetsLogged);
+	buf.append(" packets logged. ");
+	if (packetsDropped > 0) {
+	    buf.append(packetsDropped);
+	    buf.append(" packets could not be parsed -- see error log. ");
+	}
+	buf.append(" Ring buffer is at ");
+	buf.append(theRing.getNumObjects());
+	buf.append(" out of ");
+	buf.append(theRing.getCapacity());
+	buf.append(".");
+	theHandleThread.resetCounts();
+	return buf.toString();
+    }
+
+
     public void shutDown() {
         log.debug("shutting down receiver.");
         theRecvThread.shutDown();
@@ -130,20 +154,25 @@ class ReceiverThread extends Thread {
         DatagramPacket packet;
         CustomByteBuffer storage;
 
+	buf = new byte[UsageMonitorPacket.MAX_PACKET_SIZE];
+	/*this is a reusable receiving buffer big enough to hold any
+	  packet.  After receiving the packet, put it into a CustomByteBuffer
+	  only as large as the packet data itself, so as to avoid writing
+	  tons of zero bytes into the database.*/
         while(stillGood) {
-            buf = new byte[UsageMonitorPacket.MAX_PACKET_SIZE];
+
             packet = new DatagramPacket(buf, buf.length);
 
             try {
                 socket.receive(packet);
 
-                storage = CustomByteBuffer.wrap(buf);
+                storage = CustomByteBuffer.fitToData(buf, packet.getLength());
                 log.info("Packet received!");
                 
                 /*Put packet into ring buffer:*/
                 if (!theRing.insert(storage)) {
                     //failed == ring is full
-                    log.warn("WARNING:  Ring buffer is FULL.  We are LOSING PACKETS.");
+                    log.error("Ring buffer is FULL.  We are LOSING PACKETS!");
                     //todo:  throw an exception?
                 }
 
@@ -156,6 +185,10 @@ class ReceiverThread extends Thread {
 
     }
 
+    public int getRingFullness() {
+	return theRing.getNumObjects();
+    }
+
     public void shutDown() {
         stillGood = false; //lets the loop in run() finish.
         socket.close();
@@ -164,35 +197,86 @@ class ReceiverThread extends Thread {
 
 class HandlerThread extends Thread {
 
+    private static Log log = LogFactory.getLog(HandlerThread.class);
     private LinkedList handlerList; /*a reference to the one in Receiver*/
     private RingBuffer theRing; /*a reference to the one in Receiver*/
     private boolean stillGood = true;
     private DefaultPacketHandler theDefaultHandler;
 
+    private int packetsLogged, errorCount;
+
     public HandlerThread(LinkedList list, String driver, String db, String table, RingBuffer ring) {
         super("UDPHandlerThread");
 
+	this.packetsLogged = 0;
+	this.errorCount = 0;
         this.handlerList = list;
         this.theRing = ring;
-        theDefaultHandler = new DefaultPacketHandler(driver, db, table);
+	try {
+	    theDefaultHandler = new DefaultPacketHandler(driver, db, table);
+	}
+	catch (Exception e) {
+	    log.error("Can't start listener thread: "+e.getMessage());
+	    stillGood = false;
+	}
+    }
+
+    public int getPacketsLogged() {
+	return this.packetsLogged;
+    }
+    
+    public int getPacketsDropped() {
+	return this.errorCount;
+    }
+
+    public void resetCounts() {
+	this.packetsLogged = 0;
+	this.errorCount = 0;
     }
 
     /*This thread waits on the RingBuffer; when packets come in, it starts
       reading them out and letting the handlers have them.*/
     public void run() {
         short componentCode, versionCode;
-        CustomByteBuffer bufFromRing;
+        CustomByteBuffer bufFromRing = null;
 
         while(stillGood) {
+	  try {
             bufFromRing = theRing.getNext();
 
             componentCode = bufFromRing.getShort();
             versionCode = bufFromRing.getShort();
             bufFromRing.rewind();
-            tryHandlers(bufFromRing, componentCode, versionCode);
-        }
+	    tryHandlers(bufFromRing, componentCode, versionCode);
+	    
+	    packetsLogged ++;
+	  } catch (Exception e) {
+	    //this thread has to be able to catch any exception and keep going...
+	    //otherwise a bad packet could shut down the thread!
+	    log.error(e.getMessage());
+	    if (bufFromRing != null) {
+	  	log.error(new String(bufFromRing.array()));
+	    }
+	    errorCount ++;
+  	  }
+	}
     }
 
+    private void debugRawPacketContents(CustomByteBuffer buf) {
+	short cc, vc;
+	long ts;
+	short ipv;
+
+	log.info("HandlerThread got a usagepacket.");	
+	cc = buf.getShort();
+	vc = buf.getShort();
+	log.info("component code = "+cc+", packet version = "+vc);
+	ts = buf.getLong();
+	log.info("Time sent = "+ts);
+	ipv = buf.getShort();
+	log.info("IP Version is "+ipv);
+	buf.rewind();
+    }
 
     private void tryHandlers(CustomByteBuffer bufFromRing, short componentCode,
                              short versionCode) {
