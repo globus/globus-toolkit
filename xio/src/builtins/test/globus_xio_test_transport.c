@@ -1,27 +1,54 @@
 #include "globus_xio_driver.h"
 #include "globus_xio_test_driver.h"
 
+#define XIOTestCreateOpWraper(ow, dh, op, res)                          \
+{                                                                       \
+    ow = (globus_l_xio_test_op_wrapper_t *)                             \
+            globus_malloc(sizeof(globus_l_xio_test_op_wrapper_t));      \
+    ow->dh = dh;                                                        \
+    ow->op = op;                                                        \
+    ow->res = res;                                                      \
+}
+
+
+typedef enum globus_xio_test_failure_e
+{
+    GLOBUS_XIO_TEST_FAIL_PASS_OPEN = 0x01,
+    GLOBUS_XIO_TEST_FAIL_FINISH_OPEN = 0x02,
+    GLOBUS_XIO_TEST_FAIL_PASS_CLOSE = 0x04,
+    GLOBUS_XIO_TEST_FAIL_FINISH_CLOSE = 0x08,
+    GLOBUS_XIO_TEST_FAIL_PASS_READ = 0x10,
+    GLOBUS_XIO_TEST_FAIL_FINISH_READ = 0x20,
+    GLOBUS_XIO_TEST_FAIL_PASS_WRITE = 0x40,
+    GLOBUS_XIO_TEST_FAIL_FINISH_WRITE = 0x80,
+} globus_xio_test_failure_t;
+
 static int
 globus_l_xio_test_activate();
 
 static int
 globus_l_xio_test_deactivate();
 
-typedef struct globus_l_xio_test_attr_s
-{
-    globus_bool_t                       inline_finish;
-    globus_bool_t                       failures;
-    float                               nbyte_percent;
-    globus_reltime_t                    delay;
-} globus_l_xio_test_attr_t;
-
+/* 
+ *  handle and attr are the same structure here
+ */
 typedef struct globus_l_xio_test_handle_s
 {
+    globus_xio_test_failure_t           failure;
     globus_xio_driver_context_t         context;
-    globus_xio_operation_t              op;
+    globus_reltime_t                    delay;
+    globus_bool_t                       inline_finish;
 } globus_l_xio_test_handle_t;
 
-static globus_l_xio_test_attr_t         globus_l_default_attr;
+typedef struct globus_l_xio_test_op_wrapper_s
+{
+    globus_xio_operation_t              op;
+    globus_l_xio_test_handle_t *        dh;
+    globus_result_t                     res;
+} globus_l_xio_test_op_wrapper_t;
+
+
+static globus_l_xio_test_handle_t       globus_l_default_attr;
 
 #include "version.h"
 
@@ -61,11 +88,11 @@ globus_result_t
 globus_l_xio_test_attr_init(
     void **                             out_attr)
 {
-    globus_l_xio_test_attr_t *          attr;
+    globus_l_xio_test_handle_t *        attr;
 
-    attr = (globus_l_xio_test_attr_t *)
-                globus_malloc(sizeof(globus_l_xio_test_attr_t));
-    memset(attr, '\0', sizeof(globus_l_xio_test_attr_t));
+    attr = (globus_l_xio_test_handle_t *)
+                globus_malloc(sizeof(globus_l_xio_test_handle_t));
+    memset(attr, '\0', sizeof(globus_l_xio_test_handle_t));
 
     *out_attr = attr;
 
@@ -82,10 +109,10 @@ globus_l_xio_test_attr_cntl(
     int                                 cmd,
     va_list                             ap)
 {
-    globus_l_xio_test_attr_t *          attr;
+    globus_l_xio_test_handle_t *        attr;
     int                                 usecs;
 
-    attr = (globus_l_xio_test_attr_t *) driver_attr;
+    attr = (globus_l_xio_test_handle_t *) driver_attr;
 
     switch(cmd)
     {
@@ -94,7 +121,7 @@ globus_l_xio_test_attr_cntl(
             break;
 
         case GLOBUS_XIO_TEST_SET_FAILURES:
-            attr->failures = va_arg(ap, int);
+            attr->failure = va_arg(ap, int);
             break;
 
         case GLOBUS_XIO_FILE_SET_USECS:
@@ -116,11 +143,11 @@ globus_l_xio_test_attr_copy(
     void **                             dst,
     void *                              src)
 {
-    globus_l_xio_test_attr_t *          attr;
+    globus_l_xio_test_handle_t *        attr;
 
-    attr = (globus_l_xio_test_attr_t *)
-                globus_malloc(sizeof(globus_l_xio_test_attr_t));
-    memcpy(attr, src, sizeof(globus_l_xio_test_attr_t));
+    attr = (globus_l_xio_test_handle_t *)
+                globus_malloc(sizeof(globus_l_xio_test_handle_t));
+    memcpy(attr, src, sizeof(globus_l_xio_test_handle_t));
 
     return GLOBUS_SUCCESS;
 }
@@ -148,7 +175,6 @@ globus_l_xio_test_target_init(
     void *                              driver_attr,
     const char *                        contact_string)
 {
-    /* TODO: add failure cases */
     return GLOBUS_SUCCESS;
 }
 
@@ -160,7 +186,6 @@ globus_result_t
 globus_l_xio_test_target_destroy(
     void *                              driver_target)
 {
-    /* TODO: add failure cases */
     return GLOBUS_SUCCESS;
 }
 
@@ -168,29 +193,31 @@ void
 globus_l_xio_operation_kickout(
     void *                              user_arg)
 {
+    globus_l_xio_test_op_wrapper_t *    ow;
     globus_l_xio_test_handle_t *        dh;
     globus_size_t                       nbytes;
 
-    dh = (globus_l_xio_test_handle_t *) user_arg;
+    ow = (globus_l_xio_test_op_wrapper_t *) user_arg;
 
     /* this is kindof cheating */
     switch(dh->op->type)
     {
         case GLOBUS_XIO_OPERATION_TYPE_OPEN:
-            GlobusXIODriverFinishedOpen(dh->context, dh, dh->op, \
-                GLOBUS_SUCCESS);
+            GlobusXIODriverFinishedOpen(ow->dh->context, ow->dh, ow->op, \
+                ow->res);
             break;
 
         case GLOBUS_XIO_OPERATION_TYPE_CLOSE:
-            GlobusXIODriverFinishedClose(dh->op, GLOBUS_SUCCESS);
+            GlobusXIODriverFinishedClose(ow->op, ow->res);
+            globus_l_xio_test_attr_destroy(dh);
             break;
 
         case GLOBUS_XIO_OPERATION_TYPE_READ:
-            GlobusXIODriverFinishedRead(dh->op, GLOBUS_SUCCESS, nbytes);
+            GlobusXIODriverFinishedRead(dh->op, ow->res, nbytes);
             break;
 
         case GLOBUS_XIO_OPERATION_TYPE_WRITE:
-            GlobusXIODriverFinishedWrite(dh->op, GLOBUS_SUCCESS, nbytes);
+            GlobusXIODriverFinishedWrite(dh->op, ow->res, nbytes);
             break;
     }    
 
@@ -207,35 +234,49 @@ globus_l_xio_test_open(
     globus_xio_driver_context_t         context,
     globus_xio_driver_operation_t       op)
 {
-    /* TODO: add failure cases */
     globus_l_xio_test_attr_t *          attr;
     globus_l_xio_test_handle_t *        dh;
+    globus_result_t                     res;
 
     attr = (globus_l_xio_test_attr_t *) driver_attr;
-
-    dh = (globus_l_xio_test_handle_t *) globus_malloc(
-            sizeof(globus_l_xio_test_handle_t));
-    dh->op = op;
-    dh->context = context;
 
     if(attr == NULL)
     {
         attr = &globus_l_default_attr;
     }
 
+    /* copy the attr to a handle */
+    globus_l_xio_test_attr_copy(&dh, attr);
+    dh->context = context;
+
+    if(dh->failure | GLOBUS_XIO_TEST_FAIL_PASS_OPEN)
+    {
+        return Failed();
+    }
+    else if(dh->failure | GLOBUS_XIO_TEST_FAIL_FINISH_OPEN)
+    {
+        res = Failed();
+    }
+
     if(attr->inline)
     {
-        GlobusXIODriverFinishedOpen(context, 0x10, op, GLOBUS_SUCCESS);
+        GlobusXIODriverFinishedOpen(context, 0x10, op, res);
     }
     else
     {
+        globus_l_xio_test_op_wrapper_t *    ow;
+
+        XIOTestCreateOpWraper(ow, dh, op, res);
+
         globus_callback_space_register_oneshot(
             NULL,
             &attr->delay,
             globus_l_xio_operation_kickout,
-            (void *)dh,
+            (void *) ow,
             GLOBUS_CALLBACK_GLOBAL_SPACE);
     }
+
+    *out_handle = dh;
 
     return GLOBUS_SUCCESS;
 }
@@ -250,30 +291,36 @@ globus_l_xio_test_close(
     globus_xio_driver_context_t         context,
     globus_xio_driver_operation_t       op)
 {
-    /* TODO: add failure cases */
-    globus_l_xio_test_attr_t *          attr;
     globus_l_xio_test_handle_t *        dh;
+    globus_result_t                     res = GLOBUS_SUCCESS;
 
-    attr = (globus_l_xio_test_attr_t *) driver_attr;
     dh = (globus_l_xio_test_handle_t *) driver_handle;
 
-    dh->op = op;
-    if(attr == NULL)
+    if(dh->failure | GLOBUS_XIO_TEST_FAIL_PASS_CLOSE)
     {
-        attr = &globus_l_default_attr;
+        return Failed();
+    }
+    else if(dh->failure | GLOBUS_XIO_TEST_FAIL_FINISH_CLOSE)
+    {
+        res = Failed();
+        GlobusXIOOperationSetUserPointer(op, res);
     }
 
-    if(attr->inline)
+    if(dh->inline)
     {
-        GlobusXIODriverFinishedOpen(context, 0x10, op, GLOBUS_SUCCESS);
+        GlobusXIODriverFinishedOpen(context, 0x10, op, res);
+        globus_l_xio_test_attr_destroy(dh);
     }
     else
     {
+        globus_l_xio_test_op_wrapper_t *    ow;
+
+        XIOTestCreateOpWraper(ow, dh, op, res);
         globus_callback_space_register_oneshot(
             NULL,
             &attr->delay,
             globus_l_xio_operation_kickout,
-            (void *)dh,
+            (void *)ow,
             GLOBUS_CALLBACK_GLOBAL_SPACE);
     }
 
@@ -291,30 +338,38 @@ globus_l_xio_test_read(
     int                                 iovec_count,
     globus_xio_driver_operation_t       op)
 {
-    /* TODO: add failure cases */
-    globus_l_xio_test_attr_t *          attr;
     globus_l_xio_test_handle_t *        dh;
+    globus_result_t                     res = GLOBUS_SUCCESS;
 
-    attr = (globus_l_xio_test_attr_t *) driver_attr;
     dh = (globus_l_xio_test_handle_t *) driver_handle;
 
-    dh->op = op;
-    if(attr == NULL)
+    if(dh->failure | GLOBUS_XIO_TEST_FAIL_PASS_READ)
     {
-        attr = &globus_l_default_attr;
+        return Failed();
+    }
+    else if(dh->failure | GLOBUS_XIO_TEST_FAIL_FINISH_READ)
+    {
+        res = Failed();
+        GlobusXIOOperationSetUserPointer(op, res);
     }
 
-    if(attr->inline)
+
+    dh->op = op;
+
+    if(dh->inline)
     {
-        GlobusXIODriverFinishedOpen(context, 0x10, op, GLOBUS_SUCCESS);
+        GlobusXIODriverFinishedOpen(context, 0x10, op, res);
     }
     else
     {
+        globus_l_xio_test_op_wrapper_t *    ow;
+
+        XIOTestCreateOpWraper(ow, dh, op, res);
         globus_callback_space_register_oneshot(
             NULL,
             &attr->delay,
             globus_l_xio_operation_kickout,
-            (void *)dh,
+            (void *)ow,
             GLOBUS_CALLBACK_GLOBAL_SPACE);
     }
 
@@ -332,30 +387,35 @@ globus_l_xio_test_write(
     int                                 iovec_count,
     globus_xio_driver_operation_t       op)
 {
-    /* TODO: add failure cases */
-    globus_l_xio_test_attr_t *          attr;
     globus_l_xio_test_handle_t *        dh;
-
-    attr = (globus_l_xio_test_attr_t *) driver_attr;
+    globus_result_t                     res = GLOBUS_SUCCESS;
+    
     dh = (globus_l_xio_test_handle_t *) driver_handle;
-
-    dh->op = op;
-    if(attr == NULL)
+    
+    if(dh->failure | GLOBUS_XIO_TEST_FAIL_PASS_WRITE)
     {
-        attr = &globus_l_default_attr;
+        return Failed();
+    }
+    else if(dh->failure | GLOBUS_XIO_TEST_FAIL_FINISH_WRITE)
+    {
+        res = Failed();
+        GlobusXIOOperationSetUserPointer(op, res);
     }
 
-    if(attr->inline)
+    if(dh->inline)
     {
-        GlobusXIODriverFinishedOpen(context, 0x10, op, GLOBUS_SUCCESS);
+        GlobusXIODriverFinishedOpen(context, 0x10, op, res);
     }
     else
     {
+        globus_l_xio_test_op_wrapper_t *    ow;
+
+        XIOTestCreateOpWraper(ow, dh, op, res);
         globus_callback_space_register_oneshot(
             NULL,
             &attr->delay,
             globus_l_xio_operation_kickout,
-            (void *)dh,
+            (void *)ow,
             GLOBUS_CALLBACK_GLOBAL_SPACE);
     }
 
@@ -369,7 +429,6 @@ globus_l_xio_test_cntl(
     int                                 cmd,
     va_list                             ap)
 {
-    /* TODO: add failure cases */
     return GLOBUS_SUCCESS;
 }
 
