@@ -55,7 +55,7 @@ RCSID("$OpenBSD: sshconnect1.c,v 1.48 2002/02/11 16:15:46 markus Exp $");
 #ifdef GSSAPI
 #include "ssh-gss.h"
 #include "bufaux.h"
-static char gssapi_patch_version[] = GSSAPI_PATCH_VERSION;
+
 /*
  * MD5 hash of host and session keys for verification. This is filled
  * in in ssh_login() and then checked in try_gssapi_authentication().
@@ -1126,7 +1126,7 @@ int try_gssapi_authentication(char *host, Options *options)
 
   debug("Attempting %s authentication", gssapi_auth_type);
 
-  service_name = (char *) malloc(strlen(GSSAPI_SERVICE_NAME) +
+  service_name = (char *) malloc(strlen("host") +
                                  strlen(hostinfo->h_name) +
                                  2 /* 1 for '@', 1 for NUL */);
 
@@ -1136,7 +1136,7 @@ int try_gssapi_authentication(char *host, Options *options)
   }
 
 
-  sprintf(service_name, "%s@%s", GSSAPI_SERVICE_NAME, hostinfo->h_name);
+  sprintf(service_name, "host@%s", hostinfo->h_name);
 
   name_type = GSS_C_NT_HOSTBASED_SERVICE;
 
@@ -1727,7 +1727,7 @@ ssh_userauth1(const char *local_user, const char *server_user, char *host,
   if ((supported_authentications & (1 << SSH_AUTH_GSSAPI)) &&
       options.gss_authentication)
     {
-      debug("Trying GSSAPI authentication (%s)...", gssapi_patch_version);
+      debug("Trying GSSAPI authentication...");
       try_gssapi_authentication(host, &options);
 
       /*
