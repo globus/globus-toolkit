@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2001 Simon Wilkinson. All rights reserved.
+ * Copyright (c) 2001,2002 Simon Wilkinson. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -27,7 +27,6 @@
 #ifdef GSSAPI
 
 #include "ssh.h"
-#include "ssh1.h"
 #include "ssh2.h"
 #include "xmalloc.h"
 #include "buffer.h"
@@ -44,18 +43,13 @@
 #include "dispatch.h"
 #include "servconf.h"
 #include "compat.h"
-#include "misc.h"
+#include "monitor_wrap.h"
 
 #include "ssh-gss.h"
 
 extern ServerOptions options;
 extern u_char *session_id2;
 extern int session_id2_len;
-
-int 	userauth_external(Authctxt *authctxt);
-int	userauth_gssapi(Authctxt *authctxt);
-void    userauth_reply(Authctxt *authctxt, int authenticated);
-static void gssapi_unsetenv(const char *var);
 
 typedef struct ssh_gssapi_cred_cache {
 	char *filename;
@@ -65,28 +59,6 @@ typedef struct ssh_gssapi_cred_cache {
 } ssh_gssapi_cred_cache;
 
 static struct ssh_gssapi_cred_cache gssapi_cred_store = {NULL,NULL,NULL};
-unsigned char ssh1_key_digest[16]; /* used for ssh1 gssapi */
-
-/*
- * Environment variables pointing to delegated credentials
- */
-static char *delegation_env[] = {
-  "X509_USER_PROXY",		/* GSSAPI/SSLeay */
-  "KRB5CCNAME",			/* Krb5 and possibly SSLeay */
-  NULL
-};
-
-Authmethod method_external = {
-	"external-keyx",
-	userauth_external,
-	&options.gss_authentication
-};
-
-Authmethod method_gssapi = {
-	"gssapi",
-	userauth_gssapi,
-	&options.gss_authentication
-};
 
 #ifdef KRB5
 
@@ -281,8 +253,10 @@ ssh_gssapi_gsi_userok(char *name)
     authorized = (globus_gss_assist_userok(gssapi_client_name.value,
 					   name) == 0);
     
-    log("GSI user %s is%s authorized as target user %s",
-	(char *) gssapi_client_name.value, (authorized ? "" : " not"), name);
+    debug("GSI user %s is%s authorized as target user %s",
+	  (char *) gssapi_client_name.value,
+	  (authorized ? "" : " not"),
+	  name);
     
     return authorized;
 }
@@ -464,291 +438,169 @@ ssh_gssapi_userok(char *user)
 	return(0);
 }
 
-int
-userauth_external(Authctxt *authctxt)
-{
-	packet_check_eom();
+/* Stuff to play nicely with privsep */
 
-	return(ssh_gssapi_userok(authctxt->user));
+#if 0
+extern struct monitor *pmonitor;
+
+OM_uint32
+mm_ssh_gssapi_server_ctxt(Gssctxt **ctx, gss_OID oid) {
+	Buffer m;
+	
+	/* Client doesn't get to see the context */
+ 	*ctx=NULL;
+
+	buffer_init(&m)
+  	buffer_put_string(&m,oid->elements,oid->length);
+  	
+	mm_request_send(pmonitor->m_recvfd, MONITOR_REQ_GSSSETUP, &m);
+
+	debug3("%s: waiting for MONITOR_ANS_GSSSIGN",__func__);
+	mm_request_receive_expect(pmonitor->m_recvfd, MONITOR_ANS_SIGN, &m);
+	major=buffer_get_int(&m);
+
+	return(major);
 }
-
-void input_gssapi_token(int type, u_int32_t plen, void *ctxt);
-void input_gssapi_exchange_complete(int type, u_int32_t plen, void *ctxt);
-
-/* We only support those mechanisms that we know about (ie ones that we know
- * how to check local user kuserok and the like
- */
+	
 int
-userauth_gssapi(Authctxt *authctxt)
-{
-	gss_OID_desc	oid= {0,NULL};
-	Gssctxt		*ctxt;
-	int		mechs;
-	gss_OID_set	supported;
-	int		present;
-	OM_uint32	ms;
-	u_int		len;
+mm_answer_gss_server_ctxt(int socket, Buffer *m) {
+	gss_OID_desc oid;
+	OM_uint32 major;
 	
-	if (!authctxt->valid || authctxt->user == NULL)
-		return 0;
+	oid.elements=buffer_get_string(m,&oid.length);
 		
-	if (datafellows & SSH_OLD_GSSAPI) {
-		debug("Early drafts of GSSAPI userauth not supported");
-		return 0;
-	}
-	
-	mechs=packet_get_int();
-	if (mechs==0) {
-		debug("Mechanism negotiation is not supported");
-		return 0;
-	}
+	major=ssh_gssapi_server_ctxt(&gsscontext,&oid);
 
-	ssh_gssapi_supported_oids(&supported);
-	do {
-		if (oid.elements)
-			xfree(oid.elements);
-		oid.elements = packet_get_string(&len);
-		oid.length = len;
-		gss_test_oid_set_member(&ms, &oid, supported, &present);
-		mechs--;
-	} while (mechs>0 && !present);
-	
-	if (!present) {
-		xfree(oid.elements);
-		return(0);
-	}
-	
-	ctxt=xmalloc(sizeof(Gssctxt));
-	authctxt->methoddata=(void *)ctxt;
-	
-	ssh_gssapi_build_ctx(ctxt);
-	ssh_gssapi_set_oid(ctxt,&oid);
-
-	if (ssh_gssapi_acquire_cred(ctxt))
-		return 0;
-
-	/* Send SSH_MSG_USERAUTH_GSSAPI_RESPONSE */
-
-	if (!compat20)
-	packet_start(SSH_SMSG_AUTH_GSSAPI_RESPONSE);
-	else
-	packet_start(SSH2_MSG_USERAUTH_GSSAPI_RESPONSE);
-	packet_put_string(oid.elements,oid.length);
-	packet_send();
-	packet_write_wait();
 	xfree(oid.elements);
-		
- 	if (!compat20)
- 	dispatch_set(SSH_MSG_AUTH_GSSAPI_TOKEN,
- 				&input_gssapi_token);
- 	else
-	dispatch_set(SSH2_MSG_USERAUTH_GSSAPI_TOKEN, 
-		     &input_gssapi_token);
-	authctxt->postponed = 1;
 	
-	return 0;
+	buffer_clear(m);
+	buffer_put_int(m,result);
+	
+	mm_request_send(socket,MONITOR_ANS_GSSSIGN,m);
+	
+	return(0);
 }
 
-void
-input_gssapi_token(int type, u_int32_t plen, void *ctxt)
-{
-	Authctxt *authctxt = ctxt;
-	Gssctxt *gssctxt;
-	gss_buffer_desc send_tok,recv_tok;
-	OM_uint32 maj_status, min_status;
-	
-	if (authctxt == NULL || authctxt->methoddata == NULL)
-		fatal("No authentication or GSSAPI context");
-		
-	gssctxt=authctxt->methoddata;
+OM_uint32
+mm_ssh_gssapi_accept_ctx(Gssctxt *ctx, gss_buffer_desc *in,
+			 gss_buffer_desc *out, OM_uint32 *flags) {
 
-	recv_tok.value=packet_get_string(&recv_tok.length);
+	Buffer m;
+	OM_uint32, major;
 	
-	maj_status=ssh_gssapi_accept_ctx(gssctxt, &recv_tok, &send_tok, NULL);
-	packet_check_eom();
+	buffer_init(&m);
+	buffer_put_string(&m, in->value, in->length);
+	mm_request_send(pmonitor->m_recvfd, MONITOR_REQ_GSSSTEP, &m);
 	
-	if (GSS_ERROR(maj_status)) {
-		/* Failure <sniff> */
-		ssh_gssapi_send_error(maj_status,min_status);
-		authctxt->postponed = 0;
-		dispatch_set(SSH_MSG_AUTH_GSSAPI_TOKEN, NULL);
-		dispatch_set(SSH2_MSG_USERAUTH_GSSAPI_TOKEN, NULL);
-		userauth_finish(authctxt, 0, "gssapi");
-	}
-			
-	if (send_tok.length != 0) {
-		/* Send a packet back to the client */
-		if (!compat20)
-		packet_start(SSH_MSG_AUTH_GSSAPI_TOKEN);
-		else
-	        packet_start(SSH2_MSG_USERAUTH_GSSAPI_TOKEN);
-                packet_put_string(send_tok.value,send_tok.length);
-                packet_send();
-                packet_write_wait();
-                gss_release_buffer(&min_status, &send_tok);
-	}
+	debug3("%s: waiting for MONITOR_ANS_GSSSTEP", &m);
+	mm_request_receive_expect(pmonitor->m_recvfd, MONITOR_ANS_GSSSTEP, &m);
 	
-	if (maj_status == GSS_S_COMPLETE) {
-		dispatch_set(SSH_MSG_AUTH_GSSAPI_TOKEN, NULL);
-  		dispatch_set(SSH2_MSG_USERAUTH_GSSAPI_TOKEN,NULL);
-		/* ssh1 does not have an extra message here */
-		if (!compat20)
-		input_gssapi_exchange_complete(0, 0, ctxt);
-		else
-  		dispatch_set(SSH2_MSG_USERAUTH_GSSAPI_EXCHANGE_COMPLETE,
-  			     &input_gssapi_exchange_complete);
-	}
+	major=buffer_get_int(&m);
+	*out->value=buffer->get_string(&m,&out->length);
+	flags=buffer_get_int(&m);
+
+	return(major);
 }
 
-/* This is called when the client thinks we've completed authentication.
- * It should only be enabled in the dispatch handler by the function above,
- * which only enables it once the GSSAPI exchange is complete.
- */
- 
-void
-input_gssapi_exchange_complete(int type, u_int32_t plen, void *ctxt)
-{
-	Authctxt *authctxt = ctxt;
-	Gssctxt *gssctxt;
-	int authenticated;
-
-    	if(strcmp(authctxt->user,"") == 0) {
-        	char *user;
-        	char *gridmapped_name = NULL;
-        	struct passwd *pw = NULL;
-        	if(globus_gss_assist_gridmap(gssapi_client_name.value,
-                           &gridmapped_name) == 0) {
-               		user = gridmapped_name;
-               		debug("I gridmapped and got %s", user);
-               		pw = getpwnam(user);
-               		if (pw && allowed_user(pw)) {
-                     		authctxt->user = user;
-                     		authctxt->pw = pwcopy(pw);
-                     		authctxt->valid = 1;
-               		}
-        	}
-    	}
-
+int
+mm_answer_gss_accept_ctxt(int socket, Buffer *m) {
+	gss_buffer_desc	in,out;
+	OM_uint32 major;
+	OM_uint32 flags = 0; /* GSI needs this */
 	
-	if (authctxt == NULL || authctxt->methoddata == NULL)
-		fatal("No authentication or GSSAPI context");
-		
-	gssctxt=authctxt->methoddata;
-
-	/* This should never happen, but better safe than sorry. */
-	if (gssctxt->status != GSS_S_COMPLETE) {
-		packet_disconnect("Context negotiation is not complete");
-	}
-
-	if (ssh_gssapi_getclient(gssctxt,&gssapi_client_type,
-				 &gssapi_client_name,
-				 &gssapi_client_creds)) {
-		fatal("Couldn't convert client name");
-	}
-				     		
-        authenticated = ssh_gssapi_userok(authctxt->user);
-
-	/* ssh1 needs to exchange the hash of the keys */
-	if (!compat20) {
-		if (authenticated) {
-
-			OM_uint32 maj_status, min_status;
-			gss_buffer_desc gssbuf,msg_tok;
-
-			/* ssh1 uses wrap */
-			gssbuf.value=ssh1_key_digest;
-			gssbuf.length=sizeof(ssh1_key_digest);
-			if ((maj_status=gss_wrap(&min_status,
-					gssctxt->context,
-					0,
-					GSS_C_QOP_DEFAULT,
-					&gssbuf,
-					NULL,
-					&msg_tok))) {
-				ssh_gssapi_error(maj_status,min_status);
-				fatal("Couldn't wrap keys");
-			}
-			packet_start(SSH_SMSG_AUTH_GSSAPI_HASH);
-			packet_put_string((char *)msg_tok.value,msg_tok.length);
-			packet_send();
-			packet_write_wait();
-			gss_release_buffer(&min_status,&msg_tok);
-		} else {
-		    packet_start(SSH_MSG_AUTH_GSSAPI_ABORT);
-		    packet_send();
-		    packet_write_wait();
-		}
-	}
-
-	authctxt->postponed = 0;
-	dispatch_set(SSH2_MSG_USERAUTH_GSSAPI_TOKEN, NULL);
-	dispatch_set(SSH2_MSG_USERAUTH_GSSAPI_EXCHANGE_COMPLETE, NULL);
-	userauth_finish(authctxt, authenticated, "gssapi");
+	in.value = buffer_get_string(m,&in.length);
+	major=ssh_gssapi_accept_ctxt(gsscontext,&in,&out,&flags);
+	xfree(in.value);
+	
+	buffer_clear(m);
+	buffer_put_int(m, major);
+	buffer_put_string(m, out.value, out.length);
+	buffer_put_int(m, flags);
+	mm_request_send(socket,MONITOR_ANS_STEP,m);
+	
+	gss_release_buffer(out);
+	
+	return(0);
 }
 
-/*
- * Clean our environment on startup. This means removing any environment
- * strings that might inadvertantly been in root's environment and 
- * could cause serious security problems if we think we set them.
- */
-void
-ssh_gssapi_clean_env(void)
-{
-  char *envstr;
-  int envstr_index;
-
-  
-   for (envstr_index = 0;
-       (envstr = delegation_env[envstr_index]) != NULL;
-       envstr_index++) {
-
-     if (getenv(envstr)) {
-       debug("Clearing environment variable %s", envstr);
-       gssapi_unsetenv(envstr);
-     }
-   }
+int
+mm_ssh_gssapi_userok(char *user) {
+	Buffer m;
+	
+	buffer_init(&m);
+	mm_request_send(pmonitor->m_recvfd, MONITOR_REQ_GSSUSEROK, &m);
+	
+	debug3("%s: waiting for MONTIOR_ANS_GSSUSEROK", __func__);
+	mm_request_receive_expect(pmonitor->m_recvfd, MONITOR_ANS_GSSUSEROK),
+				  &m);
+	
+	authenticated = buffer_get_int(&m);
+	
+	buffer_free(&m);
+	debug3("%s: user %sauthetnicated",__func__, authenticated ? "" : "not ");
+	return(authenticated);
 }
 
-/*
- * Wrapper around unsetenv.
- */
-static void
-gssapi_unsetenv(const char *var)
-{
-#ifdef HAVE_UNSETENV
-    unsetenv(var);
+int
+mm_answer_gss_userok(int socket, Buffer *m) {
+	authenticated = authctxt->valid && ssh_gssapi_userok(authctxt->user);
+	
+	buffer_clear(m);
+	buffer_put_int(m, authenticated);
+	
+	debug3("%s: sending result %d", __func__, authenticated);
+	mm_request_send(socket, MONITOR_ANS_GSSUSEROK, m);
+	
+	/* Monitor loop will terminate if authenticated */
+	return(authenticated);
+}
 
-#else /* !HAVE_UNSETENV */
-    extern char **environ;
-    char **p1 = environ;	/* New array list */
-    char **p2 = environ;	/* Current array list */
-    int len = strlen(var);
-
-    /*
-     * Walk through current environ array (p2) copying each pointer
-     * to new environ array (p1) unless the pointer is to the item
-     * we want to delete. Copy happens in place.
-     */
-    while (*p2) {
-	if ((strncmp(*p2, var, len) == 0) &&
-	    ((*p2)[len] == '=')) {
-	    /*
-	     * *p2 points at item to be deleted, just skip over it
-	     */
-	    p2++;
-	} else {
-	    /*
-	     * *p2 points at item we want to save, so copy it
-	     */
-	    *p1 = *p2;
-	    p1++;
-	    p2++;
+OM_uint32
+mm_ssh_gssapi_sign(Gssctxt *ctx, gss_buffer_desc *data, gss_buffer_desc *hash) {
+	Buffer m;
+	OM_uint32 major, minor;
+	
+	buffer_init(&m);
+	buffer_put_string(&m, data->value, data->length);
+	
+	mm_request_send(pmonitor->m_recvfd, MONITOR_REQ_GSSSIGN, &m);
+	
+	debug3("%s: waiting for MONITOR_ANS_GSSSIGN",__func__);
+	mm_request_receive_expect(pmonitor->m_recvfd, MONITOR_ANS_GSSSIGN, &m);
+	major=buffer_get_int(&m);
+	*hash->value = buffer_get_string(&m, &hash->length);
+	
+	return(major);
+}
+	
+int
+mm_answer_gss_sign(int socket, Buffer *m) {
+	gss_buffer_desc data,hash;
+	OM_uint32 major;
+	
+	data.value = buffer_get_string(m,&data.length);
+	if (data.length != 20)
+		fatal("%s: data length incorrect: %d", __func__, datlen);
+	
+	/* Save the session ID - only first time round */
+	if (session_id2_len == 0) {
+		session_id2_len=data.length;
+		session_id2 = xmalloc(session_id2_len);
+		memcpy(session_id2, data.value, session_id2_len);
 	}
-    }
+	major=ssh_gssapi_sign(gsscontext, &data, &hash);
+	
+	xfree(data.value);
+	
+	buffer_clear(m);
+	buffer_put_int(m, major);
+	buffer_put_string(m, hash.value, hash.length);
 
-    /* And make sure new array is NULL terminated */
-    *p1 = NULL;
-#endif /* HAVE_UNSETENV */
+        mm_request_send(socket,MONITOR_ANS_GSSSIGN,m);
+        	
+	gss_release_buffer(hash);
+	
+	return(0);
 }
-
+#endif
 #endif /* GSSAPI */

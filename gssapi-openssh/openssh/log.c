@@ -367,7 +367,7 @@ do_log(LogLevel level, const char *fmt, va_list args)
 		vsnprintf(msgbuf, sizeof(msgbuf), fmt, args);
 	}
 	if (log_on_stderr) {
-		fprintf(stderr, "%s\r\n", msgbuf);
+		fprintf(stderr, "%d: %s\r\n", getpid(), msgbuf);
 	} else {
 		openlog(argv0 ? argv0 : __progname, LOG_PID, log_facility);
 		syslog(pri, "%.500s", msgbuf);

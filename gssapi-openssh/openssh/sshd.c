@@ -85,6 +85,10 @@ RCSID("$OpenBSD: sshd.c,v 1.251 2002/06/25 18:51:04 markus Exp $");
 #include "monitor_wrap.h"
 #include "monitor_fdpass.h"
 
+#ifdef GSSAPI
+#include "ssh-gss.h"
+#endif
+
 #ifdef LIBWRAP
 #include <tcpd.h>
 #include <syslog.h>
@@ -990,10 +994,13 @@ main(int ac, char **av)
 		log("Disabling protocol version 1. Could not load host key");
 		options.protocol &= ~SSH_PROTO_1;
 	}
+#ifndef GSSAPI
+	/* The GSSAPI key exchange can run without a host key */
 	if ((options.protocol & SSH_PROTO_2) && !sensitive_data.have_ssh2_key) {
 		log("Disabling protocol version 2. Could not load host key");
 		options.protocol &= ~SSH_PROTO_2;
 	}
+#endif
 	if (!(options.protocol & (SSH_PROTO_1|SSH_PROTO_2))) {
 		log("sshd: no hostkeys available -- exiting.");
 		exit(1);
@@ -1796,6 +1803,45 @@ do_ssh2_kex(void)
 		myproposal[PROPOSAL_COMP_ALGS_STOC] = "none";
 	}
 	myproposal[PROPOSAL_SERVER_HOST_KEY_ALGS] = list_hostkey_types();
+
+#ifdef GSSAPI
+	{ 
+	char *orig;
+	char *gss = NULL;
+	char *newstr = NULL;
+       	orig = myproposal[PROPOSAL_KEX_ALGS];
+
+	/* If we don't have a host key, then all of the algorithms
+	 * currently in myproposal are useless */
+	if (strlen(myproposal[PROPOSAL_SERVER_HOST_KEY_ALGS])==0)
+		orig= NULL;
+		
+        if (options.gss_keyex)
+        	gss = ssh_gssapi_mechanisms(1,NULL);
+        else
+        	gss = NULL;
+        
+	if (gss && orig) {
+		int len = strlen(orig) + strlen(gss) +2;
+		newstr=xmalloc(len);
+		snprintf(newstr,len,"%s,%s",gss,orig);
+	} else if (gss) {
+		newstr=gss;
+	} else if (orig) {
+		newstr=orig;
+	}
+        /* If we've got GSSAPI mechanisms, then we've also got the 'null'
+	   host key algorithm, but we're not allowed to advertise it, unless
+	   its the only host key algorithm we're supporting */
+	if (gss && (strlen(myproposal[PROPOSAL_SERVER_HOST_KEY_ALGS])) == 0) {
+	  	myproposal[PROPOSAL_SERVER_HOST_KEY_ALGS]="null";
+	}
+	if (newstr)
+		myproposal[PROPOSAL_KEX_ALGS]=newstr;
+	else
+		fatal("No supported key exchange algorithms");
+        }
+#endif
 
 	/* start key exchange */
 	kex = kex_setup(myproposal);

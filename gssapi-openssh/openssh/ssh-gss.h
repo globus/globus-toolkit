@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2001 Simon Wilkinson. All rights reserved.
+ * Copyright (c) 2001,2002 Simon Wilkinson. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -22,6 +22,9 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#ifndef _SSH_GSS_H
+#define _SSH_GSS_H
+
 #ifdef GSSAPI
 
 #include "kex.h"
@@ -41,18 +44,18 @@
 #endif /* !HEIMDAL */
 #endif /* KRB5 */
 
-/* draft-ietf-secsh-gsskeyex-01 */
-#define SSH2_MSG_KEXGSS_INIT		30
-#define SSH2_MSG_KEXGSS_CONTINUE 	31
-#define SSH2_MSG_KEXGSS_COMPLETE 	32
-#define SSH2_MSG_KEXGSS_HOSTKEY		33
-#define KEX_GSS_SHA1			"gss-group1-sha1-"
-
-/* draft-galb-secsh-gssapi-01 */
-#define SSH2_MSG_USERAUTH_GSSAPI_RESPONSE     60
-#define SSH2_MSG_USERAUTH_GSSAPI_TOKEN        61
-#define SSH2_MSG_USERAUTH_GSSAPI_HASH         62
+/* draft-ietf-secsh-gsskeyex-03 */
+#define SSH2_MSG_KEXGSS_INIT				30
+#define SSH2_MSG_KEXGSS_CONTINUE 			31
+#define SSH2_MSG_KEXGSS_COMPLETE 			32
+#define SSH2_MSG_KEXGSS_HOSTKEY				33
+#define SSH2_MSG_KEXGSS_ERROR				34
+#define SSH2_MSG_USERAUTH_GSSAPI_RESPONSE     		60
+#define SSH2_MSG_USERAUTH_GSSAPI_TOKEN        		61
 #define SSH2_MSG_USERAUTH_GSSAPI_EXCHANGE_COMPLETE	63    
+#define SSH2_MSG_USERAUTH_GSSAPI_ERROR			64  
+
+#define KEX_GSS_SHA1					"gss-group1-sha1-"
 
 enum ssh_gss_id {
 #ifdef KRB5
@@ -86,7 +89,7 @@ extern gss_cred_id_t   gssapi_client_creds;
 extern enum ssh_gss_id gssapi_client_type;
 
 char *ssh_gssapi_mechanisms(int server, char *host);
-int ssh_gssapi_id_kex(Gssctxt *ctx, char *name);
+gss_OID ssh_gssapi_id_kex(Gssctxt *ctx, char *name);
 void ssh_gssapi_set_oid_data(Gssctxt *ctx, void *data, size_t len);
 void ssh_gssapi_set_oid(Gssctxt *ctx, gss_OID oid);
 void ssh_gssapi_supported_oids(gss_OID_set *oidset);
@@ -106,19 +109,26 @@ OM_uint32 ssh_gssapi_getclient(Gssctxt *ctx,
 				gss_buffer_desc *name,
 				gss_cred_id_t *creds);
 void ssh_gssapi_error(OM_uint32 major_status,OM_uint32 minor_status);
-void ssh_gssapi_send_error(OM_uint32 major_status,OM_uint32 minor_status);
-void ssh_gssapi_build_ctx(Gssctxt *ctx);
-void ssh_gssapi_delete_ctx(Gssctxt *ctx);
+void ssh_gssapi_build_ctx(Gssctxt **ctx);
+void ssh_gssapi_delete_ctx(Gssctxt **ctx);
+OM_uint32 ssh_gssapi_client_ctx(Gssctxt **ctx,gss_OID oid,char *host);
+OM_uint32 ssh_gssapi_server_ctx(Gssctxt **ctx,gss_OID oid);
 
 /* In the client */
 void ssh_gssapi_client(Kex *kex, char *host, struct sockaddr *hostaddr,
                        Buffer *client_kexinit, Buffer *server_kexinit);
 
 /* In the server */
+int ssh_gssapi_userok(char *name);
 void ssh_gssapi_server(Kex *kex, Buffer *client_kexinit, 
 		       Buffer *server_kexinit);
+
+OM_uint32 ssh_gssapi_sign(Gssctxt *ctx, gss_buffer_desc *buffer, 
+					gss_buffer_desc *hash);
+
 void ssh_gssapi_do_child(char ***envp, u_int *envsizep);                 
 void ssh_gssapi_cleanup_creds(void *ignored);
 void ssh_gssapi_storecreds();
-void ssh_gssapi_clean_env();
 #endif /* GSSAPI */
+
+#endif /* _SSH_GSS_H */
