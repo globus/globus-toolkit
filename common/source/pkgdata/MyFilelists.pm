@@ -22,13 +22,14 @@ sub new {
   my ($class, %arg) = @_;
   my $me = {};
   bless $me, $class;
-  $me->{'filelist'} = new Grid::GPT::Filelist(%arg);
+  $me->{'filelist'} = new Grid::GPT::Filelist((%arg));
   return $me;
 }
 
 sub pgm_files {
   my $self = shift;
   $self->{'filelist'}->extract_programs();
+  $self->{'filelist'}->add_package_metadata_files('pgm');
   my $list = $self->{'filelist'}->get_list();
   $self->{'filelist'}->reset();
   return $list;
@@ -38,6 +39,7 @@ sub rtl_files {
   my $self = shift;
   $self->{'filelist'}->flavored_files();
   $self->{'filelist'}->extract_dynamic_libs();
+  $self->{'filelist'}->add_package_metadata_files('rtl');
   my $list = $self->{'filelist'}->get_list();
   $self->{'filelist'}->reset();
   return $list;
@@ -60,6 +62,7 @@ sub dev_files {
   $self->{'filelist'}->reset();
 
   $self->{'filelist'}->flavored_headers();
+  $self->{'filelist'}->add_package_metadata_files('dev');
   $list = $self->{'filelist'}->get_list();
   push @$result, @$list;
   $self->{'filelist'}->reset();
@@ -70,6 +73,7 @@ sub hdr_files {
   my $self = shift;
   $self->{'filelist'}->noflavor_headers();
   my $list = $self->{'filelist'}->get_list();
+  $self->{'filelist'}->add_package_metadata_files('hdr', 'noflavor');
   $self->{'filelist'}->reset();
   return $list;
 }
@@ -77,6 +81,7 @@ sub hdr_files {
 sub data_files {
   my $self = shift;
   $self->{'filelist'}->extract_data();
+  $self->{'filelist'}->add_package_metadata_files('data', 'noflavor');
   my $list = $self->{'filelist'}->get_list();
   $self->{'filelist'}->reset();
   return $list;
@@ -85,6 +90,7 @@ sub data_files {
 sub doc_files {
   my $self = shift;
   $self->{'filelist'}->extract_docs();
+  $self->{'filelist'}->add_package_metadata_files('doc', 'noflavor');
   my $list = $self->{'filelist'}->get_list();
   $self->{'filelist'}->reset();
   return $list;
