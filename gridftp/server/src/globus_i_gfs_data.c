@@ -1437,7 +1437,6 @@ globus_i_gfs_data_request_handle_destroy(
         switch(data_handle->state)
         {
             case GLOBUS_L_GFS_DATA_HANDLE_VALID:
-                session_handle->ref++;
                 data_handle->state = 
                     GLOBUS_L_GFS_DATA_HANDLE_CLOSING_AND_DESTROYED;
                 if(!data_handle->is_mine)
@@ -1446,6 +1445,7 @@ globus_i_gfs_data_request_handle_destroy(
                 }
                 else
                 {
+                    session_handle->ref++;
                     /* set directly to closed to that when callback
                         returns we clean it up */
                     result = globus_ftp_control_data_force_close(
