@@ -525,7 +525,7 @@ globus_i_gsi_callback_check_proxy(
     globus_gsi_callback_data_t          callback_data)
 {
     globus_gsi_cert_utils_cert_type_t   cert_type;
-    globus_result_t                     result;
+    globus_result_t                     result = GLOBUS_SUCCESS;
     static char *                       _function_name_ =
         "globus_i_gsi_callback_check_proxy";
 
@@ -545,13 +545,35 @@ globus_i_gsi_callback_check_proxy(
         goto exit;
     }
 
-    callback_data->cert_type = cert_type;
-    
     if(cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_PROXY ||
        cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_LIMITED_PROXY ||
        cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_PROXY)
     {  
         /* it is a proxy */
+
+        /* a legacy globus proxy may only be followed by another legacy globus
+         * proxy or a limited legacy globus_proxy.
+         * a limited legacy globus proxy may only be followed by another
+         * limited legacy globus proxy or a full legacy globus proxy
+         * a draft compliant proxy may only be followed by another draft
+         * compliant proxy
+         */
+        
+        if(((callback_data->cert_type ==
+             GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_PROXY ||
+             callback_data->cert_type ==
+             GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_LIMITED_PROXY) &&
+            (cert_type != GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_PROXY &&
+             cert_type != GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_LIMITED_PROXY)) ||
+           (callback_data->cert_type ==
+            GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_PROXY &&
+            cert_type != GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_PROXY))
+        {
+            GLOBUS_GSI_CALLBACK_ERROR_CHAIN_RESULT(
+                result,
+                GLOBUS_GSI_CALLBACK_ERROR_MIXING_DIFFERENT_PROXY_TYPES);
+            goto exit;
+        }
 
         if (cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_LIMITED_PROXY)
         {
@@ -590,9 +612,17 @@ globus_i_gsi_callback_check_proxy(
         GLOBUS_I_GSI_CALLBACK_DEBUG_PRINT(2, "Passed proxy test\n");
 
         callback_data->proxy_depth++;
-    }
 
-    result = GLOBUS_SUCCESS;
+        if(callback_data->max_proxy_depth != -1 &&
+           callback_data->max_proxy_depth < callback_data->proxy_depth)
+        {
+            GLOBUS_GSI_CALLBACK_ERROR_CHAIN_RESULT(
+                result,
+                GLOBUS_GSI_CALLBACK_ERROR_PROXY_PATH_LENGTH_EXCEEDED);
+            goto exit;
+        }
+    }
+    callback_data->cert_type = cert_type;
   
  exit:
 

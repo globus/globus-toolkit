@@ -100,7 +100,8 @@ GSS_CALLCONV gss_init_delegation(
     X509 *                              cert = NULL;
     STACK_OF(X509) *                    cert_chain = NULL;
     PROXYCERTINFO *                     pci;
-    globus_gsi_cert_utils_proxy_type_t  proxy_type = GLOBUS_FULL_PROXY;
+    globus_gsi_cert_utils_cert_type_t   cert_type =
+        GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_PROXY;
     int                                 index;
     globus_result_t                     local_result = GLOBUS_SUCCESS;
     static char *                       _function_name_ =
@@ -193,8 +194,8 @@ GSS_CALLCONV gss_init_delegation(
         }
 
         local_result = 
-            globus_gsi_cert_utils_check_proxy_name(cert, 
-                                                   &proxy_type);
+            globus_gsi_cert_utils_get_cert_type(cert, 
+                                                &cert_type);
         if(local_result != GLOBUS_SUCCESS)
         {
             X509_free(cert);
@@ -209,7 +210,7 @@ GSS_CALLCONV gss_init_delegation(
         cert = NULL;
 
         if(extension_oids != GSS_C_NO_OID_SET ||
-           proxy_type == GLOBUS_RESTRICTED_PROXY)
+           cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_PROXY)
         {
             GLOBUS_GSI_GSSAPI_ERROR_RESULT(
                 minor_status,
@@ -221,7 +222,7 @@ GSS_CALLCONV gss_init_delegation(
         }
         else
         {
-            proxy_type = GLOBUS_LIMITED_PROXY;        
+            cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_LIMITED_PROXY;
         }
     }
     

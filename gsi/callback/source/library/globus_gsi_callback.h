@@ -154,7 +154,7 @@ globus_gsi_callback_set_cert_type(
     globus_gsi_cert_utils_cert_type_t   cert_type);
 
 globus_result_t
-globus_gsi_callback_get_proxy_type(
+globus_gsi_callback_get_cert_type(
     globus_gsi_callback_data_t          callback_data,
     globus_gsi_cert_utils_cert_type_t * cert_type);
 
