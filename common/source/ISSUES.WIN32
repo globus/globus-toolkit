@@ -7,4 +7,5 @@ are these correct (inglobus_common_include.h.win)
   #define SIZEOF_LONG 4
 
 
-
+globus_thread_diagnostics_vprintf (globus_print.c)
+  what is it and where did it come form

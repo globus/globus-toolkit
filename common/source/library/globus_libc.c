@@ -366,32 +366,6 @@ globus_libc_fstat(int fd,
 #endif /* !defined(HAVE_THREAD_SAFE_SELECT) && !defined(BUILD_LITE) */
 
  
-/******************************************************************************
-Function: globus_libc_lseek()
-
-Description: 
-
-Parameters: 
-
-Returns:
-******************************************************************************/
-#undef globus_libc_lseek
-int
-globus_libc_lseek(int fd,
-		  globus_off_t offset,
-		  int whence)
-{
-    int rc;
-    int save_errno;
-    globus_libc_lock();
-    rc = lseek(fd, offset, whence);
-    save_errno = errno;
-    /* Should convert EWOULDBLOCK to EINTR */
-    globus_libc_unlock();
-    errno = save_errno;
-    return(rc);
-} /* globus_libc_lseek() */
- 
 #if !defined(BUILD_LITE)
 /******************************************************************************
 Function: globus_libc_malloc()
@@ -915,6 +889,9 @@ globus_libc_gethostname(char *name, int len)
 } /* globus_libc_gethostname() */
 
 
+#if defined(TARGET_ARCH_WIN32)
+
+#else
 /******************************************************************************
 Function: globus_libc_getpid()
 
@@ -969,6 +946,7 @@ globus_libc_fork(void)
     return child;
 } /* globus_libc_fork() */
 
+#endif /* TARGET_ARCH_WIN32 */
 /******************************************************************************
 Function: globus_libc_usleep()
 
@@ -1015,10 +993,13 @@ Returns:
 double
 globus_libc_wallclock(void)
 {
-    struct timeval tv;
+    globus_abstime_t now;
+    long sec;
+    long usec;
 
-    gettimeofday(&tv, 0);
-    return (((double) tv.tv_sec) + ((double) tv.tv_usec) / 1000000.0);
+    GlobusTimeAbstimeGetCurrent(now);
+    GlobusTimeAbstimeGet(now, sec, usec);
+    return (((double) sec) + ((double) usec) / 1000000.0);
 } /* globus_libc_wallclock() */
 
 
@@ -1592,6 +1573,29 @@ globus_l_libc_copy_hostent_data_to_buffer(struct hostent *h,
     }
 } /* globus_l_libc_copy_hostent_data_to_buffer() */
 
+
+/*
+ * globus_libc_system_error_string()
+ *
+ * Return the string for the current errno.
+ */
+char *
+globus_libc_system_error_string(int the_error)
+{
+#if !defined HAVE_STRERROR
+#if ! defined(TARGET_ARCH_LINUX) & ! defined(TARGET_ARCH_FREEBSD)
+    extern char *sys_errlist[];
+#endif
+    return ((char *)sys_errlist[the_error]);
+#else
+    return strerror(the_error);
+#endif
+} /* globus_libc_system_error_string() */
+
+#if defined(TARGET_ARCH_WIN32)
+
+#else
+
 /******************************************************************************
 Function: globus_l_libc_copy_pwd_data_to_buffer()
 
@@ -1727,23 +1731,6 @@ globus_l_libc_copy_pwd_data_to_buffer(struct passwd *pwd,
 } /* globus_l_libc_copy_pwd_data_to_buffer() */
 
 
-/*
- * globus_libc_system_error_string()
- *
- * Return the string for the current errno.
- */
-char *
-globus_libc_system_error_string(int the_error)
-{
-#if !defined HAVE_STRERROR
-#if ! defined(TARGET_ARCH_LINUX) & ! defined(TARGET_ARCH_FREEBSD)
-    extern char *sys_errlist[];
-#endif
-    return ((char *)sys_errlist[the_error]);
-#else
-    return strerror(the_error);
-#endif
-} /* globus_libc_system_error_string() */
 
 
 /******************************************************************************
@@ -1826,6 +1813,7 @@ globus_libc_gethomedir(char *result, int bufsize)
     return rc;
 } /* globus_libc_gethomedir() */
 
+#endif /* TARGET_ARCH_WIN32 */
 
 char *
 globus_libc_strdup(const char * string)
@@ -1872,6 +1860,35 @@ globus_libc_strdup(const char * string)
  * win32 issues not worked out yet
  */
 #if !defined(TARGET_ARCH_WIN32)
+
+/******************************************************************************
+Function: globus_libc_lseek()
+
+Description: 
+
+Parameters: 
+
+Returns:
+******************************************************************************/
+#undef globus_libc_lseek
+
+int
+globus_libc_lseek(int fd,
+		  globus_off_t offset,
+		  int whence)
+{
+    int rc;
+    int save_errno;
+    globus_libc_lock();
+    rc = lseek(fd, offset, whence);
+    save_errno = errno;
+    /* Should convert EWOULDBLOCK to EINTR */
+    globus_libc_unlock();
+    errno = save_errno;
+    return(rc);
+} /* globus_libc_lseek() */
+ 
+
 
 #undef globus_libc_opendir
 extern DIR *

@@ -82,7 +82,7 @@ globus_l_descriptor_string(char *fmt, char *s1, char *s2, char *s3)
 {
     globus_libc_sprintf(fmt, "t%lu:p%lu%s%s%s%s%s%s",
 			(unsigned long) globus_thread_self(),
-			(unsigned long) getpid(),
+			(unsigned long) globus_libc_getpid(),
 			(s1 ? ": " : ""),
 			(s1 ? s1 : ""),
 			(s2 ? ": " : ""),
