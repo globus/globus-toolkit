@@ -2751,6 +2751,8 @@ globus_l_gfs_data_send_eof(
                 op);
             if(result != GLOBUS_SUCCESS)
             {
+                globus_i_gfs_log_result(
+                    "send_eof error", result);
                 op->cached_res = result;
                 globus_callback_register_oneshot(
                     NULL,
@@ -3751,6 +3753,8 @@ globus_gridftp_server_finished_transfer(
                                 op);
                             if(result != GLOBUS_SUCCESS)
                             {
+                                globus_i_gfs_log_result(
+                                    "write_eof error", result);
                                 op->cached_res = result;
                                 globus_callback_register_oneshot(
                                     NULL,
