@@ -97,16 +97,19 @@ AC_DEFUN(LAC_ASM_SET,
                         lac_BN_OBJ="asm/sparcv8plus.lo"
                         lac_MD5_OBJ="asm/md5-sparcv8plus.lo"
                     ;;
+                    *x86_64*)
+                        lac_BN_OBJ="asm/x86_64-gcc.lo"
+                    ;;
                     *x86*)
-                            lac_BN_OBJ="asm/bn86-elf.lo asm/co86-elf.lo"
-                            lac_BF_OBJ="asm/bx86-elf.lo"
-                            lac_DES_OBJ="asm/dx86-elf.lo asm/yx86-elf.lo"
-                            lac_CAST_OBJ="asm/cx86-elf.lo"
-                            lac_RC4_OBJ="asm/rx86-elf.lo"
-                            lac_RC5_OBJ="asm/r586-elf.lo"
-                            lac_SHA1_OBJ="asm/sx86-elf.lo"
-                            lac_MD5_OBJ="asm/mx86-elf.lo"
-                            lac_RMD_OBJ="asm/rm86-elf.lo"
+                        lac_BN_OBJ="asm/bn86-elf.lo asm/co86-elf.lo"
+                        lac_BF_OBJ="asm/bx86-elf.lo"
+                        lac_DES_OBJ="asm/dx86-elf.lo asm/yx86-elf.lo"
+                        lac_CAST_OBJ="asm/cx86-elf.lo"
+                        lac_RC4_OBJ="asm/rx86-elf.lo"
+                        lac_RC5_OBJ="asm/r586-elf.lo"
+                        lac_SHA1_OBJ="asm/sx86-elf.lo"
+                        lac_MD5_OBJ="asm/mx86-elf.lo"
+                        lac_RMD_OBJ="asm/rm86-elf.lo"
                     ;;
                     *ia64*)
                         lac_BN_OBJ="asm/ia64.lo"
