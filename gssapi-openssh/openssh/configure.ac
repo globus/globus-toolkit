@@ -616,8 +616,9 @@ if test "x$gsi_path" != "xno" ; then
 	fi
 	AC_MSG_RESULT(yes)
 
-	CPPFLAGS="$CPPFLAGS $GSI_CPPFLAGS"
-	LIBS="$LIBS $GSI_LIBS"
+        LIBS="$LIBS $GSI_LIBS"
+        LDFLAGS="$LDFLAGS $GSI_LDFLAGS"
+        CPPFLAGS="$CPPFLAGS $GSI_CPPFLAGS"
 
 	AC_MSG_CHECKING(that Globus linkline works)
 	# test that we got the libraries OK
