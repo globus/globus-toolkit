@@ -71,6 +71,7 @@ globus_wsrf_servicegroup                    ws-mds/servicegroup/source
 globus_wsrf_servicegroup_schema             ws-mds/servicegroup/schema
 globus_ws_core_schema                       wsrf/schema/ tar
 globus_wsrf_xindice                         wsrf/java/xindice
+globus_java_container_admin_tools           wsrf/java/container_tools/source
 globus_java_ws_core_common                  wsrf/java/common/source
 globus_java_ws_core_tools                   wsrf/java/tools/source
 globus_java_ws_core_tools_test              wsrf/java/tools/test
