@@ -81,8 +81,8 @@ CVS Information:
 /* In gssutil.c: */
 #define GSSERR_F_NAME_TO_NAME              GSSERR_F_BASE + 11
 #define GSSERR_F_CREATE_FILL               GSSERR_F_BASE + 12
-#define GSSERR_F_GS_HANDSHAKE              GSSERR_F_BASE + 13
-#define GSSERR_F_GS_RETRIEVE_PEER          GSSERR_F_BASE + 14
+#define GSSERR_F_GSS_HANDSHAKE              GSSERR_F_BASE + 13
+#define GSSERR_F_GSS_RETRIEVE_PEER          GSSERR_F_BASE + 14
 
 #define GSSERR_F_WRAP                      GSSERR_F_BASE + 15
 #define GSSERR_F_UNWRAP                    GSSERR_F_BASE + 16
@@ -234,6 +234,40 @@ CVS Information:
 #endif
 #endif
 
+#ifdef BUILD_DEBUG
+#define GLOBUS_I_GSI_GSSAPI_DEBUG(level) \
+    (globus_i_gssapi_debug_level >= (level))
+
+#define GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(level, message) \
+do { \
+    if (GLOBUS_I_GSI_GSSAPI_DEBUG(level)) \
+    { \
+	globus_libc_fprintf message; \
+    } \
+} while (0)
+
+#define GLOBUS_I_GSI_GSSAPI_DEBUG_FNPRINTF(level, message) \
+do { \
+    if (GLOBUS_I_GSI_GSSAPI_DEBUG(level)) \
+    { \
+	globus_libc_fnprintf message; \
+    } \
+} while (0)
+
+#else
+#define GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(level, message)
+#define GLOBUS_I_GSI_GSSAPI_DEBUG_FNPRINTF(level, message)
+#endif
+
+#define GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER \
+            GLOBUS_I_GSI_GSSAPI_DEBUG_PRINTF( \
+                1, (stderr, "%s entering\n", _function_name_))
+
+#define GLOBUS_I_GSSAPI_DEBUG_EXIT \
+            GLOBUS_I_GSI_GSSAPI_DEBUG_PRINTF( \
+                1, (stderr, "%s exiting\n", _function_name_))
+
+#endif
 
 /* Compare OIDs */
 
@@ -275,20 +309,20 @@ typedef struct ssl3_enc_method
 #endif
 
 typedef enum {
-    GS_CON_ST_HANDSHAKE = 0,
-    GS_CON_ST_FLAGS,
-    GS_CON_ST_REQ,
-    GS_CON_ST_CERT,
-    GS_CON_ST_DONE
-} gs_con_st_t;
+    GSS_CON_ST_HANDSHAKE = 0,
+    GSS_CON_ST_FLAGS,
+    GSS_CON_ST_REQ,
+    GSS_CON_ST_CERT,
+    GSS_CON_ST_DONE
+} gss_con_st_t;
 
 typedef enum
 {
-    GS_DELEGATION_START,
-    GS_DELEGATION_DONE,
-    GS_DELEGATION_COMPLETE_CRED,
-    GS_DELEGATION_SIGN_CERT
-} gs_delegation_state_t;
+    GSS_DELEGATION_START,
+    GSS_DELEGATION_DONE,
+    GSS_DELEGATION_COMPLETE_CRED,
+    GSS_DELEGATION_SIGN_CERT
+} gss_delegation_state_t;
 
 typedef struct gss_name_desc_struct {
     /* gss_buffer_desc  name_buffer ; */
@@ -299,40 +333,39 @@ typedef struct gss_name_desc_struct {
 } gss_name_desc ;
 
 typedef struct gss_cred_id_desc_struct {
-    proxy_cred_desc *                   pcd;
+    globus_gsi_cred_handle_t            cred_handle;
     gss_name_desc *                     globusid;
     gss_cred_usage_t                    cred_usage;
-    BIO *                               gs_bio_err;
 } gss_cred_id_desc ;
 
 typedef struct gss_ctx_id_desc_struct{
-    globus_mutex_t                      mutex;
-    proxy_verify_desc                   pvd; /* used for verify_callback */
-    proxy_verify_ctx_desc               pvxd;
-    gss_name_desc *                     source_name;                 
-    gss_name_desc *                     target_name;                 
-    gss_cred_id_desc *                  cred_handle;
-    OM_uint32                           ret_flags;
-    OM_uint32                           req_flags;
-    OM_uint32                           ctx_flags;
-    int                                 cred_obtained;
-    SSL *                               gs_ssl; 
-    BIO *                               gs_rbio;
-    BIO *                               gs_wbio;
-    BIO *                               gs_sslbio;
-    gs_con_st_t                         gs_state;
-    int                                 locally_initiated;
-    time_t                              goodtill;
+    globus_mutex_t                          mutex;
+    globus_gsi_credential_callback_data_t   callback_data;
+    gss_cred_id_desc *                      peer_cred_handle;
+    gss_name_desc *                         source_name;                 
+    gss_name_desc *                         target_name;                 
+    gss_cred_id_desc *                      cred_handle;
+    OM_uint32                               ret_flags;
+    OM_uint32                               req_flags;
+    OM_uint32                               ctx_flags;
+    int                                     cred_obtained;
+    SSL *                                   gss_ssl; 
+    BIO *                                   gss_rbio;
+    BIO *                                   gss_wbio;
+    BIO *                                   gss_sslbio;
+    gss_con_st_t                             gss_state;
+    int                                     locally_initiated;
+    time_t                                  goodtill;
     /* following used during delegation */
 
     /* new key for delegated proxy - do we need this now that we have
      * init/accept-delegation
      */
-    EVP_PKEY *                          dpkey;
+    EVP_PKEY *                              dpkey;
     /* delegated cert */
-    X509 *                              dcert;
+    X509 *                                  dcert;
     /* delegation state */
-    gs_delegation_state_t               delegation_state;
+    gss_delegation_state_t                   delegation_state;
 } gss_ctx_id_desc ;
 
 /**********************************************************************

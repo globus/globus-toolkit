@@ -1,4 +1,4 @@
-/**********************************************************************
+es/**********************************************************************
 
 gssutils.c
 
@@ -50,11 +50,17 @@ gss_copy_name_to_name(
     STACK *                             group = NULL;
     ASN1_BIT_STRING *                   group_types = NULL;
     int                                 i;
+
+    static char *                       _function_name_ =
+        "gss_copy_name_to_name";
+
+    GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
     
     output_name = (gss_name_desc *) malloc(sizeof(gss_name_desc));
 
     if (output_name == NULL)
     {
+#error
         GSSerr(GSSERR_F_NAME_TO_NAME, GSSERR_R_OUT_OF_MEMORY);
         return GSS_S_FAILURE ;
     }
@@ -64,6 +70,7 @@ gss_copy_name_to_name(
         x509n = X509_NAME_dup(input->x509n);
         if (x509n == NULL)
         {
+#error
             return GSS_S_FAILURE;
         }
     }
@@ -90,6 +97,8 @@ gss_copy_name_to_name(
     output_name->group_types = group_types;
     
     *output = output_name;
+
+    GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     
     return  GSS_S_COMPLETE;
 }
@@ -108,8 +117,10 @@ gss_copy_name_to_name(
  * @return
  */
 
-OM_uint32 
+
+OM_uint32
 gss_create_and_fill_context(
+    OM_uint32 *                         minor_status,
     gss_ctx_id_desc **                  context_handle_P,
     gss_cred_id_desc *                  cred_handle,
     const gss_cred_usage_t              cred_usage,
@@ -119,17 +130,31 @@ gss_create_and_fill_context(
     gss_ctx_id_desc*                    context = NULL;
     gss_cred_id_t                       output_cred_handle= NULL;
     int                                 j;
+    OM_uint32                           local_minor_status;
+    char *                              certdir = NULL;
+    SSL_CTX *                           ssl_context = NULL;
+    OM_uint32                           return_value;
+
+    static char *                       _function_name_ =
+        "gss_create_and_fill_context";
+
+    GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
     if(*context_handle_P == GSS_C_NO_CONTEXT)
     {
-        context = (gss_ctx_id_desc*) malloc(sizeof(gss_ctx_id_desc)) ;
+        context = (gss_ctx_id_desc*) globus_malloc(sizeof(gss_ctx_id_desc)) ;
         if (context == NULL)
         {
-            GSSerr(GSSERR_F_CREATE_FILL, GSSERR_R_OUT_OF_MEMORY);
-            return GSS_S_FAILURE;
+            minor_status = (OM_unit32 *) globus_error_wrap_errno_error(
+                GLOBUS_GSI_GSSAPI_MODULE,
+                NULL,
+                errno);
+                    ...
+            return_value = GSS_S_FAILURE;
+            goto done:
         }
         
-        memset(context,0,sizeof(gss_ctx_id_desc));
+        memset(context,(int)NULL,sizeof(gss_ctx_id_desc));
         *context_handle_P = context;
         context->ctx_flags = 0;
     }
@@ -138,26 +163,12 @@ gss_create_and_fill_context(
         context = *context_handle_P;
     }
     
-    context->target_name = NULL;
-    context->source_name = NULL; 
-    context->cred_handle = (gss_cred_id_desc*) NULL ;
-    context->ret_flags = 0;
     context->req_flags = req_flags;
-    context->gs_ssl = NULL;
-    context->gs_rbio = NULL;
-    context->gs_wbio = NULL;
-    context->gs_sslbio = NULL;
-    context->gs_state = GS_CON_ST_HANDSHAKE;
-    context->delegation_state = GS_DELEGATION_START;
-    context->dpkey = NULL;
-    context->dcert = NULL;
+    context->gss_state = GSS_CON_ST_HANDSHAKE;
+    context->delegation_state = GSS_DELEGATION_START;
     context->locally_initiated = (cred_usage == GSS_C_INITIATE);
     context->ctx_flags |= GSS_I_CTX_INITIALIZED;
-    context->goodtill = 0;
     globus_mutex_init(&context->mutex, NULL);
-
-    proxy_verify_ctx_init(&(context->pvxd));
-    proxy_verify_init(&(context->pvd), &(context->pvxd));
 
     /* 
      * set if its OK to accept proxies signed by limited proxies
@@ -165,7 +176,7 @@ gss_create_and_fill_context(
     
     if ( context->req_flags & GSS_C_GLOBUS_LIMITED_PROXY_MANY_FLAG)
     {
-        context->pvd.multiple_limited_proxy_ok = 1;
+        context->callback_data.multiple_limited_proxy_ok = 1;
     }
 
     if (cred_handle == GSS_C_NO_CREDENTIAL)
@@ -173,19 +184,13 @@ gss_create_and_fill_context(
         if(req_flags & GSS_C_ANON_FLAG)
         {
             major_status = gss_create_anonymous_cred(
+                & local_minor_status,
                 &output_cred_handle,
-                cred_usage);
+                cred_usage);            
         }
         else
         {
-            OM_uint32 minor_status;
-
-            /*
-             * Ok, go ahead and get minor_status here and throw
-             * it away. A subsequent call to gsi_generate_minor_status()
-             * should regenerate it.
-             */
-            major_status = gss_acquire_cred(&minor_status,
+            major_status = gss_acquire_cred(& local_minor_status,
                                             GSS_C_NO_NAME,
                                             GSS_C_INDEFINITE,
                                             GSS_C_NO_OID_SET,
@@ -197,12 +202,12 @@ gss_create_and_fill_context(
         
         if (GSS_ERROR(major_status))
         {
-            return major_status;
+            /* SLANG - chain minor status */
+#error
+            return_value = major_status;
+            goto done;
         }
-        
-#ifdef DEBUG
-        fprintf(stderr,"Passed gss_acquire_cred\n");
-#endif
+
         context->cred_handle = output_cred_handle;
         context->cred_obtained = 1;
     }
@@ -223,155 +228,146 @@ gss_create_and_fill_context(
                                              context->cred_handle->globusid);
     }
     
-    if (context->cred_handle->pcd->certdir)
+    globus_gsi_cred_handle_get_handle_attrs(
+        context->cred_handle->cred_handle, & handle_attrs);
+    globus_gsi_cred_handle_attrs_get_ca_cert_dir(handle_attrs, certdir);
+
+    if (certdir)
     {
-        context->pvxd.certdir = strdup(context->cred_handle->pcd->certdir);
+        context->callback_data.certdir = certdir;
+    }
+    else
+    {
+#error need to return error here
     }
 
+    globus_free(certdir);
 
-#ifdef DEBUG
-    fprintf(stderr,"SSL_CTX_set_app_data to pvd %p\n",
-            context->pvd);
-#endif
-
-    /* setup the SSL  for the gs_shuffle routine */
+    /* setup the SSL  for the gss_shuffle routine */
   
-    context->gs_ssl = SSL_new(context->cred_handle->pcd->gs_ctx);
+    globus_gsi_cred_get_ssl_context(context->cred_handle->cred_handle,
+                                    & ssl_context);
 
-    if (context->gs_ssl == NULL)
+    context->gss_ssl = SSL_new(ssl_context);
+
+    SSL_CTX_free(ssl_context);
+
+    if (context->gss_ssl == NULL)
     {
-        return GSS_S_FAILURE;
+#error need to add error here
+        return_value = GSS_S_FAILURE;
+        goto done;
     }
 
     if (cred_usage == GSS_C_ACCEPT)
     {
-        SSL_set_ssl_method(context->gs_ssl,SSLv23_method());
-        SSL_set_options(context->gs_ssl,SSL_OP_NO_SSLv2|SSL_OP_NO_TLSv1);
+        SSL_set_ssl_method(context->gss_ssl,SSLv23_method());
+        SSL_set_options(context->gss_ssl,SSL_OP_NO_SSLv2|SSL_OP_NO_TLSv1);
     }
     else
     {
-        SSL_set_ssl_method(context->gs_ssl,SSLv3_method());
+        SSL_set_ssl_method(context->gss_ssl,SSLv3_method());
     }
 
-    SSL_set_ex_data(context->gs_ssl, PVD_SSL_EX_DATA_IDX, 
-                    (char *)&(context->pvd)); 
+    SSL_set_ex_data(context->gss_ssl, GLOBUS_GSI_VERIFY_CALLBACK_DATA_IDX, 
+                    (char *)& context->callback_data); 
 
     /*
-     * If accept and caller set GSS_C_CONF_FLAG, remove
-     * the NULL encryptions.    
      * If initiate and caller did not set the GSS_C_CONF_FLAG
-     * then move NULLs to begining.
-     * else, it is already set in the end, so nothing to do.
+     * then add the NULL ciphers to begining.
      */
-
-    if (cred_usage == GSS_C_ACCEPT)
+    if (!(context->req_flags & GSS_C_CONF_FLAG))
     {
-        if (context->req_flags & GSS_C_CONF_FLAG)
-        {
-            context->gs_ssl->cipher_list = sk_SSL_CIPHER_dup(
-                context->cred_handle->pcd->gs_ctx->cipher_list);
-            context->gs_ssl->cipher_list_by_id = sk_SSL_CIPHER_dup(
-                context->cred_handle->pcd->gs_ctx->cipher_list_by_id);
-        }
 
-        if (context->gs_ssl->cipher_list_by_id 
-            && context->gs_ssl->cipher_list)
+        n = (newcred->cred_handle->ssl_context->method->num_ciphers)();
+        for (i = 0; i < n; i++)
         {
-            for(j=0;j<context->cred_handle->pcd->num_null_enc_ciphers;j++)
+            cipher = 
+                (newcred->cred_handle->ssl_context->method->get_cipher)(i);
+
+#define MY_NULL_MASK 0x130021L
+
+            if (cipher && 
+                ((cipher->algorithms & MY_NULL_MASK) == MY_NULL_MASK))
             {
-                /* need to delete_ptr to get the same cipher, if not at end */
-                sk_SSL_CIPHER_delete_ptr(
-                    context->gs_ssl->cipher_list_by_id,
-                    sk_SSL_CIPHER_pop(context->gs_ssl->cipher_list));
-            }
-        }
-    }
-    else
-    {
-        if (!(context->req_flags & GSS_C_CONF_FLAG))
-        {
-            context->gs_ssl->cipher_list = sk_SSL_CIPHER_dup(
-                context->cred_handle->pcd->gs_ctx->cipher_list);
-            context->gs_ssl->cipher_list_by_id = sk_SSL_CIPHER_dup(
-                context->cred_handle->pcd->gs_ctx->cipher_list_by_id);
-        }
-        if (context->gs_ssl->cipher_list)
-        {
-            for(j=0;j<context->cred_handle->pcd->num_null_enc_ciphers;j++)
-            {
-                sk_SSL_CIPHER_unshift(
-                    context->gs_ssl->cipher_list,
-                    sk_pop(context->gs_ssl->cipher_list));
+                sk_SSL_CIPHER_push(
+                    newcred->cred_handle->ssl_context->cipher_list, cipher);
+                sk_SSL_CIPHER_push(
+                    newcred->cred_handle->ssl_context->cipher_list_by_id, 
+                    cipher);
             }
         }
     }
 
-#ifdef DEBUG
-    fprintf(stderr,"SSL is at %p\n",context->gs_ssl);
-    fprintf(stderr,"SSL_set_app_data to pvd %p\n",
-            context->pvd);
-#endif
 
-	
+    GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
+        3, (stderr,"SSL is at %p\n", context->gss_ssl));
+    GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
+        3, (stderr,"SSL_set_app_data to pvd %p\n", context->pvd));
     
-    if ((context->gs_rbio = BIO_new(BIO_s_mem())) == NULL)
+    if ((context->gss_rbio = BIO_new(BIO_s_mem())) == NULL)
     {
-        return GSS_S_FAILURE;
+        return_value = GSS_S_FAILURE;
+        goto done;
     }
 
-    if ((context->gs_wbio = BIO_new(BIO_s_mem())) == NULL)
+    if ((context->gss_wbio = BIO_new(BIO_s_mem())) == NULL)
     {
-        return GSS_S_FAILURE;
+        return_value = GSS_S_FAILURE;
+        goto done;
     }
 
-    if ((context->gs_sslbio = BIO_new(BIO_f_ssl())) == NULL)
+    if ((context->gss_sslbio = BIO_new(BIO_f_ssl())) == NULL)
     {
-        return GSS_S_FAILURE;
+        return_value = GSS_S_FAILURE;
+        goto done;
     }
-#ifdef DEBUG
-    fprintf(stderr,"Setting the SSL state\n");
-#endif
-
     if ( cred_usage == GSS_C_INITIATE)
     {
-        SSL_set_connect_state(context->gs_ssl);
+        SSL_set_connect_state(context->gss_ssl);
     }
     else
     {
-        SSL_set_accept_state(context->gs_ssl);
+        SSL_set_accept_state(context->gss_ssl);
     }
 
-    SSL_set_bio(context->gs_ssl,
-                context->gs_rbio,
-                context->gs_wbio);
+    SSL_set_bio(context->gss_ssl,
+                context->gss_rbio,
+                context->gss_wbio);
 
-    BIO_set_ssl(context->gs_sslbio, 
-                context->gs_ssl, 
+    BIO_set_ssl(context->gss_sslbio, 
+                context->gss_ssl, 
                 BIO_NOCLOSE);
 
-#ifdef DEBUG
     {
         char buff[256];
         int i;
         STACK *sk;
         
-        fprintf(stderr,"Ciphers available:\n");
-        sk=(STACK *)SSL_get_ciphers(context->gs_ssl);
+        GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
+            2, (stderr,"Ciphers available:\n"));
+        sk=(STACK *)SSL_get_ciphers(context->gss_ssl);
         for (i=0; i<sk_num(sk); i++)
         {
             SSL_CIPHER_description((SSL_CIPHER *)sk_value(sk,i),
                                    buff,256);
-            fprintf(stderr,buff);
+            GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
+                3, (stderr,buff));
         }
     }
-#endif
 
-    return GSS_S_COMPLETE;
+    return_value = GSS_S_COMPLETE;
+
+ done:
+
+    GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
+
+    return return_value;
 }
 
 
 /**********************************************************************
-Function:  gs_put_token()
+Function:  gss_put_token()
 
 Description:
 	Called by init_sec_context and accept_sec_context.
@@ -382,12 +378,18 @@ Parameters:
 Returns:
 **********************************************************************/
 OM_uint32
-gs_put_token(
+gss_put_token(
+    OM_uint32                           minor_status,
     const gss_ctx_id_desc*              context_handle,
     BIO *                               bio,
     const gss_buffer_t                  input_token)
 {
     BIO *                               read_bio;
+    OM_uint32                           return_value;
+    static char *                       _function_name_ =
+        "gss_put_token";
+
+    GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
     if(bio)
     {
@@ -395,36 +397,43 @@ gs_put_token(
     }
     else
     {
-        read_bio = context_handle->gs_rbio;
+        read_bio = context_handle->gss_rbio;
     }
 
-	/* add any input data onto the input for the SSL BIO */
+    /* add any input data onto the input for the SSL BIO */
 
-#ifdef DEBUG
-	fprintf(stderr,"input token: len=%d\n",input_token->length);
-#endif
-	if (input_token->length > 0)
+    GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
+        3, (stderr,"input token: len=%d",input_token->length));
+
+    if (input_token->length > 0)
     {
-		BIO_write(read_bio,
+        BIO_write(read_bio,
                   input_token->value,
                   input_token->length);
-#ifdef DEBUG
-		BIO_dump(context_handle->cred_handle->gs_bio_err,
-                 input_token->value,
-                 input_token->length);
-#endif
-	}
+
+        GLOBUS_I_GSI_GSSAPI_DEBUG_FNPRINTF(
+            3, (stderr, input_token->length,
+                "value=%s\n", input_token->value));
+    }
     else
     {
-		return GSS_S_DEFECTIVE_TOKEN;
-	}
+#error /* add error thingy here */
+        return_value = GSS_S_DEFECTIVE_TOKEN;
+        goto done;
+    }
 
-    return GSS_S_COMPLETE;
+    return_value = GSS_S_COMPLETE;
+
+ done:
+
+    GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
+
+    return return_value;
 }
 
 
 /**********************************************************************
-Function:  gs_get_token()
+Function:  gss_get_token()
 
 Description:
 	Called by init_sec_context and accept_sec_context.
@@ -435,12 +444,19 @@ Parameters:
 Returns:
 **********************************************************************/
 OM_uint32
-gs_get_token(
+gss_get_token(
+    OM_unt32 *                          minor_status,
     const gss_ctx_id_desc*              context_handle,
     BIO *                               bio,
     const gss_buffer_t                  output_token)
 {
+    OM_uint32                           return_value;
     BIO *                               write_bio;
+
+    static char *                       _function_name_ =
+        "gss_get_token";
+    
+    GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
     if(bio)
     {
@@ -448,141 +464,48 @@ gs_get_token(
     }
     else
     {
-        write_bio = context_handle->gs_wbio;
+        write_bio = context_handle->gss_wbio;
     }
     
-	/* make out token */
-	output_token->length = BIO_pending(write_bio);
-	if (output_token->length > 0)
+    /* make out token */
+    output_token->length = BIO_pending(write_bio);
+    if (output_token->length > 0)
     {
-		output_token->value = (char *) malloc(output_token->length);
-		if (output_token->value == NULL)
+        output_token->value = (char *) malloc(output_token->length);
+        if (output_token->value == NULL)
         {
-			output_token->length = 0 ;
-			GSSerr(GSSERR_F_GS_HANDSHAKE, GSSERR_R_OUT_OF_MEMORY);
-			return GSS_S_FAILURE;
-		}
-		BIO_read(write_bio,
+            output_token->length = 0 ;
+#error /* add error thingy here */
+            GSSerr(GSSERR_F_GSS_HANDSHAKE, GSSERR_R_OUT_OF_MEMORY);
+            return_value = GSS_S_FAILURE;
+        }
+
+        BIO_read(write_bio,
                  output_token->value,
                  output_token->length);
-#ifdef DEBUG
-		fprintf(stderr,"output token: len=%d\n",output_token->length);
-#endif
-#ifdef DEBUG
-		BIO_dump(context_handle->cred_handle->gs_bio_err,
-				output_token->value,
-				output_token->length);
-#endif
-	}
+
+
+        GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
+            3, (stderr,"output token: len=%d",input_token->length));
+        
+        GLOBUS_I_GSI_GSSAPI_DEBUG_FNPRINTF(
+            3, (stderr, input_token->length,
+                "value=%s\n", input_token->value));
+    }
     else
     {
-		output_token->value = NULL;
-	}
-	return GSS_S_COMPLETE;
-}
+        output_token->value = NULL;
+    }
 
+    return_value = GSS_S_COMPLETE;
 
+    GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
 
-/**********************************************************************
-Function:  gs_read()
-
-Description:
-	Called by init_sec_context and accept_sec_context.
-	Attempt to read from the SSL BIO
-
-Parameters:
-   
-Returns:
-**********************************************************************/
-
-OM_uint32    
-gs_read 
-(const gss_ctx_id_desc*         context_handle,
- void *data,
- int length)
-{
-	OM_uint32 major_status = 0;
-	int rc;
-
-	/*
-	 * do the BIO_do_handshake which may produce output,
-	 * and endup waiting for input
-	 * when completed without error, connection established
-	 */
-	rc = BIO_read(context_handle->gs_sslbio,data,length);
-	if (rc <= 0) {
-		if (!BIO_should_retry(context_handle->gs_sslbio) || 
-			!BIO_should_read(context_handle->gs_sslbio)) {
-
-			/* problem! */
-			GSSerr(GSSERR_F_READ,GSSERR_R_READ_BIO);
-			major_status = GSS_S_DEFECTIVE_CREDENTIAL ;
-		}
-	}
-
-	if (!GSS_ERROR(major_status)) {
-		if (rc > 0) {
-			major_status = GSS_S_COMPLETE ; 
-#ifdef DEBUG
-			fprintf(stderr,"SSL handshake finished\n");
-#endif
-		} else {
-			major_status = GSS_S_CONTINUE_NEEDED ;
-		}
-	}
-  
-	return major_status ;
-}
-/**********************************************************************
-Function:  gs_write()
-
-Description:
-	Called by init_sec_context and accept_sec_context.
-	Write to the SSL BIO
-
-Parameters:
-   
-Returns:
-**********************************************************************/
-
-OM_uint32    
-gs_write 
-(const gss_ctx_id_desc*         context_handle)
-{
-	OM_uint32 major_status = 0;
-	int rc;
-
-	/*
-	 * do the BIO_do_handshake which may produce output,
-	 * and endup waiting for input
-	 * when completed without error, connection established
-	 */
-	rc = BIO_do_handshake(context_handle->gs_sslbio);
-	if (rc <= 0) {
-		if (!BIO_should_retry(context_handle->gs_sslbio) || 
-			!BIO_should_read(context_handle->gs_sslbio)) {
-			/* problem! */
-			GSSerr(GSSERR_F_WRITE,GSSERR_R_WRITE_BIO);
-			major_status = GSS_S_DEFECTIVE_CREDENTIAL ;
-		}
-	}
-
-	if (!GSS_ERROR(major_status)) {
-		if (rc > 0) {
-			major_status = GSS_S_COMPLETE ; 
-#ifdef DEBUG
-			fprintf(stderr,"SSL handshake finished\n");
-#endif
-		} else {
-			major_status = GSS_S_CONTINUE_NEEDED ;
-		}
-	}
-  
-	return major_status ;
+    return return_value;
 }
 
 /**********************************************************************
-Function:  gs_handshake
+Function:  gss_handshake
 
 Description:
 	Called by init_sec_context and accept_sec_context.
@@ -596,103 +519,103 @@ Returns:
 **********************************************************************/
 
 OM_uint32    
-gs_handshake 
-(gss_ctx_id_desc*               context_handle)
+gss_handshake(
+    OM_unt32 *                          minor_status,
+    gss_ctx_id_desc *                   context_handle)
 {
-	OM_uint32 major_status = 0;
-	int rc;
+    OM_uint32 major_status = 0;
+    int rc;
+    
+    GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
-	/*
+    /*
 	 * do the BIO_do_handshake which may produce output,
 	 * and endup waiting for input
 	 * when completed without error, connection established
 	 */
-	rc = BIO_do_handshake(context_handle->gs_sslbio);
-	if (rc <= 0) {
-		if (!BIO_should_retry(context_handle->gs_sslbio) || 
-			!BIO_should_read(context_handle->gs_sslbio)) {
+    rc = BIO_do_handshake(context_handle->gss_sslbio);
+    if (rc <= 0) {
+        if (!BIO_should_retry(context_handle->gss_sslbio) || 
+            !BIO_should_read(context_handle->gss_sslbio)) {
 
-			/* problem! */
-#ifdef DEBUG
-			fprintf(stderr,"disp=%d,level=%d,desc=%d,left=%d\n",
-				context_handle->gs_ssl->s3->alert_dispatch,
-				context_handle->gs_ssl->s3->send_alert[0],
-				context_handle->gs_ssl->s3->send_alert[1],
-				context_handle->gs_ssl->s3->wbuf.left);
+            /* problem! */
+
+            GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
+                2, (stderr,"disp=%d,level=%d,desc=%d,left=%d\n",
+                    context_handle->gss_ssl->s3->alert_dispatch,
+                    context_handle->gss_ssl->s3->send_alert[0],
+                    context_handle->gss_ssl->s3->send_alert[1],
+                    context_handle->gss_ssl->s3->wbuf.left));
 			
-			fprintf(stderr,"SSL_get_error = %d\n",
-			SSL_get_error(context_handle->gs_ssl, rc));
+            GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
+                2, (stderr,"SSL_get_error = %d\n",
+                    SSL_get_error(context_handle->gss_ssl, rc)));
 
-			fprintf(stderr,"shutdown=%d\n",
-			SSL_get_shutdown(context_handle->gs_ssl));
+            GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
+                2, (stderr,"shutdown=%d\n",
+                    SSL_get_shutdown(context_handle->gss_ssl)));
 #endif
             /* checks for ssl alert 42 */
             if (ERR_peek_error() == 
-               ERR_PACK(ERR_LIB_SSL,SSL_F_SSL3_READ_BYTES,
-                   SSL_R_SSLV3_ALERT_BAD_CERTIFICATE))
+                ERR_PACK(ERR_LIB_SSL,SSL_F_SSL3_READ_BYTES,
+                         SSL_R_SSLV3_ALERT_BAD_CERTIFICATE))
             {
-               ERR_clear_error();
-               GSSerr(GSSERR_F_GS_HANDSHAKE,GSSERR_R_REMOTE_CERT_VERIFY_FAILED);
+                ERR_clear_error();
+                GSSerr(GSSERR_F_GSS_HANDSHAKE,GSSERR_R_REMOTE_CERT_VERIFY_FAILED);
             }
             else
             {
-                GSSerr(GSSERR_F_GS_HANDSHAKE,GSSERR_R_HANDSHAKE);
+                GSSerr(GSSERR_F_GSS_HANDSHAKE,GSSERR_R_HANDSHAKE);
             }
 
-			major_status = GSS_S_DEFECTIVE_CREDENTIAL;
-		}
-	}
+            major_status = GSS_S_DEFECTIVE_CREDENTIAL;
+        }
+    }
 
-	if (!GSS_ERROR(major_status)) {
-		if (rc > 0) {
-			major_status = GSS_S_COMPLETE ; 
+    if (!GSS_ERROR(major_status)) {
+        if (rc > 0) {
+            major_status = GSS_S_COMPLETE ; 
 
-			/*
-			 * Set  GSS_C_CONF_FLAG if cipher uses encryption
-			 * which is at least 56 bit. SSL defines a number
-			 * of different levels, we need to map to a single GSS
-			 * flag. See the s3_lib.c for list of ciphers. 
-			 * This could be changed to SSL_MIDUM or SSL_HIGH 
-			 * if a site wants higher protection. 
-			 */
+            /*
+             * Set  GSS_C_CONF_FLAG if cipher uses encryption
+             * which is at least 56 bit. SSL defines a number
+             * of different levels, we need to map to a single GSS
+             * flag. See the s3_lib.c for list of ciphers. 
+             * This could be changed to SSL_MIDUM or SSL_HIGH 
+             * if a site wants higher protection. 
+             */
 
-#if SSLEAY_VERSION_NUMBER >= 0x0090581fL
-			if ((context_handle->gs_ssl->session->cipher->algo_strength
-					& SSL_STRONG_MASK) >= SSL_LOW) {
-				context_handle->ret_flags |= GSS_C_CONF_FLAG;
-			}
-#else
-			if ((context_handle->gs_ssl->session->cipher->algorithms
-					& SSL_STRONG_MASK) >= SSL_LOW) {
-				context_handle->ret_flags |= GSS_C_CONF_FLAG;
-			}
-#endif
+            if ((context_handle->gss_ssl->session->cipher->algo_strength
+                 & SSL_STRONG_MASK) >= SSL_LOW) {
+                context_handle->ret_flags |= GSS_C_CONF_FLAG;
+            }
 
-#ifdef DEBUG
-			{
-				char buff[256];
+            {
+                char buff[256];
 
-				fprintf(stderr,"SSL handshake finished\n");
-				fprintf(stderr,"cred_usage=%d\n",
-						context_handle->cred_handle->cred_usage);
-				fprintf(stderr,"Cipher being used:\n");
-				SSL_CIPHER_description(
-					context_handle->gs_ssl->session->cipher,
-					buff,256);
-				fprintf(stderr,buff);
-			}
-
-#endif
-		} else {
-			major_status = GSS_S_CONTINUE_NEEDED ;
-		}
-	}
+                GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
+                    2, (stderr,"SSL handshake finished\n"));
+                GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
+                    2, (stderr,"cred_usage=%d\n",
+                        context_handle->cred_handle->cred_usage));
+                GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
+                    2, (stderr,"Cipher being used:\n"));
+                SSL_CIPHER_description(
+                    context_handle->gss_ssl->session->cipher,
+                    buff,256);
+                GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
+                    2, (stderr,buff));
+            }
+        } else {
+            major_status = GSS_S_CONTINUE_NEEDED ;
+        }
+    }
   
-	return major_status ;
+    return major_status ;
 }
 
 /**********************************************************************
-Function:  gs_retrieve_peer
+Function:  gss_retrieve_peer
 
 Description:
 	Called after the handshake has completed sucessfully,
@@ -706,7 +629,8 @@ Returns:
 
 
 OM_uint32
-gs_retrieve_peer(
+gss_retrieve_peer(
+    OM_uint32                           minor_status,
     gss_ctx_id_desc *                   context_handle,
     const gss_cred_usage_t              cred_usage) 
 {
@@ -726,23 +650,27 @@ gs_retrieve_peer(
     int                                 k;
     int                                 cert_count;
     char *                              subgroup;
-        
 
-    if (context_handle->gs_ssl->session)
+    static char *                       _function_name_ =
+        "gss_retrieve_peer";
+    
+    GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
+    
+    if (context_handle->gss_ssl->session)
     {
-        peer = context_handle->gs_ssl->session->peer;
+        peer = context_handle->gss_ssl->session->peer;
     }
     
     outname = ( gss_name_desc *)malloc(sizeof(gss_name_desc));
     
     if (outname == NULL)
     {
-        GSSerr(GSSERR_F_GS_RETRIEVE_PEER, GSSERR_R_OUT_OF_MEMORY);
+#error /* add error object thingy */
+        GSSerr(GSSERR_F_GSS_RETRIEVE_PEER, GSSERR_R_OUT_OF_MEMORY);
         major_status = GSS_S_FAILURE;
         goto err;
     }
-    
-    
+       
     if (peer == NULL)
     {
         outname->name_oid =  GSS_C_NT_ANONYMOUS;
@@ -753,47 +681,33 @@ gs_retrieve_peer(
         
         if(subject == NULL)
         {
-            GSSerr(GSSERR_F_GS_RETRIEVE_PEER, GSSERR_R_PROCESS_CERT);
+#error add error object
+            GSSerr(GSSERR_F_GSS_RETRIEVE_PEER, GSSERR_R_PROCESS_CERT);
             major_status = GSS_S_FAILURE;
             goto err;
         }
 
-#ifdef DEBUG
-        {
-            char *s;
-            s = X509_NAME_oneline(subject,NULL,0);
-            fprintf(stderr,"gs_retrieve_peer: X509 subject: %s\n", s);
-            free(s);
-        }
-#endif
-        
-        /*
-         * drop all the /CN=proxy entries 
-         */
-        proxy_get_base_name(subject);
-        
-        outname->name_oid =  GSS_C_NO_OID;
-        
-#ifdef DEBUG
         { 
             char * s;
             s = X509_NAME_oneline(subject,NULL,0);
-            fprintf(stderr,"X509 subject after proxy : %s\n", s);
+            GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
+                2, (stderr, "X509 subject after proxy : %s\n", s));
             free(s);
         }
-#endif
 
         /*
          * Figure out the group name
          */
 
-        cert_count = context_handle->pvd.cert_depth;
+        cert_count = context_handle->callback_data.cert_depth;
         
+        
+
         group = sk_new_null();
 
         if(group == NULL)
         {
-            GSSerr(GSSERR_F_GS_RETRIEVE_PEER, GSSERR_R_OUT_OF_MEMORY);
+            GSSerr(GSSERR_F_GSS_RETRIEVE_PEER, GSSERR_R_OUT_OF_MEMORY);
             major_status = GSS_S_FAILURE;
             goto err;
         }
@@ -802,7 +716,7 @@ gs_retrieve_peer(
 
         if(group_types == NULL)
         {
-            GSSerr(GSSERR_F_GS_RETRIEVE_PEER, GSSERR_R_OUT_OF_MEMORY);
+            GSSerr(GSSERR_F_GSS_RETRIEVE_PEER, GSSERR_R_OUT_OF_MEMORY);
             major_status = GSS_S_FAILURE;
             goto err;
         }
@@ -834,7 +748,7 @@ gs_retrieve_peer(
 
                     if(subgroup == NULL)
                     {
-                        GSSerr(GSSERR_F_GS_RETRIEVE_PEER,
+                        GSSerr(GSSERR_F_GSS_RETRIEVE_PEER,
                                GSSERR_R_OUT_OF_MEMORY);
                         major_status = GSS_S_FAILURE;
                         goto err;
@@ -867,7 +781,7 @@ gs_retrieve_peer(
 
                     if(subgroup == NULL)
                     {
-                        GSSerr(GSSERR_F_GS_RETRIEVE_PEER,
+                        GSSerr(GSSERR_F_GSS_RETRIEVE_PEER,
                                GSSERR_R_OUT_OF_MEMORY);
                         major_status = GSS_S_FAILURE;
                         goto err;
@@ -905,6 +819,8 @@ gs_retrieve_peer(
     {
         context_handle->source_name = outname;
     }
+
+    GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     
     return GSS_S_COMPLETE;
 
@@ -929,6 +845,8 @@ err:
     {
         ASN1_BIT_STRING_free(group_types);
     }
+
+    GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
 
     return major_status;
 }
@@ -974,9 +892,9 @@ gss_create_anonymous_cred(
 
     newcred->globusid->group_types = NULL;
     
-    newcred->gs_bio_err = BIO_new_fp(stderr,BIO_NOCLOSE);
+    newcred->gss_bio_err = BIO_new_fp(stderr,BIO_NOCLOSE);
 
-    if(!newcred->gs_bio_err)
+    if(!newcred->gss_bio_err)
     {
         GSSerr(GSSERR_F_ACQUIRE_CRED, GSSERR_R_OUT_OF_MEMORY);
         goto err;
@@ -1001,7 +919,7 @@ gss_create_anonymous_cred(
 
     
     if(globus_ssl_utils_setup_ssl_ctx(
-           &newcred->pcd->gs_ctx,
+           &newcred->pcd->gss_ctx,
            newcred->pcd->certfile,
            newcred->pcd->certdir,
            NULL,
@@ -1076,7 +994,7 @@ gss_create_and_fill_cred(
 
     newcred->cred_usage = cred_usage;
     newcred->globusid = NULL;
-    newcred->gs_bio_err = BIO_new_fp(stderr,BIO_NOCLOSE);
+    newcred->gss_bio_err = BIO_new_fp(stderr,BIO_NOCLOSE);
     
     if (!(newcred->pcd = proxy_cred_desc_new()))
     {
@@ -1187,10 +1105,10 @@ gss_create_and_fill_cred(
         SSL_CIPHER * cipher;
 
         j = 0;
-        n = ((*newcred->pcd->gs_ctx->method->num_ciphers))();
+        n = ((*newcred->pcd->gss_ctx->method->num_ciphers))();
         for (i=0; i<n; i++)
         {
-            cipher = (*(newcred->pcd->gs_ctx->method->get_cipher))(i);
+            cipher = (*(newcred->pcd->gss_ctx->method->get_cipher))(i);
 #if SSLEAY_VERSION_NUMBER >= 0x0090581fL
 #define MY_NULL_MASK 0x130021L
 #else
@@ -1205,9 +1123,9 @@ gss_create_and_fill_cred(
 #endif
 		
                 sk_SSL_CIPHER_push(
-                    newcred->pcd->gs_ctx->cipher_list, cipher);
+                    newcred->pcd->gss_ctx->cipher_list, cipher);
                 sk_SSL_CIPHER_push(
-                    newcred->pcd->gs_ctx->cipher_list_by_id, cipher);
+                    newcred->pcd->gss_ctx->cipher_list_by_id, cipher);
             }
         }
         newcred->pcd->num_null_enc_ciphers = j;
