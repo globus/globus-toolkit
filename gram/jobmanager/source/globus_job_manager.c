@@ -6089,7 +6089,7 @@ globus_l_gram_read_state_file( globus_gram_jobmanager_request_t *req,
 
         globus_libc_sprintf(buffer,
                             "%sdev/stdout%03d",
-                            req->jm_restart,
+                            graml_gass_cache_tag,
                             idx);
 
 	for ( j = 0; j < cache_size; j++ )
@@ -6133,7 +6133,7 @@ globus_l_gram_read_state_file( globus_gram_jobmanager_request_t *req,
 
         globus_libc_sprintf(buffer,
                             "%sdev/stderr%03d",
-                            req->jm_restart,
+                            graml_gass_cache_tag,
                             idx);
 
 	for ( j = 0; j < cache_size; j++ )
