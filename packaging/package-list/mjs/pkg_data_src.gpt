@@ -22,9 +22,9 @@
     <Version_Label>0.0.2</Version_Label>
 
     <Source_Dependencies Type="compile" >
-      <Dependency Name="core"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
-      <Dependency Name="filestreaming"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
-      <Dependency Name="providers"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
+      <Dependency Name="core" Package="pgm"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
+      <Dependency Name="filestreaming" Package="pgm"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
+      <Dependency Name="providers" Package="pgm"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
     </Source_Dependencies>
 
     <Build_Instructions>
