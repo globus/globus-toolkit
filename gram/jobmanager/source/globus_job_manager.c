@@ -4018,20 +4018,10 @@ globus_l_jm_http_query_callback( void *               arg,
 
     rc = errorcode;
 
-     if ((rc==GLOBUS_SUCCESS) && done) 
-     {
-	 rc = GLOBUS_GRAM_CLIENT_ERROR_JOB_QUERY_DENIAL; 
-     }
-     else 
-     {    
-	 rc = globus_gram_http_unpack_status_request(
-	     buf,
-	     nbytes,
-	     &query );
-     }
+    rc = globus_gram_http_unpack_status_request( buf, nbytes, &query );
 
-     /* The "user" callback has to free the read buffer */
-     globus_libc_free(buf);
+    /* The "user" callback has to free the read buffer */
+    globus_libc_free(buf);
 
     globus_io_handle_get_user_pointer( handle,
 				       (void **) &request );
@@ -4057,18 +4047,25 @@ globus_l_jm_http_query_callback( void *               arg,
     
     if (strcmp(query,"cancel")==0)
     {
-	GRAM_LOCK;
-	rc = globus_jobmanager_request_cancel(request);
- 	/*
-	 * NOTE: old code set state to FAILED. Shouldn't it be DONE?
-	 */
-	status = request->status = GLOBUS_GRAM_CLIENT_JOB_STATE_FAILED;  
-	/*
-	 * wake up the timed() wait in the main routine
-	 */
-	graml_jm_done = GLOBUS_TRUE;
-	globus_cond_signal(&graml_api_cond);
-	GRAM_UNLOCK;
+        if (done)
+	{
+	   rc = GLOBUS_GRAM_CLIENT_ERROR_JOB_QUERY_DENIAL; 
+	}
+	else
+	{
+	    GRAM_LOCK;
+	    rc = globus_jobmanager_request_cancel(request);
+ 	    /*
+	     * NOTE: old code set state to FAILED. Shouldn't it be DONE?
+	     */
+	    status = request->status = GLOBUS_GRAM_CLIENT_JOB_STATE_FAILED;  
+    	    /*
+	     * wake up the timed() wait in the main routine
+	     */
+	    graml_jm_done = GLOBUS_TRUE;
+	    globus_cond_signal(&graml_api_cond);
+	    GRAM_UNLOCK;
+	}
     }
     else if (strcmp(query,"status")==0)
     {
@@ -4078,91 +4075,112 @@ globus_l_jm_http_query_callback( void *               arg,
     }
     else if (strcmp(query,"signal")==0)
     {
-	if (sscanf(rest,"%d", &request->signal) != 1)
-	    rc = GLOBUS_GRAM_CLIENT_ERROR_HTTP_UNPACK_FAILED;
+        if (done)
+	{
+	   rc = GLOBUS_GRAM_CLIENT_ERROR_JOB_QUERY_DENIAL; 
+	}
 	else
-        {
-            after_signal = strchr(rest,' ');
-            if (after_signal)
-                *after_signal++ = '\0';
-
-            if (after_signal && (strlen(after_signal) > 0))
+	{
+	    if (sscanf(rest,"%d", &request->signal) != 1)
+	        rc = GLOBUS_GRAM_CLIENT_ERROR_HTTP_UNPACK_FAILED;
+	    else
             {
-                request->signal_arg = globus_libc_strdup(after_signal);
+                after_signal = strchr(rest,' ');
+                if (after_signal)
+                    *after_signal++ = '\0';
 
-                GRAM_LOCK;
-                rc = globus_jobmanager_request_signal(request);
-                GRAM_UNLOCK;
-
-                if (rc != GLOBUS_SUCCESS)
+                if (after_signal && (strlen(after_signal) > 0))
                 {
-                    rc = GLOBUS_GRAM_CLIENT_ERROR_SIGNALING_JOB;
+                    request->signal_arg = globus_libc_strdup(after_signal);
+
+                    GRAM_LOCK;
+                    rc = globus_jobmanager_request_signal(request);
+                    GRAM_UNLOCK;
+
+                    if (rc != GLOBUS_SUCCESS)
+                    {
+                        rc = GLOBUS_GRAM_CLIENT_ERROR_SIGNALING_JOB;
+                    }
+                    else
+                    {
+                        status = request->status;
+                    }
                 }
                 else
                 {
-                    status = request->status;
+                    rc = GLOBUS_GRAM_CLIENT_ERROR_HTTP_UNPACK_FAILED;
                 }
-            }
-            else
-            {
-                rc = GLOBUS_GRAM_CLIENT_ERROR_HTTP_UNPACK_FAILED;
             }
 	}
     }
     else if (strcmp(query,"register")==0)
     {
-	url = globus_libc_strdup(rest);
-	if (sscanf(rest,"%d %s", &mask, url) != 2)
-	    rc = GLOBUS_GRAM_CLIENT_ERROR_HTTP_UNPACK_FAILED;
+        if (done)
+	{
+	   rc = GLOBUS_GRAM_CLIENT_ERROR_JOB_QUERY_DENIAL; 
+	}
 	else
 	{
-	    callback = my_malloc(globus_l_gram_client_contact_t,1);
-	    callback->contact = globus_libc_strdup(url);
-	    callback->job_state_mask = mask;
-	    callback->failed_count   = 0;
+	    url = globus_libc_strdup(rest);
+	    if (sscanf(rest,"%d %s", &mask, url) != 2)
+	        rc = GLOBUS_GRAM_CLIENT_ERROR_HTTP_UNPACK_FAILED;
+	    else
+	    {
+	        callback = my_malloc(globus_l_gram_client_contact_t,1);
+	        callback->contact = globus_libc_strdup(url);
+	        callback->job_state_mask = mask;
+	        callback->failed_count   = 0;
 	    
-	    GRAM_LOCK;
-	    rc = globus_list_insert(
-		&globus_l_gram_client_contacts,
-		(void *) callback);
-	    status = request->status;
-	    GRAM_UNLOCK;
+	        GRAM_LOCK;
+	        rc = globus_list_insert(
+		    &globus_l_gram_client_contacts,
+		    (void *) callback);
+	        status = request->status;
+	        GRAM_UNLOCK;
 	    
-	    if (rc != GLOBUS_SUCCESS)
-		rc = GLOBUS_GRAM_CLIENT_ERROR_INSERTING_CLIENT_CONTACT;
-	}
-	globus_libc_free(url);
+	        if (rc != GLOBUS_SUCCESS)
+		    rc = GLOBUS_GRAM_CLIENT_ERROR_INSERTING_CLIENT_CONTACT;
+	    }
+	    globus_libc_free(url);
+        }
     }
     else if (strcmp(query,"unregister")==0)
     {
-	url = rest;
-	if (!url || strlen(url)==0)
-	    rc = GLOBUS_GRAM_CLIENT_ERROR_HTTP_UNPACK_FAILED;
+        if (done)
+	{
+	   rc = GLOBUS_GRAM_CLIENT_ERROR_JOB_QUERY_DENIAL; 
+	}
 	else
 	{
-	    rc = GLOBUS_GRAM_CLIENT_ERROR_CLIENT_CONTACT_NOT_FOUND;
-	    GRAM_LOCK;
-	    tmp_list = globus_l_gram_client_contacts;
-	    while(!globus_list_empty(tmp_list))
+	    url = rest;
+	    if (!url || strlen(url)==0)
+	        rc = GLOBUS_GRAM_CLIENT_ERROR_HTTP_UNPACK_FAILED;
+	    else
 	    {
-		next_list = globus_list_rest(tmp_list);
+	        rc = GLOBUS_GRAM_CLIENT_ERROR_CLIENT_CONTACT_NOT_FOUND;
+	        GRAM_LOCK;
+	        tmp_list = globus_l_gram_client_contacts;
+	        while(!globus_list_empty(tmp_list))
+	        {
+		    next_list = globus_list_rest(tmp_list);
 		
-		callback = (globus_l_gram_client_contact_t *)
-		            globus_list_first(tmp_list);
+		    callback = (globus_l_gram_client_contact_t *)
+		                globus_list_first(tmp_list);
 		    
-		if (strcmp(url, callback->contact) == 0)
-		{
-		    callback  = (globus_l_gram_client_contact_t *)
-			globus_list_remove( &globus_l_gram_client_contacts,
-					    tmp_list);
-		    globus_libc_free (callback->contact);
-		    globus_libc_free (callback);
-		    rc = GLOBUS_SUCCESS;
-		}
-		tmp_list = next_list;
+		    if (strcmp(url, callback->contact) == 0)
+		    {
+		        callback  = (globus_l_gram_client_contact_t *)
+			    globus_list_remove( &globus_l_gram_client_contacts,
+					        tmp_list);
+		        globus_libc_free (callback->contact);
+		        globus_libc_free (callback);
+		        rc = GLOBUS_SUCCESS;
+		    }
+		    tmp_list = next_list;
+	        }
+	        status = request->status;
+	        GRAM_UNLOCK;
 	    }
-	    status = request->status;
-	    GRAM_UNLOCK;
 	}
     }
     else
