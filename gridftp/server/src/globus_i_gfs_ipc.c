@@ -3662,7 +3662,6 @@ globus_gfs_ipc_handle_get(
     int                                 ctr;
     int                                 count;
     globus_i_gfs_community_t *          community;
-    int                                 cs_count;
     globus_result_t                     res;
     globus_bool_t                       done = GLOBUS_FALSE;
     GlobusGFSName(globus_gfs_handle_get);
@@ -3681,7 +3680,7 @@ globus_gfs_ipc_handle_get(
         }
 
         ndx = 0;
-        for(ctr = 0; ctr < cs_count && !done; ctr++)
+        for(ctr = 0; ctr < count && !done; ctr++)
         {
             if(ctr == community->cs_count)
             {
