@@ -131,7 +131,7 @@ buffer_from_file(const char			*path,
     int				open_flags;
     int				return_status = SSL_ERROR;
     struct stat			statbuf;
-    unsigned char		*buffer;
+    unsigned char		*buffer = NULL;
     int				buffer_len;
     
     assert(path != NULL);
