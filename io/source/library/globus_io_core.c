@@ -2082,7 +2082,7 @@ globus_l_io_handle_events(
 	     * file descriptor has been removed from the select list.
 	     */
 	    globus_l_io_select_count++;
-	    globus_l_io_cond_signal();
+	    globus_l_io_cond_broadcast();
 
 	    /*
 	     * If the FD table has been modified in a way which invalidates the

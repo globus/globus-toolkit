@@ -154,6 +154,14 @@ extern int                              globus_i_io_skip_poll_frequency;
 	}						\
     }
 
+#   define globus_l_io_cond_broadcast()			\
+    {							\
+	if (globus_i_io_cond_cnt > 0)			\
+	{						\
+	    globus_cond_broadcast(&globus_i_io_cond);	\
+	}						\
+    }
+
 #   define globus_l_io_cond_wait()				\
     {								\
         globus_i_io_mutex_cnt--;				\
