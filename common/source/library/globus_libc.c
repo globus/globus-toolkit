@@ -2017,7 +2017,7 @@ globus_libc_memrchr(
 {
     globus_byte_t *                         tmp_ptr;
 
-    tmp_ptr = &s[n];
+    tmp_ptr = &s[n - 1];
     while(tmp_ptr != s)
     {
         if(*tmp_ptr == c)
