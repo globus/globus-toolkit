@@ -189,7 +189,8 @@ globus_l_gram_job_manager_gsi_register_proxy_timeout(
     {
 	if ((int) lifetime - request->proxy_timeout <= 0)
 	{
-	    request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
+            globus_gram_job_manager_request_set_status(request,
+                GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED);
 	    request->failure_code =
 		GLOBUS_GRAM_PROTOCOL_ERROR_USER_PROXY_EXPIRED;
 	    rc = GLOBUS_FAILURE;

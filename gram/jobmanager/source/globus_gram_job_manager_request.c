@@ -55,6 +55,7 @@ globus_gram_job_manager_request_init(
     r->condor_os = NULL;
     r->condor_arch = NULL;
     r->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_UNSUBMITTED;
+	r->status_update_time = 0;
     r->url_base = GLOBUS_NULL;
     r->job_contact = GLOBUS_NULL;
     r->job_contact_path = GLOBUS_NULL;
@@ -148,6 +149,67 @@ globus_gram_job_manager_request_destroy(
 
 }
 /* globus_gram_job_manager_request_destroy() */
+
+/**
+ * Change the status associated with a job request
+ *
+ * Changes the status associated with a job request.
+ * There is now additional tracking data associated with the
+ * status that must be updated when the status is.  This function
+ * handles managing it.  It is NOT recommended that you directly
+ * change the status.
+ *
+ * @param request
+ *        Job request to change status of.
+ * @param status
+ *        Status to set the job request to.
+ *
+ * @return GLOBUS_SUCCESS assuming valid input.
+ *         If the request is null, returns GLOBUS_FAILURE.
+ */
+int
+globus_gram_job_manager_request_set_status(
+    globus_gram_jobmanager_request_t *	request,
+    globus_gram_protocol_job_state_t	status)
+{
+    return globus_gram_job_manager_request_set_status_time(request, status,
+		time(0));
+}
+/* globus_gram_job_manager_request_set_status() */
+
+
+/**
+ * Change the status associated with a job request
+ *
+ * Changes the status associated with a job request.
+ * There is now additional tracking data associated with the
+ * status that must be updated when the status is.  This function
+ * handles managing it.  It is NOT recommended that you directly
+ * change the status.
+ *
+ * @param request
+ *        Job request to change status of.
+ * @param status
+ *        Status to set the job request to.
+ * @param valid_time
+ *        The status is known good as of this time (seconds since epoch)
+ *
+ * @return GLOBUS_SUCCESS assuming valid input.
+ *         If the request is null, returns GLOBUS_FAILURE.
+ */
+int
+globus_gram_job_manager_request_set_status_time(
+    globus_gram_jobmanager_request_t *	request,
+    globus_gram_protocol_job_state_t	status,
+    time_t valid_time)
+{
+    if( ! request )
+        return GLOBUS_FAILURE;
+    request->status = status;
+    request->status_update_time = valid_time;
+    return GLOBUS_SUCCESS;
+}
+/* globus_gram_job_manager_request_set_status() */
 
 extern
 void

@@ -765,6 +765,44 @@ globus_gram_job_manager_output_get_cache_name(
 /* globus_gram_job_manager_output_get_cache_name() */ 
 
 /**
+ * Get size of standard out
+ *
+ * @param request
+ *        Request that we are checking the size of the output file of.
+ * @param type
+ *        Must be either "stdout" or "stderr".
+ * @param size
+ *        Pointer to memory to hold result.
+ *
+ * @retval GLOBUS_SUCCESS (or GLOBUS_FAILURE if you pass in bogus arguments)
+ */
+int
+globus_gram_job_manager_output_get_size(
+    globus_gram_jobmanager_request_t *	request,
+    const char *			type,
+    globus_off_t *                      size
+    )
+{
+    if(!size || !request || !request->output) {
+        return GLOBUS_FAILURE;
+    }
+
+    if(strcmp(type, "stdout") == 0)
+    {
+        *size = request->output->stdout_size;
+        return GLOBUS_SUCCESS;
+    }
+    else if(strcmp(type, "stderr") == 0)
+    {
+        *size = request->output->stderr_size;
+        return GLOBUS_SUCCESS;
+    }
+
+    return GLOBUS_FAILURE;
+}
+/* globus_gram_job_manager_output_get_size() */
+
+/**
  * Check size of output files
  *
  * Verifies that the size of the stdout or stderr file is exactly @a size

@@ -269,7 +269,8 @@ globus_gram_job_manager_state_file_read(
     {
         goto error_exit;
     }
-    request->status = atoi( buffer );
+    globus_gram_job_manager_request_set_status_time(request,
+		atoi( buffer ), statbuf.st_mtime);
     if (fgets( buffer, sizeof(buffer), fp ) == NULL)
     {
         goto error_exit;

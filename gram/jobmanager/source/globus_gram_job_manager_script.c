@@ -457,6 +457,317 @@ globus_gram_job_manager_script_submit(
 }
 /* globus_gram_job_manager_script_submit() */
 
+
+
+/**
+ * Set job request status and fire callback so it registers
+ *
+ * Avoids actually locking request if possible.
+ */
+static
+int
+local_globus_set_status(
+    globus_gram_jobmanager_request_t *    request,
+    globus_gram_protocol_job_state_t      status)
+{
+    if( ! request )
+        return GLOBUS_FAILURE;
+
+    if(request->status != status)
+    {
+        globus_mutex_lock(&request->mutex);
+        globus_gram_job_manager_request_set_status(request, status);
+        request->unsent_status_change = GLOBUS_TRUE;
+        globus_mutex_unlock(&request->mutex);
+    }
+
+    {
+    /* Globus expects the callback to fire. Force it to
+     * run instantly. */
+        globus_reltime_t delay;
+        GlobusTimeReltimeSet(delay, 0, 0);
+        globus_callback_register_oneshot(
+            &request->poll_timer,
+            &delay,
+            globus_gram_job_manager_state_machine_callback,
+            request);
+    }
+    return GLOBUS_SUCCESS;
+}
+/* local_globus_set_status() */
+
+
+/**
+ * Modified job_contact in place to remove the port.
+ */
+static void job_contact_strip_port(
+    char * job_contact)
+{
+    char * first_end;
+    char * second_begin;
+
+    if( job_contact == 0 )
+        return;
+
+    first_end = strrchr( job_contact, ':' );
+    if( first_end == 0 ) /* malformed job_contact? */
+        return;
+
+    second_begin = strchr( first_end, '/' );
+    if( second_begin == 0 ) /* malformed job_contact? */
+        return;
+
+    memmove(first_end, second_begin, strlen(second_begin) + 1);
+}
+
+
+
+/**
+ * Try to poll status of job request using Condor grid_manager_monitor_agent
+ *
+ * If the Condor grid_manager_monitor_agent is running on the machine, this
+ * function retrieve job request status using that, otherwise it fails. 
+ * Expected to be called exclusively from globus_gram_job_manager_script_poll.
+ */
+int
+globus_gram_job_manager_script_poll_fast(
+    globus_gram_jobmanager_request_t *    request)
+{
+    char * grid_monitor_output = 0;
+                /* Path is $GLOBUS_LOCATION/GRID_MONITOR_LOCATION$UID */
+    char * GRID_MONITOR_LOCATION = "/tmp/grid_manager_monitor_agent_log.";
+    const char * WHITESPACE = " \t";
+    uid_t this_uid = geteuid();
+    struct stat stat_results;
+    FILE * grid_monitor_file = 0;
+    int rc;
+    time_t MAX_MONITOR_FILE_AGE = (60*5); /* seconds */
+    char line[1024];
+    char line_job_contact[1024];
+    int return_val = GLOBUS_FAILURE;
+    time_t status_file_last_update = 0;
+    const int DEBUG_FAST_POLL = 0; /* Set to 1 for extra log info */
+    char * job_contact_match = 0;
+
+    if( ! request || ! request->globus_location || ! request->job_contact)
+        goto FAST_POLL_EXIT_FAILURE;
+
+    if(this_uid > 999999)
+    {
+    /* UIDs this large are unlikely, but if they occur the buffer
+     * isn't large enough to handle it
+     */
+        goto FAST_POLL_EXIT_FAILURE;
+    }
+
+    grid_monitor_output = globus_libc_malloc(
+        strlen(request->globus_location) +
+        strlen(GRID_MONITOR_LOCATION) + 10);
+    if( ! grid_monitor_output)
+        goto FAST_POLL_EXIT_FAILURE;
+
+    sprintf(grid_monitor_output, "%s%s%d",
+        request->globus_location,
+        GRID_MONITOR_LOCATION,
+        (int)this_uid);
+
+    grid_monitor_file = fopen(grid_monitor_output, "r");
+
+    if( ! grid_monitor_file )
+    {
+    /* No monitor file?  That's acceptable, silently fail */
+        goto FAST_POLL_EXIT_FAILURE;
+    }
+
+    rc = stat(grid_monitor_output, &stat_results);
+
+
+    if( rc != 0 )
+        goto FAST_POLL_EXIT_FAILURE;
+
+    if(stat_results.st_uid != this_uid ||
+        !S_ISREG(stat_results.st_mode)
+    /* TODO: test for world writable (bad)?  Is such a test logical on AFS? */
+    )
+    {
+        globus_gram_job_manager_request_log(request,
+            "JMI: poll_fast: Monitoring file looks untrustworthy.  "
+            "Reverting to normal polling\n");
+        goto FAST_POLL_EXIT_FAILURE;
+    }
+
+    if( (stat_results.st_mtime + MAX_MONITOR_FILE_AGE) < time(NULL) )
+    {
+        globus_gram_job_manager_request_log(request,
+            "JMI: poll_fast: Monitoring file looks out of date.  "
+            "Reverting to normal polling\n");
+        goto FAST_POLL_EXIT_FAILURE;
+    }
+
+    /* If we got this far, we've decided we trust the file */
+
+    /* Read the first line, which is two timestamps as seconds since epoch.
+     * The first one is start time of last query pass, the second is finish. */
+    if( ! fgets(line, sizeof(line), grid_monitor_file) )
+    {
+        globus_gram_job_manager_request_log(request,
+            "JMI: poll_fast: Job state file %s malformed, missing first line\n",
+            grid_monitor_output);
+        goto FAST_POLL_EXIT_FAILURE;
+    }
+    if( ! feof(grid_monitor_file) && line[strlen(line) - 1] != '\n')
+    {
+        globus_gram_job_manager_request_log(request,
+            "JMI: poll_fast: Job state file %s malformed, first line too long\n",
+            grid_monitor_output);
+        goto FAST_POLL_EXIT_FAILURE;
+    }
+
+    status_file_last_update = atoi(line);
+    if(status_file_last_update < request->status_update_time) {
+        /* We somehow got a status update more recent than the status file.
+         * Most likely we successfully executed a traditional poll faster than
+         * the status script processed things.  This status file is fresh
+         * enough, so we should switch over to using that, we want to avoid
+         * firing off a traditional poll.  So, leave the existing status in
+         * place and report a successful poll. */
+        globus_gram_job_manager_request_log(request,
+            "JMI: poll_fast: **** Job state file %s older than my last "
+            "known status.  Using last known status. (%d < %d)\n",
+            grid_monitor_output,
+            status_file_last_update, request->status_update_time);
+        local_globus_set_status(request, request->status);
+        return_val = GLOBUS_SUCCESS;
+        goto FAST_POLL_EXIT;
+    }
+
+    job_contact_match = globus_libc_malloc(strlen(request->job_contact) + 1);
+    strcpy(job_contact_match, request->job_contact);
+    job_contact_strip_port(job_contact_match);
+
+    if(DEBUG_FAST_POLL)
+    {
+        globus_gram_job_manager_request_log(request,
+            "JMI: poll_fast: ******* seeking: %s in %s\n", job_contact_match,
+            grid_monitor_output);
+    }
+    /* TODO: First pass.  Improve with binary search of file to make
+     * scanning large files fast. Still this is probably plenty fast
+     * enough for fairly large runs. */
+    while( 1 )
+    {
+        size_t len = 0;
+        char * line_bit = line;
+        if( ! fgets(line, sizeof(line), grid_monitor_file) )
+        {
+            globus_gram_job_manager_request_log(request,
+                "JMI: poll_fast: ******** "
+                "Failed to find %s\n", job_contact_match);
+            /* end of file (or error), job isn't in file.  It might just not
+             * have been noticed yet.  Silently skip */
+            goto FAST_POLL_EXIT_FAILURE;
+        }
+        if( ! feof(grid_monitor_file) && line[strlen(line) - 1] != '\n')
+        {
+            globus_gram_job_manager_request_log(request,
+                "JMI: poll_fast: Monitoring file looks corrupt, "
+                "lines are too long.  "
+                "Reverting to normal polling\n");
+            goto FAST_POLL_EXIT_FAILURE;
+        }
+
+        len = strcspn(line_bit, WHITESPACE);
+        if(len == 0)
+        {
+            globus_gram_job_manager_request_log(request,
+                "JMI: poll_fast: Monitoring file looks corrupt, "
+                "line doesn't start with job contact string.  "
+                "Reverting to normal polling\n");
+            goto FAST_POLL_EXIT_FAILURE;
+        }
+
+        /* So long as sizeof(line_job_contact) == sizeof(line),
+         * this is safe */
+        memcpy(line_job_contact, line, len);
+        line_job_contact[len] = 0;
+        job_contact_strip_port(line_job_contact);
+
+        if( strcmp(line_job_contact, job_contact_match) != 0 )
+        {
+            if(DEBUG_FAST_POLL)
+            {
+                globus_gram_job_manager_request_log(request,
+                    "JMI: poll_fast:          no match: %s\n",
+                    line);
+            }
+            continue;
+        }
+
+        line_bit += len;
+
+        len = strspn(line_bit, WHITESPACE);
+        if(len == 0)
+        {
+            globus_gram_job_manager_request_log(request,
+                "JMI: poll_fast: Monitoring file looks corrupt, "
+                "missing whitespace field seperator.  "
+                "Reverting to normal polling\n");
+            goto FAST_POLL_EXIT_FAILURE;
+        }
+
+        line_bit += len;
+
+        /* Found exact match, read status */
+        len = strspn(line_bit, "0123456789");
+        if(len == 0)
+        {
+            /* No digits!? */
+            globus_gram_job_manager_request_log(request,
+                "JMI: poll_fast: Monitoring file looks corrupt, "
+                "non numeric status.  "
+                "Reverting to normal polling\n");
+            goto FAST_POLL_EXIT_FAILURE;
+        }
+
+        local_globus_set_status(request, atoi(line_bit));
+
+        if(DEBUG_FAST_POLL)
+        {
+            globus_gram_job_manager_request_log(request,
+                "JMI: poll_fast: ******** "
+                "OK. found %s (%s)\n", job_contact_match, line_job_contact);
+        }
+
+        return_val = GLOBUS_SUCCESS;
+        goto FAST_POLL_EXIT;
+    }
+
+FAST_POLL_EXIT_FAILURE:
+    return_val = GLOBUS_FAILURE;
+
+FAST_POLL_EXIT:
+    if(grid_monitor_file) 
+        fclose(grid_monitor_file);
+    if( grid_monitor_output )
+        globus_libc_free(grid_monitor_output);
+    if( job_contact_match )
+        globus_libc_free(job_contact_match);
+
+    globus_gram_job_manager_request_log(request,
+        "JMI: poll_fast: returning %d = %s\n", return_val,
+        (return_val == GLOBUS_FAILURE) ?
+            "GLOBUS_FAILURE (try Perl scripts)" :
+            "GLOBUS_SUCCESS (skip Perl scripts)");
+    return return_val;
+}
+/* globus_gram_job_manager_script_poll_fast() */
+
+
+
+
+
+
+
 /**
  * Poll the status of a job request.
  *
@@ -491,6 +802,12 @@ globus_gram_job_manager_script_poll(
         utime(request->job_state_file, NULL);
     }
 
+    /* Keep the state file's timestamp up to date so that
+     * anything scrubbing the state files of old and dead
+     * processes leaves it alone */
+    if(request->job_state_file)
+        utime(request->job_state_file, NULL);
+
     script_arg_file = tempnam(NULL, "gram_poll");
 
     if (!request)
@@ -518,12 +835,19 @@ globus_gram_job_manager_script_poll(
     globus_gram_job_manager_request_log(request,
           "JMI: local stderr filename = %s.\n", stderr_filename);
 
+    globus_gram_job_manager_request_log(request,
+	"JMI: poll: seeking: %s\n", request->job_contact);
+    if( globus_gram_job_manager_script_poll_fast(request) == GLOBUS_SUCCESS )
+    {
+        return(GLOBUS_SUCCESS);
+    }
+
     if ((script_arg_fp = fopen(script_arg_file, "w")) == NULL)
     {
         globus_gram_job_manager_request_log(request,
               "JMI: Failed to open gram script argument file. %s\n",
               script_arg_file );
-        request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
+        globus_gram_job_manager_request_set_status(request, GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED);
         request->failure_code =
               GLOBUS_GRAM_PROTOCOL_ERROR_ARG_FILE_CREATION_FAILED;
         return(GLOBUS_FAILURE);
@@ -1284,7 +1608,7 @@ globus_l_gram_job_manager_default_done(
 	else if(globus_l_gram_job_manager_script_valid_state_change(
 		    request, script_status))
 	{
-	    request->status = script_status;
+        globus_gram_job_manager_request_set_status(request, script_status);
 	    request->unsent_status_change = GLOBUS_TRUE;
 	}
     }
@@ -1294,7 +1618,7 @@ globus_l_gram_job_manager_default_done(
 
 	if(request->jobmanager_state == starting_jobmanager_state)
 	{
-	    request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
+	    globus_gram_job_manager_request_set_status(request, GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED);
 	    if(script_status <= 0)
 	    {
 		request->failure_code = 
@@ -1357,7 +1681,7 @@ globus_l_gram_job_manager_default_done(
     }
     else if(request->jobmanager_state == starting_jobmanager_state)
     {
-	request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
+	globus_gram_job_manager_request_set_status(request, GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED);
 	request->failure_code = 
 	    GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_SCRIPT_STATUS;
 	request->unsent_status_change = GLOBUS_TRUE;
@@ -1424,7 +1748,7 @@ globus_l_gram_job_manager_query_done(
 		    request, script_status)))
 	{
 	    request->unsent_status_change = GLOBUS_TRUE;
-	    request->status = script_status;
+	    globus_gram_job_manager_request_set_status(request, script_status);
 	    if(request->status == GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED)
 	    {
 		request->failure_code =
@@ -1440,7 +1764,7 @@ globus_l_gram_job_manager_query_done(
 						 script_status))
 		
 	{
-	    request->status = script_status;
+	    globus_gram_job_manager_request_set_status(request, script_status);
 	    request->unsent_status_change = GLOBUS_TRUE;
 	}
     }

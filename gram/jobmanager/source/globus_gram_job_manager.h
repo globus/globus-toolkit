@@ -162,9 +162,19 @@ typedef struct
      * The state of the job. This corresponds to the job state machine
      * described in the GRAM documentation.
      *
+     * Use globus_gram_job_manager_request_set_status() to change.
+     *
      * @todo add link 
      */ 
     globus_gram_protocol_job_state_t	status;
+
+    /**
+     * Last time status was changed
+     *
+     * The time that the status member was last changed.
+     * Automatically set by globus_gram_job_manager_request_set_status().
+     */
+    time_t 				status_update_time;
 
     /**
      * Job Failure Reason
@@ -398,6 +408,17 @@ int
 globus_gram_job_manager_request_destroy(
     globus_gram_jobmanager_request_t *	request);
 
+int
+globus_gram_job_manager_request_set_status(
+    globus_gram_jobmanager_request_t *	request,
+    globus_gram_protocol_job_state_t	status);
+
+int
+globus_gram_job_manager_request_set_status_time(
+    globus_gram_jobmanager_request_t *	request,
+    globus_gram_protocol_job_state_t	status,
+	time_t valid_time);
+
 void
 globus_gram_job_manager_request_open_logfile(
     globus_gram_jobmanager_request_t *	request,
@@ -522,6 +543,13 @@ int
 globus_gram_job_manager_output_read_state(
     globus_gram_jobmanager_request_t *	request,
     FILE *				fp);
+
+int
+globus_gram_job_manager_output_get_size(
+    globus_gram_jobmanager_request_t *	request,
+    const char *			type,
+    globus_off_t *                      size
+    );
 
 int
 globus_gram_job_manager_output_check_size(

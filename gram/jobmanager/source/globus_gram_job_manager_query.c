@@ -450,7 +450,7 @@ globus_l_gram_job_manager_cancel(
       case GLOBUS_GRAM_JOB_MANAGER_STATE_PROXY_RELOCATE:
           request->jobmanager_state
                   = GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
-          request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
+          globus_gram_job_manager_request_set_status(request, GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED);
           request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_USER_CANCELLED;
 
           return GLOBUS_SUCCESS;
@@ -458,7 +458,7 @@ globus_l_gram_job_manager_cancel(
       case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE:
           request->jobmanager_state
                   = GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED;
-          request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
+          globus_gram_job_manager_request_set_status(request, GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED);
           request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_USER_CANCELLED;
           request->unsent_status_change = GLOBUS_TRUE;
           if(request->poll_timer != GLOBUS_HANDLE_TABLE_NO_HANDLE)
@@ -485,7 +485,7 @@ globus_l_gram_job_manager_cancel(
       case GLOBUS_GRAM_JOB_MANAGER_STATE_STAGE_IN:
           request->jobmanager_state
                   = GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED;
-          request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
+          globus_gram_job_manager_request_set_status(request, GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED);
           request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_USER_CANCELLED;
           request->unsent_status_change = GLOBUS_TRUE;
 
@@ -841,6 +841,33 @@ globus_l_gram_job_manager_signal(
 		       "%"GLOBUS_OFF_T_FORMAT" %"GLOBUS_OFF_T_FORMAT,
 		       &out_size, &err_size) > 0)
 	{
+	    if( ! request || !(request->output) ) {
+                globus_gram_job_manager_request_log(
+                    request,
+                    "JM: ***** STDIO_SIZE request. "
+                    "BOGUS REQUEST OBJECT!\n");
+	    }
+	    else 
+	    {
+                globus_off_t local_size_stdout = 0;
+                globus_off_t local_size_stderr = 0;
+                int rc_out, rc_err;
+                rc_out = globus_gram_job_manager_output_get_size(request,
+                        "stdout", &local_size_stdout);
+                rc_err = globus_gram_job_manager_output_get_size(request,
+                        "stderr", &local_size_stderr);
+                globus_gram_job_manager_request_log(
+                    request,
+                    "JM: STDIO_SIZE request. "
+                    "stdout: remote %d, local %d%s, %s."
+                    "stderr: remote %d, local %d%s, %s.\n",
+                    (int)(out_size), (int)local_size_stdout,
+                    (rc_out == GLOBUS_SUCCESS) ? "" : " error querying local value",
+                    (out_size == local_size_stdout)?"ok":"ERROR",
+                    (int)(err_size), (int)local_size_stderr,
+                    (rc_err == GLOBUS_SUCCESS) ? "" : " error querying local value",
+                    (err_size == local_size_stderr)?"ok":"ERROR");
+	    }
 	    if(out_size >= 0)
 	    {
 		rc = globus_gram_job_manager_output_check_size(
@@ -935,7 +962,7 @@ globus_l_gram_job_manager_query_stop_manager(
 	case GLOBUS_GRAM_JOB_MANAGER_STATE_STDIO_UPDATE_CLOSE:
 	case GLOBUS_GRAM_JOB_MANAGER_STATE_STDIO_UPDATE_OPEN:
 	case GLOBUS_GRAM_JOB_MANAGER_STATE_STOP:
-	  request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
+          globus_gram_job_manager_request_set_status(request, GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED);
 	  request->unsent_status_change = GLOBUS_TRUE;
 	  request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_JM_STOPPED;
 	  request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_STOP;
@@ -943,14 +970,14 @@ globus_l_gram_job_manager_query_stop_manager(
 	case GLOBUS_GRAM_JOB_MANAGER_STATE_PRE_CLOSE_OUTPUT:
 	case GLOBUS_GRAM_JOB_MANAGER_STATE_CLOSE_OUTPUT:
 	case GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_CLOSE_OUTPUT:
-	  request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
+          globus_gram_job_manager_request_set_status(request, GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED);
 	  request->unsent_status_change = GLOBUS_TRUE;
 	  request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_JM_STOPPED;
 	  request->jobmanager_state =
 	      GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_CLOSE_OUTPUT;
 	  break;
 	case GLOBUS_GRAM_JOB_MANAGER_STATE_STAGE_OUT:
-	  request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
+          globus_gram_job_manager_request_set_status(request, GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED);
 	  request->unsent_status_change = GLOBUS_TRUE;
 	  request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_JM_STOPPED;
 	  request->jobmanager_state =
@@ -961,7 +988,7 @@ globus_l_gram_job_manager_query_stop_manager(
 	case GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_DONE:
 	case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE:
 	case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE_COMMITTED:
-	  request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
+          globus_gram_job_manager_request_set_status(request, GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED);
 	  request->unsent_status_change = GLOBUS_TRUE;
 	  request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_JM_STOPPED;
 	  request->jobmanager_state =
