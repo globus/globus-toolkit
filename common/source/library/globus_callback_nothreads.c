@@ -212,40 +212,6 @@ globus_l_callback_blocked_cb(
     }
 }
 
-/**
- * globus_l_callback_space_dec_ref
- *
- * -- the functionality of globus_l_callback_space_inc_ref is contained in
- *    globus_l_callback_register()
- * -- All callbacks within a space have refs on that space.
- */
-
-static
-void
-globus_l_callback_space_dec_ref(
-    globus_l_callback_space_t *          space)
-{
-    globus_handle_table_decrement_reference(
-        &globus_l_callback_space_table, space->handle);
-}
-
-/**
- * globus_l_callback_info_dec_ref
- *
- * -- the functionality of globus_l_callback_info_inc_ref is contained in
- *    globus_l_callback_register()
- * -- there can only be two refs max: me and the user
- */
-
-static
-void
-globus_l_callback_info_dec_ref(
-    globus_l_callback_info_t *          callback_info)
-{
-    globus_handle_table_decrement_reference(
-        &globus_l_callback_handle_table, callback_info->handle);
-}
-
 static
 void
 globus_l_callback_info_destructor(
@@ -258,7 +224,8 @@ globus_l_callback_info_destructor(
     /* global space is local storage, is not managed */
     if(callback_info->my_space->handle != GLOBUS_CALLBACK_GLOBAL_SPACE)
     {
-        globus_l_callback_space_dec_ref(callback_info->my_space);
+        globus_handle_table_decrement_reference(
+            &globus_l_callback_space_table, callback_info->my_space->handle);
     }
 
     globus_memory_push_node(
@@ -616,7 +583,8 @@ globus_l_callback_cancel_kickout_cb(
     callback_info->unregister_callback(callback_info->unreg_args);
 
     /* this will cause the callback_info to be freed */
-    globus_l_callback_info_dec_ref(callback_info);
+    globus_handle_table_decrement_reference(
+        &globus_l_callback_handle_table, callback_info->handle);
 }
 
 /**
@@ -677,7 +645,9 @@ globus_callback_unregister(
         /* unregister callback will get called when running_count == 0 */
 
         /* this decrements the user's reference */
-        globus_l_callback_info_dec_ref(callback_info);
+        globus_handle_table_decrement_reference(
+            &globus_l_callback_handle_table, callback_handle);
+
         
         /* this is not really an error, just informing the user that I have
          * deffered the cancel until the callback is no longer running
@@ -699,7 +669,8 @@ globus_callback_unregister(
                 &callback_info->my_space->queue, callback_info);
             
             callback_info->in_queue = GLOBUS_FALSE;
-            globus_l_callback_info_dec_ref(callback_info);
+            globus_handle_table_decrement_reference(
+                &globus_l_callback_handle_table, callback_handle);
         }
 
         if(unregister_callback)
@@ -716,7 +687,8 @@ globus_callback_unregister(
         else
         {
             /* not kicking one out, so decr last ref */
-            globus_l_callback_info_dec_ref(callback_info);
+            globus_handle_table_decrement_reference(
+                &globus_l_callback_handle_table, callback_handle);
         }
         
         return GLOBUS_SUCCESS;
@@ -773,11 +745,13 @@ globus_callback_blocking_unregister(
             callback_info->in_queue = GLOBUS_FALSE;
             
             /* this decr my reference */
-            globus_l_callback_info_dec_ref(callback_info);
+            globus_handle_table_decrement_reference(
+                &globus_l_callback_handle_table, callback_handle);
         }
 
         /* this decr user's reference */
-        globus_l_callback_info_dec_ref(callback_info);
+        globus_handle_table_decrement_reference(
+            &globus_l_callback_handle_table, callback_handle);
 
         return GLOBUS_SUCCESS;
     }
@@ -835,7 +809,8 @@ globus_callback_adjust_period(
             callback_info->in_queue = GLOBUS_FALSE;
             
             /* decr my reference to this */
-            globus_l_callback_info_dec_ref(callback_info);
+            globus_handle_table_decrement_reference(
+                &globus_l_callback_handle_table, callback_handle);
         }
     }
     else
@@ -980,8 +955,9 @@ globus_callback_space_destroy(
         return GLOBUS_L_CALLBACK_CONSTRUCT_INVALID_SPACE(
             "globus_callback_space_destroy");
     }
-
-    globus_l_callback_space_dec_ref(i_space);
+    
+    globus_handle_table_decrement_reference(
+        &globus_l_callback_space_table, space);
 
     return GLOBUS_SUCCESS;
 }
@@ -1239,7 +1215,8 @@ globus_callback_space_poll(
                 }
 
                 /* decrement my ref */
-                globus_l_callback_info_dec_ref(callback_info);
+                globus_handle_table_decrement_reference(
+                    &globus_l_callback_handle_table, callback_info->handle);
             }
             else if(callback_info->is_periodic && !restart_info.restarted)
             {
