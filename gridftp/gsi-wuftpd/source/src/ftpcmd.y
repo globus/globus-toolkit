@@ -2057,13 +2057,13 @@ void site_exec(char *cmd)
 	}
 	if (!maxfound)
 	    maxlines = defmaxlines;
-	lreply(200, cmd);
+	lreply(200, "%s", cmd);
 	while (fgets(buf, sizeof buf, cmdf)) {
 	    size_t len = strlen(buf);
 
 	    if (len > 0 && buf[len - 1] == '\n')
 		buf[--len] = '\0';
-	    lreply(200, buf);
+	    lreply(200, "%s", buf);
 	    if (maxlines <= 0)
 		++lines;
 	    else if (++lines >= maxlines) {

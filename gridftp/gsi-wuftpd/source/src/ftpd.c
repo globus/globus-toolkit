@@ -3269,7 +3269,7 @@ void pass(char *passwd)
 	reply(230, "User %s logged in.%s", pw->pw_name, guest ?
 	      "  Access restrictions apply." : "");
 	sprintf(proctitle, "%s: %s", remotehost, pw->pw_name);
-	setproctitle(proctitle);
+	setproctitle("%s", proctitle);
 	if (logging)
 	    syslog(LOG_INFO, "FTP LOGIN FROM %s, %s", remoteident, pw->pw_name);
 /* H* mod: if non-anonymous user, copy it to "authuser" so everyone can
@@ -6022,7 +6022,7 @@ void dolog(struct sockaddr_in *sin)
 
     remotehost[sizeof(remotehost) - 1] = '\0';
     sprintf(proctitle, "%s: connected", remotehost);
-    setproctitle(proctitle);
+    setproctitle("%s", proctitle);
 
     wu_authenticate();
 /* Create a composite source identification string, to improve the logging
