@@ -35,37 +35,37 @@ include_once( "/mcs/www-unix.globus.org/include/globus_header.inc" );
         <LI><a href="#packaging">Packaging</a>
         </UL>
       <h2><A name=Core></A>WS Core</h2>
-      <p>Fixed the following bug for WS Core:</p>
+      <p>Fixed the following bugs for WS Core:</p>
       <ul>
-        <li>Bug <a href="http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=1680">1680:
+        <li><a href="http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=1680">1680:
             anonymous authentication still try to load X509_USER_PROXY certificate</a></li>
-        <li>Bug <a href="http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=1777">1777:
+        <li><a href="http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=1777">1777:
             The method &quot;put&quot; in ContextManager class should be synchronized</a></li>
       </ul>
       <!-- 1.0@bugzilla.org -->
 <h2><A name=Security></A>Security (GSI)</h2>
-      <p>Fixed the following bugs:</p>
+      <p>Fixed the following bugs for GSI:</p>
       <ul>
-        <li>Bug <a href="http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=1802"></a><a href="http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=1669">1669:
+        <li><a href="http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=1802"></a><a href="http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=1669">1669:
             grid-proxy-init -help is broken in 3.2rc2</a> </li>
-        <li>Bug <a href="http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=1802"></a><a href="http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=1673">1673:
+        <li><a href="http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=1802"></a><a href="http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=1673">1673:
             Import of anonymous name creates wrong name</a></li>
-        <li>Bug <a href="http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=1802"></a><a href="http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=1685">1685:
+        <li><a href="http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=1802"></a><a href="http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=1685">1685:
             bn_div_3_words undefined in IRIX compile</a></li>
-        <li>Bug <a href="http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=1802"></a><a href="http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=1708">1708:
+        <li><a href="http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=1802"></a><a href="http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=1708">1708:
             globus_ftp_control: gss_init_sec_context failed on AIX 5.1</a></li>
-        <li>Bug <a href="http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=1802"></a><a href="http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=1727">1727:
+        <li><a href="http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=1802"></a><a href="http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=1727">1727:
             openssl segfaults in smime called by ncsa-cert-request.pl</a></li>
-        <li>Bug <a href="http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=1802"></a><a href="http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=1774">1774:
+        <li><a href="http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=1802"></a><a href="http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=1774">1774:
             Authorization is in some cases not performaned before delegation</a></li>
-        <li>Bug <a href="http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=1802">1802:
+        <li><a href="http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=1802">1802:
         accept_sec_context doesn't set LIMITED_PROXY_FLAG for GSI_3_LIMITED_PROXY</a></li>
       </ul>
       <p align="right">[ <a href="#top">top</a> ]</p>
       <h2><A name=GridFTP></A>GridFTP</h2>
       <p>Fixed the following bug in gridftp:</p>
       <ul>
-        <li>Bug <a href="http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=1711">1711:
+        <li><a href="http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=1711">1711:
           gss_buffer_desc.length larger than int, causes radix_encode/decode to
           be bad</a><br>
         </li>
@@ -80,7 +80,7 @@ include_once( "/mcs/www-unix.globus.org/include/globus_header.inc" );
 
       <p>Fixed the following bug in globus_xio: </p>
       <ul>
-        <li>Bug <a href="http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=1778">1778:
+        <li><a href="http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=1778">1778:
             memory leaks in the GRAM client library</a> (fixed XIO handle leak)</li>
       </ul>
       <p align="right">[ <a href="#top">top</a> ]</p> 
@@ -89,13 +89,13 @@ include_once( "/mcs/www-unix.globus.org/include/globus_header.inc" );
 
 			<p>Fixed the following bugs in GRAM3 (the OGSI version of GRAM):</p>
 			<ul>
-			  <li>Bug <a href="http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=1699">1699:
+			  <li><a href="http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=1699">1699:
 			      managed-job-globusrun does not parse args correctly</a></li>
-			  <li>Bug <a href="http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=1786">1786: GT3.0 update error</a></li>
+			  <li><a href="http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=1786">1786: GT3.0 update error</a></li>
 </ul>
 			<p>Fixed the following bug in GRAM2 (the pre-OGSI version of GRAM):</p>
 			<ul>
-			  <li>Bug <a href="http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=1659">1659:
+			  <li><a href="http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=1659">1659:
 			      globus_gram_job_manager pkg metadata problem in 3.2rc2</a> (fixed
 			    the dependency mismatch for the JM data package)</li>
 </ul>
@@ -103,17 +103,17 @@ include_once( "/mcs/www-unix.globus.org/include/globus_header.inc" );
 	<h2 align="left"><a name="packaging"></a>Packaging</h2>
 	<p>Fixed the following bug for globus_core:</p>
 	<ul>
-      <li>Bug <a href="http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=1706">1706:
+      <li><a href="http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=1706">1706:
           Vendorcc flavor fails on AIX</a> (updated AIX vendorcc support) </li>
 </ul>
 	<p>Fixed the following bug for globus_common:</p>
 	<ul>
-      <li>Bug <a href="http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=1684">1684:
+      <li><a href="http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=1684">1684:
           lookups always failing on IRIX 6.5</a></li>
 </ul>
 	<p align="left">Fixed the following bug for pyGlobus:</p>
 	<ul>
-	  <li>Bug <a href="http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=1696">1696:
+	  <li><a href="http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=1696">1696:
         handling pyGlobus dependencies in the default installation</a>	    (added pyglobus threaded packages)</li>
 </ul>
 	<p>We also made some changes to the <code>globus-makefile-header</code>: it was not putting
