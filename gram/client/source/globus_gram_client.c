@@ -589,7 +589,8 @@ globus_gram_client_job_cancel(char * job_contact)
 
     /* TODO: pack query */
     globus_libc_sprintf( query,
-			 "%d null",
+			 "%d %d",
+			 GLOBUS_GRAM_PROTOCOL_VERSION,
 			 GLOBUS_GRAM_HTTP_QUERY_JOB_CANCEL );
 
     querysize = strlen(query)+1;
