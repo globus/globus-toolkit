@@ -68,5 +68,4 @@ globus_result_get_error_string(
         int                                  errstr_len);
 
 
-#endif __GLOBUS_AUTH_ERROR_H_
-
+#endif /* __GLOBUS_AUTH_ERROR_H_ */

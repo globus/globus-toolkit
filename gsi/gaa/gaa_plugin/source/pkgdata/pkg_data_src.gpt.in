@@ -23,6 +23,11 @@
 <Simple_Version Major="2" />
 </Version>
 </Dependency>
+<Dependency Name="globus_libtool" >
+<Version >
+<Simple_Version Major="0" />
+</Version>
+</Dependency>
 </Source_Dependencies>
 <Source_Dependencies Type="lib_link" >
 <Dependency Name="gaa_core" >
@@ -33,6 +38,11 @@
 <Dependency Name="gaa_util" >
 <Version >
 <Simple_Version Major="1" />
+</Version>
+</Dependency>
+<Dependency Name="globus_libtool" >
+<Version >
+<Simple_Version Major="0" />
 </Version>
 </Dependency>
 </Source_Dependencies>
