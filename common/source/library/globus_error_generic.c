@@ -181,7 +181,7 @@ globus_error_initialize_error(
     if(short_desc_format != NULL)
     {
         globus_libc_va_copy(ap_copy,ap);
-        size = globus_libc_vprintf_length(short_desc_format,ap);
+        size = globus_libc_vprintf_length(short_desc_format,ap_copy);
         va_end(ap_copy);
 
         size++;
