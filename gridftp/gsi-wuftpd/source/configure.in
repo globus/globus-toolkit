@@ -241,8 +241,8 @@ if test "$globus_authorization" = "yes"; then
 
 	inc="${GLOBUS_LOCATION}/include"
 	GSSAPI_CFLAGS="-I${inc} -I${inc}/${globus_flavor} ${GPT_CONFIG_CFLAGS}"
-	GSSAPI_LDFLAGS="-L${GLOBUS_LOCATION}/lib"
-	GSSAPI_LIBS="${GPT_CONFIG_PGM_LINKS} ${GPT_CONFIG_LIBS}"
+	GSSAPI_LDFLAGS="-L${GLOBUS_LOCATION}/lib ${GPT_CONFIG_LIBS}"
+	GSSAPI_LIBS="${GPT_CONFIG_PGM_LINKS}"
     
        # End Globus/GSI section
 fi	
