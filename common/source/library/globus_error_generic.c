@@ -115,8 +115,6 @@ globus_error_initialize_error(
 
     memset((void *) instance_data,0,sizeof(globus_l_error_data_t));
 
-    globus_object_set_local_instance_data(error, instance_data);
-
     instance_data->type = type;
 
     if(short_desc != NULL)
@@ -129,6 +127,8 @@ globus_error_initialize_error(
         instance_data->long_desc = globus_libc_strdup(long_desc);
     }
     
+    globus_object_set_local_instance_data(error, instance_data);
+
     return globus_error_initialize_base(error,
                                         base_source,
                                         base_cause);

@@ -10,7 +10,7 @@
  * These globus_error functions are motivated by the desire to provide
  * a easier way of generating new error types, while at the same time
  * preserving all features (e.g. memory management, chaining) of the
- * current error handling framework. The function in this API are
+ * current error handling framework. The functions in this API are
  * auxiliary to the function in the Globus Generic Error API in the
  * sense that they provide a wraper for representing system errors in
  * terms of a globus_error_t.

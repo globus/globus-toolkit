@@ -27,7 +27,7 @@ EXTERN_C_BEGIN
 
 /**
  * Generic Error object instance data definition
- * @ingroup globus_gsi_proxy_object
+ * @ingroup globus_generic_error_object
  * @internal
  *
  * This structure contains all of the data associated with a Globus
