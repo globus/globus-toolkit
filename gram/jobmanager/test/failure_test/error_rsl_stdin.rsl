@@ -1,0 +1,3 @@
+(* GLOBUS_GRAM_PROTOCOL_ERROR_RSL_STDIN *)
+&(executable=/bin/true)
+ (stdin = a sequence)

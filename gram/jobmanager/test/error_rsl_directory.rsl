@@ -1,3 +1,0 @@
-(* GLOBUS_GRAM_PROTOCOL_ERROR_RSL_DIRECTORY *)
-&(executable=/bin/ls)
- (directory=("can't parse this"))

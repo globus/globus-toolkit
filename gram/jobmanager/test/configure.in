@@ -18,5 +18,6 @@ AC_OUTPUT(
 	Makefile
 	pkgdata/Makefile
 	pkgdata/pkg_data_src.gpt
-        Makefile
+        submit_test/Makefile
+        failure_test/Makefile
 )

@@ -10,6 +10,7 @@ my $globus_location = $ENV{GLOBUS_LOCATION};
 my $contact;
 
 @tests = qw(
+    globus-gram-job-manager-submit-test.pl
     globus-gram-job-manager-failure-test.pl
 );
 if(0 != system("grid-proxy-info -exists -hours 2") / 255)

@@ -1,3 +1,0 @@
-(* GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_STDOUT *)
-&(executable=/bin/echo)
- (stdout=/no/such/file)

@@ -1,3 +1,0 @@
-(* GLOBUS_GRAM_PROTOCOL_ERROR_RSL_STDIN *)
-&(executable=/bin/echo)
- (stdin = a sequence)

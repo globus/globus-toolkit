@@ -1,0 +1,2 @@
+&(executable=/bin/echo)
+ (arguments=string with some \\backslashes)
