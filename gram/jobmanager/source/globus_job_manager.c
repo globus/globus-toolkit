@@ -175,13 +175,13 @@ main(int argc,
 		    "nx",         /* package designator              */
 		    NULL);        /* additional modules              */
 
-    nexus_enable_fault_tolerance(NULL, NULL);
-
     if (rc != NEXUS_SUCCESS)
     {
 	fprintf(stderr, "nexus_init() failed with rc=%d\n", rc);
 	exit(1);
     }
+
+    nexus_enable_fault_tolerance(NULL, NULL);
 
     *test_dat_file = '\0';
 
