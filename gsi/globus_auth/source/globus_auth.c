@@ -1,6 +1,34 @@
+#include "gaa.h"
 #include "globus_auth.h"
 #include "globus_auth_error.h"
+#include <string.h>
+#include <ctype.h>
 
+#define MAX_POLICY_BUF_LENGTH 8192
+
+struct cas_policy {
+    char *			target_subject;
+    char *			start_time;
+    char *			end_time;
+    char *			rights;
+};
+typedef struct cas_policy cas_policy;
+
+struct parsed_line {
+    char *name;
+    char *value;
+};
+
+static cas_policy *globus_l_authorization_cas_policy_new();
+
+static void globus_l_authorization_cas_policy_free(cas_policy *cp);
+
+static cas_policy
+*globus_l_authorization_parse_policy_header(char *policy_string);
+
+static char *
+globus_l_authorization_parse_policy_header_line(char * string,
+						struct parsed_line *pline);
 
 /** globus_authorization_handle_init()
  *
@@ -78,12 +106,12 @@ globus_authorization_handle_init(
     
     if(urlbase != NULL)
     {
-        (*handle)->gaa_cb_arg.urlbase = strdup(urlbase);
+        (*handle)->gaa_cb_arg.urlbase = (char *)strdup(urlbase);
     }
 
     if(service_type != NULL)
     {
-        (*handle)->gaa_cb_arg.service_type = strdup(service_type);
+        (*handle)->gaa_cb_arg.service_type = (char *)strdup(service_type);
     }
     
     if(actions != NULL)
@@ -101,7 +129,7 @@ globus_authorization_handle_init(
 
         while(actions[i])
         {
-            (*handle)->gaa_cb_arg.actions[i] = strdup(actions[i]);
+            (*handle)->gaa_cb_arg.actions[i] = (char *)strdup(actions[i]);
             i++;
         }
 
@@ -198,6 +226,10 @@ globus_authorization_handle_destroy(
         free((*handle)->gaa_cb_arg.actions);
     }
 
+    if((*handle)->policy_display_string)
+    {
+        free((*handle)->policy_display_string);
+    }
     
 #ifdef DEBUG
     if ((*handle)->debug_answer)
@@ -244,8 +276,12 @@ globus_authorization_handle_set_gss_ctx(
     gaa_status              status;
     OM_uint32               maj_stat, 
                             min_stat;
-    gss_buffer_set_t        restrictions;
-    int                     ii,len_so_far, old_len;
+    gss_buffer_set_t	    policy_extension = 0;
+    gss_name_t		    signer_identity;
+    gss_buffer_desc	    signer_namebuf;
+    gss_buffer_desc	    policy_buf;
+    cas_policy *	    caspolicy = 0;
+    globus_auth_result_t    result = GLOBUS_SUCCESS;
          
     if (!handle) 
     {
@@ -303,6 +339,7 @@ globus_authorization_handle_set_gss_ctx(
 
     if (gaa_add_cred(handle->gaa, handle->gaa_sc, cred)!=GAA_S_SUCCESS)
     {
+	gaa_free_cred(cred);
         return(globus_result_set(
                    GLOBUS_AUTH_INTERNAL_GAA_ERROR,
                    "failed to add GAA credential : %s (%s)",
@@ -310,53 +347,129 @@ globus_authorization_handle_set_gss_ctx(
                    gaa_get_err()));
     }
     handle->gss_context = context; 
+    handle->audit_identity = cred->principal->value;
+    handle->authorization_identity = cred->principal->value;
     maj_stat = gss_inquire_sec_context_by_oid( 
         &min_stat,
         context,
-        (gss_OID) gss_restrictions_extension,
-        &restrictions);
-                            
+        (gss_OID) gss_cas_policy_extension,
+        &policy_extension);
+    
     if(maj_stat != GSS_S_COMPLETE)
     {
-        return(globus_result_set(
-                GLOBUS_AUTH_INTERNAL_GSS_ERROR,
-                "failed to get restrictions from gss context"));
-
+        result = globus_result_set(
+	    GLOBUS_AUTH_INTERNAL_GSS_ERROR,
+	    "failed to get cas policy extension from gss context");
+	goto end;
     }
 
-    len_so_far = 0;
-    old_len = 0;
-    
-    /*go through the cert chain and pull out all restrictions*/
-
-    for(ii = 0; ii < restrictions->count; ii++)
+    /* pull out the cas rights from the cert */
+    if ((policy_extension->count > 0) &&
+	(policy_extension->elements->length > 0))
     {
-        if(restrictions->elements[ii].length > 0)
-        {
-            /*the cert at this level contains restrictions*/
-            old_len = len_so_far;
-            len_so_far += restrictions->elements[ii].length;
-            if(!handle->gaa_cb_arg.restrictions)
-            {
-                handle->gaa_cb_arg.restrictions =
-                    (char *)malloc(len_so_far+1);
-                memcpy(handle->gaa_cb_arg.restrictions,
-                       (char *)restrictions->elements[ii].value,
-                       len_so_far);
-            
-                handle->gaa_cb_arg.restrictions[len_so_far] = 0;
-            }
-            else
-            {
-		/* Can't handle multiple restrictions yet */
-		gss_release_buffer_set(&min_stat, &restrictions);
-		return(globus_result_set(GLOBUS_AUTH_UNIMPLEMENTED_REDELEGATION,
-					 "support for restrictions in more than one cert in the chain is not implemented"));
-           }
-        }/*end if restrictions->elements[i].length*/
-    }/*end for ii*/
+	policy_buf.length = MAX_POLICY_BUF_LENGTH;
+	if ((policy_buf.value = malloc(policy_buf.length)) == 0)
+	{
+	    result = globus_result_set(
+                GLOBUS_AUTH_MEMORY_ALLOCATION_ERROR,
+                "failed to get allocate space for policy buffer");
+	    goto end;
+	}
+	    
+	if ((maj_stat = gss_policy_verify(&min_stat, context,
+					 (gss_buffer_t)policy_extension->elements,
+					 &policy_buf,
+					 &signer_identity)) != GSS_S_COMPLETE)
+	{
+	    result = globus_result_set(
+                GLOBUS_AUTH_INTERNAL_GSS_ERROR,
+                "failed to verify cas policy extension");
+	    goto end;
+	}
+	if ((maj_stat = gss_display_name(&min_stat,
+					signer_identity,
+					&signer_namebuf,
+					0)) != GSS_S_COMPLETE)
+	{
+	    result = globus_result_set(
+                GLOBUS_AUTH_INTERNAL_GSS_ERROR,
+                "failed to display cas policy signer name");
+	    goto end;
+	}
 
-    gss_release_buffer_set(&min_stat, &restrictions);
+	if (policy_buf.length < MAX_POLICY_BUF_LENGTH)
+	{
+	    ((char *)policy_buf.value)[policy_buf.length] = '\0';
+	    if ((handle->policy_display_string =
+		 strdup((char *)policy_buf.value)) == 0)
+	    {
+		result = globus_result_set(
+		    GLOBUS_AUTH_MEMORY_ALLOCATION_ERROR,
+		    "failed to copy policy buffer");
+		goto end;
+	    }
+	}
+	else
+	{
+	    result = globus_result_set(
+                GLOBUS_AUTH_INTERNAL_GSS_ERROR,
+                "policy too long");
+	    goto end;
+	}
+	
+	if ((caspolicy =
+	     globus_l_authorization_parse_policy_header(policy_buf.value)) == 0)
+	{
+	    result = globus_result_set(
+                GLOBUS_AUTH_INTERNAL_GSS_ERROR,
+                "failed to parse cas policy");
+	    goto end;
+	}
+
+	if (caspolicy->rights)
+	{
+	    /* Okay, treat this as a CAS credential. */
+	    if (caspolicy->target_subject == 0)
+	    {
+		result = globus_result_set(
+		    GLOBUS_AUTH_AUTHORIZATION_FAILED,
+		    "credential policy statement has no target user");
+	    }
+	    if (strcmp(caspolicy->target_subject,
+		       handle->authorization_identity))
+	    {
+		result = globus_result_set(
+		    GLOBUS_AUTH_AUTHORIZATION_FAILED,
+		    "credential bearer is not the target user");
+	    }
+	    if (caspolicy->start_time)
+		if ((handle->gaa_cb_arg.start_time =
+		     (char *)strdup(caspolicy->start_time)) == 0)
+		{
+		    result = globus_result_set(
+			GLOBUS_AUTH_MEMORY_ALLOCATION_ERROR,
+			"failed to strdup policy start time");
+		}
+	    if (caspolicy->end_time)
+		if ((handle->gaa_cb_arg.end_time =
+		     (char *)strdup(caspolicy->end_time)) == 0)
+		{
+		    result = globus_result_set(
+			GLOBUS_AUTH_MEMORY_ALLOCATION_ERROR,
+			"failed to strdup policy end time");
+		}
+
+	    if ((handle->gaa_cb_arg.restrictions =
+		 (char *)strdup(caspolicy->rights)) == 0)
+	    {
+		result = globus_result_set(
+		    GLOBUS_AUTH_MEMORY_ALLOCATION_ERROR,
+		    "failed to strdup policy rights");
+	    }
+
+	    handle->authorization_identity = signer_namebuf.value;
+	}
+    }
     
     /*establish the getpolicy callback*/
     status = gaa_set_getpolicy_callback(
@@ -368,13 +481,17 @@ globus_authorization_handle_set_gss_ctx(
 
     if (status != GAA_S_SUCCESS)
     {
-        return(globus_result_set(GLOBUS_AUTH_INTERNAL_GAA_ERROR,
-                                 "error in setting the getpolicy callback: %s (%s)",
-                                 gaacore_majstat_str(status),
-                                 gaa_get_err())); 
+        result = globus_result_set(GLOBUS_AUTH_INTERNAL_GAA_ERROR,
+				   "error in setting the getpolicy callback: %s (%s)",
+				   gaacore_majstat_str(status),
+				   gaa_get_err()); 
     }
     
-    return GLOBUS_SUCCESS;
+ end:
+    if (policy_extension)
+	gss_release_buffer_set(&min_stat, &policy_extension);
+    globus_l_authorization_cas_policy_free(caspolicy);
+    return (result);
 }
 
 /** globus_authorization_handle_get_gss_ctx()
@@ -395,8 +512,6 @@ globus_authorization_handle_set_gss_ctx(
  *        GSS  security context information not available  
  */
   
-
-
 globus_auth_result_t
 globus_authorization_handle_get_gss_ctx(
     globus_authorization_handle_t handle,
@@ -520,7 +635,6 @@ globus_authorization_eval(
     gaa_list_ptr right_list = 0;
     gaa_request_right_ptr right = 0;
     gaa_answer_ptr answer = 0;
-    int i = 0;
     int status;
     globus_auth_result_t ret_val;
     /*gaa_policy_ptr    policy;*/
@@ -549,7 +663,7 @@ globus_authorization_eval(
     /*Get policy info for the filename*/
     status = gaa_get_object_policy_info(object, handle->gaa,
                                         &handle->policy);
-    
+
     if(status != GAA_S_SUCCESS)
     {
         return(globus_result_set(
@@ -726,8 +840,6 @@ globus_authorization_handle_set_policy_source(
     globus_authorization_handle_t handle,
     char * policy_source)
 {
-    int status;
-
     if (!handle) 
     {
         return(globus_result_set(
@@ -815,4 +927,257 @@ globus_authorization_handle_get_policy_source(
     strncpy(policy_source, handle->policy_source,*length);
     (*length) = strlen(handle->policy_source) + 1;    
     return GLOBUS_SUCCESS;
+}
+
+static cas_policy *
+globus_l_authorization_cas_policy_new()
+{
+    cas_policy *cp;
+
+    if ((cp = malloc(sizeof(cas_policy))) == 0)
+	return(0);
+    cp->target_subject = cp->start_time = cp->end_time = cp->rights = 0;
+    return(cp);
+}
+
+
+static void
+globus_l_authorization_cas_policy_free(cas_policy *cp)
+{
+    if (cp == 0)
+	return;
+  
+    /* elements are not malloc'd */
+    free(cp);
+}
+
+/** globus_l_authorization_parse_policy_header()
+ * Parses a cas policy extension into a cas_policy structure.
+ *
+ * @param policy_string
+ *	  input string to parse
+ *
+ * @retval <cas_policy *>
+ *        parsed cas_policy structure
+ * @retval 0
+ *	  returns 0 on error
+ *
+ * @note
+ *	  This function parses the header part of the CAS policy statement
+ *        (target user and validity time) but leaves the list of rights as
+ *        a string.
+ */
+
+#define DID_USER 1    
+#define DID_STARTTIME 2
+#define DID_ENDTIME 4
+#define DID_ALL (DID_USER | DID_STARTTIME | DID_ENDTIME)
+
+static cas_policy *
+globus_l_authorization_parse_policy_header(char *		policy_string)
+{
+    int whatsdone = 0;
+    struct parsed_line pline;
+    char *nextline;
+    cas_policy *caspolicy;
+
+
+    nextline = policy_string;
+
+    if ((caspolicy = globus_l_authorization_cas_policy_new()) == 0)
+	return(0);
+
+    while (nextline && ((whatsdone & DID_ALL) != DID_ALL))
+    {
+	nextline = globus_l_authorization_parse_policy_header_line(nextline,
+								    &pline);
+	if (pline.name == 0)
+	    continue;
+	else if (strcasecmp(pline.name, "user") == 0)
+	{
+	    if (whatsdone & DID_USER)
+		/* must have exactly one target user */
+		return(0);
+	    caspolicy->target_subject = pline.value;
+	    whatsdone |= DID_USER;
+	}
+	else if (strcasecmp(pline.name, "notbefore") == 0)
+	{
+	    if (whatsdone & DID_STARTTIME)
+		/* must have exactly one start time */
+		return(0);
+	    if (pline.value)
+		caspolicy->start_time = pline.value;
+	    whatsdone |= DID_STARTTIME;
+	}
+	else if (strcasecmp(pline.name, "notafter") == 0)
+	{
+	    if (whatsdone & DID_ENDTIME)
+		/* must have exactly one end time */
+		return(0);
+	    if (pline.value)
+		caspolicy->end_time = pline.value;
+	    whatsdone |= DID_ENDTIME;
+	}
+	else
+	    break;
+    }
+    if ((whatsdone & DID_ALL) == DID_ALL)
+    {
+	caspolicy->rights = nextline;
+	return(caspolicy);
+    }
+    else
+    {
+	globus_l_authorization_cas_policy_free(caspolicy);
+	return(0);
+    }
+}
+
+
+/** globus_l_authorization_parse_policy_header_line()
+ *
+ * Parses a line from a CAS policy statement into a {name, value} pair.
+ *
+ * @param string
+ *	  input string
+ * @param pline
+ *	  output parsed name/value pair
+ *        pline->name is a pointer to the first non-whitespace character
+ *        in the line (or null if a newline is encountered before any
+ *        non-whitespace character).
+ *        pline->value is a pointer to the first character of the value
+ *        (the first non-whitespace character after the first ":").
+ *
+ * @retval <string>
+ *         a (char *) pointing to the character immediately following
+ *	   the first newline in the input string.
+ * @retval 0
+ *         if the input string is the last line (i.e., if there is no newline,
+ *         or the character immediately following the newline is null.
+ *
+ * @note
+ *        This function inserts null characters into the input string.
+ *        The separator character (":") between the name and value
+ *        is nulled out to terminate pline.name.  The first whitespace
+ *	  character after the last non-whitespace character in the line
+ *        is nulled out to terminate pline.value.
+ */
+static char *
+globus_l_authorization_parse_policy_header_line(char *		    string,
+						struct parsed_line *pline)
+{
+    char *nextline = 0;
+    char *s;
+    char *eol;
+
+    pline->name = pline->value = 0;
+
+    /* Find end of line and nextline value, and null-terminate string */
+    eol = string;
+    while ((*eol != '\n') && (*eol != '\0'))
+	eol++;
+    if (*eol == '\n')
+    {
+	nextline = eol+1;
+	if (*nextline == '\0')
+	    nextline = 0;
+	*eol = '\0';
+    }
+
+    /* Fill in pline->name */
+    while (isspace(*string) && *string != '\0')
+	string++;
+
+    if (*string != '\0')
+	pline->name = string;
+
+    /* Null-terminate pline->nanme and find pline->value */
+    for (s = pline->name; s && *s && ! pline->value; s++)
+	if (*s == ':')
+	{
+	    *s++ = '\0';	/* null-terminate name */
+	    while (*s && isspace(*s))
+		s++;
+	    pline->value = s;
+	}
+    
+    if (pline->value && *pline->value == '\0')
+	pline->value = 0;
+
+    /* Null out whitespace after pline->value */
+    if (pline->value)
+	for (s = eol-1; s > pline->value && isspace(*s); s--)
+	    *s = '\0';
+    else if (pline->name)
+	for (s = eol-1; s > pline->name && isspace(*s); s--)
+	    *s = '\0';
+    
+    return(nextline);
+}
+
+char *
+globus_auth_get_authorization_identity(globus_authorization_handle_t handle)
+{
+    if (handle == 0)
+	return(0);
+    else
+	return(handle->authorization_identity);
+}
+
+char *
+globus_auth_get_audit_identity(globus_authorization_handle_t handle)
+{
+    if (handle == 0)
+	return(0);
+    else
+	return(handle->audit_identity);
+}
+
+char *
+globus_auth_get_policy_string(globus_authorization_handle_t handle)
+{
+    return(handle->policy_display_string);
+}
+
+globus_auth_result_t
+globus_auth_check_condition(globus_authorization_handle_t handle,
+			    char *			  condtype,
+			    char *			  condauth,
+			    char *			  condval)
+{
+    gaa_status		    status = GAA_S_SUCCESS;
+    gaa_condition *	    cond = 0;
+    int 	 	    ynm = GAA_C_MAYBE;
+    gaa_time_period	    vtp;
+
+    if (handle == 0)
+	return(globus_result_set(GLOBUS_AUTH_BAD_HANDLE,
+				 "null auth handle"));
+    if (handle->gaa == 0)
+	return(globus_result_set(GLOBUS_AUTH_BAD_HANDLE,
+				 "auth handle has null gaa pointer"));
+    if (handle->gaa_sc == 0)
+	return(globus_result_set(GLOBUS_AUTH_BAD_HANDLE,
+				 "auth handle has null sc pointer"));
+    if ((status = gaa_new_condition(&cond, condtype, condauth,
+				    condval)) != GAA_S_SUCCESS)
+        return(globus_result_set(
+                   GLOBUS_AUTH_INTERNAL_GAA_ERROR,
+                   "failed to create condition : %s (%s)",
+                   gaacore_majstat_str(status),
+                   gaa_get_err()));
+    if ((status = gaa_check_condition(handle->gaa, handle->gaa_sc, cond, &vtp,
+				      &ynm, 0)) != GAA_S_SUCCESS)
+	return(globus_result_set(
+	    GLOBUS_AUTH_INTERNAL_GAA_ERROR,
+	    "failed to check condition : %s (%s)",
+	    gaacore_majstat_str(status),
+	    gaa_get_err()));
+    if (ynm == GAA_C_YES)
+	return(GLOBUS_SUCCESS);
+    else
+	return(globus_result_set(GLOBUS_AUTH_AUTHORIZATION_FAILED,
+				 "condition check returned %s",
+				 gaacore_majstat_str(ynm)));
 }

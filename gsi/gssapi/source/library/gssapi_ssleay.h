@@ -356,6 +356,9 @@ extern
 const gss_OID_desc * const              gss_untrusted_group;
 
 extern
+const gss_OID_desc * const              gss_cas_policy_extension;
+
+extern
 globus_thread_once_t                    once_control;
 
 /**********************************************************************
