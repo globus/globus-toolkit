@@ -1017,12 +1017,12 @@ globus_i_xio_operation_cancel(
     }
     else
     {
-        /* we set canceled above first to ensure that the op->ndx we are
-         * reading is stable. what may happen is that above ndx may change
-         * to source_ndx + 1 immediately after we read it. this would cause us
-         * to errorneously 'cancel' this op.  This is ok, since we are
-         * guaranteed to hit the locked section in GlobusIXIOClearCancel which
-         * will set canceled back to 0 for us
+        /* we set canceled above first to make up for the fact that the 
+         * op->ndx we are reading is not stable. what may happen is that above
+         * ndx may change to source_ndx + 1 immediately after we read it. this
+         * would cause us to errorneously 'cancel' this op.  This is ok, since
+         * we are guaranteed to hit the locked section in GlobusIXIOClearCancel
+         * which will set canceled back to 0 for us
          */
         op->canceled = 0;
     }
