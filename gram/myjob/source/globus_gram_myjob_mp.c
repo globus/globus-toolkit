@@ -18,144 +18,74 @@ CVS Information:
 /******************************************************************************
 			     Include header files
 ******************************************************************************/
-#include "gram_myjob.h"
-#include "globus_nexus.h"
-
-#include "globus_common.h"
+#include "globus_gram_myjob.h"
 #include "globus_gram_myjob_mp.h"
-
-/******************************************************************************
-		       Define module specific constants
-******************************************************************************/
-
-#define MY_COMMUNICATOR_DIFFERENTIATOR 0
-
-/******************************************************************************
-			       Type definitions
-******************************************************************************/
+#include "globus_common.h"
 
 
 /******************************************************************************
 		       Define module specific variables
 ******************************************************************************/
 static globus_bool_t			graml_myjob_initialized = GLOBUS_FALSE;
-static mp_communicator_t		graml_myjob_communicator;
+static globus_mp_communicator_t		graml_myjob_communicator;
 static int				graml_myjob_size;
 static int				graml_myjob_rank;
 
 
 /******************************************************************************
-			  Module specific prototypes
+			 Module activation definitions
 ******************************************************************************/
+static int 
+globus_l_gram_myjob_activate();
+
+static int 
+globus_l_gram_myjob_deactivate();
 
 
-int 
-globus_gram_myjob_activate ()
+globus_module_descriptor_t		globus_i_gram_myjob_module =
 {
-  int err;
+    "globus_gram_myjob_mp",
+    globus_l_gram_myjob_activate,
+    globus_l_gram_myjob_deactivate,
+    GLOBUS_NULL
+};
 
-  if ( globus_module_activate (GLOBUS_COMMON_MODULE) != GLOBUS_SUCCESS ) 
-    goto activate_common_module_error;
 
-  {
-    int argc = 1;
-    char * arg1 = "dummy";
-    char ** argv;
-
-    argv = &arg1;
-    if ( globus_gram_myjob_init (&argc, &argv) ) 
-      goto activate_gram_myjob_init_error;
-  }
-
-  return GLOBUS_SUCCESS;
-
-activate_gram_myjob_init_error:
-  globus_module_deactivate (GLOBUS_COMMON_MODULE);
-
-activate_common_module_error:
-  return GLOBUS_FAILURE;
-}
-
-int
-globus_gram_myjob_deactivate ()
+/*
+ * globus_l_gram_myjob_activate()
+ */
+static int 
+globus_l_gram_myjob_activate()
 {
-  int rc;
+    GLOBUS_MP_INITIALIZE();
+    GLOBUS_MP_INIT_NODE_INFO(graml_myjob_rank, graml_myjob_size);
+    GLOBUS_MP_COMMUNICATOR_ALLOC(graml_myjob_communicator);
 
-  rc = GLOBUS_SUCCESS;
-
-  if ( globus_gram_myjob_done () )
-    rc = GLOBUS_FAILURE;
-
-  if ( globus_module_deactivate (GLOBUS_COMMON_MODULE) != GLOBUS_SUCCESS )
-    rc = GLOBUS_FAILURE;
-
-  return rc;
-}
-
-/******************************************************************************
-Function:	globus_gram_myjob_init()
-
-Description:	initializes parallel communication; allocates a new
-		 communicator; gets the size and rank, caching them
-
-Parameters:	see API
-
-Returns:	GLOBUS_SUCCESS
-******************************************************************************/
-int
-globus_gram_myjob_init(
-    int *				argc,
-    char ***				argv)
-{
-    if (!graml_myjob_initialized)
-    {
-	MP_INITIALIZE(argc, argv);
-	MP_INIT_NODE_INFO(graml_myjob_rank, graml_myjob_size);
-	MP_COMMUNICATOR_ALLOC(graml_myjob_communicator,
-			      MY_COMMUNICATOR_DIFFERENTIATOR);
-
-	graml_myjob_initialized = GLOBUS_TRUE;
-    }
-
-    return(GLOBUS_SUCCESS);
+    graml_myjob_initialized = GLOBUS_TRUE;
+    
+    return GLOBUS_SUCCESS;
 }
 
 
-/******************************************************************************
-Function:	globus_gram_myjob_done()
-
-Description:	frees resources used by the communicator; shut's down
-		parallel communication
-
-Parameters:	see API
-
-Returns:	GLOBUS_SUCCESS
-		GLOBUS_GRAM_MYJOB_ERROR_NOT_INITIALIZED
-******************************************************************************/
-int
-globus_gram_myjob_done()
+/*
+ * globus_l_gram_myjob_deactivate()
+ */
+static int
+globus_l_gram_myjob_deactivate()
 {
-    if (!graml_myjob_initialized)
-    {
-	return(GLOBUS_GRAM_MYJOB_ERROR_NOT_INITIALIZED);
-    }
-
-    MP_COMMUNICATOR_FREE(graml_myjob_communicator);
-
-    /* Do not call shutdown so that we don't do multiple MPI_Finalize()
-    MP_NODE_SHUTDOWN();
-    */
+    GLOBUS_MP_COMMUNICATOR_FREE(graml_myjob_communicator);
+    GLOBUS_MP_NODE_SHUTDOWN();
 
     graml_myjob_initialized = GLOBUS_FALSE;
-
-    return(GLOBUS_SUCCESS);
+    
+    return GLOBUS_SUCCESS;
 }
 
 
 /******************************************************************************
 Function:	globus_gram_myjob_size()
 
-Description:	sets size to one (1)
+Description:	sets size to number of nodes
 
 Parameters:	see API
 
@@ -185,7 +115,7 @@ globus_gram_myjob_size(
 /******************************************************************************
 Function:	globus_gram_myjob_rank()
 
-Description:	sets rank to zero (0)
+Description:	sets rank to node's ordinal
 
 Parameters:	see API
 
@@ -227,8 +157,9 @@ globus_gram_myjob_send(
     globus_byte_t *			msg_buf,
     int					msg_len)
 {
-    mp_send_status_t			send_status;
-    nexus_bool_t			send_done;
+    globus_mp_send_status_t		send_status;
+    globus_bool_t			send_done;
+    int					error;
 
     if (!graml_myjob_initialized)
     {
@@ -248,17 +179,19 @@ globus_gram_myjob_send(
     }
 
 
-    MP_SEND(graml_myjob_communicator,
-	    dest_rank,
-	    msg_buf,
-	    msg_len,
-	    send_status);
+    GLOBUS_MP_SEND(graml_myjob_communicator,
+		   dest_rank,
+		   msg_buf,
+		   msg_len,
+		   send_status,
+		   error);
 
-    send_done = NEXUS_FALSE;
+    send_done = GLOBUS_FALSE;
     do
     {
-	MP_SEND_STATUS(send_status, send_done);
-    } while(!send_done);
+	GLOBUS_MP_SEND_STATUS(send_status, send_done, error);
+    }
+    while(!send_done);
 
     return(GLOBUS_SUCCESS);
 }
@@ -278,8 +211,9 @@ globus_gram_myjob_receive(
     globus_byte_t *			msg_buf,
     int *				msg_len)
 {
-    mp_receive_status_t			recv_status;
-    nexus_bool_t			recv_done;
+    globus_mp_receive_status_t		recv_status;
+    globus_bool_t			recv_done;
+    int					error;
 
     if (!graml_myjob_initialized)
     {
@@ -291,16 +225,18 @@ globus_gram_myjob_receive(
 	return(GLOBUS_GRAM_MYJOB_ERROR_BAD_SIZE);
     }
 
-    MP_POST_RECEIVE(graml_myjob_communicator,
-		    globus_gram_myjob_receive,
-		    msg_buf,
-		    GLOBUS_GRAM_MYJOB_MAX_BUFFER_LENGTH,
-		    recv_status);
+    GLOBUS_MP_POST_RECEIVE(graml_myjob_communicator,
+			   globus_gram_myjob_receive,
+			   msg_buf,
+			   GLOBUS_GRAM_MYJOB_MAX_BUFFER_LENGTH,
+			   recv_status,
+			   error);
 
-    MP_RECEIVE_WAIT(globus_gram_myjob_receive(),
-		    recv_status,
-		    msg_len,
-		    recv_done);
+    GLOBUS_MP_RECEIVE_WAIT(globus_gram_myjob_receive(),
+			   recv_status,
+			   msg_len,
+			   recv_done,
+			   error);
 
     return(GLOBUS_SUCCESS);
 }
@@ -322,7 +258,7 @@ Returns:	this will never return
 int
 globus_gram_myjob_kill()
 {
-    MP_ABORT();
+    GLOBUS_MP_ABORT();
     abort();
 
     return GLOBUS_GRAM_MYJOB_ERROR_COMM_FAILURE;

@@ -25,7 +25,6 @@ CVS Information:
 			     Include header files
 ******************************************************************************/
 #include "globus_common.h"
-#include "globus_gram_client.h"
 
 
 /******************************************************************************
@@ -33,93 +32,30 @@ CVS Information:
 ******************************************************************************/
 #define GLOBUS_GRAM_MYJOB_MAX_BUFFER_LENGTH	4096
 
-
-/******************************************************************************
-				Type definition
-******************************************************************************/
-
-
-
-
-
-
-/******************************************************************************
-			      Function prototypes
-******************************************************************************/
-
-extern int 
-globus_gram_myjob_activate ();
-
-extern int
-globus_gram_myjob_deactivate ();
-
-#define GLOBUS_GRAM_MYJOB_MODULE (&globus_gram_myjob_module)
-
-static globus_module_descriptor_t globus_gram_myjob_module = 
-{
-  "globus_gram_myjob",
-  globus_gram_myjob_activate,
-  globus_gram_myjob_deactivate,
-  NULL
-};
-
-/******************************************************************************
-Function:	globus_gram_myjob_init()
-
-Description:	initialize GRAM's communication subsystem
-
-		This routine must be called before any of the other
-		communication routines.
-
-		If any node in the job calls globus_gram_myjob_init(), all nodes must
-		make the call; failure to do so may result in the job hanging.
-
-Parameters:	argc
-			pointer to number of command line arguments
-
-		argv
-			pointer to array of command line arguments
-
-Returns:	TODO: define all possible values
-
-		GLOBUS_GRAM_MYJOB_SUCCESS
-			initialization completed successfully
-
-		GLOBUS_GRAM_MYJOB_ERROR_NOT_INITIALIZED
-			the underlying communication system was not initialized
-			prior to calling globus_gram_myjob_init()
-******************************************************************************/
-int
-globus_gram_myjob_init(
-    int *				argc,
-    char ***				argv);
+/*
+ * gram_myjob_*() error codes
+ */ 
+#define GLOBUS_GRAM_MYJOB_ERROR_BASE		(0x000f0000)
+#define GLOBUS_GRAM_MYJOB_SUCCESS		0
+#define GLOBUS_GRAM_MYJOB_ERROR_NOT_INITIALIZED	\
+    (GLOBUS_GRAM_MYJOB_ERROR_BASE + 0)
+#define GLOBUS_GRAM_MYJOB_ERROR_BAD_PARAM	\
+    (GLOBUS_GRAM_MYJOB_ERROR_BASE + 1)
+#define GLOBUS_GRAM_MYJOB_ERROR_COMM_FAILURE	\
+    (GLOBUS_GRAM_MYJOB_ERROR_BASE + 2)
+#define GLOBUS_GRAM_MYJOB_ERROR_BAD_RANK	\
+    (GLOBUS_GRAM_MYJOB_ERROR_BASE + 3)
+#define GLOBUS_GRAM_MYJOB_ERROR_BAD_SIZE	\
+    (GLOBUS_GRAM_MYJOB_ERROR_BASE + 4)
 
 
 /******************************************************************************
-Function:	globus_gram_myjob_done()
-
-Description:	terminate GRAM's communication subsystem, releasing any
-		resource which might have been allocated.  This routine should
-		be called anytime a major communcation phase ends to prevent
-		resources from being held unnecessarily for the entire duration
-		of the job.  Should further communication be required at a
-		later time, globus_gram_myjob_init() may be called again.
-
-		the other communication routines may not be used once this
-		routine is called, unless globus_gram_myjob_init() is called again
-
-Parameters:	none
-
-Returns:	TODO: define all possible values
-
-		GLOBUS_GRAM_MYJOB_SUCCESS
-			initialization completed successfully
-
-		GLOBUS_GRAM_MYJOB_ERROR_NOT_INITIALIZED
-			globus_gram_myjob_init() has not been called
+			Module activation declarations
 ******************************************************************************/
-int
-globus_gram_myjob_done();
+
+#define GLOBUS_GRAM_MYJOB_MODULE (&globus_i_gram_myjob_module)
+
+extern globus_module_descriptor_t globus_i_gram_myjob_module;
 
 
 /******************************************************************************
