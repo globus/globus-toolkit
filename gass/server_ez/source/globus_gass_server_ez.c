@@ -465,11 +465,15 @@ globus_l_gass_server_ez_register_accept_callback(
     if(rc != GLOBUS_SUCCESS ||
        parsed_url.url_path == GLOBUS_NULL)
     {
+        globus_gass_transfer_deny(request, 404, "File Not Found");
+        globus_gass_transfer_request_destroy(request);
         globus_url_destroy(&parsed_url);
 	goto reregister;
     }
     if(strlen(parsed_url.url_path) == 0U)
     {
+        globus_gass_transfer_deny(request, 404, "File Not Found");
+        globus_gass_transfer_request_destroy(request);
         globus_url_destroy(&parsed_url);
         goto reregister;
     }
