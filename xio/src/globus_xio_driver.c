@@ -2,7 +2,7 @@
 #include "globus_i_xio.h"
 
 globus_result_t
-globus_i_xio_repass(
+globus_i_xio_repass_write(
     globus_i_xio_op_t *                     op)
 {
     globus_i_xio_op_entry_t *               my_op;
@@ -30,6 +30,43 @@ globus_i_xio_repass(
 
     /* repass the operation down */
     res = next_context->driver->write_func(
+            next_context->driver_handle,
+            tmp_iovec,
+            iovec_count,
+            op);
+
+    return res;
+}
+
+globus_result_t
+globus_i_xio_repass_read(
+    globus_i_xio_op_t *                     op)
+{
+    globus_i_xio_op_entry_t *               my_op;
+    globus_i_xio_context_entry_t *          next_context;
+    globus_result_t                         res;
+    globus_xio_iovec_t *                    tmp_iovec;
+    int                                     iovec_count;
+
+    my_op = &op->entry[op->ndx - 1];
+    next_context = &op->_op_context->entry[op->ndx - 1];
+
+    /* allocate tmp iovec to the bigest it could ever be */
+    if(my_op->_op_ent_fake_iovec == NULL)
+    {
+        my_op->_op_ent_fake_iovec = (globus_xio_iovec_t *)
+            globus_malloc(sizeof(globus_xio_iovec_t) *
+                my_op->_op_ent_iovec_count);
+    }
+    tmp_iovec = my_op->_op_ent_fake_iovec;
+
+    GlobusIXIOUtilTransferAdjustedIovec(
+        tmp_iovec, iovec_count,
+        my_op->_op_ent_iovec, my_op->_op_ent_iovec_count,
+        my_op->_op_ent_nbytes);
+
+    /* repass the operation down */
+    res = next_context->driver->read_func(
             next_context->driver_handle,
             tmp_iovec,
             iovec_count,

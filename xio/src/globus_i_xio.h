@@ -615,7 +615,11 @@ globus_i_xio_op_destroy(
     globus_bool_t *                         destroy_context);
 
 globus_result_t
-globus_i_xio_repass(
+globus_i_xio_repass_write(
+    globus_i_xio_op_t *                     op);
+
+globus_result_t
+globus_i_xio_repass_read(
     globus_i_xio_op_t *                     op);
 
 void

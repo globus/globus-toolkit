@@ -618,7 +618,7 @@ globus_xio_driver_finished_write_DEBUG(
         /* if not enough bytes read set the fire_cb default to false */
         _fire_cb = GLOBUS_FALSE;
         /* repass the operation down */
-        _res = globus_i_xio_repass(_op);
+        _res = globus_i_xio_repass_write(_op);
         if(_res != GLOBUS_SUCCESS)
         {
             _fire_cb = GLOBUS_TRUE;
@@ -915,7 +915,7 @@ globus_xio_driver_finished_read_DEBUG(
     {
         /* if not enough bytes read set the fire_cb deafult to false */
         _fire_cb = GLOBUS_FALSE;
-        _res = globus_i_xio_repass(_op);
+        _res = globus_i_xio_repass_read(_op);
         if(_res != GLOBUS_SUCCESS)
         {
             _fire_cb = GLOBUS_TRUE;
