@@ -63,6 +63,8 @@ dnl   lac_cv_F90FLAGS
 dnl
 dnl
 
+m4_pattern_allow(^AC_PROG_CC_GNU$)
+
 dnl LAC_COMPILERS_ARGS()
 AC_DEFUN(LAC_COMPILERS_ARGS,
 [

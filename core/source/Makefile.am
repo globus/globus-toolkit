@@ -8,8 +8,6 @@ license_DATA = GLOBUS_LICENSE
 sbin_SCRIPTS = \
 	libtool-$(GLOBUS_FLAVOR_NAME)
 
-flavorincludedir = $(GLOBUS_LOCATION)/include/$(GLOBUS_FLAVOR_NAME)
-
 flavorinclude_HEADERS = \
 	globus_config.h
 

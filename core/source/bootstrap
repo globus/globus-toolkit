@@ -26,12 +26,12 @@ for program in automake aclocal autoconf autoheader
     }
 done
 
-automake_version=`automake --version | grep globus`
+#automake_version=`automake --version | grep globus`
 
-if test "x$automake_version" = "x"; then
-    echo "ERROR: You are not using the patched automake" >&2
-    exit 1
-fi
+#if test "x$automake_version" = "x"; then
+#    echo "ERROR: You are not using the patched automake" >&2
+#    exit 1
+#fi
 
 config=
 
