@@ -1,0 +1,23 @@
+/**
+@mainpage Fork Job Manager
+
+This package contains the "fork" interface to the GRAM Job Manager. It is
+a setup package; the script setup-globus-job-manager-fork must be run
+to register a fork job manager with the Gatekeeper as a service.
+
+@section fork_changes Change Log
+
+@subsection gram_1_6 GRAM 1.0
+
+Split from the core of the Job Manager as a setup package.
+
+The test for mpirun is done at the time this package is set up. If mpirun
+is not found at that time, the job manager will return the error
+GLOBUS_GRAM_PROTOCOL_ERROR_JOBTYPE_NOT_SUPPORTED instead of
+GLOBUS_GRAM_PROTOCOL_ERROR_MPIRUN_NOT_FOUND.
+
+Errors in the max_time, ...,  host_count RSL attributes will not be detected
+by the fork interface to the job manager. These values were validated to be
+integers in GRAM 1.5, but then ignored by the job manager for the fork startup
+method.
+*/
