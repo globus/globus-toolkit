@@ -50,7 +50,13 @@
         </flavor_choice>
        
         </flavors>
-    </Build_Instructions>
+</Build_Instructions>
+
+<Source_Dependencies Type="compile" > 
+	<Dependency Name="globus_core"> 
+		<Version><Simple_Version Major="2"> </Simple_Version> </Version> 
+	</Dependency> 
+</Source_Dependencies>
 
   </src_pkg >
 
