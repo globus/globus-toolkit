@@ -1,4 +1,4 @@
-.TH myproxy-init 1 "2003-4-30" "NCSA" "MyProxy"
+.TH myproxy-init 1 "2003-5-1" "NCSA" "MyProxy"
 .SH NAME
 myproxy-init \- store a credential for later retrieval
 .SH SYNOPSIS
@@ -22,7 +22,7 @@ A credential with a lifetime of one week (by default) is then
 delegated to the
 .BR myproxy-server (8)
 and stored with the given MyProxy pass phrase.
-Proxy credentials with default lifetime of 2 hours can then be
+Proxy credentials with default lifetime of 12 hours can then be
 retrieved by 
 .BR myproxy-get-delegation (1)
 using the MyProxy passphrase.
@@ -102,16 +102,17 @@ The MyProxy username need not correspond to a real Unix username.
 .BI -c " hours, " --cred_lifetime " hours"
 Specifies the lifetime of the credential stored on the
 .BR myproxy-server (8)
-in hours.  Default: 1 week (168 hours)
+in hours.
 Specify 
 .I 0
 for the maximum possible lifetime, i.e., the lifetime of
 the original credential.
+Default: 1 week (168 hours)
 .TP
 .BI -t " hours, " --proxy_lifetime " hours"
 Specifies the maximum lifetime of credentials retrieved from the
 .BR myproxy-server (8)
-using the stored credential.  Default: 2 hours
+using the stored credential.  Default: 12 hours
 .TP
 .B -n, --no_passphrase
 Disables passphrase authentication for the stored credential.
@@ -120,10 +121,12 @@ the credential will not be encrypted by a passphrase in the repository, and
 the credential will not be retrievable using passphrase authentication
 with
 .BR myproxy-get-delegation (1).
-This option is required for storing renewable credentials.
+This option is used for storing renewable credentials
+and is implied by
+.BR -R .
 .TP
 .B -d, --dn_as_username
-Use the proxy certificate subject (DN) as the default username, instead
+Use the certificate subject (DN) as the default username, instead
 of the 
 .B LOGNAME 
 environment variable.
@@ -132,7 +135,7 @@ environment variable.
 Allow credentials to be retrieved with just pass phrase authentication.
 By default, only entities with credentials that match the
 .BR myproxy-server.config (5)
-policy may retrieve credentials.
+default retriever policy may retrieve credentials.
 This option allows entities without existing credentials to retrieve a
 credential using pass phrase authentication by including "anonymous"
 in the set of allowed retrievers.  The
@@ -231,7 +234,8 @@ Specifies the distinguished name (DN) of the
 All MyProxy client programs authenticate the server's identity.
 By default, MyProxy servers run with host credentials, so the MyProxy
 client programs expect the server to have a distinguished name of the
-form "host/<fqhn>" (where <fqhn> is the fully-qualified hostname of
+form "host/<fqhn>" or "myproxy/<fqhn>"
+(where <fqhn> is the fully-qualified hostname of
 the server).  If the server is running with some other DN, you can set
 this environment variable to tell the MyProxy clients to accept the
 alternative DN.
