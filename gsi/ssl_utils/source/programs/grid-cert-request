@@ -56,8 +56,8 @@ ${short_usage}
     -nopw                : Create certificate without a passwd
     -int[eractive]       : Prompt user for each component of the DN
     -force               : Overwrites prexisting certifictes
-    -nondefaultca        : Will ask which CA is to be used (interactive)
-    -nondefaultca=<HASH> : Will use the CA with hash value <HASH>
+    -ca                  : Will ask which CA is to be used (interactive)
+    -ca <hash>           : Will use the CA with hash value <hash>
 EOF
 }
 
@@ -243,14 +243,15 @@ readCommandLine () {
          FORCE="TRUE"
          shift
          ;;
-     -nondefaultca)
-         nondefaultca="true"
-	 set_nondefaultca
-	 shift
-	 ;;
-     -nondefaultca=*)
-	 nondefaultca=`echo $1 | ${GLOBUS_SH_SED-sed} -e "s|-nondefaultca=\(.*\)|\1|"`
-	 if [ -z "${nondefaultca}" ]; then long_usage; exit 1; fi	    
+     -ca)
+	 if [ ! -z "$2" ] && [ -z "`echo $2 | ${GLOBUS_SH_SED-sed} -e "s|[^-]*||g"`" ]; then
+	    echo "nondefaultca=$2"
+	    nondefaultca=$2
+	    shift
+	 else
+	    echo "nondefaultca=true"
+	    nondefaultca="true"
+	 fi
 	 set_nondefaultca
 	 shift
 	 ;;
