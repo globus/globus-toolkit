@@ -19,15 +19,13 @@ my $name		= 'jobmanager-remote';
 my $host;
 my $type;
 my $location;
-my $force		= 0;
 my $cmd;
 
 GetOptions('service-name|s=s' => \$name,
-	   'force|f' => \$force,
 	   'host|h=s'  => \$host,
 	   'type|t=s' => \$type,
 	   'location|l=s' => \$location,
-	   'help|h|?' => \$help);
+	   'help|h' => \$help);
 
 &usage if $help;
 
@@ -36,15 +34,6 @@ my $metadata =
 
 my $globusdir	= $ENV{GLOBUS_LOCATION};
 my $libexecdir	= "$globusdir/libexec";
-
-if($force != 0)
-{
-    $force = '-f';
-}
-else
-{
-    $force = '';
-}
 
 if($host eq "" || $type eq "" || $location eq "")
 {
@@ -60,7 +49,7 @@ if($? != 0)
 }
 
 # Create service
-$cmd = "$libexecdir/globus-job-manager-service-add -m remote -s \"$name\" $force";
+$cmd = "$libexecdir/globus-job-manager-service-add -m remote -s \"$name\"";
 system("$cmd >/dev/null 2>/dev/null");
 
 if($? == 0)
@@ -77,7 +66,6 @@ sub usage
 {
     print "Usage: $0 [options] -host=HOST -type=TYPE -location=LOCATION\n".
           "Options:  [--service-name|-s service_name]\n".
-          "          [--force|-f]\n".
 	  "          [--help|-h]\n";
     exit 1;
 }
