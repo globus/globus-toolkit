@@ -8,4 +8,4 @@ globus_version_t local_version =
 };
 
 static const char build_flavor[] = "@GLOBUS_FLAVOR_NAME@";
-static const char globus_l_gfs_gpt_name[] = "@PACKAGE@";
+static const char local_package_name[] = "@PACKAGE@";

@@ -4,7 +4,6 @@
 #include "globus_common.h"
 #include "globus_gridftp_server_control.h"
 
-
 extern globus_extension_registry_t      globus_i_gfs_dsi_registry;
 #define GLOBUS_GFS_DSI_REGISTRY         &globus_i_gfs_dsi_registry
 

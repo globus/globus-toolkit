@@ -620,75 +620,21 @@ globus_i_gfs_config_init(
         
 }
 
-/* returns false if option doesnt exist */
-globus_bool_t
-globus_i_gfs_config_bool(
-    const char *                        option_name)
-{
-    globus_l_gfs_config_option_t *      option;    
-    
-    option = (globus_l_gfs_config_option_t *) 
-        globus_hashtable_lookup(&option_table, (void *) option_name);
-    
-    if(option)
-    {
-        return (globus_bool_t) option->value;
-    }
-    
-    return GLOBUS_FALSE;
-}
 
 
-/* returns INT_MAX if option doesnt exist */
-int
-globus_i_gfs_config_int(
+void *
+globus_i_gfs_config_get(
     const char *                        option_name)
 {
     globus_l_gfs_config_option_t *      option;
-    int                                 value = INT_MAX;    
-    
-    option = (globus_l_gfs_config_option_t *) 
-        globus_hashtable_lookup(&option_table, (void *) option_name);
-        
-    if(option)
-    {        
-        value = (int) option->value;
-    }
-
-    return value;
-}
-
-char *
-globus_i_gfs_config_string(
-    const char *                        option_name)
-{
-    globus_l_gfs_config_option_t *      option;
-    char *                              value = GLOBUS_NULL;    
+    void *                              value = NULL;    
     
     option = (globus_l_gfs_config_option_t *) 
         globus_hashtable_lookup(&option_table, (void *) option_name);
         
     if(option && option->value)
     {        
-        value = globus_libc_strdup((char *) option->value);
-    }
-
-    return value;
-}
-
-globus_list_t *
-globus_i_gfs_config_list(
-    const char *                        option_name)
-{
-    globus_l_gfs_config_option_t *      option;
-    globus_list_t *                     value = GLOBUS_NULL;    
-    
-    option = (globus_l_gfs_config_option_t *) 
-        globus_hashtable_lookup(&option_table, (void *) option_name);
-        
-    if(option && option->value)
-    {        
-        value = (globus_list_t *) option->value;
+        value = option->value;
     }
 
     return value;

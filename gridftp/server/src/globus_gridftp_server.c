@@ -2,8 +2,9 @@
 #include "globus_xio.h"
 #include "globus_xio_tcp_driver.h"
 #include "globus_i_gridftp_server.h"
-#include <sys/wait.h>
 #include "version.h"
+
+#include <sys/wait.h>
 
 static globus_cond_t                    globus_l_gfs_cond;
 static globus_mutex_t                   globus_l_gfs_mutex;
@@ -506,7 +507,7 @@ main(
     if(globus_i_gfs_config_bool("version"))
     {
         globus_version_print(
-            globus_l_gfs_gpt_name,
+            local_package_name,
             &local_version,
             stderr,
             GLOBUS_TRUE);
@@ -516,7 +517,7 @@ main(
     if(globus_i_gfs_config_bool("versions"))
     {
         globus_version_print(
-            globus_l_gfs_gpt_name,
+            local_package_name,
             &local_version,
             stderr,
             GLOBUS_TRUE);
