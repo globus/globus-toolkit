@@ -1,6 +1,7 @@
 include $(top_srcdir)/globus_automake_pre
 
 globus_gram_reporter_scripts = \
+	globus-script-fork-queue \
 	globus-script-condor-queue \
 	globus-script-easymcs-queue \
 	globus-script-glunix-queue \
