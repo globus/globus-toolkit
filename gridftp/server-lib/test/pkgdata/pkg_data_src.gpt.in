@@ -15,13 +15,13 @@
         <Source_Dependencies Type="compile">
             <Dependency Name="globus_xio">
                 <Version>
-                    <Simple_Version Major="1"/>
+                    <Simple_Version Major="0"/>
                 </Version>
             </Dependency>
 
             <Dependency Name="globus_ftp_control">
                 <Version>
-                    <Simple_Version Major="0"/>
+                    <Simple_Version Major="2"/>
                 </Version>
             </Dependency>
 
@@ -35,13 +35,13 @@
         <Source_Dependencies Type="pgm_link">
             <Dependency Name="globus_xio">
                 <Version>
-                    <Simple_Version Major="1"/>
+                    <Simple_Version Major="0"/>
                 </Version>
             </Dependency>
 
             <Dependency Name="globus_ftp_control">
                 <Version>
-                    <Simple_Version Major="0"/>
+                    <Simple_Version Major="2"/>
                 </Version>
             </Dependency>
 
@@ -55,13 +55,13 @@
         <Source_Dependencies Type="lib_link">
             <Dependency Name="globus_xio">
                 <Version>
-                    <Simple_Version Major="1"/>
+                    <Simple_Version Major="0"/>
                 </Version>
             </Dependency>
 
             <Dependency Name="globus_ftp_control">
                 <Version>
-                    <Simple_Version Major="0"/>
+                    <Simple_Version Major="2"/>
                 </Version>
             </Dependency>
 
