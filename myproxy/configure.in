@@ -74,7 +74,7 @@ AC_SUBST(SYSLIBS)
 dnl
 dnl Check for SASL
 dnl
-AC_ARG_WITH(sasl,
+AC_ARG_WITH(sasl2,
 	[ --with-sasl2=PATH        Build with SASL V2 support],
 	[
 		AC_MSG_CHECKING(for SASL installation)
@@ -89,7 +89,7 @@ AC_ARG_WITH(sasl,
 dnl
 dnl Check for Kerberos
 dnl
-AC_ARG_WITH(kerberos,
+AC_ARG_WITH(kerberos5,
 	[ --with-kerberos5=PATH    Build with Kerberos V5 support],
 	[
 		AC_MSG_CHECKING(for Kerberos)
