@@ -8449,7 +8449,6 @@ globus_l_ftp_eb_accept_callback(
                 error = globus_error_get(res);
                 globus_l_ftp_control_stripes_destroy(dc_handle, error);
             }
-            globus_assert(res == GLOBUS_SUCCESS);
         }
         /*
          *  since the accept came back, dec ref
