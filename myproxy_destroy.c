@@ -110,7 +110,7 @@ main(int argc, char *argv[])
     if (myproxy_init_client(socket_attrs) < 0) {
         fprintf(stderr, "error in myproxy_init_client(): %s\n",
 		verror_get_string());
-        exit(1);
+        return 1;
     }
 
 #if defined(CONDITIONAL_ENCRYPTION)
@@ -123,7 +123,7 @@ main(int argc, char *argv[])
     if (myproxy_authenticate_init(socket_attrs, NULL /* Default proxy */) < 0) {
         fprintf(stderr, "error in myproxy_authenticate_init(): %s\n",
 		verror_get_string());
-        exit(1);
+	return 1;
     }
 
     if (client_request->username == NULL) { /* set default username */
@@ -133,12 +133,12 @@ main(int argc, char *argv[])
 					  &username)) {
 		fprintf(stderr,
 			"Cannot get subject name from your certificate\n");
-		exit(1);
+		return 1;
 	    }
 	} else {
 	    if (!(username = getenv("LOGNAME"))) {
 		fprintf(stderr, "Please specify a username.\n");
-		exit(1);
+		return 1;
 	    }
 	}
 	client_request->username = strdup(username);
@@ -150,14 +150,14 @@ main(int argc, char *argv[])
     
     if (requestlen < 0) {
         fprintf(stderr, "error in myproxy_serialize_request()\n");
-        exit(1);
+        return 1;
     }
 
     /* Send request to the myproxy-server */
     if (myproxy_send(socket_attrs, request_buffer, requestlen) < 0) {
         fprintf(stderr, "error in myproxy_send_request(): %s,\n",
 		verror_get_string());
-        exit(1);
+        return 1;
     }
 
     /* Receive a response from the server */
@@ -166,13 +166,13 @@ main(int argc, char *argv[])
     if (responselen < 0) {
         fprintf(stderr, "error in myproxy_recv(): %s\n",
 		verror_get_string());
-        exit(1);
+        return 1;
     }
 
     /* Make a response object from the response buffer */
     if (myproxy_deserialize_response(server_response, response_buffer, responselen) < 0) {
         fprintf(stderr, "error in myproxy_deserialize_response()\n");
-        exit(1);
+        return 1;
     }
 
     /* Check version */
@@ -196,7 +196,7 @@ main(int argc, char *argv[])
     /* free memory allocated */
     myproxy_free(socket_attrs, client_request, server_response);
 
-    exit(0);
+    return 0;
 }
 
 void 
