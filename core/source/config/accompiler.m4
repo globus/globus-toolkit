@@ -237,13 +237,15 @@ case ${host}--$1 in
         if test "$lac_cv_build_64bit" = "yes"; then
             LAC_PROG_CC_GNU($lac_cv_CC,
                             [ lac_CFLAGS="$lac_CFLAGS -m64"
-                              lac_CXXFLAGS="$lac_CXXFLAGS -m64" ],
+                              lac_CXXFLAGS="$lac_CXXFLAGS -m64"
+                              lac_LDFLAGS="$lac_LDFLAGS -m64" ],
                             [ lac_CFLAGS="$lac_CFLAGS -xarch=v9 -KPIC"
                               lac_CXXFLAGS="$lac_CXXFLAGS -xarch=v9 -KPIC" ])
         else
             LAC_PROG_CC_GNU($lac_cv_CC,
                             [ lac_CFLAGS="$lac_CFLAGS -m32"
-                              lac_CXXFLAGS="$lac_CXXFLAGS -m32" ],
+                              lac_CXXFLAGS="$lac_CXXFLAGS -m32"
+                              lac_LDFLAGS="$lac_LDFLAGS -m32" ],
                             [ lac_CFLAGS="$lac_CFLAGS -xarch=v8"
                               lac_CXXFLAGS="$lac_CXXFLAGS -xarch=v8" ])
 
