@@ -343,7 +343,8 @@ globus_io_fileattr_init(
      *  NETLOGGER
      */
     attr->nl_handle = GLOBUS_NULL;
-
+    attr->space = GLOBUS_CALLBACK_GLOBAL_SPACE;
+    
     return GLOBUS_SUCCESS;
 }
 
