@@ -11,6 +11,7 @@ require Exporter;
               dest_is_remote 
               clean_remote_file 
               get_remote_file 
+              run_command
               compare_local_files );            # symbols to export by default
 
 BEGIN { push(@INC, $ENV{GLOBUS_LOCATION} . '/lib/perl'); }
@@ -312,6 +313,25 @@ sub ftp_commands()
             'LIST', 'NLST', 'MDTM', 'MKD', 'RMD', 'RNFR', 'RNTO', 'NOOP' );
 }
 
+sub run_command($)
+{
+    my $command = shift;
+    
+    if(defined($ENV{"FTP_TEST_EF"}))
+    {
+        $command = "ef $command";
+    }
+    elsif(defined($ENV{"FTP_TEST_VALGRIND"}))
+    {
+        $ENV{"VALGRIND_OPTS"} = $ENV{"VALGRIND_SUPP"} .
+            " -q --error-limit=no --num-callers=10 " .
+            "--profile=no --leak-check=yes --leak-resolution=med " .
+            "--freelist-vol=10000000 --logfile=valgrind";
+        $command = "valgrind $command";
+    }
+
+    return system($command);
+}
 
 =back
 

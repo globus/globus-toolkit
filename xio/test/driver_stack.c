@@ -49,7 +49,8 @@ stack_main(
 
     res = globus_xio_driver_unload(stack_driver);
     test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
-
+    globus_xio_stack_destroy(stack);
+    
     rc = globus_module_deactivate(GLOBUS_XIO_MODULE);
     globus_assert(rc == 0);
 

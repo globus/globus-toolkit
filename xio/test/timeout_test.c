@@ -19,7 +19,7 @@ result_is_timeout(
         !globus_error_match(
             globus_error_peek(res),
             GLOBUS_XIO_MODULE,
-            GLOBUS_XIO_ERROR_TIMEDOUT))
+            GLOBUS_XIO_ERROR_CANCELED))
     {
         return GLOBUS_FALSE;
     }

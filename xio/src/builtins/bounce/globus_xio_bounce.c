@@ -111,13 +111,18 @@ test_bounce_finish_op(
             break;
     
         case TEST_OPEN:
+            if(info->res != GLOBUS_SUCCESS)
+            {
+                bounce_handle_destroy(info->handle);
+                info->handle = NULL;
+            }
             globus_xio_driver_finished_open(
                 info->handle, op, info->res);
             break;
 
         case TEST_CLOSE:
             globus_xio_driver_finished_close(op, info->res);
-            globus_free(info->handle);
+            bounce_handle_destroy(info->handle);
             break;
 
         default:
@@ -393,6 +398,7 @@ globus_l_xio_bounce_close(
     res = test_bounce_next_op(info, op);
     if(res != GLOBUS_SUCCESS)
     {
+        bounce_handle_destroy(info->handle);
         goto err;
     }
     GlobusXIODebugInternalExit();

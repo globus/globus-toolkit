@@ -14,14 +14,10 @@ result_is_cancel(
     globus_result_t                             res)
 {
     if(res == GLOBUS_SUCCESS ||
-        (!globus_error_match(
-            globus_error_peek(res),
-            GLOBUS_XIO_MODULE,
-            GLOBUS_XIO_ERROR_CANCELED)) &&
         !globus_error_match(
             globus_error_peek(res),
             GLOBUS_XIO_MODULE,
-            GLOBUS_XIO_ERROR_TIMEDOUT))
+            GLOBUS_XIO_ERROR_CANCELED))
     {
         return GLOBUS_FALSE;
     }

@@ -115,7 +115,8 @@ unload_main(
     {
         globus_assert(0);
     }
-
+    
+    globus_xio_stack_destroy(stack);
     res = globus_xio_driver_unload(debug_driver);
     test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
     res = globus_xio_driver_unload(test_driver);

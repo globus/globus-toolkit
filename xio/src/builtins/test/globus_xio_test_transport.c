@@ -94,7 +94,7 @@ cancel_cb(
 
     globus_mutex_lock(&ow->mutex);
     {
-        ow->res = GlobusXIOErrorTimedout();
+        ow->res = GlobusXIOErrorCanceled();
         ow->canceled = GLOBUS_TRUE;
         if(ow->callback_out)
         {
@@ -136,7 +136,7 @@ test_l_delay_register(
         if(ow->canceled)
         {
             delay = NULL;
-            ow->res = GlobusXIOErrorTimedout();
+            ow->res = GlobusXIOErrorCanceled();
         }
         ow->callback_out = GLOBUS_TRUE;
         res = globus_callback_space_register_oneshot(
@@ -568,6 +568,7 @@ globus_l_xio_test_close(
 
     if(dh->failure == GLOBUS_XIO_TEST_FAIL_PASS_CLOSE)
     {
+        globus_l_xio_test_attr_destroy(dh);
         res = GlobusXIOErrorTestError(GLOBUS_XIO_TEST_FAIL_PASS_CLOSE);
         goto err;
     }

@@ -25,20 +25,6 @@
         __LINE__,                                                           \
         "Operation was canceled")                                          
                                                                             
-#define GlobusXIOErrorObjTimedout()                                         \
-        globus_error_construct_error(                                       \
-            GLOBUS_XIO_MODULE,                                              \
-            GLOBUS_NULL,                                                    \
-            GLOBUS_XIO_ERROR_TIMEDOUT,                                      \
-            __FILE__,                                                       \
-            _xio_name,                                                      \
-            __LINE__,                                                       \
-            "Operation timed out")                                           
-                                                                            
-#define GlobusXIOErrorTimedout()                                            \
-    globus_error_put(                                                       \
-        GlobusXIOErrorObjTimedout())
-
 #define GlobusXIOErrorObjEOF()                                              \
         globus_error_construct_error(                                       \
             GLOBUS_XIO_MODULE,                                              \
@@ -342,10 +328,6 @@ globus_xio_error_is_eof(
 
 globus_bool_t
 globus_xio_error_is_canceled(
-    globus_result_t                     res);
-
-globus_bool_t
-globus_xio_error_is_timeout(
     globus_result_t                     res);
 
 void

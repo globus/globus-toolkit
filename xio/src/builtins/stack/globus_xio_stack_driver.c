@@ -94,6 +94,7 @@ globus_l_xio_stack_unload(
 
     globus_xio_driver_unload(stack_info->debug_driver);
     globus_xio_driver_unload(stack_info->test_driver);
+    globus_free(stack_info);
     globus_xio_driver_destroy(driver);
 }
 

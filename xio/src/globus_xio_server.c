@@ -105,6 +105,11 @@ globus_l_xio_server_destroy(
     
     globus_callback_space_destroy(xio_server->space);
     globus_mutex_destroy(&xio_server->mutex);
+    if(xio_server->contact_string)
+    {
+        globus_free(xio_server->contact_string);
+    }
+    
     globus_free(xio_server);
     
     GlobusXIODebugInternalExit();
@@ -240,7 +245,7 @@ globus_l_xio_server_accept_kickout(
     /* if failed clean up the operation */
     if(res != GLOBUS_SUCCESS)
     {
-        for(ctr = 0;  ctr < xio_op->stack_size; ctr++)
+        for(ctr = 0; ctr < xio_op->stack_size; ctr++)
         {
             if(xio_op->entry[ctr].link != NULL)
             {
@@ -270,7 +275,6 @@ globus_l_xio_server_accept_kickout(
         globus_mutex_lock(&xio_server->mutex);
         {
             GlobusXIOOpDec(xio_op);
-
             if(xio_op->ref == 0)
             {
                 /* remove the reference for the op on the server */
@@ -351,6 +355,7 @@ globus_i_xio_server_post_accept(
         if(xio_op->ref == 0)
         {
             GlobusIXIOServerDec(destroy_server, xio_server);
+            globus_free(xio_op);
         }
     }
     globus_mutex_unlock(&xio_server->mutex);
@@ -470,6 +475,7 @@ globus_l_xio_accept_timeout_callback(
                 {
                     /* remove the reference for the op on the server */
                     GlobusIXIOServerDec(destroy_server, xio_server);
+                    globus_free(xio_op);
                 }
 
                 /* remove it from the timeout list */
@@ -524,7 +530,6 @@ globus_l_xio_accept_timeout_callback(
         /* if canceling set the res and we will remove this timer event */
         if(cancel)
         {
-            xio_op->cached_obj = GlobusXIOErrorObjTimedout();
             rc = GLOBUS_TRUE;
             /* Assume all timeouts originate from user */
             xio_op->canceled = 1;
@@ -595,7 +600,9 @@ globus_l_xio_server_close_kickout(
 {
     globus_i_xio_server_t *             xio_server;
     globus_bool_t                       destroy_server = GLOBUS_FALSE;
-
+    GlobusXIOName(globus_l_xio_server_close_kickout);
+    
+    GlobusXIODebugInternalEnter();
     xio_server = (globus_i_xio_server_t *) user_arg;
     
     if(xio_server->cb)
@@ -616,6 +623,8 @@ globus_l_xio_server_close_kickout(
     {
         globus_l_xio_server_destroy(xio_server);
     }
+    
+    GlobusXIODebugInternalExit();
 }
 /*
  *  this is called locked
@@ -630,7 +639,8 @@ globus_l_xio_close_server(
     globus_callback_space_t             space = 
                                                 GLOBUS_CALLBACK_GLOBAL_SPACE;
     GlobusXIOName(globus_l_xio_close_server);
-
+    GlobusXIODebugInternalEnter();
+    
     for(ctr = 0; ctr < xio_server->stack_size; ctr++)
     {
         if(xio_server->entry[ctr].driver->server_destroy_func != NULL)
@@ -654,7 +664,8 @@ globus_l_xio_close_server(
         globus_l_xio_server_close_kickout,
         (void *)xio_server,
         space);
-
+    
+    GlobusXIODebugInternalExit();
     return res;
 }
 
@@ -796,13 +807,10 @@ globus_l_xio_server_register_accept(
                 globus_assert(xio_op->ref > 0);
             }
         }
-        GlobusXIOOpDec(xio_op);
-        if(xio_op == 0)
-        {
-            GlobusIXIOServerDec(free_server, xio_server);
-            globus_assert(!free_server);
-            globus_free(xio_op);
-        }
+        
+        /* we dont dec the op here because its owned by the caller */
+        GlobusIXIOServerDec(free_server, xio_server);
+        globus_assert(!free_server);
     }
   state_err:
     globus_mutex_unlock(&xio_server->mutex);
@@ -835,7 +843,7 @@ globus_xio_server_create(
     void *                              ds_attr = NULL;
     globus_i_xio_op_t *                 xio_op = NULL;
     globus_xio_contact_t                contact_info;
-    GlobusXIOName(globus_xio_server_init);
+    GlobusXIOName(globus_xio_server_create);
 
     GlobusXIODebugEnter();
     if(server == NULL)
@@ -890,8 +898,8 @@ globus_xio_server_create(
         {
             xio_server->accept_timeout = server_attr->accept_timeout_cb;
             xio_server->space = server_attr->space;
-            globus_callback_space_reference(xio_server->space);
         }
+        globus_callback_space_reference(xio_server->space);
         
         /* Only using this op for its index, really... things like type
          * and state don't matter to me.  I will also be using the open_attr
@@ -928,6 +936,7 @@ globus_xio_server_create(
     {
         goto err;
     }
+    globus_free(xio_op);
     
     globus_mutex_lock(&globus_i_xio_mutex);
     {
@@ -944,6 +953,12 @@ globus_xio_server_create(
     if(xio_op)
     {
         globus_free(xio_op);
+    }
+    if(xio_server)
+    {
+        globus_mutex_destroy(&xio_server->mutex);
+        globus_callback_space_destroy(xio_server->space);
+        globus_free(xio_server);
     }
     *server = NULL;
 
@@ -1246,9 +1261,10 @@ globus_xio_server_accept(
     if(info->error_obj != NULL)
     {
         res = GlobusXIOObjToResult(info->error_obj);
-        goto register_error;
+        globus_i_xio_blocking_destroy(info);
+        goto err;
     }
-
+    
     *out_handle = info->accepted_handle;
     globus_i_xio_blocking_destroy(info);
 
@@ -1407,17 +1423,20 @@ globus_xio_server_close(
         
         res = globus_xio_server_register_close(xio_server, 
                 globus_l_xio_server_close_cb, info);
-
-        while(!info->done)
+        if(res == GLOBUS_SUCCESS)
         {
-            globus_cond_wait(&info->cond, &info->mutex);
+            while(!info->done)
+            {
+                globus_cond_wait(&info->cond, &info->mutex);
+            }
         }
     }
     globus_mutex_unlock(&info->mutex);
-
+    
+    globus_i_xio_blocking_destroy(info);
+    
     if(res != GLOBUS_SUCCESS)
     {
-        globus_i_xio_blocking_destroy(info);
         goto err;
     }
 

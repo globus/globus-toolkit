@@ -41,7 +41,7 @@ sub lingering_get
     unlink('core');
     
     my $command = "$test_exec -s gsiftp://$source_host$source_file >/dev/null 2>&1";
-    $rc = system($command) / 256;
+    $rc = run_command($command) / 256;
     if($rc != 1)
     {
         $errors .= "\n# Test exited with $rc. ";

@@ -11,7 +11,7 @@ sub run_test
     my $cmd=(shift);
     my $test_str=(shift);
     my ($errors,$rc) = ("",0);
-    my $output_dir=$ENV{'xio-test-output-dir'};
+    my $output_dir=$ENV{'XIO_TEST_OUPUT_DIR'};
 
     # delete the output dir if it exists
     $rc = system("mkdir -p $output_dir");
@@ -34,6 +34,13 @@ sub run_test
     if(defined($ENV{"XIO_TEST_EF"}))
     {
         $command = "ef $command";
+    }
+    elsif(defined($ENV{"XIO_TEST_VALGRIND"}))
+    {
+        $ENV{"VALGRIND_OPTS"} = "-q --error-limit=no --num-callers=10 " .
+            "--profile=no --leak-check=yes --leak-resolution=med " .
+            "--freelist-vol=10000000 --logfile=$output_dir/$test_str.valgrind";
+        $command = "valgrind $command";
     }
 
     $rc = system($command);

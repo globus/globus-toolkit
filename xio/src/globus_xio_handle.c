@@ -852,6 +852,10 @@ globus_l_xio_open_close_callback_kickout(
     {
         op->_op_cb(handle, GlobusXIOObjToResult(op->cached_obj), op->user_arg);
     }
+    else if(op->cached_obj != NULL)
+    {
+        globus_object_free(op->cached_obj);
+    }
 
     globus_mutex_lock(&handle->context->mutex);
     {
@@ -1084,6 +1088,10 @@ globus_l_xio_read_write_callback_kickout(
             op,
             op->user_arg);
     }
+    else if(op->cached_obj != NULL)
+    {
+        globus_object_free(op->cached_obj);
+    }
 
     globus_mutex_lock(&handle->context->mutex);
     {
@@ -1294,7 +1302,6 @@ globus_l_xio_timeout_callback(
         /* if canceling set the res and we will remove this timer event */
         if(cancel)
         {
-            op->cached_obj = GlobusXIOErrorObjTimedout();
             rc = GLOBUS_TRUE;
             /* Assume all timeouts originate from user */
             op->canceled = 1;

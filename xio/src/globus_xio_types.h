@@ -50,7 +50,6 @@ typedef enum globus_i_xio_signal_type_e
 typedef enum
 {
     GLOBUS_XIO_ERROR_CANCELED,
-    GLOBUS_XIO_ERROR_TIMEDOUT,
     GLOBUS_XIO_ERROR_EOF,
     GLOBUS_XIO_ERROR_COMMAND,
     GLOBUS_XIO_ERROR_CONTACT_STRING,

@@ -31,7 +31,12 @@ accept_close_cb(
     void *                                      user_arg)
 {
     globus_result_t                             res;
-
+    
+    if(result == GLOBUS_SUCCESS)
+    {
+        globus_xio_close(handle, NULL);
+    }
+    
     globus_mutex_lock(&globus_l_mutex);
     {
         globus_l_cb_cnt++;
@@ -59,19 +64,19 @@ accept_cb(
     globus_result_t                             result,
     void *                                      user_arg)
 {
-    globus_xio_handle_t *                       h;
-
-    h = (globus_xio_handle_t *) user_arg;
-
     if(globus_l_closed)
     {
         failed_exit("the accept callback came after the server_close callback");
+    }
+    
+    if(result == GLOBUS_SUCCESS)
+    {
+        globus_xio_close(handle, NULL);
     }
 
     globus_mutex_lock(&globus_l_mutex);
     {
         globus_l_cb_cnt++;
-        *h = handle;
         globus_l_accepted++;
         globus_cond_signal(&globus_l_cond);
     }
@@ -117,7 +122,11 @@ server2_main(
 
     /* blocking */
     res = globus_xio_server_accept(&handle, server);
-
+    if(res == GLOBUS_SUCCESS)
+    {
+        globus_xio_close(handle, NULL);
+    }
+    
     globus_mutex_lock(&globus_l_mutex);
     {
         /* non blocking */
