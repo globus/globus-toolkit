@@ -1,0 +1,27 @@
+AC_REVISION($Revision$)
+AC_INIT(condor.in)
+
+# checking for the GLOBUS_LOCATION
+
+if test "x$GLOBUS_LOCATION" = "x"; then
+    echo "ERROR Please specify GLOBUS_LOCATION" >&2
+    exit 1
+fi
+
+AC_PATH_PROG(CONDOR_SUBMIT, condor_submit, no)
+if test "$CONDOR_SUBMIT" = "no" ; then
+    AC_MSG_ERROR("Cannot locate condor_submit")
+fi
+
+AC_PATH_PROG(CONDOR_RM, condor_rm, no)
+if test "$CONDOR_RM" = "no"; then
+    AC_MSG_ERROR("Cannot locate condor_rm")
+fi
+
+prefix='$(GLOBUS_LOCATION)'
+exec_prefix='$(GLOBUS_LOCATION)'
+libexecdir=${prefix}/libexec
+
+AC_OUTPUT(
+    condor.pm:condor.in
+)

@@ -1,0 +1,296 @@
+# Globus::GRAM::JobManager::condor package
+#
+# CVS Information:
+# $Source$
+# $Date$
+# $Revision$
+# $Author$
+
+use Globus::GRAM::Error;
+use Globus::GRAM::JobState;
+use Globus::GRAM::JobManager;
+use Globus::Core::Paths;
+
+package Globus::GRAM::JobManager::condor;
+
+@ISA = qw(Globus::GRAM::JobManager);
+
+my ($condor_submit, $condor_arch, $condor_os);
+
+BEGIN
+{
+    $condor_submit 	= '@CONDOR_SUBMIT@';
+    $condor_arch	= '@CONDOR_ARCH@';
+    $condor_os 		= '@CONDOR_OS@';
+}
+
+sub new
+{
+    my $proto = shift;
+    my $class = ref($proto) || $proto;
+    my $self = $class->SUPER::new(@_);
+
+    $self->{condor_logfile} = $Globus::Core::Paths::tmpdir
+                            . "/gram_condor_log."
+			    . $self->{JobDescription}->uniq_id();
+    
+    bless $self, $class;
+    return $self;
+}
+
+sub submit
+{
+    my $self = shift;
+    my $description = $self->{JobDescription};
+    my @environment;
+    my $environment_string;
+    my $tag = $description->cache_tag() or $ENV{GLOBUS_GRAM_JOB_CONTACT};
+    my $cache_pgm = "$Globus::Core::Paths::bindir/globus-gass-cache";
+    my $script_url;
+    my $script_filename;
+    my $script_file;
+    my $requirements = "";
+    my $rank = "";
+    my @arguments;
+    my $argument_string;
+
+    if($description->jobtype() eq 'single' ||
+       $description->jobtype() eq 'multiple')
+    {
+	$universe = 'vanilla';
+    }
+    else if($description->jobtype() eq 'condor')
+    {
+	$universe = 'standard'
+    }
+    else
+    {
+	return Globus::GRAM::Error::JOBTYPE_NOT_SUPPORTED();
+    }
+
+    # Validate some RSL parameters
+    if(!defined($description->directory()))
+    {
+        return Globus::GRAM::Error::RSL_DIRECTORY;
+    }
+    elsif( $description->stdin() eq "")
+    {
+	return Globus::GRAM::Error::RSL_STDIN;
+    }
+    elsif(ref($description->count()) ||
+       $description->count() != int($description->count()))
+    {
+	return Globus::GRAM::Error::INVALID_COUNT();
+    }
+    elsif( $description->executable eq "")
+    {
+	return Globus::GRAM::Error::RSL_EXECUTABLE();
+    }
+
+    # In the standard universe, we can validate stdin and directory
+    # because they will sent to the execution host  by condor transparently.
+    if($universe eq 'standard')
+    {
+	if(! -d $description->directory())
+	{
+	    return Globus::GRAM::Error::BAD_DIRECTORY;
+	}
+	elsif(! -r $description->stdin())
+	{
+	    return Globus::GRAM::Error::STDIN_NOT_FOUND();
+	}
+	elsif(! -f $description->executable())
+	{
+	    return Globus::GRAM::Error::EXECUTABLE_NOT_FOUND();
+	}
+	elsif(! -x $description->executable())
+	{
+	    return Globus::GRAM::Error::EXECUTABLE_PERMISSIONS();
+	}
+    }
+
+    @environment = $description->environment();
+    foreach $tuple ($description->environment())
+    {
+	if(!ref($tuple) || scalar(@$tuple) != 2)
+	{
+	    return Globus::GRAM::Error::RSL_ENVIRONMENT();
+	}
+    }
+    $environment_string = join(';',
+                               map {$_->[0] . "=" . $_->[1]} @environment);
+
+    @arguments = $description->arguments();
+    foreach (@arguments)
+    {
+	if(ref($_))
+	{
+	    return Globus::GRAM::Error::RSL_ARGUMENTS();
+	}
+    }
+    if($arguments[0])
+    {
+	$argument_string = join(' ',
+				map
+				{
+				    $_ =~ s/\\/\\\\/g;
+				    $_ =~ s/\$/\\\$/g;
+				    $_ =~ s/"/\\\"/g;
+				    $_ =~ s/`/\\\`/g;
+				    $_ =~ s/^/"/;
+				    $_ =~ s/$/"/;
+				    $_;
+				}
+				@arguments);
+    }
+    else
+    {
+	$argument_string = '';
+    }
+
+    # Create script for condor submission
+    $script_url = "$tag/condor_script.$$";
+    system("$cache_pgm -add -t $tag -n $script_url /dev/null >/dev/null");
+    $script_filename = `$cache_pgm -query $script_url 2>/dev/null`;
+    chomp($script_filename);
+
+    if($script_filename eq "")
+    {
+	return Globus::GRAM::::Error::TEMP_SCRIPT_FILE_FAILED;
+    }
+
+    $script_file = new IO::File($script_filename, '>');
+
+    $script_file->print("#\n# description file for condor submission\n#\n");
+    $script_file->print("Universe = $universe\n");
+    $script_file->print("Notification = Never\n");
+    $script_file->print("Executable = " . $description->executable . "\n");
+
+    $requirements  = "OpSys == \"$condor_os\" ";
+    $requirements .= " && Arch == \"$condor_arch\" ";
+    if($description->min_memory() ne "")
+    {
+	$requirements .= " && Memory >= " . $description->min_memory();
+	$rank = "rank = Memory\n";
+    }
+
+    if($universe eq 'vanilla' &&
+       $description->stdin() eq '/dev/null' &&
+       $description->stdout() eq '/dev/null' &&
+       $description->stderr() eq '/dev/null')
+    {
+	$requirements .= "&& FileSystemDomain != \"xxx\"";
+    }
+    $script_file->print("Requirements = $requirements\n");
+    if($rank ne "")
+    {
+	$script_file->print("$rank\n");
+    }
+    $script_file->print("Environment = $environment_string\n");
+    $script_file->print("Arguments = $argument_string\n");
+    $script_file->print("InitialDir = " . $description->directory() . "\n");
+    $script_file->print("Input = " . $description->stdin() . "\n");
+    $script_file->print("Output = " . $description->stdout() . "\n");
+    $script_file->print("Error = " . $description->stderr() . "\n");
+    $script_file->print("Log = " . $self->{condor_logfile} . "\n");
+    $script_file->print("queue " . $description->count() . "\n");
+
+    $script_file->close();
+
+    $log = "2> " . $description->stderr();
+
+    $script_response = new IO::File("$condor_submit $script_filename $log|");
+
+    if($? == 0)
+    {
+	$response_line =(grep("submitted to cluster", <script_response>))[0];
+	$job_id = split(/\./, split(/\s+/, $response_line)[5])[0];
+	$status = Globus::GRAM::JobState::PENDING;
+
+        $script_response->close();
+
+	return {JOB_STATE => Globus::GRAM::JobState::PENDING,
+	        JOB_ID    => $job_id};
+    }
+    else
+    {
+        $script_response->close();
+
+	return Globus::GRAM::Error::JOB_EXECUTION_FAILED;
+    }
+}
+
+sub poll
+{
+    my $self = shift;
+    my $description = $self->{JobDescription};
+    my $state;
+    my $condor_log_file;
+    my $job_id = $description->job_id();
+    my $num_done;
+    my $num_run;
+    my $num_abort;
+
+    $self->log("polling job " . $description->jobid());
+
+    $condor_log_file = new IO::File($self->{condor_logfile}, '<');
+
+    @status = grep(/^[0-9]* \(0*${job_id}/, <$condor_log_file>);
+    @status = sort(map { join(' ', split(/ /)[0,1]) });
+    foreach(@status)
+    {
+	unless($seen{$_}++)
+	{
+	    push(@uniq, $__;
+	}
+    }
+    $num_done = scalar(grep(/^005/));
+    $num_run = scalar(grep(/^001/));
+    $num_abort = scalar(grep(/^013/));
+
+    if($num_abort > 0)
+    {
+	$state = Globus::GRAM::JobState::FAILED;
+	unlink($self->{condor_logfile});
+    }
+    elsif($num_done == $description->count())
+    {
+	$state = Globus::GRAM::JobState::DONE;
+	unlink($self->{condor_logfile});
+    }
+    elsif($num_done > 0 || $num_run > 0)
+    {
+	$state = Globus::GRAM::JobState::ACTIVE;
+    }
+    else
+    {
+	$state = Globus::GRAM::JobState::PENDING;
+    }
+
+    return { JOB_STATE => $state };
+}
+
+sub cancel
+{
+    my $self = shift;
+    my $description = $self->{JobDescription};
+    my $status;
+    my $job_id = $description->jobid();
+    my $count = 0;
+
+    $self->log("cancel job " . $description->jobid());
+
+    $status = new IO::File("$condor_rm $job_id 2> /dev/null|");
+    $result = (split(/\./, <$status>))[0];
+
+    if($result eq 'Deleted ' . $description->jobid())
+    {
+	return { JOB_STATE => Globus::GRAM::JobState::FAILED };
+    }
+    else
+    {
+	return Globus::GRAM::Error::JOB_CANCEL_FAILED();
+    }
+}
+
+1;
