@@ -13,6 +13,7 @@
 #       Split Log Files     02/17/2004      R. Gaffaney
 #       Log nmake Returns   02/18/2004      R. Gaffaney
 #       Unique Make Names   03/04/2004      R. Gaffaney
+#       DLL Export Issues   04/01/2004      R. Gaffaney
 #
 # -----------------------------------------------------------------------------
 
@@ -781,19 +782,16 @@ my $i;
     my $FlagsPre;
     my $FlagsPost;
     if($BuildConfig eq "debug") {
-        $FlagsPre  = "/nologo /W3 /$CRuntimeLib /GX /Od ";
+        $FlagsPre  = "/nologo /W3 /$CRuntimeLib /GX /Od /Gd /Z7 ";
         $FlagsPost = "/D \"WIN32\" /D \"_DEBUG\" /D \"_MBCS\" /D \"_LIB\" /Fo\"\$\(INTDIR\)\\\\\" /Fd\"\$\(INTDIR\)\\\\\" /FD /GZ /c";
         }
      else {
-        $FlagsPre  = "/nologo /$CRuntimeLib /W3 /GX /O2 ";
+        $FlagsPre  = "/nologo /$CRuntimeLib /W3 /GX /O2 /Gd ";
         $FlagsPost = "/D \"WIN32\" /D \"NDEBUG\" /D \"_MBCS\" /D \"_LIB\" /Fo\"\$\(INTDIR\)\\\\\" /Fd\"\$\(INTDIR\)\\\\\" /FD /c";
         }
 
     # Create The Compile String
     print WINMAKE "CPP_PROJ=", $FlagsPre, $IncludeString, $FlagsPost, "\n";
-    print WINMAKE "BSC32=bscmake.exe\n";
-    print WINMAKE "BSC32_FLAGS=/nologo /o\"\$\(OUTDIR\)\\$FullLibraryName.bsc\"\n"; 
-    print WINMAKE "BSC32_SBRS= \\\n";
     print WINMAKE "\n";
 
     # Library
@@ -1443,19 +1441,16 @@ my $i;
     my $FlagsPre;
     my $FlagsPost;
     if($BuildConfig eq "debug") {
-        $FlagsPre  = "/nologo /W3 /$CRuntimeLib /GX /Od ";
-        $FlagsPost = "/D \"WIN32\" /D \"_DEBUG\" /D \"_MBCS\" /D \"_USRDLL\" /D \"CALLOUT_EXPORTS\" /Fo\"\$\(INTDIR\)\\\\\" /Fd\"\$\(INTDIR\)\\\\\" /FD /GZ /c";
+        $FlagsPre  = "/nologo /W3 /$CRuntimeLib /GX /Od /Gd /Z7 ";
+        $FlagsPost = "/D \"WIN32\" /D \"_DEBUG\" /D \"_MBCS\" /D \"_USRDLL\" /D \"_WINDOWS\" /Fo\"\$\(INTDIR\)\\\\\" /Fd\"\$\(INTDIR\)\\\\\" /FD /GZ /c";
         }
      else {
-        $FlagsPre  = "/nologo /$CRuntimeLib /W3 /GX /O2 ";
-        $FlagsPost = "/D \"WIN32\" /D \"NDEBUG\" /D \"_MBCS\" /D \"_USRDLL\" /D \"CALLOUT_EXPORTS\" /Fo\"\$\(INTDIR\)\\\\\" /Fd\"\$\(INTDIR\)\\\\\" /FD /c";
+        $FlagsPre  = "/nologo /$CRuntimeLib /W3 /GX /O2 /Gd ";
+        $FlagsPost = "/D \"WIN32\" /D \"NDEBUG\" /D \"_MBCS\" /D \"_USRDLL\" /D \"_WINDOWS\" /Fo\"\$\(INTDIR\)\\\\\" /Fd\"\$\(INTDIR\)\\\\\" /FD /c";
         }
 
     # Create The Compile String
     print WINMAKE "CPP_PROJ=", $FlagsPre, $IncludeString, $FlagsPost, "\n";
-    print WINMAKE "BSC32=bscmake.exe\n";
-    print WINMAKE "BSC32_FLAGS=/nologo /o\"\$\(OUTDIR\)\\$FullLibraryName.bsc\"\n"; 
-    print WINMAKE "BSC32_SBRS= \\\n";
     print WINMAKE "\n";
 
     # Temp Variables For Building Link Flags String
@@ -1474,7 +1469,7 @@ my $i;
         $LinkFlag0.= "$i ";
         }
     if($BuildConfig eq "debug") {
-        $LinkFlag1 = "/nologo /dll /pdb:\"\$\(OUTDIR\)\\$FullLibraryName.pdb\" /debug /machine:I386";
+        $LinkFlag1 = "/nologo /dll /pdb:none /debug /machine:I386";
         $LinkFlag3 = "/implib:\"\$\(OUTDIR\)\\$FullLibraryName.lib\"";
         }
     else {
@@ -1533,14 +1528,8 @@ my $i;
     print WINMAKE "\n";
 
     print WINMAKE "\$\(DS_POSTBUILD_DEP\) : \"\$\(OUTDIR\)\\$FullLibraryName.lib\"\n";
-    if($BuildConfig eq "debug") {
-        print WINMAKE "    copy \$\(OUTDIR\)\\$FullLibraryName.lib $GlobusLocation\\lib\\*\.*\n";
-        print WINMAKE "    copy \$\(OUTDIR\)\\$FullLibraryName.dll $GlobusLocation\\bin\\*\.*\n";
-        print WINMAKE "    copy \$\(OUTDIR\)\\$FullLibraryName.pdb $GlobusLocation\\bin\\*\.*\n";
-        }
-    else {
-        print WINMAKE "    copy \$\(OUTDIR\)\\$FullLibraryName.lib $GlobusLocation\\lib\\*\.*\n";
-        }
+    print WINMAKE "    copy \$\(OUTDIR\)\\$FullLibraryName.lib $GlobusLocation\\lib\\*\.*\n";
+    print WINMAKE "    copy \$\(OUTDIR\)\\$FullLibraryName.dll $GlobusLocation\\bin\\*\.*\n";
     print WINMAKE "\n";
 
     # Inferences
@@ -1919,19 +1908,16 @@ my $i;
     my $FlagsPre;
     my $FlagsPost;
     if($BuildConfig eq "debug") {
-        $FlagsPre  = "/nologo /W3 /$CRuntimeLib /GX /Od ";
-        $FlagsPost = "/D \"WIN32\" /D \"_DEBUG\" /D \"_MBCS\" /D \"_CONSOLE\" /D \"CALLOUT_EXPORTS\" /Fo\"\$\(INTDIR\)\\\\\" /Fd\"\$\(INTDIR\)\\\\\" /FD /GZ /c";
+        $FlagsPre  = "/nologo /W3 /$CRuntimeLib /GX /Od /Gd /Z7 ";
+        $FlagsPost = "/D \"WIN32\" /D \"_DEBUG\" /D \"_MBCS\" /D \"_CONSOLE\" /D \"_WINDOWS\" /Fo\"\$\(INTDIR\)\\\\\" /Fd\"\$\(INTDIR\)\\\\\" /FD /GZ /c";
         }
      else {
-        $FlagsPre  = "/nologo /$CRuntimeLib /W3 /GX /O2 ";
-        $FlagsPost = "/D \"WIN32\" /D \"NDEBUG\" /D \"_MBCS\" /D \"_CONSOLE\" /D \"CALLOUT_EXPORTS\" /Fo\"\$\(INTDIR\)\\\\\" /Fd\"\$\(INTDIR\)\\\\\" /FD /c";
+        $FlagsPre  = "/nologo /$CRuntimeLib /W3 /GX /O2 /Gd ";
+        $FlagsPost = "/D \"WIN32\" /D \"NDEBUG\" /D \"_MBCS\" /D \"_CONSOLE\" /D \"_WINDOWS\" /Fo\"\$\(INTDIR\)\\\\\" /Fd\"\$\(INTDIR\)\\\\\" /FD /c";
         }
 
     # Create The Compile String
     print PROGRAM_MAKE "CPP_PROJ=", $FlagsPre, $IncludeString, $FlagsPost, "\n";
-    print PROGRAM_MAKE "BSC32=bscmake.exe\n";
-    print PROGRAM_MAKE "BSC32_FLAGS=/nologo /o\"\$\(OUTDIR\)\\$BaseSourcesName\-$FlavorName.bsc\"\n"; 
-    print PROGRAM_MAKE "BSC32_SBRS= \\\n";
     print PROGRAM_MAKE "\n";
     
     # Temp Variables For Building Link Flags String
@@ -1950,7 +1936,7 @@ my $i;
         $LinkFlag0.= "$i ";
         }
     if($BuildConfig eq "debug") {
-        $LinkFlag1 = "/nologo /subsystem:console /incremental:no /pdb:\"\$\(OUTDIR\)\\$BaseSourcesName.pdb\" /debug /machine:I386";
+        $LinkFlag1 = "/nologo /subsystem:console /incremental:no /pdb:none /debug /machine:I386";
         $LinkFlag3 = "";
         }
     else {
@@ -1992,16 +1978,9 @@ my $i;
     print PROGRAM_MAKE "\n";
 
     print PROGRAM_MAKE "\$\(DS_POSTBUILD_DEP\) : \"\$\(OUTDIR\)\\$BaseSourcesName.exe\"\n";
-    if($BuildConfig eq "debug") {
-        print WINMAKE "    if not exist \"\$\(OUTDIR\)\/\$\(NULL\)\" mkdir \"\$\(OUTDIR\)\"\n";
-        print PROGRAM_MAKE "    if not exist $GlobusLocation\\bin\\$FlavorName mkdir $GlobusLocation\\bin\\$FlavorName\n";
-        print PROGRAM_MAKE "    copy \$\(OUTDIR\)\\$BaseSourcesName.exe $GlobusLocation\\bin\\$FlavorName\\*\.*\n";
-        print PROGRAM_MAKE "    copy \$\(OUTDIR\)\\$BaseSourcesName.pdb $GlobusLocation\\bin\\$FlavorName\\*\.*\n";
-        }
-    else {
-        print PROGRAM_MAKE "    if not exist $GlobusLocation\\bin\\$FlavorName mkdir $GlobusLocation\\bin\\$FlavorName\n";
-        print PROGRAM_MAKE "    copy \$\(OUTDIR\)\\$BaseSourcesName.exe $GlobusLocation\\bin\\$FlavorName\\*\.*\n";
-        }
+    print PROGRAM_MAKE "    if not exist \"\$\(OUTDIR\)\/\$\(NULL\)\" mkdir \"\$\(OUTDIR\)\"\n";
+    print PROGRAM_MAKE "    if not exist $GlobusLocation\\bin\\$FlavorName mkdir $GlobusLocation\\bin\\$FlavorName\n";
+    print PROGRAM_MAKE "    copy \$\(OUTDIR\)\\$BaseSourcesName.exe $GlobusLocation\\bin\\$FlavorName\\*\.*\n";
     print PROGRAM_MAKE "\n";
 
     # Inferences
