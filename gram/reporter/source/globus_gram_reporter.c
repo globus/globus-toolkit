@@ -348,7 +348,7 @@ globus_l_gram_write_gram_cldif_file(globus_l_gram_conf_values_t * vals,
         if ( ! q_node->queuename)
            q_node->queuename = (char *) globus_libc_strdup("default");
 
-        fprintf(vals->cldif_fp, "dn: Mds-Job-Queue=%s, Mds-Software-deployment=%s, %s\n", 
+        fprintf(vals->cldif_fp, "dn: Mds-Job-Queue-name=%s, Mds-Software-deployment=%s, %s\n", 
                     q_node->queuename,
                     vals->rdn,
                 vals->dmdn);
@@ -359,7 +359,7 @@ globus_l_gram_write_gram_cldif_file(globus_l_gram_conf_values_t * vals,
         fprintf(vals->cldif_fp, "objectclass: MdsComputerTotal\n");
         fprintf(vals->cldif_fp, "objectclass: MdsComputerTotalFree\n");
         fprintf(vals->cldif_fp, "objectclass: MdsGramJobQueue\n");
-        fprintf(vals->cldif_fp, "Mds-Job-Queue: %s\n", q_node->queuename);
+        fprintf(vals->cldif_fp, "Mds-Job-Queue-name: %s\n", q_node->queuename);
         fprintf(vals->cldif_fp, "Mds-Computer-Total-nodeCount: %d\n", q_node->totalnodes);
         fprintf(vals->cldif_fp, "Mds-Computer-Total-Free-nodeCount: %d\n", q_node->freenodes);
         fprintf(vals->cldif_fp, "Mds-Memory-Ram-Total-sizeMB: %d\n", q_node->maxtotalmemory);
