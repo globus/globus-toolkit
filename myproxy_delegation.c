@@ -1,9 +1,3 @@
-/*
- * myproxy-get-delegation
- *
- * Webserver program to retrieve a delegated credential from a myproxy-server
- */
-
 #include "myproxy.h"
 #include "gnu_getopt.h"
 #include "version.h"
@@ -19,9 +13,6 @@
 #include <assert.h>
 #include <errno.h>
 #include <unistd.h>
-
-static char version[] =
-"myproxy-delegation version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
 
 static int copy_file(const char *source,
 		     const char *dest,
