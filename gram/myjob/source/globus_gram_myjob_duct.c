@@ -17,12 +17,12 @@ static nexus_cond_t  s_cond;
 static nexus_mutex_t s_mutex;
 
 typedef struct globus_gram_myjob_msg_s {
-  int len;
+  int size;
   globus_byte_t *msg;
 } globus_gram_myjob_msg_t;
 
 
-static
+static void
 s_incoming_msg_handler (globus_duct_runtime_t * runtimep,
 			int                     size,
 			globus_byte_t         * data,
@@ -89,7 +89,7 @@ s_myjob_reset ()
     globus_gram_myjob_msg_t * msgp;
 
     msgp = ((globus_gram_myjob_msg_t *)
-	    globus_fifo_dequeue (&s_incoming_msg));
+	    globus_fifo_dequeue (&s_incoming_msgs));
 
     assert (msgp!=NULL);
 
@@ -104,13 +104,9 @@ s_myjob_reset ()
 static void 
 s_myjob_done ()
 {
-  int err;
+  globus_fifo_destroy (&s_incoming_msgs);
 
-  err = globus_fifo_destroy (&s_incoming_msgs);
-  assert (!err);
-
-  err = globus_duct_runtime_destroy (&s_duct);
-  assert (!err);
+  globus_duct_runtime_destroy (&s_duct);
 
   nexus_mutex_destroy (&s_mutex);
   nexus_cond_destroy (&s_cond);
@@ -200,6 +196,14 @@ globus_gram_myjob_atexit ()
   s_myjob_deactivate ();
 }
 
+globus_module_descriptor_t              globus_i_gram_myjob_module =
+{
+    "globus_gram_myjob_duct",
+    globus_gram_myjob_activate,
+    globus_gram_myjob_deactivate,
+    globus_gram_myjob_atexit
+};
+ 
 
 int
 globus_gram_myjob_rank (int * rankp)
@@ -210,11 +214,11 @@ globus_gram_myjob_rank (int * rankp)
   int local_addr;
   int * remote_addrs;
   globus_list_t *addrs_list;
-  globus_list_t *sorted_addrss_list;
+  globus_list_t *sorted_addrs_list;
   globus_list_t *list_iter;
 
   if ( rankp == NULL ) 
-    return GLOBUS_GRAM_MYJOB_ERROR_INVALID_PARAMETER;
+    return GLOBUS_GRAM_MYJOB_ERROR_BAD_PARAM;
 
   err = globus_duct_runtime_structure (&s_duct,
 				       &local_addr,
@@ -269,7 +273,7 @@ globus_gram_myjob_size (int * sizep)
   int * remote_addrs;
 
   if ( sizep == NULL ) 
-    return GLOBUS_GRAM_MYJOB_ERROR_INVALID_PARAMETER;
+    return GLOBUS_GRAM_MYJOB_ERROR_BAD_PARAM;
 
   err = globus_duct_runtime_structure (&s_duct,
 				       &local_addr,
@@ -298,7 +302,7 @@ globus_gram_myjob_send (int             dest_addr,
   int local_addr;
   int * remote_addrs;
   globus_list_t *addrs_list;
-  globus_list_t *sorted_addrss_list;
+  globus_list_t *sorted_addrs_list;
   globus_list_t *list_iter;
 
   err = globus_gram_myjob_size (&size);
@@ -307,7 +311,7 @@ globus_gram_myjob_send (int             dest_addr,
   if ( (msg == NULL) || (msg_len < 0)
        || (dest_addr > (size-1))
        || (dest_addr < 0) ) 
-    return GLOBUS_GRAM_MYJOB_ERROR_INVALID_PARAMETER;
+    return GLOBUS_GRAM_MYJOB_ERROR_BAD_PARAM;
 
   err = globus_duct_runtime_structure (&s_duct,
 				       &local_addr,
@@ -358,10 +362,11 @@ globus_gram_myjob_receive (globus_byte_t * msgp,
 			   int           * msg_lenp)
 {
   int err;
+  int i;
   globus_gram_myjob_msg_t *duct_msgp;
 
   if ( (msgp == NULL) || (msg_lenp == NULL) ) 
-    return GLOBUS_GRAM_MYJOB_ERROR_INVALID_PARAMETER;
+    return GLOBUS_GRAM_MYJOB_ERROR_BAD_PARAM;
 
   err = nexus_mutex_lock (&s_mutex);
   assert (!err);
@@ -374,9 +379,9 @@ globus_gram_myjob_receive (globus_byte_t * msgp,
 	       globus_fifo_dequeue (&s_incoming_msgs));
   assert (msgp!=NULL);
 
-  (*msg_lenp) = duct_msgp->len;
+  (*msg_lenp) = duct_msgp->size;
 
-  for (i=0; i<duct_msgp->len; i++) {
+  for (i=0; i<duct_msgp->size; i++) {
     msgp[i] = duct_msgp->msg[i];
   }
 
@@ -390,3 +395,10 @@ globus_gram_myjob_receive (globus_byte_t * msgp,
 }
 
 
+int
+globus_gram_myjob_kill ()
+{
+  assert (0);
+
+  return 1;
+}
