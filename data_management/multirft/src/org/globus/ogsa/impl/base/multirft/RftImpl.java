@@ -72,6 +72,7 @@ import org.globus.ogsa.wsdl.GSR;
 
 import org.globus.util.GlobusURL;
 import org.globus.util.Util;
+import org.globus.ftp.exception.ServerException;
 
 import org.gridforum.ogsi.ServiceDataType;
 
@@ -545,6 +546,13 @@ public class RftImpl
         super.preDestroy( context );
         logger.debug("Removing the delegated proxy from : " + this.proxyLocation);
         Util.destroy(this.proxyLocation);
+        try { 
+            closeAll();
+        } catch (IOException ioe) {
+            logger.error("Error while closing connections",ioe);
+        } catch (ServerException se) {
+            logger.error("Error while closing connections",se);
+        }
         logger.debug( "RFT instance destroyed" );
     }
 
@@ -578,6 +586,15 @@ public class RftImpl
         }
     }
 
+    private void closeAll() 
+    throws IOException,ServerException {
+        logger.debug("Closing all connections");
+        for ( int i = 0; i < this.transferClients.size(); i++ ) {
+            TransferClient transferClient = (TransferClient) 
+                                this.transferClients.elementAt(i);
+            transferClient.close();
+        }
+    }
 
     /**
      *  Gets the transferClient attribute of the RftImpl object
@@ -598,7 +615,7 @@ public class RftImpl
             int status = tempTransferClient.getStatus();
             GlobusURL tempSource = new GlobusURL( sourceURL );
             GlobusURL tempDest = new GlobusURL( destinationURL );
-            if ( status != 3 ) {
+            if ( status != TransferJob.STATUS_ACTIVE ) {
                 flag = true;
             }
             if ( ( source.getHost().equals( tempSource.getHost() ) ) && ( destination.getHost().equals( tempDest.getHost() ) ) && flag ) {
@@ -732,6 +749,13 @@ public class RftImpl
                         statusChanged( newTransferJob );
                     } else {
                         logger.debug( "No more transfers " );
+                        try {
+                            closeAll();
+                        } catch (IOException ioe) {
+                            logger.error("Error closing connections",ioe);
+                        } catch (ServerException se) {
+                            logger.error("Server Exception while closing connections",se);
+                        }
                     }
 
                     throw new RemoteException( MessageUtils.toString( e ) );
@@ -822,7 +846,8 @@ public class RftImpl
                             try {
                                 logger.debug( "Sleeping Here" );
                                 //FIX THIS
-                                sleep( 2000 );
+                                //sleep( 2000 );
+                                urlExpander.join();
                                 expStatus = urlExpander.getStatus();
                             } catch ( InterruptedException ie ) {
                             }
@@ -831,7 +856,15 @@ public class RftImpl
                         
                         TransferJob newTransferJob1 = dbAdapter.getTransferJob(requestId);
                     	if ( newTransferJob1 == null ) {
-                            	logger.debug( "No more transfers " );
+                            logger.debug( "No more transfers " );
+                            try {
+                                    closeAll();
+                                } catch (IOException ioe) {
+                                    logger.error("Error closing connections",ioe);
+                                } catch (ServerException se) {
+                                logger.error(
+                                    "Server Exception while closing connections",se);
+                                } 
                         	} else {
                             	transferThread = new TransferThread( newTransferJob1 );
                             	transferThread.start();

@@ -732,6 +732,11 @@ public class TransferClient {
         this.parallelism = parallel;
     }
 
+    public void close() 
+    throws IOException,ServerException {
+        this.sourceHost.close();
+        this.destinationHost.close();
+    }
 
     /**
      *  DOCUMENT ME!

@@ -27,6 +27,7 @@ Southern California. All Rights Reserved.
   <!-- Directories created during build -->
   <property name="build.dir" value="build" />
   <property name="docs.dir" value="docs"/>
+  <property name="share.dir" value="share"/>
   <property name="etc.dir" value="./etc"/>
   <property name="build.javadocs" value="${build.dir}/javadocs"/>
   <property name="build.dest" value="${build.dir}/classes"/>
@@ -41,7 +42,7 @@ Southern California. All Rights Reserved.
   <property name="jar.name" value="multirft.jar"/>
   <property name="gar.name" value="multirft.gar"/>
   <property name="server.config" value="multirft-server-config.wsdd"/>
-
+  <property name="garshare.dir" value="${share.dir}"/>
   <property name="client.config" value="multirft-client-config.wsdd"/>
 
   <!-- Properties for bindings genertion -->
