@@ -169,9 +169,9 @@ int main(int argc, char **argv)
     char *                             url;
     int                                rc;
     globus_gass_transfer_listener_t    listener;
-    globus_gass_transfer_listenerattr_t * attr = GLOBUS_NULL;
-    char *                             scheme = GLOBUS_NULL;
-    globus_gass_transfer_requestattr_t * reqattr = GLOBUS_NULL;
+    globus_gass_transfer_listenerattr_t  attr;
+    char                              scheme[6]="https";
+    globus_gass_transfer_requestattr_t  reqattr;
 
     
     globus_module_activate(GLOBUS_GASS_SERVER_EZ_MODULE);
@@ -231,10 +231,14 @@ int main(int argc, char **argv)
 	    break;
 	case arg_p:
 	    port = (unsigned short) atoi(instance->values[0]);	    
-	    attr=(globus_gass_transfer_listenerattr_t *)globus_malloc(
-			sizeof(globus_gass_transfer_listenerattr_t));
-	    globus_gass_transfer_listenerattr_set_port(attr,
+	    globus_gass_transfer_listenerattr_init(&attr,
+						   scheme);
+	    rc=globus_gass_transfer_listenerattr_set_port(&attr,
 						       port);
+	    if(rc!=GLOBUS_SUCCESS)
+	    {
+		exit;
+	    }
 	    break;
 	case arg_n:
 	    for (p=instance->values[0]; p; ++p)
@@ -281,9 +285,9 @@ int main(int argc, char **argv)
 
     rc = globus_gass_server_ez_init(
 		&listener,
-        	attr,
+        	&attr,
         	scheme,
-        	reqattr,
+        	&reqattr,
         	options,
         	options & GLOBUS_GASS_SERVER_EZ_CLIENT_SHUTDOWN_ENABLE
         	? client_shutdown_callback
@@ -291,7 +295,7 @@ int main(int argc, char **argv)
 
     if(rc != GLOBUS_SUCCESS)
     {
-	globus_gass_transfer_listenerattr_get_port(attr,
+	globus_gass_transfer_listenerattr_get_port(&attr,
 					    	   &port);
 	if(port == 0)
 	{
@@ -324,7 +328,7 @@ int main(int argc, char **argv)
     globus_cond_destroy(&cond);
     globus_mutex_destroy(&mutex);
     
-    globus_gass_server_ez_shutdown(port);
+    globus_gass_server_ez_shutdown(listener);
 
     globus_module_deactivate(GLOBUS_GASS_SERVER_EZ_MODULE);
     return 0;
