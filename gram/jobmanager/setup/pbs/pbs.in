@@ -332,7 +332,7 @@ EOF
 
         if ($description->jobtype() eq "mpi")
         {
-            print JOB "$mpirun -npp " . $description->count();
+            print JOB "$mpirun -np " . $description->count();
 
             if ($cluster)
             {
