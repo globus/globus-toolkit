@@ -274,11 +274,9 @@ main(
             }
             /* error on overflow */
             
-            if(hours > (((time_t)(~0U>>1))/60-1))
+            if(hours > (((time_t)(~0U>>1))/3600-1))
             {
-                args_error(
-                    arg_index, argp,
-                    "hours * 60 + minutes must be less than INT_MAX");
+                hours = (((time_t)(~0U>>1))/3600-1);
             }
             
             valid = (hours * 60) + minutes;
@@ -290,11 +288,9 @@ main(
             args_verify_next(arg_index, argp, "integer argument missing");
             hours = atoi(argv[arg_index + 1]);
             /* error on overflow */
-            if(hours > ((time_t)(~0U>>1))/60)
+            if(hours > ((time_t)(~0U>>1))/3600)
             {
-                args_error(
-                    arg_index, argp,
-                    "hours * 60 must be less than INT_MAX");
+                hours = ((time_t)(~0U>>1))/3600;
             }
             valid = hours * 60;
             arg_index++;
