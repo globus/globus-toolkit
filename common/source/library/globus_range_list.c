@@ -37,6 +37,148 @@ globus_range_list_init(
 }
 
 int
+globus_range_list_merge2(
+    globus_range_list_t *               dest,
+    globus_range_list_t                 src1,
+    globus_range_list_t                 src2)
+{
+    globus_l_range_ent_t *              ent1 = NULL;
+    globus_l_range_ent_t *              ent2 = NULL;
+    int                                 size_inc;
+    int                                 ent2_size;
+
+    if (src1->head == NULL)
+    {
+        *dest = src2;
+    }
+    else if (src2->head == NULL)
+    {
+        *dest = src1;
+    }
+    else if (src1->head->offset <= src2->head->offset)
+    {
+        *dest = src1;
+        ent1 = src1->head;
+        ent2 = src2->head;
+        ent2_size = src2->size;
+    }
+    else
+    {
+        *dest = src2;
+        ent1 = src2->head;
+        ent2 = src1->head;
+        ent2_size = src1->size;
+    }
+    if (ent1 && ent2)
+    {
+        globus_l_range_ent_t *              curr1;
+        globus_l_range_ent_t *              curr2;
+        globus_l_range_ent_t *              prev;
+        globus_l_range_ent_t *              next;
+        globus_off_t                        curr1_end;
+        globus_off_t                        curr2_end;
+        globus_bool_t                       done = GLOBUS_FALSE;
+
+        while (ent2)
+        {
+            curr2 = ent2;
+            if(curr2->length == GLOBUS_RANGE_LIST_MAX)
+            {
+                curr2_end = GLOBUS_RANGE_LIST_MAX;
+            }
+            else
+            {
+                curr2_end = curr2->offset + curr2->length;
+            }
+            prev = NULL;
+            while(ent1 != NULL && !done)
+            {
+                curr1 = ent1;
+                if(curr1->length == GLOBUS_RANGE_LIST_MAX)
+                {
+                    curr1_end = GLOBUS_RANGE_LIST_MAX;
+                }
+                else
+                {
+                    curr1_end = curr1->offset + curr1->length;
+                }
+                next = curr1->next;
+                /* if it is discontigous and in front of this one - this if
+                   will not be entered on the first iteration */
+                if (curr2_end < curr1->offset &&
+                    curr2_end != GLOBUS_RANGE_LIST_MAX)
+                {
+                    prev->next = curr2;
+                    ent2 = curr2->next;
+                    curr2->next = curr1;
+                    ent1 = curr2;
+                    done = GLOBUS_TRUE;
+                    size_inc++;
+                }
+                /* if it is merging */
+                else if((curr2_end >= curr1->offset ||
+                    curr2_end == GLOBUS_RANGE_LIST_MAX)
+                    && (curr2->offset <= curr1_end ||
+                    curr1_end == GLOBUS_RANGE_LIST_MAX))
+                {
+                    if(curr2->offset < curr1->offset)
+                    {
+                        curr1->offset = curr2->offset;
+                    }
+                    if(curr2_end == GLOBUS_RANGE_LIST_MAX ||
+                        curr1_end == GLOBUS_RANGE_LIST_MAX)
+                    {
+                        curr1->length = GLOBUS_RANGE_LIST_MAX;
+                    }
+                    else if(curr2_end > curr1_end)
+                    {
+                        curr1->length = curr2_end - curr1->offset;
+                    }
+                    if(next != NULL && curr2_end >= next->offset)
+                    {
+                        if(next->length == GLOBUS_RANGE_LIST_MAX)
+                        {
+                            curr1->length = GLOBUS_RANGE_LIST_MAX;
+                        } 
+                        else
+                        {
+                            curr1->length =
+                                next->offset + next->length - curr1->offset;
+                        }
+                        size_inc--;
+                        curr1->next = next->next;
+                        globus_free(next);
+                    } 
+                    ent2 = curr2->next;
+                    globus_free(curr2);
+                    ent1 = curr1;
+                    done = GLOBUS_TRUE;
+                }
+                else
+                {   
+                    prev = curr1;
+                    curr1 = curr1->next;
+                }
+            }      
+            /* must be last entry - if we hit this, we can just point
+               prev->next to curr2 (ent2) and thats it */
+            if(!done)
+            {       
+                prev->next = curr2;
+                ent2 = NULL;
+                size_inc += ent2_size;
+            }       
+            else    
+            {   
+                ent2_size--;
+            }   
+        }           
+        (*dest)->size += size_inc;
+    }               
+    return GLOBUS_SUCCESS;
+}                   
+
+int
 globus_range_list_merge(
     globus_range_list_t *               dest,
     globus_range_list_t                 src1,
