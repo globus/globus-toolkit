@@ -96,7 +96,7 @@ globus_ftp_client_plugin_command_mask_t;
  *        by the user.
  *
  * @return A pointer to a plugin. This plugin copy must remain valid
- *         until the copy's @link globus_ftp_client_plugin_t::destroy
+ *         until the copy's @link globus_ftp_client_destroy_t
  *         destroy @endlink function
  *         is called on the copy.
  *

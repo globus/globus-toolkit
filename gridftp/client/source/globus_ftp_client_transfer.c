@@ -3453,6 +3453,9 @@ abort:
 /* globus_l_ftp_client_extended_third_party_transfer() */
 /*@}*/
 
+/**
+ * @name Modification Time
+ */
 /*@{*/
 /**
  * Get a file's modification time from an FTP server.
@@ -3742,6 +3745,9 @@ abort:
 /* globus_ftp_client_modification_time() */
 /*@}*/
 
+/**
+ * @name Size
+ */
 /*@{*/
 /**
  * Get a file's size from an FTP server.
@@ -4034,6 +4040,7 @@ abort:
 }
 /* globus_ftp_client_modification_time() */
 /*@}*/
+
 /**
  * @name Abort
  */

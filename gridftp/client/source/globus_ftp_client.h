@@ -1,4 +1,5 @@
 /**
+ * @anchor globus_ftp_client_api
  * @mainpage Globus FTP Client API
  *
  * The Globus FTP Client library provides a convenient way of accessing
@@ -137,16 +138,37 @@ typedef union
 globus_ftp_client_restart_marker_t;
 
 /**
+ * @struct globus_ftp_client_handle_t
+ *
  * FTP Client Handle.
  * @ingroup globus_ftp_client_handle
  *
- * Every FTP Client operation done to an FTP server has a handle
- * associated with it.
+ * An FTP client handle is used to associate state with a group of
+ * operations. Handles can have @link globus_ftp_client_handleattr_t 
+ * attributes @endlink associated with them. All FTP @link
+ * globus_ftp_client_operations operations @endlink take a handle pointer
+ * as a parameter.
  *
  * @see globus_ftp_client_handle_init(),
  * globus_ftp_client_handle_destroy(), globus_ftp_client_handleattr_t
  */
 typedef struct globus_i_ftp_client_handle_t * globus_ftp_client_handle_t;
+
+/**
+ * @struct globus_ftp_client_plugin_t
+ *
+ * FTP Client plugin.
+ * @ingroup globus_ftp_client_plugins
+ * 
+ * An FTP Client plugin is used to add restart, monitoring, 
+ * and performance tuning operations to the FTP Client library, without
+ * modifying the base API. Multiple plugins may be associated with a
+ * globus_ftp_client_handle_t.
+ *
+ * @see globus_ftp_client_handle_init(),
+ * globus_ftp_client_handle_destroy(), globus_ftp_client_handleattr_t,
+ * @link globus_ftp_client_debug_plugin Debugging Plugin @endlink
+ */
 typedef struct globus_i_ftp_client_plugin_t * globus_ftp_client_plugin_t;
 
 /**
@@ -210,6 +232,8 @@ typedef void (*globus_ftp_client_data_callback_t) (
     globus_bool_t				eof);
 
 /**
+ * @struct gobus_ftp_client_operationattr_t
+ *
  * Operation Attributes.
  * @ingroup globus_ftp_client_operationattr
  *
@@ -226,6 +250,7 @@ typedef struct globus_i_ftp_client_operationattr_t *
 globus_ftp_client_operationattr_t;
 
 /**
+ * @struct globus_ftp_client_handleattr_t
  * Handle Attributes.
  * @ingroup globus_ftp_client_handleattr
  *
