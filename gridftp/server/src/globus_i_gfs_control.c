@@ -748,6 +748,9 @@ globus_l_gfs_request_transfer_event(
                 GLOBUS_I_GFS_LOG_INFO,
                 "Requesting abort...\n");
             break;
+        case GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_TRANSFER_COMPLETE:
+            event = GLOBUS_GFS_EVENT_TRANSFER_COMPLETE;
+            break;
         default:
             goto error;
             break;
@@ -832,20 +835,6 @@ globus_l_gfs_data_transfer_cb(
     globus_l_gfs_request_info_t *       request;
     request = (globus_l_gfs_request_info_t *) user_arg;
     op = request->control_op;
-
-    /* no more events once this returns */
-    globus_gridftp_server_control_events_disable(op);
-
-    /* if we ddi not yet get a begin don't send the complete.  perhaps 
-        this should be moved into the server library */
-    if(request->transfer_id != NULL)
-    {
-        globus_i_gfs_data_request_transfer_event(
-            NULL,
-            request->instance->session_id,
-            request->transfer_id,
-            GLOBUS_GFS_EVENT_TRANSFER_COMPLETE);
-    }
 
     if(reply->result != GLOBUS_SUCCESS)
     {

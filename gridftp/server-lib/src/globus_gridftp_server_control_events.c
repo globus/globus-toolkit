@@ -96,6 +96,7 @@ globus_i_gsc_event_start(
         event->user_cb(op, GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_ABORT, user_arg);
     }
 
+    op->ref++;  /* until transfer finsihed event happens */
     if(op->type == GLOBUS_L_GSC_OP_TYPE_RECV)
     {
         /* performance markers */
@@ -114,7 +115,6 @@ globus_i_gsc_event_start(
             /* register periodic for events */
             GlobusTimeReltimeSet(
                 delay, op->server_handle->opts.perf_frequency, 0);
-            op->ref++;  /* up the op ref for all oustanding callbacks */
             event->perf_running = GLOBUS_TRUE;
             res = globus_callback_register_periodic(
                 &event->periodic_handle,
@@ -134,7 +134,6 @@ globus_i_gsc_event_start(
         {
             GlobusTimeReltimeSet(
                 delay, op->server_handle->opts.restart_frequency,0);
-            op->ref++;  /* up the op ref for all oustanding callbacks */
             event->restart_running = GLOBUS_TRUE;
             res = globus_callback_register_periodic(
                 &event->restart_handle,
@@ -150,21 +149,43 @@ globus_i_gsc_event_start(
     }
 }
 
+static
+void
+globus_l_gsc_event_done_cb(
+    void *                              user_arg)
+{
+    globus_i_gsc_op_t *                 op;
+    globus_i_gsc_event_data_t *         event;
+
+    op = (globus_i_gsc_op_t *) user_arg;
+    event = &op->event;
+
+    event->user_cb(
+        op,
+        GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_TRANSFER_COMPLETE,
+        event->user_arg);
+
+    globus_mutex_lock(&op->server_handle->mutex);
+    {
+        globus_i_gsc_op_destroy(op);
+    }
+    globus_mutex_unlock(&op->server_handle->mutex);
+}
+
 void
 globus_i_gsc_event_end(
     globus_i_gsc_op_t *                 op)
 {
-    globus_i_gsc_event_data_t *             event;
+    globus_i_gsc_event_data_t *         event;
 
     event = &op->event;
 
-    if(op->aborted &&
-        event->event_mask & GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_ABORT)
+    if(event->event_mask == 0)
     {
-        op->aborted = GLOBUS_FALSE;
-        event->user_cb(
-            op, GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_ABORT, event->user_arg);
+        return;
     }
+
+    event->event_mask = 0;
 
     if(event->perf_running)
     {
@@ -176,7 +197,7 @@ globus_i_gsc_event_end(
             op,
             NULL);
     }
-    if(event->restart_running)
+    else if(event->restart_running)
     {
         event->restart_running = GLOBUS_FALSE;
         globus_callback_unregister(
@@ -184,6 +205,14 @@ globus_i_gsc_event_end(
             globus_l_gsc_unreg_restart_marker,
             op,
             NULL);
+    }
+    else
+    {
+        globus_callback_register_oneshot(
+            NULL,
+            NULL,
+            globus_l_gsc_event_done_cb,
+            op);
     }
 }
 
@@ -197,12 +226,12 @@ globus_l_gsc_unreg_perf_marker(
     op = (globus_i_gsc_op_t *) user_arg;
     event = &op->event;
 
-    globus_mutex_lock(&op->server_handle->mutex);
-    {
-        globus_free(event->stripe_total);
-        globus_i_gsc_op_destroy(op);
-    }
-    globus_mutex_unlock(&op->server_handle->mutex);
+    event->restart_running = GLOBUS_FALSE;
+    globus_callback_unregister(
+        op->event.restart_handle,
+        globus_l_gsc_unreg_restart_marker,
+        op,
+        NULL);
 }
 
 static void
@@ -231,16 +260,10 @@ globus_l_gsc_unreg_restart_marker(
     void *                                  user_arg)
 {
     globus_i_gsc_op_t *                     op;
-    globus_i_gsc_event_data_t *             event;
 
     op = (globus_i_gsc_op_t *) user_arg;
-    event = &op->event;
 
-    globus_mutex_lock(&op->server_handle->mutex);
-    {
-        globus_i_gsc_op_destroy(op);
-    }
-    globus_mutex_unlock(&op->server_handle->mutex);
+    globus_l_gsc_event_done_cb(op);
 }
 
 static void

@@ -2236,7 +2236,6 @@ globus_i_gsc_command_panic(
     return res;
 }
 
-
 void
 globus_gsc_959_finished_command(
     globus_i_gsc_op_t *                 op,
@@ -3803,6 +3802,7 @@ globus_gridftp_server_control_finished_transfer(
         {
             globus_range_list_destroy(op->range_list);
         }
+        globus_i_gsc_event_end(op);
     }
     globus_mutex_unlock(&op->server_handle->mutex);
 
@@ -3897,32 +3897,6 @@ globus_gridftp_server_control_events_enable(
     {
         /* TODO: determine if cached */
         globus_i_gsc_event_start(op, event_mask, event_cb, user_arg);
-    }
-    globus_mutex_unlock(&op->server_handle->mutex);
-
-    return GLOBUS_SUCCESS;
-
-  error_param:
-
-    return res;
-}
-
-globus_result_t
-globus_gridftp_server_control_events_disable(
-    globus_gridftp_server_control_op_t  op)
-{
-    globus_result_t                     res;
-    GlobusGridFTPServerName(globus_gridftp_server_control_events_disable);
-
-    if(op == NULL)
-    {
-        res = GlobusGridFTPServerErrorParameter("op");
-        goto error_param;
-    }
-
-    globus_mutex_lock(&op->server_handle->mutex);
-    {
-        globus_i_gsc_event_end(op);
     }
     globus_mutex_unlock(&op->server_handle->mutex);
 
