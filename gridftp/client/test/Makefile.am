@@ -86,97 +86,97 @@ INCLUDES += $(GPT_INCLUDES)
 LDADD = libglobus_ftp_client_test_$(GLOBUS_FLAVOR_NAME).la $(GPT_PGM_LINKS)
 
 globus_ftp_client_create_destroy_test_SOURCES = globus_ftp_client_create_destroy_test.c $(LibHeaders)
-globus_ftp_client_create_destroy_test_LDFLAGS = $(GPT_test_LDFLAGS)
+globus_ftp_client_create_destroy_test_LDFLAGS = $(GPT_LDFLAGS)
 
 globus_ftp_client_get_test_SOURCES = globus_ftp_client_get_test.c $(LibHeaders)
-globus_ftp_client_get_test_LDFLAGS = $(GPT_test_LDFLAGS)
+globus_ftp_client_get_test_LDFLAGS = $(GPT_LDFLAGS)
 
 globus_ftp_client_put_test_SOURCES = globus_ftp_client_put_test.c $(LibHeaders)
-globus_ftp_client_put_test_LDFLAGS = $(GPT_test_LDFLAGS)
+globus_ftp_client_put_test_LDFLAGS = $(GPT_LDFLAGS)
 
 globus_ftp_client_caching_get_test_SOURCES = globus_ftp_client_caching_get_test.c $(LibHeaders)
-globus_ftp_client_caching_get_test_LDFLAGS = $(GPT_test_LDFLAGS)
+globus_ftp_client_caching_get_test_LDFLAGS = $(GPT_LDFLAGS)
 
 globus_ftp_client_multiple_block_get_test_SOURCES = globus_ftp_client_multiple_block_get_test.c $(LibHeaders)
-globus_ftp_client_multiple_block_get_test_LDFLAGS = $(GPT_test_LDFLAGS)
+globus_ftp_client_multiple_block_get_test_LDFLAGS = $(GPT_LDFLAGS)
 
 globus_ftp_client_ascii_list_test_SOURCES = globus_ftp_client_ascii_list_test.c $(LibHeaders)
-globus_ftp_client_ascii_list_test_LDFLAGS = $(GPT_test_LDFLAGS)
+globus_ftp_client_ascii_list_test_LDFLAGS = $(GPT_LDFLAGS)
 
 globus_ftp_client_bad_buffer_test_SOURCES = globus_ftp_client_bad_buffer_test.c $(LibHeaders)
-globus_ftp_client_bad_buffer_test_LDFLAGS = $(GPT_test_LDFLAGS)
+globus_ftp_client_bad_buffer_test_LDFLAGS = $(GPT_LDFLAGS)
 
 globus_ftp_client_multiple_bad_buffer_test_SOURCES = globus_ftp_client_multiple_bad_buffer_test.c $(LibHeaders)
-globus_ftp_client_multiple_bad_buffer_test_LDFLAGS = $(GPT_test_LDFLAGS)
+globus_ftp_client_multiple_bad_buffer_test_LDFLAGS = $(GPT_LDFLAGS)
 
 globus_ftp_client_transfer_test_SOURCES = globus_ftp_client_transfer_test.c $(LibHeaders)
-globus_ftp_client_transfer_test_LDFLAGS = $(GPT_test_LDFLAGS)
+globus_ftp_client_transfer_test_LDFLAGS = $(GPT_LDFLAGS)
 
 globus_ftp_client_lingering_get_test_SOURCES = globus_ftp_client_lingering_get_test.c $(LibHeaders)
-globus_ftp_client_lingering_get_test_LDFLAGS = $(GPT_test_LDFLAGS)
+globus_ftp_client_lingering_get_test_LDFLAGS = $(GPT_LDFLAGS)
 
 globus_ftp_client_multiple_block_put_test_SOURCES = globus_ftp_client_multiple_block_put_test.c $(LibHeaders)
-globus_ftp_client_multiple_block_put_test_LDFLAGS = $(GPT_test_LDFLAGS)
+globus_ftp_client_multiple_block_put_test_LDFLAGS = $(GPT_LDFLAGS)
 
 globus_ftp_client_caching_transfer_test_SOURCES = globus_ftp_client_caching_transfer_test.c $(LibHeaders)
-globus_ftp_client_caching_transfer_test_LDFLAGS = $(GPT_test_LDFLAGS)
+globus_ftp_client_caching_transfer_test_LDFLAGS = $(GPT_LDFLAGS)
 
 globus_ftp_client_partial_get_test_SOURCES = globus_ftp_client_partial_get_test.c $(LibHeaders)
-globus_ftp_client_partial_get_test_LDFLAGS = $(GPT_test_LDFLAGS)
+globus_ftp_client_partial_get_test_LDFLAGS = $(GPT_LDFLAGS)
 
 globus_ftp_client_partial_put_test_SOURCES = globus_ftp_client_partial_put_test.c $(LibHeaders)
-globus_ftp_client_partial_put_test_LDFLAGS = $(GPT_test_LDFLAGS)
+globus_ftp_client_partial_put_test_LDFLAGS = $(GPT_LDFLAGS)
 
 globus_ftp_client_extended_get_test_SOURCES = globus_ftp_client_extended_get_test.c $(LibHeaders)
-globus_ftp_client_extended_get_test_LDFLAGS = $(GPT_test_LDFLAGS)
+globus_ftp_client_extended_get_test_LDFLAGS = $(GPT_LDFLAGS)
 
 globus_ftp_client_user_auth_test_SOURCES = globus_ftp_client_user_auth_test.c $(LibHeaders)
-globus_ftp_client_user_auth_test_LDFLAGS = $(GPT_test_LDFLAGS)
+globus_ftp_client_user_auth_test_LDFLAGS = $(GPT_LDFLAGS)
 
 globus_ftp_client_extended_put_test_SOURCES = globus_ftp_client_extended_put_test.c $(LibHeaders)
-globus_ftp_client_extended_put_test_LDFLAGS = $(GPT_test_LDFLAGS)
+globus_ftp_client_extended_put_test_LDFLAGS = $(GPT_LDFLAGS)
 
 globus_ftp_client_partial_transfer_test_SOURCES = globus_ftp_client_partial_transfer_test.c $(LibHeaders)
-globus_ftp_client_partial_transfer_test_LDFLAGS = $(GPT_test_LDFLAGS)
+globus_ftp_client_partial_transfer_test_LDFLAGS = $(GPT_LDFLAGS)
 
 globus_ftp_client_multiget_test_SOURCES = globus_ftp_client_multiget_test.c $(LibHeaders)
-globus_ftp_client_multiget_test_LDFLAGS = $(GPT_test_LDFLAGS)
+globus_ftp_client_multiget_test_LDFLAGS = $(GPT_LDFLAGS)
 
 globus_ftp_client_extended_transfer_test_SOURCES = globus_ftp_client_extended_transfer_test.c $(LibHeaders)
-globus_ftp_client_extended_transfer_test_LDFLAGS = $(GPT_test_LDFLAGS)
+globus_ftp_client_extended_transfer_test_LDFLAGS = $(GPT_LDFLAGS)
 
 globus_ftp_client_extended_get_caching_test_SOURCES = globus_ftp_client_extended_get_caching_test.c $(LibHeaders)
-globus_ftp_client_extended_get_caching_test_LDFLAGS = $(GPT_test_LDFLAGS)
+globus_ftp_client_extended_get_caching_test_LDFLAGS = $(GPT_LDFLAGS)
 
 globus_ftp_client_read_all_test_SOURCES = globus_ftp_client_read_all_test.c $(LibHeaders)
-globus_ftp_client_read_all_test_LDFLAGS = $(GPT_test_LDFLAGS)
+globus_ftp_client_read_all_test_LDFLAGS = $(GPT_LDFLAGS)
 
 globus_ftp_client_delete_test_SOURCES = globus_ftp_client_delete_test.c $(LibHeaders)
-globus_ftp_client_delete_test_LDFLAGS = $(GPT_test_LDFLAGS)
+globus_ftp_client_delete_test_LDFLAGS = $(GPT_LDFLAGS)
 
 globus_ftp_client_mkdir_test_SOURCES = globus_ftp_client_mkdir_test.c $(LibHeaders)
-globus_ftp_client_mkdir_test_LDFLAGS = $(GPT_test_LDFLAGS)
+globus_ftp_client_mkdir_test_LDFLAGS = $(GPT_LDFLAGS)
 
 globus_ftp_client_rmdir_test_SOURCES = globus_ftp_client_rmdir_test.c $(LibHeaders)
-globus_ftp_client_rmdir_test_LDFLAGS = $(GPT_test_LDFLAGS)
+globus_ftp_client_rmdir_test_LDFLAGS = $(GPT_LDFLAGS)
 
 globus_ftp_client_move_test_SOURCES = globus_ftp_client_move_test.c $(LibHeaders)
-globus_ftp_client_move_test_LDFLAGS = $(GPT_test_LDFLAGS)
+globus_ftp_client_move_test_LDFLAGS = $(GPT_LDFLAGS)
 
 globus_ftp_client_ascii_verbose_list_test_SOURCES = globus_ftp_client_ascii_verbose_list_test.c $(LibHeaders)
-globus_ftp_client_ascii_verbose_list_test_LDFLAGS = $(GPT_test_LDFLAGS)
+globus_ftp_client_ascii_verbose_list_test_LDFLAGS = $(GPT_LDFLAGS)
 
 globus_ftp_client_cache_all_test_SOURCES = globus_ftp_client_cache_all_test.c $(LibHeaders)
-globus_ftp_client_cache_all_test_LDFLAGS = $(GPT_test_LDFLAGS)
+globus_ftp_client_cache_all_test_LDFLAGS = $(GPT_LDFLAGS)
 
 globus_ftp_client_exist_test_SOURCES = globus_ftp_client_exist_test.c $(LibHeaders)
-globus_ftp_client_exist_test_LDFLAGS = $(GPT_test_LDFLAGS)
+globus_ftp_client_exist_test_LDFLAGS = $(GPT_LDFLAGS)
 
 globus_ftp_client_modification_time_test_SOURCES = globus_ftp_client_modification_time_test.c $(LibHeaders)
-globus_ftp_client_modification_time_test_LDFLAGS = $(GPT_test_LDFLAGS)
+globus_ftp_client_modification_time_test_LDFLAGS = $(GPT_LDFLAGS)
 
 globus_ftp_client_size_test_SOURCES = globus_ftp_client_size_test.c $(LibHeaders)
-globus_ftp_client_size_test_LDFLAGS = $(GPT_test_LDFLAGS)
+globus_ftp_client_size_test_LDFLAGS = $(GPT_LDFLAGS)
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top
