@@ -272,7 +272,7 @@ EOF
 	    return Globus::GRAM::Error::RSL_ARGUMENTS;
 	}
     }
-    if($arguments[0])
+    if($#arguments >= 0)
     {
         foreach(@arguments)
 	{
