@@ -1,19 +1,28 @@
 #!/bin/sh
 
-factory=$1
-max=$2
+OPTIND=0
+while getopts "f:n:v" arg ; do
+    if [ $arg = "f" ]; then
+        factory=$OPTARG
+    elif [ $arg = "n" ]; then
+        count=$OPTARG
+    elif [ $arg = "v" ]; then
+        verbose=1
+    fi
+done
+
 if [ -z $factory ]; then
     echo "ERROR: No contact string specified"
     exit
 fi
-if [ -z $max ]; then
+if [ -z $count ]; then
     echo "ERROR: No max job count specified"
     exit
 fi
 
 cat sleep.xml.in | sed -e "s#GLOBUS_LOCATION#$GLOBUS_LOCATION#" > sleep.xml
 
-count=1
+index=1
 begin_time=0
 end_time=0
 batch=-batch
@@ -21,14 +30,14 @@ batch=-batch
 logfile="logs/stress-test.log"
 rm -f $logfile
 
-while [ $count -le $max ] 
+while [ $index -le $count ] 
 do 
-  echo $count >> $logfile
+  echo $index >> $logfile
 
 begin_time=`date +%s`
 $GLOBUS_LOCATION/bin/managed-job-globusrun $batch -factory $factory -file ./sleep.xml 2>&1 >> $logfile
 end_time=`date +%s`
 echo "Time taken for managed-job-globusrun: `expr $end_time - $begin_time` Seconds" >> $logfile
 
-  count="$(($count + 1))"
+  index="$(($index + 1))"
 done
