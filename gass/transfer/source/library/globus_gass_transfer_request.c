@@ -487,6 +487,11 @@ globus_i_gass_transfer_request_destroy(
 	    globus_free(req->denial_message);
 	}
 
+	/* free subject name */
+	if(req->subject)
+	{
+	    globus_free(req->subject);
+	}
 
 	globus_free(req);
 	request = GLOBUS_HANDLE_TABLE_NO_HANDLE;
