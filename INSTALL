@@ -6,6 +6,7 @@ INSTALL		myproxy installation directions
  2. Building the software
  3. Installing the client (user) software
  4. Installing the myproxy-server
+ 4a.Installnig the myproxy-server using a non-host certificate
  5. The myproxy-server.config file
  6. Installing the portal software
  7. Providing access from the portal
@@ -116,6 +117,37 @@ The program will start up and background itself. It accepts
 connections on TCP port 7512, forking off a seperate child
 to handle each incoming connection. It logs information via
 the syslog service under the daemon facility.
+
+4a. Installing the myproxy-server using a non-host certificate
+--------------------------------------------------------------
+
+It is possible to run a myproxy-server using a non-host certificate,
+either a normal user certificate or any other certificate you desire.
+In order to do so the private key of the certificate will either need
+to be non-encrypted or you will need to generate a proxy from the
+server to use.
+
+If you are using the key and certificate directly and they are not in
+your default locations (i.e. $(HOME)/.globus/usercert.pem and
+$(HOME)/.globus/userkey.pem) you will need to set the environment
+variables X509_USER_CERT and X509_USER_KEY to the paths of the
+certificate and key files respectively before running
+myproxy-server.
+
+If you are using a proxy that is not in the default location
+(i.e. where grid-proxy-init sticks it by default: /tmp/x509up_u<your
+uid>) you will need to set the environment variable X509_USER_PROXY to
+the path of the proxy file before running myproxy-server.
+
+Note that when using a proxy you will need to periodically renew the
+proxy using grid-proxy-init in order to allow myproxy-server to keep
+functioning.
+
+On the client side you will need to inform the client that you are not
+expecting the myproxy-server to be running using a host
+certificate. You do this by setting the environment variable
+MYPROXY_SERVER_DN to the DN of the certificate being used by the
+server.
 
 5. The myproxy-server.config file
 ---------------------------------
