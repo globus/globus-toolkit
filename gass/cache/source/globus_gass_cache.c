@@ -749,6 +749,10 @@ globus_l_gass_cache_write_one_entry(
        enought... */
     globus_libc_sprintf(size_s,"%38lu",entry->num_tags);
     size_s[sizeof(size_s)-3] = '\0';
+    if (entry->pending != 'F' && entry->pending != 'P')
+    {
+	globus_libc_printf("Error Pending flag not set when writing\n");
+    }
     size_s[sizeof(size_s)-2] = entry->pending;
     size_s[sizeof(size_s)-1] = '\n';
     
@@ -838,9 +842,11 @@ globus_l_gass_cache_read_one_entry(
 	    CACHE_TRACE("No more memory");
 	    return(GLOBUS_GASS_CACHE_ERROR_NO_MEMORY);
 	}
-	/* init some fields */
-	(*entry)->num_tags=0;
     }
+    /* init some fields */
+    (*entry)->num_tags=0;
+    (*entry)->tags= GLOBUS_NULL;
+    (*entry)->pending= 'F';
     /* read url */
     if (globus_l_gass_cache_read_one_str(&((**entry).url), fd))
     {
@@ -1005,7 +1011,7 @@ globus_l_gass_cache_entry_free(
 	(*entry)->filename = GLOBUS_NULL;
 	globus_free((*entry)->lock_tag);
 	(*entry)->lock_tag = GLOBUS_NULL;
-	if ((*entry)->tags != NULL)
+	if ((*entry)->tags != GLOBUS_NULL)
 	{
 	    for (i=0; i<(*entry)->num_tags+1; i++)
 	    {
@@ -1014,7 +1020,7 @@ globus_l_gass_cache_entry_free(
 	    }
 	}
 	globus_free((*entry)->tags);
-	
+	(*entry)->tags = GLOBUS_NULL;
 	if (itself == GLOBUS_TRUE)
 	{
 	    globus_free(*entry);
@@ -1161,7 +1167,6 @@ globus_l_gass_cache_lookfor_url(
 	{
 	    /* the same url */
 	    GLOBUS_L_GASS_CACHE_LG("URL found ");
-
 	    *return_entry=globus_gass_cache_entry_pt;
 	    globus_gass_cache_entry_pt=GLOBUS_NULL;
 	}
@@ -3716,7 +3721,6 @@ globus_gass_cache_list(
 					  GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
     /* and return */
     return(rc);
-
     
 }
 /* globus_gass_cache_list() */
