@@ -162,16 +162,18 @@ Southern California. All Rights Reserved.
 
  <!-- deploys the gar -->
    <target name="deployGar" depends="gar">
+    
+    <ant antfile="${ogsacore.javadir}/build-packages.xml" target="addDocs">
+        <property name="docs.dir" value="docs"/>
+         <property name="gar.name" value="${build.lib}/${package.dir}.gar"/>      
+    </ant>
+
        <copy todir="${ogsacore.javadir}/lib" file="${build.lib}/${package.dir}.gar"/>
        <ant antfile="${ogsacore.javadir}/build-packages.xml" target="deployClientServerGar" dir="${ogsacore.javadir}">
          <reference refid="classpath" torefid="classpath"/>
          <property name="gar.name" value="${build.lib}/${package.dir}.gar"/>       
        </ant>
-    <ant antfile="${ogsacore.javadir}/build-packages.xml" target="addDocs">
-        <property name="docs.dir" value="docs"/>
-         <property name="gar.name" value="${build.lib}/${package.dir}.gar"/>      
-    </ant>
-   </target>
+    </target>
 
   <!-- =================================================================== -->
   <!-- Cleans everything                                                   -->
