@@ -16,7 +16,7 @@
 #
 
 $srcdirname = "gsi_openssh";
-$srcpkgname = "gsi_openssh-3.1p1-src";
+$srcpkgname = "gsi_openssh-3.2.3p1-src";
 
 #
 # uncomment when we've got a better place to get the current version from
