@@ -129,3 +129,4 @@ globus_gram_job_manager_setup_callout gram/jobmanager/setup/callout  dirt.sh
 globus_gridmap_callout          gsi/gridmap_callout/source      dirt.sh
 globus_gridmap_callout_setup    gsi/gridmap_callout/setup       dirt.sh
 globus_gridmap_callout_error    gsi/gridmap_callout/error       dirt.sh
+globus_xio                      xio/src                         dirt.sh
