@@ -54,6 +54,7 @@ globus_i_xio_http_target_init(
 {
     globus_result_t                     res;
     globus_i_xio_http_target_t *        target;
+    globus_xio_contact_t                new_contact_info;
     GlobusXIOName(globus_l_xio_http_target_init);
 
     target = globus_i_xio_http_target_new();
@@ -96,7 +97,18 @@ globus_i_xio_http_target_init(
         goto free_target_exit;
     }
 
-    res = globus_xio_driver_client_target_pass(target_op, contact_info);
+    memcpy(&new_contact_info, contact_info, sizeof(globus_xio_contact_t));
+    if (new_contact_info.port == 0
+            && (strcmp(new_contact_info.scheme, "http")==0))
+    {
+        new_contact_info.port = "80";
+    }
+    else if (new_contact_info.port == 0
+            && (strcmp(new_contact_info.scheme, "https")==0))
+    {
+        new_contact_info.port = "443";
+    }
+    res = globus_xio_driver_client_target_pass(target_op, &new_contact_info);
 
     if (res != GLOBUS_SUCCESS)
     {

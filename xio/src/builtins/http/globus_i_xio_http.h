@@ -7,7 +7,7 @@
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 
-enum { GLOBUS_XIO_HTTP_CHUNK_SIZE = 2048 };
+enum { GLOBUS_XIO_HTTP_CHUNK_SIZE = 128 };
 
 typedef enum
 {
@@ -16,6 +16,53 @@ typedef enum
     GLOBUS_XIO_HTTP_TRANSFER_ENCODING_CHUNKED
 }
 globus_i_xio_http_transfer_encoding_t;
+
+typedef enum
+{
+    GLOBUS_XIO_HTTP_CHUNK_CRLF,
+    GLOBUS_XIO_HTTP_CHUNK_LINE,
+    GLOBUS_XIO_HTTP_CHUNK_FOOTERS
+}
+globus_i_xio_http_chunk_t;
+
+#define GLOBUS_XIO_HTTP_COPY_BLOB(fifo, blob, len, label) \
+    do { \
+        result = globus_i_xio_http_copy_blob(fifo, blob, len); \
+        if (result != GLOBUS_SUCCESS) \
+        { \
+            goto label; \
+        } \
+    } while (0);
+
+typedef struct
+{
+    /**
+     * Copy of iovec array registered by user.
+     */
+    globus_xio_iovec_t *                iov;
+    /**
+     * Number of iovecs in the iov.
+     */
+    globus_size_t                       iovcnt;
+    /**
+     * Operation associated with user's read or write.
+     */
+    globus_xio_operation_t              operation;
+    /**
+     * Number of bytes copied into user buffers already (for residue handling
+     * in reads).
+     */
+    globus_size_t                       nbytes;
+    /**
+     * Wait for remainder for operation.
+     */
+    int                                 wait_for;
+    /**
+     * buffer to hold the chunk size line
+     */
+    globus_byte_t                       chunk_size_buffer[64];             
+}
+globus_i_xio_http_operation_info_t;
 
 #define GLOBUS_XIO_ARRAY_LENGTH(x) (sizeof(x)/sizeof(x[0]))
 
@@ -202,6 +249,11 @@ typedef struct
      * Information about headers associated with this request
      */
     globus_i_xio_http_header_info_t     headers;
+
+    /**
+     * Flag indicating whether headers have been sent yet (used on server side).
+     */
+    globus_bool_t                       headers_sent;
 }
 globus_i_xio_http_response_t;
 
@@ -271,37 +323,13 @@ typedef struct
      */
     globus_size_t                       read_chunk_left;
     /**
-     * Flag indicating whether this is the first chunk
-     * (special parsing handling).
+     * Flag indicating which special cases of the chunk parser will
+     * used.
      */
-    globus_bool_t                       first_chunk;
+    globus_i_xio_http_chunk_t           chunk;
     
-    /**
-     * Copy of iovec array for read registered by user.
-     */
-    globus_xio_iovec_t *                user_read_iov;
-    /**
-     * Number of iovecs in the user_read_iov.
-     */
-    globus_size_t                       user_read_iovcnt;
-    /**
-     * Read operation associated with user's read.
-     */
-    globus_xio_operation_t              user_read_operation;
-    /**
-     * Number of bytes copied into user buffers.
-     */
-    globus_size_t                       user_read_nbytes;
-    /**
-     * Wait for remainder for user read.
-     */
-    int                                 user_read_wait_for;
-    /**
-     * Result from passing the data to the transport in the buffered
-     * read case.
-     */
-    globus_result_t                     user_read_result;
-
+    globus_i_xio_http_operation_info_t  read_operation;
+    globus_i_xio_http_operation_info_t  write_operation;
 }
 globus_i_xio_http_handle_t;
 
@@ -507,6 +535,14 @@ globus_i_xio_http_server_open_callback(
     globus_result_t                     result,
     void *                              user_arg);
 
+extern
+globus_result_t
+globus_i_xio_http_server_write_response(
+    globus_i_xio_http_handle_t *        http_handle,
+    const globus_xio_iovec_t *          iovec,
+    int                                 iovec_count,
+    globus_xio_operation_t              op);
+
 /* globus_xio_http_target.c */ 
 extern
 globus_result_t
@@ -539,9 +575,33 @@ globus_i_xio_http_read(
     globus_xio_operation_t              op);
 
 extern
+globus_result_t
+globus_i_xio_http_write(
+    void *                                  handle,
+    const globus_xio_iovec_t *              iovec,
+    int                                     iovec_count,
+    globus_xio_operation_t                  op);
+
+extern
 void
 globus_i_xio_http_copy_residue(
     globus_i_xio_http_handle_t *        handle);
+
+extern
+globus_result_t
+globus_i_xio_http_write_chunk(
+    globus_i_xio_http_handle_t *        http_handle,
+    const globus_xio_iovec_t *          iovec,
+    int                                 iovec_count,
+    globus_xio_operation_t              op);
+
+extern
+void
+globus_i_xio_http_write_callback(
+    globus_xio_operation_t              op,
+    globus_result_t                     result,
+    globus_size_t                       nbytes,
+    void *                              user_arg);
 
 extern
 globus_result_t

@@ -38,15 +38,6 @@ globus_l_xio_http_client_call_ready_callback(
     globus_i_xio_http_handle_t *        http_handle,
     globus_result_t                     result);
 
-#define GLOBUS_XIO_HTTP_COPY_BLOB(fifo, blob, len, label) \
-    do { \
-        result = globus_i_xio_http_copy_blob(fifo, blob, len); \
-        if (result != GLOBUS_SUCCESS) \
-        { \
-            goto label; \
-        } \
-    } while (0);
-
 /**
  * Client-side connection open callback
  * @ingroup globus_i_xio_http_client
@@ -310,6 +301,9 @@ globus_l_xio_http_client_write_request(
         }
         else
         {
+            http_handle->request_info.headers.transfer_encoding =
+                GLOBUS_XIO_HTTP_TRANSFER_ENCODING_CHUNKED;
+
             GLOBUS_XIO_HTTP_COPY_BLOB(&iovecs,
                     "Transfer-Encoding: chunked\r\n",
                     28,
@@ -378,6 +372,7 @@ free_iovecs_exit:
     {
         iov = globus_fifo_dequeue(&iovecs);
 
+        free(iov->iov_base);
         free(iov);
     }
     globus_fifo_destroy(&iovecs);
@@ -581,7 +576,7 @@ globus_l_xio_http_client_read_response_callback(
         http_handle->response_info.headers.entity_needed = GLOBUS_TRUE;
     }
 
-    if (http_handle->user_read_operation != NULL)
+    if (http_handle->read_operation.operation != NULL)
     {
         copy_residue = GLOBUS_TRUE;
     }
@@ -627,7 +622,7 @@ reregister_read:
 
     return;
 error_exit:
-    if (http_handle->user_read_operation != NULL)
+    if (http_handle->read_operation.operation != NULL)
     {
         copy_residue = GLOBUS_TRUE;
     }

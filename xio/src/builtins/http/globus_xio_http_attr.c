@@ -185,7 +185,7 @@ globus_i_xio_http_attr_cntl(
  * @ingroup globus_i_xio_http_attr
  *
  * Copies all values associated with the @a src http attribute to
- * a newly allocated attribute in @dst. If this function returns a
+ * a newly allocated attribute in @a dst. If this function returns a
  * failure, then the @a dst should be considered uninitiailized.  This is
  * called by the XIO driver via globus_xio_attr_copy().
  *

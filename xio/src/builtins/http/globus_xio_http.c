@@ -59,7 +59,7 @@ globus_l_xio_http_load(
         globus_i_xio_http_open,
         globus_i_xio_http_close,
         globus_i_xio_http_read,
-        NULL/*globus_l_xio_http_write*/,
+        globus_i_xio_http_write,
         globus_i_xio_http_handle_cntl,
 	NULL);
 

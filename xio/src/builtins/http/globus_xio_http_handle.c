@@ -4,6 +4,14 @@
  * @defgroup globus_i_xio_http_handle Internal Handle Implementation
  */
 
+static
+void
+globus_l_xio_http_write_eof_callback(
+    globus_xio_operation_t              op,
+    globus_result_t                     result,
+    globus_size_t                       nbytes,
+    void *                              user_arg);
+
 /**
  * Allocate and initialize an HTTP handle
  * @ingroup globus_i_xio_http_handle
@@ -58,12 +66,15 @@ globus_i_xio_http_handle_init(
     http_handle->read_buffer.iov_base = NULL;
     http_handle->read_buffer.iov_len = 0;
     http_handle->close_operation = NULL;
-    http_handle->user_read_iov = NULL;
-    http_handle->user_read_iovcnt = 0;
-    http_handle->user_read_operation = NULL;
-    http_handle->user_read_nbytes = 0;
-    http_handle->user_read_result = GLOBUS_SUCCESS;
-    http_handle->first_chunk = GLOBUS_TRUE;
+    http_handle->read_operation.iov = NULL;
+    http_handle->read_operation.iovcnt = 0;
+    http_handle->read_operation.operation = NULL;
+    http_handle->read_operation.nbytes = 0;
+    http_handle->write_operation.iov = NULL;
+    http_handle->write_operation.iovcnt = 0;
+    http_handle->write_operation.operation = NULL;
+    http_handle->write_operation.nbytes = 0;
+    http_handle->chunk = GLOBUS_XIO_HTTP_CHUNK_LINE;
 
     return GLOBUS_SUCCESS;
 
@@ -150,9 +161,13 @@ globus_i_xio_http_handle_cntl(
 {
     globus_result_t                     result = GLOBUS_SUCCESS;
     globus_i_xio_http_handle_t *        http_handle = handle;
+    globus_i_xio_http_header_info_t *   headers;
     char *                              in_str;
+    char *                              in_str2;
     char *                              save_str;
     int                                 in_int;
+    globus_bool_t                       response_needed = GLOBUS_FALSE;
+    static globus_xio_iovec_t           end_of_body_iovec = { "0\r\n\r\n", 5 };
     GlobusXIOName(globus_i_xio_http_handle_cntl);
 
     switch (cmd)
@@ -161,13 +176,30 @@ globus_i_xio_http_handle_cntl(
             if (http_handle->target_info.is_client)
             {
                 result = GlobusXIOErrorParameter("handle");
+                break;
             }
 
-            GLOBUS_XIO_HTTP_TODO("Implement response headers");
+            if (http_handle->response_info.headers_sent)
+            {
+                result = GlobusXIOErrorParameter("handle");
+                break;
+            }
+            in_str = va_arg(ap, char *);
+            in_str2 = va_arg(ap, char *);
+
+            result = globus_i_xio_http_header_info_set_header(
+                    &http_handle->response_info.headers,
+                    in_str,
+                    in_str2);
 
             break;
 
         case GLOBUS_XIO_HTTP_HANDLE_SET_RESPONSE_STATUS_CODE:
+            if (http_handle->response_info.headers_sent)
+            {
+                result = GlobusXIOErrorParameter("handle");
+                break;
+            }
             in_int = va_arg(ap, int);
 
             if (in_int < 100 || in_int > 599)
@@ -181,6 +213,11 @@ globus_i_xio_http_handle_cntl(
             break;
 
         case GLOBUS_XIO_HTTP_HANDLE_SET_RESPONSE_REASON_PHRASE:
+            if (http_handle->response_info.headers_sent)
+            {
+                result = GlobusXIOErrorParameter("handle");
+                break;
+            }
             in_str = va_arg(ap, char *);
 
             if (in_str == NULL)
@@ -204,11 +241,93 @@ globus_i_xio_http_handle_cntl(
             }
             break;
         case GLOBUS_XIO_HTTP_HANDLE_SET_RESPONSE_HTTP_VERSION:
+            if (http_handle->response_info.headers_sent)
+            {
+                result = GlobusXIOErrorParameter("handle");
+                break;
+            }
             http_handle->response_info.http_version =
                     va_arg(ap, globus_xio_http_version_t);
             break;
         case GLOBUS_XIO_HTTP_HANDLE_SET_END_OF_ENTITY:
-            GLOBUS_XIO_HTTP_TODO("Implement end-of-body handling");
+            if (http_handle->write_operation.operation != NULL)
+            {
+                result = GlobusXIOErrorAlreadyRegistered();
+                break;
+            }
+            else if (http_handle->target_info.is_client)
+            {
+                headers = &http_handle->request_info.headers;
+            }
+            else
+            {
+                headers = &http_handle->response_info.headers;
+
+                if (! http_handle->response_info.headers_sent)
+                {
+                    headers->entity_needed = GLOBUS_TRUE;
+                    response_needed = GLOBUS_TRUE;
+                }
+            }
+            
+            if (! headers->entity_needed)
+            {
+                result = GlobusXIOHttpErrorNoEntity();
+                break;
+            }
+
+            if (headers->transfer_encoding
+                    != GLOBUS_XIO_HTTP_TRANSFER_ENCODING_CHUNKED &&
+                !response_needed)
+            {
+                /*
+                 * Nothing to do in identity mode unless we need to send
+                 * our response
+                 */
+                result = GLOBUS_SUCCESS;
+                break;
+            }
+
+            if (response_needed)
+            {
+                /* To send an empty response from server */
+                result = globus_i_xio_http_server_write_response(
+                        http_handle,
+                        NULL,
+                        0,
+                        NULL);
+            }
+            else
+            {
+                result = globus_xio_driver_operation_create(
+                        &http_handle->write_operation.operation,
+                        http_handle->handle);
+
+                if (result != GLOBUS_SUCCESS)
+                {
+                    break;
+                }
+
+                headers->entity_needed = GLOBUS_FALSE;
+
+                result = globus_xio_driver_pass_write(
+                        http_handle->write_operation.operation,
+                        &end_of_body_iovec,
+                        1,
+                        4,
+                        globus_l_xio_http_write_eof_callback,
+                        http_handle);
+
+                if (result != GLOBUS_SUCCESS)
+                {
+                    /* Undo our attempt to set eof */
+                    globus_xio_driver_operation_destroy(
+                            http_handle->write_operation.operation);
+                    headers->entity_needed = GLOBUS_TRUE;
+                }
+            }
+
+
             break;
         default:
             result = GlobusXIOErrorParameter("cmd");
@@ -217,3 +336,18 @@ globus_i_xio_http_handle_cntl(
     return result;
 }
 /* globus_i_xio_http_handle_cntl() */
+
+static
+void
+globus_l_xio_http_write_eof_callback(
+    globus_xio_operation_t              op,
+    globus_result_t                     result,
+    globus_size_t                       nbytes,
+    void *                              user_arg)
+{
+    /* How should error be handled here? */
+    globus_xio_driver_operation_destroy(op);
+
+    return;
+}
+/* globus_l_xio_http_write_eof_callback() */
