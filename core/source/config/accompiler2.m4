@@ -108,7 +108,7 @@ AC_DEFUN(LAC_COMPILERS_MPL,
 [
     AC_MSG_CHECKING(for MPL)
     AC_CACHE_VAL(lac_cv_mpl, [dnl
-        case "$target" in
+        case "$host" in
             *-ibm-aix* )
                 poepackage="`/usr/bin/lslpp -clq | grep '/usr/lib/objrepos.*Parallel Operating Environment' | wc -l`"
                 case "$poepackage" in
@@ -131,7 +131,7 @@ AC_DEFUN(LAC_COMPILERS_MPI,
 [
     AC_MSG_CHECKING(for MPI)
     AC_CACHE_VAL(lac_cv_mpi, [dnl
-        case "$target" in
+        case "$host" in
             *-ibm-aix* )
                 poepackage="`/usr/bin/lslpp -clq | grep '/usr/lib/objrepos.*Parallel Operating Environment' | wc -l`"
                 case "$poepackage" in
@@ -166,7 +166,7 @@ AC_DEFUN(LAC_COMPILERS_INX,
 [
     AC_MSG_CHECKING(for INX)
     AC_CACHE_VAL(lac_cv_inx, [dnl
-        case "$target" in
+        case "$host" in
             i860-intel-osf* )
                 lac_cv_inx="yes"
             ;;
@@ -223,6 +223,7 @@ LAC_SUBSTITUTE_COMPILER_VAR(CXXCPP)
 LAC_SUBSTITUTE_COMPILER_VAR(CXXFLAGS)
 LAC_SUBSTITUTE_COMPILER_VAR(LD)
 LAC_SUBSTITUTE_COMPILER_VAR(LDFLAGS)
+LAC_SUBSTITUTE_COMPILER_VAR(LIBS)
 LAC_SUBSTITUTE_COMPILER_VAR(AR)
 LAC_SUBSTITUTE_COMPILER_VAR(ARFLAGS)
 LAC_SUBSTITUTE_COMPILER_VAR(RANLIB)
@@ -404,7 +405,7 @@ case ${host}--$1 in
         dnl Don't set RANLIB for since if its present its
 	dnl probable gnu and is incompatible
         dnl     This fixes the reported problem on  modi4.ncsa.uiuc.edu 
-	lac_cv_RANLIB="true"
+	AC_CACHE_VAL(lac_cv_RANLIB, lac_cv_RANLIB="true")
 
         if test "$lac_mpi" = "yes" ; then
             lac_LIBS="$lac_LIBS -lmpi"
@@ -529,7 +530,7 @@ else
     if test -z "$lac_cxxflags_opt" ; then
 	lac_CXXFLAGS="-O $lac_CXXFLAGS"
     else
-	lac_CXXFLAGS="$lac_cxx_flags_opt $lac_CXXFLAGS"
+	lac_CXXFLAGS="$lac_cxxflags_opt $lac_CXXFLAGS"
     fi
 fi
 
@@ -542,15 +543,15 @@ AC_CACHE_CHECK("C++ Preprocessor", lac_cv_CXXCPP, lac_cv_CXXCPP="$lac_cv_CXX -E"
 AC_CACHE_CHECK("F77 flags", lac_cv_F77FLAGS, lac_cv_F77FLAGS="$lac_F77FLAGS")
 AC_CACHE_CHECK("F90 flags", lac_cv_F90FLAGS, lac_cv_F90FLAGS="$lac_F90FLAGS")
 
-CC=$lac_cv_CC
-CFLAGS=$lac_cv_CFLAGS
+CC="$lac_cv_CC"
+CFLAGS="$lac_cv_CFLAGS"
 AC_PROG_CC
-CROSS=$cross_compiling
+CROSS="$cross_compiling"
 AC_SUBST(CROSS)
 AC_SUBST(cross_compiling)
 dnl Note that if RANLIB is set appropriately
 dnl This line should do nothing
-AC_PATH_PROGS(lac_cv_RANLIB, ranlib true, true)
+AC_PATH_PROGS(lac_cv_RANLIB, $lac_cv_RANLIB ranlib true, true)
 
 AC_PATH_PROGS(lac_cv_AR, [ar], ar)
 AC_CACHE_VAL(lac_cv_ARFLAGS, lac_cv_ARFLAGS="ruv")
