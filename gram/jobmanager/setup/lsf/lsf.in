@@ -20,16 +20,6 @@ BEGIN
     $bkill  = '@BKILL@';
 }
 
-sub new
-{
-    my $proto = shift;
-    my $class = ref($proto) || $proto;
-    my $self = $class->SUPER::new(@_);
-    
-    bless $self, $class;
-    return $self;
-}
-
 sub submit
 {
     my $self = shift;
@@ -133,7 +123,7 @@ sub submit
     chomp($lsf_job_script_name);
     if($lsf_job_script_name eq "")
     {
-	return GLOBUS_GRAM_PROTOCOL_ERROR_TEMP_SCRIPT_FILE_FAILED();
+	return Globus::GRAM::ERROR::TEMP_SCRIPT_FILE_FAILED();
     }
 
     $lsf_job_script = new IO::File($lsf_job_script_name, '>');
@@ -329,7 +319,7 @@ sub poll
     {
 	$state = Globus::GRAM::JobState::ACTIVE;
     }
-    elsif(/UNKWN|ZOMBI/)
+    elsif(/UNKWN|ZOMBI|EXIT/)
     {
 	$state = Globus::GRAM::JobState::FAILED;
     }
@@ -351,7 +341,11 @@ sub cancel
 
     system("$bkill $job_id >/dev/null 2>/dev/null");
 
-    return {};
+    if($? == 0)
+    {
+	return { JOB_STATE => Globus::GRAM::JobState::FAILED };
+    }
+    return Globus::GRAM::Error::JOB_CANCEL_FAILED();
 }
 
 1;
