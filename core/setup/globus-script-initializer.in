@@ -69,4 +69,5 @@ deployed='FALSE'              # This line is overwritten during deployment
     localstatedir=${prefix}/var
     tmpdir=@tmpdir@
     secure_tmpdir=@secure_tmpdir@
+    local_tmpdir=@local_tmpdir@
     ################# END    Inserted by configure #############
