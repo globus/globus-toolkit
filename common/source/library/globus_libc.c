@@ -3236,7 +3236,7 @@ globus_libc_getnameinfo(
     result = GLOBUS_SUCCESS;
     rc = getnameinfo(
         (const struct sockaddr *) addr,
-        sizeof(globus_sockaddr_t),
+        GlobusLibcSockaddrLen(addr),
         hostbuf,
         hostbuf_len,
         servbuf,
