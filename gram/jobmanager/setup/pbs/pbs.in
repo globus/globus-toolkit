@@ -246,6 +246,8 @@ EOF
     {
         # truncate off the domain name
 	$job_id =~ s/([^\.]*).([^\.]*)\..*/$1.$2/;
+	unlink($pbs_job_script_name);
+
 	return {JOB_ID => $job_id};
     }
     unlink($pbs_job_script_name);

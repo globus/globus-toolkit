@@ -32,14 +32,18 @@ AC_ARG_WITH(host-type,
           HOST_TYPE=$withval
 	  AC_SUBST(HOST_TYPE)
 	  ;;
-    esca])
+    esac])
 
 if test "$HOST_TYPE" = no; then
-    AC_MSG_ERROR("Missing required --with-host-type=cluster|smp|chiba_cluster")
+    AC_MSG_ERROR([Missing required --with-host-type=cluster|smp|chiba_cluster])
 fi
 AC_PATH_PROGS(REMOTE_SHELL, ssh rsh, no)
-if test "$REMOTE_SHELL" = "no" && ( test "$HOST_TYPE" = cluster || test "$HOST_TYPE" = chiba_cluster ; then
-    AC_MSG_ERROR("Cannot locate a remote shell program")
+if test "$REMOTE_SHELL" = "no"; then
+    case "$HOST_TYPE" in
+        cluster|chiba_cluster)
+	    AC_MSG_ERROR("Cannot locate a remote shell program")
+	    ;;
+    esac
 fi
 
 prefix='$(GLOBUS_LOCATION)'
