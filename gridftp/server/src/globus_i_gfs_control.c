@@ -562,7 +562,8 @@ globus_l_gfs_request_command(
     GlobusGFSName(globus_l_gfs_request_command);
     
     instance = (globus_i_gfs_server_instance_t *) user_arg;
-    
+
+    memset(&cmd_attr, 0, sizeof(globus_i_gfs_cmd_attr_t));
     
     if(strcmp(cmd_array[0], "MKD") == 0)
     {
@@ -669,7 +670,7 @@ globus_l_gfs_request_command(
     command_state->cksm_response = cmd_attr.cksm_response;
     command_state->chmod_mode = cmd_attr.chmod_mode;
     command_state->rnfr_pathname = cmd_attr.rnfr_pathname; 
-
+    
     result = globus_gfs_ipc_request_command(
         instance->ipc_handle,
         &request_id,

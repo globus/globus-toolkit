@@ -14,23 +14,6 @@ typedef globus_gridftp_server_control_stat_t globus_gridftp_server_stat_t;
 /* (optional) this is used for listings, size, etc... it is only used in the
  * 'default' module
  */
-typedef globus_result_t
-(*globus_gridftp_server_resource_t)(
-    globus_gridftp_server_operation_t   op,
-    const char *                        pathname,
-    int                                 mask);
-
-typedef globus_result_t
-(*globus_gridftp_server_recv_t)(
-    globus_gridftp_server_operation_t   op,
-    const char *                        arguments,
-    const char *                        pathname);
-
-typedef globus_result_t
-(*globus_gridftp_server_send_t)(
-    globus_gridftp_server_operation_t   op,
-    const char *                        arguments,
-    const char *                        pathname);
 
 void
 globus_gridftp_server_finished_resource(

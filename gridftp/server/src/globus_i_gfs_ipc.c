@@ -11,7 +11,7 @@ static globus_xio_driver_t              globus_l_gfs_tcp_driver = GLOBUS_NULL;
  *  size:    remaining size of message
  */
 #define GFS_IPC_HEADER_SIZE         (sizeof(uint32_t)+sizeof(uint32_t)+1)
-#define GFS_IPC_DEFAULT_BUFFER_SIZE 1024
+#define GFS_IPC_DEFAULT_BUFFER_SIZE 1024 * 1024
 
 #define GFSEncodeUInt32(_start, _len, _buf, _w)                         \
 do                                                                      \
@@ -20,8 +20,13 @@ do                                                                      \
     /* verify buffer size */                                            \
     if((globus_byte_t *)_buf - (globus_byte_t *)_start + 4 > _len)      \
     {                                                                   \
+        globus_byte_t *                 _newstart;                      \
         _len *= 2;                                                      \
-        _start = globus_libc_realloc(_start, _len);                     \
+        _newstart = (globus_byte_t *) globus_libc_realloc(_start, _len);\
+        if(_newstart != _start)                                         \
+        {                                                               \
+            fprintf(stderr, "screwed on the realloc\n");                \
+        }                                                               \
     }                                                                   \
     _cw = htonl((uint32_t)_w);                                          \
     memcpy(_buf, &_cw, 4);                                              \
@@ -50,13 +55,19 @@ do                                                                      \
  */
 #if !defined(WORDS_BIGENDIAN)
 
+
 #define GFSEncodeUInt64(_start, _len, _buf, _w)                         \
 do                                                                      \
 {                                                                       \
     if((globus_byte_t *)_buf - (globus_byte_t *)_start + 8 > _len)      \
     {                                                                   \
+        globus_byte_t *                 _newstart;                      \
         _len *= 2;                                                      \
-        _start = globus_libc_realloc(_start, _len);                     \
+        _newstart = (globus_byte_t *) globus_libc_realloc(_start, _len);\
+        if(_newstart != _start)                                         \
+        {                                                               \
+            fprintf(stderr, "screwed on the realloc\n");                \
+        }                                                               \
     }                                                                   \
     memcpy(_buf, &_w, 8);                                               \
     _buf += 8;                                                          \
@@ -86,8 +97,13 @@ do                                                                      \
                                                                         \
     if((globus_byte_t *)_buf - (globus_byte_t *)_start + 8 > _len)      \
     {                                                                   \
+        globus_byte_t *                 _newstart;                      \
         _len *= 2;                                                      \
-        _start = globus_libc_realloc(_start, _len);                     \
+        _newstart = (globus_byte_t *) globus_libc_realloc(_start, _len);\
+        if(_newstart != _start)                                         \
+        {                                                               \
+            fprintf(stderr, "screwed on the realloc\n");                \
+        }                                                               \
     }                                                                   \
                                                                         \
     _lo = ntohl(_lo);                                                   \
@@ -125,8 +141,13 @@ do                                                                      \
 {                                                                       \
     if((globus_byte_t *)_buf - (globus_byte_t *)_start >= _len)         \
     {                                                                   \
+        globus_byte_t *                 _newstart;                      \
         _len *= 2;                                                      \
-        _start = globus_libc_realloc(_start, _len);                     \
+        _newstart = (globus_byte_t *) globus_libc_realloc(_start, _len);\
+        if(_newstart != _start)                                         \
+        {                                                               \
+            fprintf(stderr, "screwed on the realloc\n");                \
+        }                                                               \
     }                                                                   \
     *_buf = (char)_w;                                                   \
     _buf++;                                                             \
