@@ -31,7 +31,7 @@ globus_gss_assist_authorization_host_name(
 {
     static char *                       _function_name_ =
         "globus_gss_assist_authorization_host_name";
-    char                                realhostname[128 + 5] = "host@";
+    char                                realhostname[NI_MAXHOST + 5] = "host@";
     gss_buffer_desc                     name_tok;
     OM_uint32                           major_status;
     OM_uint32                           minor_status;
@@ -47,19 +47,19 @@ globus_gss_assist_authorization_host_name(
 
     /* If hostname is an ip address, do a non-canonname getaddrinfo to get
      * the sockaddr, then getnameinfo to get the hostname from that addr */ 
-    if(hostname && (isdigit(hostname[0]) || strchr(hostname, ':')))
+
+    hints.ai_flags = GLOBUS_AI_NUMERICHOST;
+    result = globus_libc_getaddrinfo(hostname, NULL, &hints, &addrinfo);
+    /* if this succeeds then the hostname must be numeric */
+    if(result == GLOBUS_SUCCESS)
     { 
-        hints.ai_flags = GLOBUS_AI_NUMERICHOST;
-        result = globus_libc_getaddrinfo(hostname, NULL, &hints, &addrinfo);
-        if(result != GLOBUS_SUCCESS ||
-           addrinfo == NULL ||
-           addrinfo->ai_addr == NULL)
+        if(addrinfo == NULL || addrinfo->ai_addr == NULL)
         {
             GLOBUS_GSI_GSS_ASSIST_ERROR_CHAIN_RESULT(
                 result,
                 GLOBUS_GSI_GSS_ASSIST_ERROR_CANONICALIZING_HOSTNAME);
             goto error_exit;
-        }    
+        }
         
         /* 
          * For connections to localhost, check for certificate
@@ -121,13 +121,14 @@ globus_gss_assist_authorization_host_name(
         if(globus_libc_addr_is_loopback(
             (const globus_sockaddr_t *) addrinfo->ai_addr) == GLOBUS_TRUE)
         {
-            globus_libc_gethostname(&realhostname[5], sizeof(realhostname) - 5);
+            globus_libc_gethostname(
+                &realhostname[5], sizeof(realhostname) - 5);
         }
         else
         {
             strncpy(&realhostname[5], addrinfo->ai_canonname, 
                     sizeof(realhostname) - 5);
-            realhostname[132] = '\0';
+            realhostname[sizeof(realhostname) - 1] = '\0';
         }
     
         globus_libc_freeaddrinfo(addrinfo);
