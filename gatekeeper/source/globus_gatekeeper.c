@@ -74,6 +74,10 @@ CVS Information:
 #include <string.h>
 #endif
 
+#ifdef HAVE_PROJ_H
+#include <proj.h>
+#endif
+
 #if !defined(MAXPATHLEN) 
 #   define MAXPATHLEN PATH_MAX
 #endif
@@ -959,6 +963,9 @@ static void doit()
     char *              userid;
     struct passwd *     pw;
 #endif
+#ifdef HAVE_PROJ_H
+    prid_t user_prid;
+#endif
 
     (void) setbuf(stdout,NULL);
 
@@ -1278,9 +1285,6 @@ static void doit()
     /*
      * Become the appropriate user
      */
-
-    chdir(pw->pw_dir);
-
     if (gatekeeper_uid == 0)
     {
 	grami_setenv("USER",userid,1);
@@ -1322,6 +1326,17 @@ static void doit()
 	    setgid(pw->pw_gid);
 	    initgroups(pw->pw_name, pw->pw_gid);
 
+#           if defined(HAVE_PROJ_H)
+            {
+	        if ((user_prid = getdfltprojuser(pw->pw_name)) < 0)
+                {
+                    user_prid = 0;
+                }
+                newarraysess();
+                setprid(user_prid);
+	    }
+#           endif
+
 #if defined(__hpux)
 	    if (setresuid(job_manager_uid, job_manager_uid, -1) != 0)
 		failure2("cannot setresuid: %s", sys_errlist[errno]);
@@ -1338,6 +1353,8 @@ static void doit()
 
 	}
     }
+
+    chdir(pw->pw_dir);
     
     pid = fork();
     if (pid < 0)
