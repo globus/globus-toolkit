@@ -76,6 +76,9 @@ int myproxy_init_server(myproxy_socket_attrs_t *server_attrs, int port_number);
 int handle_client(myproxy_socket_attrs_t *server_attrs, 
                   myproxy_server_context_t *server_context);
 
+void respond_with_error_and_die(myproxy_socket_attrs_t *attrs,
+				const char *error);
+
 void send_response(myproxy_socket_attrs_t *server_attrs, 
 		   myproxy_response_t *response, 
 		   char *client_name);
@@ -262,9 +265,7 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
     /* Authenticate server to client and get DN of client */
     if (myproxy_authenticate_accept(attrs, client_name, sizeof(client_name)) < 0) {
 	/* Client_name may not be set on error so don't use it. */
-        my_failure("Error authenticating client");
-	server_response->response_type =  MYPROXY_ERROR_RESPONSE; 
-        strcat(server_response->error_string, "Error authenticating client\n");
+	respond_with_error_and_die(attrs, "authentication failed");
     }
 
     /* Log client name */
@@ -273,7 +274,7 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
     /* Receive client request */
     requestlen = myproxy_recv(attrs, client_buffer, sizeof(client_buffer));
     if (requestlen < 0) {
-        my_failure("Error in myproxy_recv_response()");
+	respond_with_error_and_die(attrs, "Error in myproxy_recv_response()");
     }
 
     /* Log client request */
@@ -282,16 +283,16 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
     /* Deserialize client request */
     if (myproxy_deserialize_request(client_buffer, requestlen, 
                                     client_request) < 0) {
-        my_failure("error in myproxy_deserialize_request()");
-	server_response->response_type =  MYPROXY_ERROR_RESPONSE; 
-        strcat(server_response->error_string, "Unable to decipher client request\n");
+        respond_with_error_and_die(attrs,
+				   "error in myproxy_deserialize_request()");
     }
 
     /* Check client version */
     if (strcmp(client_request->version, MYPROXY_VERSION) != 0) {
-        server_response->response_type =  MYPROXY_ERROR_RESPONSE; 
-        strcat(server_response->error_string, "Invalid version number received.\n");
-	myproxy_log("client %s Invalid version number received", client_name);
+	myproxy_log("client %s Invalid version number (%s) received",
+		    client_name, client_request->version);
+        respond_with_error_and_die(attrs,
+				   "Invalid version number received.\n");
     }
 
     /* Fill in credential structure = owner, user, passphrase, proxy location */
@@ -327,17 +328,13 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
 
     if (authorization_ok == -1)
     {
-	myproxy_log("Error checking authorization");
 	myproxy_log_verror();
-	exit(1);
+	respond_with_error_and_die(attrs, "Error checking authorization");
     }
     
     if (authorization_ok != 1)
     {
-	/* Authorization failed */
-	myproxy_log("Authorization failed for %s", client_name);
-	/* XXX */
-	exit(1);
+	respond_with_error_and_die(attrs, "Authorization failed");
     }
 
     /* Handle client request */
@@ -345,9 +342,7 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
     case MYPROXY_GET_PROXY:
 	/* return server response */
 	send_response(attrs, server_response, client_name);
-	if (server_response->response_type == MYPROXY_ERROR_RESPONSE) {
-	  myproxy_log("Received ERROR: %s", server_response->error_string);
-	}
+
         /* add lifetime (s) = client_request->hours * 60 minutes/hour * 60 minutes/sec */
         client_creds->lifetime = 60*60*client_request->hours; 
         get_proxy(attrs, client_creds, server_response);
@@ -355,10 +350,7 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
     case MYPROXY_PUT_PROXY:
 	/* return server response */
 	send_response(attrs, server_response, client_name);
-	/* Don't continue if there was an error */
-	if (server_response->response_type ==  MYPROXY_ERROR_RESPONSE) {
-	  my_failure("Unable to process client request");
-	}
+
         /* add lifetime (s) = client_request->hours * 60 minutes/hour * 60 minutes/sec */
         client_creds->lifetime = 60*60*client_request->hours; 
         put_proxy(attrs, client_creds, server_response);
@@ -495,6 +487,37 @@ myproxy_init_server(myproxy_socket_attrs_t *attrs, int port_number)
 	    failure("Error in listen()");
     }
     return listen_sock;
+}
+
+void
+respond_with_error_and_die(myproxy_socket_attrs_t *attrs,
+			   const char *error)
+{
+    myproxy_response_t		response;
+    int				responselen;
+    char			response_buffer[2048];
+    
+
+    response.version = strdup(MYPROXY_VERSION);
+    response.response_type = MYPROXY_ERROR_RESPONSE;
+    snprintf(response.error_string, sizeof(response.error_string),
+	     "%s", error);
+    
+    responselen = myproxy_serialize_response(&response,
+					     response_buffer,
+					     sizeof(response_buffer));
+    
+    if (responselen < 0) {
+        my_failure("error in myproxy_serialize_response()");
+    }
+
+    if (myproxy_send(attrs, response_buffer, responselen) < 0) {
+        my_failure("error in myproxy_send()\n");
+    } 
+
+    myproxy_log("ERROR: %s. Exiting", error);
+    
+    exit(1);
 }
 
 void send_response(myproxy_socket_attrs_t *attrs, myproxy_response_t *response, char *client_name) {
