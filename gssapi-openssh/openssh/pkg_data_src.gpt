@@ -60,7 +60,7 @@
     <Build_Instructions>
 
       <Build_Step>
-        GSICFG="--prefix=INSTALLDIR_GPTMACRO --with-globus=INSTALLDIR_GPTMACRO --with-globus-flavor=FLAVOR_GPTMACRO"
+        GSICFG="--prefix=INSTALLDIR_GPTMACRO --with-globus=INSTALLDIR_GPTMACRO --with-globus-flavor=FLAVOR_GPTMACRO --disable-strip"
 
         if test "STATIC_LINK_GPTMACRO" = "yes"; then 
           GSICFG="$GSICFG --with-globus-static"
