@@ -1287,6 +1287,41 @@ static void doit()
 
     notice2(LOG_NOTICE, "Authenticated globus user: %s", client_name);
 
+#ifdef CLASS_ADD
+	{
+		/* This is only a sample to show the class adds */
+		 gss_buffer_desc * class_add_array = NULL;
+		 gss_buffer_desc * class_add_array_entry = NULL;
+
+		minor_status = 0xdee0;
+		major_status = gss_inquire_context(&minor_status,
+					context_handle,
+					NULL,
+					(gss_name_t) &class_add_array,
+					NULL,
+					NULL,
+					NULL,
+					NULL,
+					NULL);
+		if (minor_status == 0xdee1) {
+			fprintf(stderr,"ClassADD strings:\n");
+			class_add_array_entry = class_add_array;
+			while(class_add_array_entry->length != -1) {
+				if (class_add_array_entry->length) { 
+					fprintf(stderr,"   %5d %*s\n", 
+						class_add_array_entry->length,
+						class_add_array_entry->length,
+						class_add_array_entry->value);
+					free(class_add_array_entry->value);
+				} else
+					fprintf(stderr,"      0\n");
+				class_add_array_entry++;	
+			}
+			free(class_add_array);     
+		}
+	}
+#endif
+
     /*
      * now do authorization  i.e. globus userid must be in the 
      * in the gridmap file. 
