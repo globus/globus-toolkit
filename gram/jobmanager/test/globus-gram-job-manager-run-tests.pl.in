@@ -8,6 +8,7 @@ require 5.005;
 use vars qw(@tests);
 use Globus::Core::Paths;
 
+my $test_result = 1;
 $|=1;
 
 my $contact;
@@ -52,7 +53,19 @@ else
 }
 
 runtests(@tests);
+$test_result = eval "runtests(\@tests);";
+if(!defined($test_result))
+{
+    print $@;
+    $test_result=1;
+}
+else
+{
+    $test_result=0;
+}
+
 
 sub END {
-system("globus-personal-gatekeeper -kill \"$contact\" >/dev/null 2>/dev/null");
+    system("globus-personal-gatekeeper -kill \"$contact\" >/dev/null 2>&1");
+    exit $test_result;
 }
