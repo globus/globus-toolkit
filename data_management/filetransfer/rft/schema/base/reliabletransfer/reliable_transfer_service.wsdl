@@ -5,9 +5,9 @@
   xmlns:gsdl="http://www.gridforum.org/namespaces/2002/07/gridServices"
   xmlns:reliable-transfer-types="http://reliabletransfer.base.ogsa.globus.org/reliable_transfer_types"
   xmlns:reliable-transfer-bindings="http://reliabletransfer.base.ogsa.globus.org/reliable_transfer_bindings"
-  xmlns:grid-service-bindings="http://ogsa.gridforum.org/service/grid_service_bindings"
-  xmlns:notification-source-bindings="http://ogsa.gridforum.org/notification/notification_source_bindings"
-  xmlns:auth-bindings="http://authentication.security.ogsa.globus.org/authentication/authentication_bindings"
+  xmlns:grid-service-bindings="http://ogsa.gridforum.org/service/grid_service/bindings"
+  xmlns:notification-source-bindings="http://ogsa.gridforum.org/notification/notification_source/bindings"
+  xmlns:auth-bindings="http://ogsa.globus.org/security/authentication/bindings"
   xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/">
 
 
@@ -15,13 +15,13 @@
         namespace="http://reliabletransfer.base.ogsa.globus.org/reliable_transfer_bindings"/>
 
 <import location="../../core/service/grid_service_bindings.wsdl"
-        namespace="http://ogsa.gridforum.org/service/grid_service_bindings"/>
+        namespace="http://ogsa.gridforum.org/service/grid_service/bindings"/>
 
 <import location="../../core/notification/notification_source_bindings.wsdl"
-        namespace="http://ogsa.gridforum.org/notification/notification_source_bindings"/>
+        namespace="http://ogsa.gridforum.org/notification/notification_source/bindings"/>
 
 <import location="../../security/authentication/gss_secure_conversation_bindings.wsdl"
-        namespace="http://authentication.security.ogsa.globus.org/authentication/authentication_bindings"/>
+        namespace="http://ogsa.globus.org/security/authentication/bindings"/>
 
 <service name="ReliableFileTransferService">
   <documentation>Globus Reliable Transfer service (management of remote job execution)</documentation>

@@ -51,6 +51,7 @@ Southern California. All Rights Reserved.
   <property name="package.dir" value="reliabletransfer"/>
   <property name="build.packages" value="${ogsacore.javadir}/build-packages.xml"/>
   <property name="etc.dir" value="./etc"/>
+  <property name="rft.nsmap.file" value="./etc"/>
 
   <!-- properties for testing -->
   <property name="test.report.dir" value="test-report"/>
@@ -104,6 +105,7 @@ Southern California. All Rights Reserved.
  <copy toDir="${schema.dir}">
     <fileset dir="${schema.origin}" casesensitive="yes"/>
  </copy>
+  <copy file="${ogsacore.javadir}/${nsmap.file}" toDir="./"/>
     <echo message=" Generating stubs from ./schema/base/reliable_transfer_service.wsdl" />
     <java classname="org.globus.ogsa.tools.wsdl.GSDL2Java" dir="./schema/base/reliabletransfer" fork="yes"
         classpathref="classpath">
@@ -111,7 +113,10 @@ Southern California. All Rights Reserved.
                  value="org.globus.net.protocol" />
       <arg value="-o"/>  
       <arg value="../../../src"/>  
-      <arg value="-Nhttp://www.gridforum.org/namespaces/2002/10/gridServices=org.gridforum.ogsa"/>
+      <arg value="-Nhttp://reliabletransfer.base.ogsa.globus.org/reliable_transfer_port_type=org.globus.ogsa.base.reliabletransfer"/>
+      <arg value="-Nhttp://reliabletransfer.base.ogsa.globus.org/reliable_transfer_bindings=org.globus.ogsa.base.reliabletransfer"/>
+      <arg value="-Nhttp://reliabletransfer.base.ogsa.globus.org/reliable_transfer=org.globus.ogsa.base.reliabletransfer"/>
+      <arg value="-Nhttp://reliabletransfer.base.ogsa.globus.org/reliable_transfer_types=org.globus.ogsa.base.reliabletransfer"/>
       <arg value="reliable_transfer_service.wsdl"/>
     </java>
   </target>

@@ -139,7 +139,6 @@ import java.net.URL;
 import java.util.Map;
 import java.util.Hashtable;
 
-import org.globus.ogsa.samples.SinkListenerPortType;
 import org.globus.ogsa.impl.core.notification.NotificationSinkManager;
 import org.globus.ogsa.impl.core.notification.NotificationSinkCallback;
 import org.globus.ogsa.impl.core.notification.NotificationSinkCallbackSecureWrapper;
@@ -150,7 +149,6 @@ import org.globus.ogsa.base.reliabletransfer.ReliableTransferPortType;
 import org.globus.ogsa.base.reliabletransfer.ReliableTransferOptions;
 import org.globus.ogsa.base.reliabletransfer.ReliableTransferAttributes;
 
-import org.globus.ogsa.impl.samples.notification.SinkListenerServiceLocator;
 import org.globus.axis.util.Util;
 import org.globus.ogsa.utils.GSIUtils;
 import org.globus.ogsa.utils.AnyHelper;
