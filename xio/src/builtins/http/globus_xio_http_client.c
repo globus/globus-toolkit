@@ -282,6 +282,23 @@ globus_i_xio_http_client_write_request(
                 http_handle->target_info.host,
                 strlen(http_handle->target_info.host),
                 free_iovecs_exit);
+
+        if (http_handle->target_info.port != 0 && 
+            http_handle->target_info.port != 80)
+        {
+            char port_buffer[7];
+            int  len;
+
+            sprintf(port_buffer, ":%hu%n",
+                    http_handle->target_info.port,
+                    &len);
+
+            GLOBUS_XIO_HTTP_COPY_BLOB(&iovecs,
+                    port_buffer,
+                    len,
+                    free_iovecs_exit);
+        }
+
         GLOBUS_XIO_HTTP_COPY_BLOB(&iovecs,
                 "\r\n",
                 2,
