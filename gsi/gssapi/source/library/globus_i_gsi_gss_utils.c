@@ -231,16 +231,19 @@ globus_i_gsi_gss_create_and_fill_context(
     }
 
     /* initialize the callback data */
-    local_result = globus_gsi_callback_data_init(&context->callback_data);
-    if(local_result != GLOBUS_SUCCESS)
+    if(context->callback_data == NULL)
     {
-        GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
-            minor_status, local_result,
-            GLOBUS_GSI_GSSAPI_ERROR_WITH_CALLBACK_DATA);
-        major_status = GSS_S_FAILURE;
-        goto free_proxy_handle;
+        local_result = globus_gsi_callback_data_init(&context->callback_data);
+        if(local_result != GLOBUS_SUCCESS)
+        {
+            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                minor_status, local_result,
+                GLOBUS_GSI_GSSAPI_ERROR_WITH_CALLBACK_DATA);
+            major_status = GSS_S_FAILURE;
+            goto free_proxy_handle;
+        }
     }
-     
+    
     /* set the callback data if its OK to accept proxies
      * signed by limited proxies
      */
@@ -258,7 +261,7 @@ globus_i_gsi_gss_create_and_fill_context(
             goto free_callback_data;
         }
     }
-
+    
     /* get the local credential */
     if (cred_handle == GSS_C_NO_CREDENTIAL)
     {

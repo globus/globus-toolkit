@@ -112,6 +112,17 @@ gss_set_sec_context_option(
         *context_handle = context;
         memset(context, 0, sizeof(gss_ctx_id_desc));
         context->ctx_flags = 0;
+
+        local_result = globus_gsi_callback_data_init(&context->callback_data);
+        if(local_result != GLOBUS_SUCCESS)
+        {
+            GLOBUS_GSI_GSSAPI_ERROR_RESULT(
+                minor_status,
+                GLOBUS_GSI_GSSAPI_ERROR_WITH_GSS_CONTEXT,
+                ("Could not initialize the callback_data in the context."));
+            major_status = GSS_S_FAILURE;
+            goto exit;
+        }
     }
     else if(context->ctx_flags & GSS_I_CTX_INITIALIZED)
     {
