@@ -1,7 +1,8 @@
-#include <stdio.h>
 #include <globus_module.h>
 #include <globus_gss_assist.h>
 #include <gssapi.h>
+
+#include <stdio.h>
 
 int
 ask(
