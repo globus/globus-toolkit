@@ -2204,8 +2204,17 @@ globus_l_io_write_auth_token(
         /* If this is not an SSL token, then we must prepend a
          * four-byte length header
          */
+
+        /**
+         * SLANG: COMPATABILITY MODIFICATION TO
+         * WORK WITH COG
+         */
+#ifndef NOT_COG_COMPAT
         if(handle->securesocket_attr.channel_mode !=
            GLOBUS_IO_SECURE_CHANNEL_MODE_SSL_WRAP ||
+#else
+        if(
+#endif
            ! globus_l_io_is_ssl_packet(init_info->output_buffer) )
         {
             init_info->output_buffer_header = globus_malloc(4);
