@@ -62,16 +62,17 @@ globus_i_gfs_log_open()
     char *                              module;
     globus_logging_module_t *           log_mod;
     void *                              log_arg;
-    char *                              logfilename;
-    char *                              log_filemode;
-    char *                              logunique;
-    char *                              log_level;
+    char *                              logfilename = NULL;
+    char *                              log_filemode = NULL;
+    char *                              logunique = NULL;
+    char *                              log_level = NULL;
     int                                 log_mask = 0;
     char *                              ptr;
     int                                 len;
     int                                 ctr;
     char *                              tag;
     globus_result_t                     result;
+    globus_reltime_t                    flush;
     GlobusGFSName(globus_i_gfs_log_open);
     GlobusGFSDebugEnter();
         
@@ -140,14 +141,18 @@ globus_i_gfs_log_open()
         }
         if(logfilename != NULL)
         {            
-            globus_l_gfs_log_file = fopen(logfilename, "a"); 
+            globus_l_gfs_log_file = fopen(logfilename, "a");
+            if(globus_l_gfs_log_file == NULL)
+            {
+                goto error;
+            }
+            setvbuf(globus_l_gfs_log_file, NULL, _IOLBF, 0);
             if((log_filemode = globus_i_gfs_config_string("log_filemode")) != NULL)
             {
                 int                     mode = 0;
                 mode = strtoul(log_filemode, NULL, 0);
                 chmod(logfilename, mode);
             }
-            globus_free(logfilename);
         }
         if(globus_l_gfs_log_file == NULL)
         {
@@ -155,11 +160,18 @@ globus_i_gfs_log_open()
         }
         
         log_arg = globus_l_gfs_log_file;
+        
+        if(logunique != NULL)
+        {
+            globus_free(logfilename);
+        }
     }
+   
+    GlobusTimeReltimeSet(flush, 5, 0);
     
     globus_logging_init(
         &globus_l_gfs_log_handle,
-        GLOBUS_NULL, /* no buffered logs */
+        &flush,
         2048,
         log_mask, 
         log_mod,
@@ -168,6 +180,10 @@ globus_i_gfs_log_open()
     if((logfilename = globus_i_gfs_config_string("log_transfer")) != NULL)
     {
         globus_l_gfs_transfer_log_file = fopen(logfilename, "a"); 
+        if(globus_l_gfs_transfer_log_file == NULL)
+        {
+            goto error;
+        }
         setvbuf(globus_l_gfs_transfer_log_file, NULL, _IOLBF, 0);
         if((log_filemode = globus_i_gfs_config_string("log_filemode")) != 0)
         {
@@ -175,7 +191,6 @@ globus_i_gfs_log_open()
             mode = strtoul(log_filemode, NULL, 0);
             chmod(logfilename, mode);
         }
-        globus_free(logfilename);
     }
 
     if(!globus_i_gfs_config_bool("disable_usage_stats"))
@@ -185,6 +200,10 @@ globus_i_gfs_log_open()
     }
 
     GlobusGFSDebugExit();        
+
+error:
+    GlobusGFSDebugExitWithError();        
+    
 }
 
 void
