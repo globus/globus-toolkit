@@ -307,7 +307,7 @@ copy_file(const char *source,
 	}
     }
     
-    return -1;
+    return return_code;
 }
 
 /*
@@ -357,6 +357,8 @@ write_data_file(const struct myproxy_creds *creds,
     fprintf(data_stream, "LIFETIME=%d\n", creds->lifetime);
     fprintf(data_stream, "END_OPTIONS\n");
 
+    fflush(data_stream);
+    
     /* Success */
     return_code = 0;
     
@@ -369,6 +371,11 @@ write_data_file(const struct myproxy_creds *creds,
 	{
 	    unlink(data_file_path);
 	}
+    }
+
+    if (data_stream != NULL)
+    {
+	fclose(data_stream);
     }
     
     return return_code;
