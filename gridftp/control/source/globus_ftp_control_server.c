@@ -498,10 +498,12 @@ globus_ftp_control_command_init(
     }
     command->noop.raw_command[j]='\0';
 
-    
-    rc=globus_i_ftp_control_decode_command(command->noop.raw_command,
-                                           &decoded_cmd,
-                                           auth_info);
+    if(auth_info->authenticated == GLOBUS_TRUE)
+    {
+        rc=globus_i_ftp_control_decode_command(command->noop.raw_command,
+                                               &decoded_cmd,
+                                               auth_info);
+    }
     
     if(rc != GLOBUS_SUCCESS)
     {
@@ -1619,7 +1621,7 @@ globus_l_ftp_control_auth_read_cb(
                 {
                     ret_flags |= GSS_C_CONF_FLAG;
                 }
-                maj_stat=gss_accept_sec_context(
+                maj_stat = gss_accept_sec_context(
                     &min_stat,
                     /* context_handle */
                     &(cc_handle->auth_info.auth_gssapi_context),
@@ -1648,8 +1650,14 @@ globus_l_ftp_control_auth_read_cb(
 
                 case GSS_S_COMPLETE:
   
-                    cc_handle->use_auth=GLOBUS_TRUE;
+                    cc_handle->use_auth = GLOBUS_TRUE;
+                    cc_handle->auth_info.authenticated = GLOBUS_TRUE;
 
+                    if(ret_flags & GSS_C_CONF_FLAG)
+                    {
+                        cc_handle->auth_info.encrypt = GLOBUS_TRUE;
+                    }
+                    
                     maj_stat = gss_export_name(
                         &min_stat,
                         cc_handle->auth_info.target_name,
@@ -1907,7 +1915,7 @@ globus_l_ftp_control_auth_read_cb(
                         goto error_cmd_destroy;
                     }
                     
-                    if(cc_handle->use_auth == GLOBUS_TRUE)
+                    if(cc_handle->auth_info.authenticated == GLOBUS_TRUE)
                     {
                         rc=globus_i_ftp_control_encode_reply(
                             reply,
@@ -2020,7 +2028,7 @@ globus_l_ftp_control_auth_read_cb(
                         goto error_cmd_destroy;
                     }
                     
-                    if(cc_handle->use_auth == GLOBUS_TRUE)
+                    if(cc_handle->auth_info.authenticated == GLOBUS_TRUE)
                     {
                         rc=globus_i_ftp_control_encode_reply(
                             reply,
@@ -2615,7 +2623,7 @@ globus_ftp_control_send_response(
         goto return_error;
     }
 
-    if(handle->cc_handle.use_auth == GLOBUS_TRUE)
+    if(handle->cc_handle.auth_info.authenticated == GLOBUS_TRUE)
     {
         rc=globus_i_ftp_control_encode_reply(buf,(char **) &encoded_buf,
                                              &(handle->cc_handle.auth_info));
@@ -2889,7 +2897,7 @@ globus_i_ftp_control_decode_command(
     OM_uint32                                 min_stat;
     int                                       conf_state;
     gss_qop_t                                 qop_state;
-
+    
     if(cmd == GLOBUS_NULL)
     {
         return globus_error_put(
@@ -2899,9 +2907,9 @@ globus_i_ftp_control_decode_command(
                 "globus_i_ftp_control_decode_command: cmd argument is NULL")
             );
     }
-
+    
     length=strlen(cmd);
-
+    
     tmp=(char *) globus_libc_malloc(length+1);
     
     if(tmp == GLOBUS_NULL)
@@ -2913,9 +2921,15 @@ globus_i_ftp_control_decode_command(
                 "globus_ftp_control_decode_command: malloc failed")
             );
     }
-
+    
     if(sscanf(cmd,"%4s",tmp) < 1)
     {
+        rc = globus_error_put(
+            globus_error_construct_string(
+                GLOBUS_FTP_CONTROL_MODULE,
+                GLOBUS_NULL,
+                "globus_ftp_control_decode_command: parse error")
+            );
         goto decode_error;
     }
     
@@ -2926,15 +2940,42 @@ globus_i_ftp_control_decode_command(
         tmp[i]=toupper(tmp[i]);
         i++;
     }
-
-
-    if(strcmp(tmp,"MIC"))
+    
+    
+    if(strcmp(tmp,"MIC") &&
+       strcmp(tmp,"ENC"))
     {
+        rc = globus_error_put(
+            globus_error_construct_string(
+                GLOBUS_FTP_CONTROL_MODULE,
+                GLOBUS_NULL,
+                "globus_ftp_control_decode_command: parse error")
+            );
         goto decode_error;
     }
-    
+
+    if((!strcmp(tmp,"ENC")) && auth_info->encrypt == GLOBUS_FALSE)
+    {
+        /* if command is ENC and encryption isn't turned on in
+           sec context */
+        
+        rc = globus_error_put(
+            globus_error_construct_string(
+                GLOBUS_FTP_CONTROL_MODULE,
+                GLOBUS_NULL,
+                "globus_ftp_control_decode_command: encryption not supported")
+            );
+        goto decode_error;
+    }
+       
     if(sscanf(cmd,"%*s %s",tmp) < 1)
     {
+        rc = globus_error_put(
+            globus_error_construct_string(
+                GLOBUS_FTP_CONTROL_MODULE,
+                GLOBUS_NULL,
+                "globus_ftp_control_decode_command: parse error")
+            );
         goto decode_error;
     }
     
@@ -2942,13 +2983,13 @@ globus_i_ftp_control_decode_command(
         
     if(*decoded_cmd == GLOBUS_NULL)
     {
-        globus_libc_free(tmp);
-        return globus_error_put(
+        rc = globus_error_put(
             globus_error_construct_string(
                 GLOBUS_FTP_CONTROL_MODULE,
                 GLOBUS_NULL,
                 "globus_ftp_control_decode_command: malloc failed")
             );
+        goto decode_error;
     }
         
     rc=globus_i_ftp_control_radix_decode(
@@ -2973,6 +3014,13 @@ globus_i_ftp_control_decode_command(
     
     if(maj_stat != GSS_S_COMPLETE)
     {
+        rc = globus_error_put(
+            globus_error_construct_string(
+                GLOBUS_FTP_CONTROL_MODULE,
+                GLOBUS_NULL,
+                "globus_ftp_control_decode_command: failed to unwrap command")
+            );
+        
         globus_libc_free(*decoded_cmd);
         goto decode_error;
     }
@@ -2994,10 +3042,10 @@ globus_i_ftp_control_decode_command(
 decode_error:
 
     *decoded_cmd=GLOBUS_NULL;
-
+    
     globus_libc_free(tmp);
-
-    return GLOBUS_SUCCESS;
+    
+    return rc;
 }
 
 #ifdef GLOBUS_INTERNAL_DOC
@@ -3087,7 +3135,14 @@ globus_i_ftp_control_encode_reply(
 
     (*encoded_reply)[0]='\0';
 
-    strcat(*encoded_reply,"631 ");
+    if(auth_info->encrypt == GLOBUS_TRUE)
+    {
+        strcat(*encoded_reply,"632 ");
+    }
+    else
+    {
+        strcat(*encoded_reply,"631 ");
+    }
 
     globus_i_ftp_control_radix_encode(
         out_buf.value,&((*encoded_reply)[4]), 
