@@ -36,6 +36,7 @@ static char usage[] = \
 "       -s | --pshost          <hostname> Hostname of the myproxy-server\n"
 "					  Can also set MYPROXY_SERVER env. var.\n"
 "       -p | --psport          <port #>   Port of the myproxy-server\n"
+"       -n | --no_passphrase              Disable passphrase authentication\n"
 "\n";
 
 struct option long_options[] =
@@ -48,14 +49,16 @@ struct option long_options[] =
   {"usage",                 no_argument, NULL, 'u'},
   {"username",        required_argument, NULL, 'l'},
   {"version",               no_argument, NULL, 'v'},
+  {"no_passphrase",         no_argument, NULL, 'n'},
   {0, 0, 0, 0}
 };
 
-static char short_options[] = "uhs:p:t:c:l:v";
+static char short_options[] = "uhs:p:t:c:l:vn";
 
 static char version[] =
 "myproxy-init version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
 
+static int use_empty_passwd = 0;
 
 /* Function declarations */
 int init_arguments(int argc, char *argv[], 
@@ -133,11 +136,13 @@ main(int argc, char *argv[])
     cleanup_user_proxy = 1;
 
     /* Allow user to provide a passphrase */
-    if (myproxy_read_verified_passphrase(client_request->passphrase,
-					 sizeof(client_request->passphrase)) == -1) {
-        fprintf(stderr, "error in myproxy_read_passphrase(): %s\n",
-		verror_get_string());
-        goto cleanup;
+    if (!use_empty_passwd) {
+	if (myproxy_read_verified_passphrase(client_request->passphrase,
+					     sizeof(client_request->passphrase)) == -1) {
+	    fprintf(stderr, "error in myproxy_read_passphrase(): %s\n",
+		    verror_get_string());
+	    goto cleanup;
+	}
     }
     
     /* Set up client socket attributes */
@@ -146,6 +151,13 @@ main(int argc, char *argv[])
 		verror_get_string());
         goto cleanup;
     }
+
+#if defined(CONDITIONAL_ENCRYPTION)
+    /* if the client requires using an empty password there is no need to 
+       encrypt the channel (and we can use the export version of Globus) */
+    if (use_empty_passwd) 
+       GSI_SOCKET_set_encryption(socket_attrs->gsi_socket, 0);
+#endif
 
     /* Authenticate client to server */
     if (myproxy_authenticate_init(socket_attrs, proxyfile) < 0) {
@@ -256,6 +268,10 @@ init_arguments(int argc,
 	case 'v': /* print version and exit */
 	    fprintf(stderr, version);
 	    return -1;
+	    break;
+	case 'n':   /* use an empty passwd == require certificate based
+		       authorization while getting the creds */
+	    use_empty_passwd = 1;
 	    break;
         default:  
 	    fprintf(stderr, usage);
