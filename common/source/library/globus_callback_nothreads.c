@@ -123,7 +123,7 @@ static globus_l_callback_restart_info_t * globus_l_callback_restart_info;
             GLOBUS_NULL,                                                    \
             GLOBUS_CALLBACK_ERROR_CANCEL_RUNNING,                           \
             "[%s] Attempt to unregister a running callback, unregister has" \
-            ",been defferred."                                              \
+            " been defferred.",                                             \
             (func)))
 
 #define GLOBUS_L_CALLBACK_CONSTRUCT_NO_ACTIVE_CALLBACK(func)                \
@@ -133,17 +133,6 @@ static globus_l_callback_restart_info_t * globus_l_callback_restart_info;
             GLOBUS_NULL,                                                    \
             GLOBUS_CALLBACK_ERROR_NO_ACTIVE_CALLBACK,                       \
             "[%s] No cuurently running callback",                           \
-            (func)))
-
-#define GLOBUS_L_CALLBACK_CONSTRUCT_INVALID_BEHAVIOR(func)                  \
-    globus_error_put(                                                       \
-        globus_error_construct_error(                                       \
-            GLOBUS_CALLBACK_MODULE,                                         \
-            GLOBUS_NULL,                                                    \
-            GLOBUS_CALLBACK_ERROR_INVALID_BEHAVIOR,                         \
-            "[%s] Invalid behavior.  Only "                                 \
-            "GLOBUS_CALLBACK_SPACE_BEHAVIOR_SERIALIZED is valid for a "     \
-            "non-threaded build",                                           \
             (func)))
 
 /**
@@ -690,6 +679,7 @@ globus_callback_unregister(
         if(unregister_callback)
         {
             globus_callback_space_register_oneshot(
+                GLOBUS_NULL,
                 &globus_i_reltime_zero,
                 globus_l_callback_cancel_kickout_cb,
                 callback_info,
@@ -972,12 +962,6 @@ globus_callback_space_attr_set_behavior(
     globus_callback_space_attr_t        attr,
     globus_callback_space_behavior_t    behavior)
 {
-    if(behavior != GLOBUS_CALLBACK_SPACE_BEHAVIOR_SERIALIZED)
-    {
-        return GLOBUS_L_CALLBACK_CONSTRUCT_INVALID_BEHAVIOR(
-            "globus_callback_space_attr_set_behavior");
-    }
-
     return GLOBUS_SUCCESS;
 }
 
@@ -1263,24 +1247,24 @@ globus_callback_signal_poll()
 }
 
 /**
- * globus_callback_get_space
+ * globus_callback_space_get
  *
  * allow a user to get the current space from within a callback
  */
 globus_result_t
-globus_callback_get_space(
+globus_callback_space_get(
     globus_callback_space_t *           space)
 {
     if(!space)
     {
         return GLOBUS_L_CALLBACK_CONSTRUCT_INVALID_ARGUMENT(
-            "globus_callback_get_space", "space");
+            "globus_callback_space_get", "space");
     }
     
     if(!globus_l_callback_restart_info)
     {
         return GLOBUS_L_CALLBACK_CONSTRUCT_NO_ACTIVE_CALLBACK(
-            "globus_callback_get_space");
+            "globus_callback_space_get");
     }
     
     *space = globus_l_callback_restart_info->callback_info->my_space->handle;

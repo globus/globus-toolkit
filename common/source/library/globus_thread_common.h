@@ -1,3 +1,12 @@
+/**
+ * @file globus_thread_common.h Common Thread Interface
+ *
+ * $Source$<br />
+ * $Date$<br />
+ * $Revision$<br />
+ * $Author$<br />
+ */
+
 /******************************************************************************
 globus_common_thread
 
@@ -79,6 +88,55 @@ void
 globus_thread_blocking_reset();
 
 void thread_print(char * s, ...);
+
+/* common documentation goes here */
+
+/**
+ * @defgroup globus_common_thread Globus Thread API
+ *
+ *
+ */
+/* @{ */
+
+/** 
+ * @fn int globus_condattr_setspace(globus_condattr_t * attr, globus_callback_space_t space)
+ *  
+ * Use this function to associate a space with a cond attr.
+ * This will allow globus_cond_wait to poll the appropriate space
+ * (if applicable)
+ *
+ * A condattr's default space is GLOBUS_CALLBACK_GLOBAL_SPACE
+ *
+ *  @param attr
+ *         attr to associate space with.
+ *
+ *  @param space
+ *         a previously initialized space
+ *
+ *  @return 
+ *         - 0 on success
+ *
+ * @see globus_callback_spaces
+ */
+
+/** 
+ * @fn int globus_condattr_getspace(globus_condattr_t * attr, globus_callback_space_t * space)
+ *  
+ * Use this function to retrieve the space associated with a condattr
+ *
+ *  @param attr
+ *         attr to associate space with.
+ *
+ *  @param space
+ *         storarage for the space to be passed back
+ *
+ *  @return 
+ *         - 0 on success
+ *
+ * @see globus_callback_spaces
+ */
+
+/* @} */
 
 EXTERN_C_END
 

@@ -12,7 +12,10 @@
 /**
  * @defgroup globus_callback Globus Callback
  *
- *
+ * @htmlonly
+ * <a href="main.html" target="_top">View documentation without frames</a><br>
+ * <a href="index.html" target="_top">View documentation with frames</a><br>
+ * @endhtmlonly
  */
 /* @{ */
 
@@ -70,6 +73,8 @@ typedef enum
     GLOBUS_CALLBACK_ERROR_INVALID_CALLBACK_HANDLE = 1024,
     /** The space handle is not valid or it has already been destroyed */
     GLOBUS_CALLBACK_ERROR_INVALID_SPACE,
+    /** The space attr is not valid or it has already been destroyed */
+    GLOBUS_CALLBACK_ERROR_INVALID_SPACE_ATTR,
     /** Could not allocate memory for an internal structure */
     GLOBUS_CALLBACK_ERROR_MEMORY_ALLOC,
     /** One of the arguments is NULL or out of range */
@@ -80,7 +85,7 @@ typedef enum
     GLOBUS_CALLBACK_ERROR_CANCEL_RUNNING,
     /** Attempt to retrieve info about a callback not in callers's stack */
     GLOBUS_CALLBACK_ERROR_NO_ACTIVE_CALLBACK,
-    /** The behavior argument is out of range or not valid for this build */
+    /** The behavior argument is not valid */
     GLOBUS_CALLBACK_ERROR_INVALID_BEHAVIOR
 } globus_callback_error_type_t;
 
@@ -88,6 +93,36 @@ typedef enum
  * Handle for a periodic callback.  This handle can be copied or compared.
  */
 typedef int                             globus_callback_handle_t;
+
+/**
+ * @hideinitializer
+ *
+ * The null callback handle.
+ *
+ * This is allows a user to initialize a callback handle to this value and know
+ * that it cant be a valid (this value is NOT zero)
+ */
+#define GLOBUS_CALLBACK_NULL_HANDLE -1
+
+/**
+ * @hideinitializer
+ *
+ * The null space handle.
+ *
+ * This is allows a user to initialize a space handle to this value and know
+ * that it cant be a valid space (this value is NOT zero)
+ */
+#define GLOBUS_CALLBACK_NULL_SPACE -2
+
+/**
+ * @hideinitializer
+ *
+ * The null space attr.
+ *
+ * This is allows a user to initialize a space attr to this value and know
+ * that it cant be a valid attr (this value is NOT zero)
+ */
+#define GLOBUS_CALLBACK_NULL_SPACE_ATTR -1
 
 /**
  * Handle for a callback space.  This handle can be copied or compared.
@@ -98,12 +133,16 @@ typedef int                             globus_callback_space_t;
  * Handle for a space attr.  This handle can be copied or compared.
  */
 typedef int                             globus_callback_space_attr_t;
+
 /* @} */
 
 /**
  * @defgroup globus_callback_api Globus Callback API
  *
- *
+ * @htmlonly
+ * <a href="main.html" target="_top">View documentation without frames</a><br>
+ * <a href="index.html" target="_top">View documentation with frames</a><br>
+ * @endhtmlonly
  */
 /* @{ */
 
@@ -111,6 +150,7 @@ typedef int                             globus_callback_space_attr_t;
  * @name Convenience Macros
  */
 /* @{ */
+
 /**
  * @hideinitializer
  *
@@ -542,7 +582,7 @@ globus_callback_blocking_unregister(
  *        the handle received from a globus_callback_space_register_periodic()
  *        call
  *
- * @param period
+ * @param new_period
  *        The new period.  If NULL or globus_i_reltime_infinity, then
  *        callback will be 'suspended' as soon as the last running instance of
  *        it returns.
@@ -601,6 +641,7 @@ globus_callback_adjust_period(
  *        - void
  * 
  * @see globus_callback_spaces
+ * @see globus_condattr_setspace()
  */
 void
 globus_callback_space_poll(
@@ -681,8 +722,6 @@ globus_callback_has_time_expired();
  * @return
  *        - GLOBUS_FALSE if not restarted
  *        - GLOBUS_TRUE if restarted
- * 
- * @see something_else
  */
 globus_bool_t
 globus_callback_was_restarted();
@@ -692,9 +731,13 @@ globus_callback_was_restarted();
 /**
  * @defgroup globus_callback_spaces Globus Callback Spaces
  *
- *
+ * @htmlonly
+ * <a href="main.html" target="_top">View documentation without frames</a><br>
+ * <a href="index.html" target="_top">View documentation with frames</a><br>
+ * @endhtmlonly
  */
 /* @{ */
+
 /**
  * @hideinitializer
  *
@@ -705,32 +748,65 @@ globus_callback_was_restarted();
  */
 #define GLOBUS_CALLBACK_GLOBAL_SPACE -1
 
-
 /**
- * Callback space behaviors
+ * Callback space behaviors describe how a space behaves.
+ *
+ * In a non-threaded build all spaces exhibit a
+ * behavior == _BEHAVIOR_SERIALIZED.  Setting a specific behavior in this case
+ * is ignored.
+ * 
+ * In a threaded build, _BEHAVIOR_SERIALIZED retains all the rules and
+ * behaviors of a non-threaded build while _BEHAVIOR_THREADED makes the
+ * space act as the global space.
+ *
+ * Setting a space's behavior to _BEHAVIOR_SERIALIZED guarantees that the 
+ * poll protection will always be there and all callbacks are serialized and
+ * only kicked out when polled for.  In a threaded build, it is still necessary
+ * to poll for callbacks in a _BEHAVIOR_SERIALIZED space. (globus_cond_wait()
+ * will take care of this for you also)
+ *
+ * Setting a space's behavior to _BEHAVIOR_THREADED allows the user to 
+ * have the poll protection provided by spaces when built non-threaded, yet,
+ * be fully threaded when built threaded (where poll protection is not needed)
  */
 typedef enum
 {
-    GLOBUS_CALLBACK_SPACE_BEHAVIOR_SERIALIZED,  /* default */
+    /** The default behavior.  Indicates that you always want poll protection
+     * and serialized callbacks
+     */
+    GLOBUS_CALLBACK_SPACE_BEHAVIOR_SERIALIZED,
+     /** Indicates that you only want poll protection */
     GLOBUS_CALLBACK_SPACE_BEHAVIOR_THREADED
 } globus_callback_space_behavior_t;
 
 /**
- * brief_desc
+ * Initialize a user space
  *
- * long_desc
+ * This creates a user space.
  *
- * @param arg_name
- *        arg_desc
+ * @param space
+ *        storage for the initialized space handle.  This must be destroyed
+ *        with globus_callback_space_destroy()
  *
- * @param arg_name
- *        arg_desc
+ * @param attr
+ *        a space attr descibing desired behaviors.  If NULL, the default
+ *        behavior of GLOBUS_CALLBACK_SPACE_BEHAVIOR_SERIALIZED is assumed.
+ *        This attr is copied into the space, so it is acceptable to destroy
+ *        the attr as soon as it is no longer needed
  *
  * @return
- *        - possible_return
- *        - possible_return
- * 
- * @see something_else
+ *        - GLOBUS_CALLBACK_ERROR_INVALID_ARGUMENT on NULL space
+ *        - GLOBUS_CALLBACK_ERROR_INVALID_SPACE_ATTR
+ *        - GLOBUS_CALLBACK_ERROR_MEMORY_ALLOC
+ *        - GLOBUS_SUCCESS
+ *
+ * @see globus_condattr_setspace()
+ * @see 
+ * @htmlonly
+ * <a class="el" href="../../globus_io/html/group__attr.html#globus_io_attr_set_callback_space_anchor">
+ *    globus_io_attr_set_callback_space()
+ * </a>
+ * @endhtmlonly
  */
 globus_result_t
 globus_callback_space_init(
@@ -738,84 +814,77 @@ globus_callback_space_init(
     globus_callback_space_attr_t        attr);
 
 /**
- * brief_desc
+ * Destroy a user space
  *
- * long_desc
+ * This will destroy a previously initialized space.  Space will not actually
+ * be destroyed until all callbacks registered with this space have been run
+ * and unregistered (if the user has a handle to that callback)
  *
- * @param arg_name
- *        arg_desc
- *
- * @param arg_name
- *        arg_desc
+ * @param space
+ *        space to destroy, previously initialized by 
+ *        globus_callback_space_init()
  *
  * @return
- *        - possible_return
- *        - possible_return
+ *        - GLOBUS_CALLBACK_ERROR_INVALID_SPACE
+ *        - GLOBUS_SUCCESS
  * 
- * @see something_else
+ * @see globus_callback_space_init()
  */
 globus_result_t
 globus_callback_space_destroy(
     globus_callback_space_t             space);
 
 /**
- * brief_desc
+ * Initialize a space attr.
  *
- * long_desc
+ * Currently, the only attr to set is the behavior.  The default behavior
+ * associated with this attr is GLOBUS_CALLBACK_SPACE_BEHAVIOR_SERIALIZED
  *
- * @param arg_name
- *        arg_desc
- *
- * @param arg_name
- *        arg_desc
+ * @param attr
+ *        storage for the intialized attr.  Must be destroyed with
+ *        globus_callback_space_attr_destroy()
  *
  * @return
- *        - possible_return
- *        - possible_return
- * 
- * @see something_else
+ *        - GLOBUS_CALLBACK_ERROR_INVALID_ARGUMENT on NULL attr
+ *        - GLOBUS_CALLBACK_ERROR_MEMORY_ALLOC
+ *        - GLOBUS_SUCCESS
  */
 globus_result_t
 globus_callback_space_attr_init(
     globus_callback_space_attr_t *      attr);
 
 /**
- * brief_desc
+ * Destroy a space attr.
  *
- * long_desc
- *
- * @param arg_name
- *        arg_desc
- *
- * @param arg_name
- *        arg_desc
+ * @param attr
+ *        attr to destroy, previously initialized with 
+ *        globus_callback_space_attr_init()
  *
  * @return
- *        - possible_return
- *        - possible_return
+ *        - GLOBUS_CALLBACK_ERROR_INVALID_SPACE_ATTR
+ *        - GLOBUS_SUCCESS
  * 
- * @see something_else
+ * @see globus_callback_space_attr_init()
  */
 globus_result_t
 globus_callback_space_attr_destroy(
     globus_callback_space_attr_t        attr);
 
 /**
- * brief_desc
+ * Set the behavior of a space
  *
- * long_desc
+ * @param attr
+ *        attr to associate behavior with
  *
- * @param arg_name
- *        arg_desc
- *
- * @param arg_name
- *        arg_desc
+ * @param behavior
+ *        desired behavior
  *
  * @return
- *        - possible_return
- *        - possible_return
+ *        - GLOBUS_CALLBACK_ERROR_INVALID_SPACE_ATTR
+ *        - GLOBUS_CALLBACK_ERROR_INVALID_BEHAVIOR
+ *        - GLOBUS_SUCCESS
  * 
- * @see something_else
+ * @see globus_callback_space_behavior_t
  */
 globus_result_t
 globus_callback_space_attr_set_behavior(
@@ -823,21 +892,20 @@ globus_callback_space_attr_set_behavior(
     globus_callback_space_behavior_t    behavior);
 
 /**
- * brief_desc
+ * Get the behavior associated with an attr
  *
- * long_desc
+ * Note: for a non-threaded build, this will always pass back a behavior ==
+ * GLOBUS_CALLBACK_SPACE_BEHAVIOR_SERIALIZED.
  *
- * @param arg_name
- *        arg_desc
+ * @param attr
+ *        attr on which to query behavior
  *
- * @param arg_name
- *        arg_desc
+ * @param behavior
+ *        storage for the behavior
  *
  * @return
- *        - possible_return
- *        - possible_return
- * 
- * @see something_else
+ *        - GLOBUS_CALLBACK_ERROR_INVALID_SPACE_ATTR
+ *        - GLOBUS_SUCCESS
  */
 globus_result_t
 globus_callback_space_attr_get_behavior(
@@ -845,42 +913,32 @@ globus_callback_space_attr_get_behavior(
     globus_callback_space_behavior_t *  behavior);
 
 /**
- * brief_desc
+ * Verify a space is valid
  *
- * long_desc
+ * Simple sanity check function which can be used by libraries that accept
+ * a user space.
  *
- * @param arg_name
- *        arg_desc
- *
- * @param arg_name
- *        arg_desc
+ * @param space
+ *        space to check
  *
  * @return
- *        - possible_return
- *        - possible_return
- * 
- * @see something_else
+ *        - GLOBUS_TRUE if the space is valid, else
+ *        - GLOBUS_FALSE
  */
 globus_bool_t
 globus_callback_space_is_valid(
     globus_callback_space_t             space);
 
 /**
- * brief_desc
+ * Retrieve the space of a currently running callback
  *
- * long_desc
- *
- * @param arg_name
- *        arg_desc
- *
- * @param arg_name
- *        arg_desc
+ * @param space
+ *        storage for the handle to the space currently running
  *
  * @return
- *        - possible_return
- *        - possible_return
- * 
- * @see something_else
+ *        - GLOBUS_CALLBACK_ERROR_INVALID_ARGUMENT on NULL space
+ *        - GLOBUS_CALLBACK_ERROR_NO_ACTIVE_CALLBACK
+ *        - GLOBUS_SUCCESS
  */
 globus_result_t
 globus_callback_space_get(

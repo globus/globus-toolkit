@@ -73,13 +73,16 @@ typedef struct globus_io_select_info_s
     void *			read_arg;
     globus_io_destructor_t	read_destructor;
     globus_bool_t		read_select;
+    globus_callback_handle_t    read_callback_handle;
 
     globus_io_callback_t	write_callback;
     void *			write_arg;
     globus_io_destructor_t	write_destructor;
+    globus_callback_handle_t    write_callback_handle;
 
     globus_io_callback_t	except_callback;
     void *			except_arg;
+    globus_callback_handle_t    except_callback_handle;
 } globus_io_select_info_t;
 #endif
 
@@ -1384,6 +1387,11 @@ globus_i_io_register_cancel(
     else if(select_info->read_callback)
     {
         /* cancel pending callback */
+        globus_callback_unregister(
+            select_info->read_callback_handle,
+            GLOBUS_NULL,
+            GLOBUS_NULL);
+        
         cancel_read = GLOBUS_TRUE;
     }
     
@@ -1413,6 +1421,11 @@ globus_i_io_register_cancel(
     else if(select_info->write_callback)
     {
         /* cancel pending callback */
+        globus_callback_unregister(
+            select_info->write_callback_handle,
+            GLOBUS_NULL,
+            GLOBUS_NULL);
+                
         cancel_write = GLOBUS_TRUE;
     }
     
@@ -1440,6 +1453,11 @@ globus_i_io_register_cancel(
     else if(select_info->except_callback)
     {
         /* cancel pending callback */
+        globus_callback_unregister(
+            select_info->except_callback_handle,
+            GLOBUS_NULL,
+            GLOBUS_NULL);
+                
         cancel_except = GLOBUS_TRUE;
     }
     
@@ -1555,13 +1573,18 @@ globus_l_io_kickout_read_cb(
     /* see if I was canceled and unregister pending select info for myself */
     globus_i_io_mutex_lock();
     {
-        if(globus_l_io_shutdown_called)
-        {
-            goto exit;
-        }
-        
         if(select_info->read_callback)
         {
+            globus_callback_unregister(
+                select_info->read_callback_handle,
+                GLOBUS_NULL,
+                GLOBUS_NULL);
+                
+            if(globus_l_io_shutdown_called)
+            {
+                goto exit;
+            }
+            
             callback = select_info->read_callback;
             args = select_info->read_arg;
             handle = select_info->handle;
@@ -1571,6 +1594,7 @@ globus_l_io_kickout_read_cb(
         }
         else
         {
+            /* someone canceled me */
             goto exit;
         }
     }
@@ -1607,13 +1631,18 @@ globus_l_io_kickout_write_cb(
     /* see if I was canceled and unregister pending select info for myself */
     globus_i_io_mutex_lock();
     {
-        if(globus_l_io_shutdown_called)
-        {
-            goto exit;
-        }
-        
         if(select_info->write_callback)
         {
+            globus_callback_unregister(
+                select_info->write_callback_handle,
+                GLOBUS_NULL,
+                GLOBUS_NULL);
+                
+            if(globus_l_io_shutdown_called)
+            {
+                goto exit;
+            }
+            
             callback = select_info->write_callback;
             args = select_info->write_arg;
             handle = select_info->handle;
@@ -1623,6 +1652,7 @@ globus_l_io_kickout_write_cb(
         }
         else
         {
+            /* someone canceled me */
             goto exit;
         }
     }
@@ -1659,13 +1689,18 @@ globus_l_io_kickout_except_cb(
     /* see if I was canceled and unregister pending select info for myself */
     globus_i_io_mutex_lock();
     {
-        if(globus_l_io_shutdown_called)
-        {
-            goto exit;
-        }
-        
         if(select_info->except_callback)
         {
+            globus_callback_unregister(
+                select_info->except_callback_handle,
+                GLOBUS_NULL,
+                GLOBUS_NULL);
+                
+            if(globus_l_io_shutdown_called)
+            {
+                goto exit;
+            }
+            
             callback = select_info->except_callback;
             args = select_info->except_arg;
             handle = select_info->handle;
@@ -1674,6 +1709,7 @@ globus_l_io_kickout_except_cb(
         }
         else
         {
+            /* someone canceled me */
             goto exit;
         }
     }
@@ -1866,7 +1902,7 @@ globus_l_io_handle_events(
             globus_l_io_pending_count++;
             
             result = globus_callback_space_register_abstime_oneshot(
-                GLOBUS_NULL,
+                &select_info->read_callback_handle,
                 &time_now,
                 globus_l_io_kickout_read_cb,
                 select_info,
@@ -2058,7 +2094,7 @@ globus_l_io_handle_events(
                         globus_l_io_pending_count++;
                         
                         result = globus_callback_space_register_abstime_oneshot(
-                            GLOBUS_NULL,
+                            &select_info->read_callback_handle,
                             &time_now,
                             globus_l_io_kickout_read_cb,
                             select_info,
@@ -2092,7 +2128,7 @@ globus_l_io_handle_events(
                         globus_l_io_pending_count++;
                         
                         result = globus_callback_space_register_abstime_oneshot(
-                            GLOBUS_NULL,
+                            &select_info->write_callback_handle,
                             &time_now,
                             globus_l_io_kickout_write_cb,
                             select_info,
@@ -2126,7 +2162,7 @@ globus_l_io_handle_events(
                         globus_l_io_pending_count++;
                         
                         result = globus_callback_space_register_abstime_oneshot(
-                            GLOBUS_NULL,
+                            &select_info->except_callback_handle,
                             &time_now,
                             globus_l_io_kickout_except_cb,
                             select_info,

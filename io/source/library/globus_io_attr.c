@@ -202,6 +202,7 @@ globus_i_io_attr_activate(void)
 /* @{ */
 /**
  * globus_io_attr_set_callback_space
+ * @anchor globus_io_attr_set_callback_space_anchor
  * @ingroup attr
  *
  * Use this to associate a callback space with a globus_io_handle_t.  When
@@ -221,6 +222,13 @@ globus_i_io_attr_activate(void)
  * @return
  *        - Error on invalid space or null attr
  *        - GLOBUS_SUCCESS
+ *
+ * @see 
+ * @htmlonly
+ * <a class="el" href="../../globus_common/html/group__globus__callback__spaces.html">
+ *    Globus Callback Spaces
+ * </a>
+ * @endhtmlonly
  */
 
 globus_result_t 
@@ -272,6 +280,13 @@ globus_io_attr_set_callback_space(
  * @return
  *        - Error on null attrs
  *        - GLOBUS_SUCCESS
+ *
+ * @see 
+ * @htmlonly
+ * <a class="el" href="../../globus_common/html/group__globus__callback__spaces.html">
+ *    Globus Callback Spaces
+ * </a>
+ * @endhtmlonly
  */
 
 globus_result_t 
