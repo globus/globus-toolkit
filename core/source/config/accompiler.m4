@@ -337,10 +337,10 @@ case ${host}--$1 in
             dnl for --with-threads=pthreads and --with-mpi, we need
             dnl to compile with an additional -lmtmpi, even when not
             dnl linking
-            AC_PATH_PROGS(lac_cv_CC, mpicc)
-            AC_PATH_PROGS(lac_cv_CXX, mpiCC)
-	    AC_PATH_PROGS(lac_cv_F77, mpif77)
-	    AC_PATH_PROGS(lac_cv_F90, mpif90)
+            AC_PATH_PROGS(lac_cv_CC, $CC mpicc)
+            AC_PATH_PROGS(lac_cv_CXX, $CXX mpiCC)
+	    AC_PATH_PROGS(lac_cv_F77, $F77 mpif77)
+	    AC_PATH_PROGS(lac_cv_F90, $F90 mpif90)
             if test "$1" = "pthreads" ; then
                 lac_CFLAGS="$lac_CFLAGS -lmtmpi"
                 lac_CXXFLAGS="$lac_CXXFLAGS -lmtmpi"
@@ -359,10 +359,10 @@ case ${host}--$1 in
 	    AC_PATH_PROGS(lac_cv_F77, $F77 f77 g77)
 	    AC_PATH_PROGS(lac_cv_CC, $F90 f90)
 	else
-	    AC_PATH_PROGS(lac_cv_CC, mpicc)
-	    AC_PATH_PROGS(lac_cv_CXX, mpiCC)
-	    AC_PATH_PROGS(lac_cv_F77, mpif77)
-	    AC_PATH_PROGS(lac_cv_F90, mpif90)
+	    AC_PATH_PROGS(lac_cv_CC, $CC mpicc)
+	    AC_PATH_PROGS(lac_cv_CXX, $CXX mpiCC)
+	    AC_PATH_PROGS(lac_cv_F77, $F77 mpif77)
+	    AC_PATH_PROGS(lac_cv_F90, $F90 mpif90)
 	fi
         LAC_PROG_CC_GNU($lac_cv_CC, ,
             [lac_CFLAGS="-Ae -D_HPUX_SOURCE $lac_CFLAGS"])
@@ -427,18 +427,18 @@ case ${host}--$1 in
       ;;	
     *-ibm-aix*--pthreads )
 	if test "$lac_mpl" != "yes" -a "$lac_mpi" != "yes" ; then
-	    AC_PATH_PROGS(lac_cv_CC, xlc_r)
-	    AC_PATH_PROGS(lac_cv_CXX, xlC_r)
-	    AC_PATH_PROGS(lac_cv_F77, xlf_r)
-	    AC_PATH_PROGS(lac_cv_F90, xlf90_r)
+	    AC_PATH_PROGS(lac_cv_CC, $CC xlc_r)
+	    AC_PATH_PROGS(lac_cv_CXX, $CXX xlC_r)
+	    AC_PATH_PROGS(lac_cv_F77, $F77 xlf_r)
+	    AC_PATH_PROGS(lac_cv_F90, $F90 xlf90_r)
 	    if test "$lac_cv_F90" = "xlf_r" ; then
 		lac_F90FLAGS="-qfree=f90 $lac_F90FLAGS"
 	    fi
 	else
-	    AC_PATH_PROGS(lac_cv_CC, mpcc_r)
-	    AC_PATH_PROGS(lac_cv_CXX, mpCC_r)
-	    AC_PATH_PROGS(lac_cv_F77, mpxlf_r)
-	    AC_PATH_PROGS(lac_cv_F90, mpxlf90_r)
+	    AC_PATH_PROGS(lac_cv_CC, $CC mpcc_r)
+	    AC_PATH_PROGS(lac_cv_CXX, $CXX mpCC_r)
+	    AC_PATH_PROGS(lac_cv_F77, $F77 mpxlf_r)
+	    AC_PATH_PROGS(lac_cv_F90, $F90 mpxlf90_r)
 	    if test "$lac_cv_F90" = "mpxlf_r" ; then
 		lac_F90FLAGS="-qfree=f90 $lac_F90FLAGS"
 	    fi
@@ -460,10 +460,10 @@ case ${host}--$1 in
 		lac_F90FLAGS="-qfree=f90 $lac_F90FLAGS"
 	    fi
 	else
-	    AC_PATH_PROGS(lac_cv_CC, mpcc)
-	    AC_PATH_PROGS(lac_cv_CXX, mpCC)
-	    AC_PATH_PROGS(lac_cv_F77, mpxlf)
-	    AC_PATH_PROGS(lac_cv_F90, mpxlf90)
+	    AC_PATH_PROGS(lac_cv_CC, $CC mpcc)
+	    AC_PATH_PROGS(lac_cv_CXX, $CXX mpCC)
+	    AC_PATH_PROGS(lac_cv_F77, $F77 mpxlf)
+	    AC_PATH_PROGS(lac_cv_F90, $F90 mpxlf90)
 	    if test "$lac_cv_F90" = "mpxlf" ; then
 		lac_F90FLAGS="-qfree=f90 $lac_F90FLAGS"
 	    fi
@@ -476,8 +476,8 @@ case ${host}--$1 in
 	fi
       ;;
     alpha-dec-osf[45]* )
-	AC_PATH_PROGS(lac_cv_CC, cc gcc)
-	AC_PATH_PROGS(lac_cv_CXX, CC cxx c++ g++ gcc)
+	AC_PATH_PROGS(lac_cv_CC, $CC cc gcc)
+	AC_PATH_PROGS(lac_cv_CXX, $CXX CC cxx c++ g++ gcc)
 	if test "$1" = "pthreads" ; then
             LAC_PROG_CC_GNU($lac_cv_CC,
 			[ ],
@@ -494,13 +494,13 @@ case ${host}--$1 in
       ;;
     alpha-cray-unicosmk* )
 	dnl Cray T3E
-	AC_PATH_PROGS(lac_cv_CC, cc)
-	AC_PATH_PROGS(lac_cv_CXX, CC)
+	AC_PATH_PROGS(lac_cv_CC, $CC cc)
+	AC_PATH_PROGS(lac_cv_CXX, $CXX CC)
 	lac_CFLAGS="-Xm $lac_CFLAGS"
 	lac_CXXFLAGS="-Xm $lac_CXXFLAGS"
 	lac_LDFLAGS="-Xm $lac_LDFLAGS"
-	AC_PATH_PROGS(lac_cv_F77, f77)
-	AC_PATH_PROGS(lac_cv_F90, f90)
+	AC_PATH_PROGS(lac_cv_F77, $F77 f77)
+	AC_PATH_PROGS(lac_cv_F90, $F90 f90)
       ;;
     *linux*--pthreads )
 	AC_PATH_PROGS(lac_cv_CC, $CC cc gcc)
