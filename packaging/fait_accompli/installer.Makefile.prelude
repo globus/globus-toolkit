@@ -9,6 +9,7 @@ THR=@thr@
 
 # Functional group dependencies, expressed in bundles.
 i18n: gpt globus-internationalization globus-internationalization-thr
+prews: prewsgram prewsgridftp prewsmds
 prewsgram: gpt globus-resource-management-server globus-resource-management-client globus-resource-management-sdk globus-resource-management-sdk-thr
 prewsgridftp: gpt globus-data-management-server globus-data-management-client globus-data-management-sdk globus-data-management-sdk-thr
 prewsmds: gpt globus-information-services-server globus-information-services-client globus-information-services-sdk
