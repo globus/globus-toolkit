@@ -127,8 +127,7 @@ if($validate_queues)
     if(@queues)
     {
 	print VALIDATION_FILE "Attribute: queue\n";
-	print VALIDATION_FILE join(" ", "Values:", @queues);
-
+	print VALIDATION_FILE join(" ", "Values:", @queues), "\n";
     }
 }
 close VALIDATION_FILE;
