@@ -1,4 +1,4 @@
-#! /bin/sh -f
+#! /bin/sh
 #
 # Globus Job Manager PBS interface script for submitting a job 
 #
@@ -212,8 +212,11 @@ fi
 
 echo "#PBS -o $grami_stdout" >> $PBS_JOB_SCRIPT
 echo "#PBS -e $grami_stderr" >> $PBS_JOB_SCRIPT
-echo "#PBS -l ncpus=$grami_count" >> $PBS_JOB_SCRIPT
-echo "#PBS -l nodes=$grami_count" >> $PBS_JOB_SCRIPT
+if ${is_cluster} ; then
+   echo "#PBS -l nodes=$grami_count" >> $PBS_JOB_SCRIPT
+else
+   echo "#PBS -l ncpus=$grami_count" >> $PBS_JOB_SCRIPT
+fi
 echo "#PBS -S /bin/sh" >> $PBS_JOB_SCRIPT
 
 # Uncomment the following lines if your pbs allows node count specification
@@ -270,11 +273,11 @@ if [ $pbs_jobtype = "mpi" ] ; then
       echo "${mpirun} -np $grami_count "\
                      "-machinefile \$PBS_NODEFILE "\
                      "$grami_program $new_grami_args "\
-                     < $grami_stdin" >> $PBS_JOB_SCRIPT
+                     "< $grami_stdin" >> $PBS_JOB_SCRIPT
    else
       echo "${mpirun} -np $grami_count "\
                       "$grami_program $new_grami_args "\
-                      < $grami_stdin" >> $PBS_JOB_SCRIPT
+                      "< $grami_stdin" >> $PBS_JOB_SCRIPT
    fi
 elif [ $pbs_jobtype = "multiple" ] ; then
    if ${is_cluster} ; then
@@ -311,7 +314,7 @@ $DEBUG_ECHO submitting PBS job script >> $grami_logfile
 
 ${qsub} < $PBS_JOB_SCRIPT 1>$PBS_JOB_OUT 2>$PBS_JOB_ERR
 
-if (test "$?" -eq "0") then
+if [ $? -eq 0 ] ; then
    job_id=`cat $PBS_JOB_OUT | awk '{split($0,field,".");print field[1]"."field[2]}'`
    if [ "${job_id}" = "" ] ; then
       $DEBUG_ECHO "job *NOT* submitted successfully!" >> $grami_logfile

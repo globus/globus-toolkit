@@ -1,4 +1,4 @@
-#! /bin/sh -f
+#! /bin/sh
 
 # Globus Job Manager LSF interface script for submitting a job 
 

@@ -1,4 +1,4 @@
-#! /bin/sh -f
+#! /bin/sh
 
 # Globus Job Manager PBS interface script for reporting job status
 # Author:               Doru Marcusiu (NCSA)

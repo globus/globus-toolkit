@@ -1,4 +1,4 @@
-#! /bin/sh -f
+#! /bin/sh
 #
 #
 # Extract the 'ST' (status) column from the qstat output

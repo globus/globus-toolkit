@@ -1,4 +1,4 @@
-#! /bin/sh -f
+#! /bin/sh
 #
 # Cancel a LoadLeveler job.
 #

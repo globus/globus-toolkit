@@ -1,4 +1,4 @@
-#! /bin/sh -f
+#! /bin/sh
 #
 # Extract the ST (status) column from the condor_q output
 # for our specific jobID.

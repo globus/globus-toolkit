@@ -1,4 +1,4 @@
-#! /bin/sh -f
+#! /bin/sh
 #
 # This script builds a shell job script which is supplied as input
 # to the GRD qsub command. The script is built based on information

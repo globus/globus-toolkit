@@ -1,4 +1,4 @@
-#! /bin/sh -f
+#! /bin/sh
 #
 # Globus Job Manager GRD interface script for deleting a job
 #
