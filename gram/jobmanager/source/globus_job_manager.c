@@ -1848,7 +1848,10 @@ int main(int argc,
     }
 
     if ( save_logfile_always_flag ||
-         (save_logfile_on_errors_flag && jm_request_failed ))
+         (save_logfile_on_errors_flag &&
+          jm_request_failed &&
+          !request->dry_run)
+       )
     {
         grami_fprintf( request->jobmanager_log_fp,
              "JM: exiting globus_gram_job_manager.\n");
