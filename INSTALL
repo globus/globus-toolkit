@@ -134,7 +134,17 @@ following as root:
        the daemon.
  
            kill -HUP <pid-of-inetd>
- 
+
+In addition, a myproxy cron script is provided that will remove any
+expired credentials. To install the script, you need to make a crontab
+entry like the following by issuing "crontab -e" as root and entering:
+
+Check credentials at midnight every night:
+0 0 * * * /bin/sh <myproxy-prefix>/etc/myproxy.cron
+
+Check for expired credentials every hour:
+0 * * * * /bin/sh <myproxy-prefix>/etc/myproxy.cron
+
 4a. Installing the myproxy-server using a non-host certificate
 --------------------------------------------------------------
 

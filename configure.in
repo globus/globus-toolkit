@@ -150,4 +150,4 @@ AC_SUBST(SYSLIBS)
 dnl
 dnl
 dnl
-AC_OUTPUT(Makefile)
+AC_OUTPUT(Makefile myproxy.cron)
