@@ -28,14 +28,11 @@
 
 #ifdef GSSAPI
 
-#include "ssh.h"
 #include "xmalloc.h"
 #include "buffer.h"
 #include "bufaux.h"
-#include "packet.h"
 #include "compat.h"
 #include <openssl/evp.h>
-#include "cipher.h"
 #include "kex.h"
 #include "log.h"
 #include "monitor_wrap.h"
