@@ -60,25 +60,15 @@ fi
 
 	# Write initial debug information to logfile
 
-$DEBUG_ECHO in gram_script_pbs_submit>> $grami_logfile
-$DEBUG_ECHO "" >> $grami_logfile
-$DEBUG_ECHO ======================================== >> $grami_logfile
-$DEBUG_ECHO arguments recieved... >> $grami_logfile
-$DEBUG_ECHO "logfile   =" $grami_logfile >> $grami_logfile
-$DEBUG_ECHO "directory =" $grami_directory >> $grami_logfile
-$DEBUG_ECHO "program   =" $grami_program >> $grami_logfile
-$DEBUG_ECHO "args      =" $grami_args >> $grami_logfile
-$DEBUG_ECHO "env       =" $grami_env >> $grami_logfile
-$DEBUG_ECHO "count     =" $grami_count >> $grami_logfile
-$DEBUG_ECHO "stdin     =" $grami_stdin >> $grami_logfile
-$DEBUG_ECHO "stdout    =" $grami_stdout >> $grami_logfile
-$DEBUG_ECHO "stderr    =" $grami_stderr >> $grami_logfile
-$DEBUG_ECHO "maxtime   =" $grami_maxtime >> $grami_logfile
-$DEBUG_ECHO "jobtype   =" $grami_jobtype >> $grami_logfile
-$DEBUG_ECHO "myjob     =" $grami_myjob >> $grami_logfile
-$DEBUG_ECHO "queue     =" $grami_queue >> $grami_logfile
-$DEBUG_ECHO "project   =" $grami_project >> $grami_logfile
-$DEBUG_ECHO "" >> $grami_logfile
+$DEBUG_ECHO in gram_script_pbs_submit                     >> $grami_logfile
+$DEBUG_ECHO ""                                            >> $grami_logfile
+$DEBUG_ECHO ============================================  >> $grami_logfile
+$DEBUG_ECHO "JM_SCRIPT: ====argument file contents===="   >> $grami_logfile
+if [ "$DEBUG_ECHO" = "echo" ] ; then
+   cat $arg_file                                          >> $grami_logfile
+fi
+$DEBUG_ECHO "JM_SCRIPT: ====argument file contents===="   >> $grami_logfile
+$DEBUG_ECHO ""
 
 	# The following several lines of code can be used to perform 2
 	# additional error checks prior to job submission. The first check is
@@ -161,11 +151,21 @@ fi
 
 	# Determine job request type
 
-$DEBUG_ECHO testing for jobtype [$grami_jobtype] >> $grami_logfile
-if [ $grami_jobtype = "mpi" -o $grami_jobtype = "multiple" -o $grami_jobtype = "single" ] ; then
-   $DEBUG_ECHO jobtype [$grami_jobtype] acceptable >> $grami_logfile
+# 4 jobtypes exist               pbs jobtype
+# -----------------              -------------------
+# jobtype 0 = mpi        ----->  mpi
+# jobtype 1 = single     ----->  single
+# jobtype 2 = multiple   ----->  multiple
+# jobtype 3 = condor     ----->  ERROR
+$DEBUG_ECHO "JM_SCRIPT: testing jobtype" >> $grami_logfile
+if [ $grami_jobtype = "0" ] ; then
+    pbs_jobtype="mpi"
+elif [ $grami_jobtype = "1" ] ; then
+    pbs_jobtype="single"
+elif [ $grami_jobtype = "2" ] ; then
+    pbs_jobtype="multiple"
 else
-   $DEBUG_ECHO invalid jobtype parameter [$grami_jobtype]; exiting with exit code 1 >> $grami_logfile
+   $DEBUG_ECHO "JM_SCRIPT: error: invalid jobtype parameter" >> $grami_logfile
    echo GRAM_SCRIPT_ERROR:@GLOBUS_GRAM_CLIENT_ERROR_INVALID_JOBTYPE@
    exit 1
 fi
@@ -245,9 +245,9 @@ echo "cd $grami_directory" >> $PBS_JOB_SCRIPT
 	# Determining job request type
 
 echo "\n# Executing job as requested by user\n" >> $PBS_JOB_SCRIPT
-if [ $grami_jobtype = "mpi" ] ; then
+if [ $pbs_jobtype = "mpi" ] ; then
     echo "${mpirun} -np $grami_count $grami_program $new_grami_args < $grami_stdin" >> $PBS_JOB_SCRIPT
-elif [ $grami_jobtype = "multiple" ] ; then
+elif [ $pbs_jobtype = "multiple" ] ; then
 	counter=0
 	while (test "$counter" -lt "$grami_count")
 	    do
