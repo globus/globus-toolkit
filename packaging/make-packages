@@ -241,7 +241,13 @@ make_source_package() {
 	else
 		echo Creating source package for $name;
 
-		pushd ogsa-cvs/$subdir
+		if [ -d ogsa-cvs/$subdir ]; then
+			pushd ogsa-cvs/$subdir
+		else
+			echo ogsa-cvs/$subdir does not exist, skipping.
+			return
+		fi
+
 
 		# most packages
 		if [ -f build.xml ]; then
