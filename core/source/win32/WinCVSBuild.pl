@@ -12,6 +12,7 @@
 #       Split Batch Files   02/17/2004      R. Gaffaney
 #       Split Log Files     02/17/2004      R. Gaffaney
 #       Log nmake Returns   02/18/2004      R. Gaffaney
+#       Unique Make Names   03/04/2004      R. Gaffaney
 #
 # -----------------------------------------------------------------------------
 
@@ -171,8 +172,8 @@ else {
 # --------------------------------------------
 
 # Open\Create The Lib Batch File
-if(!open (LIBBATCHEXEC,"> WinCVSBuildLibs.bat")) {
-    print "Can't Open Batch File \"WinCVSBuildLibs.bat\"\n";    
+if(!open (LIBBATCHEXEC,"> WinCVSBuildLibs\-$FlavorName.bat")) {
+    print "Can't Open Batch File \"WinCVSBuildLibs\-$FlavorName.bat\"\n";    
     exit();
     }
 
@@ -190,8 +191,8 @@ print LIBBATCHEXEC "echo =======================================================
 print LIBBATCHEXEC "\n";
 
 # Open\Create The Lib Batch File
-if(!open (EXEBATCHEXEC,"> WinCVSBuildExes.bat")) {
-    print "Can't Open Batch File \"WinCVSBuildExes.bat\"\n";    
+if(!open (EXEBATCHEXEC,"> WinCVSBuildExes\-$FlavorName.bat")) {
+    print "Can't Open Batch File \"WinCVSBuildExes\-$FlavorName.bat\"\n";    
     exit();
     }
 
@@ -691,8 +692,8 @@ my $i;
     #
     
     # Open\Create The Makefile
-    if(!open (WINMAKE,"> Winmake.mak")) {
-        print "Can't Open Makefile \"Winmake.mak\"\n";    
+    if(!open (WINMAKE,"> winmake_$FlavorName.mak")) {
+        print "Can't Open Makefile \"winmake_$FlavorName.mak\"\n";    
         exit();
         }
 
@@ -1356,8 +1357,8 @@ my $i;
     #
     
     # Open\Create The Makefile
-    if(!open (WINMAKE,"> Winmake.mak")) {
-        print "Can't Open Makefile \"Winmake.mak\"\n";    
+    if(!open (WINMAKE,"> winmake_$FlavorName.mak")) {
+        print "Can't Open Makefile \"winmake_$FlavorName.mak\"\n";    
         exit();
         }
 
@@ -1596,13 +1597,13 @@ my @nmakeCall;
         
     # Embed Leader For This Makefile
     print LIBBATCHEXEC "echo ================================================================ \>\> $GlobusLocation\\core\\source\\win32\\$FlavorName$LibSuffix.log\n";
-    print LIBBATCHEXEC "echo BEGIN nmake $SourceLocation\\Winmake.mak \>\> $GlobusLocation\\core\\source\\win32\\$FlavorName$LibSuffix.log\n";
+    print LIBBATCHEXEC "echo BEGIN nmake $SourceLocation\\winmake_$FlavorName.mak \>\> $GlobusLocation\\core\\source\\win32\\$FlavorName$LibSuffix.log\n";
     print LIBBATCHEXEC "echo ================================================================ \>\> $GlobusLocation\\core\\source\\win32\\$FlavorName$LibSuffix.log\n";
     
     # Execute The Makefile
-    print LIBBATCHEXEC "nmake /F Winmake.mak COPY  \>\> $GlobusLocation\\core\\source\\win32\\$FlavorName$LibSuffix.log\n";
-    print LIBBATCHEXEC "nmake /F Winmake.mak CLEAN \>\> $GlobusLocation\\core\\source\\win32\\$FlavorName$LibSuffix.log\n";
-    print LIBBATCHEXEC "nmake /F Winmake.mak ALL   \>\> $GlobusLocation\\core\\source\\win32\\$FlavorName$LibSuffix.log\n";
+    print LIBBATCHEXEC "nmake /F winmake_$FlavorName.mak COPY  \>\> $GlobusLocation\\core\\source\\win32\\$FlavorName$LibSuffix.log\n";
+    print LIBBATCHEXEC "nmake /F winmake_$FlavorName.mak CLEAN \>\> $GlobusLocation\\core\\source\\win32\\$FlavorName$LibSuffix.log\n";
+    print LIBBATCHEXEC "nmake /F winmake_$FlavorName.mak ALL   \>\> $GlobusLocation\\core\\source\\win32\\$FlavorName$LibSuffix.log\n";
     
     # Report Build Results (from nmake ALL Only)
     print LIBBATCHEXEC "if NOT ERRORLEVEL 1 echo SUCCEEDED - $FlavorName Library At: $SourceLocation \>\> $GlobusLocation\\core\\source\\win32\\BuildResults.log\n";
@@ -1610,7 +1611,7 @@ my @nmakeCall;
     
     # Embed Leader For This Makefile
     print LIBBATCHEXEC "echo ================================================================ \>\> $GlobusLocation\\core\\source\\win32\\$FlavorName$LibSuffix.log\n";
-    print LIBBATCHEXEC "echo END nmake $SourceLocation\\Winmake.mak \>\> $GlobusLocation\\core\\source\\win32\\$FlavorName$LibSuffix.log\n";
+    print LIBBATCHEXEC "echo END nmake $SourceLocation\\winmake_$FlavorName.mak \>\> $GlobusLocation\\core\\source\\win32\\$FlavorName$LibSuffix.log\n";
     print LIBBATCHEXEC "echo ================================================================ \>\> $GlobusLocation\\core\\source\\win32\\$FlavorName$LibSuffix.log\n";
 
     # Change The Working Directory To The 'Home' Directory
@@ -1694,6 +1695,29 @@ my $i;
                         }
                     } # while<WINMAKE_AM>
                 } # if LibDependencies
+            
+            # Handle Program Only Lib Dependencies
+            if(/^ProgramLibDependencies/) {
+                # Note: Winmake.am Does Not Allow A .Lib On The 'ProgramLibDependencies=' Line
+            
+                # Collect The Libs In The Block
+                while(<WINMAKE_AM>) {
+                    # Substitute For $(GLOBUS_FLAVOR_NAME) If Necessary
+                    s/\$\(GLOBUS_FLAVOR_NAME\)/$FlavorName/;
+                
+                    # Split The Arguments
+                    @stemp = {};
+                    @stemp = split;
+                    
+                    # Capture Export
+                    $ProgramDependencies[$ProgramDependencyCount++] = $stemp[0];
+
+                    # Exit When No Trailing Continuation Symbol \
+                    if(!/\\/) {
+                        last;
+                        }
+                    } # while<WINMAKE_AM>
+                } # if ProgramLibDependencies
             
             } # while<WINMAKE_AM>
         } # else (open(WINMAKE_AM))
@@ -1840,14 +1864,14 @@ my $i;
     #
     
     # Open\Create The Makefile
-    if(!open (PROGRAM_MAKE,"> $BaseSourcesName.mak")) {
-        print "Can't Open Makefile \"$BaseSourcesName.mak\"\n";    
+    if(!open (PROGRAM_MAKE,"> $BaseSourcesName\-$FlavorName.mak")) {
+        print "Can't Open Makefile \"$BaseSourcesName\-$FlavorName.mak\"\n";    
         exit();
         }
 
     # Print A Header To The Makefile
     print PROGRAM_MAKE "# \n";
-    print PROGRAM_MAKE "# $BaseSourcesName.mak Auto Generated from Makefile.am by WinCVSBuild.pl\n";
+    print PROGRAM_MAKE "# $BaseSourcesName\-$FlavorName.mak Auto Generated from Makefile.am by WinCVSBuild.pl\n";
     print PROGRAM_MAKE "# \n";
     print PROGRAM_MAKE "\n";
 
@@ -1906,7 +1930,7 @@ my $i;
     # Create The Compile String
     print PROGRAM_MAKE "CPP_PROJ=", $FlagsPre, $IncludeString, $FlagsPost, "\n";
     print PROGRAM_MAKE "BSC32=bscmake.exe\n";
-    print PROGRAM_MAKE "BSC32_FLAGS=/nologo /o\"\$\(OUTDIR\)\\$BaseSourcesName.bsc\"\n"; 
+    print PROGRAM_MAKE "BSC32_FLAGS=/nologo /o\"\$\(OUTDIR\)\\$BaseSourcesName\-$FlavorName.bsc\"\n"; 
     print PROGRAM_MAKE "BSC32_SBRS= \\\n";
     print PROGRAM_MAKE "\n";
     
@@ -2011,20 +2035,20 @@ my $i;
         
     # Embed Leader For This Makefile
     print EXEBATCHEXEC "echo ================================================================ \>\> $GlobusLocation\\core\\source\\win32\\$FlavorName$ExeSuffix.log\n";
-    print EXEBATCHEXEC "echo BEGIN nmake $SourceLocation\\$BaseSourcesName.mak \>\> $GlobusLocation\\core\\source\\win32\\$FlavorName$ExeSuffix.log\n";
+    print EXEBATCHEXEC "echo BEGIN nmake $SourceLocation\\$BaseSourcesName\-$FlavorName.mak \>\> $GlobusLocation\\core\\source\\win32\\$FlavorName$ExeSuffix.log\n";
     print EXEBATCHEXEC "echo ================================================================ \>\> $GlobusLocation\\core\\source\\win32\\$FlavorName$ExeSuffix.log\n";
     
     # Execute The Makefile
-    print EXEBATCHEXEC "nmake /F $BaseSourcesName.mak CLEAN \>\> $GlobusLocation\\core\\source\\win32\\$FlavorName$ExeSuffix.log\n";
-    print EXEBATCHEXEC "nmake /F $BaseSourcesName.mak ALL   \>\> $GlobusLocation\\core\\source\\win32\\$FlavorName$ExeSuffix.log\n";
+    print EXEBATCHEXEC "nmake /F $BaseSourcesName\-$FlavorName.mak CLEAN \>\> $GlobusLocation\\core\\source\\win32\\$FlavorName$ExeSuffix.log\n";
+    print EXEBATCHEXEC "nmake /F $BaseSourcesName\-$FlavorName.mak ALL   \>\> $GlobusLocation\\core\\source\\win32\\$FlavorName$ExeSuffix.log\n";
     
     # Report Build Results (from nmake ALL Only)
-    print EXEBATCHEXEC "if NOT ERRORLEVEL 1 echo SUCCEEDED - $FlavorName Executable: $BaseSourcesName  \>\> $GlobusLocation\\core\\source\\win32\\BuildResults.log\n";
-    print EXEBATCHEXEC "if ERRORLEVEL 1 echo FAILED    - $FlavorName Executable: $BaseSourcesName - nmake Return: %ERRORLEVEL%  \>\> $GlobusLocation\\core\\source\\win32\\BuildResults.log\n";
+    print EXEBATCHEXEC "if NOT ERRORLEVEL 1 echo SUCCEEDED - $FlavorName Executable: $BaseSourcesName\-$FlavorName  \>\> $GlobusLocation\\core\\source\\win32\\BuildResults.log\n";
+    print EXEBATCHEXEC "if ERRORLEVEL 1 echo FAILED    - $FlavorName Executable: $BaseSourcesName\-$FlavorName - nmake Return: %ERRORLEVEL%  \>\> $GlobusLocation\\core\\source\\win32\\BuildResults.log\n";
     
     # Embed Leader For This Makefile
     print EXEBATCHEXEC "echo ================================================================ \>\> $GlobusLocation\\core\\source\\win32\\$FlavorName$ExeSuffix.log\n";
-    print EXEBATCHEXEC "echo END nmake $SourceLocation\\$BaseSourcesName.mak \>\> $GlobusLocation\\core\\source\\win32\\$FlavorName$ExeSuffix.log\n";
+    print EXEBATCHEXEC "echo END nmake $SourceLocation\\$BaseSourcesName\-$FlavorName.mak \>\> $GlobusLocation\\core\\source\\win32\\$FlavorName$ExeSuffix.log\n";
     print EXEBATCHEXEC "echo ================================================================ \>\> $GlobusLocation\\core\\source\\win32\\$FlavorName$ExeSuffix.log\n";
 
     # Change The Working Directory To The 'Home' Directory
