@@ -775,13 +775,13 @@ myproxy_serialize_response(const myproxy_response_t *response,
 	int i;
 	
 	/*Find out nameless credential*/
-	for (i = 0; i < (response->data).creds.num_creds; i ++)
+	for (i = 0; i < response->num_creds; i ++)
 	{
-		if (!(response->data).creds.info_creds[i].credname)
+		if (!response->info_creds[i].credname)
 		{
 			// credential description
-			if ((response->data).creds.info_creds[i].creddesc) {
-			    len = concatenate_strings (data, datalen, MYPROXY_CRED_PREFIX, "_", MYPROXY_CRED_DESC_STRING, (response->data).creds.info_creds[i].creddesc, "\n", NULL);
+			if (response->info_creds[i].creddesc) {
+			    len = concatenate_strings (data, datalen, MYPROXY_CRED_PREFIX, "_", MYPROXY_CRED_DESC_STRING, response->info_creds[i].creddesc, "\n", NULL);
 
 			    if (len == -1)
 				goto error;
@@ -790,7 +790,7 @@ myproxy_serialize_response(const myproxy_response_t *response,
 			}
 
 			// start time
-			snprintf(date, sizeof (date), "%lu",  (response->data).creds.info_creds[i].cred_start_time);
+			snprintf(date, sizeof (date), "%lu",  response->info_creds[i].cred_start_time);
 			len = concatenate_strings (data, datalen, MYPROXY_CRED_PREFIX, "_", MYPROXY_START_TIME_STRING, 
 					date, "\n", NULL);
 
@@ -800,7 +800,7 @@ myproxy_serialize_response(const myproxy_response_t *response,
 			totlen += len;
 
 			// end time
-			snprintf(date, sizeof (date), "%lu",  (response->data).creds.info_creds[i].cred_end_time);
+			snprintf(date, sizeof (date), "%lu",  response->info_creds[i].cred_end_time);
 			len = concatenate_strings (data, datalen, MYPROXY_CRED_PREFIX, "_", MYPROXY_END_TIME_STRING, 
 					date, "\n", NULL);
 
@@ -811,7 +811,7 @@ myproxy_serialize_response(const myproxy_response_t *response,
 
 			// owner string
 			len = concatenate_strings (data, datalen, MYPROXY_CRED_PREFIX, "_", MYPROXY_CRED_OWNER_STRING,
-					(response->data).creds.info_creds[i].cred_owner, "\n", NULL);
+					response->info_creds[i].cred_owner, "\n", NULL);
 
 			if (len == -1)
 				goto error;
@@ -819,10 +819,10 @@ myproxy_serialize_response(const myproxy_response_t *response,
 			totlen += len;
 
 			// retriever string
-			if ((response->data).creds.info_creds[i].retriever_str != NULL)
+			if (response->info_creds[i].retriever_str != NULL)
 			{
 				len = concatenate_strings (data, datalen, MYPROXY_CRED_PREFIX, "_", MYPROXY_RETRIEVER_STRING,
-					(response->data).creds.info_creds[i].retriever_str, "\n", NULL);
+					response->info_creds[i].retriever_str, "\n", NULL);
 
 				if (len == -1)
 					goto error;
@@ -831,10 +831,10 @@ myproxy_serialize_response(const myproxy_response_t *response,
 			}	
 			
 			//renewer string
-			if ((response->data).creds.info_creds[i].renewer_str != NULL)
+			if (response->info_creds[i].renewer_str != NULL)
 			{
 				len = concatenate_strings (data, datalen, MYPROXY_CRED_PREFIX, "_", MYPROXY_RENEWER_STRING,
-					(response->data).creds.info_creds[i].renewer_str, "\n", NULL);
+					response->info_creds[i].renewer_str, "\n", NULL);
 
 				if (len == -1)
 					goto error;
@@ -847,7 +847,7 @@ myproxy_serialize_response(const myproxy_response_t *response,
 	} /*end for */
 	
 
-	if ((response->data).creds.num_creds >= 1)
+	if (response->num_creds >= 1)
 	{
 		/* Build up additional credentials string*/
 		len = concatenate_strings (data, datalen, MYPROXY_ADDITIONAL_CREDS_STRING, NULL);
@@ -857,11 +857,11 @@ myproxy_serialize_response(const myproxy_response_t *response,
        
 		totlen += len;
 
-		for (i = 0; i < (response->data).creds.num_creds-1; i ++)
+		for (i = 0; i < response->num_creds-1; i ++)
 		{
-			if ((response->data).creds.info_creds[i].credname)
+			if (response->info_creds[i].credname)
 			{
-				len = concatenate_strings (data, datalen, (response->data).creds.info_creds[i].credname, "," , NULL);
+				len = concatenate_strings (data, datalen, response->info_creds[i].credname, "," , NULL);
 			
 				if (len == -1)
 					goto error;
@@ -869,7 +869,7 @@ myproxy_serialize_response(const myproxy_response_t *response,
 				totlen += len;
 			}
 		}		
-		len = concatenate_strings (data, datalen, (response->data).creds.info_creds[i].credname, "\n", NULL);
+		len = concatenate_strings (data, datalen, response->info_creds[i].credname, "\n", NULL);
 		
 		if (len == -1)
 			goto error;
@@ -877,18 +877,18 @@ myproxy_serialize_response(const myproxy_response_t *response,
 		totlen += len;
 	
 		/*Add the rest */
-		for (i = 0; i < (response->data).creds.num_creds; i ++)
+		for (i = 0; i < response->num_creds; i ++)
 		{
 
 			// don't add default credential as it has already been added
-			if (!(response->data).creds.info_creds[i].credname)
+			if (!response->info_creds[i].credname)
 				continue;
 
-			if ((response->data).creds.info_creds[i].creddesc != NULL)
+			if (response->info_creds[i].creddesc != NULL)
 			{
 				len = concatenate_strings (data, datalen, MYPROXY_CRED_PREFIX, "_", 
-						(response->data).creds.info_creds[i].credname, "_", MYPROXY_CRED_DESC_STRING, 
-						(response->data).creds.info_creds[i].creddesc, "\n", NULL);
+						response->info_creds[i].credname, "_", MYPROXY_CRED_DESC_STRING, 
+						response->info_creds[i].creddesc, "\n", NULL);
 
 				if (len == -1)
 					goto error;
@@ -897,10 +897,10 @@ myproxy_serialize_response(const myproxy_response_t *response,
 			}
 
 			// start time
-			if ((response->data).creds.info_creds[i].cred_start_time) {
-				snprintf (date, sizeof (date), "%lu", (response->data).creds.info_creds[i].cred_start_time);
+			if (response->info_creds[i].cred_start_time) {
+				snprintf (date, sizeof (date), "%lu", response->info_creds[i].cred_start_time);
 				len = concatenate_strings (data, datalen, MYPROXY_CRED_PREFIX, "_",
-						(response->data).creds.info_creds[i].credname, "_", MYPROXY_START_TIME_STRING, 
+						response->info_creds[i].credname, "_", MYPROXY_START_TIME_STRING, 
 						date, "\n", NULL);
 
 				if (len == -1)
@@ -910,10 +910,10 @@ myproxy_serialize_response(const myproxy_response_t *response,
 			}
 
 			// end time
-			if ((response->data).creds.info_creds[i].cred_end_time) {
-				snprintf (date, sizeof (date), "%lu", (response->data).creds.info_creds[i].cred_end_time);
+			if (response->info_creds[i].cred_end_time) {
+				snprintf (date, sizeof (date), "%lu", response->info_creds[i].cred_end_time);
 				len = concatenate_strings (data, datalen, MYPROXY_CRED_PREFIX, "_",
-						(response->data).creds.info_creds[i].credname, "_", MYPROXY_END_TIME_STRING, 
+						response->info_creds[i].credname, "_", MYPROXY_END_TIME_STRING, 
 						date, "\n", NULL);
 
 				if (len == -1)
@@ -924,8 +924,8 @@ myproxy_serialize_response(const myproxy_response_t *response,
 
 			// owner
 			len = concatenate_strings (data, datalen, MYPROXY_CRED_PREFIX, "_", 
-					(response->data).creds.info_creds[i].credname, "_", MYPROXY_CRED_OWNER_STRING,
-					(response->data).creds.info_creds[i].cred_owner, "\n", NULL);
+					response->info_creds[i].credname, "_", MYPROXY_CRED_OWNER_STRING,
+					response->info_creds[i].cred_owner, "\n", NULL);
 
 			if (len == -1)
 				goto error;
@@ -933,11 +933,11 @@ myproxy_serialize_response(const myproxy_response_t *response,
 			totlen += len;
 
 			// retriever
-			if ((response->data).creds.info_creds[i].retriever_str != NULL)
+			if (response->info_creds[i].retriever_str != NULL)
 			{
 				len = concatenate_strings (data, datalen, MYPROXY_CRED_PREFIX, "_",
-					(response->data).creds.info_creds[i].credname, "_", MYPROXY_RETRIEVER_STRING,
-					(response->data).creds.info_creds[i].retriever_str, "\n", NULL);
+					response->info_creds[i].credname, "_", MYPROXY_RETRIEVER_STRING,
+					response->info_creds[i].retriever_str, "\n", NULL);
 
 				if (len == -1)
 					goto error;
@@ -946,11 +946,11 @@ myproxy_serialize_response(const myproxy_response_t *response,
 			}
 
 			// renewer 
-			if ((response->data).creds.info_creds[i].renewer_str != NULL)
+			if (response->info_creds[i].renewer_str != NULL)
 			{
 				len = concatenate_strings (data, datalen, MYPROXY_CRED_PREFIX, "_",
-					(response->data).creds.info_creds[i].credname, "_", MYPROXY_RENEWER_STRING,
-					(response->data).creds.info_creds[i].renewer_str, "\n", NULL);
+					response->info_creds[i].credname, "_", MYPROXY_RENEWER_STRING,
+					response->info_creds[i].renewer_str, "\n", NULL);
 
 				if (len == -1)
 					goto error;
@@ -1045,7 +1045,7 @@ myproxy_deserialize_response(myproxy_response_t *response,
     {
     	char tmp[100], response_str[1000], **strs;
 
-	(response->data).creds.info_creds = (myproxy_info_t *) malloc (sizeof (myproxy_info_t));
+	response->info_creds = (myproxy_info_t *) malloc (sizeof (myproxy_info_t));
 	/*Nameless credential*/
 	
 	// start time
@@ -1062,7 +1062,7 @@ myproxy_deserialize_response(myproxy_response_t *response,
        if (len > 0) {
 		switch(string_to_int(buffer, &value)) {
 		  	case STRING_TO_INT_SUCCESS:
-				(response->data).creds.info_creds[0].cred_start_time = value;
+				response->info_creds[0].cred_start_time = value;
 				break;
 			case STRING_TO_INT_NONNUMERIC:
 				verror_put_string("Non-numeric characters in CRED_START_TIME \"%s\"",
@@ -1082,7 +1082,7 @@ myproxy_deserialize_response(myproxy_response_t *response,
 	idx = 1;
 	// Credential name
 
-	(response->data).creds.info_creds[0].credname = NULL;
+	response->info_creds[0].credname = NULL;
 
 	// credential description
 	tmp[0] = '\0';
@@ -1096,9 +1096,9 @@ myproxy_deserialize_response(myproxy_response_t *response,
 		return -1;
 
 	if (len == -2)
-		(response->data).creds.info_creds[0].creddesc = NULL;
+		response->info_creds[0].creddesc = NULL;
 	else
-		(response->data).creds.info_creds[0].creddesc = strdup (buffer);
+		response->info_creds[0].creddesc = strdup (buffer);
 		
 	// end time
     	tmp[0] = '\0';
@@ -1113,7 +1113,7 @@ myproxy_deserialize_response(myproxy_response_t *response,
        if (len > 0) {
 		switch(string_to_int(buffer, &value)) {
 		  	case STRING_TO_INT_SUCCESS:
-				(response->data).creds.info_creds[0].cred_end_time = value;
+				response->info_creds[0].cred_end_time = value;
 				break;
 			case STRING_TO_INT_NONNUMERIC:
 				verror_put_string("Non-numeric characters in CRED_END_TIME \"%s\"",
@@ -1141,7 +1141,7 @@ myproxy_deserialize_response(myproxy_response_t *response,
     	}
 
 	if (len != -2)
-    		strcpy ((response->data).creds.info_creds[0].cred_owner, response_str); 
+    		strcpy (response->info_creds[0].cred_owner, response_str); 
 
 	// retriever
 	tmp[0] = '\0';
@@ -1160,7 +1160,7 @@ myproxy_deserialize_response(myproxy_response_t *response,
     	}
 
 	if (len != -2)
-    		(response->data).creds.info_creds[0].retriever_str = strdup (response_str); 
+    		response->info_creds[0].retriever_str = strdup (response_str); 
 
 	//renewer
 	tmp[0] = '\0';
@@ -1179,7 +1179,7 @@ myproxy_deserialize_response(myproxy_response_t *response,
     	}
 
 	if (len != -2)
-    		(response->data).creds.info_creds[0].renewer_str = strdup (response_str); 
+    		response->info_creds[0].renewer_str = strdup (response_str); 
 
 	/*Try for additional credentials*/
 
@@ -1195,13 +1195,13 @@ myproxy_deserialize_response(myproxy_response_t *response,
 
 	if (len == -2) // no additional credentials
 	{
-		(response->data).creds.num_creds = idx;
+		response->num_creds = idx;
 		return 0;
 	}
 
 	len = parse_add_creds (response_str, &strs, &num_creds);
 
-	(response->data).creds.num_creds = num_creds+idx;
+	response->num_creds = num_creds+idx;
 	if (len == -1)
 	{
 		verror_prepend_string ("Error parsing additional credential string");
@@ -1211,8 +1211,8 @@ myproxy_deserialize_response(myproxy_response_t *response,
 	//Get additional credentials 
 	for (i = 0; i < num_creds; i++)
 	{
-		(response->data).creds.info_creds = realloc ((response->data).creds.info_creds, (i+idx+1) * sizeof (myproxy_info_t));
-		(response->data).creds.info_creds[i+idx].credname = strdup (strs[i]); // credential name
+		response->info_creds = realloc (response->info_creds, (i+idx+1) * sizeof (myproxy_info_t));
+		response->info_creds[i+idx].credname = strdup (strs[i]); // credential name
 
 		// credential description
 		tmp[0] = '\0';
@@ -1231,9 +1231,9 @@ myproxy_deserialize_response(myproxy_response_t *response,
 			verror_prepend_string ("Error in extracting credential description");
 			
 		if (len == -2)
-			(response->data).creds.info_creds[i+idx].creddesc = NULL;
+			response->info_creds[i+idx].creddesc = NULL;
 		else
-			(response->data).creds.info_creds[i+idx].creddesc = strdup(buffer);
+			response->info_creds[i+idx].creddesc = strdup(buffer);
 
 		// credential start time
 		tmp[0]='\0';
@@ -1254,7 +1254,7 @@ myproxy_deserialize_response(myproxy_response_t *response,
 		    if (len > 0) {
 		       	switch(string_to_int(buffer, &value)) {
 		  	case STRING_TO_INT_SUCCESS:
-				(response->data).creds.info_creds[i+idx].cred_start_time = value;
+				response->info_creds[i+idx].cred_start_time = value;
 				break;
 			case STRING_TO_INT_NONNUMERIC:
 				verror_put_string("Non-numeric characters in CRED_START_TIME \"%s\"",
@@ -1285,7 +1285,7 @@ myproxy_deserialize_response(myproxy_response_t *response,
 		    if (len > 0) {
 		       	switch(string_to_int(buffer, &value)) {
 		  	case STRING_TO_INT_SUCCESS:
-				(response->data).creds.info_creds[i+idx].cred_end_time = value;
+				response->info_creds[i+idx].cred_end_time = value;
 				break;
 			case STRING_TO_INT_NONNUMERIC:
 				verror_put_string("Non-numeric characters in CRED_END_TIME \"%s\"",
@@ -1314,11 +1314,11 @@ myproxy_deserialize_response(myproxy_response_t *response,
 				break;
 
 				case -2:
-					(response->data).creds.info_creds[i+idx].cred_owner[0] = '\0';
+					response->info_creds[i+idx].cred_owner[0] = '\0';
 				break;
 
 				default:
-					strcpy ((response->data).creds.info_creds[i+idx].cred_owner, buffer);
+					strcpy (response->info_creds[i+idx].cred_owner, buffer);
 			}
 		}
 
@@ -1339,11 +1339,11 @@ myproxy_deserialize_response(myproxy_response_t *response,
 					// fall through
 
 				case -2:
-					(response->data).creds.info_creds[i+idx].retriever_str = NULL;
+					response->info_creds[i+idx].retriever_str = NULL;
 				break;
 
 				default:
-					(response->data).creds.info_creds[i+idx].retriever_str = strdup(buffer);
+					response->info_creds[i+idx].retriever_str = strdup(buffer);
 			}
 		}
 
@@ -1364,11 +1364,11 @@ myproxy_deserialize_response(myproxy_response_t *response,
 					// fall through
 
 				case -2:
-					(response->data).creds.info_creds[i+idx].renewer_str = NULL;
+					response->info_creds[i+idx].renewer_str = NULL;
 				break;
 
 				default:
-					(response->data).creds.info_creds[i+idx].renewer_str = strdup(buffer);
+					response->info_creds[i+idx].renewer_str = strdup(buffer);
 			}
 		}
 	}
@@ -1382,11 +1382,11 @@ myproxy_deserialize_response(myproxy_response_t *response,
     if (response->response_type == MYPROXY_ERROR_RESPONSE)
     {
     /* It's ok if ERROR not present */
-       (response->data).error_str = (char *) malloc (1024);
+       response->error_str = (char *) malloc (1024);
     len = convert_message(data, datalen,
 			  MYPROXY_ERROR_STRING, 
 			  CONVERT_MESSAGE_ALLOW_MULTIPLE,
-                          (response->data).error_str,
+                          response->error_str,
 			  1024);
 	return 0;
     }
@@ -1477,7 +1477,7 @@ myproxy_recv_response(myproxy_socket_attrs_t *attrs, myproxy_response_t *respons
     /* Check response */
     switch(response->response_type) {
         case MYPROXY_ERROR_RESPONSE:
-            verror_put_string("ERROR from server: %s", (response->data).error_str);
+            verror_put_string("ERROR from server: %s", response->error_str);
 	    return(-1);
             break;
         case MYPROXY_OK_RESPONSE:

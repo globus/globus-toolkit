@@ -118,15 +118,11 @@ typedef struct
   char                          *version;
   myproxy_proto_response_type_t response_type;
   authorization_data_t		**authorization_data;
+  char				*error_str;
 
-  // credentials info for myproxy-info or response string
-  union {
-	 struct {
- 		myproxy_info_t 	*info_creds;
-		int num_creds;
-	} creds;
-	 char			*error_str;
-  } data;
+    /* credentials info for myproxy-info */
+  myproxy_info_t 	*info_creds;
+  int num_creds;
 } myproxy_response_t;
 
   

@@ -1185,8 +1185,8 @@ int read_from_directory (struct myproxy_creds *creds, myproxy_response_t *respon
 
     } /* end for */
 
-    (response->data).creds.info_creds = info_ptr;
-    (response->data).creds.num_creds = index;
+    response->info_creds = info_ptr;
+    response->num_creds = index;
     return 0;
 
     error:
