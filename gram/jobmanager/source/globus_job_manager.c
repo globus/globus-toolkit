@@ -34,7 +34,7 @@ CVS Information:
 
 #include <gssapi.h>
 #include <globus_gss_assist.h>
-#include "sslutils.h"
+#include <globus_gsi_credential.h>
 
 #include "globus_common.h"
 #include "globus_gram_job_manager.h"
@@ -56,9 +56,9 @@ CVS Information:
  * iso.org.dod.internet.private.enterprise (1.3.6.1.4.1)
  * globus 3536
  * security 1
- * gssapi_ssleay 1
+ * gssapi_openssl 1
  */
-static gss_OID_desc gss_mech_oid_globus_gssapi_ssleay =
+static gss_OID_desc gss_mech_oid_globus_gssapi_openssl =
         {9, "\x2b\x06\x01\x04\x01\x9b\x50\x01\x01"};
 #define GRAM_JOB_MANAGER_STATUS_FILE_SECONDS 600
 
@@ -1767,7 +1767,7 @@ int main(int argc,
 	{
 	    major_status = gss_test_oid_set_member(
 		    &minor_status,
-		    &gss_mech_oid_globus_gssapi_ssleay,
+		    &gss_mech_oid_globus_gssapi_openssl,
 		    mechs,
 		    &present);
 	    if(major_status != GSS_S_COMPLETE)
@@ -1833,11 +1833,10 @@ int main(int argc,
 
     if (graml_env_x509_user_proxy)
     {
-	proxy_cred_desc *pcd = NULL;
-	time_t time_after;
-	time_t time_now;
-	ASN1_UTCTIME *asn1_time = NULL;
-	globus_reltime_t delay_time;
+        globus_gsi_cred_handle_t        proxy_handle;
+        time_t                          lifetime;
+	globus_reltime_t                delay_time;
+        globus_result_t                 result;
 
 	globus_libc_setenv( "X509_USER_PROXY",
 			    graml_env_x509_user_proxy,
@@ -1848,60 +1847,90 @@ int main(int argc,
 		       graml_env_x509_user_proxy);
 
 	/* read in proxy */
-	/* initialize SSLeay and the error strings */
-	ERR_load_prxyerr_strings(0);
-	SSLeay_add_ssl_algorithms();
+        result = globus_gsi_cred_handle_init(&proxy_handle, NULL);
+        if(result != GLOBUS_SUCCESS)
+        {
+            char *                      error_chain_string = NULL;
+            globus_object_t *           error_obj = NULL;
 
-	/* Load proxy */
-	pcd = proxy_cred_desc_new();
+            request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
+            request->failure_code =
+                GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_USER_PROXY;
+            rc = GLOBUS_FAILURE;
+            error_obj = globus_error_get(result);
+            error_chain_string = globus_error_print_chain(error_obj);
+            globus_object_free(error_obj);
 
-	if (pcd && proxy_load_user_cert(pcd, graml_env_x509_user_proxy,
-					NULL, NULL)) {
-/* Freeing this struct seems to screw up other stuff that uses X509
-	    proxy_cred_desc_free(pcd);
-*/
-	    pcd = NULL;
-	}
+            globus_jobmanager_log(request->jobmanager_log_fp,
+                                  "JM: user proxy credential could not be"
+                                  " initialized:\n%s\n", error_chain_string);
+            globus_libc_free(error_chain_string);
+        }
 
-	if (pcd && (pcd->upkey = X509_get_pubkey(pcd->ucert)) == NULL) {
-/* Freeing this struct seems to screw up other stuff that uses X509
-	    proxy_cred_desc_free(pcd);
-*/
-	    pcd = NULL;
-	}
+        result = globus_gsi_cred_read_proxy(proxy_handle,
+                                            graml_env_x509_user_proxy);
+        if(result != GLOBUS_SUCCESS)
+        {
+            char *                      error_chain_string = NULL;
+            globus_object_t *           error_obj = NULL;
 
-	if (pcd)
-	{
-	    /* validity: set time_diff to time to expiration (in seconds) */
-	    asn1_time = ASN1_UTCTIME_new();
-	    X509_gmtime_adj(asn1_time,0);
-	    time_now = ASN1_UTCTIME_mktime(asn1_time);
-	    time_after = ASN1_UTCTIME_mktime(X509_get_notAfter(pcd->ucert));
+            request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
+            request->failure_code =
+                GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_USER_PROXY;
+            rc = GLOBUS_FAILURE;
+            error_obj = globus_error_get(result);
+            error_chain_string = globus_error_print_chain(error_obj);
+            globus_object_free(error_obj);
 
-	    if ((time_after - time_now) - 300 <= 0)
-	    {
-		request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
-		request->failure_code =
-		    GLOBUS_GRAM_PROTOCOL_ERROR_USER_PROXY_EXPIRED;
-		rc = GLOBUS_FAILURE;
-		globus_jobmanager_log(request->jobmanager_log_fp,
-				    "JM: user proxy lifetime is less than minimum (5 minutes)\n");
-	    } else {
-		/* set timer */
-		GlobusTimeReltimeSet(delay_time, (time_after - time_now) - 300, 0);
-		globus_callback_register_oneshot(&proxy_expiration_handle,
-						 &delay_time,
-						 globus_l_gram_proxy_expiration,
-						 (void *)request);
-	    }
+            globus_jobmanager_log(request->jobmanager_log_fp,
+                                  "JM: user proxy could not be read from "
+                                  "the file: %s\n%s\n",
+                                  graml_env_x509_user_proxy,
+                                  error_chain_string);
+            globus_libc_free(error_obj);
+        }
 
-/* Freeing this struct seems to screw up other stuff that uses X509
-	    proxy_cred_desc_free(pcd);
-*/
-	} else {
-	    globus_jobmanager_log(request->jobmanager_log_fp,
-			  "JM: problem reading user proxy\n");
-	}
+        result = globus_gsi_cred_get_lifetime(proxy_handle, lifetime);
+        if(result != GLOBUS_SUCCESS)
+        {
+            char *                      error_chain_string = NULL;
+            globus_object_t *           error_obj = NULL;
+
+            request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
+            request->failure_code =
+                GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_USER_PROXY;
+            rc = GLOBUS_FAILURE;
+            error_obj = globus_error_get(result);
+            error_chain_string = globus_error_print_chain(error_obj);
+            globus_object_free(error_obj);
+            
+            globus_jobmanager_log(request->jobmanager_log_fp,
+                                  "JM: lifetime of user proxy could not "
+                                  "be determined.\n%s\n",
+                                  error_chain_string);
+            globus_libc_free(error_obj);
+        }
+
+        if(lifetime - 300 <= 0)
+        {
+            request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
+            request->failure_code =
+                GLOBUS_GRAM_PROTOCOL_ERROR_USER_PROXY_EXPIRED;
+            rc = GLOBUS_FAILURE;
+            globus_jobmanager_log(request->jobmanager_log_fp,
+                                  "JM: user proxy lifetime is "
+                                  "less than minimum (5 minutes)\n");
+        }
+        else
+        {
+            GlobusTimeReltimeSet(delay_time, lifetime - 300, 0);
+            globus_callback_register_oneshot(&proxy_expiration_handle,
+                                             &delay_time,
+                                             globus_l_gram_proxy_expiration,
+                                             (void *)request);
+        }
+
+        globus_gsi_cred_handle_destroy(proxy_handle);
     }
 
     if (rc == GLOBUS_SUCCESS && request->save_state == GLOBUS_TRUE)
