@@ -446,6 +446,7 @@ globus_l_gsp_959_read_callback(
     /* largest know command is 4, but possible the user sent a huge one */
     char *                                  command_name;
     int                                     sc;
+    int                                     ctr;
     GlobusGridFTPServerName(globus_l_gsp_959_read_callback);
 
     handle = (globus_l_gsp_959_handle_t *) user_arg;
@@ -474,6 +475,10 @@ globus_l_gsp_959_read_callback(
                 sc = sscanf(buffer, "%s", command_name);
                 /* stack will make sure this never happens */
                 globus_assert(sc > 0);
+                for(ctr = 0; command_name[ctr] != '\0'; ctr++)
+                {
+                    command_name[ctr] = toupper(command_name[ctr]);
+                }
 
                 /* calling pers function will likely result in a write being
                     post, the next read will be posted there. */

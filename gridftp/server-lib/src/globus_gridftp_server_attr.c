@@ -300,8 +300,7 @@ globus_gridftp_server_attr_command_add(
     const char *                            command_name,
     globus_gridftp_server_cmd_func_t        func,
     void *                                  user_arg,
-    globus_bool_t                           auth_required,
-    globus_bool_t                           refresh)
+    globus_gridftp_server_command_desc_t    cmd_desc)
 {
     globus_i_gs_attr_t *                    attr;
     globus_result_t                         res;
@@ -335,10 +334,9 @@ globus_gridftp_server_attr_command_add(
         goto err;
     }
     cmd_ent->name = globus_libc_strdup(command_name);
-    cmd_ent->refresh = refresh;
+    cmd_ent->desc = cmd_desc;
     cmd_ent->user_arg = user_arg;
     cmd_ent->func = func;
-    cmd_ent->auth_required = auth_required;
 
     list = (globus_list_t *)globus_hashtable_lookup(
                 &server_attr->command_func_table, (char *)command_name);

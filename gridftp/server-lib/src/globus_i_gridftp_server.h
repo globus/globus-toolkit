@@ -86,6 +86,15 @@ GlobusDebugDeclare(GLOBUS_GRIDFTP_SERVER);
             "[%s:%d] Not yet authenticated.",                               \
             _gridftp_server_name, __LINE__))
 
+#define GlobusGridFTPServerPostAuthenticated()                              \
+    globus_error_put(                                                       \
+        globus_error_construct_error(                                       \
+            GLOBUS_GRIDFTP_SERVER_MODULE,                                   \
+            GLOBUS_NULL,                                                    \
+            GLOBUS_GRIDFTP_SERVER_POST_AUTH,                                \
+            "[%s:%d] Not yet authenticated.",                               \
+            _gridftp_server_name, __LINE__))
+
 #define GlobusGridFTPServerNotACommand()                                    \
     globus_error_put(                                                       \
         globus_error_construct_error(                                       \
@@ -140,6 +149,7 @@ typedef enum
     GLOBUS_GRIDFTP_SERVER_ERROR_STATE,
     GLOBUS_GRIDFTP_SERVER_ERROR_MEMORY,
     GLOBUS_GRIDFTP_SERVER_NO_AUTH,
+    GLOBUS_GRIDFTP_SERVER_POST_AUTH,
     GLOBUS_GRIDFTP_SERVER_NO_COMMAND,
     GLOBUS_GRIDFTP_SERVER_MALFORMED_COMMAND,
 } globus_gridftp_server_error_type_t;
@@ -212,8 +222,7 @@ typedef struct globus_i_gs_command_entry_s
 
     void *                                  user_arg;
 
-    globus_bool_t                           refresh;
-    globus_bool_t                           auth_required;
+    globus_gridftp_server_command_desc_t    desc;
 
     globus_gridftp_server_cmd_func_t        func;
 } globus_i_gs_cmd_ent_t;

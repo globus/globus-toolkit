@@ -250,6 +250,18 @@ globus_l_gs_noop_cmd(
 }
 
 globus_result_t
+globus_l_gs_quit_cmd(
+    globus_gridftp_server_t                 server,
+    const char *                            command_name,
+    globus_gridftp_server_operation_t       op,
+    globus_list_t *                         list)
+{
+    globus_gridftp_server_finished_cmd(op, GLOBUS_SUCCESS, GLOBUS_TRUE);
+
+    return GLOBUS_SUCCESS;
+}
+
+globus_result_t
 globus_i_gs_cmd_add_builtins(
     globus_gridftp_server_attr_t            attr)
 {
@@ -260,8 +272,8 @@ globus_i_gs_cmd_add_builtins(
             "NOOP",
             globus_l_gs_noop_cmd,
             NULL,
-            GLOBUS_FALSE,
-            GLOBUS_TRUE);
+            GLOBUS_GRIDFTP_SERVER_COMMAND_DESC_POST_AUTH |
+                GLOBUS_GRIDFTP_SERVER_COMMAND_DESC_REFRESH);
     if(res != GLOBUS_SUCCESS)
     {
         return res;
@@ -271,8 +283,8 @@ globus_i_gs_cmd_add_builtins(
             "MODE",
             globus_l_gs_simple_cmd,
             NULL,
-            GLOBUS_TRUE,
-            GLOBUS_TRUE);
+            GLOBUS_GRIDFTP_SERVER_COMMAND_DESC_POST_AUTH |
+                GLOBUS_GRIDFTP_SERVER_COMMAND_DESC_REFRESH);
     if(res != GLOBUS_SUCCESS)
     {
         return res;
@@ -282,8 +294,8 @@ globus_i_gs_cmd_add_builtins(
             "TYPE",
             globus_l_gs_simple_cmd,
             NULL,
-            GLOBUS_TRUE,
-            GLOBUS_TRUE);
+            GLOBUS_GRIDFTP_SERVER_COMMAND_DESC_POST_AUTH |
+                GLOBUS_GRIDFTP_SERVER_COMMAND_DESC_REFRESH);
     if(res != GLOBUS_SUCCESS)
     {
         return res;
@@ -293,8 +305,8 @@ globus_i_gs_cmd_add_builtins(
             "CWD",
             globus_l_gs_directory_cmd,
             NULL,
-            GLOBUS_TRUE,
-            GLOBUS_TRUE);
+            GLOBUS_GRIDFTP_SERVER_COMMAND_DESC_POST_AUTH |
+                GLOBUS_GRIDFTP_SERVER_COMMAND_DESC_REFRESH);
     if(res != GLOBUS_SUCCESS)
     {
         return res;
@@ -304,8 +316,21 @@ globus_i_gs_cmd_add_builtins(
             "AUTH",
             globus_l_gs_cmd_auth,
             NULL,
-            GLOBUS_FALSE,
-            GLOBUS_TRUE);
+            GLOBUS_GRIDFTP_SERVER_COMMAND_DESC_PRE_AUTH |
+                GLOBUS_GRIDFTP_SERVER_COMMAND_DESC_REFRESH);
+    if(res != GLOBUS_SUCCESS)
+    {
+        return res;
+    }
+
+    res = globus_gridftp_server_attr_command_add(
+            attr,
+            "QUIT",
+            globus_l_gs_quit_cmd,
+            NULL,
+            GLOBUS_GRIDFTP_SERVER_COMMAND_DESC_PRE_AUTH |
+            GLOBUS_GRIDFTP_SERVER_COMMAND_DESC_POST_AUTH |
+                GLOBUS_GRIDFTP_SERVER_COMMAND_DESC_REFRESH);
     if(res != GLOBUS_SUCCESS)
     {
         return res;

@@ -366,6 +366,7 @@ globus_l_gs_proto_cmd_kickout(
         (globus_gridftp_server_t) i_op->server,
         i_op->res,
         i_op->cmd_ent->name,
+        i_op->arg_list,
         i_op->pmod_arg);
 
     globus_l_gs_callback_return(i_op->server);
@@ -421,10 +422,16 @@ globus_l_gs_next_command(
          * if we have not yet authenticated and we require 
          * authentication
          */
-        if(cmd_ent->auth_required &&
-           op->server->state != GLOBUS_L_GS_STATE_OPEN)
+        if(!(cmd_ent->desc & GLOBUS_GRIDFTP_SERVER_COMMAND_DESC_PRE_AUTH) &&
+           op->server->state == GLOBUS_L_GS_STATE_AUTH)
         {
             res = GlobusGridFTPServerNotAuthenticated();
+        }
+        else if(
+            !(cmd_ent->desc & GLOBUS_GRIDFTP_SERVER_COMMAND_DESC_POST_AUTH) &&
+            op->server->state == GLOBUS_L_GS_STATE_OPEN)
+        {
+            res = GlobusGridFTPServerPostAuthenticated();
         }
         else
         {
@@ -1020,8 +1027,8 @@ globus_gridftp_server_pmod_command(
     globus_gridftp_server_t                 server,
     const char *                            command_name,
     globus_gridftp_server_pmod_command_cb_t cb,
-    void *                                  user_arg,
-    globus_list_t *                         arg_list)
+    globus_list_t *                         arg_list,
+    void *                                  user_arg)
 {
     globus_i_gs_op_t *                      i_op;
     globus_i_gs_server_t *                  i_server;

@@ -43,6 +43,13 @@ typedef enum globus_gridftp_server_protocol_e
     GLOBUS_GRIDFTP_SERVER_PROTOCOL_SOAP,
 } globus_gridftp_server_protocol_t;
 
+typedef enum globus_gridftp_server_command_desc_e
+{
+    GLOBUS_GRIDFTP_SERVER_COMMAND_DESC_REFRESH = 0x01,
+    GLOBUS_GRIDFTP_SERVER_COMMAND_DESC_POST_AUTH = 0x02,
+    GLOBUS_GRIDFTP_SERVER_COMMAND_DESC_PRE_AUTH = 0x04,
+} globus_gridftp_server_command_desc_t;
+
 typedef enum globus_gridftp_server_session_command_e
 {
     GLOBUS_GRIDFTP_SERVER_SESSION_COMMAND_MKDIR,
@@ -159,8 +166,7 @@ globus_gridftp_server_attr_command_add(
     const char *                            command_name,
     globus_gridftp_server_cmd_func_t        func,
     void *                                  user_arg,
-    globus_bool_t                           auth_required,
-    globus_bool_t                           refresh);
+    globus_gridftp_server_command_desc_t    cmd_descriptor);
 
 globus_result_t
 globus_gridftp_server_attr_set_error(
@@ -553,6 +559,7 @@ typedef void
     globus_gridftp_server_t                 server,
     globus_result_t                         result,
     const char *                            command_name,
+    globus_list_t *                         list,
     void *                                  user_arg);
 
 /*
@@ -564,8 +571,8 @@ globus_gridftp_server_pmod_command(
     globus_gridftp_server_t                 server,
     const char *                            command_name,
     globus_gridftp_server_pmod_command_cb_t cb,
-    void *                                  user_arg,
-    globus_list_t *                         list);
+    globus_list_t *                         list,
+    void *                                  user_arg);
 
 /*
  *  cancel all outstanding commands

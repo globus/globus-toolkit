@@ -26,6 +26,7 @@ globus_l_gs_pmod_959_cmd_noop_cb(
     globus_gridftp_server_t                 server,
     globus_result_t                         result,
     const char *                            command_name,
+    globus_list_t *                         list,
     void *                                  user_arg)
 {
     globus_gs_pmod_959_op_t                 op;
@@ -51,8 +52,8 @@ globus_l_gs_pmod_959_cmd_noop(
         server,
         "NOOP",
         globus_l_gs_pmod_959_cmd_noop_cb,
-        op,
-        NULL);
+        NULL,
+        op);
 }
 
 static void
@@ -60,6 +61,7 @@ globus_l_gs_pmod_959_cmd_basic_cb(
     globus_gridftp_server_t                 server,
     globus_result_t                         result,
     const char *                            command_name,
+    globus_list_t *                         list,
     void *                                  user_arg)
 {
     globus_l_gs_pmod_959_cmd_wrapper_t *    wrapper;
@@ -82,6 +84,13 @@ globus_l_gs_pmod_959_cmd_basic_cb(
             code = 530;
             msg = "Please login with USER and PASS.";
         }   
+        else if(globus_error_match(
+            globus_error_peek(result), 
+            GLOBUS_GRIDFTP_SERVER_MODULE, GLOBUS_GRIDFTP_SERVER_POST_AUTH))
+        {
+            code = 503;
+            msg = "You are already logged in!";
+        }
         else
         {
             msg = wrapper->fail_msg;
@@ -129,8 +138,8 @@ globus_l_gs_pmod_959_cmd_mode(
         server,
         "MODE",
         globus_l_gs_pmod_959_cmd_basic_cb,
-        wrapper,
-        list);
+        list,
+        wrapper);
 }
 
 static void
@@ -166,10 +175,86 @@ globus_l_gs_pmod_959_cmd_type(
         server,
         "TYPE",
         globus_l_gs_pmod_959_cmd_basic_cb,
-        wrapper,
-        list);
+        list,
+        wrapper);
 }
 
+/*
+ *  stat and size
+ */
+static void
+globus_l_gs_pmod_959_cmd_stat_cb(
+    globus_gridftp_server_t                 server,
+    globus_result_t                         result,
+    const char *                            command_name,
+    globus_list_t *                         list,
+    void *                                  user_arg)
+{
+    globus_gridftp_server_stat_t *          stat_info;
+    int                                     stat_count;
+}
+
+static void
+globus_l_gs_pmod_959_cmd_stat(
+    globus_gs_pmod_959_handle_t             handle,
+    globus_gs_pmod_959_op_t                 op,
+    const char *                            command_name,
+    const char *                            full_command,
+    void *                                  user_arg)
+{
+    globus_l_gs_pmod_959_cmd_wrapper_t *    wrapper;
+    globus_gridftp_server_t                 server;
+    globus_list_t *                         list = NULL;
+    /* these are really just place holders in the list */
+    globus_gridftp_server_stat_t *          stat_info;
+    int                                     stat_count;
+
+    wrapper = (globus_l_gs_pmod_959_cmd_wrapper_t *) globus_malloc(
+        sizeof(globus_l_gs_pmod_959_cmd_wrapper_t));
+    wrapper->op = op;
+
+    globus_list_insert(&list, stat_count);
+    globus_list_insert(&list, stat_info);
+
+    globus_gridftp_server_pmod_command(
+        server,
+        "STAT",
+        globus_l_gs_pmod_959_cmd_stat_cb,
+        list,
+        wrapper);
+}
+
+/*
+ *  quit
+ */
+static void
+globus_l_gs_pmod_959_cmd_quit_cb(
+    globus_gridftp_server_t                 server,
+    globus_result_t                         result,
+    const char *                            command_name,
+    globus_list_t *                         list,
+    void *                                  user_arg)
+{
+    char *                                  msg;
+    globus_l_gs_pmod_959_cmd_wrapper_t *    wrapper;
+
+    wrapper = (globus_l_gs_pmod_959_cmd_wrapper_t *) user_arg;
+
+    globus_gridftp_server_pmod_done(
+        server,
+        result);
+
+    if(result == GLOBUS_SUCCESS)
+    {
+        msg = globus_libc_strdup("Goodbye");
+    }
+    else
+    {
+        msg = globus_libc_strdup("Say goodbye next time.");
+    }
+
+    globus_gs_pmod_959_finished_op(wrapper->op, 221, msg);
+}
 
 static void
 globus_l_gs_pmod_959_cmd_quit(
@@ -179,6 +264,22 @@ globus_l_gs_pmod_959_cmd_quit(
     const char *                            full_command,
     void *                                  user_arg)
 {
+    globus_result_t                         res;
+    globus_l_gs_pmod_959_cmd_wrapper_t *    wrapper;
+    globus_gridftp_server_t                 server;
+
+    wrapper = (globus_l_gs_pmod_959_cmd_wrapper_t *) globus_malloc(
+        sizeof(globus_l_gs_pmod_959_cmd_wrapper_t));
+    wrapper->op = op;
+
+    globus_gs_pmod_959_get_server(&server, handle);
+
+    globus_gridftp_server_pmod_command(
+        server,
+        "QUIT",
+        globus_l_gs_pmod_959_cmd_quit_cb,
+        NULL,
+        wrapper);
 }
 
 /*
@@ -266,8 +367,8 @@ globus_l_gs_pmod_959_cmd_pass(
         server,
         "AUTH",
         globus_l_gs_pmod_959_cmd_basic_cb,
-        wrapper,
-        list);
+        list,
+        wrapper);
 }
 
 void
@@ -302,6 +403,18 @@ globus_i_gs_pmod_959_add_commands(
         handle,
         "QUIT", 
         globus_l_gs_pmod_959_cmd_quit,
+        cmd_handle);
+
+    globus_gs_pmod_959_command_add(
+        handle,
+        "STAT", 
+        globus_l_gs_pmod_959_cmd_stat,
+        cmd_handle);
+
+    globus_gs_pmod_959_command_add(
+        handle,
+        "SIZE", 
+        globus_l_gs_pmod_959_cmd_stat,
         cmd_handle);
 
     globus_gs_pmod_959_command_add(
