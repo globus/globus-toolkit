@@ -415,6 +415,7 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
 	if (client_creds->location != NULL) {
 	    free(client_creds->location);
 	}
+	free(client_creds);
     }
 
     myproxy_destroy(attrs, client_request, server_response);
