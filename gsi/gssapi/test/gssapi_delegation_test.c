@@ -1,4 +1,3 @@
-
 #define EXT_SIZE 16
 #include "gssapi.h"
 #include "globus_gss_assist.h"

@@ -1,4 +1,3 @@
-
 #define EXT_SIZE 16
 #include "gssapi.h"
 #include "gssapi_openssl.h"

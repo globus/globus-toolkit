@@ -5,11 +5,11 @@ gcc -g -I$GLOBUS_LOCATION/include -I$GLOBUS_LOCATION/include/gcc32dbg -L$GLOBUS_
 
 */
 
+#include "gssapi.h"
+#include "globus_gss_assist.h"
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "gssapi.h"
-#include "globus_gss_assist.h"
 
 int main()
 {
