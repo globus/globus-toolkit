@@ -3,13 +3,6 @@ VPATH	=	@srcdir@
 srcdir	=	@srcdir@
 prefix	=	@prefix@
 
-#
-# Set this for the makefile_header below
-GLOBUS_INSTALL_PATH	=	@GSI_INSTALL_PATH@
-
-GSI_DEVELOPMENT_PATH	=	@GSI_DEV_PATH@
-
-#include $(GSI_DEVELOPMENT_PATH)/etc/makefile_header
 include @GLOBUS_MAKEFILE_HEADER@
 
 MYPROXY_SERVER_DIR	=	@MYPROXY_SERVER_DIR@
