@@ -612,6 +612,9 @@ grami_jm_request_params(gram_specification_t * description_tree,
     grami_jm_param_get(description_tree, GRAM_STDERR_PARAM, params->std_err);
     grami_jm_param_get(description_tree, GRAM_MAXTIME_PARAM, pgm_maxtime);
 
+    /*
+     * set defaults for everything, if not specified
+     */
     if (strlen(pgm_maxtime) == 0)
     {
         params->maxtime = 0;
@@ -648,14 +651,6 @@ grami_jm_request_params(gram_specification_t * description_tree,
        strcpy(params->std_in, GRAM_DEFAULT_STDIN);
     }
 
-    /*
-     * Verify the std_in file exists, Otherwise error out.
-     */
-    if (stat(params->std_in, &statbuf) != 0)
-    {
-        return(GRAM_ERROR_STDIN_NOTFOUND);
-    }
-
     if (strlen(params->std_out) == 0)
     {
        strcpy(params->std_out, GRAM_DEFAULT_STDOUT);
@@ -666,8 +661,26 @@ grami_jm_request_params(gram_specification_t * description_tree,
        strcpy(params->std_err, GRAM_DEFAULT_STDERR);
     }
 
-/*  create the std files
- */ 
+    /*
+     * change to the right directory, so that std* files
+     * are interpreted relative to this directory
+     */
+    if (chdir(params->dir) != 0)
+    {
+	return(GRAM_ERROR_BAD_DIRECTORY);
+    }
+
+    /*
+     * Verify the std_in file exists, Otherwise error out.
+     */
+    if (stat(params->std_in, &statbuf) != 0)
+    {
+        return(GRAM_ERROR_STDIN_NOTFOUND);
+    }
+
+    /*
+     * create the std_out and std_err files
+     */ 
     tmp_fd = open(params->std_out, O_WRONLY | O_CREAT | O_TRUNC, 0666 );
     close(tmp_fd);
     tmp_fd = open(params->std_err, O_WRONLY | O_CREAT | O_TRUNC, 0666 );
