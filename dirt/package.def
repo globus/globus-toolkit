@@ -135,3 +135,9 @@ globus_gridftp_server           gridftp/server/src              dirt.sh
 globus_gridftp_server_control   gridftp/server-lib/src          dirt.sh
 globus_xio                      xio/src                         dirt.sh
 globus_gcs_b38b4d8c_setup       gsi/gcs/setup                   dirt.sh
+globus_authz_callout_error      gsi/authz/error                 dirt.sh
+globus_authz                    gsi/authz/source                dirt.sh
+globus_authz_test               gsi/authz/test                  dirt.sh
+globus_authz_null_callout       gsi/authz_null_callout/source   dirt.sh
+globus_authz_gaa_callout        gsi/authz_gaa_callout/source    dirt.sh
+gaa_simple_test                 gsi/gaa_callbacks/gaa_simpe/test dirt.sh
