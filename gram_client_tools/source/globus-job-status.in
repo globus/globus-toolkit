@@ -13,6 +13,8 @@ globus_source ${libexecdir}/globus-sh-tools.sh
 
 PROGRAM_NAME=`echo $0 | ${GLOBUS_SH_SED-sed} -e 's|.*/||g'`
 PROGRAM_VERSION='@VERSION@'
+PACKAGE='@PACKAGE@'
+VERSION='@VERSION@'
 DIRT_TIMESTAMP='@DIRT_TIMESTAMP@'
 DIRT_BRANCH_ID='@DIRT_BRANCH_ID@'
 
