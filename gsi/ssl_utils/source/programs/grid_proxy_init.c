@@ -199,6 +199,8 @@ main(
     ASN1_UTCTIME *                      asn1_time = NULL;
     void *                              restriction_buf = NULL;
     size_t                              restriction_buf_len = 0;
+    char *                              restriction_filename = NULL;
+    FILE *                              fp;
     int                                 (*pw_cb)() = NULL;
 
     
@@ -359,9 +361,8 @@ main(
         }
         else if (strcmp(argp,"-restriction")==0)
         {
-            args_verify_next(i,argp,"restriction string missing");
-            restriction_buf = (void *)argv[++i];
-            restriction_buf_len = strlen(restriction_buf) +1;
+            args_verify_next(i,argp,"restriction file name missing");
+            restriction_filename = argv[++i];
         }
         else
             args_error(i,argp,"unrecognized option");
@@ -476,6 +477,25 @@ main(
         fflush(stdout);
     }
 
+    if(restriction_filename)
+    {
+        if(!(fp = fopen(restriction_filename,"r")))
+        {
+            fprintf(stderr,"Unable to open restrictions file\n");
+            goto err;
+        }
+        
+        restriction_buf = malloc(512);
+        
+        while(restriction_buf_len !=
+              (restriction_buf_len += 
+               fread(&restriction_buf[restriction_buf_len],1,512,fp)))
+        {
+            restriction_buf = realloc(restriction_buf,
+                                      restriction_buf_len + 512);
+        }
+    }
+    
     if (proxy_create_local(pcd,
                            outfile,
                            hours,
