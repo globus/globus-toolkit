@@ -45,6 +45,8 @@ my $trusted_certs_dir = "";
 
 my $ca_install_hash = "__CACERT_HASH__";
 
+my $installed_cert_hash = undef;
+
 if(defined($opt_nonroot))
 {
     if($opt_nonroot eq "") 
@@ -191,24 +193,15 @@ if ($result != 0)
   die "Failed to set permissions on $trusted_certs_dir/${ca_install_hash}.signing_policy. Aborting.";
 }
 
-if(defined($opt_default))
-{
+$installed_cert_hash = get_hash(${trusted_certs_dir});
 
-	system "rm -f $target_dir/grid-security.conf";
-	my $ret_value = ($? >> 8);
-	system "rm -f $target_dir/globus-user-ssl.conf";
-	$ret_value += ($? >> 8);
-	system "rm -f $target_dir/globus-host-ssl.conf";
-	$ret_value += ($? >> 8);
-
-	if($ret_value > 0) { die "\nERROR: Can't delete security config files from $target_dir\n\n"; }
-
-	my $ret_value  = symlink("${trusted_certs_dir}/grid-security.conf.${ca_install_hash}",   "${target_dir}/grid-security.conf");
-	$ret_value += symlink("${trusted_certs_dir}/globus-user-ssl.conf.${ca_install_hash}", "${target_dir}/globus-user-ssl.conf");
-	$ret_value += symlink("${trusted_certs_dir}/globus-host-ssl.conf.${ca_install_hash}", "${target_dir}/globus-host-ssl.conf");
-	if($ret_value < 3) { die "\nERROR: Can't create symlinks for security config files from $trusted_certs_dir to $target_dir\n\n"; }
-
-}
+# check for already existing config files in grid-security
+handle_config_file("grid-security.conf", "grid-security.conf.${ca_install_hash}", 
+		   "${target_dir}", "${trusted_certs_dir}");
+handle_config_file("globus-user-ssl.conf", "globus-user-ssl.conf.${ca_install_hash}", 
+		   "${target_dir}", "${trusted_certs_dir}");
+handle_config_file("globus-host-ssl.conf", "globus-host-ssl.conf.${ca_install_hash}", 
+		   "${target_dir}", "${trusted_certs_dir}");
 
 my @statres = stat "$globusdir/etc/globus_packages/globus_trusted_ca_${ca_install_hash}_setup/pkg_data_noflavor_data.gpt";
 
@@ -224,6 +217,102 @@ $metadata->finish();
 
 print "$myname: Complete\n";
 
+sub handle_config_file
+{
+    my $file = shift;
+    my $globus_ca_file = shift;
+    my $current_dir = shift;
+    my $move_dir = shift;
+
+    my $symlink_exists = eval { symlink("",""); 1 };
+    die "ERROR: symbolic links not supported on this machine.\n" if( ! $symlink_exists );
+
+    if ( ! -f "$current_dir/$file" )
+    {
+	# if no config files in grid-security dir, make symlinks of
+        # of Globus CA config files
+	$opt_default = 1;
+	check_default($file, $current_dir, $move_dir, 0);
+    }
+    else
+    {
+	if( ! ( -l "$current_dir/$file" ) )
+	{
+	    # if old grid-security config files are not symlinked
+            # then move them to certificates dir and make symlinks
+            # from them
+
+	    system("cp -f $current_dir/$file $move_dir/$file.$installed_cert_hash");
+	    die "ERROR: Can't copy $current_dir/$file to $move_dir/$file.$installed_cert_hash.\n" if(($? >> 8) > 0);
+	    check_default($file, $current_dir, $move_dir, 1);
+	}
+	else
+	{
+	    check_default($file, $current_dir, $move_dir, 0);
+	}
+    }
+}
+
+sub check_default
+{
+    my $file = shift;
+    my $current_dir = shift;
+    my $move_dir = shift;
+    my $dodefault = shift;
+
+    if($opt_default)
+    {
+	system("rm -f $current_dir/$file");
+	die "ERROR: Can't delete $current_dir/$file" if (($? >> 8) > 0);
+	die "ERROR: Can't create symlink from $move_dir/$file.${ca_cert_hash} to  $current_dir/$file.\n"
+	    if (! symlink("$move_dir/$file.${ca_install_hash}", "$current_dir/$file"));
+    }
+    elsif($dodefault)
+    {
+	system("rm -f $current_dir/$file");
+	die "ERROR: Can't delete $current_dir/$file" if (($? >> 8) > 0);
+	die "ERROR: Can't create symlink from $move_dir/$file.$installed_cert_hash to  $current_dir/$file.\n"
+	    if (! symlink("$move_dir/$file.$installed_cert_hash", "$current_dir/$file"));
+    }
+}
+
+sub get_hash
+{
+    my $tmp_dirname = shift;
+    opendir HANDLE, $tmp_dirname;
+    my @entries = readdir(HANDLE);
+    closedir(HANDLE);
+    
+    my @ca_certs = ();
+    
+    for my $ent (@entries)
+    {
+	if($ent =~ /[0-9a-zA-Z]*\.0$/)
+	{
+	    unshift @ca_certs, $ent;
+	}
+    }
+    
+    if (scalar(@ca_certs) == 1)
+    {
+	my $h = shift @ca_certs;
+	$h =~ /(.*)\.0/;
+	return $1;
+    }
+    elsif(scalar(@ca_certs) > 1)
+    {
+	warn "\nWARNING:  Can't match the previously installed GSI configuration files\n" . 
+	     "          to a CA certificate. For the configuration files ending in\n" .
+	     "          \"00000000\" located in $tmp_dirname,\n" .
+	     "          change the \"00000000\" extension to the hash of the correct\n" .
+	     "          CA certificate.\n\n";
+	return "00000000";
+    }
+    else
+    {
+	return undef;
+    }
+}
 
 sub pod2usage 
 {
@@ -243,7 +332,10 @@ sub pod2usage
               
               -default
                  sets the CA being installed to be the
-                 default CA for this host.
+                 default CA for this host.  If
+                 this option is not used, this CA only
+                 becomes the default if no other CA has already
+                 been installed.
           ]\n";
 
   exit $ex;
