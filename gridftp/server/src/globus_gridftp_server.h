@@ -339,6 +339,9 @@ typedef struct globus_gfs_transfer_info_s
     int                                 node_count;    
     /** node index */
     int                                 node_ndx;
+
+    /** client requested storage space size */
+    globus_off_t                        alloc_size;
 } globus_gfs_transfer_info_t;
 
 /*

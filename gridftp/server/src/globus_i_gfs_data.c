@@ -76,6 +76,7 @@ typedef struct
 
     gss_cred_id_t                       del_cred;
     char *                              username;
+    char *                              real_username;
     char *                              home_dir;
     uid_t                               uid;
     int                                 gid_count;
@@ -928,6 +929,8 @@ globus_l_gfs_data_authorize(
         op->session_handle->home_dir = strdup(pwent->pw_dir);
     }
 
+    op->session_handle->real_username = globus_libc_strdup(pwent->pw_name);
+    
     rc = globus_i_gfs_acl_init(
         &op->session_handle->acl_handle,
         context,
@@ -4195,6 +4198,10 @@ globus_i_gfs_data_session_stop(
             {
                 globus_free(session_handle->username);
             }
+            if(session_handle->real_username)
+            {
+                globus_free(session_handle->real_username);
+            }
             if(session_handle->home_dir)
             {
                 globus_free(session_handle->home_dir);
@@ -4891,6 +4898,19 @@ globus_gridftp_server_get_session_uid(
     GlobusGFSDebugEnter();
 
     *uid = op->session_handle->uid;
+
+    GlobusGFSDebugExit();
+}
+
+void
+globus_gridftp_server_get_session_username(
+    globus_gfs_operation_t              op,
+    char **                             username)
+{
+    GlobusGFSName(globus_gridftp_server_get_session_username);
+    GlobusGFSDebugEnter();
+
+    *username = globus_libc_strdup(op->session_handle->real_username);
 
     GlobusGFSDebugExit();
 }
