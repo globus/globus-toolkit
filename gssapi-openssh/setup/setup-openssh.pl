@@ -144,7 +144,7 @@ if ($response eq "n")
     print "\n";
     print "Exiting gsi_openssh setup.\n";
 
-    exit 0;
+    exit;
 }
 
 print "\n";
