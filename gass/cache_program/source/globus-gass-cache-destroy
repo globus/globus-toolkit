@@ -6,12 +6,6 @@
 #     $Revision$
 #     $Author$
  
-prefix=@prefix@
-exec_prefix=@exec_prefix@
-libexecdir=@libexecdir@
-bindir=@bindir@
-
-
 # defaults list of machine to clean
 TARGETS=${HOME}/.globus/my-contacts
 
