@@ -54,6 +54,9 @@ typedef struct globus_l_xio_telnet_handle_s
     globus_xio_iovec_t                  read_iovec;
     globus_xio_iovec_t                  write_iovec;
     unsigned char                       last_char;
+    globus_bool_t                       finish;
+    globus_result_t                     finish_res;
+    globus_size_t                       finish_len;
 } globus_l_xio_telnet_handle_t;
 
 typedef struct
@@ -256,6 +259,12 @@ globus_l_xio_telnet_cmd_write_cb(
         globus_l_xio_telnet_request_data(handle, op);
     }
     globus_mutex_unlock(&handle->mutex);
+    if(handle->finish)
+    {
+        handle->finish = GLOBUS_FALSE;
+        globus_xio_driver_finished_read(
+            op, handle->finish_res, handle->finish_len);       
+    }
 }
 
 static void
@@ -280,6 +289,12 @@ globus_l_xio_telnet_read_cb(
         globus_l_xio_telnet_request_data(handle, op);
     }
     globus_mutex_unlock(&handle->mutex);
+    if(handle->finish)
+    {
+        handle->finish = GLOBUS_FALSE;
+        globus_xio_driver_finished_read(
+            op, handle->finish_res, handle->finish_len);       
+    }
 }
 
 static void
@@ -347,7 +362,9 @@ globus_l_xio_telnet_request_data(
         }
         handle->read_buffer_ndx = remainder;
 
-        globus_xio_driver_finished_read(op, GLOBUS_SUCCESS, len);
+        handle->finish = GLOBUS_TRUE;
+        handle->finish_len = len;
+        handle->finish_res = GLOBUS_SUCCESS;
     }
     else
     {
@@ -377,7 +394,9 @@ globus_l_xio_telnet_request_data(
     return;
 
   err:
-    globus_xio_driver_finished_read(op, res, 0);
+    handle->finish = GLOBUS_TRUE;
+    handle->finish_len = 0;
+    handle->finish_res = res;
 }
 
 static globus_result_t
@@ -613,8 +632,13 @@ globus_l_xio_telnet_read(
         handle->user_read_iovec_count = iovec_count;
         globus_l_xio_telnet_request_data(handle, op);
     }
-    globus_mutex_unlock(&handle->mutex);
-
+    globus_mutex_unlock(&handle->mutex);    
+    if(handle->finish)
+    {
+        handle->finish = GLOBUS_FALSE;
+        globus_xio_driver_finished_read(
+            op, handle->finish_res, handle->finish_len);      
+    }
     return GLOBUS_SUCCESS;
 }
 

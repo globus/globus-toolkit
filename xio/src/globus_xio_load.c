@@ -58,7 +58,7 @@ globus_xio_driver_load(
     }
     
     hook = (globus_xio_driver_hook_t *) globus_extension_lookup(
-        &handle, GLOBUS_XIO_DRIVER_REGISTRY, driver_name);
+        &handle, GLOBUS_XIO_DRIVER_REGISTRY, (void *) driver_name);
     if(!hook)
     {
         snprintf(buf, 256, GLOBUS_XIO_EXTENSION_FORMAT, driver_name);
@@ -72,7 +72,7 @@ globus_xio_driver_load(
         
         activated = GLOBUS_TRUE;
         hook = (globus_xio_driver_hook_t *) globus_extension_lookup(
-            &handle, GLOBUS_XIO_DRIVER_REGISTRY, driver_name);
+            &handle, GLOBUS_XIO_DRIVER_REGISTRY, (void *) driver_name);
     }
     
     if(!hook)
