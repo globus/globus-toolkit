@@ -258,6 +258,7 @@ globus_fifo_move(
     {
         return -1;
     }
+    globus_fifo_init(fifo_dest);
     s_fifo_dest = *fifo_dest;
     s_fifo_src = *fifo_src;
     if(s_fifo_dest == GLOBUS_NULL || s_fifo_src == GLOBUS_NULL)
