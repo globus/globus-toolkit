@@ -11,9 +11,13 @@ globus_source ${libexecdir}/globus-sh-tools.sh
 #     $Author$
 
 
-progname=`echo $0 | ${GLOBUS_SH_SED-sed} -e 's|^.*/\([^/]*\)|\1|g'`
+PROGRAM_NAME=`echo $0 | ${GLOBUS_SH_SED-sed} -e 's|.*/||g'`
+PROGRAM_VERSION='@VERSION@'
+DIRT_TIMESTAMP='@DIRT_TIMESTAMP@'
+DIRT_BRANCH_ID='@DIRT_BRANCH_ID@'
 
-short_usage="$progname [-help] [jobID]"
+
+short_usage="$PROGRAM_NAME [-help] [-version] [jobID]"
 
 long_usage ()
 {
@@ -21,7 +25,7 @@ ${GLOBUS_SH_CAT-cat} >&2 <<EOF
 
 Usage: ${short_usage}
 
-    $progname prints out the status of a job previously started by
+    $PROGRAM_NAME prints out the status of a job previously started by
     globus-job-submit, identified by the string "jobID". A valid proxy
     certificate is required for this operation to succeed.
 

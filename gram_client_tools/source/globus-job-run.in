@@ -7,15 +7,19 @@
 . ${GLOBUS_LOCATION}/libexec/globus-script-initializer
 globus_source ${libexecdir}/globus-sh-tools.sh
 
-progname=`echo $0 | ${GLOBUS_SH_SED-sed} -e 's|^.*/\([^/]*\)|\1|g'`
+PROGRAM_NAME=`echo $0 | ${GLOBUS_SH_SED-sed} -e 's|.*/||g'`
+PROGRAM_VERSION='@VERSION@'
+DIRT_TIMESTAMP='@DIRT_TIMESTAMP@'
+DIRT_BRANCH_ID='@DIRT_BRANCH_ID@'
 
-case "$progname" in
+
+case "$PROGRAM_NAME" in
 *-run)
-   short_usage="$progname {[-:] <contact string> [-np N] <executable> [<arg>...]}..."
-   std_file_statement="default to stdout/stdout of $progname."
+   short_usage="$PROGRAM_NAME {[-:] <contact string> [-np N] <executable> [<arg>...]}..."
+   std_file_statement="default to stdout/stdout of $PROGRAM_NAME."
    ;;
 *-submit)
-   short_usage="$progname [-help] <contact string> [-np N] <executable> [<arg>...]"
+   short_usage="$PROGRAM_NAME [-help] <contact string> [-np N] <executable> [<arg>...]"
    std_file_statement="is retrieved later using globus-job-get-output."
    ;;
 esac
@@ -24,37 +28,37 @@ long_usage ()
 {
 ${GLOBUS_SH_CAT-cat} >&2 <<EOF
 
-Usage: $progname \\
-      [-help|-usage]                       # print usage and exit
-      [-version]                           # print version and exit
-Usage: $progname \\
-      [-dumprsl]                         \\ # output RSL, don't run job
-      [-dryrun]                          \\ # verify RSL, don't run job
-      [-verify]                          \\ # perform dryrun, then run job
-      [-file             file]           \\ # read rest of arguments from file
-      [-stdin    [-l|-s] file]           \\ # global input default
-      [-stdout   [-l|-s] file]           \\ # global output default
-      [-stderr   [-l|-s] file]           \\ # global error output default
-      [-env              name=value]...  \\ # global environment default
-      [-args             [jobarg]...]    \\ # job-wide arguments
-      [ host-clause  |                   \\ # job description
-        -: host-clause...]               \\ # subjob description (multi-req)
+Usage: $PROGRAM_NAME
+      [-help|-usage]                     print usage and exit
+      [-version]                         print version and exit
+Usage: $PROGRAM_NAME
+      [-dumprsl]                         output RSL, don't run job
+      [-dryrun]                          verify RSL, don't run job
+      [-verify]                          perform dryrun, then run job
+      [-file             file]           read rest of arguments from file
+      [-stdin    [-l|-s] file]           global input default
+      [-stdout   [-l|-s] file]           global output default
+      [-stderr   [-l|-s] file]           global error output default
+      [-env              name=value]...  global environment default
+      [-args             [jobarg]...]    job-wide arguments
+      [ host-clause  |                   job description
+        -: host-clause...]               subjob description (multi-req)
 
 host-clause syntax:
-      { contact string                   \\ # only the hostname is required.
-        [-np             N]              \\ # number of processing elements
-        [-count          N]              \\ # same as -np
-        [-host-count     nodes]          \\ # number of SMP nodes (IBM SP)
-        [-m[axtime]      minutes]        \\ # time to allocate for the job
-        [-p[roject]      projectID]      \\ # scheduling/accounting project ID
-        [-q[ueue]        queueID]        \\ # scheduling/accounting queue ID
-        [-d[ir]          directory]      \\ # working directory
-        [-env            name=value]...  \\ # environment binding
-        [-stdin  [-l|-s] file]           \\ # input
-        [-stdout [-l|-s] file]           \\ # output
-        [-stderr [-l|-s] file]           \\ # error output
-        [-x rsl-clause]                  \\ # RSL extension capability
-        [-l|-s] executable [args...]     \\ # executable and clause arguments
+      { contact string                   only the hostname is required.
+        [-np             N]              number of processing elements
+        [-count          N]              same as -np
+        [-host-count     nodes]          number of SMP nodes (IBM SP)
+        [-m[axtime]      minutes]        time to allocate for the job
+        [-p[roject]      projectID]      scheduling/accounting project ID
+        [-q[ueue]        queueID]        scheduling/accounting queue ID
+        [-d[ir]          directory]      working directory
+        [-env            name=value]...  environment binding
+        [-stdin  [-l|-s] file]           input
+        [-stdout [-l|-s] file]           output
+        [-stderr [-l|-s] file]           error output
+        [-x rsl-clause]                  RSL extension capability
+        [-l|-s] executable [args...]     executable and clause arguments
 
    Job stdin defaults to /dev/null.
    Job stdout/stderr $std_file_statement
@@ -308,7 +312,7 @@ parse_fileopt ()
     #
     # The following settings are triggered:
     #
-    # progname    option             flag   action
+    # PROGRAM_NAME    option             flag   action
     # -----------------------------------------------------------
     # run         -stdin,executable  -s     enable GASS read
     # run         -stdout,-stderr    -s     enable GASS write
@@ -321,7 +325,7 @@ parse_fileopt ()
     fi
 
     stagevar=dummy
-    case "${progname}:${opt}" in
+    case "${PROGRAM_NAME}:${opt}" in
 	*-run:-stdin | *-run:executable)
 	    stagevar=job_needs_gass_read
 	    ;;
@@ -663,7 +667,7 @@ parse_global_opts ()
 		globus_args_option_error "$1" \
 				      "Cannot mix single and multi-req syntax"
 	    fi
-	    case "${progname}" in
+	    case "${PROGRAM_NAME}" in
 		*-submit)
 		    globus_args_option_error "$1" "batch multi-reqs not supported"
 		    ;;
@@ -743,7 +747,7 @@ parse_top ()
     # there are some differences in default settings for job-run and
     # job-submit....
     #
-    case "${progname}" in
+    case "${PROGRAM_NAME}" in
 	*-submit)
 	    job_needs_gass_output=false
 	    job_cache_stdout=true
@@ -799,7 +803,7 @@ then
 	gassflag="-w"
     fi
 
-    case "${progname}:${job_is_multi}" in
+    case "${PROGRAM_NAME}:${job_is_multi}" in
 	*submit:true)
 	    echo "this statement should never have been executed" >&2
 	    error_exit 1

@@ -62,6 +62,7 @@ typedef struct globus_i_globusrun_gram_monitor_s
 
     globus_bool_t  verbose;
     unsigned long  job_state;
+    int            failure_code;
 } globus_i_globusrun_gram_monitor_t;
 
 /*****************************************************************************
@@ -269,7 +270,7 @@ static char *  long_usage = \
 			"\nUse -help to display full usage\n", \
 			oneline_usage); \
     globus_module_deactivate_all(); \
-    exit(1); \
+    exit(-1); \
 }
 
 #define globusrun_l_args_error_fmt(fmt,arg) \
@@ -281,7 +282,7 @@ static char *  long_usage = \
 			"\nUse -help to display full usage\n", \
 			arg, oneline_usage); \
     globus_module_deactivate_all(); \
-    exit(1); \
+    exit(-1); \
 }
 
 
@@ -481,7 +482,7 @@ static int arg_f_mode = O_RDONLY;
 				   GLOBUS_NULL   ) )  /* error on argument line */
 	{
 	    globus_module_deactivate_all();
-	    exit(1);
+	    exit(-1);
 	}
 
 	/* maximum one unflagged argument should remain: the RSL string */
@@ -698,7 +699,7 @@ static int arg_f_mode = O_RDONLY;
 	globus_libc_fprintf(stderr,
 			    "%s Error: Bad RSL\n",
 			    program);
-	err=-2;
+	err=GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
 	return err;
     }
 
@@ -774,7 +775,7 @@ static int arg_f_mode = O_RDONLY;
 
 	if(url_relation_string == GLOBUS_NULL)
 	{
-	    err=-3;
+	    err=GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
 
 	    globus_libc_fprintf(stderr,
 				"%s Error: Malloc failed\n",
@@ -1168,6 +1169,7 @@ globus_l_globusrun_gram_callback_func(void *user_arg,
 	    globus_libc_printf("GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED\n");
 	}
         monitor->done = GLOBUS_TRUE;
+	monitor->failure_code = errorcode;
 	break;
     case GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE:
 	if(monitor->verbose)
@@ -1234,6 +1236,7 @@ globus_l_globusrun_gramrun(char * request_string,
     }
 
     monitor.done = GLOBUS_FALSE;
+    monitor.failure_code = 0;
     monitor.verbose=verbose;
     globus_mutex_init(&monitor.mutex, GLOBUS_NULL);
     globus_cond_init(&monitor.cond, GLOBUS_NULL);
@@ -1366,7 +1369,10 @@ globus_l_globusrun_gramrun(char * request_string,
     globus_mutex_destroy(&monitor.mutex);
     globus_cond_destroy(&monitor.cond);
 
-    err=!(monitor.job_state == GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE);
+    if(monitor.job_state != GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE)
+    {
+	err = monitor.failure_code;
+    }
 
 hard_exit:
 
@@ -2093,7 +2099,7 @@ globus_l_globusrun_status_job(char * job_contact)
                  "GRAM Job status failed because %s (error code %d)\n",
                  globus_gram_protocol_error_string(failure_code),
                  failure_code);
-	    return -1;
+	    return failure_code;
 	}
     }
     else
