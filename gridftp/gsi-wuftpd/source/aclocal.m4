@@ -124,8 +124,8 @@ if test "$gssapi_type" = "globus" ; then
 	else
 	    AC_MSG_ERROR(failed)
 	fi
-	. gpt_build_temp.sh
-	rm gpt_build_temp.sh
+	. ./gpt_build_temp.sh
+	rm ./gpt_build_temp.sh
 
 	inc="${GLOBUS_LOCATION}/include"
 	GSSAPI_CFLAGS="-I${inc} -I${inc}/${globus_flavor} ${GPT_CONFIG_CFLAGS}"
@@ -393,8 +393,8 @@ AC_ARG_ENABLE(globus-data, [  --disable-globus-data   don't use globus data code
 	else
 	    AC_MSG_ERROR(failed)
 	fi
-	. gpt_build_temp.sh
-	rm gpt_build_temp.sh
+	. ./gpt_build_temp.sh
+	rm ./gpt_build_temp.sh
 
 	inc="${GLOBUS_LOCATION}/include"
 	GLOBUS_DATA_CFLAGS="-I${inc} -I${inc}/${globus_flavor} ${GPT_CONFIG_CFLAGS}"
