@@ -3,12 +3,13 @@
 BEGIN
 {
     use Config;
-    my $path = $ENV{GLOBUS_LOCATION} . '/lib';
 
     push(@INC, "@GLOBUS_LOCATION@/lib/perl");
     $ENV{GLOBUS_LOCATION} =
         "@GLOBUS_LOCATION@" if(!exists($ENV{GLOBUS_LOCATION}));
 }
+
+my $path = $ENV{GLOBUS_LOCATION} . '/lib';
 
 if($Config{osname} eq 'irix')
 {
