@@ -479,7 +479,7 @@ status_file_gen(char * my_job_status)
     fprintf(log_fp, "in status_file_gen\n");
 
     sprintf(status_file, "%s/%s_%lu",
-            GLOBUS_STATUS_DIR,
+            grami_jm_status_dir,
             STATUS_FILE_PREFIX,
             (unsigned long) getpid(0) );
 
