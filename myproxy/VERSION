@@ -6,6 +6,8 @@ Version History
 v0.6.3 XX XX 200X (GPT package version 1.15)
   - Modified client tools to attempt connecting to the server first,
     before prompting for user input, to catch server problems early.
+  - added initial experimental support for Kerberos authentication via
+    the SASL/GSSAPI mechanism.
 
 v0.6.2 21 Jun 2004 (GPT package version 1.14)
   - added initial experimental support for PAM authentication via
