@@ -20,7 +20,7 @@ setup_environment() {
 		export JAVA_HOME=/usr/java/jdk1.3.1_06
 	fi
 
-	export OGSA_HOME=`pwd`/gt3-core-bin/gt3-core
+	export OGSA_HOME=`pwd`/gt3-core/core
 }
 
 # If we're on an MCS machine, just checkout from filesystem.
@@ -82,6 +82,8 @@ make_package() {
 	if [ -d $destdir ]; then
 		echo Skipping package $name;
 		echo Delete $destdir to force rebuild;
+	elif [ x$name = x ]; then
+		echo Skipping missing packagedata
 	else
 		echo Building package $name;
 		mkdir -p $destdir
@@ -98,6 +100,8 @@ make_package() {
 		if [ "x"$gar != "x" ]; then
 			echo Copying GAR $gar
 			cp ogsa-cvs/$subdir/$gar $destdir
+		fi
+		if [ -f metadata/$name/pkg_data_src.gpt ]; then
 			cp metadata/$name/pkg_data_src.gpt gt3-$name
 		fi
 		touch $destdir/INSTALL
