@@ -232,7 +232,8 @@ public class TransferJob {
     public String toString() {
 
         return new String("From URL: " + transfer.getSourceUrl() + "\n" +
-                "To URL: " + transfer.getDestinationUrl() + "\n");
+                "To URL: " + transfer.getDestinationUrl() + "\n"+ "Id: " 
+                +this.getTransferId() );
     }
 
 

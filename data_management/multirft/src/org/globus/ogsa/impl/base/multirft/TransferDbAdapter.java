@@ -672,6 +672,7 @@ public class TransferDbAdapter {
             query.append( requestId );
             query.append( " AND status=4 AND source_url like '%" );
             query.append( "source%' AND dest_url like '%destination%'" );
+            query.append(" order by id ");
             logger.debug( "getting transferjob " + query.toString() );
             ResultSet rs = st.executeQuery( query.toString() );
             transferJob = getTransferJobFromRS( rs );
@@ -706,7 +707,7 @@ public class TransferDbAdapter {
             StringBuffer query = new StringBuffer( 5000 );
             query.append( "SELECT * FROM transfer where request_id=" );
             query.append( requestId );
-            query.append( " AND status=4 OR status=1" );
+            query.append( " AND status=4 OR status=1 order by id" );
             logger.debug(
                     "Getting TransferJob from Database:" + query.toString() );
 
@@ -844,15 +845,20 @@ public class TransferDbAdapter {
 
         try {
             logger.debug( "In transfer dbAdapter update " +
-                    transferJob.getTransferId() + " " + transferJob.getStatus() );
+                    transferJob.getTransferId() + " " 
+                    + transferJob.getStatus() + " " +
+                    transferJob.getSourceUrl() + " " + 
+                    transferJob.getDestinationUrl());
             Statement st = c.createStatement();
-            int update = st.executeUpdate(
-                    "UPDATE transfer SET status= " +
-                    transferJob.getStatus() + ",attempts=" +
-                    transferJob.getAttempts() + ",dest_url='"
-                     + transferJob.getDestinationUrl() + "',source_url='"
-                     + transferJob.getSourceUrl() + "' where id=" +
-                    transferJob.getTransferId() );
+            StringBuffer query = new StringBuffer(5000);
+            query.append("UPDATE transfer SET status= ").append(
+                    transferJob.getStatus()).append( ",attempts=").append(
+                    transferJob.getAttempts()).append( ",dest_url='").append(
+                     transferJob.getDestinationUrl()).append( "',source_url='"
+                     ).append(transferJob.getSourceUrl()).append("' where id=")
+                     .append (transferJob.getTransferId() );
+            logger.debug("Updating transfer "+query.toString()); 
+            int update = st.executeUpdate(query.toString());
             st.close();
         } catch ( Exception e ) {
             returnDBConnection( c );

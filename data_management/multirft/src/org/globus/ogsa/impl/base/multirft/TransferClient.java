@@ -286,12 +286,32 @@ public class TransferClient {
             GridFTPRestartMarkerElement gridFTPRestartMarkerElement,
             ServiceData gridFTPPerfMarkerSD,
             GridFTPPerfMarkerElement gridFTPPerfMarkerElement ) {
-        this.markerListener = new MyMarkerListener( this.dbOptions, transferProgress,
+        this.markerListener = new MyMarkerListener( transferProgress,
                 serviceData, transferProgressData, this.size,
                 restartMarkerServiceData, restartMarker,
                 gridFTPRestartMarkerSD, gridFTPRestartMarkerElement,
                 gridFTPPerfMarkerSD, gridFTPPerfMarkerElement );
         this.markerListener.setTransferId( this.transferid );
+    }
+
+
+    /**
+     *  Sets the myMarkerListener attribute of the TransferClient object
+     *
+     *@param  markerListener  The new myMarkerListener value
+     */
+    public void setMyMarkerListener( MyMarkerListener markerListener ) {
+        this.markerListener = markerListener;
+    }
+
+
+    /**
+     *  Gets the size attribute of the TransferClient object
+     *
+     *@return    The size value
+     */
+    public long getSize() {
+        return this.size;
     }
 
 
@@ -368,6 +388,7 @@ public class TransferClient {
 
         try {
             this.transferid = transferid;
+            logger.debug("transfer id in transfer client: " + this.transferid);
             sourceGlobusURL = new GlobusURL( sourceURL );
             destinationGlobusURL = new GlobusURL( destinationURL );
             sourceHostName = sourceGlobusURL.getHost();
@@ -418,7 +439,7 @@ public class TransferClient {
                 this.urlExpander.start();
             } else {
                 size = sourceHost.getSize( sourcePath );
-                markerListener = new MyMarkerListener( dbOptions, transferProgress,
+                markerListener = new MyMarkerListener( transferProgress,
                         serviceData,
                         transferProgressData, size,
                         restartMarkerServiceData,
@@ -598,6 +619,14 @@ public class TransferClient {
      */
     public void setSourcePath( String sourcePath ) {
         this.sourcePath = "/" + sourcePath;
+        this.markerListener = null;
+        try {
+            this.size = sourceHost.getSize( this.sourcePath );
+        } catch ( Exception e ) {
+            logger.error( "Unable to get size of : " + sourcePath, e );
+            status = 2;
+        }
+
     }
 
 
@@ -723,6 +752,8 @@ public class TransferClient {
             destinationHost.setTCPBufferSize( this.tcpBufferSize );
             sourceHost.extendedTransfer( this.sourcePath, this.destinationHost,
                     this.destinationPath, markerListener );
+            logger.debug( "Transfer done" );
+            this.markerListener = null;
             status = 0;
         } catch ( Exception e ) {
             logger.debug( "Exception in transfer", e );

@@ -69,7 +69,6 @@ public class MyMarkerListener
     /**
      *  Constructor for the MyMarkerListener object
      *
-     *@param  dbOptions                     Description of the Parameter
      *@param  transferProgress              Description of the Parameter
      *@param  serviceData                   Description of the Parameter
      *@param  transferProgressData          Description of the Parameter
@@ -81,7 +80,7 @@ public class MyMarkerListener
      *@param  gridFTPPerfMarkerSD           Description of the Parameter
      *@param  gridFTPPerfMarkerElement      Description of the Parameter
      */
-    public MyMarkerListener( TransferDbOptions dbOptions,
+    public MyMarkerListener(
             FileTransferProgressType transferProgress,
             ServiceDataSet serviceData,
             ServiceData transferProgressData, long size,
@@ -93,7 +92,7 @@ public class MyMarkerListener
             GridFTPPerfMarkerElement gridFTPPerfMarkerElement ) {
 
         try {
-            dbAdapter = new TransferDbAdapter( dbOptions );
+            dbAdapter = TransferDbAdapter.getTransferDbAdapter();
             list = new ByteRangeList();
             this.transferProgress = transferProgress;
             this.serviceData = serviceData;
@@ -105,7 +104,7 @@ public class MyMarkerListener
             this.gridFTPRestartMarkerElement = gridFTPRestartMarkerElement;
             this.gridFTPPerfMarkerSD = gridFTPPerfMarkerSD;
             this.gridFTPPerfMarkerElement = gridFTPPerfMarkerElement;
-        } catch ( RemoteException re ) {
+        } catch ( Exception re ) {
             logger.error( "Cannot create DbAdapter" + re.getMessage() );
         }
     }
@@ -391,7 +390,7 @@ public class MyMarkerListener
                             e.getMessage() );
                 }
             } catch ( PerfMarkerException e ) {
-                logger.debug( "Exception in perfMarkerArrived" );
+                logger.debug( "Exception in perfMarkerArrived" +e.getMessage());
             }
         } else {
             logger.info( "Stripe Bytes Transferred: not present" );

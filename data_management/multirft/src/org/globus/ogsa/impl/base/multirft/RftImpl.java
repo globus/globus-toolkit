@@ -53,6 +53,7 @@ import org.globus.ogsa.base.multirft.TransferType;
 import org.globus.ogsa.base.multirft.Version;
 import org.globus.ogsa.config.ConfigException;
 import org.globus.ogsa.config.ContainerConfig;
+import org.globus.ogsa.impl.base.multirft.MyMarkerListener;
 import org.globus.ogsa.impl.base.multirft.TransferDbAdapter;
 import org.globus.ogsa.impl.base.multirft.TransferDbOptions;
 import org.globus.ogsa.impl.base.multirft.TransferJob;
@@ -182,7 +183,6 @@ public class RftImpl
                 TransferJob transferJob = new TransferJob( transfers[temp],
                         TransferJob.STATUS_PENDING,
                         0 );
-                transferJob.setTransferId( transferCount );
                 processURLs( transferJob );
                 TransferThread transferThread = new TransferThread( transferJob );
                 transferThread.start();
@@ -691,6 +691,14 @@ public class RftImpl
                         logger.debug( "Reusing TransferClient from the pool" );
                         transferClient.setSourceURL( transferJob.getSourceUrl() );
                         transferClient.setDestinationURL( transferJob.getDestinationUrl() );
+                       
+                         MyMarkerListener myMarkerListener = new
+                         MyMarkerListener( transferProgress, serviceData
+                         , transferProgressData, transferClient.getSize()
+                         , restartMarkerServiceData, restartMarkerDataType
+                         , gridFTPRestartMarkerSD, gridFTPRestartMarkerSDE
+                         , gridFTPPerfMarkerSD, gridFTPPerfMarkerSDE );
+                         transferClient.setMyMarkerListener( myMarkerListener );
                         transferClient.setStatus( TransferJob.STATUS_ACTIVE );
                     }
                 } catch ( Exception e ) {
@@ -722,7 +730,6 @@ public class RftImpl
                     transferClient.setRestartMarker( restartMarker );
 
                 }
-                logger.debug( "Transfer client should be 6 here : " + transferClient.getStatus() );
                 if ( transferClient != null ) {
                     if ( transferClient.getStatus() == 6 ) {
                         transferClient.setStatus( TransferJob.STATUS_EXPANDING );
