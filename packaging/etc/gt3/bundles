@@ -1,15 +1,25 @@
 BUNDLE gt3-all-src
 	cas
 	servicegroup
+	globus_servicegroup_setup
 	rips
+	globus_rips_setup
 	index
+	globus_index_setup
 	sdb
+	globus_sdb_setup
 	rft
+	globus_rft_setup
 	providers
+	globus_providers_setup
 	mds-db
+	globus_mds_db_setup
 	jms
+	globus_jms_setup
 	filestreaming
+	globus_filestreaming_setup
 	aggregator
+	globus_aggregator_setup
 	core
 	globus_core
 

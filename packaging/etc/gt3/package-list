@@ -3,7 +3,7 @@ globus_aggregator_setup information_services/aggregator-setup		gpt
 cas			cas
 core			ogsa
 mds-db			information_services/db
-globus_mds-db_setup     information_services/mds-db-setup		gpt
+globus_mds_db_setup     information_services/mds-db-setup		gpt
 dbgs			playground/java/database
 filestreaming		data_management/filestreaming
 globus_filestreaming_setup  data_management/filestreaming-setup		gpt
