@@ -134,11 +134,12 @@ static ERR_STRING_DATA prxyerr_str_reasons[]=
     {PRXYERR_R_PROCESS_CERTS, "unable to access trusted certificates in:"},
     {PRXYERR_R_PROCESS_PROXY, "processing user proxy cert"},
     {PRXYERR_R_NO_TRUSTED_CERTS, "check X509_CERT_DIR and X509_CERT_FILE"},
-    {PRXYERR_R_PROBLEM_KEY_FILE, "bad file system permissions on private key"},
-    {PRXYERR_R_ZERO_LENGTH_KEY_FILE, "zero file length on private key"},
-    {PRXYERR_R_ZERO_LENGTH_CERT_FILE, "zero file length on certificate"},
+    {PRXYERR_R_PROBLEM_KEY_FILE, "bad file system permissions on private key\n"
+                                 "     must only be readable by the user"},
+    {PRXYERR_R_ZERO_LENGTH_KEY_FILE, "private key file is empty"},
     {PRXYERR_R_PROBLEM_NOKEY_FILE, "user private key not found"},
     {PRXYERR_R_PROBLEM_NOCERT_FILE, "user certificate not found"},
+    {PRXYERR_R_INVALID_CERT, "no certificate in file"},
     {PRXYERR_R_USER_CERT_EXPIRED, "user certificate has expired"},
     {PRXYERR_R_SERVER_CERT_EXPIRED, "server certificate has expired"},
     {PRXYERR_R_PROXY_EXPIRED, "proxy expired: run grid-proxy-init or wgpi first"},
@@ -158,7 +159,7 @@ static ERR_STRING_DATA prxyerr_str_reasons[]=
     {PRXYERR_R_CA_POLICY_PARSE, "CA policy parse problems"},
     {PRXYERR_R_CA_UNKNOWN,"remote certificate signed by unknown CA"},
     {PRXYERR_R_PROBLEM_CLIENT_CA, "Problems getting client_CA list"},
-    {PRXYERR_R_CB_NO_PW, "proxy expired:Run grid-proxy-init or wgpi first"},
+    {PRXYERR_R_CB_NO_PW, "no proxy credentials: run grid-proxy-init or wgpi first"},
     {PRXYERR_R_CB_CALLED_WITH_ERROR,"Certificate verify failed:"},
     {PRXYERR_R_CLASS_ADD_OID,"can't find CLASS_ADD OID"},
     {PRXYERR_R_CLASS_ADD_EXT,"problem adding CLASS_ADD Extension"},
@@ -167,6 +168,7 @@ static ERR_STRING_DATA prxyerr_str_reasons[]=
     {PRXYERR_R_DELEGATE_CREATE,"problem creating delegate extension"},
     {PRXYERR_R_DELEGATE_COPY,"problem copying delegate extension to proxy"},
     {PRXYERR_R_BUFFER_TOO_SMALL,"buffer too small"},
+    {PRXYERR_R_CERT_NOT_YET_VALID,"remote credential not yet valid"},
     {0,NULL},
 };
 
@@ -1832,6 +1834,7 @@ proxy_verify_callback(
      * the SSL. We have saved a pointer to the  context handle
      * in the SSL, and its magic number should be PVD_MAGIC_NUMBER 
      */
+
 #ifdef DEBUG
     fprintf(stderr,"\nproxy_verify_callback\n");
 #endif
@@ -1922,6 +1925,11 @@ proxy_verify_callback(
         /* if already failed, skip the rest, but add error messages */
         if (!ok)
         {
+            if (ctx->error==X509_V_ERR_CERT_NOT_YET_VALID)
+            {
+                PRXYerr(PRXYERR_F_VERIFY_CB,PRXYERR_R_CERT_NOT_YET_VALID);
+            }
+
             goto fail_verify;
         }
 #ifdef DEBUG
@@ -2051,7 +2059,8 @@ proxy_verify_callback(
                 ctx->error = X509_V_ERR_ERROR_IN_CRL_NEXT_UPDATE_FIELD;
                 goto fail_verify;
             }
-            
+           
+
             if (i < 0)
             {
                 PRXYerr(PRXYERR_F_VERIFY_CB,PRXYERR_R_CRL_HAS_EXPIRED);
@@ -2072,6 +2081,7 @@ proxy_verify_callback(
             fprintf(stderr,"Checking  CRL\n");
 #endif
             /* check if this cert is revoked */
+
 
             n = sk_X509_REVOKED_num(crl_info->revoked);
             for (i=0; i<n; i++)
@@ -2365,6 +2375,7 @@ fail_verify:
             case X509_V_OK:
             case X509_V_ERR_INVALID_PURPOSE:
             case X509_V_ERR_APPLICATION_VERIFICATION:
+
                  ERR_add_error_data(7, 
                     "\n        File=", 
                     ca_policy_file_path ? ca_policy_file_path : "UNKNOWN",
@@ -2374,7 +2385,16 @@ fail_verify:
                     "\n        issuer =",
                     issuer_s ? issuer_s : "UNKNOWN");
             break;
+            case X509_V_ERR_CERT_NOT_YET_VALID:
 
+                 ERR_add_error_data(5, 
+                    "\n    Remote Certificate:",
+                    "\n        subject=",
+                    subject_s ? subject_s : "UNKNOWN",
+                    "\n        issuer =",
+                    issuer_s ? issuer_s : "UNKNOWN");
+ 
+            break;
             case X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN:
                  PRXYerr(PRXYERR_F_VERIFY_CB,PRXYERR_R_CA_UNKNOWN);
                     ERR_add_error_data(2, "\n        issuer =",
@@ -3258,11 +3278,21 @@ proxy_load_user_cert(
                               &(pcd->ucert),
                               OPENSSL_PEM_CB(NULL,NULL)) == NULL)
             {
-                PRXYerr(PRXYERR_F_INIT_CRED,PRXYERR_R_PROCESS_CERT);
-                ERR_add_error_data(2, "\n        File=", user_cert);
-                fclose(fp);
-                status = PRXYERR_R_PROCESS_CERT;
-                goto err;
+               if (ERR_peek_error() == ERR_PACK(ERR_LIB_PEM,PEM_F_PEM_READ_BIO,PEM_R_NO_START_LINE))
+                {
+                    ERR_clear_error();
+                    PRXYerr(PRXYERR_F_INIT_CRED,PRXYERR_R_INVALID_CERT);
+                    status = PRXYERR_R_INVALID_CERT;
+                } 
+                else
+                { 
+                    PRXYerr(PRXYERR_F_INIT_CRED,PRXYERR_R_PROCESS_CERT);
+                    status = PRXYERR_R_PROCESS_CERT;
+                }
+                    ERR_add_error_data(2, "\n        File=", user_cert);
+                    fclose(fp);
+                    goto err;
+                
             }
             fclose(fp);
         }
