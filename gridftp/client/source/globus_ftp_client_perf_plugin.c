@@ -91,8 +91,8 @@ perf_plugin_complete_cb(
     if(ps->complete_cb)
     {
         ps->complete_cb(
-            handle,
             ps->user_specific,
+            handle,
             ps->success);
     }
 }
@@ -252,8 +252,8 @@ perf_plugin_response_cb(
         }
 
         ps->marker_cb(
-            handle,
             ps->user_specific,
+            handle,
             time_stamp_int,
             time_stamp_tenght,
             stripe_ndx,
@@ -302,8 +302,8 @@ perf_plugin_data_cb(
             ps->last_time = time_now;
 
             ps->marker_cb(
-                handle,
                 ps->user_specific,
+                handle,
                 timebuf.time,
                 timebuf.millitm / 100,
                 0,
@@ -351,8 +351,8 @@ perf_plugin_get_cb(
     if(ps->begin_cb)
     {
         ps->begin_cb(
-            handle,
             ps->user_specific,
+            handle,
             url,
             GLOBUS_NULL);
     }
@@ -406,8 +406,8 @@ perf_plugin_put_cb(
     if(ps->begin_cb)
     {
         ps->begin_cb(
-            handle,
             ps->user_specific,
+            handle,
             GLOBUS_NULL,
             url);
     }
@@ -450,8 +450,8 @@ perf_plugin_transfer_cb(
     if(ps->begin_cb)
     {
         ps->begin_cb(
-            handle,
             ps->user_specific,
+            handle,
             source_url,
             dest_url);
     }

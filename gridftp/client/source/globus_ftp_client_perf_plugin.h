@@ -75,8 +75,8 @@ globus_module_descriptor_t globus_i_ftp_client_perf_plugin_module;
  */
 
 typedef void (*globus_ftp_client_perf_plugin_begin_cb_t)(
-    globus_ftp_client_handle_t *                    handle,
     void *                                          user_specific,
+    globus_ftp_client_handle_t *                    handle,
     const char *                                    source_url,
     const char *                                    dest_url);
 
@@ -117,8 +117,8 @@ typedef void (*globus_ftp_client_perf_plugin_begin_cb_t)(
  */
 
 typedef void (*globus_ftp_client_perf_plugin_marker_cb_t)(
-    globus_ftp_client_handle_t *                    handle,
     void *                                          user_specific,
+    globus_ftp_client_handle_t *                    handle,
     long                                            time_stamp_int,
     char                                            time_stamp_tength,
     int                                             stripe_ndx,
@@ -149,8 +149,8 @@ typedef void (*globus_ftp_client_perf_plugin_marker_cb_t)(
  */
 
 typedef void (*globus_ftp_client_perf_plugin_complete_cb_t)(
-    globus_ftp_client_handle_t *                    handle,
     void *                                          user_specific,
+    globus_ftp_client_handle_t *                    handle,
     globus_bool_t                                   success);
 
 /**

@@ -43,8 +43,8 @@ typedef struct
 static
 globus_bool_t
 restart_marker_begin_cb(
-    globus_ftp_client_handle_t *            handle,
     void *                                  user_arg,
+    globus_ftp_client_handle_t *            handle,
     const char *                            source_url,
     const char *                            dest_url,
     globus_ftp_client_restart_marker_t *    user_saved_marker)
@@ -61,8 +61,8 @@ restart_marker_begin_cb(
 static
 void
 restart_marker_marker_cb(
-    globus_ftp_client_handle_t *            handle,
     void *                                  user_arg,
+    globus_ftp_client_handle_t *            handle,
     globus_ftp_client_restart_marker_t *    marker)
 {
     marker_state_t *                        marker_state;
@@ -79,8 +79,8 @@ restart_marker_marker_cb(
 static
 void
 restart_marker_complete_cb(
-    globus_ftp_client_handle_t *            handle,
     void *                                  user_arg,
+    globus_ftp_client_handle_t *            handle,
     globus_object_t *                       error,
     const char *                            error_url)
 {

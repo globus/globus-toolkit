@@ -86,8 +86,8 @@ restart_marker_plugin_complete_cb(
     if(ps->complete_cb)
     {
         ps->complete_cb(
-            handle,
             ps->user_arg,
+            handle,
             ps->error_obj,
             ps->error_url);
     }
@@ -200,8 +200,8 @@ restart_marker_plugin_response_cb(
         if(count)
         {
             ps->marker_cb(
-                handle,
                 ps->user_arg,
+                handle,
                 &ps->restart_marker);
         }
     }
@@ -251,8 +251,8 @@ restart_marker_plugin_data_cb(
             ps->last_time = time_now;
 
             ps->marker_cb(
-                handle,
                 ps->user_arg,
+                handle,
                 &ps->restart_marker);
         }
 
@@ -306,8 +306,8 @@ restart_marker_plugin_get_cb(
     if(ps->begin_cb)
     {
         restart = ps->begin_cb(
-            handle,
             ps->user_arg,
+            handle,
             url,
             GLOBUS_NULL,
             &ps->restart_marker);
@@ -374,8 +374,8 @@ restart_marker_plugin_put_cb(
     if(ps->begin_cb)
     {
         restart = ps->begin_cb(
-            handle,
             ps->user_arg,
+            handle,
             GLOBUS_NULL,
             url,
             &ps->restart_marker);
@@ -444,8 +444,8 @@ restart_marker_plugin_transfer_cb(
     if(ps->begin_cb)
     {
         restart = ps->begin_cb(
-            handle,
             ps->user_arg,
+            handle,
             source_url,
             dest_url,
             &ps->restart_marker);

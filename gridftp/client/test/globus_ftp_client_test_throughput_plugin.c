@@ -31,8 +31,8 @@ globus_l_ftp_client_test_throughput_plugin_deactivate(void)
 
 static
 void throughput_plugin_begin_cb(
+    void *                                          user_arg,
     globus_ftp_client_handle_t *                    handle,
-    void *                                          user_specific,
     const char *                                    source_url,
     const char *                                    dest_url)
 {
@@ -41,8 +41,8 @@ void throughput_plugin_begin_cb(
 
 static
 void throughput_plugin_stripe_cb(
-    globus_ftp_client_handle_t *                    handle,
     void *                                          user_arg,
+    globus_ftp_client_handle_t *                    handle,
     int                                             stripe_ndx,
     globus_off_t                                    bytes,
     float                                           instantaneous_throughput,
@@ -57,8 +57,8 @@ void throughput_plugin_stripe_cb(
 
 static
 void throughput_plugin_total_cb(
-    globus_ftp_client_handle_t *                    handle,
     void *                                          user_arg,
+    globus_ftp_client_handle_t *                    handle,
     globus_off_t                                    bytes,
     float                                           instantaneous_throughput,
     float                                           avg_throughput)
@@ -71,8 +71,8 @@ void throughput_plugin_total_cb(
 
 static
 void throughput_plugin_complete_cb(
+    void *                                          user_arg,
     globus_ftp_client_handle_t *                    handle,
-    void *                                          user_specific,
     globus_bool_t                                   success)
 {
     globus_libc_fprintf(stderr, "throughput_plugin_complete_cb\n");

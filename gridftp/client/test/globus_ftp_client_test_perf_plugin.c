@@ -31,8 +31,8 @@ globus_l_ftp_client_test_perf_plugin_deactivate(void)
 
 static
 void perf_plugin_begin_cb(
-    globus_ftp_client_handle_t *                    handle,
     void *                                          user_specific,
+    globus_ftp_client_handle_t *                    handle,
     const char *                                    source_url,
     const char *                                    dest_url)
 {
@@ -41,8 +41,8 @@ void perf_plugin_begin_cb(
 
 static
 void perf_plugin_marker_cb(
-    globus_ftp_client_handle_t *                    handle,
     void *                                          user_specific,
+    globus_ftp_client_handle_t *                    handle,
     long                                            time_stamp_int,
     char                                            time_stamp_tength,
     int                                             stripe_ndx,
@@ -58,8 +58,8 @@ void perf_plugin_marker_cb(
 
 static
 void perf_plugin_complete_cb(
-    globus_ftp_client_handle_t *                    handle,
     void *                                          user_specific,
+    globus_ftp_client_handle_t *                    handle,
     globus_bool_t                                   success)
 {
     globus_libc_fprintf(stderr, "perf_plugin_complete_cb\n");

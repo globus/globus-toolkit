@@ -69,8 +69,8 @@ globus_module_descriptor_t globus_i_ftp_client_throughput_plugin_module;
  */
 
 typedef void (*globus_ftp_client_throughput_plugin_begin_cb_t)(
-    globus_ftp_client_handle_t *                    handle,
     void *                                          user_arg,
+    globus_ftp_client_handle_t *                    handle,
     const char *                                    source_url,
     const char *                                    dest_url);
 
@@ -104,8 +104,8 @@ typedef void (*globus_ftp_client_throughput_plugin_begin_cb_t)(
  */
 
 typedef void (*globus_ftp_client_throughput_plugin_stripe_cb_t)(
-    globus_ftp_client_handle_t *                    handle,
     void *                                          user_arg,
+    globus_ftp_client_handle_t *                    handle,
     int                                             stripe_ndx,
     globus_off_t                                    bytes,
     float                                           instantaneous_throughput,
@@ -138,8 +138,8 @@ typedef void (*globus_ftp_client_throughput_plugin_stripe_cb_t)(
  */
 
 typedef void (*globus_ftp_client_throughput_plugin_total_cb_t)(
-    globus_ftp_client_handle_t *                    handle,
     void *                                          user_arg,
+    globus_ftp_client_handle_t *                    handle,
     globus_off_t                                    bytes,
     float                                           instantaneous_throughput,
     float                                           avg_throughput);
@@ -166,8 +166,8 @@ typedef void (*globus_ftp_client_throughput_plugin_total_cb_t)(
  */
 
 typedef void (*globus_ftp_client_throughput_plugin_complete_cb_t)(
-    globus_ftp_client_handle_t *                    handle,
     void *                                          user_arg,
+    globus_ftp_client_handle_t *                    handle,
     globus_bool_t                                   success);
 
 globus_result_t

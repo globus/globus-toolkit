@@ -76,8 +76,8 @@ typedef struct throughput_plugin_info_s
 static
 void
 throughput_plugin_begin_cb(
-    globus_ftp_client_handle_t *                handle,
     void *                                      user_specific,
+    globus_ftp_client_handle_t *                handle,
     const char *                                source_url,
     const char *                                dest_url)
 {
@@ -89,8 +89,8 @@ throughput_plugin_begin_cb(
     if(info->begin_cb)
     {
         info->begin_cb(
-            handle,
             info->user_arg,
+            handle,
             source_url,
             dest_url);
     }
@@ -111,8 +111,8 @@ throughput_plugin_begin_cb(
 static
 void
 throughput_plugin_marker_cb(
-    globus_ftp_client_handle_t *                handle,
     void *                                      user_specific,
+    globus_ftp_client_handle_t *                handle,
     long                                        time_stamp_int,
     char                                        time_stamp_tength,
     int                                         stripe_ndx,
@@ -242,8 +242,8 @@ throughput_plugin_marker_cb(
             (info->cur_times[stripe_ndx] - info->start_time);
 
         info->per_stripe_cb(
-            handle,
             info->user_arg,
+            handle,
             stripe_ndx,
             nbytes,
             instantaneous_throughput,
@@ -279,8 +279,8 @@ throughput_plugin_marker_cb(
         }
 
         info->total_cb(
-            handle,
             info->user_arg,
+            handle,
             nbytes,
             instantaneous_throughput,
             avg_throughput);
@@ -299,8 +299,8 @@ throughput_plugin_marker_cb(
 static
 void
 throughput_plugin_complete_cb(
-    globus_ftp_client_handle_t *                handle,
     void *                                      user_specific,
+    globus_ftp_client_handle_t *                handle,
     globus_bool_t                               success)
 {
     throughput_plugin_info_t *                  info;
@@ -309,7 +309,10 @@ throughput_plugin_complete_cb(
 
     if(info->complete_cb)
     {
-        info->complete_cb(handle, info->user_arg, success);
+        info->complete_cb(
+            info->user_arg,
+            handle,
+            success);
     }
 
     if(info->prev_times)

@@ -77,8 +77,8 @@ globus_l_globus_url_copy_signal(int signum, RETSIGTYPE (*func)(int));
 static
 void
 globus_l_gass_copy_performance_cb(
-    globus_gass_copy_handle_t *                     handle,
     void *                                          user_arg,
+    globus_gass_copy_handle_t *                     handle,
     globus_off_t                                    total_bytes,
     float                                           instantaneous_throughput,
     float                                           avg_throughput);
@@ -919,8 +919,8 @@ Returns:
 static
 void
 globus_l_gass_copy_performance_cb(
-    globus_gass_copy_handle_t *                     handle,
     void *                                          user_arg,
+    globus_gass_copy_handle_t *                     handle,
     globus_off_t                                    total_bytes,
     float                                           instantaneous_throughput,
     float                                           avg_throughput)

@@ -7,6 +7,7 @@
  */
 
 #include "globus_gass_copy.h"
+#include <sys/timeb.h>
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 
@@ -34,9 +35,9 @@ struct globus_gass_copy_perf_info_s
 
     globus_mutex_t                          lock;
 
-    time_t                                  start_time;
+    double                                  start_time;
 
-    time_t                                  prev_time;
+    double                                  prev_time;
     globus_off_t                            prev_bytes;
 
     globus_off_t                            live_bytes;
@@ -45,8 +46,8 @@ struct globus_gass_copy_perf_info_s
 static
 void
 globus_l_gass_copy_perf_ftp_cb(
-    globus_ftp_client_handle_t *            handle,
     void *                                  user_arg,
+    globus_ftp_client_handle_t *            handle,
     globus_off_t                            bytes,
     float                                   instantaneous_throughput,
     float                                   avg_throughput);
@@ -1009,38 +1010,40 @@ globus_l_gass_copy_perf_local_cb(
     globus_gass_copy_perf_info_t *          perf_info;
     float                                   instantaneous_throughput;
     float                                   avg_throughput;
-    time_t                                  time_now;
+    double                                  time_now;
     globus_off_t                            bytes_now;
-    time_t                                  time_elapsed;
+    double                                  time_elapsed;
+    struct timeb                            timebuf;
 
     perf_info = (globus_gass_copy_perf_info_t *) user_arg;
 
     globus_mutex_lock(&perf_info->lock);
     {
-        time_now = time(NULL);
+        ftime(&timebuf);
+        time_now = timebuf.time + (timebuf.millitm / 1000.0);
         bytes_now = perf_info->live_bytes;
     }
     globus_mutex_unlock(&perf_info->lock);
 
     time_elapsed = time_now - perf_info->prev_time;
-    if(time_elapsed == 0)
+    if(time_elapsed < 0.1)
     {
         /* shouldnt be possible (callback delay is 2 secs) */
-        time_elapsed = 1;
+        time_elapsed = 0.1;
     }
 
-    instantaneous_throughput = (float)
+    instantaneous_throughput =
         (bytes_now - perf_info->prev_bytes) /
         time_elapsed;
 
     time_elapsed = time_now - perf_info->start_time;
-    if(time_elapsed == 0)
+    if(time_elapsed < 0.1)
     {
         /* shouldnt be possible (callback delay is 2 secs) */
-        time_elapsed = 1;
+        time_elapsed = 0.1;
     }
 
-    avg_throughput = (float)
+    avg_throughput =
         bytes_now /
         time_elapsed;
 
@@ -1048,8 +1051,8 @@ globus_l_gass_copy_perf_local_cb(
     perf_info->prev_bytes = bytes_now;
 
     perf_info->callback(
-        perf_info->copy_handle,
         perf_info->user_arg,
+        perf_info->copy_handle,
         bytes_now,
         instantaneous_throughput,
         avg_throughput);
@@ -1060,8 +1063,8 @@ globus_l_gass_copy_perf_local_cb(
 static
 void
 globus_l_gass_copy_perf_ftp_cb(
-    globus_ftp_client_handle_t *            handle,
     void *                                  user_arg,
+    globus_ftp_client_handle_t *            handle,
     globus_off_t                            bytes,
     float                                   instantaneous_throughput,
     float                                   avg_throughput)
@@ -1071,8 +1074,8 @@ globus_l_gass_copy_perf_ftp_cb(
     perf_info = (globus_gass_copy_perf_info_t *) user_arg;
 
     perf_info->callback(
-        perf_info->copy_handle,
         perf_info->user_arg,
+        perf_info->copy_handle,
         bytes,
         instantaneous_throughput,
         avg_throughput);
@@ -1085,8 +1088,10 @@ globus_l_gass_copy_perf_setup_local_callback(
 {
     globus_reltime_t                        delay_time;
     globus_reltime_t                        period_time;
+    struct timeb                            timebuf;
 
-    perf_info->start_time = time(NULL);
+    ftime(&timebuf);
+    perf_info->start_time = timebuf.time + (timebuf.millitm / 1000.0);
     perf_info->prev_time = perf_info->start_time;
     perf_info->prev_bytes = 0;
     perf_info->live_bytes = 0;

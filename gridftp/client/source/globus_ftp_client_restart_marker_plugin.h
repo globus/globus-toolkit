@@ -89,8 +89,8 @@ globus_module_descriptor_t globus_i_ftp_client_restart_marker_plugin_module;
 
 typedef globus_bool_t
 (*globus_ftp_client_restart_marker_plugin_begin_cb_t)(
-    globus_ftp_client_handle_t *                            handle,
     void *                                                  user_arg,
+    globus_ftp_client_handle_t *                            handle,
     const char *                                            source_url,
     const char *                                            dest_url,
     globus_ftp_client_restart_marker_t *                    user_saved_marker);
@@ -129,8 +129,8 @@ typedef globus_bool_t
  */
 
 typedef void (*globus_ftp_client_restart_marker_plugin_marker_cb_t)(
-    globus_ftp_client_handle_t *                            handle,
     void *                                                  user_arg,
+    globus_ftp_client_handle_t *                            handle,
     globus_ftp_client_restart_marker_t *                    marker);
 
 /**
@@ -157,8 +157,8 @@ typedef void (*globus_ftp_client_restart_marker_plugin_marker_cb_t)(
  */
 
 typedef void (*globus_ftp_client_restart_marker_plugin_complete_cb_t)(
-    globus_ftp_client_handle_t *                            handle,
     void *                                                  user_arg,
+    globus_ftp_client_handle_t *                            handle,
     globus_object_t *                                       error,
     const char *                                            error_url);
 
