@@ -2992,6 +2992,12 @@ globus_xio_close(
         res = GlobusXIOErrorMemory("operation");
         goto param_error;
     }
+    info = globus_i_xio_blocking_alloc();
+    if(info == NULL)
+    {
+        res = GlobusXIOErrorMemory("internal strucature");
+        goto alloc_error;
+    }
 
     globus_mutex_lock(&handle->context->mutex);
     {
@@ -3012,6 +3018,8 @@ globus_xio_close(
             handle->state = GLOBUS_XIO_HANDLE_STATE_CLOSING;
             /* this is set for the cancel */
         }
+
+        info->op = op;
         /*
          *  set up the operation
          */
@@ -3025,15 +3033,6 @@ globus_xio_close(
         op->entry[0].prev_ndx = -1;/*for first pass there is no return*/
     }
     globus_mutex_unlock(&handle->context->mutex);
-
-    info = globus_i_xio_blocking_alloc();
-    if(info == NULL)
-    {
-        res = GlobusXIOErrorMemory("internal strucature");
-        goto alloc_error;
-    }
-
-    info->op = op;
 
     /* set up op */
     for(ctr = 0; ctr < handle->context->stack_size; ctr++)
