@@ -207,22 +207,39 @@ sub submit
 
 	    if ( ! exec (@cmdline) )
             {
+                my $err = "$!\n";
                 $SIG{PIPE} = 'IGNORE';
-                print WRITER 'X';
+                print WRITER "$err";
                 close(WRITER);
                 exit(1);
             }
 	}
 	else
 	{
+            my $error_code = '';
+
+            if ($pid == undef)
+            {
+                $self->log("fork failed\n");
+                $failure_code = "fork: $!";
+            }
 	    close(WRITER);
 	    
 	    $_ = <READER>;
 	    close(READER);
 
-	    if($_ eq 'X')
+	    if($_ ne '')
 	    {
-		# exec failed. kill rest of job and return an error
+                chomp($_);
+                $self->log("exec failed\n");
+                $failure_code = "exec: $_";
+            }
+
+            if ($failure_code ne '')
+            {
+		# fork or exec failed. kill rest of job and return an error
+
+                $failure_code =~ s/\n/ /g;
 		foreach(@job_id)
 		{
                     $pgid = getpgrp($_);
@@ -236,6 +253,13 @@ sub submit
                         kill(-$signo{KILL}, $pgid);
 
 		}
+
+                local(*ERR);
+                open(ERR, '>' . $description->stderr());
+                print ERR "$failure_code\n";
+                close(ERR);
+
+                $self->respond({GT3_FAILURE_MESSAGE => $failure_code });
 		return Globus::GRAM::Error::JOB_EXECUTION_FAILED;
 	    }
 	    push(@job_id, $pid);
