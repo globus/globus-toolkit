@@ -162,9 +162,6 @@ typedef struct globus_i_wu_monitor_s
 
     char *                     fname;
 
-#if defined(JB_LOG_HERE)
-    globus_off_t	       proxy_nbytes;
-#endif
 } globus_i_wu_monitor_t;
 
 /*
@@ -361,7 +358,7 @@ globus_write(
 static globus_bool_t                    g_log_active = GLOBUS_FALSE;
 static globus_netlogger_handle_t        g_log_globus_nl_handle;
 
-static globus_off_t                     g_log_total_nbytes;
+static globus_off_t                     g_log_total_nbytes = 0;
 static globus_abstime_t                 g_log_last_time;
 
 static long                             g_log_min_msec = 2000;
@@ -370,7 +367,6 @@ static int                              g_log_stripe_ndx = 0;
 void
 create_netlogger_connection()
 {
-    char                                buf[32];
     char *                              stripe_ndx_str;
     char *                              netlogger_delay;
     globus_result_t                     res;
@@ -386,7 +382,6 @@ create_netlogger_connection()
         g_log_min_msec = atoi(netlogger_delay);
     }  
 
-    sprintf(buf, "%d", getpid());
     res = globus_netlogger_handle_init(
               &g_log_globus_nl_handle,
               g_perf_hostname,
@@ -422,16 +417,15 @@ log_start_transfer()
     g_log_total_nbytes = 0;
     GlobusTimeAbstimeGetCurrent(g_log_last_time);
 
-    sprintf(id, "GPFTPD%d", g_log_stripe_ndx);
+    sprintf(id, "BackendProxy-%d", g_log_stripe_ndx);
     sprintf(buf, 
-        "GSID=BackendProxy-%d BE.ID=%d",
-        g_log_stripe_ndx, 
+        "BE.ID=%d",
         (int)getpid());
     res = globus_netlogger_write(
               &g_log_globus_nl_handle,
               "GPFTPD_START",
               id,
-              1,
+              "Emergency",
               buf);
     if(res != GLOBUS_SUCCESS)
     {
@@ -445,7 +439,7 @@ log_start_transfer()
  */
 void
 log_throughput(
-    globus_off_t                        nbytes,
+    globus_size_t                       nbytes,
     globus_bool_t                       last)
 {
     globus_abstime_t                    time_now;
@@ -486,11 +480,10 @@ log_throughput(
         event_str = data_str;
     }
 
-    sprintf(id, "GPFTPD%d", g_log_stripe_ndx);
+    sprintf(id, "BackendProxy-%d", g_log_stripe_ndx);
     sprintf(buf, 
-        "GSID=BackendProxy-%d FTP_NBYTES=%"GLOBUS_OFF_T_FORMAT
+        "FTP_NBYTES=%ld"
         " BE.ID=%d FTP_MS=%ld", 
-        (int)g_log_stripe_ndx, 
         g_log_total_nbytes,
         (int)getpid(),
         (long)msec);
@@ -498,7 +491,7 @@ log_throughput(
               &g_log_globus_nl_handle,
               event_str,
               id,
-              1,
+              "Emergency",
               buf);
     if(res != GLOBUS_SUCCESS)
     {
@@ -635,6 +628,8 @@ usleep(1);
 DEBUG_OPEN();
 G_ENTER();
 
+    rc = globus_module_activate(GLOBUS_FTP_CONTROL_MODULE);
+    assert(rc == GLOBUS_SUCCESS);
 
     g_perf_progname = "wuftpd";
     if(gethostname(g_perf_hostname, 256) != 0)
@@ -649,9 +644,6 @@ G_ENTER();
                                  S_IRUSR | S_IRGRP | S_IROTH);
     }
     setup_volumetable();
-
-    rc = globus_module_activate(GLOBUS_FTP_CONTROL_MODULE);
-    assert(rc == GLOBUS_SUCCESS);
 
     /* added for SC01 ProxyServer demo */
     create_netlogger_connection();
@@ -965,6 +957,7 @@ g_send_data(
     /*
      *  perhaps a time out should be added here
      */
+    log_start_transfer();
     (void) signal(SIGALRM, g_alarm_signal);
     alarm(timeout_connect);
 
