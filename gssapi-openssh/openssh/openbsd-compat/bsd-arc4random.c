@@ -66,7 +66,7 @@ void arc4random_stir(void)
 	unsigned char rand_buf[SEED_SIZE];
 
 	memset(&rc4, 0, sizeof(rc4));
-	if (!RAND_bytes(rand_buf, sizeof(rand_buf)))
+	if (RAND_bytes(rand_buf, sizeof(rand_buf)) <= 0)
 		fatal("Couldn't obtain random bytes (error %ld)",
 		    ERR_get_error());
 	RC4_set_key(&rc4, sizeof(rand_buf), rand_buf);
