@@ -17,7 +17,9 @@ my $test_name="unload";
 my @tests;
 my @todo;
 
-push(@tests,  "$test_name");
+push(@tests,  "$test_name 1");
+push(@tests,  "$test_name 2");
+push(@tests,  "$test_name 3");
 
 if($type == 1)
 {

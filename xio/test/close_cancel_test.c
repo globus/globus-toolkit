@@ -34,8 +34,6 @@ open_cb(
     globus_result_t                             result,
     void *                                      user_arg)
 {
-    globus_mutex_lock(&globus_l_mutex);
-    {
         if(result == GLOBUS_SUCCESS ||
             (!globus_error_match(
                 globus_error_peek(result),
@@ -44,8 +42,6 @@ open_cb(
         {
             fprintf(stderr, "open callback should have been with a cancel.\n");
         }
-    }
-    globus_mutex_unlock(&globus_l_mutex);
 }
 
 int
@@ -83,8 +79,6 @@ close_cancel_main(
 
     if(pos == 1)
     {
-        globus_mutex_lock(&globus_l_mutex);
-        {
             res = globus_xio_register_open(
                     &handle,
                     attr,
@@ -94,8 +88,6 @@ close_cancel_main(
             test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
             res = globus_xio_close(handle, NULL);
             test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
-        }
-        globus_mutex_unlock(&globus_l_mutex);
     }
     else if(pos == 2)
     {
