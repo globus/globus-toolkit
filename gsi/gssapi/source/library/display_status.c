@@ -116,7 +116,8 @@ GSS_CALLCONV gss_display_status(
         error_chain_string = globus_error_print_chain(error_obj);
 
         status_string->value = globus_gsi_cert_utils_create_string(
-            "GSS Minor Status Error Chain:\n%s", error_chain_string);
+            "GSS Minor Status Error Chain:\n%s",
+            error_chain_string == NULL ? "(null)" : error_chain_string);
         
         globus_libc_free(error_chain_string);
         globus_object_free(error_obj);
