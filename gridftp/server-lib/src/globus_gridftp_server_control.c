@@ -3207,9 +3207,15 @@ globus_gridftp_server_control_restart_get(
             restart->offset_a[restart->size] = ent->offset + ent->length;
             ent = (globus_l_gsc_restart_ent_t *)
                 globus_priority_q_first(&restart->q);
-            restart->length_a[restart->size] = 
-                ent->offset - restart->offset_a[restart->size];
-
+            if(ent != NULL)
+            {
+                restart->length_a[restart->size] = 
+                    ent->offset - restart->offset_a[restart->size];
+            }
+            else
+            {
+                restart->length_a[restart->size] = -1;
+            }
             restart->size++;
         }
     }
