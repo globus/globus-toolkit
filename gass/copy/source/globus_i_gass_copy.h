@@ -4,6 +4,7 @@
  */
 #include "globus_gass_copy.h"
 #include "globus_common.h"
+#include "globus_error_string.h"
 
 #ifndef GLOBUS_L_INCLUDE_GLOBUS_GASS_COPY_H
 #define GLOBUS_L_INCLUDE_GLOBUS_GASS_COPY_H
@@ -147,6 +148,7 @@ typedef struct globus_i_gass_copy_state_target_s
 	   * already an ftp_handle in the copy_handle
 	   */
 	    globus_ftp_client_handle_t *		handle;
+	    globus_i_gass_copy_monitor_t        monitor;
 	    int					n_channels;
 	    int					n_reads_posted;
 	} ftp;
