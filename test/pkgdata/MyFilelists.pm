@@ -38,10 +38,6 @@ sub pgm_files {
   $list = $self->{'filelist'}->get_list();
   push @$result, @$list;
   $self->{'filelist'}->reset();
-  $self->{'filelist'}->extract_perl_modules();
-  $list = $self->{'filelist'}->get_list();
-  push @$result, @$list;
-  $self->{'filelist'}->reset();
   return $result;
 }
 
@@ -54,10 +50,6 @@ sub pgm_static_files {
   push @$result, @$list;
   $self->{'filelist'}->reset();
   $self->{'filelist'}->extract_setup_files();
-  $list = $self->{'filelist'}->get_list();
-  push @$result, @$list;
-  $self->{'filelist'}->reset();
-  $self->{'filelist'}->extract_perl_modules();
   $list = $self->{'filelist'}->get_list();
   push @$result, @$list;
   $self->{'filelist'}->reset();
@@ -74,6 +66,10 @@ sub rtl_files {
   push @$result, @$list;
   $self->{'filelist'}->reset();
 
+  $self->{'filelist'}->extract_perl_modules();
+  $list = $self->{'filelist'}->get_list();
+  push @$result, @$list;
+  $self->{'filelist'}->reset();
   return $result;
 }
 
