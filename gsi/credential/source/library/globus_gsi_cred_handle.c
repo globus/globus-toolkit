@@ -1506,7 +1506,7 @@ globus_gsi_cred_verify_cert_chain(
     int                                 callback_data_index;
     globus_result_t                     result = GLOBUS_SUCCESS;
     static char *                       _function_name_ =
-        "globus_gsi_cred_verify_proxy_cert_chain";
+        "globus_gsi_cred_verify_cert_chain";
 
     GLOBUS_I_GSI_CRED_DEBUG_ENTER;
     
@@ -1631,6 +1631,57 @@ globus_gsi_cred_verify_cert_chain(
         X509_STORE_CTX_free(store_context);
     }
 
+    GLOBUS_I_GSI_CRED_DEBUG_EXIT;
+    return result;
+}
+
+
+globus_result_t
+globus_gsi_cred_verify(
+    globus_gsi_cred_handle_t            handle)
+{
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    EVP_PKEY *                          issuer_pkey;
+    X509 *                              issuer_cert;
+    static char *                       _function_name_ =
+        "globus_gsi_cred_verify_cert";
+
+    GLOBUS_I_GSI_CRED_DEBUG_ENTER;
+
+    issuer_cert = sk_X509_value(handle->cert_chain,0);
+
+    if(issuer_cert == NULL)
+    {
+        GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_CRED_ERROR_WITH_CRED_CERT_CHAIN,
+            ("Error getting issuer certificate from cert chain"));
+        goto error;
+    }
+
+    issuer_pkey = X509_get_pubkey(issuer_cert);
+
+    if(issuer_pkey == NULL)
+    {
+        GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_CRED_ERROR_WITH_CRED_CERT_CHAIN,
+            ("Error getting public key from issuer certificate"));
+        goto error;
+    }
+    
+    if(!X509_verify(handle->cert,issuer_pkey))
+    {
+        GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_CRED_ERROR_VERIFYING_CRED,
+            ("Failed to verify credential"));
+    }
+
+    EVP_PKEY_free(issuer_pkey);
+
+ error:
+    
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
 }

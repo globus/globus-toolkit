@@ -949,6 +949,18 @@ main(
             stdout,
             "Proxy Verify OK\n");
     }
+    else
+    {
+        result = globus_gsi_cred_verify(proxy_cred_handle);
+        
+        if(result != GLOBUS_SUCCESS)
+        {
+            globus_libc_fprintf(
+                stderr,
+                "\n\nERROR: Could not verify the signature of the generated proxy certificate\n       This is likely due to a non-matching user key and cert\n\n");
+            GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
+        }
+    }
 
     if(ca_cert_dir)
     {
