@@ -9,7 +9,7 @@ if test -z "${GLOBUS_LOCATION}"; then
 fi
 
 . ${GLOBUS_LOCATION}/libexec/globus-script-initializer
-
+globus_source ${GLOBUS_LOCATION}/libexec/globus-sh-tools.sh
 
 if [ ! -z "${GRID_SECURITY_DIR}" ]; then
     secconfdir=${GRID_SECURITY_DIR}
@@ -58,7 +58,7 @@ ${short_usage}
 EOF
 }
 
-. $libexecdir/globus-args-parser-header
+globus_source $libexecdir/globus-args-parser-header
 
 #SSL related needs
 PATH=${GLOBUS_LOCATION}/bin:${PATH}
@@ -106,7 +106,8 @@ trap cleanup 0
 security_conf=${secconfdir}/grid-security.conf
 
 # See if we can proceed
-. ${security_conf}
+globus_source ${security_conf}
+
 
 # if their domain is localdomain, we don't
 # let them generate a cert request
