@@ -339,18 +339,25 @@ globus_xio_server_cntl(
 /**
  * in tcp driver case this is an accept
  */
+
+typedef void
+(*globus_xio_accept_callback_t)(
+    globus_xio_target_t                         target,
+    globus_xio_driver_server_t                  server_handle,
+    globus_result_t                             result,
+    void *                                      user_arg);
+
 globus_result_t
 globus_xio_server_accept(
     globus_xio_target_t *                       out_target,
-    globus_xio_attr_t                           target_attr,
-    globus_xio_server_t                         server);
+    globus_xio_server_t                         server,
+    globus_xio_attr_t                           accept_attr);
 
 globus_result_t
 globus_xio_server_register_accept(
-    globus_xio_target_t *                       out_target,
-    globus_xio_attr_t                           target_attr,
     globus_xio_server_t                         server,
-    globus_xio_callback_t                       cb,
+    globus_xio_attr_t                           accept_attr,
+    globus_xio_accept_callback_t                cb,
     void *                                      user_arg);
 
 globus_result_t

@@ -34,7 +34,6 @@ globus_i_xio_target_init(
         goto err;
     }
 
-
     target_stack = (struct globus_i_xio_target_stack_s *)
                         globus_malloc(
                             sizeof(struct globus_i_xio_target_stack_s) * 

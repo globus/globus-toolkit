@@ -119,39 +119,48 @@ struct globus_i_xio_stack_s
  *
  *  Not all members are used by target.
  */
-struct globus_i_xio_driver_target_stack_s
+typedef struct globus_i_xio_driver_target_entry_s
 {
     struct globus_xio_driver_s *                driver;
     void *                                      target;
-}
+} globus_i_xio_driver_target_entry_t;
 
-struct globus_i_xio_target_s
+typedef struct globus_i_xio_target_s
 {
-    globus_xio_target_type_t                    type;
+    globus_i_xio_target_type_t                  type;
     int                                         stack_size;
-    globus_i_xio_driver_target_stack_t          entry[1];
-};
+    globus_i_xio_driver_target_entry_t          entry[1];
+} globus_i_xio_target_t;
 
-struct globus_i_xio_server_entry_s
+typedef struct globus_i_xio_server_entry_s
 {
     globus_xio_driver_t                         driver;
-    void *                                      server_attr;
+    void *                                      attr;
     void *                                      server_handle;
 } globus_i_xio_server_entry_t;
 
-struct globus_xio_server_s
+/* 
+ *  
+ */
+typedef struct globus_xio_server_s
 {
     int                                         ndx;
     globus_bool_t                               canceled;
     globus_xio_server_state_t                   state;
-    globus_xio_driver_cancel_callback_t         cancel_cb;
+    globus_xio_driver_accept_cancel_callback_t  cancel_cb;
+    void *                                      cancel_user_arg;
 
-    globus_xio_callback_t                       cb;
+    globus_xio_server_state_t                   state;
+
+    globus_xio_accept_callback_t                cb;
     void *                                      user_arg;
 
-    globus_i_xio_server_entry_t                 driver_entry[1];
+    int                                         ref;
 
-} globus_xio_server_t;
+    int                                         stack_size;
+    globus_i_xio_server_entry_t                 entry[1];
+
+} globus_i_xio_server_t;
 
 
 typedef struct globus_i_xio_handle_s
@@ -166,7 +175,8 @@ typedef struct globus_i_xio_handle_s
 
     /* since only 1 open or close can be outstanding at a time we don't
        need a list */
-    globus_i_xio_operationt_t *                 open_close_op;
+    globus_i_xio_operationt_t *                 open_op;
+    globus_i_xio_operationt_t *                 close_op;
     globus_list_t *                             write_op_list;
     globus_list_t *                             read_op_list;
 
@@ -294,6 +304,20 @@ typedef enum globus_i_xio_operation_type_e
     GLOBUS_XIO_OPERATION_TYPE_WRITE,
     GLOBUS_XIO_OPERATION_TYPE_EOF,
 } globus_i_xio_operation_type_t;
+
+typedef enum globus_i_xio_target_type_e
+{
+    GLOBUS_XIO_TARGET_TYPE_NONE,
+    GLOBUS_XIO_TARGET_TYPE_SERVER,
+    GLOBUS_XIO_TARGET_TYPE_CLIENT,
+} globus_i_xio_target_type_t;
+
+typedef enum globus_xio_server_state_e
+{
+    GLOBUS_XIO_SERVER_STATE_OPEN,
+    GLOBUS_XIO_SERVER_STATE_ACCEPTING,
+    GLOBUS_XIO_SERVER_STATE_CLOSED,
+} globus_xio_server_state_t;
 
 /***************************************************************************
  *                    Driver accessor macros

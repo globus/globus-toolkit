@@ -290,11 +290,45 @@ typedef globus_result_t
  *         the server connection it uses this structure to signal globus_xio 
  *         that it has completed the operation.
  */
+
 typedef globus_result_t
 (*globus_xio_driver_server_accept_t)(
     void *                                      driver_server,
     void *                                      driver_attr,
-    globus_xio_driver_operation_t               op);
+    globus_xio_driver_accept_request_t          accept_req);
+
+typedef void
+(*globus_xio_driver_accept_callback_t)(
+    globus_xio_driver_server_t                  server_handle,
+    globus_result_t                             result,
+    void *                                      user_arg);
+
+globus_result_t
+globus_xio_driver_pass_accept(
+    globus_xio_driver_server_t                  server_handle,
+    globus_xio_driver_accept_callback_t         cb,
+    void *                                      user_arg);
+
+void
+globus_xio_driver_finished_accept(
+    globus_xio_accepted_handle_t                accepted_handle,
+    void *                                      driver_target,
+    globus_result_t                             result);
+
+typedef void
+(*globus_xio_driver_accept_cancel_callback_t)(
+    globus_xio_driver_accept_request_t          accept_req,
+    void *                                      user_arg);
+ 
+void
+globus_xio_server_enable_cancel(
+    globus_xio_driver_accept_request_t          accept_req,
+    globus_xio_driver_accept_cancel_callback_t  cancel_cb,
+    void *                                      user_arg);
+
+void
+globus_xio_server_disable_cancel(
+    globus_xio_driver_accept_request_t          accept_req);
 
 /**
  *  Driver API finished accept
@@ -1154,7 +1188,7 @@ typedef struct globus_xio_driver_s
     globus_xio_driver_handle_cntl_t                     handle_cntl_func;
 
     globus_xio_driver_target_init_t                     target_init_func;
-    globus_xio_driver_target_destroy_t                  target_destroy_finc;
+    globus_xio_driver_target_destroy_t                  target_destroy_func;
 
     /*
      * target init functions.  Must have client or server
