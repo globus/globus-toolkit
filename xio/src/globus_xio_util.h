@@ -165,6 +165,15 @@
             "[%s:%d] Module not activated.",                                \
             _xio_name, __LINE__))                            
                                                                             
+#define GlobusXIOErrorUnloaded()                                            \
+    globus_error_put(                                                       \
+        globus_error_construct_error(                                       \
+            GLOBUS_XIO_MODULE,                                              \
+            NULL,                                                           \
+            GLOBUS_XIO_ERROR_UNLOADED,                                      \
+            "[%s:%d] driver in handle has been unloaded.",                  \
+            _xio_name, __LINE__))                            
+                                                                            
 #define GlobusIXIOUtilTransferIovec(iov, siov, iovc)                        \
     do                                                                      \
     {                                                                       \

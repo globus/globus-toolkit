@@ -147,9 +147,9 @@ globus_i_xio_handle_destroy(
     {
         globus_list_remove(&globus_l_outstanding_handles_list,
             globus_list_search(globus_l_outstanding_handles_list, handle));
-        globus_cond_signal(&globus_l_cond);
     }
     globus_mutex_unlock(&globus_l_mutex);
+
     globus_assert(handle->ref == 0);
     globus_free(handle);
 }

@@ -288,7 +288,8 @@ globus_l_xio_operation_kickout(
 
     GlobusXIODriverDisableCancel(ow->op);
 
-    GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE, ("finishing with=%d\n", ow->res));
+    GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE, 
+        ("finishing with=%d\n", ow->res));
     switch(ow->type)
     {
         case GLOBUS_XIO_OPERATION_TYPE_OPEN:
