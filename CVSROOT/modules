@@ -101,3 +101,7 @@ gs -a \
         ogsa-c\
         ogsa_messaging\
         program_execution
+
+ws -a \
+	ws-gram\
+	wsrf
