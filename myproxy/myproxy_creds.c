@@ -831,7 +831,12 @@ myproxy_creds_retrieve(struct myproxy_creds *creds)
     }
 
     if (read_data_file(creds, data_path) == -1) {
-	verror_put_string("can't read credentials");
+	if (verror_get_errno() == ENOENT) {
+	    verror_clear();
+	    verror_put_string("Credentials do not exist");
+	} else {
+	    verror_put_string("Can't read credentials");
+	}
 	return -1;
     }
 
