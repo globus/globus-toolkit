@@ -536,12 +536,13 @@ if test "x$gsi_path" != "xno" ; then
         #
 
         AC_MSG_CHECKING(whether to compensate linking with LD_LIBRARY_PATH)
-        AC_MSG_RESULT()
+        AC_MSG_RESULT(yes)
 
         if test "x${LD_LIBRARY_PATH}" != "x" ; then
             LD_LIBRARY_PATH="$LD_LIBRARY_PATH:"
         fi
-        export LD_LIBRARY_PATH="$LD_LIBRARY_PATH${globus_lib_dir}"
+        LD_LIBRARY_PATH="$LD_LIBRARY_PATH${globus_lib_dir}"
+        export LD_LIBRARY_PATH
 # End Globus/GSI section
 fi
 
