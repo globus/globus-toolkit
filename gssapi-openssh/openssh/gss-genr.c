@@ -425,7 +425,7 @@ ssh_gssapi_import_name(Gssctxt *ctx, const char *host) {
 	gss_buffer_desc gssbuf;
 	OM_uint32 maj_status, min_status;
 	struct hostent *hostinfo = NULL;
-	char *xhost;
+	char *xhost, *addr;
 	
 	/* Make a copy of the host name, in case it was returned by a
 	 * previous call to gethostbyname(). */	
@@ -439,8 +439,16 @@ ssh_gssapi_import_name(Gssctxt *ctx, const char *host) {
 	if ((hostinfo == NULL) || (hostinfo->h_name == NULL)) {
 		debug("Unable to get FQDN for \"%s\"", xhost);
 	} else {
-		xfree(xhost);
-		xhost = xstrdup(hostinfo->h_name);
+	    	addr = xmalloc(hostinfo->h_length);
+		memcpy(addr, hostinfo->h_addr, hostinfo->h_length);
+		hostinfo = gethostbyaddr(addr, hostinfo->h_length, AF_INET);
+		xfree(addr);
+		if ((hostinfo == NULL) || (hostinfo->h_name == NULL)) {
+		    debug("Unable to get FQDN for \"%s\"", xhost);
+		} else {
+		    xfree(xhost);
+		    xhost = xstrdup(hostinfo->h_name);
+		}
 	}
 		
         gssbuf.length = sizeof("host@")+strlen(xhost);

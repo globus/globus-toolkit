@@ -1086,12 +1086,22 @@ int try_gssapi_authentication(char *host, Options *options)
   int type;
   char *gssapi_auth_type = NULL;
   struct hostent *hostinfo;
-
+  char *addr;
 
   /*
    * host is not guarenteed to be a FQDN, so we need to make sure it is.
    */
   hostinfo = gethostbyname(host);
+
+  if ((hostinfo == NULL) || (hostinfo->h_addr == NULL)) {
+      debug("GSSAPI authentication: Unable to get FQDN for \"%s\"", host);
+      goto cleanup;
+  }
+
+  addr = xmalloc(hostinfo->h_length);
+  memcpy(addr, hostinfo->h_addr, hostinfo->h_length);
+  hostinfo = gethostbyaddr(addr, hostinfo->h_length, AF_INET);
+  xfree(addr);
 
   if ((hostinfo == NULL) || (hostinfo->h_name == NULL)) {
       debug("GSSAPI authentication: Unable to get FQDN for \"%s\"", host);
