@@ -809,6 +809,78 @@ globus_callback_unregister(
     }
 }
 
+globus_result_t
+globus_callback_adjust_oneshot(
+    globus_callback_handle_t            callback_handle,
+    const globus_reltime_t *            new_delay)
+{
+    globus_l_callback_info_t *          callback_info;
+
+    callback_info = (globus_l_callback_info_t *)
+        globus_handle_table_lookup(
+            &globus_l_callback_handle_table, callback_handle);
+    if(!callback_info || callback_info->is_periodic)
+    {
+        return GLOBUS_L_CALLBACK_CONSTRUCT_INVALID_CALLBACK_HANDLE(
+            "globus_callback_adjust_period");
+    }
+    
+    /* this doesnt catch a previously unregistered callback that passed a
+     * NULL unregister -- bad things may happen in that case
+     */
+    if(callback_info->unregister_callback)
+    {
+        return GLOBUS_L_CALLBACK_CONSTRUCT_ALREADY_CANCELED(
+            "globus_callback_unregister");
+    }
+    
+    if(!new_delay)
+    {
+        new_delay = &globus_i_reltime_zero;
+    }
+    
+    if(callback_info->in_queue)
+    {
+        if(globus_reltime_cmp(new_delay, &globus_i_reltime_zero) > 0)
+        {
+            GlobusTimeAbstimeGetCurrent(callback_info->start_time);
+            GlobusTimeAbstimeInc(callback_info->start_time, *new_delay);
+            
+            if(callback_info->in_queue == GLOBUS_L_CALLBACK_QUEUE_TIMED)
+            {
+                globus_priority_q_modify(
+                    &callback_info->my_space->timed_queue,
+                    callback_info,
+                    &callback_info->start_time);
+            }
+            else
+            {
+                GlobusICallbackReadyRemove(
+                    &callback_info->my_space->ready_queue, callback_info);
+                
+                callback_info->in_queue = GLOBUS_L_CALLBACK_QUEUE_TIMED;
+                
+                globus_priority_q_enqueue(
+                    &callback_info->my_space->timed_queue,
+                    callback_info,
+                    &callback_info->start_time);
+            }
+        }
+        else if(callback_info->in_queue == GLOBUS_L_CALLBACK_QUEUE_TIMED)
+        {
+            globus_priority_q_remove(
+                &callback_info->my_space->timed_queue, callback_info);
+            
+            callback_info->in_queue = GLOBUS_L_CALLBACK_QUEUE_READY;
+            
+            GlobusICallbackReadyEnqueue(
+                &callback_info->my_space->ready_queue, callback_info);
+        }
+    }
+    
+    return GLOBUS_SUCCESS;
+}
+
 /**
  * globus_callback_adjust_period
  *

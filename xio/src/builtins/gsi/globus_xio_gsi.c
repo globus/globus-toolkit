@@ -1987,7 +1987,7 @@ globus_l_xio_gsi_read_cb(
         if(no_header == GLOBUS_TRUE)
         {
             /* read at least another header */
-            wait_for = 5 - handle->bytes_read + wait_for;
+            wait_for = 5 - handle->bytes_read;
         }
         else
         {

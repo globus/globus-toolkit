@@ -267,6 +267,15 @@ globus_xio_stack_push_driver(
 
 /**
  *  @ingroup GLOBUS_XIO_API
+ *  Copy a stack object
+ */
+globus_result_t
+globus_xio_stack_copy(
+    globus_xio_stack_t *                dst,
+    globus_xio_stack_t                  src);
+
+/**
+ *  @ingroup GLOBUS_XIO_API
  *  Destroy a stack object.
  */
 globus_result_t

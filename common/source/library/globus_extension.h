@@ -37,6 +37,7 @@ extern globus_module_descriptor_t       globus_i_extension_module;
     extern globus_module_descriptor_t name##_module
 #define GlobusExtensionMyModule(name) &name##_module
 #endif
+
 /**
  * loads the shared library 'lib<extension_name>_<flavor>.so' from
  * $GLOBUS_LOCATION/lib (or other location in LD_LIBRARY_PATH
@@ -54,8 +55,20 @@ extern globus_module_descriptor_t       globus_i_extension_module;
  *      - mapped name in dll hash        XXX not implemented
  *      - load mapped name               XXX not implemented
  *  - <extension_name> in builtin hash
- *  - lib<extension_name>_<build_flavor> in dll hash
- *  - load lib<extension_name>_<build_flavor>
+ *  - <extension_name> in dll hash
+ *  - load library
+ *      if(strchr(<extension_name, '/'))
+ *        - concatenate / + dirname(<entension_name>) +
+ *              /lib + basename(<entension_name>) + _<flavor>.so
+ *          to $GLOBUS_LOCATION/lib and
+ *              each search path in mappings file XXX not implemented
+ *          (eg, for <extension_name> == wsrf/services/CounterService, load
+ *            $GLOBUS_LOCATION/lib/wsrf/services/libCounterService_gcc32dbg.so)
+ *        - lib + basename(<entension_name>) + _<flavor>.so
+ *          subject to LD_LIBRARY_PATH
+ *      else
+ *        - load lib<extension_name>_<build_flavor>
+ *          subject to LD_LIBRARY_PATH
  */
 int
 globus_extension_activate(
