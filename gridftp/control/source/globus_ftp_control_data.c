@@ -6253,6 +6253,14 @@ globus_l_ftp_control_register_close_msg(
     return res;
 }
 
+static
+void
+globus_l_ftp_control_io_close_kickout(
+    void *                                      user_args)
+{
+    globus_l_ftp_io_close_callback(user_args, GLOBUS_NULL, GLOBUS_SUCCESS);
+}
+
 /*
  *  globus_l_ftp_control_stripes_destroy()
  *  --------------------------------------
@@ -6326,6 +6334,11 @@ globus_l_ftp_control_stripes_destroy(
              
             if(res != GLOBUS_SUCCESS)
             {
+                res = globus_callback_register_oneshot(
+                     GLOBUS_NULL,
+                     GLOBUS_NULL,
+                     globus_l_ftp_control_io_close_kickout,
+                     callback_info);
                 globus_assert(res == GLOBUS_SUCCESS);
             }
             globus_list_remove(
@@ -6352,6 +6365,15 @@ globus_l_ftp_control_stripes_destroy(
                       &data_conn->io_handle,
                       globus_l_ftp_io_close_callback,
                       (void *)callback_info);
+            if(res != GLOBUS_SUCCESS)
+            {
+                res = globus_callback_register_oneshot(
+                         GLOBUS_NULL,
+                         GLOBUS_NULL,
+                         globus_l_ftp_control_io_close_kickout,
+                         callback_info);
+                globus_assert(res == GLOBUS_SUCCESS);
+            }
         }
 
         globus_list_free(stripe->free_cache_list);
@@ -6369,7 +6391,15 @@ globus_l_ftp_control_stripes_destroy(
                 &stripe->listener_handle,
                 globus_l_ftp_io_close_callback,
                 (void *)callback_info);
-            globus_assert(res == GLOBUS_SUCCESS);
+            if(res != GLOBUS_SUCCESS)
+            {
+                res = globus_callback_register_oneshot(
+                         GLOBUS_NULL,
+                         GLOBUS_NULL,
+                         globus_l_ftp_control_io_close_kickout,
+                         callback_info);
+                globus_assert(res == GLOBUS_SUCCESS);
+            }
         }
         /* remove the reference the stripe had to it */
         globus_l_ftp_control_dc_dec_ref(transfer_handle);
@@ -7447,7 +7477,15 @@ globus_l_ftp_stream_listen_callback(
                           handle,
                           globus_l_ftp_io_close_callback,
                           (void *)cb_info);
-                globus_assert(res == GLOBUS_SUCCESS);
+                if(res != GLOBUS_SUCCESS)
+                {
+                    res = globus_callback_register_oneshot(
+                             GLOBUS_NULL,
+                             GLOBUS_NULL,
+                             globus_l_ftp_control_io_close_kickout,
+                             cb_info);
+                    globus_assert(res == GLOBUS_SUCCESS);
+                }
             }
         }
 
@@ -8063,7 +8101,15 @@ globus_l_ftp_eb_listen_callback(
                               handle,
                               globus_l_ftp_io_close_callback,
                               (void *)cb_info);
-                    globus_assert(res == GLOBUS_SUCCESS);
+                    if(res != GLOBUS_SUCCESS)
+                    {
+                        res = globus_callback_register_oneshot(
+                                 GLOBUS_NULL,
+                                 GLOBUS_NULL,
+                                 globus_l_ftp_control_io_close_kickout,
+                                 cb_info);
+                        globus_assert(res == GLOBUS_SUCCESS);
+                    }
                 }
             }
             callback = data_conn->callback;
@@ -8453,7 +8499,15 @@ globus_l_ftp_eb_read_header_callback(
                               &data_conn->io_handle,
                               globus_l_ftp_io_close_callback,
                               (void *)cb_info);
-                    globus_assert(res == GLOBUS_SUCCESS);
+                    if(res != GLOBUS_SUCCESS)
+                    {
+                        res = globus_callback_register_oneshot(
+                                 GLOBUS_NULL,
+                                 GLOBUS_NULL,
+                                 globus_l_ftp_control_io_close_kickout,
+                                 cb_info);
+                        globus_assert(res == GLOBUS_SUCCESS);
+                    }
                 }
                 /*
                  *  if we got EOD without a close message
@@ -8679,7 +8733,15 @@ globus_l_ftp_eb_read_callback(
                                   &data_conn->io_handle,
                                   globus_l_ftp_io_close_callback,
                                   (void *)cb_info);
-                        globus_assert(res == GLOBUS_SUCCESS);
+                        if(res != GLOBUS_SUCCESS)
+                        {
+                            res = globus_callback_register_oneshot(
+                                     GLOBUS_NULL,
+                                     GLOBUS_NULL,
+                                     globus_l_ftp_control_io_close_kickout,
+                                     cb_info);
+                            globus_assert(res == GLOBUS_SUCCESS);
+                        }
                     }
                     /*
                      *  if we are caching the data connection
@@ -9291,7 +9353,15 @@ globus_l_ftp_close_msg_callback(
                       &data_conn->io_handle,
                       globus_l_ftp_io_close_callback,
                       (void *)cb_info);
-        globus_assert(res == GLOBUS_SUCCESS);
+        if(res != GLOBUS_SUCCESS)
+        {
+            res = globus_callback_register_oneshot(
+                     GLOBUS_NULL,
+                     GLOBUS_NULL,
+                     globus_l_ftp_control_io_close_kickout,
+                     cb_info);
+            globus_assert(res == GLOBUS_SUCCESS);
+        }
     }
     globus_mutex_unlock(&dc_handle->mutex);
 
