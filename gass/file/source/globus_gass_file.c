@@ -28,12 +28,6 @@ CVS Information:
 #include "globus_gass_cache.h"
 #include "globus_gass_client.h"
 
-#if (defined TARGET_ARCH_BSD)
-  #ifndef O_SYNC
-    #define O_SYNC O_FSYNC
-  #endif
-#endif
-
 /******************************************************************************
                                Type definitions
 ******************************************************************************/
@@ -325,23 +319,13 @@ globus_gass_open(char *url, int oflag, ...)
 	break;
 	
     case (O_WRONLY|O_APPEND):
-	if(oflag & O_SYNC)
-	{
-	    rc = globus_gass_client_put_socket(url,
-					       GLOBUS_NULL,
-					       GLOBUS_TRUE,
-					       GLOBUS_GASS_ACK_COMPLETE,
-					       &file->fd);
+
+	rc = globus_gass_client_put_socket(url,
+					   GLOBUS_NULL,
+					   GLOBUS_TRUE,
+					   GLOBUS_GASS_ACK_NONE,
+					   &file->fd);
 	
-	}
-	else
-	{
-	    rc = globus_gass_client_put_socket(url,
-					       GLOBUS_NULL,
-					       GLOBUS_TRUE,
-					       GLOBUS_GASS_ACK_NONE,
-					       &file->fd);
-	}
 	file->filename = GLOBUS_NULL;
 	if(rc != GLOBUS_GASS_REQUEST_PENDING)
 	{
