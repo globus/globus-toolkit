@@ -68,6 +68,7 @@ AC_OUTPUT(
         programs/grid-cert-renew
         programs/grid-change-pass-phrase
         programs/grid-cert-request
+        programs/grid-default-ca
         doxygen/Makefile
 	doxygen/Doxyfile 
 	doxygen/Doxyfile-internal

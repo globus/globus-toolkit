@@ -10,7 +10,7 @@ Dist_Scripts = \
         grid-cert-info.in \
         grid-change-pass-phrase.in \
         grid-cert-request.in \
-	grid-default-ca
+	grid-default-ca.in
 
 bin_SCRIPTS = $(User_Scripts)
 
