@@ -57,7 +57,6 @@ if [ -n "$1" ]; then
 fi
  
 _hostname="${GLOBUS_HOSTNAME}"
-_domainname="`echo ${_hostname}|${GLOBUS_SH_CUT-cut} -s -d '.' -f '2-'`"
 
 # If the ENV variable is not set, determine its correct value
 if [ -z "${GLOBUS_HOSTNAME}" ] ; then
@@ -74,7 +73,7 @@ if [ -z "${GLOBUS_HOSTNAME}" ] ; then
 
   _basename="`echo ${_fullname} | ${GLOBUS_SH_CUT-cut} -d. -f1`"
  
-  if [ "X$_fullname" = "X$_basename" ] ; then
+  if [ "X$_fullname" = "X$_basename" -a ! -z "$GLOBUS_LOCALDOMAIN" ] ; then
     # Its not fully qualified
     _fullname="${_basename}.${GLOBUS_LOCALDOMAIN}"
   fi
@@ -94,5 +93,7 @@ case "${PROGRAM_NAME}" in
     ;;
 
 esac
+
+
 
 
