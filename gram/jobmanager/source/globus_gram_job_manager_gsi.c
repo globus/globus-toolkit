@@ -500,6 +500,9 @@ globus_gram_job_manager_gsi_relocate_proxy(
 
 	    goto rename_failed;
 	}
+	globus_libc_setenv("X509_USER_PROXY",
+		           globus_libc_strdup(cred_file),
+			   1);
     }
 
 rename_failed:
