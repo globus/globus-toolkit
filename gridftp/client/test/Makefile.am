@@ -78,6 +78,7 @@ test_PROGRAMS= \
 	globus-ftp-client-extended-transfer-test \
 	globus-ftp-client-feat-test \
 	globus-ftp-client-lingering-get-test \
+	globus-ftp-client-mlst-test \
 	globus-ftp-client-mkdir-test \
 	globus-ftp-client-modification-time-test \
 	globus-ftp-client-move-test \
@@ -180,6 +181,9 @@ globus_ftp_client_rmdir_test_LDFLAGS = $(GPT_LDFLAGS)
 
 globus_ftp_client_move_test_SOURCES = globus_ftp_client_move_test.c $(LibHeaders)
 globus_ftp_client_move_test_LDFLAGS = $(GPT_LDFLAGS)
+
+globus_ftp_client_mlst_test_SOURCES = globus_ftp_client_mlst_test.c $(LibHeaders)
+globus_ftp_client_mlst_test_LDFLAGS = $(GPT_LDFLAGS)
 
 globus_ftp_client_ascii_verbose_list_test_SOURCES = globus_ftp_client_ascii_verbose_list_test.c $(LibHeaders)
 globus_ftp_client_ascii_verbose_list_test_LDFLAGS = $(GPT_LDFLAGS)

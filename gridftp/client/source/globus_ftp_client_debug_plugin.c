@@ -170,6 +170,16 @@ globus_l_ftp_client_debug_plugin_machine_list(
 
 static
 void
+globus_l_ftp_client_debug_plugin_modification_time(
+    globus_ftp_client_plugin_t *		plugin,
+    void * 					plugin_specific,
+    globus_ftp_client_handle_t *		handle,
+    const char *				url,
+    const globus_ftp_client_operationattr_t *	attr,
+    globus_bool_t 				restart);
+
+static
+void
 globus_l_ftp_client_debug_plugin_move(
     globus_ftp_client_plugin_t *		plugin,
     void * 					plugin_specific,
@@ -645,6 +655,32 @@ globus_l_ftp_client_debug_plugin_machine_list(
 
 static
 void
+globus_l_ftp_client_debug_plugin_mlst(
+    globus_ftp_client_plugin_t *		plugin,
+    void *					plugin_specific,
+    globus_ftp_client_handle_t *		handle,
+    const char *				url,
+    const globus_ftp_client_operationattr_t *	attr,
+    globus_bool_t 				restart)
+{
+    globus_l_ftp_client_debug_plugin_t *	d;
+
+    d = (globus_l_ftp_client_debug_plugin_t *) plugin_specific;
+
+    if(!d->stream)
+    {
+	return;
+    }
+
+    fprintf(d->stream, "%s%sstarting to MLST %s\n",
+	    d->text ? d->text : "",
+	    d->text ? ": " : "",
+	    url);
+}
+/* globus_l_ftp_client_debug_plugin_machine_list() */
+
+static
+void
 globus_l_ftp_client_debug_plugin_move(
     globus_ftp_client_plugin_t *		plugin,
     void *					plugin_specific,
@@ -1092,7 +1128,8 @@ globus_ftp_client_debug_plugin_init(
     GLOBUS_FTP_CLIENT_DEBUG_PLUGIN_SET_FUNC(plugin, move);
     GLOBUS_FTP_CLIENT_DEBUG_PLUGIN_SET_FUNC(plugin, verbose_list);
     GLOBUS_FTP_CLIENT_DEBUG_PLUGIN_SET_FUNC(plugin, machine_list);
-    GLOBUS_FTP_CLIENT_DEBUG_PLUGIN_SET_FUNC(plugin, list);
+    GLOBUS_FTP_CLIENT_DEBUG_PLUGIN_SET_FUNC(plugin, mlst);
+    GLOBUS_FTP_CLIENT_DEBUG_PLUGIN_SET_FUNC(plugin, list);    
     GLOBUS_FTP_CLIENT_DEBUG_PLUGIN_SET_FUNC(plugin, get);
     GLOBUS_FTP_CLIENT_DEBUG_PLUGIN_SET_FUNC(plugin, put);
     GLOBUS_FTP_CLIENT_DEBUG_PLUGIN_SET_FUNC(plugin, third_party_transfer);

@@ -232,6 +232,7 @@ typedef enum
     GLOBUS_FTP_CLIENT_LIST,
     GLOBUS_FTP_CLIENT_NLST,
     GLOBUS_FTP_CLIENT_MLSD,
+    GLOBUS_FTP_CLIENT_MLST,
     GLOBUS_FTP_CLIENT_GET,
     GLOBUS_FTP_CLIENT_PUT,
     GLOBUS_FTP_CLIENT_TRANSFER,
@@ -289,6 +290,8 @@ typedef enum
     GLOBUS_FTP_CLIENT_TARGET_SETUP_RNFR,
     GLOBUS_FTP_CLIENT_TARGET_SETUP_RNTO,
     GLOBUS_FTP_CLIENT_TARGET_SETUP_MDTM,
+    GLOBUS_FTP_CLIENT_TARGET_SETUP_MLST,
+    GLOBUS_FTP_CLIENT_TARGET_MLST,
     GLOBUS_FTP_CLIENT_TARGET_LIST,
     GLOBUS_FTP_CLIENT_TARGET_RETR,
     GLOBUS_FTP_CLIENT_TARGET_STOR,
@@ -528,6 +531,10 @@ typedef struct globus_i_ftp_client_handle_t
     /** Pointer to user's features buffer */
     globus_i_ftp_client_features_t *		features_pointer;
 
+    /** Pointer to user's MLST fact string buffer */
+    globus_byte_t **		                mlst_buffer_pointer;
+    globus_size_t *                             mlst_buffer_length_pointer;
+
     /** Thread safety */
     globus_mutex_t                              mutex;
 
@@ -682,6 +689,7 @@ typedef struct globus_i_ftp_client_plugin_t
     globus_ftp_client_plugin_verbose_list_t     verbose_list_func;
     globus_ftp_client_plugin_machine_list_t     machine_list_func;
     globus_ftp_client_plugin_list_t		list_func;
+    globus_ftp_client_plugin_mlst_t		mlst_func;
     globus_ftp_client_plugin_get_t		get_func;
     globus_ftp_client_plugin_put_t		put_func;
     globus_ftp_client_plugin_third_party_transfer_t
@@ -833,6 +841,12 @@ globus_i_ftp_client_plugin_notify_verbose_list(
 
 void
 globus_i_ftp_client_plugin_notify_machine_list(
+    globus_i_ftp_client_handle_t *		handle,
+    const char *				url,
+    globus_i_ftp_client_operationattr_t *	attr);
+    
+void
+globus_i_ftp_client_plugin_notify_mlst(
     globus_i_ftp_client_handle_t *		handle,
     const char *				url,
     globus_i_ftp_client_operationattr_t *	attr);

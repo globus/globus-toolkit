@@ -182,7 +182,9 @@ globus_ftp_client_handle_init(
     i_handle->eret_alg_str = GLOBUS_NULL;
     i_handle->esto_alg_str = GLOBUS_NULL;
     i_handle->modification_time_pointer = GLOBUS_NULL;
-
+    i_handle->mlst_buffer_pointer = GLOBUS_NULL;
+    i_handle->mlst_buffer_length_pointer = GLOBUS_NULL;
+    
     globus_i_ftp_client_handle_unlock(i_handle);
 
     return GLOBUS_SUCCESS;

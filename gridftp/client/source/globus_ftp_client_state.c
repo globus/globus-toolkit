@@ -94,6 +94,12 @@ globus_l_ftp_client_parse_mdtm(
     globus_i_ftp_client_handle_t *		client_handle,
     globus_ftp_control_response_t *		response);
 
+static
+void
+globus_l_ftp_client_parse_mlst(
+    globus_i_ftp_client_handle_t *		client_handle,
+    globus_ftp_control_response_t *		response);
+
 /**
  * Buffer size command applicability information.
  * @internal
@@ -1482,6 +1488,10 @@ redo:
 	{
 	    target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_MDTM;
 	}
+	else if(client_handle->op == GLOBUS_FTP_CLIENT_MLST)
+	{
+	    target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_MLST;
+	}
 	/* Prefer PASV data connections for most operations */
 	else if(client_handle->state ==
 		GLOBUS_FTP_CLIENT_HANDLE_DEST_SETUP_CONNECTION ||
@@ -2050,6 +2060,43 @@ redo:
 		user_arg,
 		list_str,
 		pathname);
+	if(result != GLOBUS_SUCCESS)
+	{
+	    goto result_fault;
+	}
+	break;
+
+    case GLOBUS_FTP_CLIENT_TARGET_SETUP_MLST:
+
+	target->state = GLOBUS_FTP_CLIENT_TARGET_NEED_COMPLETE;
+
+	target->mask = GLOBUS_FTP_CLIENT_CMD_MASK_FILE_ACTIONS;
+
+	globus_i_ftp_client_plugin_notify_command(
+	    client_handle,
+	    target->url_string,
+	    target->mask,
+	    "MLST %s" CRLF,
+	    pathname);
+
+	if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
+	    client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART ||
+	    client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_FAILURE)
+	{
+	    break;
+	}
+
+	globus_assert(client_handle->state ==
+		      GLOBUS_FTP_CLIENT_HANDLE_SOURCE_SETUP_CONNECTION);
+
+	result =
+	    globus_ftp_control_send_command(
+		handle,
+		"MLST %s" CRLF,
+		globus_i_ftp_client_response_callback,
+		user_arg,
+		pathname);
+
 	if(result != GLOBUS_SUCCESS)
 	{
 	    goto result_fault;
@@ -2853,7 +2900,8 @@ redo:
 		    }
 		    if(client_handle->op != GLOBUS_FTP_CLIENT_MDTM &&
 		       client_handle->op != GLOBUS_FTP_CLIENT_SIZE &&
-		       client_handle->op != GLOBUS_FTP_CLIENT_FEAT)
+		       client_handle->op != GLOBUS_FTP_CLIENT_FEAT &&
+		       client_handle->op != GLOBUS_FTP_CLIENT_MLST)
 		    {
 			client_handle->state =
 			    GLOBUS_FTP_CLIENT_HANDLE_FAILURE;
@@ -2882,6 +2930,12 @@ redo:
                             globus_i_ftp_client_feature_get(
                                 target->features, i));
                     }
+		}
+		else if(client_handle->op == GLOBUS_FTP_CLIENT_MLST &&
+			response->code == 250)
+		{
+		    globus_l_ftp_client_parse_mlst(client_handle,
+			                           response);
 		}
 	    }
 	}
@@ -4032,6 +4086,146 @@ error_exit:
 	client_handle->err = GLOBUS_I_FTP_CLIENT_ERROR_PROTOCOL_ERROR();
     }
 }
+
+/*
+We expect the response buffer for MLST to look like this:    
+
+250-Begin<CRLF>
+<SPACE>type=dir;modify=20020101224853;UNIX.mode=0755<SPACE>/pub/kernel/software<CRLF>
+250 End.<CRLF>
+
+There may be multiple fact string lines, but the filenames must be the same. If
+there are multiple fact string lines, we verify that the filenames are the same
+and concatenate the fact lists into a single fact list.  The user will always 
+get a single line consisting of "factlist<space>filename".
+
+If the response buffer doesn't look like that we exit with a protocol error.
+*/
+static
+void
+globus_l_ftp_client_parse_mlst(
+    globus_i_ftp_client_handle_t *		client_handle,
+    globus_ftp_control_response_t *		response)
+{
+    char *					p;
+    globus_byte_t *                             buffer;
+    char *                                      fact_list;
+    char *                                      this_filename;
+    char *                                      filename;
+    int                                         fact_list_length = 0;
+    int                                         total_fact_list_length = 0;
+    int                                         filename_length = 0;
+    int                                         data_length;
+
+    static char * myname = "globus_l_ftp_client_parse_mlst";
+
+    if(response->code != 250)
+    {
+	return;
+    }
+    
+    buffer = (globus_byte_t *) globus_malloc(
+        response->response_length * sizeof(globus_byte_t));
+    if(buffer == GLOBUS_NULL)
+    {
+        goto nomem_exit;
+    }
+    
+    p = (char *) response->response_buffer;
+
+    /* advancing past the starting control response */   
+    while(*p && *p != '\r' && *p != '\n')
+    {
+        p++;
+    }
+    while(*p && (*p == '\r' || *p == '\n'))
+    {
+        p++;
+    }
+    
+    /* every fact line starts with a space */
+    while(*p == ' ' && *(++p))
+    {        
+        fact_list = p;
+        
+        /* filename starts after the first space
+           no spaces are allowed in the fact list */
+        this_filename = strchr(p, ' ');
+        if(this_filename == GLOBUS_NULL)
+        {
+            goto error_exit;
+        }        
+        fact_list_length = this_filename - p;
+        
+        /* copy current fact list to buffer */        
+        memcpy(buffer + total_fact_list_length, fact_list, fact_list_length);
+        
+        total_fact_list_length += fact_list_length;
+
+        /* advancing past the end of the filename */
+        p = this_filename;
+        while(*p && *p != '\r' && *p != '\n')
+        {
+            p++;
+        }        
+
+        /* if we have multiple fact strings for this file, check that the
+           filenames are the same.  exit with protocol error if not */
+        if(filename_length != 0)
+        {
+            if(filename_length != p - this_filename ||
+               strncmp(filename, this_filename, filename_length))
+            {
+                goto error_exit;
+            }
+        }        
+        else
+        {    
+            filename_length = p - this_filename;
+            filename = this_filename;
+        }
+        
+        /* advancing past the CRLF to the start of the next line */
+        while(*p && (*p == '\r' || *p == '\n'))
+        {
+            p++;
+        }        
+    }    
+    
+    if(*p == '\0' || filename_length == 0)
+    {
+        goto error_exit;
+    }
+        
+    memcpy(buffer + total_fact_list_length, filename, filename_length);
+    
+    data_length = total_fact_list_length + filename_length;
+    
+    /* null terminate the buffer since the user 
+       will likely treat it as a string */
+    buffer[data_length] = '\0';
+    
+    *client_handle->mlst_buffer_pointer = buffer;
+    *client_handle->mlst_buffer_length_pointer = data_length; 
+      
+    return;
+
+error_exit:
+    if(client_handle->err == GLOBUS_SUCCESS)
+    {
+	client_handle->err = GLOBUS_I_FTP_CLIENT_ERROR_PROTOCOL_ERROR();
+    }
+    globus_free(buffer);
+    return;
+
+nomem_exit:
+    if(client_handle->err == GLOBUS_SUCCESS)
+    {
+	client_handle->err = GLOBUS_I_FTP_CLIENT_ERROR_OUT_OF_MEMORY();
+    }
+    return;
+} /* globus_l_ftp_client_parse_mlst() */
+
 
 static
 globus_bool_t

@@ -86,6 +86,7 @@ globus_i_ftp_client_restart_register_oneshot(
        handle->op == GLOBUS_FTP_CLIENT_MOVE   ||
        handle->op == GLOBUS_FTP_CLIENT_NLST   ||
        handle->op == GLOBUS_FTP_CLIENT_MLSD   ||
+       handle->op == GLOBUS_FTP_CLIENT_MLST   ||
        handle->op == GLOBUS_FTP_CLIENT_LIST)
     {
 	result = globus_callback_register_oneshot(
@@ -700,6 +701,7 @@ globus_i_ftp_client_restart(
 	   handle->op == GLOBUS_FTP_CLIENT_MOVE   ||
 	   handle->op == GLOBUS_FTP_CLIENT_NLST   ||
 	   handle->op == GLOBUS_FTP_CLIENT_MLSD   ||
+	   handle->op == GLOBUS_FTP_CLIENT_MLST   ||
 	   handle->op == GLOBUS_FTP_CLIENT_LIST   ||
 	   handle->op == GLOBUS_FTP_CLIENT_SIZE   ||
 	   handle->op == GLOBUS_FTP_CLIENT_MDTM

@@ -192,6 +192,16 @@ globus_l_ftp_client_restart_plugin_machine_list(
 
 static
 void
+globus_l_ftp_client_restart_plugin_mlst(
+    globus_ftp_client_plugin_t *		plugin,
+    void * 					plugin_specific,
+    globus_ftp_client_handle_t *		handle,
+    const char *				url,
+    const globus_ftp_client_operationattr_t *	attr,
+    globus_bool_t 				restart);
+
+static
+void
 globus_l_ftp_client_restart_plugin_move(
     globus_ftp_client_plugin_t *		plugin,
     void * 					plugin_specific,
@@ -539,6 +549,29 @@ globus_l_ftp_client_restart_plugin_machine_list(
 
 static
 void
+globus_l_ftp_client_restart_plugin_mlst(
+    globus_ftp_client_plugin_t *		plugin,
+    void *					plugin_specific,
+    globus_ftp_client_handle_t *		handle,
+    const char *				url,
+    const globus_ftp_client_operationattr_t *	attr,
+    globus_bool_t 				restart)
+{
+    globus_l_ftp_client_restart_plugin_t *	d;
+
+    d = (globus_l_ftp_client_restart_plugin_t *) plugin_specific;
+
+    globus_l_ftp_client_restart_plugin_genericify(d);
+    d->operation = GLOBUS_FTP_CLIENT_MLST;
+    d->source_url = globus_libc_strdup(url);
+    globus_ftp_client_operationattr_copy(&d->source_attr,attr);
+
+}
+/* globus_l_ftp_client_restart_plugin_mlst() */
+
+
+static
+void
 globus_l_ftp_client_restart_plugin_move(
     globus_ftp_client_plugin_t *		plugin,
     void *					plugin_specific,
@@ -738,6 +771,13 @@ globus_l_ftp_client_restart_plugin_fault(
 		    &d->source_attr,
 		    &when);
 	    break;
+	case GLOBUS_FTP_CLIENT_MLST:
+	    globus_ftp_client_plugin_restart_mlst(
+		    handle,
+		    d->source_url,
+		    &d->source_attr,
+		    &when);
+	    break;
 	case GLOBUS_FTP_CLIENT_GET:
 	    globus_ftp_client_plugin_restart_get(
 		    handle,
@@ -904,6 +944,7 @@ globus_ftp_client_restart_plugin_init(
     GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin, move);
     GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin, verbose_list);
     GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin, machine_list);
+    GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin, mlst);
     GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin, list);
     GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin, get);
     GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin, put);
