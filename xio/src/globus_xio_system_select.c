@@ -9,6 +9,9 @@ GlobusDebugDefine(GLOBUS_XIO_SYSTEM);
 #define GlobusXIOSystemDebugPrintf(level, message)                          \
     GlobusDebugPrintf(GLOBUS_XIO_SYSTEM, level, message)
 
+#define GlobusXIOSystemDebugFwrite(level, buffer, size, count)              \
+    GlobusDebugFwrite(GLOBUS_XIO_SYSTEM, level, buffer, size, count)
+
 #define GlobusXIOSystemDebugEnter()                                         \
     GlobusXIOSystemDebugPrintf(                                             \
         GLOBUS_L_XIO_SYSTEM_DEBUG_TRACE,                                    \
@@ -39,11 +42,60 @@ GlobusDebugDefine(GLOBUS_XIO_SYSTEM);
         GLOBUS_L_XIO_SYSTEM_DEBUG_TRACE,                                    \
         ("[%s] fd=%d, Exiting with error\n", _xio_name, (fd)))
 
+#define GlobusXIOSystemDebugRawBuffer(nbytes, buffer)                       \
+    do                                                                      \
+    {                                                                       \
+        GlobusXIOSystemDebugPrintf(                                         \
+            GLOBUS_L_XIO_SYSTEM_DEBUG_RAW,                                  \
+            ("[%s] Begin RAW data ************\n", _xio_name));             \
+        GlobusXIOSystemDebugFwrite(                                         \
+            GLOBUS_L_XIO_SYSTEM_DEBUG_RAW, buffer, 1, nbytes);              \
+        GlobusXIOSystemDebugPrintf(                                         \
+            GLOBUS_L_XIO_SYSTEM_DEBUG_RAW,                                  \
+            ("\n[%s] End RAW data ************\n", _xio_name));             \
+    } while(0)
+ 
+#define GlobusXIOSystemDebugRawIovec(nbytes, iovec)                         \
+    do                                                                      \
+    {                                                                       \
+        if(GlobusDebugTrue(                                                 \
+            GLOBUS_XIO_SYSTEM, GLOBUS_L_XIO_SYSTEM_DEBUG_RAW))              \
+        {                                                                   \
+            globus_size_t               _bytes = nbytes;                    \
+            int                         _i = 0;                             \
+                                                                            \
+            while(_bytes > 0)                                               \
+            {                                                               \
+                globus_size_t           _len = (iovec)[_i].iov_len;         \
+                                                                            \
+                if(_bytes < _len)                                           \
+                {                                                           \
+                    _len = _bytes;                                          \
+                }                                                           \
+                _bytes -= _len;                                             \
+                                                                            \
+                GlobusDebugMyPrintf(                                        \
+                    GLOBUS_XIO_SYSTEM,                                      \
+                    ("[%s] Begin RAW data %i ************\n",               \
+                    _xio_name, _i));                                        \
+                GlobusDebugMyFwrite(                                        \
+                    GLOBUS_XIO_SYSTEM,                                      \
+                    (iovec)[_i].iov_base, 1, _len);                         \
+                GlobusDebugMyPrintf(                                        \
+                    GLOBUS_XIO_SYSTEM,                                      \
+                    ("\n[%s] End RAW data %i ************\n",               \
+                    _xio_name, _i));                                        \
+                _i++;                                                       \
+            }                                                               \
+        }                                                                   \
+    } while(0)
+
 enum globus_l_xio_error_levels
 {
     GLOBUS_L_XIO_SYSTEM_DEBUG_TRACE     = 1,
     GLOBUS_L_XIO_SYSTEM_DEBUG_DATA      = 2,
-    GLOBUS_L_XIO_SYSTEM_DEBUG_INFO      = 4
+    GLOBUS_L_XIO_SYSTEM_DEBUG_INFO      = 4,
+    GLOBUS_L_XIO_SYSTEM_DEBUG_RAW       = 8
 };
 
 #ifdef HAVE_SYSCONF
@@ -360,7 +412,7 @@ globus_l_xio_system_activate(void)
     globus_reltime_t                    period;
     GlobusXIOName(globus_l_xio_system_activate);
 
-    GlobusDebugInit(GLOBUS_XIO_SYSTEM, TRACE DATA INFO);
+    GlobusDebugInit(GLOBUS_XIO_SYSTEM, TRACE DATA INFO RAW);
     GlobusXIOSystemDebugEnter();
 
     if(globus_module_activate(GLOBUS_XIO_MODULE) != GLOBUS_SUCCESS)
@@ -1034,6 +1086,8 @@ globus_l_xio_system_try_read(
         GlobusXIOSystemDebugPrintf(
             GLOBUS_L_XIO_SYSTEM_DEBUG_DATA,
             ("[%s] Read %d bytes (buflen = %d)\n", _xio_name, rc, buflen));
+        
+        GlobusXIOSystemDebugRawBuffer(rc, buf);
     }
 
     *nbytes = rc;
@@ -1090,7 +1144,9 @@ globus_l_xio_system_try_readv(
     GlobusXIOSystemDebugPrintf(
         GLOBUS_L_XIO_SYSTEM_DEBUG_DATA,
         ("[%s] Read %d bytes\n", _xio_name, rc));
-
+    
+    GlobusXIOSystemDebugRawIovec(rc, iov);
+            
     GlobusXIOSystemDebugExitFD(fd);
     return GLOBUS_SUCCESS;
 
@@ -1144,7 +1200,9 @@ globus_l_xio_system_try_recv(
     GlobusXIOSystemDebugPrintf(
         GLOBUS_L_XIO_SYSTEM_DEBUG_DATA,
         ("[%s] Read %d bytes\n", _xio_name, rc));
-
+    
+    GlobusXIOSystemDebugRawBuffer(rc, buf);
+    
     GlobusXIOSystemDebugExitFD(fd);
     return GLOBUS_SUCCESS;
 
@@ -1207,7 +1265,9 @@ globus_l_xio_system_try_recvfrom(
     GlobusXIOSystemDebugPrintf(
         GLOBUS_L_XIO_SYSTEM_DEBUG_DATA,
         ("[%s] Read %d bytes\n", _xio_name, rc));
-
+    
+    GlobusXIOSystemDebugRawBuffer(rc, buf);
+    
     GlobusXIOSystemDebugExitFD(fd);
     return GLOBUS_SUCCESS;
 
@@ -1260,7 +1320,9 @@ globus_l_xio_system_try_recvmsg(
     GlobusXIOSystemDebugPrintf(
         GLOBUS_L_XIO_SYSTEM_DEBUG_DATA,
         ("[%s] Read %d bytes\n", _xio_name, rc));
-
+    
+    GlobusXIOSystemDebugRawIovec(rc, msghdr->msg_iov);
+    
     GlobusXIOSystemDebugExitFD(fd);
     return GLOBUS_SUCCESS;
 
@@ -1312,7 +1374,9 @@ globus_l_xio_system_try_write(
     GlobusXIOSystemDebugPrintf(
         GLOBUS_L_XIO_SYSTEM_DEBUG_DATA,
         ("[%s] Wrote %d bytes\n", _xio_name, rc));
-
+    
+    GlobusXIOSystemDebugRawBuffer(rc, buf);
+    
     GlobusXIOSystemDebugExitFD(fd);
     return GLOBUS_SUCCESS;
 
@@ -1359,7 +1423,9 @@ globus_l_xio_system_try_writev(
     GlobusXIOSystemDebugPrintf(
         GLOBUS_L_XIO_SYSTEM_DEBUG_DATA,
         ("[%s] Wrote %d bytes\n", _xio_name, rc));
-
+    
+    GlobusXIOSystemDebugRawIovec(rc, iov);
+    
     GlobusXIOSystemDebugExitFD(fd);
     return GLOBUS_SUCCESS;
 
@@ -1407,7 +1473,9 @@ globus_l_xio_system_try_send(
     GlobusXIOSystemDebugPrintf(
         GLOBUS_L_XIO_SYSTEM_DEBUG_DATA,
         ("[%s] Wrote %d bytes\n", _xio_name, rc));
-
+    
+    GlobusXIOSystemDebugRawBuffer(rc, buf);
+    
     GlobusXIOSystemDebugExitFD(fd);
     return GLOBUS_SUCCESS;
 
@@ -1462,7 +1530,9 @@ globus_l_xio_system_try_sendto(
     GlobusXIOSystemDebugPrintf(
         GLOBUS_L_XIO_SYSTEM_DEBUG_DATA,
         ("[%s] Wrote %d bytes\n", _xio_name, rc));
-
+    
+    GlobusXIOSystemDebugRawBuffer(rc, buf);
+    
     GlobusXIOSystemDebugExitFD(fd);
     return GLOBUS_SUCCESS;
 
@@ -1509,7 +1579,9 @@ globus_l_xio_system_try_sendmsg(
     GlobusXIOSystemDebugPrintf(
         GLOBUS_L_XIO_SYSTEM_DEBUG_DATA,
         ("[%s] Wrote %d bytes\n", _xio_name, rc));
-
+    
+    GlobusXIOSystemDebugRawIovec(rc, msghdr->msg_iov);
+    
     GlobusXIOSystemDebugExitFD(fd);
     return GLOBUS_SUCCESS;
 
