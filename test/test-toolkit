@@ -2,14 +2,6 @@
 
 # ------------------------------------------------------------------------
 # test-toolkit - A script to test an installation of the Globus Toolkit.
-# $Revision$
-# ------------------------------------------------------------------------
-
-# ------------------------------------------------------------------------
-# Overview
-#
-#    Update me
-#
 # ------------------------------------------------------------------------
 
 use strict;
@@ -19,30 +11,30 @@ use Config;
 use File::Find;
 
 # ------------------------------------------------------------------------
+# $Revision$
+# ------------------------------------------------------------------------
+my $VERSION = "test-toolkit version:  ".`ident $0 | grep Revision | awk {'print \$2;'}`;
+
+# ------------------------------------------------------------------------
 # Get options
 # ------------------------------------------------------------------------
-my ($help, $version, $debug, $color, $globus, $remote, $directory);
+my ($help, $version, $debug, $color, $remote, $directory);
 
 GetOptions (
     'help'              => \$help,
     'color'             => \$color,
     'debug'             => \$debug,
     'version'           => \$version,
-    'globus'            => \$globus,
-    'remote'            => \$remote,
-    'directory'         => \$directory
+    'remote=s'          => \$remote,
+    'directory=s'       => \$directory
 );
 
 if (defined $help)        { help(); exit; }
-if (defined $version)     { }
+if (defined $version)     { print "$VERSION"; exit; }
 
-if(defined($globus))
+if (! -d "$ENV{GLOBUS_LOCATION}") 
 {
-    $ENV{GLOBUS_LOCATION} = $globus;
-}
-elsif(!defined($ENV{'GLOBUS_LOCATION'}))
-{
-    die "You need to set GLOBUS_LOCATION or specify one with -globus";
+    die "You need to set GLOBUS_LOCATION in your environment\n";
 }
 
 if (defined $remote) 
@@ -88,15 +80,18 @@ exit;
 # Help
 # ------------------------------------------------------------------
 sub help {
-    print "Usage: test-toolkit [options] <GLOBUS_LOCATION> <FQDN>
+    print "Usage: test-toolkit [options]
 
     Options:
 
-    [-h --help]                 Print this message
-    [-v --version]              Print out version of test-toolkit
-    [-d --debug]                Turn on debugging
-    [-c --color]                Turn on color
-
+    [--help]                 Print this message
+    [--version]              Print out version of test-toolkit
+    [--debug]                Turn on debugging
+    [--color]                Turn on color
+    [--remote=<FQDN>]        Run remote tests against <FQDN>
+                             Default is to only run local tests
+    [--directory=<dir>]      Only run tests behind <dir>     
+                             Default is GLOBUS_LOCATION/test
 \n";
 }
 

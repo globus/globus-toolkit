@@ -655,6 +655,7 @@ globus_gram_job_manager_output_local_name(
     char *				fname;
     unsigned long			timestamp;
     globus_list_t *			destinations;
+    int					rc;
 
     if(strcmp(type, GLOBUS_GRAM_PROTOCOL_STDOUT_PARAM) == 0)
     {
@@ -682,13 +683,25 @@ globus_gram_job_manager_output_local_name(
 	    out_file = globus_gram_job_manager_output_get_cache_name(
 		    request,
 		    type);
-	    globus_gass_cache_add(
+
+	    rc = globus_gass_cache_add(
 		    &request->cache_handle,
 		    out_file,
 		    request->cache_tag,
 		    GLOBUS_TRUE,
 		    &timestamp,
 		    &fname);
+	    if(rc != GLOBUS_GASS_CACHE_ADD_NEW &&
+	       rc != GLOBUS_GASS_CACHE_ADD_EXISTS)
+	    {
+		globus_gram_job_manager_request_log(
+			request,
+			"Adding %s to gass cache failed, "
+			"globus_gram_cache_add() returned %d\n",
+			type == GLOBUS_GRAM_PROTOCOL_STDOUT_PARAM ?
+			"stdout" : "stderr", rc);
+		return GLOBUS_NULL;
+	    }
 
 	    globus_gass_cache_add_done(
 		    &request->cache_handle,

@@ -34,6 +34,8 @@ sub check_for_commands
            globus-job-get-output
            globus-job-status
            globus-personal-gatekeeper
+           globus-mds
+           globus-gatekeeper
            grid-cert-info
            grid-cert-renew
            grid-cert-request
@@ -46,6 +48,10 @@ sub check_for_commands
            grid-mapfile-add-entry          
            grid-mapfile-delete-entry
            grid-mapfile-check-consistency
+           grid-mapfile-add-entry
+           grid-mapfile-check-consistency
+           grid-mapfile-delete-entry
+           in.ftpd
            );
     
     foreach my $command (@commands) 

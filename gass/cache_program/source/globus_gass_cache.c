@@ -35,11 +35,9 @@ typedef enum {
     GASSL_ADD,
     GASSL_DELETE,
     GASSL_CLEANUP_TAG,
-    GASSL_CLEANUP_URL,
     GASSL_QUERY_URL,
     GASSL_MANGLE,
-    GASSL_DIRS,
-    GASSL_LIST
+    GASSL_DIRS
 } globus_l_cache_op_t;
 
 /******************************************************************************
@@ -60,10 +58,11 @@ static char *globus_l_cache_url_arg(char *url);
 /******************************************************************************
 			     Module specific variables
 ******************************************************************************/
-static globus_mutex_t globus_l_cache_monitor_mutex;
-static globus_cond_t  globus_l_cache_monitor_cond;
-static globus_bool_t  globus_l_cache_monitor_done = GLOBUS_FALSE;
-static globus_bool_t  globus_l_cache_status = 0;
+static globus_mutex_t	globus_l_cache_monitor_mutex;
+static globus_cond_t	globus_l_cache_monitor_cond;
+static globus_bool_t	globus_l_cache_monitor_done = GLOBUS_FALSE;
+static globus_bool_t	globus_l_cache_status = 0;
+static int		globus_l_cache_verbose = 0;
 
 
 static char * oneline_usage = 
@@ -91,18 +90,11 @@ static char * long_usage =
 "                     tag will be removed from that URL. If no tag is\n"
 "                     specified by the [-t tag] option, then the \"null\"\n"
 "                     tag will be used.\n"
-"    -cleanup-url   - remove all tags for an URL in the cache\n"
-"                     This operation requires that the URL be specified on\n"
-"                     the command line.\n"
 "    -mangle        - prints the mangled versions of the URL / tag\n"
 "    -dirs          - Displays internal directory names:\n"
 "                     The \"local\" data directory (from the tag / URL )\n"
 "                     The \"global\" data directory (from the URL )\n"
 "                     The base directories\n"
-"    -list          - list the contents of the cache.\n"
-"                     If either the [-t tag] or a URL is specified on the\n"
-"                     command line, then only cache entries which match\n"
-"                     those will be listed\n"
 "    -query         - prints the name of the local file in the cache that\n"
 "                     is associated with the URL\n"
 "\n"
@@ -120,7 +112,9 @@ static char * long_usage =
 "    -r resource    - The resource argument specifies that the cache\n"
 "                     operation will be performed on a remote cache. The\n"
 "                     resource manager contact takes the form:\n"
-"                          host:port/service:subject\n\n";
+"                          host:port/service:subject\n"
+"    -verbose       - Turn on verbose output\n"
+"\n";
 
 int
 test_hostname( char *  value, void *  ignored,  char **  errmsg )
@@ -153,8 +147,6 @@ test_integer( char *  value, void *   ignored, char **  errmsg )
 enum { arg_a = 1,	/* Add */
        arg_d,		/* Delete */
        arg_ct,		/* Cleanup Tag */
-       arg_cu,		/* Cleanup URL */
-       arg_l,		/* List */
        arg_m,		/* Mangled output */
        arg_dir,		/* Directories */
        arg_q,		/* Query */
@@ -165,7 +157,8 @@ enum { arg_a = 1,	/* Add */
        arg_r,		/* Resource */
        arg_n,		/* NewName */
        arg_t,		/* Tag */
-       n_args=arg_t };
+       arg_v,		/* Verbose */
+       n_args=arg_v };
 
 #define listname(x) x##_aliases
 #define namedef(id,alias1,alias2) \
@@ -187,10 +180,9 @@ flagdef(arg_d,   "-d", "-delete");
 flagdef(arg_dir, "-dirs", GLOBUS_NULL );
 flagdef(arg_m,   "-m", "-mangle" );
 flagdef(arg_q,   "-q", "-query");
-flagdef(arg_l,   "-l", "-list");
+flagdef(arg_v,   "-v", "-vebose");
 
 flagdef(arg_ct,  "-cleanup-tag", GLOBUS_NULL);
-flagdef(arg_cu,  "-cleanup-url", GLOBUS_NULL);
 
 oneargdef(arg_h, "-h", "-mdshost",    test_hostname);
 oneargdef(arg_p, "-p", "-mdsport",    test_integer);
@@ -208,18 +200,17 @@ static globus_args_option_descriptor_t args_options[n_args];
     setupopt(arg_a);	\
     setupopt(arg_d);	\
     setupopt(arg_m);	\
-    setupopt(arg_l);	\
     setupopt(arg_dir);	\
     setupopt(arg_q);	\
     setupopt(arg_ct);	\
-    setupopt(arg_cu);	\
     setupopt(arg_h);	\
     setupopt(arg_p);	\
     setupopt(arg_b);	\
     setupopt(arg_T);	\
     setupopt(arg_r);	\
     setupopt(arg_n);	\
-    setupopt(arg_t);
+    setupopt(arg_t);	\
+    setupopt(arg_v);
 
 
 #define globus_l_args_usage() \
@@ -318,10 +309,8 @@ main(int argc, char **argv)
 	case arg_d:
 	case arg_dir:
 	case arg_m:
-	case arg_l:
 	case arg_q:
 	case arg_ct:
-	case arg_cu:
 	    if (op != GASSL_UNKNOWN)
 		globus_l_args_error("only one operation can be specified");
 	    switch(instance->id_number)
@@ -341,14 +330,11 @@ main(int argc, char **argv)
 	    case arg_dir:
 		op = GASSL_DIRS;
 		break;
-	    case arg_l: 
-		op = GASSL_LIST;
-		break;
 	    case arg_ct: 
 		op = GASSL_CLEANUP_TAG;
 		break;
-	    case arg_cu: 
-		op = GASSL_CLEANUP_URL;
+	    case arg_v:
+		globus_l_cache_verbose++;
 		break;
 	    }
 	    break;
@@ -527,8 +513,6 @@ globus_l_cache_op_string(globus_l_cache_op_t op)
 	return "-delete";
     case GASSL_CLEANUP_TAG:
 	return "-cleanup-tag";
-    case GASSL_CLEANUP_URL:
-	return "-cleanup-url";
     case GASSL_QUERY_URL:
 	return "-query";
     case GASSL_MANGLE:
@@ -825,14 +809,6 @@ globus_l_cache_local_op(
 				globus_gass_cache_error_string(rc));
 	    return_value = GLOBUS_FAILURE;
 	}
-	break;
-
-    case GASSL_CLEANUP_URL:
-	globus_libc_fprintf( stderr, "cleanup_url not implemented\n" );
-	break;
-
-    case GASSL_LIST:
-	globus_libc_fprintf( stderr, "list not implemented\n" );
 	break;
 
     case GASSL_QUERY_URL:

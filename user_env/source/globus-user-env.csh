@@ -18,7 +18,7 @@ if ( ! $?LD_LIBRARY_PATH ) then
 endif
 
 if ( ! $?LIBPATH ) then
-    setenv LIBPATH ''
+    setenv LIBPATH '/usr/lib:/lib'
 endif
 
 if ( ! $?SHLIB_PATH ) then

@@ -10,22 +10,27 @@ use Globus::Core::Paths;
 # Prototypes
 sub GassCacheList ( );
 sub GassCacheCleanupUrl ( $ );
+sub DumpHelp( );
 
 
 # ******************************************************
 # Command line options
 # ******************************************************
-my %Options =
-    (
-     "[-ping]"		=> "Enable ping test",
-     "[-]"		=> "Read roster from STDIN",
-     "[-reserved]"	=> "Check the reserved list",
-     "[-cluster]"	=> "Report \"Cluster\" nodes that are down",
-     "[-h]"		=> "Dump help",
-    );
+my $PerlOperations =<<END_OPERATIONS;
+    -cleanup-url   - remove all tags for an URL in the cache
+                     This operation requires that the URL be specified on
+                     the command line.
+    -list          - list the contents of the cache.
+                     If either the [-t tag] or a URL is specified on the
+                     command line, then only cache entries which match
+                     those will be listed
+END_OPERATIONS
+my $PerlOptions =<<END_OPTIONS;
+END_OPTIONS
+
 my $Program = $0;
 my $ProgramC = $Globus::Core::Paths::libexecdir . '/globus-gass-cache-util';
-my $verbose = 0;
+my $Verbose = 0;
 
 
 # Option flags
@@ -38,9 +43,8 @@ my @CprogFlags = (
 		  "-dirs",
 		  "-m", "-mangle",
 		  "-q", "-query",
-		  "-l", "-list",
 		  "-cleanup-tag",
-		  "-cleanup-url" );
+		  );
 my $CprogFlagsRE =
     "(" . join( ")|(", @CprogFlags ) . ")";
 
@@ -56,18 +60,41 @@ my @CprogArgs = (
 my $CprogArgsRE =
     "(" . join( ")|(", @CprogArgs ) . ")";
 
+# Arguments that the "C" _doesn't_ understand, and need to be stripped
+# off before we punt to the C program
+my @CprogNonArgs = (
+		    "-l", "-list",
+		    "-cleanup-url",
+		   );
+my $CprogNonArgsRE =
+    "(" . join( ")|(", @CprogNonArgs ) . ")";
+
 # The manglings we know about..
 my @Manglings = ( "html", "md5" );
 
 # Make stdout sane
 $|=1;
 
-# Walk through the command line
+# Store the URL to process
 my $URL = "";
+
+# Empty command line; punt it
 if ( $#ARGV < 0 )
 {
     exec ( "$ProgramC", @ARGV );
 }
+
+# Build list of C program arguments..
+my @CprogArgv = grep{!/^$CprogNonArgsRE$/} @ARGV;
+
+# Help; punt + our own processing...
+if ( grep( /^-help$/, @ARGV ) >= 1 )
+{
+    DumpHelp();
+    exit 0;
+}
+
+# Walk through the command line
 my @JobList;
 my $ArgNo;
 for($ArgNo = 0; $ArgNo < @ARGV; $ArgNo++)
@@ -86,14 +113,14 @@ for($ArgNo = 0; $ArgNo < @ARGV; $ArgNo++)
     {
 	$OptionLong = 1;
     }
-    elsif ( $Arg eq "-v" )
+    elsif ( ( $Arg eq "-v" ) || ( $Arg eq "-verbose" ) )
     {
-	$verbose++;
+	$Verbose++;
     }
     elsif ( $Arg =~ /^($CprogFlagsRE)$/ )
     {
 	# Invoke the C program
-	exec ( "$ProgramC", @ARGV );
+	exec ( "$ProgramC", @CprogArgv );
     }
     elsif ( $Arg =~ /^($CprogArgsRE)$/ )
     {
@@ -103,7 +130,7 @@ for($ArgNo = 0; $ArgNo < @ARGV; $ArgNo++)
     elsif ( $Arg =~ /^-/ )
     {
 	# Not sure what the hell it is, punt it off to the C prog...
-	exec ( "$ProgramC", @ARGV );
+	exec ( "$ProgramC", @CprogArgv );
     }
     # Must be the URL
     else
@@ -115,7 +142,7 @@ for($ArgNo = 0; $ArgNo < @ARGV; $ArgNo++)
 # Did we do anything?  If not, punt to the C program...
 if ( $#JobList < 0 )
 {
-    exec ( "$ProgramC", @ARGV );
+    exec ( "$ProgramC", @CprogArgv );
 }
 else
 {
@@ -131,17 +158,28 @@ else
 	    GassCacheCleanupUrl( $URL );
 	}
     }
-}
-
+}   # End of logical "main"
+# ******************************************************
 
 # ******************************************************
-# List the contents of the Cache
+# Function: GassCacheList()
+#
+# Description:
+#	List the contents of the Cache
+#
+# Parameters:
+#  None
+#
+# Return Values:
+#  None
+#
 # ******************************************************
 sub GassCacheList ( )
 {
     my %RootDirs;
 
     # Read the directories from the program...
+    delete( $ENV{GLOBUS_GASS_CACHE_DEBUG} );
     my $Cmd = "$ProgramC -dirs";
     open( DIRS, "$Cmd|" ) || die "Can't run '$Cmd'";
     while( <DIRS> )
@@ -155,8 +193,11 @@ sub GassCacheList ( )
     die "No GLOBAL root" if ( ! defined $RootDirs{GLOBAL} );
     die "No LOCAL root" if ( ! defined $RootDirs{LOCAL} );
 
+    # *************************************************
     # Now, let's do the real fun...
-    print "Scanning the global entries in $RootDirs{GLOBAL}\n" if($verbose);
+    #  Scan through the global directory for all URLs
+    # *************************************************
+    print "Scanning the global entries in $RootDirs{GLOBAL}\n" if( $Verbose );
     my %Global;
     $Cmd = "find $RootDirs{GLOBAL} -name 'data*' -print";
     foreach my $FullPath (`$Cmd` )
@@ -195,10 +236,12 @@ sub GassCacheList ( )
     }
     close( FIND );
 
+    # ******************************************
     # Scan through the local directory, now..
-    print "Scanning the local entries in $RootDirs{LOCAL}\n" if($verbose);
+    # ******************************************
+    print "Scanning the local entries in $RootDirs{LOCAL}\n" if( $Verbose );
     my @Local;
-    $Cmd = "find $RootDirs{LOCAL} -name 'data*' -print";
+    $Cmd = "find $RootDirs{LOCAL} -name 'data.*' -print";
     foreach my $FullPath (`$Cmd` )
     {
 	chomp $FullPath;
@@ -244,7 +287,7 @@ sub GassCacheList ( )
 			$Mangled = $1;
 			$MangledOk = 1;
 		    }
-		    }
+		}
 		close( MANGLE );
 	    }
 	}
@@ -276,7 +319,9 @@ sub GassCacheList ( )
 	$r = ();
     }
 
+    # ********************
     # Dump it all out..
+    # ********************
     foreach my $Inode ( keys %Global )
     {
 	print "URL: $Global{$Inode}->{Url}\n";
@@ -293,11 +338,21 @@ sub GassCacheList ( )
 	    }
 	}
     }
-}
+}   # GassCacheList()
 
 
 # ******************************************************
-# Cleanup a URL in the GASS Cache
+# Function: GassCacheCleanupUrl
+#
+# Description:
+#	Cleanup a URL in the GASS Cache
+#
+# Parameters:
+#  URL to cleanup
+#
+# Return Values:
+#  None
+#
 # ******************************************************
 sub GassCacheCleanupUrl ( $ )
 {
@@ -308,11 +363,12 @@ sub GassCacheCleanupUrl ( $ )
     if ( !defined( $Url ) || ( $Url eq "" )  )
     {
 	print STDERR "CleanupUrl requires a URL to cleanup\n";
-	system "$ProgramC -help";
+	DumpHelp( );
 	exit 1;
     }
 
     # Mangle the URL
+    delete( $ENV{GLOBUS_GASS_CACHE_DEBUG} );
     my $Mangled = "";
     {
 	my $Cmd = "$ProgramC -mangle $Url";
@@ -349,13 +405,15 @@ sub GassCacheCleanupUrl ( $ )
     my $FullGlobalDir = "$RootDirs{GLOBAL}/$Mangled";
     if ( ! -d $FullGlobalDir )
     {
-	print STDERR "Could not clean up file because the URL was not found in the GASS cache.\n";
+	print STDERR "Could not clean up file because ".
+	    "the URL was not found in the GASS cache.\n";
 	exit 1;
     }
     my $FullGlobalData = "$FullGlobalDir/data";
     if ( ! -f $FullGlobalData )
     {
-	print STDERR "Could not clean up file because the URL was not found in the GASS cache.\n";
+	print STDERR "Could not clean up file because ".
+	    "the URL was not found in the GASS cache.\n";
 	exit 1;
     }
     my $FullGlobalDataInode = -1;
@@ -371,7 +429,7 @@ sub GassCacheCleanupUrl ( $ )
     }
 
     # Tell the user...
-    print "Found global data file @ $FullGlobalData\n" if($verbose);
+    print "Found global data file @ $FullGlobalData\n" if( $Verbose );
 
     # Scan through the local directory, now..
     my %Local;
@@ -379,7 +437,7 @@ sub GassCacheCleanupUrl ( $ )
     $Cmd =
 	"find $RootDirs{LOCAL} -inum $FullGlobalDataInode -print";
     open( FIND, "$Cmd|" ) || die "Can't run '$Cmd'";
-    print "Scanning the local entries in $RootDirs{LOCAL}\n" if($verbose);
+    print "Scanning the local entries in $RootDirs{LOCAL}\n" if( $Verbose );
     while( <FIND> )
     {
 	chomp;
@@ -429,7 +487,7 @@ sub GassCacheCleanupUrl ( $ )
     close( FIND );
 
     # Print results to the user...
-    if($verbose)
+    if( $Verbose )
     {
 	if ( $LocalCount <= 0 )
 	{
@@ -462,70 +520,106 @@ sub GassCacheCleanupUrl ( $ )
     {
 	foreach my $FileRec ( @{$Local{$Dir}} )
 	{
-	    print "$FileRec->{Tag}.. ";
+	    print "$FileRec->{Tag}.. ($FileRec->{File}) " if ( $Verbose );
 	    unlink "$Dir/$FileRec->{File}";
-	    unlink "$Dir/url";
+	    print "\n" if ( $Verbose );
+	}
 
-	    my @Dirs = split( /\//, $Dir );
+	# Blow away the extras..
+	unlink "$Dir/url";
+	unlink "$Dir/tag";
+
+	# Temp dir for working in..
+	my $TmpDir;
+
+	# Blow away the directories..
+	my @Dirs = split( /\//, $Dir );
+	while( 1 )
+	{
+	    $TmpDir = join ('/', @Dirs );
+	    last if ( $TmpDir eq $RootDirs{LOCAL} );
+	    last if ( ! rmdir( $TmpDir ) );
+	    print "\t$TmpDir\n " if ( $Verbose );
+	    pop @Dirs;
+	}
+
+	# Check: does this directory have only a "tag" file?
+	my $TagFile = "$TmpDir/tag";
+	if (  ( $TmpDir ne $RootDirs{LOCAL} ) && ( -f "$TagFile" )  )
+	{
+	    my @Stat = stat( "$TagFile" );
+
+	    # Unlink it if it's the last one..
+	    if ( $Stat[3] == 1 )
+	    {
+		unlink( "$TagFile" );
+	    }
+
+	    # Try cleaning up more...
 	    while( 1 )
 	    {
-		my $Dir = join ('/', @Dirs );
-		last if ( ! rmdir( $Dir ) );
-		print "\n\t$Dir ";
+		$TmpDir = join ('/', @Dirs );
+		last if ( $TmpDir eq $RootDirs{LOCAL} );
+		last if ( ! rmdir( $TmpDir ) );
+		print "\t$TmpDir\n " if ( $Verbose );
 		pop @Dirs;
 	    }
-	    print "\n";
 	}
     }
 
     # And, remove the global dir
     {
 	my $Dir = $FullGlobalDir;
-	print "Global.. " if($verbose);
+	print "Global.. " if ( $Verbose );
 	unlink "$Dir/data";
 	unlink "$Dir/url";
 
 	my @Dirs = split( /\//, $Dir );
 	while( 1 )
 	{
-	    my $Dir = join ('/', @Dirs );
-	    last if ( ! rmdir( $Dir ) );
-	    print "\n\t$Dir " if($verbose);
+	    my $TmpDir = join ('/', @Dirs );
+	    last if ( $TmpDir eq $RootDirs{GLOBAL} );
+	    last if ( ! rmdir( $TmpDir ) );
+	    print "\n\t$TmpDir " if( $Verbose );
 	    pop @Dirs;
 	}
-	print "\n" if($verbose);
+	print "\n" if ( $Verbose );
     }
 
-}
+}   # GassCacheCleanupUrl()
 
-# ******************************************************
-# Dump out usage
-# ******************************************************
-sub Usage ( $ )
+sub DumpHelp( )
 {
-    my $Unknown = shift;
+    open( PROGC,  "$ProgramC -help 2>&1 |" )
+	or die "Can't run '$ProgramC' for help";
 
-    print "$Program: unknown option '$Unknown'\n" if ( $Unknown ne "" );
-    printf "usage: $Program %s\n", join (" ", sort keys %Options);
-    print "use '-h' for more help\n";
-    exit 1;
-
-} # usage ()
-# ******************************************************
-
-# ******************************************************
-# Dump out help
-# ******************************************************
-sub Help ( )
-{
-    my ($opt, $text);
-
-    printf "usage: $Program %s\n", join (" ", sort keys %Options);
-    foreach $opt (sort {lc($a) cmp lc($b) } keys %Options)
+    # Just print everything up 'til the "Valid optoins" line
+    $_ = <PROGC>;
+    while ( <PROGC> )
     {
-	printf ("  %15s : %-40s\n", $opt, $Options{$opt} );
+	print;
+	last if ( /^Valid oper/ );
     }
-    exit 0;
 
-} # help ()
-# ******************************************************
+    # Now, all the C program operations..
+    while ( <PROGC> )
+    {
+	chomp; s/\s+$//;
+	last if ( $_ eq "" );
+	print "$_\n";
+    }
+
+    # Print out _our_ operations
+    print "$PerlOperations\n";
+
+    # Now, all the C program options..
+    while ( <PROGC> )
+    {
+	chomp; s/\s+$//;
+	last if ( $_ eq "" );
+	print "$_\n";
+    }
+    # Print out _our- options
+    print "$PerlOptions\n";
+    close( PROGC );
+}
