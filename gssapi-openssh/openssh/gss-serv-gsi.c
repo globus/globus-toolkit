@@ -78,20 +78,20 @@ ssh_gssapi_gsi_storecreds(ssh_gssapi_client *client)
 		char *creds_env = NULL;
 
 		/*
- 		* This is the current hack with the GSI gssapi library to
-		* export credentials to disk.
-		*/
+ 		 * This is the current hack with the GSI gssapi library to
+		 * export credentials to disk.
+		 */
 
 		debug("Exporting delegated credentials");
 		
 		minor_status = 0xdee0;	/* Magic value */
 		major_status =
 			gss_inquire_cred(&minor_status,
-					client->creds,
-					(gss_name_t *) &creds_env,
-					NULL,
-					NULL,
-					NULL);
+					 client->creds,
+					 (gss_name_t *) &creds_env,
+					 NULL,
+					 NULL,
+					 NULL);
 
 		if ((major_status == GSS_S_COMPLETE) &&
 		    (minor_status == 0xdee1) &&
@@ -100,12 +100,12 @@ ssh_gssapi_gsi_storecreds(ssh_gssapi_client *client)
 			char		*value;
 				
 			/*
-			* String is of the form:
-			* X509_USER_DELEG_PROXY=filename
-			* so we parse out the filename
-			* and then set X509_USER_PROXY
-			* to point at it.
-			*/
+			 * String is of the form:
+			 * X509_USER_DELEG_PROXY=filename
+			 * so we parse out the filename
+			 * and then set X509_USER_PROXY
+			 * to point at it.
+			 */
 			value = strchr(creds_env, '=');
 			
 			if (value != NULL)
@@ -115,7 +115,7 @@ ssh_gssapi_gsi_storecreds(ssh_gssapi_client *client)
 #ifdef USE_PAM
 				do_pam_putenv("X509_USER_PROXY",value);
 #endif
-				client->store.filename=NULL;
+			 	client->store.filename=NULL;
 				client->store.envvar="X509_USER_PROXY";
 				client->store.envval=strdup(value);
 

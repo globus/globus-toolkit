@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2001,2002 Simon Wilkinson. All rights reserved.
+ * Copyright (c) 2001-2003 Simon Wilkinson. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -81,7 +81,7 @@ kexgss_client(Kex *kex)
     	}
     		
 	token_ptr = GSS_C_NO_BUFFER;
-			
+			 
 	do {
 		debug("Calling gss_init_sec_context");
 		
@@ -91,8 +91,14 @@ kexgss_client(Kex *kex)
 					       &ret_flags);
 
 		if (GSS_ERROR(maj_status)) {
+			if (send_tok.length!=0) {
+				/* Hmmm - not sure about this */
+				packet_start(SSH2_MSG_KEXGSS_CONTINUE);
+				packet_put_string(send_tok.value,
+						  send_tok.length);
+			}			  
 			fatal("gss_init_context failed");
-		} 
+		}
 
 		/* If we've got an old receive buffer get rid of it */
 		if (token_ptr != GSS_C_NO_BUFFER)
@@ -111,7 +117,7 @@ kexgss_client(Kex *kex)
 		}
 		
 		/* If we have data to send, then the last message that we
-		* received cannot have been a 'complete'. */
+		 * received cannot have been a 'complete'. */
 		if (send_tok.length !=0) {
 			if (first) {
 				packet_start(SSH2_MSG_KEXGSS_INIT);
@@ -129,7 +135,7 @@ kexgss_client(Kex *kex)
 
 			
 			/* If we've sent them data, they'd better be polite
-			* and reply. */
+			 * and reply. */
 		
 			type = packet_read();
 			switch (type) {
@@ -168,22 +174,26 @@ kexgss_client(Kex *kex)
 				min_status=packet_get_int();
 				msg=packet_get_string(NULL);
 				lang=packet_get_string(NULL);
-				fatal(msg);
+				fprintf(stderr,"GSSAPI Error: \n%s",msg);
 			default:
 				packet_disconnect("Protocol error: didn't expect packet type %d",
 		    		type);
 			}
 			token_ptr=&recv_tok;
+		} else {
+			/* No data, and not complete */
+			if (maj_status!=GSS_S_COMPLETE) {
+				fatal("Not complete, and no token output");
+			}
 		}
-
     	} while (maj_status & GSS_S_CONTINUE_NEEDED);
     	
     	/* We _must_ have received a COMPLETE message in reply from the 
-    	* server, which will have set dh_server_pub and msg_tok */
-    	
+    	 * server, which will have set dh_server_pub and msg_tok */
+    	 
     	if (type!=SSH2_MSG_KEXGSS_COMPLETE)
     	   fatal("Didn't receive a SSH2_MSG_KEXGSS_COMPLETE when I expected it");
-    		    	
+    	 	    	
 	/* Check f in range [1, p-1] */
         if (!dh_pub_is_valid(dh, dh_server_pub))
                         packet_disconnect("bad server public DH value");

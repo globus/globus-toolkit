@@ -50,6 +50,7 @@ userauth_external(Authctxt *authctxt)
 static void ssh_gssapi_userauth_error(Gssctxt *ctxt);
 static void input_gssapi_token(int type, u_int32_t plen, void *ctxt);
 static void input_gssapi_exchange_complete(int type, u_int32_t plen, void *ctxt);
+static void input_gssapi_errtok(int, u_int32_t, void *);
 
 /* We only support those mechanisms that we know about (ie ones that we know
  * how to check local user kuserok and the like
@@ -91,22 +92,15 @@ userauth_gssapi(Authctxt *authctxt)
                 doid = packet_get_string(&len);
                 debug("Got string");
                 
-                if (datafellows & SSH_BUG_GSSAPI_BER) {
-                	oid.elements = doid;
-                	oid.length = len;
-                } else {
-                	if (doid[0]!=0x06 || doid[1]!=len-2) {
-                		debug("Badly encoded mechanism OID received");
-                		oid.elements=NULL;
-                	} else {
-                		oid.elements = doid + 2;
-                		oid.length   = len - 2;
-		               	gss_test_oid_set_member(&ms, &oid, supported, &present);
-                  	}
-                }
-		if (oid.elements) {
-	            	gss_test_oid_set_member(&ms, &oid, supported, &present);
-	        }
+               	if (doid[0]!=0x06 || doid[1]!=len-2) {
+               		log("Mechanism OID received using the old encoding form");
+               		oid.elements = doid;
+               		oid.length = len;
+               	} else {
+               		oid.elements = doid + 2;
+               		oid.length   = len - 2;
+               	}
+            	gss_test_oid_set_member(&ms, &oid, supported, &present);
         } while (mechs>0 && !present);
         
         if (!present) {
@@ -125,11 +119,8 @@ userauth_gssapi(Authctxt *authctxt)
 
        	packet_start(SSH2_MSG_USERAUTH_GSSAPI_RESPONSE);
 
-	if (datafellows & SSH_BUG_GSSAPI_BER) {
-       		packet_put_string(oid.elements,oid.length);
-       	} else {
-       		packet_put_string(doid,len);
-       	}
+	/* Just return whatever they sent */
+	packet_put_string(doid,len);
        	
         packet_send();
         packet_write_wait();
@@ -137,6 +128,8 @@ userauth_gssapi(Authctxt *authctxt)
 
         dispatch_set(SSH2_MSG_USERAUTH_GSSAPI_TOKEN, 
                      &input_gssapi_token);
+        dispatch_set(SSH2_MSG_USERAUTH_GSSAPI_ERRTOK,
+        	     &input_gssapi_errtok);
         authctxt->postponed = 1;
         
         return 0;
@@ -157,32 +150,62 @@ input_gssapi_token(int type, u_int32_t plen, void *ctxt)
         recv_tok.value=packet_get_string(&recv_tok.length);
         
         maj_status=PRIVSEP(ssh_gssapi_accept_ctx(gssctxt, &recv_tok, 
-        					&send_tok, NULL));
+        					 &send_tok, NULL));
         packet_check_eom();
-                        
-        if (send_tok.length != 0) {
-                /* Send a packet back to the client, even if there has
-                 * been an error, as this may contain mechanism specific
-                 * error information */
-                packet_start(SSH2_MSG_USERAUTH_GSSAPI_TOKEN);
-                packet_put_string(send_tok.value,send_tok.length);
-                packet_send();
-                packet_write_wait();
-                gss_release_buffer(&min_status, &send_tok);        
-        }
-
+        
         if (GSS_ERROR(maj_status)) {
-                ssh_gssapi_userauth_error(gssctxt);
+        	ssh_gssapi_userauth_error(gssctxt);
+		if (send_tok.length != 0) {
+			packet_start(SSH2_MSG_USERAUTH_GSSAPI_ERRTOK);
+	                packet_put_string(send_tok.value,send_tok.length);
+        	        packet_send();
+               		packet_write_wait();
+               	}
                 authctxt->postponed = 0;
                 dispatch_set(SSH2_MSG_USERAUTH_GSSAPI_TOKEN, NULL);
                 userauth_finish(authctxt, 0, "gssapi");
+        } else {
+               	if (send_tok.length != 0) {
+               		packet_start(SSH2_MSG_USERAUTH_GSSAPI_TOKEN);
+               		packet_put_string(send_tok.value,send_tok.length);
+               		packet_send();
+               		packet_write_wait();
+                }
+	        if (maj_status == GSS_S_COMPLETE) {
+        	        dispatch_set(SSH2_MSG_USERAUTH_GSSAPI_TOKEN,NULL);
+                	dispatch_set(SSH2_MSG_USERAUTH_GSSAPI_EXCHANGE_COMPLETE,
+                             	     &input_gssapi_exchange_complete);
+                }
         }
+        
+        gss_release_buffer(&min_status, &send_tok);        
+}
 
-        if (maj_status == GSS_S_COMPLETE) {
-                dispatch_set(SSH2_MSG_USERAUTH_GSSAPI_TOKEN,NULL);
-                dispatch_set(SSH2_MSG_USERAUTH_GSSAPI_EXCHANGE_COMPLETE,
-                             &input_gssapi_exchange_complete);
-        }
+static void
+input_gssapi_errtok(int type, u_int32_t plen, void *ctxt)
+{
+        Authctxt *authctxt = ctxt;
+        Gssctxt *gssctxt;
+        gss_buffer_desc send_tok,recv_tok;
+        OM_uint32 maj_status;
+        
+        if (authctxt == NULL || (authctxt->methoddata == NULL && !use_privsep))
+                fatal("No authentication or GSSAPI context");
+                
+        gssctxt=authctxt->methoddata;
+        recv_tok.value=packet_get_string(&recv_tok.length);
+        
+        /* Push the error token into GSSAPI to see what it says */
+        maj_status=PRIVSEP(ssh_gssapi_accept_ctx(gssctxt, &recv_tok, 
+        					 &send_tok, NULL));
+        packet_check_eom();
+
+	/* We can't return anything to the client, even if we wanted to */
+	dispatch_set(SSH2_MSG_USERAUTH_GSSAPI_TOKEN, NULL);
+	dispatch_set(SSH2_MSG_USERAUTH_GSSAPI_ERRTOK,NULL);
+
+	/* The client will have already moved on to the next auth */
+	
 }
 
 /* This is called when the client thinks we've completed authentication.
@@ -203,14 +226,15 @@ input_gssapi_exchange_complete(int type, u_int32_t plen, void *ctxt)
         gssctxt=authctxt->methoddata;
         
 	/* We don't need to check the status, because the stored credentials
-	* which userok uses are only populated once the context init step
-	* has returned complete.
-	*/
+	 * which userok uses are only populated once the context init step
+	 * has returned complete.
+	 */
 
         authenticated = PRIVSEP(ssh_gssapi_userok(authctxt->user));
 
         authctxt->postponed = 0;
         dispatch_set(SSH2_MSG_USERAUTH_GSSAPI_TOKEN, NULL);
+        dispatch_set(SSH2_MSG_USERAUTH_GSSAPI_ERRTOK, NULL);
         dispatch_set(SSH2_MSG_USERAUTH_GSSAPI_EXCHANGE_COMPLETE, NULL);
         userauth_finish(authctxt, authenticated, "gssapi");
 }

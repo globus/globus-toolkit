@@ -53,6 +53,7 @@
 #define SSH2_MSG_USERAUTH_GSSAPI_TOKEN        		61
 #define SSH2_MSG_USERAUTH_GSSAPI_EXCHANGE_COMPLETE	63    
 #define SSH2_MSG_USERAUTH_GSSAPI_ERROR			64  
+#define SSH2_MSG_USERAUTH_GSSAPI_ERRTOK			65
 
 #define KEX_GSS_SHA1					"gss-group1-sha1-"
 
@@ -126,8 +127,9 @@ OM_uint32 ssh_gssapi_server_ctx(Gssctxt **ctx,gss_OID oid);
 int ssh_gssapi_check_mechanism(gss_OID oid, char *host);
 
 /* In the server */
-gss_OID ssh_gssapi_server_id_kex(Gssctxt *ctx, char *name);
+gss_OID ssh_gssapi_server_id_kex(char *name);
 int ssh_gssapi_userok(char *name);
+int ssh_gssapi_localname(char **name);
 void ssh_gssapi_server(Kex *kex, Buffer *client_kexinit, 
 		       Buffer *server_kexinit);
 

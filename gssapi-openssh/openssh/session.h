@@ -69,6 +69,6 @@ Session	*session_by_tty(char *);
 void	 session_close(Session *);
 void	 do_setusercontext(struct passwd *);
 
-void	child_set_env(char ***envp, u_int *envsizep, const char *name,
+void	 child_set_env(char ***envp, u_int *envsizep, const char *name,
 		       const char *value);
 #endif

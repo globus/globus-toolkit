@@ -1831,7 +1831,7 @@ do_ssh2_kex(void)
        	orig = myproposal[PROPOSAL_KEX_ALGS];
 
 	/* If we don't have a host key, then all of the algorithms
-	* currently in myproposal are useless */
+	 * currently in myproposal are useless */
 	if (strlen(myproposal[PROPOSAL_SERVER_HOST_KEY_ALGS])==0)
 		orig= NULL;
 		

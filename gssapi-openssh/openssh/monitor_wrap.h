@@ -68,6 +68,7 @@ OM_uint32 mm_ssh_gssapi_sign(Gssctxt *ctxt, gss_buffer_desc *buffer,
 			     gss_buffer_desc *hash);
 int mm_ssh_gssapi_userok(char *user);
 char *mm_ssh_gssapi_last_error(Gssctxt *ctxt, OM_uint32 *maj, OM_uint32 *min);
+
 #endif
 
 void mm_terminate(void);
