@@ -9,6 +9,11 @@ GSI_SOCKET_CFLAGS	=	-DGSI_SOCKET_SSLEAY $(CFLAGS) -Wall
 
 TARGETS	=	gsi-socket-test myproxy-init myproxy-get-delegation myproxy-server
 
+COMMON_OBJS	= myproxy.o gsi_socket.o gnu_getopt.o gnu_getopt_long.o
+INIT_OBJS	= myproxy_init.o $(COMMON_OBJS)
+GET_OBJS	= myproxy_get_delegation.o $(COMMON_OBJS)
+SERVER_OBJS	= myproxy_server.o verror.o $(COMMON_OBJS)
+
 default:	$(TARGETS)
 
 gsi-socket-test: gsi_socket_test.o gsi_socket.o
@@ -18,15 +23,15 @@ gsi-socket-test: gsi_socket_test.o gsi_socket.o
 gsi_socket.o: gsi_socket.c
 	$(CC) $(GSI_SOCKET_CFLAGS) -c $<
 
-myproxy-init: myproxy_init.o myproxy.o gsi_socket.o gnu_getopt.o gnu_getopt_long.o
+myproxy-init: $(INIT_OBJS)
 	$(LINK) $(LDFLAGS) $(GLOBUS_GSSAPI_LDFLAGS) \
 		-o $@ $^ $(GLOBUS_GSSAPI_LIBS)
 
-myproxy-get-delegation: myproxy_get_delegation.o myproxy.o gsi_socket.o gnu_getopt.o gnu_getopt_long.o
+myproxy-get-delegation: $(GET_OBJS)
 	$(CC) $(LDFLAGS) $(GLOBUS_GSSAPI_LDFLAGS) \
 		-o $@ $^ $(GLOBUS_GSSAPI_LIBS)
 
-myproxy-server: myproxy_server.o myproxy.o gsi_socket.o gnu_getopt.o gnu_getopt_long.o verror.o
+myproxy-server: $(SERVER_OBJS)
 	$(CC) $(LDFLAGS) $(GLOBUS_GSSAPI_LDFLAGS) \
 		-o $@ $^ $(GLOBUS_GSSAPI_LIBS)
 
