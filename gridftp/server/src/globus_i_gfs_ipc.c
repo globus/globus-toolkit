@@ -1267,23 +1267,23 @@ globus_l_gfs_ipc_unpack_cred(
     gss_cred_id_t                       cred;
 
     GFSDecodeUInt32(buffer, len, gsi_buffer.length);
-    gsi_buffer.value = buffer;
-
-    maj_stat = gss_import_cred(&min_stat,
-                               &cred,
-                               GSS_C_NO_OID,
-                               0,
-                               &gsi_buffer,
-                               0,
-                               &time_rec);
-                                                                                
-                                                                                
-    if(maj_stat != GSS_S_COMPLETE)
+    if(gsi_buffer.length > 0)
     {
-        goto decode_err;
-    }
+        gsi_buffer.value = buffer;
 
-    *out_cred = cred;
+        maj_stat = gss_import_cred(
+            &min_stat, &cred, GSS_C_NO_OID, 0, &gsi_buffer, 0, &time_rec);
+        if(maj_stat != GSS_S_COMPLETE)
+        {
+            goto decode_err;
+        }
+
+        *out_cred = cred;
+    }
+    else
+    {
+        *out_cred = NULL;
+    }
 
     return 0;
 

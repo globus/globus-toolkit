@@ -750,7 +750,7 @@ extern globus_gfs_storage_iface_t       globus_gfs_remote_dsi_iface;
         __FILE__,                                                           \
         _gfs_name,                                                          \
         __LINE__,                                                           \
-        "IPC Commincation error.")
+        "IPC Communication error.")
                                                                             
 #define GlobusGFSErrorObjMemory(mem_name)                                   \
     globus_error_construct_error(                                           \
