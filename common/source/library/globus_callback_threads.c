@@ -95,6 +95,7 @@ typedef struct globus_l_callback_space_attr_s
 typedef struct
 {
     globus_bool_t                       restarted;
+    globus_bool_t                       replaced;
     const globus_abstime_t *            time_stop;
     globus_bool_t                       signaled;
     globus_l_callback_info_t *          callback_info;
@@ -1486,8 +1487,10 @@ globus_l_callback_blocked_cb(
             {
                 globus_mutex_lock(&globus_l_callback_thread_lock);
                 {
-                    if(!globus_l_callback_shutting_down)
+                    if(!globus_l_callback_shutting_down &&
+                        !callback_info->my_space->idle_count)
                     {
+                        restart_info->replaced = GLOBUS_TRUE;
                         callback_info->my_space->thread_count++;
                         globus_l_callback_thread_count++;
                         
@@ -1642,6 +1645,7 @@ globus_callback_space_poll(
             globus_mutex_unlock(&i_space->lock);
             
             restart_info.restarted = GLOBUS_FALSE;
+            restart_info.replaced = GLOBUS_FALSE;
             restart_info.callback_info = callback_info;
             
             globus_thread_blocking_callback_enable(&restart_index);
@@ -1748,6 +1752,7 @@ globus_l_callback_thread_callback(
      * an new thread may be created by one of the pollers
      */
     restart_info.restarted = GLOBUS_FALSE;
+    restart_info.replaced = GLOBUS_FALSE;
     restart_info.create_thread = GLOBUS_FALSE;
     restart_info.own_thread = GLOBUS_TRUE;
     restart_info.time_stop = &globus_i_abstime_infinity;
@@ -1865,9 +1870,9 @@ static
 void
 globus_l_callback_serialized_cleanup(
     globus_l_callback_space_t *         i_space,
-    globus_bool_t                       restarted)
+    globus_bool_t                       replaced)
 {
-    if(restarted)
+    if(replaced)
     {
         globus_mutex_lock(&i_space->lock);
         {
@@ -1946,10 +1951,11 @@ globus_l_callback_thread_poll(
     globus_l_callback_space_t *         i_space;
     
     i_space = (globus_l_callback_space_t *) user_args;
-    /* if this thread is ever restarted, its going to terminate, since
+    /* if this thread is ever replaced, its going to terminate, since
      * it knows a new thread was started as a result of the restart
      */
     restart_info.restarted = GLOBUS_FALSE;
+    restart_info.replaced = GLOBUS_FALSE;
     restart_info.create_thread = GLOBUS_TRUE;
     restart_info.own_thread = GLOBUS_FALSE;
     restart_info.time_stop = &globus_i_abstime_infinity;
@@ -2035,7 +2041,7 @@ globus_l_callback_thread_poll(
                     callback_info, restart_info.restarted, GLOBUS_NULL);
 
                 /* if I was restarted, a new thread has taken my place */
-                done = restart_info.restarted;
+                done = restart_info.replaced;
             }
             /* small period, so he gets his own thread */
             else
@@ -2063,7 +2069,7 @@ globus_l_callback_thread_poll(
     
     if(i_space->behavior == GLOBUS_CALLBACK_SPACE_BEHAVIOR_SERIALIZED)
     {
-        globus_l_callback_serialized_cleanup(i_space, restart_info.restarted);
+        globus_l_callback_serialized_cleanup(i_space, restart_info.replaced);
     }
     
     globus_thread_setspecific(
