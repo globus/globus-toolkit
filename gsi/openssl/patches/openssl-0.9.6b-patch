@@ -155,7 +155,7 @@ diff -u -r -P openssl-0.9.6b/Makefile openssl-0.9.6b-patched/Makefile
  	@echo "Makefile.ssl is older than Makefile.org."
 diff -u -r -P openssl-0.9.6b/Makefile.org openssl-0.9.6b-patched/Makefile.org
 --- openssl-0.9.6b/Makefile.org	Mon Jul  9 07:08:41 2001
-+++ openssl-0.9.6b-patched/Makefile.org	Fri Nov  2 12:56:20 2001
++++ openssl-0.9.6b-patched/Makefile.org	Fri Nov  2 14:31:07 2001
 @@ -231,20 +231,21 @@
  		if [ -n "$(SHARED_LIBS_LINK_EXTS)" ]; then \
  			tmp="$(SHARED_LIBS_LINK_EXTS)"; \
@@ -225,7 +225,7 @@ diff -u -r -P openssl-0.9.6b/Makefile.org openssl-0.9.6b-patched/Makefile.org
 +	set -x; libs="-L. ${SHLIBDEPS}" ; \
 +	for i in ${SHLIBDIRS}; do \
 +		lib=lib$${i}.so.${SHLIB_MAJOR}.${SHLIB_MINOR} ; \
-+		${CC} $(CFLAG) -o $$lib -Wl,-soname -Wl,$$lib -all lib$${i}.a -noall $$libs ${EXLIBS} -lc ; \
++		${CC} $(CFLAG) -o $$lib -Wl,-soname -Wl,$$lib -Wl,-all lib$${i}.a -Wl,-none $$libs ${EXLIBS}; \
 +	libs="$$libs -l$$i"; \
 +	done
 +do_aix-gcc-shared:
