@@ -3,17 +3,11 @@ MUST HAVE
 SERVER:
 -instrument logging in server
 -implement abort_cb on server side
--config opt for tcp port range and globus_hostname... just set the env for them
--config for pre-login banner: terse, default, and user-specified
--config for timeouts (i need more info on this)
--config for post-login banner: default and user-specified
--config for anonymous access - which user to setuid to
--config for disable connections
--verify inetd is prepped right
--mimic wu cmdline opt names when applicable i.e. -S -p etc etc (important now so people don't start using opts that we will drop)
 -verify data destroy working on server end (and no leaks!)
 -call control_disconnected() when needed
 -server mem management... i know there are some leaks with attrs and now with instance for event stuff
+-mimic wu cmdline opt names when applicable i.e. -S -p etc etc (important now so people don't start using opts that we will drop)
+-verify inetd is prepped right
 
 LIB:
 -instrument logging in server-lib
@@ -21,6 +15,10 @@ LIB:
 -verify epsv/eprt...  currently not spec i think
 -decide if gonna keep offset in transfer func... if so, i need length also
 -decide if locking in event cb is right api decision
+-set_banner/set_message should just take a bare string and add proper response codes and multiliningness (banner currently just spits out the message i give it, and hangs on multiline.... login message does nutskin)
+-globus_i_gsc_string_to_959 (used in banner) hurts a brutha.... i set a banner of "hi there", start server, connect once, quit, connect again, server seggys at:
+    #0  0x40068261 in globus_i_gsc_string_to_959 (in_str=0x4196aff4 "hi there") at globus_gridftp_server_control.c:2486
+    2486            out_str[size] = '\n';
 
 BOTH:
 -add proper return vals/messages for error situations
@@ -43,6 +41,7 @@ SERVER:
 -drop in cheap ipc-bounce-oneshot layer
 -make forking/daemon mode better (maybe leave this out for now)
 -define logging classes in config
+-implement setuid/setgid to anonymous_user
 -produce netlogger output (based on event timer i guess?... -Z option in wu)
 -global config opts can be non-overridable, or forced to a range
 -think about config val checking/verification
