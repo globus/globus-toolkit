@@ -47,7 +47,76 @@
  *  Not all members are used by target.
  */
 
-        </PRE>
+operation struture will use stretchy array
 
+        </PRE>
+<BR>
+        <PRE>
+        finished op and call stack
+        - must be called unlocked
+        - callback can be called in same stack (don't need to register oneshot)
+            - for drivers and final
+        - spaces
+            - drivers do not deal in spaces
+            - user can register in a space, if they do the final callback is
+              registered in a one shot connected to that space
+        - register functions cannot call callback
+            - so if finished op is called in register function (in other words
+              the operation completes before the register function returns)
+              xio must detect this and register callback in a oneshot.
+
+        serialized reads and writes.
+        - it is possible that a driver stack may want serialized operations.
+          In other words that only 1 operation can be registered at a time.
+        - this is solved with a driver that serializes
+            - this driver can be used anywhere in stack and possibly in 
+              multiple places.
+
+        serialized async operations
+        - the user handle will have a lock that will be locked around
+          serialized requestes
+        - the driver, however, will not have this. 
+        - in other words, the driver pass function is not thread safe but the
+          user register function is thread safe.
+
+        barrier
+        - there will be a read EOF barrier and a close barrier
+            - this could be handled as a driver but for efficiency reasons
+              it will not be.
+        - EOF barrier will block the calling of a callback until all 
+          outstanding read requests have completed.
+        - close barrier 
+            - typically when a driver receives a code operation, it cancels
+              all outstanding operations.  in this case xio will call 
+              the cancel interface function for all outstanding operations
+              then when all the callbacks return it will pass the cancel
+              down.
+            - optionally it can allow outstanding operations to finish
+              and then it will close pass the close down to the driver.
+            - close callback should return after all outstanding
+              callbacks return... but this will just happen due to register
+              block.
+
+        error
+        - no blocking for errors
+        - if an error is returned handle remains open
+            - it is possible that later error condition will no longer exist
+
+        driver customize
+        - may want to have same driver with differnt global state
+            - so you can load the driver once, but intialize its state
+              multiple times in different memory locations
+        
+        cancels
+        - how to do this without locks in between drivers
+
+        eof protection may need serialized calls
+
+        close
+        - once close is called, it cannot be called again
+        - it will clean up all it can
+        - this is case if it returns an error or callback comes in with 
+          an error or if it succeds 
+        </PRE>
     </body>
 </html>
