@@ -24,14 +24,10 @@ CVS Information:
 
 #include "globus_gass_copy.h"
 
-/* uncomment to use netlogger */
 /*
-#define USE_NETLOGGER
-*/
-
-#if defined(USE_NETLOGGER)
-#include "logging.h"
-#endif
+ *  use globus_io for netlogger stuff
+ */
+#include "globus_io.h"
 
 /******************************************************************************
                                Type definitions
@@ -224,9 +220,11 @@ static globus_args_option_descriptor_t args_options[arg_num];
 static globus_bool_t globus_l_globus_url_copy_ctrlc = GLOBUS_FALSE;
 static globus_bool_t globus_l_globus_url_copy_ctrlc_handled = GLOBUS_FALSE;
 static globus_bool_t verbose_flag = GLOBUS_FALSE;
-#if defined(USE_NETLOGGER)
-static NLhandle   * lp = NULL;
-#endif
+
+/*
+ *  net logger handle
+ */
+static NLhandle   *                    g_globus_nl_handle;
 
 /******************************************************************************
 Function: main()
@@ -283,6 +281,10 @@ main(int argc, char **argv)
     globus_gass_copy_handle_t          gass_copy_handle;
     char                               buffer[512];
     globus_result_t                    result;
+    globus_netlogger_handle_t          gnl_handle;
+    globus_ftp_client_handleattr_t     ftp_handleattr;
+    globus_gass_copy_handleattr_t      gass_copy_handleattr;
+    globus_io_attr_t                   io_attr;
 
     err = globus_module_activate(GLOBUS_COMMON_MODULE);
     if ( err != GLOBUS_SUCCESS )
@@ -395,9 +397,43 @@ main(int argc, char **argv)
     monitor.done = GLOBUS_FALSE;
     monitor.use_err = GLOBUS_FALSE;
 
-    globus_gass_copy_handle_init(&gass_copy_handle, GLOBUS_NULL);
+
+
+    /*
+     *  added for netlogger
+     */
+    globus_gass_copy_handleattr_init(&gass_copy_handleattr);
     globus_gass_copy_attr_init(&source_gass_copy_attr);
     globus_gass_copy_attr_init(&dest_gass_copy_attr);
+
+#if defined(GLOBUS_BUILD_WITH_NETLOGGER)
+    g_globus_nl_handle = NetLoggerOpen(argv[0], NULL, NL_ENV);
+
+    globus_netlogger_handle_init(
+        &gnl_handle,
+        g_globus_nl_handle);
+
+    globus_ftp_client_handleattr_init(&ftp_handleattr);
+
+    globus_ftp_client_handleattr_set_netlogger(
+        &ftp_handleattr,
+        &gnl_handle);
+
+    globus_io_fileattr_init(&io_attr);
+    globus_io_attr_netlogger_set_handle(&io_attr, &gnl_handle);
+
+    globus_gass_copy_attr_set_io(
+        &source_gass_copy_attr,
+        &io_attr);
+    globus_gass_copy_attr_set_io(
+        &dest_gass_copy_attr,
+        &io_attr);
+
+    globus_gass_copy_handleattr_set_ftp_attr(
+        &gass_copy_handleattr, &ftp_handleattr);
+#endif
+
+    globus_gass_copy_handle_init(&gass_copy_handle, &gass_copy_handleattr);
 
     if (subject && !source_subject)
         source_subject = subject;
