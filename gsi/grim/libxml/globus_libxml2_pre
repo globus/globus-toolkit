@@ -1,2 +1,0 @@
-libxml2includedir = $(GLOBUS_LOCATION)/include/$(GLOBUS_FLAVOR_NAME)/libxml
-## libxml2include = [ HEADERS ]
