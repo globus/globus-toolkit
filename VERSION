@@ -1,8 +1,17 @@
-This is MyProxy v0.5.4 2 May 2003
+This is MyProxy v0.5.5 30 May 2003
 This version should be compatible with all versions since v0.2.
 
 Version History
 ---------------
+v0.5.5 30 May 2003 (GPT package version 1.7)
+  - added support for Globus Toolkit 2.4 libraries
+  - added support for external passphrase quality enforcement with
+    passphrase_policy_program command in myproxy-server.config
+  - added support for locking credentials via myproxy-admin-query
+  - included example myproxy.cron script for removing expired credentials
+  - fixed problems with installed headers fixed
+  - added MYPROXY_SERVER_PORT environment variable
+
 v0.5.4 2 May 2003 (GPT package version 1.6)
   - myproxy-admin-adduser command added
   - default lifetime of delegated proxies changed to 12 hours instead of 2
