@@ -1,4 +1,0 @@
-name=grim
-subdir=program_execution/grim
-build="ant -Dogsa.root=\$OGSA_HOME"
-gar=build/lib/grim.gar
