@@ -214,7 +214,11 @@ sub fixpaths
 
     while (<IN>)
     {
-        if ( /Subsystem\s+sftp\s+\S+/ )
+        #
+        # sorry for the whacky regex, but i need to verify a whole line
+        #
+
+        if ( /^\s*Subsystem\s+sftp\s+\S+\s*$/ )
         {
             $_ = "Subsystem\tsftp\t$gpath/libexec/sftp-server\n";
             $_ =~ s:/+:/:g;
