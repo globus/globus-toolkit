@@ -28,9 +28,6 @@
 #   ifndef BN_DIV2W
 #       undef BN_DIV2W
 #   endif
-#   ifndef BN_DIV3W
-#       undef BN_DIV3W
-#   endif
 #endif
 
 #ifdef HEADER_DES_LOCL_H

@@ -191,50 +191,22 @@ GSS_CALLCONV gss_unwrap(
             goto err;
         }
 
-        /* now get the data from SSL. 
+        /* now get the date from SSL. 
          * We don't know how big it is, so assume the max?
          */
 
-        while((rc = SSL_read(context->gs_ssl, readarea, sizeof(readarea))) > 0)
-        {
-            void * realloc_ptr;
-
-            realloc_ptr = realloc(
-                output_message_buffer->value,
-                rc + output_message_buffer->length);
-
-            if(realloc_ptr == NULL)
-            {
-                GSSerr(GSSERR_F_UNWRAP, GSSERR_R_OUT_OF_MEMORY);
-                *minor_status = gsi_generate_minor_status();
-                major_status = GSS_S_FAILURE;
-
-                /* free allocated mem */
-                if(output_message_buffer->value)
-                { 
-                    free(output_message_buffer->value);
-                }
-
-                goto err;
-                
-            }
-
-            output_message_buffer->value = realloc_ptr;
-
-            memcpy(output_message_buffer->value +
-                   output_message_buffer->length,
-                   readarea,
-                   rc);
-            
-            output_message_buffer->length += rc;
-        }
-        
+        rc = SSL_read(context->gs_ssl, readarea, sizeof(readarea));
         if (rc < 0)
         {
             ssl_error = SSL_get_error(context->gs_ssl, rc);
             
-            if(!ssl_error == SSL_ERROR_WANT_READ)
+            if(ssl_error == SSL_ERROR_WANT_READ)
             {
+                output_message_buffer->value = NULL;
+                output_message_buffer->length = 0;
+            }
+            else
+            { 
                 char errbuf[256];
                 
                 /* Problem, we should have some data here! */
@@ -245,15 +217,23 @@ GSS_CALLCONV gss_unwrap(
                 ERR_add_error_data(1,errbuf);
                 *minor_status = gsi_generate_minor_status();
                 major_status = GSS_S_FAILURE;
-
-                /* free allocated mem */
-                if(output_message_buffer->value)
-                { 
-                    free(output_message_buffer->value);
-                }
-                
                 goto err;
             }
+        }
+        else if (rc == 0)
+        {
+            output_message_buffer->value = NULL;
+            output_message_buffer->length = rc;
+        }
+        else
+        {
+            if ((output_message_buffer->value = (char *)malloc(rc)) == NULL)
+            {
+                major_status = GSS_S_FAILURE;
+                goto err;
+            }
+            output_message_buffer->length = rc;
+            memcpy(output_message_buffer->value, readarea, rc);
         }
                 
         if (conf_state)
@@ -273,7 +253,7 @@ err:
     /* unlock the context mutex */
     
     globus_mutex_unlock(&context->mutex);
-    
+
     return major_status;
 }
 

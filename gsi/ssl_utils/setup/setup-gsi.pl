@@ -98,14 +98,6 @@ else
   {
     die "Failed to set permissions on $target_dir. Aborting.";
   }
-
-  $result = system("chmod 755 $trusted_certs_dir");
-
-  if ($result != 0) 
-  {
-    die "Failed to set permissions on $trusted_certs_dir. Aborting.";
-  }
-
 }
 
 #

@@ -115,7 +115,7 @@ AC_DEFUN(LAC_ASM_SET,
                 case ${lac_cv_CPU} in
                     *mips3*|*mips4*)
                         dnl this needs testing
-                        lac_BN_OBJ="asm/mips3.lo"
+                        dnl lac_BN_OBJ="asm/mips3.lo"
                     ;;
                 esac
             ;;
