@@ -64,6 +64,87 @@
 # define SSHD_PAM_SERVICE       __progname
 #endif
 
+/*modified by binhe*/
+#ifdef GSSAPI
+/*------------ GSSAPI-related functions -----------------------*/
+
+#include <gssapi.h>
+/*
+ * Given a target account, and source host, perform GSSAPI authentication
+ * and authorization. Returns 1 on success, 0 on failure. On success fills
+ * in client_name with the GSSAPI identity of the user.
+ */
+int auth_gssapi(const char *target_account,
+                const char *source_host,
+                gss_buffer_desc *client_name);
+
+/*
+ * The userstring sent by the client may contain a GSSAPI identity which
+ * the server can use to determine the target account. This function
+ * parses the userstring and does the local account determination,
+ * if needed.
+ */
+char *
+gssapi_parse_userstring(char *username);
+
+/*
+ * Change the ownership of all delegated credentials to the user.
+ * Returns 0 on success, non-zero on error.
+ */
+int
+gssapi_chown_delegation(uid_t uid, gid_t gid);
+
+/*
+ * Remove the forwarded proxy credentials
+ */
+void
+gssapi_remove_delegation(void);
+
+/*
+ * Clean our environment on startup. This means removing any environment
+ * strings that might inadvertantly been in root's environment and
+ * could cause serious security problems if we think we set them.
+ */
+void
+gssapi_clean_env(void);
+
+/*
+ * Set up our environment for GSSAPI authentication
+ */
+void
+gssapi_setup_env(void);
+
+/*
+ * Fix up our environment after GSSAPI authentication
+ */
+int
+gssapi_fix_env(void);
+
+/*
+ * Pass all the GSSAPI environment variables to the child.
+ */
+void
+gssapi_child_set_env(char ***p_env,
+                     unsigned int *p_envsize);
+
+/*
+ * A string containing the version of the GSSAPI patch applied
+ */
+#define GSSAPI_PATCH_VERSION    "GSSAPI_PATCH FOR OPENSSH-3.0.2p1"
+
+#ifndef GSSAPI_SERVICE_NAME
+#define GSSAPI_SERVICE_NAME             "host"
+#endif /* GSSAPI_SERVICE_NAME */
+
+#ifndef GSSAPI_SERVICE_NAME_FORMAT
+#define GSSAPI_SERVICE_NAME_FORMAT      "%s@%s"         /* host@fqdn */
+#endif /* GSSAPI_SERVICE_NAME_FORMAT */
+
+/* String to send if we don't have a valid hash of sshd keys */
+#define GSSAPI_NO_HASH_STRING           "GSSAPI_NO_HASH"
+#endif /* GSSAPI */
+/*end of modification*/
+
 /*
  * Name of the environment variable containing the pathname of the
  * authentication socket.

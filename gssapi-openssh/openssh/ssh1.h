@@ -70,6 +70,15 @@
 #define SSH_MSG_CHANNEL_INPUT_EOF	SSH_MSG_CHANNEL_CLOSE
 #define SSH_MSG_CHANNEL_OUTPUT_CLOSE	SSH_MSG_CHANNEL_CLOSE_CONFIRMATION
 
+/*modified by binhe*/
+/* GSS-API authentication */
+#define SSH_CMSG_AUTH_GSSAPI                    88      /* int, strings... */
+#define SSH_SMSG_AUTH_GSSAPI_RESPONSE           89      /* string */
+#define SSH_MSG_AUTH_GSSAPI_TOKEN               90      /* string */
+#define SSH_SMSG_AUTH_GSSAPI_HASH               91      /* string */
+#define SSH_MSG_AUTH_GSSAPI_ABORT               92      /* */
+/*end of modification*/
+
 /*
  * Authentication methods.  New types can be added, but old types should not
  * be removed for compatibility.  The maximum allowed value is 31.
@@ -83,6 +92,10 @@
 #define SSH_PASS_KERBEROS_TGT	7
 				/* 8 to 15 are reserved */
 #define SSH_PASS_AFS_TOKEN	21
+
+/*modified by binhe*/
+#define SSH_AUTH_GSSAPI		24
+/*end of modification*/
 
 /* Protocol flags.  These are bit masks. */
 #define SSH_PROTOFLAG_SCREEN_NUMBER	1	/* X11 forwarding includes screen */

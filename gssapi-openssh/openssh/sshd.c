@@ -77,6 +77,13 @@ RCSID("$OpenBSD: sshd.c,v 1.209 2001/11/10 13:19:45 markus Exp $");
 #include "ssh-gss.h"
 #endif
 
+/*modified by binhe*/
+#ifdef GSSAPI
+#include <openssl/md5.h>
+#include "bufaux.h"
+#endif /* GSSAPI */
+/*end of modification*/
+
 #ifdef LIBWRAP
 #include <tcpd.h>
 #include <syslog.h>
@@ -782,6 +789,12 @@ main(int ac, char **av)
 	if (test_flag)
 		exit(0);
 
+/*modified by binhe*/
+#ifdef GSSAPI
+  gssapi_clean_env();
+#endif /* GSSAPI */
+/*end of modification*/
+
 #ifdef HAVE_SCO_PROTECTED_PW
 	(void) set_auth_parameters(ac, av);
 #endif
@@ -1302,6 +1315,14 @@ do_ssh1_kex(void)
 #endif
 	if (options.challenge_response_authentication == 1)
 		auth_mask |= 1 << SSH_AUTH_TIS;
+
+/*modified by binhe*/
+#ifdef GSSAPI
+  	if (options.gss_authentication)
+    		auth_mask |= 1 << SSH_AUTH_GSSAPI;
+#endif
+/*end of modification*/
+
 	if (options.password_authentication)
 		auth_mask |= 1 << SSH_AUTH_PASSWORD;
 	packet_put_int(auth_mask);
@@ -1427,6 +1448,51 @@ do_ssh1_kex(void)
 		for (i = 0; i < 16; i++)
 			session_id[i] = session_key[i] ^ session_key[i + 16];
 	}
+
+/*modified by binhe*/
+#ifdef GSSAPI
+  /*
+   * Before we destroy the host and server keys, hash them so we can
+   * send the hash over to the client via a secure channel so that it
+   * can verify them.
+   */
+  {
+    MD5_CTX md5context;
+    Buffer buf;
+    unsigned char *data;
+    unsigned int data_len;
+    extern unsigned char ssh_key_digest[];      /* in auth_gssapi.c */
+
+
+    debug("Calculating MD5 hash of server and host keys...");
+
+    /* Write all the keys to a temporary buffer */
+    buffer_init(&buf);
+
+    /* Server key */
+    buffer_put_bignum(&buf, sensitive_data.server_key->rsa->e);
+    buffer_put_bignum(&buf, sensitive_data.server_key->rsa->n);
+
+    /* Host key */
+    buffer_put_bignum(&buf, sensitive_data.ssh1_host_key->rsa->e);
+    buffer_put_bignum(&buf, sensitive_data.ssh1_host_key->rsa->n);
+
+    /* Get the resulting data */
+    data = (unsigned char *) buffer_ptr(&buf);
+    data_len = buffer_len(&buf);
+
+    /* And hash it */
+    MD5_Init(&md5context);
+    MD5_Update(&md5context, data, data_len);
+    MD5_Final(ssh_key_digest, &md5context);
+
+    /* Clean up */
+    buffer_clear(&buf);
+    buffer_free(&buf);
+  }
+#endif /* GSSAPI */
+/*end of modification*/
+
 	/* Destroy the private and public keys.  They will no longer be needed. */
 	destroy_sensitive_data();
 

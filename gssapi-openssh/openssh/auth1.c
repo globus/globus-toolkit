@@ -26,6 +26,12 @@ RCSID("$OpenBSD: auth1.c,v 1.25 2001/06/26 16:15:23 dugsong Exp $");
 #include "misc.h"
 #include "uidswap.h"
 
+/*modified by bine*/
+#include <gssapi.h>
+#include "ssh.h"
+#include "canohost.h"
+/*end of modification*/
+
 /* import */
 extern ServerOptions options;
 
@@ -156,6 +162,31 @@ do_authloop(Authctxt *authctxt)
 			}
 			break;
 #endif /* KRB4 || KRB5 */
+
+/*modified by binhe*/
+#ifdef GSSAPI
+        case SSH_CMSG_AUTH_GSSAPI:
+          if (options.gss_authentication) {
+            gss_buffer_desc client_name;
+            OM_uint32 min_stat;
+
+
+            if (auth_gssapi(authctxt->user, get_canonical_hostname(options.reverse_mapping_check), &client_name)) {
+
+              /* Successful authentication and authorization */
+              authenticated = 1;
+
+              gss_release_buffer(&min_stat, &client_name);
+            }
+
+          } else {
+            packet_get_all();
+            debug("GSSAPI authentication disabled.");
+          }
+
+          break;
+#endif /* GSSAPI */
+/*end of modification*/
 			
 #if defined(AFS) || defined(KRB5)
 			/* XXX - punt on backward compatibility here. */
@@ -374,6 +405,21 @@ do_authentication()
 	/* Get the user name. */
 	user = packet_get_string(&ulen);
 	packet_integrity_check(plen, (4 + ulen), SSH_CMSG_USER);
+
+/*modified by binhe*/
+#ifndef GSSAPI
+  /* GSSAPI clients may legitimately send long names (see below) */
+
+  if (strlen(user) > 255)
+    do_authentication_fail_loop();
+
+#else /* GSSAPI */
+
+  /* Parse GSSAPI identity from userstring */
+  user = gssapi_parse_userstring(user);
+
+#endif /* GSSAPI */
+/*end of modification*/
 
 	if ((style = strchr(user, ':')) != NULL)
 		*style++ = '\0';

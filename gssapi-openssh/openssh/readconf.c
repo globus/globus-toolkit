@@ -788,6 +788,10 @@ initialize_options(Options * options)
         options->gss_deleg_creds = -1;
 #ifdef GSI
         options->gss_globus_deleg_limited_proxy = -1;
+/*modified by binhe*/
+  options->forward_gssapi_globus_proxy = -1;
+  options->forward_gssapi_globus_limited_proxy = -1;
+/*end of modification*/
 #endif /* GSI */
 #endif /* GSSAPI */
 
@@ -879,6 +883,12 @@ fill_default_options(Options * options)
 #ifdef GSI
 	if (options->gss_globus_deleg_limited_proxy == -1)
 		options->gss_globus_deleg_limited_proxy = 0;
+/*modified by binhe*/
+  if (options->forward_gssapi_globus_proxy == -1)
+    options->forward_gssapi_globus_proxy = 0;
+  if (options->forward_gssapi_globus_limited_proxy == -1)
+    options->forward_gssapi_globus_limited_proxy = 0;
+/*end of modification*/
 #endif /* GSI */
 #endif /* GSSAPI */
 #if defined(KRB4) || defined(KRB5)

@@ -53,6 +53,10 @@ typedef struct {
 	int	gss_deleg_creds;
 #ifdef GSI
 	int	gss_globus_deleg_limited_proxy;
+/*modified by binhe*/
+  	int forward_gssapi_globus_proxy;
+  	int forward_gssapi_globus_limited_proxy;
+/*end of modification*/
 #endif /* GSI */
 #endif /* GSSAPI */
 
