@@ -1585,7 +1585,6 @@ globus_gridftp_server_control_finished_resource(
         i_op->user_arg);
 
     globus_l_gsc_op_destroy(i_op);
-    globus_free(stat_info_array);
 
     globus_mutex_lock(&i_server->mutex);
     {
