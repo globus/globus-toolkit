@@ -2491,7 +2491,7 @@ proxy_get_filenames(int proxy_in,
 		}
 	}
 #endif
-	if (!user_proxy || !getenv("X509_RUN_AS_SERVER")) {
+	if (!user_proxy || getenv("X509_RUN_AS_SERVER")) {
 		unsigned long uid;
 		uid = getuid();
 		len = strlen(DEFAULT_SECURE_TMP_DIR) 
