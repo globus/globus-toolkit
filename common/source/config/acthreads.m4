@@ -39,7 +39,6 @@ solaristhreads)
 	if test "$GLOBUS_HAVE_SOLARIS_THREADS" = "yes" ; then
 
 		THREAD_LIB_FLAGS=$SOLARIS_THREAD_LIB_FLAGS
-		AC_DEFINE(GLOBUS_USE_SOLARIS_THREADS)
 	else
 		echo "ERROR: thread flavor $flavor not supported on this platform"
 		exit 1
@@ -47,17 +46,14 @@ solaristhreads)
 	;;
 
 sproc)
-		AC_DEFINE(GLOBUS_USE_SPROC)
 ;;
 
 external)
-		AC_DEFINE(GLOBUS_USE_EXTERNAL_THREADS)
 ;;
 pthreads)
 	if test "$GLOBUS_HAVE_PTHREADS" = "yes" ; then
 
 		THREAD_LIB_FLAGS=$PTHREAD_LIB_FLAGS
-		AC_DEFINE(GLOBUS_USE_PTHREADS)
 	else
 		echo "ERROR: thread flavor $flavor not supported on this platform"
 		exit 1
@@ -65,7 +61,6 @@ pthreads)
 	;;
 none)
 		THREAD_LIB_FLAGS=
-		AC_DEFINE(GLOBUS_USE_NO_THREADS)
 ;;
 *)
 	echo "ERROR: thread flavor $flavor not recognized"

@@ -1,5 +1,11 @@
 #include "globus_io.h"
+#ifndef TARGET_ARCH_WIN32
 #include <fcntl.h>
+//#else
+//#include "globus_io_windows.h"
+#endif
+// forward declaration
+void usage( char * executableName );
 
 /*
  * Function:    main
@@ -22,15 +28,32 @@ main(int argc, char **argv)
     globus_size_t                       bytes;
     globus_size_t                       i;
     globus_byte_t                       buf[10];
+#ifdef TARGET_ARCH_WIN32
+	HANDLE						outputFile;
+    globus_io_handle_t			write_handle;
+#endif
     
     globus_module_activate(GLOBUS_COMMON_MODULE);
     globus_module_activate(GLOBUS_IO_MODULE);
 
+#ifndef TARGET_ARCH_WIN32
     result = globus_io_file_open("/etc/group",
-                                 O_RDONLY,
-                                 0600,
-                                 GLOBUS_NULL,
-                                 &handle);
+				 O_RDONLY,
+				 0600,
+				 GLOBUS_NULL,
+				 &handle);
+#else
+	if ( argc < 3 )
+	{
+		usage( argv[0] );
+		return -1;
+	}
+    result = globus_io_file_open( argv[1],
+				 O_RDONLY,
+				 0,
+				 GLOBUS_NULL,
+				 &handle);
+#endif
 
     if(result != GLOBUS_SUCCESS)
     {
@@ -40,11 +63,25 @@ main(int argc, char **argv)
         goto done;
     }
     
+#ifndef TARGET_ARCH_WIN32
     result = globus_io_file_posix_convert(
         fileno(stdout),
         GLOBUS_NULL,
         &stdout_handle);
-
+#else
+	outputFile= CreateFile( argv[2], GENERIC_WRITE, 0, NULL, CREATE_ALWAYS,
+	 FILE_FLAG_OVERLAPPED, NULL );
+	if ( outputFile == INVALID_HANDLE_VALUE )
+	{
+		printf( "An error occurred while trying to create the output file (error is %d)...exiting\n",
+		 GetLastError() );
+		return -1;
+	}
+    result= globus_io_file_windows_convert(
+		outputFile,
+		GLOBUS_NULL,
+		&write_handle);
+#endif
     if(result != GLOBUS_SUCCESS)
     {
         error = globus_error_get(result);
@@ -53,7 +90,6 @@ main(int argc, char **argv)
                            errstring);
         goto done;
     }
-
 
     do
     {
@@ -69,10 +105,17 @@ main(int argc, char **argv)
         {
             globus_size_t           nbytes2;
             
-            globus_io_write(&stdout_handle,
-                            buf,
-                            bytes,
-                            &nbytes2);
+#ifndef TARGET_ARCH_WIN32
+	globus_io_write(&stdout_handle,
+			buf,
+			bytes,
+			&nbytes2);
+#else
+		globus_io_write( &write_handle,
+				buf,
+				bytes,
+				&nbytes2);
+#endif
         }
         else
         {
@@ -93,7 +136,11 @@ main(int argc, char **argv)
     }
     
     globus_io_close(&handle);
+#ifndef TARGET_ARCH_WIN32
     globus_io_close(&stdout_handle);
+#else
+    globus_io_close( &write_handle);
+#endif
 
     globus_module_deactivate(GLOBUS_IO_MODULE);
     globus_module_deactivate(GLOBUS_COMMON_MODULE);
@@ -101,3 +148,9 @@ main(int argc, char **argv)
     return 0;
 }
 /* main() */
+
+void usage( char * executableName )
+{
+	printf( "Usage --\n" );
+	printf( "%s <input file> <output file>\n", executableName );
+}

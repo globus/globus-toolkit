@@ -19,7 +19,9 @@ CVS Information:
 #include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
+#ifndef TARGET_ARCH_WIN32
 #include <strings.h>
+#endif
 #include "version.h"
 
 #if defined(DEBUG_GASS_TRANSFER)

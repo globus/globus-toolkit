@@ -1,15 +1,14 @@
 #include "globus_common.h"
 #include "globus_thread_common.h"
-#include <stdio.h>
-#include <string.h>
-#include <unistd.h>
-#include <assert.h>
-#include <ctype.h>
 
 static globus_memory_t                   mem;
 
 #define MEM_INIT_SIZE      15
+#ifndef TARGET_ARCH_WIN32
 #define POPS               100000
+#else
+#define POPS                 1000
+#endif
 
 typedef struct mem_test_s
 {
@@ -42,7 +41,7 @@ int main(int argc, char * argv[])
        mem_init(mem_ptr[cnt], cnt);
    }
 
-   dump((globus_byte_t *) mem_ptr[0], mem.total_size);
+   dump((globus_byte_t *) mem_ptr[0], MEM_INIT_SIZE * sizeof(mem_test_t));
    
    globus_memory_push_node(&mem, (globus_byte_t *)mem_ptr[0]);
    

@@ -18,17 +18,8 @@ CVS Information:
 /******************************************************************************
                              Include header files
 ******************************************************************************/
-#include "config.h"
-#include "globus_common.h"
 #include "globus_tilde_expand.h"
-
-#if HAVE_CTYPE_H
-#include <ctype.h>
-#endif
-
-#if HAVE_STRING_H
-#include <string.h>
-#endif
+#include "globus_libc.h"
 
 /******************************************************************************
 Function: globus_tilde_expand()
@@ -65,6 +56,19 @@ Parameters:
 
 Returns: 
 ******************************************************************************/
+#if defined(TARGET_ARCH_WIN32)
+int
+globus_tilde_expand(
+    unsigned long options,
+    globus_bool_t url_form,
+    char *inpath,
+    char **outpath)
+{
+    return -1;
+}
+
+#else /* WIN32 */
+
 int
 globus_tilde_expand(
     unsigned long options,
@@ -232,5 +236,7 @@ notilde:
     strcpy(*outpath, inpath);
     return GLOBUS_SUCCESS;
 } /* globus_tilde_expand() */
+
+#endif /* WIN32 */
 
 

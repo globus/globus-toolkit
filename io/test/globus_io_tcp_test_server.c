@@ -3,6 +3,10 @@
 
 int test1(int argc, char **argv);
 
+#ifdef TARGET_ARCH_WIN32
+#include "getoptWin.h"
+#endif
+
 typedef struct
 {
     globus_mutex_t			mutex;
@@ -156,7 +160,11 @@ test1(int argc, char **argv)
 	&attr,
 	GLOBUS_FALSE);
 */
+#ifndef TARGET_ARCH_WIN32
     while (( c = getopt(argc, argv, "brgscvi:I:")) != EOF)
+#else
+    while (( c = getoptWin(argc, argv, "rgsci:I:")) != EOF)
+#endif
     {
         switch(c)
 	{
@@ -281,7 +289,14 @@ test1(int argc, char **argv)
         globus_libc_printf("listening on port %d\n", (int) port);
     }
 
-    globus_io_tcp_listen(&handle);
+    result = globus_io_tcp_listen(&handle);
+	if ( result != GLOBUS_SUCCESS )
+	{
+        err = globus_error_get(result);
+        errstring = globus_object_printable_to_string(err);
+		globus_libc_printf("test 1 listen failed: %s\n", errstring);
+		goto exit;
+	}
     result = globus_io_tcp_accept(&handle,
 				  &attr,
 				  &child_handle);

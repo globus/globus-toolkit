@@ -1,4 +1,4 @@
-AC_REVISION($Revision$)
+C_REVISION($Revision$)
 AC_INIT(Makefile.am)
 AC_CONFIG_AUX_DIR(config)
 
@@ -22,7 +22,7 @@ exec_prefix='$(GLOBUS_LOCATION)'
 GPT_INIT
 AM_INIT_AUTOMAKE($GPT_NAME, $GPT_VERSION,0)
 AM_MAINTAINER_MODE
-AM_CONFIG_HEADER(globus_config.h)
+AM_CONFIG_HEADER(globus_config.h:globus_config.h.in)
 
 AC_ARG_WITH(
     flavor,
@@ -37,6 +37,12 @@ if test "$globus_cv_flavor" = "notset" \
     AC_MSG_ERROR([A flavor description string must be specified!])
 fi
 
+CHECK_HEADERS
+CHECK_FUNCS
+CHECK_FOR_TIMESPEC
+CHECK_FOR_IOVEC
+CHECK_SIZES
+
 GLOBUS_FLAVOR_NAME=$globus_cv_flavor
 AC_SUBST(GLOBUS_FLAVOR_NAME)
 
@@ -49,7 +55,6 @@ dnl go look for perl
 if test "x$PERL" = "x"; then
         AC_PATH_PROG(PERL,perl)
 fi
-
 
 LAC_COMPILERS
 
@@ -109,15 +114,4 @@ AC_OUTPUT(Makefile
 	pkgdata/pkg_data_src.gpt
 	pkgdata/build-parameters
 	)
-
-
-
-
-
-
-
-
-
-
-
 

@@ -8,8 +8,12 @@
  */
 #endif
 
-#include "globus_i_error_errno.h"
+#include "globus_error_errno.h"
 #include "globus_i_error_generic.h"
+#include "globus_object.h"
+#include "globus_module.h"
+#include "globus_error.h"
+#include "globus_error_generic.h"
 #include <string.h>
 
 /**

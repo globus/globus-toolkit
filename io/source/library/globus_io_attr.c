@@ -183,7 +183,7 @@ globus_i_io_attr_activate(void)
     /* tcp options */
     globus_l_io_tcpattr_default.nodelay = GLOBUS_FALSE;
     globus_l_io_tcpattr_default.restrict_port = GLOBUS_TRUE;
-    memcpy(globus_l_io_tcpattr_default.interface, "000.000.000.000", 16);
+    memcpy(globus_l_io_tcpattr_default.interface_addr, "000.000.000.000", 16);
     
     /* udp options */ 
     globus_l_io_udpattr_default.connected = GLOBUS_FALSE;
@@ -192,7 +192,7 @@ globus_i_io_attr_activate(void)
     globus_l_io_udpattr_default.mc_ttl = 1;
     globus_l_io_udpattr_default.mc_enabled = GLOBUS_FALSE;
     globus_l_io_udpattr_default.address = GLOBUS_NULL;
-    globus_l_io_udpattr_default.interface = INADDR_ANY;
+    globus_l_io_udpattr_default.interface_addr = INADDR_ANY;
     globus_l_io_udpattr_default.restrict_port = GLOBUS_TRUE;
 
     /* file options */
@@ -1161,7 +1161,7 @@ globus_i_io_udpattr_initialize(
     instance->mc_ttl = 1;
     instance->mc_enabled = GLOBUS_FALSE;
     instance->address = GLOBUS_NULL;
-    instance->interface = INADDR_ANY;
+    instance->interface_addr = INADDR_ANY;
 
     return globus_i_io_securesocketattr_initialize(
 	globus_object_upcast(obj,
@@ -3169,7 +3169,7 @@ globus_io_attr_get_tcp_nodelay(
  * @param attr
  *        The attribute to query or modify. The attr parameter must be 
  *        initialized by globus_io_tcpattr_init().
- * @param interface
+ * @param interface_addr
  *        The value of the interface attribute. The interface string must
  *        be in dotted-ip format (ie "127.0.0.1").
  *
@@ -3188,7 +3188,7 @@ globus_io_attr_get_tcp_nodelay(
 globus_result_t
 globus_io_attr_set_tcp_interface(
     globus_io_attr_t * attr,
-    const char * interface)
+    const char * interface_addr)
 {
     globus_object_t *			tcpattr;
     globus_i_io_tcpattr_instance_t *	instance;
@@ -3244,19 +3244,19 @@ globus_io_attr_set_tcp_interface(
 		myname));
     }
 
-    if(sscanf(interface, "%u.%u.%u.%u",
+    if(sscanf(interface_addr, "%u.%u.%u.%u",
               &address[0], &address[1], &address[2], &address[3]) != 4)
     {
 	return globus_error_put(
 	    globus_io_error_construct_bad_parameter(
 		GLOBUS_IO_MODULE,
 		GLOBUS_NULL,
-		"interface",
+		"interface_addr",
 		2,
 		myname));
     }
 
-    sprintf((char *)instance->interface, "%u.%u.%u.%u",
+    sprintf((char *)instance->interface_addr, "%u.%u.%u.%u",
             address[0], address[1], address[2], address[3]);
 
     return GLOBUS_SUCCESS;
@@ -3266,7 +3266,7 @@ globus_io_attr_set_tcp_interface(
 globus_result_t
 globus_io_attr_get_tcp_interface(
     globus_io_attr_t * attr,
-    char ** interface)
+    char ** interface_addr)
 {
     globus_object_t *			tcpattr;
     globus_i_io_tcpattr_instance_t *	instance;
@@ -3293,18 +3293,18 @@ globus_io_attr_get_tcp_interface(
 		1,
 		myname));
     }
-    if(interface == GLOBUS_NULL)
+    if(interface_addr == GLOBUS_NULL)
     {
 	return globus_error_put(
 	    globus_io_error_construct_null_parameter(
 		GLOBUS_IO_MODULE,
 		GLOBUS_NULL,
-		"interface",
+		"interface_addr",
 		2,
 		myname));
     }
 
-    *interface = GLOBUS_NULL;
+    *interface_addr = GLOBUS_NULL;
     tcpattr = globus_object_upcast(attr->attr,
 				   GLOBUS_IO_OBJECT_TYPE_TCPATTR);
     if(tcpattr == GLOBUS_NULL)
@@ -3332,14 +3332,14 @@ globus_io_attr_get_tcp_interface(
 		1,
 		myname));
     }
-    if(instance->interface[0] != 0)
+    if(instance->interface_addr[0] != 0)
     {
-        *interface = globus_libc_malloc(16);
-        memcpy(*interface, &instance->interface[0], 16);
+        *interface_addr = globus_libc_malloc(16);
+        memcpy(*interface_addr, &instance->interface_addr[0], 16);
     }
     else
     {
-        *interface = GLOBUS_NULL;
+        *interface_addr = GLOBUS_NULL;
     }
     return GLOBUS_SUCCESS;
 }
@@ -5712,8 +5712,8 @@ globus_i_io_copy_tcpattr_to_handle(
 
 	    handle->tcp_attr.nodelay = instance->nodelay;
 	    handle->tcp_attr.restrict_port = instance->restrict_port;
-            memcpy(&handle->tcp_attr.interface[0],
-                   &instance->interface[0],
+            memcpy(&handle->tcp_attr.interface_addr[0],
+                   &instance->interface_addr[0],
                    16);
 	    
 	    return GLOBUS_SUCCESS;
@@ -5800,7 +5800,7 @@ globus_i_io_copy_udpattr_to_handle(
 	    handle->udp_attr.mc_loop = instance->mc_loop;
 	    handle->udp_attr.mc_ttl = instance->mc_ttl;
 	    handle->udp_attr.address = instance->address;
-	    handle->udp_attr.interface = instance->interface;
+	    handle->udp_attr.interface_addr = instance->interface_addr;
 	    handle->udp_attr.restrict_port = instance->restrict_port;
             
 	    return GLOBUS_SUCCESS;
@@ -6171,7 +6171,7 @@ globus_result_t
 globus_io_attr_set_udp_multicast_membership(
     globus_io_attr_t *                        attr,
     char *                                    address,
-    char *                                    interface)
+    char *                                    interface_addr)
 {
     globus_result_t                      result;
     globus_i_io_udpattr_instance_t *	 instance;
@@ -6196,7 +6196,7 @@ globus_io_attr_set_udp_multicast_membership(
     {
 	/* TODO: test interface information */
         instance->address = address;
-        instance->interface = interface;
+        instance->interface_addr = interface_addr;
         instance->mc_enabled = GLOBUS_TRUE;
         instance->reuse = GLOBUS_TRUE;
     }
@@ -6218,7 +6218,7 @@ globus_result_t
 globus_io_attr_get_udp_multicast_membership(
     globus_io_attr_t *                        attr,
     char **                                   address,
-    char **                                   interface)
+    char **                                   interface_addr)
 {
     globus_result_t                      result;
     globus_i_io_udpattr_instance_t *	 instance;
@@ -6235,7 +6235,7 @@ globus_io_attr_get_udp_multicast_membership(
     }
 
     *address = instance->address;
-    *interface = instance->interface;
+    *interface_addr = instance->interface_addr;
 
     return GLOBUS_SUCCESS;
     /* set specifcattribute */
@@ -6332,7 +6332,7 @@ globus_io_attr_get_udp_multicast_ttl(
 globus_result_t
 globus_io_attr_set_udp_multicast_interface(
     globus_io_attr_t *                       attr,
-    char *                                   interface)
+    char *                                   interface_addr)
 {
     globus_result_t                      result;
     globus_i_io_udpattr_instance_t *	 instance;
@@ -6355,7 +6355,7 @@ globus_io_attr_set_udp_multicast_interface(
 
     }
 
-    instance->interface = interface;
+    instance->interface_addr = interface_addr;
 
     return GLOBUS_SUCCESS;
 }
@@ -6371,7 +6371,7 @@ globus_io_attr_set_udp_multicast_interface(
 globus_result_t
 globus_io_attr_get_udp_multicast_interface(
     globus_io_attr_t *                      attr,
-    char **                                 interface)
+    char **                                 interface_addr)
 {
     globus_result_t                      result;
     globus_i_io_udpattr_instance_t *	 instance;
@@ -6388,7 +6388,7 @@ globus_io_attr_get_udp_multicast_interface(
     }
     /* set specifcattribute */
 
-    *interface = instance->interface;
+    *interface_addr = instance->interface_addr;
 
     return GLOBUS_SUCCESS;
 }

@@ -15,18 +15,12 @@ Description:
 CVS Information:
 ******************************************************************************/
 
-#ifndef GLOBUS_THREAD_COMMON
-#define GLOBUS_THREAD_COMMON
+#ifndef GLOBUS_THREAD_COMMON_H
+#define GLOBUS_THREAD_COMMON_H
 
-#ifndef EXTERN_C_BEGIN
-#    ifdef __cplusplus
-#	 define EXTERN_C_BEGIN extern "C" {
-#	 define EXTERN_C_END }
-#    else
-#	 define EXTERN_C_BEGIN
-#	 define EXTERN_C_END
-#    endif
-#endif
+#include "globus_common_include.h"
+#include "globus_module.h"
+#include "globus_callback.h"
 
 EXTERN_C_BEGIN
 
@@ -141,3 +135,5 @@ void thread_print(char * s, ...);
 EXTERN_C_END
 
 #endif
+
+

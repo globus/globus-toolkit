@@ -1,11 +1,6 @@
 
-#include "config.h"
-
-#include "globus_common.h"
-
-
 #include "globus_object_cache.h"
-
+#include "globus_libc.h"
 
 /**********************************************************************
  * Object Creation API
@@ -95,4 +90,6 @@ globus_object_cache_list (globus_object_cache_t * cache)
 
   return globus_fifo_copy (&(cache->handles));
 }
+
+
 

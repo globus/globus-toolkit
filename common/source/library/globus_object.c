@@ -1,18 +1,16 @@
-
-#include "config.h"
-#include "globus_common.h"
-#include <string.h>
-#include <assert.h>
-
+#include "globus_object.h"
+#include "globus_libc.h"
 
 globus_bool_t
 globus_object_type_assert_valid (const globus_object_type_t * type)
 {
-  while ( type != NULL ) {
-    if ( type->parent_type != NULL ) {
-
+  while ( type != NULL ) 
+  {
+    if ( type->parent_type != NULL ) 
+	{
     }
-    else {
+    else 
+	{
       /* validate static/dynamic tag */
       assert ( type->copy_func == NULL );
       assert ( type->destructor == NULL );
@@ -28,24 +26,28 @@ globus_object_type_assert_valid (const globus_object_type_t * type)
 globus_bool_t
 globus_object_assert_valid (const globus_object_t * object)
 {
-  if ( object!=NULL ) {
+  if ( object!=NULL ) 
+  {
     globus_object_type_assert_valid (object->type);
 
-    while (object!=NULL) {
+    while (object!=NULL) 
+	{
       assert ( object->type != NULL );
 
-      if ( object->parent_object != NULL ) {
-	/* validate object/type lattice */
-	assert ( object->type->parent_type
-		 == object->parent_object->type );
+      if ( object->parent_object != NULL ) 
+	  {
+		/* validate object/type lattice */
+		assert ( object->type->parent_type
+			== object->parent_object->type );
       }
-      else {
-	/* validate object/type lattice */
-	assert ( object->type->parent_type == NULL );
+      else 
+	  {
+		/* validate object/type lattice */
+		assert ( object->type->parent_type == NULL );
 
-	/* validate static/dynamic tag */
-	assert ( (object->instance_data == NULL) 
-		 || (object->instance_data == (void *) 0x01 ) );
+		/* validate static/dynamic tag */
+		assert ( (object->instance_data == NULL) 
+			|| (object->instance_data == (void *) 0x01 ) );
       }
 
       /* validate parent object */
@@ -172,11 +174,13 @@ globus_object_free (globus_object_t * object)
 
   if ( globus_object_is_static (object) == GLOBUS_TRUE ) return;
 
-  if ( object->type->destructor != NULL ) {
+  if ( object->type->destructor != NULL ) 
+  {
     (object->type->destructor) (object->instance_data);
   }
 
-  if ( object->parent_object != NULL ) {
+  if ( object->parent_object != NULL ) 
+  {
     globus_object_free (object->parent_object);
     object->parent_object = NULL;
   }
@@ -419,4 +423,6 @@ globus_object_printable_to_string (globus_object_t * printable)
   }
   else return NULL;
 }
+
+
 

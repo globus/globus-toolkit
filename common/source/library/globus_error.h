@@ -2,10 +2,9 @@
 #ifndef GLOBUS_ERROR_H
 #define GLOBUS_ERROR_H
 
-
-#include "globus_common.h"
-
+#include "globus_common_include.h"
 #include "globus_object.h"
+#include "globus_module.h"
 
 #if defined(HAVE_INTTYPES_H)
 #include <inttypes.h>  
@@ -37,8 +36,6 @@ EXTERN_C_BEGIN
  * Error API Types
  *   globus_result_t          --   used as error object handle
  **********************************************************************/
-
-typedef void * globus_result_t;
 
 #define GLOBUS_SUCCESS 0
 
@@ -167,4 +164,6 @@ extern globus_module_descriptor_t globus_i_error_module;
 EXTERN_C_END
 
 #endif /* GLOBUS_ERROR_H */
+
+
 

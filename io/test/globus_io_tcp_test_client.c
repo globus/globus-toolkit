@@ -2,6 +2,10 @@
 
 int test1(int argc, char **argv);
 
+#ifdef TARGET_ARCH_WIN32
+#include "getoptWin.h"
+#endif
+
 typedef struct
 {
     globus_mutex_t			mutex;
@@ -124,7 +128,11 @@ test1(int argc, char **argv)
     globus_io_attr_set_tcp_restrict_port(
 	&attr,
 	GLOBUS_FALSE);
+#ifndef TARGET_ARCH_WIN32
     while (( c = getopt(argc, argv, "abrHi:vgsch:p:I:dD")) != EOF)
+#else
+    while (( c = getoptWin(argc, argv, "rHi:gsch:p:I:dD")) != EOF)
+#endif
     {
 	switch(c)
 	{
