@@ -610,6 +610,7 @@ globus_io_tcpattr_init(
     }
     
     iattr->type = GLOBUS_I_IO_TCP_ATTR;
+    iattr->file_flags = 0;
     
     result = globus_xio_attr_init(&iattr->attr);
     if(result != GLOBUS_SUCCESS)
