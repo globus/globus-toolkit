@@ -17,6 +17,7 @@
 #define GLOBUS_AUTH_AUTHORIZATION_FAILED            9
 #define GLOBUS_AUTH_MAYBE                           10
 #define GLOBUS_AUTH_UNKNOWN_ERROR                   11
+#define GLOBUS_AUTH_UNIMPLEMENTED_REDELEGATION	    12
 
 /*to avoid compiling in globus common*/
 /*#define GLOBUS_TRUE 1
@@ -58,14 +59,14 @@ globus_result_duplicate(
 globus_auth_result_t
 globus_result_get_error_type(
         globus_auth_result_t                 result,
-        int *                           errnum);
+        int *                                errnum);
 
 /* Extract the string error from a error structure */
 globus_auth_result_t
 globus_result_get_error_string(
         globus_auth_result_t                 result,
-        char **                         errstr);
+        char *                               errstr,
+        int                                  errstr_len);
 
 
-#endif __GLOBUS_AUTH_ERROR_H_
-
+#endif /* __GLOBUS_AUTH_ERROR_H_ */
