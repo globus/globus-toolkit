@@ -31,17 +31,11 @@ VPATH = @srcdir@
 # Generic Makefile for autoconf'ed build
 #
 
-CC=@CC@
+CC=@GLOBUS_LIBTOOL@ @CC@
 
-@INCLUDE_GLOBUS_MAKEFILE_HEADER@
- 
 GLOBUS_DATA_CFLAGS=@GLOBUS_DATA_CFLAGS@
 GLOBUS_DATA_LDFLAGS=@GLOBUS_DATA_LDFLAGS@
 GLOBUS_DATA_LIBS=@GLOBUS_DATA_LIBS@
-
-LBL_STRIPED_SERVER_LIBS=@LBL_STRIPED_SERVER_LIBS@
-LBL_STRIPED_SERVER_LDFLAGS=@LBL_STRIPED_SERVER_LDFLAGS@
-LBL_STRIPED_SERVER_CFLAGS=@LBL_STRIPED_SERVER_CFLAGS@
 
 #WNOERROR=-Werror
 #WARNINGS=$(WNOERROR) -Wall -Wpointer-arith -Wcast-align -Wstrict-prototypes -Wmissing-prototypes 
@@ -50,13 +44,11 @@ CFLAGS=$(WARNINGS)                          \
        @CFLAGS@                             \
        @GSSAPI_CFLAGS@                      \
        @AFS_CFLAGS@                         \
-       $(GLOBUS_DATA_CFLAGS)                \
-       $(LBL_STRIPED_SERVER_CFLAGS)
+       $(GLOBUS_DATA_CFLAGS)
 LDFLAGS=@LDFLAGS@                           \
         @GSSAPI_LDFLAGS@                    \
         @AFS_LDFLAGS@                       \
-        $(GLOBUS_DATA_LDFLAGS)              \
-       $(LBL_STRIPED_SERVER_LDFLAGS)
+        $(GLOBUS_DATA_LDFLAGS)
 
 YACC=@YACC@
 LIBS=@LIBS@                                 \
@@ -64,8 +56,7 @@ LIBS=@LIBS@                                 \
      @GSSAPI_LIBS@                          \
      @AFS_LDFLAGS@                          \
      @AFS_LIBS@                             \
-     $(GLOBUS_DATA_LIBS)                    \
-     $(LBL_STRIPED_SERVER_LIBS)
+     $(GLOBUS_DATA_LIBS)
 
 UTIL_SRC  = COPYRIGHT.c vers.c
 UTIL_OBJS = COPYRIGHT.o vers.o

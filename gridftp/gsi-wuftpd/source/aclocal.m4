@@ -80,59 +80,32 @@ case $gssapi_type in
 esac
 
 if test "$gssapi_type" != "none" ; then
-
 	# Do stuff here for any GSSAPI library
 	AC_DEFINE(GSSAPI)
-
 fi
 
 if test "$gssapi_type" = "globus" ; then
 	# Globus GSSAPI configuration
 	AC_DEFINE(GSSAPI_GLOBUS)
 
-	# Find GLOBUS/GSI installation Directory
-	globus_install_dir="$globus_dir"
-	CHECK_GLOBUS_DEVELOPMENT_PATH(true)
+	CHECK_GLOBUS_DEVELOPMENT_PATH()
+	AC_MSG_CHECKING(Globus GSSAPI dependencies)
 
-        if test "$globus_install_dir" != "$globus_dev_dir"; then
-            GSSAPI_LIBS='$(INSTALL_LIBDIR) $(GLOBUS_GSSAPI_LIBS)'
-            GSSAPI_LDFLAGS='$(GLOBUS_GSSAPI_LDFLAGS)'
-            GSSAPI_CFLAGS='$(INSTALL_INCLUDE) $(GLOBUS_GSSAPI_CFLAGS)'
-        else
-            GSSAPI_LIBS="-lglobus_gss_assist -lglobus_gss -lglobus_gaa"
-            GSSAPI_LDFLAGS="-L${globus_dev_dir}/lib"
-            GSSAPI_CFLAGS="-I${globus_dev_dir}/include"
+	gpt_build_config -src=pkg_data_src-gssapi.gpt \
+	                 -flavor=${globus_cv_flavor} > /dev/null
+	if test "$?" = "0"; then
+	    AC_MSG_RESULT(ok)
+	else
+	    AC_MSG_ERROR(failed)
+	fi
+	. gpt_build_temp.sh
+	rm gpt_build_temp.sh
 
-            dnl Find SSLeay installation directory
-            GSSAPI_LIBS="$GSSAPI_LIBS -lssl"
-
-            dnl Find SSLeay installation directory
-            GSSAPI_LIBS="$GSSAPI_LIBS -lssl"
-
-            dnl XXX Should be able to figure this out from Globus/GSI install dir
-            AC_MSG_CHECKING(for ssleay directory)
-            AC_ARG_WITH(ssl-dir,
-                    [  --with-ssl-dir=<DIR>  Root directory for OpenSSL or ssleay stuff
-                        Only needed with globus or gsi],
-                    ssleay_dir=$withval,
-                    ssleay_dir="/usr/local/ssl")
-	    if test ! -d ${ssleay_dir} ; then
-		AC_MSG_ERROR(Cannot find SSLeay installation directory)
-	    fi
-
-            AC_MSG_RESULT($ssleay_dir)
-
-            if test "$ssleay_dir" != "none" ; then
-                GSSAPI_LDFLAGS="-L${ssleay_dir}/lib $GSSAPI_LDFLAGS"
-                GSSAPI_CFLAGS="-I${ssleay_dir}/include $GSSAPI_CFLAGS"
-		# Specify full path to ssleay's libcrypto so we don't conflict
-		# with Keberos libcrypto.a
-		GSSAPI_LIBS="$GSSAPI_LIBS ${ssleay_dir}/lib/libcrypto.a"
-	    else
-		GSSAPI_LIBS="$GSSAPI_LIBS -lcrypto}"
-            fi
-        fi
-
+	inc="${GLOBUS_LOCATION}/include"
+	GSSAPI_CFLAGS="-I${inc} -I${inc}/${globus_cv_flavor} ${GPT_CONFIG_CFLAGS}"
+	GSSAPI_LDFLAGS="-L${GLOBUS_LOCATION}/lib ${GPT_CONFIG_LIBS}"
+	GSSAPI_LIBS="${GPT_CONFIG_PGM_LINKS}"
+    
        # End Globus/GSI section
 elif test "$gssapi_type" = "krb5" ; then
 
@@ -175,31 +148,26 @@ elif test "$gssapi_type" = "krb5" ; then
 	GSSAPI_CFLAGS="-I${krb5_install_dir}/include/gssapi $GSSAPI_CFLAGS"
 	
 	if test "$authorization_type" = "gridmap" ; then 
+	    CHECK_GLOBUS_DEVELOPMENT_PATH()
+	    AC_MSG_CHECKING(Globus gridmap dependencies)
 
-		AC_MSG_CHECKING(Using gridmap with Kerberos)
-		AC_DEFINE(GRIDMAP_WITH_KRB5)
+	    inc="${GLOBUS_LOCATION}/include"
+	    GLOBUS_GRIDMAP_CFLAGS="-I${inc} -I${inc}/${globus_cv_flavor} ${GPT_CONFIG_CFLAGS}"
+	    GLOBUS_GRIDMAP_LDFLAGS="-L${GLOBUS_LOCATION}/lib ${GPT_CONFIG_LIBS}"
+	    GLOBUS_GRIDMAP_LIBS="-lglobus_gss_assist_${globus_cv_flavor}"
+    
+            GSSAPI_CFLAGS="$GSSAPI_LIBS $GLOBUS_GRIDMAP_CFLAGS"
+            GSSAPI_LDFLAGS="$GSSAPI_LIBS $GLOBUS_GRIDMAP_LDFLAGS"
+            GSSAPI_LIBS="$GSSAPI_LIBS $GLOBUS_GRIDMAP_LIBS"
 
-		# Find GLOBUS/GSI installation Directory
-		globus_install_dir="$globus_dir"
-		CHECK_GLOBUS_DEVELOPMENT_PATH(true)
-
-        if test "$globus_install_dir" != "$globus_dev_dir"; then
-            GSSAPI_LIBS='$(INSTALL_LIBDIR) -lglobus_gss_assist $GSSAPI_LIBS'
-            GSSAPI_LDFLAGS='$(GLOBUS_GSSAPI_LDFLAGS) $GSSAPI_LDFLAGS'
-            GSSAPI_CFLAGS='$(INSTALL_INCLUDE) $(GLOBUS_GSSAPI_CFLAGS) $GSSAPI_CFLAGS'
-        else
-            GSSAPI_LIBS="-lglobus_gss_assist $GSSAPI_LIBS"
-            GSSAPI_LDFLAGS="-L${globus_dev_dir}/lib $GSSAPI_LDFLAGS"
-            GSSAPI_CFLAGS="-I${globus_dev_dir}/include $GSSAPI_CFLAGS"
-		fi
-	fi
+	    AC_DEFINE(GRIDMAP_WITH_KRB5)
 	# End Kerberos 5 Section
-fi
+	fi
+    fi
 
 AC_SUBST(GSSAPI_LIBS)
 AC_SUBST(GSSAPI_LDFLAGS)
 AC_SUBST(GSSAPI_CFLAGS)
-AC_SUBST(INCLUDE_GLOBUS_MAKEFILE_HEADER)
 
 if test "$gssapi_type" != "none" ; then
   dnl Check for the existance of specific GSSAPI routines.
@@ -337,115 +305,80 @@ AC_DEFUN(CHECK_SETJMP,[
  )
 ])dnl CHECK_SETJMP
 
-dnl CHECK_GLOBUS_DEVELOPMENT_PATH([true|false])
-dnl if $1 is true, then an installation which did not do
-dnl globus-install is ok. Otherwise, fail in that case.
-dnl globus_install_dir should be set to be tested 
 AC_DEFUN(CHECK_GLOBUS_DEVELOPMENT_PATH,[dnl
+        AC_ARG_WITH(globus-flavor,
+[  --with-globus-flavor=FLAVOR  Choose globus flavor],
+                    globus_cv_flavor=$withval,
+                    AC_MSG_ERROR(must specify flavor))
+	GLOBUS_FLAVOR_NAME=$globus_cv_flavor
 
-    AC_MSG_CHECKING(for Globus/GSI installation directory)
+    if test -z "$globus_cv_development_path"; then
 
+	AC_MSG_CHECKING(for Globus/GSI installation directory)
 
-    if test x"$globus_install_dir" = x"none" -o x"$globus_install_dir" = x""; then
-	if test -n "$GLOBUS_INSTALL_PATH" ; then
-		globus_install_dir=$GLOBUS_INSTALL_PATH
-	elif test -d /usr/local/globus ; then
-		globus_install_dir="/usr/local/globus"
-	elif test -d /usr/local/gsi ; then
-		globus_install_dir="/usr/local/gsi"
+	if test x"$globus_dir" = x"none" \
+	     -o x"$globus_dir" = x""; then
+	    if test -n "$GLOBUS_LOCATION" ; then
+		    globus_dir=$GLOBUS_LOCATION
+	    elif test -n "$GLOBUS_INSTALL_PATH" ; then
+		    globus_dir=$GLOBUS_INSTALL_PATH
+	    elif test -d /usr/local/globus ; then
+		    globus_dir="/usr/local/globus"
+	    elif test -d /usr/local/gsi ; then
+		    globus_dir="/usr/local/gsi"
+	    else
+		    AC_MSG_ERROR(Cannot find Globus/GSI installation directory)
+	    fi	
+	fi
+	AC_MSG_RESULT($globus_dir)
+
+	GLOBUS_LOCATION=$globus_dir
+	AC_MSG_CHECKING(for Globus packaging tools)
+	if test -d ${GLOBUS_LOCATION}/etc/globus_packages; then
+	    AC_MSG_RESULT(ok)
+	    if test -z "$GPT_LOCATION" ; then
+		GPT_LOCATION=$GLOBUS_LOCATION
+	    fi
+	elif test -n "${GPT_LOCATION}" -a -d "${GPT_LOCATION}"; then
+	    AC_MSG_RESULT(ok)
 	else
-		AC_MSG_ERROR(Cannot find Globus/GSI installation directory)
-	fi	
+	    AC_MSG_ERROR(missing)
+	fi
+        GLOBUS_LIBTOOL=${GPT_LOCATION}/sbin/libtool-${GLOBUS_FLAVOR_NAME}
+	AC_SUBST(GLOBUS_LIBTOOL)
+	globus_cv_development_path=${GLOBUS_LOCATION}
     fi
-    AC_MSG_RESULT($globus_install_dir)
-
-    dnl Find GLOBUS/GSI development directory
-    AC_MSG_CHECKING(for Globus/GSI development directory)
-
-    if test -d ${globus_install_dir}/lib ; then
-        # Looks like a flat directory structure from configure/make and not
-        # globus-install or gsi-install
-	if test x"$1" = x"true"; then
-	    globus_dev_dir=$globus_install_dir
-	else
-	    AC_MSG_ERROR(Globus/GSI not properly installed. Use globus-install or gsi-install)
-	fi
-    else
-	# Assume a true globus installation with architecture
-	# directories and run globus-development-path to find
-	# the development directory
-
-	# Make sure GLOBUS_INSTALL_PATH is set
-	if test -z "$GLOBUS_INSTALL_PATH" ; then
-		GLOBUS_INSTALL_PATH=$globus_install_dir
-		export GLOBUS_INSTALL_PATH
-	fi
-
-	dev_path_program=${globus_install_dir}/bin/globus-development-path
-
-	if test ! -x ${dev_path_program} ; then
-		AC_MSG_ERROR(Cannot find Globus/GSI installation directory: program ${dev_path_program} does not exist or is not executable)
-	fi
-
-	globus_dev_dir=`${dev_path_program}`
-	if test -z "$globus_dev_dir" -o "X$globus_dev_dir" = "X<not found>" ; then
-			AC_MSG_ERROR(Cannot find Globus/GSI development directory)
-	fi
-
-	if test ! -d "$globus_dev_dir" ; then
-		AC_MSG_ERROR(Cannot find Globus/GSI development directory: $globus_dev_dir does not exist)
-	fi
-    fi
-    AC_MSG_RESULT($globus_dev_dir)
-
-    if test "$globus_install_dir" != "$globus_dev_dir"; then
-        INCLUDE_GLOBUS_MAKEFILE_HEADER="include $globus_dev_dir/etc/makefile_header"
-    fi
-
 ])dnl CHECK_GLOBUS_DEVELOPMENT_PATH
 
 AC_DEFUN(GLOBUS_DATA_CONFIG,[
 AC_ARG_ENABLE(globus-data, [  --disable-globus-data    don't use globus data code],
 	[ globus_data=$enableval ], [ globus_data=yes ])
 
-GLOBUS_DATA_CFLAGS=""
-GLOBUS_DATA_LDFLAGS=""
-GLOBUS_DATA_LIBS=""
-
-if test $globus_data = yes; then
+    if test $globus_data = yes; then
 	AC_DEFINE(USE_GLOBUS_DATA_CODE)
-	globus_install_dir="$globus_dir"
-	CHECK_GLOBUS_DEVELOPMENT_PATH(false)
-	GLOBUS_DATA_CFLAGS='$(INSTALL_INCLUDE) $(GLOBUS_FTP_CONTROL_CFLAGS) $(BASE_CFLAGS)'
-	GLOBUS_DATA_LDFLAGS='$(GLOBUS_FTP_CONTROL_LDFLAGS) $(BASE_LDFLAGS)'
-	GLOBUS_DATA_LIBS='$(INSTALL_LIBDIR) $(GLOBUS_FTP_CONTROL_LIBS)'
-fi
+	CHECK_GLOBUS_DEVELOPMENT_PATH()
+	AC_MSG_CHECKING(Globus data dependencies)
 
-AC_SUBST(GLOBUS_DATA_CFLAGS)
-AC_SUBST(GLOBUS_DATA_LDFLAGS)
-AC_SUBST(GLOBUS_DATA_LIBS)
+	gpt_build_config -src=pkg_data_src.gpt \
+	                 -flavor=${globus_cv_flavor} > /dev/null
+	if test "$?" = "0"; then
+	    AC_MSG_RESULT(ok)
+	else
+	    AC_MSG_ERROR(failed)
+	fi
+	. gpt_build_temp.sh
+	rm gpt_build_temp.sh
+
+	inc="${GLOBUS_LOCATION}/include"
+	GLOBUS_DATA_CFLAGS="-I${inc} -I${inc}/${globus_cv_flavor} ${GPT_CONFIG_CFLAGS}"
+	GLOBUS_DATA_LDFLAGS="-L${GLOBUS_LOCATION}/lib ${GPT_CONFIG_LIBS}"
+	GLOBUS_DATA_LIBS="${GPT_CONFIG_PGM_LINKS}"
+    
+	AC_SUBST(GLOBUS_DATA_CFLAGS)
+	AC_SUBST(GLOBUS_DATA_LDFLAGS)
+	AC_SUBST(GLOBUS_DATA_LIBS)
+    fi
 ])
-
-AC_DEFUN(STRIPED_SERVER_CONFIG,[
-AC_ARG_ENABLE(striped-server, [  --striped-server=<path to striped server code>   use this server as a backend to a striped server],
-	[ striped_server=$enableval ], [ striped_server="none" ])
-
-
-if test $striped_server = "none"; then
-    LBL_STRIPED_SERVER_DIR=""
-else
-    LBL_STRIPED_SERVER_LDFLAGS=-L$striped_server
-    LBL_STRIPED_SERVER_CFLAGS=-I$striped_server
-    LBL_STRIPED_SERVER_LIBS=-lftputils
-    AC_DEFINE(STRIPED_SERVER_BACKEND)
-fi
-
-AC_SUBST(LBL_STRIPED_SERVER_LIBS)
-AC_SUBST(LBL_STRIPED_SERVER_LDFLAGS)
-AC_SUBST(LBL_STRIPED_SERVER_CFLAGS)
-
-])
-
 
 #serial 4
 
