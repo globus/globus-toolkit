@@ -259,7 +259,7 @@ public class FileStreamImpl extends GridServiceImpl {
 
             fireFileStreamStopped();
         } catch (GridServiceException gse) {
-            logger.error("problem adding service data", gse);
+            logger.error("problem stopping source file tailing", gse);
         }
     }
 }

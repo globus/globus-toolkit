@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <definitions name="FileStreamFactory"
-             targetNamespace="http://www.globus.org/namespaces/base/streaming"
-             xmlns:tns="http://www.globus.org/namespaces/base/streaming"
+             targetNamespace="http://www.globus.org/namespaces/2003/04/base/streaming"
+             xmlns:tns="http://www.globus.org/namespaces/2003/04/base/streaming"
              xmlns:gwsdl="http://www.gridforum.org/namespaces/2003/03/gridWSDLExtensions"
              xmlns:ogsi="http://www.gridforum.org/namespaces/2003/03/OGSI"
              xmlns:gsi="http://ogsa.globus.org/security/authentication"

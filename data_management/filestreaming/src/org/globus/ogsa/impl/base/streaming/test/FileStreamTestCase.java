@@ -35,6 +35,7 @@ import org.globus.ogsa.base.streaming.FileStreamFactoryOptionsWrapperType;
 import org.globus.ogsa.base.streaming.FileStreamPortType;
 import org.globus.ogsa.base.streaming.service.FileStreamServiceGridLocator;
 import org.globus.ogsa.impl.security.authentication.Constants;
+import org.globus.ogsa.server.test.GridTestCase;
 import org.globus.ogsa.server.test.TestServer;
 import org.globus.ogsa.utils.AnyHelper;
 import org.globus.ogsa.utils.GridServiceFactory;
@@ -46,7 +47,7 @@ import org.gridforum.ogsi.LocatorType;
 import org.gridforum.ogsi.OGSIServiceGridLocator;
 import org.gridforum.ogsi.ReferenceType;
 
-public class FileStreamTestCase extends TestCase {
+public class FileStreamTestCase extends GridTestCase {
     private static final String FSFF_BASE_PATH
         = "base/streaming/FileStreamFactoryFactoryService";
     private static final String FSF_INSTANCE_ID = "testFileStreamFactory";

@@ -130,12 +130,13 @@ import junit.framework.TestCase;
 import junit.framework.TestSuite;
 import junit.framework.TestResult;
 
+import org.globus.ogsa.server.test.GridTestSuite;
 import org.globus.ogsa.server.test.TestServer;
 
 /**
  * tests ogsified GRAM client
  */
-public class PackageTests extends TestSuite {
+public class PackageTests extends GridTestSuite {
 
     private TestServer testServer;
 
