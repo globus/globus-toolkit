@@ -119,7 +119,8 @@ flavorinclude_HEADERS = \
 	globus_extension.h \
 	globus_common.h \
 	globus_thread_$(GLOBUS_THREADS).h \
-	globus_common_include.h
+	globus_common_include.h \
+	globus_uuid.h
 
 
 lib_LTLIBRARIES = libglobus_common_$(GLOBUS_FLAVOR_NAME).la 
