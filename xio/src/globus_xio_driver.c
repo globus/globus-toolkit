@@ -172,12 +172,12 @@ globus_i_xio_handle_destroy(
             handle->sd_monitor = NULL;
             globus_cond_signal(&globus_l_cond);
         }
-        handle->context = NULL;
         else
         {
             globus_list_remove(&globus_l_outstanding_handles_list,
                 globus_list_search(globus_l_outstanding_handles_list, handle));
         }
+        handle->context = NULL;
     }
     globus_mutex_unlock(&globus_l_mutex);
 
