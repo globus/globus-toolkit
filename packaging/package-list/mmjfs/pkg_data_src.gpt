@@ -27,12 +27,14 @@
 
     <Build_Instructions>
 
-	    <Build_Step> ant generateMmjfsConfig -Dogsacore.javadir=$GT3_LOCATION</Build_Step>
-	    <Build_Step> ant mmjfsGar -Dogsacore.javadir=$GT3_LOCATION</Build_Step>
-	    <Build_Step> cp mmjfsLib/mmjfs.gar $GT3_LOCATION/gars</Build_Step>
-	    <Build_Step> cp setperms.sh $GT3_LOCATION</Build_Step>
-	    <Build_Step> cp src/org/globus/ogsa/impl/base/gram/setuid/launch_uhe.sh $GT3_LOCATION</Build_Step>
-	    <Build_Step> cp src/org/globus/ogsa/impl/base/gram/setuid/setuidCSrc/launch_uhe_setuid $GT3_LOCATION</Build_Step>
+	    <Build_Step> ant generateMmjfsConfig -Dogsacore.javadir=INSTALLDIR_GPTMACRO</Build_Step>
+	    <Build_Step> ant copyEtcDir -Dogsacore.javadir=INSTALLDIR_GPTMACRO</Build_Step>
+	    <Build_Step> ant mmjfsGar -Dogsacore.javadir=INSTALLDIR_GPTMACRO</Build_Step>
+	    <Build_Step> cp mmjfsLib/mmjfs.gar INSTALLDIR_GPTMACRO/gars</Build_Step>
+	    <Build_Step> cp setperms.sh INSTALLDIR_GPTMACRO</Build_Step>
+	    <Build_Step> cp src/org/globus/ogsa/impl/base/gram/setuid/launch_uhe.sh INSTALLDIR_GPTMACRO</Build_Step>
+	    <Build_Step> cp src/org/globus/ogsa/impl/base/gram/setuid/setuidCSrc/launch_uhe_setuid INSTALLDIR_GPTMACRO</Build_Step>
+	    <Build_Step> ant -f INSTALLDIR_GPTMACRO/build-packages.xml deployGar -Dgar.name=INSTALLDIR_GPTMACRO/gars/mmjfs.gar</Build_Step>
 
     </Build_Instructions>
 
