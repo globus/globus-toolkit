@@ -51,8 +51,8 @@ static const globus_l_gfs_config_option_t option_list[] =
  {"dsi", "storage_type", NULL, "-dsi", NULL, GLOBUS_L_GFS_CONFIG_STRING, "file"},
  {"version", NULL, NULL, "-version", "-v", GLOBUS_L_GFS_CONFIG_BOOL, 0},
  {"versions", NULL, NULL, "-versions", "-V", GLOBUS_L_GFS_CONFIG_BOOL, 0},
-
- {"last_option", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE}
+ {"exec_name", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, NULL},
+ {"argv", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_VOID, 0}
 };
 
 static int option_count = sizeof(option_list) / sizeof(globus_l_gfs_config_option_t);
@@ -337,7 +337,10 @@ globus_l_gfs_config_load_commandline(
             {
                 option = (globus_l_gfs_config_option_t *)
                     globus_malloc(sizeof(globus_l_gfs_config_option_t));
-                memcpy(option, &option_list[i], sizeof(globus_l_gfs_config_option_t));
+                memcpy(
+                    option,
+                    &option_list[i],
+                    sizeof(globus_l_gfs_config_option_t));
             }
 
             switch(option->type)
@@ -582,6 +585,7 @@ globus_i_gfs_config_init(
     int                                 argc,
     char **                             argv)
 {
+    char *                              exec_name;
     char *                              local_config_file;
     char *                              global_config_file;
     int                                 arg_num;
@@ -593,6 +597,11 @@ globus_i_gfs_config_init(
         globus_hashtable_string_hash,
         globus_hashtable_string_keyeq);
 
+    /* set defaul exe name */
+    exec_name = globus_common_create_string(
+        "%s/sbin/globus-gridftp-server",
+        globus_module_getenv("GLOBUS_LOCATION"));
+    globus_l_gfs_config_set("exec_name", exec_name);
     global_config_file = "/etc/grid-security/gridftp.conf";
     local_config_file = NULL;
 
@@ -610,14 +619,16 @@ globus_i_gfs_config_init(
         local_config_file = globus_common_create_string(
         "%s/etc/gridftp.conf", globus_libc_getenv("GLOBUS_LOCATION"));
     }
-    
+
+
     globus_l_gfs_config_load_defaults();
     globus_l_gfs_config_load_config_file(global_config_file);
     globus_l_gfs_config_load_config_file(local_config_file);
     globus_l_gfs_config_load_config_env();
     globus_l_gfs_config_load_commandline(argc, argv);
     globus_l_gfs_config_misc();
-    
+    globus_l_gfs_config_set("argv", argv);
+
     globus_free(local_config_file);
         
 }
