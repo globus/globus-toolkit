@@ -4706,9 +4706,11 @@ pkcs12_load_credential(
     PKCS12 *                            p12 = NULL;
     STACK_OF(PKCS7) *                   auth_safes = NULL;
     STACK_OF(PKCS12_SAFEBAG) *          bags = NULL;
+    STACK_OF(X509) *                    certs;
     PKCS12_SAFEBAG *                    bag;
     int                                 bag_nid;
     int                                 i;
+    int                                 j;
     PKCS7 *                             p7;
     PKCS8_PRIV_KEY_INFO *               p8;
     int                                 status = -1;
@@ -4762,6 +4764,8 @@ pkcs12_load_credential(
     }
     
     p12 = d2i_PKCS12_fp(fp, NULL);
+
+    fclose(fp);
     
     if(p12 == NULL)
     {
@@ -4771,7 +4775,7 @@ pkcs12_load_credential(
     
     /* don't know if we need to check the MAC */
     
-    if(!PKCS12_verify_mac(p12,NULL,0))
+    if(!PKCS12_verify_mac(p12,password,-1))
     {
         /* some error or other */
         goto err;   
@@ -4784,63 +4788,91 @@ pkcs12_load_credential(
         /* some error or other */
         goto err;   
     }
+
+    certs = sk_X509_new_null();
     
-    /* pick the first auth safe */
+    for (i = 0; i < sk_PKCS7_num(auth_safes); i++)
+    {
+        p7 = sk_PKCS7_value (auth_safes, i);
+        
+        bag_nid = OBJ_obj2nid (p7->type);
+        
+        if(bag_nid == NID_pkcs7_data)
+        {
+            bags = M_PKCS12_unpack_p7data(p7);
+        }
+        else if(bag_nid == NID_pkcs7_encrypted)
+        {
+            bags = M_PKCS12_unpack_p7encdata (p7, password, -1);
+        }
+        else
+        {
+            /* some error or other */
+            goto err;   
+        }
+
     
-    p7 = sk_PKCS7_value (auth_safes, 0);
+        for (j=0;j<sk_PKCS12_SAFEBAG_num(bags);j++)
+        {
+            bag = sk_PKCS12_SAFEBAG_value(bags, j);
+            
+            if(M_PKCS12_bag_type(bag) == NID_certBag &&
+               M_PKCS12_cert_bag_type(bag) == NID_x509Certificate)
+            {
+                sk_X509_push(certs,M_PKCS12_certbag2x509(bag));
+            }
+            else if(M_PKCS12_bag_type(bag) == NID_keyBag &&
+                    pcd->upkey == NULL)
+            {
+                p8 = bag->value.keybag;
+                if (!(pcd->upkey = EVP_PKCS82PKEY (p8)))
+                {
+                    /* some error or other */
+                    goto err;   
+                }
+            }
+            else if(M_PKCS12_bag_type(bag) == NID_pkcs8ShroudedKeyBag &&
+                    pcd->upkey == NULL)
+            {
+                if (!(p8 = M_PKCS12_decrypt_skey(bag,
+                                                 password,
+                                                 strlen(password))))
+                {
+                    /* some error or other */
+                    goto err;   
+                }
+            
+                if (!(pcd->upkey = EVP_PKCS82PKEY(p8)))
+                {
+                    /* some error or other */
+                    goto err;   
+                }
+                
+                PKCS8_PRIV_KEY_INFO_free(p8);
+            }
+        }
+    }
     
-    bag_nid = OBJ_obj2nid (p7->type);
-    
-    if(bag_nid != NID_pkcs7_data)
+    if(pcd->upkey == NULL)
     {
         /* some error or other */
         goto err;   
     }
-    
-    bags = M_PKCS12_unpack_p7data(p7);
-    
-    for (i=0;i<sk_PKCS12_SAFEBAG_num (bags);i++)
+
+    for(i=0;i<sk_X509_num(certs);i++)
     {
-        bag = sk_PKCS12_SAFEBAG_value (bags, i);
-        
-        if(M_PKCS12_bag_type(bag) == NID_certBag &&
-           M_PKCS12_cert_bag_type(bag) == NID_x509Certificate &&
-           pcd->ucert == NULL)
+        pcd->ucert = sk_X509_pop(certs);
+
+        if(X509_check_private_key(pcd->ucert, pcd->upkey)) 
         {
-            pcd->ucert = M_PKCS12_certbag2x509(bag);  
+            sk_X509_pop_free(certs, X509_free);
+            return 0;
         }
-        else if(M_PKCS12_bag_type(bag) == NID_keyBag &&
-            pcd->upkey == NULL)
+        else
         {
-            p8 = bag->value.keybag;
-            if (!(pcd->upkey = EVP_PKCS82PKEY (p8)))
-            {
-                /* some error or other */
-                goto err;   
-            }
-        }
-        else if(M_PKCS12_bag_type(bag) == NID_pkcs8ShroudedKeyBag &&
-                pcd->upkey == NULL)
-        {
-            if (!(p8 = M_PKCS12_decrypt_skey(bag,
-                                             password,
-                                             strlen(password))))
-            {
-                /* some error or other */
-                goto err;   
-            }
-            
-            if (!(pcd->upkey = EVP_PKCS82PKEY(p8)))
-            {
-                /* some error or other */
-                goto err;   
-            }
-            
-            PKCS8_PRIV_KEY_INFO_free(p8);
+            X509_free(pcd->ucert);
         }
     }
-    
-    fclose(fp);
 
 err:
     return status;
