@@ -28,7 +28,7 @@ if(0 != system("grid-proxy-info -exists -hours 2") / 255)
 chdir "$globus_location/test/@PACKAGE@";
 
 system("globus-personal-gatekeeper -killall >/dev/null 2>/dev/null");
-system("globus-personal-gatekeeper -start >/dev/null 2>/dev/null");
+system("globus-personal-gatekeeper -start -log never>/dev/null 2>/dev/null");
 chomp($contact = `globus-personal-gatekeeper -list`);
 if($? != 0)
 {
