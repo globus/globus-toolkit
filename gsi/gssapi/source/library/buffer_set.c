@@ -16,26 +16,36 @@ CVS Information:
 
 static char *rcsid = "$Header$";
 
-/**********************************************************************
-                             Include header files
-**********************************************************************/
 
 #include "gssapi_ssleay.h"
 #include <string.h>
 
-/**********************************************************************
-                               Type definitions
-**********************************************************************/
+/**
+ * @defgroup buffer_set Functions for manipulating a buffer set
+ *
+ * @{
+ */
 
-/**********************************************************************
-                          Module specific prototypes
-**********************************************************************/
-
-/**********************************************************************
-                       Define module specific variables
-**********************************************************************/
-
-
+/**
+ * Create a empty buffer set.
+ *
+ * This function allocates and initializes a empty buffer set. The
+ * memory allocated in this function should be freed by a call to
+ * gss_release_buffer_set.
+ *
+ * @param minor_status
+ *        The minor status returned by this function. This paramter
+ *        will be 0 upon success.
+ * @param buffer_set
+ *        Pointer to a buffer set structure.
+ * 
+ * @return
+ *        GSS_S_COMPLETE upon success
+ *        GSS_S_FAILURE failure
+ *
+ * @see gss_add_buffer_set_member
+ * @see gss_release_buffer_set
+ */
 
 OM_uint32 
 GSS_CALLCONV gss_create_empty_buffer_set(
@@ -71,6 +81,30 @@ GSS_CALLCONV gss_create_empty_buffer_set(
     return GSS_S_COMPLETE;
 } /* gss_create_empty_buffer_set */
 
+
+/**
+ * Add a buffer to a buffer set.
+ *
+ * This function allocates a new gss_buffer_t, intializes it with the
+ * values in the member_buffer parameter (<b>NOTE: this function
+ * currently does not copy the contents of the input buffer</b>).
+ *
+ *
+ * @param minor_status
+ *        The minor status returned by this function. This paramter
+ *        will be 0 upon success.
+ * @param member_buffer
+ *        Buffer to insert into the buffer set.
+ * @param buffer_set
+ *        Pointer to a initialized buffer set structure.
+ * 
+ * @return
+ *        GSS_S_COMPLETE upon success
+ *        GSS_S_FAILURE failure
+ *
+ * @see gss_create_empty_buffer_set
+ * @see gss_release_buffer_set
+ */
 
 OM_uint32
 GSS_CALLCONV gss_add_buffer_set_member(
@@ -130,16 +164,27 @@ GSS_CALLCONV gss_add_buffer_set_member(
     return GSS_S_COMPLETE;
 }
 
-/**********************************************************************
-Function:  gss_release_buffer_set
-
-Description:
-	Release the contents of a buffer set
-
-Parameters:
-
-Returns:
-**********************************************************************/
+/**
+ * Free all memory associated with a buffer set.
+ *
+ * This function will free all memory associated with a buffer
+ * set. Note that it will also free all memory associated with the
+ * buffers int the buffer set.
+ *
+ * @param minor_status
+ *        The minor status returned by this function. This paramter
+ *        will be 0 upon success.
+ * @param buffer_set
+ *        Pointer to a buffer set structure. This pointer will point
+ *        at a NULL value upon return.
+ * 
+ * @return
+ *        GSS_S_COMPLETE upon success
+ *        GSS_S_FAILURE failure
+ *
+ * @see gss_create_empty_buffer_set
+ * @see gss_add_buffer_set_member
+ */
 
 OM_uint32 
 GSS_CALLCONV gss_release_buffer_set(
@@ -172,7 +217,9 @@ GSS_CALLCONV gss_release_buffer_set(
 
 } /* gss_release_buffer_set */
 
-
+/**
+ * @}
+ */
 
 
 
