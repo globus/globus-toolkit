@@ -182,6 +182,7 @@ static char *	x509_cert_file = NULL;
 static char *	x509_user_proxy = NULL;
 static char *	x509_user_cert = NULL;
 static char *	x509_user_key = NULL;
+static char *	nickname = NULL;
 static char **  jmargp;
 static int 		jmargc;
 static int 		ok_to_send_errmsg;
@@ -516,6 +517,12 @@ main(int xargc,
 		&& (i + 1 < argc))
 	{
 	    libexecdir = argv[i+1];
+	    i++;
+	}
+	else if ((strcmp(argv[i], "-nickname") == 0)
+		&& (i + 1 < argc))
+	{
+	    nickname = argv[i+1];
 	    i++;
 	}
 	else if ((strcmp(argv[i], "-jm") == 0)
@@ -1174,6 +1181,12 @@ static void doit()
     {
 	*argp++ = "-e";
 	*argp++ = libexecdir;
+    }
+
+    if (nickname)
+    {
+	*argp++ = "-nickname";
+	*argp++ = nickname;
     }
 
     for(i = 0; i < jmargc; i++)
