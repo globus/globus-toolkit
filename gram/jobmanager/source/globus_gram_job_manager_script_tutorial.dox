@@ -21,16 +21,17 @@ of the Globus::GRAM::JobManager module. Its name must match the scheduler
 type string used when the service is installed. For the LSF scheduler,
 the name is <em>lsf</em>, so the module name is
 <em>Globus::GRAM::JobManager::lsf</em> and
-it is stored in the file <code>lsf.pm</code>. Though there are many
+it is stored in the file <code>lsf.pm</code>. Though there are several
 methods in the JobManager interface, they only ones which absolutely
 need to be implemented in a scheduler module are
 submit, poll, cancel. 
 
-We'll begin by looking at the start of the lsf source module, where we
-import the GRAM support modules into the scheduler module's
-namespace, declare the module's namespace, and declare this module as a 
-subclass of the Globus::GRAM::JobManager module.  All scheduler packages
-will need to do this, substituting the name of the scheduler type being
+We'll begin by looking at the start of the lsf source module, lsf.in (the
+transformation to lsf.pm happens when the setup script is run.  To begin the
+script, we import the GRAM support modules into the scheduler module's
+namespace, declare the module's namespace, and declare this module as a
+subclass of the Globus::GRAM::JobManager module.  All scheduler packages will
+need to do this, substituting the name of the scheduler type being
 implemented where we see <em>lsf</em> below.
 
 @code
@@ -65,7 +66,7 @@ BEGIN
 The values surrounded by the at-sign (such as <code>@MPIRUN@</code>)
 will be replaced by with the path to the named programs by
 the <code>find-lsf-tools</code> script described
-@ref system_specific_configuration "below".  
+@ref system_specific_configuration "below".
 
 @subsection gram_tut_constructor Writing a constructor
 
@@ -398,6 +399,16 @@ sub cancel
 }
 @endcode
 
+@subsection gram_tut_exit_1 End of the script
+
+It is required that all perl modules return a non-zero value when they 
+are parsed. To do this, make sure the last line of your module consists
+of:
+
+@code
+1;
+@endcode
+
 @section job_manager_tutorial_service_setup Setting up a Scheduler
 
 Once we've written the job manager script, we need to get it installed
@@ -418,7 +429,7 @@ does the following:
    set up.
 
 @subsection system_specific_configuration System-Specific Configuration
-First, the scheduler setup script probes for any system-specific
+First, our scheduler setup script probes for any system-specific
 information needed to interface with the local scheduler. For example, the
 LSF scheduler uses the <code>mpirun</code>, <code>bsub</code>,
 <code>bqueues</code>, <code>bjobs</code>, and <code>bkill</code> commands to
@@ -557,7 +568,253 @@ my $metadata =
 $metadata->finish();
 @endcode
 
-@section job_manager_tutorial_service_packaging Packging a Scheduler Interface
+@section job_manager_tutorial_service_packaging Packaging
+
+Now that we've written a job manager scheduler interface, we'll package it
+using GPT to make it easy for our users to build and install. We'll start
+by gathering the different files we've written above into a single directory
+<code>lsf</code>.
+- lsf.in
+- find-lsf-tools.in
+- setup-globus-job-manager.pl
+
+@subsection job_manager_tutorial_doc Package Documentation
+If there are any scheduler-specific options defined for this scheduler
+module, or if there any any optional setup items, then it is good to
+provide a documentation page which describes these. For LSF, we describe
+the changes since the last version of this package in the file
+<code>globus_gram_job_manager_lsf.dox</code>. This file consists of a doxygen
+mainpage.  See www.doxygen.org for information on how to write documentation
+with that tool.
+
+@subsection job_manager_tutorial_configure configure.in
+Now, we'll write our configure.in script. This file is converted to the
+configure shell script by the bootstrap script below. Since we
+don't do any probes for compile-time tools or system characteristics,
+we just call the various initialization macros used by GPT, declare
+that we may provide doxygen documentation, and then output the files we
+need substitions done on.
+
+@code
+AC_REVISION($Revision$)
+AC_INIT(Makefile.am)
+
+GLOBUS_INIT
+AM_PROG_LIBTOOL
+
+dnl Initialize the automake rules the last argument
+AM_INIT_AUTOMAKE($GPT_NAME, $GPT_VERSION)
+
+LAC_DOXYGEN("../", "*.dox")
+
+GLOBUS_FINALIZE
+
+AC_OUTPUT(
+        Makefile
+        pkgdata/Makefile
+        pkgdata/pkg_data_src.gpt
+        doxygen/Doxyfile
+        doxygen/Doxyfile-internal
+        doxygen/Makefile
+)
+@endcode
+
+@subsection job_manager_tutorial_pkg_data Package Metadata
+Now we'll write our metadata file, and put it in the pkgdata subdirectory
+of our package. The important things to note in this file are the package
+name and version, the post_install_program, and the setup sections. These
+define how the package distribution will be named, what command will be
+run by <code>gpt-postinstall</code> when this package is installed, and
+what the setup dependencies will be written when the Grid::GPT::Setup
+object is @ref updating_gpt_metadata "finalized".
+
+@code
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE gpt_package_metadata SYSTEM "package.dtd">
+
+<gpt_package_metadata Format_Version="0.02" Name="globus_gram_job_manager_setup_lsf" >
+
+  <Aging_Version Age="0" Major="1" Minor="0" />
+  <Description >LSF Job Manager Setup</Description>
+  <Functional_Group >ResourceManagement</Functional_Group>
+  <Version_Stability Release="Beta" />
+  <src_pkg >
+
+    <With_Flavors build="no" />
+    <Source_Setup_Dependency PkgType="pgm" >
+      <Setup_Dependency Name="globus_gram_job_manager_setup" >
+        <Version >
+          <Simple_Version Major="3" />
+        </Version>
+      </Setup_Dependency>
+      <Setup_Dependency Name="globus_core_setup" >
+        <Version >
+          <Simple_Version Major="3" />
+        </Version>
+      </Setup_Dependency>
+    </Source_Setup_Dependency>
+
+    <Build_Environment >
+      <cflags >@GPT_CFLAGS@</cflags>
+      <external_includes >@GPT_EXTERNAL_INCLUDES@</external_includes>
+      <pkg_libs > </pkg_libs>
+      <external_libs >@GPT_EXTERNAL_LIBS@</external_libs>
+    </Build_Environment>
+
+    <Post_Install_Message >
+      Run the setup-globus-job-manager-lsf setup script to configure an
+      lsf job manager.
+    </Post_Install_Message>
+
+    <Post_Install_Program >
+      setup-globus-job-manager-lsf
+    </Post_Install_Program>
+
+    <Setup Name="globus_gram_job_manager_service_setup" >
+      <Aging_Version Age="0" Major="1" Minor="0" />
+    </Setup>
+
+  </src_pkg>
+
+</gpt_package_metadata>
+@endcode
+
+@subsection job_manager_tutorial_automake Automake Makefile.am
+
+The automake Makefile.am for this package is short because there
+isn't any compilation needed for this package. We just need to define
+what needs to be installed into which directory, and what source files
+need to be put inot our source distribution. For the LSF package, we
+need to list the <code>lsf.in</code>, <code>find-lsf-tools</code>, and
+code>setup-globus-job-manager-lsf.pl</code> scripts as files to be
+installed into the setup directory. We need to add those files plus our
+documentation source file to the EXTRA_LIST variable so that they
+will be included in source distributions. The rest of the lines in the
+file are needed for proper interaction with GPT.
+
+@code
+include $(top_srcdir)/globus_automake_pre
+include $(top_srcdir)/globus_automake_pre_top
+
+SUBDIRS = pkgdata doxygen
+
+setup_SCRIPTS = \
+    lsf.in \
+    find-lsf-tools \
+    setup-globus-job-manager-lsf.pl
+
+EXTRA_DIST = $(setup_SCRIPTS) globus_gram_job_manager_lsf.dox
+
+include $(top_srcdir)/globus_automake_post
+include $(top_srcdir)/globus_automake_post_top
+@endcode
+
+@subsection job_manager_tutorial_bootstrap Bootstrap
+
+The final piece we need to write for our package is the
+<code>bootstrap</code> script. This script is the standard bootstrap
+script for a globus package, with an extra line to generate the
+<code>fine-lsf-tools</code> script using autoconf.
+
+@code
+#!/bin/sh
+
+# checking for the GLOBUS_LOCATION
+
+if test "x$GLOBUS_LOCATION" = "x"; then
+    echo "ERROR Please specify GLOBUS_LOCATION" >&2
+    exit 1
+fi
+
+if [ ! -f ${GLOBUS_LOCATION}/libexec/globus-bootstrap.sh ]; then
+    echo "ERROR: Unable to locate \${GLOBUS_LOCATION}/libexec/globus-bootstrap.sh"
+    echo "       Please ensure that you have installed the globus-core package and"
+    echo "       that GLOBUS_LOCATION is set to the proper directory"
+    exit
+fi
+
+. ${GLOBUS_LOCATION}/libexec/globus-bootstrap.sh
+
+autoconf find-lsf-tools.in > find-lsf-tools
+chmod 755 find-lsf-tools
+
+exit 0
+@endcode
+
+@section job_manager_tutorial_building Building, Testing, and Debugging
+
+With this all done, we can now try to build our now package. To do so,
+we'll need to run
+
+@code
+% ./bootstrap
+% ./globus-build
+@endcode
+
+If all of the files are written correctly, this should result in our
+package being installed into <code>$GLOBUS_LOCATION</code>. Once that
+is done, we should be able to run gpt-postinstall to configure our new
+job manager.
+
+Now, we should be able to run the command
+
+@code
+% globus-personal-gatekeeper -start -jmtype lsf
+@endcode
+
+to start a gatekeeper configured to run a job manager using our new scripts.
+Running this will output a contact string (referred to as <contact-string>
+below), which we can use to connect to
+this new service. To do so, we'll run globus-job-run to submit a test job:
+
+@code
+% globus-job-run <contact-string> /bin/echo Hello, LSF
+Hello, LSF
+@endcode
+
+@subsection job_manager_tutorial_debugging When Things Go Wrong
+
+If the test above fails, or more complicated job failures are occurring,
+then you'lll have to debug your scheduler interface. Here are a few tips
+to help you out.
+
+Make sure that your script is valid Perl. If you run 
+
+@code
+perl -I$GLOBUS_LOCATION/lib/perl \
+    $GLOBUS_LOCATION/lib/perl/Globus/GRAM/JobManager/lsf.pm
+@endcode
+
+You should get no output. If there are any diagnostics, correct them
+(in the lsf.in file), reinstall your package, and rerun the setup script.
+
+Look at the <a href="http://www.globus.org/about/faq/errors.html">Globus
+Toolkit Error FAQ</a> and see if the failure is perhaps not related to
+your scheduler script at all.
+
+Enable logging for the job manager. By default, the job manager is
+configured to log only when it notices a job failure. However, if your
+problem is that your script is not returning a failure code when you expect,
+you might want to enable logging always. To do this, modify the job manager
+configuration file to contain "-save-logfile&nbsp;always" in place of
+"-save-log&nbsp;on_errors".
+
+Adding logging messages to your script: the JobManager object implements
+a <code>log</code> method, which allows you to write messages to the 
+job manager log file. Do this as your methods are called to pinpoint
+where the error occurs.
+
+Save the job description file when your script is run. This will allow
+you to run the <code>globus-job-manager-script.pl</code> interactively
+(or in the Perl debugger). To save the job description file, you can do
+
+@code
+$self->{JobDescription}->save("/tmp/job_description.$$");
+@endcode
+
+in any of the methods you've implemented.
+
+
 */
 
 /*
