@@ -1043,6 +1043,72 @@ mm_ssh_gssapi_sign(Gssctxt *ctx, gss_buffer_desc *data, gss_buffer_desc *hash) {
 
         return(major);
 }
+
+OM_uint32
+mm_gss_indicate_mechs(OM_uint32 *minor_status, gss_OID_set *mech_set)
+{
+        Buffer m;
+	OM_uint32 major;
+	int i=0;
+
+	buffer_init(&m);
+
+	mm_request_send(pmonitor->m_recvfd, MONITOR_REQ_GSSMECHS, &m);
+
+        debug3("%s: waiting for MONITOR_ANS_GSSMECHS",__func__);
+        mm_request_receive_expect(pmonitor->m_recvfd, MONITOR_ANS_GSSMECHS,
+				  &m);
+        major=buffer_get_int(&m);
+	*mech_set = xmalloc(sizeof(gss_OID_set_desc));
+        (*mech_set)->count=buffer_get_int(&m);
+	(*mech_set)->elements=xmalloc(sizeof(gss_OID_desc)*(*mech_set)->count);
+	for (i=0; i < (*mech_set)->count; i++) {
+	    u_int length;
+	    (*mech_set)->elements[i].elements=buffer_get_string(&m, &length);
+	    (*mech_set)->elements[i].length = length;
+	}
+
+        return(major);
+}
+
+OM_uint32
+mm_gss_display_status(OM_uint32 *minor_status, OM_uint32 status_value,
+		      int status_type, const gss_OID mech_type,
+		      OM_uint32 *message_context, gss_buffer_t status_string)
+{
+        Buffer m;
+	OM_uint32 major;
+
+	buffer_init(&m);
+
+	buffer_put_int(&m, status_value);
+	buffer_put_int(&m, status_type);
+	if (mech_type) {
+	    buffer_put_string(&m, mech_type->elements, mech_type->length);
+	} else {
+	    buffer_put_string(&m, "", 0);
+	}
+	if (message_context) {
+	    buffer_put_int(&m, *message_context);
+	} else {
+	    buffer_put_int(&m, 0);
+	}
+
+	mm_request_send(pmonitor->m_recvfd, MONITOR_REQ_GSSSTAT, &m);
+
+        debug3("%s: waiting for MONITOR_ANS_GSSMECHS",__func__);
+        mm_request_receive_expect(pmonitor->m_recvfd, MONITOR_ANS_GSSSTAT,
+				  &m);
+	
+	if (message_context) {
+	    *message_context = buffer_get_int(&m);
+	} else {
+	    buffer_get_int(&m);
+	}
+	status_string->value = buffer_get_string(&m, &status_string->length);
+
+	return major;
+}
 #endif /* GSSAPI */
 
 #ifdef GSI
