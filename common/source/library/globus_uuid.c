@@ -256,6 +256,12 @@ globus_uuid_import(
     uint16_t                            hilow;
     char                                buf[3];
     
+    /* skip leading uuid:, if it exists */
+    if(strncmp("uuid:", str, 5) == 0)
+    {
+        str += 5;
+    }
+    
     /**
      * 1b4e28ba-2fa1-11d2-883f-b9a761bde3fb
      * 012345678901234567890123456789012345
