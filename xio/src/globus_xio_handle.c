@@ -808,7 +808,6 @@ globus_l_xio_register_readv(
 
     GlobusXIODebugInternalEnter();
 
-
     handle = op->_op_handle;
 
     globus_mutex_lock(&handle->context->mutex);
@@ -855,6 +854,8 @@ globus_l_xio_register_readv(
         op->_op_wait_for, globus_i_xio_read_write_callback, (void *)NULL);
     if(res != GLOBUS_SUCCESS)
     {
+        op->ref--;
+        globus_assert(op->ref > 0);
         goto err;
     }
 
@@ -873,7 +874,6 @@ globus_l_xio_register_readv(
     }
     globus_mutex_unlock(&handle->context->mutex);
 
-
     GlobusXIODebugInternalExit();
     return GLOBUS_SUCCESS;
 
@@ -881,9 +881,6 @@ globus_l_xio_register_readv(
 
     globus_mutex_lock(&handle->context->mutex);
     {
-        op->ref--; /* dec for the register */
-        globus_assert(op->ref > 0);
-
         /* in case timeout unregister fails */
         op->type = GLOBUS_XIO_OPERATION_TYPE_FINISHED;
         /* if we had a timeout, we need to unregister it */
