@@ -4,7 +4,7 @@
 
 Useful targets are:
 
-  javadocs - creates a collective set of javadocs for all non-core java code
+  javadocs - creates a collective set of javadocs for all GT3 java code
              in this CVS root
 
 ==================================================================== -->
@@ -23,10 +23,10 @@ Useful targets are:
   <property name="javadocs.dir" value="${build.dir}/javadocs"/>
 
   <!-- package directories -->
+  <property name="core.dir" value="../ogsa/impl/java"/>
   <property name="aggregator.dir" value="../information_services/aggregator"/>
   <property name="db.dir" value="../information_services/db"/>
   <property name="filestreaming.dir" value="../data_management/filestreaming"/>
-  <property name="findServiceData.dir" value="../ogsa_client/findServiceData"/>
   <property name="grim.dir" value="../program_execution/grim"/>
   <property name="index.dir" value="../information_services/index"/>
   <property name="jms.dir" value="../ogsa_messaging/jms"/>
@@ -35,14 +35,14 @@ Useful targets are:
   <property name="mmjfs.dir" value="../program_execution/mmjfs"/>
   <property name="providers.dir" value="../information_services/providers"/>
   <property name="sdb.dir" value="../ogsa_client/sdb"/>
-  <property name="rips.dir" value="../program_execution/rips"/>
+  <property name="rips.dir" value="../information_services/rips"/>
   <property name="servicegroup.dir" value="../information_services/servicegroup"/>
 
   <!-- stub destination directories -->
   <property name="aggregator.stubs.dir" value="${aggregator.dir}/build/stubs"/>
   <property name="filestreaming.stubs.dir" value="${filestreaming.dir}/build/stubs"/>
   <property name="index.stubs.dir" value="${index.dir}/build/stubs"/>
-  <!--<property name="multirft.stubs.dir" value="${multirft.dir}/src/org/globus/ogsa/base"/>-->
+  <property name="mjs.stubs.dir" value="${mjs.dir}/build/stubs/org/globus/ogsa/base/gram"/>
   <property name="providers.stubs.dir" value="${providers.dir}/build/stubs"/>
   <property name="rips.stubs.dir" value="${rips.dir}/build/stubs"/>
   <property name="servicegroup.stubs.dir" value="${servicegroup.dir}/build/stubs"/>
@@ -82,12 +82,22 @@ Useful targets are:
   <target name="stubs">
     <ant dir="${ogsa.root}" target="stubs" inheritAll="false"/>
     <ant dir="${aggregator.dir}" target="stubs" inheritAll="false"/>
-    <ant dir="${filestreaming.dir}" target="stubs" inheritAll="false"/>
+    <ant dir="${providers.dir}" target="stubs" inheritAll="false"/>
+    <copy file="${aggregator.dir}/schema/base/aggregator/service_data_aggregator_port_type.gwsdl" todir="${index.dir}/build/schema/base/aggregator"/>
+    <copy file="${providers.dir}/schema/base/provider/service_data_provider_execution_port_type.gwsdl" todir="${index.dir}/build/schema/base/provider"/>
     <ant dir="${index.dir}" target="stubs" inheritAll="false"/>
+    <ant dir="${filestreaming.dir}" target="stubs" inheritAll="false"/>
+    <copy file="${providers.dir}/schema/base/provider/service_data_provider_execution_port_type.gwsdl" todir="${rips.dir}/build/schema/base/provider"/>
+    <ant dir="${rips.dir}" target="stubs" inheritAll="false"/>
+    <copy file="${filestreaming.dir}/schema/base/streaming/file_stream_port_type.gwsdl" todir="${mjs.dir}/schema/base/streaming">
+        <fileset dir="${filestreaming.dir}/schema/base/streaming">
+            <include name="file_stream*.gwsdl"/>
+            <include name="file_stream*.wsdl"/>
+            <include name="file_stream*.xml"/>
+        </fileset>
+    </copy>
     <ant dir="${mjs.dir}" target="stubs" inheritAll="false"/>
     <ant dir="${multirft.dir}" target="stubs" inheritAll="false"/>
-    <ant dir="${providers.dir}" target="stubs" inheritAll="false"/>
-    <ant dir="${rips.dir}" target="stubs" inheritAll="false"/>
     <ant dir="${servicegroup.dir}" target="stubs" inheritAll="false"/>
   </target>
 
@@ -97,6 +107,10 @@ Useful targets are:
         destdir="${javadocs.dir}"
         windowtitle="Globus Tookit 3.0 Services APIs"
     >
+        <fileset dir="${core.dir}/src" defaultexcludes="yes">
+            <include name="**/*.java" />
+            <exclude name="**/test/**"/>
+        </fileset>
         <fileset dir="${aggregator.dir}/src" defaultexcludes="yes">
             <include name="**/*.java" />
             <exclude name="**/test/**"/>
@@ -114,10 +128,6 @@ Useful targets are:
         </fileset>
         <fileset dir="${filestreaming.stubs.dir}" defaultexcludes="yes">
             <include name="**/*.java" />
-        </fileset>
-        <fileset dir="${findServiceData.dir}/src" defaultexcludes="yes">
-            <include name="**/*.java" />
-            <exclude name="**/test/**"/>
         </fileset>
         <fileset dir="${grim.dir}/src" defaultexcludes="yes">
             <include name="**/*.java" />
@@ -138,11 +148,9 @@ Useful targets are:
             <include name="**/*.java" />
             <exclude name="**/test/**"/>
         </fileset>
-        <!--
         <fileset dir="${aggregator.stubs.dir}" defaultexcludes="yes">
             <include name="**/*.java" />
         </fileset>
-        -->
         <fileset dir="${mjs.dir}/src" defaultexcludes="yes">
             <include name="**/*.java" />
             <exclude name="**/test/**"/>
