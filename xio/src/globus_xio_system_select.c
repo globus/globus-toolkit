@@ -1572,6 +1572,10 @@ globus_l_xio_system_handle_read(
                 else
                 {
                     *read_info->sop.non_data.out_fd = new_fd;
+                    GlobusXIOSystemDebugPrintf(
+                        GLOBUS_L_XIO_SYSTEM_DEBUG_INFO,
+                        ("[%s] Accepted new connection, fd=%d\n",
+                             _xio_name, new_fd));
                 }
             }
         }

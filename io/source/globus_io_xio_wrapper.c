@@ -398,15 +398,12 @@ globus_l_io_iattr_copy(
     dest_iattr->type = source_iattr->type;
     if(dest_iattr->type == GLOBUS_I_IO_TCP_ATTR)
     {
-        dest_iattr->authentication_mode = 
-            GLOBUS_IO_SECURE_AUTHENTICATION_MODE_NONE;
-        dest_iattr->authorization_mode = 
-            GLOBUS_IO_SECURE_AUTHORIZATION_MODE_NONE;
-        dest_iattr->channel_mode = 
-            GLOBUS_IO_SECURE_CHANNEL_MODE_CLEAR;
+        dest_iattr->authentication_mode = source_iattr->type;
+        dest_iattr->authorization_mode = source_iattr->type;
+        dest_iattr->channel_mode = source_iattr->type;
 
         result = globus_io_attr_get_secure_authorization_mode(
-            &dest_iattr,
+            &source_iattr,
             &dest_iattr->authorization_mode,
             &data);
         if(result != GLOBUS_SUCCESS)
