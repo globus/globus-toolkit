@@ -10,6 +10,7 @@
 
 #include "globus_config.h"
 
+extern
 FILE *          globus_i_ftp_control_devnull;
 
 typedef enum

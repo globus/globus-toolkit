@@ -664,6 +664,38 @@ case ${host}--$1 in
         fi
         CC="$lac_cv_CC"
       ;;
+    *-darwin* )
+        dnl No 64bit support yet
+        if test "$lac_cv_build_64bit" = "yes"; then
+                AC_MSG_ERROR(64 bits not supported on this platform)
+                exit 1
+        fi
+        
+        if test "$GLOBUS_CC" = "mpicc"; then
+            AC_PATH_PROGS(lac_cv_CC,  $CC  mpicc)
+            AC_PATH_PROGS(lac_cv_CXX, $CXX mpiCC)
+            AC_PATH_PROGS(lac_cv_F77, $F77 mpif77)
+            AC_PATH_PROGS(lac_cv_F90, $F90 mpif90)
+        else
+            if test "$GLOBUS_CC" = "gcc"; then
+                AC_PATH_PROGS(lac_cv_CC, $CC gcc)
+            else
+                AC_PATH_PROGS(lac_cv_CC, $CC cc)
+            fi
+            
+            AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC CC c++ g++ gcc)
+            AC_PATH_PROGS(lac_cv_F77, $F77 f77 g77)
+            AC_PATH_PROGS(lac_cv_F90, $F90 f90)
+        fi
+        CC="$lac_cv_CC"
+	
+	# for now assume fink is installed in /sw
+
+        lac_CFLAGS="$lac_CFLAGS -I/sw/include"
+        lac_CXXFLAGS="$lac_CXXFLAGS -I/sw/include"
+        lac_CPPFLAGS="$lac_CPPFLAGS -traditional-cpp"
+        lac_LDFLAGS="$lac_LDFLAGS -L/sw/lib"
+      ;;
     * )
         dnl No 64bit support yet
         if test "$lac_cv_build_64bit" = "yes"; then

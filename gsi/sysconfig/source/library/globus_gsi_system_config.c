@@ -2531,8 +2531,11 @@ globus_gsi_sysconfig_get_username_unix(
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_ENTER;
 
     /* the below seems to be fairly portable */
-    
+#ifdef _SC_GETPW_R_SIZE_MAX
     buf_len = sysconf(_SC_GETPW_R_SIZE_MAX) + 1;
+#else
+    buf_len = 1024;
+#endif
 
     buf = malloc(buf_len);
 
@@ -2924,7 +2927,11 @@ globus_gsi_sysconfig_get_home_dir_unix(
 
     /* the below seems to be fairly portable */
     
+#ifdef _SC_GETPW_R_SIZE_MAX
     buf_len = sysconf(_SC_GETPW_R_SIZE_MAX) + 1;
+#else
+    buf_len = 1024;
+#endif
 
     buf = malloc(buf_len);
 

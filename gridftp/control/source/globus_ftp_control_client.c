@@ -12,6 +12,9 @@
 #include <netinet/in.h>
 #endif
 
+/* Global variable declarations */
+
+FILE *                                  globus_i_ftp_control_devnull;
 
 /* Local variable declarations */
 
