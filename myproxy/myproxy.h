@@ -31,7 +31,7 @@
 #define MYPROXY_RENEWER_STRING     "RENEWER="
 #define MYPROXY_CRED_NAME_STRING   "CRED_NAME="
 #define MYPROXY_CRED_DESC_STRING   "CRED_DESC="
-#define MYPROXY_FORCE_DBASE_WRITE_STRING "FORCE_DBASE_WRITE="
+#define MYPROXY_FORCE_CREDENTIAL_OVERWRITE "FORCE_CREDENTIAL_OVERWRITE="
 #define MYPROXY_AUTHORIZATION_STRING "AUTHORIZATION_DATA="
 #define MYPROXY_AUTH_SERVICE_STRING "AUTHORIZED_SERVICE="
 #define MYPROXY_AUTH_CLIENT_STRING  "AUTHORIZED_CLIENT="
@@ -96,9 +96,9 @@ typedef struct
     char                         **authorized_client_dns;
     char                         *retrievers;
     char                         *renewers;
-    char		   *credname;
-    char		   *cred_desc;
-    int		   force_dbase_write;
+    char			 *credname;
+    char			 *creddesc;
+    int		   		 force_credential_overwrite;
 } myproxy_request_t;
 
 /* A server response object */

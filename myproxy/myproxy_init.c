@@ -56,8 +56,8 @@ static char usage[] = \
 "                                         instead of the LOGNAME env. var.\n"
 #if defined (MULTICRED_FEATURE)
 "	-k | --credname <name>		  Specifies credential name\n"
-"	-K | --cred_desc <description>	  Specifies credential description\n"
-"	-f | --force_dbase_write	  Forces write to database even if credential with the specified name is present\n"
+"	-K | --creddesc <description>	  Specifies credential description\n"
+"	-f | --force			  Force Credential Overwrite\n"
 #endif
 "\n";
 
@@ -82,18 +82,19 @@ struct option long_options[] =
   {"match_cn_only", 	    no_argument, NULL, 'X'},
 #if defined (MULTICRED_FEATURE)
   {"credname",	      required_argument, NULL, 'k'},
-  {"cred_desc",	      required_argument, NULL, 'K'},
-  {"force_dbase_write",	    no_argument, NULL, 'f'},
+  {"creddesc",	      required_argument, NULL, 'K'},
+  {"force",	      	    no_argument, NULL, 'f'},
 #endif
   {0, 0, 0, 0}
 };
 
 #if defined (MULTICRED_FEATURE)
+
 static char short_options[] = "uhD:s:p:t:c:l:vndr:R:xXaAk:K:f";  //colon following an option indicates option takes an argument
+
 #else
 static char short_options[] = "uhD:s:p:t:c:l:vndr:R:xXaA";  //colon following an option indicates option takes an argument
 #endif
-
 
 static char version[] =
 "myproxy-init version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
@@ -299,6 +300,7 @@ init_arguments(int argc,
 
     int arg;
 
+    request->force_credential_overwrite = 0;
     while((arg = gnu_getopt_long(argc, argv, short_options, 
 				 long_options, NULL)) != EOF) 
     {
@@ -383,10 +385,10 @@ init_arguments(int argc,
 	    request->credname = strdup (gnu_optarg);
 	    break;
 	case 'K':  /*credential description*/
-	    request->cred_desc = strdup (gnu_optarg);
+	    request->creddesc = strdup (gnu_optarg);
 	    break;
-	case 'f':  /*force database write*/
-	    request->force_dbase_write = 1;
+	case 'f':  /*force credential overwrite*/
+	    request->force_credential_overwrite = 1;
 	    break;
 #endif
 

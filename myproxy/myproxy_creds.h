@@ -23,8 +23,8 @@ struct myproxy_creds {
     int renewer_expr_type;
     int lifetime;
     char *credname;
-    char *cred_desc;
-    int force_dbase_write;
+    char *creddesc;
+    int force_credential_overwrite;
     void *restrictions;
     time_t start_time;
     time_t end_time;
@@ -48,9 +48,9 @@ struct myproxy_database {
 	char *retrievers;
 	char *renewers;
 	char *credname;
-	char *cred_desc;
+	char *creddesc;
 	char credentials[MAX_TEXT_LEN];
-	int force_dbase_write;
+	int force_credential_overwrite;
 };
 
 	
@@ -100,7 +100,7 @@ int myproxy_creds_delete(const struct myproxy_creds *creds);
  *
  * Returns 1 if the user does, 0 if they do not, -1 on error.
  */
-int myproxy_creds_exist(const char *username);
+int myproxy_creds_exist(const char *username, const char *credname);
 
 /*
  * myproxy_creds_is_owner()
@@ -110,7 +110,7 @@ int myproxy_creds_exist(const char *username);
  *
  * Returns 1 if the client owns the credentials, 0 if they do not, -1 on error.
  */
-int myproxy_creds_is_owner(const char *username,
+int myproxy_creds_is_owner(const char *username, const char *credname,
 			   const char *client_name);
 
 /*

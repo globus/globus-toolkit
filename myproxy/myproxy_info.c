@@ -180,10 +180,11 @@ main(int argc, char *argv[])
         break;
     case MYPROXY_OK_RESPONSE:
 	time_diff = server_response->cred_end_time - time(NULL);
-	if (server_response->cred_owner && strlen(server_response->cred_owner))
-	   printf("proxy owned by : %s\n", server_response->cred_owner); 
+	//if (server_response->cred_owner && strlen(server_response->cred_owner))
+	  // printf("proxy owned by : %s\n", server_response->cred_owner); 
 
 #if defined (MULTICRED_FEATURE)
+#define TABS_PER_ENTRY 5
 	if (server_response->response_string)
 	{
 	   int i;
@@ -198,9 +199,9 @@ main(int argc, char *argv[])
 		{
 		    	tab_count ++;
 
-			if (tab_count %3 == 0)
+			if (tab_count %TABS_PER_ENTRY	 == 0)
 			{
-				printf ("\n\nCredential %d:\n",tab_count/3+1);
+				printf ("\n\nCredential %d:\n",tab_count/TABS_PER_ENTRY+1);
 				continue;
 			}
 		}

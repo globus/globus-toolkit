@@ -49,9 +49,6 @@ static char usage[] = \
 "       -c | --config              	Specifies configuration file to use\n"\
 "       -p | --port <portnumber>   	Specifies the port to run on\n"\
 "       -s | --storage <directory> 	Specifies the credential storage directory\n"
-#if defined (MULTICRED_FEATURE)  
-"	-b | --database_name <name>	Specifies the database name to store credentials\n"
-#endif  
 "\n";
 
 struct option long_options[] =
@@ -64,17 +61,10 @@ struct option long_options[] =
     {"storage",    	required_argument, NULL, 's'},       
     {"usage",            	no_argument, NULL, 'u'},
     {"version",          	no_argument, NULL, 'v'},
-#if defined (MULTICRED_FEATURE)
-    {"database_name", 	required_argument, NULL, 'b'},
-#endif
     {0, 0, 0, 0}
 };
 
-#if defined (MULTICRED_FEATURE)
-static char short_options[] = "dhc:p:s:vuD:b:";
-#else
 static char short_options[] = "dhc:p:s:vuD:";
-#endif
 
 static char version[] =
 "myproxy-server version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
@@ -188,20 +178,6 @@ main(int argc, char *argv[])
 	fprintf(stderr, "%s %s\n", verror_get_string(), verror_strerror());
 	exit(1);
     }
-
-#if defined (MULTICRED_FEATURE)
-    if (dbase_name == NULL)   //user hasn't specified a dbase name. use default
-    {
-	if (server_context->dbase_name == NULL) //default dbase name not specified. halt
-	{
-	   fprintf (stderr, "Storage database name not specified in command line or in configuration file\n");
-	   exit (1);
-	}
-      
-	dbase_name = strdup (server_context->dbase_name);
-    }
-#endif
-
 
     
     /* 
@@ -344,7 +320,7 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
 
 #if defined (MULTICRED_FEATURE)
     client_creds->credname = strdup ("DEFAULT_CREDENTIAL_NAME!@#$%^&*()");    //initialize with defaults
-    client_creds->cred_desc = strdup ("This is the default credential description");
+    //client_creds->creddesc = strdup ("This is the default credential description");
 #endif
 
     server_response->response_string = strdup (""); 
@@ -458,10 +434,10 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
     if (client_request->credname != NULL)
 	client_creds->credname = strdup (client_request->credname);
   
-    if (client_request->cred_desc != NULL)
-	client_creds->cred_desc = strdup (client_request->cred_desc);
+    if (client_request->creddesc != NULL)
+	client_creds->creddesc = strdup (client_request->creddesc);
 
-    client_creds->force_dbase_write = client_request->force_dbase_write;
+    client_creds->force_credential_overwrite = client_request->force_credential_overwrite;
 #endif
 
     /* First level authorization checking happens here - server-wide policy. 
@@ -520,7 +496,7 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
 
 	if (str == NULL)
 	{
-	  myproxy_log (DBG_LO, debug_level,"No default retriver dns specified. Using *");
+	  myproxy_log (DBG_LO, debug_level,"No default retriever dns specified. Using *");
           client_creds->retrievers = strdup ("*");
 	}
 	else
@@ -746,12 +722,6 @@ init_arguments(int argc, char *argv[],
         case 'D':
             debug_level = atoi (gnu_optarg);
             break;
-#if defined (MULTICRED_FEATURE)
-	case 'b':
-	    free (dbase_name);
-	    dbase_name = strdup (gnu_optarg);
-	    break;
-#endif
         default: /* ignore unknown */ 
             arg_error = -1;
             break;	
@@ -876,18 +846,7 @@ void get_proxy(myproxy_socket_attrs_t *attrs,
     /* Delegate credentials to client */
     min_lifetime = MIN(creds->lifetime, request->proxy_lifetime);
 
-#if defined (MULTICRED_FEATURE)
-    if (copy_credential_to_file(creds, filename) == -1) {  //write credential to temporary file. Get filename
-					//GSI requires credential to be in file before delegation
-        myproxy_log_verror();
-	response->response_type =  MYPROXY_ERROR_RESPONSE; 
-	strcat(response->error_string, "Unable to write credential to temporary file.\n");
-    }
-    else
-    if (myproxy_init_delegation(attrs, filename, min_lifetime) < 0) {
-#else
     if (myproxy_init_delegation(attrs, creds->location, min_lifetime) < 0) {
-#endif
 
         myproxy_log_verror();
 	response->response_type =  MYPROXY_ERROR_RESPONSE; 
@@ -940,7 +899,8 @@ void put_proxy(myproxy_socket_attrs_t *attrs,
 
 void info_proxy(myproxy_creds_t *creds, myproxy_response_t *response) {
     char *recs;
-#if defined(MULTICRED_FEATURE)
+
+#if defined (MULTICRED_FEATURE)
     if (myproxy_creds_info(creds, &recs) < 0) {
 #else
     if (myproxy_creds_info(creds) < 0) {

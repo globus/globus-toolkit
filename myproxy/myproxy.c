@@ -390,9 +390,9 @@ myproxy_serialize_request(const myproxy_request_t *request, char *data, const in
     }
 
     //credential description
-    if (request->cred_desc != NULL)
+    if (request->creddesc != NULL)
     { 
-	char *buf = strdup (request->cred_desc);
+	char *buf = strdup (request->creddesc);
 	strip_char ( buf, '\n');
       len = concatenate_strings(data, datalen, MYPROXY_CRED_DESC_STRING,
 			      buf, "\n", NULL); 
@@ -404,14 +404,14 @@ myproxy_serialize_request(const myproxy_request_t *request, char *data, const in
     }
 
     //force database write
-    if (encode_integer(request->force_dbase_write,
+    if (encode_integer(request->force_credential_overwrite,
 			str,
 			sizeof(str)) == -1)
     {
 	return -1;
     }
 			
-    len = concatenate_strings(data, datalen, MYPROXY_FORCE_DBASE_WRITE_STRING,
+    len = concatenate_strings(data, datalen, MYPROXY_FORCE_CREDENTIAL_OVERWRITE,
 			      str, "\n", NULL);
     if (len < 0)
       return -1;
@@ -630,7 +630,7 @@ myproxy_deserialize_request(const char *data, const int datalen,
 			  buf, sizeof(buf));
 
     if (len == -2)  /*-2 indicates string not found*/
-       request->cred_desc = strdup ("This is the default credential");
+       request->creddesc = NULL; //strdup ("This is the default credential");
     else
        if (len <= -1)
        {
@@ -639,9 +639,9 @@ myproxy_deserialize_request(const char *data, const int datalen,
        }
        else
        {
-         request->cred_desc = strdup(buf);
+         request->creddesc = strdup(buf);
     
-         if (request->cred_desc == NULL)
+         if (request->creddesc == NULL)
          {
 	  //verror_put_string("strdup() failed");
 	  verror_put_errno(errno);
@@ -651,7 +651,7 @@ myproxy_deserialize_request(const char *data, const int datalen,
 
     //force database write
     len = convert_message(data, datalen,
-			  MYPROXY_FORCE_DBASE_WRITE_STRING,
+			  MYPROXY_FORCE_CREDENTIAL_OVERWRITE,
 			  CONVERT_MESSAGE_DEFAULT_FLAGS,
                           buf, sizeof(buf));
     if (len == -1)
@@ -661,9 +661,9 @@ myproxy_deserialize_request(const char *data, const int datalen,
     }
     else
       if (len == -2) // string not found
-         request->force_dbase_write = 0;
+         request->force_credential_overwrite = 0;
       else
-    	if (parse_string(buf, &request->force_dbase_write) == -1)  
+    	if (parse_string(buf, &request->force_credential_overwrite) == -1)  
     	{
 		return -1;
     	}
