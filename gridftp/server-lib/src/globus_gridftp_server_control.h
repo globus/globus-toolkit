@@ -394,6 +394,11 @@ globus_gridftp_server_control_attr_set_security(
     globus_gridftp_server_control_attr_t    in_attr,
     globus_gridftp_server_control_security_type_t sec);
 
+globus_result_t
+globus_gridftp_server_control_attr_set_idle_time(
+    globus_gridftp_server_control_attr_t    in_attr,
+    int                                     idle_timeout);
+
 /*
  *  if module name is NULL then it is the default handler
  */

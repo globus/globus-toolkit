@@ -1929,6 +1929,8 @@ globus_gridftp_server_control_start(
         server_handle->prot = 'C';
         server_handle->dcau = 'A';
 
+        server_handle->idle_timeout = i_attr->idle_timeout;
+
         if(server_handle->cwd != NULL)
         {
             globus_free(server_handle->cwd);

@@ -336,6 +336,8 @@ typedef struct globus_i_gsc_attr_s
     char *                                  pre_auth_banner;
     globus_gridftp_server_control_security_type_t   security;
 
+    int                                     idle_timeout;
+
     globus_i_gsc_user_funcs_t               funcs;
 } globus_i_gsc_attr_t;
 
@@ -397,6 +399,9 @@ typedef struct globus_i_gsc_server_handle_s
     char *                                  modes;
     char *                                  types;
     int                                     stripe_count;
+
+    int                                     idle_timeout;
+    globus_callback_handle_t                idle_handle;
 
     /* opts state */
     globus_i_gsc_handle_opts_t              opts;

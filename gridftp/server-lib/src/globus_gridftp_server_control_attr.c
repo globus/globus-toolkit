@@ -16,16 +16,13 @@ globus_gridftp_server_control_attr_init(
         goto err;
     }
 
-    attr = (globus_i_gsc_attr_t *) globus_malloc(
-                sizeof(globus_i_gsc_attr_t));
-
+    attr = (globus_i_gsc_attr_t *) globus_calloc(
+                sizeof(globus_i_gsc_attr_t), 1);
     if(attr == NULL)
     {
         res = GlobusGridFTPServerErrorMemory("attr");
         goto err;
     }
-
-    memset(attr, '\0', sizeof(globus_i_gsc_attr_t));
 
     globus_hashtable_init(
         &attr->funcs.send_cb_table,
@@ -510,6 +507,25 @@ globus_gridftp_server_control_attr_set_banner(
     return GLOBUS_SUCCESS;
 }
                                                                                 
+globus_result_t
+globus_gridftp_server_control_attr_set_idle_time(
+    globus_gridftp_server_control_attr_t    in_attr,
+    int                                     idle_timeout)
+{
+    globus_i_gsc_attr_t *                   attr;
+    GlobusGridFTPServerName(globus_gridftp_server_control_attr_set_list);
+
+    if(in_attr == NULL)
+    {
+        return GlobusGridFTPServerErrorParameter("server_attr");
+    }
+    attr = (globus_i_gsc_attr_t *) in_attr;
+
+    attr->idle_timeout = idle_timeout;
+
+    return GLOBUS_SUCCESS;
+}
+
 globus_result_t
 globus_gridftp_server_control_attr_set_message(
     globus_gridftp_server_control_attr_t    in_attr,
