@@ -31,6 +31,7 @@ MyProxy Online Credential Repository
 <Dependency Name="globus_gssapi_gsi" >
 <Version>
 <Version_Range Lower_Minor="2" Upper_Minor="42" Upper_Major="3" Lower_Major="3" />
+<Simple_Version Major="4"/>
 </Version>
 </Dependency>
 </Source_Dependencies>
