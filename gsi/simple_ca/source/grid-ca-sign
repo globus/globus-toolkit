@@ -242,59 +242,25 @@ do_cleanup() {
     ${GLOBUS_SH_RM-rm} -f ${TMP_REQ_FILE} ${TMP_CERT_FILE}
 }
 
-readCommandLine "$@"
+do_password_input() {
+    if test $need_password_input; then
+        ${GLOBUS_SH_STTY-stty} -echo
+        echo ""
+        echo $@
+        recho "please enter the password for the CA key: "
+    fi
+}        
 
-if test -z "$GRID_CA_DIR"; then
-    GRID_CA_DIR=${HOME}/.globus/simpleCA/
-fi
-
-if test ! -d ${GRID_CA_DIR}; then
-    echo ""
-    echo "ERROR: No simple CA directory"
-    echo "found at ${GRID_CA_DIR}"
-    echo "Either specify a directory with -dir, or run"
-    echo "setup-simple-ca to create a CA"
-    echo ""
-    exit 1
-fi
-
-if test ! -f ${GRID_CA_DIR}/cacert.pem; then
-    echo ""
-    echo "ERROR: No simple CA setup found at ${GRID_CA_DIR}."
-    echo "The CA certificate is missing!"
-    echo "Please run setup-simple-ca before"
-    echo "signing certificates."
-    echo ""
-    exit 1
-fi
-
-grid_ca_conf=${GRID_CA_DIR}/grid-ca-ssl.conf
-openssl_cmd=${GLOBUS_LOCATION}/bin/openssl
-
-TMP_REQ_FILE=/tmp/tmp_cert_req.pem.$$
-TMP_CERT_FILE=/tmp/tmp_cert.pem.$$
-
-${GLOBUS_SH_CP-cp} ${INPUT_REQ_FILE} ${TMP_REQ_FILE}
-
-echo ${openssl_options} | grep "\-passin" > /dev/null
-res1=$?
-if test ! $res1 = 0; then
-    echo ${openssl_options} | grep "\-key" > /dev/null
-    res1=$?
-fi
-
-if test ! $res1 = 0; then
-	echo ""
-	recho "Enter password for the CA key: "
-	${GLOBUS_SH_STTY-stty} -echo
-	read password 0<&2
-	${GLOBUS_SH_STTY-stty} echo
-	echo ""
-        openssl_options="$openssl_options -key ${password}"
-fi
+end_password_input() {
+    if test $need_password_input; then
+        ${GLOBUS_SH_STTY-stty} echo
+        echo ""
+    fi
+}
 
 do_sign() {
  
+do_password_input "To sign the request"
 tmp_output=/tmp/tmp_output.$$
 ${openssl_cmd} ca $openssl_options -batch -config ${grid_ca_conf} \
                   -in ${TMP_REQ_FILE} -out ${TMP_CERT_FILE} \
@@ -377,6 +343,7 @@ if test ${openssl_result} != 0; then
 
             tmp_revoke_output=/tmp/tmp_revoke_out.$$
 
+            do_password_input "To revoke the current certificate"
             ${openssl_cmd} ca $openssl_options -batch -config ${grid_ca_conf} \
                     -revoke ${SIGNED_CERT} \
                     2> ${tmp_revoke_output}
@@ -396,6 +363,7 @@ if test ${openssl_result} != 0; then
             else
                 
                 ${GLOBUS_SH_RM-rm} -f ${tmp_revoke_output}
+                echo ""
                 echo "Signing new certificate"
                 do_sign;
                 return;
@@ -476,6 +444,52 @@ fi
 
 }
 
+readCommandLine "$@"
+
+if test -z "$GRID_CA_DIR"; then
+    GRID_CA_DIR=${HOME}/.globus/simpleCA/
+fi
+
+if test ! -d ${GRID_CA_DIR}; then
+    echo ""
+    echo "ERROR: No simple CA directory"
+    echo "found at ${GRID_CA_DIR}"
+    echo "Either specify a directory with -dir, or run"
+    echo "setup-simple-ca to create a CA"
+    echo ""
+    exit 1
+fi
+
+if test ! -f ${GRID_CA_DIR}/cacert.pem; then
+    echo ""
+    echo "ERROR: No simple CA setup found at ${GRID_CA_DIR}."
+    echo "The CA certificate is missing!"
+    echo "Please run setup-simple-ca before"
+    echo "signing certificates."
+    echo ""
+    exit 1
+fi
+
+grid_ca_conf=${GRID_CA_DIR}/grid-ca-ssl.conf
+openssl_cmd=${GLOBUS_LOCATION}/bin/openssl
+
+TMP_REQ_FILE=/tmp/tmp_cert_req.pem.$$
+TMP_CERT_FILE=/tmp/tmp_cert.pem.$$
+
+${GLOBUS_SH_CP-cp} ${INPUT_REQ_FILE} ${TMP_REQ_FILE}
+
+echo ${openssl_options} | grep "\-passin" > /dev/null
+res1=$?
+if test ! $res1 = 0; then
+    echo ${openssl_options} | grep "\-key" > /dev/null
+    res1=$?
+fi
+
+if test ! $res1 = 0; then
+    need_password_input=1
+    openssl_options="${openssl_options} -passin stdin"
+fi
+
 do_sign;
 
 if test ! -f ${TMP_CERT_FILE}; then
@@ -512,4 +526,3 @@ fi
 
 do_cleanup
 exit
-
