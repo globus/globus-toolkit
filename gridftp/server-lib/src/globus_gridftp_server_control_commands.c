@@ -1860,7 +1860,7 @@ globus_l_gsc_cmd_stor_retr(
     {
         if(cmd_a[1] == NULL)
         {
-            path = NULL;
+            path = strdup(op->server_handle->cwd);
         }
         else
         {

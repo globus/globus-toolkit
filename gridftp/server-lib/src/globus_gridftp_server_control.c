@@ -723,7 +723,7 @@ globus_l_gsc_parse_command(
 
     *out_cmd_a = NULL;
 
-    cmd_a = (char **) globus_malloc(sizeof(char *) * argc);
+    cmd_a = (char **) globus_malloc(sizeof(char *) * (argc+1));
     if(cmd_a == NULL)
     {
         return -1;
@@ -989,7 +989,6 @@ globus_l_gsc_command_callout(
             {
                 res = globus_l_gsc_final_reply(op->server_handle, msg);
                 done = GLOBUS_TRUE;
-                globus_free(op);
             }
             else
             {
