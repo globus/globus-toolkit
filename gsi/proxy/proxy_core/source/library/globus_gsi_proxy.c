@@ -1065,7 +1065,7 @@ globus_i_gsi_proxy_create_string(
     int                                 length;
     char *                              error_string;
     static char *                       _function_name_ =
-        "globus_i_gsi_proxy_create_error_string";
+        "globus_i_gsi_proxy_create_string";
     
     GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
 
