@@ -557,6 +557,10 @@ globus_l_ftp_client_target_new(
 	goto free_target;
     }
     result = globus_ftp_control_handle_init(target->control_handle);
+    globus_ftp_control_set_netlogger(
+        target->control_handle,
+        handle->attr.nl_handle);
+
     
     if(result)
     {

@@ -8,6 +8,7 @@
 #endif
 
 #include "globus_ftp_control.h"
+#include "globus_i_ftp_control.h"
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -127,6 +128,23 @@ globus_i_ftp_parallelism_copy(
 
     /* TODO check src_parallelism for vaid members */
     return GLOBUS_SUCCESS;
+}
+
+globus_result_t
+globus_ftp_control_set_netlogger(
+    globus_ftp_control_handle_t *               handle,
+    globus_netlogger_handle_t *                 nl_handle)
+{
+    globus_result_t                             res;
+
+    res = globus_i_ftp_control_client_set_netlogger(handle, nl_handle);
+    if(res != GLOBUS_SUCCESS)
+    {
+        return res;
+    }
+    res = globus_i_ftp_control_data_set_netlogger(handle, nl_handle);
+
+    return res;
 }
 
 int

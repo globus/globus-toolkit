@@ -48,7 +48,7 @@
     ci->data_conn = dc;                                                 \
 }
 
-#define TABLE_ENTRY_MALLOC(t_e, buf, len, off, _eof, cb, cb_a, dc_h)     \
+#define TABLE_ENTRY_MALLOC(t_e, buf, len, off, _eof, cb, cb_a, dc_h)    \
 {                                                                       \
     t_e = (globus_l_ftp_handle_table_entry_t *)                         \
           globus_malloc(sizeof(globus_l_ftp_handle_table_entry_t));     \
@@ -562,14 +562,12 @@ static globus_hashtable_t           globus_l_ftp_control_data_layout_table;
 #define GLOBUS_FTP_CONTROL_DATA_DESCRIPTOR_EOR            0x80
 
 /*
- *  NetLogger functions
+ *  NETLOGGER functions
  */
-#if defined(GLOBUS_BUILD_WITH_NETLOGGER)
-
 globus_result_t
-globus_ftp_control_set_netlogger(
+globus_i_ftp_control_data_set_netlogger(
     globus_ftp_control_handle_t *               handle,
-    NLhandle *                                  nl_handle)
+    globus_netlogger_handle_t *                 nl_handle)
 {
     globus_i_ftp_dc_handle_t *                  dc_handle;
     globus_object_t *                           err;
@@ -615,8 +613,6 @@ globus_ftp_control_set_netlogger(
 
     return GLOBUS_SUCCESS;
 }
-
-#endif /* GLOBUS_BUILD_WITH_NETLOGGER */
 
 globus_bool_t
 globus_list_remove_element(
@@ -6405,9 +6401,7 @@ globus_i_ftp_control_data_cc_init(
             dc_handle->close_callback = GLOBUS_NULL;
             dc_handle->close_callback_arg = GLOBUS_NULL;
 
-#if defined(GLOBUS_BUILD_WITH_NETLOGGER)
             dc_handle->nl_handle = GLOBUS_NULL;
-#endif
 
 	    globus_io_tcpattr_init(&dc_handle->io_attr);
 	    globus_io_attr_set_tcp_nodelay(&dc_handle->io_attr, 

@@ -9,6 +9,7 @@
 #endif
 
 #include "globus_i_ftp_client.h"
+#include "globus_error_string.h"
 
 #include <string.h>
 
@@ -63,6 +64,7 @@ globus_ftp_client_handleattr_init(
 		GLOBUS_FTP_CLIENT_MODULE->module_name,
 		myname));
     }
+    i_attr->nl_handle = GLOBUS_NULL;
     *attr = i_attr;
     
     return GLOBUS_SUCCESS;
@@ -350,6 +352,60 @@ globus_ftp_client_handleattr_remove_cached_url(
 /*@}*/
 
 /**
+ * @name Netlogger management
+ */
+/**
+ * Set the netlogger handle used with this transfer.
+ * @ingroup globus_ftp_client_handleattr
+ *
+ * Each handle can have a netlogger handle associated with it
+ * for logging its data.
+ *
+ * Only 1 netlogger handle can be associated with a client handle.
+ *
+ * @param attr
+ *        The attribute set to modify.
+ * @param nl_handle
+ *        The open netlogger handle to be associated with this
+ *        attribute set.
+ */
+globus_result_t
+globus_ftp_client_handleattr_set_netlogger(
+    globus_ftp_client_handleattr_t *            attr,
+    globus_netlogger_handle_t *                 nl_handle)
+{
+    globus_object_t *                           err = GLOBUS_SUCCESS;
+    globus_i_ftp_client_handleattr_t *          i_attr;
+    static char * myname = "globus_ftp_client_handleattr_set_netlogger";
+
+    if(attr == GLOBUS_NULL)
+    {
+        err = globus_error_construct_string(
+                GLOBUS_FTP_CLIENT_MODULE,
+                GLOBUS_NULL,
+                "[%s] Cannot modify NULL attribute at %s\n",
+                GLOBUS_FTP_CLIENT_MODULE->module_name,
+                myname);
+        return globus_error_put(err);
+    }
+    if(nl_handle == GLOBUS_NULL)
+    {
+        err = globus_error_construct_string(
+                GLOBUS_FTP_CLIENT_MODULE,
+                GLOBUS_NULL,
+                "[%s] Cannot set NULL netlogger handle at %s\n",
+                GLOBUS_FTP_CLIENT_MODULE->module_name,
+                myname);
+        return globus_error_put(err);
+    }
+    i_attr = *(globus_i_ftp_client_handleattr_t **) attr;
+
+    i_attr->nl_handle = nl_handle;
+
+    return GLOBUS_SUCCESS;
+}
+
+/**
  * @name Plugin Management
  */
 /*@{*/
@@ -604,15 +660,6 @@ globus_ftp_client_operationattr_init(
 					= GLOBUS_NULL;
     i_attr->resume_third_party		= GLOBUS_FALSE;
     i_attr->force_striped		= GLOBUS_FALSE;
-
-    /*
-     *  net logger stuff
-     */
-#   if defined(GLOBUS_BUILD_WITH_NETLOGGER)
-    {
-        i_attr->nl_handle = GLOBUS_NULL;
-    }
-#   endif
 
     tmp_name = globus_libc_strdup("anonymous");
     if(tmp_name == GLOBUS_NULL)
@@ -2310,41 +2357,6 @@ error_exit:
 /* globus_ftp_client_operationattr_get_append() */
 /* @} */
 
-
-#if defined(GLOBUS_BUILD_WITH_NETLOGGER)
-
-globus_result_t
-globus_ftp_client_operationattr_set_netlogger(
-    const globus_ftp_client_operationattr_t *   attr,
-    NLhandle *                                  nl_handle)
-{
-    globus_object_t *                           err;
-    globus_i_ftp_client_operationattr_t *       i_attr;
-    static char * myname = "globus_ftp_client_operationattr_set_netlogger";
-
-    if(attr == GLOBUS_NULL)
-    {
-        err = globus_error_construct_string(
-            GLOBUS_FTP_CLIENT_MODULE,
-            GLOBUS_NULL,
-            "[%s] Cannot set values on a NULL attribute at %s\n",
-            GLOBUS_FTP_CLIENT_MODULE->module_name,
-            myname);
-
-        goto error_exit;
-    }
-    i_attr = *attr;
-
-    i_attr->nl_handle = nl_handle;
-
-    return GLOBUS_SUCCESS;
-
-error_exit:
-    return globus_error_put(err);
-}
-
-#endif
-
 /**
  * @name Read into a Single Buffer
  */
@@ -2624,22 +2636,6 @@ globus_ftp_client_operationattr_copy(
 	goto destroy_exit;
     }
 
-    /*
-     *  netlogger stuff
-     */
-#   if defined(GLOBUS_BUILD_WITH_NETLOGGER)
-    {
-        result = globus_ftp_client_operationattr_set_netlogger(
-                     dst,
-                     i_src->nl_handle);
-        if(result)
-        {
-            goto destroy_exit;
-        }
-    }
-#   endif
-
-
     if(!i_src->using_default_auth)
     {
 	result = 
@@ -2690,6 +2686,7 @@ globus_i_ftp_client_handleattr_copy(
     }
     
     dest->cache_all = src->cache_all;
+    dest->nl_handle = src->nl_handle;
     dest->url_cache = GLOBUS_NULL;
     dest->plugins = GLOBUS_NULL;
     

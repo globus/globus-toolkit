@@ -79,6 +79,16 @@ globus_i_ftp_control_encode_reply(
     globus_ftp_control_auth_info_t *          auth_info);
 
 globus_result_t
+globus_i_ftp_control_data_set_netlogger(
+    globus_ftp_control_handle_t *               handle,
+    globus_netlogger_handle_t *                 nl_handle);
+
+globus_result_t
+globus_i_ftp_control_client_set_netlogger(
+    globus_ftp_control_handle_t *               handle,
+    globus_netlogger_handle_t *                 nl_handle);
+
+globus_result_t
 globus_i_ftp_control_data_activate(void);
 
 globus_result_t

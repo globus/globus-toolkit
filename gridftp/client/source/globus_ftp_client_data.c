@@ -444,10 +444,12 @@ globus_ftp_client_register_write(
 
 	goto unlock_error;
     }
+
     if(i_handle->partial_offset != -1)
     {
 	offset -= i_handle->partial_offset;
     }
+
     data = globus_l_ftp_client_data_new(buffer,
 					buffer_length,
 					offset,

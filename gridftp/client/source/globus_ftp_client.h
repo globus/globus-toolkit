@@ -50,13 +50,6 @@
 #include "globus_ftp_control.h"
 #include "globus_priority_q.h"
 
-/*
- *  net logger stuff
- */
-#if defined(GLOBUS_BUILD_WITH_NETLOGGER)
-#include "logging.h"
-#endif
-
 #ifndef GLOBUS_INCLUDE_FTP_CLIENT_H
 #define GLOBUS_INCLUDE_FTP_CLIENT_H
 
@@ -406,6 +399,11 @@ globus_result_t
 globus_ftp_client_handleattr_get_cache_all(
     const globus_ftp_client_handleattr_t *	attr,
     globus_bool_t *				cache_all);
+
+globus_result_t
+globus_ftp_client_handleattr_set_netlogger(
+    globus_ftp_client_handleattr_t *		attr,
+    globus_netlogger_handle_t *	                nl_handle);
 
 globus_result_t
 globus_ftp_client_handleattr_remove_plugin(
@@ -766,16 +764,6 @@ globus_result_t
 globus_ftp_client_operationattr_copy(
     globus_ftp_client_operationattr_t *		dst,
     const globus_ftp_client_operationattr_t *	src);
-
-/* 
- *  net logger stuff
- */
-#if defined(GLOBUS_BUILD_WITH_NETLOGGER)
-globus_result_t
-globus_ftp_client_operationattr_set_netlogger(
-    const globus_ftp_client_operationattr_t *   attr,
-    NLhandle *                                  handle);
-#endif /* GLOBUS_BUILD_WITH_NETLOGGER */
 
 #endif
 
