@@ -1,6 +1,9 @@
 First, setup your GPT 1.0 environment.  You'll need to use a specific
 version of the GNU autotools.  See
 <http://www.ncsa.uiuc.edu/Divisions/NSM/GST/GPT/SettingUp_GPT.html>.
+Using GPT 1.0 to create packages ensures that the packages will be
+compatible with all later versions of GPT.  GPT 1.0 currently has
+problems with bundles created with GPT 2.1.1.
 
 Before anything else:
 $ ./bootstrap
