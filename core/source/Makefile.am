@@ -1,6 +1,7 @@
 scriptsysconfdir = $(GLOBUS_INSTALL_PATH)/etc
 scriptsysconf_SCRIPTS = \
 	globus-build-env-$(GLOBUS_FLAVOR_NAME).sh
+	globus-sh-tools.sh
 
 bin_SCRIPTS = \
 	libtool-$(GLOBUS_FLAVOR_NAME)

@@ -58,5 +58,6 @@ exec_prefix='$(GLOBUS_INSTALL_PATH)'
 
 
 AC_OUTPUT(Makefile
-          globus-build-env-${globus_cv_flavor}.sh:globus-build-env.sh.in
+       	globus-build-env-${globus_cv_flavor}.sh:globus-build-env.sh.in
+	globus-sh-tools.sh
 	aclocal/Makefile)

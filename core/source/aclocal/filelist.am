@@ -1,6 +1,12 @@
+all-local: $(GLOBUS_FLAVOR_NAME).filelist
+
+$(GLOBUS_FLAVOR_NAME).filelist: filelist
+
+.PHONY: $(GLOBUS_FLAVOR_NAME).filelist
+
 filelist_file:
 	mydir=`pwd`; \
-	if test "$$mydir/$(GLOBUS_FLAVOR_NAME).filelist" =  "$(FILELIST_FILE)"; then \
+	if test "$$mydir/$(GLOBUS_FLAVOR_NAME).filelist" =  "$(FILELIST_FILE)" -a -f "$$mydir/$(GLOBUS_FLAVOR_NAME).filelist"; then \
 		rm $(FILELIST_FILE); \
 	fi
 
