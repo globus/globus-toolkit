@@ -16,7 +16,7 @@
 <IncludedPackages >
 <Package PackageFlavor="ANY" PackageName="globus_user_env" PackageType="src" PackageVersion="2.2" />
 <Package PackageFlavor="ANY" PackageName="globus_proxy_utils" PackageType="src" PackageVersion="0.6" />
-<Package PackageFlavor="ANY" PackageName="gsi_openssh" PackageType="src" PackageVersion="2.1" />
+<Package PackageFlavor="ANY" PackageName="gsi_openssh" PackageType="src" PackageVersion="2.2" />
 </IncludedPackages>
 <ExcludedPackages >
 </ExcludedPackages>
