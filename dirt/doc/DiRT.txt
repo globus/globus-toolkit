@@ -1,21 +1,23 @@
------------------------------------
+-------------------------------------
 DiRT:  Distribution Revision Tracking
------------------------------------
+-------------------------------------
 
 DiRT is a method of allowing Globus Toolkit(tm) components to include information that allows the identification of the exact revisions of all source files that make up a package, module, or program.  It is tightly coupled with CVS.
 
-DiRT currently provides a timestamp and an cvs branch id that, together, can be used with cvs to checkout the code as it was at that timestamp, on that branch.  This information is maintained in a file (we'll call it the 'version' file) that will appear in every checkout of a package making use of DiRT.  This information can be integrated into Globus' packages in many ways.  The case which prompted the need for DiRT is the potential support problem caused by users mixing and matching different revisions of packages in a Globus installation.
+DiRT currently provides a timestamp and an cvs branch id that, together, can be used with cvs to checkout the code as it was at that timestamp, on that branch.  This information is maintained in a file (we'll call it the 'version' file) that will appear in every checkout of a package making use of DiRT.  This information can be integrated into Globus' packages in many ways.  
+
+The need for DiRT was prompted by the potential support problem caused by users mixing and matching different revisions of packages in a Globus installation.  We simply cannot depend on being able to identify what code a user is having a problem with by the package version alone (accessible with gpt_verify).
 
 In summary, DiRT updates a 'version' file associated with every 'enabled' package every time a 'cvs commit' is done within that package.  Details follow.
 
--------------------------
+--------------------------
 What is DiRT comprised of?
--------------------------
+--------------------------
 
 DiRT is comprised of 2 configuration files, some perl scripts, and any number of template files.  The active versions of these files are located in $CVSROOT/dirt_active (where CVSROOT is  /home/globdev/CVS/globus-packages). They can also be checked out and modified via 'cvs checkout dirt' with the same CVSROOT.  (Note:  When changes are committed to dirt, the dirt_active dir is automatically updated)  A detailed description of these files follows:
 
 dirt/package.def
----------------
+----------------
 This file is used to specify which packages should be enabled for DiRT processing and which template file should be used.  It contains lines of the form:
 
 <package name>  <package dir>  <template file>
@@ -56,24 +58,24 @@ window                              4
 my_branch                           5
 
 dirt/scripts/dirt-update.pl
------------------------------
+---------------------------
 This is the workhorse script.  It is intended to be run by cvs from its loginfo file.  It is invoked at commit time with the modified repository as an argument.  CVS provides the list of modified files via stdin.  This script determines when it is necessary to update the 'version' file and does so.  For details on its operation, see 'How exactly does DiRT work?'
 
 dirt/scripts/dirt-get-branch-name.pl
-----------------------------------
+------------------------------------
 This is a utility script for users.  It simply reads the branch.def file to map a branch id argument to a branch name.
 
 dirt/scripts/dirt-convert-time.pl
--------------------------------
+---------------------------------
 This is a utility script for users.  It converts the unix timestamp that DiRT stores in 'version' files to a form that can be passed to cvs.  (ex: 'cvs checkout -r `dirt-get-branch-name.pl 3` -D"`dirt-convert-time.pl 1013535996`" <module>')
 
 dirt/templates/<template file>
------------------------------
+------------------------------
 This is one of the template files named in package.def.  It can contain anything.  The only things of concern to DiRT are the two strings @DIRT_TIMESTAMP@ and @DIRT_BRANCH_ID@.  Every time a package is modified, the template will be re parsed, replacing @DIRT_TIMESTAMP@ and @DIRT_BRANCH_ID@ with the correct values and storing this parsed file with the package.
 
---------------------------------
+---------------------------------
 What do I have to do to use DiRT?
---------------------------------
+---------------------------------
 Well, first... anytime there is a branch, it should be entered into the branch.def file with a unique id.
 
 Then, you need to create a template file and add it to dirt's template dir (or use an existing one).  As an example, we'll create a simple one:
@@ -127,9 +129,30 @@ This process has to be repeated for every branch and package that wants the vers
 
 If you remove version.sh later (ie, you do a cvs remove on it), DiRT will not put it back unless it is 'requested' again later.  Also, simply removing the package entry in package.def will not cause all of the 'version' files to be removed.  It will only prevent them from being updated any further.  This should ONLY be done when there are no longer any active branches making use of the 'version' file.
 
-------------------------------------------------------
+-------------------------------------------------
+What is an example use of the what DiRT provides?
+-------------------------------------------------
+To continue from the example above, lets make use of the version.sh file.  Let's say we have a script that gets installed with a particular package.  Currently, there is no way to identify the exact revision of this script.
+
+Let's assume that this script is already processed by the configure script (ie, it was named 'script.in', after configure we have 'script').  Within this script we can now add a '--version' flag that will be able to not only print out the package revision, but also the timestamp and branch-id.
+
+A line like the following would exist in script.in:
+
+VERSION_STRING="@VERSION@.@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@"
+
+The configure script would source the contents of version.sh and use those values to process script.in (assume VERSION is the package version and already known to the configure process).  If we use the example version.sh file above, we might have a line like the following:
+
+VERSION_STRING="2.1.1013552864-5"
+
+(If this would be confusing to users, we could have a version flag and a verbose version flag.  The first would show only '2.1', while the other would show '2.1.1013552864-5')
+
+Now, if a user has a problem with this script, we can request the version string from them and either use it to identify whether the problem has already been fixed since (by using cvs log) or we can check out the exact version of the script they have with:
+
+cvs checkout -r `dirt-get-branch-name.pl 5` -D"`dirt-convert-time.pl 1013552864`" <module containing 'script'>
+
+--------------------------------
 What do I need to be careful of?
-------------------------------------------------------
+--------------------------------
 
 For DiRT to be useful, it is important that a branch id always map to one and only one branch tag.  This also implies that the mapping should never change.  This branch id to branch name mapping is the only way of retrieving an image of the source depicted by the timestamp and branch id.
 
@@ -137,9 +160,9 @@ Template files should never change once in use.  Unless this change is purely ae
 
 If, for some reason, you check out a file in a package using DiRT by using a **numeric** branch id (because, you're nuts?) instead of the symbolic tag name, DiRT will not be able to reflect that modification back to the version file.
 
---------------------------
+---------------------------
 How exactly does DiRT work?
---------------------------
+---------------------------
 
 This will be the common case explanation using the psuedo code for update_version.pl.  However, the update_version.pl script was written to handle some insane special cases which might occur if someone thought they were a CVS guru.
 
@@ -174,9 +197,9 @@ unlock package's root dir (if cvs didnt do it for us)
 
     
 
-----------------------------------------------
+-----------------------------------------------
 What are the limitations/know issues with DiRT?
-----------------------------------------------
+-----------------------------------------------
 
 - ignores updates to files checked out with numeric branches
 - no template revision tracking
