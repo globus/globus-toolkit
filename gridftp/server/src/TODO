@@ -7,7 +7,6 @@ protocol:
 -- reply codes - verify.
 -- verify that dsi api is correct wrt to errors
 -- error out usefully to server and client when cred problem in gssapi driver
-** add stripe options via opts retr (disableable?)
 
 signal handling:
 -- SIGINT needs to handle data-node shutdown
@@ -46,15 +45,11 @@ change option names to better group together common options
 syslog module
 ipc security options - doc well, make sure it works the way we expect
     access lists for front/backend connections? 
-network write blocksize
 need some spec compliant support for partitioned layout
     current stripeblocksize impl is basically spec compliant RR
 
 -----------------------------------------------------------------------
 known bugs:
--- we don't chdir to the users home directory on successful auth, which 
-    should at least be an option.  There is no way to set a cwd in the 
-    server-lib though?
 -- ipc local mode doesn't work (besides no way to initiate it)
 -- not calling _finish() in data.c for some request funcs that fail before
     the dsi call. 

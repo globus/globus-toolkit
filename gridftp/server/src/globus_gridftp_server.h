@@ -100,7 +100,7 @@ typedef enum globus_gfs_event_type_e
 } globus_gfs_event_type_t;
 
 /*
- *  globus_gfs_error_type_t
+ *  globus_gfs_buffer_type_t
  *
  */
 typedef enum globus_gfs_buffer_type_e
@@ -109,6 +109,17 @@ typedef enum globus_gfs_buffer_type_e
     GLOBUS_GFS_BUFFER_SERVER_DEFINED = 0xFFFF
     /* user defined types will start at 0x00010000 */
 } globus_gfs_buffer_type_t;
+
+/*
+ *  globus_gfs_layout_type_t
+ * 
+ * Striped layout types.
+ */
+typedef enum globus_gfs_layout_type_e
+{
+    GLOBUS_GFS_LAYOUT_PARTITIONED = 1,
+    GLOBUS_GFS_LAYOUT_BLOCKED
+} globus_gfs_layout_type_t;
 
 /*
  *  globus_gfs_stat_t
@@ -187,6 +198,21 @@ typedef struct globus_gfs_stat_finished_info_s
 } globus_gfs_stat_finished_info_t;
 
 /*
+ *  globus_gfs_session_finished_info_t
+ * 
+ * Contains specific result info for a stat.
+ */
+typedef struct globus_gfs_session_finished_info_s
+{
+    /** arg to pass back with each request */
+    void *                              session_arg;
+    /** local username that was authenticated */
+    char *                              username;
+    /** home directory of authenticated user */
+    char *                              home_dir;
+} globus_gfs_session_finished_info_t;
+
+/*
  *  globus_gfs_finished_info_t
  * 
  * Final result info for an operation.
@@ -201,13 +227,12 @@ typedef struct globus_gfs_finished_info_s
     int                                 code;
     /** additional message, usually for failure */
     char *                              msg;
-    /** result_t (will go away, use above two) */
+    /** result_t */
     globus_result_t                     result;
-
-    void *                              session_arg;
 
     union
     {
+        globus_gfs_session_finished_info_t session;
         globus_gfs_data_finished_info_t data;
         globus_gfs_cmd_finshed_info_t   command;
         globus_gfs_stat_finished_info_t stat;
@@ -334,6 +359,8 @@ typedef struct globus_gfs_data_info_s
     int                                 blocksize;
     /** blocksize to use for stripe layout */
     int                                 stripe_blocksize;
+    /** stripe layout to use */
+    int                                 stripe_layout;
 
     /** protection mode */
     char                                prot;
@@ -380,6 +407,7 @@ typedef struct globus_gfs_session_info_s
     globus_bool_t                       map_user;
     char *                              username;
     char *                              password;
+    char *                              home_dir;
     char *                              subject;
     char *                              cookie;
     char *                              host_id;

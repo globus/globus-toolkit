@@ -46,6 +46,8 @@ typedef struct globus_l_gfs_remote_node_info_s
     int                                 event_mask;
     int                                 node_ndx;
     int                                 stripe_count;
+    char *                              username;
+    char *                              home_dir;
     int                                 info_needs_free;
     void *                              info;
 } globus_l_gfs_remote_node_info_t;
@@ -149,6 +151,7 @@ void
 globus_l_gfs_remote_node_request_kickout(
     globus_gfs_ipc_handle_t             ipc_handle,
     globus_result_t                     result,
+    globus_gfs_ipc_reply_t *            reply,
     void *                              user_arg)
 {
     globus_l_gfs_remote_request_t *     bounce_info;
@@ -160,7 +163,14 @@ globus_l_gfs_remote_node_request_kickout(
     node_info = (globus_l_gfs_remote_node_info_t *)
         globus_calloc(1, sizeof(globus_l_gfs_remote_node_info_t));
     node_info->ipc_handle = ipc_handle;
-
+    if(reply->info.session.username)
+    {
+        node_info->username = strdup(reply->info.session.username);
+    }
+    if(reply->info.session.home_dir)
+    {
+        node_info->home_dir = strdup(reply->info.session.home_dir);
+    }
     bounce_info->callback(
         node_info,
         result,
@@ -1322,7 +1332,9 @@ globus_l_gfs_remote_session_start_kickout(
     memset(&finished_info, '\0', sizeof(globus_gfs_finished_info_t));
     finished_info.type = GLOBUS_GFS_OP_SESSION_START;          
     finished_info.result = result;          
-    finished_info.session_arg = bounce_info->my_handle;                          
+    finished_info.info.session.session_arg = bounce_info->my_handle;                          
+    finished_info.info.session.username = node_info->username;                          
+    finished_info.info.session.home_dir = node_info->home_dir;                          
                                                               
     globus_gridftp_server_operation_finished(                 
         bounce_info->op,                                                   
@@ -1364,6 +1376,11 @@ globus_l_gfs_remote_session_start(
     {
         my_handle->session_info.subject = strdup(session_info->subject);
     }
+    if(session_info->home_dir != NULL)
+    {
+        my_handle->session_info.home_dir = strdup(session_info->home_dir);
+    }
+    my_handle->session_info.map_user = session_info->map_user;
     my_handle->session_info.del_cred = session_info->del_cred;
     my_handle->striped_mode = globus_i_gfs_config_int("striped_mode");
     
@@ -1419,6 +1436,14 @@ globus_l_gfs_remote_session_end(
         {
             globus_free(node_info->info);
         }
+        if(node_info->username)
+        {
+            globus_free(node_info->username);
+        }
+        if(node_info->home_dir)
+        {
+            globus_free(node_info->home_dir);
+        }
         globus_free(node_info);
     }                              
     
@@ -1433,6 +1458,10 @@ globus_l_gfs_remote_session_end(
     if(my_handle->session_info.subject != NULL)
     {
         globus_free(my_handle->session_info.subject);
+    }
+    if(my_handle->session_info.home_dir != NULL)
+    {
+        globus_free(my_handle->session_info.home_dir);
     }
     globus_free(my_handle);
     

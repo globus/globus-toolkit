@@ -30,9 +30,9 @@ globus_gfs_acl_test_init(
     char *                              fail_str;
     GlobusGFSName(globus_gfs_acl_test_init);
 
-    fail_str = globus_libc_getenv("GLOBUS_GFS_ACL_TEST_FAIL");
-    if(fail_str != NULL && (strcmp(fail_str, "ALL") == 0 || 
-        strcmp(fail_str, "init") == 0))
+    fail_str = globus_i_gfs_config_string("test_acl");
+    if(fail_str != NULL && (strstr(fail_str, "ALL") || 
+        strstr(fail_str, "init")))
     {
         *out_res = GlobusACLTestFailure();
     }
@@ -40,7 +40,7 @@ globus_gfs_acl_test_init(
     {
         *out_res = GLOBUS_SUCCESS;
     }
-    if(globus_libc_getenv("GLOBUS_GFS_ACL_TEST_BLOCK"))
+    if(strstr(fail_str, "BLOCK"))
     {
         globus_gfs_acl_authorized_finished(acl_handle, *out_res);
         return GLOBUS_GFS_ACL_WOULD_BLOCK;
@@ -63,9 +63,9 @@ globus_gfs_acl_test_authorize(
     char *                              fail_str;
     GlobusGFSName(globus_gfs_acl_test_authorize);
 
-    fail_str = globus_libc_getenv("GLOBUS_GFS_ACL_TEST_FAIL");
-    if(fail_str != NULL && (strcmp(fail_str, "ALL") == 0 || 
-        strcmp(fail_str, action) == 0))
+    fail_str = globus_i_gfs_config_string("test_acl");
+    if(fail_str != NULL && (strstr(fail_str, "ALL") || 
+        strstr(fail_str, action)))
     {
         *out_res = GlobusACLTestFailure();
     }
@@ -74,7 +74,7 @@ globus_gfs_acl_test_authorize(
         *out_res = GLOBUS_SUCCESS;
     }
 
-    if(globus_libc_getenv("GLOBUS_GFS_ACL_TEST_BLOCK"))
+    if(strstr(fail_str, "BLOCK"))
     {
         globus_gfs_acl_authorized_finished(acl_handle, *out_res);
         return GLOBUS_GFS_ACL_WOULD_BLOCK;

@@ -267,9 +267,16 @@ typedef void
     void *                              user_arg);
 
 typedef void
-(*globus_gfs_ipc_open_close_callback_t)(
+(*globus_gfs_ipc_close_callback_t)(
     globus_gfs_ipc_handle_t             ipc_handle,
     globus_result_t                     result,
+    void *                              user_arg);
+
+typedef void
+(*globus_gfs_ipc_open_callback_t)(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    globus_result_t                     result,
+    globus_gfs_ipc_reply_t *            reply,
     void *                              user_arg);
 
 typedef void
@@ -577,7 +584,7 @@ globus_result_t
 globus_gfs_ipc_handle_create(
     globus_gfs_ipc_iface_t *            iface,
     globus_xio_system_handle_t          system_handle,
-    globus_gfs_ipc_open_close_callback_t cb,
+    globus_gfs_ipc_open_callback_t      cb,
     void *                              user_arg,
     globus_gfs_ipc_error_callback_t     error_cb,
     void *                              error_arg);
@@ -588,7 +595,7 @@ globus_gfs_ipc_handle_create(
 globus_result_t
 globus_gfs_ipc_close(
     globus_gfs_ipc_handle_t             ipc_handle,
-    globus_gfs_ipc_open_close_callback_t cb,
+    globus_gfs_ipc_close_callback_t     cb,
     void *                              user_arg);
 
 globus_result_t
@@ -611,7 +618,7 @@ globus_gfs_ipc_handle_obtain_by_path(
     const char *                        pathname,
     globus_gfs_session_info_t *         session_info,
     globus_gfs_ipc_iface_t *            iface,
-    globus_gfs_ipc_open_close_callback_t cb,
+    globus_gfs_ipc_open_callback_t      cb,
     void *                              user_arg,
     globus_gfs_ipc_error_callback_t     error_cb,
     void *                              error_user_arg);
@@ -633,24 +640,11 @@ globus_gfs_ipc_handle_obtain(
     int *                               handle_count,
     globus_gfs_session_info_t *         session_info,
     globus_gfs_ipc_iface_t *            iface,
-    globus_gfs_ipc_open_close_callback_t cb,
+    globus_gfs_ipc_open_callback_t      cb,
     void *                              user_arg,
     globus_gfs_ipc_error_callback_t     error_cb,
     void *                              error_user_arg);
 
-globus_result_t
-globus_gfs_ipc_close(
-    globus_gfs_ipc_handle_t             ipc_handle,
-    globus_gfs_ipc_open_close_callback_t cb,
-    void *                              user_arg);
-
-globus_result_t
-globus_gfs_ipc_handle_release(
-    globus_gfs_ipc_handle_t             ipc_handle);
-
-/* 
- *
- */
 
 /* 
  *   community functions

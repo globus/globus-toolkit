@@ -115,7 +115,7 @@ typedef struct globus_gfs_ipc_request_s
     globus_gfs_ipc_request_type_t       type;
     int                                 id;
     globus_gfs_ipc_callback_t           cb;
-    globus_gfs_ipc_open_close_callback_t open_cb;
+    globus_gfs_ipc_open_callback_t      open_cb;
     globus_gfs_ipc_event_callback_t     event_cb;
     void *                              user_arg;
     globus_gfs_ipc_reply_t *            reply;
@@ -129,6 +129,7 @@ typedef struct globus_l_gfs_ipc_connection_s
     char *                              community;
     char *                              cookie;
     char *                              username;
+    char *                              home_dir;
     char *                              subject;
     char *                              host_id;
     globus_bool_t                       map_user;
@@ -150,8 +151,8 @@ typedef struct globus_i_gfs_ipc_handle_s
     globus_mutex_t                      mutex;
     globus_l_gfs_ipc_state_t            state;
 
-    globus_gfs_ipc_open_close_callback_t open_cb;
-    globus_gfs_ipc_open_close_callback_t close_cb;
+    globus_gfs_ipc_open_callback_t      open_cb;
+    globus_gfs_ipc_close_callback_t     close_cb;
     void *                              user_arg;
     globus_result_t                     cached_res;
     globus_gfs_ipc_error_callback_t     error_cb;
@@ -365,6 +366,10 @@ globus_l_gfs_ipc_handle_destroy(
     if(ipc->connection_info.subject)
     {
         globus_free(ipc->connection_info.subject);
+    }
+    if(ipc->connection_info.home_dir)
+    {
+        globus_free(ipc->connection_info.home_dir);
     }
     if(ipc->connection_info.host_id)
     {
@@ -588,6 +593,14 @@ globus_l_gfs_ipc_session_info_copy(
             goto subject_error;
         }
     }
+    if(session_info->home_dir)
+    {
+        cp->home_dir = strdup(session_info->home_dir);
+        if(cp->home_dir == NULL)
+        {
+            goto home_dir_error;
+        }
+    }
     if(session_info->cookie)
     {
         cp->cookie = strdup(session_info->cookie);
@@ -610,6 +623,8 @@ globus_l_gfs_ipc_session_info_copy(
 host_id_error:
     globus_free(cp->host_id);
 cookie_error:
+    globus_free(cp->home_dir);
+home_dir_error:
     globus_free(cp->subject);
 subject_error:
     globus_free(cp->password);
@@ -641,6 +656,10 @@ globus_l_gfs_session_info_free(
         if(session_info->subject)
         {
             globus_free(session_info->subject);
+        }
+        if(session_info->home_dir)
+        {
+            globus_free(session_info->home_dir);
         }
         if(session_info->cookie)
         {
@@ -896,12 +915,13 @@ globus_l_gfs_ipc_request_ss_body_cb(
     globus_byte_t *                     start_buf;
     globus_list_t *                     list;
     globus_i_gfs_ipc_handle_t *         ipc;
-    char *                              msg;
-    int                                 code;
+    globus_gfs_ipc_reply_t              reply;
     GlobusGFSName(globus_l_gfs_ipc_requestor_ss_body_cb);
 
     start_buf = buffer;
     ipc = (globus_i_gfs_ipc_handle_t *) user_arg;
+
+    memset(&reply, '\0', sizeof(globus_gfs_ipc_reply_t));
 
     globus_assert(globus_l_gfs_ipc_requester);
 
@@ -913,21 +933,23 @@ globus_l_gfs_ipc_request_ss_body_cb(
 
     /* safe because no one else has this yet */
     ipc->state = GLOBUS_GFS_IPC_STATE_IN_CB;
-    GFSDecodeUInt32(buffer, len, code);
-    GFSDecodeUInt32(buffer, len, result);
-    GFSDecodeString(buffer, len, msg);
-    if(result != GLOBUS_SUCCESS && msg != NULL)
+    GFSDecodeUInt32(buffer, len, reply.code);
+    GFSDecodeUInt32(buffer, len, reply.result);
+    GFSDecodeString(buffer, len, reply.msg);
+    if(reply.result != GLOBUS_SUCCESS && reply.msg != NULL)
     {
-        result = GlobusGFSErrorGeneric(msg);
-        globus_free(msg);
-        msg = NULL;
+        result = GlobusGFSErrorGeneric(reply.msg);
+        globus_free(reply.msg);
+        reply.msg = NULL;
     }
+    GFSDecodeString(buffer, len, reply.info.session.username);
+    GFSDecodeString(buffer, len, reply.info.session.home_dir);
 
     if(ipc->open_cb)
     {
-        ipc->open_cb(ipc, result, ipc->user_arg);
+        ipc->open_cb(ipc, result, &reply, ipc->user_arg);
     }
-
+        
     globus_mutex_lock(&ipc->mutex);
     {
         switch(ipc->state)
@@ -965,15 +987,31 @@ globus_l_gfs_ipc_request_ss_body_cb(
     globus_mutex_unlock(&ipc->mutex);
 
     globus_free(start_buf);
-
+    if(reply.info.session.home_dir)
+    {
+        globus_free(reply.info.session.home_dir);
+    }
+    if(reply.info.session.username)
+    {
+        globus_free(reply.info.session.username);
+    }
     return;
 
 error:
 decode_err:
     globus_free(start_buf);
+    if(reply.info.session.home_dir)
+    {
+        globus_free(reply.info.session.home_dir);
+    }
+    if(reply.info.session.username)
+    {
+        globus_free(reply.info.session.username);
+    }
+    reply.result = result;
     if(ipc->open_cb)
     {
-        ipc->open_cb(ipc, result, ipc->user_arg);
+        ipc->open_cb(ipc, result, &reply, ipc->user_arg);
     }
     /* ok to call this unlocked.  since we errored no one should touch ipc */
     globus_l_gfs_ipc_error_close(ipc);
@@ -1017,6 +1055,8 @@ globus_l_gfs_ipc_reply_ss_body_cb(
         globus_libc_strdup(ipc->connection_info.cookie);
     ipc->session_info->host_id = 
         globus_libc_strdup(ipc->connection_info.host_id);
+    ipc->session_info->home_dir = 
+        globus_libc_strdup(ipc->connection_info.home_dir);
     ipc->session_info->map_user = ipc->connection_info.map_user;
     GFSDecodeString(buffer, len, ipc->session_info->password);
     
@@ -1321,6 +1361,7 @@ globus_l_gfs_ipc_read_new_body_cb(
     GFSDecodeString(ptr, size, ipc->connection_info.subject);
     GFSDecodeString(ptr, size, ipc->connection_info.username);
     GFSDecodeString(ptr, size, ipc->connection_info.host_id);
+    GFSDecodeString(ptr, size, ipc->connection_info.home_dir);
     GFSDecodeUInt32(ptr, size, ipc->connection_info.map_user);
 
     if(strcmp(ipc->connection_info.version, globus_l_gfs_local_version) != 0)
@@ -1453,6 +1494,12 @@ globus_gfs_ipc_reply_session(
                     GFSEncodeString(
                         buffer, ipc->buffer_size, ptr, reply->msg);
                 }
+                GFSEncodeString(
+                    buffer, ipc->buffer_size, 
+                    ptr, reply->info.session.username);
+                GFSEncodeString(
+                    buffer, ipc->buffer_size, 
+                    ptr, reply->info.session.home_dir);
     
                 msg_size = ptr - buffer;
                 ptr = buffer + GFS_IPC_HEADER_SIZE_OFFSET;
@@ -1489,7 +1536,7 @@ globus_gfs_ipc_reply_session(
                     goto mem_error;
                 }
 
-                ipc->user_arg = reply->session_arg;
+                ipc->user_arg = reply->info.session.session_arg;
                 ipc->state = GLOBUS_GFS_IPC_STATE_IN_USE;
                 break;
 
@@ -1702,7 +1749,7 @@ globus_result_t
 globus_gfs_ipc_handle_create(
     globus_gfs_ipc_iface_t *            iface,
     globus_xio_system_handle_t          system_handle,
-    globus_gfs_ipc_open_close_callback_t cb,
+    globus_gfs_ipc_open_callback_t      cb,
     void *                              user_arg,
     globus_gfs_ipc_error_callback_t     error_cb,
     void *                              error_arg)
@@ -1885,6 +1932,8 @@ globus_l_gfs_ipc_client_open_cb(
             buffer, ipc->buffer_size, ptr, ipc->connection_info.username);
         GFSEncodeString(
             buffer, ipc->buffer_size, ptr, ipc->connection_info.host_id);
+        GFSEncodeString(
+            buffer, ipc->buffer_size, ptr, ipc->connection_info.home_dir);
         GFSEncodeUInt32(
             buffer, ipc->buffer_size, ptr, ipc->connection_info.map_user);
         msg_size = ptr - buffer;
@@ -1968,7 +2017,7 @@ globus_l_gfs_ipc_handle_connect(
     globus_gfs_session_info_t *         session_info,
     globus_gfs_ipc_iface_t *            iface,
     globus_i_gfs_community_t *          community,
-    globus_gfs_ipc_open_close_callback_t cb,
+    globus_gfs_ipc_open_callback_t      cb,
     void *                              user_arg,
     globus_gfs_ipc_error_callback_t     error_cb,
     void *                              error_user_arg)
@@ -2014,6 +2063,8 @@ globus_l_gfs_ipc_handle_connect(
         session_info->subject ? strdup(session_info->subject) : NULL;
     ipc->connection_info.username = 
         session_info->username ? strdup(session_info->username) : NULL;
+    ipc->connection_info.home_dir = 
+        session_info->home_dir ? strdup(session_info->home_dir) : NULL;
     ipc->connection_info.host_id = strdup(session_info->host_id);
     ipc->connection_info.map_user = session_info->map_user;
 
@@ -2131,7 +2182,7 @@ globus_gfs_ipc_handle_obtain_by_path(
     const char *                        pathname,
     globus_gfs_session_info_t *         session_info,
     globus_gfs_ipc_iface_t *            iface,
-    globus_gfs_ipc_open_close_callback_t cb,
+    globus_gfs_ipc_open_callback_t      cb,
     void *                              user_arg,
     globus_gfs_ipc_error_callback_t     error_cb,
     void *                              error_user_arg)
@@ -2162,6 +2213,7 @@ globus_gfs_ipc_handle_obtain_by_path(
         tmp_ci.community = community->name;
         tmp_ci.cookie = session_info->cookie;
         tmp_ci.username = session_info->username;
+        tmp_ci.home_dir = session_info->home_dir;
         tmp_ci.subject = session_info->subject;
         tmp_ci.map_user = session_info->map_user;
 
@@ -2376,7 +2428,7 @@ globus_l_gfs_ipc_close_cb(
 globus_result_t
 globus_gfs_ipc_close(
     globus_gfs_ipc_handle_t             ipc_handle,
-    globus_gfs_ipc_open_close_callback_t cb,
+    globus_gfs_ipc_close_callback_t     cb,
     void *                              user_arg)
 {
     globus_result_t                     res;
@@ -2795,6 +2847,7 @@ globus_l_gfs_ipc_unpack_data(
     GFSDecodeUInt32(buffer, len, data_info->tcp_bufsize);
     GFSDecodeUInt32(buffer, len, data_info->blocksize);
     GFSDecodeUInt32(buffer, len, data_info->stripe_blocksize);
+    GFSDecodeUInt32(buffer, len, data_info->stripe_layout);
     GFSDecodeChar(buffer, len, data_info->prot);
     GFSDecodeChar(buffer, len, data_info->dcau);
     GFSDecodeString(buffer, len, data_info->subject);
@@ -5049,6 +5102,7 @@ globus_l_gfs_ipc_pack_data(
     GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, data_info->tcp_bufsize);
     GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, data_info->blocksize);
     GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, data_info->stripe_blocksize);
+    GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, data_info->stripe_layout);
 
     GFSEncodeChar(buffer, ipc->buffer_size, ptr, data_info->prot);
     GFSEncodeChar(buffer, ipc->buffer_size, ptr, data_info->dcau);

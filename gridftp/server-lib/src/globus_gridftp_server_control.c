@@ -2278,6 +2278,7 @@ globus_gridftp_server_control_start(
     server_handle->opts.delayed_passive = GLOBUS_FALSE;
     server_handle->opts.passive_only = GLOBUS_FALSE;
     server_handle->opts.layout = 0;
+    server_handle->opts.block_size = 0;
 
     /* default state */
     server_handle->modes = globus_libc_strdup(i_attr->modes);

@@ -11,6 +11,7 @@
 
 static globus_logging_handle_t          globus_l_gfs_log_handle = NULL;
 static FILE *                           globus_l_gfs_log_file = NULL;
+static FILE *                           globus_l_gfs_transfer_log_file = NULL;
 
 void
 globus_i_gfs_log_open(void)
@@ -18,6 +19,9 @@ globus_i_gfs_log_open(void)
     char *                              module;
     globus_logging_module_t *           log_mod;
     void *                              log_arg;
+    char *                              logfilename;
+    int                                 log_filemode;
+    char *                              logunique;
         
     /* XXX should use the globus_extension stuff here */
     module = globus_i_gfs_config_string("log_module");
@@ -39,10 +43,6 @@ globus_i_gfs_log_open(void)
 
     if(log_mod == &globus_logging_stdio_module)
     {          
-        char *                          logfilename;
-        char *                          logunique;
-        int                             log_filemode;
-        
         logfilename = globus_i_gfs_config_string("log_single");
         if(logfilename == NULL)
         {
@@ -54,8 +54,7 @@ globus_i_gfs_log_open(void)
             }
         }
         if(logfilename != NULL)
-        {
-            
+        {            
             globus_l_gfs_log_file = fopen(logfilename, "a"); 
             if((log_filemode = globus_i_gfs_config_int("log_filemode")) != 0)
             {
@@ -78,6 +77,17 @@ globus_i_gfs_log_open(void)
         globus_i_gfs_config_int("debug_level"), 
         log_mod,
         log_arg);
+        
+    if((logfilename = globus_i_gfs_config_string("log_transfer")) != NULL)
+    {
+        globus_l_gfs_transfer_log_file = fopen(logfilename, "a"); 
+        if((log_filemode = globus_i_gfs_config_int("log_filemode")) != 0)
+        {
+            chmod(logfilename, log_filemode);
+        }
+        globus_free(logfilename);
+    }
+        
 }
 
 void
@@ -90,6 +100,11 @@ globus_i_gfs_log_close(void)
         fclose(globus_l_gfs_log_file);
         globus_l_gfs_log_file = NULL;
     }
+    if(globus_l_gfs_transfer_log_file != NULL)
+    {
+        fclose(globus_l_gfs_transfer_log_file);
+        globus_l_gfs_transfer_log_file = NULL;
+    }    
 }
 
 void
@@ -123,3 +138,134 @@ globus_i_gfs_log_result(
     globus_i_gfs_log_message(GLOBUS_I_GFS_LOG_ERR, "%s:\n%s\n", lead, message);
     globus_free(message);
 }
+
+#if 0
+void
+globus_i_gfs_log_transfer(
+    int                                 stripe_count,
+    int                                 stream_count, 
+    struct timeval *                    start_gtd_time,
+    struct timeval *                    end_gtd_time,
+    char *                              dest_ip,
+    globus_size_t                       blksize,
+    globus_size_t                       tcp_bs,
+    const char *                        fname,
+    globus_size_t                       nbytes,
+    int                                 code,
+    char *                              volume,
+    char *                              type,
+    char *                              username)
+{
+    time_t                                  start_time_time;
+    time_t                                  end_time_time;
+    struct tm *                             tmp_tm_time;
+    struct tm                               start_tm_time;
+    struct tm                               end_tm_time;
+    char                                    out_buf[4096];
+    globus_result_t                         res;
+    int                                     ctr;
+    unsigned int                            tmp_i;
+    long                                     win_size;
+    int                                     opt_dir;
+
+    if(globus_l_gfs_transfer_log_file == NULL)
+    {
+        return;
+    }
+
+    start_time_time = (time_t)start_gtd_time->tv_sec;
+    tmp_tm_time = gmtime(&start_time_time);
+    if(tmp_tm_time == NULL)
+    {
+        return;
+    }
+    start_tm_time = *tmp_tm_time;
+
+    end_time_time = (time_t)end_gtd_time->tv_sec;
+    tmp_tm_time = gmtime(&end_time_time);
+    if(tmp_tm_time == NULL)
+    {
+        return;
+    }
+    end_tm_time = *tmp_tm_time;
+
+    if(tcp_bs == 0)
+    {
+        int                            sock;
+        int                            opt_len;
+
+        if(strcmp(type, "RETR") == 0 || strcmp(type, "ERET") == 0)
+        {
+            opt_dir = SO_SNDBUF;
+            sock = STDOUT_FILENO;
+        }
+        else
+        {
+            opt_dir = SO_RCVBUF;
+            sock = STDIN_FILENO;
+        }
+        opt_len = sizeof(win_size);
+        getsockopt(sock, SOL_SOCKET, opt_dir, &win_size, &opt_len);
+    }
+    else
+    {
+        win_size = buffer_size;
+    }
+
+    sprintf(out_buf, 
+        "DATE=%04d%02d%02d%02d%02d%02d.%d "
+        "HOST=%s "
+        "PROG=%s "
+        "NL.EVNT=FTP_INFO "
+        "START=%04d%02d%02d%02d%02d%02d.%d "
+        "USER=%s "
+        "FILE=%s "
+        "BUFFER=%ld "
+        "BLOCK=%ld "
+        "NBYTES=%ld "
+        "VOLUME=%s "
+        "STREAMS=%d "
+        "STRIPES=%d "
+        "DEST=1[%s] " 
+        "TYPE=%s " 
+        "CODE=%d\n\0",
+        /* end time */
+        end_tm_time.tm_year,
+        end_tm_time.tm_mon,
+        end_tm_time.tm_mday,
+        end_tm_time.tm_hour,
+        end_tm_time.tm_min,
+        end_tm_time.tm_sec,
+        (int) end_gtd_time->tv_usec,
+        globus_i_gfs_config_string("fqdn"),
+        "globus-gridftp-server",
+        /* start time */
+        start_tm_time.tm_year,
+        start_tm_time.tm_mon,
+        start_tm_time.tm_mday,
+        start_tm_time.tm_hour,
+        start_tm_time.tm_min,
+        start_tm_time.tm_sec,
+        (int) start_gtd_time->tv_usec,
+        /* other args */
+        username,
+        fname,
+        win_size,
+        (long) blksize,
+        (long) nbytes,
+        volume,
+        stream_count, 
+        stripe_count,
+        dest_ip,
+        type, 
+        code);
+
+    /*
+     *  lock and write the string
+     */
+    globus_tmp_libc_flock(g_perf_log_file_fd);
+    write(g_perf_log_file_fd, out_buf, strlen(out_buf));
+    globus_tmp_libc_funlock(g_perf_log_file_fd);
+}
+
+#endif

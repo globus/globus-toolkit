@@ -1336,7 +1336,6 @@ globus_l_gsc_cmd_opts(
                 else if(strncmp(tmp_ptr, "Blocked;", sizeof("Blocked;")-1) == 0)
                 {
                     opts->layout = GLOBUS_GSC_LAYOUT_TYPE_BLOCKED;
-                    opts->block_size = tmp_i;
                 }
                 else
                 {

@@ -119,11 +119,6 @@ globus_l_gfs_sighup(
         "Done reloading config.\n");           
 }
 
-/* now have an open channel (when we get here, we hand off to the
- * control or data server code)
- * XXX all thats left for process management is to setuid iff this is an inetd
- * instance (or spawned from this daemon code)
- */
 static
 void 
 globus_l_gfs_sigchld(
@@ -318,7 +313,14 @@ globus_l_gfs_spawn_child(
             if(strcmp(prog_argv[i], "-S") != 0 &&
                 strcmp(prog_argv[i], "-s") != 0)
             {
-                new_argv[j++] = prog_argv[i];
+                if(strcmp(prog_argv[i], "-p") == 0)
+                {
+                    i++;
+                }
+                else
+                {   
+                    new_argv[j++] = prog_argv[i];
+                }
             }
         }
         new_argv[j++] = "-i";
@@ -482,7 +484,12 @@ globus_l_gfs_new_server_cb(
         if(globus_i_gfs_config_bool("data_node"))
         {
             result = globus_i_gfs_data_node_start(
-                handle, system_handle, remote_contact, local_contact);
+                handle, 
+                system_handle, 
+                remote_contact, 
+                local_contact, 
+                globus_l_gfs_server_closed, 
+                NULL);
         }
         else
         {        
@@ -949,7 +956,7 @@ main(
     {
         globus_gfs_acl_add_module(&globus_gfs_acl_cas_module);
     }
-    if(globus_libc_getenv("GLOBUS_GFS_ACL_TEST_FAIL"))
+    if(globus_i_gfs_config_string("test_acl"))
     {
         globus_gfs_acl_add_module(&globus_gfs_acl_test_module);
     }

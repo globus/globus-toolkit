@@ -546,7 +546,9 @@ globus_l_gfs_data_auth_init_cb(
     else
     {
         finished_info.result = GLOBUS_SUCCESS;
-        finished_info.session_arg = op->session_handle;
+        finished_info.info.session.session_arg = op->session_handle;
+        finished_info.info.session.username = session_info->username;
+        finished_info.info.session.home_dir = session_info->home_dir;
 
         if(op->callback == NULL)
         {
@@ -567,7 +569,7 @@ globus_l_gfs_data_auth_init_cb(
 
 error:
     finished_info.result = result;
-    finished_info.session_arg = NULL;
+    finished_info.info.session.session_arg = NULL;
         
     if(op->callback == NULL)
     {
@@ -798,6 +800,15 @@ globus_l_gfs_data_authorize(
         res = GlobusGFSErrorParameter("setuid");
         goto uid_error;
     }
+    if(pwent->pw_dir != NULL)
+    {
+        if(session_info->home_dir != NULL)
+        {
+            globus_free(session_info->home_dir);
+        }
+        session_info->home_dir = strdup(pwent->pw_dir);
+    }
+
     rc = globus_i_gfs_acl_init(
         &op->session_handle->acl_handle,
         context,
@@ -828,7 +839,7 @@ pwent_error:
         memset(&finished_info, '\0', sizeof(globus_gfs_finished_info_t));
     
         finished_info.result = res;
-        finished_info.session_arg = NULL;
+        finished_info.info.session.session_arg = NULL;
             
         if(op->callback == NULL)
         {
@@ -2803,6 +2814,56 @@ globus_l_gfs_data_end_transfer_kickout(
             &reply);
     }
 
+#if 0
+    /* log transfer */
+    if(op->node_ndx == 0)
+    {
+        char *                          type;
+        globus_gfs_transfer_info_t *    info;
+        
+        info = (globus_gfs_transfer_info_t *) op->info_struct;
+        
+        if(op->writing)
+        {
+            if(info->module_name || info->partial_offset != 0 || 
+                info->partial->length != -1)
+            {
+                type = "ERET";
+            }
+            else
+            {
+                type = "RETR";
+            }
+        }
+        else
+        {
+            if(info->module_name || info->partial_offset != 0 || !info->trunc)
+            {
+                type = "ESTO";
+            }
+            else
+            {
+                type = "STOR";
+            }
+        }
+            
+        globus_i_gfs_log_transfer(
+            op->num_stripes,
+            op->num_stripes * op->data_handle.info.num_streams,
+            op->start_time,
+            time(),
+            "destip",
+            op->data_handle.info.blocksize,
+            op->data_handle.info.tcp_bs,
+            info->pathname,
+            op->bytes_transferred,
+            "code",
+            "volume",
+            type,
+            op->session_handle->session_info->username);
+            
+    }
+#endif    
     /* remove the refrence for this callback.  It is posible the before
         aquireing this lock the completing state occured and we are
         ready to finish */
@@ -3622,6 +3683,7 @@ void
 globus_l_gfs_data_ipc_open_cb(
     globus_gfs_ipc_handle_t             ipc_handle,
     globus_result_t                     result,
+    globus_gfs_ipc_reply_t *            reply,
     void *                              user_arg)
 {
     globus_i_gfs_monitor_t *            monitor;
@@ -3637,7 +3699,9 @@ globus_i_gfs_data_node_start(
     globus_xio_handle_t                 handle,
     globus_xio_system_handle_t          system_handle,
     const char *                        remote_contact,
-    const char *                        local_contact)
+    const char *                        local_contact,
+    globus_i_gfs_server_close_cb_t      close_func,
+    void *                              close_arg)
 {
     globus_result_t                     res;
     globus_i_gfs_monitor_t              monitor;
@@ -3701,7 +3765,7 @@ globus_i_gfs_data_session_start(
     op->user_arg = user_arg;
     op->info_struct = session_info;
 
-    if(globus_i_gfs_config_bool("node_authorizes"))
+    if(globus_i_gfs_config_int("auth_level") > 0)
     {
         globus_l_gfs_data_authorize(op, context, session_info);
     }
@@ -4232,9 +4296,10 @@ globus_gridftp_server_operation_finished(
             if(op->session_handle)
             {
                 op->session_handle->session_arg = 
-                    (void *) finished_info->session_arg;
+                    (void *) finished_info->info.session.session_arg;
             }
-            finished_info->session_arg = op->session_handle;
+            finished_info->info.session.session_arg = op->session_handle;
+                
             break;
 
         case GLOBUS_GFS_OP_PASSIVE:

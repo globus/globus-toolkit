@@ -256,7 +256,7 @@ globus_l_gfs_auth_session_cb(
 
     auth_info = (globus_l_gfs_auth_info_t *) user_arg;
 
-    auth_info->instance->session_arg = reply->session_arg;
+    auth_info->instance->session_arg = reply->info.session.session_arg;
     if(reply->result != GLOBUS_SUCCESS)
     {
         tmp_str = globus_error_print_friendly(
@@ -270,9 +270,17 @@ globus_l_gfs_auth_session_cb(
     }
     else
     {
+        if(reply->info.session.home_dir != NULL && 
+            globus_i_gfs_config_bool("chdir_on_login"))
+        {
+            globus_gridftp_server_control_set_cwd(
+                auth_info->instance->server_handle,
+                reply->info.session.home_dir);
+        }
+        
         globus_gridftp_server_control_finished_auth(
             auth_info->control_op,
-            auth_info->session_info->username,
+            reply->info.session.username,
             GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS,
             NULL);
     }
@@ -284,6 +292,10 @@ globus_l_gfs_auth_session_cb(
     if(auth_info->session_info->subject != NULL)
     {
         globus_free(auth_info->session_info->subject);
+    }
+    if(auth_info->session_info->home_dir != NULL)
+    {
+        globus_free(auth_info->session_info->home_dir);
     }
     globus_free(auth_info->session_info);
     globus_free(auth_info);
@@ -1260,9 +1272,42 @@ globus_l_gfs_get_data_info(
         NULL);
     globus_assert(result == GLOBUS_SUCCESS);
 
+    result = globus_gridftp_server_control_get_layout(                                       
+        op,
+        (globus_gsc_layout_t *) &data_info->stripe_layout,
+        &data_info->stripe_blocksize);
+    globus_assert(result == GLOBUS_SUCCESS);
+    
+    if(data_info->stripe_blocksize == 0 || 
+        globus_i_gfs_config_bool("stripe_blocksize_locked"))
+    {
+        data_info->stripe_blocksize = 
+            globus_i_gfs_config_int("stripe_blocksize");
+    }
+    if(globus_i_gfs_config_int("stripe_layout_locked"))
+    {
+        data_info->stripe_layout = 
+            globus_i_gfs_config_int("stripe_layout");
+    }
+    else
+    {        
+        switch(data_info->stripe_layout)
+        {
+            case GLOBUS_GSC_LAYOUT_TYPE_PARTITIONED:
+                data_info->stripe_layout = GLOBUS_GFS_LAYOUT_PARTITIONED;
+                break;
+            case GLOBUS_GSC_LAYOUT_TYPE_BLOCKED:
+                data_info->stripe_layout = GLOBUS_GFS_LAYOUT_BLOCKED;
+                break;
+            case GLOBUS_GSC_LAYOUT_TYPE_NONE:
+            default:
+                data_info->stripe_layout = 
+                    globus_i_gfs_config_int("stripe_layout");
+                break;
+        }
+    }
+    
     data_info->blocksize = globus_i_gfs_config_int("blocksize");
-    data_info->stripe_blocksize =
-        globus_i_gfs_config_int("stripe_blocksize") * data_info->blocksize;
 
 }
 

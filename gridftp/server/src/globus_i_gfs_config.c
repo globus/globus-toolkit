@@ -52,8 +52,9 @@ static const globus_l_gfs_config_option_t option_list[] =
     "No security whatsoever. Don't use this."},
  {"cas", "cas", NULL, "-cas", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_TRUE, NULL,
     "Enable CAS authorization."},
- {"node_authorizes", NULL, NULL, "--node-authorizes", NULL, GLOBUS_L_GFS_CONFIG_INT, -1, NULL,
-    "This node will authenticate users. Default is yes for frontend only."},
+ {"auth_level", NULL, NULL, "--auth-level", NULL, GLOBUS_L_GFS_CONFIG_INT, -1, NULL,
+    "0 = No authentication or authorization. 1 = Authentication only. 2 = Authentication only."
+    "3 = Authentication and authorization. Default is 3 for frontends and 0 for backends"},
  {"ipc_gsi", "ipc_gsi", NULL, "-ipc-gsi", "-IG", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
     "Encrypt ipc channel."},
  {"max_connections", "max_connections", NULL, "-max-connections", "-mc", GLOBUS_L_GFS_CONFIG_INT, 0, NULL,
@@ -69,10 +70,12 @@ static const globus_l_gfs_config_option_t option_list[] =
     "Run as a background daemon detached from any controlling terminals."},
  {"inetd", "inetd", NULL, "-inetd", "-i", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
     "Run under an inetd service."},
- {"chdir_to", "chdir_to",NULL, "-chdir-to", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
+ {"chdir_to", "chdir_to", NULL, "-chdir-to", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "Directory to chdir to after starting.  Default is /."},
- {"no_chdir", "no_chdir",NULL, "-no-chdir", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
+ {"no_chdir", "no_chdir", NULL, "-no-chdir", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
     "Do not move out of the current directory.  This is default only for non-forked mode."},
+ {"chdir_on_login", "chdir_on_login", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_TRUE, NULL,
+    "Set the current directory to the authenticated users home dir."},
  {"exec", "exec", NULL, "-exec", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "For staticly compiled or non-GL standard binary locations, force the full path of server to exec when forking."},
 /* network/interface options */
@@ -118,11 +121,17 @@ static const globus_l_gfs_config_option_t option_list[] =
     "Comma seperated list of backend contact strings."},
  {"striped_mode", "striped_mode", NULL, "-striped-mode", NULL, GLOBUS_L_GFS_CONFIG_INT, 1, NULL,
     "Default is a 1-1 stripe configuration. Mode 2 would be ALL-ALL."},
- {"stripe_blocksize", "stripe_blocksize", NULL, "-stripe-blocksize", "-sbs", GLOBUS_L_GFS_CONFIG_INT, 10, NULL,
-    "Multiple of blocksize used to divide files over each stripe."},
+ {"stripe_blocksize", "stripe_blocksize", NULL, "-stripe-blocksize", "-sbs", GLOBUS_L_GFS_CONFIG_INT, (1024 * 1024), NULL,
+    "Blocksize used to divide files over each stripe. Default is 1MB"},
+ {"stripe_layout", "stripe_layout", NULL, "-stripe-layout", "-sl", GLOBUS_L_GFS_CONFIG_INT, GLOBUS_GFS_LAYOUT_BLOCKED, NULL,
+    "Stripe layout. 1 = Partitioned, 2 = Blocked."},
+ {"stripe_blocksize_locked", "stripe_blocksize_locked", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
+    "Do not allow client to override stripe blocksize with the OPTS RETR command"},
+ {"stripe_layout_locked", "stripe_layout_locked", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
+    "Do not allow client to override stripe layout with the OPTS RETR command"},
 /* disk options */
  {"blocksize", "blocksize", NULL, "-blocksize", "-bs", GLOBUS_L_GFS_CONFIG_INT, (256 * 1024), NULL,
-    "Size of data blocks to read from disk before posting to the network."},
+    "Size of data blocks to read from disk before posting to the network. Default is 256KB"},
  {"sync", "sync", NULL, "-sync", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
     "Flush disk writes before sending restart markers. May impact performance."},
 /* other */
@@ -133,6 +142,10 @@ static const globus_l_gfs_config_option_t option_list[] =
  {"versions", NULL, NULL, "-versions", "-V", GLOBUS_L_GFS_CONFIG_BOOL, 0, NULL,
     "Show version information for all loaded globus libraries."},
 /* internal use */
+ {"test_acl", NULL, NULL, NULL, "-testacl", GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
+    NULL /* load and pass arguments to the test acl module. the string
+        may include BLOCK, which will cause a failure in the callback,
+        and any or all of ALL, init, or read, write, etc action to fail on */},
  {"fqdn", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     NULL /* used to store list of known backends and associated info */},
  {"community", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_LIST, 0, NULL,
@@ -737,18 +750,17 @@ globus_l_gfs_config_misc()
     }
     
     /* if node_authorizes is -1 it means it has not yet been touched */
-    if(globus_i_gfs_config_int("node_authorizes") == -1)
+    if(globus_i_gfs_config_int("auth_level") == -1)
     {
         if(globus_i_gfs_config_bool("data_node"))
         {
-            globus_l_gfs_config_set("node_authorizes", 0, NULL);
+            globus_l_gfs_config_set("auth_level", 0, NULL);
         }
         else
         {
-            globus_l_gfs_config_set("node_authorizes", 1, NULL);
+            globus_l_gfs_config_set("auth_level", 3, NULL);
         }
     }
-
     
     return GLOBUS_SUCCESS;
 }
