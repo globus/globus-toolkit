@@ -40,15 +40,15 @@ static char usage[] = \
 "        myproxy-server [-h|-help] [-version]\n"\
 "\n"\
 "   Options\n"\
-"       -h | --help                	Displays usage\n"\
+"       -h | --help                     Displays usage\n"\
 "       -u | --usage                             \n"\
 "                                               \n"\
-"       -v | --verbose             Display debugging messages\n"\
-"       -V | --version             Displays version\n"\
-"       -d | --debug               Run in debug mode (don't fork)\n"\
-"       -c | --config              Specifies configuration file to use\n"\
-"       -p | --port <portnumber>   Specifies the port to run on\n"\
-"       -s | --storage <directory> Specifies the credential storage directory\n"\
+"       -v | --verbose              Display debugging messages\n"\
+"       -V | --version              Displays version\n"\
+"       -d | --debug                Run in debug mode (don't fork)\n"\
+"       -c | --config               Specifies configuration file to use\n"\
+"       -p | --port    <portnumber> Specifies the port to run on\n"\
+"       -s | --storage <directory>  Specifies the credential storage directory\n"\
 "\n";
 
 struct option long_options[] =

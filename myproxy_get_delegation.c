@@ -46,7 +46,7 @@ static char usage[] = \
 "       -d | --dn_as_username             Use subject of the authorization\n"
 "                                         credential as the default username\n"
 "                                         instead of the LOGNAME env. var.\n"
-"	 -k | --credname	<name>    Specify credential name\n"
+"        -k | --credname       <name>     Specify credential name\n"
 "\n";
 
 struct option long_options[] =
