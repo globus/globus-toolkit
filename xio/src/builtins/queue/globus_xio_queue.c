@@ -67,6 +67,7 @@ globus_l_xio_q_handle_destroy(
     globus_fifo_destroy(&handle->read_q);
     globus_fifo_destroy(&handle->write_q);
     globus_mutex_destroy(&handle->mutex);
+    globus_free(handle);
 }
 
 /*
@@ -140,6 +141,7 @@ globus_l_xio_queue_read_cb(
 {
     globus_xio_driver_queue_handle_t *  handle;
     globus_bool_t                       done = GLOBUS_FALSE;
+    globus_bool_t                       finish_read = GLOBUS_FALSE;
     globus_xio_driver_queue_entry_t *   entry;
     globus_result_t                     res;
     
@@ -154,8 +156,9 @@ globus_l_xio_queue_read_cb(
             {
                 handle->outstanding_read--;
                 done = GLOBUS_TRUE;
-                /* must be after the wempty check */
-                globus_xio_driver_finished_read(op, res, nbytes);
+                finish_read = GLOBUS_TRUE;
+                /* delay the final finished_read til unlocked since it
+                   could cause the close and destroy the handle and lock */
             }
             else
             {
@@ -166,7 +169,7 @@ globus_l_xio_queue_read_cb(
                 /* must be after the dequeue */
                 globus_xio_driver_finished_read(op, res, nbytes);
 
-                globus_xio_driver_pass_read(
+                res = globus_xio_driver_pass_read(
                     entry->op, 
                     entry->iovec,
                     entry->iovec_count, 
@@ -187,6 +190,11 @@ globus_l_xio_queue_read_cb(
         }
     }
     globus_mutex_unlock(&handle->mutex);
+
+    if(finish_read)
+    {
+        globus_xio_driver_finished_read(op, res, nbytes);
+    }
 }
 
 static globus_result_t
@@ -256,6 +264,7 @@ globus_l_xio_queue_write_cb(
 {
     globus_xio_driver_queue_handle_t *  handle;
     globus_bool_t                       done = GLOBUS_FALSE;
+    globus_bool_t                       finish_write = GLOBUS_FALSE;
     globus_xio_driver_queue_entry_t *   entry;
     globus_result_t                     res;
     
@@ -271,7 +280,9 @@ globus_l_xio_queue_write_cb(
             {
                 handle->outstanding_write--;
                 done = GLOBUS_TRUE;
-                globus_xio_driver_finished_write(op, res, nbytes);
+                finish_write = GLOBUS_TRUE;
+                /* delay the final finished_write til unlocked since it
+                   could cause the close and destroy the handle and lock */
             }
             else
             {
@@ -302,6 +313,11 @@ globus_l_xio_queue_write_cb(
         }
     }
     globus_mutex_unlock(&handle->mutex);
+    
+    if(finish_write)
+    {
+        globus_xio_driver_finished_write(op, res, nbytes);
+    }
 }
 
 static globus_result_t
