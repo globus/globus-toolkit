@@ -23,8 +23,6 @@
 
     <Build_Instructions>
 
-      <Build_Step>patch -N -p1 -i ../patches/openssl-0.9.6b-patch</Build_Step>
-
       <Build_Step>MAKE_GPTMACRO clean</Build_Step>
 
       <Build_Step Macro_Args="libs='ssl crypto sasl' regex='lib$${i}FLAVOR'">RUN_FLAVOR_MAKEFILES_GPTMACRO</Build_Step>

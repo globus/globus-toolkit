@@ -27,7 +27,7 @@ INCLUDES += $(GPT_INCLUDES)
 
 # include_HEADERS is an automake macro which contains 
 # a list of header files that are to be installed in $prefix/include
-include_HEADERS= \
+flavorinclude_HEADERS= \
 	globus_gass_copy.h
 
 # lib_LTLIBRARIES is an automake macro which contains

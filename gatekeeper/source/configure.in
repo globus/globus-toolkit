@@ -58,11 +58,4 @@ AC_OUTPUT(
 	pkgdata/Makefile
 	pkgdata/pkg_data_src.gpt
         Makefile
-	,
-	$GPT_LOCATION/sbin/gpt_generate_bin_pkg_data \
-	--flavor=$GLOBUS_FLAVOR_NAME "./pkgdata/pkg_data_src.gpt"
-	,
-	GLOBUS_FLAVOR_NAME=$GLOBUS_FLAVOR_NAME
-	GLOBUS_LOCATION=$GLOBUS_LOCATION
-	GPT_LOCATION=$GPT_LOCATION
 )

@@ -17,7 +17,7 @@ Sources= \
 	unwrap.c \
 	wrap.c
 
-include_HEADERS= \
+flavorinclude_HEADERS= \
 	globus_gss_assist.h
 
 

@@ -65,7 +65,7 @@ Sources= \
 	globus_error_string.c \
 	globus_error_string.h
 
-include_HEADERS = \
+flavorinclude_HEADERS = \
 	globus_release.h \
 	globus_module.h \
 	globus_url.h \
@@ -92,7 +92,9 @@ include_HEADERS = \
 	globus_debug.h \
 	globus_args.h \
 	globus_strptime.h \
-	globus_thread_common.h
+	globus_thread_common.h \
+	globus_common.h \
+	globus_thread_$(GLOBUS_THREADS).h
 
 lib_LTLIBRARIES = libglobus_common_$(GLOBUS_FLAVOR_NAME).la
 
@@ -101,10 +103,6 @@ INCLUDES = @GPT_INCLUDES@
 libglobus_common___GLOBUS_FLAVOR_NAME__la_LIBADD = @GPT_LIB_LINKS@
 
 libglobus_common___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
-
-flavorinclude_HEADERS = \
-	globus_common.h \
-	globus_thread_$(GLOBUS_THREADS).h
 
 EXTRA_DIST = \
 	globus_thread_none.c \

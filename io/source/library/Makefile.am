@@ -18,7 +18,7 @@ Sources= \
 	globus_io_write.c \
 	globus_l_io.h
 
-include_HEADERS = \
+flavorinclude_HEADERS = \
 	globus_io.h \
 	globus_io_error_hierarchy.h
 
