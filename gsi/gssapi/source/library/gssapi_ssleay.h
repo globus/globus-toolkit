@@ -104,7 +104,8 @@ CVS Information:
 #define GSSERR_R_WRITE_BIO			115
 #define GSSERR_R_PASSED_NULL_PARAMETER		116
 #define GSSERR_R_UNEXPECTED_FORMAT		117
-
+#define GSSERR_R_PROXY_EXPIRED                  118  /* No reason string defined see PRXYERR_R_PROXY_EXPIRE*/
+#define GSSERR_R_CERT_EXPIRED                   119  /* No reason string defined see PRXYERR_R_CERT_EXPIRE*/
 
 /*
  * we need to distinguish between a token

@@ -550,7 +550,6 @@ gs_handshake
 			SSL_get_shutdown(context_handle->gs_ssl));
 #endif
 			GSSerr(GSSERR_F_GS_HANDSHAKE,GSSERR_R_HANDSHAKE);
-			*minor_status = GSSERR_R_HANDSHAKE ;
 			major_status = GSS_S_DEFECTIVE_CREDENTIAL ;
 		}
 	}
@@ -752,7 +751,14 @@ gss_create_and_fill_cred
 
 	if ((status = proxy_init_cred(newcred->pcd, 
 			proxy_password_callback_no_prompt, bp)))  {
-		if (status == PRXYERR_R_CERT_EXPIERED) { 
+		
+		if (status == PRXYERR_R_CERT_EXPIRED) { 
+			*minor_status =  GSSERR_R_PROXY_EXPIRED;
+			major_status =  GSS_S_CREDENTIALS_EXPIRED;
+		}
+
+		if (status = PRXYERR_R_PROXY_EXPIRED) { 
+			*minor_status =  GSSERR_R_CERT_EXPIRED;
 			major_status =  GSS_S_CREDENTIALS_EXPIRED;
 		}
 		goto err;

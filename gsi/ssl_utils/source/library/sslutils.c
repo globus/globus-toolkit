@@ -137,7 +137,8 @@ static ERR_STRING_DATA prxyerr_str_reasons[]=
     {PRXYERR_R_PROBLEM_KEY_FILE, "Problems with security of private key"},
     {PRXYERR_R_PROBLEM_NOKEY_FILE, "Private key not found"},
     {PRXYERR_R_PROBLEM_NOCERT_FILE, "Certificate not found"},
-    {PRXYERR_R_CERT_EXPIERED, "User cert has expired"},
+    {PRXYERR_R_CERT_EXPIRED, "User cert has expired"},
+    {PRXYERR_R_PROXY_EXPIRED, "User proxy has expired"},
     {PRXYERR_R_CRL_SIGNATURE_FAILURE, "Invalid signature on a CRL"},
     {PRXYERR_R_CRL_NEXT_UPDATE_FIELD, "Invalid nextupdate field in CRL"},
     {PRXYERR_R_CRL_HAS_EXPIRED, "Outdated CRL found, revoking all certs till you get new CRL"},
@@ -3654,9 +3655,17 @@ proxy_init_cred(
     /* test if the cert is still valid */
     if (X509_cmp_current_time(X509_get_notAfter(pcd->ucert)) <= 0)
     {
-        PRXYerr(PRXYERR_F_INIT_CRED,PRXYERR_R_CERT_EXPIERED);
+ 	if (pcd->type==CRED_TYPE_PROXY)
+	{
+		PRXYerr(PRXYERR_F_INIT_CRED,PRXYERR_R_PROXY_EXPIRED);
+		status = PRXYERR_R_PROXY_EXPIRED; 
+        }
+        else {
+		PRXYerr(PRXYERR_F_INIT_CRED,PRXYERR_R_CERT_EXPIRED);
+		status = PRXYERR_R_CERT_EXPIRED; 
+        }
+
 	ERR_add_error_data(2,"\n        File=", user_cert);
-        status = PRXYERR_R_CERT_EXPIERED;
         goto err;
     }
 
