@@ -289,6 +289,7 @@ auth_sasl_negotiate_client(myproxy_socket_attrs_t *attrs,
     send_response_sasl_data(attrs, &server_response, server_buffer, len);
 
     authorization_data_free(server_response.authorization_data);
+    server_response.authorization_data = NULL;
 
     while (result == SASL_CONTINUE) {
 
@@ -311,6 +312,7 @@ auth_sasl_negotiate_client(myproxy_socket_attrs_t *attrs,
         }
 
 	authorization_data_free(server_response.authorization_data);
+	server_response.authorization_data = NULL;
     } 
 
     myproxy_debug("SASL negotiation finished.");
