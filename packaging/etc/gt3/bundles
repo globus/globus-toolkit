@@ -37,25 +37,21 @@ BUNDLE scheduler-fork
 	mjs_fork_setup
 	mmjfs_fork_setup
 	globus_gram_job_manager_setup_fork
-	globus_gram_reporter_setup_fork
 
 BUNDLE scheduler-pbs
 	mjs_pbs_setup
 	mmjfs_pbs_setup
 	rips_pbs_provider_setup
 	globus_gram_job_manager_setup_pbs
-	globus_gram_reporter_setup_pbs
 
 BUNDLE scheduler-lsf
 	mmjfs_lsf_setup
 	mjs_lsf_setup
 	rips_lsf_provider_setup
 	globus_gram_job_manager_setup_lsf
-	globus_gram_reporter_setup_lsf
 
 BUNDLE scheduler-condor
 	mmjfs_condor_setup
 	mjs_condor_setup
 	rips_condor_provider_setup
 	globus_gram_job_manager_setup_condor
-	globus_gram_reporter_setup_condor
