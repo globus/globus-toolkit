@@ -53,7 +53,7 @@ my $globusdir = $ENV{GLOBUS_LOCATION};
 my $setupdir = "$globusdir/setup/globus/";
 my $gk_conf = "$globusdir/etc/globus-gatekeeper.conf";
 my $jm_conf = "$globusdir/etc/globus-job-manager.conf";
-my $port;
+my $port = 0;
 my $subject;
 my $junk;
 
@@ -112,10 +112,10 @@ else
 }
 
 print "  - Getting gatekeeper port\n";
-my $port_line = `grep port $gk_conf`;
-chomp($port_line);
-($junk, $port) = split(/port/, $port_line);
-$port =~ s/^\s+//; #strip leading whitespace
+if ( open(GK_CONF, $gk_conf) ) {
+  $port = (m/^(\s*)-port\s+([0-9]+)/)[1] while( ! $port && ($_=<GK_CONF>) );
+  close GK_CONF;
+}
 
 #get values from system commands/file
 my $hostname = `$globusdir/bin/globus-hostname`;
