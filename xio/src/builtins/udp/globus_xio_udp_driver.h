@@ -78,7 +78,13 @@ typedef enum
      * dd cntls
      */
     /* char *                           contact_string */
-    GLOBUS_XIO_UDP_SET_CONTACT
+    GLOBUS_XIO_UDP_SET_CONTACT,
+    
+    /**
+     * handle cntls
+     */
+    /* char *                           contact_string */
+    GLOBUS_XIO_UDP_CONNECT
     
 } globus_xio_udp_cmd_t;
 
