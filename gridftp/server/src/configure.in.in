@@ -15,7 +15,7 @@ AM_INIT_AUTOMAKE($GPT_NAME, $GPT_VERSION)
 
 dnl Build hooks for all 'builtin' modules
 echo -n "Checking for builtin modules... "
-MODULE_DIRS=
+MODULE_DIRS=.
 MODULE_LIBS=
 MODULE_HOOKS_DEC=
 MODULE_HOOKS_DEF=
@@ -45,7 +45,7 @@ AC_SUBST(MODULE_HOOKS_DEF)
 
 dnl Build hooks for all 'builtin' commands
 echo -n "Checking for builtin commands... "
-COMMAND_DIRS=
+COMMAND_DIRS=.
 COMMAND_LIBS=
 COMMAND_HOOKS_DEC=
 COMMAND_HOOKS_DEF=
