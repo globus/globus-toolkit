@@ -72,7 +72,7 @@ $DEBUG_ECHO ""                                            >> $grami_logfile
 $DEBUG_ECHO "JM_SCRIPT: testing jobtype" >> $grami_logfile
 if [ $grami_jobtype = "0" ] ; then
    $DEBUG_ECHO "JM_SCRIPT: error: jobtype MPI not supported " >> $grami_logfile
-   echo "GRAM_SCRIPT_ERROR:@GLOBUS_GRAM_CLIENT_ERROR_MPI_NOT_SUPPORTED@"
+   echo "GRAM_SCRIPT_ERROR:@GLOBUS_GRAM_CLIENT_ERROR_JOBTYPE_NOT_SUPPORTED@"
    exit 1
 elif [ $grami_jobtype = "1" ] ; then
     condor_universe="vanilla"

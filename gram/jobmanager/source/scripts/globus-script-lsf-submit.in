@@ -161,6 +161,11 @@ elif [ $grami_jobtype = "1" ] ; then
     lsf_jobtype="single"
 elif [ $grami_jobtype = "2" ] ; then
     lsf_jobtype="multiple"
+elif [ $grami_jobtype = "3" ] ; then
+   $DEBUG_ECHO "JM_SCRIPT: ERROR: jobtype parameter not supported "
+               >> $grami_logfile
+   echo "GRAM_SCRIPT_ERROR:@GLOBUS_GRAM_CLIENT_ERROR_JOBTYPE_NOT_SUPPORTED@"
+   exit 1
 else
    $DEBUG_ECHO "JM_SCRIPT: invalid jobtype parameter" >> $grami_logfile
    echo GRAM_SCRIPT_ERROR:@GLOBUS_GRAM_CLIENT_ERROR_INVALID_JOBTYPE@

@@ -890,7 +890,7 @@ globus_l_gram_check_shell(globus_gram_jobmanager_request_t * request)
         grami_fprintf( request->jobmanager_log_fp,
               "JMI: globus_l_gram_check_shell(): poll script returned unknown "
               "value: %d\n", request->status );
-        request->failure_code = GLOBUS_GRAM_CLIENT_ERROR_INVALID_SCRIPT_STATUS;
+        request->failure_code = GLOBUS_GRAM_CLIENT_ERROR_INVALID_JOBSTATE;
         return(GLOBUS_GRAM_JOBMANAGER_STATUS_FAILED);
     }
 
