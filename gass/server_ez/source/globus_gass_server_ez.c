@@ -210,7 +210,7 @@ globus_gass_server_ez_init(globus_gass_transfer_listener_t * listener,
     server->reqattr=reqattr;
 
     globus_hashtable_insert(&globus_i_gass_server_ez_listeners,
-			    *listener,
+			    (void *)*listener,
 			    server);
 
     rc=globus_gass_transfer_register_listen(*listener,
@@ -241,7 +241,7 @@ globus_gass_server_ez_shutdown(globus_gass_transfer_listener_t listener)
 {
     int rc;
     globus_l_gass_server_ez_t *server;
-    void * user_arg;
+    void * user_arg = GLOBUS_NULL;
 
 
     rc=globus_gass_transfer_close_listener(listener,
