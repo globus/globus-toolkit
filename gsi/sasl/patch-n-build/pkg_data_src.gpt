@@ -26,7 +26,7 @@
       <Dependency Name="globus_libtool"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
     </Source_Dependencies>
     
-    <Source_Dependencies Type="pgm_runtime" > 
+    <Source_Dependencies Type="lib_runtime" > 
     <Dependency Name="globus_sasl_gssapi_gsi" Package="rtl"><Version><Simple_Version Major="0"></Simple_Version></Version> </Dependency>
     </Source_Dependencies> 
     
