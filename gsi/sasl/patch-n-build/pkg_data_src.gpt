@@ -22,6 +22,7 @@ Globus binary package for sasl
 
 <Build_Instructions>
 
+<Build_Step>patch -N -p1 -i ../patches/cyrus-sasl-1.5.27-patch</Build_Step>
 <Build_Step>MAKE_GPTMACRO distclean</Build_Step>
 
 <Build_Step>./configure --prefix=INSTALLDIR_GPTMACRO --disable-gssapi</Build_Step>
