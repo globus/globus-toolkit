@@ -7,7 +7,11 @@
  */
 
 #include "myproxy_creds.h"
+
+#if defined (MULTICRED_FEATURE)
 #include "my_utility.h"
+#endif
+
 #include "myproxy_server.h"
 
 #include "verror.h"
@@ -28,10 +32,12 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#if defined (MULTICRED_FEATURE)
 struct myproxy_database mydbase; //database structure
 
 extern char *mydsn, *myuid, *mypwd;
-   char *dbase_name; //database name
+char *dbase_name; //database name
+#endif
 
 /*
  * Doesn't always seem to be define in <unistd.h>
@@ -128,7 +134,7 @@ file_exists(const char *path)
     return return_value;
 }
 
-
+#if defined (MULTICRED_FEATURE)
 /********************************************************
 * initialize tables                                     *
 *********************************************************/
@@ -138,37 +144,7 @@ int my_init_table(SQLHDBC hdbc, SQLHSTMT hstmt)
 
   printf("\nmy_init_table:\n");
 
-#ifdef CREATE_DATABASE
-  printf ("\ncreating database:\n");
-  rc = SQLPrepare (hstmt, "create database if not exists ?", SQL_NTS);
-  mystmt (hstmt, rc);
-
-  rc = SQLBindParameter (hstmt, 1, SQL_PARAM_INPUT, SQL_VARCHAR, SQL_C_CHAR, 255, 0, "mydsn", strlen ("mydsn") , NULL);
-  mystmt (hstmt, rc);
-
-   rc = SQLExecute (hstmt);
-  mycon(hdbc,rc);
-
-  /* commit the transaction */
-  rc = SQLEndTran(SQL_HANDLE_DBC, hdbc, SQL_COMMIT);
-  mycon(hdbc,rc);
-
-  /* use database*/
-  rc = SQLPrepare (hstmt, "USE DATABASE ?", SQL_NTS);
-  mystmt (hstmt, rc);
-
-  rc = SQLBindParameter (hstmt, 1, SQL_PARAM_INPUT, SQL_VARCHAR, SQL_C_CHAR, 255, 0, dbase_name, strlen (dbase_name) , NULL);
-  mystmt (hstmt, rc);
-
-   rc = SQLExecute (hstmt);
-  mycon(hdbc,rc);
-
-  /* commit the transaction */
-  rc = SQLEndTran(SQL_HANDLE_DBC, hdbc, SQL_COMMIT);
-  mycon(hdbc,rc);
-#endif
-
-    /* create the table 'main' */
+ /* create the table 'main' */
   printf(" creating table 'main'\n");
 
     rc = SQLExecDirect(hstmt,"CREATE TABLE IF NOT EXISTS main(\
@@ -322,7 +298,7 @@ int my_param_insert(SQLHDBC hdbc, SQLHSTMT hstmt)
 
     return 0;
 }
-
+#endif
 /*
  * check_storage_directory()
  *
@@ -459,12 +435,13 @@ get_storage_locations(const char *username,
     assert(creds_path != NULL);
     assert(data_path != NULL);
     assert(storage_dir != NULL);
-    
-/*    if (check_storage_directory(storage_dir) == -1)
+
+#if !defined(MULTICRED_FEATURE)    
+    if (check_storage_directory(storage_dir) == -1)
     {
         goto error;
     }
-  */  
+#endif 
     if (strchr(username, '/')) {
        sterile_username = strmd5(username, NULL);
        if (sterile_username == NULL)
@@ -512,6 +489,7 @@ get_storage_locations(const char *username,
     return return_code;
 }
 
+#if defined (MULTICRED_FEATURE)
 /*
  * freedbase ()
  *
@@ -541,10 +519,6 @@ void freedbase (struct myproxy_database *pdbase)
     
   if (pdbase->cred_desc != NULL)
      free(pdbase->cred_desc);
-   /* 
-  if (pdbase->credentials != NULL)
-     free(pdbase->credentials);
-*/
   return;
 }
 
@@ -647,6 +621,8 @@ copy_credential_to_file(struct myproxy_creds *creds, char *filename)
 	return return_code;
 }
 
+#endif 
+
 /*
  * copy_file()
  *
@@ -679,7 +655,7 @@ copy_file(const char *source,
         goto error;
     }
 
-#ifdef NOTREQUIRED    
+#if !defined (MULTICRED_FEATURE)
     dst_fd = open(dest, dst_flags, mode);
     
     if (dst_fd == -1)
@@ -688,12 +664,16 @@ copy_file(const char *source,
         verror_put_string("opening %s for writing", dest);
         goto error;
     }
-#endif    
-
+#else
 	memset (mydbase.credentials, 0, MAX_TEXT_LEN);
+#endif
+
     do 
     {
+#if defined (MULTICRED_FEATURE)
 	static int size = 0;
+#endif
+
         bytes_read = read(src_fd, buffer, sizeof(buffer)-1);
 	buffer[bytes_read]='\0';
         if (bytes_read == -1)
@@ -703,15 +683,18 @@ copy_file(const char *source,
             goto error;
         }
 
+#if defined (MULTICRED_FEATURE)
 	size += bytes_read;
+#endif
 	
         if (bytes_read != 0)
         {
+#if defined (MULTICRED_FEATURE)
 	if (size != bytes_read)
 		strcat (mydbase.credentials, buffer);
 	else
 		strcpy (mydbase.credentials,buffer);
-#ifdef NOTREQUIRED
+#else
             if (write(dst_fd, buffer, bytes_read) == -1)
             {
                 verror_put_errno(errno);
@@ -731,7 +714,7 @@ copy_file(const char *source,
     {
         close(src_fd);
     }
-#ifdef NOTREQUIRED    
+#if !defined (MULTICRED_FEATURE)
     if (dst_fd != -1)
     {
         close(dst_fd);
@@ -764,9 +747,36 @@ write_data_file(const struct myproxy_creds *creds,
     FILE *data_stream = NULL;
     int data_file_open_flags = O_WRONLY | O_CREAT | O_TRUNC;
     int return_code = -1;
-        char *tmp1;
-#ifdef NOTREQUIRED
-    
+    char *tmp1;
+
+#if defined (MULTICRED_FEATURE)
+    mydbase.owner = strdup (creds->owner_name);
+    mydbase.passphrase = strdup (tmp1);
+    mydbase.lifetime = creds->lifetime;
+
+    mydbase.username = strdup (creds->username);
+
+    if (creds->retrievers != NULL)
+    {
+        mydbase.retrievers = strdup (creds->retrievers);
+    }
+    else
+	mydbase.retrievers = NULL;
+
+    if (creds->renewers != NULL)
+    {	
+        mydbase.renewers = strdup (creds->renewers);
+    }
+    else
+	mydbase.renewers = NULL;
+
+   mydbase.credname = strdup (creds->credname);
+   mydbase.cred_desc = strdup (creds->cred_desc);
+   mydbase.force_dbase_write = creds->force_dbase_write;
+
+   return_code = 0;
+#else
+
     /*
      * Open with open() first to minimize any race condition with
      * file permissions.
@@ -789,7 +799,6 @@ write_data_file(const struct myproxy_creds *creds,
         verror_put_string("reopening storage file %s", data_file_path);
         goto error;
     }
-#endif 
 
     /* Write out all the extra data associated with these credentials 
      * support for crypt() added btemko /6/16/00
@@ -798,37 +807,12 @@ write_data_file(const struct myproxy_creds *creds,
      */
     tmp1=(char *)crypt(creds->passphrase, 
 	&creds->owner_name[strlen(creds->owner_name)-3]);
+ 
+    fprintf (data_stream, "OWNER=%s\n",creds->owner_name);
+    fprintf (data_stream, "PASSPHRASE=%s\n", tmp1);
+    fprintf (data_stream, "LIFETIME=%d\n", creds->lifetime);
+    fprintf (data_stream, "END_OPTIONS\n");
 
-    mydbase.owner = strdup (creds->owner_name);
-//    fprintf(data_stream, "OWNER=%s\n", creds->owner_name);
-    mydbase.passphrase = strdup (tmp1);
- //   fprintf(data_stream, "PASSPHRASE=%s\n", tmp1);
-    mydbase.lifetime = creds->lifetime;
-//    fprintf(data_stream, "LIFETIME=%d\n", creds->lifetime);
-
-    mydbase.username = strdup (creds->username);
-
-    if (creds->retrievers != NULL)
-    {
-//        fprintf(data_stream, "RETRIEVERS=%s\n", creds->retrievers);
-        mydbase.retrievers = strdup (creds->retrievers);
-    }
-    else
-	mydbase.retrievers = NULL;
-
-    if (creds->renewers != NULL)
-    {	
-//        fprintf(data_stream, "RENEWERS=%s\n", creds->renewers);
-        mydbase.renewers = strdup (creds->renewers);
-    }
-    else
-	mydbase.renewers = NULL;
-
-   mydbase.credname = strdup (creds->credname);
-   mydbase.cred_desc = strdup (creds->cred_desc);
-    mydbase.force_dbase_write = creds->force_dbase_write;
-
-//    fprintf(data_stream, "END_OPTIONS\n");
 
     fflush(data_stream);
     
@@ -851,15 +835,18 @@ write_data_file(const struct myproxy_creds *creds,
         fclose(data_stream);
     }
     
+#endif
     return return_code;
 }
 
+#if defined (MULTICRED_FEATURE)
 struct dbase_info
 {
   char *owner;
   char *credname;
   char *cred_desc;
 };
+#endif
 
 /*
  * read_data_file()
@@ -878,10 +865,8 @@ read_data_file(struct myproxy_creds *creds,
     int done = 0;
     int line_number = 0;
     int return_code = -1;
-    struct dbase_info *dbase_recs;
     int num_recs,i;
-    //char *pchr;
-    
+
     assert(creds != NULL);
     assert(datafile_path != NULL);
     
@@ -1013,15 +998,6 @@ read_data_file(struct myproxy_creds *creds,
         goto error;
     }
 
-    //dbase_recs = (struct dbase_info *) malloc (sizeof (struct dbase_info));
-    //num_recs = read_from_database_for_info(&dbase_recs);
-
-//    pchr = read_from_database(&dbase_recs);
-
-/*    for (i = 0; i < num_recs; i++)
-	printf ("%s\t%s\t%s\n-------------------\n",(dbase_recs+i)->owner, dbase_recs[i].credname, dbase_recs[i].cred_desc);
-*/
-    //printf ("%s",pchr);
     /* Success */
     return_code = 0;
     
@@ -1034,6 +1010,7 @@ read_data_file(struct myproxy_creds *creds,
     return return_code;
 }
 
+#if defined (MULTICRED_FEATURE)
 /*
  * Reads all records and returns a pointer to a character string having the record data (owner, credential name , credential description) 
  */
@@ -1236,6 +1213,8 @@ int write_to_database()
 
 }
 
+#endif 
+
 /**********************************************************************
  *
  * API routines
@@ -1263,43 +1242,37 @@ myproxy_creds_store(const struct myproxy_creds *creds)
         return -1;
     }
 
-//#ifdef FORLATER  
     if (get_storage_locations(creds->username,
                               creds_path, sizeof(creds_path),
                               data_path, sizeof(data_path)) == -1)
     {
         goto error;
     }
-//#endif
     /*
      * If credentials already exist for this username then we need
      * to check to make sure new credentials have the same owner.
      */
 
-    printf ("Hi - 1\n");
+#if defined (MULTICRED_FEATURE)
     memset (&mydbase, 0, sizeof (mydbase));
+#endif
 
-    //data_path = strdup ("junk");  //temporary
-    //creds_path = strdup ("junk");
-
-    // the following 2 functions fill in the mydbase structure too
     if (write_data_file(creds, data_path, data_file_mode) == -1) // info about credential
     {
         goto error;
     }
-    printf ("Hi - 2\n");
 
     if (copy_file(creds->location, creds_path, creds_file_mode) == -1) // credential
     {
         goto error;
     }
 
-    printf ("Hi - 3\n");
+#if defined (MULTICRED_FEATURE)
     if (write_to_database () < 0)
 	goto error;
-
-    printf ("Hi - 4\n");
     freedbase (&mydbase);
+#endif
+
 
     /* Success */
     return_code = 0;
@@ -1332,11 +1305,13 @@ myproxy_creds_fetch_entry(char *username, char *credname, struct myproxy_creds *
 			     data_path, sizeof(data_path)) == -1)
       return -1;
 
-   //if (read_data_file(creds, data_path) == -1)
-     // return -1;
-
+#if !defined (MULTICRED_FEATURE)
+   if (read_data_file (creds, data_path) == -1)
+ 	return -1;
+#else
    if (retrieve_from_database_given_username_credname (username, credname, creds) == -1)
 	return -1;
+#endif
 
    creds->username = mystrdup(username);
    creds->location = mystrdup(creds_path);
@@ -1345,7 +1320,6 @@ myproxy_creds_fetch_entry(char *username, char *credname, struct myproxy_creds *
 }
 
 
-/* retrieves credential for the user name and credential name*/
 int
 myproxy_creds_retrieve(struct myproxy_creds *creds)
 {
@@ -1353,7 +1327,7 @@ myproxy_creds_retrieve(struct myproxy_creds *creds)
     char data_path[MAXPATHLEN];
     struct myproxy_creds retrieved_creds;
     int return_code = -1;
-        char *tmp1=NULL;
+    char *tmp1=NULL;
     
     if ((creds == NULL) ||
         (creds->username == NULL) ||
@@ -1365,7 +1339,7 @@ myproxy_creds_retrieve(struct myproxy_creds *creds)
 
     memset(&retrieved_creds, 0, sizeof(retrieved_creds));
    
-/*
+#if !defined (MULTICRED_FEATURE)
     if (get_storage_locations(creds->username,
                               creds_path, sizeof(creds_path),
                               data_path, sizeof(data_path)) == -1)
@@ -1378,10 +1352,10 @@ myproxy_creds_retrieve(struct myproxy_creds *creds)
 	verror_put_string("can't read credentials");
         goto error;
     }
-*/
-
+#else
    if ( retrieve_from_database_given_username_credname(creds->username, creds->credname, &retrieved_creds) == -1)
 	goto error;
+#endif
 
     /* Copy creds */
     if (creds->owner_name != NULL)
@@ -1389,25 +1363,39 @@ myproxy_creds_retrieve(struct myproxy_creds *creds)
     if (creds->location != NULL)
        free(creds->location);
     creds->owner_name = mystrdup(retrieved_creds.owner_name);
-    //creds->location = mystrdup(creds_path);
+
+#if !defined (MULTICRED_FEATURE)
+    creds->location = mystrdup(creds_path);
+#endif
+
     creds->lifetime = retrieved_creds.lifetime;
     creds->restrictions = NULL;
-    
-    if ((creds->owner_name == NULL)) //||
-       // (creds->location == NULL))
+   
+#if defined (MULTICRED_FEATURE) 
+    if ((creds->owner_name == NULL)) 
+#else
+    if ((creds->owner_name == NULL) ||
+        (creds->location == NULL))
+#endif
     {
         goto error;
     }
    
-    if (retrieved_creds.retrievers == NULL || strlen(retrieved_creds.retrievers) == 0)
+    if (retrieved_creds.retrievers == NULL )
        creds->retrievers = NULL;
     else
-       creds->retrievers = mystrdup(retrieved_creds.retrievers);
+	if (strlen (retrieved_creds.renewers) == 0)
+       		creds->retrievers = NULL;
+    	else
+       		creds->retrievers = mystrdup(retrieved_creds.retrievers);
 
-    if (retrieved_creds.renewers != NULL || strlen(retrieved_creds.renewers) == 0)
+    if (retrieved_creds.renewers == NULL )
        creds->renewers = NULL;
-    else
-       creds->renewers = mystrdup(retrieved_creds.renewers);
+	else 
+	  if (strlen (retrieved_creds.renewers) == 0)
+       		creds->renewers = NULL;
+    		else
+       			creds->renewers = mystrdup(retrieved_creds.renewers);
  
     /* Success */
     return_code = 0;
@@ -1554,6 +1542,7 @@ myproxy_creds_is_owner(const char		*username,
     return return_code;
 }
 
+#if defined (MULTICRED_FEATURE)
 int my_delete (SQLHDBC hdbc, SQLHSTMT hstmt)
 {
   SQLRETURN   rc;
@@ -1623,7 +1612,10 @@ myproxy_creds_delete(const struct myproxy_creds *creds)
 
 }
 
-#ifdef TO_BE_REMOVED
+#else
+int
+myproxy_creds_delete(const struct myproxy_creds *creds)
+{
     char creds_path[MAXPATHLEN];
     char data_path[MAXPATHLEN];
     struct myproxy_creds tmp_creds;
@@ -1671,6 +1663,7 @@ myproxy_creds_delete(const struct myproxy_creds *creds)
 }
 #endif
 
+#if defined (MULTICRED_FEATURE)
 int
 myproxy_creds_info(struct myproxy_creds *creds, char **records)
 {
@@ -1700,6 +1693,36 @@ myproxy_creds_info(struct myproxy_creds *creds, char **records)
 error:
     return return_code;
 }
+#else
+int
+myproxy_creds_info(struct myproxy_creds *creds)
+{
+    char creds_path[MAXPATHLEN];
+    char data_path[MAXPATHLEN];
+    struct myproxy_creds tmp_creds;
+    int return_code = -1;
+    time_t end_time;
+
+    if ((creds == NULL) || (creds->username == NULL)) {
+       verror_put_errno(EINVAL);
+       return -1;
+    }
+
+    if (get_storage_locations(creds->username,
+	                      creds_path, sizeof(creds_path),
+			      data_path, sizeof(data_path)) == -1) {
+       goto error;
+    }
+
+    if (ssl_get_times(creds_path, &creds->start_time, &creds->end_time) != 0)
+       goto error;
+
+    return_code = 0;
+
+error:
+    return return_code;
+}
+#endif 
 
 void myproxy_creds_free_contents(struct myproxy_creds *creds)
 {

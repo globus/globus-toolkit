@@ -1,3 +1,4 @@
+#if defined (MULTICRED_FEATURE)
 /***************************************************************************
                           my_utility.h  -  description
                              -------------------
@@ -199,4 +200,4 @@ void mydisconnect(SQLHENV *henv,SQLHDBC *hdbc, SQLHSTMT *hstmt)
 
 #endif /* __TMYODBC_UTILITY_H__ */
 
-
+#endif /* End MULTICRED_FEATURE check*/

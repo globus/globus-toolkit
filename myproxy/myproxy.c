@@ -198,7 +198,6 @@ myproxy_authenticate_init(myproxy_socket_attrs_t *attrs, const char *proxyfile)
                                    sizeof(error_string));
        verror_put_string("Error setting credentials to use: %s\n", error_string);
 
-//	myproxy_log (DBG_HI, debug_level, "myproxy_authenticate_init - 1\n");  //C
        return -1;
    }
 
@@ -206,7 +205,6 @@ myproxy_authenticate_init(myproxy_socket_attrs_t *attrs, const char *proxyfile)
        GSI_SOCKET_get_error_string(attrs->gsi_socket, error_string,
                                    sizeof(error_string));
        verror_put_string("Error authenticating: %s\n", error_string);
-	//myproxy_log (DBG_HI, debug_level, "myproxy_authenticate_init - 2\n");  //C
        return -1;
    }
    return 0;
@@ -376,6 +374,7 @@ myproxy_serialize_request(const myproxy_request_t *request, char *data, const in
 
     }
 
+#if defined (MULTICRED_FEATURE)
     //credential name
     if (request->credname!= NULL)
     {
@@ -419,7 +418,7 @@ myproxy_serialize_request(const myproxy_request_t *request, char *data, const in
 
     totlen += len;
    
-
+#endif
     //authorized service string
     for (authorized_services = request->authorized_service_dns;
 	 authorized_services; authorized_services++) {
@@ -597,6 +596,7 @@ myproxy_deserialize_request(const char *data, const int datalen,
          }
        }
 
+#if defined (MULTICRED_FEATURE)
     //credential name
     len = convert_message(data, datalen,
 			  MYPROXY_CRED_NAME_STRING,
@@ -664,6 +664,7 @@ myproxy_deserialize_request(const char *data, const int datalen,
     {
 	return -1;
     }
+#endif
 
     //authorization service
     len = convert_message(data, datalen, MYPROXY_AUTH_SERVICE_STRING,
@@ -733,7 +734,6 @@ myproxy_serialize_response(const myproxy_response_t *response,
     totlen += len;
 
     /* Only add response if necessary */
-    //if (strcmp(response->response_string, "") != 0) {
     if (response->response_type == MYPROXY_OK_RESPONSE) 
     {
 	int response_size = strlen (response->response_string);
@@ -767,10 +767,8 @@ myproxy_serialize_response(const myproxy_response_t *response,
     }
 	
     /* Only add error string if necessary */
-    //if (strcmp(response->error_string, "") != 0) {
       if (response->response_type == MYPROXY_ERROR_RESPONSE) 
       {
-	//printf ("%s", verror_get_string());
 	strcat ((char *)response->error_string, verror_get_string()); //add the verror string too
 	if (buf != NULL)
 		free (buf);
@@ -1035,13 +1033,11 @@ myproxy_recv_response(myproxy_socket_attrs_t *attrs, myproxy_response_t *respons
     /* Receive a response from the server */
     responselen = myproxy_recv(attrs, response_buffer, sizeof(response_buffer));
     if (responselen < 0) {
-        //verror_put_string("Error in myproxy_recv()");
         return(-1);
     }
 
     /* Make a response object from the response buffer */
     if (myproxy_deserialize_response(response, response_buffer, responselen) < 0) {
-      //verror_put_string("Error in myproxy_deserialize_response()");
       return(-1);
     }
 

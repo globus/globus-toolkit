@@ -128,6 +128,7 @@ void myproxy_creds_free_contents(struct myproxy_creds *creds);
  */
 void myproxy_set_storage_dir(char *dir);
 
+#if defined (MULTICRED_FEATURE)
 /*
  * freedbase ()
  *
@@ -173,4 +174,6 @@ int retrieve_cred_from_database_given_username_credname(char *username, char *cr
  */
 
 int copy_credential_to_file(struct myproxy_creds *creds, char *filename);
+#endif
+
 #endif /* __MYPROXY_CREDS_H */
