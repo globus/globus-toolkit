@@ -1,6 +1,0 @@
-.libs
-*.o
-*.lo
-libglobus_oldgaa*
-Makefile.in
-Makefile
