@@ -171,9 +171,10 @@ typedef struct globus_gsiftp_control_striping_s
 
 struct globus_gass_copy_handle_s
 {
-   int       fd;
-   void *    user_pointer;
-   /* ... add other fields */
+    void *				user_pointer;
+    globus_gsiftp_client_handle_t *	gsiftp_handle;
+    globus_io_handle_t *		io_handle;
+
 } globus_gass_copy_handle_t;
 
 /**
