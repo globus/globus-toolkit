@@ -855,7 +855,8 @@ main(int xargc,
     {
         fprintf(stderr,"Gatekeeper subject name  : \"%s\"\n",
         get_globusid());
-        fprintf(stderr,"Gatekeeper test complete : Success!\n");
+        fprintf(stderr,"Gatekeeper test complete : Success!\n\n");
+        fprintf(stderr,"Gatekeeper shutting down!\n");
         exit(0);
     }
 
