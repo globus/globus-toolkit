@@ -196,7 +196,7 @@ globus_i_xio_server_accept_callback(
         else
         {
             /* if there is an outstanding accept callback */
-            if(xio_op->timeout_cb != NULL)
+            if(xio_op->_op_server_timeout_cb != NULL)
             {
                 if(globus_i_xio_timer_unregister_timeout(
                         &globus_l_xio_timeout_timer, xio_op))
@@ -285,7 +285,7 @@ globus_l_xio_accept_timeout_callback(
                 rc = GLOBUS_FALSE;
                 /* cancel the sucker */
                 globus_assert(!xio_op->progress);
-                globus_assert(xio_op->timeout_cb != NULL);
+                globus_assert(xio_op->_op_server_timeout_cb != NULL);
 
                 if(!xio_op->block_timeout)
                 {
@@ -307,7 +307,8 @@ globus_l_xio_accept_timeout_callback(
     /* if in cancel state, verfiy with user that they want to cancel */
     if(timeout)
     {
-        cancel = xio_op->timeout_cb(xio_server, xio_op->type);
+        cancel = xio_op->_op_server_timeout_cb(
+                    xio_server, xio_op->type);
     }
     /* all non time out casses can just return */
     else
@@ -431,7 +432,7 @@ globus_xio_server_init(
         globus_mutex_init(&xio_server->mutex, NULL);
 
         /* timeout handling */
-        xio_server->accept_timeout = server_attr->open_timeout_cb;
+        xio_server->accept_timeout = server_attr->accept_timeout_cb;
 
         /* walk through the stack and add each entry to the array */
         ctr = 0;
@@ -581,7 +582,7 @@ globus_xio_server_register_accept(
                 xio_op->ref = 1;
                 xio_op->cancel_cb = NULL;
                 xio_op->canceled = GLOBUS_FALSE;
-                xio_op->timeout_cb = xio_server->accept_timeout;
+                xio_op->_op_server_timeout_cb = xio_server->accept_timeout;
                 xio_op->progress = GLOBUS_TRUE;
                 xio_op->ndx = 0;
                 xio_op->stack_size = xio_server->stack_size;
@@ -596,7 +597,7 @@ globus_xio_server_register_accept(
                 }
 
                 /*i deal with timeout if there is one */
-                if(xio_op->timeout_cb != NULL)
+                if(xio_op->_op_server_timeout_cb != NULL)
                 {
                     xio_op->ref++;
                     globus_i_xio_timer_register_timeout(
@@ -604,7 +605,7 @@ globus_xio_server_register_accept(
                         xio_op,
                         &xio_op->progress,
                         globus_l_xio_accept_timeout_callback,
-                        &xio_server->timeout_period);
+                        &xio_server->accept_timeout_period);
                 }
 
                 /* add a reference to the server for this target */
@@ -621,7 +622,7 @@ globus_xio_server_register_accept(
                     xio_op->state = GLOBUS_XIO_OP_STATE_FINISHED;
 
                     /* if a timeout was registered we must unregister it */
-                    if(xio_op->timeout_cb != NULL)
+                    if(xio_op->_op_server_timeout_cb != NULL)
                     {
                         if(globus_i_xio_timer_unregister_timeout(
                                 &globus_l_xio_timeout_timer, xio_op))
@@ -678,7 +679,7 @@ globus_xio_server_cancel_accept(
             xio_server->op->canceled = GLOBUS_TRUE;
             if(xio_server->op->cancel_cb)
             {
-                xio_server->op->cancel_cb(xio_server, 
+                xio_server->op->cancel_cb(xio_server->op,
                     xio_server->op->cancel_arg);
             }            
         }

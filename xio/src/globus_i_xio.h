@@ -183,6 +183,9 @@ typedef struct globus_i_xio_attr_s
     globus_xio_timeout_callback_t               close_timeout_cb;
     globus_reltime_t                            close_timeout_period;
 
+    globus_xio_timeout_server_callback_t        accept_timeout_cb;
+    globus_reltime_t                            accept_timeout_period;
+
     globus_bool_t                               cancel_open;
     globus_bool_t                               cancel_close;
     globus_bool_t                               cancel_read;
@@ -222,8 +225,8 @@ typedef struct globus_xio_server_s
 {
     globus_xio_server_state_t                   state;
 
-    globus_xio_timeout_callback_t               accept_timeout;
-    globus_reltime_t                            timeout_period;
+    globus_xio_timeout_server_callback_t        accept_timeout;
+    globus_reltime_t                            accept_timeout_period;
     struct globus_i_xio_op_s *                  op;
 
     int                                         ref;
@@ -366,10 +369,12 @@ typedef struct globus_i_xio_op_entry_s
 #define _op_context                             type_u.handle_s.context
 #define _op_nbytes                              type_u.handle_s.nbytes
 #define _op_wait_for                            type_u.handle_s.wait_for
+#define _op_handle_timeout_cb                   type_u.handle_s.timeout_cb
 
 #define _op_server                              type_u.target_s.server
 #define _op_target                              type_u.target_s.target
 #define _op_in_register                         type_u.target_s.in_register
+#define _op_server_timeout_cb                   type_u.target_s.timeout_cb
 
 /*
  *  represents a requested io operation (open close read or write).
@@ -413,6 +418,7 @@ typedef struct globus_i_xio_op_s
             /* data descriptor */
             globus_i_xio_dd_t *                 data_desc;
             globus_size_t                       wait_for;
+            globus_xio_timeout_callback_t       timeout_cb;
         } handle_s;
         /* target stuff */
         struct
@@ -420,12 +426,12 @@ typedef struct globus_i_xio_op_s
             globus_i_xio_server_t *             server;
             void *                              target;
             globus_bool_t                       in_register;
+            globus_xio_timeout_server_callback_t   timeout_cb;
         } target_s;
     } type_u;
 
     /* flag to determine if cancel should happen */
     globus_bool_t                               progress;
-    globus_xio_timeout_callback_t               timeout_cb;
 
     /* reference count for destruction */
     int                                         ref;

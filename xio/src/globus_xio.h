@@ -440,6 +440,12 @@ typedef globus_bool_t
     globus_xio_handle_t                         handle,
     globus_xio_operation_type_t                 type);
 
+typedef globus_bool_t
+(*globus_xio_timeout_server_callback_t)(
+    globus_xio_server_t                         handle,
+    globus_xio_operation_type_t                 type);
+
+
 /******************************************************************
  *                      data descriptor
  *****************************************************************/

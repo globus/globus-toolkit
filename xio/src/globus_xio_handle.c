@@ -220,7 +220,7 @@ globus_i_xio_open_close_callback(
         else
         {
             fire_callback = GLOBUS_TRUE;
-            if(op->timeout_cb != NULL)
+            if(op->_op_handle_timeout_cb != NULL)
             {
                 /* 
                  * unregister the cancel
@@ -351,7 +351,7 @@ globus_i_xio_read_write_callback(
         else
         {
             fire_operation = GLOBUS_TRUE;
-            if(op->timeout_cb != NULL)
+            if(op->_op_handle_timeout_cb != NULL)
             {
                 /* 
                  * unregister the cancel
@@ -548,7 +548,7 @@ globus_l_xio_timeout_callback(
                 rc = GLOBUS_FALSE;
                 /* cancel the sucker */
                 globus_assert(!op->progress);
-                globus_assert(op->timeout_cb != NULL);
+                globus_assert(op->_op_handle_timeout_cb != NULL);
 
                 /* if the driver has blocked the timeout don't call it */
                 if(!op->block_timeout)
@@ -569,7 +569,7 @@ globus_l_xio_timeout_callback(
     /* if in cancel state, verfiy with user that they want to cancel */
     if(timeout)
     {
-        cancel = op->timeout_cb(handle, op->type);
+        cancel = op->_op_handle_timeout_cb(handle, op->type);
     }
     /* all non time out casses can just return */
     else
@@ -692,7 +692,7 @@ globus_l_xio_register_writev(
         {
             /* op the operatin reference count for this */
             op->ref++;
-            op->timeout_cb = handle->write_timeout_cb;
+            op->_op_handle_timeout_cb = handle->write_timeout_cb;
             globus_i_xio_timer_register_timeout(
                 &globus_l_xio_timeout_timer,
                 op,
@@ -775,7 +775,7 @@ globus_l_xio_register_readv(
         {
             /* op the operatin reference count for this */
             op->ref++;
-            op->timeout_cb = handle->read_timeout_cb;
+            op->_op_handle_timeout_cb = handle->read_timeout_cb;
             globus_i_xio_timer_register_timeout(
                 &globus_l_xio_timeout_timer,
                 op,
@@ -848,7 +848,7 @@ globus_l_xio_register_open(
     {
         /* op the operatin reference count for this */
         op->ref++;
-        op->timeout_cb = handle->open_timeout_cb;
+        op->_op_handle_timeout_cb = handle->open_timeout_cb;
         globus_i_xio_timer_register_timeout(
             &globus_l_xio_timeout_timer,
             op,
@@ -940,7 +940,7 @@ globus_l_xio_register_close(
         {
             /* op the operatin reference count for this */
             op->ref++;
-            op->timeout_cb = handle->close_timeout_cb;
+            op->_op_handle_timeout_cb = handle->close_timeout_cb;
             globus_i_xio_timer_register_timeout(
                 &globus_l_xio_timeout_timer,
                 op,
