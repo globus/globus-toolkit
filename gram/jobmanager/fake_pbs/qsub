@@ -2,7 +2,25 @@
 
 use POSIX;
 
+#increment the job count for use by the fake qstat script
+my $username = $ENV{"USER"};
+my $dataFile = "/home/$username/.globus/fake_qsub_data";
+my $jobCount=0;
+
+if (-r $dataFile) {
+    open(DATAFILE, "$dataFile")
+        or die "ERROR: couldn't open $dataFile for writing";
+    $jobCount = <DATAFILE>;
+    close(DATAFILE);
+}
+open(DATAFILE, ">$dataFile")
+    or die "ERROR: couldn't open $dataFile for writing";
+print DATAFILE ($jobCount + 1);
+close(DATAFILE);
+
+#print the simulated job ID
 my $hostname = (POSIX::uname())[1];
 my $now = time;
 
 print sprintf("%010d%010d.$hostname\n",$now,$$);
+
