@@ -1,9 +1,6 @@
 #!@SH@
-
+#
 # Globus Job Manager PBS interface script for submitting a job 
-
-# Author:		Doru Marcusiu (NCSA)
-# Last Modified:	6/24/98
 #
 # This script builds a shell job script which is supplied as input
 # to the PBS qsub command. The script is built based on information
@@ -15,13 +12,14 @@
 # PBS job id is appended to the file passed as an argument to this
 # script to be used by other scripts at a later time.
 
+
 # The temporary job script is created for the submission and then removed 
 # at the end of this script. 
 
 # Inserted by configure.
 @globus_script_initializer@
 . ${libexecdir}/globus-gram-constants
-	
+    
 qsub=${GLOBUS_SH_QSUB-qsub}
 qstat=${GLOBUS_SH_QSTAT-qstat}
 awk=${GLOBUS_SH_AWK-awk}
@@ -35,20 +33,19 @@ PBS_JOB_ERR="${PBS_JOB_SCRIPT}.err"
 
 arg_file=$1
 
-	# Check for the argument file. If it does not exist
-	# then return with an error immediately
+# Check for the argument file. If it does not exist
+# then return with an error immediately
 
 if [ ! -f $arg_file ] ; then
    echo GRAM_SCRIPT_ERROR:$GLOBUS_GRAM_CLIENT_ERROR_BAD_SCRIPT_ARG_FILE
    exit 1
 fi
- 
-	# Source the argument file to set environment variables
-	# defining all the job arguments
 
+# Source the argument file to set environment variables
+# defining all the job arguments
 . $arg_file
 
-	# If a logfile name has been defined then activate debug mode
+# If a logfile name has been defined then activate debug mode
 
 if [ $grami_logfile = "/dev/null" ] ; then
     DEBUG_ECHO=:
@@ -56,8 +53,8 @@ else
     DEBUG_ECHO=echo
 fi
 
-	# Write initial debug information to logfile
 
+# Write initial debug information to logfile
 $DEBUG_ECHO in gram_script_pbs_submit                     >> $grami_logfile
 $DEBUG_ECHO ""                                            >> $grami_logfile
 $DEBUG_ECHO ============================================  >> $grami_logfile
@@ -68,70 +65,35 @@ fi
 $DEBUG_ECHO "JM_SCRIPT: ====argument file contents===="   >> $grami_logfile
 $DEBUG_ECHO ""
 
-	# The following several lines of code can be used to perform 2
-	# additional error checks prior to job submission. The first check is
-	# for the existance of the directory which the user requested
-	# be the working directory. If it does not exist the script
-	# returns an error and the job is not submitted. The second check
-	# is for existance of the file requested by the user to be used for
-	# stdin. If the file does not exist the scripts returns an error and
-	# the job is not submitted.
 
-	# These checks are only valid if performed on the file system to be used
-	# by the host on which the job will run. But, this file system may not
-	# be shared with host from which the job is submitted. Therefore, the
-	# check does not make sense. If however the host from which the job 
-	# will be submitted (i.e. the host running the globus gatekeeper)
-	# shares file systems with all the hosts which may potentially
-	# run the job these checks can be used. In order to have the job
-	# manager perform these checks the following 2 sections of code
-	# should *not* be commented out.
-
-
-	# Check for existance of directory
-
-#$DEBUG_ECHO testing for existance of directory [$grami_directory] >> $grami_logfile
-#if [ -d $grami_directory ]; then
-#   $DEBUG_ECHO directory [$grami_directory] found >> $grami_logfile
-#    cd $grami_directory
-#else
-#   $DEBUG_ECHO directory [$grami_directory] DOES NOT exist; exiting with exit code 1 >> $grami_logfile
-#   echo GRAM_SCRIPT_ERROR:$GLOBUS_GRAM_CLIENT_ERROR_BAD_DIRECTORY
-#   exit 1
-#fi
+# The following several lines of code can be used to perform 2
+# additional error checks prior to job submission. The first check is
+# for the existance of the directory which the user requested
+# be the working directory. If it does not exist the script
+# returns an error and the job is not submitted. The second check
+# is for existance of the file requested by the user to be used for
+# stdin. If the file does not exist the scripts returns an error and
+# the job is not submitted.
 #
-	# Check for existance of stdin file if not /dev/null
-#
-#if [ $grami_stdin != "/dev/null" ]; then
-#    $DEBUG_ECHO testing for existance of stdin file [$grami_stdin] >> $grami_logfile
-#    if [ -r $grami_stdin ]; then
-#        $DEBUG_ECHO stdin file [$grami_stdin] found and is readable >> $grami_logfile
-#    else
-#        $DEBUG_ECHO stdin file [$grami_stdin] DOES NOT exist or is not readable; exiting with exit code 1 >> $grami_logfile
-#        echo GRAM_SCRIPT_ERROR:$GLOBUS_GRAM_CLIENT_ERROR_STDIN_NOT_FOUND
-#        exit 1
-#    fi
-#fi
-
-        # Check for non supported parameters and return an error
-        # if found.
+# These checks are only valid if performed on the file system to be used
+# by the host on which the job will run. But, this file system may not
+# be shared with host from which the job is submitted. Therefore, the
+# check does not make sense. If however the host from which the job 
+# will be submitted (i.e. the host running the globus gatekeeper)
+# shares file systems with all the hosts which may potentially
+# run the job these checks can be used. In order to have the job
+# manager perform these checks the following 2 sections of code
+# should *not* be commented out.
 
 
+
+# Check for existance of directory
 # Check for non supported parameters here. That is, if any of the RSL parameters
 # which PBS can not support have been requested return an error.
 
 $DEBUG_ECHO testing for unsupported parameters >> $grami_logfile
 
-        # Verify existance of queue if queue parameter is not NULL
-# if (unsupported parameters found)
-#     $DEBUG_ECHO unsupported parameters found. Exiting with error. >> $grami_logfile
-# else
-#     $DEBUG_ECHO No unsupported parameters found. >> $grami_logfile
-# fi
-#
-
 $DEBUG_ECHO testing for queue attribute specification >> $grami_logfile
-
 if [ ! -z "${grami_queue}" ]; then
     $DEBUG_ECHO testing for existance of PBS queue [$grami_queue] >> $grami_logfile
     status=`${qstat} -Q $grami_queue`
@@ -140,14 +102,13 @@ if [ ! -z "${grami_queue}" ]; then
     else
         $DEBUG_ECHO PBS queue [$grami_queue] DOES NOT exist; exiting with exit code 1 >> $grami_logfile
         echo GRAM_SCRIPT_ERROR:$GLOBUS_GRAM_CLIENT_ERROR_INVALID_QUEUE
-	exit 1
+    exit 1
     fi
 else
     $DEBUG_ECHO no queue attribute specified >> $grami_logfile
 fi
 
-
-	# Determine job request type
+# Determine job request type
 
 # 4 jobtypes exist               pbs jobtype
 # -----------------              -------------------
@@ -173,19 +134,38 @@ else
    exit 1
 fi
 
-	# Determining per process cpu time limit
-
+# Determining per process cpu time limit
+# This uses max_cpu_time, or if max_cpu_time is not set, it will use
+# max_time, which will be deprecated in 1.2
 $DEBUG_ECHO testing for per process cpu time limit >> $grami_logfile
-if [ $grami_max_time -eq 0 ] ; then
-    cpu_time=0
-    $DEBUG_ECHO No per process cpu time specified, using [queue default] per process cpu time >> $grami_logfile
+
+if [ $grami_max_cpu_time -eq 0 ] ; then
+    # if not set, try max_time which will be deprecated in 1.2
+    if [ $grami_max_time -eq 0 ] ; then
+        cpu_time=0
+        $DEBUG_ECHO No per process cpu time specified, using [queue default] per process cpu time >> $grami_logfile
+    else
+        cpu_time="$grami_max_time"
+        $DEBUG_ECHO using max_time, [$cpu_time] minutes, for max per process cpu time >> $grami_logfile
+    fi
 else
-    cpu_time="$grami_max_time"
-    $DEBUG_ECHO using [$cpu_time] minutes for max per process cpu time >> $grami_logfile
+    cpu_time="$grami_max_cpu_time"
+    $DEBUG_ECHO using max_cpu_time, [$cpu_time] minutes, for max per process cpu time >> $grami_logfile
 fi
 
+# Determining process wall time limit (since processes all run at the same
+# time, the wall time should be the time needed for the longest process to
+# complete)
+$DEBUG_ECHO testing for process wall time limit >> $grami_logfile
+if [ $grami_max_wall_time -eq 0 ] ; then
+    wall_time=0
+    $DEBUG_ECHO No process wall time specified, using [queue default] process wall time >> $grami_logfile
+else
+    wall_time="$grami_max_wall_time"
+    $DEBUG_ECHO using [$wall_time] minutes for max wall time >> $grami_logfile
+fi
 
-	# Start building job script
+# Start building job script
 
 $DEBUG_ECHO starting to build PBS job script >> $grami_logfile
 
@@ -200,7 +180,29 @@ if [ ! -z "${grami_project}" ] ; then
 fi
 
 if [ $cpu_time -ne 0 ] ; then
+    if [ $pbs_jobtype = "multiple" ] ; then
+        total_cput=`expr "$cpu_time" \* "$grami_count"`
+    else
+        total_cput=$cpu_time
+    fi
     echo "#PBS -l pcput=$cpu_time:00" >> $PBS_JOB_SCRIPT
+    echo "#PBS -l cput=$total_cput:00" >> $PBS_JOB_SCRIPT
+fi
+
+if [ $wall_time -ne 0 ] ; then
+    echo "#PBS -l walltime=$wall_time:00" >> $PBS_JOB_SCRIPT
+fi
+
+# User must specify per executable memory.  If job type is multiple
+# we run multiple instances of the executable an need to multiply
+# memory size by nprocs.
+if [ "${grami_max_memory}" -ne 0 ] ; then
+    if [ $pbs_jobtype = "multiple" ] ; then
+        max_memory=`expr "$grami_max_memory" \* "$grami_count"`
+    else
+        max_memory=$grami_max_memory
+    fi
+    echo "#PBS -l mem=${max_memory}mb" >> $PBS_JOB_SCRIPT    
 fi
 
 echo "#PBS -o $grami_stdout" >> $PBS_JOB_SCRIPT
@@ -208,7 +210,7 @@ echo "#PBS -e $grami_stderr" >> $PBS_JOB_SCRIPT
 echo "#PBS -l ncpus=$grami_count" >> $PBS_JOB_SCRIPT
 #echo "#PBS -l nodes=$grami_count" >> $PBS_JOB_SCRIPT
 
-	# Check for environment variables
+# Check for environment variables
 
 #
 #loop through all the environment variables.  Variables and values are seperate
@@ -227,11 +229,9 @@ if [ ! -z "${grami_env}" ] ; then
           x=0
           new_grami_env="${new_grami_env}=$1,"
        fi
- 
        shift
    done
 fi
- 
 echo "#PBS -v $new_grami_env" >> $PBS_JOB_SCRIPT
 
 new_grami_args=""
@@ -240,23 +240,22 @@ if [ ! -z "${grami_args}" ] ; then
    new_grami_args="$*"
 fi
 
-	# Determine directory to be used as working directory 
+# Determine directory to be used as working directory 
 
 echo "\n# Changing to directory as requested by user\n" >> $PBS_JOB_SCRIPT
 echo "cd $grami_directory" >> $PBS_JOB_SCRIPT
- 
-	# Determining job request type
+# Determining job request type
 
 echo "\n# Executing job as requested by user\n" >> $PBS_JOB_SCRIPT
 if [ $pbs_jobtype = "mpi" ] ; then
     echo "${mpirun} -np $grami_count $grami_program $new_grami_args < $grami_stdin" >> $PBS_JOB_SCRIPT
 elif [ $pbs_jobtype = "multiple" ] ; then
-	counter=0
-	while (test "$counter" -lt "$grami_count")
-	    do
+    counter=0
+    while (test "$counter" -lt "$grami_count")
+        do
             echo "$grami_program $new_grami_args < $grami_stdin &" >> $PBS_JOB_SCRIPT
-	    counter=`expr $counter + 1`
-	    done
+        counter=`expr $counter + 1`
+        done
         echo "wait" >> $PBS_JOB_SCRIPT;
 else
     echo "$grami_program $new_grami_args < $grami_stdin" >> $PBS_JOB_SCRIPT
@@ -265,7 +264,8 @@ fi
 $DEBUG_ECHO PBS job script successfully built >> $grami_logfile
 $DEBUG_ECHO submitting PBS job script >> $grami_logfile
 
-	# Execute qsub command
+# Execute qsub command
+
 
 ${qsub} < $PBS_JOB_SCRIPT 1>$PBS_JOB_OUT 2>$PBS_JOB_ERR
 if (test "$?" -eq "0") then
@@ -290,7 +290,7 @@ else
    exit 1
 fi
 
-	# Remove temporary job script file
+# Remove temporary job script file
 
 ${rm} $PBS_JOB_SCRIPT $PBS_JOB_OUT $PBS_JOB_ERR
 
