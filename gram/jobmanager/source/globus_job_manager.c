@@ -1606,16 +1606,29 @@ grami_jm_request_params(globus_rsl_t * rsl_tree,
     }
 
     /*
+     * add the job contact to the environment.
+     */
+    for(x = 0; params->pgm_env[x] != GLOBUS_NULL; x++)
+    {
+        ;
+    }
+	    
+    params->pgm_env = (char **)
+           globus_libc_realloc(params->pgm_env,
+                   (x+3) * sizeof(char *));
+
+    params->pgm_env[x] = "GRAM_JOB_CONTACT";
+    ++x;
+    params->pgm_env[x] = graml_job_contact;
+    ++x;
+    params->pgm_env[x] = GLOBUS_NULL;
+
+    /*
      * Check for X509 variables and add them to the environment that is
      * passed to the schedulers.
      */
     if (grami_env_x509_cert_dir)
     {
-	for(x = 0; params->pgm_env[x] != GLOBUS_NULL; x++)
-	{
-	    ;
-	}
-	    
 	params->pgm_env = (char **)
             globus_libc_realloc(params->pgm_env,
                     (x+3) * sizeof(char *));
@@ -1630,11 +1643,6 @@ grami_jm_request_params(globus_rsl_t * rsl_tree,
 
     if (grami_env_x509_user_proxy)
     {
-	for(x = 0; params->pgm_env[x] != GLOBUS_NULL; x++)
-	{
-	    ;
-	}
-	    
 	params->pgm_env = (char **)
             globus_libc_realloc(params->pgm_env,
                     (x+3) * sizeof(char *));
