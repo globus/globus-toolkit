@@ -273,4 +273,6 @@ gram_myjob_kill()
 {
     MP_ABORT();
     abort();
+
+    return GRAM_MYJOB_ERROR_COMM_FAILURE;
 }
