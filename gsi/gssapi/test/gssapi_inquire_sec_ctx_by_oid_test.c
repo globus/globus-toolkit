@@ -139,6 +139,16 @@ server_func(
         exit(1);
     }
 
+    result = globus_gsi_gssapi_test_dump_cert_chain(
+        "cert_chain.txt",
+        context_handle);
+
+    if(result == GLOBUS_FALSE)
+    {
+	fprintf(stderr, "SERVER: Failed to dump cert chain\n");
+        exit(1);
+    }
+    
     close(server_args->fd);
     
     free(server_args);
@@ -155,28 +165,28 @@ client_func(
     void *                              arg)
 {
     struct context_arg *                client_args;
-    globus_bool_t                       result;
+    globus_bool_t                       authenticated;
     gss_ctx_id_t                        context_handle = GSS_C_NO_CONTEXT;
     char *                              user_id = NULL;
     gss_cred_id_t                       delegated_cred = GSS_C_NO_CREDENTIAL;
     int                                 connect_fd;
-    int                                 rc;
+    int                                 result;
     
     client_args = (struct context_arg *) arg;
 
     connect_fd = socket(PF_UNIX, SOCK_STREAM, 0);
 
-    rc = connect(connect_fd,
-                 (struct sockaddr *) client_args->address,
-                 sizeof(struct sockaddr_un));
+    result = connect(connect_fd,
+                     (struct sockaddr *) client_args->address,
+                     sizeof(struct sockaddr_un));
 
-    if(rc != 0)
+    if(result != 0)
     {
         abort();
     }
 
 
-    result = globus_gsi_gssapi_test_authenticate(
+    authenticated = globus_gsi_gssapi_test_authenticate(
         connect_fd,
         GLOBUS_FALSE, 
         client_args->credential, 
@@ -184,7 +194,7 @@ client_func(
         &user_id, 
         &delegated_cred);
     
-    if(result == GLOBUS_FALSE)
+    if(authenticated == GLOBUS_FALSE)
     {
         fprintf(stderr, "CLIENT: Authentication failed\n");
         exit(1);

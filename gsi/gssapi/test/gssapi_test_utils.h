@@ -46,3 +46,8 @@ globus_gsi_gssapi_test_receive_hello(
     int                                 fd,
     gss_ctx_id_t                        context);
 
+globus_bool_t
+globus_gsi_gssapi_test_dump_cert_chain(
+    char *                              filename,
+    gss_ctx_id_t                        context);
+

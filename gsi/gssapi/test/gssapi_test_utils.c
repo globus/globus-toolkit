@@ -1,5 +1,8 @@
 
 #include "gssapi_test_utils.h"
+#include "openssl/x509.h"
+#include "openssl/x509v3.h"
+
 
 
 static int
@@ -352,6 +355,81 @@ globus_gsi_gssapi_test_receive_hello(
     return result;
 }
 
+globus_bool_t
+globus_gsi_gssapi_test_dump_cert_chain(
+    char *                              filename,
+    gss_ctx_id_t                        context)
+{
+    OM_uint32                           major_status;
+    OM_uint32                           minor_status;
+    int                                 i;
+    globus_bool_t                       result = GLOBUS_TRUE;
+    FILE *                              dump_file;
+    gss_OID_desc                        cert_chain_oid =
+        {11, "\x2b\x06\x01\x04\x01\x9b\x50\x01\x01\x01\x08"}; 
+    gss_buffer_set_t                    cert_chain_buffers;
+    X509 *                              cert;
+    unsigned char *                     tmp_ptr;
+    
+    dump_file = fopen(filename,"w");
+
+    if(dump_file == NULL)
+    {
+        fprintf(stderr,"\nLINE %d ERROR: Couldn't open %s\n\n",
+                __LINE__, filename);
+        result = GLOBUS_FALSE;
+        goto exit;
+    }
+
+    major_status = gss_inquire_sec_context_by_oid(
+        &minor_status,
+        context,
+        &cert_chain_oid,
+        &cert_chain_buffers);
+
+    if(GSS_ERROR(major_status))
+    {
+        char *                          error_str;
+        globus_gss_assist_display_status_str(&error_str,
+                                             NULL,
+                                             major_status,
+                                             minor_status,
+                                             0);
+        fprintf(stderr,"\nLINE %d ERROR: %s\n\n", __LINE__, error_str);
+        result = GLOBUS_FALSE;
+        goto exit;
+    }
+
+    for(i = 0; i < cert_chain_buffers->count; i++)
+    {
+        tmp_ptr = cert_chain_buffers->elements[i].value;
+        cert = d2i_X509(NULL, &tmp_ptr,
+                        cert_chain_buffers->elements[i].length);
+        if(cert == NULL)
+        {
+            fprintf(stderr,"\nLINE %d ERROR: Couldn't deserialize cert\n\n",
+                    __LINE__);
+            result = GLOBUS_FALSE;
+            gss_release_buffer_set(&minor_status,
+                                   &cert_chain_buffers);
+            goto exit;
+        }
+        
+        X509_print_fp(dump_file,
+                      cert);
+        X509_free(cert);
+    }
+
+    gss_release_buffer_set(&minor_status,
+                           &cert_chain_buffers);
+ exit:
+    if(dump_file)
+    {
+        fclose(dump_file);
+    }
+    
+    return result;
+}
 
 static int
 get_token(

@@ -4,20 +4,6 @@ include $(top_srcdir)/globus_automake_pre_top
 SUBDIRS= \
 	pkgdata
 
-Sources= \
-	gssapi_anonymous_test.c \
-	gssapi_delegation_test.c \
-	gssapi_limited_delegation_test.c \
-	gssapi_delegation_compat_test.c \
-	gssapi_test_utils.c \
-	gssapi_test_utils.h \
-	gssapi_thread_test.c \
-	gssapi_context_test.c \
-	gssapi_acquire_test.c \
-	gssapi_openssl.h \
-	globus_gsi_gss_constants.h
-#	gssapi_group_test.c \
-
 AM_CFLAGS += $(GPT_CFLAGS) 
 
 INCLUDES += $(GPT_INCLUDES)
@@ -32,6 +18,7 @@ Scripts= \
 	gssapi-context-test.pl \
 	gssapi-expimp-test.pl \
 	gssapi-acquire-test.pl \
+	gssapi-inquire-sec-ctx-by-oid-test.pl \
 	run-gssapi-tests.pl
 #	gssapi-group-test.pl \
 
@@ -64,6 +51,7 @@ test_PROGRAMS= \
 	gssapi-thread-test \
 	gssapi-context-test \
 	gssapi-expimp-test \
+	gssapi-inquire-sec-ctx-by-oid-test \
 	gssapi-acquire-test 
 #	gssapi-group-test \
 
@@ -142,6 +130,15 @@ gssapi_expimp_test_SOURCES =	gssapi_expimp_test.c \
 gssapi_expimp_test_LDFLAGS = $(GPT_LDFLAGS)
 
 gssapi_expimp_test_LDADD = $(GPT_PGM_LINKS)
+
+gssapi_inquire_sec_ctx_by_oid_test_SOURCES = \
+				gssapi_inquire_sec_ctx_by_oid_test.c \
+				gssapi_test_utils.c \
+				gssapi_test_utils.h
+
+gssapi_inquire_sec_ctx_by_oid_test_LDFLAGS = $(GPT_LDFLAGS)
+
+gssapi_inquire_sec_ctx_by_oid_test_LDADD = $(GPT_PGM_LINKS)
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top
