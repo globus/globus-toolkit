@@ -1,3 +1,4 @@
+#ifdef BUILD_GSSAPI_PLUGIN
 /* Generic SASL plugin utility functions
  * Rob Siemborski
  * $Id: plugin_common.c,v 1.20 2004/06/23 18:43:37 rjs3 Exp $
@@ -921,4 +922,5 @@ unsigned int plug_sleep (unsigned int seconds)
     Sleep (dwSec);
     return 0;
 }
+#endif
 #endif
