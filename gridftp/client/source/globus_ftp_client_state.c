@@ -1139,7 +1139,8 @@ redo:
 	    "DCAU %c%s%s" CRLF,
 	    globus_i_ftp_client_response_callback,
 	    target,
-	    (char) target->attr->dcau.mode,
+	    (char) target->attr->dcau.mode == GLOBUS_FTP_CONTROL_DCAU_DEFAULT
+	        ? GLOBUS_FTP_CONTROL_DCAU_SELF : target->attr->dcau.mode,
 	    target->attr->dcau.mode == GLOBUS_FTP_CONTROL_DCAU_SUBJECT
 		? " " : "",
 	    target->attr->dcau.mode == GLOBUS_FTP_CONTROL_DCAU_SUBJECT
