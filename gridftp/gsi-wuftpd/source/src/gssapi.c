@@ -287,7 +287,8 @@ gssapi_identity()
 int
 gssapi_check_authorization(char *gssapi_name, char *account)
 {
-#ifdef GSSAPI_KRB5
+/* we can use the KRB5 kuserok, or the gridmap */
+#if defined(GSSAPI_KRB5) && !defined(GRIDMAP_WITH_KRB5)
     	int retval = -1;
 	krb5_boolean k5ret;
 	krb5_context kc;
@@ -331,7 +332,7 @@ gssapi_check_authorization(char *gssapi_name, char *account)
 	return retval;
 #endif /* GSSAPI_KRB5 */
 
-#ifdef GSSAPI_GLOBUS
+#if defined(GSSAPI_GLOBUS) || defined(GRIDMAP_WITH_KRB5)
 	int retval = -1;	/* 0 == authorized */
 
 

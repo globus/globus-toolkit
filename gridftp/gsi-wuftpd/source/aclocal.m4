@@ -18,6 +18,7 @@ dnl  GSSAPI_KRB5              The user requested Kerberos 5 GSSAPI support
 dnl  HAVE_GSS_SEAL            The gss_seal() function is present.
 dnl  HAVE_GSS_UNSEAL          The gss_unseal() function is present.
 dnl  HAVE_GSS_EXPORT_NAME     The gss_export_name() function is present.
+dnl  GRIDMAP_WITH_KRB5        Use the gridmap with Kerberos
 
 
 AC_DEFUN([GSSAPI_CONFIG],
@@ -37,6 +38,15 @@ AC_ARG_WITH(gssapi,
      gssapi_type="none"
 fi])
 
+
+AC_ARG_WITH(gridmap-dir,
+[  --with-gridmap-dir=<DIR> With krb5, use gridmap from globus or gsi],
+[gridmap_dir=$withval], 
+[if test -z "$gridmap_dir"; then
+	gridmap_dir="no"
+fi])
+
+AC_MSG_CHECKING(girdmap-dir $gridmap_dir)
 
 case $gssapi_type in
   no|none)	# No support
@@ -75,6 +85,7 @@ if test "$gssapi_type" = "globus" ; then
 	AC_DEFINE(GSSAPI_GLOBUS)
 
 	# Find GLOBUS/GSI installation Directory
+	globus_install_dir="$gssapi_dir"
 	CHECK_GLOBUS_DEVELOPMENT_PATH(true)
 
         if test "$globus_install_dir" != "$globus_dev_dir"; then
@@ -95,7 +106,8 @@ if test "$gssapi_type" = "globus" ; then
             dnl XXX Should be able to figure this out from Globus/GSI install dir
             AC_MSG_CHECKING(for ssleay directory)
             AC_ARG_WITH(ssl-dir,
-                    [  --with-ssl-dir=<DIR>  Root directory for ssleay stuff],
+                    [  --with-ssl-dir=<DIR>  Root directory for OpenSSL or ssleay stuff
+                        Only needed with globus or gsi],
                     ssleay_dir=$withval,
                     ssleay_dir="/usr/local/ssl")
 	    if test ! -d ${ssleay_dir} ; then
@@ -155,7 +167,26 @@ elif test "$gssapi_type" = "krb5" ; then
 	GSSAPI_CFLAGS="-I${krb5_install_dir}/include $GSSAPI_CFLAGS"
 	# For <gssapi.h>
 	GSSAPI_CFLAGS="-I${krb5_install_dir}/include/gssapi $GSSAPI_CFLAGS"
+	
+	if test "$gridmap_dir" != "no" ; then 
 
+		AC_MSG_CHECKING(Using gridmap with Kerberos)
+		AC_DEFINE(GRIDMAP_WITH_KRB5)
+
+		# Find GLOBUS/GSI installation Directory
+		globus_install_dir="$gridmap_dir"
+		CHECK_GLOBUS_DEVELOPMENT_PATH(true)
+
+        if test "$globus_install_dir" != "$globus_dev_dir"; then
+            GSSAPI_LIBS='$(INSTALL_LIBDIR) -lglobus_gss_assist $GSSAPI_LIBS'
+            GSSAPI_LDFLAGS='$(GLOBUS_GSSAPI_LDFLAGS) $GSSAPI_LDFLAGS'
+            GSSAPI_CFLAGS='$(INSTALL_INCLUDE) $(GLOBUS_GSSAPI_CFLAGS) $GSSAPI_CFLAGS'
+        else
+            GSSAPI_LIBS="-lglobus_gss_assist $GSSAPI_LIBS"
+            GSSAPI_LDFLAGS="-L${globus_dev_dir}/lib $GSSAPI_LDFLAGS"
+            GSSAPI_CFLAGS="-I${globus_dev_dir}/include $GSSAPI_CFLAGS"
+		fi
+	fi
 	# End Kerberos 5 Section
 fi
 
@@ -303,11 +334,11 @@ AC_DEFUN(CHECK_SETJMP,[
 dnl CHECK_GLOBUS_DEVELOPMENT_PATH([true|false])
 dnl if $1 is true, then an installation which did not do
 dnl globus-install is ok. Otherwise, fail in that case.
+dnl globus_install_dir should be set to be tested 
 AC_DEFUN(CHECK_GLOBUS_DEVELOPMENT_PATH,[dnl
 
     AC_MSG_CHECKING(for Globus/GSI installation directory)
 
-    globus_install_dir=$gssapi_dir
 
     if test x"$globus_install_dir" = x"none" -o x"$globus_install_dir" = x""; then
 	if test -n "$GLOBUS_INSTALL_PATH" ; then
@@ -377,6 +408,7 @@ GLOBUS_DATA_LIBS=""
 
 if test $globus_data = yes; then
 	AC_DEFINE(USE_GLOBUS_DATA_CODE)
+	globus_install_dir="$gssapi_dir"
 	CHECK_GLOBUS_DEVELOPMENT_PATH(false)
 	GLOBUS_DATA_CFLAGS='$(INSTALL_INCLUDE) $(GLOBUS_FTP_CONTROL_CFLAGS) $(BASE_CFLAGS)'
 	GLOBUS_DATA_LDFLAGS='$(GLOBUS_FTP_CONTROL_LDFLAGS) $(BASE_LDFLAGS)'

@@ -2214,8 +2214,10 @@ void user(char *name)
 		 * We always needs the PASS command for our state machine
 		 * so we always send back 331, even though we may just
 		 * need a dummy password.
-		 */
-		reply(331, "GSSAPI user %s is%s authorized as %s%s",
+         * But the Kerberos ftpd sends 232 if OK as per draft 8
+         */
+        reply(gssapi_user_is_good? 232 : 331, 
+			  "GSSAPI user %s is%s authorized as %s%s",
 		      gssapi_name,
 		      (gssapi_user_is_good ? "" : " not"),
 		      name,

@@ -234,6 +234,8 @@
 #undef GSSAPI_KRB5
 #undef GSSAPI_GLOBUS
 
+#undef GRIDMAP_WITH_KRB5
+
 /*
  *  LBL striped server
  */
