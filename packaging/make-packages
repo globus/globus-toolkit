@@ -10,7 +10,7 @@
 version="0.3"
 
 usage () {
-	echo $0: Usage:  $0 "[-p p1 p2 ...] [-t tag] [-i dir [-r]] [-n] [-h] [-c | -j] [-a] [-s | -b]"
+	echo $0: Usage:  $0 "[-p \"p1 p2 ...\"] [-t tag] [-i dir [-r] ] [-n] [-h] [-c | -j] [-a] [-s | -b]"
 	echo
 	echo "With no arguments, checkout and build all of GT3."
 	echo "	$0 -p \"p1 p2 ...\" 	Build packages p1, p2, ..."
@@ -472,6 +472,10 @@ if [ x"$package" != "x" ]; then
 
 	#Build GT2 autotools, as globus_grim needs them
 	build_gt2_autotools
+	
+	if [ x$dir != "x" ]; then
+		export GLOBUS_LOCATION=$dir
+	fi
 
 	package_iter $package
 
@@ -480,16 +484,9 @@ if [ x"$package" != "x" ]; then
 	for f in $package; do
 		if [ -d ${f}*-src ]; then
 			tar czf package-output/${f}-${version}.tar.gz ${f}*-src
+			$GPT_LOCATION/sbin/gpt-build package-output/${f}-${version}.tar.gz gcc32dbg
 		fi
 	done
-
-	if [ x$dir != "x" ]; then
-
-		export GLOBUS_LOCATION=$dir
-
-		$GPT_LOCATION/sbin/gpt-bundle -nodeps -bn=custom-src -bv=1.0 -srcdir=package-output $package
-		$GPT_LOCATION/sbin/gpt-build custom-src-1.0-src_bundle.tar.gz gcc32dbg
-	fi
 
 	exit
 fi
