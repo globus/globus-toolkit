@@ -330,7 +330,8 @@ globus_l_gsc_cmd_prot(
 static void
 globus_l_gsc_cmd_mdtm_cb(
     globus_i_gsc_op_t *                     op,
-    globus_result_t                         result,
+    globus_gridftp_server_control_response_t response_type,
+    char *                                  response_msg,
     char *                                  path,
     globus_gridftp_server_control_stat_t *  stat_info,
     int                                     stat_count,
@@ -340,9 +341,15 @@ globus_l_gsc_cmd_mdtm_cb(
     char *                                  msg;
     GlobusGridFTPServerName(globus_l_gsc_cmd_mdtm_cb);
 
-    if(result != GLOBUS_SUCCESS)
+    if(response_type != GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS)
     {
-        msg = globus_libc_strdup("500 Command failed\r\n");
+        switch(response_type)
+        {
+            default:
+                /* TODO: evaulated error type */
+                msg = globus_libc_strdup("500 Command failed\r\n");
+                break;
+        }
     }
     else
     {
@@ -502,7 +509,8 @@ globus_l_gsc_cmd_pwd(
 static void
 globus_l_gsc_cmd_cwd_cb(
     globus_i_gsc_op_t *                     op,
-    globus_result_t                         result,
+    globus_gridftp_server_control_response_t response_type,
+    char *                                  response_msg,
     char *                                  path,
     globus_gridftp_server_control_stat_t *  stat_info,
     int                                     stat_count,
@@ -515,11 +523,28 @@ globus_l_gsc_cmd_cwd_cb(
     /*
      *  decide what message to send
      */
-    if(result != GLOBUS_SUCCESS || stat_count < 1)
+    if(response_type != GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS ||
+        stat_count < 1)
     {
-        msg = globus_common_create_string(
-            "550 %s: Could not change directory.\r\n",
-            path);
+        switch(response_type)
+        {
+            case GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_PATH_INVALID:
+                msg = globus_common_create_string(
+                    "550 %s: No such file or directory.\r\n",
+                    path);
+                break;
+
+            case GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_ACCESS_DENINED:
+                msg = globus_common_create_string(
+                    "553 Permission denied.\r\n");
+                break;
+
+            default:
+                msg = globus_common_create_string(
+                    "550 %s: Could not change directory.\r\n",
+                    path);
+                break;
+        }
     }
     else if(!S_ISDIR(stat_info->mode))
     {
@@ -648,7 +673,8 @@ globus_l_gsc_cmd_cwd(
 static void
 globus_l_gsc_cmd_stat_cb(
     globus_i_gsc_op_t *                     op,
-    globus_result_t                         result,
+    globus_gridftp_server_control_response_t response_type,
+    char *                                  response_msg,
     char *                                  path,
     globus_gridftp_server_control_stat_t *  stat_info,
     int                                     stat_count,
@@ -658,9 +684,24 @@ globus_l_gsc_cmd_stat_cb(
     char *                                  tmp_ptr;
     GlobusGridFTPServerName(globus_l_gsc_cmd_stat_cb);
 
-    if(result != GLOBUS_SUCCESS)
+    if(response_type != GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS)
     {
-        msg = globus_libc_strdup("500 Command failed\r\n");
+        switch(response_type)
+        {
+            case GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_PATH_INVALID:
+                msg = globus_common_create_string(
+                    "550 No such file or directory.\r\n");
+                break;
+
+            case GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_ACCESS_DENINED:
+                msg = globus_common_create_string(
+                    "553 Permission denied.\r\n");
+                break;
+
+            default:
+                msg = globus_libc_strdup("500 Command failed\r\n");
+                break;
+        }
     }
     else
     {
@@ -751,7 +792,8 @@ globus_l_gsc_cmd_stat(
 static void
 globus_l_gsc_cmd_size_cb(
     globus_i_gsc_op_t *                     op,
-    globus_result_t                         result,
+    globus_gridftp_server_control_response_t response_type,
+    char *                                  response_msg,
     char *                                  path,
     globus_gridftp_server_control_stat_t *  stat_info,
     int                                     stat_count,
@@ -760,9 +802,25 @@ globus_l_gsc_cmd_size_cb(
     char *                                  msg = NULL;
     GlobusGridFTPServerName(globus_l_gsc_cmd_size_cb);
 
-    if(result != GLOBUS_SUCCESS || stat_count < 1)
+    if(response_type != GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS ||
+        stat_count < 1)
     {
-        msg = globus_libc_strdup("550 Command failed.\r\n");
+        switch(response_type)
+        {
+            case GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_PATH_INVALID:
+                msg = globus_common_create_string(
+                    "550 No such file.\r\n");
+                break;
+
+            case GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_ACCESS_DENINED:
+                msg = globus_common_create_string(
+                    "553 Permission denied.\r\n");
+                break;
+
+            default:
+                msg = globus_libc_strdup("500 Command failed\r\n");
+                break;
+        }
     }
     else
     {
@@ -900,13 +958,14 @@ globus_l_gsc_cmd_user(
 static void
 globus_l_gsc_auth_cb(
     globus_i_gsc_op_t *                     op,
-    globus_result_t                         result,
+    globus_gridftp_server_control_response_t response_type,
+    char *                                  response_msg,
     void *                                  user_arg)
 {
     char *                                  msg;
     char *                                  tmp_ptr;
 
-    if(result == GLOBUS_SUCCESS)
+    if(response_type == GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS)
     {
         if(op->server_handle->post_auth_banner == NULL)
         {
@@ -1479,7 +1538,8 @@ globus_l_gsc_cmd_rest(
 static void
 globus_l_gsc_cmd_pasv_cb(
     globus_i_gsc_op_t *                     op,
-    globus_result_t                         res,
+    globus_gridftp_server_control_response_t response_type,
+    char *                                  response_msg,
     const char **                           cs,
     int                                     addr_count,
     void *                                  user_arg)
@@ -1499,8 +1559,9 @@ globus_l_gsc_cmd_pasv_cb(
     wrapper = (globus_l_gsc_cmd_wrapper_t *) user_arg;
     wrapper->op = op;
 
-    if(res != GLOBUS_SUCCESS)
+    if(response_type != GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS)
     {
+        /* TODO: evaulated error type */
         globus_gsc_959_finished_command(op, "500 Command failed.\r\n");
         goto err;
     }
@@ -1781,12 +1842,13 @@ globus_l_gsc_cmd_pasv(
 static void
 globus_l_gsc_cmd_port_cb(
     globus_i_gsc_op_t *                     op,
-    globus_result_t                         res,
+    globus_gridftp_server_control_response_t response_type,
+    char *                                  response_msg,
     void *                                  user_arg)
 {
-
-    if(res != GLOBUS_SUCCESS)
+    if(response_type != GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS)
     {
+        /* TODO: evaulated error type */
         globus_gsc_959_finished_command(
             op, "500 PORT Command failed.\r\n");
     }
@@ -2098,15 +2160,17 @@ globus_l_gsc_cmd_port(
 static void 
 globus_l_gsc_data_cb(
     globus_i_gsc_op_t *                     op,
-    globus_result_t                         res,
+    globus_gridftp_server_control_response_t response_type,
+    char *                                  response_msg,
     void *                                  user_arg)
 {
     globus_l_gsc_cmd_wrapper_t *            wrapper;
 
     wrapper = (globus_l_gsc_cmd_wrapper_t *) user_arg;
 
-    if(res != GLOBUS_SUCCESS)
+    if(response_type != GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS)
     {
+        /* TODO: evaulated error type */
         globus_gsc_959_finished_command(wrapper->op, "500 Command failed\r\n");
     }
     else

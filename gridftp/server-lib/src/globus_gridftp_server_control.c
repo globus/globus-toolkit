@@ -292,7 +292,7 @@ globus_l_gsc_op_create(
     server_handle->ref++;
 
     op->server_handle = server_handle;
-    op->res = GLOBUS_SUCCESS;
+    op->response_type = GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS;
     op->cmd_list = globus_list_concat(server_handle->all_cmd_list, cmd_list);
     op->ref = 1;
 
@@ -760,8 +760,8 @@ globus_l_gsc_finished_op(
             break;
 
         case GLOBUS_L_GSC_STATE_ABORTING_STOPPING:
-            globus_i_gsc_op_destroy(op);
             server_handle->state = GLOBUS_L_GSC_STATE_STOPPING;
+            globus_i_gsc_op_destroy(op);
             break;
 
         case GLOBUS_L_GSC_STATE_STOPPING:
@@ -902,7 +902,7 @@ globus_l_gsc_open_cb(
 
   err:
     server_handle->ref--;
-    GlobusLRegisterDone(server_handle);
+    globus_l_gsc_server_ref_check(server_handle);
     globus_mutex_unlock(&server_handle->mutex);
 }
 
@@ -2940,7 +2940,7 @@ globus_i_gsc_resource_query(
     op->path = globus_libc_strdup(path);
     op->mask = mask;
     op->user_arg = user_arg;
-    op->res = GLOBUS_SUCCESS;
+    op->response_type = GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS;
 
     if(op->server_handle->funcs.resource_cb != NULL)
     {
@@ -2981,7 +2981,7 @@ globus_i_gsc_authenticate(
 
     op->auth_cb = cb;
     op->type = GLOBUS_L_GSC_OP_TYPE_AUTH;
-    op->res = GLOBUS_SUCCESS;
+    op->response_type = GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS;
     op->user_arg = user_arg;
 
     if(user != NULL)
@@ -3188,7 +3188,7 @@ globus_i_gsc_list(
         return GlobusGridFTPServerControlErrorSyntax();
     }
 
-    return op->res;
+    return GLOBUS_SUCCESS;
 }
 
 globus_result_t
@@ -3388,14 +3388,16 @@ globus_l_gsc_internal_cb_kickout(
         case GLOBUS_L_GSC_OP_TYPE_AUTH:
             op->auth_cb(
                 op,
-                op->res,
+                op->response_type,
+                op->response_msg,
                 op->user_arg);
             break;
 
         case GLOBUS_L_GSC_OP_TYPE_RESOURCE:
             op->stat_cb(
                 op,
-                op->res,
+                op->response_type,
+                op->response_msg,
                 op->path,
                 op->stat_info,
                 op->stat_count,
@@ -3405,7 +3407,8 @@ globus_l_gsc_internal_cb_kickout(
         case GLOBUS_L_GSC_OP_TYPE_CREATE_PASV:
             op->passive_cb(
                 op,
-                op->res,
+                op->response_type,
+                op->response_msg,
                 (const char **)op->cs,
                 op->max_cs,
                 op->user_arg);
@@ -3414,7 +3417,8 @@ globus_l_gsc_internal_cb_kickout(
         case GLOBUS_L_GSC_OP_TYPE_CREATE_PORT:
             op->port_cb(
                 op,
-                op->res,
+                op->response_type,
+                op->response_msg,
                 op->user_arg);
             break;
 
@@ -3425,7 +3429,8 @@ globus_l_gsc_internal_cb_kickout(
         case GLOBUS_L_GSC_OP_TYPE_MLSD:
             op->transfer_cb(
                 op,
-                op->res,
+                op->response_type,
+                op->response_msg,
                 op->user_arg);
             break;
 
@@ -3438,8 +3443,9 @@ globus_l_gsc_internal_cb_kickout(
 globus_result_t
 globus_gridftp_server_control_finished_auth(
     globus_i_gsc_op_t *                 op,
-    globus_result_t                     res,
-    uid_t                               uid)
+    uid_t                               uid,
+    globus_gridftp_server_control_response_t response_code,
+    const char *                            msg)
 {
     GlobusGridFTPServerName(globus_gridftp_server_control_finished_auth);
 
@@ -3454,12 +3460,17 @@ globus_gridftp_server_control_finished_auth(
 
     globus_mutex_lock(&op->server_handle->mutex);
     {
-        if(res == GLOBUS_SUCCESS)
+        op->response_type = response_code;
+        if(op->response_type == GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS)
         {
             op->server_handle->authenticated = GLOBUS_TRUE;
             op->server_handle->uid = uid;
         }
-        op->res = res;
+        op->response_msg = NULL;
+        if(msg != NULL)
+        {
+            op->response_msg = strdup(msg);
+        }
         if(op->auth_cb != NULL)
         {
             GlobusLGSCRegisterInternalCB(op);
@@ -3473,9 +3484,10 @@ globus_gridftp_server_control_finished_auth(
 globus_result_t
 globus_gridftp_server_control_finished_resource(
     globus_gridftp_server_control_op_t  op,
-    globus_result_t                     result,
     globus_gridftp_server_control_stat_t *  stat_info_array,
-    int                                 stat_count)
+    int                                 stat_count,
+    globus_gridftp_server_control_response_t response_code,
+    const char *                            msg)
 {
     int                                 ctr;
     globus_result_t                     res = GLOBUS_SUCCESS;
@@ -3485,9 +3497,13 @@ globus_gridftp_server_control_finished_resource(
     {
         return GlobusGridFTPServerErrorParameter("op");
     }
-    
-    res = result;
-    op->res = result;
+
+    op->response_type = response_code;
+    op->response_msg = NULL;
+    if(msg != NULL)
+    {
+        op->response_msg = strdup(msg);
+    }
     
     if(res == GLOBUS_SUCCESS)
     {
@@ -3510,15 +3526,16 @@ globus_gridftp_server_control_finished_resource(
         res = GLOBUS_FAILURE;
     }
 
-    return res;
+    return GLOBUS_SUCCESS;
 }
 
 globus_result_t
 globus_gridftp_server_control_finished_active_connect(
     globus_gridftp_server_control_op_t  op,
     void *                              user_data_handle,
-    globus_result_t                     res,
-    globus_gridftp_server_control_data_dir_t data_dir)
+    globus_gridftp_server_control_data_dir_t data_dir,
+    globus_gridftp_server_control_response_t response_code,
+    const char *                            msg)
 {
     globus_i_gsc_data_t *               data_obj;
     GlobusGridFTPServerName(globus_gridftp_server_control_finished_active_connect);
@@ -3558,10 +3575,11 @@ globus_result_t
 globus_gridftp_server_control_finished_passive_connect(
     globus_gridftp_server_control_op_t  op,
     void *                              user_data_handle,
-    globus_result_t                     res,
     globus_gridftp_server_control_data_dir_t data_dir,
     const char **                       cs,
-    int                                 cs_count)
+    int                                 cs_count,
+    globus_gridftp_server_control_response_t response_code,
+    const char *                            msg)
 {
     globus_i_gsc_data_t *               data_obj;
     int                                 ctr;
@@ -3601,7 +3619,13 @@ globus_gridftp_server_control_finished_passive_connect(
     }
     op->cs[ctr] = NULL;
     op->max_cs = cs_count;
-    op->res = res;
+
+    op->response_type = response_code;
+    op->response_msg = NULL;
+    if(msg != NULL)
+    {
+        op->response_msg = strdup(msg);
+    }
 
     globus_mutex_lock(&op->server_handle->mutex);
     {
@@ -3684,7 +3708,8 @@ globus_gridftp_server_control_begin_transfer(
 globus_result_t
 globus_gridftp_server_control_finished_transfer(
     globus_gridftp_server_control_op_t  op,
-    globus_result_t                     res)
+    globus_gridftp_server_control_response_t response_code,
+    const char *                            msg)
 {
     GlobusGridFTPServerName(globus_gridftp_server_control_finished_transfer);
 
@@ -3701,7 +3726,12 @@ globus_gridftp_server_control_finished_transfer(
         return GlobusGridFTPServerErrorParameter("op");
     }
 
-    op->res = res;
+    op->response_type = response_code;
+    op->response_msg = NULL;
+    if(msg != NULL)
+    {
+        op->response_msg = strdup(msg);
+    }
 
     globus_mutex_lock(&op->server_handle->mutex);
     {

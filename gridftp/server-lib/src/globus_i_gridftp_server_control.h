@@ -82,13 +82,15 @@ typedef enum globus_i_gsc_mlsx_fact_e
 typedef void
 (*globus_i_gsc_auth_cb_t)(
     struct globus_i_gsc_op_s *              op,
-    globus_result_t                         result,
+    globus_gridftp_server_control_response_t response_type,
+    char *                                  response_msg,
     void *                                  user_arg);
 
 typedef void
 (*globus_i_gsc_resource_cb_t)(
     struct globus_i_gsc_op_s *              op,
-    globus_result_t                         result,
+    globus_gridftp_server_control_response_t response_type,
+    char *                                  response_msg,
     char *                                  path,
     globus_gridftp_server_control_stat_t *  stat_info,
     int                                     stat_count,
@@ -97,7 +99,8 @@ typedef void
 typedef void
 (*globus_i_gsc_passive_cb_t)(
     struct globus_i_gsc_op_s *              op,
-    globus_result_t                         result,
+    globus_gridftp_server_control_response_t response_type,
+    char *                                  response_msg,
     const char **                           cs,
     int                                     addr_count,
     void *                                  user_arg);
@@ -105,13 +108,15 @@ typedef void
 typedef void
 (*globus_i_gsc_port_cb_t)(
     struct globus_i_gsc_op_s *              op,
-    globus_result_t                         result,
+    globus_gridftp_server_control_response_t response_type,
+    char *                                  response_msg,
     void *                                  user_arg);
 
 typedef void
 (*globus_i_gsc_transfer_cb_t)(
     struct globus_i_gsc_op_s *              op,
-    globus_result_t                         result,
+    globus_gridftp_server_control_response_t response_type,
+    char *                                  response_msg,
     void *                                  user_arg);
 
 typedef struct globus_i_gsc_data_s
@@ -207,7 +212,9 @@ typedef struct globus_i_gsc_op_s
 
     int                                     ref;
     struct globus_i_gsc_server_handle_s *   server_handle;
-    globus_result_t                         res;
+
+    globus_gridftp_server_control_response_t response_type;
+    char *                                  response_msg;
 
     globus_list_t *                         cmd_list;
     globus_bool_t                           done;
