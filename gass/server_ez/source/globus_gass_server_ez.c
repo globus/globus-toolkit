@@ -587,7 +587,7 @@ globus_l_gass_server_ez_register_accept_callback(
 		globus_gass_transfer_deny(request, 404, "File Not Found");
 		globus_gass_transfer_request_destroy(request);
                 globus_url_destroy(&parsed_url);
-		goto reregister:
+		goto reregister;
 	    }
 
             buf = globus_malloc(1024);
