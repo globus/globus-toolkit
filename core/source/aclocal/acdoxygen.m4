@@ -56,7 +56,13 @@ AC_DEFUN(LAC_DOXYGEN_PREDEFINES,dnl
 AC_DEFUN(LAC_DOXYGEN,dnl
 [
     AC_PATH_PROG(DOT, dot)
-    AC_PATH_PROG(PERL, perl5 perl)
+	
+    if test -z "$GLOBUS_PERL" ; then
+       AC_PATH_PROG(PERL, perl)
+    else
+	PERL="$GLOBUS_PERL"
+	AC_SUBST(PERL)
+    fi
     if test "$DOT" != ""; then
        HAVE_DOT=YES
     else
