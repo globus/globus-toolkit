@@ -624,7 +624,7 @@ globus_i_gfs_data_active_request(
             &addresses[i].host[2], 
             &addresses[i].host[3], 
             &addresses[i].port);
-        if(rc < 6)
+        if(rc < 5)
         {
             result = GlobusGFSErrorGeneric("Bad contact string");
             goto error_format;

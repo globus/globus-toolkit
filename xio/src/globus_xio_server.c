@@ -58,6 +58,7 @@ do                                                                      \
     globus_i_xio_server_t *                         _s;                 \
                                                                         \
     _s = (_in_s);                                                       \
+    globus_callback_space_destroy(_s->space);                           \
     globus_mutex_destroy(&_s->mutex);                                   \
     globus_free(_s);                                                    \
 } while (0)
@@ -781,6 +782,7 @@ globus_xio_server_create(
         {
             xio_server->accept_timeout = server_attr->accept_timeout_cb;
             xio_server->space = server_attr->space;
+            globus_callback_space_reference(xio_server->space);
         }
         /* walk through the stack and add each entry to the array */
         ctr = 0;

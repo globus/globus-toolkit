@@ -17,7 +17,8 @@ globus_l_gfs_channel_close_cb(
         GLOBUS_I_GFS_LOG_INFO,
         "Closed connection from %s\n",
         instance->remote_contact);
-        
+    
+    globus_free(instance->remote_contact);
     globus_free(instance);
 }
 

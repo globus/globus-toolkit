@@ -1949,8 +1949,14 @@ globus_l_gsc_pmod_959_data_cb(
             wrapper->op, "226 Transfer Complete.\r\n");
     }
 
-    globus_free(wrapper->mod_name);
-    globus_free(wrapper->mod_parms);
+    if(wrapper->mod_name)
+    {
+        globus_free(wrapper->mod_name);
+    }
+    if(wrapper->mod_parms)
+    {
+        globus_free(wrapper->mod_parms);
+    }
     globus_free(wrapper->path);
     globus_free(wrapper);
 }

@@ -1609,86 +1609,47 @@ globus_l_xio_handle_cancel_operations(
 {
     globus_list_t *                         list;
     globus_i_xio_op_t *                     tmp_op;
-    globus_result_t                         res = GLOBUS_SUCCESS;
     GlobusXIOName(globus_l_xio_handle_cancel_operations);
 
     GlobusXIODebugInternalEnter();
 
     globus_mutex_lock(&xio_handle->cancel_mutex);
     {
-        if(mask & GLOBUS_XIO_CANCEL_OPEN)
+        if(mask & GLOBUS_XIO_CANCEL_OPEN && xio_handle->open_op != NULL)
         {
-            if(xio_handle->open_op == NULL)
-            {
-                res = GlobusXIOErrorNotRegistered();
-            }
-            else
-            {
-                res = globus_i_xio_operation_cancel(xio_handle->open_op);
-            }
+            globus_i_xio_operation_cancel(xio_handle->open_op);
         }
-        if(mask & GLOBUS_XIO_CANCEL_CLOSE)
+        if(mask & GLOBUS_XIO_CANCEL_CLOSE && xio_handle->close_op != NULL)
         {
-            if(xio_handle->close_op == NULL)
-            {
-                res = GlobusXIOErrorNotRegistered();
-            }
-            else
-            {
-                res = globus_i_xio_operation_cancel(xio_handle->close_op);
-            }
+            globus_i_xio_operation_cancel(xio_handle->close_op);
         }
         if(mask & GLOBUS_XIO_CANCEL_READ)
         {
-            if(globus_list_empty(xio_handle->read_op_list))
+            /* remove all outstanding read ops */
+            for(list = xio_handle->read_op_list;
+                !globus_list_empty(list);
+                list = globus_list_rest(list))
             {
-                res = GlobusXIOErrorNotRegistered();
-            }
-            else
-            {
-                /* remove all outstanding read ops */
-                for(list = xio_handle->read_op_list;
-                    !globus_list_empty(list);
-                    list = globus_list_rest(list))
-                {
-                    tmp_op = (globus_i_xio_op_t *) 
-                                globus_list_first(list);
-                    res = globus_i_xio_operation_cancel(tmp_op);
-                }
+                tmp_op = (globus_i_xio_op_t *) globus_list_first(list);
+                globus_i_xio_operation_cancel(tmp_op);
             }
         }
         if(mask & GLOBUS_XIO_CANCEL_WRITE)
         {
-            if(globus_list_empty(xio_handle->write_op_list))
+            for(list = xio_handle->write_op_list;
+                !globus_list_empty(list);
+                list = globus_list_rest(list))
             {
-                res = GlobusXIOErrorNotRegistered();
-            }
-            else
-            {
-                for(list = xio_handle->write_op_list;
-                    !globus_list_empty(list);
-                    list = globus_list_rest(list))
-                {
-                    tmp_op = (globus_i_xio_op_t *)  
-                                globus_list_first(list);
-                    res = globus_i_xio_operation_cancel(tmp_op);
-                }
+                tmp_op = (globus_i_xio_op_t *) globus_list_first(list);
+                globus_i_xio_operation_cancel(tmp_op);
             }
         }
     }
     globus_mutex_unlock(&xio_handle->cancel_mutex);
 
-    if(res != GLOBUS_SUCCESS)
-    {
-        GlobusXIODebugInternalExit();
-    }
-    else
-    {
-        GlobusXIODebugInternalExitWithError();
-    }
+    GlobusXIODebugInternalExit();
 
-    /* cancel doesn't fail sonce it is a best effort method */
-    return res;
+    return GLOBUS_SUCCESS;
 }
 /********************************************************************
  *                        API functions 

@@ -200,6 +200,7 @@ globus_i_xio_handle_destroy(
         globus_i_xio_context_destroy(handle->context);
     }
     globus_assert(handle->ref == 0);
+    globus_callback_space_destroy(handle->space);
     globus_free(handle);
 
     GlobusXIODebugInternalExit();

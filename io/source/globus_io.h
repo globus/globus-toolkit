@@ -292,16 +292,6 @@ globus_io_tcp_get_remote_address(
     unsigned short *                    port);
 
 globus_result_t
-globus_io_tcp_get_attr(
-    globus_io_handle_t *                handle,
-    globus_io_attr_t *                  attr);
-
-globus_result_t
-globus_io_tcp_set_attr(
-    globus_io_handle_t *                handle,
-    globus_io_attr_t *                  attr);
-
-globus_result_t
 globus_io_tcp_posix_convert(
     int                                 socket,
     globus_io_attr_t *                  attributes,
@@ -455,8 +445,6 @@ globus_bool_t
 globus_io_eof(
     globus_object_t *                   eof);
 
-
-
 globus_result_t
 globus_io_attr_set_callback_space(
     globus_io_attr_t *                  attr,
@@ -466,141 +454,6 @@ globus_result_t
 globus_io_attr_get_callback_space(
     globus_io_attr_t *                  attr,
     globus_callback_space_t *           space);
-
-/** XXX UDP stuff **/
-
-typedef void
-(*globus_io_udp_sendto_callback_t)(
-    void *                              arg,
-    globus_io_handle_t *                handle,
-    globus_result_t                     result,
-    globus_byte_t *                     buf,
-    globus_size_t                       nbytes);
-
-typedef void
-(*globus_io_udp_recvfrom_callback_t)(
-    void *                              arg,
-    globus_io_handle_t *                handle,
-    globus_result_t                     result,
-    globus_byte_t *                     buf,
-    globus_size_t                       nbytes_recvd,
-    char *                              host,
-    unsigned short                      port);
-
-typedef void
-(*globus_io_sendto_callback_t)(
-    void *                              arg,
-    globus_io_handle_t *                handle,
-    globus_result_t                     result,
-    globus_byte_t *                     buf,
-    globus_size_t                       nbytes);
-
-globus_result_t
-globus_io_register_select(
-    globus_io_handle_t *                handle,
-    globus_io_callback_t                read_callback_func,
-    void *                              read_callback_arg,
-    globus_io_callback_t                write_callback_func,
-    void *                              write_callback_arg,
-    globus_io_callback_t                except_callback_func,
-    void *                              except_callback_arg);
-
-globus_result_t
-globus_io_attr_get_udp_restrict_port(
-    globus_io_attr_t *                  attr,
-    globus_bool_t *                     restrict_port);
-
-globus_result_t
-globus_io_attr_set_udp_restrict_port(
-    globus_io_attr_t *                  attr,
-    globus_bool_t                       restrict_port);
-
-globus_result_t
-globus_io_udp_bind(
-    unsigned short *                    port,
-    globus_io_attr_t *                  attr,
-    globus_io_handle_t *                handle);
-
-globus_result_t
-globus_io_udp_sendto(
-    globus_io_handle_t *                handle,
-    globus_byte_t *                     buf,
-    int                                 flags,
-    globus_size_t                       nbytes,
-    const char *                        host,
-    unsigned short                      port,
-    globus_size_t *                     bytes_sent);
-
-globus_result_t
-globus_io_udp_register_recvfrom(
-    globus_io_handle_t *                handle,
-    globus_byte_t *                     buf,
-    globus_size_t                       nbytes,
-    int                                 flags,
-    globus_io_udp_recvfrom_callback_t   recvfrom_callback,
-    void *                              callback_arg);
-
-globus_result_t
-globus_io_udp_recvfrom(
-    globus_io_handle_t *                handle,
-    globus_byte_t *                     buf,
-    int                                 flags,
-    globus_size_t                       nbytes,
-    char **                             host,
-    unsigned short *                    port,
-    globus_size_t *                     nbytes_received);
-
-globus_result_t
-globus_io_udpattr_init(
-    globus_io_attr_t *                  attr);
-
-globus_result_t
-globus_io_udpattr_destroy(
-    globus_io_attr_t *                  attr);
-
-globus_result_t
-globus_io_attr_set_udp_multicast_loop(
-    globus_io_attr_t *                  attr,
-    globus_bool_t                       enable_loopback);
-
-globus_result_t
-globus_io_attr_get_udp_multicast_loop(
-    globus_io_attr_t *                  attr,
-    globus_bool_t *                     enable_loopback);
-
-globus_result_t
-globus_io_attr_set_udp_multicast_membership(
-    globus_io_attr_t *                  attr,
-    char *                              address,
-    char *                              interface_addr);
-
-globus_result_t
-globus_io_attr_get_udp_multicast_membership(
-    globus_io_attr_t *                  attr,
-    char **                             address,
-    char **                             interface_addr);
-
-globus_result_t
-globus_io_attr_set_udp_multicast_ttl(
-    globus_io_attr_t *                  attr,
-    globus_byte_t                       ttl);
-
-globus_result_t
-globus_io_attr_get_udp_multicast_ttl(
-    globus_io_attr_t *                  attr,
-    globus_byte_t *                     ttl);
-
-globus_result_t
-globus_io_attr_set_udp_multicast_interface(
-    globus_io_attr_t *                  attr,
-    char *                              interface_addr);
-
-globus_result_t
-globus_io_attr_get_udp_multicast_interface(
-    globus_io_attr_t *                  attr,
-    char **                             interface_addr);
-
-/*** XXX gsi stuff ***/
 
 #include "globus_gss_assist.h"
 
@@ -689,7 +542,6 @@ globus_result_t
 globus_io_tcp_get_delegated_credential(
     globus_io_handle_t *                handle,
     gss_cred_id_t *                     cred);
-
 
 globus_result_t
 globus_io_register_init_delegation(
@@ -844,7 +696,7 @@ globus_io_attr_get_secure_proxy_mode(
     globus_io_secure_proxy_mode_t *     mode);
 
 
-/* netlogger crap */
+/* netlogger */
 
 globus_result_t
 globus_io_attr_netlogger_set_handle(

@@ -755,6 +755,10 @@ globus_xio_handle_cancel_operations(
     globus_xio_handle_t                     handle,
     int                                     mask);
 
+globus_result_t
+globus_xio_server_cancel_accept(
+    globus_xio_server_t                     server);
+
 /**
  *  Close a handle
  *  @ingroup GLOBUS_XIO_API

@@ -88,6 +88,7 @@ globus_xio_attr_cntl(
     globus_xio_timeout_server_callback_t    server_timeout_cb;
     globus_xio_timeout_callback_t           timeout_cb;
     globus_reltime_t *                      delay_time;
+    globus_callback_space_t                 space;
     GlobusXIOName(globus_xio_attr_cntl);
 
     GlobusXIODebugEnter();
@@ -201,7 +202,14 @@ globus_xio_attr_cntl(
                 break;
 
             case GLOBUS_XIO_ATTR_SET_SPACE:
-                attr->space = va_arg(ap, globus_callback_space_t);
+                space = va_arg(ap, globus_callback_space_t);
+                res = globus_callback_space_reference(space);
+                if(res != GLOBUS_SUCCESS)
+                {
+                    goto err;
+                }
+                globus_callback_space_destroy(attr->space);
+                attr->space = space;
                 break;
         } 
 
@@ -252,7 +260,8 @@ globus_xio_attr_destroy(
             res = tmp_res;
         }
     }
-
+    
+    globus_callback_space_destroy(attr->space);
     globus_free(attr->entry);
     globus_free(attr);
     if(res != GLOBUS_SUCCESS)
@@ -325,7 +334,8 @@ globus_xio_attr_copy(
     xio_attr_dst->max = xio_attr_src->max;
     xio_attr_dst->ndx = xio_attr_src->ndx;
     xio_attr_dst->space = xio_attr_src->space;
- 
+    globus_callback_space_reference(xio_attr_dst->space);
+    
     for(ctr = 0; ctr < xio_attr_dst->ndx; ctr++)
     {
         xio_attr_dst->entry[ctr].driver = xio_attr_src->entry[ctr].driver;
