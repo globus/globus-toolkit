@@ -39,6 +39,11 @@ globus_module_descriptor_t globus_i_gass_transfer_module =
     GLOBUS_NULL
 };
 
+static
+void
+globus_l_gass_transfer_listener_close_callback(
+    void *					user_arg,
+    globus_gass_transfer_listener_t		request);
 
 static
 int
@@ -130,7 +135,7 @@ globus_l_gass_transfer_deactivate(void)
 	rc = globus_i_gass_transfer_close_listener(
 	    tmp,
 	    l,
-	    globus_i_gass_transfer_deactivate_callback,
+	    globus_l_gass_transfer_listener_close_callback,
 	    GLOBUS_NULL);
     }
     
@@ -180,4 +185,13 @@ globus_i_gass_transfer_deactivate_callback(
     globus_gass_transfer_request_t		request)
 {
     globus_i_gass_transfer_request_destroy(request);
+}
+
+static
+void
+globus_l_gass_transfer_listener_close_callback(
+    void *					user_arg,
+    globus_gass_transfer_listener_t		request)
+{
+    return;
 }

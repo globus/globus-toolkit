@@ -283,6 +283,8 @@ globus_gass_transfer_proto_listener_ready(
     globus_gass_transfer_listener_struct_t *	l;
     globus_gass_transfer_listen_callback_t	callback;
     void *					callback_arg;
+    globus_gass_transfer_listen_callback_t	close_callback = GLOBUS_NULL;
+    void *					close_callback_arg;
 
     globus_i_gass_transfer_lock();
     l = globus_handle_table_lookup(&globus_i_gass_transfer_listener_handles,
@@ -310,6 +312,10 @@ globus_gass_transfer_proto_listener_ready(
 	l->status = GLOBUS_GASS_TRANSFER_LISTENER_CLOSED;
 	callback = l->listen_callback;
 	callback_arg = l->listen_callback_arg;
+
+	close_callback = l->close_callback;
+	close_callback_arg = l->close_callback_arg;
+	
 	/* Destroy our reference to the proto */
 	l->proto->destroy(l->proto,
 			  listener);
@@ -323,6 +329,14 @@ globus_gass_transfer_proto_listener_ready(
 
 	callback(callback_arg,
 		 listener);
+	if(close_callback)
+	{
+	    close_callback(close_callback_arg,
+			   listener);
+	}
+	globus_i_gass_transfer_lock();
+	globus_i_gass_transfer_listener_destroy(listener);
+	globus_i_gass_transfer_unlock();
 	return;
 
       case GLOBUS_GASS_TRANSFER_LISTENER_READY:
