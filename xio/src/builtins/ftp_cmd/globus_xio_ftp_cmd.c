@@ -298,6 +298,37 @@ globus_l_xio_ftp_cmd_open(
     return res;
 }
 
+
+static void
+globus_l_xio_ftp_cmd_write_cb(
+    globus_xio_operation_t              op,
+    globus_result_t                     result,
+    globus_size_t                       nbytes,
+    void *                              user_arg)
+{
+    globus_xio_driver_finished_write(op, result, nbytes);
+}
+                                                                                
+static globus_result_t
+globus_l_xio_ftp_cmd_write(
+    void *                              driver_specific_handle,
+    const globus_xio_iovec_t *          iovec,
+    int                                 iovec_count,
+    globus_xio_operation_t              op)
+{
+    globus_result_t                     res;
+
+    res = globus_xio_driver_pass_write(
+        op,
+        iovec,
+        iovec_count,
+        globus_xio_operation_get_wait_for(op),
+        globus_l_xio_ftp_cmd_write_cb,
+        NULL);
+
+    return res;
+}
+
 globus_result_t
 globus_l_xio_ftp_cmd_request_data(
     globus_l_xio_ftp_cmd_handle_t *     handle,
@@ -490,7 +521,7 @@ globus_l_xio_ftp_cmd_load(
         globus_l_xio_ftp_cmd_open,
         globus_l_xio_ftp_cmd_close,
         globus_l_xio_ftp_cmd_read,
-        NULL, /* leave write null for now */
+        globus_l_xio_ftp_cmd_write,
         NULL,
         NULL);
 
