@@ -34,8 +34,8 @@ static char *  LONG_USAGE = \
 "    -exists [options]  (-e)   Returns 0 if valid proxy exists, 1 otherwise\n"\
 "\n" \
 "    [printoptions]\n" \
-"        -subject              Distinguished name (DN) of subject\n" \
-"        -issuer               DN of issuer (certificate signer)\n" \
+"        -subject       (-s)   Distinguished name (DN) of subject\n" \
+"        -issuer        (-i)   DN of issuer (certificate signer)\n" \
 "        -identity             DN of the identity represented by the proxy\n" \
 "        -type                 Type of proxy (full or limited)\n" \
 "        -timeleft             Time (in seconds) until proxy expires\n" \
@@ -493,12 +493,14 @@ main(
     for (arg_index = 1; arg_index < argc; arg_index++)
     {
 	argp = argv[arg_index];
-	if (strcmp(argp,"-subject") == 0)
+	if ((strcmp(argp,"-subject") == 0) ||
+            (strcmp(argp, "-s") == 0))
 	{
 	    printf("%s\n", subject);
             print_all = GLOBUS_FALSE;
 	}
-	else if (strcmp(argp, "-issuer") == 0)
+	else if ((strcmp(argp, "-issuer") == 0) ||
+                 (strcmp(argp, "-i") == 0))
 	{
 	    printf("%s\n", issuer);
             print_all = GLOBUS_FALSE;
