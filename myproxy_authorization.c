@@ -303,31 +303,40 @@ static struct authorization_func *authorization_funcs[] = {
 static int num_funcs = sizeof(authorization_funcs) / sizeof(authorization_funcs[0]);
 
 int
-authorization_init_server(authorization_data_t ***data)
+authorization_init_server(authorization_data_t ***data,
+			  author_method_t methods[])
 {
    authorization_data_t **auth_data;
-   int i;
+   int i=0, j=0, num_methods=0;
 
-   auth_data = malloc(sizeof(*auth_data) * (num_funcs + 1));
+   auth_data = malloc(sizeof(authorization_data_t *) * (num_funcs + 1));
    if (auth_data == NULL) {
       verror_put_string("malloc() failed");
       verror_put_errno(errno);
       return -1;
    }
-   for (i = 0; i < num_funcs; i++) {
-      auth_data[i] = malloc(sizeof(**auth_data));
-      if (auth_data == NULL) {
-	 verror_put_string("malloc() failed");
-	 verror_put_errno(errno);
-	 free(auth_data);
-	 return -1;
-      }
-      auth_data[i]->server_data = authorization_funcs[i]->create_server_data();
-      auth_data[i]->client_data = NULL;
-      auth_data[i]->client_data_len = 0;
-      auth_data[i]->method = authorization_funcs[i]->method;
+   memset(auth_data, 0, sizeof(authorization_data_t *) * (num_funcs + 1));
+   for (i = 0; methods[i] != AUTHORIZETYPE_NULL; i++) {
+       for (j = 0; j < num_funcs; j++) {
+	   if (authorization_funcs[j]->method == methods[i]) {
+	       auth_data[num_methods] = malloc(sizeof(auth_data));
+	       if (auth_data[num_methods] == NULL) {
+		   verror_put_string("malloc() failed");
+		   verror_put_errno(errno);
+		   authorization_data_free_contents(*auth_data);
+		   free(auth_data);
+		   return -1;
+	       }
+	       auth_data[num_methods]->server_data =
+		   authorization_funcs[j]->create_server_data();
+	       auth_data[num_methods]->client_data = NULL;
+	       auth_data[num_methods]->client_data_len = 0;
+	       auth_data[num_methods]->method = authorization_funcs[j]->method;
+	       num_methods++;
+	   }
+       }
    }
-   auth_data[num_funcs] = NULL;
+   auth_data[num_methods] = NULL;
 
    *data = auth_data;
 
