@@ -34,6 +34,13 @@ if [ -n "$1" ]; then
     globus_args_unrecognized_option "$1"
 fi
  
+globus_hostname=""		# Replaced by deploy
+
+if [ -n "${globus_hostname}" ]; then
+    echo "${globus_hostname}"
+    exit 0
+fi
+
 LOCALDOMAIN=@LOCALDOMAIN@
  
 if [ -x ${libexecdir}/globus-libc-hostname ]; then
