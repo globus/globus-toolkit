@@ -17,7 +17,6 @@ RCSID("$OpenBSD: servconf.c,v 1.112 2002/06/23 09:46:51 deraadt Exp $");
 #endif
 #if defined(KRB5)
 #ifdef HEIMDAL
-#include <krb.h>
 #else
 /* Bodge - but then, so is using the kerberos IV KEYFILE to get a Kerberos V
  * keytab */
