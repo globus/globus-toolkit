@@ -398,6 +398,7 @@ OM_uint32 ssh_gssapi_accept_ctx(Gssctxt *ctx,gss_buffer_desc *recv_tok,
 				gss_buffer_desc *send_tok, OM_uint32 *flags) 
 {
 	OM_uint32 maj_status, min_status;
+	gss_OID mech;
 	
 	maj_status=gss_accept_sec_context(&min_status,
 					  &ctx->context,
@@ -405,7 +406,7 @@ OM_uint32 ssh_gssapi_accept_ctx(Gssctxt *ctx,gss_buffer_desc *recv_tok,
 					  recv_tok,
 					  GSS_C_NO_CHANNEL_BINDINGS,
 					  &ctx->client,
-					  &ctx->oid,
+					  &mech, /* read-only pointer */
 					  send_tok,
 					  flags,
 					  NULL,
