@@ -15,7 +15,6 @@ CVS Information:
 /******************************************************************************
                              Include header files
 ******************************************************************************/
-#include "assist_config.h"
 #include "globus_gss_assist.h"
 #include <gssapi.h>
 #include <malloc.h>

@@ -3,26 +3,30 @@ dnl
 AC_REVISION($Revision$)
 AC_INIT(Makefile.am)
 
-
-AM_INIT_AUTOMAKE(globus_gss_assist, 2.0)
-
 GLOBUS_INIT
+
 
 AM_PROG_LIBTOOL
 
-# add any packages names that you depend on here
-GLOBUS_SET_BUILD_DEPS(gssapi-ssleay)
+dnl config header goes here
 
-# Add any ldflags ie. system  libraries that are need to link with your
-# libraries here.
-GLOBUS_ADD_XTRA_LIBS(-L$SSLPATH/lib -lssl -lcrypto])
+dnl Initialize the automake rules the last argument
+AM_INIT_AUTOMAKE($GPT_NAME, $GPT_VERSION)
+
+#AM_CONFIG_HEADER(config.h library/globus_common.h:library/globus_common.h.in)
 
 
-GLOBUS_GENERATE
+GPT_SET_LIBS(-lglobus_gssapi_gsi_$GLOBUS_FLAVOR_NAME)
 
 AC_OUTPUT(
-	assist_config.h
 	Makefile
-	build_parameters_$GLOBUS_FLAVOR_NAME:build_parameters.in
+	pkgdata/Makefile
+	pkgdata/pkg_data_src.gpt
+	,
+	$GLOBUS_INSTALL_PATH/sbin/gpt_generate_bin_pkg_data \
+	--flavor=$GLOBUS_FLAVOR_NAME "./pkgdata/pkg_data_src.gpt"
+	,
+	GLOBUS_FLAVOR_NAME=$GLOBUS_FLAVOR_NAME
+
 )
 

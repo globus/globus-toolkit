@@ -1,4 +1,6 @@
 include $(top_srcdir)/globus_automake_targets
+SUBDIRS = pkgdata
+
 Sources= \
 	accept.c \
 	acconfig.h \
@@ -16,11 +18,9 @@ include_HEADERS= \
 	globus_gss_assist.h
 
 
-INCLUDES = -I $(GLOBUS_INSTALL_PATH)/include/ \
-        -I $(GLOBUS_INSTALL_PATH)/include/$(GLOBUS_FLAVOR_NAME)  \
-        -I @SSLPATH@/include     
+INCLUDES = $(GPT_INCLUDES)     
 
 lib_LTLIBRARIES = libglobus_gss_assist_$(GLOBUS_FLAVOR_NAME).la
-libglobus_gss_assist_la_SOURCES = $(Sources)
+libglobus_gss_assist___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
 include $(top_srcdir)/globus_automake_rules
 include $(top_srcdir)/globus_automake_top_rules

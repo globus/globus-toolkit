@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE gpt_package_metadata SYSTEM "package.dtd">
+
+<gpt_package_metadata Name="globus_gss_assist" Format_Version="0.02">
+<Aging_Version Major="2" Minor="0" Age="0"/>
+<src_pkg>
+
+<With_Flavors build="yes" />
+<Build_Environment>
+<cflags>@GPT_CFLAGS@</cflags>
+<external_includes>@GPT_EXTERNAL_INCLUDES@</external_includes>
+<external_libs>@GPT_EXTERNAL_LIBS@</external_libs>
+<pkg_libs>-lglobus_gss_assist</pkg_libs>
+</Build_Environment>
+
+</src_pkg>
+</gpt_package_metadata>
+
