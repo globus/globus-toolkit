@@ -187,14 +187,15 @@ check_storage_directory()
     }
     
     /* Make sure it's owned by me */
-    if (statbuf.st_uid != getuid())
+    if (statbuf.st_uid != geteuid())
     {
 	struct passwd *pw;
-	pw = getpwuid(getuid());
+	pw = getpwuid(geteuid());
 	if (pw) {
 	    verror_put_string("%s not owned by %s", storage_dir, pw->pw_name);
 	} else {
-	    verror_put_string("%s not owned by uid %d", storage_dir, getuid());
+	    verror_put_string("%s not owned by uid %d", storage_dir,
+			      geteuid());
 	}
         goto error;
     }
