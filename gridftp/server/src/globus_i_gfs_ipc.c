@@ -3231,14 +3231,9 @@ globus_l_gfs_ipc_reply_read_body_cb(
                 result = GlobusGFSErrorIPC();
                 goto err;
             }
-            globus_mutex_lock(&ipc->mutex);
-            {
-                globus_hashtable_insert(
-                    &ipc->reply_table, (void *)request->id, request);
-            }
-            globus_mutex_unlock(&ipc->mutex);
             ipc->iface->data_destroy_func(
                 ipc, ipc->user_arg, data_arg);
+            globus_l_gfs_ipc_request_destroy(request);
             break;
             
         case GLOBUS_GFS_OP_EVENT:            
@@ -3251,6 +3246,13 @@ globus_l_gfs_ipc_reply_read_body_cb(
             }
             ipc->iface->transfer_event_func(
                 ipc, ipc->user_arg, event_info);
+            globus_l_gfs_ipc_request_destroy(request);
+
+            if(event_info->eof_count)
+            {
+                globus_free(event_info->eof_count);
+            }
+            globus_free(event_info);
             break;
             
         default:

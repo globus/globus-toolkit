@@ -137,6 +137,7 @@ typedef struct globus_i_gsc_data_s
     void *                                  user_handle;
     globus_gridftp_server_control_data_dir_t dir;
     globus_bool_t                           first_use;
+    struct globus_i_gsc_op_s *              event_op;
 } globus_i_gsc_data_t;
 
 typedef enum globus_i_gsc_op_type_e
