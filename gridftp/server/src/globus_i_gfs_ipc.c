@@ -855,8 +855,6 @@ globus_l_gfs_ipc_error_close_cb(
 
     ipc = (globus_i_gfs_ipc_handle_t *) user_arg;
 
-    ipc->cached_res = result;
-
     globus_l_gfs_ipc_error_close_kickout(ipc);
 
     GlobusGFSDebugExit();
@@ -1446,6 +1444,7 @@ globus_l_gfs_ipc_read_new_body_cb(
 
     if(result != GLOBUS_SUCCESS)
     {
+        ipc->cached_res = result;
         goto error;
     }
     size = len;
@@ -1512,6 +1511,7 @@ globus_l_gfs_ipc_read_new_body_cb(
         if(new_buf == NULL)
         {
             result = GlobusGFSErrorIPC();
+            ipc->cached_res = result;
             goto error;
         }
         result = globus_xio_register_read(
@@ -1525,6 +1525,7 @@ globus_l_gfs_ipc_read_new_body_cb(
         if(result != GLOBUS_SUCCESS)
         {
             globus_free(new_buf);
+            ipc->cached_res = result;
             goto error;
         }
     }
@@ -1539,7 +1540,8 @@ decode_err:
 error:
     globus_free(in_buffer);
     globus_i_gfs_log_message(
-        GLOBUS_I_GFS_LOG_ERR, "An accepted IPC connection failed to open\n");
+        GLOBUS_I_GFS_LOG_ERR, 
+        "An accepted IPC connection failed during session body read.\n");
 
     globus_l_gfs_ipc_error_close_kickout(ipc);
 
@@ -1696,6 +1698,7 @@ globus_l_gfs_ipc_read_new_header_cb(
     ipc = (globus_i_gfs_ipc_handle_t *) user_arg;
     if(result != GLOBUS_SUCCESS)
     {
+        ipc->cached_res = result;
         goto err;
     }
 
@@ -1714,6 +1717,7 @@ globus_l_gfs_ipc_read_new_header_cb(
     if(new_buf == NULL)
     {
         res = GlobusGFSErrorMemory("new_buf");
+        ipc->cached_res = res;
         goto err;
     }
 
@@ -1727,6 +1731,7 @@ globus_l_gfs_ipc_read_new_header_cb(
         ipc);
     if(result != GLOBUS_SUCCESS)
     {
+        ipc->cached_res = result;
         goto mem_err;
     }
     globus_free(buffer);
@@ -1738,7 +1743,8 @@ mem_err:
 decode_err:
 err:
     globus_i_gfs_log_message(
-        GLOBUS_I_GFS_LOG_ERR, "An accepted IPC connection failed to open\n");
+        GLOBUS_I_GFS_LOG_ERR,
+        "An accepted IPC connection failed during session header read\n");
     globus_l_gfs_ipc_error_close_kickout(ipc);
 
     GlobusGFSDebugExitWithError();
@@ -1759,6 +1765,7 @@ globus_l_gfs_ipc_server_open_cb(
     ipc = (globus_i_gfs_ipc_handle_t *) user_arg;
     if(result != GLOBUS_SUCCESS)
     {
+        ipc->cached_res = result;
         goto error;
     }
 
@@ -1778,6 +1785,7 @@ globus_l_gfs_ipc_server_open_cb(
         ipc);
     if(result != GLOBUS_SUCCESS)
     {
+        ipc->cached_res = result;
         goto mem_error;
     }
 
@@ -1788,8 +1796,8 @@ mem_error:
     globus_free(buffer);
 error:
     globus_i_gfs_log_message(
-        GLOBUS_I_GFS_LOG_ERR, "An accepted IPC connection failed to open\n");
-
+        GLOBUS_I_GFS_LOG_ERR, 
+        "An accepted IPC connection failed during open\n");
     globus_l_gfs_ipc_error_close_kickout(ipc);
 
     GlobusGFSDebugExitWithError();
@@ -1909,9 +1917,16 @@ globus_gfs_ipc_handle_create(
     {
         goto attr_error;
     }
-    result = globus_xio_attr_cntl(xio_attr, globus_l_gfs_gsi_driver,
-        GLOBUS_XIO_GSI_FORCE_SERVER_MODE, GLOBUS_TRUE);
-
+    if(globus_i_gfs_config_bool("secure_ipc"))
+    {
+        result = globus_xio_attr_cntl(xio_attr, globus_l_gfs_gsi_driver,
+            GLOBUS_XIO_GSI_FORCE_SERVER_MODE, GLOBUS_TRUE);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto attr_error;
+        }
+    }
+    
     ipc = (globus_i_gfs_ipc_handle_t *)
         globus_calloc(1, sizeof(globus_i_gfs_ipc_handle_t));
     if(ipc == NULL)
@@ -2051,12 +2066,20 @@ globus_l_gfs_ipc_client_open_cb(
 
     ipc = (globus_i_gfs_ipc_handle_t *) user_arg;
 
+    ipc->state = GLOBUS_GFS_IPC_STATE_IN_CB;
+    
+    if(result != GLOBUS_SUCCESS)
+    {
+        ipc->cached_res = result;
+        goto error;
+    }
+    
     globus_mutex_lock(&ipc->mutex);
     {
         buffer = globus_malloc(ipc->buffer_size);
         if(buffer == NULL)
         {
-            goto buffer_error;
+            goto error;
         }
         ptr = buffer;
 
@@ -2101,7 +2124,16 @@ globus_l_gfs_ipc_client_open_cb(
 
 xio_error:
     globus_free(buffer);
-buffer_error:
+error:
+    {
+        globus_gfs_ipc_reply_t          reply;
+        memset(&reply, '\0', sizeof(globus_gfs_ipc_reply_t));          
+        result = GlobusGFSErrorWrapFailed("IPC connection", result);
+        if(ipc->open_cb)
+        {
+            ipc->open_cb(ipc, result, &reply, ipc->user_arg);
+        }
+    }    
     globus_l_gfs_ipc_error_close(ipc);
     globus_mutex_unlock(&ipc->mutex);
 
@@ -2216,6 +2248,7 @@ globus_l_gfs_ipc_handle_connect(
     if(allowed_to_connect)
     {
         globus_xio_attr_init(&attr);
+
         if(session_info->del_cred != NULL &&
             globus_i_gfs_config_bool("secure_ipc"))
         {
@@ -4637,9 +4670,15 @@ globus_l_gfs_ipc_stop_write_cb(
         {
             goto error;
         }
+        /* have a read pending on the cached connection so that we can catch
+            errant data or disconnections.
+            XXX need to change gsi driver to handle 0 byte read with a pass
+            instead of a finish.  possibly figure out a different way to 
+            checkup on cached connections since this won't necessisarily work
+            on every driver we might want to use */
         result = globus_xio_register_read(
             ipc->xio_handle,
-            buffer, /* bs parmeter */
+            buffer, /* bogus parmeter */
             0,
             0,
             NULL,

@@ -59,6 +59,7 @@ typedef struct globus_l_gfs_remote_ipc_bounce_s
     int                                 cached_result;
     int                                 sending;
     int                                 events_enabled;
+    globus_object_t *                   cached_error;
 } globus_l_gfs_remote_ipc_bounce_t;
 
 typedef struct globus_l_gfs_remote_node_info_s
@@ -196,16 +197,19 @@ globus_l_gfs_remote_node_request_kickout(
     
     bounce_info = (globus_l_gfs_remote_request_t *)  user_arg;
 
-    node_info = (globus_l_gfs_remote_node_info_t *)
-        globus_calloc(1, sizeof(globus_l_gfs_remote_node_info_t));
-    node_info->ipc_handle = ipc_handle;
-    if(reply->info.session.username)
+    if(result == GLOBUS_SUCCESS)
     {
-        node_info->username = strdup(reply->info.session.username);
-    }
-    if(reply->info.session.home_dir)
-    {
-        node_info->home_dir = strdup(reply->info.session.home_dir);
+        node_info = (globus_l_gfs_remote_node_info_t *)
+            globus_calloc(1, sizeof(globus_l_gfs_remote_node_info_t));
+        node_info->ipc_handle = ipc_handle;
+        if(reply->info.session.username)
+        {
+            node_info->username = strdup(reply->info.session.username);
+        }
+        if(reply->info.session.home_dir)
+        {
+            node_info->home_dir = strdup(reply->info.session.home_dir);
+        }
     }
     
     bounce_info->callback(
@@ -269,7 +273,7 @@ globus_l_gfs_remote_node_request(
             globus_l_gfs_remote_node_request_kickout,
             bounce_info,
             globus_l_gfs_remote_ipc_error_cb,
-            bounce_info); 
+            my_handle); 
         if(result != GLOBUS_SUCCESS)
         {
             goto error;
@@ -1401,6 +1405,16 @@ globus_l_gfs_remote_session_start_kickout(
                                                                     
     bounce_info->nodes_requesting--;
 
+    if(bounce_info->cached_error)
+    {
+        goto error;
+    }
+    if(result != GLOBUS_SUCCESS)
+    {
+        bounce_info->cached_error = globus_error_get(result);
+        goto error;
+    }
+    
     if(bounce_info->nodes_requesting)
     {
         globus_l_gfs_remote_node_release(
@@ -1428,6 +1442,24 @@ globus_l_gfs_remote_session_start_kickout(
     }
     
     GlobusGFSRemoteDebugExit();
+    return;
+    
+error:                                                              
+    if(!bounce_info->nodes_requesting)
+    {
+        memset(&finished_info, '\0', sizeof(globus_gfs_finished_info_t));
+        finished_info.type = GLOBUS_GFS_OP_SESSION_START;          
+        finished_info.result = globus_error_put(bounce_info->cached_error);          
+        globus_gridftp_server_operation_finished(                 
+            bounce_info->op,                                                   
+            finished_info.result,                                               
+            &finished_info);
+    
+        globus_free(bounce_info->node_handle);        
+        globus_free(bounce_info);  
+    }
+    
+    GlobusGFSRemoteDebugExitWithError();
 }   
 
 static

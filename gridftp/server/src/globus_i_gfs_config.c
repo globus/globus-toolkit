@@ -70,7 +70,7 @@ static const globus_l_gfs_config_option_t option_list[] =
     "deny a connection from 192.168.2.45."},
  {"cas", "cas", NULL, "cas", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_TRUE, NULL,
     "Enable CAS authorization."},
- {"secure_ipc", "secure_ipc", NULL, "secure-ipc", "si", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
+ {"secure_ipc", "secure_ipc", NULL, "secure-ipc", "si", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_TRUE, NULL,
     "Use gsi security on ipc channel."},
  {"allow_anonymous", "allow_anonymous", NULL, "allow-anon", "aa", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
     "Allow cleartext anonymous access. If server is running as root anonymous_user "
