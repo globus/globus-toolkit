@@ -431,10 +431,9 @@ globus_l_gram_client_authenticate(char * gatekeeper_url,
                      minor_status,
                      token_status);
 
-
-		globus_nexus_fd_close(*gatekeeper_fd);
-		GLOBUS_L_UNLOCK;
-		return (GLOBUS_GRAM_CLIENT_ERROR_AUTHORIZATION);
+        globus_nexus_fd_close(*gatekeeper_fd);
+        GLOBUS_L_UNLOCK;
+        return (GLOBUS_GRAM_CLIENT_ERROR_AUTHORIZATION);
     }
 
     /* We still have the GSSAPI context setup and could use
@@ -459,7 +458,7 @@ globus_l_gram_client_authenticate(char * gatekeeper_url,
 				  (void **) &auth_msg_buf, &auth_msg_buf_size))
     {
         grami_fprintf(globus_l_print_fp,
-	      "Authoirization message not received");
+	      "Authorization message not received");
 	GLOBUS_L_UNLOCK;
 	return (GLOBUS_GRAM_CLIENT_ERROR_AUTHORIZATION);
     }
