@@ -21,9 +21,9 @@ CVS Information:
 #include "lber.h"
 #include "ldap.h"
 #include "gram_client.h"
-#include "gass_server_ez.h"
-#include "gass_client.h"
-#include "gass_cache.h"
+#include "globus_gass_server_ez.h"
+#include "globus_gass_client.h"
+#include "globus_gass_cache.h"
 
 char *get_contact_string(LDAP *ldap_server, LDAPMessage* entry);
 
