@@ -9,7 +9,6 @@ CVS Information:
     $Date$
     $Revision$
     $Author$
-
 ******************************************************************************/
 
 /******************************************************************************
@@ -24,7 +23,7 @@ CVS Information:
 #include <signal.h>
 
 #include "globus_gass_copy.h"
-
+#include "globus_ftp_client_debug_plugin.h"
 /*
  *  use globus_io for netlogger stuff
  */
@@ -93,9 +92,10 @@ globus_l_gass_copy_performance_cb(
 #define GLOBUS_URL_COPY_ARG_VERBOSE     4
 
 const char * oneline_usage
-    = "globus-url-copy [-help] [-usage] [-version] [-b | -a] [-bs <size>]\n"
+    = "globus-url-copy [-help | -usage] [-v] [-vb] [-dbg] [-b | -a]\n"
       "                        [-s <subject>] [-ds <subject>] [-ss <subject>]\n"
-      "                        [-tcp-bs <size>] [-p <parallelism>] [-notpt] [-nodcau]\n"
+      "                        [-tcp-bs <size>] [-bs <size>] [-p <parallelism>]\n"
+      "                        [-notpt] [-nodcau]\n"
       "                        sourceURL destURL";
 
 const char * long_usage =
@@ -110,6 +110,9 @@ const char * long_usage =
 "\t -vb | -verbose \n"
 "\t      during the transfer, display the number of bytes transferred\n"
 "\t      and the transfer rate per second\n"
+"\t -dbg |-debugftp \n"
+"\t      Debug ftp connections.  Prints control channel communication\n"
+"\t      to stderr\n"
 "\t -b | -binary\n"
 "\t      Do not apply any conversion to the files. *default*\n"
 "\t -s  <subject> | -subject <subject>\n"
@@ -177,7 +180,7 @@ test_integer( char *   value,
     return res;
 }
 
-enum { arg_a = 1, arg_b, arg_s, arg_p, arg_vb, arg_ss, arg_ds, arg_tcp_bs,
+enum { arg_a = 1, arg_b, arg_s, arg_p, arg_vb, arg_debugftp, arg_ss, arg_ds, arg_tcp_bs,
        arg_bs, arg_notpt, arg_nodcau, arg_num = arg_nodcau };
 
 #define listname(x) x##_aliases
@@ -201,6 +204,7 @@ globus_args_option_descriptor_t defname(id) = \
 flagdef(arg_a, "-a", "-ascii");
 flagdef(arg_b, "-b", "-binary");
 flagdef(arg_vb, "-vb", "-verbose");
+flagdef(arg_debugftp, "-dbg", "-debugftp");
 flagdef(arg_notpt, "-notpt", "-no-third-party-transfers");
 flagdef(arg_nodcau, "-nodcau", "-no-data-channel-authentication");
 
@@ -218,7 +222,7 @@ static globus_args_option_descriptor_t args_options[arg_num];
 
 #define globus_url_copy_i_args_init() \
     setupopt(arg_a); setupopt(arg_b); setupopt(arg_s); setupopt(arg_vb); \
-    setupopt(arg_ss); setupopt(arg_ds); setupopt(arg_tcp_bs); \
+    setupopt(arg_debugftp); setupopt(arg_ss); setupopt(arg_ds); setupopt(arg_tcp_bs); \
     setupopt(arg_bs); setupopt(arg_p); setupopt(arg_notpt); \
     setupopt(arg_nodcau);
 
@@ -289,8 +293,11 @@ main(int argc, char **argv)
     globus_result_t                    result;
     globus_netlogger_handle_t          gnl_handle;
     globus_ftp_client_handleattr_t     ftp_handleattr;
+    globus_ftp_client_plugin_t         debug_plugin;
     globus_gass_copy_handleattr_t      gass_copy_handleattr;
     globus_io_attr_t                   io_attr;
+    globus_bool_t                      ftp_handle_attr_used = GLOBUS_FALSE;
+    globus_bool_t                      use_debug = GLOBUS_FALSE;
 
     err = globus_module_activate(GLOBUS_COMMON_MODULE);
     if ( err != GLOBUS_SUCCESS )
@@ -375,15 +382,18 @@ main(int argc, char **argv)
 	case arg_nodcau:
 	    no_dcau = GLOBUS_TRUE;
 	    break;
+	case arg_debugftp:
+	    use_debug = GLOBUS_TRUE;
+	    break;
         default:
             globus_url_copy_l_args_error_fmt("parse panic, arg id = %d",
                                        instance->id_number );
             break;
         }
     }
-
+    
     globus_args_option_instance_list_free( &options_found );
-
+    
     if ( (options & GLOBUS_URL_COPY_ARG_ASCII) &&
          (options & GLOBUS_URL_COPY_ARG_BINARY) )
     {
@@ -415,6 +425,49 @@ main(int argc, char **argv)
     globus_gass_copy_attr_init(&source_gass_copy_attr);
     globus_gass_copy_attr_init(&dest_gass_copy_attr);
 
+    if(use_debug)
+    {
+        globus_module_activate(GLOBUS_FTP_CLIENT_DEBUG_PLUGIN_MODULE);
+        
+        if(!ftp_handle_attr_used)
+        {
+            ftp_handle_attr_used = GLOBUS_TRUE;
+            
+            result = globus_ftp_client_handleattr_init(&ftp_handleattr);
+            if(result != GLOBUS_SUCCESS)
+            {
+                fprintf(stderr, "Error: Unable to init ftp handle attr %s\n",
+                    globus_object_printable_to_string(globus_error_get(result)));
+    
+                return 1;
+            }
+        }
+
+        result = globus_ftp_client_debug_plugin_init(
+            &debug_plugin,
+            stderr,
+            "debug");
+        if(result != GLOBUS_SUCCESS)
+        {
+            fprintf(stderr, "Error: Unable to init debug plugin %s\n",
+                globus_object_printable_to_string(globus_error_get(result)));
+
+            return 1;
+        }
+
+        result = globus_ftp_client_handleattr_add_plugin(
+            &ftp_handleattr,
+            &debug_plugin);
+        if(result != GLOBUS_SUCCESS)
+        {
+            fprintf(stderr, "Error: Unable to register debug plugin %s\n",
+                globus_object_printable_to_string(globus_error_get(result)));
+
+            return 1;
+        }
+    }
+
+
 #if defined(GLOBUS_BUILD_WITH_NETLOGGER)
     sprintf(buffer, "%d", getpid());
     globus_libc_gethostname(my_hostname, MAXHOSTNAMELEN);
@@ -427,8 +480,12 @@ main(int argc, char **argv)
     globus_netlogger_set_desc(
         &gnl_handle,
         "DISK");
-
-    globus_ftp_client_handleattr_init(&ftp_handleattr);
+    
+    if(!ftp_handle_attr_used)
+    {
+        globus_ftp_client_handleattr_init(&ftp_handleattr);
+        ftp_handle_attr_used = GLOBUS_TRUE;
+    }
 
     globus_ftp_client_handleattr_set_netlogger(
         &ftp_handleattr,
@@ -443,11 +500,15 @@ main(int argc, char **argv)
     globus_gass_copy_attr_set_io(
         &dest_gass_copy_attr,
         &io_attr);
-
-    globus_gass_copy_handleattr_set_ftp_attr(
-        &gass_copy_handleattr, &ftp_handleattr);
+    
 #endif
-
+    
+    if(ftp_handle_attr_used)
+    {
+        globus_gass_copy_handleattr_set_ftp_attr(
+            &gass_copy_handleattr, &ftp_handleattr);
+    }
+    
     globus_gass_copy_handle_init(&gass_copy_handle, &gass_copy_handleattr);
 
     if (subject && !source_subject)
@@ -777,7 +838,7 @@ main(int argc, char **argv)
 
     if (verbose_flag)
     {
-        globus_libc_fprintf(stderr, "\n");
+        globus_libc_fprintf(stdout, "\n");
     }
 
     if (monitor.use_err)
@@ -795,9 +856,8 @@ main(int argc, char **argv)
 
     if (!dest_io_handle)
         globus_url_destroy(&dest_url);
-
-    globus_module_deactivate(GLOBUS_GASS_COPY_MODULE);
-    globus_module_deactivate(GLOBUS_COMMON_MODULE);
+    
+    globus_module_deactivate_all();
 
     return ret_val;
 
@@ -940,9 +1000,10 @@ globus_l_gass_copy_performance_cb(
     float                                           instantaneous_throughput,
     float                                           avg_throughput)
 {
-    globus_libc_fprintf(stderr,
+    globus_libc_fprintf(stdout,
         " %" GLOBUS_OFF_T_FORMAT " bytes -- average %.2f KB/sec -- instantaneous %.2f KB/sec\r",
         total_bytes,
         avg_throughput / 1024,
         instantaneous_throughput / 1024);
+    fflush(stdout);
 }
