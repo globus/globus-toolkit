@@ -62,6 +62,7 @@ globus_module_descriptor_t globus_i_scheduler_event_generator_module =
 };
 
 static globus_mutex_t                   globus_l_seg_mutex;
+static globus_cond_t                    globus_l_seg_cond;
 static globus_xio_handle_t              globus_l_seg_output_handle;
 static globus_xio_handle_t              globus_l_seg_input_handle;
 static globus_xio_stack_t               globus_l_seg_file_stack;
@@ -75,6 +76,7 @@ static globus_scheduler_event_generator_fault_handler_t
 static void *                           globus_l_seg_fault_arg;
 static globus_fifo_t                    globus_l_seg_buffers;
 static globus_bool_t                    globus_l_seg_write_registered;
+static int                              globus_l_seg_shutdown;
 
 static
 int
@@ -95,6 +97,7 @@ globus_l_seg_activate(void)
     globus_l_seg_fault_handler = NULL;
     globus_l_seg_fault_arg = NULL;
     globus_l_seg_write_registered = GLOBUS_FALSE;
+    globus_l_seg_shutdown = 0;
 
     rc = lt_dlinit();
     if (rc != 0)
@@ -225,6 +228,11 @@ globus_l_seg_activate(void)
     {
         goto close_in_handle_error;
     }
+    rc = globus_cond_init(&globus_l_seg_cond, NULL);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        goto destroy_mutex_error;
+    }
 
     result = globus_xio_register_read(
             globus_l_seg_input_handle,
@@ -237,7 +245,7 @@ globus_l_seg_activate(void)
 
     if (result != GLOBUS_SUCCESS)
     {
-        goto destroy_mutex_error;
+        goto destroy_cond_error;
     }
 
     globus_xio_attr_destroy(in_attr);
@@ -245,6 +253,8 @@ globus_l_seg_activate(void)
 
     return 0;
 
+destroy_cond_error:
+    globus_cond_destroy(&globus_l_seg_cond);
 destroy_mutex_error:
     globus_mutex_destroy(&globus_l_seg_mutex);
 close_in_handle_error:
@@ -276,8 +286,6 @@ static
 int
 globus_l_seg_deactivate(void)
 {
-    char *                              buffer;
-
     if (globus_l_seg_scheduler_module)
     {
         globus_module_deactivate(globus_l_seg_scheduler_module);
@@ -291,14 +299,16 @@ globus_l_seg_deactivate(void)
     }
 
     globus_mutex_lock(&globus_l_seg_mutex);
+    globus_l_seg_shutdown = 1;
     globus_l_seg_fault_handler = NULL;
     globus_l_seg_fault_arg = NULL;
 
-    while (!globus_fifo_empty(&globus_l_seg_buffers))
+    if (globus_l_seg_write_registered)
     {
-        buffer = globus_fifo_dequeue(&globus_l_seg_buffers);
-
-        globus_libc_free(buffer);
+        while (globus_l_seg_shutdown == 1)
+        {
+            globus_cond_wait(&globus_l_seg_mutex, &globus_l_seg_cond);
+        }
     }
     globus_fifo_destroy(&globus_l_seg_buffers);
     globus_mutex_unlock(&globus_l_seg_mutex);
@@ -307,6 +317,7 @@ globus_l_seg_deactivate(void)
     globus_xio_close(globus_l_seg_input_handle, NULL);
 
     globus_mutex_destroy(&globus_l_seg_mutex);
+    globus_cond_destroy(&globus_l_seg_cond);
 
     globus_module_deactivate(GLOBUS_XIO_MODULE);
     globus_module_deactivate(GLOBUS_COMMON_MODULE);
@@ -372,7 +383,9 @@ globus_scheduler_event(
     vsprintf(buf, format, ap);
     va_end(ap);
 
-    return globus_l_seg_register_write(buf);
+    globus_mutex_lock(&globus_l_seg_mutex);
+    result = globus_l_seg_register_write(buf);
+    globus_mutex_unlock(&globus_l_seg_mutex);
 
 error:
     return result;
@@ -589,7 +602,6 @@ globus_scheduler_event_generator_load_module(
 {
     globus_result_t                     result;
     int                                 rc;
-    char                                timestamp_str[64];
     const char *                        symbol_name
             = "globus_scheduler_event_module_ptr";
 
@@ -766,8 +778,6 @@ globus_l_seg_register_write(
     void *                              arg;
     int                                 i;
 
-    globus_mutex_lock(&globus_l_seg_mutex);
-
     if (buf)
     {
         globus_fifo_enqueue(&globus_l_seg_buffers, buf);
@@ -808,8 +818,6 @@ globus_l_seg_register_write(
         globus_l_seg_write_registered = GLOBUS_TRUE;
     }
 
-    globus_mutex_unlock(&globus_l_seg_mutex);
-
     return GLOBUS_SUCCESS;
 
 call_fault_handler:
@@ -818,7 +826,6 @@ call_fault_handler:
         handler = globus_l_seg_fault_handler;
         arg = globus_l_seg_fault_arg;
 
-        globus_mutex_unlock(&globus_l_seg_mutex);
         (*handler)(arg, result);
     }
     return result;
@@ -852,6 +859,7 @@ globus_l_seg_writev_callback(
                                         handler = NULL;
     void *                              arg;
     globus_bool_t                       reregister_write;
+    int                                 do_shutdown = 0;
 
     for (i = 0; i < count; i++)
     {
@@ -871,7 +879,10 @@ globus_l_seg_writev_callback(
     {
         reregister_write = GLOBUS_TRUE;
     }
-    globus_mutex_unlock(&globus_l_seg_mutex);
+    else if (globus_l_seg_shutdown)
+    {
+        do_shutdown = 1;
+    }
     if (handler)
     {
         (*handler)(arg, result);
@@ -880,5 +891,12 @@ globus_l_seg_writev_callback(
     {
         globus_l_seg_register_write(NULL);
     }
+
+    if (do_shutdown)
+    {
+        globus_l_seg_shutdown = 2;
+        globus_cond_signal(&globus_l_seg_cond);
+    }
+    globus_mutex_unlock(&globus_l_seg_mutex);
 }
 /* globus_l_seg_writev_callback() */
