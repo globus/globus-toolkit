@@ -2983,7 +2983,7 @@ globus_i_gsc_add_commands(
         globus_l_gsc_cmd_pasv,
         GLOBUS_GSC_COMMAND_POST_AUTH,
         1,
-        1,
+        2,
         "SPAS",
         NULL);
 
