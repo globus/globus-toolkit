@@ -557,6 +557,9 @@ void get_proxy(myproxy_socket_attrs_t *attrs,
 	       myproxy_creds_t *creds, 
 	       myproxy_response_t *response) 
 {
+    myproxy_debug("Retrieving credentials for username \"%s\"",
+		  creds->user_name);
+    
     /* Retrieve credentials */
     if (myproxy_creds_retrieve(creds) < 0) {
         response->response_type =  MYPROXY_ERROR_RESPONSE; 
@@ -564,13 +567,17 @@ void get_proxy(myproxy_socket_attrs_t *attrs,
 	return;
     }
  
+    myproxy_debug("  Owner is \"%s\"", creds->owner_name);
+    myproxy_debug("  Location is %s", creds->location);
+    myproxy_debug("  Lifetime is %d seconds", creds->lifetime);
+    
     /* Delegate credentials to client */
     if (myproxy_init_delegation(attrs, creds->location, creds->lifetime) < 0) {
         response->response_type =  MYPROXY_ERROR_RESPONSE; 
 	strcat(response->error_string, "Unable to delegate credentials.\n");
 	myproxy_log("Unable to delegate credentials for %s", creds->owner_name);
     } else {
-        myproxy_log("Delegating credentials to: %s", creds->owner_name);
+        myproxy_log("Delegating credentials for %s", creds->owner_name);
 	response->response_type = MYPROXY_OK_RESPONSE;
     }
   
@@ -582,12 +589,16 @@ void put_proxy(myproxy_socket_attrs_t *attrs,
 {
     char delegfile[64];
 
+    myproxy_debug("Storing credentials for username \"%s\"", creds->user_name);
+    myproxy_debug("  Owner is \"%s\"", creds->owner_name);
+    myproxy_debug("  Delegation lifetime is %d seconds", creds->lifetime);
+    
     /* Accept delegated credentials from client */
     if (myproxy_accept_delegation(attrs, delegfile, sizeof(delegfile)) < 0) {
 	myproxy_log("error in myproxy_accept_delegation()");
         exit(1);
     }
-    myproxy_log("Accepted delegation: %s", delegfile);
+    myproxy_debug("  Accepted delegation: %s", delegfile);
  
     creds->location = malloc(strlen(delegfile) + 1);
     strcpy(creds->location, delegfile);
@@ -598,6 +609,13 @@ void put_proxy(myproxy_socket_attrs_t *attrs,
         strcat(response->error_string, "Unable to store credentials.\n"); 
     } else {
 	response->response_type = MYPROXY_OK_RESPONSE;
+    }
+
+    /* Clean up temporary delegation */
+    if (unlink(delegfile) != 0)
+    {
+	myproxy_log_perror("Removal of temporary credentials file %s failed",
+			   delegfile);
     }
 }
 
