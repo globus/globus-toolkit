@@ -3,6 +3,7 @@
 
 #include "globus_gridftp_server.h"
 #include "globus_ftp_control.h"
+#include "globus_i_gfs_acl.h"
 
 void
 globus_i_gfs_server_closed();
@@ -17,7 +18,8 @@ typedef struct
 
     /* XXX: is this a good place ? */
     void *                          user_data_handle;
-    
+    globus_i_gfs_acl_handle_t       acl_handle;
+
     union
     {
         struct
@@ -113,7 +115,6 @@ globus_i_gfs_monitor_signal(
 #include "globus_i_gfs_control.h"
 #include "globus_i_gfs_ipc.h"
 #include "globus_i_gfs_data.h"
-#include "globus_i_gfs_acl.h"
 #include "globus_i_gfs_config.h"
 
 #endif

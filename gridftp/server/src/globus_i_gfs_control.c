@@ -3,6 +3,8 @@
 #include "globus_i_gridftp_server.h"
 #include <grp.h>
 
+#define FTP_SERVICE_NAME "file"
+
 globus_result_t
 globus_l_gfs_op_attr_init(
     globus_i_gfs_op_attr_t **   u_attr)
@@ -111,7 +113,9 @@ globus_l_gfs_channel_close_cb(
         GLOBUS_I_GFS_LOG_INFO,
         "Closed connection from %s\n",
         instance->remote_contact);
-    
+
+    globus_i_gfs_data_session_stop(
+        instance->user_data_handle, NULL);
     globus_free(instance->remote_contact);
     globus_free(instance);
     globus_i_gfs_server_closed();
@@ -175,8 +179,9 @@ typedef struct globus_l_gfs_auth_info_s
 static
 void
 globus_l_gfs_auth_data_cb(
-    globus_result_t                     result,
-    void *                              user_arg)
+    const char *                        resource_id,
+    void *                              user_arg,
+    globus_result_t                     result)
 {
     globus_l_gfs_auth_info_t *          auth_info;  
 
@@ -197,8 +202,12 @@ globus_l_gfs_auth_data_cb(
             NULL, 
             GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_PANIC, 
             "internal error");
-    }        
-    return;
+    }
+
+    globus_i_gfs_data_session_start(
+        &auth_info->instance->user_data_handle,
+        NULL,
+        auth_info->username);
 }    
 
 static
@@ -221,7 +230,7 @@ globus_l_gfs_request_auth(
     uid_t                               current_uid;
     gid_t                               gid;
     char *                              err_msg = GLOBUS_NULL;
-
+    globus_result_t                     res;
     globus_l_gfs_auth_info_t *          auth_info;  
     globus_i_gfs_server_instance_t *    instance;
     char *                              remote_cs;
@@ -319,7 +328,7 @@ globus_l_gfs_request_auth(
                 gid = pwent->pw_gid;
             }
 
-            rc = setgid(gid);
+        rc = setgid(gid);
             if(rc != 0)
             {
                err_msg = globus_common_create_string(
@@ -345,8 +354,19 @@ globus_l_gfs_request_auth(
                       
     auth_info->response = 
         GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS;
-    
-    globus_l_gfs_auth_data_cb(GLOBUS_SUCCESS, auth_info);
+
+    rc = globus_i_gfs_acl_init(
+        &instance->acl_handle,
+        context,
+        FTP_SERVICE_NAME,
+        user_name,
+        &res,
+        globus_l_gfs_auth_data_cb,
+        auth_info);
+    if(rc == GLOBUS_GFS_ACL_COMPLETE)
+    {
+        globus_l_gfs_auth_data_cb(NULL, auth_info, res);
+    }
     
     return;
 
