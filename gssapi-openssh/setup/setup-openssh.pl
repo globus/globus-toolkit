@@ -640,7 +640,7 @@ sub determineKeys
         $mainkeyfile = "$localsshdir/$basekeyfile";
         $mainpubkeyfile = "$localsshdir/$basekeyfile.pub";
 
-        if ( isReadable($mainkeyfile) && isReadable($mainpubkeyfile) )
+        if ( isPresent($mainkeyfile) && isPresent($mainpubkeyfile) )
         {
             push(@$linklist, $basekeyfile);
             $count++;
@@ -897,7 +897,7 @@ sub linkFile
 {
     my($src, $dest) = @_;
 
-    if ( !isReadable($src) )
+    if ( !isPresent($src) )
     {
         debug1("$src is not readable... not creating $dest.\n");
         return;
