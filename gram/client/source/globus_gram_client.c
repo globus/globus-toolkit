@@ -160,20 +160,6 @@ static gss_cred_id_t credential_handle = GSS_C_NO_CREDENTIAL;
 #endif
 
 
-#define create_monitor(monitor) \
-{ \
-    globus_mutex_init(&monitor.mutex, (globus_mutexattr_t *) GLOBUS_NULL); \
-    globus_cond_init(&monitor.done, (globus_condattr_t *) GLOBUS_NULL); \
-    monitor.done = GLOBUS_FALSE ; \
-}
-
-#define destroy_monitor(monitor) \
-{ \
-    globus_mutex_destroy(&monitor.mutex); \
-    globus_cond_destroy(&monitor.done); \
-}
-
-
 /******************************************************************************
 Function:	globus_i_gram_client_activate()
 Description:	Initialize variables
@@ -725,7 +711,7 @@ globus_gram_client_job_cancel(char * job_contact)
     GLOBUS_L_UNLOCK;
 
     globus_mutex_lock(&monitor.mutex);
-    while (!&monitor.done)
+    while (!monitor.done)
     {
 	globus_cond_wait(&monitor.cond, &monitor.mutex);
     }
@@ -766,6 +752,7 @@ globus_gram_client_job_status(char * job_contact,
     int                          rc;
     int                          version;
     char                         query[GLOBUS_GRAM_HTTP_BUFSIZE];
+    char                         url[1000];
     globus_size_t                querysize;
     globus_gram_http_monitor_t   monitor;
 
@@ -788,24 +775,31 @@ globus_gram_client_job_status(char * job_contact,
 	    &querysize,
 	    &monitor);
 
+    grami_fprintf(globus_l_print_fp,
+		  "post and get returned %d\n",rc);
+
     if (rc!=GLOBUS_SUCCESS)
 	goto globus_gram_client_job_status_done;
 
     GLOBUS_L_UNLOCK;
 
     globus_mutex_lock(&monitor.mutex);
-    while (!&monitor.done)
+    while (!monitor.done)
     {
 	globus_cond_wait(&monitor.cond, &monitor.mutex);
     }
     rc = monitor.errorcode;
     globus_mutex_unlock(&monitor.mutex);
 
+    grami_fprintf(globus_l_print_fp,
+		  "monitor released, errcode=%d\n",rc);
+
     GLOBUS_L_LOCK;
 
     if (rc == GLOBUS_SUCCESS && querysize > 0)
     {
-	if (3 != sscanf(query, "%d %d %d", &version, job_status, failure_code))
+	if (4 != sscanf(query, "%d %s %d %d",
+			&version, url, job_status, failure_code))
 	    rc = GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED;
 	else if (version != GLOBUS_GRAM_PROTOCOL_VERSION)
 	    rc = GLOBUS_GRAM_CLIENT_ERROR_VERSION_MISMATCH;
@@ -873,11 +867,11 @@ Parameters:
 Returns:
 ******************************************************************************/
 int 
-globus_gram_client_callback_register(char * job_contact,
-				     const int job_state_mask,
-				     const char * callback_contact,
-				     int * job_status,
-				     int * failure_code)
+globus_gram_client_job_callback_register(char * job_contact,
+					 const int job_state_mask,
+					 const char * callback_contact,
+					 int * job_status,
+					 int * failure_code)
 {
     int                          rc;
     int                          version;
@@ -895,8 +889,8 @@ globus_gram_client_callback_register(char * job_contact,
     globus_libc_sprintf(query,
 			"%d %d %d %s",
 			GLOBUS_GRAM_PROTOCOL_VERSION,
-			job_state_mask,
 			GLOBUS_GRAM_HTTP_QUERY_JOB_REGISTER,
+			job_state_mask,
 			callback_contact );
 
     querysize = strlen(query);
@@ -913,7 +907,7 @@ globus_gram_client_callback_register(char * job_contact,
     GLOBUS_L_UNLOCK;
 
     globus_mutex_lock(&monitor.mutex);
-    while (!&monitor.done)
+    while (!monitor.done)
     {
 	globus_cond_wait(&monitor.cond, &monitor.mutex);
     }
@@ -952,11 +946,10 @@ Parameters:
 Returns:
 ******************************************************************************/
 int 
-globus_gram_client_callback_unregister(char * job_contact,
-				       const int job_state_mask,
-				       const char * callback_contact,
-				       int * job_status,
-				       int * failure_code)
+globus_gram_client_job_callback_unregister(char * job_contact,
+					   const char * callback_contact,
+					   int * job_status,
+					   int * failure_code)
 {
     int                          rc;
     int                          version;
@@ -971,9 +964,8 @@ globus_gram_client_callback_unregister(char * job_contact,
     monitor.done = GLOBUS_FALSE;
 
     globus_libc_sprintf(query,
-			"%d %d %d %s",
+			"%d %d %s",
 			GLOBUS_GRAM_PROTOCOL_VERSION,
-			job_state_mask,
 			GLOBUS_GRAM_HTTP_QUERY_JOB_UNREGISTER,
 			callback_contact );
 
@@ -991,7 +983,7 @@ globus_gram_client_callback_unregister(char * job_contact,
     GLOBUS_L_UNLOCK;
 
     globus_mutex_lock(&monitor.mutex);
-    while (!&monitor.done)
+    while (!monitor.done)
     {
 	globus_cond_wait(&monitor.cond, &monitor.mutex);
     }

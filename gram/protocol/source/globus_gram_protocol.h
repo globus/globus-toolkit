@@ -33,9 +33,6 @@ typedef struct
     volatile globus_bool_t   done;
     volatile int             errorcode;
     volatile void *          buf;
-
-    /* used internally: */
-    volatile int           destruct_options;
 } globus_gram_http_monitor_t;
 
 
