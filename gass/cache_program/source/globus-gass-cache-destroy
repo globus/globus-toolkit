@@ -22,6 +22,11 @@ CAT_TARGETS="@CAT@ ${TARGETS}"
 # USAGE
 Usage()
 {
+    @ECHO@ "globus-gass-cache-destroy [ -t <machine> | -f <file> ]"
+    @ECHO@ "    Will destroy (clean without coherence check) the globus cache"
+    @ECHO@ "    on all the machine listed in ~/.globus/my-contacts, "
+    @ECHO@ "    or in <file> if -f option used, or only on the machine"
+    @ECHO@ "    specified with the -t option." 
     exit 1
 }
  
