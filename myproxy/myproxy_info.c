@@ -41,7 +41,7 @@ struct option long_options[] =
 static char short_options[] = "hus:p:l:vVd";
 
 static char version[] =
-"myproxy-destroy version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
+"myproxy-info version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
 
 static int dn_as_username = 0;
 
