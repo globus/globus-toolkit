@@ -523,12 +523,11 @@ write_data_file(const struct myproxy_creds *creds,
     fprintf (data_stream, "PASSPHRASE=%s\n", tmp1);
     fprintf (data_stream, "LIFETIME=%d\n", creds->lifetime);
 
-    fprintf (data_stream, "NAME=%s\n", creds->credname);
+    if (creds->credname != NULL)
+	fprintf (data_stream, "NAME=%s\n", creds->credname);
 
     if (creds->creddesc != NULL)
 	fprintf (data_stream, "DESCRIPTION=%s\n", creds->creddesc);
-    else
-	fprintf (data_stream, "DESCRIPTION=%s\n", "No Description");
 
     if (creds->retrievers != NULL)
 	fprintf (data_stream, "RETRIEVERS=%s\n", creds->retrievers);
@@ -851,7 +850,7 @@ myproxy_creds_retrieve(struct myproxy_creds *creds)
 {
     char creds_path[MAXPATHLEN];
     char data_path[MAXPATHLEN];
-    struct myproxy_creds retrieved_creds;
+    struct myproxy_creds retrieved_creds = {0}; /* initialize with 0s */
     int return_code = -1;
     char *tmp1=NULL;
     
@@ -1022,7 +1021,7 @@ myproxy_creds_is_owner(const char		*username,
 {
     char creds_path[MAXPATHLEN];
     char data_path[MAXPATHLEN];
-    struct myproxy_creds retrieved_creds;
+    struct myproxy_creds retrieved_creds = {0}; /* initialize with 0s */
     int return_code = -1;
 
     memset(&retrieved_creds, 0, sizeof(retrieved_creds));
@@ -1064,7 +1063,7 @@ myproxy_creds_delete(const struct myproxy_creds *creds)
 {
     char creds_path[MAXPATHLEN];
     char data_path[MAXPATHLEN];
-    struct myproxy_creds tmp_creds;
+    struct myproxy_creds tmp_creds = {0}; /* initialize with 0s */
     int return_code = -1;
         char *tmp1=NULL;
     
@@ -1125,7 +1124,7 @@ int read_from_directory (struct myproxy_creds *creds, myproxy_response_t *respon
     int count, tot_len, i;
     struct direct **files;
     char *ret_str;
-    struct myproxy_creds tmp_creds;
+    struct myproxy_creds tmp_creds = {0}; /* initialize with 0s */
     int index;
     myproxy_info_t *info_ptr;
 
@@ -1219,7 +1218,7 @@ myproxy_creds_info(struct myproxy_creds *creds, myproxy_response_t *response)
 {
     char creds_path[MAXPATHLEN];
     char data_path[MAXPATHLEN];
-    struct myproxy_creds tmp_creds;
+    struct myproxy_creds tmp_creds = {0}; /* initialize with 0s */
     int return_code = -1;
     time_t end_time;
 
@@ -1244,7 +1243,7 @@ myproxy_creds_info(struct myproxy_creds *creds)
 {
     char creds_path[MAXPATHLEN];
     char data_path[MAXPATHLEN];
-    struct myproxy_creds tmp_creds;
+    struct myproxy_creds tmp_creds = {0}; /* initialize with 0s */
     int return_code = -1;
     time_t end_time;
 
