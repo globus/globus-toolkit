@@ -36,14 +36,34 @@ sub new
     my $description = $self->{JobDescription};
     my $stdout = $description->stdout();
     my $stderr = $description->stderr();
+    my $globus_condor_conf = "$ENV{GLOBUS_LOCATION}/globus-condor.conf";
 
-    if(! exists($ENV{GLOBUS_SPOOL_DIR}))
+    if (-r $globus_condor_conf)
     {
-        $log_dir = $Globus::Core::Paths::tmpdir;
+        local(*FH);
+
+        if (open(FH, "<$globus_condor_conf"))
+        {
+            while(<FH>) {
+                chomp;
+                if (m/log_dir=(.*)$/) {
+                    $log_dir = $1;
+                    break;
+                }
+            }
+            close(FH);
+        }
     }
-    else
+    if (! defined($log_dir))
     {
-        $log_dir = $ENV{GLOBUS_SPOOL_DIR};
+        if(! exists($ENV{GLOBUS_SPOOL_DIR}))
+        {
+            $log_dir = $Globus::Core::Paths::tmpdir;
+        }
+        else
+        {
+            $log_dir = $ENV{GLOBUS_SPOOL_DIR};
+        }
     }
 
     if($description->jobtype() eq 'multiple' && $description->count > 1)
