@@ -51,11 +51,7 @@ static const char *
 encode_command(const myproxy_proto_request_type_t	command_value);
 
 static int
-parse_integer(const char			*lifetime_str,
-	       int				*lifetime_value);
-
-static int
-parse_lifetime(const char			*lifetime_str,
+parse_string(const char			*lifetime_str,
 	       int				*lifetime_value);
 
 static int
@@ -291,13 +287,15 @@ myproxy_serialize_request(const myproxy_request_t *request, char *data, const in
     int len;
     int totlen = 0;
     char lifetime_string[64];
+    char str[64];
     char expr_type_string[5];
     const char *command_string;
     char **authorized_services, **authorized_clients;
 
     assert(data != NULL);
     assert(datalen > 0);
-    
+   
+    // version
     data[0] = '\0';
     
     len = concatenate_strings(data, datalen, MYPROXY_VERSION_STRING,
@@ -307,6 +305,7 @@ myproxy_serialize_request(const myproxy_request_t *request, char *data, const in
     
     totlen += len;
 
+    // command type
     command_string = encode_command((myproxy_proto_request_type_t)request->command_type);
     
     if (command_string == NULL)
@@ -321,17 +320,24 @@ myproxy_serialize_request(const myproxy_request_t *request, char *data, const in
       return -1;
     
     totlen += len;
+
+    // username
     len = concatenate_strings(data, datalen, MYPROXY_USERNAME_STRING,
 			      request->username, "\n", NULL); 
     if (len < 0)
       return -1;
 
     totlen += len;
+
+    //passphrase
     len = concatenate_strings(data, datalen, MYPROXY_PASSPHRASE_STRING,
 			       request->passphrase, "\n", NULL);
     if (len < 0)
       return -1;
 
+    totlen += len;
+
+    //lifetime
     if (encode_integer(request->proxy_lifetime,
 			lifetime_string,
 			sizeof(lifetime_string)) == -1)
@@ -339,7 +345,6 @@ myproxy_serialize_request(const myproxy_request_t *request, char *data, const in
 	return -1;
     }
 			
-    totlen += len;
     len = concatenate_strings(data, datalen, MYPROXY_LIFETIME_STRING,
 			      lifetime_string, "\n", NULL);
     if (len < 0)
@@ -347,6 +352,7 @@ myproxy_serialize_request(const myproxy_request_t *request, char *data, const in
 
     totlen += len;
    
+    // retrievers
     if (request->retrievers != NULL)
     { 
       len = concatenate_strings(data, datalen, MYPROXY_RETRIEVER_STRING,
@@ -358,6 +364,7 @@ myproxy_serialize_request(const myproxy_request_t *request, char *data, const in
 
     }
 
+    //renewers
     if (request->renewers != NULL)
     { 
       len = concatenate_strings(data, datalen, MYPROXY_RENEWER_STRING,
@@ -369,6 +376,7 @@ myproxy_serialize_request(const myproxy_request_t *request, char *data, const in
 
     }
 
+    //credential name
     if (request->cred_name!= NULL)
     { 
       len = concatenate_strings(data, datalen, MYPROXY_CRED_NAME_STRING,
@@ -380,6 +388,7 @@ myproxy_serialize_request(const myproxy_request_t *request, char *data, const in
 
     }
 
+    //credential description
     if (request->cred_desc != NULL)
     { 
       len = concatenate_strings(data, datalen, MYPROXY_CRED_DESC_STRING,
@@ -391,7 +400,23 @@ myproxy_serialize_request(const myproxy_request_t *request, char *data, const in
 
     }
 
-    //myproxy_log (DBG_HI, debug_level, "OK\n");
+    //force database write
+    if (encode_integer(request->force_dbase_write,
+			str,
+			sizeof(str)) == -1)
+    {
+	return -1;
+    }
+			
+    len = concatenate_strings(data, datalen, MYPROXY_FORCE_DBASE_WRITE_STRING,
+			      str, "\n", NULL);
+    if (len < 0)
+      return -1;
+
+    totlen += len;
+   
+
+    //authorized service string
     for (authorized_services = request->authorized_service_dns;
 	 authorized_services; authorized_services++) {
 	len = concatenate_strings(data, datalen, MYPROXY_AUTH_SERVICE_STRING,
@@ -402,6 +427,7 @@ myproxy_serialize_request(const myproxy_request_t *request, char *data, const in
 	totlen += len;
     }
 
+    // authorized client dns
     for (authorized_clients = request->authorized_client_dns;
 	 authorized_clients; authorized_clients++) {
 	len = concatenate_strings(data, datalen, MYPROXY_AUTH_CLIENT_STRING,
@@ -425,8 +451,7 @@ myproxy_deserialize_request(const char *data, const int datalen,
     assert(request != NULL);
     assert(data != NULL);
 
-    //myproxy_log(DBG_HI, debug_level, "myproxy_deserialize_request: Data = %s\n\n", data);
-    
+    //version
     len = convert_message(data, datalen,
 			  MYPROXY_VERSION_STRING,
 			  CONVERT_MESSAGE_DEFAULT_FLAGS,
@@ -447,7 +472,7 @@ myproxy_deserialize_request(const char *data, const int datalen,
 	return -1;
     }
 
-
+    //command 
     len = convert_message(data, datalen,
 			  MYPROXY_COMMAND_STRING,
 			  CONVERT_MESSAGE_DEFAULT_FLAGS,
@@ -464,6 +489,7 @@ myproxy_deserialize_request(const char *data, const int datalen,
 	return -1;
     }
 
+    // username 
     len = convert_message(data, datalen,
 			  MYPROXY_USERNAME_STRING,
 			  CONVERT_MESSAGE_DEFAULT_FLAGS,
@@ -483,7 +509,7 @@ myproxy_deserialize_request(const char *data, const int datalen,
 	return -1;
     }
 
-
+    //passphrase
     len = convert_message(data, datalen,
 			  MYPROXY_PASSPHRASE_STRING, 
 			  CONVERT_MESSAGE_DEFAULT_FLAGS,
@@ -498,6 +524,7 @@ myproxy_deserialize_request(const char *data, const int datalen,
     /* XXX request_passphrase is a static buffer. Why? */
     strncpy(request->passphrase, buf, sizeof(request->passphrase));
 
+    //lifetime
     len = convert_message(data, datalen,
 			  MYPROXY_LIFETIME_STRING,
 			  CONVERT_MESSAGE_DEFAULT_FLAGS,
@@ -508,11 +535,12 @@ myproxy_deserialize_request(const char *data, const int datalen,
 	return -1;
     }
     
-    if (parse_lifetime(buf, &request->proxy_lifetime) == -1)
+    if (parse_string(buf, &request->proxy_lifetime) == -1)
     {
 	return -1;
     }
 
+    //retriever
     len = convert_message(data, datalen,
 			  MYPROXY_RETRIEVER_STRING,
 			  CONVERT_MESSAGE_DEFAULT_FLAGS,
@@ -539,6 +567,7 @@ myproxy_deserialize_request(const char *data, const int datalen,
     }
 
 
+    //renewer
     len = convert_message(data, datalen,
 			  MYPROXY_RENEWER_STRING,
 			  CONVERT_MESSAGE_DEFAULT_FLAGS,
@@ -564,6 +593,7 @@ myproxy_deserialize_request(const char *data, const int datalen,
          }
        }
 
+    //credential name
     len = convert_message(data, datalen,
 			  MYPROXY_CRED_NAME_STRING,
 			  CONVERT_MESSAGE_DEFAULT_FLAGS,
@@ -589,6 +619,7 @@ myproxy_deserialize_request(const char *data, const int datalen,
          }
        }
 
+    //credential description
     len = convert_message(data, datalen,
 			  MYPROXY_CRED_DESC_STRING,
 			  CONVERT_MESSAGE_DEFAULT_FLAGS,
@@ -614,6 +645,23 @@ myproxy_deserialize_request(const char *data, const int datalen,
          }
        }
 
+    //force database write
+    len = convert_message(data, datalen,
+			  MYPROXY_FORCE_DBASE_WRITE_STRING,
+			  CONVERT_MESSAGE_DEFAULT_FLAGS,
+                          buf, sizeof(buf));
+    if (len <= -1)
+    {
+	verror_prepend_string("Error parsing force_database_write from client request");
+	return -1;
+    }
+    
+    if (parse_string(buf, &request->force_dbase_write) == -1)  
+    {
+	return -1;
+    }
+
+    //authorization service
     len = convert_message(data, datalen, MYPROXY_AUTH_SERVICE_STRING,
 			  CONVERT_MESSAGE_ALLOW_MULTIPLE,
 			  buf, sizeof(buf));
@@ -626,6 +674,7 @@ myproxy_deserialize_request(const char *data, const int datalen,
 	}
     }
 			  
+    //authorization client
     len = convert_message(data, datalen, MYPROXY_AUTH_CLIENT_STRING,
 			  CONVERT_MESSAGE_ALLOW_MULTIPLE,
 			  buf, sizeof(buf));
@@ -1194,49 +1243,7 @@ encode_command(const myproxy_proto_request_type_t	command_value)
 
 
 /*
- * parse_lifetime()
- *
- * Given a string representation of a proxy lifetime, fill in the given
- * integer with the lifetime in seconds.
- *
- * Currently the string is just an ascii representation of the integer.
- *
- * Returns 0 on success, -1 on error setting verror.
- */
-static int
-parse_lifetime(const char			*lifetime_str,
-	       int				*lifetime_value)
-{
-    int				value;
-    int				return_value = -1;
-    
-    assert(lifetime_str != NULL);
-    assert(lifetime_value != NULL);
-    
-    /* XXX Should also handle string commands */
-
-    switch (string_to_int(lifetime_str, &value))
-    {
-      case STRING_TO_INT_SUCCESS:
-	return_value = 0;
-	*lifetime_value = value;
-	break;
-	
-      case STRING_TO_INT_NONNUMERIC:
-	verror_put_string("Non-numeric characters in lifetime string \"%s\"",
-			  lifetime_str);
-	break;
-	
-      case STRING_TO_INT_ERROR:
-	break;
-    }
-    
-    return return_value;
-}
-
-
-/*
- * parse_integer()
+ * parse_string
  *
  * Given a string representation of an integer value, fill in the given
  * integer with its integral value.
@@ -1246,27 +1253,27 @@ parse_lifetime(const char			*lifetime_str,
  * Returns 0 on success, -1 on error setting verror.
  */
 static int
-parse_integer(const char			*integer_str,
-	       int				*data_value)
+parse_string(const char			*str,
+	       int			*value)
 {
-    int				value;
+    int				val;
     int				return_value = -1;
     
-    assert(integer_str != NULL);
-    assert(data_value != NULL);
+    assert(str != NULL);
+    assert(value != NULL);
     
     /* XXX Should also handle string commands */
 
-    switch (string_to_int(integer_str, &value))
+    switch (string_to_int(str, &val))
     {
       case STRING_TO_INT_SUCCESS:
 	return_value = 0;
-	*data_value = value;
+	*value = val;
 	break;
 	
       case STRING_TO_INT_NONNUMERIC:
 	verror_put_string("Non-numeric characters in string \"%s\"",
-			  integer_str);
+			  str);
 	break;
 	
       case STRING_TO_INT_ERROR:
@@ -1275,7 +1282,6 @@ parse_integer(const char			*integer_str,
     
     return return_value;
 }
-
 
 
 /*

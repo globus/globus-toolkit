@@ -55,7 +55,8 @@ static char usage[] = \
 "                                         (DN) as the default username,\n"
 "                                         instead of the LOGNAME env. var.\n"
 "	-k | --cred_name <name>		  Specifies credential name\n"
-"	-K | --cred_desc <description>	  Specifies credential description"
+"	-K | --cred_desc <description>	  Specifies credential description\n"
+"	-f | --force_dbase_write	  Forces write to database even if credential with the specified name is present\n"
 "\n";
 
 struct option long_options[] =
@@ -79,10 +80,11 @@ struct option long_options[] =
   {"match_cn_only", 	    no_argument, NULL, 'X'},
   {"cred_name",	      required_argument, NULL, 'k'},
   {"cred_desc",	      required_argument, NULL, 'K'},
+  {"force_dbase_write",	    no_argument, NULL, 'f'},
   {0, 0, 0, 0}
 };
 
-static char short_options[] = "uhD:s:p:t:c:l:vndr:R:xXaAk:K:";  //colon following an option indicates option takes an argument
+static char short_options[] = "uhD:s:p:t:c:l:vndr:R:xXaAk:K:f";  //colon following an option indicates option takes an argument
 
 static char version[] =
 "myproxy-init version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
@@ -372,6 +374,9 @@ init_arguments(int argc,
 	    break;
 	case 'K':  /*credential description*/
 	    request->cred_desc = strdup (gnu_optarg);
+	    break;
+	case 'f':  /*force database write*/
+	    request->force_dbase_write = 1;
 	    break;
         default:  
 	    fprintf(stderr, usage);

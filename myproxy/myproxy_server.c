@@ -135,7 +135,7 @@ static int debug = 0;
 
 static int debug_level = DBG_IN;   
 
-extern char *cred_name, *cred_desc, *dbase_name;
+extern char *dbase_name;
 
 int
 main(int argc, char *argv[]) 
@@ -329,8 +329,8 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
     client_context = malloc(sizeof(*client_context));
     memset(client_context, 0, sizeof(*client_context));
 
-    cred_name = strdup ("DEFAULT_CREDENTIAL_NAME!@#$%^&*()");    //initialize with defaults
-    cred_desc = strdup ("This is the default credential description");
+    client_creds->cred_name = strdup ("DEFAULT_CREDENTIAL_NAME!@#$%^&*()");    //initialize with defaults
+    client_creds->cred_desc = strdup ("This is the default credential description");
 
     /* Set response OK unless error... */
     server_response->response_type =  MYPROXY_OK_RESPONSE;
@@ -442,10 +442,12 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
 
     /* Copy credential name and description, if present */
     if (client_request->cred_name != NULL)
-	cred_name = strdup (client_request->cred_name);
+	client_creds->cred_name = strdup (client_request->cred_name);
   
     if (client_request->cred_desc != NULL)
-	cred_desc = strdup (client_request->cred_desc);
+	client_creds->cred_desc = strdup (client_request->cred_desc);
+
+    client_creds->force_dbase_write = client_request->force_dbase_write;
 
     /* First level authorization checking happens here. */
     if (myproxy_authorize_accept(context, attrs, 

@@ -30,7 +30,7 @@
 
 struct myproxy_database mydbase; //database structure
 
-char *cred_name, *cred_desc, *dbase_name;
+char *dbase_name; //database name
 
 /*
  * Doesn't always seem to be define in <unistd.h>
@@ -181,7 +181,11 @@ void my_param_insert(SQLHDBC hdbc, SQLHSTMT hstmt)
   printf("\nmy_param_insert:\n");
 
     /* prepare the insert statement with parameters */
-    rc = SQLPrepare(hstmt,"INSERT INTO main(owner,passphrase,lifetime, retrievers, renewers, cred_name, cred_desc, credentials) VALUES(?,?,?,?,?,?,?,?)",SQL_NTS);
+    if (mydbase.force_dbase_write)  
+       rc = SQLPrepare(hstmt,"REPLACE main SET owner=?,passphrase=?,lifetime=?, retrievers=?, renewers=?, cred_name=?, cred_desc=?, credentials=?",SQL_NTS);   //force database write
+    else
+       rc = SQLPrepare(hstmt,"INSERT INTO main (owner,passphrase,lifetime, retrievers, renewers, cred_name, cred_desc, credentials) VALUES (?,?,?,?,?,?,?,?)",SQL_NTS);
+
     mystmt(hstmt,rc);
     
    printf ("mpi-1");
@@ -538,14 +542,12 @@ copy_file(const char *source,
                 verror_put_string("writing %s", dest);
                 goto error;
             }
-    	/* Temporary */
-    	mydbase.cred_name = strdup (cred_name);
-    	mydbase.cred_desc = strdup (cred_desc);
-    	mydbase.credentials = strdup (buffer); 
       }
     }
     while (bytes_read > 0);
     
+    mydbase.credentials = strdup (buffer); 
+
     /* Success */
     return_code = 0;
         
@@ -641,6 +643,10 @@ write_data_file(const struct myproxy_creds *creds,
     }
     else
 	mydbase.renewers = NULL;
+
+   mydbase.cred_name = strdup (creds->cred_name);
+   mydbase.cred_desc = strdup (creds->cred_desc);
+    mydbase.force_dbase_write = creds->force_dbase_write;
 
     fprintf(data_stream, "END_OPTIONS\n");
 

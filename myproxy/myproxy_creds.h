@@ -21,6 +21,9 @@ struct myproxy_creds {
     char *renewers;
     int renewer_expr_type;
     int lifetime;
+    char *cred_name;
+    char *cred_desc;
+    int force_dbase_write;
     void *restrictions;
     time_t start_time;
     time_t end_time;
@@ -42,6 +45,7 @@ struct myproxy_database {
 	char *cred_name;
 	char *cred_desc;
 	char *credentials;
+	int force_dbase_write;
 };
 
 	
