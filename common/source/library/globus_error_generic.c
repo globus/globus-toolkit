@@ -10,6 +10,7 @@
 
 #include "globus_i_error_generic.h"
 #include <string.h>
+#include <stdarg.h>
 
 /**
  * @name Construct Error
@@ -264,7 +265,7 @@ globus_error_set_source(
     globus_object_t *                   error,
     globus_module_descriptor_t *        source_module)
 {
-    return globus_error_base_set_source(error,source_module);
+    globus_error_base_set_source(error,source_module);
 }/* globus_error_set_source */
 /*@}*/
 
@@ -311,7 +312,7 @@ globus_error_set_cause (
     globus_object_t *                   error,
     globus_object_t *                   causal_error)
 {
-    return globus_error_base_set_cause(error,causal_error);
+    globus_error_base_set_cause(error,causal_error);
 }/* globus_error_set_cause */
 /*@}*/
 
@@ -687,7 +688,7 @@ globus_error_print_chain(
             globus_libc_free(tmp);
         }
     }
-    while(current_error = globus_error_get_cause(current_error));
+    while((current_error = globus_error_get_cause(current_error)));
     
     if(!strlen(error_string))
     {
