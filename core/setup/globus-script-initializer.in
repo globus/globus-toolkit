@@ -55,7 +55,7 @@ GLOBUS_DEPLOYED='FALSE'            # This line is overwritten during deployment
 	    echo "ERROR: cannot read ${exec_prefix}/etc/globus-ssl-path.sh" 1>&2
 	    exit 1
 	fi
-	. "${GLOBUS_INSTALL_PATH}/etc/globus-ssl-path.sh"
+	. "${exec_prefix}/etc/globus-ssl-path.sh"
 	if [ -z "${GLOBUS_SSL_PATH}" ]; then
 	    echo "ERROR: environment variable GLOBUS_SSL_PATH not defined"  1>&2
 	    echo "in ${exec_prefix}/etc/globus-ssl-path.sh"         1>&2
