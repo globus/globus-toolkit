@@ -76,7 +76,7 @@ install_gt2() {
 # Go to subdir, run the build script.
 # Copy gar if one is specified.
 make_package() {
-	export destdir=`pwd`/${name}-bin/${name}
+	export destdir=`pwd`/gt3-${name}/${name}
 	export GPT_LOCATION=`pwd`/gpt-2.2.5
 
 	if [ -d $destdir ]; then
@@ -98,6 +98,7 @@ make_package() {
 		if [ "x"$gar != "x" ]; then
 			echo Copying GAR $gar
 			cp ogsa-cvs/$subdir/$gar $destdir
+			cp metadata/$name/pkg_data_src.gpt gt3-$name
 		fi
 		touch $destdir/INSTALL
 	fi
