@@ -1802,7 +1802,8 @@ char *
 globus_libc_system_error_string(int the_error)
 {
 #if !defined HAVE_STRERROR
-#if ! defined(TARGET_ARCH_LINUX) & ! defined(TARGET_ARCH_FREEBSD)
+#if ! defined(TARGET_ARCH_LINUX) & ! defined(TARGET_ARCH_FREEBSD) & \
+    ! defined(TARGET_ARCH_DARWIN)
     extern char *sys_errlist[];
 #endif
     return ((char *)sys_errlist[the_error]);
