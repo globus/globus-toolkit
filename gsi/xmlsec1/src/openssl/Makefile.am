@@ -9,6 +9,7 @@ INCLUDES = \
 	-DPACKAGE=\"@PACKAGE@\" \
 	-I$(top_srcdir) \
 	-I$(top_srcdir)/include \
+        -I$(GLOBUS_LOCATION)/include/@GLOBUS_FLAVOR_NAME@/libxml25 \
 	$(XMLSEC_DEFINES) \
 	$(OPENSSL_CFLAGS) \
 	$(LIBXSLT_CFLAGS) \
