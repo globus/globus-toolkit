@@ -139,6 +139,7 @@ genfilename(char * prefix, char * path, char * sufix);
  */
 
 static gss_cred_id_t credential_handle = GSS_C_NO_CREDENTIAL;
+static gss_cred_id_t delegated_cred_handle = GSS_C_NO_CREDENTIAL;
 static gss_ctx_id_t  context_handle    = GSS_C_NO_CONTEXT;
 
 /******************************************************************************
@@ -1131,10 +1132,12 @@ static void doit()
     /* GSSAPI assist variables */
     OM_uint32           major_status = 0;
     OM_uint32           minor_status = 0;
+    OM_uint32           minor_status2 = 0;
     int                 token_status = 0;
     OM_uint32           ret_flags = 0;
 	gss_buffer_desc 	context_token = GSS_C_EMPTY_BUFFER;
 	FILE *				context_tmpfile = NULL;
+	char *              delcname = NULL;
 
     /* Authorization variables */
     int                 rc;
@@ -1251,6 +1254,7 @@ static void doit()
                        &ret_flags,
                        NULL,            /* don't need user_to_user */
                        &token_status,
+					   &delegated_cred_handle,
                        globus_gss_assist_token_get_fd,
                        (void *)stdin,
                        globus_gss_assist_token_send_fd,
@@ -1514,6 +1518,12 @@ static void doit()
 	int        fd, i;
 	size_t     len, bufsize;
 
+	/*
+	 * DEE this is no longer needed as the delegated cred is
+	 * returned, and proxy is still in memory
+	 * failure will cleanup the delegated cred. 
+	 */
+#if 0
         if ( ((proxyfile = getenv("X509_USER_DELEG_PROXY")) != NULL)
 	     && ((fd = open(proxyfile, O_RDWR, 0600) >= 0))  )
         {
@@ -1529,8 +1539,45 @@ static void doit()
 	    close(fd);
             unlink(proxyfile);
         }
+#endif
 	failure(FAILED_PING, "ping successful");
     }
+
+	/*
+	 * The old Kerberos (with mods) and the old GSI both
+	 * set environment variables to point at the delegated cred. 
+	 * Keberos 1.1 and the new GSI now both return a cred handle
+	 * which allows the application to to deal with the 
+	 * delegated cred. Unfortunatly, the GSSAPI does not define
+	 * a gss_export_cred. So in the new GSI we have overloaded
+	 * the gss_inquire_cred to write out the delegated
+	 * cred and return a string  which can be used for the
+	 * setenv. Mods for Kerberos 1.1 have been sent to MIT 
+	 * as well. 
+	 * The string returned is ready for a putenv
+	 * The GSI returns X509_USER_DELEG_PROXY=...,
+	 * Kerberos returns KRB5CCNAME=FILE:... 
+	 */
+
+	if (delegated_cred_handle)
+	{
+		minor_status = 0xdee0;
+		major_status = gss_inquire_cred(&minor_status,
+			 delegated_cred_handle, (char *)&delcname, NULL, NULL, NULL);
+		if (major_status == GSS_S_COMPLETE )
+		{
+			if  ( minor_status == 0xdee1 && delcname)
+			{
+				char * cp;
+
+				cp = strchr(delcname,'=');
+				*cp = '\0';
+				cp++;
+				grami_setenv(delcname,cp,1);
+				delcname = NULL;
+			}
+		}
+	}
 
     /* for gssapi_ssleay if we received delegated proxy certificate
      * they will be in a file in tmp pointed at by the 
@@ -1549,7 +1596,7 @@ static void doit()
         }
     }
 
-	/* For the Kerberos GSSAPI with the mode to 
+	/* For the Kerberos GSSAPI  prior to 1.1 with the mode to 
 	 * src/lib/gssapi/krb5/accept_sec_context.c 
 	 * to setenv KRB5CCNAME, the KRB5CCANME will be 
 	 * owned by root, and we need to change the ownership. 
@@ -2128,6 +2175,15 @@ failure(short failure_type, char * s)
     {
         fprintf(stderr,"Gatekeeper test complete : Failure!\n");
     }
+
+	/* Cleanup any delegated credential */
+
+	if (delegated_cred_handle)
+	{
+		OM_uint32 minor_status2;
+		gss_release_cred(&minor_status2, &delegated_cred_handle);
+	}
+
     exit(1);
 } /* failure() */
 
