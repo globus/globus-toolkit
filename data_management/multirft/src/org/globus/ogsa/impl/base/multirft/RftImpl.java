@@ -486,7 +486,7 @@ public class RftImpl
      */
     public void statusChanged(TransferJob transferJob)
                        throws GridServiceException {
-        logger.debug("Single File Transfer Status SDE changed ");
+        logger.debug("Single File Transfer Status SDE changed "+transferJob.getStatus());
         dbAdapter.update(transferJob);
         transferJobId_ = transferJob.getTransferId();
 
@@ -510,7 +510,8 @@ public class RftImpl
     public TransferClient getTransferClient(String sourceURL,String destinationURL) 
     throws MalformedURLException  {
         TransferClient transferClient = null;
-        logger.debug("Inside getTransferClient");
+        boolean flag=false;
+        logger.debug("Inside getTransferClient"+this.transferClients.size());
         for(int i=0;i<this.transferClients.size();i++) {
             TransferClient tempTransferClient = (TransferClient) this.transferClients.elementAt(i);
             GlobusURL source = tempTransferClient.getSourceURL();
@@ -518,11 +519,14 @@ public class RftImpl
             int status = tempTransferClient.getStatus();
             GlobusURL tempSource = new GlobusURL(sourceURL);
             GlobusURL tempDest = new GlobusURL(destinationURL);
-            if((source.getHost().equals(tempSource.getHost())) && (destination.getHost().equals(tempDest.getHost())) && 
-                ((status==0)||(status==2))) {
+            if((status==0) || (status==2)) {
+                flag=true;
+            }
+            if((source.getHost().equals(tempSource.getHost())) && (destination.getHost().equals(tempDest.getHost())) && flag) { 
                 transferClient = tempTransferClient;
                 transferClient.setSourcePath(tempSource.getPath());
                 transferClient.setDestinationPath(tempDest.getPath());
+                logger.debug("status: " + status);
                 return transferClient;
             }
         }
@@ -595,11 +599,11 @@ public class RftImpl
                                                         gridFTPPerfMarkerSD, 
                                                         gridFTPPerfMarkerSDE, 
                                                         rftOptions);
-                    transferClients.add(transferClient);
                     } else {
                         logger.debug("Reusing TransferClient from the pool");
                         transferClient.setSourceURL(transferJob.getSourceUrl());
                         transferClient.setDestinationURL(transferJob.getDestinationUrl());
+                        transferClient.setStatus(TransferJob.STATUS_ACTIVE);
                     }
                 } catch (Exception e) {
                     logger.error("Error in Transfer Client" + e.toString(), e);
@@ -634,6 +638,7 @@ public class RftImpl
                 }
 
                 if (transferClient != null) {
+                    transferClient.setStatus(TransferJob.STATUS_ACTIVE);
                     transferClient.setParallelStreams(rftOptions.getParallelStreams());
                     transferClient.setTcpBufferSize(rftOptions.getTcpBufferSize());
                     transferClient.setRFTOptions(rftOptions);
@@ -648,13 +653,18 @@ public class RftImpl
 
                     if (x == 0) {
                         transferJob.setStatus(TransferJob.STATUS_FINISHED);
+                        this.status = TransferJob.STATUS_FINISHED;
                         notifyUpdate();
                         statusChanged(transferJob);
                         transferProgress.setPercentComplete(100);
                         transferProgressData.setValue(transferProgress);
+                        transferClient.setStatus(TransferJob.STATUS_FINISHED);
+                        transferClients.add(transferClient);
                     } else if ((x == 1) && 
                                (transferJob.getAttempts() < maxAttempts)) {
                         transferJob.setStatus(TransferJob.STATUS_PENDING);
+                        transferClient.setStatus(TransferJob.STATUS_PENDING);
+                        this.status = TransferJob.STATUS_PENDING;
                         notifyUpdate();
                         statusChanged(transferJob);
 
@@ -665,15 +675,23 @@ public class RftImpl
                     } else if ((x == 2) || 
                                (transferJob.getAttempts() >= maxAttempts)) {
                         transferJob.setStatus(TransferJob.STATUS_FAILED);
+                        this.status = TransferJob.STATUS_FAILED;
                         statusChanged(transferJob);
+                        transferClient.setStatus(TransferJob.STATUS_FAILED);
+                        transferClients.add(transferClient);
                     } else {
                         transferJob.setStatus(TransferJob.STATUS_RETRYING);
+                        transferClient.setStatus(TransferJob.STATUS_RETRYING);
+                        this.status= TransferJob.STATUS_RETRYING;
                         notifyUpdate();
                         statusChanged(transferJob);
                     }
                 } else {
                     transferJob.setStatus(TransferJob.STATUS_FAILED);
+                    this.status = TransferJob.STATUS_FAILED;
                     statusChanged(transferJob);
+                    transferClient.setStatus(TransferJob.STATUS_FAILED);
+                    transferClients.add(transferClient);
                 }
 
                 dbAdapter.update(transferJob);

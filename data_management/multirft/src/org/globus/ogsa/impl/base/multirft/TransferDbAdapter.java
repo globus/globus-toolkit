@@ -449,7 +449,7 @@ public class TransferDbAdapter {
             StringBuffer query = new StringBuffer(5000);
             query.append("SELECT * FROM transfer where request_id=");
             query.append(requestId);
-            query.append(" AND status=4");
+            query.append(" AND status=4 OR status=1");
             logger.debug(
                     "Getting TransferJob from Database:" + query.toString());
 

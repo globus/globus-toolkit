@@ -61,7 +61,7 @@ public class TransferClient {
     String proxyPath;
     String sourceHostName;
     String destinationHostName;
-    int status;
+    int status=-1;
     int transferid;
     int parallelism;
     int tcpBufferSize;
@@ -130,6 +130,9 @@ public class TransferClient {
             logger.debug("Unable to create GridFTP Client to : " + this.destinationGlobusURL.getHost());
             throw new RemoteException(MessageUtils.toString(e));
         }
+    }
+    public void setStatus(int status) {
+        this.status = status;
     }
     public void setCredential(String proxyPath) 
     throws org.ietf.jgss.GSSException {
@@ -210,15 +213,6 @@ public class TransferClient {
 
         try {
             this.transferid = transferid;
-            logger.debug("Transfer Params:");
-            logger.debug(
-                    "Binary:" + rftOptions.isBinary() + "BlockSize:" + 
-                    rftOptions.getBlockSize());
-            logger.debug("TcpBufferSize:" + rftOptions.getTcpBufferSize());
-            logger.debug("Notpt:" + rftOptions.isNotpt());
-            logger.debug("ParallelStreams" + 
-                         rftOptions.getParallelStreams());
-            logger.debug("DCAU:" + rftOptions.isDcau());
             sourceGlobusURL = new GlobusURL(sourceURL);
             destinationGlobusURL = new GlobusURL(destinationURL);
             sourceHostName = sourceGlobusURL.getHost();
