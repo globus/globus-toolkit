@@ -139,7 +139,7 @@ do                                                                      \
     {                                                                   \
         goto decode_err;                                                \
     }                                                                   \
-    _w = *_buf;                                                         \
+    _w = (char)*_buf;                                                   \
     _buf++;                                                             \
     _len--;                                                             \
 } while(0)
@@ -1998,7 +1998,7 @@ globus_l_gfs_ipc_pack_data(
     }
 
     /* now that we know size, add it in */
-    msg_size = ptr - buffer - GFS_IPC_HEADER_SIZE;
+    msg_size = ptr - buffer;
     GFSEncodeUInt32(buffer, ipc->buffer_size, size_ptr, msg_size);
 
     res = globus_xio_register_write(
