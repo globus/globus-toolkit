@@ -5,6 +5,7 @@ SUBDIRS = pkgdata doxygen
 
 setup_SCRIPTS = \
     setup-globus-job-manager-callout \
+    setup-globus-job-manager-callout-message \
     setup-globus-job-manager-callout.pl
 
 EXTRA_DIST = $(setup_SCRIPTS) globus_gram_job_manager_callout.dox
