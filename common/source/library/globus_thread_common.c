@@ -356,11 +356,6 @@ globus_l_thread_common_activate(void)
 {
     int rc;
 
-    /* 
-     * safely initialize ICU library w/ threads
-     */
-    uloc_getDefault(); 
-
     rc = globus_thread_key_create(&l_thread_stack_key,
 			          globus_l_thread_blocking_callback_destroy);
 
