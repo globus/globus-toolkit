@@ -1524,21 +1524,14 @@ globus_l_gfs_data_passive_kickout(
     bounce_info = (globus_l_gfs_data_passive_bounce_t *) user_arg;
 
     memset(&reply, '\0', sizeof(globus_gfs_ipc_reply_t));
-    reply.info.data.contact_strings = (const char **) 
-        globus_calloc(1, sizeof(char *));
- 
     reply.type = GLOBUS_GFS_OP_PASSIVE;
     reply.id = bounce_info->id;
     reply.result = bounce_info->result;
-
-    reply.info.data.data_arg = (void *) globus_handle_table_insert(
-        &bounce_info->handle->session_handle->handle_table,
-        bounce_info->handle,
-        1);
-
+    reply.info.data.contact_strings = (const char **) 
+        globus_calloc(1, sizeof(char *));
+    reply.info.data.contact_strings[0] = bounce_info->contact_string;
     reply.info.data.bi_directional = bounce_info->bi_directional;
     reply.info.data.cs_count = 1;
-    reply.info.data.contact_strings[0] = bounce_info->contact_string;
 
     /* as soon as we finish the data handle can be in play, set its
         state appropriately.  if not success then we never created a
@@ -1546,7 +1539,12 @@ globus_l_gfs_data_passive_kickout(
     if(bounce_info->result == GLOBUS_SUCCESS)
     {
         bounce_info->handle->is_mine = GLOBUS_TRUE;
-        bounce_info->handle->state = GLOBUS_L_GFS_DATA_HANDLE_VALID;
+        bounce_info->handle->state = GLOBUS_L_GFS_DATA_HANDLE_VALID;     
+    
+        reply.info.data.data_arg = (void *) globus_handle_table_insert(
+            &bounce_info->handle->session_handle->handle_table,
+            bounce_info->handle,
+            1);
     }
     else
     {
@@ -1780,17 +1778,10 @@ globus_l_gfs_data_active_kickout(
 
     bounce_info = (globus_l_gfs_data_active_bounce_t *) user_arg;
 
-    bounce_info->handle->is_mine = GLOBUS_TRUE;
-
     memset(&reply, '\0', sizeof(globus_gfs_ipc_reply_t));
-
     reply.type = GLOBUS_GFS_OP_ACTIVE;
     reply.id = bounce_info->id;
-    reply.result = GLOBUS_SUCCESS;
-    reply.info.data.data_arg = (void *) globus_handle_table_insert(
-        &bounce_info->handle->session_handle->handle_table,
-        bounce_info->handle,
-        1);
+    reply.result = bounce_info->result;
     reply.info.data.bi_directional = bounce_info->bi_directional;
 
     /* as soon as we finish the data handle can be in play, set its
@@ -1799,6 +1790,12 @@ globus_l_gfs_data_active_kickout(
     if(bounce_info->result == GLOBUS_SUCCESS)
     {
         bounce_info->handle->state = GLOBUS_L_GFS_DATA_HANDLE_VALID;
+        bounce_info->handle->is_mine = GLOBUS_TRUE;
+
+        reply.info.data.data_arg = (void *) globus_handle_table_insert(
+            &bounce_info->handle->session_handle->handle_table,
+            bounce_info->handle,
+            1);
     }
     else
     {
@@ -2089,6 +2086,7 @@ globus_i_gfs_data_request_recv(
 error_module:
 error_op:
 error_handle:
+/* XXX need to reply with error here */
     return;
 }
 
@@ -2188,6 +2186,7 @@ globus_i_gfs_data_request_send(
 error_module:
 error_op:
 error_handle:
+/* XXX need to reply with error here */
     return;
 }
 
