@@ -201,7 +201,7 @@ main(int argc, char *argv[])
 	   hours, days, client_request->username, socket_attrs->pshost); 
     
     /* free memory allocated */
-    myproxy_destroy(socket_attrs, client_request, server_response);
+    myproxy_free(socket_attrs, client_request, server_response);
 
     exit(0);
 
@@ -330,7 +330,7 @@ receive_response(myproxy_socket_attrs_t *attrs, myproxy_response_t *response) {
     /* Receive a response from the server */
     responselen = myproxy_recv(attrs, response_buffer, sizeof(response_buffer));
     if (responselen < 0) {
-        fprintf(stderr, "error in myproxy_recv_response()\n");
+        fprintf(stderr, "error in myproxy_recv()\n");
         return -1;
     }
 
