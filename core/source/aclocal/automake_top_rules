@@ -1,5 +1,5 @@
 EXTRA_DIST = bootstrap \
         globus_automake_pre \
         globus_automake_post \
-        globus_automake_top_pre \
-        globus_automake_top_post
+        globus_automake_pre_top \
+        globus_automake_post_top
