@@ -62,6 +62,9 @@ Codes returned by globus_gass_cache module
 #define GLOBUS_GASS_CACHE_ERROR_INVALID_PARRAMETER     -19
 
 
+#if !defined(FILENAME_MAX) && defined(MAXPATHLEN)
+#   define FILENAME_MAX MAXPATHLEN
+#endif
 /******************************************************************************
 Types
 ******************************************************************************/
