@@ -101,32 +101,40 @@ globus_gass_cache_error_strings[] =
 /******************************************************************************
                           Module specific prototypes
 ******************************************************************************/
-static void globus_l_gass_cache_log(FILE* f,char * str,...);
-static void globus_l_gass_cache_trace(char* source_file,int line,char * str, ...);
+static void globus_l_gass_cache_log(FILE* f,
+				    char * str,...);
+static void globus_l_gass_cache_trace(char* source_file,
+				      int line,
+				      char * str, ...);
 static void globus_l_gass_cache_entry_free(globus_gass_cache_entry_t** entry,
-				   globus_bool_t itself);
-static int  globus_l_gass_cache_read_nb_entries(globus_gass_cache_t*  cache_handle);
+					   globus_bool_t itself);
+static int  globus_l_gass_cache_read_nb_entries(
+    globus_gass_cache_t* cache_handle);
 static int  globus_l_gass_cache_write_nb_entries(int fd,
-					 int nb_entries);
-static int  globus_l_gass_cache_lookfor_url(globus_gass_cache_entry_t** return_entry,
-				    char * searched_url,
-				    globus_gass_cache_t*  cache_handle);
-static int  globus_l_gass_cache_write_state_file(globus_gass_cache_entry_t* entry,
-					 globus_gass_cache_t*  cache_handle);
+						 int nb_entries);
+static int  globus_l_gass_cache_lookfor_url(
+    globus_gass_cache_entry_t** return_entry,
+    char *searched_url,
+    globus_gass_cache_t *cache_handle);
+static int  globus_l_gass_cache_write_state_file(
+    globus_gass_cache_entry_t* entry,
+    globus_gass_cache_t *cache_handle);
 static int  globus_l_gass_cache_write_one_str(char* buff_pt,
-				      int fd);
-static int  globus_l_gass_cache_write_one_entry(int fd,
-					globus_gass_cache_entry_t* entry);
+					      int fd);
+static int  globus_l_gass_cache_write_one_entry(
+    int fd,
+    globus_gass_cache_entry_t *entry);
 static int  globus_l_gass_cache_read_one_str(char** buff_pt,
-				     int fd);
+					     int fd);
+static int  globus_l_gass_cache_read_one_entry(
+    int fd,
+    globus_gass_cache_entry_t** entry);
 
-static int  globus_l_gass_cache_read_one_entry(int fd,
-				       globus_gass_cache_entry_t** entry);
 static int  globus_l_gass_cache_lock_file(char* file);
 static int  globus_l_gass_cache_unlock_file(char* file);
 static int  globus_l_gass_cache_lock_open( globus_gass_cache_t*  cache_handle);
-static int  globus_l_gass_cache_unlock_close(globus_gass_cache_t*  cache_handle,
-				     globus_bool_t abort);
+static int  globus_l_gass_cache_unlock_close(globus_gass_cache_t *cache_handle,
+					     globus_bool_t abort);
 /******************************************************************************
 Function: globus_l_gass_cache_log()
 
@@ -145,7 +153,9 @@ Returns:
                none           
 ******************************************************************************/
 static void 
-globus_l_gass_cache_log( FILE* f,char* str,...)
+globus_l_gass_cache_log(FILE* f,
+			char* str,
+			...)
 {
     va_list    args;
     char *     fmt;
@@ -161,15 +171,10 @@ globus_l_gass_cache_log( FILE* f,char* str,...)
     
     /* remove the \n */
     time_buff[24]='\0';
-    gethostname(hname,sizeof(hname));
-#   ifdef BUILD_LITE
-    mytid = 0;
-#   else
+    globus_libc_gethostname(hname,sizeof(hname));
     mytid = (long) globus_thread_self();
-#   endif    
-    
-    globus_libc_lock();
-    fprintf(f,"%s %s PID:%ld TID:%ld : ",
+
+    globus_libc_fprintf(f,"%s %s PID:%ld TID:%ld : ",
 	    time_buff,
 	    hname,
 	    (long)getpid(),
@@ -179,9 +184,10 @@ globus_l_gass_cache_log( FILE* f,char* str,...)
     /*
     fmt = va_arg(args, char *);
     */
-    vfprintf(f, str, args);
+    globus_libc_vfprintf(f, str, args);
     va_end(args);
-    fprintf(f,"\n");
+    globus_libc_fprintf(f,"\n");
+    globus_libc_lock();
     fflush(f);
     globus_libc_unlock();
 } /* globus_gass_cache_log */
@@ -209,22 +215,26 @@ Returns:
 ******************************************************************************/
 
 static void 
-globus_l_gass_cache_trace(char* source_file,int line,char * str, ...)
+globus_l_gass_cache_trace(char* source_file,
+			  int line,
+			  char *str,
+			  ...)
 {
     va_list    args;
     char *     fmt;
 
     va_start(args,str);
     
-    globus_libc_lock();
-    fprintf(stderr,"%s %d : ",source_file,  line);
+    globus_libc_fprintf(stderr,"%s %d : ",source_file,  line);
     /*
     fmt = va_arg(args, char *);
     */
-    vfprintf(stderr, str, args);
+    globus_libc_vfprintf(stderr, str, args);
     va_end(args);
     
-    fprintf(stderr,"\n");
+    globus_libc_fprintf(stderr,"\n");
+
+    globus_libc_lock();
     fflush(stderr);
     globus_libc_unlock();
     
@@ -251,7 +261,7 @@ Returns:
 
 static int
 globus_l_gass_cache_write_one_str(char* buff_pt,
-		 int fd)
+				  int fd)
 {
     /* ascii coded size of the next data to read */
     char size_s[GLOBUS_L_GASS_CACHE_L_LENGHT+1];
@@ -259,11 +269,11 @@ globus_l_gass_cache_write_one_str(char* buff_pt,
 
     
     /* write buffer lenght, including \n */
-    size = strlen(buff_pt) +1;      /* include the terminating null char     */
-    globus_libc_lock();
-    sprintf(size_s,"%40u",size);  /* 40 is for GLOBUS_L_GASS_CACHE_L_LENGHT !!!    */
+    size = strlen(buff_pt) +1;	/* include the terminating null char     */
+    globus_libc_sprintf(size_s,"%40u",size);
+    /* 40 is for GLOBUS_L_GASS_CACHE_L_LENGHT !!!    */
     size_s[sizeof(size_s)-1] = '\n';
-    globus_libc_unlock();
+
     while ( write(fd, size_s,sizeof(size_s)) != sizeof(size_s) )
     {
 	if (errno != EINTR)
@@ -316,7 +326,7 @@ Returns:
 
 static int
 globus_l_gass_cache_read_one_str(char** buff_pt,
-		 int fd)
+				 int fd)
 {
     /* ascii coded size of the next data to read */
     char size_s[GLOBUS_L_GASS_CACHE_L_LENGHT+1];
@@ -331,7 +341,9 @@ globus_l_gass_cache_read_one_str(char** buff_pt,
 	    return(GLOBUS_GASS_CACHE_ERROR_STATE_F_CORRUPT);
 	}
     }
-    size_s[GLOBUS_L_GASS_CACHE_L_LENGHT]='\0'; /* replace \n with  0 (end of string) */
+    size_s[GLOBUS_L_GASS_CACHE_L_LENGHT]='\0';
+    /* replace \n with  0 (end of string) */
+    
     size = atoi(size_s);
     
     if (!size)
@@ -393,7 +405,9 @@ globus_l_gass_cache_read_nb_entries(globus_gass_cache_t*  cache_handle)
 	    return(GLOBUS_GASS_CACHE_ERROR_STATE_F_CORRUPT);
 	}
     }
-    size_s[GLOBUS_L_GASS_CACHE_L_LENGHT]='\0'; /* replace \n with  0 (end of string) */
+    size_s[GLOBUS_L_GASS_CACHE_L_LENGHT]='\0';
+    /* replace \n with  0 (end of string) */
+    
     cache_handle->nb_entries = atoi(size_s);
 
     return(GLOBUS_SUCCESS);
@@ -423,7 +437,8 @@ Returns:
  
 ******************************************************************************/
 static int
-globus_l_gass_cache_write_nb_entries(int fd, int nb_entries)
+globus_l_gass_cache_write_nb_entries(int fd,
+				     int nb_entries)
 {
     /* ascii coded size of the next data to read */
     char size_s[GLOBUS_L_GASS_CACHE_L_LENGHT+1];
@@ -439,12 +454,12 @@ globus_l_gass_cache_write_nb_entries(int fd, int nb_entries)
 	}
     }
 
-    globus_libc_lock();
-    sprintf(size_s,"%40u",nb_entries);  /* 40 is for GLOBUS_L_GASS_CACHE_L_LENGHT !*/
+    globus_libc_sprintf(size_s,"%40u",nb_entries);
+    /* 40 is for GLOBUS_L_GASS_CACHE_L_LENGHT !*/
     size_s[sizeof(size_s)-1] = '\n';
-    globus_libc_unlock();
+
     while (write(fd,
-	      size_s,sizeof(size_s))       != sizeof(size_s) )
+	      size_s,sizeof(size_s))  != sizeof(size_s) )
     {
 	if (errno != EINTR)
 	{
@@ -482,9 +497,9 @@ Returns:
 ******************************************************************************/
 static int
 globus_l_gass_cache_write_one_entry(int fd,
-			   globus_gass_cache_entry_t* entry)
+				    globus_gass_cache_entry_t* entry)
 {
-                        /* ascii coded size of the next data to read         */
+    /* ascii coded size of the next data to read         */
     char size_s[GLOBUS_L_GASS_CACHE_L_LENGHT+1];
     unsigned int size;  /* size of the next data to read                     */
     unsigned int i;     /* to loop in the tags array                         */
@@ -512,11 +527,10 @@ globus_l_gass_cache_write_one_entry(int fd,
 	return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE);
     }
 
-    /* write timestamp */               /* 40 is for GLOBUS_L_GASS_CACHE_L_LENGHT !!!*/
-    globus_libc_lock();
-    sprintf(size_s,"%40lu",entry->timestamp);
+    /* write timestamp */
+    /* 40 is for GLOBUS_L_GASS_CACHE_L_LENGHT !!!*/
+    globus_libc_sprintf(size_s,"%40lu",entry->timestamp);
     size_s[sizeof(size_s)-1] = '\n';
-    globus_libc_unlock();
                              
     while ( write(fd, size_s,sizeof(size_s)) != sizeof(size_s) )
     {
@@ -562,10 +576,8 @@ globus_l_gass_cache_write_one_entry(int fd,
 
     /* write the number of existing tag enties */
     /* 40 is for GLOBUS_L_GASS_CACHE_L_LENGHT !!!      */
-    globus_libc_lock();
-    sprintf(size_s,"%40lu",entry->num_tags);
+    globus_libc_sprintf(size_s,"%40lu",entry->num_tags);
     size_s[sizeof(size_s)-1] = '\n';
-    globus_libc_unlock();
     
     while ( write(fd, size_s,sizeof(size_s)) != sizeof(size_s) )
     {
@@ -595,10 +607,9 @@ globus_l_gass_cache_write_one_entry(int fd,
 	
 	    /* write the count */
 	    /* 40 is for GLOBUS_L_GASS_CACHE_L_LENGHT  !!!     */
-	    globus_libc_lock();
-	    sprintf(size_s,"%40u",(entry->tags+i)->count);
+	    globus_libc_sprintf(size_s,"%40u",(entry->tags+i)->count);
 	    size_s[sizeof(size_s)-1] = '\n';
-	    globus_libc_unlock();
+
 	    while ( write(fd, size_s,sizeof(size_s)) != sizeof(size_s) )
 	    {
 		if (errno != EINTR)
@@ -637,9 +648,9 @@ Returns:    GLOBUS_SUCCESS or
 ******************************************************************************/
 static int
 globus_l_gass_cache_read_one_entry(int fd,
-			  globus_gass_cache_entry_t** entry)
+				   globus_gass_cache_entry_t** entry)
 {
-                        /* ascii coded size of the next data to read */
+    /* ascii coded size of the next data to read */
     char size_s[GLOBUS_L_GASS_CACHE_L_LENGHT+1];
     unsigned int size;  /* size of the next data to read             */
     int i;              /* tag array index                           */
@@ -781,7 +792,8 @@ Returns:
                none (as free()) 
 ******************************************************************************/
 static void
-globus_l_gass_cache_entry_free(globus_gass_cache_entry_t** entry,globus_bool_t itself)
+globus_l_gass_cache_entry_free(globus_gass_cache_entry_t** entry,
+			       globus_bool_t itself)
 {
     int i;
     if (*entry != GLOBUS_NULL)
@@ -807,8 +819,7 @@ globus_l_gass_cache_entry_free(globus_gass_cache_entry_t** entry,globus_bool_t i
 	{
 	    globus_free(*entry);
 	    *entry=GLOBUS_NULL;
-	}
-	
+	}	
     }
 } /* globus_l_gass_cache_entry_free() */
 
@@ -835,10 +846,9 @@ Returns:
 ******************************************************************************/
 static int
 globus_l_gass_cache_write_state_file(globus_gass_cache_entry_t* entry,
-		       globus_gass_cache_t*  cache_handle)
+				     globus_gass_cache_t*  cache_handle)
 {
     int      rc; /* general purpose return code */
-
 
     if (entry != NULL)
     {
@@ -851,7 +861,6 @@ globus_l_gass_cache_write_state_file(globus_gass_cache_entry_t* entry,
 	}
     }
     return(GLOBUS_SUCCESS);
-    
 } /* globus_l_gass_cache_write_state_file() */
 
 /******************************************************************************
@@ -888,23 +897,23 @@ Returns:
 ******************************************************************************/
 static int
 globus_l_gass_cache_lookfor_url(globus_gass_cache_entry_t** return_entry,
-		       char * searched_url,
-		       globus_gass_cache_t*  cache_handle)
+				char * searched_url,
+				globus_gass_cache_t*  cache_handle)
 {
-    
-    globus_gass_cache_entry_t* globus_gass_cache_entry_pt=NULL; /* for general usage            */
-    int                 rc;                  /* return code                  */
-    char                size_s[GLOBUS_L_GASS_CACHE_L_LENGHT+1];
+    globus_gass_cache_entry_t* globus_gass_cache_entry_pt=NULL;
+				/* for general usage            */
 
-    char                entry_separator[2];  /* eache entry is preceded by   */
-                                             /* a line containing #\n        */
-    char                comment[COMMENT_LENGHT];
+    int rc;			/* return code                  */
+    char size_s[GLOBUS_L_GASS_CACHE_L_LENGHT+1];
+    char entry_separator[2];	/* eache entry is preceded by   */
+				/* a line containing #\n        */
+    char comment[COMMENT_LENGHT];
   
     /* Write the  comment */
-    globus_libc_lock();
-    sprintf(comment,"%-79s","# Gass_cache state file. Do not modify ! ");
+    globus_libc_sprintf(comment,
+			"%-79s","# Gass_cache state file. Do not modify ! ");
     comment[sizeof(comment)-1] = '\n';
-    globus_libc_unlock();
+
     while (write(cache_handle->temp_file_fd,comment,sizeof(comment))
 	   != sizeof(comment))
     {
@@ -917,7 +926,7 @@ globus_l_gass_cache_lookfor_url(globus_gass_cache_entry_t** return_entry,
     
     *return_entry = NULL;   /* initialised to "not found" */
     /* scann the file */
-    /* I do not "rewind" because I should have juste opened the file         */
+    /* I do not "rewind" because I should have just opened the file         */
 
     
     while ( read( cache_handle->state_file_fd,
@@ -940,10 +949,12 @@ globus_l_gass_cache_lookfor_url(globus_gass_cache_entry_t** return_entry,
 					    globus_gass_cache_entry_pt);
 	    if (rc != GLOBUS_SUCCESS)
 	    {
-		globus_l_gass_cache_entry_free(&globus_gass_cache_entry_pt,GLOBUS_TRUE);
+		globus_l_gass_cache_entry_free(&globus_gass_cache_entry_pt,
+					       GLOBUS_TRUE);
 		return (rc);
 	    }
-	    globus_l_gass_cache_entry_free(&globus_gass_cache_entry_pt,GLOBUS_TRUE);
+	    globus_l_gass_cache_entry_free(&globus_gass_cache_entry_pt,
+					   GLOBUS_TRUE);
 	}
 	else
 	{
@@ -963,8 +974,6 @@ globus_l_gass_cache_lookfor_url(globus_gass_cache_entry_t** return_entry,
     {
 	return(globus_l_gass_cache_read_nb_entries(cache_handle));
     }
-	
-    
 } /* globus_l_gass_cache_lookfor_url() */
 
 /******************************************************************************
@@ -1000,17 +1009,13 @@ globus_l_gass_cache_lock_file(char* file_to_be_locked)
     strcpy(lock_file, file_to_be_locked);
     strcat(lock_file, GLOBUS_L_GASS_CACHE_LOCK_EXT);
     /* !!! need to handle multi threaded !!! */
-    gethostname(hname,sizeof(hname));
-#ifdef BUILD_LITE
-    sprintf(uniq_lock_file,"%s_%s_%ld",
-            lock_file,hname,
-            (long)getpid());
-#else
-    sprintf(uniq_lock_file,"%s_%s_%ld",
-            lock_file,hname,
-            (long)globus_thread_self());
-#endif
+    globus_libc_gethostname(hname,sizeof(hname));
 
+    globus_libc_sprintf(uniq_lock_file,"%s_%s_%ld:%ld",
+			lock_file,
+			hname,
+			(long) globus_libc_getpid(),
+			(long) globus_thread_self());
     
     while ( (uniq_lock_file_fd = creat(uniq_lock_file,
 				       GLOBUS_L_GASS_CACHE_STATE_MODE)) < 0 )
@@ -1101,16 +1106,13 @@ globus_l_gass_cache_unlock_file(char* file_to_be_locked)
     strcpy(lock_file, file_to_be_locked);
     strcat(lock_file, GLOBUS_L_GASS_CACHE_LOCK_EXT);
     /* !!! need to handle multi threaded !!! */
-    gethostname(hname,sizeof(hname));
-#ifdef BUILD_LITE
-    sprintf(uniq_lock_file,"%s_%s_%ld",
-            lock_file,hname,
-            (long)getpid());
-#else
-    sprintf(uniq_lock_file,"%s_%s_%ld",
-            lock_file,hname,
-            (long)globus_thread_self());
-#endif
+    globus_libc_gethostname(hname,sizeof(hname));
+
+    globus_libc_sprintf(uniq_lock_file,"%s_%s_%ld:%ld",
+			lock_file,
+			hname,
+			(long) globus_libc_getpid(),
+			(long) globus_thread_self());
  
     /* remove the lock */
     while (unlink(lock_file) != 0 )
@@ -1131,8 +1133,7 @@ globus_l_gass_cache_unlock_file(char* file_to_be_locked)
 	}
     }
     
-    return(GLOBUS_SUCCESS);
- 
+    return(GLOBUS_SUCCESS); 
 } /* globus_l_gass_cache_unlock_file */
 
 /******************************************************************************
@@ -1218,11 +1219,11 @@ globus_l_gass_cache_lock_open( globus_gass_cache_t*  cache_handle)
 		/* initialise the number of entries */
 		cache_handle->nb_entries=0;
 		/* Write the  comment */
-		globus_libc_lock();
-		sprintf(comment,
-			"%-79s","# Gass_cache state file. Do not modify ! ");
+		globus_libc_sprintf(
+		    comment,
+		    "%-79s","# Gass_cache state file. Do not modify ! ");
 		comment[sizeof(comment)-1] = '\n';
-		globus_libc_unlock();
+
 		while (write(cache_handle->state_file_fd,
 			     comment,sizeof(comment))
 		       != sizeof(comment))
@@ -1266,7 +1267,8 @@ globus_l_gass_cache_lock_open( globus_gass_cache_t*  cache_handle)
 				      GLOBUS_L_GASS_CACHE_STATE_MODE );
     if (cache_handle->temp_file_fd == -1 )
     {
-	GLOBUS_L_GASS_CACHE_LG("Could not open/create the temporary state file");
+	GLOBUS_L_GASS_CACHE_LG(
+	    "Could not open/create the temporary state file");
 	close(cache_handle->state_file_fd);
 	globus_l_gass_cache_unlock_file(cache_handle->state_file_path);
 	return(GLOBUS_GASS_CACHE_ERROR_OPEN_STATE);
@@ -1321,11 +1323,14 @@ globus_l_gass_cache_unlock_close(globus_gass_cache_t*  cache_handle,
     /* before I close, I want to write the number of entries */
     if (!abort)
     {
-	    rc = globus_l_gass_cache_write_nb_entries(cache_handle->temp_file_fd,
-				  cache_handle->nb_entries);
+	    rc = globus_l_gass_cache_write_nb_entries(
+		cache_handle->temp_file_fd,
+		cache_handle->nb_entries);
+	    
 	    if ( rc!= GLOBUS_SUCCESS )
 	    {
-		globus_l_gass_cache_unlock_close(cache_handle,GLOBUS_L_GASS_CACHE_ABORT);
+		globus_l_gass_cache_unlock_close(cache_handle,
+						 GLOBUS_L_GASS_CACHE_ABORT);
 		return(rc);
 	    }
     }
@@ -1411,22 +1416,19 @@ Returns:    BLOBUS_SUCCESS or error code:
 	 
 ******************************************************************************/
 int 
-globus_gass_cache_open(char*          cache_directory_path,
-		globus_gass_cache_t*  cache_handle)
+globus_gass_cache_open(char                *cache_directory_path,
+		       globus_gass_cache_t *cache_handle)
 
 {
-    int           rc;            /* general purpose returned code           */
-    char *        pt;            /* general purpose returned pointer        */
+    int         rc;		/* general purpose returned code           */
+    char *      pt;		/* general purpose returned pointer        */
 
-    int           f_name_lenght; /* too verify the lenght of the file names */
-    char          f_name[MAXPATHLEN+1];/* path name of the 3 files we will open */
-
-
-    char          log_f_name[MAXPATHLEN+1]; /* log file file name           */
-    
-    int           state_f_fd;   /* to open/create the state file          */
-	
-    struct stat  cache_dir_stat;   
+    int         f_name_lenght;	/* too verify the lenght of the file names */
+    char        f_name[MAXPATHLEN+1];/* path name of the 3 files we */
+				     /* will open */
+    char        log_f_name[MAXPATHLEN+1]; /* log file file name           */
+    int         state_f_fd;	/* to open/create the state file          */
+    struct stat cache_dir_stat;   
 
     CHECK_CACHE_IS_NOT_INIT();
     
@@ -1434,8 +1436,7 @@ globus_gass_cache_open(char*          cache_directory_path,
 
     /* if cache_directory_path empty (""), behave as if NULL */
     if ( cache_directory_path != GLOBUS_NULL) 
-    {
-	
+    {	
 	f_name_lenght=strlen(cache_directory_path);
 	if ( f_name_lenght == 0 )
 	{
@@ -1447,7 +1448,7 @@ globus_gass_cache_open(char*          cache_directory_path,
     /* if cache_directory_path empty, read it from GLOBUS_GASS_CACHE_DEFAULT */
     if ( cache_directory_path == GLOBUS_NULL )
     {
-      	pt = getenv(GLOBUS_L_GASS_CACHE_DEFAULT_DIR_ENV_VAR);
+      	pt = globus_libc_getenv(GLOBUS_L_GASS_CACHE_DEFAULT_DIR_ENV_VAR);
 
 	/* if GLOBUS_GASS_CACHE_DEFAUL empty (""), behave as if not defined */
 	if ( pt != GLOBUS_NULL)
@@ -1464,7 +1465,7 @@ globus_gass_cache_open(char*          cache_directory_path,
 	if ( pt == GLOBUS_NULL )
 	{
 	    /* cache directory still not defined; use the defaults */
-	    /*   "$HOME/.globus_gass_cache"                               */
+	    /*   "$HOME/.globus_gass_cache" */
 	    pt = getenv("HOME");
 	    if ( pt != GLOBUS_NULL)
 	    {
@@ -1481,13 +1482,17 @@ globus_gass_cache_open(char*          cache_directory_path,
 		CACHE_TRACE("HOME not defined or empty");
 		return ( GLOBUS_GASS_CACHE_ERROR_NO_HOME );
 	    }
-	    if ((f_name_lenght + sizeof(GLOBUS_L_GASS_CACHE_DEFAULT_DIR_NAME))>=MAXPATHLEN)
+	    if ((f_name_lenght +
+		 sizeof(GLOBUS_L_GASS_CACHE_DEFAULT_DIR_NAME))>=MAXPATHLEN)
 	    {
 		CACHE_TRACE("ENAMETOOLONG");
 		return ( GLOBUS_GASS_CACHE_ERROR_NAME_TOO_LONG);
 	    }
-	    strcpy(cache_handle->cache_directory_path, pt);
-	    strcat(cache_handle->cache_directory_path,GLOBUS_L_GASS_CACHE_DEFAULT_DIR_NAME);
+	    strcpy(cache_handle->cache_directory_path,
+		   pt);
+	    
+	    strcat(cache_handle->cache_directory_path,
+		   GLOBUS_L_GASS_CACHE_DEFAULT_DIR_NAME);
 	}
 	else /* *pt is not null or empty */
 	{
@@ -1499,7 +1504,7 @@ globus_gass_cache_open(char*          cache_directory_path,
 	    strcpy(cache_handle->cache_directory_path, pt);
 	}
     }
-    else  /* cache_directory_path is valid */
+    else			/* cache_directory_path is valid */
     {
 	/* For the first version, we do not accept a  cache_directory_path */
 	/*
@@ -1511,15 +1516,18 @@ globus_gass_cache_open(char*          cache_directory_path,
 	    CACHE_TRACE("ENAMETOOLONG");
 	    return ( GLOBUS_GASS_CACHE_ERROR_NAME_TOO_LONG);
 	}
-	strcpy(cache_handle->cache_directory_path,cache_directory_path);
-	/* */
+	strcpy(cache_handle->cache_directory_path,
+	       cache_directory_path);
+
     }
 
-    CACHE_TRACE2(" cache directory :%s ",cache_handle->cache_directory_path );
+    CACHE_TRACE2(" cache directory :%s ",
+		 cache_handle->cache_directory_path );
     
     /* here, *cache_handle.cache_directory_path should be defined */
     /* let see if it exists, and create it if it does not */
-    rc =  stat( cache_handle->cache_directory_path,&cache_dir_stat);
+    rc =  stat(cache_handle->cache_directory_path,
+	       &cache_dir_stat);
     if (rc == 0)
     {
 	
@@ -1537,7 +1545,8 @@ globus_gass_cache_open(char*          cache_directory_path,
 	/* code send back would be a little erroneous        */
 	/* ok for now.                                       */
 	
-	rc = mkdir(cache_handle->cache_directory_path, GLOBUS_L_GASS_CACHE_DIR_MODE);
+	rc = mkdir(cache_handle->cache_directory_path,
+		   GLOBUS_L_GASS_CACHE_DIR_MODE);
         if ( rc != 0 )
 	{
 	    CACHE_TRACE("could not create the cache directory");
@@ -1569,7 +1578,8 @@ globus_gass_cache_open(char*          cache_directory_path,
     /* Prepare a lock file name */
     strcpy(cache_handle->state_file_lock_path,
 	   cache_handle->cache_directory_path);
-    strcat(cache_handle->state_file_lock_path,GLOBUS_L_GASS_CACHE_STATE_F_LOCK);
+    strcat(cache_handle->state_file_lock_path,
+	   GLOBUS_L_GASS_CACHE_STATE_F_LOCK);
     
     /* open or create the state file */
     strcpy(cache_handle->state_file_path,cache_handle->cache_directory_path);
@@ -1577,8 +1587,8 @@ globus_gass_cache_open(char*          cache_directory_path,
     
     CACHE_TRACE(cache_handle->state_file_path);
     state_f_fd = open(cache_handle->state_file_path,
-		       O_RDWR|O_CREAT,
-		       GLOBUS_L_GASS_CACHE_STATE_MODE);
+		      O_RDWR|O_CREAT,
+		      GLOBUS_L_GASS_CACHE_STATE_MODE);
 
     if (state_f_fd == -1)
     {
@@ -1595,15 +1605,14 @@ globus_gass_cache_open(char*          cache_directory_path,
     /* just prepare a temporary file name */
     strcpy(cache_handle->temp_file_path,
 	   cache_handle->cache_directory_path);
-    strcat(cache_handle->temp_file_path,GLOBUS_L_GASS_CACHE_STATE_F_TEMP);
+    strcat(cache_handle->temp_file_path,
+	   GLOBUS_L_GASS_CACHE_STATE_F_TEMP);
 
     GLOBUS_L_GASS_CACHE_LG("Cache Opened");
     /* to simply check if the cache has been open, in any other function */
     cache_handle->init = &globus_l_gass_cache_is_init;
     
     return(GLOBUS_SUCCESS);
-	
-	
 } /*  globus_gass_cache_open() */
 
 
@@ -1636,8 +1645,10 @@ globus_gass_cache_close(globus_gass_cache_t *  cache_handle)
 
     /* marque this handle as not opened */
     cache_handle->init=&globus_l_gass_cache_is_not_init;
-#   if defined GLOBUS_L_GASS_CACHE_LOG    
-    fclose(cache_handle->log_FILE);
+#   if defined GLOBUS_L_GASS_CACHE_LOG
+    {
+	fclose(cache_handle->log_FILE);
+    }
 #   endif
     
     GLOBUS_L_GASS_CACHE_LG("Cache Closed");
@@ -1713,33 +1724,33 @@ Returns:
 	    
 ******************************************************************************/
 int
-globus_gass_cache_add(globus_gass_cache_t *  cache_handle,
-	       char*           url,
-	       char*           tag,
-	       globus_bool_t   create,
-	       unsigned long*  timestamp,
-	       char**          local_filename)
+globus_gass_cache_add(globus_gass_cache_t *cache_handle,
+		      char                *url,
+		      char                *tag,
+		      globus_bool_t        create,
+		      unsigned long      *timestamp,
+		      char              **local_filename)
 {
-    int                     rc;   /* general purpose return code            */
-    globus_gass_cache_entry_t*     entry_found_pt;
-    globus_gass_cache_entry_t*     new_entry_pt;
-    globus_gass_cache_tag_t*       tag_pt; /* to scan thrue the tag arrays          */
-    
-    char                    notready_file_path[MAXPATHLEN+1];
-    struct stat             file_stat;
-    int tmp_fd;
+    int                        rc;   /* general purpose return code */
+    globus_gass_cache_entry_t *entry_found_pt;
+    globus_gass_cache_entry_t *new_entry_pt;
+    globus_gass_cache_tag_t   *tag_pt; /* to scan thrue the tag arrays */
+    char                       notready_file_path[MAXPATHLEN+1];
+    struct stat                file_stat;
+    int                        tmp_fd;
     
     /* simply check if the cache has been opened */
     CHECK_CACHE_IS_INIT();
     
-   /* if no tag supplied, we map it to the tag GLOBUS_L_GASS_CACHE_NULL_TAG ("null") */
+   /* if no tag supplied, we map it to the tag
+      GLOBUS_L_GASS_CACHE_NULL_TAG ("null") */
    if (tag == GLOBUS_NULL)
    {
        tag=GLOBUS_L_GASS_CACHE_NULL_TAG;
    }
-
-/* I want to do every thing again and again until the data file */
-/* is ready */
+   
+   /* I want to do every thing again and again until the data file 
+      is ready */
    while (GLOBUS_TRUE)
    {
        rc = globus_l_gass_cache_lock_open(cache_handle);
@@ -1749,10 +1760,13 @@ globus_gass_cache_add(globus_gass_cache_t *  cache_handle,
 	   return(rc);
        }
        
-       rc = globus_l_gass_cache_lookfor_url(&entry_found_pt, url, cache_handle);
+       rc = globus_l_gass_cache_lookfor_url(&entry_found_pt,
+					    url,
+					    cache_handle);
        if (rc != GLOBUS_SUCCESS)
        {
-	   globus_l_gass_cache_unlock_close(cache_handle,GLOBUS_L_GASS_CACHE_ABORT);
+	   globus_l_gass_cache_unlock_close(cache_handle,
+					    GLOBUS_L_GASS_CACHE_ABORT);
 	   return(rc);
        }
        
@@ -1761,7 +1775,8 @@ globus_gass_cache_add(globus_gass_cache_t *  cache_handle,
 	   CACHE_TRACE("URL not found");
 	   if (create == GLOBUS_FALSE)
 	   {
-	       globus_l_gass_cache_unlock_close(cache_handle,GLOBUS_L_GASS_CACHE_ABORT);
+	       globus_l_gass_cache_unlock_close(cache_handle,
+						GLOBUS_L_GASS_CACHE_ABORT);
 	       return(GLOBUS_GASS_CACHE_URL_NOT_FOUND);
        }
 	   
@@ -1770,9 +1785,9 @@ globus_gass_cache_add(globus_gass_cache_t *  cache_handle,
 	   cache_handle->nb_entries++;
 	   
 	   /* create a new file name */
-	   globus_libc_lock();
 	   *local_filename=globus_malloc(MAXPATHLEN+1);
 	   GLOBUS_L_GASS_CACHE_FILENAME(*local_filename);
+	   globus_libc_lock();
 	   while (stat(*local_filename,&file_stat) != -1)
 	   {
 	       GLOBUS_L_GASS_CACHE_FILENAME(*local_filename);
@@ -1795,7 +1810,7 @@ globus_gass_cache_add(globus_gass_cache_t *  cache_handle,
 	   strcpy(notready_file_path,*local_filename);
 	   strcat(notready_file_path,GLOBUS_L_GASS_CACHE_EXT_NOTREADY);
 	   if ((tmp_fd = creat(notready_file_path, 
-                                GLOBUS_L_GASS_CACHE_STATE_MODE)) == -1 )
+			       GLOBUS_L_GASS_CACHE_STATE_MODE)) == -1 )
 	   {
 	       CACHE_TRACE("Could not create new data filei lock");
 	       globus_l_gass_cache_unlock_close(cache_handle,
@@ -1810,7 +1825,8 @@ globus_gass_cache_add(globus_gass_cache_t *  cache_handle,
 	   if (new_entry_pt == GLOBUS_NULL)
 	   {
 	       CACHE_TRACE("No more memory");
-	       globus_l_gass_cache_unlock_close(cache_handle,GLOBUS_L_GASS_CACHE_ABORT);
+	       globus_l_gass_cache_unlock_close(cache_handle,
+						GLOBUS_L_GASS_CACHE_ABORT);
 	       return(GLOBUS_GASS_CACHE_ERROR_NO_MEMORY);
 	   }
 	   
@@ -1819,7 +1835,8 @@ globus_gass_cache_add(globus_gass_cache_t *  cache_handle,
 	   if (new_entry_pt->url == GLOBUS_NULL)
 	   {
 	       CACHE_TRACE("No more memory");
-	       globus_l_gass_cache_unlock_close(cache_handle,GLOBUS_L_GASS_CACHE_ABORT);
+	       globus_l_gass_cache_unlock_close(cache_handle,
+						GLOBUS_L_GASS_CACHE_ABORT);
 	       return(GLOBUS_GASS_CACHE_ERROR_NO_MEMORY);
 	   }
 	   strcpy(new_entry_pt->url,url);
@@ -1829,15 +1846,17 @@ globus_gass_cache_add(globus_gass_cache_t *  cache_handle,
 	   if (new_entry_pt->filename == GLOBUS_NULL)
 	   {
 	       CACHE_TRACE("No more memory");
-	       globus_l_gass_cache_unlock_close(cache_handle,GLOBUS_L_GASS_CACHE_ABORT);
+	       globus_l_gass_cache_unlock_close(cache_handle,
+						GLOBUS_L_GASS_CACHE_ABORT);
 	       return(GLOBUS_GASS_CACHE_ERROR_NO_MEMORY);
 	   }
 	   strcpy(new_entry_pt->filename,*local_filename);
 	   
 	   /* status */
-	   /* we could point directly in the tag area, but it is not very clean  */
-	   /* confusing problems could occur when unlocked and locked on an      */
-	   /* other tag...                                                       */
+	   /* we could point directly in the tag area, but it is not
+	   very clean confusing problems could occur when unlocked and
+	   locked on an other tag...  */
+	   
 	   /* status */
 	   /* lets lock the file on the new tag */
 	   new_entry_pt->lock_tag= globus_malloc(strlen(tag)+1);
@@ -1845,8 +1864,10 @@ globus_gass_cache_add(globus_gass_cache_t *  cache_handle,
 	   if ( new_entry_pt->lock_tag == GLOBUS_NULL)
 	   {
 	       CACHE_TRACE("No more memory");
-	       globus_l_gass_cache_entry_free(&new_entry_pt,GLOBUS_TRUE);
-	       globus_l_gass_cache_unlock_close(cache_handle,GLOBUS_L_GASS_CACHE_ABORT);
+	       globus_l_gass_cache_entry_free(&new_entry_pt,
+					      GLOBUS_TRUE);
+	       globus_l_gass_cache_unlock_close(cache_handle,
+						GLOBUS_L_GASS_CACHE_ABORT);
 	       return(GLOBUS_GASS_CACHE_ERROR_NO_MEMORY);
 	   }
 	   strcpy( new_entry_pt->lock_tag, tag);
@@ -1859,12 +1880,16 @@ globus_gass_cache_add(globus_gass_cache_t *  cache_handle,
 	   
 	   /* tags */
 	   /* allocate an array of 2 tags (one real, and one "end" indicator */
-	   new_entry_pt->tags=globus_malloc(2 * sizeof(globus_gass_cache_tag_t));
+	   new_entry_pt->tags =
+	       globus_malloc(2*sizeof(globus_gass_cache_tag_t));
+	   
 	   if (new_entry_pt->tags == GLOBUS_NULL)
 	   {
 	       CACHE_TRACE("No more memory");
-	       globus_l_gass_cache_entry_free(&new_entry_pt,GLOBUS_TRUE);
-	       globus_l_gass_cache_unlock_close(cache_handle,GLOBUS_L_GASS_CACHE_ABORT);
+	       globus_l_gass_cache_entry_free(&new_entry_pt,
+					      GLOBUS_TRUE);
+	       globus_l_gass_cache_unlock_close(cache_handle,
+						GLOBUS_L_GASS_CACHE_ABORT);
 	       return(GLOBUS_GASS_CACHE_ERROR_NO_MEMORY);
 	   }
 	   
@@ -1872,8 +1897,10 @@ globus_gass_cache_add(globus_gass_cache_t *  cache_handle,
 	   if ( (*(new_entry_pt->tags)).tag == GLOBUS_NULL)
 	   {
 	       CACHE_TRACE("No more memory");
-	       globus_l_gass_cache_entry_free(&new_entry_pt,GLOBUS_TRUE);
-	       globus_l_gass_cache_unlock_close(cache_handle,GLOBUS_L_GASS_CACHE_ABORT);
+	       globus_l_gass_cache_entry_free(&new_entry_pt,
+					      GLOBUS_TRUE);
+	       globus_l_gass_cache_unlock_close(cache_handle,
+						GLOBUS_L_GASS_CACHE_ABORT);
 	       return(GLOBUS_GASS_CACHE_ERROR_NO_MEMORY);
 	   }
 	   strcpy( (*(new_entry_pt->tags)).tag,tag);
@@ -1883,19 +1910,24 @@ globus_gass_cache_add(globus_gass_cache_t *  cache_handle,
 	   new_entry_pt->num_tags=1;
 	   
 	   /* ok now lets write this new entry */
-	   rc= globus_l_gass_cache_write_state_file(new_entry_pt, cache_handle);
+	   rc= globus_l_gass_cache_write_state_file(new_entry_pt,
+						    cache_handle);
 	   if (rc != GLOBUS_SUCCESS)
 	   {
-	       globus_l_gass_cache_unlock_close(cache_handle,GLOBUS_L_GASS_CACHE_ABORT);
+	       globus_l_gass_cache_unlock_close(cache_handle,
+						GLOBUS_L_GASS_CACHE_ABORT);
 	       return(rc);
 	   }
-	   rc = globus_l_gass_cache_unlock_close(cache_handle,GLOBUS_L_GASS_CACHE_COMMIT);
+	   rc = globus_l_gass_cache_unlock_close(cache_handle,
+						 GLOBUS_L_GASS_CACHE_COMMIT);
 	   if (rc != GLOBUS_SUCCESS)
 	   {
 	       return(rc);
 	   }
 	   
-	   GLOBUS_L_GASS_CACHE_LG3( "Url %s tag %s CREATED", url, tag);
+	   GLOBUS_L_GASS_CACHE_LG3( "Url %s tag %s CREATED",
+				    url,
+				    tag);
 	   return(GLOBUS_GASS_CACHE_ADD_NEW);
        } 
        else /* url found */
@@ -1905,36 +1937,47 @@ globus_gass_cache_add(globus_gass_cache_t *  cache_handle,
 	   {
 	       CACHE_TRACE("Data file not ready: wait");
 	       
-	       strcpy(notready_file_path,entry_found_pt->filename);
-	       strcat(notready_file_path,GLOBUS_L_GASS_CACHE_EXT_NOTREADY);
+	       strcpy(notready_file_path,
+		      entry_found_pt->filename);
+	       strcat(notready_file_path,
+		      GLOBUS_L_GASS_CACHE_EXT_NOTREADY);
 	       
 	       /* just check coherence between state file and blocking file */
 	       if ( stat(notready_file_path, &file_stat) == -1 )
 	       {
-		   GLOBUS_L_GASS_CACHE_LG("State file and bloking file are not coherent");
-		   globus_l_gass_cache_unlock_close(cache_handle,GLOBUS_L_GASS_CACHE_ABORT);
+		   GLOBUS_L_GASS_CACHE_LG(
+		       "State file and bloking file are not coherent");
+		   globus_l_gass_cache_unlock_close(cache_handle,
+						    GLOBUS_L_GASS_CACHE_ABORT);
 		   return(GLOBUS_GASS_CACHE_ERROR_STATE_F_CORRUPT);
 		   
 	       }
 	       
-	       rc = globus_l_gass_cache_write_state_file(entry_found_pt, cache_handle);
+	       rc = globus_l_gass_cache_write_state_file(entry_found_pt,
+							 cache_handle);
 	       if (rc != GLOBUS_SUCCESS)
 	       {
-		   globus_l_gass_cache_unlock_close(cache_handle,GLOBUS_L_GASS_CACHE_ABORT);
+		   globus_l_gass_cache_unlock_close(cache_handle,
+						    GLOBUS_L_GASS_CACHE_ABORT);
 		   return(rc);
 	       }
-	       rc = globus_l_gass_cache_unlock_close(cache_handle,GLOBUS_L_GASS_CACHE_COMMIT);
+	       rc = globus_l_gass_cache_unlock_close(
+		   cache_handle,
+		   GLOBUS_L_GASS_CACHE_COMMIT);
+	       
 	       if (rc != GLOBUS_SUCCESS)
 	       {
 		   return(rc);
 	       }
 	       
 	       /* wait */
-	       rc = stat(notready_file_path, &file_stat);
+	       rc = stat(notready_file_path,
+			 &file_stat);
 	       while ( rc != -1 )
 	       {
 		   globus_libc_usleep(LOOP_TIME);
-		   rc = stat(notready_file_path, &file_stat);
+		   rc = stat(notready_file_path,
+			     &file_stat);
 	       }
 	       
 	       CACHE_TRACE("Data file now ready: continue/call recursivelly");
@@ -1958,14 +2001,16 @@ globus_gass_cache_add(globus_gass_cache_t *  cache_handle,
 	       /* return the file name and the timestamp */
 	       /* create a new file name */
 	       *local_filename=globus_malloc(MAXPATHLEN+1);
-	       strcpy(*local_filename,entry_found_pt->filename);
-	       *timestamp= entry_found_pt->timestamp;
+	       strcpy(*local_filename,
+		      entry_found_pt->filename);
+	       *timestamp = entry_found_pt->timestamp;
 	       
 	       /* add a tag */
 	       tag_pt = entry_found_pt->tags;
 	       while (tag_pt->tag != GLOBUS_NULL)
 	       {
-		   if ( !strcmp(tag_pt->tag, tag))
+		   if ( !strcmp(tag_pt->tag,
+				tag))
 		   {
 		       /* tag found */
 		       tag_pt->count++;
@@ -1976,13 +2021,17 @@ globus_gass_cache_add(globus_gass_cache_t *  cache_handle,
 	       if (tag_pt->tag == GLOBUS_NULL)
 	       {
 		   CACHE_TRACE("Tag Not found");
-		   /* the tag was not found. Now, we are pointing one the first  */
-		   /* empty tag entry allocated for tag creation. Lets create it */
+		   /* the tag was not found. Now, we are pointing one
+		   the first empty tag entry allocated for tag
+		   creation. Lets create it */
 		   tag_pt->tag = globus_malloc(strlen(tag) +1);
 		   if (tag_pt->tag == GLOBUS_NULL)
 		   {
 		       CACHE_TRACE("No more memory");
-		       globus_l_gass_cache_unlock_close(cache_handle,GLOBUS_L_GASS_CACHE_ABORT);
+		       globus_l_gass_cache_unlock_close(
+			   cache_handle,
+			   GLOBUS_L_GASS_CACHE_ABORT);
+		       
 		       return(GLOBUS_GASS_CACHE_ERROR_NO_MEMORY);
 		   }
 		   strcpy(tag_pt->tag, tag);
@@ -1996,8 +2045,10 @@ globus_gass_cache_add(globus_gass_cache_t *  cache_handle,
 	       if ( entry_found_pt->lock_tag == GLOBUS_NULL)
 	       {
 		   CACHE_TRACE("No more memory");
-		   globus_l_gass_cache_entry_free(&entry_found_pt,GLOBUS_TRUE);
-		   globus_l_gass_cache_unlock_close(cache_handle,GLOBUS_L_GASS_CACHE_ABORT);
+		   globus_l_gass_cache_entry_free(&entry_found_pt,
+						  GLOBUS_TRUE);
+		   globus_l_gass_cache_unlock_close(cache_handle,
+						    GLOBUS_L_GASS_CACHE_ABORT);
 		   return(GLOBUS_GASS_CACHE_ERROR_NO_MEMORY);
 	       }
 	       strcpy( entry_found_pt->lock_tag, tag);
@@ -2005,14 +2056,19 @@ globus_gass_cache_add(globus_gass_cache_t *  cache_handle,
 	       /* prepare to unlock the datafile */
 	       /* do it before I write the state file */
 	       /* wich also free entry_found_pt */
-	       strcpy(notready_file_path,entry_found_pt->filename);
-	       strcat(notready_file_path,GLOBUS_L_GASS_CACHE_EXT_NOTREADY);
+	       strcpy(notready_file_path,
+		      entry_found_pt->filename);
+	       
+	       strcat(notready_file_path,
+		      GLOBUS_L_GASS_CACHE_EXT_NOTREADY);
 	       
 	       /* Write this url entry  */
-	       rc = globus_l_gass_cache_write_state_file(entry_found_pt, cache_handle);
+	       rc = globus_l_gass_cache_write_state_file(entry_found_pt,
+							 cache_handle);
 	       if (rc != GLOBUS_SUCCESS)
 	       {
-		   globus_l_gass_cache_unlock_close(cache_handle,GLOBUS_L_GASS_CACHE_ABORT);
+		   globus_l_gass_cache_unlock_close(cache_handle,
+						    GLOBUS_L_GASS_CACHE_ABORT);
 		   return(rc);
 	       }
 	       
@@ -2029,7 +2085,9 @@ globus_gass_cache_add(globus_gass_cache_t *  cache_handle,
                close(tmp_fd);
 	       
 	       /* release lock */
-	       rc = globus_l_gass_cache_unlock_close(cache_handle,GLOBUS_L_GASS_CACHE_COMMIT);
+	       rc = globus_l_gass_cache_unlock_close(
+		   cache_handle,
+		   GLOBUS_L_GASS_CACHE_COMMIT);
 	       if (rc != GLOBUS_SUCCESS)
 	       {
 		   return(rc);
@@ -2071,15 +2129,15 @@ Returns:    GLOBUS_SUCCESS or error code:
 
 ******************************************************************************/
 int
-globus_gass_cache_add_done(globus_gass_cache_t *  cache_handle,
-		    char *          url,
-		    char *          tag,
-		    unsigned long   timestamp)
+globus_gass_cache_add_done(globus_gass_cache_t *cache_handle,
+			   char                *url,
+			   char                *tag,
+			   unsigned long        timestamp)
 {
-    int                     rc;   /* general purpose return code              */
-    char                    notready_file_path[MAXPATHLEN+1];
-    struct stat             file_stat;
-    globus_gass_cache_entry_t*     entry_found_pt;
+    int                        rc;   /* general purpose return code */
+    char                       notready_file_path[MAXPATHLEN+1];
+    struct stat                file_stat;
+    globus_gass_cache_entry_t *entry_found_pt;
 
 
     /* simply check if the cache has been opened */
@@ -2090,17 +2148,22 @@ globus_gass_cache_add_done(globus_gass_cache_t *  cache_handle,
     {
 	return(rc);
     }  
-    rc = globus_l_gass_cache_lookfor_url(&entry_found_pt, url, cache_handle);
+    rc = globus_l_gass_cache_lookfor_url(&entry_found_pt,
+					 url,
+					 cache_handle);
     if (rc != GLOBUS_SUCCESS)
     {
-	globus_l_gass_cache_unlock_close(cache_handle,GLOBUS_L_GASS_CACHE_ABORT);
+	globus_l_gass_cache_unlock_close(cache_handle,
+					 GLOBUS_L_GASS_CACHE_ABORT);
 	return(rc);
     }
     
     if (entry_found_pt == GLOBUS_NULL)   /* url not found */
     {
-	GLOBUS_L_GASS_CACHE_LG("Function globus_gass_cache_add_done() called with  URL not in cache state file");
-	globus_l_gass_cache_unlock_close(cache_handle,GLOBUS_L_GASS_CACHE_ABORT);
+	GLOBUS_L_GASS_CACHE_LG("Function globus_gass_cache_add_done() "
+			       "called with URL not in cache state file");
+	globus_l_gass_cache_unlock_close(cache_handle,
+					 GLOBUS_L_GASS_CACHE_ABORT);
 	return(GLOBUS_GASS_CACHE_ERROR_URL_NOT_FOUND);
     }
     else
@@ -2109,7 +2172,8 @@ globus_gass_cache_add_done(globus_gass_cache_t *  cache_handle,
 	if ( entry_found_pt->lock_tag == GLOBUS_NULL)
 	{
 	    GLOBUS_L_GASS_CACHE_LG("Cache file already Done");
-	    globus_l_gass_cache_unlock_close(cache_handle,GLOBUS_L_GASS_CACHE_ABORT);
+	    globus_l_gass_cache_unlock_close(cache_handle,
+					     GLOBUS_L_GASS_CACHE_ABORT);
 	    return(GLOBUS_GASS_CACHE_ERROR_ALREADY_DONE);
 	}
 	if (tag == GLOBUS_NULL)
@@ -2120,7 +2184,8 @@ globus_gass_cache_add_done(globus_gass_cache_t *  cache_handle,
 	{
 	    /* wrong tag */
 	    GLOBUS_L_GASS_CACHE_LG("Function globus_gass_cache_add_done() called with wrong tag");
-	   globus_l_gass_cache_unlock_close(cache_handle,GLOBUS_L_GASS_CACHE_ABORT);
+	   globus_l_gass_cache_unlock_close(cache_handle,
+					    GLOBUS_L_GASS_CACHE_ABORT);
 	   return(GLOBUS_GASS_CACHE_ERROR_WRONG_TAG);
 	}
 	
@@ -2133,14 +2198,18 @@ globus_gass_cache_add_done(globus_gass_cache_t *  cache_handle,
 	/* prepare to unlock the datafile */
 	/* do it before I write the state file */
 	/* wich also free entry_found_pt */
-	strcpy(notready_file_path,entry_found_pt->filename);
-        strcat(notready_file_path,GLOBUS_L_GASS_CACHE_EXT_NOTREADY);
+	strcpy(notready_file_path,
+	       entry_found_pt->filename);
+        strcat(notready_file_path,
+	       GLOBUS_L_GASS_CACHE_EXT_NOTREADY);
 	
 	/* update the state file */
-	rc= globus_l_gass_cache_write_state_file(entry_found_pt, cache_handle);
+	rc= globus_l_gass_cache_write_state_file(entry_found_pt,
+						 cache_handle);
 	if (rc != GLOBUS_SUCCESS)
 	{
-	    globus_l_gass_cache_unlock_close(cache_handle,GLOBUS_L_GASS_CACHE_ABORT);
+	    globus_l_gass_cache_unlock_close(cache_handle,
+					     GLOBUS_L_GASS_CACHE_ABORT);
 	    return(rc);
        }
 	
@@ -2148,12 +2217,14 @@ globus_gass_cache_add_done(globus_gass_cache_t *  cache_handle,
         if ( unlink(notready_file_path) )
 	{
 	    CACHE_TRACE("Could not delete data file lock");
-	    globus_l_gass_cache_unlock_close(cache_handle,GLOBUS_L_GASS_CACHE_ABORT);
+	    globus_l_gass_cache_unlock_close(cache_handle,
+					     GLOBUS_L_GASS_CACHE_ABORT);
 	    return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_DEL_LOCK);
 	}
 	
 	/* and realease the data file */
-	rc = globus_l_gass_cache_unlock_close(cache_handle,GLOBUS_L_GASS_CACHE_COMMIT);
+	rc = globus_l_gass_cache_unlock_close(cache_handle,
+					      GLOBUS_L_GASS_CACHE_COMMIT);
 	return(rc);
     }
 } /* globus_gass_cache_add_done() */
@@ -2184,29 +2255,30 @@ Returns:    GLOBUS_SUCCESS or error code:
 
 ******************************************************************************/
 int
-globus_gass_cache_delete_start(globus_gass_cache_t *  cache_handle,
-		  char *          url,
-		  char *          tag,
-		  unsigned long*  timestamp)
+globus_gass_cache_delete_start(globus_gass_cache_t *cache_handle,
+			       char                *url,
+			       char                *tag,
+			       unsigned long       *timestamp)
 {
-    int                     rc;               /* general purpose return code */
-    globus_gass_cache_entry_t*     entry_found_pt;
-    char                    notready_file_path[MAXPATHLEN+1];
-    struct stat             file_stat;
-    globus_gass_cache_tag_t *      tag_pt;
-    int tmp_fd;
+    int                        rc; /* general purpose return code */
+    globus_gass_cache_entry_t *entry_found_pt;
+    char                       notready_file_path[MAXPATHLEN+1];
+    struct stat                file_stat;
+    globus_gass_cache_tag_t   *tag_pt;
+    int                        tmp_fd;
         
     /* simply check if the cache has been opened */
     CHECK_CACHE_IS_INIT();
 
-    /* if no tag supplied, we map it to the tag GLOBUS_L_GASS_CACHE_NULL_TAG ("null")*/
+    /* if no tag supplied, we map it to the tag
+       GLOBUS_L_GASS_CACHE_NULL_TAG ("null")*/
     if (tag == GLOBUS_NULL)
     {
        tag=GLOBUS_L_GASS_CACHE_NULL_TAG;
     }
     
-/* I want to do every thing again and again until the data file */
-/* is ready */
+    /* I want to do every thing again and again until the data file is
+       ready */
    while (GLOBUS_TRUE)
    {
        rc = globus_l_gass_cache_lock_open(cache_handle);
@@ -2215,45 +2287,60 @@ globus_gass_cache_delete_start(globus_gass_cache_t *  cache_handle,
 	   return(rc);
        }
        
-       rc = globus_l_gass_cache_lookfor_url(&entry_found_pt, url, cache_handle);
+       rc = globus_l_gass_cache_lookfor_url(&entry_found_pt,
+					    url,
+					    cache_handle);
        if (rc != GLOBUS_SUCCESS)
        {
-	   globus_l_gass_cache_unlock_close(cache_handle,GLOBUS_L_GASS_CACHE_ABORT);
+	   globus_l_gass_cache_unlock_close(cache_handle,
+					    GLOBUS_L_GASS_CACHE_ABORT);
 	   return(rc);
        }
        
        if (entry_found_pt == GLOBUS_NULL)   /* url not found */
        {
-	   GLOBUS_L_GASS_CACHE_LG("Function globus_gass_cache_delete_start() called with  URL not in cache state file");
-	   globus_l_gass_cache_unlock_close(cache_handle,GLOBUS_L_GASS_CACHE_ABORT);
+	   GLOBUS_L_GASS_CACHE_LG("Function "
+				  "globus_gass_cache_delete_start() "
+				  "called with URL not in cache state file");
+	   globus_l_gass_cache_unlock_close(cache_handle,
+					    GLOBUS_L_GASS_CACHE_ABORT);
 	   return(GLOBUS_GASS_CACHE_ERROR_URL_NOT_FOUND);
        }
        else
        { /* URL found */
 	   CACHE_TRACE("URL found");
-	   if (entry_found_pt->lock_tag != GLOBUS_NULL) /* data file not ready */
-	   {
+	   if (entry_found_pt->lock_tag != GLOBUS_NULL)
+	   {			/* data file not ready */
 	       CACHE_TRACE("Data file not ready: wait");
 	       
-	       strcpy(notready_file_path,entry_found_pt->filename);
-	       strcat(notready_file_path,GLOBUS_L_GASS_CACHE_EXT_NOTREADY);
+	       strcpy(notready_file_path,
+		      entry_found_pt->filename);
+	       strcat(notready_file_path,
+		      GLOBUS_L_GASS_CACHE_EXT_NOTREADY);
 	       
 	       /* just check coherence between state file and blocking file */
 	       if ( stat(notready_file_path, &file_stat) == -1 )
 	       {
-		   GLOBUS_L_GASS_CACHE_LG("State file and bloking file are not coherent");
-		   globus_l_gass_cache_unlock_close(cache_handle,GLOBUS_L_GASS_CACHE_ABORT);
+		   GLOBUS_L_GASS_CACHE_LG("State file and bloking file "
+					  "are not coherent");
+		   globus_l_gass_cache_unlock_close(cache_handle,
+						    GLOBUS_L_GASS_CACHE_ABORT);
 		   return(GLOBUS_GASS_CACHE_ERROR_STATE_F_CORRUPT);
 		
 	       }
 	       
-	       rc = globus_l_gass_cache_write_state_file(entry_found_pt, cache_handle);
+	       rc = globus_l_gass_cache_write_state_file(entry_found_pt,
+							 cache_handle);
 	       if (rc != GLOBUS_SUCCESS)
 	       {
-		   globus_l_gass_cache_unlock_close(cache_handle,GLOBUS_L_GASS_CACHE_ABORT);
+		   globus_l_gass_cache_unlock_close(cache_handle,
+						    GLOBUS_L_GASS_CACHE_ABORT);
 		   return(rc);
 	       }
-	       rc = globus_l_gass_cache_unlock_close(cache_handle,GLOBUS_L_GASS_CACHE_COMMIT);
+	       rc = globus_l_gass_cache_unlock_close(
+		   cache_handle,
+		   GLOBUS_L_GASS_CACHE_COMMIT);
+	       
 	       if (rc != GLOBUS_SUCCESS)
 	       {
 		   return(rc);
@@ -2298,8 +2385,11 @@ globus_gass_cache_delete_start(globus_gass_cache_t *  cache_handle,
 	       }
 	       if (tag_pt->tag == GLOBUS_NULL)
 	       {
-		   GLOBUS_L_GASS_CACHE_LG("Function globus_gass_cache_delete_start() called with unknown tag");
-		   globus_l_gass_cache_unlock_close(cache_handle,GLOBUS_L_GASS_CACHE_ABORT);
+		   GLOBUS_L_GASS_CACHE_LG("Function "
+					  "globus_gass_cache_delete_start() "
+					  "called with unknown tag");
+		   globus_l_gass_cache_unlock_close(cache_handle,
+						    GLOBUS_L_GASS_CACHE_ABORT);
 		   return( GLOBUS_GASS_CACHE_ERROR_WRONG_TAG);
 	       } /* tag not found */
 	       
@@ -2308,8 +2398,10 @@ globus_gass_cache_delete_start(globus_gass_cache_t *  cache_handle,
 	       if ( entry_found_pt->lock_tag == GLOBUS_NULL)
 	       {
 		   CACHE_TRACE("No more memory");
-		   globus_l_gass_cache_entry_free(&entry_found_pt,GLOBUS_TRUE);
-		   globus_l_gass_cache_unlock_close(cache_handle,GLOBUS_L_GASS_CACHE_ABORT);
+		   globus_l_gass_cache_entry_free(&entry_found_pt,
+						  GLOBUS_TRUE);
+		   globus_l_gass_cache_unlock_close(cache_handle,
+						    GLOBUS_L_GASS_CACHE_ABORT);
 		   return(GLOBUS_GASS_CACHE_ERROR_NO_MEMORY);
 	       }
 	       strcpy( entry_found_pt->lock_tag, tag);
@@ -2317,14 +2409,18 @@ globus_gass_cache_delete_start(globus_gass_cache_t *  cache_handle,
 	       /* prepare to unlock the datafile */
 	       /* do it before I write the state file */
 	       /* wich also free entry_found_pt */
-	       strcpy(notready_file_path,entry_found_pt->filename);
-	       strcat(notready_file_path,GLOBUS_L_GASS_CACHE_EXT_NOTREADY);
+	       strcpy(notready_file_path,
+		      entry_found_pt->filename);
+	       strcat(notready_file_path,
+		      GLOBUS_L_GASS_CACHE_EXT_NOTREADY);
 	       
 	       /* Write this url entry  */
-	       rc = globus_l_gass_cache_write_state_file(entry_found_pt, cache_handle);
+	       rc = globus_l_gass_cache_write_state_file(entry_found_pt,
+							 cache_handle);
 	       if (rc != GLOBUS_SUCCESS)
 	       {
-		   globus_l_gass_cache_unlock_close(cache_handle,GLOBUS_L_GASS_CACHE_ABORT);
+		   globus_l_gass_cache_unlock_close(cache_handle,
+						    GLOBUS_L_GASS_CACHE_ABORT);
 		   return(rc);
 	       }
 	       
@@ -2333,13 +2429,16 @@ globus_gass_cache_delete_start(globus_gass_cache_t *  cache_handle,
                                    GLOBUS_L_GASS_CACHE_STATE_MODE)) == -1 )
 	       {
 		   CACHE_TRACE("Could not create new data file lock");
-		   globus_l_gass_cache_unlock_close(cache_handle,GLOBUS_L_GASS_CACHE_ABORT);
+		   globus_l_gass_cache_unlock_close(cache_handle,
+						    GLOBUS_L_GASS_CACHE_ABORT);
 		   return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_CREATE_DATA_F);
 	       }   
                close(tmp_fd);
 
 	       /* release lock */
-	       rc = globus_l_gass_cache_unlock_close(cache_handle,GLOBUS_L_GASS_CACHE_COMMIT);
+	       rc = globus_l_gass_cache_unlock_close(
+		   cache_handle,
+		   GLOBUS_L_GASS_CACHE_COMMIT);
 	       /* and return */
 	       return(rc);
 	   }
@@ -2388,18 +2487,18 @@ Returns:    GLOBUS_SUCCESS or error code:
 	    or any of the defined gass error code.   
 ******************************************************************************/
 int
-globus_gass_cache_delete(globus_gass_cache_t *  cache_handle,
-		  char *          url,
-		  char *          tag,
-		  unsigned long   timestamp,
-		  globus_bool_t   is_locked)
+globus_gass_cache_delete(globus_gass_cache_t *cache_handle,
+			 char                *url,
+			 char                *tag,
+			 unsigned long        timestamp,
+			 globus_bool_t        is_locked)
 { 
-    int                     rc;               /* general purpose return code */
-    globus_gass_cache_entry_t*     entry_found_pt;
-    char                    notready_file_path[MAXPATHLEN+1];
-    struct stat             file_stat;
-    globus_gass_cache_tag_t *      tag_pt;
-    int                     same_tag;
+    int                        rc; /* general purpose return code */
+    globus_gass_cache_entry_t *entry_found_pt;
+    char                       notready_file_path[MAXPATHLEN+1];
+    struct stat                file_stat;
+    globus_gass_cache_tag_t   *tag_pt;
+    int                        same_tag;
 
     /* simply check if the cache has been opened */
     CHECK_CACHE_IS_INIT();
@@ -2420,63 +2519,77 @@ globus_gass_cache_delete(globus_gass_cache_t *  cache_handle,
 	   return(rc);
        }
     
-       rc = globus_l_gass_cache_lookfor_url(&entry_found_pt, url, cache_handle);
+       rc = globus_l_gass_cache_lookfor_url(&entry_found_pt,
+					    url,
+					    cache_handle);
        if (rc != GLOBUS_SUCCESS)
        {
-	   globus_l_gass_cache_unlock_close(cache_handle,GLOBUS_L_GASS_CACHE_ABORT);
+	   globus_l_gass_cache_unlock_close(cache_handle,
+					    GLOBUS_L_GASS_CACHE_ABORT);
 	   return(rc);
        }
     
        if (entry_found_pt == GLOBUS_NULL)   /* url not found */
        {
-	   GLOBUS_L_GASS_CACHE_LG("Function globus_gass_cache_delete() called with  URL not in cache state file");
-	   globus_l_gass_cache_unlock_close(cache_handle,GLOBUS_L_GASS_CACHE_ABORT);
+	   GLOBUS_L_GASS_CACHE_LG("Function globus_gass_cache_delete() "
+				  "called with  URL not in cache state file");
+	   globus_l_gass_cache_unlock_close(cache_handle,
+					    GLOBUS_L_GASS_CACHE_ABORT);
 	   return(GLOBUS_GASS_CACHE_ERROR_URL_NOT_FOUND);
        }
     
        /* URL found */
        CACHE_TRACE("URL found");
     
-       if ( entry_found_pt->lock_tag != GLOBUS_NULL )  /* if file locked and    */
-       {
+       if ( entry_found_pt->lock_tag != GLOBUS_NULL )
+       {			/* if file locked and */
 	   same_tag = !strcmp(entry_found_pt->lock_tag, tag);
-	   if ( !same_tag ||                        /* Not by me (tag !=) or */
-		( same_tag && !is_locked)             /* might be me (tag ==)  */
-		/* but I did not do it   */
+	   if ( !same_tag ||	/* Not by me (tag !=) or */
+		( same_tag && !is_locked) /* might be me (tag ==)  */
+				/* but I did not do it   */
 	       )
-	   {                                        /*  I wait               */
+	   {			/*  I wait               */
 	       CACHE_TRACE("Data file not ready: wait");
 	    
-	       strcpy(notready_file_path,entry_found_pt->filename);
-	       strcat(notready_file_path,GLOBUS_L_GASS_CACHE_EXT_NOTREADY);
+	       strcpy(notready_file_path,
+		      entry_found_pt->filename);
+	       strcat(notready_file_path,
+		      GLOBUS_L_GASS_CACHE_EXT_NOTREADY);
 	    
 	       /* just check coherence between state file and blocking file */
 	       if ( stat(notready_file_path, &file_stat) == -1 )
 	       {
-		   GLOBUS_L_GASS_CACHE_LG("State file and bloking file are not coherent");
-		   globus_l_gass_cache_unlock_close(cache_handle,GLOBUS_L_GASS_CACHE_ABORT);
+		   GLOBUS_L_GASS_CACHE_LG("State file and bloking file "
+					  "are not coherent");
+		   globus_l_gass_cache_unlock_close(cache_handle,
+						    GLOBUS_L_GASS_CACHE_ABORT);
 		   return(GLOBUS_GASS_CACHE_ERROR_STATE_F_CORRUPT);
 		
 	       }
 	    
-	       rc = globus_l_gass_cache_write_state_file(entry_found_pt, cache_handle);
+	       rc = globus_l_gass_cache_write_state_file(entry_found_pt,
+							 cache_handle);
 	       if (rc != GLOBUS_SUCCESS)
 	       {
-		   globus_l_gass_cache_unlock_close(cache_handle,GLOBUS_L_GASS_CACHE_ABORT);
+		   globus_l_gass_cache_unlock_close(cache_handle,
+						    GLOBUS_L_GASS_CACHE_ABORT);
 		   return(rc);
 	       }
-	       rc = globus_l_gass_cache_unlock_close(cache_handle,GLOBUS_L_GASS_CACHE_COMMIT);
+	       rc = globus_l_gass_cache_unlock_close(cache_handle,
+						     GLOBUS_L_GASS_CACHE_COMMIT);
 	       if (rc != GLOBUS_SUCCESS)
 	       {
 		   return(rc);
 	       }
 	    
 	       /* wait */
-	       rc = stat(notready_file_path, &file_stat);
+	       rc = stat(notready_file_path,
+			 &file_stat);
 	       while ( rc != -1 )
 	       {
 		   globus_libc_usleep(LOOP_TIME);
-		   rc = stat(notready_file_path, &file_stat);
+		   rc = stat(notready_file_path,
+			     &file_stat);
 	       }
 	       CACHE_TRACE("Data file now ready: continue/call recursivelly");
 	       /* now it should be ready */
@@ -2507,25 +2620,33 @@ globus_gass_cache_delete(globus_gass_cache_t *  cache_handle,
        }
        if (tag_pt->tag == GLOBUS_NULL)
        {
-	   GLOBUS_L_GASS_CACHE_LG("Function globus_gass_cache_delete() called with unknown tag");
-	   globus_l_gass_cache_unlock_close(cache_handle,GLOBUS_L_GASS_CACHE_ABORT);
+	   GLOBUS_L_GASS_CACHE_LG("Function globus_gass_cache_delete() "
+				  "called with unknown tag");
+	   globus_l_gass_cache_unlock_close(cache_handle,
+					    GLOBUS_L_GASS_CACHE_ABORT);
 	   return( GLOBUS_GASS_CACHE_ERROR_WRONG_TAG);
        } /* tag not found */
     
-       /* tag found; Here, either it is not locked, or it was locked with the    */
-       /* same tag : Unlock the file and Remove the tag                          */
-       /* set the file as ready and copy the timestamp                           */
+       /* tag found; Here, either it is not locked, or it was locked
+	  with the same tag : Unlock the file and Remove the tag
+	  set the file as ready and copy the timestamp */
+       
        if (entry_found_pt->lock_tag != GLOBUS_NULL)
        {
 	   globus_free(entry_found_pt->lock_tag);
 	   entry_found_pt->lock_tag= GLOBUS_NULL; 
 	   /* Unlock the cache entry */
-	   strcpy(notready_file_path,entry_found_pt->filename);
-	   strcat(notready_file_path,GLOBUS_L_GASS_CACHE_EXT_NOTREADY);
+	   strcpy(notready_file_path,
+		  entry_found_pt->filename);
+	   
+	   strcat(notready_file_path,
+		  GLOBUS_L_GASS_CACHE_EXT_NOTREADY);
+	   
 	   if ( unlink(notready_file_path) )
 	   {
 	       CACHE_TRACE("Could not delete data file lock");
-	       globus_l_gass_cache_unlock_close(cache_handle,GLOBUS_L_GASS_CACHE_ABORT);
+	       globus_l_gass_cache_unlock_close(cache_handle,
+						GLOBUS_L_GASS_CACHE_ABORT);
 	       return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_DEL_LOCK);
 	   }
        }
@@ -2544,10 +2665,12 @@ globus_gass_cache_delete(globus_gass_cache_t *  cache_handle,
        if (entry_found_pt->num_tags)    /* some more tag */
        {
 	   /* I do write the last entry */
-	   rc = globus_l_gass_cache_write_state_file(entry_found_pt, cache_handle);
+	   rc = globus_l_gass_cache_write_state_file(entry_found_pt,
+						     cache_handle);
 	   if (rc != GLOBUS_SUCCESS)
 	   {
-	       globus_l_gass_cache_unlock_close(cache_handle,GLOBUS_L_GASS_CACHE_ABORT);
+	       globus_l_gass_cache_unlock_close(cache_handle,
+						GLOBUS_L_GASS_CACHE_ABORT);
 	       return(rc);
 	   }
        }
@@ -2561,16 +2684,20 @@ globus_gass_cache_delete(globus_gass_cache_t *  cache_handle,
 	       CACHE_TRACE("Could not delete data file");
 	       /* remove the entry anyway... we might have a zomby */
 	       /* data file */
-	       globus_l_gass_cache_entry_free(&entry_found_pt,GLOBUS_TRUE);
-	       globus_l_gass_cache_unlock_close(cache_handle,GLOBUS_L_GASS_CACHE_COMMIT);
+	       globus_l_gass_cache_entry_free(&entry_found_pt,
+					      GLOBUS_TRUE);
+	       globus_l_gass_cache_unlock_close(cache_handle,
+						GLOBUS_L_GASS_CACHE_COMMIT);
 	       return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_DEL_LOCK);
 	   }
 	   /* since we do not write it, lets free the entry here */
-	   globus_l_gass_cache_entry_free(&entry_found_pt,GLOBUS_TRUE);
+	   globus_l_gass_cache_entry_free(&entry_found_pt,
+					  GLOBUS_TRUE);
        }
     
        /* release lock */
-       rc = globus_l_gass_cache_unlock_close(cache_handle,GLOBUS_L_GASS_CACHE_COMMIT);
+       rc = globus_l_gass_cache_unlock_close(cache_handle,
+					     GLOBUS_L_GASS_CACHE_COMMIT);
        /* and return */
        return(rc);
    } /* while recurs */
@@ -2609,21 +2736,22 @@ Returns:    GLOBUS_SUCCESS or error code:
 
 ******************************************************************************/
 int
-globus_gass_cache_cleanup_tag(globus_gass_cache_t *  cache_handle,
-		       char *          url,
-		       char *          tag)
+globus_gass_cache_cleanup_tag(globus_gass_cache_t *cache_handle,
+			      char                *url,
+			      char                *tag)
 {
-    int                     rc;               /* general purpose return code */
-    globus_gass_cache_entry_t*     entry_found_pt;
-    char                    notready_file_path[MAXPATHLEN+1];
-    struct stat             file_stat;
-    globus_gass_cache_tag_t *      tag_pt;
-    int                     same_tag;
+    int                        rc; /* general purpose return code */
+    globus_gass_cache_entry_t *entry_found_pt;
+    char                       notready_file_path[MAXPATHLEN+1];
+    struct stat                file_stat;
+    globus_gass_cache_tag_t   *tag_pt;
+    int                        same_tag;
 
     /* simply check if the cache has been opened */
     CHECK_CACHE_IS_INIT();
 
-    /* if no tag supplied, we map it to the tag GLOBUS_L_GASS_CACHE_NULL_TAG ("null")*/
+    /* if no tag supplied, we map it to the tag
+       GLOBUS_L_GASS_CACHE_NULL_TAG ("null")*/
    if (tag == GLOBUS_NULL)
    {
        tag=GLOBUS_L_GASS_CACHE_NULL_TAG;
@@ -2635,17 +2763,21 @@ globus_gass_cache_cleanup_tag(globus_gass_cache_t *  cache_handle,
        return(rc);
    }
 
-   rc = globus_l_gass_cache_lookfor_url(&entry_found_pt, url, cache_handle);
+   rc = globus_l_gass_cache_lookfor_url(&entry_found_pt,
+					url,
+					cache_handle);
    if (rc != GLOBUS_SUCCESS)
    {
-       globus_l_gass_cache_unlock_close(cache_handle,GLOBUS_L_GASS_CACHE_ABORT);
+       globus_l_gass_cache_unlock_close(cache_handle,
+					GLOBUS_L_GASS_CACHE_ABORT);
        return(rc);
    }
 
    if (entry_found_pt == GLOBUS_NULL)   /* url not found */
    {
        GLOBUS_L_GASS_CACHE_LG("Function globus_gass_cache_cleanup_tag() called with  URL not in cache state file");
-       globus_l_gass_cache_unlock_close(cache_handle,GLOBUS_L_GASS_CACHE_ABORT);
+       globus_l_gass_cache_unlock_close(cache_handle,
+					GLOBUS_L_GASS_CACHE_ABORT);
        return(GLOBUS_GASS_CACHE_ERROR_URL_NOT_FOUND);
    }
    /* URL found */
@@ -2675,9 +2807,9 @@ globus_gass_cache_cleanup_tag(globus_gass_cache_t *  cache_handle,
    if ( entry_found_pt->lock_tag != GLOBUS_NULL ) /* file locked */
    {
        same_tag = !strcmp(entry_found_pt->lock_tag, tag);
-       /* if locked with the same tag or if there is no more tag left at all */
-       /* Note that it should not happen that the file is locked with a      */
-       /* not existing tag. But then we clean every thing any way            */
+       /* if locked with the same tag or if there is no more tag left
+       at all Note that it should not happen that the file is locked
+       with a not existing tag. But then we clean every thing any way */
        if (same_tag || !entry_found_pt->num_tags) 
        {
 	   /* locked with the tag to be cleaned up : remove lock */
@@ -2688,9 +2820,10 @@ globus_gass_cache_cleanup_tag(globus_gass_cache_t *  cache_handle,
            strcat(notready_file_path,GLOBUS_L_GASS_CACHE_EXT_NOTREADY);
            if ( unlink(notready_file_path) )
 	   {
-	       CACHE_TRACE("Could not delete data file lock, but continue cleanup");
-	       /* weel, since this is a clean up, lets try to clean up any way
-		  and not abort/return an error  here... */
+	       CACHE_TRACE("Could not delete data file lock, "
+			   "but continue cleanup");
+	       /* weel, since this is a clean up, lets try to clean up
+		  any way and not abort/return an error here... */
 	   }
        } /* same tag */
    } /* file locked */
@@ -2698,10 +2831,12 @@ globus_gass_cache_cleanup_tag(globus_gass_cache_t *  cache_handle,
    if (entry_found_pt->num_tags) /* some other tag */
    {
        /* I do write the last entry */
-       rc = globus_l_gass_cache_write_state_file(entry_found_pt, cache_handle);
+       rc = globus_l_gass_cache_write_state_file(entry_found_pt,
+						 cache_handle);
        if (rc != GLOBUS_SUCCESS)
        {
-	   globus_l_gass_cache_unlock_close(cache_handle,GLOBUS_L_GASS_CACHE_ABORT);
+	   globus_l_gass_cache_unlock_close(cache_handle,
+					    GLOBUS_L_GASS_CACHE_ABORT);
 	   return(rc);
        } 
    }
@@ -2713,15 +2848,18 @@ globus_gass_cache_cleanup_tag(globus_gass_cache_t *  cache_handle,
        if ( unlink(entry_found_pt->filename) )
        {
 	   CACHE_TRACE("Could not delete data file, clean up anyway...");
-	   globus_l_gass_cache_unlock_close(cache_handle,GLOBUS_L_GASS_CACHE_COMMIT);
+	   globus_l_gass_cache_unlock_close(cache_handle,
+					    GLOBUS_L_GASS_CACHE_COMMIT);
 	   return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_DELETE_DATA_F);
        }
        /* since we did not write it, lets free the entry here */
-       globus_l_gass_cache_entry_free(&entry_found_pt,GLOBUS_TRUE);
+       globus_l_gass_cache_entry_free(&entry_found_pt,
+				      GLOBUS_TRUE);
    } /* no more tag at all */
    
    /* release lock */
-   rc = globus_l_gass_cache_unlock_close(cache_handle,GLOBUS_L_GASS_CACHE_COMMIT);
+   rc = globus_l_gass_cache_unlock_close(cache_handle,
+					 GLOBUS_L_GASS_CACHE_COMMIT);
    /* and return */
    return(rc);
     
@@ -2739,12 +2877,12 @@ Description:
     This function never block. 
 ******************************************************************************/
 int
-globus_gass_cache_cleanup_file(globus_gass_cache_t *  cache_handle,
-		       char *          url)
+globus_gass_cache_cleanup_file(globus_gass_cache_t *cache_handle,
+			       char                *url)
 {
-    int                     rc;               /* general purpose return code */
-    globus_gass_cache_entry_t*     entry_found_pt;
-    char                    notready_file_path[MAXPATHLEN+1];
+    int                        rc; /* general purpose return code */
+    globus_gass_cache_entry_t *entry_found_pt;
+    char                       notready_file_path[MAXPATHLEN+1];
 
     /* simply check if the cache has been opened */
     CHECK_CACHE_IS_INIT();
@@ -2755,17 +2893,22 @@ globus_gass_cache_cleanup_file(globus_gass_cache_t *  cache_handle,
 	return(rc);
     }
     
-    rc = globus_l_gass_cache_lookfor_url(&entry_found_pt, url, cache_handle);
+    rc = globus_l_gass_cache_lookfor_url(&entry_found_pt,
+					 url,
+					 cache_handle);
     if (rc != GLOBUS_SUCCESS)
     {
-	globus_l_gass_cache_unlock_close(cache_handle,GLOBUS_L_GASS_CACHE_ABORT);
+	globus_l_gass_cache_unlock_close(cache_handle,
+					 GLOBUS_L_GASS_CACHE_ABORT);
 	return(rc);
     }
     
     if (entry_found_pt == GLOBUS_NULL)   /* url not found */
     {
-	GLOBUS_L_GASS_CACHE_LG("Function globus_gass_cache_cleanup_file() called with  URL not in cache state file");
-	globus_l_gass_cache_unlock_close(cache_handle,GLOBUS_L_GASS_CACHE_ABORT);
+	GLOBUS_L_GASS_CACHE_LG("Function globus_gass_cache_cleanup_file() "
+			       "called with  URL not in cache state file");
+	globus_l_gass_cache_unlock_close(cache_handle,
+					 GLOBUS_L_GASS_CACHE_ABORT);
 	return(GLOBUS_GASS_CACHE_ERROR_URL_NOT_FOUND);
     }
     /* URL found */
@@ -2783,19 +2926,24 @@ globus_gass_cache_cleanup_file(globus_gass_cache_t *  cache_handle,
     /* remove the lock */
     if (entry_found_pt->lock_tag != NULL)
     {
-        strcpy(notready_file_path,entry_found_pt->filename);
-        strcat(notready_file_path,GLOBUS_L_GASS_CACHE_EXT_NOTREADY);
+        strcpy(notready_file_path,
+	       entry_found_pt->filename);
+        strcat(notready_file_path,
+	       GLOBUS_L_GASS_CACHE_EXT_NOTREADY);
         if ( unlink(notready_file_path) )
 	{
-	    CACHE_TRACE("Could not delete data file lock, but continue cleanup");
+	    CACHE_TRACE("Could not delete data file lock, "
+			"but continue cleanup");
 	}
    }
     
     /* do not write the last entry, in order to delete it */
     /* since we do not write it, lets free the entry here */
-    globus_l_gass_cache_entry_free(&entry_found_pt,GLOBUS_TRUE);
+    globus_l_gass_cache_entry_free(&entry_found_pt,
+				   GLOBUS_TRUE);
     /* release lock */
-    rc = globus_l_gass_cache_unlock_close(cache_handle,GLOBUS_L_GASS_CACHE_COMMIT);
+    rc = globus_l_gass_cache_unlock_close(cache_handle,
+					  GLOBUS_L_GASS_CACHE_COMMIT);
     /* and return */
     return(rc);
     
@@ -2824,15 +2972,15 @@ Returns:    GLOBUS_SUCCESS or error code:
     
 ******************************************************************************/
 int
-globus_gass_cache_list(globus_gass_cache_t *         cache_handle,
-		globus_gass_cache_entry_t **  entries,
-		int *                  size)
+globus_gass_cache_list(globus_gass_cache_t        *cache_handle,
+		       globus_gass_cache_entry_t **entries,
+		       int                        *size)
 {
-    int                     rc;               /* general purpose return code */
-    char                size_s[GLOBUS_L_GASS_CACHE_L_LENGHT+1];
-    char                entry_separator[2];  /* eache entry is preceded by   */
-                                             /* a line containing #\n or *\n */
-    int i;
+    int      rc;		/* general purpose return code */
+    char     size_s[GLOBUS_L_GASS_CACHE_L_LENGHT+1];
+    char     entry_separator[2]; /* eache entry is preceded by   */
+				 /* a line containing #\n or *\n */
+    int      i;
     
     /* simply check if the cache has been opened */
     CHECK_CACHE_IS_INIT();
@@ -2844,10 +2992,12 @@ globus_gass_cache_list(globus_gass_cache_t *         cache_handle,
 	return(rc);
     }
 
-    /* lets read the number of entries at the end of the file                */
-    /* I must rewind LENGHT_LENGH for the nb_entries, +1 for the \n          */
-    /* and + 2 for the "*\n" preceding the nb_entries, = LENGHT_LENGH+3      */
-    lseek(cache_handle->state_file_fd,-(GLOBUS_L_GASS_CACHE_L_LENGHT+3), SEEK_END);
+    /* lets read the number of entries at the end of the file I must
+    rewind LENGHT_LENGH for the nb_entries, +1 for the \n and + 2 for
+    the "*\n" preceding the nb_entries, = LENGHT_LENGH+3 */
+    lseek(cache_handle->state_file_fd,
+	  -(GLOBUS_L_GASS_CACHE_L_LENGHT+3),
+	  SEEK_END);
     
     while (read( cache_handle->state_file_fd,
 		  entry_separator,
@@ -2861,16 +3011,18 @@ globus_gass_cache_list(globus_gass_cache_t *         cache_handle,
 	}
 	*entries = NULL;
 	*size = 0;
-	return(globus_l_gass_cache_unlock_close(cache_handle,GLOBUS_L_GASS_CACHE_ABORT));
+	return(globus_l_gass_cache_unlock_close(cache_handle,
+						GLOBUS_L_GASS_CACHE_ABORT));
     }
     if (entry_separator[0] != '*')
     {
 	CACHE_TRACE("Error reading state file");
-	globus_l_gass_cache_unlock_close(cache_handle,GLOBUS_L_GASS_CACHE_ABORT);
+	globus_l_gass_cache_unlock_close(cache_handle,
+					 GLOBUS_L_GASS_CACHE_ABORT);
 	return(GLOBUS_GASS_CACHE_ERROR_STATE_F_CORRUPT);
     }
-    while ( read(cache_handle->state_file_fd, size_s,sizeof(size_s))
-	 != sizeof(size_s) )
+    while ( read(cache_handle->state_file_fd,
+		 size_s,sizeof(size_s)) != sizeof(size_s) )
     {
 	if (errno != EINTR)
 	{
@@ -2878,26 +3030,31 @@ globus_gass_cache_list(globus_gass_cache_t *         cache_handle,
 	    return(GLOBUS_GASS_CACHE_ERROR_STATE_F_CORRUPT);
 	}
     }
-    size_s[GLOBUS_L_GASS_CACHE_L_LENGHT]='\0'; /* replace \n with  0 (end of string) */
+    size_s[GLOBUS_L_GASS_CACHE_L_LENGHT]='\0'; /* replace \n with \0 */
     *size = atoi(size_s);
 
     if ( *size == 0)
     {
 	/* No entries, job finished */
 	*entries =GLOBUS_NULL;
-	return(globus_l_gass_cache_unlock_close(cache_handle,GLOBUS_L_GASS_CACHE_ABORT));
+	return(globus_l_gass_cache_unlock_close(cache_handle,
+						GLOBUS_L_GASS_CACHE_ABORT));
     }
     
     *entries = globus_malloc( (*size) *  sizeof(globus_gass_cache_entry_t));
     if (*entries == GLOBUS_NULL)
     {
 	CACHE_TRACE("No more memory");
-	globus_l_gass_cache_unlock_close(cache_handle,GLOBUS_L_GASS_CACHE_ABORT);
+	globus_l_gass_cache_unlock_close(cache_handle,
+					 GLOBUS_L_GASS_CACHE_ABORT);
 	return(GLOBUS_GASS_CACHE_ERROR_NO_MEMORY);
     }
 
     /* scan the file */
-    lseek(cache_handle->state_file_fd,COMMENT_LENGHT, SEEK_SET);
+    lseek(cache_handle->state_file_fd,
+	  COMMENT_LENGHT,
+	  SEEK_SET);
+
     for (i=0; i<*size; i++)
     {
 	globus_gass_cache_entry_t * entry_pt;
@@ -2907,22 +3064,25 @@ globus_gass_cache_list(globus_gass_cache_t *         cache_handle,
 			    sizeof(entry_separator))
 		      != sizeof(entry_separator)))
 	{
-	    	if (errno != EINTR)
+	    if (errno != EINTR)
 		{
 		    CACHE_TRACE("Error reading state file");
-		    globus_l_gass_cache_unlock_close(cache_handle,GLOBUS_L_GASS_CACHE_ABORT);
+		    globus_l_gass_cache_unlock_close(
+			cache_handle,
+			GLOBUS_L_GASS_CACHE_ABORT);
 		    return(GLOBUS_GASS_CACHE_ERROR_STATE_F_CORRUPT);
 		}
 	}
 	if (entry_separator[0] != '#' ) 
 	{
 	    CACHE_TRACE("Error reading state file");
-	    globus_l_gass_cache_unlock_close(cache_handle,GLOBUS_L_GASS_CACHE_ABORT);
+	    globus_l_gass_cache_unlock_close(cache_handle,
+					     GLOBUS_L_GASS_CACHE_ABORT);
 	    return(GLOBUS_GASS_CACHE_ERROR_STATE_F_CORRUPT);
 	}
 	entry_pt =  *entries+i;
 	rc = globus_l_gass_cache_read_one_entry(cache_handle->state_file_fd,
-					&entry_pt);
+						&entry_pt);
 	if (rc != GLOBUS_SUCCESS)
 	{
 	    return (rc);
@@ -2934,7 +3094,8 @@ globus_gass_cache_list(globus_gass_cache_t *         cache_handle,
 
     /* I do not free the memory allocated by each read: the user must */
     /* call gass-cache_list_free() */
-    rc = globus_l_gass_cache_unlock_close(cache_handle,GLOBUS_L_GASS_CACHE_ABORT);
+    rc = globus_l_gass_cache_unlock_close(cache_handle,
+					  GLOBUS_L_GASS_CACHE_ABORT);
     /* and return */
     return(rc);
 
@@ -2956,11 +3117,11 @@ Returns:    GLOBUS_SUCCESS
 
 ******************************************************************************/
 int 
-globus_gass_cache_list_free(globus_gass_cache_entry_t *  entries,
-		     int                   size)
+globus_gass_cache_list_free(globus_gass_cache_entry_t *entries,
+			    int                        size)
 {
     int i;
-    globus_gass_cache_entry_t * an_entry_pt;
+    globus_gass_cache_entry_t *an_entry_pt;
     
     for (i=size-1; i>=0 ; i--)
     {
@@ -2990,8 +3151,13 @@ Returns:   Pointer to an error message, or NULL if invalide error code.
 const char *
 globus_gass_cache_error_string(int error_code)
 {
-    if (error_code > 0 || -error_code >= sizeof(globus_gass_cache_error_strings)/sizeof(globus_gass_cache_error_strings[0]))
+    if (error_code > 0 ||
+	-error_code >=
+	(sizeof(globus_gass_cache_error_strings) /
+	 sizeof(globus_gass_cache_error_strings[0])))
+    {
         return("Invalid error code");
+    }
     return(globus_gass_cache_error_strings[-error_code]);
 }
 
