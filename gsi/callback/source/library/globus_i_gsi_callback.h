@@ -64,6 +64,7 @@ extern FILE *                           globus_i_gsi_callback_debug_fstream;
 
 #else
 
+#define GLOBUS_I_GSI_CALLBACK_DEBUG(_LEVEL_) 0
 #define GLOBUS_I_GSI_CALLBACK_DEBUG_FPRINTF(_LEVEL_, _MESSAGE_) {}
 #define GLOBUS_I_GSI_CALLBACK_DEBUG_FNPRINTF(_LEVEL_, _MESSAGE_) {}
 #define GLOBUS_I_GSI_CALLBACK_DEBUG_PRINT(_LEVEL_, _MESSAGE_) {}
