@@ -179,7 +179,7 @@ int PROXYCERTINFO_print(
 
     values = i2v_PROXYCERTINFO(PROXYCERTINFO_x509v3_ext_meth(),
                                cert_info,
-                               values);
+                               NULL);
 
     X509V3_EXT_val_prn(bp, values, 0, 1);
     
@@ -482,6 +482,15 @@ STACK_OF(CONF_VALUE) * i2v_PROXYCERTINFO(
     {
         extlist = NULL;
         return extlist;
+    }
+
+    if(extlist == NULL)
+    {
+        extlist = sk_CONF_VALUE_new_null();
+        if(extlist == NULL)
+        { 
+            return NULL;
+        }
     }
     
     if(PROXYCERTINFO_get_path_length(ext) > -1)
