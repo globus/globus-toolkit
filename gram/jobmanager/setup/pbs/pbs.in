@@ -3,6 +3,8 @@ use Globus::GRAM::JobState;
 use Globus::GRAM::JobManager;
 use Globus::Core::Paths;
 
+use IO::File;
+
 use POSIX;
 
 package Globus::GRAM::JobManager::pbs;
@@ -47,6 +49,8 @@ sub submit
     my $script_url;
     my @arguments;
     my $email_when = "";
+    my $cache_pgm = "$Globus::Core::Paths::bindir/globus-gass-cache";
+
 
     $self->log("Entering pbs submit");
 
@@ -58,6 +62,26 @@ sub submit
 	    return Globus::GRAM::Error::JOBTYPE_NOT_SUPPORTED;
 	}
     }
+    if( $description->executable eq "")
+    {
+	return Globus::GRAM::Error::RSL_EXECUTABLE();
+    }
+    elsif(! -f $description->executable())
+    {
+	return Globus::GRAM::Error::EXECUTABLE_NOT_FOUND();
+    }
+    elsif(! -x $description->executable())
+    {
+	return Globus::GRAM::Error::EXECUTABLE_PERMISSIONS();
+    }
+    elsif( $description->stdin() eq "")
+    {
+	return Globus::GRAM::Error::RSL_STDIN;
+    }
+    elsif(! -r $description->stdin())
+    {
+       return Globus::GRAM::Error::STDIN_NOT_FOUND();
+   }
 
     $self->log("Determining job max time cpu from job description");
     if(defined($description->max_cpu_time())) 
@@ -91,8 +115,8 @@ sub submit
     $self->log('Building job script');
 
     $script_url = "$tag/pbs_job_script.$$"; 
-    system("globus-gass-cache -add -t $tag -n $script_url file:/dev/null");
-    $pbs_job_script_name = `globus-gass-cache -query $script_url`;
+    system("$cache_pgm -add -t $tag -n $script_url file:/dev/null");
+    $pbs_job_script_name = `$cache_pgm -query $script_url`;
     chomp($pbs_job_script_name);
     if($pbs_job_script_name eq "")
     {
@@ -197,8 +221,19 @@ EOF
 	    return Globus::GRAM::Error::RSL_ENVIRONMENT();
 	}
 	push(@new_env, $tuple->[0] . "=" . $tuple->[1]);
-	$rsh_env .= $tuple->[0] . "=" . $tuple->[1] . ";"
-	         .  "export " . $tuple->[0] . ";";
+
+	$tuple->[0] =~ s/\\/\\\\/g;
+	$tuple->[0] =~ s/\$/\\\$/g;
+	$tuple->[0] =~ s/"/\\\"/g;
+	$tuple->[0] =~ s/`/\\\`/g;
+
+	$tuple->[1] =~ s/\\/\\\\/g;
+	$tuple->[1] =~ s/\$/\\\$/g;
+	$tuple->[1] =~ s/"/\\\"/g;
+	$tuple->[1] =~ s/`/\\\`/g;
+
+	$rsh_env .= $tuple->[0] . "=" . $tuple->[1] . ";\n"
+	         .  "export " . $tuple->[0] . ";\n";
     }
     $pbs_job_script->print("#PBS -v " .  join(',', @new_env));
 
@@ -216,11 +251,21 @@ EOF
     }
     if($arguments[0])
     {
-	$args = join(' ', @arguments);
+        foreach(@arguments)
+	{
+	    $self->log("Transforming argument \"$_\"\n");
+	    $_ =~ s/\\/\\\\/g;
+	    $_ =~ s/\$/\\\$/g;
+	    $_ =~ s/"/\\\"/g;
+	    $_ =~ s/`/\\\`/g;
+	    $self->log("Transformed to \"$_\"\n");
+
+	    $args .= '"' . $_ . '" ';
+	}
     }
     else
     {
-	$args = "";
+	$args = '';
     }
     if($description->jobtype() eq "mpi")
     {
@@ -246,11 +291,25 @@ EOF
     elsif($description->jobtype() eq 'multiple')
     {
 	my $count = $description->count;
-	my $cmd;
+	my $cmd_script_url ;
+	my $cmd_script_name ;
+	my $cmd_script ;
 	my $stdin = $description->stdin();
 
-	$cmd = "cd " . $description->directory() . ";" . $rsh_env
-	     . $description->executable() . " $args";
+        $cmd_script_url = "$tag/pbs_cmd_script.$$";
+	system("$cache_pgm -add -t $tag -n $cmd_script_url file:/dev/null");
+	$cmd_script_name = `$cache_pgm -q $cmd_script_url`;
+	chomp($cmd_script_name);
+	if($cmd_script_name eq "")
+	{
+	    return GLOBUS_GRAM_PROTOCOL_ERROR_TEMP_SCRIPT_FILE_FAILED();
+	}
+	$cmd_script = new IO::File($cmd_script_name, '>');
+	$cmd_script->print("#!/bin/sh\n");
+	$cmd_script->print('cd ' . $description->directory() . "\n");
+	$cmd_script->print("$rsh_env\n");
+	$cmd_script->print($description->executable() . " $args\n");
+	$cmd_script->close();
 
 	$pbs_job_script->print(<<EOF);
 	hosts=\`cat \$PBS_NODEFILE\`;
@@ -258,7 +317,7 @@ EOF
 	while test \$counter -lt $count; do
 	    for host in \$hosts; do
 		if test \$counter -lt $count; then
-		    $remote_shell \$host '/bin/sh -c "$cmd"' < $stdin &
+		    $remote_shell \$host "/bin/sh $cmd_script_name" < $stdin &
 		    counter=\`expr \$counter + 1\`
 		else
 		    break
@@ -277,7 +336,7 @@ EOF
 
     if($description->logfile() ne "")
     {
-        $errfile = "2>" . $description->logfile();
+        $errfile = "2>>" . $description->logfile();
     }
 
     chomp($job_id = `$qsub < $pbs_job_script_name $errfile`);
@@ -287,11 +346,11 @@ EOF
         # truncate off the domain name
 	$job_id =~ s/([^\.]*).([^\.]*)\..*/$1.$2/;
 
-	system("globus-gass-cache -cleanup-url $script_url");
+	#system("$cache_pgm -cleanup-url $script_url");
 
 	return {JOB_ID => $job_id};
     }
-    system("globus-gass-cache -cleanup-url $tag/pbs_job_script.$$");
+    #system("$cache_pgm -cleanup-url $tag/pbs_job_script.$$");
 
     return Globus::GRAM::Error::INVALID_SCRIPT_REPLY;
 }
