@@ -1370,9 +1370,11 @@ gss_create_and_fill_cred(
         
     } while(cert_count-- &&
             (cert = sk_X509_value(newcred->pcd->cert_chain,cert_count)));
+
+    *output_cred_handle = newcred;
     
     major_status = GSS_S_COMPLETE;
-
+    
     return major_status;
     
 err:
