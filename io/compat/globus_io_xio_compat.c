@@ -195,6 +195,11 @@ static globus_xio_driver_t              globus_l_io_gsi_driver;
 static globus_xio_stack_t               globus_l_io_file_stack;
 static globus_xio_stack_t               globus_l_io_tcp_stack;
 static globus_xio_stack_t               globus_l_io_gsi_stack;
+static globus_reltime_t                 globus_l_io_open_timeout =
+{
+    90,  /* 1.5 minutes */
+    0,
+};
 
 static
 int
@@ -1871,6 +1876,16 @@ globus_io_tcp_get_attr(
 }
 
 static
+globus_bool_t
+globus_l_io_open_timeout_cb(
+    globus_xio_handle_t                 handle,
+    globus_xio_operation_type_t         type,
+    void *                              user_arg)
+{
+    return GLOBUS_TRUE;
+}
+
+static
 globus_result_t
 globus_l_io_tcp_register_connect(
     const char *                        host,
@@ -1941,6 +1956,18 @@ globus_l_io_tcp_register_connect(
         globus_l_io_tcp_driver,
         GLOBUS_XIO_TCP_SET_NO_IPV6,
         GLOBUS_TRUE);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_attr;
+    }
+    
+    result = globus_xio_attr_cntl(
+        ihandle->attr->attr,
+        GLOBUS_NULL,
+        GLOBUS_XIO_ATTR_SET_TIMEOUT_OPEN,
+        globus_l_io_open_timeout_cb,
+        &globus_l_io_open_timeout,
+        GLOBUS_NULL);
     if(result != GLOBUS_SUCCESS)
     {
         goto error_attr;
@@ -2491,6 +2518,18 @@ globus_l_io_tcp_register_accept(
         globus_l_io_tcp_driver,
         GLOBUS_XIO_TCP_GET_REMOTE_CONTACT,
         &contact_string);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_gsi;
+    }
+    
+    result = globus_xio_attr_cntl(
+        ihandle->attr->attr,
+        GLOBUS_NULL,
+        GLOBUS_XIO_ATTR_SET_TIMEOUT_OPEN,
+        globus_l_io_open_timeout_cb,
+        &globus_l_io_open_timeout,
+        GLOBUS_NULL);
     if(result != GLOBUS_SUCCESS)
     {
         goto error_gsi;
