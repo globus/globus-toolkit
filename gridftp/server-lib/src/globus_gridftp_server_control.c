@@ -1485,7 +1485,7 @@ globus_gridftp_server_control_start(
         res = GlobusGridFTPServerErrorParameter("server");
         goto err;
     }
-    if(system_handle <= 0)
+    if(system_handle < 0)
     {
         res = GlobusGridFTPServerErrorParameter("system_handle");
         goto err;
@@ -1659,6 +1659,8 @@ globus_gridftp_server_control_start(
         server_handle->types = globus_libc_strdup(i_attr->types);
         server_handle->type = 'A';
         server_handle->mode = 'S';
+        server_handle->prot = 'C';
+        server_handle->dcau = 'A';
 
         if(server_handle->cwd != NULL)
         {

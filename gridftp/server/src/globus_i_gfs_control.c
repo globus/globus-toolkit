@@ -110,10 +110,19 @@ globus_l_gfs_auth_request(
     struct passwd *                     pwent;
 
 /* XXX add error responses */
-    rc = globus_gss_assist_gridmap((char *) subject, &local_name);
-    if(rc != 0)
+    if(!globus_i_gfs_config_bool("no_gssapi"))
     {
-        goto error_gridmap;
+        rc = globus_gss_assist_gridmap((char *) subject, &local_name);
+        if(rc != 0)
+        {
+            goto error_gridmap;
+        }
+    }
+    else
+    {   
+        globus_gridftp_server_control_finished_auth(
+            op, GLOBUS_SUCCESS, getuid());
+        return;    
     }
     
     pwent = getpwnam(local_name);
@@ -122,6 +131,20 @@ globus_l_gfs_auth_request(
         goto error_getpwnam;
     }
     globus_free(local_name);
+
+    if(globus_i_gfs_config_bool("inetd") || globus_i_gfs_config_bool("fork"))
+    {
+        rc = setgid(pwent->pw_gid);
+        if(rc != 0)
+        {
+            goto error_setid;
+        }
+        rc = setuid(pwent->pw_uid);
+        if(rc != 0)
+        {
+            goto error_setid;
+        }
+    }        
                       
     globus_gridftp_server_control_finished_auth(
         op, GLOBUS_SUCCESS, pwent->pw_uid);
@@ -130,6 +153,7 @@ globus_l_gfs_auth_request(
    
 error_getpwnam:
     globus_free(local_name);
+error_setid:
 error_gridmap:
     globus_gridftp_server_control_finished_auth(
         op, result, 0);
@@ -476,7 +500,9 @@ globus_l_gfs_op_to_attr(
 {
     globus_result_t                     result;
     int                                 buf_size;
-    
+    char                                dcau;
+    char                                prot;
+        
     *attr = globus_i_gfs_data_attr_defaults;
     if(net_prt == GLOBUS_GRIDFTP_SERVER_CONTROL_PROTOCOL_IPV6)
     {
@@ -505,6 +531,23 @@ globus_l_gfs_op_to_attr(
     result = globus_gridftp_server_control_get_parallelism(
         op, &attr->nstreams);
     globus_assert(result == GLOBUS_SUCCESS);
+
+    if(!globus_i_gfs_config_bool("no_gssapi"))
+    {    
+        result = globus_gridftp_server_control_get_data_auth(
+            op, 
+            &attr->dcau.subject.subject, 
+            &attr->dcau.mode,
+            &attr->prot, 
+            &attr->delegated_cred);
+        globus_assert(result == GLOBUS_SUCCESS);
+                
+        attr->use_dcau = GLOBUS_TRUE;
+    }
+    else
+    {
+        attr->use_dcau = GLOBUS_FALSE;
+    }                
 }
 
 static
@@ -524,6 +567,7 @@ globus_l_gfs_passive_data_connect(
     /* XXX how do I know how many streams to 
      * optimize for when receiving data in mode E? 
      */
+    
     
     result = globus_i_gfs_ipc_passive_data_request(
         instance,
@@ -646,9 +690,12 @@ globus_i_gfs_control_start(
     {
         goto error_attr;
     }
-/* XXX check config */
+
     result = globus_gridftp_server_control_attr_set_security(
-        attr, GLOBUS_GRIDFTP_SERVER_LIBRARY_GSSAPI);
+        attr, 
+        (globus_i_gfs_config_bool("no_gssapi")) ?
+        GLOBUS_GRIDFTP_SERVER_LIBRARY_NONE :
+        GLOBUS_GRIDFTP_SERVER_LIBRARY_GSSAPI);
     if(result != GLOBUS_SUCCESS)
     {
         goto error_attr_setup;
@@ -719,7 +766,8 @@ globus_i_gfs_control_start(
         goto error_init;
     }
 
-/*    result = globus_gsc_959_command_add(
+/*
+    result = globus_gsc_959_command_add(
         instance->u.control.server,
         "MKD",
         globus_l_gfs_command_request,

@@ -2602,5 +2602,5 @@ globus_i_gsc_add_commands(
     globus_gridftp_server_control_add_feature(server_handle, "MLST Type*;Size*;Modify*;Perm*;Charset;UNIX.mode*;Unique*;");    
     globus_gridftp_server_control_add_feature(server_handle, "SIZE");    
     globus_gridftp_server_control_add_feature(server_handle, "PARALLEL");    
-//    globus_gridftp_server_control_add_feature(server_handle, "DCAU");    
+    globus_gridftp_server_control_add_feature(server_handle, "DCAU");    
 }

@@ -391,6 +391,29 @@ globus_l_gfs_data_handle_init(
             goto error_control;
         }
     }
+
+    if(attr->use_dcau)
+    {
+        result = globus_ftp_control_local_dcau(
+            &handle->data_channel, &attr->dcau, attr->delegated_cred);
+        if(result != GLOBUS_SUCCESS)
+        {
+            result = GlobusGFSErrorWrapFailed(
+                "globus_ftp_control_local_dcau", result);
+            goto error_control;
+        }
+        if(attr->dcau.mode != GLOBUS_FTP_CONTROL_DCAU_NONE)
+        {
+            result = globus_ftp_control_local_prot(
+                &handle->data_channel, attr->prot);
+            if(result != GLOBUS_SUCCESS)
+            {
+                result = GlobusGFSErrorWrapFailed(
+                    "globus_ftp_control_local_prot", result);
+                goto error_control;
+            }
+        }
+    }
     
     handle->ref = 1;
     handle->closed = GLOBUS_FALSE;
@@ -457,6 +480,10 @@ globus_i_gfs_data_handle_destroy(
     globus_result_t                     result;
     GlobusGFSName(globus_i_gfs_data_handle_destroy);
     
+    if(handle == GLOBUS_NULL)
+    {
+        goto error;
+    }
     globus_mutex_lock(&handle->lock);
     {
         if(--handle->ref == 0)
@@ -488,6 +515,8 @@ globus_i_gfs_data_handle_destroy(
             globus_free(handle);
         }
     }
+error:
+    return;    
 }
 
 typedef struct
@@ -554,7 +583,7 @@ globus_i_gfs_data_passive_request(
             "globus_ftp_control_local_pasv", result);
         goto error_control;
     }
-    
+          
     GlobusLibcSockaddrSetFamily(addr, AF_INET);
     GlobusLibcSockaddrSetPort(addr, address.port);
     result = globus_libc_addr_to_contact_string(
@@ -659,7 +688,6 @@ globus_i_gfs_data_active_request(
             "globus_l_gfs_data_handle_init", result);
         goto error_handle;
     }
-    
     addresses = (globus_ftp_control_host_port_t *)
         globus_malloc(sizeof(globus_ftp_control_host_port_t) * cs_count);
     if(!addresses)

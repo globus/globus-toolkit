@@ -9,13 +9,14 @@
 /* option_name, default val, configfile, env, cmdline long, cmdline short, bool? */
 static char*                            option_list[][7] = 
 {
-    {"port",                "0",    "port",                 "GLOBUS_GRIDFTP_SERVER_PORT",        "-port",               "-p", "0"},
+    {"port",                "0",    "port",                 "GLOBUS_GRIDFTP_SERVER_PORT",        "-port",               "-p",   "0"},
     {"data_port_range",     "0",    "data_port_range",      "GLOBUS_TCP_PORT_RANGE",             "-data-port-range",    "-dpr", "0"},
-    {"max_connections",     "200",  "max_connections",      "",                                  "-max-connections",    "-mc", "0"},
-    {"fork",                "0",    "fork",                 "",                                  "-fork",               "-f", "1"},
-    {"no_gssapi",           "0",    "no_gssapi",            "",                                  "-no-gssapi",          "-ng", "1"},
-    {"uid",                 "0",    "",            "",                                  "-uid",          "-u", "0"},
-    {"data_node",           "0",    "data_node",            "",                                  "-data-node",          "-d", "1"}
+    {"max_connections",     "200",  "max_connections",      "",                                  "-max-connections",    "-mc",  "0"},
+    {"fork",                "0",    "fork",                 "",                                  "-fork",               "-f",   "1"},
+    {"inetd",               "0",    "inetd",                "",                                  "-inetd",              "-i",   "1"},
+    {"no_gssapi",           "0",    "no_gssapi",            "",                                  "-no-gssapi",          "-ng",  "1"},
+    {"uid",                 "0",    "",                     "",                                  "-uid",                "-u",   "0"},
+    {"data_node",           "0",    "data_node",            "",                                  "-data-node",          "-d",   "1"}
 };
 
 static int option_count = sizeof(option_list) / sizeof(char *) / 7;

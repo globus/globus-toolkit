@@ -515,6 +515,7 @@ globus_gridftp_server_control_get_cwd(
 globus_result_t
 globus_gridftp_server_control_get_data_auth(
     globus_gridftp_server_control_op_t      op,
+    char **                                 subject,
     char *                                  dcau,
     char *                                  prot,
     gss_cred_id_t *                         del_cred);

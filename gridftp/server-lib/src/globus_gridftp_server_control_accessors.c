@@ -137,6 +137,7 @@ globus_gridftp_server_control_get_cwd(
 globus_result_t
 globus_gridftp_server_control_get_data_auth(
     globus_gridftp_server_control_op_t      op,
+    char **                                 subject,
     char *                                  dcau,
     char *                                  prot,
     gss_cred_id_t *                         del_cred)
@@ -147,18 +148,22 @@ globus_gridftp_server_control_get_data_auth(
 
     globus_mutex_lock(&op->server_handle->mutex);
     {
+        if(subject != NULL)
+        {
+            *subject = globus_libc_strdup(op->server_handle->subject);
+        }
         if(dcau != NULL)
         {
             *dcau = op->server_handle->dcau;
         }
         if(prot != NULL)
         {
-            *prot = op->server_handle->dcau;
+            *prot = op->server_handle->prot;
         }
         if(del_cred != NULL)
         {
             *del_cred = op->server_handle->del_cred;
-        }
+        }        
     }
     globus_mutex_unlock(&op->server_handle->mutex);
 
