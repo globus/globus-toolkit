@@ -365,7 +365,7 @@ void debug(const char *fmt, ...)
   vsprintf(buf, fmt, args);
   va_end(args);
   gatekeeper_notice(LOG_DEBUG, buf);
-#endif DEBUG
+#endif 
 }
 
 
@@ -1123,7 +1123,7 @@ cray_setup (uid_t uid, const char *username)
   if ( TmpDir == NULL ) {
     debug ("could not create temporary directory for %s", udbent->ue_name);
   } else debug ("Tmp dir is %s\n", TmpDir);
-#endif CREATE_TMPDIR
+#endif 
 
   /* Now set limits, including CPU time for the (interactive) job and process,
      and set up permissions (for chown etc), etc.  This is via an internal CRI
