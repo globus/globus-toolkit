@@ -533,8 +533,8 @@ globus_l_callback_register(
             }
             globus_mutex_unlock(&globus_l_callback_handle_lock);
     
-            return GLOBUS_L_CALLBACK_CONSTRUCT_MEMORY_ALLOC(
-                "globus_l_callback_register", "i_space");
+            return GLOBUS_L_CALLBACK_CONSTRUCT_INVALID_SPACE(
+                "globus_l_callback_register");
         }
     }
     

@@ -373,8 +373,8 @@ globus_l_callback_register(
             globus_memory_push_node(
                 &globus_l_callback_info_memory, callback_info);
 
-            return GLOBUS_L_CALLBACK_CONSTRUCT_MEMORY_ALLOC(
-                "globus_l_callback_register", "i_space");
+            return GLOBUS_L_CALLBACK_CONSTRUCT_INVALID_SPACE(
+                "globus_l_callback_register");
         }
 
         globus_handle_table_increment_reference(
