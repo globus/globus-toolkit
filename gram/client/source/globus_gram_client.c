@@ -385,17 +385,21 @@ globus_gram_client_ping(char * gatekeeper_contact)
 {
     int                          rc;
     globus_io_attr_t             attr;
-    globus_io_handle_t           handle;
+    globus_gram_http_monitor_t   monitor;
     char *                       url;
     char *                       service;
     char *                       dn;
+    char *                       ping_service;
+
+    globus_mutex_init(&monitor.mutex, (globus_mutexattr_t *) NULL);
+    globus_cond_init(&monitor.cond, (globus_condattr_t *) NULL);
+    monitor.done = GLOBUS_FALSE;
 
     rc = globus_l_gram_client_parse_gatekeeper_contact(
 	gatekeeper_contact,
 	&url,
 	&service,
 	&dn );
-    
     if (rc != GLOBUS_SUCCESS)
 	goto globus_gram_client_ping_parse_failed;
 
@@ -403,29 +407,47 @@ globus_gram_client_ping(char * gatekeeper_contact)
 	&attr,
 	GLOBUS_IO_SECURE_DELEGATION_MODE_NONE,
 	dn );
-
     if (rc != GLOBUS_SUCCESS)
 	goto globus_gram_client_ping_attr_failed;
 
-
-    rc = globus_gram_http_attach( url,
-				  &handle,
-				  &attr );
+    ping_service = strcat("ping", service);
+    
+    rc = globus_gram_http_post_and_get(
+	         url,
+		 ping_service,
+		 &attr,
+		 GLOBUS_NULL,
+		 0,
+		 GLOBUS_NULL,
+		 0,
+		 &monitor);
 
     if (rc != GLOBUS_SUCCESS)
 	goto globus_gram_client_ping_post_failed;
 
-    globus_io_close(&handle);
+    globus_mutex_lock(&monitor.mutex);
+    {   
+        while (!monitor.done)
+        {
+            globus_cond_wait(&monitor.cond, &monitor.mutex);
+        }
+        rc = monitor.errorcode;
+    }
+    globus_mutex_unlock(&monitor.mutex);
 
 globus_gram_client_ping_post_failed:
     globus_io_tcpattr_destroy (&attr);
 
 globus_gram_client_ping_attr_failed:
+    globus_libc_free(ping_service);
     globus_libc_free(url);
     globus_libc_free(service);
     globus_libc_free(dn);
 
 globus_gram_client_ping_parse_failed:
+    globus_mutex_destroy(&monitor.mutex);
+    globus_cond_destroy(&monitor.cond);
+    globus_io_tcpattr_destroy (&attr);
     return rc;
 } /* globus_gram_client_ping() */
 

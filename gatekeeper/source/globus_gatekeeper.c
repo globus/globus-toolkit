@@ -169,6 +169,9 @@ static gss_ctx_id_t  context_handle    = GSS_C_NO_CONTEXT;
 #define FAILED_SERVER               3
 #define FAILED_NOLOGIN              4
 #define FAILED_AUTHENTICATION       5
+#define FAILED_PING                 6
+
+#define MIN(a,b) ((a) < (b) ? (a) : (b))
 
 static char     tmpbuf[1024];
 #define notice2(i,a,b) {sprintf(tmpbuf, a,b); notice(i,tmpbuf);}
@@ -218,6 +221,7 @@ static char *   x509_user_cert = NULL;
 static char *   x509_user_key = NULL;
 static int      ok_to_send_errmsg = 0;
 static FILE *   fdout;
+static int      got_ping_request = 0;
 
 /******************************************************************************
 Function:       get_globusid()
@@ -1287,35 +1291,28 @@ static void doit()
 
     }
 
-    service_name = (char *) malloc(length);
-
     {
-	char  save = http_message[length];
+	char    save = http_message[length];
+	char *  tmpbuf = (char *) malloc(length);
+	char *  p;
+
 	http_message[length] = '\0';
-	if (1 != sscanf(http_message, "POST /%s", service_name))
+	if ((1 != sscanf(http_message, "POST %s", tmpbuf)) ||
+	    (! (p = strchr(tmpbuf, '/'))))
 	{
 	    failure(FAILED_SERVICELOOKUP, 
 		    "Unable to extract service name from incoming message\n");
 	}
 	http_message[length] = save;
+
+	if (strncmp(tmpbuf,"ping/",5)==0)
+	    got_ping_request = 1;
+
+	service_name = strdup(++p);
+	free(tmpbuf);
     }
 
-
-    http_body_file = tmpfile();
-    if (http_body_file)
-    {
-	setbuf(http_body_file,NULL);
-	fcntl(fileno(http_body_file), F_SETFD, 0);
-	sprintf(buf, "%d", fileno(http_body_file));
-	grami_setenv("GRID_SECURITY_HTTP_BODY_FD", buf, 1);
-	notice2(0,"GRID_SECURITY_HTTP_BODY_FD=%s",buf);
-    }    
-    else
-    {
-	failure(FAILED_SERVER, "Unable to create http body tmpfile");
-    }
-
-    /* find body of message */
+    /* find body of message and forward it to the service */
     {
 	char    lastchar;
 	char *  end_of_header = "\015\012\015\012";
@@ -1331,12 +1328,30 @@ static void doit()
 	}
 
 	http_body += 4;  /* CR LF CR LF */
-	fwrite(http_body,
-	       1,
-	       (size_t)(&http_message[http_length] - http_body),
-	       http_body_file);
 
-	lseek(fileno(http_body_file), 0, SEEK_SET);
+	if (! got_ping_request)
+	{
+	    http_body_file = tmpfile();
+	    if (http_body_file)
+	    {
+		setbuf(http_body_file,NULL);
+		fcntl(fileno(http_body_file), F_SETFD, 0);
+		sprintf(buf, "%d", fileno(http_body_file));
+		grami_setenv("GRID_SECURITY_HTTP_BODY_FD", buf, 1);
+		notice2(0,"GRID_SECURITY_HTTP_BODY_FD=%s",buf);
+
+		fwrite(http_body,
+		       1,
+		       (size_t)(&http_message[http_length] - http_body),
+		       http_body_file);
+		
+		lseek(fileno(http_body_file), 0, SEEK_SET);
+	    }    
+	    else
+	    {
+		failure(FAILED_SERVER, "Unable to create http body tmpfile");
+	    }
+	}
     }
     
     free(http_message);
@@ -1346,8 +1361,11 @@ static void doit()
     {
 	failure(FAILED_SERVICELOOKUP, "Service name malformed");
     }
-    
-    notice2(LOG_NOTICE,"Requested service:%s", service_name);
+
+    notice3(LOG_NOTICE,
+	    "Requested service: %s %s",
+	    service_name,
+	    (got_ping_request) ? "[PING ONLY]" : "");
 
     if ((rc = globus_gatekeeper_util_globusxmap(
 		genfilename(gatekeeperhome,grid_services,NULL), 
@@ -1431,6 +1449,33 @@ static void doit()
     notice2(LOG_NOTICE, "Authorized as local uid: %d", service_uid);
     notice2(LOG_NOTICE, "          and local gid: %d", service_gid);
 
+    /*
+     * service existed, we were authorized to use it. ping was successful.
+     */
+    if (got_ping_request)
+    {
+	char *     proxyfile;
+	int        fd, i;
+	size_t     len, bufsize;
+
+        if ( ((proxyfile = getenv("X509_USER_DELEG_PROXY")) != NULL)
+	     && ((fd = open(proxyfile, O_RDWR, 0600) >= 0))  )
+        {
+	    len = lseek(fd, 0, SEEK_END);
+	    lseek(fd, 0, SEEK_SET);
+	    bufsize = sizeof(tmpbuf);
+	    for (i=0; i<bufsize; i++)
+		tmpbuf[i] = 0;
+
+	    for (i=0; i<len; )
+		i += write(fd, tmpbuf, MIN(bufsize, len-i));
+
+	    close(fd);
+            unlink(proxyfile);
+        }
+	failure(FAILED_PING, "ping successful");
+    }
+
     /* for gssapi_ssleay if we received delegated proxy certificate
      * they will be in a file in tmp pointed at by the 
      * X509_USER_DELEG_PROXY env variable. 
@@ -1444,11 +1489,8 @@ static void doit()
         char *proxyfile;
         if ((proxyfile = getenv("X509_USER_DELEG_PROXY")) != NULL)
         {
-/* OL */    notice2(LOG_NOTICE, "delegated proxy in %s", proxyfile);
             chown(proxyfile,service_uid,service_gid);
         }
-	else
-/* OL */    notice(LOG_NOTICE, "no delegated proxy!");
     }
 
 	/* now check for options */
@@ -1980,6 +2022,13 @@ failure(short failure_type, char * s)
 	case FAILED_SERVICELOOKUP:
 	    response = ("HTTP/1.1 404 Not Found\015\012"
 			"Connection: close\015\012"
+			"\015\012");
+	    break;
+
+	case FAILED_PING:
+	    response = ("HTTP/1.1 200 OK\015\012"
+                        "Content-Type: application/x-globus-gram\015\012"
+                        "Content-Length: 0\015\012"
 			"\015\012");
 	    break;
 
