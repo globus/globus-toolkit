@@ -30,7 +30,7 @@ GetOptions('service-name|s=s' => \$name,
 &usage if $host_type eq "";
 
 my $metadata =
-    new Grid::GPT::Setup(package_name => "globus_job_manager_setup_pbs");
+    new Grid::GPT::Setup(package_name => "globus_gram_job_manager_setup_pbs");
 
 my $globusdir	= $ENV{GLOBUS_LOCATION};
 my $libexecdir	= "$globusdir/libexec";
