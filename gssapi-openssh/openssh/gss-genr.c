@@ -196,13 +196,14 @@ void ssh_gssapi_set_oid(Gssctxt *ctx, gss_OID oid) {
 enum ssh_gss_id ssh_gssapi_get_ctype(Gssctxt *ctxt) {
 	enum ssh_gss_id i=0;
 	
-	while(supported_mechs[i].name!=NULL &&
-	      	supported_mechs[i].oid.length != ctxt->oid->length &&
-	      	(memcmp(supported_mechs[i].oid.elements,
-	      	       ctxt->oid->elements,ctxt->oid->length) !=0)) {
+	while(supported_mechs[i].name!=NULL) {
+	   if (supported_mechs[i].oid.length == ctxt->oid->length &&
+	       (memcmp(supported_mechs[i].oid.elements,
+		       ctxt->oid->elements,ctxt->oid->length) == 0))
+	       return i;
 	   i++;
 	}
-	return(i);
+	return(GSS_LAST_ENTRY);
 }
 
 /* Set the GSS context's OID to the oid indicated by the given key exchange
