@@ -23,7 +23,7 @@ modified to support encrypted user sessions, available from
 You can build the encryption-enabled GSI package using the
 directions for building standard GSI package:
 
-http://www.globus.org/security/v1.1/
+http://www.globus.org/security/v1.1/installation.html
 
 NOTE that you only need the encryption-enabled GSI for building
 myproxy, you can use the myproxy binaries with any recent GSI
@@ -51,7 +51,7 @@ Step 1: Run './configure'
 		Specify myproxy-server install prefix. This is the
 		prefix under which the server binaries and configuration
 		files will be installed. By default this is
-		${prefix}/myproxy-server
+		${prefix}
 
 	--with-myproxy-tools-path=<PATH>
   		Specify myproxy tools install prefix. This is the prefix
