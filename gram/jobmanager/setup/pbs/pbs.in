@@ -24,16 +24,6 @@ BEGIN
     $remote_shell = '@REMOTE_SHELL@';
 }
 
-sub new
-{
-    my $proto = shift;
-    my $class = ref($proto) || $proto;
-    my $self = $class->SUPER::new(@_);
-    
-    bless $self, $class;
-    return $self;
-}
-
 sub submit
 {
     my $self = shift;
