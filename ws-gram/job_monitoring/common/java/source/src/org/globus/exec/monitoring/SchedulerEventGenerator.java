@@ -52,6 +52,22 @@ class SchedulerEventGenerator extends Thread {
     private JobStateMonitor monitor;
 
     /**
+     * Used to keep track of the last restart time for the SEG process---if
+     * it was too recent (less than our THROTTLE_RESTART_THRESHOLD) wait 
+     * THROTTLE_RESTART_TIME before trying again.
+     */
+    private long lastRestart = 0;
+    /**
+     * When throttling process restarts, wait this many milliseconds before
+     * next restart attempt.
+     */
+    private final long THROTTLE_RESTART_TIME = 2 * 60 * 1000;
+    /**
+     * When SEG terminates within this amount of time of being started, assume
+     * something might be wrong and delay again.
+     */
+    private final long THROTTLE_RESTART_THRESHOLD = 2 * 1000;
+    /**
      * SEG constructor.
      *
      * @param path
@@ -71,6 +87,8 @@ class SchedulerEventGenerator extends Thread {
         this.shutdownCalled = false;
         this.timeStamp = null;
         this.monitor = monitor;
+
+        lastRestart = 0;
     }
 
     /**
@@ -170,6 +188,8 @@ class SchedulerEventGenerator extends Thread {
     {
         proc = null;
 
+        throttleRestart();
+
         if (!shutdownCalled) {
             logger.debug("Starting seg process");
             String [] cmd;
@@ -202,10 +222,35 @@ class SchedulerEventGenerator extends Thread {
     }
 
     /**
+     * Delay THROTTLE_RESTART_TIME before returning unless either
+     * <ul>
+     * <li>The SEG process wasn't restarted within
+     *    THROTTLE_RESTART_THRESHOLD</li>
+     * <li>The shutdown method has been called</li>
+     * </ul>
+     */
+    private synchronized void throttleRestart() {
+        logger.debug("throttleRestart called");
+
+        long thisTime = new java.util.Date().getTime();
+        long endOfWait = thisTime + THROTTLE_RESTART_TIME;
+
+        while ((!shutdownCalled) &&
+                    ((thisTime - lastRestart) < THROTTLE_RESTART_THRESHOLD)) {
+            logger.debug("Throttling the restart as we just restarted the SEG");
+            try {
+                wait(endOfWait - thisTime);
+            } catch (InterruptedException ie) {
+            }
+            thisTime = new java.util.Date().getTime();
+        }
+        lastRestart = thisTime;
+    }
+
+    /**
      * Tell a SEG process to terminate.
      * 
-     * This funcName
-     * by this object and will cause the thread associated with this
+     * This function will cause the thread associated with this
      * object to terminate once all input has been processed.
      */
     public synchronized void shutdown()
@@ -218,6 +263,8 @@ class SchedulerEventGenerator extends Thread {
                 proc.getOutputStream().close();
             }
             shutdownCalled = true;
+            /* Wake up throttler if we were waiting in it */
+            notify();
         }
     }
     
