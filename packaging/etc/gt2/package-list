@@ -1,4 +1,16 @@
 # (Package name) (Package subdir) (Build type, if not default) (pnb)
+gaa_core			gsi/gaa/gaa_core/source
+gaa_debug			gsi/gaa/gaa_debug/source
+gaa_gss_generic			gsi/gaa_callbacks/gaa_gss_generic/source
+gaa_plugin			gsi/gaa/gaa_plugin/source
+gaa_simple			gsi/gaa_callbacks/gaa_simple/source
+gaa_simple_test		gsi/gaa_callbacks/gaa_simple/test
+gaa_util			gsi/gaa_util/source
+globus_authz			gsi/authz/source
+globus_authz_callout_error	gsi/authz/error
+globus_authz_gaa_callout	gsi/authz_gaa_callout/source
+globus_authz_null_callout	gsi/authz_null_callout/source
+globus_authz_test		gsi/authz/test
 globus_callout                  callout/source
 globus_common			common/source
 globus_common_setup		common/setup

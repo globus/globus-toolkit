@@ -147,6 +147,19 @@ BUNDLE globus-data-management-server
 	globus_ftp_control
 	globus_gridftp_server
 	globus_gridftp_server_control
+        globus_libxml2
+	globus_libxslt
+        globus_xmlsec1
+        gaa_util
+	gaa_core
+	gaa_plugin
+	gaa_debug
+	globus_authz_callout_error
+	globus_authz
+	globus_authz_null_callout
+	gaa_gss_generic
+	gaa_simple
+	globus_authz_gaa_callout
 	globus_gridftp_server2
 
 BUNDLE globus-data-management-sdk
@@ -308,6 +321,8 @@ BUNDLE	all-test
 	globus_mds_test
 	globus_openssl_error_test
 	globus_proxy_ssl_test
+	globus_authz_test
+	gaa_simple_test
 BUNDLE globus-gsi
 	globus_gss_assist
 	globus_proxy_utils
