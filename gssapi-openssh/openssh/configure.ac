@@ -76,7 +76,6 @@ case "$host" in
 	AC_DEFINE(BROKEN_REALPATH)
 	dnl AIX handles lastlog as part of its login message
 	AC_DEFINE(DISABLE_LASTLOG)
-	AC_DEFINE(HAVE_BOGUS_SYS_QUEUE_H)
 	;;
 *-*-cygwin*)
 	LIBS="$LIBS /usr/lib/textmode.o"
@@ -158,7 +157,6 @@ case "$host" in
 	check_for_libcrypt_later=1
 	AC_DEFINE(DONT_TRY_OTHER_AF)
 	AC_DEFINE(PAM_TTY_KLUDGE)
-	AC_DEFINE(HAVE_BOGUS_SYS_QUEUE_H)
 	inet6_default_4in6=yes
 	;;
 mips-sony-bsd|mips-sony-newsos4)
@@ -850,7 +848,7 @@ AC_ARG_WITH(ssl-dir,
 # Patch up SSL libraries for GSI authentication as needed
 if test "x$globus_flavor_type" != "xno" ; then
 	# For Globus 2, always link with the static libraries
-	LIBS="$LIBS ${gsi_path}/libglobus_ssl_utils_${globus_flavor_type}.a ${gsi_path}/libssl_${globus_flavor_type}.a ${gsi_path}/libcrypto_${globus_flavor_type}.a"
+	LIBS="$LIBS ${gsi_path}/lib/libglobus_ssl_utils_${globus_flavor_type}.a ${gsi_path}/lib/libssl_${globus_flavor_type}.a ${gsi_path}/lib/libcrypto_${globus_flavor_type}.a"
 else
 	if test "x$gsi_path" != "xno" ; then
 		# Older GSI needs -lssl too
@@ -2176,7 +2174,6 @@ if test "$USES_LOGIN_CONF" != "yes" ; then
 fi
 
 # Set superuser path separately to user path
-MD5_MSG="no" 
 AC_ARG_WITH(superuser-path,
 	[  --with-superuser-path=  Specify different path for super-user],
 	[
