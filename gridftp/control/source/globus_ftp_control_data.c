@@ -758,6 +758,78 @@ globus_ftp_control_data_connect_read(
 /**
  * Create an outgoing FTP data connection.
  *
+ *  This function sets the interface that will be used to send and
+ *  receive information along the data channel.
+ *
+ * @param handle
+ *        A pointer to a FTP control handle which is configured to
+ *        create an outgoing data connection.
+ * @param interface
+ *
+ */
+globus_result_t
+globus_ftp_control_data_set_interface(
+    globus_ftp_control_handle_t *               handle,
+    const char *                                interface)
+{
+    globus_result_t                             res;
+    globus_i_ftp_dc_handle_t *                  dc_handle;
+    globus_object_t *                           err;
+    static char *                               my_name=
+                                      "globus_ftp_control_data_set_interface";
+
+    if(handle == GLOBUS_NULL)
+    {
+        err = globus_io_error_construct_null_parameter(
+                  GLOBUS_FTP_CONTROL_MODULE,
+                  GLOBUS_NULL,
+                  "handle",
+                  1,
+                  my_name);
+        return globus_error_put(err);
+    }
+    if(interface == GLOBUS_NULL)
+    {
+        err = globus_io_error_construct_null_parameter(
+                  GLOBUS_FTP_CONTROL_MODULE,
+                  GLOBUS_NULL,
+                  "interface",
+                  2,
+                  my_name);
+        return globus_error_put(err);
+    }
+
+    dc_handle = &handle->dc_handle;
+    GlobusFTPControlDataTestMagic(dc_handle);
+    if(!dc_handle->initialized)
+    {
+        err = globus_io_error_construct_not_initialized(
+                  GLOBUS_FTP_CONTROL_MODULE,
+                  GLOBUS_NULL,
+                  "handle",
+                  1,
+                  my_name);
+        return globus_error_put(err);
+    }
+
+    globus_mutex_lock(&dc_handle->mutex);
+    {
+        res = globus_io_attr_set_tcp_interface(
+                  &dc_handle->io_attr,
+                  interface);
+        if(res == GLOBUS_SUCCESS)
+        {
+            dc_handle->interface = strdup(interface);
+        }
+    }
+    globus_mutex_unlock(&dc_handle->mutex);
+
+    return res;
+}
+
+/**
+ * Create an outgoing FTP data connection.
+ *
  * This function will register a globus_io_{accept, connect}. Further
  * accepts/connects are done by registering a new accept/connect in
  * the current accept/connect callback. A call to either
@@ -6571,6 +6643,8 @@ globus_i_ftp_control_data_cc_init(
             dc_handle->nl_io_handle_set = GLOBUS_FALSE;
             dc_handle->nl_ftp_handle_set = GLOBUS_FALSE;
 
+            dc_handle->interface = NULL;
+
             globus_io_tcpattr_init(&dc_handle->io_attr);
             globus_io_attr_set_tcp_nodelay(&dc_handle->io_attr,
 					   GLOBUS_TRUE);
@@ -6743,6 +6817,10 @@ globus_i_ftp_control_data_cc_destroy(
             if(dc_handle->nl_ftp_handle_set)
             {
                 globus_netlogger_handle_destroy(&dc_handle->nl_ftp_handle);
+            }
+            if(dc_handle->interface)
+            {
+                free(dc_handle->interface);
             }
         }
         else
