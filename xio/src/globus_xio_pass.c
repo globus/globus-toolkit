@@ -1201,8 +1201,9 @@ globus_xio_driver_read_delivered(
             globus_i_xio_op_destroy(op, &destroy_handle);
         }
         purge = GLOBUS_FALSE;
-        if(my_context->read_eof)
+        if(my_context->read_eof && my_context->read_operations == 0)
         {
+            /* just delivered an eof op */
             switch(my_context->state)
             {
                 case GLOBUS_XIO_CONTEXT_STATE_EOF_RECEIVED:
@@ -1224,10 +1225,6 @@ globus_xio_driver_read_delivered(
                 default:
                     globus_assert(0);
             }
-
-            /* if we get an operation with EOF type we definitly must
-               have no outstanding reads */
-            globus_assert(my_context->read_operations == 0);
         }
         else
         {
