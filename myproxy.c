@@ -717,9 +717,8 @@ myproxy_serialize_response(const myproxy_response_t *response,
 {
     int len;
     int totlen = 0;
-    const char *response_string;
     authorization_data_t **p;
-    char *buf = NULL;
+    const char *response_string;
     
     assert(data != NULL);
     assert(response != NULL);
@@ -737,8 +736,7 @@ myproxy_serialize_response(const myproxy_response_t *response,
     response_string = encode_response((myproxy_proto_response_type_t) response->response_type);
 
     /*Response string*/
-    if (response_string == NULL)
-    {
+    if (response_string == NULL) {
 	return -1;
     }
     
@@ -750,7 +748,7 @@ myproxy_serialize_response(const myproxy_response_t *response,
     totlen += len;
 
     /*Authorization data*/
-    if ((p = response->authorization_data))
+    if ((p = response->authorization_data)) {
        while (*p) {
 	  len = concatenate_strings(data, datalen, MYPROXY_AUTHORIZATION_STRING,
 		     authorization_get_name((*p)->method), ":", 
@@ -760,214 +758,150 @@ myproxy_serialize_response(const myproxy_response_t *response,
 	  totlen += len;
 	  p++;
        }
-
-    /* Response */
-    if (response->response_type == MYPROXY_OK_RESPONSE) 
-    {
-	char date[64];
-	int i;
-	
-	/*Find out nameless credential*/
-	for (i = 0; i < response->num_creds; i ++)
-	{
-		if (!response->info_creds[i].credname)
-		{
-		    /* credential description */
-			if (response->info_creds[i].creddesc) {
-			    len = concatenate_strings (data, datalen, MYPROXY_CRED_PREFIX, "_", MYPROXY_CRED_DESC_STRING, response->info_creds[i].creddesc, "\n", NULL);
-
-			    if (len == -1)
-				goto error;
-
-			    totlen += len;
-			}
-
-			/* start time */
-			snprintf(date, sizeof (date), "%lu",  response->info_creds[i].cred_start_time);
-			len = concatenate_strings (data, datalen, MYPROXY_CRED_PREFIX, "_", MYPROXY_START_TIME_STRING, 
-					date, "\n", NULL);
-
-			if (len == -1)
-				goto error;
-				
-			totlen += len;
-
-			/* end time */
-			snprintf(date, sizeof (date), "%lu",  response->info_creds[i].cred_end_time);
-			len = concatenate_strings (data, datalen, MYPROXY_CRED_PREFIX, "_", MYPROXY_END_TIME_STRING, 
-					date, "\n", NULL);
-
-			if (len == -1)
-				goto error;
-			
-			totlen += len;
-
-			/* owner string */
-			len = concatenate_strings (data, datalen, MYPROXY_CRED_PREFIX, "_", MYPROXY_CRED_OWNER_STRING,
-					response->info_creds[i].cred_owner, "\n", NULL);
-
-			if (len == -1)
-				goto error;
-		
-			totlen += len;
-
-			/* retriever string */
-			if (response->info_creds[i].retriever_str != NULL)
-			{
-				len = concatenate_strings (data, datalen, MYPROXY_CRED_PREFIX, "_", MYPROXY_RETRIEVER_STRING,
-					response->info_creds[i].retriever_str, "\n", NULL);
-
-				if (len == -1)
-					goto error;
-			
-				totlen += len;
-			}	
-			
-			/*renewer string */
-			if (response->info_creds[i].renewer_str != NULL)
-			{
-				len = concatenate_strings (data, datalen, MYPROXY_CRED_PREFIX, "_", MYPROXY_RENEWER_STRING,
-					response->info_creds[i].renewer_str, "\n", NULL);
-
-				if (len == -1)
-					goto error;
-       
-				totlen += len;
-			}	
-
-			break;
-		}
-	} /*end for */
-	
-
-	if (response->num_creds >= 1)
-	{
-		/* Build up additional credentials string*/
-		len = concatenate_strings (data, datalen, MYPROXY_ADDITIONAL_CREDS_STRING, NULL);
-		
-		if (len == -1)
-			goto error;
-       
-		totlen += len;
-
-		for (i = 0; i < response->num_creds-1; i ++)
-		{
-			if (response->info_creds[i].credname)
-			{
-				len = concatenate_strings (data, datalen, response->info_creds[i].credname, "," , NULL);
-			
-				if (len == -1)
-					goto error;
-       
-				totlen += len;
-			}
-		}		
-		len = concatenate_strings (data, datalen, response->info_creds[i].credname, "\n", NULL);
-		
-		if (len == -1)
-			goto error;
-     
-		totlen += len;
-	
-		/*Add the rest */
-		for (i = 0; i < response->num_creds; i ++)
-		{
-
-		    /* don't add default credential as it has already been added */
-			if (!response->info_creds[i].credname)
-				continue;
-
-			if (response->info_creds[i].creddesc != NULL)
-			{
-				len = concatenate_strings (data, datalen, MYPROXY_CRED_PREFIX, "_", 
-						response->info_creds[i].credname, "_", MYPROXY_CRED_DESC_STRING, 
-						response->info_creds[i].creddesc, "\n", NULL);
-
-				if (len == -1)
-					goto error;
-				
-				totlen += len;
-			}
-
-			/* start time */
-			if (response->info_creds[i].cred_start_time) {
-				snprintf (date, sizeof (date), "%lu", response->info_creds[i].cred_start_time);
-				len = concatenate_strings (data, datalen, MYPROXY_CRED_PREFIX, "_",
-						response->info_creds[i].credname, "_", MYPROXY_START_TIME_STRING, 
-						date, "\n", NULL);
-
-				if (len == -1)
-					goto error;
-				
-				totlen += len;
-			}
-
-			/* end time */
-			if (response->info_creds[i].cred_end_time) {
-				snprintf (date, sizeof (date), "%lu", response->info_creds[i].cred_end_time);
-				len = concatenate_strings (data, datalen, MYPROXY_CRED_PREFIX, "_",
-						response->info_creds[i].credname, "_", MYPROXY_END_TIME_STRING, 
-						date, "\n", NULL);
-
-				if (len == -1)
-					goto error;
-				
-				totlen += len;
-			}
-
-			/* owner */
-			len = concatenate_strings (data, datalen, MYPROXY_CRED_PREFIX, "_", 
-					response->info_creds[i].credname, "_", MYPROXY_CRED_OWNER_STRING,
-					response->info_creds[i].cred_owner, "\n", NULL);
-
-			if (len == -1)
-				goto error;
-		
-			totlen += len;
-
-			/* retriever */
-			if (response->info_creds[i].retriever_str != NULL)
-			{
-				len = concatenate_strings (data, datalen, MYPROXY_CRED_PREFIX, "_",
-					response->info_creds[i].credname, "_", MYPROXY_RETRIEVER_STRING,
-					response->info_creds[i].retriever_str, "\n", NULL);
-
-				if (len == -1)
-					goto error;
-			
-				totlen += len;
-			}
-
-			/* renewer  */
-			if (response->info_creds[i].renewer_str != NULL)
-			{
-				len = concatenate_strings (data, datalen, MYPROXY_CRED_PREFIX, "_",
-					response->info_creds[i].credname, "_", MYPROXY_RENEWER_STRING,
-					response->info_creds[i].renewer_str, "\n", NULL);
-
-				if (len == -1)
-					goto error;
-       
-				totlen += len;
-			}
-		}  /* end for */
-         }
     }
-    else /* Only add error string if necessary */
-      if (response->response_type == MYPROXY_ERROR_RESPONSE) 
-      {
-	if (buf != NULL)
-		free (buf);
 
+    /* Include credential info in OK response to INFO request */
+    if (response->response_type == MYPROXY_OK_RESPONSE &&
+	response->info_creds) {
+	int first_cred = 1;
+	myproxy_creds_t *cred;
+	char date[40];
+	for (cred = response->info_creds; cred != NULL; cred = cred->next) {
+	    /* Include name on first cred only.  Other creds are indexed by
+	       name, so there is no need for an additional name field. */
+	    if (cred->credname && first_cred) {
+		len = concatenate_strings(data, datalen, MYPROXY_CRED_PREFIX,
+					  "_", MYPROXY_CRED_NAME_STRING,
+					  cred->credname, "\n", NULL);
+		if (len == -1)
+		    goto error;
+		totlen += len;
+	    }
+	    assert(cred->credname || first_cred);
+	    if (cred->creddesc) {
+		if (first_cred) {
+		    len = concatenate_strings(data, datalen,
+					      MYPROXY_CRED_PREFIX,
+					      "_", MYPROXY_CRED_DESC_STRING,
+					      cred->creddesc, "\n", NULL);
+		} else {
+		    len = concatenate_strings(data, datalen,
+					      MYPROXY_CRED_PREFIX,
+					      "_", cred->credname,
+					      "_", MYPROXY_CRED_DESC_STRING,
+					      cred->creddesc, "\n", NULL);
+		}
+		if (len == -1)
+		    goto error;
+		totlen += len;
+	    }
+	    sprintf(date, "%lu",  cred->start_time);
+	    if (first_cred) {
+		len = concatenate_strings(data, datalen, MYPROXY_CRED_PREFIX,
+					  "_", MYPROXY_START_TIME_STRING, 
+					  date, "\n", NULL);
+	    } else {
+		len = concatenate_strings(data, datalen, MYPROXY_CRED_PREFIX,
+					  "_", cred->credname,
+					  "_", MYPROXY_START_TIME_STRING, 
+					  date, "\n", NULL);
+	    }
+	    if (len == -1)
+		goto error;
+	    totlen += len;
+	    sprintf(date, "%lu", cred->end_time);
+	    if (first_cred) {
+		len = concatenate_strings(data, datalen, MYPROXY_CRED_PREFIX,
+					  "_", MYPROXY_END_TIME_STRING, 
+					  date, "\n", NULL);
+	    } else {
+		len = concatenate_strings(data, datalen, MYPROXY_CRED_PREFIX,
+					  "_", cred->credname,
+					  "_", MYPROXY_END_TIME_STRING, 
+					  date, "\n", NULL);
+	    }
+	    if (len == -1)
+		goto error;
+	    totlen += len;
+	    if (first_cred) {
+		len = concatenate_strings(data, datalen, MYPROXY_CRED_PREFIX,
+					  "_", MYPROXY_CRED_OWNER_STRING,
+					  cred->owner_name, "\n", NULL);
+	    } else {
+		len = concatenate_strings(data, datalen, MYPROXY_CRED_PREFIX,
+					  "_", cred->credname,
+					  "_", MYPROXY_CRED_OWNER_STRING,
+					  cred->owner_name, "\n", NULL);
+	    }
+	    if (len == -1)
+		goto error;
+	    totlen += len;
+	    if (cred->retrievers) {
+		if (first_cred) {
+		    len = concatenate_strings(data, datalen,
+					      MYPROXY_CRED_PREFIX,
+					      "_", MYPROXY_RETRIEVER_STRING,
+					      cred->retrievers, "\n", NULL);
+		} else {
+		    len = concatenate_strings(data, datalen,
+					      MYPROXY_CRED_PREFIX,
+					      "_", cred->credname,
+					      "_", MYPROXY_RETRIEVER_STRING,
+					      cred->retrievers, "\n", NULL);
+		}
+		if (len == -1)
+		    goto error;
+		totlen += len;
+	    }	
+	    if (cred->renewers) {
+		if (first_cred) {
+		    len = concatenate_strings(data, datalen,
+					      MYPROXY_CRED_PREFIX,
+					      "_", MYPROXY_RENEWER_STRING,
+					      cred->renewers, "\n", NULL);
+		} else {
+		    len = concatenate_strings(data, datalen,
+					      MYPROXY_CRED_PREFIX,
+					      "_", cred->credname,
+					      "_", MYPROXY_RENEWER_STRING,
+					      cred->renewers, "\n", NULL);
+		}
+		if (len == -1)
+		    goto error;
+		totlen += len;
+	    }
+	    first_cred = 0;
+	}
+	if (response->info_creds->next) {
+	    len = concatenate_strings(data, datalen,
+				      MYPROXY_ADDITIONAL_CREDS_STRING, NULL);
+	    totlen += len;
+	    for (cred = response->info_creds->next;
+		 cred != NULL;
+		 cred = cred->next) {
+		if (cred->next) {
+		    len = concatenate_strings(data, datalen, cred->credname,
+					      "," , NULL);
+		} else {
+		    len = concatenate_strings(data, datalen, cred->credname,
+					      NULL);
+		}
+		totlen += len;
+	    }
+	}
+    }
+
+    /* Only add error string if necessary */
+    if (response->response_type == MYPROXY_ERROR_RESPONSE) {
+	char *buf;
 	buf = strdup (verror_get_string());
-	
 	strip_char (buf, '\n');
         len = concatenate_strings(data, datalen, MYPROXY_ERROR_STRING,
 				  buf, "\n", NULL);
         if (len < 0)
 	  return -1;
-
         totlen += len;
+	free(buf);
     }
 
     return totlen+1;
@@ -986,8 +920,8 @@ myproxy_deserialize_response(myproxy_response_t *response,
     char response_type_str[128];
     char authorization_data[4096];
     int value,i, num_creds ;
-    char buffer[128];
-    int idx = 0;
+    char tmp[100];
+    char buffer[1024];
 
     assert(data != NULL); 
 
@@ -998,21 +932,18 @@ myproxy_deserialize_response(myproxy_response_t *response,
 			  CONVERT_MESSAGE_DEFAULT_FLAGS,
 			  version_str, sizeof(version_str));
 
-    if (len == -1)
-    {
+    if (len == -1) {
 	verror_prepend_string("Error parsing version from server response");
 	return -1;
     }
 
-    if (response->version)
-    {
+    if (response->version) {
 	free(response->version);
     }
 
     response->version = strdup(version_str);
 
-    if (response->version == NULL)
-    {
+    if (response->version == NULL) {
 	verror_put_errno(errno);
 	return -1;
     }
@@ -1022,376 +953,269 @@ myproxy_deserialize_response(myproxy_response_t *response,
 			  CONVERT_MESSAGE_DEFAULT_FLAGS,
 			  response_type_str, sizeof(response_type_str));
 
-    if (len == -1 || len == -2)
-    {
+    if (len == -1 || len == -2) {
 	return -1;
     }
 
-    if (parse_response_type(response_type_str, &response->response_type) == -1)
-    {
+    if (parse_response_type(response_type_str,
+			    &response->response_type) == -1) {
 	return -1;
     }
 
-    if (response->response_type == MYPROXY_OK_RESPONSE)
-    {
-    	char tmp[100], response_str[1000], **strs;
-
-	response->info_creds = (myproxy_info_t *) malloc (sizeof (myproxy_info_t));
-	/*Nameless credential*/
-	
-	/* start time */
-    	tmp[0] = '\0';
-    	len = concatenate_strings (tmp, sizeof(tmp), MYPROXY_CRED_PREFIX, "_", MYPROXY_START_TIME_STRING, NULL);
-    	if (len < 0)
-        	return -1;
-		
+    if (response->response_type == MYPROXY_ERROR_RESPONSE) {
+	/* It's ok if ERROR not present */
+	response->error_str = (char *) malloc (1024);
 	len = convert_message(data, datalen,
-		  tmp, CONVERT_MESSAGE_DEFAULT_FLAGS,
-		  buffer, sizeof(buffer));
+			      MYPROXY_ERROR_STRING, 
+			      CONVERT_MESSAGE_ALLOW_MULTIPLE,
+			      response->error_str,
+			      1024);
+	return 0;
+    }
 
+    /* Parse any cred info in response */
+    
+    /* start time */
+    tmp[0] = '\0';
+    len = concatenate_strings(tmp, sizeof(tmp), MYPROXY_CRED_PREFIX, "_",
+			      MYPROXY_START_TIME_STRING, NULL);
+    if (len < 0) return -1;
+    len = convert_message(data, datalen, tmp, CONVERT_MESSAGE_DEFAULT_FLAGS,
+			  buffer, sizeof(buffer));
+    if (len == -1) return -1;
 
-       if (len > 0) {
-		switch(string_to_int(buffer, &value)) {
-		  	case STRING_TO_INT_SUCCESS:
-				response->info_creds[0].cred_start_time = value;
-				break;
-			case STRING_TO_INT_NONNUMERIC:
-				verror_put_string("Non-numeric characters in CRED_START_TIME \"%s\"",
-				buffer);
-				return -1;
-			case STRING_TO_INT_ERROR:
-				return -1;
-		}
-	    }
+    if (len > 0) {		/* credential info present */
+	response->info_creds = malloc(sizeof(struct myproxy_creds));
+	memset(response->info_creds, 0, sizeof(struct myproxy_creds));
 
-       if (len == -2) /* nameless credential not present */
-	{
-		num_creds = 0;
-		goto skipover;
+	switch(string_to_int(buffer, &value)) {
+	case STRING_TO_INT_SUCCESS:
+	    response->info_creds->start_time = value;
+	    break;
+	case STRING_TO_INT_NONNUMERIC:
+	    verror_put_string("Non-numeric characters in CRED_START_TIME \"%s\"", buffer);
+	    return -1;
+	case STRING_TO_INT_ERROR:
+	    return -1;
 	}
 
-	idx = 1;
-	/* Credential name */
+    	tmp[0] = '\0';
+    	len = concatenate_strings (tmp, sizeof(tmp), MYPROXY_CRED_PREFIX,
+				   "_", MYPROXY_END_TIME_STRING, NULL);
+    	if (len < 0) return -1;
+		
+	len = convert_message(data, datalen, tmp,
+			      CONVERT_MESSAGE_DEFAULT_FLAGS,
+			      buffer, sizeof(buffer));
 
-	response->info_creds[0].credname = NULL;
+	if (len > 0) {
+	    switch(string_to_int(buffer, &value)) {
+	    case STRING_TO_INT_SUCCESS:
+		response->info_creds->end_time = value;
+		break;
+	    case STRING_TO_INT_NONNUMERIC:
+		verror_put_string("Non-numeric characters in CRED_END_TIME \"%s\"", buffer);
+		return -1;
+	    case STRING_TO_INT_ERROR:
+		return -1;
+	    }
+	}
 
-	/* credential description */
 	tmp[0] = '\0';
-	len = concatenate_strings (tmp, sizeof(tmp), MYPROXY_CRED_PREFIX, "_", MYPROXY_CRED_DESC_STRING, NULL);
+	len = concatenate_strings(tmp, sizeof(tmp), MYPROXY_CRED_PREFIX,
+				  "_", MYPROXY_CRED_DESC_STRING, NULL);
 	if (len < 0) return -1;
 
-	len = convert_message (data, datalen, tmp, CONVERT_MESSAGE_DEFAULT_FLAGS,
-				buffer, sizeof(buffer));
+	len = convert_message(data, datalen, tmp,
+			      CONVERT_MESSAGE_DEFAULT_FLAGS,
+			      buffer, sizeof(buffer));
+	if (len == -1) return -1;
+	if (len > 0)
+	    response->info_creds->creddesc = strdup(buffer);
+		
+	tmp[0] = '\0';
+    	len = concatenate_strings(tmp, sizeof(tmp), MYPROXY_CRED_PREFIX,
+				  "_", MYPROXY_CRED_OWNER_STRING, NULL);
+    	if (len < 0) return -1;
+		
+	len = convert_message(data, datalen, tmp,
+			      CONVERT_MESSAGE_DEFAULT_FLAGS,
+			      buffer, sizeof(buffer));
+    	if (len == -1) return -1;
+	if (len >= 0)
+	    response->info_creds->owner_name = strdup(buffer); 
 
-	if (len == -1)
+	tmp[0] = '\0';
+    	len = concatenate_strings(tmp, sizeof(tmp), MYPROXY_CRED_PREFIX,
+				  "_", MYPROXY_RETRIEVER_STRING, NULL);
+    	if (len < 0) return -1;
+		
+	len = convert_message(data, datalen, tmp,
+			      CONVERT_MESSAGE_DEFAULT_FLAGS,
+			      buffer, sizeof(buffer));
+    	if (len == -1) return -1;
+	if (len >= 0)
+	    response->info_creds->retrievers = strdup(buffer); 
+
+	tmp[0] = '\0';
+    	len = concatenate_strings(tmp, sizeof(tmp), MYPROXY_CRED_PREFIX,
+				  "_", MYPROXY_RENEWER_STRING, NULL);
+    	if (len < 0) return -1;
+		
+	len = convert_message(data, datalen, tmp,
+			      CONVERT_MESSAGE_DEFAULT_FLAGS,
+			      buffer, sizeof(buffer));
+    	if (len == -1) return -1;
+	if (len >= 0)
+	    response->info_creds->renewers = strdup(buffer); 
+
+	len = convert_message(data, datalen, MYPROXY_ADDITIONAL_CREDS_STRING,
+			      CONVERT_MESSAGE_DEFAULT_FLAGS, 
+			      buffer, sizeof(buffer));
+
+    	if (len == -1) return -1;
+	if (len >= 0) {		/* addl credentials */
+	    char **strs;
+	    struct myproxy_creds *cred = response->info_creds;
+
+	    len = parse_add_creds(buffer, &strs, &num_creds);
+	    if (len == -1) {
+		verror_put_string("Error parsing additional cred string");
 		return -1;
-
-	if (len == -2)
-		response->info_creds[0].creddesc = NULL;
-	else
-		response->info_creds[0].creddesc = strdup (buffer);
-		
-	/* end time */
-    	tmp[0] = '\0';
-    	len = concatenate_strings (tmp, sizeof(tmp), MYPROXY_CRED_PREFIX, "_", MYPROXY_END_TIME_STRING, NULL);
-    	if (len < 0)
-        	return -1;
-		
-	len = convert_message(data, datalen,
-		  tmp, CONVERT_MESSAGE_DEFAULT_FLAGS,
-		  buffer, sizeof(buffer));
-
-       if (len > 0) {
-		switch(string_to_int(buffer, &value)) {
-		  	case STRING_TO_INT_SUCCESS:
-				response->info_creds[0].cred_end_time = value;
-				break;
-			case STRING_TO_INT_NONNUMERIC:
-				verror_put_string("Non-numeric characters in CRED_END_TIME \"%s\"",
-				buffer);
-				return -1;
-			case STRING_TO_INT_ERROR:
-				return -1;
-		}
 	    }
 
-       /* owner  */
-	tmp[0] = '\0';
-    	len = concatenate_strings (tmp, sizeof(tmp), MYPROXY_CRED_PREFIX, "_", MYPROXY_CRED_OWNER_STRING, NULL);
-    	if (len < 0)
-        	return -1;
-		
-	len = convert_message(data, datalen,
-		  tmp, CONVERT_MESSAGE_DEFAULT_FLAGS,
-		  response_str, sizeof(response_str));
+	    for (i = 0; i < num_creds; i++) {
+		cred->next = malloc(sizeof(struct myproxy_creds));
+		cred = cred->next;
+		memset(cred, 0, sizeof(struct myproxy_creds));
 
-    	if (len == -1)
-    	{
-		verror_prepend_string("Error_parsing owner string from server response");
-		return -1;
-    	}
+		cred->credname = strdup(strs[i]);
 
-	if (len != -2)
-    		strcpy (response->info_creds[0].cred_owner, response_str); 
-
-	/* retriever */
-	tmp[0] = '\0';
-    	len = concatenate_strings (tmp, sizeof(tmp), MYPROXY_CRED_PREFIX, "_", MYPROXY_RETRIEVER_STRING, NULL);
-    	if (len < 0)
-        	return -1;
-		
-	len = convert_message(data, datalen,
-		  tmp, CONVERT_MESSAGE_DEFAULT_FLAGS,
-		  response_str, sizeof(response_str));
-
-    	if (len == -1)
-    	{
-		verror_prepend_string("Error_parsing response string from server response");
-		return -1;
-    	}
-
-	if (len != -2)
-    		response->info_creds[0].retriever_str = strdup (response_str); 
-
-	/*renewer */
-	tmp[0] = '\0';
-    	len = concatenate_strings (tmp, sizeof(tmp), MYPROXY_CRED_PREFIX, "_", MYPROXY_RENEWER_STRING, NULL);
-    	if (len < 0)
-        	return -1;
-		
-	len = convert_message(data, datalen,
-		  tmp, CONVERT_MESSAGE_DEFAULT_FLAGS,
-		  response_str, sizeof(response_str));
-
-    	if (len == -1)
-    	{
-		verror_prepend_string("Error_parsing response string from server response");
-		return -1;
-    	}
-
-	if (len != -2)
-    		response->info_creds[0].renewer_str = strdup (response_str); 
-
-	/*Try for additional credentials*/
-
-	skipover:;
-	len = convert_message (data, datalen, MYPROXY_ADDITIONAL_CREDS_STRING, CONVERT_MESSAGE_DEFAULT_FLAGS, 
-				response_str, sizeof(response_str));
-
-    	if (len == -1)
-    	{
-		verror_prepend_string("Error_parsing response string from server response");
-		return -1;
-    	}
-
-	if (len == -2) /* no additional credentials */
-	{
-		response->num_creds = idx;
-		return 0;
-	}
-
-	len = parse_add_creds (response_str, &strs, &num_creds);
-
-	response->num_creds = num_creds+idx;
-	if (len == -1)
-	{
-		verror_prepend_string ("Error parsing additional credential string");
-		return -1;
-	}
-
-	/*Get additional credentials  */
-	for (i = 0; i < num_creds; i++)
-	{
-		response->info_creds = realloc (response->info_creds, (i+idx+1) * sizeof (myproxy_info_t));
-		response->info_creds[i+idx].credname = strdup (strs[i]); /* credential name */
-
-		/* credential description */
 		tmp[0] = '\0';
-		len = concatenate_strings (tmp, sizeof(tmp), MYPROXY_CRED_PREFIX, "_", strs[i], "_", 
-						MYPROXY_CRED_DESC_STRING, NULL);
+		len = concatenate_strings(tmp, sizeof(tmp),
+					  MYPROXY_CRED_PREFIX, "_", strs[i],
+					  "_", MYPROXY_CRED_DESC_STRING, NULL);
+		if (len == -1) return -1;
 
-		if (len == -1)
-		{
-			verror_prepend_string ("Error constructing query string");
-		}
-
-		len = convert_message(data, datalen, tmp, CONVERT_MESSAGE_DEFAULT_FLAGS,
+		len = convert_message(data, datalen, tmp,
+				      CONVERT_MESSAGE_DEFAULT_FLAGS,
 					buffer, sizeof(buffer));
-
-		if (len == -1)
-			verror_prepend_string ("Error in extracting credential description");
+		if (len == -1) return -1;
 			
-		if (len == -2)
-			response->info_creds[i+idx].creddesc = NULL;
-		else
-			response->info_creds[i+idx].creddesc = strdup(buffer);
+		if (len >= 0)
+		    cred->creddesc = strdup(buffer);
 
-		/* credential start time */
 		tmp[0]='\0';
-		len = concatenate_strings (tmp, sizeof(tmp), MYPROXY_CRED_PREFIX, "_", strs[i], "_", MYPROXY_START_TIME_STRING, 
-						NULL);
+		len = concatenate_strings (tmp, sizeof(tmp),
+					   MYPROXY_CRED_PREFIX, "_", strs[i],
+					   "_", MYPROXY_START_TIME_STRING,
+					   NULL);
+		if (len == -1) return -1;
 
-		if (len == -1)
-		{
-			verror_prepend_string ("Error constructing query string");
-		}
-
-		if (len != -2)
-		{
-		  
-    		   len = convert_message(data, datalen, tmp,
-			  		CONVERT_MESSAGE_DEFAULT_FLAGS,
-			 		 buffer, sizeof(buffer));
-		    if (len > 0) {
-		       	switch(string_to_int(buffer, &value)) {
-		  	case STRING_TO_INT_SUCCESS:
-				response->info_creds[i+idx].cred_start_time = value;
-				break;
-			case STRING_TO_INT_NONNUMERIC:
-				verror_put_string("Non-numeric characters in CRED_START_TIME \"%s\"",
-				buffer);
-				return -1;
-			case STRING_TO_INT_ERROR:
-				return -1;
-			}
+		len = convert_message(data, datalen, tmp,
+				      CONVERT_MESSAGE_DEFAULT_FLAGS,
+				      buffer, sizeof(buffer));
+		if (len == -1) return -1;
+		if (len > 0) {
+		    switch(string_to_int(buffer, &value)) {
+		    case STRING_TO_INT_SUCCESS:
+			cred->start_time = value;
+			break;
+		    case STRING_TO_INT_NONNUMERIC:
+			verror_put_string("Non-numeric characters in CRED_START_TIME \"%s\"", buffer);
+			return -1;
+		    case STRING_TO_INT_ERROR:
+			return -1;
 		    }
 		}
 
-		/* credential end time */
 		tmp[0] = '\0';
-		len = concatenate_strings (tmp, sizeof(tmp), MYPROXY_CRED_PREFIX, "_", 
-						strs[i], "_", MYPROXY_END_TIME_STRING, NULL);
+		len = concatenate_strings(tmp, sizeof(tmp),
+					  MYPROXY_CRED_PREFIX, "_", strs[i],
+					  "_", MYPROXY_END_TIME_STRING, NULL);
+		if (len == -1) return -1;
 
-		if (len == -1)
-		{
-			verror_prepend_string ("Error constructing query string");
-		}
-
-		if (len != -2)
-		{
-		  
-    		   len = convert_message(data, datalen, tmp,
-			  		CONVERT_MESSAGE_DEFAULT_FLAGS,
-			 		 buffer, sizeof(buffer));
-		    if (len > 0) {
-		       	switch(string_to_int(buffer, &value)) {
-		  	case STRING_TO_INT_SUCCESS:
-				response->info_creds[i+idx].cred_end_time = value;
-				break;
-			case STRING_TO_INT_NONNUMERIC:
-				verror_put_string("Non-numeric characters in CRED_END_TIME \"%s\"",
-				buffer);
-				return -1;
-			case STRING_TO_INT_ERROR:
-				return -1;
-			}
+		len = convert_message(data, datalen, tmp,
+				      CONVERT_MESSAGE_DEFAULT_FLAGS,
+				      buffer, sizeof(buffer));
+		if (len == -1) return -1;
+		if (len > 0) {
+		    switch(string_to_int(buffer, &value)) {
+		    case STRING_TO_INT_SUCCESS:
+			cred->end_time = value;
+			break;
+		    case STRING_TO_INT_NONNUMERIC:
+			verror_put_string("Non-numeric characters in CRED_END_TIME \"%s\"", buffer);
+			return -1;
+		    case STRING_TO_INT_ERROR:
+			return -1;
 		    }
 		}
 
-		/*credential owner */
 		tmp[0] = '\0';
-		len = concatenate_strings (tmp, sizeof(tmp), MYPROXY_CRED_PREFIX, "_", strs[i], "_", 
-						MYPROXY_CRED_OWNER_STRING, NULL);
-
-		if (len > 0) {
-			len = convert_message (data, datalen, tmp,
-						CONVERT_MESSAGE_DEFAULT_FLAGS,
-						buffer, sizeof (buffer));
+		len = concatenate_strings (tmp, sizeof(tmp),
+					   MYPROXY_CRED_PREFIX, "_", strs[i],
+					   "_", MYPROXY_CRED_OWNER_STRING,
+					   NULL);
+		if (len == -1) return -1;
+		
+		len = convert_message(data, datalen, tmp,
+				      CONVERT_MESSAGE_DEFAULT_FLAGS,
+				      buffer, sizeof (buffer));
+		if (len == -1) return -1;
 			
-			switch (len)
-			{
-				case -1:
-					verror_prepend_string ("Error extracting owner string");
-				break;
+		if (len >= 0)
+		    cred->owner_name = strdup(buffer);
 
-				case -2:
-					response->info_creds[i+idx].cred_owner[0] = '\0';
-				break;
-
-				default:
-					strcpy (response->info_creds[i+idx].cred_owner, buffer);
-			}
-		}
-
-		/*retriever string */
 		tmp[0] = '\0';
-		len = concatenate_strings (tmp, sizeof(tmp), MYPROXY_CRED_PREFIX, "_", strs[i], "_", 
-						MYPROXY_RETRIEVER_STRING, NULL);
+		len = concatenate_strings(tmp, sizeof(tmp),
+					  MYPROXY_CRED_PREFIX, "_", strs[i],
+					  "_", MYPROXY_RETRIEVER_STRING,
+					  NULL);
+		if (len == -1) return -1;
 
-		if (len > 0) {
-			len = convert_message (data, datalen, tmp,
-						CONVERT_MESSAGE_DEFAULT_FLAGS,
-						buffer, sizeof (buffer));
-			
-			switch (len)
-			{
-				case -1:
-					verror_prepend_string ("Error extracting retriever string");
-					/* fall through */
+		len = convert_message (data, datalen, tmp,
+				       CONVERT_MESSAGE_DEFAULT_FLAGS,
+				       buffer, sizeof (buffer));
+		if (len == -1) return -1;
+		
+		if (len >= 0)
+		    cred->retrievers = strdup(buffer);
 
-				case -2:
-					response->info_creds[i+idx].retriever_str = NULL;
-				break;
-
-				default:
-					response->info_creds[i+idx].retriever_str = strdup(buffer);
-			}
-		}
-
-		/*renewer string */
 		tmp[0] = '\0';
-		len = concatenate_strings (tmp, sizeof(tmp), MYPROXY_CRED_PREFIX, "_", strs[i], "_", 
-						MYPROXY_RENEWER_STRING, NULL);
+		len = concatenate_strings (tmp, sizeof(tmp),
+					   MYPROXY_CRED_PREFIX, "_", strs[i],
+					   "_", MYPROXY_RENEWER_STRING, NULL);
+		if (len == -1) return -1;
 
-		if (len > 0) {
-			len = convert_message (data, datalen, tmp,
-						CONVERT_MESSAGE_DEFAULT_FLAGS,
-						buffer, sizeof (buffer));
+		len = convert_message(data, datalen, tmp,
+				      CONVERT_MESSAGE_DEFAULT_FLAGS,
+				      buffer, sizeof (buffer));
+		if (len == -1) return -1;
 			
-			switch (len)
-			{
-				case -1:
-					verror_prepend_string ("Error extracting renewer string");
-					/* fall through */
+		if (len >= 0)
+		    cred->renewers = strdup(buffer);
 
-				case -2:
-					response->info_creds[i+idx].renewer_str = NULL;
-				break;
-
-				default:
-					response->info_creds[i+idx].renewer_str = strdup(buffer);
-			}
-		}
+	    }
+	    /* de-allocate string-list from parse_add_creds() */
+	    for (i=0; i < num_creds; i++) {
+		free(strs[i]);
+	    }
+	    free(strs);
 	}
-	/* de-allocate string-list from parse_add_creds() */
-	for (i=0; i < num_creds; i++) {
-	    free(strs[i]);
-	}
-	free(strs);
-    }
-    else
-    if (response->response_type == MYPROXY_ERROR_RESPONSE)
-    {
-    /* It's ok if ERROR not present */
-       response->error_str = (char *) malloc (1024);
-    len = convert_message(data, datalen,
-			  MYPROXY_ERROR_STRING, 
-			  CONVERT_MESSAGE_ALLOW_MULTIPLE,
-                          response->error_str,
-			  1024);
-	return 0;
     }
 
     len = convert_message(data, datalen,
 	                  MYPROXY_AUTHORIZATION_STRING,
 			  CONVERT_MESSAGE_ALLOW_MULTIPLE,
 			  authorization_data, sizeof(authorization_data));
-    if (len > 0)
-       if (parse_auth_data(authorization_data, 
-		           &response->authorization_data)) {
-	  verror_prepend_string("Error parsing authorization data from server response");
-	  return -1;
-       }
+    if (len > 0) {
+	if (parse_auth_data(authorization_data, 
+			    &response->authorization_data)) {
+	    verror_put_string("Error parsing authorization data from server response");
+	    return -1;
+	}
+    }
 
     /* Success */
     return 0;
