@@ -110,6 +110,9 @@ extern char *modenames[];
 extern char *formnames[];
 extern int restricted_user;	/* global flag indicating if user is restricted to home directory */
 
+/* TCP window size to use for data transferrs */
+extern int TCPwindowsize;
+ 
 #ifdef TRANSFER_COUNT
 extern int data_count_total;
 extern int data_count_in;
@@ -197,7 +200,7 @@ extern int port_allowed(const char *remoteaddr);
 
     UMASK   IDLE    CHMOD   GROUP   GPASS   NEWER
     MINFO   INDEX   EXEC    ALIAS   CDPATH  GROUPS
-    CHECKMETHOD     CHECKSUM
+    CHECKMETHOD     CHECKSUM        BUFSIZE
 
     LEXERR
 
@@ -209,7 +212,7 @@ extern int port_allowed(const char *remoteaddr);
 %type <String>  STRING password pathname pathstring username method
 %type <Number>  NUMBER byte_size check_login form_code 
 %type <Number>  struct_code mode_code octal_number
-%type <Number>  prot_code
+%type <Number>  prot_code bufsize
 
 %start  cmd_list
 
@@ -1031,6 +1034,18 @@ rcmd: RNFR check_login SP pathname CRLF
 	    if ($2)
 		CheckSumLastFile();
 	}
+    | SITE check_login SP BUFSIZE CRLF   
+	=	{
+	    if (log_commands) syslog(LOG_INFO, "SITE BUFSIZE");
+	    print_bufsize ();
+ 	}
+    | SITE check_login SP BUFSIZE SP bufsize CRLF
+	=	{	
+	    int size = $6;
+ 
+	    if (log_commands) syslog(LOG_INFO, "SITE BUFSIZE %d", size);
+	    set_bufsize (size);
+	}
     ;
         
 username: STRING
@@ -1295,6 +1310,9 @@ check_login: /* empty */
 	}
     ;
 
+bufsize: NUMBER
+    ;
+
 %%
 
 extern jmp_buf errcatch;
@@ -1386,6 +1404,7 @@ struct tab sitetab[] =
     {"GROUPS", GROUPS, OSTR, 1, "[ <sp> ] "},
     {"CHECKMETHOD", CHECKMETHOD, OSTR, 1, "[ <sp> method ]"},
     {"CHECKSUM", CHECKSUM, OSTR, 1, "[ <sp> file-name ]"},
+    {"BUFSIZE", BUFSIZE, ARGS, 1, "[ <sp> <bufsize in kilobytes> ]"},
     {NULL, 0, 0, 0, 0}
 };
 
@@ -2111,4 +2130,24 @@ void print_groups(void)
 
     (void) fflush(stdout);
     reply(214, "");
+}
+
+/*
+ * Functions to display and manipulate the TCP window size
+ */
+set_bufsize(int size)
+{
+    TCPwindowsize = size;
+    
+    reply(214, "TCP window size set to %d kilobytes.",
+	 TCPwindowsize);
+}
+ 
+print_bufsize()
+{
+    if (TCPwindowsize > 0)
+	reply(214, "TCP window size is %d kilobytes.",
+	      TCPwindowsize);
+    else
+	reply(214, "TCP window size is the system default.");
 }
