@@ -28,12 +28,35 @@
 #  14. Get info on stored renewable credentials (myproxy-info -d).
 #  15. Verify renewal policies (one accept, one deny).
 #  16. Verify correct lifetime of retrieved credentials.
+#
+#  17. Store credential (myproxy-store -v -t 1)
+#  18. Get info on the stored credential (myproxy-info)
+#  19. Create proxy from stored credential (myproxy-get-delegation).
+#  20. Retrieve stored credential (myproxy-retrieve)
+#  21. Verify passphrase checking (myproxy-get-delegation).
+#  22. Verify passphrase checking (myproxy-retrieve).
+#  23. Verify renewal fails by default (myproxy-get-delegation).
+#  24. Verify renewal fails by default (myproxy-retrieve).
+#  25. Remove credential from repository (myproxy-destroy).
+#  26. Verify credential is removed (myproxy_info).
+#  27. Store credentials with retrieval policies (myproxy-store).
+#  28. Verify retrieval policies (one accept, one deny) (myproxy-get-delegation).
+#  29. Verify retrieval policies (one accept, one deny) (myproxy-retrieve).
+#  30. Store renewable credentials.
+#  31. Get info on stored renewable credentials (myproxy-info -d).
+#  32. Verify renewal policies.
+#  33. Verify correct lifetime of retrieved credentials.
+#  34. Store credentials with retrieve key policies.
+#  35. Get info for stored retrieve key credentials.
+#  36. Verify myproxy-retrieve key retrieval policies.
+#
 # CoG test cases are:
 #   1. CoG anonget of myproxy-init stored credential.
 #   2. CoG get of myproxy-init stored credential.
 #   3. (pending) Store a credential (CoG myproxy put).
 
 use IPC::Open3;
+use Term::ReadKey;
 
 #
 # handle cmdline options
@@ -93,8 +116,12 @@ $cert_subject = (split(/\/CN=proxy|\/CN=limited proxy|\/CN=\d+/,
 #
 # check for the commands I want to run
 #
+chomp($myproxy_store = `which myproxy-store 2>/dev/null`);
+die "myproxy-store not in PATH, stopped" if (!(-x $myproxy_store));
 chomp($myproxy_init = `which myproxy-init 2>/dev/null`);
 die "myproxy-init not in PATH, stopped" if (!(-x $myproxy_init));
+chomp($myproxy_retrieve = `which myproxy-retrieve 2>/dev/null`);
+die "myproxy-retrieve not in PATH, stopped" if (!(-x $myproxy_retrieve));
 chomp($myproxy_info = `which myproxy-info 2>/dev/null`);
 die "myproxy-info not in PATH, stopped" if (!(-x $myproxy_info));
 chomp($myproxy_destroy = `which myproxy-destroy 2>/dev/null`);
@@ -144,6 +171,8 @@ if ($startserver) {
     print CONF "default_retrievers    \"*\"\n";
     print CONF "authorized_renewers   \"*\"\n";
     print CONF "default_renewers      \"none\"\n";
+    print CONF "authorized_key_retrievers \"*\"\n";
+    print CONF "default_key_retrievers    \"*\"\n";
     close(CONF);
     $SERVERPIDFILE = "/tmp/myproxy-test.serverpid.$$";
     $servercmd = "$myproxy_server -s $serverdir -c $serverconf";
@@ -414,6 +443,408 @@ if ($exitstatus == 0) {
 }
 &runtest("myproxy-destroy -v", undef);
 
+#
+# Start of myproxy-store and myproxy-retrieve tests
+#
+
+# We want to use the real end-entity credential
+delete $ENV{'X509_USER_CERT'};
+delete $ENV{'X509_USER_KEY'};
+
+print "\n\n\n";
+print "*****************************\n";
+print "Enter credential passphrase: ";
+ReadMode 'noecho';
+$passphrase = ReadLine 0;
+chomp $passphrase;
+ReadMode 'normal';
+print "\n";
+
+# commands to test: myproxy-store, myproxy-info, myproxy-destroy,
+#                   myproxy-get-delegation, myproxy-retrieve, and 
+#                   myproxy-change-pass-phrase
+
+#
+# Test 17
+#
+($exitstatus, $output) =
+    &runtest("myproxy-store -v -t 1", undef);
+print "MyProxy Test 17 (store credential with default name): ";
+if ($exitstatus == 0) {
+    print "SUCCEEDED\n"; $SUCCESSES++;
+} else {
+    print "FAILED\n"; $FAILURES++; print STDERR $output;
+}
+
+#
+# Test 18
+#
+($exitstatus, $output) = &runtest("myproxy-info -v", undef);
+print "MyProxy Test 18 (get info for stored credential): ";
+if ($exitstatus == 0 && $output =~ /username/) {
+    print "SUCCEEDED\n"; $SUCCESSES++;
+} else {
+    print "FAILED\n"; $FAILURES++; print STDERR $output;
+}
+
+#
+# Test 19
+#
+
+($exitstatus, $output) =
+    &runtest("myproxy-get-delegation -t 1 -o /tmp/myproxy-test.$$ -v -S",
+	     $passphrase . "\n");
+print "MyProxy Test 19 (create proxy from stored credential): ";
+if ($exitstatus == 0) {
+    ($exitstatus, $output) =
+	&verifyproxy("/tmp/myproxy-test.$$");
+}
+if ($exitstatus == 0) {
+    print "SUCCEEDED\n"; $SUCCESSES++;
+} else {
+    print "FAILED\n"; $FAILURES++; print STDERR $output;
+}
+
+#
+# Test 20
+#
+
+($exitstatus, $output) =
+    &runtest("myproxy-retrieve -c /tmp/myproxy-test.cert.$$ -y /tmp/myproxy-test.key.$$ -v -S",
+	     $passphrase . "\n");
+print "MyProxy Test 20 (retrieve stored credential): ";
+if ($exitstatus == 0) {
+    ($exitstatus, $output) =
+	&verifycert("/tmp/myproxy-test.cert.$$", "/tmp/myproxy-test.key.$$");
+}
+if ($exitstatus == 0) {
+    print "SUCCEEDED\n"; $SUCCESSES++;
+} else {
+    print "FAILED\n"; $FAILURES++; print STDERR $output;
+}
+unlink( "/tmp/myproxy-test.cert.$$" );
+unlink( "/tmp/myproxy-test.key.$$" );
+
+#
+# Test 21
+#
+($exitstatus, $output) =
+    &runtest("myproxy-get-delegation -t 1 -o /tmp/myproxy-test.$$ -v -S",
+	     "badpassphrase\n");
+print "MyProxy Test 21 (verify passphrase checking on myproxy-get-delegation): ";
+if ($exitstatus != 0 && $output =~ /invalid pass phrase/) {
+    print "SUCCEEDED\n"; $SUCCESSES++;
+} else {
+    print "FAILED\n"; $FAILURES++; print STDERR $output;
+}
+
+#
+# Test 22
+#
+($exitstatus, $output) =
+    &runtest("myproxy-retrieve -c /tmp/myproxy-test-cert.$$ -y /tmp/myproxy-test-key.$$ -v -S",
+	     "badpassphrase\n");
+print "MyProxy Test 22 (verify passphrase checking on myproxy-retrieve): ";
+if ($exitstatus != 0 && $output =~ /invalid pass phrase/) {
+    print "SUCCEEDED\n"; $SUCCESSES++;
+} else {
+    print "FAILED\n"; $FAILURES++; print STDERR $output;
+}
+unlink( "/tmp/myproxy-test.cert.$$" );
+unlink( "/tmp/myproxy-test.key.$$" );
+
+#
+# Test 23
+#
+($exitstatus, $output) =
+    &runtest("myproxy-get-delegation -a \$X509_USER_PROXY -t 1 -o /tmp/myproxy-test.$$ -v", undef);
+print "MyProxy Test 23 (verify myproxy-get-delegation default renewal policy): ";
+if ($exitstatus != 0) {
+    print "SUCCEEDED\n"; $SUCCESSES++;
+} else {
+    print "FAILED\n"; $FAILURES++; print STDERR $output;
+}
+
+#
+# Test 24
+#
+($exitstatus, $output) =
+    &runtest("myproxy-retrieve -a \$X509_USER_PROXY  -c /tmp/myproxy-test-cert.$$ -y /tmp/myproxy-test-key.$$ -v", undef);
+print "MyProxy Test 24 (verify myproxy-retrieve default renewal policy): ";
+if ($exitstatus != 0) {
+    print "SUCCEEDED\n"; $SUCCESSES++;
+} else {
+    print "FAILED\n"; $FAILURES++; print STDERR $output;
+}
+unlink( "/tmp/myproxy-test-cert.$$" );
+unlink( "/tmp/myproxy-test-key.$$" );
+
+#
+# Test 25
+#
+($exitstatus, $output) =
+    &runtest("myproxy-destroy -v", undef);
+print "MyProxy Test 25 (remove credential from repository): ";
+if ($exitstatus == 0 && $output =~ /was successfully removed/) {
+    print "SUCCEEDED\n"; $SUCCESSES++;
+} else {
+    print "FAILED\n"; $FAILURES++; print STDERR $output;
+}
+
+#
+# Test 26
+#
+($exitstatus, $output) =
+    &runtest("myproxy-info -v", undef);
+print "MyProxy Test 26 (verify credentials are removed): ";
+if (!($output =~ /default credential/)) {
+    print "SUCCEEDED\n"; $SUCCESSES++;
+} else {
+    print "FAILED\n"; $FAILURES++; print STDERR $output;
+}
+
+#
+# Test 27
+#
+($exitstatus, $output) =
+    &runtest("myproxy-store -v -r 'nobody' -k 'nobody' -t 1", undef);
+print "MyProxy Test 27 (store credentials with retrieval policies): ";
+
+if ($exitstatus == 0) {
+    ($exitstatus, $output) =
+	&runtest("myproxy-store -v -x -r '$cert_subject' -k 'mine' -t 1", undef);
+}
+if ($exitstatus == 0) {
+    print "SUCCEEDED\n"; $SUCCESSES++;
+} else {
+    print "FAILED\n"; $FAILURES++; print STDERR $output;
+}
+
+#
+# Test 28
+#
+($exitstatus, $output) =
+    &runtest("myproxy-get-delegation -k 'mine' -t 1 -o /tmp/myproxy-test.$$ -v -S",
+	     $passphrase . "\n");
+print "MyProxy Test 28 (verify myproxy-get-delegation retrieval policies): ";
+
+if ($exitstatus == 0) {
+    ($exitstatus, $output) =
+	&verifyproxy("/tmp/myproxy-test.$$");
+}
+if ($exitstatus == 0) {
+    ($exitstatus, $output) =
+	&runtest("myproxy-get-delegation -k 'nobody' -t 1 -o /tmp/myproxy-test.$$ -v -S",
+		 $passphrase . "\n");
+
+    if ($exitstatus != 0) {
+	print "SUCCEEDED\n"; $SUCCESSES++;
+    } else {
+	print "FAILED\n"; $FAILURES++;
+	print STDERR "Shouldn't have allowed retrieval.";
+	print STDERR $output;
+    }
+} else {
+    print "FAILED\n"; $FAILURES++; print STDERR $output;
+}
+
+#
+# Test 29
+#
+($exitstatus, $output) =
+    &runtest("myproxy-retrieve -k 'mine' -c /tmp/myproxy-test.cert.12.1.$$ -y /tmp/myproxy-test.key.12.1.$$ -v -S",
+	     $passphrase . "\n");
+print "MyProxy Test 29 (verify myproxy-retrieve retrieval policies): ";
+if ($exitstatus == 0) {
+    ($exitstatus, $output) =
+	&verifycert("/tmp/myproxy-test.cert.12.1.$$", "/tmp/myproxy-test.key.12.1.$$");
+}
+if ($exitstatus == 0) {
+    ($exitstatus, $output) =
+	&runtest("myproxy-retrieve -k 'nobody' -c /tmp/myproxy-test.cert.12.2.$$ -y /tmp/myproxy-test.key.12.2.$$ -v -S",
+		 $passphrase . "\n");
+    if ($exitstatus != 0) {
+	print "SUCCEEDED\n"; $SUCCESSES++;
+    } else {
+	print "FAILED\n"; $FAILURES++;
+	print STDERR "Shouldn't have allowed retrieval.";
+	print STDERR $output;
+    }
+} else {
+    print "FAILED\n"; $FAILURES++; print STDERR $output;
+}
+&runtest("myproxy-destroy -v -k 'mine'", undef);
+&runtest("myproxy-destroy -v -k 'nobody'", undef);
+`rm /tmp/myproxy-test.*.12.*.$$`;
+
+#
+# Test 30
+#
+($exitstatus, $output) =
+    &runtest("myproxy-store -v -R 'nobody' -k 'nobody' -t 1 -d", undef);
+print "MyProxy Test 30 (store credentials with renewal policies): ";
+if ($exitstatus == 0) {
+    ($exitstatus, $output) =
+	&runtest("myproxy-store -v -x -R '$cert_subject' -k 'mine' -t 1 -d",
+		 undef);
+}
+if ($exitstatus == 0) {
+    print "SUCCEEDED\n"; $SUCCESSES++;
+} else {
+    print "FAILED\n"; $FAILURES++; print STDERR $output;
+}
+
+#
+# Test 31
+#
+($exitstatus, $output) = &runtest("myproxy-info -v -d", undef);
+print "MyProxy Test 31 (get info for stored renewal credentials): ";
+if ($exitstatus == 0 && $output =~ /username/) {
+    print "SUCCEEDED\n"; $SUCCESSES++;
+} else {
+    print "FAILED\n"; $FAILURES++; print STDERR $output;
+}
+
+#
+# Test 32
+#
+
+## This test does not work.  You can not use myproxy-store and
+## myproxy-get-delegation -a.  This assumes an unencrypted private key.
+## myproxy-store does not safe the key that way.
+##
+##
+($exitstatus, $output) =
+    &runtest("myproxy-get-delegation -k 'mine' -t 1 -o /tmp/myproxy-test.$$ -v -d -S",
+	     $passphrase . "\n");
+print "MyProxy Test 32 (verify renewal policies): ";
+if ($exitstatus == 0) {
+    ($exitstatus, $output) =
+	&verifyproxy("/tmp/myproxy-test.$$");
+}
+if ($exitstatus == 0) {
+    ($exitstatus, $output) =
+	&runtest("myproxy-get-delegation -k 'nobody' -t 1 -o /tmp/myproxy-test.$$ -v -d -S",
+		 $passphrase . "\n");
+    if ($exitstatus == 0) {
+	print "SUCCEEDED\n"; $SUCCESSES++;
+    } else {
+	print "FAILED\n"; $FAILURES++;
+	print STDERR "Shouldn't have allowed retrieval.";
+	print STDERR $output;
+    }
+} else {
+    print "FAILED\n"; $FAILURES++; print STDERR $output;
+}
+
+&runtest("myproxy-destroy -v -k 'mine' -d", undef);
+&runtest("myproxy-destroy -v -k 'nobody' -d", undef);
+
+#
+# Test 33
+#
+($exitstatus, $output) =
+    &runtest("myproxy-store -v -a -t 2", undef);
+print "MyProxy Test 33 (verify lifetime of retrieved credentials): ";
+if ($exitstatus == 0) {
+    ($exitstatus, $output) =
+	&runtest("myproxy-get-delegation -o /tmp/myproxy-test.$$ -v -S",
+		 $passphrase . "\n");
+    $timeleft = `$grid_proxy_info -file /tmp/myproxy-test.$$ -timeleft`;
+    if (defined($timeleft) &&
+	$timeleft > 60*60*2+300 || $timeleft < 60*60*2-300) {
+	$output = "Credential lifetime ($timeleft) incorrect." .
+	    "It should be " . (60*60*2) . ".\n";
+	$exitstatus = 1;
+    }
+}
+if ($exitstatus == 0) {
+    ($exitstatus, $output) =
+	&verifyproxy("/tmp/myproxy-test.$$");
+}
+if ($exitstatus == 0) {
+    ($exitstatus, $output) =
+	&runtest("myproxy-get-delegation -t 1 -o /tmp/myproxy-test.$$ -v -S",
+		 $passphrase . "\n");
+    $timeleft = `$grid_proxy_info -file /tmp/myproxy-test.$$ -timeleft`;
+    if ($timeleft > 60*61 || $timeleft < 60*59) {
+	$output = "Credential lifetime ($timeleft) incorrect." .
+	    "It should be " . (60*60) . ".\n";
+	$exitstatus = 1;
+    }
+}
+if ($exitstatus == 0) {
+    ($exitstatus, $output) =
+	&verifyproxy("/tmp/myproxy-test.$$");
+}
+if ($exitstatus == 0) {
+    print "SUCCEEDED\n"; $SUCCESSES++;
+} else {
+    print "FAILED\n"; $FAILURES++; print STDERR $output;
+}
+&runtest("myproxy-destroy -v", undef);
+
+#
+# Test 34
+#
+($exitstatus, $output) =
+    &runtest("myproxy-store -v -E 'nobody' -k 'nobody' -t 1 -d", undef);
+print "MyProxy Test 34 (store credentials with retrieve key policies): ";
+if ($exitstatus == 0) {
+    ($exitstatus, $output) =
+	&runtest("myproxy-store -v -x -E '$cert_subject' -k 'mine' -t 1 -d",
+		 undef);
+}
+if ($exitstatus == 0) {
+    print "SUCCEEDED\n"; $SUCCESSES++;
+} else {
+    print "FAILED\n"; $FAILURES++; print STDERR $output;
+}
+
+#
+# Test 35
+#
+($exitstatus, $output) = &runtest("myproxy-info -v -d", undef);
+print "MyProxy Test 35 (get info for stored retrieve key credentials): ";
+if ($exitstatus == 0 && $output =~ /username/) {
+    print "SUCCEEDED\n"; $SUCCESSES++;
+} else {
+    print "FAILED\n"; $FAILURES++; print STDERR $output;
+}
+
+#
+# Test 36
+#
+($exitstatus, $output) =
+    &runtest("myproxy-retrieve -d -k 'mine' -c /tmp/myproxy-test.cert.12.1.$$ -y /tmp/myproxy-test.key.12.1.$$ -v -S",
+	     $passphrase . "\n");
+print "MyProxy Test 36 (verify myproxy-retrieve key retrieval policies): ";
+if ($exitstatus == 0) {
+    ($exitstatus, $output) =
+	&verifycert("/tmp/myproxy-test.cert.12.1.$$", "/tmp/myproxy-test.key.12.1.$$");
+}
+if ($exitstatus == 0) {
+    ($exitstatus, $output) =
+	&runtest("myproxy-retrieve -d -k 'nobody' -c /tmp/myproxy-test.cert.12.2.$$ -y /tmp/myproxy-test.key.12.2.$$ -v -S",
+		 $passphrase . "\n");
+    if ($exitstatus == 0) {
+	print "SUCCEEDED\n"; $SUCCESSES++;
+    } else {
+	print "FAILED\n"; $FAILURES++;
+	print STDERR "Shouldn't have allowed retrieval.";
+	print STDERR $output;
+    }
+} else {
+    print "FAILED\n"; $FAILURES++; print STDERR $output;
+}
+
+&runtest("myproxy-destroy -v -k 'mine' -d", undef);
+&runtest("myproxy-destroy -v -k 'nobody' -d", undef);
+`rm /tmp/myproxy-test.*.12.*.$$`;
+
+#
+# COG tests
+#
 if (defined($ENV{"COG_INSTALL_PATH"})) {
     &docogtests();
 } else {
@@ -554,6 +985,34 @@ sub verifyproxy {
     local($output) = '$grid_proxy_init $oldproxy -debug -verify -cert $proxyfile -key $proxyfile -valid 0:1 -out /tmp/tmpproxy.$$';
     if ($? != 0) {
 	$output = "failed to verify proxy\n" . $output;
+	unlink("/tmp/tmpproxy.$$");
+	return (1, $output);
+    }
+
+    # remove the new proxy we created for validation
+    # NOTE: this does not affect the user's original proxy in any way
+    unlink("/tmp/tmpproxy.$$");
+
+    return (0, "");
+}
+
+#
+# verifycert
+#
+# Check to see if user has a valid usable certificate
+#
+# Dependencies: (-x grid-proxy-int)
+#
+# grid-proxy-init -debug -verify -cert $certfile -key $keyfile
+#     if $? == 0 then proxy is valid
+#     if $? != 0, die, b/c proxy is invalid and won't work
+#
+sub verifycert {
+    local($certfile, $keyfile) = @_;
+
+    local($output) = '$grid_proxy_init $oldproxy -debug -verify -cert $certfile -key $keyfile -valid 0:1 -out /tmp/tmpproxy.$$';
+    if ($? != 0) {
+	$output = "failed to verify certificate from: $certfile and $keyfile\n" . $output;
 	unlink("/tmp/tmpproxy.$$");
 	return (1, $output);
     }

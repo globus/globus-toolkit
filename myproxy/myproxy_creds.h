@@ -25,7 +25,7 @@ struct myproxy_creds {
     char                 *creddesc;
     char                 *retrievers;
     char                 *renewers;
-    int                   endentity;
+    char                 *keyretrieve;
 
     /* start_time and end_time are set from the certificates in the cred */
     time_t                start_time;
@@ -214,16 +214,5 @@ int myproxy_check_storage_dir();
  */
 int myproxy_print_cred_info(myproxy_creds_t *creds, FILE *out);
 
-/*
- * myproxy_check_endentity()
- *
- * Check to see if the given user already has end entity credentials stored.
- *
- * Returns 1 if the user does, 0 if they do not, -1 on error.
- */
-int
-myproxy_check_endentity( const char *username,
-                         const char *credname,
-                         const char *client_name);
 #endif
 

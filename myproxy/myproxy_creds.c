@@ -453,16 +453,11 @@ write_data_file(const struct myproxy_creds *creds,
     if (creds->retrievers != NULL)
 	fprintf (data_stream, "RETRIEVERS=%s\n", creds->retrievers);
 
+    if (creds->keyretrieve != NULL)
+	fprintf (data_stream, "KEYRETRIEVERS=%s\n", creds->keyretrieve);
+
     if (creds->renewers != NULL)
 	fprintf (data_stream, "RENEWERS=%s\n", creds->renewers);
-
-    /*
-    ** This marks the file as a real credential.  This means the file
-    ** should not be overwritten or deleted, unless a destroy command
-    ** is given.
-    */
-    if( creds->endentity )
-	fprintf (data_stream, "ENDENTITY=%d\n", creds->endentity);
 
     fprintf (data_stream, "END_OPTIONS\n");
 
@@ -619,6 +614,17 @@ read_data_file(struct myproxy_creds *creds,
             }
             continue;
         }
+       
+        if (strcmp(variable, "KEYRETRIEVERS") == 0)
+        {
+            creds->keyretrieve = mystrdup(value);
+            
+            if (creds->keyretrieve == NULL)
+            {
+                goto error;
+            }
+            continue;
+        }
         
         if (strcmp(variable, "RENEWERS") == 0)
         {
@@ -657,13 +663,6 @@ read_data_file(struct myproxy_creds *creds,
         {
             creds->lifetime = (int) strtol(value, NULL, 10);
             
-            continue;
-        }
-        
-        if (strcmp(variable, "ENDENTITY") == 0)
-        {
-            creds->endentity = (int) strtol(value, NULL, 10);
-
             continue;
         }
         
@@ -824,43 +823,6 @@ myproxy_creds_retrieve(struct myproxy_creds *creds)
 
     /* Success */
     return 0;
-}
-
-int
-myproxy_check_endentity( const char *username,
-                         const char *credname,
-                         const char *client_name) 
-{
-    char                 creds_path[MAXPATHLEN] = "";
-    char                 data_path[MAXPATHLEN]  = "";
-    char                 lock_path[MAXPATHLEN]  = "";
-    struct myproxy_creds creds                  = {0}; /* initialize with 0s */
-
-    if (username == NULL)
-    {
-        verror_put_errno(EINVAL);
-        return -1;
-    }
-
-    if (get_storage_locations(username,
-                              creds_path, sizeof(creds_path),
-                              data_path, sizeof(data_path),
-                              lock_path, sizeof(lock_path),
-                              credname) == -1) {
-        return -1;
-    }
-
-    if (read_data_file(&creds, data_path) == -1) {
-        if (verror_get_errno() == ENOENT) {
-            verror_clear();
-            verror_put_string("Credentials do not exist");
-        } else {
-            verror_put_string("Can't read credentials");
-        }
-        return -1;
-    }
-
-    return( creds.endentity );
 }
 
 int myproxy_creds_retrieve_all(struct myproxy_creds *creds)
@@ -1473,6 +1435,7 @@ void myproxy_creds_free_contents(struct myproxy_creds *creds)
     if (creds->owner_name != NULL)	free(creds->owner_name);
     if (creds->location != NULL)	free(creds->location);
     if (creds->retrievers != NULL)	free(creds->retrievers);
+    if (creds->keyretrieve != NULL)	free(creds->keyretrieve);
     if (creds->renewers != NULL)	free(creds->renewers);
     if (creds->credname != NULL)	free(creds->credname);
     if (creds->creddesc != NULL)	free(creds->creddesc);
@@ -1515,6 +1478,8 @@ myproxy_print_cred_info(myproxy_creds_t *creds, FILE *out)
 				       creds->retrievers);
 	if (creds->renewers)   fprintf(out, "  renewal policy: %s\n",
 				       creds->renewers);
+	if (creds->keyretrieve) fprintf(out, "  key retrieval policy: %s\n",
+				       creds->keyretrieve);
 	if (creds->lockmsg)    fprintf(out, "  locked: %s\n", creds->lockmsg);
 	now = time(0);
 	if (creds->end_time > now) {

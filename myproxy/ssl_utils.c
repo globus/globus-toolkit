@@ -969,7 +969,7 @@ ssl_proxy_load_from_file(SSL_CREDENTIALS	*creds,
     {
 	goto error;
     }
-    
+
     if (ssl_proxy_from_pem(creds, buffer, buffer_len, pass_phrase) == SSL_ERROR)
     {
 	verror_prepend_string("Error reading proxy from %s", path);

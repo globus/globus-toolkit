@@ -351,9 +351,10 @@ handle_client(myproxy_socket_attrs_t *attrs,
     client_creds->username       = strdup(client_request->username);
     client_creds->passphrase     = strdup(client_request->passphrase);
     client_creds->lifetime 	 = client_request->proxy_lifetime;
-    client_creds->endentity 	 = !(ENDENTITY);
     if (client_request->retrievers != NULL)
 	client_creds->retrievers = strdup(client_request->retrievers);
+    if (client_request->keyretrieve != NULL)
+	client_creds->keyretrieve = strdup(client_request->keyretrieve);
     if (client_request->renewers != NULL)
 	client_creds->renewers   = strdup(client_request->renewers);
     if (client_request->credname != NULL)
@@ -482,10 +483,6 @@ handle_client(myproxy_socket_attrs_t *attrs,
         break;
 
       case MYPROXY_STORE_CERT:
-          /* this is an end entity credential */
-          client_creds->endentity 	 = ENDENTITY;
-          myproxy_debug("  EndEntuty: %d\n", client_creds->endentity );
-
           /* Store the end-entity credential */
           myproxy_log("Received STORE request from %s", client_name);
           myproxy_debug("  Username: %s", client_creds->username);
@@ -495,6 +492,8 @@ handle_client(myproxy_socket_attrs_t *attrs,
               myproxy_debug("  Retriever policy: %s", client_creds->retrievers);
           if (client_creds->renewers != NULL)
               myproxy_debug("  Renewer policy: %s", client_creds->renewers);
+          if (client_creds->keyretrieve != NULL)
+              myproxy_debug("  Key Retriever policy: %s", client_creds->keyretrieve);
  
           /* Send initial OK response */
           send_response(attrs, server_response, client_name);
@@ -1112,6 +1111,28 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
 
    switch (client_request->command_type) {
    case MYPROXY_RETRIEVE_CERT:
+	   myproxy_debug("end-entity authorization mechanism.\n");
+	   authorization_ok =
+	       myproxy_server_check_policy_list((const char **)context->authorized_key_retrievers_dns, client_name);
+	   if (authorization_ok != 1) {
+	       verror_put_string("\"%s\" not authorized by server's authorized key retrievers policy", client_name);
+	       goto end;
+	   }
+	   if (creds.keyretrieve) {
+	       authorization_ok =
+		   myproxy_server_check_policy(creds.keyretrieve, client_name);
+	       if (authorization_ok != 1) {
+		   verror_put_string("\"%s\" not authorized by credential's key retriever policy", client_name);
+		   goto end;
+	       }
+	   } else if (context->default_key_retrievers_dns) {
+	       authorization_ok =
+		   myproxy_server_check_policy_list((const char **)context->default_key_retrievers_dns, client_name);
+	       if (authorization_ok != 1) {
+		   verror_put_string("\"%s\" not authorized by server's default key retriever policy", client_name);
+		   goto end;
+	       }
+	   }
    case MYPROXY_GET_PROXY:
        /* Gather all authorization information for the GET request from
 	  the client.  May include additional network exchanges. */
@@ -1171,6 +1192,7 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
 	   myproxy_debug("cert authorization mechanism.\n");
 	   authorization_ok =
 	       myproxy_server_check_policy_list((const char **)context->authorized_renewer_dns, client_name);
+
 	   if (authorization_ok != 1) goto end;
 	   /* check per-credential policy */
 	   if (creds.renewers) {
@@ -1250,30 +1272,6 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
 	       }
 	       goto end;
 	   }
-
-           /* 
-           ** If these are the users end entity credentials the should
-           ** not be overwritten.
-           */
-           int endentity_credentials;
-           endentity_credentials = myproxy_check_endentity( 
-                                       client_request->username, 
-                                       client_request->credname, 
-                                       client_name);
-
-	   if (endentity_credentials == -1) {
-	       verror_put_string("Error checking for end entity credentials.");
-	       goto end;
-	   }
-
-           if (endentity_credentials) {
-               if (client_request->command_type != MYPROXY_DESTROY_PROXY) {
-                   myproxy_log("End entity credential can not be overwritten.");
-                   verror_put_string("End entity credential can not be overwritten.");
-                   goto end;
-               }
-           }
-             
        }
        break;
 
@@ -1281,6 +1279,12 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
        /* Authorization checking done inside the processing of the
 	  INFO request, since there may be multiple credentials stored
 	  under this username. */
+       authorization_ok = 1;
+       break;
+
+   case MYPROXY_CONTINUE:
+       /* This command just tells the server to continue.  No checking is
+          needed. */ 
        authorization_ok = 1;
        break;
 

@@ -30,7 +30,7 @@ static char usage[] =
     "       -y | --keyfile        <filename>  Key file name\n"
     "       -l | --username       <username>  Username for the delegated proxy\n"
     "       -t | --proxy_lifetime <hours>     Lifetime of proxies delegated by\n"
-    "                                         server (default 12 hours)\n"
+    "                                         server (default 12 hours).\n"
     "       -a | --allow_anonymous_retrievers Allow credentials to be retrieved\n"
     "                                         with just username/passphrase\n"
     "       -A | --allow_anonymous_renewers   Allow credentials to be renewed by\n"
@@ -43,6 +43,8 @@ static char usage[] =
     "                                         credential\n"
     "       -R | --renewable_by   <dn>        Allow specified entity to renew\n"
     "                                         credential\n"
+    "       -E | --retrieve_key <dn>          Allow specified entity to retrieve\n"
+    "                                         credential key\n"
     "       -d | --dn_as_username             Use the proxy certificate subject\n"
     "                                         (DN) as the default username,\n"
     "                                         instead of the LOGNAME env. var.\n"
@@ -67,6 +69,7 @@ struct option long_options[] = {
     {"allow_anonymous_renewers",         no_argument, NULL, 'A'},
     {"retrievable_by",             required_argument, NULL, 'r'},
     {"renewable_by",               required_argument, NULL, 'R'},
+    {"retrieve_key",               required_argument, NULL, 'E'},
     {"regex_dn_match",                   no_argument, NULL, 'x'},
     {"match_cn_only",                    no_argument, NULL, 'X'},
     {"credname",                   required_argument, NULL, 'k'},
@@ -75,7 +78,7 @@ struct option long_options[] = {
 };
 
 /*colon following an option indicates option takes an argument */
-static char short_options[] = "uhl:vVd:r:R:xXaAk:K:t:c:y:s:";
+static char short_options[] = "uhl:vVdr:R:xXaAk:K:t:c:y:s:p:E:";
 
 static char version[] =
     "myproxy-init version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "
@@ -83,9 +86,7 @@ static char version[] =
 
 static char *certfile               = NULL;	/* certificate file name */
 static char *keyfile                = NULL;	/* key file name */
-static char *creddir                = NULL;	/* key file name */
 static int   dn_as_username         = 0;
-static int   read_passwd_from_stdin = 0;
 static int   verbose                = 0;
 
 /* Function declarations */
@@ -95,9 +96,6 @@ init_arguments(    int                      argc,
 	           myproxy_socket_attrs_t  *attrs,
                    myproxy_request_t       *request);
 
-void 
-error_exit(        char                    *msg);
-
 int 
 file2buf(          const char               filename[], 
                    char                   **buf);
@@ -105,16 +103,7 @@ file2buf(          const char               filename[],
 int 
 makecertfile(      const char               certfile[],
 	           const char               keyfile[],
-	           const char               creddir[], 
-                   char                   **credfile);
-
-int 
-grid_proxy_init(   int                      hours, 
-                   const char              *proxyfile);
-
-int 
-grid_proxy_destroy(const char              *proxyfile);
-
+                   char                   **credbuf);
 
 #define		SECONDS_PER_HOUR			(60 * 60)
 
@@ -125,10 +114,7 @@ main(int   argc,
     char                   *pshost;
     char                    request_buffer[1024];
     char                   *credkeybuf         = NULL;
-    char                   *tmpfile            = NULL;
     int                     requestlen;
-    int                     cred_lifetime;
-    int                     cleanup_temp_file  = 0;
 
     myproxy_socket_attrs_t *socket_attrs;
     myproxy_request_t      *client_request;
@@ -162,12 +148,11 @@ main(int   argc,
 	socket_attrs->psport = MYPROXY_SERVER_PORT;
     }
 
-    certfile = strdup(MYPROXY_DEFAULT_USERCERT);
-    keyfile = strdup(MYPROXY_DEFAULT_USERKEY);
+    GLOBUS_GSI_SYSCONFIG_GET_USER_CERT_FILENAME( &certfile,
+                                                 &keyfile );
 
-    creddir = malloc(strlen(getenv("HOME")) + 1 +
-		     strlen(MYPROXY_DEFAULT_DIRECTORY) + 1);
-    sprintf(creddir, "%s/%s", getenv("HOME"), MYPROXY_DEFAULT_DIRECTORY);
+    client_request->proxy_lifetime = SECONDS_PER_HOUR *
+                                     MYPROXY_DEFAULT_DELEG_HOURS;
 
     /* Initialize client arguments and create client request object */
 
@@ -178,8 +163,7 @@ main(int   argc,
     /*
      ** Read Credential and Key files
      */
-    cleanup_temp_file = 1; 
-    if( makecertfile(certfile, keyfile, creddir, &tmpfile) < 0 )
+    if( makecertfile(certfile, keyfile, &credkeybuf) < 0 )
     {
       fprintf( stderr, "makecertfile failed\n" );
       goto cleanup;
@@ -242,12 +226,10 @@ main(int   argc,
         goto cleanup;
     }
 
-    file2buf( tmpfile, &credkeybuf );
-
     /* Send end-entity credentials to server. */
     if (myproxy_init_credentials(socket_attrs,
 				 credkeybuf,
-				 cred_lifetime,
+				 client_request->proxy_lifetime,
 				 NULL /* no passphrase */ ) < 0) {
         fprintf(stderr, "%s\n",
                 verror_get_string());
@@ -260,27 +242,11 @@ main(int   argc,
         goto cleanup;
     }
 
-/*
-** DO I NEED TO DO THIS?
-*/
-    /* Delete proxy file */
-    if (grid_proxy_destroy(tmpfile) != 0) {
-        fprintf(stderr, "Failed to remove temporary credential file.\n");
-        goto cleanup;
-    }
-    cleanup_temp_file = 0;
-/*
-**
-*/
-
     printf( "Credentials saved to myproxy server\n" );
 
     return 0;
 
  cleanup:
-    if (cleanup_temp_file) {
-        grid_proxy_destroy(tmpfile);
-    }
     return 1;
 }
 
@@ -305,11 +271,6 @@ init_arguments(int                     argc,
 
 	case 'p':		/* psport */
 	    attrs->psport = atoi(gnu_optarg);
-	    break;
-
-	case 'd':		/* set the credential storage directory */
-//	    myproxy_set_storage_dir(gnu_optarg);
-            creddir = strdup(gnu_optarg);
 	    break;
 
 	case 'c':		/* credential file name */
@@ -377,6 +338,14 @@ init_arguments(int                     argc,
 	    break;
 
 	case 'R':		/* renewers list */
+            /*
+            ** This needs to be readdressed.  Right now, the private key is
+            ** being stored encrypted.  This is a problem if the user calls
+            ** /myproxy-get-delegation with the -a option.  The call will
+            ** fail because an unencrypted password is being looked for.
+            ** So, do we want to add code to unencrypt the private key if
+            ** this option is used?
+            */
 	    if (request->retrievers) {
 		fprintf(stderr,
 			"-R is incompatible with -a and -r.  A credential may not be used for both\nretrieval and renewal.  If both are desired, upload multiple credentials with\ndifferent names, using the -k option.\n");
@@ -401,7 +370,22 @@ init_arguments(int                     argc,
 	    }
 	    break;
 
-	case 'D':		/* 
+        case 'E' :              /* key retriever list */ 
+	    if (expr_type == REGULAR_EXP) {
+		//Copy as is
+		request->keyretrieve = strdup(gnu_optarg);
+	    } else {
+		request->keyretrieve =
+		    (char *) malloc(strlen(gnu_optarg) + 5);
+		strcpy(request->keyretrieve, "*/CN=");
+		myproxy_debug("authorized key retriever %s",
+			      request->keyretrieve);
+		request->keyretrieve =
+		    strcat(request->keyretrieve, gnu_optarg);
+	    }
+	    break;
+
+	case 'd':		/* 
 				 ** use the certificate subject (DN) as the 
 				 ** default username instead of LOGNAME 
 				 */
@@ -524,50 +508,45 @@ file2buf(const char   filename[],
 int 
 makecertfile(const char   certfile[],
              const char   keyfile[],
-	     const char   creddir[], 
-             char       **credfile)
+             char       **credbuf)
 {
-    char *certbuf = NULL;
-    char *keybuf  = NULL;
-    char *cert    = NULL;
-    char *key     = NULL;
-    int   retval  = -1;
-    int   fd;
-    int   rval;
+    char       *certbuf = NULL;
+    char       *keybuf  = NULL;
+    int         retval  = -1;
+    struct stat s;
+    int         bytes;
 
-    cert = malloc(strlen(certfile) + 1 + strlen(creddir) + 1);
-    key  = malloc(strlen(keyfile)  + 1 + strlen(creddir) + 1);
+    /* Figure out how much memory we are going to need */
+    stat( certfile, &s );
+    bytes = s.st_size;
+    stat( keyfile, &s );
+    bytes += s.st_size;
 
-    sprintf(cert, "%s/%s", creddir, certfile);
-    sprintf(key, "%s/%s", creddir, keyfile);
-
-    /* Now store the credentials */
-    char tmpfile[L_tmpnam];
-    if (tmpnam(tmpfile) == NULL)
-    {
-      fprintf(stderr, "tmpnam() failed: %d\n", errno);
-      goto cleanup;
-    }
-
-    /* Open the output file. */
-    if ((fd = open(tmpfile, O_CREAT | O_EXCL | O_WRONLY,
-                   S_IRUSR | S_IWUSR)) < 0) {
-        fprintf(stderr, "open(%s) failed: %s\n", *credfile, strerror(errno));
-        goto cleanup;
-    }
-
+    *credbuf = malloc( bytes + 1 );
+    memset(*credbuf, 0, (bytes + 1));
 
     /* Read the certificate(s) into a buffer. */
-    if (file2buf(cert, &certbuf) < 0) {
+    if (file2buf(certfile, &certbuf) < 0) {
 	fprintf(stderr, "Failed to read %s\n", certfile);
 	goto cleanup;
     }
 
+    /* Read the key into a buffer. */
+    if (file2buf(keyfile, &keybuf) < 0) {
+        fprintf(stderr, "Failed to read %s\n", keyfile);
+        goto cleanup;
+    }
+
+
     static char  BEGINCERT[] = "-----BEGIN CERTIFICATE-----";
     static char  ENDCERT[] = "-----END CERTIFICATE-----";
+    static char BEGINKEY[] = "-----BEGIN RSA PRIVATE KEY-----";
+    static char ENDKEY[] = "-----END RSA PRIVATE KEY-----";
     char        *certstart; 
     char        *certend;
     int          size;
+    char        *keystart; 
+    char        *keyend;
 
     if ((certstart = strstr(certbuf, BEGINCERT)) == NULL)
     {
@@ -583,18 +562,25 @@ makecertfile(const char   certfile[],
     certend += strlen(ENDCERT);
     size = certend-certstart;
 
-    while (size) {
-        if ((rval = write(fd, certstart, size)) < 0) {
-            perror("write");
-            goto cleanup;
-        }
-        size -= rval;
-        certstart += rval;
+    strncat( *credbuf, certstart, size ); 
+    strcat( *credbuf, "\n\0" ); 
+    certstart += size;
+
+    /* Write the key. */
+    if ((keystart = strstr(keybuf, BEGINKEY)) == NULL) {
+	fprintf(stderr, "%s doesn't contain '%s'.\n", keyfile, BEGINKEY);
+	goto cleanup;
     }
-    if (write(fd, "\n", 1) < 0) {
-        perror("write");
-        goto cleanup;
+
+    if ((keyend = strstr(keystart, ENDKEY)) == NULL) {
+	fprintf(stderr, "%s doesn't contain '%s'.\n", keyfile, ENDKEY);
+	goto cleanup;
     }
+    keyend += strlen(ENDKEY);
+    size = keyend-keystart;
+
+    strncat( *credbuf, keystart, size );
+    strcat( *credbuf, "\n\0" );
 
     /* Write any remaining certificates. */
     while ((certstart = strstr(certstart, BEGINCERT)) != NULL) {
@@ -607,99 +593,17 @@ makecertfile(const char   certfile[],
         certend += strlen(ENDCERT);
         size = certend-certstart;
 
-        while (size) {
-            if ((rval = write(fd, certstart, size)) < 0) {
-                perror("write");
-                goto cleanup;
-            }
-            size -= rval;
-            certstart += rval;
-        }
-        if (write(fd, "\n", 1) < 0) {
-            perror("write");
-            goto cleanup;
-        }
+        strncat( *credbuf, certstart, size ); 
+        strcat( *credbuf, "\n\0" ); 
+        certstart += size;
     }
-
-    /* Read the key into a buffer. */
-    if (file2buf(key, &keybuf) < 0) {
-	fprintf(stderr, "Failed to read %s\n", keyfile);
-	goto cleanup;
-    }
-
-    char *tmpkey = keybuf;
-    size = strlen(keybuf);
-
-    while (size) {
-        if ((rval = write(fd, tmpkey, size)) < 0) {
-            perror("write");
-            goto cleanup;
-        }
-        size -= rval;
-        tmpkey += rval;
-    }
-    if (write(fd, "\n", 1) < 0) {
-        perror("write");
-        goto cleanup;
-    }
-
-    *credfile = strdup( tmpfile );
 
     retval = 0;
 
   cleanup:
     if (certbuf) free(certbuf);
     if (keybuf) free(keybuf);
-    if (cert) free(cert);
-    if (key) free(key);
-    if (fd) close(fd);
 
     return (retval);
 }
 
-/* grid_proxy_init()
- *
- * Uses the system() call to run grid-proxy-init to create a user proxy
- *
- * returns grid-proxy-init status 0 if OK, -1 on error
- */
-int 
-grid_proxy_init(int         seconds, 
-                const char *proxyfile)
-{
-    int  rc;
-    char command[128];
-    int  hours;
-
-    assert(proxyfile != NULL);
-
-    hours = seconds / SECONDS_PER_HOUR;
-
-    sprintf(command,
-	    "grid-proxy-init -verify -valid %d:0 -out %s%s%s",
-	    hours,
-	    proxyfile,
-	    read_passwd_from_stdin ? " -pwstdin" : "",
-	    verbose ? " -debug" : "");
-
-    rc = system(command);
-
-    return rc;
-}
-
-/* grid_proxy_destroy()
- *
- * Fill the proxy file with zeros and unlink.
- *
- * returns 0 if OK, -1 on error
- */
-int 
-grid_proxy_destroy(const char *proxyfile)
-{
-    if (ssl_proxy_file_destroy(proxyfile) != SSL_SUCCESS) {
-	fprintf(stderr, "%s\n", verror_get_string());
-	return -1;
-    }
-
-    return 0;
-}

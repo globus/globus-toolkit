@@ -1180,6 +1180,7 @@ int GSI_SOCKET_delegation_init_ext(GSI_SOCKET *self,
     if (passphrase && passphrase[0] == '\0') {
 	passphrase = NULL;
     }
+
     if (ssl_proxy_load_from_file(creds, source_credentials,
 				 passphrase) == SSL_ERROR)
     {
@@ -1205,13 +1206,13 @@ int GSI_SOCKET_delegation_init_ext(GSI_SOCKET *self,
     {
 	goto error;
     }
-    
+
     if (ssl_proxy_restrictions_set_lifetime(proxy_restrictions,
 					    (long) lifetime) == SSL_ERROR)
     {
 	goto error;
     }
-    
+   
     /*
      * Sign the request
      */
@@ -1225,7 +1226,7 @@ int GSI_SOCKET_delegation_init_ext(GSI_SOCKET *self,
 	GSI_SOCKET_set_error_from_verror(self);
 	goto error;
     }
-    
+
     /*
      * Write the proxy certificate back to user
      */
