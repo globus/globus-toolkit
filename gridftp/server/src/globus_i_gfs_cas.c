@@ -30,6 +30,10 @@ globus_gfs_acl_cas_init(
 {
     globus_gsi_authz_handle_t           cas_handle;
 
+    if(acl_handle->context == NULL)
+    {
+        goto err;
+    }
     *out_res = globus_gsi_authz_handle_init(
         &cas_handle,
         resource_id,
@@ -60,6 +64,10 @@ globus_gfs_acl_cas_authorize(
     char *                              full_object;
 
     cas_handle = (globus_gsi_authz_handle_t) out_handle;
+    if(acl_handle->context == NULL)
+    {
+        goto err;
+    }
 
     full_object = globus_common_create_string(
         "ftp://%s%s", acl_handle->hostname, object);
