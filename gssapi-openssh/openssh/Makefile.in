@@ -285,6 +285,10 @@ install-files: scard-install
 		ln -s ./scp$(EXEEXT) $(DESTDIR)$(bindir)/gsiscp; \
 		rm -f $(DESTDIR)$(mandir)/$(mansubdir)1/gsiscp.1; \
 		ln -s ./scp.1 $(DESTDIR)$(mandir)/$(mansubdir)1/gsiscp.1; \
+		rm -f $(DESTDIR)$(bindir)/gsisftp; \
+		ln -s ./sftp$(EXEEXT) $(DESTDIR)$(bindir)/gsisftp; \
+		rm -f $(DESTDIR)$(mandir)/$(mansubdir)1/gsisftp.1; \
+		ln -s ./sftp.1 $(DESTDIR)$(mandir)/$(mansubdir)1/gsisftp.1; \
 	fi
 	if [ ! -d $(DESTDIR)$(sysconfdir) ]; then \
 		$(srcdir)/mkinstalldirs $(DESTDIR)$(sysconfdir); \
@@ -358,6 +362,7 @@ uninstall:
 	if [ ! -z "$(INSTALL_GSISSH)" ]; then \
 		rm -f $(DESTDIR)$(bindir)/gsiscp; \
 		rm -f $(DESTDIR)$(bindir)/gsissh; \
+		rm -f $(DESTDIR)$(bindir)/gsisftp; \
 	fi
 	-rm -f $(DESTDIR)$(bindir)/ssh$(EXEEXT)
 	-rm -f $(DESTDIR)$(bindir)/scp$(EXEEXT)
@@ -375,6 +380,7 @@ uninstall:
 	if [ ! -z "$(INSTALL_GSISSH)" ]; then \
 		rm -f $(DESTDIR)$(mandir)/$(mansubdir)1/gsissh.1; \
 		rm -f $(DESTDIR)$(mandir)/$(mansubdir)1/gsiscp.1; \
+		rm -f $(DESTDIR)$(mandir)/$(mansubdir)1/gsisftp.1; \
 	fi
 	-rm -f $(DESTDIR)$(mandir)/$(mansubdir)1/ssh-add.1
 	-rm -f $(DESTDIR)$(mandir)/$(mansubdir)1/ssh-agent.1
