@@ -2,7 +2,7 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="7.00"
-	Name="TestClient"
+	Name="io_tcp_test_client"
 	ProjectGUID="{D4AFEDF4-A4BB-4BD7-A3CC-CE6A6D9BF9A3}"
 	Keyword="Win32Proj">
 	<Platforms>
@@ -19,10 +19,10 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(GLOBUS_LOCATION)\include&quot;;&quot;$(GLOBUS_LOCATION)\include\nonthreaded&quot;"
+				AdditionalIncludeDirectories="\include\threaded;\include"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				MinimalRebuild="TRUE"
-				BasicRuntimeChecks="3"
+				BasicRuntimeChecks="0"
 				RuntimeLibrary="2"
 				BufferSecurityCheck="TRUE"
 				UsePrecompiledHeader="0"
@@ -34,10 +34,12 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="ws2_32.lib Mswsock.lib libeay32.lib ssleay32.lib globus_common_win32dbg.lib globus_oldgaa.lib globus_sslutils.lib globus_opensslmodule.lib globus_gssapi.lib globus_gss_assist.lib globus_io_win32dbg.lib"
-				OutputFile="$(OutDir)/TestClient.exe"
+				AdditionalOptions="/VERBOSE:LIB"
+				AdditionalDependencies="ws2_32.lib Mswsock.lib libeay32.lib ssleay32.lib libglobus_common_win32dbg.lib libglobus_io_win32dbg.lib"
+				OutputFile="$(OutDir)/io_tcp_test_client.exe"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="$(GLOBUS_LOCATION)\lib"
+				IgnoreDefaultLibraryNames="libc"
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile="$(OutDir)/TestClient.pdb"
 				SubSystem="1"

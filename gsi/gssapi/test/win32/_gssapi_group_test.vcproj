@@ -2,8 +2,8 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="7.00"
-	Name="DebugLibThr"
-	ProjectGUID="{16B9F788-DBFE-4B3F-809A-35A398F97417}"
+	Name="_gssapi_group_test"
+	ProjectGUID="{8CF1C6AF-728E-4134-8D59-7D162CF55F0D}"
 	Keyword="Win32Proj">
 	<Platforms>
 		<Platform
@@ -14,65 +14,35 @@
 			Name="Debug|Win32"
 			OutputDirectory="Debug"
 			IntermediateDirectory="Debug"
-			ConfigurationType="4"
+			ConfigurationType="1"
 			CharacterSet="2">
 			<Tool
 				Name="VCCLCompilerTool"
+				AdditionalOptions="/VERBOSE"
 				Optimization="0"
-				AdditionalIncludeDirectories="$(GLOBUS_LOCATION)\include;$(GLOBUS_LOCATION)\include\threaded;$(SolutionDir)"
-				PreprocessorDefinitions="WIN32;_DEBUG;_LIB"
+				AdditionalIncludeDirectories="\include;\include\threaded"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				MinimalRebuild="TRUE"
-				BasicRuntimeChecks="3"
+				BasicRuntimeChecks="0"
 				RuntimeLibrary="2"
+				BufferSecurityCheck="FALSE"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="TRUE"
-				DebugInformationFormat="1"
+				DebugInformationFormat="3"
 				CompileAs="0"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
 			<Tool
-				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)/globus_gridftp_client_win32dbgthr.lib"/>
-			<Tool
-				Name="VCMIDLTool"/>
-			<Tool
-				Name="VCPostBuildEventTool"
-				Description="copying $(OutDir)\$(TargetFileName) to &quot;$(GLOBUS_LOCATION)\lib\&quot;"
-				CommandLine="copy $(OutDir)\$(TargetFileName) &quot;$(GLOBUS_LOCATION)\lib\&quot;"/>
-			<Tool
-				Name="VCPreBuildEventTool"/>
-			<Tool
-				Name="VCPreLinkEventTool"/>
-			<Tool
-				Name="VCResourceCompilerTool"/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
-		</Configuration>
-		<Configuration
-			Name="Release|Win32"
-			OutputDirectory="Release"
-			IntermediateDirectory="Release"
-			ConfigurationType="4"
-			CharacterSet="2">
-			<Tool
-				Name="VCCLCompilerTool"
-				Optimization="2"
-				InlineFunctionExpansion="1"
-				OmitFramePointers="TRUE"
-				PreprocessorDefinitions="WIN32;NDEBUG;_LIB"
-				StringPooling="TRUE"
-				RuntimeLibrary="4"
-				EnableFunctionLevelLinking="TRUE"
-				UsePrecompiledHeader="0"
-				WarningLevel="3"
-				Detect64BitPortabilityProblems="TRUE"
-				DebugInformationFormat="3"/>
-			<Tool
-				Name="VCCustomBuildTool"/>
-			<Tool
-				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)/DebugLibThr.lib"/>
+				Name="VCLinkerTool"
+				AdditionalDependencies="libglobus_oldgaa_win32dbg.lib libglobus_common_win32dbgthr.lib libglobus_gssapi_gsi_win32dbg.lib libglobus_gss_assist_win32dbg.lib Ws2_32.lib libeay32.lib libglobus_gsi_credential_win32dbg.lib libglobus_gsi_callback_win32dbg.lib ssleay32.lib libglobus_gsi_cert_utils_win32dbg.lib libglobus_proxy_ssl_win32dbg.lib libglobus_gsi_proxy_core_win32dbg.lib libglobus_openssl_win32dbg.lib libglobus_openssl_error_Win32dbg.lib libglobus_gsi_sysconfig_win32dbg.lib"
+				OutputFile="$(OutDir)/gssapi_group_test.exe"
+				LinkIncremental="2"
+				AdditionalLibraryDirectories="\lib"
+				GenerateDebugInformation="TRUE"
+				ProgramDatabaseFile="$(OutDir)/gssapi_group_test.pdb"
+				SubSystem="1"
+				TargetMachine="1"/>
 			<Tool
 				Name="VCMIDLTool"/>
 			<Tool
@@ -85,6 +55,53 @@
 				Name="VCResourceCompilerTool"/>
 			<Tool
 				Name="VCWebServiceProxyGeneratorTool"/>
+			<Tool
+				Name="VCWebDeploymentTool"/>
+		</Configuration>
+		<Configuration
+			Name="Release|Win32"
+			OutputDirectory="Release"
+			IntermediateDirectory="Release"
+			ConfigurationType="1"
+			CharacterSet="2">
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="2"
+				InlineFunctionExpansion="1"
+				OmitFramePointers="TRUE"
+				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
+				StringPooling="TRUE"
+				RuntimeLibrary="4"
+				EnableFunctionLevelLinking="TRUE"
+				UsePrecompiledHeader="0"
+				WarningLevel="3"
+				Detect64BitPortabilityProblems="TRUE"
+				DebugInformationFormat="3"/>
+			<Tool
+				Name="VCCustomBuildTool"/>
+			<Tool
+				Name="VCLinkerTool"
+				OutputFile="$(OutDir)/gssapi_group_test.exe"
+				LinkIncremental="1"
+				GenerateDebugInformation="TRUE"
+				SubSystem="1"
+				OptimizeReferences="2"
+				EnableCOMDATFolding="2"
+				TargetMachine="1"/>
+			<Tool
+				Name="VCMIDLTool"/>
+			<Tool
+				Name="VCPostBuildEventTool"/>
+			<Tool
+				Name="VCPreBuildEventTool"/>
+			<Tool
+				Name="VCPreLinkEventTool"/>
+			<Tool
+				Name="VCResourceCompilerTool"/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"/>
+			<Tool
+				Name="VCWebDeploymentTool"/>
 		</Configuration>
 	</Configurations>
 	<Files>
@@ -92,54 +109,22 @@
 			Name="Source Files"
 			Filter="cpp;c;cxx;def;odl;idl;hpj;bat;asm">
 			<File
-				RelativePath="..\globus_ftp_client.c">
+				RelativePath="..\gssapi_group_test.c">
 			</File>
 			<File
-				RelativePath="..\globus_ftp_client_attr.c">
-			</File>
-			<File
-				RelativePath="..\globus_ftp_client_data.c">
-			</File>
-			<File
-				RelativePath="..\globus_ftp_client_debug_plugin.c">
-			</File>
-			<File
-				RelativePath="..\globus_ftp_client_exists.c">
-			</File>
-			<File
-				RelativePath="..\globus_ftp_client_handle.c">
-			</File>
-			<File
-				RelativePath="..\globus_ftp_client_perf_plugin.c">
-			</File>
-			<File
-				RelativePath="..\globus_ftp_client_plugin.c">
-			</File>
-			<File
-				RelativePath="..\globus_ftp_client_restart.c">
-			</File>
-			<File
-				RelativePath="..\globus_ftp_client_restart_marker.c">
-			</File>
-			<File
-				RelativePath="..\globus_ftp_client_restart_marker_plugin.c">
-			</File>
-			<File
-				RelativePath="..\globus_ftp_client_restart_plugin.c">
-			</File>
-			<File
-				RelativePath="..\globus_ftp_client_state.c">
-			</File>
-			<File
-				RelativePath="..\globus_ftp_client_throughput_plugin.c">
-			</File>
-			<File
-				RelativePath="..\globus_ftp_client_transfer.c">
+				RelativePath="..\gssapi_test_utils.c">
 			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl;inc">
+			<File
+				RelativePath="..\gssapi_test_utils.h">
+			</File>
+		</Filter>
+		<Filter
+			Name="Resource Files"
+			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe">
 		</Filter>
 	</Files>
 	<Globals>

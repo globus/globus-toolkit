@@ -2,8 +2,8 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="7.00"
-	Name="DebugLib"
-	ProjectGUID="{0CD0622C-C584-4781-B547-561411E864FF}"
+	Name="GSI_callback"
+	ProjectGUID="{48B7BE8F-92AB-4849-BB65-94F60AC3AF2A}"
 	Keyword="Win32Proj">
 	<Platforms>
 		<Platform
@@ -19,27 +19,25 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="$(GLOBUS_LOCATION)\include;$(GLOBUS_LOCATION)\include\nonthreaded;$(SolutionDir)"
+				AdditionalIncludeDirectories="\gsi\gssapi\source\WinProjects;\gsi\proxy\proxy_ssl\source\library;\gsi\credential\source\library;\gsi\proxy\proxy_core\source\library;\gsi\openssl_error\source\library;\gsi\cert_utils\source\library;\gsi\callback\source\library;\core\source\win32\nonthreaded;\gsi\gssapi\source\WinProjects;&quot;$(GLOBUS_LOCATION)\include&quot;;&quot;$(GLOBUS_LOCATION)\include\nonthreaded&quot;;..\..\..\gssapi\source\win32;&quot;$(GLOBUS_LOCATION)\include&quot;;&quot;$(GLOBUS_LOCATION)\include\nonthreaded&quot;;&quot;$(SolutionDir)&quot;;..\..\..\ssl_utils\source\library;..\..\..\openssl_module\source\library;\gsi\sysconfig\source\library;\Include\OpenSSL;\gsi\callback\source\library\oldgaa;\gsi\callback\source\library\Win32\;\gsi\sysconfig\source\library\Win32"
 				PreprocessorDefinitions="WIN32;_DEBUG;_LIB"
 				MinimalRebuild="TRUE"
-				BasicRuntimeChecks="3"
+				BasicRuntimeChecks="0"
 				RuntimeLibrary="2"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="TRUE"
-				DebugInformationFormat="1"
-				CompileAs="0"/>
+				DebugInformationFormat="4"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)/globus_gridftp_client_win32dbg.lib"/>
+				OutputFile="$(OutDir)/libglobus_gsi_callback_win32dbg.lib"/>
 			<Tool
 				Name="VCMIDLTool"/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				Description="copying $(OutDir)\$(TargetFileName) to &quot;$(GLOBUS_LOCATION)\lib\&quot;"
-				CommandLine="copy $(OutDir)\$(TargetFileName) &quot;$(GLOBUS_LOCATION)\lib\&quot;"/>
+				CommandLine="copy .\debug\*.lib \lib\*.*"/>
 			<Tool
 				Name="VCPreBuildEventTool"/>
 			<Tool
@@ -72,7 +70,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)/DebugLib.lib"/>
+				OutputFile="$(OutDir)/GSI_callback.lib"/>
 			<Tool
 				Name="VCMIDLTool"/>
 			<Tool
@@ -92,82 +90,35 @@
 			Name="Source Files"
 			Filter="cpp;c;cxx;def;odl;idl;hpj;bat;asm">
 			<File
-				RelativePath="..\globus_ftp_client.c">
+				RelativePath="..\library\globus_gsi_callback.c">
 			</File>
 			<File
-				RelativePath="..\globus_ftp_client_attr.c">
+				RelativePath="..\library\globus_gsi_callback_data.c">
 			</File>
 			<File
-				RelativePath="..\globus_ftp_client_data.c">
-			</File>
-			<File
-				RelativePath="..\globus_ftp_client_debug_plugin.c">
-			</File>
-			<File
-				RelativePath="..\globus_ftp_client_exists.c">
-			</File>
-			<File
-				RelativePath="..\globus_ftp_client_handle.c">
-			</File>
-			<File
-				RelativePath="..\globus_ftp_client_perf_plugin.c">
-			</File>
-			<File
-				RelativePath="..\globus_ftp_client_plugin.c">
-			</File>
-			<File
-				RelativePath="..\globus_ftp_client_restart.c">
-			</File>
-			<File
-				RelativePath="..\globus_ftp_client_restart_marker.c">
-			</File>
-			<File
-				RelativePath="..\globus_ftp_client_restart_marker_plugin.c">
-			</File>
-			<File
-				RelativePath="..\globus_ftp_client_restart_plugin.c">
-			</File>
-			<File
-				RelativePath="..\globus_ftp_client_state.c">
-			</File>
-			<File
-				RelativePath="..\globus_ftp_client_throughput_plugin.c">
-			</File>
-			<File
-				RelativePath="..\globus_ftp_client_transfer.c">
+				RelativePath="..\library\globus_gsi_callback_error.c">
 			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl;inc">
 			<File
-				RelativePath="..\globus_ftp_client.h">
+				RelativePath="..\library\globus_gsi_callback.h">
 			</File>
 			<File
-				RelativePath="..\globus_ftp_client_debug_plugin.h">
+				RelativePath="..\library\globus_gsi_callback_constants.h">
 			</File>
 			<File
-				RelativePath="..\globus_ftp_client_perf_plugin.h">
-			</File>
-			<File
-				RelativePath="..\globus_ftp_client_plugin.h">
-			</File>
-			<File
-				RelativePath="..\globus_ftp_client_restart_marker_plugin.h">
-			</File>
-			<File
-				RelativePath="..\globus_ftp_client_restart_plugin.h">
-			</File>
-			<File
-				RelativePath="..\globus_ftp_client_throughput_nl_plugin.h">
-			</File>
-			<File
-				RelativePath="..\globus_ftp_client_throughput_plugin.h">
-			</File>
-			<File
-				RelativePath="..\globus_i_ftp_client.h">
+				RelativePath="..\library\globus_i_gsi_callback.h">
 			</File>
 		</Filter>
+		<Filter
+			Name="Resource Files"
+			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe">
+		</Filter>
+		<File
+			RelativePath="ReadMe.txt">
+		</File>
 	</Files>
 	<Globals>
 	</Globals>

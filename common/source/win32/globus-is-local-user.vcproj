@@ -2,8 +2,8 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="7.00"
-	Name="DebugLibThr"
-	ProjectGUID="{25C247EC-2E23-48FF-8A64-6C924D62258C}"
+	Name="globus-is-local-user"
+	ProjectGUID="{E547F615-6A47-4A13-94FF-374758B4DE39}"
 	Keyword="Win32Proj">
 	<Platforms>
 		<Platform
@@ -14,65 +14,32 @@
 			Name="Debug|Win32"
 			OutputDirectory="Debug"
 			IntermediateDirectory="Debug"
-			ConfigurationType="4"
+			ConfigurationType="1"
 			CharacterSet="2">
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(GLOBUS_LOCATION)\include&quot;;&quot;$(GLOBUS_LOCATION)\include\threaded&quot;;&quot;$(SolutionDir)&quot;"
-				PreprocessorDefinitions="WIN32;_DEBUG;_LIB"
+				AdditionalIncludeDirectories="..\..\source\win32;..\..\source\library;..\..\..\core\source\win32\nonthreaded"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				MinimalRebuild="TRUE"
-				BasicRuntimeChecks="3"
+				BasicRuntimeChecks="0"
 				RuntimeLibrary="2"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="TRUE"
-				DebugInformationFormat="1"
-				CompileAs="0"/>
+				DebugInformationFormat="4"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
 			<Tool
-				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)/globus_gass_transfer_win32dbgthr.lib"/>
-			<Tool
-				Name="VCMIDLTool"/>
-			<Tool
-				Name="VCPostBuildEventTool"
-				Description="copying $(OutDir)\$(TargetFileName) to &quot;$(GLOBUS_LOCATION)\lib\&quot;"
-				CommandLine="copy $(OutDir)\$(TargetFileName) &quot;$(GLOBUS_LOCATION)\lib\&quot;"/>
-			<Tool
-				Name="VCPreBuildEventTool"/>
-			<Tool
-				Name="VCPreLinkEventTool"/>
-			<Tool
-				Name="VCResourceCompilerTool"/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
-		</Configuration>
-		<Configuration
-			Name="Release|Win32"
-			OutputDirectory="Release"
-			IntermediateDirectory="Release"
-			ConfigurationType="4"
-			CharacterSet="2">
-			<Tool
-				Name="VCCLCompilerTool"
-				Optimization="2"
-				InlineFunctionExpansion="1"
-				OmitFramePointers="TRUE"
-				PreprocessorDefinitions="WIN32;NDEBUG;_LIB"
-				StringPooling="TRUE"
-				RuntimeLibrary="4"
-				EnableFunctionLevelLinking="TRUE"
-				UsePrecompiledHeader="0"
-				WarningLevel="3"
-				Detect64BitPortabilityProblems="TRUE"
-				DebugInformationFormat="3"/>
-			<Tool
-				Name="VCCustomBuildTool"/>
-			<Tool
-				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)/DebugLibThr.lib"/>
+				Name="VCLinkerTool"
+				AdditionalDependencies="libglobus_common_win32dbgthr.lib  Ws2_32.lib"
+				OutputFile="$(OutDir)/globus-is-local-user.exe"
+				LinkIncremental="2"
+				AdditionalLibraryDirectories="\lib"
+				GenerateDebugInformation="TRUE"
+				ProgramDatabaseFile="$(OutDir)/globus-is-local-user.pdb"
+				SubSystem="1"
+				TargetMachine="1"/>
 			<Tool
 				Name="VCMIDLTool"/>
 			<Tool
@@ -85,6 +52,53 @@
 				Name="VCResourceCompilerTool"/>
 			<Tool
 				Name="VCWebServiceProxyGeneratorTool"/>
+			<Tool
+				Name="VCWebDeploymentTool"/>
+		</Configuration>
+		<Configuration
+			Name="Release|Win32"
+			OutputDirectory="Release"
+			IntermediateDirectory="Release"
+			ConfigurationType="1"
+			CharacterSet="2">
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="2"
+				InlineFunctionExpansion="1"
+				OmitFramePointers="TRUE"
+				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
+				StringPooling="TRUE"
+				RuntimeLibrary="4"
+				EnableFunctionLevelLinking="TRUE"
+				UsePrecompiledHeader="3"
+				WarningLevel="3"
+				Detect64BitPortabilityProblems="TRUE"
+				DebugInformationFormat="3"/>
+			<Tool
+				Name="VCCustomBuildTool"/>
+			<Tool
+				Name="VCLinkerTool"
+				OutputFile="$(OutDir)/globus-is-local-user.exe"
+				LinkIncremental="1"
+				GenerateDebugInformation="TRUE"
+				SubSystem="1"
+				OptimizeReferences="2"
+				EnableCOMDATFolding="2"
+				TargetMachine="1"/>
+			<Tool
+				Name="VCMIDLTool"/>
+			<Tool
+				Name="VCPostBuildEventTool"/>
+			<Tool
+				Name="VCPreBuildEventTool"/>
+			<Tool
+				Name="VCPreLinkEventTool"/>
+			<Tool
+				Name="VCResourceCompilerTool"/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"/>
+			<Tool
+				Name="VCWebDeploymentTool"/>
 		</Configuration>
 	</Configurations>
 	<Files>
@@ -92,46 +106,26 @@
 			Name="Source Files"
 			Filter="cpp;c;cxx;def;odl;idl;hpj;bat;asm">
 			<File
-				RelativePath="..\library\globus_gass_transfer.c">
-			</File>
-			<File
-				RelativePath="..\library\globus_gass_transfer_attribute.c">
-			</File>
-			<File
-				RelativePath="..\library\globus_gass_transfer_client.c">
-			</File>
-			<File
-				RelativePath="..\library\globus_gass_transfer_ftp.c">
-			</File>
-			<File
-				RelativePath="..\library\globus_gass_transfer_http.c">
-			</File>
-			<File
-				RelativePath="..\library\globus_gass_transfer_keyvalue.c">
-			</File>
-			<File
-				RelativePath="..\library\globus_gass_transfer_proto.c">
-			</File>
-			<File
-				RelativePath="..\library\globus_gass_transfer_referral.c">
-			</File>
-			<File
-				RelativePath="..\library\globus_gass_transfer_request.c">
-			</File>
-			<File
-				RelativePath="..\library\globus_gass_transfer_send_recv.c">
-			</File>
-			<File
-				RelativePath="..\library\globus_gass_transfer_server.c">
-			</File>
-			<File
-				RelativePath="..\library\globus_gass_transfer_text.c">
+				RelativePath="..\programs\globus_is_local_user.c">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories="\gsi\sysconfig\source\Win32"/>
+				</FileConfiguration>
 			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl;inc">
 		</Filter>
+		<Filter
+			Name="Resource Files"
+			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe">
+		</Filter>
+		<File
+			RelativePath="ReadMe.txt">
+		</File>
 	</Files>
 	<Globals>
 	</Globals>

@@ -19,10 +19,10 @@
 
 /* DEBUG MACROS */
 
-#ifdef BUILD_DEBUG
-
 extern int                              globus_i_gsi_sysconfig_debug_level;
 extern FILE *                           globus_i_gsi_sysconfig_debug_fstream;
+
+#ifdef BUILD_DEBUG
 
 #define GLOBUS_I_GSI_SYSCONFIG_DEBUG(_LEVEL_) \
     (globus_i_gsi_sysconfig_debug_level >= (_LEVEL_))
@@ -74,6 +74,7 @@ extern FILE *                           globus_i_gsi_sysconfig_debug_fstream;
                                                   _OBJ_NAME_, _OBJ_) {}
 
 #endif
+
 #define GLOBUS_I_GSI_SYSCONFIG_DEBUG_ENTER \
             GLOBUS_I_GSI_SYSCONFIG_DEBUG_FPRINTF( \
                 1, (globus_i_gsi_sysconfig_debug_fstream, \

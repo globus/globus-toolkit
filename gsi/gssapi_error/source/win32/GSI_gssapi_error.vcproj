@@ -2,8 +2,8 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="7.00"
-	Name="DebugLib"
-	ProjectGUID="{78A00573-72A5-4B03-A1C4-4F1AFA91BCA3}"
+	Name="GSI_gssapi_error"
+	ProjectGUID="{5A38A34A-94FF-4B31-BABF-E0E244BD5832}"
 	Keyword="Win32Proj">
 	<Platforms>
 		<Platform
@@ -19,27 +19,25 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(GLOBUS_LOCATION)\include&quot;;&quot;$(GLOBUS_LOCATION)\include\nonthreaded&quot;;&quot;$(SolutionDir)&quot;"
+				AdditionalIncludeDirectories="\gsi\gssapi\source\WinProjects;\gsi\proxy\proxy_ssl\source\library;\gsi\credential\source\library;\gsi\proxy\proxy_core\source\library;\gsi\openssl_error\source\library;\gsi\cert_utils\source\library;\gsi\callback\source\library;\core\source\win32\nonthreaded;\gsi\gssapi\source\WinProjects;&quot;$(GLOBUS_LOCATION)\include&quot;;&quot;$(GLOBUS_LOCATION)\include\nonthreaded&quot;;..\..\..\gssapi\source\win32;&quot;$(GLOBUS_LOCATION)\include&quot;;&quot;$(GLOBUS_LOCATION)\include\nonthreaded&quot;;&quot;$(SolutionDir)&quot;;..\..\..\ssl_utils\source\library;..\..\..\openssl_module\source\library;\gsi\sysconfig\source\library;\Include\OpenSSL"
 				PreprocessorDefinitions="WIN32;_DEBUG;_LIB"
 				MinimalRebuild="TRUE"
-				BasicRuntimeChecks="3"
+				BasicRuntimeChecks="0"
 				RuntimeLibrary="2"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="TRUE"
-				DebugInformationFormat="1"
-				CompileAs="0"/>
+				DebugInformationFormat="4"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)/globus_gass_server_ez_win32dbg.lib"/>
+				OutputFile="$(OutDir)/libgssapi_error_win32dbg.lib"/>
 			<Tool
 				Name="VCMIDLTool"/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				Description="copying $(OutDir)\$(TargetFileName) to &quot;$(GLOBUS_LOCATION)\lib\&quot;"
-				CommandLine="copy $(OutDir)\$(TargetFileName) &quot;$(GLOBUS_LOCATION)\lib\&quot;"/>
+				CommandLine="copy .\debug\*.lib \lib\*.*"/>
 			<Tool
 				Name="VCPreBuildEventTool"/>
 			<Tool
@@ -72,50 +70,11 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)/DebugLib.lib"/>
+				OutputFile="$(OutDir)/GSI_gssapi_error.lib"/>
 			<Tool
 				Name="VCMIDLTool"/>
 			<Tool
 				Name="VCPostBuildEventTool"/>
-			<Tool
-				Name="VCPreBuildEventTool"/>
-			<Tool
-				Name="VCPreLinkEventTool"/>
-			<Tool
-				Name="VCResourceCompilerTool"/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
-		</Configuration>
-		<Configuration
-			Name="DebugThr|Win32"
-			OutputDirectory="DebugThr"
-			IntermediateDirectory="DebugThr"
-			ConfigurationType="4"
-			CharacterSet="2">
-			<Tool
-				Name="VCCLCompilerTool"
-				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(GLOBUS_LOCATION)\include&quot;;&quot;$(GLOBUS_LOCATION)\include\threaded&quot;;&quot;$(SolutionDir)&quot;"
-				PreprocessorDefinitions="WIN32;_DEBUG;_LIB"
-				MinimalRebuild="TRUE"
-				BasicRuntimeChecks="3"
-				RuntimeLibrary="2"
-				UsePrecompiledHeader="0"
-				WarningLevel="3"
-				Detect64BitPortabilityProblems="TRUE"
-				DebugInformationFormat="1"
-				CompileAs="0"/>
-			<Tool
-				Name="VCCustomBuildTool"/>
-			<Tool
-				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)/globus_gass_server_ez_win32dbgthr.lib"/>
-			<Tool
-				Name="VCMIDLTool"/>
-			<Tool
-				Name="VCPostBuildEventTool"
-				Description="copying $(OutDir)\$(TargetFileName) to &quot;$(GLOBUS_LOCATION)\lib\&quot;"
-				CommandLine="copy $(OutDir)\$(TargetFileName) &quot;$(GLOBUS_LOCATION)\lib\&quot;"/>
 			<Tool
 				Name="VCPreBuildEventTool"/>
 			<Tool
@@ -131,16 +90,29 @@
 			Name="Source Files"
 			Filter="cpp;c;cxx;def;odl;idl;hpj;bat;asm">
 			<File
-				RelativePath="..\globus_gass_server_ez.c">
+				RelativePath="..\library\globus_error_gssapi.c">
+			</File>
+			<File
+				RelativePath="..\library\globus_i_error_gssapi.c">
 			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl;inc">
 			<File
-				RelativePath="..\globus_gass_server_ez.h">
+				RelativePath="..\library\globus_error_gssapi.h">
+			</File>
+			<File
+				RelativePath="..\library\globus_i_error_gssapi.h">
 			</File>
 		</Filter>
+		<Filter
+			Name="Resource Files"
+			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe">
+		</Filter>
+		<File
+			RelativePath="ReadMe.txt">
+		</File>
 	</Files>
 	<Globals>
 	</Globals>

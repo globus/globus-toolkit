@@ -2,8 +2,8 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="7.00"
-	Name="DebugLib"
-	ProjectGUID="{B86A42AE-F88A-4C25-A584-B96C744E4B16}"
+	Name="GSI_gridmap_callout_error"
+	ProjectGUID="{E73FF829-FD91-49F5-98C7-56D68A0707A2}"
 	Keyword="Win32Proj">
 	<Platforms>
 		<Platform
@@ -19,27 +19,24 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(GLOBUS_LOCATION)\include&quot;;&quot;$(GLOBUS_LOCATION)\include\nonthreaded&quot;;&quot;$(SolutionDir)&quot;"
+				AdditionalIncludeDirectories="\gsi\gssapi\source\WinProjects;\gsi\proxy\proxy_ssl\source\library;\gsi\credential\source\library;\gsi\proxy\proxy_core\source\library;\gsi\openssl_error\source\library;\gsi\cert_utils\source\library;\gsi\callback\source\library;\core\source\win32\nonthreaded;\gsi\gssapi\source\WinProjects;&quot;$(GLOBUS_LOCATION)\include&quot;;&quot;$(GLOBUS_LOCATION)\include\nonthreaded&quot;;..\..\..\gssapi\source\win32;&quot;$(GLOBUS_LOCATION)\include&quot;;&quot;$(GLOBUS_LOCATION)\include\nonthreaded&quot;;&quot;$(SolutionDir)&quot;;..\..\..\ssl_utils\source\library;..\..\..\openssl_module\source\library;\gsi\sysconfig\source\library;\Include\OpenSSL;\gsi\callback\source\library\oldgaa;\gsi\callback\source\library\Win32\;\gsi\sysconfig\source\library\Win32;\gsi\gridmap_callout\error;\gsi\gssapi_error\source\library"
 				PreprocessorDefinitions="WIN32;_DEBUG;_LIB"
 				MinimalRebuild="TRUE"
-				BasicRuntimeChecks="3"
+				BasicRuntimeChecks="0"
 				RuntimeLibrary="2"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="TRUE"
-				DebugInformationFormat="1"
-				CompileAs="0"/>
+				DebugInformationFormat="4"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)/globus_gram_client_win32dbg.lib"/>
+				OutputFile="$(OutDir)/libglobus_gridmap_callout_error_win32dbg.lib"/>
 			<Tool
 				Name="VCMIDLTool"/>
 			<Tool
-				Name="VCPostBuildEventTool"
-				Description="copying $(OutDir)\$(TargetFileName) to &quot;$(GLOBUS_LOCATION)\lib\&quot;"
-				CommandLine="copy $(OutDir)\$(TargetFileName) &quot;$(GLOBUS_LOCATION)\lib\&quot;"/>
+				Name="VCPostBuildEventTool"/>
 			<Tool
 				Name="VCPreBuildEventTool"/>
 			<Tool
@@ -64,7 +61,7 @@
 				StringPooling="TRUE"
 				RuntimeLibrary="4"
 				EnableFunctionLevelLinking="TRUE"
-				UsePrecompiledHeader="0"
+				UsePrecompiledHeader="3"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="TRUE"
 				DebugInformationFormat="3"/>
@@ -72,50 +69,11 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)/DebugLib.lib"/>
+				OutputFile="$(OutDir)/GSI_gridmap_callout_error.lib"/>
 			<Tool
 				Name="VCMIDLTool"/>
 			<Tool
 				Name="VCPostBuildEventTool"/>
-			<Tool
-				Name="VCPreBuildEventTool"/>
-			<Tool
-				Name="VCPreLinkEventTool"/>
-			<Tool
-				Name="VCResourceCompilerTool"/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
-		</Configuration>
-		<Configuration
-			Name="DebugThr|Win32"
-			OutputDirectory="DebugThr"
-			IntermediateDirectory="DebugThr"
-			ConfigurationType="4"
-			CharacterSet="2">
-			<Tool
-				Name="VCCLCompilerTool"
-				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(GLOBUS_LOCATION)\include&quot;;&quot;$(GLOBUS_LOCATION)\include\threaded&quot;;&quot;$(SolutionDir)&quot;"
-				PreprocessorDefinitions="WIN32;_DEBUG;_LIB"
-				MinimalRebuild="TRUE"
-				BasicRuntimeChecks="3"
-				RuntimeLibrary="2"
-				UsePrecompiledHeader="0"
-				WarningLevel="3"
-				Detect64BitPortabilityProblems="TRUE"
-				DebugInformationFormat="1"
-				CompileAs="0"/>
-			<Tool
-				Name="VCCustomBuildTool"/>
-			<Tool
-				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)/globus_gram_client_win32dbgthr.lib"/>
-			<Tool
-				Name="VCMIDLTool"/>
-			<Tool
-				Name="VCPostBuildEventTool"
-				Description="copying $(OutDir)\$(TargetFileName) to &quot;$(GLOBUS_LOCATION)\lib\&quot;"
-				CommandLine="copy $(OutDir)\$(TargetFileName) &quot;$(GLOBUS_LOCATION)\lib\&quot;"/>
 			<Tool
 				Name="VCPreBuildEventTool"/>
 			<Tool
@@ -131,16 +89,23 @@
 			Name="Source Files"
 			Filter="cpp;c;cxx;def;odl;idl;hpj;bat;asm">
 			<File
-				RelativePath="..\globus_gram_client.c">
+				RelativePath="..\..\error\globus_i_gridmap_callout_error.c">
 			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl;inc">
 			<File
-				RelativePath="..\globus_gram_client.h">
+				RelativePath="..\..\error\globus_gridmap_callout_error.h">
 			</File>
 		</Filter>
+		<Filter
+			Name="Resource Files"
+			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe">
+		</Filter>
+		<File
+			RelativePath="ReadMe.txt">
+		</File>
 	</Files>
 	<Globals>
 	</Globals>

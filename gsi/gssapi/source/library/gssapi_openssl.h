@@ -13,6 +13,7 @@
 #define _GSSAPI_OPENSSL_H
 
 #if defined(WIN32)
+#define _WINSOCKAPI_  //rcg 9/23/03
 #   include "windows.h"
 #endif
 

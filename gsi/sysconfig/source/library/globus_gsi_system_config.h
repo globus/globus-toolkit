@@ -152,6 +152,8 @@ globus_module_descriptor_t              globus_i_gsi_sysconfig_module;
             globus_gsi_sysconfig_check_certfile_win32
 #    define GLOBUS_GSI_SYSCONFIG_FILE_EXISTS \
             globus_gsi_sysconfig_file_exists_win32
+#    define GLOBUS_GSI_SYSCONFIG_DIR_EXISTS \
+            globus_gsi_sysconfig_dir_exists_win32
 #    define GLOBUS_GSI_SYSCONFIG_GET_CERT_DIR \
             globus_gsi_sysconfig_get_cert_dir_win32
 #    define GLOBUS_GSI_SYSCONFIG_GET_USER_CERT_FILENAME \
@@ -176,10 +178,12 @@ globus_module_descriptor_t              globus_i_gsi_sysconfig_module;
             globus_gsi_sysconfig_remove_all_owned_files_win32
 #    define GLOBUS_GSI_SYSCONFIG_GET_GRIDMAP_FILENAME \
             globus_gsi_sysconfig_get_gridmap_filename_win32
+#    define GLOBUS_GSI_SYSCONFIG_GET_AUTHZ_CONF_FILENAME \
+            globus_gsi_sysconfig_get_authz_conf_filename_win32
 #    define GLOBUS_GSI_SYSCONFIG_IS_SUPERUSER \
             globus_gsi_sysconfig_is_superuser_win32
 #    define GLOBUS_GSI_SYSCONFIG_GET_USER_ID_STRING \
-            globus_gsI_sysconfig_get_user_id_string_win32
+            globus_gsi_sysconfig_get_user_id_string_win32
 #    define GLOBUS_GSI_SYSCONFIG_GET_PROC_ID_STRING \
             globus_gsi_sysconfig_get_proc_id_string_win32
 #    define GLOBUS_GSI_SYSCONFIG_GET_USERNAME \
@@ -404,6 +408,7 @@ globus_module_descriptor_t              globus_i_gsi_sysconfig_module;
             globus_gsi_sysconfig_get_unique_proxy_filename
 
 #ifdef WIN32
+typedef int globus_gsi_statcheck_t;
 
 globus_result_t
 globus_gsi_sysconfig_set_key_permissions_win32(
@@ -415,18 +420,19 @@ globus_gsi_sysconfig_get_home_dir_win32(
 
 globus_result_t
 globus_gsi_sysconfig_file_exists_win32(
-    const char *                        filename,
-    globus_gsi_statcheck_t *            status);
+    const char *                        filename);
+
+globus_result_t
+globus_gsi_sysconfig_dir_exists_win32(
+    const char *                        filename);
 
 globus_result_t
 globus_gsi_sysconfig_check_keyfile_win32(
-    const char *                        filename,
-    globus_gsi_statcheck_t *            status);
+    const char *                        filename);
 
 globus_result_t
 globus_gsi_sysconfig_check_certfile_win32(
-    const char *                        filename,
-    globus_gsi_statcheck_t *            status);
+    const char *                        filename);
 
 globus_result_t
 globus_gsi_sysconfig_get_cert_dir_win32(
@@ -469,7 +475,8 @@ globus_gsi_sysconfig_get_current_working_dir_win32(
 
 globus_result_t
 globus_gsi_sysconfig_make_absolute_path_for_filename_win32(
-    char *                              filename);
+    char *                              filename,
+	char **								absolute_path);
 
 globus_result_t
 globus_gsi_sysconfig_split_dir_and_filename_win32(

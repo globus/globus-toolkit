@@ -2,9 +2,16 @@
 
 #include "gssapi_test_utils.h"
 #include <sys/types.h>
+#ifndef WIN32
 #include <sys/socket.h>
 #include <sys/un.h>
-
+#else
+#include <winsock2.h>
+struct  sockaddr_un {
+   short   sun_family;             /* AF_UNIX */
+   char    sun_path[108];          /* path name (gag) */
+   };
+#endif
 
 #define NUM_CLIENTS 10
 #define ITERATIONS 10

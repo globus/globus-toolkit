@@ -2,8 +2,8 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="7.00"
-	Name="DebugThreadedLib"
-	ProjectGUID="{F09430BF-80D7-4294-9122-19D5B7F71D32}"
+	Name="GSI_openssl_error"
+	ProjectGUID="{04848777-C8F2-4FEC-BAB7-E7EE597E5414}"
 	Keyword="Win32Proj">
 	<Platforms>
 		<Platform
@@ -19,27 +19,25 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="$(GLOBUS_LOCATION)\include;$(GLOBUS_LOCATION)\include\threaded;$(SolutionDir)"
+				AdditionalIncludeDirectories="\include;&quot;$(SolutionDir)&quot;;\include\nonthreaded;\core\source\win32\nonthreaded;\gsi\openssl_error\source\library;\gsi\proxy\proxy_ssl\source\library"
 				PreprocessorDefinitions="WIN32;_DEBUG;_LIB"
 				MinimalRebuild="TRUE"
-				BasicRuntimeChecks="3"
+				BasicRuntimeChecks="0"
 				RuntimeLibrary="2"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="TRUE"
-				DebugInformationFormat="1"
-				CompileAs="0"/>
+				DebugInformationFormat="4"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)/globus_io_win32dbgthr.lib"/>
+				OutputFile="$(OutDir)/libglobus_openssl_error_win32dbg.lib"/>
 			<Tool
 				Name="VCMIDLTool"/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				Description="copying $(OutDir)\$(TargetFileName) to &quot;$(GLOBUS_LOCATION)\lib\&quot;"
-				CommandLine="copy $(OutDir)\$(TargetFileName) &quot;$(GLOBUS_LOCATION)\lib\&quot;"/>
+				CommandLine="copy .\debug\*.lib \lib\*.*"/>
 			<Tool
 				Name="VCPreBuildEventTool"/>
 			<Tool
@@ -72,7 +70,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)/DebugThreadedLib.lib"/>
+				OutputFile="$(OutDir)/GSI_openssl_error.lib"/>
 			<Tool
 				Name="VCMIDLTool"/>
 			<Tool
@@ -92,67 +90,29 @@
 			Name="Source Files"
 			Filter="cpp;c;cxx;def;odl;idl;hpj;bat;asm">
 			<File
-				RelativePath="..\library\globus_io_attr.c">
+				RelativePath="..\library\globus_error_openssl.c">
 			</File>
 			<File
-				RelativePath="..\library\globus_io_common.c">
-			</File>
-			<File
-				RelativePath="..\library\globus_io_core.c">
-			</File>
-			<File
-				RelativePath="..\library\globus_io_error_hierarchy.c">
-			</File>
-			<File
-				RelativePath="..\library\globus_io_error_strings.c">
-			</File>
-			<File
-				RelativePath="..\library\globus_io_file.c">
-			</File>
-			<File
-				RelativePath="..\library\globus_io_read.c">
-			</File>
-			<File
-				RelativePath="..\library\globus_io_securesocket.c">
-			</File>
-			<File
-				RelativePath="..\library\globus_io_socket.c">
-			</File>
-			<File
-				RelativePath="..\library\globus_io_tcp.c">
-			</File>
-			<File
-				RelativePath="..\library\globus_io_windows.c">
-			</File>
-			<File
-				RelativePath="..\library\globus_io_winsock.c">
-			</File>
-			<File
-				RelativePath="..\library\globus_io_write.c">
+				RelativePath="..\library\globus_i_error_openssl.c">
 			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl;inc">
 			<File
-				RelativePath="..\library\globus_i_io_windows.h">
+				RelativePath="..\library\globus_error_openssl.h">
 			</File>
 			<File
-				RelativePath="..\library\globus_i_io_winsock.h">
-			</File>
-			<File
-				RelativePath="..\library\globus_io.h">
-			</File>
-			<File
-				RelativePath="..\library\globus_io_error_hierarchy.h">
-			</File>
-			<File
-				RelativePath="..\library\globus_io_win_io_operation.h">
-			</File>
-			<File
-				RelativePath="..\library\globus_l_io.h">
+				RelativePath="..\library\globus_i_error_openssl.h">
 			</File>
 		</Filter>
+		<Filter
+			Name="Resource Files"
+			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe">
+		</Filter>
+		<File
+			RelativePath="ReadMe.txt">
+		</File>
 	</Files>
 	<Globals>
 	</Globals>

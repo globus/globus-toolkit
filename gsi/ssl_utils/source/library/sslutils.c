@@ -89,6 +89,12 @@ static char *rcsid = "$Header$";
 #endif
 #endif
 
+#ifdef WIN32
+#ifndef ERR_file_name
+#define ERR_file_name   __FILE__
+#endif
+#endif
+
 int fix_add_entry_asn1_set_param = 0;
 
 extern globus_mutex_t                   globus_l_gsi_ssl_utils_mutex;

@@ -2,7 +2,7 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="7.00"
-	Name="openssl_module"
+	Name="GSI_openssl_module"
 	ProjectGUID="{AC876877-B8E6-4528-8F76-6F16BF81AD90}"
 	Keyword="Win32Proj">
 	<Platforms>
@@ -19,10 +19,10 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(GLOBUS_LOCATION)\include&quot;;&quot;$(SolutionDir)&quot;;&quot;$(GLOBUS_LOCATION)\include\nonthreaded&quot;"
+				AdditionalIncludeDirectories="\include;&quot;$(SolutionDir)&quot;;\include\nonthreaded;\core\source\win32\nonthreaded;\gsi\openssl_error\source\library;\gsi\proxy\proxy_ssl\source\library"
 				PreprocessorDefinitions="WIN32;_DEBUG;_LIB"
 				MinimalRebuild="TRUE"
-				BasicRuntimeChecks="3"
+				BasicRuntimeChecks="0"
 				RuntimeLibrary="2"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
@@ -33,11 +33,12 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)/globus_opensslmodule.lib"/>
+				OutputFile="$(OutDir)/libglobus_openssl_win32dbg.lib"/>
 			<Tool
 				Name="VCMIDLTool"/>
 			<Tool
-				Name="VCPostBuildEventTool"/>
+				Name="VCPostBuildEventTool"
+				CommandLine="copy .\debug\*.lib \lib\*.*"/>
 			<Tool
 				Name="VCPreBuildEventTool"/>
 			<Tool

@@ -2,8 +2,8 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="7.00"
-	Name="DebugLib"
-	ProjectGUID="{AE7CD395-2725-400A-89DB-2DC426DC1357}"
+	Name="ClientDebugLibThr"
+	ProjectGUID="{16B9F788-DBFE-4B3F-809A-35A398F97417}"
 	Keyword="Win32Proj">
 	<Platforms>
 		<Platform
@@ -19,27 +19,27 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(GLOBUS_LOCATION)\include&quot;;&quot;$(GLOBUS_LOCATION)\include\nonthreaded&quot;;&quot;$(SolutionDir)&quot;"
+				AdditionalIncludeDirectories="\include;\include\nonthreaded;&quot;$(SolutionDir)&quot;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_LIB"
 				MinimalRebuild="TRUE"
-				BasicRuntimeChecks="3"
+				BasicRuntimeChecks="0"
 				RuntimeLibrary="2"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="TRUE"
-				DebugInformationFormat="1"
+				DebugInformationFormat="0"
 				CompileAs="0"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)/globus_gram_protocol_win32dbg.lib"/>
+				OutputFile="$(OutDir)/libglobus_dftp_client_win32dbgthr.lib"/>
 			<Tool
 				Name="VCMIDLTool"/>
 			<Tool
 				Name="VCPostBuildEventTool"
 				Description="copying $(OutDir)\$(TargetFileName) to &quot;$(GLOBUS_LOCATION)\lib\&quot;"
-				CommandLine="copy $(OutDir)\$(TargetFileName) &quot;$(GLOBUS_LOCATION)\lib\&quot;"/>
+				CommandLine="copy $(OutDir)\$(TargetFileName) \lib\*.*"/>
 			<Tool
 				Name="VCPreBuildEventTool"/>
 			<Tool
@@ -72,50 +72,11 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)/DebugLib.lib"/>
+				OutputFile="$(OutDir)/DebugLibThr.lib"/>
 			<Tool
 				Name="VCMIDLTool"/>
 			<Tool
 				Name="VCPostBuildEventTool"/>
-			<Tool
-				Name="VCPreBuildEventTool"/>
-			<Tool
-				Name="VCPreLinkEventTool"/>
-			<Tool
-				Name="VCResourceCompilerTool"/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
-		</Configuration>
-		<Configuration
-			Name="DebugThr|Win32"
-			OutputDirectory="DebugThr"
-			IntermediateDirectory="DebugThr"
-			ConfigurationType="4"
-			CharacterSet="2">
-			<Tool
-				Name="VCCLCompilerTool"
-				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(GLOBUS_LOCATION)\include&quot;;&quot;$(GLOBUS_LOCATION)\include\threaded&quot;;&quot;$(SolutionDir)&quot;"
-				PreprocessorDefinitions="WIN32;_DEBUG;_LIB"
-				MinimalRebuild="TRUE"
-				BasicRuntimeChecks="3"
-				RuntimeLibrary="2"
-				UsePrecompiledHeader="0"
-				WarningLevel="3"
-				Detect64BitPortabilityProblems="TRUE"
-				DebugInformationFormat="1"
-				CompileAs="0"/>
-			<Tool
-				Name="VCCustomBuildTool"/>
-			<Tool
-				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)/globus_gram_protocol_win32dbgthr.lib"/>
-			<Tool
-				Name="VCMIDLTool"/>
-			<Tool
-				Name="VCPostBuildEventTool"
-				Description="copying $(OutDir)\$(TargetFileName) to &quot;$(GLOBUS_LOCATION)\lib\&quot;"
-				CommandLine="copy $(OutDir)\$(TargetFileName) &quot;$(GLOBUS_LOCATION)\lib\&quot;"/>
 			<Tool
 				Name="VCPreBuildEventTool"/>
 			<Tool
@@ -131,30 +92,54 @@
 			Name="Source Files"
 			Filter="cpp;c;cxx;def;odl;idl;hpj;bat;asm">
 			<File
-				RelativePath="..\globus_gram_protocol.c">
+				RelativePath="..\globus_ftp_client.c">
 			</File>
 			<File
-				RelativePath="..\globus_gram_protocol_error.c">
+				RelativePath="..\globus_ftp_client_attr.c">
 			</File>
 			<File
-				RelativePath="..\globus_gram_protocol_frame.c">
+				RelativePath="..\globus_ftp_client_data.c">
 			</File>
 			<File
-				RelativePath="..\globus_gram_protocol_io.c">
+				RelativePath="..\globus_ftp_client_debug_plugin.c">
 			</File>
 			<File
-				RelativePath="..\globus_gram_protocol_pack.c">
+				RelativePath="..\globus_ftp_client_exists.c">
+			</File>
+			<File
+				RelativePath="..\globus_ftp_client_handle.c">
+			</File>
+			<File
+				RelativePath="..\globus_ftp_client_perf_plugin.c">
+			</File>
+			<File
+				RelativePath="..\globus_ftp_client_plugin.c">
+			</File>
+			<File
+				RelativePath="..\globus_ftp_client_restart.c">
+			</File>
+			<File
+				RelativePath="..\globus_ftp_client_restart_marker.c">
+			</File>
+			<File
+				RelativePath="..\globus_ftp_client_restart_marker_plugin.c">
+			</File>
+			<File
+				RelativePath="..\globus_ftp_client_restart_plugin.c">
+			</File>
+			<File
+				RelativePath="..\globus_ftp_client_state.c">
+			</File>
+			<File
+				RelativePath="..\globus_ftp_client_throughput_plugin.c">
+			</File>
+			<File
+				RelativePath="..\globus_ftp_client_transfer.c">
 			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl;inc">
-			<File
-				RelativePath="..\globus_gram_protocol.h">
-			</File>
-			<File
-				RelativePath="..\globus_i_gram_protocol.h">
-			</File>
 		</Filter>
 	</Files>
 	<Globals>

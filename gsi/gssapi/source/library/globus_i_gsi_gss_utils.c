@@ -22,6 +22,11 @@ static char *rcsid = "$Id$";
 
 #include "ssl_locl.h"
 
+#ifdef WIN32
+#define strcasecmp stricmp
+#define strncasecmp strnicmp
+#endif
+
 extern int                              globus_i_gsi_gssapi_debug_level;
 extern FILE *                           globus_i_gsi_gssapi_debug_fstream;
 
