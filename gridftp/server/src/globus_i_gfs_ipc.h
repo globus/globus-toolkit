@@ -1,6 +1,8 @@
 #ifndef GLOBUS_I_GFS_IPC_H
 #define GLOBUS_I_GFS_IPC_H
 
+#include "globus_i_gridftp_server.h"
+
 // stuck in globus_i_gridftp_server.h for now so ipc_handle can be in instance
 // will be outa there when ipc_handle handling shit is in control.c
 // after local version / single stripe is working i guess.
@@ -218,17 +220,32 @@ typedef struct globus_gfs_data_state_s
     const char **                       contact_strings;
 } globus_gfs_data_state_t;
 
-typedef struct globus_gfs_resource_state_s
+typedef struct globus_gfs_stat_state_s
 {
     globus_bool_t                       file_only;
     char *                              pathname;
-} globus_gfs_resource_state_t;
+} globus_gfs_stat_state_t;
+
+
+typedef void
+(*globus_i_gfs_ipc_data_callback_t)(
+    globus_gfs_ipc_reply_t *           reply,
+    void *                              user_arg);
+
+typedef void
+(*globus_i_gfs_ipc_data_event_callback_t)(
+    globus_gfs_ipc_event_reply_t *     reply,
+    void *                              user_arg);
+
+
 
 typedef void
 (*globus_gfs_ipc_iface_set_user_t)(
     globus_gfs_ipc_handle_t             ipc_handle,
     int                                 id,
-    const char *                        user_dn);
+    const char *                        user_dn,
+    globus_i_gfs_ipc_data_callback_t          cb,
+    void *                              user_arg);
 
 globus_result_t
 globus_gfs_ipc_set_user(
@@ -242,7 +259,9 @@ typedef void
 (*globus_gfs_ipc_iface_set_cred_t)(
     globus_gfs_ipc_handle_t             ipc_handle,
     int                                 id,
-    gss_cred_id_t                       cred_thing);
+    gss_cred_id_t                       cred_thing,
+    globus_i_gfs_ipc_data_callback_t          cb,
+    void *                              user_arg);
 
 globus_result_t
 globus_gfs_ipc_set_cred(
@@ -261,7 +280,10 @@ typedef globus_result_t
 (*globus_gfs_ipc_iface_recv_t)(
     globus_gfs_ipc_handle_t             ipc_handle,
     int                                 id,
-    globus_gfs_transfer_state_t *       recv_state);
+    globus_gfs_transfer_state_t *       recv_state,
+    globus_i_gfs_ipc_data_callback_t          cb,
+    globus_i_gfs_ipc_data_event_callback_t    event_cb,
+    void *                              user_arg);
 
 globus_result_t
 globus_gfs_ipc_request_recv(
@@ -281,7 +303,10 @@ typedef globus_result_t
 (*globus_gfs_ipc_iface_send_t)(
     globus_gfs_ipc_handle_t             ipc_handle,
     int                                 id,
-    globus_gfs_transfer_state_t *       send_state);
+    globus_gfs_transfer_state_t *       send_state,
+    globus_i_gfs_ipc_data_callback_t          cb,
+    globus_i_gfs_ipc_data_event_callback_t    event_cb,
+    void *                              user_arg);
 
 globus_result_t
 globus_gfs_ipc_request_send(
@@ -297,13 +322,16 @@ typedef globus_result_t
 (*globus_gfs_ipc_iface_list_t)(
     globus_gfs_ipc_handle_t             ipc_handle,
     int                                 id,
-    globus_gfs_transfer_state_t *       send_state);
+    globus_gfs_transfer_state_t *       list_state,
+    globus_i_gfs_ipc_data_callback_t          cb,
+    globus_i_gfs_ipc_data_event_callback_t    event_cb,
+    void *                              user_arg);
 
 globus_result_t
 globus_gfs_ipc_request_list(
     globus_gfs_ipc_handle_t             ipc_handle,
     int *                               id,
-    globus_gfs_transfer_state_t *       send_state,
+    globus_gfs_transfer_state_t *       list_state,
     globus_gfs_ipc_callback_t           cb,
     globus_gfs_ipc_event_callback_t     event_cb,
     void *                              user_arg);
@@ -318,7 +346,9 @@ typedef globus_result_t
 (*globus_gfs_ipc_iface_command_t)(
     globus_gfs_ipc_handle_t             ipc_handle,
     int                                 id,
-    globus_gfs_command_state_t *        cmd_state);
+    globus_gfs_command_state_t *        cmd_state,
+    globus_i_gfs_ipc_data_callback_t          cb,
+    void *                              user_arg);
 
 globus_result_t
 globus_gfs_ipc_request_command(
@@ -337,7 +367,9 @@ typedef globus_result_t
 (*globus_gfs_ipc_iface_active_data_t)(
     globus_gfs_ipc_handle_t             ipc_handle,
     int                                 id,
-    globus_gfs_data_state_t *           data_state);
+    globus_gfs_data_state_t *           data_state,
+    globus_i_gfs_ipc_data_callback_t          cb,
+    void *                              user_arg);
 
 globus_result_t
 globus_gfs_ipc_request_active_data(
@@ -356,7 +388,9 @@ typedef globus_result_t
 (*globus_gfs_ipc_iface_passive_data_t)(
     globus_gfs_ipc_handle_t             ipc_handle,
     int                                 id,
-    globus_gfs_data_state_t *           data_state);
+    globus_gfs_data_state_t *           data_state,
+    globus_i_gfs_ipc_data_callback_t          cb,
+    void *                              user_arg);
 
 globus_result_t
 globus_gfs_ipc_request_passive_data(
@@ -373,13 +407,15 @@ typedef globus_result_t
 (*globus_gfs_ipc_iface_resource_t)(
     globus_gfs_ipc_handle_t             ipc_handle,
     int                                 id,
-    globus_gfs_resource_state_t *       resource_state);
+    globus_gfs_stat_state_t *       resource_state,
+    globus_i_gfs_ipc_data_callback_t          cb,
+    void *                              user_arg);
 
 globus_result_t
 globus_gfs_ipc_request_resource(
     globus_gfs_ipc_handle_t             ipc_handle,
     int *                               id,
-    globus_gfs_resource_state_t *       resource_state,
+    globus_gfs_stat_state_t *       resource_state,
     globus_gfs_ipc_callback_t           cb,
     void *                              user_arg);
 

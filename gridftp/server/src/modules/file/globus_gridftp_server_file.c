@@ -1,5 +1,5 @@
 
-#include "globus_gridftp_server.h"
+#include "globus_gridftp_server_module.h"
 #include "globus_xio.h"
 #include "globus_xio_file_driver.h"
 #include <openssl/md5.h>
@@ -155,10 +155,10 @@ globus_l_gfs_file_copy_stat(
 
 /* XXX static */
 globus_result_t
-globus_l_gfs_file_resource(
+globus_l_gfs_file_stat(
     globus_gridftp_server_operation_t   op,
-    const char *                        pathname,
-    int                                 mask)
+    globus_gfs_stat_state_t *           stat_state,
+    void *                              user_arg)
 {
     globus_result_t                     result;
     struct stat                         stat_buf;
@@ -167,17 +167,17 @@ globus_l_gfs_file_resource(
     DIR *                               dir;
     char                                basepath[MAXPATHLEN];
     char                                filename[MAXPATHLEN];
-    GlobusGFSName(globus_l_gfs_file_resource);
+    GlobusGFSName(globus_l_gfs_file_stat);
 
-    if(stat(pathname, &stat_buf) != 0)
+    if(stat(stat_state->pathname, &stat_buf) != 0)
     {
         result = GlobusGFSErrorSystemError("stat", errno);
         goto error_stat1;
     }
     
-    globus_l_gfs_file_partition_path(pathname, basepath, filename);
+    globus_l_gfs_file_partition_path(stat_state->pathname, basepath, filename);
     
-    if(!S_ISDIR(stat_buf.st_mode) || (mask & GLOBUS_GFS_FILE_ONLY))
+    if(!S_ISDIR(stat_buf.st_mode) || stat_state->file_only)
     {
         stat_info = (globus_gridftp_server_stat_t *)
             globus_malloc(sizeof(globus_gridftp_server_stat_t));
@@ -196,7 +196,7 @@ globus_l_gfs_file_resource(
         int                             i;
         char                            dir_path[MAXPATHLEN];
     
-        dir = globus_libc_opendir(pathname);
+        dir = globus_libc_opendir(stat_state->pathname);
         if(!dir)
         {
             result = GlobusGFSErrorSystemError("opendir", errno);
@@ -255,7 +255,7 @@ globus_l_gfs_file_resource(
         closedir(dir);
     }
     
-    globus_gridftp_server_finished_resource(
+    globus_gridftp_server_finished_stat(
         op, GLOBUS_SUCCESS, stat_info, stat_count);
     
     globus_free(stat_info);
@@ -488,6 +488,51 @@ seek_error:
 fd_error:
 param_error:
      /* reply(501, "Error calculating checksum"); */
+
+    return result;
+}
+
+
+globus_result_t
+globus_l_gfs_file_command(
+    globus_gridftp_server_operation_t   op,
+    globus_gfs_command_state_t *        cmd_state,
+    void *                              user_arg)
+{
+    globus_result_t                     result;
+    
+    switch(cmd_state->command)
+    {
+      case GLOBUS_I_GFS_CMD_MKD:
+        result = globus_l_gfs_file_mkdir(op, cmd_state->pathname);
+        break;
+      case GLOBUS_I_GFS_CMD_RMD:
+        result = globus_l_gfs_file_rmdir(op, cmd_state->pathname);
+        break;
+      case GLOBUS_I_GFS_CMD_DELE:
+        result = globus_l_gfs_file_delete(op, cmd_state->pathname);
+        break;
+      case GLOBUS_I_GFS_CMD_RNTO:
+        result = globus_l_gfs_file_rename(
+            op, cmd_state->rnfr_pathname, cmd_state->pathname);
+        break;
+      case GLOBUS_I_GFS_CMD_SITE_CHMOD:
+        result = globus_l_gfs_file_chmod(
+            op, cmd_state->pathname, cmd_state->chmod_mode);
+        break;
+      case GLOBUS_I_GFS_CMD_CKSM:
+        result = globus_l_gfs_file_cksm(
+            op, 
+            cmd_state->pathname, 
+            cmd_state->cksm_alg,
+            cmd_state->cksm_offset,
+            cmd_state->cksm_length);
+        break;
+      
+      default:
+        result = GLOBUS_FAILURE;
+        break;
+    }
 
     return result;
 }
@@ -881,6 +926,7 @@ globus_l_gfs_file_open_write_cb(
         monitor->file_handle = GLOBUS_NULL;
         goto error_open;
     }
+
     globus_gridftp_server_begin_transfer(monitor->op);
     
     globus_mutex_lock(&monitor->lock);
@@ -1031,8 +1077,8 @@ error_attr:
 globus_result_t
 globus_l_gfs_file_recv(
     globus_gridftp_server_operation_t   op,
-    const char *                        arguments,
-    const char *                        pathname)
+    globus_gfs_transfer_state_t *       transfer_state,
+    void *                              user_arg)
 {
     globus_result_t                     result;
     globus_l_recv_monitor_t *           monitor;
@@ -1067,13 +1113,13 @@ globus_l_gfs_file_recv(
     open_flags = GLOBUS_XIO_FILE_BINARY | 
         GLOBUS_XIO_FILE_CREAT | 
         GLOBUS_XIO_FILE_WRONLY;
-    if(arguments == NULL)
+    if(offset == 0 && length == -1)
     {
         open_flags |= GLOBUS_XIO_FILE_TRUNC;
     }
         
     result = globus_l_gfs_file_open(
-        &monitor->file_handle, pathname, open_flags, monitor);
+        &monitor->file_handle, transfer_state->pathname, open_flags, monitor);
     if(result != GLOBUS_SUCCESS)
     {
         result = GlobusGFSErrorWrapFailed("globus_l_gfs_file_open", result);
@@ -1484,8 +1530,8 @@ error_open:
 globus_result_t
 globus_l_gfs_file_send(
     globus_gridftp_server_operation_t   op,
-    const char *                        arguments,
-    const char *                        pathname)
+    globus_gfs_transfer_state_t *       transfer_state,
+    void *                              user_arg)
 {
     globus_result_t                     result;
     globus_l_send_monitor_t *           monitor;
@@ -1511,7 +1557,7 @@ globus_l_gfs_file_send(
     open_flags = GLOBUS_XIO_FILE_BINARY | GLOBUS_XIO_FILE_RDONLY;
 
     result = globus_l_gfs_file_open(
-        &monitor->file_handle, pathname, open_flags, monitor);
+        &monitor->file_handle, transfer_state->pathname, open_flags, monitor);
     if(result != GLOBUS_SUCCESS)
     {
         result = GlobusGFSErrorWrapFailed("globus_l_gfs_file_open", result);
@@ -1526,3 +1572,20 @@ error_open:
 error_alloc:
     return result;
 }
+
+
+globus_gridftp_server_storage_iface_t   globus_gfs_file_dsi_iface = 
+{
+    NULL, /* globus_l_gfs_file_init, */
+    NULL, /* globus_l_gfs_file_destroy, */
+    NULL, /* list */
+    globus_l_gfs_file_send,
+    globus_l_gfs_file_recv,
+    NULL, /* trev */
+    NULL, /* active */
+    NULL, /* passive */
+    NULL, /* data destroy */
+    globus_l_gfs_file_command, 
+    globus_l_gfs_file_stat,
+    NULL
+};

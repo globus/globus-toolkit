@@ -1,3 +1,14 @@
+#ifndef GLOBUS_GRIDFTP_SERVER_MODULE_H
+#define GLOBUS_GRIDFTP_SERVER_MODULE_H
+
+
+#include "globus_gridftp_server.h"
+#include "globus_i_gridftp_server.h"
+
+typedef globus_gfs_ipc_reply_t          globus_gridftp_server_finished_t;
+typedef globus_gfs_ipc_event_reply_t    globus_gridftp_server_event_t;
+typedef struct globus_l_gfs_data_operation_s * globus_gridftp_server_operation_t;
+
 
 /* notification funcs */
 
@@ -12,6 +23,29 @@ globus_gridftp_server_operation_event(
     globus_gridftp_server_operation_t   op,
     globus_result_t                     result,
     globus_gridftp_server_event_t       event_state);
+
+void
+globus_gridftp_server_begin_transfer(
+    globus_gridftp_server_operation_t   op);
+
+void
+globus_gridftp_server_finished_transfer(
+    globus_gridftp_server_operation_t   op, 
+    globus_result_t                     result);
+
+void
+globus_gridftp_server_finished_command(
+    globus_gridftp_server_operation_t   op, 
+    globus_result_t                     result,
+    char *                              command_response);
+    
+void
+globus_gridftp_server_finished_stat(
+    globus_gridftp_server_operation_t   op, 
+    globus_result_t                     result,
+    globus_gridftp_server_stat_t *      stat_info,
+    int                                 stat_count);
+
 
 
 /* data read and write */
@@ -73,7 +107,7 @@ globus_gridftp_server_get_optimal_concurrency(
 
 void
 globus_gridftp_server_get_block_size(
-    int                                 op,
+    globus_gridftp_server_operation_t   op,
     globus_size_t *                     block_size);
 
 void
@@ -172,67 +206,8 @@ typedef struct globus_gridftp_server_storage_iface_s
 } globus_gridftp_server_storage_iface_t;
 
 
+extern globus_gridftp_server_storage_iface_t   globus_gfs_file_dsi_iface;
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// other shit
-
-void
-globus_gridftp_server_finished_transfer_init(
-    globus_gridftp_server_operation_t   op,
-    globus_result_t                     result,
-    globus_gridftp_server_stripe_info_t * stripe_info,  /* maybe stripe info should be params? */
-    void *                              init_arg);
-
-typedef globus_gridftp_server_stripe_info_s
-{
-    /*  stuff we care about */
-} globus_gridftp_server_stripe_info_t
-
-
-typedef globus_result_t
-(*globus_gridftp_server_storage_send_init_t)(
-    globus_gridftp_server_operation_t   op,
-    const char *                        pathname);
-
-typedef globus_result_t
-(*globus_gridftp_server_storage_recv_init_t)(
-    globus_gridftp_server_operation_t   op,
-    const char *                        pathname);
-
-typedef globus_result_t
-(*globus_gridftp_server_storage_send_cancel_t)(
-    globus_gridftp_server_operation_t   op,
-    void *                              init_arg);
-
-typedef globus_result_t
-(*globus_gridftp_server_storage_recv_cancel_t)(
-    globus_gridftp_server_operation_t   op,
-    void *                              init_arg);
-
+#endif
