@@ -36,7 +36,7 @@ globus_i_gfs_log_open(void)
     globus_logging_init(
         &log_handle,
         GLOBUS_NULL, /* no buffered logs */
-        16384,
+        2048,
         globus_i_gfs_config_int("debug_level"), 
         &globus_logging_stdio_module,
         log_file);
