@@ -579,8 +579,14 @@ globus_l_gram_http_read_callback( void *                 read_t,
     /* Reading the header information */
     else if (! status->got_header)
     {
-	if (status->n_read==0 && (char)*buf == '0')
+	if (status->n_read==0 && (((char)*buf == '0') || ((char)*buf == 'D')))
+	{
+	    globus_libc_fprintf(
+		stderr,
+		"WARNING, read first character %c : delegation packet?\n"
+		(char)*buf );
 	    goto register_read_again;
+	}
 
 	status->n_read += nbytes;
 	status->buf[status->n_read] = '\0';
