@@ -439,12 +439,55 @@ static int arg_f_mode = O_RDONLY;
 	globus_gass_transfer_listenerattr_t * attr		 =GLOBUS_NULL;
 	char *                             scheme		 =GLOBUS_NULL;
 	globus_gass_transfer_requestattr_t * reqattr	 =GLOBUS_NULL;
+	char *                             activation_err    = GLOBUS_NULL;
 
 	err = globus_module_activate(GLOBUS_COMMON_MODULE);
 	if ( err != GLOBUS_SUCCESS )
 	{
-	    globus_libc_fprintf(stderr, "Error initializing globus\n");
-	    return 1;
+	    activation_err = "Error initializing globus\n";
+	}
+
+	if(activation_err == NULL)
+	{
+	    err = globus_module_activate(GLOBUS_GSI_GSS_ASSIST_MODULE);
+	    if ( err != GLOBUS_SUCCESS )
+	    {
+		activation_err = "Error initializing GSI GSS ASSIST\n";
+		return 1;
+	    }
+        }
+
+	if(activation_err == NULL)
+	{
+	    err = globus_module_activate(GLOBUS_GRAM_CLIENT_MODULE);
+	    if ( err != GLOBUS_SUCCESS)
+	    {
+		activation_err = globus_gram_protocol_error_string(err);
+	    }
+	}
+	if(activation_err == NULL)
+	{
+	    err = globus_module_activate(GLOBUS_NEXUS_MODULE);
+	    if ( err != GLOBUS_SUCCESS )
+	    {
+		activation_err = "Error initializing nexus\n";
+	    }
+	}
+	if(activation_err == NULL)
+	{
+	    err = globus_module_activate(GLOBUS_GASS_SERVER_EZ_MODULE);
+	    if ( err != GLOBUS_SUCCESS )
+	    {
+		activation_err = "Error initializing gass_server_ez\n";
+	    }
+	}
+	if(activation_err == NULL)
+	{
+	    err = globus_module_activate(GLOBUS_DUROC_CONTROL_MODULE);
+	    if ( err != GLOBUS_SUCCESS )
+	    {
+		activation_err = "Error initializing duroc control\n";
+	    }
 	}
         
 	if (strrchr(argv[0],'/'))
@@ -469,50 +512,21 @@ static int arg_f_mode = O_RDONLY;
 	    exit(-1);
 	}
 
-        err = globus_module_activate(GLOBUS_GSI_GSS_ASSIST_MODULE);
-        if ( err != GLOBUS_SUCCESS )
-        {
-            globus_libc_fprintf(stderr, "Error initializing GSI GSS ASSIST\n");
-            return 1;
-        }
-        err = globus_module_activate(GLOBUS_GRAM_CLIENT_MODULE);
-	if ( err != GLOBUS_SUCCESS)
-	{
-	    globus_libc_fprintf(stderr,
-				"Error initializing GRAM: %s\n",
-				globus_gram_protocol_error_string(err));
-            globus_module_deactivate_all();
-	    return 1;
-	}
-	err = globus_module_activate(GLOBUS_NEXUS_MODULE);
-        if ( err != GLOBUS_SUCCESS )
-        {
-            globus_libc_fprintf (stderr, "Error initializing nexus\n");
-            globus_module_deactivate_all();
-            return 1;
-        }
-        err = globus_module_activate(GLOBUS_GASS_SERVER_EZ_MODULE);
-        if ( err != GLOBUS_SUCCESS )
-        {
-            globus_libc_fprintf(stderr, "Error initializing gass_server_ez\n");
-            globus_module_deactivate_all();
-            return 1;
-        }
-        err = globus_module_activate(GLOBUS_DUROC_CONTROL_MODULE);
-        if ( err != GLOBUS_SUCCESS )
-        {
-            globus_libc_fprintf(stderr, "Error initializing duroc control\n");
-            globus_module_deactivate_all();
-            return 1;
-        }
 	/* maximum one unflagged argument should remain: the RSL string */
 	if (argc > 2)
 	{
 	    globusrun_l_args_error("too many request strings specified");
 	}
-
+	
 	if (argc > 1)
 	    request_string = globus_libc_strdup(argv[1]);
+
+	if (activation_err != NULL)
+	{
+	    fprintf(stderr, "%s", activation_err);
+
+	    exit(-2);
+	}
 
 	for (list = options_found;
 	     !globus_list_empty(list);
