@@ -2,14 +2,14 @@
 INSTALL		myproxy installation directions
 =======
 
- 1. Prerequisites for building
- 2. Building the software
- 3. Installing the client (user) software
- 4. Installing the myproxy-server
- 4a.Installnig the myproxy-server using a non-host certificate
- 5. The myproxy-server.config file
- 6. Installing the portal software
- 7. Providing access from the portal
+ 1.  Prerequisites for building
+ 2.  Building the software
+ 3.  Installing the client (user) software
+ 4.  Installing the myproxy-server
+ 4a. Installing the myproxy-server using a non-host certificate
+ 5.  The myproxy-server.config file
+ 6.  Installing the portal software
+ 7.  Providing access from the portal
 
 
 1. Prerequisites for building
@@ -117,6 +117,39 @@ The program will start up and background itself. It accepts
 connections on TCP port 7512, forking off a seperate child
 to handle each incoming connection. It logs information via
 the syslog service under the daemon facility.
+
+To run the myproxy server out of inetd, you need to do the 
+following as root:
+
+    *  Add the entries in etc.services.modifications to the
+       /etc/services file.
+       (Under Solaris add the entries to /etc/inet/services.)
+ 
+    *  Add the entries in etc.inetd.conf.modifications to the
+       /etc/inetd.conf file.  
+       (Under Solaris add the entries to /etc/inet/inetd.conf)  
+
+    *  Reactivate the inetd daemon.
+       This is accomplished by sending the SIGHUP signal to
+       the daemon.
+ 
+           kill -HUP <pid-of-inetd>
+ 
+    *  Copy the Myproxy startup script SXXmyproxy
+ 
+       to the appropriate systems startup directory.
+       E.g., /etc/rc.d/rc5.d/S[nn]myproxy   (under RedHat)  or
+             /etc/rc3.d/S[nn]myproxy        (under Solaris) or
+             /sbin/rc3.d/S[nn]myproxy       (under HP-UX)
+         where nn is a number between 00 and 99.
+ 
+       Alternatively, make a call to this script from the
+       system startup script. E.g., under BSD add an entry
+       in /etc/rc.local which calls SXXmyproxy
+
+    *   Execute the command:
+ 
+        SXXmyproxy start
 
 4a. Installing the myproxy-server using a non-host certificate
 --------------------------------------------------------------
