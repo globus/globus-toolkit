@@ -208,10 +208,8 @@ Southern California. All Rights Reserved.
 
   <!-- Deploys the gar file -->
   <target name="deployGar" depends="gar">
-    <copy todir="${ogsa.root}/lib" file="${build.lib}/${gar.name}"/>
-
     <ant antfile="build-packages.xml" target="deployGar" dir="${ogsa.root}">
-      <property name="gar.name" value="lib/${gar.name}"/>
+      <property name="gar.name" value="${basedir}/${build.lib}/${gar.name}"/>
     </ant>
   </target>
 
