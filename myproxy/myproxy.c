@@ -88,8 +88,9 @@ static int parse_add_creds (char *response_str, char ***pstrs, int *num_creds)
 		if (tmp == 0) // last credential name
 		{
 			size_t slen;
-			slen = strlen(p+len);
-			strs[idx] = (char *) malloc (slen+1);
+			slen = strlen (p+len);
+			strs[idx] = (char *) malloc(slen+1); // corrected after
+							     // jim suggested
 			if (strncpy (strs[idx], p+len, slen) == NULL)
 				return -1;
 
@@ -906,7 +907,7 @@ myproxy_serialize_response(const myproxy_response_t *response,
 	} /*end for */
 	
 
-	if ((response->data).creds.num_creds > 1)
+	if ((response->data).creds.num_creds >= 1)
 	{
 		/* Build up additional credentials string*/
 		len = concatenate_strings (data, datalen, MYPROXY_ADDITIONAL_CREDS_STRING, NULL);
@@ -916,7 +917,7 @@ myproxy_serialize_response(const myproxy_response_t *response,
        
 		totlen += len;
 
-		for (i = 0; i < (response->data).creds.num_creds-2; i ++)
+		for (i = 0; i < (response->data).creds.num_creds-1; i ++)
 		{
 			if ((response->data).creds.info_creds[i].credname)
 			{
@@ -1672,7 +1673,6 @@ convert_message(const char			*buffer,
 
 		if (line_index + 2 > line_len)
 		{
-			printf ("YESS %s\n", buffer);
 		    verror_put_string("Internal buffer (line) too small");
 		    goto error;
 		}
@@ -1698,7 +1698,6 @@ convert_message(const char			*buffer,
 	/* Is there room in line for this value */
 	if ((line_index + value_length + 1 /* for NUL */) > line_len)
 	{
-		printf ("NOO - %s\n", buffer);
 	    verror_put_string("Internal buffer (line) too small");
 	    goto error;
 	}

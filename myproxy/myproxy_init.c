@@ -231,7 +231,6 @@ main(int argc, char *argv[])
     }
 
     /* Send request to the myproxy-server */
-    myproxy_debug("Request buffer = %s", request_buffer);
 
     if (myproxy_send(socket_attrs, request_buffer, requestlen) < 0) {
         fprintf(stderr, "%s\n", 

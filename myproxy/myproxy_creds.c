@@ -1150,7 +1150,7 @@ int read_from_directory (struct myproxy_creds *creds, myproxy_response_t *respon
         	goto error;
     	}
    
-	if (myproxy_creds_is_owner(username, tmp_creds.credname, tmp_creds.owner_name) == -1)
+	if (myproxy_creds_is_owner(username, tmp_creds.credname, creds->owner_name) == -1)
 		continue;
 	
 	p = strstr (files[i]->d_name, ".data");
