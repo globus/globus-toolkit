@@ -41,14 +41,13 @@ sub new
     my $class = ref($proto) || $proto;
     my $self = $class->SUPER::new(@_);
     my $description = $self->{JobDescription};
-    my $tag = $description->cache_tag() or $tag = $ENV{GLOBUS_GRAM_JOB_CONTACT};
     my $stdout = $description->stdout();
     my $stderr = $description->stderr();
 
     if($description->jobtype() eq 'multiple' && $description->count > 1)
     {
 	$self->{STDIO_MERGER} =
-	    new Globus::GRAM::StdioMerger($tag, $stdout, $stderr);
+	    new Globus::GRAM::StdioMerger($self->job_dir(), $stdout, $stderr);
     }
     else
     {

@@ -21,7 +21,7 @@
 
        <Dependency Name="globus_gram_job_manager" Package="pgm">
            <Version>
-               <Simple_Version Major="4"/>
+               <Simple_Version Major="5"/>
            </Version>
        </Dependency>
     </Source_Dependencies>
