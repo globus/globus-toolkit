@@ -64,7 +64,7 @@ extern
 globus_module_descriptor_t        globus_i_gass_copy_module;
 
 
-/** Globus GASS copy GSIFTP control tcpbuffer Types */
+/** control tcpbuffer Types */
 typedef enum
 {
     /** Don't change the TCP buffer/window size from the system default */
@@ -77,7 +77,7 @@ typedef enum
     GLOBUS_GSIFTP_CONTROL_TCPBUFFER_AUTOMATIC
 } globus_gsiftp_control_tcpbuffer_mode_t;
     
-/** Globus GASS copy GSIFTP control tcpbuffer attribute structure.  */
+/** control tcpbuffer attribute structure  */
 typedef struct globus_gsiftp_control_tcpbuffer_s
 {
     globus_gsiftp_control_tcpbuffer_mode_t mode;
@@ -101,7 +101,7 @@ typedef struct globus_gsiftp_control_tcpbuffer_s
 } globus_gsiftp_control_tcpbuffer_t;
 
 
-/** Globus GASS copy GSIFTP control parallelism Types */
+/** control parallelism Types */
 typedef enum {
     /** No parallelism */
     GLOBUS_GSIFTP_CONTROL_PARALLELISM_NONE,
@@ -113,7 +113,7 @@ typedef enum {
     GLOBUS_GSIFTP_CONTROL_PARALLELISM_AUTOMATIC,
 } globus_gsiftp_control_parallelism_mode_t;
     
-/** Globus GASS copy GSIFTP control parallelism attribute structure.  */
+/** control parallelism attribute structure  */
 typedef struct globus_gsiftp_control_parallelism_s
 {
     globus_gsiftp_control_parallelism_mode_t mode;
@@ -127,7 +127,7 @@ typedef struct globus_gsiftp_control_parallelism_s
 	{
 	    unsigned long size;
 	} fixed;
-	struct /* GLOBUS_GSIFTP_CONTROL_PARALLELIS_AUTOMATIC */
+	struct /* GLOBUS_GSIFTP_CONTROL_PARALLELISM_AUTOMATIC */
 	{
 	    unsigned long initial_size;
 	    unsigned long minimum_size;
@@ -138,7 +138,7 @@ typedef struct globus_gsiftp_control_parallelism_s
 
 
 
-/** Globus GASS copy GSIFTP control striping Types */
+/** control striping Types */
 typedef enum
 {
     /** No striping */
@@ -151,7 +151,7 @@ typedef enum
     GLOBUS_GSIFTP_CONTROL_STRIPING_BLOCKED_ROUND_ROBIN,
 } globus_gsiftp_control_striping_mode_t;
 
-/** Globus GASS copy GSIFTP control striping attribute structure.  */
+/** control striping attribute structure  */
 typedef struct globus_gsiftp_control_striping_s
 {
     globus_gsiftp_control_striping_mode_t mode;
@@ -193,6 +193,129 @@ globus_gass_copy_init(
 globus_result_t
 globus_gass_copy_destroy(
     globus_gass_copy_handle_t * handle);
+
+
+/**
+ * copy functions (blocking)
+ */
+globus_result_t
+globus_gass_copy_url_to_url(
+    globus_gass_copy_handle_t * handle,
+    char * source_url,
+    globus_gass_copy_attr_t * source_attr,
+    char * dest_url,
+    globus_gass_copy_attr_t * dest_attr);
+
+globus_result_t
+globus_gass_copy_url_to_handle(
+    globus_gass_copy_handle_t * handle,
+    char * source_url,
+    globus_gass_copy_attr_t * source_attr,
+    globus_io_handle_t * dest_handle);
+
+globus_result_t
+globus_gass_copy_handle_to_url(
+    globus_gass_copy_handle_t * handle,
+    globus_io_handle_t * source_handle,
+    char * dest_url,
+    globus_gass_copy_attr_t * dest_attr);
+
+/**
+ * copy functions (asyncronous)
+ */
+globus_result_t
+globus_gass_copy_register_url_to_url(
+    globus_gass_copy_handle_t * handle,
+    char * source_url,
+    globus_gass_copy_attr_t * dest_attr,
+    char * dest_url,
+    globus_gass_copy_attr_t * source_attr,
+    globus_gass_copy_callback_t callback_func,
+    void * callback_arg);
+
+globus_result_t
+globus_gass_copy_register_url_to_handle(
+    globus_gass_copy_handle_t * handle,
+    char * source_url,
+    globus_gass_copy_attr_t * source_attr,
+    globus_io_handle_t * dest_handle,
+    globus_gass_copy_callback_t callback_func,
+    void * callback_arg);
+
+globus_result_t
+globus_gass_copy_register_handle_to_url(
+    globus_gass_copy_handle_t * handle,
+    globus_io_handle_t * source_handle,
+    char * dest_url,
+    globus_gass_copy_attr_t * dest_attr,
+    globus_gass_copy_callback_t callback_func,
+    void * callback_arg);
+
+/**
+ * cache handles functions
+ *
+ * Use this when transferring mulitple files from or to the same host
+ */
+globus_result_t
+globus_gass_copy_cache_url_state(
+    globus_gass_copy_handle_t * handle,
+    char * url);
+
+globus_result_t
+globus_gass_copy_flush_url_state(
+    globus_gass_copy_handle_t * handle,
+    char * url);
+
+/**
+ *  get/set user pointers from/to GASS copy handles
+ */
+globus_result_t
+globus_gass_copy_set_user_pointer(
+    globus_gass_copy_handle_t * handle,
+    void * user_data);
+
+void *
+globus_gass_copy_get_user_pointer(
+    globus_gass_copy_handle_t * handle);
+
+
+/**
+ * Set Attribute functions
+ */
+
+/* TCP buffer/window size */
+globus_result_t
+globus_gass_copy_attr_set_tcpbuffer(
+    globus_gass_copy_attr_t * attr,
+    globus_gsiftp_control_tcpbuffer_t * tcpbuffer_info);
+
+/* parallel transfer options */
+globus_result_t
+globus_gass_copy_attr_set_parallelism(
+    globus_gass_copy_attr_t * attr,
+    globus_gsiftp_control_parallelism_t * parallelism_info);
+
+/* striping options */
+globus_result_t
+globus_gass_copy_attr_set_striping(
+    globus_gass_copy_attr_t * attr,
+    globus_gsiftp_control_striping_t * striping_info);
+
+/* authorization options */
+globus_result_t
+globus_gass_copy_attr_set_authorization(
+    globus_gass_copy_attr_t * attr,
+    globus_io_authorization_t * authorization_info);
+
+/* secure channel options */
+globus_result_t
+globus_gass_copy_attr_set_secure_channel(
+    globus_gass_copy_attr_t * attr,
+    globus_io_secure_channel_t * secure_channel_info);
+
+/**
+ * Get Attribute functions
+ */
 
 EXTERN_C_END
 
