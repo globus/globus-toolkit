@@ -91,8 +91,8 @@ AC_SUBST(FILELIST_FILE)
 dnl GLOBUS_BUILD_DEPS(<list of package names seperated by spaces>)
 AC_DEFUN(GLOBUS_SET_BUILD_DEPS, [
 
-	for $pkg in $1; do
-		bfile="$GLOBUS_INSTALL_PATH/etc/globus_packages/$pkg/build_parameter_$GLOBUS_FLAVOR_NAME"
+	for pkg in $1; do
+		bfile="$GLOBUS_INSTALL_PATH/etc/globus_packages/$pkg/build_parameters_$GLOBUS_FLAVOR_NAME"
 		if ! test -f $bfile; then
 
 			AC_MSG_ERROR(["Package $pkg is not installed for flavor $GLOBUS_FLAVOR_NAME"])
