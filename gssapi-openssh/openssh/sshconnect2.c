@@ -754,6 +754,14 @@ userauth_external(Authctxt *authctxt)
         if (attempt++ >= 1)
         	return 0;
                                 
+	/* The client MUST NOT try this method if initial key exchange
+	   was not performed using a GSSAPI-based key exchange
+	   method. */
+	if (xxx_kex->kex_type != KEX_GSS_GRP1_SHA1) {
+		debug2("gsskex not performed, skipping external-keyx");
+		return 0;
+	}
+
         debug2("userauth_external");
         packet_start(SSH2_MSG_USERAUTH_REQUEST);
 #ifdef GSI
