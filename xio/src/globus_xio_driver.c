@@ -1,6 +1,26 @@
 #include "globus_xio.h"
 #include "globus_i_xio.h"
 
+static
+globus_bool_t
+globus_l_xio_server_timeout_always(
+    globus_xio_server_t                 server,
+    globus_xio_operation_type_t         type)
+{
+    return GLOBUS_TRUE;
+}
+
+
+static
+globus_bool_t
+globus_l_xio_timeout_always(
+    globus_xio_handle_t                 handle,
+    globus_xio_operation_type_t         type,
+    void *                              user_arg)
+{
+    return GLOBUS_TRUE;
+}
+
 void
 globus_l_xio_op_restarted(
     globus_i_xio_op_t *                 op)
@@ -168,7 +188,7 @@ globus_i_xio_handle_destroy(
             {
                 GlobusXIODebugPrintf(
                     GLOBUS_XIO_DEBUG_INFO,
-                    ("[globus_i_xio_handle_destroy] :: context->ref == 0.\n"));
+                    (_XIOSL("[globus_i_xio_handle_destroy] :: context->ref == 0.\n")));
                 destroy_context = GLOBUS_TRUE;
             }
 
@@ -176,8 +196,8 @@ globus_i_xio_handle_destroy(
             {
                 GlobusXIODebugPrintf(
                     GLOBUS_XIO_DEBUG_INFO,
-                        ("[globus_i_xio_handle_destroy]"
-                        " :: signalling handle unload.\n"));
+                        (_XIOSL("[globus_i_xio_handle_destroy]"
+                        " :: signalling handle unload.\n")));
 
                 handle->sd_monitor->count--;
                 if(handle->sd_monitor->count == 0)
@@ -230,12 +250,12 @@ globus_i_xio_handle_dec(
     handle->ref--; 
     GlobusXIODebugPrintf(
         GLOBUS_XIO_DEBUG_INFO_VERBOSE,
-        ("[globus_i_xio_handle_dec] :: handle ref at %d.\n", handle->ref));
+        (_XIOSL("[globus_i_xio_handle_dec] :: handle ref at %d.\n"), handle->ref));
     if(handle->ref == 0)
     {
         GlobusXIODebugPrintf(
             GLOBUS_XIO_DEBUG_INFO,
-            ("[globus_i_xio_handle_dec] :: handle ref at 0.\n"));
+            (_XIOSL("[globus_i_xio_handle_dec] :: handle ref at 0.\n")));
         globus_assert(handle->state == GLOBUS_XIO_HANDLE_STATE_CLOSED);
         *destroy_handle = GLOBUS_TRUE;
         /* purge the ch list */
@@ -250,7 +270,7 @@ globus_i_xio_handle_dec(
                     NULL);
             if(res != GLOBUS_SUCCESS)
             {
-                globus_panic(GLOBUS_XIO_MODULE, res, "failed to unregister");
+                globus_panic(GLOBUS_XIO_MODULE, res, _XIOSL("failed to unregister"));
             }
         }
     }
@@ -425,7 +445,7 @@ globus_i_xio_will_block_cb(
             case GLOBUS_XIO_OPERATION_TYPE_NONE:
                 GlobusXIODebugPrintf(
                     GLOBUS_XIO_DEBUG_INFO_VERBOSE,
-                    ("[%s:%d] :: type none, exiting\n", _xio_name, __LINE__));
+                    (_XIOSL("[%s:%d] :: type none, exiting\n"), _xio_name, __LINE__));
                 goto exit;
 
             /* finishe state means the operation was already delivered */
@@ -443,7 +463,7 @@ globus_i_xio_will_block_cb(
         ndx = op->entry[ndx].next_ndx;
         GlobusXIODebugPrintf(
             GLOBUS_XIO_DEBUG_INFO_VERBOSE,
-           ("[%s:%d] :: Index = %d\n", _xio_name, __LINE__, ndx));
+           (_XIOSL("[%s:%d] :: Index = %d\n"), _xio_name, __LINE__, ndx));
     }
     while(ndx != op->stack_size && ndx != 0);
 
@@ -666,7 +686,7 @@ globus_i_xio_driver_start_close(
 
     GlobusXIODebugPrintf(
         GLOBUS_XIO_DEBUG_INFO,
-       ("[%s:%d] :: Index = %d\n", _xio_name, __LINE__, op->ndx));
+       (_XIOSL("[%s:%d] :: Index = %d\n"), _xio_name, __LINE__, op->ndx));
     my_op->in_register = GLOBUS_TRUE;
     res = my_context->driver->close_func(
                     my_context->driver_handle,
@@ -886,7 +906,7 @@ globus_i_xio_context_destroy(
 
     GlobusXIODebugPrintf(
         GLOBUS_XIO_DEBUG_INFO_VERBOSE, 
-        ("  context @ 0x%x: ref=%d size=%d\n", 
+        (_XIOSL("  context @ 0x%x: ref=%d size=%d\n"), 
             xio_context, xio_context->ref, xio_context->stack_size));
     
     for(ctr = 0; ctr < xio_context->stack_size; ctr++)
@@ -987,7 +1007,7 @@ globus_xio_driver_operation_destroy(
             {
                 GlobusXIODebugPrintf(
                     GLOBUS_XIO_DEBUG_INFO,
-      ("[globus_xio_driver_operation_destroy] :: context->ref == 0.\n"));
+      (_XIOSL("[globus_xio_driver_operation_destroy] :: context->ref == 0.\n")));
                 destroy_context = GLOBUS_TRUE;
             }
             globus_memory_push_node(&context->op_memory, op);
@@ -1124,6 +1144,10 @@ globus_i_xio_driver_attr_cntl(
                 timeout_cb = va_arg(ap, globus_xio_timeout_callback_t);
                 delay_time = va_arg(ap, globus_reltime_t *);
                 attr->timeout_arg = va_arg(ap, void *);
+                if(timeout_cb == NULL)
+                {
+                    timeout_cb = globus_l_xio_timeout_always;
+                }
 
                 attr->open_timeout_cb = timeout_cb;
                 attr->close_timeout_cb = timeout_cb;
@@ -1140,6 +1164,10 @@ globus_i_xio_driver_attr_cntl(
                 timeout_cb = va_arg(ap, globus_xio_timeout_callback_t);
                 delay_time = va_arg(ap, globus_reltime_t *);
                 attr->timeout_arg = va_arg(ap, void *);
+                if(timeout_cb == NULL)
+                {
+                    timeout_cb = globus_l_xio_timeout_always;
+                }
 
                 attr->open_timeout_cb = timeout_cb;
                 GlobusTimeReltimeCopy(attr->open_timeout_period, *delay_time);
@@ -1149,6 +1177,10 @@ globus_i_xio_driver_attr_cntl(
                 timeout_cb = va_arg(ap, globus_xio_timeout_callback_t);
                 delay_time = va_arg(ap, globus_reltime_t *);
                 attr->timeout_arg = va_arg(ap, void *);
+                if(timeout_cb == NULL)
+                {
+                    timeout_cb = globus_l_xio_timeout_always;
+                }
 
                 attr->close_timeout_cb = timeout_cb;
                 GlobusTimeReltimeCopy(attr->close_timeout_period, *delay_time);
@@ -1158,6 +1190,10 @@ globus_i_xio_driver_attr_cntl(
                 timeout_cb = va_arg(ap, globus_xio_timeout_callback_t);
                 delay_time = va_arg(ap, globus_reltime_t *);
                 attr->timeout_arg = va_arg(ap, void *);
+                if(timeout_cb == NULL)
+                {
+                    timeout_cb = globus_l_xio_timeout_always;
+                }
 
                 attr->read_timeout_cb = timeout_cb;
                 GlobusTimeReltimeCopy(attr->read_timeout_period, *delay_time);
@@ -1167,6 +1203,10 @@ globus_i_xio_driver_attr_cntl(
                 timeout_cb = va_arg(ap, globus_xio_timeout_callback_t);
                 delay_time = va_arg(ap, globus_reltime_t *);
                 attr->timeout_arg = va_arg(ap, void *);
+                if(timeout_cb == NULL)
+                {
+                    timeout_cb = globus_l_xio_timeout_always;
+                }
 
                 attr->write_timeout_cb = timeout_cb;
                 GlobusTimeReltimeCopy(attr->write_timeout_period, *delay_time);
@@ -1177,6 +1217,10 @@ globus_i_xio_driver_attr_cntl(
                     va_arg(ap, globus_xio_timeout_server_callback_t);
                 delay_time = va_arg(ap, globus_reltime_t *);
                 attr->timeout_arg = va_arg(ap, void *);
+                if(server_timeout_cb == NULL)
+                {
+                    server_timeout_cb = globus_l_xio_server_timeout_always;
+                }
 
                 attr->accept_timeout_cb = server_timeout_cb;
                 GlobusTimeReltimeCopy(attr->accept_timeout_period, *delay_time);
@@ -1292,7 +1336,7 @@ globus_i_xio_driver_dd_cntl(
         }
         else
         {
-            res = GlobusXIOErrorInvalidDriver("driver doesn't support dd cntl");
+            res = GlobusXIOErrorInvalidDriver(_XIOSL("driver doesn't support dd cntl"));
             goto err;
         }
     }
@@ -1479,7 +1523,7 @@ globus_i_xio_driver_handle_cntl(
                 else
                 {
                     res = GlobusXIOErrorInvalidDriver(
-                        "handle_cntl not supported");
+                        _XIOSL("handle_cntl not supported"));
                 }
                 if(res != GLOBUS_SUCCESS)
                 {
@@ -1491,13 +1535,12 @@ globus_i_xio_driver_handle_cntl(
         if(ndx == -1)
         {
             /* throw error */
-            res = GlobusXIOErrorInvalidDriver("not found");
+            res = GlobusXIOErrorInvalidDriver(_XIOSL("not found"));
             goto err;
         }
     }
     else
     {
-        /* do general settings */
     }
 
     GlobusXIODebugExit();
@@ -1695,7 +1738,7 @@ globus_xio_driver_set_eof_received(
     {
         globus_assert(
             my_context->read_operations > 0 &&
-            "Must be called on behalf of read operations");
+            _XIOSL("Must be called on behalf of read operations"));
         globus_assert(
             my_context->state == GLOBUS_XIO_CONTEXT_STATE_OPEN ||
             my_context->state == GLOBUS_XIO_CONTEXT_STATE_EOF_RECEIVED ||
@@ -1731,7 +1774,7 @@ globus_xio_driver_eof_received(
     {
         globus_assert(
             my_context->read_operations > 0 &&
-            "Must be called on behalf of read operations");
+            _XIOSL("Must be called on behalf of read operations"));
         globus_assert(
             my_context->state == GLOBUS_XIO_CONTEXT_STATE_OPEN ||
             my_context->state == GLOBUS_XIO_CONTEXT_STATE_EOF_RECEIVED ||

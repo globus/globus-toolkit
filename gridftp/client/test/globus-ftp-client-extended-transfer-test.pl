@@ -22,6 +22,7 @@ if (!defined($gpath))
 
 @INC = (@INC, "$gpath/lib/perl");
 
+my ($proto) = setup_proto();
 my ($source_host, $source_file, $local_copy) = setup_remote_source();
 my ($dest_host, $dest_file) = setup_remote_dest();
 
@@ -35,7 +36,7 @@ sub basic_func
     my ($parallelism) = (shift);
     my ($errors,$rc) = ("",0);
 
-    my $command = "$test_exec -P $parallelism -s gsiftp://$source_host$source_file -d gsiftp://$dest_host$dest_file >/dev/null 2>&1";
+    my $command = "$test_exec -P $parallelism -s $proto$source_host$source_file -d $proto$dest_host$dest_file >/dev/null 2>&1";
     $errors = run_command($command, 0);
     if($errors eq "")
     {
@@ -68,7 +69,7 @@ sub bad_url_src
 {
     my ($errors,$rc) = ("",0);
 
-    my $command = "$test_exec -s gsiftp://$source_host/no-such-file-here -d gsiftp://$dest_host$dest_file >/dev/null 2>&1";
+    my $command = "$test_exec -s $proto$source_host/no-such-file-here -d $proto$dest_host$dest_file >/dev/null 2>&1";
     $errors = run_command($command, 1);
     if($errors eq "")
     {
@@ -91,7 +92,7 @@ sub bad_url_dest
 {
     my ($errors,$rc) = ("",0);
 
-    my $command = "$test_exec -s gsiftp://$source_host$source_file -d gsiftp://$dest_host/no-such-file-here >/dev/null 2>&1";
+    my $command = "$test_exec -s $proto$source_host$source_file -d $proto$dest_host/no-such-file-here >/dev/null 2>&1";
     $errors = run_command($command, 1);
     if($errors eq "")
     {
@@ -115,7 +116,7 @@ sub abort_test
     my ($abort_point) = shift;
     my ($par) = shift;
 
-    my $command = "$test_exec -P $par -a $abort_point -s gsiftp://$source_host$source_file -d gsiftp://$dest_host$dest_file >/dev/null 2>&1";
+    my $command = "$test_exec -P $par -a $abort_point -s $proto$source_host$source_file -d $proto$dest_host$dest_file >/dev/null 2>&1";
     $errors = run_command($command, -2);
     if($errors eq "")
     {
@@ -148,7 +149,7 @@ sub restart_test
     my ($restart_point) = shift;
     my ($par) = shift;
 
-    my $command = "$test_exec -P $par -r $restart_point -s gsiftp://$source_host$source_file -d gsiftp://$dest_host$dest_file >/dev/null 2>&1";
+    my $command = "$test_exec -P $par -r $restart_point -s $proto$source_host$source_file -d $proto$dest_host$dest_file >/dev/null 2>&1";
     $errors = run_command($command, 0);
     if($errors eq "")
     {
@@ -189,7 +190,7 @@ sub perf_test
 {
     my ($errors,$rc) = ("",0);
 
-    my $command = "$test_exec -M -s gsiftp://$source_host$source_file -d gsiftp://$dest_host$dest_file >/dev/null 2>&1";
+    my $command = "$test_exec -M -s $proto$source_host$source_file -d $proto$dest_host$dest_file >/dev/null 2>&1";
     $errors = run_command($command, 0);
     if($errors eq "")
     {
@@ -217,7 +218,7 @@ sub throughput_test
 {
     my ($errors,$rc) = ("",0);
 
-    my $command = "$test_exec -T -s gsiftp://$source_host$source_file -d gsiftp://$dest_host$dest_file >/dev/null 2>&1";
+    my $command = "$test_exec -T -s $proto$source_host$source_file -d $proto$dest_host$dest_file >/dev/null 2>&1";
     $errors = run_command($command, 0);
     if($errors eq "")
     {
@@ -233,6 +234,11 @@ sub throughput_test
 }
 
 push(@tests, "throughput_test();");
+
+if(defined($ENV{FTP_TEST_RANDOMIZE}))
+{
+    shuffle(\@tests);
+}
 
 if(@ARGV)
 {

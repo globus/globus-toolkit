@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE gpt_package_metadata SYSTEM "globus_package.dtd">
 <gpt_package_metadata Format_Version="0.02" Name="globus_authz" >
-  <Aging_Version Age="0" Major="0" Minor="4" />
+  <Aging_Version Age="0" Major="0" Minor="5" />
   <Description >Globus authz library</Description>
   <Functional_Group >Security</Functional_Group>
   <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@" />
@@ -15,7 +15,7 @@
       </Dependency>
       <Dependency Name="globus_gssapi_gsi" >
         <Version >
-          <Simple_Version Major="3" />
+          <Simple_Version Major="4" />
         </Version>
       </Dependency>
       <Dependency Name="globus_authz_callout_error" >
@@ -32,22 +32,10 @@
       </Dependency>
       <Dependency Name="globus_gssapi_gsi" >
         <Version >
-          <Simple_Version Major="3" />
+          <Simple_Version Major="4" />
         </Version>
       </Dependency>
-      <Dependency Name="globus_authz_callout_error" >
-        <Version >
-          <Simple_Version Major="0" />
-        </Version>
-      </Dependency>
-    </Source_Dependencies>
-    <Source_Dependencies Type="pgm_link" >
-      <Dependency Name="globus_callout" >
-        <Version >
-          <Simple_Version Major="0" />
-        </Version>
-      </Dependency>
-      <Dependency Name="globus_authz_callout_error" >
+      <Dependency Name="globus_authz_callout_error">
         <Version >
           <Simple_Version Major="0" />
         </Version>

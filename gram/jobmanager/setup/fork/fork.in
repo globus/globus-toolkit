@@ -115,7 +115,8 @@ sub submit
     {
 	if(ref($_))
 	{
-	    return Globus::GRAM::Error::RSL_LIBRARY_PATH();
+            $self->log("Invalid library_path value");
+	    return Globus::GRAM::Error::RSL_ENVIRONMENT();
 	}
 	$self->append_path(\%CHILD_ENV, 'LD_LIBRARY_PATH', $_);
 	if($Config::Config{osname} eq 'irix')
@@ -259,6 +260,7 @@ sub submit
             }
             if ($res[0] == '101') {
                 @job_id = split(',', $res[2]);
+                last;
             } elsif ($res[0] == '102') {
                 $self->respond({GT3_FAILURE_MESSAGE => "starter: $res[3]" });
                 close(STARTER_OUT);

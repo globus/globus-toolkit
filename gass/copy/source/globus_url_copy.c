@@ -71,11 +71,13 @@ typedef struct
     int                                 restart_retries;
     int                                 restart_interval;
     int                                 restart_timeout;
+    int                                 stripe_bs;
     globus_bool_t			striped;
     globus_bool_t			rfc1738;
     globus_off_t			partial_offset;
     globus_off_t			partial_length;
     globus_bool_t                       list_uses_data_mode;
+    globus_bool_t                       ipv6;
 
     /* the need for 2 is due to the fact that gass copy is
      * not copying attributes
@@ -303,6 +305,13 @@ const char * long_usage =
 "       defaults the full file.\n"
 "  -stripe\n"
 "       enable striped transfers on supported servers\n"
+"  -striped-block-size | -sbs\n"
+"       set layout mode and blocksize for striped transfers\n"
+"       If not set, server defaults will be used.\n"
+"       If set to 0, Partitioned mode will be used.\n"
+"       If set to >0, Blocked mode will be used, with this as the blocksize.\n"
+"  -ipv6\n"
+"       use ipv6 when available (EXPERIMENTAL)\n"
 "\n";
 
 /***********
@@ -318,11 +327,11 @@ this feature has not yet been implemented.
 #define globus_url_copy_l_args_error(a) \
 { \
     globus_libc_fprintf(stderr, \
-                        "\nERROR: " \
+                        _GASCSL("\nERROR: " \
                         a \
                         "\n\nSyntax: %s\n" \
-                        "\nUse -help to display full usage\n", \
-                        oneline_usage); \
+                        "\nUse -help to display full usage\n"), \
+                        _GASCSL(oneline_usage)); \
     globus_module_deactivate_all(); \
     exit(1); \
 }
@@ -330,11 +339,11 @@ this feature has not yet been implemented.
 #define globus_url_copy_l_args_error_fmt(fmt,arg) \
 { \
     globus_libc_fprintf(stderr, \
-                        "\nERROR: " \
+                        _GASCSL("\nERROR: " \
                         fmt \
                         "\n\nSyntax: %s\n" \
-                        "\nUse -help to display full usage\n", \
-                        arg, oneline_usage); \
+                        "\nUse -help to display full usage\n"), \
+                        arg, _GASCSL(oneline_usage)); \
     globus_module_deactivate_all(); \
     exit(1); \
 }
@@ -346,7 +355,7 @@ test_integer( char *   value,
 {
     int  res = (atoi(value) < 0);
     if (res)
-        *errmsg = strdup("argument is not a positive integer");
+        *errmsg = strdup(_GASCSL("argument is not a positive integer"));
     return res;
 }
 
@@ -379,6 +388,8 @@ enum
     arg_partial_length,
     arg_rfc1738,
     arg_fast,
+    arg_ipv6,
+    arg_stripe_bs,
     arg_striped,
     arg_num = arg_striped
 };
@@ -417,8 +428,10 @@ flagdef(arg_recurse, "-r", "-recurse");
 flagdef(arg_striped, "-stripe", "-striped");
 flagdef(arg_rfc1738, "-rp", "-relative-paths");
 flagdef(arg_fast, "-fast", "-fast-data-channels");
+flagdef(arg_ipv6, "-ipv6","-IPv6");
 
 oneargdef(arg_f, "-f", "-filename", GLOBUS_NULL, GLOBUS_NULL);
+oneargdef(arg_stripe_bs, "-sbs", "-striped-block-size", test_integer, GLOBUS_NULL);
 oneargdef(arg_bs, "-bs", "-block-size", test_integer, GLOBUS_NULL);
 oneargdef(arg_tcp_bs, "-tcp-bs", "-tcp-buffer-size", test_integer, GLOBUS_NULL);
 oneargdef(arg_p, "-p", "-parallel", test_integer, GLOBUS_NULL);
@@ -462,8 +475,10 @@ static globus_args_option_descriptor_t args_options[arg_num];
     setupopt(arg_recurse);		\
     setupopt(arg_partial_offset);	\
     setupopt(arg_partial_length);	\
-    setupopt(arg_rfc1738);	\
-    setupopt(arg_fast);	\
+    setupopt(arg_rfc1738);      	\
+    setupopt(arg_fast);	                \
+    setupopt(arg_ipv6);         	\
+    setupopt(arg_stripe_bs);         	\
     setupopt(arg_striped);
 
 static globus_bool_t globus_l_globus_url_copy_ctrlc = GLOBUS_FALSE;
@@ -527,7 +542,7 @@ main(int argc, char **argv)
     if ( err != GLOBUS_SUCCESS )
     {
         globus_libc_fprintf(stderr, 
-            "Error %d, activating gass copy module\n",
+            _GASCSL("Error %d, activating gass copy module\n"),
             err);
         return 1;
     }
@@ -535,7 +550,7 @@ main(int argc, char **argv)
     if ( err != GLOBUS_SUCCESS )
     {
         globus_libc_fprintf(stderr, 
-            "Error %d, activating ftp debug plugin module\n",
+            _GASCSL("Error %d, activating ftp debug plugin module\n"),
             err);
         return 1;
     }
@@ -543,7 +558,7 @@ main(int argc, char **argv)
     if ( err != GLOBUS_SUCCESS )
     {
         globus_libc_fprintf(stderr, 
-            "Error %d, activating ftp restart plugin module\n",
+            _GASCSL("Error %d, activating ftp restart plugin module\n"),
             err);
         return 1;
     }
@@ -585,7 +600,7 @@ main(int argc, char **argv)
            &gass_copy_handle, 
            &guc_info) != 0)
     {
-        fprintf(stderr, "Failed to initialize handle.\n");
+        fprintf(stderr, _GASCSL("Failed to initialize handle.\n"));
         return 1;
     }
 
@@ -599,7 +614,7 @@ main(int argc, char **argv)
     {
         g_err_msg = globus_error_print_friendly(
             globus_error_peek(result));
-        fprintf(stderr, "\nerror: %s", g_err_msg);
+        fprintf(stderr, _GASCSL("\nerror: %s"), g_err_msg);
         globus_free(g_err_msg);        
         ret_val = 1;
     }
@@ -670,10 +685,10 @@ globus_l_gass_copy_performance_cb(
 {
     globus_libc_fprintf(stdout,
         " %12" GLOBUS_OFF_T_FORMAT 
-        " bytes %12.2f KB/sec avg %12.2f KB/sec inst\r",
+        " bytes %12.2f MB/sec avg %12.2f MB/sec inst\r",
         total_bytes,
-        avg_throughput / 1024,
-        instantaneous_throughput / 1024);
+        avg_throughput / (1024 * 1024),
+        instantaneous_throughput / (1024 * 1024));
     fflush(stdout);
 }
 
@@ -842,14 +857,14 @@ globus_l_guc_parse_file(
                 
         if(strcmp(src_url, "-") == 0 && strcmp(dst_url, "-") == 0)
         {
-            fprintf(stderr, "stdin and stdout cannot be used together.\n");
+            fprintf(stderr, _GASCSL("stdin and stdout cannot be used together.\n"));
             goto error_parse;
         }
         if(strcmp(src_url, "-") == 0)
         {
             if(stdin_used)
             {
-                fprintf(stderr, "stdin can only be used once.\n");
+                fprintf(stderr, _GASCSL("stdin can only be used once.\n"));
                 goto error_parse;
             }
             stdin_used = GLOBUS_TRUE;
@@ -868,7 +883,7 @@ globus_l_guc_parse_file(
     
 error_parse:
     fclose(fptr);
-    fprintf(stderr, "Problem parsing url list: line %d\n", line_num);
+    fprintf(stderr, _GASCSL("Problem parsing url list: line %d\n"), line_num);
     return -1;
  
 }
@@ -1067,7 +1082,7 @@ globus_l_guc_transfer_files(
                 
                 if(new_url)
                 {
-                    globus_libc_fprintf(stdout, "Source: %s\nDest:   %s\n", 
+                    globus_libc_fprintf(stdout, _GASCSL("Source: %s\nDest:   %s\n"), 
                         src_url_base, 
                         dst_url_base);
                 }
@@ -1102,7 +1117,7 @@ globus_l_guc_transfer_files(
                         monitor.done = GLOBUS_TRUE;
                         g_err_msg = globus_error_print_friendly(
                             globus_error_peek(result));
-                        fprintf(stderr, "\nerror listing %s:\n%s",
+                        fprintf(stderr, _GASCSL("\nerror listing %s:\n%s"),
                             src_url, g_err_msg);
                         globus_free(g_err_msg);
                     }
@@ -1145,7 +1160,7 @@ globus_l_guc_transfer_files(
                 monitor.done = GLOBUS_TRUE;
                 g_err_msg = globus_error_print_friendly(
                     globus_error_peek(result));
-                fprintf(stderr, "\nerror transferring %s:\n%s",
+                fprintf(stderr, _GASCSL("\nerror transferring %s:\n%s"),
                     src_url, g_err_msg);
                 globus_free(g_err_msg);
             }
@@ -1160,7 +1175,7 @@ globus_l_guc_transfer_files(
             if(globus_l_globus_url_copy_ctrlc &&
                !globus_l_globus_url_copy_ctrlc_handled)
             {
-                fprintf(stderr, "\nCancelling copy...\n");
+                fprintf(stderr, _GASCSL("\nCancelling copy...\n"));
                 guc_info->cancelled = GLOBUS_TRUE;
                 
                 globus_gass_copy_cancel(
@@ -1188,7 +1203,7 @@ globus_l_guc_transfer_files(
                 monitor.done = GLOBUS_TRUE;
                 g_err_msg = globus_error_print_friendly(
                     globus_error_peek(result));
-                fprintf(stderr, "\nerror transferring %s:\n%s",
+                fprintf(stderr, _GASCSL("\nerror transferring %s:\n%s"),
                     src_url, g_err_msg);
                 globus_free(g_err_msg);
             }
@@ -1239,7 +1254,7 @@ globus_l_guc_transfer_files(
             globus_error_construct_string(
                 GLOBUS_NULL,
                 GLOBUS_NULL,
-                "There was an error with one or more transfers.\n"));
+                _GASCSL("There was an error with one or more transfers.\n")));
     }
 
     return result;
@@ -1315,11 +1330,13 @@ globus_l_guc_parse_arguments(
     guc_info->restart_retries = 5;
     guc_info->restart_interval = 0;
     guc_info->restart_timeout = 0;
+    guc_info->stripe_bs = -1;
     guc_info->striped = GLOBUS_FALSE;
     guc_info->partial_offset = -1;
     guc_info->partial_length = -1;
     guc_info->rfc1738 = GLOBUS_FALSE;
     guc_info->list_uses_data_mode = GLOBUS_FALSE;
+    guc_info->ipv6 = GLOBUS_FALSE;
 
     /* determine the program name */
     
@@ -1435,8 +1452,14 @@ globus_l_guc_parse_arguments(
         case arg_rfc1738:
             guc_info->rfc1738 = GLOBUS_TRUE;
             break;
+	case arg_stripe_bs:
+	    guc_info->stripe_bs = atoi(instance->values[0]);
+	    break;
 	case arg_striped:
 	    guc_info->striped = GLOBUS_TRUE;
+	    break;
+	case arg_ipv6:
+	    guc_info->ipv6 = GLOBUS_TRUE;
 	    break;
 	case arg_partial_offset:
             globus_libc_scan_off_t(
@@ -1660,7 +1683,7 @@ globus_l_guc_expand_urls(
             globus_error_construct_string(
                 GLOBUS_NULL,
                 GLOBUS_NULL,
-                "No files matched the source url.\n"));                    
+                _GASCSL("No files matched the source url.\n")));                    
     }
     if(was_error && result == GLOBUS_SUCCESS)
     {
@@ -1668,7 +1691,7 @@ globus_l_guc_expand_urls(
             globus_error_construct_string(
                 GLOBUS_NULL,
                 GLOBUS_NULL,
-                "There was an error with one or more transfers.\n"));
+                _GASCSL("There was an error with one or more transfers.\n")));
     }
     
     return result;
@@ -1799,8 +1822,8 @@ error_too_many_matches:
         globus_error_construct_string(
             GLOBUS_NULL,
             GLOBUS_NULL,
-            "Multiple source urls must be transferred to a directory "
-            "destination url:\n%s\n",
+            _GASCSL("Multiple source urls must be transferred to a directory "
+            "destination url:\n%s\n"),
             dst_url));                    
 error_expand:
     globus_fifo_destroy(&guc_info->matched_url_list);
@@ -1830,7 +1853,7 @@ globus_l_guc_init_gass_copy_handle(
     result = globus_ftp_client_handleattr_init(&ftp_handleattr);
     if(result != GLOBUS_SUCCESS)
     {
-        fprintf(stderr, "Error: Unable to init ftp handle attr %s\n",
+        fprintf(stderr, _GASCSL("Error: Unable to init ftp handle attr %s\n"),
             globus_error_print_friendly(globus_error_peek(result)));
 
         return -1;
@@ -1846,7 +1869,7 @@ globus_l_guc_init_gass_copy_handle(
             "debug");
         if(result != GLOBUS_SUCCESS)
         {
-            fprintf(stderr, "Error: Unable to init debug plugin %s\n",
+            fprintf(stderr, _GASCSL("Error: Unable to init debug plugin %s\n"),
                 globus_error_print_friendly(globus_error_peek(result)));
 
             return -1;
@@ -1857,7 +1880,7 @@ globus_l_guc_init_gass_copy_handle(
             &debug_plugin);
         if(result != GLOBUS_SUCCESS)
         {
-            fprintf(stderr, "Error: Unable to register debug plugin %s\n",
+            fprintf(stderr, _GASCSL("Error: Unable to register debug plugin %s\n"),
                 globus_error_print_friendly(globus_error_peek(result)));
 
             return -1;
@@ -1881,7 +1904,7 @@ globus_l_guc_init_gass_copy_handle(
             timeout_p); /* absolute timeout NULL=inifinte */
         if(result != GLOBUS_SUCCESS)
         {
-            fprintf(stderr, "Error: Unable to init debug plugin %s\n",
+            fprintf(stderr, _GASCSL("Error: Unable to init debug plugin %s\n"),
                 globus_error_print_friendly(globus_error_peek(result)));
 
             return -1;
@@ -1892,7 +1915,7 @@ globus_l_guc_init_gass_copy_handle(
             &restart_plugin);
         if(result != GLOBUS_SUCCESS)
         {
-            fprintf(stderr, "Error: Unable to register restart plugin %s\n",
+            fprintf(stderr, _GASCSL("Error: Unable to register restart plugin %s\n"),
                 globus_error_print_friendly(globus_error_peek(result)));
 
             return -1;
@@ -1928,7 +1951,7 @@ globus_l_guc_init_gass_copy_handle(
             &ftp_handleattr, GLOBUS_TRUE);
         if(result != GLOBUS_SUCCESS)
         {
-            fprintf(stderr, "Error: Unable to set rfc1738 support %s\n",
+            fprintf(stderr, _GASCSL("Error: Unable to set rfc1738 support %s\n"),
                 globus_error_print_friendly(globus_error_peek(result)));
 
             return -1;
@@ -1970,10 +1993,10 @@ globus_l_guc_init_gass_copy_handle(
         if (result != GLOBUS_SUCCESS)
         {
             fprintf(stderr, 
-                "Error: Unable to register performance handler %s\n",
+                _GASCSL("Error: Unable to register performance handler %s\n"),
                 globus_error_print_friendly(globus_error_peek(result)));
 
-            fprintf(stderr, "Continuing without performance info\n");
+            fprintf(stderr, _GASCSL("Continuing without performance info\n"));
         }
     }
 
@@ -2057,15 +2080,33 @@ globus_l_guc_gass_attr_init(
 
 	if (guc_info->striped)
 	{
-                layout.mode = GLOBUS_FTP_CONTROL_STRIPING_PARTITIONED;
-                layout.partitioned.size = 1024*1024;
+	    memset(&layout, '\0', sizeof(globus_ftp_control_layout_t));
+            switch(guc_info->stripe_bs)
+            {
+                case -1:
+                    layout.mode = 
+                        GLOBUS_FTP_CONTROL_STRIPING_NONE;
+                    break;
+                case 0:
+                    layout.mode = 
+                        GLOBUS_FTP_CONTROL_STRIPING_PARTITIONED;
+                    break;
+                default:
+                    layout.mode = 
+                        GLOBUS_FTP_CONTROL_STRIPING_BLOCKED_ROUND_ROBIN;
+                    layout.round_robin.block_size = guc_info->stripe_bs;
+            }
+            globus_ftp_client_operationattr_set_mode(
+                        ftp_attr,
+                        GLOBUS_FTP_CONTROL_MODE_EXTENDED_BLOCK);
+            globus_ftp_client_operationattr_set_striped(ftp_attr, GLOBUS_TRUE);    
+            globus_ftp_client_operationattr_set_layout(ftp_attr, &layout);
+	}
 
-        globus_ftp_client_operationattr_set_mode(
-                    ftp_attr,
-                    GLOBUS_FTP_CONTROL_MODE_EXTENDED_BLOCK);
-
-        globus_ftp_client_operationattr_set_striped(ftp_attr, GLOBUS_TRUE);    
-                globus_ftp_client_operationattr_set_layout(ftp_attr, &layout);
+	if (guc_info->ipv6)
+	{
+            globus_ftp_client_operationattr_set_allow_ipv6(
+                ftp_attr, GLOBUS_TRUE);    
 	}
 
         if (subject  ||
@@ -2175,7 +2216,7 @@ globus_l_guc_get_io_handle(
 #   else
     {
         fprintf(stderr, 
-            "Error: On Windows, the source URL cannot be stdin\n" );
+            _GASCSL("Error: On Windows, the source URL cannot be stdin\n" ));
         globus_module_deactivate_all();
 
         return NULL;

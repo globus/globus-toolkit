@@ -86,6 +86,9 @@ globus_module_descriptor_t		globus_i_gsi_openssl_error_module;
 
 extern const globus_object_type_t GLOBUS_ERROR_TYPE_OPENSSL_DEFINITION;
 
+#define _GOESL(s) globus_common_i18n_get_string(\
+		GLOBUS_GSI_OPENSSL_ERROR_MODULE, \
+		s)
 /**
  * @defgroup globus_openssl_error_object Error Construction
  * @ingroup globus_openssl_error_api

@@ -156,8 +156,8 @@ globus_xio_attr_destroy(
             {
                 GlobusXIODebugPrintf(
                     GLOBUS_XIO_DEBUG_INFO_VERBOSE, 
-                    ("[globus_xio_attr_destroy]: destroying attr @0x%x "
-                        "driver @0x%x, %s\n", 
+                    (_XIOSL("[globus_xio_attr_destroy]: destroying attr @0x%x "
+                        "driver @0x%x, %s\n"), 
                     attr,
                     attr->entry[ctr].driver,
                     attr->entry[ctr].driver->name));
@@ -589,6 +589,57 @@ globus_xio_stack_init(
 }
 
 globus_result_t
+globus_xio_stack_copy(
+    globus_xio_stack_t *                dst,
+    globus_xio_stack_t                  src)
+{
+    globus_i_xio_stack_t *		xio_stack_src;
+    globus_i_xio_stack_t *		xio_stack_dst;
+    globus_result_t                     res;
+    GlobusXIOName(globus_xio_stack_push_driver);
+                    
+    GlobusXIODebugEnter();
+    if(dst == NULL)
+    {
+        res = GlobusXIOErrorParameter("dst");
+        goto err;
+    }
+
+    if(src == NULL)
+    {
+        res = GlobusXIOErrorParameter("src");
+        goto err;
+    }
+
+    xio_stack_src = src;
+
+    xio_stack_dst = (globus_i_xio_stack_t *)
+            globus_malloc(sizeof(globus_i_xio_stack_t));
+
+    /* check for memory alloc failure */
+    if(xio_stack_dst == NULL)
+    {
+        res = GlobusXIOErrorMemory("xio_stack_dst");
+        goto err;
+    }
+
+    memset(xio_stack_dst, 0, sizeof(globus_i_xio_stack_t));
+    xio_stack_dst->size = xio_stack_src->size;
+    xio_stack_dst->driver_stack = globus_list_copy(
+					xio_stack_src->driver_stack);
+    *dst = xio_stack_dst;
+
+    GlobusXIODebugExit();
+
+    return GLOBUS_SUCCESS;
+
+  err:
+
+    GlobusXIODebugExitWithError();
+    return res;
+}
+
+globus_result_t
 globus_xio_stack_push_driver(
     globus_xio_stack_t                  stack,
     globus_xio_driver_t                 driver)
@@ -631,7 +682,7 @@ globus_xio_stack_push_driver(
         if(driver->transport_open_func == NULL)
         {
             res = GlobusXIOErrorInvalidDriver(
-                "open function not defined");
+                _XIOSL("open function not defined"));
             goto err;
         }
         else
@@ -643,7 +694,7 @@ globus_xio_stack_push_driver(
     else if(driver->transport_open_func != NULL)
     {
         res = GlobusXIOErrorInvalidDriver(
-            "transport can only be at bottom of stack");
+            _XIOSL("transport can only be at bottom of stack"));
         goto err;
     }
     else

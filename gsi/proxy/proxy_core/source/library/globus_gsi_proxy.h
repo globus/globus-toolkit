@@ -92,6 +92,9 @@ EXTERN_C_BEGIN
 extern
 globus_module_descriptor_t		globus_i_gsi_proxy_module;
 
+#define _PCSL(s) globus_common_i18n_get_string(\
+		  GLOBUS_GSI_PROXY_MODULE, \
+		  s)
 
 /**
  * GSI Proxy Handle.
@@ -335,6 +338,13 @@ globus_gsi_proxy_sign_req(
     globus_gsi_proxy_handle_t           handle,
     globus_gsi_cred_handle_t            issuer_credential,
     BIO *                               output_bio);
+
+globus_result_t
+globus_gsi_proxy_resign_cert(
+    globus_gsi_proxy_handle_t           handle,
+    globus_gsi_cred_handle_t            issuer_credential,
+    globus_gsi_cred_handle_t            peer_credential,
+    globus_gsi_cred_handle_t *          resigned_credential);
 
 globus_result_t
 globus_gsi_proxy_assemble_cred(

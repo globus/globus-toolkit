@@ -11,17 +11,17 @@ GlobusDebugDefine(GLOBUS_XIO_FILE);
 #define GlobusXIOFileDebugEnter()                                           \
     GlobusXIOFileDebugPrintf(                                               \
         GLOBUS_L_XIO_FILE_DEBUG_TRACE,                                      \
-        ("[%s] Entering\n", _xio_name))
+        (_XIOSL("[%s] Entering\n"), _xio_name))
         
 #define GlobusXIOFileDebugExit()                                            \
     GlobusXIOFileDebugPrintf(                                               \
         GLOBUS_L_XIO_FILE_DEBUG_TRACE,                                      \
-        ("[%s] Exiting\n", _xio_name))
+        (_XIOSL("[%s] Exiting\n"), _xio_name))
 
 #define GlobusXIOFileDebugExitWithError()                                   \
     GlobusXIOFileDebugPrintf(                                               \
         GLOBUS_L_XIO_FILE_DEBUG_TRACE,                                      \
-        ("[%s] Exiting with error\n", _xio_name))
+        (_XIOSL("[%s] Exiting with error\n"), _xio_name))
 
 enum globus_l_xio_error_levels
 {
@@ -288,56 +288,6 @@ typedef struct
     globus_off_t                        trunc_offset;
 } globus_l_open_info_t;
 
-static
-void
-globus_l_xio_file_system_open_cb(
-    globus_result_t                     result,
-    void *                              user_arg)
-{
-    globus_l_open_info_t *              open_info;
-    GlobusXIOName(globus_l_xio_file_system_open_cb);
-    
-    GlobusXIOFileDebugEnter();
-    
-    open_info = (globus_l_open_info_t *) user_arg;
-    
-    if(result == GLOBUS_SUCCESS)
-    {
-        /* all handles created by me are closed on exec */
-        fcntl(open_info->handle->handle, F_SETFD, FD_CLOEXEC);
-        if(open_info->trunc_offset > 0)
-        {
-            int                         rc;
-            
-            rc = ftruncate(open_info->handle->handle, open_info->trunc_offset);
-            if(rc < 0)
-            {
-                result = GlobusXIOErrorSystemError("ftruncate", errno);
-                
-                do
-                {
-                    rc = close(open_info->handle->handle);
-                } while(rc < 0 && errno == EINTR);
-            }
-        }
-    }
-    
-    if(result != GLOBUS_SUCCESS)
-    {
-        globus_l_xio_file_handle_destroy(open_info->handle);
-        open_info->handle = GLOBUS_NULL;
-    }
-    
-    globus_xio_driver_finished_open(
-        open_info->handle,
-        open_info->op,
-        result);
-    
-    globus_free(open_info);
-    
-    GlobusXIOFileDebugExit();
-}
-
 /*
  *  open a file
  */
@@ -352,9 +302,8 @@ globus_l_xio_file_open(
     globus_l_handle_t *                 handle;
     const globus_l_attr_t *             attr;
     globus_result_t                     result;
-    globus_l_open_info_t *              open_info;
     globus_xio_system_handle_t          converted_handle;
-    int                                 flags;
+    globus_bool_t                       converted_std = GLOBUS_FALSE;
     GlobusXIOName(globus_l_xio_file_open);
     
     GlobusXIOFileDebugEnter();
@@ -378,63 +327,68 @@ globus_l_xio_file_open(
         if(strcmp(contact_info->scheme, "stdin") == 0)
         {
             converted_handle = fileno(stdin);
+            converted_std = GLOBUS_TRUE;
         }
         else if(strcmp(contact_info->scheme, "stdout") == 0)
         {
             converted_handle = fileno(stdout);
+            converted_std = GLOBUS_TRUE;
         }
         else if(strcmp(contact_info->scheme, "stderr") == 0)
         {
             converted_handle = fileno(stderr);
+            converted_std = GLOBUS_TRUE;
         }
     }
     
     if(converted_handle == GLOBUS_XIO_FILE_INVALID_HANDLE)
     {
+        int                             flags;
+        globus_off_t                    trunc_offset = 0;
+        
         if(!contact_info->resource)
         {
             result = GlobusXIOErrorContactString("missing path");
             goto error_pathname;
         }
         
-        open_info = (globus_l_open_info_t *)
-            globus_malloc(sizeof(globus_l_open_info_t));
-        if(!open_info)
-        {
-            result = GlobusXIOErrorMemory("open_info");
-            goto error_info;
-        }
-        
-        open_info->op = op;
-        open_info->handle = handle;
-        
         flags = attr->flags;
-        if(flags & GLOBUS_XIO_FILE_TRUNC)
+        if((attr->flags & GLOBUS_XIO_FILE_TRUNC) && attr->trunc_offset > 0)
         {
-            open_info->trunc_offset = attr->trunc_offset;
-            if(open_info->trunc_offset > 0)
-            {
-                flags = flags & ~GLOBUS_XIO_FILE_TRUNC;
-            }
-        }
-        else
-        {
-            open_info->trunc_offset = 0;
+            flags = flags & ~GLOBUS_XIO_FILE_TRUNC;
+            trunc_offset = attr->trunc_offset;
         }
         
-        result = globus_xio_system_register_open(
-            op,
-            contact_info->resource,
-            flags,
-            attr->mode,
-            &handle->handle,
-            globus_l_xio_file_system_open_cb,
-            open_info);
-        if(result != GLOBUS_SUCCESS)
+        do
         {
-            result = GlobusXIOErrorWrapFailed(
-                "globus_xio_system_register_open", result);
-            goto error_register;
+            handle->handle = open(
+                contact_info->resource, flags | O_NONBLOCK, attr->mode);
+        } while(handle->handle < 0 && errno == EINTR);
+
+        if(handle->handle < 0)
+        {
+            result = GlobusXIOErrorSystemError("open", errno);
+            goto error_open;
+        }
+        
+        /* all handles created by me are closed on exec */
+        fcntl(handle->handle, F_SETFD, FD_CLOEXEC);
+        if(trunc_offset > 0)
+        {
+            int                         rc;
+            
+            rc = ftruncate(handle->handle, trunc_offset);
+            if(rc < 0)
+            {
+                result = GlobusXIOErrorSystemError("ftruncate", errno);
+                
+                do
+                {
+                    rc = close(handle->handle);
+                } while(rc < 0 && errno == EINTR);
+                
+                goto error_truncate;
+            }
         }
     }
     else
@@ -442,7 +396,7 @@ globus_l_xio_file_open(
         handle->handle = converted_handle;
         handle->converted = GLOBUS_TRUE;
         
-        if(attr->flags & GLOBUS_XIO_FILE_TRUNC)
+        if(!converted_std && attr->flags & GLOBUS_XIO_FILE_TRUNC)
         {
             int                         rc;
             
@@ -453,18 +407,25 @@ globus_l_xio_file_open(
                 goto error_truncate;
             }
         }
-        
-        globus_xio_driver_finished_open(handle, op, GLOBUS_SUCCESS);
     }
+    
+    globus_xio_driver_finished_open(handle, op, GLOBUS_SUCCESS);
     
     GlobusXIOFileDebugExit();
     return GLOBUS_SUCCESS;
-    
-error_register:
-    globus_free(open_info);
 
+error_open:
 error_truncate:
-error_info:
+    if(handle->converted)
+    {
+        result = GlobusXIOErrorWrapFailedWithMessage(result,
+            "Unable to convert file handle %d", (int) handle->handle);
+    }
+    else
+    {
+        result = GlobusXIOErrorWrapFailedWithMessage(result,
+            "Unable to open file %s", contact_info->resource);
+    }
 error_pathname:
     globus_l_xio_file_handle_destroy(handle);
 
@@ -647,7 +608,7 @@ globus_l_xio_file_write(
     
     GlobusXIOFileDebugPrintf(
         GLOBUS_L_XIO_FILE_DEBUG_INFO,
-        ("[%s] count=%d, 1st buflen=%d\n",
+        (_XIOSL("[%s] count=%d, 1st buflen=%d\n"),
             _xio_name, iovec_count, (int) iovec[0].iov_len));
             
     handle = (globus_l_handle_t *) driver_specific_handle;

@@ -292,6 +292,7 @@ globus_gass_copy_handle_init(
 	handle->buffer_length = 1024*1024;
 	handle->user_pointer = GLOBUS_NULL;
 	handle->err = GLOBUS_NULL;
+	handle->user_cancel_callback = GLOBUS_NULL;
 	handle->partial_offset = -1;
 	handle->partial_end_offset = -1;
 
@@ -3065,10 +3066,21 @@ globus_l_gass_copy_ftp_get_done_callback(
 #ifdef GLOBUS_I_GASS_COPY_DEBUG
 	    globus_libc_fprintf(stderr, "ftp_get_done_callback(): called with error\n");
 #endif
+            copy_handle->state->source.status = GLOBUS_I_GASS_COPY_TARGET_FAILED;
+            copy_handle->status = GLOBUS_GASS_COPY_STATUS_FAILURE;
             globus_i_gass_copy_set_error(copy_handle, error);
+
+            cancel_info = (globus_i_gass_copy_cancel_t *)
+                globus_libc_malloc(sizeof(globus_i_gass_copy_cancel_t));
+            cancel_info->handle = copy_handle;
+            cancel_info->canceling_source = GLOBUS_TRUE;
+            globus_l_gass_copy_generic_cancel(cancel_info);
+            globus_libc_free(cancel_info);
         }
-        
-        globus_l_gass_copy_write_from_queue(copy_handle);
+        if(copy_handle->state)
+        {
+            globus_l_gass_copy_write_from_queue(copy_handle);
+        }
     }
 
 } /* globus_l_gass_copy_ftp_get_done_callback() */
@@ -3110,10 +3122,21 @@ globus_l_gass_copy_ftp_put_done_callback(
 #ifdef GLOBUS_I_GASS_COPY_DEBUG
             globus_libc_fprintf(stderr, "ftp_put_done_callback(): called with error\n");
 #endif
+            copy_handle->state->dest.status = GLOBUS_I_GASS_COPY_TARGET_FAILED;
+            copy_handle->status = GLOBUS_GASS_COPY_STATUS_FAILURE;
             globus_i_gass_copy_set_error(copy_handle, error);
+
+            cancel_info = (globus_i_gass_copy_cancel_t *)
+                globus_libc_malloc(sizeof(globus_i_gass_copy_cancel_t));
+            cancel_info->handle = copy_handle;
+            cancel_info->canceling_source = GLOBUS_FALSE;
+            globus_l_gass_copy_generic_cancel(cancel_info);
+            globus_libc_free(cancel_info);
         }
-        
-	globus_l_gass_copy_write_from_queue(copy_handle);
+        if(copy_handle->state)
+        {
+            globus_l_gass_copy_write_from_queue(copy_handle);
+        }
     }
 
 } /* globus_l_gass_copy_ftp_put_done_callback() */

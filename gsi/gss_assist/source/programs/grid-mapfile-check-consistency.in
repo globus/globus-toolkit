@@ -47,7 +47,7 @@ globus_source $libexecdir/globus-args-parser-header $@
 ##############################################
 
 secconfdir="/etc/grid-security"
-GRID_MAP_FILE=${secconfdir}/grid-mapfile
+GRID_MAP_FILE=${GRIDMAP-${secconfdir}/grid-mapfile}
 ECHO_DRYRUN=:
 
 # Parse command line arguments
@@ -229,7 +229,7 @@ EOF
 
     # Check for existance of O=,CN= fields
 
-    check_fields=`echo $line | ${GLOBUS_SH_GREP-grep} "O=" | ${GLOBUS_SH_GREP-grep} "CN="`
+    check_fields=`echo $line | ${GLOBUS_SH_GREP-grep} "/O=" | ${GLOBUS_SH_GREP-grep} "/CN="`
     if [ -z "$check_fields" ]
     then
         echo "Warning: The following entry is missing either a  O=, a CN= field or both"

@@ -16,6 +16,7 @@ CVS Information:
 #include "globus_libc.h"
 #include "globus_error.h"
 #include "globus_error_generic.h"
+#include "globus_common.h"
 
 /*****************************************************************************
 		      Module specific prototypes
@@ -61,7 +62,7 @@ va_dcl
     char fmt[1024];
     va_list ap;
 
-    globus_l_descriptor_string(fmt, "Fatal error", msg, (char *) NULL);
+    globus_l_descriptor_string(fmt, _GCSL("Fatal error"), msg, (char *) NULL);
 
 #ifdef HAVE_STDARG_H
     va_start(ap, msg);
@@ -150,7 +151,7 @@ va_dcl
     char fmt[1024];
     va_list ap;
 
-    globus_l_descriptor_string(fmt, "Error", msg, (char *) NULL);
+    globus_l_descriptor_string(fmt, _GCSL("Error"), msg, (char *) NULL);
 
 #ifdef HAVE_STDARG_H
     va_start(ap, msg);
@@ -177,7 +178,7 @@ va_dcl
     char fmt[1024];
     va_list ap;
     
-    globus_l_descriptor_string(fmt, "Warning", msg, (char *) NULL);
+    globus_l_descriptor_string(fmt, _GCSL("Warning"), msg, (char *) NULL);
 
 #ifdef HAVE_STDARG_H
     va_start(ap, msg);
@@ -204,7 +205,7 @@ va_dcl
     char fmt[1024];
     va_list ap;
 
-    globus_l_descriptor_string(fmt, "Notice", msg, (char *) NULL);
+    globus_l_descriptor_string(fmt, _GCSL("Notice"), msg, (char *) NULL);
 
 #ifdef HAVE_STDARG_H
     va_start(ap, msg);
@@ -263,7 +264,7 @@ va_dcl
     int save_error;
 
     save_error = errno;
-    globus_l_descriptor_string(fmt, "Fatal error: ", msg, globus_libc_system_error_string(save_error));
+    globus_l_descriptor_string(fmt, _GCSL("Fatal error: "), msg, globus_libc_system_error_string(save_error));
 
 #ifdef HAVE_STDARG_H
     va_start(ap, msg);
@@ -329,7 +330,7 @@ globus_get_unique_session_string(void)
     
     if (strlen(tmp_buf) >= GLOBUS_L_MAX_SESSION_STRING_LENGTH)
     {
-        globus_fatal("Internal Error: GLOBUS_L_MAX_SESSION_STRING_LENGTH=%d not long enough to hold seesion string\n", GLOBUS_L_MAX_SESSION_STRING_LENGTH);
+        globus_fatal(_GCSL("Internal Error: GLOBUS_L_MAX_SESSION_STRING_LENGTH=%d not long enough to hold seesion string\n"), GLOBUS_L_MAX_SESSION_STRING_LENGTH);
     }
     result = globus_libc_strdup(tmp_buf);
 
@@ -347,11 +348,11 @@ globus_panic(
     
     if(module)
     { 
-        fprintf(stderr, "PANIC in module %s\n", module->module_name);
+        fprintf(stderr, _GCSL("PANIC in module %s\n"), module->module_name);
     }
     else
     {
-        fprintf(stderr, "PANIC\n");
+        fprintf(stderr, _GCSL("PANIC\n"));
     }
     
     va_start(ap, message);
@@ -360,7 +361,7 @@ globus_panic(
     
     if(result != GLOBUS_SUCCESS)
     {
-        fprintf(stderr, "Result:\n%s\n",  
+        fprintf(stderr, _GCSL("Result:\n%s\n"),  
             globus_error_print_chain(globus_error_get(result)));
     }
     

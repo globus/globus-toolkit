@@ -23,6 +23,7 @@ if (!defined($gpath))
 
 @INC = (@INC, "$gpath/lib/perl");
 
+my ($proto) = setup_proto();
 my ($source_host, $source_file, $local_copy) = setup_remote_source();
 
 sub check_existence
@@ -59,7 +60,12 @@ else
     {
         my $exists_rc = stat($_) ? 0 : 1;
         
-        push(@tests, "check_existence('gsiftp://$source_host$_', $exists_rc);");
+        push(@tests, "check_existence('$proto$source_host$_', $exists_rc);");
+    }
+
+    if(defined($ENV{FTP_TEST_RANDOMIZE}))
+    {
+        shuffle(\@tests);
     }
 
     if(@ARGV)

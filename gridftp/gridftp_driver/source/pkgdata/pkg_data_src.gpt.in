@@ -3,7 +3,7 @@
 
 <gpt_package_metadata Name="globus_xio_gridftp_driver" Format_Version="0.01">
 
-    <Aging_Version Major="0" Minor="2" Age="0"/>
+    <Aging_Version Major="0" Minor="3" Age="0"/>
     <Description> Globus XIO GridFTP Driver</Description>
     <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@"/>
 
@@ -32,6 +32,14 @@
             <Dependency Name="globus_ftp_client">
                 <Version>
                     <Simple_Version Major="2"/>
+                </Version>
+            </Dependency>
+        </Source_Dependencies>
+
+        <Source_Dependencies Type="doc_runtime">
+            <Dependency Name="globus_xio" Package="doc">
+                <Version>
+                    <Simple_Version Major="0"/>
                 </Version>
             </Dependency>
         </Source_Dependencies>

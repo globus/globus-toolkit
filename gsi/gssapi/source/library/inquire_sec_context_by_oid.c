@@ -56,7 +56,7 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
-            ("Invalid minor_status (NULL) passed to function"));
+            (_GGSL("Invalid minor_status (NULL) passed to function")));
         major_status = GSS_S_FAILURE;
         goto exit;
     }
@@ -66,7 +66,7 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
-            ("Invalid context_handle passed to function"));
+            (_GGSL("Invalid context_handle passed to function")));
         major_status = GSS_S_FAILURE;
         goto exit;
     }
@@ -79,7 +79,7 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
-            ("Invalid desired_object passed to function"));
+            (_GGSL("Invalid desired_object passed to function")));
         major_status = GSS_S_FAILURE;
         goto exit;
     }
@@ -89,7 +89,7 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
-            ("Invalid data_set (NULL) passed to function"));
+            (_GGSL("Invalid data_set (NULL) passed to function")));
         major_status = GSS_S_FAILURE;
         goto exit;
     }
@@ -153,7 +153,7 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
             GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
                 minor_status,
                 GLOBUS_GSI_GSSAPI_ERROR_WITH_OPENSSL,
-                ("Couldn't create ASN1 object"));
+                (_GGSL("Couldn't create ASN1 object")));
             major_status = GSS_S_FAILURE;
             goto exit;
         }
@@ -182,8 +182,8 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
                     GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
                         minor_status,
                         GLOBUS_GSI_GSSAPI_ERROR_WITH_OPENSSL,
-                        ("Couldn't get extension at index %d "
-                         "from cert in credential.", found_index));
+                        (_GGSL("Couldn't get extension at index %d "
+                         "from cert in credential."), found_index));
                     major_status = GSS_S_FAILURE;
                     goto exit;
                 }
@@ -194,8 +194,8 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
                     GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
                         minor_status,
                         GLOBUS_GSI_GSSAPI_ERROR_WITH_OPENSSL,
-                        ("Couldn't get cert extension in the form of an "
-                         "ASN1 octet string."));
+                        (_GGSL("Couldn't get cert extension in the form of an "
+                         "ASN1 octet string.")));
                     major_status = GSS_S_FAILURE;
                     goto exit;
                 }
@@ -207,7 +207,7 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
                     GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
                         minor_status,
                         GLOBUS_GSI_GSSAPI_ERROR_WITH_OPENSSL,
-                        ("Failed to make copy of extension data"));
+                        (_GGSL("Failed to make copy of extension data")));
                     major_status = GSS_S_FAILURE;
                     goto exit;
                 }
@@ -244,7 +244,7 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
                 GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
                     minor_status,
                     GLOBUS_GSI_GSSAPI_ERROR_WITH_OPENSSL,
-                    ("Failed to serialize certificate"));
+                    (_GGSL("Failed to serialize certificate")));
                 major_status = GSS_S_FAILURE;
                 goto exit;                
             }
@@ -267,7 +267,7 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
                 GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
                     minor_status,
                     GLOBUS_GSI_GSSAPI_ERROR_WITH_OPENSSL,
-                    ("Failed to serialize certificate"));
+                    (_GGSL("Failed to serialize certificate")));
                 major_status = GSS_S_FAILURE;
                 goto exit;                
             }

@@ -31,6 +31,7 @@ the client library.
 
 =cut
 
+my ($proto) = setup_proto();
 my ($source_host, $source_file, $local_copy) = setup_remote_source();
 
 sub lingering_get
@@ -38,7 +39,7 @@ sub lingering_get
     my ($errors,$rc) = ("",0);
     my ($old_proxy);
 
-    my $command = "$test_exec -s gsiftp://$source_host$source_file >/dev/null 2>&1";
+    my $command = "$test_exec -s $proto$source_host$source_file >/dev/null 2>&1";
     $errors = run_command($command, 1);
     if($errors eq "")
     {
@@ -51,6 +52,11 @@ sub lingering_get
     }
 }
 push(@tests, "lingering_get();");
+
+if(defined($ENV{FTP_TEST_RANDOMIZE}))
+{
+    shuffle(\@tests);
+}
 
 if(@ARGV)
 {

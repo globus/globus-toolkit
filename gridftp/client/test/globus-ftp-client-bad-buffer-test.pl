@@ -21,6 +21,7 @@ if (!defined($gpath))
 my @tests;
 my @todo;
 
+my ($proto) = setup_proto();
 my ($source_host, $source_file, $local_copy) = setup_remote_source();
 
 # Test 1: Bad buffer test
@@ -32,7 +33,7 @@ sub bad_buffer
 
     unlink('core');
     
-    my $command = "$test_exec -s gsiftp://$source_host$source_file >/dev/null 2>&1";
+    my $command = "$test_exec -s $proto$source_host$source_file >/dev/null 2>&1";
     $errors = run_command($command, 2);
     if($errors eq "")
     {
@@ -45,6 +46,11 @@ sub bad_buffer
     }
 }
 push(@tests, "bad_buffer");
+
+if(defined($ENV{FTP_TEST_RANDOMIZE}))
+{
+    shuffle(\@tests);
+}
 
 if(@ARGV)
 {

@@ -27,7 +27,7 @@ GetOptions('path|p=s' => \$path,
 
 if (-e $path) {
     if (-o $path) {
-        chmod(0622, $path);
+        chmod(0666, $path);
     } else {
         print STDERR "Log file $path exists but is not owned by this user\n";
         exit(1);
@@ -37,7 +37,7 @@ if (-e $path) {
         print STDERR "Unable to create log file at $path\n";
         exit (1);
     }
-    chmod(0622, $path);
+    chmod(0666, $path);
 }
 
 my $metadata =

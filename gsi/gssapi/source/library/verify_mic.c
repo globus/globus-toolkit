@@ -84,7 +84,7 @@ GSS_CALLCONV gss_verify_mic(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
-            ("Invalid context handle (GSS_C_NO_CONTEXT) passed to function"));
+            (_GGSL("Invalid context handle (GSS_C_NO_CONTEXT) passed to function")));
         goto exit;
     }
 
@@ -94,7 +94,7 @@ GSS_CALLCONV gss_verify_mic(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
-            ("Invalid token_buffer (NULL) passed to function"));
+            (_GGSL("Invalid token_buffer (NULL) passed to function")));
         goto exit;
     }
 
@@ -104,7 +104,7 @@ GSS_CALLCONV gss_verify_mic(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
-            ("Invalid token_buffer (value param is NULL) passed to function"));
+            (_GGSL("Invalid token_buffer (value param is NULL) passed to function")));
         goto exit;
     }
 
@@ -136,7 +136,7 @@ GSS_CALLCONV gss_verify_mic(
             GLOBUS_GSI_GSSAPI_ERROR_RESULT(
                 minor_status,
                 GLOBUS_GSI_GSSAPI_ERROR_EXPIRED_CREDENTIAL,
-                ("Credential expired: %s < %s",
+                (_GGSL("Credential expired: %s < %s"),
                  ctime(&context_goodtill), ctime(&current_time)));
             goto exit;
         }
@@ -176,8 +176,8 @@ GSS_CALLCONV gss_verify_mic(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_TOKEN_FAIL,
-            ("Token length of %d does not match "
-             "size of message digest %d",
+            (_GGSL("Token length of %d does not match "
+             "size of message digest %d"),
              token_buffer->length, 
              (GSS_SSL_MESSAGE_DIGEST_PADDING + md_size)));
         goto exit;
@@ -195,8 +195,8 @@ GSS_CALLCONV gss_verify_mic(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_TOKEN_FAIL,
-            ("Message buffer length of %d does not match "
-             "expected length of %d in token",
+            (_GGSL("Message buffer length of %d does not match "
+             "expected length of %d in token"),
              message_buffer->length,
              buffer_len));
         goto exit;
@@ -220,7 +220,7 @@ GSS_CALLCONV gss_verify_mic(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_WITH_MIC,
-            ("Message digest and token's contents are not equal"));
+            (_GGSL("Message digest and token's contents are not equal")));
         goto exit;
     }
 
@@ -250,7 +250,7 @@ GSS_CALLCONV gss_verify_mic(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_TOKEN_FAIL,
-            ("Missing write sequence at index: %d in the token",
+            (_GGSL("Missing write sequence at index: %d in the token"),
              index));
         goto exit;
     }
@@ -262,7 +262,7 @@ GSS_CALLCONV gss_verify_mic(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_TOKEN_FAIL,
-            ("Token is too old"));
+            (_GGSL("Token is too old")));
         goto exit;
     }
 

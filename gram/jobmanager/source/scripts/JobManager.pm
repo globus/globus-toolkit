@@ -742,13 +742,12 @@ sub cache_cleanup
     my $job_path = $self->job_dir();
 
     $self->log("cache_cleanup(enter)");
-    if ( ! defined $tag )
-    {
-	$self->log( "No cache tag defined to cleanup" );
-    }
 
-    ($stderr, $rc) = $self->pipe_err_cmd($cache_pgm,
-        '-cleanup-tag', '-t', $tag);
+    if ( defined $tag )
+    {
+         ($stderr, $rc) = $self->pipe_err_cmd($cache_pgm,
+             '-cleanup-tag', '-t', $tag);
+    }
 
     $self->log("Cleaning files in job dir $job_path");
 
@@ -1019,6 +1018,8 @@ sub job_dir {
 
     $job_dir = $ENV{HOME}."/.globus/job/$posix_hostname/".$description->uniq_id();
     $self->log("making my own job dir @ $job_dir");
+
+    return $job_dir;
 
 }
 

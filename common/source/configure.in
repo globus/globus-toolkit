@@ -20,6 +20,8 @@ CHECK_NEED_LNSL
 
 CHECK_NEED_LSOCKET
 
+CHECK_NEED_LDL
+
 GPT_SET_LIBS(["$EXTERNAL_LIBS"])
 
 AC_SUBST(GLOBUS_THREADS)
@@ -43,6 +45,7 @@ AC_OUTPUT(
 	library/Makefile
 	programs/Makefile
 	programs/globus-sh-exec
+	programs/globus-version
 	scripts/Makefile
 	config/Makefile
 	doxygen/Makefile

@@ -2,29 +2,22 @@
 #include "globus_xio_util.h"
 #include "globus_xio_ordering_driver.h"
 #include "globus_xio_mode_e_driver.h"
+#include "globus_xio_tcp_driver.h"
 
 #define CHUNK_SIZE 5000
 #define FILE_NAME_LEN 25
 
 globus_xio_driver_t                     mode_e_driver;
 globus_xio_driver_t                     ordering_driver;
-int					y = 5;
-globus_mutex_t				mutex;
-globus_cond_t				cond;
-
-void
-read_cb(
-    globus_xio_handle_t                	handle,
-    globus_result_t                     res,
-    globus_byte_t *                     buffer,
-    globus_size_t                       len,
-    globus_size_t                       nbytes,
-    globus_xio_data_descriptor_t        data_desc,
-    void *                              user_arg);
+globus_xio_driver_t                     tcp_driver;
+int 					y = 0;
+int					port = 0;
+globus_mutex_t                          mutex;
+globus_cond_t                           cond;
 
 void
 write_cb(
-    globus_xio_handle_t                	handle,
+    globus_xio_handle_t                 handle,
     globus_result_t                     res,
     globus_byte_t *                     buffer,
     globus_size_t                       len,
@@ -52,22 +45,23 @@ void
 help()
 {
     fprintf(stdout, 
-        "globus-xio-mode-e-file [options]\n"
+        "globus-xio-ordering-file [options]\n"
         "-----------------\n"
-        "using the -s switch sets up a server."  
-        "\n"
+        "using the -s switch sets up a server\n"  
         "specify -c <contact string> to communicate with the server\n"
+	"server can only read and the client can only write\n"
         "\n"
         "options:\n"
-        "-c <contact_string> : use this contact string (required for client)\n"
+        "-c <host:port> (required for client)\n"
         "-s : be a server\n"
-        "-p : num streams (optional)\n"
-	"-f : file name\n");
+	"-p : port (optional server option, client ignores this option)\n"
+        "-P : num streams (optional client option, server ignores this)\n"
+	"-f : file name (required for both server and client\n");
 }
 
 void
 write_cb(
-    globus_xio_handle_t                	handle,
+    globus_xio_handle_t                 handle,
     globus_result_t                     res,
     globus_byte_t *                     buffer,
     globus_size_t                       len,
@@ -76,34 +70,11 @@ write_cb(
     void *                              user_arg)
 {
     globus_free(buffer);
-}
-
-
-void
-read_cb(
-    globus_xio_handle_t                	handle,
-    globus_result_t                     result,
-    globus_byte_t *                     buffer,
-    globus_size_t                       len,
-    globus_size_t                       nbytes,
-    globus_xio_data_descriptor_t        data_desc,
-    void *                              user_arg)
-{
-    FILE * 				fp;
-    int 				rc;
-    globus_result_t			res;
-    fp = (FILE*)user_arg;
-    fputs(buffer, fp);
-    globus_free(buffer);
-    if (result != GLOBUS_SUCCESS)
-    {
-	fclose(fp);  
-    }
     globus_mutex_lock(&mutex);
     if (--y == 0)
     {
         globus_mutex_unlock(&mutex);
-	globus_cond_signal(&cond);
+        globus_cond_signal(&cond);
     }
     else
     {
@@ -111,12 +82,26 @@ read_cb(
     }
 }
 
+globus_result_t
+attr_cntl_cb(
+    globus_xio_attr_t                       attr)
+{       
+    globus_result_t                         result;
+    result = globus_xio_attr_cntl(
+        attr,
+        tcp_driver,
+        GLOBUS_XIO_TCP_SET_PORT,
+        port);
+    return result;
+}   
+
 int
 main(
     int                                     argc,
     char **                                 argv)
 {
     globus_xio_stack_t                      stack;
+    globus_xio_stack_t                      mode_e_stack;
     globus_xio_handle_t                     xio_handle;
     globus_xio_server_t			    server;	
     globus_xio_attr_t                       attr = NULL;
@@ -134,19 +119,32 @@ main(
 
     res = globus_xio_driver_load("mode_e", &mode_e_driver);
     test_res(res);
+    res = globus_xio_driver_load("ordering", &ordering_driver);
+    test_res(res);
     res = globus_xio_stack_init(&stack, NULL);
     test_res(res);
     res = globus_xio_stack_push_driver(stack, mode_e_driver);
     test_res(res);
-
-    globus_mutex_init(&mutex, NULL);
-    globus_cond_init(&cond, NULL);
+    res = globus_xio_stack_push_driver(stack, ordering_driver);
+    test_res(res);
+    res = globus_xio_driver_load("tcp", &tcp_driver);
+    test_res(res);                      
+    res = globus_xio_stack_init(&mode_e_stack, NULL);
+    test_res(res);
+    res = globus_xio_stack_push_driver(mode_e_stack, tcp_driver);
+    test_res(res);
 
     if (argc < 4)
     {
         help();
         exit(1);
     }
+    test_res(globus_xio_attr_init(&attr));
+    test_res(globus_xio_attr_cntl(
+        attr,
+        mode_e_driver,
+        GLOBUS_XIO_MODE_E_SET_STACK,
+        mode_e_stack));
     for(ctr = 1; ctr < argc; ctr++)
     {
         if(strcmp(argv[ctr], "-h") == 0)
@@ -170,6 +168,20 @@ main(
         }
         else if(strcmp(argv[ctr], "-p") == 0)
         {
+            if (argc < 6)
+            {
+                help();
+                exit(1);
+            }
+            port = atoi(argv[ctr+1]);
+            test_res(globus_xio_attr_cntl(
+                attr,
+                mode_e_driver,
+                GLOBUS_XIO_MODE_E_APPLY_ATTR_CNTLS,
+                attr_cntl_cb));
+        }
+        else if(strcmp(argv[ctr], "-P") == 0)
+        {
 	    if (argc < 6)
 	    {
 		help();
@@ -177,6 +189,11 @@ main(
 	    }
             num_streams = atoi(argv[ctr+1]);
             test_res(globus_xio_attr_init(&attr));
+            test_res(globus_xio_attr_cntl(
+                attr,
+                ordering_driver,
+		GLOBUS_XIO_ORDERING_SET_MAX_READ_COUNT,
+                num_streams));
             test_res(globus_xio_attr_cntl(
                 attr,
                 mode_e_driver,
@@ -203,12 +220,10 @@ main(
         exit(1);
     }
     
-
-  
     if(be_server)
     {
 	globus_size_t size = CHUNK_SIZE + 1;
-	int i, x = 5;
+	int i, nbytes;
 	res = globus_xio_server_create(&server, attr, stack);
     	test_res(res);
         globus_xio_server_get_contact_string(server, &cs);
@@ -218,31 +233,26 @@ main(
 	res = globus_xio_open(xio_handle, NULL, attr);
 	test_res(res);
  	fp = fopen(filename, "w");
-        while(x)
+        while(1)
         {
 	    char * buffer;
 	    buffer = (char *) globus_malloc(size);
             for (i=0; i<size; i++)
 		buffer[i] = '\0';
-            res = globus_xio_register_read(
+            res = globus_xio_read(
                 xio_handle,
                 buffer,
                 size - 1,
 		1,
-                NULL,
-		read_cb,
-		fp);
+		&nbytes,
+                NULL);
+	    fputs(buffer, fp);
 	    if (res != GLOBUS_SUCCESS)
 		break;
-	    --x;
 	}
-	globus_mutex_lock(&mutex);
-	while(y)
-	{
-	    globus_cond_wait(&mutex, &cond);
-	}
-	globus_mutex_unlock(&mutex);
 	res = globus_xio_close(xio_handle, NULL);
+	test_res(res);
+        res = globus_xio_server_close(server);
 	test_res(res);
 	res = globus_xio_driver_unload(mode_e_driver);
 	test_res(res);
@@ -261,7 +271,11 @@ main(
         test_res(res);
    	res = globus_xio_open(xio_handle, cs, attr);
    	test_res(res);
+        globus_mutex_init(&mutex, NULL);
+        globus_cond_init(&cond, NULL);
+
         fp = fopen(filename, "r");
+        globus_mutex_lock(&mutex);
         while(!feof(fp))
 	{
             char * buffer;
@@ -279,24 +293,39 @@ main(
 		write_cb,
 		NULL);
             test_res(res); 
+	    ++y;
         } 
         fclose(fp);
-	test_res(globus_xio_attr_init(&attr));
-	test_res(globus_xio_attr_cntl(
-	    attr,
-	    mode_e_driver,
-	    GLOBUS_XIO_MODE_E_SET_EOF,
-	    GLOBUS_TRUE,
-	    num_streams));
+/*        test_res(globus_xio_data_descriptor_init(&dd, xio_handle));
+        test_res(globus_xio_data_descriptor_cntl(
+            dd,
+            mode_e_driver,
+            GLOBUS_XIO_MODE_E_SEND_EOD,
+            GLOBUS_TRUE));
+        res = globus_xio_write(
+                xio_handle,
+                buffer,
+                nbytes,
+                nbytes,
+                &nbytes,
+                NULL);
+        test_res(res); */
+        while(y)
+        {
+            globus_cond_wait(&mutex, &cond);
+        }
+        globus_mutex_unlock(&mutex);
 	res = globus_xio_close(xio_handle, attr);
 	test_res(res);
 	res = globus_xio_driver_unload(mode_e_driver);
 	test_res(res);
+	res = globus_xio_driver_unload(ordering_driver);
+	test_res(res);
 	rc = globus_module_deactivate(GLOBUS_XIO_MODULE);
 	globus_assert(rc == GLOBUS_SUCCESS);
+        globus_mutex_destroy(&mutex);
+        globus_cond_destroy(&cond);
 
     }
-	globus_mutex_destroy(&mutex);
-	globus_cond_destroy(&cond);
     return 0;
 }

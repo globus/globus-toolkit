@@ -954,7 +954,7 @@ globus_libc_gethostname(char *name, int len)
         
         memset(&hints, 0, sizeof(globus_addrinfo_t));
         hints.ai_flags = GLOBUS_AI_CANONNAME;
-        hints.ai_family = PF_UNSPEC;
+        hints.ai_family = AF_UNSPEC;
         hints.ai_socktype = SOCK_STREAM;
         hints.ai_protocol = 0;
         
@@ -1003,8 +1003,9 @@ globus_libc_gethostname(char *name, int len)
 } /* globus_libc_gethostname() */
 
 int
-globus_libc_gethostaddr(
-    globus_sockaddr_t *                 addr)
+globus_libc_gethostaddr_by_family(
+    globus_sockaddr_t *                 addr,
+    int                                 family)
 {
     int                                 rc;
     char                                hostname[MAXHOSTNAMELEN];
@@ -1021,7 +1022,7 @@ globus_libc_gethostaddr(
     
     memset(&hints, 0, sizeof(globus_addrinfo_t));
     hints.ai_flags = 0;
-    hints.ai_family = PF_UNSPEC;
+    hints.ai_family = family;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_protocol = 0;
     
@@ -1045,6 +1046,13 @@ globus_libc_gethostaddr(
     globus_libc_freeaddrinfo(save_addrinfo);
     
     return 0;
+}
+
+int
+globus_libc_gethostaddr(
+    globus_sockaddr_t *                 addr)
+{
+    return globus_libc_gethostaddr_by_family(addr, AF_UNSPEC);
 }
 
 /*
@@ -3196,6 +3204,7 @@ globus_libc_getnameinfo(
     globus_result_t                     result;
 
     result = GLOBUS_SUCCESS;
+    *hostbuf = 0;
     rc = getnameinfo(
         (const struct sockaddr *) addr,
         GlobusLibcSockaddrLen(addr),
@@ -3204,6 +3213,20 @@ globus_libc_getnameinfo(
         servbuf,
         servbuf_len,
         flags);
+#ifdef TARGET_ARCH_DARWIN
+    if(rc == 0 && !*hostbuf && !(flags & GLOBUS_NI_NUMERICHOST))
+    {
+        rc = getnameinfo(
+            (const struct sockaddr *) addr,
+            GlobusLibcSockaddrLen(addr),
+            hostbuf,
+            hostbuf_len,
+            servbuf,
+            servbuf_len,
+            flags | GLOBUS_NI_NUMERICHOST);
+    }
+#endif
+
     if(rc != 0)
     {
         if(rc == EAI_SYSTEM)
@@ -3254,7 +3277,10 @@ globus_libc_addr_is_loopback(
         }
         break;
       case AF_INET6:
-        if(IN6_IS_ADDR_LOOPBACK(&((struct sockaddr_in6 *) _addr)->sin6_addr))
+        if(IN6_IS_ADDR_LOOPBACK(&((struct sockaddr_in6 *) _addr)->sin6_addr) ||
+          (IN6_IS_ADDR_V4MAPPED(&((struct sockaddr_in6 *) _addr)->sin6_addr) &&
+     (*(uint32_t *) &((struct sockaddr_in6 *) _addr)->sin6_addr.s6_addr[12]) ==
+                INADDR_LOOPBACK))
         {
             result = GLOBUS_TRUE;
         }
@@ -3286,7 +3312,10 @@ globus_libc_addr_is_wildcard(
         break;
       case AF_INET6:
         if(IN6_IS_ADDR_UNSPECIFIED(
-            &((struct sockaddr_in6 *) _addr)->sin6_addr))
+          &((struct sockaddr_in6 *) _addr)->sin6_addr) ||
+          (IN6_IS_ADDR_V4MAPPED(&((struct sockaddr_in6 *) _addr)->sin6_addr) &&
+     (*(uint32_t *) &((struct sockaddr_in6 *) _addr)->sin6_addr.s6_addr[12]) ==
+                INADDR_ANY))
         {
             result = GLOBUS_TRUE;
         }
@@ -3329,10 +3358,15 @@ globus_libc_addr_to_contact_string(
     }
         
     if(opts_mask & GLOBUS_LIBC_ADDR_LOCAL ||
-        globus_libc_addr_is_loopback(addr) || 
         globus_libc_addr_is_wildcard(addr))
     {
-        if(globus_libc_gethostaddr(&myaddr) != 0)
+        int                             family;
+        
+        family = (opts_mask & GLOBUS_LIBC_ADDR_IPV6)
+            ? AF_INET6 : ((opts_mask & GLOBUS_LIBC_ADDR_IPV4)
+            ? AF_INET : AF_UNSPEC);
+            
+        if(globus_libc_gethostaddr_by_family(&myaddr, family) != 0)
         {
             result = globus_error_put(
                 globus_error_construct_error(
@@ -3396,6 +3430,216 @@ globus_libc_addr_to_contact_string(
 error_memory:
 error_nameinfo:
     return result;
+}
+
+/** convert a numeric contact string to an array of ints
+ * 
+ * (port is optional and may be NULL.  0 will be passed back if no port is
+ * found)
+ * host needs to have room for at least 16 ints
+ * count will be passed back. 4 for ipv4, 16 for ipv6
+ */
+globus_result_t
+globus_libc_contact_string_to_ints(
+    const char *                        contact_string,
+    int *                               host,
+    int *                               count,
+    unsigned short *                    port)
+{
+    char *                              s;
+    char *                              p;
+    int                                 i;
+    char                                buf[256];
+    struct in_addr                      addr4;
+    struct in6_addr                     addr6;
+    unsigned char *                     paddr;
+    
+    memset(host, 0, sizeof(int) * 16);
+    strncpy(buf, contact_string, sizeof(buf));
+    buf[255] = 0;
+    s = strchr(buf, ':');
+    p = strchr(buf, '.');
+    if(!s || (p && p < s))
+    {
+        /* this must be ipv4 */
+        *count = 4;
+        if(s)
+        {
+            *(s++) = 0;
+        }
+        
+        if(inet_pton(AF_INET, buf, &addr4) <= 0)
+        {
+            goto error_parse;
+        }
+        paddr = (unsigned char *) &addr4;
+    }
+    else
+    {
+        char *                          pbuf = buf;
+        
+        *count = 16;
+        if(*pbuf == '[')
+        {
+            pbuf++;
+            s = strchr(pbuf, ']');
+            if(!s)
+            {
+                goto error_parse;
+            }
+            *(s++) = 0;
+            if(*(s++) != ':')
+            {
+                s = NULL;
+            } 
+        }
+        else
+        {
+            /* cant have a port without [] notation */
+            s = NULL;
+        }
+        
+        if(inet_pton(AF_INET6, pbuf, &addr6) <= 0)
+        {
+            goto error_parse;
+        }
+        paddr = (unsigned char *) &addr6;
+    }
+    
+    if(port)
+    {
+        *port = 0;
+        if(s)
+        {
+            sscanf(s, "%hu", port);
+        }
+    }
+    
+    for(i = 0; i < *count; i++)
+    {
+        host[i] = paddr[i];
+    }
+    
+    return GLOBUS_SUCCESS;
+    
+error_parse:
+    return globus_error_put(
+        globus_error_construct_error(
+            GLOBUS_COMMON_MODULE,
+            GLOBUS_NULL,
+            0,
+            __FILE__,
+            "globus_libc_contact_string_to_ints",
+            __LINE__,
+            "unable to parse ip"));
+}
+
+char *
+globus_libc_ints_to_contact_string(
+    int *                               host,
+    int                                 count,
+    unsigned short                      port)
+{
+    char *                              layout[25];
+    char                                bufs[12][10];
+    char                                ipv4[20];
+    int                                 h = 0;
+    int                                 l = 0;
+    int                                 b = 0;
+    globus_bool_t                       need_bracket = GLOBUS_FALSE;
+    globus_bool_t                       compressed = GLOBUS_FALSE;
+    
+    if(count == 16)
+    {
+        if(port)
+        {
+            layout[l++] = "[";
+            need_bracket = GLOBUS_TRUE;
+        }
+        
+        /* count up leading zeros */
+        while(h < 16 && host[h] == 0) h++;
+        if(h == 12)
+        {
+            count = 4;
+            layout[l++] = "::";
+        }
+        else if(h == 10 && host[10] == 0xff && host[11] == 0xff)
+        {
+            count = 4;
+            h = 12;
+            layout[l++] = "::FFFF:";
+        }
+        else if(h == 16)
+        {
+            layout[l++] = "0::0";
+        }
+        else
+        {
+            for(h = 0; h < 16;)
+            {
+                if(!compressed &&
+                    host[h] == 0 && h < 11 && host[h + 1] == 0 &&
+                    host[h + 2] == 0 && host[h + 3] == 0 &&
+                    host[h + 4] == 0 && host[h + 5] == 0)
+                {
+                    /* compress 3 or more 0s into :: */
+                    compressed = GLOBUS_TRUE;
+                    if(h == 0)
+                    {
+                        layout[l++] = "::";
+                    }
+                    else
+                    {
+                        layout[l++] = ":";
+                    }
+                    
+                    h += 6;
+                    while(h < 15 && host[h] == 0 && host[h + 1] == 0) h += 2;
+                }
+                else
+                {
+                    if((host[h] & 0xff) == 0)
+                    {
+                        snprintf(bufs[b], 10, "%X", host[h + 1] & 0xff);
+                    }
+                    else
+                    {
+                        snprintf(bufs[b], 10, "%X%.2X",
+                            host[h] & 0xff, host[h + 1] & 0xff);
+                    }
+                    
+                    layout[l++] = bufs[b++];
+                    if(h < 14)
+                    {
+                        layout[l++] = ":";
+                    }
+                    
+                    h += 2;
+                }
+            }
+        }
+    }
+    
+    if(count == 4)
+    {
+        snprintf(ipv4, sizeof(ipv4),
+            "%d.%d.%d.%d", host[h + 0], host[h + 1], host[h + 2], host[h + 3]);
+        layout[l++] = ipv4;
+    }
+    
+    if(need_bracket)
+    {
+        layout[l++] = "]";
+    }
+    
+    if(port && l > 0)
+    {
+        sprintf(bufs[b], ":%d", (int) port);
+        layout[l++] = bufs[b++];
+    }
+    
+    return globus_libc_join((char **)layout, l);
 }
 
 /**

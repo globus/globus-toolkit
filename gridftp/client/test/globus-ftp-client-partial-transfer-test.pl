@@ -24,6 +24,7 @@ if (!defined($gpath))
 
 @INC = (@INC, "$gpath/lib/perl");
 
+my ($proto) = setup_proto();
 my ($source_host, $source_file, $local_copy) = setup_remote_source();
 my ($dest_host, $dest_file) = setup_remote_dest();
 
@@ -78,7 +79,7 @@ sub basic_func
     substr($dest_data, $offset, 100, substr($source_data, $offset, 100));
 
     my $cmd = "$test_exec -R $offset " .int(100+$offset).
-           " -s gsiftp://$source_host$tmpname2 -d gsiftp://$dest_host$tmpname";
+           " -s $proto$source_host$tmpname2 -d $proto$dest_host$tmpname";
     print `$cmd`;
 
     $rc = $?;
@@ -118,6 +119,11 @@ else
     push(@tests, "basic_func(0);");
     push(@tests, "basic_func(100);");
     push(@tests, "basic_func(5000);");
+
+    if(defined($ENV{FTP_TEST_RANDOMIZE}))
+    {
+        shuffle(\@tests);
+    }
 
     if(@ARGV)
     {

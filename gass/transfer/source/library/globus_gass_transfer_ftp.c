@@ -32,7 +32,7 @@ static int globus_l_gass_lock_line=0;
 static int globus_l_gass_lock_tmp=0;
 
 #define globus_l_gass_transfer_ftp_lock() \
-        printf("Thread [%d] acquiring mutex at %s:%d\n", \
+        printf(_GTSL("Thread [%d] acquiring mutex at %s:%d\n"), \
                (int) globus_thread_self(), \
 	       __FILE__, \
 	       __LINE__), \
@@ -42,7 +42,7 @@ static int globus_l_gass_lock_tmp=0;
 	globus_l_gass_lock_line=__LINE__, \
 	globus_l_gass_lock_tmp
 #define globus_l_gass_transfer_ftp_unlock() \
-        printf("Thread [%d] releasing mutex at %s:%d\n", \
+        printf(_GTSL("Thread [%d] releasing mutex at %s:%d\n"), \
                (int) globus_thread_self(), \
 	       __FILE__, \
 	       __LINE__), \

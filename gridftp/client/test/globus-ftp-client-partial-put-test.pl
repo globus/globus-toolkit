@@ -25,6 +25,7 @@ if (!defined($gpath))
 
 @INC = (@INC, "$gpath/lib/perl");
 
+my ($proto) = setup_proto();
 my ($dest_host, $dest_file) = setup_remote_dest();
 
 # Test #1-3. Basic functionality: create a dummy file in /tmp; modify
@@ -53,7 +54,7 @@ sub basic_func
     print $newfile $data;
     close $newfile;
     
-    my $command = "$test_exec -R $offset -d gsiftp://$dest_host$dest_file -p >/dev/null 2>&1";
+    my $command = "$test_exec -R $offset -d $proto$dest_host$dest_file -p >/dev/null 2>&1";
     open($newfile, "|$command");
     my $i = $offset;
     if($offset > 4096)
@@ -107,6 +108,11 @@ else
 push(@tests, "basic_func(0);");
 push(@tests, "basic_func(100);");
 push(@tests, "basic_func(5000);");
+
+if(defined($ENV{FTP_TEST_RANDOMIZE}))
+{
+    shuffle(\@tests);
+}
 
 if(@ARGV)
 {

@@ -702,7 +702,7 @@ globus_ftp_client_perf_plugin_set_copy_destroy(
                 _globus_func_name));
     }
 
-    result = globus_ftp_client_perf_plugin_get_user_specific(
+    result = globus_ftp_client_plugin_get_plugin_specific(
               plugin,
               (void **) &ps);
 

@@ -105,13 +105,21 @@ AC_ARG_ENABLE(insure,
 
 AC_DEFUN([LAC_COMPILERS],
 [
-
-dnl this is to prevent AC_PROG_CC being called
-dnl automatically from autoconf dependencies
-AC_PROVIDE([AC_PROG_CC])
+AC_BEFORE([$0], [AC_PROG_CC])
 
 AC_CANONICAL_BUILD
 AC_CANONICAL_HOST
+
+dnl Restore and reset the flags from AC_PROG_CC so we can do our
+dnl own compiler config. Saved flags are from ../configure.in
+CC="$SAVED_CC"
+CFLAGS="$SAVED_CFLAGS"
+unset ac_cv_c_compiler_gnu
+unset ac_cv_prog_ac_ct_CC
+unset ac_cv_prog_cc_g
+unset ac_cv_prog_cc_stdc
+unset am_cv_CC_dependencies_compiler_type
+
 LAC_COMPILERS_ARGS
 LAC_THREADS
 LAC_MP
@@ -193,20 +201,20 @@ case ${host}--$1 in
         else
             if test "$GLOBUS_CC" = "gcc"; then
                 AC_PATH_PROGS(lac_cv_CC, $CC gcc)
-                AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC c++ g++ gcc)
+                AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC g++)
+                AC_PATH_PROGS(lac_cv_F77, $F77 g77)
             else
                 AC_PATH_PROGS(lac_cv_CC, $CC cc $lac_cv_CC)
                 AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC CC)
+                AC_PATH_PROGS(lac_cv_F77, $F77 f77)
+                AC_PATH_PROGS(lac_cv_F90, $F90 f90)
             fi
-            
-            AC_PATH_PROGS(lac_cv_F77, $F77 f77 g77)
-            AC_PATH_PROGS(lac_cv_F90, $F90 f90)
         fi
         CC="$lac_cv_CC"
 
         if test "$CC" = "/usr/ucb/cc" ; then
             AC_MSG_ERROR([The compiler found was /usr/ucb/cc (not supported)])
-            exit 1            
+            exit 1
         fi
 
         LAC_PROG_CC_GNU($lac_cv_CC,
@@ -230,7 +238,18 @@ case ${host}--$1 in
                         ])
 
         if test "$lac_cv_build_64bit" = "yes"; then
-            lac_CFLAGS="$lac_CFLAGS -xcode=pic32 -xarch=v9"
+            LAC_PROG_CC_GNU($lac_cv_CC,
+                            [ lac_CFLAGS="$lac_CFLAGS -m64"
+                              lac_CXXFLAGS="$lac_CXXFLAGS -m64" ],
+                            [ lac_CFLAGS="$lac_CFLAGS -xarch=v9 -KPIC"
+                              lac_CXXFLAGS="$lac_CXXFLAGS -xarch=v9 -KPIC" ])
+        else
+            LAC_PROG_CC_GNU($lac_cv_CC,
+                            [ lac_CFLAGS="$lac_CFLAGS -m32"
+                              lac_CXXFLAGS="$lac_CXXFLAGS -m32" ],
+                            [ lac_CFLAGS="$lac_CFLAGS -xarch=v8"
+                              lac_CXXFLAGS="$lac_CXXFLAGS -xarch=v8" ])
+
         fi
 
         ;;
@@ -586,19 +605,21 @@ case ${host}--$1 in
                 AC_PATH_PROGS(lac_cv_CPP, $CPP cpp,[],/usr/lib:$PATH)
                 dnl other parts of the toolchain needs to know about 32/64 bits
                 if test "$lac_cv_build_64bit" = "yes"; then
+                    lac_cv_LD="/usr/bin/ld -b64 -brtl"
+                    lac_LDFLAGS="-b64 -brtl $lac_LDFLAGS"
                     lac_cv_AR="/usr/bin/ar -X64"
                     lac_ARFLAGS="-X64 $lac_ARFLAGS"
                     lac_CFLAGS="-q64 -D_ALL_SOURCE $lac_CFLAGS"
                     lac_CXXFLAGS="-q64 -D_ALL_SOURCE $lac_CXXFLAGS"
-                    lac_LDFLAGS="-b64 -brtl $lac_LDFLAGS"
                     lac_NM="/usr/bin/nm -X64 -B"
                     lac_OBJECT_MODE="64"
                 else
+                    lac_cv_LD="/usr/bin/ld -b32 -brtl"
+                    lac_LDFLAGS="-b32 -brtl $lac_LDFLAGS"
                     lac_cv_AR="/usr/bin/ar -X32"
                     lac_ARFLAGS="-X32 $lac_ARFLAGS"
                     lac_CFLAGS="-q32 -D_ALL_SOURCE $lac_CFLAGS"
                     lac_CXXFLAGS="-q32 -D_ALL_SOURCE $lac_CXXFLAGS"
-                    lac_LDFLAGS="-b32 -brtl $lac_LDFLAGS"
                     lac_NM="/usr/bin/nm -X32 -B"
                     lac_OBJECT_MODE="32"
                 fi
@@ -683,19 +704,21 @@ case ${host}--$1 in
                 AC_PATH_PROGS(lac_cv_CPP, $CPP cpp,[],/usr/lib:$PATH)
                 dnl other parts of the toolchain needs to know about 32/64 bits
                 if test "$lac_cv_build_64bit" = "yes"; then
+                    lac_cv_LD="/usr/bin/ld -b64 -brtl"
+                    lac_LDFLAGS="-b64 -brtl $lac_LDFLAGS"
                     lac_cv_AR="/usr/bin/ar -X64"
                     lac_ARFLAGS="-X64 $lac_ARFLAGS"
                     lac_CFLAGS="-q64 -D_ALL_SOURCE $lac_CFLAGS"
                     lac_CXXFLAGS="-q64 -D_ALL_SOURCE $lac_CXXFLAGS"
-                    lac_LDFLAGS="-b64 -brtl $lac_LDFLAGS"
                     lac_NM="/usr/bin/nm -X64 -B"
                     lac_OBJECT_MODE="64"
                 else
+                    lac_cv_LD="/usr/bin/ld -b32 -brtl"
+                    lac_LDFLAGS="-b32 -brtl $lac_LDFLAGS"
                     lac_cv_AR="/usr/bin/ar -X32"
                     lac_ARFLAGS="-X32 $lac_ARFLAGS"
                     lac_CFLAGS="-q32 -D_ALL_SOURCE $lac_CFLAGS"
                     lac_CXXFLAGS="-q32 -D_ALL_SOURCE $lac_CXXFLAGS"
-                    lac_LDFLAGS="-b32 -brtl $lac_LDFLAGS"
                     lac_NM="/usr/bin/nm -X32 -B"
                     lac_OBJECT_MODE="32"
                 fi
@@ -814,7 +837,7 @@ case ${host}--$1 in
                 AC_MSG_ERROR(64 bits not supported on this platform)
                 exit 1
         fi
-        
+
         lac_CPPFLAGS="$lac_CPPFLAGS -I/sw/include"
         lac_LDFLAGS="$lac_LDFLAGS -L/sw/lib"
 
@@ -826,19 +849,19 @@ case ${host}--$1 in
         else
             if test "$GLOBUS_CC" = "gcc"; then
                 AC_PATH_PROGS(lac_cv_CC, $CC gcc)
-        	lac_CFLAGS="$lac_CFLAGS -fno-common"
-        	lac_CPPFLAGS="$lac_CPPFLAGS -no-cpp-precomp"
+                lac_CFLAGS="$lac_CFLAGS -fno-common"
+                lac_CPPFLAGS="$lac_CPPFLAGS -no-cpp-precomp"
             else
                 AC_PATH_PROGS(lac_cv_CC, $CC cc)
             fi
-            
-            AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC CC c++ g++ gcc)
+
+            AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC c++ g++ gcc CC)
             AC_PATH_PROGS(lac_cv_F77, $F77 f77 g77)
             AC_PATH_PROGS(lac_cv_F90, $F90 f90)
         fi
         CC="$lac_cv_CC"
-	
-	# for now assume fink is installed in /sw
+
+        # for now assume fink is installed in /sw
 
         lac_CFLAGS="$lac_CFLAGS -I/sw/include -DBIND_8_COMPAT"
         lac_CXXFLAGS="$lac_CXXFLAGS -I/sw/include"
@@ -902,11 +925,6 @@ fi
 GLOBUS_DEBUG="$lac_cv_debug"
 AC_SUBST(GLOBUS_DEBUG)
 
-dnl we have to run AC_PROG_CC to get the all the other
-dnl autoconf macros to work correctly
-CC=$lac_cv_CC
-AC_PROG_CC()
-
 LAC_PROG_CC_GNU([$lac_cv_CC $lac_CFLAGS],
 [
     lac_CFLAGS="$lac_CFLAGS -Wall"
@@ -923,10 +941,6 @@ AC_CACHE_CHECK("C++ Preprocessor", lac_cv_CXXCPP, lac_cv_CXXCPP="$lac_cv_CXX -E"
 AC_CACHE_CHECK("F77 flags", lac_cv_F77FLAGS, lac_cv_F77FLAGS="$lac_F77FLAGS")
 AC_CACHE_CHECK("F90 flags", lac_cv_F90FLAGS, lac_cv_F90FLAGS="$lac_F90FLAGS")
 
-dnl If a system did not set the LD then set it using CC
-if test -z "$lac_cv_LD" ; then
-   lac_cv_LD="$lac_cv_CC"
-fi
 
 CC="$lac_cv_CC"
 LD="$lac_cv_LD"
@@ -949,12 +963,17 @@ NM="$lac_NM"
 OBJECT_MODE="$lac_OBJECT_MODE"
 ])
 
+dnl Need to get macro dependencies right
+AC_DEFUN([LAC_PROG_CC], [AC_PROG_CC])
+
+
 dnl LAC_PROG_CC_GNU(COMPILER, ACTION-IF-TRUE, ACTION-IF-FALSE)
 AC_DEFUN([LAC_PROG_CC_GNU],
 [
 if test "X$1" != "X" ; then
     _SAVED_CC="$CC"
     CC="$1"
+    AC_REQUIRE([LAC_PROG_CC])
     AC_TRY_COMPILE([],
                    [#ifndef __GNUC__
     choke me
@@ -964,6 +983,7 @@ if test "X$1" != "X" ; then
     [lac_compiler_gnu=no])
     CC="$_SAVED_CC"
 else
+    AC_REQUIRE([LAC_PROG_CC])
     AC_TRY_COMPILE([],
                    [#ifndef __GNUC__
     choke me

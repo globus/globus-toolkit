@@ -80,7 +80,7 @@ Cleanup()
 # Main Logic
 
 secconfdir="/etc/grid-security"
-GRID_MAP_FILE=${secconfdir}/grid-mapfile
+GRID_MAP_FILE=${GRIDMAP-${secconfdir}/grid-mapfile}
 GRID_MAP_FILE_COPY=${tmpdir}/mapfile.copy.$$
 NEW_GRID_MAP_FILE=${tmpdir}/new_mapfile.$$
 CONSISTANCY_CHECK=${tmpdir}/consistancy_check.$$

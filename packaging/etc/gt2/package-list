@@ -60,6 +60,7 @@ globus_gram_reporter_setup_fork	gram/reporter/setup/fork
 globus_gram_reporter_setup_pbs		gram/reporter/setup/pbs
 globus_gram_reporter_setup_lsf		gram/reporter/setup/lsf
 globus_gram_reporter_setup_condor	gram/reporter/setup/condor
+globus_xio_gridftp_driver		gridftp/gridftp_driver/source
 globus_gridftp_server		gridftp/gsi-wuftpd/source
 globus_gridftp_server_control	gridftp/server-lib/src
 globus_gridftp_server2		gridftp/server/src
@@ -81,7 +82,7 @@ globus_io_test			io/test
 globus_xio			xio/src
 globus_xio_test			xio/test
 globus_ldapmodules		mds/openldap/ldapmodules
-globus_libtool mds/libtool pnb libtool-1.5.6.tar.gz
+globus_libtool mds/libtool pnb libtool-1.5.8.tar.gz
 globus_mds_back_giis		mds/openldap/giis-ldapmodules
 globus_mds_common		mds/common/source
 globus_mds_common_setup		mds/common/setup
@@ -111,4 +112,5 @@ globus_gcs_b38b4d8c_setup       gsi/gcs/setup
 globus_simple_ca                gsi/simple_ca/source
 globus_simple_ca_setup          gsi/simple_ca/setup
 globus_icu4c 			icu4c/  tar
+globus_i18n			i18n/source
 globus_libxml2                  libxml2/

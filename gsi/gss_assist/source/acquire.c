@@ -114,7 +114,7 @@ globus_gss_assist_acquire_cred_ext(
 
     GLOBUS_I_GSI_GSS_ASSIST_DEBUG_FPRINTF(
         3, (globus_i_gsi_gss_assist_debug_fstream,
-            "gss_assist_acquire_cred_ext usage=%d desired_name=%s\n",
+            _GASL("gss_assist_acquire_cred_ext usage=%d desired_name=%s\n"),
             cred_usage, desired_name_char ? desired_name_char : "(NULL)"));
 
     if (desired_name_char) {
@@ -142,7 +142,7 @@ globus_gss_assist_acquire_cred_ext(
 
         GLOBUS_I_GSI_GSS_ASSIST_DEBUG_FPRINTF(3,
             (globus_i_gsi_gss_assist_debug_fstream, 
-             "Imported name %s type:%p:i%d\n", 
+             _GASL("Imported name %s type:%p:i%d\n"), 
              (char *) tmp_buffer->value, 
              desired_name_type, i));
     }
@@ -158,7 +158,7 @@ globus_gss_assist_acquire_cred_ext(
 
     GLOBUS_I_GSI_GSS_ASSIST_DEBUG_FPRINTF(3,
         (globus_i_gsi_gss_assist_debug_fstream, 
-         "major=%8.8x minor=%8.8x\n", 
+         _GASL("major=%8.8x minor=%8.8x\n"), 
          (unsigned int) major_status, 
          (unsigned int) *minor_status));
 

@@ -1,0 +1,2 @@
+postinstall:
+	${GPT_LOCATION}/sbin/gpt-postinstall

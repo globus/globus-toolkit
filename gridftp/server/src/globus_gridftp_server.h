@@ -1,13 +1,41 @@
+
+/* Header file for globus_gridftp_server modules.  
+ * 
+ * If you are interested in writing a module for this server and want to
+ * discuss it's design, or are already writing one and would like support,
+ * please subscribe to gridftp-mpd@globus.org by sending a message to 
+ * majordomo@globus.org with the line 'subscribe gridftp-mpd' in the body.
+ * In fact, we'd like to hear from you even if you don't need any assistance.
+ */
+
+
 #ifndef GLOBUS_GRIDFTP_SERVER_H
 #define GLOBUS_GRIDFTP_SERVER_H
 
 #include "globus_common.h"
 #include "globus_gridftp_server_control.h"
 
+#define GLOBUS_MAPPING_STRING ":globus-mapping:"
+
+#define _GSSL(s) globus_common_i18n_get_string_by_key(\
+		    NULL, \
+		    "globus_gridftp_server", \
+		    s)
+
+#define _FSSL(s,p) globus_common_i18n_get_string_by_key(\
+		     p, \
+		    "globus_gridftp_server", \
+		    s)
+
+extern globus_module_descriptor_t      globus_i_gfs_module;
+#define GLOBUS_GRIDFTP_SERVER_MODULE (&globus_i_gfs_module)
+
 extern globus_extension_registry_t      globus_i_gfs_dsi_registry;
 #define GLOBUS_GFS_DSI_REGISTRY         &globus_i_gfs_dsi_registry
 
-#define GLOBUS_GRIDFTP_SERVER_RELEASE_TYPE " ** Developement Release **"
+#define GLOBUS_GRIDFTP_SERVER_RELEASE_TYPE " ** Development Release **"
+
+
 
 /*
  *  globus_gfs_error_type_t
@@ -15,7 +43,7 @@ extern globus_extension_registry_t      globus_i_gfs_dsi_registry;
  */
 typedef enum globus_gfs_error_type_e
 {
-    GLOBUS_GFS_ERROR_MEMORY,
+    GLOBUS_GFS_ERROR_MEMORY = 1,
     GLOBUS_GFS_ERROR_PARAMETER,
     GLOBUS_GFS_ERROR_SYSTEM_ERROR,
     GLOBUS_GFS_ERROR_WRAPPED,
@@ -30,12 +58,11 @@ typedef enum globus_gfs_error_type_e
  */
 typedef enum globus_gfs_operation_type_e
 {
-    GLOBUS_GFS_OP_FINAL_REPLY,
+    GLOBUS_GFS_OP_FINAL_REPLY = 1,
     GLOBUS_GFS_OP_EVENT_REPLY,
     GLOBUS_GFS_OP_EVENT,    
     GLOBUS_GFS_OP_SESSION_START,
     GLOBUS_GFS_OP_SESSION_STOP,
-    GLOBUS_GFS_OP_AUTH,
     GLOBUS_GFS_OP_RECV,
     GLOBUS_GFS_OP_SEND,
     GLOBUS_GFS_OP_LIST,
@@ -45,7 +72,9 @@ typedef enum globus_gfs_operation_type_e
     GLOBUS_GFS_OP_DESTROY,
     GLOBUS_GFS_OP_TRANSFER,
     GLOBUS_GFS_OP_STAT,
-    GLOBUS_GFS_OP_USER_BUFFER
+    GLOBUS_GFS_OP_BUFFER_SEND,
+    GLOBUS_GFS_OP_HANDSHAKE,
+    GLOBUS_GFS_OP_SESSION_START_REPLY
 } globus_gfs_operation_type_t;
 
 /*
@@ -56,13 +85,14 @@ typedef enum globus_gfs_operation_type_e
  */
 typedef enum globus_gfs_command_type_e
 {
-    GLOBUS_GFS_CMD_MKD,
+    GLOBUS_GFS_CMD_MKD = 1,
     GLOBUS_GFS_CMD_RMD,
     GLOBUS_GFS_CMD_DELE,
     GLOBUS_GFS_CMD_RNTO,
     GLOBUS_GFS_CMD_RNFR,
     GLOBUS_GFS_CMD_CKSM,
-    GLOBUS_GFS_CMD_SITE_CHMOD
+    GLOBUS_GFS_CMD_SITE_CHMOD,
+    GLOBUS_GFS_CMD_SITE_DSI
 } globus_gfs_command_type_t;
 
 /*
@@ -72,11 +102,40 @@ typedef enum globus_gfs_command_type_e
  */
 typedef enum globus_gfs_event_type_e
 {
-    GLOBUS_GFS_EVENT_TRANSFER_BEGIN,
-    GLOBUS_GFS_EVENT_DISCONNECTED,
-    GLOBUS_GFS_EVENT_BYTES_RECVD,
-    GLOBUS_GFS_EVENT_RANGES_RECVD
+    GLOBUS_GFS_EVENT_TRANSFER_BEGIN = 0x0001,
+    GLOBUS_GFS_EVENT_TRANSFER_ABORT = 0x0002,
+    GLOBUS_GFS_EVENT_TRANSFER_COMPLETE = 0x0004,
+    GLOBUS_GFS_EVENT_DISCONNECTED = 0x0008,
+    GLOBUS_GFS_EVENT_BYTES_RECVD = 0x0010,
+    GLOBUS_GFS_EVENT_RANGES_RECVD = 0x0020,
+    GLOBUS_GFS_EVENT_TRANSFER_CONNECTED = 0x0040,
+    GLOBUS_GFS_EVENT_PARTIAL_EOF_COUNT = 0x0100,
+    GLOBUS_GFS_EVENT_FINAL_EOF_COUNT = 0x0200,
+    
+    GLOBUS_GFS_EVENT_ALL = 0xFFFF
 } globus_gfs_event_type_t;
+
+/*
+ *  globus_gfs_buffer_type_t
+ *
+ */
+typedef enum globus_gfs_buffer_type_e
+{
+    GLOBUS_GFS_BUFFER_EOF_INFO = 0x0001,
+    GLOBUS_GFS_BUFFER_SERVER_DEFINED = 0xFFFF
+    /* user defined types will start at 0x00010000 */
+} globus_gfs_buffer_type_t;
+
+/*
+ *  globus_gfs_layout_type_t
+ * 
+ * Striped layout types.
+ */
+typedef enum globus_gfs_layout_type_e
+{
+    GLOBUS_GFS_LAYOUT_PARTITIONED = 1,
+    GLOBUS_GFS_LAYOUT_BLOCKED
+} globus_gfs_layout_type_t;
 
 /*
  *  globus_gfs_stat_t
@@ -91,6 +150,7 @@ typedef enum globus_gfs_event_type_e
  *     int                              mode;
  *     int                              nlink;
  *     char                             name[MAXPATHLEN];
+ *     char                             symlink_target[MAXPATHLEN];
  *     uid_t                            uid;
  *     gid_t                            gid;
  *     globus_size_t                    size;
@@ -112,7 +172,7 @@ typedef globus_gridftp_server_control_stat_t    globus_gfs_stat_t;
 typedef struct globus_gfs_data_finished_info_s
 {
     /** unique key for the data_handle */
-    int                                 data_handle_id;
+    void *                              data_arg;
     /** false if the direction of data flow is restricted */
     globus_bool_t                       bi_directional;
     /** is the connection using ipv6? */
@@ -146,12 +206,32 @@ typedef struct globus_gfs_cmd_finshed_info_s
 typedef struct globus_gfs_stat_finished_info_s
 {
     /** uid of the user that performed the stat */
-    uid_t                               uid;
+    int                                 uid;
+    /** count of gids in gid_array */
+    int                                 gid_count;
+    /** array of gids of which user that performed the stat is a member */
+    int *                               gid_array;
     /** number of stat objects in the array */
     int                                 stat_count;
     /** array of stat objects */
     globus_gfs_stat_t *                 stat_array;
 } globus_gfs_stat_finished_info_t;
+
+/*
+ *  globus_gfs_session_finished_info_t
+ * 
+ * Contains specific result info for a stat.
+ */
+typedef struct globus_gfs_session_finished_info_s
+{
+    /** arg to pass back with each request */
+    void *                              session_arg;
+    /** local username of authenticated user */
+    char *                              username;
+    /** home directory of authenticated user */
+    char *                              home_dir;
+    
+} globus_gfs_session_finished_info_t;
 
 /*
  *  globus_gfs_finished_info_t
@@ -168,13 +248,12 @@ typedef struct globus_gfs_finished_info_s
     int                                 code;
     /** additional message, usually for failure */
     char *                              msg;
-    /** result_t (will go away, use above two) */
+    /** result_t */
     globus_result_t                     result;
-
-    int                                 session_id;
 
     union
     {
+        globus_gfs_session_finished_info_t session;
         globus_gfs_data_finished_info_t data;
         globus_gfs_cmd_finshed_info_t   command;
         globus_gfs_stat_finished_info_t stat;
@@ -190,17 +269,30 @@ typedef struct globus_gfs_event_info_s
 {
     /** type of event */
     globus_gfs_event_type_t             type;
+
+    /** arg supplied with the BEGIN_TRANSFER event, 
+        will be passed back with each transfer event */
+    void *                              event_arg;
+    
+    /* reply data */
     /** node that event is from */
     int                                 node_ndx;
     /** unique key of transfer request that event is related to */
     int                                 id;
-    /** unique key of transfer op that event is related to */
-    int                                 transfer_id;
+    /** mask of events that should be passed in */
+    int                                 event_mask;
     /** number of bytes received for current transfer */
     globus_off_t                        recvd_bytes;
     /** ranges of bytes received for current transfer */
     globus_range_list_t                 recvd_ranges;
-    int                                 session_id;
+    /** arg representing data handle that event is related to */    
+    void *                              data_arg;
+    
+    /* request data */
+    /** array of eof counts */    
+    int *                               eof_count;
+    /** number of nodes (size of eof_count array) */    
+    int                                 node_count;
 } globus_gfs_event_info_t;
 
 /*
@@ -216,7 +308,7 @@ typedef struct globus_gfs_transfer_info_s
     char *                              module_name;
     char *                              module_args;
     /** type of list requested */
-    const char *                        list_type;
+    char *                              list_type;
     
     /** offset of partial transfer */
     globus_off_t                        partial_offset;
@@ -224,8 +316,11 @@ typedef struct globus_gfs_transfer_info_s
     globus_off_t                        partial_length;
     /** list or ranges for a restart */
     globus_range_list_t                 range_list;
+    /** length of partial transfer */
+    globus_bool_t                       truncate;
+    
     /** unique key that identifies the associated data_handle */
-    int                                 data_handle_id;
+    void *                              data_arg;
     /** number of eof that sender should send  xxx might need to be array here */
     int                                 eof_count;
     /** total number of local stripes that will be involved */
@@ -282,7 +377,11 @@ typedef struct globus_gfs_data_info_s
     /** tcp buffersize to use */
     int                                 tcp_bufsize;
     /** blocksize to use */
-    globus_size_t                       blocksize;
+    int                                 blocksize;
+    /** blocksize to use for stripe layout */
+    int                                 stripe_blocksize;
+    /** stripe layout to use */
+    int                                 stripe_layout;
 
     /** protection mode */
     char                                prot;
@@ -299,8 +398,11 @@ typedef struct globus_gfs_data_info_s
     int                                 cs_count;
     /** array of contact strings (PORT) */
     const char **                       contact_strings;
+    /** interface that should be used for data connections */
+    char *                              interface;
 
-    /* XXX: is this temp */
+    /* if this is set, the data channel will use it instead
+        of the default session credential */
     gss_cred_id_t                       del_cred;
 } globus_gfs_data_info_t;
 
@@ -313,11 +415,23 @@ typedef struct globus_gfs_stat_info_s
 {
     /** if pathname is a directory, should stat report its info or its contents */
     globus_bool_t                       file_only;
+    /** this stat is requested internally -- bypasses authorization checks */
+    globus_bool_t                       internal;
     /** pathname to stat */
     char *                              pathname;
 } globus_gfs_stat_info_t;
 
-
+typedef struct globus_gfs_session_info_s
+{
+    gss_cred_id_t                       del_cred;
+    globus_bool_t                       free_cred;
+    globus_bool_t                       map_user;
+    char *                              username;
+    char *                              password;
+    char *                              subject;
+    char *                              cookie;
+    char *                              host_id;
+} globus_gfs_session_info_t;
 
 
 /**************************************************************************
@@ -349,10 +463,11 @@ typedef struct globus_l_gfs_data_operation_s *  globus_gfs_operation_t;
  * object pointer will then be passed back to the module with any other
  * interface call.
  */
-typedef globus_result_t
+typedef void
 (*globus_gfs_storage_init_t)(
     globus_gfs_operation_t              op,
-    const char *                        user_id);
+    globus_gfs_session_info_t *         session_info);
+    
 /*
  * This will be called when the client session ends.  Final cleanup 
  * should be done here.
@@ -366,7 +481,7 @@ typedef void
  *
  * This defines the functions that will be called for list, send, and recv.
  */
-typedef globus_result_t
+typedef void
 (*globus_gfs_storage_transfer_t)(
     globus_gfs_operation_t              op,
     globus_gfs_transfer_info_t *        transfer_info,
@@ -378,7 +493,7 @@ typedef globus_result_t
  * This defines the function that will be called for commands.  The type
  * member of command_info specifies which command to carry out. 
  */
-typedef globus_result_t
+typedef void
 (*globus_gfs_storage_command_t)(
     globus_gfs_operation_t              op,
     globus_gfs_command_info_t *         command_info,
@@ -389,7 +504,7 @@ typedef globus_result_t
  *
  * This defines the function that will be called for a stat lookup. 
  */
-typedef globus_result_t
+typedef void
 (*globus_gfs_storage_stat_t)(
     globus_gfs_operation_t              op,
     globus_gfs_stat_info_t *            stat_info,
@@ -401,7 +516,7 @@ typedef globus_result_t
  * This defines the functions that will be called for active and passive
  * data connection creation. 
  */
-typedef globus_result_t
+typedef void
 (*globus_gfs_storage_data_t)(
     globus_gfs_operation_t              op,
     globus_gfs_data_info_t *            data_info,
@@ -416,7 +531,7 @@ typedef globus_result_t
  */
 typedef void
 (*globus_gfs_storage_data_destroy_t)(
-    int                                 data_handle_id,
+    void *                              data_arg,
     void *                              user_arg);
 
 /*
@@ -428,8 +543,7 @@ typedef void
  */
 typedef void
 (*globus_gfs_storage_trev_t)(
-    int                                 transfer_id,
-    int                                 event_type,
+    globus_gfs_event_info_t *           event_info,
     void *                              user_arg);
 
 /*
@@ -440,11 +554,25 @@ typedef void
  */
 typedef void
 (*globus_gfs_storage_set_cred_t)(
-    globus_gfs_operation_t              op,
-    gss_cred_id_t                       cred_thing,
+    gss_cred_id_t                       del_cred,
+    void *                              user_arg);
+
+/*
+ *  send user buffer
+ *
+ * This defines the function that will be called to send a user defined buffer.
+ * XXX more here later XXX
+ */
+typedef void
+(*globus_gfs_storage_buffer_send_t)(
+    int                                 buffer_type,
+    globus_byte_t *                     buffer,
+    globus_size_t                       buffer_len,
     void *                              user_arg);
 
 
+#define GLOBUS_GFS_DSI_DESCRIPTOR_SENDER 0x01
+#define GLOBUS_GFS_DSI_DESCRIPTOR_BLOCKING 0x02
 /*
  *  globus_gfs_storage_iface_t
  * 
@@ -455,6 +583,8 @@ typedef void
  */
 typedef struct globus_gfs_storage_iface_s
 {
+    int                                 descriptor;
+
     /* session initiating functions */
     globus_gfs_storage_init_t           init_func;
     globus_gfs_storage_destroy_t        destroy_func;
@@ -474,6 +604,7 @@ typedef struct globus_gfs_storage_iface_s
     globus_gfs_storage_stat_t           stat_func;
 
     globus_gfs_storage_set_cred_t       set_cred_func;
+    globus_gfs_storage_buffer_send_t    buffer_send_func;
 } globus_gfs_storage_iface_t;
 
 
@@ -513,9 +644,11 @@ globus_gridftp_server_operation_event(
  * 
  * Speficic event notification for the start of a transfer.
  */ 
-void
+globus_result_t
 globus_gridftp_server_begin_transfer(
-    globus_gfs_operation_t              op);
+    globus_gfs_operation_t              op,
+    int                                 event_mask,
+    void *                              event_arg);
 
 /*
  * finished transfer
@@ -561,7 +694,7 @@ void
 globus_gridftp_server_finished_active_data(
     globus_gfs_operation_t              op, 
     globus_result_t                     result,
-    int                                 data_handle_id,
+    void *                              data_arg,
     globus_bool_t                       bi_directional);
 
 /*
@@ -573,7 +706,7 @@ void
 globus_gridftp_server_finished_passive_data(
     globus_gfs_operation_t              op, 
     globus_result_t                     result,
-    int                                 data_handle_id,
+    void *                              data_arg,
     globus_bool_t                       bi_directional,
     const char **                       contact_strings,
     int                                 cs_count);
@@ -682,10 +815,7 @@ globus_gridftp_server_get_block_size(
  * get read_range
  * 
  * This should be called during send() in order to know the specific
- * offset and length of the file to read from the storage system, as well
- * as the delta from the file offset that you should write to the server.
- * i.e. you would pass (write_delta + current file offset) as the offset 
- * parameter to globus_gridftp_server_register_write()
+ * offset and length of the file to read from the storage system
  * You should continue calling this and transferring the speficied data
  * until it returns a length of 0.
  */ 
@@ -693,17 +823,14 @@ void
 globus_gridftp_server_get_read_range(
     globus_gfs_operation_t              op,
     globus_off_t *                      offset,
-    globus_off_t *                      length,
-    globus_off_t *                      write_delta);
+    globus_off_t *                      length);
+
 
 /*
  * get write_range
  * 
  * This should be called during recv() in order to know the specific
- * offset and length that the data will be written to storage system, as well
- * as the delta from the server read offset that you should write to the 
- * storage system (write_delta) and the delta from the server read offset to
- * the offset that you should pass to 
+ * offset and length that the data will be written to storage system.
  * globus_gridftp_server_update_bytes_written();  
  */ 
  /* XXX explain better */
@@ -711,9 +838,7 @@ void
 globus_gridftp_server_get_write_range(
     globus_gfs_operation_t              op,
     globus_off_t *                      offset,
-    globus_off_t *                      length,
-    globus_off_t *                      write_delta,
-    globus_off_t *                      transfer_delta);
+    globus_off_t *                      length);
 
 
 
@@ -728,12 +853,42 @@ extern globus_gfs_storage_iface_t       globus_gfs_remote_dsi_iface;
 
 
 /** Error and result object helper macros */   
+enum
+{
+    GLOBUS_GFS_DEBUG_TRACE = 8,
+    GLOBUS_GFS_DEBUG_INFO = 16
+};
 
 #ifdef __GNUC__
 #define GlobusGFSName(func) static const char * _gfs_name __attribute__((__unused__)) = #func
 #else
 #define GlobusGFSName(func) static const char * _gfs_name = #func
 #endif
+
+GlobusDebugDeclare(GLOBUS_GRIDFTP_SERVER);
+
+#define GlobusGFSDebugPrintf(level, message)                                \
+    GlobusDebugPrintf(GLOBUS_GRIDFTP_SERVER, level, message)
+
+#define GlobusGFSDebugInfo(_msg)                                            \
+    GlobusGFSDebugPrintf(                                                   \
+        GLOBUS_GFS_DEBUG_INFO,                                              \
+        ("[%s] %s\n", _gfs_name, _msg))
+
+#define GlobusGFSDebugEnter()                                               \
+    GlobusGFSDebugPrintf(                                                   \
+        GLOBUS_GFS_DEBUG_TRACE,                                             \
+        ("[%s] Entering\n", _gfs_name))
+        
+#define GlobusGFSDebugExit()                                                \
+    GlobusGFSDebugPrintf(                                                   \
+        GLOBUS_GFS_DEBUG_TRACE,                                             \
+        ("[%s] Exiting\n", _gfs_name))
+
+#define GlobusGFSDebugExitWithError()                                       \
+    GlobusGFSDebugPrintf(                                                   \
+        GLOBUS_GFS_DEBUG_TRACE,                                             \
+        ("[%s] Exiting with error\n", _gfs_name))
 
 #define GlobusGFSErrorMemory(mem_name)                                      \
     globus_error_put(GlobusGFSErrorObjMemory(mem_name))                               
@@ -773,7 +928,7 @@ extern globus_gfs_storage_iface_t       globus_gfs_remote_dsi_iface;
         __FILE__,                                                           \
         _gfs_name,                                                          \
         __LINE__,                                                           \
-        "user a bad parameter %s",                                          \
+        "invalid parameter: %s",                                            \
         (param_name))                               
                                                                             
 #define GlobusGFSErrorSystemError(system_func, _errno)                      \

@@ -25,7 +25,7 @@
 
             <Dependency Name="globus_gssapi_gsi">
                 <Version>
-                    <Simple_Version Major="3"/>
+                    <Simple_Version Major="4"/>
                 </Version>
             </Dependency>        
 
@@ -51,7 +51,7 @@
 
             <Dependency Name="globus_gssapi_gsi">
                 <Version>
-                    <Simple_Version Major="3"/>
+                    <Simple_Version Major="4"/>
                 </Version>
             </Dependency>        
 

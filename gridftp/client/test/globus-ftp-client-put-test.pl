@@ -46,6 +46,7 @@ files compare.
 
 =cut
 
+my ($proto) = setup_proto();
 my ($dest_host, $dest_file) = setup_remote_dest();
 my ($local_copy) = setup_local_source();
 
@@ -58,7 +59,7 @@ sub basic_func
     {
         FtpTestLib::push_proxy('/dev/null');
     }
-    my $command = "$test_exec -d gsiftp://$dest_host$dest_file < $local_copy >/dev/null 2>&1";
+    my $command = "$test_exec -d $proto$dest_host$dest_file < $local_copy >/dev/null 2>&1";
     $errors = run_command($command, $use_proxy ? 0 : -1);
     if($use_proxy && $errors eq '')
     {
@@ -83,7 +84,7 @@ sub basic_func
     
     clean_remote_file($dest_host, $dest_file);
 }
-push(@tests, "basic_func" . "(0);"); #Use invalid proxy
+push(@tests, "basic_func" . "(0);") unless $proto ne "gsiftp://"; #Use invalid proxy
 push(@tests, "basic_func" . "(1);"); #Use proxy
 
 
@@ -107,7 +108,7 @@ sub bad_url
 {
     my ($errors,$rc) = ("",0);
 
-    my $command = "$test_exec -d gsiftp://$dest_host/no/such/file/here < $local_copy >/dev/null 2>&1";
+    my $command = "$test_exec -d $proto$dest_host/no/such/file/here < $local_copy >/dev/null 2>&1";
     $errors = run_command($command, 1);
     if($errors eq "")
     {
@@ -136,7 +137,7 @@ sub abort_test
     my ($errors,$rc) = ("", 0);
     my ($abort_point) = shift;
 
-    my $command = "$test_exec -a $abort_point -d gsiftp://$dest_host$dest_file < $local_copy >/dev/null 2>&1";
+    my $command = "$test_exec -a $abort_point -d $proto$dest_host$dest_file < $local_copy >/dev/null 2>&1";
     $errors = run_command($command, -2);
     if($errors eq "")
     {
@@ -167,7 +168,7 @@ sub restart_test
     my ($errors,$rc) = ("",0);
     my ($restart_point) = shift;
 
-    my $command = "$test_exec -r $restart_point -d gsiftp://$dest_host$dest_file < $local_copy >/dev/null 2>&1";
+    my $command = "$test_exec -r $restart_point -d $proto$dest_host$dest_file < $local_copy >/dev/null 2>&1";
     $errors = run_command($command, 0);
     if($errors eq "")
     {
@@ -225,7 +226,7 @@ sub dcau_test
     my ($errors,$rc) = ("",0);
     my ($dcau, $desired_rc) = @_;
 
-    my $command = "$test_exec -c $dcau -d gsiftp://$dest_host$dest_file < $local_copy 2>&1";
+    my $command = "$test_exec -c $dcau -d $proto$dest_host$dest_file < $local_copy 2>&1";
     $errors = run_command($command, $desired_rc);
     if($errors eq "" && $desired_rc == 0)
     {
@@ -262,7 +263,7 @@ else
 push(@tests, "dcau_test('none', 0);");
 push(@tests, "dcau_test('self', 0);");
 push(@tests, "dcau_test(\"'$subject'\", 0);");
-push(@tests, "dcau_test(\"'/O=Grid/O=Globus/CN=bogus'\", 1);");
+push(@tests, "dcau_test(\"'/O=Grid/O=Globus/CN=bogus'\", 1);") unless $proto ne "gsiftp://";
 
 =head2 I<prot_test> (Test 90-92)
 
@@ -289,7 +290,7 @@ sub prot_test
     my ($errors,$rc) = ("",0);
     my ($prot, $desired_rc) = @_;
 
-    my $command = "$test_exec -c self -t $prot -d gsiftp://$dest_host$dest_file < $local_copy >/dev/null 2>&1";
+    my $command = "$test_exec -c self -t $prot -d $proto$dest_host$dest_file < $local_copy >/dev/null 2>&1";
     $errors = run_command($command, $desired_rc);
     if($errors eq "" && $desired_rc == 0)
     {
@@ -326,7 +327,7 @@ sub perf_test
 {
     my ($errors,$rc) = ("",0);
 
-    my $command = "$test_exec -d gsiftp://$dest_host$dest_file -M < $local_copy >/dev/null 2>&1";
+    my $command = "$test_exec -d $proto$dest_host$dest_file -M < $local_copy >/dev/null 2>&1";
     $errors = run_command($command, 0);
     if($errors eq "")
     {
@@ -354,7 +355,7 @@ sub throughput_test
 {
     my ($errors,$rc) = ("",0);
 
-    my $command = "$test_exec -d gsiftp://$dest_host$dest_file -M -T < $local_copy >/dev/null 2>&1";
+    my $command = "$test_exec -d $proto$dest_host$dest_file -M -T < $local_copy >/dev/null 2>&1";
     $errors = run_command($command, 0);
     if($errors eq "")
     {
@@ -391,7 +392,7 @@ sub restart_plugin_test
 	$other_args = "";
     }
 
-    my $command = "$test_exec -d gsiftp://$dest_host$dest_file -f 0,0,0,0 $other_args < $local_copy >/dev/null 2>&1";
+    my $command = "$test_exec -d $proto$dest_host$dest_file -f 0,0,0,0 $other_args < $local_copy >/dev/null 2>&1";
     $errors = run_command($command, 0);
     if($errors eq "")
     {
@@ -420,6 +421,11 @@ foreach (&FtpTestLib::ftp_commands())
 push(@tests, "restart_plugin_test('PROT', '-c self -t safe')");
 push(@tests, "restart_plugin_test('DCAU', '-c self -t safe')");
 push(@tests, "restart_plugin_test('PBSZ', '-c self -t safe')");
+
+if(defined($ENV{FTP_TEST_RANDOMIZE}))
+{
+    shuffle(\@tests);
+}
 
 if(@ARGV)
 {

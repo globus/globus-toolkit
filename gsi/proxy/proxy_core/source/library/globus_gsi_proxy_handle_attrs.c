@@ -67,7 +67,7 @@ globus_gsi_proxy_handle_attrs_init(
         GLOBUS_GSI_PROXY_ERROR_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE_ATTRS,
-            ("NULL handle attributes passed to function: %s", 
+            (_PCSL("NULL handle attributes passed to function: %s"), 
              _function_name_));
         goto exit;
     }
@@ -290,7 +290,7 @@ globus_gsi_proxy_handle_attrs_set_signing_algorithm(
         GLOBUS_GSI_PROXY_ERROR_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE_ATTRS,
-            ("NULL handle attributes passed to function: %s", 
+            (_PCSL("NULL handle attributes passed to function: %s"), 
              _function_name_));
         goto exit;
     }
@@ -336,7 +336,7 @@ globus_gsi_proxy_handle_attrs_get_signing_algorithm(
         GLOBUS_GSI_PROXY_ERROR_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE_ATTRS,
-            ("NULL handle attributes passed to function: %s",
+            (_PCSL("NULL handle attributes passed to function: %s"),
              _function_name_));
         goto exit;
     }
@@ -387,7 +387,7 @@ globus_gsi_proxy_handle_attrs_set_clock_skew_allowable(
         GLOBUS_GSI_PROXY_ERROR_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE_ATTRS,
-            ("NULL handle attributes passed to function: %s",
+            (_PCSL("NULL handle attributes passed to function: %s"),
              _function_name_));
         goto exit;
     }
@@ -430,7 +430,7 @@ globus_gsi_proxy_handle_attrs_get_clock_skew_allowable(
         GLOBUS_GSI_PROXY_ERROR_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE_ATTRS,
-            ("NULL handle attributes passed to function: %s",
+            (_PCSL("NULL handle attributes passed to function: %s"),
              _function_name_));
         goto exit;
     }
@@ -478,7 +478,7 @@ globus_gsi_proxy_handle_attrs_get_key_gen_callback(
         GLOBUS_GSI_PROXY_ERROR_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE_ATTRS,
-            ("NULL handle attributes passed to function: %s",
+            (_PCSL("NULL handle attributes passed to function: %s"),
              _function_name_));
         goto exit;
     }
@@ -520,7 +520,7 @@ globus_gsi_proxy_handle_attrs_set_key_gen_callback(
         GLOBUS_GSI_PROXY_ERROR_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE_ATTRS,
-            ("NULL handle attributes passed to function: %s",
+            (_PCSL("NULL handle attributes passed to function: %s"),
              _function_name_));
         goto exit;
     }
@@ -565,7 +565,7 @@ globus_gsi_proxy_handle_attrs_copy(
         GLOBUS_GSI_PROXY_ERROR_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE_ATTRS,
-            ("NULL handle attributes passed to function: %s",
+            (_PCSL("NULL handle attributes passed to function: %s"),
              _function_name_));
         goto error_exit;
     }
@@ -574,7 +574,7 @@ globus_gsi_proxy_handle_attrs_copy(
         GLOBUS_GSI_PROXY_ERROR_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE_ATTRS,
-            ("NULL handle attributes passed to function: %s",
+            (_PCSL("NULL handle attributes passed to function: %s"),
              _function_name_));
         goto error_exit;
     }

@@ -73,8 +73,8 @@ GSS_CALLCONV gss_init_sec_context(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
-            ("Can't initialize a context to be both anonymous and "
-             "provide delegation"));
+            (_GGSL("Can't initialize a context to be both anonymous and "
+             "provide delegation")));
         goto error_exit;
     }
 
@@ -85,8 +85,8 @@ GSS_CALLCONV gss_init_sec_context(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
-            ("Can't initialize a context to both use SSL compatible "
-             "context establishment and provide delegation"));
+            (_GGSL("Can't initialize a context to both use SSL compatible "
+             "context establishment and provide delegation")));
         goto error_exit;
     }
 
@@ -97,8 +97,8 @@ GSS_CALLCONV gss_init_sec_context(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
-            ("Need a target name for authorization prior "
-             "to doing delegation"));
+            (_GGSL("Need a target name for authorization prior "
+             "to doing delegation")));
         goto error_exit;
     }
 
@@ -219,7 +219,7 @@ GSS_CALLCONV gss_init_sec_context(
             GLOBUS_GSI_GSSAPI_ERROR_RESULT(
                 minor_status,
                 GLOBUS_GSI_GSSAPI_ERROR_PROXY_VIOLATION,
-                ("Function set to not accept limited proxies"));
+                (_GGSL("Function set to not accept limited proxies")));
             context->gss_state = GSS_CON_ST_DONE;
             break;
         }
@@ -254,8 +254,8 @@ GSS_CALLCONV gss_init_sec_context(
                 GLOBUS_GSI_GSSAPI_ERROR_RESULT(
                     minor_status,
                     GLOBUS_GSI_GSSAPI_ERROR_AUTHZ_DENIED,
-                    ("The name of the remote entity (%s), and the expected "
-                     "name for the remote entity (%s) do not match",
+                    (_GGSL("The name of the remote entity (%s), and the expected "
+                     "name for the remote entity (%s) do not match"),
                      actual_name, expected_name));
                 OPENSSL_free(actual_name);
                 OPENSSL_free(expected_name);

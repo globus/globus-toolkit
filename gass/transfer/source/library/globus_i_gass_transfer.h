@@ -186,10 +186,10 @@ extern globus_mutex_t globus_i_gass_transfer_mutex;
 
 #if defined(GLOBUS_DEBUG_GASS_TRANSFER)
 #define globus_i_gass_transfer_lock()   \
-	thread_print("locking mutex at %s:%d\n", __FILE__, __LINE__), \
+	thread_print(_GTSL("locking mutex at %s:%d\n"), __FILE__, __LINE__), \
 	globus_mutex_lock(&globus_i_gass_transfer_mutex)
 #define globus_i_gass_transfer_unlock()	\
-	thread_print("unlocking mutex at %s:%d\n", __FILE__, __LINE__), \
+	thread_print(_GTSL("unlocking mutex at %s:%d\n"), __FILE__, __LINE__), \
 	globus_mutex_unlock(&globus_i_gass_transfer_mutex)
 #else
 #define globus_i_gass_transfer_lock()   \

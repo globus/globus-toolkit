@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE gpt_package_metadata SYSTEM "package.dtd">
 
-<gpt_package_metadata Format_Version="0.01" Name="globus_wsrf_gram_job_monitoring_common_java_source">
+<gpt_package_metadata Format_Version="0.01" Name="globus_wsrf_gram_job_monitoring_common_java">
 
   <Aging_Version Age="0" Major="0" Minor="1" />
   <Description> GT4 GRAM Job Monitoring Common Classes (Java)</Description>
@@ -29,7 +29,7 @@
             </Version>
         </Dependency> 
         
-        <Dependency Name="globus_wsrf_gram_common_java_source" Package="pgm">
+        <Dependency Name="globus_wsrf_gram_common_java" Package="pgm">
             <Version>
                 <Simple_Version Major="0"/>
             </Version>
@@ -39,8 +39,6 @@
 
     <Build_Instructions>
         <Build_Step> ant -Denv.GLOBUS_LOCATION=INSTALLDIR_GPTMACRO</Build_Step>
-        <Build_Step> mkdir -p INSTALLDIR_GPTMACRO/gars/ </Build_Step>
-        <Build_Step> cp build/lib/gram-monitoring.jar INSTALLDIR_GPTMACRO/lib/ </Build_Step>        
     </Build_Instructions>
 
   </src_pkg >

@@ -50,8 +50,8 @@ Sources= \
 	globus_print.h \
 	globus_priority_q.c \
 	globus_priority_q.h \
-    globus_range_list.c \
-    globus_range_list.h \
+	globus_range_list.c \
+	globus_range_list.h \
 	globus_release.h \
 	globus_strptime.c \
 	globus_strptime.h \
@@ -79,9 +79,9 @@ Sources= \
 	globus_error_string.h \
 	globus_extension.c \
 	globus_extension.h \
-	globus_common_include.h
-	globus_i18n.c \
-	globus_i18n.h
+	globus_common_include.h \
+	globus_uuid.c \
+	globus_uuid.h
 
 
 flavorinclude_HEADERS = \
@@ -92,7 +92,7 @@ flavorinclude_HEADERS = \
 	globus_hashtable.h \
 	globus_fifo.h \
 	globus_symboltable.h \
-    globus_logging.h    \
+	globus_logging.h    \
 	globus_object.h \
 	globus_object_hierarchy.h \
 	globus_error.h \
@@ -120,10 +120,10 @@ flavorinclude_HEADERS = \
 	globus_common.h \
 	globus_thread_$(GLOBUS_THREADS).h \
 	globus_common_include.h \
-	globus_i18n.h
+	globus_uuid.h
 
 
-lib_LTLIBRARIES = libglobus_common_$(GLOBUS_FLAVOR_NAME).la
+lib_LTLIBRARIES = libglobus_common_$(GLOBUS_FLAVOR_NAME).la 
 
 INCLUDES = @GPT_INCLUDES@
 

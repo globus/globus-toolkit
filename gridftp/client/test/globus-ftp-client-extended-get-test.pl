@@ -23,6 +23,7 @@ if (!defined($gpath))
 
 @INC = (@INC, "$gpath/lib/perl");
 
+my ($proto) = setup_proto();
 my ($source_host, $testfile, $local_copy) = setup_remote_source(1);
 
 my $handle = new FileHandle;
@@ -45,7 +46,7 @@ sub basic_func
 
     unlink($tmpname);
 
-    my $command = "$test_exec -P $parallelism -s gsiftp://$source_host$testfile >$tmpname 2>/dev/null";
+    my $command = "$test_exec -P $parallelism -s $proto$source_host$testfile >$tmpname 2>/dev/null";
     $errors = run_command($command, 0);
     if($errors eq "" && 0 != &compare_data($test_data, $tmpname))
     {
@@ -74,7 +75,7 @@ sub bad_url
 {
     my ($errors,$rc) = ("",0);
 
-    my $command = "$test_exec -s gsiftp://$source_host/no-such-file-here >/dev/null  2>/dev/null";
+    my $command = "$test_exec -s $proto$source_host/no-such-file-here >/dev/null  2>/dev/null";
     $errors = run_command($command, 1);
     if($errors eq "")
     {
@@ -98,7 +99,7 @@ sub abort_test
     my ($abort_point) = shift;
     my ($par) = shift;
 
-    my $command = "$test_exec -P $par -a $abort_point -s gsiftp://$source_host$testfile >/dev/null 2>/dev/null";
+    my $command = "$test_exec -P $par -a $abort_point -s $proto$source_host$testfile >/dev/null 2>/dev/null";
     $errors = run_command($command, -2);
     if($errors eq "")
     {
@@ -133,7 +134,7 @@ sub restart_test
 
     unlink($tmpname);
 
-    my $command = "$test_exec -P $par -r $restart_point -s gsiftp://$source_host$testfile >$tmpname 2>/dev/null";
+    my $command = "$test_exec -P $par -r $restart_point -s $proto$source_host$testfile >$tmpname 2>/dev/null";
     $errors = run_command($command, 0);
     if($errors eq "" && 0 != &compare_data($test_data, $tmpname))
     {
@@ -172,7 +173,7 @@ sub perf_test
     my $tmpname = POSIX::tmpnam();
     my ($errors,$rc) = ("",0);
 
-    my $command = "$test_exec -s gsiftp://$source_host$testfile -M >$tmpname 2>/dev/null";
+    my $command = "$test_exec -s $proto$source_host$testfile -M >$tmpname 2>/dev/null";
     $errors = run_command($command, 0);
     if($errors eq "")
     {
@@ -200,7 +201,7 @@ sub throughput_test
     my $tmpname = POSIX::tmpnam();
     my ($errors,$rc) = ("",0);
 
-    my $command = "$test_exec -s gsiftp://$source_host$testfile -T >$tmpname 2>/dev/null";
+    my $command = "$test_exec -s $proto$source_host$testfile -T >$tmpname 2>/dev/null";
     $errors = run_command($command, 0);
     if($errors eq "")
     {
@@ -215,6 +216,11 @@ sub throughput_test
 }
 
 push(@tests, "throughput_test();");
+
+if(defined($ENV{FTP_TEST_RANDOMIZE}))
+{
+    shuffle(\@tests);
+}
 
 if(@ARGV)
 {

@@ -1,12 +1,12 @@
 include $(top_srcdir)/globus_automake_pre
 
-bin_SCRIPTS = globus-sh-exec
+bin_SCRIPTS = globus-sh-exec globus-version
 sbin_SCRIPTS = globus-update-doxygen-index \
         globus-vararg-enums-doxygen-filter.pl
 
 libexec_PROGRAMS = globus-libc-hostname globus-is-local-user
 
-EXTRA_DIST = $(sbin_SCRIPTS) globus-sh-exec.in
+EXTRA_DIST = $(sbin_SCRIPTS) globus-sh-exec.in globus-version.in
 
 INCLUDES = -I$(top_srcdir)/library $(GPT_INCLUDES) 
 

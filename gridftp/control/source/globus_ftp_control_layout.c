@@ -25,7 +25,7 @@ globus_ftp_control_layout_blocked_verify(
         res = globus_error_put(globus_error_construct_string(
                      GLOBUS_FTP_CONTROL_MODULE,
                      GLOBUS_NULL,
-                     "layout string not in proper format."));
+                     _FCSL("layout string not in proper format.")));
         goto exit;
     }
 
@@ -36,7 +36,7 @@ globus_ftp_control_layout_blocked_verify(
         res = globus_error_put(globus_error_construct_string(
                      GLOBUS_FTP_CONTROL_MODULE,
                      GLOBUS_NULL,
-                     "layout string not in proper format."));
+                     _FCSL("layout string not in proper format.")));
         goto exit;
     }
     tmp_ptr = strchr(name, ';');
@@ -45,7 +45,7 @@ globus_ftp_control_layout_blocked_verify(
         res = globus_error_put(globus_error_construct_string(
                      GLOBUS_FTP_CONTROL_MODULE,
                      GLOBUS_NULL,
-                     "layout string not in proper format. must end with ';'"));
+                     _FCSL("layout string not in proper format. must end with ';'")));
         goto exit;
     }
     *tmp_ptr = '\0';
@@ -54,7 +54,7 @@ globus_ftp_control_layout_blocked_verify(
         res = globus_error_put(globus_error_construct_string(
                      GLOBUS_FTP_CONTROL_MODULE,
                      GLOBUS_NULL,
-                     "layout string not in proper format. ';'"));
+                     _FCSL("layout string not in proper format. ';'")));
         goto exit;
     }
 
@@ -64,7 +64,7 @@ globus_ftp_control_layout_blocked_verify(
         res = globus_error_put(globus_error_construct_string(
                      GLOBUS_FTP_CONTROL_MODULE,
                      GLOBUS_NULL,
-                     "layout string not named \"Blocked\"."));
+                     _FCSL("layout string not named \"Blocked\".")));
         goto exit;
     }
     if(sscanf(parm_name, "BlockSize=%d;", &block_size) < 1)
@@ -72,7 +72,7 @@ globus_ftp_control_layout_blocked_verify(
         res = globus_error_put(globus_error_construct_string(
                      GLOBUS_FTP_CONTROL_MODULE,
                      GLOBUS_NULL,
-                     "\"BlockSize\" argument not found."));
+                     _FCSL("\"BlockSize\" argument not found.")));
         goto exit;
     }
 
@@ -111,7 +111,6 @@ globus_ftp_control_layout_blocked(
     int                                         chunk;
     int                                         stripe_ndx;
     globus_off_t                                offset;
-    int                                         connections;
     globus_size_t                               size;
     globus_result_t                             res;
 
@@ -160,7 +159,7 @@ globus_ftp_control_layout_partitioned_verify(
         return globus_error_put(globus_error_construct_string(
                      GLOBUS_FTP_CONTROL_MODULE,
                      GLOBUS_NULL,
-                     "layout string not in proper format."));
+                     _FCSL("layout string not in proper format.")));
     }
 
     if(strcmp(layout_str, "StripedLayout=Partitioned;") != 0)
@@ -168,7 +167,7 @@ globus_ftp_control_layout_partitioned_verify(
         return globus_error_put(globus_error_construct_string(
                      GLOBUS_FTP_CONTROL_MODULE,
                      GLOBUS_NULL,
-                     "layout string not in proper format."));
+                     _FCSL("layout string not in proper format.")));
     }
 
     return GLOBUS_SUCCESS;
@@ -211,7 +210,6 @@ globus_ftp_control_layout_partitioned(
     int                                         chunk;
     int                                         stripe_ndx;
     globus_off_t                                offset;
-    int                                         connections;
     globus_size_t                               size;
     globus_size_t                               filesize;
     globus_result_t                             res;

@@ -5,15 +5,17 @@ SUBDIRS=\
     pkgdata
 
 Sources= \
+    globus_i_gridftp_server_control.h                   \
     globus_gridftp_server_control.c                     \
 	globus_gridftp_server_control_attr.c                \
     globus_gridftp_server_control_accessors.c           \
     globus_gridftp_server_control_events.c              \
-    globus_gridftp_server_control_commands.c
+    globus_gridftp_server_control_commands.c            \
+    globus_xio_gssapi_ftp.c
 
 flavorinclude_HEADERS =                         \
-    globus_i_gridftp_server_control.h           \
-    globus_gridftp_server_control.h
+    globus_gridftp_server_control.h             \
+    globus_xio_gssapi_ftp.h
 
 lib_LTLIBRARIES = libglobus_gridftp_server_control_$(GLOBUS_FLAVOR_NAME).la
 

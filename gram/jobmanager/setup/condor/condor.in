@@ -250,6 +250,11 @@ sub submit
     print SCRIPT_FILE "#\n# description file for condor submission\n#\n";
     print SCRIPT_FILE "Universe = $universe\n";
     print SCRIPT_FILE "Notification = Never\n";
+    if ($description->executable() =~ m|^[^/]|)
+    {
+        $description->add('executable', './' . $description->executable());
+    }
+
     print SCRIPT_FILE "Executable = " . $description->executable . "\n";
 
     $requirements  = "OpSys == \"" . $description->condor_os() . "\" ";

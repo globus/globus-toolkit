@@ -8,7 +8,7 @@
 #else
 #include "ltdl.h"
 #endif
-
+#include "globus_common.h"
 /* provides local_version and build_flavor */
 #include "version.h"
 
@@ -17,6 +17,9 @@
 #else
 #define MY_LIB_EXT ".so"
 #endif
+
+extern globus_result_t
+globus_location(char **   bufp);
 
 GlobusDebugDefine(GLOBUS_EXTENSION);
 
@@ -83,6 +86,7 @@ static globus_rmutex_t                  globus_l_libtool_mutex;
 static globus_rmutex_t                  globus_l_extension_mutex;
 static globus_hashtable_t               globus_l_extension_loaded;
 static globus_hashtable_t               globus_l_extension_builtins;
+static char *                           globus_l_globus_location;
 /*
 static globus_hashtable_t               globus_l_extension_mappings;
 */
@@ -124,6 +128,7 @@ int
 globus_l_extension_activate(void)
 {
     static globus_bool_t                initialized = GLOBUS_FALSE;
+    char *                              tmp;
     GlobusFuncName(globus_l_extension_activate);
     
     if(!initialized)
@@ -160,6 +165,13 @@ globus_l_extension_activate(void)
             
         globus_rmutex_init(&globus_l_extension_mutex, NULL);
         globus_thread_key_create(&globus_l_extension_owner_key, NULL);
+        
+        if(globus_location(&tmp) == GLOBUS_SUCCESS)
+        {
+            globus_l_globus_location =
+                globus_common_create_string("%s/lib", tmp);
+            globus_free(tmp);
+        }
         
         initialized = GLOBUS_TRUE;
         GlobusExtensionDebugExit();
@@ -279,6 +291,52 @@ globus_l_extension_dlopen(
 {
     char                                library[1024];
     lt_dlhandle                         dlhandle;
+    char *                              path;
+    char *                              basename;
+    char *                              search_path = NULL;
+    char *                              save_path;
+    
+    path = globus_libc_strdup(name);
+    if(path && (basename = strrchr(path, '/')))
+    {
+        *basename = 0;
+        if(basename == path)
+        {
+            /* ignore root dir */
+            name = path + 1;
+        }
+        else if(*(basename + 1) == 0)
+        {
+            /* ignore trailing slashes */
+            name = path;
+        }
+        else
+        {
+            name = basename + 1;
+            if(globus_l_globus_location)
+            {
+                /* if globus_location is not set, then it's likely I won't
+                 * find the library
+                 */
+                search_path = globus_common_create_string(
+                    "%s/%s", globus_l_globus_location, path);
+            }
+        }
+    }
+    
+    globus_l_libtool_mutex_lock();
+    
+    if(search_path || globus_l_globus_location)
+    {
+        if((save_path = (char *) lt_dlgetsearchpath()))
+        {
+            /* libtool frees this pointer before setting the next one */
+            save_path = globus_libc_strdup(save_path);
+        }
+    
+        lt_dlsetsearchpath(
+            search_path ? search_path : globus_l_globus_location);
+    }
     
     snprintf(library, 1024, "lib%s_%s", name, build_flavor);
     library[1023] = 0;
@@ -289,17 +347,41 @@ globus_l_extension_dlopen(
         snprintf(library, 1024, "lib%s_%s" MY_LIB_EXT, name, build_flavor);
         library[1023] = 0;
         dlhandle = lt_dlopenext(library);
-        if(!dlhandle)
+    }
+
+    if(!dlhandle)
+    {
+        const char *                error;
+        
+        error = lt_dlerror();
+        
+        GlobusExtensionDebugPrintf(
+            GLOBUS_L_EXTENSION_DEBUG_DLL,
+            (_GCSL("[%s] Couldn't dlopen %s in %s (or LD_LIBRARY_PATH): %s\n"),
+             _globus_func_name, library,
+             search_path ? search_path : globus_l_globus_location 
+                ? globus_l_globus_location : "(default)",
+             error ? error : "(null)"));
+    }
+    
+    if(search_path || globus_l_globus_location)
+    {
+        lt_dlsetsearchpath(save_path);
+        if(save_path)
         {
-            const char *                error;
-            
-            error = lt_dlerror();
-            
-            GlobusExtensionDebugPrintf(
-                GLOBUS_L_EXTENSION_DEBUG_DLL,
-                ("[%s] Couldn't dlopen %s: %s\n",
-                    _globus_func_name, library, error ? error : "(null)"));
+            globus_free(save_path);
         }
+    }
+    globus_l_libtool_mutex_unlock();
+    
+    if(search_path)
+    {
+        globus_free(search_path);
+    }
+    
+    if(path)
+    {
+        globus_free(path);
     }
     
     return dlhandle;
@@ -322,7 +404,7 @@ globus_l_extension_get_module(
         
         GlobusExtensionDebugPrintf(
             GLOBUS_L_EXTENSION_DEBUG_DLL,
-            ("[%s] Couldn't find module descriptor : %s\n",
+            (_GCSL("[%s] Couldn't find module descriptor : %s\n"),
                 _globus_func_name, error ? error : "(null)"));
     }
     
@@ -684,15 +766,65 @@ globus_extension_lookup(
                 if(entry->owner)
                 {
                     entry->owner->ref++;
-                  
+                    
+                    globus_assert(
+                        (entry->owner != (globus_l_extension_module_t *)
+                            globus_thread_getspecific(
+                                globus_l_extension_owner_key)) &&
+                   "You can not lookup something owned by the calling module");
+                        
                     GlobusExtensionDebugPrintf(
                         GLOBUS_L_EXTENSION_DEBUG_VERBOSE,
-                        ("[%] Accessing entry %s within %s\n",
-                            _globus_func_name, symbol, entry->owner->name));
+                        (_GCSL("[%] Accessing entry %s within %s\n"),
+                            _globus_func_name,
+                            registry->user_hashing ? "" : symbol,
+                            entry->owner->name));
                 }
                 
                 *handle = entry;
             }
+        }
+    }
+    globus_rmutex_unlock(&globus_l_extension_mutex);
+    
+    GlobusExtensionDebugExit();
+    return datum;
+
+error_param:
+    GlobusExtensionDebugExitWithError();
+    return NULL;
+}
+
+void *
+globus_extension_reference(
+    globus_extension_handle_t           handle)
+{
+    globus_l_extension_handle_t *       entry;
+    void *                              datum = NULL;
+    GlobusFuncName(globus_extension_reference);
+    
+    GlobusExtensionDebugEnter();
+    
+    if(!handle)
+    {
+        goto error_param;
+    }
+    
+    entry = handle;
+    
+    globus_rmutex_lock(&globus_l_extension_mutex);
+    {
+        datum = entry->datum;
+        entry->ref++;
+        if(entry->owner)
+        {
+            entry->owner->ref++;
+            
+            globus_assert(
+                (entry->owner != (globus_l_extension_module_t *)
+                    globus_thread_getspecific(
+                        globus_l_extension_owner_key)) &&
+           "You can not reference something owned by the calling module");
         }
     }
     globus_rmutex_unlock(&globus_l_extension_mutex);

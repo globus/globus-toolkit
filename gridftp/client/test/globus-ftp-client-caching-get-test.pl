@@ -22,6 +22,7 @@ if (!defined($gpath))
 
 @INC = (@INC, "$gpath/lib/perl");
 
+my ($proto) = setup_proto();
 my ($source_host, $source_file, $local_copy) = setup_remote_source();
 
 # Test #1-2. Basic functionality: Do a simple get (twice, caching the url)
@@ -40,7 +41,7 @@ sub basic_func
         FtpTestLib::push_proxy("/dev/null");
     }
     
-    my $command = "$test_exec -s gsiftp://$source_host$source_file >$tmpname 2>/dev/null";
+    my $command = "$test_exec -s $proto$source_host$source_file >$tmpname 2>/dev/null";
     $errors = run_command($command, $use_proxy ? 0 : -1);
     if($errors eq "" && $use_proxy)
     {
@@ -67,7 +68,7 @@ sub basic_func
         FtpTestLib::pop_proxy();
     }
 }
-push(@tests, "basic_func" . "(0);"); #Use invalid proxy
+push(@tests, "basic_func" . "(0);") unless $proto ne "gsiftp://"; #Use invalid proxy
 push(@tests, "basic_func" . "(1);"); #Use proxy
 
 # Test #3: Bad URL: Do a simple get (twice, caching the URL)
@@ -76,7 +77,7 @@ push(@tests, "basic_func" . "(1);"); #Use proxy
 sub bad_url
 {
     my ($errors,$rc) = ("",0);
-    my ($bogus_url) = new Globus::URL("gsiftp://$source_host$source_file");
+    my ($bogus_url) = new Globus::URL("$proto$source_host$source_file");
 
     $bogus_url->{path} = "/no-such-file-here";
     
@@ -104,7 +105,7 @@ sub abort_test
     my ($errors,$rc) = ("", 0);
     my ($abort_point) = shift;
 
-    my $command = "$test_exec -a $abort_point -s gsiftp://$source_host$source_file >/dev/null 2>/dev/null";
+    my $command = "$test_exec -a $abort_point -s $proto$source_host$source_file >/dev/null 2>/dev/null";
     $errors = run_command($command, -2);
     if($errors eq "")
     {
@@ -134,7 +135,7 @@ sub restart_test
 
     unlink($tmpname);
 
-    my $command = "$test_exec -r $restart_point -s gsiftp://$source_host$source_file >'$tmpname' 2>/dev/null";
+    my $command = "$test_exec -r $restart_point -s $proto$source_host$source_file >'$tmpname' 2>/dev/null";
     $errors = run_command($command, 0);
     if($errors eq "")
     {
@@ -160,6 +161,11 @@ sub restart_test
 for(my $i = 1; $i <= 41; $i++)
 {
     push(@tests, "restart_test($i);");
+}
+
+if(defined($ENV{FTP_TEST_RANDOMIZE}))
+{
+    shuffle(\@tests);
 }
 
 if(@ARGV)

@@ -1,0 +1,10 @@
+Once deactivate is called you do may not call close, or any other xio function.
+------------------------------------------------------------------------------
+This can be strange because any outstanding callbacks return with an
+error.  In a typical case (when deactivate has not been called) a user
+will/must call close.  However in the case of deactivate being called
+a user must NOT call close (or any other xio funtion).  Therefore, a user
+must know that deactive has been called and react accordingly in any
+callbacks  that occur after it.
+
+

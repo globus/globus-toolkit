@@ -298,7 +298,7 @@ globus_gsi_cert_utils_get_cert_type(
         GLOBUS_GSI_CERT_UTILS_OPENSSL_ERROR_RESULT(
             result,
             GLOBUS_GSI_CERT_UTILS_ERROR_GETTING_NAME_ENTRY_OF_SUBJECT,
-            ("Can't get X509 name entry from subject"));
+            (_CUSL("Can't get X509 name entry from subject")));
         goto exit;
     }
 
@@ -325,8 +325,8 @@ globus_gsi_cert_utils_get_cert_type(
                 GLOBUS_GSI_CERT_UTILS_OPENSSL_ERROR_RESULT(
                     result,
                     GLOBUS_GSI_CERT_UTILS_ERROR_NON_COMPLIANT_PROXY,
-                    ("Can't get DER encoded extension "
-                     "data from X509 extension object"));
+                    (_CUSL("Can't get DER encoded extension "
+                     "data from X509 extension object")));
                 goto exit;
             }
 
@@ -340,8 +340,8 @@ globus_gsi_cert_utils_get_cert_type(
                 GLOBUS_GSI_CERT_UTILS_OPENSSL_ERROR_RESULT(
                     result,
                     GLOBUS_GSI_CERT_UTILS_ERROR_NON_COMPLIANT_PROXY,
-                    ("Can't convert DER encoded PROXYCERTINFO "
-                     "extension to internal form"));
+                    (_CUSL("Can't convert DER encoded PROXYCERTINFO "
+                     "extension to internal form")));
                 pci = NULL;
                 goto exit;
             }
@@ -351,7 +351,7 @@ globus_gsi_cert_utils_get_cert_type(
                 GLOBUS_GSI_CERT_UTILS_OPENSSL_ERROR_RESULT(
                     result,
                     GLOBUS_GSI_CERT_UTILS_ERROR_NON_COMPLIANT_PROXY,
-                    ("Can't get policy from PROXYCERTINFO extension"));
+                    (_CUSL("Can't get policy from PROXYCERTINFO extension")));
                 goto exit;
             }
 
@@ -361,8 +361,8 @@ globus_gsi_cert_utils_get_cert_type(
                 GLOBUS_GSI_CERT_UTILS_OPENSSL_ERROR_RESULT(
                     result,
                     GLOBUS_GSI_CERT_UTILS_ERROR_NON_COMPLIANT_PROXY,
-                    ("Can't get policy language from"
-                     " PROXYCERTINFO extension"));
+                    (_CUSL("Can't get policy language from"
+                     " PROXYCERTINFO extension")));
                 goto exit;
             }
 
@@ -392,7 +392,7 @@ globus_gsi_cert_utils_get_cert_type(
                 GLOBUS_GSI_CERT_UTILS_OPENSSL_ERROR_RESULT(
                     result,
                     GLOBUS_GSI_CERT_UTILS_ERROR_NON_COMPLIANT_PROXY,
-                    ("Found more than one PCI extension"));
+                    (_CUSL("Found more than one PCI extension")));
                 goto exit;
             }
         }
@@ -414,7 +414,7 @@ globus_gsi_cert_utils_get_cert_type(
                 GLOBUS_GSI_CERT_UTILS_OPENSSL_ERROR_RESULT(
                     result,
                     GLOBUS_GSI_CERT_UTILS_ERROR_COPYING_SUBJECT,
-                    ("Error copying X509_NAME struct"));
+                    (_CUSL("Error copying X509_NAME struct")));
                 goto exit;
             }
             
@@ -425,7 +425,7 @@ globus_gsi_cert_utils_get_cert_type(
                 GLOBUS_GSI_CERT_UTILS_OPENSSL_ERROR_RESULT(
                     result,
                     GLOBUS_GSI_CERT_UTILS_ERROR_GETTING_CN_ENTRY,
-                    ("Error creating X509 name entry of: %s", data->data));
+                    (_CUSL("Error creating X509 name entry of: %s"), data->data));
                 goto exit;
             }
             
@@ -436,7 +436,7 @@ globus_gsi_cert_utils_get_cert_type(
                 GLOBUS_GSI_CERT_UTILS_OPENSSL_ERROR_RESULT(
                     result,
                     GLOBUS_GSI_CERT_UTILS_ERROR_ADDING_CN_TO_SUBJECT,
-                    ("Error adding name entry with value: %s, to subject",
+                    (_CUSL("Error adding name entry with value: %s, to subject"),
                      data->data));
                 goto exit;
             }
@@ -456,7 +456,7 @@ globus_gsi_cert_utils_get_cert_type(
                 GLOBUS_GSI_CERT_UTILS_OPENSSL_ERROR_RESULT(
                     result,
                     GLOBUS_GSI_CERT_UTILS_ERROR_NON_COMPLIANT_PROXY,
-                    ("Issuer name + proxy CN entry does not equal subject name"));
+                    (_CUSL("Issuer name + proxy CN entry does not equal subject name")));
                 goto exit;
             }
 
@@ -564,8 +564,8 @@ globus_gsi_cert_utils_get_x509_name(
                 GLOBUS_GSI_CERT_UTILS_ERROR_RESULT(
                     result,
                     GLOBUS_GSI_CERT_UTILS_ERROR_UNEXPECTED_FORMAT,
-                    ("The subject_string cannot be convert to an "
-                     "X509_NAME, unexpected format"));
+                    (_CUSL("The subject_string cannot be convert to an "
+                     "X509_NAME, unexpected format")));
                 goto exit;
             }
             /* terminate name string */
@@ -613,8 +613,8 @@ globus_gsi_cert_utils_get_x509_name(
                     GLOBUS_GSI_CERT_UTILS_ERROR_RESULT(
                         result,
                         GLOBUS_GSI_CERT_UTILS_ERROR_UNEXPECTED_FORMAT,
-                        ("The name entry: %s is not "
-                         "recognized as a valid OID", name_entry_str));
+                        (_CUSL("The name entry: %s is not "
+                         "recognized as a valid OID"), name_entry_str));
                     goto exit;
                 }
             }
@@ -631,7 +631,7 @@ globus_gsi_cert_utils_get_x509_name(
                 GLOBUS_GSI_CERT_UTILS_ERROR_RESULT(
                     result,
                     GLOBUS_GSI_CERT_UTILS_ERROR_UNEXPECTED_FORMAT,
-                    ("Error with name entry: %s, with a value of: %s",
+                    (_CUSL("Error with name entry: %s, with a value of: %s"),
                      name_entry_str, name_value_str));
                 goto exit;
             }
@@ -643,7 +643,7 @@ globus_gsi_cert_utils_get_x509_name(
                 GLOBUS_GSI_CERT_UTILS_ERROR_RESULT(
                     result,
                     GLOBUS_GSI_CERT_UTILS_ERROR_UNEXPECTED_FORMAT,
-                    ("Couldn't add name entry to  X509_NAME object"));
+                    (_CUSL("Couldn't add name entry to  X509_NAME object")));
                 goto exit;
             }
             
@@ -658,7 +658,7 @@ globus_gsi_cert_utils_get_x509_name(
         GLOBUS_GSI_CERT_UTILS_ERROR_RESULT(
             result,
             GLOBUS_GSI_CERT_UTILS_ERROR_UNEXPECTED_FORMAT,
-            ("The X509 name doesn't start with a /"));
+            (_CUSL("The X509 name doesn't start with a /")));
         goto exit;
     }
     /* ToDo: Fix memory leak from X509_NAME_oneline call below */

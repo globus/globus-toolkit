@@ -15,44 +15,44 @@ GlobusDebugDefine(GLOBUS_XIO_SYSTEM);
 #define GlobusXIOSystemDebugEnter()                                         \
     GlobusXIOSystemDebugPrintf(                                             \
         GLOBUS_L_XIO_SYSTEM_DEBUG_TRACE,                                    \
-        ("[%s] Entering\n", _xio_name))
+        (_XIOSL("[%s] Entering\n"), _xio_name))
 
 #define GlobusXIOSystemDebugExit()                                          \
     GlobusXIOSystemDebugPrintf(                                             \
         GLOBUS_L_XIO_SYSTEM_DEBUG_TRACE,                                    \
-        ("[%s] Exiting\n", _xio_name))
+        (_XIOSL("[%s] Exiting\n"), _xio_name))
 
 #define GlobusXIOSystemDebugExitWithError()                                 \
     GlobusXIOSystemDebugPrintf(                                             \
         GLOBUS_L_XIO_SYSTEM_DEBUG_TRACE,                                    \
-        ("[%s] Exiting with error\n", _xio_name))
+        (_XIOSL("[%s] Exiting with error\n"), _xio_name))
 
 #define GlobusXIOSystemDebugEnterFD(fd)                                     \
     GlobusXIOSystemDebugPrintf(                                             \
         GLOBUS_L_XIO_SYSTEM_DEBUG_TRACE,                                    \
-        ("[%s] fd=%d, Entering\n", _xio_name, (fd)))
+        (_XIOSL("[%s] fd=%d, Entering\n"), _xio_name, (fd)))
 
 #define GlobusXIOSystemDebugExitFD(fd)                                      \
     GlobusXIOSystemDebugPrintf(                                             \
         GLOBUS_L_XIO_SYSTEM_DEBUG_TRACE,                                    \
-        ("[%s] fd=%d, Exiting\n", _xio_name, (fd)))
+        (_XIOSL("[%s] fd=%d, Exiting\n"), _xio_name, (fd)))
 
 #define GlobusXIOSystemDebugExitWithErrorFD(fd)                             \
     GlobusXIOSystemDebugPrintf(                                             \
         GLOBUS_L_XIO_SYSTEM_DEBUG_TRACE,                                    \
-        ("[%s] fd=%d, Exiting with error\n", _xio_name, (fd)))
+        (_XIOSL("[%s] fd=%d, Exiting with error\n"), _xio_name, (fd)))
 
 #define GlobusXIOSystemDebugRawBuffer(nbytes, buffer)                       \
     do                                                                      \
     {                                                                       \
         GlobusXIOSystemDebugPrintf(                                         \
             GLOBUS_L_XIO_SYSTEM_DEBUG_RAW,                                  \
-            ("[%s] Begin RAW data ************\n", _xio_name));             \
+            (_XIOSL("[%s] Begin RAW data ************\n"), _xio_name));             \
         GlobusXIOSystemDebugFwrite(                                         \
             GLOBUS_L_XIO_SYSTEM_DEBUG_RAW, buffer, 1, nbytes);              \
         GlobusXIOSystemDebugPrintf(                                         \
             GLOBUS_L_XIO_SYSTEM_DEBUG_RAW,                                  \
-            ("\n[%s] End RAW data ************\n", _xio_name));             \
+            (_XIOSL("\n[%s] End RAW data ************\n"), _xio_name));             \
     } while(0)
  
 #define GlobusXIOSystemDebugRawIovec(nbytes, iovec)                         \
@@ -76,14 +76,14 @@ GlobusDebugDefine(GLOBUS_XIO_SYSTEM);
                                                                             \
                 GlobusDebugMyPrintf(                                        \
                     GLOBUS_XIO_SYSTEM,                                      \
-                    ("[%s] Begin RAW data %i ************\n",               \
+                    (_XIOSL("[%s] Begin RAW data %i ************\n"),               \
                     _xio_name, _i));                                        \
                 GlobusDebugMyFwrite(                                        \
                     GLOBUS_XIO_SYSTEM,                                      \
                     (iovec)[_i].iov_base, 1, _len);                         \
                 GlobusDebugMyPrintf(                                        \
                     GLOBUS_XIO_SYSTEM,                                      \
-                    ("\n[%s] End RAW data %i ************\n",               \
+                    (_XIOSL("\n[%s] End RAW data %i ************\n"),               \
                     _xio_name, _i));                                        \
                 _i++;                                                       \
             }                                                               \
@@ -634,7 +634,8 @@ static
 void
 globus_l_xio_system_cancel_cb(
     globus_xio_operation_t              op,
-    void *                              user_arg)
+    void *                              user_arg,
+    globus_xio_error_type_t             reason)
 {
     globus_l_operation_info_t *         op_info;
     GlobusXIOName(globus_l_xio_system_cancel_cb);
@@ -648,17 +649,21 @@ globus_l_xio_system_cancel_cb(
         if(op_info->state != GLOBUS_L_OPERATION_COMPLETE && 
             op_info->state != GLOBUS_L_OPERATION_CANCELED)
         {
+            op_info->error = reason == GLOBUS_XIO_ERROR_TIMEOUT
+                ? GlobusXIOErrorObjTimeout()
+                : GlobusXIOErrorObjCanceled();
+                    
             globus_mutex_lock(&globus_l_xio_system_fdset_mutex);
             {
                 globus_bool_t           pend;
-
+                
                 if(op_info->state == GLOBUS_L_OPERATION_NEW)
                 {
                     op_info->state = GLOBUS_L_OPERATION_CANCELED;
-                    
+                        
                     GlobusXIOSystemDebugPrintf(
                         GLOBUS_L_XIO_SYSTEM_DEBUG_INFO,
-                        ("[%s] fd=%d, Canceling NEW\n",
+                        (_XIOSL("[%s] fd=%d, Canceling NEW\n"),
                             _xio_name, op_info->fd));
                 }
                 else
@@ -669,7 +674,7 @@ globus_l_xio_system_cancel_cb(
                         
                         GlobusXIOSystemDebugPrintf(
                             GLOBUS_L_XIO_SYSTEM_DEBUG_INFO,
-                            ("[%s] fd=%d, Canceling Active\n",
+                            (_XIOSL("[%s] fd=%d, Canceling Active\n"),
                                 _xio_name, op_info->fd));
                             
                         /* pend the cancel for after select wakes up */
@@ -689,12 +694,10 @@ globus_l_xio_system_cancel_cb(
                         
                         GlobusXIOSystemDebugPrintf(
                             GLOBUS_L_XIO_SYSTEM_DEBUG_INFO,
-                            ("[%s] fd=%d, Canceling Pending\n",
+                            (_XIOSL("[%s] fd=%d, Canceling Pending\n"),
                                 _xio_name, op_info->fd));
                                 
                         /* unregister and kickout now */
-                        op_info->error = GlobusXIOErrorObjCanceled();
-
                         result = globus_callback_register_oneshot(
                             GLOBUS_NULL,
                             GLOBUS_NULL,
@@ -706,7 +709,7 @@ globus_l_xio_system_cancel_cb(
                             globus_panic(
                                 GLOBUS_XIO_SYSTEM_MODULE,
                                 result,
-                                "[%s:%d] Couldn't register callback",
+                                _XIOSL("[%s:%d] Couldn't register callback"),
                                 _xio_name,
                                 __LINE__);
                         }
@@ -781,22 +784,22 @@ globus_l_xio_system_register_read(
 
     globus_mutex_lock(&globus_l_xio_system_fdset_mutex);
     {
+        /* this really shouldnt be possible, but to be thorough ... */
+        if(read_info->state == GLOBUS_L_OPERATION_CANCELED)
+        {
+            result = globus_error_put(read_info->error);
+            goto error_canceled;
+        }
+
         if(globus_l_xio_system_shutdown_called)
         {
             result = GlobusXIOErrorNotActivated();
             goto error_deactivated;
         }
         
-        /* this really shouldnt be possible, but to be thorough ... */
-        if(read_info->state == GLOBUS_L_OPERATION_CANCELED)
-        {
-            result = GlobusXIOErrorCanceled();
-            goto error_canceled;
-        }
-
         if(fd >= globus_l_xio_system_max_fds)
         {
-            result = GlobusXIOErrorSystemResource("too many fds");
+            result = GlobusXIOErrorSystemResource(_XIOSL("too many fds"));
             goto error_too_many_fds;
         }
 
@@ -839,8 +842,8 @@ globus_l_xio_system_register_read(
 
 error_already_registered:
 error_too_many_fds:
-error_canceled:
 error_deactivated:
+error_canceled:
     read_info->state = GLOBUS_L_OPERATION_COMPLETE;
     globus_mutex_unlock(&globus_l_xio_system_fdset_mutex);
     globus_xio_operation_disable_cancel(read_info->op);
@@ -872,22 +875,22 @@ globus_l_xio_system_register_write(
 
     globus_mutex_lock(&globus_l_xio_system_fdset_mutex);
     {
+        /* this really shouldnt be possible, but to be thorough ... */
+        if(write_info->state == GLOBUS_L_OPERATION_CANCELED)
+        {
+            result = globus_error_put(write_info->error);
+            goto error_canceled;
+        }
+        
         if(globus_l_xio_system_shutdown_called)
         {
             result = GlobusXIOErrorNotActivated();
             goto error_deactivated;
         }
         
-        /* this really shouldnt be possible, but to be thorough ... */
-        if(write_info->state == GLOBUS_L_OPERATION_CANCELED)
-        {
-            result = GlobusXIOErrorCanceled();
-            goto error_canceled;
-        }
-
         if(fd >= globus_l_xio_system_max_fds)
         {
-            result = GlobusXIOErrorSystemResource("too many fds");
+            result = GlobusXIOErrorSystemResource(_XIOSL("too many fds"));
             goto error_too_many_fds;
         }
 
@@ -930,8 +933,8 @@ globus_l_xio_system_register_write(
 
 error_already_registered:
 error_too_many_fds:
-error_canceled:
 error_deactivated:
+error_canceled:
     write_info->state = GLOBUS_L_OPERATION_COMPLETE;
     globus_mutex_unlock(&globus_l_xio_system_fdset_mutex);
     globus_xio_operation_disable_cancel(write_info->op);
@@ -1061,7 +1064,7 @@ globus_l_xio_system_select_wakeup(void)
         globus_panic(
             GLOBUS_XIO_SYSTEM_MODULE,
             GlobusXIOErrorSystemError("write", errno),
-            "[%s:%d] Couldn't wakeup select",
+            _XIOSL("[%s:%d] Couldn't wakeup select"),
             _xio_name,
             __LINE__);
     }
@@ -1129,7 +1132,7 @@ globus_l_xio_system_try_read(
         
         GlobusXIOSystemDebugPrintf(
             GLOBUS_L_XIO_SYSTEM_DEBUG_DATA,
-            ("[%s] Read %d bytes (buflen = %d)\n", _xio_name, rc, buflen));
+            (_XIOSL("[%s] Read %d bytes (buflen = %d)\n"), _xio_name, rc, buflen));
         
         GlobusXIOSystemDebugRawBuffer(rc, buf);
     }
@@ -1187,7 +1190,7 @@ globus_l_xio_system_try_readv(
     
     GlobusXIOSystemDebugPrintf(
         GLOBUS_L_XIO_SYSTEM_DEBUG_DATA,
-        ("[%s] Read %d bytes\n", _xio_name, rc));
+        (_XIOSL("[%s] Read %d bytes\n"), _xio_name, rc));
     
     GlobusXIOSystemDebugRawIovec(rc, iov);
             
@@ -1243,7 +1246,7 @@ globus_l_xio_system_try_recv(
     
     GlobusXIOSystemDebugPrintf(
         GLOBUS_L_XIO_SYSTEM_DEBUG_DATA,
-        ("[%s] Read %d bytes\n", _xio_name, rc));
+        (_XIOSL("[%s] Read %d bytes\n"), _xio_name, rc));
     
     GlobusXIOSystemDebugRawBuffer(rc, buf);
     
@@ -1308,7 +1311,7 @@ globus_l_xio_system_try_recvfrom(
     
     GlobusXIOSystemDebugPrintf(
         GLOBUS_L_XIO_SYSTEM_DEBUG_DATA,
-        ("[%s] Read %d bytes\n", _xio_name, rc));
+        (_XIOSL("[%s] Read %d bytes\n"), _xio_name, rc));
     
     GlobusXIOSystemDebugRawBuffer(rc, buf);
     
@@ -1363,7 +1366,7 @@ globus_l_xio_system_try_recvmsg(
     
     GlobusXIOSystemDebugPrintf(
         GLOBUS_L_XIO_SYSTEM_DEBUG_DATA,
-        ("[%s] Read %d bytes\n", _xio_name, rc));
+        (_XIOSL("[%s] Read %d bytes\n"), _xio_name, rc));
     
     GlobusXIOSystemDebugRawIovec(rc, msghdr->msg_iov);
     
@@ -1417,7 +1420,7 @@ globus_l_xio_system_try_write(
     
     GlobusXIOSystemDebugPrintf(
         GLOBUS_L_XIO_SYSTEM_DEBUG_DATA,
-        ("[%s] Wrote %d bytes\n", _xio_name, rc));
+        (_XIOSL("[%s] Wrote %d bytes\n"), _xio_name, rc));
     
     GlobusXIOSystemDebugRawBuffer(rc, buf);
     
@@ -1466,7 +1469,7 @@ globus_l_xio_system_try_writev(
     
     GlobusXIOSystemDebugPrintf(
         GLOBUS_L_XIO_SYSTEM_DEBUG_DATA,
-        ("[%s] Wrote %d bytes\n", _xio_name, rc));
+        (_XIOSL("[%s] Wrote %d bytes\n"), _xio_name, rc));
     
     GlobusXIOSystemDebugRawIovec(rc, iov);
     
@@ -1516,7 +1519,7 @@ globus_l_xio_system_try_send(
     
     GlobusXIOSystemDebugPrintf(
         GLOBUS_L_XIO_SYSTEM_DEBUG_DATA,
-        ("[%s] Wrote %d bytes\n", _xio_name, rc));
+        (_XIOSL("[%s] Wrote %d bytes\n"), _xio_name, rc));
     
     GlobusXIOSystemDebugRawBuffer(rc, buf);
     
@@ -1573,7 +1576,7 @@ globus_l_xio_system_try_sendto(
     
     GlobusXIOSystemDebugPrintf(
         GLOBUS_L_XIO_SYSTEM_DEBUG_DATA,
-        ("[%s] Wrote %d bytes\n", _xio_name, rc));
+        (_XIOSL("[%s] Wrote %d bytes\n"), _xio_name, rc));
     
     GlobusXIOSystemDebugRawBuffer(rc, buf);
     
@@ -1622,7 +1625,7 @@ globus_l_xio_system_try_sendmsg(
     
     GlobusXIOSystemDebugPrintf(
         GLOBUS_L_XIO_SYSTEM_DEBUG_DATA,
-        ("[%s] Wrote %d bytes\n", _xio_name, rc));
+        (_XIOSL("[%s] Wrote %d bytes\n"), _xio_name, rc));
     
     GlobusXIOSystemDebugRawIovec(rc, msghdr->msg_iov);
     
@@ -1656,7 +1659,7 @@ globus_l_xio_system_handle_read(
 
     if(read_info->state == GLOBUS_L_OPERATION_CANCELED)
     {
-        result = GlobusXIOErrorCanceled();
+        /* error already set on info */
         goto error_canceled;
     }
 
@@ -1695,7 +1698,7 @@ globus_l_xio_system_handle_read(
                     read_info->nbytes++;
                     GlobusXIOSystemDebugPrintf(
                         GLOBUS_L_XIO_SYSTEM_DEBUG_INFO,
-                        ("[%s] Accepted new connection, fd=%d\n",
+                        (_XIOSL("[%s] Accepted new connection, fd=%d\n"),
                              _xio_name, new_fd));
                 }
             }
@@ -1792,14 +1795,17 @@ globus_l_xio_system_handle_read(
         break;
     }
     
+    if(result != GLOBUS_SUCCESS)
+    {
+        read_info->error = globus_error_get(result);
+    }
+    
     /* always true for accept operations */
     if(read_info->nbytes >= read_info->waitforbytes ||
         result != GLOBUS_SUCCESS)
     {
 error_canceled:
         handled_it = GLOBUS_TRUE;
-        read_info->error = result == GLOBUS_SUCCESS 
-            ? GLOBUS_NULL : globus_error_get(result);
         read_info->state = GLOBUS_L_OPERATION_COMPLETE;
 
         globus_mutex_lock(&globus_l_xio_system_fdset_mutex);
@@ -1816,7 +1822,7 @@ error_canceled:
             globus_panic(
                 GLOBUS_XIO_SYSTEM_MODULE,
                 result,
-                "[%s:%d] Couldn't register callback",
+                _XIOSL("[%s:%d] Couldn't register callback"),
                 _xio_name,
                 __LINE__);
         }
@@ -1847,7 +1853,7 @@ globus_l_xio_system_handle_write(
 
     if(write_info->state == GLOBUS_L_OPERATION_CANCELED)
     {
-        result = GlobusXIOErrorCanceled();
+        /* error already set on info */
         goto error_canceled;
     }
 
@@ -1967,15 +1973,18 @@ globus_l_xio_system_handle_write(
         return GLOBUS_FALSE;
         break;
     }
-
+    
+    if(result != GLOBUS_SUCCESS)
+    {
+        write_info->error = globus_error_get(result);
+    }
+    
     /* always true for connect operations */
     if(write_info->nbytes >= write_info->waitforbytes ||
         result != GLOBUS_SUCCESS)
     {
 error_canceled:
         handled_it = GLOBUS_TRUE;
-        write_info->error = result == GLOBUS_SUCCESS 
-            ? GLOBUS_NULL : globus_error_get(result);
         write_info->state = GLOBUS_L_OPERATION_COMPLETE;
 
         globus_mutex_lock(&globus_l_xio_system_fdset_mutex);
@@ -1992,7 +2001,7 @@ error_canceled:
             globus_panic(
                 GLOBUS_XIO_SYSTEM_MODULE,
                 result,
-                "[%s:%d] Couldn't register callback",
+                _XIOSL("[%s:%d] Couldn't register callback"),
                 _xio_name,
                 __LINE__);
         }
@@ -2027,13 +2036,17 @@ globus_l_xio_system_bad_apple(void)
                 {
                     GlobusXIOSystemDebugPrintf(
                         GLOBUS_L_XIO_SYSTEM_DEBUG_INFO,
-                        ("[%s] fd=%d, Canceling read bad apple\n", 
+                        (_XIOSL("[%s] fd=%d, Canceling read bad apple\n"), 
                         _xio_name, fd));
                     
                     op_info = globus_l_xio_system_read_operations[fd];
-                    op_info->state = GLOBUS_L_OPERATION_CANCELED;
-                    globus_list_insert(
-                        &globus_l_xio_system_canceled_reads, (void *) fd);
+                    if(op_info->state == GLOBUS_L_OPERATION_PENDING)
+                    {
+                        op_info->state = GLOBUS_L_OPERATION_CANCELED;
+                        op_info->error = GlobusXIOErrorObjParameter("handle");
+                        globus_list_insert(
+                            &globus_l_xio_system_canceled_reads, (void *) fd);
+                    }
                 }
             }
             
@@ -2043,13 +2056,17 @@ globus_l_xio_system_bad_apple(void)
                 {
                     GlobusXIOSystemDebugPrintf(
                         GLOBUS_L_XIO_SYSTEM_DEBUG_INFO,
-                        ("[%s] fd=%d, Canceling write bad apple\n",
+                        (_XIOSL("[%s] fd=%d, Canceling write bad apple\n"),
                         _xio_name, fd));
                     
                     op_info = globus_l_xio_system_write_operations[fd];
-                    op_info->state = GLOBUS_L_OPERATION_CANCELED;
-                    globus_list_insert(
-                        &globus_l_xio_system_canceled_writes, (void *) fd);
+                    if(op_info->state == GLOBUS_L_OPERATION_PENDING)
+                    {
+                        op_info->state = GLOBUS_L_OPERATION_CANCELED;
+                        op_info->error = GlobusXIOErrorObjParameter("handle");
+                        globus_list_insert(
+                            &globus_l_xio_system_canceled_writes, (void *) fd);
+                    }
                 }
             }
         }
@@ -2113,7 +2130,7 @@ globus_l_xio_system_poll(
         
         GlobusXIOSystemDebugPrintf(
             GLOBUS_L_XIO_SYSTEM_DEBUG_INFO,
-            ("[%s] Before select\n", _xio_name));
+            (_XIOSL("[%s] Before select\n"), _xio_name));
                     
         nready = select(
             num,
@@ -2125,7 +2142,7 @@ globus_l_xio_system_poll(
         
         GlobusXIOSystemDebugPrintf(
             GLOBUS_L_XIO_SYSTEM_DEBUG_INFO,
-            ("[%s] After select\n", _xio_name));
+            (_XIOSL("[%s] After select\n"), _xio_name));
         
         globus_mutex_lock(&globus_l_xio_system_cancel_mutex);
         {
@@ -2177,7 +2194,7 @@ globus_l_xio_system_poll(
                 
                 GlobusXIOSystemDebugPrintf(
                     GLOBUS_L_XIO_SYSTEM_DEBUG_INFO,
-                    ("[%s] fd=%d, Setting canceled read\n", _xio_name, fd));
+                    (_XIOSL("[%s] fd=%d, Setting canceled read\n"), _xio_name, fd));
                     
                 if(!FD_ISSET(fd, globus_l_xio_system_ready_reads))
                 {
@@ -2194,7 +2211,7 @@ globus_l_xio_system_poll(
                 
                 GlobusXIOSystemDebugPrintf(
                     GLOBUS_L_XIO_SYSTEM_DEBUG_INFO,
-                    ("[%s] fd=%d, Setting canceled read\n", _xio_name, fd));
+                    (_XIOSL("[%s] fd=%d, Setting canceled read\n"), _xio_name, fd));
                     
                 if(!FD_ISSET(fd, globus_l_xio_system_ready_writes))
                 {
@@ -2244,11 +2261,11 @@ typedef struct
 
 static
 void
-globus_l_xio_system_open_close_kickout(
+globus_l_xio_system_close_kickout(
     void *                              user_arg)
 {
     globus_l_xio_system_open_close_info_t * info;
-    GlobusXIOName(globus_l_xio_system_open_close_kickout);
+    GlobusXIOName(globus_l_xio_system_close_kickout);
 
     GlobusXIOSystemDebugEnter();
 
@@ -2259,73 +2276,6 @@ globus_l_xio_system_open_close_kickout(
     globus_free(info);
 
     GlobusXIOSystemDebugExit();
-}
-
-globus_result_t
-globus_xio_system_register_open(
-    globus_xio_operation_t              op,
-    const char *                        pathname,
-    int                                 flags,
-    int                                 mode,
-    globus_xio_system_handle_t *        out_fd,
-    globus_xio_system_callback_t        callback,
-    void *                              user_arg)
-{
-    int                                 fd;
-    globus_result_t                     result;
-    globus_l_xio_system_open_close_info_t *  open_info;
-    GlobusXIOName(globus_xio_system_register_open);
-
-    GlobusXIOSystemDebugEnter();
-
-    do
-    {
-        fd = open(pathname, flags | O_NONBLOCK, mode);
-    } while(fd < 0 && errno == EINTR);
-
-    if(fd < 0)
-    {
-        result = GlobusXIOErrorSystemError("open", errno);
-        goto error_open;
-    }
-
-    open_info = (globus_l_xio_system_open_close_info_t *)
-        globus_malloc(sizeof(globus_l_xio_system_open_close_info_t));
-    if(!open_info)
-    {
-        result = GlobusXIOErrorMemory("open_info");
-        goto error_open_info;
-    }
-
-    open_info->callback = callback;
-    open_info->user_arg = user_arg;
-
-    result = globus_callback_register_oneshot(
-        GLOBUS_NULL,
-        GLOBUS_NULL,
-        globus_l_xio_system_open_close_kickout,
-        open_info);
-    if(result != GLOBUS_SUCCESS)
-    {
-        result = GlobusXIOErrorWrapFailed(
-            "globus_callback_register_oneshot", result);
-        goto error_register;
-    }
-
-    *out_fd = fd;
-
-    GlobusXIOSystemDebugExitFD(fd);
-    return GLOBUS_SUCCESS;
-
-error_register:
-    globus_free(open_info);
-
-error_open_info:
-    GlobusIXIOSystemCloseFd(fd);
-
-error_open:
-    GlobusXIOSystemDebugExitWithError();
-    return result;
 }
 
 globus_result_t
@@ -2394,7 +2344,7 @@ globus_xio_system_register_connect(
     if(result != GLOBUS_SUCCESS)
     {
         result = GlobusXIOErrorWrapFailed(
-            "globus_l_xio_system_register_write", result);
+            _XIOSL("globus_l_xio_system_register_write"), result);
         goto error_register;
 
     }
@@ -2456,7 +2406,7 @@ globus_xio_system_register_accept(
     if(result != GLOBUS_SUCCESS)
     {
         result = GlobusXIOErrorWrapFailed(
-            "globus_l_xio_system_register_read", result);
+            _XIOSL("globus_l_xio_system_register_read"), result);
         goto error_register;
     }
 
@@ -2490,7 +2440,7 @@ globus_xio_system_register_read(
     GlobusXIOSystemDebugEnterFD(fd);
     GlobusXIOSystemDebugPrintf(
         GLOBUS_L_XIO_SYSTEM_DEBUG_DATA,
-        ("[%s] Waiting for %u bytes\n", _xio_name, (unsigned) waitforbytes));
+        (_XIOSL("[%s] Waiting for %u bytes\n"), _xio_name, (unsigned) waitforbytes));
         
     GlobusIXIOSystemAllocOperation(op_info);
     if(!op_info)
@@ -2576,7 +2526,7 @@ globus_xio_system_register_read_ex(
     GlobusXIOSystemDebugEnterFD(fd);
     GlobusXIOSystemDebugPrintf(
         GLOBUS_L_XIO_SYSTEM_DEBUG_DATA,
-        ("[%s] Waiting for %u bytes\n", _xio_name, (unsigned) waitforbytes));
+        (_XIOSL("[%s] Waiting for %u bytes\n"), _xio_name, (unsigned) waitforbytes));
         
     if(!flags && !from)
     {
@@ -2694,7 +2644,7 @@ globus_xio_system_register_write(
     GlobusXIOSystemDebugEnterFD(fd);
     GlobusXIOSystemDebugPrintf(
         GLOBUS_L_XIO_SYSTEM_DEBUG_DATA,
-        ("[%s] Waiting for %u bytes\n", _xio_name, (unsigned) waitforbytes));
+        (_XIOSL("[%s] Waiting for %u bytes\n"), _xio_name, (unsigned) waitforbytes));
         
     GlobusIXIOSystemAllocOperation(op_info);
     if(!op_info)
@@ -2738,7 +2688,7 @@ globus_xio_system_register_write(
     if(result != GLOBUS_SUCCESS)
     {
         result = GlobusXIOErrorWrapFailed(
-            "globus_l_xio_system_register_write", result);
+            _XIOSL("globus_l_xio_system_register_write"), result);
         goto error_register;
     }
 
@@ -2781,7 +2731,7 @@ globus_xio_system_register_write_ex(
     GlobusXIOSystemDebugEnterFD(fd);
     GlobusXIOSystemDebugPrintf(
         GLOBUS_L_XIO_SYSTEM_DEBUG_DATA,
-        ("[%s] Waiting for %u bytes\n", _xio_name, (unsigned) waitforbytes));
+        (_XIOSL("[%s] Waiting for %u bytes\n"), _xio_name, (unsigned) waitforbytes));
         
     if(!flags && !u_to)
     {
@@ -2943,7 +2893,7 @@ globus_xio_system_register_close(
     result = globus_callback_register_oneshot(
         GLOBUS_NULL,
         GLOBUS_NULL,
-        globus_l_xio_system_open_close_kickout,
+        globus_l_xio_system_close_kickout,
         close_info);
     if(result != GLOBUS_SUCCESS)
     {

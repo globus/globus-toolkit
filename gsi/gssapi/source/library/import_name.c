@@ -51,7 +51,7 @@ GSS_CALLCONV gss_import_name(
     gss_name_desc *                     output_name = NULL;
     X509_NAME *                         x509n = NULL;
     X509_NAME_ENTRY *                   x509_name_entry = NULL;
-    int                                 length;
+    int                                 length, i;
     char *                              name_buffer = NULL;
     char *                              index;
 
@@ -127,6 +127,45 @@ GSS_CALLCONV gss_import_name(
             (unsigned char *) name_buffer,
             -1);
         X509_NAME_add_entry(x509n, x509_name_entry, 0, 0);
+    }
+    else if (g_OID_equal(GSS_C_NT_EXPORT_NAME, input_name_type)) {
+        i = 0;
+        if (name_buffer[i++] != 0x04 || name_buffer[i++] != 0x01 ||
+            name_buffer[i++] !=
+                ((gss_mech_globus_gssapi_openssl->length+2) >> 8) ||
+            name_buffer[i++] !=
+                ((gss_mech_globus_gssapi_openssl->length+2) & 0xff) ||
+            name_buffer[i++] != 0x06 ||
+            name_buffer[i++] !=
+                (gss_mech_globus_gssapi_openssl->length & 0xff) ||
+            (memcmp(&(name_buffer[i]), gss_mech_globus_gssapi_openssl->elements,
+                    gss_mech_globus_gssapi_openssl->length) != 0))
+        {
+            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                minor_status, local_result,
+                GLOBUS_GSI_GSSAPI_ERROR_BAD_NAME);
+            major_status = GSS_S_BAD_NAME;
+            goto free_x509_name;
+        }
+
+        i += gss_mech_globus_gssapi_openssl->length;
+        length = name_buffer[i++] << 24;
+        length += name_buffer[i++] << 16;
+        length += name_buffer[i++] << 8;
+        length += name_buffer[i++] & 0xff;
+
+        local_result = globus_gsi_cert_utils_get_x509_name(
+            &(name_buffer[i]),
+            length,
+            x509n);
+        if(local_result != GLOBUS_SUCCESS)
+        {
+            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                minor_status, local_result,
+                GLOBUS_GSI_GSSAPI_ERROR_BAD_NAME);
+            major_status = GSS_S_BAD_NAME;
+            goto free_x509_name;
+        }
     }
     else
     {

@@ -1,6 +1,10 @@
 #ifndef GLOBUS_I_GFS_ACL_H
 #define GLOBUS_I_GFS_ACL_H
 
+#include <pwd.h>
+#include <sys/types.h>
+#include <grp.h>
+
 struct globus_i_gfs_acl_handle_s;
 
 typedef enum globus_l_gfs_acl_type_e
@@ -19,7 +23,7 @@ typedef void
     globus_result_t                     result);
 
 
-globus_result_t
+int
 globus_gfs_acl_authorize(
     struct globus_i_gfs_acl_handle_s *  acl_handle,
     const char *                        action,
@@ -32,7 +36,10 @@ int
 globus_i_gfs_acl_init(
     struct globus_i_gfs_acl_handle_s *  acl_handle,
     const gss_ctx_id_t                  context,
-    const char *                        user_id,
+    const struct passwd *               pwent,
+    const struct group *                grent,
+    const char *                        given_pw,
+    const char *                        ipaddr,
     const char *                        resource_id,
     globus_result_t *                   out_res,
     globus_gfs_acl_cb_t                 cb,
@@ -42,23 +49,22 @@ void
 globus_i_gfs_acl_destroy(
     struct globus_i_gfs_acl_handle_s *  acl_handle);
 
-
 /*
  *  interface implementation functions
  */
 enum
 {
     GLOBUS_GFS_ACL_COMPLETE,
-    GLOBUS_GFS_ACL_WOULD_BLOCK,
+    GLOBUS_GFS_ACL_WOULD_BLOCK
 };
 
 typedef int
 (*globus_gfs_acl_init_t)(
     void **                             out_handle,
-    const gss_ctx_id_t                  context,
-    const char *                        user_id,
+    const struct passwd *               passwd,
+    const char *                        given_pw,
     const char *                        resource_id,
-    int                                 request_id,
+    struct globus_i_gfs_acl_handle_s *  acl_handle,
     globus_result_t *                   out_res);
 
 typedef int
@@ -66,17 +72,17 @@ typedef int
     void *                              out_handle,
     const char *                        action,
     const char *                        object,
-    int                                 request_id,
+    struct globus_i_gfs_acl_handle_s *  acl_handle,
     globus_result_t *                   out_res);
 
 void
 globus_gfs_acl_authorized_finished(
-    int                                 request_id,
+    struct globus_i_gfs_acl_handle_s *  acl_handle,
     globus_result_t                     result);
 
 typedef void
 (*globus_gfs_acl_destroy_t)(
-    void **                             out_handle);
+    void *                              out_handle);
 
 typedef struct globus_gfs_acl_module_s
 {
@@ -87,9 +93,13 @@ typedef struct globus_gfs_acl_module_s
 
 typedef struct globus_i_gfs_acl_handle_s
 {
-    gss_ctx_id_t                        context;
+    struct passwd                       pwent;
+    struct group                        grpent;
+    char *                              given_pw;
+    char *                              ipaddr;
     globus_i_gfs_acl_type_t             type;
     char *                              user_id;
+    char *                              hostname;
     char *                              auth_action;
     char *                              auth_object;
     globus_gfs_acl_cb_t                 cb;
@@ -97,6 +107,11 @@ typedef struct globus_i_gfs_acl_handle_s
     globus_list_t *                     module_list;
     globus_list_t *                     current_list;
     globus_result_t                     cached_res;
+    gss_ctx_id_t                        context;
 } globus_i_gfs_acl_handle_t;
+
+void
+globus_gfs_acl_add_module(
+    globus_gfs_acl_module_t *           module);
 
 #endif

@@ -23,6 +23,7 @@ if (!defined($gpath))
 
 @INC = (@INC, "$gpath/lib/perl");
 
+my ($proto) = setup_proto();
 my ($source_host, $source_file, $local_copy) = setup_remote_source();
 
 sub check_size
@@ -74,8 +75,14 @@ foreach('/etc/group', '/bin/sh', '/adsfadsfa')
 	$size = -1;
     }
 
-    push(@tests, "check_size('gsiftp://$source_host$_', $size);");
+    push(@tests, "check_size('$proto$source_host$_', $size);");
 }
+
+if(defined($ENV{FTP_TEST_RANDOMIZE}))
+{
+    shuffle(\@tests);
+}
+
 if(@ARGV)
 {
     plan tests => scalar(@ARGV);

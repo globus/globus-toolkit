@@ -1,7 +1,6 @@
 BUNDLE globus-resource-management-server
 	globus_core
 	globus_common
-	globus_icu4c
 	globus_common_setup
 	globus_libtool
         globus_callout
@@ -49,7 +48,6 @@ BUNDLE globus-resource-management-server
 BUNDLE globus-resource-management-sdk
 	globus_core
 	globus_common
-	globus_icu4c
 	globus_common_setup
 	globus_libtool
         globus_callout
@@ -94,13 +92,11 @@ BUNDLE globus-resource-management-sdk
 BUNDLE globus-resource-management-client
 	globus_core
 	globus_common
-	globus_icu4c
 	globus_common_setup
 	globus_libtool
         globus_callout
 	globus_data_conversion
 	globus_openssl
-	globus_proxy_wrapper
 	globus_user_env
 	globus_gsi_openssl_error
 	globus_gsi_proxy_ssl
@@ -135,7 +131,6 @@ BUNDLE globus-resource-management-client
 BUNDLE globus-data-management-server
 	globus_core
 	globus_common
-	globus_icu4c
 	globus_common_setup
 	globus_libtool
         globus_callout
@@ -157,10 +152,7 @@ BUNDLE globus-data-management-server
 	globus_io
 	gssapi_error
 	globus_ftp_control
-	globus_gridftp_server
         globus_libxml2
-        globus_libxml25
-	globus_libxslt
         globus_xmlsec1
         gaa_util
 	gaa_core
@@ -180,7 +172,6 @@ BUNDLE globus-data-management-server
 BUNDLE globus-data-management-sdk
 	globus_core
 	globus_common
-	globus_icu4c
 	globus_common_setup
 	globus_libtool
         globus_callout
@@ -204,17 +195,16 @@ BUNDLE globus-data-management-sdk
 	globus_ftp_control
 	globus_gass_transfer
 	globus_ftp_client
+    globus_xio_gridftp_driver
 	globus_gass_copy
 
 BUNDLE globus-data-management-client
 	globus_core
 	globus_common
-	globus_icu4c
 	globus_common_setup
 	globus_libtool
         globus_callout
 	globus_openssl
-	globus_proxy_wrapper
 	globus_user_env
 	globus_gsi_openssl_error
 	globus_gsi_proxy_ssl
@@ -235,12 +225,12 @@ BUNDLE globus-data-management-client
 	globus_ftp_control
 	globus_gass_transfer
 	globus_ftp_client
-	globus_gass_copy
+    globus_xio_gridftp_driver
+    globus_gass_copy
 
 BUNDLE globus-information-services-server THREADED
 	globus_core
 	globus_common
-	globus_icu4c
 	globus_common_setup
 	globus_libtool
         globus_callout
@@ -272,7 +262,6 @@ BUNDLE globus-information-services-server THREADED
 BUNDLE globus-information-services-sdk THREADED
 	globus_core
 	globus_common
-	globus_icu4c
 	globus_common_setup
 	globus_libtool
         globus_callout
@@ -300,7 +289,6 @@ BUNDLE globus-information-services-sdk THREADED
 BUNDLE globus-information-services-client THREADED
 	globus_core
 	globus_common
-	globus_icu4c
 	globus_common_setup
 	globus_libtool
         globus_callout
@@ -308,7 +296,6 @@ BUNDLE globus-information-services-client THREADED
 	globus_mds_common
 	globus_mds_common_setup
 	globus_openssl
-	globus_proxy_wrapper
 	globus_user_env
 	globus_cyrus-sasl
 	globus_gsi_openssl_error
@@ -336,7 +323,7 @@ BUNDLE	schedulers
 	globus_gram_reporter_setup_fork
 	globus_gram_reporter_setup_lsf
 	globus_gram_reporter_setup_pbs
-BUNDLE	all-test
+BUNDLE	prews-test
 	globus_test
 	globus_common_test
 	globus_ftp_client_test
@@ -368,24 +355,20 @@ BUNDLE globus-gsi
 	globus_gsi_proxy_ssl
 	globus_gsi_openssl_error
 	globus_user_env
-	globus_proxy_wrapper
 	globus_openssl
 	globus_libtool
         globus_callout
 	globus_common_setup
 	globus_common
-	globus_icu4c
 	globus_core
 	gssapi_error
 BUNDLE globus-rls-server THREADED
         globus_core
 	globus_callout
         globus_common
-	globus_icu4c
         globus_common_setup
         globus_libtool
         globus_openssl
-        globus_proxy_wrapper
         globus_user_env
         globus_gsi_openssl_error
         globus_gsi_proxy_ssl
@@ -417,7 +400,6 @@ BUNDLE gt2-unthreaded
 	globus_authz_null_callout
 	globus_callout
 	globus_common
-	globus_icu4c
 	globus_common_setup
 	globus_core
 	globus_data_conversion
@@ -446,7 +428,6 @@ BUNDLE gt2-unthreaded
 	globus_gram_job_manager_setup_fork
 	globus_gram_myjob
 	globus_gram_protocol
-	globus_gridftp_server
 	globus_gridmap_callout_error
 	globus_gsi_callback
 	globus_gsi_cert_utils
@@ -460,14 +441,11 @@ BUNDLE gt2-unthreaded
 	globus_io
 	globus_libtool
 	globus_libxml2
-	globus_libxml25
-	globus_libxslt
 	globus_mp
 	globus_nexus
 	globus_openssl
 	globus_openssl_module
 	globus_proxy_utils
-	globus_proxy_wrapper
 	globus_rsl
 	globus_rsl_assist
 	globus_simple_ca
@@ -478,11 +456,11 @@ BUNDLE gt2-unthreaded
 	gssapi_error
         globus_gridftp_server_control
         globus_gridftp_server2
+        globus_xio_gridftp_driver
 
 BUNDLE gt2-threaded THREADED
 	globus_callout
 	globus_common
-	globus_icu4c
 	globus_common_setup
 	globus_core
 	globus_cyrus-sasl
@@ -516,9 +494,113 @@ BUNDLE gt2-threaded THREADED
 	globus_openssl
 	globus_openssl_module
 	globus_proxy_utils
-	globus_proxy_wrapper
 	globus_rsl
 	globus_sasl_gssapi_gsi
 	globus_user_env
         globus_xio
 	gssapi_error
+
+BUNDLE globus-simple-ca
+	globus_core
+	globus_common
+	globus_common_setup
+	globus_openssl
+	globus_libtool
+	globus_icu4c
+	globus_gsi_openssl_error
+	globus_openssl_module
+	globus_gsi_proxy_ssl
+	globus_gsi_cert_utils
+	globus_simple_ca
+	globus_simple_ca_setup
+
+BUNDLE globus-common-libs
+        globus_core
+        globus_openssl
+        globus_common_setup
+        globus_libtool
+        globus_common
+        globus_gsi_openssl_error
+        globus_gsi_proxy_ssl
+        globus_openssl_module
+        globus_gsi_cert_utils
+        globus_gsi_sysconfig
+        globus_gsi_callback
+        globus_gsi_credential
+        globus_gsi_proxy_core
+        globus_proxy_utils
+        globus_callout
+        globus_gssapi_gsi
+        globus_gss_assist
+        gssapi_error
+        globus_user_env
+        globus_simple_ca
+        globus_simple_ca_setup
+        globus_xio
+        globus_io
+        globus_gass_transfer
+        globus_ftp_control
+        globus_ftp_client
+        globus_gass_copy
+        globus_gass_cache
+        globus_gram_protocol
+        globus_rsl
+        globus_gram_client
+        globus_gass_server_ez
+
+
+BUNDLE globus-gram
+        globus_data_conversion
+        globus_mp
+        globus_nexus
+        globus_duct_common
+        globus_duct_runtime
+        globus_gram_myjob
+        globus_gass_cache_program
+        globus_rsl_assist
+        globus_gatekeeper_setup
+        globus_gram_job_manager_setup
+        globus_duct_control
+        globus_gram_job_manager_callout_error
+        globus_gram_job_manager
+        globus_gram_job_manager_setup_fork
+        globus_duroc_common
+        globus_duroc_runtime
+        globus_duroc_bootstrap
+        globus_duroc_control
+        globus_gatekeeper
+        globus_gram_client_tools
+
+BUNDLE globus-gridftp
+        globus_libxml2
+        globus_xmlsec1
+        gaa_core
+        gaa_util
+        gaa_plugin
+        gaa_simple
+        globus_gaa_authz_callout_setup
+        gaa_gss_generic
+        globus_authz_callout_error
+        globus_authz
+        globus_authz_null_callout
+        gaa_debug
+        globus_gridftp_server_control
+        globus_gridftp_server2
+        globus_authz_gaa_callout
+        globus_gridmap_callout_error
+
+BUNDLE globus-mds
+        globus_sasl_gssapi_gsi
+        globus_cyrus-sasl
+        globus_openldap
+        globus_ldapmodules
+        globus_mds_common_setup
+        globus_mds_common
+        globus_hostname2contacts
+        globus_mds_gris_setup
+        globus_mds_gris
+        globus_mds_back_giis
+
+BUNDLE globus-internationalization
+        globus_icu4c
+        globus_i18n

@@ -67,7 +67,7 @@ globus_i_gsi_callback_openssl_error_result(
             function_name,
             line_number,
             "%s%s%s",
-            globus_l_gsi_callback_error_strings[error_type],
+            _CLS(globus_l_gsi_callback_error_strings[error_type]),
             short_desc ? ": " : "",
             short_desc ? short_desc : "");    
 
@@ -108,7 +108,7 @@ globus_i_gsi_callback_error_result(
         function_name,
         line_number, 
         "%s%s%s",
-        globus_l_gsi_callback_error_strings[error_type],
+        _CLS(globus_l_gsi_callback_error_strings[error_type]),
         short_desc ? ": " : "",
         short_desc ? short_desc : "");
 
@@ -151,7 +151,7 @@ globus_i_gsi_callback_error_chain_result(
             function_name,
             line_number, 
             "%s%s%s",
-            globus_l_gsi_callback_error_strings[error_type],
+            _CLS(globus_l_gsi_callback_error_strings[error_type]),
             short_desc ? ": " : "",
             short_desc ? short_desc : "");
 

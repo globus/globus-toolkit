@@ -209,21 +209,25 @@ read_scheduler_validation_failed:
 	    record = globus_list_first(tmp_list);
 	    tmp_list = globus_list_rest(tmp_list);
 
-	    globus_l_gram_job_manager_validate_log(
-		    request,
-		    "JMI: Validation Record:\n"
-		    "attribute = '%s'\n"
-		    "description = '%s'\n"
-		    "required_when = '%d'\n"
-		    "default_when = '%d'\n"
-		    "default_values = '%s'\n"
-		    "enumerated_values = '%s'\n\n",
-		    record->attribute,
-		    record->description ? record->description : "",
-		    record->required_when,
-		    record->default_when,
-		    record->default_value ? record->default_value : "",
-		    record->enumerated_values ? record->enumerated_values : "");
+            if(globus_l_gram_job_manager_verbose_debugging)
+            {
+                globus_l_gram_job_manager_validate_log(
+                        request,
+                        "JMI: Validation Record:\n"
+                        "attribute = '%s'\n"
+                        "description = '%s'\n"
+                        "required_when = '%d'\n"
+                        "default_when = '%d'\n"
+                        "default_values = '%s'\n"
+                        "enumerated_values = '%s'\n\n",
+                        record->attribute,
+                        record->description ? record->description : "",
+                        record->required_when,
+                        record->default_when,
+                        record->default_value ? record->default_value : "",
+                        record->enumerated_values ?
+                                record->enumerated_values : "");
+            }
 	}
     }
     if(rc != GLOBUS_SUCCESS)
@@ -967,7 +971,7 @@ globus_l_gram_job_manager_insert_default_rsl(
 
 		globus_l_gram_job_manager_validate_log(
 		    request,
-		    "Nope, adding default RSL of %s\n",
+		    "Adding default RSL of %s\n",
 		    new_relation_str);
 
 		new_relation = globus_rsl_parse(new_relation_str);
@@ -976,37 +980,20 @@ globus_l_gram_job_manager_insert_default_rsl(
 
 		globus_libc_free(new_relation_str);
 	    }
-	    else
-	    {
-		globus_l_gram_job_manager_validate_log(
-		    request,
-		    "Yes\n");
-	    }
 	}
 	if(record->required_when & when)
 	{
-	    globus_l_gram_job_manager_validate_log(
-		request,
-		"Checking whether required attribute %s is in "
-		"user RSL spec...",
-		record->attribute);
-
 	    if(!globus_l_gram_job_manager_attribute_exists(
 			*attributes,
 			record->attribute))
 	    {
 		globus_l_gram_job_manager_validate_log(
 			request,
-			"No, invalid RSL\n");
+			"invalid RSL: required attribute %s is missing\n",
+                        record->attribute);
 
 		return globus_l_gram_job_manager_missing_value_error(
 			    record->attribute);
-	    }
-	    else
-	    {
-		globus_l_gram_job_manager_validate_log(
-			request,
-			"Yes, valid RSL\n");
 	    }
 	}
     }
@@ -1122,10 +1109,7 @@ globus_l_gram_job_manager_validate_log(
     va_list				ap;
 
     va_start(ap, fmt);
-    if(globus_l_gram_job_manager_verbose_debugging)
-    {
-	globus_libc_vfprintf(request->jobmanager_log_fp, fmt, ap);
-    }
+    globus_libc_vfprintf(request->jobmanager_log_fp, fmt, ap);
     va_end(ap);
 #endif
 }

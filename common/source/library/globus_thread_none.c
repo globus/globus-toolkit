@@ -25,6 +25,7 @@ CVS Information:
 #include "version.h"
 #include "globus_time.h"
 #include "globus_libc.h"
+#include "globus_common.h"
 
 /******************************************************************************
 			       Define macros
@@ -124,7 +125,7 @@ globus_thread_key_create(
     int rc;
 
     rc = globus_macro_thread_key_create(key, func);
-    globus_i_thread_test_rc(rc, "NEXUS: globusthread_key_create() failed\n");
+    globus_i_thread_test_rc(rc, _GCSL("NEXUS: globusthread_key_create() failed\n"));
     return (rc);
 }
 /* globus_key_create() */
@@ -142,7 +143,7 @@ globus_thread_setspecific(
     int rc;
 
     rc = globus_macro_thread_setspecific(key, value);
-    globus_i_thread_test_rc(rc, "NEXUS: globus_thread_setspecific() failed\n");
+    globus_i_thread_test_rc(rc, _GCSL("NEXUS: globus_thread_setspecific() failed\n"));
     return (rc);
 }
 /* globus_thread_setspecific() */
@@ -250,7 +251,7 @@ globus_mutex_init(
     int rc;
 
     rc = globus_macro_mutex_init(mut, attr);
-    globus_i_thread_test_rc(rc, "NEXUS: globus_mutex_init() failed\n");
+    globus_i_thread_test_rc(rc, _GCSL("NEXUS: globus_mutex_init() failed\n"));
     return (rc);
 }
 /* globus_mutex_init() */
@@ -267,7 +268,7 @@ globus_mutex_destroy(
     int rc;
 
     rc = globus_macro_mutex_destroy(mut);
-    globus_i_thread_test_rc(rc, "NEXUS: globus_mutex_destroy() failed\n");
+    globus_i_thread_test_rc(rc, _GCSL("NEXUS: globus_mutex_destroy() failed\n"));
     return (rc);
 }
 /* globus_mutex_destroy() */
@@ -284,7 +285,7 @@ globus_mutex_lock(
     int rc;
 
     rc = globus_macro_mutex_lock(mut);
-    globus_i_thread_test_rc(rc, "NEXUS: globus_mutex_lock() failed\n");
+    globus_i_thread_test_rc(rc, _GCSL("NEXUS: globus_mutex_lock() failed\n"));
     return (rc);
 }
 /* globus_mutex_lock() */
@@ -301,7 +302,7 @@ globus_mutex_unlock(
     int rc;
 
     rc = globus_macro_mutex_unlock(mut);
-    globus_i_thread_test_rc(rc, "NEXUS: globus_mutex_unlock() failed\n");
+    globus_i_thread_test_rc(rc, _GCSL("NEXUS: globus_mutex_unlock() failed\n"));
     return (rc);
 }
 /* globus_mutex_unlock() */
@@ -395,7 +396,7 @@ globus_cond_init(
     int rc;
 
     rc = globus_macro_cond_init(cv, attr);
-    globus_i_thread_test_rc(rc, "NEXUS: globus_cond_init() failed\n");
+    globus_i_thread_test_rc(rc, _GCSL("NEXUS: globus_cond_init() failed\n"));
     return (rc);
 }
 /* globus_cond_init() */
@@ -412,7 +413,7 @@ globus_cond_destroy(
     int rc;
 
     rc = globus_macro_cond_destroy(cv);
-    globus_i_thread_test_rc(rc, "NEXUS: globus_cond_destroy() failed\n");
+    globus_i_thread_test_rc(rc, _GCSL("NEXUS: globus_cond_destroy() failed\n"));
     return (rc);
 }
 /* globus_cond_destroy() */
@@ -430,7 +431,7 @@ globus_cond_wait(
     int rc;
 
     rc = globus_macro_cond_wait(cv, mut);
-    globus_i_thread_test_rc(rc, "NEXUS: globus_cond_wait() failed\n");
+    globus_i_thread_test_rc(rc, _GCSL("NEXUS: globus_cond_wait() failed\n"));
     return (rc);
 }
 /* globus_cond_wait() */
@@ -448,7 +449,7 @@ globus_cond_timedwait(
     int rc;
 
     rc = globus_macro_cond_timedwait(cv, mut, abstime);
-    globus_i_thread_test_rc(rc, "NEXUS: globus_cond_wait() failed\n");
+    globus_i_thread_test_rc(rc, _GCSL("NEXUS: globus_cond_wait() failed\n"));
     return (rc);
 }
 /* globus_cond_timedwait() */
@@ -465,7 +466,7 @@ globus_cond_signal(
     int rc;
 
     rc = globus_macro_cond_signal(cv);
-    globus_i_thread_test_rc(rc, "NEXUS: globus_cond_signal() failed\n");
+    globus_i_thread_test_rc(rc, _GCSL("NEXUS: globus_cond_signal() failed\n"));
     return (rc);
 }
 /* globus_cond_signal () */
@@ -482,7 +483,7 @@ globus_cond_broadcast(
     int rc;
 
     rc = globus_macro_cond_broadcast(cv);
-    globus_i_thread_test_rc(rc, "NEXUS: globus_cond_broadcast() failed\n");
+    globus_i_thread_test_rc(rc, _GCSL("NEXUS: globus_cond_broadcast() failed\n"));
     return (rc);
 }
 /* globus_cond_broadcast() */

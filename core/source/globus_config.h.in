@@ -71,6 +71,11 @@
 #undef HAVE_SYS_SOCKET_H
 #undef HAVE_STDARG_H
 #undef HAVE_ARPA_INET_H
+#undef HAVE_NET_IF_ARP_H
+#undef HAVE_NET_IF_DL_H
+#undef HAVE_IFADDRS_H
+#undef HAVE_SYS_IOCTL_H
+#undef HAVE_NET_IF_H
 #undef HAVE_FORK1
 #undef HAVE_GMTIME_R
 #undef HAVE_INTTYPES_H

@@ -89,6 +89,17 @@
  * The tcp driver uses the following environment variables
  * - GLOBUS_HOSTNAME Used when setting the hostname in the contact string
  * - GLOBUS_TCP_PORT_RANGE Used to restrict anonymous listener ports
+ *      ex: GLOBUS_TCP_PORT_RANGE=4000,4100
+ * - GLOBUS_TCP_PORT_RANGE_STATE_FILE Used in conjunction with
+ *      GLOBUS_TCP_PORT_RANGE to maintain last used port among many
+ *      applications making use of the same port range.  That last port + 1
+ *      will be used as a starting point within the specified tcp port range
+ *      instead of always starting at the beginning.  This is really only
+ *      necessary when a machine is behind a stateful firewall which is holding
+ *      a port in a different state than the application's machine.
+ *      See bugzilla.globus.org, bug 1851 for more info.
+ *      ex: GLOBUS_TCP_PORT_RANGE_STATE_FILE=/tmp/port_state
+ *      (file will be created if it does not exist)
  * - GLOBUS_TCP_SOURCE_RANGE Used to restrict local ports used in a connection
  * - GLOBUS_XIO_TCP_DEBUG Available if using a debug build.  See globus_debug.h
  *      for format.  The TCP driver defines the levels TRACE for all function
@@ -169,23 +180,6 @@ typedef enum
  */
 typedef enum
 {
-    /**GlobusVarArgEnum(attr)
-     * Change the default attr values.
-     * @ingroup tcp_driver_cntls
-     * 
-     * @param affect_global
-     *      If GLOBUS_TRUE, any future cntls on this attr will access
-     *      the global default attr (which all new attrs are initialized from)
-     *      The default is GLOBUS_FALSE.  Note:  this should only be used at
-     *      the application level and there should only be one.  There is no
-     *      mutex protecting the global attr.  This feature should not be
-     *      abused.  There are some attrs that make no sense to change
-     *      globally.  Attrs that do include the tcp port range stuff, socket
-     *      buffer sizes, etc.
-     */
-    /* globus_bool_t                    affect_global */
-    GLOBUS_XIO_TCP_AFFECT_ATTR_DEFAULTS,
-    
     /** GlobusVarArgEnum(attr)
      * Set the tcp service name to bind to.
      * @ingroup tcp_driver_cntls
@@ -679,8 +673,24 @@ typedef enum
      *      when done with it.   It will be in the format: \<ip\>:\<port\>
      */
     /* char **                          contact_string_out */
-    GLOBUS_XIO_TCP_GET_REMOTE_NUMERIC_CONTACT
+    GLOBUS_XIO_TCP_GET_REMOTE_NUMERIC_CONTACT,
     
+    /**GlobusVarArgEnum(attr)
+     * Change the default attr values.
+     * @ingroup tcp_driver_cntls
+     * 
+     * @param affect_global
+     *      If GLOBUS_TRUE, any future cntls on this attr will access
+     *      the global default attr (which all new attrs are initialized from)
+     *      The default is GLOBUS_FALSE.  Note:  this should only be used at
+     *      the application level and there should only be one.  There is no
+     *      mutex protecting the global attr.  This feature should not be
+     *      abused.  There are some attrs that make no sense to change
+     *      globally.  Attrs that do include the tcp port range stuff, socket
+     *      buffer sizes, etc.
+     */
+    /* globus_bool_t                    affect_global */
+    GLOBUS_XIO_TCP_AFFECT_ATTR_DEFAULTS
 } globus_xio_tcp_cmd_t;
 
 

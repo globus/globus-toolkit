@@ -132,6 +132,16 @@ globus_i_xio_monitor_destroy(
 {
 }
 
+static
+globus_bool_t
+globus_l_xio_handle_timeout_always(
+    globus_xio_handle_t                 handle,
+    globus_xio_operation_type_t         type,
+    void *                              user_arg)
+{
+    return GLOBUS_TRUE;
+}
+
 void
 globus_l_xio_oneshot_wrapper_cb(
     void *                              user_arg)
@@ -150,7 +160,7 @@ globus_l_xio_oneshot_wrapper_cb(
         res = globus_callback_unregister(space_info->ch, NULL, NULL, NULL);
         if(res != GLOBUS_SUCCESS)
         {
-            globus_panic(GLOBUS_XIO_MODULE,res,"failed to unregister oneshot");
+            globus_panic(GLOBUS_XIO_MODULE,res,_XIOSL("failed to unregister oneshot"));
         }
         globus_mutex_lock(&handle->context->cancel_mutex);
         {
@@ -179,7 +189,7 @@ globus_l_xio_cancel_data_ops(
     {
         tmp_op = (globus_i_xio_op_t *) globus_list_first(list);
         GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE,
-            ("[%s] : canceling read op @ 0x%x\n", 
+            (_XIOSL("[%s] : canceling read op @ 0x%x\n"), 
             _xio_name, tmp_op));
         globus_i_xio_operation_cancel(tmp_op, -1);
     }
@@ -190,7 +200,7 @@ globus_l_xio_cancel_data_ops(
     {
         tmp_op = (globus_i_xio_op_t *) globus_list_first(list);
         GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE,
-            ("[%s] : canceling write op @ 0x%x\n", 
+            (_XIOSL("[%s] : canceling write op @ 0x%x\n"), 
             _xio_name, tmp_op));
         globus_i_xio_operation_cancel(tmp_op, -1);
     }
@@ -309,7 +319,7 @@ globus_l_xio_handle_pre_close(
                 globus_mutex_lock(&handle->context->cancel_mutex);
                 {
                     GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE,
-                        ("[%s] : canceling open op @ 0x%x\n", 
+                        (_XIOSL("[%s] : canceling open op @ 0x%x\n"), 
                         _xio_name, handle->open_op));
                     /* we delay the pass close until the open callback */
                     globus_i_xio_operation_cancel(handle->open_op, -1);
@@ -409,7 +419,7 @@ globus_i_xio_close_handles(
     
     GlobusXIODebugPrintf(
         GLOBUS_XIO_DEBUG_INFO, 
-        ("[globus_i_xio_close_handles]: closing driver @0x%x, %s\n", 
+        (_XIOSL("[globus_i_xio_close_handles]: closing driver @0x%x, %s\n"), 
         driver, driver ? driver->name : "(null)"));
         
     globus_i_xio_monitor_init(&monitor);
@@ -431,8 +441,8 @@ globus_i_xio_close_handles(
                 {
                     GlobusXIODebugPrintf(
                         GLOBUS_XIO_DEBUG_INFO_VERBOSE, 
-                        ("[globus_i_xio_close_handles]: checking dd @0x%x "
-                            "driver @0x%x, %s\n", 
+                        (_XIOSL("[globus_i_xio_close_handles]: checking dd @0x%x "
+                            "driver @0x%x, %s\n"), 
                         dd,
                         context->entry[ctr].driver,
                         context->entry[ctr].driver->name));
@@ -442,8 +452,8 @@ globus_i_xio_close_handles(
                     {
                         GlobusXIODebugPrintf(
                             GLOBUS_XIO_DEBUG_INFO, 
-                            ("[globus_i_xio_close_handles] : "
-                            "will destroy dd @0x%x\n", dd));
+                            (_XIOSL("[globus_i_xio_close_handles] : "
+                            "will destroy dd @0x%x\n"), dd));
 
                         found = GLOBUS_TRUE;
                         globus_list_insert(&c_handles, dd);
@@ -482,8 +492,8 @@ globus_i_xio_close_handles(
                 {
                     GlobusXIODebugPrintf(
                         GLOBUS_XIO_DEBUG_INFO_VERBOSE, 
-                        ("[globus_i_xio_close_handles]: checking handle @0x%x "
-                            "driver @0x%x, %s\n", 
+                        (_XIOSL("[globus_i_xio_close_handles]: checking handle @0x%x "
+                            "driver @0x%x, %s\n"), 
                         handle,
                         handle->context->entry[ctr].driver,
                         handle->context->entry[ctr].driver->name));
@@ -494,8 +504,8 @@ globus_i_xio_close_handles(
                     {
                         GlobusXIODebugPrintf(
                             GLOBUS_XIO_DEBUG_INFO, 
-                            ("[globus_i_xio_close_handles] : "
-                            "will wait on handle @0x%x state=%d\n", 
+                            (_XIOSL("[globus_i_xio_close_handles] : "
+                            "will wait on handle @0x%x state=%d\n"), 
                             handle, handle->state));
 
                         found = GLOBUS_TRUE;
@@ -530,8 +540,8 @@ globus_i_xio_close_handles(
                                 globus_list_insert(&c_handles, handle);
                                 GlobusXIODebugPrintf(
                                     GLOBUS_XIO_DEBUG_INFO, 
-                                    ("[globus_i_xio_close_handles] : "
-                                    "registersing close on handle @0x%x\n", 
+                                    (_XIOSL("[globus_i_xio_close_handles] : "
+                                    "registersing close on handle @0x%x\n"), 
                                     handle));
                             }
                         }
@@ -562,8 +572,8 @@ globus_i_xio_close_handles(
                         found = GLOBUS_TRUE;
                         GlobusXIODebugPrintf(
                             GLOBUS_XIO_DEBUG_INFO, 
-                            ("[globus_i_xio_close_handles] : "
-                            "will wait on server @0x%x state=%d\n", 
+                            (_XIOSL("[globus_i_xio_close_handles] : "
+                            "will wait on server @0x%x state=%d\n"), 
                             server, server->state));
                             
                         globus_list_remove(
@@ -688,7 +698,7 @@ globus_i_xio_register_oneshot(
     }
 
     GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO, 
-        ("registering to space %d, user_arg = 0x%x\n", 
+        (_XIOSL("registering to space %d, user_arg = 0x%x\n"), 
         space, user_arg));
     res = globus_callback_space_register_oneshot(
                 ch,
@@ -698,7 +708,7 @@ globus_i_xio_register_oneshot(
                 space);
     if(res != GLOBUS_SUCCESS)
     {
-        globus_panic(GLOBUS_XIO_MODULE, res, "failed to register oneshot");
+        globus_panic(GLOBUS_XIO_MODULE, res, _XIOSL("failed to register oneshot"));
     }
     GlobusXIODebugInternalExit();
 }
@@ -798,7 +808,7 @@ globus_l_xio_open_close_callback(
     globus_mutex_lock(&handle->context->mutex);
     {
         GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE,
-                    ("[%s] : op@ 0x%x op->type=%d handle->state=%d\n", 
+                    (_XIOSL("[%s] : op@ 0x%x op->type=%d handle->state=%d\n"), 
                     _xio_name, op, op->type, handle->state));
         /* state can be either opening or closing.*/
         switch(handle->state)
@@ -1067,7 +1077,7 @@ globus_i_xio_read_write_callback(
         if(op->type == GLOBUS_XIO_OPERATION_TYPE_WRITE)
         {
             GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE,
-                ("[%s] : removing write op @ 0x%x\n", 
+                (_XIOSL("[%s] : removing write op @ 0x%x\n"), 
                 _xio_name, op));
             globus_list_remove(&handle->write_op_list, 
                 globus_list_search(handle->write_op_list, op));
@@ -1075,7 +1085,7 @@ globus_i_xio_read_write_callback(
         else if(op->type == GLOBUS_XIO_OPERATION_TYPE_READ)
         {
             GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE,
-                ("[%s] : removing read op @ 0x%x\n", 
+                (_XIOSL("[%s] : removing read op @ 0x%x\n"), 
                 _xio_name, op));
             globus_list_remove(&handle->read_op_list, 
                 globus_list_search(handle->read_op_list, op));
@@ -1193,7 +1203,6 @@ globus_i_xio_operation_cancel(
     globus_i_xio_op_t *                 op,
     int                                 source_ndx)
 {
-    globus_bool_t                       tmp_rc;
     GlobusXIOName(globus_i_xio_operation_cancel);
 
     GlobusXIODebugInternalEnter();
@@ -1204,7 +1213,7 @@ globus_i_xio_operation_cancel(
     if(op->canceled)
     {
         GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE,
-            ("[%s] : op @ 0x%x alread canceled\n", 
+            (_XIOSL("[%s] : op @ 0x%x alread canceled\n"), 
                     _xio_name, op));
         goto exit;
     }
@@ -1217,8 +1226,11 @@ globus_i_xio_operation_cancel(
          * if the user oks the cancel then remove the timeout from 
          * the poller
          */
-        tmp_rc = globus_i_xio_timer_unregister_timeout(
-                &globus_i_xio_timeout_timer, op);
+        if(globus_i_xio_timer_unregister_timeout(
+                &globus_i_xio_timeout_timer, op))
+        {
+            GlobusXIOOpDec(op);
+        }
     }
     /* since in callback this will always be true */
 
@@ -1240,10 +1252,14 @@ globus_i_xio_operation_cancel(
     {
         if(op->cancel_cb != NULL)
         {
+            globus_i_xio_op_entry_t * my_op;
+            my_op = &op->entry[op->ndx - 1];
             GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE,
-                ("[%s] : op @ 0x%x calling cancel\n",
+                (_XIOSL("[%s] : op @ 0x%x calling cancel\n"),
                         _xio_name, op));
-            op->cancel_cb(op, op->cancel_arg);
+            my_op->in_register = GLOBUS_TRUE;
+            op->cancel_cb(op, op->cancel_arg, GLOBUS_XIO_ERROR_CANCELED);
+            my_op->in_register = GLOBUS_FALSE;
         }
     }
     else
@@ -1365,7 +1381,11 @@ globus_l_xio_timeout_callback(
             op->canceled = 1;
             if(op->cancel_cb)
             {
-                op->cancel_cb(op, op->cancel_arg);
+        	    globus_i_xio_op_entry_t * my_op;
+                my_op = &op->entry[op->ndx - 1];
+                my_op->in_register = GLOBUS_TRUE;
+                op->cancel_cb(op, op->cancel_arg, GLOBUS_XIO_ERROR_TIMEOUT);
+                my_op->in_register = GLOBUS_FALSE;
             }
         }
         globus_mutex_unlock(&handle->context->cancel_mutex);
@@ -1489,7 +1509,7 @@ globus_l_xio_register_writev(
         }
 
         GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE,
-            ("[%s] : inserting write op @ 0x%x\n", 
+            (_XIOSL("[%s] : inserting write op @ 0x%x\n"), 
             _xio_name, op));
         globus_list_insert(&handle->write_op_list, op);
     }
@@ -1613,7 +1633,7 @@ globus_l_xio_register_readv(
         }
 
         GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE,
-            ("[%s] : inserting read op @ 0x%x\n", 
+            (_XIOSL("[%s] : inserting read op @ 0x%x\n"), 
             _xio_name, op));
         globus_list_insert(&handle->read_op_list, op);
     }
@@ -2600,6 +2620,8 @@ globus_xio_handle_cntl(
     globus_result_t                     res;
     va_list                             ap;
     globus_i_xio_context_t *            context;
+    globus_xio_timeout_callback_t       timeout_cb;
+    globus_reltime_t *                  delay_time;
     GlobusXIOName(globus_xio_handle_cntl);
 
     GlobusXIODebugEnter();
@@ -2625,8 +2647,100 @@ globus_xio_handle_cntl(
     }
 #   endif
 
-    res = globus_i_xio_driver_handle_cntl(context, driver, cmd, ap);
+    if(driver != NULL)
+    {
+        res = globus_i_xio_driver_handle_cntl(context, driver, cmd, ap);
+    }
+    else
+    {
+        globus_mutex_lock(&context->mutex);
+        {
+            /* do general settings */
+            switch(cmd)
+            {
+                case GLOBUS_XIO_ATTR_SET_TIMEOUT_ALL:
+                    timeout_cb = va_arg(ap, globus_xio_timeout_callback_t);
+                    delay_time = va_arg(ap, globus_reltime_t *);
+                    handle->timeout_arg = va_arg(ap, void *);
+                    if(timeout_cb == NULL)
+                    {
+                        timeout_cb = globus_l_xio_handle_timeout_always;
+                    }
 
+                    handle->open_timeout_cb = timeout_cb;
+                    handle->close_timeout_cb = timeout_cb;
+                    handle->read_timeout_cb = timeout_cb;
+                    handle->write_timeout_cb = timeout_cb;
+
+                    GlobusTimeReltimeCopy(
+                        handle->open_timeout_period, *delay_time);
+                    GlobusTimeReltimeCopy(
+                        handle->close_timeout_period, *delay_time);
+                    GlobusTimeReltimeCopy(
+                        handle->read_timeout_period, *delay_time);
+                    GlobusTimeReltimeCopy(
+                        handle->write_timeout_period, *delay_time);
+                    break;
+
+                case GLOBUS_XIO_ATTR_SET_TIMEOUT_OPEN:
+                    timeout_cb = va_arg(ap, globus_xio_timeout_callback_t);
+                    delay_time = va_arg(ap, globus_reltime_t *);
+                    handle->timeout_arg = va_arg(ap, void *);
+                    if(timeout_cb == NULL)
+                    {
+                        timeout_cb = globus_l_xio_handle_timeout_always;
+                    }
+                    handle->open_timeout_cb = timeout_cb;
+                    GlobusTimeReltimeCopy(
+                        handle->open_timeout_period, *delay_time);
+                    break;
+
+                case GLOBUS_XIO_ATTR_SET_TIMEOUT_CLOSE:
+                    timeout_cb = va_arg(ap, globus_xio_timeout_callback_t);
+                    delay_time = va_arg(ap, globus_reltime_t *);
+                    handle->timeout_arg = va_arg(ap, void *);
+                    if(timeout_cb == NULL)
+                    {
+                        timeout_cb = globus_l_xio_handle_timeout_always;
+                    }
+                    handle->close_timeout_cb = timeout_cb;
+                    GlobusTimeReltimeCopy(
+                        handle->close_timeout_period, *delay_time);
+                    break;
+
+               case GLOBUS_XIO_ATTR_SET_TIMEOUT_READ:
+                    timeout_cb = va_arg(ap, globus_xio_timeout_callback_t);
+                    delay_time = va_arg(ap, globus_reltime_t *);
+                    handle->timeout_arg = va_arg(ap, void *);
+                    if(timeout_cb == NULL)
+                    {
+                        timeout_cb = globus_l_xio_handle_timeout_always;
+                    }
+
+                    handle->read_timeout_cb = timeout_cb;
+                    GlobusTimeReltimeCopy(
+                        handle->read_timeout_period, *delay_time);
+                    break;
+
+                case GLOBUS_XIO_ATTR_SET_TIMEOUT_WRITE:
+                    timeout_cb = va_arg(ap, globus_xio_timeout_callback_t);
+                    delay_time = va_arg(ap, globus_reltime_t *);
+                    handle->timeout_arg = va_arg(ap, void *);
+                    if(timeout_cb == NULL)
+                    {
+                        timeout_cb = globus_l_xio_handle_timeout_always;
+                    }
+                    handle->write_timeout_cb = timeout_cb;
+                    GlobusTimeReltimeCopy(
+                        handle->write_timeout_period, *delay_time);
+                    break;
+
+                default:
+                    break;
+            }
+        }
+        globus_mutex_unlock(&context->mutex);
+    }
     va_end(ap);
 
     if(res != GLOBUS_SUCCESS)

@@ -45,6 +45,26 @@ GlobusDebugDeclare(GLOBUS_GRIDFTP_SERVER_CONTROL);
         GLOBUS_GRIDFTP_SERVER_CONTROL_DEBUG_INTERNAL_TRACE,                 \
         ("[%s] I Exiting with error\n", _gridftp_server_name))
 
+#define GlobusGridFTPServerDebugVerboseEnter()                              \
+    GlobusGSDebugPrintf(                                                    \
+        GLOBUS_GRIDFTP_SERVER_CONTROL_DEBUG_VERBOSE,                        \
+        ("[%s] V Entering\n", _gridftp_server_name))
+
+#define GlobusGridFTPServerDebugVerboseExit()                               \
+    GlobusGSDebugPrintf(                                                    \
+        GLOBUS_GRIDFTP_SERVER_CONTROL_DEBUG_VERBOSE,                        \
+        ("[%s] V Exiting\n", _gridftp_server_name))
+    
+#define GlobusGridFTPServerDebugVerboseExitWithError()                      \
+    GlobusGSDebugPrintf(                                                    \
+        GLOBUS_GRIDFTP_SERVER_CONTROL_DEBUG_VERBOSE,                        \
+        ("[%s] V Exiting with error\n", _gridftp_server_name))
+
+#define GlobusGridFTPServerDebugCommand(cmd)                                \
+    GlobusGSDebugPrintf(                                                    \
+        GLOBUS_GRIDFTP_SERVER_CONTROL_DEBUG_COMMANDS,                       \
+        ("### [%s] Received command: %s\n", _gridftp_server_name, cmd))
+
 struct globus_i_gs_attr_s;
 
 typedef enum globus_i_gsc_debug_levels_e
@@ -53,8 +73,9 @@ typedef enum globus_i_gsc_debug_levels_e
     GLOBUS_GRIDFTP_SERVER_CONTROL_DEBUG_WARNING = 2,
     GLOBUS_GRIDFTP_SERVER_CONTROL_DEBUG_TRACE = 4,
     GLOBUS_GRIDFTP_SERVER_CONTROL_DEBUG_INTERNAL_TRACE = 8,
-    GLOBUS_GRIDFTP_SERVER_CONTROL_DEBUG_INFO = 16,
-    GLOBUS_GRIDFTP_SERVER_CONTROL_DEBUG_INFO_VERBOSE = 32
+    GLOBUS_GRIDFTP_SERVER_CONTROL_DEBUG_COMMANDS = 16,
+    GLOBUS_GRIDFTP_SERVER_CONTROL_DEBUG_VERBOSE = 32,
+    GLOBUS_GRIDFTP_SERVER_CONTROL_DEBUG_STATE = 64
 } globus_i_gsc_debug_levels_t;
 
 typedef enum globus_i_gsc_error_type_e
@@ -76,8 +97,17 @@ typedef enum globus_i_gsc_mlsx_fact_e
     GLOBUS_GSC_MLSX_FACT_SIZE = 'S',
     GLOBUS_GSC_MLSX_FACT_PERM = 'P',
     GLOBUS_GSC_MLSX_FACT_UNIXMODE = 'U',
-    GLOBUS_GSC_MLSX_FACT_UNIQUE = 'Q'
+    GLOBUS_GSC_MLSX_FACT_UNIQUE = 'Q',
+    GLOBUS_GSC_MLSX_FACT_UNIXSLINK = 'L'
 } globus_i_gsc_mlsx_fact_t;
+
+typedef enum
+{
+    GLOBUS_L_GSC_DATA_OBJ_READY = 1,
+    GLOBUS_L_GSC_DATA_OBJ_DESTROY_WAIT,
+    GLOBUS_L_GSC_DATA_OBJ_DESTROYING,
+    GLOBUS_L_GSC_DATA_OBJ_INUSE
+} globus_l_gsc_data_obj_state_t;
 
 typedef void
 (*globus_i_gsc_auth_cb_t)(
@@ -122,10 +152,12 @@ typedef void
 
 typedef struct globus_i_gsc_data_s
 {
+    globus_l_gsc_data_obj_state_t           state;
     struct globus_i_gsc_server_handle_s *   server_handle;
     int                                     stripe_count;
     void *                                  user_handle;
     globus_gridftp_server_control_data_dir_t dir;
+    globus_bool_t                           first_use;
 } globus_i_gsc_data_t;
 
 typedef enum globus_i_gsc_op_type_e
@@ -144,6 +176,7 @@ typedef enum globus_i_gsc_op_type_e
 
 typedef struct globus_i_gsc_event_data_s
 {
+    globus_l_gsc_data_obj_state_t           state;
     globus_callback_handle_t                periodic_handle;
     int                                     stripe_count;
     globus_bool_t                           perf_running;
@@ -151,6 +184,7 @@ typedef struct globus_i_gsc_event_data_s
     globus_callback_handle_t                restart_handle;
     globus_bool_t                           restart_running;
 
+    int                                     event_mask;
     globus_gridftp_server_control_event_cb_t user_cb;
     void *                                  user_arg;
 
@@ -166,18 +200,16 @@ typedef struct globus_i_gsc_handle_opts_s
     globus_bool_t                           refresh;
     globus_size_t                           packet_size;
     globus_bool_t                           delayed_passive;
-    int                                     port_max;
-    int                                     pasv_max;
     globus_bool_t                           passive_only;
-    int                                     dc_parsing_alg;
     int                                     perf_frequency;
     int                                     restart_frequency;
-    globus_gridftp_server_control_network_protocol_t     port_prt;
-    globus_gridftp_server_control_network_protocol_t     pasv_prt;
+    globus_gsc_layout_t                     layout;
+    int                                     block_size;
 } globus_i_gsc_handle_opts_t;
 
 typedef struct globus_i_gsc_module_func_s
 {
+    char *                                              key;
     globus_gridftp_server_control_transfer_cb_t         func;
     void *                                              user_arg;
 } globus_i_gsc_module_func_t;
@@ -233,9 +265,10 @@ typedef struct globus_i_gsc_op_s
     globus_gridftp_server_control_stat_t *  stat_info;
     int                                     stat_count;
 
-    uid_t                                   uid;
-
     /* stuff for resource */
+    int                                     uid;
+    int                                     gid_count;
+    int *                                   gid_array;
     char *                                  path;
     globus_gridftp_server_control_resource_mask_t mask;
 
@@ -255,14 +288,15 @@ typedef struct globus_i_gsc_op_s
     globus_gridftp_server_control_transfer_cb_t user_data_cb;
     globus_bool_t                           transfer_started;
 
-    globus_range_list_t                     range_list;;
-    globus_range_list_t                     perf_range_list;;
+    globus_range_list_t                     range_list;
+    globus_range_list_t                     perf_range_list;
     globus_i_gsc_event_data_t               event;
 
     globus_bool_t                           aborted;
-    globus_gridftp_server_control_abort_cb_t abort_cb;
     void *                                  abort_user_arg;
     void *                                  user_arg;
+
+    globus_i_gsc_data_t *                   data_destroy_obj;
 } globus_i_gsc_op_t;
 
 typedef struct globus_i_gsc_attr_s
@@ -299,7 +333,7 @@ typedef enum globus_l_gsc_state_e
     GLOBUS_L_GSC_STATE_ABORTING,
     GLOBUS_L_GSC_STATE_ABORTING_STOPPING,
     GLOBUS_L_GSC_STATE_STOPPING,
-    GLOBUS_L_GSC_STATE_STOPPED,
+    GLOBUS_L_GSC_STATE_STOPPED
 } globus_l_gsc_state_t;
 
 /* the server handle */
@@ -344,6 +378,9 @@ typedef struct globus_i_gsc_server_handle_s
 
     globus_off_t                        allocated_bytes;
 
+    /* force failure on this command */
+    char *                              fault_cmd;
+    
     /* opts state */
     globus_i_gsc_handle_opts_t          opts;
 
@@ -371,6 +408,7 @@ typedef struct globus_i_gsc_server_handle_s
     int                                 abort_cnt;
     globus_hashtable_t                  cmd_table;
     globus_hashtable_t                  site_cmd_table;
+    globus_hashtable_t                  data_object_table;
     struct globus_i_gsc_op_s *          outstanding_op;
 } globus_i_gsc_server_handle_t;
 
@@ -513,10 +551,11 @@ globus_i_gsc_mlsx_line(
 char *
 globus_i_gsc_string_to_959(
     int                                 code,
-    const char *                        in_str);
+    const char *                        in_str, 
+    const char *                        preline);
 
-globus_bool_t
-globus_i_guc_data_object_destroy(
+void
+globus_i_guc_command_data_destroy(
     globus_i_gsc_server_handle_t *      server_handle);
 
 void
@@ -524,5 +563,19 @@ globus_i_gsc_log(
     globus_i_gsc_server_handle_t *      server_handle,
     const char *                        command,
     int                                 mask);
+
+globus_bool_t
+globus_i_guc_data_object_destroy(
+    globus_i_gsc_server_handle_t *      server_handle,
+    globus_i_gsc_data_t *               data_object);
+
+globus_result_t
+globus_i_gsc_cmd_intermediate_reply(
+    globus_i_gsc_op_t *                 op,
+    char *                              reply_msg);
+
+void
+globus_i_gsc_event_start_perf_restart(
+    globus_i_gsc_op_t *                 op);
 
 #endif

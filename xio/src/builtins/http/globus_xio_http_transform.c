@@ -109,6 +109,10 @@ globus_i_xio_http_open(
     else
     {
         result = globus_i_xio_http_target_init(&target, contact_info);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error;
+        }
     }
     
     http_handle = globus_l_xio_http_find_cached_handle(target, attr);
@@ -126,7 +130,8 @@ globus_i_xio_http_open(
     {
         globus_i_xio_http_target_destroy(target);
     }
-    
+
+error:
     return result;
 }
 /* globus_i_xio_http_open() */

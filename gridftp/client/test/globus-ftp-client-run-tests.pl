@@ -34,30 +34,51 @@ my $globus_location = $ENV{GLOBUS_LOCATION};
             globus-ftp-client-user-auth-test.pl
             );
 
+if(defined($ENV{FTP_TEST_RANDOMIZE}))
+{
+    shuffle(\@tests);
+}
+
+
 my $runserver;
+my $runwuserver;
+my $nogsi;
 my $server_pid;
 
-GetOptions( 'runserver' => \$runserver);
+GetOptions( 'runserver' => \$runserver,
+            'runwuserver' => \$runwuserver,
+            'nogsi' => \$nogsi);
 
+if(defined($nogsi) or defined($ENV{FTP_TEST_NO_GSI}))
+{
+    $nogsi = 1;
+    $ENV{FTP_TEST_NO_GSI} = 1;
+    print "Not using GSI security.\n";
+}
 if(defined($runserver))
 {
     $server_pid = setup_server();
 }
+elsif(defined($runwuserver))
+{
+    $server_pid = setup_wuserver();
+}
 
-if(0 != system("grid-proxy-info -exists -hours 2 >/dev/null 2>&1") / 256)
+if((0 != system("grid-proxy-info -exists -hours 2 >/dev/null 2>&1") / 256) && !defined($nogsi))
 {
     print "Security proxy required to run the tests.\n";
     exit 1;
 }
 
 print "Running sanity check\n";
+my ($proto) = setup_proto();
 my ($source_host, $source_file, $local_copy1) = setup_remote_source();
 my ($local_copy2) = setup_local_source();
 my ($dest_host, $dest_file) = setup_remote_dest();
 
-if(0 != system("./globus-ftp-client-get-test -s gsiftp://$source_host$source_file  >/dev/null 2>&1") / 256)
+if(0 != system("./globus-ftp-client-get-test -s $proto$source_host$source_file  >/dev/null 2>&1") / 256)
 {
-    print "Sanity check of source (gsiftp://$source_host$source_file) failed.\n";
+    print "Sanity check of source ($proto$source_host$source_file) failed.\n";
     if(defined($server_pid))
     {
         kill(9,$server_pid);
@@ -65,9 +86,9 @@ if(0 != system("./globus-ftp-client-get-test -s gsiftp://$source_host$source_fil
     
     exit 1;
 }
-if(0 != system("./globus-ftp-client-put-test -d gsiftp://$dest_host$dest_file < $local_copy2 ") / 256)
+if(0 != system("./globus-ftp-client-put-test -d $proto$dest_host$dest_file < $local_copy2 ") / 256)
 {
-    print "Sanity check of local source ($local_copy2) to dest (gsiftp://$dest_host$dest_file) failed.\n";
+    print "Sanity check of local source ($local_copy2) to dest ($proto$dest_host$dest_file) failed.\n";
     clean_remote_file($dest_host, $dest_file);
 
     if(defined($server_pid))
@@ -95,6 +116,77 @@ if($server_pid)
 exit 0;
 
 sub setup_server()
+{
+    my $server_pid;
+    my $server_prog = "$globus_location/sbin/globus-gridftp-server";
+    my $server_host = "localhost";
+    my $server_port = 0;
+    my $server_nosec = "";
+    my $subject;
+    if(defined($nogsi))
+    {
+        $server_nosec = "-aa";
+    }
+
+    my $server_args = "-no-fork -no-chdir -d 0 -p $server_port $server_nosec";
+    
+    if(!defined($nogsi))
+    {
+        if(0 != system("grid-proxy-info -exists -hours 2 >/dev/null 2>&1") / 256)
+        {
+            $ENV{X509_CERT_DIR} = cwd();
+            $ENV{X509_USER_PROXY} = cwd() . "/testcred.pem";
+        }
+    
+        system('chmod go-rw testcred.pem');
+         
+        $subject = `grid-proxy-info -identity`;
+        chomp($subject);
+        
+        $ENV{GRIDMAP} = cwd() . "/gridmap";
+        if ( -f $ENV{GRIDMAP})
+        {
+            system('mv $GRIDMAP $GRIDMAP.old');    
+        }   
+        if( 0 != system("grid-mapfile-add-entry -dn \"$subject\" -ln `whoami` -f $ENV{GRIDMAP} >/dev/null 2>&1") / 256)
+        {
+            print "Unable to create gridmap file\n";
+            exit 1;
+        }
+    }
+
+    $server_pid = open(SERVER, "$server_prog $server_args |");
+     
+    if($server_pid == -1)
+    {
+        print "Unable to start server\n";
+        exit 1;
+    }
+
+    select((select(SERVER), $| = 1)[0]);
+    $server_port = <SERVER>;
+    $server_port =~ s/Server listening at .*?:(\d+)/\1/;
+    chomp($server_port);
+
+    if($server_port !~ /\d+/)
+    {
+        print "Unable to start server\n";
+        exit 1;
+    }
+    
+    print "Started server at port $server_port\n";
+
+    # sleep a second, some hosts are slow....
+
+    sleep 5;
+    
+    $ENV{GLOBUS_FTP_CLIENT_TEST_SUBJECT} = $subject;
+    $ENV{FTP_TEST_SOURCE_HOST} = "$server_host:$server_port";
+    $ENV{FTP_TEST_DEST_HOST} = "$server_host:$server_port";   
+
+    return $server_pid;
+}
+sub setup_wuserver()
 {
     my $server_pid;
     my $server_prog = "$globus_location/sbin/in.ftpd";
@@ -127,8 +219,7 @@ sub setup_server()
     }
 
     $server_pid = open(SERVER, "$server_prog $server_args |");
-     
-    if($server_pid == -1)
+    if(!defined($server_pid))
     {
         print "Unable to start server\n";
         exit 1;

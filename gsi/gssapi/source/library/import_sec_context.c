@@ -73,8 +73,8 @@ GSS_CALLCONV gss_import_sec_context(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_UNSUPPORTED,
-            ("This function does not currently support the "
-             "Windows platform"));
+            (_GGSL("This function does not currently support the "
+             "Windows platform")));
         goto exit;
 #endif
 
@@ -94,7 +94,7 @@ GSS_CALLCONV gss_import_sec_context(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_TOKEN_FAIL,
-            ("The inter-process token is not valid"));
+            (_GGSL("The inter-process token is not valid")));
         goto exit;
     }
 
@@ -104,7 +104,7 @@ GSS_CALLCONV gss_import_sec_context(
         GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_IMPEXP_BIO_SSL,
-            ("Couldn't initialize BIO for importing context"));
+            (_GGSL("Couldn't initialize BIO for importing context")));
         major_status = GSS_S_FAILURE;
         goto exit;
     }
@@ -122,8 +122,8 @@ GSS_CALLCONV gss_import_sec_context(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_IMPEXP_BIO_SSL,
-            ("Trying to import version %d of a security context token "
-             "only version %d is supported by this implementation",
+            (_GGSL("Trying to import version %d of a security context token "
+             "only version %d is supported by this implementation"),
              version, GLOBUS_I_GSI_GSSAPI_IMPL_VERSION));
         goto exit;
     }
@@ -184,7 +184,7 @@ GSS_CALLCONV gss_import_sec_context(
         GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_IMPEXP_BIO_SSL,
-            ("Couldn't initialize buffers in SSL handle"));
+            (_GGSL("Couldn't initialize buffers in SSL handle")));
         major_status = GSS_S_FAILURE;
         goto exit;
     }
@@ -195,7 +195,7 @@ GSS_CALLCONV gss_import_sec_context(
         GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_IMPEXP_BIO_SSL,
-            ("Couldn't initialize write bio buffer in SSL handle"));
+            (_GGSL("Couldn't initialize write bio buffer in SSL handle")));
         major_status = GSS_S_FAILURE;
         goto exit; 
     } 
@@ -207,7 +207,7 @@ GSS_CALLCONV gss_import_sec_context(
         GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_IMPEXP_BIO_SSL,
-            ("Couldn't initialize SSL_SESSION handle"));
+            (_GGSL("Couldn't initialize SSL_SESSION handle")));
         major_status = GSS_S_NO_CONTEXT;
         goto exit;
     }
@@ -231,7 +231,7 @@ GSS_CALLCONV gss_import_sec_context(
                 major_status = GSS_S_NO_CONTEXT;
                 GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
                     minor_status, major_status,
-                    ("Couldn't read DER encoded peer cert from BIO"));
+                    (_GGSL("Couldn't read DER encoded peer cert from BIO")));
                 sk_X509_pop_free(cert_chain, X509_free);        
                 goto exit;
             }
@@ -289,7 +289,7 @@ GSS_CALLCONV gss_import_sec_context(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_IMPEXP_NO_CIPHER,
-            ("Attempt to set the session cipher failed"));
+            (_GGSL("Attempt to set the session cipher failed")));
         goto exit;
     }
 
@@ -303,7 +303,7 @@ GSS_CALLCONV gss_import_sec_context(
         GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_IMPEXP_BIO_SSL,
-            ("Couldn't setup buffers in SSL handle"));
+            (_GGSL("Couldn't setup buffers in SSL handle")));
         major_status = GSS_S_FAILURE;
         goto exit;
     }

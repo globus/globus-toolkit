@@ -4,7 +4,8 @@ package FtpTestLib;
 require Exporter;
 @ISA = qw(Exporter);
 
-@EXPORT = qw( setup_remote_source 
+@EXPORT = qw( setup_proto
+              setup_remote_source 
               setup_local_source 
               setup_remote_dest 
               source_is_remote 
@@ -12,7 +13,9 @@ require Exporter;
               clean_remote_file 
               get_remote_file 
               run_command
-              compare_local_files );            # symbols to export by default
+              compare_local_files 
+              shuffle
+            );            # symbols to export by default
 
 
 BEGIN { push(@INC, $ENV{GLOBUS_LOCATION} . '/lib/perl'); }
@@ -20,7 +23,7 @@ BEGIN { push(@INC, $ENV{GLOBUS_LOCATION} . '/lib/perl'); }
 my $self = {};
 use strict;
 
-use POSIX;
+use POSIX ();
 use Carp;
 use Sys::Hostname;
 use Data::Dumper;
@@ -182,6 +185,18 @@ FTP_TEST_LOCAL_BIGFILE (/bin/sh)   # used as the local source by the extended-pu
 
 =cut
 
+#my ($proto) = setup_proto();
+sub setup_proto()
+{
+    my $proto = "gsiftp://";
+    
+    if(defined($ENV{FTP_TEST_NO_GSI}))
+    {
+        $proto = "ftp://";
+    }
+    return ($proto);
+}
+
 #my ($source_host, $source_file, $local_copy) = setup_remote_source($big = 0);
 sub setup_remote_source(;$)
 {
@@ -315,6 +330,19 @@ sub get_remote_file($$;$)
     }
 
     return $dest;
+}
+
+# The Fisher-Yates Shuffle 
+sub shuffle
+{
+    my $array = shift;
+    my $i;
+    for ($i = @$array; --$i; )
+    {
+        my $j = int rand ($i+1);
+        next if $i == $j;
+        @$array[$i,$j] = @$array[$j,$i];
+    }
 }
 
 sub ftp_commands()

@@ -45,7 +45,7 @@ globus_l_thread_self(globus_i_thread_t **Thread)
     rc = thr_getspecific(globus_thread_all_global_vars.thread_t_pointer, 
 			 (void *)(Thread)); 
     globus_i_thread_test_rc(rc,
-			    "GLOBUSTHREAD: get thread-local data failed\n");
+			    _GCSL("GLOBUSTHREAD: get thread-local data failed\n"));
 }
 
 /*
@@ -180,7 +180,7 @@ globus_l_thread_activate()
     while((rc = thr_setconcurrency( concurrency_level ))==EINTR) ;
 
     globus_i_thread_test_rc(rc,
-			    "GLOBUS_THREAD: thr_setconcurrency failed\n");
+			    _GCSL("GLOBUS_THREAD: thr_setconcurrency failed\n"));
 
     (globus_thread_all_global_vars.general_attribute) = USYNC_THREAD;
     (globus_thread_all_global_vars.thread_flags) = THR_DETACHED;
@@ -194,7 +194,8 @@ globus_l_thread_activate()
 	       &(globus_thread_all_global_vars.thread_t_pointer),
 	       GLOBUS_NULL))==EINTR);
 
-    globus_i_thread_test_rc( rc, "GLOBUS_THREAD: thr_keycreate failed\n");
+    globus_i_thread_test_rc( rc, 
+		    	    _GCSL("GLOBUS_THREAD: thr_keycreate failed\n"));
     
     globus_mutex_init(&(thread_mem_mutex),
 		      (globus_mutexattr_t *) GLOBUS_NULL );
@@ -315,7 +316,7 @@ set_tsd(globus_i_thread_t *thread)
 	globus_thread_all_global_vars.thread_t_pointer,
 	(void *) thread ))==4) ;
     globus_i_thread_test_rc(rc,
-			    "GLOBUS_THREAD: set thread-local data failed\n");
+			    _GCSL("GLOBUS_THREAD: set thread-local data failed\n"));
 } /* set_tsd() */
 
 
@@ -382,7 +383,7 @@ globus_thread_create(globus_thread_t *user_thread,
     while((rc = thr_create( GLOBUS_NULL, stacksize, thread_starter,
 			   thread, (globus_thread_all_global_vars.thread_flags),
 			   &thread_id ))==4);
-    globus_i_thread_test_rc( rc, "GLOBUS_THREAD: create thread failed\n" );
+    globus_i_thread_test_rc( rc, _GCSL("GLOBUS_THREAD: create thread failed\n" ));
     
     if(user_thread)
     {
@@ -414,7 +415,7 @@ globus_threadattr_init(globus_threadattr_t *attr)
 {
     int rc;
     rc = globus_macro_threadattr_init(attr);
-    globus_i_thread_test_rc(rc, "GLOBUS_THREAD: threadattr_init() failed\n");
+    globus_i_thread_test_rc(rc, _GCSL("GLOBUS_THREAD: threadattr_init() failed\n"));
     return (rc);
 }
 
@@ -427,7 +428,7 @@ globus_thread_destroy(globus_threadattr_t *attr)
 {
     int rc;
     rc = globus_macro_threadattr_destroy(attr);
-    globus_i_thread_test_rc(rc, "GLOBUS_THREAD: threadattr_destroy() failed\n");
+    globus_i_thread_test_rc(rc, _GCSL("GLOBUS_THREAD: threadattr_destroy() failed\n"));
     return (rc);
 }
 
@@ -442,7 +443,7 @@ globus_threadattr_setstacksize(globus_threadattr_t *attr,
     int rc;
     rc = globus_macro_threadattr_setstacksize(attr, stacksize);
     globus_i_thread_test_rc(rc,
-			    "GLOBUS_THREAD: threadattr_setstacksize failed\n");
+			    _GCSL("GLOBUS_THREAD: threadattr_setstacksize failed\n"));
     return (rc);
 }
 
@@ -457,7 +458,7 @@ globus_threadattr_getstacksize(globus_threadattr_t *attr,
     int rc;
     rc = globus_macro_threadattr_getstacksize(attr, stacksize);
     globus_i_thread_test_rc(rc,
-			    "GLOBUS_THREAD: threadattr_getstacksize failed\n");
+			    _GCSL("GLOBUS_THREAD: threadattr_getstacksize failed\n"));
     return (rc);
 }
 
@@ -471,7 +472,7 @@ globus_thread_key_create(globus_thread_key_t *key,
 {
    int rc=0;
    while((rc = globus_macro_thread_key_create(key,func )) == 4);
-   globus_i_thread_test_rc( rc, "GLOBUS_THREAD: keycreate failed\n" );
+   globus_i_thread_test_rc( rc, _GCSL("GLOBUS_THREAD: keycreate failed\n" ));
     return(rc);
 } /* globus_thrad_key_create() */
 
@@ -484,7 +485,7 @@ globus_thread_key_delete(globus_thread_key_t key)
 {
    int rc=0;
    while((rc = globus_macro_thread_key_delete(key)) == 4);
-   globus_i_thread_test_rc( rc, "GLOBUS_THREAD: keydelete failed\n" );
+   globus_i_thread_test_rc( rc, _GCSL("GLOBUS_THREAD: keydelete failed\n" ));
     return(rc);
 } /* globus_thread_key_delete() */
 
@@ -498,7 +499,7 @@ globus_thread_setspecific(globus_thread_key_t key,
 {
     int rc=0;
     while((rc = globus_macro_thread_setspecific(key, value))==4) ;
-    globus_i_thread_test_rc(rc, "GLOBUS_THREAD: set specific failed\n");
+    globus_i_thread_test_rc(rc, _GCSL("GLOBUS_THREAD: set specific failed\n"));
     return rc;
 } /* globus_thread_setspecific() */
 
@@ -523,7 +524,7 @@ globus_i_thread_getspecific(globus_thread_key_t key)
     void *value;
 
     while((rc = thr_getspecific(key, &value))==4) ;
-    globus_i_thread_test_rc(rc, "GLOBUS_THREAD: get specific failed\n");
+    globus_i_thread_test_rc(rc, _GCSL("GLOBUS_THREAD: get specific failed\n"));
     return (value);
 } /* globus_i_thread_getspecific() */
 
@@ -576,7 +577,7 @@ globus_mutex_init(globus_mutex_t *mut,
 {
     int rc=0;
     while((rc =globus_macro_mutex_init(mut, attr))==4) ;
-    globus_i_thread_test_rc(rc, "GLOBUS_THREAD: allocate lock failed\n");
+    globus_i_thread_test_rc(rc, _GCSL("GLOBUS_THREAD: allocate lock failed\n"));
     return rc;
 }
 
@@ -589,7 +590,7 @@ globus_mutex_destroy( globus_mutex_t *mut )
 {
     int rc=0;
     while((rc = globus_macro_mutex_destroy(mut))==4) ;
-    globus_i_thread_test_rc(rc, "GLOBUS_THREAD: free lock failed\n");
+    globus_i_thread_test_rc(rc, _GCSL("GLOBUS_THREAD: free lock failed\n"));
     return rc;
 }
 
@@ -608,7 +609,7 @@ globus_cond_init(globus_cond_t *cv,
     }
     globus_i_thread_test_rc(
 	rc,
-	"GLOBUS_THREAD: allocate condition variable failed\n");
+	_GCSL("GLOBUS_THREAD: allocate condition variable failed\n"));
     return rc;
 }
 
@@ -627,7 +628,7 @@ globus_cond_destroy(globus_cond_t *cv)
     }
     globus_i_thread_test_rc(
 	rc,
-	"GLOBUS_THREAD: free condition variable failed\n");
+	_GCSL("GLOBUS_THREAD: free condition variable failed\n"));
     return rc;
 }
 
@@ -640,7 +641,7 @@ globus_mutex_lock( globus_mutex_t *mut )
 {
     int rc=0;
     while((rc = globus_macro_mutex_lock(mut))==4) ;
-    globus_i_thread_test_rc(rc, "GLOBUS_THREAD: mutex lock failed\n");
+    globus_i_thread_test_rc(rc, _GCSL("GLOBUS_THREAD: mutex lock failed\n"));
     return rc;
 }
 
@@ -657,8 +658,8 @@ globus_mutex_trylock(globus_mutex_t *mut)
     if (rc != EBUSY)
     {
         globus_i_thread_test_rc(rc,
-				"GLOBUS_THREAD: "
-				"globus_mutex_trylock() failed\n" );
+				_GCSL("GLOBUS_THREAD: "
+				"globus_mutex_trylock() failed\n" ));
     }
     return(rc);
 } /* globus_mutex_trylock() */
@@ -673,7 +674,7 @@ globus_mutex_unlock( globus_mutex_t *mut )
 {
     int rc=0;
     while((rc = globus_macro_mutex_unlock(mut))==4) ;
-    globus_i_thread_test_rc(rc, "GLOBUS_THREAD: mutex unlock failed\n");
+    globus_i_thread_test_rc(rc, _GCSL("GLOBUS_THREAD: mutex unlock failed\n"));
     return rc;
 }
 
@@ -738,7 +739,7 @@ globus_cond_wait(globus_cond_t *cv,
     rc=globus_macro_cond_space_wait(cv, mut);
     globus_i_thread_test_rc(
 	rc,
-	"GLOBUS_THREAD: condition variable wait failed\n");
+	_GCSL("GLOBUS_THREAD: condition variable wait failed\n"));
     return rc;
 }
 
@@ -761,7 +762,7 @@ globus_cond_timedwait(globus_cond_t *cv,
        )
     globus_i_thread_test_rc(
 	rc,
-	"GLOBUS_THREAD: condition variable wait failed\n");
+	_GCSL("GLOBUS_THREAD: condition variable wait failed\n"));
 #   if defined(ETIME)
     if(rc == ETIME)
     {
@@ -783,7 +784,7 @@ globus_cond_signal( globus_cond_t *cv )
     while((rc = globus_macro_cond_space_signal(cv))==4) ;
     globus_i_thread_test_rc(
 	rc,
-	"GLOBUS_THREAD: condition variable signal failed\n");
+	_GCSL("GLOBUS_THREAD: condition variable signal failed\n"));
     return rc;
 }
 
@@ -798,7 +799,7 @@ globus_cond_broadcast( globus_cond_t *cv )
     while((rc = globus_macro_cond_space_broadcast(cv))==4) ;
     globus_i_thread_test_rc(
 	rc,
-	"GLOBUS_THREAD: condition variable broadcast failed\n");
+	_GCSL("GLOBUS_THREAD: condition variable broadcast failed\n"));
     return rc;
 }
 

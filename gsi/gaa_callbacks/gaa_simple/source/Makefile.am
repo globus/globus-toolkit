@@ -27,11 +27,9 @@ lib_LTLIBRARIES = libglobus_gaa_simple_$(GLOBUS_FLAVOR_NAME).la
 
 libglobus_gaa_simple___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
 
-#libglobus_gaa_simple___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS)
+libglobus_gaa_simple___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS)
 
 libglobus_gaa_simple___GLOBUS_FLAVOR_NAME__la_LIBADD = $(GPT_LIB_LINKS)
-
-libglobus_gaa_simple___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDADD) 
 
 xml_sig_test_SOURCES = xml_sig_test.c
 xml_sig_test_LDFLAGS = $(GPT_LDFLAGS)

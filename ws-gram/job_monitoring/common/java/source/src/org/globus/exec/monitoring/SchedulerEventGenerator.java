@@ -108,6 +108,10 @@ class SchedulerEventGenerator extends Thread {
                 stdout = new java.io.BufferedReader(
                         new java.io.InputStreamReader(
                                 proc.getInputStream()));
+                if (logger.isDebugEnabled()) {
+                    logger.debug("Seg input buffer is "
+                    + (stdout.ready()?"read":"not ready"));
+                }
                 while ((input = stdout.readLine()) != null) {
                     logger.debug("seg input line: " + input);
                     java.util.StringTokenizer tok =
@@ -260,7 +264,7 @@ class SchedulerEventGenerator extends Thread {
             return;
         } else {
             if (proc != null) {
-                proc.getOutputStream().close();
+                proc.getInputStream().close();
             }
             shutdownCalled = true;
             /* Wake up throttler if we were waiting in it */

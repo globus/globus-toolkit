@@ -67,6 +67,7 @@ EXTERN_C_BEGIN
 #include "globus_error_errno.h"
 #include "globus_error_generic.h"
 #include "globus_extension.h"
+#include "globus_uuid.h"
 
 # if !defined(alloca)
 /* AIX requires this to be the first thing in the file.  */
@@ -114,6 +115,7 @@ typedef struct globus_barrier_s
     int                 count;
 } globus_barrier_t;
 
+
 /******************************************************************************
 			       Define constants
 ******************************************************************************/
@@ -125,6 +127,24 @@ extern globus_module_descriptor_t	globus_i_common_module;
 
 #define GLOBUS_COMMON_MODULE (&globus_i_common_module)
 
+
+/******************************************************************************
+		  		i18n 
+******************************************************************************/
+
+extern globus_extension_registry_t i18n_registry;
+#define I18N_REGISTRY &i18n_registry
+
+char *
+globus_common_i18n_get_string_by_key(
+    const char *                        locale,
+    const char *                        resource_name,
+    const char *                        key);
+
+char *
+globus_common_i18n_get_string(
+    globus_module_descriptor_t *        module,
+    const char *                        key);
 
 /******************************************************************************
 		   Install path discovery functions

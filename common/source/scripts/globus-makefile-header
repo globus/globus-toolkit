@@ -102,7 +102,7 @@ if ($environment eq "gpt1")
 
     if ($static)
     {
-        $argstring .= "-static ";
+        $argstring .= "-link=static ";
     }
 
     $pkgstr = join(' ', @pkgs);

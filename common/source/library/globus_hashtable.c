@@ -618,6 +618,7 @@ globus_hashtable_destroy(
     globus_hashtable_t *                table)
 {
     globus_l_hashtable_t *              itable;
+    globus_l_hashtable_bucket_entry_t * entry;
     
     if(!table || !*table)
     {
@@ -626,6 +627,16 @@ globus_hashtable_destroy(
     }
     
     itable = *table;
+    entry = itable->first;
+    
+    while(entry)
+    {
+        globus_l_hashtable_bucket_entry_t * save;
+        
+        save = entry->next;
+        globus_memory_push_node(&itable->memory, entry);
+        entry = save;
+    }
     
     globus_memory_destroy(&itable->memory);
     globus_free(itable->buckets);

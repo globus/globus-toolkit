@@ -1,100 +1,61 @@
-Immediate:
-----------
-5) test suite
-    single local 
-        non-daemon
-        daemon
-        detached
-        inetd
-    single remote data-node 
-        non-daemon
-        daemon
-        detached
-        inetd 
-7) merge branch to trunk and verify nothing broke
-8) update doc to reflect striping info and current issues/limitations
+This is the current list of things outstanding for the 4.0 release.
+** denotes must happen before feature freeze
+XX denotes unlikely that this will be in 4.0
 
+protocol:
+-- correct FEAT response?
+-- reply codes - verify.
+-- verify that dsi api is correct wrt to errors
+-- error out usefully to server and client when cred problem in gssapi driver
 
-file not trunc on striped puts, since they all look like partials, also
-    truncating on pasv stor... who truncates, and have to deal with
-    data coming before the 150 response
+striping:
+-- verify eofc handling, should move out of remote into data.c
+-- verify _get_read_range()
+-- consolidate some restart ranges instead of sending one from every stripe
 
-fix up error in data.c and dsi, or make use result_t over ipc temporarily
+ipc:
+XX connect backwards!! 0
+XX ipc local mode doesn't work (besides no way to initiate it)
 
-make abort go
+XX commands belong in server-lib
 
-clean up memory and locking in data.c
+logging:
+-- instrument code
+-- verify output format
+-- specify log format by configuration
+-- syslog module for globus_logging
 
-clean up rest of stuff from pre-dsi change (old attrs that just copy to new
-    info structs, etc)
+Pre-Auth Timeout
 
-think if broadcast would be quick enough, and do correct connection 
-    count stuff if not (for eofs)
+GID and MLST need to wotk correctly.
 
-add symlink_target to stat buffer, server-lib stuff to display it in mlsx
+cleanup:
+-- verify test suite
+-- clean majority of memory leaks
 
-add security to ipc
+**Usability issues:
+DOC DOC DOC
+be chatty while parsing config
+ipc security options - doc well, make sure it works the way we expect
+need some spec compliant support for partitioned layout
+    current stripeblocksize impl is basically spec compliant RR
 
-update doc to reflect striping info and current issues/limitations
-
-check if threaded works (and fix if easy) so we can at least list it as a known issue
-
-verify test suite on following instances:
-    single local non-daemon, daemon, detached and inetd
-    single remote and data-node non-daemon, daemon, detached and inetd 
-    4 stripe remote in same modes (general success here, not expected to pass everything)
-                 
-check what version this should be, and change package name 
-
-merge branch to trunk and verify nothing broke
-
-
-
-
-**OLD ALPHA STUFF:
-
-MUST HAVE
---------------------------------------------------------------
-SERVER:
--instrument logging in server
--implement abort_cb on server side
--verify data destroy working on server end (and no leaks!)
--call control_disconnected() when needed
--server mem management... i know there are some leaks with attrs and now with instance for event stuff
--mimic wu cmdline opt names when applicable i.e. -S -p etc etc (important now so people don't start using opts that we will drop)
--verify inetd is prepped right
-
-LIB:
--verify feat list
-
-BOTH:
--add proper return vals/messages for error situations
--verify reply codes
--recheck exit/quit/abort states (after server abort/exit stuff is good)
-
---------------------------------------------------------------
-
-OTHER: (non-code)
-update gridftp-server-stable-branch tag
+-----------------------------------------------------------------------
+known bugs:
+-- force_close after transfer_complete when an error is passed to 
+   finished_transfer().
+-- error out of option parsing properly
+-- ipc failure while the handle is owned by the dsi destroys the handle. should
+    not free until user calls release or close, and just error out of any other
+    calls that attempt to use the handle.
+-- need to make sure ints in various places are change to size_t if they
+    need to be, and on passing size_t's over ipc need to do some smarts
+    to treat it as 4 or 8 bytes... possible probs if sizes differ on front
+    and back?  This is specifically a problem with tcp_bs, we treat it as an
+    int on the server side, but server-lib gives it to us as a size_t (as
+    it probably should), which is a different size on most 64 bit platforms.
+    
 
 
 
-
-if time, desire, etc etc:
---------------------------------------------------------------
-SERVER:
--make forking/daemon mode better (maybe leave this out for now)
--define logging classes in config
--produce netlogger output (based on event timer i guess?... -Z option in wu)
--global config opts can be non-overridable, or forced to a range
--think about config val checking/verification
--sync(2) before each transfer stat update (by option only, unless it doesn't affect perf)
--make sure server will work with tcpd
-
-LIB:
--additional functionality for STAT (959 says transfer stats and other shit)
--additional command to get server version
-
---------------------------------------------------------------
-
-
+ability to send 500 go away to control channel before server-lib has control

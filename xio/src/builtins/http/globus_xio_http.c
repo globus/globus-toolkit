@@ -264,7 +264,7 @@ globus_i_xio_http_find_eol(
     while (((skip + 1) < blob_length) && 
         (result = memchr(blob + skip, '\r', blob_length-skip)) != NULL)
     {
-        if (result == (blob + skip + blob_length))
+        if (result+1 == (blob + skip + blob_length))
         {
             return NULL;
         }

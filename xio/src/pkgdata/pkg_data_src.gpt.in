@@ -3,7 +3,7 @@
 
 <gpt_package_metadata Format_Version="0.02" Name="globus_xio" >
 
-  <Aging_Version Age="0" Major="0" Minor="15" />
+  <Aging_Version Age="0" Major="0" Minor="20" />
   <Description >Globus XIO Framework</Description>
   <Functional_Group >Communication</Functional_Group>
   <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@" />
@@ -15,7 +15,7 @@
     <Source_Dependencies Type="compile" >
       <Dependency Name="globus_gss_assist" > <Version > <Simple_Version Major="3" /> </Version> </Dependency>
       <Dependency Name="gssapi_error" > <Version > <Simple_Version Major="2" /> </Version> </Dependency>
-      <Dependency Name="globus_gssapi_gsi" > <Version > <Simple_Version Major="3" /> </Version> </Dependency>
+      <Dependency Name="globus_gssapi_gsi" > <Version > <Simple_Version Major="4" /> </Version> </Dependency>
       <Dependency Name="globus_common" > <Version > <Simple_Version Major="4" /> </Version> </Dependency>
       <Dependency Name="globus_core" > <Version > <Simple_Version Major="4" /> </Version> </Dependency>
     </Source_Dependencies>
@@ -23,7 +23,7 @@
     <Source_Dependencies Type="lib_link" >
       <Dependency Name="globus_gss_assist" > <Version > <Simple_Version Major="3" /> </Version> </Dependency>
       <Dependency Name="gssapi_error" > <Version > <Simple_Version Major="2" /> </Version> </Dependency>
-      <Dependency Name="globus_gssapi_gsi" > <Version > <Simple_Version Major="3" /> </Version> </Dependency>
+      <Dependency Name="globus_gssapi_gsi" > <Version > <Simple_Version Major="4" /> </Version> </Dependency>
       <Dependency Name="globus_common" > <Version > <Simple_Version Major="4" /> </Version> </Dependency>
     </Source_Dependencies>
 

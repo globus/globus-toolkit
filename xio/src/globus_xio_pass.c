@@ -38,7 +38,7 @@ globus_xio_driver_pass_open(
     if(op->canceled)
     {
         GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE,
-            ("[%s] :Operation canceled\n", _xio_name));
+            (_XIOSL("[%s] :Operation canceled\n"), _xio_name));
         res = GlobusXIOErrorCanceled();
     }
     else
@@ -254,7 +254,7 @@ globus_xio_driver_open_delivered(
             *deliver_type == GLOBUS_XIO_OPERATION_TYPE_FINISHED)
         {
             GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE,
-                ("[%s] : Already delivered\n", _xio_name));
+                (_XIOSL("[%s] : Already delivered\n"), _xio_name));
             GlobusXIOOpDec(op);
             if(op->ref == 0)
             {
@@ -406,7 +406,7 @@ globus_xio_driver_pass_close(
     if(op->canceled && op->type != GLOBUS_XIO_OPERATION_TYPE_OPEN)
     {
         GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE,
-            ("[%s] :Operation canceled\n", _xio_name));
+            (_XIOSL("[%s] :Operation canceled\n"), _xio_name));
         res = GlobusXIOErrorCanceled();
     }
     else
@@ -611,7 +611,7 @@ globus_xio_driver_pass_write(
     globus_xio_operation_type_t         deliver_type = 
         GLOBUS_XIO_OPERATION_TYPE_FINISHED;
     globus_bool_t                       destroy_handle = GLOBUS_FALSE;
-    GlobusXIOName(GlobusXIODriverPassWrite);
+    GlobusXIOName(globus_xio_driver_pass_write);
 
     GlobusXIODebugInternalEnter();
     op = (in_op);
@@ -629,7 +629,7 @@ globus_xio_driver_pass_write(
     if(op->canceled)
     {
         GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE,
-            ("[%s] :Operation canceled\n", _xio_name));
+            (_XIOSL("[%s] :Operation canceled\n"), _xio_name));
         res = GlobusXIOErrorCanceled();
     }
     else
@@ -849,7 +849,7 @@ globus_xio_driver_write_delivered(
             *deliver_type == GLOBUS_XIO_OPERATION_TYPE_FINISHED)
         {
             GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE,
-                ("[%s] : Already delivered\n", _xio_name));
+                (_XIOSL("[%s] : Already delivered\n"), _xio_name));
             GlobusXIOOpDec(op);
             if(op->ref == 0)
             {
@@ -870,7 +870,7 @@ globus_xio_driver_write_delivered(
         my_context->outstanding_operations--;
 
         GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE,
-            ("[%s] : Context @ 0x%x State=%d Count=%d close_start=%d\n",
+            (_XIOSL("[%s] : Context @ 0x%x State=%d Count=%d close_start=%d\n"),
             _xio_name, my_context, my_context->state,
             my_context->outstanding_operations,
             my_context->close_started));
@@ -948,7 +948,7 @@ globus_xio_driver_pass_read(
     if(op->canceled)
     {
         GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE,
-            ("[%s] :Operation canceled\n", _xio_name));
+            (_XIOSL("[%s] :Operation canceled\n"), _xio_name));
         res = GlobusXIOErrorCanceled();
     }
     else
@@ -994,7 +994,7 @@ globus_xio_driver_pass_read(
             if(my_context->state == GLOBUS_XIO_CONTEXT_STATE_EOF_RECEIVED)
             {
                 GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO,
-                    ("[%s]: Queuing read on eof list\n", _xio_name));
+                    (_XIOSL("[%s]: Queuing read on eof list\n"), _xio_name));
                 
                 op->cached_obj = GlobusXIOErrorObjEOF();
                 globus_list_insert(&my_context->eof_op_list, op);
@@ -1007,7 +1007,7 @@ globus_xio_driver_pass_read(
                 my_context->pending_reads > 0)
             {
                 GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO,
-                    ("[%s]: Queuing read on pending queue\n", _xio_name));
+                    (_XIOSL("[%s]: Queuing read on pending queue\n"), _xio_name));
                     
                 /* add this to the pending queue */
                 my_context->pending_reads++;
@@ -1258,7 +1258,7 @@ globus_l_xio_pass_pending_reads(
              * the remaining in the eof queue
              */
             GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO,
-                ("[%s]: Dumping pending queue into eof list\n", _xio_name));
+                (_XIOSL("[%s]: Dumping pending queue into eof list\n"), _xio_name));
             do
             {
                 my_context->pending_reads--;
@@ -1311,7 +1311,7 @@ globus_l_xio_pass_pending_reads(
             if(res != GLOBUS_SUCCESS)
             {
                 GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO,
-                    ("[%s]: Pending read failed, finishing now\n", _xio_name));
+                    (_XIOSL("[%s]: Pending read failed, finishing now\n"), _xio_name));
                 
                 globus_xio_driver_finished_read(op, res, 0);
             }
@@ -1384,7 +1384,7 @@ globus_xio_driver_read_delivered(
             *deliver_type == GLOBUS_XIO_OPERATION_TYPE_FINISHED)
         {
             GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE,
-                ("[%s] : Already delivered\n", _xio_name));
+                (_XIOSL("[%s] : Already delivered\n"), _xio_name));
             GlobusXIOOpDec(op);
             if(op->ref == 0)
             {
@@ -1431,7 +1431,7 @@ globus_xio_driver_read_delivered(
             if(my_context->eof_operations == 0)
             {
                 GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO,
-                    ("[%s]: All eof ops delivered\n", _xio_name));
+                    (_XIOSL("[%s]: All eof ops delivered\n"), _xio_name));
                     
                 if(my_context->state == GLOBUS_XIO_CONTEXT_STATE_EOF_DELIVERED)
                 {
@@ -1467,7 +1467,7 @@ globus_xio_driver_read_delivered(
         }
 
         GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE,
-            ("[%s] : Context @ 0x%x State=%d Count=%d close_start=%d\n",
+            (_XIOSL("[%s] : Context @ 0x%x State=%d Count=%d close_start=%d\n"),
             _xio_name, my_context, my_context->state,
             my_context->outstanding_operations,
             my_context->close_started));
@@ -1535,7 +1535,7 @@ globus_xio_driver_pass_accept(
     if(op->canceled)
     {
         GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE,
-            ("[%s] :Operation canceled\n", _xio_name));
+            (_XIOSL("[%s] :Operation canceled\n"), _xio_name));
         res = GlobusXIOErrorCanceled();
     }
     else

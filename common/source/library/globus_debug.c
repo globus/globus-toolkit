@@ -1,16 +1,52 @@
 #include "globus_debug.h"
 #include "globus_libc.h"
 #include "globus_module.h"
+#include "globus_common.h"
 
 #ifdef BUILD_DEBUG
 
 char * strdup(const char *);
 
 static
+void
+globus_l_debug_parse_level_names(
+    char *                              my_names,
+    char **                             my_levels)
+{
+    char *                              name;
+    int                                 i;
+    
+    /* check for level names */
+    /* prune whitespace */
+    name = my_names + strspn(my_names, " \t\n");
+    for(i = 0; i < 32; i++)
+    {
+        if(*name)
+        {
+            my_levels[i] = name;
+            
+            /* find end of name */
+            name += strcspn(name, " \t\n");
+            /* terminate previous name */
+            if(*name)
+            {
+                *(name++) = 0;
+                /* prune whitespace */
+                name += strspn(name, " \t\n");
+            }
+        }
+        else
+        {
+            my_levels[i] = GLOBUS_NULL;
+        }
+    }
+}
+
+static
 unsigned
 globus_l_debug_get_level(
     const char *                        env_name,
-    const char *                        level_names,
+    char **                             my_levels,
     char *                              levels  /* gets mangled */)
 {
     unsigned                            level;
@@ -18,43 +54,9 @@ globus_l_debug_get_level(
     level = (unsigned) strtoul(levels, NULL, 10);
     if(level == 0)
     {
-        char *                          my_names;
-        char *                          name;
         char *                          next_name;
-        char *                          my_levels[32];
         int                             i;
         globus_bool_t                   negate = GLOBUS_FALSE;
-        
-        my_names = strdup(level_names);
-        if(!my_names)
-        {
-            return 0;
-        }
-        
-        /* check for level names */
-        /* prune whitespace */
-        name = my_names + strspn(my_names, " \t\n");
-        for(i = 0; i < 32; i++)
-        {
-            if(*name)
-            {
-                my_levels[i] = name;
-                
-                /* find end of name */
-                name += strcspn(name, " \t\n");
-                /* terminate previous name */
-                if(*name)
-                {
-                    *(name++) = 0;
-                    /* prune whitespace */
-                    name += strspn(name, " \t\n");
-                }
-            }
-            else
-            {
-                my_levels[i] = GLOBUS_NULL;
-            }
-        }
         
         if(*levels == '^')
         {
@@ -87,7 +89,7 @@ globus_l_debug_get_level(
             else
             {
                 fprintf(stderr,
-                    "Invalid level name (%s) in %s env variable... ignoring\n",
+                    _GCSL("Invalid level name (%s) in %s env variable... ignoring\n"),
                     levels,
                     env_name);
             }
@@ -97,8 +99,6 @@ globus_l_debug_get_level(
         {
             level = ~level;
         }
-        
-        free(my_names);
     }
     
     return level;
@@ -108,37 +108,47 @@ void
 globus_debug_init(
     const char *                        env_name,
     const char *                        level_names,
-    unsigned *                          debug_level,
-    FILE **                             out_file,
-    globus_bool_t *                     using_file,
-    globus_bool_t *                     show_tids)
+    globus_debug_handle_t *             handle)
 {
     char *                              tmp;
 
-    if(*out_file)
+    if(handle->file)
     {
         return;
     }
     
-    *debug_level = 0;
-    *out_file = stderr;
-    *using_file = GLOBUS_FALSE;
-    *show_tids = GLOBUS_FALSE;
+    handle->levels = 0;
+    handle->timestamp_levels = 0;
+    handle->file = stderr;
+    handle->thread_ids = GLOBUS_FALSE;
+    handle->using_file = GLOBUS_FALSE;
 
     tmp = globus_module_getenv(env_name);
     if(tmp && *tmp)
     {
+        char *                          my_names;
+        char *                          my_levels[32];
         char *                          levels;
         char *                          filename;
         char *                          show_tid;
+        char *                          timestamp_levels;
         
         levels = strdup(tmp);
         if(!levels)
         {
             return;
         }
+        my_names = strdup(level_names);
+        if(!my_names)
+        {
+            free(levels);
+            return;
+        }
+        
+        globus_l_debug_parse_level_names(my_names, my_levels);
         
         show_tid = GLOBUS_NULL;
+        timestamp_levels = GLOBUS_NULL;
         filename = strchr(levels, ',');
         if(filename)
         {
@@ -148,45 +158,82 @@ globus_debug_init(
             if(show_tid)
             {
                 *(show_tid++) = 0;
+                
+                timestamp_levels = strchr(show_tid, ',');
+                if(timestamp_levels)
+                {
+                    *(timestamp_levels++) = 0;
+                }
             }
         }
         
-        *debug_level = globus_l_debug_get_level(env_name, level_names, levels);
+        handle->levels = 
+            globus_l_debug_get_level(env_name, my_levels, levels);
 
-        if(*debug_level)
+        if(handle->levels)
         {
+            globus_bool_t               append_pid = GLOBUS_FALSE;
+            
+            if(show_tid && *show_tid)
+            {
+                int                     flags;
+                
+                flags = atoi(show_tid);
+                if((flags & 0x1))
+                {
+                    handle->thread_ids = GLOBUS_TRUE;
+                }
+                
+                if((flags & 0x2))
+                {
+                    append_pid = GLOBUS_TRUE;
+                }
+            }
+            
             if(filename && *filename)
             {
+                char                    buf[1024];
+                
+                if(append_pid)
+                {
+                    sprintf(buf, "%s.%d", filename, (int) getpid());
+                    filename = buf;
+                }
+                
                 if(*filename == '#')
                 {
                     filename += 1;
                     truncate(filename, 0);
                 }
                 
-                *out_file = fopen(filename, "a");
-                if(*out_file)
+                handle->file = fopen(filename, "a");
+                if(handle->file)
                 {
-                    *using_file = GLOBUS_TRUE;
-                    setvbuf(*out_file, GLOBUS_NULL, _IONBF, 0);
-                    fprintf(*out_file, "### %d: %s ###\n", getpid(), env_name);
+                    handle->using_file = GLOBUS_TRUE;
+                    setvbuf(handle->file, GLOBUS_NULL, _IONBF, 0);
+                    fprintf(
+                        handle->file, "### %d: %s ###\n", getpid(), env_name);
                 }
                 else
                 {
-                    *out_file = stderr;
+                    handle->file = stderr;
                     fprintf(stderr,
-                        "%s: Could not open %s, "
-                        "using stderr for debug messages\n",
+                        _GCSL("%s: Could not open %s, "
+                        "using stderr for debug messages\n"),
                         env_name,
                         filename);
                 }
             }
             
-            if(show_tid && *show_tid != '0') /* I DO mean the digit 0 */
+            if(timestamp_levels)
             {
-                *show_tids = GLOBUS_TRUE;
+                handle->timestamp_levels = 
+                    globus_l_debug_get_level(
+                        env_name, my_levels, timestamp_levels);
             }
         }
         
+        free(my_names);
         free(levels);
     }
 }

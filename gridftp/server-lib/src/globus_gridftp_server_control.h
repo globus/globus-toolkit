@@ -7,10 +7,10 @@
 #include "globus_xio_system.h"
 
 typedef struct globus_i_gsc_server_handle_s * globus_gridftp_server_control_t;
-typedef struct globus_i_gsc_attr_s *     globus_gridftp_server_control_attr_t;
-typedef struct globus_i_gsc_op_s *          globus_gridftp_server_control_op_t;
-typedef struct globus_i_gsc_op_s *          globus_gsc_959_op_t;
-typedef time_t                              globus_time_t;
+typedef struct globus_i_gsc_attr_s *    globus_gridftp_server_control_attr_t;
+typedef struct globus_i_gsc_op_s *      globus_gridftp_server_control_op_t;
+typedef struct globus_i_gsc_op_s *      globus_gsc_959_op_t;
+typedef time_t                          globus_time_t;
 
 /***********************************************************************
  *                          error types
@@ -21,7 +21,7 @@ typedef enum globus_gsc_error_type_e
     GLOBUS_GRIDFTP_SERVER_CONTROL_ERROR_PANIC,
     GLOBUS_GRIDFTP_SERVER_CONTROL_ERROR_SYSTEM_RESOURCE,
     GLOBUS_GRIDFTP_SERVER_CONTROL_ERROR_AUTHENTICATION,
-    GLOBUS_GRIDFTP_SERVER_CONTROL_ERROR_SYNTAX,
+    GLOBUS_GRIDFTP_SERVER_CONTROL_ERROR_SYNTAX
 } globus_gridftp_server_control_error_type_t;
 
 typedef enum globus_gsc_response_e
@@ -43,6 +43,16 @@ typedef enum globus_gsc_response_e
 #else
 #define GlobusGridFTPServerName(func) static const char * _gridftp_server_name = #func
 #endif
+
+#define _FSCSL(s) globus_common_i18n_get_string( \
+		     GLOBUS_GRIDFTP_SERVER_CONTROL_MODULE, \
+		     s)
+
+#define _FSMSL(s) globus_common_i18n_get_string_by_key( \
+		     NULL, \
+		     GLOBUS_GRIDFTP_SERVER_CONTROL_MODULE->module_name, \
+		     s)
+
 
 #define GlobusGridFTPServerErrorParameter(param_name)                       \
     globus_error_put(                                                       \
@@ -112,6 +122,13 @@ typedef enum globus_gsc_security_type_e
     GLOBUS_GRIDFTP_SERVER_LIBRARY_GSSAPI = 0x02
 } globus_gridftp_server_control_security_type_t;
 
+typedef enum globus_gsc_layout_e
+{
+    GLOBUS_GSC_LAYOUT_TYPE_NONE = 0,
+    GLOBUS_GSC_LAYOUT_TYPE_PARTITIONED,
+    GLOBUS_GSC_LAYOUT_TYPE_BLOCKED
+} globus_gsc_layout_t;
+
 /**
  *  stat structure
  *  --------------
@@ -125,6 +142,7 @@ typedef struct globus_gridftp_server_control_stat_s
     int                                     mode;
     int                                     nlink;
     char                                    name[MAXPATHLEN];
+    char                                    symlink_target[MAXPATHLEN];
     uid_t                                   uid;
     gid_t                                   gid;
     globus_size_t                           size;
@@ -175,7 +193,9 @@ typedef enum globus_i_gsc_data_dir_e
 typedef enum globus_gridftp_server_control_event_type_e
 {
     GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_PERF = 0x01,
-    GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_RESTART = 0x02
+    GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_RESTART = 0x02,
+    GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_ABORT = 0x04,
+    GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_TRANSFER_COMPLETE = 0x08
 } globus_gridftp_server_control_event_type_t;
 
 /**
@@ -205,11 +225,11 @@ typedef void
  */
 globus_result_t
 globus_gridftp_server_control_finished_auth(
-    globus_gridftp_server_control_op_t      op,
-    const char *                            username,
+    globus_gridftp_server_control_op_t  op,
+    const char *                        username,
     globus_gridftp_server_control_response_t response_code,
-    const char *                            msg);
-
+    const char *                        msg);
+    
 /**
  *  mask type.
  *  ----------
@@ -287,31 +307,6 @@ globus_gridftp_server_control_list_buffer_alloc(
 void
 globus_gridftp_server_control_list_buffer_free(
     globus_byte_t *                         buffer);
-
-typedef void
-(*globus_gridftp_server_control_abort_cb_t)(
-    globus_gridftp_server_control_op_t      op,
-    void *                                  user_arg);
-
-globus_result_t
-globus_gridftp_server_control_enable_abort(
-    globus_gridftp_server_control_op_t      op,
-    globus_gridftp_server_control_abort_cb_t abort_cb,
-    void *                                  user_arg);
-
-globus_result_t
-globus_gridftp_server_control_disable_abort(
-    globus_gridftp_server_control_op_t      op);
-
-globus_result_t
-globus_gridftp_server_abort_enable(
-    globus_gridftp_server_control_op_t  op,
-    globus_gridftp_server_control_abort_cb_t abort_cb,
-    void *                                  user_arg);
-
-globus_result_t
-globus_gridftp_server_abort_disable(
-    globus_gridftp_server_control_op_t  op);
 
 /**
  *  logging 
@@ -401,6 +396,17 @@ typedef void
     int                                     event_type,
     void *                                  user_arg);
 
+globus_result_t
+globus_gridftp_server_control_events_enable(
+    globus_gridftp_server_control_op_t  op,
+    int                                 event_mask,
+    globus_gridftp_server_control_event_cb_t event_cb,
+    void *                              user_arg);
+
+globus_result_t
+globus_gridftp_server_control_events_disable(
+    globus_gridftp_server_control_op_t      op);
+
 /**
  *  finished resource query request
  *
@@ -413,7 +419,9 @@ globus_gridftp_server_control_finished_resource(
     globus_gridftp_server_control_op_t      op,
     globus_gridftp_server_control_stat_t *  stat_info_array,
     int                                     stat_count,
-    uid_t                                   uid,
+    int                                     uid,
+    int                                     gid_count,
+    int *                                   gid_array,
     globus_gridftp_server_control_response_t response_code,
     const char *                            msg);
 
@@ -562,6 +570,13 @@ globus_gridftp_server_control_stop(
 /*
  *  setters and getters
  */
+
+globus_result_t
+globus_gridftp_server_control_get_layout(
+    globus_gridftp_server_control_op_t      op,
+    globus_gsc_layout_t *                   layout_type,
+    int *                                   block_size);
+
 globus_result_t
 globus_gridftp_server_control_get_buffer_size(
     globus_gridftp_server_control_op_t      op,
@@ -587,6 +602,11 @@ globus_result_t
 globus_gridftp_server_control_get_cwd(
     globus_gridftp_server_control_t         server,
     char **                                 cwd_string);
+
+globus_result_t
+globus_gridftp_server_control_set_cwd(
+    globus_gridftp_server_control_t         server,
+    const char *                            cwd_string);
 
 globus_result_t
 globus_gridftp_server_control_get_data_auth(
@@ -677,10 +697,7 @@ globus_gridftp_server_control_disconnected(
  */
 globus_result_t
 globus_gridftp_server_control_begin_transfer(
-    globus_gridftp_server_control_op_t  op,
-    int                                 event_mask,
-    globus_gridftp_server_control_event_cb_t event_cb,
-    void *                              user_arg);
+    globus_gridftp_server_control_op_t  op);
 
 /**
  *  a data transfer requested has been completed.

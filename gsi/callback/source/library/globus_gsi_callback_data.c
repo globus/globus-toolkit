@@ -45,7 +45,7 @@ globus_gsi_callback_data_init(
         GLOBUS_GSI_CALLBACK_ERROR_RESULT(
             result,
             GLOBUS_GSI_CALLBACK_ERROR_CALLBACK_DATA,
-            ("NULL pointer to callback_data passed to function: %s",
+            (_CLS("NULL pointer to callback_data passed to function: %s"),
              _function_name_));
         goto exit;
     }
@@ -162,7 +162,7 @@ globus_gsi_callback_data_copy(
         GLOBUS_GSI_CALLBACK_ERROR_RESULT(
             result,
             GLOBUS_GSI_CALLBACK_ERROR_CALLBACK_DATA,
-            ("NULL callback data source parameter passed to function: %s",
+            (_CLS("NULL callback data source parameter passed to function: %s"),
              _function_name_));
         goto exit;
     }
@@ -172,7 +172,7 @@ globus_gsi_callback_data_copy(
         GLOBUS_GSI_CALLBACK_ERROR_RESULT(
             result,
             GLOBUS_GSI_CALLBACK_ERROR_CALLBACK_DATA,
-            ("NULL callback data dest parameter passed to function: %s",
+            (_CLS("NULL callback data dest parameter passed to function: %s"),
              _function_name_));
         goto exit;
     }        
@@ -193,7 +193,7 @@ globus_gsi_callback_data_copy(
             GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_CALLBACK_ERROR_CERT_CHAIN,
-                ("Couldn't copy cert chain from callback data"));
+                (_CLS("Couldn't copy cert chain from callback data")));
             goto exit;
         }
     }
@@ -248,7 +248,7 @@ globus_gsi_callback_get_cert_depth(
         GLOBUS_GSI_CALLBACK_ERROR_RESULT(
             result,
             GLOBUS_GSI_CALLBACK_ERROR_CALLBACK_DATA,
-            ("NULL parameter callback_data passed to function: %s",
+            (_CLS("NULL parameter callback_data passed to function: %s"),
              _function_name_));
         goto exit;
     }
@@ -258,7 +258,7 @@ globus_gsi_callback_get_cert_depth(
         GLOBUS_GSI_CALLBACK_ERROR_RESULT(
             result,
             GLOBUS_GSI_CALLBACK_ERROR_CALLBACK_DATA,
-            ("NULL parameter cert_depth passed to function: %s",
+            (_CLS("NULL parameter cert_depth passed to function: %s"),
              _function_name_));
         goto exit;
     }
@@ -297,7 +297,7 @@ globus_gsi_callback_set_cert_depth(
         GLOBUS_GSI_CALLBACK_ERROR_RESULT(
             result,
             GLOBUS_GSI_CALLBACK_ERROR_CALLBACK_DATA,
-            ("NULL parameter callback_data passed to function: %s",
+            (_CLS("NULL parameter callback_data passed to function: %s"),
              _function_name_));
         goto exit;
     }
@@ -343,7 +343,7 @@ globus_gsi_callback_get_proxy_depth(
         GLOBUS_GSI_CALLBACK_ERROR_RESULT(
             result,
             GLOBUS_GSI_CALLBACK_ERROR_CALLBACK_DATA,
-            ("NULL parameter callback_data passed to function: %s",
+            (_CLS("NULL parameter callback_data passed to function: %s"),
              _function_name_));
         goto exit;
     }
@@ -353,7 +353,7 @@ globus_gsi_callback_get_proxy_depth(
         GLOBUS_GSI_CALLBACK_ERROR_RESULT(
             result,
             GLOBUS_GSI_CALLBACK_ERROR_CALLBACK_DATA,
-            ("NULL parameter proxy_depth passed to function: %s",
+            (_CLS("NULL parameter proxy_depth passed to function: %s"),
              _function_name_));
         goto exit;
     }
@@ -392,7 +392,7 @@ globus_gsi_callback_set_proxy_depth(
         GLOBUS_GSI_CALLBACK_ERROR_RESULT(
             result,
             GLOBUS_GSI_CALLBACK_ERROR_CALLBACK_DATA,
-            ("NULL parameter callback_data passed to function: %s",
+            (_CLS("NULL parameter callback_data passed to function: %s"),
              _function_name_));
         goto exit;
     }
@@ -438,7 +438,7 @@ globus_gsi_callback_get_cert_type(
         GLOBUS_GSI_CALLBACK_ERROR_RESULT(
             result,
             GLOBUS_GSI_CALLBACK_ERROR_CALLBACK_DATA,
-            ("NULL parameter callback_data passed to function: %s",
+            (_CLS("NULL parameter callback_data passed to function: %s"),
              _function_name_));
         goto exit;
     }
@@ -448,7 +448,7 @@ globus_gsi_callback_get_cert_type(
         GLOBUS_GSI_CALLBACK_ERROR_RESULT(
             result,
             GLOBUS_GSI_CALLBACK_ERROR_CALLBACK_DATA,
-            ("NULL parameter cert_type passed to function: %s",
+            (_CLS("NULL parameter cert_type passed to function: %s"),
              _function_name_));
         goto exit;
     }
@@ -489,7 +489,7 @@ globus_gsi_callback_set_cert_type(
         GLOBUS_GSI_CALLBACK_ERROR_RESULT(
             result,
             GLOBUS_GSI_CALLBACK_ERROR_CALLBACK_DATA,
-            ("NULL parameter callback_data passed to function: %s",
+            (_CLS("NULL parameter callback_data passed to function: %s"),
              _function_name_));
         goto exit;
     }
@@ -536,7 +536,7 @@ globus_gsi_callback_get_cert_chain(
         GLOBUS_GSI_CALLBACK_ERROR_RESULT(
             result,
             GLOBUS_GSI_CALLBACK_ERROR_CALLBACK_DATA,
-            ("NULL parameter callback_data passed to function: %s",
+            (_CLS("NULL parameter callback_data passed to function: %s"),
              _function_name_));
         goto exit;
     }
@@ -546,7 +546,7 @@ globus_gsi_callback_get_cert_chain(
         GLOBUS_GSI_CALLBACK_ERROR_RESULT(
             result,
             GLOBUS_GSI_CALLBACK_ERROR_CALLBACK_DATA,
-            ("NULL parameter cert_chain passed to function: %s",
+            (_CLS("NULL parameter cert_chain passed to function: %s"),
              _function_name_));
         goto exit;
     }
@@ -563,7 +563,7 @@ globus_gsi_callback_get_cert_chain(
             GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_CALLBACK_ERROR_CALLBACK_DATA,
-                ("Couldn't copy cert chain in callback data"));
+                (_CLS("Couldn't copy cert chain in callback data")));
             goto exit;
         }
     }
@@ -603,7 +603,7 @@ globus_gsi_callback_set_cert_chain(
         GLOBUS_GSI_CALLBACK_ERROR_RESULT(
             result,
             GLOBUS_GSI_CALLBACK_ERROR_CALLBACK_DATA,
-            ("NULL parameter callback_data passed to function: %s",
+            (_CLS("NULL parameter callback_data passed to function: %s"),
              _function_name_));
         goto exit;
     }
@@ -625,7 +625,7 @@ globus_gsi_callback_set_cert_chain(
             GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_CALLBACK_ERROR_CALLBACK_DATA,
-                ("Couldn't set the cert chain in the callback_data"));
+                (_CLS("Couldn't set the cert chain in the callback_data")));
             goto exit;
         }
     }
@@ -671,7 +671,7 @@ globus_gsi_callback_get_multiple_limited_proxy_ok(
         GLOBUS_GSI_CALLBACK_ERROR_RESULT(
             result,
             GLOBUS_GSI_CALLBACK_ERROR_CALLBACK_DATA,
-            ("NULL parameter callback_data passed to function: %s",
+            (_CLS("NULL parameter callback_data passed to function: %s"),
              _function_name_));
         goto exit;
     }
@@ -681,7 +681,7 @@ globus_gsi_callback_get_multiple_limited_proxy_ok(
         GLOBUS_GSI_CALLBACK_ERROR_RESULT(
             result,
             GLOBUS_GSI_CALLBACK_ERROR_CALLBACK_DATA,
-            ("NULL parameter peer_cert_chain passed to function: %s",
+            (_CLS("NULL parameter peer_cert_chain passed to function: %s"),
              _function_name_));
         goto exit;
     }
@@ -724,7 +724,7 @@ globus_gsi_callback_set_multiple_limited_proxy_ok(
         GLOBUS_GSI_CALLBACK_ERROR_RESULT(
             result,
             GLOBUS_GSI_CALLBACK_ERROR_CALLBACK_DATA,
-            ("NULL parameter callback_data passed to function: %s",
+            (_CLS("NULL parameter callback_data passed to function: %s"),
              _function_name_));
         goto exit;
     }
@@ -770,7 +770,7 @@ globus_gsi_callback_get_extension_oids(
         GLOBUS_GSI_CALLBACK_ERROR_RESULT(
             result,
             GLOBUS_GSI_CALLBACK_ERROR_CALLBACK_DATA,
-            ("NULL parameter callback_data passed to function: %s",
+            (_CLS("NULL parameter callback_data passed to function: %s"),
              _function_name_));
         goto exit;
     }
@@ -780,7 +780,7 @@ globus_gsi_callback_get_extension_oids(
         GLOBUS_GSI_CALLBACK_ERROR_RESULT(
             result,
             GLOBUS_GSI_CALLBACK_ERROR_CALLBACK_DATA,
-            ("NULL parameter extension_oids passed to function: %s",
+            (_CLS("NULL parameter extension_oids passed to function: %s"),
              _function_name_));
         goto exit;
     }
@@ -821,7 +821,7 @@ globus_gsi_callback_set_extension_oids(
         GLOBUS_GSI_CALLBACK_ERROR_RESULT(
             result,
             GLOBUS_GSI_CALLBACK_ERROR_CALLBACK_DATA,
-            ("NULL parameter callback_data passed to function: %s",
+            (_CLS("NULL parameter callback_data passed to function: %s"),
              _function_name_));
         goto exit;
     }
@@ -868,7 +868,7 @@ globus_gsi_callback_get_cert_dir(
         GLOBUS_GSI_CALLBACK_ERROR_RESULT(
             result,
             GLOBUS_GSI_CALLBACK_ERROR_CALLBACK_DATA,
-            ("NULL parameter callback_data passed to function: %s",
+            (_CLS("NULL parameter callback_data passed to function: %s"),
              _function_name_));
         goto exit;
     }
@@ -878,7 +878,7 @@ globus_gsi_callback_get_cert_dir(
         GLOBUS_GSI_CALLBACK_ERROR_RESULT(
             result,
             GLOBUS_GSI_CALLBACK_ERROR_CALLBACK_DATA,
-            ("NULL parameter cert_dir passed to function: %s",
+            (_CLS("NULL parameter cert_dir passed to function: %s"),
              _function_name_));
         goto exit;
     }
@@ -920,7 +920,7 @@ globus_gsi_callback_set_cert_dir(
         GLOBUS_GSI_CALLBACK_ERROR_RESULT(
             result,
             GLOBUS_GSI_CALLBACK_ERROR_CALLBACK_DATA,
-            ("NULL parameter callback_data passed to function: %s",
+            (_CLS("NULL parameter callback_data passed to function: %s"),
              _function_name_));
         goto exit;
     }
@@ -970,7 +970,7 @@ globus_gsi_callback_get_extension_cb(
         GLOBUS_GSI_CALLBACK_ERROR_RESULT(
             result,
             GLOBUS_GSI_CALLBACK_ERROR_CALLBACK_DATA,
-            ("NULL parameter callback_data passed to function: %s",
+            (_CLS("NULL parameter callback_data passed to function: %s"),
              _function_name_));
         goto exit;
     }
@@ -980,7 +980,7 @@ globus_gsi_callback_get_extension_cb(
         GLOBUS_GSI_CALLBACK_ERROR_RESULT(
             result,
             GLOBUS_GSI_CALLBACK_ERROR_CALLBACK_DATA,
-            ("NULL parameter extension_cb passed to function: %s",
+            (_CLS("NULL parameter extension_cb passed to function: %s"),
              _function_name_));
         goto exit;
     }
@@ -1019,7 +1019,7 @@ globus_gsi_callback_set_extension_cb(
         GLOBUS_GSI_CALLBACK_ERROR_RESULT(
             result,
             GLOBUS_GSI_CALLBACK_ERROR_CALLBACK_DATA,
-            ("NULL parameter callback_data passed to function: %s",
+            (_CLS("NULL parameter callback_data passed to function: %s"),
              _function_name_));
         goto exit;
     }
@@ -1064,7 +1064,7 @@ globus_gsi_callback_get_error(
         GLOBUS_GSI_CALLBACK_ERROR_RESULT(
             result,
             GLOBUS_GSI_CALLBACK_ERROR_CALLBACK_DATA,
-            ("NULL parameter callback_data passed to function: %s",
+            (_CLS("NULL parameter callback_data passed to function: %s"),
              _function_name_));
         goto exit;
     }
@@ -1103,7 +1103,7 @@ globus_gsi_callback_set_error(
         GLOBUS_GSI_CALLBACK_ERROR_RESULT(
             result,
             GLOBUS_GSI_CALLBACK_ERROR_CALLBACK_DATA,
-            ("NULL parameter callback_data passed to function: %s",
+            (_CLS("NULL parameter callback_data passed to function: %s"),
              _function_name_));
         goto exit;
     }
