@@ -17,13 +17,17 @@ my $args     = "-s localhost -l $username -t $lifetime -o $outfile";
 
 # Check length of password
 my $len = length ($password);
-if (($len < 5) || ($len > 10))
-{
-  passwordtoolong();
+if (($len < 5) || ($len > 10)) {
+    passwordtoolong();
 }
 
 # zap everything past first nonword character
 $username =~ s/\W.*//;
+
+if ($lifetime =~ /\D/) {
+  invalidlifetime();
+}
+
 
 # use expect to run the command
 my $cmd_filehandle = Expect->spawn("$program $args");
