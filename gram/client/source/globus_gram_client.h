@@ -272,8 +272,36 @@ int
 globus_gram_client_ping(
     const char *			resource_manager_contact);
 
+int 
+globus_gram_client_register_ping(
+    const char *			resource_manager_contact,
+    globus_gram_client_attr_t		attr,
+    globus_gram_client_nonblocking_func_t
+    					register_callback,
+    void *				register_callback_arg);
+
 void
 globus_gram_client_debug(void);
+
+/**
+ * @defgroup globus_gram_client_attr GRAM Client Attribute Functions
+ */
+int
+globus_gram_client_attr_init(
+    globus_gram_client_attr_t *         attr);
+int
+globus_gram_client_attr_destroy(
+    globus_gram_client_attr_t *         attr);
+
+int
+globus_gram_client_attr_set_credential(
+    globus_gram_client_attr_t           attr,
+    gss_cred_id_t                       credential);
+
+int
+globus_gram_client_attr_get_credential(
+    globus_gram_client_attr_t           attr,
+    gss_cred_id_t *                     credential);
 
 #define GLOBUS_GRAM_CLIENT_MODULE (&globus_gram_client_module)
 

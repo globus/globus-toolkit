@@ -16,6 +16,8 @@ SUBDIRS= \
 # will need to be seperated into seperate macros.
 Sources= \
 	globus_gram_client.c \
+        globus_gram_client_attr.c \
+        globus_i_gram_client.h \
 	globus_gram_client.h
 
 # INCLUDES is an automake macro which contains 

@@ -24,22 +24,13 @@
  */
 
 #include "globus_config.h"
-#include "globus_gram_client.h"
+#include "globus_i_gram_client.h"
 #include "globus_gram_protocol.h"
+#include "globus_io.h"
 
 #include <assert.h>
 #include <stdio.h>
-#include <malloc.h>
 #include <string.h>
-#ifndef TARGET_ARCH_WIN32
-#include <sys/param.h>
-#include <sys/time.h>
-#endif
-#include <globus_io.h>
-
-#if defined(TARGET_ARCH_SOLARIS)
-#include <netdb.h>
-#endif
 #include "version.h"
 
 typedef
@@ -101,10 +92,17 @@ globus_l_gram_client_parse_gatekeeper_contact(
     char **				gatekeeper_dn);
 
 static int 
-globus_l_gram_client_setup_attr_t(
+globus_l_gram_client_setup_gatekeeper_attr(
     globus_io_attr_t *                     attrp,
+    gss_cred_id_t                          credential,
     globus_io_secure_delegation_mode_t     delegation_mode,
     char *                                 gatekeeper_dn );
+
+static int
+globus_l_gram_client_setup_jobmanager_attr(
+    globus_io_attr_t *                      attr,
+    gss_cred_id_t                           credential);
+
 
 static
 int
@@ -112,7 +110,15 @@ globus_l_gram_client_job_request(
     const char *			resource_manager_contact,
     const char *			description,
     int					job_state_mask,
+    globus_i_gram_client_attr_t *       iattr,
     const char *			callback_contact,
+    globus_l_gram_client_monitor_t *	monitor);
+
+static
+int 
+globus_l_gram_client_ping(
+    const char *			resource_manager_contact,
+    globus_i_gram_client_attr_t *       iattr,
     globus_l_gram_client_monitor_t *	monitor);
 
 static
@@ -184,10 +190,11 @@ globus_module_descriptor_t globus_gram_client_module =
     &local_version
 };
 
-FILE *					globus_l_print_fp;
-static globus_mutex_t			globus_l_mutex;
+static FILE *				globus_l_print_fp;
 static int				globus_l_is_initialized = 0;
 static globus_hashtable_t		globus_l_gram_client_contacts;
+
+static globus_mutex_t		        globus_l_mutex;
 
 #define GLOBUS_L_CHECK_IF_INITIALIZED assert(globus_l_is_initialized==1)
 
@@ -244,7 +251,6 @@ globus_i_gram_client_activate(void)
 			  globus_hashtable_string_hash,
 			  globus_hashtable_string_keyeq);
 
-    /* globus_gram_client_debug(); */
 
     return 0;
 } /* globus_i_gram_client_activate() */
@@ -466,11 +472,12 @@ globus_l_gram_client_parse_gatekeeper_contact(
 
 
 /*
- * globus_l_gram_client_setup_attr_t()
+ * globus_l_gram_client_setup_gatekeeper_attr()
  */
 static int 
-globus_l_gram_client_setup_attr_t(
+globus_l_gram_client_setup_gatekeeper_attr(
     globus_io_attr_t *                     attrp,
+    gss_cred_id_t                          credential,
     globus_io_secure_delegation_mode_t     delegation_mode,
     char *                                 gatekeeper_dn )
 {
@@ -478,12 +485,16 @@ globus_l_gram_client_setup_attr_t(
     globus_io_secure_authorization_data_t  auth_data;
 
     if ( (res = globus_io_tcpattr_init(attrp))
+         || (res = globus_io_attr_set_socket_keepalive(attrp, GLOBUS_TRUE))
+
 	 || (res = globus_io_secure_authorization_data_initialize(
 	     &auth_data))
 	 || (res = globus_io_attr_set_secure_authentication_mode(
 	     attrp,
 	     GLOBUS_IO_SECURE_AUTHENTICATION_MODE_MUTUAL,
-	     globus_i_gram_protocol_credential))
+             (credential != GSS_C_NO_CREDENTIAL)
+                 ? credential
+                 : globus_i_gram_protocol_credential))
 	 ||  (gatekeeper_dn ? (res = globus_io_secure_authorization_data_set_identity(
 	     &auth_data,
 	     gatekeeper_dn)) : 0)
@@ -513,8 +524,40 @@ globus_l_gram_client_setup_attr_t(
     }
 
     return GLOBUS_SUCCESS;
-} /* globus_l_gram_client_setup_attr_t() */
+} /* globus_l_gram_client_setup_gatekeeper_attr() */
 
+static int
+globus_l_gram_client_setup_jobmanager_attr(
+    globus_io_attr_t *                      attr,
+    gss_cred_id_t                           credential)
+{
+    globus_result_t                        res;
+    globus_io_secure_authorization_data_t  auth_data;
+
+    if ( (res = globus_io_tcpattr_init(attr))
+            || (res = globus_io_attr_set_socket_keepalive(attr, GLOBUS_TRUE))
+            || (res = globus_io_secure_authorization_data_initialize(
+                    &auth_data))
+            || (res = globus_io_attr_set_secure_authentication_mode(
+                    attr,
+                    GLOBUS_IO_SECURE_AUTHENTICATION_MODE_MUTUAL,
+                     (credential != GSS_C_NO_CREDENTIAL)
+                         ? credential
+                         : globus_i_gram_protocol_credential))
+            || (res = globus_io_attr_set_secure_authorization_mode(
+                    attr,
+                    GLOBUS_IO_SECURE_AUTHORIZATION_MODE_SELF,
+                    &auth_data))
+            || (res = globus_io_attr_set_secure_channel_mode(
+                    attr,
+                    GLOBUS_IO_SECURE_CHANNEL_MODE_SSL_WRAP)) )
+    {
+        globus_object_t *  err = globus_error_get(res);
+        globus_object_free(err);
+        return GLOBUS_GRAM_PROTOCOL_ERROR_CONNECTION_FAILED;
+    }
+    return GLOBUS_SUCCESS;
+} /* globus_l_gram_client_setup_jobmanager_attr() */
 
 /**
  * Version checking
@@ -544,6 +587,79 @@ globus_gram_client_set_credentials(gss_cred_id_t new_credentials)
 
 
 /**
+ * Verify that a gatekeeper is running (nonblocking).
+ * @ingroup globus_gram_client_job_functions
+ *
+ * Sends a specially-formated GRAM protocol message which checks to
+ * see if a Globus Gatekeeper is running on a given PORT, and whether that
+ * Gatekeeper is configured to support the desired job manager service.
+ * This is primarily used for diagnostic purposes.
+ *
+ * If this function determines that the ping could not be processed before
+ * contacting the gatekeeper (for example, a malformed
+ * @a resource_manager_contact),  it will return an error, and the 
+ * @a regiser_callback function will not be called.
+ *
+ * @param resource_manager_contact
+ *        A NULL-terminated character string containing a
+ *        @link globus_gram_resource_manager_contact GRAM contact@endlink.
+ * @param attr
+ *        Client attributes to be used. Should be set to
+ *        GLOBUS_GRAM_CLIENT_NO_ATTR if no attributes are to be used.
+ * @param register_callback
+ *        The callback function to call when the ping request has
+ *        completed. 
+ * @param register_callback_arg
+ *        A pointer to user data which will be passed to the callback as
+ *        it's @a user_callback_arg.
+ *
+ * @return
+ * This function returns GLOBUS_SUCCESS if The gatekeeper contact is valid, the
+ * client was able to authenticate with the Gatekeeper, and the Gatekeeper was
+ * able to locate the requested service. Otherwise one of the
+ * GLOBUS_GRAM_PROTOCOL_ERROR values is returned.
+ */
+int 
+globus_gram_client_register_ping(
+    const char *			resource_manager_contact,
+    globus_gram_client_attr_t           attr,
+    globus_gram_client_nonblocking_func_t
+                                        register_callback,
+    void *                              register_callback_arg)
+{
+    globus_i_gram_client_attr_t *       iattr = NULL;
+    globus_l_gram_client_monitor_t *	monitor;
+    int					rc;
+
+    monitor = globus_libc_malloc(sizeof(globus_l_gram_client_monitor_t));
+
+    if(!monitor)
+    {
+        return GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+    }
+    iattr = (globus_i_gram_client_attr_t *) attr;
+
+    globus_l_gram_client_monitor_init(
+            monitor,
+            register_callback,
+            register_callback_arg);
+
+    rc = globus_l_gram_client_ping(
+            resource_manager_contact,
+            iattr,
+            monitor);
+
+    if (rc != GLOBUS_SUCCESS)
+    {
+        globus_l_gram_client_monitor_destroy(monitor);
+        globus_libc_free(monitor);
+
+    }
+    return rc;
+}
+/* globus_gram_client_register_ping() */
+
+/**
  * Verify that a gatekeeper is running.
  * @ingroup globus_gram_client_job_functions
  *
@@ -559,7 +675,7 @@ globus_gram_client_set_credentials(gss_cred_id_t new_credentials)
  *        @link globus_gram_resource_manager_contact GRAM contact@endlink.
  *
  * @return
- * This funciton returns GLOBUS_SUCCESS if The gatekeeper contact is valid, the
+ * This function returns GLOBUS_SUCCESS if The gatekeeper contact is valid, the
  * client was able to authenticate with the Gatekeeper, and the Gatekeeper was
  * able to locate the requested service. Otherwise one of the
  * GLOBUS_GRAM_PROTOCOL_ERROR values is returned.
@@ -569,48 +685,22 @@ globus_gram_client_ping(
     const char *			resource_manager_contact)
 {
     int					rc;
-    globus_io_attr_t			attr;
     globus_l_gram_client_monitor_t	monitor;
-    char *				url;
-    char *				dn;
 
-    globus_mutex_init(&monitor.mutex, (globus_mutexattr_t *) NULL);
-    globus_cond_init(&monitor.cond, (globus_condattr_t *) NULL);
-    monitor.done = GLOBUS_FALSE;
+    globus_l_gram_client_monitor_init(&monitor, NULL, NULL);
 
-    rc = globus_l_gram_client_parse_gatekeeper_contact(
-	resource_manager_contact,
-	"ping",
-	&url,
-	&dn );
-
-    if (rc != GLOBUS_SUCCESS)
-	goto globus_gram_client_ping_parse_failed;
-
-    rc = globus_l_gram_client_setup_attr_t( 
-	&attr,
-	GLOBUS_IO_SECURE_DELEGATION_MODE_NONE,
-	dn );
-    if (rc != GLOBUS_SUCCESS)
-	goto globus_gram_client_ping_attr_failed;
-
-    globus_mutex_lock(&monitor.mutex);
-    monitor.type = GLOBUS_GRAM_CLIENT_PING;
-
-    rc = globus_gram_protocol_post(
-	         url,
-		 &monitor.handle,
-		 &attr,
-		 GLOBUS_NULL,
-		 0,
-		 &globus_l_gram_client_monitor_callback,
-		 &monitor);
-
+    rc = globus_l_gram_client_ping(
+            resource_manager_contact,
+            NULL,
+            &monitor);
     if (rc != GLOBUS_SUCCESS)
     {
-	globus_mutex_unlock(&monitor.mutex);
-	goto globus_gram_client_ping_post_failed;
+        globus_l_gram_client_monitor_destroy(&monitor);
+
+        return rc;
     }
+
+    globus_mutex_lock(&monitor.mutex);
     while (!monitor.done)
     {
 	globus_cond_wait(&monitor.cond, &monitor.mutex);
@@ -619,15 +709,6 @@ globus_gram_client_ping(
 
     globus_mutex_unlock(&monitor.mutex);
 
-globus_gram_client_ping_post_failed:
-    globus_io_tcpattr_destroy (&attr);
-
-globus_gram_client_ping_attr_failed:
-    globus_libc_free(url);
-    if (dn)
-        globus_libc_free(dn);
-
-globus_gram_client_ping_parse_failed:
     globus_l_gram_client_monitor_destroy(&monitor);
 
     return rc;
@@ -668,7 +749,6 @@ globus_gram_client_ping_parse_failed:
  * @param attr
  *        Client attributes to be used. Should be set to
  *        GLOBUS_GRAM_CLIENT_NO_ATTR if no attributes are to be used.
- *        Currently ignored.
  * @param register_callback
  *        The callback function to call when the job request submission has
  *        completed. This function will be passed a copy of the job_contact
@@ -696,6 +776,7 @@ globus_gram_client_register_job_request(
     					register_callback,
     void *				register_callback_arg)
 {
+    globus_i_gram_client_attr_t *       iattr = NULL;
     globus_l_gram_client_monitor_t *	monitor;
     int					rc;
 
@@ -705,6 +786,8 @@ globus_gram_client_register_job_request(
 	return GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
     }
 
+    iattr = (globus_i_gram_client_attr_t *) attr;
+
     globus_l_gram_client_monitor_init(monitor,
 	                              register_callback,
 				      register_callback_arg);
@@ -712,6 +795,7 @@ globus_gram_client_register_job_request(
     rc = globus_l_gram_client_job_request(resource_manager_contact,
 	                                  description,
 				          job_state_mask,
+                                          iattr,
 				          callback_contact,
 				          monitor);
     if(rc != GLOBUS_SUCCESS)
@@ -775,6 +859,7 @@ globus_gram_client_job_request(
     rc = globus_l_gram_client_job_request(resource_manager_contact,
 	                                  description,
 					  job_state_mask,
+                                          NULL,
 					  callback_contact,
 					  &monitor);
     if(rc != GLOBUS_SUCCESS)
@@ -831,6 +916,7 @@ int
 globus_l_gram_client_to_jobmanager(
     const char *			job_contact,
     const char *			request,
+    globus_i_gram_client_attr_t *       iattr,
     globus_l_gram_client_callback_type_t
     					request_type,
     globus_l_gram_client_monitor_t *	monitor)
@@ -838,7 +924,20 @@ globus_l_gram_client_to_jobmanager(
     int					rc;
     globus_byte_t *			query = GLOBUS_NULL; 
     globus_size_t			querysize;
+    globus_io_attr_t                    attr;
+    globus_bool_t                       use_attr = GLOBUS_FALSE;
 
+    if (iattr != NULL && iattr->credential != GSS_C_NO_CREDENTIAL)
+    {
+        rc = globus_l_gram_client_setup_jobmanager_attr( 
+	             &attr,
+                     iattr->credential);
+        if (rc != GLOBUS_SUCCESS)
+        {
+            goto error_exit;
+        }
+        use_attr = GLOBUS_TRUE;
+    }
     rc = globus_gram_protocol_pack_status_request(
 	      request,
 	      &query,
@@ -846,7 +945,7 @@ globus_l_gram_client_to_jobmanager(
 
     if (rc!=GLOBUS_SUCCESS)
     {
-	goto error_exit;
+	goto free_attr_exit;
     }
     
     globus_mutex_lock(&monitor->mutex);
@@ -855,7 +954,7 @@ globus_l_gram_client_to_jobmanager(
     rc = globus_gram_protocol_post(
 	         job_contact,
 		 &monitor->handle,
-		 GLOBUS_NULL,
+		 use_attr ? &attr : NULL,
 		 query,
 		 querysize,
 		 (monitor->callback != GLOBUS_NULL) 
@@ -878,6 +977,11 @@ globus_l_gram_client_to_jobmanager(
     if(query)
     {
 	globus_libc_free(query);
+    }
+free_attr_exit:
+    if(use_attr)
+    {
+        globus_io_tcpattr_destroy (&attr);
     }
 error_exit:
     return rc;
@@ -919,6 +1023,7 @@ globus_gram_client_job_cancel(
 
     rc = globus_l_gram_client_to_jobmanager( job_contact,
 	    				     "cancel",
+                                             NULL,
 					     GLOBUS_GRAM_CLIENT_CANCEL,
 					     &monitor);
 
@@ -958,7 +1063,6 @@ globus_gram_client_job_cancel(
  * @param attr
  *        Client attributes to be used. Should be set to
  *        GLOBUS_GRAM_CLIENT_NO_ATTR if no attributes are to be used.
- *        Currently ignored.
  * @param register_callback
  *        The callback function to call when the job request cancel has
  *        completed. 
@@ -998,6 +1102,7 @@ globus_gram_client_register_job_cancel(
 
     rc = globus_l_gram_client_to_jobmanager( job_contact,
 	    				     "cancel",
+                                             (globus_i_gram_client_attr_t*)attr,
 					     GLOBUS_GRAM_CLIENT_CANCEL,
 					     monitor);
 
@@ -1085,6 +1190,7 @@ globus_gram_client_job_signal(
 
     rc = globus_l_gram_client_to_jobmanager( job_contact,
 					     request,
+                                             NULL,
 					     GLOBUS_GRAM_CLIENT_SIGNAL,
 					     &monitor);
     if(rc != GLOBUS_SUCCESS)
@@ -1139,7 +1245,6 @@ error_exit:
  * @param attr
  *        Client attributes to be used. Should be set to
  *        GLOBUS_GRAM_CLIENT_NO_ATTR if no attributes are to be used.
- *        Currently ignored.
  * @param register_callback
  *        The callback function to call when the job signal has
  *        completed. 
@@ -1200,6 +1305,7 @@ globus_gram_client_register_job_signal(
 
     rc = globus_l_gram_client_to_jobmanager( job_contact,
 					     request,
+                                             attr,
 					     GLOBUS_GRAM_CLIENT_SIGNAL,
 					     monitor);
     globus_libc_free(request);
@@ -1253,6 +1359,7 @@ globus_gram_client_job_status(
 
     rc = globus_l_gram_client_to_jobmanager( job_contact,
 					     "status",
+                                             NULL,
 					     GLOBUS_GRAM_CLIENT_STATUS,
 					     &monitor);
 
@@ -1300,7 +1407,6 @@ error_exit:
  * @param attr
  *        Client attributes to be used. Should be set to
  *        GLOBUS_GRAM_CLIENT_NO_ATTR if no attributes are to be used.
- *        Currently ignored.
  * @param register_callback
  *        Callback function to be called when the job status query has
  *        been processed.
@@ -1336,6 +1442,7 @@ globus_gram_client_register_job_status(
 
     rc = globus_l_gram_client_to_jobmanager( job_contact,
 					     "status",
+                                             attr,
 					     GLOBUS_GRAM_CLIENT_STATUS,
 					     monitor);
 
@@ -1406,6 +1513,7 @@ globus_gram_client_job_callback_register(
     rc = globus_l_gram_client_to_jobmanager(
 	    job_contact,
 	    request,
+            NULL,
 	    GLOBUS_GRAM_CLIENT_CALLBACK_REGISTER,
 	    &monitor);
 
@@ -1495,6 +1603,7 @@ globus_gram_client_job_callback_unregister(
     rc = globus_l_gram_client_to_jobmanager(
 	    job_contact,
 	    request,
+            NULL,
 	    GLOBUS_GRAM_CLIENT_CALLBACK_UNREGISTER,
 	    &monitor);
 
@@ -1607,7 +1716,6 @@ end:
  * @param attr
  *        Client attributes to be used. Should be set to
  *        GLOBUS_GRAM_CLIENT_NO_ATTR if no attributes are to be used.
- *        Currently ignored.
  * @param register_callback
  *        Callback function to be called when the job refresh has
  *        been processed.
@@ -1669,7 +1777,6 @@ globus_gram_client_register_job_refresh_credentials(
  * @param attr
  *        Client attributes to be used. Should be set to
  *        GLOBUS_GRAM_CLIENT_NO_ATTR if no attributes are to be used.
- *        Currently ignored.
  * @param register_callback
  *        The callback function to call when the job signal has
  *        completed. 
@@ -1721,6 +1828,7 @@ globus_gram_client_register_job_callback_registration(
     rc = globus_l_gram_client_to_jobmanager(
 	    job_contact,
 	    request,
+            NULL,
 	    GLOBUS_GRAM_CLIENT_CALLBACK_REGISTER,
 	    monitor);
 
@@ -1752,7 +1860,6 @@ globus_gram_client_register_job_callback_registration(
  * @param attr
  *        Client attributes to be used. Should be set to
  *        GLOBUS_GRAM_CLIENT_NO_ATTR if no attributes are to be used.
- *        Currently ignored.
  * @param register_callback
  *        The callback function to call when the job signal has
  *        completed. 
@@ -1802,6 +1909,7 @@ globus_gram_client_register_job_callback_unregistration(
     rc = globus_l_gram_client_to_jobmanager(
 	    job_contact,
 	    request,
+            attr,
 	    GLOBUS_GRAM_CLIENT_CALLBACK_UNREGISTER,
 	    monitor);
 
@@ -1961,6 +2069,7 @@ globus_l_gram_client_job_request(
     const char *			resource_manager_contact,
     const char *			description,
     int					job_state_mask,
+    globus_i_gram_client_attr_t *       iattr,
     const char *			callback_contact,
     globus_l_gram_client_monitor_t *	monitor)
 {
@@ -1980,8 +2089,10 @@ globus_l_gram_client_job_request(
 	goto globus_gram_client_job_request_parse_failed;
     }
 
-    if ((rc = globus_l_gram_client_setup_attr_t( 
+    if ((rc = globus_l_gram_client_setup_gatekeeper_attr( 
 	             &attr,
+                     (iattr != NULL)
+                         ? iattr->credential : GSS_C_NO_CREDENTIAL,
 		     GLOBUS_IO_SECURE_DELEGATION_MODE_LIMITED_PROXY,
 		     dn )) 
 
@@ -2027,6 +2138,72 @@ globus_gram_client_job_request_parse_failed:
     return rc;
 }
 /* globus_l_gram_client_job_request() */
+
+static
+int 
+globus_l_gram_client_ping(
+    const char *			resource_manager_contact,
+    globus_i_gram_client_attr_t *       iattr,
+    globus_l_gram_client_monitor_t *	monitor)
+{
+    int					rc;
+    char *                              url;
+    char *                              dn;
+    globus_io_attr_t                    attr;
+
+    rc = globus_l_gram_client_parse_gatekeeper_contact(
+	resource_manager_contact,
+	"ping",
+	&url,
+	&dn );
+
+    if (rc != GLOBUS_SUCCESS)
+    {
+	goto globus_gram_client_ping_parse_failed;
+    }
+
+    rc = globus_l_gram_client_setup_gatekeeper_attr( 
+	&attr,
+        (iattr != NULL) ? iattr->credential : GSS_C_NO_CREDENTIAL,
+	GLOBUS_IO_SECURE_DELEGATION_MODE_NONE,
+	dn );
+
+    if (rc != GLOBUS_SUCCESS)
+    {
+	goto globus_gram_client_ping_attr_failed;
+    }
+
+    globus_mutex_lock(&monitor->mutex);
+    monitor->type = GLOBUS_GRAM_CLIENT_PING;
+
+    rc = globus_gram_protocol_post(
+	         url,
+		 &monitor->handle,
+		 &attr,
+		 GLOBUS_NULL,
+		 0,
+                 (monitor->callback != NULL)
+                     ? globus_l_gram_client_register_callback
+                     : globus_l_gram_client_monitor_callback,
+                 monitor);
+    globus_mutex_unlock(&monitor->mutex);
+
+    if (rc == GLOBUS_SUCCESS)
+    {
+        return rc;
+    }
+
+    globus_io_tcpattr_destroy (&attr);
+
+globus_gram_client_ping_attr_failed:
+    globus_libc_free(url);
+    if (dn)
+        globus_libc_free(dn);
+
+globus_gram_client_ping_parse_failed:
+    return rc;
+}
+/* globus_l_gram_client__ping() */
 
 static
 int
