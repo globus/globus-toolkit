@@ -73,8 +73,6 @@ typedef enum
     GLOBUS_CALLBACK_ERROR_INVALID_CALLBACK_HANDLE = 1024,
     /** The space handle is not valid or it has already been destroyed */
     GLOBUS_CALLBACK_ERROR_INVALID_SPACE,
-    /** The space attr is not valid or it has already been destroyed */
-    GLOBUS_CALLBACK_ERROR_INVALID_SPACE_ATTR,
     /** Could not allocate memory for an internal structure */
     GLOBUS_CALLBACK_ERROR_MEMORY_ALLOC,
     /** One of the arguments is NULL or out of range */
@@ -103,7 +101,7 @@ typedef int                             globus_callback_space_t;
  * Handle for a space attr.  This handle can be copied
  * and represented as NULL with GLOBUS_NULL
  */
-typedef struct globus_l_callback_space_attr_t * globus_callback_space_attr_t;
+typedef struct globus_l_callback_space_attr_s * globus_callback_space_attr_t;
 
 /* @} */
 

@@ -21,15 +21,6 @@
             "[%s] Invalid space handle",                                    \
             (func)))
 
-#define GLOBUS_L_CALLBACK_CONSTRUCT_INVALID_SPACE_ATTR(func)                \
-    globus_error_put(                                                       \
-        globus_error_construct_error(                                       \
-            GLOBUS_CALLBACK_MODULE,                                         \
-            GLOBUS_NULL,                                                    \
-            GLOBUS_CALLBACK_ERROR_INVALID_SPACE_ATTR,                       \
-            "[%s] Invalid space attr",                                      \
-            (func)))
-
 #define GLOBUS_L_CALLBACK_CONSTRUCT_MEMORY_ALLOC(func, alloc)               \
     globus_error_put(                                                       \
         globus_error_construct_error(                                       \

@@ -38,7 +38,7 @@ typedef struct
     globus_cond_t                       cond;
 } globus_l_callback_space_t;
 
-typedef struct
+typedef struct globus_l_callback_space_attr_s
 {
     globus_callback_space_behavior_t    behavior;
 } globus_l_callback_space_attr_t;
@@ -79,7 +79,6 @@ static globus_memory_t                  globus_l_callback_info_memory;
 static globus_mutex_t                   globus_l_callback_space_lock;
 static globus_handle_table_t            globus_l_callback_space_table;
 static globus_memory_t                  globus_l_callback_space_memory;
-static globus_handle_table_t            globus_l_callback_space_attr_table;
 static globus_memory_t                  globus_l_callback_space_attr_memory;
 
 static globus_l_callback_space_t        globus_l_callback_global_space;
