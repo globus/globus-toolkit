@@ -191,6 +191,7 @@ typedef void
 (*globus_gridftp_server_control_auth_cb_t)(
     globus_gridftp_server_control_op_t      op,
     globus_gridftp_server_control_security_type_t secure_type,
+    gss_ctx_id_t                            context,
     const char *                            subject,
     const char *                            user_name,
     const char *                            pw,

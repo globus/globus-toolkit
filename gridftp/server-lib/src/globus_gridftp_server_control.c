@@ -3014,6 +3014,7 @@ globus_i_gsc_authenticate(
             globus_l_gsc_gssapi_ftp_driver,
             GLOBUS_XIO_DRIVER_GSSAPI_FTP_GET_AUTH,
             &type,
+            &op->server_handle->context,
             &op->server_handle->cred,
             &op->server_handle->del_cred,
             &op->server_handle->subject);
@@ -3033,6 +3034,7 @@ globus_i_gsc_authenticate(
         op->server_handle->funcs.auth_cb(
             op,
             type,
+            op->server_handle->context,
             op->server_handle->subject,
             op->username,
             op->password,

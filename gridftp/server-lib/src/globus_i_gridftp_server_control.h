@@ -323,6 +323,7 @@ typedef struct globus_i_gsc_server_handle_s
     char *                              post_auth_banner;
     char *                              pre_auth_banner;
 
+    gss_ctx_id_t                        context;
     gss_cred_id_t                       cred;
     gss_cred_id_t                       del_cred;
     globus_gridftp_server_control_security_type_t   security_type;
