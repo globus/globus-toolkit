@@ -9,16 +9,6 @@
 #include "verror.h"
 #include "string_funcs.h"
 
-#if defined(SUPPORT_SSL_ANONYMOUS_AUTH)
-#include "sslutil.h"
-#if SSLEAY_VERSION_NUMBER >= 0x0090581fL
-#include <x509v3.h>
-#endif
-#else
-#include <globus_gss_assist.h>
-#include <gssapi.h>
-#endif
-
 #include <string.h>
 #include <assert.h>
 #include <stdlib.h>
