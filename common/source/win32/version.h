@@ -6,3 +6,5 @@ globus_version_t local_version =
     1020870347,
     8
 };
+
+static const char build_flavor[] = "win32dbgmtdthr";

@@ -12,6 +12,7 @@ Sources= \
 	acconfig.h \
 	acquire.c \
 	display.c \
+	hostname.c \
 	globus_gss_assist_constants.h \
 	globus_gss_assist_error.c \
 	globus_i_gss_assist.h \

@@ -1,10 +1,14 @@
+# Windows Only Source Files In Linux Directory
+Sources = \
+    globus_libtool_windows.c
 
 flavorinclude_HEADERS = \
-    globus_object_cache.h
+    globus_object_cache.h \
+    globus_libtool_windows.h
 
 wininclude_HEADERS = \
 	globus_common.h \
-    config.h
+    config.h \
 
 LibDependencies = \
     Ws2_32.lib

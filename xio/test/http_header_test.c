@@ -531,8 +531,8 @@ int main(int argc, char * argv[])
     }
 
     globus_xio_stack_destroy(stack);
-    globus_xio_driver_unload(tcp_driver);
     globus_xio_driver_unload(http_driver);
+    globus_xio_driver_unload(tcp_driver);
     globus_module_deactivate_all();
 
 error_exit:

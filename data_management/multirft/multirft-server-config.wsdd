@@ -15,6 +15,7 @@
     <parameter name="instance-className" value="org.globus.ogsa.base.multirft.RFTPortType"/>
     <parameter name="instance-baseClassName" value="org.globus.ogsa.impl.base.multirft.RftImpl"/>
     <parameter name="instance-securityConfig" value="org/globus/ogsa/impl/base/multirft/security-config.xml"/>
+    <parameter name="securityConfig" value="org/globus/ogsa/impl/base/multirft/security-config.xml"/>
     <parameter name="handlerClass" value="org.globus.ogsa.handlers.RPCURIProvider"/>
     <parameter name="className" value="org.gridforum.ogsi.NotificationFactory"/>
     <parameter name="allowedMethods" value="*"/>

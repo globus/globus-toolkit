@@ -16,7 +16,6 @@
 char *
 globus_l_gsi_gssapi_error_strings[GLOBUS_GSI_GSSAPI_ERROR_LAST] =
 {
-
 /* 0 */   "SSLv3 handshake problems",
 /* 1 */   "globusid not found",
 /* 2 */   "getting cert subject name",
@@ -56,7 +55,9 @@ globus_l_gsi_gssapi_error_strings[GLOBUS_GSI_GSSAPI_ERROR_LAST] =
 /* 36 */  "Error getting peer credential",
 /* 37 */  "Error unknown option",
 /* 38 */  "Error creating error object",
-/* 39 */  "Host lookup failed"
+/* 39 */  "Host lookup failed",
+/* 40 */  "Function not supported on the current platform",
+/* 41 */  "Authorization denied"
 };
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL

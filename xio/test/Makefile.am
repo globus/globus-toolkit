@@ -2,7 +2,8 @@ include $(top_srcdir)/globus_automake_pre
 include $(top_srcdir)/globus_automake_pre_top
 
 SUBDIRS= \
-	pkgdata 
+	pkgdata \
+	drivers 
 
 Sources=                                \
 	test_common.h                   \
@@ -21,7 +22,7 @@ Sources=                                \
 	block_barrier_test.c            \
 	read_barrier_test.c
 
-INCLUDES += $(GPT_INCLUDES)
+INCLUDES += -I$(top_srcdir)/drivers $(GPT_INCLUDES)
 
 test_PROGRAMS=                          \
 	framework_test			\

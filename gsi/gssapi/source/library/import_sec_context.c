@@ -84,7 +84,7 @@ GSS_CALLCONV gss_import_sec_context(
     
     globus_thread_once(
         &once_control,
-        (void (*)(void))globus_i_gsi_gssapi_module.activation_func);
+        globus_l_gsi_gssapi_activate_once);
 
     if (interprocess_token == NULL || 
         interprocess_token == GSS_C_NO_BUFFER || 

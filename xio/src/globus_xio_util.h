@@ -19,6 +19,13 @@ globus_xio_driver_error_match(
     globus_object_t *                   error,
     int                                 type);
 
+globus_bool_t
+globus_xio_driver_error_match_with_cb(
+    globus_xio_driver_t                 driver,
+    globus_object_t *                   error,
+    globus_extension_error_match_cb_t   callback,
+    void *                              type);
+
 void
 globus_xio_contact_destroy(
     globus_xio_contact_t *              contact_info);
@@ -31,6 +38,17 @@ globus_xio_contact_parse(
 globus_result_t
 globus_xio_contact_info_to_string(
     const globus_xio_contact_t *        contact_info,
+    char **                             contact_string);
+
+globus_result_t
+globus_xio_contact_info_to_url(
+    const globus_xio_contact_t *        contact_info,
+    char **                             contact_string);
+
+globus_result_t
+globus_xio_contact_info_to_encoded_string(
+    const globus_xio_contact_t *        contact_info,
+    const globus_xio_contact_t *        encode_chars,
     char **                             contact_string);
 
 /**
@@ -56,7 +74,7 @@ globus_xio_contact_info_to_string(
         GLOBUS_XIO_ERROR_CANCELED,                                          \
         __FILE__,                                                           \
         _xio_name,                                                          \
-        __LINE__,                                                           \
+        __LINE__,							    \
         "Operation was canceled")                                          
                                                                             
 #define GlobusXIOErrorObjEOF()                                              \
@@ -336,11 +354,17 @@ globus_xio_contact_info_to_string(
     do                                                                      \
     {                                                                       \
         int                             _i;                                 \
-        out_len = 0;                                                        \
-        for(_i = 0; _i < iovc; _i++)                                        \
+        const struct iovec *            _iov;                               \
+        int                             _iovc;                              \
+        globus_size_t                   _out_len;                           \
+        _iov = (iov);							    \
+        _iovc = (iovc);							    \
+        _out_len = 0;                                                       \
+        for(_i = 0; _i < _iovc; _i++)                                       \
         {                                                                   \
-            out_len += iov[_i].iov_len;                                     \
+            _out_len += _iov[_i].iov_len;                                   \
         }                                                                   \
+        out_len = _out_len;						    \
     } while(0)
 
 #define GlobusXIOUtilIovSerialize(                                          \

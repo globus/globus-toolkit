@@ -457,7 +457,7 @@ globus_ftp_control_connect(
         element->callback = callback;
         element->arg = callback_arg;
     
-        result = globus_libc_gethostname(localhost,MAXHOSTNAMELEN);
+        result = globus_libc_gethostname(localhost, MAXHOSTNAMELEN);
     
         globus_assert(result == 0);
     
@@ -4486,7 +4486,7 @@ globus_i_ftp_control_client_get_connection_info(
             if(remotehost != GLOBUS_NULL &&
                remoteport != GLOBUS_NULL)
             {
-                result = globus_io_tcp_get_local_address(
+                result = globus_io_tcp_get_remote_address(
                              &handle->cc_handle.io_handle,
                              remotehost,
                              remoteport);

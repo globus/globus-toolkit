@@ -636,7 +636,6 @@ globus_xio_stack_push_driver(
         }
         else
         {
-            xio_stack->transport_driver = driver;
             xio_stack->size++;
             globus_list_insert(&xio_stack->driver_stack, driver);
         }

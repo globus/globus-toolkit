@@ -35,6 +35,7 @@ import org.globus.ogsa.client.managers.NotificationSinkManager;
 import org.globus.ogsa.impl.core.service.ServicePropertiesImpl;
 import org.globus.ogsa.impl.security.authentication.Constants;
 import org.globus.ogsa.impl.security.authorization.NoAuthorization;
+import org.globus.ogsa.impl.security.authorization.HostAuthorization;
 import org.globus.ogsa.utils.AnyHelper;
 import org.globus.ogsa.utils.GetOpts;
 import org.globus.ogsa.utils.GridServiceFactory;
@@ -56,6 +57,8 @@ import org.gridforum.ogsi.WSDLReferenceType;
 import org.gridforum.ogsi.holders.ExtensibilityTypeHolder;
 import org.gridforum.ogsi.holders.LocatorTypeHolder;
 import org.gridforum.ogsi.holders.TerminationTimeTypeHolder;
+import org.globus.ogsa.impl.security.authorization.SelfAuthorization;
+import org.globus.ogsa.impl.security.authorization.HostAuthorization;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -70,9 +73,14 @@ public class RFTClient {
     public static void main( String[] args ) {
         System.out.println( "Multifile RFT command line client" );
 
+        /*these options can be overridden from command line
+        use bin/rft -authz self to override host authz 
+        if the service is running as user*/
         GetOpts opts = new GetOpts(
-                "Usage: RFTClient <factory handle> [id] <path to transfer>",
-                1 );
+                "Usage: RFTClient [-options] <factory handle> [id] <path to transfer>",
+                1, Constants.SIGNATURE,null,
+                HostAuthorization.getInstance(),Constants.SIGNATURE,
+                new IgnoreProxyPolicyHandler());
         String error = opts.parse( args );
 
         if ( error != null ) {
@@ -166,8 +174,9 @@ public class RFTClient {
 
             OGSIServiceGridLocator factoryService = new OGSIServiceGridLocator();
             Factory factory = factoryService.getFactoryPort(new URL(handle));
+            //set factory security options
+            opts.setOptions((Stub)factory);
             GridServiceFactory gridFactory = new GridServiceFactory(factory);
-
             LocatorType locator = gridFactory.createService(extension);
             System.out.println("Created an instance of Multi-RFT");
 
@@ -177,15 +186,14 @@ public class RFTClient {
 
             System.out.println("  Handle: " + location);
             RFTPortType rftPort = loc.getMultiFileRFTPort(locator);
+            ((Stub)rftPort)._setProperty(Constants.GSI_SEC_CONV,
+                                          Constants.SIGNATURE);
+            //by default does self authz
             ((Stub)rftPort)._setProperty(Constants.AUTHORIZATION, 
-                                         NoAuthorization.getInstance());
-            ((Stub)rftPort)._setProperty(GSIConstants.GSI_MODE, 
-                                         GSIConstants.GSI_MODE_FULL_DELEG);
-            ((Stub)rftPort)._setProperty(Constants.GSI_SEC_CONV, 
-                                         Constants.SIGNATURE);
-            ((Stub)rftPort)._setProperty(Constants.GRIM_POLICY_HANDLER,
-                                         new IgnoreProxyPolicyHandler());
-
+                                         SelfAuthorization.getInstance());
+            //perform delegation here 
+            ((Stub)rftPort)._setProperty(GSIConstants.GSI_MODE,
+                GSIConstants.GSI_MODE_FULL_DELEG);
             int requestid = rftPort.start();
             System.out.println("Request id: " + requestid);
             

@@ -1257,6 +1257,10 @@ void
 globus_xio_operation_disable_cancel(
     globus_xio_operation_t              op);
 
+globus_bool_t
+globus_xio_operation_is_canceled(
+    globus_xio_operation_t              op);
+
 globus_size_t
 globus_xio_operation_get_wait_for(
     globus_xio_operation_t              op);
@@ -1273,6 +1277,11 @@ void *
 globus_xio_operation_get_data_descriptor(
     globus_xio_operation_t              op,
     globus_bool_t                       force_create);
+
+globus_result_t
+globus_xio_operation_copy_stack(
+    globus_xio_operation_t              op,
+    globus_xio_stack_t *                stack);
 
 EXTERN_C_END
 

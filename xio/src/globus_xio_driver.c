@@ -627,8 +627,9 @@ globus_l_xio_driver_purge_read_eof(
             tmp_op->_op_handle,
             globus_l_xio_driver_op_read_kickout,
            (void *)tmp_op,
-            tmp_op->blocking ? GLOBUS_CALLBACK_GLOBAL_SPACE: 
-                                tmp_op->_op_handle->space);
+            (tmp_op->blocking || !tmp_op->_op_handle)
+                ? GLOBUS_CALLBACK_GLOBAL_SPACE
+                : tmp_op->_op_handle->space);
     }
     GlobusXIODebugInternalExit();
 }
@@ -703,11 +704,12 @@ globus_i_xio_driver_start_close(
         if(op->ref == 0)
         {
             globus_i_xio_op_destroy(op, &destroy_handle);
-            context->ref--;
-            if(context->ref == 0)
-            {
-                destroy_context = GLOBUS_TRUE;
-            }
+        }
+        
+        context->ref--;
+        if(context->ref == 0)
+        {
+            destroy_context = GLOBUS_TRUE;
         }
     }
     globus_mutex_unlock(&context->mutex);
@@ -1990,7 +1992,7 @@ globus_xio_operation_enable_cancel(
     }
     else
     {
-        mutex = &op->_op_context->mutex;
+        mutex = &op->_op_context->cancel_mutex;
     }
     
     globus_mutex_lock(mutex);
@@ -2019,7 +2021,7 @@ globus_xio_operation_disable_cancel(
     }
     else
     {
-        mutex = &op->_op_context->mutex;
+        mutex = &op->_op_context->cancel_mutex;
     }
     
     globus_mutex_lock(mutex);
@@ -2028,6 +2030,16 @@ globus_xio_operation_disable_cancel(
         op->cancel_arg = NULL;
     }
     globus_mutex_unlock(mutex);
+}
+
+/* this is intended to only be used with a lock that a user also holds in the
+ * cancel callback.  I have not thought of the validity outside of that use
+ */
+globus_bool_t
+globus_xio_operation_is_canceled(
+    globus_xio_operation_t              op)
+{
+    return op->canceled != 0;
 }
 
 globus_size_t
@@ -2067,4 +2079,70 @@ globus_xio_operation_get_data_descriptor(
     }
     
     return op->entry[op->ndx - 1].dd;
+}
+
+globus_result_t
+globus_xio_operation_copy_stack(
+    globus_xio_operation_t              op,
+    globus_xio_stack_t *                stack)
+{
+    globus_result_t                     result;
+    globus_i_xio_server_t *             server;
+    globus_i_xio_context_t *            context;
+    globus_i_xio_stack_t *              istack;
+    int                                 ndx;
+    GlobusXIOName(globus_xio_operation_copy_stack);
+
+    GlobusXIODebugEnter();
+
+    result = globus_xio_stack_init(stack, NULL);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_init;
+    }
+    
+    istack = *stack;
+    
+    switch(op->type)
+    {
+      case GLOBUS_XIO_OPERATION_TYPE_SERVER_INIT:
+        server = op->_op_server;
+        
+        for(ndx = op->stack_size - 1; ndx > op->ndx; ndx--)
+        {
+            istack->size++;
+            globus_list_insert(
+                &istack->driver_stack, server->entry[ndx].driver);
+        }
+        break;
+      
+      case GLOBUS_XIO_OPERATION_TYPE_ACCEPT:
+        server = op->_op_server;
+        
+        for(ndx = op->stack_size - 1; ndx >= op->ndx; ndx--)
+        {
+            istack->size++;
+            globus_list_insert(
+                &istack->driver_stack, server->entry[ndx].driver);
+        }
+        break;
+        
+      default:
+        context = op->_op_context;
+        
+        for(ndx = op->stack_size - 1; ndx >= op->ndx; ndx--)
+        {
+            istack->size++;
+            globus_list_insert(
+                &istack->driver_stack, context->entry[ndx].driver);
+        }
+        break;
+    }
+    
+    GlobusXIODebugExit();
+    return GLOBUS_SUCCESS;
+    
+error_init:
+    GlobusXIODebugExitWithError();
+    return result;
 }

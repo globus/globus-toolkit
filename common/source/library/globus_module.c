@@ -272,42 +272,45 @@ globus_module_deactivate(
      * counter for this module, and call it's deactivation function if it is
      * no longer being used.
      */
-    globus_l_module_mutex_lock(&globus_l_module_mutex);
+    ret_val = GLOBUS_SUCCESS;
+    if (module_descriptor->activation_func != GLOBUS_NULL)
     {
-	ret_val = GLOBUS_SUCCESS;
-
-	if (module_descriptor->activation_func != GLOBUS_NULL)
-	{
-	    globus_l_module_entry_t *   entry;
-	    
-	    entry = globus_l_module_decrement(module_descriptor, parent_key);
-	    if (entry && entry->reference_count == 0)
-	    {
-	        parent_key_save = parent_key;
-		globus_thread_setspecific(
-		    globus_l_deactivate_parent_key,
-		    module_descriptor->activation_func);
-		
-		if(entry->deactivate_cb)
-		{
-		    ret_val = entry->deactivate_cb(
-		        module_descriptor, entry->user_arg);
-		}
-		else if(module_descriptor->deactivation_func != NULL)
-		{
-		    ret_val = module_descriptor->deactivation_func();
-		}
-
-		globus_thread_setspecific(
-		    globus_l_deactivate_parent_key, parent_key_save);
-	    }
-	    else if(globus_l_module_reference_count(module_descriptor) == 0)
+        globus_l_module_entry_t *       entry;
+        
+        globus_l_module_mutex_lock(&globus_l_module_mutex);
+        
+        entry = globus_l_module_decrement(module_descriptor, parent_key);
+        if (entry && entry->reference_count == 0)
+        {
+            globus_l_module_mutex_unlock(&globus_l_module_mutex);
+            
+            parent_key_save = parent_key;
+            globus_thread_setspecific(
+                globus_l_deactivate_parent_key,
+                module_descriptor->activation_func);
+            
+            if(entry->deactivate_cb)
+            {
+                ret_val = entry->deactivate_cb(
+                    module_descriptor, entry->user_arg);
+            }
+            else if(module_descriptor->deactivation_func != NULL)
+            {
+                ret_val = module_descriptor->deactivation_func();
+            }
+            
+            globus_thread_setspecific(
+                globus_l_deactivate_parent_key, parent_key_save);
+        }
+        else
+        {
+            if(globus_l_module_reference_count(module_descriptor) == 0)
             {
                 ret_val = GLOBUS_FAILURE;
             }
-	}
+            globus_l_module_mutex_unlock(&globus_l_module_mutex);
+        }
     }
-    globus_l_module_mutex_unlock(&globus_l_module_mutex);
 
     return ret_val;
 }
@@ -350,7 +353,9 @@ globus_module_deactivate_all(void)
 		if(globus_list_empty(module_entry->clients) &&
 		   module_entry->reference_count > 0)
 		{
+		    globus_l_module_mutex_unlock(&globus_l_module_mutex);
 		    globus_module_deactivate(module_entry->descriptor);
+		    globus_l_module_mutex_lock(&globus_l_module_mutex);
 		    deactivated_one = GLOBUS_TRUE;
 		}
 	    }

@@ -7,6 +7,7 @@
 #include "globus_common.h"
 #include "globus_xio_gsi.h"
 #include "gssapi.h"
+#include "globus_gss_assist.h"
 #include "globus_error_gssapi.h"
 
 #define GLOBUS_XIO_GSI_DRIVER_MODULE GlobusXIOMyModule(gsi)
@@ -46,7 +47,7 @@
             GLOBUS_XIO_GSI_DRIVER_MODULE,                                    \
             (major_status),                                                  \
             (minor_status),                                                  \
-            GLOBUS_XIO_GSI_ERROR_WRAP_GSSAPI,                                        \
+            GLOBUS_XIO_GSI_ERROR_WRAP_GSSAPI,                                \
             __FILE__,                                                        \
             _xio_name,                                                       \
             __LINE__,                                                        \
@@ -64,6 +65,41 @@
             _xio_name,                                                       \
             __LINE__,                                                        \
             "Peer specified lower protection level"))
+
+#define GlobusXioGSIErrorEmptyTargetName()                                   \
+    globus_error_put(                                                        \
+        globus_error_construct_error(                                        \
+            GLOBUS_XIO_GSI_DRIVER_MODULE,                                    \
+            GLOBUS_NULL,                                                     \
+            GLOBUS_XIO_GSI_ERROR_EMPTY_TARGET_NAME,                          \
+            __FILE__,                                                        \
+            _xio_name,                                                       \
+            __LINE__,                                                        \
+            "Identity authorization requested, but no target name set"))
+
+#define GlobusXioGSIErrorEmptyHostName()                                     \
+    globus_error_put(                                                        \
+        globus_error_construct_error(                                        \
+            GLOBUS_XIO_GSI_DRIVER_MODULE,                                    \
+            GLOBUS_NULL,                                                     \
+            GLOBUS_XIO_GSI_ERROR_EMPTY_HOST_NAME,                            \
+            __FILE__,                                                        \
+            _xio_name,                                                       \
+            __LINE__,                                                        \
+            "Host authorization requested, but no host name set"))
+
+#define GlobusXioGSIAuthorizationFailed(_peer_name, _expected_name)          \
+    globus_error_put(                                                        \
+        globus_error_construct_error(                                        \
+            GLOBUS_XIO_GSI_DRIVER_MODULE,                                    \
+            GLOBUS_NULL,                                                     \
+            GLOBUS_XIO_GSI_AUTHORIZATION_FAILED,                             \
+            __FILE__,                                                        \
+            _xio_name,                                                       \
+            __LINE__,                                                        \
+            "The peer authenticated to %s. Expected the peer "               \
+            "to authenticate as %s", (_peer_name), (_expected_name)))
+
 
 /* XIO debug stuff */
 
@@ -120,6 +156,7 @@ typedef struct
     globus_xio_gsi_protection_level_t   prot_level;
     gss_name_t                          target_name;
     globus_bool_t                       init;
+    globus_xio_gsi_authorization_mode_t authz_mode;
 } globus_l_attr_t;
 
 /*
@@ -134,6 +171,8 @@ typedef struct
     OM_uint32                           max_wrap_size;
     gss_ctx_id_t                        context;
     gss_cred_id_t                       delegated_cred;
+    gss_cred_id_t                       credential;
+    char *                              host;
     gss_OID                             mech_used;
     gss_name_t                          peer_name;
     gss_name_t                          local_name;

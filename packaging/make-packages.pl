@@ -42,6 +42,7 @@ my %prereq_archives = (
 my %cvs_archives = (
      'gt2' => [ "/home/globdev/CVS/globus-packages", "gp", $cvs_prefix . "gt2-cvs", "HEAD" ],
      'gt3' => [ "/home/globdev/CVS/globus-packages", "gs", $cvs_prefix . "ogsa-cvs", "HEAD" ],
+     'gt4' => [ "/home/globdev/CVS/globus-packages", "ws", $cvs_prefix . "wsrf-cvs", "HEAD" ],
      'cbindings' => [ "/home/globdev/CVS/globus-packages", "ogsa-c", $cvs_prefix . "cbindings", "HEAD" ],
      'autotools' => [ "/home/globdev/CVS/globus-packages", "side_tools", $cvs_prefix . "autotools", "HEAD" ]
       );
@@ -988,7 +989,7 @@ sub cvs_checkout_generic ()
 	    $cvsopts = "";
 	}
 
-	log_system("cvs -d $cvsroot co $cvsopts $module",
+	log_system("cvs -d $cvsroot co -P $cvsopts $module",
 		   "$cvs_logs/" . $tree . ".log");
 
 	if ( $? ne 0 )

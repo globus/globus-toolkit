@@ -281,7 +281,8 @@ globus_l_io_authorization_test_connect_callback(
     monitor = (globus_l_io_authorization_test_monitor_t *) arg;
     if(result != GLOBUS_SUCCESS)
     { 
-        printf("%s\n",globus_error_print_chain(globus_error_get(result)));
+        printf("%s\n", globus_object_printable_to_string(
+                   globus_error_get(result)));
         exit(1);
     }
     globus_mutex_lock(&monitor->mutex);

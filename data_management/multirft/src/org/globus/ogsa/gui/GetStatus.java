@@ -10,6 +10,7 @@ import org.gridforum.ogsi.OGSIServiceGridLocator;
 import org.globus.axis.gsi.GSIConstants;
 import org.globus.gsi.proxy.IgnoreProxyPolicyHandler;
 import org.globus.ogsa.impl.security.authorization.NoAuthorization;
+import org.globus.ogsa.impl.security.authorization.SelfAuthorization;
 import org.globus.ogsa.impl.security.Constants;
 
 import javax.xml.rpc.Stub;
@@ -22,7 +23,10 @@ public class GetStatus {
         String fileName;
         RFTPortType rftPort;
         GetOpts opts = new GetOpts (
-                        "Usage: GetStatus <handle>",2);
+                        "Usage: GetStatus [options] <handle>",1, 
+                        Constants.SIGNATURE,null,
+                        SelfAuthorization.getInstance(),Constants.SIGNATURE,
+                        new IgnoreProxyPolicyHandler());
         String error = opts.parse(args);
         if( error!=null ) {
             System.err.println(error);
@@ -37,14 +41,8 @@ public class GetStatus {
                     locator.getGridServicePort(new HandleType(handle));
             MultiFileRFTServiceGridLocator loc = new MultiFileRFTServiceGridLocator();
             rftPort = loc.getMultiFileRFTPort(new URL(handle));
-            ((Stub)rftPort)._setProperty(Constants.AUTHORIZATION, 
-                                         NoAuthorization.getInstance());
-            ((Stub)rftPort)._setProperty(GSIConstants.GSI_MODE, 
-                                         GSIConstants.GSI_MODE_FULL_DELEG);
-            ((Stub)rftPort)._setProperty(Constants.GSI_SEC_CONV, 
-                                         Constants.SIGNATURE);
-            ((Stub)rftPort)._setProperty(Constants.GRIM_POLICY_HANDLER,
-                                         new IgnoreProxyPolicyHandler());
+        
+            opts.setOptions((Stub)rftPort);
             status = rftPort.getStatus(fileName);
             if(status != null) {
                 System.out.println("Transfer Id: " + status.getTransferId());
