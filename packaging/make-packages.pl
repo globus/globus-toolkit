@@ -1274,15 +1274,18 @@ sub package_source_tar()
 	    log_system("cp $destdir/pkgdata/pkg_data_src.gpt $destdir/pkgdata/pkg_data_src.gpt.in",
 		       "$pkglog/$package");
 	    paranoia "Metadata copy failed for $package.";
-	    if ( -e "$destdir/pkgdata/filelist" )
+	    if (!( -e "$destdir/filelist" ))
 	    {
-		log_system("cp $destdir/pkgdata/filelist $destdir", "$pkglog/$package");
-		paranoia "Filelist copy failed for $package.";
-            } else {
-		print "\tPartially cool.  Still got filelist from package-list.\n";
-		log_system("cp $top_dir/package-list/$package/filelist 	$destdir/", "$pkglog/$package");
-		paranoia "Filelist copy from package-list failed for $package.";
-	    }
+	      if ( -e "$destdir/pkgdata/filelist" )
+	      {
+	  	  log_system("cp $destdir/pkgdata/filelist $destdir", "$pkglog/$package");
+		  paranoia "Filelist copy failed for $package.";
+              } else {
+		  print "\tPartially cool.  Still got filelist from package-list.\n";
+		  log_system("cp $top_dir/package-list/$package/filelist 	$destdir/", "$pkglog/$package");
+		  paranoia "Filelist copy from package-list failed for $package.";
+	      }
+            }
 	} else {
 	    log_system("mkdir -p $destdir/pkgdata/", "$pkglog/$package");
 	    paranoia "mkdir failed during $package.";
