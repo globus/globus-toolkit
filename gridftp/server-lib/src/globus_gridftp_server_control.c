@@ -252,6 +252,7 @@ static globus_i_gsc_op_t *
 globus_l_gsc_op_create(
     globus_list_t *                         cmd_list,
     const char *                            command,
+    int                                     len,
     globus_i_gsc_server_handle_t *          server_handle)
 {
     globus_i_gsc_op_t *                     op;
@@ -261,7 +262,9 @@ globus_l_gsc_op_create(
     {
         return NULL;
     }
-    op->command = globus_libc_strdup(command);
+    op->command = globus_libc_malloc(len + 1);
+    memcpy(op->command, command, len);
+    op->command[len] = '\0';
     if(op->command == NULL)
     {
         globus_free(op);
@@ -366,7 +369,7 @@ globus_l_gsc_read_cb(
                 if(strcmp(command_name, "ABOR") != 0)
                 {
                     op = globus_l_gsc_op_create(
-                        cmd_list, buffer, server_handle);
+                        cmd_list, buffer, len, server_handle);
                     if(op == NULL)
                     {
                         globus_i_gsc_terminate(server_handle, 0);

@@ -4,6 +4,14 @@
 #include "globus_xio_ftp_cmd.h"
 #include "globus_xio_gssapi_ftp.h"
 
+/*
+#define FTP_DRIVER_NAME "ftp_cmd"
+#define MODE GLOBUS_XIO_DRIVER_FTP_CMD_BUFFER
+*/
+
+#define FTP_DRIVER_NAME "gssapi_ftp"
+#define MODE GLOBUS_XIO_GSSAPI_ATTR_TYPE_SUPER_MODE
+
 #define REPLY_220 "220 Hello there\r\n"
 #define FTP_USER_ARG (void*)0x15
 
@@ -189,17 +197,29 @@ main(
     char *                                  cs;
     globus_gridftp_server_control_attr_t    ftp_attr;
     globus_gridftp_server_control_t         ftp_server;
+    int                                     mode;
+    char *                                  driver_name;
 
     globus_module_activate(GLOBUS_XIO_MODULE);
     globus_module_activate(GLOBUS_GRIDFTP_SERVER_CONTROL_MODULE);
 
+    if(argc > 1)
+    {
+        mode = GLOBUS_XIO_GSSAPI_ATTR_TYPE_SUPER_MODE;
+        driver_name = "gssapi_ftp";
+    }
+    else
+    {
+        mode = GLOBUS_XIO_DRIVER_FTP_CMD_BUFFER;
+        driver_name = "ftp_cmd";
+    }
     /*
      *  set up the xio handle
      */
     res = globus_xio_driver_load("tcp", &tcp_driver);
     test_res(res, __LINE__);
 
-    res = globus_xio_driver_load("ftp_cmd", &ftp_driver);
+    res = globus_xio_driver_load(driver_name, &ftp_driver);
     test_res(res, __LINE__);
     res = globus_xio_stack_init(&stack, NULL);
     res = globus_xio_stack_push_driver(stack, tcp_driver);
@@ -221,11 +241,12 @@ main(
     res = globus_xio_attr_init(&xio_attr);
     test_res(res, __LINE__);
     res = globus_xio_attr_cntl(
-        xio_attr, ftp_driver, GLOBUS_XIO_DRIVER_FTP_CMD_BUFFER, GLOBUS_TRUE);
+        xio_attr, ftp_driver, mode, GLOBUS_TRUE);
     test_res(res, __LINE__);
     res = globus_xio_open(xio_handle, NULL, xio_attr);
     test_res(res, __LINE__);
 
+    fprintf(stdout, "xio connection esstablished.\n");
     /*
      *  server connection is all set up, hand it to server_lib
      */
