@@ -408,9 +408,14 @@ main(int xargc,
          * gatekeeperhome (-home path) when not run from inetd. 
          * otherwise it is NULL
          */
-#if defined(TARGET_ARCH_LINUX)
-        /* There is a memory corruption bug in the getcwd in
+#if defined(TARGET_ARCH_LINUX) || defined(TARGET_ARCH_SOLARIS)
+        /*
+	 * There is a memory corruption bug in the getcwd in
          * glibc-2.1.1 and earlier
+	 *
+	 * Solaris 2.5.1 does not have a correct implementation
+	 * of getcwd either.
+	 *
          */
 	{
 	    char tmppath[PATH_MAX];
