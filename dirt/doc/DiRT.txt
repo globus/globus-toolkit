@@ -82,59 +82,59 @@ Then, you need to create a template file and add it to dirt's template dir (or u
 
 % cvs co dirt
 % cd dirt/templates
-% cat > version.sh
+% cat > dirt.sh
 DIRT_TIMESTAMP=@DIRT_TIMESTAMP@
 DIRT_BRANCH_ID=@DIRT_BRANCH_ID@
 ^D
-% cvs add version.sh
+% cvs add dirt.sh
 % cvs commit -m 'Added new template file for my_package'
 
 (Note:  anytime something is committed to dirt, dirt_active is automatically updated.  This behavior mimics modifications to the CVSROOT administrative module)
 
 Now, we need to enable DiRT for the package.  Add an entry in package.def:
 
-globus_my_package  path/to/my_package version.sh
+globus_my_package  path/to/my_package dirt.sh
 
-Note that the path specified is where the parsed version.sh is going to end up.  The information specified in the parsed version.sh will reflect changes to all files in and below the specified path.
+Note that the path specified is where the parsed dirt.sh is going to end up.  The information specified in the parsed dirt.sh will reflect changes to all files in and below the specified path.
 
-We have just enabled DiRT for my_package.  However, none of the branches or trunk will contain this parsed 'dirt' file until we explicitly request it.  In fact, any changes that are committed to an enabled package that has not 'requested' the version file will receive a warning: 
+We have just enabled DiRT for my_package.  However, none of the branches or trunk will contain this parsed 'dirt' file until we explicitly request it.  In fact, any changes that are committed to an enabled package that has not 'requested' the 'dirt' file will receive a warning: 
 
 DiRT Warning: Package defined for DiRT but no users
 
 To 'request' this file, we simply add a dummy file by the same name and commit that.  Once this is done, DiRT will provided as long as that file exists.
 
-check out the branch (or trunk) that you need to contain the 'dirt' file, add a dummy version.sh and commit it.
+check out the branch (or trunk) that you need to contain the 'dirt' file, add a dummy dirt.sh and commit it.
 
 % cvs checkout -r my_branch <module that contains my_package>
 % cd path/to/my_package
-% touch version.sh
-% cvs add version.sh
-% cvs commit -m 'Requesting DiRT for version.sh' version.sh
+% touch dirt.sh
+% cvs add dirt.sh
+% cvs commit -m 'Requesting DiRT for dirt.sh' dirt.sh
 ....
-DiRT: version.sh has been updated.
+DiRT: dirt.sh has been updated.
 DiRT: You should do a cvs update in this package's root directory
 % cvs update
-U version.sh
-% cat version.sh
+U dirt.sh
+% cat dirt.sh
 DIRT_TIMESTAMP=1013552864
 DIRT_BRANCH_ID=5
 %
 
-From now on, any modifications made to files in or below path/to/my_package will cause version.sh to be updated and you will see 
+From now on, any modifications made to files in or below path/to/my_package will cause dirt.sh to be updated and you will see 
 
-DiRT: version.sh has been updated.
+DiRT: dirt.sh has been updated.
 DiRT: You should do a cvs update in this package's root directory
 
-This process has to be repeated for every branch and package that wants the 'dirt' file.  (Unless that branch has a branch point that already had a version file.  In this case, it will automatically be inherited)
+This process has to be repeated for every branch and package that wants the 'dirt' file.  (Unless that branch has a branch point that already had a 'dirt' file.  In this case, it will automatically be inherited)
 
-If you remove version.sh later (ie, you do a cvs remove on it), DiRT will not put it back unless it is 'requested' again later.  Also, simply removing the package entry in package.def will not cause all of the 'dirt' files to be removed.  It will only prevent them from being updated any further.  This should ONLY be done when there are no longer any active branches making use of the 'dirt' file.
+If you remove dirt.sh later (ie, you do a cvs remove on it), DiRT will not put it back unless it is 'requested' again later.  Also, simply removing the package entry in package.def will not cause all of the 'dirt' files to be removed.  It will only prevent them from being updated any further.  This should ONLY be done when there are no longer any active branches making use of the 'dirt' file.
 
 -------------------------------------------------
 What is an example use of the what DiRT provides?
 -------------------------------------------------
 (DiRT has been put into use throughout globus module code.  see http://www.mcs.anl.gov/~link/versions.txt for more info)
 
-To continue from the example above, lets make use of the version.sh file.  Let's say we have a script that gets installed by my_package.  Currently, there is no way to identify the exact revision of this script.
+To continue from the example above, lets make use of the dirt.sh file.  Let's say we have a script that gets installed by my_package.  Currently, there is no way to identify the exact revision of this script.
 
 Let's assume that this script is already processed by the configure script (ie, it was named 'script.in', after configure we have 'script').  Within this script we can now add a '--version' flag that will be able to not only print out the package revision, but also the timestamp and branch-id.
 
@@ -142,7 +142,7 @@ A line like the following would exist in script.in:
 
 PROGRAM_VERSION="@GPT_MAJOR_VERSION@.@GPT_MINOR_VERSION@ (@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@)"
 
-The configure script would source the contents of version.sh and use those values to process script.in (assume VERSION is the package version and already known to the configure process).  If we use the example version.sh file above, we might have a line like the following in script:
+The configure script would source the contents of dirt.sh and use those values to process script.in (assume VERSION is the package version and already known to the configure process).  If we use the example dirt.sh file above, we might have a line like the following in script:
 
 PROGRAM_VERSION="2.1 (1013552864-5)"
 
@@ -158,7 +158,7 @@ What do I need to be careful of?
 
 For DiRT to be useful, it is important that a branch id always map to one and only one branch tag.  This also implies that the mapping should never change.  This branch id to branch name mapping is the only way of retrieving an image of the source depicted by the timestamp and branch id.
 
-Template files should never change once in use.  Unless this change is purely aesthetic or documentative.  The reason is because the version files in all branches are reconstructed from scratch from this template with every modification.  To make a major change in a template file may break previous branches depending on its old format.  If this behavior poses a problem, I will add support for specifying a revision of a template file in the package.def (this will require a few other changes also, see limitations section).
+Template files should never change once in use.  Unless this change is purely aesthetic or documentative.  The reason is because the 'dirt' files in all branches are reconstructed from scratch from this template with every modification.  To make a major change in a template file may break previous branches depending on its old format.  If this behavior poses a problem, I will add support for specifying a revision of a template file in the package.def (this will require a few other changes also, see limitations section).
 
 If, for some reason, you check out a file in a package using DiRT by using a **numeric** branch id (because, you're nuts?) instead of the symbolic tag name, DiRT will not be able to reflect that modification back to a 'dirt' file.
 
