@@ -37,7 +37,8 @@ typedef enum {
     GASSL_DELETE,
     GASSL_CLEANUP_TAG,
     GASSL_CLEANUP_FILE,
-    GASSL_LIST
+    GASSL_LIST,
+    GASSL_QUERY_URL
 } globus_l_cache_op_t;
 
 /******************************************************************************
@@ -183,6 +184,10 @@ main(int argc, char **argv)
     {
 	op = GASSL_LIST;
     }
+    else if(strncmp("query", argv[arg], strlen(argv[arg])) == 0)
+    {
+	op = GASSL_QUERY_URL;
+    }
     else
     {
 	return globus_l_cache_usage();
@@ -224,7 +229,8 @@ main(int argc, char **argv)
     /* verify globus_l_cache_usage */
     if(op == GASSL_ADD ||
        op == GASSL_DELETE ||
-       op == GASSL_CLEANUP_FILE)
+       op == GASSL_CLEANUP_FILE ||
+       op == GASSL_QUERY_URL)
     {
 	if(url == GLOBUS_NULL)
 	{
@@ -777,6 +783,35 @@ globus_l_cache_local_op(globus_l_cache_op_t op,
 	    }
 	}
 	globus_gass_cache_list_free(entries, size);
+	break;
+    case GASSL_QUERY_URL:
+	rc = globus_gass_cache_add(&cache_handle,
+				   url,
+				   tag,
+				   GLOBUS_FALSE, /* DO NOT CREATE */
+				   &timestamp,
+				   &local_filename);
+	
+	if(rc == GLOBUS_GASS_CACHE_ADD_EXISTS)
+	{
+	    globus_gass_cache_add_done(&cache_handle,
+				url,
+				tag,
+				timestamp);
+	    globus_libc_printf("%s\n",local_filename);
+	}
+	else if(rc == GLOBUS_GASS_CACHE_URL_NOT_FOUND)
+	{
+	    globus_libc_printf("\n");
+	}
+	else
+	{
+	    globus_libc_printf("Error (%d: %s) querying cache\n",
+			   rc,
+			   globus_gass_cache_error_string(rc));
+	    return;
+	}
+	free(local_filename);
 	break;
     }
     globus_gass_cache_close(&cache_handle);
