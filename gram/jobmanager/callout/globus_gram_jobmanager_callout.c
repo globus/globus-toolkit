@@ -103,7 +103,7 @@ globus_gram_callout(
 
     major_status = gss_inquire_sec_context_by_oid(
         &minor_status,
-        job_initiator_ctx,
+        requester_ctx,
         &cert_chain_oid,
         &cert_chain_buffers);
 
