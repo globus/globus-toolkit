@@ -2018,7 +2018,6 @@ globus_l_gram_job_manager_output_close_done(
     globus_bool_t			event_registered;
     globus_list_t *			node;
 
-    request->output->pending_closes--;
     if(destination->url)
     {
 	globus_libc_free(destination->url);
@@ -2053,27 +2052,31 @@ globus_l_gram_job_manager_output_close_done(
     }
     globus_libc_free(destination);
 
-    if((request->jobmanager_state ==
-	    GLOBUS_GRAM_JOB_MANAGER_STATE_CLOSE_OUTPUT ||
-        request->jobmanager_state ==
-	    GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_CLOSE_OUTPUT ||
-        request->jobmanager_state ==
-	    GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_CLOSE_OUTPUT ||
-        request->jobmanager_state ==
-	    GLOBUS_GRAM_JOB_MANAGER_STATE_STDIO_UPDATE_CLOSE ||
-        request->jobmanager_state ==
-	    GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_CLOSE_OUTPUT) &&
-        request->output->close_flag &&
-        request->output->pending_closes == 0)
+    if(request->output->close_flag)
     {
-	globus_callback_unregister(request->output->callback_handle);
-	request->output->callback_handle = GLOBUS_HANDLE_TABLE_NO_HANDLE;
-	do
+	request->output->pending_closes--;
+
+	if((request->jobmanager_state ==
+		GLOBUS_GRAM_JOB_MANAGER_STATE_CLOSE_OUTPUT ||
+	    request->jobmanager_state ==
+		GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_CLOSE_OUTPUT ||
+	    request->jobmanager_state ==
+		GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_CLOSE_OUTPUT ||
+	    request->jobmanager_state ==
+		GLOBUS_GRAM_JOB_MANAGER_STATE_STDIO_UPDATE_CLOSE ||
+	    request->jobmanager_state ==
+		GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_CLOSE_OUTPUT) &&
+	    request->output->pending_closes == 0)
 	{
-	    event_registered =
-		globus_gram_job_manager_state_machine(request);
+	    globus_callback_unregister(request->output->callback_handle);
+	    request->output->callback_handle = GLOBUS_HANDLE_TABLE_NO_HANDLE;
+	    do
+	    {
+		event_registered =
+		    globus_gram_job_manager_state_machine(request);
+	    }
+	    while(!event_registered);
 	}
-	while(!event_registered);
     }
 }
 /* globus_l_gram_job_manager_output_close_done() */

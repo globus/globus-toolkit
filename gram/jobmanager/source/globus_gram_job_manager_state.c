@@ -1745,6 +1745,8 @@ globus_gram_job_manager_state_machine(
 
       case GLOBUS_GRAM_JOB_MANAGER_STATE_DONE:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_DONE:
+	globus_cond_signal(&request->cond);
+	event_registered = GLOBUS_TRUE;
 	break;
 
       case GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_RESPONSE:

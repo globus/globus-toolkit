@@ -590,13 +590,33 @@ sub remote_io_file_create
     my $filename = "${tag}dev/remote_io_url";
     my $tmpname = POSIX::tmpnam();
     my $tmpfile = new IO::File(">$tmpname");
+    my $tmpcachefile;
     my $fh;
     my $result;
 
     $tmpfile->print($description->remote_io_url() . "\n");
     $tmpfile->close();
 
-    system("$cache_pgm -add -t $tag -n $filename file:$tmpname >/dev/null");
+    chomp($result = `$cache_pgm -query $filename`);
+
+    if($result eq '')
+    {
+	# no remote_io_url in the cache yet
+	system("$cache_pgm -add -t $tag -n $filename file:$tmpname "
+	       . ">/dev/null");
+    }
+    else
+    {
+	# already in cache
+	system("$cache_pgm -add -t $tag -n $filename.$$ file:$tmpname "
+	       . ">/dev/null");
+        if($? == 0)
+	{
+	    chomp($tmpcachefile = `$cache_pgm -q $filename.$$`);
+	    rename($tmpcachefile, $result);
+	}
+	system("$cache_pgm -cleanup-url $filename.$$");
+    }
 
     unlink($tmpname);
 

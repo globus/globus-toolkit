@@ -73,6 +73,11 @@ globus_bool_t
 globus_l_gram_job_manager_query_valid(
     globus_gram_jobmanager_request_t *	request);
 
+static
+int
+globus_l_gram_job_manager_query_stop_manager(
+    globus_gram_jobmanager_request_t *	request);
+
 void
 globus_gram_job_manager_query_callback(
     void *				arg,
@@ -480,7 +485,7 @@ globus_l_gram_job_manager_signal(
     globus_gram_protocol_handle_t	handle,
     globus_bool_t *			reply)
 {
-    int					rc;
+    int					rc = GLOBUS_SUCCESS;
     int					signal;
     char *				after_signal;
     globus_off_t			out_size = -1;
@@ -681,20 +686,8 @@ globus_l_gram_job_manager_signal(
 	break;
 
     case GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_STOP_MANAGER:
-	if(!globus_l_gram_job_manager_can_cancel(request))
-	{
-	   rc = GLOBUS_GRAM_PROTOCOL_ERROR_JOB_QUERY_DENIAL;
-	}
-	else
-	{
-	    request->status =
-		GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
-	    request->unsent_status_change = GLOBUS_TRUE;
-	    request->failure_code =
-		GLOBUS_GRAM_PROTOCOL_ERROR_JM_STOPPED;
-	    request->jobmanager_state =
-		GLOBUS_GRAM_JOB_MANAGER_STATE_STOP;
-	}
+	rc = globus_l_gram_job_manager_query_stop_manager(request);
+
 	break;
     default:
 	rc = GLOBUS_GRAM_PROTOCOL_ERROR_UNKNOWN_SIGNAL_TYPE;
@@ -702,6 +695,91 @@ globus_l_gram_job_manager_signal(
     return rc;
 }
 /* globus_l_gram_job_manager_signal() */
+
+static
+int
+globus_l_gram_job_manager_query_stop_manager(
+    globus_gram_jobmanager_request_t *	request)
+{
+    int rc = GLOBUS_SUCCESS;
+
+    switch(request->jobmanager_state)
+    {
+	case GLOBUS_GRAM_JOB_MANAGER_STATE_START:
+	case GLOBUS_GRAM_JOB_MANAGER_STATE_PRE_MAKE_SCRATCHDIR:
+	case GLOBUS_GRAM_JOB_MANAGER_STATE_MAKE_SCRATCHDIR:
+	case GLOBUS_GRAM_JOB_MANAGER_STATE_REMOTE_IO_FILE_CREATE:
+	case GLOBUS_GRAM_JOB_MANAGER_STATE_OPEN_OUTPUT:
+	case GLOBUS_GRAM_JOB_MANAGER_STATE_PROXY_RELOCATE:
+	case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE:
+	case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_COMMIT_EXTEND:
+	case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_COMMITTED:
+	case GLOBUS_GRAM_JOB_MANAGER_STATE_STAGE_IN:
+	case GLOBUS_GRAM_JOB_MANAGER_STATE_SUBMIT:
+	case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL1:
+	case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL2:
+	case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY1:
+	case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2:
+	case GLOBUS_GRAM_JOB_MANAGER_STATE_PROXY_REFRESH:
+	case GLOBUS_GRAM_JOB_MANAGER_STATE_STDIO_UPDATE_CLOSE:
+	case GLOBUS_GRAM_JOB_MANAGER_STATE_STDIO_UPDATE_OPEN:
+	case GLOBUS_GRAM_JOB_MANAGER_STATE_STOP:
+	  request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
+	  request->unsent_status_change = GLOBUS_TRUE;
+	  request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_JM_STOPPED;
+	  request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_STOP;
+	  break;
+	case GLOBUS_GRAM_JOB_MANAGER_STATE_CLOSE_OUTPUT:
+	case GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_CLOSE_OUTPUT:
+	  request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
+	  request->unsent_status_change = GLOBUS_TRUE;
+	  request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_JM_STOPPED;
+	  request->jobmanager_state =
+	      GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_CLOSE_OUTPUT;
+	  break;
+	case GLOBUS_GRAM_JOB_MANAGER_STATE_STAGE_OUT:
+	  request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
+	  request->unsent_status_change = GLOBUS_TRUE;
+	  request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_JM_STOPPED;
+	  request->jobmanager_state =
+	      GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_CLOSE_OUTPUT;
+	  break;
+	case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_END:
+	case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_END_COMMIT_EXTEND:
+	case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_END_COMMITTED:
+	case GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_DONE:
+	  request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
+	  request->unsent_status_change = GLOBUS_TRUE;
+	  request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_JM_STOPPED;
+	  request->jobmanager_state =
+	      GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_DONE;
+	  break;
+	case GLOBUS_GRAM_JOB_MANAGER_STATE_FILE_CLEAN_UP:
+	case GLOBUS_GRAM_JOB_MANAGER_STATE_SCRATCH_CLEAN_UP:
+	case GLOBUS_GRAM_JOB_MANAGER_STATE_CACHE_CLEAN_UP:
+	case GLOBUS_GRAM_JOB_MANAGER_STATE_DONE:
+	case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_DONE:
+	case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED:
+	case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_FILE_CLEAN_UP:
+	case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_SCRATCH_CLEAN_UP:
+	case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_CACHE_CLEAN_UP:
+	case GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED:
+	case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_CLOSE_OUTPUT:
+	case GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_CLOSE_OUTPUT:
+        case GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_PRE_FILE_CLEAN_UP:
+	case GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_FILE_CLEAN_UP:
+	case GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_SCRATCH_CLEAN_UP:
+	case GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_CACHE_CLEAN_UP:
+	case GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_RESPONSE:
+	case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE:
+	case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE_COMMIT_EXTEND:
+	case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE_COMMITTED:
+	  rc = GLOBUS_GRAM_PROTOCOL_ERROR_JOB_QUERY_DENIAL;
+	  break;
+    }
+    return rc;
+}
+/* globus_l_gram_job_manager_query_stop_manager() */
 
 static
 globus_bool_t
@@ -734,31 +812,30 @@ globus_bool_t
 globus_l_gram_job_manager_can_cancel(
     globus_gram_jobmanager_request_t *	request)
 {
-    if(request->jobmanager_state
-	   == GLOBUS_GRAM_JOB_MANAGER_STATE_START ||
-       request->jobmanager_state
-           == GLOBUS_GRAM_JOB_MANAGER_STATE_MAKE_SCRATCHDIR ||
-       request->jobmanager_state
-           == GLOBUS_GRAM_JOB_MANAGER_STATE_OPEN_OUTPUT ||
-       request->jobmanager_state
-           == GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE ||
-       request->jobmanager_state
-           == GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_COMMIT_EXTEND ||
-       request->jobmanager_state
-           == GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_COMMITTED ||
-       request->jobmanager_state
-           == GLOBUS_GRAM_JOB_MANAGER_STATE_STAGE_IN ||
-       request->jobmanager_state
-           == GLOBUS_GRAM_JOB_MANAGER_STATE_SUBMIT ||
-       request->jobmanager_state
-           == GLOBUS_GRAM_JOB_MANAGER_STATE_POLL1 ||
-       request->jobmanager_state
-           == GLOBUS_GRAM_JOB_MANAGER_STATE_POLL2)
+    switch(request->jobmanager_state)
     {
-	return GLOBUS_TRUE;
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_START:
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_PRE_MAKE_SCRATCHDIR:
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_MAKE_SCRATCHDIR:
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_REMOTE_IO_FILE_CREATE:
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_OPEN_OUTPUT:
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_PROXY_RELOCATE:
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE:
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_COMMIT_EXTEND:
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_COMMITTED:
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_STAGE_IN:
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_SUBMIT:
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL1:
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL2:
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY1:
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2:
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_PROXY_REFRESH:
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_STDIO_UPDATE_CLOSE:
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_STDIO_UPDATE_OPEN:
+        return GLOBUS_TRUE;
+      default:
+	return GLOBUS_FALSE;
     }
-
-    return GLOBUS_FALSE;
 }
 /* globus_l_gram_job_manager_can_cancel() */
 
@@ -772,8 +849,11 @@ globus_l_gram_job_manager_query_valid(
 	    ? request->restart_state : request->jobmanager_state)
     {
       case GLOBUS_GRAM_JOB_MANAGER_STATE_START:
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_PRE_MAKE_SCRATCHDIR:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_MAKE_SCRATCHDIR:
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_REMOTE_IO_FILE_CREATE:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_OPEN_OUTPUT:
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_PROXY_RELOCATE:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_COMMIT_EXTEND:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_COMMITTED:
@@ -783,6 +863,9 @@ globus_l_gram_job_manager_query_valid(
       case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL2:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY1:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2:
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_PROXY_REFRESH:
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_STDIO_UPDATE_CLOSE:
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_STDIO_UPDATE_OPEN:
 	  return GLOBUS_TRUE;
       case GLOBUS_GRAM_JOB_MANAGER_STATE_CLOSE_OUTPUT:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_STAGE_OUT:
