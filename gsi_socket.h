@@ -70,7 +70,7 @@ void GSI_SOCKET_clear_error(GSI_SOCKET *gsi_socket);
  *
  * Returns GSI_SOCKET_SUCCESS on success, GSI_SOCKET_ERROR otherwise.
  */
-int GSI_SOCET_set_encryption(GSI_SOCKET *gsi_socket,
+int GSI_SOCKET_set_encryption(GSI_SOCKET *gsi_socket,
 			     int value);
 
 /*
