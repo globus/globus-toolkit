@@ -81,23 +81,32 @@ public class SingleJobThread
             logger.debug("running job thread");
         }
         //retrieve, parse, and validate the RSL
-        /*
         File file = new File(rslFile);
         RslParser rslParser = RslParserFactory.newRslParser();
-        Element rsl = rslParser.parse(new FileReader(file));
+        Element rsl = null;
+        try {
+            rsl = rslParser.parse(new FileReader(file));
+        } catch (Exception e) {
+            logger.error("unable to read RSL file", e);
+            return;
+        }
 
         //setup factory stub
         OGSIServiceGridLocator factoryLocator = new OGSIServiceGridLocator();
-        Factory factory = factoryLocator.getFactoryPort(new URL(factoryUrl));
+        Factory factory = null;
+        try {
+            factory = factoryLocator.getFactoryPort(new URL(factoryUrl));
+        } catch (Exception e) {
+            logger.error("unable to get factory port", e);
+            return;
+        }
         ((Stub)factory)._setProperty(Constants.GSI_XML_SIGNATURE,
                                      Boolean.TRUE);
         ((Stub)factory)._setProperty(Constants.GRIM_POLICY_HANDLER,
                                  new IgnoreProxyPolicyHandler());
         ((Stub)factory)._setProperty(GSIConstants.GSI_AUTHORIZATION,
                                     NoAuthorization.getInstance());
-        ExtensibilityType creationParameters = AnyHelper.getExtensibility(rsl);
         GridServiceFactory gridServiceFactory = new GridServiceFactory(factory);
-        */
 
         //start timming createService()
         this.perfLog.start();
@@ -106,20 +115,25 @@ public class SingleJobThread
         if (logger.isDebugEnabled()) {
             logger.debug("creating job");
         }
-        /*
-        LocatorType gshHolder = gridServiceFactory.createService(extension);
-        ManagedJobServiceGridLocator mjsLocator
-            = new ManagedJobServiceGridLocator();
-        this.managedJob = loc.getManagedJobPort(gshHolder);
-        */
+        try {
+            ExtensibilityType creationParameters = AnyHelper.getExtensibility(rsl);
+            LocatorType gshHolder
+                = gridServiceFactory.createService(creationParameters);
+            ManagedJobServiceGridLocator mjsLocator
+                = new ManagedJobServiceGridLocator();
+            this.managedJob = mjsLocator.getManagedJobPort(gshHolder);
+        } catch (Exception e) {
+            logger.error("unable to create MJS instance", e);
+            return;
+        }
 
-        /**/
+        /*
         try {
             Thread.currentThread().sleep(5000);
         } catch (Exception e) {
             logger.error("unabled to sleep", e);
         }
-        /**/
+        */
 
         //stop timming createService()
         this.perfLog.stop("createService");
@@ -159,7 +173,6 @@ public class SingleJobThread
             logger.debug("starting job");
         }
         //setup MJS stub
-        /*
         ((Stub)this.managedJob)._setProperty(GSIConstants.GSI_AUTHORIZATION,
                                             NoAuthorization.getInstance());
         ((Stub)this.managedJob)._setProperty(GSIConstants.GSI_MODE,
@@ -168,22 +181,24 @@ public class SingleJobThread
                                             Constants.SIGNATURE);
         ((Stub)this.managedJob)._setProperty(Constants.GRIM_POLICY_HANDLER,
                                             new IgnoreProxyPolicyHandler());
-                                            */
 
         //start timming start()
         this.perfLog.start();
 
         //start job
+        try {
+            JobStatusType jobState = this.managedJob.start();
+        } catch (Exception e) {
+            logger.error("unable to start MJS instance", e);
+            return;
+        }
         /*
-        JobStatusType jobState = this.managedJob.start();
-        */
-        /**/
         try {
             Thread.currentThread().sleep(5000);
         } catch (Exception e) {
             logger.error("unabled to sleep", e);
         }
-        /**/
+        */
 
         //stop timming start()
         this.perfLog.stop("start");
