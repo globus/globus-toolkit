@@ -892,6 +892,11 @@ globus_l_gfs_file_update_concurrency(
     int                                 extra;
     GlobusGFSName(globus_l_gfs_file_update_concurrency);
 
+    if(monitor->eof)
+    {
+        return;
+    }
+    
     monitor->concurrency_check = monitor->concurrency_check_interval;
     monitor->concurrency_check_interval *= 2;
     if(monitor->concurrency_check_interval > 1024)
@@ -996,7 +1001,7 @@ globus_l_gfs_file_server_read_cb(
         }
 
         monitor->concurrency_check--;
-        if(monitor->concurrency_check == 0)
+        if(monitor->concurrency_check == 0 && !eof)
         {
             globus_l_gfs_file_update_concurrency(monitor);
         }        
