@@ -287,7 +287,9 @@ unset_env() {
 #iter_generic dir
 #dir should contain a file called build-info
 iter_generic() {
-	if [ -e $1/build-info ]; then
+	if [ -e $1/IGNORE ]; then
+		echo "$1/IGNORE exists, skipping $1"
+	elif [ -e $1/build-info ]; then
 		source $1/build-info
 		make_source_package $1
 		unset_env
