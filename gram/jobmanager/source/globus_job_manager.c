@@ -290,8 +290,7 @@ Description:
 Parameters:
 Returns:
 ******************************************************************************/
-int 
-main(int argc,
+int main(int argc,
      char **argv)
 {
     int                    i;
@@ -323,9 +322,9 @@ main(int argc,
     FILE *                 fp;
     FILE *                 test_fp;
     struct stat            statbuf;
-    globus_byte_t *        ptr;
     globus_byte_t                       buffer[GLOBUS_GRAM_CLIENT_MAX_MSG_SIZE];
     globus_byte_t *                     reply;
+    globus_size_t                       reply_size;
     globus_rsl_t *                      rsl_tree;
     globus_gass_cache_entry_t *         cache_entries;
     int                                 cache_size;
@@ -337,7 +336,7 @@ main(int argc,
     globus_result_t                     error;
     globus_callback_handle_t		gass_poll_handle;
     globus_callback_handle_t		stat_cleanup_poll_handle;
-	
+    
     /* gssapi */
 
     OM_uint32			        major_status = 0;
@@ -838,26 +837,37 @@ main(int argc,
     grami_fprintf( request->jobmanager_log_fp,
           "JM: jobmanager_libexecdir = %s\n", request->jobmanager_libexecdir);
 
-    /*
-     *  if a read_rsl_file has been defined, read data from the file 
-     *  instead of from stdin.
-     *  This is just the data, no length field.
-     *  DEE We could change this if needed. 
-     *  In this case, there is not client, and no security
-     *  context to import.  
-     */
-
-    if (strlen(read_rsl_file) > 0)
+    /* Read RSL */
     {
-        int args_fd;
+        int    args_fd;
 
-        if ((args_fd = open(read_rsl_file, O_RDONLY)) == -1)
-        {
-            GRAM_UNLOCK;
-            grami_fprintf( request->jobmanager_log_fp,
-                  "JM: Cannot open test file %s.\n", read_rsl_file);
-            exit(1);
-        }
+	if (strlen(read_rsl_file))
+	{
+	    if ((args_fd = open(read_rsl_file, O_RDONLY)) == -1)
+	    {
+		GRAM_UNLOCK;
+		grami_fprintf( request->jobmanager_log_fp,
+			       "JM: Cannot open test file %s.\n",
+			       read_rsl_file);
+		exit(1);
+	    }
+	}
+	else
+	{
+	    char *  args_fd_str;
+
+	    args_fd_str = globus_libc_getenv("GRID_SECURITY_HTTP_BODY_FD");
+	    
+	    if ((!args_fd_str)a
+		|| ((args_fd = atoi(args_fd_str)) == 0))
+	    {
+		GRAM_UNLOCK;
+		grami_fprintf( request->jobmanager_log_fp,
+			       "JM: Cannot open http body file\n" );
+		exit(1);
+	    }
+	}
+
         jrbuf_size = lseek(args_fd, 0, SEEK_END);
         lseek(args_fd, 0, SEEK_SET);
         if (jrbuf_size > GLOBUS_GRAM_CLIENT_MAX_MSG_SIZE) 
@@ -874,79 +884,57 @@ main(int argc,
         }
         (void *) close(args_fd);
     }
-    else
+
+    if (strlen(read_rsl_file)==0)
     {
-        /*
-         * Stdin and stdout point at the client socket.
-         * Gatekeeper has done authentication and authorization
-         * we will now import security context,
-         * then get the job
-         * request buffer using gssapi wrap and unwrap
-         */
-        if (globus_gss_assist_import_sec_context(
+	rc = globus_gram_http_unpack_job_request(
+		       buffer, 
+		       jrbuf_size,
+		       &job_state_mask,
+		       &client_contact_str,
+		       &rsl_spec );
+
+	if (rc == GLOBUS_GRAM_CLIENT_ERROR_VERSION_MISMATCH)
+	{
+	    grami_fprintf(
+		request->jobmanager_log_fp,
+		"JM: ERROR: globus gram protocol version mismatch!\n");
+	    grami_fprintf( request->jobmanager_log_fp,
+			   "JM: gram client version      = %d\n",
+			   gram_version);
+	    grami_fprintf( request->jobmanager_log_fp,
+			   "JM: gram protocol version = %d\n",
+			   GLOBUS_GRAM_PROTOCOL_VERSION);
+	    fprintf( stderr,
+		     "ERROR: globus gram protocol version mismatch!\n");
+	    fprintf( stderr,
+		     "gram client version      = %d\n",
+		     gram_version);
+	    fprintf( stderr, 
+		     "gram job manager version = %d\n",
+		     GLOBUS_GRAM_PROTOCOL_VERSION);
+	} 
+	else if (rc) 
+	{
+	    grami_fprintf( request->jobmanager_log_fp,
+			   "JM: ERROR: globus gram protocol failure!\n");
+	    return(GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED);
+	}
+
+	if (globus_gss_assist_import_sec_context(
 	                   &minor_status,
 			   &context_handle,
 			   &token_status,
 			   -1,
-                            request->jobmanager_log_fp) != GSS_S_COMPLETE)
-        {
-            grami_fprintf( request->jobmanager_log_fp,
-                "JM:Failed to load security context\n");
-            return(GLOBUS_GRAM_CLIENT_ERROR_GATEKEEPER_MISCONFIGURED);
-        }
+			   request->jobmanager_log_fp) != GSS_S_COMPLETE)
+	{
+	    grami_fprintf( request->jobmanager_log_fp,
+			   "JM:Failed to load security context\n");
+	    return(GLOBUS_GRAM_CLIENT_ERROR_GATEKEEPER_MISCONFIGURED);
+	}
 
         grami_fprintf(request->jobmanager_log_fp,
             "JM: context loaded\n");
-
-	/* TODO:
-	   reply = "HTTP/1.1 200 OK"...
-	   */
-
-	major_status = globus_gss_assist_wrap_send(
-	                        &minor_status,
-				context_handle,
-				(char *)reply,
-				strlen((char *)reply) + 1,
-				&token_status,
-				globus_gss_assist_token_send_fd,
-				stdout,
-				request->jobmanager_log_fp);
-	
-        /* Get the job request from client as wrapped message */
-
-        major_status = globus_gss_assist_get_unwrap(
-	                     &minor_status,
-			     context_handle,
-			     &jrbuf,
-			     &jrbuf_size,
-			     &token_status,
-			     globus_gss_assist_token_get_fd,
-			     stdin,
-			     request->jobmanager_log_fp);
-
-        if (major_status != GSS_S_COMPLETE)
-        {
-            grami_fprintf(request->jobmanager_log_fp,
-                "JM: get_unwraped failed\n");
-            return(GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED);
-        }
-
-        grami_fprintf(request->jobmanager_log_fp,
-                "JM: Got wrap size=%ld\n",
-                jrbuf_size);
-
-        if (jrbuf_size > GLOBUS_GRAM_CLIENT_MAX_MSG_SIZE)
-        {
-            grami_fprintf( request->jobmanager_log_fp,
-                "JM: Job request to big\n");
-            return(GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED);
-        }
-
-        /* copy request to buffer so rest of code is not changed much */
-
-        memcpy(buffer, jrbuf, jrbuf_size);
-        globus_libc_free(jrbuf);
-        jrbuf = NULL;
     }
 
     /*
@@ -974,35 +962,6 @@ main(int argc,
 
         exit(0);
     }
-
-    ptr = buffer;
-
-    /*  Anything left TODO here? --Steve A */
-    rc = globus_i_gram_unpack_http_job_request(
-			   buffer, strlen((char *) buffer),
-			   &job_state_mask,
-			   (globus_byte_t **) &client_contact_str,
-			   (globus_size_t *) NULL,
-			   (globus_byte_t **) &rsl_spec, 
-			   (globus_size_t *) NULL);
-    if (rc == GLOBUS_GRAM_CLIENT_ERROR_VERSION_MISMATCH) {
-	grami_fprintf( request->jobmanager_log_fp,
-		       "JM: ERROR: globus gram protocol version mismatch!\n");
-	grami_fprintf( request->jobmanager_log_fp,
-		       "JM: gram client version      = %d\n", gram_version);
-	grami_fprintf( request->jobmanager_log_fp,
-		       "JM: gram protocol version = %d\n",
-		       GLOBUS_GRAM_PROTOCOL_VERSION);
-	fprintf(stderr, "ERROR: globus gram protocol version mismatch!\n");
-	fprintf(stderr, "gram client version      = %d\n", gram_version);
-	fprintf(stderr, "gram job manager version = %d\n",
-		GLOBUS_GRAM_PROTOCOL_VERSION);
-    } else if (rc) {
-	grami_fprintf( request->jobmanager_log_fp,
-		       "JM: ERROR: globus gram protocol failure!\n");
-	return(GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED);
-    }
-
 
     if (client_contact_str!=NULL)
     {
@@ -1441,12 +1400,12 @@ main(int argc,
         grami_fprintf( request->jobmanager_log_fp,
               "JM: request was successful, sending message to client\n");
 
-/* TODO:
 	rc = globus_i_gram_pack_http_job_request_result_fb(
-	    &reply,
-	    GLOBUS_SUCCESS,
-	    graml_job_contact);
-*/
+	               &reply,
+		       GLOBUS_SUCCESS,
+		       graml_job_contact);
+
+	/* TODO: frame reply */
 
 	if (rc == GLOBUS_SUCCESS)
 	{
@@ -1454,7 +1413,7 @@ main(int argc,
 	    globus_gss_assist_wrap_send(&minor_status,
 					context_handle,
 					(char *)reply,
-					strlen((char *)reply) + 1,
+					reply_size,
 					&token_status,
 					globus_gss_assist_token_send_fd,
 					stdout,
@@ -1513,19 +1472,20 @@ main(int argc,
         grami_fprintf( request->jobmanager_log_fp,
               "JM: request failed, sending message to client\n");
 
-/* TODO:                            
 	rc = globus_i_gram_pack_http_job_request_result(
-	    &reply,
-	    request->failure_code,
-	    NULL);
-*/
+	           &reply,
+		   request->failure_code,
+		   NULL);
+
+	/* TODO: frame reply */
+
 	if (rc == GLOBUS_SUCCESS)
 	{
 	    /* send this reply back down the socket to the client */
 	    globus_gss_assist_wrap_send(&minor_status,
 					context_handle,
 					(char *)reply,
-					strlen((char *)reply) + 1,
+					reply_size,
 					&token_status,
 					globus_gss_assist_token_send_fd,
 					stdout,
@@ -1878,15 +1838,13 @@ globus_l_gram_client_callback(int status, int failure_code)
 
     if (tmp_list)
     {
-/*  TODO:
-	rc = globus_i_gram_http_pack_status_message_fb(
-	    &message,
-	    &msgsize,
-	    graml_job_contact,
-	    status,
-	    failure_code);
-*/
-
+	rc = globus_i_gram_http_pack_status_message(
+                   &message,
+	           &msgsize,
+		   graml_job_contact,
+		   status,
+		   failure_code);
+	
 	if (rc != GLOBUS_SUCCESS)
 	{
 	    grami_fprintf( graml_log_fp,
@@ -1907,11 +1865,12 @@ globus_l_gram_client_callback(int status, int failure_code)
                 "JM: sending callback of status %d to %s.\n", status,
                 client_contact_node->contact);
 
-            rc = globus_l_gram_http_post( client_contact_node->contact,
-					GLOBUS_NULL,        /* default attr */
-					message,
-					strlen((char *)message)+1,
-					GLOBUS_NULL );      /* no monitor */
+            rc = globus_gram_http_post_and_get(
+		             client_contact_node->contact,
+			     GLOBUS_NULL,                   /* default attr */
+			     message,
+			     strlen((char *)message)+1,
+			     GLOBUS_NULL );                 /* no monitor */
 
 	    if (rc != GLOBUS_SUCCESS)       /* connect failed, most likely */
 	    {
@@ -3908,13 +3867,6 @@ globus_l_jm_http_query_callback( void *               arg,
     if (rc != GLOBUS_SUCCESS)
 	goto globus_l_jm_http_query_send_reply;
 
-    /* TODO: unpack buffer */
-    if (1 != sscanf((char *)buf, "%d", &query))
-    {
-	rc = GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED;
-	goto globus_l_jm_http_query_send_reply;
-    }
-    
     globus_io_handle_get_user_pointer( handle,
 				       (void **) &request );
     
