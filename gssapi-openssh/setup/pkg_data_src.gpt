@@ -21,12 +21,38 @@
     <Build_Instructions>
 
       <COMMENT> what happens if INSTALLDIR_GPTMACRO/setup doesn't exist? </COMMENT>
+      <COMMENT> things break, that's what </COMMENT>
+
       <Build_Step>mkdir -p INSTALLDIR_GPTMACRO/setup/globus</Build_Step>
       <Build_Step>cp setup-openssh INSTALLDIR_GPTMACRO/setup/globus/setup-openssh</Build_Step>
       <Build_Step>cp setup-openssh.pl INSTALLDIR_GPTMACRO/setup/globus/setup-openssh.pl</Build_Step>
       <Build_Step>cp ssh_config INSTALLDIR_GPTMACRO/setup/globus/ssh_config</Build_Step>
       <Build_Step>cp sshd_config INSTALLDIR_GPTMACRO/setup/globus/sshd_config</Build_Step>
       <Build_Step>cp moduli INSTALLDIR_GPTMACRO/setup/globus/moduli</Build_Step>
+
+      <Build_Step>mkdir -p INSTALLDIR_GPTMACRO/share/gsi-openssh/contrib</Build_Step>
+
+      <Build_Step>mkdir -p INSTALLDIR_GPTMACRO/share/gsi-openssh/contrib/caldera</Build_Step>
+      <Build_Step>cp ./contrib/caldera/sshd.init INSTALLDIR_GPTMACRO/share/gsi-openssh/contrib/caldera/sshd.init</Build_Step>
+      <Build_Step>cp ./contrib/caldera/sshd.pam INSTALLDIR_GPTMACRO/share/gsi-openssh/contrib/caldera/sshd.pam</Build_Step>
+
+      <Build_Step>mkdir -p INSTALLDIR_GPTMACRO/share/gsi-openssh/contrib/redhat</Build_Step>
+      <Build_Step>cp ./contrib/redhat/openssh.spec INSTALLDIR_GPTMACRO/share/gsi-openssh/contrib/redhat/openssh.spec</Build_Step>
+      <Build_Step>cp ./contrib/redhat/sshd.init INSTALLDIR_GPTMACRO/share/gsi-openssh/contrib/redhat/sshd.init</Build_Step>
+      <Build_Step>cp ./contrib/redhat/sshd.pam INSTALLDIR_GPTMACRO/share/gsi-openssh/contrib/redhat/sshd.pam</Build_Step>
+      <Build_Step>cp ./contrib/redhat/sshd.pam-7.x INSTALLDIR_GPTMACRO/share/gsi-openssh/contrib/redhat/sshd.pam-7.x</Build_Step>
+
+      <Build_Step>mkdir -p INSTALLDIR_GPTMACRO/share/gsi-openssh/contrib/suse</Build_Step>
+      <Build_Step>cp ./contrib/suse/openssh.spec INSTALLDIR_GPTMACRO/share/gsi-openssh/contrib/suse/openssh.spec</Build_Step>
+      <Build_Step>cp ./contrib/suse/rc.config.sshd INSTALLDIR_GPTMACRO/share/gsi-openssh/contrib/suse/rc.config.sshd</Build_Step>
+      <Build_Step>cp ./contrib/suse/rc.sshd INSTALLDIR_GPTMACRO/share/gsi-openssh/contrib/suse/rc.sshd</Build_Step>
+
+      <Build_Step>mkdir -p INSTALLDIR_GPTMACRO/share/gsi-openssh/contrib/hpux</Build_Step>
+      <Build_Step>cp ./contrib/hpux/README INSTALLDIR_GPTMACRO/share/gsi-openssh/contrib/hpux/README</Build_Step>
+      <Build_Step>cp ./contrib/hpux/egd INSTALLDIR_GPTMACRO/share/gsi-openssh/contrib/hpux/egd</Build_Step>
+      <Build_Step>cp ./contrib/hpux/egd.rc INSTALLDIR_GPTMACRO/share/gsi-openssh/contrib/hpux/egd.rc</Build_Step>
+      <Build_Step>cp ./contrib/hpux/sshd INSTALLDIR_GPTMACRO/share/gsi-openssh/contrib/hpux/sshd</Build_Step>
+      <Build_Step>cp ./contrib/hpux/sshd.rc INSTALLDIR_GPTMACRO/share/gsi-openssh/contrib/hpux/sshd.rc</Build_Step>
 
     </Build_Instructions>
 
