@@ -1233,7 +1233,10 @@ globus_l_gram_job_manager_default_done(
     }
     else if(strcmp(variable, "GRAM_SCRIPT_JOB_ID") == 0)
     {
-	request->job_id = globus_libc_strdup(value);
+        if(value != NULL && strlen(value) > 0)
+	{
+	    request->job_id = globus_libc_strdup(value);
+	}
     }
     else if(strcmp(variable, "GRAM_SCRIPT_SCRATCH_DIR") == 0)
     {
