@@ -19,4 +19,5 @@ AC_OUTPUT(
         test.conf
 	pkgdata/Makefile
 	pkgdata/pkg_data_src.gpt
+        flavor.h
 )
