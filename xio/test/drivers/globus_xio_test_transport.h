@@ -3,18 +3,6 @@
 
 #include "globus_common.h"
 
-#define GlobusXIOErrorTestError(location)                               \
-    globus_error_put(                                                   \
-        globus_error_construct_error(                                   \
-            GlobusXIOMyModule(test),                                    \
-            NULL,                                                       \
-            location,                                                   \
-            __FILE__,                                                   \
-            _xio_name,                                                  \
-            __LINE__,                                                   \
-            "I am soooo lazy"))
-
-
 typedef enum globus_xio_test_failure_e
 {
     GLOBUS_XIO_TEST_FAIL_NONE,

@@ -342,6 +342,10 @@ main(
 
     rc = globus_module_activate(GLOBUS_COMMON_MODULE);
     globus_assert(rc == 0);
+    rc = globus_module_activate(GLOBUS_XIO_MODULE);
+    globus_assert(rc == GLOBUS_SUCCESS);
+    rc = globus_extension_activate("globus_xio_test_drivers");
+    globus_assert(rc == 0 && "couldnt load drivers");
 
     /* add all the known tests to hash table */
     rc = globus_hashtable_init(
@@ -438,9 +442,6 @@ main(
         return 1;
     }
 
-    rc = globus_module_activate(GLOBUS_XIO_MODULE);
-    globus_assert(rc == GLOBUS_SUCCESS);
-
     if(file)
     {
         FILE *                          in;
@@ -476,6 +477,7 @@ main(
 
     globus_hashtable_destroy(&globus_l_test_hash);
 
+    globus_extension_deactivate("globus_xio_test_drivers");
     globus_module_deactivate_all();
 
     return rc;

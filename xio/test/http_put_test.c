@@ -675,8 +675,8 @@ destroy_mutex_exit:
     globus_mutex_destroy(&mutex);
 cleanup_exit:
     globus_xio_stack_destroy(stack);
-    globus_xio_driver_unload(tcp_driver);
     globus_xio_driver_unload(http_driver);
+    globus_xio_driver_unload(tcp_driver);
 
     globus_module_deactivate_all();
 

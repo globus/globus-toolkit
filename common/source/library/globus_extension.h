@@ -27,13 +27,13 @@ extern globus_module_descriptor_t       globus_i_extension_module;
 #ifndef GLOBUS_BUILTIN
 #define GlobusExtensionDefineModule(name)                                   \
     globus_module_descriptor_t globus_extension_module
-#define GlobusExtensionDeclareModule(name)                                   \
+#define GlobusExtensionDeclareModule(name)                                  \
     extern globus_module_descriptor_t globus_extension_module
 #define GlobusExtensionMyModule(name) &globus_extension_module
 #else
 #define GlobusExtensionDefineModule(name)                                   \
     globus_module_descriptor_t name##_module
-#define GlobusExtensionDeclareModule(name)                                   \
+#define GlobusExtensionDeclareModule(name)                                  \
     extern globus_module_descriptor_t name##_module
 #define GlobusExtensionMyModule(name) &name##_module
 #endif
@@ -75,11 +75,17 @@ typedef struct
 
 /* these two calls are only to be called from within an extensions activate
  * and deactivate functions
+ * 
+ * the module in the add can either be GlobusExtensionMyModule(name),
+ * some other module, or NULL.  It's purpose is to specify the module that
+ * is associated with the error objects that might come from use of this
+ * addition to the registry.
  */
 int
 globus_extension_registry_add(
     globus_extension_registry_t *       registry,
     const char *                        symbol,
+    globus_module_descriptor_t *        module,
     void *                              data);
 
 void *
@@ -119,7 +125,7 @@ globus_extension_error_match(
  * hopefully in the future, these functions will only be needed by generated
  * code
  */
-void
+int
 globus_extension_register_builtin(
     const char *                        extension_name,
     globus_module_descriptor_t *        module_descriptor);
@@ -135,7 +141,7 @@ typedef struct
 } globus_extension_builtin_t;
 
 /* array of builtins, with null entry at end */
-void
+int
 globus_extension_register_builtins(
     globus_extension_builtin_t *        builtins);
 
