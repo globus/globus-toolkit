@@ -42,7 +42,7 @@ AC_MSG_CHECKING(for myodbc installation path)
 dnl --with-myodbc
 AC_ARG_WITH(myodbc,
 	[  --with-myodbc=PATH specify myodbc path],
-		MYODBC_INSTALL_PATH=$withval),
+		MYODBC_INSTALL_PATH=$withval)
 AC_MSG_RESULT($MYODBC_INSTALL_PATH)
 AC_SUBST(MYODBC_INSTALL_PATH)
 
