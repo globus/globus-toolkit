@@ -3,8 +3,36 @@
 
 
 /**
+ * @defgroup globus_error_api Globus Error API
+ *
+ * Intended use:
+ *
+ * If a function needs to return an error it should do the following:
+ *
+ * - External errors, such as error returns from system calls and
+ *   GSSAPI errors, should be wrapped using the appropriate error
+ *   type.
+ * - The wrapped external error should then be passed as the cause of
+ *   a globus error.
+ * - External error types are expected to provide a utility function
+ *   to combine the above two steps.
+ * - The globus error should then be returned from the function.
+ *
+ * Notes on how to generate globus errors:
+ *
+ * - Module specific error types should be greater or equal to 1024
+ *   (to leave some space for global error types).
+ * - You may wish to generate a mapping from error types to format
+ *   strings for use in short descriptions.
+ * - You may also wish to generate a common prefix for all of the
+ *   above fromat strings. The suggested prefix is "Function: %s Line:
+ *   %s ".
+ */
+
+/**
  * @anchor globus_generic_error_api
- * @mainpage Globus Generic Error API
+ * @defgroup globus_generic_error_api Globus Generic Error API
+ * @ingroup globus_error_api
  *
  * These globus_error functions are motivated by the desire to provide
  * a easier way of generating new error types, while at the same time
@@ -37,6 +65,7 @@ EXTERN_C_BEGIN
 
 /**
  * @defgroup globus_generic_error_object Error Construction
+ * @ingroup globus_generic_error_api
  *
  * Create and initialize a Globus Generic Error object.
  *
@@ -76,6 +105,7 @@ globus_error_initialize_error(
 
 /**
  * @defgroup globus_generic_error_accessor Error Data Accessors and Modifiers
+ * @ingroup globus_generic_error_api
  *
  * Get and set data in a Globus Generic Error object.
  *
@@ -134,6 +164,7 @@ globus_error_set_long_desc(
 
 /**
  * @defgroup globus_generic_error_utility Error Handling Helpers
+ * @ingroup globus_generic_error_api
  *
  * Helper functions for dealing with Globus Generic Error objects.
  *
@@ -152,6 +183,7 @@ globus_error_match(
 char *
 globus_error_print_chain(
     globus_object_t *                   error);
+
 
 #endif
 

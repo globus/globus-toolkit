@@ -9,6 +9,7 @@
 #endif
 
 #include "globus_i_error_errno.h"
+#include "globus_i_error_generic.h"
 #include <string.h>
 
 /**
@@ -207,6 +208,66 @@ globus_error_errno_match(
             system_errno);
     }
 }/* globus_error_errno_match */
+/*@}*/
+
+
+/**
+ * @name Wrap Errno Error
+ */
+/*@{*/
+/**
+ * Allocate and initialize an error of type GLOBUS_ERROR_TYPE_GLOBUS
+ * which contains a causal error of type GLOBUS_ERROR_TYPE_ERRNO.
+ * @ingroup globus_errno_error_utility  
+ *
+ * @param base_source
+ *        Pointer to the originating module.
+ * @param system_errno
+ *        The errno to use when generating the causal error.
+ * @param type
+ *        The error type. We may reserve part of this namespace for
+ *        common errors. Errors not in this space are assumed to be
+ *        local to the originating module.
+ * @param short_desc
+ *        Short context sensitive string giving a succinct description
+ *        of the error. To be passed on to the user.
+ * @param long_desc
+ *        Longer context sensitive string giving a more detailed
+ *        explanation of the error.
+ * @return
+ *        The resulting error object. It is the user's responsibility
+ *        to eventually free this object using globus_object_free(). A
+ *        globus_result_t may be obtained by calling
+ *        globus_error_put() on this object.        
+ */
+globus_object_t *
+globus_error_wrap_errno_error(
+    globus_module_descriptor_t *        base_source,
+    const int                           system_errno,
+    const int                           type,
+    const char *                        short_desc,
+    const char *                        long_desc)
+{
+    globus_object_t *                   causal_error;
+
+    causal_error = globus_error_construct_errno_error(
+        base_source,
+        NULL,
+        system_errno);
+
+    if(!causal_error)
+    {
+        return GLOBUS_NULL;
+    }
+
+    return globus_error_construct_error(
+        base_source,
+        causal_error,
+        type,
+        short_desc,
+        long_desc);
+    
+}/* globus_error_wrap_errno_error */
 /*@}*/
 
 

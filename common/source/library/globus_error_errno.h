@@ -4,15 +4,16 @@
 
 /**
  * @anchor globus_errno_error_api
- * @mainpage Globus Errno Error API
+ * @defgroup globus_errno_error_api Globus Errno Error API
+ * @ingroup globus_error_api
  *
  * These globus_error functions are motivated by the desire to provide
  * a easier way of generating new error types, while at the same time
  * preserving all features (e.g. memory management, chaining) of the
- * current error handling framework. It does this by defining a
- * errno error type for globus which in turn contains a integer in
- * it's instance data which is used for carrying the actual error type
- * information.
+ * current error handling framework. The function in this API are
+ * auxiliary to the function in the Globus Generic Error API in the
+ * sense that they provide a wraper for representing system errors in
+ * terms of a globus_error_t.
  *
  * Any program that uses Globus Errno Error functions must include
  * "globus_common.h". 
@@ -37,6 +38,7 @@ EXTERN_C_BEGIN
 
 /**
  * @defgroup globus_errno_error_object Error Construction
+ * @ingroup globus_errno_error_api
  *
  * Create and initialize a Globus Errno Error object.
  *
@@ -72,6 +74,7 @@ globus_error_initialize_errno_error(
 
 /**
  * @defgroup globus_errno_error_accessor Error Data Accessors and Modifiers
+ * @ingroup globus_errno_error_api
  *
  * Get and set data in a Globus Errno Error object.
  *
@@ -94,6 +97,7 @@ globus_error_errno_set_errno(
 
 /**
  * @defgroup globus_errno_error_utility Error Handling Helpers
+ * @ingroup globus_errno_error_api
  *
  * Helper functions for dealing with Globus Errno Error objects.
  *
@@ -108,6 +112,14 @@ globus_error_errno_match(
     globus_object_t *                   error,
     globus_module_descriptor_t *        module,
     int                                 system_errno);
+
+globus_object_t *
+globus_error_wrap_errno_error(
+    globus_module_descriptor_t *        base_source,
+    const int                           system_errno,
+    const int                           type,
+    const char *                        short_desc,
+    const char *                        long_desc);
 
 #endif
 
