@@ -177,17 +177,4 @@ GLOBUS_SH_PRESERVE="@GLOBUS_SH_PRESERVE@"
 GLOBUS_SH_PRUN="@GLOBUS_SH_PRUN@"
 GLOBUS_SH_PS="@GLOBUS_SH_PS@"
 
-globus_source () {
-
-  # Check if file exists and source it
-  if [ ! -f "$1" ] ; then
-     ${GLOBUS_SH_PRINTF-printf} "$1 not found.\n" >&2
-     exit 1
-  fi
-
-  . "$1"
-}
-
-
-
 # end of config file
