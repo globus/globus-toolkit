@@ -310,11 +310,23 @@ globus_gass_open(char *url, int oflag, ...)
 	break;
 	
     case (O_WRONLY|O_APPEND):
-	rc = globus_gass_client_put_socket(url,
-					   GLOBUS_NULL,
-					   GLOBUS_TRUE,
-					   GLOBUS_GASS_ACK_NONE,
-					   &file->fd);
+	if(oflag & O_SYNC)
+	{
+	    rc = globus_gass_client_put_socket(url,
+					       GLOBUS_NULL,
+					       GLOBUS_TRUE,
+					       GLOBUS_GASS_ACK_COMPLETE,
+					       &file->fd);
+	
+	}
+	else
+	{
+	    rc = globus_gass_client_put_socket(url,
+					       GLOBUS_NULL,
+					       GLOBUS_TRUE,
+					       GLOBUS_GASS_ACK_NONE,
+					       &file->fd);
+	}
 	file->filename = GLOBUS_NULL;
 	if(rc != GLOBUS_GASS_REQUEST_PENDING)
 	{
@@ -435,10 +447,10 @@ globus_gass_close(int fd)
     }
     else
     {
-	nexus_fd_close(file->fd);
-	
 	if (file->scheme_type == GLOBUS_URL_SCHEME_X_GASS_CACHE)
 	{
+	    nexus_fd_close(file->fd);
+	
 	    globus_gass_cache_delete(&globus_l_gass_file_cache_handle,
 			      file->url,
 			      globus_l_gass_file_tag,
