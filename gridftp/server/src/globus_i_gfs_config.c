@@ -203,10 +203,10 @@ static const globus_l_gfs_config_option_t option_list[] =
  {"login_msg_file", "login_msg_file", NULL, "login-msg-file", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "File to read login message from.", NULL, NULL},
 {NULL, "Module Options", NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL},
- {"load_dsi_module", "load_dsi_module", NULL, "dsi", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, "file",
+ {"load_dsi_module", "load_dsi_module", NULL, "dsi", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "Data Storage Interface module to load. file and remote modules are defined by the server. "
-    "Defaults to file unless the 'remote' option is specified, in which case the remote "
-    "DSI is loaded.", NULL, NULL},
+    "If not set, the file module is loaded, unless the 'remote' option is specified, in which case the remote "
+    "module is loaded.", NULL, NULL},
  {"allowed_modules", "allowed_modules", NULL, "allowed-modules", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "Comma seperated list of ERET/ESTO modules to allow, and optionally specify an alias for. "
     "Example: module1,alias2:module2,module3 (module2 will be loaded when a client asks for alias2).", NULL, NULL}, 
@@ -1227,7 +1227,10 @@ globus_l_gfs_config_misc()
         }
         else
         {
-            globus_l_gfs_config_set("load_dsi_module", 0, globus_libc_strdup("remote"));                
+            if(globus_i_gfs_config_string("load_dsi_module") == NULL)
+            {
+                globus_l_gfs_config_set("load_dsi_module", 0, globus_libc_strdup("remote"));    
+            }            
         }            
         community->cs_count = 1;
         
@@ -1262,6 +1265,10 @@ globus_l_gfs_config_misc()
         
         globus_l_gfs_config_set("community", 0, community_list);                
     }
+    if(globus_i_gfs_config_string("load_dsi_module") == NULL)
+    {
+        globus_l_gfs_config_set("load_dsi_module", 0, globus_libc_strdup("file"));    
+    }            
     
     value = globus_libc_strdup(globus_i_gfs_config_string("allowed_modules"));
     if(value != NULL)

@@ -675,7 +675,8 @@ globus_l_gfs_data_command_cb(
             globus_free(msg);
             break;
           case GLOBUS_GFS_CMD_RNFR:
-            globus_gsc_959_finished_command(op, "350 Waiting for RNTO.\r\n");
+            globus_gsc_959_finished_command(op,
+                "350 OK. Send RNTO with destination name.\r\n");
             break;
           case GLOBUS_GFS_CMD_CKSM:
             msg = globus_common_create_string(
@@ -788,13 +789,13 @@ globus_l_gfs_request_command(
         command_info->command = GLOBUS_GFS_CMD_RNFR;
         globus_l_gfs_get_full_path(
             instance, cmd_array[1], &command_info->pathname);
-        instance->rnfr_pathname = globus_libc_strdup(command_info->pathname);
         if(command_info->pathname == NULL)
         {
             goto err;
         }
+        instance->rnfr_pathname = globus_libc_strdup(command_info->pathname);
         globus_gsc_959_finished_command(op,
-            "200 OK.\r\n");
+            "350 OK. Send RNTO with destination name.\r\n");
         done = GLOBUS_TRUE;
     }
     else if(strcmp(cmd_array[0], "RNTO") == 0)
