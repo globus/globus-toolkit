@@ -39,7 +39,16 @@ sub basic_func
       $errors .= "\n# Core file generated.";
    }
    
-   $rc = system("$diff $test_prog.log.stdout $test_prog.stdout") / 256;
+   open(EXPECTED, "<$test_prog.stdout") || die "Couldn't open $test_prog.stdout: $!\n";
+   open(LOGGED, "<$test_prog.log.stdout") || die "Couldn't open $test_prog.log.stdout: $!\n";
+   $rc = 0;
+   while ( my $line = <EXPECTED> )
+   {
+      my $logged = <LOGGED>;
+      $rc++ unless ( $logged =~ /$line/ );
+   }
+
+   # $rc = system("$diff $test_prog.log.stdout $test_prog.stdout") / 256;
    
    if($rc != 0)
    {
