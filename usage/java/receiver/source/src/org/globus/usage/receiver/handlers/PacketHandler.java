@@ -1,5 +1,8 @@
 package org.globus.usage.receiver.handlers;
 
+import org.globus.usage.packets.CustomByteBuffer;
+import org.globus.usage.packets.UsageMonitorPacket;
+
 public interface PacketHandler {
     /*I separate instantiating and handling the packet to make it easier
       to reuse code -- in case, for instance, you want to write two handlers

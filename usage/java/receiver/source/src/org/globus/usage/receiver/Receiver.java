@@ -1,13 +1,22 @@
 package org.globus.usage.receiver;
 
+import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
 import java.util.LinkedList;
 import java.util.ListIterator;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import org.globus.usage.packets.CustomByteBuffer;
+import org.globus.usage.packets.IPTimeMonitorPacket;
+import org.globus.usage.packets.UsageMonitorPacket;
+import org.globus.usage.receiver.handlers.DefaultPacketHandler;
+import org.globus.usage.receiver.handlers.PacketHandler;
+
 public class Receiver {
-    private static Log log = LogFactory.getInstance(Receiver.class);
+    private static Log log = LogFactory.getLog(Receiver.class);
 
     RingBuffer theRing; /*receiver thread puts packets in here; handler
                           thread reads them out and pass them through the 
@@ -79,7 +88,7 @@ public class Receiver {
         code = bufFromRing.getShort();
         switch (code) {
             case 0:
-                packet = new GFTPMonitorPacket();
+                packet = new org.globus.usage.packets.GFTPMonitorPacket();
                 break;
             case 69:
                 packet = new IPTimeMonitorPacket();
@@ -105,7 +114,7 @@ public class Receiver {
 /*Should this actually be an inner class of Receiver?*/
 class ReceiverThread extends Thread {
 
-    private static Category log = Category.getInstance(ReceiverThread.class.getName());
+    private static Log log = LogFactory.getLog(ReceiverThread.class);
 
     protected DatagramSocket socket = null;
     protected int listeningPort;
