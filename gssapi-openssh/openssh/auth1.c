@@ -63,6 +63,11 @@ auth1_gss_protocol_error(int type, u_int32_t plen, void *ctxt)
 int
 gsi_gridmap(char *subject_name, char **mapped_name)
 {
+#ifdef GLOBUS_GSI_GSS_ASSIST_MODULE
+    if (globus_module_activate(GLOBUS_GSI_GSS_ASSIST_MODULE) != 0) {
+	return 0;
+    }
+#endif
     return(globus_gss_assist_gridmap(subject_name, mapped_name) == 0);
 }
 #endif

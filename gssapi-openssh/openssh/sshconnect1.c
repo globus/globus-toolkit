@@ -1051,13 +1051,9 @@ int try_gssapi_authentication(char *host, Options *options)
    * previous call to gethostbyname(). */	
   xhost = xstrdup(host);
 
-  /* If xhost is the loopback interface, switch it to our
-     true local hostname. */
-  resolve_localhost(&xhost);
-
   /* Make sure we have the FQHN. Some GSSAPI implementations don't do
    * this for us themselves */
-  make_fqhn(&xhost);
+  resolve_hostname(&xhost);
 
   /*
    * Default flags

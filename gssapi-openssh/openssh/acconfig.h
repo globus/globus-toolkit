@@ -207,6 +207,9 @@
 /* Define this is you want GSSAPI support in the version 2 protocol */
 #undef GSSAPI
 
+/* Define this if GSSAPI supports gss_export_cred() */
+#undef HAVE_GSSAPI_EXT
+
 /* Define if you want Kerberos 5 support */
 #undef KRB5
 
@@ -218,6 +221,10 @@
 
 /* Define if you want AFS support */
 #undef AFS
+
+/* Define this if you want to use AFS/Kerberos 5 option, which runs aklog. */
+#undef AFS_KRB5
+#undef AKLOG_PATH
 
 /* Define if you want GSI/Globus authentication support */
 #undef GSI

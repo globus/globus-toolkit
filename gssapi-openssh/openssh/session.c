@@ -1320,6 +1320,18 @@ do_child(Session *s, const char *command)
 	struct passwd *pw = s->pw;
 	u_int i;
 
+#ifdef AFS_KRB5
+/* Default place to look for aklog. */
+#ifdef AKLOG_PATH
+#define KPROGDIR AKLOG_PATH
+#else
+#define KPROGDIR "/usr/bin/aklog"
+#endif /* AKLOG_PATH */
+
+	struct stat st;
+	char *aklog_path;
+#endif /* AFS_KRB5 */
+
 	/* remove hostkey from the child's memory */
 	destroy_sensitive_data();
 
@@ -1401,6 +1413,30 @@ do_child(Session *s, const char *command)
 	 * /etc/ssh/sshrc and xauth are run in the proper environment.
 	 */
 	environ = env;
+
+#ifdef AFS_KRB5
+
+	/* User has authenticated, and if a ticket was going to be
+	 * passed we would have it.  KRB5CCNAME should already be set.
+	 * Now try to get an AFS token using aklog.
+	 */
+	if (k_hasafs()) {  /* Do we have AFS? */
+
+		aklog_path = xstrdup(KPROGDIR);
+
+		/*
+		 * Make sure it exists before we try to run it
+		 */
+		if (stat(aklog_path, &st) == 0) {
+			debug("Running %s to get afs token.",aklog_path);
+			system(aklog_path);
+		} else {
+			debug("%s does not exist.",aklog_path);
+		}
+
+		xfree(aklog_path);
+	}
+#endif /* AFS_KRB5 */
 
 #ifdef AFS
 	/* Try to get AFS tokens for the local cell. */

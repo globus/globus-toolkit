@@ -276,7 +276,13 @@ ssh_gssapi_gsi_userok(char *name)
 {
     int authorized = 0;
     
-    /* This returns 0 on success */
+#ifdef GLOBUS_GSI_GSS_ASSIST_MODULE
+    if (globus_module_activate(GLOBUS_GSI_GSS_ASSIST_MODULE) != 0) {
+	return 0;
+    }
+#endif
+
+    /* globus_gss_assist_userok() returns 0 on success */
     authorized = (globus_gss_assist_userok(gssapi_client_name.value,
 					   name) == 0);
     
@@ -292,6 +298,11 @@ ssh_gssapi_gsi_userok(char *name)
 int
 ssh_gssapi_gsi_localname(char **user)
 {
+#ifdef GLOBUS_GSI_GSS_ASSIST_MODULE
+    if (globus_module_activate(GLOBUS_GSI_GSS_ASSIST_MODULE) != 0) {
+	return 0;
+    }
+#endif
     return(globus_gss_assist_gridmap(gssapi_client_name.value, user) == 0);
 }
 
@@ -356,14 +367,14 @@ ssh_gssapi_gsi_storecreds(gss_buffer_t export_buffer)
 			}
 			else
 			{
-				log("Failed to parse delegated credentials string '%s'",
-				    creds_env);
+			    log("Failed to parse delegated credentials string '%s'",
+				creds_env);
 			}
 		}
 		else
 		{
-			log("Failed to export delegated credentials (error %ld)",
-			    major_status);
+		    log("Failed to export delegated credentials (error %d)",
+			major_status);
 		}
 	}
 	return 0;

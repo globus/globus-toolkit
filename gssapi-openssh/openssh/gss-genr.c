@@ -453,13 +453,9 @@ ssh_gssapi_import_name(Gssctxt *ctx, const char *host) {
 	 * previous call to gethostbyname(). */	
 	xhost = xstrdup(host);
 
-	/* If xhost is the loopback interface, switch it to our
-	   true local hostname. */
-	resolve_localhost(&xhost);
-
 	/* Make sure we have the FQHN. Some GSSAPI implementations don't do
 	 * this for us themselves */
-	make_fqhn(&xhost);
+	resolve_hostname(&xhost);
 
         gssbuf.length = sizeof("host@")+strlen(xhost);
 
