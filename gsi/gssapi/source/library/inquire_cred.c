@@ -61,6 +61,7 @@ GSS_CALLCONV gss_inquire_cred(
 {
     OM_uint32                           major_status = GSS_S_COMPLETE;
     OM_uint32                           local_minor_status;
+    OM_uint32                           local_major_status;
     globus_result_t                     local_result;
     gss_cred_id_desc *                  cred_handle =
         (gss_cred_id_desc *)cred_handle_P;
@@ -73,54 +74,76 @@ GSS_CALLCONV gss_inquire_cred(
 
     if (cred_handle == GSS_C_NO_CREDENTIAL)
     {
-        major_status = GSS_S_NO_CRED;
+        local_major_status = gss_acquire_cred(
+            &local_minor_status,
+            NULL,
+            GSS_C_INDEFINITE,
+            GSS_C_NO_OID_SET,
+            GSS_C_BOTH,
+            &cred_handle,
+            NULL,
+            NULL);
+
+        if(GSS_ERROR(local_major_status))
+        {
+            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                minor_status, local_minor_status,
+                GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_CREDENTIAL);
+            major_status = GSS_S_NO_CRED;
+            return major_status;
+        }
     }
-    else
+
+    if (mechanisms != NULL)
     {
-        if (mechanisms != NULL)
-        {
-            *mechanisms = GSS_C_NO_OID_SET;
-        }
-
-        if (cred_usage != NULL)
-        {
-            *cred_usage = cred_handle->cred_usage;
-        }
-
-        if(lifetime != NULL)
-        {
-            local_result = globus_gsi_cred_get_lifetime(
-                cred_handle->cred_handle,
-                lifetime);
-            if(local_result != GLOBUS_SUCCESS)
-            {
-                GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
-                    minor_status, local_result,
-                    GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_CREDENTIAL);
-                major_status = GSS_S_FAILURE;
-                goto exit;
-            }
-        }
-
-        if(name != NULL)
-        {
-#warning what about 0xdee0 and 0xdee1
-            major_status = globus_i_gsi_gss_copy_name_to_name(
-                &local_minor_status,
-                (gss_name_desc **) name,
-                cred_handle->globusid);
-            if(GSS_ERROR(major_status))
-            {
-                GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
-                    minor_status, local_minor_status,
-                    GLOBUS_GSI_GSSAPI_ERROR_BAD_NAME);
-                goto exit;
-            }
-        }        
+        *mechanisms = GSS_C_NO_OID_SET;
     }
+
+    if (cred_usage != NULL)
+    {
+        *cred_usage = cred_handle->cred_usage;
+    }
+
+    if(lifetime != NULL)
+    {
+        local_result = globus_gsi_cred_get_lifetime(
+            cred_handle->cred_handle,
+            lifetime);
+        if(local_result != GLOBUS_SUCCESS)
+        {
+            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                minor_status, local_result,
+                GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_CREDENTIAL);
+            major_status = GSS_S_FAILURE;
+            goto exit;
+        }
+    }
+
+    if(name != NULL)
+    {
+#warning what about 0xdee0 and 0xdee1
+        major_status = globus_i_gsi_gss_copy_name_to_name(
+            &local_minor_status,
+            (gss_name_desc **) name,
+            cred_handle->globusid);
+        if(GSS_ERROR(major_status))
+        {
+            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                minor_status, local_minor_status,
+                GLOBUS_GSI_GSSAPI_ERROR_BAD_NAME);
+            goto exit;
+        }
+    }        
     
  exit:
 
+        
+    if(cred_handle_P == GSS_C_NO_CREDENTIAL &&
+       cred_handle != GSS_C_NO_CREDENTIAL)
+    {
+        gss_release_cred(&local_minor_status, &cred_handle);
+    }
+    
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;
 }
