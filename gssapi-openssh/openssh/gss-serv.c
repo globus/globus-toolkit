@@ -43,7 +43,6 @@
 #include "session.h"
 #include "dispatch.h"
 #include "servconf.h"
-#include "compat.h"
 #include "monitor_wrap.h"
 #include "xmalloc.h"
 #include "getput.h"
