@@ -170,3 +170,5 @@ globus_scheduler_provider_setup_pbs ws-gram/discovery/provider/setup/pbs dirt.sh
 globus_scheduler_provider_setup_lsf ws-gram/discovery/provider/setup/lsf dirt.sh
 globus_scheduler_provider_setup_condor ws-gram/discovery/provider/setup/condor dirt.sh
 globus_gram_local_proxy_tool ws-gram/service/proxy-tool/source dirt.sh
+globus_gridmap_and_execute ws-gram/service/gridmap_and_execute/source dirt.sh
+globus_gridmap_and_execute_test ws-gram/service/gridmap_and_execute/test dirt.sh
