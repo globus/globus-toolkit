@@ -517,8 +517,11 @@ globus_gram_client_ping(char * gatekeeper_url)
     int gatekeeper_fd;
 
     if ((rc = globus_l_gram_client_authenticate(gatekeeper_url,
-                                                GSS_C_MUTUAL_FLAG,
-                                                &gatekeeper_fd)) != 0)
+#ifdef GSS_C_GLOBUS_LIMITED_PROXY_FLAG
+									GSS_C_GLOBUS_LIMITED_PROXY_FLAG |
+#endif
+                                    GSS_C_MUTUAL_FLAG,
+                                    &gatekeeper_fd)) != 0)
     {
         if (rc != GLOBUS_GRAM_CLIENT_ERROR_VERSION_MISMATCH)
             return(rc);
@@ -571,10 +574,22 @@ globus_gram_client_job_request(char * gatekeeper_url,
     * if possible. We specify the services we would like,
     * mutual authentication, delegation.
     * We might also want sequence, and integraty.
+	* 
+	* As a gram client, we will be delegating our proxy
+	* to a foreign site, and want to limit its usefullness
+	* in order to abide by the Globus security policy. 
+	* Gatekeepers are set up to not accept a limited proxy
+	* for authentication. 
+	* We also only want to authenticate to real gatekeepers
+	* not to limited proxy gatekeepers too. 
     */
     if ((rc = globus_l_gram_client_authenticate(gatekeeper_url,
-                                      GSS_C_DELEG_FLAG|GSS_C_MUTUAL_FLAG,
-                                      &gatekeeper_fd)) != 0)
+#ifdef GSS_C_GLOBUS_LIMITED_PROXY_FLAG
+						GSS_C_GLOBUS_LIMITED_PROXY_FLAG |
+						GSS_C_GLOBUS_LIMITED_DELEG_PROXY_FLAG |
+#endif
+                        GSS_C_DELEG_FLAG|GSS_C_MUTUAL_FLAG,
+                        &gatekeeper_fd)) != 0)
     {
         return(rc);
     }
