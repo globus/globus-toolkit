@@ -29,6 +29,7 @@ import org.globus.ogsa.base.gram.types.FaultType;
 import org.globus.ogsa.base.gram.types.JobStateType;
 import org.globus.ogsa.base.gram.types.JobStatusType;
 import org.globus.ogsa.handlers.GrimProxyPolicyHandler;
+import org.globus.ogsa.impl.base.gram.client.GramJob;
 import org.globus.ogsa.impl.base.gram.utils.FaultUtils;
 import org.globus.ogsa.impl.base.gram.utils.rsl.GramJobAttributes;
 import org.globus.ogsa.impl.base.gram.utils.rsl.JobAttributes;
@@ -74,21 +75,16 @@ public class JobStopperThread
     }
 
     ScalabilityTester harness = null;
-    String factoryUrl = null;
-    Element rsl = null;
-    ManagedJobServiceGridLocator mjsLocator = null;
-    NotificationSinkManager notificationSinkManager = null;
-    String notificationSinkId = null;
     int jobIndex = -1;
-    boolean completed = false;
+    String jobHandle = null;
 
-    public JobStopperThread(ScalabilityTester harness, int jobIndex) {
+    public JobStopperThread(
+            ScalabilityTester           harness,
+            int                         jobIndex,
+            String                      jobHandle) {
         this.harness = harness;
         this.jobIndex = jobIndex;
-        this.factoryUrl = this.harness.getFactoryUrl();
-        if (logger.isDebugEnabled()) {
-            logger.debug("Factory URL: " + this.factoryUrl);
-        }
+        this.jobHandle = jobHandle;
     }
 
     public int getIndex() {
@@ -102,33 +98,12 @@ public class JobStopperThread
             logger.debug("running job stopper thread");
         }
 
-        //destroy MJS instance
+        GramJob job = new GramJob("");
         try {
-            if (logger.isDebugEnabled()) {
-                logger.debug("mjsLocator: " + this.mjsLocator);
-                if (this.mjsLocator != null) {
-                    GSR gsr = this.mjsLocator.getGSR();
-                    logger.debug("gsr: " + gsr);
-                    if (gsr != null) {
-                        HandleType handle = gsr.getHandle();
-                        logger.debug("handle: " + handle);
-                    }
-                    
-                }
-            }
-            ManagedJobPortType managedJob = this.mjsLocator.getManagedJobPort(
-                this.mjsLocator.getGSR().getHandle());
-            ((Stub)managedJob)._setProperty(Constants.GSI_SEC_CONV,
-                                            Constants.SIGNATURE);
-            ((Stub)managedJob)._setProperty(Constants.AUTHORIZATION,
-                                            NoAuthorization.getInstance());
-            ((Stub)managedJob)._setProperty(Constants.GRIM_POLICY_HANDLER,
-                                            new IgnoreProxyPolicyHandler());
-            managedJob.destroy();
-
-            this.mjsLocator = null;
-        } catch (RemoteException re) {
-            logger.error("unable to destroy MJS instance", re);
+            job.setHandle(this.jobHandle);
+            job.destroy();
+        } catch (Exception e) {
+            logger.error("unabled to destroy job", e);
         }
     }
 }

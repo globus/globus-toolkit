@@ -29,6 +29,7 @@ import org.globus.ogsa.base.gram.types.FaultType;
 import org.globus.ogsa.base.gram.types.JobStateType;
 import org.globus.ogsa.base.gram.types.JobStatusType;
 import org.globus.ogsa.handlers.GrimProxyPolicyHandler;
+import org.globus.ogsa.impl.base.gram.client.GramJob;
 import org.globus.ogsa.impl.base.gram.utils.FaultUtils;
 import org.globus.ogsa.impl.base.gram.utils.rsl.GramJobAttributes;
 import org.globus.ogsa.impl.base.gram.utils.rsl.JobAttributes;
@@ -57,8 +58,9 @@ import org.gridforum.ogsi.LocatorType;
 import org.gridforum.ogsi.ExtensibilityType;
 
 import org.w3c.dom.Element;
-import java.io.BufferedWriter;
-import java.io.FileWriter;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.StringWriter;
 
 import org.globus.ogsa.tools.ant.StressTest;
 import org.globus.ogsa.utils.PerformanceLog;
@@ -68,14 +70,9 @@ public class JobStarterThread
     implements                      Runnable {
 
     static Log logger = LogFactory.getLog(JobStarterThread.class.getName());
-    static final Object RSL_MONITOR;
-    static {
-        RSL_MONITOR = new Object();
-    }
 
     ScalabilityTester harness = null;
     String factoryUrl = null;
-    Element rsl = null;
     ManagedJobServiceGridLocator mjsLocator = null;
     NotificationSinkManager notificationSinkManager = null;
     String notificationSinkId = null;
@@ -102,117 +99,63 @@ public class JobStarterThread
             logger.debug("running job thread");
         }
 
-        //create service
+        GramJob job = null;
+        //retrieve, parse, and validate the RSL
+        String rsl = null;
         try {
-            createService();
+            BufferedReader reader
+               = new BufferedReader(new FileReader(this.harness.getRslFile()));
+            StringWriter writer = new StringWriter();
+            String line = reader.readLine();
+            while (line != null) {
+                writer.write(line);
+                line = reader.readLine();
+            }
+            writer.close();
+            reader.close();
+            rsl = writer.toString();
+        } catch (Exception e) {
+            abort("unable to read RSL", e);
+            return;
+        }
+
+        //create job
+        if (logger.isDebugEnabled()) {
+            logger.debug("creating job #" + this.jobIndex);
+        }
+        job = new GramJob(rsl);
+        try {
+            job.setSubstitutionDefinition(
+                "JOB_INDEX",
+                "<rsl:urlElement value=\"" + this.jobIndex + "\"/>");
+            job.request(new URL(this.factoryUrl), true);
         } catch (Exception e) {
             abort("unable to create MJS instance", e);
             return;
         }
+        if (logger.isDebugEnabled()) {
+            logger.debug("created job #" + this.jobIndex);
+        }
+        this.harness.notifyCreated(
+            this.jobIndex,
+            job.getHandle().toString());
 
         //do actual start call on job
+        if (logger.isDebugEnabled()) {
+            logger.debug("starting job #" + this.jobIndex
+                        +" with handle:\n" + job.getHandle());
+        }
         try {
-            startService();
+            job.start();
         } catch (Exception e) {
             abort("unable to start MJS instance", e);
+            logger.error(e.getMessage());
             return;
         }
-    }
-
-    protected void createService() throws Exception {
         if (logger.isDebugEnabled()) {
-            logger.debug("creating job");
+            logger.debug("started job #" + this.jobIndex);
         }
-
-        //setup factory stub
-        OGSIServiceGridLocator factoryLocator = new OGSIServiceGridLocator();
-        Factory factory = factoryLocator.getFactoryPort(new URL(factoryUrl));
-        ((Stub)factory)._setProperty(Constants.GSI_SEC_MSG,
-                                     Constants.SIGNATURE);
-        ((Stub)factory)._setProperty(Constants.GRIM_POLICY_HANDLER,
-                                 new IgnoreProxyPolicyHandler());
-        ((Stub)factory)._setProperty(Constants.AUTHORIZATION,
-                                    NoAuthorization.getInstance());
-        GridServiceFactory gridServiceFactory
-            = new GridServiceFactory(factory);
-
-        //create MJS instance
-        if (logger.isDebugEnabled()) {
-            logger.debug("creating job");
-        }
-
-        LocatorType gshHolder = null;
-        synchronized (RSL_MONITOR) {
-            //retrieve, parse, and validate the RSL
-            File file = new File(this.harness.getRslFile());
-            RslParser rslParser = RslParserFactory.newRslParser();
-            try {
-                this.rsl = rslParser.parse(new FileReader(file));
-                GramJobAttributes rslAttributes = new GramJobAttributes(this.rsl);
-                rslAttributes.setSubstitutionDefinition(
-                    "JOB_INDEX",
-                    "<rsl:urlElement value=\"" + String.valueOf(jobIndex) + "\"/>");
-            } catch (Exception e) {
-                abort("unable to read RSL file", e);
-            }
-
-            ExtensibilityType creationParameters
-                = AnyHelper.getExtensibility(this.rsl);
-            gshHolder = gridServiceFactory.createService(creationParameters);
-            this.rsl = null;
-        }
-        this.mjsLocator = new ManagedJobServiceGridLocator();
-        //This next step caches the GSR in the locator for use later
-        ManagedJobPortType managedJob
-            = this.mjsLocator.getManagedJobPort(gshHolder);
-        String jobHandle = this.mjsLocator.getGSR().getHandle().toString();
-        if (logger.isDebugEnabled()) {
-            logger.debug("Job Handle: " + jobHandle);
-        }
-        this.harness.notifyCreated( this.jobIndex, jobHandle);
-        if (logger.isDebugEnabled()) {
-            logger.debug("notified harness that the job was created");
-        }
-    }
-
-    protected void startService() {
-        if (logger.isDebugEnabled()) {
-            logger.debug("starting job");
-        }
-
-        //setup MJS stub
-        ManagedJobPortType managedJob = null;
-        try {
-            managedJob = this.mjsLocator.getManagedJobPort(
-                this.mjsLocator.getGSR().getHandle());
-        } catch (Exception e) {
-            abort("unable to get MJS reference", e);
-            return;
-        }
-        ((Stub)managedJob)._setProperty(Constants.GSI_SEC_CONV,
-                                        Constants.SIGNATURE);
-        ((Stub)managedJob)._setProperty(GSIConstants.GSI_MODE,
-                                        GSIConstants.GSI_MODE_FULL_DELEG);
-        ((Stub)managedJob)._setProperty(Constants.AUTHORIZATION,
-                                        NoAuthorization.getInstance());
-        ((Stub)managedJob)._setProperty(Constants.GRIM_POLICY_HANDLER,
-                                        new IgnoreProxyPolicyHandler());
-
-        //start job
-        JobStatusType jobStatus = null;
-        try {
-            jobStatus = managedJob.start();
-        } catch (Exception e) {
-            abort("unable to start MJS instance", e);
-            return;
-        }
-        managedJob = null;
-
-       this.harness.notifyStarted(this.jobIndex);
-
-       if (logger.isDebugEnabled()) {
-           logger.debug("notified harness that I started");
-       }
+        this.harness.notifyStarted(this.jobIndex);
     }
 
     protected void abort(String errorMessage) {

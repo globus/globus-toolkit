@@ -3,6 +3,9 @@ package org.globus.ogsa.base.gram.testing.scalability;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import org.globus.ogsa.base.gram.types.JobStateType;
+import org.globus.ogsa.impl.base.gram.client.GramJob;
+
 public class ScalabilityTester {
 
     static Log logger = LogFactory.getLog(ScalabilityTester.class.getName());
@@ -37,22 +40,56 @@ public class ScalabilityTester {
             logger.debug("creating " + this.count + " job(s)");
         }
 
+        int jobsAtOnce = 0;
         for (int i=0; i<this.count; i++) {
-            //this.jobList[i] = new JobStarterThread(this, i);
-            //new Thread(this.jobList[i]).start();
+            if ((i%100) == 0) {
+                jobsAtOnce = getThroughput(i);
+                if (logger.isDebugEnabled()) {
+                    logger.debug("throughput: " + jobsAtOnce);
+                }
+            }
+
             new Thread(new JobStarterThread(this, i)).start();
-            //if ((i > 0) && (i % 20) == 0) {
+            if ((i%jobsAtOnce) == 0) {
+                while (this.startedCount < i) {
+                    if (logger.isDebugEnabled()) {
+                        logger.debug(this.startedCount + " < " + i);
+                    }
+                    try {
+                        wait(3000);
+                    } catch (Exception e) {
+                        logger.error("error waiting for next submission",e);
+                    }
+                }
                 try {
-                    wait(1000);
+                    wait(60000);
                 } catch (Exception e) {
                     logger.error("error waiting for next submission", e);
                 }
-            //}
+            }
         }
 
         if (logger.isDebugEnabled()) {
             logger.debug("all jobs created");
         }
+    }
+
+    /** Determines an appropriate throughput in jobs based on current job load.
+     *  The equation used in this method was determined experimentally and has
+     *  no real basis in theory.
+     */
+    private int getThroughput(int jobLoad) {
+        double maxThroughput = 70.0;
+        double load = (double) jobLoad;
+
+       //double throughput = (maxThroughput + 30) / Math.sqrt(0.01*load+1) - 30;
+        double ratio = maxThroughput / this.count;
+        double throughput = (maxThroughput + (maxThroughput / 10))
+                          / Math.sqrt(ratio * load + 1)
+                          - (maxThroughput / 10) - 1;
+        if (throughput < 1.5) throughput = 1.0;
+
+        return Math.round((float) throughput);
     }
 
     protected void waitForAllToComplete() {
@@ -72,20 +109,54 @@ public class ScalabilityTester {
             } catch (Exception e) {
                 logger.error("unabled to wait", e);
             }
-            this.startedCount = 0;
-            for (int index=0; index<this.count; index++) {
-                if (this.startedList[index]) {
-                    this.startedCount++;
-                } else {
-                    if (logger.isDebugEnabled()) {
-                        logger.debug("Waiting for job #" + index);
-                    }
-                }
-            }
         }
 
         if (logger.isDebugEnabled()) {
             logger.debug("all jobs started");
+        }
+
+        //destroy jobs (throttled to avoid reaching resident job max)
+        for (int index=this.jobHandleList.length-1; index>=0; index--) {
+            GramJob job = new GramJob("");
+            try {
+                if (logger.isDebugEnabled()) {
+                    logger.debug("handle: " + this.jobHandleList[index]);
+                }
+                job.setHandle(this.jobHandleList[index]);
+                job.refreshStatus();
+
+                String stateString = job.getStatusAsString();
+                if (logger.isDebugEnabled()) {
+                    logger.debug("State Integer: " + job.getStatus());
+                    logger.debug("State String: " + stateString);
+                }
+                JobStateType state
+                    = JobStateType.fromString(stateString);
+                while (!state.equals(JobStateType.Active)) {
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("waiting for job #"
+                                    +index
+                                    +" with state \""
+                                    +state.toString()
+                                    +"\"");
+                    }
+                    if (   (state.equals(JobStateType.Failed))
+                        || (state.equals(JobStateType.Done))) {
+                        break;
+                    }
+
+                    wait(15000);
+
+                    state = JobStateType.fromString(job.getStatusAsString());
+                }
+
+                new Thread(new JobStopperThread(
+                    this, index, this.jobHandleList[index])).start();
+
+                wait(3000);
+            } catch (Exception e) {
+                logger.error("unabled to destroy job", e);
+            }
         }
     }
 
@@ -105,6 +176,7 @@ public class ScalabilityTester {
         if (logger.isDebugEnabled()) {
             logger.debug("got started signal from job #" + jobIndex);
         }
+        this.startedCount++;
         this.startedList[jobIndex] = true;
         notifyAll();
     }
