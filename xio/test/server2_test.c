@@ -18,7 +18,7 @@ close_cb(
     {
         globus_l_closed = GLOBUS_TRUE;
         globus_l_cb_cnt++;
-        globus_cond_signal(&globus_l_cond);
+        globus_cond_broadcast(&globus_l_cond);
     }
     globus_mutex_unlock(&globus_l_mutex);
 }
@@ -144,7 +144,7 @@ server2_main(
             {
                 accept_count++;
                 fprintf(stderr, 
-                    "WARNING: 2nd register accept should have failed"); 
+                    "MINOR WARNING: 2nd register accept didn't failed\n"); 
             }
 #           endif
         }

@@ -1,39 +1,3 @@
-/*
- *  close barrier test
- *  -----------------
- *
- *  verifies that all successful callback are devilvered before
- *  any eof callbacks.
- *
- *  working options
- *  -i          call finish inline
- *  -r <int>    number of outstanding reads that can be out at oncea
- *  -R <int>    total number of bytes to "read"
- *  -w <int>    number of outstanding writes that can be out at oncea
- *  -W <int>    total number of bytes to "write"
- *  -c <int>    chuck size to finish at once
- *  -b <int>    buffer size to post
- *
- *  test suite
- *  ----------
- *  - should be called w/ and w/o -i    :  * 2
- *  - different amounts of reads and
- *    writes.  
- *    (0,1,2,4,8) * (0,1,2,4,8) - 1     :  * 24
- *    [not doing 0x0]
- *  - called with -c < -b and with      :  * 3  ( / 2; / 2.3; / 1)
- *    numbers that do not end in nice   
- *    math
- *  - different drivers                 :  * 6
- *    1) transport
- *    2) transport simple
- *    3) transport bounce
- *    4) transport simple bounce
- *    5) transport simple bounce simple
- *    6) transport bounce simple bounce
- *                                         864
- */
-
 #include "globus_xio.h"
 #include "globus_common.h"
 #include "test_common.h"
@@ -58,7 +22,7 @@ close_cb(
     globus_mutex_lock(&globus_l_mutex);
     {
         globus_l_closed2 = GLOBUS_TRUE;
-        globus_cond_signal(&globus_l_cond2);
+        globus_cond_broadcast(&globus_l_cond2);
     }
     globus_mutex_unlock(&globus_l_mutex);
 }
