@@ -190,6 +190,7 @@ GSS_CALLCONV gss_init_sec_context
 			if ((context->req_flags & GSS_C_GLOBUS_LIMITED_PROXY_FLAG)
 				 	&& context->pvd.limited_proxy) {
 				GSSerr(GSSERR_F_INIT_SEC,GSSERR_R_PROXY_VIOLATION);
+				*minor_status = GSSERR_R_PROXY_VIOLATION;
 				major_status = GSS_S_UNAUTHORIZED;
 				context->gs_state = GS_CON_ST_DONE;
 				break;
@@ -229,6 +230,7 @@ GSS_CALLCONV gss_init_sec_context
 						free (s1);
 						free (s2);
 					}
+					*minor_status = GSSERR_R_MUTUAL_AUTH;
 					major_status = GSS_S_UNAUTHORIZED;
 					context->gs_state = GS_CON_ST_DONE;
 					break;
