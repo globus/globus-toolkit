@@ -610,11 +610,29 @@ cd ${tmp_ca_setup_dir}
 #${GLOBUS_SH_CHMOD-chmod} 0700 bootstrap
 ${GLOBUS_SH_CHMOD-chmod} 0700 configure
 
+CA_UTILS_PACKAGE_DIR=globus_simple_ca_${CA_CERT_HASH}_setup-0.13
+CA_UTILS_PACKAGE=$CA_UTILS_PACKAGE_DIR.tar.gz
+
 #./bootstrap
 ./configure
-make dist
-
-CA_UTILS_PACKAGE=globus_simple_ca_${CA_CERT_HASH}_setup-0.12.tar.gz
+make distdir
+${GLOBUS_SH_CHMOD-chmod} -R a+r $(CA_UTILS_PACKAGE_DIR)
+tar
+if [ $? -eq 127 ]; then
+	echo ""
+	echo "BUILD FAILED: tar does not appear to be in your path."
+	echo ""
+	exit 1;
+fi
+tar cvf $CA_UTILS_PACKAGE_DIR.tar $CA_UTILS_PACKAGE_DIR
+gzip
+if [ $? -eq 127 ]; then
+	echo ""
+	echo "BUILD FAILED: gzip does not appear to be in your path."
+	echo ""
+	exit 1;
+fi
+gzip $CA_UTILS_PACKAGE_DIR.tar
 
 if test ! -f ${tmp_ca_setup_dir}/${CA_UTILS_PACKAGE}; then
     echo ""
