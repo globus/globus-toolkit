@@ -3309,3 +3309,36 @@ globus_i_gsc_restart_destroy(
     globus_free(restart);
 }
 
+void
+globus_l_gsc_send_restart_marker()
+{
+
+}
+
+void
+globus_l_gsc_send_perf_marker(
+    globus_i_gsc_op_t *                     op)
+{
+    char *                                  msg;
+    int                                     ctr;
+    struct timeval                          now;
+    globus_i_gsc_event_data_t *             event;
+
+    event = &op->server_handle->event;
+    gettimeofday(&now, NULL);
+    for(ctr = 0; ctr < event->stripe_count; ctr++)
+    {
+        msg = globus_common_create_string(
+                "112-Perf Marker.\r\n"
+                " Timestamp:  %ld.%01ld\r\n"
+                " Stripe Index: %d\r\n"
+                " Stripe Bytes Transferred: %"GLOBUS_OFF_T_FORMAT"\r\n"
+                " Total Stripe Count: %d\r\n"
+                "112 End.\r\n",
+                    now.tv_sec, now.tv_usec / 100000,
+                    ctr,
+                    event->stripe_total_bytes[ctr],
+                    event->stripe_count);
+        globus_i_gsc_intermediate_reply(op, msg); 
+    }
+}

@@ -249,9 +249,6 @@ typedef struct globus_i_gsc_op_s
     globus_gridftp_server_control_stat_t *  stat_info;
     int                                     stat_count;
 
-    char                                    transfer_mode;
-    char                                    transfer_type;
-
     uid_t                                   uid;
 
     /* stuff for resource */
@@ -326,6 +323,8 @@ typedef struct globus_i_gsc_event_data_s
 {
     int                                     perf_frequency;
     int                                     restart_frequency;
+    int                                     stripe_count;
+    globus_off_t *                          stripe_total_bytes;
 } globus_i_gsc_event_data_t;
 
 /* the server handle */

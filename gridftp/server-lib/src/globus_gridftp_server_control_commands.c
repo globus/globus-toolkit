@@ -2014,12 +2014,10 @@ globus_l_gsc_cmd_stor_retr(
         sizeof(globus_l_gsc_cmd_wrapper_t));
     if(wrapper == NULL)
     {
-        goto err;
+        globus_i_gsc_command_panic(op);
+        return;
     }
     wrapper->op = op;
-
-    op->transfer_mode = op->server_handle->mode;
-    op->transfer_type = op->server_handle->type;
 
     if(strcmp(cmd_a[0], "STOR") == 0 ||  strcmp(cmd_a[0], "ESTO") == 0)
     {
@@ -2162,11 +2160,6 @@ globus_l_gsc_cmd_stor_retr(
         {
             path = strdup(cmd_a[1]);
         }
-        if(!op->server_handle->list_data_mode)
-        {
-            op->transfer_mode = 'S';
-            op->transfer_type = 'A';
-        }
     }
 
     wrapper->mod_name = mod_name;
@@ -2193,9 +2186,6 @@ globus_l_gsc_cmd_stor_retr(
         globus_l_gsc_cmd_transfer(wrapper);
     }
 
-    return;
-
-  err:
     return;
 }
 
