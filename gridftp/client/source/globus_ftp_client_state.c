@@ -525,7 +525,7 @@ redo:
 	}	
 	else
 	{
-	    target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_LIST_OPTS;
+	    target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_TYPE;
 	}
 
 	if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_SOURCE_CONNECT)
@@ -540,80 +540,6 @@ redo:
 	}
 	goto redo;
     
-    case GLOBUS_FTP_CLIENT_TARGET_SETUP_LIST_OPTS:
-        if((client_handle->op == GLOBUS_FTP_CLIENT_MLSD ||
-            client_handle->op == GLOBUS_FTP_CLIENT_LIST ||
-            client_handle->op == GLOBUS_FTP_CLIENT_NLST) &&
-            (target->attr->mode != GLOBUS_FTP_CONTROL_MODE_STREAM ||
-            target->attr->type != GLOBUS_FTP_CONTROL_TYPE_ASCII) &&
-            globus_i_ftp_client_feature_get(
-                target->features, 
-                GLOBUS_FTP_CLIENT_FEATURE_OPTS_LIST)
-                    == GLOBUS_FTP_CLIENT_MAYBE)
-        {
-            target->mask = GLOBUS_FTP_CLIENT_CMD_MASK_TRANSFER_PARAMETERS;
-            globus_i_ftp_client_plugin_notify_command(
-                client_handle,
-                target->url_string,
-                target->mask,
-                "OPTS LIST UseDataMode=yes;" CRLF);
-            if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
-                client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART ||
-                client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_FAILURE)
-            {
-                break;
-            }
-            result = globus_ftp_control_send_command(
-                target->control_handle,
-                "OPTS LIST UseDataMode=yes;" CRLF,
-                globus_i_ftp_client_response_callback,
-                target);
-            if(result != GLOBUS_SUCCESS)
-            {
-                goto result_fault;
-            }
-            
-            target->state = GLOBUS_FTP_CLIENT_TARGET_LIST_OPTS;
-            break;
-        }
-        else
-        {
-            goto skip_opts_list;
-        }
-    
-    case GLOBUS_FTP_CLIENT_TARGET_LIST_OPTS:
-        if((!error) &&
-           response->response_class == GLOBUS_FTP_POSITIVE_COMPLETION_REPLY)
-        {
-            globus_i_ftp_client_feature_set(
-                target->features, 
-                GLOBUS_FTP_CLIENT_FEATURE_OPTS_LIST,
-                GLOBUS_FTP_CLIENT_TRUE);
-        }
-        else if((!error) && response->code / 10 == 50)
-        {
-            /* let's fall back to stream mode lists */
-            globus_i_ftp_client_feature_set(
-                target->features, 
-                GLOBUS_FTP_CLIENT_FEATURE_OPTS_LIST,
-                GLOBUS_FTP_CLIENT_FALSE);
-            
-            target->attr->mode = GLOBUS_FTP_CONTROL_MODE_STREAM;
-            target->attr->type = GLOBUS_FTP_CONTROL_TYPE_ASCII;
-            target->attr->parallelism.mode = 
-                GLOBUS_FTP_CONTROL_PARALLELISM_NONE;
-        }
-        else
-        {
-            target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_CONNECTION;
-
-            goto notify_fault;
-        }
-        
-    skip_opts_list:
-        target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_TYPE;
-	goto redo;
-        
     case GLOBUS_FTP_CLIENT_TARGET_SETUP_TYPE:
 	target->state = GLOBUS_FTP_CLIENT_TARGET_TYPE;
 
@@ -3225,7 +3151,7 @@ redo:
 	{
 	    /* NOOP successful, we can re-use this target */
 	    target->state =
-		GLOBUS_FTP_CLIENT_TARGET_SETUP_LIST_OPTS;
+		GLOBUS_FTP_CLIENT_TARGET_SETUP_TYPE;
 	    goto redo;
 	}
 	else

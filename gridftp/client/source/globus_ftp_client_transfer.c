@@ -4691,24 +4691,13 @@ globus_l_ftp_client_list_op(
     
     /* force stream/ASCII/no parallelism, 
         unless we are allowing lists in the current data mode */
-    if(handle->source->features &&
-        globus_i_ftp_client_feature_get(
-            handle->source->features, 
-            GLOBUS_FTP_CLIENT_FEATURE_OPTS_LIST) == GLOBUS_FTP_CLIENT_FALSE)
-    {
-        /* we've already determined that the server doesn't support the
-         * opts list command
-         */
-        handle->source->attr->list_uses_data_mode = GLOBUS_FALSE;
-    }
-                    
     if(!handle->source->attr->list_uses_data_mode)
     {
         handle->source->attr->mode = GLOBUS_FTP_CONTROL_MODE_STREAM;
         handle->source->attr->type = GLOBUS_FTP_CONTROL_TYPE_ASCII;
         handle->source->attr->parallelism.mode = 
             GLOBUS_FTP_CONTROL_PARALLELISM_NONE;
-    }    
+    }
 
     /* Notify plugins that a list operation is happening */
     switch(op)

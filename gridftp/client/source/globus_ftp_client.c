@@ -393,8 +393,6 @@ globus_i_ftp_target_state_to_string(
     static const char * site_help               = "SITE_HELP";
     static const char * feat                    = "FEAT";
     static const char * setup_connection        = "SETUP_CONNECTION";
-    static const char * setup_list_opts         = "SETUP_LIST_OPTS";
-    static const char * list_opts               = "LIST_OPTS";
     static const char * setup_type              = "SETUP_TYPE";
     static const char * type                    = "TYPE";
     static const char * setup_mode              = "SETUP_MODE";
@@ -480,12 +478,6 @@ globus_i_ftp_target_state_to_string(
             break;
         case GLOBUS_FTP_CLIENT_TARGET_SETUP_CONNECTION:
             return setup_connection;
-            break;
-        case GLOBUS_FTP_CLIENT_TARGET_SETUP_LIST_OPTS:
-            return setup_list_opts;
-            break;
-        case GLOBUS_FTP_CLIENT_TARGET_LIST_OPTS:
-            return list_opts;
             break;
         case GLOBUS_FTP_CLIENT_TARGET_SETUP_TYPE:
             return setup_type;
