@@ -66,12 +66,12 @@ sub fixpaths
         "/etc/sshrc" => "${sysconfdir}/sshrc",
         "/usr/X11R6/bin/xauth" => "${xauth_path}",
         "/usr/bin:/bin:/usr/sbin:/sbin" => "/usr/bin:/bin:/usr/sbin:/sbin:${bindir}",
-        "/path/to/scp.real" => "${bindir}/scp.real",
-        "/path/to/ssh" => "${bindir}/ssh",
-        "/path/to/sftp.real" => "${bindir}/sftp.real",
-        "/path/to/sshd.real" => "${sbindir}/sshd.real",
-        "/path/to/ssh_config" => "${sysconfdir}/ssh_config",
-        "/path/to/sshd_config" => "${sysconfdir}/sshd_config",
+        "(/path/to/scp.real)" => "${bindir}/scp.real",
+        "(/path/to/ssh)" => "${bindir}/ssh",
+        "(/path/to/sftp.real)" => "${bindir}/sftp.real",
+        "(/path/to/sshd.real)" => "${sbindir}/sshd.real",
+        "(/path/to/ssh_config)" => "${sysconfdir}/ssh_config",
+        "(/path/to/sshd_config)" => "${sysconfdir}/sshd_config",
         );
 
     #
