@@ -11,10 +11,10 @@
 
 struct globus_hashtable_s
 {
-    volatile int                            size;
-    globus_list_t * volatile * volatile     chains;
-    globus_hashtable_hash_func_t  volatile  hash_func;
-    globus_hashtable_keyeq_func_t volatile  keyeq_func;
+    int                                 size;
+    globus_list_t **                    chains;
+    globus_hashtable_hash_func_t        hash_func;
+    globus_hashtable_keyeq_func_t       keyeq_func;
 };
 
 typedef struct hashtsearchargs 
@@ -23,6 +23,11 @@ typedef struct hashtsearchargs
     void *                              key;
 } globus_hashtable_search_args_t;
 
+typedef struct hashtentry 
+{
+    void *                              key;
+    void *                              datum;
+} globus_hashtable_entry_t;
 
 static int
 globus_hashtable_s_chain_pred(
@@ -31,14 +36,11 @@ globus_hashtable_s_chain_pred(
 {
     globus_hashtable_entry_t *          element;
     globus_hashtable_search_args_t *    args;
-    int                                 status;
 
-    element = (globus_hashtable_entry_t *)datum;
-    args = (globus_hashtable_search_args_t *)vargs;
+    element = (globus_hashtable_entry_t *) datum;
+    args = (globus_hashtable_search_args_t *) vargs;
 
-    status = (*(args->s_table->keyeq_func)) (element->key, args->key);
-
-    return status;
+    return args->s_table->keyeq_func(element->key, args->key);
 }
 
 void *
@@ -51,30 +53,28 @@ globus_hashtable_lookup(
     globus_list_t *                     found_link;
     globus_hashtable_search_args_t      search_args;   
 
-    assert(table!=GLOBUS_NULL);
+    globus_assert(table != GLOBUS_NULL);
     s_table = *table;
-    assert(s_table!=GLOBUS_NULL);
+    globus_assert(s_table != GLOBUS_NULL);
     
-    chainno = (*(s_table->hash_func)) (key, s_table->size);
+    chainno = s_table->hash_func(key, s_table->size);
     search_args.s_table = s_table;
     search_args.key = key;
 
-    found_link = globus_list_search_pred ((s_table->chains)[chainno],   
-                                        globus_hashtable_s_chain_pred,
-                                        (void *) &search_args);
-    if(found_link==GLOBUS_NULL) 
+    found_link = globus_list_search_pred(
+        s_table->chains[chainno], globus_hashtable_s_chain_pred, &search_args);
+    if(!found_link) 
     {
         return GLOBUS_NULL;
     }
     else 
     {    
         /* return datum */
-        void *                          datum;
-        datum = (((globus_hashtable_entry_t *) 
-                  globus_list_first (found_link))
-                        ->datum);
+        globus_hashtable_entry_t *      entry;
+        
+        entry = (globus_hashtable_entry_t *) globus_list_first(found_link);
 
-        return datum;
+        return entry->datum;
     }
 }
 
@@ -86,8 +86,9 @@ globus_hashtable_insert(
 {
     struct globus_hashtable_s *         s_table;
     
-    assert (table!=GLOBUS_NULL);
+    globus_assert(table != GLOBUS_NULL);
     s_table = *table;
+    globus_assert(s_table != GLOBUS_NULL);
     
     if(globus_hashtable_lookup(table, key)) 
     {
@@ -99,13 +100,18 @@ globus_hashtable_insert(
         int                             chainno;
         globus_hashtable_entry_t *      new_entry;
 
-        chainno = (*(s_table->hash_func))(key, s_table->size);
-        new_entry = globus_malloc (sizeof(globus_hashtable_entry_t));
-        if (new_entry==GLOBUS_NULL) return -2;
+        chainno = s_table->hash_func(key, s_table->size);
+        new_entry = (globus_hashtable_entry_t *)
+            globus_malloc(sizeof(globus_hashtable_entry_t));
+            
+        if(!new_entry)
+        {
+            return -2;
+        }
+        
         new_entry->key = key;
         new_entry->datum = datum;
-        return globus_list_insert ((globus_list_t **) &((s_table->chains)[chainno]),
-                               (void *) new_entry);
+        return globus_list_insert(&s_table->chains[chainno], new_entry);
     }
 }
 
@@ -119,33 +125,31 @@ globus_hashtable_remove(
     globus_list_t *                     found_link;
     globus_hashtable_search_args_t      search_args;
 
-    assert (table!=GLOBUS_NULL);
+    globus_assert(table != GLOBUS_NULL);
     s_table = *table;
-    assert(s_table != GLOBUS_NULL);
+    globus_assert(s_table != GLOBUS_NULL);
     
-    chainno = (*(s_table->hash_func)) (key, s_table->size);
+    chainno = s_table->hash_func(key, s_table->size);
     search_args.s_table = s_table;
     search_args.key = key;
-    found_link = globus_list_search_pred ((s_table->chains)[chainno],
-                                        globus_hashtable_s_chain_pred,
-                                        (void *) &search_args);
-    if (found_link == GLOBUS_NULL) 
+    found_link = globus_list_search_pred(
+        s_table->chains[chainno], globus_hashtable_s_chain_pred, &search_args);
+    if(!found_link) 
     {
         return GLOBUS_NULL;
     }
     else 
     {
         /* remove entry */
-        globus_hashtable_entry_t *entry;
-        entry = ((globus_hashtable_entry_t *) 
-                 globus_list_remove (((globus_list_t **)
-                                     &((s_table->chains)[chainno])),
-                                 found_link));
-        if (entry!=GLOBUS_NULL) 
+        globus_hashtable_entry_t *      entry;
+        entry = (globus_hashtable_entry_t *)  
+            globus_list_remove(&s_table->chains[chainno], found_link);
+        if(entry) 
         {
-            void *datum;
+            void *                      datum;
+            
             datum = entry->datum;
-            globus_free (entry);
+            globus_free(entry);
             return datum;
         }
         else 
@@ -164,19 +168,24 @@ globus_hashtable_init(
 {
     int                                 i;
     struct globus_hashtable_s *         s_table;
-
-    s_table = (struct globus_hashtable_s *)globus_malloc(sizeof(struct globus_hashtable_s));
-    *table = s_table;    
-    assert(s_table != GLOBUS_NULL);
     
-    assert (size > 0);
+    globus_assert(table != GLOBUS_NULL);
+    
+    s_table = (struct globus_hashtable_s *)
+        globus_malloc(sizeof(struct globus_hashtable_s));
+    globus_assert(s_table != GLOBUS_NULL);
+    *table = s_table;    
+    
+    globus_assert(size > 0);
     s_table->size = size;
-    s_table->chains = globus_malloc(sizeof(globus_list_t*)*size);
-    if(s_table->chains == GLOBUS_NULL) 
+    s_table->chains = (globus_list_t **)
+        globus_malloc(sizeof(globus_list_t *) * size);
+    if(!s_table->chains) 
     {
         return -1; 
     }
-    for (i=0; i<size; i++) 
+    
+    for (i = 0; i < size; i++) 
     {
         s_table->chains[i] = GLOBUS_NULL;
     }
@@ -186,6 +195,14 @@ globus_hashtable_init(
     return 0;
 }
 
+static
+void
+globus_hashtable_list_destroy_all_cb(
+    void *                              element)
+{
+    globus_free(element);
+}
+
 int 
 globus_hashtable_destroy(
     globus_hashtable_t *                table)
@@ -193,24 +210,28 @@ globus_hashtable_destroy(
     int                                 i;
     struct globus_hashtable_s *         s_table;
 
-    if(table == NULL || *table == NULL)
+    if(table == GLOBUS_NULL || *table == GLOBUS_NULL)
     {
-        return 0;
+        return GLOBUS_FAILURE;
     }
-    
+
     s_table = *table;
 
-    for (i=0; i<s_table->size; i++) 
+    for(i = 0; i < s_table->size; i++) 
     {
-        if(!globus_list_empty(((globus_list_t *)s_table->chains[i]))) 
+        if(!globus_list_empty(s_table->chains[i]))
         {
-            globus_list_free ( ((globus_list_t *)s_table->chains[i]));
+            globus_list_destroy_all(
+                s_table->chains[i], globus_hashtable_list_destroy_all_cb);
             s_table->chains[i] = GLOBUS_NULL;
         }
     }
 
     s_table->size = 0;
-    if(s_table->chains) globus_free((globus_list_t *) s_table->chains);
+    if(s_table->chains)
+    {
+        globus_free(s_table->chains);
+    }
     
     globus_free(s_table);
 
@@ -225,25 +246,32 @@ globus_hashtable_destroy_all(
     int                                 i;
     struct globus_hashtable_s *         s_table;
 
-    if(table == NULL || *table == NULL)
+    if(table == GLOBUS_NULL || *table == GLOBUS_NULL)
     {
-        return 0;
+        return GLOBUS_FAILURE;
     }
-    
+
     s_table = *table;
 
-    for (i=0; i<s_table->size; i++) 
+    for (i = 0; i < s_table->size; i++) 
     {
-        if(!globus_list_empty(((globus_list_t *)s_table->chains[i]))) 
+        while(!globus_list_empty(s_table->chains[i]))
         {
-            globus_list_destroy_all((globus_list_t *)s_table->chains[i],
-                                    element_free);
-            s_table->chains[i] = GLOBUS_NULL;
+            globus_hashtable_entry_t *  entry;
+            
+            entry = (globus_hashtable_entry_t *) globus_list_remove(
+                &s_table->chains[i], s_table->chains[i]);
+            
+            element_free(entry->datum);
+            globus_free(entry);
         }
     }
 
     s_table->size = 0;
-    if(s_table->chains) globus_free((globus_list_t *) s_table->chains);
+    if(s_table->chains)
+    {
+        globus_free(s_table->chains);
+    }
     
     globus_free(s_table);
 

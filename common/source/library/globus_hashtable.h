@@ -31,12 +31,6 @@ struct globus_hashtable_s;
 
 typedef struct globus_hashtable_s *     globus_hashtable_t;
 
-typedef struct hashtentry 
-{
-    void *                              key;
-    void *                              datum;
-} globus_hashtable_entry_t;
-
 /*
  * function prototypes
  */
