@@ -45,4 +45,14 @@
 #include "string_funcs.h"
 #include "vparse.h"
 
+#if defined(HAVE_LIBSASL2)
+#include <sasl.h>
+#include <saslutil.h>
+#define SASL_BUFFER_SIZE 20480
+#endif
+
+#if defined(HAVE_LIBKRB5)
+#include <krb5.h>
+#endif
+
 #endif /* __MYPROXY_COMMON_H */

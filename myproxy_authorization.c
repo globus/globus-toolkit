@@ -245,8 +245,62 @@ struct authorization_func authorization_cert = {
    "X509_certificate"
 };
 
+
+#if defined(HAVE_LIBSASL2)
+/* 
+ * Implementation of SASL-based authorization
+ */
+
+char * auth_sasl_create_server_data(void)
+{
+   char *challenge = strdup("SASL authorization negotiation server"); 
+   
+   return challenge;
+}
+
+ 
+/* the extra data parameter must contain a filename with a certificate to 
+   authorization */
+char * auth_sasl_create_client_data (authorization_data_t *data, 
+      void *extra_data, size_t extra_data_len, size_t *client_data_len )
+{
+   char *tmp;
+
+   tmp = malloc(extra_data_len + 1);
+   if (tmp == NULL)
+      return NULL;
+   memcpy(tmp, extra_data, extra_data_len);
+   tmp[extra_data_len] = '\0';
+   *client_data_len = extra_data_len + 1;
+   return tmp;
+}
+
+int auth_sasl_check_client (authorization_data_t *auth_data,
+                            struct myproxy_creds *creds, 
+			    char *client_name)
+{ 
+   int return_status = 1;
+
+   return return_status;
+}
+   
+
+
+struct authorization_func authorization_sasl = {
+   auth_sasl_create_server_data,
+   auth_sasl_create_client_data,
+   auth_sasl_check_client,
+   AUTHORIZETYPE_SASL,
+   "SASL"
+};
+#endif /* defined(HAVE_LIBSASL2) */
+
+
 static struct authorization_func *authorization_funcs[] = {
    &authorization_passwd,
+#if defined(HAVE_LIBSASL2)
+   &authorization_sasl,
+#endif
    &authorization_cert
 };
 
