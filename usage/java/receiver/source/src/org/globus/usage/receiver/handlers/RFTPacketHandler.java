@@ -16,8 +16,8 @@ public class RFTPacketHandler extends DefaultPacketHandler {
 
     private static Log log = LogFactory.getLog(RFTPacketHandler.class);
 
-    public RFTPacketHandler(String driverClass, String db, String table) throws SQLException, ClassNotFoundException {
-        super(driverClass, db, table);
+    public RFTPacketHandler(String dburl, String table) throws SQLException {
+        super(dburl, table);
     }
 
     public boolean doCodesMatch(short componentCode, short versionCode) {

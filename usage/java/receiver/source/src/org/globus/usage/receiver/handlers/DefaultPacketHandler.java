@@ -10,6 +10,7 @@ import org.apache.commons.logging.LogFactory;
 
 import org.globus.usage.packets.CustomByteBuffer;
 import org.globus.usage.packets.UsageMonitorPacket;
+import org.globus.usage.receiver.HandlerThread;
 
 public class DefaultPacketHandler implements PacketHandler {
     /*The handler that will be called when receiver gets an unknown code...
@@ -20,18 +21,15 @@ public class DefaultPacketHandler implements PacketHandler {
 
     protected String dburl;
     protected String table;
-    protected String driverClass;
     protected Connection con;
-    /*Pass in for example ("org.gjt.mm.mysql.Driver", "jdbc:mysql://localhost/menagerie?user=javaprog&password=letmein")*/
 
-    public DefaultPacketHandler(String driverClass, String dburl, String table) throws SQLException, ClassNotFoundException {
-        //this should be full JDBC URL for the database.
-        this.dburl = dburl;
+    /*Gets a database connection from the pool created by the HandlerThread.
+     table is the name of the table in that database to write packets to.*/
+    public DefaultPacketHandler(String dburl, String table) throws SQLException, {
+	//        this.dburl = dburl;
         this.table = table;
-        this.driverClass = driverClass;
 
-	Class.forName(driverClass);
-	con = DriverManager.getConnection(dburl);
+	con = DriverManager.getConnection(HandlerThread.dbPoolName);
     }
 
     public void finalize() {

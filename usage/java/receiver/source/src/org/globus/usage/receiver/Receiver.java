@@ -17,23 +17,21 @@ import org.globus.usage.receiver.handlers.PacketHandler;
 
 public class Receiver {
     private static Log log = LogFactory.getLog(Receiver.class);
-
     public static final int DEFAULT_PORT = 4810;
+    private final static int RING_BUFFER_SIZE = 100;
 
     RingBuffer theRing; /*receiver thread puts packets in here; handler
                           thread reads them out and pass them through the 
                           handlers.*/
-
     LinkedList handlerList; /*Every handler in this list gets a crack at
                               the incoming packets.*/
-
     ReceiverThread theRecvThread;
     HandlerThread theHandleThread;
-    private final static int RING_BUFFER_SIZE = 100;
+
 
     /*Creates a receiver which will listen on the given port and write
       packets to the given database.*/
-    public Receiver(int port, String driver, String db,
+    public Receiver(int port, String dburl,
                     String table, int ringBufferSize) throws IOException {
 
         theRing = new RingBuffer(ringBufferSize);
@@ -44,15 +42,15 @@ public class Receiver {
           pass them through all registered handlers...*/
         theRecvThread = new ReceiverThread(port, theRing);
         theRecvThread.start();
-        theHandleThread = new HandlerThread(handlerList, driver, db, table, theRing);
+        theHandleThread = new HandlerThread(handlerList, dburl, table, theRing);
         theHandleThread.start();
     }
 
     /*Constructor with no specified ringBuffer size uses default*/
-    public Receiver(int port, String driver, String db, String table)
+    public Receiver(int port, String db, String table)
         throws IOException {
 
-        this(port, driver, db, table, RING_BUFFER_SIZE);
+        this(port, db, table, RING_BUFFER_SIZE);
     }
 
 
@@ -192,127 +190,5 @@ class ReceiverThread extends Thread {
     public void shutDown() {
         stillGood = false; //lets the loop in run() finish.
         socket.close();
-    }
-}
-
-class HandlerThread extends Thread {
-
-    private static Log log = LogFactory.getLog(HandlerThread.class);
-    private LinkedList handlerList; /*a reference to the one in Receiver*/
-    private RingBuffer theRing; /*a reference to the one in Receiver*/
-    private boolean stillGood = true;
-    private DefaultPacketHandler theDefaultHandler;
-
-    private int packetsLogged, errorCount;
-
-    public HandlerThread(LinkedList list, String driver, String db, String table, RingBuffer ring) {
-        super("UDPHandlerThread");
-
-	this.packetsLogged = 0;
-	this.errorCount = 0;
-        this.handlerList = list;
-        this.theRing = ring;
-	try {
-	    theDefaultHandler = new DefaultPacketHandler(driver, db, table);
-	}
-	catch (Exception e) {
-	    log.error("Can't start listener thread: "+e.getMessage());
-	    stillGood = false;
-	}
-    }
-
-    public int getPacketsLogged() {
-	return this.packetsLogged;
-    }
-    
-    public int getPacketsDropped() {
-	return this.errorCount;
-    }
-
-    public void resetCounts() {
-	this.packetsLogged = 0;
-	this.errorCount = 0;
-    }
-
-    /*This thread waits on the RingBuffer; when packets come in, it starts
-      reading them out and letting the handlers have them.*/
-    public void run() {
-        short componentCode, versionCode;
-        CustomByteBuffer bufFromRing = null;
-
-        while(stillGood) {
-	  try {
-            bufFromRing = theRing.getNext();
-
-            componentCode = bufFromRing.getShort();
-            versionCode = bufFromRing.getShort();
-            bufFromRing.rewind();
-	    tryHandlers(bufFromRing, componentCode, versionCode);
-	    
-	    packetsLogged ++;
-	  } catch (Exception e) {
-	    //this thread has to be able to catch any exception and keep going...
-	    //otherwise a bad packet could shut down the thread!
-	    log.error(e.getMessage());
-	    if (bufFromRing != null) {
-	  	log.error(new String(bufFromRing.array()));
-	    }
-	    errorCount ++;
-  	  }
-	}
-    }
-
-    private void debugRawPacketContents(CustomByteBuffer buf) {
-	short cc, vc;
-	long ts;
-	short ipv;
-
-	log.info("HandlerThread got a usagepacket.");	
-	cc = buf.getShort();
-	vc = buf.getShort();
-	log.info("component code = "+cc+", packet version = "+vc);
-	ts = buf.getLong();
-	log.info("Time sent = "+ts);
-	ipv = buf.getShort();
-	log.info("IP Version is "+ipv);
-	buf.rewind();
-    }
-
-    private void tryHandlers(CustomByteBuffer bufFromRing, short componentCode,
-                             short versionCode) {
-        UsageMonitorPacket packet;
-        boolean hasBeenHandled;
-        PacketHandler handler;
-        ListIterator it;
-        
-        /*This next bit is synchronized to make sure a handler can't
-              be registered while we're walking the list...*/
-        synchronized(handlerList) {
-            hasBeenHandled = false;                
-            for (it = handlerList.listIterator(); it.hasNext(); ) {
-                handler = (PacketHandler)it.next();
-                if (handler.doCodesMatch(componentCode, versionCode)) {
-                    packet = handler.instantiatePacket(bufFromRing);
-                    packet.parseByteArray(bufFromRing.array());
-                    handler.handlePacket(packet);
-                    bufFromRing.rewind();
-                    hasBeenHandled = true;
-                }
-            }
-            if (!hasBeenHandled) {
-                packet = theDefaultHandler.instantiatePacket(bufFromRing);
-                packet.parseByteArray(bufFromRing.array());
-                theDefaultHandler.handlePacket(packet);
-            }
-        }
-        /*If multiple handlers return true for doCodesMatch, each
-          handler will be triggered, each with its own separate copy of
-          the packet.  theDefaultHandler will be called only if no other
-          handlers trigger.*/        
-    }
-
-
-    public void shutDown() {
-        stillGood = false; //lets the loop in run() finish
     }
 }

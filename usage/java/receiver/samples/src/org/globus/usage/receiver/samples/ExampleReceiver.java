@@ -22,11 +22,12 @@ public class ExampleReceiver {
     public static void main(String[] args) {
         int port = 0;
         String databaseDriverClass, databaseURL, defaultTable, gftpTable;
+	int ringBufferSize = 0;
         Properties props;
         InputStream propsIn;
         Receiver receiver;
         GridFTPPacketHandler gftpHandler;
-
+	RFTPacketHandler rftHandler;
 
         /*Open properties file (which gets compiled into jar) to read
           default port and database connection information:*/
@@ -44,7 +45,8 @@ public class ExampleReceiver {
             databaseURL = props.getProperty("database-url");
             defaultTable = props.getProperty("default-table");
             gftpTable = props.getProperty("gftp-table");
-            
+	    rftTable = props.getProperty("rft-table");
+            ringBufferSize = props.getProperty("ringbuffer-size");
 
             if (args.length == 1)
                 /*Get listening port number from command line*/
@@ -53,7 +55,7 @@ public class ExampleReceiver {
                 /*or else, read port from properties file:*/
                 port = Integer.parseInt(props.getProperty("listening-port"));
             }
-            
+
             if (port == 0) {
                 throw new Exception("You must specify listening port either on the command line or in the properties file.");
             }
@@ -62,23 +64,24 @@ public class ExampleReceiver {
               the database connection class to use, the url to connect to your
               database, and the database table where default packets will be
 	      written if no other handler takes them:*/
-	    System.out.println("Starting receiver on port "+port+"; will write to database at "+databaseURL+".");
-            receiver = new Receiver(port, 
-                                    databaseDriverClass, 
-                                    databaseURL,
-                                    defaultTable);
+	    System.out.println("Starting receiver on port "+port+"; will write to database at "+databaseURL+"; Ringbuffer size is "+ringBufferSize);
+            receiver = new Receiver(port, databaseURL, defaultTable,
+				    ringBufferSize);
             
             /*gftpHandler is an example of a PacketHandler subclass.  I create
-              one here, giving it the neccessary database infomration, and then
-              register it to the receiver; it knows what to do with all incoming
-              GFTP usage packets.*/
-            gftpHandler = new GridFTPPacketHandler(databaseDriverClass,
-                                                   databaseURL,
+              one here, giving it the neccessary database information, and then
+              register it to the receiver; it knows what to do with all
+	      incoming GFTP usage packets.*/
+            gftpHandler = new GridFTPPacketHandler(databaseURL,
                                                    gftpTable);
             receiver.registerHandler(gftpHandler);
+	    
+	    /*Let's handle RFT usage packets too.  All packets that aren't
+	      GFTP or RFT will end up in the unknown_packets table.*/
+	    rftHandler = new RFTPacketHandler(databaseURL, rftTable);
+	    receiver.registerHandler(rftHandler);
 
-
-	    //Register other handlers here.
+	    //Other handlers can be registered here.
 
 	    //start the control socket thread:
 	    new ControlSocketThread(receiver, 4811).start();
