@@ -225,6 +225,10 @@ AC_SUBST(AFS_CFLAGS)
 
 if test "$with_afs" != "no"; then
 	AFS_SRC="afs.c"
+
+	dnl These checks needed for transarc AFS code in afs.c
+	CHECK_SIGNALS
+	CHECK_SETJMP
 else
 	AFS_SRC=""
 fi

@@ -288,3 +288,41 @@ esac
 
 ]) dnl AFS_CONFIG
 
+dnl
+dnl check for POSIX signal handling -- CHECK_SIGNALS
+dnl
+dnl Taken from Kerberos 5 distribution
+dnl
+AC_DEFUN(CHECK_SIGNALS,[
+ AC_CHECK_FUNC(sigprocmask,
+  [AC_MSG_CHECKING(for sigset_t and POSIX_SIGNALS)
+   AC_TRY_COMPILE(
+    [#include <signal.h>],
+    [sigset_t x],
+    type_sigset_t=yes, type_sigset_t=no)
+   AC_MSG_RESULT($type_sigset_t)
+   if test $type_sigset_t = yes; then
+    AC_DEFINE(POSIX_SIGNALS)
+   fi
+  ]
+ )
+])dnl CHECK_SIGNALS
+dnl
+dnl check for POSIX setjmp/longjmp -- CHECK_SETJMP
+dnl
+dnl Taken from Kerberos 5 distribution
+dnl
+AC_DEFUN(CHECK_SETJMP,[
+ AC_FUNC_CHECK(sigsetjmp,
+  [AC_MSG_CHECKING(for sigjmp_buf)
+   AC_TRY_COMPILE(
+    [#include <setjmp.h>],
+    [sigjmp_buf x],
+    struct_sigjmp_buf=yes,struct_sigjmp_buf=no)
+   AC_MSG_RESULT($struct_sigjmp_buf)
+   if test $struct_sigjmp_buf = yes; then
+    AC_DEFINE(POSIX_SETJMP)
+   fi
+  ]
+ )
+])dnl CHECK_SETJMP

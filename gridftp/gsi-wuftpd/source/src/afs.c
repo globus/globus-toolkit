@@ -6,6 +6,10 @@
 
 #ifdef AFS
 
+/*
+ * Most of this code taken from krb5/appl/bsd/login.c patched
+ * with Ken Hornstein's monster patch.
+ */
 
 /* Set to 1 if we got a pagsh */
 static int pagflag = 0;
@@ -53,15 +57,20 @@ static int unlog_internal()
 
 #else /* !HAVE_LIBKRBAFS */
 
+/* XXX Do we always want this or just if we have POSIX_SETJMP? */
+#include <setjmp.h>
+
 /* Transarc AFS libraries */
 #ifndef POSIX_SETJMP
+
 #undef sigjmp_buf
 #undef sigsetjmp
 #undef siglongjmp
 #define sigjmp_buf	jmp_buf
 #define sigsetjmp(j,s)	setjmp(j)
 #define siglongjmp	longjmp
-#endif
+
+#endif /* !POSIX_SETJMP */
 
 #if !defined(SIGSYS) && defined(__linux__)
 /* Linux doesn't seem to have SIGSYS */
@@ -69,18 +78,24 @@ static int unlog_internal()
 #endif
 
 #ifdef POSIX_SIGNALS
+
 typedef struct sigaction handler;
 #define handler_init(H,F)		(sigemptyset(&(H).sa_mask), \
 					 (H).sa_flags=0, \
 					 (H).sa_handler=(F))
 #define handler_swap(S,NEW,OLD)		sigaction(S, &NEW, &OLD)
 #define handler_set(S,OLD)		sigaction(S, &OLD, NULL)
-#else
+
+#else /* !POSIX_SIGNALS */
+
+/* XXX - I think this code is broken VW 4/21/00 */
+
 typedef sigtype (*handler)();
 #define handler_init(H,F)		((H) = (F))
 #define handler_swap(S,NEW,OLD)		((OLD) = signal ((S), (NEW)))
 #define handler_set(S,OLD)		(signal ((S), (OLD)))
-#endif
+
+#endif /* !POSIX_SIGNALS */
 
 extern setpag(), ktc_ForgetAllTokens();
 

@@ -228,4 +228,14 @@
 /* Define if you have libkrbafs */
 #undef HAVE_LIBKRBAFS
 
+/*
+ * Define if you have sigset_t and posix signals
+ */
+#undef POSIX_SIGNALS
+
+/*
+ * Define if you have posix setjmp
+ */
+#undef POSIX_SETJMP
+
 #include "../config.h"
