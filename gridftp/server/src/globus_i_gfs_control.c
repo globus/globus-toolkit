@@ -14,7 +14,7 @@ typedef struct
     globus_i_gfs_server_close_cb_t      close_func;
     void *                              close_arg;
 
-    int                                 session_id;
+    void *                              session_arg;
 
     globus_gridftp_server_control_t     server_handle;
 } globus_l_gfs_server_instance_t;
@@ -176,7 +176,7 @@ globus_l_gfs_channel_close_cb(
         "Closed connection from %s\n",
         instance->remote_contact);
 
-    globus_i_gfs_data_session_stop(NULL, instance->session_id);
+    globus_i_gfs_data_session_stop(NULL, instance->session_arg);
     if(instance->close_func)
     {
         instance->close_func(instance->close_arg);
@@ -249,7 +249,7 @@ globus_l_gfs_auth_session_cb(
 
     auth_info = (globus_l_gfs_auth_info_t *) user_arg;
 
-    auth_info->instance->session_id = reply->session_id;
+    auth_info->instance->session_arg = reply->session_arg;
     if(reply->result != GLOBUS_SUCCESS)
     {
         globus_gridftp_server_control_finished_auth(
@@ -343,7 +343,6 @@ globus_l_gfs_request_auth(
     globus_i_gfs_data_session_start(
         NULL,
         context,
-        0,
         session_info,
         globus_l_gfs_auth_session_cb,
         auth_info);
@@ -448,7 +447,7 @@ globus_l_gfs_request_stat(
 
     globus_i_gfs_data_request_stat(
         NULL,
-        instance->session_id,
+        instance->session_arg,
         0,
         stat_info,
         globus_l_gfs_data_stat_cb,
@@ -662,7 +661,7 @@ globus_l_gfs_request_command(
 
     globus_i_gfs_data_request_command(
         NULL,
-        instance->session_id,
+        instance->session_arg,
         0,
         command_info,
         globus_l_gfs_data_command_cb,
@@ -715,7 +714,7 @@ globus_l_gfs_request_transfer_event(
 
     globus_i_gfs_data_request_transfer_event(
         NULL,
-        request->instance->session_id,
+        request->instance->session_arg,
         request->transfer_id,
         event);
 
@@ -889,12 +888,12 @@ globus_l_gfs_request_send(
     globus_l_gfs_get_full_path(instance, path, &send_info->pathname);
     send_info->range_list = range_list;
     send_info->stripe_count = 1;
-    send_info->node_count = 1;
+    send_info->cs_count = 1;
     send_info->data_handle_id = (int) data_handle;
 
     globus_i_gfs_data_request_send(
         NULL,
-        instance->session_id,
+        instance->session_arg,
         0,
         send_info,
         globus_l_gfs_data_transfer_cb,
@@ -975,12 +974,12 @@ globus_l_gfs_request_recv(
     globus_l_gfs_get_full_path(instance, path, &recv_info->pathname);
     recv_info->range_list = range_list;
     recv_info->stripe_count = 1;
-    recv_info->node_count = 1;
+    recv_info->cs_count = 1;
     recv_info->data_handle_id = (int) data_handle;
 
     globus_i_gfs_data_request_recv(
         NULL,
-        instance->session_id,
+        instance->session_arg,
         0,
         recv_info,
         globus_l_gfs_data_transfer_cb,
@@ -1025,11 +1024,11 @@ globus_l_gfs_request_list(
     list_info->list_type = globus_libc_strdup(list_type);
     list_info->data_handle_id = (int) data_handle;
     list_info->stripe_count = 1;
-    list_info->node_count = 1;
+    list_info->cs_count = 1;
 
     globus_i_gfs_data_request_list(
         NULL,
-        instance->session_id,
+        instance->session_arg,
         0,
         list_info,
         globus_l_gfs_data_transfer_cb,
@@ -1192,7 +1191,7 @@ globus_l_gfs_request_passive_data(
 
     globus_i_gfs_data_request_passive(
         NULL,
-        instance->session_id,
+        instance->session_arg,
         0,
         data_info,
         globus_l_gfs_data_passive_data_cb,
@@ -1297,7 +1296,7 @@ globus_l_gfs_request_active_data(
     
     globus_i_gfs_data_request_active(
         NULL,
-        instance->session_id,
+        instance->session_arg,
         0,
         data_info,
         globus_l_gfs_data_active_data_cb,
@@ -1322,7 +1321,7 @@ globus_l_gfs_request_data_destroy(
     instance = (globus_l_gfs_server_instance_t *) user_arg;
 
     globus_i_gfs_data_request_handle_destroy(
-        NULL, instance->session_id, (int) user_data_handle);
+        NULL, instance->session_arg, (int) user_data_handle);
 }
 
 static
