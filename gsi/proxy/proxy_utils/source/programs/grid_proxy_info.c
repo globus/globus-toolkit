@@ -28,6 +28,7 @@ static char *  LONG_USAGE = \
 "    Options\n" \
 "    -help, -usage             Displays usage\n" \
 "    -version                  Displays version\n" \
+"    -debug                    Displays debugging output\n" \
 "    -file <proxyfile>  (-f)   Non-standard location of proxy\n" \
 "    [printoptions]            Prints information about proxy\n" \
 "    -exists [options]  (-e)   Returns 0 if valid proxy exists, 1 otherwise\n"\
