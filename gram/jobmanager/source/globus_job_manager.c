@@ -5523,6 +5523,7 @@ globus_l_jm_handle_stdio_update(char *signal_arg)
 		             &tmp_param) != 0)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_STDOUT;
+	goto globus_l_jm_handle_stdio_update_done;
     }
     if (tmp_param[0])
     {
@@ -5540,11 +5541,13 @@ globus_l_jm_handle_stdio_update(char *signal_arg)
 	    if (new_stdout_fd < 0)
 	    {
 		rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_STDOUT;
+		goto globus_l_jm_handle_stdio_update_done;
 	    }
 	}
 	else
 	{
 	    rc = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_STDOUT;
+	    goto globus_l_jm_handle_stdio_update_done;
 	}
     }
 
@@ -5557,6 +5560,7 @@ globus_l_jm_handle_stdio_update(char *signal_arg)
 		             &tmp_param) != 0)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_STDERR;
+	goto globus_l_jm_handle_stdio_update_done;
     }
     if (tmp_param[0])
     {
@@ -5574,11 +5578,13 @@ globus_l_jm_handle_stdio_update(char *signal_arg)
 	    if (new_stderr_fd < 0)
 	    {
 		rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_STDERR;
+		goto globus_l_jm_handle_stdio_update_done;
 	    }
 	}
 	else
 	{
 	    rc = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_STDERR;
+	    goto globus_l_jm_handle_stdio_update_done;
 	}
     }
     }
@@ -5590,6 +5596,7 @@ globus_l_jm_handle_stdio_update(char *signal_arg)
 		             &tmp_param) != 0)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_STDOUT_POSITION;
+	goto globus_l_jm_handle_stdio_update_done;
     }
     if (tmp_param[0])
     {
@@ -5598,6 +5605,7 @@ globus_l_jm_handle_stdio_update(char *signal_arg)
 	if (x < 0)
         {
             rc = GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_STDOUT_POSITION;
+	    goto globus_l_jm_handle_stdio_update_done;
         }
         else
         {
@@ -5614,6 +5622,7 @@ globus_l_jm_handle_stdio_update(char *signal_arg)
 		             &tmp_param) != 0)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_STDERR_POSITION;
+	goto globus_l_jm_handle_stdio_update_done;
     }
     if (tmp_param[0])
     {
@@ -5622,6 +5631,7 @@ globus_l_jm_handle_stdio_update(char *signal_arg)
 	if (x < 0)
         {
             rc = GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_STDERR_POSITION;
+	    goto globus_l_jm_handle_stdio_update_done;
         }
         else
         {
@@ -5637,12 +5647,14 @@ globus_l_jm_handle_stdio_update(char *signal_arg)
 		             &tmp_param) != 0)
     {
 	rc = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_REMOTE_IO_URL;
+	goto globus_l_jm_handle_stdio_update_done;
     }
     if (tmp_param[0] && graml_remote_io_url != NULL)
     {
         new_remote_io_url = tmp_param[0];
     }
 
+globus_l_jm_handle_stdio_update_done:
     if (rc == GLOBUS_SUCCESS)
     {
 	/* Everything worked, so make the requested changes */
