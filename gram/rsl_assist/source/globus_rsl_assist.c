@@ -81,11 +81,27 @@ globus_rsl_assist_replace_manager_name(globus_rsl_t * rsl)
      *         (|(attr1=value1)(attr2=value2))
      * 
      */
+    int rc;
+    globus_list_t *		lists;
+    
+    /*
+     * if the request is a multirequest, run this function repeatedly 
+     * over the list of requests
+     */
+    if (globus_rsl_is_boolean_multi(rsl))
+    {
+	lists = (globus_list_t *) globus_rsl_boolean_get_operand_list(rsl);
+	while (!globus_list_empty(lists))
+	{
+	    rc=globus_rsl_assist_replace_manager_name(globus_list_first(lists));
+	    lists=globus_list_rest(lists);
+	}
+	return rc;
+    }
 
     /* if we are not a boolean operation, don't handle it */
     if(globus_rsl_is_boolean(rsl))
     {
-	globus_list_t *		lists;
 
 	/* get the operands of the boolean operator, in the example
 	 * of &(foo=x)(bar=y)
@@ -107,10 +123,10 @@ globus_rsl_assist_replace_manager_name(globus_rsl_t * rsl)
 	    /* if boolean, recursively process the request */
 	    if(globus_rsl_is_boolean(head))
 	    {
-		if(globus_rsl_assist_replace_manager_name(head) != 0)
+		if((rc = globus_rsl_assist_replace_manager_name(head)) != 0)
 		{
 		    /* JST Should'nt I free some stuff here ? */
-		    return -1;
+		    return rc;
 		}
 	    }
 	    /* if a relation, check to see if it's one we can deal with */
@@ -181,10 +197,14 @@ globus_rsl_assist_replace_manager_name(globus_rsl_t * rsl)
 				"resourceManagerContact",
 				globus_rsl_value_make_sequence(
 				    sequence));
+
+#                       if 0
+			/* Code replaced by globus_list_replace_first() below*/
 			
 			/* remove this node from the list of operands
 			 * to the boolean
 		         */
+			
 			globus_list_remove(
 			    globus_rsl_boolean_get_operand_list_ref(rsl),
 			    lists);
@@ -194,6 +214,9 @@ globus_rsl_assist_replace_manager_name(globus_rsl_t * rsl)
 			globus_list_insert(
 			    globus_rsl_boolean_get_operand_list_ref(rsl),
 					   (void *)resource_contact_relation);
+#                       endif
+			globus_list_replace_first(lists,
+						  resource_contact_relation);
 		    }
 		}
 	    }
@@ -293,6 +316,8 @@ globus_l_rsl_assist_query_ldap(
     {
 	ldap_perror(ldap_server, "ldap_search");
 	ldap_unbind(ldap_server);
+	/* ? ldap close ? */
+	globus_libc_free(search_string);
 	exit(1);
     }
 
@@ -308,11 +333,13 @@ globus_l_rsl_assist_query_ldap(
 	if(contact != GLOBUS_NULL)
 	{
 	    ldap_unbind(ldap_server);
+	    globus_libc_free(search_string);
 	    return contact;
 	}
     }
     /* disconnect from the server */
     ldap_unbind(ldap_server);
+    globus_libc_free(search_string);
     return GLOBUS_NULL;
 } /* globus_l_rsl_assist_query_ldap() */
 
@@ -336,7 +363,7 @@ globus_l_rsl_assist_parse_ldap_reply(
     char *a, *dn;
     BerElement *ber;
     char** values;
-    int numValues;
+    /* int numValues;*/
     int i;
     char *contact=GLOBUS_NULL;
 
@@ -346,12 +373,12 @@ globus_l_rsl_assist_parse_ldap_reply(
     for (a = ldap_first_attribute(ldap_server,entry,&ber); a != NULL;
 	 a = ldap_next_attribute(ldap_server,entry,ber) )
     {
-	values = ldap_get_values(ldap_server,entry,a);
-	numValues = ldap_count_values(values);
 	
 	/* got our match, so copy and return it*/
 	if(strcmp(a, "contact") == 0)
 	{
+	    values = ldap_get_values(ldap_server,entry,a);
+	    /* numValues = ldap_count_values(values); */
 	    contact = strdup(values[0]);
 	    ldap_value_free(values);
 	    break;
