@@ -3329,7 +3329,6 @@ globus_libc_addr_to_contact_string(
     }
         
     if(opts_mask & GLOBUS_LIBC_ADDR_LOCAL ||
-        globus_libc_addr_is_loopback(addr) || 
         globus_libc_addr_is_wildcard(addr))
     {
         if(globus_libc_gethostaddr(&myaddr) != 0)
