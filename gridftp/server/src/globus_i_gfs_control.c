@@ -470,7 +470,6 @@ globus_l_gfs_send_request(
     const char *                        local_target,
     const char *                        mod_name,
     const char *                        mod_parms,
-    globus_off_t                        offset,
     globus_range_list_t                 range_list)
 {
     globus_result_t                     result;
@@ -545,7 +544,6 @@ globus_l_gfs_recv_request(
     const char *                        local_target,
     const char *                        mod_name,
     const char *                        mod_parms,
-    globus_off_t                        offset,
     globus_range_list_t                 range_list)
 {
     globus_result_t                     result;
@@ -1016,7 +1014,7 @@ globus_i_gfs_control_start(
         globus_free(banner);
     }
 
-    login_msg = globus_i_gfs_config_string("login_banner");
+    login_msg = globus_i_gfs_config_string("login_msg");
     if(login_msg)
     {
         result = globus_gridftp_server_control_attr_set_message(
