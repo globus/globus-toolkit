@@ -1322,10 +1322,8 @@ globus_l_gfs_remote_session_end(
     {
         return;
     }
-    
-    for(list = my_handle->cached_node_list;
-        !globus_list_empty(list);
-        list = globus_list_rest(list))
+    list = my_handle->cached_node_list;
+    while(globus_list_empty(list))
     {
         node_info = (globus_l_gfs_remote_node_info_t *) 
             globus_list_remove(&list, list);
