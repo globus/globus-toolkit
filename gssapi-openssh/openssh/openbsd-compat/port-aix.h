@@ -30,10 +30,10 @@
 #ifdef WITH_AIXAUTHENTICATE
 # include <login.h>
 # include <userpw.h>
-# include <usersec.h>
-# ifdef HAVE_SYS_AUDIT_H
+# if defined(HAVE_SYS_AUDIT_H) && defined(AIX_LOGINFAILED_4ARG)
 #  include <sys/audit.h>
 # endif
+# include <usersec.h>
 #endif
 
 /* Some versions define r_type in the above headers, which causes a conflict */

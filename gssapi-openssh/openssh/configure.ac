@@ -132,6 +132,9 @@ main() { if (NSVersionOfRunTimeLibrary("System") >= (60 << 16))
 	[AC_MSG_RESULT(buggy)
 	AC_DEFINE(BROKEN_GETADDRINFO)],
 	[AC_MSG_RESULT(assume it is working)])
+	AC_DEFINE(SETEUID_BREAKS_SETUID)
+	AC_DEFINE(BROKEN_SETREUID)
+	AC_DEFINE(BROKEN_SETREGID)
 	;;
 *-*-hpux10.26)
 	if test -z "$GCC"; then
@@ -198,6 +201,9 @@ main() { if (NSVersionOfRunTimeLibrary("System") >= (60 << 16))
 	AC_DEFINE(WITH_IRIX_AUDIT)
 	AC_CHECK_FUNC(jlimit_startjob, [AC_DEFINE(WITH_IRIX_JOBS)])
 	AC_DEFINE(BROKEN_INET_NTOA)
+	AC_DEFINE(SETEUID_BREAKS_SETUID)
+	AC_DEFINE(BROKEN_SETREUID)
+	AC_DEFINE(BROKEN_SETREGID)
 	AC_DEFINE(WITH_ABBREV_NO_TTY)
 	AC_DEFINE(LOCKED_PASSWD_STRING, "*LK*")
 	;;
@@ -226,6 +232,11 @@ mips-sony-bsd|mips-sony-newsos4)
 	;;
 *-*-freebsd*)
 	check_for_libcrypt_later=1
+	;;
+*-*-bsdi*)
+	AC_DEFINE(SETEUID_BREAKS_SETUID)
+	AC_DEFINE(BROKEN_SETREUID)
+	AC_DEFINE(BROKEN_SETREGID)
 	;;
 *-next-*)
 	conf_lastlog_location="/usr/adm/lastlog"
@@ -278,6 +289,9 @@ mips-sony-bsd|mips-sony-newsos4)
 	LIBS="$LIBS -lc89"
 	AC_DEFINE(USE_PIPES)
 	AC_DEFINE(SSHD_ACQUIRES_CTTY)
+	AC_DEFINE(SETEUID_BREAKS_SETUID)
+	AC_DEFINE(BROKEN_SETREUID)
+	AC_DEFINE(BROKEN_SETREGID)
 	;;
 *-sni-sysv*)
 	CPPFLAGS="$CPPFLAGS -I/usr/local/include"
@@ -395,6 +409,9 @@ mips-sony-bsd|mips-sony-newsos4)
 	fi
 	AC_DEFINE(DISABLE_FD_PASSING)
 	AC_DEFINE(BROKEN_GETADDRINFO)
+	AC_DEFINE(SETEUID_BREAKS_SETUID)
+	AC_DEFINE(BROKEN_SETREUID)
+	AC_DEFINE(BROKEN_SETREGID)
 	AC_DEFINE(LOCKED_PASSWD_SUBSTR, "Nologin")
 	;;
 
@@ -463,7 +480,7 @@ AC_CHECK_HEADERS(bstring.h crypt.h endian.h features.h floatingpoint.h \
 	sys/cdefs.h sys/mman.h sys/pstat.h sys/select.h sys/stat.h \
 	sys/stropts.h sys/sysmacros.h sys/time.h sys/timers.h \
 	sys/un.h time.h tmpdir.h ttyent.h usersec.h \
-	util.h utime.h utmp.h utmpx.h)
+	util.h utime.h utmp.h utmpx.h vis.h)
 
 # Checks for libraries.
 AC_CHECK_FUNC(yp_match, , AC_CHECK_LIB(nsl, yp_match))
@@ -833,7 +850,7 @@ dnl    Checks for library functions. Please keep in alphabetical order
 AC_CHECK_FUNCS(\
 	arc4random __b64_ntop b64_ntop __b64_pton b64_pton basename \
 	bcopy bindresvport_sa clock fchmod fchown freeaddrinfo futimes \
-	gai_strerror getaddrinfo getcwd getgrouplist getnameinfo getopt \
+	getaddrinfo getcwd getgrouplist getnameinfo getopt \
 	getpeereid _getpty getrlimit getttyent glob inet_aton \
 	inet_ntoa inet_ntop innetgr login_getcapbool md5_crypt memmove \
 	mkdtemp mmap ngetaddrinfo nsleep ogetaddrinfo openlog_r openpty \
@@ -844,6 +861,21 @@ AC_CHECK_FUNCS(\
 	strlcat strlcpy strmode strnvis sysconf tcgetpgrp \
 	truncate utimes vhangup vsnprintf waitpid \
 )
+
+# IRIX has a const char return value for gai_strerror()
+AC_CHECK_FUNCS(gai_strerror,[
+	AC_DEFINE(HAVE_GAI_STRERROR)
+	AC_TRY_COMPILE([
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
+
+const char *gai_strerror(int);],[
+char *str;
+
+str = gai_strerror(0);],[
+		AC_DEFINE(HAVE_CONST_GAI_STRERROR_PROTO, 1,
+		[Define if gai_strerror() returns const char *])])])
 
 AC_SEARCH_LIBS(nanosleep, rt posix4, AC_DEFINE(HAVE_NANOSLEEP))
 
@@ -2377,11 +2409,15 @@ else
 fi
 
 # check for /etc/default/login and use it if present.
+AC_ARG_ENABLE(etc-default-login,
+	[  --disable-etc-default-login       Disable using PATH from /etc/default/login [no]],,
+[
 AC_CHECK_FILE("/etc/default/login", [ external_path_file=/etc/default/login ])
 
 if test "x$external_path_file" = "x/etc/default/login"; then
 	AC_DEFINE(HAVE_ETC_DEFAULT_LOGIN)
 fi
+])
 
 dnl BSD systems use /etc/login.conf so --with-default-path= has no effect
 if test $ac_cv_func_login_getcapbool = "yes" -a \
