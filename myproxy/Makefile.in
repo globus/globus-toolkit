@@ -35,25 +35,28 @@ SERVER_PROGS	=	myproxy-server
 CLIENT_PROGS	=	myproxy-init myproxy-destroy
 TOOL_PROGS	=	myproxy-get-delegation
 TEST_PROGS	=	gsi-socket-test
+MYPROXY_LIB     =       libmyproxy.a
 
 
-COMMON_OBJS	= myproxy.o gsi_socket.o gnu_getopt.o gnu_getopt_long.o \
-			verror.o ssl_utils.o string_funcs.o
-CLIENT_OBJS	= myproxy_read_pass.o
-INIT_OBJS	= myproxy_init.o $(COMMON_OBJS) $(CLIENT_OBJS)
-DESTROY_OBJS	= myproxy_destroy.o $(COMMON_OBJS) $(CLIENT_OBJS)
-GET_OBJS	= myproxy_get_delegation.o $(COMMON_OBJS) $(CLIENT_OBJS)
+LIB_OBJS	= myproxy.o gsi_socket.o gnu_getopt.o gnu_getopt_long.o \
+			verror.o ssl_utils.o string_funcs.o \
+			myproxy_delegation.o myproxy_read_pass.o
+INIT_OBJS	= myproxy_init.o $(MYPROXY_LIB)
+DESTROY_OBJS	= myproxy_destroy.o $(MYPROXY_LIB)
+GET_OBJS	= myproxy_get_delegation.o $(MYPROXY_LIB)
 SERVER_OBJS	= myproxy_server.o myproxy_creds.o \
 			myproxy_log.o vparse.o myproxy_server_config.o \
-			$(COMMON_OBJS)
+			$(MYPROXY_LIB)
 
-default:	clients server tools
+default:	clients server tools library
 
 clients:	$(CLIENT_PROGS)
 
 server:		$(SERVER_PROGS)
 
 tools:		$(TOOL_PROGS)
+
+library:	$(MYPROXY_LIB)
 
 gsi-socket-test: gsi_socket_test.o gsi_socket.o
 	$(LINK) $(LDFLAGS) $(GLOBUS_GSSAPI_LDFLAGS) \
@@ -84,6 +87,9 @@ myproxy-server: $(SERVER_OBJS)
 	$(CC) $(LDFLAGS) $(GLOBUS_GSSAPI_LDFLAGS) \
 		-o $@ $(SERVER_OBJS) $(GLOBUS_GSSAPI_LIBS) $(SYSLIBS)
 
+libmyproxy.a: $(LIB_OBJS)
+	$(AR) rsc $@ $^
+
 myproxy.o: myproxy.c myproxy.h
 
 myproxy_creds.o: myproxy_creds.c myproxy_creds.h
@@ -105,7 +111,7 @@ clean:
 distclean:	clean
 	rm -f Makefile config.cache config.log config.status
 
-install:	server-install client-install tools-install
+install:	server-install client-install tools-install library-install
 
 server-install:	$(SERVER_PROGS)
 	@for prog in $(SERVER_PROGS) ; do \
@@ -137,3 +143,6 @@ tools-install: $(TOOL_PROGS)
 	  $(INSTALL) -o $(INSTALL_OWNER) -m 755 $${prog} $(MYPROXY_TOOLS_DIR)/bin/$${prog} ;	\
 	done
 
+library-install: $(MYPROXY_LIB)
+	echo Installing $(MYPROXY_LIB) in $(MYPROXY_TOOLS_DIR)/lib
+	$(INSTALL) -m 755 $(MYPROXY_LIB) $(MYPROXY_TOOLS_DIR)/lib/libmyproxy.a
