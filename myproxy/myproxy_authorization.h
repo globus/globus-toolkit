@@ -19,7 +19,7 @@ typedef struct
   author_method_t  method;
 } authorization_data_t;
 
-int authorization_data_init_server (authorization_data_t ***data);
+int authorization_init_server (authorization_data_t ***data);
 void authorization_data_free (authorization_data_t **data);
 
 char * authorization_get_name(author_method_t method);
