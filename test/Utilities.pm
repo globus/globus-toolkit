@@ -260,7 +260,6 @@ sub wait_command()
             $output .= $_ ;
         }
         $fd->close();
-        $rc = waitpid($pid,0);
     }
     else
     {
