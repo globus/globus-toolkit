@@ -63,7 +63,8 @@ GSS_CALLCONV gss_init_sec_context(
         &once_control,
         (void (*)(void))globus_i_gsi_gssapi_module.activation_func);
 
-    if(req_flags & GSS_C_ANON_FLAG & GSS_C_DELEG_FLAG)
+    if(req_flags & GSS_C_ANON_FLAG &&
+       req_flags & GSS_C_DELEG_FLAG)
     {
         major_status = GSS_S_FAILURE;
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
@@ -73,6 +74,19 @@ GSS_CALLCONV gss_init_sec_context(
              "provide delegation"));
         goto error_exit;
     }
+
+    if(req_flags & GSS_C_GLOBUS_SSL_COMPATIBLE &&
+       req_flags & GSS_C_DELEG_FLAG)
+    {
+        major_status = GSS_S_FAILURE;
+        GLOBUS_GSI_GSSAPI_ERROR_RESULT(
+            minor_status,
+            GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
+            ("Can't initialize a context to both use SSL compatible "
+             "context establishment and provide delegation"));
+        goto error_exit;
+    }
+
     
     if ((context == (gss_ctx_id_t) GSS_C_NO_CONTEXT) ||
         !(context->ctx_flags & GSS_I_CTX_INITIALIZED))
