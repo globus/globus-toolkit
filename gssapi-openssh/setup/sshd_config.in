@@ -73,7 +73,7 @@
 # Warning: enabling this may bypass the setting of 'PasswordAuthentication'
 #PAMAuthenticationViaKbdInt no
 
-#X11Forwarding no
+X11Forwarding yes
 #X11DisplayOffset 10
 #X11UseLocalhost yes
 #PrintMotd yes
