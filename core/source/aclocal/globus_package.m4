@@ -197,6 +197,8 @@ AC_DEFUN(LAC_DOXYGEN,dnl
     LAC_DOXYGEN_SOURCE_DIRS($2)
     LAC_DOXYGEN_OUTPUT_TAGFILE($3)
     LAC_DOXYGEN_TAGFILES($4)
+    LAC_DOXYGEN_FILE_PATTERNS($5)	
+
 
     AC_SUBST(lac_doxygen_file_patterns)
     AC_SUBST(lac_doxygen_examples)
