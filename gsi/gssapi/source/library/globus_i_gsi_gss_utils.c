@@ -2178,6 +2178,9 @@ globus_i_gsi_gssapi_init_ssl_context(
         ca_cert = NULL;
     }
 
+    X509_STORE_set_flags(SSL_CTX_get_cert_store(cred_handle->ssl_context),
+                         X509_V_FLAG_IGNORE_CRITICAL);
+    
     if(anon_ctx != GLOBUS_I_GSI_GSS_ANON_CONTEXT)
     {
         local_result = globus_gsi_cred_get_cert(cred_handle->cred_handle,
@@ -2263,8 +2266,9 @@ globus_i_gsi_gssapi_init_ssl_context(
             for(index = 0; index < sk_X509_num(client_cert_chain); ++index)
             {
                 tmp_cert = X509_dup(sk_X509_value(client_cert_chain, index));
-                if(!X509_STORE_add_cert(cred_handle->ssl_context->cert_store,
-                                       tmp_cert))
+                if(!X509_STORE_add_cert(
+                       SSL_CTX_get_cert_store(cred_handle->ssl_context),
+                       tmp_cert))
                 {
                     /* need to free to reduce ref count */
                     X509_free(tmp_cert);

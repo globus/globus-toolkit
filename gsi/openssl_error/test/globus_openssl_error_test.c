@@ -46,13 +46,13 @@ int main(int argc, char * argv[])
 
     globus_module_activate(GLOBUS_GSI_OPENSSL_ERROR_TEST_MODULE);
 
-    ERR_put_error(ERR_LIB_ASN1, ASN1_F_X509_ALGOR_NEW, ASN1_R_TOO_LONG,
+    ERR_put_error(ERR_LIB_ASN1, ASN1_F_X509_NAME_NEW, ASN1_R_TOO_LONG,
                   __FILE__, __LINE__);
     
     ERR_put_error(ERR_LIB_BIO, BIO_F_BIO_WRITE, BIO_R_BROKEN_PIPE,
                   __FILE__, __LINE__);
 
-    ERR_put_error(ERR_LIB_ASN1, ASN1_F_USERNOTICE_NEW, 
+    ERR_put_error(ERR_LIB_ASN1, ASN1_F_I2D_RSA_PUBKEY, 
                   ASN1_R_DECODE_ERROR, __FILE__, __LINE__);
 
     {
