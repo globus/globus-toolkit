@@ -597,6 +597,20 @@ globus_l_gfs_config_misc()
         globus_l_gfs_config_set("community", 0, community_list);                
     }
     
+    /* if node_authorizes is -1 it means it has not yet been touched */
+    if(globus_i_gfs_config_int("node_authorizes") == -1)
+    {
+        if(globus_i_gfs_config_bool("data_node"))
+        {
+            globus_l_gfs_config_set("node_authorizes", 0, NULL);
+        }
+        else
+        {
+            globus_l_gfs_config_set("node_authorizes", 1, NULL);
+        }
+    }
+
+    
     return GLOBUS_SUCCESS;
 }
     
@@ -648,7 +662,6 @@ globus_i_gfs_config_init(
         "%s/etc/gridftp.conf", globus_libc_getenv("GLOBUS_LOCATION"));
     }
 
-
     globus_l_gfs_config_load_defaults();
     globus_l_gfs_config_load_config_file(global_config_file);
     globus_l_gfs_config_load_config_file(local_config_file);
@@ -660,21 +673,7 @@ globus_i_gfs_config_init(
     globus_l_gfs_config_set("argv", 0, argv);
     globus_l_gfs_config_set("argc", argc, NULL);
 
-    /* if node_authorizes is -1 it means it has not yet been touched */
-    if(globus_i_gfs_config_int("node_authorizes") == -1)
-    {
-        if(globus_i_gfs_config_bool("data_node"))
-        {
-            globus_l_gfs_config_set("node_authorizes", 0, NULL);
-        }
-        else
-        {
-            globus_l_gfs_config_set("node_authorizes", 1, NULL);
-        }
-    }
-
-    globus_free(local_config_file);
-        
+    globus_free(local_config_file);     
 }
 
 

@@ -27,6 +27,20 @@ do                                                                      \
     _buf += 4;                                                          \
 } while(0)
 
+#define GFSDecodeUInt32P(_buf, _len, _w)                                \
+do                                                                      \
+{                                                                       \
+    uint32_t                            _cw;                            \
+    /* verify buffer size */                                            \
+    if(_len - 4 < 0)                                                    \
+    {                                                                   \
+        goto decode_err;                                                \
+    }                                                                   \
+    memcpy(&_cw, _buf, 4);                                              \
+    _w = (void *) htonl((uint32_t)_cw);                                 \
+    _buf += 4;                                                          \
+    _len -= 4;                                                          \
+} while(0)
 
 #define GFSDecodeUInt32(_buf, _len, _w)                                 \
 do                                                                      \
@@ -38,7 +52,7 @@ do                                                                      \
         goto decode_err;                                                \
     }                                                                   \
     memcpy(&_cw, _buf, 4);                                              \
-    (uint32_t)_w = htonl((uint32_t)_cw);                                \
+    _w = htonl((uint32_t)_cw);                                          \
     _buf += 4;                                                          \
     _len -= 4;                                                          \
 } while(0)

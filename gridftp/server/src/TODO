@@ -17,6 +17,8 @@ signal handling:
 striping:
 -- verify eofc handling, should move out of remote into data.c
 -- verify _get_read_range()
+-- consolidate some restart ranges instead of sending one from
+    every stripe
     
 ipc:
 XX connect backwards
@@ -67,7 +69,7 @@ DONE
 -- sync() before each transfer stat update (by option)
 -- added ipc connect timeout and idle timeout (removes from cache)
 -- verify on 64bit machines (after void * changes)
-    passes test suite without problems in local, remote, and striped
+    passes test suite without problems in local, remote, and 4 striped
 
 fixed bugs:
 -- there's no way to tell the difference between a NULL string and an empty
