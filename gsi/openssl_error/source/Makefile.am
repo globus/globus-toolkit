@@ -8,10 +8,17 @@ SUBDIRS= \
 
 Sources= \
 	globus_error_openssl.h \
-	globus_error_openssl.c
+	globus_error_openssl.c \
+        globus_i_error_openssl.h \
+	globus_i_error_openssl.c
+
+EXTRA_DIST= \
+        version.h
+	dirt.sh
 
 flavorinclude_HEADERS= \
-	globus_error_openssl.h
+	globus_error_openssl.h \
+	globus_i_error_openssl.h
 
 lib_LTLIBRARIES = libglobus_gsi_openssl_error_$(GLOBUS_FLAVOR_NAME).la
 
