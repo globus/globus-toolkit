@@ -112,7 +112,8 @@ sub submit
     $pbs_job_script->print(<<EOF);
 #! /bin/sh
 # PBS batch job script built by Globus job manager
-# PBS -S /bin/sh
+#
+#PBS -S /bin/sh
 EOF
 
     if(defined($queue))
