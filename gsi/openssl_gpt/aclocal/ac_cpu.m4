@@ -12,16 +12,10 @@ AC_DEFUN(LAC_CPU_SET,
         *ia64*)
             lac_cv_CPU="ia64"
         ;;        
-        *solaris*)
-            lac_cv_CPU=`uname -m`
-        ;;
         *hpux*)
             lac_cv_CPU="parisc"
         ;;
-        *-ibm-aix*)
-            lac_cv_CPU=`uname -m`
-        ;;
-        *-dec-osf*)
+        *-ibm-aix*|*-dec-osf*|*alpha*linux*|*solaris*)
             lac_cv_CPU=`uname -m`
         ;;
         *irix6*)
