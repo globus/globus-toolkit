@@ -1120,8 +1120,6 @@ random_stress_test()
             }
         }
         globus_mutex_unlock(&random_stress_mutex);
-        
-        random_stress_registered = GLOBUS_FALSE;
     }
 
     globus_module_deactivate(GLOBUS_CALLBACK_MODULE);
@@ -1184,6 +1182,7 @@ random_stress_count_handler(
             globus_cond_signal(&random_stress_cond);
             
             globus_callback_unregister(stress_callback_handle, GLOBUS_NULL, GLOBUS_NULL);
+            random_stress_registered = GLOBUS_FALSE;
         }
         globus_mutex_unlock(&random_stress_mutex);
     } 
