@@ -59,7 +59,7 @@ sub submit
     {
 	$universe = 'vanilla';
     }
-    else if($description->jobtype() eq 'condor')
+    elsif($description->jobtype() eq 'condor')
     {
 	$universe = 'standard'
     }
@@ -204,7 +204,7 @@ sub submit
     if($? == 0)
     {
 	$response_line =(grep("submitted to cluster", <script_response>))[0];
-	$job_id = split(/\./, split(/\s+/, $response_line)[5])[0];
+	$job_id = (split(/\./, (split(/\s+/, $response_line))[5]))[0];
 	$status = Globus::GRAM::JobState::PENDING;
 
         $script_response->close();
@@ -236,17 +236,17 @@ sub poll
     $condor_log_file = new IO::File($self->{condor_logfile}, '<');
 
     @status = grep(/^[0-9]* \(0*${job_id}/, <$condor_log_file>);
-    @status = sort(map { join(' ', split(/ /)[0,1]) });
+    @status = sort(map { join(' ', (split(/ /))[0,1]) } @status);
     foreach(@status)
     {
 	unless($seen{$_}++)
 	{
-	    push(@uniq, $__;
+	    push(@uniq, $_);
 	}
     }
-    $num_done = scalar(grep(/^005/));
-    $num_run = scalar(grep(/^001/));
-    $num_abort = scalar(grep(/^013/));
+    $num_done = scalar(grep(/^005/, @uniq));
+    $num_run = scalar(grep(/^001/, @uniq));
+    $num_abort = scalar(grep(/^013/, @uniq));
 
     if($num_abort > 0)
     {
