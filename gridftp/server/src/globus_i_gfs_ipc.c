@@ -3475,15 +3475,19 @@ globus_l_gfs_ipc_cache_error_cb(
         }
         else
         {
-            list = (globus_list_t *) globus_hashtable_lookup(
+            list = (globus_list_t *) globus_hashtable_remove(
                 &globus_l_ipc_handle_table, entry->hash_str);
 
             tmp_list = globus_list_search(list, entry);
             globus_list_remove(&list, tmp_list);
-            globus_hashtable_insert(
-                &globus_l_ipc_handle_table,
-                entry->hash_str,
-                list);
+
+            if(!globus_list_empty(list))
+            {
+                globus_hashtable_insert(
+                    &globus_l_ipc_handle_table,
+                    entry->hash_str,
+                    list);
+            }
         }
     }
     globus_mutex_unlock(&globus_l_ipc_mutex);
@@ -3516,7 +3520,7 @@ globus_l_gfs_ipc_handle_get(
     globus_l_gfs_ipc_cache_entry_t *    entry = NULL;
     GlobusGFSName(globus_l_gfs_ipc_handle_get);
 
-    list = (globus_list_t *) globus_hashtable_lookup(
+    list = (globus_list_t *) globus_hashtable_remove(
         &globus_l_ipc_handle_table, (void *)hash_str);
 
     /* if entry not there create it */
@@ -3556,11 +3560,13 @@ globus_l_gfs_ipc_handle_get(
     {
         entry = (globus_l_gfs_ipc_cache_entry_t *) 
             globus_list_remove(&list, list);
-        globus_hashtable_insert(
-            &globus_l_ipc_handle_table,
-            (void *)hash_str,
-            list);
-
+        if(!globus_list_empty(list))
+        {
+            globus_hashtable_insert(
+                &globus_l_ipc_handle_table,
+                (void *)hash_str,
+                list);
+        }
         /* update callback info */
         globus_assert(entry != NULL);
         entry->cb = cb;
