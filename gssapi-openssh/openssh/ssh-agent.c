@@ -50,6 +50,7 @@ RCSID("$OpenBSD: ssh-agent.c,v 1.108 2003/03/13 11:44:50 markus Exp $");
 #include "authfd.h"
 #include "compat.h"
 #include "log.h"
+#include "pathnames.h"
 #include "readpass.h"
 #include "misc.h"
 
