@@ -26,7 +26,23 @@ if (!defined($gpath))
 
 require Grid::GPT::Setup;
 
-&GetOptions("grid-security-dir|d=s") || die "Error processing options";
+if( ! &GetOptions("grid-security-dir|d=s") ) { 
+
+    print <<EOF
+
+setup-gsi [-d <security config dir>]
+
+The setup-gsi script takes an optional argument -d, 
+and the directory that the security configuration 
+files will be placed.  If no argument is given, the 
+directory defaults to /etc/grid-security/.
+
+EOF
+    ;
+
+    exit 1;
+}
+
 
 my $setupdir = "$globusdir/setup/globus/";
 
@@ -42,7 +58,28 @@ else
    $target_dir = "/etc/grid-security";
 }
 
-my $trusted_certs_dir = $target_dir . "/certificates";
+# modify grid-cert-request to have correct security directory
+$reqfile = "$globusdir/bin/grid-cert-request";
+
+if( ! -w $reqfile ){
+    print "To run this script, $reqfile must be writeable\n";
+    exit 1;
+}
+
+$cert_request_buf = `cat $reqfile`;
+$cert_request_buf =~ s/secconfdir=GRID_SECURITY_DIR/secconfdir=$target_dir/;
+
+open(CERT_REQ, ">$reqfile");
+print CERT_REQ $cert_request_buf;
+close(CERT_REQ);
+
+my $trusted_certs_dir;
+if($target_dir eq "/etc/grid-security/") {
+    
+    $trusted_certs_dir = $target_dir . "/certificates";
+} else {
+    $trusted_certs_dir = $globusdir . "/share/certificates";
+}
 
 my $myname = "setup-gsi";
 
