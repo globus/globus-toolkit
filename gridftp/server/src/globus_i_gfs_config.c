@@ -72,7 +72,7 @@ static const globus_l_gfs_config_option_t option_list[] =
     "Enable CAS authorization."},
  {"secure_ipc", "secure_ipc", NULL, "secure-ipc", "si", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_TRUE, NULL,
     "Use gsi security on ipc channel."},
- {"ipc_auth_mode", "ipc_auth_mode", NULL, "ipc-auth-mode", "ia, GLOBUS_L_GFS_CONFIG_STRING, 0, "host",
+ {"ipc_auth_mode", "ipc_auth_mode", NULL, "ipc-auth-mode", "ia", GLOBUS_L_GFS_CONFIG_STRING, 0, "host",
     "Set authorization mode for the ipc connection.  Options are: none, host, self or subject:<subject>"},
  {"allow_anonymous", "allow_anonymous", NULL, "allow-anon", "aa", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
     "Allow cleartext anonymous access. If server is running as root anonymous_user "
