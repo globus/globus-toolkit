@@ -60,8 +60,19 @@ sub register_test
         skip($contact eq '', "Can't tweak contact", 0);
     }
 }
+
+my $x509_user_proxy;
+
+if (exists $ENV{X509_USER_PROXY})
+{
+    $x509_user_proxy = $ENV{X509_USER_PROXY};
+}
+else
+{
+    chomp($x509_user_proxy = `grid-proxy-info -path`);
+}
 push(@tests, "register_test('$ENV{CONTACT_STRING}', '', 0);");
-push(@tests, "register_test('$ENV{CONTACT_STRING}', '$ENV{X509_USER_PROXY}', 0);");
+push(@tests, "register_test('$ENV{CONTACT_STRING}', '$x509_user_proxy', 0);");
 
 my $bad_contact;
 if($ENV{CONTACT_STRING} =~ m/:(.*):/)
@@ -73,7 +84,7 @@ if($ENV{CONTACT_STRING} =~ m/:(.*):/)
 }
 
 push(@tests, "register_test('$bad_contact', '', 93);");
-push(@tests, "register_test('$bad_contact', '$ENV{X509_USER_PROXY}', 93);");
+push(@tests, "register_test('$bad_contact', '$x509_user_proxy', 93);");
 
 # Now that the tests are defined, set up the Test to deal with them.
 plan tests => scalar(@tests), todo => \@todo;
