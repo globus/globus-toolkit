@@ -43,9 +43,9 @@
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 #include "globus_common.h"
 #include "globus_gass_transfer.h"
-/*
+
 #include "globus_ftp_client.h"
-*/
+
 #include "globus_io.h"
 #endif
 
@@ -139,9 +139,9 @@ struct globus_gass_copy_handle_s
   globus_result_t                     result;
   
   int                                 err;
-
+ 
+  globus_ftp_client_handle_t	      ftp_handle;
   
-  /*  globus_ftp_client_handle_t	        ftp_handle; */
 };
 
 /**
@@ -159,6 +159,7 @@ typedef struct globus_gass_copy_attr_s
     globus_ftp_control_parallel_t       parallel_info;
     globus_ftp_control_tcpbuffer_t      tcpbuffer_info;
     */
+  globus_ftp_client_attr_t * ftp_attr;
   globus_io_attr_t * io;
   globus_gass_transfer_requestattr_t * gass_requestattr;
 } globus_gass_copy_attr_t;

@@ -69,7 +69,12 @@ typedef struct globus_i_gass_copy_state_target_s
      */
     globus_gass_copy_attr_t			attr;
 
-    /**
+  /* If the attr was passed as an argument then FALSE
+ * If the attr was created internally then TRUE
+ */
+  globus_bool_t			                free_attr;
+
+  /**
      * coordinates the modifying of the target structure
      */
     globus_mutex_t                              mutex;
@@ -88,6 +93,11 @@ typedef struct globus_i_gass_copy_state_target_s
      * Used to limit the number of n_pending
      */
     int                                 n_simultaneous;
+
+    /**
+     * Used to compute the offset for ftp writes
+     */
+    int                                 n_complete;
 
     /**
      * signifies the target has been successfully setup
@@ -110,9 +120,11 @@ typedef struct globus_i_gass_copy_state_target_s
 
 	struct /* GLOBUS_I_GASS_COPY_TARGET_MODE_FTP */
 	{
-#ifdef USE_FTP
-	    globus_ftp_handle *			handle;
-#endif
+	  /* FIXX - not sure that any of this is needed
+	   * same as n_simultaneous and n_pending, and there's
+	   * already an ftp_handle in the copy_handle
+	   */
+	    globus_ftp_client_handle_t *		handle;
 	    int					n_channels;
 	    int					n_reads_posted;
 	} ftp;
