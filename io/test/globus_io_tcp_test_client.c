@@ -121,7 +121,7 @@ test1(int argc, char **argv)
     globus_io_attr_set_tcp_restrict_port(
 	&attr,
 	GLOBUS_FALSE);
-    while (( c = getopt(argc, argv, "rHi:gsch:p:I:")) != EOF)
+    while (( c = getopt(argc, argv, "rHi:gsch:p:I:dD")) != EOF)
     {
 	switch(c)
 	{
@@ -160,6 +160,16 @@ test1(int argc, char **argv)
 	        GLOBUS_IO_SECURE_AUTHORIZATION_MODE_IDENTITY,
 	        &auth_data);
             break;
+	  case 'd':
+	    globus_io_attr_set_secure_delegation_mode(
+		    &attr,
+		    GLOBUS_IO_SECURE_DELEGATION_MODE_LIMITED_PROXY);
+	    break;
+	  case 'D':
+	    globus_io_attr_set_secure_delegation_mode(
+		    &attr,
+		    GLOBUS_IO_SECURE_DELEGATION_MODE_FULL_PROXY);
+	    break;
           case 'r':
             globus_io_attr_set_tcp_restrict_port(
 		&attr,

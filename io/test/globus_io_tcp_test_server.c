@@ -230,7 +230,18 @@ test1(int argc, char **argv)
     }
     else
     {
+        gss_cred_id_t cred;
 	globus_libc_printf("test 1 accept succeeded\n");
+	result = globus_io_tcp_get_delegated_credential(&child_handle, &cred);
+	if(result == GLOBUS_SUCCESS && cred != GSS_C_NO_CREDENTIAL)
+	{
+	    globus_libc_printf("Delegated credential %p\n", cred);
+	}
+	else
+	{
+	    globus_libc_printf("No delegated credential\n", cred);
+	}
+
     }
     globus_io_tcp_get_local_address(&child_handle,
 	                            host,
