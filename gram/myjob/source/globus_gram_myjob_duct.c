@@ -97,9 +97,9 @@ s_myjob_init ()
 				  NULL,
 				  NULL,
 				  NULL);
-  assert (!err);
 
-  return GLOBUS_SUCCESS;
+  if (err) return GLOBUS_GRAM_MYJOB_ERROR_COMM_FAILURE;
+  else return GLOBUS_SUCCESS;
 }
 
 static void
@@ -143,6 +143,10 @@ static int s_myjob_module_enabled = 0;
 static int
 s_myjob_activate ()
 {
+  int err;
+
+  err = GLOBUS_FAILURE;
+
   if ( globus_module_activate (GLOBUS_COMMON_MODULE) != GLOBUS_SUCCESS ) 
     goto activate_common_module_error;
 
@@ -152,10 +156,16 @@ s_myjob_activate ()
   if ( globus_module_activate (GLOBUS_DUCT_RUNTIME_MODULE) != GLOBUS_SUCCESS )
     goto activate_duct_runtime_module_error;
 
-  s_myjob_init ();
+  err = s_myjob_init ();
+
+  if (err) {
+    goto activate_myjob_error;
+  }
 
   return GLOBUS_SUCCESS;
 
+activate_myjob_error:
+  globus_module_deactivate (GLOBUS_DUCT_RUNTIME_MODULE);
 
 activate_duct_runtime_module_error:
   globus_module_deactivate (GLOBUS_NEXUS_MODULE);
@@ -164,20 +174,23 @@ activate_nexus_module_error:
   globus_module_deactivate (GLOBUS_COMMON_MODULE);
 
 activate_common_module_error:
-  return GLOBUS_FAILURE;
+  return err;
 }
 
 
 int 
 globus_gram_myjob_activate ()
 {
+  int err;
+
   if ( s_myjob_module_enabled == 0 ) {
-    if ( s_myjob_activate () == GLOBUS_SUCCESS ) {
+    if ( (err = s_myjob_activate ()) == GLOBUS_SUCCESS ) {
       s_myjob_module_enabled = 1;
       return GLOBUS_SUCCESS;
     }
-    else
-      return GLOBUS_FAILURE;
+    else {
+      return err;
+    }
   }
   else
     return GLOBUS_SUCCESS;
