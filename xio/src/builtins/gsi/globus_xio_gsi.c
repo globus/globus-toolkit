@@ -1013,8 +1013,6 @@ globus_l_xio_gsi_write_token_cb(
         /* done */
         if(handle->result_obj != NULL)
         {
-            result = globus_error_put(handle->result_obj);
-            handle->result_obj = NULL;
             goto error_pass_close;
         }
         
@@ -1053,10 +1051,18 @@ globus_l_xio_gsi_write_token_cb(
     return;
     
  error_pass_close:
+    if(handle->result_obj == NULL)
+    { 
+        handle->result_obj = globus_error_get(result);
+    }
+    
     if(globus_xio_driver_pass_close(
            op,
            globus_l_xio_gsi_close_cb, handle) != GLOBUS_SUCCESS)
     {
+        result = globus_error_put(handle->result_obj);
+        handle->result_obj = NULL;
+    
         globus_l_xio_gsi_handle_destroy(handle);
         globus_xio_driver_finished_open(driver_handle, NULL, op, result);
 
@@ -1245,8 +1251,7 @@ globus_l_xio_gsi_read_token_cb(
                 minor_status);
         
             /* if we have a output token try to send it */
-            if(output_token.length == 0 ||
-               handle->eof == GLOBUS_TRUE)
+            if(output_token.length == 0)
             {
                 if(handle->result_obj)
                 {
@@ -1257,6 +1262,10 @@ globus_l_xio_gsi_read_token_cb(
             }
             else
             {
+                if(handle->result_obj)
+                {
+                    globus_object_free(handle->result_obj);
+                }
                 handle->result_obj = globus_error_get(result);
                 handle->done = GLOBUS_TRUE;
             }
@@ -1414,15 +1423,17 @@ globus_l_xio_gsi_read_token_cb(
     return;
 
  error_pass_close:
-    if(handle->result_obj != NULL)
+    if(handle->result_obj == NULL)
     { 
-        result = globus_error_put(handle->result_obj);
-        handle->result_obj = NULL;
+        handle->result_obj = globus_error_get(result);
     }
                 
     if(globus_xio_driver_pass_close(
            op,globus_l_xio_gsi_close_cb, handle) != GLOBUS_SUCCESS)
     {
+        result = globus_error_put(handle->result_obj);
+        handle->result_obj = NULL;
+        
         globus_l_xio_gsi_handle_destroy(handle);
         globus_xio_driver_finished_open(
             driver_handle, NULL, op, result);
@@ -1600,10 +1611,9 @@ globus_l_xio_gsi_open_cb(
     return;
 
  error_pass_close:
-    if(handle->result_obj != NULL)
+    if(handle->result_obj == NULL)
     { 
-        result = globus_error_put(handle->result_obj);
-        handle->result_obj = NULL;
+        handle->result_obj = globus_error_get(result);
     }
                 
     if(globus_xio_driver_pass_close(
@@ -1612,6 +1622,10 @@ globus_l_xio_gsi_open_cb(
         GlobusXIOGSIDebugInternalExitWithError();
         return;
     }
+    
+    result = globus_error_put(handle->result_obj);
+    handle->result_obj = NULL;
+    
  error_destroy_handle:
     globus_l_xio_gsi_handle_destroy(handle);
     globus_xio_driver_finished_open(driver_handle, NULL, op, result);
