@@ -15,7 +15,7 @@ CVS Information:
 ******************************************************************************/
 
 /******************************************************************************
-			     Include header files
+                             Include header files
 ******************************************************************************/
 #include "config.h"
 #include "globus_common.h"
@@ -23,7 +23,7 @@ CVS Information:
 #include <assert.h>
 
 /******************************************************************************
-		             Type definitions
+                             Type definitions
 ******************************************************************************/
 #define GLOBUS_L_CALLBACK_HASH_TABLE_SIZE         32768
 #define GLOBUS_L_CALLBACK_INIT_STRUCT_COUNT       256
@@ -135,9 +135,9 @@ globus_l_callback_queue_get_next(
     globus_abstime_t *                         next_time);
 
 /******************************************************************************
-		       Define module specific variables
+                       Define module specific variables
 ******************************************************************************/
-static globus_timeq_t                          globus_l_callback_q;
+static globus_priority_q_t                          globus_l_callback_q;
 static globus_mutex_t                          globus_l_q_lock;
 
 
@@ -171,11 +171,11 @@ static volatile globus_bool_t                  globus_l_callback_shutting_down;
         ((globus_l_thread_restart_info_t *)globus_memory_pop_node(&globus_l_memory_restart_info))
 #   define FREE_CALLBACK_T(ptr) \
         (globus_memory_push_node( \
-				  &globus_l_memory_callback_info, \
-			          (globus_byte_t *)ptr))
+                                  &globus_l_memory_callback_info, \
+                                  (globus_byte_t *)ptr))
 #   define FREE_RESTART_T(ptr) \
         (globus_memory_push_node(&globus_l_memory_restart_info, \
-			          (globus_byte_t *)ptr))
+                                  (globus_byte_t *)ptr))
 #else
 #   define MALLOC_CALLBACK_T() \
         ((globus_l_callback_info_t *) globus_malloc(sizeof(globus_l_callback_info_t)))
@@ -188,10 +188,10 @@ static volatile globus_bool_t                  globus_l_callback_shutting_down;
 #endif
 
 /******************************************************************************
-			   Module Definition
+                           Module Definition
 ******************************************************************************/
 
-globus_module_descriptor_t		globus_i_callback_module =
+globus_module_descriptor_t              globus_i_callback_module =
 {
     "globus_callback",
     globus_l_callback_activate,
@@ -201,7 +201,7 @@ globus_module_descriptor_t		globus_i_callback_module =
 
 
 /******************************************************************************
-		       globus_callback function definitions
+                       globus_callback function definitions
 ******************************************************************************/
 
 /*
@@ -215,29 +215,29 @@ globus_l_callback_activate(void)
     rc = globus_module_activate(GLOBUS_THREAD_MODULE);
     if(rc != GLOBUS_SUCCESS)
     {
-	return rc;
+        return rc;
     }
 
     rc = globus_module_activate(GLOBUS_THREAD_POOL_MODULE);
     if(rc != GLOBUS_SUCCESS)
     {
-	return rc;
+        return rc;
     }
     globus_handle_table_init(&globus_l_callback_handle_table);
 
-    globus_timeq_init(&globus_l_callback_q);
+    globus_priority_q_init(&globus_l_callback_q, globus_abstime_cmp);
     globus_mutex_init(&globus_l_q_lock,
-		      (globus_mutexattr_t *) GLOBUS_NULL);
+                      (globus_mutexattr_t *) GLOBUS_NULL);
    
 #   if !defined(_GLOBUS_CALLBACK_USE_THREAD_POOL)
     {
         globus_thread_key_create(&globus_l_restart_thread_key, 
-		                  GLOBUS_NULL);
+                                  GLOBUS_NULL);
     }
 #   else
     {
         globus_thread_pool_key_create(&globus_l_restart_thread_key, 
-		                  GLOBUS_NULL);
+                                  GLOBUS_NULL);
     }
 #   endif
 
@@ -245,47 +245,47 @@ globus_l_callback_activate(void)
     {
         globus_memory_init(&globus_l_memory_callback_info,
                          sizeof(globus_l_callback_info_t),
-			 GLOBUS_L_CALLBACK_INIT_STRUCT_COUNT);
+                         GLOBUS_L_CALLBACK_INIT_STRUCT_COUNT);
         globus_memory_init(&globus_l_memory_restart_info,
                          sizeof(globus_l_thread_restart_info_t),
-			 GLOBUS_L_CALLBACK_INIT_STRUCT_COUNT);
+                         GLOBUS_L_CALLBACK_INIT_STRUCT_COUNT);
     }
 #   endif
 
 #   if !defined(BUILD_LITE)
     {
-	globus_l_thread_count = 0;
+        globus_l_thread_count = 0;
         globus_l_callback_shutting_down = GLOBUS_FALSE;
         globus_l_time_q_thread_running = GLOBUS_FALSE;    
 
         globus_cond_init(&globus_l_thread_cond,
-		         (globus_condattr_t *) GLOBUS_NULL);
+                         (globus_condattr_t *) GLOBUS_NULL);
         globus_cond_init(&globus_l_callback_run_cond,
-		         (globus_condattr_t *) GLOBUS_NULL);
+                         (globus_condattr_t *) GLOBUS_NULL);
 
         globus_mutex_init(&globus_l_thread_create_lock,
-  		          (globus_mutexattr_t *) GLOBUS_NULL);
-	globus_l_wakeup_list = GLOBUS_NULL;
+                          (globus_mutexattr_t *) GLOBUS_NULL);
+        globus_l_wakeup_list = GLOBUS_NULL;
         
-	globus_mutex_lock(&globus_l_thread_create_lock);
+        globus_mutex_lock(&globus_l_thread_create_lock);
         {
-    	    /*  if thread not running and library isn't shut down */
+            /*  if thread not running and library isn't shut down */
             if(!globus_l_time_q_thread_running)
-	    {
-	        int tc_rc;;
+            {
+                int tc_rc;;
                 globus_l_time_q_thread_running = GLOBUS_TRUE;
-	        globus_l_thread_count++;
+                globus_l_thread_count++;
 #               if !defined(_GLOBUS_CALLBACK_USE_THREAD_POOL)
-		{
+                {
                     tc_rc = globus_thread_create(
                             GLOBUS_NULL,
-	                    (globus_threadattr_t *) GLOBUS_NULL,
-			    globus_l_callback_timeq_run,
-			    (void *) GLOBUS_NULL);
+                            (globus_threadattr_t *) GLOBUS_NULL,
+                            globus_l_callback_timeq_run,
+                            (void *) GLOBUS_NULL);
                     assert (tc_rc==0);
                 }
 #               else
-		{
+                {
                     globus_i_thread_start(
                         globus_l_callback_timeq_run,
                         (void *) GLOBUS_NULL);
@@ -299,9 +299,9 @@ globus_l_callback_activate(void)
     {
         globus_thread_setspecific(
             globus_l_restart_thread_key,
-	    (void *) GLOBUS_NULL);
+            (void *) GLOBUS_NULL);
         globus_thread_blocking_callback_push(globus_l_callback_func_restart,
-					     (void *) GLOBUS_NULL,
+                                             (void *) GLOBUS_NULL,
                                              &(globus_l_callback_index));
        globus_thread_blocking_callback_disable(&(globus_l_callback_index));
     }
@@ -323,8 +323,8 @@ globus_l_callback_deactivate(void)
     /*  clean up for threaded build */
 #   if   !defined(BUILD_LITE)
     {
-	globus_list_t *                    i;
-	globus_l_callback_info_t *         callback_info;
+        globus_list_t *                    i;
+        globus_l_callback_info_t *         callback_info;
 
         /* lock thread create will hold all new threads from starting
            and hold all adds to the wakeup list.  Once the lock is released
@@ -333,17 +333,17 @@ globus_l_callback_deactivate(void)
            to see if they can proceed. */
         globus_mutex_lock(&globus_l_thread_create_lock);
         {
-   	    /* wake up all threads */
-	    i = globus_l_wakeup_list;
-	    while(!globus_list_empty(i))
-	    {
+            /* wake up all threads */
+            i = globus_l_wakeup_list;
+            while(!globus_list_empty(i))
+            {
                 callback_info = (globus_l_callback_info_t *)
-			           globus_list_first(i);
+                                   globus_list_first(i);
 
-	        callback_info->wakeup_func(callback_info->wakeup_args);
+                callback_info->wakeup_func(callback_info->wakeup_args);
 
                 i = globus_list_rest(i);
-	    }
+            }
             globus_list_free(globus_l_wakeup_list);
     
             globus_l_callback_shutting_down = GLOBUS_TRUE;
@@ -354,7 +354,7 @@ globus_l_callback_deactivate(void)
             while(globus_l_thread_count > 0)
             {
                 globus_cond_wait(&globus_l_thread_cond,
-  		                 &globus_l_thread_create_lock);
+                                 &globus_l_thread_create_lock);
             }
         }
         globus_mutex_unlock(&globus_l_thread_create_lock);
@@ -375,23 +375,23 @@ globus_l_callback_deactivate(void)
     globus_mutex_lock(&globus_l_q_lock);
     {  
         globus_l_callback_info_t *        callback_info;
-        while(globus_timeq_size(&globus_l_callback_q) > 0)
+        while(globus_priority_q_size(&globus_l_callback_q) > 0)
         {
-	    callback_info = (globus_l_callback_info_t *)
-                globus_timeq_dequeue(&globus_l_callback_q);
+            callback_info = (globus_l_callback_info_t *)
+                globus_priority_q_dequeue(&globus_l_callback_q);
             globus_l_callback_free(callback_info);
         }
     }
     globus_mutex_unlock(&globus_l_q_lock);
 
-    globus_timeq_destroy(&globus_l_callback_q);
+    globus_priority_q_destroy(&globus_l_callback_q);
     globus_mutex_destroy(&globus_l_q_lock);
     globus_handle_table_destroy(&globus_l_callback_handle_table);
 
     rc = globus_module_deactivate(GLOBUS_THREAD_POOL_MODULE);
     if(rc != GLOBUS_SUCCESS)
     {
-	return rc;
+        return rc;
     }
     globus_module_deactivate(GLOBUS_THREAD_MODULE);
 
@@ -426,10 +426,10 @@ globus_callback_poll(
     }
 #   else
     {
-	globus_abstime_t                         time_now;
-	globus_abstime_t *                       tmp_time;
-	globus_abstime_t *                       time_stop;
-	globus_abstime_t                         time_next;
+        globus_abstime_t                         time_now;
+        globus_abstime_t *                       tmp_time;
+        globus_abstime_t *                       time_stop;
+        globus_abstime_t                         time_next;
         globus_bool_t                            done = GLOBUS_FALSE;
         globus_bool_t                            rc;
         globus_bool_t                            first_call = GLOBUS_TRUE;
@@ -449,119 +449,119 @@ globus_callback_poll(
                                 globus_thread_getspecific(globus_l_restart_thread_key);
 
         while(!done &&
-	      !globus_timeq_empty(&globus_l_callback_q))
-	{
+              !globus_priority_q_empty(&globus_l_callback_q))
+        {
             GlobusTimeAbstimeGetCurrent(time_now);
 
             if(globus_abstime_cmp(&time_now, (globus_abstime_t *)timeout) > 0 &&
                !first_call) 
-	    {
+            {
                 done = GLOBUS_TRUE;
-	    }
-	    else
-	    {
-		first_call = GLOBUS_FALSE;
+            }
+            else
+            {
+                first_call = GLOBUS_FALSE;
                 globus_l_callback_queue_get_next(
                                 &callback_info,
                                 &time_next);
-	        if(callback_info != GLOBUS_NULL) 
-	        {
+                if(callback_info != GLOBUS_NULL) 
+                {
                     time_stop = timeout;
-		    if(globus_timeq_size(&globus_l_callback_q) > 0)
-		    {
-			tmp_time = globus_timeq_first_time(
-				       &globus_l_callback_q);
-			if(globus_abstime_cmp(
-			       tmp_time, 
+                    if(globus_priority_q_size(&globus_l_callback_q) > 0)
+                    {
+                        tmp_time = (globus_abstime_t *) 
+                            globus_priority_q_first_priority(&globus_l_callback_q);
+                        if(globus_abstime_cmp(
+                               tmp_time, 
                                (globus_abstime_t *)time_stop) < 0)
-			{
+                        {
                             time_stop = tmp_time;
-			}
-		    }
+                        }
+                    }
 
-	            restart_info->callback_info = callback_info;
-	            restart_info->callback_index = globus_l_callback_index;
+                    restart_info->callback_info = callback_info;
+                    restart_info->callback_index = globus_l_callback_index;
 
-		    GlobusTimeAbstimeCopy(restart_info->end_time, *time_stop);
-		    GlobusTimeAbstimeCopy(restart_info->start_time, time_now);
+                    GlobusTimeAbstimeCopy(restart_info->end_time, *time_stop);
+                    GlobusTimeAbstimeCopy(restart_info->start_time, time_now);
                     
                     restart_info->restarted = GLOBUS_FALSE;
 
                     globus_thread_blocking_callback_enable(&(globus_l_callback_index)); 
 
-		    /*
-		     * call the users function
-		     */
-	            globus_thread_setspecific(
-			globus_l_restart_thread_key,
-		        (void *) restart_info);
-		    callback_info->call_depth++;
+                    /*
+                     * call the users function
+                     */
+                    globus_thread_setspecific(
+                        globus_l_restart_thread_key,
+                        (void *) restart_info);
+                    callback_info->call_depth++;
 
                     callback_info->handler_thread_id = globus_thread_self();
                     rc = callback_info->callback_func(time_stop,
-				             callback_info->callback_args);
+                                             callback_info->callback_args);
 
 
-		    callback_info->call_depth--;
-	            globus_thread_setspecific(
-			globus_l_restart_thread_key,
-		        (void *) last_restart_info);
+                    callback_info->call_depth--;
+                    globus_thread_setspecific(
+                        globus_l_restart_thread_key,
+                        (void *) last_restart_info);
 
-		    /* rest global structures to current call stack values */
-		    GlobusTimeAbstimeCopy(restart_info->end_time, *time_stop);
-		    GlobusTimeAbstimeCopy(restart_info->start_time, time_now);
-	            restart_info->callback_info = callback_info;
+                    /* rest global structures to current call stack values */
+                    GlobusTimeAbstimeCopy(restart_info->end_time, *time_stop);
+                    GlobusTimeAbstimeCopy(restart_info->start_time, time_now);
+                    restart_info->callback_info = callback_info;
 
-		    /* 
-		     *  if one shot or canceled free it 
-		     *  else put it back in the queue  
-		     */
-		    if(globus_time_reltime_is_infinity(&callback_info->period) &&
-		       callback_info->call_depth == 0)
-		    {
-			if(callback_info->unregister_callback != GLOBUS_NULL)
-			{
-			    callback_info->unregister_callback(
+                    /* 
+                     *  if one shot or canceled free it 
+                     *  else put it back in the queue  
+                     */
+                    if(globus_time_reltime_is_infinity(&callback_info->period) &&
+                       callback_info->call_depth == 0)
+                    {
+                        if(callback_info->unregister_callback != GLOBUS_NULL)
+                        {
+                            callback_info->unregister_callback(
                                 callback_info->unreg_args);
-			}
-			globus_l_callback_free(callback_info);
-		    }
-		    else if(!globus_time_reltime_is_infinity(
+                        }
+                        globus_l_callback_free(callback_info);
+                    }
+                    else if(!globus_time_reltime_is_infinity(
                                  &callback_info->period) &&
                            !restart_info->restarted)
-		    {
-			globus_l_callback_requeue(callback_info);
-		    }
+                    {
+                        globus_l_callback_requeue(callback_info);
+                    }
 
-		    /* end loop if callback changed something */
-		    if(rc)
-		    {
+                    /* end loop if callback changed something */
+                    if(rc)
+                    {
                         done = GLOBUS_TRUE;
-		    }
-	        }
-		/* sleep until next one is ready or timeout expires */
-	        else if(globus_abstime_cmp(timeout, 
+                    }
+                }
+                /* sleep until next one is ready or timeout expires */
+                else if(globus_abstime_cmp(timeout, 
                                            &time_next) > 0)
-	        {
+                {
                     globus_reltime_t    sleep_time;
                     long tm;
 
                     GlobusTimeAbstimeDiff(sleep_time, time_next, time_now);
                     GlobusTimeReltimeToUSec(tm, sleep_time);
 
-		    if(tm > 0)
-		    {
+                    if(tm > 0)
+                    {
                         globus_libc_usleep(tm);
-		    }
-	        }
-		else if(!globus_time_abstime_is_infinity(
+                    }
+                }
+                else if(!globus_time_abstime_is_infinity(
                              (globus_abstime_t *)timeout))
-		{
+                {
                     done = GLOBUS_TRUE;
-		}
+                }
             }
-	}
-	FREE_RESTART_T(restart_info);
+        }
+        FREE_RESTART_T(restart_info);
     }
 
 #   endif
@@ -634,10 +634,10 @@ globus_l_callback_register(
 
 #   if  defined(BUILD_LITE)
     {
-	/* if not threaded wakeup function is illegal */
+        /* if not threaded wakeup function is illegal */
         if(wakeup_func != GLOBUS_NULL)
-	{
-	    wakeup_func = GLOBUS_NULL;
+        {
+            wakeup_func = GLOBUS_NULL;
         }
     }
 #   endif
@@ -651,8 +651,8 @@ globus_l_callback_register(
         callback_info->handle = 
               globus_handle_table_insert(
                   &globus_l_callback_handle_table,
-		  (void*)callback_info,
-		  2);
+                  (void*)callback_info,
+                  2);
 
         *callback_handle = callback_info->handle;
     }
@@ -661,8 +661,8 @@ globus_l_callback_register(
         callback_info->handle = 
               globus_handle_table_insert(
                   &globus_l_callback_handle_table,
-		  (void*)callback_info,
-		  1);
+                  (void*)callback_info,
+                  1);
     }
 
     callback_info->callback_func = callback_func;
@@ -681,9 +681,9 @@ globus_l_callback_register(
     /* add it to the queue */
     globus_mutex_lock(&globus_l_q_lock);
     {
-        globus_timeq_enqueue(&globus_l_callback_q,
-  			     (void *) callback_info,
-			     &callback_info->start_time);
+        globus_priority_q_enqueue(&globus_l_callback_q,
+                             (void *) callback_info,
+                             &callback_info->start_time);
     }
     globus_mutex_unlock(&globus_l_q_lock);
 
@@ -691,12 +691,12 @@ globus_l_callback_register(
 #   if !defined(BUILD_LITE)
     {
         globus_mutex_lock(&globus_l_thread_create_lock);
-	{
+        {
             if(
                !globus_l_callback_shutting_down)
             {
                 globus_cond_signal(&globus_l_callback_run_cond);
-	    }
+            }
         }
         globus_mutex_unlock(&globus_l_thread_create_lock);
     }
@@ -715,7 +715,7 @@ globus_l_callback_free(
 {
     /* may not be in queue if threaded and finished running */
 
-    globus_timeq_remove(
+    globus_priority_q_remove(
         &globus_l_callback_q,
          info);
     info->running = GLOBUS_FALSE;
@@ -811,10 +811,10 @@ globus_i_callback_register_cancel(
     if(callback_info == GLOBUS_NULL)
     {
         rc = GLOBUS_FAILURE;
-	if(unregister_callback != GLOBUS_NULL)
-	{
+        if(unregister_callback != GLOBUS_NULL)
+        {
             unregister_callback(unreg_args);
-	}
+        }
     }
     else
     {
@@ -823,23 +823,23 @@ globus_i_callback_register_cancel(
             globus_handle_table_decrement_reference(
                 &globus_l_callback_handle_table,
                 callback_info->handle);
-	  /* if registerd set so it is not requeued */
+          /* if registerd set so it is not requeued */
             if(callback_info->running == GLOBUS_FALSE)
-	    {
-		if(unregister_callback != GLOBUS_NULL)
-		{
+            {
+                if(unregister_callback != GLOBUS_NULL)
+                {
                     unregister_callback(unreg_args);
-		}
+                }
                 globus_l_callback_free(callback_info);
-	    }
+            }
             else
-	    {
+            {
                 /* set to infinite so it is removed after it returns */
                 GlobusTimeReltimeCopy((callback_info->period), 
                                        globus_i_reltime_infinity);
                 callback_info->unregister_callback = unregister_callback;
                 callback_info->unreg_args = unreg_args;
-	    }
+            }
         }
         globus_mutex_unlock(&globus_l_q_lock);
 
@@ -868,9 +868,9 @@ globus_l_callback_requeue(
         GlobusTimeAbstimeCopy((callback_info->start_time), time_now);
     }
 
-    globus_timeq_enqueue(&globus_l_callback_q,
+    globus_priority_q_enqueue(&globus_l_callback_q,
                          (void *) callback_info,
-			 &callback_info->start_time);
+                         &callback_info->start_time);
 #   if !defined(BUILD_LITE)
     {
         globus_mutex_lock(&globus_l_thread_create_lock);
@@ -908,10 +908,10 @@ globus_l_callback_timeq_run(
     restart_info = MALLOC_RESTART_T();
     restart_info->restarted = GLOBUS_FALSE;
     globus_thread_setspecific(globus_l_restart_thread_key,
-	                      (void *) restart_info);
+                              (void *) restart_info);
 
     globus_thread_blocking_callback_push(globus_l_callback_func_restart,
-					 (void *) globus_l_callback_timeq_run,
+                                         (void *) globus_l_callback_timeq_run,
                                           &(restart_info->callback_index));
 
     /* Make sure the the list hasn't emptied and deactivate 
@@ -927,119 +927,120 @@ globus_l_callback_timeq_run(
                 done = GLOBUS_TRUE;
                 globus_l_time_q_thread_running = GLOBUS_FALSE;
             }
-            else if(globus_timeq_empty(&globus_l_callback_q))
-	    {
-		globus_thread_blocking_callback_disable(&(restart_info->callback_index));
+            else if(globus_priority_q_empty(&globus_l_callback_q))
+            {
+                globus_thread_blocking_callback_disable(&(restart_info->callback_index));
                 globus_cond_wait(&globus_l_callback_run_cond,
-				 &globus_l_thread_create_lock);
-		globus_thread_blocking_callback_enable(&(restart_info->callback_index));
-	    }
+                                 &globus_l_thread_create_lock);
+                globus_thread_blocking_callback_enable(&(restart_info->callback_index));
+            }
         }
         globus_mutex_unlock(&globus_l_thread_create_lock);
 
-	/* get next element if wait time expired */
+        /* get next element if wait time expired */
         globus_l_callback_queue_get_next(
             &callback_info,
             &next_time);
-	if(callback_info != GLOBUS_NULL)
+        if(callback_info != GLOBUS_NULL)
         {
             /* if function does not have its own thread */
-	    if(callback_info->wakeup_func == NULL)
-	    {
-		/* by calling the registered function it is possible 
-		 * that the thread could be restarted
-		 */
+            if(callback_info->wakeup_func == NULL)
+            {
+                /* by calling the registered function it is possible 
+                 * that the thread could be restarted
+                 */
                 restart_info->callback_info = callback_info;
                 GlobusTimeAbstimeGetCurrent((restart_info->start_time));
 
-		if(globus_timeq_size(&globus_l_callback_q) > 0)
-		{
+                if(globus_priority_q_size(&globus_l_callback_q) > 0)
+                {
                     globus_abstime_t *           tmp_time;
 
-		    tmp_time = globus_timeq_first_time(&globus_l_callback_q);
+                    tmp_time = (globus_abstime_t *)
+                        globus_priority_q_first_priority(&globus_l_callback_q);
                     GlobusTimeAbstimeCopy(time_stop,
                                           (*tmp_time));
                     GlobusTimeAbstimeCopy(restart_info->end_time,
                                           (time_stop));
                 }
-		else
-		{
+                else
+                {
                     GlobusTimeAbstimeCopy((time_stop), 
                                           globus_i_abstime_infinity);
                     GlobusTimeAbstimeCopy(restart_info->end_time,
-					  (time_stop));
-      		}
+                                          (time_stop));
+                }
 
                 callback_info->handler_thread_id = globus_thread_self();
                 rc = callback_info->callback_func(
-				       &time_stop,
-				       callback_info->callback_args);
+                                       &time_stop,
+                                       callback_info->callback_args);
 
-		globus_thread_yield();
+                globus_thread_yield();
 
                 /* if restarted logic */
-		restart_info = (globus_l_thread_restart_info_t *)
-				 globus_thread_getspecific(globus_l_restart_thread_key);
-		/*  
-		 *  The queue must be locked before the test to reenqueue is made
-		 *  otherwise unregister may be called after the test but 
-		 *  before the requeue.
-		 */
+                restart_info = (globus_l_thread_restart_info_t *)
+                                 globus_thread_getspecific(globus_l_restart_thread_key);
+                /*  
+                 *  The queue must be locked before the test to reenqueue is made
+                 *  otherwise unregister may be called after the test but 
+                 *  before the requeue.
+                 */
                 globus_mutex_lock(&globus_l_q_lock);
-		{
-		    callback_info->running = GLOBUS_FALSE;
+                {
+                    callback_info->running = GLOBUS_FALSE;
                     if(restart_info->restarted)
-		    {
+                    {
                         done = GLOBUS_TRUE;
-		    }
-	            else if(globus_time_reltime_is_infinity(&callback_info->period) &&
-			    !callback_info->running)
-	            {
-			if(callback_info->unregister_callback != GLOBUS_NULL)
-			{
-		            callback_info->unregister_callback(callback_info->unreg_args);
-			}
-			globus_l_callback_free(callback_info);
                     }
-		    else
-		    {
-  	                globus_l_callback_requeue(callback_info);
-		    }
+                    else if(globus_time_reltime_is_infinity(&callback_info->period) &&
+                            !callback_info->running)
+                    {
+                        if(callback_info->unregister_callback != GLOBUS_NULL)
+                        {
+                            callback_info->unregister_callback(callback_info->unreg_args);
+                        }
+                        globus_l_callback_free(callback_info);
+                    }
+                    else
+                    {
+                        globus_l_callback_requeue(callback_info);
+                    }
                 }
                 globus_mutex_unlock(&globus_l_q_lock);
             }
-	    else
-	    {
-		globus_mutex_lock(&globus_l_thread_create_lock);
-		{
-	            if(!globus_l_callback_shutting_down)
-		    {
-		 	globus_list_insert(&globus_l_wakeup_list,
-					    (void *) callback_info);
+            else
+            {
+                globus_mutex_lock(&globus_l_thread_create_lock);
+                {
+                    if(!globus_l_callback_shutting_down)
+                    {
+                        globus_list_insert(&globus_l_wakeup_list,
+                                            (void *) callback_info);
 
-	                globus_l_thread_count++;
+                        globus_l_thread_count++;
 #                       if !defined(_GLOBUS_CALLBACK_USE_THREAD_POOL)
-			{
+                        {
                             globus_thread_create(
                                 GLOBUS_NULL,
-			        (globus_threadattr_t *) GLOBUS_NULL,
-			        globus_l_callback_func_run,
-			        (void *) callback_info);
+                                (globus_threadattr_t *) GLOBUS_NULL,
+                                globus_l_callback_func_run,
+                                (void *) callback_info);
                         }
 #                       else 
-			{
+                        {
                             globus_i_thread_start(
                                 globus_l_callback_func_run,
-		                (void *) callback_info);
+                                (void *) callback_info);
                         }
 #                       endif
                     }
-	        } 
-		globus_mutex_unlock(&globus_l_thread_create_lock);
-	    }
-	}
+                } 
+                globus_mutex_unlock(&globus_l_thread_create_lock);
+            }
+        }
         /* callback == NULL */
-	else
+        else
         {
             globus_mutex_lock(&globus_l_thread_create_lock);
             {
@@ -1048,30 +1049,30 @@ globus_l_callback_timeq_run(
                     done = GLOBUS_TRUE;
                     globus_l_time_q_thread_running = GLOBUS_FALSE;
                 }
-		else
-		{
-	   	    globus_thread_blocking_callback_disable(
+                else
+                {
+                    globus_thread_blocking_callback_disable(
                         &(restart_info->callback_index));
 
                     if(globus_time_abstime_is_infinity(&next_time))
                     {
                         globus_cond_wait(
-		            &globus_l_callback_run_cond,
-		            &globus_l_thread_create_lock);
+                            &globus_l_callback_run_cond,
+                            &globus_l_thread_create_lock);
                     }
                     else
                     {
                         globus_cond_timedwait(
-		            &globus_l_callback_run_cond,
-		            &globus_l_thread_create_lock,
-			    &next_time);
+                            &globus_l_callback_run_cond,
+                            &globus_l_thread_create_lock,
+                            &next_time);
                     }
-		    globus_thread_blocking_callback_enable(
+                    globus_thread_blocking_callback_enable(
                         &(restart_info->callback_index));
-	        }
+                }
             }
             globus_mutex_unlock(&globus_l_thread_create_lock);
-	}
+        }
     }
     FREE_RESTART_T(restart_info);
     globus_l_thread_count_dec();
@@ -1084,12 +1085,12 @@ globus_l_thread_count_dec()
 {
     globus_mutex_lock(&globus_l_thread_create_lock);
     {
-	 globus_l_thread_count--;
-	 if(globus_l_thread_count <= 0)
-	 {
+         globus_l_thread_count--;
+         if(globus_l_thread_count <= 0)
+         {
              globus_l_callback_shutting_down = GLOBUS_TRUE;
              globus_cond_signal(&globus_l_thread_cond);
-	 }
+         }
     }
     globus_mutex_unlock(&globus_l_thread_create_lock);
 }
@@ -1118,40 +1119,40 @@ globus_l_callback_func_run(
 
     restart_info->callback_info = callback_info;
     globus_thread_setspecific(globus_l_restart_thread_key,
-			      (void *) restart_info);
+                              (void *) restart_info);
 
     globus_thread_blocking_callback_push(globus_l_callback_func_restart,
-					 (void *) GLOBUS_NULL,
+                                         (void *) GLOBUS_NULL,
                                           &(restart_info->callback_index));
 
     while(!done &&
-	  !globus_l_callback_shutting_down)
+          !globus_l_callback_shutting_down)
     {
-	callback_info->running = GLOBUS_TRUE;
+        callback_info->running = GLOBUS_TRUE;
         GlobusTimeAbstimeGetCurrent(restart_info->start_time);
         GlobusTimeAbstimeCopy(timeout, globus_i_abstime_infinity);
 
         callback_info->handler_thread_id = globus_thread_self();
         rc = callback_info->callback_func(
                  &timeout,
-		 callback_info->callback_args);
+                 callback_info->callback_args);
 
-	globus_thread_yield();
+        globus_thread_yield();
 
         globus_mutex_lock(&globus_l_q_lock);
         {
-	    if(restart_info->restarted)
-	    {
-	        done = GLOBUS_TRUE;
+            if(restart_info->restarted)
+            {
+                done = GLOBUS_TRUE;
             }
-	    else if(globus_time_reltime_is_infinity(&callback_info->period))
-	    {
-	         callback_info->running = GLOBUS_FALSE;
+            else if(globus_time_reltime_is_infinity(&callback_info->period))
+            {
+                 callback_info->running = GLOBUS_FALSE;
                  done = GLOBUS_TRUE;
-		 freeit = GLOBUS_TRUE;
-	    }
-	    else
-	    {
+                 freeit = GLOBUS_TRUE;
+            }
+            else
+            {
                 globus_abstime_t   tmp_time;
 
                 GlobusTimeAbstimeGetCurrent(time_now);
@@ -1162,16 +1163,16 @@ globus_l_callback_func_run(
                  * with a sleep for efficientcy
                  */
                 if(globus_abstime_cmp(&tmp_time, &time_now) > 0)
-	        {
-		    callback_info->running = GLOBUS_FALSE;
-	            globus_l_callback_requeue(restart_info->callback_info);
+                {
+                    callback_info->running = GLOBUS_FALSE;
+                    globus_l_callback_requeue(restart_info->callback_info);
                     done = GLOBUS_TRUE;
                 }
-		else
-		{
+                else
+                {
                     GlobusTimeAbstimeCopy(callback_info->start_time, tmp_time);
-		}
-	    }
+                }
+            }
         }
         globus_mutex_unlock(&globus_l_q_lock);
     }
@@ -1180,31 +1181,31 @@ globus_l_callback_func_run(
     if(!restart_info->restarted)
     {
         globus_mutex_lock(&globus_l_thread_create_lock);
-	{
-	    if(!globus_l_callback_shutting_down)
-	    {
-	        globus_list_t * entry;
+        {
+            if(!globus_l_callback_shutting_down)
+            {
+                globus_list_t * entry;
 
-	        entry = globus_list_search(globus_l_wakeup_list,
-			                   callback_info);
+                entry = globus_list_search(globus_l_wakeup_list,
+                                           callback_info);
 
                 globus_list_remove(&globus_l_wakeup_list,
-			           entry);
-	    }
-	}
+                                   entry);
+            }
+        }
         globus_mutex_unlock(&globus_l_thread_create_lock);
-	if(freeit)
-	{
-	    if(callback_info->unregister_callback != GLOBUS_NULL)
-	    {
+        if(freeit)
+        {
+            if(callback_info->unregister_callback != GLOBUS_NULL)
+            {
                 callback_info->unregister_callback(callback_info->unreg_args);
-	    }
+            }
             globus_mutex_lock(&globus_l_q_lock);
             {
                 globus_l_callback_free(callback_info);
             }
             globus_mutex_unlock(&globus_l_q_lock);
-	}
+        }
     }
     FREE_RESTART_T(restart_info);
     globus_l_thread_count_dec();
@@ -1225,12 +1226,12 @@ globus_l_callback_func_restart(
     globus_l_callback_info_t *            callback_info;
 
     restart_info = (globus_l_thread_restart_info_t *)
-		     globus_thread_getspecific(globus_l_restart_thread_key);
+                     globus_thread_getspecific(globus_l_restart_thread_key);
 
     if(restart_info == GLOBUS_NULL 
-	  || restart_info->callback_info == GLOBUS_NULL)
+          || restart_info->callback_info == GLOBUS_NULL)
     {
-	return GLOBUS_NULL;
+        return GLOBUS_NULL;
     }
     callback_info = restart_info->callback_info;
       
@@ -1249,7 +1250,7 @@ globus_l_callback_func_restart(
            !globus_time_reltime_is_infinity(&callback_info->period))
         /* &&  callback_info->wakeup_func == GLOBUS_NULL)*/
         {
-  	    globus_l_callback_requeue(callback_info);
+            globus_l_callback_requeue(callback_info);
         }
         restart_info->restarted = GLOBUS_TRUE;
     }
@@ -1258,7 +1259,7 @@ globus_l_callback_func_restart(
 
 #   if !defined(BUILD_LITE)
     {
-	globus_thread_func_t    func;
+        globus_thread_func_t    func;
 
         /*  set func to the entry point of the new thread */
         func = (globus_thread_func_t) user_args;   
@@ -1274,12 +1275,12 @@ globus_l_callback_func_restart(
                     {
                         globus_thread_create(
                             GLOBUS_NULL,
-	                    (globus_threadattr_t *) GLOBUS_NULL,
-		            func,
-   		           (void *) callback_info);
+                            (globus_threadattr_t *) GLOBUS_NULL,
+                            func,
+                           (void *) callback_info);
                     }
 #                   else
-		    {
+                    {
                         globus_i_thread_start(
                             func,
                             (void *) callback_info);
@@ -1308,18 +1309,19 @@ globus_l_callback_queue_get_next(
     GlobusTimeAbstimeCopy(*next_time, globus_i_abstime_infinity);
     globus_mutex_lock(&globus_l_q_lock);
     {
-        if(!globus_timeq_empty(&globus_l_callback_q))
+        if(!globus_priority_q_empty(&globus_l_callback_q))
         {
-            tmp_time = globus_timeq_first_time(&globus_l_callback_q);
+            tmp_time = (globus_abstime_t *)
+                globus_priority_q_first_priority(&globus_l_callback_q);
             GlobusTimeAbstimeCopy(*next_time, *tmp_time);
             GlobusTimeAbstimeGetCurrent(time_now);
 
-    	    if(globus_abstime_cmp(next_time, &time_now) < 0)
-    	    {
-	        callback_info = (globus_l_callback_info_t *)
-                                  globus_timeq_dequeue(&globus_l_callback_q);
+            if(globus_abstime_cmp(next_time, &time_now) < 0)
+            {
+                callback_info = (globus_l_callback_info_t *)
+                                  globus_priority_q_dequeue(&globus_l_callback_q);
                 callback_info->running = GLOBUS_TRUE;
-	    }
+            }
         }
     }
     globus_mutex_unlock(&globus_l_q_lock);
@@ -1348,20 +1350,20 @@ globus_callback_get_timeout(
     if(globus_abstime_cmp(&time_stop, (globus_abstime_t *)&globus_i_abstime_infinity) == 0)
     {
         GlobusTimeReltimeCopy(*time_left, globus_i_reltime_infinity);
-	rc = GLOBUS_FALSE;
+        rc = GLOBUS_FALSE;
     }
     else
     {
         GlobusTimeAbstimeGetCurrent(time_now);
-	if(globus_abstime_cmp(&time_stop, &time_now) < 0)
-  	{
+        if(globus_abstime_cmp(&time_stop, &time_now) < 0)
+        {
             GlobusTimeReltimeCopy(*time_left, globus_i_reltime_zero);
-	    rc = GLOBUS_TRUE;
-	}
-	else
-	{
+            rc = GLOBUS_TRUE;
+        }
+        else
+        {
             GlobusTimeAbstimeDiff(*time_left, time_now, time_stop);
-	    rc = GLOBUS_FALSE;
+            rc = GLOBUS_FALSE;
         }
     }
     return rc;
@@ -1371,7 +1373,7 @@ globus_bool_t
 globus_callback_get_timestop(
     globus_abstime_t *                    time_stop)
 {
-    globus_l_thread_restart_info_t *	  restart_info;
+    globus_l_thread_restart_info_t *      restart_info;
 
     restart_info = (globus_l_thread_restart_info_t *)
                         globus_thread_getspecific(globus_l_restart_thread_key);
@@ -1400,7 +1402,7 @@ globus_callback_has_time_expired()
     globus_callback_get_timestop(&time_stop);
 
     if(globus_abstime_cmp(&time_stop, 
-			  (globus_abstime_t *)&globus_i_abstime_infinity) != 0)
+                          (globus_abstime_t *)&globus_i_abstime_infinity) != 0)
     {
         GlobusTimeAbstimeGetCurrent(time_now); 
         if(globus_abstime_cmp(&time_now, &time_stop) > 0)
@@ -1446,7 +1448,7 @@ globus_callback_adjust_period(
     return GLOBUS_TRUE;
 }
 /******************************************************************************
-		       handle creation functions
+                       handle creation functions
 ******************************************************************************/
 globus_bool_t
 globus_callback_was_restarted()
@@ -1454,7 +1456,7 @@ globus_callback_was_restarted()
     globus_l_thread_restart_info_t *      restart_info;
 
     restart_info = (globus_l_thread_restart_info_t *)
-			 globus_thread_getspecific(globus_l_restart_thread_key);
+                         globus_thread_getspecific(globus_l_restart_thread_key);
 
     if(restart_info == GLOBUS_NULL)
     {
@@ -1465,5 +1467,5 @@ globus_callback_was_restarted()
 
 void print_inside_info(int type)
 {
-    globus_libc_printf("q size = %d", globus_timeq_size(&globus_l_callback_q));
+    globus_libc_printf("q size = %d", globus_priority_q_size(&globus_l_callback_q));
 }
