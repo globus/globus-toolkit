@@ -4270,10 +4270,12 @@ globus_gridftp_server_begin_transfer(
     event_reply.type = GLOBUS_GFS_EVENT_TRANSFER_BEGIN;
     event_reply.id = op->id;
     event_reply.event_mask =
-        GLOBUS_GFS_EVENT_TRANSFER_ABORT |
-        GLOBUS_GFS_EVENT_TRANSFER_COMPLETE |
-        ((op->data_handle->info.mode == 'E') ?
-        GLOBUS_GFS_EVENT_BYTES_RECVD | GLOBUS_GFS_EVENT_RANGES_RECVD : 0);
+        GLOBUS_GFS_EVENT_TRANSFER_ABORT | GLOBUS_GFS_EVENT_TRANSFER_COMPLETE;
+    if(!op->data_handle->is_mine || op->data_handle->info.mode == 'E')
+    {
+        event_reply.event_mask |=
+            GLOBUS_GFS_EVENT_BYTES_RECVD | GLOBUS_GFS_EVENT_RANGES_RECVD;
+    }
 
     event_reply.event_arg = (void *) globus_handle_table_insert(
         &op->session_handle->handle_table, op, 1);
