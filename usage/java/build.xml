@@ -7,6 +7,7 @@
   </path>
 
   <target name="clean">
+    <mkdir dir="./dist"/>
     <delete>
       <fileset dir="./dist">
 	<include name="**/*.class"/>
