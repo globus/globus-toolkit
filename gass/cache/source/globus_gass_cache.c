@@ -1205,6 +1205,19 @@ globus_l_gass_cache_lock_file(
 	    return(GLOBUS_GASS_CACHE_ERROR_LOCK_ERROR);
 	}
     }
+    
+    /* write its own name in the file, so it could be read in the "common"
+       lock file */
+    while ( write(uniq_lock_file_fd, uniq_lock_file, strlen(uniq_lock_file) )
+	    != strlen(uniq_lock_file))
+    {
+	if (errno != EINTR)
+	{
+	    CACHE_TRACE("Error writing state file");
+	    return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE);
+	}
+    }
+    
     while (close(uniq_lock_file_fd) < 0 )
     {
 	if (errno != EINTR)
@@ -1266,15 +1279,19 @@ globus_l_gass_cache_lock_file(
 			      timeout.
 			      I could see that this file is old (or not)
 			      */
-			    temp_file_fd = open(temp_file,
-						O_WRONLY |O_CREAT,
-						GLOBUS_L_GASS_CACHE_STATE_MODE );
-			    if (temp_file_fd == -1 )
+			    while ((temp_file_fd =
+				    open(temp_file,
+					 O_WRONLY |O_CREAT,
+					 GLOBUS_L_GASS_CACHE_STATE_MODE))
+				   == -1)
 			    {
-				return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_CREATE);
+				if (errno != EINTR )
+				{
+				    return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_CREATE);
+				}
 			    }
 			    
-			    /* let wait again */
+			    /* let's wait again */
 			    lock_tout = 0;
 			    
 			    goto end_of_while;
@@ -1301,7 +1318,9 @@ globus_l_gass_cache_lock_file(
 				return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_DEL_LOCK);
 			    }
 			    if (errno == ENOENT )
+			    {
 				break;
+			    }
 			}
 			while (unlink(lock_file) != 0 )
 			{
@@ -1501,18 +1520,22 @@ globus_l_gass_cache_lock_open(
 
     GLOBUS_L_GASS_CACHE_LG2("State file %s LOCKED", cache_handle->state_file_path );
 
-    cache_handle->state_file_fd = open(cache_handle->state_file_path,
-					O_RDWR,GLOBUS_L_GASS_CACHE_STATE_MODE);
-    if (cache_handle->state_file_fd == -1 )
+    while ((cache_handle->state_file_fd =
+	    open(cache_handle->state_file_path,
+		 O_RDWR,GLOBUS_L_GASS_CACHE_STATE_MODE))
+	   == -1)
     {
-	/* well, if we can not open the state file,there is probably
-	   a serious problem. but any way, lets try to unlock it before
-	   we return an error */
-	globus_l_gass_cache_unlock_file(cache_handle->state_file_path);
-	GLOBUS_L_GASS_CACHE_LG("Could not open the state file");
-	return(GLOBUS_GASS_CACHE_ERROR_OPEN_STATE);
+	if ( errno != EINTR )
+	{
+	    /* well, if we can not open the state file,there is probably
+	       a serious problem. but any way, lets try to unlock it before
+	       we return an error */
+	    globus_l_gass_cache_unlock_file(cache_handle->state_file_path);
+	    GLOBUS_L_GASS_CACHE_LG("Could not open the state file");
+	    return(GLOBUS_GASS_CACHE_ERROR_OPEN_STATE);
+	}
     }
-
+    
     do
     {
 	rc = read( cache_handle->state_file_fd,
@@ -1609,17 +1632,21 @@ globus_l_gass_cache_lock_open(
     } while (rc!=sizeof(cache_handle->comment)); /* just to handle the EINTR */
     
     GLOBUS_L_GASS_CACHE_LG("State file opened");
-    cache_handle->temp_file_fd = open(cache_handle->temp_file_path,
-				      O_WRONLY |O_CREAT|O_TRUNC,
-				      GLOBUS_L_GASS_CACHE_STATE_MODE );
-    if (cache_handle->temp_file_fd == -1 )
+    while ((cache_handle->temp_file_fd =
+	    open(cache_handle->temp_file_path,
+		 O_WRONLY |O_CREAT|O_TRUNC,
+		 GLOBUS_L_GASS_CACHE_STATE_MODE ))
+	   == -1)
     {
-	GLOBUS_L_GASS_CACHE_LG(
-	    "Could not open/create the temporary state file");
-	globus_l_gass_cache_unlock_close(
-	    cache_handle,
-	    GLOBUS_L_GASS_CACHE_ABORT);
-	return(GLOBUS_GASS_CACHE_ERROR_OPEN_STATE);
+	if (errno != EINTR )
+	{
+	    GLOBUS_L_GASS_CACHE_LG(
+		"Could not open/create the temporary state file");
+	    globus_l_gass_cache_unlock_close(
+		cache_handle,
+		GLOBUS_L_GASS_CACHE_ABORT);
+	    return(GLOBUS_GASS_CACHE_ERROR_OPEN_STATE);
+	}
     }
 
     GLOBUS_L_GASS_CACHE_LG("Temporary State file opened");
@@ -2019,24 +2046,31 @@ globus_gass_cache_open(char                *cache_directory_path,
     strcat(cache_handle->state_file_path,GLOBUS_L_GASS_CACHE_STATE_F_NAME );
     GLOBUS_L_GASS_CACHE_LG(cache_handle->state_file_path);
 
-    state_f_fd = open(cache_handle->state_file_path,
-		      O_RDWR|O_CREAT,
-		      GLOBUS_L_GASS_CACHE_STATE_MODE);
-
-    if (state_f_fd == -1)
+    while ((state_f_fd = open(cache_handle->state_file_path,
+			      O_RDWR|O_CREAT,
+			      GLOBUS_L_GASS_CACHE_STATE_MODE))
+	   == -1)
     {
-	
-	GLOBUS_L_GASS_CACHE_LG("Could NOT open or create the state file");
-#       if defined GLOBUS_L_GASS_CACHE_LOG
+	if (errno != EINTR )
 	{
-	    fclose(cache_handle->log_FILE);
+	    GLOBUS_L_GASS_CACHE_LG("Could NOT open or create the state file");
+#           if defined GLOBUS_L_GASS_CACHE_LOG
+	    {
+		fclose(cache_handle->log_FILE);
+	    }
+#           endif
+	    return ( GLOBUS_GASS_CACHE_ERROR_CAN_NOT_CREATE );
 	}
-#       endif
-	return ( GLOBUS_GASS_CACHE_ERROR_CAN_NOT_CREATE );
     }
     
-    close (state_f_fd);
-    
+    while (close (state_f_fd) == -1)
+    {
+	if (errno != EINTR )
+	{
+	    return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE);
+	}
+    }
+     
     /* just prepare a temporary file name */
     strcpy(cache_handle->temp_file_path,
 	   cache_handle->cache_directory_path);
