@@ -1,0 +1,35 @@
+dnl
+
+AC_REVISION($Revision$)
+AC_INIT(Makefile.am)
+
+GLOBUS_INIT
+
+AM_PROG_LIBTOOL
+
+dnl config header goes here
+
+dnl Initialize the automake rules the last argument
+AM_INIT_AUTOMAKE(globus_ssl_utils, 2.0.0)
+
+
+GPT_SET_LIBS("-lglobus_gaa_$GLOBUS_FLAVOR_NAME -lssl -lcrypto")
+
+AC_OUTPUT(
+	Makefile
+	pkgdata/Makefile
+	pkgdata/pkg_data_src.gpt
+	library/Makefile
+	programs/Makefile
+	programs/grid-cert-info
+	programs/grid-cert-renew
+	programs/grid-cert-request-config
+	programs/grid-change-pass-phrase
+	programs/grid-cert-request
+	,
+	$GLOBUS_INSTALL_PATH/sbin/gpt_generate_bin_pkg_data --src="./pkgdata/pkg_data_src.gpt" \
+	--flavor=$GLOBUS_FLAVOR_NAME
+	,
+	GLOBUS_FLAVOR_NAME=$GLOBUS_FLAVOR_NAME
+)
+
