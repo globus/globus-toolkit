@@ -29,6 +29,8 @@ if test ! -L globus_automake_targets; then
     globus_automake_targets
     ln -s $GLOBUS_INSTALL_PATH/share/globus_aclocal/automake_rules \
     globus_automake_rules
+    ln -s $GLOBUS_INSTALL_PATH/share/globus_aclocal/automake_top_rules \
+    globus_automake_top_rules
 fi
 
 echo "running automake -c -a --foreign"
