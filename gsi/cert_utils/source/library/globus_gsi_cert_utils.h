@@ -140,6 +140,21 @@ globus_result_t globus_gsi_cert_utils_get_x509_name(
     int                                 length,
     X509_NAME *                         x509_name);
 
+
+/* For backwards compatibility */
+
+#define globus_gsi_cert_utils_create_string \
+    globus_common_create_string
+
+#define globus_gsi_cert_utils_create_nstring \
+    globus_common_create_nstring
+
+#define globus_gsi_cert_utils_v_create_string \
+    globus_common_v_create_string
+
+#define globus_gsi_cert_utils_v_create_nstring \
+    globus_common_v_create_nstring
+
 #endif /* DOXYGEN */
 
 EXTERN_C_END
