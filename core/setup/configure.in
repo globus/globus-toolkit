@@ -2,74 +2,7 @@
 AC_REVISION($Revision$)
 AC_INIT(Makefile.am)
 
-# checking for the GLOBUS_LOCATION
-
-if test "x$GLOBUS_LOCATION" = "x"; then
-    echo "ERROR Please specify GLOBUS_LOCATION" >&2
-    exit 1
-fi
-if test "x$GPT_LOCATION" = "x"; then
-    GPT_LOCATION=$GLOBUS_LOCATION
-    export GPT_LOCATION
-fi
-
-
-GPT_INIT
-
-#extract whether the package is built with flavors from the src metadata
-$GPT_LOCATION/sbin/gpt_extract_data --build $srcdir/pkgdata/pkg_data_src.gpt.in > tmpfile.gpt
-
-. ./tmpfile.gpt
-rm ./tmpfile.gpt
-
-if test "x$GPT_BUILD_WITH_FLAVORS" = "xno"; then
-        GLOBUS_FLAVOR_NAME="noflavor"
-fi
-
-
-AC_ARG_WITH(flavor,
-	[ --with-flavor=<FL>     Specify the globus build flavor or without-flavor for a flavor independent  ],
-
-	[
-	case $withval in
-	no)
-		NO_FLAVOR="yes"
-		;;
-	yes)
-		echo "Please specify a globus build flavor" >&2
-		exit 1
-		;;
-	*)
-		GLOBUS_FLAVOR_NAME=$withval
-		;;
-	esac
-	],
-
-	[ 
-        if test "x$GLOBUS_FLAVOR_NAME" = "x"; then
-	        echo "Please specify a globus build flavor" >&2
-	        exit 1
-        fi
-	]
-)
-
-AM_CONDITIONAL(WITHOUT_FLAVORS, test "$NO_FLAVOR" = "yes")
-AC_SUBST(GLOBUS_FLAVOR_NAME)
-
-
-prefix='$(GLOBUS_LOCATION)'
-exec_prefix='$(GLOBUS_LOCATION)'
-
-define([AM_PROG_LIBTOOL],[
-	LIBTOOL='$(SHELL) $(GLOBUS_LOCATION)/sbin/libtool-$(GLOBUS_FLAVOR_NAME)'
-	AC_SUBST(LIBTOOL)
-	AC_SUBST(LN_S)
-])
-
-dnl define FILELIST_FILE variable
-FILELIST_FILE=`pwd`;
-FILELIST_FILE="$FILELIST_FILE/pkgdata/master.filelist"
-AC_SUBST(FILELIST_FILE)
+GLOBUS_INIT
 
 AM_PROG_LIBTOOL
 
