@@ -100,7 +100,6 @@ createScript () {
     echo "Universe       = ${condor_universe}"
     echo ""
     eval echo "Executable     = ${grami_program}"
-    eval echo "Initialdir     = ${grami_directory}"
     echo "Requirements   = OpSys == \"${condor_opsys}\""\
                        " && Arch == \"${condor_arch}\""\
                        " && FileSystemDomain != \"xxx\""
@@ -113,10 +112,12 @@ createScript () {
     fi
     echo ""
     if [ "${condor_universe}" = "vanilla" ] ; then
+       echo "Initialdir = /var/tmp"
        echo "Input = /dev/null"
        echo "Output = /dev/null"
        echo "Error = /dev/null"
     else
+       eval echo "Initialdir = ${grami_directory}"
        eval echo "Input = ${grami_stdin}"
        eval echo "Output = ${grami_stdout}"
        eval echo "Error = ${grami_stderr}"
