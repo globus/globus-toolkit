@@ -164,6 +164,8 @@ Southern California. All Rights Reserved.
       <property name="gar.name" value="${build.lib}/${package.dir}.gar"/>
       <property name="garlib.dir" value="${build.lib}"/>
       <property name="gardocs.dir" value="docs"/>
+      <property name="garetc.dir" value="etc"/>
+       
       <property name="garserverdeployment.file" value="${package.dir}-server-config.wsdd"/>
       <property name="garclientdeployment.file" value="${package.dir}-client-config.wsdd"/>
       <property name="garschema.origin" value="./schema/base/reliabletransfer"/>
