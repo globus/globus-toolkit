@@ -1,0 +1,81 @@
+.TH myproxy-admin-query 1 "2003-2-26" "NCSA" "MyProxy"
+.SH NAME
+myproxy-admin-query \- query MyProxy repository contents
+.SH SYNOPSIS
+.B myproxy-admin-query
+[
+.I options
+]
+.SH DESCRIPTION
+The
+.B myproxy-admin-query
+command displays information about the credentials stored in the
+MyProxy repository.
+It accesses the repository directly and must be run on the machine
+where the
+.BR myproxy-server (8)
+is installed from the account that owns the repository.
+.SH OPTIONS
+.TP
+.B -h, --help
+Displays command usage text and exits.
+.TP
+.B -u, --usage
+Displays command usage text and exits.
+.TP
+.B -v, --verbose
+Enables verbose debugging output to the terminal.
+.TP
+.B -V, --version
+Displays version information and exits.
+.TP
+.BI -l " name, " --username " name"
+Return information on credentials for a single username.  By default,
+the command returns information on all credentials for all usernames.
+.TP
+.BI -t " hours, " --time_left " hours"
+Return information on credentials with remaining lifetime less than the
+specified number of hours.
+.TP
+.BI -s " dir, " --storage " dir"
+Specifies the location of the credential storage directory.
+The directory must be accessible only by the user running the 
+.B myproxy-server
+process for security reasons.  Default: /var/myproxy or $GLOBUS_LOCATION/var/myproxy
+.SH "EXIT STATUS"
+0 on success, >0 on error
+.SH ENVIRONMENT
+.TP
+.B MYPROXY_SERVER
+Specifies the hostname where the
+.BR myproxy-server (8)
+is running.  This environment variable can be used in place of the 
+.B -s
+option.
+.B MYPROXY_SERVER_DN
+Specifies the distinguished name (DN) of the 
+.BR myproxy-server (8).
+All MyProxy client programs authenticate the server's identity.
+By default, MyProxy servers run with host credentials, so the MyProxy
+client programs expect the server to have a distinguished name of the
+form "host/<fqhn>" (where <fqhn> is the fully-qualified hostname of
+the server).  If the server is running with some other DN, you can set
+this environment variable to tell the MyProxy clients to accept the
+alternative DN.
+.SH AUTHORS
+Jim Basney,
+Shiva Shankar Chetan,
+Jarek Gawor,
+Daniel Kouril,
+Jason Novotny,
+Miroslav Ruda,
+Benjamin Temko,
+and Von Welch
+.SH "SEE ALSO"
+.BR myproxy-change-pass-phrase (1),
+.BR myproxy-destroy (1),
+.BR myproxy-get-delegation (1),
+.BR myproxy-init (1),
+.BR myproxy-server.config (5),
+.BR myproxy-admin-load-credential (8),
+.BR myproxy-server (8)
