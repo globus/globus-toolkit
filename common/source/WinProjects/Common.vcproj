@@ -88,179 +88,179 @@
 			Name="Source Files"
 			Filter="cpp;c;cxx;rc;def;odl;idl;hpj;bat;asm">
 			<File
-				RelativePath=".\library\globus_args.c">
+				RelativePath="..\library\globus_args.c">
 			</File>
 			<File
-				RelativePath=".\library\globus_callback.c">
+				RelativePath="..\library\globus_callback.c">
 			</File>
 			<File
-				RelativePath=".\library\globus_cfifo.c">
+				RelativePath="..\library\globus_cfifo.c">
 			</File>
 			<File
-				RelativePath=".\library\globus_common.c">
+				RelativePath="..\library\globus_common.c">
 			</File>
 			<File
-				RelativePath=".\library\globus_common_paths.c">
+				RelativePath="..\library\globus_common_paths.c">
 			</File>
 			<File
-				RelativePath=".\library\globus_debug.c">
+				RelativePath="..\library\globus_debug.c">
 			</File>
 			<File
-				RelativePath=".\library\globus_error.c">
+				RelativePath="..\library\globus_error.c">
 			</File>
 			<File
-				RelativePath=".\library\globus_error_hierarchy.c">
+				RelativePath="..\library\globus_error_hierarchy.c">
 			</File>
 			<File
-				RelativePath=".\library\globus_error_string.c">
+				RelativePath="..\library\globus_error_string.c">
 			</File>
 			<File
-				RelativePath=".\library\globus_fifo.c">
+				RelativePath="..\library\globus_fifo.c">
 			</File>
 			<File
-				RelativePath=".\library\globus_handle_table.c">
+				RelativePath="..\library\globus_handle_table.c">
 			</File>
 			<File
-				RelativePath=".\library\globus_hashtable.c">
+				RelativePath="..\library\globus_hashtable.c">
 			</File>
 			<File
-				RelativePath=".\library\globus_libc.c">
+				RelativePath="..\library\globus_libc.c">
 			</File>
 			<File
-				RelativePath=".\library\globus_libc_setenv.c">
+				RelativePath="..\library\globus_libc_setenv.c">
 			</File>
 			<File
-				RelativePath=".\library\globus_list.c">
+				RelativePath="..\library\globus_list.c">
 			</File>
 			<File
-				RelativePath=".\library\globus_memory.c">
+				RelativePath="..\library\globus_memory.c">
 			</File>
 			<File
-				RelativePath=".\library\globus_module.c">
+				RelativePath="..\library\globus_module.c">
 			</File>
 			<File
-				RelativePath=".\library\globus_object.c">
+				RelativePath="..\library\globus_object.c">
 			</File>
 			<File
-				RelativePath=".\library\globus_object_cache.c">
+				RelativePath="..\library\globus_object_cache.c">
 			</File>
 			<File
-				RelativePath=".\library\globus_object_hierarchy.c">
+				RelativePath="..\library\globus_object_hierarchy.c">
 			</File>
 			<File
-				RelativePath=".\library\globus_print.c">
+				RelativePath="..\library\globus_print.c">
 			</File>
 			<File
-				RelativePath=".\library\globus_priority_q.c">
+				RelativePath="..\library\globus_priority_q.c">
 			</File>
 			<File
-				RelativePath=".\library\globus_strptime.c">
+				RelativePath="..\library\globus_strptime.c">
 			</File>
 			<File
-				RelativePath=".\library\globus_symboltable.c">
+				RelativePath="..\library\globus_symboltable.c">
 			</File>
 			<File
-				RelativePath=".\library\globus_thread_common.c">
+				RelativePath="..\library\globus_thread_common.c">
 			</File>
 			<File
-				RelativePath=".\library\globus_thread_none.c">
+				RelativePath="..\library\globus_thread_none.c">
 			</File>
 			<File
-				RelativePath=".\library\globus_thread_pool.c">
+				RelativePath="..\library\globus_thread_pool.c">
 			</File>
 			<File
-				RelativePath=".\library\globus_tilde_expand.c">
+				RelativePath="..\library\globus_tilde_expand.c">
 			</File>
 			<File
-				RelativePath=".\library\globus_time.c">
+				RelativePath="..\library\globus_time.c">
 			</File>
 			<File
-				RelativePath=".\library\globus_timeq.c">
+				RelativePath="..\library\globus_timeq.c">
 			</File>
 			<File
-				RelativePath=".\library\globus_url.c">
+				RelativePath="..\library\globus_url.c">
 			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl;inc">
 			<File
-				RelativePath=".\library\config.h">
+				RelativePath="..\library\config.h">
 			</File>
 			<File
-				RelativePath=".\library\globus_args.h">
+				RelativePath="..\library\globus_args.h">
 			</File>
 			<File
-				RelativePath=".\library\globus_callback.h">
+				RelativePath="..\library\globus_callback.h">
 			</File>
 			<File
-				RelativePath=".\library\globus_cfifo.h">
+				RelativePath="..\library\globus_cfifo.h">
 			</File>
 			<File
-				RelativePath=".\library\globus_common.h">
+				RelativePath="..\library\globus_common.h">
 			</File>
 			<File
-				RelativePath=".\library\globus_common_config.h">
+				RelativePath="..\library\globus_common_config.h">
 			</File>
 			<File
-				RelativePath=".\library\globus_common_include.h">
+				RelativePath="..\library\globus_common_include.h">
 			</File>
 			<File
-				RelativePath=".\library\globus_config.h">
+				RelativePath="..\library\globus_config.h">
 			</File>
 			<File
-				RelativePath=".\library\globus_debug.h">
+				RelativePath="..\library\globus_debug.h">
 			</File>
 			<File
-				RelativePath=".\library\globus_error.h">
+				RelativePath="..\library\globus_error.h">
 			</File>
 			<File
-				RelativePath=".\library\globus_error_hierarchy.h">
+				RelativePath="..\library\globus_error_hierarchy.h">
 			</File>
 			<File
-				RelativePath=".\library\globus_error_string.h">
+				RelativePath="..\library\globus_error_string.h">
 			</File>
 			<File
-				RelativePath=".\library\globus_fifo.h">
+				RelativePath="..\library\globus_fifo.h">
 			</File>
 			<File
-				RelativePath=".\library\globus_handle_table.h">
+				RelativePath="..\library\globus_handle_table.h">
 			</File>
 			<File
-				RelativePath=".\library\globus_hashtable.h">
+				RelativePath="..\library\globus_hashtable.h">
 			</File>
 			<File
-				RelativePath=".\library\globus_i_thread.h">
+				RelativePath="..\library\globus_i_thread.h">
 			</File>
 			<File
-				RelativePath=".\library\globus_libc.h">
+				RelativePath="..\library\globus_libc.h">
 			</File>
 			<File
-				RelativePath=".\library\globus_list.h">
+				RelativePath="..\library\globus_list.h">
 			</File>
 			<File
-				RelativePath=".\library\globus_memory.h">
+				RelativePath="..\library\globus_memory.h">
 			</File>
 			<File
-				RelativePath=".\library\globus_module.h">
+				RelativePath="..\library\globus_module.h">
 			</File>
 			<File
-				RelativePath=".\library\globus_object.h">
+				RelativePath="..\library\globus_object.h">
 			</File>
 			<File
-				RelativePath=".\library\globus_symboltable.h">
+				RelativePath="..\library\globus_symboltable.h">
 			</File>
 			<File
-				RelativePath=".\library\globus_thread_common.h">
+				RelativePath="..\library\globus_thread_common.h">
 			</File>
 			<File
-				RelativePath=".\library\globus_thread_pool.h">
+				RelativePath="..\library\globus_thread_pool.h">
 			</File>
 			<File
-				RelativePath=".\library\globus_time.h">
+				RelativePath="..\library\globus_time.h">
 			</File>
 			<File
-				RelativePath=".\library\globus_timeq.h">
+				RelativePath="..\library\globus_timeq.h">
 			</File>
 		</Filter>
 		<Filter
