@@ -49,49 +49,49 @@ static char *  LONG_USAGE = \
 
 #   define args_show_version() \
     { \
-	char buf[64]; \
-	sprintf( buf, \
-		 "%s-%s", \
-		 PACKAGE, \
-		 VERSION); \
-	fprintf(stderr, "%s", buf); \
+        char buf[64]; \
+        sprintf( buf, \
+                 "%s-%s", \
+                 PACKAGE, \
+                 VERSION); \
+        fprintf(stderr, "%s", buf); \
         globus_module_deactivate_all(); \
-	exit(0); \
+        exit(0); \
     }
 
 #   define args_show_short_help() \
     { \
         fprintf(stderr, \
-		SHORT_USAGE_FORMAT \
-		"\nOption -help will display usage.\n", \
-		program); \
+                SHORT_USAGE_FORMAT \
+                "\nOption -help will display usage.\n", \
+                program); \
         globus_module_deactivate_all(); \
-	exit(0); \
+        exit(0); \
     }
 
 #   define args_show_full_usage() \
     { \
-	fprintf(stderr, SHORT_USAGE_FORMAT \
-		"%s", \
-		program, \
-		LONG_USAGE); \
+        fprintf(stderr, SHORT_USAGE_FORMAT \
+                "%s", \
+                program, \
+                LONG_USAGE); \
         globus_module_deactivate_all(); \
-	exit(0); \
+        exit(0); \
     }
 
 #   define args_error_message(errmsg) \
     { \
-	fprintf(stderr, "ERROR: %s\n", errmsg); \
+        fprintf(stderr, "ERROR: %s\n", errmsg); \
         args_show_short_help(); \
         globus_module_deactivate_all(); \
-	exit(1); \
+        exit(1); \
     }
 
 #   define args_error(argnum, argval, errmsg) \
     { \
-	char buf[1024]; \
-	sprintf(buf, "argument #%d (%s) : %s", argnum, argval, errmsg); \
-	args_error_message(buf); \
+        char buf[1024]; \
+        sprintf(buf, "argument #%d (%s) : %s", argnum, argval, errmsg); \
+        args_error_message(buf); \
     }
 
 void
@@ -105,12 +105,12 @@ globus_i_gsi_proxy_utils_print_error(
     globus_i_gsi_proxy_utils_print_error(result, debug, __FILE__, __LINE__)
 
 #define STATUS_OK               0
-#define STATUS_EXPIRED		1
-#define STATUS_NOT_FOUND	2
-#define STATUS_CANT_LOAD	3
-#define STATUS_NO_NAME		4
-#define STATUS_BAD_OPTS		5
-#define STATUS_INTERNAL		6
+#define STATUS_EXPIRED          1
+#define STATUS_NOT_FOUND        2
+#define STATUS_CANT_LOAD        3
+#define STATUS_NO_NAME          4
+#define STATUS_BAD_OPTS         5
+#define STATUS_INTERNAL         6
 
 int 
 main(
@@ -151,92 +151,92 @@ main(
 
     if (strrchr(argv[0], '/'))
     {
-	program = strrchr(argv[0], '/') + 1;
+        program = strrchr(argv[0], '/') + 1;
     }
     else
     {
-	program = argv[0];
+        program = argv[0];
     }
 
     /* Parsing phase 1: check all arguments that they are valid */
     for (arg_index = 1; arg_index < argc; arg_index++)
     {
-	argp = argv[arg_index];
+        argp = argv[arg_index];
 
         if (strncmp(argp, "--", 2) == 0)
-	{
-	    if (argp[2] != '\0')
-	    {
-		args_error(arg_index, argp, "double-dashed options "
+        {
+            if (argp[2] != '\0')
+            {
+                args_error(arg_index, argp, "double-dashed options "
                            "are not allowed");
-	    }
-	    else
-	    {
-		arg_index = argc + 1;   		/* no more parsing */
-		continue;
-	    }
-	}
-	if ((strcmp(argp, "-help") == 0) ||
-	    (strcmp(argp, "-usage") == 0))
-	{
-	    args_show_full_usage();
-	}
-	else if (strcmp(argp, "-version") == 0)
-	{
-	    args_show_version();
-	}
-	else if ((strcmp(argp, "-file") == 0) ||
-		 (strcmp(argp, "-f") == 0)   )
-	{
-	    if ((arg_index + 1 >= argc) || (argv[arg_index + 1][0] == '-'))
-	    {
-		args_error(arg_index, argp, "need a file name argument");
-	    }
-	    else
+            }
+            else
+            {
+                arg_index = argc + 1;                   /* no more parsing */
+                continue;
+            }
+        }
+        if ((strcmp(argp, "-help") == 0) ||
+            (strcmp(argp, "-usage") == 0))
+        {
+            args_show_full_usage();
+        }
+        else if (strcmp(argp, "-version") == 0)
+        {
+            args_show_version();
+        }
+        else if ((strcmp(argp, "-file") == 0) ||
+                 (strcmp(argp, "-f") == 0)   )
+        {
+            if ((arg_index + 1 >= argc) || (argv[arg_index + 1][0] == '-'))
+            {
+                args_error(arg_index, argp, "need a file name argument");
+            }
+            else
             {
                 proxy_filename = argv[++arg_index];
             }
-	}
-	else if ((strcmp(argp, "-exists") == 0) ||
-		 (strcmp(argp, "-e") == 0))
-	{
-	    if (exists_flag)
-	    {
-		args_error(arg_index, argp, "can only be given once");
-	    }
-	    exists_flag++;
-	}
-	else if ((strcmp(argp,"-hours")==0) ||
-		 (strcmp(argp,"-h")==0)       )
-	{
-	    if (!exists_flag || hours_flag)
-	    {
-		args_error(arg_index, argp, "suboption to -exists");
-	    }
-	    hours_flag++;
-	    if (( arg_index + 1 >= argc) || (argv[arg_index + 1][0] == '-'))
-	    {
-		args_error(arg_index,argp,"need a non-negative integer argument");
-	    }
-	    else
-		time_valid = atoi(argv[++arg_index]) * 60;
-	}
-	else if ((strcmp(argp, "-valid") == 0) ||
-		 (strcmp(argp, "-v") == 0)       )
-	{
+        }
+        else if ((strcmp(argp, "-exists") == 0) ||
+                 (strcmp(argp, "-e") == 0))
+        {
+            if (exists_flag)
+            {
+                args_error(arg_index, argp, "can only be given once");
+            }
+            exists_flag++;
+        }
+        else if ((strcmp(argp,"-hours")==0) ||
+                 (strcmp(argp,"-h")==0)       )
+        {
+            if (!exists_flag || hours_flag)
+            {
+                args_error(arg_index, argp, "suboption to -exists");
+            }
+            hours_flag++;
+            if (( arg_index + 1 >= argc) || (argv[arg_index + 1][0] == '-'))
+            {
+                args_error(arg_index,argp,"need a non-negative integer argument");
+            }
+            else
+                time_valid = atoi(argv[++arg_index]) * 60;
+        }
+        else if ((strcmp(argp, "-valid") == 0) ||
+                 (strcmp(argp, "-v") == 0)       )
+        {
             int                         hours = 0;
             int                         minutes = 0;
-	    if (!exists_flag || time_valid_flag)
-	    {
-		args_error(arg_index, argp, "suboption to -exists");
-	    }
-	    time_valid_flag++;
-	    if ((arg_index + 1 >= argc) || (argv[arg_index + 1][0] == '-'))
-	    {
-		args_error(arg_index, argp, 
+            if (!exists_flag || time_valid_flag)
+            {
+                args_error(arg_index, argp, "suboption to -exists");
+            }
+            time_valid_flag++;
+            if ((arg_index + 1 >= argc) || (argv[arg_index + 1][0] == '-'))
+            {
+                args_error(arg_index, argp, 
                            "need a non-negative "
                            "integer argument");
-	    }
+            }
             else if(sscanf(argv[++arg_index], "%d:%d", &hours, &minutes) < 2)
             {
                 args_error(
@@ -259,41 +259,41 @@ main(
                     "be in the range 0-60");
             }
             time_valid = (hours * 60) + minutes;
-	}
-	else if ((strcmp(argp, "-bits") == 0) ||
-		 (strcmp(argp, "-b") == 0)       )
-	{
-	    if (!exists_flag || bits_flag)
-	    {
-		args_error(arg_index, argp, "suboption to -exists");
-	    }
-	    bits_flag++;
-	    if ((arg_index + 1 >= argc) || (argv[arg_index + 1][0] == '-'))
-	    {
-		args_error(arg_index, argp, 
+        }
+        else if ((strcmp(argp, "-bits") == 0) ||
+                 (strcmp(argp, "-b") == 0)       )
+        {
+            if (!exists_flag || bits_flag)
+            {
+                args_error(arg_index, argp, "suboption to -exists");
+            }
+            bits_flag++;
+            if ((arg_index + 1 >= argc) || (argv[arg_index + 1][0] == '-'))
+            {
+                args_error(arg_index, argp, 
                            "need a non-negative "
                            "integer argument");
-	    }
-	    else
-		bits = atoi(argv[++arg_index]);
-	}
-	else if ((strcmp(argp, "-subject") == 0)  ||
-		 (strcmp(argp, "-issuer") == 0)   ||
-		 (strcmp(argp, "-strength") == 0) ||
-		 (strcmp(argp, "-type") == 0)     ||
-		 (strcmp(argp, "-timeleft") == 0) ||
-		 (strcmp(argp, "-text") == 0)     ||
-		 (strcmp(argp, "-all") == 0)      ||
+            }
+            else
+                bits = atoi(argv[++arg_index]);
+        }
+        else if ((strcmp(argp, "-subject") == 0)  ||
+                 (strcmp(argp, "-issuer") == 0)   ||
+                 (strcmp(argp, "-strength") == 0) ||
+                 (strcmp(argp, "-type") == 0)     ||
+                 (strcmp(argp, "-timeleft") == 0) ||
+                 (strcmp(argp, "-text") == 0)     ||
+                 (strcmp(argp, "-all") == 0)      ||
                  (strcmp(argp, "-path") == 0))
-	{
-	    continue;
-	}
+        {
+            continue;
+        }
         else if ((strcmp(argp, "-debug") == 0))
         {
             debug = 1;
         }
-	else
-	    args_error(arg_index, argp, "unrecognized option");
+        else
+            args_error(arg_index, argp, "unrecognized option");
     }
 
     if(proxy_filename)
@@ -362,7 +362,7 @@ main(
 
     if ((proxy_pubkey = X509_get_pubkey(proxy_cert)) == NULL)
     {
-	globus_libc_fprintf(
+        globus_libc_fprintf(
             stderr,
             "\n\nERROR: unable to load public key from proxy\n");
         globus_module_deactivate_all();
@@ -404,12 +404,12 @@ main(
     /* check if proxy is valid in our own defined sense */
     if (exists_flag)
     {
-	is_valid = (lifetime >= (time_valid * 60)) && 
+        is_valid = (lifetime >= (time_valid * 60)) && 
                    (strength >= bits) ? 0 : 1;
     }
     else
     {
-	is_valid = 0;
+        is_valid = 0;
     }
 
     /* type: restricted, limited or full */
@@ -450,65 +450,65 @@ main(
     
     for (arg_index = 1; arg_index < argc; arg_index++)
     {
-	argp = argv[arg_index];
-	if (strcmp(argp,"-subject") == 0)
-	{
-	    printf("%s\n", subject);
-	}
-	else if (strcmp(argp, "-issuer") == 0)
-	{
-	    printf("%s\n", issuer);
-	}
-	else if (strcmp(argp, "-timeleft") == 0)
-	{
-	    printf("%ld\n", (long) ((lifetime >= 0) ? lifetime : -1));
-	}
-	else if (strcmp(argp, "-type") == 0)
-	{
-	    printf("%s\n", proxy_type_name);
-	}
-	else if (strcmp(argp, "-strength") == 0)
-	{
-	    printf("%d\n", strength);
-	}
-	else if (strcmp(argp, "-text") == 0)
-	{
+        argp = argv[arg_index];
+        if (strcmp(argp,"-subject") == 0)
+        {
+            printf("%s\n", subject);
+        }
+        else if (strcmp(argp, "-issuer") == 0)
+        {
+            printf("%s\n", issuer);
+        }
+        else if (strcmp(argp, "-timeleft") == 0)
+        {
+            printf("%ld\n", (long) ((lifetime >= 0) ? lifetime : -1));
+        }
+        else if (strcmp(argp, "-type") == 0)
+        {
+            printf("%s\n", proxy_type_name);
+        }
+        else if (strcmp(argp, "-strength") == 0)
+        {
+            printf("%d\n", strength);
+        }
+        else if (strcmp(argp, "-text") == 0)
+        {
             X509_print_fp(stdout, proxy_cert);
-	}
-	else if (strcmp(argp, "-all") == 0)
-	{
-	    printf("subject  : %s\n" 
-		   "issuer   : %s\n" 
-		   "type     : %s\n" 
-		   "strength : %d bits\n"
+        }
+        else if (strcmp(argp, "-all") == 0)
+        {
+            printf("subject  : %s\n" 
+                   "issuer   : %s\n" 
+                   "type     : %s\n" 
+                   "strength : %d bits\n"
                    "path     : %s\n"
-		   "timeleft : ",
-		   subject,
-		   issuer,
-		   proxy_type_name,
-		   strength,
+                   "timeleft : ",
+                   subject,
+                   issuer,
+                   proxy_type_name,
+                   strength,
                    proxy_filename);
 
-	    if (lifetime <= 0)
-		lifetime = 0;
+            if (lifetime <= 0)
+                lifetime = 0;
 
-	    printf("%ld:%02ld:%02ld",
-		   (long)(lifetime / 3600),
-		   (long)(lifetime % 3600) / 60,
-		   (long)lifetime % 60 );
+            printf("%ld:%02ld:%02ld",
+                   (long)(lifetime / 3600),
+                   (long)(lifetime % 3600) / 60,
+                   (long)lifetime % 60 );
 
-	    if (lifetime > 3600 * 24)
-		printf("  (%.1f days)", (float)(lifetime / 3600) / 24.0);
-	    printf("\n");
-	}
-	else if ((strcmp(argp, "-valid") == 0) ||
-		 (strcmp(argp, "-bits") == 0) ||
-		 (strcmp(argp, "-file") == 0) ||
-		 (strcmp(argp, "-f") == 0))
-	{
-	    arg_index++;
-	    continue;
-	}
+            if (lifetime > 3600 * 24)
+                printf("  (%.1f days)", (float)(lifetime / 3600) / 24.0);
+            printf("\n");
+        }
+        else if ((strcmp(argp, "-valid") == 0) ||
+                 (strcmp(argp, "-bits") == 0) ||
+                 (strcmp(argp, "-file") == 0) ||
+                 (strcmp(argp, "-f") == 0))
+        {
+            arg_index++;
+            continue;
+        }
         else if (strcmp(argp, "-path") == 0)
         {
             printf("path     : %s\n", proxy_filename);

@@ -328,7 +328,7 @@ main(
             args_verify_next(arg_index, argp, 
                              "restriction file name missing");
             restriction_filename = argv[++arg_index];
-	    proxy_type = GLOBUS_RESTRICTED_PROXY;
+            proxy_type = GLOBUS_RESTRICTED_PROXY;
         }
         else if(strcmp(argp, "-pl") == 0 &&
                 strcmp(argp, "-policy-language") == 0)
