@@ -820,47 +820,50 @@ globus_i_gass_transfer_request_destroy(
 #if DEBUG_GASS_TRANSFER
 	printf(_GTSL("removing from list\n"));
 #endif
-	globus_list_remove(&globus_i_gass_transfer_requests,
-			   tmp);
+        if (tmp)
+        {
+            globus_list_remove(&globus_i_gass_transfer_requests,
+                               tmp);
 
-	globus_cond_signal(&globus_i_gass_transfer_shutdown_cond);
-	
-	if(req->attr)
-	{
-	    globus_object_free(req->attr);
-	}
-	globus_fifo_destroy(&req->pending_data);
-	if (req->url)
-	{
-	    globus_free(req->url);
-	}
+            globus_cond_signal(&globus_i_gass_transfer_shutdown_cond);
+            
+            if(req->attr)
+            {
+                globus_object_free(req->attr);
+            }
+            globus_fifo_destroy(&req->pending_data);
+            if (req->url)
+            {
+                globus_free(req->url);
+            }
 
-	/* free referral */
-	for(i = 0; i < req->referral_count; i++)
-	{
-	    globus_free(req->referral_url[i]);
-	}
-	if(req->referral_url)
-	{
-	    globus_free(req->referral_url);
-	}
-	req->referral_url = GLOBUS_NULL;
-	req->referral_count = 0;
+            /* free referral */
+            for(i = 0; i < req->referral_count; i++)
+            {
+                globus_free(req->referral_url[i]);
+            }
+            if(req->referral_url)
+            {
+                globus_free(req->referral_url);
+            }
+            req->referral_url = GLOBUS_NULL;
+            req->referral_count = 0;
 
-	/* free deny message */
-	if(req->denial_message)
-	{
-	    globus_free(req->denial_message);
-	}
+            /* free deny message */
+            if(req->denial_message)
+            {
+                globus_free(req->denial_message);
+            }
 
-	/* free subject name */
-	if(req->subject)
-	{
-	    globus_free(req->subject);
-	}
+            /* free subject name */
+            if(req->subject)
+            {
+                globus_free(req->subject);
+            }
 
-	globus_free(req);
-	request = GLOBUS_NULL_HANDLE;
+            globus_free(req);
+            request = GLOBUS_NULL_HANDLE;
+        }
 
 	return GLOBUS_SUCCESS;
     }

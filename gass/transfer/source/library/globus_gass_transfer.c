@@ -137,12 +137,6 @@ globus_l_gass_transfer_deactivate(void)
 	    req,
 	    globus_i_gass_transfer_deactivate_callback,
 	    GLOBUS_NULL);
-
-	if(rc != GLOBUS_SUCCESS)
-	{
-	    /* fail failed! */
-	    globus_i_gass_transfer_deactivate_callback(NULL, tmp);
-	}
     }
 
     rest = globus_i_gass_transfer_listeners;
