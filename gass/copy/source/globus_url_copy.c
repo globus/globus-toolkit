@@ -23,11 +23,13 @@ CVS Information:
 
 #include "globus_gass_file.h"
 
-
+#if 1
 const char * oneline_usage
     = "globus-url-copy [-help] [-usage] [-version] [-binary] sourceURL destURL";
-/*
-    = "globus-url-copy [-help] [-usage] [-version] [-binary|-ascii] sourceURL destURL";*/
+#else
+const char * oneline_usage
+    = "globus-url-copy [-help] [-usage] [-version] [-binary|-ascii] sourceURL destURL";
+#endif
 
 const char * long_usage
     =   "\nglobus-url-copy [options] sourceURL destURL\n"
@@ -37,7 +39,7 @@ const char * long_usage
         "\t -version          : Print the version of this program\n"
         "\t -ascii            : NOT available yet; convert the file to/from\n"
         "\t                     netASCII format to/from local file format\n"
-        "\t -binary           : Do not aply any conversion to the files\n"
+        "\t -binary           : Do not apply any conversion to the files\n"
         "\t                     -binary is used by default\n\n";
 
 #define binary_id   1
@@ -159,22 +161,27 @@ main(int argc, char **argv)
     */
 
     /* Verify that the source and destination are valid URLs */
-    rc = globus_url_parse(sourceURL, &test_url);
-    if(rc != GLOBUS_SUCCESS)
+    if (strcmp(sourceURL,"-"))
     {
-	fprintf(stderr, "can not parse sourceURL \"%s\"\n", sourceURL);
-	exit(GLOBUS_SUCCESS);
+	rc = globus_url_parse(sourceURL, &test_url);
+	if(rc != GLOBUS_SUCCESS)
+	{
+	    fprintf(stderr, "can not parse sourceURL \"%s\"\n", sourceURL);
+	    exit(GLOBUS_SUCCESS);
+	}
+	globus_url_destroy(&test_url);
     }
-    globus_url_destroy(&test_url);
 
-    rc = globus_url_parse(destURL, &test_url);
-    if(rc != GLOBUS_SUCCESS)
+    if (strcmp(destURL,"-"))
     {
-	fprintf(stderr, "can not parse destURL \"%s\"\n", destURL);
-	exit(GLOBUS_SUCCESS);
+	rc = globus_url_parse(destURL, &test_url);
+	if(rc != GLOBUS_SUCCESS)
+	{
+	    fprintf(stderr, "can not parse destURL \"%s\"\n", destURL);
+	    exit(GLOBUS_SUCCESS);
+	}
+	globus_url_destroy(&test_url);
     }
-    globus_url_destroy(&test_url);
-    
     /* end of argument parsing */
 
     /* To find out if I need to do some netASCII to Unix or
