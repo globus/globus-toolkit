@@ -16,6 +16,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/param.h>
 #include <fcntl.h> 
 #include <assert.h>
 #include <errno.h>
@@ -37,6 +38,8 @@ static char usage[] = \
 "       -o | --out             <path>     Location of delegated proxy\n"
 "       -s | --pshost          <hostname> Hostname of the myproxy-server\n"
 "       -p | --psport          <port #>   Port of the myproxy-server\n"
+"       -a | --authorization   <path>     Use credential for authorization\n"
+"                                         (instead of passphrase)\n"
 "\n";
 
 struct option long_options[] =
@@ -49,10 +52,11 @@ struct option long_options[] =
     {"usage",                  no_argument, NULL, 'u'},
     {"username",         required_argument, NULL, 'l'},
     {"version",                no_argument, NULL, 'v'},
+    {"authorization",    required_argument, NULL, 'r'},
     {0, 0, 0, 0}
 };
 
-static char short_options[] = "hus:p:l:t:o:v";
+static char short_options[] = "hus:p:l:t:o:va:";
 
 static char version[] =
 "myproxy-get-delegation version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
@@ -70,6 +74,7 @@ init_arguments(int argc, char *argv[],
 
 /* location of delegated proxy */
 char *outputfile = NULL;
+char *creds_to_authorization = NULL;
 
 int
 main(int argc, char *argv[]) 
@@ -80,7 +85,7 @@ main(int argc, char *argv[])
 
     my_setlinebuf(stdout);
     my_setlinebuf(stderr);
-    
+
     socket_attrs = malloc(sizeof(*socket_attrs));
     memset(socket_attrs, 0, sizeof(*socket_attrs));
 
@@ -92,7 +97,7 @@ main(int argc, char *argv[])
 
     /* Setup defaults */
     myproxy_set_delegation_defaults(socket_attrs,client_request);
- 
+
     /* Initialize client arguments and create client request object */
     init_arguments(argc, argv, socket_attrs, client_request);
 
@@ -100,16 +105,18 @@ main(int argc, char *argv[])
 	proxy_get_filenames(0, NULL, NULL, &outputfile, NULL, NULL);
     }
 
-    /* Allow user to provide a passphrase */
-    if (myproxy_read_passphrase(client_request->passphrase,
-				sizeof(client_request->passphrase)) == -1)
-    {
-        fprintf(stderr, "Error reading passphrase\n");
-        exit(1);
+    if (creds_to_authorization == NULL) {
+       /* Allow user to provide a passphrase */
+       if (myproxy_read_passphrase(client_request->passphrase,
+				   sizeof(client_request->passphrase)) == -1)
+       {
+	   fprintf(stderr, "Error reading passphrase\n");
+	   exit(1);
+       }
     }
-    
+
     if (myproxy_get_delegation(socket_attrs, client_request, 
-	    NULL, server_response, outputfile)!=0) {
+	    creds_to_authorization, server_response, outputfile)!=0) {
 	fprintf(stderr, "Failed to receive a proxy.\n");
 	exit(1);
     }
@@ -160,6 +167,9 @@ init_arguments(int argc,
 	case 'o':	/* output file */
 	    outputfile = strdup(gnu_optarg);
             break;    
+	case 'a':       /* special authorization */
+	    creds_to_authorization = strdup(gnu_optarg);
+	    break; 
         case 'v':       /* print version and exit */
             fprintf(stderr, version);
             exit(1);
