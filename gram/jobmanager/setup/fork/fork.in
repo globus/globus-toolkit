@@ -1,8 +1,19 @@
+
+# Globus::GRAM::JobManager::fork package
+#
+# CVS Information:
+# $Source$
+# $Date$
+# $Revision$
+# $Author$
+
 use Globus::GRAM::Error;
 use Globus::GRAM::JobState;
 use Globus::GRAM::JobManager;
+use Globus::Core::Paths;
 
 use File::stat;
+use IO::Pipe;
 use Fcntl;
 
 package Globus::GRAM::JobManager::fork;
@@ -36,18 +47,19 @@ sub submit
     my $multi_output = 0;
     my $tag = $ENV{GLOBUS_GRAM_JOB_CONTACT};
     my $format = "x-gass-cache://$tag/dev/std\%s/\%03d";
-    my $cache_pgm = "$ENV{GLOBUS_LOCATION}/bin/globus-gass-cache";
+    my $cache_pgm = "$Globus::Core::Paths::bindir/globus-gass-cache";
     my $description = $self->{JobDescription};
     my $merge_urlname = "x-gass-cache://$tag/dev/stdio_merge";
     my $merge_file = undef;
     my $merge_filename;
+    my $pipe;
     
     chdir $description->directory() or
         return Globus::GRAM::Error::INVALID_DIRECTORY;
 
     foreach $tuple ($description->environment())
     {
-	$CHILD_ENV{@{$tuple}[0]} = @{$tuple}[1];
+	$CHILD_ENV{$tuple->[0]} = $tuple->[1];
     }
 
     if($description->jobtype() eq 'multiple')
@@ -109,10 +121,14 @@ sub submit
 	    $job_stderr = $description->stderr();
 	}
 
+        # should close on exec
+        $pipe = new IO::Pipe;
 	$pid = fork();
 
 	if($pid == 0)
 	{
+	    $pipe->writer();
+
             # forked child
 	    %ENV = %CHILD_ENV;
 
@@ -130,30 +146,55 @@ sub submit
 		exec ($mpirun, '-np',
 		      $description->count(),
 		      $description->executable(),
-		      $description->arguments())
-		    || die "Error starting mpirun";
+		      $description->arguments());
+		$pipe->print('X');
+		$pipe->close();
+		exit(1);
 	    }
 	    elsif($description->jobtype() eq 'mpi')
 	    {
 		exec ($mpirun, '-np',
 		      $description->count(),
-		      $description->executable())
-		    || die "Error starting mpirun";
+		      $description->executable());
+		$pipe->print('X');
+		$pipe->close();
+		exit(1);
 	    }
 	    elsif(defined($description->arguments()))
 	    {
 		exec ($description->executable(),
-		      $description->arguments())
-		    || die "Error starting program";
+		      $description->arguments());
+		$pipe->print('X');
+		$pipe->close();
+		exit(1);
 	    }
 	    else
 	    {
-		exec ($description->executable())
-		    || die "Error starting program";
+		exec ($description->executable());
+		$pipe->print('X');
+		$pipe->close();
+		exit(1);
 	    }
 	}
 	else
 	{
+	    $pipe->reader();
+	    $_ = <$pipe>;
+	    $pipe->close();
+
+	    if($_ eq 'X')
+	    {
+		# exec failed. kill rest of job and return an error
+		foreach(@job_id)
+		{
+		    kill(SIGTERM, $_);
+
+		    sleep(5);
+		    
+		    kill(SIGKILL, $_);
+		}
+		return Globus::GRAM::Error::JOB_EXECUTION_FAILED;
+	    }
 	    push(@job_id, $pid);
 	}
     }
@@ -210,7 +251,7 @@ sub _merge_multi_output
     my $state = shift;
     my $description = $self->{JobDescription};
     my $tag = $ENV{GLOBUS_GRAM_JOB_CONTACT};
-    my $cache_pgm = "$ENV{GLOBUS_LOCATION}/bin/globus-gass-cache";
+    my $cache_pgm = "$Globus::Core::Paths::bindir/globus-gass-cache";
     my $merge_urlname = "x-gass-cache://$tag/dev/stdio_merge";
     my $merge_filename = `$cache_pgm -query $merge_urlname`;
     my $merge_file;

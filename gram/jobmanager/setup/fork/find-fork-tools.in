@@ -18,5 +18,5 @@ exec_prefix='$(GLOBUS_LOCATION)'
 libexecdir=${prefix}/libexec
 
 AC_OUTPUT(
-  $GLOBUS_LOCATION/lib/perl/Globus/GRAM/JobManager/fork.pm:fork.in
+    fork.pm:fork.in
 )
