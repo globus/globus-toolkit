@@ -368,7 +368,8 @@ EOF
 
 	#system("$cache_pgm -cleanup-url $script_url");
 
-	return {JOB_ID => $job_id};
+	return {JOB_ID => $job_id,
+	        JOB_STATE => Globus::GRAM::JobState::PENDING };
     }
     #system("$cache_pgm -cleanup-url $tag/pbs_job_script.$$");
 
