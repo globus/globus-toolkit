@@ -60,7 +60,19 @@ globus_gss_assist_strcatr(
         + (post ? strlen(post) : 0);
 
     if (str)
+    { 
         new = (char *)realloc(str,len);
+        if(!new)
+        {
+            new = malloc(len);
+            if(new)
+            {
+                *new = '\0';
+                strcat(new, str);
+                free(str);
+            }
+        }
+    }
     else
     {
         new = (char *)malloc(len);
@@ -176,6 +188,7 @@ globus_gss_assist_display_status_str(
     char *                              reason2 = (char *) 0;
     char                                buf[1024];
     char *                              msg = NULL;
+    char *                              tmp;
     static char *                       _function_name_ =
         "globus_gss_assist_display_status_str";
     GLOBUS_I_GSI_GSS_ASSIST_DEBUG_ENTER;
@@ -185,10 +198,17 @@ globus_gss_assist_display_status_str(
 	return GSS_S_FAILURE;
     }
 
+    *str = NULL;
+    
     msg = globus_gss_assist_strcatr(msg,
                                     comment ? comment : "GSS failure: ",
                                     NULL,0,
                                     "\n");
+    if(!msg)
+    {
+        return GSS_S_FAILURE;
+    }
+    
     if(token_status == 0)
     { 
         message_context = 0;
@@ -202,14 +222,19 @@ globus_gss_assist_display_status_str(
             {
                 if (status_string->length)
                 {
-                    msg = globus_gss_assist_strcatr(msg,
-                                                    "",
-                                                    (char *) status_string->value,
-                                                    status_string->length,
-                                                    "");
+                    tmp = globus_gss_assist_strcatr(
+                        msg, "",
+                        (char *) status_string->value,
+                        status_string->length, "");
+                    if(!tmp)
+                    {
+                        free(msg);
+                        return GSS_S_FAILURE;
+                    }
+                    msg = tmp;
                 }
+                gss_release_buffer(&minor_status2, status_string);
             }
-            gss_release_buffer(&minor_status2, status_string);
         }
         while (message_context != 0);
 
@@ -226,14 +251,19 @@ globus_gss_assist_display_status_str(
             {
                 if (status_string->length)
                 {
-                    msg = globus_gss_assist_strcatr(msg,
-                                                    "",
-                                                    (char *) status_string->value,
-                                                    status_string->length,
-                                                    "");
+                    tmp = globus_gss_assist_strcatr(
+                        msg, "",
+                        (char *) status_string->value,
+                        status_string->length, "");
+                    if(!tmp)
+                    {
+                        free(msg);
+                        return GSS_S_FAILURE;
+                    }
+                    msg = tmp;
                 }
+                gss_release_buffer(&minor_status2, status_string);            
             }
-            gss_release_buffer(&minor_status2, status_string);
         }
         while (message_context != 0);
     }
@@ -286,11 +316,16 @@ globus_gss_assist_display_status_str(
         }
         sprintf(buf,"    globus_gss_assist token :%d: %s %s\n",
                 token_status,  reason1, reason2);
-        msg = globus_gss_assist_strcatr(msg,
+        tmp = globus_gss_assist_strcatr(msg,
                                         buf,
                                         NULL,0,
                                         NULL);
-
+        if(!tmp)
+        {
+            free(msg);
+            return GSS_S_FAILURE;
+        }
+        msg = tmp;
     }
     
     *str = msg;
