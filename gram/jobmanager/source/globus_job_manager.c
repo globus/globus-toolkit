@@ -324,7 +324,9 @@ int main(int argc,
     struct stat            statbuf;
     globus_byte_t                       buffer[GLOBUS_GRAM_CLIENT_MAX_MSG_SIZE];
     globus_byte_t *                     reply;
-    globus_size_t                       reply_size;
+    globus_size_t                       replysize;
+    globus_byte_t *                     sendbuf;
+    globus_size_t                       sendsize;
     globus_rsl_t *                      rsl_tree;
     globus_gass_cache_entry_t *         cache_entries;
     int                                 cache_size;
@@ -858,7 +860,7 @@ int main(int argc,
 
 	    args_fd_str = globus_libc_getenv("GRID_SECURITY_HTTP_BODY_FD");
 	    
-	    if ((!args_fd_str)a
+	    if ((!args_fd_str)
 		|| ((args_fd = atoi(args_fd_str)) == 0))
 	    {
 		GRAM_UNLOCK;
@@ -1392,49 +1394,77 @@ int main(int argc,
     }
 
     /*
-     * If the request was successful reply with the job contact else
-     * send error status.
+     * Send reply with the job contact or error status
      */
     if (rc == GLOBUS_SUCCESS)
     {
         grami_fprintf( request->jobmanager_log_fp,
               "JM: request was successful, sending message to client\n");
+	
+    }
+    else
+    {
+        grami_fprintf( request->jobmanager_log_fp,
+		       "JM: request failed with error %d (%s), "
+		       "sending message to client\n",
+		       rc,
+		       globus_gram_client_error_string(rc));
+	jm_request_failed = GLOBUS_TRUE;
+    }
 
-	rc = globus_i_gram_pack_http_job_request_result_fb(
-	               &reply,
-		       GLOBUS_SUCCESS,
-		       graml_job_contact);
+    rc = globus_gram_http_pack_job_request_reply(
+	rc,
+	(jm_request_failed) ? GLOBUS_NULL : graml_job_contact,
+	&reply,
+	&replysize);
 
-	/* TODO: frame reply */
+    if (rc==GLOBUS_SUCCESS)
+    {
+	rc = globus_gram_http_frame_reply(
+	    200,
+	    reply,
+	    replysize,
+	    &sendbuf,
+	    &sendsize);
+    }
+    if (rc!=GLOBUS_SUCCESS)
+    {
+	rc = globus_gram_http_frame_reply(
+	    500,
+	    GLOBUS_NULL,
+	    0,
+	    &sendbuf,
+	    &sendsize);
+    }
 
-	if (rc == GLOBUS_SUCCESS)
-	{
-	    /* send this reply back down the socket to the client */
-	    globus_gss_assist_wrap_send(&minor_status,
-					context_handle,
-					(char *)reply,
-					reply_size,
-					&token_status,
-					globus_gss_assist_token_send_fd,
-					stdout,
-					request->jobmanager_log_fp);
+    if (reply)
+	globus_libc_free(reply);
 
-	    /* 
-	     * close the connection (both stdin and stdout are connected
-	     * to the socket)
-	     */
-	    close(0);
-	    close(1);
-	    globus_libc_free(reply);
-	}
+    if (rc == GLOBUS_SUCCESS)
+    {
+	/* send this reply back down the socket to the client */
+	globus_gss_assist_wrap_send(&minor_status,
+				    context_handle,
+				    (char *) sendbuf,
+				    sendsize,
+				    &token_status,
+				    globus_gss_assist_token_send_fd,
+				    stdout,
+				    request->jobmanager_log_fp);
 
-	/* restore rc to previous value (is this needed??) */
-	rc = GLOBUS_SUCCESS;
+	/* 
+	 * close the connection (both stdin and stdout are connected
+	 * to the socket)
+	 */
+	close(0);
+	close(1);
+	globus_libc_free(sendbuf);
+    }
 
+    if (!jm_request_failed)
+    {
         if (!request->job_id)
-        {
             request->job_id = (char *) globus_libc_strdup ("UNKNOWN");
-        }
 
         /* send callback with the status */
         globus_l_gram_client_callback(request->status, request->failure_code);
@@ -1443,19 +1473,19 @@ int main(int argc,
         if (publish_jobs_flag)
         {
             if ((final_rsl_spec = globus_rsl_unparse(rsl_tree)) == GLOBUS_NULL)
-            {
                 final_rsl_spec = (char *) globus_libc_strdup("RSL UNKNOWN");
-            }
 
             job_status_dir = globus_l_gram_genfilename(conf.deploy_path,
-                                                                "tmp",
-                                                                 NULL);
-            sprintf(job_status_file_path, "%s/%s_%s.%s",
-                                           job_status_dir,
-                                           conf.rdn,
-                                           graml_env_logname,
-                                           request->job_id );
+						       "tmp",
+						       NULL);
 
+            sprintf( job_status_file_path,
+		     "%s/%s_%s.%s",
+		     job_status_dir,
+		     conf.rdn,
+		     graml_env_logname,
+		     request->job_id );
+	    
             grami_fprintf( request->jobmanager_log_fp,
                  "JM: job_status_file_path = %s\n", job_status_file_path);
 
@@ -1464,47 +1494,7 @@ int main(int argc,
                                           graml_env_globus_id,
                                           request->job_id,
 					  request->status);
-        }
-
-    }
-    else
-    {
-        grami_fprintf( request->jobmanager_log_fp,
-              "JM: request failed, sending message to client\n");
-
-	rc = globus_i_gram_pack_http_job_request_result(
-	           &reply,
-		   request->failure_code,
-		   NULL);
-
-	/* TODO: frame reply */
-
-	if (rc == GLOBUS_SUCCESS)
-	{
-	    /* send this reply back down the socket to the client */
-	    globus_gss_assist_wrap_send(&minor_status,
-					context_handle,
-					(char *)reply,
-					reply_size,
-					&token_status,
-					globus_gss_assist_token_send_fd,
-					stdout,
-					request->jobmanager_log_fp);
-	    
-	    /* 
-	     * close the connection (both stdin and stdout are connected
-	     * to the socket)
-	     */
-	    close(0);
-	    close(1);
-	    globus_libc_free(reply);
 	}
-
-	/* restore rc to previous value (is this needed??) */
-	rc = GLOBUS_FAILURE;
-
-	jm_request_failed = GLOBUS_TRUE;
-
     }
  
     GRAM_UNLOCK;
@@ -1622,6 +1612,7 @@ int main(int argc,
 	globus_callback_unregister(stat_cleanup_poll_handle);
 	globus_callback_unregister(gass_poll_handle);
 
+	globus_poll_nonblocking();
     } /* endif */
 
     globus_gram_http_callback_disallow(graml_job_contact);
@@ -1838,12 +1829,12 @@ globus_l_gram_client_callback(int status, int failure_code)
 
     if (tmp_list)
     {
-	rc = globus_i_gram_http_pack_status_message(
-                   &message,
-	           &msgsize,
-		   graml_job_contact,
-		   status,
-		   failure_code);
+	rc = globus_gram_http_pack_status_update_message(
+	    graml_job_contact,
+	    status,
+	    failure_code,
+	    &message,
+	    &msgsize);
 	
 	if (rc != GLOBUS_SUCCESS)
 	{
@@ -1867,9 +1858,12 @@ globus_l_gram_client_callback(int status, int failure_code)
 
             rc = globus_gram_http_post_and_get(
 		             client_contact_node->contact,
+		             client_contact_node->contact,
 			     GLOBUS_NULL,                   /* default attr */
 			     message,
-			     strlen((char *)message)+1,
+			     msgsize,
+			     GLOBUS_NULL,                   /* ignore reply */
+			     GLOBUS_NULL,
 			     GLOBUS_NULL );                 /* no monitor */
 
 	    if (rc != GLOBUS_SUCCESS)       /* connect failed, most likely */
@@ -3848,17 +3842,18 @@ globus_l_jm_http_query_callback( void *               arg,
 {
     globus_gram_jobmanager_request_t *   request;
     globus_l_gram_client_contact_t *     callback;
-    globus_byte_t *                      httpbuf;
-    globus_size_t                        bufsize;
-    globus_size_t                        msgsize;
     globus_list_t *                      tmp_list;
     globus_list_t *                      next_list;
-    char                                 reply[GLOBUS_GRAM_HTTP_BUFSIZE];
-    char                                 url[1024];
+    globus_size_t                        replysize;
+    globus_size_t                        sendsize;
+    globus_byte_t *                      reply             = GLOBUS_NULL;
+    globus_byte_t *                      sendbuf           = GLOBUS_NULL;
+    char *                               query             = GLOBUS_NULL;
+    char *                               rest;
+    char *                               url;
     int                                  mask;
-    int                                  query;
     int                                  status;
-    int                                  job_status;
+    int                                  failure;
     int                                  rc;
 
 
@@ -3870,33 +3865,50 @@ globus_l_jm_http_query_callback( void *               arg,
     globus_io_handle_get_user_pointer( handle,
 				       (void **) &request );
     
+    rc = globus_gram_http_unpack_status_request(
+	    buf,
+	    nbytes,
+	    &query );
+
+    globus_libc_free(buf);
+
+    if (rc != GLOBUS_SUCCESS)
+    {
+	goto globus_l_jm_http_query_send_reply;
+    }
+
     grami_fprintf( request->jobmanager_log_fp,
-		   "JM : in globus_l_gram_http_query_callback, query=%d\n",
+		   "JM : in globus_l_gram_http_query_callback, query=%s\n",
 		   query);
     
-    switch(query)
+    rest = strchr(query,' ');
+    if (rest)
+	*rest++ = '\0';
+    
+    status  = GLOBUS_SUCCESS;  /* if status==FAILED, error code is */
+    failure = GLOBUS_SUCCESS;  /* found in failure                 */
+    
+    if (strcmp(query,"cancel")==0)
     {
-    case GLOBUS_GRAM_HTTP_QUERY_JOB_CANCEL:
 	GRAM_LOCK;
-	rc = globus_jobmanager_request_cancel(request);
+	failure = globus_jobmanager_request_cancel(request);
 	request->status = GLOBUS_GRAM_CLIENT_JOB_STATE_FAILED;
+	status = request->status;
 	graml_jm_done = 1;
 	GRAM_UNLOCK;
-	globus_libc_sprintf(reply, "%d", rc);
-	break;
-	
-    case GLOBUS_GRAM_HTTP_QUERY_JOB_STATUS:
+    }
+    else if (strcmp(query,"status")==0)
+    {
 	GRAM_LOCK;
-	rc = request->status;
+	status = request->status;
 	GRAM_UNLOCK;
-	globus_libc_sprintf(reply, "%d", rc);
-	break;
-	
-    case GLOBUS_GRAM_HTTP_QUERY_JOB_REGISTER:
-	if (3!=sscanf((char *)buf,"%d %s %d", &query, url, &mask))
-	    rc = GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED;
-	
-	if (rc == GLOBUS_SUCCESS)
+    }
+    else if (strcmp(query,"register")==0)
+    {
+	url = globus_libc_strdup(rest);
+	if (sscanf(rest,"%d %s", &mask, url) != 2)
+	    rc = GLOBUS_GRAM_CLIENT_ERROR_HTTP_UNPACK_FAILED;
+	else
 	{
 	    callback = my_malloc(globus_l_gram_client_contact_t,1);
 	    callback->contact = strdup(url);
@@ -3904,31 +3916,25 @@ globus_l_jm_http_query_callback( void *               arg,
 	    callback->failed_count   = 0;
 	    
 	    GRAM_LOCK;
-	    status = globus_list_insert( &globus_l_gram_client_contacts,
-					 (void *) callback);
-	    job_status = request->status;
+	    failure = globus_list_insert(
+		&globus_l_gram_client_contacts,
+		(void *) callback);
+	    status = request->status;
 	    GRAM_UNLOCK;
 	    
-	    if (status != GLOBUS_SUCCESS)
+	    if (failure != GLOBUS_SUCCESS)
 		status = GLOBUS_GRAM_CLIENT_ERROR_INSERTING_CLIENT_CONTACT;
-
-	    globus_libc_sprintf( reply, "%d %d", job_status, status );
 	}
-	break;
-
-    case GLOBUS_GRAM_HTTP_QUERY_JOB_UNREGISTER:
-#if 0				/* TODO: What was this supposed to be?
-				   --steve A*/
-	if (2!=sscanf((char *)buf,"%d %s %d", &query, url))
-	    rc = GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED;
-#else
-	if (2!=sscanf((char *)buf,"%d %s %*d", &query, url))
-	    rc = GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED;
-#endif
-	
-	if (rc == GLOBUS_SUCCESS)
+	globus_libc_free(url);
+    }
+    else if (strcmp(query,"unregister")==0)
+    {
+	url = rest;
+	if (strlen(url) == 0)
+	    rc = GLOBUS_GRAM_CLIENT_ERROR_HTTP_UNPACK_FAILED;
+	else
 	{
-	    status = GLOBUS_GRAM_CLIENT_ERROR_CLIENT_CONTACT_NOT_FOUND;
+	    failure = GLOBUS_GRAM_CLIENT_ERROR_CLIENT_CONTACT_NOT_FOUND;
 	    GRAM_LOCK;
 	    tmp_list = globus_l_gram_client_contacts;
 	    while(!globus_list_empty(tmp_list))
@@ -3950,51 +3956,56 @@ globus_l_jm_http_query_callback( void *               arg,
 		    
 		tmp_list = next_list;
 	    }
-	    job_status = request->status;
+	    status = request->status;
 	    GRAM_UNLOCK;
-	    globus_libc_sprintf( reply, "%d %d", job_status, status );
 	}
-	break;
-
-    default:
-	/* TODO: new error type */
-	rc = GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED;
-	break;
+    }
+    else
+    {
+	status = GLOBUS_GRAM_CLIENT_JOB_STATE_FAILED;
+	failure = GLOBUS_GRAM_CLIENT_ERROR_INVALID_JOB_QUERY;
     }
 
 globus_l_jm_http_query_send_reply:
-
+	
     if (rc == GLOBUS_SUCCESS)
     {
-	msgsize = (globus_size_t) strlen(reply)+1;
-	rc = globus_gram_http_frame_response( 200,
-					      (globus_byte_t *) reply,
-					      msgsize,
-					      &httpbuf,
-					      &bufsize );
+	rc = globus_gram_http_pack_status_reply(
+	    status,
+	    failure,
+	    &reply,
+	    &replysize );
     }
-    if (rc!=GLOBUS_SUCCESS)
+    if (rc == GLOBUS_SUCCESS)
     {
-	globus_gram_http_frame_response( 400,
-					 GLOBUS_NULL,
-					 0,
-					 &httpbuf,
-					 &bufsize );
+	rc = globus_gram_http_frame_reply(
+	    200,
+	    reply,
+	    replysize,
+	    &sendbuf,
+	    &sendsize);
     }
-    if (GLOBUS_SUCCESS != globus_io_register_write(
-	                         handle,     
-				 httpbuf,
-				 bufsize,
-				 globus_gram_http_close_after_write,
-				 GLOBUS_NULL) )
-     {
-	 globus_libc_free(httpbuf);
-	 globus_io_register_close(
-	     handle,
-	     globus_gram_http_close_callback,
-	     GLOBUS_NULL );
-     }
-
-     globus_libc_free(buf);
+    if (rc != GLOBUS_SUCCESS)
+    {
+	globus_gram_http_frame_reply(
+	    400,
+	    GLOBUS_NULL,
+	    0,
+	    &sendbuf,
+	    &sendsize );
+    }
+    if (reply)
+	globus_libc_free(reply);
+    if (query)
+	globus_libc_free(query);
+    
+    globus_io_register_write(
+	handle,
+	sendbuf,
+	sendsize,
+	globus_gram_http_close_after_write,
+	GLOBUS_NULL );
 }
+    
+
 

@@ -1285,11 +1285,18 @@ static void doit()
     }
 
     service_name = (char *) malloc(length);
-    if (1 != sscanf(http_message, "POST /%s", service_name))
+
     {
-	failure(FAILED_SERVICELOOKUP, 
-		 "Unable to extract service name from incoming message\n");
+	char  save = http_message[length];
+	http_message[length] = '\0';
+	if (1 != sscanf(http_message, "POST /%s", service_name))
+	{
+	    failure(FAILED_SERVICELOOKUP, 
+		    "Unable to extract service name from incoming message\n");
+	}
+	http_message[length] = save;
     }
+
 
     http_body_file = tmpfile();
     if (http_body_file)
@@ -1297,8 +1304,8 @@ static void doit()
 	setbuf(http_body_file,NULL);
 	fcntl(fileno(http_body_file), F_SETFD, 0);
 	sprintf(buf, "%d", fileno(http_body_file));
-	grami_setenv("GRID_HTTP_BODY_FD", buf, 1);
-	notice2(0,"GRID_HTTP_BODY_FD=%s",buf);
+	grami_setenv("GRID_SECURITY_HTTP_BODY_FD", buf, 1);
+	notice2(0,"GRID_SECURITY_HTTP_BODY_FD=%s",buf);
     }    
     else
     {
@@ -1332,8 +1339,7 @@ static void doit()
     free(http_message);
     length = strlen(service_name);
     
-    /*DEE should do sanity check on length, and null term */
-    if (length > 256 || service_name[length-1] != '\0')
+    if (length > 256)
     {
 	failure(FAILED_SERVICELOOKUP, "Service name malformed");
     }

@@ -253,6 +253,7 @@ globus_l_gram_client_parse_gatekeeper_contact( char *    contact_string,
 					       char **   gatekeeper_service,
 					       char **   gatekeeper_dn )
 {
+    char *                duplicate;
     char *                host;
     char *                port;
     char *                dn;
@@ -260,11 +261,16 @@ globus_l_gram_client_parse_gatekeeper_contact( char *    contact_string,
     unsigned short        iport;
 
     /*
-     *  the gatekeeper contact format:  <host>:<port>[/<service>]:<dn>
-     */
+     *  the gatekeeper contact format: [https://]<host>:<port>[/<service>]:<dn>
+     */    
 
-    if ((host = strdup(contact_string)))
+    if ((duplicate = strdup(contact_string)))
     {
+	host = duplicate;
+
+	if (strncmp(duplicate,"https://", strlen("https://")) == 0)
+	    host += strlen("https://");
+
 	dn = host;
 	if ((port = strchr(host,':')))
 	{
@@ -272,10 +278,10 @@ globus_l_gram_client_parse_gatekeeper_contact( char *    contact_string,
 	    if ((dn = strchr(port, ':'))) 
 		*dn++ = '\0';
     
-	    if ((service = strchr(port,'/')))
-		*service++ = '\0';
-	    else
-		service = "jobmanager";
+	    if (! (service = strchr(port,'/')))
+		service = "/jobmanager";        /* yes, including the slash */
+
+	    *service++ = '\0';   /* must delimit port and service, fix later */
 	}
 	else
 	    port = "754";
@@ -290,10 +296,14 @@ globus_l_gram_client_parse_gatekeeper_contact( char *    contact_string,
 					 strlen(port) + 
 					 strlen("https://:/"));
 
-    globus_libc_sprintf(*gatekeeper_url, "https://%s:%s/", host, port);
+    globus_libc_sprintf(*gatekeeper_url, "https://%s:%s/", host, port);    
+    /* 
+     * done with the port, can now put the slash back
+     */
+    *(--service) = '/';
     *gatekeeper_service = strdup(service);
     *gatekeeper_dn = strdup(dn);
-    globus_libc_free(host);
+    globus_libc_free(duplicate);
 
     return GLOBUS_SUCCESS;
 }
@@ -427,7 +437,7 @@ Parameters:
 Returns:
 ******************************************************************************/
 int 
-globus_gram_client_job_request(char *           gatekeeper_url,
+globus_gram_client_job_request(char *           gatekeeper_contact,
 			       const char *     description,
 			       const int        job_state_mask,
 			       const char *     callback_url,
@@ -441,23 +451,41 @@ globus_gram_client_job_request(char *           gatekeeper_url,
     globus_size_t                replysize;
     globus_gram_http_monitor_t   monitor;
     globus_io_attr_t             attr;
+    char *                       url;
+    char *                       service;
+    char *                       dn;
 
     globus_mutex_init(&monitor.mutex, (globus_mutexattr_t *) NULL);
     globus_cond_init(&monitor.cond, (globus_condattr_t *) NULL);
     monitor.done = GLOBUS_FALSE;
 
-    rc = globus_gram_http_pack_job_request(
-	          job_state_mask,
-		  callback_url,
-		  description,
-		  &query,
-		  &querysize );
+    if ((rc = globus_l_gram_client_parse_gatekeeper_contact(
+	            gatekeeper_contact,
+		     &url,
+		     &service,
+		     &dn )) != GLOBUS_SUCCESS)
+    {
+	goto globus_gram_client_job_request_parse_failed;
+    }
 
-    if (rc!=GLOBUS_SUCCESS)
+    if ((rc = globus_l_gram_client_setup_attr_t( 
+	             &attr,
+		     GLOBUS_IO_SECURE_DELEGATION_MODE_LIMITED_PROXY,
+		     dn )) 
+
+	|| (rc = globus_gram_http_pack_job_request(
+	             job_state_mask,
+		     callback_url,
+		     description,
+		     &query,
+		     &querysize)) )
+    {
 	goto globus_gram_client_job_request_pack_failed;
+    }
 
     rc = globus_gram_http_post_and_get(
-	         gatekeeper_url,
+	         url,
+		 service,
 		 &attr,
 		 query,
 		 querysize,
@@ -478,6 +506,7 @@ globus_gram_client_job_request(char *           gatekeeper_url,
     }
     globus_mutex_unlock(&monitor.mutex);
 
+
     if (rc == GLOBUS_SUCCESS)
     {
 	char * result_contact = GLOBUS_NULL;
@@ -491,7 +520,8 @@ globus_gram_client_job_request(char *           gatekeeper_url,
 	    == GLOBUS_SUCCESS)
 	{
 	    rc = result_status;
-	    if ( job_contact ) {
+	    if ( job_contact )
+	    {
 		(*job_contact) = ((result_status==GLOBUS_SUCCESS) 
 				  ? globus_libc_strdup(result_contact)
 				  : NULL);
@@ -504,9 +534,15 @@ globus_gram_client_job_request(char *           gatekeeper_url,
 	globus_libc_free(reply);
 
 globus_gram_client_job_request_http_failed:
-    globus_libc_free(query);
+    if (query)
+	globus_libc_free(query);
 
 globus_gram_client_job_request_pack_failed:
+    globus_libc_free(url);
+    globus_libc_free(service);
+    globus_libc_free(dn);
+
+globus_gram_client_job_request_parse_failed:
     
     globus_mutex_destroy(&monitor.mutex);
     globus_cond_destroy(&monitor.cond);
@@ -564,6 +600,7 @@ globus_l_gram_client_to_jobmanager(char *   job_contact,
 	goto globus_l_gram_client_to_jobmanager_pack_failed;
     
     rc = globus_gram_http_post_and_get(
+	    job_contact,
 	    job_contact,
 	    GLOBUS_NULL,
 	    query,

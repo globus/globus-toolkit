@@ -52,6 +52,7 @@ EXTERN_C_BEGIN
  */
 #include "globus_gram_error.h"
 
+
 /*
  *  Job Parameter Constants
  */

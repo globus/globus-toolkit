@@ -287,8 +287,8 @@ globus_gram_http_initialize_read_t( globus_gram_http_read_t **    read_t,
     {  \
 	res = globus_io_register_read( handle, \
 				       status->buf, \
-				       2, \
-				       2, \
+				       1, \
+				       1, \
 				       globus_l_gram_http_read_callback, \
 				       (void *) status); \
     } \
@@ -568,8 +568,8 @@ globus_l_gram_http_read_callback( void *                 read_t,
     globus_size_t		 payload_length;
     int				 rc = GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED;
 
-    verbose(notice("read_callback : handle = %d, just read %d, total=%d\n",
-		   handle->fd, nbytes, status->n_read));
+    verbose(notice("read_callback : handle=%d, just read %d, total=%d rc=%d\n",
+		   handle->fd, nbytes, status->n_read, result));
 
     /* Error doing read */
     if (res != GLOBUS_SUCCESS)
@@ -601,6 +601,7 @@ globus_l_gram_http_read_callback( void *                 read_t,
 	    }
 	    if(rc != GLOBUS_SUCCESS)
 	    {
+		verbose(notice("read_callback : parse error\n"));
 		goto error_exit;
 	    }
 
@@ -628,6 +629,7 @@ globus_l_gram_http_read_callback( void *                 read_t,
 				       read_t );
 	if(res != GLOBUS_SUCCESS)
 	{
+	    verbose(notice("read_callback : re-register error\n"));
 	    goto error_exit;
 	}
 	return;
@@ -637,6 +639,8 @@ globus_l_gram_http_read_callback( void *                 read_t,
     {
 	status->n_read += nbytes;
 	status->buf[status->n_read] = '\0';
+
+	verbose(notice("read_callback : calling callback function\n"));
 
 	globus_io_handle_set_user_pointer( handle,
 					   status->user_pointer );
@@ -754,6 +758,7 @@ globus_l_gram_http_get_callback( void *                read_t,
 /************************ "HTTP" post/get functions ************************/
 int
 globus_gram_http_post_and_get( char *                         url,
+			       char *                         header_url,
 			       globus_io_attr_t *             attr,
 			       globus_byte_t *                request_message,
 			       globus_size_t                  request_size,
@@ -795,7 +800,7 @@ globus_gram_http_post_and_get( char *                         url,
     handle  = my_malloc(globus_io_handle_t,1);
 
     if ((rc = globus_gram_http_attach(url, handle, attr))
-	|| (rc = globus_gram_http_frame_request( url,
+	|| (rc = globus_gram_http_frame_request( header_url,
 						 parsed_url.host,
 						 request_message,
 						 request_size,
@@ -1426,7 +1431,8 @@ globus_gram_http_pack_job_request(
 			strlen(GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE) +
 			strlen(GLOBUS_GRAM_HTTP_PACK_JOB_STATE_MASK_LINE) +
 			strlen(GLOBUS_GRAM_HTTP_PACK_CALLBACK_URL_LINE) +
-			strlen(callback_url) + 2 * strlen(rsl) + 10);
+			((callback_url) ? strlen(callback_url) : 0)
+			+ 2*strlen(rsl) + 16);
 
     len = globus_libc_sprintf((char *) *query, 
 			      GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE
@@ -1435,12 +1441,14 @@ globus_gram_http_pack_job_request(
 			      "rsl: ",
 			      GLOBUS_GRAM_PROTOCOL_VERSION,
 			      job_state_mask,
-			      callback_url);
+			      (callback_url) ? callback_url : "" );
     
     len += globus_l_gram_http_quote_string( rsl,
 					    (*query)+len );
 
-    globus_libc_sprintf((char *)(query+len), CRLF);
+    globus_libc_sprintf((char *)(*query)+len,
+			"%s", 
+			CRLF);
     *querysize = (globus_size_t)(len+3);
 
     return GLOBUS_SUCCESS;

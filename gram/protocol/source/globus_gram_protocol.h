@@ -114,6 +114,7 @@ globus_gram_http_client_callback( void *                arg,
 
 int
 globus_gram_http_post_and_get( char *                         url,
+			       char *                         header_url,
 			       globus_io_attr_t *             attr,
 			       globus_byte_t *                request_message,
 			       globus_size_t                  request_size,
