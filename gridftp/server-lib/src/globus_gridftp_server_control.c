@@ -365,6 +365,7 @@ globus_gridftp_server_control_finished_auth(
     globus_gridftp_server_control_operation_t       op,
     globus_result_t                                 res)
 {
+    globus_i_gsc_server_t *                         i_server;
     globus_i_gsc_op_t *                             i_op;
     GlobusGridFTPServerName(globus_gridftp_server_control_finished_auth);
 
@@ -378,12 +379,24 @@ globus_gridftp_server_control_finished_auth(
         return;
     }
 
+    i_server = i_op->server;
+
+    globus_mutex_lock(&i_server->mutex);
+    {
+        /* if not in STATE_AUTH, we will deal with it in callback_return */
+        if(i_server->state == GLOBUS_L_GS_STATE_AUTH)
+        {
+            i_server->state = GLOBUS_L_GS_STATE_OPEN;
+        }
+    }
+    globus_mutex_unlock(&i_server->mutex);
+
     i_op->auth_cb(
-        i_op->server,
+        i_server,
         res,
         i_op->user_arg);
 
-    globus_l_gsc_callback_return(i_op->server);
+    globus_l_gsc_callback_return(i_server);
 }
 
 globus_result_t
@@ -418,11 +431,11 @@ globus_gridftp_server_control_pmod_authenticate(
     i_op->user_arg = user_arg;
 
     i_op->auth_cb = cb;
-    if(username == NULL)
+    if(username != NULL)
     {
         i_op->username = globus_libc_strdup(username);
     }
-    if(password == NULL)
+    if(password != NULL)
     {
         i_op->password = globus_libc_strdup(password);
     }
