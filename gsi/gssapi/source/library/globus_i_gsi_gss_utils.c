@@ -1365,7 +1365,7 @@ globus_i_gsi_gss_cred_read(
     if(desired_subject != NULL)
     {
         local_desired_subject = strdup(desired_subject);
-        actual_subject = strchr(local_desired_subject, '@');
+        actual_subject = strrchr(local_desired_subject, '/');
         if(actual_subject == NULL)
         {
             actual_subject = local_desired_subject;
@@ -1374,7 +1374,11 @@ globus_i_gsi_gss_cred_read(
         {
             local_desired_subject[actual_subject - 
                                  local_desired_subject] = '\0';
-            service_name = local_desired_subject;
+            service_name = strchr(local_desired_subject, '=');
+            if(!service_name)
+            {
+                service_name = local_desired_subject;
+            }
             actual_subject++;
         }
     }
