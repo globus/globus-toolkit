@@ -474,6 +474,19 @@ globus_usage_stats_vsend(
     globus_size_t                       written;
     int                                 i = 0;
 
+    if(handle == NULL)
+    {
+        return globus_error_put(
+            globus_error_construct_error(
+                GLOBUS_USAGE_MODULE,
+                NULL,
+                GLOBUS_USAGE_STATS_ERROR_TYPE_OOM,
+                __FILE__,
+                _globus_func_name,
+                __LINE__,
+                "Handle is NULL."));
+    }
+                
     if(handle->optout)
     {
         return result;
