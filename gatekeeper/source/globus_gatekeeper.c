@@ -1111,6 +1111,7 @@ static void doit()
     char *		service_options[SERVICE_OPTIONS_MAX];
     int			service_option_local_cred = 0;
     int			service_option_stderr_log = 0;
+    int			service_option_accept_limited = 0;
     unsigned char       int_buf[4];
     char                tmp_version[64];
     struct stat         statbuf;
@@ -1239,13 +1240,10 @@ static void doit()
 	 * We will not accept limited proxies for authentication, as
 	 * they may have been stolen. This enforces part of the 
 	 * Globus security policy.
+	 * This check will be made later, after the service is
+	 * is determined. This is done to allow limited proxies
+	 * to be used for some services, like GARA
 	 */
-
-#ifdef GSS_C_GLOBUS_LIMITED_PROXY_FLAG
-	ret_flags = GSS_C_GLOBUS_LIMITED_PROXY_FLAG;
-#else
-	ret_flags = 0;
-#endif
 
     major_status = globus_gss_assist_accept_sec_context(&minor_status,
                        &context_handle,
@@ -1512,6 +1510,59 @@ static void doit()
 	failure(FAILED_SERVER, "ERROR: gatekeeper misconfigured");
       }
 
+	/* now check for options */
+	if (globus_gatekeeper_util_tokenize(
+					service_args[SERVICE_OPTIONS_INDEX],
+					service_options,
+					&num_service_options,
+					","))
+	{
+		notice(LOG_ERR, "ERROR:Tokenize failed for services options");
+		failure(FAILED_SERVER, "ERROR: gatekeeper misconfigured");
+	}
+	
+    for (i = 0; i < num_service_options; i++)
+    {
+        if (strcmp(service_options[i], "local_cred") == 0)
+        {
+            service_option_local_cred = 1;
+		}
+		else if (strcmp(service_options[i], "stderr_log") == 0)
+		{
+			service_option_stderr_log = 1;
+		}
+		else if (strcmp(service_options[i], "accept_limited") == 0)
+		{
+			service_option_accept_limited = 1;
+		}
+		else if (strcmp(service_options[i], "-") == 0)
+		{
+		}
+		else
+		{
+			notice2(LOG_ERR, "ERROR:Invalid service option %s",
+						service_options[i]);
+			failure(FAILED_SERVER, 
+				"ERROR: gatekeeper misconfigured");
+		}
+	}
+
+	/*
+	 * most services will not acceot a limited proxy
+	 * for authentication. We will check now. This
+	 * only works with the Globus GSSAPI but is a noop
+	 * for the Kerberos GSSAPI
+	 */
+#ifdef GSS_C_GLOBUS_LIMITED_PROXY_FLAG
+	 if ((service_option_accept_limited == 0)
+		&& (ret_flags & GSS_C_GLOBUS_LIMITED_PROXY_FLAG))
+		{
+			failure(FAILED_AUTHORIZATION, 
+				"Attempt to use limited proxy for service");
+
+		}
+#endif
+
 
     /*
      * Either run as the userid from the globus map,
@@ -1649,41 +1700,6 @@ static void doit()
 			chown(ccname+5,service_uid,service_gid);
 		}
 	}
-
-
-	/* now check for options */
-	if (globus_gatekeeper_util_tokenize(
-					service_args[SERVICE_OPTIONS_INDEX],
-					service_options,
-					&num_service_options,
-					","))
-	{
-		notice(LOG_ERR, "ERROR:Tokenize failed for services options");
-		failure(FAILED_SERVER, "ERROR: gatekeeper misconfigured");
-	}
-	
-    for (i = 0; i < num_service_options; i++)
-    {
-        if (strcmp(service_options[i], "local_cred") == 0)
-        {
-            service_option_local_cred = 1;
-		}
-		else if (strcmp(service_options[i], "stderr_log") == 0)
-		{
-			service_option_stderr_log = 1;
-		}
-		else if (strcmp(service_options[i], "-") == 0)
-		{
-		}
-		else
-		{
-			notice2(LOG_ERR, "ERROR:Invalid service option %s",
-						service_options[i]);
-			failure(FAILED_SERVER, 
-				"ERROR: gatekeeper misconfigured");
-		}
-	}
-
 
 	service_path = genfilename(libexecdir,
 			service_args[SERVICE_PATH_INDEX],NULL);

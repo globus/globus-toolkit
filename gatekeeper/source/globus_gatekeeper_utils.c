@@ -325,6 +325,17 @@ globus_gatekeeper_util_exec(char *args[],
  
     args[0] = cp;
 
+#ifdef DEBUG
+	fprintf(stderr,"EXECING %s args=",path);
+	{
+		int n = 0;
+		while (args[n]) {
+			fprintf (stderr," %s \n",args[n]);
+			n++;
+		}
+	fprintf(stderr,"\n");
+	}
+#endif
     execv(path, args);
 	fprintf(stderr,"Failed to exec the child\n");
     exit(127);      /* in case execl fails */

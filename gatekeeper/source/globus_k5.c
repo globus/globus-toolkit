@@ -183,9 +183,7 @@ DEEDEBUG2("and uid %d\n",pw?pw->pw_uid:-111111);
    * Make sure the creds cache is owned by the user. 
    */
 
-  if (rc == 0 && getuid() == 0) {
-	userid = getenv("USER");
-	if ((pw = getpwnam(userid)) != NULL) {
+  if (rc == 0 && getuid() == 0 && pw) {
 	  (void) chown(ccname+5,pw->pw_uid, pw->pw_gid);
     }
   }
