@@ -16,6 +16,11 @@ $timeleft = `$grid_proxy_info -timeleft`;
 die "grid-proxy-info failed, stopped"
     if (!defined($timeleft) || $timeleft eq "");
 die "proxy expired, stopped" if ($timeleft < 60);
+$cert_subject = `$grid_proxy_info -subject`;
+die "grid-proxy-info -subject failed, stopped"
+    if (!defined($cert_subject) || $cert_subject eq "");
+$cert_subject = (split(/\/CN=proxy|\/CN=limited proxy/, $cert_subject))[0];
+print STDERR $cert_subject, "\n";
 
 #
 # check for the commands I want to run
@@ -115,7 +120,16 @@ if ($exitstatus == 0 && $output =~ /A proxy has been received/) {
     print "FAILED\n"; $FAILURES++; print STDERR $output;
 }
 
-print "MyProxy Test 7 (verify old passphrase fails): ";
+print "MyProxy Test 7 (verify default renewal policy): ";
+($exitstatus, $output) =
+    &runtest("myproxy-get-delegation -a \$X509_USER_PROXY -t 1 -o /tmp/myproxy-test.$$ -v", undef);
+if ($exitstatus != 0 && $output =~ /not authorized/) {
+    print "SUCCEDED\n"; $SUCCESSES++;
+} else {
+    print "FAILED\n"; $FAILURES++; print STDERR $output;
+}
+
+print "MyProxy Test 8 (verify old passphrase fails): ";
 ($exitstatus, $output) =
     &runtest("myproxy-get-delegation -t 1 -o /tmp/myproxy-test.$$ -v",
 	     $old_passphrase . "\n" . $old_passphrase . "\n");
@@ -125,7 +139,7 @@ if ($exitstatus != 0 && $output =~ /invalid pass phrase/) {
     print "FAILED\n"; $FAILURES++; print STDERR $output;
 }
 
-print "MyProxy Test 8 (remove credential from repository): ";
+print "MyProxy Test 9 (remove credential from repository): ";
 ($exitstatus, $output) =
     &runtest("myproxy-destroy -v", undef);
 if ($exitstatus == 0 && $output =~ /was succesfully removed/) {
@@ -134,7 +148,7 @@ if ($exitstatus == 0 && $output =~ /was succesfully removed/) {
     print "FAILED\n"; $FAILURES++; print STDERR $output;
 }
 
-print "MyProxy Test 9 (verify credentials are removed): ";
+print "MyProxy Test 10 (verify credentials are removed): ";
 ($exitstatus, $output) =
     &runtest("myproxy-info -v", undef);
 if (!($output =~ /default credential/)) {
@@ -143,6 +157,35 @@ if (!($output =~ /default credential/)) {
     print "FAILED\n"; $FAILURES++; print STDERR $output;
 }
 
+print "MyProxy Test 11 (store credentials with retrieval policies): ";
+($exitstatus, $output) =
+    &runtest("myproxy-init -v -r 'nobody' -k 'nobody' -c 1 -t 1",
+	     $passphrase . "\n" . $passphrase . "\n");
+if ($exitstatus == 0) {
+    ($exitstatus, $output) =
+	&runtest("myproxy-init -v -r $cert_subject -k 'mine' -c 1 -t 1",
+		 $passphrase . "\n" . $passphrase . "\n");
+}
+if ($exitstatus == 0) {
+    print "SUCCEDED\n"; $SUCCESSES++;
+} else {
+    print "FAILED\n"; $FAILURES++; print STDERR $output;
+}
+
+print "MyProxy Test 12 (verify retrieval policies): ";
+($exitstatus, $output) =
+    &runtest("myproxy-get-delegation -k 'mine' -t 1 -o /tmp/myproxy-test.$$ -v",
+	     $passphrase . "\n" . $passphrase . "\n");
+if ($exitstatus == 0 && $output =~ /A proxy has been received/) {
+    ($exitstatus, $output) =
+	&runtest("myproxy-get-delegation -k 'nobody' -t 1 -o /tmp/myproxy-test.$$ -v",
+		 $passphrase . "\n" . $passphrase . "\n");
+}
+if ($exitstatus != 0 && $output =~ /A proxy has been received/) {
+    print "SUCCEDED\n"; $SUCCESSES++;
+} else {
+    print "FAILED\n"; $FAILURES++; print STDERR $output;
+}
 
 #
 # END TESTS
