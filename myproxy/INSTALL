@@ -1,0 +1,224 @@
+=======
+INSTALL		myproxy installation directions
+=======
+
+ 1. Prerequisits for building
+ 2. Building the software
+ 3. Installing the client (user) software
+ 4. Installing the myproxy-server
+ 5. The myproxy-server.config file
+ 6. Installing the portal software
+
+
+1. Prerequisits for building
+-----------------------------
+
+In order to build the myproxy software you will need a special
+version of the Grid Security Infrastructure (GSI) that has been
+modified to support encrypted user sessions. This GSI package
+is possibly restricted under US export control law and hence
+not publically available. Please contact the myproxy authors
+if you want access to the GSI package.
+
+You can build the encryption-enabled GSI package using the
+directions for building standard GSI package:
+
+http://www.globus.org/security/v1.1/
+
+2. Building the myproxy software
+--------------------------------
+
+The myproxy software is built using the standard configure/make
+paradigm:
+
+Step 1: Run './configure'
+   You will need to provide the following argument(s):
+
+	--with-gsi=<path to gsi installation>
+
+   You may also want to provide one or more of the following
+   arguments:
+	
+	--with-myproxy-server-path=<PATH>
+		Specify myproxy-server install prefix. This is the
+		prefix under which the server binaries and configuration
+		files will be installed. By default this is
+		/usr/local/myproxy-server
+
+	--with-myproxy-tools-path=<PATH>
+  		Specify myproxy tools install prefix. This is the prefix
+		under which the portal tools binaries will be installed.
+		By default this is /usr/local
+
+	--with-myproxy-client-path=<PATH>
+		Speicify myproxy client intall prefix. This is the prefix
+		under which the client binaries will be installed.
+		By default this is /usr/local
+
+Step 2: Run 'make'
+
+Step 3: After a hopefully successful make you are ready to install. You
+	can do this by running 'make install', or you can install just
+	specific portions with 'make server-install', 'make tools-install'
+	or 'make client-install'. You probably will need root access.
+
+3. Installing the client (user) software
+----------------------------------------
+
+There really is not any thing to do after installing the client
+software to use it. The client programs are myproxy-init and
+myproxy-destroy. See the README file for more information on
+using the clients.
+
+It is worth noting that the environment variable MYPROXY_SERVER
+can be set to tell these programs the hostname where the
+myproxy-server is running.
+
+4. Installing the myproxy-server
+--------------------------------
+
+You should choose a well-protected host to run the myproxy-server
+on. Consult with security-aware personel at your site. You want
+a host that is secured to the level of a kerberos KDC, that is
+limited user access, limited services, well monitored and
+maintained in terms of security patches.
+
+The host on which the myproxy-server is running will need
+to have /etc/security created and a host certificate installed.
+Directions for doing so can be found at:
+
+http://www.globus.org/security/v1.1/etc_grid_security.html
+
+After installing the server with 'make install' or 'make
+server-install' you should, under the installation
+prefix (/usr/local/myproxy-server by default), find the following
+directories:
+
+sbin	This is where the myproxy-server binary is located.
+
+store	This is where the myproxy server will physically store
+	credentials placed under it's care.
+
+etc	This is were the myproxy-server.config file is located.
+	See the next section for details on this file.
+
+To run the daemon, run the binary '<prefix>/sbin/myproxy-server'.
+The program will start up and background itself. It accepts
+connections on TCP port 7512, forking off a seperate child
+to handle each incoming connection. It logs information via
+the syslog service under the daemon facility.
+
+5. The myproxy-server.config file
+---------------------------------
+
+You should edit the myproxy-server.config file in order to
+restrict the users that are allowed to store credentials
+with the myproxy server and, more importantly, what services
+are allowed to retrieve credentials from myproxy-server.
+There will be an example myproxy-server.config file installed
+for you to start with.
+
+Lines in the configuration file use limited regular expressions
+so that you can match classes of users easy. The limited
+regular expressions support the shell-stype characters '*' and
+'?', where '*' matches any number of characters and '?' matches
+any single character.
+
+The DN limited regexes should be delimited with double quotes(").
+
+The config file currently has the following types of lines:
+
+allowed_clients  <DN regex>
+
+	Each of these lines allows any clients whose DNs match
+	the given limited regex to connect to the myproxy-server
+	and store credentials with it for future retrieval by
+	services. Any number of these lines may appear.
+
+allowed_services <DN regex>
+
+	Each of these lines allows any services whose DNs match
+	the given limited regex to connect to the myproxy-server
+	and retrieve credentials previously stored by a client.
+	In order to retrieve credentials the service also needs
+	to know the name and pass phrase provided by the client
+	when the credentials were stored. Any number of these
+	lines may appear.
+
+Here is an example configuration file. This file allows two classes
+of clients, those with a certificate issued by the Alliance CA
+(DNs that start with "/C=US/O=National Computational Science Alliance/")
+and those with a certificate issued by the Globus CA (DNs that start
+with "/C=US/O=Globus/"). The file allows one class of services,
+that being portal service certificates issued by the Alliance
+CA.
+
+
+
+#
+# Allowed clients
+#
+# Allow any Alliance certificate holder to store credentials with us
+allowed_clients  "/C=US/O=National Computational Science Alliance/CN=*"
+#
+# Allow any Globus certificate holder to store credentials with us
+allowed_clients  "/C=US/O=Globus/*"
+
+#
+# Servers allowed to connect and retrieve certificates. These should
+# be trusted portals or other services.
+#
+# Allow any holder of an Alliance portal certificate to retrieve
+# credentials stored with us.
+allowed_services "/C=US/O=National Computational Science Alliance/CN=portal/*"
+#
+# End example myproxy-server.config file
+
+
+6. Installing the portal software
+---------------------------------
+
+To allow the portal software, currently myproxy-get-delegation,
+to authentication to the myproxy server it will need a service
+certificate. Since this software is unlikely to run as root
+it probably will not have access to any host key that exists on
+the system, so you probably will want to get a different service
+certificate for it.
+
+Although the choice of server name is arbitrary, we recommend
+a standard of using a common name composed of the service name
+"portal" followed by the fully qualified domain name. For example
+on the host "foo.ncsa.uiuc.edu" the common name would look like:
+
+portal/foo.ncsa.uiuc.edu
+
+and the full DN as issued by the Alliance CA would look like:
+	
+/C=US/O=National Computational Science Alliance/CN=portal/foo.ncsa.uiuc.edu
+
+But really it can be anything you want, it just has to be matched
+by any allowed_services regex in the myproxy-server.config file.
+
+To generate this certificate follow these steps. The following
+example assumes you are using the Globus CA, modify as appropraite
+to use another CA.
+
+1) su to the user that will eventually be running the portal
+   code (probably user 'nobody'). e.g.
+	su nobody
+2) Create a directory to hold the certificate and key e.g.:
+	mkdir /usr/portal/cert/
+3) Run grid-cert-request with the following arguments. Replace
+   <fqdn> with the fully qualified domain name of your host:
+	grid-cert-request -dir /usr/portal/cert -nopw -cn portal/<fqdn>
+4) Get the certificate back from the CA and install as usual.
+5) Before running myproxy-get-delegate you will need to set the
+   X509_USER_CERT and X509_USER_KEY variables to point at
+   the service certificate and key. e.g.
+	setenv X509_USER_CERT /usr/portal/cert/usercert.pem
+	setenv X509_USER_KEY /usr/portal/cert/userkey.pem
+
+----
+End of Installation Directions
+----
+
