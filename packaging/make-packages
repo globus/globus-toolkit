@@ -10,7 +10,7 @@
 version="0.3"
 
 usage () {
-	echo $0: Usage:  $0 [-p package] [-t tag] [-i dir [-r]] [-n] [-h] [-c]
+	echo $0: Usage:  $0 [-p package] [-t tag] [-i dir [-r]] [-n] [-h] [-c] [-a]
 	echo
 	echo "With no arguments, checkout and build all of GT3."
 	echo "		$0 -p grim		Build package-list/grim"
@@ -18,6 +18,7 @@ usage () {
 	echo "		$0 -i dir	Install into dir"
 	echo "		$0 -r		Make a release candidate.  Requires -i"
 	echo "		$0 -n 		Don't update the CVS checkout"
+	echo "		$0 -a		Use anonymous CVS checkouts"
 	echo "		$0 -h		Print this help message"
 	echo "		$0 -c		Just build C bindings"
 	echo
@@ -56,7 +57,10 @@ checkout_cvs() {
 		echo "Using tag $tag"
 	fi
 
-	if [ -d /home/globdev/CVS/gridservices ]; then
+	if [ $anonymous = 1 ]; then
+		echo Using anonymous CVS ...
+		export CVSROOT=:pserver:anonymous@cvs.globus.org:/home/globdev/CVS/gridservices
+	elif [ -d /home/globdev/CVS/gridservices ]; then
 		export CVSROOT=/home/globdev/CVS/gridservices
 	else
 		export CVSROOT=cvs.globus.org:/home/globdev/CVS/gridservices
@@ -110,29 +114,75 @@ install_gt2() {
 	echo
 }
 
-install_cdeps() {
-	if [ -d /home/globdev/CVS/globus-packages ]; then
-		export CVSROOT=/home/globdev/CVS/globus-packages
+install_gt2_source() {
+        flavor="gcc32dbg"
+	export GLOBUS_LOCATION=$1
+
+        if [ $anonymous = 1 ]; then
+                echo Using anonymous cvs ...
+                export CVSROOT=:pserver:anonymous@cvs.globus.org:/home/globdev/CVS/globus-packages
+        elif [ -d /home/globdev/CVS/globus-packages ]; then
+                export CVSROOT=/home/globdev/CVS/globus-packages
+        else
+                export CVSROOT=cvs.globus.org:/home/globdev/CVS/globus-packages
+                export CVS_RSH=ssh
+        fi
+
+	if [ ! -d gt2-cvs ]; then
+		echo Making fresh GT2 CVS checkout
+		mkdir gt2-cvs
+		cd gt2-cvs
+                cvs -d$CVSROOT co -r $gt2_branch all
 	else
-		export CVSROOT=cvs.globus.org:/home/globdev/CVS/globus-packages
-		export CVS_RSH=ssh
+		echo "Updating GT2 CVS checkout."
+		# FIND GT2 EQUIV. cvs stat ogsa-cvs/ogsa/impl/java/build.xml | grep Tag
+		cd gt2-cvs
+		for f in *; do
+			cd $f
+			cvs -z3 -qq up 
+			cd ..
+		done
 	fi
-		
-	pushd ogsa-cvs/ogsa-c/build_tools
-	cvs -d$CVSROOT co side_tools/build-autotools
+	# You are now still in gt2-cvs
+
+	# Always build autotools, since cbindings needs it also.
 	./side_tools/build-autotools
 	export PATH=$PWD/autotools/bin:$PATH
-	./cvs-build-ogsa -force gcc32dbg
+
+	if [ -d ../gt2-installation ]; then
+		echo There is an existing gt2-installation, skipping rebuild.
+		echo Delete gt2-installation to force a rebuild.
+	else
+		cd side_tools
+        	./cvs-build -noupdates -builddir=.. -installdir=$GLOBUS_LOCATION -everything $flavor
+	fi
+
+	cd .. 
+}
+
+# Our GLOBUS_LOCATION was set when we installed GT2
+# and we built autotools and put it on our path already.
+# (May need to change this if I add a "from-binary/from-source" switch for the gt2 install)
+# Need to unset gpt location - it's 2.x version, and there's a 1.x version in
+# $GLOBUS_LOCATION.  This freaks cvs-build-ogsa out.
+
+install_cdeps() {
+		
+	pushd ogsa-cvs/ogsa-c/build_tools
+
+	OGPT=$GPT_LOCATION
+	unset GPT_LOCATION
+
+	./cvs-build-ogsa --force gcc32dbg
 	cd binary_packages
 	$GPT_LOCATION/sbin/gpt-bundle -bindir=. -output=ogsa_cbindings_bin_bundle.tar.gz `cat packaging_list | xargs`
 	cd ../source_packages
 	$GPT_LOCATION/sbin/gpt-bundle -srdir=. -output=ogsa_cbindings_src_bundle.tar.gz `cat packaging_list | xargs`
-
+	export GPT_LOCATION=$OGPT
 	popd
 
 	mkdir -p package-output
 	cp ogsa-cvs/ogsa-c/ogsa_cbindings_*_bundle.tar.gz package-output
-
 }
 
 # Go to subdir, run the build script.
@@ -326,7 +376,9 @@ read_args() {
 	package=""
 	release=-1
 	tag=""
+	gt2_branch="HEAD"
 	update=1
+	anonymous=0
 
 	while [ x$1 != "x" ]; do
 		if [ $1 = "-t" ]; then
@@ -350,6 +402,9 @@ read_args() {
 			exit
 		elif [ $1 = "-c" ]; then
 			onlyc=1;
+			shift;
+		elif [ $1 = "-a" ]; then
+			anonymous=1;
 			shift;
 		else
 			echo "Unrecognized option $1"
@@ -398,10 +453,11 @@ if [ $onlyc != 1 ]; then
 	echo
 fi
 
+echo Building GT2 from CVS ...
+install_gt2_source `pwd`/gt2-installation
 
-# echo Building C-dependent packages
-# install_gt2
-# install_cdeps
+echo Building C-dependent packages
+install_cdeps
 # dir_iter package-list-cdeps
 
 collate_packages
