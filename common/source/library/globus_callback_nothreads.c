@@ -603,8 +603,6 @@ globus_callback_unregister(
                 &globus_i_reltime_zero,
                 globus_l_callback_cancel_kickout_cb,
                 callback_info,
-                GLOBUS_NULL,
-                GLOBUS_NULL,
                 callback_info->my_space->handle);
         }
         else
@@ -1077,8 +1075,6 @@ globus_callback_space_poll(
                         &globus_i_reltime_zero,
                         globus_l_callback_cancel_kickout_cb,
                         callback_info,
-                        GLOBUS_NULL,
-                        GLOBUS_NULL,
                         callback_info->my_space->handle);
                 }
                 else
