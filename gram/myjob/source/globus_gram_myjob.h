@@ -59,14 +59,6 @@ Parameters:	argc
 		argv
 			pointer to array of command line arguments
 
-		size
-			pointer to storage; will be set to the number of
-			processes participating in the job; pointer may be NULL
-
-		rank
-			pointer to storage; will be set to the rank of the
-			current process; pointer may be NULL
-
 Returns:	TODO: define all possible values
 
 		GRAM_MYJOB_SUCCESS
