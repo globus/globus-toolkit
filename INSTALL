@@ -97,6 +97,17 @@ It is worth noting that the environment variable MYPROXY_SERVER
 can be set to tell these programs the hostname where the
 myproxy-server is running.
 
+By default, the clients will bind their sockets to a random available
+port.  To restrict the clients to a port range, set the
+MYPROXY_TCP_PORT_RANGE environment variable.  For example,
+
+  export MYPROXY_TCP_PORT_RANGE=64000,64100
+
+restricts the myproxy clients to bind to ports in the range
+64000-64100.  If MYPROXY_TCP_PORT_RANGE is undefined, the myproxy
+clients will also check for the GLOBUS_TCP_PORT_RANGE environment
+variable.
+
 4. Installing the myproxy-server
 --------------------------------
 
