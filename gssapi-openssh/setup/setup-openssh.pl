@@ -53,7 +53,7 @@ $xauth_path = "/usr/bin/X11/xauth";
 
 sub action
 {
-    my $command = @_;
+    my ($command) = @_;
 
     printf "$command\n";
 
@@ -91,7 +91,8 @@ sub runkeygen
     if ( ! -d "${sysconfdir}" )
     {
         print "Could not find ${sysconfdir} directory... creating\n";
-        mkdir($sysconfdir, mode);
+        mkdir($sysconfdir, 16877);
+        # 16877 should be 755, or drwxr-xr-x
     }
 
     print "Generating ssh keys (if necessary)...\n";
