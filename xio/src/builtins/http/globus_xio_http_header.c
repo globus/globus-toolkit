@@ -232,6 +232,29 @@ globus_i_xio_http_header_parse(
                 + http_handle->read_buffer_offset);
         http_handle->read_buffer_valid -= parsed;
         http_handle->read_buffer_offset += parsed;
+
+        /* Decide how we will handle the next data coming on the stream.
+         *
+         * If we are chunked, a client of an HTTP/1.0 server, or have a content
+         * length header, then we should expect an entity body. Otherwise,
+         * the headers are the end of the message.
+         */
+        if (headers->transfer_encoding
+                == GLOBUS_XIO_HTTP_TRANSFER_ENCODING_CHUNKED)
+        {
+            http_handle->parse_state = GLOBUS_XIO_HTTP_CHUNK_LINE;
+        }
+        else if ((http_handle->target_info.is_client && 
+                http_handle->response_info.http_version
+                    == GLOBUS_XIO_HTTP_VERSION_1_0) ||
+                headers->content_length_set)
+        {
+            http_handle->parse_state = GLOBUS_XIO_HTTP_IDENTITY_BODY;
+        }
+        else
+        {
+            http_handle->parse_state = GLOBUS_XIO_HTTP_EOF;
+        }
     }
     else
     {

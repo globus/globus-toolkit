@@ -19,11 +19,18 @@ globus_i_xio_http_transfer_encoding_t;
 
 typedef enum
 {
+    GLOBUS_XIO_HTTP_REQUEST_LINE,
+    GLOBUS_XIO_HTTP_STATUS_LINE,
+    GLOBUS_XIO_HTTP_HEADERS,
     GLOBUS_XIO_HTTP_CHUNK_CRLF,
     GLOBUS_XIO_HTTP_CHUNK_LINE,
-    GLOBUS_XIO_HTTP_CHUNK_FOOTERS
+    GLOBUS_XIO_HTTP_CHUNK_FOOTERS,
+    GLOBUS_XIO_HTTP_CHUNK_BODY,
+    GLOBUS_XIO_HTTP_IDENTITY_BODY,
+    GLOBUS_XIO_HTTP_EOF,
+    GLOBUS_XIO_HTTP_CLOSE
 }
-globus_i_xio_http_chunk_t;
+globus_i_xio_http_parse_state_t;
 
 #define GLOBUS_XIO_HTTP_COPY_BLOB(fifo, blob, len, label) \
     do { \
@@ -249,11 +256,6 @@ typedef struct
      * Information about headers associated with this request
      */
     globus_i_xio_http_header_info_t     headers;
-
-    /**
-     * Flag indicating whether headers have been sent yet (used on server side).
-     */
-    globus_bool_t                       headers_sent;
 }
 globus_i_xio_http_response_t;
 
@@ -323,13 +325,21 @@ typedef struct
      */
     globus_size_t                       read_chunk_left;
     /**
-     * Flag indicating which special cases of the chunk parser will
-     * used.
+     * Current state of the HTTP parser for reading data.
      */
-    globus_i_xio_http_chunk_t           chunk;
+    globus_i_xio_http_parse_state_t     parse_state;
+    /**
+     * Current state of the HTTP parser for writing data.
+     */
+    globus_i_xio_http_parse_state_t     send_state;
     
     globus_i_xio_http_operation_info_t  read_operation;
     globus_i_xio_http_operation_info_t  write_operation;
+
+    /**
+     * Flag indicating whether close was called on this handle.
+     */
+    globus_bool_t                       user_close;
 }
 globus_i_xio_http_handle_t;
 
@@ -584,7 +594,7 @@ globus_i_xio_http_write(
 
 extern
 void
-globus_i_xio_http_copy_residue(
+globus_i_xio_http_parse_residue(
     globus_i_xio_http_handle_t *        handle);
 
 extern

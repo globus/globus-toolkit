@@ -67,13 +67,12 @@ globus_i_xio_http_client_open_callback(
 {
     globus_i_xio_http_handle_t *        http_handle = user_arg;
     globus_xio_driver_handle_t          handle;
-    globus_bool_t                       pass_close_on_error = GLOBUS_TRUE;
     globus_result_t                     result2;
 
     handle = http_handle->handle;
     if (result != GLOBUS_SUCCESS)
     {
-        pass_close_on_error = GLOBUS_FALSE;
+        http_handle->send_state = GLOBUS_XIO_HTTP_CLOSE;
 
         goto error_exit;
     }
@@ -82,13 +81,14 @@ globus_i_xio_http_client_open_callback(
 
     if (result != GLOBUS_SUCCESS)
     {
+        http_handle->send_state = GLOBUS_XIO_HTTP_EOF;
         goto error_exit;
     }
 
     return;
 
 error_exit:
-    if (pass_close_on_error)
+    if (http_handle->send_state == GLOBUS_XIO_HTTP_EOF)
     {
         result2 = globus_xio_driver_operation_create(
                 &http_handle->close_operation,
@@ -101,22 +101,25 @@ error_exit:
              * situation. Resetting this flag makes the lower code destroy
              * the handle.
              */
-            pass_close_on_error = GLOBUS_FALSE;
+            http_handle->send_state = GLOBUS_XIO_HTTP_CLOSE;
 
             goto destroy_handle_exit;
         }
-
         result2 = globus_xio_driver_pass_close(
                 http_handle->close_operation,
                 globus_i_xio_http_close_callback,
                 http_handle);
-        if (result2 != GLOBUS_SUCCESS)
+        if (result2 == GLOBUS_SUCCESS)
         {
-            pass_close_on_error = GLOBUS_FALSE;
+            http_handle->user_close = GLOBUS_FALSE;
+        }
+        else
+        {
+            http_handle->send_state = GLOBUS_XIO_HTTP_CLOSE;
         }
     }
 destroy_handle_exit:
-    if (! pass_close_on_error)
+    if (http_handle->send_state == GLOBUS_XIO_HTTP_CLOSE)
     {
         globus_i_xio_http_handle_destroy(http_handle);
         globus_libc_free(http_handle);
@@ -168,6 +171,8 @@ globus_l_xio_http_client_write_request(
     int                                 i;
     char                                size_buffer[sizeof(globus_size_t)+3];
     GlobusXIOName(globus_i_xio_http_client_write_request);
+
+    globus_assert(http_handle->send_state == GLOBUS_XIO_HTTP_REQUEST_LINE);
 
     /*
      * Compose HTTP request:
@@ -302,6 +307,8 @@ globus_l_xio_http_client_write_request(
                     size_buffer,
                     rc,
                     free_iovecs_exit);
+            http_handle->request_info.headers.transfer_encoding =
+                    GLOBUS_XIO_HTTP_TRANSFER_ENCODING_IDENTITY;
         }
         else
         {
@@ -450,6 +457,22 @@ globus_l_xio_http_client_write_request_callback(
         goto destroy_op_exit;
     }
 
+    http_handle->parse_state = GLOBUS_XIO_HTTP_STATUS_LINE;
+
+    if (!http_handle->request_info.headers.entity_needed)
+    {
+        http_handle->send_state = GLOBUS_XIO_HTTP_EOF;
+    }
+    else if (http_handle->request_info.headers.transfer_encoding ==
+            GLOBUS_XIO_HTTP_TRANSFER_ENCODING_IDENTITY)
+    {
+        http_handle->send_state = GLOBUS_XIO_HTTP_IDENTITY_BODY;
+    }
+    else
+    {
+        http_handle->send_state = GLOBUS_XIO_HTTP_CHUNK_BODY;
+    }
+
     result = globus_xio_driver_pass_read(
             http_handle->response_info.read_operation,
             &http_handle->read_buffer,
@@ -539,9 +562,9 @@ globus_l_xio_http_client_read_response_callback(
 
     globus_assert(!http_handle->parsed_headers);
 
-    /* Haven't parsed response line yet */
     http_handle->read_buffer_valid += nbytes;
 
+    /* Parsed response line and headers. */
     result = globus_l_xio_http_client_parse_response(http_handle, &done);
 
     if (result == GLOBUS_SUCCESS && !done)
@@ -552,24 +575,9 @@ globus_l_xio_http_client_read_response_callback(
     /* Parsed all header information */
     http_handle->parsed_headers = GLOBUS_TRUE;
 
-    /* Decide whether we think reads should be done on this response */
-
-    if (http_handle->request_info.http_version == GLOBUS_XIO_HTTP_VERSION_1_0 ||
-        http_handle->response_info.http_version == GLOBUS_XIO_HTTP_VERSION_1_0)
-    {
-        /* Don't know, don't care, will read until EOF */
-        http_handle->response_info.headers.entity_needed = GLOBUS_TRUE;
-    }
-    else if (http_handle->response_info.headers.transfer_encoding
-            == GLOBUS_XIO_HTTP_TRANSFER_ENCODING_CHUNKED)
-    {
-        http_handle->response_info.headers.entity_needed = GLOBUS_TRUE;
-    }
-    else if (http_handle->response_info.headers.content_length_set)
-    {
-        http_handle->response_info.headers.entity_needed = GLOBUS_TRUE;
-    }
-
+    /* If user registered a read before we finished parsing, we'll
+     * have to handle it after we call the ready callback
+     */
     if (http_handle->read_operation.operation != NULL)
     {
         copy_residue = GLOBUS_TRUE;
@@ -579,10 +587,7 @@ globus_l_xio_http_client_read_response_callback(
 
     if (copy_residue)
     {
-        /* User registered a read before we parsed everything, handle
-         * residue.
-         */
-        globus_i_xio_http_copy_residue(http_handle);
+        globus_i_xio_http_parse_residue(http_handle);
     }
 
     return;
@@ -628,7 +633,7 @@ error_exit:
         /* User registered a read before we parsed everything, handle
          * residue.
          */
-        globus_i_xio_http_copy_residue(http_handle);
+        globus_i_xio_http_parse_residue(http_handle);
     }
 }
 /* globus_l_xio_http_client_read_response_callback() */
@@ -672,8 +677,7 @@ globus_l_xio_http_client_parse_response(
     int                                 rc;
     GlobusXIOName(globus_l_xio_http_client_parse_response);
 
-    if (http_handle->response_info.http_version
-            == GLOBUS_XIO_HTTP_VERSION_UNSET)
+    if (http_handle->parse_state == GLOBUS_XIO_HTTP_STATUS_LINE)
     {
         /* Parse the status line:
          *
@@ -745,6 +749,8 @@ globus_l_xio_http_client_parse_response(
                 + http_handle->read_buffer_offset);
         http_handle->read_buffer_valid -= parsed;
         http_handle->read_buffer_offset += parsed;
+
+        http_handle->parse_state = GLOBUS_XIO_HTTP_HEADERS;
     }
 
     return globus_i_xio_http_header_parse(http_handle, done);

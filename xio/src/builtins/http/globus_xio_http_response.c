@@ -35,7 +35,6 @@ globus_i_xio_http_response_init(
     res = globus_i_xio_http_header_info_init(&response->headers);
 
     response->status_code = 200;
-    response->headers_sent = GLOBUS_FALSE;
 
     return res;
 }
@@ -97,7 +96,6 @@ globus_i_xio_http_response_copy(
     GlobusXIOName(globus_i_xio_http_response_copy);
 
     dest->status_code = src->status_code;
-    dest->headers_sent = src->headers_sent;
 
     if (src->reason_phrase == NULL)
     {

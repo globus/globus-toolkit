@@ -286,7 +286,8 @@ globus_i_xio_http_find_eol(
     char *                              result;
     globus_size_t                       skip = 0;
 
-    while ((result = memchr(blob + skip, '\r', blob_length-skip)) != NULL)
+    while (((skip + 1) < blob_length) && 
+        (result = memchr(blob + skip, '\r', blob_length-skip)) != NULL)
     {
         if (result == (blob + skip + blob_length))
         {

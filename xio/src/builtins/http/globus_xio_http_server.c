@@ -213,7 +213,11 @@ error_exit:
                 globus_i_xio_http_close_callback,
                 http_handle);
 
-        if (result2 != GLOBUS_SUCCESS)
+        if (result2 == GLOBUS_SUCCESS)
+        {
+            http_handle->user_close = GLOBUS_FALSE;
+        }
+        else
         {
             pass_close_on_error = GLOBUS_FALSE;
         }
@@ -290,6 +294,7 @@ globus_i_xio_http_server_write_response(
     globus_xio_http_header_t *          current_header;
     GlobusXIOName(globus_i_xio_server_write_response);
 
+    globus_assert(http_handle->send_state == GLOBUS_XIO_HTTP_STATUS_LINE);
     rc = globus_fifo_init(&iovecs);
 
     if (rc != GLOBUS_SUCCESS)
@@ -489,7 +494,19 @@ globus_i_xio_http_server_write_response(
     }
     globus_fifo_destroy(&iovecs);
 
-    http_handle->response_info.headers_sent = GLOBUS_TRUE;
+    if (iovec_count == 0)
+    {
+        http_handle->send_state = GLOBUS_XIO_HTTP_EOF;
+    }
+    else if (http_handle->response_info.headers.transfer_encoding ==
+            GLOBUS_XIO_HTTP_TRANSFER_ENCODING_CHUNKED)
+    {
+        http_handle->send_state = GLOBUS_XIO_HTTP_CHUNK_BODY;
+    }
+    else
+    {
+        http_handle->send_state = GLOBUS_XIO_HTTP_IDENTITY_BODY;
+    }
 
     return GLOBUS_SUCCESS;
 
@@ -598,8 +615,24 @@ globus_l_xio_http_server_write_response_callback(
                 http_handle->write_operation.operation);
         http_handle->write_operation.operation = NULL;
     }
+
+    if (http_handle->close_operation != NULL)
+    {
+        result = globus_xio_driver_pass_close(
+                http_handle->close_operation,
+                globus_i_xio_http_close_callback,
+                http_handle);
+
+        if (result != GLOBUS_SUCCESS)
+        {
+            globus_i_xio_http_close_callback(
+                http_handle->close_operation,
+                result,
+                http_handle);
+        }
+    }
 }
-/* globus_i_xio_http_server_write_response_callback() */
+/* globus_l_xio_http_server_write_response_callback() */
 
 
 /**
@@ -673,11 +706,11 @@ globus_l_xio_http_server_read_request_callback(
             && (http_handle->request_info.headers.transfer_encoding
             == GLOBUS_XIO_HTTP_TRANSFER_ENCODING_CHUNKED))
     {
-        http_handle->request_info.headers.entity_needed = GLOBUS_TRUE;
+        http_handle->parse_state = GLOBUS_XIO_HTTP_CHUNK_LINE;
     }
     else if (http_handle->request_info.headers.content_length_set)
     {
-        http_handle->request_info.headers.entity_needed = GLOBUS_TRUE;
+        http_handle->parse_state = GLOBUS_XIO_HTTP_IDENTITY_BODY;
     }
 
     if (http_handle->request_info.headers.connection_close)
@@ -704,7 +737,7 @@ globus_l_xio_http_server_read_request_callback(
         /* User registered a read before we parsed everything, handle
          * residue.
          */
-        globus_i_xio_http_copy_residue(http_handle);
+        globus_i_xio_http_parse_residue(http_handle);
     }
 
     return;
@@ -754,7 +787,7 @@ error_exit:
         /* User registered a read before we parsed everything, handle
          * residue.
          */
-        globus_i_xio_http_copy_residue(http_handle);
+        globus_i_xio_http_parse_residue(http_handle);
     }
 }
 /* globus_l_xio_http_server_read_request_callback() */
