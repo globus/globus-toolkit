@@ -29,7 +29,7 @@ globus_i_gfs_log_message(
     
     va_start(ap, format);
     
-    if(!globus_i_gfs_config_bool("inetd") && !globus_i_gfs_config_bool("fork"))
+    if(!globus_i_gfs_config_bool("inetd") && !globus_i_gfs_config_bool("detach"))
     {
         globus_libc_vfprintf(stderr, format, ap);
     }

@@ -1,7 +1,6 @@
 
 #include "globus_i_gridftp_server.h"
 
-/* value verification? */
 typedef enum
 {
     GLOBUS_L_GFS_CONFIG_BOOL,

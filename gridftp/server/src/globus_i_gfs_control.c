@@ -505,7 +505,7 @@ globus_l_gfs_recv_request(
 {
     globus_result_t                     result;
     globus_i_gfs_server_instance_t *    instance;
-    globus_i_gfs_op_attr_t *    op_attr;            
+    globus_i_gfs_op_attr_t *            op_attr;            
     globus_i_gfs_ipc_data_handle_t *    data;
     int                                 args;
     GlobusGFSName(globus_l_gfs_recv_request);
@@ -791,7 +791,7 @@ globus_l_gfs_add_commands(
         GLOBUS_GSC_COMMAND_POST_AUTH,
         2,
         2,
-        "214 Syntax: MKD <sp> pathname\r\n",
+        "MKD <sp> pathname",
         GLOBUS_NULL);    
     if(result != GLOBUS_SUCCESS)
     {
@@ -804,7 +804,7 @@ globus_l_gfs_add_commands(
         GLOBUS_GSC_COMMAND_POST_AUTH,
         2,
         2,
-        "214 Syntax: RMD <sp> pathname\r\n",
+        "RMD <sp> pathname",
         GLOBUS_NULL);    
     if(result != GLOBUS_SUCCESS)
     {
@@ -817,7 +817,7 @@ globus_l_gfs_add_commands(
         GLOBUS_GSC_COMMAND_POST_AUTH,
         2,
         2,
-        "214 Syntax: DELE <sp> pathname\r\n",
+        "DELE <sp> pathname",
         GLOBUS_NULL);    
     if(result != GLOBUS_SUCCESS)
     {
@@ -825,12 +825,12 @@ globus_l_gfs_add_commands(
     }
     result = globus_gsc_959_command_add(
         control_handle,
-        "SITE",
+        "SITE CHMOD",
         globus_l_gfs_command_request,
         GLOBUS_GSC_COMMAND_POST_AUTH,
         4,
         4,
-        "214 Syntax: SITE <sp> CHMOD <sp> mode <sp> pathname\r\n",
+        "SITE CHMOD <sp> mode <sp> pathname",
         GLOBUS_NULL);    
     if(result != GLOBUS_SUCCESS)
     {
@@ -843,7 +843,7 @@ globus_l_gfs_add_commands(
         GLOBUS_GSC_COMMAND_POST_AUTH,
         5,
         5,
-        "214 Syntax: CKSM <sp> algorithm <sp> offset <sp> length <sp> pathname\r\n",
+        "CKSM <sp> algorithm <sp> offset <sp> length <sp> pathname",
         GLOBUS_NULL);    
     if(result != GLOBUS_SUCCESS)
     {
@@ -856,7 +856,7 @@ globus_l_gfs_add_commands(
         GLOBUS_GSC_COMMAND_POST_AUTH,
         2,
         2,
-        "214 Syntax: RNFR <sp> pathname\r\n",
+        "RNFR <sp> pathname",
         instance);    
     if(result != GLOBUS_SUCCESS)
     {
@@ -869,7 +869,7 @@ globus_l_gfs_add_commands(
         GLOBUS_GSC_COMMAND_POST_AUTH,
         2,
         2,
-        "214 Syntax: RNTO <sp> pathname\r\n",
+        "RNTO <sp> pathname",
         instance);    
     if(result != GLOBUS_SUCCESS)
     {
@@ -1031,5 +1031,3 @@ error_strdup:
 error_malloc:
     return result;
 }
-
-
