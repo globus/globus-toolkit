@@ -8,6 +8,7 @@ my $opt_debug_pgms = 0;
 
 my @packages;
 my %pgm_flavors;
+my %pgm_static_flavors;
 
 my $package;
 
@@ -82,17 +83,22 @@ while (<QUERY>)
         $flavor = $2;
         $type   = $3;
 
+        # pgms are the only ones which can conflict
+        # store the best flavor choice in the pgm flavor list
+        # the idea is to keep only the best flavor of each package
         if ($name eq "globus_core")
         {
             # should we always skip these packages?
         }
         elsif ($type eq "pgm")
         {
-            # pgms are the only ones which can conflict
-            # store the best flavor choice in the pgm flavor list
-            # the idea is to keep only the best flavor of each package
             $pgm_flavors{$name} = pick_best_flavor($flavor, 
                                                    $pgm_flavors{$name});
+        }
+        elsif ($type eq "pgm_static")
+        {
+            $pgm_static_flavors{$name} = pick_best_flavor($flavor, 
+                                             $pgm_static_flavors{$name});
         }
         else
         {
@@ -105,6 +111,11 @@ close(QUERY);
 foreach $name (sort keys %pgm_flavors)
 {
      add_package($name, $pgm_flavors{$name}, "pgm");
+}
+
+foreach $name (sort keys %pgm_static_flavors)
+{
+     add_package($name, $pgm_static_flavors{$name}, "pgm_static");
 }
 
 print <<EOT
