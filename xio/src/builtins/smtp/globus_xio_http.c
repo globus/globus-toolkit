@@ -5,7 +5,7 @@
 #include "globus_error_string.h"
 #include "globus_xio_http.h"
 #include "version.h"
-
+ 
 typedef enum
 {
     HTTP_S_HEADER,
