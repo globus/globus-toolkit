@@ -165,7 +165,6 @@ main(
     globus_grim_config_t                    config;
     char **                                 tmp_env;
 
-
     tmp_env = environ;
     while(*tmp_env)
     {
@@ -882,21 +881,18 @@ grim_write_proxy(
         return 1;
     }
 
+    globus_grim_devel_get_NID(&grim_NID);
 
-    /*
-     *  set the policy in the cert
-     */
-    pci = PROXYCERTINFO_new();
-    res = globus_gsi_proxy_handle_set_proxy_cert_info(
-              proxy_handle,
-              pci);
+
+    res = globus_gsi_proxy_handle_set_type(
+                proxy_handle, 
+                GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_RESTRICTED_PROXY);
     if(res != GLOBUS_SUCCESS)
     {
-        grim_write_log("ERROR: could not set cert info.\n");
+        grim_write_log("ERROR could not set the proxy type.\n");
         free(assertion_string);
         return 1;
     }
-    globus_grim_devel_get_NID(&grim_NID);
     res = globus_gsi_proxy_handle_set_policy(
               proxy_handle,
               assertion_string,
@@ -908,7 +904,7 @@ grim_write_proxy(
         free(assertion_string);
         return 1;
     }
- 
+
     /*
      *  create signed proxy
      */
@@ -933,8 +929,9 @@ grim_write_proxy(
         return 1;
     }
 
+/*
     free(assertion_string);
-
+*/
     res = globus_gsi_cred_get_lifetime(cred_handle, &lifetime);
     if(res != GLOBUS_SUCCESS)
     {
