@@ -249,6 +249,7 @@ globus_gram_job_manager_staging_write_state(
 	fprintf(fp, "%s\n", tmp_str);
 	globus_libc_free(tmp_str);
     }
+    fprintf(fp, "%d\n", globus_list_size(request->stage_out_todo));
     tmp_list = request->stage_out_todo;
     while(!globus_list_empty(tmp_list))
     {
