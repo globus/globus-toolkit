@@ -646,6 +646,18 @@ static int retrieve_attr_values(
    return cnt;
 } /* retrieve_attr_values */
 
+static void set_ld_timeout(LDAP  *ld, int timeout_val, char *env_string)
+{
+
+  if(timeout_val > 0) {
+    ld->ld_timeout=timeout_val;
+    } else { /* check the environment variable */
+      char *tmp=getenv(env_string);
+      int tmp_int=0;
+      if(tmp) tmp_int=atoi(tmp);
+      if(tmp_int>0) ld->ld_timeout=tmp_int;
+  }
+}
 
 static
 int
