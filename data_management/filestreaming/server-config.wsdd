@@ -2,9 +2,8 @@
 <deployment
     name="defaultServerConfig"
     xmlns="http://xml.apache.org/axis/wsdd/"
-    xmlns:java="http://xml.apache.org/axis/wsdd/providers/java"
-    xmlns:fs-types="http://www.globus.org/namespaces/base/filestreaming">
-    <service name="base/streaming/FileStreamingFactoryFactoryService"
+    xmlns:java="http://xml.apache.org/axis/wsdd/providers/java">
+    <service name="base/streaming/FileStreamFactoryFactoryService"
              provider="Handler"
              style="wrapped">
         <!--Factory (FS Factory Factory) Parameters-->
