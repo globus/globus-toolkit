@@ -339,6 +339,12 @@ kexgss_server(Kex *kex)
 						 &ret_flags);
 
 		gss_release_buffer(&min_status,&recv_tok);
+
+#ifdef GSS_C_GLOBUS_LIMITED_PROXY_FLAG
+                if (ret_flags & GSS_C_GLOBUS_LIMITED_PROXY_FLAG) {
+                        fatal("Limited proxy is not allowed.");
+                }
+#endif
 		
 		if (maj_status & GSS_S_CONTINUE_NEEDED) {
 			debug("Sending GSSAPI_CONTINUE");

@@ -23,7 +23,7 @@
  */
 
 #include "includes.h"
-RCSID("$OpenBSD: ssh-rsa.c,v 1.16 2002/02/24 19:14:59 markus Exp $");
+RCSID("$OpenBSD: ssh-rsa.c,v 1.18 2002/04/02 20:11:38 markus Exp $");
 
 #include <openssl/evp.h>
 #include <openssl/err.h>
@@ -35,6 +35,7 @@ RCSID("$OpenBSD: ssh-rsa.c,v 1.16 2002/02/24 19:14:59 markus Exp $");
 #include "key.h"
 #include "ssh-rsa.h"
 #include "compat.h"
+#include "ssh.h"
 
 /* RSASSA-PKCS1-v1_5 (PKCS #1 v2.0 signature) with SHA1 */
 int
@@ -52,10 +53,6 @@ ssh_rsa_sign(
 
 	if (key == NULL || key->type != KEY_RSA || key->rsa == NULL) {
 		error("ssh_rsa_sign: no RSA key");
-		return -1;
-	}
-	if (datafellows & SSH_BUG_SIGBLOB) {
-		error("ssh_rsa_sign: SSH_BUG_SIGBLOB not supported");
 		return -1;
 	}
 	nid = (datafellows & SSH_BUG_RSASIGMD5) ? NID_md5 : NID_sha1;
@@ -125,11 +122,7 @@ ssh_rsa_verify(
 		error("ssh_rsa_verify: no RSA key");
 		return -1;
 	}
-	if (datafellows & SSH_BUG_SIGBLOB) {
-		error("ssh_rsa_verify: SSH_BUG_SIGBLOB not supported");
-		return -1;
-	}
-	if (BN_num_bits(key->rsa->n) < 768) {
+	if (BN_num_bits(key->rsa->n) < SSH_RSA_MINIMUM_MODULUS_SIZE) {
 		error("ssh_rsa_verify: n too small: %d bits",
 		    BN_num_bits(key->rsa->n));
 		return -1;
