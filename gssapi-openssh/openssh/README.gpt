@@ -1,0 +1,14 @@
+README.gpt
+==========
+
+As part of the build process for the GPT package, we have decided to make greater
+use of the "macro" feature of GPT to minimize the number of changes to the
+underlying configure script.  This means that there will be a recommended set of
+configure options on a "per-platform" basis, and that you will specify these on
+the command-line to gpt-build as in:
+
+    $GPT_LOCATION/sbin/gpt-build gsi_openssh-0.5-src.tar.gz gcc32 \
+      GSI_OPENSSH_GPTMACRO="..."
+
+[ Linux ]
+GSI_OPENSSH_GPTMACRO="--disable-suid-ssh --with-md5-passwords"
