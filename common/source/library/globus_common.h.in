@@ -131,7 +131,7 @@ typedef struct globus_barrier_s
 
 #define GLOBUS_NULL	0
 
-#define GLOBUS_FAILURE  1
+#define GLOBUS_FAILURE  -1
 
 #ifndef SWIG
  
