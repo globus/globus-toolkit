@@ -452,7 +452,7 @@ grid_proxy_init(int seconds, const char *proxyfile) {
 
     hours = seconds / SECONDS_PER_HOUR;
     
-    sprintf(command, "grid-proxy-init -valid %d:0 -out %s%s%s", hours,
+    sprintf(command, "grid-proxy-init -verify -valid %d:0 -out %s%s%s", hours,
 	    proxyfile, read_passwd_from_stdin ? " -pwstdin" : "",
 	    verbose ? " -debug" : "");
     rc = system(command);
