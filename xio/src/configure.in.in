@@ -17,7 +17,8 @@ dnl Build hooks for all 'builtin' drivers
 echo -n "Checking for builtin drivers... "
 XIO_BUILTIN_DIRS=
 XIO_BUILTIN_LIBS=
-XIO_BUILTIN_HOOKS=
+XIO_BUILTIN_HOOKS_DEC=
+XIO_BUILTIN_HOOKS_DEF=
 builtins=`ls builtins | grep -v CVS`
 delim=
 if test "X$builtins" != "X" ; then
@@ -27,8 +28,9 @@ if test "X$builtins" != "X" ; then
         
     lib_name="builtins/${builtin}/libglobus_xio_${builtin}_driver_${GLOBUS_FLAVOR_NAME}.la"
     XIO_BUILTIN_LIBS="$XIO_BUILTIN_LIBS $lib_name"
-        
-    XIO_BUILTIN_HOOKS="$XIO_BUILTIN_HOOKS $delim globus_i_xio_${builtin}_hook"
+    
+    XIO_BUILTIN_HOOKS_DEC="$XIO_BUILTIN_HOOKS_DEC $delim globus_i_xio_${builtin}_hook"
+    XIO_BUILTIN_HOOKS_DEF="$XIO_BUILTIN_HOOKS_DEF $delim &globus_i_xio_${builtin}_hook"
     delim=","
     echo "Including driver: $builtin"
   done
@@ -38,7 +40,8 @@ fi
 
 AC_SUBST(XIO_BUILTIN_DIRS)
 AC_SUBST(XIO_BUILTIN_LIBS)
-AC_SUBST(XIO_BUILTIN_HOOKS)
+AC_SUBST(XIO_BUILTIN_HOOKS_DEC)
+AC_SUBST(XIO_BUILTIN_HOOKS_DEF)
 
 LAC_DOXYGEN("../", "*.doc")
 

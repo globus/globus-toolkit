@@ -1,11 +1,11 @@
 #include "globus_xio_load.h"
 
-extern globus_xio_driver_hook_t *       @XIO_BUILTIN_HOOKS@;
+extern globus_xio_driver_hook_t         @XIO_BUILTIN_HOOKS_DEC@;
 
 static globus_xio_driver_hook_t *       builtins[] = 
 {
-    @XIO_BUILTIN_HOOKS@, GLOBUS_NULL;
-}
+    @XIO_BUILTIN_HOOKS_DEF@, GLOBUS_NULL
+};
 
 globus_result_t
 globus_xio_driver_load(
@@ -14,7 +14,7 @@ globus_xio_driver_load(
     ...)
 {
     
-    
+    return GLOBUS_SUCCESS;
 }
 
 globus_result_t
@@ -22,5 +22,5 @@ globus_xio_driver_unload(
     globus_xio_driver_t                 driver)
 {
     
-    
+    return GLOBUS_SUCCESS;
 }

@@ -14,7 +14,8 @@ Sources= \
 	globus_xio_server.c                         \
 	globus_xio_macro_magic.c                    \
 	globus_xio_util.c                           \
-	globus_xio_system_select.c 
+	globus_xio_system_select.c                  \
+	globus_xio_load.c
 
 flavorinclude_HEADERS = \
     globus_xio_types.h                          \
