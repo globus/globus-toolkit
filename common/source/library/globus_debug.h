@@ -12,7 +12,7 @@ void
 globus_debug_init(
     const char *                        env_name,
     const char *                        level_names,
-    int *                               debug_level,
+    unsigned *                          debug_level,
     FILE **                             out_file,
     globus_bool_t *                     using_file,
     globus_bool_t *                     show_tids);
@@ -43,12 +43,12 @@ globus_debug_init(
         }                                                                   \
         va_end(ap);                                                         \
     }                                                                       \
-    int globus_i_##module_name##_debug_level
+    unsigned globus_i_##module_name##_debug_level
 
 /* call this in a header file (if needed externally) */
 #define GlobusDebugDeclare(module_name)                                     \
     extern void globus_i_##module_name##_debug_printf(const char *, ...);   \
-    extern int globus_i_##module_name##_debug_level
+    extern unsigned globus_i_##module_name##_debug_level
 
 /* call this in module activate func
  *
@@ -62,6 +62,9 @@ globus_debug_init(
  *    if a '#' precedes the filename, the file will be overwritten on each run
  *    otherwise, the default is to append to the existing (if one exists)
  * <show tids> is 0 or 1 to show thread ids on all messages.  0 by default
+ * 
+ * Also, user's can use the ALL level in their env setting to turn on 
+ * all levels
  */
 #define GlobusDebugInit(module_name, levels)                                \
     globus_debug_init(                                                      \
