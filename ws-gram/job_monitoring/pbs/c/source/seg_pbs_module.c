@@ -216,7 +216,7 @@ globus_l_pbs_module_activate(void)
     result = globus_common_get_attribute_from_config_file(
             NULL,
             "etc/globus_scheduler_event_generator_pbs.conf",
-            "logdir",
+            "log_path",
             &logfile_state->log_dir);
     if (result != GLOBUS_SUCCESS)
     {
