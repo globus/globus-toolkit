@@ -128,8 +128,8 @@ if test "$gssapi_type" = "globus" ; then
 
 	inc="${GLOBUS_LOCATION}/include"
 	GSSAPI_CFLAGS="-I${inc} -I${inc}/${globus_flavor} ${GPT_CONFIG_CFLAGS}"
-	GSSAPI_LDFLAGS="-L${GLOBUS_LOCATION}/lib ${GPT_CONFIG_LIBS}"
-	GSSAPI_LIBS="${GPT_CONFIG_PGM_LINKS}"
+	GSSAPI_LDFLAGS="-L${GLOBUS_LOCATION}/lib"
+	GSSAPI_LIBS="${GPT_CONFIG_PGM_LINKS} ${GPT_CONFIG_LIBS}"
     
        # End Globus/GSI section
 elif test "$gssapi_type" = "krb5" ; then
