@@ -3221,7 +3221,7 @@ proxy_get_filenames(
                     sprintf(default_user_cert,"%s%s%s",
                             home, FILE_SEPERATOR, X509_DEFAULT_PKCS12_FILE);
                     len = strlen(home) + strlen(X509_DEFAULT_PKCS12_FILE) + 2;
-                    default_user_key = (char *) remalloc(default_user_key,len);
+                    default_user_key = (char *) realloc(default_user_key,len);
                     if (!default_user_key)
                     {
                         PRXYerr(PRXYERR_F_INIT_CRED, PRXYERR_R_OUT_OF_MEMORY);
