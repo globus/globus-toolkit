@@ -1201,11 +1201,11 @@ globus_io_tcpattr_destroy(
     
     iattr = (globus_l_io_attr_t *) *attr;
     
-    if(dest_iattr->authz_data.identity != GSS_C_NO_NAME)
+    if(iattr->authz_data.identity != GSS_C_NO_NAME)
     {
         OM_uint32                       minor_status;
 
-        gss_release_name(&minor_status, dest_iattr->authz_data.identity);
+        gss_release_name(&minor_status, iattr->authz_data.identity);
     }
     
     globus_xio_attr_destroy(iattr->attr);
