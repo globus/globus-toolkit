@@ -16,3 +16,12 @@ cond_eval cond_local_access file {
    idcred no
 }
 
+cond_eval cond_notbefore unixtime {
+   cond_eval libglobus_gaa_simple_$f.so gaa_simple_check_notbefore
+   idcred no
+}
+
+cond_eval cond_notafter unixtime {
+   cond_eval libglobus_gaa_simple_$f.so gaa_simple_check_notafter
+   idcred no
+}
