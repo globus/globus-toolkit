@@ -190,7 +190,8 @@ main(int argc, char *argv[])
 
     /*Check version */
     if (strcmp(server_response->version, MYPROXY_VERSION) != 0) {
-	    	fprintf (stderr, "Invalid version number received from server\n");
+	fprintf (stderr, "Invalid version number received from server\n");
+	exit(1);
     }
 
     /*Check response */
@@ -198,7 +199,7 @@ main(int argc, char *argv[])
 	    case MYPROXY_ERROR_RESPONSE:
 		    fprintf (stderr, "Receiver ERROR_RESPONSE: %s\n", 
 			     server_response->error_string);
-		    break;
+		    return 1;
 
 	    case MYPROXY_OK_RESPONSE:
     		    printf("Passphrase changed\n");
@@ -206,7 +207,7 @@ main(int argc, char *argv[])
 	
 	    default:
 		    fprintf (stderr, "Invalid response type received.\n");
-		    break;
+		    return 1;
 	}
     verror_clear();
 
