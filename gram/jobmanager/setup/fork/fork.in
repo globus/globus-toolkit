@@ -96,6 +96,10 @@ sub submit
     {
         return Globus::GRAM::Error::RSL_DIRECTORY;
     }
+    if ($description->directory() =~ m|^[^/]|) {
+        $description->add("directory",
+                $ENV{HOME} . '/' . $description->directory());
+    }
     chdir $description->directory() or
         return Globus::GRAM::Error::BAD_DIRECTORY;
 
