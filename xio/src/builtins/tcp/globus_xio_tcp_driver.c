@@ -1725,6 +1725,7 @@ typedef struct
     globus_l_attr_t *                   attr;
     globus_addrinfo_t *                 save_addrinfo;
     globus_addrinfo_t *                 next_addrinfo;
+    char *                              contact_string;
 } globus_l_connect_info_t;
 
 static
@@ -1757,6 +1758,8 @@ globus_l_xio_tcp_system_connect_cb(
     
     if(result != GLOBUS_SUCCESS)
     {
+        result = GlobusXIOErrorWrapFailedWithMessage(result,
+            "Unable to connect to %s", connect_info->contact_string);
         globus_l_xio_tcp_handle_destroy(connect_info->handle);
         connect_info->handle = GLOBUS_NULL;
     }
@@ -1768,6 +1771,7 @@ globus_l_xio_tcp_system_connect_cb(
     
     globus_libc_freeaddrinfo(connect_info->save_addrinfo);
     globus_l_xio_tcp_attr_destroy(connect_info->attr);
+    globus_free(connect_info->contact_string);
     globus_free(connect_info);
     
     GlobusXIOTcpDebugExit();
@@ -1924,6 +1928,14 @@ globus_l_xio_tcp_connect(
         goto error_info;
     }
     
+    connect_info->contact_string =
+        globus_common_create_string("%s:%s", host, port);
+    if(!connect_info->contact_string)
+    {
+        result = GlobusXIOErrorMemory("connect_info");
+        goto error_contact;
+    }
+    
     result = globus_l_xio_tcp_attr_copy(
         (void **) &connect_info->attr, (void *) attr);
     if(result != GLOBUS_SUCCESS)
@@ -1953,8 +1965,11 @@ error_connect_next:
     globus_l_xio_tcp_attr_destroy(connect_info->attr);
     
 error_attr:
-    globus_free(connect_info);
+    globus_free(connect_info->contact_string);
     
+error_contact:
+    globus_free(connect_info);
+
 error_info:
     globus_libc_freeaddrinfo(addrinfo);
 
@@ -2003,8 +2018,9 @@ globus_l_xio_tcp_open(
             op, handle, attr, contact_info->host, contact_info->port);
         if(result != GLOBUS_SUCCESS)
         {
-            result = GlobusXIOErrorWrapFailed(
-                "globus_l_xio_tcp_connect", result);
+            result = GlobusXIOErrorWrapFailedWithMessage2(result,
+                "Unable to connect to %s:%s",
+                contact_info->host, contact_info->port);
             goto error_connect;
         }
     }

@@ -416,6 +416,16 @@ globus_l_xio_file_open(
 
 error_open:
 error_truncate:
+    if(handle->converted)
+    {
+        result = GlobusXIOErrorWrapFailedWithMessage(result,
+            "Unable to convert file handle %d", (int) handle->handle);
+    }
+    else
+    {
+        result = GlobusXIOErrorWrapFailedWithMessage(result,
+            "Unable to open file %s", contact_info->resource);
+    }
 error_pathname:
     globus_l_xio_file_handle_destroy(handle);
 
