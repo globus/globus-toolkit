@@ -827,18 +827,19 @@ Sigfunc *my_signal(int signo, Sigfunc *func)
     }
 } 
 
+/* Signal handlers here.  Beware of making library calls inside signal
+   handlers, as we could be interrupted at any point with a signal.
+   This means no logging! */
 void
 sig_chld(int signo) {
     pid_t pid;
     int   stat;
     
-    while ( (pid = waitpid(-1, &stat, WNOHANG)) > 0)
-        myproxy_debug("child %d terminated", pid);
+    while ( (pid = waitpid(-1, &stat, WNOHANG)) > 0);
     return;
 } 
 
 void sig_exit(int signo) {
-    myproxy_log("Server killed by signal %d", signo);
     exit(0);
 }
 
