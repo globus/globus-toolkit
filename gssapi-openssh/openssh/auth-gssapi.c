@@ -384,6 +384,15 @@ int auth_gssapi(const char *target_account,
 
     (void) gss_release_buffer(&min_stat, &recv_tok);
 
+/*modified by binhe*/
+    if (ret_flags & GSS_C_GLOBUS_LIMITED_PROXY_FLAG) {
+      packet_start(SSH_MSG_AUTH_GSSAPI_ABORT);
+      packet_send();
+
+      goto cleanup;
+    }
+/*end of modification*/
+
     if (maj_stat!=GSS_S_COMPLETE && maj_stat!=GSS_S_CONTINUE_NEEDED) {
       display_gssapi_status("accepting context", maj_stat, min_stat);
 
