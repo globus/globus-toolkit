@@ -274,8 +274,7 @@ gpt-install-files:
 	$(INSTALL) -m 0755 -s ssh-agent $(DESTDIR)$(bindir)/ssh-agent
 	$(INSTALL) -m 0755 -s ssh-keygen $(DESTDIR)$(bindir)/ssh-keygen
 	$(INSTALL) -m 0755 -s ssh-keyscan $(DESTDIR)$(bindir)/ssh-keyscan
-	$(INSTALL) -m 0755 -s sshd $(DESTDIR)$(sbindir)/sshd.real
-	$(INSTALL) -m 0755 sshd.wrapper $(DESTDIR)$(sbindir)/sshd
+	$(INSTALL) -m 0755 -s sshd $(DESTDIR)$(sbindir)/sshd
 	if test ! -z "$(INSTALL_SSH_RAND_HELPER)" ; then \
 		$(INSTALL) -m 0755 -s ssh-rand-helper $(DESTDIR)$(libexecdir)/ssh-rand-helper ; \
 	fi
