@@ -6,6 +6,9 @@
 #ifndef _MYPROXY_READ_PASS_H
 #define _MYPROXY_READ_PASS_H
 
+/* Minimum pass phrase length */
+#define MIN_PASS_PHRASE_LEN		6
+
 /*
  * myproxy_read_passphrase()
  *

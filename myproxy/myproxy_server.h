@@ -6,9 +6,6 @@
 #ifndef __MYPROXY_SERVER_H
 #define __MYPROXY_SERVER_H
 
-/* Minimum pass phrase length */
-#define MIN_PASS_PHRASE_LEN		6
-
 extern int errno;
 
 typedef struct 
