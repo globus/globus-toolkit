@@ -910,8 +910,11 @@ sub install_globus_core()
 {
     if ( $inplace ) {
         my $dir = $cvs_archives{gt2}[2];
-        system("pushd ${dir}/core/source; ./bootstrap; popd");
-        system("pushd ${dir}/core/source; $ENV{GPT_LOCATION}/sbin/gpt-build -force $verbose $flavor; popd");
+        my $_cwd = cwd();
+        chdir $dir . "/core/source";
+        system("./bootstrap");
+        system("$ENV{GPT_LOCATION}/sbin/gpt-build -force $verbose $flavor");
+        chdir $_cwd;
     } else {
         print "$ENV{PWD}";
         system("$ENV{GPT_LOCATION}/sbin/gpt-build -nosrc $verbose $flavor");
