@@ -156,7 +156,7 @@ print CONF "-globus-host-manufacturer $manuf\n";
 print CONF "-globus-host-osname $os_name\n";
 print CONF "-globus-host-osversion $os_version\n";
 print CONF "-save-logfile on_errors\n";
-print CONF "-job-reporting-dir $jm_dir\n";
+print CONF "-job-reporting-dir $jm_tmp\n";
 print CONF "-machine-type unknown\n";
 close(CONF);
 
