@@ -15,16 +15,11 @@
 #include "globus_rsl.h"
 #include "globus_rsl_assist.h"
 #include "globus_callout.h"
+#include "globus_gram_protocol.h"
 #include "version.h"
 #include <stdlib.h>
 #include "openssl/crypto.h"
 #include "openssl/x509.h"
-
-
-static
-globus_bool_t
-globus_l_gram_callout_authorize_self(
-    gss_ctx_id_t                        context);
 
 #endif
 
@@ -158,7 +153,7 @@ globus_gram_callout(
          strcmp(action,"renew") &&
          strcmp(action,"unregister")))
     {
-        if(globus_l_gram_callout_authorize_self(requester_ctx)
+        if(globus_gram_protocol_authorize_self(requester_ctx)
            != GLOBUS_TRUE)
         {
             /* TODO: Need to define standard errors for authz callback */
@@ -180,55 +175,5 @@ globus_gram_callout(
 }
 /* @} */
 
-
-static
-globus_bool_t
-globus_l_gram_callout_authorize_self(
-    gss_ctx_id_t                        context)
-{
-    OM_uint32                           major_status;
-    OM_uint32                           minor_status;
-    gss_name_t                          source_name;
-    gss_name_t                          target_name;
-    int                                 equal;
-    globus_bool_t                       result = GLOBUS_FALSE;
-    
-    major_status = gss_inquire_context(&minor_status,
-                                       context,
-                                       &source_name,
-                                       &target_name,
-                                       NULL,
-                                       NULL,
-                                       NULL,
-                                       NULL,
-                                       NULL);
-    if(GSS_ERROR(major_status))
-    {
-        goto exit;
-    }
-
-    major_status = gss_compare_name(&minor_status,
-                                    source_name,
-                                    target_name,
-                                    &equal);
-    if(GSS_ERROR(major_status))
-    {
-        goto free_names;
-    }
-
-    if(equal)
-    {
-        result = GLOBUS_TRUE;
-    }
-    
- free_names:
-    gss_release_name(&minor_status,
-                     &source_name);
-    gss_release_name(&minor_status,
-                     &target_name);
- exit:
-
-    return result;    
-}
 
 
