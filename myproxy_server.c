@@ -155,6 +155,13 @@ main(int argc, char *argv[])
         exit(1);
     }
 
+    if (server_context->default_retriever_dns != NULL)
+    	myproxy_debug("Default retriever policy = %s",
+		  server_context->default_retriever_dns);
+    if (server_context->default_renewer_dns != NULL)
+    	myproxy_debug("Default renewer policy = %s",
+		  server_context->default_renewer_dns);
+
    if (server_context->config_file == NULL)
     {
 	if (access(default_config_file, R_OK) == 0) {
@@ -428,7 +435,6 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
     
     /* Set response OK unless error... */
     server_response->response_type =  MYPROXY_OK_RESPONSE;
-    //server_response->data).response_string = strdup ("OK"); //TODO:remove
       
     /* Handle client request */
     switch (client_request->command_type) {
@@ -732,12 +738,10 @@ void put_proxy(myproxy_socket_attrs_t *attrs,
     myproxy_debug("Storing credentials for username \"%s\"", creds->username);
     myproxy_debug("  Owner is \"%s\"", creds->owner_name);
     myproxy_debug("  Delegation lifetime is %d seconds", creds->lifetime);
-    if (creds->retrievers) {
-	myproxy_debug("  Retrievers = %s", creds->retrievers);
-    }
-    if (creds->renewers) {
-	myproxy_debug("  Renewers = %s", creds->renewers); 
-    }
+    if (creds->retrievers != NULL)
+	    myproxy_debug("  Retrievers = %s", creds->retrievers);
+    if (creds->renewers != NULL)
+    	    myproxy_debug("  Renewers = %s", creds->renewers); 
     /* Accept delegated credentials from client */
     if (myproxy_accept_delegation(attrs, delegfile, sizeof(delegfile)) < 0) {
 	myproxy_log_verror();
@@ -779,12 +783,6 @@ void info_proxy(myproxy_creds_t *creds, myproxy_response_t *response) {
        (response->data).error_str = strdup(verror_get_string());
     } else { 
        response->response_type = MYPROXY_OK_RESPONSE;
-       //response->response_string = strdup (recs);  // REMOVE ALL
-       //response->cred_start_time = creds->start_time;
-       //response->cred_end_time = creds->end_time;
-    //   if (creds->owner_name && strlen(creds->owner_name) > 0)
-//	  strncpy(response->cred_owner, creds->owner_name,
-//	          sizeof(response->cred_owner));
     }
 }
 
@@ -1073,8 +1071,35 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
        break;
 
    case MYPROXY_PUT_PROXY:
-   case MYPROXY_INFO_PROXY:
    case MYPROXY_DESTROY_PROXY:
+       /* Is this client authorized to store credentials here? */
+       authorization_ok = myproxy_server_check_cred(context, client_name);
+       if (!(authorization_ok == 1)) break;
+
+       credentials_exist = myproxy_creds_exist(client_request->username, client_request->credname);
+       if (credentials_exist == -1) {
+	   myproxy_log_verror();
+	   verror_put_string("%s","Error checking credential existence");
+	   goto end;
+       }
+
+       if (credentials_exist == 1) {
+	   client_owns_credentials = myproxy_creds_is_owner(client_request->username, client_request->credname, client_name);
+	   if (client_owns_credentials == -1) {
+	       verror_put_string("%s","Error checking credential ownership");
+	       goto end;
+	   }
+       }
+
+       if (credentials_exist && !client_owns_credentials) {
+	   myproxy_log("Username \"%s\" in use by another client",
+		       client_request->username);
+	   verror_put_string("%s","Username in use by another client");
+	   goto end;
+       }
+       break;
+
+   case MYPROXY_INFO_PROXY:
        /* Is this client authorized to store credentials here? */
        authorization_ok =
 	   myproxy_server_check_policy_list((const char **)context->accepted_credential_dns, client_name);
@@ -1083,7 +1108,7 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
 	   goto end;
        }
 
-#if !defined (MULTICRED_FEATURE)
+#if defined (TO_BE_REMOVED)
        credentials_exist = myproxy_creds_exist(client_request->username);
        if (credentials_exist == -1) {
 	   verror_put_string("Error checking credential existence");
@@ -1097,7 +1122,6 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
 	       goto end;
 	   }
        }
-
        if (credentials_exist && !client_owns_credentials) {
 	   myproxy_log("Username \"%s\" in use by another client",
 		       client_request->username);

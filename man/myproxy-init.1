@@ -159,6 +159,18 @@ Specifies that the DN used by options
 and 
 .B -R 
 will be matched against the Common Name (CN) of the subject.
+.TP
+.BI -k " name, " --credname " name"
+Specifies the credential name.
+.TP
+.BI -K " description, " --creddesc " description"
+Specifies credential description.
+.TP 
+.B -f, --force 
+By default, if a credential with the specified name already exists,
+myproxy-server does not allow the credential to be overwritten. This
+option requests myproxy-server to overwrite any credential that exists
+with the specified credential name.
 .SH "EXIT STATUS"
 0 on success, >0 on error
 .SH FILES

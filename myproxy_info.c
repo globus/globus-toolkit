@@ -166,6 +166,7 @@ main(int argc, char *argv[])
     }
 
     /* Make a response object from the response buffer */
+
     if (myproxy_deserialize_response(server_response, response_buffer, responselen) < 0) {
         fprintf(stderr, "%s\n",verror_get_string);
         exit(1);
