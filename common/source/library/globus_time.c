@@ -31,7 +31,7 @@ const globus_reltime_t        globus_i_reltime_zero =
 
 globus_bool_t
 globus_time_has_expired(
-    globus_abstime_t *                     abstime)
+    const globus_abstime_t *                     abstime)
 {
     globus_abstime_t                       time_now;
 
@@ -47,7 +47,7 @@ globus_time_has_expired(
 
 globus_bool_t
 globus_time_abstime_is_infinity(
-    globus_abstime_t *                     abstime)
+    const globus_abstime_t *                     abstime)
 {
     if(abstime == GLOBUS_NULL)
     {
@@ -65,7 +65,7 @@ globus_time_abstime_is_infinity(
 
 globus_bool_t
 globus_time_reltime_is_infinity(
-    globus_reltime_t *                     reltime)
+    const globus_reltime_t *                     reltime)
 {
     if(reltime == GLOBUS_NULL)
     {
@@ -83,8 +83,8 @@ globus_time_reltime_is_infinity(
 
 int
 globus_abstime_cmp(
-    globus_abstime_t *                     abstime_1,
-    globus_abstime_t *                     abstime_2)
+    const globus_abstime_t *                     abstime_1,
+    const globus_abstime_t *                     abstime_2)
 {
     int                                    rc;
 
@@ -124,8 +124,8 @@ globus_abstime_cmp(
 
 int
 globus_reltime_cmp(
-    globus_reltime_t *                     reltime_1,
-    globus_reltime_t *                     reltime_2)
+    const globus_reltime_t *                     reltime_1,
+    const globus_reltime_t *                     reltime_2)
 {
     int                                    rc;
 
