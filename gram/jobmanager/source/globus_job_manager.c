@@ -64,6 +64,7 @@ tree_free(gram_specification_t * sp);
                        Define variables for external use
 ******************************************************************************/
 char * grami_jm_libexecdir = GLOBUS_LIBEXECDIR;
+char * grami_jm_status_dir = GLOBUS_STATUS_DIR;
 
 /******************************************************************************
                        Define module specific variables
@@ -478,7 +479,7 @@ status_file_gen(char * my_job_status)
     fprintf(log_fp, "in status_file_gen\n");
 
     sprintf(status_file, "%s/%s_%lu",
-            STATUS_FILE_DIR,
+            GLOBUS_STATUS_DIR,
             STATUS_FILE_PREFIX,
             (unsigned long) getpid(0) );
 
