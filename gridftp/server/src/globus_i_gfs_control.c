@@ -146,29 +146,6 @@ globus_l_gfs_channel_close_cb(
 
 static
 void
-globus_l_gfs_request_abort(
-    globus_gridftp_server_control_op_t  op,
-    void *                              user_arg)
-{
-    globus_l_gfs_request_info_t *       request;
- 
-    request = (globus_l_gfs_request_info_t *) user_arg;
-
-    globus_i_gfs_log_message(
-        GLOBUS_I_GFS_LOG_INFO,
-        "Requesting abort...\n");
-
-    globus_i_gfs_data_request_transfer_event(
-        NULL,
-        request->instance->session_id,
-        request->transfer_id,
-        GLOBUS_GFS_EVENT_TRANSFER_ABORT);
-
-    return;
-}
-
-static
-void
 globus_l_gfs_done_cb(
     globus_gridftp_server_control_t     server,
     globus_result_t                     result,
@@ -499,6 +476,8 @@ globus_l_gfs_data_stat_cb(
             GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS,
             GLOBUS_NULL);
     }
+
+    globus_l_gfs_request_info_destroy(request);
 }
 
 static
@@ -595,6 +574,8 @@ globus_l_gfs_data_command_cb(
     {
         globus_gsc_959_finished_command(op, "500 Unknown error.\r\n");
     }
+    
+    globus_l_gfs_request_info_destroy(request);
 }
 
 static
@@ -761,6 +742,12 @@ globus_l_gfs_request_transfer_event(
         case GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_RESTART:
             event = GLOBUS_GFS_EVENT_RANGES_RECVD;
             break;
+        case GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_ABORT:
+            event = GLOBUS_GFS_EVENT_TRANSFER_ABORT;
+            globus_i_gfs_log_message(
+                GLOBUS_I_GFS_LOG_INFO,
+                "Requesting abort...\n");
+            break;
         default:
             goto error;
             break;
@@ -796,11 +783,12 @@ globus_l_gfs_data_event_cb(
     {
       case GLOBUS_GFS_EVENT_TRANSFER_BEGIN:
         request->transfer_id = reply->transfer_id;
-
-        result = globus_gridftp_server_events_enable(
+        
+        result = globus_gridftp_server_control_events_enable(
             op,
             GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_PERF |
-            GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_RESTART,
+            GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_RESTART |
+            GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_ABORT,
             globus_l_gfs_request_transfer_event,
             request);
         if(result != GLOBUS_SUCCESS)
@@ -808,7 +796,6 @@ globus_l_gfs_data_event_cb(
             /* TODO: can we ignore this */
         }
         globus_gridftp_server_control_begin_transfer(op);
-
         break;
 
       case GLOBUS_GFS_EVENT_DISCONNECTED:
@@ -843,8 +830,8 @@ globus_l_gfs_data_transfer_cb(
     request = (globus_l_gfs_request_info_t *) user_arg;
     op = request->control_op;
 
-    /* no more aborts once this returns */
-    globus_gridftp_server_events_disable(op);
+    /* no more events once this returns */
+    globus_gridftp_server_control_events_disable(op);
 
     if(reply->result != GLOBUS_SUCCESS)
     {
@@ -866,6 +853,8 @@ globus_l_gfs_data_transfer_cb(
         request->instance->session_id,
         request->transfer_id,
         GLOBUS_GFS_EVENT_TRANSFER_COMPLETE);
+
+    globus_l_gfs_request_info_destroy(request);
 }
 
 static
@@ -1089,6 +1078,8 @@ globus_l_gfs_data_passive_data_cb(
             GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS,
             GLOBUS_NULL);
     }
+
+    globus_l_gfs_request_info_destroy(request);
 }
 
 static
@@ -1221,6 +1212,8 @@ globus_l_gfs_data_active_data_cb(
             GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS,
             GLOBUS_NULL);
     }
+
+    globus_l_gfs_request_info_destroy(request);
 }
 
 static
