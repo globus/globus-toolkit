@@ -32,6 +32,8 @@ unlink("test_results.txt");
             unload-test.pl
             http-header-test.pl
             http-post-test.pl
+            http-put-test.pl
+            http-get-test.pl
             );
 
 my $runserver;
