@@ -4,6 +4,8 @@
 #include "extensions.h"
 #include <unistd.h>
 #include <openssl/des.h>
+#include <pwd.h>
+#include <grp.h>
 
 #define USER_NAME_MAX   64
 #define FTP_SERVICE_NAME "file"
@@ -298,13 +300,36 @@ globus_l_gfs_authorize_cb(
     void *                              user_arg,
     globus_result_t                     result)
 {
+    GlobusGFSName(globus_l_gfs_authorize_cb);
+
     if(result == GLOBUS_SUCCESS)
     {
         globus_l_gfs_blocking_dispatch_kickout(user_arg);
     }
     else
     {
-        /* finish with the error */
+        globus_gfs_finished_info_t      finished_info;
+        globus_l_gfs_data_operation_t * op;
+        
+        op = (globus_l_gfs_data_operation_t *) user_arg;
+        memset(&finished_info, '\0', sizeof(globus_gfs_finished_info_t));
+
+        result = GlobusGFSErrorWrapFailed(
+            "authorization", result);
+        finished_info.result = result;
+            
+        if(op->callback == NULL)
+        {
+            globus_gfs_ipc_reply_finished(
+                op->ipc_handle, &finished_info);
+        }
+        else
+        {
+            op->callback(
+                &finished_info,
+                op->user_arg);
+        }
+        globus_l_gfs_data_operation_destroy(op);
     }
 }
 

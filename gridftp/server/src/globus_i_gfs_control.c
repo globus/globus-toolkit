@@ -1,7 +1,6 @@
 #include "globus_xio.h"
 #include "globus_gridftp_server_control.h"
 #include "globus_i_gridftp_server.h"
-#include <grp.h>
 
 typedef struct
 {
