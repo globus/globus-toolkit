@@ -22,7 +22,6 @@ import org.apache.log4j.Logger;
 
 import org.globus.axis.gsi.GSIConstants;
 import org.globus.ftp.exception.FTPException;
-import org.globus.gsi.gssapi.auth.SelfAuthorization;
 import org.globus.gsi.jaas.JaasGssUtil;
 import org.globus.io.gass.client.GassException;
 import org.globus.io.streams.FTPOutputStream;
