@@ -17,8 +17,10 @@ my $metadata = new Grid::GPT::Setup(package_name => "globus_common_setup");
 
 my $globusdir = $ENV{GLOBUS_LOCATION};
 my $setupdir = "$globusdir/setup/globus/";
-my $result = `$setupdir/setup-common-sh-scripts`;
 
+print "Creating globus-hostname\n";
+print "Creating globus-domainname\n";
+my $result = `$setupdir/setup-common-sh-scripts`;
 $result = system("chmod 0755 $setupdir/globus-hostname");
 $result = system("cp globus-hostname $globusdir/bin");
 $result = system("cp globus-hostname $globusdir/bin/globus-domainname");
@@ -34,7 +36,9 @@ if( ("$hostname" eq "localhost.") ||
    print "WARNING: globus-hostname was unable to determine a valid hostname\n";
    print "WARNING: this may lead to problems with other programs that\n";
    print "WARNING: depend on globus-hostname. To avoid this please set the\n";
-   print "WARNING: GLOBUS_HOSTNAME environment variable"
+   print "WARNING: GLOBUS_HOSTNAME environment variable\n";
 }
+
+print "Done\n";
 
 $metadata->finish();
