@@ -3,8 +3,6 @@ package org.globus.ogsa.base.gram.testing.scalability;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import org.globus.ogsa.utils.PerformanceLog;
-
 public class ScalabilityTester {
 
     static Log logger = LogFactory.getLog(ScalabilityTester.class.getName());
@@ -12,10 +10,11 @@ public class ScalabilityTester {
     String factoryUrl = null;
     String rslFile = null;
     int count = 1;
-    SingleJobThread[] jobList = null;
+    //JobStarterThread[] jobList = null;
+    String[] jobHandleList = null;
     int[] jobPhaseState = null;
-    boolean[] completedList = null;
-    int completedCount = 0;
+    boolean[] startedList = null;
+    int startedCount = 0;
 
     public ScalabilityTester() { }
 
@@ -26,35 +25,23 @@ public class ScalabilityTester {
     }
 
     protected void createAll() {
-        this.jobList = new SingleJobThread[this.count];
+        //this.jobList = new JobStarterThread[this.count];
+        this.jobHandleList = new String[this.count];
         this.jobPhaseState = new int[this.count];
 
-        //START TIMMING createService
         if (logger.isDebugEnabled()) {
             logger.debug("creating " + this.count + " job(s)");
         }
 
         for (int i=0; i<this.count; i++) {
-            this.jobList[i] = new SingleJobThread(this, i);
-            new Thread(this.jobList[i]).start();
-        }
-
-        int oldCreatedCount = -1;
-        while (this.createdCount < this.count) {
-            if (logger.isDebugEnabled()) {
-                if (oldCreatedCount != this.createdCount) {
-                    logger.debug("waiting for "
-                                + (this.count - this.createdCount)
-                                + " job(s) to be created");
-                    oldCreatedCount = this.createdCount;
-                }
+            if ((i > 0) && ((i % 30) == 0)) {
+                try {
+                    Thread.currentThread().sleep(60000);
+                } catch (Exception e) { }
             }
-
-            try {
-                wait(5000);
-            } catch (Exception e) {
-                logger.error("unabled to wait", e);
-            }
+            //this.jobList[i] = new JobStarterThread(this, i);
+            //new Thread(this.jobList[i]).start();
+            new Thread(new JobStarterThread(this, i)).start();
         }
 
         if (logger.isDebugEnabled()) {
@@ -63,18 +50,18 @@ public class ScalabilityTester {
     }
 
     protected void waitForAllToComplete() {
-        this.completedList = new boolean[this.count];
+        this.startedList = new boolean[this.count];
         for (int index=0; index<this.count; index++) {
-            this.completedList[index] = false;
+            this.startedList[index] = false;
         }
         int oldCompletedCount = -1;
-        while (this.completedCount < this.count) {
+        while (this.startedCount < this.count) {
             if (logger.isDebugEnabled()) {
-                if (oldCompletedCount != this.completedCount) {
+                if (oldCompletedCount != this.startedCount) {
                     logger.debug("waiting for "
-                                + (this.count - this.completedCount)
-                                + " job(s) to be completed");
-                    oldCompletedCount = this.completedCount;
+                                + (this.count - this.startedCount)
+                                + " job(s) to be started");
+                    oldCompletedCount = this.startedCount;
                 }
             }
 
@@ -83,10 +70,10 @@ public class ScalabilityTester {
             } catch (Exception e) {
                 logger.error("unabled to wait", e);
             }
-            this.completedCount = 0;
+            this.startedCount = 0;
             for (int index=0; index<this.count; index++) {
-                if (this.completedList[index]) {
-                    this.completedCount++;
+                if (this.startedList[index]) {
+                    this.startedCount++;
                 } else {
                     if (logger.isDebugEnabled()) {
                         logger.debug("Waiting for job #" + index);
@@ -95,18 +82,8 @@ public class ScalabilityTester {
             }
         }
 
-        //STOP TIMMING start
-        this.completePerfLog.stop("complete");
         if (logger.isDebugEnabled()) {
-            logger.debug("all jobs completed");
-        }
-
-        for (int index=0; index<this.count; index++) {
-            if (!this.completedList[index]) {
-                if (logger.isDebugEnabled()) {
-                    logger.debug("False notify for job #" + index);
-                }
-            }
+            logger.debug("all jobs started");
         }
     }
 
@@ -115,20 +92,15 @@ public class ScalabilityTester {
         notifyAll();
     }
 
-    synchronized void notifyCompleted(int jobIndex) {
-        if (logger.isDebugEnabled()) {
-            logger.debug("got completed signal from job #" + jobIndex);
-        }
-        //this.completedCount++;
-        this.completedList[jobIndex] = true;
-        notifyAll();
+    synchronized void notifyCreated(int jobIndex, String jobHandle) {
+        this.jobHandleList[jobIndex] = jobHandle;
     }
 
-    synchronized void notifyStopped(int jobIndex) {
+    synchronized void notifyStarted(int jobIndex) {
         if (logger.isDebugEnabled()) {
-            logger.debug("got stopped signal from job #" + jobIndex);
+            logger.debug("got started signal from job #" + jobIndex);
         }
-        this.stoppedCount++;
+        this.startedList[jobIndex] = true;
         notifyAll();
     }
 
