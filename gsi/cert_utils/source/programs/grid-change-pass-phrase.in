@@ -40,7 +40,7 @@ ${short_usage}
      -- If X509_USER_KEY not set, $HOME/.globus/userkey.pem
 
    Options
-      -help            Displays usage
+      -help, -usage    Displays usage
       -version         Displays version
       -file location   Change passphrase on key stored in the file at
                        the non-standard location 'location'.
