@@ -50,6 +50,18 @@ public class CustomByteBuffer {
         this.maxSize = internalArray.length;
     }
 
+    public int limit() {
+        return this.maxSize;
+    }
+    
+    public int position() {
+        return this.pointer;
+    }
+    
+    public int remaining() {
+        return this.maxSize - this.pointer;
+    }
+
     public byte[] array() {
         shrink();
         return this.internalArray;
@@ -66,12 +78,12 @@ public class CustomByteBuffer {
     }
     
     public void get(byte[] dataGoesHere) {
-        get(dataGoesHere, dataGoesHere.length);
+        get(dataGoesHere, 0, dataGoesHere.length);
     }
     
-    public void get(byte[] dataGoesHere, int numBytes) {
+    public void get(byte[] dataGoesHere, int offset, int numBytes) {
         System.arraycopy(this.internalArray, this.pointer, 
-                         dataGoesHere, 0, 
+                         dataGoesHere, offset, 
                          numBytes);
         this.pointer += numBytes;
     }
@@ -115,11 +127,11 @@ public class CustomByteBuffer {
     }
 
     public void put(byte[] data) {
-        put(data, data.length);
+        put(data, 0, data.length);
     }
 
-    public void put(byte[] data, int numBytes) {
-        System.arraycopy(data, 0, 
+    public void put(byte[] data, int offset, int numBytes) {
+        System.arraycopy(data, offset, 
                          this.internalArray, this.pointer, 
                          numBytes);
         this.pointer += numBytes;
