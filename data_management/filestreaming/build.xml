@@ -240,7 +240,7 @@ Southern California. All Rights Reserved.
 
   </target>
 
-  <target name="cleanAll">
+  <target name="cleanAll" depends="clean">
     <delete dir="${stubs.dir}"/>
   </target>
 
