@@ -551,6 +551,27 @@ globus_gsi_proxy_handle_set_type(
 
     handle->type = type;
 
+    switch(type)
+    {
+      case GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_IMPERSONATION_PROXY:
+        result = globus_gsi_proxy_handle_set_policy(
+            handle, NULL, 0, OBJ_sn2nid(IMPERSONATION_PROXY_SN));
+        break;
+
+      case GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_INDEPENDENT_PROXY:
+        result = globus_gsi_proxy_handle_set_policy(
+            handle, NULL, 0, OBJ_sn2nid(INDEPENDENT_PROXY_SN));
+        break;
+
+      case GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_LIMITED_PROXY:
+        result = globus_gsi_proxy_handle_set_policy(
+            handle, NULL, 0, OBJ_sn2nid(LIMITED_PROXY_SN));
+        break;
+        
+      default:
+        break;
+    }
+
  exit:
 
     GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
@@ -605,7 +626,7 @@ globus_gsi_proxy_handle_set_policy(
             ("NULL handle passed to function: %s", _function_name_));
         goto exit;
     }
-
+    
     policy = PROXYCERTINFO_get_policy(handle->proxy_cert_info);
     if(!policy)
     {
@@ -622,8 +643,7 @@ globus_gsi_proxy_handle_set_policy(
         goto exit;
     }
 
-    if(!PROXYPOLICY_set_policy_language(policy, policy_object) ||
-       !PROXYPOLICY_set_policy(policy, policy, policy_length))
+    if(!PROXYPOLICY_set_policy_language(policy, policy_object))
     {
         GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
             result,
@@ -632,8 +652,16 @@ globus_gsi_proxy_handle_set_policy(
         goto exit;
     }
 
-    PROXYCERTINFO_set_policy(handle->proxy_cert_info, policy);
-    
+    if(!PROXYPOLICY_set_policy(policy, policy_data, policy_length) &&
+       policy_data)
+    {
+        GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_PROXY_ERROR_WITH_PROXYPOLICY,
+            ("PROXYPOLICY of proxy handle could not be initialized"));
+        goto exit;
+    }
+       
     result = GLOBUS_SUCCESS;
 
  exit:

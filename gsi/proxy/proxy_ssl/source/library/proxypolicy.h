@@ -46,9 +46,17 @@ EXTERN_C_BEGIN
  * maintaining information about proxy certificates.
  */
 
-#define PROXYPOLICY_OID                 "1.3.6.1.4.1.3536.1.224"
-#define PROXYPOLICY_SN                  "PROXYPOLICY"
-#define PROXYPOLICY_LN                  "Proxy Policy"
+#define IMPERSONATION_PROXY_OID         "1.3.6.1.5.5.7.21.1"
+#define IMPERSONATION_PROXY_SN          "IMPERSONATION_PROXY"
+#define IMPERSONATION_PROXY_LN          "GSI impersonation proxy"
+
+#define INDEPENDENT_PROXY_OID           "1.3.6.1.5.5.7.21.2"
+#define INDEPENDENT_PROXY_SN            "INDEPENDENT_PROXY"
+#define INDEPENDENT_PROXY_LN            "GSI independent proxy"
+
+#define LIMITED_PROXY_OID               "1.3.6.1.4.1.3536.1.1.1.9"
+#define LIMITED_PROXY_SN                "LIMITED_PROXY"
+#define LIMITED_PROXY_LN                "GSI limited proxy"
 
 /* Used for error handling */
 #define ASN1_F_PROXYPOLICY_NEW          450

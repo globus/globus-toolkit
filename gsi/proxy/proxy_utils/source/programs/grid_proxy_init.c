@@ -36,8 +36,8 @@ static char *  LONG_USAGE = \
 "    -q                        Quiet mode, minimal output\n" \
 "    -verify                   Verifies certificate to make proxy for\n" \
 "    -pwstdin                  Allows passphrase from stdin\n" \
-"    -limited                  Creates a limited legacy globus proxy\n" \
-"    -old                      Creates a full legacy globus proxy\n" \
+"    -limited                  Creates a limited globus proxy\n" \
+"    -old                      Creates a legacy globus proxy\n" \
 "    -valid <h:m>              Proxy is valid for h hours and m \n" \
 "                              minutes (default:12:00)\n" \
 "    -hours <hours>            Deprecated support of hours option\n" \
@@ -300,11 +300,25 @@ main(
         }
         else if(strcmp(argp, "-limited") == 0)
         {
-            cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_LIMITED_PROXY;
+            if(GLOBUS_GSI_CERT_UTILS_IS_GSI_2_PROXY(cert_type))
+            { 
+                cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_LIMITED_PROXY;
+            }
+            else
+            {
+                cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_LIMITED_PROXY;
+            }
         }
         else if(strcmp(argp, "-old") == 0)
         {
-            cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_PROXY;
+            if(GLOBUS_GSI_CERT_UTILS_IS_LIMITED_PROXY(cert_type))
+            { 
+                cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_LIMITED_PROXY;
+            }
+            else
+            {
+                cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_PROXY;
+            }
         }        
         else if(strcmp(argp, "-verify") == 0)
         {
@@ -323,12 +337,14 @@ main(
             args_verify_next(arg_index, argp, 
                              "policy file name missing");
             policy_filename = argv[++arg_index];
+            cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_RESTRICTED_PROXY;
         }
         else if(strcmp(argp, "-pl") == 0 ||
                 strcmp(argp, "-policy-language") == 0)
         {
             args_verify_next(arg_index, argp, "policy language missing");
             policy_language = argv[++arg_index];
+            cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_RESTRICTED_PROXY;
         }
         else if(strcmp(argp, "-path-length") == 0)
         {

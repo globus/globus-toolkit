@@ -74,29 +74,6 @@ EXTERN_C_BEGIN
 extern
 globus_module_descriptor_t		globus_i_openssl_module;
 
-/**
- * Proxy Cert Info defines
- * @ingroup globus_openssl_activation
- */
-
-#define PROXYCERTINFO_OID               "1.3.6.1.4.1.3536.1.222"
-#define PROXYCERTINFO_SN                "PROXYCERTINFO"
-#define PROXYCERTINFO_LN                "Proxy Certificate Info Extension"
-
-#define IMPERSONATION_PROXY_OID         "1.3.6.1.5.5.7.21.1"
-#define IMPERSONATION_PROXY_SN          "IMPERSONATION_PROXY"
-#define IMPERSONATION_PROXY_LN          "GSI impersonation proxy"
-
-#define INDEPENDENT_PROXY_OID           "1.3.6.1.5.5.7.21.2"
-#define INDEPENDENT_PROXY_SN            "INDEPENDENT_PROXY"
-#define INDEPENDENT_PROXY_LN            "GSI independent proxy"
-
-#define LIMITED_PROXY_OID               "1.3.6.1.4.1.3536.1.1.1.8"
-#define LIMITED_PROXY_SN                "LIMITED_PROXY"
-#define LIMITED_PROXY_LN                "GSI limited proxy"
-
-
-
 EXTERN_C_END
 
 #endif /* GLOBUS_INCLUDE_GLOBUS_OPENSSL_H */

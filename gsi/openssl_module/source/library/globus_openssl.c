@@ -77,6 +77,10 @@ globus_l_openssl_activate(void)
                INDEPENDENT_PROXY_SN,
                INDEPENDENT_PROXY_LN);
 
+    OBJ_create(LIMITED_PROXY_OID,
+               LIMITED_PROXY_SN,
+               LIMITED_PROXY_LN);
+    
     pci_NID = OBJ_create(PROXYCERTINFO_OID,PROXYCERTINFO_SN,PROXYCERTINFO_LN);
 
     pci_x509v3_ext_meth = PROXYCERTINFO_x509v3_ext_meth();

@@ -16,6 +16,7 @@
 #include "globus_gsi_system_config.h"
 #include "globus_gsi_proxy.h"
 #include "globus_gsi_credential.h"
+#include "globus_openssl.h"
 
 int                                     debug = 0;
 
@@ -140,6 +141,17 @@ main(
     EVP_PKEY *                          proxy_pubkey = NULL;
     globus_result_t                     result;
 
+    if(globus_module_activate(GLOBUS_OPENSSL_MODULE) !=
+       (int)GLOBUS_SUCCESS)
+    {
+        globus_libc_fprintf(
+            stderr,
+            "\n\nERROR: Couldn't load module: GLOBUS_OPENSSL_MODULE.\n"
+            "Make sure Globus is installed correctly.\n\n");
+        exit(1);
+    }
+
+    
     if(globus_module_activate(GLOBUS_GSI_PROXY_MODULE) != (int)GLOBUS_SUCCESS)
     {
         globus_libc_fprintf(
@@ -426,14 +438,23 @@ main(
     
     switch(cert_type)
     {
-      case GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_PROXY:
-        cert_type_name = "Proxy draft compliant proxy";
+      case GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_IMPERSONATION_PROXY:
+        cert_type_name = "Proxy draft compliant impersonation proxy";
+        break;
+      case GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_INDEPENDENT_PROXY:
+        cert_type_name = "Proxy draft compliant independent proxy";
+        break;
+      case GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_LIMITED_PROXY:
+        cert_type_name = "Proxy draft compliant limited proxy";
+        break;
+      case GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_RESTRICTED_PROXY:
+        cert_type_name = "Proxy draft compliant restricted proxy";
         break;
       case GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_PROXY:
-        cert_type_name = "full globus proxy";
+        cert_type_name = "full legacy globus proxy";
         break;
       case GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_LIMITED_PROXY:
-        cert_type_name = "limited globus proxy";
+        cert_type_name = "limited legacy globus proxy";
         break;
       default:
         globus_libc_fprintf(

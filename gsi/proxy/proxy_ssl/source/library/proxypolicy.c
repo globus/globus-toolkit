@@ -5,7 +5,6 @@
 #include <openssl/objects.h>
 
 #include "proxypolicy.h"
-#include "globus_openssl.h"
 
 /**
  * @name Get a method for ASN1 conversion
@@ -278,10 +277,23 @@ int PROXYPOLICY_set_policy(
         unsigned char *                 copy = malloc(length);
         memcpy(copy, policy, length);
 
+        if(!proxypolicy->policy)
+        {
+            proxypolicy->policy = ASN1_OCTET_STRING_new();
+        }
+        
         ASN1_OCTET_STRING_set(proxypolicy->policy, copy, length);
-        return 1;
+
     }
-    return 0;
+    else
+    {
+        if(proxypolicy->policy)
+        {
+            ASN1_OCTET_STRING_free(proxypolicy->policy);
+        }
+    }
+
+    return 1;
 }
 /* @} */
 
@@ -305,12 +317,15 @@ unsigned char * PROXYPOLICY_get_policy(
     PROXYPOLICY *                       policy,
     int *                               length)
 {
-    (*length) = policy->policy->length;
-    if(*length > 0 && policy->policy->data)
-    {
-        unsigned char *                 copy = malloc(*length);
-        memcpy(copy, policy->policy->data, *length);
-        return copy;
+    if(policy->policy)
+    { 
+        (*length) = policy->policy->length;
+        if(*length > 0 && policy->policy->data)
+        {
+            unsigned char *                 copy = malloc(*length);
+            memcpy(copy, policy->policy->data, *length);
+            return copy;
+        }
     }
     
     return NULL;
@@ -383,7 +398,7 @@ PROXYPOLICY * d2i_PROXYPOLICY(
     M_ASN1_D2I_Init();
     M_ASN1_D2I_start_sequence();
     M_ASN1_D2I_get(ret->policy_language, d2i_ASN1_OBJECT);
-    M_ASN1_D2I_get(ret->policy, d2i_ASN1_OCTET_STRING);
+    M_ASN1_D2I_get_EXP_opt(ret->policy, d2i_ASN1_OCTET_STRING,1);
     M_ASN1_D2I_Finish(a, 
                       PROXYPOLICY_free, 
                       ASN1_F_D2I_PROXYPOLICY);
@@ -446,7 +461,7 @@ STACK_OF(CONF_VALUE) * i2v_PROXYPOLICY(
     
     if(!policy)
     {
-        X509V3_add_value("    Policy: ", "EMPTY", &extlist);
+        X509V3_add_value("    Policy", " EMPTY", &extlist);
     }
     else
     {
