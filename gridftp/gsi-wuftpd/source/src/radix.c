@@ -71,7 +71,7 @@ int *len, decode;
 }
 
 char *
-radix_error(e)
+radix_error(int e)
 {
 	switch (e) {
 	    case 0:  return("Success");

@@ -651,7 +651,12 @@ cmd: USER SP username CRLF
     | ESTO check_login SP esto_mode SP pathname CRLF
         =	{
 	    if (log_commands)
-		syslog(LOG_INFO, "ESTO %c %" GLOBUS_OFF_T_FORMAT " %s", $4.mode, $4.offset, CHECKNULL($6));
+		syslog(
+		    LOG_INFO,
+		    "ESTO %c %" GLOBUS_OFF_T_FORMAT " %s",
+		    $4.mode,
+		    $4.offset,
+		    CHECKNULL($6));
 	    if ($2 && $6 != NULL && !restrict_check($6))
 		store($6, "r+", 0, (int) $4.offset);
 	    if ($6 != NULL)

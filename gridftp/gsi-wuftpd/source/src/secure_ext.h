@@ -23,15 +23,13 @@ extern char *protection_levelnames[];
 /* Size of protected buffer */
 extern unsigned int max_pbuf_size;
 
-
-int set_prot_level();
+int set_prot_level(int prot_level);
 int clear_cmd_channel();
-int auth();
-int auth_data();
-int pbsz();
-int secure_parse_message();
+int auth(char * type);
+int auth_data(char * data);
+int pbsz(char * size_string);
+int send_adat_reply(int code, unsigned char * data, int length);
 
-int send_adat_reply();
 
 
 /*
@@ -56,4 +54,5 @@ int send_adat_reply();
 #define LARGE_BUFSIZE		10240
 
 #endif /* __SECURE_EXT_H */
+
 

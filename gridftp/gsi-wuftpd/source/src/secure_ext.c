@@ -49,7 +49,7 @@ int protection_level_reply_codes[] = { 0,		/* Undefined */
 unsigned int max_pbuf_size = 0;			/* Used in secure.c */
 static unsigned int actual_pbuf_size = 0;
 
-static char *cleartext_buffer = NULL;
+static unsigned char *cleartext_buffer = NULL;
 
 
 
@@ -63,8 +63,7 @@ static char *cleartext_buffer = NULL;
  * implement this.
  */
 int
-set_prot_level(prot_level)
-     int prot_level;
+set_prot_level(int prot_level)
 {
     if (debug)
 	syslog(LOG_DEBUG, "Attempting to set protection level to %s",
@@ -145,8 +144,7 @@ clear_cmd_channel()
 
 
 int
-auth(type)
-char *type;
+auth(char * type)
 {
 	if (auth_type)
 		reply(534, "Authentication type already set to %s", auth_type);
@@ -171,8 +169,7 @@ char *type;
 }
 
 int
-pbsz(size_string)
-     char *size_string;
+pbsz(char * size_string)
 {
     unsigned int requested_pbuf_size;
     
@@ -232,8 +229,7 @@ pbsz(size_string)
 
 
 int
-auth_data(data)
-     char *data;
+auth_data(char * data)
 {
     int radix_err;
     char decoded_data[LARGE_BUFSIZE];
@@ -289,10 +285,10 @@ auth_data(data)
 }
 
 int
-send_adat_reply(code, data, length)
+send_adat_reply(int code, unsigned char * data, int length)
 {
     int radix_err;
-    char encoded_data[LARGE_BUFSIZE];
+    unsigned char encoded_data[LARGE_BUFSIZE];
     
 
     radix_err = radix_encode(data, encoded_data, &length, 0);
