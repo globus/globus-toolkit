@@ -1653,11 +1653,6 @@ globus_gfs_ipc_request_resource(
             {
                 goto err;
             }
-
-            globus_hashtable_insert(
-                &ipc->call_table,
-                (void *)request->id,
-                request);
         }
 
         globus_hashtable_insert(
@@ -1699,23 +1694,91 @@ globus_gfs_ipc_request_resource(
 /*
  *  destroy a data connection associated with the given ID
  */
-void
+globus_result_t
 globus_gfs_ipc_data_destroy(
     globus_gfs_ipc_handle_t             ipc_handle,   
     int                                 data_connection_id)
 {
     globus_i_gfs_ipc_handle_t *         ipc;
+    globus_result_t                     res;
+    globus_gfs_ipc_request_t *          request = NULL;
+    globus_byte_t *                     buffer = NULL;
+    globus_byte_t *                     ptr;
+    globus_byte_t *                     size_ptr;
+    globus_size_t                       msg_size;
     GlobusGFSName(globus_gfs_ipc_data_destroy);
 
     ipc = (globus_i_gfs_ipc_handle_t *) ipc_handle;
-    if(ipc->xio_handle == GLOBUS_NULL)
+
+    globus_mutex_lock(&ipc->mutex);
     {
-        ipc->iface->data_destroy_func(data_connection_id);
+        request = (globus_gfs_ipc_request_t *) 
+            globus_calloc(1, sizeof(globus_gfs_ipc_request_t));
+        if(request == NULL)
+        {
+            goto err;
+        }
+        request->id = (int) request;
+        request->ipc = ipc_handle;
+
+        if(!ipc->local)
+        {
+            /* pack the header */
+            buffer = globus_malloc(ipc->buffer_size);
+            ptr = buffer;
+            GFSEncodeChar(
+                buffer, ipc->buffer_size, ptr, GLOBUS_GFS_IPC_TYPE_DESTROY);
+            GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, request->id);
+            size_ptr = ptr;
+            GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, -1);
+
+            /* pack body */
+            GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, data_connection_id);
+
+            /* now that we know size, add it in */
+            msg_size = ptr - buffer;
+            GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, msg_size);
+
+            res = globus_xio_register_write(
+                ipc_handle->xio_handle,
+                buffer,
+                msg_size,
+                msg_size,
+                NULL,
+                globus_l_gfs_ipc_write_cb,
+                request);
+            if(res != GLOBUS_SUCCESS)
+            {
+                goto err;
+            }
+        }
+
+        globus_hashtable_insert(
+            &ipc->call_table,
+            (void *)request->id,
+            request);
     }
-    else
+    globus_mutex_unlock(&ipc->mutex);
+
+    if(ipc->local)
     {
-        /* i like wires */
+        ipc_handle->iface->data_destroy_func(data_connection_id);
     }
+
+    return GLOBUS_SUCCESS;
+
+  err:
+
+    globus_mutex_unlock(&ipc->mutex);
+    if(buffer != NULL)
+    {
+        globus_free(buffer);
+    }
+    if(request != NULL)
+    {
+        globus_free(request);
+    }
+    return res;
 }
 
 
