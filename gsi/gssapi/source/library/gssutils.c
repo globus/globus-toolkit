@@ -471,8 +471,8 @@ gs_get_token(
         while(len < output_token->length)
         { 
             rc = BIO_read(write_bio,
-                          output_token->value,
-                          output_token->length);
+                          ((char *) output_token->value) + len,
+                          output_token->length - len);
             if(rc > 0)
             {
                 len += rc;
