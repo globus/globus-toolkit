@@ -15,6 +15,7 @@ RCSID("$OpenBSD: auth1.c,v 1.35 2002/02/03 17:53:25 markus Exp $");
 #include "xmalloc.h"
 #include "rsa.h"
 #include "ssh1.h"
+#include "dispatch.h"
 #include "packet.h"
 #include "buffer.h"
 #include "mpaux.h"
@@ -27,14 +28,33 @@ RCSID("$OpenBSD: auth1.c,v 1.35 2002/02/03 17:53:25 markus Exp $");
 #include "misc.h"
 #include "uidswap.h"
 
-/*modified by bine*/
-#include <gssapi.h>
-#include "ssh.h"
-#include "canohost.h"
-/*end of modification*/
+#ifdef GSSAPI
+int     userauth_gssapi(Authctxt *authctxt);
+char *	gssapi_parse_userstring(char *userstring);
+#endif
 
 /* import */
 extern ServerOptions options;
+
+#ifdef GSSAPI
+void
+auth1_gss_protocol_error(int type, u_int32_t plen, void *ctxt)
+{
+  Authctxt *authctxt = ctxt;
+  /* Other side told us to abort, dont need to tell him */ 
+  /* maybe we can us some other method. */
+  if (type == SSH_MSG_AUTH_GSSAPI_ABORT) {
+      log("auth1: GSSAPI aborting");
+      dispatch_set(SSH_MSG_AUTH_GSSAPI_TOKEN, NULL);
+      authctxt->success = 1; /* get out of loop*/
+      return;
+  }
+
+  log("auth1: protocol error: type %d plen %d", type, plen);
+  packet_disconnect("Protocol error during GSSAPI authentication: "
+          "Unknown packet type %d", type);
+}
+#endif
 
 /*
  * convert ssh auth msg type into description
@@ -58,6 +78,10 @@ get_authname(int type)
 #if defined(KRB4) || defined(KRB5)
 	case SSH_CMSG_AUTH_KERBEROS:
 		return "kerberos";
+#endif
+#if defined(GSSAPI)
+	case SSH_CMSG_AUTH_GSSAPI:
+	    	return "gssapi";
 #endif
 	}
 	snprintf(buf, sizeof buf, "bad-auth-msg-%d", type);
@@ -162,30 +186,40 @@ do_authloop(Authctxt *authctxt)
 			break;
 #endif /* KRB4 || KRB5 */
 
-/*modified by binhe*/
 #ifdef GSSAPI
-        case SSH_CMSG_AUTH_GSSAPI:
-          if (options.gss_authentication) {
-            gss_buffer_desc client_name;
-            OM_uint32 min_stat;
-
-
-            if (auth_gssapi(authctxt->user, get_canonical_hostname(options.verify_reverse_mapping), &client_name)) {
-
-              /* Successful authentication and authorization */
-              authenticated = 1;
-
-              gss_release_buffer(&min_stat, &client_name);
-            }
-
-          } else {
-            packet_get_all();
-            debug("GSSAPI authentication disabled.");
-          }
-
-          break;
+		case SSH_CMSG_AUTH_GSSAPI:
+			if (!options.gss_authentication) {
+				verbose("GSSAPI authentication disabled.");
+				break;
+			}
+			/*
+			* GSSAPI was first added to ssh1 in ssh-1.2.27, and
+			* was added to the SecurtCRT product. In order
+			* to continue operating with these, we will add
+			* the equivelent GSSAPI support to SSH1. 
+			* Will use the gssapi routines from the ssh2 as
+			* they are almost identical. But they use dispatch
+			* so we need to setup the dispatch tables here 
+			* auth1.c for use only by the gssapi code. 
+			* Since we already have the packet, we will call
+			* userauth_gssapi then start the dispatch loop.
+			*/
+			if (!authctxt->valid) {
+			packet_disconnect("Authentication rejected for invalid user");
+			}
+			dispatch_init(&auth1_gss_protocol_error);
+			userauth_gssapi(authctxt);
+			dispatch_run(DISPATCH_BLOCK, &authctxt->success, authctxt);
+			if (authctxt->postponed) { /* failed, try other methods */
+				authctxt->success = 0;
+				authctxt->postponed = 0;
+				break;
+			}
+			do_authenticated(authctxt);
+			/* will only return if authenticated */
+			authenticated = 1;
+			break;
 #endif /* GSSAPI */
-/*end of modification*/
 			
 #if defined(AFS) || defined(KRB5)
 			/* XXX - punt on backward compatibility here. */
