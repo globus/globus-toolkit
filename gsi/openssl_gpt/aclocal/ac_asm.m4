@@ -72,7 +72,6 @@ AC_DEFUN([LAC_ASM_SET],
                     *sun4u*)
                         case ${GLOBUS_FLAVOR_NAME} in
                             *64* )
-                                lac_BN_OBJ="asm/sparcv8plus.lo"
                                 lac_MD5_OBJ="asm/md5-sparcv8plus.lo"
                             ;;
                             *32* )
