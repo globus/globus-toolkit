@@ -37,10 +37,13 @@ ${short_usage}
   the signed certificate to stdout.
 
   Options:
-    -force           : Sign a certificate request with subject that
-		       matches an already signed certificate.
-    -dir <cadir>     : Set the configure directory of the CA
-
+    -force             : Sign a certificate request with subject that
+		         matches an already signed certificate.
+    -dir <cadir>       : Set the configure directory of the CA
+    -in  <cert req>    : The cert request to sign, if not 
+                         given a request is expected from stdin
+    -out <signed cert> : The newly signed cert.  If not given,
+                         the cert is written to stdout
 EOF
 }
 
@@ -62,6 +65,16 @@ readCommandLine() {
             -dir)
                 shift;
                 GRID_CA_DIR=$1;
+                shift;
+                ;;
+            -in)
+                shift;
+                INPUT_REQ_FILE=$1;
+                shift;
+                ;;
+            -out)
+                shift;
+                SIGNED_OUTPUT_FILE=$1;
                 shift;
                 ;;
             *)
@@ -92,10 +105,20 @@ openssl_cmd=${GLOBUS_LOCATION}/bin/openssl
 TMP_REQ_FILE=${GLOBUS_SH_TMP-/tmp/}/tmp_cert_req.pem.$$
 TMP_CERT_FILE=${GLOBUS_SH_TMP-/tmp/}/tmp_cert.pem.$$
 
-while read INPUT_REQ ; do
+if [ -z "$INPUT_REQ_FILE" ]; then
+    while read INPUT_REQ ; do
 
-	echo "${INPUT_REQ}" >> ${TMP_REQ_FILE}
-done
+            echo "${INPUT_REQ}" >> ${TMP_REQ_FILE}
+    done
+else
+    if [ ! -r ${INPUT_REQ_FILE} ]; then
+        recho ""
+        recho "ERROR: The file: ${INPUT_REQ_FILE} is not readable"
+        recho ""
+    fi
+
+    TMP_REQ_FILE=${INPUT_REQ_FILE}
+fi
 
 recho ""
 recho -n "Enter password for the CA key: "
@@ -195,7 +218,14 @@ recho ""
 ${GLOBUS_SH_RM-rm} -f ${tmp_input_file}
 ${GLOBUS_SH_RM-rm} -f ${tmp_output}
 
-cat ${TMP_CERT_FILE}
+if [ -z "$SIGNED_OUTPUT_FILE" ]; then
+    cat ${TMP_CERT_FILE}
+else
+    CERT_OUTPUT_DIR="`echo $SIGNED_OUTPUT_FILE | ${GLOBUS_SH_SED-sed} -e "s|\(.*\)/.*|\1|"`"
+    if [ -w ${CERT_OUTPUT_DIR} ]; then
+        ${GLOBUS_SH_CP-cp} ${TMP_CERT_FILE} ${SIGNED_OUTPUT_FILE}
+    fi
+fi
 
 ${GLOBUS_SH_RM-rm} -f ${TMP_REQ_FILE} ${TMP_CERT_FILE}
 
