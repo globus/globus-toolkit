@@ -70,6 +70,10 @@ static int
 string_to_int(const char			*string,
 	      int				*integer);
 
+static char **
+make_string_list(char str[],
+		 int  strlen);
+
 /* Values for string_to_int() */
 #define STRING_TO_INT_SUCCESS		1
 #define STRING_TO_INT_ERROR		-1
@@ -253,6 +257,7 @@ myproxy_serialize_request(const myproxy_request_t *request, char *data, const in
     int totlen = 0;
     char lifetime_string[64];
     const char *command_string;
+    char **authorized_services, **authorized_clients;
 
     assert(data != NULL);
     assert(datalen > 0);
@@ -306,6 +311,26 @@ myproxy_serialize_request(const myproxy_request_t *request, char *data, const in
 
     totlen += len;
 
+    for (authorized_services = request->authorized_service_dns;
+	 authorized_services; authorized_services++) {
+	len = concatenate_strings(data, datalen, MYPROXY_AUTH_SERVICE_STRING,
+				  *authorized_services, "\n", NULL);
+	if (len < 0) {
+	    return -1;
+	}
+	totlen += len;
+    }
+
+    for (authorized_clients = request->authorized_client_dns;
+	 authorized_clients; authorized_clients++) {
+	len = concatenate_strings(data, datalen, MYPROXY_AUTH_CLIENT_STRING,
+				  *authorized_clients, "\n", NULL);
+	if (len < 0) {
+	    return -1;
+	}
+	totlen += len;
+    }
+
     return totlen+1;
 }
 
@@ -314,11 +339,7 @@ myproxy_deserialize_request(const char *data, const int datalen,
                             myproxy_request_t *request)
 {
     int len;
-    char version_str[128];
-    char command_str[128];
-    char username_str[128];
-    char passphrase_str[MAX_PASS_LEN+1];
-    char lifetime_str[128];
+    char buf[1024];
 
     assert(request != NULL);
     assert(data != NULL);
@@ -326,7 +347,7 @@ myproxy_deserialize_request(const char *data, const int datalen,
     len = convert_message(data, datalen,
 			  MYPROXY_VERSION_STRING,
 			  CONVERT_MESSAGE_DEFAULT_FLAGS,
-			  version_str, sizeof(version_str));
+			  buf, sizeof(buf));
 
     if (len == -1)
     {
@@ -334,19 +355,20 @@ myproxy_deserialize_request(const char *data, const int datalen,
 	return -1;
     }
 
-    request->version = strdup(version_str);
+    request->version = strdup(buf);
     
     if (request->version == NULL)
     {
 	verror_put_string("strdup() failed");
 	verror_put_errno(errno);
+	return -1;
     }
 
 
     len = convert_message(data, datalen,
 			  MYPROXY_COMMAND_STRING,
 			  CONVERT_MESSAGE_DEFAULT_FLAGS,
-			  command_str, sizeof(command_str));
+			  buf, sizeof(buf));
 
     if (len == -1)
     {
@@ -354,7 +376,7 @@ myproxy_deserialize_request(const char *data, const int datalen,
 	return -1;
     }
     
-    if (parse_command(command_str, &request->command_type) == -1)
+    if (parse_command(buf, &request->command_type) == -1)
     {
 	return -1;
     }
@@ -362,26 +384,27 @@ myproxy_deserialize_request(const char *data, const int datalen,
     len = convert_message(data, datalen,
 			  MYPROXY_USERNAME_STRING,
 			  CONVERT_MESSAGE_DEFAULT_FLAGS,
-			  username_str, sizeof(username_str));
+			  buf, sizeof(buf));
     if (len == -1)
     {
 	verror_prepend_string("Error parsing usename from client request");
 	return -1;
     }
     
-    request->username = strdup(username_str);
+    request->username = strdup(buf);
 
     if (request->username == NULL)
     {
 	verror_put_string("strdup() failed");
 	verror_put_errno(errno);
+	return -1;
     }
 
 
     len = convert_message(data, datalen,
 			  MYPROXY_PASSPHRASE_STRING, 
 			  CONVERT_MESSAGE_DEFAULT_FLAGS,
-                          passphrase_str, sizeof(passphrase_str));
+                          buf, sizeof(buf));
 
     if (len == -1) 
     {
@@ -390,21 +413,45 @@ myproxy_deserialize_request(const char *data, const int datalen,
     }
     
     /* XXX request_passphrase is a static buffer. Why? */
-    strncpy(request->passphrase, passphrase_str, sizeof(request->passphrase));
+    strncpy(request->passphrase, buf, sizeof(request->passphrase));
 
     len = convert_message(data, datalen,
 			  MYPROXY_LIFETIME_STRING,
 			  CONVERT_MESSAGE_DEFAULT_FLAGS,
-                          lifetime_str, sizeof(lifetime_str));
+                          buf, sizeof(buf));
     if (len == -1)
     {
 	verror_prepend_string("Error parsing passphrase from client request");
 	return -1;
     }
     
-    if (parse_lifetime(lifetime_str, &request->portal_lifetime) == -1)
+    if (parse_lifetime(buf, &request->portal_lifetime) == -1)
     {
 	return -1;
+    }
+
+    len = convert_message(data, datalen, MYPROXY_AUTH_SERVICE_STRING,
+			  CONVERT_MESSAGE_ALLOW_MULTIPLE,
+			  buf, sizeof(buf));
+    if (len >= 0) {
+	request->authorized_service_dns = make_string_list(buf, len);
+	if (request->authorized_service_dns == NULL) {
+	    verror_put_string("make_string_list() failed");
+	    verror_put_errno(errno);
+	    return -1;
+	}
+    }
+			  
+    len = convert_message(data, datalen, MYPROXY_AUTH_CLIENT_STRING,
+			  CONVERT_MESSAGE_ALLOW_MULTIPLE,
+			  buf, sizeof(buf));
+    if (len >= 0) {
+	request->authorized_client_dns = make_string_list(buf, len);
+	if (request->authorized_client_dns == NULL) {
+	    verror_put_string("make_string_list() failed");
+	    verror_put_errno(errno);
+	    return -1;
+	}
     }
 
     /* Success */
@@ -488,6 +535,7 @@ myproxy_deserialize_response(myproxy_response_t *response,
     {
 	verror_put_string("strdup() failed");
 	verror_put_errno(errno);
+	return -1;
     }
 
     len = convert_message(data, datalen,
@@ -557,6 +605,46 @@ myproxy_recv(myproxy_socket_attrs_t *attrs,
    }
    return readlen;
 } 
+
+int
+myproxy_recv_response(myproxy_socket_attrs_t *attrs, myproxy_response_t *response) {
+    int responselen;
+    char response_buffer[1024];
+
+    /* Receive a response from the server */
+    responselen = myproxy_recv(attrs, response_buffer, sizeof(response_buffer));
+    if (responselen < 0) {
+        verror_put_string("Error in myproxy_recv()");
+        return(-1);
+    }
+
+    /* Make a response object from the response buffer */
+    if (myproxy_deserialize_response(response, response_buffer, responselen) < 0) {
+      verror_put_string("Error in myproxy_deserialize_response()");
+      return(-1);
+    }
+
+    /* Check version */
+    if (strcmp(response->version, MYPROXY_VERSION) != 0) {
+      verror_put_string("Error: Received invalid version number from server");
+      return(-1);
+    } 
+
+    /* Check response */
+    switch(response->response_type) {
+        case MYPROXY_ERROR_RESPONSE:
+            verror_put_string("ERROR from server: %s", response->error_string);
+	    return(-1);
+            break;
+        case MYPROXY_OK_RESPONSE:
+            break;
+        default:
+            verror_put_string("Received unknown response type");
+	    return(-1);
+            break;
+    }
+    return 0;
+}
 
 void
 myproxy_free(myproxy_socket_attrs_t *attrs, 
@@ -1023,43 +1111,36 @@ string_to_int(const char			*string,
     return return_value;
 }
 
-int
-myproxy_recv_response(myproxy_socket_attrs_t *attrs, myproxy_response_t *response) {
-    int responselen;
-    char response_buffer[1024];
+/*
+ * make_string_list()
+ *
+ * Convert a potentially multi-line string into an array of one-line
+ * strings.  The input string is modified during the conversion.
+ */
+static char **
+make_string_list(char str[], int strlen)
+{
+    int num_lines, i;
+    char **list = NULL;
 
-    /* Receive a response from the server */
-    responselen = myproxy_recv(attrs, response_buffer, sizeof(response_buffer));
-    if (responselen < 0) {
-        verror_put_string("Error in myproxy_recv()");
-        return(-1);
+    if (str[strlen-1] == '\n') {
+	str[--strlen] = '\0';
     }
-
-    /* Make a response object from the response buffer */
-    if (myproxy_deserialize_response(response, response_buffer, responselen) < 0) {
-      verror_put_string("Error in myproxy_deserialize_response()");
-      return(-1);
+    for (num_lines=1, i=0; i < strlen; i++) {
+	if (str[i] == '\n') {
+	    num_lines++;
+	}
     }
-
-    /* Check version */
-    if (strcmp(response->version, MYPROXY_VERSION) != 0) {
-      verror_put_string("Error: Received invalid version number from server");
-      return(-1);
-    } 
-
-    /* Check response */
-    switch(response->response_type) {
-        case MYPROXY_ERROR_RESPONSE:
-            verror_put_string("ERROR from server: %s", response->error_string);
-	    return(-1);
-            break;
-        case MYPROXY_OK_RESPONSE:
-            break;
-        default:
-            verror_put_string("Received unknown response type");
-	    return(-1);
-            break;
+    list = (char **)calloc(num_lines+1, sizeof(char *));
+    if (list == NULL) {
+	return list;
     }
-    return 0;
+    for (i=strlen-2; i >= 0; i--) {
+	if (str[i] == '\n') {
+	    list[--num_lines] = strdup(&(str[i+1]));
+	    str[i] = '\0';
+	}
+    }
+    list[0] = strdup(str);
+    return list;
 }
-
