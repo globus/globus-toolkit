@@ -1892,11 +1892,13 @@ int
 mm_answer_gss_sign(int socket, Buffer *m) {
         gss_buffer_desc data,hash;
         OM_uint32 major,minor;
+	u_int len;
 
-        data.value = buffer_get_string(m,&data.length);
-        if (data.length != 16) {  /* HACK - i.e. we are using SSHv1 */
+        data.value = buffer_get_string(m, &len);
+	data.length = len;
         if (data.length != 20)
-                fatal("%s: data length incorrect: %d", __func__, data.length);
+		fatal("%s: data length incorrect: %d", __func__,
+		      (int)data.length);
 
         /* Save the session ID - only first time round */
         if (session_id2_len == 0) {
@@ -1904,7 +1906,6 @@ mm_answer_gss_sign(int socket, Buffer *m) {
                 session_id2 = xmalloc(session_id2_len);
                 memcpy(session_id2, data.value, session_id2_len);
         }
-        } /* HACK - end */
         major=ssh_gssapi_sign(gsscontext, &data, &hash);
 
         xfree(data.value);
