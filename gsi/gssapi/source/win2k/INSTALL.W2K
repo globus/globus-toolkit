@@ -1,0 +1,12 @@
+Before Installing and files you must first build the package.  See README.W2K
+for details.
+
+
+Installing
+----------
+
+The following files need to be copied to the given location:
+
+...\win2k\Build\globus_gssapi.lib         --> %GLOBUS_LOCATION%\lib
+...\source\library\gssapi.h               --> %GLOBUS_LOCATION%\include
+...\source\library\globus_gssapi_config.h --> %GLOBUS_LOCATION%\include
