@@ -366,7 +366,7 @@ typedef enum
      * @param target_name
      *      The expected peer name
      */
-    /* gss_name_t                       target_name */
+    /* gss_name_t *                     target_name */
     GLOBUS_XIO_GSI_GET_TARGET_NAME,
 
     /** GlobusVarArgEnum(attr)
@@ -376,7 +376,7 @@ typedef enum
      * @param target_name
      *      The expected peer name
      */
-    /* gss_name_t *                     target_name */
+    /* gss_name_t                       target_name */
     GLOBUS_XIO_GSI_SET_TARGET_NAME,
 
     /** GlobusVarArgEnum(handle)
