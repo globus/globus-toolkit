@@ -2356,6 +2356,90 @@ globus_libc_printf_length(const char * fmt, ...)
 }
 
 
+char *
+globus_common_create_string(
+    const char *                        format,
+    ...)
+{
+    va_list                             ap;
+    char *                              new_string;
+
+    va_start(ap, format);
+
+    new_string = globus_common_v_create_string(format, ap);
+
+    va_end(ap);
+
+    return new_string;
+}
+
+char *
+globus_common_create_nstring(
+    int                                 length,
+    const char *                        format,
+    ...)
+{
+    va_list                             ap;
+    char *                              new_string;
+
+    va_start(ap, format);
+
+    new_string = globus_common_v_create_nstring(length, format, ap);
+
+    va_end(ap);
+
+    return new_string;
+}
+
+char *
+globus_common_v_create_string(
+    const char *                        format,
+    va_list                             ap)
+{
+    int                                 len;
+    char *                              new_string = NULL;
+    va_list                             ap_copy;
+
+    globus_libc_va_copy(ap_copy,ap);
+    
+    len = globus_libc_vprintf_length(format,ap_copy);
+
+    va_end(ap_copy);
+
+    len++;
+
+    if((new_string = malloc(len)) == NULL)
+    {
+        return NULL;
+    }
+    
+    globus_libc_vsnprintf(new_string,
+                          len,
+                          format,
+                          ap);
+    
+    return new_string;
+}
+
+char *
+globus_common_v_create_nstring(
+    int                                 length,
+    const char *                        format,
+    va_list                             ap)
+{
+    char *                              new_string = NULL;
+
+    if((new_string = malloc(length + 1)) == NULL)
+    {
+        return NULL;
+    }
+
+    globus_libc_vsnprintf(new_string, length + 1, format, ap);
+
+    return new_string;
+}
+
+
 #ifdef TARGET_ARCH_CRAYT3E
 /* for alloca on T3E */
 #if !defined (__GNUC__) || __GNUC__ < 2

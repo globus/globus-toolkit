@@ -262,6 +262,28 @@ globus_libc_printf_length(const char * fmt, ...);
 /* not really 'libc'... but a convenient place to put it in */
 int globus_libc_gethomedir(char *result, int bufsize);
 
+char *
+globus_common_create_string(
+    const char *                        format,
+    ...);
+
+char *
+globus_common_create_nstring(
+    int                                 length,
+    const char *                        format,
+    ...);
+
+char *
+globus_common_v_create_string(
+    const char *                        format,
+    va_list                             ap);
+
+char *
+globus_common_v_create_nstring(
+    int                                 length,
+    const char *                        format,
+    va_list                             ap);
+
 #ifndef HAVE_MEMMOVE
 #  define memmove(d, s, n) bcopy ((s), (d), (n))
 #  define HAVE_MEMMOVE
