@@ -1,10 +1,6 @@
-contact string details
-
 reexamine build process
 
 remove context from transport and hide context else where
-
-drivers should take globus_url_t instead of string contact string
 
 need clean method of getting contact string
 
@@ -15,3 +11,5 @@ po canceled by driver then op bounces down bug
 need to add driver_attr_cntl also
 
 Pass Accept, get back,  pass_open, get back, pass_read... does that work?
+
+need to check for sysconf for system driver, otherwise we're going to have a 256 fd limit
