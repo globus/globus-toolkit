@@ -3235,7 +3235,7 @@ globus_l_gram_status_file_cleanup(
 {
     DIR *            status_dir;
     char * job_status_dir;
-    struct dirent *  dir_entry;
+    struct dirent *  dir_entry = GLOBUS_NULL;
     char             logname_string[256];
     char             stat_file_path[1024];
     struct stat      statbuf;
@@ -3269,6 +3269,7 @@ globus_l_gram_status_file_cleanup(
     for(globus_libc_readdir_r(status_dir, &dir_entry);
         dir_entry != GLOBUS_NULL && 
         globus_callback_has_time_expired() > 0;
+        globus_free(dir_entry),
         globus_libc_readdir_r(status_dir, &dir_entry))
     {
         if (strstr(dir_entry->d_name, logname_string) != NULL)
@@ -3301,6 +3302,9 @@ globus_l_gram_status_file_cleanup(
             }
         }
     }
+
+    if (dir_entry != GLOBUS_NULL) globus_free(dir_entry);
+
     globus_libc_closedir(status_dir);
 
     return status;
