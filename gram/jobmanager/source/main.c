@@ -204,6 +204,11 @@ main(
 	{
 	    request->job_reporting_dir = globus_libc_strdup(argv[++i]);
 	}
+        else if((strcmp(argv[i], "-history") == 0)
+                && (i + 1 < argc))
+        {
+            request->job_history_dir = globus_libc_strdup(argv[++i]);
+        }
         else if (strcmp(argv[i], "-publish-jobs") == 0)
         {
             request->publish_jobs = GLOBUS_TRUE;

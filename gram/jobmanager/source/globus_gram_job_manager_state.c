@@ -534,6 +534,7 @@ globus_gram_job_manager_state_machine(
 		GLOBUS_TRUE);
 	}
 	globus_gram_job_manager_reporting_file_set(request);
+        globus_gram_job_manager_history_file_set(request);
 
 	globus_libc_setenv("GLOBUS_GRAM_JOB_CONTACT",
 		           request->job_contact,
@@ -618,6 +619,7 @@ globus_gram_job_manager_state_machine(
 		    GLOBUS_GRAM_PROTOCOL_RESTART_PARAM);
 
 	    globus_gram_job_manager_reporting_file_set(request);
+ //           globus_gram_job_manager_history_file_set(request);
 	    globus_gram_job_manager_state_file_set(request);
 
 	    /* Attempt to read the job state file */
@@ -1264,6 +1266,8 @@ globus_gram_job_manager_state_machine(
 	    }
 	}
 	globus_gram_job_manager_reporting_file_create(request);
+        globus_gram_job_manager_history_file_create(request);
+	request->job_history_status = request->status;
 
 	if(request->save_state)
 	{
@@ -1280,6 +1284,16 @@ globus_gram_job_manager_state_machine(
 	    globus_gram_job_manager_state_file_write(request);
 	    globus_gram_job_manager_reporting_file_create(request);
 	}
+
+	/*The request->job_history_status is used to save the last job status that is stored in
+          history file. If it is different with request->status, we have to write
+          history file. */
+        if(request->unsent_status_change && (request->job_history_status != request->status))
+        {
+	    globus_gram_job_manager_history_file_create(request);
+            request->job_history_status = request->status;
+	}
+
 	if(request->status == GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED)
 	{
 	    request->jobmanager_state =
@@ -1852,6 +1866,13 @@ globus_gram_job_manager_state_machine(
       case GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_CLOSE_OUTPUT:
 	/* Send the job manager stopped or proxy expired failure callback */
 	request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
+
+	if(request->job_history_status != request->status)
+	{
+            globus_gram_job_manager_history_file_create(request);
+	    request->job_history_status = request->status;
+	}
+
 	globus_gram_job_manager_contact_state_callback(request);
 
 	request->jobmanager_state = 
@@ -1925,7 +1946,13 @@ globus_gram_job_manager_state_machine(
          */
 	if(request->unsent_status_change)
 	{
-	    globus_gram_job_manager_contact_state_callback(request);
+            if(request->job_history_status != request->status)
+            {
+            	globus_gram_job_manager_history_file_create(request);
+            	request->job_history_status = request->status;
+            }
+
+            globus_gram_job_manager_contact_state_callback(request);
 	    request->unsent_status_change = GLOBUS_FALSE;
 	}
 

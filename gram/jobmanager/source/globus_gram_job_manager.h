@@ -375,6 +375,9 @@ typedef struct
     globus_bool_t			publish_jobs;
     char *				job_reporting_dir;
     char *				job_reporting_file;
+    char *                              job_history_dir;
+    char *                              job_history_file;
+    int					job_history_status;
     char *				cache_location;
     globus_bool_t			relocated_proxy;
     int					proxy_timeout;
@@ -421,6 +424,14 @@ globus_gram_job_manager_reporting_file_start_cleaner(
 int
 globus_gram_job_manager_reporting_file_stop_cleaner(
     globus_gram_jobmanager_request_t *	request);
+
+int
+globus_gram_job_manager_history_file_set(
+    globus_gram_jobmanager_request_t *  request);
+
+int
+globus_gram_job_manager_history_file_create(
+    globus_gram_jobmanager_request_t *  request);
 
 /* globus_gram_job_manager_validate.c */
 
