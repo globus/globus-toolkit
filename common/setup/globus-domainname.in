@@ -35,14 +35,14 @@ fi
  
 globus_hostname=""		# Replaced by deploy
 
-globus_domainname="`echo ${globus_hostname}|${GLOBUS_SH_CUT-cut} -s -d '.' -f '2-'`"
+
 
 if [ -n "${globus_domainname}" ]; then
     echo "${globus_domainname}"
     exit 0
 fi
 
-LOCALDOMAIN=@LOCALDOMAIN@
+globus_source ${sysconfdir}/globus-default-domain
  
 if [ -x ${libexecdir}/globus-libc-hostname ]; then
     FULLNAME="`${libexecdir}/globus-libc-hostname`"
@@ -57,13 +57,13 @@ fi
     BASENAME=`@GLOBUS_SH_HOSTNAME@ | ${GLOBUS_SH_CUT-cut} -d. -f1`
  
 if [ "X$FULLNAME" = "X$BASENAME" ] ; then
-# Its not fully qualified
+    # Its not fully qualified
     GLOBUS_HOSTNAME="${BASENAME}.${LOCALDOMAIN}"
 else
     GLOBUS_HOSTNAME="$FULLNAME"
 fi
 
-GLOBUS_DOMAINNAME="`echo $GLOBUS_HOSTNAME | ${GLOBUS_SH_TR-tr} 'A-Z' 'a-z' | ${GLOBUS_SH_CUT-cut} -s -d '.' -f '2-'`"
+
 
 echo $GLOBUS_DOMAINNAME
 export GLOBUS_DOMAINNAME
