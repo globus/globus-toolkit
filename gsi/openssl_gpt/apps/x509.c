@@ -93,7 +93,7 @@ static char *x509_usage[]={
 " -passin arg     - private key password source\n",
 " -serial         - print serial number value\n",
 " -hash           - print hash value\n",
-" -issuerhash     - print issuer hash value\n",
+" -issuer_hash    - print issuer hash value\n",
 " -subject        - print subject DN\n",
 " -issuer         - print issuer DN\n",
 " -email          - print email address(es)\n",
@@ -169,7 +169,7 @@ int MAIN(int argc, char **argv)
 	char *CAkeyfile=NULL,*CAserial=NULL;
 	char *alias=NULL;
 	int text=0,serial=0,hash=0,subject=0,issuer=0,startdate=0,enddate=0;
-	int issuerhash=0,ocspid=0;
+	int issuer_hash=0,ocspid=0;
 	int noout=0,sign_flag=0,CA_flag=0,CA_createserial=0,email=0;
 	int trustout=0,clrtrust=0,clrreject=0,aliasout=0,clrext=0;
 	int C=0;
@@ -382,8 +382,8 @@ int MAIN(int argc, char **argv)
 			text= ++num;
 		else if (strcmp(*argv,"-hash") == 0)
 			hash= ++num;
-		else if (strcmp(*argv,"-issuerhash") == 0)
-			issuerhash= ++num;
+		else if (strcmp(*argv,"-issuer_hash") == 0)
+			issuer_hash= ++num;
 		else if (strcmp(*argv,"-subject") == 0)
 			subject= ++num;
 		else if (strcmp(*argv,"-issuer") == 0)
@@ -714,7 +714,7 @@ bad:
 				{
 				BIO_printf(STDout,"%08lx\n",X509_subject_name_hash(x));
 				}
-			else if (issuerhash == i)
+			else if (issuer_hash == i)
 				{
 				BIO_printf(STDout,"%08lx\n",X509_issuer_name_hash(x));
 				}
