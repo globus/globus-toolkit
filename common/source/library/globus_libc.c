@@ -3100,11 +3100,23 @@ globus_l_libc_i00afunc (long address)
 #endif /* TARGET_ARCH_CRAYT3E */
 
 /* IPv6 utils */
-#ifdef TARGET_ARCH_AIX5
-#define GLOBUS_HAVE_BROKEN_GETADDRINFO 1
+
+/* some getaddrinfo() don't do reverse-lookups to fill in ai_canonname,
+ * so if node was a numerical address, ai_canonname will be too.
+ * copy addrinfos and fill in ai_canonname with a getnameinfo lookup
+ *  
+ * This is probably just a difference in interpretation of the spec, but
+ * we expect ai_canonname to be a hostname.
+ * 
+ *  -- Might be better to do !defined(TARGET_ARCH_LINUX) and maybe BSD... */
+#if defined(TARGET_ARCH_AIX)   || defined(TARGET_ARCH_OSF1)     ||   \
+    defined(TARGET_ARCH_HPUX)  || defined(TARGET_ARCH_SOLARIS)  ||   \
+    defined(TARGET_ARCH_IRIX)  || defined(TARGET_ARCH_SUNOS41)
+#define GLOBUS_GETADDRINFO_DOESNT_GET_CANONNAME 1
 #endif
 
-#ifdef GLOBUS_HAVE_BROKEN_GETADDRINFO
+
+#ifdef GLOBUS_GETADDRINFO_DOESNT_GET_CANONNAME
 static
 int
 globus_l_libc_copy_addrinfo(
@@ -3230,7 +3242,7 @@ globus_libc_getaddrinfo(
     }
 #endif
 
-#ifdef GLOBUS_HAVE_BROKEN_GETADDRINFO
+#ifdef GLOBUS_GETADDRINFO_DOESNT_GET_CANONNAME
     {
         /* some getaddrinfo() don't do reverse-lookups to fill in ai_canonname,
          * so if node was a numerical address, ai_canonname will be too.
@@ -3273,7 +3285,7 @@ void
 globus_libc_freeaddrinfo(
     globus_addrinfo_t *                 res)
 {
-#ifdef GLOBUS_HAVE_BROKEN_GETADDRINFO
+#ifdef GLOBUS_GETADDRINFO_DOESNT_GET_CANONNAME
     globus_addrinfo_t *                 next;
     
     if(res && res->ai_canonname)
