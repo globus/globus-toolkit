@@ -8,6 +8,13 @@ bin/ssh-add
 bin/ssh-agent
 bin/ssh-keygen
 bin/ssh-keyscan
+doc/gsi_openssh/README
+doc/gsi_openssh/README.gpt
+doc/gsi_openssh/README.privsep
+doc/gsi_openssh/INSTALL
+doc/gsi_openssh/WARNING.RNG
+doc/gsi_openssh/LICENSE.OpenSSH
+doc/gsi_openssh/CREDITS
 libexec/sftp-server
 libexec/ssh-keysign
 libexec/ssh-rand-helper

@@ -14,6 +14,7 @@ datadir=@datadir@
 mandir=@mandir@
 mansubdir=@mansubdir@
 sysconfdir=$$GLOBUS_LOCATION/etc/ssh
+docdir=$$GLOBUS_LOCATION/doc/gsi_openssh
 piddir=@piddir@
 srcdir=@srcdir@
 top_srcdir=@top_srcdir@
@@ -300,6 +301,7 @@ install-files: scard-install
 #   o the scard-install target
 #   o creating and chmod'ing PRIVSEP_PATH
 #   o removing the conditionals around ssh-rand-helper*
+#   o install docs into $GL/doc/gsi_openssh
 #
 
 gpt-install-files:
@@ -333,6 +335,16 @@ gpt-install-files:
 	@NO_SFTP@$(INSTALL) -m 644 sftp.1.out $(DESTDIR)$(mandir)/$(mansubdir)1/sftp.1
 	@NO_SFTP@$(INSTALL) -m 644 sftp-server.8.out $(DESTDIR)$(mandir)/$(mansubdir)8/sftp-server.8
 	$(INSTALL) -m 644 ssh-keysign.8.out $(DESTDIR)$(mandir)/$(mansubdir)8/ssh-keysign.8
+	if [ ! -d $(DESTDIR)$(docdir) ]; then \
+		$(srcdir)/mkinstalldirs $(DESTDIR)$(docdir); \
+	fi
+	$(INSTALL) -m 644 README $(DESTDIR)$(docdir)/README
+	$(INSTALL) -m 644 README.gpt $(DESTDIR)$(docdir)/README.gpt
+	$(INSTALL) -m 644 README.privsep $(DESTDIR)$(docdir)/README.privsep
+	$(INSTALL) -m 644 INSTALL $(DESTDIR)$(docdir)/INSTALL
+	$(INSTALL) -m 644 WARNING.RNG $(DESTDIR)$(docdir)/WARNING.RNG
+	$(INSTALL) -m 644 LICENCE $(DESTDIR)$(docdir)/LICENSE.OpenSSH
+	$(INSTALL) -m 644 CREDITS $(DESTDIR)$(docdir)/CREDITS
 	-rm -f $(DESTDIR)$(bindir)/slogin
 	ln -s ssh$(EXEEXT) $(DESTDIR)$(bindir)/slogin
 	-rm -f $(DESTDIR)$(mandir)/$(mansubdir)1/slogin.1
