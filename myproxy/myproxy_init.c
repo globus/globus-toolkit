@@ -13,16 +13,13 @@
 /*#include "myproxy.h"*/
 #include "gsi_socket.h"
 #include "gnu_getopt.h"
-
 #include <stdio.h>
+#include <string.h>
 #include <unistd.h>
-#include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h> 
-
 #include <stdlib.h>
-#include <string.h>
 
 
 
@@ -85,6 +82,7 @@ typedef struct
     char *pshost;	
     int psport;
     GSI_SOCKET *gsi_socket;
+    /* MESSAGE *client_message;*/
 } myproxy_client_attrs_t;
 
 
@@ -125,8 +123,8 @@ main(int argc, char *argv[])
 int 
 myproxy_init_arguments(int argc, char *argv[], myproxy_client_attrs_t *attrs)
 { 
-    extern char *optarg;
-    extern int optind;
+    extern char *gnu_optarg;
+    extern int gnu_optind;
 
     int arg;
     int arg_error = 0;
@@ -143,27 +141,27 @@ myproxy_init_arguments(int argc, char *argv[], myproxy_client_attrs_t *attrs)
 	switch(arg) {
 	    
 	case 't': 	/* Specify lifetime */
-	    timestr = malloc(strlen(optarg) + 1);
-	    strcpy(timestr, optarg);
+	    timestr = malloc(strlen(gnu_optarg) + 1);
+	    strcpy(timestr, gnu_optarg);
 	    if ( get_cred_lifetime(&(attrs->deleg_lifetime), timestr) ) {
 		arg_error = -1;
 		fprintf(stderr, bad_lifetime_usage);
 	    }	
 	    break;      
 	case 's': 	/* pshost name */
-	    attrs->pshost = malloc(strlen(optarg) + 1);
-	    strcpy(attrs->pshost, optarg); 
+	    attrs->pshost = malloc(strlen(gnu_optarg) + 1);
+	    strcpy(attrs->pshost, gnu_optarg); 
 	    break;
 	case 'p': 	/* psport */
-	    attrs->psport = atoi(optarg);
+	    attrs->psport = atoi(gnu_optarg);
 	    break;
 	case 'u': 	/* print help and exit */
 	    fprintf(stderr, usage);
 	    exit(1);
 	    break;
 	case 'l':	/* username */
-	    attrs->username = malloc(strlen(optarg) + 1);
-	    strcpy(attrs->username, optarg); 
+	    attrs->username = malloc(strlen(gnu_optarg) + 1);
+	    strcpy(attrs->username, gnu_optarg); 
 	    break;
 	case 'v': /* print version and exit */
 	    fprintf(stderr, version);
@@ -277,6 +275,10 @@ myproxy_init_client(myproxy_client_attrs_t *attrs)
 int 
 myproxy_send_message(myproxy_client_attrs_t *attrs) {
 
+/*
+    myproxy_transfer *message;
+    message = myproxy_transfer_new();
+*/
     int len;
     int tot_seconds;
     char error_string[1024]; 
@@ -294,6 +296,7 @@ myproxy_send_message(myproxy_client_attrs_t *attrs) {
     char * pass_str = "PASSPHRASE=";
     char * life_str = "LIFETIME=";
 
+
     tot_seconds = attrs->deleg_lifetime.seconds + 
 	          60*(attrs->deleg_lifetime.minutes + 
 		      60*attrs->deleg_lifetime.hours);
@@ -308,8 +311,11 @@ myproxy_send_message(myproxy_client_attrs_t *attrs) {
 		   commstr, 
 		   passstr, 
 		   lifestr) + 1; /* NUL */
- 
-   if (GSI_SOCKET_write_buffer(attrs->gsi_socket, request, len) == GSI_SOCKET_ERROR)
+
+    /* MESSAGE *client_message = MESSAGE_new();*/
+    
+
+    if (GSI_SOCKET_write_buffer(attrs->gsi_socket, request, len) == GSI_SOCKET_ERROR)
     {
 	GSI_SOCKET_get_error_string(attrs->gsi_socket, error_string,
 				    sizeof(error_string));
