@@ -7,7 +7,7 @@ SUBDIRS = \
 
 INCLUDES = $(GPT_INCLUDES)
 
-EXTRA_DIST = ''
+EXTRA_DIST = 
 
 lib_LTLIBRARIES = libglobus_gram_job_manager_callout_$(GLOBUS_FLAVOR_NAME).la
 
