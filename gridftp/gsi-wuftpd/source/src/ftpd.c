@@ -80,6 +80,27 @@
 #define VA_START(f)	va_start(ap, f)
 #define VA_END		va_end(ap)
 
+
+/**** added by JB **********/
+#if defined(THROUGHPUT)
+#   define SEND_DATA(__name, __instr, __outstr, __blksize, __length)    \
+        send_data(__name, __instr, __outstr, __blksize, __length)
+#else
+#   define SEND_DATA(__name, __instr, __outstr, __blksize, __length)    \
+        send_data(__instr, __outstr, __blksize, __length)
+#endif
+
+#ifdef USE_GLOBUS_DATA_CODE
+#   if defined(THROUGHPUT)
+#       define G_SEND_DATA(__name, __instr, __h, __blksize, __length)  \
+            g_send_data(__name, __instr, __h, __blksize, __length)
+#   else
+#       define G_SEND_DATA(__name, __instr, __h, __blksize, __length)  \
+            g_send_data(__instr, __h, __blksize, __length)
+#   endif
+#endif
+
+
 #include "proto.h"
 
 #ifdef HAVE_UFS_QUOTA_H
@@ -234,6 +255,15 @@ int Send(FILE *sockfp, char *format,...);
 #if defined(_SCO_DS) && !defined(SIGURG)
 #define SIGURG	SIGUSR1
 #endif
+
+
+/*
+ *  globus code added by JB
+ */
+#ifdef USE_GLOBUS_DATA_CODE
+extern globus_ftp_control_handle_t               g_data_handle;
+#endif
+
 
 /* File containing login names NOT to be used on this machine. Commonly used
  * to disallow uucp. */
@@ -527,6 +557,7 @@ int send_data(char *name, FILE *, FILE *, off_t, int);
 #else
 int send_data(FILE *, FILE *, off_t, int);
 #endif
+
 void dolog(struct sockaddr_in *);
 void dologout(int);
 void perror_reply(int, char *);
@@ -1065,6 +1096,32 @@ int main(int argc, char **argv, char **envp)
     /* Set up default state */
     data = -1;
     type = TYPE_A;
+
+    /*
+     *  globus hack added by JB
+     *  initialize handle and put it into ascii mode
+     */
+#   if defined(USE_GLOBUS_DATA_CODE)
+    {
+        char *                            a;
+        globus_ftp_control_host_port_t    host_port;
+        globus_result_t                   res;
+
+        a = (char *)his_addr;
+        host_port.host[0] = (int)a[0];
+        host_port.host[1] = (int)a[1];
+        host_port.host[2] = (int)a[2];
+        host_port.host[3] = (int)a[3];
+        host_port.port = 21;
+
+        globus_ftp_control_handle_init(&g_data_handle);
+        res = globus_ftp_control_local_port(
+                  &g_data_handle,
+                  &host_port);
+        assert(res != GLOBUS_SUCCESS);
+    }
+#   endif
+
     form = FORM_N;
     stru = STRU_F;
     mode = MODE_S;
@@ -1072,11 +1129,13 @@ int main(int argc, char **argv, char **envp)
     yyerrorcalled = 0;
 
     entry = (struct aclmember *) NULL;
-    if ((getaclentry("hostname", &entry)) && ARG0) {
+    if ((getaclentry("hostname", &entry)) && ARG0) 
+    {
 	(void) strncpy(hostname, ARG0, sizeof(hostname));
 	hostname[sizeof(hostname) - 1] = '\0';
     }
-    else {
+    else 
+    {
 #ifdef HAVE_SYSINFO
 	sysinfo(SI_HOSTNAME, hostname, sizeof(hostname));
 #else
@@ -1084,7 +1143,8 @@ int main(int argc, char **argv, char **envp)
 #endif
 /* set the FQDN here */
 	shp = gethostbyname(hostname);
-	if (shp != NULL) {
+	if (shp != NULL) 
+        {
 	    (void) strncpy(hostname, shp->h_name, sizeof(hostname));
 	    hostname[sizeof(hostname) - 1] = '\0';
 	}
@@ -4371,30 +4431,41 @@ void retrieve(char *cmd, char *name, int offset, int length)
 	}
     }
 
-    dout = dataconn(name, st.st_size, "w");
-    if (dout == NULL)
-	goto done;
-#ifdef BUFFER_SIZE
-#ifdef THROUGHPUT
-    TransferComplete = send_data(name, fin, dout, BUFFER_SIZE, length);
-#else
-    TransferComplete = send_data(fin, dout, BUFFER_SIZE, length);
-#endif
-#else
-#ifdef HAVE_ST_BLKSIZE
-#ifdef THROUGHPUT
-    TransferComplete = send_data(name, fin, dout, st.st_blksize * 2, length);
-#else
-    TransferComplete = send_data(fin, dout, st.st_blksize * 2, length);
-#endif
-#else
-#ifdef THROUGHPUT
-    TransferComplete = send_data(name, fin, dout, BUFSIZ);
-#else
-    TransferComplete = send_data(fin, dout, BUFSIZ);
-#endif
-#endif
-#endif
+#   if defined(USE_GLOBUS_DATA_CODE)
+    {
+#       ifdef BUFFER_SIZE
+            TransferComplete = G_SEND_DATA(name, fin, 
+                                   g_control_channel, BUFFER_SIZE, length);
+#       else
+#           ifdef HAVE_ST_BLKSIZE
+                TransferComplete = SEND_DATA(name, fin, g_control_handle, 
+                                       st.st_blksize * 2, length);
+#           else
+                TransferComplete = SEND_DATA(name, fin, 
+                                       g_control_handle, BUFSIZ);
+#           endif
+#       endif
+    }
+#   else
+    {
+        dout = dataconn(name, st.st_size, "w");
+        if (dout == NULL)
+        {
+	    goto done;
+        }
+#       ifdef BUFFER_SIZE
+            TransferComplete = SEND_DATA(name, fin, dout, BUFFER_SIZE, length);
+#       else
+#           ifdef HAVE_ST_BLKSIZE
+                TransferComplete = SEND_DATA(name, fin, dout, 
+                                       st.st_blksize * 2, length);
+#           else
+                TransferComplete = SEND_DATA(name, fin, dout, BUFSIZ);
+#           endif
+#       endif
+    }
+#   endif
+
     (void) fclose(dout);
 
   logresults:
@@ -4471,205 +4542,327 @@ void retrieve(char *cmd, char *name, int offset, int length)
 	(*closefunc) (fin);
 }
 
-void store(char *name, char *mode, int unique, int offset)
+/*
+ *  modified by JB for globus data code
+ */
+void 
+store(
+    char *                                    name, 
+    char *                                    mode, 
+    int                                       unique, 
+    int                                       offset)
 {
-    FILE *fout, *din;
-    struct stat st;
-    int TransferIncomplete = 1;
-    char *gunique(char *local);
-    time_t start_time = time(NULL);
-    int                                  tmp_restart; /* added by JB */
+    FILE *                                    fout; 
+    FILE *                                    din;
+    struct stat                               st;
+    int                                       TransferIncomplete = 1;
+    char *                                    gunique(char *local);
+    time_t                                    start_time = time(NULL);
+    int                                       tmp_restart; /* added by JB */
 
-    struct aclmember *entry = NULL;
+    struct aclmember *                        entry = NULL;
 
-    int fdout;
-    char realname[MAXPATHLEN];
+    int                                       fdout;
+    char                                      realname[MAXPATHLEN];
 
 #ifdef OVERWRITE
-    int overwrite = 1;
-    int exists = 0;
-
+    int                                       overwrite = 1;
+    int                                       exists = 0;
 #endif /* OVERWRITE */
 
-    int open_flags = 0;
+    int                                       open_flags = 0;
 
 #ifdef UPLOAD
-    mode_t oldmask;
-    uid_t uid;
-    gid_t gid;
-    uid_t oldid;
-    int f_mode = -1, match_value = -1;
-    int valid = 0;
+    mode_t                                    oldmask;
+    uid_t                                     uid;
+    gid_t                                     gid;
+    uid_t                                     oldid;
+    int                                       f_mode = -1;
+    int                                       match_value = -1;
+    int                                       valid = 0;
+
     open_flags = (O_RDWR | O_CREAT |
-		  ((mode != NULL && *mode == 'a') ? O_APPEND : (offset==-1) ? O_TRUNC : 0));
+		  ((mode != NULL && *mode == 'a') 
+                    ? O_APPEND : (offset==-1) ? O_TRUNC : 0));
 #endif /* UPLOAD */
 
     wu_realpath(name, realname, chroot_path);
 
 #ifdef TRANSFER_COUNT
 #ifdef TRANSFER_LIMIT
-    if (((file_limit_data_in > 0) && (file_count_in >= file_limit_data_in))
-	|| ((file_limit_data_total > 0) && (file_count_total >= file_limit_data_total))
-      || ((data_limit_data_in > 0) && (data_count_in >= data_limit_data_in))
-	|| ((data_limit_data_total > 0) && (data_count_total >= data_limit_data_total))) {
-	if (log_security)
-	    if (anonymous)
-		syslog(LOG_NOTICE, "anonymous(%s) of %s tried to upload %s (Transfer limits exceeded)",
+    {
+        if (((file_limit_data_in > 0) && (file_count_in >= file_limit_data_in))
+	     || ((file_limit_data_total > 0) && 
+                 (file_count_total >= file_limit_data_total))
+             || ((data_limit_data_in > 0) && 
+                 (data_count_in >= data_limit_data_in))
+             || ((data_limit_data_total > 0) && 
+                 (data_count_total >= data_limit_data_total))) 
+        {
+            if (log_security)
+            {
+	        if (anonymous)
+                {
+                    syslog(LOG_NOTICE, 
+         "anonymous(%s) of %s tried to upload %s (Transfer limits exceeded)",
 		       guestpw, remoteident, realname);
-	    else
-		syslog(LOG_NOTICE, "%s of %s tried to upload %s (Transfer limits exceeded)",
+                }
+	        else
+                {
+		    syslog(LOG_NOTICE, 
+                      "%s of %s tried to upload %s (Transfer limits exceeded)",
 		       pw->pw_name, remoteident, realname);
-	reply(553, "Permission denied on server. (Transfer limits exceeded)");
-	return;
-    }
-    if (((file_limit_raw_in > 0) && (xfer_count_in >= file_limit_raw_in))
-	|| ((file_limit_raw_total > 0) && (xfer_count_total >= file_limit_raw_total))
-	|| ((data_limit_raw_in > 0) && (byte_count_in >= data_limit_raw_in))
-	|| ((data_limit_raw_total > 0) && (byte_count_total >= data_limit_raw_total))) {
-	if (log_security)
-	    if (anonymous)
-		syslog(LOG_NOTICE, "anonymous(%s) of %s tried to upload %s (Transfer limits exceeded)",
+                }
+            }
+            reply(553, 
+              "Permission denied on server. (Transfer limits exceeded)");
+            return;
+        }
+        if (((file_limit_raw_in > 0) && (xfer_count_in >= file_limit_raw_in))
+             || ((file_limit_raw_total > 0) && 
+                 (xfer_count_total >= file_limit_raw_total))
+	     || ((data_limit_raw_in > 0) && 
+                 (byte_count_in >= data_limit_raw_in))
+	     || ((data_limit_raw_total > 0) && 
+                 (byte_count_total >= data_limit_raw_total))) 
+        {
+            if (log_security)
+            {
+                if (anonymous)
+                {
+                    syslog(LOG_NOTICE, 
+       "anonymous(%s) of %s tried to upload %s (Transfer limits exceeded)",
 		       guestpw, remoteident, realname);
-	    else
-		syslog(LOG_NOTICE, "%s of %s tried to upload %s (Transfer limits exceeded)",
+                }
+                else
+                {
+		    syslog(LOG_NOTICE, 
+                      "%s of %s tried to upload %s (Transfer limits exceeded)",
 		       pw->pw_name, remoteident, realname);
-	reply(553, "Permission denied on server. (Transfer limits exceeded)");
-	return;
+                }
+            }
+            reply(553, 
+             "Permission denied on server. (Transfer limits exceeded)");
+            return;
+        }
     }
-#endif
-#endif
+#   endif /* TRANSFER_COUNT */
+#   endif /* TRANSFER_LIMIT */
 
     if (unique && stat(name, &st) == 0 &&
 	(name = gunique(name)) == NULL)
+    {
 	return;
-
+    }
     /*
      * check the filename, is it legal?
      */
-    if ((fn_check(name)) <= 0) {
+    if ((fn_check(name)) <= 0) 
+    {
 	if (log_security)
+        {
 	    if (anonymous)
-		syslog(LOG_NOTICE, "anonymous(%s) of %s tried to upload \"%s\" (path-filter)",
+            {
+		syslog(LOG_NOTICE, 
+                   "anonymous(%s) of %s tried to upload \"%s\" (path-filter)",
 		       guestpw, remoteident, realname);
+            }
 	    else
-		syslog(LOG_NOTICE, "%s of %s tried to upload \"%s\" (path-filter)",
+            {
+		syslog(LOG_NOTICE, 
+                       "%s of %s tried to upload \"%s\" (path-filter)",
 		       pw->pw_name, remoteident, realname);
+             }
+        }
 	return;
     }
+
+#   ifdef OVERWRITE
+    {
+        /* 
+         * if overwrite permission denied and file exists... then deny the user
+         * permission to write the file. 
+         */
+        while (getaclentry("overwrite", &entry) && ARG0 && ARG1 != NULL) 
+        {
+            if (type_match(ARG1))
+            {
+     	        if (strcasecmp(ARG0, "yes") != 0) 
+                {
+  		    overwrite = 0;
+             	    open_flags |= O_EXCL;
+	        }
+            }
+        }
+
+#       ifdef PARANOID
+        {
+            overwrite = 0;
+        }
+#       endif
+        if (!stat(name, &st))
+        {
+	    exists = 1;
+        }
+
+        if (!overwrite && exists) 
+        {
+  	    if (log_security)
+            {
+	        if (anonymous)
+                {
+		    syslog(LOG_NOTICE, 
+                       "anonymous(%s) of %s tried to overwrite %s",
+		       guestpw, remoteident, realname);
+                }
+	        else
+                {
+              	    syslog(LOG_NOTICE, "%s of %s tried to overwrite %s",
+		       pw->pw_name, remoteident, realname);
+                }
+            }
+ 	    reply(553, "%s: Permission denied on server. (Overwrite)", name);
+	    return;
+        }
+    }
+#   endif /* OVERWRITE */
+
+#   ifdef UPLOAD
+    {
+        if ((match_value = upl_check(name, &uid, &gid, &f_mode, &valid)) < 0) 
+        {
+	    if (log_security)
+            {
+	        if (anonymous)
+                {
+		    syslog(LOG_NOTICE, 
+                      "anonymous(%s) of %s tried to upload %s (upload denied)",
+		       guestpw, remoteident, realname);
+                }
+	        else
+                {
+		    syslog(LOG_NOTICE, 
+                      "%s of %s tried to upload %s (upload denied)",
+		       pw->pw_name, remoteident, realname);
+                }
+            }
+	    return;
+        }
+
+        /* do not truncate the file if we are restarting */
+        if (restart_point)
+        {
+    	    open_flags &= ~O_TRUNC;
+        }
+        /* 
+         * if the user has an explicit new file mode, than open the file using
+         * that mode.  We must take care to not let the umask affect the file
+         * mode.
+         * 
+         * else open the file and let the default umask determine the file 
+         * mode. 
+         */
+        if (f_mode >= 0) 
+        {
+	    oldmask = umask(0000);
+            fdout = open(name, open_flags, f_mode);
+	    umask(oldmask);
+        }
+        else
+        { 
+	    fdout = open(name, open_flags, 0666);
+        }
+
+        if (fdout < 0) 
+        {
+	    if (log_security)
+            {
+	        if (anonymous)
+                {
+		    syslog(LOG_NOTICE, 
+                    "anonymous(%s) of %s tried to upload %s (permissions)",
+		       guestpw, remoteident, realname);
+                }
+   	        else
+                {
+		    syslog(LOG_NOTICE, 
+                       "%s of %s tried to upload %s (permissions)",
+		       pw->pw_name, remoteident, realname);
+                }
+            }
+  	    perror_reply(553, name);
+	    return;
+        }
+        /* if we have a uid and gid, then use them. */
 
 #ifdef OVERWRITE
-    /* if overwrite permission denied and file exists... then deny the user
-     * permission to write the file. */
-    while (getaclentry("overwrite", &entry) && ARG0 && ARG1 != NULL) {
-	if (type_match(ARG1))
-	    if (strcasecmp(ARG0, "yes") != 0) {
-		overwrite = 0;
-		open_flags |= O_EXCL;
-	    }
-    }
-
-#ifdef PARANOID
-    overwrite = 0;
+        if (!exists)
 #endif
-    if (!stat(name, &st))
-	exists = 1;
-
-    if (!overwrite && exists) {
-	if (log_security)
-	    if (anonymous)
-		syslog(LOG_NOTICE, "anonymous(%s) of %s tried to overwrite %s",
-		       guestpw, remoteident, realname);
-	    else
-		syslog(LOG_NOTICE, "%s of %s tried to overwrite %s",
-		       pw->pw_name, remoteident, realname);
-	reply(553, "%s: Permission denied on server. (Overwrite)", name);
-	return;
-    }
-#endif /* OVERWRITE */
-
-#ifdef UPLOAD
-    if ((match_value = upl_check(name, &uid, &gid, &f_mode, &valid)) < 0) {
-	if (log_security)
-	    if (anonymous)
-		syslog(LOG_NOTICE, "anonymous(%s) of %s tried to upload %s (upload denied)",
-		       guestpw, remoteident, realname);
-	    else
-		syslog(LOG_NOTICE, "%s of %s tried to upload %s (upload denied)",
-		       pw->pw_name, remoteident, realname);
-	return;
-    }
-
-    /* do not truncate the file if we are restarting */
-    if (restart_point)
-	open_flags &= ~O_TRUNC;
-
-    /* if the user has an explicit new file mode, than open the file using
-     * that mode.  We must take care to not let the umask affect the file
-     * mode.
-     * 
-     * else open the file and let the default umask determine the file mode. */
-    if (f_mode >= 0) {
-	oldmask = umask(0000);
-	fdout = open(name, open_flags, f_mode);
-	umask(oldmask);
-    }
-    else
-	fdout = open(name, open_flags, 0666);
-
-    if (fdout < 0) {
-	if (log_security)
-	    if (anonymous)
-		syslog(LOG_NOTICE, "anonymous(%s) of %s tried to upload %s (permissions)",
-		       guestpw, remoteident, realname);
-	    else
-		syslog(LOG_NOTICE, "%s of %s tried to upload %s (permissions)",
-		       pw->pw_name, remoteident, realname);
-	perror_reply(553, name);
-	return;
-    }
-    /* if we have a uid and gid, then use them. */
-
-#ifdef OVERWRITE
-    if (!exists)
-#endif
-	if (valid > 0) {
-	    oldid = geteuid();
-	    if (uid != 0)
-		(void) seteuid((uid_t) uid);
-	    if ((uid == 0) || ((fchown(fdout, uid, gid)) < 0)) {
-		delay_signaling();	/* we can't allow any signals while euid==0: kinch */
-		(void) seteuid((uid_t) 0);
-		if ((fchown(fdout, uid, gid)) < 0) {
+        {   
+  	    if (valid > 0) 
+            {
+	        oldid = geteuid();
+	        if (uid != 0)
+                {
+		    (void) seteuid((uid_t) uid);
+                }
+	        if ((uid == 0) || ((fchown(fdout, uid, gid)) < 0)) 
+                {
+                    /* we can't allow any signals while euid==0: kinch */
+		    delay_signaling();	
+		    (void) seteuid((uid_t) 0);
+		    if ((fchown(fdout, uid, gid)) < 0) 
+                    {
+		        (void) seteuid(oldid);
+                        /* we can allow signals once again: kinch */
+		        enable_signaling();		
+		        perror_reply(550, "fchown");
+		        return;
+		    }
 		    (void) seteuid(oldid);
-		    enable_signaling();		/* we can allow signals once again: kinch */
-		    perror_reply(550, "fchown");
-		    return;
-		}
-		(void) seteuid(oldid);
-		enable_signaling();	/* we can allow signals once again: kinch */
+                    /* we can allow signals once again: kinch */
+		    enable_signaling();	
+	        }
+   	        else
+                {
+		    (void) seteuid(oldid);
+	        }
 	    }
-	    else
-		(void) seteuid(oldid);
-	}
-#endif /* UPLOAD */
+        }
+    }
+#   endif /* UPLOAD */
 
     if (restart_point && (open_flags & O_APPEND) == 0 || offset != -1)
+    {
 	mode = "r+";
+    }
 
-#ifdef UPLOAD
-    fout = fdopen(fdout, mode);
-#else
-    fout = fopen(name, mode);
-#endif /* UPLOAD */
+#   ifdef UPLOAD
+    {
+        fout = fdopen(fdout, mode);
+    }
+#   else
+    {
+        fout = fopen(name, mode);
+    }
+#   endif /* UPLOAD */
 
-    if (fout == NULL) {
+    if (fout == NULL) 
+    {
 	if (log_security)
+        {
 	    if (anonymous)
-		syslog(LOG_NOTICE, "anonymous(%s) of %s tried to upload %s (permissions)",
+            {
+		syslog(LOG_NOTICE, 
+                   "anonymous(%s) of %s tried to upload %s (permissions)",
 		       guestpw, remoteident, realname);
+            }
 	    else
+            {
 		syslog(LOG_NOTICE, "%s of %s tried to upload %s (permissions)",
 		       pw->pw_name, remoteident, realname);
+            }
+        }
 	perror_reply(553, name);
 	return;
     }
@@ -4722,76 +4915,101 @@ void store(char *name, char *mode, int unique, int offset)
 	    goto done;
 	}
     }
-    din = dataconn(name, (off_t) - 1, "r");
-    if (din == NULL)
-	goto done;
-    TransferIncomplete = receive_data(din, fout);
-    (void) fclose(din);
-    if (TransferIncomplete == 0) {
-	if (unique)
-	    reply(226, "Transfer complete (unique file name:%s).", name);
-	else
-	    reply(226, "Transfer complete.");
-    }
 
+/*
+ * use standard data code or globus data code
+ */
+#   if defined(USE_GLOBUS_DATA_CODE)
+    {
+        TransferIncomplete = receive_data(&g_control_handle, fout);
+    }
+#   else
+    {
+        din = dataconn(name, (off_t) - 1, "r");
+        if (din == NULL)
+        {
+   	    goto done;
+        }
+        TransferIncomplete = receive_data(din, fout);
+        (void) fclose(din);
+    }
+#   endif
+
+    if (TransferIncomplete == 0) 
+    {
+	if (unique)
+        {
+	    reply(226, "Transfer complete (unique file name:%s).", name);
+        }
+	else
+        {
+	    reply(226, "Transfer complete.");
+        }
+    }
     fb_realpath(name, LastFileTransferred);
 
-#ifdef MAIL_ADMIN
-    if (anonymous && incmails > 0) {
-	FILE *sck = NULL;
+#   ifdef MAIL_ADMIN
+    {
+        if (anonymous && incmails > 0) 
+        {
+  	    FILE *sck = NULL;
 
-	unsigned char temp = 0, temp2 = 0;
-	char pathname[MAXPATHLEN];
-	while ((temp < mailservers) && (sck == NULL))
-	    sck = SockOpen(mailserver[temp++], 25);
-	if (sck == NULL) {
-	    syslog(LOG_ERR, "Can't connect to a mailserver.");
-	    goto mailfail;
-	}
-	if (Reply(sck) != 220) {
-	    syslog(LOG_ERR, "Mailserver failed to initiate contact.");
-	    goto mailfail;
-	}
-	if (Send(sck, "HELO localhost\r\n") != 250) {
-	    syslog(LOG_ERR, "Mailserver doesn't understand HELO.");
-	    goto mailfail;
-	}
-	if (Send(sck, "MAIL FROM: <%s>\r\n", email(mailfrom)) != 250) {
-	    syslog(LOG_ERR, "Mailserver didn't accept MAIL FROM.");
-	    goto mailfail;
-	}
-	for (temp = 0; temp < incmails; temp++) {
-	    if (Send(sck, "RCPT TO: <%s>\r\n", email(incmail[temp])) == 250)
-		temp2++;
-	}
-	if (temp2 == 0) {
-	    syslog(LOG_ERR, "Mailserver didn't accept any RCPT TO.");
-	    goto mailfail;
-	}
-	if (Send(sck, "DATA\r\n") != 354) {
-	    syslog(LOG_ERR, "Mailserver didn't accept DATA.");
-	    goto mailfail;
-	}
-	SockPrintf(sck, "From: wu-ftpd <%s>\r\n", mailfrom);
-	SockPrintf(sck, "Subject: New file uploaded: %s\r\n\r\n", name);
-	fb_realpath(name, pathname);
-	SockPrintf(sck, "%s uploaded %s from %s.\r\nFile size is %d.\r\nPlease move the file where it belongs.\r\n", guestpw, pathname, remotehost, byte_count);
-	if (Send(sck, ".\r\n") != 250)
-	    syslog(LOG_ERR, "Message rejected by mailserver.");
-	if (Send(sck, "QUIT\r\n") != 221)
-	    syslog(LOG_ERR, "Mailserver didn't accept QUIT.");
-	goto mailok;
-      mailfail:
-	if (sck != NULL)
-	    fclose(sck);
-      mailok:
-	sck = NULL;		/* We don't need this, but some (stupid) compilers need an
+	    unsigned char temp = 0, temp2 = 0;
+	    char pathname[MAXPATHLEN];
+	    while ((temp < mailservers) && (sck == NULL))
+	        sck = SockOpen(mailserver[temp++], 25);
+	    if (sck == NULL) {
+	        syslog(LOG_ERR, "Can't connect to a mailserver.");
+	        goto mailfail;
+	    }
+	    if (Reply(sck) != 220) {
+	        syslog(LOG_ERR, "Mailserver failed to initiate contact.");
+	        goto mailfail;
+	    }
+	    if (Send(sck, "HELO localhost\r\n") != 250) {
+	        syslog(LOG_ERR, "Mailserver doesn't understand HELO.");
+	        goto mailfail;
+	    }
+	    if (Send(sck, "MAIL FROM: <%s>\r\n", email(mailfrom)) != 250) {
+	        syslog(LOG_ERR, "Mailserver didn't accept MAIL FROM.");
+	        goto mailfail;
+	    }
+	    for (temp = 0; temp < incmails; temp++) {
+	        if (Send(sck, "RCPT TO: <%s>\r\n", email(incmail[temp])) == 250)
+		    temp2++;
+	    }
+	    if (temp2 == 0) {
+	        syslog(LOG_ERR, "Mailserver didn't accept any RCPT TO.");
+	        goto mailfail;
+	    }
+	    if (Send(sck, "DATA\r\n") != 354) {
+	        syslog(LOG_ERR, "Mailserver didn't accept DATA.");
+	        goto mailfail;
+	    }
+  	    SockPrintf(sck, "From: wu-ftpd <%s>\r\n", mailfrom);
+	    SockPrintf(sck, "Subject: New file uploaded: %s\r\n\r\n", name);
+	    fb_realpath(name, pathname);
+	    SockPrintf(sck, "%s uploaded %s from %s.\r\nFile size is %d.\r\nPlease move the file where it belongs.\r\n", guestpw, pathname, remotehost, byte_count);
+	    if (Send(sck, ".\r\n") != 250)
+	        syslog(LOG_ERR, "Message rejected by mailserver.");
+	    if (Send(sck, "QUIT\r\n") != 221)
+	        syslog(LOG_ERR, "Mailserver didn't accept QUIT.");
+	    goto mailok;
+          mailfail:
+	    if (sck != NULL)
+	        fclose(sck);
+          mailok:
+	    sck = NULL;		/* We don't need this, but some (stupid) compilers need an
 				   instruction after a label. This one can't hurt. */
+        }
     }
-#endif /* MAIL_ADMIN */
+#   endif /* MAIL_ADMIN */
 
-    if (log_incoming_xfers && (xferlog || syslogmsg)) {
-	char namebuf[MAXPATHLEN], msg[MAXPATHLEN + 2 * MAXHOSTNAMELEN + 100 + 128];	/* AUTHNAMESIZE is 100 */
+    if (log_incoming_xfers && (xferlog || syslogmsg)) 
+    {
+        /* AUTHNAMESIZE is 100 */
+	char namebuf[MAXPATHLEN]; 
+        char msg[MAXPATHLEN + 2 * MAXHOSTNAMELEN + 100 + 128];	
 	size_t msglen;		/* for stupid_sprintf */
 	int xfertime = time(NULL) - start_time;
 	time_t curtime = time(NULL);
@@ -4799,15 +5017,22 @@ void store(char *name, char *mode, int unique, int offset)
 
 	if (!xfertime)
 	    xfertime++;
-#ifdef XFERLOG_REALPATH
-	wu_realpath(name, namebuf, chroot_path);
-#else
-	fb_realpath(name, namebuf);
-#endif
+#       ifdef XFERLOG_REALPATH
+        {
+	    wu_realpath(name, namebuf, chroot_path);
+        }
+#       else
+        {
+	    fb_realpath(name, namebuf);
+        }
+#       endif
 	for (loop = 0; namebuf[loop]; loop++)
+        {
 	    if (isspace(namebuf[loop]) || iscntrl(namebuf[loop]))
+            {
 		namebuf[loop] = '_';
-
+            }
+        }
 /* see above */
 	sprintf(msg, "%.24s %d %s %" L_FORMAT " ",
 		ctime(&curtime),
@@ -4829,11 +5054,17 @@ void store(char *name, char *mode, int unique, int offset)
 	    );
 	/* Ensure msg always ends with '\n' */
 	if (strlen(msg) == sizeof(msg) - 1)
+        {
 	    msg[sizeof(msg) - 2] = '\n';
+        }
 	if (syslogmsg != 1)
+        {
 	    write(xferlog, msg, strlen(msg));
+        }
 	if (syslogmsg != 0)
+        {
 	    syslog(LOG_INFO, "xferlog (recv): %s", msg + 25);
+        }
     }
     data = -1;
     pdata = -1;
@@ -6386,26 +6617,37 @@ void passive(void)
     int on = 1;
     register char *p, *a;
 
-/* H* fix: if we already *have* a passive socket, close it first.  Prevents
-   a whole variety of entertaining clogging attacks. */
-    if (pdata > 0) {
+    /* 
+     * H* fix: if we already *have* a passive socket, close it first.  Prevents
+     *         a whole variety of entertaining clogging attacks. 
+     */
+    if (pdata > 0) 
+    {
 	close(pdata);
 	pdata = -1;
     }
-    if (!logged_in) {
+    if (!logged_in) 
+    {
 	reply(530, "Login with USER first.");
 	return;
     }
     pdata = socket(AF_INET, SOCK_STREAM, 0);
-    if (pdata < 0) {
+    if (pdata < 0) 
+    {
 	perror_reply(425, "Can't open passive connection");
 	return;
     }
     if (keepalive)
-	(void) setsockopt(pdata, SOL_SOCKET, SO_KEEPALIVE, (char *) &on, sizeof(on));
-    if (TCPwindowsize) {
-	(void) setsockopt(pdata, SOL_SOCKET, SO_SNDBUF, (char *) &TCPwindowsize, sizeof(TCPwindowsize));
-	(void) setsockopt(pdata, SOL_SOCKET, SO_RCVBUF, (char *) &TCPwindowsize, sizeof(TCPwindowsize));
+    {
+	(void) setsockopt(pdata, SOL_SOCKET, SO_KEEPALIVE, 
+                   (char *) &on, sizeof(on));
+    }
+    if (TCPwindowsize) 
+    {
+	(void) setsockopt(pdata, SOL_SOCKET, SO_SNDBUF, 
+                   (char *) &TCPwindowsize, sizeof(TCPwindowsize));
+	(void) setsockopt(pdata, SOL_SOCKET, SO_RCVBUF, 
+                   (char *) &TCPwindowsize, sizeof(TCPwindowsize));
     }
     pasv_addr = ctrl_addr;
     pasv_addr.sin_port = 0;
@@ -6414,7 +6656,8 @@ void passive(void)
 
     checkports();
 
-    if (passive_port_min == -1) {
+    if (passive_port_min == -1) 
+    {
 	passive_port_max = 65534;
 	passive_port_min = 1024;
     }
@@ -6426,7 +6669,8 @@ void passive(void)
 	int j;
 	int k;
 
-	if (passive_port_max < passive_port_min) {
+	if (passive_port_max < passive_port_min) 
+        {
 	    (void) seteuid((uid_t) pw->pw_uid);
 	    enable_signaling();	/* we can allow signals once again: kinch */
 	    goto pasv_error;
@@ -6435,21 +6679,24 @@ void passive(void)
 	i = passive_port_max - passive_port_min + 1;
 
 	port_array = calloc(i, sizeof(int));
-	if (port_array == NULL) {
+	if (port_array == NULL) 
+        {
 	    (void) seteuid((uid_t) pw->pw_uid);
 	    enable_signaling();	/* we can allow signals once again: kinch */
 	    goto pasv_error;
 	}
 
 	pasv_port_array = calloc(i, sizeof(int));
-	if (pasv_port_array == NULL) {
+	if (pasv_port_array == NULL) 
+        {
 	    free(port_array);
 	    (void) seteuid((uid_t) pw->pw_uid);
 	    enable_signaling();	/* we can allow signals once again: kinch */
 	    goto pasv_error;
 	}
 
-	do {
+	do 
+        {
 	    --i;
 	    port_array[i] = passive_port_min + i;
 	} while (i > 0);
@@ -6469,23 +6716,32 @@ void passive(void)
 
 	bind_error = -1;
 	errno = EADDRINUSE;
-	for (i = 3; (bind_error < 0) && (errno == EADDRINUSE) && (i > 0); i--) {
-	    for (j = passive_port_max - passive_port_min + 1; (bind_error < 0) && (errno == EADDRINUSE) && (j > 0); j--) {
-		if (i == 3) {
+	for (i = 3; (bind_error < 0) && (errno == EADDRINUSE) && (i > 0); i--) 
+        {
+	    for (j = passive_port_max - passive_port_min + 1; 
+                 (bind_error < 0) && (errno == EADDRINUSE) && (j > 0); 
+                 j--) 
+            {
+		if (i == 3) 
+                {
 		    k = (int) ((1.0 * j * rand()) / (RAND_MAX + 1.0));
 		    pasv_port_array[j - 1] = port_array[k];
 		    while (++k < j)
+                    {
 			port_array[k - 1] = port_array[k];
+                    }
 		}
 		pasv_addr.sin_port = htons(pasv_port_array[j - 1]);
-		bind_error = bind(pdata, (struct sockaddr *) &pasv_addr, sizeof(pasv_addr));
+		bind_error = bind(pdata, (struct sockaddr *) 
+                                    &pasv_addr, sizeof(pasv_addr));
 	    }
 	}
 
 	free(pasv_port_array);
 	free(port_array);
 
-	if (bind_error < 0) {
+	if (bind_error < 0) 
+        {
 	    (void) seteuid((uid_t) pw->pw_uid);
 	    enable_signaling();	/* we can allow signals once again: kinch */
 	    goto pasv_error;
@@ -6495,22 +6751,34 @@ void passive(void)
     (void) seteuid((uid_t) pw->pw_uid);
     enable_signaling();		/* we can allow signals once again: kinch */
     len = sizeof(pasv_addr);
+    
     if (getsockname(pdata, (struct sockaddr *) &pasv_addr, &len) < 0)
+    {
 	goto pasv_error;
+    }
     if (listen(pdata, 1) < 0)
+    {
 	goto pasv_error;
+    }
+
     usedefault = 1;
     if (route_vectored)
+    {
 	a = (char *) &vect_addr.sin_addr;
+    }
     else
+    {
 	a = (char *) &pasv_addr.sin_addr;
+    }
     p = (char *) &pasv_addr.sin_port;
 
 #define UC(b) (((int) b) & 0xff)
 
-    if (debug) {
+    if (debug) 
+    {
 	char *s = calloc(128 + strlen(remoteident), sizeof(char));
-	if (s) {
+	if (s) 
+        {
 	    int i = ntohs(pasv_addr.sin_port);
 	    sprintf(s, "PASV port %i assigned to %s", i, remoteident);
 	    syslog(LOG_DEBUG, s);
@@ -6524,9 +6792,11 @@ void passive(void)
   pasv_error:
     (void) close(pdata);
     pdata = -1;
-    if (debug) {
+    if (debug) 
+    {
 	char *s = calloc(128 + strlen(remoteident), sizeof(char));
-	if (s) {
+	if (s) 
+        {
 	    sprintf(s, "PASV port assignment assigned for %s", remoteident);
 	    syslog(LOG_DEBUG, s);
 	    free(s);

@@ -68,6 +68,12 @@
 
 #endif /* !FTP_SECURITY_EXTENSIONS */
 
+/*
+ *  globus code added by JB
+ */
+#ifdef USE_GLOBUS_DATA_CODE
+extern globus_ftp_control_handle_t               g_data_handle;
+#endif
 
 extern int dolreplies;
 #ifndef INTERNAL_LS
@@ -262,13 +268,46 @@ cmd: USER SP username CRLF
 		syslog(LOG_INFO, "PORT");
 /* H* port fix, part B: admonish the twit.
    Also require login before PORT works */
-	    if ($2) {
+	    if ($2) 
+            {
 #ifndef DISABLE_PORT
 		if (((cliaddr.s_addr == his_addr.sin_addr.s_addr)
 		     || (port_allowed(inet_ntoa(cliaddr))))
-		    && (ntohs(cliport) > 1023)) {
+		    && (ntohs(cliport) > 1023)) 
+                {
+                    /*
+                     *  globus hack added by JB
+                     */
+#                   if defined(USE_GLOBUS_DATA_CODE)
+                    {
+                        globus_result_t                   res = GLOBUS_SUCCESS;
+                        globus_ftp_control_host_port_t    host_port;
+                        char *                            a;
+
+                        a = (char *)cliaddr;
+                        host_port.host[0] = (int)a[0];
+                        host_port.host[1] = (int)a[1];
+                        host_port.host[2] = (int)a[2];
+                        host_port.host[3] = (int)a[3];
+                        host_port.port = inet_ntohs(cliport);
+
+                        res = globus_ftp_control_local_port(
+                                  &g_data_handle,
+                                  &host_port);
+                        if(res != GLOBUS_SUCCESS)
+                        {
+                    	    memset(&data_dest, 0, sizeof(data_dest));
+		            syslog(LOG_WARNING, "refused PORT %s,%d from %s",
+			    inet_ntoa(cliaddr), ntohs(cliport), remoteident);
+		            reply(500, "Illegal PORT Command");
+     
+                            goto globus_port_err;
+                        }
+                    }
+#                   endif
 		    usedefault = 0;
-		    if (pdata >= 0) {
+		    if (pdata >= 0) 
+                    {
 			(void) close(pdata);
 			pdata = -1;
 		    }
@@ -277,8 +316,10 @@ cmd: USER SP username CRLF
 		    data_dest.sin_port = cliport;
 		    reply(200, "PORT command successful.");
 		}
-		else {
+		else 
+                {
 #endif
+ globus_port_err:
 		    memset(&data_dest, 0, sizeof(data_dest));
 		    syslog(LOG_WARNING, "refused PORT %s,%d from %s",
 			   inet_ntoa(cliaddr), ntohs(cliport), remoteident);
@@ -296,7 +337,20 @@ cmd: USER SP username CRLF
 		syslog(LOG_INFO, "PASV");
 	    if ($2)
 #if (defined (DISABLE_PORT) || !defined (DISABLE_PASV))
-		passive();
+
+                /*
+                 *  globus code added by JB
+                 */
+#               if defined(USE_GLOBUS_DATA_CODE)
+                {
+		    g_passive();
+                }
+#               else
+                {
+		    passive();
+                }
+#               endif
+
 #else
 		reply(425, "Cannot open passive connection");
 #endif
@@ -324,16 +378,28 @@ cmd: USER SP username CRLF
 	    if (log_commands)
 		syslog(LOG_INFO, "TYPE %s", typenames[cmd_type]);
 	    if ($2)
-		switch (cmd_type) {
+		switch (cmd_type) 
+                {
 
 		case TYPE_A:
-		    if (cmd_form == FORM_N) {
+		    if (cmd_form == FORM_N) 
+                    {
 			reply(200, "Type set to A.");
 			type = cmd_type;
 			form = cmd_form;
+#                       if defined(USE_GLOBUS_DATA_CODE)
+                        {
+                            globus_ftp_control_local_type(
+                                &g_data_handle,
+                                GLOBUS_FTP_CONTROL_TYPE_ASCII,
+                                0);
+                        }
+#                       endif
 		    }
 		    else
+                    {
 			reply(504, "Form must be N.");
+		    }
 		    break;
 
 		case TYPE_E:
@@ -343,17 +409,29 @@ cmd: USER SP username CRLF
 		case TYPE_I:
 		    reply(200, "Type set to I.");
 		    type = cmd_type;
+#                   if defined(USE_GLOBUS_DATA_CODE)
+                    {
+                        globus_ftp_control_local_type(
+                            &g_data_handle,
+                            GLOBUS_FTP_CONTROL_TYPE_IMAGE,
+                            0);
+                    }
+#                   endif
+
 		    break;
 
 		case TYPE_L:
 #if NBBY == 8
-		    if (cmd_bytesz == 8) {
+		    if (cmd_bytesz == 8) 
+                    {
 			reply(200,
 			      "Type set to L (byte size 8).");
 			type = cmd_type;
 		    }
 		    else
+                    {
 			reply(504, "Byte size must be 8.");
+		    }
 #else /* NBBY == 8 */
 #error UNIMPLEMENTED for NBBY != 8
 #endif /* NBBY == 8 */
@@ -364,7 +442,8 @@ cmd: USER SP username CRLF
 	    if (log_commands)
 		syslog(LOG_INFO, "STRU %s", strunames[$4]);
 	    if ($2)
-		switch ($4) {
+		switch ($4) 
+                {
 
 		case STRU_F:
 		    reply(200, "STRU F ok.");

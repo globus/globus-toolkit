@@ -39,6 +39,13 @@
 #include <stdarg.h>
 
 /*
+ *  globus hack added by JB
+ */
+#if defined(USE_GLOBUS_DATA_CODE)
+#include <globus_ftp_control.h>
+#endif
+
+/*
    ** access.c
  */
 int parsetime(char *);
