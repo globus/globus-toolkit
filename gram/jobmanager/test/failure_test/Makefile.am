@@ -33,6 +33,7 @@ pkgdata_DATA = \
     error_opening_stderr2.rsl \
     error_opening_stderr.rsl \
     error_opening_stdout2.rsl \
+    error_opening_stdout3.rsl \
     error_opening_stdout.rsl \
     error_rsl_arguments.rsl \
     error_rsl_cache.rsl \
