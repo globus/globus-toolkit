@@ -1,7 +1,7 @@
 
 #include <stdio.h>
 #include <proxycertinfo.h>
-#include <proxyrestriction.h>
+#include <proxypolicy.h>
 #include <string.h>
 #include <openssl/pem.h>
 
@@ -16,14 +16,14 @@ int main(int argc, char * argv[])
 
     FILE * instream;
 
-    PROXYRESTRICTION * rst;
+    PROXYPOLICY * rst;
     PROXYCERTINFO * pcinfo;
     ASN1_OBJECT * pol_lang;
 
-    int haspclength, hasrestriction, pclength;
+    int haspclength, haspolicy, pclength;
     int ind, from_file, to_file, version;
 
-    from_file = to_file = haspclength = hasrestriction = pclength = 0;
+    from_file = to_file = haspclength = haspolicy = pclength = 0;
     version = 1;
 
     if(argc > 1)
@@ -50,7 +50,7 @@ int main(int argc, char * argv[])
 	    {
 		ind++;
 		pllang = argv[ind];
-		hasrestriction = 1;
+		haspolicy = 1;
 		ind++;
 		plstring = argv[ind];
 		ind++;
@@ -116,18 +116,18 @@ int main(int argc, char * argv[])
 	    PROXYCERTINFO_set_path_length(pcinfo, pclength);
 	}
 
-	if(hasrestriction)
+	if(haspolicy)
 	{
-	    rst = PROXYRESTRICTION_new();
-	    PROXYRESTRICTION_set_policy(rst, plstring, strlen(plstring));
+	    rst = PROXYPOLICY_new();
+	    PROXYPOLICY_set_policy(rst, plstring, strlen(plstring));
 	    pol_lang = ASN1_OBJECT_new();
 	    pol_lang->sn = pllang;
 	    pol_lang->ln = pllang;
 	    pol_lang->data = pllang;
 	    pol_lang->length = strlen(pllang);
 	    pol_lang->flags = 0;
-            PROXYRESTRICTION_set_policy_language(rst, pol_lang);
-            PROXYCERTINFO_set_restriction(pcinfo, rst);
+            PROXYPOLICY_set_policy_language(rst, pol_lang);
+            PROXYCERTINFO_set_policy(pcinfo, rst);
 	}
 
 	PROXYCERTINFO_print_fp(stdout, pcinfo);
@@ -160,7 +160,7 @@ void usage()
             "of the proxy cert info,\n      otherwise "
             "no max length exists\n\n"
             "  -rest  <language> <policy>\n"
-            "      adds a restriction to the proxy cert info\n"
+            "      adds a policy to the proxy cert info\n"
             "      and sets the policy language and\n"
             "      and policy string\n\n"
             "  -in  <proxycertfile>\n"
