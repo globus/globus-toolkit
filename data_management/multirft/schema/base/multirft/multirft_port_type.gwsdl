@@ -68,56 +68,56 @@ ogsi:NotificationSource">
   <input message="tns:cancelInputMessage"/>
   <output message="tns:cancelOutputMessage"/>
  </operation>
-</grid:portType>
 
-<gwsdl:serviceDataDescription name="FileTransferProgress"
-                             element="rft-types:FileTransferProgressType"
+<gwsdl:serviceData name="FileTransferProgress"
+                             type="rft-types:FileTransferProgressType"
                              maxOccurs="1"
                              minOccurs="1"
                              mutability="mutable">
-</gwsdl:serviceDataDescription>
-<gwsdl:serviceDataDescription name="FileTransferRestartMarker"
-                             element="rft-types:FileTransferRestartMarker"
+</gwsdl:serviceData>
+<gwsdl:serviceData name="FileTransferRestartMarker"
+                             type="rft-types:FileTransferRestartMarker"
                              maxOccurs="1"
                              minOccurs="1"
                              mutability="mutable">
-</gwsdl:serviceDataDescription>
+</gwsdl:serviceData>
 
-<gwsdl:serviceDataDescription name="FileTransferJobStatusElement"
-                             element="rft-types:FileTransferStatusElement"
+<gwsdl:serviceData name="FileTransferJobStatusElement"
+                             type="rft-types:FileTransferStatusElement"
                              minOccurs="1"
                              maxOccurs="unbounded"
                              mutability="mutable">
-</gwsdl:serviceDataDescription> 
+</gwsdl:serviceData> 
 
-<gwsdl:serviceDataDescription name="FileTransferStatusElement"
-                             element="rft-types:FileTransferStatusElement"
+<gwsdl:serviceData name="FileTransferStatusElement"
+                             type="rft-types:FileTransferStatusElement"
                              minOccurs="1"
                              maxOccurs="1"
                              mutability="mutable">
-</gwsdl:serviceDataDescription> 
+</gwsdl:serviceData> 
 
-<gwsdl:serviceDataDescription name="GridFTPRestartMarkerElement"
-                             element="rft-types:GridFTPRestartMarkerElement"
+<gwsdl:serviceData name="GridFTPRestartMarkerElement"
+                             type="rft-types:GridFTPRestartMarkerElement"
                              minOccurs="1"
                              maxOccurs="1"
                              mutability="mutable">
-</gwsdl:serviceDataDescription>
+</gwsdl:serviceData>
 
-<gwsdl:serviceDataDescription name="GridFTPPerfMarkerElement"
-                             element="rft-types:GridFTPPerfMarkerElement"
+<gwsdl:serviceData name="GridFTPPerfMarkerElement"
+                             type="rft-types:GridFTPPerfMarkerElement"
                              minOccurs="1"
                              maxOccurs="1"
                              mutability="mutable">
-</gwsdl:serviceDataDescription>
+</gwsdl:serviceData>
 
-<gwsdl:serviceDataDescription name="Version"
-                             element="rft-types:Version"
+<gwsdl:serviceData name="Version"
+                             type="rft-types:Version"
                              minOccurs="1"
                              maxOccurs="1"
                              mutability="constant">
-</gwsdl:serviceDataDescription>
+</gwsdl:serviceData>
 
+</grid:portType>
 </definitions>
 
 
