@@ -7,7 +7,7 @@ setup_SCRIPTS = \
     setup-globus-job-manager-callout \
     setup-globus-job-manager-callout.pl
 
-EXTRA_DIST = $(setup_SCRIPTS) globus_gram_job_manager_fork.dox
+EXTRA_DIST = $(setup_SCRIPTS) globus_gram_job_manager_callout.dox
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top
