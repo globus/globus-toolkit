@@ -15,26 +15,14 @@ public class ScalabilityTester {
     SingleJobThread[] jobList = null;
     int[] jobPhaseState = null;
     boolean[] completedList = null;
-    int createdCount = 0;
-    int startedCount = 0;
     int completedCount = 0;
-    int stoppedCount = 0;
-
-    PerformanceLog perfLog = new PerformanceLog(
-        ScalabilityTester.class.getName());
-    PerformanceLog completePerfLog = new PerformanceLog(
-        ScalabilityTester.class.getName() + ".complete");
 
     public ScalabilityTester() { }
 
     public synchronized void run() {
         createAll();
 
-        startAll();
-
         waitForAllToComplete();
-
-        cleanupAll();
     }
 
     protected void createAll() {
@@ -44,9 +32,7 @@ public class ScalabilityTester {
         //START TIMMING createService
         if (logger.isDebugEnabled()) {
             logger.debug("creating " + this.count + " job(s)");
-            logger.debug("perf log start [createService]");
         }
-        this.perfLog.start();
 
         for (int i=0; i<this.count; i++) {
             this.jobList[i] = new SingleJobThread(this, i);
@@ -71,64 +57,8 @@ public class ScalabilityTester {
             }
         }
 
-        //STOP TIMMING createService
-        this.perfLog.stop("createService");
         if (logger.isDebugEnabled()) {
             logger.debug("all jobs created");
-        }
-    }
-
-    protected void startAll() {
-        if (logger.isDebugEnabled()) {
-            logger.debug("starting " + this.count + " job(s)");
-        }
-
-        //START TIMMING start
-        if (logger.isDebugEnabled()) {
-            logger.debug("starting " + this.count + " job(s)");
-            logger.debug("perf log start [start]");
-        }
-        this.perfLog.start();
-
-        for (int i=0; i<this.jobList.length; i++) {
-            if (this.jobList[i].getIndex() >= 0) {
-                this.jobList[i].start();
-            }
-        }
-
-        boolean startedTimmingComplete = false;
-        int oldStartedCount = -1;
-        while (this.startedCount < this.count) {
-            if (logger.isDebugEnabled()) {
-                if (oldStartedCount != this.startedCount) {
-                    logger.debug("waiting for "
-                                + (this.count - this.startedCount)
-                                + " job(s) to be started");
-                    oldStartedCount = this.startedCount;
-                }
-            }
-
-            try {
-                wait(5000);
-            } catch (Exception e) {
-                logger.error("unabled to wait", e);
-            }
-
-            if (!startedTimmingComplete) {
-                //START TIMMING complete
-                if (logger.isDebugEnabled()) {
-                    logger.debug("starting " + this.count + " job(s)");
-                    logger.debug("perf log start [start]");
-                }
-                this.completePerfLog.start();
-                startedTimmingComplete = true;
-            }
-        }
-
-        //STOP TIMMING start
-        this.perfLog.stop("start");
-        if (logger.isDebugEnabled()) {
-            logger.debug("all jobs started");
         }
     }
 
@@ -180,55 +110,8 @@ public class ScalabilityTester {
         }
     }
 
-    protected void cleanupAll() {
-        //send signal to all job threads to cleanup and exit
-        for (int i=0; i<this.jobList.length; i++) {
-            this.jobList[i].stop();
-        }
-
-        int oldStoppedCount = -1;
-        while (this.stoppedCount < this.count) {
-            if (logger.isDebugEnabled()) {
-                if (oldStoppedCount != this.stoppedCount) {
-                    logger.debug("waiting for "
-                                + (this.count - this.stoppedCount)
-                                + " job(s) to be stopped");
-                    oldStoppedCount = this.stoppedCount;
-                }
-            }
-
-            try {
-                wait(5000);
-            } catch (Exception e) {
-                logger.error("unabled to wait", e);
-            }
-        }
-
-        this.perfLog.stop("complete");
-
-        if (logger.isDebugEnabled()) {
-            logger.debug("all jobs stopped");
-        }
-    }
-
     synchronized void notifyError() {
         this.count--;
-        notifyAll();
-    }
-
-    synchronized void notifyCreated(int jobIndex) {
-        if (logger.isDebugEnabled()) {
-            logger.debug("got created signal from job #" + jobIndex);
-        }
-        this.createdCount++;
-        notifyAll();
-    }
-
-    synchronized void notifyStarted(int jobIndex) {
-        if (logger.isDebugEnabled()) {
-            logger.debug("got started signal from job #" + jobIndex);
-        }
-        this.startedCount++;
         notifyAll();
     }
 

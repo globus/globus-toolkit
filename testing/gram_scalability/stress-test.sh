@@ -20,8 +20,6 @@ if [ -z $count ]; then
     exit
 fi
 
-cat sleep.xml.in | sed -e "s#GLOBUS_LOCATION#$GLOBUS_LOCATION#" > sleep.xml
-
 index=1
 begin_time=0
 end_time=0
@@ -32,7 +30,8 @@ rm -f $logfile
 
 while [ $index -le $count ] 
 do 
-  echo $index >> $logfile
+    cat sleep.xml.in | sed -e "s#GLOBUS_LOCATION#$GLOBUS_LOCATION#" -e "s#JOBINDEX#$index#"> sleep.xml
+    echo $index >> $logfile
 
 begin_time=`date +%s`
 $GLOBUS_LOCATION/bin/managed-job-globusrun $batch -factory $factory -file ./sleep.xml 2>&1 >> $logfile

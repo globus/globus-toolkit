@@ -74,11 +74,7 @@ public class SingleJobThread
     NotificationSinkManager notificationSinkManager = null;
     String notificationSinkId = null;
     int jobIndex = -1;
-    boolean started = false;
     boolean completed = false;
-
-    PerformanceLog perfLog = new PerformanceLog(
-        SingleJobThread.class.getName());
 
     public SingleJobThread(ScalabilityTester harness, int jobIndex) {
         this.harness = harness;
@@ -136,12 +132,6 @@ public class SingleJobThread
             logger.debug("creating job");
         }
 
-        //START TIMMING createService
-        if (logger.isDebugEnabled()) {
-            logger.debug("perf log start [createService]");
-        }
-        this.perfLog.start();
-
         //setup factory stub
         OGSIServiceGridLocator factoryLocator = new OGSIServiceGridLocator();
         Factory factory = factoryLocator.getFactoryPort(new URL(factoryUrl));
@@ -160,7 +150,7 @@ public class SingleJobThread
         }
 
         ExtensibilityType creationParameters
-            = AnyHelper.getExtensibility(rsl);
+            = AnyHelper.getExtensibility(this.rsl);
         LocatorType gshHolder
             = gridServiceFactory.createService(creationParameters);
         this.mjsLocator = new ManagedJobServiceGridLocator();
@@ -174,35 +164,13 @@ public class SingleJobThread
             throw new Exception("unable to subscribe for MJS notifications", e);
         }
 
-        //STOP TIMMING createService
-        this.perfLog.stop("createService");
-
-        this.harness.notifyCreated(this.jobIndex);
-        if (logger.isDebugEnabled()) {
-            logger.debug("notifyed harness of creation");
-        }
-
-        //wait for start signal
-        if (logger.isDebugEnabled()) {
-            logger.debug("waiting for signal to start");
-        }
-        try {
-            this.wait();
-        } catch (Exception e) {
-            logger.error("unable to wait", e);
-        }
+        this.rsl = null;
     }
 
     protected void startService() {
         if (logger.isDebugEnabled()) {
             logger.debug("starting job");
         }
-
-        //START TIMMING start
-        if (logger.isDebugEnabled()) {
-            logger.debug("perf log start [start]");
-        }
-        this.perfLog.start();
 
         //setup MJS stub
         ManagedJobPortType managedJob = null;
@@ -233,34 +201,6 @@ public class SingleJobThread
             return;
         }
 
-        //STOP TIMMING start
-        this.perfLog.stop("start");
-
-        this.harness.notifyStarted(this.jobIndex);
-        if (logger.isDebugEnabled()) {
-            logger.debug("notifyed harness of start");
-        }
-
-        //wait for Active signal
-        if (logger.isDebugEnabled()) {
-            logger.debug("job #" + this.jobIndex
-                        + " waiting for signal to start timming complete");
-        }
-        while (!started) {
-            try {
-                this.wait(2000);
-            } catch (Exception e) {
-                logger.error("unable to wait", e);
-                return;
-            }
-       }
-
-        //START TIMMING complete
-        if (logger.isDebugEnabled()) {
-            logger.debug("perf log start [complete]");
-        }
-        this.perfLog.start();
-
         //wait for Done or Failed signal
         if (logger.isDebugEnabled()) {
             logger.debug("waiting for signal to stop timming complete");
@@ -273,24 +213,12 @@ public class SingleJobThread
                 return;
             }
        }
-        this.harness.notifyCompleted(this.jobIndex);
-        if (logger.isDebugEnabled()) {
-            logger.debug("notified harness that I completed");
-        }
 
-        //STOP TIMMING complete
-        this.perfLog.stop("complete");
+       this.harness.notifyCompleted(this.jobIndex);
 
-        //wait for stop signal
-        if (logger.isDebugEnabled()) {
-            logger.debug("waiting for signal to stop");
-        }
-        try {
-            this.wait();
-        } catch (Exception e) {
-            logger.error("unable to wait", e);
-            return;
-        }
+       if (logger.isDebugEnabled()) {
+           logger.debug("notified harness that I completed");
+       }
     }
 
     void subscribeForNotifications() throws Exception {
@@ -326,15 +254,7 @@ public class SingleJobThread
         this.notificationSinkManager.removeListener(this.notificationSinkId);
     }
 
-    public void start() {
-        //non-blocking job start (see Thread.wait() in createService())
-        synchronized (this) {
-            this.notify();
-        }
-    }
-
     public void stop() {
-        //non-blocking job start (see Thread.waite() in startService())
         synchronized (this) {
             if (logger.isDebugEnabled()) {
                 logger.debug("stopping job thread");
@@ -358,20 +278,11 @@ public class SingleJobThread
             logger.debug("received state notification: " + jobState);
         }
 
-        if (jobState.equals(JobStateType.Active)) {
-            synchronized (this) {
-                started = true;
-                this.notifyAll();
-            }
-        } else
         if (   jobState.equals(JobStateType.Done)
             || jobState.equals(JobStateType.Failed)) {
-            if (!completed) {
-               synchronized (this) {
-                    started = true;
-                    completed = true;
-                    this.notifyAll();
-                }
+           synchronized (this) {
+                completed = true;
+                this.notifyAll();
             }
         }
     }
@@ -412,11 +323,6 @@ public class SingleJobThread
             managedJob.destroy();
         } catch (RemoteException re) {
             logger.error("unable to destroy MJS instance", re);
-        }
-
-        this.harness.notifyStopped(this.jobIndex);
-        if (logger.isDebugEnabled()) {
-            logger.debug("notifyed harness of stop");
         }
     }
 }

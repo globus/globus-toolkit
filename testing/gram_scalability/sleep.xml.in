@@ -17,7 +17,7 @@
     </gram:executable>
     <gram:arguments>
         <rsl:stringArray>
-            <rsl:string><rsl:stringElement value="72000"/></rsl:string>
+            <rsl:string><rsl:stringElement value="10800"/></rsl:string>
         </rsl:stringArray>
     </gram:arguments>
     <gram:stdout>
@@ -38,7 +38,7 @@
             <rsl:url>
                 <rsl:urlElement value="file://"/>
                 <rsl:substitutionRef name="HOME"/>
-                <rsl:urlElement value="/testing/gram_scalability/logs/stress-test.stdout"/>
+                <rsl:urlElement value="/testing/gram_scalability/logs/stress-test.stdout.JOBINDEX"/>
             </rsl:url>
         </rsl:fileOutput>
         <rsl:fileOutput>
@@ -48,7 +48,7 @@
             <rsl:url>
                 <rsl:urlElement value="file://"/>
                 <rsl:substitutionRef name="HOME"/>
-                <rsl:urlElement value="/testing/gram_scalability/logs/stress-test.stderr"/>
+                <rsl:urlElement value="/testing/gram_scalability/logs/stress-test.stderr.JOBINDEX"/>
             </rsl:url>
         </rsl:fileOutput>
     </rsl:fileOutputArray> </gram:fileStageOut>
