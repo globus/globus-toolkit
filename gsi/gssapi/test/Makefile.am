@@ -22,16 +22,16 @@ Scripts= \
 	run-gssapi-tests.pl
 
 Data= \
-	gssapi_anonymous_test.stdout \
-	gssapi_delegation_test.stdout \
-	gssapi_limited_delegation_test.stdout \
-	gssapi_delegation_compat_test.stdout \
-	gssapi_group_test.stdout \
-	gssapi_anonymous_test.stderr \
-	gssapi_delegation_test.stderr \
-	gssapi_limited_delegation_test.stderr \
-	gssapi_delegation_compat_test.stderr \
-	gssapi_group_test.stderr
+	gssapi-anonymous-test.stdout \
+	gssapi-delegation-test.stdout \
+	gssapi-limited-delegation-test.stdout \
+	gssapi-delegation-compat-test.stdout \
+	gssapi-group-test.stdout \
+	gssapi-anonymous-test.stderr \
+	gssapi-delegation-test.stderr \
+	gssapi-limited-delegation-test.stderr \
+	gssapi-delegation-compat-test.stderr \
+	gssapi-group-test.stderr
 
 test_DATA = $(Data)
 

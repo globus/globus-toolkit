@@ -1,4 +1,4 @@
-#! perl
+#!/usr/bin/env perl
 
 =pod
 
@@ -12,6 +12,7 @@ common library.
 use strict;
 use POSIX;
 use Test;
+use Cwd;
 
 my $test_prog = 'gssapi-delegation-test';
 
@@ -23,6 +24,9 @@ sub basic_func
 {
    my ($errors,$rc) = ("",0);
    
+   $ENV{X509_CERT_DIR} = cwd();
+   $ENV{X509_USER_PROXY} = "testcred.pem";
+
    $rc = system("$test_prog 1>$test_prog.log.stdout 2>$test_prog.log.stderr") / 256;
 
    if($rc != 0)
