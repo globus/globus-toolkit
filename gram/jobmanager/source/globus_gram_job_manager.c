@@ -994,23 +994,37 @@ globus_l_gram_fork_execute(globus_gram_jobmanager_request_t * request,
         }
         else
         {
-            /* get stdout and stderr files from callback function */
-            /* set the argument to 1 to indicate requesting a stdout file */
-            stdout_filename = (*request->filename_callback_func)(1);
-            if (stdout_filename == GLOBUS_NULL)
+            if (strcmp(request->my_stdout, "/dev/null") == 0)
             {
-                request->failure_code = 
-                      GLOBUS_GRAM_CLIENT_ERROR_STDOUT_FILENAME_FAILED;
-                return(GLOBUS_FAILURE);
+                stdout_filename = "/dev/null";
+            }
+            else
+            {
+                /* get stdout and stderr files from callback function */
+                /* set the argument to 1 to indicate requesting a stdout file */
+                stdout_filename = (*request->filename_callback_func)(1);
+                if (stdout_filename == GLOBUS_NULL)
+                {
+                    request->failure_code = 
+                          GLOBUS_GRAM_CLIENT_ERROR_STDOUT_FILENAME_FAILED;
+                    return(GLOBUS_FAILURE);
+                }
             }
 
-            /* set the argument to 0 to indicate requesting a stderr file */
-            stderr_filename = (*request->filename_callback_func)(0);
-            if (stderr_filename == GLOBUS_NULL)
+            if (strcmp(request->my_stderr, "/dev/null") == 0)
             {
-                request->failure_code = 
-                      GLOBUS_GRAM_CLIENT_ERROR_STDERR_FILENAME_FAILED;
-                return(GLOBUS_FAILURE);
+                stderr_filename = "/dev/null";
+            }
+            else
+            {
+                /* set the argument to 0 to indicate requesting a stderr file */
+                stderr_filename = (*request->filename_callback_func)(0);
+                if (stderr_filename == GLOBUS_NULL)
+                {
+                    request->failure_code = 
+                          GLOBUS_GRAM_CLIENT_ERROR_STDERR_FILENAME_FAILED;
+                    return(GLOBUS_FAILURE);
+                }
             }
         }
 
