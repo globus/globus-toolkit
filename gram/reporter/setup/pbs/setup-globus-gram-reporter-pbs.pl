@@ -46,15 +46,22 @@ if($action != 0)
     $action = "-remove";
     my $action_comment = "removing";
     print "Un-setting up $type gram reporter in MDS\n";
+    print "----------------------------------------\n";
+    system("rm -f $globusdir/libexec/globus-script-pbs-queue");
 }
 else
 {
     $action = "-add";
     my $action_comment = "adding";
     print "Setting up $type gram reporter in MDS\n";
+    print "----------------------------------------\n";
+    print `./find-pbs-reporter-tools --cache-file=/dev/null`;
+    if($? != 0)
+    {
+        print STDERR "Error locating PBS commands, aborting!\n";
+        exit 2;
+    }
 }
-
-print "--------------------------------\n";
 
 # un/setup reporter entries in MDS
 #----------------------------------------------------------
