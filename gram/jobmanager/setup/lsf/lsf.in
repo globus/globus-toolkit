@@ -304,7 +304,7 @@ sub poll
     # SSUSP         Suspended by system             SUSPENDED
     # DONE          Completed sucessfully           DONE
     # EXIT          Completed unsuccessfully        FAILED
-    # UNKWN         Unknown state                   FAILED
+    # UNKWN         Unknown state                   *ignore*
     # ZOMBI         Unknown state                   FAILED
 
     my $self = shift;
@@ -312,34 +312,71 @@ sub poll
     my $job_id = $description->jobid();
     my $state;
     my $status_line;
+    my $exit_code;
 
     $self->log("polling job $job_id");
 
     # Get first line matching job id
     $_ = (grep(/$job_id/, `$bjobs $job_id 2>/dev/null`))[0];
 
-    # Get 3th field (status)
-    $_ = (split(/\s+/))[2];
+    # get the exit code of the bjobs command.  For more info, do a 
+    # search for $CHILD_ERROR in perlvar documentation.
+    $exit_code = $? >> 8;
 
-    if(/PEND/)
+    # Verifying that the job is no longer there.
+    # return code 255 = "Job <123> is not found"
+    if($exit_code == 255)
     {
-	$state = Globus::GRAM::JobState::PENDING;
-    }
-    elsif(/USUSP|SSUSP|PSUSP/)
-    {
-	$state = Globus::GRAM::JobState::SUSPENDED
-    }
-    elsif(/RUN/)
-    {
-	$state = Globus::GRAM::JobState::ACTIVE;
-    }
-    elsif(/UNKWN|ZOMBI|EXIT/)
-    {
-	$state = Globus::GRAM::JobState::FAILED;
+        $self->log("bjobs rc is 255 == Job <123> is not found == DONE");
+        $state = Globus::GRAM::JobState::DONE;
     }
     else
     {
-	$state = Globus::GRAM::JobState::DONE;
+
+        # Get 3th field (status)
+        $_ = (split(/\s+/))[2];
+
+        if(/PEND/)
+        {
+            $state = Globus::GRAM::JobState::PENDING;
+        }
+        elsif(/DONE/)
+        {
+            $state = Globus::GRAM::JobState::DONE;
+        }
+        elsif(/USUSP|SSUSP|PSUSP/)
+        {
+            $state = Globus::GRAM::JobState::SUSPENDED;
+        }
+        elsif(/RUN/)
+        {
+            $state = Globus::GRAM::JobState::ACTIVE;
+        }
+        elsif(/EXIT/)
+        {
+            return Globus::GRAM::Error::JOB_EXIT_CODE_NON_ZERO();
+        }
+        elsif(/UNKWN/)
+        {
+            # We want the JM to ignore this poll and keep the same state
+            # as the previous state.  Returning an empty hash will do the job.
+            $self->log("bjobs returned the UNKWN state.  Telling JM to ignore this poll");
+            return {};
+        }
+        elsif(/ZOMBI/)
+        {
+            return Globus::GRAM::Error::LOCAL_SCHEDULER_ERROR();
+        }
+        else
+        {
+            # This else is reached by an unknown response from lsf.
+            # It could be that LSF was temporarily unavailable, but that it
+            # can recover and the submitted job is fine.
+            # We want the JM to ignore this poll and keep the same state
+            # as the previous state.  Returning an empty hash will do the job.
+            $self->log("bjobs returned an unknown response.  Telling JM to ignore this poll");
+            return {};
+        }
     }
 
     return {JOB_STATE => $state};
