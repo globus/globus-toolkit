@@ -18,6 +18,7 @@ EXTRA_DIST = \
 # will need to be seperated into seperate macros.
 Sources= \
 	globus_gass_copy.c   \
+	globus_gass_copy_glob.c \
 	globus_i_gass_copy.h \
 	globus_gass_copy.h 
 
