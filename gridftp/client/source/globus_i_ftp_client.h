@@ -221,17 +221,10 @@ typedef enum
     GLOBUS_FTP_CLIENT_PUT,
     GLOBUS_FTP_CLIENT_TRANSFER,
     GLOBUS_FTP_CLIENT_MDTM,
-    GLOBUS_FTP_CLIENT_SIZE
+    GLOBUS_FTP_CLIENT_SIZE,
+    GLOBUS_FTP_CLIENT_FEAT
 }
 globus_i_ftp_client_operation_t;
-
-typedef enum
-{
-    GLOBUS_FTP_CLIENT_FALSE = GLOBUS_FALSE,
-    GLOBUS_FTP_CLIENT_TRUE  = GLOBUS_TRUE,
-    GLOBUS_FTP_CLIENT_MAYBE
-}
-globus_ftp_client_tristate_t;
 
 typedef enum
 {
@@ -298,6 +291,14 @@ typedef enum
 }
 globus_ftp_client_target_state_t;
 
+typedef struct
+{
+    struct globus_i_ftp_client_target_s *	source;
+    struct globus_i_ftp_client_target_s *	dest;
+    globus_i_ftp_client_operation_t		operation;
+}
+globus_i_ftp_client_data_target_t;
+
 /**
  * FTP server features we are interested in. 
  *
@@ -307,32 +308,48 @@ globus_ftp_client_target_state_t;
  * supports it.
  *
  */
-typedef enum
-{
-    /* Buffer-size setting commands; keep these at the beginning of
-     * the enum
-     */
-    GLOBUS_FTP_CLIENT_FEATURE_RETRBUFSIZE = 0,
-    GLOBUS_FTP_CLIENT_FEATURE_RBUFSZ,
-    GLOBUS_FTP_CLIENT_FEATURE_RBUFSIZ,
-    GLOBUS_FTP_CLIENT_FEATURE_STORBUFSIZE,
-    GLOBUS_FTP_CLIENT_FEATURE_SBUSSZ,
-    GLOBUS_FTP_CLIENT_FEATURE_SBUFSIZ,
-    GLOBUS_FTP_CLIENT_FEATURE_BUFSIZE,
-    GLOBUS_FTP_CLIENT_FEATURE_SBUF,
-    GLOBUS_FTP_CLIENT_FEATURE_ABUF,
 
-    GLOBUS_FTP_CLIENT_FEATURE_REST_STREAM,
-    GLOBUS_FTP_CLIENT_FEATURE_PARALLELISM,
-    GLOBUS_FTP_CLIENT_FEATURE_DCAU,
-    GLOBUS_FTP_CLIENT_FEATURE_ESTO,
-    GLOBUS_FTP_CLIENT_FEATURE_ERET,
-    GLOBUS_FTP_CLIENT_FEATURE_SIZE,
-    GLOBUS_FTP_CLIENT_FEATURE_MAX,
-    GLOBUS_FTP_CLIENT_LAST_BUFFER_COMMAND = GLOBUS_FTP_CLIENT_FEATURE_ABUF,
-    GLOBUS_FTP_CLIENT_FIRST_FEAT_FEATURE = GLOBUS_FTP_CLIENT_FEATURE_SBUF
-}
-globus_i_ftp_client_probed_feature_t;
+
+
+/* Do not access members of the feature 
+   structures below. Instead, use interface functions:
+   globus_i_ftp_client_feature_get()
+   globus_i_ftp_client_feature_set()
+   globus_i_ftp_client_features_init()
+   globus_i_ftp_client_features_destroy()
+   This will facilitate future changes in the structures.
+*/
+typedef struct globus_i_ftp_client_features_s
+{
+  globus_ftp_client_tristate_t list[GLOBUS_FTP_CLIENT_FEATURE_MAX];
+} globus_i_ftp_client_features_t;
+
+
+/* Should it be needed to store feature parameters 
+   beside feature names, these are the proposed structures:
+
+typedef struct globus_i_ftp_client_feature_s{
+  globus_ftp_client_tristate_t                   supported;
+  char **                                        attrs;
+} globus_i_ftp_client_feature_t;
+
+typedef struct globus_i_ftp_client_features_s
+{
+  globus_ftp_client_feature_t list[GLOBUS_FTP_CLIENT_FEATURE_MAX];
+} globus_i_ftp_client_features_t;
+
+*/
+
+globus_ftp_client_tristate_t 
+globus_i_ftp_client_feature_get(
+    globus_i_ftp_client_features_t *             features,
+    globus_ftp_client_probed_feature_t           feature);
+
+void 
+globus_i_ftp_client_feature_set(
+    globus_i_ftp_client_features_t *             features,
+    globus_ftp_client_probed_feature_t           feature,
+    globus_ftp_client_tristate_t                 value);
 
 /**
  * Data connection caching information.
@@ -529,8 +546,7 @@ typedef struct globus_i_ftp_client_target_s
     globus_ftp_control_auth_info_t		auth_info;
 
     /** Features we've discovered about this target so far. */
-    globus_ftp_client_tristate_t		
-					features[GLOBUS_FTP_CLIENT_FEATURE_MAX];
+    globus_i_ftp_client_features_t *       	features;
     /** Current settings */
     globus_ftp_control_dcau_t			dcau;
     globus_ftp_control_protection_t		data_prot;
@@ -573,7 +589,7 @@ typedef struct globus_i_ftp_client_target_s
  * globus_i_ftp_client_target_release().
  */
 typedef struct
-{
+{ 
     /** URL which the user has requested to be cached. */
     globus_url_t				url;
     /** 
@@ -679,6 +695,7 @@ typedef struct globus_i_ftp_client_plugin_t
     /** This pointer is reserved for plugin-specific data */
     void *					plugin_specific;
 } globus_i_ftp_client_plugin_t;
+
 
 #ifndef DOXYGEN
 /* globus_ftp_client_attr.c */
