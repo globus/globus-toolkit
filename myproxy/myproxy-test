@@ -368,6 +368,11 @@ sub runtest {
 sub docogtests {
 
     $cogmyproxy = "$ENV{COG_INSTALL_PATH}/bin/myproxy -h $ENV{MYPROXY_SERVER}";
+
+    if (defined($ENV{"MYPROXY_SERVER_DN"})) {
+	$cogmyproxy .= " -s \"$ENV{MYPROXY_SERVER_DN}\"";
+    }
+
     $ENV{"COG_OPTS"} = " -DX509_USER_PROXY=$ENV{X509_USER_PROXY}"
                      . " -DX509_USER_CERT=$ENV{X509_USER_CERT}"
                      . " -DX509_USER_KEY=$ENV{X509_USER_KEY}";
