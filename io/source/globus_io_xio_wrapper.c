@@ -1881,6 +1881,7 @@ globus_io_tcp_create_listener(
     ihandle->xio_handle = GLOBUS_NULL;
     ihandle->xio_target = GLOBUS_NULL;
     ihandle->xio_attr = iattr->attr;
+    ihandle->authz_data = GLOBUS_NULL;
     globus_free(iattr);
     ihandle->io_handle = handle;
     *handle = ihandle;
