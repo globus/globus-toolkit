@@ -12,6 +12,9 @@
 #include "globus_gram_job_manager.h"
 #include "globus_rsl_assist.h"
 #include "globus_callout.h"
+#include "globus_callout_constants.h"
+#include "globus_gsi_system_config.h"
+#include "globus_gsi_system_config_constants.h"
 
 #include <string.h>
 
@@ -130,6 +133,10 @@ globus_gram_job_manager_state_machine(
     globus_rsl_t *			restart_rsl;
     globus_gram_job_manager_query_t *	query;
     globus_bool_t			first_poll = GLOBUS_FALSE;
+    globus_callout_handle_t             authz_handle;
+    char *                              filename;
+    globus_object_t *                   error;
+
 
     GLOBUS_GRAM_JOB_MANAGER_DEBUG_STATE(request, "entering");
 
@@ -732,27 +739,78 @@ globus_gram_job_manager_state_machine(
 		    request,
 		    "Merged Job RSL");
 	}
-        
-        /* add authz callback here */
 
-        {
-            globus_callout_handle_t     authz_handle;
-            char *                      filename;
-            globus_result_t             result;
-            globus_object_t *           error;
+        /* call authz callout here */
 
-            rc = GLOBUS_GRAM_PROTOCOL_ERROR_AUTHORIZATION;
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_AUTHORIZATION;
+
             
-            result = GLOBUS_GSI_SYSCONFIG_GET_AUTHZ_CONF_FILENAME(&filename);
+        result = GLOBUS_GSI_SYSCONFIG_GET_AUTHZ_CONF_FILENAME(&filename);
 
+        
+        
+        if(result != GLOBUS_SUCCESS)
+        {
+            error = globus_error_get(result);
+            
+            if(globus_error_match(
+                   error,
+                   GLOBUS_GSI_SYSCONFIG_MODULE,
+                   GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_AUTHZ_FILENAME)
+               == GLOBUS_TRUE)
+            {
+                globus_object_free(error);
+            }
+            else
+            {
+                globus_object_free(error);
+                request->failure_code = rc;
+                request->jobmanager_state =
+                    GLOBUS_GRAM_JOB_MANAGER_STATE_STOP;
+                break;
+            }
+        }
+        else
+        {
+            
+            result = globus_callout_handle_init(&authz_handle);
+            
+            if(result != GLOBUS_SUCCESS)
+            {
+                request->failure_code = rc;
+                request->jobmanager_state =
+                    GLOBUS_GRAM_JOB_MANAGER_STATE_STOP;
+                break;                
+            }
+            
+            result = globus_callout_read_config(authz_handle, filename);
+            
+            if(result != GLOBUS_SUCCESS)
+            {
+                globus_callout_handle_destroy(authz_handle);
+                request->failure_code = rc;
+                request->jobmanager_state =
+                    GLOBUS_GRAM_JOB_MANAGER_STATE_STOP;
+                break;                
+            }
+            
+            result = globus_callout_call_type(authz_handle,
+                                              GLOBUS_GRAM_AUTHZ_CALLOUT_TYPE,
+                                              request->response_context,
+                                              request->response_context,
+                                              request->uniq_id,
+                                              request->rsl,
+                                              GLOBUS_GRAM_AUTHZ_ACTION_START);
+            globus_callout_handle_destroy(authz_handle);
+            
             if(result != GLOBUS_SUCCESS)
             {
                 error = globus_error_get(result);
-
+                
                 if(globus_error_match(
                        error,
-                       GLOBUS_GSI_SYSCONFIG_MODULE,
-                       GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_AUTHZ_FILENAME)
+                       GLOBUS_CALLOUT_MODULE,
+                       GLOBUS_CALLOUT_ERROR_TYPE_NOT_REGISTERED)
                    == GLOBUS_TRUE)
                 {
                     globus_object_free(error);
@@ -766,63 +824,8 @@ globus_gram_job_manager_state_machine(
                     break;
                 }
             }
-            else
-            { 
-                result = globus_callout_handle_init(&authz_handle);
-                
-                if(result != GLOBUS_SUCCESS)
-                {
-                    request->failure_code = rc;
-                    request->jobmanager_state =
-                        GLOBUS_GRAM_JOB_MANAGER_STATE_STOP;
-                    break;                
-                }
-                
-                result = globus_callout_read_config(authz_handle, filename);
-                
-                if(result != GLOBUS_SUCCESS)
-                {
-                    globus_callout_handle_destroy(authz_handle);
-                    request->failure_code = rc;
-                    request->jobmanager_state =
-                        GLOBUS_GRAM_JOB_MANAGER_STATE_STOP;
-                    break;                
-                }
-                
-                result = globus_callout_call_type(handle,
-                                                  GLOBUS_GRAM_AUTHZ_CALLOUT_TYPE,
-                                                  request->response_context,
-                                                  request->response_context,
-                                                  request->uniq_id,
-                                                  request->rsl,
-                                                  GLOBUS_GRAM_AUTHZ_ACTION_START);
-
-                globus_callout_handle_destroy(authz_handle);
-                
-                if(result != GLOBUS_SUCCESS)
-                {
-                    error = globus_error_get(result);
-                    
-                    if(globus_error_match(
-                           error,
-                           GLOBUS_CALLOUT_MODULE,
-                           GLOBUS_CALLOUT_ERROR_TYPE_NOT_REGISTERED)
-                       == GLOBUS_TRUE)
-                    {
-                        globus_object_free(error);
-                    }
-                    else
-                    {
-                        globus_object_free(error);
-                        request->failure_code = rc;
-                        request->jobmanager_state =
-                            GLOBUS_GRAM_JOB_MANAGER_STATE_STOP;
-                        break;
-                    }
-                }
-            }
         }
-        
+
 	/* GLOBUS_GRAM_JOB_MANAGER_STATE_PRE_MAKE_SCRATCHDIR used to be here */
 	request->jobmanager_state =
 	    GLOBUS_GRAM_JOB_MANAGER_STATE_MAKE_SCRATCHDIR;

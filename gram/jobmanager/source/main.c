@@ -21,8 +21,9 @@
 
 #include "gssapi.h"
 #include "globus_gss_assist.h"
-
+#include "globus_gsi_system_config.h"
 #include "globus_common.h"
+#include "globus_callout.h"
 #include "globus_gram_job_manager.h"
 #include "globus_gram_protocol.h"
 #include "globus_rsl.h"
@@ -572,7 +573,12 @@ globus_l_gram_job_manager_activate(void)
 	fprintf(stderr, "common module activation failed with rc=%d\n", rc);
 	goto common_failed;
     }
-
+    rc = globus_module_activate(GLOBUS_CALLOUT_MODULE);
+    if (rc != GLOBUS_SUCCESS)
+    {
+	fprintf(stderr, "callout module activation failed with rc=%d\n", rc);
+	goto callout_failed;
+    }
     rc = globus_module_activate(GLOBUS_GSI_GSS_ASSIST_MODULE);
     if (rc != GLOBUS_SUCCESS)
     {
@@ -645,6 +651,7 @@ gram_protocol_failed:
 io_failed:
 gss_assist_failed:
 gsi_sysconfig_failed:
+callout_failed:
     if(rc)
     {
 	globus_module_deactivate_all();

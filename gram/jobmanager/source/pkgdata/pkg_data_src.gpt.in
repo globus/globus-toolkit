@@ -3,7 +3,7 @@
 
 <gpt_package_metadata Format_Version="0.02" Name="globus_gram_job_manager">
 
-    <Aging_Version Age="0" Major="3" Minor="5"/>
+    <Aging_Version Age="0" Major="3" Minor="6"/>
     <Description>GRAM Jobmanager</Description>
     <Functional_Group>ResourceManagement</Functional_Group>
     <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@"/>
@@ -27,7 +27,7 @@
             
             <Dependency Name="globus_gass_cache">
                 <Version>
-                    <Simple_Version Major="2"/>
+                    <Simple_Version Major="4"/>
                 </Version>
             </Dependency>
 
@@ -40,6 +40,18 @@
             <Dependency Name="globus_gss_assist">
                 <Version>
                     <Simple_Version Major="3"/>
+                </Version>
+            </Dependency>
+
+            <Dependency Name="globus_gsi_sysconfig">
+                <Version>
+                    <Simple_Version Major="0"/>
+                </Version>
+            </Dependency>
+
+            <Dependency Name="globus_callout">
+                <Version>
+                    <Simple_Version Major="0"/>
                 </Version>
             </Dependency>
 
@@ -95,7 +107,7 @@
             
             <Dependency Name="globus_gass_cache">
                 <Version>
-                    <Simple_Version Major="2"/>
+                    <Simple_Version Major="4"/>
                 </Version>
             </Dependency>
 
@@ -108,6 +120,18 @@
             <Dependency Name="globus_gss_assist">
                 <Version>
                     <Simple_Version Major="3"/>
+                </Version>
+            </Dependency>
+
+            <Dependency Name="globus_gsi_sysconfig">
+                <Version>
+                    <Simple_Version Major="0"/>
+                </Version>
+            </Dependency>
+
+            <Dependency Name="globus_callout">
+                <Version>
+                    <Simple_Version Major="0"/>
                 </Version>
             </Dependency>
 
