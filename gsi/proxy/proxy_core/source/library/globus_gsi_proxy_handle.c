@@ -80,8 +80,6 @@ globus_gsi_proxy_handle_init(
 
     hand = *handle; 
 
-    hand->proxy_key = NULL;
-
     /* initialize the X509 request structure */
     if((hand->req = X509_REQ_new()) == NULL)
     {
@@ -92,16 +90,16 @@ globus_gsi_proxy_handle_init(
         goto free_handle;
     }
 
-    hand->proxy_cert_info = NULL;
-/*      if((hand->proxy_cert_info = PROXYCERTINFO_new()) == NULL) */
-/*      {         */
-/*          GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT( */
-/*              result, */
-/*              GLOBUS_GSI_PROXY_ERROR_WITH_PROXYCERTINFO, */
-/*              ("Error initializing new PROXYCERTINFO struct")); */
-/*          goto free_handle; */
-/*      } */
-
+    /* create a new PCI extension */
+    if((hand->proxy_cert_info = PROXYCERTINFO_new()) == NULL)
+    {
+        GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_PROXY_ERROR_WITH_PROXYCERTINFO,
+            ("Error initializing new PROXYCERTINFO struct"));
+        goto free_handle;
+    }
+    
     /* initialize the handle attributes */
     if(handle_attrs == NULL)
     {
@@ -190,125 +188,25 @@ globus_gsi_proxy_handle_destroy(
 /* globus_gsi_proxy_handle_destroy */
 /*@}*/
 
+
 /**
- * Copy 
+ * @name Get Request
+ */
+/*@{*/
+/**
+ * Get the certificate request from a GSI Proxy handle.
  * @ingroup globus_gsi_proxy_handle
- */
-/* @{ */
-/**
- * Make a copy of the handle.  There probably shouldn't be multiple
- * copies of a handle lying around, since a handle should only be
- * used for once sequence of operations, so this function should be used
- * sparingly, if at all.
  *
- * @param a
- *        The original handle to copy
- * @param b
- *        The copied handle
+ * @param handle
+ *        The handle from which to get the certificate request
+ * @param req
+ *        Parameter used to return the request. It is the users responsibility
+ *        to free the returned request.
  * @return
- *        GLOBUS_SUCCESS if the copy was successful, an error
- *        otherwise
+ *        GLOBUS_SUCCESS
+ *
+ * @see globus_gsi_proxy_handle_set_req()
  */
-globus_result_t
-globus_gsi_proxy_handle_copy(
-    globus_gsi_proxy_handle_t           a,
-    globus_gsi_proxy_handle_t *         b)
-{
-    int                                 len;
-    unsigned char *                     der_encoded = NULL;
-    globus_gsi_proxy_handle_attrs_t     b_attrs;
-    globus_result_t                     result;
-    BIO *                               pk_mem_bio = NULL;
-    static char *                       _function_name_ =
-        "globus_gsi_proxy_handle_copy";
-
-    GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
-
-    if(a == NULL)
-    {
-        GLOBUS_GSI_PROXY_ERROR_RESULT(
-            result,
-            GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE,
-            ("NULL handle parameter passed to function: %s", _function_name_));
-        goto exit;
-    }
-    if(b == NULL)
-    {
-        GLOBUS_GSI_PROXY_ERROR_RESULT(
-            result,
-            GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE,
-            ("NULL handle parameter passed to function: %s", _function_name_));
-        goto exit;
-    }
-    
-    result = globus_gsi_proxy_handle_attrs_copy(a->attrs, & b_attrs);
-    if(result != GLOBUS_SUCCESS)
-    {
-        GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
-            result,
-            GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE_ATTRS);
-        goto exit;
-    }
-        
-    result = globus_gsi_proxy_handle_init(b, b_attrs);        
-    if(result != GLOBUS_SUCCESS)
-    {
-        GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
-            result,
-            GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE);
-        goto free_handle;
-    }
-
-    if(((*b)->req = X509_REQ_dup(a->req)) == NULL)
-    {
-        GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
-            result,
-            GLOBUS_GSI_PROXY_ERROR_WITH_X509_REQ,
-            ("Error copying X509_REQ in proxy handle"));
-        goto free_handle;
-    }
-
-    pk_mem_bio = BIO_new(BIO_s_mem());
-    
-    len = i2d_PrivateKey_bio(pk_mem_bio, a->proxy_key);
-    if(len <= 0)
-    {
-        GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
-            result,
-            GLOBUS_GSI_PROXY_ERROR_WITH_PRIVATE_KEY,
-            ("Error converting private key to DER encoded form."));
-        goto free_bio;
-    }
-
-    (*b)->proxy_key = d2i_PrivateKey_bio(pk_mem_bio, &(*b)->proxy_key);
-    BIO_free(pk_mem_bio);
-
-    result = GLOBUS_SUCCESS;
-    goto exit;
-
- free_bio:
-    if(pk_mem_bio)
-    {
-        BIO_free(pk_mem_bio);
-    }
-
- free_handle:
-    if(b)
-    {
-        globus_gsi_proxy_handle_destroy(*b);
-    }
-
- exit:
-
-    if(der_encoded)
-    {
-        globus_libc_free(der_encoded);
-    }
-
-    GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
-    return result;
-}
-
 globus_result_t
 globus_gsi_proxy_handle_get_req(
     globus_gsi_proxy_handle_t           handle,
@@ -353,7 +251,27 @@ globus_gsi_proxy_handle_get_req(
     GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
     return result;
 }
-    
+/* globus_gsi_proxy_handle_get_req */
+/*@}*/
+
+
+/**
+ * @name Set Request
+ */
+/*@{*/
+/**
+ * Set the certificate request in a GSI Proxy handle.
+ * @ingroup globus_gsi_proxy_handle
+ *
+ * @param handle
+ *        The handle for which to set the certificate request
+ * @param req
+ *        Request to be copied to handle.
+ * @return
+ *        GLOBUS_SUCCESS
+ *
+ * @see globus_gsi_proxy_handle_get_req()
+ */
 globus_result_t
 globus_gsi_proxy_handle_set_req(
     globus_gsi_proxy_handle_t           handle,
@@ -397,7 +315,28 @@ globus_gsi_proxy_handle_set_req(
     GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
     return result;
 }
+/* globus_gsi_proxy_handle_set_req */
+/*@}*/
 
+
+/**
+ * @name Get Private Key
+ */
+/*@{*/
+/**
+ * Get the private key from a GSI Proxy handle.
+ * @ingroup globus_gsi_proxy_handle
+ *
+ * @param handle
+ *        The handle from which to get the private key
+ * @param proxy_key
+ *        Parameter used to return the key. It is the users responsibility to
+ *        free the returned key.
+ * @return
+ *        GLOBUS_SUCCESS
+ *
+ * @see globus_gsi_proxy_handle_set_private_key()
+ */
 globus_result_t
 globus_gsi_proxy_handle_get_private_key(
     globus_gsi_proxy_handle_t           handle,
@@ -454,7 +393,26 @@ globus_gsi_proxy_handle_get_private_key(
     GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
     return result;
 }
+/* globus_gsi_proxy_handle_get_private_key */
+/*@}*/
 
+/**
+ * @name Set Private Key
+ */
+/*@{*/
+/**
+ * Set the private key in a GSI Proxy handle.
+ * @ingroup globus_gsi_proxy_handle
+ *
+ * @param handle
+ *        The handle for which to set the private key
+ * @param proxy_key
+ *        Parameter used to pass the key
+ * @return
+ *        GLOBUS_SUCCESS
+ *
+ * @see globus_gsi_proxy_handle_get_private_key()
+ */
 globus_result_t
 globus_gsi_proxy_handle_set_private_key(
     globus_gsi_proxy_handle_t           handle,
@@ -503,7 +461,72 @@ globus_gsi_proxy_handle_set_private_key(
     GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
     return result;
 }
+/* globus_gsi_proxy_handle_set_private_key */
+/*@}*/
 
+/**
+ * @name Get Limited Proxy State
+ */
+/*@{*/
+/**
+ * Determine whether a limited proxy will be generated when using this handle. 
+ * @ingroup globus_gsi_proxy_handle
+ *
+ * @param handle
+ *        The handle from which to get the is_limited field
+ * @param is_limited
+ *        Parameter used to return the field.
+ * @return
+ *        GLOBUS_SUCCESS
+ *
+ * @see globus_gsi_proxy_handle_set_is_limited()
+ */
+globus_result_t
+globus_gsi_proxy_handle_get_is_limited(
+    globus_gsi_proxy_handle_t           handle,
+    globus_bool_t *                     is_limited)
+{
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    static char *                       _function_name_ = 
+        "globus_gsi_proxy_handle_get_is_limited";
+    GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
+
+    if(!handle)
+    {
+        GLOBUS_GSI_PROXY_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE,
+            ("Invalid handle (NULL) passed to function"));
+        goto exit;
+    }
+
+    *is_limited = handle->is_limited;
+
+ exit:
+
+    GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
+    return result;
+}
+/* globus_gsi_proxy_handle_get_is_limited */
+/*@}*/
+
+/**
+ * @name Set Limited Proxy State
+ */
+/*@{*/
+/**
+ * Set the limited proxy flag for this handle
+ * @ingroup globus_gsi_proxy_handle
+ *
+ * @param handle
+ *        The handle for which to set the is_limited field
+ * @param is_limited
+ *        Parameter used to pass the value to be set
+ * @return
+ *        GLOBUS_SUCCESS
+ *
+ * @see globus_gsi_proxy_handle_get_is_limited()
+ */
 globus_result_t
 globus_gsi_proxy_handle_set_is_limited(
     globus_gsi_proxy_handle_t           handle,
@@ -530,6 +553,8 @@ globus_gsi_proxy_handle_set_is_limited(
     GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
     return result;
 }
+/* globus_gsi_proxy_handle_set_is_limited */
+/*@}*/
 
 /**
  * @name Set Policy
@@ -677,141 +702,6 @@ globus_gsi_proxy_handle_get_policy(
 /* globus_gsi_proxy_handle_get_policy */
 /*@}*/
 
-/**
- * @name Set Group
- */
-/*@{*/
-/**
- * Set the group to be used in the GSI Proxy handle.
- * @ingroup globus_gsi_proxy_handle
- *
- * This function sets the group to be used in the proxy cert
- * info extension.
- *
- * @param handle
- *        The handle to be modified.
- * @param group
- *        The group identifier.
- * @param attached
- *        The attachment state of the group
- * @return
- *        GLOBUS_SUCCESS if the handle and its associated fields are valid,
- *        otherwise an error is returned
- *
- * @see globus_gsi_proxy_handle_get_group()
- */
-globus_result_t
-globus_gsi_proxy_handle_set_group(
-    globus_gsi_proxy_handle_t           handle,
-    unsigned char *                     group,
-    int                                 attached)
-{
-    globus_result_t                     result;
-    PROXYGROUP *                        proxygroup;
-
-    static char *                       _function_name_ =
-        "globus_gsi_proxy_handle_set_group";
-
-    GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
-    
-    if(handle == NULL)
-    {
-        GLOBUS_GSI_PROXY_ERROR_RESULT(
-            result,
-            GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE, 
-           ("NULL handle passed to function: %s", _function_name_));
-        goto exit;
-    }
-
-    proxygroup = PROXYCERTINFO_get_group(handle->proxy_cert_info);
-    if(!proxygroup)
-    {
-        proxygroup = PROXYGROUP_new();
-    }
-    if(!PROXYGROUP_set_name(proxygroup, group, strlen(group)) ||
-       !PROXYGROUP_set_attached(proxygroup, attached))
-    {
-        GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
-            result,
-            GLOBUS_GSI_PROXY_ERROR_WITH_PROXYGROUP,
-            ("Couldn't set PROXYGROUP in proxy handle"));
-        goto exit;
-    }
-    PROXYCERTINFO_set_group(handle->proxy_cert_info, proxygroup);
-
-    result = GLOBUS_SUCCESS;
-
- exit:
-
-    GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
-    return result;
-}
-/* globus_gsi_proxy_handle_set_group */
-/*@}*/
-
-
-/**
- * @name Get Group
- */
-/*@{*/
-/**
- * Get the group from the GSI Proxy handle.
- * @ingroup globus_gsi_proxy_handle
- *
- * This function gets the group that is being used in the 
- * proxy cert info extension.
- *
- * @param handle
- *        The handle to be interrogated.
- * @param group
- *        The group identifier.
- * @param group_length
- *        The length of the group identifier.
- * @param attached
- *        The attachment state of the group
- * @return
- *        GLOBUS_SUCCESS if the handle is valid, otherwise an
- *        error is returned
- *
- * @see globus_gsi_proxy_handle_set_group()
- */
-globus_result_t
-globus_gsi_proxy_handle_get_group(
-    globus_gsi_proxy_handle_t           handle,
-    unsigned char **                    group,
-    long *                              group_length,
-    int *                               attached)
-{
-    globus_result_t                     result;
-    static char *                       _function_name_ =
-        "globus_gsi_proxy_handle_get_group";
-
-    GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
-    
-    if(handle == NULL)
-    {
-        GLOBUS_GSI_PROXY_ERROR_RESULT(
-            result,
-            GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE,
-            ("NULL handle passed to function: %s", _function_name_));
-        goto exit;
-    }
-
-    *group = PROXYGROUP_get_name(
-        PROXYCERTINFO_get_group(handle->proxy_cert_info), group_length);
-    *attached = *PROXYGROUP_get_attached(
-        PROXYCERTINFO_get_group(handle->proxy_cert_info));
-
-    result = GLOBUS_SUCCESS;
-
- exit:
-
-    GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
-    return result;
-}
-/* globus_gsi_proxy_handle_get_group */
-/*@}*/
-
 
 /**
  * @name Set Path Length
@@ -928,6 +818,94 @@ globus_gsi_proxy_handle_get_pathlen(
 
 
 /**
+ * @name Get Time Valid
+ */
+/* @{ */
+/**
+ * Get the validity time of the proxy
+ *
+ * @param handle
+ *        The proxy handle to get the expiration date of
+ * @param time_valid
+ *        expiration date of the proxy handle
+ * 
+ * @result
+ *        GLOBUS_SUCCESS
+ */
+globus_result_t
+globus_gsi_proxy_handle_get_time_valid(
+    globus_gsi_proxy_handle_t           handle,
+    int *                               time_valid)
+{
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    static char *                       _function_name_ =
+        "globus_gsi_proxy_handle_get_time_valid";
+    
+    GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
+
+    if(handle == NULL)
+    {
+        GLOBUS_GSI_PROXY_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE,
+            ("NULL handle passed to function: %s", _function_name_));
+        goto exit;
+    }
+
+    *time_valid = handle->time_valid;
+
+ exit:        
+    GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
+    return result;
+}
+/* globus_gsi_proxy_handle_get_time_valid */
+/*@}*/
+
+/**
+ * @name Set Time Valid
+ */
+/* @{ */
+/**
+ * Set the validity time of the proxy
+ *
+ * @param handle
+ *        The proxy handle to set the expiration date for
+ * @param time_valid
+ *        desired expiration date of the proxy
+ * 
+ * @result
+ *        GLOBUS_SUCCESS
+ */
+globus_result_t
+globus_gsi_proxy_handle_set_time_valid(
+    globus_gsi_proxy_handle_t           handle,
+    int                                 time_valid)
+{
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    static char *                       _function_name_ =
+        "globus_gsi_proxy_handle_set_time_valid";
+    
+    GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
+
+    if(handle == NULL)
+    {
+        GLOBUS_GSI_PROXY_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE,
+            ("NULL handle passed to function: %s", _function_name_));
+        goto exit;
+    }
+
+    handle->time_valid = time_valid;
+
+ exit:
+    GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
+    return result;
+}
+/* globus_gsi_proxy_handle_set_time_valid */
+/*@}*/
+
+/**
  * @name Clear Cert Info
  */
 /*@{*/
@@ -939,12 +917,11 @@ globus_gsi_proxy_handle_get_pathlen(
  * the GSI Proxy handle.
  *
  * @param handle
- *        The handle to be interrogated.
+ *        The handle for which to clear the proxy cert info extension.
  * @return
  *        GLOBUS_SUCCESS if the handle is valid, otherwise an
  *        error is returned
  *
- * @see globus_gsi_proxy_handle_set_pathlen()
  */
 globus_result_t
 globus_gsi_proxy_handle_clear_cert_info(
@@ -985,130 +962,6 @@ globus_gsi_proxy_handle_clear_cert_info(
 }
 /* globus_gsi_proxy_handle_clear_cert_info */
 /*@}*/
-
-
-globus_result_t
-globus_gsi_proxy_handle_get_proxy_cert_info(
-    globus_gsi_proxy_handle_t           handle,
-    PROXYCERTINFO **                    pci)
-{
-    globus_result_t                     result = GLOBUS_SUCCESS;
-    static char *                       _function_name_ =
-        "globus_gsi_proxy_handle_get_proxy_cert_info";
-    GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
-    
-    if(!handle)
-    {
-        GLOBUS_GSI_PROXY_ERROR_RESULT(
-            result,
-            GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE,
-            ("Invalid handle (NULL) passed to function"));
-        goto exit;
-    }
-
-    if(!pci)
-    {
-        GLOBUS_GSI_PROXY_ERROR_RESULT(
-            result,
-            GLOBUS_GSI_PROXY_ERROR_WITH_PROXYCERTINFO,
-            ("Invalid PROXYCERTINFO passed to function"));
-        goto exit;
-    }
-
-    *pci = PROXYCERTINFO_dup(handle->proxy_cert_info);
-    if(!*pci)
-    {
-        GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
-            result,
-            GLOBUS_GSI_PROXY_ERROR_WITH_PROXYCERTINFO,
-            ("Couldn't copy PROXYCERTINFO structure"));
-        goto exit;
-    }
-
- exit:
-
-    GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
-    return result;
-}
-
-globus_result_t
-globus_gsi_proxy_handle_set_proxy_cert_info(
-    globus_gsi_proxy_handle_t           handle,
-    PROXYCERTINFO *                     pci)
-{
-    globus_result_t                     result = GLOBUS_SUCCESS;
-    static char *                       _function_name_ =
-        "globus_gsi_proxy_handle_set_proxy_cert_info";
-    GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
-
-    if(!handle)
-    {
-        GLOBUS_GSI_PROXY_ERROR_RESULT(
-            result,
-            GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE,
-            ("Invalid handle (NULL) passed to function"));
-        goto exit;
-    }
-
-    if(handle->proxy_cert_info)
-    {
-        PROXYCERTINFO_free(handle->proxy_cert_info);
-        handle->proxy_cert_info = NULL;
-    }
-    
-    if(pci)
-    {
-        handle->proxy_cert_info = PROXYCERTINFO_dup(pci);
-        if(!handle->proxy_cert_info)
-        {
-            GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
-                result,
-                GLOBUS_GSI_PROXY_ERROR_WITH_PROXYCERTINFO,
-                ("Couldn't copy PROXYCERTINFO"));
-            goto exit;
-        }
-    }
-
- exit:
-
-    GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
-    return result;
-}
-
-/**
- * @name Proxy Is Limited
- */
-/* @{ */
-/**
- * Check to see if the proxy is a limited proxy (the limited
- * proxy flag in the handle is set)
- *
- * @param handle
- *        the proxy handle to check
- *
- * @param is_limited
- *        boolean value to set depending on the value in the handle
- *
- * @return
- *        GLOBUS_SUCCESS
- */
-globus_result_t
-globus_gsi_proxy_is_limited(
-    globus_gsi_proxy_handle_t           handle,
-    globus_bool_t *                     is_limited)
-{    
-    static char *                       _function_name_ =
-        "globus_gsi_proxy_is_limited";
-
-    GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
-
-    *is_limited = handle->is_limited;
-
-    GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
-    return GLOBUS_SUCCESS;
-}
-/* @} */
-
 
 /**
  * @name Get Signing Algorithm
@@ -1233,44 +1086,6 @@ globus_gsi_proxy_handle_get_init_prime(
 }
 /* @} */
 
-/**
- * @name Get Time Valid
- */
-/* @{ */
-/**
- * Get the validity time of the proxy
- *
- * @param handle
- *        The proxy handle to get the expiration date of
- * @param time_valid
- *        expiration date of the proxy handle
- * 
- * @result
- *        GLOBUS_SUCCESS
- */
-globus_result_t
-globus_gsi_proxy_handle_get_time_valid(
-    globus_gsi_proxy_handle_t           handle,
-    int *                               time_valid)
-{
-    globus_result_t                     result;
-    static char *                       _function_name_ =
-        "globus_gsi_proxy_handle_get_time_valid";
-    
-    GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
-
-    result = globus_gsi_proxy_handle_attrs_get_time_valid(handle->attrs,
-                                                          time_valid);
-    if(result != GLOBUS_SUCCESS)
-    {
-        result = GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
-            result,
-            GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE_ATTRS);
-    }
-        
-    GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
-    return result;
-}
 
 /**
  * @name Get Clock Skew
@@ -1325,7 +1140,7 @@ globus_gsi_proxy_handle_get_clock_skew_allowable(
  * @param handle
  *        The proxy handle to get the callback from
  * @param callback
- *        The callback to set
+ *        Parameter used for returning the callback
  *
  * @result
  *        GLOBUS_SUCCESS or an error object identifier

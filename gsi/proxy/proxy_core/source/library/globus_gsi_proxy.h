@@ -152,11 +152,6 @@ globus_gsi_proxy_handle_destroy(
     globus_gsi_proxy_handle_t           handle);
 
 globus_result_t
-globus_gsi_proxy_handle_copy(
-    globus_gsi_proxy_handle_t           a,
-    globus_gsi_proxy_handle_t *         b);
-
-globus_result_t
 globus_gsi_proxy_handle_get_req(
     globus_gsi_proxy_handle_t           handle,
     X509_REQ **                         req);
@@ -177,9 +172,24 @@ globus_gsi_proxy_handle_set_private_key(
     EVP_PKEY *                          proxy_key);
 
 globus_result_t
+globus_gsi_proxy_handle_get_is_limited(
+    globus_gsi_proxy_handle_t           handle,
+    globus_bool_t *                     is_limited);
+
+globus_result_t
 globus_gsi_proxy_handle_set_is_limited(
     globus_gsi_proxy_handle_t           handle,
     globus_bool_t                       is_limited);
+
+globus_result_t
+globus_gsi_proxy_handle_get_time_valid(
+    globus_gsi_proxy_handle_t           handle,
+    int *                               time_valid);
+
+globus_result_t
+globus_gsi_proxy_handle_set_time_valid(
+    globus_gsi_proxy_handle_t           handle,
+    int                                 time_valid);
 
 globus_result_t
 globus_gsi_proxy_handle_set_policy(
@@ -196,19 +206,6 @@ globus_gsi_proxy_handle_get_policy(
     int *                               policy_NID);
 
 globus_result_t
-globus_gsi_proxy_handle_set_group(
-    globus_gsi_proxy_handle_t           handle,
-    unsigned char *                     group,
-    int                                 attached);
-
-globus_result_t
-globus_gsi_proxy_handle_get_group(
-    globus_gsi_proxy_handle_t           handle,
-    unsigned char **                    group,
-    long *                              group_length,
-    int *                               attached);
-
-globus_result_t
 globus_gsi_proxy_handle_set_pathlen(
     globus_gsi_proxy_handle_t           handle,
     long                                pathlen);
@@ -221,16 +218,6 @@ globus_gsi_proxy_handle_get_pathlen(
 globus_result_t
 globus_gsi_proxy_handle_clear_cert_info(
     globus_gsi_proxy_handle_t           handle);
-
-globus_result_t
-globus_gsi_proxy_handle_get_proxy_cert_info(
-    globus_gsi_proxy_handle_t           handle,
-    PROXYCERTINFO **                    pci);
-
-globus_result_t
-globus_gsi_proxy_handle_set_proxy_cert_info(
-    globus_gsi_proxy_handle_t           handle,
-    PROXYCERTINFO *                     pci);
 
 globus_result_t
 globus_gsi_proxy_is_limited(
@@ -251,11 +238,6 @@ globus_result_t
 globus_gsi_proxy_handle_get_init_prime(
     globus_gsi_proxy_handle_t           handle,
     int *                               init_prime);
-
-globus_result_t
-globus_gsi_proxy_handle_get_time_valid(
-    globus_gsi_proxy_handle_t           handle,
-    int *                               time_valid);
 
 globus_result_t
 globus_gsi_proxy_handle_get_clock_skew_allowable(
@@ -368,16 +350,6 @@ globus_result_t
 globus_gsi_proxy_handle_attrs_get_signing_algorithm(
     globus_gsi_proxy_handle_attrs_t     handle_attrs,
     EVP_MD **                           algorithm);
-
-globus_result_t
-globus_gsi_proxy_handle_attrs_set_time_valid(
-    globus_gsi_proxy_handle_attrs_t     handle_attrs,
-    int                                 time_valid);
-
-globus_result_t
-globus_gsi_proxy_handle_attrs_get_time_valid(
-    globus_gsi_proxy_handle_attrs_t     handle_attrs,
-    int *                               time_valid);
 
 globus_result_t
 globus_gsi_proxy_handle_attrs_set_clock_skew_allowable(

@@ -548,7 +548,7 @@ globus_gsi_proxy_sign_req(
     X509_EXTENSION *                    pci_ext = NULL;
     EVP_PKEY *                          issuer_pkey = NULL;
     EVP_PKEY *                          req_pubkey = NULL;
-    globus_result_t                     result;
+    globus_result_t                     result = GLOBUS_SUCCESS;
     int                                 res;
     
     static char *                       _function_name_ =
@@ -691,7 +691,7 @@ globus_gsi_proxy_sign_req(
 
     result = globus_i_gsi_proxy_set_pc_times(new_pc, issuer_cert, 
                                              handle->attrs->clock_skew, 
-                                             handle->attrs->time_valid);
+                                             handle->time_valid);
     if(result != GLOBUS_SUCCESS)
     {
         result = GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(

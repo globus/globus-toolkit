@@ -106,7 +106,7 @@ extern FILE *                           globus_i_gsi_proxy_debug_fstream;
         __LINE__, \
         _tmp_string_, \
         NULL); \
-    globus_libc_free(_tmp_string_);
+    globus_libc_free(_tmp_string_)
 
 #define GLOBUS_GSI_PROXY_ERROR_RESULT(_RESULT_, \
                                       _ERRORTYPE_, _ERRORSTR_) \
@@ -119,7 +119,7 @@ extern FILE *                           globus_i_gsi_proxy_debug_fstream;
         __LINE__, \
         _tmp_string_, \
         NULL); \
-    globus_libc_free(_tmp_string_);
+    globus_libc_free(_tmp_string_)
 
 #define GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(_RESULT_, \
                                             _ERRORTYPE_) \
@@ -130,7 +130,7 @@ extern FILE *                           globus_i_gsi_proxy_debug_fstream;
         _function_name_, \
         __LINE__, \
         NULL, \
-        NULL);
+        NULL)
 
 #define GLOBUS_GSI_PROXY_OPENSSL_LONG_ERROR_RESULT(_RESULT_, \
                                                    _ERRORTYPE_, \
@@ -145,7 +145,7 @@ extern FILE *                           globus_i_gsi_proxy_debug_fstream;
         __LINE__, \
         _tmp_string_, \
         _LONG_DESC_); \
-    globus_libc_free(_tmp_string_);
+    globus_libc_free(_tmp_string_)
 
 #define GLOBUS_GSI_PROXY_LONG_ERROR_RESULT(_RESULT_, \
                                            _ERRORTYPE_, \
@@ -161,7 +161,7 @@ extern FILE *                           globus_i_gsi_proxy_debug_fstream;
         _tmp_string_, \
         NULL, \
         _LONG_DESC_); \
-    globus_libc_free(_tmp_string_);
+    globus_libc_free(_tmp_string_)
 
 #define GLOBUS_GSI_PROXY_LONG_ERROR_CHAIN_RESULT(_RESULT_, \
                                                  _ERRORTYPE_, \
@@ -173,7 +173,7 @@ extern FILE *                           globus_i_gsi_proxy_debug_fstream;
         _function_name_, \
         __LINE__, \
         NULL, \
-        _LONG_DESC_);
+        _LONG_DESC_)
 
 #include "globus_gsi_proxy_constants.h"
 
@@ -207,11 +207,6 @@ typedef struct globus_l_gsi_proxy_handle_attrs_s
      * generating the proxy certificate
      */
     EVP_MD *                            signing_algorithm;
-    /**
-     * The number of minutes the proxy certificate
-     * is valid for
-     */
-    int                                 time_valid;
     /**
      * The clock skew (in seconds) allowed 
      * for the proxy certificate.  The skew
@@ -249,7 +244,8 @@ typedef struct globus_l_gsi_proxy_handle_s
     globus_bool_t                       is_limited;
     /** The proxy cert info extension used in the operations */
     PROXYCERTINFO *                     proxy_cert_info;    
-
+    /** The number of minutes the proxy certificate is valid for */
+    int                                 time_valid;
 } globus_i_gsi_proxy_handle_t;
 
 
