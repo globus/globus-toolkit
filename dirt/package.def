@@ -49,4 +49,4 @@ globus_proxy_core               gsi/proxy/proxy_core/source     dirt.sh
 globus_gram_reporter            gram/reporter/source            dirt.sh
 globus_openssl_module           gsi/openssl_module/source       dirt.sh
 globus_gssapi_gsi               gsi/gssapi/source               dirt.sh
-globus_openssl_error            gsi/openssl_error/source        dirt.sh
+globus_gsi_openssl_error        gsi/openssl_error/source        dirt.sh
