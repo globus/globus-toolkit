@@ -11,7 +11,14 @@ wininclude_HEADERS = \
     config.h \
 
 LibDependencies = \
-    Ws2_32.lib
+    Ws2_32.lib \
+    icudata.lib \
+    icuucd.lib \
+    icuind.lib \
+    icutud.lib \
+    iculed.lib \
+    icuiod.lib \
+    iculxd.lib
 
 # Export Exclusions Found By Linker
 ExportExclusions = \
@@ -48,6 +55,10 @@ WinExports = \
     globus_i_abstime_infinity \
     globus_i_reltime_infinity \
     globus_error_mutliple_add_chain \
-    globus_error_construct_multiple
-
-
+    globus_error_construct_multiple \
+    lt_dlinit \
+    lt_dlexit \
+    lt_dlsym \
+    lt_dlerror \
+    lt_dlopenext \
+    lt_dlclose
