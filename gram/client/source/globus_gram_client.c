@@ -263,7 +263,7 @@ globus_l_gram_client_parse_gatekeeper_contact( char *    contact_string,
      *  the gatekeeper contact format: [https://]<host>:<port>[/<service>]:<dn>
      */    
 
-    if ((duplicate = strdup(contact_string)))
+    if ((duplicate = globus_libc_strdup(contact_string)))
     {
 	host = duplicate;
 
@@ -275,7 +275,14 @@ globus_l_gram_client_parse_gatekeeper_contact( char *    contact_string,
 	{
 	    *port++ = '\0';
 	    if ((dn = strchr(port, ':'))) 
+	    {
 		*dn++ = '\0';
+	    }
+	    else
+	    {
+		globus_free(duplicate);
+		return GLOBUS_GRAM_CLIENT_ERROR_BAD_GATEKEEPER_CONTACT;
+	    }
 	    iport = (unsigned short) atoi(port);
     
 	    if (! (service = strchr(port,'/')))
@@ -301,8 +308,8 @@ globus_l_gram_client_parse_gatekeeper_contact( char *    contact_string,
     /* 
      * done with the port, can now put the slash back
      */
-    *gatekeeper_service = strdup(service);
-    *gatekeeper_dn = strdup(dn);
+    *gatekeeper_service = globus_libc_strdup(service);
+    *gatekeeper_dn = globus_libc_strdup(dn);
     globus_libc_free(duplicate);
 
     return GLOBUS_SUCCESS;
@@ -561,6 +568,7 @@ globus_gram_client_job_request_http_failed:
 	globus_libc_free(query);
 
 globus_gram_client_job_request_pack_failed:
+    globus_io_tcpattr_destroy (&attr);
     globus_libc_free(url);
     globus_libc_free(service);
     globus_libc_free(dn);
@@ -569,7 +577,6 @@ globus_gram_client_job_request_parse_failed:
     
     globus_mutex_destroy(&monitor.mutex);
     globus_cond_destroy(&monitor.cond);
-    globus_io_tcpattr_destroy (&attr);
     return rc;
 } /* globus_gram_client_job_request() */
 

@@ -103,7 +103,8 @@ globus_l_gram_client_error_strings[GLOBUS_GRAM_CLIENT_ERROR_LAST] =
 /*  92 */     "the job manager does not support the service that the client requested",
 /*  93 */     "the gatekeeper failed to find the requested service",
 /*  94 */     "the jobmanager does not accept any new requests (shutting down)",
-/*  95 */     "the client failed to close the listener associated with the callback URL"
+/*  95 */     "the client failed to close the listener associated with the callback URL",
+/*  96 */     "the gatekeeper contact cannot be parsed"
 };
 
 const char *
