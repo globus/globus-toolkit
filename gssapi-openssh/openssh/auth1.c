@@ -28,9 +28,6 @@ RCSID("$OpenBSD: auth1.c,v 1.35 2002/02/03 17:53:25 markus Exp $");
 #include "misc.h"
 #include "uidswap.h"
 
-#ifdef GSSAPI
-#endif
-
 /* import */
 extern ServerOptions options;
 
