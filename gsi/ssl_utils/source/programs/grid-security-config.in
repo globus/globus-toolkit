@@ -1,7 +1,14 @@
-#! @SH@
+#!/bin/sh
 
-# Inserted by configure.
-@globus_script_initializer@
+if test -z "${GLOBUS_LOCATION}"; then
+    echo ""
+    echo "ERROR: Please set GLOBUS_LOCATION to the Globus installation directory before"
+    echo "running this script"
+    echo ""
+    exit 1
+fi
+
+. ${GLOBUS_LOCATION}/libexec/globus-script-initializer
 
 
 trap '${GLOBUS_SH_RM-rm} -f ${TEMP_FILE1} ' 0

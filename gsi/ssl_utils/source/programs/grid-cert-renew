@@ -1,7 +1,14 @@
-#! @SH@
+#!/bin/sh
 
-# Inserted by configure.
-@globus_script_initializer@
+if test -z "${GLOBUS_LOCATION}"; then
+    echo ""
+    echo "ERROR: Please set GLOBUS_LOCATION to the Globus installation directory before"
+    echo "running this script"
+    echo ""
+    exit 1
+fi
+
+. ${GLOBUS_LOCATION}/libexec/globus-script-initializer
 
 #
 # renew a request using a Globus 1.0 or 1.1 installation
@@ -39,7 +46,7 @@ ${short_usage}
 EOF
 }
 
-@globus_args_parser_header@
+. $libexecdir/globus-args-parser-header
 
 
 MyWhich()
@@ -81,9 +88,9 @@ trap bailout 1 2 3 6 15
 #########################################################################
 # start
 
-sslexec=${GLOBUS_SSL_PATH}/bin/${ssl_exec_name}
-if [ -r ${GLOBUS_SSL_PATH}/bin/openssl ]; then
-	sslexec=${GLOBUS_SSL_PATH}/bin/openssl
+sslexec=${GLOBUS_LOCATION}/bin/${ssl_exec_name}
+if [ -r ${GLOBUS_LOCATION}/bin/openssl ]; then
+	sslexec=${GLOBUS_LOCATION}/bin/openssl
 	ssl_exec_name="openssl"
 fi
 proxy_init=${bindir}/grid-proxy-init

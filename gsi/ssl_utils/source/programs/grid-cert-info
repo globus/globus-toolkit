@@ -1,11 +1,19 @@
-#! @SH@
+#!/bin/sh
 #
 # globus-cert-info
 #
 # Easily extract information from a user's cert.
 #
 
-@globus_script_initializer@
+if test -z "${GLOBUS_LOCATION}"; then
+    echo ""
+    echo "ERROR: Please set GLOBUS_LOCATION to the Globus installation directory before"
+    echo "running this script"
+    echo ""
+    exit 1
+fi
+
+. ${GLOBUS_LOCATION}/libexec/globus-script-initializer
 
 PROGRAM_NAME=`echo $0 | ${GLOBUS_SH_SED-sed} 's|.*/||g'`
 
@@ -48,14 +56,14 @@ ${short_usage}
 EOF
 }
 
-@globus_args_parser_header@
+. $libexecdir/globus-args-parser-header
 
 
 #SSL related needs
-PATH=${GLOBUS_SSL_PATH}/bin:${PATH}
-SSLEAY="${GLOBUS_SSL_PATH}/bin/ssleay"
-if [ -r ${GLOBUS_SSL_PATH}/bin/openssl ]; then
-	SSLEAY="${GLOBUS_SSL_PATH}/bin/openssl"
+PATH=${GLOBUS_LOCATION}/bin:${PATH}
+SSLEAY="${GLOBUS_LOCATION}/bin/ssleay"
+if [ -r ${GLOBUS_LOCATION}/bin/openssl ]; then
+	SSLEAY="${GLOBUS_LOCATION}/bin/openssl"
 fi
 	
 
