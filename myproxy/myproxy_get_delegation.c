@@ -108,13 +108,13 @@ main(int argc, char *argv[])
     
     /* Set up client socket attributes */
     if (myproxy_init_client(socket_attrs) < 0) {
-        fprintf(stderr, "error in myproxy_init_client()\n");
+        fprintf(stderr, "Error in myproxy_init_client()\n");
         exit(1);
     }
     
      /* Authenticate client to server */
     if (myproxy_authenticate_init(socket_attrs, NULL) < 0) {
-        fprintf(stderr, "error in myproxy_authenticate_init()\n");
+        fprintf(stderr, "Unable to authenticate to %s\n", socket_attrs->pshost);
         exit(1);
     }
 
@@ -132,42 +132,17 @@ main(int argc, char *argv[])
         exit(1);
     }
 
+    /* Continue unless the response is not OK */
+    receive_response(socket_attrs, server_response);
+
     /* Accept delegated credentials from client */
     if (myproxy_accept_delegation(socket_attrs, delegfile, sizeof(delegfile)) < 0) {
         fprintf(stderr, "error in myproxy_accept_delegation()\n");
 	exit(1);
     }      
 
-    /* Receive a response from the server */
-    responselen = myproxy_recv(socket_attrs, response_buffer, sizeof(response_buffer));
-    if (responselen < 0) {
-        fprintf(stderr, "error in myproxy_recv_response()\n");
-        exit(1);
-    }
-
-    /* Make a response object from the response buffer */
-    if (myproxy_deserialize_response(server_response, response_buffer, responselen) < 0) {
-        fprintf(stderr, "error in myproxy_deserialize_response()\n");
-        exit(1);
-    }
-    
-    /* Check version */
-    if (strcmp(server_response->version, MYPROXY_VERSION) != 0) {
-        fprintf(stderr, "Invalid version number received from server\n");
-    } 
-
-    /* Check response */
-    switch(server_response->response_type) {
-    case MYPROXY_ERROR_RESPONSE:
-        fprintf(stderr, "Received ERROR: %s\n", server_response->error_string);
-        break;
-    case MYPROXY_OK_RESPONSE:
-        printf("proxy was succesfully retrieved for user %s.\n", client_request->username);
-        break;
-    default:
-        fprintf(stderr, "Received unknown response type\n");
-        break;
-    }
+    /* Continue unless the response is not OK */
+    receive_response(socket_attrs, server_response);
 
     /* free memory allocated */
     myproxy_destroy(socket_attrs, client_request, server_response);
@@ -233,31 +208,71 @@ int
 read_passphrase(char *passphrase, const int passlen, const int min, const int max) 
 {
     int i;
-    char pass[passlen];
+    char pass[1024];
     int done = 0;
 
     assert(passphrase != NULL);
+    assert(passlen < 1024);
 
     /* Get user's passphrase */    
     do {
         printf("Enter password to retrieve proxy on  myproxy-server:\n");
         
-        if (!(fgets(pass, passlen, stdin))) {
+        if (!(fgets(pass, 1024, stdin))) {
             fprintf(stderr,"Failed to read password from stdin\n");   
             return -1;
         }	
-        i = strlen(pass);
+        i = strlen(pass) - 1;
         if ((i < min) || (i > max)) {
-            printf("Password must be between %d and %d characters\n, min, max");
+            printf("Password must be between %d and %d characters\n", min, max);
         } else {
             done = 1;
         }
     } while (!done);
     
-    if (pass[i-1] == '\n') {
-        pass[i-1] = '\0';
+    if (pass[i] == '\n') {
+        pass[i] = '\0';
     }
     strncpy(passphrase, pass, passlen);
     return 0;
 }
 
+void
+receive_response(myproxy_socket_attrs_t *attrs, myproxy_response_t *response) {
+    int responselen;
+    char response_buffer[1024];
+
+    /* Receive a response from the server */
+    responselen = myproxy_recv(attrs, response_buffer, sizeof(response_buffer));
+    if (responselen < 0) {
+        fprintf(stderr, "error in myproxy_recv_response()\n");
+        exit(1);
+    }
+
+    /* Make a response object from the response buffer */
+    if (myproxy_deserialize_response(response, response_buffer, responselen) < 0) {
+      fprintf(stderr, "error in myproxy_deserialize_response()\n");
+      exit(1);
+    }
+
+    /* Check version */
+    if (strcmp(response->version, MYPROXY_VERSION) != 0) {
+      fprintf(stderr, "Received invalid version number from server\n");
+      exit(1);
+    } 
+
+    /* Check response */
+    switch(response->response_type) {
+        case MYPROXY_ERROR_RESPONSE:
+            fprintf(stderr, "Received ERROR: %s\n", response->error_string);
+	    exit(1);
+            break;
+        case MYPROXY_OK_RESPONSE:
+            break;
+        default:
+            fprintf(stderr, "Received unknown response type\n");
+	    exit(1);
+            break;
+    }
+    return;
+}
