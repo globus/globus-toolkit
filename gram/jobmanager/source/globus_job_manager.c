@@ -17,6 +17,10 @@ CVS Information:
 ******************************************************************************/
 #include "globus_common.h"
 
+#if HAVE_UTIME_H
+#include <utime.h>
+#endif
+
 #include <stdio.h>
 #include <malloc.h>
 #include <sys/param.h>
@@ -307,7 +311,6 @@ static int                         graml_stderr_count;
 }
 
 #define GRAM_TIMED_WAIT(wait_time) { \
-    int err; \
     globus_abstime_t abs; \
     abs.tv_sec = time(GLOBUS_NULL) + wait_time; \
     abs.tv_nsec = 0; \
@@ -336,13 +339,8 @@ main(int argc,
     int                    count;
     int                    gram_version;
     int                    job_state_mask;
-    int                    n_nodes;
     int                    format;
-    int                    job_status;
-    int                    message_handled;
     int                    print_debug_flag = 0;
-    int                    skip_poll = 0;
-    int                    skip_stat = 0;
     int                    tmp_status;
     int                    publish_jobs_flag = 0;
     char                   rsl_spec[GLOBUS_GRAM_CLIENT_MAX_MSG_SIZE];
@@ -352,18 +350,14 @@ main(int argc,
     char                   job_status_file_path[512];
     char *                 job_status_dir = GLOBUS_NULL;
     char *                 home_dir = NULL;
-    char *                 tmp_ptr;
     char *                 client_contact_str;
     char *                 my_host;
-    char *                 dash_pos;
     char *                 libexecdir;
     char *                 final_rsl_spec = GLOBUS_NULL;
     unsigned short         my_port;
-    FILE *                 args_fp;
     FILE *                 fp;
     FILE *                 test_fp;
     struct stat            statbuf;
-    globus_byte_t          type;
     globus_byte_t *        ptr;
     globus_byte_t                       buffer[GLOBUS_GRAM_CLIENT_MAX_MSG_SIZE];
     globus_nexus_buffer_t               reply_buffer;
@@ -2065,11 +2059,7 @@ globus_l_gram_rsl_env_add(globus_rsl_t * ast_node,
 {
     globus_rsl_t * tmp_rsl_ptr;
     globus_list_t * tmp_rsl_list;
-    globus_list_t * tmp_value_list;
     globus_list_t * new_list;
-    globus_rsl_value_t * tmp_rsl_value_ptr;
-    char * tmp_value;
-    int value_ctr = 0;
 
     if (globus_rsl_is_boolean(ast_node))
     {
@@ -2956,7 +2946,6 @@ globus_l_gram_register_handler(globus_nexus_endpoint_t * endpoint,
                                globus_nexus_buffer_t * buffer,
                                globus_bool_t is_non_threaded_handler)
 {
-    int                                rc;
     int                                size;
     int                                gram_version;
     int                                job_state_mask;
@@ -3044,7 +3033,6 @@ globus_l_gram_unregister_handler(globus_nexus_endpoint_t * endpoint,
                                  globus_nexus_buffer_t * buffer,
                                  globus_bool_t is_non_threaded_handler)
 {
-    int                                rc;
     int                                size;
     int                                gram_version;
     int                                len;
@@ -3151,7 +3139,6 @@ globus_l_gram_status_handler(globus_nexus_endpoint_t * endpoint,
                              globus_nexus_buffer_t * buffer,
                              globus_bool_t is_non_threaded_handler)
 {
-    int                                rc;
     int                                size;
     int                                gram_version;
     globus_nexus_startpoint_t          reply_sp;
@@ -3217,7 +3204,6 @@ globus_l_gram_start_time_handler(globus_nexus_endpoint_t * endpoint,
 {
     int                         rc;
     int                         size;
-    int                         message_handled;
     float                       confidence;
     globus_nexus_startpoint_t   reply_sp;
     globus_nexus_buffer_t       reply_buffer;
@@ -3858,8 +3844,6 @@ globus_l_gram_check_file_list(int check_fd, globus_list_t *file_list)
     tmp_list = file_list;
     while(!globus_list_empty(tmp_list))
     {
-        struct stat file_status;
-
         output = (globus_l_gram_output_t *) globus_list_first(tmp_list);
         output->poll_counter--;
         if (output->poll_counter < 1)
@@ -3957,7 +3941,6 @@ globus_l_gram_check_file(int out_fd,
         if(last_nl != output->last_written)
         {
             off_t amt_to_write = last_nl - output->last_written;
-            off_t written = 0;
             lseek(fd,
                   output->last_written,
                   SEEK_SET);
@@ -4035,7 +4018,6 @@ Returns:
 static void
 globus_l_gram_delete_file_list(int output_fd, globus_list_t **handle_list)
 {
-    globus_list_t *           tmp_list;
     globus_l_gram_output_t *  output;
     globus_byte_t *           buf = globus_libc_malloc(1024);
     int                       fd;
