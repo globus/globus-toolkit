@@ -308,7 +308,8 @@ int main(int argc,
     int                    rc;
     int                    length;
     int                    job_state_mask;
-    int                    print_debug_flag = 0;
+    int                    save_logfile_always_flag = 0;
+    int                    save_logfile_on_errors_flag = 0;
     int                    krbflag = 0;
     int                    tmp_status;
     int                    publish_jobs_flag = 0;
@@ -511,9 +512,20 @@ int main(int argc,
         {
             strcpy(write_rsl_file, argv[i+1]); i++;
         }
-        else if (strcmp(argv[i], "-d") == 0)
+        else if ((strcmp(argv[i], "-save-logfile") == 0)
+                 && (i + 1 < argc))
         {
-            print_debug_flag = 1;
+            if (strcmp(argv[i+1], "always") == 0)
+            {
+                save_logfile_always_flag    = 1;
+                save_logfile_on_errors_flag = 0;
+            }
+            else
+            {
+                save_logfile_always_flag    = 0;
+                save_logfile_on_errors_flag = 1;
+            }
+            i++;
         }
         else if (strcmp(argv[i], "-k") == 0)
         {
@@ -610,38 +622,40 @@ int main(int argc,
         else if ((strcasecmp(argv[i], "-help" ) == 0) ||
                  (strcasecmp(argv[i], "--help") == 0))
         {
-            fprintf(stderr, "Usage: %s\n", argv[0]);
-            fprintf(stderr, "\n");
-            fprintf(stderr, "Required Arguments:\n");
-            fprintf(stderr, "\t-type jobmanager type, i.e. fork, lsf ...\n");
-            fprintf(stderr, "\t-rdn relative domain name\n");
-            fprintf(stderr, "\t-globus-org-dn organization's domain name\n");
-            fprintf(stderr, "\t-globus-host-dn host domain name\n");
-            fprintf(stderr, "\t-globus-host-manufacturer manufacturer\n");
-            fprintf(stderr, "\t-globus-host-cputype cputype\n");
-            fprintf(stderr, "\t-globus-host-osname osname\n");
-            fprintf(stderr, "\t-globus-host-osversion osversion\n");
-            fprintf(stderr, "\t-globus-gatekeeper-host host\n");
-            fprintf(stderr, "\t-globus-gatekeeper-port port\n");
-            fprintf(stderr, "\t-globus-gatekeeper-subject subject\n");
-            fprintf(stderr, "\nNon-required Arguments:\n");
-            fprintf(stderr, "\t-home deploy dir\n");
-            fprintf(stderr, "\t-e libexec dir\n");
-            fprintf(stderr, "\t-globus-install-path dir\n");
-            fprintf(stderr, "\t-condor-arch arch, i.e. SUN4x\n");
-            fprintf(stderr, "\t-condor-os os, i.e. SOLARIS26\n");
-            fprintf(stderr, "\t-publish-jobs\n");
-            fprintf(stderr, "\t-d write a log file in the users home dir\n");
-            fprintf(stderr, "\n");
-            fprintf(stderr, "Note: if type=condor then\n");
-            fprintf(stderr, "      -condor-os & -condor-arch are required.\n");
-            fprintf(stderr, "\n");
+            fprintf(stderr, 
+                    "Usage: globus-gram-jobmanager\n"
+                    "\n"
+                    "Required Arguments:\n"
+                    "\t-type jobmanager type, i.e. fork, lsf ...\n"
+                    "\t-rdn relative domain name\n"
+                    "\t-globus-org-dn organization's domain name\n"
+                    "\t-globus-host-dn host domain name\n"
+                    "\t-globus-host-manufacturer manufacturer\n"
+                    "\t-globus-host-cputype cputype\n"
+                    "\t-globus-host-osname osname\n"
+                    "\t-globus-host-osversion osversion\n"
+                    "\t-globus-gatekeeper-host host\n"
+                    "\t-globus-gatekeeper-port port\n"
+                    "\t-globus-gatekeeper-subject subject\n"
+                    "\n"
+                    "Non-required Arguments:\n"
+                    "\t-home deploy dir\n"
+                    "\t-e libexec dir\n"
+                    "\t-globus-install-path dir\n"
+                    "\t-condor-arch arch, i.e. SUN4x\n"
+                    "\t-condor-os os, i.e. SOLARIS26\n"
+                    "\t-publish-jobs\n"
+                    "\t-save-logfile [ always | on_errors ]\n"
+                    "\n"
+                    "Note: if type=condor then\n"
+                    "      -condor-os & -condor-arch are required.\n"
+                    "\n");
             exit(1);
         }
         else
         {
-            fprintf(stderr, "Warning: Ignoring unknown argument %s\n", argv[i]);
-            fprintf(stderr, "\n");
+            fprintf(stderr, "Warning: Ignoring unknown argument %s\n\n",
+                    argv[i]);
         }
     }
 
@@ -676,7 +690,7 @@ int main(int argc,
 	globus_libc_usleep(sleeptime * 1000 * 1000);
     }
 
-    if (print_debug_flag)
+    if (save_logfile_always_flag || save_logfile_on_errors_flag)
     {
         /*
          * Open the gram logfile just for testing!
@@ -692,17 +706,24 @@ int main(int argc,
 
             if ((request->jobmanager_log_fp = fopen(tmp_buffer, "a")) == NULL)
             {
-                GRAM_UNLOCK;
                 fprintf(stderr, "JM: Cannot open gram logfile.\n");
-                exit(1);
+            }
+            else
+            {
+                sprintf(tmp_buffer, "/dev/null");
             }
         }
-        graml_log_fp = request->jobmanager_log_fp;
-		setbuf(request->jobmanager_log_fp,NULL);
     }
     else
     {
-        strcpy(tmp_buffer, "/dev/null");
+        /* don't write a log file */
+        sprintf(tmp_buffer, "/dev/null");
+    }
+
+    graml_log_fp = request->jobmanager_log_fp;
+    if (request->jobmanager_log_fp)
+    {
+        setbuf(request->jobmanager_log_fp,NULL);
     }
 
     request->jobmanager_logfile = (char *) globus_libc_strdup(tmp_buffer);
@@ -1429,6 +1450,19 @@ int main(int argc,
 		       request->failure_code,
 		       globus_gram_client_error_string(request->failure_code));
 	jm_request_failed = GLOBUS_TRUE;
+
+        if (globus_l_gram_stdout_fd != -1)
+        {
+            globus_l_gram_delete_file_list(globus_l_gram_stdout_fd,
+                                           &globus_l_gram_stdout_files);
+            globus_gass_close(globus_l_gram_stdout_fd);
+        }
+        if (globus_l_gram_stderr_fd != -1)
+        {
+            globus_l_gram_delete_file_list(globus_l_gram_stderr_fd,
+                                           &globus_l_gram_stderr_files);
+            globus_gass_close(globus_l_gram_stderr_fd);
+        }
     }
 
     rc = globus_gram_http_pack_job_request_reply(
@@ -1755,6 +1789,7 @@ int main(int argc,
 
     grami_fprintf( request->jobmanager_log_fp, "JM: freeing RSL.\n");
 
+
     if (graml_rsl_tree)
         globus_rsl_free_recursive(graml_rsl_tree);
 
@@ -1812,8 +1847,26 @@ int main(int argc,
 	exit(1);
     }
 
-    grami_fprintf( request->jobmanager_log_fp,
-          "JM: exiting globus_gram_job_manager.\n");
+    if ( save_logfile_always_flag ||
+         (save_logfile_on_errors_flag && jm_request_failed ))
+    {
+        grami_fprintf( request->jobmanager_log_fp,
+             "JM: exiting globus_gram_job_manager.\n");
+    }
+    else
+    {
+        /*
+         * Check to see if the jm log file exists.  If so, then delete it.
+         */
+        if (stat(request->jobmanager_logfile, &statbuf) == 0)
+        {
+            if (remove(request->jobmanager_logfile) != 0)
+            {
+	        fprintf(stderr, "failed to remove job manager log file = %s\n",
+                        request->jobmanager_logfile);
+            }
+        }
+    }
 
     return(0);
 
