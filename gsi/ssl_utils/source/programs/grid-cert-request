@@ -79,6 +79,7 @@ ${short_usage}
                          <prefix>cert.pem, <prefix>key.pem and
                          <prefix>cert_request.pem
     -nopw              : Create certificate without a passwd
+    -verbose           : Don't clear the screen
     -int[eractive]     : Prompt user for each component of the DN
     -force             : Overwrites preexisting certifictes
     -ca                : Will ask which CA is to be used (interactive)
@@ -160,8 +161,7 @@ abort_cleanup ()
 {
     ${GLOBUS_SH_RM-rm} -f ${CERT_FILE} ${KEY_FILE} \
                           ${REQUEST_FILE} ${RAND_TEMP} \
-                          ${REQ_HEAD} ${REQ_INPUT} ${REQ_OUTPUT} \
-                          ${REQ_LOG}
+                          ${REQ_HEAD} ${REQ_INPUT} ${REQ_OUTPUT}
 }
 
 
@@ -230,6 +230,10 @@ read_command_line ()
                 ;;
             -nopw|-nodes|-nopassphrase)
                 NO_DES="-nodes"
+                shift
+                ;;
+            -verbose)
+                VERBOSE="yes"
                 shift
                 ;;
             -int|-interactive)
@@ -566,12 +570,13 @@ create_certs () {
         else
             used_config="${SSL_HOST_CONFIG}"
         fi
-        create_input_file "${COMMON_NAME}" "${used_config}" >${REQ_INPUT}
+
+        create_input_file "${COMMON_NAME}" "${used_config}" > ${REQ_INPUT}
 
         ${SSL_EXEC} req -new -keyout ${KEY_FILE} \
               -rand ${RAND_TEMP}:/var/adm/wtmp:/var/log/messages \
               -out ${REQ_OUTPUT} -config ${used_config} \
-              ${NO_DES} < ${REQ_INPUT} 1>/dev/null 2> ${REQ_LOG}
+              ${NO_DES} < ${REQ_INPUT} 
         RET=$?
 
         ${GLOBUS_SH_RM-rm} -f ${RAND_TEMP}
@@ -580,10 +585,10 @@ create_certs () {
         # You can't separate the SSL output, it all goes to stderr
         # including the prompts.
         # Don't remove ssleay output on error as it may be useful
-        if test ${RET} -ne 0 ; then
-            ${GLOBUS_SH_CAT-cat} ${REQ_LOG}
+        
+        if test ${RET} -eq 0 -a -z "${VERBOSE}" ; then
+            ${GLOBUS_SH_CLEAR-clear}
         fi
-        ${GLOBUS_SH_RM-rm} -f ${REQ_LOG}
     fi
 
     if [ ${RET} -ne 0 ] ; then
@@ -706,7 +711,6 @@ read_command_line "$@"
 REQ_HEAD=${TARGET_DIR}/$PROGRAM_NAME.$$.head
 REQ_INPUT=${TARGET_DIR}/$PROGRAM_NAME.$$.input
 REQ_OUTPUT=${TARGET_DIR}/$PROGRAM_NAME.$$.output
-REQ_LOG=${TARGET_DIR}/$PROGRAM_NAME.$$.log
 RAND_TEMP=${TARGET_DIR}/$PROGRAM_NAME.$$.random
 
 # Source the security.conf file
