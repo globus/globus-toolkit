@@ -552,6 +552,18 @@ globus_authorization_eval(
     status = gaa_check_authorization(handle->gaa,handle->gaa_sc,
                                      handle->policy,right_list,answer);
     
+#ifdef GAA_DEBUG
+    {
+        char buffer[512];
+        
+        /* Requires gaa debug library to be linked in */
+
+        gaadebug_answer_string(handle->gaa, buffer, sizeof(buffer), answer);
+
+        fprintf(stderr, "%s\n", buffer);
+    }
+#endif /* GAA_DEBUG */
+
     switch (status)
     {
     case GAA_C_YES:
@@ -582,6 +594,20 @@ globus_authorization_eval(
                     gaa_get_err());
         break;
     }
+
+#ifdef DEBUG
+    if (status != GAA_C_YES)
+    {
+        char string[256];
+        
+        globus_result_get_error_string(ret_val, string, sizeof(string));
+        
+        fprintf(stderr,
+                "globus_authorization_eval returning error (status %d): %s\n",
+                status, string);
+    }
+#endif /* DEBUG */
+
     gaa_list_free(right_list);
     right_list = NULL;    
 
