@@ -1989,6 +1989,11 @@ globus_callback_space_is_single(
 {
     globus_l_callback_space_t *         i_space;
     
+    if(space == GLOBUS_CALLBACK_GLOBAL_SPACE)
+    {
+        return GLOBUS_FALSE;
+    }
+
     globus_mutex_lock(&globus_l_callback_space_lock);
     {
         i_space = (globus_l_callback_space_t *)
