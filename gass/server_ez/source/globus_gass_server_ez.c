@@ -16,8 +16,8 @@ CVS Information:
                              Include header files
 ******************************************************************************/
 #include "globus_common.h"
-
 #include "globus_gass_server_ez.h"
+#include "globus_i_gass_common.h"
 
 #include <stdio.h>
 #include <fcntl.h>
@@ -347,17 +347,17 @@ globus_gass_server_ez_put_memory_done(globus_gass_server_put_request_t *request,
 	   lastnl != -1 &&
 	    r->line_buffer_used != 0)
 	{
-	    _nx_write_blocking(r->fd,
-			       r->line_buffer,
-			       r->line_buffer_used);
+	    globus_i_gass_write(r->fd,
+				r->line_buffer,
+				r->line_buffer_used);
 	    r->line_buffer_used = 0;
 	}
 	
 	if(lastnl != -1)
 	{
-	    _nx_write_blocking(r->fd,
-			       buffer,
-			       lastnl);
+	    globus_i_gass_write(r->fd,
+				r->line_buffer,
+				r->line_buffer_used);
 	}
 	else
 	{
@@ -398,15 +398,15 @@ globus_gass_server_ez_put_memory_done(globus_gass_server_put_request_t *request,
 	if(r->line_buffer != GLOBUS_NULL &&
 	   r->line_buffer_used != 0UL)
 	{
-	    _nx_write_blocking(r->fd,
-			       r->line_buffer,
-			       r->line_buffer_used);
+	    globus_i_gass_write(r->fd,
+				r->line_buffer,
+				r->line_buffer_used);
 	}
 	if(receive_length != 0)
 	{
-	    _nx_write_blocking(r->fd,
-			       buffer,
-			       receive_length);
+	    globus_i_gass_write(r->fd,
+				buffer,
+				receive_length);
 	}
 
 	/* This should _always_ be the case */
