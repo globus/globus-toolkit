@@ -527,9 +527,10 @@ typedef struct globus_i_gfs_ipc_iface_s
  */
 globus_result_t
 globus_gfs_ipc_handle_create(
-    globus_gfs_ipc_handle_t *           ipc_handle,
     globus_gfs_ipc_iface_t *            iface,
     globus_xio_system_handle_t          system_handle,
+    globus_gfs_ipc_open_close_callback_t cb,
+    void *                              user_arg,
     globus_gfs_ipc_error_callback_t     error_cb,
     void *                              error_arg);
 

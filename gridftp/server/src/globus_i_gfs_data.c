@@ -5,6 +5,49 @@ static globus_gfs_storage_iface_t *     dsi = NULL;
 static void *                           dsi_user_arg = NULL;
 
 void
+globus_i_gfs_monitor_init(
+    globus_i_gfs_monitor_t *            monitor)
+{
+    globus_mutex_init(&monitor->mutex, NULL);
+    globus_cond_init(&monitor->cond, NULL);
+    monitor->done = GLOBUS_FALSE;
+}
+
+void
+globus_i_gfs_monitor_wait(
+    globus_i_gfs_monitor_t *            monitor)
+{
+    globus_mutex_lock(&monitor->mutex);
+    {
+        while(!monitor->done)
+        {
+            globus_cond_wait(&monitor->cond, &monitor->mutex);
+        }
+    }
+    globus_mutex_unlock(&monitor->mutex);
+}
+
+void
+globus_i_gfs_monitor_destroy(
+    globus_i_gfs_monitor_t *            monitor)
+{
+    globus_mutex_destroy(&monitor->mutex);
+    globus_cond_destroy(&monitor->cond);
+}
+
+void
+globus_i_gfs_monitor_signal(
+    globus_i_gfs_monitor_t *            monitor)
+{
+    globus_mutex_lock(&monitor->mutex);
+    {
+        monitor->done = GLOBUS_FALSE;
+        globus_cond_signal(&monitor->cond);
+    }
+    globus_mutex_unlock(&monitor->mutex);
+}
+
+void
 globus_i_gfs_data_init()
 {
     if(globus_i_gfs_config_string("remote"))
@@ -2216,6 +2259,20 @@ globus_l_gfs_data_ipc_error_cb(
     return;
 }
 
+static
+void
+globus_l_gfs_data_ipc_open_cb(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    globus_result_t                     result,
+    void *                              user_arg)
+{
+    globus_i_gfs_monitor_t *            monitor;
+
+    monitor = (globus_i_gfs_monitor_t *) user_arg;
+
+    globus_i_gfs_monitor_signal(monitor);
+}
+
 
 globus_result_t
 globus_i_gfs_data_node_start(
@@ -2224,15 +2281,21 @@ globus_i_gfs_data_node_start(
     const char *                        remote_contact)
 {
     globus_result_t                     res;
-    globus_gfs_ipc_handle_t             ipc_handle;
+    globus_i_gfs_monitor_t              monitor;
+
+    globus_i_gfs_monitor_init(&monitor);
     
     res = globus_gfs_ipc_handle_create(
-        &ipc_handle,
         &globus_gfs_ipc_default_iface,
         system_handle,
+        globus_l_gfs_data_ipc_open_cb,
+        &monitor,
         globus_l_gfs_data_ipc_error_cb,
         NULL);
-    
+
+    globus_i_gfs_monitor_wait(&monitor);
+    globus_i_gfs_monitor_destroy(&monitor);
+
     return res;
 }
 

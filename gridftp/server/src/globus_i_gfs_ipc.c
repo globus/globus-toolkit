@@ -14,7 +14,6 @@ static globus_xio_stack_t               globus_l_gfs_ipc_xio_stack;
 typedef enum globus_l_gfs_ipc_state_s
 {
     GLOBUS_GFS_IPC_STATE_OPENING,
-    GLOBUS_GFS_IPC_STATE_PASSIVE_OPEN,
     GLOBUS_GFS_IPC_STATE_OPEN,
     GLOBUS_GFS_IPC_STATE_GETTING,
     GLOBUS_GFS_IPC_STATE_IN_USE,
@@ -373,12 +372,6 @@ globus_l_gfs_ipc_error_kickout(
     {
         switch(ipc->state)
         {
-            /* passive case too */
-            case GLOBUS_GFS_IPC_STATE_PASSIVE_OPEN:
-                error_cb = ipc->error_cb;
-                ipc->state = GLOBUS_GFS_IPC_STATE_ERROR;
-                break;
-
             /* need to delay error callback until after the get callback
                 is delivered */
             case GLOBUS_GFS_IPC_STATE_GETTING:
@@ -616,25 +609,18 @@ globus_l_gfs_ipc_close(
  */
 globus_result_t
 globus_gfs_ipc_handle_create(
-    globus_gfs_ipc_handle_t *           ipc_handle,
     globus_gfs_ipc_iface_t *            iface,
     globus_xio_system_handle_t          system_handle,
+    globus_gfs_ipc_open_close_callback_t cb,
+    void *                              user_arg,
     globus_gfs_ipc_error_callback_t     error_cb,
     void *                              error_arg)
 {
     globus_i_gfs_ipc_handle_t *         ipc = NULL;
     globus_result_t                     res;
-    globus_byte_t *                     read_buf;
-    
-    globus_xio_handle_t                 xio_handle;
     globus_xio_attr_t                   xio_attr;
     GlobusGFSName(globus_gfs_ipc_handle_create);
 
-    if(ipc_handle == NULL)
-    {
-        res = GlobusGFSErrorParameter("ipc_handle");
-        goto err;
-    }
     if(iface == NULL)
     {
         res = GlobusGFSErrorParameter("iface");
@@ -659,21 +645,6 @@ globus_gfs_ipc_handle_create(
         goto err;
     }
 
-    res = globus_xio_handle_create(&xio_handle, globus_l_gfs_ipc_xio_stack);
-    if(res != GLOBUS_SUCCESS)
-    {
-        goto err;
-    }
-    res = globus_xio_open(
-        xio_handle, 
-        NULL, 
-        xio_attr);
-    if(res != GLOBUS_SUCCESS)
-    {
-        goto err;
-    }
-    globus_xio_attr_destroy(xio_attr);
-
     ipc = (globus_i_gfs_ipc_handle_t *)
         globus_calloc(1, sizeof(globus_i_gfs_ipc_handle_t));
     if(ipc == NULL)
@@ -681,13 +652,20 @@ globus_gfs_ipc_handle_create(
         res = GlobusGFSErrorMemory("ipc");
         goto err;
     }
-    ipc->state = GLOBUS_GFS_IPC_STATE_PASSIVE_OPEN;
+    res = globus_xio_handle_create(
+        &ipc->xio_handle, globus_l_gfs_ipc_xio_stack);
+    if(res != GLOBUS_SUCCESS)
+    {
+        goto err;
+    }
+    ipc->state = GLOBUS_GFS_IPC_STATE_OPENING;
     ipc->iface = iface;
     ipc->error_cb = error_cb;
     ipc->error_arg = error_arg;
     ipc->local = GLOBUS_FALSE;
     ipc->buffer_size = GFS_IPC_DEFAULT_BUFFER_SIZE;
-    ipc->xio_handle = xio_handle;
+    ipc->open_cb = cb;
+    ipc->open_arg = user_arg;
 
     globus_hashtable_init(
         &ipc->call_table,
@@ -696,21 +674,18 @@ globus_gfs_ipc_handle_create(
         globus_hashtable_voidp_keyeq);
     globus_mutex_init(&ipc->mutex, NULL);
 
-    read_buf = globus_malloc(GFS_IPC_HEADER_SIZE);
-    res = globus_xio_register_read(
-        ipc->xio_handle,
-        read_buf,
-        GFS_IPC_HEADER_SIZE,
-        GFS_IPC_HEADER_SIZE,
-        NULL,
-        globus_l_gfs_ipc_read_header_cb,
+    res = globus_xio_register_open(
+        ipc->xio_handle, 
+        NULL, 
+        xio_attr,
+        globus_l_gfs_ipc_open_cb,
         ipc);
+    globus_xio_attr_destroy(xio_attr);
     if(res != GLOBUS_SUCCESS)
     {
-        globus_free(read_buf);
+        goto err;
     }
 
-    *ipc_handle = ipc;
     return GLOBUS_SUCCESS;
 
   err:

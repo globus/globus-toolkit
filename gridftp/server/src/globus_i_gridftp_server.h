@@ -83,6 +83,28 @@ typedef struct
     int                                 ref;
 } globus_i_gfs_data_handle_t;
 
+typedef struct globus_i_gfs_monitor_s
+{
+    globus_bool_t                       done;
+    globus_cond_t                       cond;
+    globus_mutex_t                      mutex;
+} globus_i_gfs_monitor_t;
+
+void
+globus_i_gfs_monitor_init(
+    globus_i_gfs_monitor_t *            monitor);
+
+void
+globus_i_gfs_monitor_destroy(
+    globus_i_gfs_monitor_t *            monitor);
+
+void
+globus_i_gfs_monitor_wait(
+    globus_i_gfs_monitor_t *            monitor);
+
+void
+globus_i_gfs_monitor_signal(
+    globus_i_gfs_monitor_t *            monitor);
 
 #include "globus_i_gfs_log.h"
 #include "globus_i_gfs_control.h"
