@@ -415,7 +415,7 @@ globus_l_gram_job_manager_renew(
     globus_bool_t *			reply)
 {
     globus_gram_job_manager_query_t *	query;
-    int					rc;
+    int					rc = 0;
     globus_reltime_t			delay;
 
     if(!globus_l_gram_job_manager_query_valid(request))

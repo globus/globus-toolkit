@@ -78,14 +78,6 @@ globus_gram_job_manager_gsi_used(
     int					present = 0;
 
     /*
-     * relocate the user proxy to the gass cache and
-     * return the local file name.
-     */
-    globus_gram_job_manager_request_log(
-	    request,
-	    "JM: user proxy relocation\n");
-
-    /*
      * Figure out if we're using GSI
      */
     major_status = gss_indicate_mechs(&minor_status,
@@ -237,18 +229,11 @@ globus_gram_job_manager_gsi_update_credential(
     globus_gram_jobmanager_request_t *	request,
     gss_cred_id_t			credential)
 {
-    unsigned long			timestamp;
-    char *				temporary_cred_url;
-    char *				temporary_cred_name;
-    FILE *				infp;
-    FILE *				outfp;
     OM_uint32				major_status;
     OM_uint32				minor_status;
     gss_buffer_desc			credential_buffer;
     int					rc;
     char *				x509_filename;
-    struct stat				statbuf;
-    char *				cred_data_buffer;
 
     rc = globus_gram_protocol_set_credentials(credential);
     if(rc != GLOBUS_SUCCESS)
@@ -256,8 +241,7 @@ globus_gram_job_manager_gsi_update_credential(
 	(void) gss_release_cred(&minor_status, &credential);
 	return rc;
     }
-    if(request->x509_user_proxy == NULL ||
-	    !globus_gram_job_manager_gsi_used(request))
+    if(!globus_gram_job_manager_gsi_used(request))
     {
 	/* I don't know what to do with this new credential. */
 	return GLOBUS_SUCCESS;
@@ -275,19 +259,6 @@ globus_gram_job_manager_gsi_update_credential(
 	goto export_failed;
     }
 
-    temporary_cred_url =
-	globus_libc_malloc(GLOBUS_GRAM_PROTOCOL_MAX_MSG_SIZE);
-
-    if(temporary_cred_url == NULL)
-    {
-	rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-	goto cred_url_malloc_failed;
-    }
-
-    sprintf(temporary_cred_url,
-	    "%sx509_deleg_proxy",
-	    request->job_contact);
-
     x509_filename = strstr(credential_buffer.value, "=");
 
     if(x509_filename == NULL)
@@ -295,109 +266,314 @@ globus_gram_job_manager_gsi_update_credential(
 	rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_USER_PROXY;
 	goto strstr_failed;
     }
+
     /* skip '=' */
     x509_filename++;
+    rc = globus_gram_job_manager_gsi_relocate_proxy(request, x509_filename);
 
-    rc = globus_gass_cache_add(&request->cache_handle,
-	                       temporary_cred_url,
-			       request->cache_tag,
-			       GLOBUS_TRUE,
-			       &timestamp,
-			       &temporary_cred_name);
-
-    if(rc != GLOBUS_GASS_CACHE_ADD_NEW && 
-       rc != GLOBUS_GASS_CACHE_ADD_EXISTS)
-    {
-	rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_CACHE_USER_PROXY;
-	goto cache_add_failed;
-    }
-    rc = stat(x509_filename, &statbuf);
-    if(rc < 0 || statbuf.st_size <= 0)
-    {
-	rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_CACHE_USER_PROXY;
-	goto stat_failed;
-    }
-    infp = fopen(x509_filename, "r");
-    if(infp == NULL)
-    {
-	rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_USER_PROXY;
-	goto infp_fopen_failed;
-    }
-    cred_data_buffer = globus_libc_malloc(statbuf.st_size);
-    if(cred_data_buffer == NULL)
-    {
-	rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_USER_PROXY;
-	goto cred_data_buffer_malloc_failed;
-    }
-    rc = fread(cred_data_buffer, statbuf.st_size, 1, infp);
-    if(rc != 1)
-    {
-	rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_USER_PROXY;
-	goto fread_failed;
-    }
-    outfp = fopen(temporary_cred_name, "w");
-    if(outfp == NULL)
-    {
-	rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_CACHE_USER_PROXY;
-	goto outfp_fopen_failed;
-    }
-    rc = fwrite(cred_data_buffer, statbuf.st_size, 1, outfp);
-    if(rc != 1)
-    {
-	rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_CACHE_USER_PROXY;
-
-	goto fwrite_failed;
-    }
-    rc = fclose(outfp);
-    outfp = NULL;
-    if(rc < 0)
-    {
-	rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_CACHE_USER_PROXY;
-
-	goto fclose_outfp_failed;
-    }
-    rc = rename(temporary_cred_name, request->x509_user_proxy);
-    if(rc < 0)
-    {
-	goto rename_failed;
-    }
-
-    rc = GLOBUS_SUCCESS;
-
-rename_failed:
-fclose_outfp_failed:
     if(rc != GLOBUS_SUCCESS)
     {
-	remove(temporary_cred_name);
+	remove(x509_filename);
     }
-fwrite_failed:
-    if(outfp)
-    {
-	fclose(outfp);
-    }
-outfp_fopen_failed:
-fread_failed:
-    globus_libc_free(cred_data_buffer);
-cred_data_buffer_malloc_failed:
-    fclose(infp);
-infp_fopen_failed:
-stat_failed:
-    globus_gass_cache_delete(&request->cache_handle,
-			     temporary_cred_url,
-			     request->cache_tag,
-			     timestamp,
-			     GLOBUS_TRUE);
-    globus_libc_free(temporary_cred_name);
-    globus_libc_free(temporary_cred_url);
-cache_add_failed:
+
 strstr_failed:
-cred_url_malloc_failed:
-    remove(x509_filename);
-    gss_release_buffer(&minor_status, &credential_buffer);
 export_failed:
     return rc;
 }
 /* globus_gram_job_manager_gsi_update_credential() */
+
+/**
+ * Relocates a proxy file into the GASS Cache. Updates the
+ * X509_USER_PROXY environment variable to point to the new location
+ * of the proxy, and then removes the file located at @a new_proxy.
+ * In the case of an error, the @a new_proxy file will not be removed.
+ *
+ * @param request
+ * @param new_proxy
+ */
+int
+globus_gram_job_manager_gsi_relocate_proxy(
+    globus_gram_jobmanager_request_t *	request,
+    const char *			new_proxy)
+{
+    struct stat				statbuf;
+    unsigned long			timestamp;
+    int					rc = 0;
+    char *				cred_url = NULL;
+    char *				cred_file = NULL;
+    char *				temp_cred_url = NULL;
+    char *				temp_cred_file = NULL;
+    FILE *				infp = NULL;
+    FILE *				outfp = NULL;
+    char *				cred_data = NULL;
+    globus_bool_t			delete_cred = GLOBUS_FALSE;
+    globus_bool_t			delete_tmp = GLOBUS_FALSE;
+    globus_bool_t			locked_tmp = GLOBUS_FALSE;
+
+    rc = stat(new_proxy, &statbuf);
+
+    if(rc < 0 || statbuf.st_size <= 0)
+    {
+	rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_USER_PROXY;
+
+	goto stat_failed;
+    }
+
+    cred_data = globus_libc_malloc(statbuf.st_size);
+
+    if(cred_data == NULL)
+    {
+	rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+	goto cred_data_malloc_failed;
+    }
+    infp = fopen(new_proxy, "r");
+
+    if(infp == NULL)
+    {
+	rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_USER_PROXY;
+
+	goto fopen_new_proxy_failed;
+    }
+
+    rc = fread(cred_data, (size_t) statbuf.st_size, 1, infp);
+
+    if(rc != 1)
+    {
+	rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_USER_PROXY;
+
+	goto fread_new_proxy_failed;
+    }
+
+    fclose(infp);
+    infp = NULL;
+
+    cred_url = globus_libc_malloc(GLOBUS_GRAM_PROTOCOL_MAX_MSG_SIZE);
+    
+    if(cred_url == NULL)
+    {
+	rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+	goto cred_url_malloc_failed;
+    }
+
+    rc = sprintf(cred_url,
+	         "%sx509_user_proxy",
+		 request->job_contact);
+
+    if(rc < 0)
+    {
+	rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_USER_PROXY;
+
+	goto cred_url_sprintf_failed;
+    }
+
+    rc = globus_gass_cache_add(&request->cache_handle,
+	                       cred_url,
+			       request->cache_tag,
+			       GLOBUS_TRUE,
+			       &timestamp,
+			       &cred_file);
+
+    if(rc != GLOBUS_GASS_CACHE_ADD_NEW &&
+       rc != GLOBUS_GASS_CACHE_ADD_EXISTS)
+    {
+	rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_CACHE_USER_PROXY;
+
+	goto cred_url_cache_add_failed;
+    }
+
+    if(rc == GLOBUS_GASS_CACHE_ADD_NEW)
+    {
+	delete_cred = GLOBUS_TRUE;
+	outfp = fopen(cred_file, "w");
+	if(outfp == NULL)
+	{
+	    rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_USER_PROXY;
+
+	    goto fopen_cred_file_failed;
+	}
+	rc = fchmod(fileno(outfp), 0600);
+        if(rc != 0)
+	{
+	    rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_USER_PROXY;
+
+	    goto fchown_cred_file_failed;
+	}
+
+	rc = fwrite(cred_data, (size_t) statbuf.st_size, 1, outfp);
+	if(rc != 1)
+	{
+	    rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_CACHE_USER_PROXY;
+
+	    goto cred_fwrite_failed;
+	}
+	fclose(outfp);
+	outfp = NULL;
+        rc = globus_gass_cache_add_done(
+		&request->cache_handle,
+		cred_url,
+		request->cache_tag,
+		timestamp);
+	if(rc != 0)
+	{
+	    rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_CACHE_USER_PROXY;
+
+	    goto cred_url_add_done_failed;
+	}
+	globus_libc_setenv("X509_USER_PROXY",
+		           globus_libc_strdup(cred_file),
+			   1);
+    }
+    else if(rc == GLOBUS_GASS_CACHE_ADD_EXISTS)
+    {
+	temp_cred_url =
+	    globus_libc_malloc(GLOBUS_GRAM_PROTOCOL_MAX_MSG_SIZE);
+	
+	if(temp_cred_url == NULL)
+	{
+	    rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+	    goto temp_cred_url_malloc_failed;
+	}
+
+	rc = sprintf(temp_cred_url,
+		     "%sx509_deleg_proxy",
+		     request->job_contact);
+	if(rc < 0)
+	{
+	    rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_CACHE_USER_PROXY;
+
+	    goto temp_cred_url_sprintf_failed;
+	}
+	rc = globus_gass_cache_add(&request->cache_handle,
+				   temp_cred_url,
+				   request->cache_tag,
+				   GLOBUS_TRUE,
+				   &timestamp,
+				   &temp_cred_file);
+
+	delete_tmp = GLOBUS_TRUE;
+
+	if(rc == GLOBUS_GASS_CACHE_ADD_NEW)
+	{
+	    locked_tmp = GLOBUS_TRUE;
+	}
+	else if(rc != GLOBUS_GASS_CACHE_ADD_EXISTS)
+	{
+	    rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_CACHE_USER_PROXY;
+
+	    goto temp_cred_cache_add_failed;
+	}
+
+	outfp = fopen(temp_cred_file, "w");
+	if(outfp == NULL)
+	{
+	    rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_CACHE_USER_PROXY;
+
+	    goto temp_cred_file_fopen_failed;
+	}
+	rc = fchmod(fileno(outfp), 0600);
+	if(rc != 0)
+	{
+	    rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_CACHE_USER_PROXY;
+
+	    goto temp_cred_file_fchown_failed;
+	}
+	rc = fwrite(cred_data, (size_t) statbuf.st_size, 1, outfp);
+	if(rc != 1)
+	{
+	    rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_CACHE_USER_PROXY;
+
+	    goto temp_cred_fwrite_failed;
+	}
+	fclose(outfp);
+	outfp = NULL;
+
+	rc = rename(temp_cred_file, cred_file);
+	if(rc != 0)
+	{
+	    rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_CACHE_USER_PROXY;
+
+	    goto rename_failed;
+	}
+    }
+
+rename_failed:
+temp_cred_file_fchown_failed:
+temp_cred_fwrite_failed:
+cred_url_add_done_failed:
+fchown_cred_file_failed:
+cred_fwrite_failed:
+    if(outfp)
+    {
+	fclose(outfp);
+	outfp = NULL;
+    }
+    if(cred_file)
+    {
+	globus_libc_free(cred_file);
+	cred_file = NULL;
+    }
+fopen_cred_file_failed:
+    if(rc != GLOBUS_SUCCESS && delete_cred)
+    {
+	globus_gass_cache_delete(&request->cache_handle,
+		                 cred_url,
+				 request->cache_tag,
+				 timestamp,
+				 GLOBUS_TRUE);
+    }
+temp_cred_file_fopen_failed:
+    if(delete_tmp)
+    {
+	globus_gass_cache_delete(&request->cache_handle,
+				 temp_cred_url,
+				 request->cache_tag,
+				 timestamp,
+				 locked_tmp);
+    }
+temp_cred_cache_add_failed:
+    if(temp_cred_file)
+    {
+	globus_libc_free(temp_cred_file);
+	temp_cred_file = NULL;
+    }
+temp_cred_url_sprintf_failed:
+    if(temp_cred_url)
+    {
+	globus_libc_free(temp_cred_url);
+	temp_cred_url = NULL;
+    }
+temp_cred_url_malloc_failed:
+cred_url_cache_add_failed:
+cred_url_sprintf_failed:
+    if(cred_url)
+    {
+	globus_libc_free(cred_url);
+    }
+cred_url_malloc_failed:
+fread_new_proxy_failed:
+    if(infp != NULL)
+    {
+	globus_libc_free(infp);
+    }
+fopen_new_proxy_failed:
+    if(cred_data)
+    {
+	globus_libc_free(cred_data);
+    }
+cred_data_malloc_failed:
+stat_failed:
+
+    if(rc == GLOBUS_SUCCESS)
+    {
+	remove(new_proxy);
+    }
+
+    return rc;
+}
+/* globus_gram_job_manager_gsi_relocate_proxy() */
 
 static
 globus_bool_t

@@ -187,9 +187,7 @@ sub proxy_relocate
 	    return Globus::GRAM::Error::OPENING_USER_PROXY;
 	}
     }
-    $self->remote_cmd('proxy_relocate');
-
-    return $self->SUPER::proxy_relocate();
+    return $self->remote_cmd('proxy_relocate');
 }
 
 

@@ -60,7 +60,8 @@ globus_gram_job_manager_state_file_write(
 				"JM: Creating and locking state lock file\n");
 
 	request->job_state_lock_fd = open( request->job_state_lock_file,
-					   O_RDWR | O_CREAT );
+					   O_RDWR | O_CREAT,
+					   S_IRUSR | S_IWUSR );
 	if ( request->job_state_lock_fd < 0 )
 	{
 	    globus_gram_job_manager_request_log(request,
@@ -139,7 +140,6 @@ globus_gram_job_manager_state_file_read(
     FILE *				fp;
     char				buffer[8192];
     struct stat				statbuf;
-    globus_reltime_t			delay;
     int					rc;
 
     globus_gram_job_manager_request_log(

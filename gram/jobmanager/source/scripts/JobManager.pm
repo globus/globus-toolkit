@@ -617,7 +617,11 @@ sub remote_io_file_create
 
 =item $manager->proxy_relocate()
 
-Relocate the delegated proxy into the GASS cache.
+Relocate the delegated proxy for job execution. Job Managers need to
+override the default if they intend to relocate the proxy into some
+common file system other than the cache. The job manager program does
+not depend on the new location of the proxy. Job Manager modules must
+not remove the default proxy.
 
 =cut
 
@@ -625,46 +629,18 @@ sub proxy_relocate
 {
     my $self = shift;
     my $description = $self->{JobDescription};
-    my $cache_pgm = "$Globus::Core::Paths::bindir/globus-gass-cache";
-    my $tag = $description->cache_tag() or $ENV{GLOBUS_GRAM_JOB_CONTACT};
-    my $filename = "${tag}x509_user_proxy";
-    my $fh;
-    my $path = $ENV{X509_USER_PROXY};
-    my $local_name;
-    my $mode = 0600;
+    my $info_pgm = "$Globus::Core::Paths::bindir/grid-proxy-info";
 
-    if($path eq "")
+    chomp($proxy_filename = `$info_pgm -path 2>/dev/null`);
+
+    if($? != 0 || $proxy_filename eq "")
     {
-	return {};
+	return Globus::GRAM::Error::OPENING_USER_PROXY;
     }
 
-    chomp($local_name = `$cache_pgm -query $filename 2>/dev/null`);
-    if($local_name ne "")
-    {
-	# Already have a proxy in cache, need to replace it
-	File::Copy::copy($path, $local_name);
-    }
-    else
-    {
-	system("$cache_pgm -add -t $tag -n $filename file:$path >/dev/null");
-    }
+    $proxy_filename =~ s/^\S+\s+:\s+//;
 
-    if($? != 0)
-    {
-	return Globus::GRAM::Error::OPENING_CACHE_USER_PROXY;
-    }
-
-    chomp($local_name = `$cache_pgm -query $filename`);
-
-    if($? != 0 || $local_name eq "")
-    {
-	return Globus::GRAM::Error::OPENING_CACHE_USER_PROXY;
-    }
-
-    unlink($path);
-    chmod $mode, $local_name;
-
-    return { X509_USER_PROXY => $local_name };
+    return { X509_USER_PROXY => $proxy_filename }
 }
 
 =item $hashref = $manager->proxy_update();

@@ -862,14 +862,31 @@ globus_gram_job_manager_state_machine(
 	request->jobmanager_state =
 	    GLOBUS_GRAM_JOB_MANAGER_STATE_PROXY_RELOCATE;
 
+	tmp_str = globus_libc_getenv("X509_USER_PROXY");
+
+	/* Try to relocate proxy if we aren't using kerberos or we
+	 * weren't started with -rsl option
+	 */
         if((!request->kerberos) &&
 	    globus_gram_job_manager_gsi_used(request) &&
-	    (request->response_context != GSS_C_NO_CONTEXT ||
-	     globus_libc_getenv("X509_USER_PROXY") != NULL))
+	    (request->response_context != GSS_C_NO_CONTEXT))
 	{
-	    globus_gram_job_manager_request_log(request,
-				  "JM: GSSAPI type is GSI\n");
+	    globus_gram_job_manager_request_log(
+		    request,
+		    "JM: GSSAPI type is GSI.. relocating proxy\n");
 
+	    rc = globus_gram_job_manager_gsi_relocate_proxy(
+		    request,
+		    globus_libc_strdup(tmp_str));
+
+	    if(rc != GLOBUS_SUCCESS)
+	    {
+		request->jobmanager_state = 
+		    GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
+		request->failure_code = rc;
+	    }
+
+	    request->relocated_proxy = GLOBUS_TRUE;
 	    rc = globus_gram_job_manager_script_proxy_relocate(request);
 
 	    if(rc == GLOBUS_SUCCESS)
@@ -883,6 +900,13 @@ globus_gram_job_manager_state_machine(
 		request->failure_code = rc;
 	    }
 	}
+	else if(request->response_context == GSS_C_NO_CONTEXT)
+	{
+	    /* pretend we relocated the proxy, so that it won't be
+	     * deleted in the -rsl startup case
+	     */
+	    request->relocated_proxy = GLOBUS_TRUE;
+	}
 	break;
       case GLOBUS_GRAM_JOB_MANAGER_STATE_PROXY_RELOCATE:
 	if((!request->kerberos) && globus_gram_job_manager_gsi_used(request))
@@ -890,7 +914,7 @@ globus_gram_job_manager_state_machine(
 	    if((!request->x509_user_proxy) &&
 		    request->response_context != GSS_C_NO_CONTEXT)
 	    {
-		/* failed to relocated proxy! */
+		/* failed to relocated proxy for job */
 		request->jobmanager_state = 
 		    GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
 		if(request->failure_code == GLOBUS_SUCCESS)
@@ -922,7 +946,6 @@ globus_gram_job_manager_state_machine(
 		    request->x509_user_proxy);
 		rc = globus_gram_job_manager_gsi_register_proxy_timeout(
 			request);
-		request->relocated_proxy = GLOBUS_TRUE;
 	    }
 	}
 
@@ -1387,8 +1410,8 @@ globus_gram_job_manager_state_machine(
 		break;
 	    }
 
-	    /* Relocate the new proxy to the cache (potentially moving
-	     * to a job execution host(s))
+	    /* Update the proxy on the job execution hosts, if applicable.
+	     * Perhaps signal the job that a new proxy is available.
 	     */
 	    rc = globus_gram_job_manager_script_proxy_update(
 		    request,
@@ -1658,9 +1681,16 @@ globus_gram_job_manager_state_machine(
 		GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_DONE;
 	}
 	
-	if(request->save_state && request->job_state_file)
+	if(request->save_state)
 	{
-	    remove(request->job_state_file);
+	    if(request->job_state_file)
+	    {
+		remove(request->job_state_file);
+	    }
+	    if(request->job_state_lock_file)
+	    {
+		remove(request->job_state_lock_file);
+	    }
 	}
 	if(request->jobmanager_state != 
 		GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_RESPONSE)
@@ -1697,9 +1727,16 @@ globus_gram_job_manager_state_machine(
 	break;
 
       case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_DONE:
-	if(request->save_state && request->job_state_file)
+	if(request->save_state)
 	{
-	    remove(request->job_state_file);
+	    if(request->job_state_file)
+	    {
+		remove(request->job_state_file);
+	    }
+	    if(request->job_state_lock_file)
+	    {
+		remove(request->job_state_lock_file);
+	    }
 	}
 	globus_cond_signal(&request->cond);
 	globus_gram_job_manager_reporting_file_stop_cleaner(request);
