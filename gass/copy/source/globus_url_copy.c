@@ -255,7 +255,7 @@ main(int argc, char **argv)
     int                                block_size = 0;
     int                                tcp_buffer_size = 0;
     globus_ftp_control_tcpbuffer_t     tcp_buffer;
-    int                                num_streams = 1;
+    int                                num_streams = 0;
     globus_ftp_control_parallelism_t   parallelism;
     char *                             subject = GLOBUS_NULL;
     char *                             source_subject = GLOBUS_NULL;
@@ -425,7 +425,7 @@ main(int argc, char **argv)
                                                       &tcp_buffer);
             }
 
-	    if (num_streams > 1)
+	    if (num_streams >= 1)
 	    {
 		globus_ftp_client_attr_set_mode(
 		    source_ftp_attr,
@@ -522,7 +522,7 @@ main(int argc, char **argv)
                                                       &tcp_buffer);
             }
 
-	    if (num_streams > 1)
+	    if (num_streams >= 1)
 	    {
 		globus_ftp_client_attr_set_mode(
 		    dest_ftp_attr,
