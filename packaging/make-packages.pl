@@ -68,12 +68,14 @@ my ($install, $installer, $anonymous, $force,
     $noupdates, $help, $man, $verbose, $skippackage,
     $skipbundle, $faster, $paranoia, $version, $uncool,
     $binary, $inplace, $gt2dir, $gt3dir, $doxygen,
-    $autotools, $deps, $graph, $listpack, $listbun ) =
+    $autotools, $deps, $graph, $listpack, $listbun,
+    $cvsuser ) =
    (0, 0, 0, 0,
     0, 0, 0, 0, 0, 
     0, 0, 1, "1.0", 0, 
     0, 0, "", "", 0,
-    1, 0, 0, 0, 0);
+    1, 0, 0, 0, 0,
+    "");
 
 my @user_bundles;
 my @user_packages;
@@ -106,6 +108,7 @@ GetOptions( 'i|install=s' => \$install,
 	    'graph!' => \$graph,
 	    'lp|list-packages!' => \$listpack,
 	    'lb|list-bundles!' => \$listbun,
+	    'cvs-user=s' => \$cvsuser,
 	    'help|?' => \$help,
 	    'man' => \$man,
 ) or pod2usage(2);
@@ -897,6 +900,7 @@ sub set_cvsroot
 	if ( not -d "$cvsroot" )
 	{
 	    $cvsroot = "cvs.globus.org:$cvsroot";
+	    $cvsroot = $cvsuser . "@" . $cvsroot if ( $cvsuser );
 	    $ENV{CVS_RSH} = "ssh";
 	}
 	# else cvsroot is fine as-is.
