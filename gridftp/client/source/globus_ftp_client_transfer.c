@@ -1939,7 +1939,9 @@ globus_ftp_client_partial_get(
             result = globus_ftp_client_restart_marker_init(&tmp_restart);
         }
         
-        if(tmp_restart.type == GLOBUS_FTP_CLIENT_RESTART_EXTENDED_BLOCK)
+        if(tmp_restart.type == GLOBUS_FTP_CLIENT_RESTART_EXTENDED_BLOCK ||
+            ((*attr) && 
+            (*attr)->mode == GLOBUS_FTP_CONTROL_MODE_EXTENDED_BLOCK))
         {
             globus_ftp_client_restart_marker_insert_range(
                 &tmp_restart,
@@ -3009,7 +3011,9 @@ globus_ftp_client_partial_third_party_transfer(
             result = globus_ftp_client_restart_marker_init(&tmp_restart);
         }
         
-        if(tmp_restart.type == GLOBUS_FTP_CLIENT_RESTART_EXTENDED_BLOCK)
+        if(tmp_restart.type == GLOBUS_FTP_CLIENT_RESTART_EXTENDED_BLOCK ||
+            ((*source_attr) && 
+            (*source_attr)->mode == GLOBUS_FTP_CONTROL_MODE_EXTENDED_BLOCK))
         {
             globus_ftp_client_restart_marker_insert_range(
                 &tmp_restart,

@@ -611,6 +611,11 @@ main(int argc, char **argv)
                  &gass_copy_handle);
     if(result != GLOBUS_SUCCESS)
     {
+        fprintf(stderr, "error: %s\n",
+            globus_error_print_friendly(globus_error_get(result)));
+        
+        fprintf(stderr, 
+            "There was an error with one or more file transfers.\n");        
         ret_val = 1;
     }
     
@@ -1666,7 +1671,7 @@ globus_l_guc_expand_urls(
                 was_error = GLOBUS_TRUE;
 
                 fprintf(stderr, "error: %s\n",
-                    globus_error_print_friendly(globus_error_get(result)));
+                    globus_error_print_friendly(globus_error_peek(result)));
 
                 if (!g_continue)
                 {
@@ -1691,8 +1696,6 @@ globus_l_guc_expand_urls(
     }
     if(was_error)
     {
-        fprintf(stderr, 
-            "There was an error with one or more file transfers.\n");
     }
     
     return result;

@@ -404,7 +404,8 @@ globus_ftp_client_register_write(
 	goto unlock_error;
     }
 
-    if(i_handle->state == GLOBUS_FTP_CLIENT_HANDLE_DEST_STOR_OR_ESTO && 
+    if(i_handle->state == GLOBUS_FTP_CLIENT_HANDLE_DEST_STOR_OR_ESTO &&
+        i_handle->dest->state == GLOBUS_FTP_CLIENT_TARGET_READY_FOR_DATA &&
         globus_priority_q_empty(&i_handle->stalled_blocks))
     {
 	/*
