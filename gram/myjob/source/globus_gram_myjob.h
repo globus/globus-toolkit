@@ -32,8 +32,6 @@ CVS Information:
 ******************************************************************************/
 #define GLOBUS_GRAM_MYJOB_MAX_BUFFER_LENGTH	4096
 
-#define MYJOB_DUCT_CONTACT "GLOBUS_GRAM_MYJOB_DUCT_CONTACT"
-
 /*
  * gram_myjob_*() error codes
  */ 
