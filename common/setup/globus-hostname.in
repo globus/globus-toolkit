@@ -4,8 +4,8 @@
 # the hostname command.  But is returns the FQN
 # in all cases.
 
-PROGRAM_NAME=`@ECHO@ $0 | @SED@ -e 's|.*/||g'`
-PROGRAM_VERSION=`@ECHO@ '$Revision$' | @CUT@ -d' ' -f2`
+PROGRAM_NAME=`echo $0 | @SED@ -e 's|.*/||g'`
+PROGRAM_VERSION=`echo '$Revision$' | @CUT@ -d' ' -f2`
 
 short_usage="${PROGRAM_NAME} [-help] [-version]"
 
@@ -55,6 +55,6 @@ else
     GLOBUS_HOSTNAME="$FULLNAME"
 fi
 
-GLOBUS_HOSTNAME="`@ECHO@ $GLOBUS_HOSTNAME | @TR@ 'A-Z' 'a-z'`"
+GLOBUS_HOSTNAME="`echo $GLOBUS_HOSTNAME | @TR@ 'A-Z' 'a-z'`"
 echo $GLOBUS_HOSTNAME
 export GLOBUS_HOSTNAME

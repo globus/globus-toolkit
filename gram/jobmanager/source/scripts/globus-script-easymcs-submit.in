@@ -11,7 +11,7 @@ awk=@AWK@
 #So, we use the path to the llsubmit command and append it to the path.
 llcmd=@LLSUBMIT@
 # strip off everything from the end of the path until a slash is found
-llpath=`@ECHO@ $llcmd | @SED@ -e 's:/[^/]*$::'`
+llpath=`echo $llcmd | @SED@ -e 's:/[^/]*$::'`
 PATH=${PATH}:$llpath; export PATH
 ################################################
 
@@ -60,12 +60,12 @@ fi
 
 new_grami_args="${grami_args}"
 # Handle single quote escaping
-new_grami_args=`@ECHO@ "${new_grami_args}" | @SED@ -e "s/'/'\\\\\"'\\\\\"'/g"`
-new_grami_args=`@ECHO@ "${new_grami_args}" | @SED@ -e "s/'/'\\\\\"'\\\\\"'/g"`
+new_grami_args=`echo "${new_grami_args}" | @SED@ -e "s/'/'\\\\\"'\\\\\"'/g"`
+new_grami_args=`echo "${new_grami_args}" | @SED@ -e "s/'/'\\\\\"'\\\\\"'/g"`
 # Handle \ escaping
-new_grami_args=`@ECHO@ "${new_grami_args}" | @SED@ -e "s/\\\\\\\\\\\\\/\\\\\/g"`
+new_grami_args=`echo "${new_grami_args}" | @SED@ -e "s/\\\\\\\\\\\\\/\\\\\/g"`
 # Handle $ escaping
-new_grami_args=`@ECHO@ "${new_grami_args}" | @SED@ -e "s/\\\\\\\\\\\\$/$/g"`
+new_grami_args=`echo "${new_grami_args}" | @SED@ -e "s/\\\\\\\\\\\\$/$/g"`
 
 # 4 jobtypes exist               easymcs progtype
 # -----------------              -------------------

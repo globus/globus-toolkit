@@ -4,10 +4,10 @@
 @globus_script_initializer@
 
 
-progname=`@ECHO@ "$0" | @SED@ -e 's|.*/||'`
+progname=`echo "$0" | @SED@ -e 's|.*/||'`
 
 if [ "$#" -ne 1 ]; then
-   @ECHO@ "$progname server_url"
+   echo "$progname server_url"
    exit 1
 fi
 

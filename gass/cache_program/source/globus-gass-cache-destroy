@@ -19,11 +19,11 @@ CAT_TARGETS="@CAT@ ${TARGETS}"
 # USAGE
 Usage()
 {
-    @ECHO@ "globus-gass-cache-destroy [ -t <machine> | -f <file> ]"
-    @ECHO@ "    Will destroy (clean without coherence check) the globus cache"
-    @ECHO@ "    on all the machine listed in ~/.globus/my-contacts, "
-    @ECHO@ "    or in <file> if -f option used, or only on the machine"
-    @ECHO@ "    specified with the -t option." 
+    echo "globus-gass-cache-destroy [ -t <machine> | -f <file> ]"
+    echo "    Will destroy (clean without coherence check) the globus cache"
+    echo "    on all the machine listed in ~/.globus/my-contacts, "
+    echo "    or in <file> if -f option used, or only on the machine"
+    echo "    specified with the -t option." 
     exit 1
 }
  
@@ -44,13 +44,13 @@ exit 0
  
 MYEND
 
-RESULT=`@ECHO@ "" |${bindir}/globusrun -s -r "${TARGET_MACH_FORK}"  "&(executable=\$(GLOBUS_TOOLS_PREFIX)/bin/globus-sh-exec)(arguments=\$(GLOBUSRUN_GASS_URL)$TMPSCRIPT)" 2>&1`
+RESULT=`echo "" |${bindir}/globusrun -s -r "${TARGET_MACH_FORK}"  "&(executable=\$(GLOBUS_TOOLS_PREFIX)/bin/globus-sh-exec)(arguments=\$(GLOBUSRUN_GASS_URL)$TMPSCRIPT)" 2>&1`
 
 THIS_STATUS=$?
 if [ $THIS_STATUS -ne 0 ]
 then
-    @ECHO@ "Cleaning failed: " 1>&2
-    @ECHO@ "$RESULT" 1>&2
+    echo "Cleaning failed: " 1>&2
+    echo "$RESULT" 1>&2
     @RM@ -rf $TMPSCRIPT > /dev/null 2>&1
     exit $THIS_STATUS
 fi
@@ -59,7 +59,7 @@ fi
 
 if [ "x$RESULT" != "xsuccessfull" ]
 then
-    @ECHO@ "globus-gass-cache-destroy: $RESULT" 1>&2
+    echo "globus-gass-cache-destroy: $RESULT" 1>&2
 fi
 
 }
@@ -90,7 +90,7 @@ while [ $# -ge 1 ]; do
                 shift
                 if [ $# -ge 1 ]
                 then
-                        CAT_TARGETS="@ECHO@ $1"
+                        CAT_TARGETS="echo $1"
                         shift
                 else
                         Usage
