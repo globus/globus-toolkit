@@ -173,7 +173,7 @@ globus_l_gfs_channel_close_cb(
 
     globus_i_gfs_log_message(
         GLOBUS_I_GFS_LOG_INFO,
-        _FSSL("Closed connection from %s\n"),
+        _FSSL("Closed connection from %s\n",NULL),
         instance->remote_contact);
 
     globus_i_gfs_data_session_stop(NULL, instance->session_arg);
@@ -256,7 +256,7 @@ globus_l_gfs_auth_session_cb(
             auth_info->control_op,
             NULL,
             GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_PANIC,
-            _FSSL("internal error: session_cb"));
+            _FSSL("internal error: session_cb",NULL));
     }
     else
     {
@@ -359,7 +359,7 @@ session_error:
         control_op,
         NULL,
         GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_PANIC,
-        _FSSL("internal error: session_cb"));
+        _FSSL("internal error: session_cb",NULL));
 }
 
 static
