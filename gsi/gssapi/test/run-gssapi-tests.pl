@@ -7,6 +7,9 @@ use vars qw(@tests);
 
 my $globus_location = $ENV{GLOBUS_LOCATION};
 
+$ENV{X509_USER_PROXY} = testcred.pem;
+$ENV{X509_CERT_DIR} = `pwd`;
+
 @tests = qw(gssapi-anonymous-test.pl
             gssapi-delegation-test.pl
             gssapi-limited-delegation-test.pl
