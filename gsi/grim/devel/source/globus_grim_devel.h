@@ -49,8 +49,8 @@
  *  @code
  *      <?xml version="1.0" encoding="UTF-8"?>
  *      <grim_conf>
- *          <conf max_time="240"/>
- *          <conf default_time="24"/>
+ *          <conf max_time="14400"/>
+ *          <conf default_time="1440"/>
  *          <conf key_bits="512"/>
  *          <conf cert_filename="/homes/bresnaha/.globus/usercert.pem"/>
  *          <conf key_filename="/tmp/x509up_u589"/>
@@ -94,8 +94,8 @@
 #define GLOBUS_GRIM_DEFAULT_PORT_TYPE_FILENAME  \
                                           "/etc/grid-security/grim-port-type.xml"
 #define GLOBUS_GRIM_DEFAULT_CONF_FILENAME "/etc/grid-security/grim-conf.xml"
-#define GLOBUS_GRIM_DEFAULT_MAX_TIME      24*60
-#define GLOBUS_GRIM_DEFAULT_TIME          12*60
+#define GLOBUS_GRIM_DEFAULT_MAX_TIME      24*60*10
+#define GLOBUS_GRIM_DEFAULT_TIME          24*60
 #define GLOBUS_GRIM_DEFAULT_KEY_BITS      512
 
 /**
