@@ -90,6 +90,18 @@ GSS_CALLCONV gss_init_sec_context(
         goto error_exit;
     }
 
+    if(req_flags & GSS_C_DELEG_FLAG &&
+       target_name == GSS_C_NO_NAME)
+    {
+        major_status = GSS_S_FAILURE;
+        GLOBUS_GSI_GSSAPI_ERROR_RESULT(
+            minor_status,
+            GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
+            ("Need a target name for authorization prior "
+             "to doing delegation"));
+        goto error_exit;
+    }
+
     
     if ((context == (gss_ctx_id_t) GSS_C_NO_CONTEXT) ||
         !(context->ctx_flags & GSS_I_CTX_INITIALIZED))
@@ -236,14 +248,15 @@ GSS_CALLCONV gss_init_sec_context(
                 expected_name = X509_NAME_oneline(
                     ((gss_name_desc*)  target_name)->x509n, NULL, 0);
                 actual_name = X509_NAME_oneline(
-                    ((gss_name_desc*) context->peer_cred_handle->globusid)->x509n, NULL, 0);
+                    ((gss_name_desc*)
+                     context->peer_cred_handle->globusid)->x509n, NULL, 0);
 
                 GLOBUS_GSI_GSSAPI_ERROR_RESULT(
                     minor_status,
-                    GLOBUS_GSI_GSSAPI_ERROR_MUTUAL_AUTH,
-                    ("The target name (%s) in the context, and the target "
-                     "name (%s) passed to the function do not match",
-                     actual_name,expected_name));
+                    GLOBUS_GSI_GSSAPI_ERROR_AUTHZ_DENIED,
+                    ("The name of the remote entity (%s), and the expected "
+                     "name for the remote entity (%s) do not match",
+                     actual_name, expected_name));
                 OPENSSL_free(actual_name);
                 OPENSSL_free(expected_name);
                 major_status = GSS_S_UNAUTHORIZED;

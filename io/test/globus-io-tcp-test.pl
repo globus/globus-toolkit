@@ -77,6 +77,18 @@ sub basic_func
        return;
    }
    
+   waitpid($client_pid,0);
+
+   if($? != 0)
+   {
+       $errors .= "Client exited abnormally. \n The following output was generated:\n";
+       while(<CLIENT>)
+       {
+           $errors .= $_;
+       }
+       kill(9, $server_pid);
+   }
+   
    waitpid($server_pid,0);
 
    if($? != 0)
@@ -88,17 +100,6 @@ sub basic_func
        }
    }
 
-   waitpid($client_pid,0);
-
-   if($? != 0)
-   {
-       $errors .= "Client exited abnormally. \n The following output was generated:\n";
-       while(<CLIENT>)
-       {
-           $errors .= $_;
-       }
-   }
-   
    close(CLIENT);
    close(SERVER);
 

@@ -65,7 +65,7 @@ gss_display_name(
 
     if(!g_OID_equal(input_name->name_oid, GSS_C_NT_ANONYMOUS))
     {
-        #ifdef WIN32
+#ifdef WIN32
         /* On Windows allocating memory with X509_NAME_oneline() and freeing
            it with free() causes an Assertion */
         char *value = NULL;
@@ -92,10 +92,10 @@ gss_display_name(
             output_name->value = (void *) strdup(GSS_I_ANON_NAME);
             output_name->length = strlen(GSS_I_ANON_NAME);
         }
-        #else
+#else
         output_name->value = X509_NAME_oneline(input_name->x509n, NULL, 0);
         output_name->length = strlen((char *) output_name->value);
-        #endif
+#endif
     }
     else
     {
@@ -103,7 +103,7 @@ gss_display_name(
         output_name->length = strlen(GSS_I_ANON_NAME);
     }
   
-    if (output_name_type)
+    if(output_name_type)
     {
         *output_name_type = input_name->name_oid;
     }
@@ -115,5 +115,5 @@ gss_display_name(
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;
 } 
-/* gss_export_name */
+/* gss_display_name */
 /* @} */

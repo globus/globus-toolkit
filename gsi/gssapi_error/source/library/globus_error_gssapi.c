@@ -234,7 +234,7 @@ globus_error_gssapi_get_minor_status(
 /*@{*/
 /**
  * Check whether the error originated from a specific module and
- * matches a specific major status.
+ * match a specific major status.
  * @ingroup globus_gssapi_error_utility  
  *
  * This function checks whether the error or any of it's causative
@@ -349,7 +349,7 @@ globus_error_wrap_gssapi_error(
     va_list                             ap;
     
     causal_error = globus_error_construct_gssapi_error(
-        base_source,
+        GLOBUS_GSI_GSSAPI_MODULE,
         NULL,
         major_status,
         minor_status);

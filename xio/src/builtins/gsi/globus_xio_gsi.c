@@ -15,11 +15,18 @@ static globus_l_attr_t                  globus_l_xio_gsi_attr_default =
     131072, /* 128K default read buffer */
     GLOBUS_XIO_GSI_PROTECTION_LEVEL_INTEGRITY,
     GSS_C_NO_NAME,
-    GLOBUS_TRUE
+    GLOBUS_TRUE,
+    GLOBUS_XIO_GSI_NO_AUTHORIZATION
 };
 
 static int                              connection_count = 0;
 static globus_mutex_t                   connection_mutex;
+
+
+static
+globus_result_t
+globus_l_xio_gsi_setup_target_name(
+    globus_l_handle_t *                 handle);
 
 static
 void
@@ -117,23 +124,24 @@ globus_l_xio_gsi_attr_cntl(
     int                                 cmd,
     va_list                             ap)
 {
-    globus_l_attr_t *                   attr;
-    gss_cred_id_t *                     out_cred;
-    OM_uint32 *                         out_flags;
-    OM_uint32                           minor_status;
-    OM_uint32                           major_status;
-    globus_bool_t *                     out_bool;
-    globus_xio_gsi_protection_level_t * out_prot_level;
-    globus_xio_gsi_proxy_mode_t *       out_proxy_mode;
-    globus_xio_gsi_proxy_mode_t         proxy_mode;
-    globus_xio_gsi_delegation_mode_t *  out_delegation_mode;
-    globus_xio_gsi_delegation_mode_t    delegation_mode;
-    globus_bool_t                       ssl_wrap;
-    globus_result_t                     result;
-    globus_size_t *                     out_size;
-    gss_name_t *                        out_name;
-    gss_name_t                          in_name;
-    globus_bool_t                       in_bool;
+    globus_l_attr_t *                       attr;
+    gss_cred_id_t *                         out_cred;
+    OM_uint32 *                             out_flags;
+    OM_uint32                               minor_status;
+    OM_uint32                               major_status;
+    globus_bool_t *                         out_bool;
+    globus_xio_gsi_protection_level_t *     out_prot_level;
+    globus_xio_gsi_proxy_mode_t *           out_proxy_mode;
+    globus_xio_gsi_proxy_mode_t             proxy_mode;
+    globus_xio_gsi_delegation_mode_t *      out_delegation_mode;
+    globus_xio_gsi_delegation_mode_t        delegation_mode;
+    globus_xio_gsi_authorization_mode_t *   out_authz_mode;
+    globus_bool_t                           ssl_wrap;
+    globus_result_t                         result;
+    globus_size_t *                         out_size;
+    gss_name_t *                            out_name;
+    gss_name_t                              in_name;
+    globus_bool_t                           in_bool;
     GlobusXIOName(globus_l_xio_gsi_attr_cntl);
     GlobusXIOGSIDebugEnter();
 
@@ -199,6 +207,18 @@ globus_l_xio_gsi_attr_cntl(
         out_flags = va_arg(ap, OM_uint32 *);
         *out_flags = attr->req_flags;
         break;
+
+        /*
+         * Authorization mode
+         */
+      case GLOBUS_XIO_GSI_SET_AUTHORIZATION_MODE:
+        attr->authz_mode = va_arg(ap, globus_xio_gsi_authorization_mode_t);
+        break;
+      case GLOBUS_XIO_GSI_GET_AUTHORIZATION_MODE:
+        out_authz_mode = va_arg(ap, globus_xio_gsi_authorization_mode_t *);
+        *out_authz_mode = attr->authz_mode;
+        break;
+
         /*
          * Proxy mode
          */ 
@@ -458,6 +478,13 @@ globus_l_xio_gsi_attr_destroy(
     
     attr = (globus_l_attr_t *) driver_attr;
 
+    if(attr->target_name != GSS_C_NO_NAME)
+    {
+        OM_uint32                       minor_status;        
+        gss_release_name(&minor_status,
+                         &attr->target_name);
+    }
+
     free(driver_attr);
 
     GlobusXIOGSIDebugExit();
@@ -617,6 +644,12 @@ globus_l_xio_gsi_handle_destroy(
                          &handle->delegated_cred);
     }
 
+    if(handle->credential != GSS_C_NO_CREDENTIAL)
+    {
+        gss_release_cred(&minor_status,
+                         &handle->credential);
+    }
+    
     if(handle->peer_name != GSS_C_NO_NAME)
     {
         gss_release_name(&minor_status,
@@ -652,6 +685,11 @@ globus_l_xio_gsi_handle_destroy(
     if(handle->result_obj)
     {
         globus_object_free(handle->result_obj);
+    }
+
+    if(handle->host != NULL)
+    {
+        free(handle->host);
     }
     
     free(handle);
@@ -1190,6 +1228,13 @@ globus_l_xio_gsi_read_token_cb(
                                                GLOBUS_NULL,
                                                GLOBUS_NULL,
                                                GLOBUS_NULL);
+            if(GSS_ERROR(major_status))
+            {
+                result = GlobusXIOErrorWrapGSSFailed("gss_inquire_context",
+                                                     major_status,
+                                                     minor_status);
+                goto error_pass_close;
+            }
         }
         else
         {
@@ -1202,15 +1247,78 @@ globus_l_xio_gsi_read_token_cb(
                                                GLOBUS_NULL,
                                                GLOBUS_NULL,
                                                GLOBUS_NULL);
-        }
-        
-        if(GSS_ERROR(major_status))
-        {
-            result = GlobusXIOErrorWrapGSSFailed("gss_inquire_context",
-                                                 major_status,
-                                                 minor_status);
-            goto error_pass_close;
-        }
+            if(GSS_ERROR(major_status))
+            {
+                result = GlobusXIOErrorWrapGSSFailed("gss_inquire_context",
+                                                     major_status,
+                                                     minor_status);
+                goto error_pass_close;
+            }
+
+            /* Do authorization here */
+            if(handle->attr->target_name != GSS_C_NO_NAME)
+            {
+                int equal;
+                
+                major_status = 
+                    gss_compare_name(&minor_status,
+                                     handle->peer_name,
+                                     handle->attr->target_name,
+                                     &equal);
+
+                if(GSS_ERROR(major_status))
+                {
+                    result = GlobusXIOErrorWrapGSSFailed("gss_compare_name",
+                                                         major_status,
+                                                         minor_status);
+                    goto error_pass_close;
+                }
+
+                if(!equal)
+                {
+                    char *              expected_name;
+                    char *              actual_name;
+                    gss_buffer_desc     name_buffer;
+
+                    major_status = gss_display_name(&minor_status,
+                                                    handle->peer_name,
+                                                    &name_buffer,
+                                                    NULL);
+                    
+                    if(GSS_ERROR(major_status))
+                    {
+                        result = GlobusXIOErrorWrapGSSFailed("gss_display_name",
+                                                             major_status,
+                                                             minor_status);
+                        goto error_pass_close;
+                    }
+
+                    actual_name = name_buffer.value;
+
+                    major_status = gss_display_name(&minor_status,
+                                                    handle->attr->target_name,
+                                                    &name_buffer,
+                                                    NULL);
+                    
+                    if(GSS_ERROR(major_status))
+                    {
+                        free(actual_name);
+                        result = GlobusXIOErrorWrapGSSFailed("gss_display_name",
+                                                             major_status,
+                                                             minor_status);
+                        goto error_pass_close;
+                    }
+
+                    expected_name = name_buffer.value;
+                    
+                    
+                    result = GlobusXioGSIAuthorizationFailed(actual_name, expected_name);
+                    free(expected_name);
+                    free(actual_name);
+                    goto error_pass_close;
+                }                
+            }            
+        }        
     }
     else if(handle->eof == GLOBUS_TRUE)
     {
@@ -1356,7 +1464,7 @@ globus_l_xio_gsi_open_cb(
         OM_uint32                       major_status;
         OM_uint32                       minor_status;
         gss_buffer_desc 	        output_token = GSS_C_EMPTY_BUFFER;
-        
+
         major_status = gss_init_sec_context(&minor_status,
                                             handle->attr->credential,
                                             &handle->context,
@@ -1568,6 +1676,7 @@ globus_l_xio_gsi_open(
 
     handle->context = GSS_C_NO_CONTEXT;
     handle->delegated_cred = GSS_C_NO_CREDENTIAL;
+    handle->credential = GSS_C_NO_CREDENTIAL;
     handle->peer_name = GSS_C_NO_NAME;
     handle->local_name = GSS_C_NO_NAME;
     handle->done = GLOBUS_FALSE;
@@ -1597,6 +1706,19 @@ globus_l_xio_gsi_open(
     if(handle->attr->init == GLOBUS_FALSE)
     {
         handle->ret_flags = handle->attr->req_flags;
+    }
+    
+    if(contact_info->host != NULL)
+    {
+        handle->host = strdup(contact_info->host);
+    }
+
+    result = globus_l_xio_gsi_setup_target_name(handle);
+
+    if(result != GLOBUS_SUCCESS)
+    {
+        globus_l_xio_gsi_handle_destroy(handle);
+        goto error;
     }
     
     handle->xio_driver_handle = globus_xio_operation_get_driver_handle(op);
@@ -3376,10 +3498,21 @@ globus_l_xio_gsi_activate(void)
     GlobusDebugInit(GLOBUS_XIO_GSI, TRACE INTERNAL_TRACE);
     GlobusXIOGSIDebugEnter();
     rc = globus_module_activate(GLOBUS_XIO_MODULE);
-    if(rc == GLOBUS_SUCCESS)
+    if( rc != GLOBUS_SUCCESS)
     {
-        GlobusXIORegisterDriver(gsi);
+        GlobusXIOGSIDebugExitWithError();
+        GlobusDebugDestroy(GLOBUS_XIO_GSI);
+        return rc;
     }
+    rc = globus_module_activate(GLOBUS_GSI_GSS_ASSIST_MODULE);
+    if( rc != GLOBUS_SUCCESS)
+    {
+        globus_module_deactivate(GLOBUS_XIO_MODULE);
+        GlobusXIOGSIDebugExitWithError();
+        GlobusDebugDestroy(GLOBUS_XIO_GSI);
+        return rc;
+    }    
+    GlobusXIORegisterDriver(gsi);
     globus_mutex_init(&connection_mutex,NULL);
     GlobusXIOGSIDebugExit();
     return rc;
@@ -3397,8 +3530,116 @@ globus_l_xio_gsi_deactivate(void)
     GlobusXIOGSIDebugEnter();
     GlobusXIOUnRegisterDriver(gsi);
     rc = globus_module_deactivate(GLOBUS_XIO_MODULE);
+    rc += globus_module_deactivate(GLOBUS_GSI_GSS_ASSIST_MODULE);
     globus_mutex_destroy(&connection_mutex);
     GlobusXIOGSIDebugExit();
     GlobusDebugDestroy(GLOBUS_XIO_GSI);
     return rc;
+}
+
+/*
+ * Set up the target name based on the authorization mode
+ */
+static
+globus_result_t
+globus_l_xio_gsi_setup_target_name(
+    globus_l_handle_t *                 handle)
+{
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    OM_uint32                           major_status;
+    OM_uint32                           minor_status;
+    GlobusXIOName(globus_l_xio_gsi_setup_target_name);
+    GlobusXIOGSIDebugInternalEnter();
+
+    switch(handle->attr->authz_mode)
+    {
+      case GLOBUS_XIO_GSI_HOST_AUTHORIZATION:
+        if(handle->host == NULL)
+        {
+            result = GlobusXioGSIErrorEmptyHostName();
+            goto error;
+        }
+        
+        if(handle->attr->target_name != GSS_C_NO_NAME)
+        {
+            gss_release_name(&minor_status,
+                             &handle->attr->target_name);
+            handle->attr->target_name = GSS_C_NO_NAME;
+        }
+        
+        result = globus_gss_assist_authorization_host_name(
+            handle->host,
+            &handle->attr->target_name);
+        if(result != GLOBUS_SUCCESS)
+        {
+            result = GlobusXIOErrorWrapFailed(
+                "globus_gss_assist_authorization_host_name", result); 
+            goto error;
+        }            
+        break;
+      case GLOBUS_XIO_GSI_IDENTITY_AUTHORIZATION:
+        if(handle->attr->target_name == GSS_C_NO_NAME)
+        {
+            result = GlobusXioGSIErrorEmptyTargetName();
+            goto error;
+        }
+        break;
+      case GLOBUS_XIO_GSI_SELF_AUTHORIZATION:
+        if(handle->attr->target_name != GSS_C_NO_NAME)
+        {
+            gss_release_name(&minor_status,
+                             &handle->attr->target_name);
+            handle->attr->target_name = GSS_C_NO_NAME;
+        }
+        
+        if(handle->attr->credential == GSS_C_NO_CREDENTIAL)
+        { 
+            major_status = gss_acquire_cred(&minor_status,
+                                            GSS_C_NO_NAME,
+                                            GSS_C_INDEFINITE,
+                                            GSS_C_NO_OID_SET,
+                                            GSS_C_BOTH,
+                                            &handle->credential,
+                                            NULL,
+                                            NULL);
+            if(GSS_ERROR(major_status))
+            {
+                result = GlobusXIOErrorWrapGSSFailed("gss_acquire_cred",
+                                                     major_status,
+                                                     minor_status);
+                goto error;
+            }
+            handle->attr->credential = handle->credential;
+        }
+        
+        major_status = gss_inquire_cred(&minor_status,
+                                        handle->attr->credential,
+                                        &handle->attr->target_name,
+                                        NULL,
+                                        NULL,
+                                        NULL);
+        if(GSS_ERROR(major_status))
+        {
+            result = GlobusXIOErrorWrapGSSFailed("gss_inquire_cred",
+                                                 major_status,
+                                                 minor_status);
+            goto error;
+        }            
+        break;
+      case GLOBUS_XIO_GSI_NO_AUTHORIZATION:
+      default:
+        if(handle->attr->target_name != GSS_C_NO_NAME)
+        {
+            gss_release_name(&minor_status,
+                             &handle->attr->target_name);
+            handle->attr->target_name = GSS_C_NO_NAME;
+        }
+    }
+
+    GlobusXIOGSIDebugInternalExit();
+    return GLOBUS_SUCCESS;
+    
+ error:
+    GlobusXIOGSIDebugInternalExitWithError();    
+    return result;
 }

@@ -122,7 +122,17 @@ typedef enum
      */
     GLOBUS_XIO_GSI_ERROR_INVALID_PROTECTION_LEVEL,
     /** Wraps a GSSAPI error */
-    GLOBUS_XIO_GSI_ERROR_WRAP_GSSAPI
+    GLOBUS_XIO_GSI_ERROR_WRAP_GSSAPI,
+    /** Indicates that GLOBUS_XIO_GSI_IDENTITY_AUTHORIZATION is set but that
+     *  the target name is empty
+     */
+    GLOBUS_XIO_GSI_ERROR_EMPTY_TARGET_NAME,
+    /** Indicates that GLOBUS_XIO_GSI_HOST_AUTHORIZATION is set but that
+     *  no host name is available
+     */
+    GLOBUS_XIO_GSI_ERROR_EMPTY_HOST_NAME,
+    /** Indicates that the peer is not authorized */       
+    GLOBUS_XIO_GSI_AUTHORIZATION_FAILED
 } globus_xio_gsi_error_t;
 
 /** doxygen varargs filter stuff
@@ -207,7 +217,27 @@ typedef enum
      */
     /* globus_xio_gsi_proxy_mode_t *    proxy_mode*/
     GLOBUS_XIO_GSI_GET_PROXY_MODE,
-    
+
+    /** GlobusVarArgEnum(attr)
+     * Set the authorization mode
+     * @ingroup gsi_driver_cntls
+     *
+     * @param authz_mode
+     *      The authorization mode to set
+     */
+    /* globus_xio_gsi_authorization_mode_t      authz_mode*/
+    GLOBUS_XIO_GSI_SET_AUTHORIZATION_MODE,
+
+    /** GlobusVarArgEnum(attr)
+     * Get the authorization mode
+     * @ingroup gsi_driver_cntls
+     *
+     * @param authz_mode
+     *      The authorization mode that is currently in effect
+     */
+    /* globus_xio_gsi_authorization_mode_t *    authz_mode*/
+    GLOBUS_XIO_GSI_GET_AUTHORIZATION_MODE,
+
     /** GlobusVarArgEnum(attr)
      * Set the delegation mode
      * @ingroup gsi_driver_cntls
@@ -534,6 +564,29 @@ typedef enum
     /** Accept both full and limited proxies unconditionally */
     GLOBUS_XIO_GSI_PROXY_MODE_MANY
 } globus_xio_gsi_proxy_mode_t;
+
+
+/**
+ * Globus XIO GSI authorization modes
+ * @ingroup gsi_driver_types
+ */
+typedef enum
+{
+    /** Do not perform any authorization. This will cause a error when used in
+     *  conjunction with delegation on the init/client side.
+     */
+    GLOBUS_XIO_GSI_NO_AUTHORIZATION,
+    /** Authorize the peer if the peer has the same identity as ourselves */
+    GLOBUS_XIO_GSI_SELF_AUTHORIZATION,
+    /** Authorize the peer if the peer identity matches the identity set in the
+     *  target name.
+     */ 
+    GLOBUS_XIO_GSI_IDENTITY_AUTHORIZATION,
+    /** Authorize the peer if the identity of the peer matches the identity of
+     *  the peer hostname.
+     */ 
+    GLOBUS_XIO_GSI_HOST_AUTHORIZATION
+} globus_xio_gsi_authorization_mode_t;
 
 /**
  * Globus XIO GSI init delegation callback
