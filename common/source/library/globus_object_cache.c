@@ -21,13 +21,23 @@ globus_object_cache_init (globus_object_cache_t * cache)
   cache->entry_count = 0;
 }
 
+
 void
 globus_object_cache_destroy (globus_object_cache_t * cache)
 {
-  if ( cache == NULL ) return;
+    globus_object_t *                       obj;
+    if(cache == NULL) return;
 
-  globus_hashtable_destroy (&(cache->handlemap));
-  globus_fifo_destroy (&(cache->handles));
+    while(!globus_fifo_empty(&(cache->handles)))
+    {
+        obj = globus_object_cache_remove(
+                cache,
+                globus_fifo_peek(&(cache->handles)));
+
+        globus_object_free(obj);
+    }
+    globus_hashtable_destroy(&(cache->handlemap));
+    globus_fifo_destroy (&(cache->handles));
 }
 
 void 
