@@ -9,32 +9,63 @@ use Test;
 my $start = time();
 my $testtmp = &make_tmpdir();
 my @log_data;
+my $skip_all = 0;
+my $gram_pbs_conf = $ENV{GLOBUS_LOCATION} . "/etc/globus-pbs.conf";
+my $gram_pbs_conf_save = $gram_pbs_conf. ".save";
+
 my $log_path = &get_log_path();
 
-@test_data = &parse_test_data();
+if (! defined($log_path))
+{
+    $skip_all = 1;
+}
+
 
 plan tests => 1;
 
-&write_test_data_to_log($log_path, @test_data);
-&run_pbs_seg("$testtmp/output");
+skip($skip_all ? "PBS SEG not configured" : 0, &run_test, 0);
 
-ok(compare("$testtmp/output", "$testtmp/output.expected") == 0);
+sub run_test
+{
+    if (! $skip_all)
+    {
+        @test_data = &parse_test_data();
+        &write_test_data_to_log($log_path, @test_data);
+        my $rc = &run_pbs_seg("$testtmp/output");
+
+        if ($rc == 0)
+        {
+            return compare("$testtmp/output", "$testtmp/output.expected");
+        }
+        else
+        {
+            return 'Unable to run SEG with PBS module: is it installed?';
+        }
+    }
+    else
+    {
+        return "skip";
+    }
+}
 
 sub run_pbs_seg
 {
     my $output = shift;
     my $seg = $ENV{GLOBUS_LOCATION} .
         '/libexec/globus-scheduler-event-generator';
-    my @args = ($seg, '-s', $ENV{GLOBUS_LOCATION} .
-            '/lib/libglobus_seg_pbs_gcc32dbg.so', '-t', $start);
+    my @args = ($seg, '-s', 'pbs', '-t', $start);
     my $pid2 = open(FH, "|-");
     my $size;
 
     if ($pid2 == 0)
     {
-        open(STDOUT, ">$output");
+        open(STDOUT, ">>$output");
         open(STDERR, '>/dev/null');
         exec {$args[0]} @args;
+    }
+
+    while (! -f $output) {
+        sleep(1);
     }
 
     do
@@ -44,6 +75,8 @@ sub run_pbs_seg
     } while ($size < (-s $output));
 
     close(FH);
+
+    return $?;
 }
 
 sub parse_test_data 
@@ -66,7 +99,7 @@ sub parse_test_data
 
 sub write_test_data_to_log {
     my $path = shift;
-    truncate($path, 0);
+    truncate("$testtmp/output.expected", 0);
 
     my $last_sleep = 0;
     foreach (@test_data) {
@@ -107,7 +140,7 @@ sub write_test_data_to_log {
             $event = "$datestring;0008;PBS_Server;Job;$jobid.$host;".
                     "Job deleted at request of $user\@$host\n";
         }
-        open(LOG, ">>$path");
+        open(LOG, ">>$path") || die "can't open $path";
         print LOG $event;
         close(LOG);
 
@@ -119,19 +152,28 @@ sub write_test_data_to_log {
 }
 
 sub get_log_path {
-    my $gram_pbs_conf = $ENV{GLOBUS_LOCATION} . "/etc/globus-pbs.conf";
-    open(CONF, "<$gram_pbs_conf");
-    my $log;
+    rename($gram_pbs_conf, $gram_pbs_conf_save);
+
+    open(CONF, "<$gram_pbs_conf_save") || return undef;
+    open(TMP_CONF, ">$gram_pbs_conf") || return undef;
+
+    my $log = $testtmp;
     my @date;
 
     while (<CONF>) {
         chomp;
         my ($var, $val) = split(/\s*=\s*/, $_);
         if ($var =~ m/^log_path$/) {
-            $log = $val;
+            print TMP_CONF "log_path=$testtmp\n";
+        }
+        else
+        {
+            print TMP_CONF "$_\n";
         }
     }
     close(CONF);
+    close(TMP_CONF);
+
 
     @date = localtime($start);
     $log .= sprintf("/%04d%02d%02d", $date[5]+1900, $date[4]+1, $date[3]);
@@ -182,6 +224,12 @@ END
     if(-d $testtmp and -o $testtmp)
     {
         File::Path::rmtree($testtmp);
+    }
+
+    if (-f $gram_pbs_conf_save)
+    {
+        rename($gram_pbs_conf_save, $gram_pbs_conf);
+
     }
 }
 
