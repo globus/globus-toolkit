@@ -4,33 +4,26 @@ use strict;
 use Globus::Core::Paths;
 use File::Copy;
 
-my $cache_pgm = "$Globus::Core::Paths::bindir/globus-gass-cache";
 sub SEEK_SET {0;} # ugly non-portable hack to avoid "use Fcntl"
 
 sub new
 {
     my $proto = shift;
     my $class = ref($proto) || $proto;
-    my $tag = shift;
+    my $dir = shift;
     my $stdout = shift;
     my $stderr = shift;
-    my $merge_urlname = "x-gass-cache://$tag/dev/stdio_merge";
     my $self  = {};
 
     $self->{STDOUT_FILES} = [];
     $self->{STDERR_FILES} = [];
-    $self->{CACHE_TAG} = $tag;
     $self->{STDOUT} = $stdout;
     $self->{STDERR} = $stderr;
+    $self->{DIR} = $dir;
 
-    $self->{MERGE_FILENAME} = &lookup_or_add_in_cache($merge_urlname, $tag);
+    $self->{MERGE_FILENAME} = "$dir/stdio_merge_metadata";
 
     bless $self, $class;
-
-    if($self->{MERGE_FILENAME} eq '')
-    {
-	return undef;
-    }
 
     if( -s $self->{MERGE_FILENAME})
     {
@@ -46,8 +39,7 @@ sub add_file
     my $type = shift;
     my $array;
     my $index;
-    my $format = "x-gass-cache://\%s/dev/std\%s/\%03d";
-    my $new_url;
+    my $format = "\%s/std\%s\%03d";
     my $new_name;
 
     if($type eq 'out')
@@ -60,8 +52,7 @@ sub add_file
     }
     $index = scalar(@{$array});
 
-    $new_url = sprintf($format, $self->{CACHE_TAG}, $type, $index);
-    $new_name = &lookup_or_add_in_cache($new_url, $self->{CACHE_TAG});
+    $new_name = sprintf($format, $self->{DIR}, $type, $index);
 
     if($new_name eq '')
     {
@@ -99,7 +90,6 @@ sub poll_list
     local(*OUT);
     open(OUT, '>>' . $self->{$which});
     select((select(OUT),$|=1)[$[]); # autoflush=1
-
 
     foreach my $record (@{$self->{$which . '_FILES'}})
     {
@@ -226,46 +216,6 @@ sub pipe_out_cmd
         }
     }
     wantarray ? @result : $result[0];
-}
-
-sub fork_and_exec_cmd
-{
-    my $pid = fork();
-
-    return undef unless defined $pid;
-    if ( $pid == 0 )
-    {
-       # child
-       $SIG{INT} = 'IGNORE';
-       $SIG{QUIT} = 'IGNORE';
-       # FIXME: what about blocking SIGCHLD?
-       open STDOUT, '>>/dev/null';
-       open STDERR, '>&STDOUT'; # dup2()
-       exec { $_[0] } @_;
-       exit 127;
-    }
-
-    # parent
-    waitpid($pid,0);   # FIXME: deal with EINTR and EAGAIN
-    $?;
-}
-
-
-sub lookup_or_add_in_cache
-{
-    my $url = shift;
-    my $tag = shift;
-    my $result;
-
-    if (($result = pipe_out_cmd($cache_pgm, '-query', '-t', $tag, $url)) eq '')
-    {
-        fork_and_exec_cmd($cache_pgm, '-add', '-t', $tag, '-n',
-            $url, 'file:/dev/null');
-
-        $result = pipe_out_cmd($cache_pgm, '-query', '-t', $tag, $url);
-    }
-        
-    return ($result eq '') ? undef : $result;
 }
 
 1;

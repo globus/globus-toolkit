@@ -396,6 +396,7 @@ typedef struct
     char *				cache_location;
     globus_bool_t			relocated_proxy;
     int					proxy_timeout;
+    char *                              job_dir;
 }
 globus_gram_jobmanager_request_t;
 
@@ -517,10 +518,11 @@ globus_gram_job_manager_output_set_urls(
     globus_list_t *			url_list,
     globus_list_t *			position_list);
 
-char *
+int
 globus_gram_job_manager_output_get_cache_name(
     globus_gram_jobmanager_request_t *	request,
-    const char *			type);
+    const char *			type,
+    char **                             out_name);
 char *
 globus_gram_job_manager_output_local_name(
     globus_gram_jobmanager_request_t *	request,
@@ -557,6 +559,10 @@ globus_gram_job_manager_output_check_size(
     const char *			type,
     globus_off_t			size);
 
+int
+globus_gram_job_manager_output_make_job_dir(
+    globus_gram_jobmanager_request_t *  request);
+
 /* globus_gram_job_manager_state.c */
 void
 globus_gram_job_manager_state_machine_callback(
@@ -583,11 +589,6 @@ int
 globus_gram_job_manager_gsi_update_credential(
     globus_gram_jobmanager_request_t *  request,
     gss_cred_id_t                       credential);
-
-int
-globus_gram_job_manager_gsi_relocate_proxy(
-    globus_gram_jobmanager_request_t *	request,
-    const char *			new_proxy);
 
 int
 globus_gram_job_manager_gsi_update_proxy_timeout(

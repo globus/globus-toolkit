@@ -2031,6 +2031,12 @@ globus_l_gram_job_manager_script_write_description(
 		",\n    'condorarch' => [ '%s' ]",
 		request->condor_arch);
     }
+    if (request->job_dir)
+    {
+	fprintf(fp,
+		",\n    'jobdir' => [ '%s' ]",
+		request->job_dir);
+    }
 
     globus_l_gram_job_manager_print_staging_list(
 	    request,
