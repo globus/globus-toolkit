@@ -231,6 +231,37 @@ int GSI_SOCKET_delegation_accept_ext(GSI_SOCKET *gsi_socket,
 				     char *passphrase);
 
 /*
+ * GSI_SOCKET_credentials_accept_ext()
+ *
+ * Accept credentials from the peer.
+ *
+ * delegated_credentials will be filled in with the location of
+ * the delegated credentials. This is mechanism-specific but
+ * probably a file path.
+ *
+ * passphrase is an optional passphrase to use to encrypt the
+ * delegated credentials.  May be NULL.
+ *
+ * Returns GSI_SOCKET_SUCCESS on success, GSI_SOCKET_ERROR otherwise.  */
+int 
+GSI_SOCKET_credentials_accept_ext(GSI_SOCKET *self,
+                                  char       *credentials,
+                                  int         credentials_len,
+                                  char       *passphrase);
+
+int
+GSI_SOCKET_get_creds(GSI_SOCKET *self,
+                     const char *source_credentials,
+                     int         lifetime,
+                     const char *passphrase);
+
+int
+GSI_SOCKET_credentials_init_ext(GSI_SOCKET *self,
+                                const char *source_credentials,
+                                int         lifetime,
+                                const char *passphrase);
+
+/*
  * GSI_SOCKET_allow_anonymous()
  *
  * If value=1, allow anonymous GSSAPI/SSL authentication.

@@ -109,7 +109,6 @@ read_all(const int sock,
 	    errno = EPIPE;
 	    return -1;
 	}
-	
 	total_bytes_read += bytes_read;
     }
     
@@ -1131,7 +1130,8 @@ int GSI_SOCKET_read_token(GSI_SOCKET *self,
     return_status = GSI_SOCKET_SUCCESS;
     
   error:
-    return return_status;}
+    return return_status;
+}
 
 void GSI_SOCKET_free_token(unsigned char *buffer)
 {
@@ -1382,3 +1382,309 @@ GSI_SOCKET_delegation_accept_ext(GSI_SOCKET *self,
 
     return return_value;
 }
+
+int GSI_SOCKET_credentials_accept_ext(GSI_SOCKET *self,
+                                      char       *credentials,
+                                      int         credentials_len,
+                                      char       *passphrase)
+{
+    int                        return_value       = GSI_SOCKET_ERROR;
+    SSL_CREDENTIALS           *creds              = NULL;
+    SSL_PROXY_RESTRICTIONS    *proxy_restrictions = NULL;
+    unsigned char             *input_buffer       = NULL;
+    size_t                     input_buffer_length;
+    unsigned char             *output_buffer      = NULL;
+    unsigned char             *fmsg;
+    int                        i;
+    char                       filename[L_tmpnam];
+
+
+    if (self == NULL)
+    {
+      goto error;
+    }
+
+    if (self->gss_context == GSS_C_NO_CONTEXT)
+    {
+      self->error_string = strdup("GSI_SOCKET not authenticated");
+      goto error;
+    }
+
+    /*
+     * Load proxy we are going to use to sign delegation
+     */
+    creds = ssl_credentials_new();
+
+    if (creds == NULL)
+    {
+      GSI_SOCKET_set_error_from_verror(self);
+      goto error;
+    }
+
+    if (passphrase && passphrase[0] == '\0') {
+      passphrase = NULL;
+    }
+
+    //Read the Cred sent from the client.
+    if (GSI_SOCKET_read_token(self,
+                              &input_buffer,
+                              &input_buffer_length) == GSI_SOCKET_ERROR)
+    {
+        goto error;
+    }
+
+    /* MAJOR HACK:
+       We don't have application-level framing in our protocol.
+       We can't separate the certificate chain easily from
+       the final protocol message, so just discard it. */
+    fmsg = input_buffer;
+    for (i=0; i < input_buffer_length-strlen("VERSION"); i++, fmsg++) {
+      if (strncmp((const char *)fmsg, "VERSION", strlen("VERSION")) == 0) {
+          input_buffer_length = fmsg-input_buffer;
+          break;
+      }
+    }
+
+    /* Now store the credentials */
+    if (tmpnam(filename) == NULL)
+    {
+      self->error_number = errno;
+      self->error_string = strdup("tmpnam() failed");
+      goto error;
+    }
+
+    int rval, fd = 0;
+    /* Open the output file. */
+    if ((fd = open(filename, O_CREAT | O_EXCL | O_WRONLY,
+                 S_IRUSR | S_IWUSR)) < 0) 
+    {
+      fprintf(stderr, "open(%s) failed: %s\n", filename, strerror(errno));
+      goto error;
+    }
+
+    int   size;
+    size = strlen( input_buffer );
+
+    char *certstart;
+    certstart = input_buffer;
+
+    while (size) 
+    {
+      if ((rval = write(fd, certstart, size)) < 0) 
+      {
+          perror("write");
+          goto error;
+      }
+
+      size -= rval;
+      certstart += rval;
+    }
+
+    if (write(fd, "\n\0", 1) < 0) 
+    {
+      perror("write");
+      goto error;
+    }
+
+    strncpy(credentials, filename, credentials_len );
+
+    /* Success */
+    return_value = GSI_SOCKET_SUCCESS;
+
+  error:
+    if (input_buffer != NULL)
+    {
+      GSI_SOCKET_free_token(input_buffer);
+    }
+
+    if (output_buffer != NULL)
+    {
+      ssl_free_buffer(output_buffer);
+    }
+
+    if (creds != NULL)
+    {
+      ssl_credentials_destroy(creds);
+    }
+
+    if (proxy_restrictions != NULL)
+    {
+      ssl_proxy_restrictions_destroy(proxy_restrictions);
+    }
+
+    if( fd )
+    {
+      close( fd );
+    }
+
+    return return_value;
+}
+
+int 
+GSI_SOCKET_credentials_init_ext(GSI_SOCKET *self,
+                                const char *source_credentials,
+                                int         lifetime,
+                                const char *passphrase)
+{
+    int                        return_value       = GSI_SOCKET_ERROR;
+    SSL_CREDENTIALS           *creds              = NULL;
+    SSL_PROXY_RESTRICTIONS    *proxy_restrictions = NULL;
+    unsigned char             *input_buffer       = NULL;
+    unsigned char             *output_buffer      = NULL;
+
+    if (self == NULL)
+    {
+      goto error;
+    }
+
+    if (self->gss_context == GSS_C_NO_CONTEXT)
+    {
+      self->error_string = strdup("GSI_SOCKET not authenticated");
+      goto error;
+    }
+
+    /*
+     * Load proxy we are going to use to sign delegation
+     */
+    creds = ssl_credentials_new();
+
+    if (creds == NULL)
+    {
+      GSI_SOCKET_set_error_from_verror(self);
+      goto error;
+    }
+
+    if (passphrase && passphrase[0] == '\0') 
+    {
+      passphrase = NULL;
+    }
+
+    if (GSI_SOCKET_write_buffer(self,
+                                source_credentials,
+                                strlen(source_credentials))
+        == GSI_SOCKET_ERROR)
+    {
+      goto error;
+    }
+
+    /* Success */
+    return_value = GSI_SOCKET_SUCCESS;
+
+  error:
+    if (input_buffer != NULL)
+    {
+      GSI_SOCKET_free_token(input_buffer);
+    }
+
+    if (output_buffer != NULL)
+    {
+      ssl_free_buffer(output_buffer);
+    }
+
+    if (creds != NULL)
+    {
+      ssl_credentials_destroy(creds);
+    }
+
+    if (proxy_restrictions != NULL)
+    {
+      ssl_proxy_restrictions_destroy(proxy_restrictions);
+    }
+
+    return return_value;
+}
+
+int 
+GSI_SOCKET_get_creds(GSI_SOCKET *self,
+                     const char *source_credentials,
+                     int         lifetime,
+                     const char *passphrase)
+{
+    int                        return_value       = GSI_SOCKET_ERROR;
+    SSL_CREDENTIALS           *creds              = NULL;
+    SSL_PROXY_RESTRICTIONS    *proxy_restrictions = NULL;
+    unsigned char             *input_buffer       = NULL;
+    unsigned char             *output_buffer      = NULL;
+    int                        output_buffer_length;
+
+
+    if (self == NULL)
+    {
+      goto error;
+    }
+
+    if (self->gss_context == GSS_C_NO_CONTEXT)
+    {
+      self->error_string = strdup("GSI_SOCKET not authenticated");
+      goto error;
+    }
+
+    /*
+     * Load proxy we are going to use to sign delegation
+     */
+    creds = ssl_credentials_new();
+
+    if (creds == NULL)
+    {
+      GSI_SOCKET_set_error_from_verror(self);
+      goto error;
+    }
+
+    if (passphrase && passphrase[0] == '\0') 
+    {
+      passphrase = NULL;
+    }
+
+    if (ssl_proxy_load_from_file(creds, source_credentials,
+                               passphrase) == SSL_ERROR)
+    {
+      GSI_SOCKET_set_error_from_verror(self);
+      goto error;
+    }
+
+    if (ssl_proxy_to_pem( creds, 
+                         &output_buffer,
+                         &output_buffer_length,
+                          passphrase) == SSL_ERROR)
+    {
+      GSI_SOCKET_set_error_from_verror(self);
+      goto error;
+    }
+
+    /*
+     * Write the proxy certificate back to user
+     */
+    if (GSI_SOCKET_write_buffer(self,
+                              (const char *)output_buffer,
+                              output_buffer_length) == GSI_SOCKET_ERROR)
+    {
+      goto error;
+    }
+
+    /* Success */
+    return_value = GSI_SOCKET_SUCCESS;
+
+  error:
+    if (input_buffer != NULL)
+    {
+      GSI_SOCKET_free_token(input_buffer);
+    }
+
+    if (output_buffer != NULL)
+    {
+      ssl_free_buffer(output_buffer);
+    }
+
+    if (creds != NULL)
+    {
+      ssl_credentials_destroy(creds);
+    }
+
+    if (proxy_restrictions != NULL)
+    {
+      ssl_proxy_restrictions_destroy(proxy_restrictions);
+    }
+
+    return return_value;
+}
+

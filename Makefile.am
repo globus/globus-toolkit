@@ -77,7 +77,9 @@ libmyproxy___GLOBUS_FLAVOR_NAME__la_LIBADD = $(GPT_LIB_LINKS)
 bin_PROGRAMS= \
 	myproxy-init \
 	myproxy-info \
+        myproxy-store \
 	myproxy-destroy \
+        myproxy-retrieve \
 	myproxy-get-delegation \
 	myproxy-change-pass-phrase
 
@@ -98,6 +100,18 @@ myproxy_info_SOURCES = 	myproxy_info.c
 myproxy_info_LDFLAGS = $(GPT_LDFLAGS)
 
 myproxy_info_LDADD = $(GPT_PGM_LINKS) ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la
+
+myproxy_store_SOURCES = myproxy_store.c
+
+myproxy_store_LDFLAGS = $(GPT_LDFLAGS)
+
+myproxy_store_LDADD = $(GPT_PGM_LINKS) ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la
+
+myproxy_retrieve_SOURCES = myproxy_get_credential.c
+
+myproxy_retrieve_LDFLAGS = $(GPT_LDFLAGS)
+
+myproxy_retrieve_LDADD = $(GPT_PGM_LINKS) ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la
 
 myproxy_destroy_SOURCES = myproxy_destroy.c
 
