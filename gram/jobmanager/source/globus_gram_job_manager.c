@@ -216,6 +216,7 @@ globus_jobmanager_request_init(globus_gram_jobmanager_request_t ** request)
     r->my_stdin = NULL;
     r->my_stdout = NULL;
     r->my_stderr = NULL;
+    r->start_time = NULL;
     r->condor_os = NULL;
     r->condor_arch = NULL;
     r->status = GLOBUS_GRAM_CLIENT_JOB_STATE_FAILED;
@@ -725,6 +726,8 @@ globus_l_gram_request_shell(globus_gram_jobmanager_request_t * request)
     fprintf(script_arg_fp,"grami_stdout='%s'\n", stdout_filename);
     fprintf(script_arg_fp,"grami_stderr='%s'\n", stderr_filename);
     fprintf(script_arg_fp,"grami_max_time='%d'\n", request->max_time);
+    globus_l_gram_param_prepare(request->start_time, new_param);
+    fprintf(script_arg_fp,"grami_start_time='%s'\n", new_param);
     fprintf(script_arg_fp,"grami_min_memory='%d'\n", request->min_memory);
     fprintf(script_arg_fp,"grami_max_memory='%d'\n", request->max_memory);
     fprintf(script_arg_fp,"grami_host_count='%d'\n", request->host_count);

@@ -50,6 +50,7 @@ CVS Information:
 #include "globus_duct_control.h"
 
 #include "globus_i_gram_http.h"
+#include "globus_rsl_assist.h"
 #include <globus_io.h>
 
 /******************************************************************************
@@ -813,6 +814,11 @@ int main(int argc,
     grami_fprintf( request->jobmanager_log_fp,
 	   "JM: GLOBUS_INSTALL_PATH = %s\n",
 	   (conf.install_path) ? (conf.install_path) : "NULL");
+
+    /* increment the counter for GLOBUS_DEPLOY_PATH & GLOBUS_INSTALL_PATH
+     */
+    conf.num_env_adds++;
+    conf.num_env_adds++;
 
     globus_libc_setenv("GLOBUS_INSTALL_PATH",
 		       conf.install_path,
@@ -2105,6 +2111,17 @@ globus_l_gram_request_fill(globus_rsl_t * rsl_tree,
         return(GLOBUS_FAILURE);
     }
  
+    /* Canonize the RSL attributes.  This will remove underscores and lowercase
+     * all character.  For example, givin the RSL relation "(Max_Time=20)" the 
+     * attribute "Max_Time" will be altered in the rsl_tree to be "maxtime".
+     * 
+     */
+    if (globus_rsl_assist_attributes_canonicalize(rsl_tree) != GLOBUS_SUCCESS)
+    {
+        req->failure_code = GLOBUS_GRAM_CLIENT_ERROR_NULL_SPECIFICATION_TREE;
+        return(GLOBUS_FAILURE);
+    }
+
     /********************************** 
      *  GET PROGRAM (executable) PARAM
      */
@@ -2366,19 +2383,6 @@ globus_l_gram_request_fill(globus_rsl_t * rsl_tree,
         return(GLOBUS_FAILURE);
     }
 
-    if (! tmp_param[0])
-    {
-        /* extra check for backward compatibility */
-        if (globus_rsl_param_get(rsl_tree,
-                                 GLOBUS_RSL_PARAM_SINGLE_LITERAL,
-                                 "maxtime",
-                                 &tmp_param) != 0)
-        {
-            req->failure_code = GLOBUS_GRAM_CLIENT_ERROR_RSL_MAXTIME;
-            return(GLOBUS_FAILURE);
-        }
-    }
-
     if (tmp_param[0])
     {
         x = atoi(tmp_param[0]);
@@ -2397,6 +2401,24 @@ globus_l_gram_request_fill(globus_rsl_t * rsl_tree,
     {
         req->max_time = 0;
     }
+
+    /********************************** 
+     *  GET START_TIME PARAM
+     */
+    if (globus_rsl_param_get(rsl_tree,
+                             GLOBUS_RSL_PARAM_SINGLE_LITERAL,
+                             GLOBUS_GRAM_CLIENT_START_TIME_PARAM,
+		             &tmp_param) != 0)
+    {
+        req->failure_code = GLOBUS_GRAM_CLIENT_ERROR_RSL_START_TIME;
+        return(GLOBUS_FAILURE);
+    }
+
+    if (tmp_param[0])
+        req->start_time = tmp_param[0];
+    else
+        req->start_time = GLOBUS_GRAM_CLIENT_DEFAULT_START_TIME;
+
 
     /********************************** 
      *  GET HOST_COUNT PARAM
@@ -2458,19 +2480,6 @@ globus_l_gram_request_fill(globus_rsl_t * rsl_tree,
         return(GLOBUS_FAILURE);
     }
 
-    if (! tmp_param[0])
-    {
-        /* extra check for backward compatibility */
-        if (globus_rsl_param_get(rsl_tree,
-                                 GLOBUS_RSL_PARAM_SINGLE_LITERAL,
-                                 "jobtype",
-                                 &tmp_param) != 0)
-        {
-            req->failure_code = GLOBUS_GRAM_CLIENT_ERROR_RSL_JOBTYPE;
-            return(GLOBUS_FAILURE);
-        }
-    }
-
     if (tmp_param[0])
     {
         if (strncmp(tmp_param[0], "mpi", 3) == 0)
@@ -2528,19 +2537,6 @@ globus_l_gram_request_fill(globus_rsl_t * rsl_tree,
     {
         req->failure_code = GLOBUS_GRAM_CLIENT_ERROR_RSL_DRYRUN;
         return(GLOBUS_FAILURE);
-    }
-
-    if (! tmp_param[0])
-    {
-        /* extra check for backward compatibility */
-        if (globus_rsl_param_get(rsl_tree,
-                                 GLOBUS_RSL_PARAM_SINGLE_LITERAL,
-                                 "dryrun",
-                                 &tmp_param) != 0)
-        {
-            req->failure_code = GLOBUS_GRAM_CLIENT_ERROR_RSL_DRYRUN;
-            return(GLOBUS_FAILURE);
-        }
     }
 
     if (tmp_param[0])
@@ -2739,6 +2735,18 @@ globus_l_gram_request_environment_append(globus_gram_jobmanager_request_t * req,
     {
         req->environment[x] = "GLOBUS_GRAM_JOB_CONTACT";   ++x;
         req->environment[x] = graml_job_contact;           ++x;
+    }
+
+    if (conf->deploy_path)
+    {
+        req->environment[x] = "GLOBUS_DEPLOY_PATH";        ++x;
+        req->environment[x] = conf->deploy_path;           ++x;
+    }
+
+    if (conf->install_path)
+    {
+        req->environment[x] = "GLOBUS_INSTALL_PATH";       ++x;
+        req->environment[x] = conf->install_path;          ++x;
     }
 
     req->environment[x] = GLOBUS_NULL;

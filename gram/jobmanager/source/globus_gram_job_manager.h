@@ -139,6 +139,7 @@ typedef struct
  globus_gram_jobmanager_jobtype_t job_type;   /* The way in which the job 
                                               * should be started
                                               */
+ char * start_time;     /* The wallclock time the job should be started */
 
  unsigned long max_time;    /* Maximum runtime in minutes, 0 means use the
                             * system default
