@@ -1372,30 +1372,9 @@ static void doit()
 		service_name, 
 		&service_line)) != 0)
       {
-	/*
-	 *DEE For an easier transition, if -jmconf -jm are given and 
-	 * this is the jobmanager, and the grid_services file was 
-	 * not found, simulate the service and the args
-	 * This should be removed at some time.
-	 */
-	
-	if ((rc == -2) && jm_conf_path && job_manager_exe 
-	    && !strncmp("jobmanager",service_name,10))
-	  
-	  {
-	    service_line = (char *)malloc(BUFSIZ);
-	    sprintf(service_line,
-		    "local_cred,stderr_log - %s jobmanager -conf ${JM_CONF_PATH}",
-		    job_manager_exe);
-	    notice(LOG_INFO,
-		   "grid_services not found, using default for jobmanager");
-	  } /* end of the easier transition */
-	else
-	  {
 	    failure3(FAILED_SERVICELOOKUP,
 		     "Failed to find requested service: %s: %d", 
 		     service_name, rc);
-	  }
       }
     
     /* 
