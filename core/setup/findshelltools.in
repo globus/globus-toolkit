@@ -16,7 +16,37 @@ if test "x$PERL" = "x"; then
 fi
 
 if test "x$SH" = "x"; then
-        AC_PATH_PROG(SH,sh)
+	AC_PATH_PROGS(SH, sh bsh, /bin/sh, /bin:/usr/bin:${PATH})
+   	AC_PATH_PROG(TMPKSH, ksh)
+   	AC_PATH_PROG(TMPBASH, bash)
+
+   	dnl IRIX 6.3 and below the SH is broken 
+   	dnl   so change SH to KSH
+   	dnl BSD sh is broken so use bash
+   	dnl CygWin32 ash is broken so force the use of bash
+   	dnl OSF1 sh is broken, use /usr/bin/posix/sh
+   	dnl   if it exists
+	
+	case "$target" in
+		mips-sgi-irix* )
+			SH=${TMPKSH}
+			;;
+    	*bsd* )
+        	if test -n ${TMPBASH};  then
+	    		SH=${TMPBASH}
+			fi
+			;;
+    	i*86-*-cygwin* )
+        	if test -n ${TMPBASH};  then
+           		SH=${TMPBASH}
+			fi
+			;;
+    	*dec* )
+        	if test -x /usr/bin/posix/sh; then
+	   			SH=/usr/bin/posix/sh
+			fi
+			;;
+	esac
 fi
 
 AC_SUBST(PERL)
