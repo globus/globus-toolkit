@@ -62,10 +62,10 @@ my $thread = "pthr";
 
 my ($install, $buildjava, $buildc, $anonymous, $noupdates, $force,
     $help, $man, $verbose, $skippackage, $skipbundle, $faster,
-    $paranoia) =
+    $paranoia, $version) =
    (0, 1, 1, 0, 0, 0,
     0, 0, 0, 0, 0, 0,
-    0);
+    0, "1.0");
 
 my @user_bundles;
 my @user_packages;
@@ -87,6 +87,7 @@ GetOptions( 'i|install=s' => \$install,
 	    'p|packages=s' => \@user_packages,
 	    'trees=s' => \@cvs_build_list,
 	    'paranoia!' => \$paranoia,
+	    'version=s' => \$version,
 	    'help|?' => \$help,
 	    'man' => \$man,
 ) or pod2usage(2);
@@ -117,6 +118,11 @@ setup_environment();
 
 if ( not $noupdates )
 {
+    # Need autotools for gt2 or gt3
+    if ($cvs_build_hash{'gt2'} eq 1 or $cvs_build_hash{'gt3'} eq 1)
+    {
+	$cvs_build_hash{'autotools'} = 1;
+    }
     get_sources();
 } else {
     print "Not checking out sources with -no-updates set.\n";
@@ -769,7 +775,7 @@ sub package_sources()
 
 	if ( $faster )
 	{
-	    if ( -e "$package_output/*${package}-*" )
+	    if ( -e "$package_output/${package}-.*" )
 	    {
 		print "-faster set.  ${package} exists, skipping.\n";
 		next;
@@ -783,7 +789,7 @@ sub package_sources()
 	} elsif ( $custom eq "tar" ) { 
 	    package_source_tar($package, $subdir);
 	} else {
-	    print "ERROR: Unkown custom packaging type $custom for $package.\n";
+	    print "ERROR: Unkown custom packaging type '$custom' for $package.\n";
 	}
     }
     
@@ -995,7 +1001,7 @@ sub bundle_sources()
 	}
 	#TODO: Let user choose deps/nodeps
 	#TODO: backticks make me nervous about using log_system
-	system("($ENV{'GPT_LOCATION'}/sbin/gpt-bundle -nodeps -bn=$bundle -bv=1.0 -srcdir=$bundle `cat $bundle/packaging_list`) > $bundlelog/$bundle 2>&1");
+	system("($ENV{'GPT_LOCATION'}/sbin/gpt-bundle -nodeps -bn=$bundle -bv=$version -srcdir=$bundle `cat $bundle/packaging_list`) > $bundlelog/$bundle 2>&1");
 	paranoia("Bundling of $bundle failed.  See $bundlelog/$bundle.");
     }
 }
