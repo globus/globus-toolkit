@@ -1432,6 +1432,10 @@ globus_i_gfs_data_request_passive(
     }
     else
     {
+        if(data_info->del_cred == NULL)
+        {
+            data_info->del_cred = session_handle->del_cred;
+        }
         result = globus_l_gfs_data_handle_init(&handle, data_info);
         if(result != GLOBUS_SUCCESS)
         {
@@ -1667,6 +1671,10 @@ globus_i_gfs_data_request_active(
     }
     else
     {
+        if(data_info->del_cred == NULL)
+        {
+            data_info->del_cred = session_handle->del_cred;
+        }
         result = globus_l_gfs_data_handle_init(&handle, data_info);
         if(result != GLOBUS_SUCCESS)
         {

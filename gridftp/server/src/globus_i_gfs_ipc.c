@@ -2366,6 +2366,7 @@ globus_l_gfs_ipc_unpack_data(
     globus_gfs_data_info_t *            data_info;
     char                                ch;
     int                                 ctr;
+    int                                 rc;
 
     data_info = (globus_gfs_data_info_t *)
         globus_malloc(sizeof(globus_gfs_data_info_t));
@@ -2394,6 +2395,12 @@ globus_l_gfs_ipc_unpack_data(
     }
     GFSDecodeString(buffer, len, data_info->pathname);
     GFSDecodeString(buffer, len, data_info->interface);
+    rc = globus_l_gfs_ipc_unpack_cred(
+        ipc, buffer, len, &data_info->del_cred);
+    if(rc != 0)
+    {
+        goto decode_err;
+    }
     
     return data_info;
 
