@@ -16,7 +16,6 @@ SUBDIRS= \
 Sources= \
 	globus_gram_protocol.c \
 	globus_gram_protocol.h \
-	globus_gram_protocol_constants.h \
 	globus_gram_protocol_error.c
 
 BUILT_SOURCES = globus_gram_protocol_constants.h
@@ -37,6 +36,12 @@ include_HEADERS= \
 
 libexec_SCRIPTS = globus-gram-protocol-constants.sh
 
+globus_gram_protocol_constants.h: globus-gram-protocol-constants.sh
+	$(RM) globus_gram_protocol_constants.h
+	@PERL@ $(srcdir)/scripts/create_protocol_constants.pl \
+		$(srcdir)/globus-gram-protocol-constants.sh \
+		> globus_gram_protocol_constants.h
+
 # lib_LTLIBRARIES is an automake macro which contains
 # a list of libtool libraries that are to be installed in $prefix/lib
 lib_LTLIBRARIES = libglobus_gram_protocol_$(GLOBUS_FLAVOR_NAME).la
@@ -45,11 +50,7 @@ libglobus_gram_protocol___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
 libglobus_gram_protocol___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS)
 libglobus_gram_protocol___GLOBUS_FLAVOR_NAME__la_LIBADD = $(GPT_LIB_LINKS)
 
-globus_gram_protocol_constants.h: globus-gram-protocol-constants.sh
-	$(RM) globus_gram_protocol_constants.h
-	@PERL@ $(srcdir)/scripts/create_protocol_constants.pl \
-		$(srcdir)/globus-gram-protocol-constants.sh \
-		> globus_gram_protocol_constants.h
+Makefile: $(BUILT_SOURCES)
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top
