@@ -48,6 +48,12 @@ my %cvs_archives = (
      'autotools' => [ "/home/globdev/CVS/globus-packages", "autotools", $cvs_prefix . "autotools", "HEAD" ]
       );
 
+my %virtual_packages = ("trusted_ca_setup" => 1,
+                        "globus_gram_job_manager_service_setup" => 1,
+		        "mmjfs_service_setup" => 1,
+		        "mjs_service_setup" => 1,
+		 	"simple_ca_setup" => 1);
+
 # package_name => [ tree, subdir, custom_build, (patch-n-build file, if exists) ]
 my %package_list;
 
@@ -361,10 +367,7 @@ sub import_package_dependencies
 
 	    # if we don't have $dep in our hash, add it and iterate
 	    if ( ($package_build_hash{$dep} ne 1) and 
-		 ( $dep ne "trusted_ca_setup") and
-		 ( $dep ne "globus_gram_job_manager_service_setup") and
-		 ( $dep ne "mmjfs_service_setup") and
-		 ( $dep ne "mjs_service_setup") )
+		 ( ! exists $virtual_packages{$dep} ) )
 	    {
 		$package_build_hash{$dep} = 1;
 		$new_hash{$dep} = 1;
@@ -1289,6 +1292,7 @@ sub inplace_build()
     my $build_args = "";
     $build_args .= " CONFIGOPTS_GPTMACRO=--enable-doxygen " if $doxygen;
     $build_args .= " -verbose " if $verbose;
+    $build_args .= " -force " if $force;
 
     log_system("$ENV{GPT_LOCATION}/sbin/gpt-build $build_args $flavor", "$pkglog/$package");
     paranoia("Inplace build of $package in $subdir failed!");
