@@ -1021,6 +1021,8 @@ do                                                                          \
     globus_mutex_unlock(_mutex);                                            \
 } while(0)
 
+#define GlobusXIOOperationGetWaitFor(_in_op)                                \
+    ((_in_op)->entry[_in_op->ndx]._op_ent_wait_for)
 /*********************************************************************
  *              function signatures used by the macros
  ********************************************************************/

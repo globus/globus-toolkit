@@ -11,6 +11,14 @@
     ow->nbytes = nb;                                                    \
 }
 
+#define GlobusXIOErrorLazy()                                            \
+    globus_error_put(                                                   \
+        globus_error_construct_error(                                   \
+            GLOBUS_XIO_MODULE,                                          \
+            NULL,                                                       \
+            5000000,                                                    \
+            "I am soooo lazy"))
+
 enum
 {
     GLOBUS_XIO_TEST_SET_INLINE,
@@ -378,6 +386,7 @@ globus_l_xio_test_read(
     globus_l_xio_test_handle_t *        dh;
     globus_result_t                     res = GLOBUS_SUCCESS;
     globus_size_t                       nbytes;
+    GlobusXIOName(globus_l_xio_test_read);
 
     dh = (globus_l_xio_test_handle_t *) driver_handle;
 
@@ -393,13 +402,13 @@ globus_l_xio_test_read(
     nbytes = dh->chunk_size;
     if(dh->chunk_size == -1)
     {
-        GlobusXIOOperationWaitFor(op, nbytes);
+        nbytes = GlobusXIOOperationGetWaitFor(op);
     }
 
     dh->bytes_read += nbytes;
     if(dh->read_nbytes != -1 && dh->bytes_read >= dh->read_nbytes)
     {
-        res = GlobusXIOErrorReadEOF();
+        res = GlobusXIOErrorEOF();
     }
 
     if(dh->inline_finish)
@@ -451,7 +460,7 @@ globus_l_xio_test_write(
     nbytes = dh->chunk_size;
     if(dh->chunk_size == -1)
     {
-        GlobusXIOOperationWaitFor(op, nbytes);
+        nbytes = GlobusXIOOperationGetWaitFor(op);
     }
 
     if(dh->inline_finish)
