@@ -267,7 +267,7 @@ globus_gsi_cert_utils_get_cert_type(
     ASN1_OBJECT *                       policy_lang = NULL;
     int                                 policy_nid;
     globus_result_t                     result = GLOBUS_SUCCESS;
-    int                                 index;
+    int                                 index = -1;
     int                                 critical;
     BASIC_CONSTRAINTS *                 x509v3_bc = NULL;
     static char *                       _function_name_ =
