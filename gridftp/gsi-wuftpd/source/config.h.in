@@ -362,3 +362,8 @@
  * Define this if stat doesn't work with large files
  */
 #undef HAVE_BROKEN_STAT
+
+/*
+ * Undef this to turn of globus_authz.
+ */
+#define GLOBUS_AUTHORIZATION 1
