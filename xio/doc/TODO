@@ -1,18 +1,12 @@
-Full Doc
---------
+Code
+----
+-- driver operation cancel
+-- driver push
+-- dynamically loadable driver
+-- get dd
 
-Introduction
---Design Goals
-Architecture
---Plugins
---Stack
---Macros
---Signals
---Driver Descriptors
-Features
---Drivers
---posix api
---timeouts
---signals
---data descriptors
-  --future functionality
+
+Doc
+---
+-- review doxygen code documention
+-- polish web pages
