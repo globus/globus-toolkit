@@ -245,12 +245,13 @@ authorized_retrievers <DN regex>
 
 default_retrievers <DN regex>
 
-	Each of these lines allows the server administrator to set server-wide
-	default policies. The regex specifies the clients who can access the 
- 	credentials. The default retriever policy is enforced if a credential 
-	does not have a specified per-user policy. This is enforced in addition 
-	to the server-wide policy specified by the authorized_retrievers line. 
-	Any number of these lines may be present.
+	Each of these lines allows the server administrator to set
+	server-wide default policies. The regex specifies the clients
+	who can access the credentials. The default retriever policy
+	is enforced if a per-credential policy is not specified on
+	upload.  This is enforced in addition to the server-wide
+	policy specified by the authorized_retrievers line.  Any
+	number of these lines may be present.
 
 authorized_renewers <DN regex>
 
@@ -267,12 +268,13 @@ authorized_renewers <DN regex>
 
 default_renewers <DN regex>
 
-	Each of these lines allows the server administrator to set server-wide
-	default renewer policies. The regex specifies the clients who can 
-	renew the credentials. The default renewer policy is enforced if 
-	a credential does not have a per-user policy. This is enforced 
-	in addition to the server-wide policy specified by the 
-	authorized_renewers line. Any number of these lines may appear.
+	Each of these lines allows the server administrator to set
+	server-wide default renewer policies. The regex specifies the
+	clients who can renew the credentials. The default renewer
+	policy is enforced if a per-credential policy is not specified
+	on upload. This is enforced in addition to the server-wide
+	policy specified by the authorized_renewers line. Any number
+	of these lines may appear.
 
 6. Using myproxy-get-delegation from a trusted service
 ---------------------------------
