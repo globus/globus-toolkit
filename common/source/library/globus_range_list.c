@@ -37,39 +37,63 @@ globus_range_list_init(
 }
 
 int
-globus_range_list_merge2(
+globus_range_list_merge_destructive(
     globus_range_list_t *               dest,
     globus_range_list_t                 src1,
     globus_range_list_t                 src2)
 {
+    globus_l_range_list_t *             tmp_dst;
     globus_l_range_ent_t *              ent1 = NULL;
     globus_l_range_ent_t *              ent2 = NULL;
     int                                 size_inc;
     int                                 ent2_size;
+    int                                 rc;
 
-    if (src1->head == NULL)
+    if(src1 == NULL || src2 == NULL)
     {
-        *dest = src2;
+        return -1;
     }
-    else if (src2->head == NULL)
+    rc = globus_range_list_init(&tmp_dst);
+    if(rc != 0)
     {
-        *dest = src1;
+        return -1;
     }
-    else if (src1->head->offset <= src2->head->offset)
+    
+    if(src1->head == NULL)
     {
-        *dest = src1;
+        tmp_dst->head = src2->head;
+        tmp_dst->size = src2->size;
+    }
+    else if(src2->head == NULL)
+    {
+        tmp_dst->head = src1->head;
+        tmp_dst->size = src1->size;
+    }
+    else if(src1->head->offset <= src2->head->offset)
+    {
+        tmp_dst->head = src1->head;
+        tmp_dst->size = src1->size;
         ent1 = src1->head;
         ent2 = src2->head;
         ent2_size = src2->size;
     }
     else
     {
-        *dest = src2;
+        tmp_dst->head = src2->head;
+        tmp_dst->size = src2->size;
         ent1 = src2->head;
         ent2 = src1->head;
         ent2_size = src1->size;
     }
-    if (ent1 && ent2)
+
+    /* we're going to move or free every entry... null out the source lists
+    so the user can destroy or reuse them safely */
+    src1->head = NULL;
+    src2->head = NULL;
+    src1->size = 0;
+    src2->size = 0;
+
+    if(ent1 && ent2)
     {
         globus_l_range_ent_t *              curr1;
         globus_l_range_ent_t *              curr2;
@@ -79,7 +103,7 @@ globus_range_list_merge2(
         globus_off_t                        curr2_end;
         globus_bool_t                       done = GLOBUS_FALSE;
 
-        while (ent2)
+        while(ent2)
         {
             curr2 = ent2;
             if(curr2->length == GLOBUS_RANGE_LIST_MAX)
@@ -105,7 +129,7 @@ globus_range_list_merge2(
                 next = curr1->next;
                 /* if it is discontigous and in front of this one - this if
                    will not be entered on the first iteration */
-                if (curr2_end < curr1->offset &&
+                if(curr2_end < curr1->offset &&
                     curr2_end != GLOBUS_RANGE_LIST_MAX)
                 {
                     prev->next = curr2;
@@ -157,7 +181,7 @@ globus_range_list_merge2(
                 else
                 {   
                     prev = curr1;
-                    curr1 = curr1->next;
+                    ent1 = curr1->next;
                 }
             }      
             /* must be last entry - if we hit this, we can just point
@@ -171,12 +195,72 @@ globus_range_list_merge2(
             else    
             {   
                 ent2_size--;
+                done = GLOBUS_FALSE;
             }   
         }           
-        (*dest)->size += size_inc;
-    }               
+        tmp_dst->size += size_inc;
+    }
+    
+    *dest = tmp_dst;               
     return GLOBUS_SUCCESS;
 }                   
+
+int
+globus_range_list_copy(
+    globus_range_list_t *               dest,
+    globus_range_list_t                 src)
+{
+    int                                 rc;
+    globus_l_range_list_t *             tmp_dst;
+    globus_l_range_ent_t *              prev;
+    globus_l_range_ent_t *              dst_ent;
+    globus_l_range_ent_t *              src_ent;
+
+    if(src == NULL)
+    {
+        return -1;
+    }
+    
+    rc = globus_range_list_init(&tmp_dst);
+    if(rc != 0)
+    {
+        return -1;
+    }
+
+    src_ent = src->head;        
+    while(src_ent != NULL)
+    {
+        dst_ent = (globus_l_range_ent_t *) 
+            globus_malloc(sizeof(globus_l_range_ent_t));
+        if(dst_ent == NULL)
+        {
+            goto err;
+        }
+        dst_ent->offset = src_ent->offset;
+        dst_ent->length = src_ent->length;
+        dst_ent->next = NULL;
+        
+        if(tmp_dst->head != NULL)
+        {
+            prev->next = dst_ent;
+        }
+        else
+        {
+            tmp_dst->head = dst_ent;
+        }
+        
+        prev = dst_ent;
+        src_ent = src_ent->next;
+    }
+    tmp_dst->size = src->size;
+    
+    *dest = tmp_dst;    
+    return GLOBUS_SUCCESS;
+
+err:
+    globus_range_list_destroy(tmp_dst);
+    return -1;
+}
 
 int
 globus_range_list_merge(
@@ -184,52 +268,42 @@ globus_range_list_merge(
     globus_range_list_t                 src1,
     globus_range_list_t                 src2)
 {
-    int                                 size;
     int                                 rc;
-    int                                 i;
-    globus_off_t                        offset;
-    globus_off_t                        length;
+    globus_range_list_t                 src1_tmp;
+    globus_range_list_t                 src2_tmp;
 
-    rc = globus_range_list_init(dest);
+    if(src1 == NULL && src2 == NULL)
+    {
+        return -1;
+    }
+    
+    rc = globus_range_list_copy(&src1_tmp, src1);
     if(rc != 0)
     {
         return -1;
     }
-
-    size = globus_range_list_size(src1);
-    for(i = 0; i < size; i++)
+    
+    rc = globus_range_list_copy(&src2_tmp, src2);
+    if(rc != 0)
     {
-        rc = globus_range_list_at(src1, i, &offset, &length);
-        if(rc != 0)
-        {
-            goto err;
-        }
-        rc = globus_range_list_insert(*dest, offset, length);
-        if(rc != 0)
-        {
-            goto err;
-        }
+        goto err1;
     }
-    size = globus_range_list_size(src2);
-    for(i = 0; i < size; i++)
+    
+    rc = globus_range_list_merge_destructive(dest, src1_tmp, src2_tmp);
+    if(rc != 0)
     {
-        rc = globus_range_list_at(src2, i, &offset, &length);
-        if(rc != 0)
-        {
-            goto err;
-        }
-        rc = globus_range_list_insert(*dest, offset, length);
-        if(rc != 0)
-        {
-            goto err;
-        }
+        goto err2;
     }
-
+    
+    globus_range_list_destroy(src2_tmp);   
+    globus_range_list_destroy(src1_tmp);
+    
     return GLOBUS_SUCCESS;
 
-  err:
-
-    globus_range_list_destroy(*dest);    
+err2:
+    globus_range_list_destroy(src2_tmp);   
+err1:
+    globus_range_list_destroy(src1_tmp);   
     return -1;
 }
 
@@ -483,7 +557,8 @@ globus_range_list_remove(
         /* this range starts fair and ends fair, but crosses foul,
              adjust offset and length */
         else if(ent->offset < offset && 
-            (ent_end > end_offset || ent_end == GLOBUS_RANGE_LIST_MAX))
+            ((ent_end > end_offset && end_offset != GLOBUS_RANGE_LIST_MAX) || 
+            ent_end == GLOBUS_RANGE_LIST_MAX))
         {
             new_ent = (globus_l_range_ent_t *) globus_malloc(
                 sizeof(globus_l_range_ent_t));

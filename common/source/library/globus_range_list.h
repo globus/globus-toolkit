@@ -20,8 +20,13 @@ typedef enum
 
 typedef struct globus_l_range_list_s *  globus_range_list_t;
 
+
+/* destructive merge of two range lists.  will leave the source range
+ * lists empty.  globus_range_list_destroy() will still need to be called
+ * on source lists. 
+ */
 int
-globus_range_list_merge2(
+globus_range_list_merge_destructive(
     globus_range_list_t *               dest,
     globus_range_list_t                 src1,
     globus_range_list_t                 src2);
@@ -31,6 +36,11 @@ globus_range_list_merge(
     globus_range_list_t *               dest,
     globus_range_list_t                 src1,
     globus_range_list_t                 src2);
+
+int
+globus_range_list_copy(
+    globus_range_list_t *               dest,
+    globus_range_list_t                 src);
 
 int
 globus_range_list_init(
