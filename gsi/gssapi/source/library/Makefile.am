@@ -2,7 +2,6 @@ include $(top_srcdir)/globus_automake_pre
 
 Sources = \
 	accept_sec_context.c \
-	accept_delegation.c \
 	acquire_cred.c \
 	compare_name.c \
 	delete_sec_context.c \
@@ -17,25 +16,29 @@ Sources = \
 	import_name.c \
 	import_sec_context.c \
 	init_sec_context.c \
-	init_delegation.c \
 	inquire_cred.c \
 	inquire_context.c \
-	inquire_sec_context_by_oid.c \
-	inquire_cred_by_oid.c \
 	oid_functions.c \
 	release_cred.c \
 	release_name.c \
 	unwrap.c \
 	verify_mic.c \
 	wrap.c \
+	release_buffer.c \
+	gssapi_working.c \
+	gssapi.h \
+	gssapi_ssleay.h \
+	$(Sources_GSS_EXTENSIONS)
+
+Sources_GSS_EXTENSIONS = \
+	accept_delegation.c \
 	import_cred.c \
 	export_cred.c \
-	release_buffer.c \
+	init_delegation.c \
+	inquire_cred_by_oid.c \
+	inquire_sec_context_by_oid.c \
 	release_buffer_set.c \
-	gssapi_working.c \
-	set_sec_context_option.c \
-	gssapi.h \
-	gssapi_ssleay.h
+	set_sec_context_option.c 
 
 flavorinclude_HEADERS = \
 	gssapi.h \
