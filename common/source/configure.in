@@ -11,7 +11,7 @@ AM_PROG_LIBTOOL
 dnl config header goes here
 
 dnl Initialize the automake rules the last argument
-AM_INIT_AUTOMAKE(globus_common, 2.0.0)
+AM_INIT_AUTOMAKE($GPT_NAME, $GPT_VERSION)
 
 AM_CONFIG_HEADER(config.h library/globus_common.h:library/globus_common.h.in)
 

@@ -1,7 +1,9 @@
 AC_REVISION($Revision$)
 AC_INIT(Makefile.am)
 AC_CONFIG_AUX_DIR(config)
-AM_INIT_AUTOMAKE(globus_core, 2.0.0,0)
+
+GPT_INIT
+AM_INIT_AUTOMAKE($GPT_NAME, $GPT_VERSION)
 AM_CONFIG_HEADER(globus_config.h)
 
 AC_ARG_WITH(
@@ -19,7 +21,6 @@ fi
 GLOBUS_FLAVOR_NAME=$globus_cv_flavor
 AC_SUBST(GLOBUS_FLAVOR_NAME)
 
-GPT_INIT
 dnl define FILELIST_FILE variable
 FILELIST_FILE=`pwd`;
 FILELIST_FILE="$FILELIST_FILE/pkgdata/master.filelist"

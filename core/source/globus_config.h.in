@@ -49,3 +49,10 @@
 #undef TARGET_ARCH_LINUX
 #undef TARGET_ARCH_CYGWIN
 #undef TARGET_ARCH_X86
+
+/* Name of package */
+#undef PACKAGE
+
+/* Version number of package */
+#undef VERSION
+
