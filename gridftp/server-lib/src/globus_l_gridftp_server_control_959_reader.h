@@ -35,13 +35,6 @@ globus_gsc_pmod_959_get_server(
  *  the oepration is only valid for the life of this function
  */
 typedef void
-(*globus_gsc_959_command_func_t)(
-    globus_gsc_op_959_t *                   op,
-    const char *                            command_name,
-    const char *                            full_command,
-    void *                                  user_arg);
-
-typedef void
 (*globus_gsc_pmod_959_abort_func_t)(
     globus_gsc_op_959_t *                   op,
     void *                                  user_arg);

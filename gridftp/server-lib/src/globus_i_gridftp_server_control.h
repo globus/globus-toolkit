@@ -128,6 +128,15 @@ GlobusDebugDeclare(GLOBUS_GRIDFTP_SERVER_CONTROL);
 #define GlobusGridFTPServerOpSetPModArg(_in_op, _in_arg)                    \
     (_in_op)->pmod_arg = (_in_arg);                                         \
 
+typedef void
+(*globus_gsc_959_command_func_t)(
+    globus_i_gsc_op_t *                     op,
+    const char *                            full_command,
+    char **                                 cmd_array,
+    int                                     argc,
+    void *                                  user_arg);
+
+
 struct globus_i_gs_attr_s;
 
 typedef enum globus_gridftp_server_debug_levels_e
@@ -302,8 +311,8 @@ typedef struct globus_i_gsc_server_s
     char *                                  modes;
     char *                                  types;
     int                                     parallelism;
-    int                                     send_buf;
-    int                                     receive_buf;
+    globus_size_t                           send_buf;
+    globus_size_t                           receive_buf;
     globus_bool_t                           refresh;
 
     /*
@@ -362,6 +371,7 @@ typedef struct globus_l_gsc_959_cmd_ent_s
     globus_gsc_959_command_desc_t           desc;
     char *                                  help;
     void *                                  user_arg;
+    int                                     argc;
 } globus_l_gsc_959_cmd_ent_t;
 
 typedef struct globus_l_gsc_959_reply_ent_s
@@ -371,13 +381,13 @@ typedef struct globus_l_gsc_959_reply_ent_s
     globus_gsc_op_959_t                     op;
 } globus_l_gsc_959_reply_ent_t;
 
-typedef struct globus_gsc_op_959_s
+typedef struct globus_i_gsc_op_s
 {
     globus_l_gsc_959_handle_t *             handle;
     globus_list_t *                         cmd_list;
     char *                                  command;
     globus_i_gsc_server_t *                 server;
-} globus_gsc_op_959_t;
+} globus_i_gsc_op_t;
 
 /* 
  *  959 reader functions
