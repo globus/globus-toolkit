@@ -858,10 +858,11 @@ myproxy_serialize_response(const myproxy_response_t *response,
 
     /* Only add error string(s) if necessary */
     if (response->response_type == MYPROXY_ERROR_RESPONSE) {
-	char *buf, *start, *end;
-	buf = strdup (verror_get_string());
+	char *start, *end;
 	/* send each line individually */
-	for (start=buf; (end = strchr(start, '\n')) != NULL; start = end+1) {
+	for (start=response->error_string;
+	     (end = strchr(start, '\n')) != NULL;
+	     start = end+1) {
 	    *end = '\0';
 	    len = concatenate_strings(data, datalen, MYPROXY_ERROR_STRING,
 				      start, "\n", NULL);
@@ -875,7 +876,6 @@ myproxy_serialize_response(const myproxy_response_t *response,
 	    if (len < 0) return -1;
 	    totlen += len;
 	}
-	free(buf);
     }
 
     return totlen+1;
@@ -938,11 +938,11 @@ myproxy_deserialize_response(myproxy_response_t *response,
 
     if (response->response_type == MYPROXY_ERROR_RESPONSE) {
 	/* It's ok if ERROR not present */
-	response->error_str = (char *) malloc (1024);
+	response->error_string = (char *) malloc (1024);
 	len = convert_message(data, datalen,
 			      MYPROXY_ERROR_STRING, 
 			      CONVERT_MESSAGE_ALLOW_MULTIPLE,
-			      response->error_str,
+			      response->error_string,
 			      1024);
 	return 0;
     }
@@ -1278,7 +1278,7 @@ myproxy_recv_response(myproxy_socket_attrs_t *attrs, myproxy_response_t *respons
     /* Check response */
     switch(response->response_type) {
         case MYPROXY_ERROR_RESPONSE:
-            verror_put_string("ERROR from server: %s", response->error_str);
+            verror_put_string("ERROR from server: %s", response->error_string);
 	    return(-1);
             break;
         case MYPROXY_OK_RESPONSE:
