@@ -553,8 +553,9 @@ globus_error_initialize_openssl_error(
          * this should shut down the recursive building of the 
          * openssl error chain
          */
-        error = base_cause;
         globus_i_openssl_error_handle_destroy(openssl_error_handle);
+        globus_object_free(error);
+        error = base_cause;
         goto done;
     }
 
