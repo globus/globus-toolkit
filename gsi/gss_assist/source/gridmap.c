@@ -15,9 +15,7 @@ CVS Information:
                              Include header files
 ******************************************************************************/
 #include <stdio.h>
-#include <malloc.h>
 #include <string.h>
-#include <stdlib.h>
 #include <pwd.h>
 #include "globus_gss_assist.h"
 

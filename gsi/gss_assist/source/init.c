@@ -17,7 +17,6 @@ CVS Information:
 ******************************************************************************/
 #include "globus_gss_assist.h"
 #include <gssapi.h>
-#include <malloc.h>
 
 extern gss_OID gss_nt_service_name;
 /******************************************************************************

@@ -18,9 +18,7 @@ CVS Information:
 ******************************************************************************/
 #include "globus_gss_assist.h"
 #include <gssapi.h>
-#include <malloc.h>
 #include <stdio.h>
-#include <stdlib.h>
 
 /******************************************************************************
                                Type definitions
