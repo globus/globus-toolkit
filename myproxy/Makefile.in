@@ -12,7 +12,8 @@ TARGETS	=	gsi-socket-test myproxy-init myproxy-get-delegation myproxy-server
 COMMON_OBJS	= myproxy.o gsi_socket.o gnu_getopt.o gnu_getopt_long.o
 INIT_OBJS	= myproxy_init.o $(COMMON_OBJS)
 GET_OBJS	= myproxy_get_delegation.o $(COMMON_OBJS)
-SERVER_OBJS	= myproxy_server.o verror.o myproxy_creds.o $(COMMON_OBJS)
+SERVER_OBJS	= myproxy_server.o verror.o myproxy_creds.o \
+			myproxy_log.o $(COMMON_OBJS)
 
 default:	$(TARGETS)
 
