@@ -168,11 +168,12 @@ gaa_simple_parse_restrictions(
             line = NULL;
         }
         line = (char *)malloc(linelen+1);
-        memset(line,0,linelen+1);
-        
-        /*read one line from the restrictions string*/
-        sscanf(restrictions,"%[^\n]",line);
-        restrictions += linelen+1;   
+	for (i = 0; i < linelen; i++)
+	    if (*restrictions)
+		line[i] = *restrictions++;
+	line[i] = '\0';
+	if (*restrictions)
+	    restrictions++;
 
         /*remove leading and trailing white spaces from line*/
         token = cleanup(line);
