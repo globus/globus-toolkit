@@ -44,8 +44,10 @@ DESTROY_OBJS	= myproxy_destroy.o $(MYPROXY_LIB)
 GET_OBJS	= myproxy_get_delegation.o $(MYPROXY_LIB)
 SERVER_OBJS	= myproxy_server.o myproxy_creds.o my_utility.o \
 			vparse.o myproxy_server_config.o \
-			libmyodbc3.so \
+			.libs/libiodbc.so \
 			$(MYPROXY_LIB)
+
+#			libmyodbc3.so 
 
 default:	clients server tools library
 

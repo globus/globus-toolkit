@@ -195,9 +195,9 @@ int my_retrieve(SQLHDBC hdbc, SQLHSTMT hstmt)
    printf ("mpi-9");
    rc = SQLFetch (hstmt);
 
-   /*if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)  //failed
+   if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)  //failed
 	return -1;
-*/
+
    mystmt (hstmt,rc);
    printf ("mpi-10");
 
@@ -556,7 +556,7 @@ copy_credential_to_file(struct myproxy_creds *creds, char *filename)
     
 
     mydsn = strdup (dbase_name);
-    myuid = strdup ("postgres");
+    myuid = strdup ("root");
     mypwd = strdup ("");
    /*
     * connect to MySQL server
@@ -1027,7 +1027,7 @@ char *read_from_database_for_info()
   char *data;
 
     mydsn = strdup (dbase_name);
-    myuid = strdup ("postgres");
+    myuid = strdup ("root");
     mypwd = strdup ("");
    /*
     * connect to MySQL server
@@ -1064,14 +1064,14 @@ char *read_from_database_for_info()
 	strcat (data, "\t");
 	strcat (data, mydbase.cred_desc);
 	strcat (data, "\t");
-
+/*
 	if (mydbase.owner != NULL)
 		free (mydbase.owner);
 	if (mydbase.credname != NULL)
 		free (mydbase.credname);
 	if (mydbase.cred_desc != NULL)
 		free (mydbase.cred_desc);
-    }
+ */   }
 
 	data[strlen(data)-1] = '\0';	//avoid last tab
     /*
@@ -1100,7 +1100,7 @@ int retrieve_from_database_given_username_credname(char *username, char *crednam
 	//char credential[MAX_TEXT_LEN];
 
 	mydsn = strdup (dbase_name);
-	myuid = strdup ("postgres");
+	myuid = strdup ("root");
 	mypwd = strdup ("");
 	/*
 	 * connect to MySQL server
@@ -1180,7 +1180,7 @@ int write_to_database()
   int retcode = -1;
 
     mydsn = strdup (dbase_name); // connect to default database
-    myuid = strdup ("postgres");
+    myuid = strdup ("root");
     mypwd = strdup ("");
 
    
@@ -1585,7 +1585,7 @@ myproxy_creds_delete(const struct myproxy_creds *creds)
   int retcode = -1;
 
   mydsn = strdup (dbase_name); // connect to default database
-  myuid = strdup ("postgres");
+  myuid = strdup ("root");
   mypwd = strdup ("");
 
   mydbase.credname = strdup (creds->credname); 
@@ -1677,7 +1677,7 @@ myproxy_creds_info(struct myproxy_creds *creds, char **records)
        verror_put_errno(EINVAL);
        return -1;
     }
-
+/*
     if (get_storage_locations(creds->username,
 	                      creds_path, sizeof(creds_path),
 			      data_path, sizeof(data_path)) == -1) {
@@ -1686,7 +1686,7 @@ myproxy_creds_info(struct myproxy_creds *creds, char **records)
 
     if (ssl_get_times(creds_path, &creds->start_time, &creds->end_time) != 0)
        goto error;
-
+*/
     *records = read_from_database_for_info();
     return_code = 0;
 

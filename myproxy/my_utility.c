@@ -67,7 +67,7 @@
 #define MAX_ROW_DATA_LEN 255
 
 SQLCHAR *mydsn = "myodbc3";
-SQLCHAR *myuid = "postgres";
+SQLCHAR *myuid = "root";
 SQLCHAR *mypwd = "";
 
 /* PROTOTYPE */

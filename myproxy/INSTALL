@@ -91,6 +91,8 @@ Step 1: Run './configure'
 
 	--disable-multicred-feature
 		Disable multiple credentials per user feature. 
+
+	--enable-multicred-feature
 		This allows a user to have multiple credentials
 		stored with credential names. The user can retrieve, renew
 		and destroy any of the credentials. This support requires
