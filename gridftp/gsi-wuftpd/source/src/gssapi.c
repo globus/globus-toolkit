@@ -39,12 +39,22 @@ extern struct sockaddr_in ctrl_addr;
 #define GSS_C_NT_HOSTBASED_SERVICE	gss_nt_service_name
 #endif /* GSS_C_NT_HOSTBASED_SERVICE */
 #endif /* GSSAPI_KRB5 */
+
+#include <gssapi.h>
+
 #ifdef GSSAPI_GLOBUS
 char* gss_services[] = { "host", 0 };
 extern const gss_OID_desc * const gss_untrusted_group;
-#endif /* GSSAPI_GLOBUS */
 
-#include <gssapi.h>
+/* Compare OIDs */
+
+#define g_OID_equal(o1,o2) \
+        (((o1) == (o2)) || \
+         ((o1) && (o2) && \
+         ((o1)->length == (o2)->length) && \
+         (memcmp((o1)->elements,(o2)->elements,(int) (o1)->length) == 0)))
+
+#endif /* GSSAPI_GLOBUS */
 
 #if USE_GLOBUS_DATA_CODE
 #include "globus_ftp_control.h"
