@@ -97,6 +97,12 @@ typedef enum {
 #if defined(KRB4) || defined(KRB5)
 	oKerberosAuthentication,
 #endif
+#ifdef GSSAPI
+	oGssAuthentication, oGssKeyEx, oGssDelegateCreds,
+#ifdef GSI
+	oGssGlobusDelegateLimitedCreds,
+#endif /* GSI */
+#endif /* GSSAPI */
 #if defined(AFS) || defined(KRB5)
 	oKerberosTgtPassing,
 #endif
@@ -143,6 +149,16 @@ static struct {
 #if defined(KRB4) || defined(KRB5)
 	{ "kerberosauthentication", oKerberosAuthentication },
 #endif
+#ifdef GSSAPI
+	{ "gssapiauthentication", oGssAuthentication },
+	{ "gssapikeyexchange", oGssKeyEx },
+	{ "gssapidelegatecredentials", oGssDelegateCreds },
+#ifdef GSI
+	/* For backwards compatability with old 1.2.27 client code */
+	{ "forwardgssapiglobusproxy", oGssDelegateCreds }, /* alias */
+	{ "forwardgssapiglobuslimitedproxy", oGssGlobusDelegateLimitedCreds },
+#endif /* GSI */
+#endif /* GSSAPI */
 #if defined(AFS) || defined(KRB5)
 	{ "kerberostgtpassing", oKerberosTgtPassing },
 #endif
@@ -362,6 +378,27 @@ parse_flag:
 		intptr = &options->kerberos_authentication;
 		goto parse_flag;
 #endif
+#ifdef GSSAPI
+	case oGssAuthentication:
+		intptr = &options->gss_authentication;
+		goto parse_flag;
+      
+	case oGssKeyEx:
+	    	intptr = &options->gss_keyex;
+		goto parse_flag;
+
+	case oGssDelegateCreds:
+		intptr = &options->gss_deleg_creds;
+		goto parse_flag;
+ 
+#ifdef GSI
+	case oGssGlobusDelegateLimitedCreds:
+		intptr = &options->gss_globus_deleg_limited_proxy;
+		goto parse_flag;
+#endif /* GSI */
+
+#endif /* GSSAPI */
+
 #if defined(AFS) || defined(KRB5)
 	case oKerberosTgtPassing:
 		intptr = &options->kerberos_tgt_passing;
@@ -747,6 +784,15 @@ initialize_options(Options * options)
 	options->rsa_authentication = -1;
 	options->pubkey_authentication = -1;
 	options->challenge_response_authentication = -1;
+#ifdef GSSAPI
+        options->gss_authentication = -1;
+	options->gss_keyex = -1;
+        options->gss_deleg_creds = -1;
+#ifdef GSI
+        options->gss_globus_deleg_limited_proxy = -1;
+#endif /* GSI */
+#endif /* GSSAPI */
+
 #if defined(KRB4) || defined(KRB5)
 	options->kerberos_authentication = -1;
 #endif
@@ -823,6 +869,18 @@ fill_default_options(Options * options)
 		options->pubkey_authentication = 1;
 	if (options->challenge_response_authentication == -1)
 		options->challenge_response_authentication = 1;
+#ifdef GSSAPI
+	if (options->gss_authentication == -1)
+		options->gss_authentication = 1;
+	if (options->gss_keyex == -1)
+		options->gss_keyex = 1;
+	if (options->gss_deleg_creds == -1)
+		options->gss_deleg_creds = 1;
+#ifdef GSI
+	if (options->gss_globus_deleg_limited_proxy == -1)
+		options->gss_globus_deleg_limited_proxy = 0;
+#endif /* GSI */
+#endif /* GSSAPI */
 #if defined(KRB4) || defined(KRB5)
 	if (options->kerberos_authentication == -1)
 		options->kerberos_authentication = 1;
