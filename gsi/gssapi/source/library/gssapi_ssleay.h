@@ -1,4 +1,4 @@
- /**********************************************************************
+/**********************************************************************
 gssapi_ssleay.h:
 
 Description:
@@ -85,35 +85,101 @@ CVS Information:
 #define GSSERR_F_ACCEPT_DELEGATION     126
 #define GSSERR_F_INQUIRE_BY_OID        127
 
+
+/* Minor errors with numbers that have the 10th bit set (specified by 
+ * GSS_FINAL_ERROR_CODE) are considered final errors.
+ * When gss_display_status is looping through the SSL
+ * error queue it will exit the loop AFTER the final error is displayed
+ * or there are further errors in the queue.
+ */
+ 
+#define GSS_FINAL_ERROR_CODE                512
+
 /* 
  * defines for reasons 
  * The match strings defined in gsserr.c
  * These are also used for the minor_status codes 
  */
 
-#define GSSERR_R_HANDSHAKE             100
-#define GSSERR_R_NO_GLOBUSID           101
-#define GSSERR_R_PROCESS_CERT          102
-#define GSSERR_R_MUTUAL_AUTH           103
-#define GSSERR_R_WRAP_BIO              104
-#define GSSERR_R_PROXY_VIOLATION       105
-#define GSSERR_R_PROXY_NOT_RECEIVED    106
-#define GSSERR_R_IMPEXP_BAD_PARMS      107
-#define GSSERR_R_IMPEXP_BIO_SSL        108
-#define GSSERR_R_IMPEXP_NO_CIPHER      109
-#define GSSERR_R_IMPEXP_BAD_LEN        110
-#define GSSERR_R_CLASS_ADD_EXT         111
-#define GSSERR_R_EXPORT_FAIL           112
-#define GSSERR_R_IMPORT_FAIL           113
-#define GSSERR_R_READ_BIO              114
-#define GSSERR_R_WRITE_BIO             115
-#define GSSERR_R_PASSED_NULL_PARAMETER 116
-#define GSSERR_R_UNEXPECTED_FORMAT     117
-#define GSSERR_R_PROXY_EXPIRED         118  
-#define GSSERR_R_CERT_EXPIRED          119  
-#define GSSERR_R_BAD_DATE              120
-#define GSSERR_R_BAD_MECH              121
-#define GSSERR_R_ADD_EXT               122
+#define GSSERR_R_HANDSHAKE                  100
+#define GSSERR_R_NO_GLOBUSID                101
+#define GSSERR_R_PROCESS_CERT               102
+#define GSSERR_R_MUTUAL_AUTH                103
+#define GSSERR_R_WRAP_BIO                   104
+#define GSSERR_R_PROXY_VIOLATION            105
+#define GSSERR_R_PROXY_NOT_RECEIVED         106
+#define GSSERR_R_IMPEXP_BAD_PARMS           107
+#define GSSERR_R_IMPEXP_BIO_SSL             108
+#define GSSERR_R_IMPEXP_NO_CIPHER           109
+#define GSSERR_R_IMPEXP_BAD_LEN             110
+#define GSSERR_R_CLASS_ADD_EXT              111
+#define GSSERR_R_EXPORT_FAIL                112
+#define GSSERR_R_IMPORT_FAIL                113
+#define GSSERR_R_READ_BIO                   114
+#define GSSERR_R_WRITE_BIO                  115
+#define GSSERR_R_PASSED_NULL_PARAMETER      116
+#define GSSERR_R_UNEXPECTED_FORMAT          117
+#define GSSERR_R_BAD_DATE                   120
+#define GSSERR_R_BAD_MECH                   121
+#define GSSERR_R_ADD_EXT                    122
+
+/* gss versions of ssl minor errors */
+#define GSSERR_PRXY_R_FATAL                 512
+#define GSSERR_PRXY_R_BAD_PROXY_ISSUER      513
+#define GSSERR_PRXY_R_LPROXY_MISSED_USED    514
+#define GSSERR_PRXY_R_CRL_SIGNATURE_FAILURE 515
+#define GSSERR_PRXY_R_CRL_NEXT_UPDATE_FIELD 516
+#define GSSERR_PRXY_R_CRL_HAS_EXPIRED       517
+#define GSSERR_PRXY_R_CERT_REVOKED          518
+#define GSSERR_PRXY_R_CA_NOPATH             519
+#define GSSERR_PRXY_R_CA_NOFILE             520
+#define GSSERR_PRXY_R_CA_POLICY_RETRIEVE    521
+#define GSSERR_PRXY_R_CA_POLICY_PARSE       522
+#define GSSERR_PRXY_R_CA_POLICY_ERR         523
+#define GSSERR_PRXY_R_CA_POLICY_VIOLATION   524
+#define GSSERR_PRXY_R_CA_UNKNOWN            525
+#define GSSERR_PRXY_R_CB_CALLED_WITH_ERROR  526
+#define GSSERR_PRXY_R_USER_CERT_EXPIRED     527
+#define GSSERR_PRXY_R_SERVER_CERT_EXPIRED   528
+#define GSSERR_PRXY_R_PROXY_EXPIRED         529
+#define GSSERR_PRXY_R_NO_PROXY              530
+#define GSSERR_PRXY_R_MALLOC_FAILURE        531
+
+#define GSSERR_PRXY_R_PROCESS_PROXY_KEY     532
+#define GSSERR_PRXY_R_PROCESS_REQ           533
+#define GSSERR_PRXY_R_PROCESS_SIGN          534
+#define GSSERR_PRXY_R_MALFORM_REQ           535
+#define GSSERR_PRXY_R_SIG_VERIFY            536
+#define GSSERR_PRXY_R_SIG_BAD               537
+#define GSSERR_PRXY_R_PROCESS_PROXY         538
+#define GSSERR_PRXY_R_PROXY_NAME_BAD        539
+#define GSSERR_PRXY_R_PROCESS_SIGNC         540
+#define GSSERR_PRXY_R_PROBLEM_PROXY_FILE    541
+#define GSSERR_PRXY_R_SIGN_NOT_CA           542
+#define GSSERR_PRXY_R_PROCESS_KEY           543
+#define GSSERR_PRXY_R_PROCESS_CERT          544
+#define GSSERR_PRXY_R_PROCESS_CERTS         545
+#define GSSERR_PRXY_R_NO_TRUSTED_CERTS      546
+#define GSSERR_PRXY_R_PROBLEM_KEY_FILE      547
+#define GSSERR_PRXY_R_PROBLEM_NOCERT_FILE   548
+#define GSSERR_PRXY_R_PROBLEM_NOKEY_FILE    549
+#define GSSERR_PRXY_R_ZERO_LENGTH_KEY_FILE  550
+#define GSSERR_PRXY_R_ZERO_LENGTH_CERT_FILE 551
+#define GSSERR_PRXY_R_NO_HOME               552
+#define GSSERR_PRXY_R_LPROXY_REJECTED       553
+#define GSSERR_PRXY_R_KEY_CERT_MISMATCH     554
+#define GSSERR_PRXY_R_WRONG_PASSPHRASE      555
+#define GSSERR_PRXY_R_PROBLEM_CLIENT_CA     556
+#define GSSERR_PRXY_R_CB_NO_PW              557
+#define GSSERR_PRXY_R_CLASS_ADD_OID         558
+#define GSSERR_PRXY_R_CLASS_ADD_EXT         559
+#define GSSERR_PRXY_R_DELEGATE_VERIFY       560
+#define GSSERR_PRXY_R_EXT_ADD               561
+#define GSSERR_PRXY_R_DELEGATE_COPY         562
+#define GSSERR_PRXY_R_DELEGATE_CREATE       563
+#define GSSERR_PRXY_R_BUFFER_TOO_SMALL      564
+
+
 
 /*
  * we need to distinguish between a token
@@ -295,5 +361,7 @@ ERR_user_lib_gsserr_num();
 int
 ERR_load_gsserr_strings(int);
 
+OM_uint32
+convert_minor_codes(const int lib, const int reason);
 
 #endif /* _GSSAPI_SSLEAY_H */
