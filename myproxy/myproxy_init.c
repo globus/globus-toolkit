@@ -59,7 +59,6 @@ static char usage[] = \
 struct option long_options[] =
 {
   {"help",                  no_argument, NULL, 'h'},
-  {"debug_level",     required_argument, NULL, 'D'},
   {"pshost",   	      required_argument, NULL, 's'},
   {"psport",          required_argument, NULL, 'p'},
   {"cred_lifetime",   required_argument, NULL, 'c'},
