@@ -40,7 +40,9 @@ CVS Information:
 #include <syslog.h>
 #include <netdb.h>
 #include <netinet/in.h>
-#include <netinet/tcp.h>
+#if defined (HAVE_NETINET_TCP_H)
+#   include <netinet/tcp.h>
+#endif
 #include <arpa/inet.h>
 #include <time.h>
 #include <sys/stat.h>
@@ -830,7 +832,7 @@ main(int xargc,
 
             if (hp = gethostbyname(hostname))
             {
-                fqdn = hp->h_name;
+                fqdn = (char *) hp->h_name;
             }
             else
             {
@@ -863,36 +865,43 @@ main(int xargc,
             (void) close(0);
             (void) close(1);
 
-#if defined(SYSV) || defined(__hpux) || defined(CRAY)
-	    /* mod here (variable "fname") no longer in use. --milne */
-            sprintf(fname, "/dev/console"); 
-            fd = open (fname, O_RDWR);
-            notice2(0, "open dev console fd = %d\n", fd);
-            if (fd < 0)
+#           if (defined(SYSV) || \
+                defined(__hpux) || \
+                defined(CRAY) || \
+                defined(TARGET_ARCH_CYGWIN))
 	    {
-		sprintf(fname, "/dev/tty");
-                fd = open (fname, O_RDWR);
-	    }
-            notice2(0, "open dev tty fd = %d\n", fd);
-            if (fd < 0)
-	    {
-		sprintf(fname, "/dev/null");
-                fd = open (fname, O_RDWR);
-	    }
-            notice3(0, "open %s fd = %d\n", fname, fd);
-            (void) dup2(2, 1); /* point out at stderr or log */
+		/* mod here (variable "fname") no longer in use. --milne */
+		sprintf(fname, "/dev/console"); 
+		fd = open (fname, O_RDWR);
+		notice2(0, "open dev console fd = %d\n", fd);
+		if (fd < 0)
+		{
+		    sprintf(fname, "/dev/tty");
+		    fd = open (fname, O_RDWR);
+		}
+		notice2(0, "open dev tty fd = %d\n", fd);
+		if (fd < 0)
+		{
+		    sprintf(fname, "/dev/null");
+		    fd = open (fname, O_RDWR);
+		}
+		notice3(0, "open %s fd = %d\n", fname, fd);
+		(void) dup2(2, 1); /* point out at stderr or log */
 
-            (void) setpgrp();
-#else
-            (void) open("/dev/null", O_RDONLY);
-            (void) dup2(2, 1); /* point stdout to stderr */
-            fd = open("/dev/tty", O_RDWR);
-            if (fd >= 0)
-            {
-                ioctl(fd, TIOCNOTTY, 0);
-                (void) close(fd);
-            }
-#endif
+		(void) setpgrp();
+	    }
+#           else
+	    {
+		(void) open("/dev/null", O_RDONLY);
+		(void) dup2(2, 1); /* point stdout to stderr */
+		fd = open("/dev/tty", O_RDWR);
+		if (fd >= 0)
+		{
+		    ioctl(fd, TIOCNOTTY, 0);
+		    (void) close(fd);
+		}
+	    }
+#           endif
         }
 
         /* stderr is either the logfile, the users stderr or the /dev/null */
@@ -911,18 +920,25 @@ main(int xargc,
 
             if (pid == 0)
             {
-#if defined(__hpux) || defined(TARGET_ARCH_SOLARIS)
-                (void) setpgrp();
-#else
-                ttyfd = open("/dev/tty",O_RDWR);
-                if (ttyfd >= 0)
-                {
-#    if !defined(CRAY)
-                    ioctl(ttyfd, TIOCNOTTY, 0);
-#    endif
-                    close(ttyfd);
+#               if defined(__hpux) || defined(TARGET_ARCH_SOLARIS)
+		{
+		    (void) setpgrp();
+		}
+#               else
+		{
+		    ttyfd = open("/dev/tty",O_RDWR);
+		    if (ttyfd >= 0)
+		    {
+#                       if !defined(CRAY) && !defined(TARGET_ARCH_CYGWIN)
+			{
+			    ioctl(ttyfd, TIOCNOTTY, 0);
+			}
+#                       endif
+			close(ttyfd);
+		    }
                 }
-#endif
+#               endif
+		
                 fclose(stdin); /* take care of stream buffers too */
                 close(0);
                 close(listener_fd);
@@ -1484,19 +1500,35 @@ static void doit()
 	    }
 #           endif
 
-#if defined(__hpux)
-	    if (setresuid(job_manager_uid, job_manager_uid, -1) != 0)
-		failure2("cannot setresuid: %s", sys_errlist[errno]);
-#elif ( defined(TARGET_ARCH_SOLARIS) || defined(TARGET_ARCH_BSD) )
-	    if (setuid(job_manager_uid) != 0)
-		failure2("cannot setuid: %s", sys_errlist[errno]);
-#else
-	    if (seteuid(0) != 0)
-		failure2("cannot seteuid: %s", sys_errlist[errno]);
+#           if defined(__hpux)
+	    {
+		if (setresuid(job_manager_uid, job_manager_uid, -1) != 0)
+		{
+		    failure2("cannot setresuid: %s", sys_errlist[errno]);
+		}
+	    }
+#           elif defined(TARGET_ARCH_SOLARIS) || \
+                 defined(TARGET_ARCH_BSD) || \
+                 defined(TARGET_ARCH_CYGWIN)
+	    {
+		if (setuid(job_manager_uid) != 0)
+		{
+		    failure2("cannot setuid: %s", sys_errlist[errno]);
+		}
+	    }
+#           else
+	    {
+		if (seteuid(0) != 0)
+		{
+		    failure2("cannot seteuid: %s", sys_errlist[errno]);
+		}
 	
-	    if (setreuid(job_manager_uid, job_manager_uid) != 0)
-		failure2("cannot setreuid: %s", sys_errlist[errno]);
-#endif
+		if (setreuid(job_manager_uid, job_manager_uid) != 0)
+		{
+		    failure2("cannot setreuid: %s", sys_errlist[errno]);
+		}
+	    }
+#           endif
 
 	}
     }
