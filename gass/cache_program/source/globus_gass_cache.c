@@ -173,8 +173,7 @@ get_rm_contact(char *resource)
     char *attrs[3];
     
     attrs[0] = "contact";
-    attrs[1] = "hn";
-    attrs[2] = GLOBUS_NULL;
+    attrs[1] = GLOBUS_NULL;
     
     if(strchr(resource, (int) ':') != GLOBUS_NULL)
     {
