@@ -1681,7 +1681,8 @@ globus_ftp_control_send_command(
     arglength=globus_libc_vfprintf(globus_i_ftp_control_devnull,
                                    cmdspec,
                                    ap);
-
+    va_end(ap);
+    
     if(arglength < 1)
     {
         result=globus_error_put(
@@ -1706,8 +1707,14 @@ globus_ftp_control_send_command(
             );
         goto error;
     }
+
+#ifdef HAVE_STDARG_H
+    va_start(ap, callback_arg);
+#else
+    va_start(ap);
+#endif
     
-    if(globus_libc_vsprintf((char *) buf, cmdspec,ap)<arglength)
+    if(globus_libc_vsprintf((char *) buf, cmdspec,ap) < arglength)
     {
         globus_libc_free(buf);
         result= globus_error_put(
@@ -1716,8 +1723,11 @@ globus_ftp_control_send_command(
                 GLOBUS_NULL,
                 "globus_ftp_control_send_command: Command string construction failed")
             );
+        va_end(ap);
         goto error;
     }
+
+    va_end(ap);
 
     globus_mutex_lock(&(handle->cc_handle.mutex));
     {

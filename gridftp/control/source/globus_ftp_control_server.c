@@ -2586,6 +2586,8 @@ globus_ftp_control_send_response(
                                    respspec,
                                    ap);
 
+    va_end(ap);
+    
     if(arglength < 1)
     {
         result=globus_error_put(
@@ -2610,8 +2612,14 @@ globus_ftp_control_send_response(
             );
         goto return_error;
     }
-    
-    if(globus_libc_vsprintf((char *) buf, respspec,ap)<arglength)
+
+#ifdef HAVE_STDARG_H
+    va_start(ap, callback_arg);
+#else
+    va_start(ap);
+#endif
+
+    if(globus_libc_vsprintf((char *) buf, respspec,ap) < arglength)
     {
         globus_libc_free(buf);
         result=globus_error_put(
@@ -2619,9 +2627,12 @@ globus_ftp_control_send_response(
                 GLOBUS_FTP_CONTROL_MODULE,
                 GLOBUS_NULL,
                 "globus_ftp_control_send_response: Response string construction failed")
-            );
+        );
+        va_end(ap);
         goto return_error;
     }
+
+    va_end(ap);
 
     if(handle->cc_handle.auth_info.authenticated == GLOBUS_TRUE)
     {
