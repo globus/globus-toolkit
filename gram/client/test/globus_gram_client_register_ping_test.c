@@ -130,7 +130,7 @@ nonblocking_callback_func(
     globus_mutex_lock(&Monitor->mutex);
 
     Monitor->errorcode = errorcode;
-//    Monitor->job_failure_code = job_failure_code;
+    /*   Monitor->job_failure_code = job_failure_code; */
     Monitor->done = GLOBUS_TRUE;
     globus_cond_signal(&Monitor->cond);
 
