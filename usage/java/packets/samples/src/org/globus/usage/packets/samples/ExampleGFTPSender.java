@@ -1,10 +1,21 @@
 package org.globus.usage.packets.samples;
 
+import java.io.InputStream;
+import java.io.IOException;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.net.SocketException;
+import java.net.UnknownHostException;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Properties;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import org.globus.usage.packets.GFTPMonitorPacket;
+import org.globus.usage.packets.IPTimeMonitorPacket;
+import org.globus.usage.packets.UsageMonitorPacket;
 
 public class ExampleGFTPSender {
 
@@ -12,8 +23,7 @@ public class ExampleGFTPSender {
     private InetAddress[] addressArray = null;
     private DatagramSocket socket = null;
 
-    private static Category log =
-        Category.getInstance(ExampleGFTPSender.class.getName());
+    private static Log log = LogFactory.getLog(ExampleGFTPSender.class);
 
     public ExampleGFTPSender() throws SocketException { 
 
