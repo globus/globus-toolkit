@@ -657,13 +657,8 @@ AC_DEFUN(LAC_STATIC_FLAGS,dnl
 [
 case $GPT_LINKTYPE in
 	static)
-
-		case ${host}--$1 in
-    		*)
-		    STATIC_FLAGS="-all-static"
-		    AC_SUBST(STATIC_FLAGS)
-		    ;;
-		esac
+                STATIC_FLAGS="-static"
+		AC_SUBST(STATIC_FLAGS)
 	;;
 esac
 ])
