@@ -1037,10 +1037,13 @@ globus_i_gsi_callback_check_critical_extensions(
 {
     ASN1_OBJECT *                       extension_object = NULL;
     X509_EXTENSION *                    extension = NULL;
+    ASN1_OCTET_STRING *                 ext_data = NULL;
+    PROXYCERTINFO *                     proxycertinfo = NULL;
     int                                 nid;
     int                                 pci_NID;
     int                                 critical_position = -1;
-    globus_result_t                     result;
+    long                                path_length;
+    globus_result_t                     result = GLOBUS_SUCCESS;
    static char *                       _function_name_ =
         "globus_i_gsi_callback_check_extensions";
 
@@ -1075,18 +1078,53 @@ globus_i_gsi_callback_check_critical_extensions(
         }
 
         nid = OBJ_obj2nid(extension_object);
-        if(nid == NID_undef)
-        {
-            GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
-                result,
-                GLOBUS_GSI_CALLBACK_ERROR_VERIFY_CRED,
-                ("Couldn't get NID from the ASN1_OBJECT extension "
-                 "contained in the certificate being verified."));
-            x509_context->error = X509_V_ERR_CERT_REJECTED;
-        }
 
         pci_NID = OBJ_sn2nid(PROXYCERTINFO_SN);
 
+        if(nid == pci_NID)
+        {
+            /* check for path length constraint */
+            if((ext_data = X509_EXTENSION_get_data(extension)) == NULL)
+            {
+                GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
+                    result,
+                    GLOBUS_GSI_CALLBACK_ERROR_VERIFY_CRED,
+                    ("Can't get DER encoded extension "
+                     "data from X509 extension object"));
+                x509_context->error = X509_V_ERR_CERT_REJECTED;
+                goto exit;
+            }
+
+            if((d2i_PROXYCERTINFO(
+                    &proxycertinfo,
+                    &ext_data->data,
+                    ext_data->length)) == NULL)
+            {
+                GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
+                    result,
+                    GLOBUS_GSI_CALLBACK_ERROR_VERIFY_CRED,
+                    ("Can't convert DER encoded PROXYCERTINFO "
+                     "extension to internal form"));
+                x509_context->error = X509_V_ERR_CERT_REJECTED;
+                goto exit;
+            }
+
+            path_length = PROXYCERTINFO_get_path_length(proxycertinfo);
+
+            /* ignore negative values */
+            
+            if(path_length > -1)
+            {
+                if(callback_data->max_proxy_depth == -1 ||
+                   callback_data->max_proxy_depth >
+                   callback_data->proxy_depth + path_length)
+                {
+                    callback_data->max_proxy_depth =
+                        callback_data->proxy_depth + path_length;
+                }
+            }
+        }
+        
         if(nid != NID_basic_constraints &&
            nid != NID_key_usage &&
            nid != NID_ext_key_usage &&
@@ -1123,10 +1161,18 @@ globus_i_gsi_callback_check_critical_extensions(
         }
     }
 
-    result = GLOBUS_SUCCESS;
-
  exit:
 
+    if(proxycertinfo != NULL)
+    {
+        PROXYCERTINFO_free(proxycertinfo);
+    }
+
+    if(ext_data != NULL)
+    {
+        ASN1_OCTET_STRING_free(ext_data);
+    }
+    
     GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
     return result;
 }
@@ -1152,7 +1198,7 @@ globus_i_gsi_callback_check_path_length(
      * know how many are proxies, so we can do the 
      * path length check now. 
      * See x509_vfy.c check_chain_purpose
-     * all we do is substract off the proxy_dpeth 
+     * all we do is substract off the proxy_depth 
      */
 
     if(x509_context->current_cert == x509_context->cert)

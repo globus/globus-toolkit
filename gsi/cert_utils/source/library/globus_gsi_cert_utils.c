@@ -261,6 +261,17 @@ globus_gsi_cert_utils_get_cert_type(
                                             -1)) != -1 &&
                 X509_EXTENSION_get_critical(X509_get_ext(cert,index)))
         {
+            if((index = X509_get_ext_by_NID(cert,
+                                            OBJ_sn2nid(PROXYCERTINFO_SN),
+                                            index)) != -1)
+            { 
+                GLOBUS_GSI_CERT_UTILS_OPENSSL_ERROR_RESULT(
+                    result,
+                    GLOBUS_GSI_CERT_UTILS_ERROR_NON_COMPLIANT_PROXY,
+                    ("Found more than one PCI extension"));
+                goto exit;
+            }
+
             *type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_PROXY;
         }
 

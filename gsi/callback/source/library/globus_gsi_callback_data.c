@@ -49,6 +49,8 @@ globus_gsi_callback_data_init(
 
     memset(*callback_data, (int) NULL, sizeof(globus_i_gsi_callback_data_t));
 
+    (*callback_data)->max_proxy_depth = -1;
+    
     (*callback_data)->cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_EEC;
 
     (*callback_data)->cert_chain = sk_X509_new_null();
