@@ -100,7 +100,7 @@ system("rm -rf ./gpt")==0 or die "Unable to remove gpt directory: $?";
 #
 
 printf("running make distprep...\n");
-system("make -f Makefile.in distprep > /dev/null")==0 or die "Could not run make distprep: $?";
+system("make -f Makefile.in distprep")==0 or die "Could not run make distprep: $?";
 
 chdir("../");
 

@@ -3,6 +3,7 @@
 # uncomment if you run a non bourne compatable shell. Ie. csh
 #SHELL = @SH@
 
+DISTPERL=perl
 AUTORECONF=autoreconf
 
 prefix=@prefix@
@@ -86,11 +87,11 @@ PATHSUBS	= \
 	-D/var/empty=$(PRIVSEP_PATH) \
 	-D/usr/bin:/bin:/usr/sbin:/sbin=@user_path@
 
-FIXPATHSCMD	= $(PERL) $(srcdir)/fixpaths $(PATHSUBS)
+FIXPATHSCMD	= $(DISTPERL) ./fixpaths $(PATHSUBS)
 
 all: $(CONFIGFILES) $(MANPAGES) $(TARGETS)
 
-gpt-all: $(CONFIGFILES) $(MANPAGES) $(TARGETS)
+gpt-all: $(TARGETS)
 
 $(LIBSSH_OBJS): config.h
 $(SSHOBJS): config.h
@@ -185,11 +186,14 @@ veryclean:
 mrproper: distclean
 
 catman-do:
+	mkdir -p ./cat/
+	mkdir -p ./man/
 	@for f in $(MANPAGES_IN) ; do \
-		base=`echo $$f | sed 's/\..*$$//'` ; \
-		echo "$$f -> $$base.0" ; \
-		nroff -mandoc $$f | cat -v | sed -e 's/.\^H//g' \
-			>$$base.0 ; \
+		echo -n "$$f -> cat.." ; \
+		nroff -mandoc $$f | cat -v | sed -e 's/.\^H//g' > ./cat/$$f ; \
+		echo -n "man.." ; \
+		$(FIXPATHSCMD) $$f | $(DISTPERL) ./mdoc2man.pl > ./man/$$f ; \
+		echo "done." ; \
 	done
 
 distprep: catman-do
@@ -296,19 +300,21 @@ install-files: scard-install
 #
 # Upon a new OpenSSH merge into the repository:
 #
-#   o Set up new $(MANPAGES).
+#   o Set up new catman-do.
+#   o Set up new gpt-all.
+#     o Remove $(MANPAGES) and $(CONFIGFILES) from target list.
 #   o Set up new gpt-install-files.
 #     o Destroy current/old gpt-install-files target.
 #     o Copy install-files target into gpt-install-files target.
-#     o Change the following items in gpt-install-files:
-#       o Remove the following sections:
-#         o Copying the configuration files.
-#         o Copying the configuration file man pages.
-#         o The scard-install target.
-#         o Creating and chmod'ing PRIVSEP_PATH.
-#       o Removing the conditionals around ssh-rand-helper*.
-#       o Install docs into $GL/doc/gsi_openssh.
-#       o Add links for gsi tools (gsissh -> ssh, etc).
+#     o Remove the following sections:
+#       o Copying the configuration files.
+#       o Copying the configuration file man pages.
+#       o The scard-install target.
+#       o Creating and chmod'ing PRIVSEP_PATH.
+#     o Removing the conditionals around ssh-rand-helper*.
+#     o Install docs into $GL/doc/gsi_openssh.
+#     o Add links for gsi tools (gsissh -> ssh, etc).
+#     o Refer to the new man and cat pages.
 #
 
 gpt-install-files:
@@ -331,11 +337,27 @@ gpt-install-files:
 	$(INSTALL) -m 4711 -s ssh-keysign $(DESTDIR)$(SSH_KEYSIGN)
 	@NO_SFTP@$(INSTALL) -m 0755 -s sftp $(DESTDIR)$(bindir)/sftp
 	@NO_SFTP@$(INSTALL) -m 0755 -s sftp-server $(DESTDIR)$(SFTP_SERVER)
-	$(INSTALL) -m 644 ssh.1.out $(DESTDIR)$(mandir)/$(mansubdir)1/ssh.1
-	$(INSTALL) -m 644 scp.1.out $(DESTDIR)$(mandir)/$(mansubdir)1/scp.1
-	$(INSTALL) -m 644 ssh-add.1.out $(DESTDIR)$(mandir)/$(mansubdir)1/ssh-add.1
-	$(INSTALL) -m 644 ssh-agent.1.out $(DESTDIR)$(mandir)/$(mansubdir)1/ssh-agent.1
-	$(INSTALL) -m 644 ssh-keygen.1.out $(DESTDIR)$(mandir)/$(mansubdir)1/ssh-keygen.1
+	$(INSTALL) -m 644 man/ssh.1 $(DESTDIR)$(mandir)/$(mansubdir)1/ssh.1
+	$(INSTALL) -m 644 man/scp.1 $(DESTDIR)$(mandir)/$(mansubdir)1/scp.1
+	$(INSTALL) -m 644 man/ssh-add.1 $(DESTDIR)$(mandir)/$(mansubdir)1/ssh-add.1
+	$(INSTALL) -m 644 man/ssh-agent.1 $(DESTDIR)$(mandir)/$(mansubdir)1/ssh-agent.1
+	$(INSTALL) -m 644 man/ssh-keygen.1 $(DESTDIR)$(mandir)/$(mansubdir)1/ssh-keygen.1
+	$(INSTALL) -m 644 man/ssh-keyscan.1 $(DESTDIR)$(mandir)/$(mansubdir)1/ssh-keyscan.1
+	$(INSTALL) -m 644 man/sshd_config.5 $(DESTDIR)$(mandir)/$(mansubdir)5/sshd_config.5
+	$(INSTALL) -m 644 man/ssh_config.5 $(DESTDIR)$(mandir)/$(mansubdir)5/ssh_config.5
+	$(INSTALL) -m 644 man/sshd.8 $(DESTDIR)$(mandir)/$(mansubdir)8/sshd.8
+	$(INSTALL) -m 644 man/ssh-rand-helper.8 $(DESTDIR)$(mandir)/$(mansubdir)8/ssh-rand-helper.8 ; \
+	@NO_SFTP@$(INSTALL) -m 644 man/sftp.1 $(DESTDIR)$(mandir)/$(mansubdir)1/sftp.1
+	@NO_SFTP@$(INSTALL) -m 644 man/sftp-server.8 $(DESTDIR)$(mandir)/$(mansubdir)8/sftp-server.8
+	-rm -f $(DESTDIR)man/$(man)1/slogin.1
+	ln -s $(DESTDIR)/man/$(man)1/ssh.1 $(DESTDIR)man/man1/slogin.1
+
+	$(INSTALL) -m 644 ssh-keysign.8.out $(DESTDIR)$(mandir)/$(mansubdir)8/ssh-keysign.8
+	$(INSTALL) -m 644 man/ssh.1 $(DESTDIR)$(mandir)/$(mansubdir)1/ssh.1
+	$(INSTALL) -m 644 man/scp.1 $(DESTDIR)$(mandir)/$(mansubdir)1/scp.1
+	$(INSTALL) -m 644 ssh-add.1 $(DESTDIR)$(mandir)/$(mansubdir)1/ssh-add.1
+	$(INSTALL) -m 644 ssh-agent.1 $(DESTDIR)$(mandir)/$(mansubdir)1/ssh-agent.1
+	$(INSTALL) -m 644 ssh-keygen.1 $(DESTDIR)$(mandir)/$(mansubdir)1/ssh-keygen.1
 	$(INSTALL) -m 644 ssh-keyscan.1.out $(DESTDIR)$(mandir)/$(mansubdir)1/ssh-keyscan.1
 	$(INSTALL) -m 644 sshd_config.5.out $(DESTDIR)$(mandir)/$(mansubdir)5/sshd_config.5
 	$(INSTALL) -m 644 ssh_config.5.out $(DESTDIR)$(mandir)/$(mansubdir)5/ssh_config.5
