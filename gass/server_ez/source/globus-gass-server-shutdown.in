@@ -1,0 +1,15 @@
+#! @SH@
+
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+bindir=@bindir@
+
+progname=`@ECHO@ "$0" | @SED@ -e 's|.*/||'`
+
+if [ "$#" -ne 1 ]; then
+   @ECHO@ "$progname server_url"
+   exit 1
+fi
+
+$bindir/globus-gass-put /dev/null "$1"/dev/globus_gass_client_shutdown > /dev/null 2>&1
+
