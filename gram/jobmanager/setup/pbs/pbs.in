@@ -258,7 +258,7 @@ EOF
 	}
     }
 
-    print JOB "#PBS -v " .  join(',', @new_env);
+    print JOB "$rsh_env";
 
     print JOB "\n#Change to directory requested by user\n";
     print JOB 'cd ' . $description->directory() . "\n";
@@ -290,17 +290,12 @@ EOF
     {
 	$args = '';
     }
-    if($description->jobtype() eq 'mpi')
+
+    if ($description->executable() =~ m|^[^/]|)
     {
-	print JOB "$mpirun -np ", $description->count(), ' ';
-	if($cluster)
-	{
-	    print JOB " -machinefile \$PBS_NODEFILE ";
-	}
-	print JOB $description->executable(), " $args < ",
-	    $description->stdin(), "\n";
+        $description->add('executable', './' . $description->executable());
     }
-    elsif($description->jobtype() eq 'multiple' && !$cluster)
+    if($description->jobtype() eq 'multiple' && !$cluster)
     {
 	for(my $i = 0; $i < $description->count(); $i++)
 	{
@@ -309,7 +304,8 @@ EOF
 	}
 	print JOB "wait\n";
     }
-    elsif($description->jobtype() eq 'multiple')
+    elsif($description->jobtype() eq 'mpi' ||
+            $description->jobtype() eq 'multiple')
     {
 	my $count = $description->count;
 	my $cmd_script_name ;
@@ -334,21 +330,36 @@ EOF
             return Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED();
 	}
 
-	print JOB <<"EOF";
-	hosts=\`cat \$PBS_NODEFILE\`;
-	counter=0
-	while test \$counter -lt $count; do
-	    for host in \$hosts; do
-		if test \$counter -lt $count; then
-		    $remote_shell \$host "/bin/sh $cmd_script_name" < $stdin &
-		    counter=\`expr \$counter + 1\`
-		else
-		    break
-		fi
-	    done
-	done
-	wait
+        if ($description->jobtype() eq "mpi")
+        {
+            print JOB "$mpirun -npp " . $description->count();
+
+            if ($cluster)
+            {
+                print JOB ' -machinefile $PBS_NODEFILE';
+            }
+            print JOB " $cmd_script_name < " .  $description->stdin() . "\n";
+        }
+        else
+        {
+            print JOB <<"EOF";
+
+hosts=\`cat \$PBS_NODEFILE\`;
+counter=0
+while test \$counter -lt $count; do
+    for host in \$hosts; do
+        if test \$counter -lt $count; then
+            $remote_shell \$host "/bin/sh $cmd_script_name" < $stdin &
+            counter=\`expr \$counter + 1\`
+        else
+            break
+        fi
+    done
+done
+wait
+
 EOF
+        }
     }
     else
     {
