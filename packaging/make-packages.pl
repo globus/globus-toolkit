@@ -462,8 +462,9 @@ sub populate_bundle_build_list()
 		print "Adding user requested bundle of $user_bundle\n";
 		push @bundle_build_list, $user_bundle;
 		print "\n";
+	    } else {
+                die "Unknown bundle requested: $user_bundle\n";
 	    }
-	    # TODO: else die with error?
 	}
     } else {
 	# build all bundles.
