@@ -1,63 +1,69 @@
-allow authentication to multiple usernames
-if user :globus_mapping: pick default gridmapping (globus_gss_assist_gridmap)
-if user bob do globus_gss_assist_userok on that user/dn combo
+This is the current list of things outstanding for the 4.0 release.
+** denotes must happen before feature freeze
+XX denotes unlikely that this will be in 4.0
 
+auth:
+** allow authentication to multiple usernames
+    if user :globus_mapping: pick default gridmapping (globus_gss_assist_gridmap)
+    if user bob do globus_gss_assist_userok on that user/dn combo
+-- we need to authorize to cas (globus_gss_assist_map_and_authorize?), how does
+    this affect above?
+XX authz instrumentation
 
-fix MLST response code to 250, if easy enough pathname 
+protocol:
+-- correct FEAT response?
+-- reply codes - verify.
+    fix MLST response code to 250, if easy enough pathname 
     in mlst should be the same that was requested
-disable perf markers in mode S
+** add symlink_target to stat buffer, server-lib stuff to display it in mlsx
+-- disable perf markers in mode S (if we must)
+** define reply errors properly for going over ipc
 
-errors
--- push back errors from remote dsi properly
+signal handling:
+** SIGINT needs to handle data-node shutdown
 
-threads
--- quick test that stuff works
+striping:
+-- verify eofc handling, should move out of remote into data.c
+** configuration of layout/buffer sizes/1-1,ALL-ALL, etc
+** verify _get_read_range()
+** file trunc issue
+    send first _ipc_request_recv() with trunc set, wait for BEGIN,
+    then send the rest with no trunc.    
+
+ipc:
+** encryption
+XX connect backwards
+** use handle_tables for psuedo-passing void *
+
+logging:
+-- instrument code
+-- verify output format
+-- specify log format by configuration
+-- configuration to choose logging module
+-- syslog module for globus_logging
+-- produce netlogger output based on perf marker info ( -Z option in wu )
+
+data:
+** dynamic adjust listening parallelism
+    query data channel for number of streams, use that as reply to 
+    _get_optimal_concurrency
+-- sync() before each transfer stat update (by option)
+
+dsi:
+** load dsi speficied in module_name on ERET/ESTO 
+
+general:
+-- verify on 64bit machines (after void * changes)
+-- instrument any remaining configuration options
+
+threads:
+-- quick test that stuff works -- not really looking for 100% right now
 -- walk through locks
 
-test hard core
--- client lib test suite
--- memory leaks
-
-EOFC
--- broadcast
--- "layout" type thoughts
--- stripe server testing
-
--- add symlink_target to stat buffer, server-lib stuff to display it in mlsx
-
-IPC 
--- security
--- connect backwards
-
-Portability issues
--- stop int<->void* conversions
-
-Protocol
--- verify messages
-
-striping
-netlogger output
-
-sync(2)
-
-Other Stuff
-------------
-file not trunc on striped puts, since they all look like partials, also
-    truncating on pasv stor... who truncates, and have to deal with
-    data coming before the 150 response
-
-clean up rest of stuff from pre-dsi change (old attrs that just copy to new
-    info structs, etc)
-
--produce netlogger output (based on event timer i guess?... -Z option in wu)
--global config opts can be non-overridable, or forced to a range
--sync(2) before each transfer stat update (by option only, unless it doesn't affect perf)
+cleanup:
+-- verify test suite
+** clean majority of memory leaks
 
 
-VERIFY THESE:
-Signal handlers
--- SIGINT, SIGHUP
 
-Verify Proper protocol responses
--- FEAT
--- reply codes
+
