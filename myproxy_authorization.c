@@ -7,7 +7,6 @@
 
 /* cert: *.h */
 #include "ssl_utils.h"
-#include "gsi_proxy.h"
 
 #include "myproxy_authorization.h"
 #include "myproxy_creds.h"
@@ -89,39 +88,6 @@ struct authorization_func authorization_passwd = {
  * Implementation of certificate-based authorization
  */
 
-/* got from ssl_utils.c */
-static void
-ssl_error_to_verror()
-{
-    while (ERR_peek_error() != 0)
-    {
-	unsigned long error;
-	ERR_STATE *error_state;
-	const char *error_data;
-	int error_number;
-	
-	/* Find data for last error */
-	error_state = ERR_get_state();
-
-	error_number = (error_state->bottom + 1) % ERR_NUM_ERRORS;
-	
-	error_data = error_state->err_data[error_number];
-
-	/* Pop error off of stack */
-	error = ERR_get_error();
-	
-	/* Now add to verror state */
-	verror_put_string(ERR_error_string(error, NULL));
-
-	if (error_data != NULL)
-	{
-	    verror_put_string(error_data);
-	}
-    }
-    
-    ERR_clear_error();
-}
-	  
 #define CHALLENGE_SIZE  16
 
 char * auth_cert_create_server_data(void)
@@ -261,7 +227,7 @@ int auth_cert_check_client (authorization_data_t *auth_data,
    if (ssl_verify_gsi_chain(chain, &cert) == SSL_ERROR)
       goto end;
 
-   proxy_get_base_name(X509_get_subject_name(cert));
+   globus_gsi_cert_utils_get_base_name(X509_get_subject_name(cert));
    authorization_subject = X509_NAME_oneline(X509_get_subject_name(cert), NULL, 0);
    return_status = (strcmp(authorization_subject, creds->owner_name) == 0);
    
