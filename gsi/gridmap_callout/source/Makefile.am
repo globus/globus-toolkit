@@ -16,7 +16,7 @@ libglobus_gridmap_callout___GLOBUS_FLAVOR_NAME__la_LIBADD = \
 libglobus_gridmap_callout___GLOBUS_FLAVOR_NAME__la_SOURCES = \
 	globus_gridmap_callout.c
 libglobus_gridmap_callout___GLOBUS_FLAVOR_NAME__la_LDFLAGS = \
-	@GPT_LDFLAGS@ -module -rpath $(GLOBUS_LOCATION)
+	@GPT_LDFLAGS@ -module -rpath $(libdir)
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

@@ -3102,7 +3102,7 @@ globus_gsi_sysconfig_get_authz_conf_filename_win32(
 
         if(result != GLOBUS_SUCCESS)
         {
-            if(!GLOBUS_GSI_SYSCONFIG_FILE_DOES_NOT_EXIST(result))
+            if(GLOBUS_GSI_SYSCONFIG_FILE_DOES_NOT_EXIST(result))
             {
                 free(authz_filename);
                 authz_filename = NULL;
@@ -3138,7 +3138,7 @@ globus_gsi_sysconfig_get_authz_conf_filename_win32(
                 
                 if(result != GLOBUS_SUCCESS)
                 {
-                    if(!GLOBUS_GSI_SYSCONFIG_FILE_DOES_NOT_EXIST(result))
+                    if(GLOBUS_GSI_SYSCONFIG_FILE_DOES_NOT_EXIST(result))
                     {
                         free(authz_filename);
                         authz_filename = NULL;
@@ -3282,7 +3282,7 @@ globus_gsi_sysconfig_get_authz_lib_conf_filename_win32(
 
         if(result != GLOBUS_SUCCESS)
         {
-            if(!GLOBUS_GSI_SYSCONFIG_FILE_DOES_NOT_EXIST(result))
+            if(GLOBUS_GSI_SYSCONFIG_FILE_DOES_NOT_EXIST(result))
             {
                 free(authz_lib_filename);
                 authz_lib_filename = NULL;
@@ -3321,7 +3321,7 @@ globus_gsi_sysconfig_get_authz_lib_conf_filename_win32(
                 
                 if(result != GLOBUS_SUCCESS)
                 {
-                    if(!GLOBUS_GSI_SYSCONFIG_FILE_DOES_NOT_EXIST(result))
+                    if(GLOBUS_GSI_SYSCONFIG_FILE_DOES_NOT_EXIST(result))
                     {
                         free(authz_lib_filename);
                         authz_lib_filename = NULL;
@@ -3470,7 +3470,7 @@ globus_gsi_sysconfig_get_gaa_conf_filename_win32(
 
         if(result != GLOBUS_SUCCESS)
         {
-            if(!GLOBUS_GSI_SYSCONFIG_FILE_DOES_NOT_EXIST(result))
+            if(GLOBUS_GSI_SYSCONFIG_FILE_DOES_NOT_EXIST(result))
             {
                 free(gaa_filename);
                 gaa_filename = NULL;
@@ -3506,7 +3506,7 @@ globus_gsi_sysconfig_get_gaa_conf_filename_win32(
                 
                 if(result != GLOBUS_SUCCESS)
                 {
-                    if(!GLOBUS_GSI_SYSCONFIG_FILE_DOES_NOT_EXIST(result))
+                    if(GLOBUS_GSI_SYSCONFIG_FILE_DOES_NOT_EXIST(result))
                     {
                         free(gaa_filename);
                         gaa_filename = NULL;
@@ -6608,7 +6608,7 @@ globus_gsi_sysconfig_get_authz_conf_filename_unix(
 
         if(result != GLOBUS_SUCCESS)
         {
-            if(!GLOBUS_GSI_SYSCONFIG_FILE_DOES_NOT_EXIST(result))
+            if(GLOBUS_GSI_SYSCONFIG_FILE_DOES_NOT_EXIST(result))
             {
                 free(authz_filename);
                 authz_filename = NULL;
@@ -6644,7 +6644,7 @@ globus_gsi_sysconfig_get_authz_conf_filename_unix(
                 
                 if(result != GLOBUS_SUCCESS)
                 {
-                    if(!GLOBUS_GSI_SYSCONFIG_FILE_DOES_NOT_EXIST(result))
+                    if(GLOBUS_GSI_SYSCONFIG_FILE_DOES_NOT_EXIST(result))
                     {
                         free(authz_filename);
                         authz_filename = NULL;
@@ -6789,7 +6789,7 @@ globus_gsi_sysconfig_get_authz_lib_conf_filename_unix(
 
         if(result != GLOBUS_SUCCESS)
         {
-            if(!GLOBUS_GSI_SYSCONFIG_FILE_DOES_NOT_EXIST(result))
+            if(GLOBUS_GSI_SYSCONFIG_FILE_DOES_NOT_EXIST(result))
             {
                 free(authz_lib_filename);
                 authz_lib_filename = NULL;
@@ -6827,7 +6827,7 @@ globus_gsi_sysconfig_get_authz_lib_conf_filename_unix(
                 
                 if(result != GLOBUS_SUCCESS)
                 {
-                    if(!GLOBUS_GSI_SYSCONFIG_FILE_DOES_NOT_EXIST(result))
+                    if(GLOBUS_GSI_SYSCONFIG_FILE_DOES_NOT_EXIST(result))
                     {
                         free(authz_lib_filename);
                         authz_lib_filename = NULL;
@@ -6972,7 +6972,7 @@ globus_gsi_sysconfig_get_gaa_conf_filename_unix(
 
         if(result != GLOBUS_SUCCESS)
         {
-            if(!GLOBUS_GSI_SYSCONFIG_FILE_DOES_NOT_EXIST(result))
+            if(GLOBUS_GSI_SYSCONFIG_FILE_DOES_NOT_EXIST(result))
             {
                 free(gaa_filename);
                 gaa_filename = NULL;
@@ -7008,7 +7008,7 @@ globus_gsi_sysconfig_get_gaa_conf_filename_unix(
                 
                 if(result != GLOBUS_SUCCESS)
                 {
-                    if(!GLOBUS_GSI_SYSCONFIG_FILE_DOES_NOT_EXIST(result))
+                    if(GLOBUS_GSI_SYSCONFIG_FILE_DOES_NOT_EXIST(result))
                     {
                         free(gaa_filename);
                         gaa_filename = NULL;
