@@ -1233,7 +1233,7 @@ globus_gsi_proxy_handle_set_proxy_cert_info(
  *
  * @param handle
  *        The proxy handle containing the type of signing algorithm used
- * @param time_valid
+ * @param signing_algorithm
  *        signing algorithm of the proxy handle
  * 
  * @result
@@ -1274,7 +1274,7 @@ globus_gsi_proxy_handle_get_signing_algorithm(
  *
  * @param handle
  *        The proxy handle to get the key bits of
- * @param time_valid
+ * @param key_bits
  *        key bits of the proxy handle
  * 
  * @result
