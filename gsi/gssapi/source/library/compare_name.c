@@ -61,7 +61,6 @@ GSS_CALLCONV gss_compare_name(
 
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
-    *minor_status = (OM_uint32) GLOBUS_FAILURE;
     major_status = GSS_S_COMPLETE;
     *name_equal = GSS_NAMES_NOT_EQUAL;
 
@@ -76,7 +75,6 @@ GSS_CALLCONV gss_compare_name(
         (name1 == GSS_C_NO_NAME || name2 == GSS_C_NO_NAME))
     {
         *name_equal = GSS_NAMES_NOT_EQUAL;
-        major_status = GSS_S_COMPLETE;
         goto exit;
     }
 

@@ -75,7 +75,7 @@ globus_i_gsi_gss_copy_name_to_name(
     if (output_name == NULL)
     {
         GLOBUS_GSI_GSSAPI_MALLOC_ERROR(minor_status);
-        major_status = GSS_S_FAILURE;
+        major_status = GSS_S_BAD_NAME;
         goto exit;
     }
     
@@ -88,7 +88,7 @@ globus_i_gsi_gss_copy_name_to_name(
                 minor_status,
                 GLOBUS_GSI_GSSAPI_ERROR_BAD_NAME,
                 ("Couldn't copy X509_NAME struct"));
-            major_status = GSS_S_FAILURE;
+            major_status = GSS_S_BAD_NAME;
             goto exit;
         }
     }

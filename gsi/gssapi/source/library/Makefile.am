@@ -6,6 +6,7 @@ Sources = \
 	compare_name.c \
 	delete_sec_context.c \
 	display_name.c \
+	duplicate_name.c \
 	display_status.c \
 	export_name.c \
 	export_sec_context.c \

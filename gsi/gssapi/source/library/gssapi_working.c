@@ -341,8 +341,10 @@ OM_uint32 GSS_CALLCONV gss_canonicalize_name
  gss_name_t *              output_name 
  ) { return GSS_S_FAILURE ; }
 
+/*
 OM_uint32 GSS_CALLCONV gss_duplicate_name
 (OM_uint32 *              minor_status ,
  const gss_name_t         src_name ,
  gss_name_t *              dest_name 
  ) { return GSS_S_FAILURE ; }
+*/
