@@ -1235,7 +1235,7 @@ globus_gsi_sysconfig_make_absolute_path_for_filename_win32(
 
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_ENTER;
 
-    if(filename[0] != '\\')
+    if(filename[0] != '\\' && !(filename[1] == ':' && filename[2] == '\\'))
     {
         result = GLOBUS_GSI_SYSCONFIG_GET_CURRENT_WORKING_DIR(&cwd);
         if(result != GLOBUS_SUCCESS)
