@@ -5111,6 +5111,7 @@ globus_l_jm_http_query_handler(
     char *                               url;
     int                                  mask;
     int                                  status;
+    int                                  failure_code;
     int                                  rc;
     globus_bool_t                        done;
     char *                               after_signal;
@@ -5177,7 +5178,8 @@ globus_l_jm_http_query_handler(
 	     * NOTE: old code set state to FAILED. Shouldn't it be DONE?
 	     */
 	    status = request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
-	    request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_USER_CANCELLED;
+	    failure_code = request->failure_code =
+		GLOBUS_GRAM_PROTOCOL_ERROR_USER_CANCELLED;
     	    /*
 	     * wake up the timed() wait in the main routine
 	     */
@@ -5191,6 +5193,7 @@ globus_l_jm_http_query_handler(
     {
 	GRAM_LOCK;
 	status = request->status;
+	failure_code = request->failure_code;
 	GRAM_UNLOCK;
     }
     else if (strcmp(query,"signal")==0)
@@ -5224,6 +5227,8 @@ globus_l_jm_http_query_handler(
 		    }
 		    GRAM_LOCK;
 		    rc = globus_jobmanager_request_signal(request);
+		    status = request->status;
+		    failure_code = request->failure_code;
 		    GRAM_UNLOCK;
 		} else {
 		    rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
@@ -5240,6 +5245,8 @@ globus_l_jm_http_query_handler(
 			graml_jm_commit_request = GLOBUS_TRUE;
 			globus_cond_signal(&graml_api_cond);
 		    }
+		    status = request->status;
+		    failure_code = request->failure_code;
 		    GRAM_UNLOCK;
 		}
 		break;
@@ -5255,6 +5262,8 @@ globus_l_jm_http_query_handler(
 			graml_jm_commit_end = GLOBUS_TRUE;
 			globus_cond_signal(&graml_api_cond);
 		    }
+		    status = request->status;
+		    failure_code = request->failure_code;
 		    GRAM_UNLOCK;
 		}
 		break;
@@ -5264,6 +5273,8 @@ globus_l_jm_http_query_handler(
 		    GRAM_LOCK;
 		    graml_commit_time_extend += atoi(after_signal);
 		    globus_cond_signal(&graml_api_cond);
+		    status = request->status;
+		    failure_code = request->failure_code;
 		    GRAM_UNLOCK;
 		} else {
 		    rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
@@ -5278,6 +5289,8 @@ globus_l_jm_http_query_handler(
 		{
 		    GRAM_LOCK;
 		    rc = globus_l_jm_handle_stdio_update( after_signal );
+		    status = request->status;
+		    failure_code = request->failure_code;
 		    GRAM_UNLOCK;
 		}
 		else
@@ -5297,6 +5310,8 @@ globus_l_jm_http_query_handler(
 			!globus_l_gram_merged_stdio) {
 			rc = GLOBUS_GRAM_PROTOCOL_ERROR_STDIO_SIZE;
 		    }
+		    status = request->status;
+		    failure_code = request->failure_code;
 		    GRAM_UNLOCK;
 		} else {
 		    rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
@@ -5308,15 +5323,12 @@ globus_l_jm_http_query_handler(
 		graml_jm_stop = GLOBUS_TRUE;
 		request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_JM_STOPPED;
 		globus_cond_signal(&graml_api_cond);
+		status = request->status;
+		failure_code = request->failure_code;
 		GRAM_UNLOCK;
 		break;
 	    default:
 		rc = GLOBUS_GRAM_PROTOCOL_ERROR_UNKNOWN_SIGNAL_TYPE;
-	    }
-
-	    if (rc == GLOBUS_SUCCESS)
-	    {
-		status = request->status;
 	    }
 	}
     }
@@ -5343,6 +5355,7 @@ globus_l_jm_http_query_handler(
 		    &globus_l_gram_client_contacts,
 		    (void *) callback);
 	        status = request->status;
+		failure_code = request->failure_code;
 	        GRAM_UNLOCK;
 
 	        if (rc != GLOBUS_SUCCESS)
@@ -5386,6 +5399,7 @@ globus_l_jm_http_query_handler(
 		    tmp_list = next_list;
 	        }
 	        status = request->status;
+		failure_code = request->failure_code;
 	        GRAM_UNLOCK;
 	    }
 	}
@@ -5398,7 +5412,20 @@ globus_l_jm_http_query_handler(
 globus_l_jm_http_query_send_reply:
 
     if (rc != GLOBUS_SUCCESS)
+    {
 	status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
+	failure_code = 0;
+    }
+    else if ( status != GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED )
+    {
+	/* It is possible for the job to have a non-zero failure code and
+	 * not have a status of FAILED (in the case where the jobmanager is
+	 * about to exit, but not because of a job-related failure: TTL
+	 * expiration or stop signal). In this case, suppress the failure
+	 * code
+	 */
+	failure_code = 0;
+    }
 
     globus_jobmanager_log( request->jobmanager_log_fp,
 		   "JM : reply: (status=%d failure code=%d (%s))\n",
@@ -5409,8 +5436,7 @@ globus_l_jm_http_query_send_reply:
 	rc = globus_gram_protocol_pack_status_reply(
 	    status,
 	    rc,
-	    request->status == GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED &&
-	        rc == GLOBUS_SUCCESS ? request->failure_code : 0,
+	    failure_code,
 	    &reply,
 	    &replysize );
     }
