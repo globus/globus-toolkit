@@ -94,6 +94,23 @@
         globus_libc_free(_tmp_str_); \
     }
 
+#define GLOBUS_GSI_GSSAPI_ERRNO_ERROR_RESULT(_MIN_RESULT_, \
+                                               _ERRORTYPE_, _ERRORSTR_) \
+    { \
+        char *                          _tmp_str_ = \
+             globus_gsi_cert_utils_create_string _ERRORSTR_; \
+        *_MIN_RESULT_ = (OM_uint32) globus_error_put( \
+            globus_error_wrap_errno_error( \
+                GLOBUS_GSI_GSSAPI_MODULE, \
+                errno, \
+                _ERRORTYPE_, \
+                "%s:%d: %s: %s", \
+                __FILE__, __LINE__, _function_name_, \
+                _tmp_str_)); \
+        globus_libc_free(_tmp_str_); \
+    }
+
+
 /* DEBUG MACROS */
 
 extern int                              globus_i_gsi_gssapi_debug_level;

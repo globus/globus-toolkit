@@ -55,7 +55,8 @@ globus_l_gsi_gssapi_error_strings[GLOBUS_GSI_GSSAPI_ERROR_LAST] =
 /* 35 */  "Error with buffer",
 /* 36 */  "Error getting peer credential",
 /* 37 */  "Error unknown option",
-/* 38 */  "Error creating error object"
+/* 38 */  "Error creating error object",
+/* 39 */  "Host lookup failed"
 };
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
