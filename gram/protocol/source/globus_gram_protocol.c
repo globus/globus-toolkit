@@ -568,7 +568,7 @@ globus_l_gram_http_read_callback( void *                 read_t,
     globus_size_t		 payload_length;
     int				 rc = GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED;
 
-    verbose(notice("read_callback : handle=%d, just read %d, total=%d rc=%d\n",
+    verbose(notice("read_callback : handle=%d nbytes=%d total=%d rc=%d\n",
 		   handle->fd, nbytes, status->n_read, result));
 
     /* Error doing read */
@@ -579,6 +579,9 @@ globus_l_gram_http_read_callback( void *                 read_t,
     /* Reading the header information */
     else if (! status->got_header)
     {
+	if (status->n_read==0 && (char)*buf == '0')
+	    goto register_read_again;
+
 	status->n_read += nbytes;
 	status->buf[status->n_read] = '\0';
 
@@ -621,6 +624,7 @@ globus_l_gram_http_read_callback( void *                 read_t,
 	    status->bufsize = status->n_read + chunk + 1;
 	}
 
+    register_read_again:
 	res = globus_io_register_read( handle,
 				       status->buf + status->n_read,
 				       chunk,
@@ -644,6 +648,7 @@ globus_l_gram_http_read_callback( void *                 read_t,
 
 	globus_io_handle_set_user_pointer( handle,
 					   status->user_pointer );
+
 	(status->callback_func)( status->callback_arg,
 				 handle,
 				 status->buf,
@@ -653,7 +658,7 @@ globus_l_gram_http_read_callback( void *                 read_t,
 	return;
     }
 
- error_exit:
+error_exit:
     my_free(status->buf);
     globus_io_register_close( handle,
 			      globus_gram_http_close_callback,
@@ -1391,7 +1396,7 @@ globus_l_gram_http_unquote_string(
 	    else if (*in == '\\')   /* escaped characeter, do next instead */
 		*out++ = *(++in);
 	    else 
-		*out++ = *in++;
+		*out++ = *in;
 	} 
 	else   /* no quote */
 	{
@@ -1404,9 +1409,10 @@ globus_l_gram_http_unquote_string(
 		}
 	    }
 	    /* TODO: Recognize % HEX HEX here. */
-	    *out++ = *in++;
+	    *out++ = *in;
 	}
-    }
+	++in;
+    }   /* while */
 
     if (in_quote)
 	return GLOBUS_GRAM_CLIENT_ERROR_HTTP_UNPACK_FAILED;
@@ -1431,7 +1437,7 @@ globus_gram_http_pack_job_request(
 			strlen(GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE) +
 			strlen(GLOBUS_GRAM_HTTP_PACK_JOB_STATE_MASK_LINE) +
 			strlen(GLOBUS_GRAM_HTTP_PACK_CALLBACK_URL_LINE) +
-			((callback_url) ? strlen(callback_url) : 0)
+			((callback_url) ? strlen(callback_url) : 2)
 			+ 2*strlen(rsl) + 16);
 
     len = globus_libc_sprintf((char *) *query, 
@@ -1441,7 +1447,7 @@ globus_gram_http_pack_job_request(
 			      "rsl: ",
 			      GLOBUS_GRAM_PROTOCOL_VERSION,
 			      job_state_mask,
-			      (callback_url) ? callback_url : "" );
+			      (callback_url) ? callback_url : "\"\"" );
     
     len += globus_l_gram_http_quote_string( rsl,
 					    (*query)+len );
@@ -1479,13 +1485,16 @@ globus_gram_http_unpack_job_request(
     *callback_url = my_malloc(char,(p-q));
     *description  = my_malloc(char,rsl_count);
 
-    if (sscanf( q,
-		GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE
-		GLOBUS_GRAM_HTTP_PACK_JOB_STATE_MASK_LINE
-		GLOBUS_GRAM_HTTP_PACK_CALLBACK_URL_LINE,
-		&protocol_version,
-		job_state_mask,
-		*callback_url ) != 3)
+    globus_libc_lock();
+    rc = sscanf( q,
+		 GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE
+		 GLOBUS_GRAM_HTTP_PACK_JOB_STATE_MASK_LINE
+		 GLOBUS_GRAM_HTTP_PACK_CALLBACK_URL_LINE,
+		 &protocol_version,
+		 job_state_mask,
+		 *callback_url );
+    globus_libc_unlock();
+    if (rc != 3)
     {
 	rc = GLOBUS_GRAM_CLIENT_ERROR_HTTP_UNPACK_FAILED;
 	goto globus_gram_http_unpack_job_request_done;
@@ -1495,9 +1504,15 @@ globus_gram_http_unpack_job_request(
 	rc = GLOBUS_GRAM_CLIENT_ERROR_VERSION_MISMATCH;
 	goto globus_gram_http_unpack_job_request_done;
     }	
+    if (strcmp(*callback_url, "\"\"")==0)
+    {
+	my_free(*callback_url);
+	*callback_url = GLOBUS_NULL;
+    }
+
     rc = globus_l_gram_http_unquote_string(
 	          (globus_byte_t*) p,
-		  rsl_count-5,
+		  rsl_count-3,        /* CR LF + null */
 		  *description );
 
 globus_gram_http_unpack_job_request_done:
@@ -1540,7 +1555,7 @@ globus_gram_http_pack_job_request_reply(
 			     GLOBUS_GRAM_PROTOCOL_VERSION,
 			     status );
 		 
-    *replysize = (globus_size_t)(strlen((char *)reply) + 1);
+    *replysize = (globus_size_t)(strlen((char *) *reply) + 1);
     return GLOBUS_SUCCESS;
 }
 
@@ -1557,8 +1572,6 @@ globus_gram_http_unpack_job_request_reply(
     int      protocol_version;
     char *   p;
 
-    rc = GLOBUS_SUCCESS;
-
     p = strstr((char *)reply, CRLF"job-manager-url:");
     if (p)
     {
@@ -1569,11 +1582,14 @@ globus_gram_http_unpack_job_request_reply(
 	p+=2;  /* crlf */
     }
 
-    if (sscanf( (char *) reply,
-		GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE
-		GLOBUS_GRAM_HTTP_PACK_STATUS_LINE,
-		&protocol_version,
-		status ) != 2 )
+    globus_libc_lock();
+    rc = sscanf( (char *) reply,
+		 GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE
+		 GLOBUS_GRAM_HTTP_PACK_STATUS_LINE,
+		 &protocol_version,
+		 status );
+    globus_libc_unlock();
+    if (rc != 2 )
     {
 	rc = GLOBUS_GRAM_CLIENT_ERROR_HTTP_UNPACK_FAILED;
 	goto globus_gram_http_unpack_job_request_done;
@@ -1585,12 +1601,15 @@ globus_gram_http_unpack_job_request_reply(
     }	
     if (p)
     {
-	if (sscanf( p,
-		    GLOBUS_GRAM_HTTP_PACK_JOB_MANAGER_URL_LINE,
-		    *job_contact ) != 1 )
-	{
+	globus_libc_lock();
+	rc = sscanf( p,
+		     GLOBUS_GRAM_HTTP_PACK_JOB_MANAGER_URL_LINE,
+		     *job_contact );
+	globus_libc_unlock();
+	if (rc != 1)
 	    rc = GLOBUS_GRAM_CLIENT_ERROR_HTTP_UNPACK_FAILED;
-	}
+	else
+	    rc = GLOBUS_SUCCESS;
     }
 
 globus_gram_http_unpack_job_request_done:
@@ -1656,9 +1675,12 @@ globus_gram_http_unpack_status_request(
     *status_request = my_malloc(char, msgsize);
     rc = GLOBUS_SUCCESS;
 
-    if (sscanf( (char *) query,
-		GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE,
-		&protocol_version) != 1 )
+    globus_libc_lock();
+    rc = sscanf( (char *) query,
+		 GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE,
+		 &protocol_version );
+    globus_libc_unlock();
+    if (rc != 1)
     {
 	rc = GLOBUS_GRAM_CLIENT_ERROR_HTTP_UNPACK_FAILED;
 	goto error_exit;
@@ -1720,14 +1742,18 @@ globus_gram_http_unpack_status_reply(
     int *              failure_code )
 {
     int     protocol_version;
-
-    if (sscanf( (char *) reply,
-		GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE
-		GLOBUS_GRAM_HTTP_PACK_STATUS_LINE
-		GLOBUS_GRAM_HTTP_PACK_FAILURE_CODE_LINE,
-		&protocol_version,
-		job_status,
-		failure_code ) != 3)
+    int     rc;
+    
+    globus_libc_unlock();
+    rc = sscanf( (char *) reply,
+		 GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE
+		 GLOBUS_GRAM_HTTP_PACK_STATUS_LINE
+		 GLOBUS_GRAM_HTTP_PACK_FAILURE_CODE_LINE,
+		 &protocol_version,
+		 job_status,
+		 failure_code );
+    globus_libc_unlock();
+    if (rc != 3)
     {
 	return GLOBUS_GRAM_CLIENT_ERROR_HTTP_UNPACK_FAILED;
     }
@@ -1780,18 +1806,22 @@ globus_gram_http_unpack_status_update_message(
     int *                    failure_code )
 {
     int   protocol_version;
+    int   rc;
 
     *job_contact = my_malloc(char, replysize);
 
-    if (sscanf( (char *) *reply,
-		GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE
-		GLOBUS_GRAM_HTTP_PACK_JOB_MANAGER_URL_LINE
-		GLOBUS_GRAM_HTTP_PACK_STATUS_LINE
-		GLOBUS_GRAM_HTTP_PACK_FAILURE_CODE_LINE,
-		&protocol_version,
-		*job_contact,
-		status,
-		failure_code ) != 4)
+    globus_libc_lock();
+    rc = sscanf( (char *) *reply,
+		 GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE
+		 GLOBUS_GRAM_HTTP_PACK_JOB_MANAGER_URL_LINE
+		 GLOBUS_GRAM_HTTP_PACK_STATUS_LINE
+		 GLOBUS_GRAM_HTTP_PACK_FAILURE_CODE_LINE,
+		 &protocol_version,
+		 *job_contact,
+		 status,
+		 failure_code );
+    globus_libc_unlock();
+    if (rc != 4)
     {
         return GLOBUS_GRAM_CLIENT_ERROR_HTTP_UNPACK_FAILED;
     }
@@ -1911,7 +1941,6 @@ globus_l_gram_http_parse_request(
 		 &protocol_version,
 		 payload_length);
     globus_libc_unlock();
-		       
     if(rc != 4)
     {
 	rc = GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED;

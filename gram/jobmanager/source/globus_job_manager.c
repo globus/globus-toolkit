@@ -1400,21 +1400,20 @@ int main(int argc,
     {
         grami_fprintf( request->jobmanager_log_fp,
               "JM: request was successful, sending message to client\n");
-	
     }
     else
     {
         grami_fprintf( request->jobmanager_log_fp,
 		       "JM: request failed with error %d (%s), "
 		       "sending message to client\n",
-		       rc,
-		       globus_gram_client_error_string(rc));
+		       request->failure_code,
+		       globus_gram_client_error_string(request->failure_code));
 	jm_request_failed = GLOBUS_TRUE;
     }
 
     rc = globus_gram_http_pack_job_request_reply(
-	rc,
-	(jm_request_failed) ? GLOBUS_NULL : graml_job_contact,
+	(jm_request_failed) ? request->failure_code : GLOBUS_SUCCESS,
+	(jm_request_failed) ? GLOBUS_NULL           : graml_job_contact,
 	&reply,
 	&replysize);
 
@@ -1440,17 +1439,34 @@ int main(int argc,
     if (reply)
 	globus_libc_free(reply);
 
+    grami_fprintf( request->jobmanager_log_fp,
+		   "JM: before sending to client: rc=%d (%s)\n", 
+		   rc, globus_gram_client_error_string(rc));
+
     if (rc == GLOBUS_SUCCESS)
     {
+        grami_fprintf( request->jobmanager_log_fp,
+              "JM: sending to client:\n");
+	for (i=0; i<sendsize; i++)
+	    grami_fprintf( request->jobmanager_log_fp,
+			   "%c", sendbuf[i] );
+        grami_fprintf( request->jobmanager_log_fp,
+              "-------------\n");
+
 	/* send this reply back down the socket to the client */
-	globus_gss_assist_wrap_send(&minor_status,
-				    context_handle,
-				    (char *) sendbuf,
-				    sendsize,
-				    &token_status,
-				    globus_gss_assist_token_send_fd,
-				    stdout,
-				    request->jobmanager_log_fp);
+	major_status = globus_gss_assist_wrap_send(
+	                       &minor_status,
+			       context_handle,
+			       (char *) sendbuf,
+			       sendsize,
+			       &token_status,
+			       globus_gss_assist_token_send_fd,
+			       stdout,
+			       request->jobmanager_log_fp);
+	
+        grami_fprintf( request->jobmanager_log_fp,
+		       "JM: major=%x minor=%x\n",
+		       major_status, minor_status);
 
 	/* 
 	 * close the connection (both stdin and stdout are connected

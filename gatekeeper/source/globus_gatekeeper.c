@@ -1441,8 +1441,11 @@ static void doit()
         char *proxyfile;
         if ((proxyfile = getenv("X509_USER_DELEG_PROXY")) != NULL)
         {
+/* OL */    notice2(LOG_NOTICE, "delegated proxy in %s", proxyfile);
             chown(proxyfile,service_uid,service_gid);
         }
+	else
+/* OL */    notice(LOG_NOTICE, "no delegated proxy!");
     }
 
 	/* now check for options */
@@ -1943,8 +1946,8 @@ static void
 failure(short failure_type, char * s)
 {
 
-	OM_uint32 minor_status = 0;
-	int		   token_status = 0;
+    OM_uint32        minor_status = 0;
+    int		     token_status = 0;
 
     fprintf(stderr,"Failure: %s\n", s);
     if (logging_syslog)
@@ -1961,38 +1964,41 @@ failure(short failure_type, char * s)
      */
     if (ok_to_send_errmsg)
     {
-      char * response;
+	char * response;
+	
+	switch (failure_type)
+	{
+	case FAILED_AUTHORIZATION: 
+	    response = ("HTTP/1.1 403 Forbidden\015\012"
+			"Connection: close\015\012"
+			"\015\012");
+	    break;
 
-      switch (failure_type) {
-       case FAILED_AUTHORIZATION: 
-	 response = ("HTTP/1.1 403 Forbidden\n"
-		     "Connection: close\n"
-		     "\n");
-	 break;
-       case FAILED_SERVICELOOKUP:
-	 response = ("HTTP/1.1 404 Not Found\n"
-		     "Connection: close\n"
-		     "\n");
-	 break;
-       case FAILED_SERVER:
-       case FAILED_NOLOGIN:
-       case FAILED_AUTHENTICATION:
-       default: 
-	 response = ("HTTP/1.1 404 Not Found\n"
-		     "Connection: close\n"
-		     "\n");
-	 break;
-      }
-      
-      /* don't care about errors here */
-      globus_gss_assist_wrap_send(&minor_status,
-				  context_handle,
-				  response,
-				  strlen(response) + 1,
-				  &token_status,
-				  globus_gss_assist_token_send_fd,
-				  fdout,
-				  logging_usrlog?usrlog_fp:NULL);
+	case FAILED_SERVICELOOKUP:
+	    response = ("HTTP/1.1 404 Not Found\015\012"
+			"Connection: close\015\012"
+			"\015\012");
+	    break;
+
+	case FAILED_SERVER:
+	case FAILED_NOLOGIN:
+	case FAILED_AUTHENTICATION:
+	default: 
+	    response = ("HTTP/1.1 404 Not Found\015\012"
+			"Connection: close\015\012"
+			"\015\012");
+	    break;
+	}
+	
+	/* don't care about errors here */
+	globus_gss_assist_wrap_send(&minor_status,
+				    context_handle,
+				    response,
+				    strlen(response) + 1,
+				    &token_status,
+				    globus_gss_assist_token_send_fd,
+				    fdout,
+				    logging_usrlog?usrlog_fp:NULL);
     }
     if (gatekeeper_test)
     {
