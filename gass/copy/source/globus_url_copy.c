@@ -24,6 +24,15 @@ CVS Information:
 
 #include "globus_gass_copy.h"
 
+/* uncomment to use netlogger */
+/*
+#define USE_NETLOGGER
+*/
+
+#if defined(USE_NETLOGGER)
+#include "logging.h"
+#endif
+
 /******************************************************************************
                                Type definitions
 ******************************************************************************/
@@ -66,16 +75,22 @@ globus_l_globus_url_copy_sigint_handler(int dummy);
 #   define globus_l_globus_url_copy_remove_cancel_poll()
 #endif
 
+static int
+globus_l_globus_get_performance(globus_abstime_t *  time_stop,
+                                void *              user_args);
+
 /*****************************************************************************
                           Module specific variables
 *****************************************************************************/
 
 #define GLOBUS_URL_COPY_ARG_ASCII       1
 #define GLOBUS_URL_COPY_ARG_BINARY      2
+#define GLOBUS_URL_COPY_ARG_VERBOSE     4
 
 const char * oneline_usage
     = "globus-url-copy [-help] [-usage] [-version] [-b | -a] [-bs <size>]\n"
       "                        [-s <subject>] [-ds <subject>] [-ss <subject>]\n"
+      "                        [-tcp-bs <size>]\n"
       "                        sourceURL destURL";
 
 const char * long_usage =
@@ -87,6 +102,9 @@ const char * long_usage =
 "\t      Print the version of this program\n"
 "\t -a | -ascii\n"
 "\t      convert the file to/from netASCII format to/from local file format\n"
+"\t -vb | -verbose \n"
+"\t      during the transfer, display the number of bytes transferred\n"
+"\t      and the transfer rate per second\n"
 "\t -b | -binary\n"
 "\t      Do not apply any conversion to the files. *default*\n"
 "\t -s  <subject> | -subject <subject>\n"
@@ -148,7 +166,7 @@ test_integer( char *   value,
     return res;
 }
 
-enum { arg_a = 1, arg_b, arg_s, arg_ss, arg_ds, arg_tcp_bs, arg_bs,
+enum { arg_a = 1, arg_b, arg_s, arg_vb, arg_ss, arg_ds, arg_tcp_bs, arg_bs,
        arg_num = arg_bs };
 
 #define listname(x) x##_aliases
@@ -171,6 +189,7 @@ globus_args_option_descriptor_t defname(id) = \
 
 flagdef(arg_a, "-a", "-ascii");
 flagdef(arg_b, "-b", "-binary");
+flagdef(arg_vb, "-vb", "-verbose");
 
 oneargdef(arg_bs, "-bs", "-block-size", test_integer, GLOBUS_NULL);
 oneargdef(arg_tcp_bs, "-tcp-bs", "-tcp-buffer-size", test_integer, GLOBUS_NULL);
@@ -183,11 +202,16 @@ static globus_args_option_descriptor_t args_options[arg_num];
 #define setupopt(id) args_options[id-1] = defname(id)
 
 #define globus_url_copy_i_args_init() \
-    setupopt(arg_a); setupopt(arg_b); setupopt(arg_s); setupopt(arg_ss); \
-    setupopt(arg_ds); setupopt(arg_tcp_bs); setupopt(arg_bs);
+    setupopt(arg_a); setupopt(arg_b); setupopt(arg_s); setupopt(arg_vb); \
+    setupopt(arg_ss); setupopt(arg_ds); setupopt(arg_tcp_bs); setupopt(arg_bs);
 
 static globus_bool_t globus_l_globus_url_copy_ctrlc = GLOBUS_FALSE;
 static globus_bool_t globus_l_globus_url_copy_ctrlc_handled = GLOBUS_FALSE;
+static globus_bool_t verbose_flag = GLOBUS_FALSE;
+static double transfer_timestamp = 0;
+#if defined(USE_NETLOGGER)
+static NLhandle   * lp = NULL;
+#endif
 
 /******************************************************************************
 Function: main()
@@ -235,6 +259,7 @@ main(int argc, char **argv)
     int                                nb_to_write;
     int                                nb_written;
     int                                rc=0;
+    double                             start_time = 0;
     my_monitor_t                       monitor;
     globus_gass_copy_handle_t          gass_copy_handle;
     char                               buffer[512];
@@ -293,6 +318,10 @@ main(int argc, char **argv)
             break;
         case arg_b:
             options |= GLOBUS_URL_COPY_ARG_BINARY;
+            break;
+        case arg_vb:
+            verbose_flag = GLOBUS_TRUE;
+            break;
         case arg_bs:
             block_size = atoi(instance->values[0]);
             break;
@@ -550,6 +579,14 @@ main(int argc, char **argv)
     }
 #   endif
 
+#if defined(USE_NETLOGGER)
+    lp = NetLoggerOpen(NL_FILE,
+                       "globus-url-copy",
+                       "/home/smartin/nl_file",
+                       "w",
+                       0);
+#endif
+
     if (source_io_handle)
     {
         result = globus_gass_copy_register_handle_to_url(
@@ -590,12 +627,30 @@ main(int argc, char **argv)
         globus_cond_destroy(&monitor.cond);
         exit(1);
     }
+ 
+    if (verbose_flag)
+    {
+        globus_reltime_t          delay_time;
+        globus_reltime_t          period_time;
+        start_time = globus_libc_wallclock();
+
+        GlobusTimeReltimeSet(delay_time, 0, 0);
+        GlobusTimeReltimeSet(period_time, 0, 1000000);
+        globus_callback_register_periodic(&globus_l_callback_handle,
+                                        &delay_time,
+                                        &period_time,
+                                        globus_l_globus_get_performance,
+                                        &gass_copy_handle,
+                                        GLOBUS_NULL,
+                                        GLOBUS_NULL);
+    }
 
     globus_mutex_lock(&monitor.mutex);
 
     while(!monitor.done)
     {
         globus_cond_wait(&monitor.cond, &monitor.mutex);
+
         if(globus_l_globus_url_copy_ctrlc &&
           (!globus_l_globus_url_copy_ctrlc_handled))
         {
@@ -608,6 +663,17 @@ main(int argc, char **argv)
         }
     }
 
+#if defined(USE_NETLOGGER)
+    NetLoggerClose(lp);
+#endif
+
+    if (verbose_flag)
+    {
+        printf("start time = %f\n", start_time);
+        printf("end time = %f\n", globus_libc_wallclock());
+        printf("transfer time (seconds) = %.3f\n", globus_libc_wallclock() - start_time);
+    }
+
     if (monitor.use_err)
     {
         fprintf(stderr, "error: %s\n",
@@ -615,6 +681,8 @@ main(int argc, char **argv)
         globus_object_free(monitor.err);
     }
     
+    globus_gass_copy_handle_destroy(&gass_copy_handle);
+
     if (!source_io_handle)
         globus_url_destroy(&source_url);
 
@@ -747,3 +815,42 @@ globus_l_globus_url_copy_signal(int signum, RETSIGTYPE (*func)(int))
 
     return sigaction(signum, &act, GLOBUS_NULL);
 } /* globus_l_globus_url_copy_signal() */
+
+/******************************************************************************
+Function: globus_l_globus_get_performance()
+Description:
+Parameters:
+Returns:
+******************************************************************************/
+static int
+globus_l_globus_get_performance(globus_abstime_t *  time_stop,
+                                void *              user_args)
+{
+    double                             current_timestamp;
+    double                             transfer_rate;
+    globus_gass_copy_performance_t     perf_info;
+    globus_gass_copy_handle_t * gass_copy_handle =
+         ( globus_gass_copy_handle_t * ) user_args;
+
+    if (globus_gass_copy_get_performance(gass_copy_handle, &perf_info)
+        == GLOBUS_SUCCESS)
+    {
+        printf("bytes transfered = %lu\n", perf_info.bytes_transfered);
+        printf("bytes transfered per second = %d\n", perf_info.transfer_rate);
+
+#if defined(USE_NETLOGGER)
+        NetLoggerWrite(lp,
+                       "bytes transfered",
+                       "nbytes=%lu",
+                       perf_info.bytes_transfered);
+        NetLoggerWrite(lp,
+                       "transfer rate per second",
+                       "nbytes=%d",
+                       perf_info.transfer_rate);
+#endif
+
+    }
+
+    return GLOBUS_SUCCESS;
+
+} /* globus_l_globus_get_performance() */
