@@ -174,6 +174,7 @@ write_all(const int sock,
 }
 
 
+#if 0 /* Unused function */
 /*
  * read_length()
  *
@@ -197,7 +198,9 @@ read_length(const int sock)
     
     return length;
 }
+#endif /* Unused function */
 
+#if 0 /* Unused function */
 /*
  * write_length()
  *
@@ -216,7 +219,7 @@ write_length(const int sock,
     
     return write_all(sock, (char *) length_array, sizeof(length_array));
 }
-
+#endif /* Unused function */
 
 /*
  * read_token()
@@ -398,7 +401,7 @@ mysetenv(const char *var,
 #endif /* !HAVE_SETENV */
 }
 
-
+#if 0 /* Unused function */
 static void
 myunsetenv(const char *var)
 
@@ -442,6 +445,7 @@ myunsetenv(const char *var)
     *p1 = NULL;
 #endif /* HAVE_UNSETENV */
 }
+#endif /* Unused function */
 
 /*
  * GSI_SOCKET_set_error_from_verror()
