@@ -76,7 +76,10 @@
                         _op);                                               \
         }                                                                   \
         _my_op->in_register = GLOBUS_FALSE;                                 \
-        GlobusXIODebugSetOut(_out_context, _my_context);                    \
+        if(_out_context != NULL)                                            \
+        {                                                                   \
+            GlobusXIODebugSetOut(_out_context, _my_context);                \
+        }                                                                   \
         GlobusXIODebugSetOut(_out_res, _res);                               \
     }                                                                       \
 }                                                                           \
@@ -995,7 +998,7 @@
                                                                             \
     _my_op->target = (_in_target);                                          \
                                                                             \
-    if(_op->entry[_op->ndx].in_register)                                    \
+    if(_my_op->in_register)                                                 \
     {                                                                       \
         globus_callback_space_register_oneshot(                             \
             NULL,                                                           \

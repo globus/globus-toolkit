@@ -835,7 +835,7 @@ static
 int
 globus_l_xio_test_deactivate(void)
 {
-    globus_callback_space_destroy(&globus_l_space);
+    globus_callback_space_destroy(globus_l_space);
     return globus_module_deactivate(GLOBUS_COMMON_MODULE);
 }
 

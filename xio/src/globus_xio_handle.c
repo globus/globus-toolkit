@@ -793,7 +793,6 @@ globus_l_xio_register_readv(
     globus_result_t                             res;
     globus_bool_t                               destroy_handle;
     globus_i_xio_handle_t *                     handle;
-    globus_xio_context_t                        tmp_context;
     GlobusXIOName(globus_l_xio_register_readv);
 
     handle = op->_op_handle;
@@ -1228,6 +1227,8 @@ globus_xio_register_open(
     {
         return res;
     }
+
+    *user_handle = handle;
 
     return GLOBUS_SUCCESS;
 

@@ -113,7 +113,7 @@ typedef struct globus_i_xio_server_entry_s
 /* 
  *  
  */
-typedef struct globus_xio_server_s
+typedef struct globus_i_xio_server_s
 {
     globus_xio_server_state_t                   state;
 
@@ -317,7 +317,7 @@ typedef struct globus_i_xio_op_s
             globus_i_xio_server_t *             server;
             void *                              target;
             globus_bool_t                       in_register;
-            globus_xio_timeout_server_callback_t   timeout_cb;
+            globus_xio_timeout_server_callback_t  timeout_cb;
         } target_s;
     } type_u;
 
@@ -432,7 +432,7 @@ typedef struct globus_i_xio_op_timer_s
 {
     globus_reltime_t                                minimal_delay;
     globus_mutex_t                                  mutex;
-    globus_mutex_t                                  cond;
+    globus_cond_t                                   cond;
     globus_list_t *                                 op_list;
     globus_bool_t                                   running;
     globus_callback_handle_t                        periodic_handle;

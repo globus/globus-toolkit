@@ -73,7 +73,10 @@ globus_xio_driver_pass_open_DEBUG(
                         _op);                                               
         }                                                                   
         _my_op->in_register = GLOBUS_FALSE;                                 
-        GlobusXIODebugSetOut(_out_context, _my_context);                    
+        if(_out_context != NULL)                                            
+        {                                                                   
+            GlobusXIODebugSetOut(_out_context, _my_context);                
+        }                                                                   
         GlobusXIODebugSetOut(_out_res, _res);                               
     }                                                                       
 }                                                                           
@@ -630,7 +633,7 @@ globus_xio_driver_pass_read_DEBUG(
                 _my_context->read_operations--;                             
                 if((_my_context->state == GLOBUS_XIO_HANDLE_STATE_CLOSING ||
                     _my_context->state ==                                   
-                       GLOBUS_XIO_HANDLE_STATE_EOF_DELIVERED_AND_CLOSING) & 
+                       GLOBUS_XIO_HANDLE_STATE_EOF_DELIVERED_AND_CLOSING) &&
                     _my_context->outstanding_operations == 0)               
                 {                                                           
                     globus_assert(_my_context->close_op != NULL);           
@@ -953,7 +956,7 @@ globus_xio_driver_finished_accept_DEBUG(
                                                                             
     _my_op->target = (_in_target);                                          
                                                                             
-    if(_op->entry[_op->ndx].in_register)                                    
+    if(_my_op->in_register)                                                 
     {                                                                       
         globus_callback_space_register_oneshot(                             
             NULL,                                                           
