@@ -19,7 +19,7 @@ my $metadata =
     new Grid::GPT::Setup(package_name => "globus_gaa_authz_callout_setup");
 
 my $globusdir = $ENV{GLOBUS_LOCATION};
-my @libs = glob("$globusdir/lib/libglobus_authz_gaa_callout_*.so");
+my @libs = glob("$globusdir/lib/libglobus_authz_gaa_callout_*.a");
 my $config = "";
 my $found = 0;
 my $lib;
@@ -49,6 +49,8 @@ if(!$lib)
 } 
 
 $lib =~ s/\.a$//;
+# Strip flavor
+$lib =~ s/_[a-zA-Z0-9]*$//;
 
 if(defined($opt_nonroot))
 {
