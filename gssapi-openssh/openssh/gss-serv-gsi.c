@@ -43,16 +43,6 @@ static int ssh_gssapi_gsi_userok(ssh_gssapi_client *client, char *name);
 static int ssh_gssapi_gsi_localname(ssh_gssapi_client *client, char **user);
 static void ssh_gssapi_gsi_storecreds(ssh_gssapi_client *client);
 
-ssh_gssapi_mech gssapi_gsi_mech_old = {
-	"N3+k7/4wGxHyuP8Yxi4RhA==",
-	"GSI",
-	{9, "\x2B\x06\x01\x04\x01\x9B\x50\x01\x01"},
-	NULL,
-	&ssh_gssapi_gsi_userok,
-	&ssh_gssapi_gsi_localname,
-	&ssh_gssapi_gsi_storecreds
-};
-
 ssh_gssapi_mech gssapi_gsi_mech = {
 	"dZuIebMjgUqaxvbF7hDbAw==",
 	"GSI",

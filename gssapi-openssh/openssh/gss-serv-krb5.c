@@ -64,16 +64,6 @@ ssh_gssapi_mech gssapi_kerberos_mech = {
 	&ssh_gssapi_krb5_storecreds
 };
 
-ssh_gssapi_mech gssapi_kerberos_mech_old = {
-	"Se3H81ismmOC3OE+FwYCiQ==",
-	"Kerberos",
-	{9, "\x2A\x86\x48\x86\xF7\x12\x01\x02\x02"},
-	&ssh_gssapi_krb5_init,
-	&ssh_gssapi_krb5_userok,
-	&ssh_gssapi_krb5_localname,
-	&ssh_gssapi_krb5_storecreds
-};
-
 /* Initialise the krb5 library, for the stuff that GSSAPI won't do */
 
 static int

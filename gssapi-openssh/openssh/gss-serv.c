@@ -57,21 +57,17 @@ ssh_gssapi_mech gssapi_null_mech =
 
 #ifdef KRB5
 extern ssh_gssapi_mech gssapi_kerberos_mech;
-extern ssh_gssapi_mech gssapi_kerberos_mech_old;
 #endif
 #ifdef GSI
 extern ssh_gssapi_mech gssapi_gsi_mech;
-extern ssh_gssapi_mech gssapi_gsi_mech_old;
 #endif
 
 ssh_gssapi_mech* supported_mechs[]= {
 #ifdef KRB5
 	&gssapi_kerberos_mech,
-	&gssapi_kerberos_mech_old, /* Support for legacy clients */
 #endif
 #ifdef GSI
 	&gssapi_gsi_mech,
-	&gssapi_gsi_mech_old,	/* Support for legacy clients */
 #endif
 	&gssapi_null_mech,
 };
