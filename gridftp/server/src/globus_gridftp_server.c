@@ -238,11 +238,6 @@ globus_l_gfs_spawn_child(
         }
         new_argv[i] = NULL;
 
-        for(i = 0; new_argv[i] != NULL; i++)
-        {
-fprintf(stderr, " %s", new_argv[i]);
-        }
-fprintf(stderr, "\n");
         rc = execv(new_argv[0], new_argv);
         if(rc == -1)
         {
