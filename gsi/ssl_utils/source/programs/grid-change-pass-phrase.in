@@ -4,6 +4,21 @@
 #
 
 . $GLOBUS_INSTALL_PATH/libexec/globus-sh-tools.sh
+prefix=${GLOBUS_INSTALL_PATH}
+exec_prefix=${GLOBUS_INSTALL_PATH}
+sbindir=${exec_prefix}/sbin
+bindir=${exec_prefix}/bin
+libdir=${exec_prefix}/lib
+libexecdir=${exec_prefix}/libexec
+includedir=${exec_prefix}/include
+datadir=${prefix}/share
+sysconfdir=${prefix}/etc
+sharedstatedir=${prefix}/com
+localstatedir=${prefix}/var
+tmpdir=/tmp
+local_tmpdir=/tmp
+secure_tmpdir=/tmp
+
 
 
 PROGRAM_NAME=`echo $0 | ${GLOBUS_SH_SED-sed} -e 's|.*/||g'`
