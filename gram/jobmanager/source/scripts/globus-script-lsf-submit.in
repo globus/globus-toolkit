@@ -19,6 +19,8 @@
 # TMP_DIR and LSF_JOB_SCRIPT name variables. This file is removed at
 # the end of this script. 
 
+# Inserted by configure.
+@globus_script_initializer@
 	
 bsub=${GLOBUS_SH_BSUB-bsub}
 bqueues=${GLOBUS_SH_BQUEUES-bqueues}

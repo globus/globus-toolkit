@@ -1,5 +1,8 @@
 #! @SH@ -f
 
+# Inserted by configure.
+@globus_script_initializer@
+
 ################################################
 # Site-specific settings
 ################################################

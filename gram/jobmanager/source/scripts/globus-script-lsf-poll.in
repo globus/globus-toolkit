@@ -26,6 +26,9 @@
 # UNKWN		Unknown state			FAILED 
 # ZOMBI		Unknown state			FAILED 
 
+# Inserted by configure.
+@globus_script_initializer@
+
 
 bjobs=${GLOBUS_SH_BJOBS-bjobs}
 grep=${GLOBUS_SH_GREP-grep}

@@ -1,5 +1,10 @@
 #! @SH@
 
+# Inserted by configure.
+@globus_script_initializer@
+
+kill=${GLOBUS_SH_KILL-kill}
+
 arg_file=$1
 # check for the argument file if it does not exist
 # then return with an error immediately.
@@ -23,9 +28,9 @@ $DEBUG_ECHO "GRAMI_JM: in glunix_rm" >> $grami_logfile
 $DEBUG_ECHO "GRAMI_JM: executing kill with job id "\
             "${grami_job_id}" >> $grami_logfile
 
-kill ${grami_job_id}
+${kill} ${grami_job_id}
 
-kill -9 ${grami_job_id}
+${kill} -9 ${grami_job_id}
 
 # the job manager only cares about GRAM_SCRIPT_SUCCESS or
 # GRAM_SCRIPT_ERROR from this script.  The value is inconsiquencial.

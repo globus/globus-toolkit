@@ -1,5 +1,8 @@
 #! @SH@ -f
 
+# Inserted by configure.
+@globus_script_initializer@
+
 arg_file=$1
 # check for the argument file if it does not exist
 # then return with an error immediately.

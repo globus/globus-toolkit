@@ -11,6 +11,8 @@
 # to obtain the job id for the job to be deleted. Once the job id
 # is determined the LSF bkill command is used to delete the job.
 
+# Inserted by configure.
+@globus_script_initializer@
 
 bkill=${GLOBUS_SH_BKILL-bkill}
 

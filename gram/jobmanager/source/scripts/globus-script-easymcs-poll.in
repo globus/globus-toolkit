@@ -35,6 +35,9 @@
 # ST      Starting				PENDING
 # H       Hog (Job held, too many requests)	PENDING
 
+# Inserted by configure.
+@globus_script_initializer@
+
 llq=${GLOBUS_SH_LLQ-llq}
 spq=${GLOBUS_SH_SPQ-spq}
 awk=${GLOBUS_SH_AWK-awk}

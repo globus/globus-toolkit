@@ -18,6 +18,8 @@
 # The temporary job script is created for the submission and then removed 
 # at the end of this script. 
 
+# Inserted by configure.
+@globus_script_initializer@
 	
 qsub=${GLOBUS_SH_QSUB-qsub}
 qstat=${GLOBUS_SH_QSTAT-qstat}

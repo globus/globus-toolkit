@@ -28,6 +28,8 @@
 # Once the job has completed information about it is no longer available.
 # Therefore, the job will be considered completed.
 
+# Inserted by configure.
+@globus_script_initializer@
 
 qstat=${GLOBUS_SH_QSTAT-qstat}
 grep=${GLOBUS_SH_GREP-grep}

@@ -1,5 +1,8 @@
 #! @SH@
 
+# Inserted by configure.
+@globus_script_initializer@
+
 condor_rm=${GLOBUS_SH_CONDOR_RM-condor_rm}
 awk=${GLOBUS_SH_AWK-awk}
 

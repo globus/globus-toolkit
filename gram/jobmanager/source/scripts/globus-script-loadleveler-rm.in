@@ -3,6 +3,11 @@
 # Cancel a LoadLeveler job.
 #
 
+# Inserted by configure.
+@globus_script_initializer@
+
+llcancel=${GLOBUS_SH_LLCANCEL-llcancel}
+
 arg_file=$1
 # check for the argument file if it does not exist
 # then return with an error immediately.
@@ -21,15 +26,15 @@ else
     DEBUG_ECHO=echo
 fi
  
-$DEBUG_ECHO "GRAMI_JM: in loadleveler_rm" >> $grami_logfile
+$DEBUG_ECHO "GRAMI_JMI: in loadleveler_rm" >> $grami_logfile
  
-$DEBUG_ECHO "GRAMI_JM: executing llcancel with job id "\
+$DEBUG_ECHO "GRAMI_JMI: executing llcancel with job id "\
             "${grami_job_id}" >> $grami_logfile
 
-${GLOBUS_SH_LLCANCEL-llcancel} ${grami_job_id}
+${llcancel} ${grami_job_id}
  
 # the job manager only cares about GRAM_SCRIPT_SUCCESS or
 # GRAM_SCRIPT_ERROR from this script.  The value is inconsiquencial.
 echo GRAM_SCRIPT_SUCCESS:999
  
-$DEBUG_ECHO "GRAMI_JM: exiting loadleveler_rm" >> $grami_logfile
+$DEBUG_ECHO "GRAMI_JMI: exiting loadleveler_rm" >> $grami_logfile

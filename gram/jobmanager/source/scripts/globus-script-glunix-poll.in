@@ -1,5 +1,10 @@
 #! @SH@ -f
 
+# Inserted by configure.
+@globus_script_initializer@
+
+kill=${GLOBUS_SH_KILL-kill}
+
 arg_file=$1
 # check for the argument file if it does not exist
 # then return with an error immediately.
@@ -23,7 +28,7 @@ $DEBUG_ECHO "JM_SCRIPT: in glunix_poll" >> $grami_logfile
 
 $DEBUG_ECHO "JM_SCRIPT: executing kill -0 with job id ${grami_job_id}" >> $grami_logfile
 
-kill -0 $grami_job_id > /dev/null 2>&1
+${kill} -0 $grami_job_id > /dev/null 2>&1
 status=$?
 
 if [ "$status" = "0" ]; then

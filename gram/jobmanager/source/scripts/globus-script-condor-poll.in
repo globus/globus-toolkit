@@ -14,6 +14,9 @@
 # C       Completed				DONE
 # X       Removed				FAILED
 
+# Inserted by configure.
+@globus_script_initializer@
+
 condor_q=${GLOBUS_SH_CONDOR_Q-condor_q}
 awk=${GLOBUS_SH_AWK-awk}
 grep=${GLOBUS_SH_GREP-grep}
