@@ -221,15 +221,30 @@ fi
 
 if test "$globus_authorization" = "yes"; then
 	AC_DEFINE(GLOBUS_AUTHORIZATION)
-	# XXX Need to check to make sure globus_auth is installed
-	GSSAPI_LIBS="$GSSAPI_LIBS -lglobus_auth_${GLOBUS_FLAVOR_NAME}"
-	GSSAPI_LIBS="$GSSAPI_LIBS -lglobus_gaa_plugin_${GLOBUS_FLAVOR_NAME}"
-	GSSAPI_LIBS="$GSSAPI_LIBS -lglobus_gaa_util_${GLOBUS_FLAVOR_NAME}"
-	GSSAPI_LIBS="$GSSAPI_LIBS -lglobus_gaa_debug_${GLOBUS_FLAVOR_NAME}"
-	GSSAPI_LIBS="$GSSAPI_LIBS -lglobus_gaa_core_${GLOBUS_FLAVOR_NAME}"
-	# Linktool's dynamic loader library
-	# XXX May need to specify path for this?
-	GSSAPI_LIBS="$GSSAPI_LIBS -lltdl"
+
+	AC_MSG_CHECKING(Globus Globus Authorization dependencies)
+
+	if test -z "$GPT_LOCATION" ; then
+	    GPT_LOCATION=$GLOBUS_LOCATION
+	fi
+
+	${GPT_LOCATION}/sbin/gpt_build_config -src=pkg_data_src.globus_auth \
+	                 -flavor=${globus_flavor} \
+			 -link $GPT_LINKTYPE > /dev/null
+	if test "$?" = "0"; then
+	    AC_MSG_RESULT(ok)
+	else
+	    AC_MSG_ERROR(failed)
+	fi
+	. ./gpt_build_temp.sh
+	rm ./gpt_build_temp.sh
+
+	inc="${GLOBUS_LOCATION}/include"
+	GSSAPI_CFLAGS="-I${inc} -I${inc}/${globus_flavor} ${GPT_CONFIG_CFLAGS}"
+	GSSAPI_LDFLAGS="-L${GLOBUS_LOCATION}/lib ${GPT_CONFIG_LIBS}"
+	GSSAPI_LIBS="${GPT_CONFIG_PGM_LINKS}"
+    
+       # End Globus/GSI section
 fi	
 	
 AC_SUBST(GSSAPI_LIBS)
