@@ -4880,11 +4880,6 @@ globus_gsi_sysconfig_get_ca_cert_files_unix(
         globus_libc_closedir(dir_handle);
     }
 
-    if(tmp_entry != NULL)
-    {
-	globus_libc_free(tmp_entry);
-    }
-
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_EXIT;
     return result;
 
