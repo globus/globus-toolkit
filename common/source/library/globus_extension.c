@@ -279,27 +279,33 @@ globus_l_extension_dlopen(
 {
     char                                library[1024];
     lt_dlhandle                         dlhandle;
-    
-    snprintf(library, 1024, "lib%s_%s", name, build_flavor);
-    library[1023] = 0;
-    dlhandle = lt_dlopenext(library);
+
+    dlhandle = lt_dlopenext(name);
+    if(!dlhandle)
+    {
+        snprintf(library, 1024, "lib%s_%s", name, build_flavor);
+        library[1023] = 0;
+        dlhandle = lt_dlopenext(library);
+    }
+
     if(!dlhandle)
     {
         /* older libtools dont search the extensions correctly */
         snprintf(library, 1024, "lib%s_%s" MY_LIB_EXT, name, build_flavor);
         library[1023] = 0;
         dlhandle = lt_dlopenext(library);
-        if(!dlhandle)
-        {
-            const char *                error;
-            
-            error = lt_dlerror();
-            
-            GlobusExtensionDebugPrintf(
-                GLOBUS_L_EXTENSION_DEBUG_DLL,
-                ("[%s] Couldn't dlopen %s: %s\n",
-                    _globus_func_name, library, error ? error : "(null)"));
-        }
+    }
+
+    if(!dlhandle)
+    {
+        const char *                error;
+        
+        error = lt_dlerror();
+        
+        GlobusExtensionDebugPrintf(
+            GLOBUS_L_EXTENSION_DEBUG_DLL,
+            ("[%s] Couldn't dlopen %s: %s\n",
+             _globus_func_name, library, error ? error : "(null)"));
     }
     
     return dlhandle;
