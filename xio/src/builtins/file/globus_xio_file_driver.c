@@ -303,6 +303,7 @@ globus_l_xio_file_open(
     const globus_l_attr_t *             attr;
     globus_result_t                     result;
     globus_xio_system_handle_t          converted_handle;
+    globus_bool_t                       converted_std = GLOBUS_FALSE;
     GlobusXIOName(globus_l_xio_file_open);
     
     GlobusXIOFileDebugEnter();
@@ -326,14 +327,17 @@ globus_l_xio_file_open(
         if(strcmp(contact_info->scheme, "stdin") == 0)
         {
             converted_handle = fileno(stdin);
+            converted_std = GLOBUS_TRUE;
         }
         else if(strcmp(contact_info->scheme, "stdout") == 0)
         {
             converted_handle = fileno(stdout);
+            converted_std = GLOBUS_TRUE;
         }
         else if(strcmp(contact_info->scheme, "stderr") == 0)
         {
             converted_handle = fileno(stderr);
+            converted_std = GLOBUS_TRUE;
         }
     }
     
@@ -392,7 +396,7 @@ globus_l_xio_file_open(
         handle->handle = converted_handle;
         handle->converted = GLOBUS_TRUE;
         
-        if(attr->flags & GLOBUS_XIO_FILE_TRUNC)
+        if(!converted_std && attr->flags & GLOBUS_XIO_FILE_TRUNC)
         {
             int                         rc;
             
