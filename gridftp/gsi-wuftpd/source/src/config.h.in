@@ -129,6 +129,9 @@
 #undef HAVE_UT_UT_HOST
 #undef HAVE_UT_UT_EXIT_E_TERMINATION
 
+#undef HAVE_SETENV
+#undef HAVE_UNSETENV
+
 /* Here instead of everywhere: */
 #include <stdio.h>
 #include <stdlib.h>
@@ -196,4 +199,33 @@
 #endif
 
 #undef USE_PAM
+
+/*
+ * Define to enable FTP Security Extensions RFC 2228 (Needed for GSSAPI)
+ */
+#undef FTP_SECURITY_EXTENSIONS
+
+/*
+ * Define this to enable GSSAPI support, then define one of the following
+ * types below (GSSAPI_GLOBUS, GSSAPI_KRB5)
+ */
+#undef GSSAPI
+#undef GSSAPI_KRB5
+#undef GSSAPI_GLOBUS
+
+/*
+ * Define this in order to enable the running of a post authentication
+ * process after the user is authentication and authorized.
+ */
+#undef POST_AUTH_PROCESS
+
+/*
+ * Define this if you want AFS support, plus one of the following definitions
+ */
+#undef AFS
+/* Define if you have Transarc AFS libraries */
+#undef HAVE_TRANSARC_AFS
+/* Define if you have libkrbafs */
+#undef HAVE_LIBKRBAFS
+
 #include "../config.h"
