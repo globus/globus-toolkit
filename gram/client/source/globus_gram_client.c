@@ -1,28 +1,27 @@
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/**
+ * @file globus_gram_client.c
+ * 
+ * Resource Managemant Client APIs
+ * 
+ * This file contains the Resource Management Client API funtion
+ * calls.  The resource management API provides functions for 
+ * submitting a job request to a RM, for asking when a job
+ * (submitted or not) might run, for cancelling a request,
+ * for requesting notification of state changes for a request,
+ * and for checking for pending notifications.
+ * 
+ * CVS Information:
+ * 
+ * - $Source$
+ * - $Date$
+ * - $Revision$
+ * - $Author$
+ */
 
-/*****************************************************************************
-globus_gram_client.c
-
-Description:
-    Resource Managemant Client API's
-
-    This file contains the Resource Management Client API funtion
-    calls.  The resource management API provides functions for 
-    submitting a job request to a RM, for asking when a job
-    (submitted or not) might run, for cancelling a request,
-    for requesting notification of state changes for a request,
-    and for checking for pending notifications.
-
-CVS Information:
-
-    $Source$
-    $Date$
-    $Revision$
-    $Author$
-******************************************************************************/
-
-/*****************************************************************************
-                             Include header files
-******************************************************************************/
+/*
+ * Include header files
+ */
 
 #include "globus_config.h"
 #include "globus_gram_client.h"
@@ -41,9 +40,14 @@ CVS Information:
 #include <netdb.h>
 #endif
 
-/******************************************************************************
-                          Module specific prototypes
-******************************************************************************/
+/*
+ * Module specific prototypes
+ */
+int
+globus_i_gram_client_activate(void);
+
+int
+globus_i_gram_client_deactivate(void);
 
 static int
 globus_l_gram_client_parse_gatekeeper_contact( char *    contact_string,
@@ -65,9 +69,9 @@ globus_l_gram_client_callback( void *                 arg,
                                globus_size_t          nbytes,
                                int                    errorcode);
 
-/******************************************************************************
-                       Define module specific variables
-******************************************************************************/
+/*
+ * Define module specific variables
+ */
 
 globus_module_descriptor_t globus_gram_client_module = 
 {
@@ -83,13 +87,13 @@ static int		globus_l_is_initialized = 0;
 
 #define GLOBUS_L_CHECK_IF_INITIALIZED assert(globus_l_is_initialized==1)
 
-/******************************************************************************
-Function:	globus_i_gram_client_activate()
-Description:	Initialize variables
-		Call authorization routine for password entry.
-Parameters:
-Returns:
-******************************************************************************/
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
+
+/*
+ * globus_i_gram_client_activate()
+ * Description:	Initialize variables
+ * Call authorization routine for password entry.
+ */
 int
 globus_i_gram_client_activate(void)
 {
@@ -129,12 +133,9 @@ globus_i_gram_client_activate(void)
 } /* globus_i_gram_client_activate() */
 
 
-/******************************************************************************
-Function:	globus_i_gram_client_deactivate()
-Description:
-Parameters:
-Returns:
-******************************************************************************/
+/*
+ * globus_i_gram_client_deactivate()
+ */
 int
 globus_i_gram_client_deactivate(void)
 {
@@ -176,12 +177,14 @@ globus_i_gram_client_deactivate(void)
 } /* globus_i_gram_client_deactivate() */
 
 
-/******************************************************************************
-Function:	globus_gram_client_debug()
-Description:
-Parameters:
-Returns:
-******************************************************************************/
+/**
+ * Enable debugging messages.
+ * @ingroup globus_gram_client
+ *
+ * Enables the displaying of internal debugging information.
+ *
+ * @return void
+ */
 void
 globus_gram_client_debug(void)
 {
@@ -191,12 +194,7 @@ globus_gram_client_debug(void)
 } /* globus_gram_client_debug() */
 
 
-/******************************************************************************
-Function:	globus_l_gram_client_parse_gatekeeper_url()
-Description:
-Parameters:
-Returns:
-******************************************************************************/
+/* globus_l_gram_client_parse_gatekeeper_url() */
 static int
 globus_l_gram_client_parse_gatekeeper_contact( char *    contact_string,
 					       char **   gatekeeper_url,
@@ -336,12 +334,9 @@ globus_l_gram_client_parse_gatekeeper_contact( char *    contact_string,
 }
 
 
-/******************************************************************************
-Function:	globus_l_gram_client_setup_attr_t()
-Description:
-Parameters:
-Returns:
-******************************************************************************/
+/*
+ * globus_l_gram_client_setup_attr_t()
+ */
 static int 
 globus_l_gram_client_setup_attr_t(
     globus_io_attr_t *                     attrp,
@@ -390,12 +385,15 @@ globus_l_gram_client_setup_attr_t(
 } /* globus_l_gram_client_setup_attr_t() */
 
 
-/******************************************************************************
-Function:	globus_gram_client_version()
-Description:
-Parameters:
-Returns:
-******************************************************************************/
+/**
+ * Version checking
+ * @ingroup globus_gram_client
+ *
+ * Return the version of the GRAM protocol which this implementation of the
+ * GRAM client library understands.
+ *
+ * @return An integer representing the protocol revision.
+ */
 int 
 globus_gram_client_version(void)
 {
@@ -404,14 +402,29 @@ globus_gram_client_version(void)
 } /* globus_gram_client_version() */
 
 
-/******************************************************************************
-Function:	globus_gram_client_ping()
-Description:
-Parameters:
-Returns:
-******************************************************************************/
+/**
+ * Verify that a gatekeeper is running.
+ * @ingroup globus_gram_client_job_functions
+ *
+ * Sends a specially-formated GRAM protocol message which checks to
+ * see if a Globus Gatekeeper is running on a given PORT, and whether that
+ * Gatekeeper is configured to support the desired job manager service.
+ * This is primarily used for diagnostic purposes.
+ *
+ * This function blocks while processing the ping request.
+ *
+ * @param resource_manager_contact
+ *        A NULL-terminated character string containing a
+ *        @link globus_gram_resource_manager_contact GRAM contact@endlink.
+ *
+ * @return
+ * This funciton returns GLOBUS_SUCCESS if The gatekeeper contact is valid, the
+ * client was able to authenticate with the Gatekeeper, and the Gatekeeper was
+ * able to locate the requested service. Otherwise one of the
+ * GLOBUS_GRAM_PROTOCOL_ERROR values is returned.
+ */
 int 
-globus_gram_client_ping(char * gatekeeper_contact)
+globus_gram_client_ping(char * resource_manager_contact)
 {
     int                          rc;
     globus_io_attr_t             attr;
@@ -426,7 +439,7 @@ globus_gram_client_ping(char * gatekeeper_contact)
     monitor.done = GLOBUS_FALSE;
 
     rc = globus_l_gram_client_parse_gatekeeper_contact(
-	gatekeeper_contact,
+	resource_manager_contact,
 	&url,
 	&service,
 	&dn );
@@ -484,17 +497,40 @@ globus_gram_client_ping_parse_failed:
 } /* globus_gram_client_ping() */
 
 
-/******************************************************************************
-Function:	globus_gram_client_job_request()
-Description:
-Parameters:
-Returns:
-******************************************************************************/
+/**
+ * Request a job be started.
+ * @ingroup globus_gram_client_job_functions
+ *
+ * Request access to interactive resources at the current time. A job request
+ * is atomic: either all of the requested processes are created, or none are
+ * created. 
+ *
+ * @param resource_manager_contact
+ *        A NULL-terminated character string containing a
+ *        @link globus_gram_resource_manager_contact GRAM contact@endlink.
+ * @param description
+ *        An RSL description of the requested job. A GRAM RSL consists of
+ *        a conjunction of
+ *        @link globus_gram_rsl_parameters RSL parameters @endlink.
+ * @param job_state_mask
+ *         0, a bitwise OR of the GLOBUS_GRAM_PROTOCOL_JOB_STATE_* states, or
+ *         GLOBUS_GRAM_PROTOCOL_JOB_STATE_ALL.
+ * @param callback_contact
+ *        The URL which will receive all messages about the job.
+ * @param job_contact
+ *        In a successful case, this is set to a unique identifier for each job.
+ *
+ * @return
+ * This function returns GLOBUS_SUCCESS if successful,
+ * otherwise one of the GLOBUS_GRAM_PROTOCOL_ERROR values is returned.
+ *
+ * @see @ref globus_gram_resource_manager_contact
+ */
 int 
-globus_gram_client_job_request(char *           gatekeeper_contact,
+globus_gram_client_job_request(char *           resource_manager_contact,
 			       const char *     description,
 			       const int        job_state_mask,
-			       const char *     callback_url,
+			       const char *     callback_contact,
 			       char **          job_contact)
 {
     int                          rc;
@@ -513,7 +549,7 @@ globus_gram_client_job_request(char *           gatekeeper_contact,
     monitor.done = GLOBUS_FALSE;
 
     if ((rc = globus_l_gram_client_parse_gatekeeper_contact(
-	            gatekeeper_contact,
+	             resource_manager_contact,
 		     &url,
 		     &service,
 		     &dn )) != GLOBUS_SUCCESS)
@@ -528,7 +564,7 @@ globus_gram_client_job_request(char *           gatekeeper_contact,
 
 	|| (rc = globus_gram_protocol_pack_job_request(
 	             job_state_mask,
-		     callback_url,
+		     callback_contact,
 		     description,
 		     &query,
 		     &querysize)) )
@@ -606,35 +642,31 @@ globus_gram_client_job_request_parse_failed:
 } /* globus_gram_client_job_request() */
 
 
-/******************************************************************************
-Function:	globus_gram_client_job_check()
-Description:
-Parameters:
-Returns:
-******************************************************************************/
-int 
-globus_gram_client_job_check(char * gatekeeper_url,
-               const char * description,
-               float required_confidence,
-               globus_gram_client_time_t * estimate,
-               globus_gram_client_time_t * interval_size)
-{
-    return(0);
-} /* globus_gram_client_job_check() */
-
-
+/**
+ * Error code translation.
+ * @ingroup globus_gram_client
+ *
+ * This function takes the error code value and returns the associated error
+ * code string. The string is statically allocated by the Globus GRAM Client
+ * library and should not be modified or freed.
+ *
+ * @param error_code
+ *        The error code to look up.
+ *
+ * @return An error string containing the reason for the error. The error
+ *         string is written to be used in the context
+ *         "[operation] failed because [error_string]".
+ *
+ */
 const char *
 globus_gram_client_error_string(int error_code)
 {
     return globus_gram_protocol_error_string(error_code);
 }
 
-/******************************************************************************
-Function:	globus_l_gram_client_to_jobmanager()
-Description:	packing/sending to jobmanager URL/waiting/unpacking 
-Parameters:
-Returns:
-******************************************************************************/
+/*
+ * packing/sending to jobmanager URL/waiting/unpacking 
+ */
 int
 globus_l_gram_client_to_jobmanager(char *   job_contact,
 				   char *   request,
@@ -734,12 +766,23 @@ globus_l_gram_client_to_jobmanager_pack_failed:
 
 
 
-/******************************************************************************
-Function:	globus_gram_client_job_cancel()
-Description:	sending cancel request to job manager
-Parameters:
-Returns:
-******************************************************************************/
+/**
+ * Cancel a GRAM-managed job.
+ * @ingroup globus_gram_client_job_functions
+ *
+ * Removes a @a PENDING job request, or kills all processes associated
+ * with an @a ACTIVE job, releasing any associated resources
+ *
+ * @param  job_contact
+ *         The job contact string of the job to contact. This is the same
+ *         value returned from globus_gram_client_job_request().
+ *
+ * @return
+ *         This function returns GLOBUS_SUCCESS if the cancellation
+ *         was successful. Otherwise one of the GLOBUS_GRAM_PROTOCOL_ERROR_*
+ *         values will be returned, indicating why the client could not cancel
+ *         the job.
+ */
 int
 globus_gram_client_job_cancel(char * job_contact)
 {
@@ -759,12 +802,42 @@ globus_gram_client_job_cancel(char * job_contact)
 }
 
 
-/******************************************************************************
-Function:	globus_gram_client_job_signal()
-Description:	
-Parameters:
-Returns:
-******************************************************************************/
+/**
+ * Signal a job manager.
+ * @ingroup globus_gram_client_job_functions
+ *
+ * Send a signal to a GRAM job manager to modify the way it handles a job
+ * request. Signals consist of a signal number, and an optional string
+ * argument. The meanings of the signals supported by the GRAM job manager
+ * are defined in the
+ * @link globus_gram_protocol_constants GRAM Protocol documentation @endlink
+ *
+ * @param job_contact
+ *         The job contact string of the job manager to signal.
+ * @param signal
+ *         The signal code to send to the job manager.
+ * @param signal_arg
+ *         Parameters for the signal, as described in the documentation
+ *         for the globus_gram_protocol_job_signal_t.
+ * @param job_status
+ *         A pointer to an integer which will return the new job status,
+ *         if the signal causes the job's state to change (for example,
+ *         the GLOBUS_GRAM_PROTOCOL_JOB_CANCEL signal will cause the
+ *         job to enter the #GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED).
+ * @param failure_code
+ *         An error code indicating why the job manager could not process
+ *         the signal.
+ *
+ * @note
+ *         Compatibility note: The Globus Toolkit(tm) Version 1.x does not
+ *         support the use of signals.
+ *
+ * @return
+ *         This function returns GLOBUS_SUCCESS if the signal
+ *         was successful. Otherwise one of the GLOBUS_GRAM_PROTOCOL_ERROR_*
+ *         values will be returned, indicating why the client could not signal
+ *         the job.
+ */
 int 
 globus_gram_client_job_signal(char * job_contact,
                               globus_gram_protocol_job_signal_t signal,
@@ -809,12 +882,29 @@ globus_gram_client_job_signal(char * job_contact,
 }
 
 
-/******************************************************************************
-Function:       globus_gram_client_job_status()
-Description:    sending cancel request to job manager
-Parameters:
-Returns:
-******************************************************************************/
+/**
+ * Query a job's status.
+ * @ingroup globus_gram_client_job_functions
+ *
+ * This function queries the status of the job associated with the job contact,
+ * returning it's current job status and job failure reason if it has failed.
+ *
+ * @param job_contact
+ *        The job contact string of the job to query. This is the same
+ *        value returned from globus_gram_client_job_request().
+ * @param job_status
+ *        A pointer to an integer which will be populated with the current
+ *        status of the job. This will be one of the
+ *        GLOBUS_GRAM_PROTOCOL_JOB_STATE_* values if this function is
+ *        successful.
+ * @param failure_code
+ *        The reason why the job failed if the @a job_status is set to 
+ *        GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED.
+ *
+ * @return This function returns GLOBUS_SUCCESS if the job state query was
+ * successfully. Otherwise one of the GLOBUS_GRAM_PROTOCOL_ERROR_* values will
+ * be returned, indicating why the client could not query the job state.
+ */
 int
 globus_gram_client_job_status(char * job_contact,
 			      int  * job_status,
@@ -835,12 +925,31 @@ globus_gram_client_job_status(char * job_contact,
 
 
 
-/******************************************************************************
-Function:	globus_gram_client_job_callback_register()
-Description:	
-Parameters:
-Returns:
-******************************************************************************/
+/**
+ * Register a callback contact for job state changes.
+ * @ingroup globus_gram_client_job_functions
+ *
+ * @param job_contact
+ *        The job contact string of the job to contact. This is the same
+ *        value returned from globus_gram_client_job_request().
+ * @param job_state_mask
+ *        A mask indicating which job state changes should be sent to the
+ *        @a callback_contact. This may be 0 (no job state changes), a
+ *        bitwise-or  of the GLOBUS_GRAM_PROTOCOL_JOB_STATE_* states, or
+ *        GLOBUS_GRAM_PROTOCOL_JOB_STATE_ALL to register for all job states.
+ * @param callback_contact
+ *        A URL string containing a GRAM client callback. This string should
+ *        normally be generated by a process calling
+ *        globus_gram_client_callback_allow().
+ * @param failure_code
+ *        Set to an error code when the job manager is unable to process
+ *        this registration.
+ *
+ * @return This function returns GLOBUS_SUCCESS if the callback registration
+ * was successful. Otherwise one of the GLOBUS_GRAM_PROTOCOL_ERROR_* values
+ * will be returned, indicating why the client could not register the callback
+ * contact.
+ */
 int 
 globus_gram_client_job_callback_register(char * job_contact,
 					 const int job_state_mask,
@@ -874,12 +983,28 @@ globus_gram_client_job_callback_register(char * job_contact,
 }
 
 
-/******************************************************************************
-Function:	globus_gram_client_job_callback_unregister()
-Description:	
-Parameters:
-Returns:
-******************************************************************************/
+/**
+ * Unregister a callback contact from future job state changes.
+ * @ingroup globus_gram_client_job_functions
+ *
+ * @param job_contact
+ *        The job contact string of the job manager to contact. This is the
+ *        same value returned from globus_gram_client_job_request().
+ * @param callback_contact
+ *        A URL string containing a GRAM client callback. This string should
+ *        normally be generated by a process calling
+ *        globus_gram_client_callback_allow(). If this function returns
+ *        successfully, the process managing the callback_contact should
+ *        not receive future job state changes.
+ * @param failure_code
+ *        Set to an error code when the job manager is unable to process
+ *        this registration.
+ *
+ * @return This function returns GLOBUS_SUCCESS if the callback unregistration
+ * was successful. Otherwise one of the GLOBUS_GRAM_PROTOCOL_ERROR_* values
+ * will be returned, indicating why the client could not unregister the
+ * callback contact.
+ */
 int 
 globus_gram_client_job_callback_unregister(char *         job_contact,
 					   const char *   callback_contact,
@@ -910,12 +1035,32 @@ globus_gram_client_job_callback_unregister(char *         job_contact,
     return rc;
 }
 
-/******************************************************************************
-Function:	globus_gram_client_callback_allow()
-Description:	
-Parameters:
-Returns:
-******************************************************************************/
+/**
+ * Create a callback contact.
+ * @ingroup globus_gram_client_callback
+ *
+ * Creates a small GRAM server which can handle GRAM state updates from
+ * job managers.  The contact information for this server is returned and
+ * may be used with the globus_gram_client_job_request() or
+ * globus_gram_client_callback_register() functions.
+ *
+ * @param callback_func
+ *        A pointer to the user's callback function to be called when
+ *        GRAM state changes are received from a Job Manager.
+ * @param user_callback_arg
+ *        A pointer to arbitrary data which is passed as the first
+ *        parameter to the @a callback_func function when it is called.
+ * @param callback_contact
+ *        A pointer to a char *. This pointer will be initialized with
+ *        a newly allocated string containing the information needed by
+ *        the Job Manager to contact this GRAM callback server. This
+ *        string should be freed by the user when it is no longer used.
+ *
+ * @return This function returns GLOBUS_SUCCESS if the callback contact
+ * create was successful. Otherwise one of the GLOBUS_GRAM_PROTOCOL_ERROR_*
+ * values will be returned, indicating why the client could not create the
+ * callback contact.
+ */
 int 
 globus_gram_client_callback_allow(
     globus_gram_client_callback_func_t callback_func,
@@ -952,12 +1097,26 @@ globus_gram_client_callback_allow(
 } /* globus_gram_client_callback_allow() */
 
 
-/******************************************************************************
-Function:	globus_gram_client_callback_disallow()
-Description:	
-Parameters:
-Returns:
-******************************************************************************/
+/**
+ * Disable a callback handler.
+ * @ingroup globus_gram_client_callback
+ *
+ * Disables the GRAM server created by calling
+ * globus_gram_client_callback_allow(). This function blocks until all
+ * pending job state updates being handled by this server are dispatched.
+ *
+ * This function can only be used to disable a callback created in
+ * the current process.
+ *
+ * @param callback_contact
+ *        The callback contact string returned by calling
+ *        globus_gram_client_callback_allow.
+ *
+ * @return This function returns GLOBUS_SUCCESS if the callback contact
+ * was disabled successful. Otherwise one of the GLOBUS_GRAM_PROTOCOL_ERROR_*
+ * values will be returned, indicating why the client could not disable the
+ * callback contact.
+ */
 int 
 globus_gram_client_callback_disallow(char * callback_contact)
 {
@@ -965,35 +1124,15 @@ globus_gram_client_callback_disallow(char * callback_contact)
 } /* globus_gram_client_callback_allow() */
 
 
-/******************************************************************************
-Function:	globus_gram_client_job_start_time()
-Description:	
-Parameters:
-Returns:
-******************************************************************************/
-int 
-globus_gram_client_job_start_time(char * job_contact,
-                    float required_confidence,
-                    globus_gram_client_time_t * estimate,
-                    globus_gram_client_time_t * interval_size)
-{
-    if(globus_l_print_fp)
-    {
-	globus_libc_fprintf(globus_l_print_fp,
-			    "in globus_gram_client_job_start_time()\n");
-    }
 
-    return GLOBUS_SUCCESS;
-} /* globus_gram_client_job_start_time() */
-
-
-
-/******************************************************************************
-Function:	globus_gram_client_job_contact_free()
-Description:	
-Parameters:
-Returns:
-******************************************************************************/
+/**
+ * Releases the resources storing a job contact string.
+ * @ingroup globus_gram_client
+ *
+ * @param job_contact
+ *        A job contact string returned in a successful call to
+ *        globus_gram_client_job_request()
+ */
 int 
 globus_gram_client_job_contact_free(char * job_contact)
 {

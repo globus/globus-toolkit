@@ -5,6 +5,7 @@ include $(top_srcdir)/globus_automake_pre_top
 # SUBDIRS is an automake macro which contains 
 # the list of subdirectories that have Makefile.am's
 SUBDIRS= \
+	doxygen \
 	pkgdata 
 
 # Sources contains all of the source files in the directory.
@@ -36,6 +37,9 @@ lib_LTLIBRARIES = libglobus_gram_client_$(GLOBUS_FLAVOR_NAME).la
 libglobus_gram_client___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
 libglobus_gram_client___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS)
 libglobus_gram_client___GLOBUS_FLAVOR_NAME__la_LIBADD = $(GPT_LIB_LINKS)
+
+EXTRA_DIST= resource_manager_contact.dox \
+	    rsl_parameters.dox
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top
