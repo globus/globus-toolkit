@@ -51,7 +51,7 @@ globus_gsi_proxy_handle_attrs_init(
  * @ingroup globus_gsi_proxy_handle_attrs
  *
  * @param handle_attrs
- *        The handle to be destroyed. blah blah
+ *        The handle to be destroyed.
  * @return 
  *        GLOBUS_SUCCESS
  *
@@ -71,7 +71,7 @@ globus_gsi_proxy_handle_attrs_destroy(
 /*@{*/
 /**
  * Make a copy of a GSI Proxy handle attribute
- * @ingroup globus_gsi_proxy_handle_attrs_copy
+ * @ingroup globus_gsi_proxy_handle_attrs
  *
  * @param a 
  *        The handle attribute to copy
