@@ -24,7 +24,7 @@ of the GT2 globus-url-copy tool and more.<!-- --------------------------- --> </
 </ul>
 <p><b>PostgreSQL</b> is used to store the state of the transfer to allow
 for restart after failures. The interface to PostgreSQL is JDBC so any
-DBMS that supports JDBC can be used, although no other has been tested. </p>
+DBMS that supports JDBC can be used, although no other has been tested. We used PostgreSQL version 7.3.2 for our testing and these instructions are good for same.</p>
 <p> <b>GridFTP</b> perfoms the actual file transfer. </p>
 <p>GridFTP server can only be run on Unix or Linux. There are 2 ways to
 get GridFTP: </p>
@@ -66,7 +66,7 @@ a Unix machine. Note however that you will be using the username
 <!-- --------------------------- -->
 <h3>Common Setup</h3>
 <p>After completing either the Unix or Windows specific setup above do
-the following from your user shell (postgres or Administrator). </p>
+the following from your user shell as username specified in multirft-server-config.wsdd  </p>
 <pre>    export PGDATA=/usr/local/pgsql/data<br>    initdb<br>    createdb ogsa<br>    psql -d ogsa -f rft_schema_ogsa.sql<br></pre>
 (rft_schema_ogsa.sql is provided in the ogsa distribution root, under
 the etc directory)

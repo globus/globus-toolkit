@@ -30,13 +30,22 @@ import org.globus.ogsa.utils.AnyHelper;
 import org.gridforum.ogsi.ServiceDataType;
 
 
+/**
+ *  Description of the Class
+ *
+ *@author     madduri
+ *@created    October 17, 2003
+ */
 public class MyMarkerListener
-    implements MarkerListener {
+         implements MarkerListener {
 
+    /**
+     *  Description of the Field
+     */
     public ByteRangeList list;
     TransferDbAdapter dbAdapter;
     int transferid;
-    private static Logger logger = Logger.getLogger(MyMarkerListener.class.getName());
+    private static Logger logger = Logger.getLogger( MyMarkerListener.class.getName() );
     FileTransferProgressType transferProgress;
     ServiceDataSet serviceData;
     ServiceData transferProgressData;
@@ -48,23 +57,42 @@ public class MyMarkerListener
     GridFTPPerfMarkerElement gridFTPPerfMarkerElement;
     long size;
 
+
+    /**
+     *  Constructor for the MyMarkerListener object
+     */
     public MyMarkerListener() {
         list = new ByteRangeList();
     }
 
-    public MyMarkerListener(TransferDbOptions dbOptions, 
-                            FileTransferProgressType transferProgress, 
-                            ServiceDataSet serviceData, 
-                            ServiceData transferProgressData, long size, 
-                            ServiceData restartMarkerServiceDataType, 
-                            FileTransferRestartMarker restartMarkerType, 
-                            ServiceData gridFTPRestartMarkerSD, 
-                            GridFTPRestartMarkerElement gridFTPRestartMarkerElement, 
-                            ServiceData gridFTPPerfMarkerSD, 
-                            GridFTPPerfMarkerElement gridFTPPerfMarkerElement) {
+
+    /**
+     *  Constructor for the MyMarkerListener object
+     *
+     *@param  transferProgress              Description of the Parameter
+     *@param  serviceData                   Description of the Parameter
+     *@param  transferProgressData          Description of the Parameter
+     *@param  size                          Description of the Parameter
+     *@param  restartMarkerServiceDataType  Description of the Parameter
+     *@param  restartMarkerType             Description of the Parameter
+     *@param  gridFTPRestartMarkerSD        Description of the Parameter
+     *@param  gridFTPRestartMarkerElement   Description of the Parameter
+     *@param  gridFTPPerfMarkerSD           Description of the Parameter
+     *@param  gridFTPPerfMarkerElement      Description of the Parameter
+     */
+    public MyMarkerListener(
+            FileTransferProgressType transferProgress,
+            ServiceDataSet serviceData,
+            ServiceData transferProgressData, long size,
+            ServiceData restartMarkerServiceDataType,
+            FileTransferRestartMarker restartMarkerType,
+            ServiceData gridFTPRestartMarkerSD,
+            GridFTPRestartMarkerElement gridFTPRestartMarkerElement,
+            ServiceData gridFTPPerfMarkerSD,
+            GridFTPPerfMarkerElement gridFTPPerfMarkerElement ) {
 
         try {
-            dbAdapter = new TransferDbAdapter(dbOptions);
+            dbAdapter = TransferDbAdapter.getTransferDbAdapter();
             list = new ByteRangeList();
             this.transferProgress = transferProgress;
             this.serviceData = serviceData;
@@ -76,238 +104,319 @@ public class MyMarkerListener
             this.gridFTPRestartMarkerElement = gridFTPRestartMarkerElement;
             this.gridFTPPerfMarkerSD = gridFTPPerfMarkerSD;
             this.gridFTPPerfMarkerElement = gridFTPPerfMarkerElement;
-        } catch (RemoteException re) {
-            logger.error("Cannot create DbAdapter" + re.getMessage());
+        } catch ( Exception re ) {
+            logger.error( "Cannot create DbAdapter" + re.getMessage() );
         }
     }
-    
-    public void setTransferDbOptions(TransferDbOptions dbOptions) 
-    throws RemoteException {
-        dbAdapter = new TransferDbAdapter(dbOptions);
+
+
+    /**
+     *  Sets the transferDbOptions attribute of the MyMarkerListener object
+     *
+     *@param  dbOptions            The new transferDbOptions value
+     *@exception  RemoteException  Description of the Exception
+     */
+    public void setTransferDbOptions( TransferDbOptions dbOptions )
+             throws RemoteException {
+        dbAdapter = new TransferDbAdapter( dbOptions );
     }
-    public void setTransferProgress(FileTransferProgressType transferProgress) {
+
+
+    /**
+     *  Sets the transferProgress attribute of the MyMarkerListener object
+     *
+     *@param  transferProgress  The new transferProgress value
+     */
+    public void setTransferProgress( FileTransferProgressType transferProgress ) {
         this.transferProgress = transferProgress;
     }
 
-    public void setServiceDataSet(ServiceDataSet serviceData) {
+
+    /**
+     *  Sets the serviceDataSet attribute of the MyMarkerListener object
+     *
+     *@param  serviceData  The new serviceDataSet value
+     */
+    public void setServiceDataSet( ServiceDataSet serviceData ) {
         this.serviceData = serviceData;
     }
 
-    public void setTransferProgress(ServiceData transferProgressData) {
+
+    /**
+     *  Sets the transferProgress attribute of the MyMarkerListener object
+     *
+     *@param  transferProgressData  The new transferProgress value
+     */
+    public void setTransferProgress( ServiceData transferProgressData ) {
         this.transferProgressData = transferProgressData;
     }
 
-    public void setSize(long size) {
+
+    /**
+     *  Sets the size attribute of the MyMarkerListener object
+     *
+     *@param  size  The new size value
+     */
+    public void setSize( long size ) {
         this.size = size;
     }
-    public void setRestartMarkerServiceDataType(ServiceData restartMarkerServiceDataType) {
+
+
+    /**
+     *  Sets the restartMarkerServiceDataType attribute of the MyMarkerListener
+     *  object
+     *
+     *@param  restartMarkerServiceDataType  The new restartMarkerServiceDataType
+     *      value
+     */
+    public void setRestartMarkerServiceDataType( ServiceData restartMarkerServiceDataType ) {
         this.restartMarkerServiceDataType = restartMarkerServiceDataType;
     }
-    
-    public void setFileTransferRestartMarker(FileTransferRestartMarker restartMarkerType) {
+
+
+    /**
+     *  Sets the fileTransferRestartMarker attribute of the MyMarkerListener
+     *  object
+     *
+     *@param  restartMarkerType  The new fileTransferRestartMarker value
+     */
+    public void setFileTransferRestartMarker( FileTransferRestartMarker restartMarkerType ) {
         this.restartMarkerType = restartMarkerType;
     }
 
-    public void setGridFTPRestartMarkerSD(ServiceData gridFTPRestartMarkerSD) {
+
+    /**
+     *  Sets the gridFTPRestartMarkerSD attribute of the MyMarkerListener object
+     *
+     *@param  gridFTPRestartMarkerSD  The new gridFTPRestartMarkerSD value
+     */
+    public void setGridFTPRestartMarkerSD( ServiceData gridFTPRestartMarkerSD ) {
         this.gridFTPRestartMarkerSD = gridFTPRestartMarkerSD;
     }
-    
-    public void setGridFTPRestartMarkerElement(GridFTPRestartMarkerElement gridFTPRestartMarkerElement) {
+
+
+    /**
+     *  Sets the gridFTPRestartMarkerElement attribute of the MyMarkerListener
+     *  object
+     *
+     *@param  gridFTPRestartMarkerElement  The new gridFTPRestartMarkerElement
+     *      value
+     */
+    public void setGridFTPRestartMarkerElement( GridFTPRestartMarkerElement gridFTPRestartMarkerElement ) {
         this.gridFTPRestartMarkerElement = gridFTPRestartMarkerElement;
     }
 
-    public void setGridFTPPerfMarkerSD(ServiceData gridFTPPerfMarkerSD) {
+
+    /**
+     *  Sets the gridFTPPerfMarkerSD attribute of the MyMarkerListener object
+     *
+     *@param  gridFTPPerfMarkerSD  The new gridFTPPerfMarkerSD value
+     */
+    public void setGridFTPPerfMarkerSD( ServiceData gridFTPPerfMarkerSD ) {
         this.gridFTPPerfMarkerSD = gridFTPPerfMarkerSD;
     }
 
-    public void setGridFTPPerfMarkerElement(GridFTPPerfMarkerElement gridFTPPerfMarkerElement) {
+
+    /**
+     *  Sets the gridFTPPerfMarkerElement attribute of the MyMarkerListener
+     *  object
+     *
+     *@param  gridFTPPerfMarkerElement  The new gridFTPPerfMarkerElement value
+     */
+    public void setGridFTPPerfMarkerElement( GridFTPPerfMarkerElement gridFTPPerfMarkerElement ) {
         this.gridFTPPerfMarkerElement = gridFTPPerfMarkerElement;
     }
 
-     /**
-     * DOCUMENT ME!
-     * 
-     * @return DOCUMENT ME! 
+
+    /**
+     *  DOCUMENT ME!
+     *
+     *@return    DOCUMENT ME!
      */
     public ByteRangeList getByteRangeList() {
 
         return this.list;
     }
 
+
     /**
-     * DOCUMENT ME!
-     * 
-     * @param transferid DOCUMENT ME!
+     *  DOCUMENT ME!
+     *
+     *@param  transferid  DOCUMENT ME!
      */
-    public void setTransferId(int transferid) {
+    public void setTransferId( int transferid ) {
         this.transferid = transferid;
     }
 
-    /**
-     * DOCUMENT ME!
-     * 
-     * @param m DOCUMENT ME!
-     */
-    public void markerArrived(Marker m) {
 
-        if (m instanceof GridFTPRestartMarker) {
-            restartMarkerArrived((GridFTPRestartMarker)m);
-        } else if (m instanceof PerfMarker) {
-            perfMarkerArrived((PerfMarker)m);
+    /**
+     *  DOCUMENT ME!
+     *
+     *@param  m  DOCUMENT ME!
+     */
+    public void markerArrived( Marker m ) {
+
+        if ( m instanceof GridFTPRestartMarker ) {
+            restartMarkerArrived( (GridFTPRestartMarker) m );
+        } else if ( m instanceof PerfMarker ) {
+            perfMarkerArrived( (PerfMarker) m );
         } else {
-            logger.debug("Unknown format of restart marker");
+            logger.debug( "Unknown format of restart marker" );
         }
     }
 
+
     /**
-     * DOCUMENT ME!
-     * 
-     * @param marker DOCUMENT ME!
+     *  DOCUMENT ME!
+     *
+     *@param  marker  DOCUMENT ME!
      */
-    private void restartMarkerArrived(GridFTPRestartMarker marker) {
+    private void restartMarkerArrived( GridFTPRestartMarker marker ) {
 
         try {
-            logger.info("-->restart marker arrived");
-            list.merge(marker.toVector());
+            logger.info( "-->restart marker arrived" );
+            list.merge( marker.toVector() );
 
             String temp = list.toFtpCmdArgument();
-            dbAdapter.setRestartMarker(transferid, temp);
+            dbAdapter.setRestartMarker( transferid, temp );
             logger.info(
-                    "Current transfer state: " + temp + " for transferId: " + 
-                    transferid);
+                    "Current transfer state: " + temp + " for transferId: " +
+                    transferid );
 
-            GridFTPRestartMarkerType gridFTPRestartMarkerType = 
+            GridFTPRestartMarkerType gridFTPRestartMarkerType =
                     new GridFTPRestartMarkerType();
-            gridFTPRestartMarkerType.setTransferId(this.transferid);
-            gridFTPRestartMarkerType.setRestartMarker(temp);
+            gridFTPRestartMarkerType.setTransferId( this.transferid );
+            gridFTPRestartMarkerType.setRestartMarker( temp );
             this.gridFTPRestartMarkerElement.setGridFTPRestartMarker(
-                    gridFTPRestartMarkerType);
-            this.gridFTPRestartMarkerSD.setValue(gridFTPRestartMarkerElement);
-            this.serviceData.add(this.gridFTPRestartMarkerSD);
+                    gridFTPRestartMarkerType );
+            this.gridFTPRestartMarkerSD.setValue( gridFTPRestartMarkerElement );
+            this.serviceData.add( this.gridFTPRestartMarkerSD );
             this.gridFTPRestartMarkerSD.notifyChange();
 
-            int high = getUpperMarker(temp);
-            this.restartMarkerType.setRestartMarkerRange(high);
-            restartMarkerServiceDataType.setValue(this.restartMarkerType);
-            this.serviceData.add(restartMarkerServiceDataType);
+            int high = getUpperMarker( temp );
+            this.restartMarkerType.setRestartMarkerRange( high );
+            restartMarkerServiceDataType.setValue( this.restartMarkerType );
+            this.serviceData.add( restartMarkerServiceDataType );
             restartMarkerServiceDataType.notifyChange();
-        } catch (Exception e) {
-            logger.debug("Exception in MarkerListener" + e.getMessage(), e);
+        } catch ( Exception e ) {
+            logger.debug( "Exception in MarkerListener" + e.getMessage(), e );
         }
     }
 
-    /**
-     * DOCUMENT ME!
-     * 
-     * @param restartMarker DOCUMENT ME!
-     * @return DOCUMENT ME! 
-     */
-    private int getUpperMarker(String restartMarker) {
 
-        StringTokenizer st = new StringTokenizer(restartMarker, "-");
+    /**
+     *  DOCUMENT ME!
+     *
+     *@param  restartMarker  DOCUMENT ME!
+     *@return                DOCUMENT ME!
+     */
+    private int getUpperMarker( String restartMarker ) {
+
+        StringTokenizer st = new StringTokenizer( restartMarker, "-" );
         String low = st.nextToken();
         String high = st.nextToken();
-        int highInt = Integer.parseInt(high);
-        double fraction = (double)highInt / this.size;
+        int highInt = Integer.parseInt( high );
+        double fraction = (double) highInt / this.size;
         fraction = fraction * 100;
 
-        Double doubleFraction = new Double(fraction);
+        Double doubleFraction = new Double( fraction );
         int integerFraction = doubleFraction.intValue();
 
         return integerFraction;
     }
 
+
     /**
-     * DOCUMENT ME!
-     * 
-     * @param marker DOCUMENT ME!
+     *  DOCUMENT ME!
+     *
+     *@param  marker  DOCUMENT ME!
      */
-    private void perfMarkerArrived(PerfMarker marker) {
-        logger.info("--> perf marker arrived");
+    private void perfMarkerArrived( PerfMarker marker ) {
+        logger.info( "--> perf marker arrived" );
 
         GridFTPPerfMarkerType gridFTPPerfMarkerType = new GridFTPPerfMarkerType();
-        gridFTPPerfMarkerType.setTransferId(this.transferid);
+        gridFTPPerfMarkerType.setTransferId( this.transferid );
 
         // time stamp
-        logger.info("Timestamp = " + marker.getTimeStamp());
-        gridFTPPerfMarkerType.setTimeStamp(marker.getTimeStamp());
+        logger.info( "Timestamp = " + marker.getTimeStamp() );
+        gridFTPPerfMarkerType.setTimeStamp( marker.getTimeStamp() );
 
         // stripe index
-        if (marker.hasStripeIndex()) {
+        if ( marker.hasStripeIndex() ) {
 
             try {
-                logger.info("Stripe index =" + marker.getStripeIndex());
-                gridFTPPerfMarkerType.setStripeIndex(marker.getStripeIndex());
-            } catch (PerfMarkerException e) {
-                logger.debug("Exception in perfMarkerArrived");
+                logger.info( "Stripe index =" + marker.getStripeIndex() );
+                gridFTPPerfMarkerType.setStripeIndex( marker.getStripeIndex() );
+            } catch ( PerfMarkerException e ) {
+                logger.debug( "Exception in perfMarkerArrived" );
             }
         } else {
-            logger.info("Stripe index: not present");
+            logger.info( "Stripe index: not present" );
         }
 
         // stripe bytes transferred
-        if (marker.hasStripeBytesTransferred()) {
+        if ( marker.hasStripeBytesTransferred() ) {
 
             try {
 
                 long stripeBytesTransferred = marker.getStripeBytesTransferred();
                 gridFTPPerfMarkerType.setStripeBytesTransferred(
-                        stripeBytesTransferred);
+                        stripeBytesTransferred );
                 logger.info(
-                        "Stripe bytes transferred = " + 
-                        stripeBytesTransferred);
+                        "Stripe bytes transferred = " +
+                        stripeBytesTransferred );
 
                 try {
 
                     double fraction;
 
-                    if (stripeBytesTransferred == this.size) {
+                    if ( stripeBytesTransferred == this.size ) {
                         fraction = 1;
                     } else {
-                        fraction = (double)stripeBytesTransferred / this.size;
+                        fraction = (double) stripeBytesTransferred / this.size;
                     }
 
                     fraction = fraction * 100;
 
-                    Double doubleFraction = new Double(fraction);
+                    Double doubleFraction = new Double( fraction );
                     int percentCompleted = doubleFraction.intValue();
-                    this.transferProgress.setPercentComplete(percentCompleted);
-                    this.transferProgressData.setValue(this.transferProgress);
-                    this.serviceData.add(transferProgressData);
+                    this.transferProgress.setPercentComplete( percentCompleted );
+                    this.transferProgressData.setValue( this.transferProgress );
+                    this.serviceData.add( transferProgressData );
                     this.transferProgressData.notifyChange();
-                } catch (Exception e) {
+                } catch ( Exception e ) {
                     logger.debug(
-                            "Exception while sending Service Data" + 
-                            e.getMessage());
+                            "Exception while sending Service Data" +
+                            e.getMessage() );
                 }
-            } catch (PerfMarkerException e) {
-                logger.debug("Exception in perfMarkerArrived");
+            } catch ( PerfMarkerException e ) {
+                logger.debug( "Exception in perfMarkerArrived" +e.getMessage());
             }
         } else {
-            logger.info("Stripe Bytes Transferred: not present");
+            logger.info( "Stripe Bytes Transferred: not present" );
         }
 
         // total stripe count
-        if (marker.hasTotalStripeCount()) {
+        if ( marker.hasTotalStripeCount() ) {
 
             try {
                 logger.info(
-                        "Total stripe count = " + 
-                        marker.getTotalStripeCount());
-                gridFTPPerfMarkerType.setTotalStripeCount(marker.getTotalStripeCount());
+                        "Total stripe count = " +
+                        marker.getTotalStripeCount() );
+                gridFTPPerfMarkerType.setTotalStripeCount( marker.getTotalStripeCount() );
                 this.gridFTPPerfMarkerElement.setGridFTPPerfMarker(
-                        gridFTPPerfMarkerType);
-                this.gridFTPPerfMarkerSD.setValue(gridFTPPerfMarkerElement);
-                this.serviceData.add(this.gridFTPPerfMarkerSD);
+                        gridFTPPerfMarkerType );
+                this.gridFTPPerfMarkerSD.setValue( gridFTPPerfMarkerElement );
+                this.serviceData.add( this.gridFTPPerfMarkerSD );
                 this.gridFTPPerfMarkerSD.notifyChange();
-            } catch (PerfMarkerException e) {
-                logger.debug("Exception in perfMarkerArrived");
-            }
-             catch (Exception e) {
-                logger.debug("Exception in perfMarkerArrived");
+            } catch ( PerfMarkerException e ) {
+                logger.debug( "Exception in perfMarkerArrived" );
+            } catch ( Exception e ) {
+                logger.debug( "Exception in perfMarkerArrived" );
             }
         } else {
-            logger.info("Total stripe count: not present");
+            logger.info( "Total stripe count: not present" );
         }
     }
 }
+

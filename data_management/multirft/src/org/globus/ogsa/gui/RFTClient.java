@@ -1,4 +1,6 @@
-/*This file is licensed under the terms of the Globus Toolkit Public|License, found at http://www.globus.org/toolkit/download/license.html.*/
+/*
+ *  This file is licensed under the terms of the Globus Toolkit Public|License, found at http://www.globus.org/toolkit/download/license.html.
+ */
 package org.globus.ogsa.gui;
 
 import java.io.BufferedReader;
@@ -18,6 +20,7 @@ import org.apache.axis.message.MessageElement;
 import org.apache.axis.utils.XMLUtils;
 
 import org.globus.axis.gsi.GSIConstants;
+import org.globus.gsi.proxy.IgnoreProxyPolicyHandler;
 
 import org.globus.ogsa.NotificationSinkCallback;
 import org.globus.ogsa.ServiceProperties;
@@ -51,7 +54,6 @@ import org.gridforum.ogsi.WSDLReferenceType;
 import org.gridforum.ogsi.holders.ExtensibilityTypeHolder;
 import org.gridforum.ogsi.holders.LocatorTypeHolder;
 import org.gridforum.ogsi.holders.TerminationTimeTypeHolder;
-import org.globus.gsi.proxy.IgnoreProxyPolicyHandler;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -73,34 +75,34 @@ public class RFTClient extends ServicePropertiesImpl
     }
 
     /**
-     * DOCUMENT ME!
-     * 
-     * @param args DOCUMENT ME!
+     *  DOCUMENT ME!
+     *
+     *@param  args  DOCUMENT ME!
      */
-    public static void main(String[] args) {
-        System.out.println("Multifile RFT command line client");
+    public static void main( String[] args ) {
+        System.out.println( "Multifile RFT command line client" );
 
         GetOpts opts = new GetOpts(
-                               "Usage: RFTClient <factory handle> [id] <path to transfer>", 
-                               1);
-        String error = opts.parse(args);
+                "Usage: RFTClient <factory handle> [id] <path to transfer>",
+                1 );
+        String error = opts.parse( args );
 
-        if (error != null) {
-            System.err.println(error);
+        if ( error != null ) {
+            System.err.println( error );
 
             return;
         }
 
-        String handle = opts.getArg(0);
+        String handle = opts.getArg( 0 );
 
         try {
 
-            File requestFile = new File(opts.getArg(1));
+            File requestFile = new File( opts.getArg( 1 ) );
             BufferedReader reader = null;
 
             try {
-                reader = new BufferedReader(new FileReader(requestFile));
-            } catch (java.io.FileNotFoundException fnfe) {
+                reader = new BufferedReader( new FileReader( requestFile ) );
+            } catch ( java.io.FileNotFoundException fnfe ) {
             }
 
             Vector requestData = new Vector();
@@ -109,13 +111,13 @@ public class RFTClient extends ServicePropertiesImpl
 
                 String line = reader.readLine();
 
-                while (line != null) {
-                    requestData.add(line);
+                while ( line != null ) {
+                    requestData.add( line );
                     line = reader.readLine();
                 }
 
                 reader.close();
-            } catch (java.io.IOException ioe) {
+            } catch ( java.io.IOException ioe ) {
             }
 
             int transferCount = (requestData.size() - 9) / 2;
@@ -147,16 +149,14 @@ public class RFTClient extends ServicePropertiesImpl
                     sourceSubjectName);
             }
             System.out.println(
-                    "Request Data Size " + requestData.size() + " " + 
-                    transferCount);
+                    "Request Data Size " + requestData.size() + " " +
+                    transferCount );
 
             for (int j = 0; j < transfers1.length; j++) {
                 transfers1[j] = new TransferType();
-                transfers1[j].setTransferId(j);
-                transfers1[j].setSourceUrl((String)requestData.elementAt(i++));
+                transfers1[j].setSourceUrl( (String) requestData.elementAt( i++ ) );
                 transfers1[j].setDestinationUrl(
-                        (String)requestData.elementAt(i++));
-                transfers1[j].setRftOptions(multirftOptions);
+                        (String) requestData.elementAt( i++ ) );
             }
 
             TransferRequestType transferRequest = new TransferRequestType();
@@ -166,13 +166,14 @@ public class RFTClient extends ServicePropertiesImpl
                 System.exit(0);
             }
 
-            transferRequest.setConcurrency(concurrency);
+            transferRequest.setRftOptions( multirftOptions );
+            transferRequest.setConcurrency( concurrency );
 
             TransferRequestElement requestElement = new TransferRequestElement();
-            requestElement.setTransferRequest(transferRequest);
+            requestElement.setTransferRequest( transferRequest );
 
             ExtensibilityType extension = new ExtensibilityType();
-            extension = AnyHelper.getExtensibility(requestElement);
+            extension = AnyHelper.getExtensibility( requestElement );
 
             OGSIServiceGridLocator factoryService = new OGSIServiceGridLocator();
             Factory factory = factoryService.getFactoryPort(new URL(handle));
@@ -233,16 +234,15 @@ public class RFTClient extends ServicePropertiesImpl
             int requestid = rftPort.start();
             System.out.println("Request id: " + requestid);
 
-            //multirftPortType.cancel(requestid,3,4);
-
-            /*
+            
             synchronized (client) {
                 client.wait();
             }
-            */
+          
 
         } catch (Exception e) {
             System.err.println(MessageUtils.toString(e));
         }
     }
 }
+

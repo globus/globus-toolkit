@@ -37,7 +37,7 @@
         <xsd:element name="transferId" type="int"/>
         <xsd:element name="sourceUrl" type="string"/>
         <xsd:element name="destinationUrl" type="string"/>
-        <xsd:element name="rftOptions" type="rft-types:RFTOptionsType"/>
+        <xsd:element name="rftOptions" type="rft-types:RFTOptionsType" minOccurs="0" maxOccurs="1"/>
     </xsd:sequence>
 </xsd:complexType>
 
@@ -46,11 +46,11 @@
         <xsd:element name="transfer" type="rft-types:TransferType"/>
     </xsd:sequence>
 </xsd:complexType>
-
 <xsd:complexType name="TransferRequestType">
     <xsd:sequence>
-        <element name="transferArray" type="rft-types:TransferType" minOccurs="0" maxOccurs="unbounded"/>
-        <element name="concurrency" type="int"/>
+        <xsd:element name="transferArray" type="rft-types:TransferType" minOccurs="1" maxOccurs="unbounded"/>
+        <xsd:element name="rftOptions" type="rft-types:RFTOptionsType" minOccurs="1" maxOccurs="1"/>
+        <xsd:element name="concurrency" type="int" minOccurs="1" maxOccurs="1"/>
     </xsd:sequence>
 </xsd:complexType>
 

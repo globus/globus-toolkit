@@ -1,4 +1,6 @@
-/*This file is licensed under the terms of the Globus Toolkit Public|License, found at http://www.globus.org/toolkit/download/license.html.*/
+/*
+ *  This file is licensed under the terms of the Globus Toolkit Public|License, found at http://www.globus.org/toolkit/download/license.html.
+ */
 package org.globus.ogsa.impl.base.multirft;
 
 import java.io.File;
@@ -39,6 +41,8 @@ import org.globus.ogsa.base.multirft.GridFTPRestartMarkerElement;
 import org.globus.ogsa.base.multirft.RFTOptionsType;
 import org.globus.ogsa.impl.base.multirft.MyMarkerListener;
 import org.globus.ogsa.impl.base.multirft.TransferDbOptions;
+import org.globus.ogsa.impl.base.multirft.util.FileSystemUtil;
+import org.globus.ogsa.impl.base.multirft.util.URLExpander;
 import org.globus.ogsa.utils.MessageUtils;
 
 import org.globus.util.GlobusURL;
@@ -52,6 +56,12 @@ import org.ietf.jgss.GSSCredential;
 import org.ietf.jgss.GSSException;
 
 
+/**
+ *  Description of the Class
+ *
+ *@author     madduri
+ *@created    October 17, 2003
+ */
 public class TransferClient {
 
     GridFTPClient sourceHost;
@@ -61,7 +71,7 @@ public class TransferClient {
     String proxyPath;
     String sourceHostName;
     String destinationHostName;
-    int status=-1;
+    int status = -1;
     int transferid;
     int parallelism;
     int tcpBufferSize;
@@ -77,516 +87,728 @@ public class TransferClient {
     String destinationSubjectName;
     String subjectName;
     TransferDbOptions dbOptions;
-    private static Logger logger = Logger.getLogger(TransferClient.class.getName());
+    FileSystemUtil fileSystemUtil;
+    static int counter = 0;
+    URLExpander urlExpander = null;
+    private static Logger logger = Logger.getLogger( TransferClient.class.getName() );
 
-    public TransferClient() {
-    }
-    public void setSourceURL(String sourceURL)
-    throws RemoteException {
+
+    /**
+     *  Constructor for the TransferClient object
+     */
+    public TransferClient() { }
+
+
+    /**
+     *  Sets the sourceURL attribute of the TransferClient object
+     *
+     *@param  sourceURL            The new sourceURL value
+     *@exception  RemoteException  Description of the Exception
+     */
+    public void setSourceURL( String sourceURL )
+             throws RemoteException {
         try {
-            this.sourceGlobusURL = new GlobusURL(sourceURL);
-        } catch(Exception e) {
-            status=2;
-            logger.debug("Invalid Source URL");
-            throw new RemoteException(MessageUtils.toString(e));
+            this.sourceGlobusURL = new GlobusURL( sourceURL );
+        } catch ( Exception e ) {
+            status = 2;
+            logger.debug( "Invalid Source URL" );
+            throw new RemoteException( MessageUtils.toString( e ) );
         }
     }
-    public void setDestinationURL(String destinationURL) 
-    throws RemoteException {
+
+
+    /**
+     *  Sets the destinationURL attribute of the TransferClient object
+     *
+     *@param  destinationURL       The new destinationURL value
+     *@exception  RemoteException  Description of the Exception
+     */
+    public void setDestinationURL( String destinationURL )
+             throws RemoteException {
         try {
-            this.destinationGlobusURL = new GlobusURL(destinationURL);
-        } catch(Exception e) {
-            status=2;
-            logger.debug("Invalid Destination URL"); 
-            throw new RemoteException(MessageUtils.toString(e));
+            this.destinationGlobusURL = new GlobusURL( destinationURL );
+        } catch ( Exception e ) {
+            status = 2;
+            logger.debug( "Invalid Destination URL" );
+            throw new RemoteException( MessageUtils.toString( e ) );
         }
     }
+
+
+    /**
+     *  Gets the sourceURL attribute of the TransferClient object
+     *
+     *@return    The sourceURL value
+     */
     public GlobusURL getSourceURL() {
         return this.sourceGlobusURL;
     }
+
+
+    /**
+     *  Gets the destinationURL attribute of the TransferClient object
+     *
+     *@return    The destinationURL value
+     */
     public GlobusURL getDestinationURL() {
         return this.destinationGlobusURL;
     }
-    public void setSourceHost(String sourceURL)
-    throws RemoteException {
+
+
+    /**
+     *  Sets the sourceHost attribute of the TransferClient object
+     *
+     *@param  sourceURL            The new sourceHost value
+     *@exception  RemoteException  Description of the Exception
+     */
+    public void setSourceHost( String sourceURL )
+             throws RemoteException {
         try {
-            this.sourceGlobusURL = new GlobusURL(sourceURL);
-            this.sourceHost = new GridFTPClient(this.sourceGlobusURL.getHost(),
-                                            this.sourceGlobusURL.getPort());
-        } catch(Exception e) {
-            status=2;
-            logger.debug("Unable to create GridFTP Client to : " + this.sourceGlobusURL.getHost());
-            throw new RemoteException(MessageUtils.toString(e));
+            this.sourceGlobusURL = new GlobusURL( sourceURL );
+            this.sourceHost = new GridFTPClient( this.sourceGlobusURL.getHost(),
+                    this.sourceGlobusURL.getPort() );
+        } catch ( Exception e ) {
+            status = 2;
+            logger.debug( "Unable to create GridFTP Client to : " + this.sourceGlobusURL.getHost() );
+            throw new RemoteException( MessageUtils.toString( e ) );
         }
-    }
-    public void setDestinationHost(String destURL)
-    throws RemoteException {
-        try {
-            this.destinationGlobusURL = new GlobusURL(destURL);
-            this.destinationHost = new GridFTPClient(this.destinationGlobusURL.getHost(),
-                                            this.destinationGlobusURL.getPort());
-        } catch(Exception e) {
-            status=2;
-            logger.debug("Unable to create GridFTP Client to : " + this.destinationGlobusURL.getHost());
-            throw new RemoteException(MessageUtils.toString(e));
-        }
-    }
-    public void setStatus(int status) {
-        this.status = status;
-    }
-    public void setCredential(String proxyPath) 
-    throws org.ietf.jgss.GSSException {
-        this.credential = loadCredential(proxyPath);
-    } 
-    public void initialize()
-    throws RemoteException {
-        try {
-            setTransferParams(this.destinationHost,this.credential);
-            setTransferParams(this.sourceHost,this.credential);
-            this.size = this.sourceHost.getSize(this.sourcePath);
-        } catch(Exception e) {
-            throw new RemoteException(MessageUtils.toString(e));
-        }
-    }
-        
-    public void setTransferId(int transferId) {
-        this.transferid= transferId;
-    }
-    public void setRftOptions(RFTOptionsType rftOptions) {
-        this.rftOptions = rftOptions;
-    }
-    public void setDbOptions(TransferDbOptions dbOptions) {
-        this.dbOptions = dbOptions;
-    }
-    public void setMyMarkerListener(FileTransferProgressType transferProgress,
-                                    ServiceDataSet serviceData, 
-                                    ServiceData transferProgressData, 
-                                    ServiceData restartMarkerServiceData, 
-                                    FileTransferRestartMarker restartMarker, 
-                                    ServiceData gridFTPRestartMarkerSD, 
-                                    GridFTPRestartMarkerElement gridFTPRestartMarkerElement, 
-                                    ServiceData gridFTPPerfMarkerSD, 
-                                    GridFTPPerfMarkerElement gridFTPPerfMarkerElement) {
-        this.markerListener = new MyMarkerListener(this.dbOptions,transferProgress,
-                                                    serviceData,transferProgressData,this.size,
-                                                    restartMarkerServiceData,restartMarker,
-                                                    gridFTPRestartMarkerSD,gridFTPRestartMarkerElement,
-                                                    gridFTPPerfMarkerSD,gridFTPPerfMarkerElement);
-        this.markerListener.setTransferId(this.transferid);
     }
 
+
+    /**
+     *  Sets the destinationHost attribute of the TransferClient object
+     *
+     *@param  destURL              The new destinationHost value
+     *@exception  RemoteException  Description of the Exception
+     */
+    public void setDestinationHost( String destURL )
+             throws RemoteException {
+        try {
+            this.destinationGlobusURL = new GlobusURL( destURL );
+            this.destinationHost = new GridFTPClient( this.destinationGlobusURL.getHost(),
+                    this.destinationGlobusURL.getPort() );
+        } catch ( Exception e ) {
+            status = 2;
+            logger.debug( "Unable to create GridFTP Client to : " + this.destinationGlobusURL.getHost() );
+            throw new RemoteException( MessageUtils.toString( e ) );
+        }
+    }
+
+
+    /**
+     *  Sets the status attribute of the TransferClient object
+     *
+     *@param  status  The new status value
+     */
+    public void setStatus( int status ) {
+        this.status = status;
+    }
+
+
+    /**
+     *  Sets the credential attribute of the TransferClient object
+     *
+     *@param  proxyPath                       The new credential value
+     *@exception  org.ietf.jgss.GSSException  Description of the Exception
+     */
+    public void setCredential( String proxyPath )
+             throws org.ietf.jgss.GSSException {
+        this.credential = loadCredential( proxyPath );
+    }
+
+
+    /**
+     *  Description of the Method
+     *
+     *@exception  RemoteException  Description of the Exception
+     */
+    public void initialize()
+             throws RemoteException {
+        try {
+            setTransferParams( this.destinationHost, this.credential );
+            setTransferParams( this.sourceHost, this.credential );
+            this.size = this.sourceHost.getSize( this.sourcePath );
+        } catch ( Exception e ) {
+            throw new RemoteException( MessageUtils.toString( e ) );
+        }
+    }
+
+
+    /**
+     *  Sets the transferId attribute of the TransferClient object
+     *
+     *@param  transferId  The new transferId value
+     */
+    public void setTransferId( int transferId ) {
+        this.transferid = transferId;
+    }
+
+
+    /**
+     *  Sets the rftOptions attribute of the TransferClient object
+     *
+     *@param  rftOptions  The new rftOptions value
+     */
+    public void setRftOptions( RFTOptionsType rftOptions ) {
+        this.rftOptions = rftOptions;
+    }
+
+
+    /**
+     *  Sets the dbOptions attribute of the TransferClient object
+     *
+     *@param  dbOptions  The new dbOptions value
+     */
+    public void setDbOptions( TransferDbOptions dbOptions ) {
+        this.dbOptions = dbOptions;
+    }
+
+
+    /**
+     *  Sets the myMarkerListener attribute of the TransferClient object
+     *
+     *@param  transferProgress             The new myMarkerListener value
+     *@param  serviceData                  The new myMarkerListener value
+     *@param  transferProgressData         The new myMarkerListener value
+     *@param  restartMarkerServiceData     The new myMarkerListener value
+     *@param  restartMarker                The new myMarkerListener value
+     *@param  gridFTPRestartMarkerSD       The new myMarkerListener value
+     *@param  gridFTPRestartMarkerElement  The new myMarkerListener value
+     *@param  gridFTPPerfMarkerSD          The new myMarkerListener value
+     *@param  gridFTPPerfMarkerElement     The new myMarkerListener value
+     */
+    public void setMyMarkerListener( FileTransferProgressType transferProgress,
+            ServiceDataSet serviceData,
+            ServiceData transferProgressData,
+            ServiceData restartMarkerServiceData,
+            FileTransferRestartMarker restartMarker,
+            ServiceData gridFTPRestartMarkerSD,
+            GridFTPRestartMarkerElement gridFTPRestartMarkerElement,
+            ServiceData gridFTPPerfMarkerSD,
+            GridFTPPerfMarkerElement gridFTPPerfMarkerElement ) {
+        this.markerListener = new MyMarkerListener( transferProgress,
+                serviceData, transferProgressData, this.size,
+                restartMarkerServiceData, restartMarker,
+                gridFTPRestartMarkerSD, gridFTPRestartMarkerElement,
+                gridFTPPerfMarkerSD, gridFTPPerfMarkerElement );
+        this.markerListener.setTransferId( this.transferid );
+    }
+
+
+    /**
+     *  Sets the myMarkerListener attribute of the TransferClient object
+     *
+     *@param  markerListener  The new myMarkerListener value
+     */
+    public void setMyMarkerListener( MyMarkerListener markerListener ) {
+        this.markerListener = markerListener;
+    }
+
+
+    /**
+     *  Gets the size attribute of the TransferClient object
+     *
+     *@return    The size value
+     */
+    public long getSize() {
+        return this.size;
+    }
+
+
+    /**
+     *  Gets the urlExpander attribute of the TransferClient object
+     *
+     *@return    The urlExpander value
+     */
+    public URLExpander getUrlExpander() {
+        return this.urlExpander;
+    }
+
+
+    /**
+     *  Sets the authorization attribute of the TransferClient object
+     */
     public void setAuthorization() {
         subjectName = this.rftOptions.getSubjectName();
         sourceSubjectName = this.rftOptions.getSourceSubjectName();
         destinationSubjectName = this.rftOptions.getDestinationSubjectName();
 
-        if (subjectName != null) {
-            destinationHost.setAuthorization(new IdentityAuthorization(
-                                                         subjectName));
-            sourceHost.setAuthorization(new IdentityAuthorization(
-                                                    subjectName));
+        if ( subjectName != null ) {
+            destinationHost.setAuthorization( new IdentityAuthorization(
+                    subjectName ) );
+            sourceHost.setAuthorization( new IdentityAuthorization(
+                    subjectName ) );
         }
-        if (sourceSubjectName != null) {
-            sourceHost.setAuthorization(new IdentityAuthorization(
-                                                    sourceSubjectName));
+        if ( sourceSubjectName != null ) {
+            sourceHost.setAuthorization( new IdentityAuthorization(
+                    sourceSubjectName ) );
         }
 
-        if (destinationSubjectName != null) {
-            destinationHost.setAuthorization(new IdentityAuthorization(
-                                                         destinationSubjectName));
+        if ( destinationSubjectName != null ) {
+            destinationHost.setAuthorization( new IdentityAuthorization(
+                    destinationSubjectName ) );
         }
     }
-    public TransferClient(int transferid, String sourceURL, 
-                          String destinationURL, String proxyPath, 
-                          TransferDbOptions dbOptions, 
-                          FileTransferProgressType transferProgress, 
-                          ServiceDataSet serviceData, 
-                          ServiceData transferProgressData, 
-                          ServiceData restartMarkerServiceData, 
-                          FileTransferRestartMarker restartMarker, 
-                          ServiceData gridFTPRestartMarkerSD, 
-                          GridFTPRestartMarkerElement gridFTPRestartMarkerElement, 
-                          ServiceData gridFTPPerfMarkerSD, 
-                          GridFTPPerfMarkerElement gridFTPPerfMarkerElement, 
-                          RFTOptionsType rftOptions)
-                   throws RemoteException {
+
+
+    /**
+     *  Constructor for the TransferClient object
+     *
+     *@param  transferid                   Description of the Parameter
+     *@param  sourceURL                    Description of the Parameter
+     *@param  destinationURL               Description of the Parameter
+     *@param  proxyPath                    Description of the Parameter
+     *@param  dbOptions                    Description of the Parameter
+     *@param  transferProgress             Description of the Parameter
+     *@param  serviceData                  Description of the Parameter
+     *@param  transferProgressData         Description of the Parameter
+     *@param  restartMarkerServiceData     Description of the Parameter
+     *@param  restartMarker                Description of the Parameter
+     *@param  gridFTPRestartMarkerSD       Description of the Parameter
+     *@param  gridFTPRestartMarkerElement  Description of the Parameter
+     *@param  gridFTPPerfMarkerSD          Description of the Parameter
+     *@param  gridFTPPerfMarkerElement     Description of the Parameter
+     *@param  rftOptions                   Description of the Parameter
+     *@exception  RemoteException          Description of the Exception
+     */
+    public TransferClient( int transferid, String sourceURL,
+            String destinationURL, String proxyPath,
+            TransferDbOptions dbOptions,
+            FileTransferProgressType transferProgress,
+            ServiceDataSet serviceData,
+            ServiceData transferProgressData,
+            ServiceData restartMarkerServiceData,
+            FileTransferRestartMarker restartMarker,
+            ServiceData gridFTPRestartMarkerSD,
+            GridFTPRestartMarkerElement gridFTPRestartMarkerElement,
+            ServiceData gridFTPPerfMarkerSD,
+            GridFTPPerfMarkerElement gridFTPPerfMarkerElement,
+            RFTOptionsType rftOptions )
+             throws RemoteException {
 
         try {
             this.transferid = transferid;
-            sourceGlobusURL = new GlobusURL(sourceURL);
-            destinationGlobusURL = new GlobusURL(destinationURL);
+            logger.debug("transfer id in transfer client: " + this.transferid);
+            sourceGlobusURL = new GlobusURL( sourceURL );
+            destinationGlobusURL = new GlobusURL( destinationURL );
             sourceHostName = sourceGlobusURL.getHost();
             destinationHostName = destinationGlobusURL.getHost();
             sourcePath = "/" + sourceGlobusURL.getPath();
             destinationPath = "/" + destinationGlobusURL.getPath();
             sourcePort = sourceGlobusURL.getPort();
             destinationPort = destinationGlobusURL.getPort();
-            sourceHost = new GridFTPClient(sourceGlobusURL.getHost(), 
-                                           sourceGlobusURL.getPort());
-            destinationHost = new GridFTPClient(destinationGlobusURL.getHost(), 
-                                                destinationGlobusURL.getPort());
-            this.credential = loadCredential(proxyPath);
+            sourceHost = new GridFTPClient( sourceGlobusURL.getHost(),
+                    sourceGlobusURL.getPort() );
+            destinationHost = new GridFTPClient( destinationGlobusURL.getHost(),
+                    destinationGlobusURL.getPort() );
+            this.fileSystemUtil = new FileSystemUtil();
+            this.fileSystemUtil.setGridFTPClient( destinationHost );
+            this.credential = loadCredential( proxyPath );
             this.rftOptions = rftOptions;
             subjectName = this.rftOptions.getSubjectName();
             sourceSubjectName = this.rftOptions.getSourceSubjectName();
             destinationSubjectName = this.rftOptions.getDestinationSubjectName();
 
-            if (subjectName != null) {
-                destinationHost.setAuthorization(new IdentityAuthorization(
-                                                         subjectName));
-                sourceHost.setAuthorization(new IdentityAuthorization(
-                                                    subjectName));
+            if ( subjectName != null ) {
+                destinationHost.setAuthorization( new IdentityAuthorization(
+                        subjectName ) );
+                sourceHost.setAuthorization( new IdentityAuthorization(
+                        subjectName ) );
             }
 
-            if (sourceSubjectName != null) {
-                sourceHost.setAuthorization(new IdentityAuthorization(
-                                                    sourceSubjectName));
+            if ( sourceSubjectName != null ) {
+                sourceHost.setAuthorization( new IdentityAuthorization(
+                        sourceSubjectName ) );
             }
 
-            if (destinationSubjectName != null) {
-                destinationHost.setAuthorization(new IdentityAuthorization(
-                                                         destinationSubjectName));
+            if ( destinationSubjectName != null ) {
+                destinationHost.setAuthorization( new IdentityAuthorization(
+                        destinationSubjectName ) );
             }
 
-            setTransferParams(destinationHost, this.credential);
-            setTransferParams(sourceHost, this.credential);
-            size = sourceHost.getSize(sourcePath);
-            markerListener = new MyMarkerListener(dbOptions, transferProgress, 
-                                                  serviceData, 
-                                                  transferProgressData, size, 
-                                                  restartMarkerServiceData, 
-                                                  restartMarker, 
-                                                  gridFTPRestartMarkerSD, 
-                                                  gridFTPRestartMarkerElement, 
-                                                  gridFTPPerfMarkerSD, 
-                                                  gridFTPPerfMarkerElement);
-            markerListener.setTransferId(transferid);
-            logger.debug("Transfer Id in TransferClient : " + transferid);
-        } catch (MalformedURLException mue) {
+            setTransferParams( destinationHost, this.credential );
+            setTransferParams( sourceHost, this.credential );
+            counter++;
+            logger.debug( "This is transfer # " + counter );
+            if ( this.sourcePath.endsWith( "/" ) ) {
+                logger.debug( "Source url contains a directory" );
+                logger.debug( "More processing needs to be done" );
+                this.status = 6;
+                this.urlExpander = new URLExpander
+                        ( this.sourceHost, this.destinationHost, sourceGlobusURL, destinationGlobusURL );
+                this.urlExpander.start();
+            } else {
+                size = sourceHost.getSize( sourcePath );
+                markerListener = new MyMarkerListener( transferProgress,
+                        serviceData,
+                        transferProgressData, size,
+                        restartMarkerServiceData,
+                        restartMarker,
+                        gridFTPRestartMarkerSD,
+                        gridFTPRestartMarkerElement,
+                        gridFTPPerfMarkerSD,
+                        gridFTPPerfMarkerElement );
+                markerListener.setTransferId( transferid );
+                logger.debug( "Transfer Id in TransferClient : " + transferid );
+
+            }
+        } catch ( MalformedURLException mue ) {
             status = 2;
-            logger.error("Error in TransferClient:Invalid URLs", mue);
-        }
-         catch (Exception e) {
+            logger.error( "Error in TransferClient:Invalid URLs", mue );
+        } catch ( Exception e ) {
             status = 2;
-            logger.error("Error in TransferClient", e);
-            throw new RemoteException(MessageUtils.toString(e));
+            logger.error( "Error in TransferClient", e );
+            throw new RemoteException( MessageUtils.toString( e ) );
         }
+
     }
 
-    /**
-     * DOCUMENT ME!
-     * 
-     * @param credPath DOCUMENT ME!
-     * @return DOCUMENT ME! 
-     * @throws GSSException DOCUMENT ME!
-     */
-    public static GSSCredential loadCredential(String credPath)
-                                        throws GSSException {
 
-        ExtendedGSSManager manager = (ExtendedGSSManager)ExtendedGSSManager.getInstance();
+    /**
+     *  DOCUMENT ME!
+     *
+     *@param  credPath       DOCUMENT ME!
+     *@return                DOCUMENT ME!
+     *@throws  GSSException  DOCUMENT ME!
+     */
+    public static GSSCredential loadCredential( String credPath )
+             throws GSSException {
+
+        ExtendedGSSManager manager = (ExtendedGSSManager) ExtendedGSSManager.getInstance();
         String handle = "X509_USER_PROXY=" + credPath;
 
-        return manager.createCredential(handle.getBytes(), 
-                                        ExtendedGSSCredential.IMPEXP_MECH_SPECIFIC, 
-                                        GSSCredential.DEFAULT_LIFETIME, null, 
-                                        GSSCredential.INITIATE_AND_ACCEPT);
+        return manager.createCredential( handle.getBytes(),
+                ExtendedGSSCredential.IMPEXP_MECH_SPECIFIC,
+                GSSCredential.DEFAULT_LIFETIME, null,
+                GSSCredential.INITIATE_AND_ACCEPT );
     }
 
+
     /**
-     * DOCUMENT ME!
-     * 
-     * @param credential DOCUMENT ME!
-     * @return DOCUMENT ME! 
-     * @throws GSSException DOCUMENT ME!
+     *  DOCUMENT ME!
+     *
+     *@param  credential     DOCUMENT ME!
+     *@return                DOCUMENT ME!
+     *@throws  GSSException  DOCUMENT ME!
      */
-    public static String saveCredential(GSSCredential credential)
-                                 throws GSSException {
+    public static String saveCredential( GSSCredential credential )
+             throws GSSException {
 
-        if (!(credential instanceof ExtendedGSSCredential)) {
-            throw new GSSException(GSSException.FAILURE);
+        if ( !( credential instanceof ExtendedGSSCredential ) ) {
+            throw new GSSException( GSSException.FAILURE );
         }
 
-        ExtendedGSSManager manager = (ExtendedGSSManager)ExtendedGSSManager.getInstance();
-        byte[] buf = ((ExtendedGSSCredential)credential).export(
-                             ExtendedGSSCredential.IMPEXP_MECH_SPECIFIC);
+        ExtendedGSSManager manager = (ExtendedGSSManager) ExtendedGSSManager.getInstance();
+        byte[] buf = ( (ExtendedGSSCredential) credential ).export(
+                ExtendedGSSCredential.IMPEXP_MECH_SPECIFIC );
 
-        if (buf == null) {
-            throw new GSSException(GSSException.FAILURE);
+        if ( buf == null ) {
+            throw new GSSException( GSSException.FAILURE );
         }
 
-        String handle = new String(buf);
-        int pos = handle.indexOf('=');
+        String handle = new String( buf );
+        int pos = handle.indexOf( '=' );
 
-        if (pos == -1) {
-            throw new GSSException(GSSException.FAILURE);
+        if ( pos == -1 ) {
+            throw new GSSException( GSSException.FAILURE );
         }
 
-        return handle.substring(pos + 1).trim();
+        return handle.substring( pos + 1 ).trim();
     }
 
+
     /**
-     * DOCUMENT ME!
-     * 
-     * @param proxyPath DOCUMENT ME!
+     *  DOCUMENT ME!
+     *
+     *@param  proxyPath  DOCUMENT ME!
      */
-    public void setProxyPath(String proxyPath) {
+    public void setProxyPath( String proxyPath ) {
         this.proxyPath = proxyPath;
     }
 
+
     /**
-     * DOCUMENT ME!
-     * 
-     * @param host DOCUMENT ME!
+     *  DOCUMENT ME!
+     *
+     *@param  host  DOCUMENT ME!
      */
-    public void setSource(GridFTPClient host) {
+    public void setSource( GridFTPClient host ) {
         this.sourceHost = host;
     }
 
+
     /**
-     * DOCUMENT ME!
-     * 
-     * @return DOCUMENT ME! 
+     *  DOCUMENT ME!
+     *
+     *@return    DOCUMENT ME!
      */
     public GridFTPClient getSource() {
 
         return this.sourceHost;
     }
 
+
     /**
-     * DOCUMENT ME!
-     * 
-     * @return DOCUMENT ME! 
+     *  DOCUMENT ME!
+     *
+     *@return    DOCUMENT ME!
      */
     public int getStatus() {
 
         return this.status;
     }
 
+
     /**
-     * DOCUMENT ME!
-     * 
-     * @param destinationHost DOCUMENT ME!
+     *  DOCUMENT ME!
+     *
+     *@param  destinationHost  DOCUMENT ME!
      */
-    public void setDestination(GridFTPClient destinationHost) {
+    public void setDestination( GridFTPClient destinationHost ) {
         this.destinationHost = destinationHost;
     }
 
+
     /**
-     * DOCUMENT ME!
-     * 
-     * @return DOCUMENT ME! 
+     *  DOCUMENT ME!
+     *
+     *@return    DOCUMENT ME!
      */
     public GridFTPClient getDestination() {
 
         return this.destinationHost;
     }
 
+
     /**
-     * DOCUMENT ME!
-     * 
-     * @param destPath DOCUMENT ME!
+     *  DOCUMENT ME!
+     *
+     *@param  destPath  DOCUMENT ME!
      */
-    public void setDestinationPath(String destPath) {
+    public void setDestinationPath( String destPath ) {
         this.destinationPath = "/" + destPath;
     }
 
+
     /**
-     * DOCUMENT ME!
-     * 
-     * @return DOCUMENT ME! 
+     *  DOCUMENT ME!
+     *
+     *@return    DOCUMENT ME!
      */
     public int getTransferID() {
 
         return this.transferid;
     }
 
+
     /**
-     * DOCUMENT ME!
-     * 
-     * @return DOCUMENT ME! 
+     *  DOCUMENT ME!
+     *
+     *@return    DOCUMENT ME!
      */
     public String getDestinationPath() {
 
         return destinationPath;
     }
 
-    /**
-     * DOCUMENT ME!
-     * 
-     * @param sourcePath DOCUMENT ME!
-     */
-    public void setSourcePath(String sourcePath) {
-        this.sourcePath = "/"+sourcePath;
-    }
 
     /**
-     * DOCUMENT ME!
-     * 
-     * @return DOCUMENT ME! 
+     *  DOCUMENT ME!
+     *
+     *@param  sourcePath  DOCUMENT ME!
+     */
+    public void setSourcePath( String sourcePath ) {
+        this.sourcePath = "/" + sourcePath;
+        this.markerListener = null;
+        try {
+            this.size = sourceHost.getSize( this.sourcePath );
+        } catch ( Exception e ) {
+            logger.error( "Unable to get size of : " + sourcePath, e );
+            status = 2;
+        }
+
+    }
+
+
+    /**
+     *  DOCUMENT ME!
+     *
+     *@return    DOCUMENT ME!
      */
     public String getSourcePath() {
 
         return this.sourcePath;
     }
 
+
     /**
-     * DOCUMENT ME!
-     * 
-     * @param rftOptions DOCUMENT ME!
+     *  DOCUMENT ME!
+     *
+     *@param  rftOptions  DOCUMENT ME!
      */
-    public void setRFTOptions(RFTOptionsType rftOptions) {
+    public void setRFTOptions( RFTOptionsType rftOptions ) {
         this.rftOptions = rftOptions;
     }
 
+
     /**
-     * DOCUMENT ME!
-     * 
-     * @param host DOCUMENT ME!
-     * @param cred DOCUMENT ME!
+     *  DOCUMENT ME!
+     *
+     *@param  host  DOCUMENT ME!
+     *@param  cred  DOCUMENT ME!
      */
-    public void setTransferParams(GridFTPClient host, GSSCredential cred) {
+    public void setTransferParams( GridFTPClient host, GSSCredential cred ) {
 
         try {
-            host.authenticate(cred);
-            host.setProtectionBufferSize(16384);
+            host.authenticate( cred );
 
-            if (rftOptions.isBinary()) {
-                host.setType(GridFTPSession.TYPE_IMAGE);
+            if ( rftOptions.isBinary() ) {
+                host.setType( GridFTPSession.TYPE_IMAGE );
             } else {
-                host.setType(GridFTPSession.TYPE_ASCII);
+                host.setType( GridFTPSession.TYPE_ASCII );
             }
 
-            host.setMode(GridFTPSession.MODE_EBLOCK);
+            host.setMode( GridFTPSession.MODE_EBLOCK );
 
-            if (rftOptions.isDcau()) {
+            if ( rftOptions.isDcau() ) {
                 host.setDataChannelAuthentication(
-                        DataChannelAuthentication.SELF);
+                        DataChannelAuthentication.SELF );
+                host.setProtectionBufferSize( 16384 );
             } else {
                 host.setLocalNoDataChannelAuthentication();
             }
-        } catch (Exception e) {
-            logger.debug("Error in setting Params", e);
+        } catch ( Exception e ) {
+            logger.debug( "Error in setting Params", e );
             status = 2;
 
             return;
         }
     }
 
+
     /**
-     * DOCUMENT ME!
-     * 
-     * @param marker DOCUMENT ME!
+     *  DOCUMENT ME!
+     *
+     *@param  marker  DOCUMENT ME!
      */
-    public void setRestartMarker(String marker) {
+    public void setRestartMarker( String marker ) {
 
         try {
             marker = "Range Marker " + marker;
 
             GridFTPRestartMarker restartmarker = new GridFTPRestartMarker(
-                                                         marker);
+                    marker );
             ByteRangeList list = new ByteRangeList();
-            list.merge(restartmarker.toVector());
-            this.sourceHost.setRestartMarker(list);
-        } catch (Exception e) {
-            logger.error("Error in setting the restart marker", e);
+            list.merge( restartmarker.toVector() );
+            this.sourceHost.setRestartMarker( list );
+        } catch ( Exception e ) {
+            logger.error( "Error in setting the restart marker", e );
         }
     }
 
+
     /**
-     * DOCUMENT ME!
-     * 
-     * @param parallel DOCUMENT ME!
+     *  DOCUMENT ME!
+     *
+     *@param  parallel  DOCUMENT ME!
      */
-    public void setParallelStreams(int parallel) {
+    public void setParallelStreams( int parallel ) {
         this.parallelism = parallel;
     }
 
+
     /**
-     * DOCUMENT ME!
-     * 
-     * @param tcpBufferSize DOCUMENT ME!
+     *  DOCUMENT ME!
+     *
+     *@param  tcpBufferSize  DOCUMENT ME!
      */
-    public void setTcpBufferSize(int tcpBufferSize) {
+    public void setTcpBufferSize( int tcpBufferSize ) {
         this.tcpBufferSize = tcpBufferSize;
     }
 
+
     /**
-     * DOCUMENT ME!
+     *  DOCUMENT ME!
      */
     public void transfer() {
 
-        if (rftOptions.isNotpt()) {
+        if ( rftOptions.isNotpt() ) {
             noTptTransfer();
         } else {
             tptTransfer();
         }
     }
 
+
     /**
-     * DOCUMENT ME!
+     *  DOCUMENT ME!
      */
     private void tptTransfer() {
 
         try {
-            logger.debug("In Transfer Client");
-            sourceHost.setOptions(new RetrieveOptions(parallelism));
-            sourceHost.setTCPBufferSize(this.tcpBufferSize);
-            destinationHost.setTCPBufferSize(this.tcpBufferSize);
-            sourceHost.extendedTransfer(this.sourcePath, this.destinationHost, 
-                                        this.destinationPath, markerListener);
+            logger.debug( "In Transfer Client" );
+            sourceHost.setOptions( new RetrieveOptions( parallelism ) );
+            sourceHost.setTCPBufferSize( this.tcpBufferSize );
+            destinationHost.setTCPBufferSize( this.tcpBufferSize );
+            sourceHost.extendedTransfer( this.sourcePath, this.destinationHost,
+                    this.destinationPath, markerListener );
+            logger.debug( "Transfer done" );
+            this.markerListener = null;
             status = 0;
-        } catch (Exception e) {
-            logger.debug("Exception in transfer", e);
+        } catch ( Exception e ) {
+            logger.debug( "Exception in transfer", e );
 
-            if (status != 2) {
+            if ( status != 2 ) {
                 status = 1;
             }
         }
     }
 
+
     /**
-     * DOCUMENT ME!
+     *  DOCUMENT ME!
      */
     private void noTptTransfer() {
 
         try {
 
             String fullLocalFile = "/tmp/TempGridFTP_" + transferid;
-            sourceHost.setOptions(new RetrieveOptions(parallelism));
-            sourceHost.setTCPBufferSize(this.tcpBufferSize);
+            sourceHost.setOptions( new RetrieveOptions( parallelism ) );
+            sourceHost.setTCPBufferSize( this.tcpBufferSize );
 
             DataSink sink = null;
-            sink = new FileRandomIO(new java.io.RandomAccessFile(fullLocalFile, 
-                                                                 "rw"));
-            sourceHost.extendedGet(sourcePath, size, sink, markerListener);
+            sink = new FileRandomIO( new java.io.RandomAccessFile( fullLocalFile,
+                    "rw" ) );
+            sourceHost.extendedGet( sourcePath, size, sink, markerListener );
             sourceHost.close();
-            destinationHost.setOptions(new RetrieveOptions(parallelism));
-            destinationHost.setTCPBufferSize(this.tcpBufferSize);
+            destinationHost.setOptions( new RetrieveOptions( parallelism ) );
+            destinationHost.setTCPBufferSize( this.tcpBufferSize );
 
             DataSource source = null;
-            source = new FileRandomIO(new java.io.RandomAccessFile(
-                                              fullLocalFile, "r"));
-            destinationHost.extendedPut(destinationPath, source, 
-                                        markerListener);
+            source = new FileRandomIO( new java.io.RandomAccessFile(
+                    fullLocalFile, "r" ) );
+            destinationHost.extendedPut( destinationPath, source,
+                    markerListener );
             destinationHost.close();
             status = 0;
-        } catch (FTPException e) {
-            logger.debug("Exception in noTpt", e);
+        } catch ( FTPException e ) {
+            logger.debug( "Exception in noTpt", e );
 
-            if (status != 2) {
+            if ( status != 2 ) {
                 status = 1;
             }
-        }
-         catch (IOException ioe) {
-            logger.debug("IOException in noTpt", ioe);
+        } catch ( IOException ioe ) {
+            logger.debug( "IOException in noTpt", ioe );
         }
     }
 
+
     /**
-     * DOCUMENT ME!
-     * 
-     * @param as DOCUMENT ME!
+     *  DOCUMENT ME!
+     *
+     *@param  as  DOCUMENT ME!
      */
-    public static void main(String[] as) {
+    public static void main( String[] as ) {
     }
 }
+
