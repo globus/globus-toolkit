@@ -27,7 +27,7 @@ cond_eval cond_notafter unixtime {
 }
 
 cond_eval userok local {
-   cond_eval libglobus_gaa_simple_$f.so gaa_simple_check_trivial_cond
-   sym_params libglobus_gaa_simple_$f.so trivial_yes
+   cond_eval libglobus_gaa_simple_$f.so gaa_simple_external_user_cond
+   params /path/to/local/authorization/program
    idcred no
 }

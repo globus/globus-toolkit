@@ -33,12 +33,12 @@ EXTERN_C_BEGIN
                              Include header files
 **********************************************************************/
 
-#include "globus_common.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 #include "openssl/crypto.h"
 #include "openssl/pkcs12.h"
+#include "globus_common.h"
 
 #define OPENSSL_PEM_CB(A,B)  A, B
 
@@ -538,6 +538,25 @@ globus_ssl_utils_setup_ssl_ctx(
     EVP_PKEY *                          client_private_key,
     STACK_OF(X509) *                    cert_chain,
     int *                               num_null_enc_ciphers);
+
+
+int
+globus_ssl_utils_sign(
+    ASN1_OCTET_STRING *                 data,
+    ASN1_BIT_STRING **                  signature,
+    EVP_PKEY *                          private_key);
+
+int
+globus_ssl_utils_verify_signature(
+    ASN1_OCTET_STRING *                 data,
+    ASN1_BIT_STRING *                   signature,
+    X509 *                              cert);
+
+int
+globus_ssl_utils_verify_cert(
+    X509 *                              end_entity_cert,
+    STACK_OF(X509) *                    cert_chain,
+    char *                              ca_cert_dir);
 
 EXTERN_C_END
 

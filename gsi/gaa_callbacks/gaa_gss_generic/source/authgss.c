@@ -1,5 +1,5 @@
-#include "gssapi.h"
 #include "gaa.h"
+#include "gssapi.h"
 #define MY_MECHNAME "gss"
 
 /** @defgroup gaa_gss_generic "gaa generic gss callbacks"

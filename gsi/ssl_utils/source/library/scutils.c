@@ -1458,7 +1458,6 @@ sc_RSA_eay_private_encrypt(
 	return 0;
     }
     
-    ulsiglen=BN_num_bytes(rsa->n);
     ck_status = (*(pFunctionList->C_Sign))(hSession,
 					   from, flen, to, &ulsiglen);
     if (ck_status != CKR_OK)
