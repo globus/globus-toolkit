@@ -76,7 +76,6 @@ else
 fi
 
 GT2CVS=$CVSBASE:/home/globdev/CVS/globus-packages
-GT3CVS=$CVSBASE:/home/globdev/CVS/gridservices
 
 cd $BASEDIR/source-trees/gt2-cvs
 
@@ -90,7 +89,7 @@ fi
  
 cd $BASEDIR/source-trees/cbindings
 
-cvs -d$GT3CVS co $GT3PKGS
+cvs -d$GT2CVS co $GT3PKGS
 if test ! $? = 0; then
 	echo ""
 	echo "cvs checkout of $GT3PKGS failed"
@@ -98,15 +97,15 @@ if test ! $? = 0; then
 	exit 1
 fi
 
-#cd $BASEDIR/source-trees/autotools
+cd $BASEDIR/source-trees/autotools
 
-#cvs -d$GT2CVS co autotools side_tools
-#if test ! $? = 0; then
-#	echo ""
-#	echo "cvs checkout of $GT2CVS failed"
-#	echo ""
-#	exit 1
-#fi
+cvs -d$GT2CVS co autotools side_tools
+if test ! $? = 0; then
+	echo ""
+	echo "cvs checkout of $GT2CVS failed"
+	echo ""
+	exit 1
+fi
 
 # check for globus autotools
 autoloc=`type autoconf | sed -e "s|autoconf is ||"`
