@@ -86,7 +86,7 @@ GSS_CALLCONV gss_init_delegation(
         goto err;
     }
 
-    if(cred_handle == GSS_C_NO_CREDENTIAL)
+    if(cred == GSS_C_NO_CREDENTIAL)
     {
         GSSerr(GSSERR_F_INIT_DELEGATION,GSSERR_R_BAD_ARGUMENT);
         *minor_status = gsi_generate_minor_status();
@@ -313,7 +313,7 @@ proxy_extension_create(
     X509_EXTENSION *                    ex = NULL;
     ASN1_OBJECT *                       asn1_obj = NULL;
     ASN1_OCTET_STRING *                 asn1_oct_string = NULL;
-    int                                 crit = 0;
+    int                                 crit = 1;
 
     if(g_OID_equal(extension_oid, gss_restrictions_extension))
     {
@@ -341,8 +341,6 @@ proxy_extension_create(
     }
     asn1_oct_string = NULL;
 
-    X509_EXTENSION_set_critical(ex,1);
-    
     return ex;
 
 err:
