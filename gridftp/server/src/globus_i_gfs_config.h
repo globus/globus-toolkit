@@ -14,4 +14,5 @@ int
 globus_i_gfs_config_int(
     const char *                        option);
 
+
 #endif
