@@ -7,11 +7,16 @@ globus_l_xio_op_restarted(
 {
     globus_bool_t                           destroy_handle = GLOBUS_FALSE;
     globus_bool_t                           destroy_context = GLOBUS_FALSE;
+    globus_i_xio_context_t *                context;
+    globus_i_xio_handle_t *                 handle;
+
     GlobusXIOName(globus_l_xio_op_restarted);
 
     GlobusXIODebugInternalEnter();
 
-    globus_mutex_lock(&op->_op_context->mutex);
+    context = op->_op_context;
+    handle = op->_op_handle;
+    globus_mutex_lock(&context->mutex);
     {
         op->ref--;
         if(op->ref == 0)
@@ -19,15 +24,15 @@ globus_l_xio_op_restarted(
             globus_i_xio_op_destroy(op, &destroy_handle, &destroy_context);
         }
     }
-    globus_mutex_unlock(&op->_op_context->mutex);
+    globus_mutex_unlock(&context->mutex);
 
     if(destroy_handle)
     {
         if(destroy_context)
         {
-            globus_i_xio_context_destroy(op->_op_context);
+            globus_i_xio_context_destroy(context);
         }
-        globus_i_xio_handle_destroy(op->_op_handle);
+        globus_i_xio_handle_destroy(handle);
     }
                                                                                 
     GlobusXIODebugInternalExit();
