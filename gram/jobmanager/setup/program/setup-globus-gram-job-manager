@@ -1,25 +1,3 @@
 #! /bin/sh
 
-. ${GLOBUS_LOCATION}/libexec/globus-script-initializer
-globus_source ${libexecdir}/globus-sh-tools.sh
-
-if test ! -f ${sysconfdir}/globus-job-manager.conf; then
-    ${GLOBUS_SH_PRINTF-printf} "Creating job manager configuration file..."
-    cat > ${sysconfdir}/globus-job-manager.conf <<-EOF
-	-home $GLOBUS_LOCATION
-	-e $GLOBUS_LOCATION/libexec
-	-save-logfile on_errors
-EOF
-    ${GLOBUS_SH_PRINTF-printf} "done\n"
-fi
-
-if test -d ${sysconfdir}/grid-services; then
-    if test ! -f ${sysconfdir}/grid-services/jobmanager; then
-        ${GLOBUS_SH_PRINTF-printf} "Creating grid service jobmanager..."
-           cat > ${sysconfdir}/grid-services/jobmanager <<-EOF
-		stderr_log,local_cred - $GLOBUS_LOCATION/libexec/globus-job-manager globus-job-manager -conf $GLOBUS_LOCATION/etc/globus-job-manager.conf -type fork -rdn jobmanager -machine-type unknown -publish-jobs
-EOF
-
-        ${GLOBUS_SH_PRINTF-printf} "done\n"
-    fi
-fi
+perl $GLOBUS_LOCATION/setup/globus/setup-globus-gram-job-manager.pl
