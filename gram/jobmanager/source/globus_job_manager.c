@@ -653,7 +653,12 @@ main(int argc,
     else
     {
 	error = globus_common_deploy_path(&graml_env_deploy_path);
-	globus_assert(!error);
+	if (error != GLOBUS_SUCCESS)
+	{
+	    grami_fprintf( request->jobmanager_log_fp,
+			   "JM: globus_common_deploy_path failed \n");
+	    return(GLOBUS_GRAM_CLIENT_ERROR_GATEKEEPER_MISCONFIGURED);
+	}
     }
 
     grami_fprintf( request->jobmanager_log_fp,
@@ -675,7 +680,7 @@ main(int argc,
 
     grami_fprintf( request->jobmanager_log_fp,
 		   "JM: GLOBUS_INSTALL_PATH = %s\n",
-		   (graml_env_deploy_path) ? (graml_env_deploy_path) : "NULL");
+		   (graml_env_install_path) ? (graml_env_install_path) : "NULL");
 
     globus_libc_setenv("GLOBUS_INSTALL_PATH",
 		       graml_env_install_path,
