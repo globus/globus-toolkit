@@ -41,3 +41,4 @@ globus_nexus			nexus/source			dirt.sh
 globus_replica_catalog		replica/catalog/source		dirt.sh
 globus_replica_management	replica/management/source	dirt.sh
 globus_rsl			gram/rsl/source			dirt.sh
+globus_hostname2contacts        gram/globus-hostname2contacts   dirt.sh
