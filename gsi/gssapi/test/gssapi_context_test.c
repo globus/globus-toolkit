@@ -44,10 +44,10 @@ main()
     pid_t                               pid;
 
     // ToDo: Make this run on windows
-    #ifdef WIN32
+#   ifdef WIN32
     printf("This Test Doesn't Run On Windows\n");
     exit(0);
-    #endif
+#   endif
 
     /* module activation */
 

@@ -1,9 +1,9 @@
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include "gssapi.h"
 #include "globus_gss_assist.h"
 #include "globus_error_openssl.h"
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include "openssl/crypto.h"
 
 void globus_print_error(globus_result_t              error_result);
