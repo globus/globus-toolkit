@@ -2396,8 +2396,6 @@ globus_gsi_sysconfig_set_key_permissions_unix(
         goto exit;
     }
 
-    printf("mode: %d IF_REG: %d IF_LNK: %d\n", stx.st_mode, S_IFREG, S_IFLNK);
-    
     if(chmod(filename, S_IRUSR|S_IWUSR) < 0)
     {
         result = globus_error_put(
