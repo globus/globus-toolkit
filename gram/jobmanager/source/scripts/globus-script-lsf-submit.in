@@ -237,8 +237,10 @@ if [ $max_memory -ne 0 ] ; then
 fi
 
 
+# commented out the "BSUB -o" command because LSF adds additional information
+# to the jobs stdout.  Instead redirecting stdout on the command line.
+# echo "#BSUB -o $grami_stdout" >> $LSF_JOB_SCRIPT
 echo "#BSUB -i $grami_stdin" >> $LSF_JOB_SCRIPT
-echo "#BSUB -o $grami_stdout" >> $LSF_JOB_SCRIPT
 echo "#BSUB -e $grami_stderr" >> $LSF_JOB_SCRIPT
 echo "#BSUB -n $grami_count" >> $LSF_JOB_SCRIPT
 
@@ -298,17 +300,17 @@ echo "cd $grami_directory" >> $LSF_JOB_SCRIPT
 echo ""  >> $LSF_JOB_SCRIPT
 echo "# Executing job as requested by user" >> $LSF_JOB_SCRIPT
 if [ $lsf_jobtype = "mpi" ] ; then
-    echo "${mpirun} -np $grami_count $grami_program $new_grami_args" >> $LSF_JOB_SCRIPT
+    echo "${mpirun} -np $grami_count $grami_program $new_grami_args > $grami_stdout" >> $LSF_JOB_SCRIPT
 elif [ $lsf_jobtype = "multiple" ] ; then
 	counter=0
 	while (test "$counter" -lt "$grami_count")
 	    do
-            echo "$grami_program $new_grami_args < ${grami_stdin} &" >> $LSF_JOB_SCRIPT
+            echo "$grami_program $new_grami_args > $grami_stdout < ${grami_stdin} &" >> $LSF_JOB_SCRIPT
 	    counter=`expr $counter + 1`
 	    done
         echo "wait" >> $LSF_JOB_SCRIPT;
 else
-    echo "$grami_program $new_grami_args" >> $LSF_JOB_SCRIPT
+    echo "$grami_program $new_grami_args > $grami_stdout" >> $LSF_JOB_SCRIPT
 fi
 
 $DEBUG_ECHO "JM_SCRIPT: LSF job script successfully built" >> $grami_logfile
