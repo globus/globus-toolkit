@@ -4,6 +4,10 @@
    convenience wrappers around globus_io to implement "http"-alike protocol.
    it's all based on callbacks.
 
+   NOTE: this is the works of a hasty design on top of which we have
+   later added and added and added... it's terrible but serves its
+   temporal purpose until a real globus_http module is implemented.
+
    Server side:
    ------------
    globus_gram_http_allow_attach()
@@ -221,22 +225,6 @@ typedef enum
 #define notice globus_libc_printf
 
 
-typedef struct
-{
-    globus_bool_t                  got_header;
-    globus_byte_t *                buf;
-    globus_size_t		   bufsize;
-    globus_gram_http_read_type_t   read_type;
-    globus_size_t                  n_read;
-    globus_gram_http_callback_t    callback_func;
-    void *                         callback_arg;
-    void *                         user_pointer;
-    globus_byte_t **               reply_buf;
-    globus_size_t *                reply_size;
-    globus_gram_http_monitor_t *   monitor;
-} globus_gram_http_read_t;
-
-
 #define monitor_signal_done(monitor,errcode) \
     { \
 	if (monitor) \
@@ -261,12 +249,42 @@ typedef struct
     }
 
 
+/******************** internal list over active listeners ************/
+typedef struct
+{
+    unsigned short        port;            /* to associate url with handle */
+    globus_bool_t         allow_execution;
+    globus_io_handle_t *  handle;
+} globus_i_gram_http_listener_t;
+
+static globus_list_t *   globus_i_gram_http_listeners   = GLOBUS_NULL;
+static globus_mutex_t    globus_i_gram_http_mutex;
+
+
+typedef struct
+{
+    globus_bool_t                       got_header;
+    globus_byte_t *                     buf;
+    globus_size_t		        bufsize;
+    globus_gram_http_read_type_t        read_type;
+    globus_size_t                       n_read;
+    globus_gram_http_callback_t         callback_func;
+    void *                              callback_arg;
+    void *                              user_pointer;
+    void *                              listener;
+    globus_byte_t **                    reply_buf;
+    globus_size_t *                     reply_size;
+    globus_gram_http_monitor_t *        monitor;
+} globus_gram_http_read_t;
+
+
 /* for some reason, this couldn't be defined as a macro. ? */
 void 
 globus_gram_http_initialize_read_t( globus_gram_http_read_t **    read_t,
 				    void *                        func,
 				    void *                        arg,
 				    void *                        userptr,
+				    void *                        listener,
 				    globus_gram_http_monitor_t *  monitor,
 				    globus_byte_t **              buf, 
 				    globus_size_t *               bufsize) 
@@ -280,6 +298,7 @@ globus_gram_http_initialize_read_t( globus_gram_http_read_t **    read_t,
     (*read_t)->callback_func  = (globus_gram_http_callback_t) func; 
     (*read_t)->callback_arg   = arg; 
     (*read_t)->user_pointer   = userptr; 
+    (*read_t)->listener       = listener;
     (*read_t)->monitor        = monitor; 
     (*read_t)->reply_buf      = buf;
     (*read_t)->reply_size     = bufsize;
@@ -311,17 +330,6 @@ globus_gram_http_initialize_read_t( globus_gram_http_read_t **    read_t,
 	my_free(status); \
     } \
 }
-
-
-/********************      internal list over active listeners ************/
-typedef struct
-{
-    unsigned short        port;
-    globus_io_handle_t *  handle;
-} globus_i_gram_http_listener_t;
-
-static globus_list_t *  globus_i_gram_http_listeners = GLOBUS_NULL;
-
 
 
 /***** forward declarations of internal functions ***/
@@ -371,9 +379,9 @@ globus_l_gram_http_get_callback( void *                arg,
 static int
 globus_l_gram_http_activate()
 {
-    OM_uint32			major_status;
-    OM_uint32			minor_status;
-    globus_i_gram_http_listeners = GLOBUS_NULL;
+    OM_uint32	major_status;
+    OM_uint32   minor_status;
+
     /*
      * Get the GSSAPI security credential for this process.
      * we save it in static storage, since it is only
@@ -398,8 +406,13 @@ globus_l_gram_http_activate()
 
         return GRAM_ERROR_AUTHORIZATION; /* need better return code */
     }
+
+    globus_i_gram_http_listeners  = GLOBUS_NULL;
+    globus_mutex_init( &globus_i_gram_http_mutex, GLOBUS_NULL);
+
     return GLOBUS_SUCCESS;
 }
+
 
 static int
 globus_l_gram_http_deactivate()
@@ -414,28 +427,34 @@ globus_l_gram_http_deactivate()
     /*
      * close open listeners
      */
-    while (!globus_list_empty(globus_i_gram_http_listeners))
+    globus_mutex_lock( &globus_i_gram_http_mutex );
     {
-	listener = globus_list_remove(&globus_i_gram_http_listeners,
-				      globus_i_gram_http_listeners);
+	while (!globus_list_empty(globus_i_gram_http_listeners))
+	{
+	    listener = globus_list_remove(&globus_i_gram_http_listeners,
+					  globus_i_gram_http_listeners);
+	    listener->allow_execution = GLOBUS_FALSE;
+	    
+	    /* 
+	     * listener was dynamically allocated. it points to a handle
+	     * which is also dynamic and that has a dynamic user-pointer
+	     * array, but the close callback routine will take care of
+	     * those: we only have to free the listener struct.
+	     */
+	    globus_io_register_close(listener->handle,
+				     globus_gram_http_close_callback,
+				     GLOBUS_NULL);
 
-	/* 
-	 * listener was dynamically allocated. it points to a handle
-	 * which is also dynamic and that has a dynamic user-pointer
-	 * array, but the close callback routine will take care of
-	 * those: we only have to free the listener struct.
-	 */
-	globus_io_register_close(listener->handle,
-				 globus_gram_http_close_callback,
-				 GLOBUS_NULL);
-
-	my_free(listener);
+	    my_free(listener);
+	}
     }
+    globus_mutex_unlock(&globus_i_gram_http_mutex);
+    globus_mutex_destroy(&globus_i_gram_http_mutex);
+
     /*
      * GSSAPI - cleanup of the credential
      * don't really care about returned status
      */
-
     if (globus_i_gram_http_credential != GSS_C_NO_CREDENTIAL)
     {
         OM_uint32 minor_status;
@@ -547,12 +566,13 @@ globus_l_gram_http_listen_callback( void *                ignored,
 
 	globus_gram_http_initialize_read_t(
 	    &status,
-	    p[0],             /* userfunc   */
-	    p[1],             /* userarg    */
-	    p[2],             /* userptr    */
-	    GLOBUS_NULL,      /* monitor    */
-	    GLOBUS_NULL,      /* replybuf   */
-	    GLOBUS_NULL );    /* replysize  */
+	    p[0],             /* userfunc    */
+	    p[1],             /* userarg     */
+	    p[2],             /* userptr     */
+	    p[3],             /* listener    */
+	    GLOBUS_NULL,      /* monitor     */
+	    GLOBUS_NULL,      /* replybuf    */
+	    GLOBUS_NULL );    /* replysize   */
 	
 	handle = my_malloc(globus_io_handle_t,1);
 
@@ -734,6 +754,8 @@ globus_l_gram_http_read_callback( void *                 read_t,
     /* Just read the body */
     else
     {
+	globus_bool_t   allowed = GLOBUS_TRUE;
+
 	status->n_read += nbytes;
 	status->buf[status->n_read] = '\0';
 
@@ -741,6 +763,37 @@ globus_l_gram_http_read_callback( void *                 read_t,
 
 	globus_io_handle_set_user_pointer( handle,
 					   status->user_pointer );
+
+	/*
+	 * if the listener field is not defined in status, we don't check if
+	 * we are allowed the call the callback or not.
+	 */
+	if (status->listener)
+	{
+	    allowed = GLOBUS_FALSE;
+	    globus_mutex_lock(&globus_i_gram_http_mutex);
+	    {
+		globus_list_t  *  list = globus_i_gram_http_listeners;
+		globus_bool_t     done = GLOBUS_FALSE;
+		
+		while (!done && !globus_list_empty(list))
+		{
+		    void* item = globus_list_first(list);
+		    if (item == status->listener)
+		    {
+			allowed = ((globus_i_gram_http_listener_t *)item)->allow_execution;
+			done = GLOBUS_TRUE;
+		    }
+		    list = globus_list_rest(list);
+		}
+	    }
+	    globus_mutex_unlock(&globus_i_gram_http_mutex);
+	}
+	else
+	    allowed = GLOBUS_TRUE;
+
+	if (!allowed)
+	    goto error_exit;
 
 	(status->callback_func)( status->callback_arg,
 				 handle,
@@ -886,12 +939,13 @@ globus_gram_http_post_and_get( char *                         url,
 
     globus_gram_http_initialize_read_t(
 	&status,
-	(void *)globus_l_gram_http_get_callback,    /* userfunc after get */
-	GLOBUS_NULL,                                /* userarg            */
-	GLOBUS_NULL,                                /* userptr            */
-	monitor,                                    /* monitor            */
-	reply_message,                              /* replybuf           */
-	reply_size );                               /* replysize          */
+	(void *)globus_l_gram_http_get_callback,      /* userfunc after get */
+	GLOBUS_NULL,                                  /* userarg            */
+	GLOBUS_NULL,                                  /* userptr            */
+	GLOBUS_NULL,                                  /* always allow exec  */
+	monitor,                                      /* monitor            */
+	reply_message,                                /* replybuf           */
+	reply_size );                                 /* replysize          */
 
     status->callback_arg = (void *) status;
 
@@ -1014,15 +1068,16 @@ globus_gram_http_allow_attach( unsigned short *             port,
 	globus_object_free(err);
 	globus_io_tcpattr_destroy(&attr);
 	my_free(handle);
-	/* TODO: return proper error */
-	return rc;
+	return GLOBUS_GRAM_CLIENT_ERROR_NO_RESOURCES;
     }
 
-    buf = my_malloc(void *, 3);
+    new_listener = my_malloc(globus_i_gram_http_listener_t,1);
+    buf = my_malloc(void *, 4);
 
     buf[0] = (void *) user_callback;
     buf[1] = user_arg;
     buf[2] = user_ptr;
+    buf[3] = (void *) new_listener;
 
     globus_io_handle_set_user_pointer(handle, (void *) buf);
 
@@ -1035,18 +1090,19 @@ globus_gram_http_allow_attach( unsigned short *             port,
 	globus_object_free(err);
 	globus_io_tcpattr_destroy(&attr);
 	my_free(handle);
-	/* TODO: return proper error */
-	return rc;
+	return GLOBUS_GRAM_CLIENT_ERROR_NO_RESOURCES;
     }
     else
     {
-	new_listener = my_malloc(globus_i_gram_http_listener_t,1);
 	new_listener->port   = *port;
 	new_listener->handle = handle;
-	globus_list_insert(&globus_i_gram_http_listeners, new_listener);
+	new_listener->allow_execution = GLOBUS_TRUE;
+	globus_mutex_lock(&globus_i_gram_http_mutex);
+	{
+	    globus_list_insert(&globus_i_gram_http_listeners, new_listener);
+	}
+	globus_mutex_unlock(&globus_i_gram_http_mutex);
     }
-
-    globus_io_tcpattr_destroy(&attr);
 
     return GLOBUS_SUCCESS;
 }
@@ -1078,23 +1134,33 @@ globus_gram_http_callback_disallow(char *   httpsurl)
     /*
      * find listener with help of port and close it
      */
-    handle = GLOBUS_NULL;
-    list = globus_i_gram_http_listeners;
-    while (!handle && !globus_list_empty(list))
+    globus_mutex_lock(&globus_i_gram_http_mutex);
     {
-	listener = globus_list_first(list);
-
-	if (listener->port == port)
-	    handle = listener->handle;
-	else
-	    list = globus_list_rest(list);
-    }
+	handle = GLOBUS_NULL;
+	list = globus_i_gram_http_listeners;
+	while (!handle && !globus_list_empty(list))
+	{
+	    listener = globus_list_first(list);
+	    
+	    if (listener->port == port)
+	    {
+		listener->allow_execution = GLOBUS_FALSE;
+		handle = listener->handle;
+	    }
+	    else
+		list = globus_list_rest(list);
+	}
     
-    if (!handle)
-	return GLOBUS_GRAM_CLIENT_ERROR_CALLBACK_NOT_FOUND;
+	if (handle)
+	{
+	    globus_list_remove(&globus_i_gram_http_listeners, list);
+	    my_free(listener);
+	}
+    }
+    globus_mutex_unlock(&globus_i_gram_http_mutex);
 
-    globus_list_remove(&globus_i_gram_http_listeners, list);
-    my_free(listener);
+    if (!handle)
+	rc = GLOBUS_GRAM_CLIENT_ERROR_CALLBACK_NOT_FOUND;
 
     verbose(notice("callback_disallow : closing handle = %d\n", handle->fd ));
 
