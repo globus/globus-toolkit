@@ -40,11 +40,10 @@ my %prereq_archives = (
 # TODO: Add explicit CVSROOT
 # TODO: Allow per-package module specification
 my %cvs_archives = (
-     'gt2' => [ "/home/globdev/CVS/globus-packages", "all", "gt2-cvs", "HEAD" ],
-     'gt3' => [ "/home/globdev/CVS/gridservices", "all", "ogsa-cvs", "HEAD" ],
-     'setup' => [ "/home/globdev/CVS/gridservices", "all", "setup-pkgs", "HEAD" ],
-     'cbindings' => [ "/home/globdev/CVS/gridservices", "ogsa-c", "cbindings", "HEAD" ],
-     'autotools' => [ "/home/globdev/CVS/globus-packages", "side_tools", "autotools", "HEAD" ]
+     'gt2' => [ "/home/globdev/CVS/globus-packages", "all", $cvs_prefix . "gt2-cvs", "HEAD" ],
+     'gt3' => [ "/home/globdev/CVS/gridservices", "all", $cvs_prefix . "ogsa-cvs", "HEAD" ],
+     'cbindings' => [ "/home/globdev/CVS/gridservices", "ogsa-c", $cvs_prefix . "cbindings", "HEAD" ],
+     'autotools' => [ "/home/globdev/CVS/globus-packages", "side_tools", $cvs_prefix . "autotools", "HEAD" ]
       );
 
 # package_name => [ tree, subdir, custom_build, (patch-n-build file, if exists) ]
@@ -67,11 +66,11 @@ my $thread = "pthr";
 my ($install, $installer, $anonymous, $force,
     $noupdates, $help, $man, $verbose, $skippackage,
     $skipbundle, $faster, $paranoia, $version, $uncool,
-    $binary, $inplace) =
+    $binary, $inplace, $gt2dir, $gt3dir) =
    (0, 0, 0, 0,
     0, 0, 0, 0, 0, 
     0, 0, 0, "1.0", 0, 
-    0, 0);
+    0, 0, "", "");
 
 my @user_bundles;
 my @user_packages;
@@ -83,7 +82,9 @@ GetOptions( 'i|install=s' => \$install,
 	    'n|no-updates!' => \$noupdates,
 	    'faster!' => \$faster,
 	    'flavor=s' => \$flavor,
+	    'd2|gt2-dir=s' => \$gt2dir,
 	    't2|gt2-tag=s' => \$cvs_archives{gt2}[3],
+	    'd3|gt3-dir=s' => \$gt3dir,
 	    't3|gt3-tag=s' => \$cvs_archives{gt3}[3],
 	    'v|verbose!' => \$verbose,
 	    'skippackage!' => \$skippackage,
@@ -110,6 +111,17 @@ if ( $help or $man ) {
 @user_bundles = split(/,/,join(',',@user_bundles));
 @cvs_build_list = split(/,/,join(',',@cvs_build_list));
 
+if ( $gt2dir )
+{
+    $cvs_archives{gt2}[2] = $gt2dir;
+    $cvs_archives{autotools}[2] = $gt2dir;
+}
+
+if ( $gt3dir )
+{
+    $cvs_archives{gt3}[2] = $gt3dir;
+    $cvs_archives{cbindings}[2] = $gt3dir;
+}
 
 
 # main ()
@@ -184,6 +196,7 @@ exit 0;
 sub setup_environment()
 # --------------------------------------------------------------------
 {
+    # Set autotools tag to GT2 tag, cbindings tag to GT3 tag.
     $cvs_archives{'autotools'}[3] = $cvs_archives{'gt2'}[3];
     $cvs_archives{'cbindings'}[3] = $cvs_archives{'gt3'}[3];
 
@@ -668,7 +681,7 @@ sub cvs_subdir
 {
     my ( $tree ) = @_;
 
-    return $cvs_prefix . $cvs_archives{$tree}[2];
+    return $cvs_archives{$tree}[2];
 }
 
 # --------------------------------------------------------------------
@@ -694,11 +707,6 @@ sub package_subdir
 sub get_sources()
 # --------------------------------------------------------------------
 {
-    if (not -e $cvs_prefix)
-    {
-	mkdir $cvs_prefix;
-    }
-
     foreach my $tree ( @cvs_build_list )
     {
 	print "Checking out cvs tree $tree.\n";
@@ -717,8 +725,6 @@ sub cvs_checkout_generic ()
 
     mkdir $cvs_logs if not -d $cvs_logs;
 
-    chdir $cvs_prefix;
-
     if ( $anonymous )
     {
 	$cvsroot = ":pserver:anonymous\@cvs.globus.org:" . $cvsroot;
@@ -736,9 +742,11 @@ sub cvs_checkout_generic ()
     {
 	print "Making fresh CVS checkout of \n";
 	print "$cvsroot, module $module, tag $tag\n";
-	print "Logging to $cvs_logs/" . $dir . ".log\n";
-	mkdir $dir;
-	chdir $dir;
+	print "Logging to $cvs_logs/" . $tree . ".log\n";
+	print "DIR is $dir\n";
+	system("mkdir -p $dir");
+	paranoia("Can't make $dir.\n");
+	chdir $dir || die "Can't cd to $dir: $!\n";
 
 	#CVS doesn't think of HEAD as a branch tag, so
 	#don't use -r if you're checking out HEAD.
@@ -748,7 +756,7 @@ sub cvs_checkout_generic ()
 	}
 
 	log_system("cvs -d $cvsroot co $cvsopts $module",
-		   "$cvs_logs/" . $dir . ".log");
+		   "$cvs_logs/" . $tree . ".log");
 
 	if ( $? ne 0 )
 	{
@@ -764,23 +772,26 @@ sub cvs_checkout_generic ()
 	    print "INFO: This means that I'm not checking the CVS tag for you, either.\n";
 	}
 	else {
+	    my @update_list;
 	    print "Updating CVS checkout of $cvsroot\n";
 	    chdir $dir;
 
 	    for my $f ( <*> ) 
 	    {
 		chdir $f;
-
 		cvs_check_tag($tree);
 		if ( -d "CVS" )
 		{
-		    print "Logging to ${cvs_logs}/" . $dir . "-${f}.log\n";
-		    log_system("cvs -z3 -qq up -dP",
-			       "${cvs_logs}/" . $dir . "-${f}.log");
-		    paranoia "Trouble with cvs up on tree $tree.";
+		    print "Queueing $f on update command.\n";
+		    push @update_list, $f;
 		}
-		chdir "..";
+		chdir '..';
 	    }
+
+	    print "Logging to ${cvs_logs}/" . $tree . ".log\n";
+	    log_system("cvs -z3 up -dP @update_list", "${cvs_logs}/" . $tree . ".log");
+	    paranoia "Trouble with cvs up on tree $tree.";
+
 	}
     }
 
@@ -1319,8 +1330,10 @@ Options:
     --force                Force
     --faster               Don't repackage if packages exist already
     --flavor               Set flavor base.  Default gcc32dbg
-    --gt2-tag              Set GT2 tag.  Default HEAD
-    --gt3-tag              Set GT3 tag.  Default HEAD
+    --gt2-tag (-t2)        Set GT2 and autotools tags.  Default HEAD
+    --gt3-tag (-t3)        Set GT3 and cbindings tags.  Default HEAD
+    --gt2-dir (-d2)        Set GT2 and autotools CVS directory.
+    --gt3-dir (-d3)        Set GT3 and cbindings CVS directory.
     --verbose              Be verbose.  Also sends logs to screen.
     --bundles="b1,b2,..."  Create bundles b1,b2,...
     --packages="p1,p2,..." Create packages p1,p2,...
