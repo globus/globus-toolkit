@@ -43,7 +43,7 @@ globus_i_gsc_reverse_restart(
 
     if(in_range == NULL)
     {
-        globus_range_list_insert(out_range, 0, -1);
+        globus_range_list_insert(out_range, 0, GLOBUS_RANGE_LIST_MAX);
     }
     else
     {
@@ -65,7 +65,8 @@ globus_i_gsc_reverse_restart(
             globus_range_list_insert(out_range, offset, length);
         }
         globus_range_list_remove_at(in_range, 0, &offset, &length);
-        globus_range_list_insert(out_range, offset + length, -1);
+        globus_range_list_insert(
+            out_range, offset + length, GLOBUS_RANGE_LIST_MAX);
     }
 }
 

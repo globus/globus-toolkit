@@ -128,6 +128,15 @@ globus_range_list_insert(
     globus_size_t                       ent_end;
     globus_bool_t                       done = GLOBUS_FALSE;
 
+    if(offset < 0 || length < 0)
+    {
+        return GLOBUS_RANGE_LIST_ERROR_PARAMETER;
+    }
+    if(length == 0)
+    {
+        return GLOBUS_SUCCESS;
+    }
+    
     if(range_list->head == NULL)
     {
         new_ent = (globus_l_range_ent_t *) globus_malloc(

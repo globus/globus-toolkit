@@ -4,8 +4,8 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <ctype.h>
+#include "version.h"
 
-#include <version.h>
 
 #define GSC_MAX_COMMAND_NAME_LEN        4
 #define GLOBUS_L_GSC_DEFAULT_220   "GridFTP Server.\n"
@@ -3265,7 +3265,7 @@ globus_i_gsc_send(
             mod_func = (globus_i_gsc_module_func_t *)
                 globus_hashtable_lookup(
                     &op->server_handle->funcs.send_cb_table, (char *)mod_name);
-            if(user_cb == NULL)
+            if(mod_func == NULL)
             {
                 globus_mutex_unlock(&op->server_handle->mutex);
                 return GlobusGridFTPServerErrorParameter("op");
@@ -3276,7 +3276,7 @@ globus_i_gsc_send(
         globus_range_list_init(&op->range_list);
         if(op->server_handle->range_list == NULL)
         {
-            globus_range_list_insert(op->range_list, 0, -1);
+            globus_range_list_insert(op->range_list, 0, GLOBUS_RANGE_LIST_MAX);
         }
         else
         {
@@ -3368,7 +3368,7 @@ globus_i_gsc_recv(
         globus_range_list_init(&op->range_list);
         if(op->server_handle->range_list == NULL)
         {
-            globus_range_list_insert(op->range_list, 0, -1);
+            globus_range_list_insert(op->range_list, 0, GLOBUS_RANGE_LIST_MAX);
         }
         else
         {

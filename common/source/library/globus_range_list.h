@@ -4,11 +4,14 @@
 #include "globus_common_include.h"
 /********************************************************************
  *
- * This file defines the list_t type
+ * This file defines the globus_range_list_t type
  *
  *
  ********************************************************************/
 EXTERN_C_BEGIN
+
+/* XXX should be max value of globus_off_t, fix to define portably */
+#define GLOBUS_RANGE_LIST_MAX 9223372036854775807
 
 typedef enum
 {
