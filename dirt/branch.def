@@ -12,3 +12,6 @@ window                              4
 globus-beta-branch-sub-versions     3
 globus-beta-branch                  2
 
+# slang's branches are 3*
+gsi3_branch                         31
+simple_ca_branch                    32
