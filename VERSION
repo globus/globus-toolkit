@@ -1,8 +1,13 @@
-This is myproxy v0.4.6 3 Sep 2002
+This is myproxy v0.5.0 ?? Nov 2002
 This version should be compatible with all versions since v0.2.
 
 Version History
 ---------------
+v0.5.0 ?? Nov 2002 (GPT package version 1.2)
+  This is the first version for Globus Toolkit 2.2.  It adds support
+  for storing multiple credentials per username and stores private
+  keys encrypted with the credential's passphrase (if set).
+
 v0.4.6 3 Sep 2002 (GPT package version 1.1)
   This version adds sample init.d and xinetd entries in the GPT
   package.
