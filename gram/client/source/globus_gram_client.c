@@ -1109,6 +1109,15 @@ globus_gram_client_callback_disallow(char * callback_contact)
     unsigned short 	  port = 0;
     char * 		  host;
 
+    grami_fprintf(globus_l_print_fp, 
+         "in globus_gram_client_callback_disallow()\n");
+
+    if (callback_contact == NULL)
+    {
+        grami_fprintf(globus_l_print_fp, "ERROR: NULL contact URL.\n");
+        return (1);
+    }
+
     grami_fprintf(globus_l_print_fp,
           "in globus_gram_client_callback_disallow()\n");
 
@@ -1117,7 +1126,7 @@ globus_gram_client_callback_disallow(char * callback_contact)
 			       &port,
 			       NULL) != 0)
     {
-        grami_fprintf(globus_l_print_fp, " invalid url.\n");
+        grami_fprintf(globus_l_print_fp, "ERROR: invalid contact url.\n");
         return (1);
     }
 
