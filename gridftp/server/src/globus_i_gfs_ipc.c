@@ -621,7 +621,7 @@ globus_l_gfs_ipc_error_close_kickout(
 
     ipc = (globus_i_gfs_ipc_handle_t *) user_arg;
 
-    if(ipc->state == GLOBUS_GFS_IPC_STATE_IN_USE && ipc->error_cb)
+    if(ipc->error_cb)
     {
         ipc->error_cb(ipc, ipc->cached_res, ipc->error_arg);
     }
@@ -1698,21 +1698,34 @@ globus_l_gfs_ipc_timeout_cb(
     void *                              user_arg)
 {
     globus_i_gfs_ipc_handle_t *         ipc;
+    globus_bool_t                       rc;
 
     ipc = (globus_i_gfs_ipc_handle_t *) user_arg;
 
     switch(type)
     {
         case GLOBUS_XIO_OPERATION_TYPE_OPEN:
-            /* cancel open */
+            rc = GLOBUS_TRUE;
             break;
-        case GLOBUS_XIO_OPERATION_TYPE_WRITE:
+        case GLOBUS_XIO_OPERATION_TYPE_READ:
+            globus_mutex_lock(&globus_l_ipc_mutex);
+            {
+                if(ipc->state == GLOBUS_GFS_IPC_STATE_OPEN)
+                {
+                    rc = GLOBUS_TRUE;
+                }
+                else
+                {
+                    rc = GLOBUS_FALSE;
+                }
+            }
             /* close handle */
             break;
         default:
+            rc = GLOBUS_FALSE;
             break;
     }
-    return 0;
+    return rc;
 }
 
 
@@ -1809,7 +1822,7 @@ globus_l_gfs_ipc_handle_connect(
             globus_xio_attr_cntl(
                 attr,
                 NULL,
-                GLOBUS_XIO_ATTR_SET_TIMEOUT_WRITE,
+                GLOBUS_XIO_ATTR_SET_TIMEOUT_READ,
                 globus_l_gfs_ipc_timeout_cb,
                 &timeout,
                 ipc);
@@ -2060,6 +2073,7 @@ globus_gfs_ipc_handle_release(
             goto err;
         }
 
+        ipc->error_cb = NULL;
         ipc->state = GLOBUS_GFS_IPC_STATE_STOPPING;
         if(!ipc->local)
         {
@@ -2148,6 +2162,7 @@ globus_gfs_ipc_close(
             case GLOBUS_GFS_IPC_STATE_IN_USE:
                 ipc_handle->close_cb = cb;
                 ipc_handle->state = GLOBUS_GFS_IPC_STATE_CLOSING;
+                ipc_handle->error_cb = NULL;
                 res = globus_xio_register_close(
                     ipc_handle->xio_handle,
                     NULL,

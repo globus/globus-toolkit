@@ -38,7 +38,7 @@ do                                                                      \
         goto decode_err;                                                \
     }                                                                   \
     memcpy(&_cw, _buf, 4);                                              \
-    (uint32_t)_w = htonl((uint32_t)_cw);                                          \
+    (uint32_t)_w = htonl((uint32_t)_cw);                                \
     _buf += 4;                                                          \
     _len -= 4;                                                          \
 } while(0)
