@@ -6,7 +6,8 @@ Sources= \
 	globus_gsi_cert_utils.h \
 	globus_gsi_cert_utils_constants.h \
 	globus_i_gsi_cert_utils.h \
-	globus_gsi_cert_utils.c
+	globus_gsi_cert_utils.c \
+	globus_gsi_cert_utils_error.c
 
 flavorinclude_HEADERS= \
 	globus_gsi_cert_utils.h \

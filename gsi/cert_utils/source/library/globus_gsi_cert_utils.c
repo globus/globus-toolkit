@@ -3,12 +3,11 @@
 #include <openssl/x509.h>
 #include "globus_i_gsi_cert_utils.h"
 #include "version.h"
-
+#include "config.h"
 #include <ctype.h>
 
-int globus_i_gsi_cert_utils_debug_level = 0;
-
-FILE * globus_i_gsi_cert_utils_debug_fstream;
+int                               globus_i_gsi_cert_utils_debug_level = 0;
+FILE *                            globus_i_gsi_cert_utils_debug_fstream = NULL;
 
 static int globus_l_gsi_cert_utils_activate(void);
 static int globus_l_gsi_cert_utils_deactivate(void);
@@ -16,7 +15,7 @@ static int globus_l_gsi_cert_utils_deactivate(void);
 /**
  * Module descriptor static initializer.
  */
-globus_module_descriptor_t globus_i_cert_utils_module =
+globus_module_descriptor_t globus_i_gsi_cert_utils_module =
 {
     "globus_cert_utils",
     globus_l_gsi_cert_utils_activate,
@@ -93,7 +92,11 @@ globus_l_gsi_cert_utils_deactivate(void)
 
     GLOBUS_I_GSI_CERT_UTILS_DEBUG_EXIT;
 
-    fclose(globus_i_gsi_cert_utils_debug_fstream);
+    if(globus_i_gsi_cert_utils_debug_fstream != stderr)
+    {
+        fclose(globus_i_gsi_cert_utils_debug_fstream);
+    }
+
     return result;
 }
 /* globus_l_gsi_cert_utils_deactivate() */
@@ -564,7 +567,7 @@ globus_gsi_cert_utils_v_create_string(
         "globus_i_gsi_cert_utils_v_create_string";
 
     GLOBUS_I_GSI_CERT_UTILS_DEBUG_ENTER;
-    if((new_string = globus_malloc(len)) == NULL)
+    if((new_string = malloc(len)) == NULL)
     {
         return NULL;
     }
@@ -607,7 +610,7 @@ globus_gsi_cert_utils_v_create_nstring(
         "globus_i_gsi_cert_utils_v_create_string";
 
     GLOBUS_I_GSI_CERT_UTILS_DEBUG_ENTER;
-    if((new_string = globus_malloc(length + 1)) == NULL)
+    if((new_string = malloc(length + 1)) == NULL)
     {
         return NULL;
     }
