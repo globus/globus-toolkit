@@ -42,13 +42,13 @@ void throughput_plugin_stripe_cb(
     globus_ftp_client_handle_t *                    handle,
     void *                                          user_arg,
     int                                             stripe_ndx,
-    globus_size_t                                   bytes,
+    globus_off_t                                    bytes,
     float                                           instantaneous_throughput,
     float                                           avg_throughput)
 {
     globus_libc_fprintf(stderr, "throughput_plugin_stripe_cb\n");
     globus_libc_fprintf(stderr, "stripe_ndx                %d\n", stripe_ndx);
-    globus_libc_fprintf(stderr, "bytes                     %d\n", bytes);
+    globus_libc_fprintf(stderr, "bytes                     %" GLOBUS_OFF_T_FORMAT "\n", bytes);
     globus_libc_fprintf(stderr, "instantaneous_throughput  %.3f\n", instantaneous_throughput);
     globus_libc_fprintf(stderr, "avg_throughput            %.3f\n", avg_throughput);
 }
@@ -57,12 +57,12 @@ static
 void throughput_plugin_total_cb(
     globus_ftp_client_handle_t *                    handle,
     void *                                          user_arg,
-    globus_size_t                                   bytes,
+    globus_off_t                                    bytes,
     float                                           instantaneous_throughput,
     float                                           avg_throughput)
 {
     globus_libc_fprintf(stderr, "throughput_plugin_total_cb\n");
-    globus_libc_fprintf(stderr, "bytes                     %d\n", bytes);
+    globus_libc_fprintf(stderr, "bytes                     %" GLOBUS_OFF_T_FORMAT "\n", bytes);
     globus_libc_fprintf(stderr, "instantaneous_throughput  %.3f\n", instantaneous_throughput);
     globus_libc_fprintf(stderr, "avg_throughput            %.3f\n", avg_throughput);
 }

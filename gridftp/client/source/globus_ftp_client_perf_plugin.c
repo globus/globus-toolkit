@@ -56,7 +56,7 @@ typedef struct perf_plugin_info_s
     /* used for get command or put (when put not in EB mode) only */
     globus_bool_t                                   use_data;
     time_t                                          last_time;
-    globus_size_t                                   nbytes;
+    globus_off_t                                    nbytes;
     globus_mutex_t                                  lock;
 
 } perf_plugin_info_t;
@@ -113,7 +113,7 @@ perf_plugin_response_cb(
     time_t                                      time_stamp;
     int                                         stripe_ndx;
     int                                         num_stripes;
-    globus_size_t                               nbytes;
+    globus_off_t                                nbytes;
 
     ps = (perf_plugin_info_t *) plugin_specific;
 
@@ -132,7 +132,7 @@ perf_plugin_response_cb(
             return;
         }
         count = sscanf(tmp_ptr + sizeof("Timestamp:"),
-            " %ld ", &time_stamp);
+            " %ld", &time_stamp);
         if(count != 1)
         {
             return;
@@ -145,7 +145,7 @@ perf_plugin_response_cb(
             return;
         }
         count = sscanf(tmp_ptr + sizeof("Stripe Index:"),
-            " %d ", &stripe_ndx);
+            " %d", &stripe_ndx);
         if(count != 1)
         {
             return;
@@ -158,7 +158,7 @@ perf_plugin_response_cb(
             return;
         }
         count = sscanf(tmp_ptr + sizeof("Total Stripe Count:"),
-            " %d ", &num_stripes);
+            " %d", &num_stripes);
         if(count != 1)
         {
             return;
@@ -171,7 +171,7 @@ perf_plugin_response_cb(
             return;
         }
         count = sscanf(tmp_ptr + sizeof("Stripe Bytes Transferred:"),
-            " %d ", &nbytes);
+            " %" GLOBUS_OFF_T_FORMAT, &nbytes);
         if(count != 1)
         {
             return;

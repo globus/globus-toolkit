@@ -79,7 +79,7 @@ void
 globus_l_gass_copy_performance_cb(
     globus_gass_copy_handle_t *                     handle,
     void *                                          user_arg,
-    globus_size_t                                   total_bytes,
+    globus_off_t                                    total_bytes,
     float                                           instantaneous_throughput,
     float                                           avg_throughput);
 
@@ -910,12 +910,12 @@ void
 globus_l_gass_copy_performance_cb(
     globus_gass_copy_handle_t *                     handle,
     void *                                          user_arg,
-    globus_size_t                                   total_bytes,
+    globus_off_t                                    total_bytes,
     float                                           instantaneous_throughput,
     float                                           avg_throughput)
 {
     globus_libc_fprintf(stderr,
-        " %d bytes -- average %.2f KB/sec -- instantaneous %.2f KB/sec\r",
+        " %" GLOBUS_OFF_T_FORMAT " bytes -- average %.2f KB/sec -- instantaneous %.2f KB/sec\r",
         total_bytes,
         avg_throughput / 1024,
         instantaneous_throughput / 1024);

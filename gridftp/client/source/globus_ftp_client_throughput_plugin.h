@@ -99,7 +99,7 @@ typedef void (*globus_ftp_client_throughput_plugin_stripe_cb_t)(
     globus_ftp_client_handle_t *                    handle,
     void *                                          user_arg,
     int                                             stripe_ndx,
-    globus_size_t                                   bytes,
+    globus_off_t                                    bytes,
     float                                           instantaneous_throughput,
     float                                           avg_throughput);
 
@@ -132,7 +132,7 @@ typedef void (*globus_ftp_client_throughput_plugin_stripe_cb_t)(
 typedef void (*globus_ftp_client_throughput_plugin_total_cb_t)(
     globus_ftp_client_handle_t *                    handle,
     void *                                          user_arg,
-    globus_size_t                                   bytes,
+    globus_off_t                                    bytes,
     float                                           instantaneous_throughput,
     float                                           avg_throughput);
 

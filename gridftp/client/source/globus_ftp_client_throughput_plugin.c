@@ -53,8 +53,8 @@ typedef struct throughput_plugin_info_s
 
     time_t *                                    prev_times;
     time_t *                                    cur_times;
-    globus_size_t *                             prev_bytes;
-    globus_size_t *                             cur_bytes;
+    globus_off_t *                              prev_bytes;
+    globus_off_t *                              cur_bytes;
 
     time_t                                      start_time;
     int                                         num_stripes;
@@ -105,7 +105,7 @@ throughput_plugin_marker_cb(
     time_t                                      time_stamp,
     int                                         stripe_ndx,
     int                                         num_stripes,
-    globus_size_t                               nbytes)
+    globus_off_t                                nbytes)
 {
     throughput_plugin_info_t *                  info;
     int                                         i;
@@ -123,10 +123,10 @@ throughput_plugin_marker_cb(
         info->cur_times = (time_t *)
             globus_malloc(sizeof(time_t) * num_stripes);
 
-        info->prev_bytes = (globus_size_t *)
-            globus_malloc(sizeof(globus_size_t) * num_stripes);
-        info->cur_bytes = (globus_size_t *)
-            globus_malloc(sizeof(globus_size_t) * num_stripes);
+        info->prev_bytes = (globus_off_t *)
+            globus_malloc(sizeof(globus_off_t) * num_stripes);
+        info->cur_bytes = (globus_off_t *)
+            globus_malloc(sizeof(globus_off_t) * num_stripes);
 
         if(!(info->prev_times &&
             info->cur_times &&

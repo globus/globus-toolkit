@@ -44,13 +44,13 @@ void perf_plugin_marker_cb(
     time_t                                          time_stamp,
     int                                             stripe_ndx,
     int                                             num_stripes,
-    globus_size_t                                   nbytes)
+    globus_off_t                                    nbytes)
 {
     globus_libc_fprintf(stderr, "perf_plugin_marker_cb\n");
     globus_libc_fprintf(stderr, "time_stamp   %ld\n", time_stamp);
     globus_libc_fprintf(stderr, "stripe_ndx   %d\n", stripe_ndx);
     globus_libc_fprintf(stderr, "num_stripes  %d\n", num_stripes);
-    globus_libc_fprintf(stderr, "nbytes       %d\n", nbytes);
+    globus_libc_fprintf(stderr, "nbytes       %" GLOBUS_OFF_T_FORMAT "\n", nbytes);
 }
 
 static

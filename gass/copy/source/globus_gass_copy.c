@@ -37,9 +37,9 @@ struct globus_gass_copy_perf_info_s
     time_t                                  start_time;
 
     time_t                                  prev_time;
-    globus_size_t                           prev_bytes;
+    globus_off_t                            prev_bytes;
 
-    globus_size_t                           live_bytes;
+    globus_off_t                            live_bytes;
 };
 
 static
@@ -47,7 +47,7 @@ void
 globus_l_gass_copy_perf_ftp_cb(
     globus_ftp_client_handle_t *            handle,
     void *                                  user_arg,
-    globus_size_t                           bytes,
+    globus_off_t                            bytes,
     float                                   instantaneous_throughput,
     float                                   avg_throughput);
 
@@ -1008,7 +1008,7 @@ globus_l_gass_copy_perf_local_cb(
     float                                   instantaneous_throughput;
     float                                   avg_throughput;
     time_t                                  time_now;
-    globus_size_t                           bytes_now;
+    globus_off_t                            bytes_now;
     time_t                                  time_elapsed;
 
     perf_info = (globus_gass_copy_perf_info_t *) user_arg;
@@ -1060,7 +1060,7 @@ void
 globus_l_gass_copy_perf_ftp_cb(
     globus_ftp_client_handle_t *            handle,
     void *                                  user_arg,
-    globus_size_t                           bytes,
+    globus_off_t                            bytes,
     float                                   instantaneous_throughput,
     float                                   avg_throughput)
 {

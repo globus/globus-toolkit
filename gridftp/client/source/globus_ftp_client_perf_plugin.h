@@ -114,7 +114,7 @@ typedef void (*globus_ftp_client_perf_plugin_marker_cb_t)(
     time_t                                          time_stamp,
     int                                             stripe_ndx,
     int                                             num_stripes,
-    globus_size_t                                   nbytes);
+    globus_off_t                                    nbytes);
 
 /**
  * Transfer complete callback
