@@ -63,11 +63,14 @@ sub copy_setup_files
     if ( -e "${sysconfdir}/ssh_config" )
     {
         $response = query_boolean("${sysconfdir}/ssh_config already exists.  Overwrite? ", "n");
+        if ($response eq "y")
+        {
+            action("cp ${sysconfdir}/ssh_config ${sysconfdir}/ssh_config.bak_${curr_time}");
+        }
     }
 
     if ($response eq "y")
     {
-        action("cp ${sysconfdir}/ssh_config ${sysconfdir}/ssh_config.bak_${curr_time}");
         action("cp ${globusdir}/setup/globus/ssh_config ${sysconfdir}/ssh_config");
     }
 
@@ -79,11 +82,14 @@ sub copy_setup_files
     if ( -e "${sysconfdir}/sshd_config" )
     {
         $response = query_boolean("${sysconfdir}/sshd_config already exists.  Overwrite? ", "n");
+        if ($response eq "y")
+        {
+            action("cp ${sysconfdir}/sshd_config ${sysconfdir}/sshd_config.bak_${curr_time}");
+        }
     }
 
     if ($response eq "y")
     {
-        action("cp ${sysconfdir}/sshd_config ${sysconfdir}/sshd_config.bak_${curr_time}");
         action("cp ${globusdir}/setup/globus/sshd_config ${sysconfdir}/sshd_config");
     }
 
@@ -95,11 +101,14 @@ sub copy_setup_files
     if ( -e "${sysconfdir}/moduli" )
     {
         $response = query_boolean("${sysconfdir}/moduli already exists.  Overwrite? ", "n");
+        if ($response eq "y")
+        {
+            action("cp ${sysconfdir}/moduli ${sysconfdir}/moduli.bak_${curr_time}");
+        }
     }
 
     if ($response eq "y")
     {
-        action("cp ${sysconfdir}/moduli ${sysconfdir}/moduli.bak_${curr_time}");
         action("cp ${globusdir}/setup/globus/moduli ${sysconfdir}/moduli");
     }
 }
