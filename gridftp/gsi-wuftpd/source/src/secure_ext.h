@@ -51,7 +51,19 @@ int send_adat_reply(int code, unsigned char * data, int length);
 #define PROT_ENCRYPTION(p)	(((p) == PROT_P) || ((p) == PROT_E))
 
 /* Need larger buffers for authentication data */
+#ifdef GLOBUS_AUTHORIZATION
+
+/*
+ * And if we are using CAS credentials we need really big buffers
+ * to handle potentially huge ADAT commands.
+ */
+#define LARGE_BUFSIZE          64 * 1024 /* Arbitrary */
+
+#else /* !GLOBUS_AUTHORIZATION */
+
 #define LARGE_BUFSIZE		10240
+
+#endif /* !GLOBUS_AUTHORIZATION */
 
 #endif /* __SECURE_EXT_H */
 
