@@ -100,14 +100,6 @@ typedef struct globus_io_cancel_info_s
     struct globus_io_cancel_info_s *	next;
 } globus_io_cancel_info_t;
 
-/* used for registered callbacks */
-typedef struct
-{
-    globus_io_callback_t                callback;
-    void *                              user_args;
-    globus_io_handle_t *                handle;
-} globus_l_io_dispatched_callback_info_t;
-
 static void
 globus_l_io_handler_wakeup(void *arg);
 
@@ -286,7 +278,6 @@ static globus_bool_t	                globus_l_io_shutdown_called;
  * memory for callback_info structures
  */
 #define GLOBUS_L_IO_CALLBACK_MEMORY_BLOCK_COUNT 256
-static globus_memory_t                  globus_l_io_dispatched_callback_memory;
 /**
  * Pipe to myself.
  *
@@ -311,14 +302,6 @@ static globus_io_handle_t	        globus_l_io_wakeup_pipe_handle;
  * at shutdown time.
  */
 static globus_callback_handle_t         globus_l_io_callback_handle;
-
-/**
- * holds the select info for operations that have been selected for but are
- * awaiting their callback to be fired. necessary to properly cancel them.
- */
-static globus_io_select_info_t **       globus_l_io_pending_read_cb;
-static globus_io_select_info_t **       globus_l_io_pending_write_cb;
-static globus_io_select_info_t **       globus_l_io_pending_except_cb;
 
 static int                              globus_l_io_pending_count;
 
@@ -1398,11 +1381,9 @@ globus_i_io_register_cancel(
             
 	cancel_read = GLOBUS_TRUE;
     }
-    else if(globus_l_io_pending_read_cb[select_info->handle->fd])
+    else if(select_info->read_callback)
     {
         /* cancel pending callback */
-        globus_l_io_pending_read_cb[select_info->handle->fd] = GLOBUS_NULL;
-        
         cancel_read = GLOBUS_TRUE;
     }
     
@@ -1429,11 +1410,9 @@ globus_i_io_register_cancel(
             
 	cancel_write = GLOBUS_TRUE;
     }
-    else if(globus_l_io_pending_write_cb[select_info->handle->fd])
+    else if(select_info->write_callback)
     {
         /* cancel pending callback */
-        globus_l_io_pending_write_cb[select_info->handle->fd] = GLOBUS_NULL;
-        
         cancel_write = GLOBUS_TRUE;
     }
     
@@ -1458,11 +1437,9 @@ globus_i_io_register_cancel(
             
 	cancel_except = GLOBUS_TRUE;
     }
-    else if(globus_l_io_pending_except_cb[select_info->handle->fd])
+    else if(select_info->except_callback)
     {
         /* cancel pending callback */
-        globus_l_io_pending_except_cb[select_info->handle->fd] = GLOBUS_NULL;
-        
         cancel_except = GLOBUS_TRUE;
     }
     
@@ -1569,9 +1546,11 @@ globus_l_io_kickout_read_cb(
     void *                              user_args)
 {
     globus_io_select_info_t *           select_info;
-    globus_l_io_dispatched_callback_info_t * callback_info;
+    globus_io_callback_t                callback;
+    void *                              args;
+    globus_io_handle_t *                handle;
     
-    callback_info = (globus_l_io_dispatched_callback_info_t *) user_args;
+    select_info = (globus_io_select_info_t *) user_args;
     
     /* see if I was canceled and unregister pending select info for myself */
     globus_i_io_mutex_lock();
@@ -1581,14 +1560,14 @@ globus_l_io_kickout_read_cb(
             goto exit;
         }
         
-        select_info = globus_l_io_pending_read_cb[callback_info->handle->fd];
-        if(select_info)
+        if(select_info->read_callback)
         {
+            callback = select_info->read_callback;
+            args = select_info->read_arg;
+            handle = select_info->handle;
+            
             select_info->read_callback = GLOBUS_NULL;
             select_info->read_destructor = GLOBUS_NULL;
-            
-            globus_l_io_pending_read_cb[callback_info->handle->fd] =
-                GLOBUS_NULL;
         }
         else
         {
@@ -1597,18 +1576,11 @@ globus_l_io_kickout_read_cb(
     }
     globus_i_io_mutex_unlock();
 
-    callback_info->callback(
-        callback_info->user_args,
-        callback_info->handle,
-        GLOBUS_SUCCESS);
+    callback(args, handle, GLOBUS_SUCCESS);
 
     globus_i_io_mutex_lock();
     {
 exit:    
-        globus_memory_push_node(
-            &globus_l_io_dispatched_callback_memory,
-            callback_info);
-        
         globus_l_io_pending_count--;
         if(globus_l_io_pending_count == 0)
         {
@@ -1626,9 +1598,11 @@ globus_l_io_kickout_write_cb(
     void *                              user_args)
 {
     globus_io_select_info_t *           select_info;
-    globus_l_io_dispatched_callback_info_t * callback_info;
+    globus_io_callback_t                callback;
+    void *                              args;
+    globus_io_handle_t *                handle;
     
-    callback_info = (globus_l_io_dispatched_callback_info_t *) user_args;
+    select_info = (globus_io_select_info_t *) user_args;
     
     /* see if I was canceled and unregister pending select info for myself */
     globus_i_io_mutex_lock();
@@ -1638,14 +1612,14 @@ globus_l_io_kickout_write_cb(
             goto exit;
         }
         
-        select_info = globus_l_io_pending_write_cb[callback_info->handle->fd];
-        if(select_info)
+        if(select_info->write_callback)
         {
+            callback = select_info->write_callback;
+            args = select_info->write_arg;
+            handle = select_info->handle;
+            
             select_info->write_callback = GLOBUS_NULL;
             select_info->write_destructor = GLOBUS_NULL;
-            
-            globus_l_io_pending_write_cb[callback_info->handle->fd] =
-                GLOBUS_NULL;
         }
         else
         {
@@ -1654,18 +1628,11 @@ globus_l_io_kickout_write_cb(
     }
     globus_i_io_mutex_unlock();
 
-    callback_info->callback(
-        callback_info->user_args,
-        callback_info->handle,
-        GLOBUS_SUCCESS);
+    callback(args, handle, GLOBUS_SUCCESS);
 
     globus_i_io_mutex_lock();
     {
 exit:    
-        globus_memory_push_node(
-            &globus_l_io_dispatched_callback_memory,
-            callback_info);
-        
         globus_l_io_pending_count--;
         if(globus_l_io_pending_count == 0)
         {
@@ -1683,9 +1650,11 @@ globus_l_io_kickout_except_cb(
     void *                              user_args)
 {
     globus_io_select_info_t *           select_info;
-    globus_l_io_dispatched_callback_info_t * callback_info;
+    globus_io_callback_t                callback;
+    void *                              args;
+    globus_io_handle_t *                handle;
     
-    callback_info = (globus_l_io_dispatched_callback_info_t *) user_args;
+    select_info = (globus_io_select_info_t *) user_args;
     
     /* see if I was canceled and unregister pending select info for myself */
     globus_i_io_mutex_lock();
@@ -1695,13 +1664,13 @@ globus_l_io_kickout_except_cb(
             goto exit;
         }
         
-        select_info = globus_l_io_pending_except_cb[callback_info->handle->fd];
-        if(select_info)
+        if(select_info->except_callback)
         {
-            select_info->except_callback = GLOBUS_NULL;
+            callback = select_info->except_callback;
+            args = select_info->except_arg;
+            handle = select_info->handle;
             
-            globus_l_io_pending_except_cb[callback_info->handle->fd] =
-                GLOBUS_NULL;
+            select_info->except_callback = GLOBUS_NULL;
         }
         else
         {
@@ -1710,18 +1679,11 @@ globus_l_io_kickout_except_cb(
     }
     globus_i_io_mutex_unlock();
     
-    callback_info->callback(
-        callback_info->user_args,
-        callback_info->handle,
-        GLOBUS_SUCCESS);
+    callback(args, handle, GLOBUS_SUCCESS);
 
     globus_i_io_mutex_lock();
     {
 exit:    
-        globus_memory_push_node(
-            &globus_l_io_dispatched_callback_memory,
-            callback_info);
-        
         globus_l_io_pending_count--;
         if(globus_l_io_pending_count == 0)
         {
@@ -1867,7 +1829,6 @@ globus_l_io_handle_events(
     globus_bool_t			handled_something = GLOBUS_FALSE;
     int                                 select_highest_fd;
     globus_abstime_t                    time_now;
-    globus_l_io_dispatched_callback_info_t * callback_info;
     globus_result_t                     result;
     
     globus_i_io_debug_printf(5,
@@ -1900,24 +1861,14 @@ globus_l_io_handle_events(
                     myname, select_info->handle->fd));
             handle = select_info->handle;
                    
-	    callback_info = (globus_l_io_dispatched_callback_info_t *)
-                globus_memory_pop_node(
-                    &globus_l_io_dispatched_callback_memory);
-    
-            callback_info->callback     = select_info->read_callback;
-            callback_info->user_args    = select_info->read_arg;
-            callback_info->handle       = handle;
-            
             /* this removes select_info from globus_l_io_reads */
-            globus_l_io_pending_read_cb[handle->fd] = select_info;
-            globus_l_io_pending_count++;
-            
             globus_i_io_unregister_read(handle, GLOBUS_FALSE);
+            globus_l_io_pending_count++;
             
             result = globus_callback_space_register_abstime_oneshot(
                 &time_now,
                 globus_l_io_kickout_read_cb,
-                callback_info,
+                select_info,
                 GLOBUS_NULL,
                 GLOBUS_NULL,
                 handle->space);
@@ -2101,23 +2052,13 @@ globus_l_io_handle_events(
                             (stderr, "%s(): read, fd=%d\n", myname, fd));
                         handle = select_info->handle;    
                         
-                        callback_info = (globus_l_io_dispatched_callback_info_t *)
-                            globus_memory_pop_node(
-                                &globus_l_io_dispatched_callback_memory);
-                
-                        callback_info->callback     = select_info->read_callback;
-                        callback_info->user_args    = select_info->read_arg;
-                        callback_info->handle       = handle;
-                        
-                        globus_l_io_pending_read_cb[fd] = select_info;
-                        globus_l_io_pending_count++;
-                        
                         globus_i_io_unregister_read(handle, GLOBUS_FALSE);
+                        globus_l_io_pending_count++;
                         
                         result = globus_callback_space_register_abstime_oneshot(
                             &time_now,
                             globus_l_io_kickout_read_cb,
-                            callback_info,
+                            select_info,
                             GLOBUS_NULL,
                             GLOBUS_NULL,
                             handle->space);
@@ -2144,23 +2085,13 @@ globus_l_io_handle_events(
 			    (stderr, "%s(): write, fd=%d\n", myname, fd));
 		        handle = select_info->handle;    
                         
-		        callback_info = (globus_l_io_dispatched_callback_info_t *)
-                            globus_memory_pop_node(
-                                &globus_l_io_dispatched_callback_memory);
-                
-                        callback_info->callback     = select_info->write_callback;
-                        callback_info->user_args    = select_info->write_arg;
-                        callback_info->handle       = handle;
-                        
-                        globus_l_io_pending_write_cb[fd] = select_info;
-                        globus_l_io_pending_count++;
-                        
                         globus_i_io_unregister_write(handle, GLOBUS_FALSE);
+                        globus_l_io_pending_count++;
                         
                         result = globus_callback_space_register_abstime_oneshot(
                             &time_now,
                             globus_l_io_kickout_write_cb,
-                            callback_info,
+                            select_info,
                             GLOBUS_NULL,
                             GLOBUS_NULL,
                             handle->space);
@@ -2187,23 +2118,13 @@ globus_l_io_handle_events(
 			    (stderr, "%s(): except, fd=%d\n", myname, fd));
 		        handle = select_info->handle;    
                         
-		        callback_info = (globus_l_io_dispatched_callback_info_t *)
-                            globus_memory_pop_node(
-                                &globus_l_io_dispatched_callback_memory);
-                
-                        callback_info->callback     = select_info->except_callback;
-                        callback_info->user_args    = select_info->except_arg;
-                        callback_info->handle       = handle;
-                        
-                        globus_l_io_pending_except_cb[fd] = select_info;
-                        globus_l_io_pending_count++;
-                        
                         globus_i_io_unregister_except(handle);
+                        globus_l_io_pending_count++;
                         
                         result = globus_callback_space_register_abstime_oneshot(
                             &time_now,
                             globus_l_io_kickout_except_cb,
-                            callback_info,
+                            select_info,
                             GLOBUS_NULL,
                             GLOBUS_NULL,
                             handle->space);
@@ -2414,11 +2335,6 @@ globus_l_io_activate(void)
     globus_i_io_debug_printf(3,
         (stderr, "globus_l_io_activate(): entering\n"));
     
-    globus_memory_init(
-        &globus_l_io_dispatched_callback_memory,
-        sizeof(globus_l_io_dispatched_callback_info_t),
-        GLOBUS_L_IO_CALLBACK_MEMORY_BLOCK_COUNT);
-    
     globus_l_io_core_wakeup_func_ptr = GLOBUS_NULL;
     globus_l_io_shutdown_called = GLOBUS_FALSE;
 
@@ -2507,24 +2423,9 @@ globus_l_io_activate(void)
         globus_malloc(sizeof(globus_io_select_info_t *) *
             globus_l_io_fd_tablesize);
     
-    globus_l_io_pending_read_cb = (globus_io_select_info_t **)
-        globus_malloc(sizeof(globus_io_select_info_t *) *
-            globus_l_io_fd_tablesize);
-
-    globus_l_io_pending_write_cb = (globus_io_select_info_t **)
-        globus_malloc(sizeof(globus_io_select_info_t *) *
-            globus_l_io_fd_tablesize);
-
-    globus_l_io_pending_except_cb = (globus_io_select_info_t **)
-        globus_malloc(sizeof(globus_io_select_info_t *) *
-            globus_l_io_fd_tablesize);
-	
     for (i = 0; i < globus_l_io_fd_tablesize; i++)
     {
 	globus_l_io_fd_table[i] = GLOBUS_NULL;
-	globus_l_io_pending_read_cb[i] = GLOBUS_NULL;
-	globus_l_io_pending_write_cb[i] = GLOBUS_NULL;
-	globus_l_io_pending_except_cb[i] = GLOBUS_NULL;
     }
     globus_l_io_fd_table_modified = GLOBUS_FALSE;
 
@@ -2762,7 +2663,6 @@ globus_l_io_deactivate(void)
     {
         globus_free(globus_i_io_udp_used_port_table);
     }
-    globus_memory_destroy(&globus_l_io_dispatched_callback_memory);
     
     globus_i_io_mutex_unlock();
     globus_i_io_debug_printf(3,

@@ -416,20 +416,6 @@ globus_i_io_securesocket_register_read(
     globus_io_read_callback_t           callback,
     void *                              callback_arg);
 
-globus_result_t
-globus_i_io_unregister_read(
-    globus_io_handle_t *		handle,
-    globus_bool_t			call_destructor);
-
-globus_result_t
-globus_i_io_unregister_write(
-    globus_io_handle_t *		handle,
-    globus_bool_t			call_destructor);
-
-globus_result_t
-globus_i_io_unregister_except(
-    globus_io_handle_t *		handle);
-
 void
 globus_i_io_default_destructor(
     void *				arg);
