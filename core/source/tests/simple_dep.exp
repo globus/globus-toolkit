@@ -1,1 +1,1 @@
--L/home/mystuff/lib  -lXm -L/opt/dum/lib -lfum  -ldee -L/usr/local/lib -lfoo  -lX  -lfee -L/opt/dum/lib -lm  -ldum 
+-L/home/mystuff/lib -lXm -L$(GLOBUS_INSTALL_PATH)/include -lfum_$(GLOBUS_FLAVOR_NAME) -L/opt/dum/lib -ldee -L$(GLOBUS_INSTALL_PATH)/include -lfoo_$(GLOBUS_FLAVOR_NAME) -L/usr/local/lib -lX -L$(GLOBUS_INSTALL_PATH)/include -lfee_$(GLOBUS_FLAVOR_NAME)  -lm -L/opt/dum/lib -ldum  
