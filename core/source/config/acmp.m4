@@ -42,7 +42,7 @@ AC_ARG_WITH(mpi-includes,
 
 AC_ARG_WITH(mpi-libs,
     [  --with-mpi-libs         Specify libs and LDFLAGS for MPI
-                          (example --with-mpi-lib=\"-L/path/to/mpi/libs -lmpi\")],
+                          (example --with-mpi-libs=\"-L/path/to/mpi/libs -lmpi\")],
     [if test "$build_arg_mpi" != "yes" ; then
         AC_MSG_ERROR([you must specify --with-mpi[[=yes]] to use --with-mpi-libs])
         exit 1
