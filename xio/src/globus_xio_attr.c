@@ -662,7 +662,11 @@ globus_xio_stack_push_driver(
         /* if in the transport position and has a push stack */
         if(driver->push_driver_func != NULL)
         {
-            driver->push_driver_func(driver, xio_stack);
+            res = driver->push_driver_func(driver, xio_stack);
+            if(res != GLOBUS_SUCCESS)
+            {
+                goto err;
+            }
         }
         else if(driver->transport_open_func == NULL)
         {

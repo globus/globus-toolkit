@@ -567,7 +567,8 @@ globus_l_xio_system_cancel_cb(
 
     globus_mutex_lock(&globus_l_xio_system_cancel_mutex);
     {
-        if(op_info->state != GLOBUS_L_OPERATION_COMPLETE)
+        if(op_info->state != GLOBUS_L_OPERATION_COMPLETE && 
+            op_info->state != GLOBUS_L_OPERATION_CANCELED)
         {
             globus_mutex_lock(&globus_l_xio_system_fdset_mutex);
             {
@@ -1881,6 +1882,63 @@ error_canceled:
     return handled_it;
 }
 
+/**
+ * one of these fds is bad, lock down the fdset and check them all
+ * --- assumed to be called with cancel lock held after a select
+ */
+static
+void
+globus_l_xio_system_bad_apple(void)
+{
+    globus_l_operation_info_t *         op_info;
+    int                                 fd;
+    struct stat                         stat_buf;
+    GlobusXIOName(globus_l_xio_system_bad_apple);
+
+    GlobusXIOSystemDebugEnter();
+    
+    globus_mutex_lock(&globus_l_xio_system_fdset_mutex);
+    {
+        for(fd = 0; fd <= globus_l_xio_system_highest_fd; fd++)
+        {
+            if(FD_ISSET(fd, globus_l_xio_system_read_fds))
+            {
+                if(fstat(fd, &stat_buf) < 0 && errno == EBADF)
+                {
+                    GlobusXIOSystemDebugPrintf(
+                        GLOBUS_L_XIO_SYSTEM_DEBUG_INFO,
+                        ("[%s] fd=%d, Canceling read bad apple\n", 
+                        _xio_name, fd));
+                    
+                    op_info = globus_l_xio_system_read_operations[fd];
+                    op_info->state = GLOBUS_L_OPERATION_CANCELED;
+                    globus_list_insert(
+                        &globus_l_xio_system_canceled_reads, (void *) fd);
+                }
+            }
+            
+            if(FD_ISSET(fd, globus_l_xio_system_write_fds))
+            {
+                if(fstat(fd, &stat_buf) < 0 && errno == EBADF)
+                {
+                    GlobusXIOSystemDebugPrintf(
+                        GLOBUS_L_XIO_SYSTEM_DEBUG_INFO,
+                        ("[%s] fd=%d, Canceling write bad apple\n",
+                        _xio_name, fd));
+                    
+                    op_info = globus_l_xio_system_write_operations[fd];
+                    op_info->state = GLOBUS_L_OPERATION_CANCELED;
+                    globus_list_insert(
+                        &globus_l_xio_system_canceled_writes, (void *) fd);
+                }
+            }
+        }
+    }
+    globus_mutex_unlock(&globus_l_xio_system_fdset_mutex);
+    
+    GlobusXIOSystemDebugExit();
+}
+
 static
 void
 globus_l_xio_system_poll(
@@ -1901,7 +1959,8 @@ globus_l_xio_system_poll(
         int                             num;
         int                             nready;
         int                             fd;
-
+        int                             save_errno;
+        
         time_left_is_zero = GLOBUS_FALSE;
         time_left_is_infinity = GLOBUS_FALSE;
 
@@ -1942,6 +2001,7 @@ globus_l_xio_system_poll(
             globus_l_xio_system_ready_writes,
             GLOBUS_NULL,
             (time_left_is_infinity ? GLOBUS_NULL : &time_left));
+        save_errno = errno;
         
         GlobusXIOSystemDebugPrintf(
             GLOBUS_L_XIO_SYSTEM_DEBUG_INFO,
@@ -1971,8 +2031,13 @@ globus_l_xio_system_poll(
             }
             else
             {
+                if(save_errno == EBADF)
+                {
+                    globus_l_xio_system_bad_apple();
+                }
+                
                 /**
-                 * can't really do anything about errors (most likely EINTR)
+                 * can't really do anything about other errors
                  * so, set ready fds to known state in case there are things
                  * to be canceled
                  */

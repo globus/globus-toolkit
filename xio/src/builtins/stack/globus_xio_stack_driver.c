@@ -28,7 +28,7 @@ typedef struct globus_l_xio_stack_info_s
     globus_xio_driver_t                     test_driver;
 } globus_l_xio_stack_info_t;
 
-static void
+static globus_result_t
 globus_l_xio_stack_push(
     globus_xio_driver_t                     driver,
     globus_xio_stack_t                      stack)
@@ -39,6 +39,8 @@ globus_l_xio_stack_push(
 
     globus_xio_stack_push_driver(stack, stack_info->test_driver);
     globus_xio_stack_push_driver(stack, stack_info->debug_driver);
+
+    return GLOBUS_SUCCESS;
 }
 
 static globus_result_t
@@ -60,7 +62,7 @@ globus_l_xio_stack_load(
         return res;
     }
 
-    globus_xio_driver_set_transport(
+    globus_xio_driver_set_transform(
         driver,
         NULL,
         NULL,
