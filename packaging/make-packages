@@ -236,6 +236,11 @@ make_source_package() {
 
 	export destdir=`pwd`/${name}-${version}-src/
 
+    if [ x"$force" != "x" ]; then
+        echo Rebuild forced, overwritting $destdir
+        rm -rf $destdir
+    fi
+
 	if [ -d $destdir ]; then
 		echo Skipping package $name;
 		echo Delete $destdir to force rebuild;
