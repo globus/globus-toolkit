@@ -120,7 +120,6 @@ extern FILE *                           globus_i_gsi_callback_debug_fstream;
                        __LINE__,                                          \
                        NULL)
 
-extern char *                    globus_l_gsi_callback_error_strings[];
 
 /**
  * GSI Credential Callback implementation
