@@ -1,4 +1,7 @@
-/* crypto/uid.c */
+/* crypto/mem_clr.c -*- mode:C; c-file-style: "eay" -*- */
+/* Written by Geoff Thorpe (geoff@geoffthorpe.net) for the OpenSSL
+ * project 2002.
+ */
 /* ====================================================================
  * Copyright (c) 2001 The OpenSSL Project.  All rights reserved.
  *
@@ -17,12 +20,12 @@
  * 3. All advertising materials mentioning features or use of this
  *    software must display the following acknowledgment:
  *    "This product includes software developed by the OpenSSL Project
- *    for use in the OpenSSL Toolkit. (http://www.OpenSSL.org/)"
+ *    for use in the OpenSSL Toolkit. (http://www.openssl.org/)"
  *
  * 4. The names "OpenSSL Toolkit" and "OpenSSL Project" must not be used to
  *    endorse or promote products derived from this software without
  *    prior written permission. For written permission, please contact
- *    licensing@OpenSSL.org.
+ *    openssl-core@openssl.org.
  *
  * 5. Products derived from this software may not be called "OpenSSL"
  *    nor may "OpenSSL" appear in their names without prior written
@@ -31,7 +34,7 @@
  * 6. Redistributions of any form whatsoever must retain the following
  *    acknowledgment:
  *    "This product includes software developed by the OpenSSL Project
- *    for use in the OpenSSL Toolkit (http://www.OpenSSL.org/)"
+ *    for use in the OpenSSL Toolkit (http://www.openssl.org/)"
  *
  * THIS SOFTWARE IS PROVIDED BY THE OpenSSL PROJECT ``AS IS'' AND ANY
  * EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -53,36 +56,20 @@
  *
  */
 
+#include <string.h>
 #include <openssl/crypto.h>
 
-#if defined(__OpenBSD__) || (defined(__FreeBSD__) && __FreeBSD__ > 2)
+unsigned char cleanse_ctr = 0;
 
-#include <unistd.h>
-
-int OPENSSL_issetugid(void)
+void OPENSSL_cleanse(void *ptr, size_t len)
 	{
-	return issetugid();
+	unsigned char *p = ptr;
+	size_t loop = len;
+	while(loop--)
+		{
+		*(p++) = cleanse_ctr;
+		cleanse_ctr += (17 + (unsigned char)((int)p & 0xF));
+		}
+	if(memchr(ptr, cleanse_ctr, len))
+		cleanse_ctr += 63;
 	}
-
-#elif defined(WIN32) || defined(VXWORKS)
-
-int OPENSSL_issetugid(void)
-	{
-	return 0;
-	}
-
-#else
-
-#include <unistd.h>
-#include <sys/types.h>
-
-int OPENSSL_issetugid(void)
-	{
-	if (getuid() != geteuid()) return 1;
-	if (getgid() != getegid()) return 1;
-	return 0;
-	}
-#endif
-
-
-
