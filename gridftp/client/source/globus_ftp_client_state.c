@@ -3157,6 +3157,17 @@ globus_l_ftp_client_parse_feat(
 	    {
 		target->features[GLOBUS_FTP_CLIENT_FEATURE_SBUF]
 			= GLOBUS_FTP_CLIENT_TRUE;
+		/* If SBUF is supported, then don't bother with other
+		 * buffer size commands
+		 */
+
+		for(i = 0; i < GLOBUS_FTP_CLIENT_FEATURE_SBUF; i++)
+		{
+		    if(target->features[i] == GLOBUS_FTP_CLIENT_MAYBE)
+		    {
+			target->features[i] = GLOBUS_FTP_CLIENT_FALSE;
+		    }
+		}
 	    }
 	    else if(strncmp(feature_label, "ABUF", 4) == 0)
 	    {
@@ -3697,7 +3708,7 @@ globus_l_ftp_client_parse_mdtm(
     globus_result_t 				res;
     struct tm					tm;
     time_t					t;
-    double					fraction;
+    float					fraction;
     unsigned long				nsec = 0UL;
     int 					rc;
     globus_object_t *				err;

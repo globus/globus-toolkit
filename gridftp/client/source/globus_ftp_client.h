@@ -211,7 +211,8 @@ typedef void (*globus_ftp_client_complete_callback_t) (
  * @param buffer
  *        The data buffer passed to the original read or write call.
  * @param length
- *        The amount of data in the data buffer.
+ *        The amount of data in the data buffer. When reading data, this
+ *        may be smaller than original buffer's length.
  * @param offset
  *        The offset into the file which this data block contains.
  * @param eof
