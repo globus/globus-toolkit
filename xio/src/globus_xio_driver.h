@@ -390,8 +390,6 @@ typedef globus_result_t
     globus_xio_driver_t *                   out_driver);
 
 /**
- *  @defgroup driver_attr_funcs Attribute Interface Functions
- *
  *  Driver attribute functions
  *
  *  If the driver wishes to provide driver specific attributes to the
