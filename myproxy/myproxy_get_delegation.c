@@ -207,6 +207,7 @@ init_arguments(int argc,
             break;    
 	case 'a':       /* special authorization */
 	    request->authzcreds = strdup(gnu_optarg);
+	    use_empty_passwd = 1;
 	    break;
 	case 'n':       /* no passphrase */
 	    use_empty_passwd = 1;
