@@ -36,8 +36,8 @@ globus_gridftp_server_control_get_buffer_size(
 
     globus_mutex_lock(&op->server_handle->mutex);
     {
-        *out_recv_bs = op->server_handle->opts.receive_buf;
-        *out_send_bs = op->server_handle->opts.send_buf;
+        *out_recv_bs = op->server_handle->receive_buf;
+        *out_send_bs = op->server_handle->send_buf;
     }
     globus_mutex_unlock(&op->server_handle->mutex);
 
@@ -55,7 +55,7 @@ globus_gridftp_server_control_get_parallelism(
 
     globus_mutex_lock(&op->server_handle->mutex);
     {
-        *out_parallelism = op->server_handle->opts.parallelism;
+        *out_parallelism = op->server_handle->parallelism;
     }
     globus_mutex_unlock(&op->server_handle->mutex);
 
@@ -99,24 +99,6 @@ globus_gridftp_server_control_get_type(
 }
 
 globus_result_t
-globus_gridftp_server_control_get_list_type(
-    globus_gridftp_server_control_op_t      op,
-    int *                                   out_type)
-{
-    if(op == NULL)
-    {
-    }
-
-    globus_mutex_lock(&op->server_handle->mutex);
-    {
-        *out_type = op->type;
-    }
-    globus_mutex_unlock(&op->server_handle->mutex);
-
-    return GLOBUS_SUCCESS;
-}
-
-globus_result_t
 globus_gridftp_server_control_get_cwd(
     globus_gridftp_server_control_t         server,
     char **                                 cwd_string)
@@ -134,38 +116,3 @@ globus_gridftp_server_control_get_cwd(
     return GLOBUS_SUCCESS;
 }
 
-globus_result_t
-globus_gridftp_server_control_get_dcau(
-    globus_gridftp_server_control_op_t      op,
-    char *                                  dcau)
-{
-    if(op == NULL)
-    {
-    }
-
-    globus_mutex_lock(&op->server_handle->mutex);
-    {
-        *dcau = op->server_handle->dcau;
-    }
-    globus_mutex_unlock(&op->server_handle->mutex);
-
-    return GLOBUS_SUCCESS;
-}
-
-globus_result_t
-globus_gridftp_server_control_get_prot(
-    globus_gridftp_server_control_op_t      op,
-    char *                                  prot)
-{
-    if(op == NULL)
-    {
-    }
-
-    globus_mutex_lock(&op->server_handle->mutex);
-    {
-        *prot = op->server_handle->dcau;
-    }
-    globus_mutex_unlock(&op->server_handle->mutex);
-
-    return GLOBUS_SUCCESS;
-}

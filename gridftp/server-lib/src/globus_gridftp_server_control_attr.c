@@ -28,18 +28,18 @@ globus_gridftp_server_control_attr_init(
     memset(attr, '\0', sizeof(globus_i_gsc_attr_t));
 
     globus_hashtable_init(
-        &attr->funcs.send_cb_table,
+        &attr->send_cb_table,
         GLOBUS_GRIDFTP_SERVER_HASHTABLE_SIZE,
         globus_hashtable_string_hash,
         globus_hashtable_string_keyeq);
 
     globus_hashtable_init(
-        &attr->funcs.recv_cb_table,
+        &attr->recv_cb_table,
         GLOBUS_GRIDFTP_SERVER_HASHTABLE_SIZE,
         globus_hashtable_string_hash,
         globus_hashtable_string_keyeq);
 
-    attr->funcs.resource_cb = NULL;
+    attr->resource_cb = NULL;
     attr->version_ctl = GLOBUS_GRIDFTP_VERSION_CTL;
     attr->modes = globus_libc_strdup("ES");
     attr->types = globus_libc_strdup("AI");
@@ -82,8 +82,8 @@ globus_gridftp_server_control_attr_destroy(
         goto err;
     }
 
-    globus_hashtable_destroy(&attr->funcs.send_cb_table);
-    globus_hashtable_destroy(&attr->funcs.recv_cb_table);
+    globus_hashtable_destroy(&attr->send_cb_table);
+    globus_hashtable_destroy(&attr->recv_cb_table);
 
     globus_free(attr->modes);
     globus_free(attr->types);
@@ -133,11 +133,10 @@ globus_gridftp_server_control_attr_copy(
         goto err;
     }
     attr->version_ctl = src->version_ctl;
-    attr->funcs.resource_cb = src->funcs.resource_cb;
+    attr->resource_cb = src->resource_cb;
     globus_hashtable_copy(
-	    &attr->funcs.send_cb_table, &src->funcs.send_cb_table, NULL);
-    globus_hashtable_copy(
-        &attr->funcs.recv_cb_table, &src->funcs.recv_cb_table, NULL);
+	    &attr->send_cb_table, &src->send_cb_table, NULL);
+    globus_hashtable_copy(&attr->recv_cb_table, &src->recv_cb_table, NULL);
     attr->modes = globus_libc_strdup(src->modes);
     attr->types = globus_libc_strdup(src->types);
 
@@ -253,12 +252,12 @@ globus_gridftp_server_control_attr_add_recv(
 
     if(module_name == NULL)
     {
-        attr->funcs.default_recv_cb = recv_cb;
+        attr->default_recv_cb = recv_cb;
     }
     else
     {
         globus_hashtable_insert(
-            &attr->funcs.recv_cb_table,
+            &attr->recv_cb_table,
             (void *)module_name,
             recv_cb);
     }
@@ -306,12 +305,12 @@ globus_gridftp_server_control_attr_add_send(
 
     if(module_name == NULL)
     {
-        attr->funcs.default_send_cb = send_cb;
+        attr->default_send_cb = send_cb;
     }
     else
     {
         globus_hashtable_insert(
-            &attr->funcs.send_cb_table,
+            &attr->send_cb_table,
             (void *)module_name,
             send_cb);
     }
@@ -355,7 +354,7 @@ globus_gridftp_server_control_attr_set_auth(
         goto err;
     }
 
-    attr->funcs.auth_cb = auth_cb;
+    attr->auth_cb = auth_cb;
 
     GlobusGridFTPServerDebugExit();
 
@@ -397,7 +396,7 @@ globus_gridftp_server_control_attr_set_resource(
         goto err;
     }
 
-    attr->funcs.resource_cb = resource_query_cb;
+    attr->resource_cb = resource_query_cb;
 
     GlobusGridFTPServerDebugExit();
 
@@ -428,138 +427,13 @@ globus_gridftp_server_control_attr_data_functions(
     }
     attr = (globus_i_gsc_attr_t *) server_attr;
 
-    attr->funcs.passive_cb = passive_cb;
-    attr->funcs.active_cb = active_cb;
-    attr->funcs.data_destroy_cb = destroy_cb;
+    attr->passive_cb = passive_cb;
+    attr->active_cb = active_cb;
+    attr->data_destroy_cb = destroy_cb;
 
     return GLOBUS_SUCCESS;
 
   err:
 
     return res;
-}
-
-globus_result_t
-globus_gridftp_server_control_attr_set_list(
-    globus_gridftp_server_control_attr_t    in_attr,
-    globus_gridftp_server_control_list_cb_t list_cb)
-{
-    globus_i_gsc_attr_t *                   attr;
-    GlobusGridFTPServerName(globus_gridftp_server_control_attr_set_list);
-
-    if(in_attr == NULL)
-    {
-        return GlobusGridFTPServerErrorParameter("server_attr");
-    }
-    attr = (globus_i_gsc_attr_t *) in_attr;
-
-    attr->funcs.list_cb = list_cb;
-
-    return GLOBUS_SUCCESS;
-}
-
-globus_result_t
-globus_gridftp_server_control_attr_set_banner(
-    globus_gridftp_server_control_attr_t    in_attr,
-    char *                                  banner)
-{
-    globus_i_gsc_attr_t *                   attr;
-    GlobusGridFTPServerName(globus_gridftp_server_control_attr_set_list);
-
-    if(in_attr == NULL)
-    {
-        return GlobusGridFTPServerErrorParameter("server_attr");
-    }
-    if(banner == NULL)
-    {
-        return GlobusGridFTPServerErrorParameter("banner");
-    }
-    attr = (globus_i_gsc_attr_t *) in_attr;
-
-    attr->pre_auth_banner = globus_i_gsc_string_to_959(banner);
-
-    return GLOBUS_SUCCESS;
-}
-                                                                                
-globus_result_t
-globus_gridftp_server_control_attr_set_message(
-    globus_gridftp_server_control_attr_t    in_attr,
-    char *                                  message)
-{
-    globus_i_gsc_attr_t *                   attr;
-    GlobusGridFTPServerName(globus_gridftp_server_control_attr_set_list);
-
-    if(in_attr == NULL)
-    {
-        return GlobusGridFTPServerErrorParameter("server_attr");
-    }
-    if(message == NULL)
-    {
-        return GlobusGridFTPServerErrorParameter("message");
-    }
-    attr = (globus_i_gsc_attr_t *) in_attr;
-
-    attr->post_auth_banner = globus_i_gsc_string_to_959(message);
-
-    return GLOBUS_SUCCESS;
-}
-
-globus_result_t
-globus_l_gsc_attr_file_set(
-    globus_gridftp_server_control_attr_t    in_attr,
-    const char *                            filename,
-    char **                                 out_string)
-{
-    globus_i_gsc_attr_t *                   attr;
-    GlobusGridFTPServerName(globus_gridftp_server_control_attr_set_list);
-
-    if(in_attr == NULL)
-    {
-        return GlobusGridFTPServerErrorParameter("server_attr");
-    }
-    if(filename == NULL)
-    {
-        return GlobusGridFTPServerErrorParameter("banner");
-    }
-    attr = (globus_i_gsc_attr_t *) in_attr;
-
-    /* TODO: read from file */
-
-    return GLOBUS_SUCCESS;
-}
-
-globus_result_t
-globus_gridftp_server_control_attr_file_set_banner(
-    globus_gridftp_server_control_attr_t    in_attr,
-    const char *                            filename)
-{
-    char *                                  tmp_s;
-    globus_result_t                         res;
-
-    res = globus_l_gsc_attr_file_set(in_attr, filename, &tmp_s);
-    if(res != GLOBUS_SUCCESS)
-    {
-        return res;
-    }
-    in_attr->pre_auth_banner = tmp_s;
-
-    return GLOBUS_SUCCESS;
-}
-                                                                                
-globus_result_t
-globus_gridftp_server_control_attr_file_set_message(
-    globus_gridftp_server_control_attr_t    in_attr,
-    const char *                            filename)
-{
-    char *                                  tmp_s;
-    globus_result_t                         res;
-
-    res = globus_l_gsc_attr_file_set(in_attr, filename, &tmp_s);
-    if(res != GLOBUS_SUCCESS)
-    {
-        return res;
-    }
-    in_attr->post_auth_banner = tmp_s;
-
-    return GLOBUS_SUCCESS;
 }

@@ -5,11 +5,10 @@
 #include "globus_common.h"
 #include "globus_gss_assist.h"
 
-typedef struct globus_i_gsc_restart_s * globus_gridftp_server_control_restart_t;
 typedef struct globus_i_gsc_server_handle_s * globus_gridftp_server_control_t;
 typedef struct globus_i_gsc_attr_s *     globus_gridftp_server_control_attr_t;
 typedef struct globus_i_gsc_op_s *          globus_gridftp_server_control_op_t;
-typedef struct globus_i_gsc_op_s *          globus_gsc_959_op_t;
+
 typedef time_t                              globus_time_t;
 
 /***********************************************************************
@@ -118,8 +117,6 @@ typedef struct globus_gridftp_server_control_stat_s
     globus_time_t                           atime;
     globus_time_t                           ctime;
     globus_time_t                           mtime;
-    int                                     dev;
-    int                                     ino;
 } globus_gridftp_server_control_stat_t;
 
 /**
@@ -161,8 +158,8 @@ typedef enum globus_i_gsc_data_dir_e
  */
 typedef enum globus_gridftp_server_control_event_type_e
 {
-    GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_PERF = 0x01,
-    GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_RESTART = 0x02
+    GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_PERF_MARKER,
+    GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_BEGIN_TRANSFER = 150
 } globus_gridftp_server_control_event_type_t;
 
 /**
@@ -205,8 +202,7 @@ globus_gridftp_server_control_finished_auth(
 typedef enum globus_gridftp_server_control_resource_mask_e
 {
     GLOBUS_GRIDFTP_SERVER_CONTROL_RESOURCE_DIRECTORY_LIST = 1,
-    GLOBUS_GRIDFTP_SERVER_CONTROL_RESOURCE_FILE_ONLY      = 2,
-    GLOBUS_GRIDFTP_SERVER_CONTROL_RESOURCE_USER_DEFINED   = 3
+    GLOBUS_GRIDFTP_SERVER_CONTROL_RESOURCE_FILE_ONLY      = 2
 } globus_gridftp_server_control_resource_mask_t;
 
 /**
@@ -246,26 +242,7 @@ typedef void
     void *                                  data_handle,
     const char *                            local_target,
     const char *                            mod_name,
-    const char *                            mod_parms,
-    globus_gridftp_server_control_restart_t restart);
-
-typedef void
-(*globus_gridftp_server_control_list_cb_t)(
-    globus_gridftp_server_control_op_t      op,
-    void *                                  data_handle,
-    const char *                            path);
-
-globus_result_t
-globus_gridftp_server_control_list_buffer_alloc(
-    globus_gridftp_server_control_op_t      op,
-    globus_gridftp_server_control_stat_t *  stat_info_array,
-    int                                     stat_count,
-    globus_byte_t **                        out_buf,
-    globus_size_t *                         out_size);
-
-void
-globus_gridftp_server_control_list_buffer_free(
-    globus_byte_t *                         buffer);
+    const char *                            mod_parms);
 
 typedef void
 (*globus_gridftp_server_control_abort_cb_t)(
@@ -367,21 +344,6 @@ globus_result_t
 globus_gridftp_server_control_attr_set_auth(
     globus_gridftp_server_control_attr_t    in_attr,
     globus_gridftp_server_control_auth_cb_t auth_cb);
-
-globus_result_t
-globus_gridftp_server_control_attr_set_list(
-    globus_gridftp_server_control_attr_t    in_attr,
-    globus_gridftp_server_control_list_cb_t list_cb);
-
-globus_result_t
-globus_gridftp_server_control_attr_set_banner(
-    globus_gridftp_server_control_attr_t    in_attr,
-    char *                                  banner);
-
-globus_result_t
-globus_gridftp_server_control_attr_set_message(
-    globus_gridftp_server_control_attr_t    in_attr,
-    char *                                  message);
 
 /*
  *  if module name is NULL then it is the default handler
@@ -494,27 +456,12 @@ globus_gridftp_server_control_get_mode(
 globus_result_t
 globus_gridftp_server_control_get_type(
     globus_gridftp_server_control_op_t      op,
-    char *                                  out_type);
+    char *                                  ou_type);
 
 globus_result_t
 globus_gridftp_server_control_get_cwd(
     globus_gridftp_server_control_t         server,
     char **                                 cwd_string);
-
-globus_result_t
-globus_gridftp_server_control_get_dcau(
-    globus_gridftp_server_control_op_t      op,
-    char *                                  dcau);
-
-globus_result_t
-globus_gridftp_server_control_get_prot(
-    globus_gridftp_server_control_op_t      op,
-    char *                                  prot);
-
-globus_result_t
-globus_gridftp_server_control_get_list_type(
-    globus_gridftp_server_control_op_t      op,
-    int *                                   out_type);
 
 globus_bool_t
 globus_gridftp_server_control_authenticated(
@@ -594,8 +541,7 @@ globus_gridftp_server_control_disconnected(
  */
 globus_result_t
 globus_gridftp_server_control_begin_transfer(
-    globus_gridftp_server_control_op_t      op,
-    int                                     event_mask);
+    globus_gridftp_server_control_op_t      op);
 
 /**
  *  a data transfer requested has been completed.
@@ -618,55 +564,6 @@ globus_gridft_server_control_send_event(
     globus_gridftp_server_control_event_type_t type,
     const char *                            msg);
 
-globus_result_t
-globus_gridftp_server_control_add_feature(
-    globus_gridftp_server_control_t         server,
-    const char *                            feature);
-
-
-/* use with care, not *external* external */
-typedef enum globus_gsc_959_command_desc_e
-{
-    GLOBUS_GSC_COMMAND_POST_AUTH = 0x01,
-    GLOBUS_GSC_COMMAND_PRE_AUTH = 0x02
-} globus_gsc_959_command_desc_t;
-
-typedef void
-(*globus_gsc_959_command_cb_t)(
-    globus_gsc_959_op_t                     op,
-    const char *                            full_command,
-    char **                                 cmd_array,
-    int                                     argc,
-    void *                                  user_arg);
-
-globus_result_t
-globus_gsc_959_command_add(
-    globus_gridftp_server_control_t         server,
-    const char *                            command_name,
-    globus_gsc_959_command_cb_t             command_cb,
-    globus_gsc_959_command_desc_t           desc,
-    int                                     min_argc,
-    int                                     max_argc,
-    const char *                            help,
-    void *                                  user_arg);
-
-void
-globus_gsc_959_finished_command(
-    globus_gsc_959_op_t                     op,
-    char *                                  reply_msg);
-
-int
-globus_gridftp_server_control_restart_get(
-    globus_gridftp_server_control_restart_t restart,
-    globus_off_t *                          offset,
-    globus_off_t *                          length);
-
-globus_result_t
-globus_gridftp_server_control_update_bytes(
-    globus_gridftp_server_control_op_t      op,
-    int                                     stripe_ndx,
-    globus_off_t                            offset,
-    globus_off_t                            length);
 
 extern globus_module_descriptor_t      globus_i_gsc_module;
 

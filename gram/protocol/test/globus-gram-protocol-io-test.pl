@@ -22,12 +22,13 @@ my @todo;
 sub test
 {
     my ($errors,$rc) = ("",0);
+    my ($args, $expected_rc) = @_;
 
     unlink('core');
 
-    system("$test_exec >/dev/null 2>/dev/null");
+    system("$test_exec $args >/dev/null 2>/dev/null");
     $rc = $?>> 8;
-    if($rc != 0)
+    if($rc != $expected_rc)
     {
         $errors .= "Test exited with $rc. ";
     }
@@ -46,7 +47,8 @@ sub test
     }
 }
 
-push(@tests, "test()");
+push(@tests, "test('', 0)");
+push(@tests, "test('invalid_host', 12)");
 
 plan tests => scalar(@tests), todo => \@todo;
 

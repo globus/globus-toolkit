@@ -160,10 +160,10 @@ TMP_CERT_FILE=/tmp/tmp_cert.pem.$$
 
 ${GLOBUS_SH_CP-cp} ${INPUT_REQ_FILE} ${TMP_REQ_FILE}
 
-echo ${openssl_options} | grep "\-passin" > /dev/null
+echo ${openssl_options} | grep "\-passin"
 res1=$?
 if test ! $res1 = 0; then
-    echo ${openssl_options} | grep "\-key" > /dev/null
+    echo ${openssl_options} | grep "\-key"
     res1=$?
 fi
 

@@ -830,11 +830,7 @@ globus_l_gass_transfer_http_read_callback(
     {
 	proto->recv_state = GLOBUS_GASS_TRANSFER_HTTP_RECV_STATE_ERROR;
     }
-    else if(nbytes==0 && proto->eof_read)
-    {
-        proto->failure_occurred = GLOBUS_TRUE;
-	proto->recv_state = GLOBUS_GASS_TRANSFER_HTTP_RECV_STATE_ERROR;
-    }
+	    
 
     if((proto->type == GLOBUS_GASS_TRANSFER_REQUEST_TYPE_PUT ||
        proto->type == GLOBUS_GASS_TRANSFER_REQUEST_TYPE_APPEND) &&
@@ -2024,10 +2020,6 @@ globus_l_gass_transfer_http_proto_destroy(
     if(proto->reason != GLOBUS_NULL)
     {
 	globus_free(proto->reason);
-    }
-    if(proto->connected_subject != GLOBUS_NULL)
-    {
-        globus_free(proto->connected_subject);
     }
     if(proto->client_side)
     {
@@ -5549,7 +5541,7 @@ globus_l_gass_transfer_http_scan_star_lws(
 	}
 	if(input[i] == CR)
 	{
-	    if(i + 2 >= max_to_scan)
+	    if(i + 2 > max_to_scan)
 	    {
 		/* not enough data */
 		return GLOBUS_TRUE;
@@ -5981,44 +5973,6 @@ globus_l_gass_transfer_http_handle_chunk(
     globus_gass_transfer_http_request_proto_t *		proto)
 {
     globus_size_t				i;
-
-    if ( proto->response_offset - proto->parsed_offset == 0 )
-    {
-        if (!proto->eof_read )
-        {
-            return GLOBUS_TRUE;
-        }
-        else
-        {
-            switch(proto->recv_state)
-            {
-              case GLOBUS_GASS_TRANSFER_HTTP_RECV_STATE_UNTIL_LENGTH:
-  		if (proto->length == proto->handled)
-		{
-		    proto->recv_state =
-			GLOBUS_GASS_TRANSFER_HTTP_RECV_STATE_EOF;
-		}
-		else 
-		{
-		    proto->recv_state =
-			GLOBUS_GASS_TRANSFER_HTTP_RECV_STATE_ERROR;
-		}
-                break;
-
-              case GLOBUS_GASS_TRANSFER_HTTP_RECV_STATE_UNTIL_EOF:
-                proto->recv_state =
-                    GLOBUS_GASS_TRANSFER_HTTP_RECV_STATE_EOF;
-                break;
-
-              default:
-                proto->failure_occurred = GLOBUS_TRUE;
-		proto->recv_state =
-	            GLOBUS_GASS_TRANSFER_HTTP_RECV_STATE_ERROR;
-                break;
-            }
-            return GLOBUS_FALSE;
-        }
-    }
 
     while(proto->response_offset - proto->parsed_offset > 0)
     {

@@ -1515,8 +1515,6 @@ globus_l_xio_register_writev(
 
     globus_mutex_lock(&handle->context->mutex);
     {
-        globus_list_remove(&handle->write_op_list,
-            globus_list_search(handle->write_op_list, op));
         GlobusXIOOpDec(op);  /* dec for the register */
         globus_assert(op->ref > 0);
         /* in case timeout unregister fails */
@@ -1637,8 +1635,6 @@ globus_l_xio_register_readv(
 
     globus_mutex_lock(&handle->context->mutex);
     {
-        globus_list_remove(&handle->read_op_list,
-            globus_list_search(handle->read_op_list, op));
         GlobusXIOOpDec(op);  /* unregister the pass */
         globus_assert(op->ref > 0);
         /* in case timeout unregister fails */

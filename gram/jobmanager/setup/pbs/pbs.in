@@ -258,6 +258,8 @@ EOF
     {
 	if($library_vars{$_} == 0)
 	{
+            my $library_path = $description->library_path();
+
 	    push(@new_env, $_ . '=' . $library_path);
 	    $rsh_env .= "$_=$library_path;\n"
 	              . "export $_;\n";

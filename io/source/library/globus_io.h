@@ -1745,6 +1745,17 @@ globus_io_register_listen(
     void *				callback_arg);
 #endif
 
+/* new api just for gram_protocol_io */
+globus_result_t
+globus_io_tcp_set_credential(
+    globus_io_handle_t *                handle,
+    gss_cred_id_t                       credential);
+
+globus_result_t
+globus_io_tcp_get_credential(
+    globus_io_handle_t *                handle,
+    gss_cred_id_t *                     credential);
+
 EXTERN_C_END
 
 #endif /* GLOBUS_INCLUDE_GLOBUS_IO_H */

@@ -2,41 +2,6 @@
 #include "globus_gridftp_server_control.h"
 #include "globus_i_gridftp_server.h"
 
-globus_result_t
-globus_l_gfs_op_attr_init(
-    globus_i_gfs_op_attr_t **   u_attr)
-{
-    globus_i_gfs_op_attr_t *    attr;
-    globus_result_t                     result;
-    GlobusGFSName(globus_i_gfs_op_attr_init);
-    
-    attr = (globus_i_gfs_op_attr_t *) 
-        globus_malloc(sizeof(globus_i_gfs_op_attr_t));
-    if(!attr)
-    {
-        result = GlobusGFSErrorMemory("attr");
-        goto error_alloc;
-    }
-    
-    attr->partial_offset = 0;
-    attr->partial_length = -1;
-    attr->restart_marker = GLOBUS_NULL;
-    
-    *u_attr = attr;
-    return GLOBUS_SUCCESS;
-    
-error_alloc:
-    return result;
-}
-
-void
-globus_i_gfs_op_attr_destroy(
-    globus_i_gfs_op_attr_t *            attr)
-{
-    globus_free(attr);
-}
-
-
 static
 void
 globus_l_gfs_channel_close_cb(
@@ -154,10 +119,7 @@ globus_l_gfs_ipc_event_cb(
     switch(type)
     {
       case GLOBUS_I_GFS_EVENT_TRANSFER_BEGIN:
-        globus_gridftp_server_control_begin_transfer(
-            op,
-            GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_PERF | 
-            GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_RESTART);
+        globus_gridftp_server_control_begin_transfer(op);
         break;
       
       case GLOBUS_I_GFS_EVENT_DISCONNECTED:
@@ -191,46 +153,21 @@ globus_l_gfs_send_request(
     void *                              data_handle,
     const char *                        local_target,
     const char *                        mod_name,
-    const char *                        mod_parms,
-    globus_gridftp_server_control_restart_t restart_marker)
+    const char *                        mod_parms)
 {
     globus_result_t                     result;
     globus_i_gfs_server_instance_t *    instance;
-    globus_i_gfs_op_attr_t *    op_attr;            
     globus_i_gfs_ipc_data_handle_t *    data;
-    int                                 args;
     GlobusGFSName(globus_l_gfs_send_request);
     
     data = (globus_i_gfs_ipc_data_handle_t *) data_handle;
-
-    result = globus_l_gfs_op_attr_init(&op_attr);
-    if(result != GLOBUS_SUCCESS)
-    {
-        result = GlobusGFSErrorWrapFailed(
-            "globus_l_gfs_op_attr_init", result);
-        goto error_attr;
-    }
-
-    if(mod_name && strcmp("P", mod_name) == 0)
-    {
-        args = sscanf(
-            mod_parms,
-            "%"GLOBUS_OFF_T_FORMAT" %"GLOBUS_OFF_T_FORMAT,
-            &op_attr->partial_offset,
-            &op_attr->partial_length);
-            
-        globus_assert(args == 2);
-    } 
-    
-    op_attr->restart_marker = restart_marker;
     
     result = globus_i_gfs_ipc_send_request(
         instance,
-        op_attr,
         data,
         local_target,
-        GLOBUS_NULL,
-        GLOBUS_NULL,
+        mod_name,
+        mod_parms,
         globus_l_gfs_ipc_transfer_cb,
         globus_l_gfs_ipc_event_cb,
         op);
@@ -243,9 +180,7 @@ globus_l_gfs_send_request(
     
     return;
 
-error_ipc:
-    globus_i_gfs_op_attr_destroy(op_attr);
-error_attr:
+error_ipc:     
     globus_gridftp_server_control_finished_transfer(op, result);
 }
 
@@ -256,41 +191,17 @@ globus_l_gfs_recv_request(
     void *                              data_handle,
     const char *                        local_target,
     const char *                        mod_name,
-    const char *                        mod_parms,
-    globus_gridftp_server_control_restart_t restart_marker)
+    const char *                        mod_parms)
 {
     globus_result_t                     result;
     globus_i_gfs_server_instance_t *    instance;
-    globus_i_gfs_op_attr_t *    op_attr;            
     globus_i_gfs_ipc_data_handle_t *    data;
-    int                                 args;
     GlobusGFSName(globus_l_gfs_recv_request);
     
     data = (globus_i_gfs_ipc_data_handle_t *) data_handle;
     
-    result = globus_l_gfs_op_attr_init(&op_attr);
-    if(result != GLOBUS_SUCCESS)
-    {
-        result = GlobusGFSErrorWrapFailed(
-            "globus_l_gfs_op_attr_init", result);
-        goto error_attr;
-    }
-
-    if(mod_name && strcmp("A", mod_name) == 0)
-    {
-        args = sscanf(
-            mod_parms,
-            "%"GLOBUS_OFF_T_FORMAT,
-            &op_attr->partial_offset);
-            
-        globus_assert(args == 1);
-    }            
-
-    op_attr->restart_marker = restart_marker;
-
     result = globus_i_gfs_ipc_recv_request(
         instance,
-        op_attr,
         data,
         local_target,
         mod_name,
@@ -306,46 +217,9 @@ globus_l_gfs_recv_request(
     }
     
     return;
-    
-error_ipc:
-    globus_i_gfs_op_attr_destroy(op_attr);
-error_attr:
-    globus_gridftp_server_control_finished_transfer(op, result);
-}
-
-static
-void
-globus_l_gfs_list_request(
-    globus_gridftp_server_control_op_t              op,
-    void *                                          data_handle,
-    const char *                                    path)
-{
-    globus_result_t                     result;
-    globus_i_gfs_server_instance_t *    instance;
-    globus_i_gfs_ipc_data_handle_t *    data;
-    GlobusGFSName(globus_l_gfs_list_request);
-    
-    data = (globus_i_gfs_ipc_data_handle_t *) data_handle;
-        
-    result = globus_i_gfs_ipc_list_request(
-        instance,
-        data,
-        path,
-        globus_l_gfs_ipc_transfer_cb,
-        globus_l_gfs_ipc_event_cb,
-        op);
-    if(result != GLOBUS_SUCCESS)
-    {
-        result = GlobusGFSErrorWrapFailed(
-            "globus_i_gfs_ipc_list_request", result);
-        goto error_ipc;
-    }
-    
-    return;
 
 error_ipc:     
-    globus_gridftp_server_control_finished_resource(
-        op, result, GLOBUS_NULL, 0);
+    globus_gridftp_server_control_finished_transfer(op, result);
 }
 
 static
@@ -369,7 +243,7 @@ globus_l_gfs_ipc_passive_data_cb(
         result,
         bi_directional 
             ? GLOBUS_GRIDFTP_SERVER_CONTROL_DATA_DIR_BI
-            : GLOBUS_GRIDFTP_SERVER_CONTROL_DATA_DIR_SEND,
+            : GLOBUS_GRIDFTP_SERVER_CONTROL_DATA_DIR_STOR,
         contact_strings,
         cs_count);
 }
@@ -470,7 +344,7 @@ globus_l_gfs_ipc_active_data_cb(
         result,
         bi_directional 
             ? GLOBUS_GRIDFTP_SERVER_CONTROL_DATA_DIR_BI
-            : GLOBUS_GRIDFTP_SERVER_CONTROL_DATA_DIR_RECV);
+            : GLOBUS_GRIDFTP_SERVER_CONTROL_DATA_DIR_RETR);
 }
 
 static
@@ -580,30 +454,9 @@ globus_i_gfs_control_start(
     {
         goto error_attr_setup;
     }
-
-    result = globus_gridftp_server_control_attr_add_recv(
-        attr, "A", globus_l_gfs_recv_request);
-    if(result != GLOBUS_SUCCESS)
-    {
-        goto error_attr_setup;
-    }
     
     result = globus_gridftp_server_control_attr_add_send(
         attr, GLOBUS_NULL, globus_l_gfs_send_request);
-    if(result != GLOBUS_SUCCESS)
-    {
-        goto error_attr_setup;
-    }
-
-    result = globus_gridftp_server_control_attr_add_send(
-        attr, "P", globus_l_gfs_send_request);
-    if(result != GLOBUS_SUCCESS)
-    {
-        goto error_attr_setup;
-    }
-
-    result = globus_gridftp_server_control_attr_set_list(
-        attr, globus_l_gfs_list_request);
     if(result != GLOBUS_SUCCESS)
     {
         goto error_attr_setup;
@@ -652,43 +505,3 @@ error_strdup:
 error_malloc:
     return result;
 }
-
-
-
-/*
-
-typedef enum globus_gsc_959_command_desc_e
-{
-    GLOBUS_GSC_COMMAND_POST_AUTH = 0x01,
-    GLOBUS_GSC_COMMAND_PRE_AUTH = 0x02
-} globus_gsc_959_command_desc_t;
-
-
-typedef void
-(*globus_gsc_959_command_cb_t)(
-    globus_gsc_959_op_t                     op,
-    const char *                            full_command,
-    char **                                 cmd_array,
-    int                                     argc,
-    void *                                  user_arg);
-
-                                                                                
-globus_result_t
-globus_gsc_959_command_add(
-    globus_gridftp_server_control_t         server,
-    const char *                            command_name,
-    globus_gsc_959_command_cb_t             command_cb,
-    globus_gsc_959_command_desc_t           desc,
-    int                                     min_argc,
-    int                                     max_argc,
-    const char *                            help,
-    void *                                  user_arg);
- 
-                                                                                
-void
-globus_gsc_959_finished_command(
-    globus_gsc_959_op_t                     op,
-    char *                                  reply_msg);
-    
-*/    
-

@@ -597,7 +597,6 @@ globus_xio_stack_push_driver(
     globus_xio_stack_t                  stack,
     globus_xio_driver_t                 driver)
 {
-    globus_xio_driver_t                 p_d;
     globus_i_xio_stack_t *              xio_stack;
     globus_result_t                     res = GLOBUS_SUCCESS;
     GlobusXIOName(globus_xio_stack_push_driver);
@@ -617,22 +616,19 @@ globus_xio_stack_push_driver(
 
     xio_stack = (globus_i_xio_stack_t *) stack;
 
-    /* if in the transport position and has a push stack */
-    if(driver->push_driver_func != NULL && xio_stack->pushing_driver != driver)
-    {
-        p_d = xio_stack->pushing_driver;
-        xio_stack->pushing_driver = driver;
-        res = driver->push_driver_func(driver, xio_stack);
-        xio_stack->pushing_driver = p_d;
-        if(res != GLOBUS_SUCCESS)
-        {
-            goto err;
-        }
-    }
     /* if a transport driver position */
-    else if(xio_stack->size == 0)
+    if(xio_stack->size == 0)
     {
-        if(driver->transport_open_func == NULL)
+        /* if in the transport position and has a push stack */
+        if(driver->push_driver_func != NULL)
+        {
+            res = driver->push_driver_func(driver, xio_stack);
+            if(res != GLOBUS_SUCCESS)
+            {
+                goto err;
+            }
+        }
+        else if(driver->transport_open_func == NULL)
         {
             res = GlobusXIOErrorInvalidDriver(
                 "open function not defined");

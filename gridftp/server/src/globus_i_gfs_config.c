@@ -187,27 +187,6 @@ globus_l_gfs_config_load_commandline(
 }
 
 
-static
-globus_result_t
-globus_l_gfs_config_load_defaults()
-{
-    int                                 rc;
-    int                                 i;
-    
-    for(i = 0; i < option_count; i++)
-    {        
-        rc = globus_hashtable_insert(&option_table, 
-            option_list[i][0], 
-            option_list[i][1]);
-        
-        if(rc)
-        {
-            /* XXX error, log something */
-        }
-    }  
-
-    return GLOBUS_SUCCESS; 
-}
 
 
 
@@ -251,7 +230,7 @@ globus_i_gfs_config_bool(
 {
     char *                              value;
     
-    value = (char *) globus_hashtable_lookup(&option_table, (void *) option);
+    value = (char *) globus_hashtable_lookup(&option_table, option);
     
     if(value && !strcmp(value, "1"))
     {
@@ -270,7 +249,7 @@ globus_i_gfs_config_int(
     char *                              value;
     int                                 int_value = INT_MAX;
     
-    value = (char *) globus_hashtable_lookup(&option_table, (void *) option);
+    value = (char *) globus_hashtable_lookup(&option_table, option);
     
     if(value)
     {
@@ -282,5 +261,27 @@ globus_i_gfs_config_int(
 
 
 
+
+static
+globus_result_t
+globus_l_gfs_config_load_defaults()
+{
+    int                                 rc;
+    int                                 i;
+    
+    for(i = 0; i < option_count; i++)
+    {        
+        rc = globus_hashtable_insert(&option_table, 
+            option_list[i][0], 
+            option_list[i][1]);
+        
+        if(rc)
+        {
+            /* XXX error, log something */
+        }
+    }  
+
+    return GLOBUS_SUCCESS; 
+}
 
 

@@ -24,7 +24,11 @@ globus_rmutex_init(
     }
     
     rmutex->level = 0;
+    #ifdef WIN32
+    memset(&rmutex->thread_id,0,sizeof(rmutex->thread_id));
+    #else
     rmutex->thread_id = 0;
+    #endif
     rmutex->waiting = 0;
     
     return 0;
@@ -79,7 +83,11 @@ globus_rmutex_unlock(
         rmutex->level--;
         if(rmutex->level == 0)
         {
+            #ifdef WIN32
+            memset(&rmutex->thread_id,0,sizeof(rmutex->thread_id));
+            #else
             rmutex->thread_id = 0;
+            #endif
             if(rmutex->waiting)
             {
                 globus_cond_signal(&rmutex->cond);
