@@ -231,7 +231,7 @@ main(int argc, char *argv[])
     
     /* Make sure all's well with the storage directory. */
     if (myproxy_check_storage_dir() == -1) {
-	fprintf(stderr, "%s\n", verror_get_string());
+	myproxy_log_verror();
 	exit(1);
     }
 
@@ -586,6 +586,20 @@ myproxy_init_server(myproxy_socket_attrs_t *attrs)
     int listen_sock;
     struct sockaddr_in sin;
     struct linger lin = {0,0};
+    GSI_SOCKET *tmp_gsi_sock;
+
+    if ((tmp_gsi_sock = GSI_SOCKET_new(0)) == NULL) {
+	failure("malloc() failed in GSI_SOCKET_new()");
+    }
+    if (GSI_SOCKET_check_creds(tmp_gsi_sock) == GSI_SOCKET_ERROR) {
+	char error_string[1024];
+	GSI_SOCKET_get_error_string(tmp_gsi_sock, error_string,
+				    sizeof(error_string));
+	myproxy_log("Problem with server credentials.\n%s\n",
+		    error_string);
+	exit(1);
+    }
+    GSI_SOCKET_destroy(tmp_gsi_sock);
     
     listen_sock = socket(AF_INET, SOCK_STREAM, 0);
 
