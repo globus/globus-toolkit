@@ -1,0 +1,64 @@
+AC_INIT(myproxy_server.c)
+
+AC_MSG_CHECKING(for Globus/GSI installation path)
+GLOBUS_PATH=""
+dnl --with-globus
+AC_ARG_WITH(globus,
+	[  --with-globus=PATH           Specify Globus install path],
+	GLOBUS_PATH=$withval)
+
+dnl --with-gsi
+AC_ARG_WITH(gsi,
+	[  --with-gsi=PATH              Specify GSI install path],
+	GLOBUS_PATH=$withval)
+
+dnl Check GLOBUS_PATH
+if test -z "${GLOBUS_PATH}" ; then
+	AC_MSG_ERROR(Must specify --with-gsi or --with-globus)
+fi
+
+if test ! -d "${GLOBUS_PATH}" ; then
+	AC_MSG_ERROR(Globus/GSI install path not found: ${GLOBUS_PATH})
+fi
+
+AC_MSG_RESULT($GLOBUS_PATH)
+AC_SUBST(GLOBUS_PATH)
+
+AC_MSG_CHECKING(for Globus/GSI development directory)
+if test -d ${GLOBUS_PATH}/lib ; then
+	# Looks like a flat directory structure from configure/make and not
+	# globus-install or gsi-install
+	GLOBUS_DEV_PATH=${GLOBUS_PATH}
+
+else
+	# Assume a true globus installation with architecture
+	# directories and run globus-development-path to find
+	# the development directory
+
+	# Make sure GLOBUS_INSTALL_PATH is set
+	if test -z "$GLOBUS_INSTALL_PATH" ; then
+		GLOBUS_INSTALL_PATH=$globus_install_dir
+		export GLOBUS_INSTALL_PATH
+	fi
+
+	dev_path_program=${GLOBUS_PATH}/bin/globus-development-path
+
+	if test ! -x ${dev_path_program} ; then
+		AC_MSG_ERROR(Cannot find Globus/GSI installation directory: program ${dev_path_program} does not exist or is not executable)
+	fi
+
+	GLOBUS_DEV_PATH=`${dev_path_program}`
+
+	if test -z "$GLOBUS_DEV_PATH" -o "X$GLOBUS_DEV_PATH" = "X<not found>" ; then
+		AC_MSG_ERROR(Cannot find Globus/GSI development directory)
+	fi
+
+	if test ! -d "$GLOBUS_DEV_PATH" ; then
+		AC_MSG_ERROR(Cannot find Globus/GSI development directory: $GLOBUS_DEV_PATH does not exist)
+	fi
+fi
+
+AC_MSG_RESULT($GLOBUS_DEV_PATH)
+AC_SUBST(GLOBUS_DEV_PATH)
+
+AC_OUTPUT(Makefile)
