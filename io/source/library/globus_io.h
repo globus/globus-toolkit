@@ -290,7 +290,7 @@ typedef globus_bool_t (*globus_io_secure_authorization_callback_t)(
     globus_io_handle_t *		handle,
     globus_result_t			result,
     char *				identity,
-    gss_ctx_id_t *			context_handle);
+    gss_ctx_id_t 			context_handle);
 
 
 /**
