@@ -130,6 +130,8 @@ GSS_CALLCONV gss_display_status
 		if ((ERR_peek_error()) != 0)
 		{
 			int i;
+            int flags;
+
 			ERR_STATE *es;
             es = ERR_get_state();
 			i=(es->bottom+1)%ERR_NUM_ERRORS;
@@ -139,7 +141,8 @@ GSS_CALLCONV gss_display_status
 			} else {
 				data = es->err_data[i];
 			}
-                        
+            flags =  es->err_data_flags[i];
+
             /* removes error from error queue along with file and line info */
             err = ERR_get_error_line(&file,&line);
 			fs=ERR_func_error_string(err);
@@ -183,7 +186,9 @@ GSS_CALLCONV gss_display_status
              * print all of its error information until one of our errors
              * is printed.
              */
-            if (ERR_peek_error() && ERR_GET_LIB(err) <  ERR_LIB_USER)
+            if (ERR_peek_error() && 
+                    (ERR_GET_LIB(err) <  ERR_LIB_USER || 
+                     flags & ERR_DISPLAY_CONTINUE_NEEDED))
             {
                 (*message_context) = 1;
             }
