@@ -61,7 +61,9 @@ typedef struct
 static const globus_l_attr_t            globus_l_xio_file_attr_default =
 {
     GLOBUS_XIO_FILE_IRUSR       |       /* mode     */
-        GLOBUS_XIO_FILE_IWUSR,  
+        GLOBUS_XIO_FILE_IWUSR   |
+        GLOBUS_XIO_FILE_IRGRP   |
+        GLOBUS_XIO_FILE_IROTH,
     GLOBUS_XIO_FILE_CREAT       |       /* flags    */
         GLOBUS_XIO_FILE_RDWR    | 
         GLOBUS_XIO_FILE_BINARY,   
