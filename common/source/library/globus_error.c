@@ -245,7 +245,7 @@ static globus_mutex_t        s_result_to_object_mutex;
 
 static int  s_error_cache_initialized = 0;
 
-static int s_error_cache_init ()
+static int s_error_cache_init (void)
 {
   globus_object_cache_init (&s_result_to_object_mapper);
   globus_mutex_init (&s_result_to_object_mutex, NULL);
@@ -254,7 +254,7 @@ static int s_error_cache_init ()
   return GLOBUS_SUCCESS;
 }
 
-static int s_error_cache_destroy ()
+static int s_error_cache_destroy (void)
 {
   globus_object_cache_destroy (&s_result_to_object_mapper);
   globus_mutex_destroy (&s_result_to_object_mutex);

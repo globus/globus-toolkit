@@ -1304,7 +1304,6 @@ globus_l_callback_queue_get_next(
     globus_l_callback_info_t **                in_info,
     globus_abstime_t *                         next_time)
 {
-    globus_abstime_t                  time_can_block;
     globus_abstime_t                  time_now;
     globus_abstime_t *                tmp_time;
     globus_l_callback_info_t *        callback_info = GLOBUS_NULL;
@@ -1394,8 +1393,6 @@ globus_callback_get_timestop(
 globus_bool_t
 globus_callback_has_time_expired()
 {
-    globus_abstime_t     time_now;
-    globus_abstime_t     time_stop;
     globus_reltime_t     dummy_time;
   
     return globus_callback_get_timeout(&dummy_time);

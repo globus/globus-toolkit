@@ -17,6 +17,8 @@ CVS Information:
 #include "globus_i_thread.h"
 #include "globus_libc.h"
 #include "globus_callback.h"
+#include "globus_libc.h"
+#include "globus_print.h"
 
 #define THREAD_STACK_INIT_SIZE 32
 

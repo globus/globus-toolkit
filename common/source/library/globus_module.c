@@ -18,6 +18,8 @@ CVS Information:
 #include "globus_common_include.h"
 #include "globus_module.h"
 #include "globus_list.h"
+#include "globus_thread_common.h"
+#include "globus_memory.h"
 #include "globus_hashtable.h"
 #include "globus_libc.h"
 #include GLOBUS_THREAD_INCLUDE

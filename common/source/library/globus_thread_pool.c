@@ -4,6 +4,7 @@
 #include "globus_time.h"
 #include "globus_libc.h"
 #include "globus_callback.h"
+#include "globus_thread_common.h"
 
 /* Number of idle threads we're willing to have waiting for tasks. Any more
  * idle threads than this will expire after TOO_MANY_IDLE_TIMEOUT seconds of

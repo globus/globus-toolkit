@@ -2,6 +2,8 @@
                    check globus_args.h for more detailed information.
 */
 
+open
+
 #include "globus_common_include.h"
 #include "globus_args.h"
 #include "globus_libc.h"
