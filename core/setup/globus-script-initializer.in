@@ -34,7 +34,7 @@ GLOBUS_DEPLOYED='FALSE'            # This line is overwritten during deployment
 	exec_prefix=${GLOBUS_DEPLOY_PATH}
     else
 	prefix="${GLOBUS_INSTALL_PATH}"
-	exec_prefix=@exec_prefix@
+	exec_prefix=@installed_exec_prefix@
     fi
     export GLOBUS_INSTALL_PATH
     sbindir=${exec_prefix}/sbin
