@@ -696,8 +696,27 @@ globus_l_gfs_send_request(
             &op_attr->partial_length);
             
         globus_assert(args == 2);
-    } 
-        
+    }
+     
+    {
+    globus_gfs_transfer_state_t *       send_state;
+    
+    send_state = (globus_gfs_transfer_state_t *) 
+        globus_calloc(1, sizeof(globus_gfs_transfer_state_t));
+    
+    send_state->partial_offset = op_attr->partial_offset;
+    send_state->partial_length = op_attr->partial_length;
+    send_state->range_list = range_list;
+    send_state->control_op = op;
+
+    result = globus_gfs_ipc_send(
+        instance->ipc_handle,
+        send_state,
+        globus_l_gfs_ipc_transfer_cb,
+        globus_l_gfs_ipc_event_cb,
+        op);
+    }
+    /*
     result = globus_i_gfs_ipc_send_request(
         instance,
         op_attr,
@@ -708,6 +727,7 @@ globus_l_gfs_send_request(
         globus_l_gfs_ipc_transfer_cb,
         globus_l_gfs_ipc_event_cb,
         op);
+    */    
     if(result != GLOBUS_SUCCESS)
     {
         result = GlobusGFSErrorWrapFailed(
@@ -779,7 +799,24 @@ globus_l_gfs_recv_request(
             
         globus_assert(args == 1);
     }            
+    {
+    globus_gfs_transfer_state_t *       recv_state;
+    
+    recv_state = (globus_gfs_transfer_state_t *) 
+        globus_calloc(1, sizeof(globus_gfs_transfer_state_t));
+    
+    send_state->partial_offset = op_attr->partial_offset;
+    send_state->range_list = range_list;
+    send_state->control_op = op;
 
+    result = globus_gfs_ipc_recv(
+        instance->ipc_handle,
+        recv_state,
+        globus_l_gfs_ipc_transfer_cb,
+        globus_l_gfs_ipc_event_cb,
+        op);
+    }
+    /*
     result = globus_i_gfs_ipc_recv_request(
         instance,
         op_attr,
@@ -790,6 +827,7 @@ globus_l_gfs_recv_request(
         globus_l_gfs_ipc_transfer_cb,
         globus_l_gfs_ipc_event_cb,
         op);
+    */
     if(result != GLOBUS_SUCCESS)
     {
         result = GlobusGFSErrorWrapFailed(
@@ -970,12 +1008,28 @@ globus_l_gfs_passive_data_connect(
      */
     
     instance = (globus_i_gfs_server_instance_t *) user_arg;
+
+    {
+    globus_gfs_data_state_t *               data_state;
     
+    data_state = (globus_gfs_data_state_t *) 
+        globus_calloc(1, sizeof(globus_gfs_data_state_t));
+    
+    /* XXX current data attr stuff will be set with set_state */
+    
+    result = globus_gfs_ipc_passive_data(
+        instance->ipc_handle,
+        data_state,
+        globus_l_gfs_ipc_passive_data_cb,
+        op);
+    }
+    /*
     result = globus_i_gfs_ipc_passive_data_request(
         instance,
         &attr,
         globus_l_gfs_ipc_passive_data_cb,
         op);
+    */
     if(result != GLOBUS_SUCCESS)
     {
         result = GlobusGFSErrorWrapFailed(
@@ -1049,7 +1103,23 @@ globus_l_gfs_active_data_connect(
     globus_l_gfs_op_to_attr(op, &attr, net_prt);
 
     instance = (globus_i_gfs_server_instance_t *) user_arg;
-        
+    {
+    globus_gfs_data_state_t *               data_state;
+    
+    data_state = (globus_gfs_data_state_t *) 
+        globus_calloc(1, sizeof(globus_gfs_data_state_t));
+    
+    /* XXX current data attr stuff will be set with set_state */
+    data_state->cs = cs;
+    data_state->cs_count = cs_count;
+    
+    result = globus_gfs_ipc_active_data(
+        instance->ipc_handle,
+        data_state,
+        globus_l_gfs_ipc_active_data_cb,
+        op);
+    }
+    /*
     result = globus_i_gfs_ipc_active_data_request(
         instance,
         &attr,
@@ -1057,6 +1127,7 @@ globus_l_gfs_active_data_connect(
         cs_count,
         globus_l_gfs_ipc_active_data_cb,
         op);
+    */
     if(result != GLOBUS_SUCCESS)
     {
         result = GlobusGFSErrorWrapFailed(

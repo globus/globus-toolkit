@@ -1,6 +1,7 @@
 
 #include "globus_i_gridftp_server.h"
 
+
 /*** XXX  this will eventually determine if the data node is part of a
  * a different process and perform ipc to that process.  for now, the data
  * node is assumed to be part of the same process and these calls are merely
@@ -489,3 +490,392 @@ globus_i_gfs_ipc_transfer_event(
     return;
 }
 
+
+#if 1
+
+/*
+ *  call the remote function
+ */
+globus_result_t
+globus_gfs_ipc_set_state(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    globus_gfs_server_state_t *         server_state,
+    globus_gfs_ipc_callback_t           cb,
+    void *                              user_arg)
+{
+    globus_result_t                     result;
+    globus_gfs_ipc_call_entry_t         call_entry;
+
+    call_entry = (globus_gfs_ipc_call_entry_t *) 
+        globus_calloc(1, sizeof(globus_gfs_ipc_call_entry_t);
+    call_entry->id = (int) call_entry;
+    call_entry->cb = cb;
+    call_entry->user_arg = user_arg;
+
+    globus_hashtable_insert(
+        &ipc_handle->call_table,
+        call_entry->id,
+        (void *) call_entry);
+    
+    if(ipc_handle->xio_handle == GLOBUS_NULL)
+    {
+        result = ipc_handle->iface->state_func(
+            ipc_handle,
+            call_entry->id,,
+            server_state);
+    }
+    else
+    {
+        /* i like wires */
+    }
+    
+    return result;
+}
+
+
+/*
+ *  receive
+ *
+ *  tell the remote process to receive a file
+ */
+globus_result_t
+globus_gfs_ipc_recv(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    globus_gfs_transfer_state_t *       recv_state,
+    globus_gfs_ipc_callback_t           cb,
+    globus_gfs_ipc_callback_t           event_cb,
+    void *                              user_arg)
+{
+    globus_result_t                     result;
+    globus_gfs_ipc_call_entry_t         call_entry;
+
+    call_entry = (globus_gfs_ipc_call_entry_t *) 
+        globus_calloc(1, sizeof(globus_gfs_ipc_call_entry_t);
+    call_entry->id = (int) call_entry;
+    call_entry->cb = cb;
+    call_entry->event_cb = event_cb;
+    call_entry->user_arg = user_arg;
+
+    globus_hashtable_insert(
+        &ipc_handle->call_table,
+        call_entry->id,
+        (void *) call_entry);
+    
+    if(ipc_handle->xio_handle == GLOBUS_NULL)
+    {
+        result = ipc_handle->iface->recv_func(
+            ipc_handle,
+            call_entry->id,,
+            recv_state);
+    }
+    else
+    {
+        /* i like wires */
+    }
+    
+    return result;
+}
+
+
+/*
+ *  send
+ *  
+ *  tell remote process to send a file
+ */
+
+globus_result_t
+globus_gfs_ipc_send(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    globus_gfs_transfer_state_t *       send_state,
+    globus_gfs_ipc_callback_t           cb,
+    globus_gfs_ipc_callback_t           event_cb,
+    void *                              user_arg)
+{
+    globus_result_t                     result;
+    globus_gfs_ipc_call_entry_t         call_entry;
+
+    call_entry = (globus_gfs_ipc_call_entry_t *) 
+        globus_calloc(1, sizeof(globus_gfs_ipc_call_entry_t);
+    call_entry->id = (int) call_entry;
+    call_entry->cb = cb;
+    call_entry->event_cb = event_cb;
+    call_entry->user_arg = user_arg;
+
+    globus_hashtable_insert(
+        &ipc_handle->call_table,
+        call_entry->id,
+        (void *) call_entry);
+    if(ipc_handle->xio_handle == GLOBUS_NULL)
+    {
+        result = ipc_handle->iface->send_func(
+            ipc_handle,
+            call_entry->id,,
+            send_state);
+    }
+    else
+    {
+        /* i like wires */
+    }
+    
+    return result;
+}
+
+/*
+ *  command
+ *
+ *  tell remote side to execute the given command
+ */
+globus_result_t
+globus_gfs_ipc_command(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    globus_gfs_command_state_t *        cmd_state,
+    globus_gfs_ipc_callback_t           cb,
+    void *                              user_arg)
+{
+    globus_result_t                     result;
+    globus_gfs_ipc_call_entry_t         call_entry;
+
+    call_entry = (globus_gfs_ipc_call_entry_t *) 
+        globus_calloc(1, sizeof(globus_gfs_ipc_call_entry_t);
+    call_entry->id = (int) call_entry;
+    call_entry->cb = cb;
+    call_entry->user_arg = user_arg;
+
+    globus_hashtable_insert(
+        &ipc_handle->call_table,
+        call_entry->id,
+        (void *) call_entry);
+    
+    if(ipc_handle->xio_handle == GLOBUS_NULL)
+    {
+        result = ipc_handle->iface->command_func(
+            ipc_handle,
+            call_entry->id,,
+            cmd_state);
+    }
+    else
+    {
+        /* i like wires */
+    }
+    
+    return result;
+}
+
+/*
+ *  active data
+ *
+ *  tell remote side to create an active data connection
+ */
+globus_result_t
+globus_gfs_ipc_active_data(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    globus_gfs_data_state_t *           data_state,
+    globus_gfs_ipc_callback_t           cb,
+    void *                              user_arg)
+{
+    globus_result_t                     result;
+    globus_gfs_ipc_call_entry_t         call_entry;
+
+    call_entry = (globus_gfs_ipc_call_entry_t *) 
+        globus_calloc(1, sizeof(globus_gfs_ipc_call_entry_t);
+    call_entry->id = (int) call_entry;
+    call_entry->cb = cb;
+    call_entry->user_arg = user_arg;
+
+    globus_hashtable_insert(
+        &ipc_handle->call_table,
+        call_entry->id,
+        (void *) call_entry);
+    
+    if(ipc_handle->xio_handle == GLOBUS_NULL)
+    {
+        result = ipc_handle->iface->active_func(
+            ipc_handle,
+            call_entry->id,,
+            data_state);
+    }
+    else
+    {
+        /* i like wires */
+    }
+    
+    return result;
+}
+
+
+/*
+ *  passive data
+ *
+ *  tell remote side to do passive data connection
+ */
+
+globus_result_t
+globus_gfs_ipc_passive_data(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    globus_gfs_data_state_t *           data_state,
+    globus_gfs_ipc_callback_t           cb,
+    void *                              user_arg)
+{
+    globus_result_t                     result;
+    globus_gfs_ipc_call_entry_t         call_entry;
+
+    call_entry = (globus_gfs_ipc_call_entry_t *) 
+        globus_calloc(1, sizeof(globus_gfs_ipc_call_entry_t);
+    call_entry->id = (int) call_entry;
+    call_entry->cb = cb;
+    call_entry->user_arg = user_arg;
+
+    globus_hashtable_insert(
+        &ipc_handle->call_table,
+        call_entry->id,
+        (void *) call_entry);
+    
+    if(ipc_handle->xio_handle == GLOBUS_NULL)
+    {
+        result = ipc_handle->iface->passive_func(
+            ipc_handle,
+            call_entry->id,,
+            data_state);
+    }
+    else
+    {
+        /* i like wires */
+    }
+    
+    return result;
+}
+
+
+/*
+ *  destroy a data connection associated with the given ID
+ */
+
+void
+globus_gfs_ipc_data_destroy(
+    globus_gfs_ipc_handle_t             ipc_handle,   
+    int                                 data_connection_id)
+{
+    globus_result_t                     result;
+
+    if(ipc_handle->xio_handle == GLOBUS_NULL)
+    {
+        result = ipc_handle->iface->data_destroy_func(data_connection_id);
+    }
+    else
+    {
+        /* i like wires */
+    }
+    
+    return result;
+}
+
+
+/*
+ *  send resource request
+ */
+
+globus_result_t
+globus_gfs_ipc_resource_query(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    globus_gfs_resource_state_t *       resource_state,
+    globus_gfs_ipc_callback_t           cb,
+    void *                              user_arg)
+{
+    globus_result_t                     result;
+    globus_gfs_ipc_call_entry_t         call_entry;
+
+    call_entry = (globus_gfs_ipc_call_entry_t *) 
+        globus_calloc(1, sizeof(globus_gfs_ipc_call_entry_t);
+    call_entry->id = (int) call_entry;
+    call_entry->cb = cb;
+    call_entry->user_arg = user_arg;
+
+    globus_hashtable_insert(
+        &ipc_handle->call_table,
+        call_entry->id,
+        (void *) call_entry);
+    
+    if(ipc_handle->xio_handle == GLOBUS_NULL)
+    {
+        result = ipc_handle->iface->resource_func(
+            ipc_handle,
+            call_entry->id,
+            resource_state);
+    }
+    else
+    {
+        /* i like wires */
+    }
+    
+    return result;
+}
+
+
+/* 
+ *  tell remote side to provide list info
+ */
+
+globus_result_t
+globus_gfs_ipc_list(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    globus_gfs_transfer_state_t *       send_state,
+    globus_gfs_ipc_callback_t           cb,
+    globus_gfs_ipc_callback_t           event_cb,
+    void *                              user_arg)
+{
+    globus_result_t                     result;
+    globus_gfs_ipc_call_entry_t         call_entry;
+
+    call_entry = (globus_gfs_ipc_call_entry_t *) 
+        globus_calloc(1, sizeof(globus_gfs_ipc_call_entry_t);
+    call_entry->id = (int) call_entry;
+    call_entry->cb = cb;
+    call_entry->event_cb = event_cb;
+    call_entry->user_arg = user_arg;
+
+    globus_hashtable_insert(
+        &ipc_handle->call_table,
+        call_entry->id,
+        (void *) call_entry);
+
+    if(ipc_handle->xio_handle == GLOBUS_NULL)
+    {
+        result = ipc_handle->iface->passive_func(
+            ipc_handle,
+            call_entry->id,
+            data_state);
+    }
+    else
+    {
+        /* i like wires */
+    }
+    
+    return result;
+}
+
+globus_result_t
+globus_gfs_ipc_init(
+    globus_gfs_ipc_handle_t *           ipc_handle,
+    globus_gfs_ipc_iface_t *            iface,
+    globus_xio_handle_t                 xio_handle)
+{
+    ipc_handle = (globus_gfs_ipc_handle_t *)
+        globus_calloc(1, sizeof(globus_gfs_ipc_handle_t));
+    
+    ipc_handle->xio_handle = xio_handle;
+    ipc_handle->iface = iface;
+    
+    globus_hashtable_init(
+        &ipc_handle->call_table,
+        256,
+        globus_hashtable_string_hash,
+        globus_hashtable_string_keyeq);
+    
+    return GLOBUS_SUCCESS;
+);
+
+
+
+
+
+#endif

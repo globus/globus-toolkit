@@ -124,7 +124,7 @@ globus_i_gfs_ipc_transfer_event(
 
 
 
-#ifdef 0
+#if 1
 
 /*
  *  replying
@@ -164,6 +164,15 @@ typedef struct globus_gfs_ipc_reply_s
     } reply_type;
 
 } globus_gfs_ipc_reply_t;
+
+/* callback and id relation */
+typedef struct globus_gfs_ipc_call_entry_s
+{
+    int                                 id;
+    globus_gfs_ipc_callback_t           cb;
+    globus_gfs_ipc_callback_t           event_cb;
+    void *                              user_arg;
+} globus_gfs_ipc_call_entry_t;
 
 globus_result_t
 globus_gfs_ipc_reply(
@@ -213,7 +222,7 @@ typedef struct globus_gfs_resource_state_s
 } globus_gfs_resource_state_t;
 /*
  *  interface to the function that gets called on the remote side when
- *  globus_gfs_ipc_call_state() is called
+ *  globus_gfs_ipc_set_state() is called
  */
 typedef void
 (*globus_gfs_ipc_iface_state_t)(
@@ -225,7 +234,7 @@ typedef void
  *  call the remote function
  */
 globus_result_t
-globus_gfs_ipc_call_state(
+globus_gfs_ipc_set_state(
     globus_gfs_ipc_handle_t             ipc_handle,
     globus_gfs_server_state_t *         server_state,
     globus_gfs_ipc_callback_t           cb,
@@ -243,7 +252,7 @@ typedef void
     globus_gfs_transfer_state_t *       recv_state);
 
 globus_result_t
-globus_gfs_ipc_call_recv(
+globus_gfs_ipc_recv(
     globus_gfs_ipc_handle_t             ipc_handle,
     globus_gfs_transfer_state_t *       recv_state,
     globus_gfs_ipc_callback_t           cb,
@@ -262,7 +271,7 @@ typedef void
     globus_gfs_transfer_state_t *       send_state);
 
 globus_result_t
-globus_gfs_ipc_call_send(
+globus_gfs_ipc_send(
     globus_gfs_ipc_handle_t             ipc_handle,
     globus_gfs_transfer_state_t *       send_state,
     globus_gfs_ipc_callback_t           cb,
@@ -281,7 +290,7 @@ typedef void
     globus_gfs_command_state_t *        cmd_state);
 
 globus_result_t
-globus_gfs_ipc_call_command(
+globus_gfs_ipc_command(
     globus_gfs_ipc_handle_t             ipc_handle,
     globus_gfs_command_state_t *        cmd_state,
     globus_gfs_ipc_callback_t           cb,
@@ -299,7 +308,7 @@ typedef void
     globus_gfs_data_state_t *           data_state);
 
 globus_result_t
-globus_gfs_ipc_call_active_data(
+globus_gfs_ipc_active_data(
     globus_gfs_ipc_handle_t             ipc_handle,
     globus_gfs_data_state_t *           data_state,
     globus_gfs_ipc_callback_t           cb,
@@ -317,7 +326,7 @@ typedef void
     globus_gfs_data_state_t *           data_state);
 
 globus_result_t
-globus_gfs_ipc_call_passive_data(
+globus_gfs_ipc_passive_data(
     globus_gfs_ipc_handle_t             ipc_handle,
     globus_gfs_data_state_t *           data_state,
     globus_gfs_ipc_callback_t           cb,
@@ -331,7 +340,7 @@ typedef void
     int                                 data_connection_id);
 
 void
-globus_gfs_ipc_call_data_destroy(
+globus_gfs_ipc_data_destroy(
     int                                 data_connection_id);
 
 /*
@@ -344,12 +353,11 @@ typedef void
     globus_gfs_resource_state_t *       resource_state);
 
 globus_result_t
-globus_gfs_ipc_call_resource(
+globus_gfs_ipc_resource_query(
     globus_gfs_ipc_handle_t             ipc_handle,
     globus_gfs_resource_state_t *       resource_state,
     globus_gfs_ipc_callback_t           cb,
     void *                              user_arg);
-
 /* 
  *  tell remote side to provide list info
  */
@@ -360,7 +368,7 @@ typedef void
     globus_gfs_transfer_state_t *       send_state);
 
 globus_result_t
-globus_gfs_ipc_call_list(
+globus_gfs_ipc_list(
     globus_gfs_ipc_handle_t             ipc_handle,
     globus_gfs_transfer_state_t *       send_state,
     globus_gfs_ipc_callback_t           cb,
