@@ -5,26 +5,45 @@
 
 
 /* value verification? */
-
-/* option_name, default val, configfile, env, cmdline long, cmdline short, bool? */
-static char*                            option_list[][7] = 
+typedef enum
 {
-    {"port",                "0",    "port",                 "GLOBUS_GRIDFTP_SERVER_PORT",        "-port",               "-p",   "0"},
-    {"data_port_range",     "0",    "data_port_range",      "GLOBUS_TCP_PORT_RANGE",             "-data-port-range",    "-dpr", "0"},
-    {"max_connections",     "200",  "max_connections",      "",                                  "-max-connections",    "-mc",  "0"},
-    {"fork",                "0",    "fork",                 "",                                  "-fork",               "-f",   "1"},
-    {"inetd",               "0",    "inetd",                "",                                  "-inetd",              "-i",   "1"},
-    {"no_gssapi",           "0",    "no_gssapi",            "",                                  "-no-gssapi",          "-ng",  "1"},
-    {"allow_clear",           "0",    "allow_clear",            "",                              "-allow-clear",        "-ac",  "1"},
-    {"uid",                 "0",    "",                     "",                                  "-uid",                "-u",   "0"},
-    {"data_node",           "0",    "data_node",            "",                                  "-data-node",          "-d",   "1"}
+    GLOBUS_L_GFS_CONFIG_BOOL,
+    GLOBUS_L_GFS_CONFIG_INT,
+    GLOBUS_L_GFS_CONFIG_STRING
+} globus_l_gfs_config_type_t;
+
+typedef struct
+{
+    char *                              option_name;
+    char *                              configfile_option;
+    char *                              env_var_option;
+    char *                              long_cmdline_option;
+    char *                              short_cmdline_option;
+    globus_l_gfs_config_type_t          type;
+    union
+    {
+        int                             int_value;
+        char *                          string_value;
+    };
+} globus_l_gfs_config_option_t;
+
+static const globus_l_gfs_config_option_t option_list[] = 
+{ 
+ {"max_connections", "max_connections", "", "-max-connections", "-mc", GLOBUS_L_GFS_CONFIG_INT, {200}},
+ {"port", "port", "GLOBUS_GRIDFTP_SERVER_PORT", "-port", "-p", GLOBUS_L_GFS_CONFIG_INT, {0}},
+ {"fork", "fork", "", "-fork", "-f", GLOBUS_L_GFS_CONFIG_BOOL, {0}},
+ {"inetd", "inetd", "", "-inetd", "-i", GLOBUS_L_GFS_CONFIG_BOOL, {0}},
+ {"no_gssapi", "no_gssapi", "", "-no-gssapi", "-ng", GLOBUS_L_GFS_CONFIG_BOOL, {0}},
+ {"allow_clear", "allow_clear", "", "-allow-clear", "-ac", GLOBUS_L_GFS_CONFIG_BOOL, {0}},
+ {"data_node", "data_node", "", "-data-node", "-d", GLOBUS_L_GFS_CONFIG_BOOL, {0}}
 };
 
-static int option_count = sizeof(option_list) / sizeof(char *) / 7;
+static int option_count = sizeof(option_list) / sizeof(globus_l_gfs_config_option_t);
 
 static globus_hashtable_t               option_table;
 
 
+/* XXX leak when strduping and overwriting string values... never free the old ones */
 
 static
 globus_result_t
@@ -33,12 +52,13 @@ globus_l_gfs_config_load_config_file(
 {
     FILE *                              fptr;
     char                                line[1024];
-    char                                option[1024];
+    char                                file_option[1024];
     char                                value[1024];
     globus_bool_t                       option_saved;
     int                                 i;
     int                                 rc;
-    
+    globus_l_gfs_config_option_t *      option;
+
     fptr = fopen(filename, "r");
     if(fptr == NULL)
     {
@@ -49,7 +69,7 @@ globus_l_gfs_config_load_config_file(
     {
         option_saved = GLOBUS_FALSE;
             
-        rc = sscanf(line, "%s%s", option, value);
+        rc = sscanf(line, "%s%s", file_option, value);
 
         if(rc != 2)
         {
@@ -59,15 +79,36 @@ globus_l_gfs_config_load_config_file(
 
         for(i = 0; i < option_count; i++)
         {
-            if(strcmp(option, option_list[i][2]))
+            if(strcmp(file_option, option_list[i].configfile_option))
             {
                 continue;
             }
             
-            globus_hashtable_remove(&option_table, option_list[i][0]);                        
+            option = (globus_l_gfs_config_option_t *) globus_hashtable_remove(
+                    &option_table, option_list[i].option_name);   
+            if(!option)
+            {
+                option = (globus_l_gfs_config_option_t *)
+                    globus_malloc(sizeof(globus_l_gfs_config_option_t));
+                memcpy(option, &option_list[i], sizeof(globus_l_gfs_config_option_t));
+            }
+            switch(option->type)
+            {
+              case GLOBUS_L_GFS_CONFIG_BOOL:
+                option->int_value = (atoi(value) == 0) ? 0 : 1;
+                break;
+              case GLOBUS_L_GFS_CONFIG_INT:
+                option->int_value = atoi(value);
+                break;
+              case GLOBUS_L_GFS_CONFIG_STRING:
+                option->string_value = globus_libc_strdup(value);
+                break;
+              default:
+                break;
+            }
             rc = globus_hashtable_insert(&option_table,
-                option_list[i][0],
-                globus_libc_strdup(value));
+                option->option_name,
+                (void *) option);
             
             if(rc)
             {
@@ -78,12 +119,12 @@ globus_l_gfs_config_load_config_file(
         }
         
         /* XXX possibly use the option even if it isn't in option table */
-        if(!option_saved)
+        if(!option_saved && 0)
         {
             globus_hashtable_remove(&option_table, option);                        
             rc = globus_hashtable_insert(&option_table,
                 option,
-                globus_libc_strdup(value));
+                (void *) atoi(value));
             
             if(rc)
             {
@@ -104,26 +145,48 @@ globus_l_gfs_config_load_config_env()
     char *                              value;
     int                                 rc;
     int                                 i;
+    globus_l_gfs_config_option_t *      option;
     
 
     for(i = 0; i < option_count; i++)
     {
-        if (!*option_list[i][3])
+        if (!*option_list[i].env_var_option)
         {
             continue;
         }
 
-        value = globus_libc_getenv(option_list[i][3]);
+        value = globus_libc_getenv(option_list[i].env_var_option);
         
         if (!value)
         {
             continue;
         }
-            
-        globus_hashtable_remove(&option_table, option_list[i][0]);                        
+                            
+        option = (globus_l_gfs_config_option_t *) globus_hashtable_remove(
+                &option_table, option_list[i].option_name);   
+        if(!option)
+        {
+            option = (globus_l_gfs_config_option_t *)
+                globus_malloc(sizeof(globus_l_gfs_config_option_t));
+            memcpy(option, &option_list[i], sizeof(globus_l_gfs_config_option_t));
+        }
+        switch(option->type)
+        {
+          case GLOBUS_L_GFS_CONFIG_BOOL:
+            option->int_value = (atoi(value) == 0) ? 0 : 1;
+            break;
+          case GLOBUS_L_GFS_CONFIG_INT:
+            option->int_value = atoi(value);
+            break;
+          case GLOBUS_L_GFS_CONFIG_STRING:
+            option->string_value = globus_libc_strdup(value);
+            break;
+          default:
+            break;
+        }
         rc = globus_hashtable_insert(&option_table,
-            option_list[i][0],
-            globus_libc_strdup(value));
+            option->option_name,
+            (void *) option);
         
         if(rc)
         {
@@ -144,8 +207,9 @@ globus_l_gfs_config_load_commandline(
     int                                 arg_num;
     char *                              argp;
     int                                 i;
-    char *                              value;
+    int                                 value;
     int                                 rc;
+    globus_l_gfs_config_option_t *      option;
     
     for(arg_num = 0; arg_num < argc; ++arg_num)
     {
@@ -153,30 +217,52 @@ globus_l_gfs_config_load_commandline(
  
         for(i = 0; i < option_count; i++)
         {
-            if(strcmp(argp, option_list[i][4]) && 
-                strcmp(argp, option_list[i][5]))
+            if(strcmp(argp, option_list[i].short_cmdline_option) && 
+                strcmp(argp, option_list[i].long_cmdline_option))
             {
                 continue;
             }
-            
-            if(!strcmp(option_list[i][6], "1"))
+                        
+            option = (globus_l_gfs_config_option_t *) globus_hashtable_remove(
+                    &option_table, option_list[i].option_name);   
+            if(!option)
             {
-                value = "1";
+                option = (globus_l_gfs_config_option_t *)
+                    globus_malloc(sizeof(globus_l_gfs_config_option_t));
+                memcpy(option, &option_list[i], sizeof(globus_l_gfs_config_option_t));
             }
-            else
+
+            switch(option->type)
             {
+              case GLOBUS_L_GFS_CONFIG_BOOL:
+                option->int_value = 1;
+                break;
+
+              case GLOBUS_L_GFS_CONFIG_INT:
                 if(++arg_num >= argc)
                 {
                     /* XXX error, log something */
                     return -1;
                 }
-                value = argv[arg_num];
-            }
-            
-            globus_hashtable_remove(&option_table, option_list[i][0]);                        
+                option->int_value = atoi(argv[arg_num]);
+                break;
+                
+              case GLOBUS_L_GFS_CONFIG_STRING:
+                if(++arg_num >= argc)
+                {
+                    /* XXX error, log something */
+                    return -1;
+                }
+                option->string_value = globus_libc_strdup(argv[arg_num]);
+                break;
+
+              default:
+                break;
+             }
+
             rc = globus_hashtable_insert(&option_table,
-                option_list[i][0],
-                globus_libc_strdup(value));
+                option->option_name,
+                (void *) option);
             
             if(rc)
             {
@@ -197,12 +283,17 @@ globus_l_gfs_config_load_defaults()
 {
     int                                 rc;
     int                                 i;
+    globus_l_gfs_config_option_t *      option;
     
     for(i = 0; i < option_count; i++)
     {        
+        option = (globus_l_gfs_config_option_t *)
+            globus_malloc(sizeof(globus_l_gfs_config_option_t));
+        memcpy(option, &option_list[i], sizeof(globus_l_gfs_config_option_t));
+        
         rc = globus_hashtable_insert(&option_table, 
-            option_list[i][0], 
-            option_list[i][1]);
+            option->option_name, 
+            (void *) option);
         
         if(rc)
         {
@@ -251,15 +342,16 @@ globus_i_gfs_config_init(
 /* returns false if option doesnt exist */
 globus_bool_t
 globus_i_gfs_config_bool(
-    const char *                        option)
+    const char *                        option_name)
 {
-    char *                              value;
+    globus_l_gfs_config_option_t *      option;    
     
-    value = (char *) globus_hashtable_lookup(&option_table, (void *) option);
+    option = (globus_l_gfs_config_option_t *) 
+        globus_hashtable_lookup(&option_table, (void *) option_name);
     
-    if(value && !strcmp(value, "1"))
+    if(option)
     {
-        return GLOBUS_TRUE;
+        return option->int_value;
     }
     
     return GLOBUS_FALSE;
@@ -269,19 +361,20 @@ globus_i_gfs_config_bool(
 /* returns INT_MAX if option doesnt exist */
 int
 globus_i_gfs_config_int(
-    const char *                        option)
+    const char *                        option_name)
 {
-    char *                              value;
-    int                                 int_value = INT_MAX;
+    globus_l_gfs_config_option_t *      option;
+    int                                 value = INT_MAX;    
     
-    value = (char *) globus_hashtable_lookup(&option_table, (void *) option);
-    
-    if(value)
-    {
-        int_value = atoi(value);
+    option = (globus_l_gfs_config_option_t *) 
+        globus_hashtable_lookup(&option_table, (void *) option_name);
+        
+    if(option)
+    {        
+        value = option->int_value;
     }
-    
-    return int_value;
+
+    return value;
 }
 
 
