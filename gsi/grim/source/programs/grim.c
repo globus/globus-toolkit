@@ -61,6 +61,7 @@
 
 #define GRIM_STRING_MAX             512
 
+#define GRIM_ASSERTION_FORMAT_VERSION "1"
 
 /*
  *  globals:
@@ -114,7 +115,9 @@ grim_write_proxy(
     globus_gsi_cred_handle_t                cred_handle,
     int                                     valid,
     int                                     key_bits,
-    char *                                  proxy_out_filename);
+    char *                                  proxy_out_filename,
+    char **                                 dna,
+    char **                                 port_types);
 
 int
 grim_parse_port_type_file(
@@ -782,7 +785,9 @@ grim_write_proxy(
     globus_gsi_cred_handle_t                    cred_handle,
     int                                         valid,
     int                                         key_bits,
-    char *                                      proxy_out_filename)
+    char *                                      proxy_out_filename,
+    char **                                     dna,
+    char **                                     port_types)
 {
     globus_gsi_proxy_handle_t                   proxy_handle;
     globus_gsi_proxy_handle_attrs_t             proxy_handle_attrs;
@@ -790,6 +795,12 @@ grim_write_proxy(
     globus_gsi_cred_handle_t                    proxy_cred_handle;
     time_t                                      goodtill;
     time_t                                      lifetime;
+    char *                                      subject;
+    char *                                      assertion;
+    char *                                      tmp_s2;
+    char *                                      tmp_s1;
+    X509 *                                      x509_var;
+    X509_NAME *                                 x509_name;
 
     res = globus_gsi_proxy_handle_attrs_init(&proxy_handle_attrs);
     if(res != GLOBUS_SUCCESS)
@@ -812,6 +823,7 @@ grim_write_proxy(
         return 1;
     }
 
+
     /* 
      * set the key bits for the proxy cert in the proxy handle
      * attributes
@@ -824,6 +836,51 @@ grim_write_proxy(
         grim_write_log(
                             "\n\nERROR: Couldn't set the key bits for "
                             "the private key of the proxy certificate\n");
+        return 1;
+    }
+
+    res = globus_gsi_cred_get_subject_name(
+              cred_handle,
+              &subject);
+    if(res != GLOBUS_SUCCESS)
+    {
+        grim_write_log("ERROR: coulnd not build assertion.\n");
+        return 1;
+    }
+
+    res = globus_gsi_cred_get_cert(
+              cred_handle,
+              &x509_var);
+    if(res != GLOBUS_SUCCESS)
+    {
+        grim_write_log("ERROR: could not get cert.\n");
+        return 1;
+    }
+    x509_name = X509_get_subject_name(x509_var);
+    tmp_s1 = X509_NAME_oneline(x509_name, 0, 0);
+    tmp_s2 = malloc(strlen(subject) + strlen(tmp_s1) + 1);
+    sprintf(tmp_s2, "%s%s", subject, tmp_s1);
+
+    assertion = grim_build_assertion(
+                    tmp_s2,
+                    g_username,
+                    dna,
+                    port_types);
+    if(assertion == NULL)
+    {
+        grim_write_log("ERROR: coulnd not build assertion.\n");
+        return 1;
+    }
+
+    res = globus_gsi_proxy_handle_set_policy(
+              proxy_handle,
+              assertion,
+              strlen(assertion),
+              policy_NID);
+    if(res != GLOBUS_SUCCESS)
+    {
+        grim_write_log("ERROR" could not set the assertion.\n");
+        free(assertion);
         return 1;
     }
  
@@ -854,8 +911,11 @@ grim_write_proxy(
         grim_write_log(
             "\n\nERROR: The proxy credential could not be "
             "written to the output file.\n");
+        free(assertion);
         return 1;
     }
+
+    free(assertion);
 
     res = globus_gsi_cred_get_lifetime(cred_handle, &lifetime);
     if(res != GLOBUS_SUCCESS)
@@ -1232,21 +1292,76 @@ grim_parse_conf_file(
     return rc;
 }
 
+#define GrowString(b, new, offset)                      \
+{                                                       \
+    if(sizeof(b) <= strlen(new) + offset)               \
+    {                                                   \
+        b = globus_realloc(b, sizeof(b) * 2);           \
+    }                                                   \
+    strcpy(&b[offset], new);                            \
+    offset += strlen(new);                              \
+}
+
+char *
+grim_grow_string(
+    char *                                  buffer,
+    char *                                  add)
+{
+    if(strlen(add) 
+}
+
 /*************************************************************************
  *
  ************************************************************************/
+char *
+grim_build_assertion(
+    char *                                  subject,
+    char *                                  username,
+    char **                                 dna,
+    char **                                 port_types)
 {
+    char *                                  buffer;
+    int                                     buffer_size = 1024;
+    int                                     buffer_ndx = 0;
+    char *                                  hostname[MAXHOSTNAMELEN];
 
-    
-"<element name="GRIMAssertion">\n"
-"    <element name=\"Version\" type="integer">\n"
-"    <element name=\"ServiceGridId\" type=\"saml:NameIdentifierType\"/>\n"
-"    <element name=\"ServiceLocalId\" type="saml:NameIdentifierType"/>\n"
-"    <element name="AuthorizedClientId" type="saml:NameIdentifierType"
-           maxOccurs="unbounded"/>
-  <!-- PortType(s) the unix account is authorized to run -->
-  <element name="AuthorizedPortType" type="QName"
-           maxOccurs="unbounded"/>
-</element>
+    globus_libc_gethostname(hostname, MAXHOSTNAMELEN);
+    buffer = globus_malloc(sizeof(char) * buffer_size);
 
+    GrowString(buffer, "<GrimAssertion>\n", buffer_ndx);
+    GrowString(buffer, "    <Version>", buffer_ndx);
+    GrowString(buffer, GRIM_ASSERTION_FORMAT_VERSION, buffer_ndx);
+    GrowString(buffer, "    </Version>\n", buffer_ndx);
+    GrowString(buffer, "    <ServiceGridId Format=\"#X509SubjectName\">", 
+                        buffer_ndx);
+    GrowString(buffer, subject, buffer_ndx);
+    GrowString(buffer, "</ServerGridId>\n", buffer_ndx);
+    GrowString(buffer, "    <ServiceLocalId Format=\"#UnixAccountName\" \n", 
+        buffer_ndx);
+    GrowString(buffer, "        NameQualifier=\", buffer_ndx);
+    GrowString(buffer, hostname, buffer_ndx);
+    GrowString(buffer, "\">", buffer_ndx);
+    GrowString(buffer, username, buffer_ndx);
+    GrowString(buffer, "</ServiceLocalId>\n", buffer_ndx);
+
+    /* add all mapped dns */
+    for(ctr = 0; dna[ctr] != NULL; ctr++)
+    {
+        GrowString(buffer, "<authorizedClientId Format=\"#X509SubjectName\">",
+            buffer_ndx);
+        GrowString(buffer, dna[ctr], buffer_ndx);
+        GrowString(buffer, "</AuthorizedClientId>\n", buffer_ndx);
+    }
+
+    /* add in port_types */
+    for(ctr = 0; port_types[ctr] != NULL; ctr++)
+    {
+        GrowString(buffer, "<authorizedPortType>", buffer_ndx);
+        GrowString(buffer, port_types[ctr], buffer_ndx);
+        GrowString(buffer, "</authorizedPortType>\n", buffer_ndx);
+    }
+
+    GrowString(buffer, "</GRIMAssertion>\n", buffer_ndx);
+
+    return buffer;
 }
