@@ -266,9 +266,8 @@ fi
 #
 #  Note that we get garbage at stderr, so only pipe stdout.
 #
-out_file=$run_file".out"
+out_file=${run_file}".out"
 
-#$cat $run_file | $llsubmit - 1> $out_file
 $llsubmit $run_file 1> $out_file
 
 status=`$cat $out_file | grep "submit:" | $awk '-F"' '{print $2}'`
@@ -290,6 +289,13 @@ else
    $DEBUG_ECHO "JM_SCRIPT: unknown response from llsubmit!" >> $grami_logfile
    $DEBUG_ECHO "##############################" >> $grami_logfile
    echo "GRAM_SCRIPT_ERROR:$GLOBUS_GRAM_CLIENT_ERROR_JOB_EXECUTION_FAILED"
+
+   echo ""                                                   >> ${grami_stderr}
+   echo "-------- output from scheduler submission --------" >> ${grami_stderr}
+   cat ${out_file}                                           >> ${grami_stderr}
+   echo "--------------------------------------------------" >> ${grami_stderr}
+   echo ""                                                   >> ${grami_stderr}
+
 fi
 
 # write the job_id to the argument file.  This is used by any subsequent
