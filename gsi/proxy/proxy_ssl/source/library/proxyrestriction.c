@@ -54,8 +54,8 @@ PROXYRESTRICTION * PROXYRESTRICTION_new()
     ret = NULL;
 
     M_ASN1_New_Malloc(ret, PROXYRESTRICTION);
-    M_ASN1_New(ret->policy_language, ASN1_OBJECT_new);
-    M_ASN1_New(ret->policy,          M_ASN1_OCTET_STRING_new);
+    ret->policy_language = OBJ_nid2obj(OBJ_sn2nid("IMPERSONATION"));
+    ret->policy = NULL;
     return (ret);
     M_ASN1_New_Error(ASN1_F_PROXYRESTRICTION_NEW);
 }
@@ -336,15 +336,18 @@ int i2d_PROXYRESTRICTION(
     PROXYRESTRICTION *                  a,
     unsigned char **                    pp)
 {
+    int                                 v1 = 0;
+    
     M_ASN1_I2D_vars(a);
 
     M_ASN1_I2D_len(a->policy_language,
                    i2d_ASN1_OBJECT);
-    M_ASN1_I2D_len(a->policy,
-                   i2d_ASN1_OCTET_STRING);
+    M_ASN1_I2D_len_EXP_opt(a->policy,
+                           i2d_ASN1_OCTET_STRING,
+                           1, v1);
     M_ASN1_I2D_seq_total();
     M_ASN1_I2D_put(a->policy_language, i2d_ASN1_OBJECT);
-    M_ASN1_I2D_put(a->policy, i2d_ASN1_OCTET_STRING);
+    M_ASN1_I2D_put_EXP_opt(a->policy, i2d_ASN1_OCTET_STRING, 1, v1);
 
     M_ASN1_I2D_finish();
 }

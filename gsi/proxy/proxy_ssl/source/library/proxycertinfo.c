@@ -72,7 +72,7 @@ PROXYCERTINFO * PROXYCERTINFO_new()
     ret->version          = ASN1_INTEGER_new();
     ASN1_INTEGER_set(ret->version, 1);  /* current first version of protocol */
     ret->path_length      = NULL;
-    ret->restriction      = NULL;
+    ret->restriction      = PROXYRESTRICTION_new();
     return (ret);
     M_ASN1_New_Error(ASN1_F_PROXYCERTINFO_NEW);
 }
@@ -446,25 +446,23 @@ int i2d_PROXYCERTINFO(
     unsigned char **                    pp)
 {
     int                                 v1;
-    int                                 v2;
 
     M_ASN1_I2D_vars(cert_info);
     
-    v1 = v2 = 0;
+    v1 = 0;
 
     M_ASN1_I2D_len(cert_info->version, i2d_ASN1_INTEGER);
+
+    M_ASN1_I2D_len(cert_info->restriction,      
+                   i2d_PROXYRESTRICTION);
 
     M_ASN1_I2D_len_EXP_opt(cert_info->path_length,      
                            i2d_ASN1_INTEGER,
                            1, v1);
-    M_ASN1_I2D_len_EXP_opt(cert_info->restriction,      
-                           i2d_PROXYRESTRICTION, 2, v2);
-
     M_ASN1_I2D_seq_total();
     M_ASN1_I2D_put(cert_info->version, i2d_ASN1_INTEGER);
+    M_ASN1_I2D_put(cert_info->restriction, i2d_PROXYRESTRICTION);
     M_ASN1_I2D_put_EXP_opt(cert_info->path_length, i2d_ASN1_INTEGER, 1, v1);
-    M_ASN1_I2D_put_EXP_opt(cert_info->restriction, 
-                           i2d_PROXYRESTRICTION, 2, v2);
     M_ASN1_I2D_finish();
 }
 /* i2d_PROXYCERTINFO() */
@@ -499,12 +497,12 @@ PROXYCERTINFO * d2i_PROXYCERTINFO(
 
     M_ASN1_D2I_get(ret->version, d2i_ASN1_INTEGER);
     
+    M_ASN1_D2I_get(ret->restriction,d2i_PROXYRESTRICTION);
+
     M_ASN1_D2I_get_EXP_opt(ret->path_length, 
                            d2i_ASN1_INTEGER, 
                            1);
-    M_ASN1_D2I_get_EXP_opt(ret->restriction, 
-                           d2i_PROXYRESTRICTION, 
-                           2);
+
     M_ASN1_D2I_Finish(cert_info, 
                       PROXYCERTINFO_free, 
                       ASN1_F_D2I_PROXYCERTINFO);
