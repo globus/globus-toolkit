@@ -934,7 +934,8 @@ redo:
 							      target);
 	if(buffer_cmd == GLOBUS_NULL)
 	{
-	    error = GLOBUS_I_FTP_CLIENT_ERROR_UNSUPPORTED_FEATURE("SBUF");
+	    error = GLOBUS_I_FTP_CLIENT_ERROR_UNSUPPORTED_FEATURE(
+	        "Adjust socket buffer");
 
 	    target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_CONNECTION;
 
