@@ -90,8 +90,8 @@ globus_io_register_close(
     static char *			myname="globus_io_register_close";
 
     globus_i_io_debug_printf(2,
-		            ("%s(): entering: handle=%p, handle->state = %d, fd=%d\n",
-			     myname, handle, handle->state, handle->fd));
+		            (stderr, "%s(): entering: handle=%p, handle->state = %d, fd=%d\n",
+			     myname, (void *)handle, handle->state, handle->fd));
     if(handle == GLOBUS_NULL)
     {
 	err = globus_io_error_construct_null_parameter(
