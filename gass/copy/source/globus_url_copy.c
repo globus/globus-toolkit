@@ -47,7 +47,7 @@ typedef struct
 {
     char *                              src_url;
     char *                              dst_url;
-} globus_l_guc_src_dst_pairs_t;
+} globus_l_guc_src_dst_pair_t;
 
 typedef struct 
 {
@@ -141,13 +141,20 @@ globus_l_guc_expand_urls(
     globus_gass_copy_handle_t *                  gass_copy_handle);
 
 static
+globus_result_t
+globus_l_guc_expand_single_url(
+    globus_l_guc_src_dst_pair_t *                url_pair,
+    globus_l_guc_info_t *                        guc_info,
+    globus_gass_copy_attr_t *                    gass_copy_attr,   
+    globus_gass_copy_handle_t *                  gass_copy_handle);
+
+static
 int
 globus_l_guc_transfer_files(
     globus_l_guc_info_t *                        guc_info,
     globus_gass_copy_attr_t *                    source_gass_copy_attr,   
     globus_gass_copy_attr_t *                    dest_gass_copy_attr,   
     globus_gass_copy_handle_t *                  gass_copy_handle);
-
 
 static
 int
@@ -761,7 +768,7 @@ globus_l_guc_parse_file(
     char                                            line[1024];
     char                                            src_url[512];
     char                                            dst_url[512];
-    globus_l_guc_src_dst_pairs_t *                  ent;
+    globus_l_guc_src_dst_pair_t *                   ent;
     char *                                          p;
     char *                                          src_p;
     char *                                          dst_p;
@@ -869,6 +876,8 @@ globus_l_guc_parse_file(
         strcpy(src_url, src_p);
         strcpy(dst_url, dst_p);
         
+        /* remove starting and ending " if needed */
+        
         if(strcmp(src_url, "-") == 0 && strcmp(dst_url, "-") == 0)
         {
             fprintf(stderr, "stdin and stdout cannot be used together.\n");
@@ -884,8 +893,8 @@ globus_l_guc_parse_file(
             stdin_used = GLOBUS_TRUE;
         }
 
-        ent = (globus_l_guc_src_dst_pairs_t *)
-                globus_malloc(sizeof(globus_l_guc_src_dst_pairs_t));
+        ent = (globus_l_guc_src_dst_pair_t *)
+                globus_malloc(sizeof(globus_l_guc_src_dst_pair_t));
         ent->src_url = globus_libc_strdup(src_url);
         ent->dst_url = globus_libc_strdup(dst_url);
         globus_fifo_enqueue(user_url_list, ent);
@@ -922,10 +931,11 @@ globus_l_guc_transfer_files(
     char *                                       dst_url_base = GLOBUS_NULL;
     int                                          src_url_base_len;
     int                                          dst_url_base_len;
-    globus_l_guc_src_dst_pairs_t *               url_pair;
+    globus_l_guc_src_dst_pair_t *                url_pair;
     globus_result_t                              result;
     int                                          ret_val = 0;
     globus_bool_t                                new_url;
+    globus_bool_t                                dst_is_dir;
         
     
     globus_mutex_init(&monitor.mutex, GLOBUS_NULL);
@@ -942,11 +952,19 @@ globus_l_guc_transfer_files(
         globus_ftp_client_operationattr_init(&guc_info->source_ftp_attr);
         globus_ftp_client_operationattr_init(&guc_info->dest_ftp_attr);
 
-        url_pair = (globus_l_guc_src_dst_pairs_t *)
+        url_pair = (globus_l_guc_src_dst_pair_t *)
                     globus_fifo_dequeue(&guc_info->expanded_url_list);
         src_url = url_pair->src_url;
         dst_url = url_pair->dst_url;
-                
+        
+        if(dst_url[strlen(dst_url) - 1] == '/')
+        {
+            dst_is_dir = GLOBUS_TRUE;   
+        }
+        else
+        {
+            dst_is_dir = GLOBUS_FALSE;
+        }   
             
         /* reset the monitor */
         monitor.done = GLOBUS_FALSE;
@@ -983,7 +1001,6 @@ globus_l_guc_transfer_files(
 
         if (source_io_handle)
         {
-            //globus_gass_copy_cache_url_state(gass_copy_handle, dst_url);
             result = globus_gass_copy_register_handle_to_url(
                          gass_copy_handle,
                          source_io_handle,
@@ -994,7 +1011,6 @@ globus_l_guc_transfer_files(
         }
         else if (dest_io_handle)
         {
-            //globus_gass_copy_cache_url_state(gass_copy_handle, src_url);
             result = globus_gass_copy_register_url_to_handle(
                          gass_copy_handle,
                          src_url,
@@ -1003,117 +1019,40 @@ globus_l_guc_transfer_files(
                          globus_l_url_copy_monitor_callback,
                          (void *) &monitor);
         }
-        else if(dst_url[strlen(dst_url) - 1] == '/')
-        {
-            if (!g_quiet_flag)
-            {
-                src_filename = strrchr(src_url, '/');               
-                while(src_filename > src_url && *src_filename == '/')
-                {
-                    src_filename--;
-                }
-                while(src_filename > src_url && *src_filename != '/')
-                {
-                    src_filename--;
-                }
-                src_filename++;
-                
-                dst_filename = strrchr(dst_url, '/');               
-                while(dst_filename > dst_url && *dst_filename == '/')
-                {
-                    dst_filename--;
-                }
-                while(dst_filename > dst_url && *dst_filename != '/')
-                {
-                    dst_filename--;
-                }
-                dst_filename++;
-
-                if(src_url_base == GLOBUS_NULL || 
-                    src_filename - src_url != src_url_base_len ||
-                    strncmp(src_url, src_url_base, src_filename - src_url))
-                {
-                    if(src_url_base != GLOBUS_NULL)
-                    {
-                        globus_free(src_url_base);
-                    }
-                    src_url_base = globus_libc_strdup(src_url);
-
-                    src_url_base_len = src_filename - src_url;
-                    src_url_base[src_url_base_len] = '\0';
-                    new_url = GLOBUS_TRUE;
-                }
-                else
-                {
-                    new_url = GLOBUS_FALSE;
-                }
-                
-                if(dst_url_base == GLOBUS_NULL || 
-                    dst_filename - dst_url != dst_url_base_len ||
-                    strncmp(dst_url, dst_url_base, dst_filename - dst_url))
-                {
-                    if(dst_url_base != GLOBUS_NULL)
-                    {
-                        globus_free(dst_url_base);
-                    }
-                    dst_url_base = globus_libc_strdup(dst_url);
-
-                    dst_url_base_len = dst_filename - dst_url;
-                    dst_url_base[dst_url_base_len] = '\0';
-                    new_url = GLOBUS_TRUE;
-                }
-                
-                if(new_url)
-                {
-                    globus_libc_fprintf(stdout, "%s  -->  %s\n", 
-                        src_url_base, 
-                        dst_url_base);
-                }
-                
-                if(!strcmp(src_filename, dst_filename))
-                {
-                    globus_libc_fprintf(stdout, "  %s\n", src_filename);
-                }
-                else
-                {
-                    globus_libc_fprintf(stdout, "  %s  ->  %s\n",
-                        src_filename, dst_filename);
-                }
-                //printf("making directory %s\n", dst_url);
-            }
-            
-            result = globus_gass_copy_mkdir(
-                gass_copy_handle,
-                dst_url,
-                dest_gass_copy_attr,
-                NULL,
-                NULL);
-                
-            if(result != GLOBUS_SUCCESS)
-            {
-               // goto error_mkdir;  
-            }
-    
-            monitor.done = GLOBUS_TRUE;
-
-        result = globus_l_guc_expand_url(
-                     url_pair,
-                     guc_info,
-                     source_gass_copy_attr,       
-                     gass_copy_handle);
-        if(result != GLOBUS_SUCCESS)
-        {
-            goto error_mkdir;
-        }
-            
-            
-        }        
         else
         {
             if (!g_quiet_flag)
             {
-                src_filename = strrchr(src_url, '/') + 1;
-                dst_filename = strrchr(dst_url, '/') + 1;
+                if(dst_is_dir)
+                {
+                    src_filename = strrchr(src_url, '/');               
+                    while(src_filename > src_url && *src_filename == '/')
+                    {
+                        src_filename--;
+                    }
+                    while(src_filename > src_url && *src_filename != '/')
+                    {
+                        src_filename--;
+                    }
+                    src_filename++;
+                    
+                    dst_filename = strrchr(dst_url, '/');               
+                    while(dst_filename > dst_url && *dst_filename == '/')
+                    {
+                        dst_filename--;
+                    }
+                    while(dst_filename > dst_url && *dst_filename != '/')
+                    {
+                        dst_filename--;
+                    }
+                    dst_filename++;
+                }
+                else
+                {
+                    src_filename = strrchr(src_url, '/') + 1;
+                    dst_filename = strrchr(dst_url, '/') + 1;
+                }
+
                 
                 if(src_url_base == GLOBUS_NULL || 
                     src_filename - src_url != src_url_base_len ||
@@ -1166,15 +1105,45 @@ globus_l_guc_transfer_files(
                         src_filename, dst_filename);
                 }
             }
-            result = globus_gass_copy_register_url_to_url(
-                         gass_copy_handle,
-                         src_url,
-                         source_gass_copy_attr,
-                         dst_url,
-                         dest_gass_copy_attr,
-                         globus_l_url_copy_monitor_callback,
-                         (void *) &monitor);
-        }
+            
+            if(dst_is_dir)
+            {
+                result = globus_l_guc_expand_single_url(
+                     url_pair,
+                     guc_info,
+                     source_gass_copy_attr,       
+                     gass_copy_handle);
+                if(result != GLOBUS_SUCCESS)
+                {
+                    goto error_mkdir;
+                }
+                
+                result = globus_gass_copy_mkdir(
+                    gass_copy_handle,
+                    dst_url,
+                    dest_gass_copy_attr,
+                    globus_l_url_copy_monitor_callback,
+                    (void *) &monitor);
+                    
+                if(result != GLOBUS_SUCCESS)
+                {
+                  result = GLOBUS_SUCCESS;
+                }
+     
+                monitor.done = GLOBUS_TRUE;
+            }
+            else
+            {
+                result = globus_gass_copy_register_url_to_url(
+                     gass_copy_handle,
+                     src_url,
+                     source_gass_copy_attr,
+                     dst_url,
+                     dest_gass_copy_attr,
+                     globus_l_url_copy_monitor_callback,
+                     (void *) &monitor);
+            }
+        }        
 
         if (result != GLOBUS_SUCCESS)
         {
@@ -1248,10 +1217,16 @@ globus_l_guc_transfer_files(
     globus_mutex_destroy(&monitor.mutex);
 
 
-return ret_val;
+    return ret_val;
 
+
+error_register:
 error_mkdir:
-return ret_val;
+    globus_cond_destroy(&monitor.cond);
+    globus_mutex_destroy(&monitor.mutex);
+
+
+    return ret_val;
 
 }
 
@@ -1269,7 +1244,7 @@ globus_l_guc_parse_arguments(
     char *                                          file_name = NULL;
     globus_args_option_instance_t *                 instance = NULL;
     globus_list_t *                                 list = NULL;
-    globus_l_guc_src_dst_pairs_t *                  ent;
+    globus_l_guc_src_dst_pair_t *                   ent;
 
 
     guc_info->no_3pt = GLOBUS_FALSE;
@@ -1287,11 +1262,9 @@ globus_l_guc_parse_arguments(
     guc_info->restart_timeout = 0;
 
     /* determine the program name */
-    if (strrchr(argv[0],'/'))
-    {
-        program = strrchr(argv[0],'/') + 1;
-    }
-    else
+    
+    program = strrchr(argv[0],'/') + 1;
+    if (!program)
     {
         program = argv[0];
     }
@@ -1437,8 +1410,8 @@ globus_l_guc_parse_arguments(
         else
         {
         
-            ent = (globus_l_guc_src_dst_pairs_t *)
-                    globus_malloc(sizeof(globus_l_guc_src_dst_pairs_t));
+            ent = (globus_l_guc_src_dst_pair_t *)
+                    globus_malloc(sizeof(globus_l_guc_src_dst_pair_t));
             ent->src_url = globus_libc_strdup(argv[1]);
             ent->dst_url = globus_libc_strdup(argv[2]);
             
@@ -1476,37 +1449,25 @@ globus_l_guc_expand_urls(
     globus_gass_copy_attr_t *                    gass_copy_attr,   
     globus_gass_copy_handle_t *                  gass_copy_handle)
 {
-    globus_fifo_t                                matched_url_list;
     char *                                       src_url;
     char *                                       dst_url;
-    int                                          url_len;
-    globus_l_guc_src_dst_pairs_t *               user_url_pair;
-    globus_l_guc_src_dst_pairs_t *               expanded_url_pair;
-    char *                                       matched_src_url;
-    char *                                       matched_file;
-    int                                          base_url_len;
-    char *                                       matched_dest_url;
+    globus_l_guc_src_dst_pair_t *                user_url_pair;
     globus_result_t                              result;
-    globus_io_handle_t *                         source_io_handle = GLOBUS_NULL;
-    globus_bool_t                                dst_is_file;
+    globus_io_handle_t *                         source_io_handle;
         
     while(!globus_fifo_empty(&guc_info->user_url_list))
     {
-
-        
-        user_url_pair = (globus_l_guc_src_dst_pairs_t *)
+        user_url_pair = (globus_l_guc_src_dst_pair_t *)
                     globus_fifo_dequeue(&guc_info->user_url_list);
 
         src_url = user_url_pair->src_url;
         dst_url = user_url_pair->dst_url;
 
-        source_io_handle = globus_l_guc_get_io_handle(
-                               src_url,
-                               fileno(stdin));
+        source_io_handle = 
+            globus_l_guc_get_io_handle(src_url, fileno(stdin));
 
         if(source_io_handle != NULL)
         {
-            
             globus_fifo_enqueue(
                 &guc_info->expanded_url_list, 
                 user_url_pair);
@@ -1524,21 +1485,18 @@ globus_l_guc_expand_urls(
             src_url,
             guc_info->source_subject);
 
-        /* expand globbed urls */
-        result = globus_l_guc_expand_url(
-                     user_url_pair,
-                     guc_info,
-                     gass_copy_attr,       
-                     gass_copy_handle);
+        result = globus_l_guc_expand_single_url(
+            user_url_pair,
+            guc_info,
+            gass_copy_attr,       
+            gass_copy_handle);
+                     
         if(result != GLOBUS_SUCCESS)
         {
             goto error_expand;
         }
-                    
-                    
+                                        
         globus_ftp_client_operationattr_destroy(&guc_info->source_ftp_attr);
-
-
         
         globus_free(user_url_pair->src_url);
         globus_free(user_url_pair->dst_url);
@@ -1547,11 +1505,6 @@ globus_l_guc_expand_urls(
     }
 
     return GLOBUS_SUCCESS;
-error_too_many_matches:
-    globus_libc_fprintf(stderr, 
-        "Multiple source urls cannot be copied "
-        "to the same destination url:\n\t%s\n",
-        dst_url);        
             
 error_expand:
     globus_ftp_client_operationattr_destroy(&guc_info->source_ftp_attr);
@@ -1567,8 +1520,8 @@ error_expand:
 
 static
 globus_result_t
-globus_l_guc_expand_url(
-    globus_l_guc_src_dst_pairs_t *               user_url_pair,
+globus_l_guc_expand_single_url(
+    globus_l_guc_src_dst_pair_t *                url_pair,
     globus_l_guc_info_t *                        guc_info,
     globus_gass_copy_attr_t *                    gass_copy_attr,   
     globus_gass_copy_handle_t *                  gass_copy_handle)
@@ -1577,124 +1530,87 @@ globus_l_guc_expand_url(
     char *                                       src_url;
     char *                                       dst_url;
     int                                          url_len;
-    globus_l_guc_src_dst_pairs_t *               expanded_url_pair;
+    globus_l_guc_src_dst_pair_t *                expanded_url_pair;
     char *                                       matched_src_url;
     char *                                       matched_file;
     int                                          base_url_len;
     char *                                       matched_dest_url;
     globus_result_t                              result;
-    globus_io_handle_t *                         source_io_handle = GLOBUS_NULL;
     globus_bool_t                                dst_is_file;
         
+                
+    globus_fifo_init(&matched_url_list);
+
+    src_url = url_pair->src_url;
+    dst_url = url_pair->dst_url;
+               
+    result = globus_gass_copy_glob_expand_url(
+                gass_copy_handle,
+                src_url,
+                gass_copy_attr,
+                &matched_url_list);
+    
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_expand;  
+    }
+    
+    url_len = strlen(dst_url);
+    
+    if(dst_url[url_len - 1] == '/')
+    {
+        dst_is_file = GLOBUS_FALSE;
+    }
+    else
+    {
+        dst_is_file = GLOBUS_TRUE;
+    }
+    
+    if(dst_is_file && globus_fifo_size(&matched_url_list) > 1)
+    {
+        goto error_too_many_matches;
+    }
+
+    base_url_len = strrchr(src_url, '/') - src_url + 1;
+                                 
+    while(!globus_fifo_empty(&matched_url_list))
+    {
+        matched_src_url = (char *) globus_fifo_dequeue(&matched_url_list);
+    
+        matched_file = matched_src_url + base_url_len;
+    
+        if(matched_src_url[strlen(matched_src_url) - 1] == '/' && 
+            !guc_info->recurse)
+        {
+            continue;
+        }
                     
-        src_url = user_url_pair->src_url;
-        dst_url = user_url_pair->dst_url;
-
-
-        base_url_len = strrchr(src_url, '/') - src_url + 1;
-        
-        globus_fifo_init(&matched_url_list);
-        
-        result = globus_gass_copy_glob_expand_url(
-                    gass_copy_handle,
-                    src_url,
-                    gass_copy_attr,
-                    &matched_url_list);
-
-        if(result != GLOBUS_SUCCESS)
+        if(dst_is_file)
         {
-            goto error_expand;  
+            matched_dest_url = globus_libc_strdup(dst_url);
         }
-        
-        url_len = strlen(dst_url);
-        
-        if(dst_url[url_len - 1] == '/')
-        {
-            dst_is_file = GLOBUS_FALSE;
-        }
-        else
-        {
-            dst_is_file = GLOBUS_TRUE;
-        }
-        
-        if(dst_is_file && globus_fifo_size(&matched_url_list) > 1)
-        {
-            goto error_too_many_matches;
-        }
-                                     
-        while(!globus_fifo_empty(&matched_url_list))
-        {
-            matched_src_url = (char *) globus_fifo_dequeue(&matched_url_list);
-       
-            matched_file = matched_src_url + base_url_len;
-
-            if(matched_src_url[strlen(matched_src_url) - 1] == '/')
-            {
-                if(guc_info->recurse)
-                {
-                    
-                /*    result = globus_gass_copy_glob_expand_url(
-                                gass_copy_handle,
-                                matched_src_url,
-                                gass_copy_attr,
-                                &matched_url_list);
+        else 
+        {        
+            matched_dest_url = (char *) globus_malloc(
+                (url_len + strlen(matched_file) + 1) * sizeof(char));
             
-                    if(result != GLOBUS_SUCCESS)
-                    {
-                        goto error_expand;  
-                    }
-                    
-                    if(dst_is_file && globus_fifo_size(&matched_url_list) > 1)
-                    {
-                        goto error_too_many_matches;
-                    }
-                  */  
-                    matched_dest_url = (char *)
-                        globus_malloc((url_len + 
-                                   strlen(matched_file) + 1) * 
-                                   sizeof(char));
-                    sprintf(matched_dest_url, 
-                        "%s%s", 
-                        dst_url, 
-                        matched_file);
-   
-                }
-                else
-                {
-                    continue;
-                }
-            }
-                        
-            if(dst_is_file)
-            {
-                matched_dest_url = globus_libc_strdup(dst_url);
-            }
-            else 
-            {        
-                matched_dest_url = (char *)
-                    globus_malloc((url_len + 
-                                   strlen(matched_file) + 1) * 
-                                   sizeof(char));
-                sprintf(matched_dest_url, 
-                    "%s%s", 
-                    dst_url, 
-                    matched_file);
-            }
-                                    
-            expanded_url_pair = (globus_l_guc_src_dst_pairs_t *)
-                    globus_malloc(sizeof(globus_l_guc_src_dst_pairs_t));
-
-            expanded_url_pair->src_url = matched_src_url;
-            expanded_url_pair->dst_url = matched_dest_url;                
-            
-            globus_fifo_enqueue(
-                &guc_info->expanded_url_list, 
-                expanded_url_pair);
+            sprintf(matched_dest_url, "%s%s", dst_url, matched_file);
         }
-
-
-        globus_fifo_destroy(&matched_url_list);
+                                
+        expanded_url_pair = (globus_l_guc_src_dst_pair_t *)
+                globus_malloc(sizeof(globus_l_guc_src_dst_pair_t));
+    
+        expanded_url_pair->src_url = matched_src_url;
+        expanded_url_pair->dst_url = matched_dest_url;                
         
+        globus_fifo_enqueue(
+            &guc_info->expanded_url_list, 
+            expanded_url_pair);
+    }
+    
+    
+    globus_fifo_destroy(&matched_url_list);
+    
         
 
 
@@ -2033,11 +1949,11 @@ void
 globus_l_guc_destroy_url_list(
     globus_fifo_t *                     url_list)
 {
-    globus_l_guc_src_dst_pairs_t *      url_pair;
+    globus_l_guc_src_dst_pair_t *       url_pair;
 
     while(!globus_fifo_empty(url_list))
     {
-        url_pair = (globus_l_guc_src_dst_pairs_t *)
+        url_pair = (globus_l_guc_src_dst_pair_t *)
                         globus_fifo_dequeue(url_list);
         globus_free(url_pair->src_url);
         globus_free(url_pair->dst_url);
