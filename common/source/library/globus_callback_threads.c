@@ -898,7 +898,7 @@ globus_callback_space_init(
         if(!i_attr)
         {
             return GLOBUS_L_CALLBACK_CONSTRUCT_INVALID_SPACE_ATTR(
-                "globus_callback_space_init", "attr");
+                "globus_callback_space_init");
         }
     }
     else
