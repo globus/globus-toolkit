@@ -624,10 +624,10 @@ AC_DEFUN(LAC_DOXYGEN,dnl
     if test -n "$DOXYGEN" ; then
 	AC_PATH_PROG(DOT, dot)
 	
-	if test -z "$GLOBUS_PERL" ; then
+	if test -z "$GLOBUS_SH_PERL" ; then
 	   AC_PATH_PROG(PERL, perl)
 	else
-	    PERL="$GLOBUS_PERL"
+	    PERL="$GLOBUS_SH_PERL"
 	    AC_SUBST(PERL)
 	fi
 	if test "$DOT" != ""; then
@@ -657,19 +657,8 @@ AC_DEFUN(LAC_STATIC_FLAGS,dnl
 [
 case $GPT_LINKTYPE in
 	static)
-
-		case ${host}--$1 in
-    		*solaris2*)
-		    STATIC_FLAGS="-Bstatic -Bdynamic $LIBS  -Bstatic -z nodefs"
-		    LIBS=""
-		    AC_SUBST(STATIC_FLAGS)
-		    AC_SUBST(LIBS)
-		    ;;
-    		*)
-		    STATIC_FLAGS="-all-static"
-		    AC_SUBST(STATIC_FLAGS)
-		    ;;
-		esac
+	        STATIC_FLAGS="-static"
+		AC_SUBST(STATIC_FLAGS)
 	;;
 esac
 ])
