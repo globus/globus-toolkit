@@ -124,7 +124,7 @@ do                                                                          \
     ((_in_op)->_op_context->entry[(_in_op)->ndx - 1].driver_handle)
 
 #define GlobusXIOOperationGetDriverHandle(_in_op)                           \
-    &((_in_op)->_op_context->entry[(_in_op)->ndx - 1])
+    &((_in_op)->_op_context->entry[(_in_op)->ndx])
 
 #define GlobusXIOOperationGetDataDescriptor(_out_dd, _in_op, _force_create) \
 {                                                                           \

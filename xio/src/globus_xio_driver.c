@@ -1516,6 +1516,9 @@ globus_xio_driver_operation_cancel(
         goto err;
     }
     
+    /* driver_handles are to the drivers below the current one */
+    source_ndx--;
+    
     globus_mutex_lock(&context->cancel_mutex);
     {
         res = globus_i_xio_operation_cancel(op, source_ndx);
