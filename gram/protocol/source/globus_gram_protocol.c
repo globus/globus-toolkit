@@ -896,6 +896,11 @@ globus_l_gram_http_read_callback( void *                 read_t,
 				 status->buf,
 				 status->n_read,
 				 GLOBUS_SUCCESS);
+        
+        /* The read buffers *should* be freed by the "user" callbacks */
+        /* but the read_t structure isn't. We try to free it here */
+        my_free(status);
+
 	return;
     }
 
