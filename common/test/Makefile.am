@@ -51,6 +51,7 @@ Scripts= \
 	globus-common-url-test.pl \
 	globus-common-mem-test.pl \
 	globus-common-module-test.pl \
+	globus-common-fifo-test.pl \
 	run-common-tests.pl
 
 Data= \
