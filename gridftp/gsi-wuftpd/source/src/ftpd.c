@@ -90,17 +90,6 @@
         send_data(__instr, __outstr, __blksize, __length)
 #endif
 
-#ifdef USE_GLOBUS_DATA_CODE
-#   if defined(THROUGHPUT)
-#       define G_SEND_DATA(__name, __instr, __h, __off, __logical_offset, __length, __size)  \
-            g_send_data(__name, __instr, __h, __off, (off_t) __logical_offset, (off_t)__length, __size)
-#   else
-#       define G_SEND_DATA(__name, __instr, __h, __off, __logical_offset, __length, __size)  \
-            g_send_data(__instr, __h, __off, (off_t) __logical_offset, (off_t)__length, __size)
-#   endif
-#endif
-
-
 #include "proto.h"
 
 #ifdef HAVE_UFS_QUOTA_H
@@ -262,6 +251,7 @@ int Send(FILE *sockfp, char *format,...);
  */
 #ifdef USE_GLOBUS_DATA_CODE
 extern globus_ftp_control_handle_t               g_data_handle;
+extern char *                                    g_perf_log_file_name;
 #endif
 
 
@@ -704,9 +694,9 @@ int i = 0;
 #endif /* DAEMON */
 
 #ifndef DAEMON
-    while ((c = getopt(argc, argv, ":aAvdlLiIoP:qQr:t:T:u:wVWX1")) != -1) {
+    while ((c = getopt(argc, argv, ":aAvdlLiIoPZ:qQr:t:T:u:wVWX1")) != -1) {
 #else /* DAEMON */
-    while ((c = getopt(argc, argv, ":aAvdlLiIop:P:qQr:sSt:T:u:VwWX1")) != -1) {
+    while ((c = getopt(argc, argv, ":aAvdlLiIop:Z:P:qQr:sSt:T:u:VwWX1")) != -1) {
 #endif /* DAEMON */
 	switch (c) {
 
@@ -766,6 +756,12 @@ int i = 0;
 	    data_source.sin_port = htons(atoi(optarg));
 	    data_source.sin_port = 0;
 	    break;
+
+#if defined(USE_GLOBUS_DATA_CODE)
+        case 'Z':
+            g_perf_log_file_name = strdup(optarg);
+            break;
+#endif
 
 #ifdef DAEMON
 	case 'p':
@@ -1116,7 +1112,7 @@ int i = 0;
      */
 #   if defined(USE_GLOBUS_DATA_CODE)
     {
-        g_start();
+        g_start(argc, argv);
     }
 #   endif
 
@@ -4550,7 +4546,7 @@ retrieve(
 
 #   if defined(USE_GLOBUS_DATA_CODE)
     {
-            TransferComplete = G_SEND_DATA(
+            TransferComplete = g_send_data(
                                    name, 
                                    fin, 
                                    &g_data_handle, 
