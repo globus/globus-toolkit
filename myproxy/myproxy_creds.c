@@ -1388,6 +1388,29 @@ myproxy_creds_change_passphrase(const struct myproxy_creds *creds,
 }
 
 int
+myproxy_creds_encrypted(const struct myproxy_creds *creds)
+{
+    char creds_path[MAXPATHLEN];
+    char data_path[MAXPATHLEN];
+    char lock_path[MAXPATHLEN];
+    
+    if ((creds == NULL) || (creds->username == NULL)) {
+	verror_put_errno(EINVAL);
+	return -1;
+    }
+    
+    if (get_storage_locations(creds->username,
+                              creds_path, sizeof(creds_path),
+                              data_path, sizeof(data_path),
+			      lock_path, sizeof(lock_path),
+			      creds->credname) == -1) {
+	return -1;
+    }
+
+    return ssl_private_key_is_encrypted(creds_path);
+}
+
+int
 myproxy_creds_verify_passphrase(const struct myproxy_creds *creds,
 				const char *passphrase)
 {
