@@ -134,6 +134,6 @@ mlsd(
             params, sizeof(params), "%s %s", get_mlsx_options(), abs_path);
         params[sizeof(params) - 1] = 0;
     
-        retrieve("mlsd %s", params, -1, -1);
+        retrieve("ftpmlsd %s", params, -1, -1);
     }
 }

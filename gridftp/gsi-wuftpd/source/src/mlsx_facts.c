@@ -208,6 +208,7 @@ get_fact_string(
         if(is_writable && S_ISREG(stat_buf.st_mode))
         {
             *(ptr++) = 'a';
+            *(ptr++) = 'w';
         }
 
         /*
@@ -292,7 +293,10 @@ get_fact_string(
     *mode_buf = '\0';
     if(strstr(mutable_facts, "unix.mode")) 
     {
-        sprintf(mode_buf, "UNIX.mode=%4o;", (unsigned) stat_buf.st_mode);
+        sprintf(
+            mode_buf,
+            "UNIX.mode=%04o;",
+            (unsigned) (stat_buf.st_mode & 07777));
     }
 
     snprintf(

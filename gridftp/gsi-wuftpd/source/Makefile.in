@@ -39,7 +39,7 @@ all:
 	(cd util/privatepw ; $(MAKE) all)
 	(cd src ; $(MAKE) all)
 	if [ ! -d bin ]; then mkdir bin; fi
-	rm -f bin/ftpd bin/ftpshut bin/ftpcount bin/ftpwho bin/ckconfig bin/ftprestart
+	rm -f bin/ftpd bin/ftpshut bin/ftpcount bin/ftpwho bin/ckconfig bin/ftprestart bin/ftpmlsd
 	@CPLN@ src/ftpd bin
 	@CPLN@ src/ftpshut bin
 	@CPLN@ src/ftpcount bin
