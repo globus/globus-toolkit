@@ -68,6 +68,8 @@ else
 }
 
 # Do script relocation
+mkdir $ENV{GLOBUS_LOCATION} . "/lib/perl/Globus/GRAM/JobManager";
+
 print `./find-pbs-tools $non_cluster --with-cpu-per-node=$cpu_per_node --with-remote-shell=$remote_shell --cache-file=/dev/null`;
 if($? != 0)
 {

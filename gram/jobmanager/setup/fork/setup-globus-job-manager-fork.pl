@@ -27,6 +27,8 @@ else
     $force = '';
 }
 
+mkdir $ENV{GLOBUS_LOCATION} . "/lib/perl/Globus/GRAM/JobManager";
+
 print `./find-fork-tools`;
 
 $cmd = "$libexecdir/globus-job-manager-service-add -m fork -s \"$name\" $force";
