@@ -628,6 +628,12 @@ globus_gram_job_manager_rsl_evaluate_value(
     globus_rsl_value_t *		value,
     char **				value_string);
 
+int
+globus_gram_job_manager_rsl_eval_string(
+    globus_gram_jobmanager_request_t *  request,
+    char *                              string,
+    char **                             value_string);
+
 /* globus_gram_job_manager_state_file.c */
 void
 globus_gram_job_manager_state_file_set(

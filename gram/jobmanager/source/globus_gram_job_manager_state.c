@@ -40,11 +40,6 @@ globus_l_gram_job_manager_set_restart_state(
 
 static
 int
-globus_l_gram_job_manager_state_eval_scratch_dir_base(
-    globus_gram_jobmanager_request_t *	request);
-
-static
-int
 globus_l_gram_job_manager_reply(
     globus_gram_jobmanager_request_t *	request);
 
@@ -383,7 +378,20 @@ globus_gram_job_manager_state_machine(
 
 	if(request->scratch_dir_base)
 	{
-	    globus_l_gram_job_manager_state_eval_scratch_dir_base(request);
+	    rc = globus_gram_job_manager_rsl_eval_string(
+		    request,
+		    request->scratch_dir_base,
+		    &tmp_str);
+
+	    if(rc != GLOBUS_SUCCESS)
+	    {
+		request->failure_code = rc;
+		request->jobmanager_state = 
+		    GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
+		break;
+	    }
+	    globus_libc_free(request->scratch_dir_base);
+	    request->scratch_dir_base = tmp_str;
 	}
 	else
 	{
@@ -393,7 +401,7 @@ globus_gram_job_manager_state_machine(
 	rc = globus_gram_job_manager_rsl_eval_one_attribute(
 		request,
 		GLOBUS_GRAM_PROTOCOL_GASS_CACHE_PARAM,
-		&request->cache_location);
+		&tmp_str);
 
 	if(rc != GLOBUS_SUCCESS)
 	{
@@ -404,7 +412,7 @@ globus_gram_job_manager_state_machine(
 	}
 
 	/* cache location in rsl, but not a literal after eval */
-	if(request->cache_location == GLOBUS_NULL &&
+	if(tmp_str == GLOBUS_NULL &&
 		!globus_list_empty(
 		    globus_rsl_param_get_values(
 			request->rsl,
@@ -416,7 +424,31 @@ globus_gram_job_manager_state_machine(
 	        GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
 	    break;
 	}
+        if(tmp_str != NULL)
+	{
+	    if(request->cache_location != NULL)
+	    {
+		globus_libc_free(request->cache_location);
+	    }
+	    request->cache_location = tmp_str;
+        }
+	if(request->cache_location != NULL)
+	{
+	    rc = globus_gram_job_manager_rsl_eval_string(
+		    request,
+		    request->cache_location,
+		    &tmp_str);
 
+	    if(rc != GLOBUS_SUCCESS)
+	    {
+		request->failure_code = rc;
+		request->jobmanager_state = 
+		    GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
+		break;
+	    }
+	    globus_libc_free(request->cache_location);
+	    request->cache_location = tmp_str;
+	}
 
 	rc = globus_gass_cache_open(request->cache_location,
 		                    &request->cache_handle);
@@ -1992,45 +2024,6 @@ globus_l_gram_job_manager_set_restart_state(
     return changed;
 }
 /* globus_l_gram_job_manager_set_restart_state() */
-
-static
-int
-globus_l_gram_job_manager_state_eval_scratch_dir_base(
-    globus_gram_jobmanager_request_t *	request)
-{
-    globus_rsl_value_t *		value;
-    char *				value_string;
-    int					rc;
-
-    rc = globus_gram_job_manager_rsl_parse_value(
-	    request,
-	    request->scratch_dir_base,
-	    &value);
-    if(rc != GLOBUS_SUCCESS)
-    {
-	goto parse_failed;
-    }
-
-    rc = globus_gram_job_manager_rsl_evaluate_value(
-	    request,
-	    value,
-	    &value_string);
-    if(rc != GLOBUS_SUCCESS || value_string == NULL)
-    {
-	goto eval_failed;
-    }
-
-    globus_libc_free(request->scratch_dir_base);
-
-    request->scratch_dir_base = value_string;
-
-eval_failed:
-    globus_rsl_value_free_recursive(value);
-parse_failed:
-
-    return rc;
-}
-/* globus_l_gram_job_manager_state_eval_scratch_dir_base() */
 
 #ifdef BUILD_DEBUG
 static

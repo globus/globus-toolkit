@@ -864,6 +864,45 @@ globus_gram_job_manager_rsl_evaluate_value(
 }
 /* globus_gram_job_manager_rsl_evaluate_value() */
 
+int
+globus_gram_job_manager_rsl_eval_string(
+    globus_gram_jobmanager_request_t *	request,
+    char *				string,
+    char **				value_string)
+{
+    globus_rsl_value_t *		value;
+    int					rc;
+
+    *value_string = NULL;
+
+    rc = globus_gram_job_manager_rsl_parse_value(
+	    request,
+	    string,
+	    &value);
+
+    if(rc != GLOBUS_SUCCESS)
+    {
+	goto parse_failed;
+    }
+
+    rc = globus_gram_job_manager_rsl_evaluate_value(
+	    request,
+	    value,
+	    value_string);
+
+    if(rc != GLOBUS_SUCCESS || (*value_string) == NULL)
+    {
+	goto eval_failed;
+    }
+
+eval_failed:
+    globus_rsl_value_free_recursive(value);
+parse_failed:
+
+    return rc;
+}
+/* globus_gram_job_manager_rsl_eval_string() */
+
 /**
  * Create duct control handler.
  *
