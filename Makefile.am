@@ -45,7 +45,9 @@ ServerSources= \
 INCLUDES += $(GPT_INCLUDES)
 
 Scripts= \
-	myproxy-test
+	myproxy-test \
+	myproxy-admin-adduser \
+	myproxy-admin-adduser-config
 
 sbin_SCRIPTS = $(Scripts)
 
