@@ -22,6 +22,9 @@ globus_debug_init(
     static globus_bool_t globus_i_##module_name##_print_threadids;          \
     void globus_i_##module_name##_debug_printf(const char * fmt, ...)       \
     {                                                                       \
+        if(!globus_i_##module_name##_debug_file)                            \
+            return;                                                         \
+                                                                            \
         va_list ap;                                                         \
         va_start(ap, fmt);                                                  \
         if(globus_i_##module_name##_print_threadids)                        \
@@ -73,6 +76,7 @@ globus_debug_init(
         if(globus_i_##module_name##_using_file)                             \
         {                                                                   \
             fclose(globus_i_##module_name##_debug_file);                    \
+            globus_i_##module_name##_debug_file = GLOBUS_NULL;              \
         }                                                                   \
     } while(0)
 
