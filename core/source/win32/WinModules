@@ -167,10 +167,10 @@ ModuleType          executable
 SourceLocation      \gsi\gssapi\test
 Win32Location       \gsi\gssapi\test\win32
 
-# These Have Porting Problems (Looking For sys/time.h)
-ModuleType          executable
-SourceLocation      \gsi\gss_assist\test
-Win32Location       \gsi\gss_assist\test\win32
+    # These Have Porting Problems (Looking For sys/time.h)
+    ModuleType          executable
+    SourceLocation      \gsi\gss_assist\test
+    Win32Location       \gsi\gss_assist\test\win32
 
 ModuleType          executable
 SourceLocation      \gsi\proxy\proxy_ssl\test
@@ -180,8 +180,11 @@ ModuleType          executable
 SourceLocation      \gsi\proxy\proxy_utils\source\programs
 Win32Location       \gsi\proxy\proxy_utils\source\programs\win32
 
-# These Don't Build yet
-ModuleType          executable
-SourceLocation      \io\test
-Win32Location       \io\test\win32
+    # These Don't Build yet
+    ModuleType          executable
+    SourceLocation      \io\test
+    Win32Location       \io\test\win32
 
+ModuleType          executable
+SourceLocation      \gass\copy\source
+Win32Location       \gass\copy\source\win32
