@@ -233,13 +233,13 @@ sub wait_command()
     my $self = shift;
     my ($pid,$fd) = @_;
     my $rc = 0;
-    my $counter = 0;
+    my $delay_counter = 0;
     my $output;
 
     while($rc == 0)
     {
         # kill after 5 minutes
-        if(counter == 5)
+        if(delay_counter == 5)
         {
             kill(9,$pid);
         }
@@ -249,7 +249,7 @@ sub wait_command()
         if($rc == 0)
         {
             sleep(60);
-            counter++;
+            delay_counter++;
         }
     }
 
