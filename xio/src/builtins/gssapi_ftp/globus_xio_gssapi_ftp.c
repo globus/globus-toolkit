@@ -243,7 +243,7 @@ globus_l_xio_gssapi_ftp_handle_create()
      *  create a new handle and initialize it
      */
     handle = (globus_l_xio_gssapi_ftp_handle_t *) 
-                globus_libc_malloc(sizeof(globus_l_xio_gssapi_ftp_handle_t));
+                globus_libc_calloc(sizeof(globus_l_xio_gssapi_ftp_handle_t), 1);
     if(handle == NULL)
     {
         goto err;
@@ -998,6 +998,8 @@ globus_l_xio_gssapi_ftp_server_read_cb(
     {
         globus_assert(!handle->client);
 
+        handle->read_posted = GLOBUS_FALSE;
+
         globus_l_xio_gssapi_ftp_parse_command(
                 handle->auth_read_iov.iov_base,
                 handle->auth_read_iov.iov_len,
@@ -1079,12 +1081,10 @@ globus_l_xio_gssapi_ftp_server_read_cb(
                     {
                         goto err;
                     }
-                    handle->read_iov[0].iov_base = 
-                        handle->auth_read_iov.iov_base;
-                    handle->read_iov[0].iov_len = 
-                        handle->auth_read_iov.iov_len;
+                    handle->read_iov[0].iov_base = out_buf;
+                    handle->read_iov[0].iov_len = strlen(out_buf);
                     globus_xio_driver_finished_read(
-                        op, GLOBUS_SUCCESS, strlen(out_buf));
+                        op, GLOBUS_SUCCESS, handle->read_iov[0].iov_len);
 
                     break;
 
@@ -1096,13 +1096,13 @@ globus_l_xio_gssapi_ftp_server_read_cb(
         if(reply)
         {
             /* send the entire reply */
-            handle->write_iov[0].iov_base = msg;
-            handle->write_iov[0].iov_len = globus_libc_strlen(msg);
+            handle->auth_write_iov.iov_base = msg;
+            handle->auth_write_iov.iov_len = globus_libc_strlen(msg);
             res = globus_xio_driver_pass_write(
                 op, 
-                handle->write_iov,
+                &handle->auth_write_iov,
                 1, 
-                handle->write_iov[0].iov_len,
+                handle->auth_write_iov.iov_len,
                 globus_l_xio_gssapi_ftp_auth_server_write_cb,
                 handle);
             if(res != GLOBUS_SUCCESS)
@@ -1136,7 +1136,6 @@ globus_l_xio_gssapi_ftp_auth_server_write_cb(
     /* this is used to alter where we read, while doing auth we use
        an internal iov. once auth is complete we switch to the user
        iov and pass a final read */
-    globus_xio_iovec_t *                iov;
     globus_l_xio_gssapi_ftp_handle_t *  handle;
     globus_result_t                     res = GLOBUS_SUCCESS;
     GlobusXIOName(globus_l_xio_gssapi_ftp_auth_server_write_cb);
@@ -1155,7 +1154,7 @@ globus_l_xio_gssapi_ftp_auth_server_write_cb(
         }
 
         handle->write_posted = GLOBUS_FALSE;
-        globus_free(handle->write_iov[0].iov_base);
+        globus_free(handle->auth_write_iov.iov_base);
         switch(handle->state)
         {
             /* this case occurs when a bad command wasread when an auth
@@ -1176,7 +1175,6 @@ globus_l_xio_gssapi_ftp_auth_server_write_cb(
 
            case GSSAPI_FTP_STATE_SERVER_ADAT_REPLY:
                 handle->state = GSSAPI_FTP_STATE_OPEN;
-                iov = handle->read_iov;
                 break;
 
             case GSSAPI_FTP_STATE_SERVER_QUITING:
@@ -2180,6 +2178,12 @@ globus_l_xio_gssapi_ftp_client_read_cb(
     {
         globus_assert(handle->state == GSSAPI_FTP_STATE_OPEN);
 
+        handle->read_posted = GLOBUS_FALSE;
+        if(result != GLOBUS_SUCCESS)
+        {
+            res = result;
+        }
+
         send_buffer = (char *) handle->read_iov[0].iov_base;
         if(send_buffer[0] == '6')
         {
@@ -2191,7 +2195,6 @@ globus_l_xio_gssapi_ftp_client_read_cb(
             if(cmd_a == NULL)
             {
                 res = GlobusXIOGssapiFTPAllocError();
-                globus_mutex_unlock(&handle->mutex);
                 goto err;
             }
             ndx = 0;
@@ -2213,7 +2216,6 @@ globus_l_xio_gssapi_ftp_client_read_cb(
                 ndx += tmp_i;
                 globus_free(send_buffer);
             }
-            globus_free(handle->read_iov->iov_base);
             handle->read_iov->iov_base = out_buffer;
         }
         /* XXX: should this be an error */
@@ -2223,8 +2225,14 @@ globus_l_xio_gssapi_ftp_client_read_cb(
         }
         globus_xio_driver_finished_read(op, GLOBUS_SUCCESS, out_length);
     }
+    globus_mutex_unlock(&handle->mutex);
 
-   err:
+    return;
+
+ err:
+    globus_xio_driver_finished_read(op, res, out_length);
+    globus_mutex_unlock(&handle->mutex);
+
     return;
 }
 
@@ -2235,7 +2243,6 @@ globus_l_xio_gssapi_ftp_read(
     int                                 iovec_count,
     globus_xio_operation_t              op)
 {
-    globus_size_t                       out_length;
     globus_l_xio_gssapi_ftp_handle_t *  handle;
     globus_result_t                     res;
     GlobusXIOName(globus_l_xio_gssapi_ftp_read);
@@ -2252,14 +2259,18 @@ globus_l_xio_gssapi_ftp_read(
             goto err;
         }
 
+        /* should serialize */
         /* completely de const'ipating here */
         handle->read_iov = (globus_xio_iovec_t *) iovec; 
         if(handle->client)
         {
             if(handle->banner != NULL)
             {
+                iovec->iov_base = handle->banner;
+                iovec->iov_len = handle->banner_length;
                 globus_xio_driver_finished_read(
-                    op, GLOBUS_SUCCESS, out_length);
+                    op, GLOBUS_SUCCESS, handle->banner_length);
+                handle->banner = NULL;
             }
             else
             {
@@ -2270,6 +2281,10 @@ globus_l_xio_gssapi_ftp_read(
                     1,
                     globus_l_xio_gssapi_ftp_client_read_cb,
                     handle);
+                if(res != GLOBUS_SUCCESS)
+                {
+                    goto err;
+                }
                 handle->read_posted = GLOBUS_TRUE;
             }
         }
@@ -2282,11 +2297,11 @@ globus_l_xio_gssapi_ftp_read(
                 1,
                 globus_l_xio_gssapi_ftp_server_read_cb, 
                 handle);
+            if(res != GLOBUS_SUCCESS)
+            {
+                goto err;
+            }
             handle->read_posted = GLOBUS_TRUE;
-        }
-        if(res != GLOBUS_SUCCESS)
-        {
-            goto err;
         }
     }	
     globus_mutex_unlock(&handle->mutex);
