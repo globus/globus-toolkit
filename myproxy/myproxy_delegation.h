@@ -9,11 +9,11 @@
 #include "myproxy.h"
 
 int myproxy_get_delegation(
-myproxy_socket_attrs_t *socket_attrs,
+    myproxy_socket_attrs_t *socket_attrs,
     myproxy_request_t      *client_request,
-    char *certfile,
+    char                   *certfile,
     myproxy_response_t     *server_response,
-    char *outfile);
+    char                   *outfile);
 
 int myproxy_set_delegation_defaults(
     myproxy_socket_attrs_t *socket_attrs,
