@@ -10,7 +10,7 @@
  */
 
 #include "includes.h"
-RCSID("$OpenBSD: servconf.c,v 1.101 2002/02/04 12:15:25 markus Exp $");
+RCSID("$OpenBSD: servconf.c,v 1.109 2002/05/15 21:02:52 markus Exp $");
 
 #if defined(KRB4)
 #include <krb.h>
@@ -45,6 +45,8 @@ static void add_one_listen_addr(ServerOptions *, char *, u_short);
 
 /* AF_UNSPEC or AF_INET or AF_INET6 */
 extern int IPv4or6;
+/* Use of privilege separation or not */
+extern int use_privsep;
 
 /* Initializes the server options to their default values. */
 
@@ -125,6 +127,9 @@ initialize_server_options(ServerOptions *options)
 	options->client_alive_count_max = -1;
 	options->authorized_keys_file = NULL;
 	options->authorized_keys_file2 = NULL;
+
+	/* Needs to be accessable in many places */
+	use_privsep = -1;
 }
 
 void
@@ -211,7 +216,7 @@ fill_default_server_options(ServerOptions *options)
 #endif
 #if defined(KRB4) || defined(KRB5)
 	if (options->kerberos_authentication == -1)
-		options->kerberos_authentication = (access(KEYFILE, R_OK) == 0);
+		options->kerberos_authentication = 0;
 	if (options->kerberos_or_local_passwd == -1)
 		options->kerberos_or_local_passwd = 1;
 	if (options->kerberos_ticket_cleanup == -1)
@@ -223,7 +228,7 @@ fill_default_server_options(ServerOptions *options)
 #endif
 #ifdef AFS
 	if (options->afs_token_passing == -1)
-		options->afs_token_passing = k_hasafs();
+		options->afs_token_passing = 0;
 #endif
 	if (options->password_authentication == -1)
 		options->password_authentication = 1;
@@ -260,6 +265,10 @@ fill_default_server_options(ServerOptions *options)
 	}
 	if (options->authorized_keys_file == NULL)
 		options->authorized_keys_file = _PATH_SSH_USER_PERMITTED_KEYS;
+
+	/* Turn privilege separation _off_ by default */
+	if (use_privsep == -1)
+		use_privsep = 0;
 }
 
 /* Keyword tokens. */
@@ -295,6 +304,7 @@ typedef enum {
 	sBanner, sVerifyReverseMapping, sHostbasedAuthentication,
 	sHostbasedUsesNameFromPacketOnly, sClientAliveInterval,
 	sClientAliveCountMax, sAuthorizedKeysFile, sAuthorizedKeysFile2,
+	sUsePrivilegeSeparation,
 	sDeprecated
 } ServerOpCodes;
 
@@ -377,6 +387,7 @@ static struct {
 	{ "clientalivecountmax", sClientAliveCountMax },
 	{ "authorizedkeysfile", sAuthorizedKeysFile },
 	{ "authorizedkeysfile2", sAuthorizedKeysFile2 },
+	{ "useprivilegeseparation", sUsePrivilegeSeparation},
 	{ NULL, sBadOption }
 };
 
@@ -765,6 +776,10 @@ parse_flag:
 
 	case sAllowTcpForwarding:
 		intptr = &options->allow_tcp_forwarding;
+		goto parse_flag;
+
+	case sUsePrivilegeSeparation:
+		intptr = &use_privsep;
 		goto parse_flag;
 
 	case sAllowUsers:

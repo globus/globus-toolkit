@@ -13,7 +13,7 @@
  */
 
 #include "includes.h"
-RCSID("$OpenBSD: sshconnect1.c,v 1.48 2002/02/11 16:15:46 markus Exp $");
+RCSID("$OpenBSD: sshconnect1.c,v 1.50 2002/04/21 16:25:06 stevesk Exp $");
 
 #include <openssl/bn.h>
 #include <openssl/md5.h>
@@ -473,6 +473,8 @@ try_krb4_authentication(void)
 
 		/* Get server's response. */
 		reply = packet_get_string((u_int *) &auth.length);
+		if (auth.length >= MAX_KTXT_LEN)
+			fatal("Kerberos v4: Malformed response from server");
 		memcpy(auth.dat, reply, auth.length);
 		xfree(reply);
 
@@ -900,7 +902,7 @@ try_challenge_response_authentication(void)
 			error("Permission denied, please try again.");
 		if (options.cipher == SSH_CIPHER_NONE)
 			log("WARNING: Encryption is disabled! "
-			    "Reponse will be transmitted in clear text.");
+			    "Response will be transmitted in clear text.");
 		response = read_passphrase(prompt, 0);
 		if (strcmp(response, "") == 0) {
 			xfree(response);
@@ -1658,14 +1660,11 @@ ssh_userauth1(const char *local_user, const char *server_user, char *host,
           newname = (char *) malloc(strlen(retname) + strlen(server_user) + 4);
           if (newname) {
             strcpy(newname, server_user);
-            if(options.user == NULL)
-              {
+            if(options.implicit) {
                 strcat(newname,":i:");
-              }
-            else
-              {
+	    } else {
                 strcat(newname,":x:");
-              }
+	    }
             strcat(newname, retname);
             server_user = newname;
             free(retname);

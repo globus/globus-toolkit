@@ -13,6 +13,7 @@
  * called by a name other than "ssh" or "Secure Shell".
  *
  * Copyright (c) 1999 Niels Provos.  All rights reserved.
+ * Copyright (c) 2000, 2001, 2002 Markus Friedl.  All rights reserved.
  *
  * Modified to work with SSL by Niels Provos <provos@citi.umich.edu>
  * in Canada (German citizen).
@@ -39,7 +40,7 @@
  */
 
 #include "includes.h"
-RCSID("$OpenBSD: ssh.c,v 1.164 2002/02/14 23:28:00 markus Exp $");
+RCSID("$OpenBSD: ssh.c,v 1.170 2002/04/22 21:04:52 markus Exp $");
 
 #include <openssl/evp.h>
 #include <openssl/err.h>
@@ -70,7 +71,6 @@ RCSID("$OpenBSD: ssh.c,v 1.164 2002/02/14 23:28:00 markus Exp $");
 #include "sshtty.h"
 
 #ifdef SMARTCARD
-#include <openssl/engine.h>
 #include "scard.h"
 #endif
 
@@ -145,6 +145,9 @@ Buffer command;
 
 /* Should we execute a command or invoke a subsystem? */
 int subsystem_flag = 0;
+
+/* # of replies received for global requests */
+static int client_global_request_id = 0;
 
 /* Prints a help message to the user.  This function never returns. */
 
@@ -476,7 +479,7 @@ again:
 				/* NOTREACHED */
 			}
 			if ((fwd_port = a2port(sfwd_port)) == 0 ||
-	  		    (fwd_host_port = a2port(sfwd_host_port)) == 0) {
+			    (fwd_host_port = a2port(sfwd_host_port)) == 0) {
 				fprintf(stderr,
 				    "Bad forwarding port(s) '%s'\n", optarg);
 				exit(1);
@@ -634,8 +637,11 @@ again:
 
 	seed_rng();
 
-	if (options.user == NULL)
-		options.user = xstrdup(pw->pw_name);
+        if (options.user == NULL) {
+                options.user = xstrdup(pw->pw_name);
+                options.implicit = 1;
+        }
+        else options.implicit = 0;
 
 	if (options.hostname != NULL)
 		host = options.hostname;
@@ -1042,6 +1048,27 @@ client_subsystem_reply(int type, u_int32_t seq, void *ctxt)
 		    len, (u_char *)buffer_ptr(&command), id);
 }
 
+void
+client_global_request_reply(int type, u_int32_t seq, void *ctxt)
+{
+	int i;
+
+	i = client_global_request_id++;
+	if (i >= options.num_remote_forwards) {
+		debug("client_global_request_reply: too many replies %d > %d",
+		    i, options.num_remote_forwards);
+		return;
+	}
+	debug("remote forward %s for: listen %d, connect %s:%d",
+	    type == SSH2_MSG_REQUEST_SUCCESS ? "success" : "failure",
+	    options.remote_forwards[i].port,
+	    options.remote_forwards[i].host,
+	    options.remote_forwards[i].host_port);
+	if (type == SSH2_MSG_REQUEST_FAILURE)
+		log("Warning: remote port forwarding failed for listen port %d",
+		    options.remote_forwards[i].port);
+}
+
 /* request pty/x11/agent/tcpfwd/shell for channel */
 static void
 ssh_session2_setup(int id, void *arg)
@@ -1188,40 +1215,29 @@ static void
 load_public_identity_files(void)
 {
 	char *filename;
-	Key *public;
 	int i = 0;
-
+	Key *public;
 #ifdef SMARTCARD
+	Key **keys;
+
 	if (options.smartcard_device != NULL &&
-	    options.num_identity_files + 1 < SSH_MAX_IDENTITY_FILES &&
-	    (public = sc_get_key(options.smartcard_device)) != NULL ) {
-		Key *new;
-
-		if (options.num_identity_files + 2 > SSH_MAX_IDENTITY_FILES)
-			options.num_identity_files = SSH_MAX_IDENTITY_FILES - 2;
-		memmove(&options.identity_files[2], &options.identity_files[0],
-		    sizeof(char *) * options.num_identity_files);
-		options.num_identity_files += 2;
-		i = 2;
-
-		/* XXX ssh1 vs ssh2 */
-		new = key_new(KEY_RSA);
-		new->flags = KEY_FLAG_EXT;
-		BN_copy(new->rsa->n, public->rsa->n);
-		BN_copy(new->rsa->e, public->rsa->e);
-		RSA_set_method(new->rsa, sc_get_engine());
-		options.identity_keys[0] = new;
-		options.identity_files[0] = xstrdup("smartcard rsa key");;
-
-		new = key_new(KEY_RSA1);
-		new->flags = KEY_FLAG_EXT;
-		BN_copy(new->rsa->n, public->rsa->n);
-		BN_copy(new->rsa->e, public->rsa->e);
-		RSA_set_method(new->rsa, sc_get_engine());
-		options.identity_keys[1] = new;
-		options.identity_files[1] = xstrdup("smartcard rsa1 key");
-
-		key_free(public);
+	    options.num_identity_files < SSH_MAX_IDENTITY_FILES &&
+	    (keys = sc_get_keys(options.smartcard_device, NULL)) != NULL ) {
+		int count = 0;
+		for (i = 0; keys[i] != NULL; i++) {
+			count++;
+			memmove(&options.identity_files[1], &options.identity_files[0],
+			    sizeof(char *) * (SSH_MAX_IDENTITY_FILES - 1));
+			memmove(&options.identity_keys[1], &options.identity_keys[0],
+			    sizeof(Key *) * (SSH_MAX_IDENTITY_FILES - 1));
+			options.num_identity_files++;
+			options.identity_keys[0] = keys[i];
+			options.identity_files[0] = xstrdup("smartcard key");;
+		}
+		if (options.num_identity_files > SSH_MAX_IDENTITY_FILES)
+			options.num_identity_files = SSH_MAX_IDENTITY_FILES;
+		i = count;
+		xfree(keys);
 	}
 #endif /* SMARTCARD */
 	for (; i < options.num_identity_files; i++) {

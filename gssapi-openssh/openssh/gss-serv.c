@@ -44,6 +44,7 @@
 #include "dispatch.h"
 #include "servconf.h"
 #include "compat.h"
+#include "misc.h"
 
 #include "ssh-gss.h"
 
@@ -266,10 +267,8 @@ ssh_gssapi_gsi_userok(char *name)
     authorized = (globus_gss_assist_userok(gssapi_client_name.value,
 					   name) == 0);
     
-    debug("GSI user %s is%s authorized as target user %s",
-	  (char *) gssapi_client_name.value,
-	  (authorized ? "" : " not"),
-	  name);
+    log("GSI user %s is%s authorized as target user %s",
+	(char *) gssapi_client_name.value, (authorized ? "" : " not"), name);
     
     return authorized;
 }
@@ -597,6 +596,24 @@ input_gssapi_exchange_complete(int type, u_int32_t plen, void *ctxt)
 	Authctxt *authctxt = ctxt;
 	Gssctxt *gssctxt;
 	int authenticated;
+
+    	if(strcmp(authctxt->user,"") == 0) {
+        	char *user;
+        	char *gridmapped_name = NULL;
+        	struct passwd *pw = NULL;
+        	if(globus_gss_assist_gridmap(gssapi_client_name.value,
+                           &gridmapped_name) == 0) {
+               		user = gridmapped_name;
+               		debug("I gridmapped and got %s", user);
+               		pw = getpwnam(user);
+               		if (pw && allowed_user(pw)) {
+                     		authctxt->user = user;
+                     		authctxt->pw = pwcopy(pw);
+                     		authctxt->valid = 1;
+               		}
+        	}
+    	}
+
 	
 	if (authctxt == NULL || authctxt->methoddata == NULL)
 		fatal("No authentication or GSSAPI context");
@@ -641,6 +658,10 @@ input_gssapi_exchange_complete(int type, u_int32_t plen, void *ctxt)
 			packet_send();
 			packet_write_wait();
 			gss_release_buffer(&min_status,&msg_tok);
+		} else {
+		    packet_start(SSH_MSG_AUTH_GSSAPI_ABORT);
+		    packet_send();
+		    packet_write_wait();
 		}
 	}
 

@@ -23,7 +23,7 @@
  */
 
 #include "includes.h"
-RCSID("$OpenBSD: auth2.c,v 1.85 2002/02/24 19:14:59 markus Exp $");
+RCSID("$OpenBSD: auth2.c,v 1.91 2002/05/13 02:37:39 itojun Exp $");
 
 #include <openssl/evp.h>
 
@@ -48,13 +48,19 @@ RCSID("$OpenBSD: auth2.c,v 1.85 2002/02/24 19:14:59 markus Exp $");
 #include "pathnames.h"
 #include "uidswap.h"
 #include "auth-options.h"
-#include "misc.h"
 #include "hostfile.h"
 #include "canohost.h"
 #include "match.h"
+#include "monitor_wrap.h"
+#include "atomicio.h"
 
 #ifdef GSSAPI
 #include "ssh-gss.h"
+#ifdef GSI
+#include "globus_gss_assist.h"
+char* olduser;
+int  changeuser = 0;
+#endif
 #endif
 
 /* import */
@@ -62,7 +68,7 @@ extern ServerOptions options;
 extern u_char *session_id2;
 extern int session_id2_len;
 
-static Authctxt	*x_authctxt = NULL;
+Authctxt *x_authctxt = NULL;
 static int one = 1;
 
 typedef struct Authmethod Authmethod;
@@ -80,8 +86,8 @@ static void input_userauth_request(int, u_int32_t, void *);
 /* helper */
 static Authmethod *authmethod_lookup(const char *);
 static char *authmethods_get(void);
-static int user_key_allowed(struct passwd *, Key *);
-static int hostbased_key_allowed(struct passwd *, const char *, char *, Key *);
+int user_key_allowed(struct passwd *, Key *);
+int hostbased_key_allowed(struct passwd *, const char *, char *, Key *);
 
 /* auth */
 static void userauth_banner(void);
@@ -127,7 +133,7 @@ Authmethod authmethods[] = {
  * loop until authctxt->success == TRUE
  */
 
-void
+Authctxt *
 do_authentication2(void)
 {
 	Authctxt *authctxt = authctxt_new();
@@ -139,11 +145,14 @@ do_authentication2(void)
 		options.kbd_interactive_authentication = 1;
 	if (options.pam_authentication_via_kbd_int)
 		options.kbd_interactive_authentication = 1;
+	if (use_privsep)
+		options.pam_authentication_via_kbd_int = 0;
 
 	dispatch_init(&dispatch_protocol_error);
 	dispatch_set(SSH2_MSG_SERVICE_REQUEST, &input_service_request);
 	dispatch_run(DISPATCH_BLOCK, &authctxt->success, authctxt);
-	do_authenticated(authctxt);
+
+	return (authctxt);
 }
 
 static void
@@ -193,6 +202,44 @@ input_userauth_request(int type, u_int32_t seq, void *ctxt)
 	user = packet_get_string(NULL);
 	service = packet_get_string(NULL);
 	method = packet_get_string(NULL);
+
+#ifdef GSSAPI
+#ifdef GSI
+        if(changeuser == 0 && (strcmp(method,"external-keyx") == 0 || strcmp(method,"gssapi") ==0) && strcmp(user,"") == 0) {
+                char *gridmapped_name = NULL;
+                struct passwd *pw = NULL;
+                if(globus_gss_assist_gridmap(gssapi_client_name.value,
+                                     &gridmapped_name) == 0) {
+                        user = gridmapped_name;
+                        debug("I gridmapped and got %s", user);
+                        pw = getpwnam(user);
+                        if (pw && allowed_user(pw)) {
+                                olduser = authctxt->user;
+                                authctxt->user = user;
+                                authctxt->pw = pwcopy(pw);
+                                authctxt->valid = 1;
+                                changeuser = 1;
+                        }
+
+                } else {
+                debug("I gridmapped and got null, reverting to %s", authctxt->user);
+                user = authctxt->user;
+                }
+        }
+        else if(changeuser) {
+                struct passwd *pw = NULL;
+                pw = getpwnam(user);
+                if (pw && allowed_user(pw)) {
+                        authctxt->user = olduser;
+                        authctxt->pw = pwcopy(pw);
+                        authctxt->valid = 1;
+                        changeuser = 0;
+                }
+        }
+
+#endif  /* GSI */
+#endif /* GSSAPI */
+
 	debug("userauth-request for user %s service %s method %s", user, service, method);
 	debug("attempt %d failures %d", authctxt->attempt, authctxt->failures);
 
@@ -201,25 +248,26 @@ input_userauth_request(int type, u_int32_t seq, void *ctxt)
 
 	if (authctxt->attempt++ == 0) {
 		/* setup auth context */
-		struct passwd *pw = NULL;
-		pw = getpwnam(user);
-		if (pw && allowed_user(pw) && strcmp(service, "ssh-connection")==0) {
-			authctxt->pw = pwcopy(pw);
+		authctxt->pw = PRIVSEP(getpwnamallow(user));
+		if (authctxt->pw && strcmp(service, "ssh-connection")==0) {
 			authctxt->valid = 1;
 			debug2("input_userauth_request: setting up authctxt for %s", user);
 #ifdef USE_PAM
-			start_pam(pw->pw_name);
+			PRIVSEP(start_pam(authctxt->pw->pw_name));
 #endif
 		} else {
 			log("input_userauth_request: illegal user %s", user);
 #ifdef USE_PAM
-			start_pam("NOUSER");
+			PRIVSEP(start_pam("NOUSER"));
 #endif
 		}
-		setproctitle("%s", pw ? user : "unknown");
+		setproctitle("%s%s", authctxt->pw ? user : "unknown",
+		    use_privsep ? " [net]" : "");
 		authctxt->user = xstrdup(user);
 		authctxt->service = xstrdup(service);
 		authctxt->style = style ? xstrdup(style) : NULL;
+		if (use_privsep)
+			mm_inform_authserv(service, style);
 	} else if (strcmp(user, authctxt->user) != 0 ||
 	    strcmp(service, authctxt->service) != 0) {
 		packet_disconnect("Change of username or service not allowed: "
@@ -264,8 +312,8 @@ userauth_finish(Authctxt *authctxt, int authenticated, char *method)
 		authenticated = 0;
 
 #ifdef USE_PAM
-	if (authenticated && authctxt->user && !do_pam_account(authctxt->user,
-	    NULL))
+	if (!use_privsep && authenticated && authctxt->user && 
+	    !do_pam_account(authctxt->user, NULL))
 		authenticated = 0;
 #endif /* USE_PAM */
 
@@ -299,6 +347,16 @@ userauth_finish(Authctxt *authctxt, int authenticated, char *method)
 #endif /* WITH_AIXAUTHENTICATE */
 			packet_disconnect(AUTH_FAIL_MSG, authctxt->user);
 		}
+		if (!compat20) {
+		/*
+		 * Break out of the dispatch loop now and go back to
+	         * SSH1 code.  We need to set the 'success' flag to
+	         * break out of the loop.  Set the 'postponed' flag to
+	         * tell the SSH1 code that authentication failed.  The
+	         * SSH1 code will handle sending SSH_SMSG_FAILURE.
+		*/
+		authctxt->success = authctxt->postponed = 1;
+		} else {
 		methods = authmethods_get();
 		if (!compat20)
 		packet_disconnect("GSSAPI authentication failed");
@@ -309,28 +367,49 @@ userauth_finish(Authctxt *authctxt, int authenticated, char *method)
 		packet_send();
 		packet_write_wait();
 		xfree(methods);
+		}
 	}
 }
 
-static void
-userauth_banner(void)
+char *
+auth2_read_banner(void)
 {
 	struct stat st;
 	char *banner = NULL;
 	off_t len, n;
 	int fd;
 
-	if (options.banner == NULL || (datafellows & SSH_BUG_BANNER))
-		return;
-	if ((fd = open(options.banner, O_RDONLY)) < 0)
-		return;
-	if (fstat(fd, &st) < 0)
-		goto done;
+	if ((fd = open(options.banner, O_RDONLY)) == -1)
+		return (NULL);
+	if (fstat(fd, &st) == -1) {
+		close(fd);
+		return (NULL);
+	}
 	len = st.st_size;
 	banner = xmalloc(len + 1);
-	if ((n = read(fd, banner, len)) < 0)
-		goto done;
+	n = atomicio(read, fd, banner, len);
+	close(fd);
+
+	if (n != len) {
+		free(banner);
+		return (NULL);
+	}
 	banner[n] = '\0';
+	
+	return (banner);
+}
+
+static void
+userauth_banner(void)
+{
+	char *banner = NULL;
+
+	if (options.banner == NULL || (datafellows & SSH_BUG_BANNER))
+		return;
+
+	if ((banner = PRIVSEP(auth2_read_banner())) == NULL)
+		goto done;
+
 	packet_start(SSH2_MSG_USERAUTH_BANNER);
 	packet_put_cstring(banner);
 	packet_put_cstring("");		/* language, unused */
@@ -339,7 +418,6 @@ userauth_banner(void)
 done:
 	if (banner)
 		xfree(banner);
-	close(fd);
 	return;
 }
 
@@ -360,13 +438,7 @@ userauth_none(Authctxt *authctxt)
 	if (check_nt_auth(1, authctxt->pw) == 0)
 		return(0);
 #endif
-#ifdef USE_PAM
-	return auth_pam_password(authctxt->pw, "");
-#elif defined(HAVE_OSF_SIA)
-	return 0;
-#else /* !HAVE_OSF_SIA && !USE_PAM */
-	return auth_password(authctxt, "");
-#endif /* USE_PAM */
+	return PRIVSEP(auth_password(authctxt, ""));
 }
 
 static int
@@ -385,13 +457,7 @@ userauth_passwd(Authctxt *authctxt)
 #ifdef HAVE_CYGWIN
 	    check_nt_auth(1, authctxt->pw) &&
 #endif
-#ifdef USE_PAM
-	    auth_pam_password(authctxt->pw, password) == 1)
-#elif defined(HAVE_OSF_SIA)
-	    auth_sia_password(authctxt->user, password) == 1)
-#else /* !USE_PAM && !HAVE_OSF_SIA */
-	    auth_password(authctxt, password) == 1)
-#endif /* USE_PAM */
+	    PRIVSEP(auth_password(authctxt, password)) == 1)
 		authenticated = 1;
 	memset(password, 0, len);
 	xfree(password);
@@ -500,8 +566,10 @@ userauth_pubkey(Authctxt *authctxt)
 		buffer_dump(&b);
 #endif
 		/* test for correct signature */
-		if (user_key_allowed(authctxt->pw, key) &&
-		    key_verify(key, sig, slen, buffer_ptr(&b), buffer_len(&b)) == 1)
+		authenticated = 0;
+		if (PRIVSEP(user_key_allowed(authctxt->pw, key)) &&
+		    PRIVSEP(key_verify(key, sig, slen, buffer_ptr(&b),
+				buffer_len(&b))) == 1)
 			authenticated = 1;
 		buffer_clear(&b);
 		xfree(sig);
@@ -517,7 +585,7 @@ userauth_pubkey(Authctxt *authctxt)
 		 * if a user is not allowed to login. is this an
 		 * issue? -markus
 		 */
-		if (user_key_allowed(authctxt->pw, key)) {
+		if (PRIVSEP(user_key_allowed(authctxt->pw, key))) {
 			packet_start(SSH2_MSG_USERAUTH_PK_OK);
 			packet_put_string(pkalg, alen);
 			packet_put_string(pkblob, blen);
@@ -605,8 +673,10 @@ userauth_hostbased(Authctxt *authctxt)
 	buffer_dump(&b);
 #endif
 	/* test for allowed key and correct signature */
-	if (hostbased_key_allowed(authctxt->pw, cuser, chost, key) &&
-	    key_verify(key, sig, slen, buffer_ptr(&b), buffer_len(&b)) == 1)
+	authenticated = 0;
+	if (PRIVSEP(hostbased_key_allowed(authctxt->pw, cuser, chost, key)) &&
+	    PRIVSEP(key_verify(key, sig, slen, buffer_ptr(&b),
+			buffer_len(&b))) == 1)
 		authenticated = 1;
 
 	buffer_clear(&b);
@@ -763,7 +833,7 @@ user_key_allowed2(struct passwd *pw, Key *key, char *file)
 }
 
 /* check whether given key is in .ssh/authorized_keys* */
-static int
+int
 user_key_allowed(struct passwd *pw, Key *key)
 {
 	int success;
@@ -783,7 +853,7 @@ user_key_allowed(struct passwd *pw, Key *key)
 }
 
 /* return 1 if given hostkey is allowed */
-static int
+int
 hostbased_key_allowed(struct passwd *pw, const char *cuser, char *chost,
     Key *key)
 {
