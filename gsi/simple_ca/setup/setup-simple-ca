@@ -265,7 +265,7 @@ while test -z "${got_subject}" ; do
     echo ""
 
     if test -n "${noint}" || test -n "${request_subject}"; then
-        split_subject "${request_subject:-casubject}"
+        split_subject "${request_subject:-${casubject}}"
         if test $? -eq 0; then
             got_subject="yes"
         else
