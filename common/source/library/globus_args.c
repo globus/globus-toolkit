@@ -272,7 +272,6 @@ globus_args_scan(
     char *                  my_arg;
     int                     len;
     int                     i;
-    char                    buf[40];
     char **                 alias;
     char **                 arglist;
     globus_fifo_t           fifo;
@@ -455,7 +454,8 @@ globus_args_scan(
 	    *argc -= my_argc - 1;
 	}
     }
-
+    
+    globus_fifo_destroy(&fifo);
     globus_mutex_unlock(&args_mutex);
     return rc;
 }
@@ -477,20 +477,17 @@ void
 globus_args_option_instance_list_free( globus_list_t **  list )
 {
     globus_args_option_instance_t  *   t;
-    globus_list_t                  *   rest;
     
-    for ( rest=*list;
-	  !globus_list_empty(rest);
-	  rest=globus_list_rest(rest) )
+    while(!globus_list_empty(*list))
     {
-	t = (globus_args_option_instance_t *) globus_list_first(rest);
+        t = (globus_args_option_instance_t *)
+            globus_list_remove(list, *list);
 	globus_assert(t);
 	if (t->values)
 	    free( t->values );
+	globus_free(t);
+        
     }
-
-    globus_list_free( *list );
-    *list = GLOBUS_NULL;
     
     return;
 }
