@@ -704,9 +704,8 @@ globus_l_xio_register_writev(
     {
         if(handle->state != GLOBUS_XIO_HANDLE_STATE_OPEN)
         {
-            globus_mutex_unlock(&handle->context->mutex);
             res = GlobusXIOErrorInvalidState(handle->state);
-            goto err;
+            goto bad_state_err;
         }
 
         /* register timeout */
@@ -736,7 +735,7 @@ globus_l_xio_register_writev(
         op->_op_wait_for, globus_i_xio_read_write_callback, (void *)NULL);
     if(res != GLOBUS_SUCCESS)
     {
-        goto err;
+        goto pass_err;
     }
 
     globus_mutex_lock(&handle->context->mutex);
@@ -757,7 +756,7 @@ globus_l_xio_register_writev(
     GlobusXIODebugInternalExit();
     return GLOBUS_SUCCESS;
 
-  err:
+  pass_err:
 
     globus_mutex_lock(&handle->context->mutex);
     {
@@ -787,6 +786,7 @@ globus_l_xio_register_writev(
             globus_assert(!destroy_handle);
         }
     }
+  bad_state_err:
     globus_mutex_unlock(&handle->context->mutex);
 
     GlobusXIODebugInternalExitWithError();
