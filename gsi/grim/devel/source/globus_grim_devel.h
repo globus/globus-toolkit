@@ -95,7 +95,7 @@
 #define GLOBUS_GRIM_DEFAULT_KEY_FILENAME  "/etc/grid-security/hostkey.pem"
 #define GLOBUS_GRIM_DEFAULT_CERT_FILENAME "/etc/grid-security/hostcert.pem"
 #define GLOBUS_GRIM_DEFAULT_PORT_TYPE_FILENAME  \
-                                          "/etc/grid-security/port_type.xml"
+                                          "/etc/grid-security/grim-port-type.xml"
 #define GLOBUS_GRIM_DEFAULT_CONF_FILENAME "/etc/grid-security/grim-conf.xml"
 #define GLOBUS_GRIM_DEFAULT_MAX_TIME      24*60
 #define GLOBUS_GRIM_DEFAULT_TIME          12*60
