@@ -649,7 +649,7 @@ globus_i_gfs_config_display_usage()
         }
         if(o->long_cmdline_option)
         {
-            printf(" --%s,", o->long_cmdline_option);
+            printf(" -%s,", o->long_cmdline_option);
         }
         if(o->env_var_option)
         {
@@ -657,8 +657,10 @@ globus_i_gfs_config_display_usage()
         }
         printf("\n");
     }
-    printf("\nAny FLAG can be negated by prepending --no or -n on the "
-        "commandline or setting a value of 0 in the config file.\n\n");
+    printf("\nAny FLAG can be negated by prepending '-no-' or '-n' to the "
+        "command line option or setting a value of 0 in the config file.\n\n");
+    printf("Check http://www-unix.globus.org/toolkit/docs/development/3.9.3/data/gridftp/ "
+        "for more in-depth documentation.\n\n");
 
     return; 
 }
