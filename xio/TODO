@@ -10,3 +10,5 @@ drivers should take globus_url_t instead of string contact string
 
 need clean method of getting contact string
 
+system code needs to handle EBADF and find offending fd and cancel op
+
