@@ -1188,7 +1188,7 @@ globus_l_gass_cache_lock_file(
     strcat(lock_file, GLOBUS_L_GASS_CACHE_LOCK_EXT);
     globus_libc_gethostname(hname,sizeof(hname));
 
-    globus_libc_sprintf(uniq_lock_file,"%s_%s_%ld:%ld",
+    globus_libc_sprintf(uniq_lock_file,"%s_%s_%ld_%ld",
 			lock_file,
 			hname,
 			(long) globus_libc_getpid(),
@@ -1397,7 +1397,7 @@ globus_l_gass_cache_unlock_file(
     /* !!! need to handle multi threaded !!! */
     globus_libc_gethostname(hname,sizeof(hname));
 
-    globus_libc_sprintf(uniq_lock_file,"%s_%s_%ld:%ld",
+    globus_libc_sprintf(uniq_lock_file,"%s_%s_%ld_%ld",
 			lock_file,
 			hname,
 			(long) globus_libc_getpid(),
