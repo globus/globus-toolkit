@@ -2150,7 +2150,7 @@ globus_gass_cache_add(globus_gass_cache_t *cache_handle,
 	       }
 	       strcpy( entry_found_pt->lock_tag, tag);
 	       
-	       /* prepare to unlock the datafile */
+	       /* prepare to lock the datafile */
 	       /* do it before I write the state file */
 	       /* wich also free entry_found_pt */
 	       strcpy(notready_file_path,
