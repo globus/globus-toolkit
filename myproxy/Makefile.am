@@ -15,6 +15,7 @@ LibSources= \
 	gnu_getopt_long.c \
 	gsi_socket.c \
 	gsi_socket.h \
+	gssapi.c \
 	myproxy.c \
 	myproxy.h \
 	myproxy_authorization.c \
@@ -34,6 +35,8 @@ LibSources= \
 	myproxy_sasl_server.c \
 	myproxy_server.h \
 	myproxy_server_config.c \
+	plugin_common.c \
+	plugin_common.h \
 	ssl_utils.c \
 	ssl_utils.h \
 	string_funcs.c \
@@ -139,18 +142,30 @@ myproxy_admin_change_pass_LDADD = $(GPT_PGM_LINKS) ./libmyproxy_$(GLOBUS_FLAVOR_
 
 sysconf_DATA = myproxy-server.config
 
-pkgdata_DATA = README INSTALL LICENSE VERSION PROTOCOL \
+pkgdata_DATA = README INSTALL LICENSE LICENSE.sasl VERSION PROTOCOL \
                etc.services.modifications etc.inetd.conf.modifications \
                myproxy.cron \
                etc.init.d.myproxy etc.xinetd.myproxy myproxy-passphrase-policy
 
-EXTRA_DIST = $(Scripts) LICENSE VERSION PROTOCOL myproxy-server.config \
+EXTRA_DIST = $(Scripts) LICENSE LICENSE.sasl VERSION PROTOCOL \
+               myproxy-server.config \
                etc.services.modifications etc.inetd.conf.modifications \
                myproxy.cron \
                etc.init.d.myproxy etc.xinetd.myproxy myproxy-passphrase-policy
 
 dirt.sh:
 	touch dirt.sh
+
+config.h:
+	touch config.h
+
+KRB5CPPFLAGS = @KRB5CPPFLAGS@
+
+gssapi.lo: gssapi.c plugin_common.h config.h
+	$(LIBTOOL) --mode=compile $(CC) $(DEFS) $(KRB5CPPFLAGS) $(CFLAGS) -c gssapi.c
+
+plugin_common.lo: plugin_common.c plugin_common.h config.h
+	$(LIBTOOL) --mode=compile $(CC) $(DEFS) $(KRB5CPPFLAGS) $(CFLAGS) -c plugin_common.c
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top
