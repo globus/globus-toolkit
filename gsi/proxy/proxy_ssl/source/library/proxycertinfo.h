@@ -48,9 +48,12 @@ EXTERN_C_BEGIN
  * maintaining information about proxy certificates.
  */
 
-#define PROXYCERTINFO_OID               "1.3.6.1.4.1.3536.1.222"
+#define PROXYCERTINFO_OLD_OID           "1.3.6.1.4.1.3536.1.222"
+#define PROXYCERTINFO_OID               "1.3.6.1.5.5.7.1.14"
 #define PROXYCERTINFO_SN                "PROXYCERTINFO"
 #define PROXYCERTINFO_LN                "Proxy Certificate Info Extension"
+#define PROXYCERTINFO_OLD_SN            "OLD_PROXYCERTINFO"
+#define PROXYCERTINFO_OLD_LN                "Proxy Certificate Info Extension (old OID)"
 
 /**
  * Used for error checking
@@ -147,7 +150,18 @@ PROXYCERTINFO * d2i_PROXYCERTINFO(
     unsigned char **                    a,
     long                                length);
 
+int i2d_PROXYCERTINFO_OLD(
+    PROXYCERTINFO *                     cert_info,
+    unsigned char **                    a);
+
+PROXYCERTINFO * d2i_PROXYCERTINFO_OLD(
+    PROXYCERTINFO **                    cert_info,
+    unsigned char **                    a,
+    long                                length);
+
 X509V3_EXT_METHOD * PROXYCERTINFO_x509v3_ext_meth();
+
+X509V3_EXT_METHOD * PROXYCERTINFO_OLD_x509v3_ext_meth();
 
 STACK_OF(CONF_VALUE) * i2v_PROXYCERTINFO(
     struct v3_ext_method *              method,

@@ -55,7 +55,9 @@ globus_l_openssl_activate(void)
 {
     int                                 i;
     int                                 pci_NID;
+    int                                 pci_old_NID;
     X509V3_EXT_METHOD *                 pci_x509v3_ext_meth = NULL;
+    X509V3_EXT_METHOD *                 pci_old_x509v3_ext_meth = NULL;
     
     globus_module_activate(GLOBUS_COMMON_MODULE);
     globus_module_activate(GLOBUS_GSI_OPENSSL_ERROR_MODULE);
@@ -68,6 +70,10 @@ globus_l_openssl_activate(void)
 
     CRYPTO_set_locking_callback(globus_l_openssl_locking_cb);
     CRYPTO_set_id_callback(globus_l_openssl_thread_id);
+
+    OBJ_create(ANY_LANGUAGE_OID,
+               ANY_LANGUAGE_SN,
+               ANY_LANGUAGE_LN);
 
     OBJ_create(IMPERSONATION_PROXY_OID,
                IMPERSONATION_PROXY_SN,
@@ -83,12 +89,19 @@ globus_l_openssl_activate(void)
     
     pci_NID = OBJ_create(PROXYCERTINFO_OID,PROXYCERTINFO_SN,PROXYCERTINFO_LN);
 
+    pci_old_NID = OBJ_create(PROXYCERTINFO_OLD_OID,
+                             PROXYCERTINFO_OLD_SN,
+                             PROXYCERTINFO_OLD_LN);
+
     pci_x509v3_ext_meth = PROXYCERTINFO_x509v3_ext_meth();
+    pci_old_x509v3_ext_meth = PROXYCERTINFO_OLD_x509v3_ext_meth();
 
     /* this sets the pci NID in the static X509V3_EXT_METHOD struct */
     pci_x509v3_ext_meth->ext_nid = pci_NID;
+    pci_old_x509v3_ext_meth->ext_nid = pci_old_NID;
     
     X509V3_EXT_add(pci_x509v3_ext_meth);
+    X509V3_EXT_add(pci_old_x509v3_ext_meth);
     
     return GLOBUS_SUCCESS;
 }

@@ -503,13 +503,13 @@ globus_gsi_proxy_inquire_req(
     PROXYPOLICY *                       policy = NULL;
     ASN1_OBJECT *                       policy_lang = NULL;
     ASN1_OBJECT *                       extension_oid = NULL;
-    ASN1_OCTET_STRING *                 ext_data = NULL;
     int                                 policy_nid;
     int                                 pci_NID;
+    int                                 pci_old_NID;
+    int                                 nid;
     int                                 i;
     STACK_OF(X509_EXTENSION) *          req_extensions = NULL;
     X509_EXTENSION *                    extension;
-    unsigned char *                     tmp_data;
     
     static char *                       _function_name_ =
         "globus_gsi_proxy_inquire_req";
@@ -553,36 +553,23 @@ globus_gsi_proxy_inquire_req(
     req_extensions = X509_REQ_get_extensions(handle->req);
 
     pci_NID = OBJ_sn2nid(PROXYCERTINFO_SN);
+    pci_old_NID = OBJ_sn2nid(PROXYCERTINFO_OLD_SN);
     
     for(i=0;i<sk_X509_EXTENSION_num(req_extensions);i++)
     {
         extension = sk_X509_EXTENSION_value(req_extensions,i);
         extension_oid = X509_EXTENSION_get_object(extension);
-
-        if(OBJ_obj2nid(extension_oid) == pci_NID)
+        nid = OBJ_obj2nid(extension_oid);
+        
+        if(nid == pci_NID || nid == pci_old_NID)
         {
-            if((ext_data = X509_EXTENSION_get_data(extension)) == NULL)
-            {
-                GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
-                    result,
-                    GLOBUS_GSI_PROXY_ERROR_WITH_PROXYCERTINFO,
-                    (_PCSL("Can't get DER encoded extension "
-                     "data from X509 extension object")));
-                goto done;
-            }
-
             if(handle->proxy_cert_info)
             {
                 PROXYCERTINFO_free(handle->proxy_cert_info);
                 handle->proxy_cert_info = NULL;
             }    
 
-            tmp_data = ext_data->data;
-            
-            if((d2i_PROXYCERTINFO(
-                    &handle->proxy_cert_info,
-                    &tmp_data,
-                    ext_data->length)) == NULL)
+            if((handle->proxy_cert_info = X509V3_EXT_d2i(extension)) == NULL)
             {
                 GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
                     result,

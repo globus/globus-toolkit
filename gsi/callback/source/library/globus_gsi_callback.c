@@ -1341,16 +1341,15 @@ globus_i_gsi_callback_check_critical_extensions(
 {
     ASN1_OBJECT *                       extension_object = NULL;
     X509_EXTENSION *                    extension = NULL;
-    ASN1_OCTET_STRING *                 ext_data = NULL;
     PROXYCERTINFO *                     proxycertinfo = NULL;
     PROXYPOLICY *                       policy = NULL;
     int                                 nid;
     int                                 pci_NID;
+    int                                 pci_old_NID;
     int                                 critical_position = -1;
     long                                path_length;
-    unsigned char *                     tmp_data;
     globus_result_t                     result = GLOBUS_SUCCESS;
-   static char *                       _function_name_ =
+    static char *                       _function_name_ =
         "globus_i_gsi_callback_check_extensions";
 
     GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
@@ -1386,30 +1385,14 @@ globus_i_gsi_callback_check_critical_extensions(
         nid = OBJ_obj2nid(extension_object);
 
         pci_NID = OBJ_sn2nid(PROXYCERTINFO_SN);
+        pci_old_NID = OBJ_sn2nid(PROXYCERTINFO_OLD_SN);
 
-        if(nid == pci_NID)
+        if(nid == pci_NID || nid == pci_old_NID)
         {
             /* check for path length constraint */
-            if((ext_data = X509_EXTENSION_get_data(extension)) == NULL)
-            {
-                GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
-                    result,
-                    GLOBUS_GSI_CALLBACK_ERROR_VERIFY_CRED,
-                    (_CLS("Can't get DER encoded extension "
-                     "data from X509 extension object")));
-                x509_context->error = X509_V_ERR_CERT_REJECTED;
-                goto exit;
-            }
 
-            tmp_data = ext_data->data;
-
-            if((d2i_PROXYCERTINFO(
-                    &proxycertinfo,
-                    &tmp_data,
-                    ext_data->length)) == NULL)
+            if((proxycertinfo = X509V3_EXT_d2i(extension)) == NULL)
             {
-                ASN1_OCTET_STRING_free(ext_data);
-                proxycertinfo = NULL;
                 GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
                     result,
                     GLOBUS_GSI_CALLBACK_ERROR_VERIFY_CRED,

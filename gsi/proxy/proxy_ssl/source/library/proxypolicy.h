@@ -36,6 +36,10 @@ EXTERN_C_BEGIN
 #include <openssl/x509v3.h>
 #include <string.h>
 
+#define ANY_LANGUAGE_OID         "1.3.6.1.5.5.7.21.0"
+#define ANY_LANGUAGE_SN          "ANY_LANGUAGE"
+#define ANY_LANGUAGE_LN          "Any Language"
+
 #define IMPERSONATION_PROXY_OID         "1.3.6.1.5.5.7.21.1"
 #define IMPERSONATION_PROXY_SN          "IMPERSONATION_PROXY"
 #define IMPERSONATION_PROXY_LN          "GSI impersonation proxy"

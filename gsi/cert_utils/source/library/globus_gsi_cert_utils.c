@@ -314,35 +314,22 @@ globus_gsi_cert_utils_get_cert_type(
         {
             *type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_LIMITED_PROXY;
         }
-        else if((index = X509_get_ext_by_NID(cert,
-                                             OBJ_sn2nid(PROXYCERTINFO_SN),
-                                             -1)) != -1 &&
+        else if(((index = X509_get_ext_by_NID(cert,
+                                              OBJ_sn2nid(PROXYCERTINFO_SN),
+                                              -1)) != -1 ||
+                 (index = X509_get_ext_by_NID(cert,
+                                              OBJ_sn2nid(PROXYCERTINFO_OLD_SN),
+                                              -1)) != -1) &&
                 (pci_ext = X509_get_ext(cert,index)) &&
                 X509_EXTENSION_get_critical(pci_ext))
         {
-            if((ext_data = X509_EXTENSION_get_data(pci_ext)) == NULL)
-            {
-                GLOBUS_GSI_CERT_UTILS_OPENSSL_ERROR_RESULT(
-                    result,
-                    GLOBUS_GSI_CERT_UTILS_ERROR_NON_COMPLIANT_PROXY,
-                    (_CUSL("Can't get DER encoded extension "
-                     "data from X509 extension object")));
-                goto exit;
-            }
-
-            tmp_data = ext_data->data;
-
-            if((d2i_PROXYCERTINFO(
-                    &pci,
-                    &tmp_data,
-                    ext_data->length)) == NULL)
+            if((pci = X509V3_EXT_d2i(pci_ext)) == NULL)
             {
                 GLOBUS_GSI_CERT_UTILS_OPENSSL_ERROR_RESULT(
                     result,
                     GLOBUS_GSI_CERT_UTILS_ERROR_NON_COMPLIANT_PROXY,
                     (_CUSL("Can't convert DER encoded PROXYCERTINFO "
                      "extension to internal form")));
-                pci = NULL;
                 goto exit;
             }
             
@@ -385,9 +372,12 @@ globus_gsi_cert_utils_get_cert_type(
                 *type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_RESTRICTED_PROXY;
             }
             
-            if((index = X509_get_ext_by_NID(cert,
-                                            OBJ_sn2nid(PROXYCERTINFO_SN),
-                                            index)) != -1)
+            if(X509_get_ext_by_NID(cert,
+                                   OBJ_sn2nid(PROXYCERTINFO_SN),
+                                   index) != -1 ||
+               X509_get_ext_by_NID(cert,
+                                   OBJ_sn2nid(PROXYCERTINFO_OLD_SN),
+                                   index) != -1)
             { 
                 GLOBUS_GSI_CERT_UTILS_OPENSSL_ERROR_RESULT(
                     result,

@@ -373,7 +373,7 @@ long PROXYCERTINFO_get_path_length(
 
     
 /**
- * @name Convert PROXYCERTINFO to DER encoding
+ * @name Convert PROXYCERTINFO to DER encoded form
  */
 /* @{ */
 /**
@@ -397,15 +397,15 @@ int i2d_PROXYCERTINFO(
     
     v1 = 0;
 
-    M_ASN1_I2D_len(cert_info->policy,      
-                   i2d_PROXYPOLICY);
-
     M_ASN1_I2D_len_EXP_opt(cert_info->path_length,      
                            i2d_ASN1_INTEGER,
                            1, v1);
+    M_ASN1_I2D_len(cert_info->policy,      
+                   i2d_PROXYPOLICY);
+
     M_ASN1_I2D_seq_total();
-    M_ASN1_I2D_put(cert_info->policy, i2d_PROXYPOLICY);
     M_ASN1_I2D_put_EXP_opt(cert_info->path_length, i2d_ASN1_INTEGER, 1, v1);
+    M_ASN1_I2D_put(cert_info->policy, i2d_PROXYPOLICY);
     M_ASN1_I2D_finish();
 }
 /* i2d_PROXYCERTINFO() */
@@ -438,11 +438,15 @@ PROXYCERTINFO * d2i_PROXYCERTINFO(
     M_ASN1_D2I_Init();
     M_ASN1_D2I_start_sequence();
 
-    M_ASN1_D2I_get(ret->policy,d2i_PROXYPOLICY);
-
-    M_ASN1_D2I_get_EXP_opt(ret->path_length, 
-                           d2i_ASN1_INTEGER, 
+    M_ASN1_D2I_get_EXP_opt(ret->path_length,
+                           d2i_ASN1_INTEGER,
                            1);
+    
+    M_ASN1_D2I_get_opt(ret->path_length, 
+                       d2i_ASN1_INTEGER,
+                       V_ASN1_INTEGER);
+
+    M_ASN1_D2I_get(ret->policy,d2i_PROXYPOLICY);
 
     M_ASN1_D2I_Finish(cert_info, 
                       PROXYCERTINFO_free, 
@@ -469,6 +473,105 @@ X509V3_EXT_METHOD * PROXYCERTINFO_x509v3_ext_meth()
         NULL
     };
     return (&proxycertinfo_x509v3_ext_meth);
+}
+
+/**
+ * @name Convert old PROXYCERTINFO to DER encoded form
+ */
+/* @{ */
+/**
+ * @ingroup proxycertinfo
+ * 
+ * Converts the old PROXYCERTINFO structure from internal
+ * format to a DER encoded ASN.1 string
+ *
+ * @param cert_info the old PROXYCERTINFO structure to convert
+ * @param pp the resulting DER encoded string
+ *
+ * @return the length of the DER encoded string
+ */
+int i2d_PROXYCERTINFO_OLD(
+    PROXYCERTINFO *                     cert_info,
+    unsigned char **                    pp)
+{
+    int                                 v1;
+
+    M_ASN1_I2D_vars(cert_info);
+    
+    v1 = 0;
+
+    M_ASN1_I2D_len(cert_info->policy,      
+                   i2d_PROXYPOLICY);
+    M_ASN1_I2D_len_EXP_opt(cert_info->path_length,      
+                           i2d_ASN1_INTEGER,
+                           1, v1);
+
+    M_ASN1_I2D_seq_total();
+    M_ASN1_I2D_put(cert_info->policy, i2d_PROXYPOLICY);
+    M_ASN1_I2D_put_EXP_opt(cert_info->path_length, i2d_ASN1_INTEGER, 1, v1);
+    M_ASN1_I2D_finish();
+}
+/* i2d_PROXYCERTINFO_OLD() */
+/* @} */
+
+/**
+ * @name Convert a old PROXYCERTINFO to internal form
+ */
+/* @{ */
+/**
+ * @ingroup
+ *
+ * Convert from a DER encoded ASN.1 string of a old PROXYCERTINFO
+ * to its internal structure
+ *
+ * @param cert_info the resulting old PROXYCERTINFO in internal form
+ * @param buffer the DER encoded ASN.1 string containing
+ * the old PROXYCERTINFO 
+ * @param the length of the buffer
+ *
+ * @return the resulting old  PROXYCERTINFO in internal form
+ */                                             
+PROXYCERTINFO * d2i_PROXYCERTINFO_OLD(
+    PROXYCERTINFO **                    cert_info,
+    unsigned char **                    pp,
+    long                                length)
+{
+    M_ASN1_D2I_vars(cert_info, PROXYCERTINFO *, PROXYCERTINFO_new);
+
+    M_ASN1_D2I_Init();
+    M_ASN1_D2I_start_sequence();
+
+    M_ASN1_D2I_get(ret->policy,d2i_PROXYPOLICY);
+
+    M_ASN1_D2I_get_opt(ret->path_length, 
+                       d2i_ASN1_INTEGER,
+                       V_ASN1_INTEGER);
+
+    M_ASN1_D2I_Finish(cert_info, 
+                      PROXYCERTINFO_free, 
+                      ASN1_F_D2I_PROXYCERTINFO);
+}
+/* d2i_PROXYCERTINFO() */
+/* @} */
+
+X509V3_EXT_METHOD * PROXYCERTINFO_OLD_x509v3_ext_meth()
+{
+    static X509V3_EXT_METHOD proxycertinfo_x509v3_ext_meth =
+    {
+        -1,
+        X509V3_EXT_MULTILINE,
+        NULL,
+        (X509V3_EXT_NEW) PROXYCERTINFO_new,
+        (X509V3_EXT_FREE) PROXYCERTINFO_free,
+        (X509V3_EXT_D2I) d2i_PROXYCERTINFO_OLD,
+        (X509V3_EXT_I2D) i2d_PROXYCERTINFO_OLD,
+        NULL, NULL,
+        (X509V3_EXT_I2V) i2v_PROXYCERTINFO,
+        NULL,
+        NULL, NULL,
+        NULL
+    };
+    return (&proxycertinfo_x509v3_ext_meth);    
 }
 
 STACK_OF(CONF_VALUE) * i2v_PROXYCERTINFO(

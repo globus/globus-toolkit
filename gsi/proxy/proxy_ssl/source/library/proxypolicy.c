@@ -408,10 +408,12 @@ PROXYPOLICY * d2i_PROXYPOLICY(
     M_ASN1_D2I_get_opt(ret->policy,
                        d2i_ASN1_OCTET_STRING,
                        V_ASN1_OCTET_STRING);
+    
     M_ASN1_D2I_get_IMP_opt(ret->policy,
                            d2i_ASN1_OCTET_STRING,
                            0,
                            V_ASN1_OCTET_STRING);
+
     M_ASN1_D2I_Finish(a, 
                       PROXYPOLICY_free, 
                       ASN1_F_D2I_PROXYPOLICY);
