@@ -323,6 +323,9 @@ globus_l_gram_job_manager_script_read(
 	}
     }
     
+    pclose(script_context->pipe);
+    remove(script_context->script_arg_file);
+
     script_context->callback(
 	    script_context->callback_arg,
 	    request,
@@ -330,8 +333,7 @@ globus_l_gram_job_manager_script_read(
 	    script_context->starting_jobmanager_state,
 	    NULL,
 	    NULL);
-    pclose(script_context->pipe);
-    remove(script_context->script_arg_file);
+
     globus_libc_free(script_context);
 }
 /* globus_l_gram_job_manager_script_read() */

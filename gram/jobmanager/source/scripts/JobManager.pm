@@ -13,11 +13,14 @@ use Globus::GRAM::JobSignal;
 use Globus::Core::Paths;
 
 use POSIX;
-use IO::File;
 use File::Path;
 use File::Copy;
 
 package Globus::GRAM::JobManager;
+
+my $cache_pgm = "$Globus::Core::Paths::bindir/globus-gass-cache";
+my $url_copy_pgm = "$Globus::Core::Paths::bindir/globus-url-copy";
+my $info_pgm = "$Globus::Core::Paths::bindir/grid-proxy-info";
 
 =head1 NAME
 
@@ -81,13 +84,15 @@ sub new
 
     if(defined($description->logfile()))
     {
-	$self->{log} = new IO::File($description->logfile(), '>>');
-	$self->{log}->autoflush();
+        local(*FH);
+        open(FH, '>>'. $description->logfile());
+        select((select(FH),$|=1)[$[]);
+        $self->{log} = *FH;
     }
 
     bless $self, $class;
 
-    $self->log("New JobManager created.");
+    $self->log("New Perl JobManager created.");
 
     return $self;
 }
@@ -105,7 +110,8 @@ sub log
 
     if(exists($self->{log}))
     {
-	$self->{log}->print(scalar(localtime(time)), " JM_SCRIPT: ", @_, "\n");
+        my $fh = $self->{log};
+	print $fh scalar(localtime(time)), " JM_SCRIPT: ", @_, "\n";
     }
 
     return;
@@ -400,8 +406,8 @@ sub rewrite_urls
 {
     my $self = shift;
     my $description = $self->{JobDescription};
-    my $cache_pgm = "$Globus::Core::Paths::bindir/globus-gass-cache";
-    my $tag = $description->cache_tag() or $tag = $ENV{GLOBUS_GRAM_JOB_CONTACT};
+    my $tag = $description->cache_tag()
+        or $tag = $ENV{'GLOBUS_GRAM_JOB_CONTACT'};
     my $url;
     my $filename;
 
@@ -410,7 +416,7 @@ sub rewrite_urls
 	chomp($url = $description->$_());
 	if($url =~ m|^[a-zA-Z]+://|)
 	{
-	    chomp($filename = `$cache_pgm -query -t $tag $url`);
+            $filename = pipe_out_cmd($cache_pgm, '-query', '-t', $tag, $url);
 	    if($filename ne '')
 	    {
 		$description->add($_, $filename);
@@ -441,33 +447,28 @@ sub stage_in
 {
     my $self = shift;
     my $description = $self->{JobDescription};
-    my $cache_pgm = "$Globus::Core::Paths::bindir/globus-gass-cache";
-    my $url_copy = "$Globus::Core::Paths::bindir/globus-url-copy";
-    my $tag = $description->cache_tag() or $tag = $ENV{GLOBUS_GRAM_JOB_CONTACT};
-    my ($remote, $local, $local_resolved, $cached);
+    my $tag = $description->cache_tag()
+        or $tag = $ENV{'GLOBUS_GRAM_JOB_CONTACT'};
+    my ($remote, $local, $local_resolved, $cached, @arg);
+
+    $self->log("stage_in(enter)");
 
     if($description->executable() =~ m|^[a-zA-Z]+://|)
     {
-	$remote = $description->executable();
-	if(system("$cache_pgm -add -t $tag $remote >/dev/null 2>&1") != 0)
-	{
-	    return Globus::GRAM::Error::STAGING_EXECUTABLE;
-	}
+        @arg = ($cache_pgm, '-add', '-t', $tag, $description->executable());
+        return Globus::GRAM::Error::STAGING_EXECUTABLE
+            if (fork_and_exec_cmd(@arg) != 0);
     }
     if($description->stdin() =~ m|^[a-zA-Z]+://|)
     {
-	$remote = $description->stdin();
-	if(system("$cache_pgm -add -t $tag $remote >/dev/null 2>&1") != 0)
-	{
-	    return Globus::GRAM::Error::STAGING_STDIN;
-	}
+        @arg = ($cache_pgm, '-add', '-t', $tag, $description->stdin());
+        return Globus::GRAM::Error::STAGING_STDIN
+            if (fork_and_exec_cmd(@arg) != 0);
     }
     foreach ($description->file_stage_in())
     {
-	if(!defined($_))
-	{
-	    next;
-	}
+        next unless defined $_;
+
 	($remote, $local) = ($_->[0], $_->[1]);
 
 	if($local !~ m|^/|)
@@ -479,19 +480,15 @@ sub stage_in
             $local_resolved = $local;
         }
 
-	if(system("$url_copy $remote file://$local_resolved >/dev/null 2>&1")
-            != 0)
-	{
-	    return Globus::GRAM::Error::STAGE_IN_FAILED;
-	}
+        @arg = ($url_copy_pgm, $remote, 'file://' . $local_resolved);
+        return Globus::GRAM::Error::STAGE_IN_FAILED
+            if (fork_and_exec_cmd(@arg) != 0);
 	$self->respond({'STAGED_IN' => "$remote $local"});
     }
     foreach($description->file_stage_in_shared())
     {
-	if(!defined($_))
-	{
-	    next;
-	}
+        next unless defined $_;
+
 	($remote, $local) = ($_->[0], $_->[1]);
 
 	if($local !~ m|^/|)
@@ -503,17 +500,22 @@ sub stage_in
             $local_resolved = $local;
         }
 
-	if(system("$cache_pgm -add -t $tag $remote >/dev/null 2>&1") == 0)
-	{
-	    chomp($cached = `$cache_pgm -query -t $tag $remote`);
-	    symlink($cached, $local_resolved);
-	}
-	else
-	{
-	    return Globus::GRAM::Error::STAGE_IN_FAILED;
-	}
+        @arg = ($cache_pgm, '-add', '-t', $tag, $remote);
+
+        return Globus::GRAM::Error::STAGE_IN_FAILED
+            if (fork_and_exec_cmd(@arg) != 0);
+
+        @arg = ($cache_pgm, '-query', '-t', $tag, $remote);
+        $cached = pipe_out_cmd(@arg);
+
+        return Globus::GRAM::Error::STAGE_IN_FAILED
+            if($cached eq '');
+
+        symlink($cached, $local_resolved);
+
 	$self->respond({'STAGED_IN_SHARED' => "$remote $local"});
     }
+    $self->log("stage_in(exit)");
     return {};
 }
 
@@ -532,29 +534,28 @@ sub stage_out
 {
     my $self = shift;
     my $description = $self->{JobDescription};
-    my $cache_pgm = "$Globus::Core::Paths::bindir/globus-gass-cache";
     my $url_copy = "$Globus::Core::Paths::bindir/globus-url-copy";
-    my $tag = $description->cache_tag() or $tag = $ENV{GLOBUS_GRAM_JOB_CONTACT};
+    my $tag = $description->cache_tag() 
+        or $tag = $ENV{'GLOBUS_GRAM_JOB_CONTACT'};
     my $local_path;
+    my @arg;
 
+    $self->log("stage_out(enter)");
     foreach ($description->file_stage_out())
     {
-	if(!defined($_))
-	{
-	    next;
-	}
+        next unless defined $_;
+
 	($local, $remote) = ($_->[0], $_->[1]);
 
 	# handle a couple of types of URLs for local files
 	$local_path = $local;
 	if($local_path =~ m|^x-gass-cache://|)
 	{
-	    chomp($local_path = `$cache_pgm -query -t $tag $local_path 2>/dev/null`);
+            @arg = ($cache_pgm, '-query', '-t', $tag, $local_path);
+            $local_path = pipe_out_cmd(@arg);
 
-	    if($local_path eq '')
-	    {
-		return Globus::GRAM::Error::STAGE_OUT_FAILED;
-	    }
+            return Globus::GRAM::Error::STAGE_OUT_FAILED
+                if($local_path eq '');
 	}
 	elsif($local_path =~ m|^file:/|)
 	{
@@ -565,12 +566,12 @@ sub stage_out
 	    $local_path = $description->directory() . '/' . $local;
 	}
 
-	if(system("$url_copy file://$local_path $remote >/dev/null 2>&1") != 0)
-	{
-	    return Globus::GRAM::Error::STAGE_OUT_FAILED;
-	}
+        @arg = ($url_copy_pgm, 'file://' . $local_path, $remote);
+        return Globus::GRAM::Error::STAGE_OUT_FAILED
+            if (fork_and_exec_cmd(@arg) != 0);
 	$self->respond({'STAGED_OUT' => "$local $remote"});
     }
+    $self->log("stage_out(exit)");
     return {};
 }
 
@@ -584,17 +585,19 @@ sub cache_cleanup
 {
     my $self = shift;
     my $description = $self->{JobDescription};
-    my $cache_pgm = "$Globus::Core::Paths::bindir/globus-gass-cache";
-    my $tag = $description->cache_tag() or $tag = $ENV{GLOBUS_GRAM_JOB_CONTACT};
+    my $tag = $description->cache_tag()
+        or $tag = $ENV{'GLOBUS_GRAM_JOB_CONTACT'};
 
+    $self->log("cache_cleanup(enter)");
     if ( ! defined $tag )
     {
 	$self->log( "No cache tag defined to cleanup" );
 	return {};
     }
 
-    system("$cache_pgm -cleanup-tag -t $tag > /dev/null 2>/dev/null");
+    fork_and_exec_cmd($cache_pgm, '-cleanup-tag', '-t', $tag);
 
+    $self->log("cache_cleanup(exit)");
     return {};
 }
 
@@ -609,45 +612,44 @@ sub remote_io_file_create
 {
     my $self = shift;
     my $description = $self->{JobDescription};
-    my $cache_pgm = "$Globus::Core::Paths::bindir/globus-gass-cache";
-    my $tag = $description->cache_tag() or $tag = $ENV{GLOBUS_GRAM_JOB_CONTACT};
+    my $tag = $description->cache_tag()
+        or $tag = $ENV{'GLOBUS_GRAM_JOB_CONTACT'};
     my $filename = "${tag}dev/remote_io_url";
-    my $fh;
     my $result;
 
-    chomp($result = `$cache_pgm -query -t $tag $filename`);
+    $self->log("remote_io_file_create(enter)");
+
+    local(*FH);
+
+    $result = pipe_out_cmd($cache_pgm, '-query', '-t', $tag, $filename);
 
     if($result eq '')
     {
 	# no remote_io_url in the cache yet
 	my $tmpname = POSIX::tmpnam();
-	my $tmpfile = new IO::File(">$tmpname");
-	$tmpfile->print($description->remote_io_url() . "\n");
-	$tmpfile->close();
-	system("$cache_pgm -add -t $tag -n $filename file:$tmpname "
-	       . ">/dev/null");
+        open(FH, '>', $tmpname)
+            || return Globus::GRAM::Error::WRITING_REMOTE_IO_URL;
+	print FH $description->remote_io_url(), "\n";
+        close FH;
+
+        fork_and_exec_cmd($cache_pgm, '-add', '-t', $tag, '-n', $filename,
+            "file:$tmpname");
 	unlink($tmpname);
+
+        $result = pipe_out_cmd($cache_pgm, '-query', '-t', $tag, $filename);
     }
     else
     {
 	# already in cache
-	my $tmpfile = new IO::File(">$result");
-	$tmpfile->print($description->remote_io_url() . "\n");
-	$tmpfile->close();
+        open(FH, '>'. $result);
+        print FH $description->remote_io_url, "\n";
+	close(FH);
     }
 
-    if($? != 0)
-    {
-	return Globus::GRAM::Error::WRITING_REMOTE_IO_URL;
-    }
+    return Globus::GRAM::Error::WRITING_REMOTE_IO_URL
+        if($result eq '');
 
-    chomp($result = `$cache_pgm -query -t $tag $filename`);
-
-    if($? != 0)
-    {
-	return Globus::GRAM::Error::WRITING_REMOTE_IO_URL;
-    }
-
+    $self->log("remote_io_file_create(exit)");
     return { REMOTE_IO_FILE => $result };
 }
 
@@ -665,17 +667,20 @@ sub proxy_relocate
 {
     my $self = shift;
     my $description = $self->{JobDescription};
-    my $info_pgm = "$Globus::Core::Paths::bindir/grid-proxy-info";
+    my $proxy_filename;
 
-    chomp($proxy_filename = `$info_pgm -path 2>/dev/null`);
+    $self->log("proxy_relocate(enter)");
 
-    if($? != 0 || $proxy_filename eq "")
-    {
-	return Globus::GRAM::Error::OPENING_USER_PROXY;
-    }
+    return { X509_USER_PROXY => $ENV{'X509_USER_PROXY'} }
+        if exists($ENV{'X509_USER_PROXY'});
+
+    $proxy_filename = pipe_out_cmd($info_pgm, '-path');
+    return Globus::GRAM::Error::OPENING_USER_PROXY
+        if($proxy_filename eq '');
 
     $proxy_filename =~ s/^\S+\s+:\s+//;
 
+    $self->log("proxy_relocate(exit)");
     return { X509_USER_PROXY => $proxy_filename }
 }
 
@@ -710,6 +715,54 @@ sub append_path
     {
 	$ref->{$var} = "$path";
     }
+}
+
+sub pipe_out_cmd
+{
+    my $result;
+    local(*READ);
+
+    my $pid = open( READ, "-|" );
+    return undef unless defined $pid;
+
+    if ( $pid )
+    {
+        # parent
+        chomp($result = scalar <READ>);
+        close(READ);
+    } else {
+        # child
+        open( STDERR, '>>/dev/null' );
+        select(STDERR); $|=1;
+        select(STDOUT); $|=1;
+        if (!  exec { $_[0] } @_ )
+        {
+            exit(127);
+        }
+    }
+    $result;
+}
+
+sub fork_and_exec_cmd
+{
+    my $pid = fork();
+
+    return undef unless defined $pid;
+    if ( $pid == 0 )
+    {
+       # child
+       $SIG{INT} = 'IGNORE';
+       $SIG{QUIT} = 'IGNORE';
+       # FIXME: what about blocking SIGCHLD?
+       open STDOUT, '>>/dev/null';
+       open STDERR, '>&STDOUT'; # dup2()
+       exec { $_[0] } @_;
+       exit 127;
+    }
+
+    # parent
+    waitpid($pid,0);   # FIXME: deal with EINTR and EAGAIN
+    $?;
 }
 
 1;

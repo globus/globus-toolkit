@@ -1162,7 +1162,7 @@ globus_gram_job_manager_state_machine(
 	    }
 	}
 
-	if(request->save_state)
+	if(request->save_state && !request->jm_restart)
 	{
 	    if (rc == GLOBUS_SUCCESS && request->save_state == GLOBUS_TRUE)
 	    {
@@ -1366,10 +1366,11 @@ globus_gram_job_manager_state_machine(
 	    /* submission failed to generate a job id */
 	    if(request->failure_code == GLOBUS_SUCCESS)
 	    {
-		request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
 		request->failure_code =
 		    GLOBUS_GRAM_PROTOCOL_ERROR_SUBMIT_UNKNOWN;
 	    }
+            request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
+            request->unsent_status_change = GLOBUS_TRUE;
 	}
 	globus_gram_job_manager_reporting_file_create(request);
         globus_gram_job_manager_history_file_create(request);

@@ -193,7 +193,19 @@ globus_gram_job_manager_request_open_logfile(
 
     if(request->jobmanager_log_fp)
     {
+        int fd;
+
 	setbuf(request->jobmanager_log_fp, NULL);
+
+        fd = fileno(request->jobmanager_log_fp);
+
+        while(fcntl(fd, F_SETFD, FD_CLOEXEC) < 0)
+        {
+            if(errno != EINTR)
+            {
+                break;
+            }
+        }
     }
 }
 /* globus_gram_job_manager_request_open_logfile() */

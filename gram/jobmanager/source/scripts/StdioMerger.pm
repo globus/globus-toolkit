@@ -1,11 +1,11 @@
-use Globus::Core::Paths;
-
-use File::stat;
-use File::Copy;
-
 package Globus::GRAM::StdioMerger;
 
+use strict;
+use Globus::Core::Paths;
+use File::Copy;
+
 my $cache_pgm = "$Globus::Core::Paths::bindir/globus-gass-cache";
+sub SEEK_SET {0;} # ugly non-portable hack to avoid "use Fcntl"
 
 sub new
 {
@@ -31,9 +31,8 @@ sub new
     {
 	return undef;
     }
-    $stat = File::stat::stat($self->{MERGE_FILENAME});
 
-    if($stat->size > 0)
+    if( -s $self->{MERGE_FILENAME})
     {
 	$self->load_state();
     }
@@ -80,13 +79,15 @@ sub poll
 {
     my $self = shift;
     my $final = shift;
-    my $stderr = new IO::File($self->{STDERR}, 'a');
-    my $record;
+
+    local(*FH);
+    open(FH, '>>' . $self->{STDERR});
 
     $self->poll_list('STDOUT', $final);
     $self->poll_list('STDERR', $final);
 
     $self->store_state();
+    close(FH);
 }
 
 sub poll_list
@@ -94,30 +95,35 @@ sub poll_list
     my $self = shift;
     my $which = shift;
     my $final = shift;
-    my $record;
-    my $output = new IO::File($self->{$which}, 'a');
-    my $tmpfile;
 
-    foreach $record (@{$self->{$which . '_FILES'}})
+    local(*OUT);
+    open(OUT, '>>' . $self->{$which});
+    select((select(OUT),$|=1)[$[]); # autoflush=1
+
+
+    foreach my $record (@{$self->{$which . '_FILES'}})
     {
-	$stat = File::stat::stat($record->[1]) or next;
-	$tmpfile = new IO::File($record->[1], 'r');
+        my @stat = CORE::stat($record->[1]);
+        next if @stat == 0;
+
+        local(*FH);
+        open(FH, '<', $record->[1]);
 
 	# We want to merge up to the last newline ... but if
 	# we're in the DONE state, then we want to poll until
 	# EOF
 	do
 	{
-	    if($stat->size > $record->[2])
+	    if($stat[7] > $record->[2])
 	    {
 		my($buffer, $buffersize, $writable);
 
 		# file has grown... merge in new data
-		$buffersize = $stat->size - $record->[2];
+		$buffersize = $stat[7] - $record->[2];
 		$buffersize = 4096 if $buffersize > 4096;
 
-		$tmpfile->seek($record->[2], SEEK_SET);
-		$tmpfile->read($buffer, $buffersize);
+                seek(FH, $record->[2], SEEK_SET);
+                read(FH, $buffer, $buffersize);
 
 		$writable = $buffer;
 
@@ -141,27 +147,29 @@ sub poll_list
 		}
 		$record->[2] += length($writable);
 
-		$output->print($writable);
+		print OUT $writable;
 	    }
 	}
-	while($final && ($record->[2] < $stat->size));
-	$tmpfile->close();
+	while($final && ($record->[2] < $stat[7]));
+        close(FH);
     }
-    $output->close();
+    close(OUT);
 }
 
 sub store_state
 {
     my $self = shift;
     my $tmp_filename = $self->{MERGE_FILENAME} . '.tmp';
-    my $tmp_file = new IO::File($tmp_filename, 'w');
+    my $format = '%s "%s" %s' . "\n";
+
+    local(*TMP);
+    open(TMP, '>' . $tmp_filename);
 
     foreach(@{$self->{STDOUT_FILES}}, @{$self->{STDERR_FILES}})
     {
-	my $format = '%s "%s" %s' . "\n";
-	$tmp_file->print(sprintf($format, $_->[0], $_->[1], $_->[2]));
+	print TMP sprintf($format, $_->[0], $_->[1], $_->[2]);
     }
-    $tmp_file->close();
+    close(TMP);
 
     rename($tmp_filename, $self->{MERGE_FILENAME});
 
@@ -171,12 +179,14 @@ sub store_state
 sub load_state
 {
     my $self = shift;
-    my $file = new IO::File($self->{MERGE_FILENAME}, 'r');
 
-    while(<$file>)
+    local(*IN);
+    open(IN, '<' . $self->{MERGE_FILENAME});
+
+    while(<IN>)
     {
 	m/^(out|err)\s+"([^"]+)"\s+([0-9]+)$/ or next;
-	($type, $local_filename, $offset) = ($1, $2, $3);
+	my ($type, $local_filename, $offset) = ($1, $2, $3);
 
 	if($type eq 'out')
 	{
@@ -187,10 +197,59 @@ sub load_state
 	    push(@{$self->{STDERR_FILES}}, [$type, $local_filename, $offset]);
 	}
     }
-    $file->close();
+    close IN;
 
     return 0;
 }
+
+sub pipe_out_cmd
+{
+    my $result;
+    local(*READ);
+
+    my $pid = open( READ, "-|" );
+    return undef unless defined $pid;
+
+    if ( $pid )
+    {
+        # parent
+        chomp($result = scalar <READ>);
+        close(READ);
+    } else {
+        # child
+        open( STDERR, '>>/dev/null' );
+        select(STDERR); $|=1;
+        select(STDOUT); $|=1;
+        if (!  exec { $_[0] } @_ )
+        {
+            exit(127);
+        }
+    }
+    $result;
+}
+
+sub fork_and_exec_cmd
+{
+    my $pid = fork();
+
+    return undef unless defined $pid;
+    if ( $pid == 0 )
+    {
+       # child
+       $SIG{INT} = 'IGNORE';
+       $SIG{QUIT} = 'IGNORE';
+       # FIXME: what about blocking SIGCHLD?
+       open STDOUT, '>>/dev/null';
+       open STDERR, '>&STDOUT'; # dup2()
+       exec { $_[0] } @_;
+       exit 127;
+    }
+
+    # parent
+    waitpid($pid,0);   # FIXME: deal with EINTR and EAGAIN
+    $?;
+}
+
 
 sub lookup_or_add_in_cache
 {
@@ -198,12 +257,14 @@ sub lookup_or_add_in_cache
     my $tag = shift;
     my $result;
 
-    chomp($result = `$cache_pgm -query -t $tag $url`);
-    if($result eq '')
+    if (($result = pipe_out_cmd($cache_pgm, '-query', '-t', $tag, $url)) eq '')
     {
-	system("$cache_pgm -add -n $url -t $tag file:/dev/null");
+        fork_and_exec_cmd($cache_pgm, '-add', '-t', $tag, '-n',
+            $url, 'file:/dev/null');
+
+        $result = pipe_out_cmd($cache_pgm, '-query', '-t', $tag, $url);
     }
-    chomp($result = `$cache_pgm -query -t $tag $url`);
+        
     if($result eq '')
     {
 	return undef;

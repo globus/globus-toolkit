@@ -7,7 +7,6 @@
 #     $Revision$
 #     $Author$
 
-use IO::File;
 use Globus::GRAM::Error;
 
 =head1 NAME
@@ -75,12 +74,11 @@ sub new
     my $proto = shift;
     my $class = ref($proto) || $proto;
     my $desc = shift;
-    my $desc_values;
-    my $self;
+    my $self = ();
 
     if ( ref ( $desc ) eq "HASH" )
     {
-	foreach my $Key ( %{$desc} )
+	foreach my $Key ( keys %{$desc} )
 	{
 	    $self->{$Key} = $desc->{$Key};
 	}
@@ -133,22 +131,27 @@ the object.
 sub save
 {
     my $self = shift;
-    my $filename = shift or $filename = "$self->{_description_file}.new";
-    my $file = new IO::File(">$filename");
+    my $filename = shift || "$self->{_description_file}.new";
+    local(*OUT);	     	# protect
 
-    $file->print("\$description = {\n");
-
-    foreach (keys %{$self})
+    if ( open( OUT, '>' . $filename ) ) 
     {
-	$file->print("    '$_' => ");
-	
-	$self->print_recursive($file, $self->{$_});
-	$file->print(",\n");
-    }
-    $file->print("};\n");
-    $file->close();
+	print OUT '$description = {', "\n";
+	foreach ( keys %{$self} ) 
+	{
+	    print OUT '   \'', $_, ' => ';
+	    $self->print_recursive( \*OUT, $self->{$_} );
+	    print OUT ",\n";
+	}
 
-    if($filename eq "$self->{_description_file}.new")
+	print OUT "};\n";
+	close(OUT);
+
+    } else {
+	# FIXME: what shall we do, if we cannot open the file?
+    }
+
+    if ( $filename eq "$self->{_description_file}.new" )
     {
 	rename("$self->{_description_file}.new", $self->{_description_file});
     }
@@ -166,41 +169,41 @@ specified in the argument list.
 sub print_recursive
 {
     my $self = shift;
-    my $file = shift;
+    my $fh = shift;			# with ..::File, \*FILE or *FILE{IO}
     my $value = shift;
     my $first = 1;
 
-    if(ref($value) eq "SCALAR")
+    if ( ref($value) eq 'SCALAR' )
     {
-	$file->print($value);
+	print $fh $value;
     }
-    elsif(ref($value) eq "ARRAY")
+    elsif(ref($value) eq 'ARRAY')
     {
-	$file->print("[ ");
+	print $fh '[ ';
 	foreach (@{$value})
 	{
-	    $file->print(", ") if (!$first);
+	    print $fh ', ' if (!$first);
 	    $first = 0;
-	    $self->print_recursive($file, $_);
+	    $self->print_recursive($fh, $_);
 	}
-	$file->print(" ]");
+	print $fh ' ]';
     }
-    elsif(ref($value) eq "HASH")
+    elsif(ref($value) eq 'HASH')
     {
-	$file->print("(");
+	print $fh '(';
 
 	foreach (keys %{$value})
 	{
-	    $file->print(", ") if (!$first);
+	    print $fh ', ' if (!$first);
 	    $first = 0;
-	    $file->print("'$_' => ");
-	    $self->print_recursive($file, $value->{$_});
+	    print $fh "'$_' => ";
+	    $self->print_recursive($fh, $value->{$_});
 	}
     }
     elsif(!ref($value))
     {
         $value =~ s|'|\\'|g;
-	$file->print("'$value'");
+	print $fh "'$value'";
     }
     return;
 }

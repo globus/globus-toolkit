@@ -420,6 +420,7 @@ globus_gram_job_manager_output_open(
 
 	request->output->stdout_fd =
 	    globus_libc_open(request->local_stdout, O_RDONLY);
+        fcntl(request->output->stdout_fd, F_SETFD, FD_CLOEXEC);
 	destinations = request->output->stdout_destinations;
 
 	while(!globus_list_empty(destinations))
@@ -452,6 +453,7 @@ globus_gram_job_manager_output_open(
     {
 	request->output->stderr_fd =
 	    globus_libc_open(request->local_stderr, O_RDONLY);
+        fcntl(request->output->stderr_fd, F_SETFD, FD_CLOEXEC);
 	destinations = request->output->stderr_destinations;
 	while(!globus_list_empty(destinations))
 	{
@@ -685,7 +687,7 @@ globus_gram_job_manager_output_local_name(
 		    type);
 
 	    rc = globus_gass_cache_add(
-		    &request->cache_handle,
+		    request->cache_handle,
 		    out_file,
 		    request->cache_tag,
 		    GLOBUS_TRUE,
@@ -704,7 +706,7 @@ globus_gram_job_manager_output_local_name(
 	    }
 
 	    globus_gass_cache_add_done(
-		    &request->cache_handle,
+		    request->cache_handle,
 		    out_file,
 		    request->cache_tag,
 		    timestamp);
@@ -1541,7 +1543,7 @@ globus_l_gram_job_manager_output_destination_open(
     {
       case GLOBUS_GRAM_JOB_MANAGER_OUTPUT_CACHE:
         rc = globus_gass_cache_add(
-		&request->cache_handle,
+		request->cache_handle,
 		destination->url,
                destination->tag ? destination->tag : request->cache_tag,
 		GLOBUS_TRUE,
@@ -1553,7 +1555,7 @@ globus_l_gram_job_manager_output_destination_open(
 	    break;
 	}
 	rc = globus_gass_cache_add_done(
-		&request->cache_handle,
+		request->cache_handle,
 		destination->url,
                destination->tag ? destination->tag : request->cache_tag,
 		0);

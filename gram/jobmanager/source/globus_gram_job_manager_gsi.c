@@ -365,7 +365,7 @@ globus_gram_job_manager_gsi_relocate_proxy(
 	goto cred_url_sprintf_failed;
     }
 
-    rc = globus_gass_cache_add(&request->cache_handle,
+    rc = globus_gass_cache_add(request->cache_handle,
 	                       cred_url,
 			       request->cache_tag,
 			       GLOBUS_TRUE,
@@ -413,7 +413,7 @@ globus_gram_job_manager_gsi_relocate_proxy(
     fclose(outfp);
     outfp = NULL;
     rc = globus_gass_cache_add_done(
-            &request->cache_handle,
+            request->cache_handle,
             cred_url,
             request->cache_tag,
             timestamp);
@@ -443,7 +443,7 @@ cred_fwrite_failed:
 fopen_cred_file_failed:
     if(rc != GLOBUS_SUCCESS && delete_cred)
     {
-	globus_gass_cache_delete(&request->cache_handle,
+	globus_gass_cache_delete(request->cache_handle,
 		                 cred_url,
 				 request->cache_tag,
 				 timestamp,
