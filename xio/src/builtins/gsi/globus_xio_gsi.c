@@ -539,6 +539,7 @@ globus_l_xio_gsi_target_cntl(
     globus_result_t                     result;
     gss_name_t *                        out_name;
     gss_name_t                          in_name;
+    globus_bool_t                       in_bool;
     OM_uint32                           major_status;
     OM_uint32                           minor_status;
     GlobusXIOName(globus_l_xio_gsi_target_cntl);
@@ -587,7 +588,8 @@ globus_l_xio_gsi_target_cntl(
         break;
       
       case GLOBUS_XIO_GSI_FORCE_SERVER_MODE:
-        target->init = GLOBUS_FALSE;
+        in_bool = va_arg(ap, globus_bool_t);
+        target->init = !in_bool;
         break;
         
       default:
