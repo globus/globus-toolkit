@@ -165,7 +165,8 @@ globus_xio_driver_unload(
         result = GlobusXIOErrorInvalidDriver("Driver not loaded");
         goto error_hook;
     }
-    
+
+    globus_i_xio_close_handles(driver);
     hook->unload(driver);
     
     globus_mutex_lock(&globus_l_xio_load_lock);
