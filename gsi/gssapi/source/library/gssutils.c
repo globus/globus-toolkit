@@ -432,6 +432,8 @@ gs_read
 			!BIO_should_read(context_handle->gs_sslbio)) {
 
 			/* problem! */
+			GSSerr(GSSERR_F_READ,GSSERR_R_READ_BIO);
+                	*minor_status = GSSERR_R_READ_BIO;
 			major_status = GSS_S_DEFECTIVE_CREDENTIAL ;
 		}
 	}
@@ -479,8 +481,9 @@ gs_write
 	if (rc <= 0) {
 		if (!BIO_should_retry(context_handle->gs_sslbio) || 
 			!BIO_should_read(context_handle->gs_sslbio)) {
-
 			/* problem! */
+			GSSerr(GSSERR_F_WRITE,GSSERR_R_WRITE_BIO);
+                	*minor_status = GSSERR_R_WRITE_BIO;
 			major_status = GSS_S_DEFECTIVE_CREDENTIAL ;
 		}
 	}
@@ -547,6 +550,7 @@ gs_handshake
 			SSL_get_shutdown(context_handle->gs_ssl));
 #endif
 			GSSerr(GSSERR_F_GS_HANDSHAKE,GSSERR_R_HANDSHAKE);
+			*minor_status = GSSERR_R_HANDSHAKE ;
 			major_status = GSS_S_DEFECTIVE_CREDENTIAL ;
 		}
 	}
