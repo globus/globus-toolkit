@@ -171,7 +171,7 @@ cray_access_denied(char *username)
  * record_failed_login: generic "login failed" interface function
  */
 void
-record_failed_login(const char *user, const char *ttyname)
+record_failed_login(const char *user, const char *hostname, const char *ttyname)
 {
 	cray_login_failure((char *)user, IA_UDBERR);
 }

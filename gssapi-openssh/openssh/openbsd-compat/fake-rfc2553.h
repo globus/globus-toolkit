@@ -117,6 +117,7 @@ struct sockaddr_in6 {
 # define EAI_NODATA	1
 # define EAI_MEMORY	2
 # define EAI_NONAME	3
+# define EAI_SYSTEM	4
 #endif
 
 #ifndef HAVE_STRUCT_ADDRINFO

@@ -67,10 +67,6 @@ int utimes(char *, struct timeval *);
 int truncate (const char *, off_t);
 #endif /* HAVE_TRUNCATE */
 
-#if !defined(HAVE_SETGROUPS) && defined(SETGROUPS_NOOP)
-int setgroups(size_t, const gid_t *);
-#endif
-
 #if !defined(HAVE_NANOSLEEP) && !defined(HAVE_NSLEEP)
 #ifndef HAVE_STRUCT_TIMESPEC
 struct timespec {
