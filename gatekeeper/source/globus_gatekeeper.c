@@ -19,6 +19,7 @@ CVS Information:
 #define _ALL_SOURCE
 #endif
 #include "globus_config.h"
+#include "globus_i_gram_version.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
@@ -941,6 +942,7 @@ static void doit()
     char *              msg[MAX_MESSAGE_LENGTH];
     unsigned int        msg_size;
     unsigned char       int_buf[4];
+    char                tmp_version[1];
     struct stat         statbuf;
     char *              job_manager_path; 
     char *              gram_k5_path; 
@@ -1123,8 +1125,13 @@ static void doit()
         failure("ERROR: gatekeeper misconfigured");
     }
 
+    /* client will check version # sent here with it's own.  If they match
+     * then the client will continue and send the additional data destined
+     * for the job manager.
+     */
+    sprintf(tmp_version, "%d", GLOBUS_GRAM_PROTOCOL_VERSION);
     if (ok_to_send_errmsg)
-        globus_gss_assist_token_send_fd(fdout,"\0",1); /* send ok*/
+        globus_gss_assist_token_send_fd(fdout,tmp_version,1);
     ok_to_send_errmsg = 0;
 
     /*
