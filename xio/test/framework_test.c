@@ -300,7 +300,10 @@ framework_main(
         }
     }
     globus_mutex_unlock(&globus_l_mutex);
-    
+
+    globus_xio_attr_destroy(attr);
+    globus_xio_stack_destroy(stack);
+
     rc = globus_module_deactivate(GLOBUS_XIO_MODULE);
     globus_assert(rc == 0);
 

@@ -317,5 +317,7 @@ main(
         globus_assert(rc == GLOBUS_SUCCESS);
     }
 
+    globus_hashtable_destroy(&globus_l_test_hash);
+
     return rc;
 }

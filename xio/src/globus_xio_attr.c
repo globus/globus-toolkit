@@ -142,7 +142,7 @@ globus_xio_attr_destroy(
         return GlobusXIOErrorParameter("attr");
     }
     
-    for(ctr = 0; ctr < attr->max; ctr++)
+    for(ctr = 0; ctr < attr->ndx; ctr++)
     {
         /* report the last seen error but be sure to attempt to clean 
             them all */

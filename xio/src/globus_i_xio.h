@@ -194,9 +194,9 @@ typedef struct globus_i_xio_context_s
     /* handle has a reference and every entry has a reference */
     int                                         ref;
     int                                         stack_size;
-    globus_i_xio_context_entry_t                entry[1];
     globus_memory_t                             op_memory;
     globus_mutex_t                              mutex;
+    globus_i_xio_context_entry_t                entry[1];
 } globus_i_xio_context_t;
 
 /* MACROS for accessing the op_entry structure unin elements */

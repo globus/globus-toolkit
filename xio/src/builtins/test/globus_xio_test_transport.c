@@ -221,7 +221,7 @@ globus_l_xio_operation_kickout(
         default:
             globus_assert(0);
     }    
-
+    globus_free(ow);
 }
 
 /**********************************

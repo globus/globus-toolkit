@@ -116,9 +116,9 @@ globus_xio_driver_finished_open_DEBUG(
     }                                                                       
                                                                             
     _context = _op->_op_context;                                            
+    _context->entry[_op->ndx - 1].driver_handle = (_in_dh);                 
     _my_op = &_op->entry[_op->ndx - 1];                                     
     _my_context = &_context->entry[_my_op->caller_ndx];                     
-    _my_context->driver_handle = (_in_dh);                                  
     /* no operation can happen while in OPENING state so no need to lock */ 
     if(_res != GLOBUS_SUCCESS)                                              
     {                                                                       
@@ -481,6 +481,7 @@ globus_xio_driver_finished_write_DEBUG(
         if(_my_op->_op_ent_fake_iovec != NULL)                              
         {                                                                   
             globus_free(_my_op->_op_ent_fake_iovec);                        
+            _my_op->_op_ent_fake_iovec = NULL;                              
         }                                                                   
         if(_my_op->in_register)                                             
         {                                                                   
@@ -764,6 +765,14 @@ globus_xio_driver_finished_read_DEBUG(
                                                                             
     if(_fire_cb)                                                            
     {                                                                       
+        /* if a temp iovec struct was used for fullfulling waitfor,         
+          we can free it now */                                             
+        if(_my_op->_op_ent_fake_iovec != NULL)                              
+        {                                                                   
+            globus_free(_my_op->_op_ent_fake_iovec);                        
+            _my_op->_op_ent_fake_iovec = NULL;                              
+        }                                                                   
+                                                                            
         if(_my_op->in_register)                                             
         {                                                                   
             _op->cached_res = (_res);                                       
@@ -803,13 +812,6 @@ globus_xio_driver_read_deliver_DEBUG(
     _my_op->_op_ent_data_cb(_op, _op->cached_res, _my_op->_op_ent_nbytes,   
                 _my_op->user_arg);                                          
                                                                             
-                                                                            
-    /* if a temp iovec struct was used for fullfulling waitfor,             
-      we can free it now */                                                 
-    if(_my_op->_op_ent_fake_iovec != NULL)                                  
-    {                                                                       
-        globus_free(_my_op->_op_ent_fake_iovec);                            
-    }                                                                       
                                                                             
     globus_mutex_lock(&_my_context->mutex);                                 
     {                                                                       

@@ -82,7 +82,8 @@ do                                                                          \
             globus_memory_pop_node(&_c->op_memory);                         \
     if(_op != NULL)                                                         \
     {                                                                       \
-        memset(_op, '\0', sizeof(globus_i_xio_op_t));                       \
+        memset(_op, '\0', sizeof(globus_i_xio_op_t) +                       \
+            (sizeof(globus_i_xio_op_entry_t) * (_c->stack_size - 1)));      \
         _op->_op_context = _c;                                              \
         _op->stack_size = _c->stack_size;                                   \
         _op->progress = GLOBUS_TRUE;                                        \
