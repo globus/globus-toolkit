@@ -8,7 +8,7 @@ contains the GSI-OpenSSH code.  Consider it a living document.
 
     1. Set up your environment to point to the correct CVS repository.
 
-          $  export CVSROOT="/afs/ncsa/projects/globus/Repository"
+          $ export CVSROOT="/afs/ncsa/projects/globus/Repository"
 
     2. Commit any locally-modified files and tag the repository before the merge.
 
@@ -46,3 +46,11 @@ contains the GSI-OpenSSH code.  Consider it a living document.
             resolved by ignoring mainline changes and keeping the text that was
             originally in the file on this branch.  (We require a specified flavor type
             where the trunk can compensate in that case.)
+
+    2002/09/24
+    ----------
+      Action: Merge
+        - occurred on: GPT branch (OPENSSH_3_1P1_GSSAPI_GPT-branch)
+        - original base: OPENSSH_3_4P1_GSI_20020923
+        - new base: OPENSSH_3_4P1_GSI_20020924
+      Conflicts: 0
