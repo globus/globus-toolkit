@@ -375,6 +375,7 @@ extends GridServiceImpl {
         Vector recoveredTransferJobs = dbAdapter.getActiveTransfers(
         persistentRequestId, this.concurrency );
         int tempSize = recoveredTransferJobs.size();
+        logger.debug("temp size: " + tempSize);
         //transfers = new TransferType[tempSize];
         
        /* for ( int i = 0; i < tempSize; i++ ) {
@@ -391,24 +392,29 @@ extends GridServiceImpl {
         
         int concurrency_ = dbAdapter.getConcurrency(
         this.persistentRequestId );
+        this.globalRFTOptionsType = null;
         logger.debug(
         "Concurrency of recovered request: " + concurrency_ );
-        for ( int i = 0; i < concurrency_; i++ ) {
+        if ( tempSize >= 1 ) {
+            for ( int i = 0; i < concurrency_; i++ ) {
+
+                TransferJob transferJob = (TransferJob)
+                    recoveredTransferJobs.elementAt( i );
+                int tempStatus = transferJob.getStatus();
             
-            TransferJob transferJob = (TransferJob)
-                recoveredTransferJobs.elementAt( i );
-            int tempStatus = transferJob.getStatus();
-            
-            if ( ( tempStatus == TransferJob.STATUS_ACTIVE ) ||
-            ( tempStatus == TransferJob.STATUS_PENDING ) ||
-            ( tempStatus == TransferJob.STATUS_EXPANDING ) ) {
+                if ( ( tempStatus == TransferJob.STATUS_ACTIVE ) ||
+                        ( tempStatus == TransferJob.STATUS_PENDING ) ||
+                        ( tempStatus == TransferJob.STATUS_EXPANDING ) ) {
                 
-                TransferThread transferThread = new TransferThread(
-                transferJob );
-                System.out.println( "Starting recovered transfer jobs "+ i );
-                transferThread.start();
-                statusChanged(transferJob);
+                    TransferThread transferThread = new TransferThread(
+                            transferJob );
+                    System.out.println( "Starting recovered transfer jobs "+ i );
+                    transferThread.start();
+                    statusChanged(transferJob);
+                }
             }
+        } else {
+            closeAll();
         }
     }
     /**
@@ -690,7 +696,9 @@ extends GridServiceImpl {
                 int tempId = transferJob.getTransferId();
                 TransferThread transferThread;
                 RFTOptionsType rftOptions = transferJob.getRftOptions();
-                rftOptions = globalRFTOptionsType;
+                if (globalRFTOptionsType != null ) {
+                    rftOptions = globalRFTOptionsType;
+                }
                 try {
                     transferClient = getTransferClient
                         ( transferJob.getSourceUrl(),

@@ -9,6 +9,7 @@ import java.rmi.RemoteException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 
@@ -62,6 +63,7 @@ public class TransferDbAdapter {
     static int def_idleConnections = 2;
     RFTOptionsType globalRFTOptions;
     int requestId;
+    private boolean old = false;
 
 
     /**
@@ -487,6 +489,7 @@ public class TransferDbAdapter {
         for ( int i = 0; i < transfers.length; i++ ) {
 
             try {
+                schemaCompat();
 
                 Statement st = c.createStatement();
                 TransferType transfer = transfers[i];
@@ -497,7 +500,11 @@ public class TransferDbAdapter {
                 query.append(
                         "INSERT INTO transfer(request_id,source_url,dest_url," )
                         .append( "dcau,parallel_streams,tcp_buffer_size," ).append(
-                        "block_size,notpt,binary_mode,source_subject,dest_subject) VALUES (" ).append(
+                        "block_size,notpt,binary_mode");
+                        if(!old) {
+                            query.append(",source_subject,dest_subject");
+                        }
+                        query.append(") VALUES (" ).append(
                         requestId ).append( ",'" ).append( transfer.getSourceUrl() )
                         .append( "','" ).append( transfer.getDestinationUrl() ).append(
                         "'," );
@@ -507,14 +514,17 @@ public class TransferDbAdapter {
                     rftOptions = this.globalRFTOptions;
                     logger.debug( "Setting global rft options" );
                 }
-                query.append( rftOptions.isDcau() ).append( "," ).append( rftOptions.getParallelStreams() )
-                        .append( "," ).append( rftOptions.getTcpBufferSize() ).append(
-                        "," ).append( rftOptions.getBlockSize() ).append( "," ).append( rftOptions.isNotpt() )
-                        .append( "," ).
-                        append( rftOptions.isBinary()).append(",'").
-                        append(rftOptions.getSourceSubjectName()).append("','")
-                        .append(rftOptions.getDestinationSubjectName())
-                        .append("'").append( ")" );
+                query.append( rftOptions.isDcau() ).append( "," ).append( rftOptions.getParallelStreams() );
+                query.append( "," ).append( rftOptions.getTcpBufferSize() ).append(
+                        "," ).append( rftOptions.getBlockSize() ).append( "," ).append( rftOptions.isNotpt() );
+                        query.append( "," ).append( rftOptions.isBinary());
+                        if(!old) {
+                            query.append(",'").
+                                append(rftOptions.getSourceSubjectName()).append("','")
+                                .append(rftOptions.getDestinationSubjectName())
+                                .append("'");
+                        }
+                query.append( ")" );
                 logger.debug(
                         "Query to insert into transfer table:" +
                         query.toString() );
@@ -611,6 +621,7 @@ public class TransferDbAdapter {
     
     private void resetActiveTransfers(int requestId) 
     throws RftDBException,SQLException {
+        schemaCompat();
         Connection c = getDBConnection();
         Statement st = c.createStatement();
         StringBuffer query = new StringBuffer(5000);
@@ -667,8 +678,10 @@ public class TransferDbAdapter {
                 rftOptions.setBlockSize( rs.getInt( 10 ) );
                 rftOptions.setNotpt( rs.getBoolean( 11 ) );
                 rftOptions.setBinary( rs.getBoolean( 12 ) );
-                rftOptions.setSourceSubjectName(rs.getString(13));
-                rftOptions.setDestinationSubjectName(rs.getString(14));
+                if(!old) {
+                    rftOptions.setSourceSubjectName(rs.getString(13));
+                    rftOptions.setDestinationSubjectName(rs.getString(14));
+                }
                 transfer.setRftOptions( rftOptions );
                 transferJob = new TransferJob( transfer, status, attempts );
                 activeTransfers.add( transferJob );
@@ -676,7 +689,7 @@ public class TransferDbAdapter {
         } catch ( SQLException e ) {
             logger.error(
                     "Unable to retrieve transfers for requestid:" +
-                    requestId );
+                    requestId,e);
             returnDBConnection( c );
             throw new RftDBException( "Unable to retrieve transfers for requestid",
                     e );
@@ -933,8 +946,10 @@ public class TransferDbAdapter {
                 rftOptions.setBlockSize( rs.getInt( 10 ) );
                 rftOptions.setNotpt( rs.getBoolean( 11 ) );
                 rftOptions.setBinary( rs.getBoolean( 12 ) );
-                rftOptions.setSourceSubjectName(rs.getString(13));
-                rftOptions.setDestinationSubjectName(rs.getString(14));
+                if(!old) {
+                    rftOptions.setSourceSubjectName(rs.getString(13));
+                    rftOptions.setDestinationSubjectName(rs.getString(14));
+                }
                 transfer.setRftOptions( rftOptions );
                 transferJob = new TransferJob( transfer, status, attempts );
                 transferJobs.add( transferJob );
@@ -1176,6 +1191,30 @@ public class TransferDbAdapter {
         returnDBConnection( c );
     }
 
+    private void schemaCompat() throws RftDBException {
+        Connection c = getDBConnection();
+
+        try {
+            logger.debug( "Running a query to get metadata" );
+
+            Statement st = c.createStatement();
+            st.setMaxRows(1);
+            ResultSet rs = st.executeQuery("Select * from transfer"); 
+            ResultSetMetaData rsmd = rs.getMetaData();
+            int numberOfColumns = rsmd.getColumnCount();
+            logger.debug("number of columns : " + numberOfColumns);
+            if( numberOfColumns == 12 ) {
+                old = true; 
+            } else if ( numberOfColumns == 14 ) {
+                old = false;
+            }
+        } catch ( Exception e ) {
+            logger.error( "Error", e );
+            returnDBConnection( c );
+        }
+
+        returnDBConnection( c );
+    }
 
     /**
      *  The main program for the TransferDbAdapter class

@@ -411,11 +411,13 @@ public class TransferClient {
             this.fileSystemUtil.setGridFTPClient( destinationHost );
             this.credential = loadCredential( proxyPath );
             this.rftOptions = rftOptions;
-            subjectName = this.rftOptions.getSubjectName();
-            sourceSubjectName = this.rftOptions.getSourceSubjectName();
-            logger.debug("source sub name "  + sourceSubjectName );
-            destinationSubjectName = this.rftOptions.getDestinationSubjectName();
-            logger.debug("dest sub name "  + destinationSubjectName);
+            if ( this.rftOptions != null ) {
+                subjectName = this.rftOptions.getSubjectName();
+                sourceSubjectName = this.rftOptions.getSourceSubjectName();
+                logger.debug("source sub name "  + sourceSubjectName );
+                destinationSubjectName = this.rftOptions.getDestinationSubjectName();
+                logger.debug("dest sub name "  + destinationSubjectName);
+            }
 
             if ( subjectName != null ) {
                 destinationHost.setAuthorization( new IdentityAuthorization(
