@@ -1724,12 +1724,16 @@ globus_l_gram_request_fill(globus_rsl_t * rsl_tree,
     if (tmp_param[0])
     {
 
-        req->count = atoi(tmp_param[0]);
+        x = atoi(tmp_param[0]);
 
-        if (req->count < 1)
+        if (x < 1)
         {
             req->failure_code = GLOBUS_GRAM_CLIENT_ERROR_INVALID_COUNT;
             return(GLOBUS_FAILURE);
+        }
+        else
+        {
+            req->count = x;
         }
     }
     else
@@ -1754,12 +1758,16 @@ globus_l_gram_request_fill(globus_rsl_t * rsl_tree,
 
     if (tmp_param[0])
     {
-        req->maxtime = atoi(tmp_param[0]);
+        x = atoi(tmp_param[0]);
 
-        if (req->maxtime < 1)
+        if (x < 1)
         {
             req->failure_code = GLOBUS_GRAM_CLIENT_ERROR_INVALID_MAXTIME;
             return(GLOBUS_FAILURE);
+        }
+        else
+        {
+            req->maxtime = x;
         }
     }
     else
@@ -1781,12 +1789,16 @@ globus_l_gram_request_fill(globus_rsl_t * rsl_tree,
 
     if (tmp_param[0])
     {
-        req->host_count = atoi(tmp_param[0]);
+        x = atoi(tmp_param[0]);
 
-        if (req->host_count < 1)
+        if (x < 1)
         {
             req->failure_code = GLOBUS_GRAM_CLIENT_ERROR_INVALID_HOST_COUNT;
             return(GLOBUS_FAILURE);
+        }
+        else
+        {
+            req->host_count = x;
         }
     }
     else
