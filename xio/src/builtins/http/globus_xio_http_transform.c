@@ -445,7 +445,7 @@ globus_i_xio_http_copy_residue(
                         > max_content)
                 {
                     http_handle->user_read_iov[i].iov_len =
-                        headers->content_length - nbytes;
+                        max_content - nbytes;
                     nbytes += http_handle->user_read_iov[i].iov_len;
                 }
             }
