@@ -392,18 +392,51 @@ globus_l_io_iattr_copy(
         goto error_alloc;
     }
     
+    memset(&dest_iattr, 0, sizeof(globus_l_io_attr_t));
+    
     dest_iattr->type = source_iattr->type;
-    dest_iattr->file_flags = source_iattr->file_flags;
+    if(dest_iattr->type == GLOBUS_I_IO_TCP_ATTR)
+    {
+        dest_iattr->authentication_mode = 
+            GLOBUS_IO_SECURE_AUTHENTICATION_MODE_NONE;
+        dest_iattr->authorization_mode = 
+            GLOBUS_IO_SECURE_AUTHORIZATION_MODE_NONE;
+        dest_iattr->channel_mode = 
+            GLOBUS_IO_SECURE_CHANNEL_MODE_CLEAR;
+
+        result = globus_io_attr_get_secure_authorization_mode(
+            &dest_iattr,
+            &dest_iattr->authorization_mode,
+            &dest_iattr->authz_data);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error_auth_copy;
+        }
+    }
+    else
+    {
+        globus_assert(dest_iattr->type == GLOBUS_I_IO_FILE_ATTR);
+        dest_iattr->file_flags = source_iattr->file_flags;
+    }
+    
     result = globus_xio_attr_copy(&dest_iattr->attr, source_iattr->attr);
     if(result != GLOBUS_SUCCESS)
     {
-        goto error_copy;
+        goto error_xio_copy;
     }
     
     *dest = dest_iattr;
     return GLOBUS_SUCCESS;
 
-error_copy:
+error_xio_copy:
+    if(dest_iattr->authz_data.identity != GSS_C_NO_NAME)
+    {
+        OM_uint32                       minor_status;
+
+        gss_release_name(&minor_status, dest_iattr->authz_data.identity);
+    }
+    
+error_auth_copy:
     globus_free(dest_iattr);
     
 error_alloc:
@@ -1161,6 +1194,13 @@ globus_io_tcpattr_destroy(
     GlobusLIOCheckAttr(attr, GLOBUS_I_IO_TCP_ATTR);
     
     iattr = (globus_l_io_attr_t *) *attr;
+    
+    if(dest_iattr->authz_data.identity != GSS_C_NO_NAME)
+    {
+        OM_uint32                       minor_status;
+
+        gss_release_name(&minor_status, dest_iattr->authz_data.identity);
+    }
     
     globus_xio_attr_destroy(iattr->attr);
     globus_free(iattr);
@@ -3899,6 +3939,7 @@ globus_io_attr_get_secure_authorization_mode(
     
     GlobusLIOCheckAttr(attr, GLOBUS_I_IO_TCP_ATTR);
     GlobusLIOCheckNullParam(data);
+    GlobusLIOCheckNullParam(mode);
     
     result = GlobusLIOMalloc(*data, globus_l_io_secure_authorization_data_t);
     if(result != GLOBUS_SUCCESS)
