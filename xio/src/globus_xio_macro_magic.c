@@ -232,8 +232,12 @@ globus_xio_driver_open_deliver_DEBUG(
         {
             _restart.op = op;
             _restart.restarted = GLOBUS_FALSE;
-            globus_thread_blocking_callback_push(
-                globus_i_xio_will_block_cb, &_restart, &_ndx);
+            globus_thread_blocking_space_callback_push(
+                globus_i_xio_will_block_cb,
+                &_restart,
+                _op->blocking ?
+                    GLOBUS_CALLBACK_GLOBAL_SPACE : _op->_op_handle->space,
+                &_ndx);
 
             _op->ndx = _my_op->caller_ndx;
             _my_op->cb(_op, _res, _my_op->user_arg);
@@ -727,8 +731,12 @@ globus_xio_driver_write_deliver_DEBUG(
         {
             _restart.op = op;
             _restart.restarted = GLOBUS_FALSE;
-            globus_thread_blocking_callback_push(
-                globus_i_xio_will_block_cb, &_restart, &_ndx);
+            globus_thread_blocking_space_callback_push(
+                globus_i_xio_will_block_cb,
+                &_restart,
+                _op->blocking ?
+                    GLOBUS_CALLBACK_GLOBAL_SPACE : _op->_op_handle->space,
+                &_ndx);
 
             _op->ndx = _my_op->caller_ndx;
             _my_op->_op_ent_data_cb(_op, _op->cached_res,
@@ -1092,8 +1100,12 @@ globus_xio_driver_read_deliver_DEBUG(
         {
             _restart.op = op;
             _restart.restarted = GLOBUS_FALSE;
-            globus_thread_blocking_callback_push(
-                globus_i_xio_will_block_cb, &_restart, &_ndx);
+            globus_thread_blocking_space_callback_push(
+                globus_i_xio_will_block_cb,
+                &_restart,
+                _op->blocking ?
+                    GLOBUS_CALLBACK_GLOBAL_SPACE : _op->_op_handle->space,
+                &_ndx);
 
             _op->ndx = _my_op->caller_ndx;
             _my_op->_op_ent_data_cb(_op, _op->cached_res,

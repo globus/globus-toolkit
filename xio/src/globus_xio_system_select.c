@@ -637,7 +637,8 @@ globus_l_xio_system_cancel_cb(
                         op_info->type == GLOBUS_L_OPERATION_READV           ||
                         op_info->type == GLOBUS_L_OPERATION_RECV            ||
                         op_info->type == GLOBUS_L_OPERATION_RECVFROM        ||
-                        op_info->type == GLOBUS_L_OPERATION_RECVMSG)
+                        op_info->type == GLOBUS_L_OPERATION_RECVMSG         ||
+                        op_info->type == GLOBUS_L_OPERATION_ACCEPT)
                     {
                         if(pend)
                         {
@@ -1528,7 +1529,10 @@ globus_l_xio_system_handle_read(
 
             if(new_fd < 0)
             {
-                result = GlobusXIOErrorSystemError("accept", errno);
+                if(errno != EAGAIN && errno != EWOULDBLOCK)
+                {
+                    result = GlobusXIOErrorSystemError("accept", errno);
+                }
             }
             else
             {
@@ -1543,6 +1547,7 @@ globus_l_xio_system_handle_read(
                 else
                 {
                     *read_info->sop.non_data.out_fd = new_fd;
+                    read_info->nbytes = 1;
                 }
             }
         }
@@ -1638,7 +1643,6 @@ globus_l_xio_system_handle_read(
         break;
     }
 
-    /* always true for accept operations */
     if(read_info->nbytes >= read_info->waitforbytes ||
         result != GLOBUS_SUCCESS)
     {
@@ -2184,10 +2188,18 @@ globus_xio_system_register_accept(
 {
     globus_result_t                     result;
     globus_l_operation_info_t *         op_info;
+    int                                 rc;
     GlobusXIOName(globus_xio_system_register_accept);
 
     GlobusXIOSystemDebugEnterFD(listener_fd);
-
+    
+    GlobusIXIOSystemAddNonBlocking(listener_fd, rc);
+    if(rc < 0)
+    {
+        result = GlobusXIOErrorSystemError("fcntl", errno);
+        goto error_nonblocking;
+    }
+    
     GlobusIXIOSystemAllocOperation(op_info);
     if(!op_info)
     {
@@ -2202,6 +2214,7 @@ globus_xio_system_register_accept(
     op_info->user_arg = user_arg;
     op_info->sop.non_data.callback = callback;
     op_info->sop.non_data.out_fd = out_fd;
+    op_info->waitforbytes = 1;
 
     result = globus_l_xio_system_register_read(listener_fd, op_info);
 
@@ -2219,6 +2232,7 @@ error_register:
     GlobusIXIOSystemFreeOperation(op_info);
 
 error_op_info:
+error_nonblocking:
     GlobusXIOSystemDebugExitWithErrorFD(listener_fd);
     return result;
 }

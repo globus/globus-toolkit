@@ -31,8 +31,8 @@ globus_l_xio_will_block_kickout(
 
 void
 globus_i_xio_will_block_cb(
-    int                                     space,
     globus_thread_callback_index_t          ndx,
+    globus_callback_space_t                 space,
     void *                                  user_args)
 {
     globus_i_xio_restart_t *                restart;
@@ -56,7 +56,7 @@ globus_i_xio_will_block_cb(
         NULL,
         globus_l_xio_will_block_kickout,
         (void *)op,
-        space);
+        op->blocking ? GLOBUS_CALLBACK_GLOBAL_SPACE : op->_op_handle->space);
 }
 
 void
