@@ -187,11 +187,12 @@ case ${host}--$1 in
         else
             if test "$GLOBUS_CC" = "gcc"; then
                 AC_PATH_PROGS(lac_cv_CC, $CC gcc)
+                AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC c++ g++ gcc)
             else
                 AC_PATH_PROGS(lac_cv_CC, $CC cc $lac_cv_CC)
+                AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC CC)
             fi
             
-            AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC CC c++ g++ gcc)
             AC_PATH_PROGS(lac_cv_F77, $F77 f77 g77)
             AC_PATH_PROGS(lac_cv_F90, $F90 f90)
         fi
@@ -294,11 +295,12 @@ case ${host}--$1 in
         else
             if test "$GLOBUS_CC" = "gcc"; then
                 AC_PATH_PROGS(lac_cv_CC, $CC gcc)
+                AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC c++ g++ gcc)
             else
                 AC_PATH_PROGS(lac_cv_CC, $CC cc)
+            AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC aCC)
             fi
             
-            AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC CC c++ g++ gcc)
             AC_PATH_PROGS(lac_cv_F77, $F77 f77 g77)
             AC_PATH_PROGS(lac_cv_F90, $F90 f90)
         fi
@@ -343,11 +345,12 @@ case ${host}--$1 in
         else
             if test "$GLOBUS_CC" = "gcc"; then
                 AC_PATH_PROGS(lac_cv_CC, $CC gcc)
+                AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC c++ g++ gcc)
             else
                 AC_PATH_PROGS(lac_cv_CC, $CC cc)
+                AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC aCC)
             fi
             
-            AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC CC c++ g++ gcc)
             AC_PATH_PROGS(lac_cv_F77, $F77 f77 g77)
             AC_PATH_PROGS(lac_cv_F90, $F90 f90)
         fi
@@ -369,11 +372,12 @@ case ${host}--$1 in
         else
             if test "$GLOBUS_CC" = "gcc"; then
                 AC_PATH_PROGS(lac_cv_CC, $CC gcc)
+                AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC c++ g++ gcc)
             else
                 AC_PATH_PROGS(lac_cv_CC, $CC cc)
+                AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC aCC)
             fi
             
-            AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC CC c++ g++ gcc)
             AC_PATH_PROGS(lac_cv_F77, $F77 f77 g77)
             AC_PATH_PROGS(lac_cv_F90, $F90 f90)
         fi
@@ -393,11 +397,12 @@ case ${host}--$1 in
         else
             if test "$GLOBUS_CC" = "gcc"; then
                 AC_PATH_PROGS(lac_cv_CC, $CC gcc)
+                AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC c++ g++ gcc)
             else
                 AC_PATH_PROGS(lac_cv_CC, $CC cc)
+                AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC aCC c++ g++ gcc)
             fi
             
-            AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC CC c++ g++ gcc)
             AC_PATH_PROGS(lac_cv_F77, $F77 f77 g77)
             AC_PATH_PROGS(lac_cv_F90, $F90 f90)
         fi
@@ -545,11 +550,12 @@ case ${host}--$1 in
         else
             if test "$GLOBUS_CC" = "gcc"; then
                 AC_PATH_PROGS(lac_cv_CC, $CC gcc)
+                AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC c++ g++ gcc)
             else
                 AC_PATH_PROGS(lac_cv_CC, $CC xlc)
+            AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC xlC)
             fi
             
-            AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC xlC c++ g++ gcc)
             AC_PATH_PROGS(lac_cv_F77, $F77 xlf)
             AC_PATH_PROGS(lac_cv_F90, $F90 xlf90)
             if test "$lac_cv_F90" = "xlf" ; then
@@ -588,11 +594,12 @@ case ${host}--$1 in
         else
             if test "$GLOBUS_CC" = "gcc"; then
                 AC_PATH_PROGS(lac_cv_CC, $CC gcc)
+                AC_PATH_PROGS(lac_cv_CXX, $CXX CC c++ g++ gcc)
             else
                 AC_PATH_PROGS(lac_cv_CC, $CC cc)
+                AC_PATH_PROGS(lac_cv_CXX, $CXX CC cxx)
             fi
             
-            AC_PATH_PROGS(lac_cv_CXX, $CXX CC cxx c++ g++ gcc)
             AC_PATH_PROGS(lac_cv_F77, $F77 f77 g77)
             AC_PATH_PROGS(lac_cv_F90, $F90 f90)
         fi
