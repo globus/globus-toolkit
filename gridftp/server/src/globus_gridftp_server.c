@@ -315,7 +315,10 @@ globus_l_gfs_spawn_child(
         {
             goto child_close_error;
         }
-        new_argv[0] = globus_i_gfs_config_get("exec_name");
+        if((new_argv[0] = globus_i_gfs_config_string("exec")) == NULL)
+        {
+            new_argv[0] = globus_i_gfs_config_string("exec_name");
+        }
         for(i = 1; prog_argv[i] != NULL; i++)
         {
             if(strcmp(prog_argv[i], "-S") == 0 ||
