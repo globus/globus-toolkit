@@ -28,7 +28,7 @@ static char usage[] =
 "    -t | --time_left    <hours>     Query for creds with lifetime greater \n"
 "                                    than specified <hours>\n"
 "    -r | --remove                   Remove credentials matching query\n"
-"    -L | --lock         <msg>       Lock access to credential(s).\n"
+"    -L | --lock         'msg'       Lock access to credential(s).\n"
 "                                    Specified msg will be returned instead.\n"
 "    -U | --unlock                   Unlock previously locked credential(s).\n"
 "    -v | --verbose                  Display debugging messages\n"
