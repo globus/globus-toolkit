@@ -364,6 +364,7 @@ typedef struct
     globus_bool_t			publish_jobs;
     char *				job_reporting_dir;
     char *				job_reporting_file;
+    char *				cache_location;
 }
 globus_gram_jobmanager_request_t;
 

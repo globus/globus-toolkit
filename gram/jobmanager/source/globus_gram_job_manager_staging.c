@@ -434,7 +434,6 @@ globus_l_gram_job_manager_staging_match(
 /* globus_l_gram_job_manager_staging_match() */
 
 static
-static
 void
 globus_l_gram_job_manager_staging_free_all(
     globus_gram_jobmanager_request_t *	request)

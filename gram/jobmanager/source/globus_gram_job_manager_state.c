@@ -279,16 +279,6 @@ globus_gram_job_manager_state_machine(
 	        GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
 	    break;
 	}
-	rc = globus_gass_cache_open(NULL, &request->cache_handle);
-
-	if(rc != GLOBUS_SUCCESS)
-	{
-	    request->failure_code = rc;
-	    request->jobmanager_state = 
-	        GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
-	    break;
-	}
-
 	request->rsl = globus_rsl_parse(request->rsl_spec);
 
 	if(!request->rsl)
@@ -357,6 +347,28 @@ globus_gram_job_manager_state_machine(
 	    request->failure_code = rc;
 	    request->jobmanager_state =
 		GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
+	    break;
+	}
+	rc = globus_gram_job_manager_rsl_eval_one_attribute(
+		request,
+		GLOBUS_GRAM_PROTOCOL_GASS_CACHE_PARAM,
+		&request->cache_location);
+
+	if(rc != GLOBUS_SUCCESS)
+	{
+	    request->failure_code = rc;
+	    request->jobmanager_state = 
+	        GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
+	    break;
+	}
+
+	rc = globus_gass_cache_open(request->cache_location,
+		                    &request->cache_handle);
+	if(rc != GLOBUS_SUCCESS)
+	{
+	    request->failure_code = rc;
+	    request->jobmanager_state = 
+	        GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
 	    break;
 	}
 	

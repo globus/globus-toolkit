@@ -208,6 +208,10 @@ main(
         {
             /* NOP */ ;
         }
+	else if (strcmp(argv[i], "-cache-location") == 0)
+	{
+	    request->cache_location = globus_libc_strdup(argv[++i]);
+	}
 	else if (strcmp(argv[i], "-scratch-dir-base") == 0)
 	{
 	    request->scratch_dir_base = globus_libc_strdup(argv[++i]);

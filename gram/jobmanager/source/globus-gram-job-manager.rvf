@@ -250,3 +250,7 @@ Attribute: filecleanup
 Description: "Specifies a list of files which will be removed after the job
               is completed."
 ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
+
+Attribute: gasscache
+Description: "Specifies location to override the GASS cache location."
+ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
