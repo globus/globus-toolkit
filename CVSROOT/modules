@@ -62,7 +62,8 @@ all -a \
         ogsa-c\
         ogsa_messaging\
         program_execution\
-	icu4c
+	icu4c\
+        usage
 
 gp -a \
         archive_compress\
