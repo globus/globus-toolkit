@@ -422,14 +422,11 @@ globus_l_xio_ftp_cmd_read_cb(
                     end_offset--;
                 }
 
-                if(!(end_offset == 2 && *tmp_ptr == '\r' && tmp_ptr[1] == '\n'))
-                {
-                    /* copy it into its own buffer */
-                    done_buf = globus_malloc(end_offset+1);
-                    memcpy(done_buf, handle->buffer, end_offset);
-                    done_buf[end_offset] = '\0';
-                    globus_fifo_enqueue(&handle->read_q, done_buf);
-                }
+                /* copy it into its own buffer */
+                done_buf = globus_malloc(end_offset+1);
+                memcpy(done_buf, handle->buffer, end_offset);
+                done_buf[end_offset] = '\0';
+                globus_fifo_enqueue(&handle->read_q, done_buf);
 
                 remain = handle->buffer_ndx - end_offset;
                 if(remain > 0)

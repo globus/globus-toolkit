@@ -389,6 +389,7 @@ globus_l_gsc_read_cb(
     globus_i_gsc_op_t *                     op;
     char *                                  command_name = NULL;
     int                                     sc;
+    int                                     ctr;
     GlobusGridFTPServerName(globus_l_gsc_read_cb);
 
     server_handle = (globus_i_gsc_server_handle_t *) user_arg;
@@ -408,10 +409,36 @@ globus_l_gsc_read_cb(
             case GLOBUS_L_GSC_STATE_PROCESSING:
                 /*  parse out the command name */
                 command_name = (char *) globus_malloc(len + 1);
-                sc = sscanf(buffer, "%s", command_name);
-                /* stack will make sure this never happens */
-                if(sc != 1)
+                for(ctr = 0, tmp_ptr = buffer; 
+                    *tmp_ptr != ' ' && *tmp_ptr != '\r'; 
+                    tmp_ptr++, ctr++)
                 {
+                    command_name[ctr] = toupper(*tmp_ptr);
+                }
+                command_name[ctr] = '\0';
+                cmd_list = (globus_list_t *) globus_hashtable_lookup(
+                            &server_handle->cmd_table, command_name);
+                /*  This may be NULL, if so  we don't suport this command.
+                 *  Just to the q anyway, it will be dealt with later. */
+
+                /* if not an abort */
+                if(strcmp(command_name, "ABOR") != 0)
+                {
+                    op = globus_l_gsc_op_create(
+                        cmd_list, buffer, len, server_handle);
+                    if(op == NULL)
+                    {
+                        res = GlobusGridFTPServerErrorMemory("op");
+                        goto err;
+                    }
+
+                    globus_fifo_enqueue(&server_handle->read_q, op);
+                    /* if no errors outstanding */
+                    if(server_handle->state == GLOBUS_L_GSC_STATE_OPEN)
+                    {
+                        globus_l_gsc_process_next_cmd(server_handle);
+                    }
+                    /* allow outstanding commands, just queue them up */
                     res = globus_xio_register_read(
                             xio_handle,
                             globus_l_gsc_fake_buffer,
@@ -427,41 +454,24 @@ globus_l_gsc_read_cb(
                 }
                 else
                 {
-                    for(tmp_ptr = command_name; *tmp_ptr != '\0'; tmp_ptr++)
+                    if(server_handle->state == GLOBUS_L_GSC_STATE_OPEN)
                     {
-                        *tmp_ptr = toupper(*tmp_ptr);
-                    }
-                    cmd_list = (globus_list_t *) globus_hashtable_lookup(
-                                &server_handle->cmd_table, command_name);
-                    /*  This may be NULL, if so  we don't suport this command.
-                     *  Just to the q anyway, it will be dealt with later. */
-
-                    /* if not an abort */
-                    if(strcmp(command_name, "ABOR") != 0)
-                    {
-                        op = globus_l_gsc_op_create(
-                            cmd_list, buffer, len, server_handle);
-                        if(op == NULL)
+                        server_handle->state=GLOBUS_L_GSC_STATE_PROCESSING;
+                        res = globus_l_gsc_final_reply(
+                            server_handle,
+                            "226 Abort successful\r\n");
+                        if(res != GLOBUS_SUCCESS)
                         {
-                            res = GlobusGridFTPServerErrorMemory("op");
                             goto err;
                         }
-
-                        globus_fifo_enqueue(&server_handle->read_q, op);
-                        /* if no errors outstanding */
-                        if(server_handle->state == GLOBUS_L_GSC_STATE_OPEN)
-                        {
-                            globus_l_gsc_process_next_cmd(server_handle);
-                        }
-                        /* allow outstanding commands, just queue them up */
                         res = globus_xio_register_read(
-                                xio_handle,
-                                globus_l_gsc_fake_buffer,
-                                globus_l_gsc_fake_buffer_len,
-                                globus_l_gsc_fake_buffer_len,
-                                NULL,
-                                globus_l_gsc_read_cb,
-                                (void *) server_handle);
+                            xio_handle,
+                            globus_l_gsc_fake_buffer,
+                            globus_l_gsc_fake_buffer_len,
+                            globus_l_gsc_fake_buffer_len,
+                            NULL,
+                            globus_l_gsc_read_cb,
+                            (void *) server_handle);
                         if(res != GLOBUS_SUCCESS)
                         {
                             goto err;
@@ -469,54 +479,28 @@ globus_l_gsc_read_cb(
                     }
                     else
                     {
-                        if(server_handle->state == GLOBUS_L_GSC_STATE_OPEN)
-                        {
-                            server_handle->state=GLOBUS_L_GSC_STATE_PROCESSING;
-                            res = globus_l_gsc_final_reply(
-                                server_handle,
-                                "226 Abort successful\r\n");
-                            if(res != GLOBUS_SUCCESS)
-                            {
-                                goto err;
-                            }
-                            res = globus_xio_register_read(
-                                xio_handle,
-                                globus_l_gsc_fake_buffer,
-                                globus_l_gsc_fake_buffer_len,
-                                globus_l_gsc_fake_buffer_len,
-                                NULL,
-                                globus_l_gsc_read_cb,
-                                (void *) server_handle);
-                            if(res != GLOBUS_SUCCESS)
-                            {
-                                goto err;
-                            }
-                        }
-                        else
-                        {
-                            server_handle->ref--;
-                            server_handle->state = GLOBUS_L_GSC_STATE_ABORTING;
-                            /*
-                             *  cancel the outstanding command.  In its callback
-                             *  we flush the q and respond to the ABOR
-                             */
-                            globus_assert(server_handle->outstanding_op!=NULL);
+                        server_handle->ref--;
+                        server_handle->state = GLOBUS_L_GSC_STATE_ABORTING;
+                        /*
+                         *  cancel the outstanding command.  In its callback
+                         *  we flush the q and respond to the ABOR
+                         */
+                        globus_assert(server_handle->outstanding_op!=NULL);
 
-                            /*
-                             *  notify user that an abort is requested if they
-                             *  are interested in hearing about it.
-                             *  In any case  we will just wait for them to 
-                             *  finish 
-                             *  to respond to the abort.  Their notification cb
-                             *  is simply a way to allow *them* to cancel what 
-                             *  they are doing, this can be called locked
-                             */
-                            if(server_handle->funcs.abort_cb != NULL)
-                            {
-                                server_handle->funcs.abort_cb(
-                                    server_handle->outstanding_op,
+                        /*
+                         *  notify user that an abort is requested if they
+                         *  are interested in hearing about it.
+                         *  In any case  we will just wait for them to 
+                         *  finish 
+                         *  to respond to the abort.  Their notification cb
+                         *  is simply a way to allow *them* to cancel what 
+                         *  they are doing, this can be called locked
+                         */
+                        if(server_handle->funcs.abort_cb != NULL)
+                        {
+                            server_handle->funcs.abort_cb(
+                                server_handle->outstanding_op,
                                     server_handle->abort_arg);
-                            }
                         }
                     }
                 }

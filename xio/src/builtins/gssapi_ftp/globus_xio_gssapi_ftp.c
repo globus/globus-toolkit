@@ -1181,7 +1181,6 @@ globus_l_xio_gssapi_ftp_server_read_cb(
 
                 globus_xio_driver_finished_read(
                     op, GLOBUS_SUCCESS, handle->read_iov[0].iov_len);
-
                 break;
 
             default:
