@@ -320,7 +320,7 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
     requestlen = myproxy_recv(attrs, client_buffer, sizeof(client_buffer));
     if (requestlen < 0) {
         myproxy_log_verror();
-	respond_with_error_and_die(attrs, "Error in myproxy_recv_response()");
+	respond_with_error_and_die(attrs, "Error in myproxy_recv()");
     }
    
     /* Deserialize client request */
@@ -339,7 +339,7 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
 				   "Invalid version number received.\n");
     }
 
-    /* Check client username and pass pharse */
+    /* Check client username and pass phrase */
     if ((client_request->username == NULL) ||
 	(strlen(client_request->username) == 0)) 
     {
@@ -386,14 +386,9 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
       case MYPROXY_PUT_PROXY:
       case MYPROXY_INFO_PROXY:
       case MYPROXY_DESTROY_PROXY:
-	/* Either a service or a client can do these operations */
+	/* Only a client can do these operations */
 	authorization_ok = myproxy_server_check_client(context, client_name);
 	
-	if (authorization_ok != 1)
-	{
-	    authorization_ok = myproxy_server_check_service(context,
-							    client_name);
-	}
 	break;
     }
 
@@ -474,7 +469,7 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
 	if (credentials_exist &&
 	    !client_owns_credentials)
 	{
-	    myproxy_log("Username \"%s\" in user by another client",
+	    myproxy_log("Username \"%s\" in use by another client",
 			client_request->username);
 	    respond_with_error_and_die(attrs,
 				       "Username in use by another client");
@@ -542,7 +537,7 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
 	free(client_creds);
     }
 
-    myproxy_destroy(attrs, client_request, server_response);
+    myproxy_free(attrs, client_request, server_response);
     if (context->config_file != NULL) {
         free(context->config_file);
         context->config_file = NULL;
