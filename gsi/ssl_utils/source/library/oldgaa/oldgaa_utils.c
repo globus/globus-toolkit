@@ -448,21 +448,13 @@ Returns:
 
 int
 oldgaa_regex_matches_string(const char * const  string,
-                         const char * const  regex)
+                            const char * const  regex)
 {
-  /* Compiled regex */
-  regex_t				preg;
-
-  /* Regex compilation flags */
-  int					cflags = 0;
-
-  /* Regex comparison flags */
-  int					eflags = 0;
-
   /* Our result (1 == match) */
   int					result = 0;
 
-
+  char *                                star;
+  
   /* Check arguments */
   if (!string || !regex)
   {
@@ -470,14 +462,19 @@ oldgaa_regex_matches_string(const char * const  string,
     return -1;
   }
 
-  if (oldgaa_regex_regcomp(&preg, regex, cflags) != 0)
-    return -1;
 
-  result = (oldgaa_regex_regexec(&preg, string,
-			       0, NULL, /* We don't care about matches */
-			       eflags) == 0);
-
-  oldgaa_regex_regfree(&preg);
+  if(!strcmp(string,regex))
+  {
+      result = 1;
+  }
+  else
+  {
+      if((star = strrchr(regex,'*')) &&
+         !strncmp(regex,string,(int) (star-regex)/sizeof(char)))
+      {
+          result = 1;
+      }
+  }
 
   return result;
 
@@ -658,76 +655,9 @@ static
 char *
 oldgaa_to_regex(const char * const glob_regex)
 {
-  char *converted_regex;
-  const char *globp;
-  char *convertedp;
-  int length;
-
-
-  /* Sanity check arguments */
-  if (glob_regex == NULL)
-  {
-    errno = ERRNO_INVALID_ARGUMENT;
-    return NULL;
-  }
-
-  /*
-   * Make a buffer large enough to hold the largest possible converted
-   * regex from the string
-   */
-  length = 
-    strlen(glob_regex) * 2 /* maximum size is twice current */
-    + 2 /* for '^' and '$' */
-    + 1 /* for NUL */;
-
-   converted_regex = malloc(length);
-
-  if (!converted_regex) out_of_memory();
-
-  convertedp = converted_regex;
-
-  *convertedp++ = '^';
-
-  for (globp = glob_regex;
-       *globp != '\0';
-       globp++)
-  {
-
-    switch(*globp)
-    {
-
-    case '*':
-      /* '*' converts to '.*' */
-      *convertedp++ = '.';
-      *convertedp++ = '*';
-      break;
-
-    case '?':
-      /* '?' converts to '.' */
-      *convertedp++ = '.';
-      break;
-
-    case '.':
-    case '^':
-    case '$':
-    case '\\':
-      /* These are escaped by prepending a backslash */
-      *convertedp++ = '\\';
-      *convertedp++ = *globp;
-      break;
-
-    default:
-      /* Anything else is copied verbatim */
-      *convertedp++ = *globp;
-    }
-  }
-    
-  *convertedp++ = '$';
-
-  *convertedp = '\0';
-
-  return converted_regex;
-
+    /* don't do the conversion */
+    /* we're no longer doing regex matching -Sam */
+    return strdup(glob_regex);
 } /* oldgaa_to_regex() */
 
 

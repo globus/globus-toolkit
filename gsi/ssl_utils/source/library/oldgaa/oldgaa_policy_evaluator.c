@@ -65,7 +65,7 @@ oldgaa_find_matching_entry(uint32             *minor_status,
  /* do exact match */
  if(oldgaa_compare_principals(ptr, entry))  return entry;
 
- #ifdef PRINCIPALS_REGEX_MATCH
+#ifdef PRINCIPALS_REGEX_MATCH
 {
   char    **subject_regexes = NULL; /* NULL terminated list of regexes */
   int i;
