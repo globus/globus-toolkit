@@ -3645,9 +3645,10 @@ globus_i_gfs_data_session_start(
     }
     session_handle->dsi = globus_l_gfs_dsi;
     globus_handle_table_init(&session_handle->handle_table, NULL);
-
     globus_mutex_init(&session_handle->mutex, NULL);
     session_handle->ref = 1;
+    session_handle->del_cred = session_info->del_cred;
+
     op->session_handle = session_handle;
     op->ipc_handle = ipc_handle;
     op->uid = getuid();
