@@ -187,6 +187,6 @@ sub runkeygen
 fixpaths();
 runkeygen();
 
-my $metadata = new Grid::GPT::Setup(package_name => "gsi-openssh-setup");
+my $metadata = new Grid::GPT::Setup(package_name => "gsi_openssh_setup");
 
 $metadata->finish();
