@@ -1050,7 +1050,7 @@ globus_gsi_proxy_sign_req(
         goto done;
     }
 
-    if(!X509_set_version(new_pc, 3))
+    if(!X509_set_version(new_pc, 2))
     {
         GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
             result,
