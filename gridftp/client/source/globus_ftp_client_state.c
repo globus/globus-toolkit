@@ -4187,8 +4187,13 @@ globus_l_ftp_client_parse_mdtm(
     globus_ftp_control_response_t *		response)
 {
     char *					p;
-    struct tm					tm;
-    time_t					t;
+    struct tm                                   tm;
+    struct tm                                   gmt_now_tm;
+    struct tm *                                 gmt_now_tm_p;
+    time_t                                      offset;
+    time_t                                      gmt_now;
+    time_t                                      now;
+    time_t                                      file_time;
     float					fraction;
     unsigned long				nsec = 0UL;
     int 					rc;
@@ -4270,9 +4275,35 @@ globus_l_ftp_client_parse_mdtm(
 	sscanf(p, "%f", &fraction);
 	nsec = fraction * 1000000000;
     }
-    t = mktime(&tm);
+    
+    file_time = mktime(&tm);
+    if(file_time == (time_t) -1)
+    {
+	goto error_exit;
+    }
+    
+    now = time(&now);
+    if(now == (time_t) -1)
+    {
+	goto error_exit;
+    }
+    
+    memset(&gmt_now_tm, '\0', sizeof(struct tm));
+    gmt_now_tm_p = globus_libc_gmtime_r(&now, &gmt_now_tm);
+    if(gmt_now_tm_p == NULL)
+    {
+	goto error_exit;
+    }
+    
+    gmt_now = mktime(&gmt_now_tm);
+    if(gmt_now == (time_t) -1)
+    {
+	goto error_exit;
+    }
+    
+    offset = now - gmt_now;
 
-    client_handle->modification_time_pointer->tv_sec = t;
+    client_handle->modification_time_pointer->tv_sec = file_time + offset;
     client_handle->modification_time_pointer->tv_nsec = nsec;
 
     return;

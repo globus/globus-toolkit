@@ -9,6 +9,12 @@
 #undef HAVE_CTIME
 #undef HAVE_CTIME_R
 
+#undef HAVE_LOCALTIME
+#undef HAVE_LOCALTIME_R
+
+#undef HAVE_GMTIME
+#undef HAVE_GMTIME_R
+
 #undef HAVE_GETPWNAM
 #undef HAVE_GETPWNAM_R
 

@@ -239,9 +239,20 @@ struct hostent *globus_libc_gethostbyaddr_r(char *addr,
 					    char *buffer,
 					    int buflen,
 					    int *h_errnop);
+
 char *globus_libc_ctime_r(time_t *clock,
 			  char *buf,
 			  int buflen);
+
+struct tm *
+globus_libc_localtime_r(
+    const time_t *timep, 
+    struct tm *result);
+
+struct tm *
+globus_libc_gmtime_r(
+    const time_t *timep, 
+    struct tm *result);
 
 int globus_libc_getpwnam_r(char *name,
 			   struct passwd *pwd,

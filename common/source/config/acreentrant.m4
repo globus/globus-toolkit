@@ -133,8 +133,12 @@ AC_CHECK_FUNCS(gethostbyname_r, [
 fi
 
 AC_CHECK_FUNCS(ctime)
+AC_CHECK_FUNCS(localtime)
+AC_CHECK_FUNCS(gmtime)
 
 if test $GLOBUS_THREADS != "none"; then
+    AC_CHECK_FUNCS(localtime_r)
+    AC_CHECK_FUNCS(gmtime_r)
     AC_CHECK_FUNCS(ctime_r, 
         [
             AC_MSG_CHECKING(number of arguments to ctime_r)

@@ -1599,6 +1599,82 @@ globus_libc_ctime_r(time_t *clock,
     return tmp_buf;
 } /* globus_libc_ctime_r() */
 
+/******************************************************************************
+Function: globus_libc_localtime_r()
+
+Description:
+
+Parameters:
+
+Returns:
+******************************************************************************/
+struct tm *
+globus_libc_localtime_r(
+    const time_t *timep, 
+    struct tm *result)
+{
+        struct tm * tmp_tm;
+        
+#   if !defined(HAVE_LOCALTIME_R)
+    {
+	globus_libc_lock();
+	tmp_tm = localtime(timep);
+
+	if(tmp_tm != GLOBUS_NULL)
+	{
+	    memcpy(result, tmp_tm, sizeof(struct tm));
+	}
+	globus_libc_unlock();
+
+	tmp_tm = result;
+    }
+#   else
+    {
+        tmp_tm = localtime_r(timep, result);
+    }
+#   endif
+
+    return tmp_tm;
+} /* globus_libc_localtime_r() */
+
+/******************************************************************************
+Function: globus_libc_gmtime_r()
+
+Description:
+
+Parameters:
+
+Returns:
+******************************************************************************/
+struct tm *
+globus_libc_gmtime_r(
+    const time_t *timep, 
+    struct tm *result)
+{
+        struct tm * tmp_tm;
+        
+#   if !defined(HAVE_GMTIME_R)
+    {
+	globus_libc_lock();
+	tmp_tm = gmtime(timep);
+
+	if(tmp_tm != GLOBUS_NULL)
+	{
+	    memcpy(result, tmp_tm, sizeof(struct tm));
+	}
+	globus_libc_unlock();
+
+	tmp_tm = result;
+    }
+#   else
+    {
+        tmp_tm = gmtime_r(timep, result);
+    }
+#   endif
+
+    return tmp_tm;
+} /* globus_libc_gmtime_r() */
+
 /*
  * These functions are not defined on win32
  */

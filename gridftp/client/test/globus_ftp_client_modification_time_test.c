@@ -94,8 +94,7 @@ int main(int argc,
     }
     if(error == GLOBUS_SUCCESS)
     {
-	/* Convert timestamp to UTC */
-	t = (time_t) modification_time.tv_sec - timezone;
+	t = (time_t) modification_time.tv_sec;
 
 	printf("Last modified %s",  ctime(&t));
     }
