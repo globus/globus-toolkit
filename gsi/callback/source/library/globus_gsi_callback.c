@@ -675,9 +675,10 @@ globus_i_gsi_callback_check_revoked(
             X509_get_issuer_name(x509_context->current_cert),
             &x509_object))
     {
-	X509 *				issuer = NULL;
+	X509 *				issuer;
         time_t                          last_time;
         time_t                          next_time;
+        EVP_PKEY *                      issuer_key;
 
 	contents_freed = 0;
 
@@ -703,26 +704,50 @@ globus_i_gsi_callback_check_revoked(
 				    x509_context, 
 				    x509_context->current_cert) <= 0)
 	{
+            char *                      subject_string;
+
+            subject_string = X509_NAME_oneline(
+                X509_get_issuer_name(x509_context->current_cert),
+                NULL, 0);
+            
 	    GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
 		result,
 		GLOBUS_GSI_CALLBACK_ERROR_INVALID_CRL,
 		("Couldn't get the issuer certificate of the CRL with "
-		 "subject: %s",
-		 X509_NAME_oneline(
-		     X509_get_issuer_name(x509_context->current_cert),
-		     NULL, 0)));
+		 "subject: %s", subject_string));
+            free(subject_string);
+            x509_context->error = X509_V_ERR_CRL_SIGNATURE_FAILURE;
+            goto free_X509_object;
 	}
 
-        if (X509_CRL_verify(crl, X509_get_pubkey(issuer)) <= 0)
+        issuer_key = X509_get_pubkey(issuer);
+        
+        if(issuer_key == NULL)
         {
             GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_CALLBACK_ERROR_INVALID_CRL,
                 ("Couldn't verify that the available CRL is valid"));
             x509_context->error = X509_V_ERR_CRL_SIGNATURE_FAILURE;
+            X509_free(issuer);
             goto free_X509_object;
         }
 
+        X509_free(issuer);
+
+        if (X509_CRL_verify(crl, issuer_key) <= 0)
+        {
+            GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
+                result,
+                GLOBUS_GSI_CALLBACK_ERROR_INVALID_CRL,
+                ("Couldn't verify that the available CRL is valid"));
+            x509_context->error = X509_V_ERR_CRL_SIGNATURE_FAILURE;
+            EVP_PKEY_free(issuer_key);
+            goto free_X509_object;
+        }
+
+        EVP_PKEY_free(issuer_key);
+        
         /* Check date see if expired */
     
         i = X509_cmp_current_time(crl_info->nextUpdate);
@@ -789,7 +814,7 @@ globus_i_gsi_callback_check_revoked(
     }
 
  free_X509_object:
-
+    
     if(!contents_freed)
     {
 	X509_OBJECT_free_contents(&x509_object);
