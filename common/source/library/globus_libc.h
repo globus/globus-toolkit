@@ -10,6 +10,12 @@ Description:
 
 #include "globus_common_include.h"
 #include GLOBUS_THREAD_INCLUDE
+#ifdef WIN32
+/* For addrinfo struct */
+#include <ws2tcpip.h>
+#define EAI_SYSTEM 11
+#define snprintf _snprintf
+#endif
 
 EXTERN_C_BEGIN
 
