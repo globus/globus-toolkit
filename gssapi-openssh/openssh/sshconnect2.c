@@ -561,7 +561,7 @@ userauth_gssapi(Authctxt *authctxt)
 		/* My DER encoding requires length<128 */
 		if (gss_supported->elements[mech].length < 128 &&
 		    !GSS_ERROR(ssh_gssapi_import_name(gssctxt,
-		    authctxt->host))) {
+						get_canonical_hostname(1)))) {
 			ok = 1; /* Mechanism works */
 		} else {
 			mech++;
