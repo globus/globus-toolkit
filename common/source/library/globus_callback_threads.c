@@ -2068,8 +2068,6 @@ globus_l_callback_thread_callback(
     {
         callback_info->callback_func(callback_info->callback_args);
         
-        globus_thread_yield();
-        
         run_now = GLOBUS_FALSE;
         
         globus_thread_blocking_callback_disable(&restart_index);

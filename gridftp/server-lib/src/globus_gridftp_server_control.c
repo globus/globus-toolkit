@@ -77,7 +77,7 @@ do                                                                      \
 typedef struct globus_l_gsc_cmd_ent_s
 {
     int                                 cmd;
-    char                                cmd_name[16]; /* only 5 needed */
+    char *                              cmd_name;
     globus_gsc_959_command_cb_t         cmd_cb;
     globus_gsc_959_command_desc_t       desc;
     char *                              help;
@@ -2319,11 +2319,11 @@ globus_gsc_959_command_add(
     if(command_name == NULL)
     {
         globus_list_insert(&server_handle->all_cmd_list, cmd_ent);
-        cmd_ent->cmd_name[0] = '\0';
+        cmd_ent->cmd_name = strdup("\0");
         return GLOBUS_SUCCESS;
     }
 
-    strcpy(cmd_ent->cmd_name, command_name);
+    cmd_ent->cmd_name = strdup(command_name);
     if(strncmp("SITE ", command_name, 5) == 0 && strlen(command_name) > 5)
     {
         tmp_ptr = (char *)&command_name[5]; 
