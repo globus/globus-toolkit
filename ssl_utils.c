@@ -28,12 +28,14 @@
 #if SSLEAY_VERSION_NUMBER > 0x0903
 
 /* OpenSSL 0.9.4 */
-#define PEM_CALLBACK(A,B)  A, B
+#define PEM_CALLBACK(func)	func, NULL
+#define PEM_NO_CALLBACK		NULL, NULL
 
 #else /* ! SSLEAY_VERSION_NUMBER > 0x0903 */
 
 /* SSLeay 0.9.0 */
-#define PEM_CALLBACK(A,B)  A
+#define PEM_CALLBACK(func)	func
+#define PEM_NO_CALLBACK		NULL
 
 #define STACK_OF(A) STACK
 
@@ -1248,7 +1250,7 @@ ssl_certificate_load_from_file(SSL_CREDENTIALS	*creds,
 	goto error;
     }
     
-    if (PEM_read_X509(cert_file, &cert, PEM_CALLBACK(NULL,NULL)) == NULL)
+    if (PEM_read_X509(cert_file, &cert, PEM_NO_CALLBACK) == NULL)
     {
 	verror_put_string("Error reading certificate %s", path);
 	ssl_error_to_verror();
@@ -1303,8 +1305,7 @@ ssl_private_key_load_from_file(SSL_CREDENTIALS	*creds,
     }
 
     if (PEM_read_PrivateKey(key_file, &(key),
-			    PEM_CALLBACK(my_pass_phrase_callback,
-					 NULL)) == NULL)
+			    PEM_CALLBACK(my_pass_phrase_callback)) == NULL)
     {
 	unsigned long error;
 	
@@ -1378,7 +1379,7 @@ ssl_proxy_from_pem(SSL_CREDENTIALS		*creds,
      */
 
     /* Read proxy certificate */
-    if (PEM_read_bio_X509(bio, &cert, PEM_CALLBACK(NULL,NULL)) == NULL)
+    if (PEM_read_bio_X509(bio, &cert, PEM_NO_CALLBACK) == NULL)
     {
 	verror_put_string("Error parsing proxy certificate");
 	ssl_error_to_verror();
@@ -1387,8 +1388,7 @@ ssl_proxy_from_pem(SSL_CREDENTIALS		*creds,
 
     /* Read proxy private key */
     if (PEM_read_bio_PrivateKey(bio, &(key),
-				PEM_CALLBACK(my_pass_phrase_callback,
-					     NULL)) == NULL)
+				PEM_CALLBACK(my_pass_phrase_callback)) == NULL)
     {
 	unsigned long error;
 	
@@ -1418,7 +1418,7 @@ ssl_proxy_from_pem(SSL_CREDENTIALS		*creds,
 	X509 *certificate = NULL;
 	
 	if (PEM_read_bio_X509(bio, &certificate,
-			      PEM_CALLBACK(NULL, NULL)) == NULL)
+			      PEM_NO_CALLBACK) == NULL)
 	{
 	    /*
 	     * If we just can't find a start line then we've reached EOF.
@@ -1598,7 +1598,7 @@ ssl_proxy_to_pem(SSL_CREDENTIALS		*creds,
 
     if (PEM_write_bio_PrivateKey(bio, creds->private_key, cipher,
 				 (char *) pass_phrase, pass_phrase_len,
-				 NULL /* No callback needed */) == SSL_ERROR)
+				 PEM_NO_CALLBACK) == SSL_ERROR)
     {
 	verror_put_string("Error packing private key");
 	ssl_error_to_verror();
