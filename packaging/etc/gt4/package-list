@@ -40,3 +40,13 @@ globus_java_ws_core_management_sample       wsrf/java/core/samples/management
 globus_java_ws_core_counter_sample          wsrf/java/core/samples/counter
 globus_java_ws_core_resolver                wsrf/java/resolver/source
 globus_java_ws_core_resolver_test           wsrf/java/resolver/test
+
+globus_c_wsdl_parser                        wsrf/c/parser/wsdl/source gpt
+globus_c_wsrf_cgen                          wsrf/c/parser/cgen/source gpt
+globus_js                                   wsrf/c/tools/js/source gpt
+globus_c_wsrf_core                          wsrf/c/core/source gpt
+globus_soap_message                         wsrf/c/message/source gpt
+globus_handler_ws_addressing                wsrf/c/handlers/addressing/source gpt
+globus_xio_buffer                           wsrf/c/transport/buffer/source gpt
+globus_c_wsrf_sample_counter_test           wsrf/c/samples/counter/test gpt
+CounterService_client_bindings              wsrf/c/samples/counter/source/ tar

@@ -1,15 +1,3 @@
-BUNDLE gt4-c-ws-core
-        globus_xio_buffer
-	globus_libxml2
-	globus_js
-	globus_wsdl_parser
-	globus_wsrf_cgen
-	globus_c_wsrf_core
-	globus_soap_message
-	globus_handler_ws_addressing
-	CounterService_client_bindings
-	globus_c_wsrf_sample_counter_test
-
 BUNDLE	ogsi-cbindings
 	globus_libxml2
 	globus_libxslt

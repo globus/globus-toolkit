@@ -4,6 +4,7 @@ gaa_debug			gsi/gaa/gaa_debug/source
 gaa_gss_generic			gsi/gaa_callbacks/gaa_gss_generic/source
 gaa_plugin			gsi/gaa/gaa_plugin/source
 gaa_simple			gsi/gaa_callbacks/gaa_simple/source
+globus_xmlsec1                  gsi/xmlsec1
 gaa_simple_test		gsi/gaa_callbacks/gaa_simple/test
 gaa_util			gsi/gaa_util/source
 globus_authz			gsi/authz/source
@@ -110,3 +111,4 @@ globus_gcs_b38b4d8c_setup       gsi/gcs/setup
 globus_simple_ca                gsi/simple_ca/source
 globus_simple_ca_setup          gsi/simple_ca/setup
 globus_icu4c 			icu4c/  tar
+globus_libxml2                  libxml2/

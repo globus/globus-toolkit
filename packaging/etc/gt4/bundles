@@ -12,6 +12,17 @@ BUNDLE gt4-java-ws-core
         globus_java_ws_core_resolver
         globus_java_ws_core_resolver_test
 
+BUNDLE gt4-c-ws-core
+	globus_c_wsdl_parser
+        globus_c_wsrf_cgen
+        globus_c_wsrf_core
+        CounterService_client_bindings
+        globus_c_wsrf_sample_counter_test
+        globus_handler_ws_addressing
+        globus_soap_message
+        globus_js
+        globus_xio_buffer
+
 BUNDLE gt4-mds
         globus_wsrf_mds_index
         globus_wsrf_mds_ganglia
