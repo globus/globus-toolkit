@@ -218,7 +218,7 @@ globus_l_xio_op_close(
     globus_xio_context_t                context,
     globus_xio_operation_t              op)
 {
-    globus_result_t                     res;
+    globus_result_t                     res = GLOBUS_SUCCESS;
     globus_l_xio_op_handle_t *          op_handle;
 
     op_handle = (globus_l_xio_op_handle_t *) driver_handle;
