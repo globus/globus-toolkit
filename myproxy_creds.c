@@ -22,6 +22,12 @@
 #include <assert.h>
 #include <sys/stat.h>
 #include <stdlib.h>
+#include <unistd.h>
+
+/*
+ * Doesn't always seem to be define in <unistd.h>
+ */
+char *crypt(const char *key, const char *salt);
 
 /* Files should only be readable by me */
 #define FILE_MODE               0600
@@ -736,7 +742,6 @@ myproxy_creds_retrieve(struct myproxy_creds *creds)
 int
 myproxy_creds_exist(const char *user_name)
 {
-    int return_value = -1;
     char creds_path[MAXPATHLEN] = "";
     char data_path[MAXPATHLEN] = "";
     int rc;
@@ -815,7 +820,6 @@ myproxy_creds_is_owner(const char		*username,
     char data_path[MAXPATHLEN];
     struct myproxy_creds retrieved_creds;
     int return_code = -1;
-    int authorization_ok = 0;
 
     memset(&retrieved_creds, 0, sizeof(retrieved_creds));
 
