@@ -5,7 +5,6 @@ DONEsend 125 instead of 150 on cached connections
 
 disable perf markers in mode S
 
-
 errors
 -- push back errors from remote dsi properly
 
@@ -34,7 +33,6 @@ Portability issues
 Protocol
 -- verify messages
 
-multiple dsi
 striping
 remote
 eret loads modiule

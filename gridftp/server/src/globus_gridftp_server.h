@@ -462,6 +462,7 @@ typedef void
 
 
 #define GLOBUS_GFS_DSI_DESCRIPTOR_SENDER 0x01
+#define GLOBUS_GFS_DSI_DESCRIPTOR_BLOCKING 0x02
 /*
  *  globus_gfs_storage_iface_t
  * 

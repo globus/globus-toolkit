@@ -13,6 +13,7 @@ static globus_xio_stack_t               globus_l_gfs_ipc_xio_stack;
 
 typedef enum globus_l_gfs_ipc_state_s
 {
+    GLOBUS_GFS_IPC_STATE_HANDSHAKE = 1,
     GLOBUS_GFS_IPC_STATE_OPENING,
     GLOBUS_GFS_IPC_STATE_OPEN,
     GLOBUS_GFS_IPC_STATE_IN_CB,
@@ -1621,6 +1622,87 @@ globus_l_gfs_ipc_read_body_cb(
         globus_free(new_buf);
     }   
     globus_l_gfs_ipc_error_kickout(ipc, res);
+}
+
+static void
+globus_l_gfs_ipc_read_handshake_header_cb(
+    globus_xio_handle_t                 handle,
+    globus_result_t                     result,
+    globus_byte_t *                     buffer,
+    globus_size_t                       len,
+    globus_size_t                       nbytes,
+    globus_xio_data_descriptor_t        data_desc,
+    void *                              user_arg)
+{
+    globus_gfs_ipc_request_t *          request;
+    char                                type;
+    int                                 id;
+    int                                 session_id;
+    globus_byte_t *                     ptr;
+    globus_byte_t *                     new_buf = NULL;
+    int                                 reply_size;
+    globus_i_gfs_ipc_handle_t *         ipc;
+    globus_result_t                     res;
+    globus_size_t                       size;
+    globus_bool_t                       read = GLOBUS_TRUE;
+    GlobusGFSName(globus_l_gfs_ipc_read_header_cb);
+
+    ipc = (globus_i_gfs_ipc_handle_t *) user_arg;
+
+    if(result != GLOBUS_SUCCESS)
+    {
+        res = result;
+        goto err;
+    }
+
+    size = len;
+    ptr = buffer;
+    GFSDecodeChar(ptr, size, type);
+    GFSDecodeUInt32(ptr, size, id);
+    GFSDecodeUInt32(ptr, size, session_id);
+    GFSDecodeUInt32(ptr, size, reply_size);
+/*
+    if(type != HANDSHAKE)
+    {
+        goto err;
+    }
+    globus_mutex_lock(&ipc->mutex);
+    {
+        globus_assert(ipc->state == GLOBUS_GFS_IPC_STATE_HANDSHAKE);
+
+        res = globus_xio_register_read(
+            handle,
+            new_buf,
+            reply_size - GFS_IPC_HEADER_SIZE,
+            reply_size - GFS_IPC_HEADER_SIZE,
+            NULL,
+            globus_l_gfs_ipc_read_handshake_body_cb,
+            ipc);
+        if(res != GLOBUS_SUCCESS)
+        {
+            goto lock_err;
+        }
+    }
+    globus_mutex_unlock(&ipc->mutex);
+
+*/
+    return;
+
+  lock_err:
+    globus_mutex_unlock(&ipc->mutex);
+
+  decode_err:
+    res = GlobusGFSErrorIPC();
+  err:
+    if(buffer != NULL)
+    {
+        globus_free(buffer);
+    }
+    globus_l_gfs_ipc_error_kickout(ipc, res);
+    if(new_buf != NULL)
+    {
+        globus_free(new_buf);
+    }
 }
 
 static void

@@ -29,6 +29,18 @@ typedef enum
     GLOBUS_L_GFS_DATA_HANDLE_CLOSED
 } globus_l_gfs_data_handle_state_t;
 
+typedef enum
+{
+    GLOBUS_L_GFS_DATA_INFO_TYPE_COMMAND = 1,
+    GLOBUS_L_GFS_DATA_INFO_TYPE_TRANSFER,
+    GLOBUS_L_GFS_DATA_INFO_TYPE_PASSIVE,
+    GLOBUS_L_GFS_DATA_INFO_TYPE_ACTIVE,
+    GLOBUS_L_GFS_DATA_INFO_TYPE_STAT,
+    GLOBUS_L_GFS_DATA_INFO_TYPE_SEND,
+    GLOBUS_L_GFS_DATA_INFO_TYPE_RECV,
+    GLOBUS_L_GFS_DATA_INFO_TYPE_LIST
+} globus_l_gfs_data_info_type_t;
+
 typedef struct
 {
     globus_gfs_operation_t   op;
@@ -71,6 +83,8 @@ typedef struct globus_l_gfs_data_operation_s
     globus_l_gfs_data_handle_t *        data_handle;
     
     globus_l_gfs_data_session_t *       session_handle;
+    void *                              info_struct;
+    globus_l_gfs_data_info_type_t       type;
 
     int                                 id;
     globus_gfs_ipc_handle_t             ipc_handle;
@@ -166,6 +180,71 @@ static
 void
 globus_l_gfs_data_start_abort(
     globus_l_gfs_data_operation_t *     op);
+
+static
+void
+globus_l_gfs_blocking_dispatch_kickout(
+    void *                              user_arg)
+{
+    globus_l_gfs_data_operation_t *     op;
+    globus_gfs_transfer_info_t *        transfer_info;
+    globus_gfs_command_info_t *         cmd_info;
+    globus_gfs_data_info_t *            data_info;
+    globus_gfs_stat_info_t *            stat_info;
+
+    op = (globus_l_gfs_data_operation_t *) user_arg;
+
+    globus_thread_blocking_will_block();
+
+    switch(op->type)
+    {
+        case GLOBUS_L_GFS_DATA_INFO_TYPE_COMMAND:
+            cmd_info = (globus_gfs_command_info_t *) op->info_struct;
+            op->session_handle->dsi->command_func(
+                op, cmd_info, op->session_handle->session_arg);
+            break;
+
+        case GLOBUS_L_GFS_DATA_INFO_TYPE_STAT:
+            stat_info = op->info_struct;
+            op->session_handle->dsi->stat_func(
+                op, stat_info, op->session_handle->session_arg);
+            break;
+
+        case GLOBUS_L_GFS_DATA_INFO_TYPE_PASSIVE:
+            data_info = (globus_gfs_data_info_t *) op->info_struct;
+            op->session_handle->dsi->passive_func(
+                op, data_info, op->session_handle->session_arg);
+            break;
+
+        case GLOBUS_L_GFS_DATA_INFO_TYPE_ACTIVE:
+            data_info = (globus_gfs_data_info_t *) op->info_struct;
+            op->session_handle->dsi->active_func(
+                op, data_info, op->session_handle->session_arg);
+            break;
+
+        case GLOBUS_L_GFS_DATA_INFO_TYPE_SEND:
+            transfer_info = (globus_gfs_transfer_info_t *) op->info_struct;
+            op->session_handle->dsi->send_func(
+                op, transfer_info, op->session_handle->session_arg);
+            break;
+
+        case GLOBUS_L_GFS_DATA_INFO_TYPE_RECV:
+            transfer_info = (globus_gfs_transfer_info_t *) op->info_struct;
+            op->session_handle->dsi->recv_func(
+                op, transfer_info, op->session_handle->session_arg);
+            break;
+
+        case GLOBUS_L_GFS_DATA_INFO_TYPE_LIST:
+            transfer_info = (globus_gfs_transfer_info_t *) op->info_struct;
+            op->session_handle->dsi->list_func(
+                op, transfer_info, op->session_handle->session_arg);
+            break;
+
+        default:
+            globus_assert(0 && "possible memory corruption");
+            break;
+    }
+}
 
 void
 globus_i_gfs_monitor_init(
@@ -330,9 +409,23 @@ globus_i_gfs_data_request_stat(
     op->state = GLOBUS_L_GFS_DATA_REQUESTING;
     op->callback = cb;
     op->user_arg = user_arg;
-    
-    session_handle->dsi->stat_func(op, stat_info, session_handle->session_arg);
-    
+    op->session_handle = session_handle;
+    op->info_struct = stat_info;
+    op->type = GLOBUS_L_GFS_DATA_INFO_TYPE_STAT;
+
+    if(session_handle->dsi->descriptor & GLOBUS_GFS_DSI_DESCRIPTOR_BLOCKING)
+    { 
+        globus_callback_register_oneshot(
+            NULL,
+            NULL,
+            globus_l_gfs_blocking_dispatch_kickout,
+            op);
+    }
+    else
+    {
+        session_handle->dsi->stat_func(
+            op, stat_info, session_handle->session_arg);
+    }
     return;
 
 error_op:
@@ -411,6 +504,9 @@ globus_i_gfs_data_request_command(
     op->pathname = globus_libc_strdup(cmd_info->pathname);
     op->callback = cb;
     op->user_arg = user_arg;
+    op->session_handle = session_handle;
+    op->info_struct = cmd_info;
+    op->type = GLOBUS_L_GFS_DATA_INFO_TYPE_COMMAND;
     dsi_name = cmd_info->pathname;
 
     if(cmd_info->command == GLOBUS_GFS_CMD_SITE_DSI &&
@@ -464,8 +560,17 @@ globus_i_gfs_data_request_command(
             op->session_handle->dsi = new_dsi;
         }
     }
-    else
+    else if(
+        session_handle->dsi->descriptor & GLOBUS_GFS_DSI_DESCRIPTOR_BLOCKING)
     {
+        globus_callback_register_oneshot(
+            NULL,
+            NULL,
+            globus_l_gfs_blocking_dispatch_kickout,
+            op);
+    }
+    else
+    { 
         session_handle->dsi->command_func(
             op, cmd_info, session_handle->session_arg);
     }
@@ -1005,8 +1110,22 @@ globus_i_gfs_data_request_passive(
         op->state = GLOBUS_L_GFS_DATA_REQUESTING;
         op->callback = cb;
         op->user_arg = user_arg;
-        session_handle->dsi->passive_func(
-            op, data_info, session_handle->session_arg);
+        op->session_handle = session_handle;
+        op->info_struct = data_info;
+        op->type = GLOBUS_L_GFS_DATA_INFO_TYPE_PASSIVE;
+        if(session_handle->dsi->descriptor & GLOBUS_GFS_DSI_DESCRIPTOR_BLOCKING)
+        {
+            globus_callback_register_oneshot(
+                NULL,
+                NULL,
+                globus_l_gfs_blocking_dispatch_kickout,
+                op);
+        }
+        else
+        {
+            session_handle->dsi->passive_func(
+                op, data_info, session_handle->session_arg);
+        }
     }
     else
     {
@@ -1226,8 +1345,22 @@ globus_i_gfs_data_request_active(
         op->state = GLOBUS_L_GFS_DATA_REQUESTING;
         op->callback = cb;
         op->user_arg = user_arg;
-        session_handle->dsi->active_func(
-            op, data_info, session_handle->session_arg);
+        op->session_handle = session_handle;
+        op->info_struct = data_info;
+        op->type = GLOBUS_L_GFS_DATA_INFO_TYPE_ACTIVE;
+        if(session_handle->dsi->descriptor & GLOBUS_GFS_DSI_DESCRIPTOR_BLOCKING)
+        {
+            globus_callback_register_oneshot(
+                NULL,
+                NULL,
+                globus_l_gfs_blocking_dispatch_kickout,
+                op);
+        }
+        else
+        {
+            session_handle->dsi->active_func(
+                op, data_info, session_handle->session_arg);
+        }
     }
     else
     {
@@ -1389,6 +1522,8 @@ globus_i_gfs_data_request_recv(
 
     op->ipc_handle = ipc_handle;    
     op->session_handle = session_handle;
+    op->type = GLOBUS_L_GFS_DATA_INFO_TYPE_RECV;
+    op->info_struct = recv_info;
     op->ref = 1;
     op->id = id;
     op->state = GLOBUS_L_GFS_DATA_REQUESTING;
@@ -1403,13 +1538,24 @@ globus_i_gfs_data_request_recv(
     op->node_ndx = recv_info->node_ndx;
     op->node_count = recv_info->node_count;    
     op->stripe_count = recv_info->stripe_count;
-
     /* events and disconnects cannot happen while i am in this
         function */
     globus_assert(data_handle->state == GLOBUS_L_GFS_DATA_HANDLE_VALID);
     data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_INUSE;
     
-    session_handle->dsi->recv_func(op, recv_info, session_handle->session_arg);
+    if(session_handle->dsi->descriptor & GLOBUS_GFS_DSI_DESCRIPTOR_BLOCKING)
+    {
+        globus_callback_register_oneshot(
+            NULL,
+            NULL,
+            globus_l_gfs_blocking_dispatch_kickout,
+            op);
+    }
+    else
+    {
+        session_handle->dsi->recv_func(
+            op, recv_info, session_handle->session_arg);
+    }
 
     return;
 
@@ -1457,6 +1603,8 @@ globus_i_gfs_data_request_send(
     }
     op->ipc_handle = ipc_handle;
     op->session_handle = session_handle;
+    op->type = GLOBUS_L_GFS_DATA_INFO_TYPE_SEND;
+    op->info_struct = send_info;
     op->ref = 1;
     op->id = id;
     op->state = GLOBUS_L_GFS_DATA_REQUESTING;
@@ -1482,7 +1630,19 @@ globus_i_gfs_data_request_send(
     globus_assert(data_handle->state == GLOBUS_L_GFS_DATA_HANDLE_VALID);
     data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_INUSE;
 
-    session_handle->dsi->send_func(op, send_info, session_handle->session_arg);
+    if(session_handle->dsi->descriptor & GLOBUS_GFS_DSI_DESCRIPTOR_BLOCKING)
+    {
+        globus_callback_register_oneshot(
+            NULL,
+            NULL,
+            globus_l_gfs_blocking_dispatch_kickout,
+            op);
+    }
+    else
+    {
+        session_handle->dsi->send_func(
+            op, send_info, session_handle->session_arg);
+    }
 
     return;
 
@@ -1607,6 +1767,8 @@ globus_i_gfs_data_request_list(
 
     data_op->ipc_handle = ipc_handle;    
     data_op->session_handle = session_handle;
+    data_op->type = GLOBUS_L_GFS_DATA_INFO_TYPE_TRANSFER;
+    data_op->info_struct = list_info;
     data_op->ref = 1;
     data_op->id = id;
     data_op->state = GLOBUS_L_GFS_DATA_REQUESTING;
@@ -1630,8 +1792,19 @@ globus_i_gfs_data_request_list(
     
     if(session_handle->dsi->list_func != NULL)
     {
-        session_handle->dsi->list_func(
-            data_op, list_info, session_handle->session_arg);
+        if(session_handle->dsi->descriptor & GLOBUS_GFS_DSI_DESCRIPTOR_BLOCKING)
+        { 
+            globus_callback_register_oneshot(
+                NULL,
+                NULL,
+                globus_l_gfs_blocking_dispatch_kickout,
+                data_op);
+        }
+        else
+        {
+            session_handle->dsi->list_func(
+                data_op, list_info, session_handle->session_arg);
+        }
     }
     else
     {    
@@ -1645,6 +1818,8 @@ globus_i_gfs_data_request_list(
         stat_op->state = GLOBUS_L_GFS_DATA_REQUESTING;
         stat_op->callback = globus_l_gfs_data_list_stat_cb;
         stat_op->user_arg = data_op;
+        stat_op->session_handle = session_handle;
+        stat_op->type = GLOBUS_L_GFS_DATA_INFO_TYPE_STAT;
 
         stat_info = (globus_gfs_stat_info_t *) 
             globus_calloc(1, sizeof(globus_gfs_stat_info_t));
@@ -1653,14 +1828,26 @@ globus_i_gfs_data_request_list(
         stat_info->file_only = GLOBUS_FALSE;
 
         stat_op->info = stat_info;
+        stat_op->info_struct = stat_info;
     
         /* events and disconnects cannot happen while i am in this
             function */
         globus_assert(data_handle->state == GLOBUS_L_GFS_DATA_HANDLE_VALID);
         data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_INUSE;
-    
-        session_handle->dsi->stat_func(
-            stat_op, stat_info, session_handle->session_arg);
+ 
+        if(session_handle->dsi->descriptor & GLOBUS_GFS_DSI_DESCRIPTOR_BLOCKING)
+        { 
+            globus_callback_register_oneshot(
+                NULL,
+                NULL,
+                globus_l_gfs_blocking_dispatch_kickout,
+                stat_op);
+        }
+        else
+        {
+            session_handle->dsi->stat_func(
+                stat_op, stat_info, session_handle->session_arg);
+        }
     }
     
     return;
