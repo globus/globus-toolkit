@@ -227,6 +227,8 @@ int
 globus_gram_job_manager_rsl_add_substitutions_to_symbol_table(
     globus_gram_jobmanager_request_t *	request)
 {
+    globus_list_t *			tmp_rsl_list;
+    globus_rsl_t *			attribute;
     globus_list_t *			substitutions;
     globus_rsl_value_t *		substitution_value;
     globus_list_t *			pair;
@@ -237,39 +239,57 @@ globus_gram_job_manager_rsl_add_substitutions_to_symbol_table(
     {
 	return GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
     }
-    substitutions = globus_rsl_param_get_values(
-		request->rsl,
-		"rslsubstitution");
 
-    while(!globus_list_empty(substitutions))
+    tmp_rsl_list = globus_rsl_boolean_get_operand_list(request->rsl);
+    while(!globus_list_empty(tmp_rsl_list))
     {
-	substitution_value = globus_list_first(substitutions);
-	substitutions = globus_list_rest(substitutions);
+	attribute = globus_list_first(tmp_rsl_list);
+	tmp_rsl_list = globus_list_rest(tmp_rsl_list);
 
-	if(!globus_rsl_value_is_sequence(substitution_value))
+	if(globus_rsl_is_relation_attribute_equal(
+		    attribute,
+		    "rslsubstitution"))
 	{
-	    return GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
+	    substitutions =
+		globus_rsl_value_sequence_get_value_list(
+			globus_rsl_relation_get_value_sequence(
+			    attribute));
 	}
-	pair = globus_rsl_value_sequence_get_value_list(substitution_value);
+	else
+	{
+	    continue;
+	}
 
-	if(globus_list_size(pair) != 2)
+	while(!globus_list_empty(substitutions))
 	{
-	    return GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
-	}
-	variable = globus_list_first(pair);
-	value = globus_list_first(globus_list_rest(pair));
+	    substitution_value = globus_list_first(substitutions);
+	    substitutions = globus_list_rest(substitutions);
 
-	if((!globus_rsl_value_is_literal(variable)) ||
-	   (!globus_rsl_value_is_literal(value)))
-	{
-	    return GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
+	    if(!globus_rsl_value_is_sequence(substitution_value))
+	    {
+		return GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
+	    }
+	    pair = globus_rsl_value_sequence_get_value_list(substitution_value);
+
+	    if(globus_list_size(pair) != 2)
+	    {
+		return GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
+	    }
+	    variable = globus_list_first(pair);
+	    value = globus_list_first(globus_list_rest(pair));
+
+	    if((!globus_rsl_value_is_literal(variable)) ||
+	       (!globus_rsl_value_is_literal(value)))
+	    {
+		return GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
+	    }
+	    globus_symboltable_insert(
+		    &request->symbol_table,
+		    globus_libc_strdup(
+			globus_rsl_value_literal_get_string(variable)),
+		    globus_libc_strdup(
+			globus_rsl_value_literal_get_string(value)));
 	}
-	globus_symboltable_insert(
-		&request->symbol_table,
-		globus_libc_strdup(
-		    globus_rsl_value_literal_get_string(variable)),
-		globus_libc_strdup(
-		    globus_rsl_value_literal_get_string(value)));
     }
     return GLOBUS_SUCCESS;
 }
