@@ -1209,6 +1209,11 @@ globus_l_error_multiple_destroy_all(
 {
     globus_l_error_multiple_chain_t * instance;
     
+    if(!data)
+    {
+        return;
+    }
+    
     instance = (globus_l_error_multiple_chain_t *) data;
     
     globus_object_free(instance->chain);
@@ -1216,6 +1221,7 @@ globus_l_error_multiple_destroy_all(
     {
         globus_free(instance->desc);
     }
+    globus_free(instance);
 }
 
 static
