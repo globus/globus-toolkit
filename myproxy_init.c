@@ -110,7 +110,6 @@ main(int argc, char *argv[])
     myproxy_debug_set_level (1);
     myproxy_log_use_stream (stderr);
 
-    myproxy_log (0,5, "WELCOME");    
     socket_attrs = malloc(sizeof(*socket_attrs));
     memset(socket_attrs, 0, sizeof(*socket_attrs));
 
