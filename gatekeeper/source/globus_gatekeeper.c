@@ -249,9 +249,10 @@ get_globusid()
                                         NULL,
                                         NULL)) == GSS_S_COMPLETE)
     {
-        major_status = gss_export_name(&minor_status,
+        major_status = gss_display_name(&minor_status,
                                        server_name,
-                                       server_buffer);
+                                       server_buffer,
+									   NULL);
         gss_release_name(&minor_status2, &server_name);
     }
     /*
