@@ -1104,12 +1104,12 @@ globus_l_gfs_remote_session_end(
         node_info = (globus_l_gfs_remote_node_info_t *) 
             globus_list_first(list);
                 
- //       result = globus_gfs_ipc_handle_release(node_info->ipc_handle);
- //       if(result != GLOBUS_SUCCESS)
- //       {
- //           globus_i_gfs_log_result(
- //               "ERROR: remote_data_destroy: handle_release", result);
- //       }
+        result = globus_gfs_ipc_handle_release(node_info->ipc_handle);
+        if(result != GLOBUS_SUCCESS)
+        {
+            globus_i_gfs_log_result(
+                "ERROR: remote_data_destroy: handle_release", result);
+        }
     }                              
    
     return;

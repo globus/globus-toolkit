@@ -1739,21 +1739,24 @@ ipc_error:
 static
 globus_i_gfs_ipc_handle_t *
 globus_l_gfs_ipc_handle_lookup(
-    globus_gfs_session_info_t *         session_info)
+    globus_l_gfs_ipc_connection_t *     connection_info)
 {
     globus_list_t *                     list;
     globus_i_gfs_ipc_handle_t *         ipc = NULL;
 
     list = (globus_list_t *) globus_hashtable_remove(
         &globus_l_ipc_handle_table,
-        session_info);
+        connection_info);
     if(!globus_list_empty(list))
     {
         ipc = (globus_i_gfs_ipc_handle_t *) globus_list_remove(&list, list);
-        globus_hashtable_insert(
-            &globus_l_ipc_handle_table,
-            session_info,
-            list);
+        if(!globus_list_empty(list))
+        {
+            globus_hashtable_insert(
+                &globus_l_ipc_handle_table,
+                connection_info,
+                list);
+        }
     }
 
     return ipc;
@@ -1770,6 +1773,7 @@ globus_gfs_ipc_handle_obtain_by_path(
     globus_gfs_ipc_error_callback_t     error_cb,
     void *                              error_user_arg)
 {
+    globus_l_gfs_ipc_connection_t       tmp_ci;
     int                                 i;
     globus_i_gfs_ipc_handle_t *         ipc;
     int                                 handle_count;
@@ -1790,13 +1794,21 @@ globus_gfs_ipc_handle_obtain_by_path(
             goto community_error;
         }
 
+        memset(&tmp_ci, '\0', sizeof(globus_l_gfs_ipc_connection_t));
+        tmp_ci.version = globus_l_gfs_local_version;
+        tmp_ci.community = community->name;
+        tmp_ci.cookie = session_info->cookie;
+        tmp_ci.username = session_info->username;
+        tmp_ci.subject = session_info->subject;
+
         memcpy(&tmp_si, session_info, sizeof(globus_gfs_session_info_t));
 
         /* first get anything that is cached */
         for(i = 0; i < community->cs_count && handle_count > 0; i++)
         {
             tmp_si.host_id = community->cs[i];
-            ipc = globus_l_gfs_ipc_handle_lookup(&tmp_si);
+            tmp_ci.host_id = community->cs[i];
+            ipc = globus_l_gfs_ipc_handle_lookup(&tmp_ci);
             if(ipc != NULL)
             {
                 /* i got it safely from the big lock, i have not given
@@ -1850,7 +1862,7 @@ globus_gfs_ipc_handle_obtain_by_path(
         while(handle_count > 0)
         {
             tmp_si.host_id = community->cs[i];
-            ipc = globus_l_gfs_ipc_handle_lookup(&tmp_si);
+            ipc = globus_l_gfs_ipc_handle_lookup(&tmp_ci);
             if(ipc == NULL)
             {
                 res = globus_l_gfs_ipc_handle_connect(
@@ -3344,6 +3356,10 @@ globus_l_gfs_ipc_find_community(
     globus_i_gfs_community_t *          found;
 
     found = globus_l_gfs_ipc_community_default;
+    if(path == NULL)
+    {
+        return found;
+    }
     for(list = globus_l_gfs_ipc_community_list;
         !globus_list_empty(list);
         list = globus_list_rest(list))
