@@ -1,495 +1,2118 @@
+diff -u -r -P cyrus-sasl-1.5.27/Makefile.in cyrus-sasl-1.5.27-patched/Makefile.in
+--- cyrus-sasl-1.5.27/Makefile.in	2001-03-23 19:48:13.000000000 -0600
++++ cyrus-sasl-1.5.27-patched/Makefile.in	2002-09-19 17:35:41.000000000 -0500
+@@ -1,6 +1,6 @@
+-# Makefile.in generated automatically by automake 1.4 from Makefile.am
++# Makefile.in generated automatically by automake 1.4-p6 from Makefile.am
+ 
+-# Copyright (C) 1994, 1995-8, 1999 Free Software Foundation, Inc.
++# Copyright (C) 1994, 1995-8, 1999, 2001 Free Software Foundation, Inc.
+ # This Makefile.in is free software; the Free Software Foundation
+ # gives unlimited permission to copy and/or distribute it,
+ # with or without modifications, as long as this notice is preserved.
+@@ -165,25 +165,25 @@
+ 
+ DISTFILES = $(DIST_COMMON) $(SOURCES) $(HEADERS) $(TEXINFOS) $(EXTRA_DIST)
+ 
+-TAR = gtar
++TAR = tar
+ GZIP_ENV = --best
+ DIST_SUBDIRS =  include lib plugins utils doc man pwcheck sample java \
+ saslauthd
+ all: all-redirect
+ .SUFFIXES:
+-$(srcdir)/Makefile.in: Makefile.am $(top_srcdir)/configure.in $(ACLOCAL_M4) 
+-	cd $(top_srcdir) && $(AUTOMAKE) --gnu --include-deps Makefile
++$(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ Makefile.am $(top_srcdir)/configure.in $(ACLOCAL_M4) 
++	cd $(top_srcdir) && $(AUTOMAKE) --gnu Makefile
+ 
+-Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status
++Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status $(BUILT_SOURCES)
+ 	cd $(top_builddir) \
+ 	  && CONFIG_FILES=$@ CONFIG_HEADERS= $(SHELL) ./config.status
+ 
+-$(ACLOCAL_M4):  configure.in 
++$(ACLOCAL_M4): @MAINTAINER_MODE_TRUE@ configure.in 
+ 	cd $(srcdir) && $(ACLOCAL)
+ 
+ config.status: $(srcdir)/configure $(CONFIG_STATUS_DEPENDENCIES)
+ 	$(SHELL) ./config.status --recheck
+-$(srcdir)/configure: $(srcdir)/configure.in $(ACLOCAL_M4) $(CONFIGURE_DEPENDENCIES)
++$(srcdir)/configure: @MAINTAINER_MODE_TRUE@$(srcdir)/configure.in $(ACLOCAL_M4) $(CONFIGURE_DEPENDENCIES)
+ 	cd $(srcdir) && $(AUTOCONF)
+ 
+ config.h: stamp-h
+@@ -196,7 +196,7 @@
+ 	  && CONFIG_FILES= CONFIG_HEADERS=config.h \
+ 	     $(SHELL) ./config.status
+ 	@echo timestamp > stamp-h 2> /dev/null
+-$(srcdir)/config.h.in: $(srcdir)/stamp-h.in
++$(srcdir)/config.h.in: @MAINTAINER_MODE_TRUE@$(srcdir)/stamp-h.in
+ 	@if test ! -f $@; then \
+ 		rm -f $(srcdir)/stamp-h.in; \
+ 		$(MAKE) $(srcdir)/stamp-h.in; \
+@@ -250,7 +250,7 @@
+ 	dot_seen=no; \
+ 	rev=''; list='$(SUBDIRS)'; for subdir in $$list; do \
+ 	  rev="$$subdir $$rev"; \
+-	  test "$$subdir" = "." && dot_seen=yes; \
++	  test "$$subdir" != "." || dot_seen=yes; \
+ 	done; \
+ 	test "$$dot_seen" = "no" && rev=". $$rev"; \
+ 	target=`echo $@ | sed s/-recursive//`; \
+@@ -292,7 +292,7 @@
+ 	  awk '    { files[$$0] = 1; } \
+ 	       END { for (i in files) print i; }'`; \
+ 	test -z "$(ETAGS_ARGS)config.h.in$$unique$(LISP)$$tags" \
+-	  || (cd $(srcdir) && etags $(ETAGS_ARGS) $$tags config.h.in $$unique $(LISP) -o $$here/TAGS)
++	  || (cd $(srcdir) && etags -o $$here/TAGS $(ETAGS_ARGS) $$tags config.h.in $$unique $(LISP))
+ 
+ mostlyclean-tags:
+ 
+@@ -341,6 +341,11 @@
+ 	-rm -rf $(distdir)
+ 	mkdir $(distdir)
+ 	-chmod 777 $(distdir)
++	here=`cd $(top_builddir) && pwd`; \
++	top_distdir=`cd $(distdir) && pwd`; \
++	distdir=`cd $(distdir) && pwd`; \
++	cd $(top_srcdir) \
++	  && $(AUTOMAKE) --include-deps --build-dir=$$here --srcdir-name=$(top_srcdir) --output-dir=$$top_distdir --gnu Makefile
+ 	@for file in $(DISTFILES); do \
+ 	  d=$(srcdir); \
+ 	  if test -d $$d/$$file; then \
 diff -u -r -P cyrus-sasl-1.5.27/configure cyrus-sasl-1.5.27-patched/configure
 --- cyrus-sasl-1.5.27/configure	2001-03-23 19:48:12.000000000 -0600
-+++ cyrus-sasl-1.5.27-patched/configure	2002-09-19 12:19:22.000000000 -0500
-@@ -3741,7 +3741,9 @@
++++ cyrus-sasl-1.5.27-patched/configure	2002-09-19 17:35:17.000000000 -0500
+@@ -600,16 +600,13 @@
+ ac_configure=$ac_aux_dir/configure # This should be Cygnus configure.
+ 
+ 
+-
+-
+-
+ # Make sure we can run config.sub.
+ if ${CONFIG_SHELL-/bin/sh} $ac_config_sub sun4 >/dev/null 2>&1; then :
+ else { echo "configure: error: can not run $ac_config_sub" 1>&2; exit 1; }
+ fi
+ 
+ echo $ac_n "checking host system type""... $ac_c" 1>&6
+-echo "configure:613: checking host system type" >&5
++echo "configure:610: checking host system type" >&5
+ 
+ host_alias=$host
+ case "$host_alias" in
+@@ -642,7 +639,7 @@
+ # SVR4 /usr/ucb/install, which tries to use the nonexistent group "staff"
+ # ./install, which can be erroneously created by make from ./install.sh.
+ echo $ac_n "checking for a BSD compatible install""... $ac_c" 1>&6
+-echo "configure:646: checking for a BSD compatible install" >&5
++echo "configure:643: checking for a BSD compatible install" >&5
+ if test -z "$INSTALL"; then
+ if eval "test \"`echo '$''{'ac_cv_path_install'+set}'`\" = set"; then
+   echo $ac_n "(cached) $ac_c" 1>&6
+@@ -695,7 +692,7 @@
+ test -z "$INSTALL_DATA" && INSTALL_DATA='${INSTALL} -m 644'
+ 
+ echo $ac_n "checking whether build environment is sane""... $ac_c" 1>&6
+-echo "configure:699: checking whether build environment is sane" >&5
++echo "configure:696: checking whether build environment is sane" >&5
+ # Just in case
+ sleep 1
+ echo timestamp > conftestfile
+@@ -752,7 +749,7 @@
+ test "$program_transform_name" = "" && program_transform_name="s,x,x,"
+ 
+ echo $ac_n "checking whether ${MAKE-make} sets \${MAKE}""... $ac_c" 1>&6
+-echo "configure:756: checking whether ${MAKE-make} sets \${MAKE}" >&5
++echo "configure:753: checking whether ${MAKE-make} sets \${MAKE}" >&5
+ set dummy ${MAKE-make}; ac_make=`echo "$2" | sed 'y%./+-%__p_%'`
+ if eval "test \"`echo '$''{'ac_cv_prog_make_${ac_make}_set'+set}'`\" = set"; then
+   echo $ac_n "(cached) $ac_c" 1>&6
+@@ -798,7 +795,7 @@
+ 
+ missing_dir=`cd $ac_aux_dir && pwd`
+ echo $ac_n "checking for working aclocal""... $ac_c" 1>&6
+-echo "configure:802: checking for working aclocal" >&5
++echo "configure:799: checking for working aclocal" >&5
+ # Run test in a subshell; some versions of sh will print an error if
+ # an executable is not found, even if stderr is redirected.
+ # Redirect stdin to placate older versions of autoconf.  Sigh.
+@@ -811,7 +808,7 @@
+ fi
+ 
+ echo $ac_n "checking for working autoconf""... $ac_c" 1>&6
+-echo "configure:815: checking for working autoconf" >&5
++echo "configure:812: checking for working autoconf" >&5
+ # Run test in a subshell; some versions of sh will print an error if
+ # an executable is not found, even if stderr is redirected.
+ # Redirect stdin to placate older versions of autoconf.  Sigh.
+@@ -824,7 +821,7 @@
+ fi
+ 
+ echo $ac_n "checking for working automake""... $ac_c" 1>&6
+-echo "configure:828: checking for working automake" >&5
++echo "configure:825: checking for working automake" >&5
+ # Run test in a subshell; some versions of sh will print an error if
+ # an executable is not found, even if stderr is redirected.
+ # Redirect stdin to placate older versions of autoconf.  Sigh.
+@@ -837,7 +834,7 @@
+ fi
+ 
+ echo $ac_n "checking for working autoheader""... $ac_c" 1>&6
+-echo "configure:841: checking for working autoheader" >&5
++echo "configure:838: checking for working autoheader" >&5
+ # Run test in a subshell; some versions of sh will print an error if
+ # an executable is not found, even if stderr is redirected.
+ # Redirect stdin to placate older versions of autoconf.  Sigh.
+@@ -850,7 +847,7 @@
+ fi
+ 
+ echo $ac_n "checking for working makeinfo""... $ac_c" 1>&6
+-echo "configure:854: checking for working makeinfo" >&5
++echo "configure:851: checking for working makeinfo" >&5
+ # Run test in a subshell; some versions of sh will print an error if
+ # an executable is not found, even if stderr is redirected.
+ # Redirect stdin to placate older versions of autoconf.  Sigh.
+@@ -863,6 +860,11 @@
+ fi
+ 
+ 
++AM_MAINTAINER_MODE
++
++
++
++
+ 
+ 	
+ 	ACLOCAL="$ACLOCAL -I \$(top_srcdir)/cmulocal"
+@@ -891,7 +893,7 @@
+ # Extract the first word of "gcc", so it can be a program name with args.
+ set dummy gcc; ac_word=$2
+ echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
+-echo "configure:895: checking for $ac_word" >&5
++echo "configure:897: checking for $ac_word" >&5
+ if eval "test \"`echo '$''{'ac_cv_prog_CC'+set}'`\" = set"; then
+   echo $ac_n "(cached) $ac_c" 1>&6
+ else
+@@ -921,7 +923,7 @@
+   # Extract the first word of "cc", so it can be a program name with args.
+ set dummy cc; ac_word=$2
+ echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
+-echo "configure:925: checking for $ac_word" >&5
++echo "configure:927: checking for $ac_word" >&5
+ if eval "test \"`echo '$''{'ac_cv_prog_CC'+set}'`\" = set"; then
+   echo $ac_n "(cached) $ac_c" 1>&6
+ else
+@@ -972,7 +974,7 @@
+       # Extract the first word of "cl", so it can be a program name with args.
+ set dummy cl; ac_word=$2
+ echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
+-echo "configure:976: checking for $ac_word" >&5
++echo "configure:978: checking for $ac_word" >&5
+ if eval "test \"`echo '$''{'ac_cv_prog_CC'+set}'`\" = set"; then
+   echo $ac_n "(cached) $ac_c" 1>&6
+ else
+@@ -1004,7 +1006,7 @@
+ fi
+ 
+ echo $ac_n "checking whether the C compiler ($CC $CFLAGS $LDFLAGS) works""... $ac_c" 1>&6
+-echo "configure:1008: checking whether the C compiler ($CC $CFLAGS $LDFLAGS) works" >&5
++echo "configure:1010: checking whether the C compiler ($CC $CFLAGS $LDFLAGS) works" >&5
+ 
+ ac_ext=c
+ # CFLAGS is not in ac_cpp because -g, -O, etc. are not valid cpp options.
+@@ -1015,12 +1017,12 @@
+ 
+ cat > conftest.$ac_ext << EOF
+ 
+-#line 1019 "configure"
++#line 1021 "configure"
+ #include "confdefs.h"
+ 
+ main(){return(0);}
+ EOF
+-if { (eval echo configure:1024: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
++if { (eval echo configure:1026: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+   ac_cv_prog_cc_works=yes
+   # If we can't run a trivial program, we are probably using a cross compiler.
+   if (./conftest; exit) 2>/dev/null; then
+@@ -1046,12 +1048,12 @@
+   { echo "configure: error: installation or configuration problem: C compiler cannot create executables." 1>&2; exit 1; }
+ fi
+ echo $ac_n "checking whether the C compiler ($CC $CFLAGS $LDFLAGS) is a cross-compiler""... $ac_c" 1>&6
+-echo "configure:1050: checking whether the C compiler ($CC $CFLAGS $LDFLAGS) is a cross-compiler" >&5
++echo "configure:1052: checking whether the C compiler ($CC $CFLAGS $LDFLAGS) is a cross-compiler" >&5
+ echo "$ac_t""$ac_cv_prog_cc_cross" 1>&6
+ cross_compiling=$ac_cv_prog_cc_cross
+ 
+ echo $ac_n "checking whether we are using GNU C""... $ac_c" 1>&6
+-echo "configure:1055: checking whether we are using GNU C" >&5
++echo "configure:1057: checking whether we are using GNU C" >&5
+ if eval "test \"`echo '$''{'ac_cv_prog_gcc'+set}'`\" = set"; then
+   echo $ac_n "(cached) $ac_c" 1>&6
+ else
+@@ -1060,7 +1062,7 @@
+   yes;
+ #endif
+ EOF
+-if { ac_try='${CC-cc} -E conftest.c'; { (eval echo configure:1064: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }; } | egrep yes >/dev/null 2>&1; then
++if { ac_try='${CC-cc} -E conftest.c'; { (eval echo configure:1066: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }; } | egrep yes >/dev/null 2>&1; then
+   ac_cv_prog_gcc=yes
+ else
+   ac_cv_prog_gcc=no
+@@ -1079,7 +1081,7 @@
+ ac_save_CFLAGS="$CFLAGS"
+ CFLAGS=
+ echo $ac_n "checking whether ${CC-cc} accepts -g""... $ac_c" 1>&6
+-echo "configure:1083: checking whether ${CC-cc} accepts -g" >&5
++echo "configure:1085: checking whether ${CC-cc} accepts -g" >&5
+ if eval "test \"`echo '$''{'ac_cv_prog_cc_g'+set}'`\" = set"; then
+   echo $ac_n "(cached) $ac_c" 1>&6
+ else
+@@ -1111,7 +1113,7 @@
+ fi
+ 
+ echo $ac_n "checking how to run the C preprocessor""... $ac_c" 1>&6
+-echo "configure:1115: checking how to run the C preprocessor" >&5
++echo "configure:1117: checking how to run the C preprocessor" >&5
+ # On Suns, sometimes $CPP names a directory.
+ if test -n "$CPP" && test -d "$CPP"; then
+   CPP=
+@@ -1126,13 +1128,13 @@
+   # On the NeXT, cc -E runs the code through the compiler's parser,
+   # not just through cpp.
+   cat > conftest.$ac_ext <<EOF
+-#line 1130 "configure"
++#line 1132 "configure"
+ #include "confdefs.h"
+ #include <assert.h>
+ Syntax Error
+ EOF
+ ac_try="$ac_cpp conftest.$ac_ext >/dev/null 2>conftest.out"
+-{ (eval echo configure:1136: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
++{ (eval echo configure:1138: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
+ ac_err=`grep -v '^ *+' conftest.out | grep -v "^conftest.${ac_ext}\$"`
+ if test -z "$ac_err"; then
+   :
+@@ -1143,13 +1145,13 @@
+   rm -rf conftest*
+   CPP="${CC-cc} -E -traditional-cpp"
+   cat > conftest.$ac_ext <<EOF
+-#line 1147 "configure"
++#line 1149 "configure"
+ #include "confdefs.h"
+ #include <assert.h>
+ Syntax Error
+ EOF
+ ac_try="$ac_cpp conftest.$ac_ext >/dev/null 2>conftest.out"
+-{ (eval echo configure:1153: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
++{ (eval echo configure:1155: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
+ ac_err=`grep -v '^ *+' conftest.out | grep -v "^conftest.${ac_ext}\$"`
+ if test -z "$ac_err"; then
+   :
+@@ -1160,13 +1162,13 @@
+   rm -rf conftest*
+   CPP="${CC-cc} -nologo -E"
+   cat > conftest.$ac_ext <<EOF
+-#line 1164 "configure"
++#line 1166 "configure"
+ #include "confdefs.h"
+ #include <assert.h>
+ Syntax Error
+ EOF
+ ac_try="$ac_cpp conftest.$ac_ext >/dev/null 2>conftest.out"
+-{ (eval echo configure:1170: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
++{ (eval echo configure:1172: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
+ ac_err=`grep -v '^ *+' conftest.out | grep -v "^conftest.${ac_ext}\$"`
+ if test -z "$ac_err"; then
+   :
+@@ -1202,7 +1204,7 @@
+ # SVR4 /usr/ucb/install, which tries to use the nonexistent group "staff"
+ # ./install, which can be erroneously created by make from ./install.sh.
+ echo $ac_n "checking for a BSD compatible install""... $ac_c" 1>&6
+-echo "configure:1206: checking for a BSD compatible install" >&5
++echo "configure:1208: checking for a BSD compatible install" >&5
+ if test -z "$INSTALL"; then
+ if eval "test \"`echo '$''{'ac_cv_path_install'+set}'`\" = set"; then
+   echo $ac_n "(cached) $ac_c" 1>&6
+@@ -1256,13 +1258,13 @@
+ 
+ 
+ echo $ac_n "checking for __attribute__""... $ac_c" 1>&6
+-echo "configure:1260: checking for __attribute__" >&5
++echo "configure:1262: checking for __attribute__" >&5
+ if eval "test \"`echo '$''{'ac_cv___attribute__'+set}'`\" = set"; then
+   echo $ac_n "(cached) $ac_c" 1>&6
+ else
+   
+ cat > conftest.$ac_ext <<EOF
+-#line 1266 "configure"
++#line 1268 "configure"
+ #include "confdefs.h"
+ 
+ #include <stdlib.h>
+@@ -1279,7 +1281,7 @@
+ 
+ ; return 0; }
+ EOF
+-if { (eval echo configure:1283: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
++if { (eval echo configure:1285: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
+   rm -rf conftest*
+   ac_cv___attribute__=yes
+ else
+@@ -1303,7 +1305,7 @@
+ 
+    # CMU GUESS RUNPATH SWITCH
+   echo $ac_n "checking for runpath switch""... $ac_c" 1>&6
+-echo "configure:1307: checking for runpath switch" >&5
++echo "configure:1309: checking for runpath switch" >&5
+ if eval "test \"`echo '$''{'andrew_runpath_switch'+set}'`\" = set"; then
+   echo $ac_n "(cached) $ac_c" 1>&6
+ else
+@@ -1312,14 +1314,14 @@
+     SAVE_LDFLAGS="${LDFLAGS}"
+     LDFLAGS="-R /usr/lib"
+     cat > conftest.$ac_ext <<EOF
+-#line 1316 "configure"
++#line 1318 "configure"
+ #include "confdefs.h"
+ 
+ int main() {
+ 
+ ; return 0; }
+ EOF
+-if { (eval echo configure:1323: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
++if { (eval echo configure:1325: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+   rm -rf conftest*
+   andrew_runpath_switch="-R"
+ else
+@@ -1329,14 +1331,14 @@
+   
+   	LDFLAGS="-Wl,-rpath,/usr/lib"
+     cat > conftest.$ac_ext <<EOF
+-#line 1333 "configure"
++#line 1335 "configure"
+ #include "confdefs.h"
+ 
+ int main() {
+ 
+ ; return 0; }
+ EOF
+-if { (eval echo configure:1340: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
++if { (eval echo configure:1342: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+   rm -rf conftest*
+   andrew_runpath_switch="-Wl,-rpath,"
+ else
+@@ -1435,7 +1437,7 @@
+ fi
+ 
+ echo $ac_n "checking build system type""... $ac_c" 1>&6
+-echo "configure:1439: checking build system type" >&5
++echo "configure:1441: checking build system type" >&5
+ 
+ build_alias=$build
+ case "$build_alias" in
+@@ -1455,7 +1457,7 @@
+ # Extract the first word of "ranlib", so it can be a program name with args.
+ set dummy ranlib; ac_word=$2
+ echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
+-echo "configure:1459: checking for $ac_word" >&5
++echo "configure:1461: checking for $ac_word" >&5
+ if eval "test \"`echo '$''{'ac_cv_prog_RANLIB'+set}'`\" = set"; then
+   echo $ac_n "(cached) $ac_c" 1>&6
+ else
+@@ -1494,7 +1496,7 @@
+ if test "$ac_cv_prog_gcc" = yes; then
+   # Check if gcc -print-prog-name=ld gives a path.
+   echo $ac_n "checking for ld used by GCC""... $ac_c" 1>&6
+-echo "configure:1498: checking for ld used by GCC" >&5
++echo "configure:1500: checking for ld used by GCC" >&5
+   ac_prog=`($CC -print-prog-name=ld) 2>&5`
+   case "$ac_prog" in
+     # Accept absolute paths.
+@@ -1518,10 +1520,10 @@
+   esac
+ elif test "$with_gnu_ld" = yes; then
+   echo $ac_n "checking for GNU ld""... $ac_c" 1>&6
+-echo "configure:1522: checking for GNU ld" >&5
++echo "configure:1524: checking for GNU ld" >&5
+ else
+   echo $ac_n "checking for non-GNU ld""... $ac_c" 1>&6
+-echo "configure:1525: checking for non-GNU ld" >&5
++echo "configure:1527: checking for non-GNU ld" >&5
+ fi
+ if eval "test \"`echo '$''{'ac_cv_path_LD'+set}'`\" = set"; then
+   echo $ac_n "(cached) $ac_c" 1>&6
+@@ -1556,7 +1558,7 @@
+ fi
+ test -z "$LD" && { echo "configure: error: no acceptable ld found in \$PATH" 1>&2; exit 1; }
+ echo $ac_n "checking if the linker ($LD) is GNU ld""... $ac_c" 1>&6
+-echo "configure:1560: checking if the linker ($LD) is GNU ld" >&5
++echo "configure:1562: checking if the linker ($LD) is GNU ld" >&5
+ if eval "test \"`echo '$''{'ac_cv_prog_gnu_ld'+set}'`\" = set"; then
+   echo $ac_n "(cached) $ac_c" 1>&6
+ else
+@@ -1572,7 +1574,7 @@
+ 
+ 
+ echo $ac_n "checking for BSD-compatible nm""... $ac_c" 1>&6
+-echo "configure:1576: checking for BSD-compatible nm" >&5
++echo "configure:1578: checking for BSD-compatible nm" >&5
+ if eval "test \"`echo '$''{'ac_cv_path_NM'+set}'`\" = set"; then
+   echo $ac_n "(cached) $ac_c" 1>&6
+ else
+@@ -1608,7 +1610,7 @@
+ echo "$ac_t""$NM" 1>&6
+ 
+ echo $ac_n "checking whether ln -s works""... $ac_c" 1>&6
+-echo "configure:1612: checking whether ln -s works" >&5
++echo "configure:1614: checking whether ln -s works" >&5
+ if eval "test \"`echo '$''{'ac_cv_prog_LN_S'+set}'`\" = set"; then
+   echo $ac_n "(cached) $ac_c" 1>&6
+ else
+@@ -1662,8 +1664,8 @@
+ case "$lt_target" in
+ *-*-irix6*)
+   # Find out which ABI we are using.
+-  echo '#line 1666 "configure"' > conftest.$ac_ext
+-  if { (eval echo configure:1667: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
++  echo '#line 1668 "configure"' > conftest.$ac_ext
++  if { (eval echo configure:1669: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
+     case "`/usr/bin/file conftest.o`" in
+     *32-bit*)
+       LD="${LD-ld} -32"
+@@ -1684,19 +1686,19 @@
+   SAVE_CFLAGS="$CFLAGS"
+   CFLAGS="$CFLAGS -belf"
+   echo $ac_n "checking whether the C compiler needs -belf""... $ac_c" 1>&6
+-echo "configure:1688: checking whether the C compiler needs -belf" >&5
++echo "configure:1690: checking whether the C compiler needs -belf" >&5
+ if eval "test \"`echo '$''{'lt_cv_cc_needs_belf'+set}'`\" = set"; then
+   echo $ac_n "(cached) $ac_c" 1>&6
+ else
+   cat > conftest.$ac_ext <<EOF
+-#line 1693 "configure"
++#line 1695 "configure"
+ #include "confdefs.h"
+ 
+ int main() {
+ 
+ ; return 0; }
+ EOF
+-if { (eval echo configure:1700: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
++if { (eval echo configure:1702: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+   rm -rf conftest*
+   lt_cv_cc_needs_belf=yes
+ else
+@@ -1837,7 +1839,7 @@
+ # Extract the first word of "$ac_prog", so it can be a program name with args.
+ set dummy $ac_prog; ac_word=$2
+ echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
+-echo "configure:1841: checking for $ac_word" >&5
++echo "configure:1843: checking for $ac_word" >&5
+ if eval "test \"`echo '$''{'ac_cv_prog_PURECOV'+set}'`\" = set"; then
+   echo $ac_n "(cached) $ac_c" 1>&6
+ else
+@@ -1879,7 +1881,7 @@
+ # Extract the first word of "$ac_prog", so it can be a program name with args.
+ set dummy $ac_prog; ac_word=$2
+ echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
+-echo "configure:1883: checking for $ac_word" >&5
++echo "configure:1885: checking for $ac_word" >&5
+ if eval "test \"`echo '$''{'ac_cv_prog_PURIFY'+set}'`\" = set"; then
+   echo $ac_n "(cached) $ac_c" 1>&6
+ else
+@@ -1922,7 +1924,7 @@
+   # Extract the first word of "javac", so it can be a program name with args.
+ set dummy javac; ac_word=$2
+ echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
+-echo "configure:1926: checking for $ac_word" >&5
++echo "configure:1928: checking for $ac_word" >&5
+ if eval "test \"`echo '$''{'ac_cv_path_JAVAC'+set}'`\" = set"; then
+   echo $ac_n "(cached) $ac_c" 1>&6
+ else
+@@ -1960,7 +1962,7 @@
+ # Extract the first word of "$ac_prog", so it can be a program name with args.
+ set dummy $ac_prog; ac_word=$2
+ echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
+-echo "configure:1964: checking for $ac_word" >&5
++echo "configure:1966: checking for $ac_word" >&5
+ if eval "test \"`echo '$''{'ac_cv_path_JAVAH'+set}'`\" = set"; then
+   echo $ac_n "(cached) $ac_c" 1>&6
+ else
+@@ -2001,7 +2003,7 @@
+ # Extract the first word of "$ac_prog", so it can be a program name with args.
+ set dummy $ac_prog; ac_word=$2
+ echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
+-echo "configure:2005: checking for $ac_word" >&5
++echo "configure:2007: checking for $ac_word" >&5
+ if eval "test \"`echo '$''{'ac_cv_prog_JAVADOC'+set}'`\" = set"; then
+   echo $ac_n "(cached) $ac_c" 1>&6
+ else
+@@ -2048,7 +2050,7 @@
+ 
+ if test "$enable_java" = yes; then
+   echo $ac_n "checking JNI cpp flags""... $ac_c" 1>&6
+-echo "configure:2052: checking JNI cpp flags" >&5
++echo "configure:2054: checking JNI cpp flags" >&5
+   if test `echo $JAVAH | sed 's,.*/,,'` = "kaffeh"; then
+     JAVA_INCLUDES=-I`echo $JAVAH | sed -e 's,/bin.*,/include/kaffe,'`
+   else
+@@ -2097,7 +2099,7 @@
+ fi
+ 
+ echo $ac_n "checking DB path to use""... $ac_c" 1>&6
+-echo "configure:2101: checking DB path to use" >&5
++echo "configure:2103: checking DB path to use" >&5
+ echo "$ac_t""$dbpath" 1>&6
+ cat >> confdefs.h <<EOF
+ #define SASL_DB_PATH "$dbpath"
+@@ -2118,17 +2120,17 @@
+   berkeley)
+ 	ac_safe=`echo "db.h" | sed 'y%./+-%__p_%'`
+ echo $ac_n "checking for db.h""... $ac_c" 1>&6
+-echo "configure:2122: checking for db.h" >&5
++echo "configure:2124: checking for db.h" >&5
+ if eval "test \"`echo '$''{'ac_cv_header_$ac_safe'+set}'`\" = set"; then
+   echo $ac_n "(cached) $ac_c" 1>&6
+ else
+   cat > conftest.$ac_ext <<EOF
+-#line 2127 "configure"
++#line 2129 "configure"
+ #include "confdefs.h"
+ #include <db.h>
+ EOF
+ ac_try="$ac_cpp conftest.$ac_ext >/dev/null 2>conftest.out"
+-{ (eval echo configure:2132: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
++{ (eval echo configure:2134: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
+ ac_err=`grep -v '^ *+' conftest.out | grep -v "^conftest.${ac_ext}\$"`
+ if test -z "$ac_err"; then
+   rm -rf conftest*
+@@ -2145,7 +2147,7 @@
+ if eval "test \"`echo '$ac_cv_header_'$ac_safe`\" = yes"; then
+   echo "$ac_t""yes" 1>&6
+   echo $ac_n "checking for db_create in -ldb-3""... $ac_c" 1>&6
+-echo "configure:2149: checking for db_create in -ldb-3" >&5
++echo "configure:2151: checking for db_create in -ldb-3" >&5
+ ac_lib_var=`echo db-3'_'db_create | sed 'y%./+-%__p_%'`
+ if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
+   echo $ac_n "(cached) $ac_c" 1>&6
+@@ -2153,7 +2155,7 @@
+   ac_save_LIBS="$LIBS"
+ LIBS="-ldb-3  $LIBS"
+ cat > conftest.$ac_ext <<EOF
+-#line 2157 "configure"
++#line 2159 "configure"
+ #include "confdefs.h"
+ /* Override any gcc2 internal prototype to avoid an error.  */
+ /* We use char because int might match the return type of a gcc2
+@@ -2164,7 +2166,7 @@
+ db_create()
+ ; return 0; }
+ EOF
+-if { (eval echo configure:2168: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
++if { (eval echo configure:2170: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+   rm -rf conftest*
+   eval "ac_cv_lib_$ac_lib_var=yes"
+ else
+@@ -2184,7 +2186,7 @@
+ else
+   echo "$ac_t""no" 1>&6
+ echo $ac_n "checking for db_create in -ldb""... $ac_c" 1>&6
+-echo "configure:2188: checking for db_create in -ldb" >&5
++echo "configure:2190: checking for db_create in -ldb" >&5
+ ac_lib_var=`echo db'_'db_create | sed 'y%./+-%__p_%'`
+ if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
+   echo $ac_n "(cached) $ac_c" 1>&6
+@@ -2192,7 +2194,7 @@
+   ac_save_LIBS="$LIBS"
+ LIBS="-ldb  $LIBS"
+ cat > conftest.$ac_ext <<EOF
+-#line 2196 "configure"
++#line 2198 "configure"
+ #include "confdefs.h"
+ /* Override any gcc2 internal prototype to avoid an error.  */
+ /* We use char because int might match the return type of a gcc2
+@@ -2203,7 +2205,7 @@
+ db_create()
+ ; return 0; }
+ EOF
+-if { (eval echo configure:2207: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
++if { (eval echo configure:2209: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+   rm -rf conftest*
+   eval "ac_cv_lib_$ac_lib_var=yes"
+ else
+@@ -2223,7 +2225,7 @@
+ else
+   echo "$ac_t""no" 1>&6
+ echo $ac_n "checking for db_open in -ldb""... $ac_c" 1>&6
+-echo "configure:2227: checking for db_open in -ldb" >&5
++echo "configure:2229: checking for db_open in -ldb" >&5
+ ac_lib_var=`echo db'_'db_open | sed 'y%./+-%__p_%'`
+ if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
+   echo $ac_n "(cached) $ac_c" 1>&6
+@@ -2231,7 +2233,7 @@
+   ac_save_LIBS="$LIBS"
+ LIBS="-ldb  $LIBS"
+ cat > conftest.$ac_ext <<EOF
+-#line 2235 "configure"
++#line 2237 "configure"
+ #include "confdefs.h"
+ /* Override any gcc2 internal prototype to avoid an error.  */
+ /* We use char because int might match the return type of a gcc2
+@@ -2242,7 +2244,7 @@
+ db_open()
+ ; return 0; }
+ EOF
+-if { (eval echo configure:2246: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
++if { (eval echo configure:2248: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+   rm -rf conftest*
+   eval "ac_cv_lib_$ac_lib_var=yes"
+ else
+@@ -2277,17 +2279,17 @@
+   gdbm)
+ 	ac_safe=`echo "gdbm.h" | sed 'y%./+-%__p_%'`
+ echo $ac_n "checking for gdbm.h""... $ac_c" 1>&6
+-echo "configure:2281: checking for gdbm.h" >&5
++echo "configure:2283: checking for gdbm.h" >&5
+ if eval "test \"`echo '$''{'ac_cv_header_$ac_safe'+set}'`\" = set"; then
+   echo $ac_n "(cached) $ac_c" 1>&6
+ else
+   cat > conftest.$ac_ext <<EOF
+-#line 2286 "configure"
++#line 2288 "configure"
+ #include "confdefs.h"
+ #include <gdbm.h>
+ EOF
+ ac_try="$ac_cpp conftest.$ac_ext >/dev/null 2>conftest.out"
+-{ (eval echo configure:2291: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
++{ (eval echo configure:2293: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
+ ac_err=`grep -v '^ *+' conftest.out | grep -v "^conftest.${ac_ext}\$"`
+ if test -z "$ac_err"; then
+   rm -rf conftest*
+@@ -2304,7 +2306,7 @@
+ if eval "test \"`echo '$ac_cv_header_'$ac_safe`\" = yes"; then
+   echo "$ac_t""yes" 1>&6
+   echo $ac_n "checking for gdbm_open in -lgdbm""... $ac_c" 1>&6
+-echo "configure:2308: checking for gdbm_open in -lgdbm" >&5
++echo "configure:2310: checking for gdbm_open in -lgdbm" >&5
+ ac_lib_var=`echo gdbm'_'gdbm_open | sed 'y%./+-%__p_%'`
+ if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
+   echo $ac_n "(cached) $ac_c" 1>&6
+@@ -2312,7 +2314,7 @@
+   ac_save_LIBS="$LIBS"
+ LIBS="-lgdbm  $LIBS"
+ cat > conftest.$ac_ext <<EOF
+-#line 2316 "configure"
++#line 2318 "configure"
+ #include "confdefs.h"
+ /* Override any gcc2 internal prototype to avoid an error.  */
+ /* We use char because int might match the return type of a gcc2
+@@ -2323,7 +2325,7 @@
+ gdbm_open()
+ ; return 0; }
+ EOF
+-if { (eval echo configure:2327: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
++if { (eval echo configure:2329: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+   rm -rf conftest*
+   eval "ac_cv_lib_$ac_lib_var=yes"
+ else
+@@ -2353,17 +2355,17 @@
+   ndbm)
+ 			ac_safe=`echo "ndbm.h" | sed 'y%./+-%__p_%'`
+ echo $ac_n "checking for ndbm.h""... $ac_c" 1>&6
+-echo "configure:2357: checking for ndbm.h" >&5
++echo "configure:2359: checking for ndbm.h" >&5
+ if eval "test \"`echo '$''{'ac_cv_header_$ac_safe'+set}'`\" = set"; then
+   echo $ac_n "(cached) $ac_c" 1>&6
+ else
+   cat > conftest.$ac_ext <<EOF
+-#line 2362 "configure"
++#line 2364 "configure"
+ #include "confdefs.h"
+ #include <ndbm.h>
+ EOF
+ ac_try="$ac_cpp conftest.$ac_ext >/dev/null 2>conftest.out"
+-{ (eval echo configure:2367: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
++{ (eval echo configure:2369: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
+ ac_err=`grep -v '^ *+' conftest.out | grep -v "^conftest.${ac_ext}\$"`
+ if test -z "$ac_err"; then
+   rm -rf conftest*
+@@ -2380,7 +2382,7 @@
+ if eval "test \"`echo '$ac_cv_header_'$ac_safe`\" = yes"; then
+   echo "$ac_t""yes" 1>&6
+   echo $ac_n "checking for dbm_open in -lndbm""... $ac_c" 1>&6
+-echo "configure:2384: checking for dbm_open in -lndbm" >&5
++echo "configure:2386: checking for dbm_open in -lndbm" >&5
+ ac_lib_var=`echo ndbm'_'dbm_open | sed 'y%./+-%__p_%'`
+ if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
+   echo $ac_n "(cached) $ac_c" 1>&6
+@@ -2388,7 +2390,7 @@
+   ac_save_LIBS="$LIBS"
+ LIBS="-lndbm  $LIBS"
+ cat > conftest.$ac_ext <<EOF
+-#line 2392 "configure"
++#line 2394 "configure"
+ #include "confdefs.h"
+ /* Override any gcc2 internal prototype to avoid an error.  */
+ /* We use char because int might match the return type of a gcc2
+@@ -2399,7 +2401,7 @@
+ dbm_open()
+ ; return 0; }
+ EOF
+-if { (eval echo configure:2403: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
++if { (eval echo configure:2405: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+   rm -rf conftest*
+   eval "ac_cv_lib_$ac_lib_var=yes"
+ else
+@@ -2418,12 +2420,12 @@
+ else
+   echo "$ac_t""no" 1>&6
+ echo $ac_n "checking for dbm_open""... $ac_c" 1>&6
+-echo "configure:2422: checking for dbm_open" >&5
++echo "configure:2424: checking for dbm_open" >&5
+ if eval "test \"`echo '$''{'ac_cv_func_dbm_open'+set}'`\" = set"; then
+   echo $ac_n "(cached) $ac_c" 1>&6
+ else
+   cat > conftest.$ac_ext <<EOF
+-#line 2427 "configure"
++#line 2429 "configure"
+ #include "confdefs.h"
+ /* System header to define __stub macros and hopefully few prototypes
+ else
+@@ -2448,7 +2450,7 @@
+ 
+ ; return 0; }
+ EOF
+-if { (eval echo configure:2452: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
++if { (eval echo configure:2454: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+   rm -rf conftest*
+   eval "ac_cv_func_dbm_open=yes"
+ else
+@@ -2476,17 +2478,17 @@
+   auto_detect)
+         	ac_safe=`echo "db.h" | sed 'y%./+-%__p_%'`
+ echo $ac_n "checking for db.h""... $ac_c" 1>&6
+-echo "configure:2480: checking for db.h" >&5
++echo "configure:2482: checking for db.h" >&5
+ if eval "test \"`echo '$''{'ac_cv_header_$ac_safe'+set}'`\" = set"; then
+   echo $ac_n "(cached) $ac_c" 1>&6
+ else
+   cat > conftest.$ac_ext <<EOF
+-#line 2485 "configure"
++#line 2487 "configure"
+ #include "confdefs.h"
+ #include <db.h>
+ EOF
+ ac_try="$ac_cpp conftest.$ac_ext >/dev/null 2>conftest.out"
+-{ (eval echo configure:2490: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
++{ (eval echo configure:2492: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
+ ac_err=`grep -v '^ *+' conftest.out | grep -v "^conftest.${ac_ext}\$"`
+ if test -z "$ac_err"; then
+   rm -rf conftest*
+@@ -2503,7 +2505,7 @@
+ if eval "test \"`echo '$ac_cv_header_'$ac_safe`\" = yes"; then
+   echo "$ac_t""yes" 1>&6
+   echo $ac_n "checking for db_create in -ldb-3""... $ac_c" 1>&6
+-echo "configure:2507: checking for db_create in -ldb-3" >&5
++echo "configure:2509: checking for db_create in -ldb-3" >&5
+ ac_lib_var=`echo db-3'_'db_create | sed 'y%./+-%__p_%'`
+ if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
+   echo $ac_n "(cached) $ac_c" 1>&6
+@@ -2511,7 +2513,7 @@
+   ac_save_LIBS="$LIBS"
+ LIBS="-ldb-3  $LIBS"
+ cat > conftest.$ac_ext <<EOF
+-#line 2515 "configure"
++#line 2517 "configure"
+ #include "confdefs.h"
+ /* Override any gcc2 internal prototype to avoid an error.  */
+ /* We use char because int might match the return type of a gcc2
+@@ -2522,7 +2524,7 @@
+ db_create()
+ ; return 0; }
+ EOF
+-if { (eval echo configure:2526: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
++if { (eval echo configure:2528: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+   rm -rf conftest*
+   eval "ac_cv_lib_$ac_lib_var=yes"
+ else
+@@ -2542,7 +2544,7 @@
+ else
+   echo "$ac_t""no" 1>&6
+ echo $ac_n "checking for db_create in -ldb""... $ac_c" 1>&6
+-echo "configure:2546: checking for db_create in -ldb" >&5
++echo "configure:2548: checking for db_create in -ldb" >&5
+ ac_lib_var=`echo db'_'db_create | sed 'y%./+-%__p_%'`
+ if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
+   echo $ac_n "(cached) $ac_c" 1>&6
+@@ -2550,7 +2552,7 @@
+   ac_save_LIBS="$LIBS"
+ LIBS="-ldb  $LIBS"
+ cat > conftest.$ac_ext <<EOF
+-#line 2554 "configure"
++#line 2556 "configure"
+ #include "confdefs.h"
+ /* Override any gcc2 internal prototype to avoid an error.  */
+ /* We use char because int might match the return type of a gcc2
+@@ -2561,7 +2563,7 @@
+ db_create()
+ ; return 0; }
+ EOF
+-if { (eval echo configure:2565: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
++if { (eval echo configure:2567: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+   rm -rf conftest*
+   eval "ac_cv_lib_$ac_lib_var=yes"
+ else
+@@ -2581,7 +2583,7 @@
+ else
+   echo "$ac_t""no" 1>&6
+ echo $ac_n "checking for db_open in -ldb""... $ac_c" 1>&6
+-echo "configure:2585: checking for db_open in -ldb" >&5
++echo "configure:2587: checking for db_open in -ldb" >&5
+ ac_lib_var=`echo db'_'db_open | sed 'y%./+-%__p_%'`
+ if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
+   echo $ac_n "(cached) $ac_c" 1>&6
+@@ -2589,7 +2591,7 @@
+   ac_save_LIBS="$LIBS"
+ LIBS="-ldb  $LIBS"
+ cat > conftest.$ac_ext <<EOF
+-#line 2593 "configure"
++#line 2595 "configure"
+ #include "confdefs.h"
+ /* Override any gcc2 internal prototype to avoid an error.  */
+ /* We use char because int might match the return type of a gcc2
+@@ -2600,7 +2602,7 @@
+ db_open()
+ ; return 0; }
+ EOF
+-if { (eval echo configure:2604: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
++if { (eval echo configure:2606: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+   rm -rf conftest*
+   eval "ac_cv_lib_$ac_lib_var=yes"
+ else
+@@ -2634,17 +2636,17 @@
+ 	if test "$dblib" = no; then
+ 	  	  ac_safe=`echo "ndbm.h" | sed 'y%./+-%__p_%'`
+ echo $ac_n "checking for ndbm.h""... $ac_c" 1>&6
+-echo "configure:2638: checking for ndbm.h" >&5
++echo "configure:2640: checking for ndbm.h" >&5
+ if eval "test \"`echo '$''{'ac_cv_header_$ac_safe'+set}'`\" = set"; then
+   echo $ac_n "(cached) $ac_c" 1>&6
+ else
+   cat > conftest.$ac_ext <<EOF
+-#line 2643 "configure"
++#line 2645 "configure"
+ #include "confdefs.h"
+ #include <ndbm.h>
+ EOF
+ ac_try="$ac_cpp conftest.$ac_ext >/dev/null 2>conftest.out"
+-{ (eval echo configure:2648: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
++{ (eval echo configure:2650: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
+ ac_err=`grep -v '^ *+' conftest.out | grep -v "^conftest.${ac_ext}\$"`
+ if test -z "$ac_err"; then
+   rm -rf conftest*
+@@ -2661,7 +2663,7 @@
+ if eval "test \"`echo '$ac_cv_header_'$ac_safe`\" = yes"; then
+   echo "$ac_t""yes" 1>&6
+   echo $ac_n "checking for dbm_open in -lndbm""... $ac_c" 1>&6
+-echo "configure:2665: checking for dbm_open in -lndbm" >&5
++echo "configure:2667: checking for dbm_open in -lndbm" >&5
+ ac_lib_var=`echo ndbm'_'dbm_open | sed 'y%./+-%__p_%'`
+ if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
+   echo $ac_n "(cached) $ac_c" 1>&6
+@@ -2669,7 +2671,7 @@
+   ac_save_LIBS="$LIBS"
+ LIBS="-lndbm  $LIBS"
+ cat > conftest.$ac_ext <<EOF
+-#line 2673 "configure"
++#line 2675 "configure"
+ #include "confdefs.h"
+ /* Override any gcc2 internal prototype to avoid an error.  */
+ /* We use char because int might match the return type of a gcc2
+@@ -2680,7 +2682,7 @@
+ dbm_open()
+ ; return 0; }
+ EOF
+-if { (eval echo configure:2684: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
++if { (eval echo configure:2686: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+   rm -rf conftest*
+   eval "ac_cv_lib_$ac_lib_var=yes"
+ else
+@@ -2708,12 +2710,12 @@
+ 
+ 	  if test "$dblib" = "weird"; then
+ 	                echo $ac_n "checking for dbm_open""... $ac_c" 1>&6
+-echo "configure:2712: checking for dbm_open" >&5
++echo "configure:2714: checking for dbm_open" >&5
+ if eval "test \"`echo '$''{'ac_cv_func_dbm_open'+set}'`\" = set"; then
+   echo $ac_n "(cached) $ac_c" 1>&6
+ else
+   cat > conftest.$ac_ext <<EOF
+-#line 2717 "configure"
++#line 2719 "configure"
+ #include "confdefs.h"
+ /* System header to define __stub macros and hopefully few prototypes,
+     which can conflict with char dbm_open(); below.  */
+@@ -2736,7 +2738,7 @@
+ 
+ ; return 0; }
+ EOF
+-if { (eval echo configure:2740: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
++if { (eval echo configure:2742: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+   rm -rf conftest*
+   eval "ac_cv_func_dbm_open=yes"
+ else
+@@ -2761,17 +2763,17 @@
+ 	  if test "$dblib" = no; then
+                	    ac_safe=`echo "gdbm.h" | sed 'y%./+-%__p_%'`
+ echo $ac_n "checking for gdbm.h""... $ac_c" 1>&6
+-echo "configure:2765: checking for gdbm.h" >&5
++echo "configure:2767: checking for gdbm.h" >&5
+ if eval "test \"`echo '$''{'ac_cv_header_$ac_safe'+set}'`\" = set"; then
+   echo $ac_n "(cached) $ac_c" 1>&6
+ else
+   cat > conftest.$ac_ext <<EOF
+-#line 2770 "configure"
++#line 2772 "configure"
+ #include "confdefs.h"
+ #include <gdbm.h>
+ EOF
+ ac_try="$ac_cpp conftest.$ac_ext >/dev/null 2>conftest.out"
+-{ (eval echo configure:2775: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
++{ (eval echo configure:2777: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
+ ac_err=`grep -v '^ *+' conftest.out | grep -v "^conftest.${ac_ext}\$"`
+ if test -z "$ac_err"; then
+   rm -rf conftest*
+@@ -2788,7 +2790,7 @@
+ if eval "test \"`echo '$ac_cv_header_'$ac_safe`\" = yes"; then
+   echo "$ac_t""yes" 1>&6
+   echo $ac_n "checking for gdbm_open in -lgdbm""... $ac_c" 1>&6
+-echo "configure:2792: checking for gdbm_open in -lgdbm" >&5
++echo "configure:2794: checking for gdbm_open in -lgdbm" >&5
+ ac_lib_var=`echo gdbm'_'gdbm_open | sed 'y%./+-%__p_%'`
+ if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
+   echo $ac_n "(cached) $ac_c" 1>&6
+@@ -2796,7 +2798,7 @@
+   ac_save_LIBS="$LIBS"
+ LIBS="-lgdbm  $LIBS"
+ cat > conftest.$ac_ext <<EOF
+-#line 2800 "configure"
++#line 2802 "configure"
+ #include "confdefs.h"
+ /* Override any gcc2 internal prototype to avoid an error.  */
+ /* We use char because int might match the return type of a gcc2
+@@ -2807,7 +2809,7 @@
+ gdbm_open()
+ ; return 0; }
+ EOF
+-if { (eval echo configure:2811: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
++if { (eval echo configure:2813: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+   rm -rf conftest*
+   eval "ac_cv_lib_$ac_lib_var=yes"
+ else
+@@ -2850,7 +2852,7 @@
+ LIBS="$cmu_save_LIBS"
+ 
+ echo $ac_n "checking DB library to use""... $ac_c" 1>&6
+-echo "configure:2854: checking DB library to use" >&5
++echo "configure:2856: checking DB library to use" >&5
+ echo "$ac_t""$dblib" 1>&6
+ 
+ case "$dblib" in
+@@ -2885,7 +2887,7 @@
+ 
+ 
+ echo $ac_n "checking for dlopen in -ldl""... $ac_c" 1>&6
+-echo "configure:2889: checking for dlopen in -ldl" >&5
++echo "configure:2891: checking for dlopen in -ldl" >&5
+ ac_lib_var=`echo dl'_'dlopen | sed 'y%./+-%__p_%'`
+ if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
+   echo $ac_n "(cached) $ac_c" 1>&6
+@@ -2893,7 +2895,7 @@
+   ac_save_LIBS="$LIBS"
+ LIBS="-ldl  $LIBS"
+ cat > conftest.$ac_ext <<EOF
+-#line 2897 "configure"
++#line 2899 "configure"
+ #include "confdefs.h"
+ /* Override any gcc2 internal prototype to avoid an error.  */
+ /* We use char because int might match the return type of a gcc2
+@@ -2904,7 +2906,7 @@
+ dlopen()
+ ; return 0; }
+ EOF
+-if { (eval echo configure:2908: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
++if { (eval echo configure:2910: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+   rm -rf conftest*
+   eval "ac_cv_lib_$ac_lib_var=yes"
+ else
+@@ -2930,12 +2932,12 @@
+ for ac_func in syslog
+ do
+ echo $ac_n "checking for $ac_func""... $ac_c" 1>&6
+-echo "configure:2934: checking for $ac_func" >&5
++echo "configure:2936: checking for $ac_func" >&5
+ if eval "test \"`echo '$''{'ac_cv_func_$ac_func'+set}'`\" = set"; then
+   echo $ac_n "(cached) $ac_c" 1>&6
+ else
+   cat > conftest.$ac_ext <<EOF
+-#line 2939 "configure"
++#line 2941 "configure"
+ #include "confdefs.h"
+ /* System header to define __stub macros and hopefully few prototypes,
+     which can conflict with char $ac_func(); below.  */
+@@ -2958,7 +2960,7 @@
+ 
+ ; return 0; }
+ EOF
+-if { (eval echo configure:2962: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
++if { (eval echo configure:2964: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+   rm -rf conftest*
+   eval "ac_cv_func_$ac_func=yes"
+ else
+@@ -2985,12 +2987,12 @@
+ 
+ LIB_CRYPT=""
+ echo $ac_n "checking for crypt""... $ac_c" 1>&6
+-echo "configure:2989: checking for crypt" >&5
++echo "configure:2991: checking for crypt" >&5
+ if eval "test \"`echo '$''{'ac_cv_func_crypt'+set}'`\" = set"; then
+   echo $ac_n "(cached) $ac_c" 1>&6
+ else
+   cat > conftest.$ac_ext <<EOF
+-#line 2994 "configure"
++#line 2996 "configure"
+ #include "confdefs.h"
+ /* System header to define __stub macros and hopefully few prototypes,
+     which can conflict with char crypt(); below.  */
+@@ -3013,7 +3015,7 @@
+ 
+ ; return 0; }
+ EOF
+-if { (eval echo configure:3017: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
++if { (eval echo configure:3019: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+   rm -rf conftest*
+   eval "ac_cv_func_crypt=yes"
+ else
+@@ -3031,7 +3033,7 @@
+ else
+   echo "$ac_t""no" 1>&6
+ echo $ac_n "checking for crypt in -lcrypt""... $ac_c" 1>&6
+-echo "configure:3035: checking for crypt in -lcrypt" >&5
++echo "configure:3037: checking for crypt in -lcrypt" >&5
+ ac_lib_var=`echo crypt'_'crypt | sed 'y%./+-%__p_%'`
+ if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
+   echo $ac_n "(cached) $ac_c" 1>&6
+@@ -3039,7 +3041,7 @@
+   ac_save_LIBS="$LIBS"
+ LIBS="-lcrypt  $LIBS"
+ cat > conftest.$ac_ext <<EOF
+-#line 3043 "configure"
++#line 3045 "configure"
+ #include "confdefs.h"
+ /* Override any gcc2 internal prototype to avoid an error.  */
+ /* We use char because int might match the return type of a gcc2
+@@ -3050,7 +3052,7 @@
+ crypt()
+ ; return 0; }
+ EOF
+-if { (eval echo configure:3054: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
++if { (eval echo configure:3056: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+   rm -rf conftest*
+   eval "ac_cv_lib_$ac_lib_var=yes"
+ else
+@@ -3078,12 +3080,12 @@
+ 
+ 	LIB_SOCKET=""
+ 	echo $ac_n "checking for connect""... $ac_c" 1>&6
+-echo "configure:3082: checking for connect" >&5
++echo "configure:3084: checking for connect" >&5
+ if eval "test \"`echo '$''{'ac_cv_func_connect'+set}'`\" = set"; then
+   echo $ac_n "(cached) $ac_c" 1>&6
+ else
+   cat > conftest.$ac_ext <<EOF
+-#line 3087 "configure"
++#line 3089 "configure"
+ #include "confdefs.h"
+ /* System header to define __stub macros and hopefully few prototypes,
+     which can conflict with char connect(); below.  */
+@@ -3106,7 +3108,7 @@
+ 
+ ; return 0; }
+ EOF
+-if { (eval echo configure:3110: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
++if { (eval echo configure:3112: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+   rm -rf conftest*
+   eval "ac_cv_func_connect=yes"
+ else
+@@ -3124,7 +3126,7 @@
+ else
+   echo "$ac_t""no" 1>&6
+ echo $ac_n "checking for gethostbyname in -lnsl""... $ac_c" 1>&6
+-echo "configure:3128: checking for gethostbyname in -lnsl" >&5
++echo "configure:3130: checking for gethostbyname in -lnsl" >&5
+ ac_lib_var=`echo nsl'_'gethostbyname | sed 'y%./+-%__p_%'`
+ if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
+   echo $ac_n "(cached) $ac_c" 1>&6
+@@ -3132,7 +3134,7 @@
+   ac_save_LIBS="$LIBS"
+ LIBS="-lnsl  $LIBS"
+ cat > conftest.$ac_ext <<EOF
+-#line 3136 "configure"
++#line 3138 "configure"
+ #include "confdefs.h"
+ /* Override any gcc2 internal prototype to avoid an error.  */
+ /* We use char because int might match the return type of a gcc2
+@@ -3143,7 +3145,7 @@
+ gethostbyname()
+ ; return 0; }
+ EOF
+-if { (eval echo configure:3147: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
++if { (eval echo configure:3149: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+   rm -rf conftest*
+   eval "ac_cv_lib_$ac_lib_var=yes"
+ else
+@@ -3164,7 +3166,7 @@
+ fi
+ 
+ 		echo $ac_n "checking for connect in -lsocket""... $ac_c" 1>&6
+-echo "configure:3168: checking for connect in -lsocket" >&5
++echo "configure:3170: checking for connect in -lsocket" >&5
+ ac_lib_var=`echo socket'_'connect | sed 'y%./+-%__p_%'`
+ if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
+   echo $ac_n "(cached) $ac_c" 1>&6
+@@ -3172,7 +3174,7 @@
+   ac_save_LIBS="$LIBS"
+ LIBS="-lsocket  $LIBS"
+ cat > conftest.$ac_ext <<EOF
+-#line 3176 "configure"
++#line 3178 "configure"
+ #include "confdefs.h"
+ /* Override any gcc2 internal prototype to avoid an error.  */
+ /* We use char because int might match the return type of a gcc2
+@@ -3183,7 +3185,7 @@
+ connect()
+ ; return 0; }
+ EOF
+-if { (eval echo configure:3187: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
++if { (eval echo configure:3189: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+   rm -rf conftest*
+   eval "ac_cv_lib_$ac_lib_var=yes"
+ else
+@@ -3246,7 +3248,7 @@
+   fi
+   cmu_save_LIBS="$LIBS"
+   echo $ac_n "checking for pam_start in -lpam""... $ac_c" 1>&6
+-echo "configure:3250: checking for pam_start in -lpam" >&5
++echo "configure:3252: checking for pam_start in -lpam" >&5
+ ac_lib_var=`echo pam'_'pam_start | sed 'y%./+-%__p_%'`
+ if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
+   echo $ac_n "(cached) $ac_c" 1>&6
+@@ -3254,7 +3256,7 @@
+   ac_save_LIBS="$LIBS"
+ LIBS="-lpam $SASL_DL_LIB $LIBS"
+ cat > conftest.$ac_ext <<EOF
+-#line 3258 "configure"
++#line 3260 "configure"
+ #include "confdefs.h"
+ /* Override any gcc2 internal prototype to avoid an error.  */
+ /* We use char because int might match the return type of a gcc2
+@@ -3265,7 +3267,7 @@
+ pam_start()
+ ; return 0; }
+ EOF
+-if { (eval echo configure:3269: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
++if { (eval echo configure:3271: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+   rm -rf conftest*
+   eval "ac_cv_lib_$ac_lib_var=yes"
+ else
+@@ -3282,17 +3284,17 @@
+   echo "$ac_t""yes" 1>&6
+   ac_safe=`echo "security/pam_appl.h" | sed 'y%./+-%__p_%'`
+ echo $ac_n "checking for security/pam_appl.h""... $ac_c" 1>&6
+-echo "configure:3286: checking for security/pam_appl.h" >&5
++echo "configure:3288: checking for security/pam_appl.h" >&5
+ if eval "test \"`echo '$''{'ac_cv_header_$ac_safe'+set}'`\" = set"; then
+   echo $ac_n "(cached) $ac_c" 1>&6
+ else
+   cat > conftest.$ac_ext <<EOF
+-#line 3291 "configure"
++#line 3293 "configure"
+ #include "confdefs.h"
+ #include <security/pam_appl.h>
+ EOF
+ ac_try="$ac_cpp conftest.$ac_ext >/dev/null 2>conftest.out"
+-{ (eval echo configure:3296: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
++{ (eval echo configure:3298: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
+ ac_err=`grep -v '^ *+' conftest.out | grep -v "^conftest.${ac_ext}\$"`
+ if test -z "$ac_err"; then
+   rm -rf conftest*
+@@ -3323,7 +3325,7 @@
+ fi
+ 
+ echo $ac_n "checking PAM support""... $ac_c" 1>&6
+-echo "configure:3327: checking PAM support" >&5
++echo "configure:3329: checking PAM support" >&5
+ echo "$ac_t""$with_pam" 1>&6
+ LIB_PAM=""
+ if test "$with_pam" != no; then
+@@ -3369,12 +3371,12 @@
+ for ac_func in getspnam getuserpw
+ do
+ echo $ac_n "checking for $ac_func""... $ac_c" 1>&6
+-echo "configure:3373: checking for $ac_func" >&5
++echo "configure:3375: checking for $ac_func" >&5
+ if eval "test \"`echo '$''{'ac_cv_func_$ac_func'+set}'`\" = set"; then
+   echo $ac_n "(cached) $ac_c" 1>&6
+ else
+   cat > conftest.$ac_ext <<EOF
+-#line 3378 "configure"
++#line 3380 "configure"
+ #include "confdefs.h"
+ /* System header to define __stub macros and hopefully few prototypes,
+     which can conflict with char $ac_func(); below.  */
+@@ -3397,7 +3399,7 @@
+ 
+ ; return 0; }
+ EOF
+-if { (eval echo configure:3401: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
++if { (eval echo configure:3403: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+   rm -rf conftest*
+   eval "ac_cv_func_$ac_func=yes"
+ else
+@@ -3443,12 +3445,12 @@
+ EOF
+ 
+    echo $ac_n "checking for getspnam""... $ac_c" 1>&6
+-echo "configure:3447: checking for getspnam" >&5
++echo "configure:3449: checking for getspnam" >&5
+ if eval "test \"`echo '$''{'ac_cv_func_getspnam'+set}'`\" = set"; then
+   echo $ac_n "(cached) $ac_c" 1>&6
+ else
+   cat > conftest.$ac_ext <<EOF
+-#line 3452 "configure"
++#line 3454 "configure"
+ #include "confdefs.h"
+ /* System header to define __stub macros and hopefully few prototypes,
+     which can conflict with char getspnam(); below.  */
+@@ -3471,7 +3473,7 @@
+ 
+ ; return 0; }
+ EOF
+-if { (eval echo configure:3475: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
++if { (eval echo configure:3477: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+   rm -rf conftest*
+   eval "ac_cv_func_getspnam=yes"
+ else
+@@ -3513,7 +3515,7 @@
+ 
+ 
+ echo $ac_n "checking CRAM-MD5""... $ac_c" 1>&6
+-echo "configure:3517: checking CRAM-MD5" >&5
++echo "configure:3519: checking CRAM-MD5" >&5
+ if test "$cram" != no; then
+   echo "$ac_t""enabled" 1>&6
+   SASL_MECHS="$SASL_MECHS libcrammd5.la"
+@@ -3532,7 +3534,7 @@
+ 
+ 
+ echo $ac_n "checking SCRAM-MD5""... $ac_c" 1>&6
+-echo "configure:3536: checking SCRAM-MD5" >&5
++echo "configure:3538: checking SCRAM-MD5" >&5
+ if test "$scram" != no; then
+   echo "$ac_t""enabled" 1>&6
+   SASL_MECHS="$SASL_MECHS libscrammd5.la"
+@@ -3565,7 +3567,7 @@
+     LDFLAGS="$LDFLAGS -L${with_des}/lib"
+   fi
+   echo $ac_n "checking for des_pcbc_encrypt in -ldes""... $ac_c" 1>&6
+-echo "configure:3569: checking for des_pcbc_encrypt in -ldes" >&5
++echo "configure:3571: checking for des_pcbc_encrypt in -ldes" >&5
+ ac_lib_var=`echo des'_'des_pcbc_encrypt | sed 'y%./+-%__p_%'`
+ if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
+   echo $ac_n "(cached) $ac_c" 1>&6
+@@ -3573,7 +3575,7 @@
+   ac_save_LIBS="$LIBS"
+ LIBS="-ldes  $LIBS"
+ cat > conftest.$ac_ext <<EOF
+-#line 3577 "configure"
++#line 3579 "configure"
+ #include "confdefs.h"
+ /* Override any gcc2 internal prototype to avoid an error.  */
+ /* We use char because int might match the return type of a gcc2
+@@ -3584,7 +3586,7 @@
+ des_pcbc_encrypt()
+ ; return 0; }
+ EOF
+-if { (eval echo configure:3588: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
++if { (eval echo configure:3590: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+   rm -rf conftest*
+   eval "ac_cv_lib_$ac_lib_var=yes"
+ else
+@@ -3611,7 +3613,7 @@
+     
+             LIB_RSAREF=""
+     echo $ac_n "checking for RSAPublicEncrypt in -lrsaref""... $ac_c" 1>&6
+-echo "configure:3615: checking for RSAPublicEncrypt in -lrsaref" >&5
++echo "configure:3617: checking for RSAPublicEncrypt in -lrsaref" >&5
+ ac_lib_var=`echo rsaref'_'RSAPublicEncrypt | sed 'y%./+-%__p_%'`
+ if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
+   echo $ac_n "(cached) $ac_c" 1>&6
+@@ -3619,7 +3621,7 @@
+   ac_save_LIBS="$LIBS"
+ LIBS="-lrsaref  $LIBS"
+ cat > conftest.$ac_ext <<EOF
+-#line 3623 "configure"
++#line 3625 "configure"
+ #include "confdefs.h"
+ /* Override any gcc2 internal prototype to avoid an error.  */
+ /* We use char because int might match the return type of a gcc2
+@@ -3630,7 +3632,7 @@
+ RSAPublicEncrypt()
+ ; return 0; }
+ EOF
+-if { (eval echo configure:3634: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
++if { (eval echo configure:3636: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+   rm -rf conftest*
+   eval "ac_cv_lib_$ac_lib_var=yes"
+ else
+@@ -3653,7 +3655,7 @@
+ 
+ 
+     echo $ac_n "checking for des_pcbc_encrypt in -lcrypto""... $ac_c" 1>&6
+-echo "configure:3657: checking for des_pcbc_encrypt in -lcrypto" >&5
++echo "configure:3659: checking for des_pcbc_encrypt in -lcrypto" >&5
+ ac_lib_var=`echo crypto'_'des_pcbc_encrypt | sed 'y%./+-%__p_%'`
+ if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
+   echo $ac_n "(cached) $ac_c" 1>&6
+@@ -3661,7 +3663,7 @@
+   ac_save_LIBS="$LIBS"
+ LIBS="-lcrypto $LIB_RSAREF $LIBS"
+ cat > conftest.$ac_ext <<EOF
+-#line 3665 "configure"
++#line 3667 "configure"
+ #include "confdefs.h"
+ /* Override any gcc2 internal prototype to avoid an error.  */
+ /* We use char because int might match the return type of a gcc2
+@@ -3672,7 +3674,7 @@
+ des_pcbc_encrypt()
+ ; return 0; }
+ EOF
+-if { (eval echo configure:3676: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
++if { (eval echo configure:3678: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+   rm -rf conftest*
+   eval "ac_cv_lib_$ac_lib_var=yes"
+ else
+@@ -3689,17 +3691,17 @@
+   echo "$ac_t""yes" 1>&6
+   ac_safe=`echo "openssl/des.h" | sed 'y%./+-%__p_%'`
+ echo $ac_n "checking for openssl/des.h""... $ac_c" 1>&6
+-echo "configure:3693: checking for openssl/des.h" >&5
++echo "configure:3695: checking for openssl/des.h" >&5
+ if eval "test \"`echo '$''{'ac_cv_header_$ac_safe'+set}'`\" = set"; then
+   echo $ac_n "(cached) $ac_c" 1>&6
+ else
+   cat > conftest.$ac_ext <<EOF
+-#line 3698 "configure"
++#line 3700 "configure"
+ #include "confdefs.h"
+ #include <openssl/des.h>
+ EOF
+ ac_try="$ac_cpp conftest.$ac_ext >/dev/null 2>conftest.out"
+-{ (eval echo configure:3703: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
++{ (eval echo configure:3705: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
+ ac_err=`grep -v '^ *+' conftest.out | grep -v "^conftest.${ac_ext}\$"`
+ if test -z "$ac_err"; then
+   rm -rf conftest*
+@@ -3741,7 +3743,9 @@
  #define WITH_DES 1
  EOF
  
 -  LIB_DES="-ldes"
-+  if test -z "$LIB_DES"; then
++  if test -z "$LIB_DES" ; then
 +    LIB_DES="-ldes"
 +  fi
  fi
  
  
-@@ -4121,9 +4123,8 @@
+@@ -3757,7 +3761,7 @@
+ fi
+ 
+ echo $ac_n "checking DIGEST-MD5""... $ac_c" 1>&6
+-echo "configure:3761: checking DIGEST-MD5" >&5
++echo "configure:3765: checking DIGEST-MD5" >&5
+ if test "$digest" != no; then
+   echo "$ac_t""enabled" 1>&6
+   SASL_MECHS="$SASL_MECHS libdigestmd5.la"
+@@ -3778,7 +3782,7 @@
+ if test "$krb4" != no; then
+   
+     echo $ac_n "checking for res_search in -lresolv""... $ac_c" 1>&6
+-echo "configure:3782: checking for res_search in -lresolv" >&5
++echo "configure:3786: checking for res_search in -lresolv" >&5
+ ac_lib_var=`echo resolv'_'res_search | sed 'y%./+-%__p_%'`
+ if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
+   echo $ac_n "(cached) $ac_c" 1>&6
+@@ -3786,7 +3790,7 @@
+   ac_save_LIBS="$LIBS"
+ LIBS="-lresolv  $LIBS"
+ cat > conftest.$ac_ext <<EOF
+-#line 3790 "configure"
++#line 3794 "configure"
+ #include "confdefs.h"
+ /* Override any gcc2 internal prototype to avoid an error.  */
+ /* We use char because int might match the return type of a gcc2
+@@ -3797,7 +3801,7 @@
+ res_search()
+ ; return 0; }
+ EOF
+-if { (eval echo configure:3801: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
++if { (eval echo configure:3805: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+   rm -rf conftest*
+   eval "ac_cv_lib_$ac_lib_var=yes"
+ else
+@@ -3827,7 +3831,7 @@
+ 
+       if test -d ${krb4}; then
+      echo $ac_n "checking for Kerberos includes""... $ac_c" 1>&6
+-echo "configure:3831: checking for Kerberos includes" >&5
++echo "configure:3835: checking for Kerberos includes" >&5
+ if eval "test \"`echo '$''{'cyrus_krbinclude'+set}'`\" = set"; then
+   echo $ac_n "(cached) $ac_c" 1>&6
+ else
+@@ -3853,17 +3857,17 @@
+   if test "$with_des" != no; then
+     ac_safe=`echo "krb.h" | sed 'y%./+-%__p_%'`
+ echo $ac_n "checking for krb.h""... $ac_c" 1>&6
+-echo "configure:3857: checking for krb.h" >&5
++echo "configure:3861: checking for krb.h" >&5
+ if eval "test \"`echo '$''{'ac_cv_header_$ac_safe'+set}'`\" = set"; then
+   echo $ac_n "(cached) $ac_c" 1>&6
+ else
+   cat > conftest.$ac_ext <<EOF
+-#line 3862 "configure"
++#line 3866 "configure"
+ #include "confdefs.h"
+ #include <krb.h>
+ EOF
+ ac_try="$ac_cpp conftest.$ac_ext >/dev/null 2>conftest.out"
+-{ (eval echo configure:3867: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
++{ (eval echo configure:3871: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
+ ac_err=`grep -v '^ *+' conftest.out | grep -v "^conftest.${ac_ext}\$"`
+ if test -z "$ac_err"; then
+   rm -rf conftest*
+@@ -3880,7 +3884,7 @@
+ if eval "test \"`echo '$ac_cv_header_'$ac_safe`\" = yes"; then
+   echo "$ac_t""yes" 1>&6
+   echo $ac_n "checking for krb_mk_priv in -lkrb""... $ac_c" 1>&6
+-echo "configure:3884: checking for krb_mk_priv in -lkrb" >&5
++echo "configure:3888: checking for krb_mk_priv in -lkrb" >&5
+ ac_lib_var=`echo krb'_'krb_mk_priv | sed 'y%./+-%__p_%'`
+ if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
+   echo $ac_n "(cached) $ac_c" 1>&6
+@@ -3888,7 +3892,7 @@
+   ac_save_LIBS="$LIBS"
+ LIBS="-lkrb -ldes $LIBS"
+ cat > conftest.$ac_ext <<EOF
+-#line 3892 "configure"
++#line 3896 "configure"
+ #include "confdefs.h"
+ /* Override any gcc2 internal prototype to avoid an error.  */
+ /* We use char because int might match the return type of a gcc2
+@@ -3899,7 +3903,7 @@
+ krb_mk_priv()
+ ; return 0; }
+ EOF
+-if { (eval echo configure:3903: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
++if { (eval echo configure:3907: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+   rm -rf conftest*
+   eval "ac_cv_lib_$ac_lib_var=yes"
+ else
+@@ -3918,7 +3922,7 @@
+ else
+   echo "$ac_t""no" 1>&6
+ echo $ac_n "checking for krb_mk_priv in -lkrb""... $ac_c" 1>&6
+-echo "configure:3922: checking for krb_mk_priv in -lkrb" >&5
++echo "configure:3926: checking for krb_mk_priv in -lkrb" >&5
+ ac_lib_var=`echo krb'_'krb_mk_priv | sed 'y%./+-%__p_%'`
+ if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
+   echo $ac_n "(cached) $ac_c" 1>&6
+@@ -3926,7 +3930,7 @@
+   ac_save_LIBS="$LIBS"
+ LIBS="-lkrb -ldes -lcom_err $LIBS"
+ cat > conftest.$ac_ext <<EOF
+-#line 3930 "configure"
++#line 3934 "configure"
+ #include "confdefs.h"
+ /* Override any gcc2 internal prototype to avoid an error.  */
+ /* We use char because int might match the return type of a gcc2
+@@ -3937,7 +3941,7 @@
+ krb_mk_priv()
+ ; return 0; }
+ EOF
+-if { (eval echo configure:3941: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
++if { (eval echo configure:3945: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+   rm -rf conftest*
+   eval "ac_cv_lib_$ac_lib_var=yes"
+ else
+@@ -3972,7 +3976,7 @@
+ fi
+ 
+ echo $ac_n "checking KERBEROS_V4""... $ac_c" 1>&6
+-echo "configure:3976: checking KERBEROS_V4" >&5
++echo "configure:3980: checking KERBEROS_V4" >&5
+ if test "$krb4" != no; then
+   echo "$ac_t""enabled" 1>&6
+   SASL_MECHS="$SASL_MECHS libkerberos4.la"
+@@ -4002,17 +4006,17 @@
+   fi
+   ac_safe=`echo "gssapi.h" | sed 'y%./+-%__p_%'`
+ echo $ac_n "checking for gssapi.h""... $ac_c" 1>&6
+-echo "configure:4006: checking for gssapi.h" >&5
++echo "configure:4010: checking for gssapi.h" >&5
+ if eval "test \"`echo '$''{'ac_cv_header_$ac_safe'+set}'`\" = set"; then
+   echo $ac_n "(cached) $ac_c" 1>&6
+ else
+   cat > conftest.$ac_ext <<EOF
+-#line 4011 "configure"
++#line 4015 "configure"
+ #include "confdefs.h"
+ #include <gssapi.h>
+ EOF
+ ac_try="$ac_cpp conftest.$ac_ext >/dev/null 2>conftest.out"
+-{ (eval echo configure:4016: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
++{ (eval echo configure:4020: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
+ ac_err=`grep -v '^ *+' conftest.out | grep -v "^conftest.${ac_ext}\$"`
+ if test -z "$ac_err"; then
+   rm -rf conftest*
+@@ -4036,17 +4040,17 @@
+   echo "$ac_t""no" 1>&6
+ ac_safe=`echo "gssapi/gssapi.h" | sed 'y%./+-%__p_%'`
+ echo $ac_n "checking for gssapi/gssapi.h""... $ac_c" 1>&6
+-echo "configure:4040: checking for gssapi/gssapi.h" >&5
++echo "configure:4044: checking for gssapi/gssapi.h" >&5
+ if eval "test \"`echo '$''{'ac_cv_header_$ac_safe'+set}'`\" = set"; then
+   echo $ac_n "(cached) $ac_c" 1>&6
+ else
+   cat > conftest.$ac_ext <<EOF
+-#line 4045 "configure"
++#line 4049 "configure"
+ #include "confdefs.h"
+ #include <gssapi/gssapi.h>
+ EOF
+ ac_try="$ac_cpp conftest.$ac_ext >/dev/null 2>conftest.out"
+-{ (eval echo configure:4050: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
++{ (eval echo configure:4054: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
+ ac_err=`grep -v '^ *+' conftest.out | grep -v "^conftest.${ac_ext}\$"`
+ if test -z "$ac_err"; then
+   rm -rf conftest*
+@@ -4074,7 +4078,7 @@
+ 
+ if test "$gssapi" != no; then
+               echo $ac_n "checking for db_open in -ldb""... $ac_c" 1>&6
+-echo "configure:4078: checking for db_open in -ldb" >&5
++echo "configure:4082: checking for db_open in -ldb" >&5
+ ac_lib_var=`echo db'_'db_open | sed 'y%./+-%__p_%'`
+ if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
+   echo $ac_n "(cached) $ac_c" 1>&6
+@@ -4082,7 +4086,7 @@
+   ac_save_LIBS="$LIBS"
+ LIBS="-ldb  $LIBS"
+ cat > conftest.$ac_ext <<EOF
+-#line 4086 "configure"
++#line 4090 "configure"
+ #include "confdefs.h"
+ /* Override any gcc2 internal prototype to avoid an error.  */
+ /* We use char because int might match the return type of a gcc2
+@@ -4093,7 +4097,7 @@
+ db_open()
+ ; return 0; }
+ EOF
+-if { (eval echo configure:4097: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
++if { (eval echo configure:4101: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+   rm -rf conftest*
+   eval "ac_cv_lib_$ac_lib_var=yes"
+ else
+@@ -4121,9 +4125,8 @@
  fi
  
  
 -  gss_impl="mit";
    echo $ac_n "checking for res_search in -lresolv""... $ac_c" 1>&6
 -echo "configure:4127: checking for res_search in -lresolv" >&5
-+echo "configure:4126: checking for res_search in -lresolv" >&5
++echo "configure:4130: checking for res_search in -lresolv" >&5
  ac_lib_var=`echo resolv'_'res_search | sed 'y%./+-%__p_%'`
  if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
    echo $ac_n "(cached) $ac_c" 1>&6
-@@ -4131,7 +4132,7 @@
+@@ -4131,7 +4134,7 @@
    ac_save_LIBS="$LIBS"
  LIBS="-lresolv  $LIBS"
  cat > conftest.$ac_ext <<EOF
 -#line 4135 "configure"
-+#line 4134 "configure"
++#line 4138 "configure"
  #include "confdefs.h"
  /* Override any gcc2 internal prototype to avoid an error.  */
  /* We use char because int might match the return type of a gcc2
-@@ -4142,7 +4143,7 @@
+@@ -4142,7 +4145,7 @@
  res_search()
  ; return 0; }
  EOF
 -if { (eval echo configure:4146: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
-+if { (eval echo configure:4145: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
++if { (eval echo configure:4149: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
    rm -rf conftest*
    eval "ac_cv_lib_$ac_lib_var=yes"
  else
-@@ -4175,7 +4176,7 @@
+@@ -4175,7 +4178,7 @@
    fi
  
    echo $ac_n "checking for base64_decode in -lroken""... $ac_c" 1>&6
 -echo "configure:4179: checking for base64_decode in -lroken" >&5
-+echo "configure:4178: checking for base64_decode in -lroken" >&5
++echo "configure:4182: checking for base64_decode in -lroken" >&5
  ac_lib_var=`echo roken'_'base64_decode | sed 'y%./+-%__p_%'`
  if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
    echo $ac_n "(cached) $ac_c" 1>&6
-@@ -4183,7 +4184,7 @@
+@@ -4183,7 +4186,7 @@
    ac_save_LIBS="$LIBS"
  LIBS="-lroken $LIB_CRYPT $LIBS"
  cat > conftest.$ac_ext <<EOF
 -#line 4187 "configure"
-+#line 4186 "configure"
++#line 4190 "configure"
  #include "confdefs.h"
  /* Override any gcc2 internal prototype to avoid an error.  */
  /* We use char because int might match the return type of a gcc2
-@@ -4194,7 +4195,7 @@
+@@ -4194,7 +4197,7 @@
  base64_decode()
  ; return 0; }
  EOF
 -if { (eval echo configure:4198: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
-+if { (eval echo configure:4197: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
++if { (eval echo configure:4201: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
    rm -rf conftest*
    eval "ac_cv_lib_$ac_lib_var=yes"
  else
-@@ -4232,7 +4233,7 @@
+@@ -4232,7 +4235,7 @@
  
  if test "$ac_cv_header_gssapi_h" = "yes"; then
    cat > conftest.$ac_ext <<EOF
 -#line 4236 "configure"
-+#line 4235 "configure"
++#line 4239 "configure"
  #include "confdefs.h"
  #include <gssapi.h>
  EOF
-@@ -4248,7 +4249,7 @@
+@@ -4248,7 +4251,7 @@
  
  elif test "$ac_cv_header_gssapi_gssapi_h"; then
    cat > conftest.$ac_ext <<EOF
 -#line 4252 "configure"
-+#line 4251 "configure"
++#line 4255 "configure"
  #include "confdefs.h"
  #include <gssapi/gssapi.h>
  EOF
-@@ -4266,11 +4267,11 @@
+@@ -4266,11 +4269,11 @@
  
  GSSAPI_LIBS=""
  echo $ac_n "checking GSSAPI""... $ac_c" 1>&6
 -echo "configure:4270: checking GSSAPI" >&5
-+echo "configure:4269: checking GSSAPI" >&5
++echo "configure:4273: checking GSSAPI" >&5
  if test "$gssapi" != no; then
    echo "$ac_t""with implementation ${gss_impl}" 1>&6
    echo $ac_n "checking for dbm_open in -lndbm""... $ac_c" 1>&6
 -echo "configure:4274: checking for dbm_open in -lndbm" >&5
-+echo "configure:4273: checking for dbm_open in -lndbm" >&5
++echo "configure:4277: checking for dbm_open in -lndbm" >&5
  ac_lib_var=`echo ndbm'_'dbm_open | sed 'y%./+-%__p_%'`
  if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
    echo $ac_n "(cached) $ac_c" 1>&6
-@@ -4278,7 +4279,7 @@
+@@ -4278,7 +4281,7 @@
    ac_save_LIBS="$LIBS"
  LIBS="-lndbm  $LIBS"
  cat > conftest.$ac_ext <<EOF
 -#line 4282 "configure"
-+#line 4281 "configure"
++#line 4285 "configure"
  #include "confdefs.h"
  /* Override any gcc2 internal prototype to avoid an error.  */
  /* We use char because int might match the return type of a gcc2
-@@ -4289,7 +4290,7 @@
+@@ -4289,7 +4292,7 @@
  dbm_open()
  ; return 0; }
  EOF
 -if { (eval echo configure:4293: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
-+if { (eval echo configure:4292: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
++if { (eval echo configure:4296: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
    rm -rf conftest*
    eval "ac_cv_lib_$ac_lib_var=yes"
  else
-@@ -4310,7 +4311,7 @@
+@@ -4310,7 +4313,7 @@
  fi
  
    echo $ac_n "checking for res_search in -lresolv""... $ac_c" 1>&6
 -echo "configure:4314: checking for res_search in -lresolv" >&5
-+echo "configure:4313: checking for res_search in -lresolv" >&5
++echo "configure:4317: checking for res_search in -lresolv" >&5
  ac_lib_var=`echo resolv'_'res_search | sed 'y%./+-%__p_%'`
  if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
    echo $ac_n "(cached) $ac_c" 1>&6
-@@ -4318,7 +4319,7 @@
+@@ -4318,7 +4321,7 @@
    ac_save_LIBS="$LIBS"
  LIBS="-lresolv  $LIBS"
  cat > conftest.$ac_ext <<EOF
 -#line 4322 "configure"
-+#line 4321 "configure"
++#line 4325 "configure"
  #include "confdefs.h"
  /* Override any gcc2 internal prototype to avoid an error.  */
  /* We use char because int might match the return type of a gcc2
-@@ -4329,7 +4330,7 @@
+@@ -4329,7 +4332,7 @@
  res_search()
  ; return 0; }
  EOF
 -if { (eval echo configure:4333: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
-+if { (eval echo configure:4332: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
++if { (eval echo configure:4336: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
    rm -rf conftest*
    eval "ac_cv_lib_$ac_lib_var=yes"
  else
-@@ -4356,12 +4357,12 @@
+@@ -4356,12 +4359,12 @@
    for ac_func in gsskrb5_register_acceptor_identity
  do
  echo $ac_n "checking for $ac_func""... $ac_c" 1>&6
 -echo "configure:4360: checking for $ac_func" >&5
-+echo "configure:4359: checking for $ac_func" >&5
++echo "configure:4363: checking for $ac_func" >&5
  if eval "test \"`echo '$''{'ac_cv_func_$ac_func'+set}'`\" = set"; then
    echo $ac_n "(cached) $ac_c" 1>&6
  else
    cat > conftest.$ac_ext <<EOF
 -#line 4365 "configure"
-+#line 4364 "configure"
++#line 4368 "configure"
  #include "confdefs.h"
  /* System header to define __stub macros and hopefully few prototypes,
      which can conflict with char $ac_func(); below.  */
-@@ -4384,7 +4385,7 @@
+@@ -4384,7 +4387,7 @@
  
  ; return 0; }
  EOF
 -if { (eval echo configure:4388: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
-+if { (eval echo configure:4387: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
++if { (eval echo configure:4391: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
    rm -rf conftest*
    eval "ac_cv_func_$ac_func=yes"
  else
-@@ -4425,7 +4426,7 @@
+@@ -4425,7 +4428,7 @@
  
  
  echo $ac_n "checking ANONYMOUS""... $ac_c" 1>&6
 -echo "configure:4429: checking ANONYMOUS" >&5
-+echo "configure:4428: checking ANONYMOUS" >&5
++echo "configure:4432: checking ANONYMOUS" >&5
  if test "$anon" != no; then
    echo "$ac_t""enabled" 1>&6
    SASL_MECHS="$SASL_MECHS libanonymous.la"
-@@ -4461,7 +4462,7 @@
+@@ -4461,7 +4464,7 @@
  
  
  echo $ac_n "checking PLAIN""... $ac_c" 1>&6
 -echo "configure:4465: checking PLAIN" >&5
-+echo "configure:4464: checking PLAIN" >&5
++echo "configure:4468: checking PLAIN" >&5
  if test "$plain" != no; then
    echo "$ac_t""enabled" 1>&6
    SASL_MECHS="$SASL_MECHS libplain.la"
-@@ -4479,7 +4480,7 @@
+@@ -4479,7 +4482,7 @@
  
  
  echo $ac_n "checking LOGIN""... $ac_c" 1>&6
 -echo "configure:4483: checking LOGIN" >&5
-+echo "configure:4482: checking LOGIN" >&5
++echo "configure:4486: checking LOGIN" >&5
  if test "$login" != no; then
    echo "$ac_t""enabled" 1>&6
    SASL_MECHS="$SASL_MECHS liblogin.la"
-@@ -4497,7 +4498,7 @@
+@@ -4497,7 +4500,7 @@
  
  
  echo $ac_n "checking SRP""... $ac_c" 1>&6
 -echo "configure:4501: checking SRP" >&5
-+echo "configure:4500: checking SRP" >&5
++echo "configure:4504: checking SRP" >&5
  if test "$srp" != no; then
    { echo "configure: error: This is pre-alpha. You probably don't want to use this" 1>&2; exit 1; }
    echo "$ac_t""enabled" 1>&6
-@@ -4546,12 +4547,12 @@
+@@ -4546,12 +4549,12 @@
  do
  ac_safe=`echo "$ac_hdr" | sed 'y%./+-%__p_%'`
  echo $ac_n "checking for $ac_hdr that defines DIR""... $ac_c" 1>&6
 -echo "configure:4550: checking for $ac_hdr that defines DIR" >&5
-+echo "configure:4549: checking for $ac_hdr that defines DIR" >&5
++echo "configure:4553: checking for $ac_hdr that defines DIR" >&5
  if eval "test \"`echo '$''{'ac_cv_header_dirent_$ac_safe'+set}'`\" = set"; then
    echo $ac_n "(cached) $ac_c" 1>&6
  else
    cat > conftest.$ac_ext <<EOF
 -#line 4555 "configure"
-+#line 4554 "configure"
++#line 4558 "configure"
  #include "confdefs.h"
  #include <sys/types.h>
  #include <$ac_hdr>
-@@ -4559,7 +4560,7 @@
+@@ -4559,7 +4562,7 @@
  DIR *dirp = 0;
  ; return 0; }
  EOF
 -if { (eval echo configure:4563: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
-+if { (eval echo configure:4562: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
++if { (eval echo configure:4566: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
    rm -rf conftest*
    eval "ac_cv_header_dirent_$ac_safe=yes"
  else
-@@ -4584,7 +4585,7 @@
+@@ -4584,7 +4587,7 @@
  # Two versions of opendir et al. are in -ldir and -lx on SCO Xenix.
  if test $ac_header_dirent = dirent.h; then
  echo $ac_n "checking for opendir in -ldir""... $ac_c" 1>&6
 -echo "configure:4588: checking for opendir in -ldir" >&5
-+echo "configure:4587: checking for opendir in -ldir" >&5
++echo "configure:4591: checking for opendir in -ldir" >&5
  ac_lib_var=`echo dir'_'opendir | sed 'y%./+-%__p_%'`
  if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
    echo $ac_n "(cached) $ac_c" 1>&6
-@@ -4592,7 +4593,7 @@
+@@ -4592,7 +4595,7 @@
    ac_save_LIBS="$LIBS"
  LIBS="-ldir  $LIBS"
  cat > conftest.$ac_ext <<EOF
 -#line 4596 "configure"
-+#line 4595 "configure"
++#line 4599 "configure"
  #include "confdefs.h"
  /* Override any gcc2 internal prototype to avoid an error.  */
  /* We use char because int might match the return type of a gcc2
-@@ -4603,7 +4604,7 @@
+@@ -4603,7 +4606,7 @@
  opendir()
  ; return 0; }
  EOF
 -if { (eval echo configure:4607: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
-+if { (eval echo configure:4606: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
++if { (eval echo configure:4610: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
    rm -rf conftest*
    eval "ac_cv_lib_$ac_lib_var=yes"
  else
-@@ -4625,7 +4626,7 @@
+@@ -4625,7 +4628,7 @@
  
  else
  echo $ac_n "checking for opendir in -lx""... $ac_c" 1>&6
 -echo "configure:4629: checking for opendir in -lx" >&5
-+echo "configure:4628: checking for opendir in -lx" >&5
++echo "configure:4632: checking for opendir in -lx" >&5
  ac_lib_var=`echo x'_'opendir | sed 'y%./+-%__p_%'`
  if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
    echo $ac_n "(cached) $ac_c" 1>&6
-@@ -4633,7 +4634,7 @@
+@@ -4633,7 +4636,7 @@
    ac_save_LIBS="$LIBS"
  LIBS="-lx  $LIBS"
  cat > conftest.$ac_ext <<EOF
 -#line 4637 "configure"
-+#line 4636 "configure"
++#line 4640 "configure"
  #include "confdefs.h"
  /* Override any gcc2 internal prototype to avoid an error.  */
  /* We use char because int might match the return type of a gcc2
-@@ -4644,7 +4645,7 @@
+@@ -4644,7 +4647,7 @@
  opendir()
  ; return 0; }
  EOF
 -if { (eval echo configure:4648: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
-+if { (eval echo configure:4647: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
++if { (eval echo configure:4651: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
    rm -rf conftest*
    eval "ac_cv_lib_$ac_lib_var=yes"
  else
-@@ -4667,12 +4668,12 @@
+@@ -4667,12 +4670,12 @@
  fi
  
  echo $ac_n "checking for ANSI C header files""... $ac_c" 1>&6
 -echo "configure:4671: checking for ANSI C header files" >&5
-+echo "configure:4670: checking for ANSI C header files" >&5
++echo "configure:4674: checking for ANSI C header files" >&5
  if eval "test \"`echo '$''{'ac_cv_header_stdc'+set}'`\" = set"; then
    echo $ac_n "(cached) $ac_c" 1>&6
  else
    cat > conftest.$ac_ext <<EOF
 -#line 4676 "configure"
-+#line 4675 "configure"
++#line 4679 "configure"
  #include "confdefs.h"
  #include <stdlib.h>
  #include <stdarg.h>
-@@ -4680,7 +4681,7 @@
+@@ -4680,7 +4683,7 @@
  #include <float.h>
  EOF
  ac_try="$ac_cpp conftest.$ac_ext >/dev/null 2>conftest.out"
 -{ (eval echo configure:4684: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
-+{ (eval echo configure:4683: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
++{ (eval echo configure:4687: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
  ac_err=`grep -v '^ *+' conftest.out | grep -v "^conftest.${ac_ext}\$"`
  if test -z "$ac_err"; then
    rm -rf conftest*
-@@ -4697,7 +4698,7 @@
+@@ -4697,7 +4700,7 @@
  if test $ac_cv_header_stdc = yes; then
    # SunOS 4.x string.h does not declare mem*, contrary to ANSI.
  cat > conftest.$ac_ext <<EOF
 -#line 4701 "configure"
-+#line 4700 "configure"
++#line 4704 "configure"
  #include "confdefs.h"
  #include <string.h>
  EOF
-@@ -4715,7 +4716,7 @@
+@@ -4715,7 +4718,7 @@
  if test $ac_cv_header_stdc = yes; then
    # ISC 2.0.2 stdlib.h does not declare free, contrary to ANSI.
  cat > conftest.$ac_ext <<EOF
 -#line 4719 "configure"
-+#line 4718 "configure"
++#line 4722 "configure"
  #include "confdefs.h"
  #include <stdlib.h>
  EOF
-@@ -4736,7 +4737,7 @@
+@@ -4736,7 +4739,7 @@
    :
  else
    cat > conftest.$ac_ext <<EOF
 -#line 4740 "configure"
-+#line 4739 "configure"
++#line 4743 "configure"
  #include "confdefs.h"
  #include <ctype.h>
  #define ISLOWER(c) ('a' <= (c) && (c) <= 'z')
-@@ -4747,7 +4748,7 @@
+@@ -4747,7 +4750,7 @@
  exit (0); }
  
  EOF
 -if { (eval echo configure:4751: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
-+if { (eval echo configure:4750: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
++if { (eval echo configure:4754: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
  then
    :
  else
-@@ -4773,12 +4774,12 @@
+@@ -4773,12 +4776,12 @@
  for ac_func in strchr memcpy getpwnam getspnam gettimeofday
  do
  echo $ac_n "checking for $ac_func""... $ac_c" 1>&6
 -echo "configure:4777: checking for $ac_func" >&5
-+echo "configure:4776: checking for $ac_func" >&5
++echo "configure:4780: checking for $ac_func" >&5
  if eval "test \"`echo '$''{'ac_cv_func_$ac_func'+set}'`\" = set"; then
    echo $ac_n "(cached) $ac_c" 1>&6
  else
    cat > conftest.$ac_ext <<EOF
 -#line 4782 "configure"
-+#line 4781 "configure"
++#line 4785 "configure"
  #include "confdefs.h"
  /* System header to define __stub macros and hopefully few prototypes,
      which can conflict with char $ac_func(); below.  */
-@@ -4801,7 +4802,7 @@
+@@ -4801,7 +4804,7 @@
  
  ; return 0; }
  EOF
 -if { (eval echo configure:4805: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
-+if { (eval echo configure:4804: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
++if { (eval echo configure:4808: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
    rm -rf conftest*
    eval "ac_cv_func_$ac_func=yes"
  else
-@@ -4828,12 +4829,12 @@
+@@ -4828,12 +4831,12 @@
  
  sasl_cv_getsubopt=no
  echo $ac_n "checking for getsubopt""... $ac_c" 1>&6
 -echo "configure:4832: checking for getsubopt" >&5
-+echo "configure:4831: checking for getsubopt" >&5
++echo "configure:4835: checking for getsubopt" >&5
  if eval "test \"`echo '$''{'ac_cv_func_getsubopt'+set}'`\" = set"; then
    echo $ac_n "(cached) $ac_c" 1>&6
  else
    cat > conftest.$ac_ext <<EOF
 -#line 4837 "configure"
-+#line 4836 "configure"
++#line 4840 "configure"
  #include "confdefs.h"
  /* System header to define __stub macros and hopefully few prototypes,
      which can conflict with char getsubopt(); below.  */
-@@ -4856,7 +4857,7 @@
+@@ -4856,7 +4859,7 @@
  
  ; return 0; }
  EOF
 -if { (eval echo configure:4860: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
-+if { (eval echo configure:4859: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
++if { (eval echo configure:4863: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
    rm -rf conftest*
    eval "ac_cv_func_getsubopt=yes"
  else
-@@ -4888,12 +4889,12 @@
+@@ -4888,12 +4891,12 @@
  sasl_cv_snprintf=no
  SNPRINTFOBJS=""
  echo $ac_n "checking for snprintf""... $ac_c" 1>&6
 -echo "configure:4892: checking for snprintf" >&5
-+echo "configure:4891: checking for snprintf" >&5
++echo "configure:4895: checking for snprintf" >&5
  if eval "test \"`echo '$''{'ac_cv_func_snprintf'+set}'`\" = set"; then
    echo $ac_n "(cached) $ac_c" 1>&6
  else
    cat > conftest.$ac_ext <<EOF
 -#line 4897 "configure"
-+#line 4896 "configure"
++#line 4900 "configure"
  #include "confdefs.h"
  /* System header to define __stub macros and hopefully few prototypes,
      which can conflict with char snprintf(); below.  */
-@@ -4916,7 +4917,7 @@
+@@ -4916,7 +4919,7 @@
  
  ; return 0; }
  EOF
 -if { (eval echo configure:4920: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
-+if { (eval echo configure:4919: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
++if { (eval echo configure:4923: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
    rm -rf conftest*
    eval "ac_cv_func_snprintf=yes"
  else
-@@ -4940,12 +4941,12 @@
+@@ -4940,12 +4943,12 @@
  fi
  
  echo $ac_n "checking for vsnprintf""... $ac_c" 1>&6
 -echo "configure:4944: checking for vsnprintf" >&5
-+echo "configure:4943: checking for vsnprintf" >&5
++echo "configure:4947: checking for vsnprintf" >&5
  if eval "test \"`echo '$''{'ac_cv_func_vsnprintf'+set}'`\" = set"; then
    echo $ac_n "(cached) $ac_c" 1>&6
  else
    cat > conftest.$ac_ext <<EOF
 -#line 4949 "configure"
-+#line 4948 "configure"
++#line 4952 "configure"
  #include "confdefs.h"
  /* System header to define __stub macros and hopefully few prototypes,
      which can conflict with char vsnprintf(); below.  */
-@@ -4968,7 +4969,7 @@
+@@ -4968,7 +4971,7 @@
  
  ; return 0; }
  EOF
 -if { (eval echo configure:4972: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
-+if { (eval echo configure:4971: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
++if { (eval echo configure:4975: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
    rm -rf conftest*
    eval "ac_cv_func_vsnprintf=yes"
  else
-@@ -5004,17 +5005,17 @@
+@@ -5004,17 +5007,17 @@
  do
  ac_safe=`echo "$ac_hdr" | sed 'y%./+-%__p_%'`
  echo $ac_n "checking for $ac_hdr""... $ac_c" 1>&6
 -echo "configure:5008: checking for $ac_hdr" >&5
-+echo "configure:5007: checking for $ac_hdr" >&5
++echo "configure:5011: checking for $ac_hdr" >&5
  if eval "test \"`echo '$''{'ac_cv_header_$ac_safe'+set}'`\" = set"; then
    echo $ac_n "(cached) $ac_c" 1>&6
  else
    cat > conftest.$ac_ext <<EOF
 -#line 5013 "configure"
-+#line 5012 "configure"
++#line 5016 "configure"
  #include "confdefs.h"
  #include <$ac_hdr>
  EOF
  ac_try="$ac_cpp conftest.$ac_ext >/dev/null 2>conftest.out"
 -{ (eval echo configure:5018: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
-+{ (eval echo configure:5017: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
++{ (eval echo configure:5021: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
  ac_err=`grep -v '^ *+' conftest.out | grep -v "^conftest.${ac_ext}\$"`
  if test -z "$ac_err"; then
    rm -rf conftest*
-@@ -5041,12 +5042,12 @@
+@@ -5041,12 +5044,12 @@
  done
  
  echo $ac_n "checking for working const""... $ac_c" 1>&6
 -echo "configure:5045: checking for working const" >&5
-+echo "configure:5044: checking for working const" >&5
++echo "configure:5048: checking for working const" >&5
  if eval "test \"`echo '$''{'ac_cv_c_const'+set}'`\" = set"; then
    echo $ac_n "(cached) $ac_c" 1>&6
  else
    cat > conftest.$ac_ext <<EOF
 -#line 5050 "configure"
-+#line 5049 "configure"
++#line 5053 "configure"
  #include "confdefs.h"
  
  int main() {
-@@ -5095,7 +5096,7 @@
+@@ -5095,7 +5098,7 @@
  
  ; return 0; }
  EOF
 -if { (eval echo configure:5099: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
-+if { (eval echo configure:5098: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
++if { (eval echo configure:5102: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
    rm -rf conftest*
    ac_cv_c_const=yes
  else
-@@ -5116,21 +5117,21 @@
+@@ -5116,21 +5119,21 @@
  fi
  
  echo $ac_n "checking for inline""... $ac_c" 1>&6
 -echo "configure:5120: checking for inline" >&5
-+echo "configure:5119: checking for inline" >&5
++echo "configure:5123: checking for inline" >&5
  if eval "test \"`echo '$''{'ac_cv_c_inline'+set}'`\" = set"; then
    echo $ac_n "(cached) $ac_c" 1>&6
  else
@@ -497,7 +2120,7 @@ diff -u -r -P cyrus-sasl-1.5.27/configure cyrus-sasl-1.5.27-patched/configure
  for ac_kw in inline __inline__ __inline; do
    cat > conftest.$ac_ext <<EOF
 -#line 5127 "configure"
-+#line 5126 "configure"
++#line 5130 "configure"
  #include "confdefs.h"
  
  int main() {
@@ -505,83 +2128,101 @@ diff -u -r -P cyrus-sasl-1.5.27/configure cyrus-sasl-1.5.27-patched/configure
  ; return 0; }
  EOF
 -if { (eval echo configure:5134: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
-+if { (eval echo configure:5133: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
++if { (eval echo configure:5137: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
    rm -rf conftest*
    ac_cv_c_inline=$ac_kw; break
  else
-@@ -5157,12 +5158,12 @@
+@@ -5157,12 +5160,12 @@
  
  
  echo $ac_n "checking return type of signal handlers""... $ac_c" 1>&6
 -echo "configure:5161: checking return type of signal handlers" >&5
-+echo "configure:5160: checking return type of signal handlers" >&5
++echo "configure:5164: checking return type of signal handlers" >&5
  if eval "test \"`echo '$''{'ac_cv_type_signal'+set}'`\" = set"; then
    echo $ac_n "(cached) $ac_c" 1>&6
  else
    cat > conftest.$ac_ext <<EOF
 -#line 5166 "configure"
-+#line 5165 "configure"
++#line 5169 "configure"
  #include "confdefs.h"
  #include <sys/types.h>
  #include <signal.h>
-@@ -5179,7 +5180,7 @@
+@@ -5179,7 +5182,7 @@
  int i;
  ; return 0; }
  EOF
 -if { (eval echo configure:5183: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
-+if { (eval echo configure:5182: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
++if { (eval echo configure:5186: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
    rm -rf conftest*
    ac_cv_type_signal=void
  else
-@@ -5200,17 +5201,17 @@
+@@ -5200,17 +5203,17 @@
  
  ac_safe=`echo "sfio.h" | sed 'y%./+-%__p_%'`
  echo $ac_n "checking for sfio.h""... $ac_c" 1>&6
 -echo "configure:5204: checking for sfio.h" >&5
-+echo "configure:5203: checking for sfio.h" >&5
++echo "configure:5207: checking for sfio.h" >&5
  if eval "test \"`echo '$''{'ac_cv_header_$ac_safe'+set}'`\" = set"; then
    echo $ac_n "(cached) $ac_c" 1>&6
  else
    cat > conftest.$ac_ext <<EOF
 -#line 5209 "configure"
-+#line 5208 "configure"
++#line 5212 "configure"
  #include "confdefs.h"
  #include <sfio.h>
  EOF
  ac_try="$ac_cpp conftest.$ac_ext >/dev/null 2>conftest.out"
 -{ (eval echo configure:5214: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
-+{ (eval echo configure:5213: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
++{ (eval echo configure:5217: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
  ac_err=`grep -v '^ *+' conftest.out | grep -v "^conftest.${ac_ext}\$"`
  if test -z "$ac_err"; then
    rm -rf conftest*
-@@ -5240,12 +5241,12 @@
+@@ -5240,12 +5243,12 @@
  for ac_func in getdomainname getpassphrase getpid
  do
  echo $ac_n "checking for $ac_func""... $ac_c" 1>&6
 -echo "configure:5244: checking for $ac_func" >&5
-+echo "configure:5243: checking for $ac_func" >&5
++echo "configure:5247: checking for $ac_func" >&5
  if eval "test \"`echo '$''{'ac_cv_func_$ac_func'+set}'`\" = set"; then
    echo $ac_n "(cached) $ac_c" 1>&6
  else
    cat > conftest.$ac_ext <<EOF
 -#line 5249 "configure"
-+#line 5248 "configure"
++#line 5252 "configure"
  #include "confdefs.h"
  /* System header to define __stub macros and hopefully few prototypes,
      which can conflict with char $ac_func(); below.  */
-@@ -5268,7 +5269,7 @@
+@@ -5268,7 +5271,7 @@
  
  ; return 0; }
  EOF
 -if { (eval echo configure:5272: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
-+if { (eval echo configure:5271: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
++if { (eval echo configure:5275: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
    rm -rf conftest*
    eval "ac_cv_func_$ac_func=yes"
  else
 diff -u -r -P cyrus-sasl-1.5.27/configure.in cyrus-sasl-1.5.27-patched/configure.in
 --- cyrus-sasl-1.5.27/configure.in	2001-03-23 19:47:27.000000000 -0600
-+++ cyrus-sasl-1.5.27-patched/configure.in	2002-09-19 12:19:22.000000000 -0500
-@@ -390,7 +390,9 @@
++++ cyrus-sasl-1.5.27-patched/configure.in	2002-09-19 17:34:27.000000000 -0500
+@@ -42,7 +42,6 @@
+ dnl
+ AC_INIT(lib/saslint.h)
+ AC_CONFIG_AUX_DIR(config)
+-AM_CONFIG_HEADER(config.h)
+ AC_CANONICAL_HOST
+ 
+ dnl
+@@ -50,6 +49,9 @@
+ dnl the values in win32/include/config.h and include/sasl.h as well.
+ dnl
+ AM_INIT_AUTOMAKE(cyrus-sasl, 1.5.27)
++AM_MAINTAINER_MODE
++AM_CONFIG_HEADER(config.h)
++
+ CMU_INIT_AUTOMAKE
+ 
+ DIRS=""
+@@ -390,7 +392,9 @@
  
  if test "$with_des" != no; then
    AC_DEFINE(WITH_DES)
@@ -592,7 +2233,7 @@ diff -u -r -P cyrus-sasl-1.5.27/configure.in cyrus-sasl-1.5.27-patched/configure
  fi
  
  AC_SUBST(LIB_DES)
-@@ -492,7 +494,6 @@
+@@ -492,7 +496,6 @@
    dnl we might need libdb
    AC_CHECK_LIB(db, db_open)
  
@@ -600,9 +2241,214 @@ diff -u -r -P cyrus-sasl-1.5.27/configure.in cyrus-sasl-1.5.27-patched/configure
    AC_CHECK_LIB(resolv,res_search)
    if test -d ${gssapi}; then 
       CPPFLAGS="$CPPFLAGS -I$gssapi/include"
+diff -u -r -P cyrus-sasl-1.5.27/doc/Makefile.in cyrus-sasl-1.5.27-patched/doc/Makefile.in
+--- cyrus-sasl-1.5.27/doc/Makefile.in	2001-03-23 19:48:13.000000000 -0600
++++ cyrus-sasl-1.5.27-patched/doc/Makefile.in	2002-09-19 17:35:41.000000000 -0500
+@@ -1,6 +1,6 @@
+-# Makefile.in generated automatically by automake 1.4 from Makefile.am
++# Makefile.in generated automatically by automake 1.4-p6 from Makefile.am
+ 
+-# Copyright (C) 1994, 1995-8, 1999 Free Software Foundation, Inc.
++# Copyright (C) 1994, 1995-8, 1999, 2001 Free Software Foundation, Inc.
+ # This Makefile.in is free software; the Free Software Foundation
+ # gives unlimited permission to copy and/or distribute it,
+ # with or without modifications, as long as this notice is preserved.
+@@ -155,14 +155,14 @@
+ 
+ DISTFILES = $(DIST_COMMON) $(SOURCES) $(HEADERS) $(TEXINFOS) $(EXTRA_DIST)
+ 
+-TAR = gtar
++TAR = tar
+ GZIP_ENV = --best
+ all: all-redirect
+ .SUFFIXES:
+-$(srcdir)/Makefile.in: Makefile.am $(top_srcdir)/configure.in $(ACLOCAL_M4) 
+-	cd $(top_srcdir) && $(AUTOMAKE) --gnu --include-deps doc/Makefile
++$(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ Makefile.am $(top_srcdir)/configure.in $(ACLOCAL_M4) 
++	cd $(top_srcdir) && $(AUTOMAKE) --gnu doc/Makefile
+ 
+-Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status
++Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status $(BUILT_SOURCES)
+ 	cd $(top_builddir) \
+ 	  && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
+ 
+@@ -175,6 +175,11 @@
+ subdir = doc
+ 
+ distdir: $(DISTFILES)
++	here=`cd $(top_builddir) && pwd`; \
++	top_distdir=`cd $(top_distdir) && pwd`; \
++	distdir=`cd $(distdir) && pwd`; \
++	cd $(top_srcdir) \
++	  && $(AUTOMAKE) --include-deps --build-dir=$$here --srcdir-name=$(top_srcdir) --output-dir=$$top_distdir --gnu doc/Makefile
+ 	@for file in $(DISTFILES); do \
+ 	  d=$(srcdir); \
+ 	  if test -d $$d/$$file; then \
+diff -u -r -P cyrus-sasl-1.5.27/include/Makefile.in cyrus-sasl-1.5.27-patched/include/Makefile.in
+--- cyrus-sasl-1.5.27/include/Makefile.in	2001-03-23 19:48:13.000000000 -0600
++++ cyrus-sasl-1.5.27-patched/include/Makefile.in	2002-09-19 17:35:41.000000000 -0500
+@@ -1,6 +1,6 @@
+-# Makefile.in generated automatically by automake 1.4 from Makefile.am
++# Makefile.in generated automatically by automake 1.4-p6 from Makefile.am
+ 
+-# Copyright (C) 1994, 1995-8, 1999 Free Software Foundation, Inc.
++# Copyright (C) 1994, 1995-8, 1999, 2001 Free Software Foundation, Inc.
+ # This Makefile.in is free software; the Free Software Foundation
+ # gives unlimited permission to copy and/or distribute it,
+ # with or without modifications, as long as this notice is preserved.
+@@ -175,18 +175,19 @@
+ 
+ DISTFILES = $(DIST_COMMON) $(SOURCES) $(HEADERS) $(TEXINFOS) $(EXTRA_DIST)
+ 
+-TAR = gtar
++TAR = tar
+ GZIP_ENV = --best
++DEP_FILES =  .deps/makemd5.P
+ SOURCES = $(makemd5_SOURCES)
+ OBJECTS = $(makemd5_OBJECTS)
+ 
+ all: all-redirect
+ .SUFFIXES:
+ .SUFFIXES: .S .c .lo .o .s
+-$(srcdir)/Makefile.in: Makefile.am $(top_srcdir)/configure.in $(ACLOCAL_M4) 
+-	cd $(top_srcdir) && $(AUTOMAKE) --gnu --include-deps include/Makefile
++$(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ Makefile.am $(top_srcdir)/configure.in $(ACLOCAL_M4) 
++	cd $(top_srcdir) && $(AUTOMAKE) --gnu include/Makefile
+ 
+-Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status
++Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status $(BUILT_SOURCES)
+ 	cd $(top_builddir) \
+ 	  && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
+ 
+@@ -200,9 +201,6 @@
+ 
+ maintainer-clean-noinstPROGRAMS:
+ 
+-.c.o:
+-	$(COMPILE) -c $<
+-
+ .s.o:
+ 	$(COMPILE) -c $<
+ 
+@@ -219,9 +217,6 @@
+ 
+ maintainer-clean-compile:
+ 
+-.c.lo:
+-	$(LIBTOOL) --mode=compile $(COMPILE) -c $<
+-
+ .s.lo:
+ 	$(LIBTOOL) --mode=compile $(COMPILE) -c $<
+ 
+@@ -275,7 +270,7 @@
+ 	  awk '    { files[$$0] = 1; } \
+ 	       END { for (i in files) print i; }'`; \
+ 	test -z "$(ETAGS_ARGS)$$unique$(LISP)$$tags" \
+-	  || (cd $(srcdir) && etags $(ETAGS_ARGS) $$tags  $$unique $(LISP) -o $$here/TAGS)
++	  || (cd $(srcdir) && etags -o $$here/TAGS $(ETAGS_ARGS) $$tags  $$unique $(LISP))
+ 
+ mostlyclean-tags:
+ 
+@@ -291,6 +286,11 @@
+ subdir = include
+ 
+ distdir: $(DISTFILES)
++	here=`cd $(top_builddir) && pwd`; \
++	top_distdir=`cd $(top_distdir) && pwd`; \
++	distdir=`cd $(distdir) && pwd`; \
++	cd $(top_srcdir) \
++	  && $(AUTOMAKE) --include-deps --build-dir=$$here --srcdir-name=$(top_srcdir) --output-dir=$$top_distdir --gnu include/Makefile
+ 	@for file in $(DISTFILES); do \
+ 	  d=$(srcdir); \
+ 	  if test -d $$d/$$file; then \
+@@ -301,6 +301,38 @@
+ 	    || cp -p $$d/$$file $(distdir)/$$file || :; \
+ 	  fi; \
+ 	done
++
++DEPS_MAGIC := $(shell mkdir .deps > /dev/null 2>&1 || :)
++
++-include $(DEP_FILES)
++
++mostlyclean-depend:
++
++clean-depend:
++
++distclean-depend:
++	-rm -rf .deps
++
++maintainer-clean-depend:
++
++%.o: %.c
++	@echo '$(COMPILE) -c $<'; \
++	$(COMPILE) -Wp,-MD,.deps/$(*F).pp -c $<
++	@-cp .deps/$(*F).pp .deps/$(*F).P; \
++	tr ' ' '\012' < .deps/$(*F).pp \
++	  | sed -e 's/^\\$$//' -e '/^$$/ d' -e '/:$$/ d' -e 's/$$/ :/' \
++	    >> .deps/$(*F).P; \
++	rm .deps/$(*F).pp
++
++%.lo: %.c
++	@echo '$(LTCOMPILE) -c $<'; \
++	$(LTCOMPILE) -Wp,-MD,.deps/$(*F).pp -c $<
++	@-sed -e 's/^\([^:]*\)\.o[ 	]*:/\1.lo \1.o :/' \
++	  < .deps/$(*F).pp > .deps/$(*F).P; \
++	tr ' ' '\012' < .deps/$(*F).pp \
++	  | sed -e 's/^\\$$//' -e '/^$$/ d' -e '/:$$/ d' -e 's/$$/ :/' \
++	    >> .deps/$(*F).P; \
++	rm -f .deps/$(*F).pp
+ info-am:
+ info: info-am
+ dvi-am:
+@@ -338,27 +370,27 @@
+ 
+ maintainer-clean-generic:
+ mostlyclean-am:  mostlyclean-noinstPROGRAMS mostlyclean-compile \
+-		mostlyclean-libtool mostlyclean-tags \
++		mostlyclean-libtool mostlyclean-tags mostlyclean-depend \
+ 		mostlyclean-generic
+ 
+ mostlyclean: mostlyclean-am
+ 
+ clean-am:  clean-noinstPROGRAMS clean-compile clean-libtool clean-tags \
+-		clean-generic mostlyclean-am
++		clean-depend clean-generic mostlyclean-am
+ 
+ clean: clean-am
+ 
+ distclean-am:  distclean-noinstPROGRAMS distclean-compile \
+-		distclean-libtool distclean-tags distclean-generic \
+-		clean-am
++		distclean-libtool distclean-tags distclean-depend \
++		distclean-generic clean-am
+ 	-rm -f libtool
+ 
+ distclean: distclean-am
+ 
+ maintainer-clean-am:  maintainer-clean-noinstPROGRAMS \
+ 		maintainer-clean-compile maintainer-clean-libtool \
+-		maintainer-clean-tags maintainer-clean-generic \
+-		distclean-am
++		maintainer-clean-tags maintainer-clean-depend \
++		maintainer-clean-generic distclean-am
+ 	@echo "This command is intended for maintainers to use;"
+ 	@echo "it deletes files that may require special tools to rebuild."
+ 
+@@ -370,8 +402,9 @@
+ maintainer-clean-compile mostlyclean-libtool distclean-libtool \
+ clean-libtool maintainer-clean-libtool uninstall-includeHEADERS \
+ install-includeHEADERS tags mostlyclean-tags distclean-tags clean-tags \
+-maintainer-clean-tags distdir info-am info dvi-am dvi check check-am \
+-installcheck-am installcheck install-exec-am install-exec \
++maintainer-clean-tags distdir mostlyclean-depend distclean-depend \
++clean-depend maintainer-clean-depend info-am info dvi-am dvi check \
++check-am installcheck-am installcheck install-exec-am install-exec \
+ install-data-am install-data install-am install uninstall-am uninstall \
+ all-redirect all-am all installdirs mostlyclean-generic \
+ distclean-generic clean-generic maintainer-clean-generic clean \
 diff -u -r -P cyrus-sasl-1.5.27/include/saslplug.h cyrus-sasl-1.5.27-patched/include/saslplug.h
 --- cyrus-sasl-1.5.27/include/saslplug.h	2000-02-27 14:39:50.000000000 -0600
-+++ cyrus-sasl-1.5.27-patched/include/saslplug.h	2002-09-19 12:20:10.000000000 -0500
++++ cyrus-sasl-1.5.27-patched/include/saslplug.h	2002-09-19 17:31:32.000000000 -0500
 @@ -46,14 +46,6 @@
  			       int (**pproc)(),
  			       void **pcontext);
@@ -627,9 +2473,640 @@ diff -u -r -P cyrus-sasl-1.5.27/include/saslplug.h cyrus-sasl-1.5.27-patched/inc
  	       const char *format,
  	       ...);
  } sasl_utils_t;
+diff -u -r -P cyrus-sasl-1.5.27/java/CyrusSasl/Makefile.in cyrus-sasl-1.5.27-patched/java/CyrusSasl/Makefile.in
+--- cyrus-sasl-1.5.27/java/CyrusSasl/Makefile.in	2001-03-23 19:48:14.000000000 -0600
++++ cyrus-sasl-1.5.27-patched/java/CyrusSasl/Makefile.in	2002-09-19 17:35:41.000000000 -0500
+@@ -1,6 +1,6 @@
+-# Makefile.in generated automatically by automake 1.4 from Makefile.am
++# Makefile.in generated automatically by automake 1.4-p6 from Makefile.am
+ 
+-# Copyright (C) 1994, 1995-8, 1999 Free Software Foundation, Inc.
++# Copyright (C) 1994, 1995-8, 1999, 2001 Free Software Foundation, Inc.
+ # This Makefile.in is free software; the Free Software Foundation
+ # gives unlimited permission to copy and/or distribute it,
+ # with or without modifications, as long as this notice is preserved.
+@@ -165,18 +165,19 @@
+ 
+ DISTFILES = $(DIST_COMMON) $(SOURCES) $(HEADERS) $(TEXINFOS) $(EXTRA_DIST)
+ 
+-TAR = gtar
++TAR = tar
+ GZIP_ENV = --best
++DEP_FILES =  .deps/javasasl.P
+ SOURCES = $(libjavasasl_la_SOURCES)
+ OBJECTS = $(libjavasasl_la_OBJECTS)
+ 
+ all: all-redirect
+ .SUFFIXES:
+ .SUFFIXES: .S .c .lo .o .s
+-$(srcdir)/Makefile.in: Makefile.am $(top_srcdir)/configure.in $(ACLOCAL_M4) 
+-	cd $(top_srcdir) && $(AUTOMAKE) --gnu --include-deps java/CyrusSasl/Makefile
++$(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ Makefile.am $(top_srcdir)/configure.in $(ACLOCAL_M4) 
++	cd $(top_srcdir) && $(AUTOMAKE) --gnu java/CyrusSasl/Makefile
+ 
+-Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status
++Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status $(BUILT_SOURCES)
+ 	cd $(top_builddir) \
+ 	  && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
+ 
+@@ -206,9 +207,6 @@
+ 	  $(LIBTOOL)  --mode=uninstall rm -f $(DESTDIR)$(libdir)/$$p; \
+ 	done
+ 
+-.c.o:
+-	$(COMPILE) -c $<
+-
+ .s.o:
+ 	$(COMPILE) -c $<
+ 
+@@ -225,9 +223,6 @@
+ 
+ maintainer-clean-compile:
+ 
+-.c.lo:
+-	$(LIBTOOL) --mode=compile $(COMPILE) -c $<
+-
+ .s.lo:
+ 	$(LIBTOOL) --mode=compile $(COMPILE) -c $<
+ 
+@@ -291,7 +286,7 @@
+ 	  awk '    { files[$$0] = 1; } \
+ 	       END { for (i in files) print i; }'`; \
+ 	test -z "$(ETAGS_ARGS)$$unique$(LISP)$$tags" \
+-	  || (cd $(srcdir) && etags $(ETAGS_ARGS) $$tags  $$unique $(LISP) -o $$here/TAGS)
++	  || (cd $(srcdir) && etags -o $$here/TAGS $(ETAGS_ARGS) $$tags  $$unique $(LISP))
+ 
+ mostlyclean-tags:
+ 
+@@ -307,6 +302,11 @@
+ subdir = java/CyrusSasl
+ 
+ distdir: $(DISTFILES)
++	here=`cd $(top_builddir) && pwd`; \
++	top_distdir=`cd $(top_distdir) && pwd`; \
++	distdir=`cd $(distdir) && pwd`; \
++	cd $(top_srcdir) \
++	  && $(AUTOMAKE) --include-deps --build-dir=$$here --srcdir-name=$(top_srcdir) --output-dir=$$top_distdir --gnu java/CyrusSasl/Makefile
+ 	@for file in $(DISTFILES); do \
+ 	  d=$(srcdir); \
+ 	  if test -d $$d/$$file; then \
+@@ -317,6 +317,38 @@
+ 	    || cp -p $$d/$$file $(distdir)/$$file || :; \
+ 	  fi; \
+ 	done
++
++DEPS_MAGIC := $(shell mkdir .deps > /dev/null 2>&1 || :)
++
++-include $(DEP_FILES)
++
++mostlyclean-depend:
++
++clean-depend:
++
++distclean-depend:
++	-rm -rf .deps
++
++maintainer-clean-depend:
++
++%.o: %.c
++	@echo '$(COMPILE) -c $<'; \
++	$(COMPILE) -Wp,-MD,.deps/$(*F).pp -c $<
++	@-cp .deps/$(*F).pp .deps/$(*F).P; \
++	tr ' ' '\012' < .deps/$(*F).pp \
++	  | sed -e 's/^\\$$//' -e '/^$$/ d' -e '/:$$/ d' -e 's/$$/ :/' \
++	    >> .deps/$(*F).P; \
++	rm .deps/$(*F).pp
++
++%.lo: %.c
++	@echo '$(LTCOMPILE) -c $<'; \
++	$(LTCOMPILE) -Wp,-MD,.deps/$(*F).pp -c $<
++	@-sed -e 's/^\([^:]*\)\.o[ 	]*:/\1.lo \1.o :/' \
++	  < .deps/$(*F).pp > .deps/$(*F).P; \
++	tr ' ' '\012' < .deps/$(*F).pp \
++	  | sed -e 's/^\\$$//' -e '/^$$/ d' -e '/:$$/ d' -e 's/$$/ :/' \
++	    >> .deps/$(*F).P; \
++	rm -f .deps/$(*F).pp
+ info-am:
+ info: info-am
+ dvi-am:
+@@ -356,19 +388,19 @@
+ 	-test -z "$(BUILT_SOURCES)" || rm -f $(BUILT_SOURCES)
+ mostlyclean-am:  mostlyclean-libLTLIBRARIES mostlyclean-compile \
+ 		mostlyclean-libtool mostlyclean-javasaslJAVA \
+-		mostlyclean-tags mostlyclean-generic
++		mostlyclean-tags mostlyclean-depend mostlyclean-generic
+ 
+ mostlyclean: mostlyclean-am
+ 
+ clean-am:  clean-libLTLIBRARIES clean-compile clean-libtool \
+-		clean-javasaslJAVA clean-tags clean-generic \
+-		mostlyclean-am
++		clean-javasaslJAVA clean-tags clean-depend \
++		clean-generic mostlyclean-am
+ 
+ clean: clean-am
+ 
+ distclean-am:  distclean-libLTLIBRARIES distclean-compile \
+ 		distclean-libtool distclean-javasaslJAVA distclean-tags \
+-		distclean-generic clean-am
++		distclean-depend distclean-generic clean-am
+ 	-rm -f libtool
+ 
+ distclean: distclean-am
+@@ -376,7 +408,8 @@
+ maintainer-clean-am:  maintainer-clean-libLTLIBRARIES \
+ 		maintainer-clean-compile maintainer-clean-libtool \
+ 		maintainer-clean-javasaslJAVA maintainer-clean-tags \
+-		maintainer-clean-generic distclean-am
++		maintainer-clean-depend maintainer-clean-generic \
++		distclean-am
+ 	@echo "This command is intended for maintainers to use;"
+ 	@echo "it deletes files that may require special tools to rebuild."
+ 
+@@ -390,12 +423,14 @@
+ maintainer-clean-libtool mostlyclean-javasaslJAVA \
+ distclean-javasaslJAVA clean-javasaslJAVA maintainer-clean-javasaslJAVA \
+ uninstall-javasaslJAVA install-javasaslJAVA tags mostlyclean-tags \
+-distclean-tags clean-tags maintainer-clean-tags distdir info-am info \
+-dvi-am dvi check check-am installcheck-am installcheck install-exec-am \
+-install-exec install-data-am install-data install-am install \
+-uninstall-am uninstall all-redirect all-am all installdirs \
+-mostlyclean-generic distclean-generic clean-generic \
+-maintainer-clean-generic clean mostlyclean distclean maintainer-clean
++distclean-tags clean-tags maintainer-clean-tags distdir \
++mostlyclean-depend distclean-depend clean-depend \
++maintainer-clean-depend info-am info dvi-am dvi check check-am \
++installcheck-am installcheck install-exec-am install-exec \
++install-data-am install-data install-am install uninstall-am uninstall \
++all-redirect all-am all installdirs mostlyclean-generic \
++distclean-generic clean-generic maintainer-clean-generic clean \
++mostlyclean distclean maintainer-clean
+ 
+ 
+ javasasl.c: javasasl.h
+diff -u -r -P cyrus-sasl-1.5.27/java/Makefile.in cyrus-sasl-1.5.27-patched/java/Makefile.in
+--- cyrus-sasl-1.5.27/java/Makefile.in	2001-03-23 19:48:14.000000000 -0600
++++ cyrus-sasl-1.5.27-patched/java/Makefile.in	2002-09-19 17:35:41.000000000 -0500
+@@ -1,6 +1,6 @@
+-# Makefile.in generated automatically by automake 1.4 from Makefile.am
++# Makefile.in generated automatically by automake 1.4-p6 from Makefile.am
+ 
+-# Copyright (C) 1994, 1995-8, 1999 Free Software Foundation, Inc.
++# Copyright (C) 1994, 1995-8, 1999, 2001 Free Software Foundation, Inc.
+ # This Makefile.in is free software; the Free Software Foundation
+ # gives unlimited permission to copy and/or distribute it,
+ # with or without modifications, as long as this notice is preserved.
+@@ -135,14 +135,14 @@
+ 
+ DISTFILES = $(DIST_COMMON) $(SOURCES) $(HEADERS) $(TEXINFOS) $(EXTRA_DIST)
+ 
+-TAR = gtar
++TAR = tar
+ GZIP_ENV = --best
+ all: all-redirect
+ .SUFFIXES:
+-$(srcdir)/Makefile.in: Makefile.am $(top_srcdir)/configure.in $(ACLOCAL_M4) 
+-	cd $(top_srcdir) && $(AUTOMAKE) --gnu --include-deps java/Makefile
++$(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ Makefile.am $(top_srcdir)/configure.in $(ACLOCAL_M4) 
++	cd $(top_srcdir) && $(AUTOMAKE) --gnu java/Makefile
+ 
+-Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status
++Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status $(BUILT_SOURCES)
+ 	cd $(top_builddir) \
+ 	  && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
+ 
+@@ -183,7 +183,7 @@
+ 	dot_seen=no; \
+ 	rev=''; list='$(SUBDIRS)'; for subdir in $$list; do \
+ 	  rev="$$subdir $$rev"; \
+-	  test "$$subdir" = "." && dot_seen=yes; \
++	  test "$$subdir" != "." || dot_seen=yes; \
+ 	done; \
+ 	test "$$dot_seen" = "no" && rev=". $$rev"; \
+ 	target=`echo $@ | sed s/-recursive//`; \
+@@ -225,7 +225,7 @@
+ 	  awk '    { files[$$0] = 1; } \
+ 	       END { for (i in files) print i; }'`; \
+ 	test -z "$(ETAGS_ARGS)$$unique$(LISP)$$tags" \
+-	  || (cd $(srcdir) && etags $(ETAGS_ARGS) $$tags  $$unique $(LISP) -o $$here/TAGS)
++	  || (cd $(srcdir) && etags -o $$here/TAGS $(ETAGS_ARGS) $$tags  $$unique $(LISP))
+ 
+ mostlyclean-tags:
+ 
+@@ -241,6 +241,11 @@
+ subdir = java
+ 
+ distdir: $(DISTFILES)
++	here=`cd $(top_builddir) && pwd`; \
++	top_distdir=`cd $(top_distdir) && pwd`; \
++	distdir=`cd $(distdir) && pwd`; \
++	cd $(top_srcdir) \
++	  && $(AUTOMAKE) --include-deps --build-dir=$$here --srcdir-name=$(top_srcdir) --output-dir=$$top_distdir --gnu java/Makefile
+ 	@for file in $(DISTFILES); do \
+ 	  d=$(srcdir); \
+ 	  if test -d $$d/$$file; then \
+diff -u -r -P cyrus-sasl-1.5.27/java/javax/Makefile.in cyrus-sasl-1.5.27-patched/java/javax/Makefile.in
+--- cyrus-sasl-1.5.27/java/javax/Makefile.in	2001-03-23 19:48:14.000000000 -0600
++++ cyrus-sasl-1.5.27-patched/java/javax/Makefile.in	2002-09-19 17:35:41.000000000 -0500
+@@ -1,6 +1,6 @@
+-# Makefile.in generated automatically by automake 1.4 from Makefile.am
++# Makefile.in generated automatically by automake 1.4-p6 from Makefile.am
+ 
+-# Copyright (C) 1994, 1995-8, 1999 Free Software Foundation, Inc.
++# Copyright (C) 1994, 1995-8, 1999, 2001 Free Software Foundation, Inc.
+ # This Makefile.in is free software; the Free Software Foundation
+ # gives unlimited permission to copy and/or distribute it,
+ # with or without modifications, as long as this notice is preserved.
+@@ -150,14 +150,14 @@
+ 
+ DISTFILES = $(DIST_COMMON) $(SOURCES) $(HEADERS) $(TEXINFOS) $(EXTRA_DIST)
+ 
+-TAR = gtar
++TAR = tar
+ GZIP_ENV = --best
+ all: all-redirect
+ .SUFFIXES:
+-$(srcdir)/Makefile.in: Makefile.am $(top_srcdir)/configure.in $(ACLOCAL_M4) 
+-	cd $(top_srcdir) && $(AUTOMAKE) --gnu --include-deps java/javax/Makefile
++$(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ Makefile.am $(top_srcdir)/configure.in $(ACLOCAL_M4) 
++	cd $(top_srcdir) && $(AUTOMAKE) --gnu java/javax/Makefile
+ 
+-Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status
++Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status $(BUILT_SOURCES)
+ 	cd $(top_builddir) \
+ 	  && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
+ 
+@@ -198,7 +198,7 @@
+ 	dot_seen=no; \
+ 	rev=''; list='$(SUBDIRS)'; for subdir in $$list; do \
+ 	  rev="$$subdir $$rev"; \
+-	  test "$$subdir" = "." && dot_seen=yes; \
++	  test "$$subdir" != "." || dot_seen=yes; \
+ 	done; \
+ 	test "$$dot_seen" = "no" && rev=". $$rev"; \
+ 	target=`echo $@ | sed s/-recursive//`; \
+@@ -240,7 +240,7 @@
+ 	  awk '    { files[$$0] = 1; } \
+ 	       END { for (i in files) print i; }'`; \
+ 	test -z "$(ETAGS_ARGS)$$unique$(LISP)$$tags" \
+-	  || (cd $(srcdir) && etags $(ETAGS_ARGS) $$tags  $$unique $(LISP) -o $$here/TAGS)
++	  || (cd $(srcdir) && etags -o $$here/TAGS $(ETAGS_ARGS) $$tags  $$unique $(LISP))
+ 
+ mostlyclean-tags:
+ 
+@@ -256,6 +256,11 @@
+ subdir = java/javax
+ 
+ distdir: $(DISTFILES)
++	here=`cd $(top_builddir) && pwd`; \
++	top_distdir=`cd $(top_distdir) && pwd`; \
++	distdir=`cd $(distdir) && pwd`; \
++	cd $(top_srcdir) \
++	  && $(AUTOMAKE) --include-deps --build-dir=$$here --srcdir-name=$(top_srcdir) --output-dir=$$top_distdir --gnu java/javax/Makefile
+ 	@for file in $(DISTFILES); do \
+ 	  d=$(srcdir); \
+ 	  if test -d $$d/$$file; then \
+diff -u -r -P cyrus-sasl-1.5.27/java/javax/security/Makefile.in cyrus-sasl-1.5.27-patched/java/javax/security/Makefile.in
+--- cyrus-sasl-1.5.27/java/javax/security/Makefile.in	2001-03-23 19:48:14.000000000 -0600
++++ cyrus-sasl-1.5.27-patched/java/javax/security/Makefile.in	2002-09-19 17:35:41.000000000 -0500
+@@ -1,6 +1,6 @@
+-# Makefile.in generated automatically by automake 1.4 from Makefile.am
++# Makefile.in generated automatically by automake 1.4-p6 from Makefile.am
+ 
+-# Copyright (C) 1994, 1995-8, 1999 Free Software Foundation, Inc.
++# Copyright (C) 1994, 1995-8, 1999, 2001 Free Software Foundation, Inc.
+ # This Makefile.in is free software; the Free Software Foundation
+ # gives unlimited permission to copy and/or distribute it,
+ # with or without modifications, as long as this notice is preserved.
+@@ -150,14 +150,14 @@
+ 
+ DISTFILES = $(DIST_COMMON) $(SOURCES) $(HEADERS) $(TEXINFOS) $(EXTRA_DIST)
+ 
+-TAR = gtar
++TAR = tar
+ GZIP_ENV = --best
+ all: all-redirect
+ .SUFFIXES:
+-$(srcdir)/Makefile.in: Makefile.am $(top_srcdir)/configure.in $(ACLOCAL_M4) 
+-	cd $(top_srcdir) && $(AUTOMAKE) --gnu --include-deps java/javax/security/Makefile
++$(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ Makefile.am $(top_srcdir)/configure.in $(ACLOCAL_M4) 
++	cd $(top_srcdir) && $(AUTOMAKE) --gnu java/javax/security/Makefile
+ 
+-Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status
++Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status $(BUILT_SOURCES)
+ 	cd $(top_builddir) \
+ 	  && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
+ 
+@@ -198,7 +198,7 @@
+ 	dot_seen=no; \
+ 	rev=''; list='$(SUBDIRS)'; for subdir in $$list; do \
+ 	  rev="$$subdir $$rev"; \
+-	  test "$$subdir" = "." && dot_seen=yes; \
++	  test "$$subdir" != "." || dot_seen=yes; \
+ 	done; \
+ 	test "$$dot_seen" = "no" && rev=". $$rev"; \
+ 	target=`echo $@ | sed s/-recursive//`; \
+@@ -240,7 +240,7 @@
+ 	  awk '    { files[$$0] = 1; } \
+ 	       END { for (i in files) print i; }'`; \
+ 	test -z "$(ETAGS_ARGS)$$unique$(LISP)$$tags" \
+-	  || (cd $(srcdir) && etags $(ETAGS_ARGS) $$tags  $$unique $(LISP) -o $$here/TAGS)
++	  || (cd $(srcdir) && etags -o $$here/TAGS $(ETAGS_ARGS) $$tags  $$unique $(LISP))
+ 
+ mostlyclean-tags:
+ 
+@@ -256,6 +256,11 @@
+ subdir = java/javax/security
+ 
+ distdir: $(DISTFILES)
++	here=`cd $(top_builddir) && pwd`; \
++	top_distdir=`cd $(top_distdir) && pwd`; \
++	distdir=`cd $(distdir) && pwd`; \
++	cd $(top_srcdir) \
++	  && $(AUTOMAKE) --include-deps --build-dir=$$here --srcdir-name=$(top_srcdir) --output-dir=$$top_distdir --gnu java/javax/security/Makefile
+ 	@for file in $(DISTFILES); do \
+ 	  d=$(srcdir); \
+ 	  if test -d $$d/$$file; then \
+diff -u -r -P cyrus-sasl-1.5.27/java/javax/security/auth/Makefile.in cyrus-sasl-1.5.27-patched/java/javax/security/auth/Makefile.in
+--- cyrus-sasl-1.5.27/java/javax/security/auth/Makefile.in	2001-03-23 19:48:14.000000000 -0600
++++ cyrus-sasl-1.5.27-patched/java/javax/security/auth/Makefile.in	2002-09-19 17:35:41.000000000 -0500
+@@ -1,6 +1,6 @@
+-# Makefile.in generated automatically by automake 1.4 from Makefile.am
++# Makefile.in generated automatically by automake 1.4-p6 from Makefile.am
+ 
+-# Copyright (C) 1994, 1995-8, 1999 Free Software Foundation, Inc.
++# Copyright (C) 1994, 1995-8, 1999, 2001 Free Software Foundation, Inc.
+ # This Makefile.in is free software; the Free Software Foundation
+ # gives unlimited permission to copy and/or distribute it,
+ # with or without modifications, as long as this notice is preserved.
+@@ -150,14 +150,14 @@
+ 
+ DISTFILES = $(DIST_COMMON) $(SOURCES) $(HEADERS) $(TEXINFOS) $(EXTRA_DIST)
+ 
+-TAR = gtar
++TAR = tar
+ GZIP_ENV = --best
+ all: all-redirect
+ .SUFFIXES:
+-$(srcdir)/Makefile.in: Makefile.am $(top_srcdir)/configure.in $(ACLOCAL_M4) 
+-	cd $(top_srcdir) && $(AUTOMAKE) --gnu --include-deps java/javax/security/auth/Makefile
++$(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ Makefile.am $(top_srcdir)/configure.in $(ACLOCAL_M4) 
++	cd $(top_srcdir) && $(AUTOMAKE) --gnu java/javax/security/auth/Makefile
+ 
+-Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status
++Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status $(BUILT_SOURCES)
+ 	cd $(top_builddir) \
+ 	  && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
+ 
+@@ -198,7 +198,7 @@
+ 	dot_seen=no; \
+ 	rev=''; list='$(SUBDIRS)'; for subdir in $$list; do \
+ 	  rev="$$subdir $$rev"; \
+-	  test "$$subdir" = "." && dot_seen=yes; \
++	  test "$$subdir" != "." || dot_seen=yes; \
+ 	done; \
+ 	test "$$dot_seen" = "no" && rev=". $$rev"; \
+ 	target=`echo $@ | sed s/-recursive//`; \
+@@ -240,7 +240,7 @@
+ 	  awk '    { files[$$0] = 1; } \
+ 	       END { for (i in files) print i; }'`; \
+ 	test -z "$(ETAGS_ARGS)$$unique$(LISP)$$tags" \
+-	  || (cd $(srcdir) && etags $(ETAGS_ARGS) $$tags  $$unique $(LISP) -o $$here/TAGS)
++	  || (cd $(srcdir) && etags -o $$here/TAGS $(ETAGS_ARGS) $$tags  $$unique $(LISP))
+ 
+ mostlyclean-tags:
+ 
+@@ -256,6 +256,11 @@
+ subdir = java/javax/security/auth
+ 
+ distdir: $(DISTFILES)
++	here=`cd $(top_builddir) && pwd`; \
++	top_distdir=`cd $(top_distdir) && pwd`; \
++	distdir=`cd $(distdir) && pwd`; \
++	cd $(top_srcdir) \
++	  && $(AUTOMAKE) --include-deps --build-dir=$$here --srcdir-name=$(top_srcdir) --output-dir=$$top_distdir --gnu java/javax/security/auth/Makefile
+ 	@for file in $(DISTFILES); do \
+ 	  d=$(srcdir); \
+ 	  if test -d $$d/$$file; then \
+diff -u -r -P cyrus-sasl-1.5.27/java/javax/security/auth/callback/Makefile.in cyrus-sasl-1.5.27-patched/java/javax/security/auth/callback/Makefile.in
+--- cyrus-sasl-1.5.27/java/javax/security/auth/callback/Makefile.in	2001-03-23 19:48:14.000000000 -0600
++++ cyrus-sasl-1.5.27-patched/java/javax/security/auth/callback/Makefile.in	2002-09-19 17:35:41.000000000 -0500
+@@ -1,6 +1,6 @@
+-# Makefile.in generated automatically by automake 1.4 from Makefile.am
++# Makefile.in generated automatically by automake 1.4-p6 from Makefile.am
+ 
+-# Copyright (C) 1994, 1995-8, 1999 Free Software Foundation, Inc.
++# Copyright (C) 1994, 1995-8, 1999, 2001 Free Software Foundation, Inc.
+ # This Makefile.in is free software; the Free Software Foundation
+ # gives unlimited permission to copy and/or distribute it,
+ # with or without modifications, as long as this notice is preserved.
+@@ -158,14 +158,14 @@
+ 
+ DISTFILES = $(DIST_COMMON) $(SOURCES) $(HEADERS) $(TEXINFOS) $(EXTRA_DIST)
+ 
+-TAR = gtar
++TAR = tar
+ GZIP_ENV = --best
+ all: all-redirect
+ .SUFFIXES:
+-$(srcdir)/Makefile.in: Makefile.am $(top_srcdir)/configure.in $(ACLOCAL_M4) 
+-	cd $(top_srcdir) && $(AUTOMAKE) --gnu --include-deps java/javax/security/auth/callback/Makefile
++$(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ Makefile.am $(top_srcdir)/configure.in $(ACLOCAL_M4) 
++	cd $(top_srcdir) && $(AUTOMAKE) --gnu java/javax/security/auth/callback/Makefile
+ 
+-Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status
++Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status $(BUILT_SOURCES)
+ 	cd $(top_builddir) \
+ 	  && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
+ 
+@@ -204,6 +204,11 @@
+ subdir = java/javax/security/auth/callback
+ 
+ distdir: $(DISTFILES)
++	here=`cd $(top_builddir) && pwd`; \
++	top_distdir=`cd $(top_distdir) && pwd`; \
++	distdir=`cd $(distdir) && pwd`; \
++	cd $(top_srcdir) \
++	  && $(AUTOMAKE) --include-deps --build-dir=$$here --srcdir-name=$(top_srcdir) --output-dir=$$top_distdir --gnu java/javax/security/auth/callback/Makefile
+ 	@for file in $(DISTFILES); do \
+ 	  d=$(srcdir); \
+ 	  if test -d $$d/$$file; then \
+diff -u -r -P cyrus-sasl-1.5.27/lib/Makefile.in cyrus-sasl-1.5.27-patched/lib/Makefile.in
+--- cyrus-sasl-1.5.27/lib/Makefile.in	2001-03-23 19:48:13.000000000 -0600
++++ cyrus-sasl-1.5.27-patched/lib/Makefile.in	2002-09-19 17:35:41.000000000 -0500
+@@ -1,6 +1,6 @@
+-# Makefile.in generated automatically by automake 1.4 from Makefile.am
++# Makefile.in generated automatically by automake 1.4-p6 from Makefile.am
+ 
+-# Copyright (C) 1994, 1995-8, 1999 Free Software Foundation, Inc.
++# Copyright (C) 1994, 1995-8, 1999, 2001 Free Software Foundation, Inc.
+ # This Makefile.in is free software; the Free Software Foundation
+ # gives unlimited permission to copy and/or distribute it,
+ # with or without modifications, as long as this notice is preserved.
+@@ -179,18 +179,22 @@
+ 
+ DISTFILES = $(DIST_COMMON) $(SOURCES) $(HEADERS) $(TEXINFOS) $(EXTRA_DIST)
+ 
+-TAR = gtar
++TAR = tar
+ GZIP_ENV = --best
++DEP_FILES =  .deps/checkpw.P .deps/client.P .deps/common.P \
++.deps/config.P .deps/db_berkeley.P .deps/db_gdbm.P .deps/db_ndbm.P \
++.deps/db_none.P .deps/db_testw32.P .deps/dlopen.P .deps/getsubopt.P \
++.deps/md5.P .deps/saslutil.P .deps/server.P .deps/snprintf.P
+ SOURCES = $(libsasl_la_SOURCES) $(EXTRA_libsasl_la_SOURCES)
+ OBJECTS = $(libsasl_la_OBJECTS)
+ 
+ all: all-redirect
+ .SUFFIXES:
+ .SUFFIXES: .S .c .lo .o .s
+-$(srcdir)/Makefile.in: Makefile.am $(top_srcdir)/configure.in $(ACLOCAL_M4) 
+-	cd $(top_srcdir) && $(AUTOMAKE) --gnu --include-deps lib/Makefile
++$(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ Makefile.am $(top_srcdir)/configure.in $(ACLOCAL_M4) 
++	cd $(top_srcdir) && $(AUTOMAKE) --gnu lib/Makefile
+ 
+-Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status
++Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status $(BUILT_SOURCES)
+ 	cd $(top_builddir) \
+ 	  && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
+ 
+@@ -220,9 +224,6 @@
+ 	  $(LIBTOOL)  --mode=uninstall rm -f $(DESTDIR)$(libdir)/$$p; \
+ 	done
+ 
+-.c.o:
+-	$(COMPILE) -c $<
+-
+ .s.o:
+ 	$(COMPILE) -c $<
+ 
+@@ -239,9 +240,6 @@
+ 
+ maintainer-clean-compile:
+ 
+-.c.lo:
+-	$(LIBTOOL) --mode=compile $(COMPILE) -c $<
+-
+ .s.lo:
+ 	$(LIBTOOL) --mode=compile $(COMPILE) -c $<
+ 
+@@ -279,7 +277,7 @@
+ 	  awk '    { files[$$0] = 1; } \
+ 	       END { for (i in files) print i; }'`; \
+ 	test -z "$(ETAGS_ARGS)$$unique$(LISP)$$tags" \
+-	  || (cd $(srcdir) && etags $(ETAGS_ARGS) $$tags  $$unique $(LISP) -o $$here/TAGS)
++	  || (cd $(srcdir) && etags -o $$here/TAGS $(ETAGS_ARGS) $$tags  $$unique $(LISP))
+ 
+ mostlyclean-tags:
+ 
+@@ -295,6 +293,11 @@
+ subdir = lib
+ 
+ distdir: $(DISTFILES)
++	here=`cd $(top_builddir) && pwd`; \
++	top_distdir=`cd $(top_distdir) && pwd`; \
++	distdir=`cd $(distdir) && pwd`; \
++	cd $(top_srcdir) \
++	  && $(AUTOMAKE) --include-deps --build-dir=$$here --srcdir-name=$(top_srcdir) --output-dir=$$top_distdir --gnu lib/Makefile
+ 	@for file in $(DISTFILES); do \
+ 	  d=$(srcdir); \
+ 	  if test -d $$d/$$file; then \
+@@ -305,6 +308,38 @@
+ 	    || cp -p $$d/$$file $(distdir)/$$file || :; \
+ 	  fi; \
+ 	done
++
++DEPS_MAGIC := $(shell mkdir .deps > /dev/null 2>&1 || :)
++
++-include $(DEP_FILES)
++
++mostlyclean-depend:
++
++clean-depend:
++
++distclean-depend:
++	-rm -rf .deps
++
++maintainer-clean-depend:
++
++%.o: %.c
++	@echo '$(COMPILE) -c $<'; \
++	$(COMPILE) -Wp,-MD,.deps/$(*F).pp -c $<
++	@-cp .deps/$(*F).pp .deps/$(*F).P; \
++	tr ' ' '\012' < .deps/$(*F).pp \
++	  | sed -e 's/^\\$$//' -e '/^$$/ d' -e '/:$$/ d' -e 's/$$/ :/' \
++	    >> .deps/$(*F).P; \
++	rm .deps/$(*F).pp
++
++%.lo: %.c
++	@echo '$(LTCOMPILE) -c $<'; \
++	$(LTCOMPILE) -Wp,-MD,.deps/$(*F).pp -c $<
++	@-sed -e 's/^\([^:]*\)\.o[ 	]*:/\1.lo \1.o :/' \
++	  < .deps/$(*F).pp > .deps/$(*F).P; \
++	tr ' ' '\012' < .deps/$(*F).pp \
++	  | sed -e 's/^\\$$//' -e '/^$$/ d' -e '/:$$/ d' -e 's/$$/ :/' \
++	    >> .deps/$(*F).P; \
++	rm -f .deps/$(*F).pp
+ info-am:
+ info: info-am
+ dvi-am:
+@@ -342,27 +377,27 @@
+ 
+ maintainer-clean-generic:
+ mostlyclean-am:  mostlyclean-libLTLIBRARIES mostlyclean-compile \
+-		mostlyclean-libtool mostlyclean-tags \
++		mostlyclean-libtool mostlyclean-tags mostlyclean-depend \
+ 		mostlyclean-generic
+ 
+ mostlyclean: mostlyclean-am
+ 
+ clean-am:  clean-libLTLIBRARIES clean-compile clean-libtool clean-tags \
+-		clean-generic mostlyclean-am
++		clean-depend clean-generic mostlyclean-am
+ 
+ clean: clean-am
+ 
+ distclean-am:  distclean-libLTLIBRARIES distclean-compile \
+-		distclean-libtool distclean-tags distclean-generic \
+-		clean-am
++		distclean-libtool distclean-tags distclean-depend \
++		distclean-generic clean-am
+ 	-rm -f libtool
+ 
+ distclean: distclean-am
+ 
+ maintainer-clean-am:  maintainer-clean-libLTLIBRARIES \
+ 		maintainer-clean-compile maintainer-clean-libtool \
+-		maintainer-clean-tags maintainer-clean-generic \
+-		distclean-am
++		maintainer-clean-tags maintainer-clean-depend \
++		maintainer-clean-generic distclean-am
+ 	@echo "This command is intended for maintainers to use;"
+ 	@echo "it deletes files that may require special tools to rebuild."
+ 
+@@ -374,12 +409,13 @@
+ distclean-compile clean-compile maintainer-clean-compile \
+ mostlyclean-libtool distclean-libtool clean-libtool \
+ maintainer-clean-libtool tags mostlyclean-tags distclean-tags \
+-clean-tags maintainer-clean-tags distdir info-am info dvi-am dvi check \
+-check-am installcheck-am installcheck install-exec-am install-exec \
+-install-data-am install-data install-am install uninstall-am uninstall \
+-all-redirect all-am all installdirs mostlyclean-generic \
+-distclean-generic clean-generic maintainer-clean-generic clean \
+-mostlyclean distclean maintainer-clean
++clean-tags maintainer-clean-tags distdir mostlyclean-depend \
++distclean-depend clean-depend maintainer-clean-depend info-am info \
++dvi-am dvi check check-am installcheck-am installcheck install-exec-am \
++install-exec install-data-am install-data install-am install \
++uninstall-am uninstall all-redirect all-am all installdirs \
++mostlyclean-generic distclean-generic clean-generic \
++maintainer-clean-generic clean mostlyclean distclean maintainer-clean
+ 
+ # PLAIN_LIBS are linked in for sasl_checkpass
+ 
 diff -u -r -P cyrus-sasl-1.5.27/lib/client.c cyrus-sasl-1.5.27-patched/lib/client.c
 --- cyrus-sasl-1.5.27/lib/client.c	2000-03-28 00:47:55.000000000 -0600
-+++ cyrus-sasl-1.5.27-patched/lib/client.c	2002-09-19 12:19:22.000000000 -0500
++++ cyrus-sasl-1.5.27-patched/lib/client.c	2002-09-19 17:31:32.000000000 -0500
 @@ -579,7 +579,8 @@
  	    name[place]=list[pos];
  	    pos++;
@@ -642,7 +3119,7 @@ diff -u -r -P cyrus-sasl-1.5.27/lib/client.c cyrus-sasl-1.5.27-patched/lib/clien
  				       || list[pos] == '_'
 diff -u -r -P cyrus-sasl-1.5.27/lib/common.c cyrus-sasl-1.5.27-patched/lib/common.c
 --- cyrus-sasl-1.5.27/lib/common.c	2000-11-21 23:55:31.000000000 -0600
-+++ cyrus-sasl-1.5.27-patched/lib/common.c	2002-09-19 12:20:10.000000000 -0500
++++ cyrus-sasl-1.5.27-patched/lib/common.c	2002-09-19 17:31:32.000000000 -0500
 @@ -53,13 +53,6 @@
  #include <saslutil.h>
  #include <saslplug.h>
@@ -677,7 +3154,7 @@ diff -u -r -P cyrus-sasl-1.5.27/lib/common.c cyrus-sasl-1.5.27-patched/lib/commo
  	    done=1;
 diff -u -r -P cyrus-sasl-1.5.27/lib/dlopen.c cyrus-sasl-1.5.27-patched/lib/dlopen.c
 --- cyrus-sasl-1.5.27/lib/dlopen.c	2000-08-13 20:44:02.000000000 -0500
-+++ cyrus-sasl-1.5.27-patched/lib/dlopen.c	2002-09-19 12:19:22.000000000 -0500
++++ cyrus-sasl-1.5.27-patched/lib/dlopen.c	2002-09-19 17:31:32.000000000 -0500
 @@ -174,6 +174,7 @@
      flag = 0;
  #endif
@@ -694,9 +3171,903 @@ diff -u -r -P cyrus-sasl-1.5.27/lib/dlopen.c cyrus-sasl-1.5.27-patched/lib/dlope
  		/* added successfully */
  	    }
  
+diff -u -r -P cyrus-sasl-1.5.27/man/Makefile.in cyrus-sasl-1.5.27-patched/man/Makefile.in
+--- cyrus-sasl-1.5.27/man/Makefile.in	2001-03-23 19:48:14.000000000 -0600
++++ cyrus-sasl-1.5.27-patched/man/Makefile.in	2002-09-19 17:35:41.000000000 -0500
+@@ -1,6 +1,6 @@
+-# Makefile.in generated automatically by automake 1.4 from Makefile.am
++# Makefile.in generated automatically by automake 1.4-p6 from Makefile.am
+ 
+-# Copyright (C) 1994, 1995-8, 1999 Free Software Foundation, Inc.
++# Copyright (C) 1994, 1995-8, 1999, 2001 Free Software Foundation, Inc.
+ # This Makefile.in is free software; the Free Software Foundation
+ # gives unlimited permission to copy and/or distribute it,
+ # with or without modifications, as long as this notice is preserved.
+@@ -160,14 +160,14 @@
+ 
+ DISTFILES = $(DIST_COMMON) $(SOURCES) $(HEADERS) $(TEXINFOS) $(EXTRA_DIST)
+ 
+-TAR = gtar
++TAR = tar
+ GZIP_ENV = --best
+ all: all-redirect
+ .SUFFIXES:
+-$(srcdir)/Makefile.in: Makefile.am $(top_srcdir)/configure.in $(ACLOCAL_M4) 
+-	cd $(top_srcdir) && $(AUTOMAKE) --gnu --include-deps man/Makefile
++$(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ Makefile.am $(top_srcdir)/configure.in $(ACLOCAL_M4) 
++	cd $(top_srcdir) && $(AUTOMAKE) --gnu man/Makefile
+ 
+-Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status
++Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status $(BUILT_SOURCES)
+ 	cd $(top_builddir) \
+ 	  && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
+ 
+@@ -219,6 +219,11 @@
+ subdir = man
+ 
+ distdir: $(DISTFILES)
++	here=`cd $(top_builddir) && pwd`; \
++	top_distdir=`cd $(top_distdir) && pwd`; \
++	distdir=`cd $(distdir) && pwd`; \
++	cd $(top_srcdir) \
++	  && $(AUTOMAKE) --include-deps --build-dir=$$here --srcdir-name=$(top_srcdir) --output-dir=$$top_distdir --gnu man/Makefile
+ 	@for file in $(DISTFILES); do \
+ 	  d=$(srcdir); \
+ 	  if test -d $$d/$$file; then \
+diff -u -r -P cyrus-sasl-1.5.27/plugins/Makefile.in cyrus-sasl-1.5.27-patched/plugins/Makefile.in
+--- cyrus-sasl-1.5.27/plugins/Makefile.in	2001-03-23 19:48:13.000000000 -0600
++++ cyrus-sasl-1.5.27-patched/plugins/Makefile.in	2002-09-19 17:35:41.000000000 -0500
+@@ -1,6 +1,6 @@
+-# Makefile.in generated automatically by automake 1.4 from Makefile.am
++# Makefile.in generated automatically by automake 1.4-p6 from Makefile.am
+ 
+-# Copyright (C) 1994, 1995-8, 1999 Free Software Foundation, Inc.
++# Copyright (C) 1994, 1995-8, 1999, 2001 Free Software Foundation, Inc.
+ # This Makefile.in is free software; the Free Software Foundation
+ # gives unlimited permission to copy and/or distribute it,
+ # with or without modifications, as long as this notice is preserved.
+@@ -237,18 +237,21 @@
+ 
+ DISTFILES = $(DIST_COMMON) $(SOURCES) $(HEADERS) $(TEXINFOS) $(EXTRA_DIST)
+ 
+-TAR = gtar
++TAR = tar
+ GZIP_ENV = --best
++DEP_FILES =  .deps/anonymous.P .deps/cram.P .deps/digestmd5.P \
++.deps/gssapi.P .deps/kerberos4.P .deps/login.P .deps/plain.P \
++.deps/scram.P .deps/srp.P
+ SOURCES = $(libplain_la_SOURCES) $(libanonymous_la_SOURCES) $(libkerberos4_la_SOURCES) $(libcrammd5_la_SOURCES) $(libscrammd5_la_SOURCES) $(libgssapiv2_la_SOURCES) $(libdigestmd5_la_SOURCES) $(liblogin_la_SOURCES) $(libsrp_la_SOURCES)
+ OBJECTS = $(libplain_la_OBJECTS) $(libanonymous_la_OBJECTS) $(libkerberos4_la_OBJECTS) $(libcrammd5_la_OBJECTS) $(libscrammd5_la_OBJECTS) $(libgssapiv2_la_OBJECTS) $(libdigestmd5_la_OBJECTS) $(liblogin_la_OBJECTS) $(libsrp_la_OBJECTS)
+ 
+ all: all-redirect
+ .SUFFIXES:
+ .SUFFIXES: .S .c .lo .o .s
+-$(srcdir)/Makefile.in: Makefile.am $(top_srcdir)/configure.in $(ACLOCAL_M4) 
+-	cd $(top_srcdir) && $(AUTOMAKE) --gnu --include-deps plugins/Makefile
++$(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ Makefile.am $(top_srcdir)/configure.in $(ACLOCAL_M4) 
++	cd $(top_srcdir) && $(AUTOMAKE) --gnu plugins/Makefile
+ 
+-Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status
++Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status $(BUILT_SOURCES)
+ 	cd $(top_builddir) \
+ 	  && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
+ 
+@@ -278,9 +281,6 @@
+ 	  $(LIBTOOL)  --mode=uninstall rm -f $(DESTDIR)$(sasldir)/$$p; \
+ 	done
+ 
+-.c.o:
+-	$(COMPILE) -c $<
+-
+ .s.o:
+ 	$(COMPILE) -c $<
+ 
+@@ -297,9 +297,6 @@
+ 
+ maintainer-clean-compile:
+ 
+-.c.lo:
+-	$(LIBTOOL) --mode=compile $(COMPILE) -c $<
+-
+ .s.lo:
+ 	$(LIBTOOL) --mode=compile $(COMPILE) -c $<
+ 
+@@ -361,7 +358,7 @@
+ 	  awk '    { files[$$0] = 1; } \
+ 	       END { for (i in files) print i; }'`; \
+ 	test -z "$(ETAGS_ARGS)$$unique$(LISP)$$tags" \
+-	  || (cd $(srcdir) && etags $(ETAGS_ARGS) $$tags  $$unique $(LISP) -o $$here/TAGS)
++	  || (cd $(srcdir) && etags -o $$here/TAGS $(ETAGS_ARGS) $$tags  $$unique $(LISP))
+ 
+ mostlyclean-tags:
+ 
+@@ -377,6 +374,11 @@
+ subdir = plugins
+ 
+ distdir: $(DISTFILES)
++	here=`cd $(top_builddir) && pwd`; \
++	top_distdir=`cd $(top_distdir) && pwd`; \
++	distdir=`cd $(distdir) && pwd`; \
++	cd $(top_srcdir) \
++	  && $(AUTOMAKE) --include-deps --build-dir=$$here --srcdir-name=$(top_srcdir) --output-dir=$$top_distdir --gnu plugins/Makefile
+ 	@for file in $(DISTFILES); do \
+ 	  d=$(srcdir); \
+ 	  if test -d $$d/$$file; then \
+@@ -387,6 +389,38 @@
+ 	    || cp -p $$d/$$file $(distdir)/$$file || :; \
+ 	  fi; \
+ 	done
++
++DEPS_MAGIC := $(shell mkdir .deps > /dev/null 2>&1 || :)
++
++-include $(DEP_FILES)
++
++mostlyclean-depend:
++
++clean-depend:
++
++distclean-depend:
++	-rm -rf .deps
++
++maintainer-clean-depend:
++
++%.o: %.c
++	@echo '$(COMPILE) -c $<'; \
++	$(COMPILE) -Wp,-MD,.deps/$(*F).pp -c $<
++	@-cp .deps/$(*F).pp .deps/$(*F).P; \
++	tr ' ' '\012' < .deps/$(*F).pp \
++	  | sed -e 's/^\\$$//' -e '/^$$/ d' -e '/:$$/ d' -e 's/$$/ :/' \
++	    >> .deps/$(*F).P; \
++	rm .deps/$(*F).pp
++
++%.lo: %.c
++	@echo '$(LTCOMPILE) -c $<'; \
++	$(LTCOMPILE) -Wp,-MD,.deps/$(*F).pp -c $<
++	@-sed -e 's/^\([^:]*\)\.o[ 	]*:/\1.lo \1.o :/' \
++	  < .deps/$(*F).pp > .deps/$(*F).P; \
++	tr ' ' '\012' < .deps/$(*F).pp \
++	  | sed -e 's/^\\$$//' -e '/^$$/ d' -e '/:$$/ d' -e 's/$$/ :/' \
++	    >> .deps/$(*F).P; \
++	rm -f .deps/$(*F).pp
+ info-am:
+ info: info-am
+ dvi-am:
+@@ -424,27 +458,27 @@
+ 
+ maintainer-clean-generic:
+ mostlyclean-am:  mostlyclean-saslLTLIBRARIES mostlyclean-compile \
+-		mostlyclean-libtool mostlyclean-tags \
++		mostlyclean-libtool mostlyclean-tags mostlyclean-depend \
+ 		mostlyclean-generic
+ 
+ mostlyclean: mostlyclean-am
+ 
+ clean-am:  clean-saslLTLIBRARIES clean-compile clean-libtool clean-tags \
+-		clean-generic mostlyclean-am
++		clean-depend clean-generic mostlyclean-am
+ 
+ clean: clean-am
+ 
+ distclean-am:  distclean-saslLTLIBRARIES distclean-compile \
+-		distclean-libtool distclean-tags distclean-generic \
+-		clean-am
++		distclean-libtool distclean-tags distclean-depend \
++		distclean-generic clean-am
+ 	-rm -f libtool
+ 
+ distclean: distclean-am
+ 
+ maintainer-clean-am:  maintainer-clean-saslLTLIBRARIES \
+ 		maintainer-clean-compile maintainer-clean-libtool \
+-		maintainer-clean-tags maintainer-clean-generic \
+-		distclean-am
++		maintainer-clean-tags maintainer-clean-depend \
++		maintainer-clean-generic distclean-am
+ 	@echo "This command is intended for maintainers to use;"
+ 	@echo "it deletes files that may require special tools to rebuild."
+ 
+@@ -456,12 +490,13 @@
+ distclean-compile clean-compile maintainer-clean-compile \
+ mostlyclean-libtool distclean-libtool clean-libtool \
+ maintainer-clean-libtool tags mostlyclean-tags distclean-tags \
+-clean-tags maintainer-clean-tags distdir info-am info dvi-am dvi check \
+-check-am installcheck-am installcheck install-exec-am install-exec \
+-install-data-am install-data install-am install uninstall-am uninstall \
+-all-redirect all-am all installdirs mostlyclean-generic \
+-distclean-generic clean-generic maintainer-clean-generic clean \
+-mostlyclean distclean maintainer-clean
++clean-tags maintainer-clean-tags distdir mostlyclean-depend \
++distclean-depend clean-depend maintainer-clean-depend info-am info \
++dvi-am dvi check check-am installcheck-am installcheck install-exec-am \
++install-exec install-data-am install-data install-am install \
++uninstall-am uninstall all-redirect all-am all installdirs \
++mostlyclean-generic distclean-generic clean-generic \
++maintainer-clean-generic clean mostlyclean distclean maintainer-clean
+ 
+ 
+ # libx509_la_SOURCES = x509.c
+diff -u -r -P cyrus-sasl-1.5.27/pwcheck/Makefile.in cyrus-sasl-1.5.27-patched/pwcheck/Makefile.in
+--- cyrus-sasl-1.5.27/pwcheck/Makefile.in	2001-03-23 19:48:14.000000000 -0600
++++ cyrus-sasl-1.5.27-patched/pwcheck/Makefile.in	2002-09-19 17:35:41.000000000 -0500
+@@ -1,6 +1,6 @@
+-# Makefile.in generated automatically by automake 1.4 from Makefile.am
++# Makefile.in generated automatically by automake 1.4-p6 from Makefile.am
+ 
+-# Copyright (C) 1994, 1995-8, 1999 Free Software Foundation, Inc.
++# Copyright (C) 1994, 1995-8, 1999, 2001 Free Software Foundation, Inc.
+ # This Makefile.in is free software; the Free Software Foundation
+ # gives unlimited permission to copy and/or distribute it,
+ # with or without modifications, as long as this notice is preserved.
+@@ -153,18 +153,20 @@
+ 
+ DISTFILES = $(DIST_COMMON) $(SOURCES) $(HEADERS) $(TEXINFOS) $(EXTRA_DIST)
+ 
+-TAR = gtar
++TAR = tar
+ GZIP_ENV = --best
++DEP_FILES =  .deps/pwcheck.P .deps/pwcheck_getpwnam.P \
++.deps/pwcheck_getspnam.P
+ SOURCES = $(pwcheck_SOURCES) $(EXTRA_pwcheck_SOURCES)
+ OBJECTS = $(pwcheck_OBJECTS)
+ 
+ all: all-redirect
+ .SUFFIXES:
+ .SUFFIXES: .S .c .lo .o .s
+-$(srcdir)/Makefile.in: Makefile.am $(top_srcdir)/configure.in $(ACLOCAL_M4) 
+-	cd $(top_srcdir) && $(AUTOMAKE) --gnu --include-deps pwcheck/Makefile
++$(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ Makefile.am $(top_srcdir)/configure.in $(ACLOCAL_M4) 
++	cd $(top_srcdir) && $(AUTOMAKE) --gnu pwcheck/Makefile
+ 
+-Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status
++Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status $(BUILT_SOURCES)
+ 	cd $(top_builddir) \
+ 	  && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
+ 
+@@ -194,9 +196,6 @@
+ 	  rm -f $(DESTDIR)$(sbindir)/`echo $$p|sed 's/$(EXEEXT)$$//'|sed '$(transform)'|sed 's/$$/$(EXEEXT)/'`; \
+ 	done
+ 
+-.c.o:
+-	$(COMPILE) -c $<
+-
+ .s.o:
+ 	$(COMPILE) -c $<
+ 
+@@ -213,9 +212,6 @@
+ 
+ maintainer-clean-compile:
+ 
+-.c.lo:
+-	$(LIBTOOL) --mode=compile $(COMPILE) -c $<
+-
+ .s.lo:
+ 	$(LIBTOOL) --mode=compile $(COMPILE) -c $<
+ 
+@@ -254,7 +250,7 @@
+ 	  awk '    { files[$$0] = 1; } \
+ 	       END { for (i in files) print i; }'`; \
+ 	test -z "$(ETAGS_ARGS)$$unique$(LISP)$$tags" \
+-	  || (cd $(srcdir) && etags $(ETAGS_ARGS) $$tags  $$unique $(LISP) -o $$here/TAGS)
++	  || (cd $(srcdir) && etags -o $$here/TAGS $(ETAGS_ARGS) $$tags  $$unique $(LISP))
+ 
+ mostlyclean-tags:
+ 
+@@ -270,6 +266,11 @@
+ subdir = pwcheck
+ 
+ distdir: $(DISTFILES)
++	here=`cd $(top_builddir) && pwd`; \
++	top_distdir=`cd $(top_distdir) && pwd`; \
++	distdir=`cd $(distdir) && pwd`; \
++	cd $(top_srcdir) \
++	  && $(AUTOMAKE) --include-deps --build-dir=$$here --srcdir-name=$(top_srcdir) --output-dir=$$top_distdir --gnu pwcheck/Makefile
+ 	@for file in $(DISTFILES); do \
+ 	  d=$(srcdir); \
+ 	  if test -d $$d/$$file; then \
+@@ -280,6 +281,38 @@
+ 	    || cp -p $$d/$$file $(distdir)/$$file || :; \
+ 	  fi; \
+ 	done
++
++DEPS_MAGIC := $(shell mkdir .deps > /dev/null 2>&1 || :)
++
++-include $(DEP_FILES)
++
++mostlyclean-depend:
++
++clean-depend:
++
++distclean-depend:
++	-rm -rf .deps
++
++maintainer-clean-depend:
++
++%.o: %.c
++	@echo '$(COMPILE) -c $<'; \
++	$(COMPILE) -Wp,-MD,.deps/$(*F).pp -c $<
++	@-cp .deps/$(*F).pp .deps/$(*F).P; \
++	tr ' ' '\012' < .deps/$(*F).pp \
++	  | sed -e 's/^\\$$//' -e '/^$$/ d' -e '/:$$/ d' -e 's/$$/ :/' \
++	    >> .deps/$(*F).P; \
++	rm .deps/$(*F).pp
++
++%.lo: %.c
++	@echo '$(LTCOMPILE) -c $<'; \
++	$(LTCOMPILE) -Wp,-MD,.deps/$(*F).pp -c $<
++	@-sed -e 's/^\([^:]*\)\.o[ 	]*:/\1.lo \1.o :/' \
++	  < .deps/$(*F).pp > .deps/$(*F).P; \
++	tr ' ' '\012' < .deps/$(*F).pp \
++	  | sed -e 's/^\\$$//' -e '/^$$/ d' -e '/:$$/ d' -e 's/$$/ :/' \
++	    >> .deps/$(*F).P; \
++	rm -f .deps/$(*F).pp
+ info-am:
+ info: info-am
+ dvi-am:
+@@ -317,27 +350,27 @@
+ 
+ maintainer-clean-generic:
+ mostlyclean-am:  mostlyclean-sbinPROGRAMS mostlyclean-compile \
+-		mostlyclean-libtool mostlyclean-tags \
++		mostlyclean-libtool mostlyclean-tags mostlyclean-depend \
+ 		mostlyclean-generic
+ 
+ mostlyclean: mostlyclean-am
+ 
+ clean-am:  clean-sbinPROGRAMS clean-compile clean-libtool clean-tags \
+-		clean-generic mostlyclean-am
++		clean-depend clean-generic mostlyclean-am
+ 
+ clean: clean-am
+ 
+ distclean-am:  distclean-sbinPROGRAMS distclean-compile \
+-		distclean-libtool distclean-tags distclean-generic \
+-		clean-am
++		distclean-libtool distclean-tags distclean-depend \
++		distclean-generic clean-am
+ 	-rm -f libtool
+ 
+ distclean: distclean-am
+ 
+ maintainer-clean-am:  maintainer-clean-sbinPROGRAMS \
+ 		maintainer-clean-compile maintainer-clean-libtool \
+-		maintainer-clean-tags maintainer-clean-generic \
+-		distclean-am
++		maintainer-clean-tags maintainer-clean-depend \
++		maintainer-clean-generic distclean-am
+ 	@echo "This command is intended for maintainers to use;"
+ 	@echo "it deletes files that may require special tools to rebuild."
+ 
+@@ -349,11 +382,13 @@
+ clean-compile maintainer-clean-compile mostlyclean-libtool \
+ distclean-libtool clean-libtool maintainer-clean-libtool tags \
+ mostlyclean-tags distclean-tags clean-tags maintainer-clean-tags \
+-distdir info-am info dvi-am dvi check check-am installcheck-am \
+-installcheck install-exec-am install-exec install-data-am install-data \
+-install-am install uninstall-am uninstall all-redirect all-am all \
+-installdirs mostlyclean-generic distclean-generic clean-generic \
+-maintainer-clean-generic clean mostlyclean distclean maintainer-clean
++distdir mostlyclean-depend distclean-depend clean-depend \
++maintainer-clean-depend info-am info dvi-am dvi check check-am \
++installcheck-am installcheck install-exec-am install-exec \
++install-data-am install-data install-am install uninstall-am uninstall \
++all-redirect all-am all installdirs mostlyclean-generic \
++distclean-generic clean-generic maintainer-clean-generic clean \
++mostlyclean distclean maintainer-clean
+ 
+ 
+ # Tell versions [3.59,3.63) of GNU make to not export all variables.
+diff -u -r -P cyrus-sasl-1.5.27/sample/Makefile.in cyrus-sasl-1.5.27-patched/sample/Makefile.in
+--- cyrus-sasl-1.5.27/sample/Makefile.in	2001-03-23 19:48:13.000000000 -0600
++++ cyrus-sasl-1.5.27-patched/sample/Makefile.in	2002-09-19 17:35:41.000000000 -0500
+@@ -1,6 +1,6 @@
+-# Makefile.in generated automatically by automake 1.4 from Makefile.am
++# Makefile.in generated automatically by automake 1.4-p6 from Makefile.am
+ 
+-# Copyright (C) 1994, 1995-8, 1999 Free Software Foundation, Inc.
++# Copyright (C) 1994, 1995-8, 1999, 2001 Free Software Foundation, Inc.
+ # This Makefile.in is free software; the Free Software Foundation
+ # gives unlimited permission to copy and/or distribute it,
+ # with or without modifications, as long as this notice is preserved.
+@@ -192,18 +192,20 @@
+ 
+ DISTFILES = $(DIST_COMMON) $(SOURCES) $(HEADERS) $(TEXINFOS) $(EXTRA_DIST)
+ 
+-TAR = gtar
++TAR = tar
+ GZIP_ENV = --best
++DEP_FILES =  .deps/client.P .deps/common.P .deps/sample-client.P \
++.deps/sample-server.P .deps/server.P
+ SOURCES = $(sample_client_SOURCES) $(sample_server_SOURCES) $(client_SOURCES) $(server_SOURCES)
+ OBJECTS = $(sample_client_OBJECTS) $(sample_server_OBJECTS) $(client_OBJECTS) $(server_OBJECTS)
+ 
+ all: all-redirect
+ .SUFFIXES:
+ .SUFFIXES: .S .c .lo .o .s
+-$(srcdir)/Makefile.in: Makefile.am $(top_srcdir)/configure.in $(ACLOCAL_M4) 
+-	cd $(top_srcdir) && $(AUTOMAKE) --gnu --include-deps sample/Makefile
++$(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ Makefile.am $(top_srcdir)/configure.in $(ACLOCAL_M4) 
++	cd $(top_srcdir) && $(AUTOMAKE) --gnu sample/Makefile
+ 
+-Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status
++Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status $(BUILT_SOURCES)
+ 	cd $(top_builddir) \
+ 	  && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
+ 
+@@ -217,9 +219,6 @@
+ 
+ maintainer-clean-noinstPROGRAMS:
+ 
+-.c.o:
+-	$(COMPILE) -c $<
+-
+ .s.o:
+ 	$(COMPILE) -c $<
+ 
+@@ -236,9 +235,6 @@
+ 
+ maintainer-clean-compile:
+ 
+-.c.lo:
+-	$(LIBTOOL) --mode=compile $(COMPILE) -c $<
+-
+ .s.lo:
+ 	$(LIBTOOL) --mode=compile $(COMPILE) -c $<
+ 
+@@ -289,7 +285,7 @@
+ 	  awk '    { files[$$0] = 1; } \
+ 	       END { for (i in files) print i; }'`; \
+ 	test -z "$(ETAGS_ARGS)$$unique$(LISP)$$tags" \
+-	  || (cd $(srcdir) && etags $(ETAGS_ARGS) $$tags  $$unique $(LISP) -o $$here/TAGS)
++	  || (cd $(srcdir) && etags -o $$here/TAGS $(ETAGS_ARGS) $$tags  $$unique $(LISP))
+ 
+ mostlyclean-tags:
+ 
+@@ -305,6 +301,11 @@
+ subdir = sample
+ 
+ distdir: $(DISTFILES)
++	here=`cd $(top_builddir) && pwd`; \
++	top_distdir=`cd $(top_distdir) && pwd`; \
++	distdir=`cd $(distdir) && pwd`; \
++	cd $(top_srcdir) \
++	  && $(AUTOMAKE) --include-deps --build-dir=$$here --srcdir-name=$(top_srcdir) --output-dir=$$top_distdir --gnu sample/Makefile
+ 	@for file in $(DISTFILES); do \
+ 	  d=$(srcdir); \
+ 	  if test -d $$d/$$file; then \
+@@ -315,6 +316,38 @@
+ 	    || cp -p $$d/$$file $(distdir)/$$file || :; \
+ 	  fi; \
+ 	done
++
++DEPS_MAGIC := $(shell mkdir .deps > /dev/null 2>&1 || :)
++
++-include $(DEP_FILES)
++
++mostlyclean-depend:
++
++clean-depend:
++
++distclean-depend:
++	-rm -rf .deps
++
++maintainer-clean-depend:
++
++%.o: %.c
++	@echo '$(COMPILE) -c $<'; \
++	$(COMPILE) -Wp,-MD,.deps/$(*F).pp -c $<
++	@-cp .deps/$(*F).pp .deps/$(*F).P; \
++	tr ' ' '\012' < .deps/$(*F).pp \
++	  | sed -e 's/^\\$$//' -e '/^$$/ d' -e '/:$$/ d' -e 's/$$/ :/' \
++	    >> .deps/$(*F).P; \
++	rm .deps/$(*F).pp
++
++%.lo: %.c
++	@echo '$(LTCOMPILE) -c $<'; \
++	$(LTCOMPILE) -Wp,-MD,.deps/$(*F).pp -c $<
++	@-sed -e 's/^\([^:]*\)\.o[ 	]*:/\1.lo \1.o :/' \
++	  < .deps/$(*F).pp > .deps/$(*F).P; \
++	tr ' ' '\012' < .deps/$(*F).pp \
++	  | sed -e 's/^\\$$//' -e '/^$$/ d' -e '/:$$/ d' -e 's/$$/ :/' \
++	    >> .deps/$(*F).P; \
++	rm -f .deps/$(*F).pp
+ info-am:
+ info: info-am
+ dvi-am:
+@@ -351,27 +384,27 @@
+ 
+ maintainer-clean-generic:
+ mostlyclean-am:  mostlyclean-noinstPROGRAMS mostlyclean-compile \
+-		mostlyclean-libtool mostlyclean-tags \
++		mostlyclean-libtool mostlyclean-tags mostlyclean-depend \
+ 		mostlyclean-generic
+ 
+ mostlyclean: mostlyclean-am
+ 
+ clean-am:  clean-noinstPROGRAMS clean-compile clean-libtool clean-tags \
+-		clean-generic mostlyclean-am
++		clean-depend clean-generic mostlyclean-am
+ 
+ clean: clean-am
+ 
+ distclean-am:  distclean-noinstPROGRAMS distclean-compile \
+-		distclean-libtool distclean-tags distclean-generic \
+-		clean-am
++		distclean-libtool distclean-tags distclean-depend \
++		distclean-generic clean-am
+ 	-rm -f libtool
+ 
+ distclean: distclean-am
+ 
+ maintainer-clean-am:  maintainer-clean-noinstPROGRAMS \
+ 		maintainer-clean-compile maintainer-clean-libtool \
+-		maintainer-clean-tags maintainer-clean-generic \
+-		distclean-am
++		maintainer-clean-tags maintainer-clean-depend \
++		maintainer-clean-generic distclean-am
+ 	@echo "This command is intended for maintainers to use;"
+ 	@echo "it deletes files that may require special tools to rebuild."
+ 
+@@ -382,12 +415,14 @@
+ mostlyclean-compile distclean-compile clean-compile \
+ maintainer-clean-compile mostlyclean-libtool distclean-libtool \
+ clean-libtool maintainer-clean-libtool tags mostlyclean-tags \
+-distclean-tags clean-tags maintainer-clean-tags distdir info-am info \
+-dvi-am dvi check check-am installcheck-am installcheck install-exec-am \
+-install-exec install-data-am install-data install-am install \
+-uninstall-am uninstall all-redirect all-am all installdirs \
+-mostlyclean-generic distclean-generic clean-generic \
+-maintainer-clean-generic clean mostlyclean distclean maintainer-clean
++distclean-tags clean-tags maintainer-clean-tags distdir \
++mostlyclean-depend distclean-depend clean-depend \
++maintainer-clean-depend info-am info dvi-am dvi check check-am \
++installcheck-am installcheck install-exec-am install-exec \
++install-data-am install-data install-am install uninstall-am uninstall \
++all-redirect all-am all installdirs mostlyclean-generic \
++distclean-generic clean-generic maintainer-clean-generic clean \
++mostlyclean distclean maintainer-clean
+ 
+ 
+ # Tell versions [3.59,3.63) of GNU make to not export all variables.
+diff -u -r -P cyrus-sasl-1.5.27/saslauthd/Makefile.in cyrus-sasl-1.5.27-patched/saslauthd/Makefile.in
+--- cyrus-sasl-1.5.27/saslauthd/Makefile.in	2001-03-23 19:48:14.000000000 -0600
++++ cyrus-sasl-1.5.27-patched/saslauthd/Makefile.in	2002-09-19 17:35:41.000000000 -0500
+@@ -1,6 +1,6 @@
+-# Makefile.in generated automatically by automake 1.4 from Makefile.am
++# Makefile.in generated automatically by automake 1.4-p6 from Makefile.am
+ 
+-# Copyright (C) 1994, 1995-8, 1999 Free Software Foundation, Inc.
++# Copyright (C) 1994, 1995-8, 1999, 2001 Free Software Foundation, Inc.
+ # This Makefile.in is free software; the Free Software Foundation
+ # gives unlimited permission to copy and/or distribute it,
+ # with or without modifications, as long as this notice is preserved.
+@@ -136,18 +136,21 @@
+ 
+ DISTFILES = $(DIST_COMMON) $(SOURCES) $(HEADERS) $(TEXINFOS) $(EXTRA_DIST)
+ 
+-TAR = gtar
++TAR = tar
+ GZIP_ENV = --best
++DEP_FILES =  .deps/auth_dce.P .deps/auth_getpwent.P .deps/auth_krb4.P \
++.deps/auth_pam.P .deps/auth_rimap.P .deps/auth_shadow.P \
++.deps/auth_sia.P .deps/mechanisms.P .deps/saslauthd.P
+ SOURCES = $(saslauthd_SOURCES)
+ OBJECTS = $(saslauthd_OBJECTS)
+ 
+ all: all-redirect
+ .SUFFIXES:
+ .SUFFIXES: .S .c .lo .o .s
+-$(srcdir)/Makefile.in: Makefile.am $(top_srcdir)/configure.in $(ACLOCAL_M4) 
+-	cd $(top_srcdir) && $(AUTOMAKE) --gnu --include-deps saslauthd/Makefile
++$(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ Makefile.am $(top_srcdir)/configure.in $(ACLOCAL_M4) 
++	cd $(top_srcdir) && $(AUTOMAKE) --gnu saslauthd/Makefile
+ 
+-Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status
++Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status $(BUILT_SOURCES)
+ 	cd $(top_builddir) \
+ 	  && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
+ 
+@@ -179,9 +182,6 @@
+ 	  rm -f $(DESTDIR)$(sbindir)/`echo $$p|sed 's/$(EXEEXT)$$//'|sed '$(transform)'|sed 's/$$/$(EXEEXT)/'`; \
+ 	done
+ 
+-.c.o:
+-	$(COMPILE) -c $<
+-
+ .s.o:
+ 	$(COMPILE) -c $<
+ 
+@@ -198,9 +198,6 @@
+ 
+ maintainer-clean-compile:
+ 
+-.c.lo:
+-	$(LIBTOOL) --mode=compile $(COMPILE) -c $<
+-
+ .s.lo:
+ 	$(LIBTOOL) --mode=compile $(COMPILE) -c $<
+ 
+@@ -278,7 +275,7 @@
+ 	  awk '    { files[$$0] = 1; } \
+ 	       END { for (i in files) print i; }'`; \
+ 	test -z "$(ETAGS_ARGS)$$unique$(LISP)$$tags" \
+-	  || (cd $(srcdir) && etags $(ETAGS_ARGS) $$tags  $$unique $(LISP) -o $$here/TAGS)
++	  || (cd $(srcdir) && etags -o $$here/TAGS $(ETAGS_ARGS) $$tags  $$unique $(LISP))
+ 
+ mostlyclean-tags:
+ 
+@@ -294,6 +291,11 @@
+ subdir = saslauthd
+ 
+ distdir: $(DISTFILES)
++	here=`cd $(top_builddir) && pwd`; \
++	top_distdir=`cd $(top_distdir) && pwd`; \
++	distdir=`cd $(distdir) && pwd`; \
++	cd $(top_srcdir) \
++	  && $(AUTOMAKE) --include-deps --build-dir=$$here --srcdir-name=$(top_srcdir) --output-dir=$$top_distdir --gnu saslauthd/Makefile
+ 	@for file in $(DISTFILES); do \
+ 	  d=$(srcdir); \
+ 	  if test -d $$d/$$file; then \
+@@ -304,6 +306,38 @@
+ 	    || cp -p $$d/$$file $(distdir)/$$file || :; \
+ 	  fi; \
+ 	done
++
++DEPS_MAGIC := $(shell mkdir .deps > /dev/null 2>&1 || :)
++
++-include $(DEP_FILES)
++
++mostlyclean-depend:
++
++clean-depend:
++
++distclean-depend:
++	-rm -rf .deps
++
++maintainer-clean-depend:
++
++%.o: %.c
++	@echo '$(COMPILE) -c $<'; \
++	$(COMPILE) -Wp,-MD,.deps/$(*F).pp -c $<
++	@-cp .deps/$(*F).pp .deps/$(*F).P; \
++	tr ' ' '\012' < .deps/$(*F).pp \
++	  | sed -e 's/^\\$$//' -e '/^$$/ d' -e '/:$$/ d' -e 's/$$/ :/' \
++	    >> .deps/$(*F).P; \
++	rm .deps/$(*F).pp
++
++%.lo: %.c
++	@echo '$(LTCOMPILE) -c $<'; \
++	$(LTCOMPILE) -Wp,-MD,.deps/$(*F).pp -c $<
++	@-sed -e 's/^\([^:]*\)\.o[ 	]*:/\1.lo \1.o :/' \
++	  < .deps/$(*F).pp > .deps/$(*F).P; \
++	tr ' ' '\012' < .deps/$(*F).pp \
++	  | sed -e 's/^\\$$//' -e '/^$$/ d' -e '/:$$/ d' -e 's/$$/ :/' \
++	    >> .deps/$(*F).P; \
++	rm -f .deps/$(*F).pp
+ info-am:
+ info: info-am
+ dvi-am:
+@@ -341,27 +375,27 @@
+ 
+ maintainer-clean-generic:
+ mostlyclean-am:  mostlyclean-sbinPROGRAMS mostlyclean-compile \
+-		mostlyclean-libtool mostlyclean-tags \
++		mostlyclean-libtool mostlyclean-tags mostlyclean-depend \
+ 		mostlyclean-generic
+ 
+ mostlyclean: mostlyclean-am
+ 
+ clean-am:  clean-sbinPROGRAMS clean-compile clean-libtool clean-tags \
+-		clean-generic mostlyclean-am
++		clean-depend clean-generic mostlyclean-am
+ 
+ clean: clean-am
+ 
+ distclean-am:  distclean-sbinPROGRAMS distclean-compile \
+-		distclean-libtool distclean-tags distclean-generic \
+-		clean-am
++		distclean-libtool distclean-tags distclean-depend \
++		distclean-generic clean-am
+ 	-rm -f libtool
+ 
+ distclean: distclean-am
+ 
+ maintainer-clean-am:  maintainer-clean-sbinPROGRAMS \
+ 		maintainer-clean-compile maintainer-clean-libtool \
+-		maintainer-clean-tags maintainer-clean-generic \
+-		distclean-am
++		maintainer-clean-tags maintainer-clean-depend \
++		maintainer-clean-generic distclean-am
+ 	@echo "This command is intended for maintainers to use;"
+ 	@echo "it deletes files that may require special tools to rebuild."
+ 
+@@ -373,12 +407,14 @@
+ clean-compile maintainer-clean-compile mostlyclean-libtool \
+ distclean-libtool clean-libtool maintainer-clean-libtool install-man8 \
+ uninstall-man8 install-man uninstall-man tags mostlyclean-tags \
+-distclean-tags clean-tags maintainer-clean-tags distdir info-am info \
+-dvi-am dvi check check-am installcheck-am installcheck install-exec-am \
+-install-exec install-data-am install-data install-am install \
+-uninstall-am uninstall all-redirect all-am all installdirs \
+-mostlyclean-generic distclean-generic clean-generic \
+-maintainer-clean-generic clean mostlyclean distclean maintainer-clean
++distclean-tags clean-tags maintainer-clean-tags distdir \
++mostlyclean-depend distclean-depend clean-depend \
++maintainer-clean-depend info-am info dvi-am dvi check check-am \
++installcheck-am installcheck install-exec-am install-exec \
++install-data-am install-data install-am install uninstall-am uninstall \
++all-redirect all-am all installdirs mostlyclean-generic \
++distclean-generic clean-generic maintainer-clean-generic clean \
++mostlyclean distclean maintainer-clean
+ 
+ 
+ # Tell versions [3.59,3.63) of GNU make to not export all variables.
+diff -u -r -P cyrus-sasl-1.5.27/utils/Makefile.in cyrus-sasl-1.5.27-patched/utils/Makefile.in
+--- cyrus-sasl-1.5.27/utils/Makefile.in	2001-03-23 19:48:13.000000000 -0600
++++ cyrus-sasl-1.5.27-patched/utils/Makefile.in	2002-09-19 17:35:41.000000000 -0500
+@@ -1,6 +1,6 @@
+-# Makefile.in generated automatically by automake 1.4 from Makefile.am
++# Makefile.in generated automatically by automake 1.4-p6 from Makefile.am
+ 
+-# Copyright (C) 1994, 1995-8, 1999 Free Software Foundation, Inc.
++# Copyright (C) 1994, 1995-8, 1999, 2001 Free Software Foundation, Inc.
+ # This Makefile.in is free software; the Free Software Foundation
+ # gives unlimited permission to copy and/or distribute it,
+ # with or without modifications, as long as this notice is preserved.
+@@ -211,18 +211,20 @@
+ 
+ DISTFILES = $(DIST_COMMON) $(SOURCES) $(HEADERS) $(TEXINFOS) $(EXTRA_DIST)
+ 
+-TAR = gtar
++TAR = tar
+ GZIP_ENV = --best
++DEP_FILES =  .deps/dbconverter-1.5.9.P .deps/sasldblistusers.P \
++.deps/saslpasswd.P .deps/sfsasl.P .deps/testsuite.P
+ SOURCES = $(libsfsasl_la_SOURCES) testsuite.c dbconverter-1.5.9.c saslpasswd.c sasldblistusers.c
+ OBJECTS = $(libsfsasl_la_OBJECTS) testsuite.o dbconverter-1.5.9.o saslpasswd.o sasldblistusers.o
+ 
+ all: all-redirect
+ .SUFFIXES:
+ .SUFFIXES: .S .c .lo .o .s
+-$(srcdir)/Makefile.in: Makefile.am $(top_srcdir)/configure.in $(ACLOCAL_M4) 
+-	cd $(top_srcdir) && $(AUTOMAKE) --gnu --include-deps utils/Makefile
++$(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ Makefile.am $(top_srcdir)/configure.in $(ACLOCAL_M4) 
++	cd $(top_srcdir) && $(AUTOMAKE) --gnu utils/Makefile
+ 
+-Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status
++Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status $(BUILT_SOURCES)
+ 	cd $(top_builddir) \
+ 	  && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
+ 
+@@ -252,9 +254,6 @@
+ 	  $(LIBTOOL)  --mode=uninstall rm -f $(DESTDIR)$(libdir)/$$p; \
+ 	done
+ 
+-.c.o:
+-	$(COMPILE) -c $<
+-
+ .s.o:
+ 	$(COMPILE) -c $<
+ 
+@@ -271,9 +270,6 @@
+ 
+ maintainer-clean-compile:
+ 
+-.c.lo:
+-	$(LIBTOOL) --mode=compile $(COMPILE) -c $<
+-
+ .s.lo:
+ 	$(LIBTOOL) --mode=compile $(COMPILE) -c $<
+ 
+@@ -415,7 +411,7 @@
+ 	  awk '    { files[$$0] = 1; } \
+ 	       END { for (i in files) print i; }'`; \
+ 	test -z "$(ETAGS_ARGS)$$unique$(LISP)$$tags" \
+-	  || (cd $(srcdir) && etags $(ETAGS_ARGS) $$tags  $$unique $(LISP) -o $$here/TAGS)
++	  || (cd $(srcdir) && etags -o $$here/TAGS $(ETAGS_ARGS) $$tags  $$unique $(LISP))
+ 
+ mostlyclean-tags:
+ 
+@@ -431,6 +427,11 @@
+ subdir = utils
+ 
+ distdir: $(DISTFILES)
++	here=`cd $(top_builddir) && pwd`; \
++	top_distdir=`cd $(top_distdir) && pwd`; \
++	distdir=`cd $(distdir) && pwd`; \
++	cd $(top_srcdir) \
++	  && $(AUTOMAKE) --include-deps --build-dir=$$here --srcdir-name=$(top_srcdir) --output-dir=$$top_distdir --gnu utils/Makefile
+ 	@for file in $(DISTFILES); do \
+ 	  d=$(srcdir); \
+ 	  if test -d $$d/$$file; then \
+@@ -441,6 +442,38 @@
+ 	    || cp -p $$d/$$file $(distdir)/$$file || :; \
+ 	  fi; \
+ 	done
++
++DEPS_MAGIC := $(shell mkdir .deps > /dev/null 2>&1 || :)
++
++-include $(DEP_FILES)
++
++mostlyclean-depend:
++
++clean-depend:
++
++distclean-depend:
++	-rm -rf .deps
++
++maintainer-clean-depend:
++
++%.o: %.c
++	@echo '$(COMPILE) -c $<'; \
++	$(COMPILE) -Wp,-MD,.deps/$(*F).pp -c $<
++	@-cp .deps/$(*F).pp .deps/$(*F).P; \
++	tr ' ' '\012' < .deps/$(*F).pp \
++	  | sed -e 's/^\\$$//' -e '/^$$/ d' -e '/:$$/ d' -e 's/$$/ :/' \
++	    >> .deps/$(*F).P; \
++	rm .deps/$(*F).pp
++
++%.lo: %.c
++	@echo '$(LTCOMPILE) -c $<'; \
++	$(LTCOMPILE) -Wp,-MD,.deps/$(*F).pp -c $<
++	@-sed -e 's/^\([^:]*\)\.o[ 	]*:/\1.lo \1.o :/' \
++	  < .deps/$(*F).pp > .deps/$(*F).P; \
++	tr ' ' '\012' < .deps/$(*F).pp \
++	  | sed -e 's/^\\$$//' -e '/^$$/ d' -e '/:$$/ d' -e 's/$$/ :/' \
++	    >> .deps/$(*F).P; \
++	rm -f .deps/$(*F).pp
+ info-am:
+ info: info-am
+ dvi-am:
+@@ -482,20 +515,20 @@
+ mostlyclean-am:  mostlyclean-libLTLIBRARIES mostlyclean-compile \
+ 		mostlyclean-libtool mostlyclean-noinstPROGRAMS \
+ 		mostlyclean-sbinPROGRAMS mostlyclean-tags \
+-		mostlyclean-generic
++		mostlyclean-depend mostlyclean-generic
+ 
+ mostlyclean: mostlyclean-am
+ 
+ clean-am:  clean-libLTLIBRARIES clean-compile clean-libtool \
+ 		clean-noinstPROGRAMS clean-sbinPROGRAMS clean-tags \
+-		clean-generic mostlyclean-am
++		clean-depend clean-generic mostlyclean-am
+ 
+ clean: clean-am
+ 
+ distclean-am:  distclean-libLTLIBRARIES distclean-compile \
+ 		distclean-libtool distclean-noinstPROGRAMS \
+-		distclean-sbinPROGRAMS distclean-tags distclean-generic \
+-		clean-am
++		distclean-sbinPROGRAMS distclean-tags distclean-depend \
++		distclean-generic clean-am
+ 	-rm -f libtool
+ 
+ distclean: distclean-am
+@@ -504,7 +537,8 @@
+ 		maintainer-clean-compile maintainer-clean-libtool \
+ 		maintainer-clean-noinstPROGRAMS \
+ 		maintainer-clean-sbinPROGRAMS maintainer-clean-tags \
+-		maintainer-clean-generic distclean-am
++		maintainer-clean-depend maintainer-clean-generic \
++		distclean-am
+ 	@echo "This command is intended for maintainers to use;"
+ 	@echo "it deletes files that may require special tools to rebuild."
+ 
+@@ -522,8 +556,9 @@
+ uninstall-sbinPROGRAMS install-sbinPROGRAMS install-man8 uninstall-man8 \
+ install-man uninstall-man uninstall-includeHEADERS \
+ install-includeHEADERS tags mostlyclean-tags distclean-tags clean-tags \
+-maintainer-clean-tags distdir info-am info dvi-am dvi check check-am \
+-installcheck-am installcheck install-exec-am install-exec \
++maintainer-clean-tags distdir mostlyclean-depend distclean-depend \
++clean-depend maintainer-clean-depend info-am info dvi-am dvi check \
++check-am installcheck-am installcheck install-exec-am install-exec \
+ install-data-am install-data install-am install uninstall-am uninstall \
+ all-redirect all-am all installdirs mostlyclean-generic \
+ distclean-generic clean-generic maintainer-clean-generic clean \
 diff -u -r -P cyrus-sasl-1.5.27/utils/sasldblistusers.c cyrus-sasl-1.5.27-patched/utils/sasldblistusers.c
 --- cyrus-sasl-1.5.27/utils/sasldblistusers.c	2001-03-11 13:33:10.000000000 -0600
-+++ cyrus-sasl-1.5.27-patched/utils/sasldblistusers.c	2002-09-19 12:19:22.000000000 -0500
++++ cyrus-sasl-1.5.27-patched/utils/sasldblistusers.c	2002-09-19 17:31:32.000000000 -0500
 @@ -136,7 +136,8 @@
  
      while (dkey.dptr != NULL) {
