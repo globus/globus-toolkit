@@ -4,6 +4,7 @@ use IO::File;
 use File::Path;
 use File::Compare;
 use POSIX;
+use Test;
 
 my $start = time();
 my $testtmp = &make_tmpdir();
@@ -12,17 +13,12 @@ my $log_path = &get_log_path();
 
 @test_data = &parse_test_data();
 
+plan tests => 1;
+
 &write_test_data_to_log($log_path, @test_data);
 &run_pbs_seg("$testtmp/output");
 
-if (compare("$testtmp/output", "$testtmp/output.expected") == 0)
-{
-    print "ok\n";
-}
-else
-{
-    print "not ok\n";
-}
+ok(compare("$testtmp/output", "$testtmp/output.expected") == 0);
 
 sub run_pbs_seg
 {
@@ -37,7 +33,7 @@ sub run_pbs_seg
     if ($pid2 == 0)
     {
         open(STDOUT, ">$output");
-        #open(STDERR, '>/dev/null');
+        open(STDERR, '>/dev/null');
         exec {$args[0]} @args;
     }
 
@@ -137,7 +133,7 @@ sub get_log_path {
     }
     close(CONF);
 
-    @date = localtime($start + $sleep);
+    @date = localtime($start);
     $log .= sprintf("/%04d%02d%02d", $date[5]+1900, $date[4]+1, $date[3]);
 
     return $log;

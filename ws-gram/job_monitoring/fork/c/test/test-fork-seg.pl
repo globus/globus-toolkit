@@ -3,16 +3,20 @@
 use IO::File;
 use File::Path;
 use File::Compare;
+use Test;
 
 my $start = time();
 my $testtmp = &make_tmpdir();
 my @log_data;
 my $log_path = &get_log_path();
 
+plan tests => 1;
+
 @test_data = &parse_test_data();
 
 &write_test_data_to_log($log_path, @test_data);
 &run_fork_seg("$testtmp/output");
+
 
 if (compare("$testtmp/output", $log_path) == 0)
 {

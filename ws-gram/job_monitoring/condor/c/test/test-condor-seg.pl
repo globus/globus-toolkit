@@ -3,6 +3,7 @@
 use IO::File;
 use File::Path;
 use File::Compare;
+use Test;
 
 my $start = time();
 my $testtmp = &make_tmpdir();
@@ -11,17 +12,12 @@ my $log_path = &get_log_path();
 
 @test_data = &parse_test_data();
 
+plan tests => 1;
+
 &write_test_data_to_log($log_path, @test_data);
 &run_condor_seg("$testtmp/output");
 
-if (compare("$testtmp/output", "$testtmp/output.expected") == 0)
-{
-    print "ok\n";
-}
-else
-{
-    print "not ok\n";
-}
+ok(compare("$testtmp/output", "$testtmp/output.expected") == 0);
 
 sub run_condor_seg
 {

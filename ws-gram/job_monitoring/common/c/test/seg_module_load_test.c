@@ -15,8 +15,10 @@ int main(int argc, char *argv[])
     int                                 rc;
     globus_result_t                     result;
     char                                modname_fmt[] =
-            "libglobus_seg_load_test_module_%s.la";
+            "%s/test/globus_scheduler_event_generator_test"
+            "/libglobus_seg_load_test_module_%s.la";
     char *                              modname;
+    char *                              globus_loc = NULL;
     int                                 notok=3;
 
     printf("1..3\n");
@@ -27,8 +29,16 @@ int main(int argc, char *argv[])
         goto error;
     }
 
-    modname = malloc(sizeof(modname_fmt) + strlen(GLOBUS_FLAVOR_NAME));
-    sprintf(modname, modname_fmt, GLOBUS_FLAVOR_NAME);
+    result = globus_location(&globus_loc);
+    if (result != GLOBUS_SUCCESS)
+    {
+        rc = 1;
+        goto error;
+    }
+
+    modname = malloc(sizeof(modname_fmt) + strlen(globus_loc) + 
+            strlen(GLOBUS_FLAVOR_NAME));
+    sprintf(modname, modname_fmt, globus_loc, GLOBUS_FLAVOR_NAME);
 
     result = globus_scheduler_event_generator_load_module(modname);
 
