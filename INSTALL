@@ -63,6 +63,17 @@ Step 1: Run './configure'
 		under which the client binaries will be installed.
 		By default this is ${prefix}
 
+	--disable-anonymous-auth
+		Use the older GSSAPI authentication code instead of
+		the newer SSL code that supports anonymous client
+		authentication.
+
+	--enable-conditional-encryption
+		Only encrypt network traffic when sending passphrases.
+		This option is currently only supported in the old
+		GSSAPI code (i.e., with --disable-anonymous-auth).  By
+		default, all myproxy communication is encrypted.
+
 Step 2: Run 'make'
 
 Step 3: After a hopefully successful make you are ready to install. You
@@ -179,7 +190,7 @@ server.
 
 You should edit the myproxy-server.config file in order to
 restrict the users that are allowed to store credentials
-with the myproxy server and, more importantly, what services
+with the myproxy server and, more importantly, what clients
 are allowed to retrieve credentials from myproxy-server.
 There will be an example myproxy-server.config file installed
 for you to start with.
@@ -194,62 +205,43 @@ The DN limited regexes should be delimited with double quotes(").
 
 The config file currently has the following types of lines:
 
-allowed_clients  <DN regex>
+accepted_credentials <DN regex>
 
-	Each of these lines allows any clients whose DNs match
-	the given limited regex to connect to the myproxy-server
-	and store credentials with it for future retrieval by
-	services. Any number of these lines may appear.
+	Each of these lines allows any clients whose DNs match the
+	given limited regex to connect to the myproxy-server and store
+	credentials with it for future retrieval.  Any number of these
+	lines may appear.  For backwards compatibility, these lines
+	can also start with allowed_clients instead of
+	accepted_credentials.
 
-allowed_services <DN regex>
+authorized_retrievers <DN regex>
 
-	Each of these lines allows any services whose DNs match
-	the given limited regex to connect to the myproxy-server
-	and retrieve credentials previously stored by a client.
-	In order to retrieve credentials the service also needs
-	to know the name and pass phrase provided by the client
-	when the credentials were stored. Any number of these
-	lines may appear.
+	Each of these lines allows any clients whose DNs match the
+	given limited regex to connect to the myproxy-server and
+	retrieve credentials previously stored by a client.  In order
+	to retrieve credentials the client also needs to know the name
+	and pass phrase provided by the client when the credentials
+	were stored. Any number of these lines may appear.  For
+	backwards compatibility, these lines can also start with
+	allowed_services instead of authorized_retrievers.
 
-Here is an example configuration file. This file allows two classes
-of clients, those with a certificate issued by the Alliance CA
-(DNs that start with "/C=US/O=National Computational Science Alliance/")
-and those with a certificate issued by the Globus CA (DNs that start
-with "/C=US/O=Globus/"). The file allows one class of services,
-that being portal service certificates issued by the Alliance
-CA.
+authorized_renewers <DN regex>
 
+	Each of these lines allows any clients whose DNs match the
+	given limited regex to connect to the myproxy-server and
+	retrieve credentials previously stored by a client.  In this
+	case, the client must also already have a credential with a DN
+	matching the DN of the credentials to be retrieved, to be used
+	in a second authorization step.
 
-
-#
-# Allowed clients
-#
-# Allow any Alliance certificate holder to store credentials with us
-allowed_clients  "/C=US/O=National Computational Science Alliance/CN=*"
-#
-# Allow any Globus certificate holder to store credentials with us
-allowed_clients  "/C=US/O=Globus/*"
-
-#
-# Servers allowed to connect and retrieve certificates. These should
-# be trusted portals or other services.
-#
-# Allow any holder of an Alliance portal certificate to retrieve
-# credentials stored with us.
-allowed_services "/C=US/O=National Computational Science Alliance/CN=portal/*"
-#
-# End example myproxy-server.config file
-
-
-6. Installing the portal software
+6. Using myproxy-get-delegation from a trusted service
 ---------------------------------
 
-To allow the portal software, currently myproxy-get-delegation,
-to authentication to the myproxy server it will need a service
-certificate. Since this software is unlikely to run as root
-it probably will not have access to any host key that exists on
-the system, so you probably will want to get a different service
-certificate for it.
+To allow a trusted service to authenticate to the myproxy server to
+retrieve credentials on behalf of users, it will need a service
+certificate. Since the service is unlikely to run as root it probably
+will not have access to any host key that exists on the system, so you
+probably will want to get a different service certificate for it.
 
 Although the choice of server name is arbitrary, we recommend
 a standard of using a common name composed of the service name
@@ -263,7 +255,7 @@ and the full DN as issued by the Alliance CA would look like:
 /C=US/O=National Computational Science Alliance/CN=portal/foo.ncsa.uiuc.edu
 
 But really it can be anything you want, it just has to be matched
-by any allowed_services regex in the myproxy-server.config file.
+by any allowed_retrievers regex in the myproxy-server.config file.
 
 To generate this certificate follow these steps. The following
 example assumes you are using the Globus CA, modify as appropraite
@@ -284,17 +276,17 @@ to use another CA.
 	setenv X509_USER_CERT /usr/portal/cert/usercert.pem
 	setenv X509_USER_KEY /usr/portal/cert/userkey.pem
 
-7. Setting up sample CGI script on portal
+7. Setting up sample CGI script on a web portal
 -----------------------------------------
 
-The  directory web/ contains a simple  HTML file  specifying a form to
-request   a  proxy.  After  filling out   the  form,   the CGI script,
-myproxy-get-delegation.cgi runs   myproxy-get-delegation with the user
+The directory web/ contains a simple HTML file specifying a form to
+request a proxy.  After filling out the form, the CGI script,
+myproxy-get-delegation.cgi runs myproxy-get-delegation with the user
 supplied input and returns the output of the command.
 
 The CGI script myproxy-get-delegation.cgi is intended to demonstrate
 the use of myproxy-get-delegation and can be modified to suit a
-particular portals requirements. If a proxy is succesfully retrieved
+particular portal's requirements. If a proxy is succesfully retrieved
 from myproxy-server, it will store the proxy in the top-level
 directory under <username>.cred.
 
