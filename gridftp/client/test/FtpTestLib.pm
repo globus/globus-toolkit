@@ -319,6 +319,8 @@ sub run_command($)
     
     if(defined($ENV{"FTP_TEST_EF"}))
     {
+        #openssl needs this:
+        $ENV{"EF_ALLOW_MALLOC_0"} = 1;
         $command = "ef $command";
     }
     elsif(defined($ENV{"FTP_TEST_VALGRIND"}))
