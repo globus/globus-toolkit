@@ -54,16 +54,6 @@ CVS Information:
 #include "globus_i_gass_cache.h"
 #include "globus_gass_cache.h"
 
-/*
- * If compilled with LOCK_TOUT defined, the lock will timeout after
- *    LOCK_TOUT try to get the lock, if the file to lock is older than
- *    LOCK_TOUT*LOOP_TIME
- *    LOOPTIME is currently define as 500000 (1/2 second)
- *    If I define  LOCK_TOUT 60, I will wait until the lock file and temp file
- *    are untouched for more than 30 locked before I break the lock.
- */
-#define LOCK_TOUT 60
-
 
 /******************************************************************************
                           Module specific variables
@@ -647,8 +637,17 @@ globus_l_gass_cache_write_one_entry(int fd,
 
 
     /* write the number of existing tag enties */
-    /* 40 is for GLOBUS_L_GASS_CACHE_L_LENGHT !!!      */
-    globus_libc_sprintf(size_s,"%40lu",entry->num_tags);
+    /* Changed in 1.1
+       Here is a hack because the Pending flag did not exist in version 1.0
+       of globus_gass_cache. I added it in this line to preserve backward
+       compatibility; The hack is that I moved the "num_tag" 2 char to the left
+       and add a \0 in the string to make atoi (below) not read the 3 last char
+       I use this 2 last char to put the Pending flag and the \n.
+       It reduce the number of tag possible, but the 38 digits left should be
+       enought... */
+    globus_libc_sprintf(size_s,"%38lu",entry->num_tags);
+    size_s[sizeof(size_s)-3] = '\0';
+    size_s[sizeof(size_s)-2] = entry->pending;
     size_s[sizeof(size_s)-1] = '\n';
     
     while ( write(fd, size_s,sizeof(size_s)) != sizeof(size_s) )
@@ -807,6 +806,28 @@ globus_l_gass_cache_read_one_entry(int fd,
 	}
     }
     size_s[GLOBUS_L_GASS_CACHE_L_LENGHT]='\0'; /* replace \n with  0 (end of string) */
+
+    /* Changed in 1.1
+       Here is a hack because the Pending flag did not exist in version 1.0
+       of globus_gass_cache. I added it in this line to preserve backward
+       compatibility; The hack is that I moved the "num_tag" 2 char to the left
+       and add a \0 in the string to make atoi (below) not read the 3 last char
+       I use this 2 last char to put the Pending flag and the \n.
+       It reduce the number of tag possible, but the 38 digits left should be
+       enought... */
+
+    if (size_s[sizeof(size_s)-3] == '\0' )
+    {
+	(**entry).pending = size_s[sizeof(size_s)-2];
+	if ((**entry).pending != 'P' &&
+	    (**entry).pending != 'F')
+	{
+	    CACHE_TRACE("Error reading state file");
+	    globus_l_gass_cache_entry_free(entry,GLOBUS_TRUE);
+	    return(GLOBUS_GASS_CACHE_ERROR_STATE_F_CORRUPT);	    
+	}
+    }
+
     (**entry).num_tags= atoi(size_s);
     /* allocate 2 too much : one spare for add  and one for the last (NULL) */
     (**entry).tags=(globus_gass_cache_tag_t *)
@@ -2229,7 +2250,8 @@ globus_gass_cache_add(globus_gass_cache_t *cache_handle,
 	   (*(new_entry_pt->tags+1)).tag = GLOBUS_NULL;
 	   (*(new_entry_pt->tags+1)).count=0;
 	   new_entry_pt->num_tags=1;
-	   
+	   new_entry_pt->pending='F';
+	       
 	   /* ok now lets write this new entry */
 	   rc= globus_l_gass_cache_write_state_file(new_entry_pt,
 						    cache_handle);
@@ -2258,6 +2280,9 @@ globus_gass_cache_add(globus_gass_cache_t *cache_handle,
 	   if (entry_found_pt->lock_tag != GLOBUS_NULL) /* data file not ready */
 	   {
 	       GLOBUS_L_GASS_CACHE_LG("Data file not ready: wait");
+
+	       /* new with 1.1 */
+	       entry_found_pt->pending='P';
 	       
 	       strcpy(notready_file_path,
 		      entry_found_pt->filename);
@@ -2310,6 +2335,9 @@ globus_gass_cache_add(globus_gass_cache_t *cache_handle,
 	   {
 	       GLOBUS_L_GASS_CACHE_LG("Data file ready...");
 	   
+	       /* new with 1.1 */
+	       entry_found_pt->pending='F';
+
 	       /* return the file name and the timestamp */
 	       /* create a new file name */
 	       *local_filename = (char *) globus_malloc(PATH_MAX+1);
@@ -2579,6 +2607,7 @@ globus_gass_cache_delete_start(globus_gass_cache_t *cache_handle,
     struct stat                file_stat;
     globus_gass_cache_tag_t   *tag_pt;
     int                        tmp_fd;
+    int count =0;
         
     /* simply check if the cache has been opened */
     CHECK_CACHE_IS_INIT();
@@ -2623,8 +2652,38 @@ globus_gass_cache_delete_start(globus_gass_cache_t *cache_handle,
        { /* URL found */
 	   GLOBUS_L_GASS_CACHE_LG("URL found");
 
-	   if (entry_found_pt->lock_tag != GLOBUS_NULL)
+	   /* new with 1.1 */      
+	   if (entry_found_pt->pending == 'P' &&
+	       count < 10  &&
+	       entry_found_pt->lock_tag == GLOBUS_NULL)
+	   {
+	       /*  I wait               */
+	       GLOBUS_L_GASS_CACHE_LG("Some add Pending on this url: wait");
+	       
+	       rc = globus_l_gass_cache_write_state_file(entry_found_pt,
+							 cache_handle);
+	       if (rc != GLOBUS_SUCCESS)
+	       {
+		   globus_l_gass_cache_unlock_close(cache_handle,
+						    GLOBUS_L_GASS_CACHE_ABORT);
+		   return(rc);
+	       }
+	       rc = globus_l_gass_cache_unlock_close(cache_handle,
+						     GLOBUS_L_GASS_CACHE_COMMIT);
+	       if (rc != GLOBUS_SUCCESS)
+	       {
+		   return(rc);
+	       }
+	       
+	       count++;
+	       globus_libc_usleep(LOOP_TIME);
+	       continue;
+	       
+	   }
+	   
+	   if (entry_found_pt->lock_tag != GLOBUS_NULL)   
 	   {			/* data file not ready */
+
 	       GLOBUS_L_GASS_CACHE_LG("Data file not ready: wait");
 	       
 	       strcpy(notready_file_path,
@@ -2659,7 +2718,7 @@ globus_gass_cache_delete_start(globus_gass_cache_t *cache_handle,
 	       {
 		   return(rc);
 	       }
-	       
+
 	       /* wait */
 	       rc = stat(notready_file_path, &file_stat);
 	       while ( rc != -1 )
@@ -2804,6 +2863,7 @@ globus_gass_cache_delete(globus_gass_cache_t *cache_handle,
     struct stat                file_stat;
     globus_gass_cache_tag_t   *tag_pt;
     int                        same_tag;
+    int count =0;
 
     /* simply check if the cache has been opened */
     CHECK_CACHE_IS_INIT();
@@ -2846,7 +2906,38 @@ globus_gass_cache_delete(globus_gass_cache_t *cache_handle,
        /* URL found */
        GLOBUS_L_GASS_CACHE_LG("URL found");
     
-       if ( entry_found_pt->lock_tag != GLOBUS_NULL )
+       /* new with 1.1 */      
+       if (entry_found_pt->pending == 'P' &&
+	   count < 10  &&
+	   entry_found_pt->lock_tag == GLOBUS_NULL)
+       {
+	   /*  I wait               */
+	   GLOBUS_L_GASS_CACHE_LG("Some add Pending on this url: wait");
+
+	   rc = globus_l_gass_cache_write_state_file(entry_found_pt,
+						     cache_handle);
+	   if (rc != GLOBUS_SUCCESS)
+	   {
+	       globus_l_gass_cache_unlock_close(cache_handle,
+						GLOBUS_L_GASS_CACHE_ABORT);
+	       return(rc);
+	   }
+	   rc = globus_l_gass_cache_unlock_close(cache_handle,
+						 GLOBUS_L_GASS_CACHE_COMMIT);
+	   if (rc != GLOBUS_SUCCESS)
+	   {
+	       return(rc);
+	   }
+	   
+
+	   count++;
+	   globus_libc_usleep(LOOP_TIME);
+	   continue;
+	   
+       } 
+       
+       
+       if ((entry_found_pt->lock_tag != GLOBUS_NULL) )
        {			/* if file locked and */
 	   same_tag = !strcmp(entry_found_pt->lock_tag, tag);
 	   if ( !same_tag ||	/* Not by me (tag !=) or */
@@ -2887,6 +2978,7 @@ globus_gass_cache_delete(globus_gass_cache_t *cache_handle,
 		   return(rc);
 	       }
 	    
+
 	       /* wait */
 	       rc = stat(notready_file_path,
 			 &file_stat);
@@ -2899,8 +2991,7 @@ globus_gass_cache_delete(globus_gass_cache_t *cache_handle,
 	       GLOBUS_L_GASS_CACHE_LG("Data file now ready: continue/call recursivelly");
 	       continue;
 	   } 
-       }
-       /* file ready or I did lockit*/
+       }       /* file ready or I did lockit*/
     
        /* look for the tag */
        tag_pt = entry_found_pt->tags;

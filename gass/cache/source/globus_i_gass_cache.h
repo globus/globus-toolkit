@@ -51,9 +51,17 @@ CVS Information:
 #define GLOBUS_L_GASS_CACHE_STATE_MODE          S_IRWXU|S_IRWXG|S_IRWXO 
 
 /* sleeping time in the globus_l_gass_cache_lock_open() lock loop */
-#define LOOP_TIME 500000   /* micro second */
-
-/* All the numbers stored in the cahe state file are coded ascii. This is    */
+#define LOOP_TIME 50000   /* in micro second */
+/* If compilled with LOCK_TOUT defined, the lock will timeout after
+   LOCK_TOUT try to get the lock, if the file to lock is older than
+   LOCK_TOUT*LOOP_TIME
+   
+   LOOPTIME is currently define as 50000 (50ms)
+   If I define  LOCK_TOUT 600, I will wait until the lock file and temp file
+   are untouched for more than 30s before I break the lock.*/
+#define LOCK_TOUT 600
+    
+/* All the numbers stored in the cache state file are coded ascii. This is   */
 /*     the number of char used to code those numbers                         */
 /*     It is used for storing the lenght of the strings (url, filename, ...) */
 /*     as well as integer or unsigned long.                                  */

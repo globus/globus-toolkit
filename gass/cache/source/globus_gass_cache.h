@@ -13,7 +13,6 @@ Description:
 
 ******************************************************************************/
 #ifndef _GLOBUS_GASS_INCLUDE_GLOBUS_GASS_CACHE_H_
-#ifndef SWIG
 #define _GLOBUS_GASS_INCLUDE_GLOBUS_GASS_CACHE_H_
 
 #ifndef EXTERN_C_BEGIN
@@ -76,12 +75,6 @@ Other definitions
 
 #define GLOBUS_GASS_CACHE_STATE_FILE_FORMAT_VERSION     1
 
-#endif
-
-#ifdef SWIG
-%subsection "Structures", before, pre, chop_left=0,chop_top=2,chop_bottom=1
-#endif
-
 /******************************************************************************
    Structure: globus_gass_cache_t
 
@@ -92,7 +85,6 @@ Other definitions
 
 typedef struct
 {
-#ifndef SWIG
     void*          init;   /* dirty hack to know if this cache has
 			      been opened/init.    */
     char           comment[COMMENT_LENGHT];
@@ -107,9 +99,7 @@ typedef struct
     char           temp_file_path[PATH_MAX+1];
     int            temp_file_fd;
     FILE*          log_FILE;
-    int            nb_entries;
-/* endif SWIG */
-#endif
+    int            nb_entries;    
 } globus_gass_cache_t;      /* cache handle */
 
 /******************************************************************************
@@ -119,11 +109,6 @@ typedef struct
 ******************************************************************************/
 typedef struct
 {
-#ifdef SWIG
-    globus_gass_cache_tag_t();
-    ~globus_gass_cache_tag_t();
-/* endif SWIG */
-#endif
     char *           tag;
     int              count;
 } globus_gass_cache_tag_t;
@@ -134,20 +119,18 @@ typedef struct
 ******************************************************************************/
 typedef struct
 {
-#ifdef SWIG
-    globus_gass_cache_entry_t();
-    ~globus_gass_cache_entry_t();
-/* endif SWIG */
-#endif
     char *                    url;
     char *                    filename;
     unsigned long             timestamp;  /* modification timestamp          */
                                           /* (seconds since the epoch)       */
+    /* new vor version 1.1 */
+    char                      pending;
     char *                    lock_tag;   /* The tag that has acquired this  */
                                           /* entry's lock, or GLOBUS_NULL    */
                                           /* if the entry is unlocked        */
     unsigned long             num_tags;   /* number of tags in the tag array */
-    globus_gass_cache_tag_t*   tags;             /* array of tags for this entry    */
+    globus_gass_cache_tag_t*   tags;      /* array of tags for this entry    */
+
 } globus_gass_cache_entry_t;
 
 /******************************************************************************
@@ -155,10 +138,6 @@ typedef struct
   FUNCTIONS
 
 ******************************************************************************/
-
-#ifdef SWIG
-%subsection "Functions", before, pre, chop_left=0,chop_top=2,chop_bottom=1
-#endif
 
 /******************************************************************************
    Function: globus_gass_cache_open()
@@ -544,7 +523,6 @@ Returns:   Pointer to an error message, or NULL if invalide error code.
 extern const char *
 globus_gass_cache_error_string(int error_code);
 
-#ifndef SWIG
 EXTERN_C_END
 
 /******************************************************************************
