@@ -27,7 +27,7 @@ arg_file=$1
 # check for the argument file if it does not exist
 # then return with an error immediately.
 if [ ! -f $arg_file ] ; then
-   echo GRAM_SCRIPT_ERROR:$GLOBUS_GRAM_CLIENT_ERROR_BAD_SCRIPT_ARG_FILE
+   echo GRAM_SCRIPT_ERROR:$GLOBUS_GRAM_PROTCOL_ERROR_BAD_SCRIPT_ARG_FILE
    exit 1
 fi
 
@@ -49,7 +49,7 @@ ps_id=`echo ${grami_job_id} | ${awk} '-F:' '{print $2}'`
 
 $DEBUG_ECHO "JM_SCRIPT: looking for prun with reservation number:pid ${res_id}:${ps_id}" >> $grami_logfile
 
-gram_job_state=$GLOBUS_GRAM_CLIENT_JOB_STATE_DONE	# assume done
+gram_job_state=$GLOBUS_GRAM_PROTCOL_JOB_STATE_DONE	# assume done
 
 prun_id=`${ps} -ax`
 prun_id=`echo "${prun_id}" | grep "prun -reserve ${res_id}" | awk '{print $1}'`
@@ -64,10 +64,10 @@ if [ ${prun_id} -eq ${ps_id} ] ; then
    # are other states other than waiting and running possible?
    if [ ${state} = "waiting" ] ; then
        $DEBUG_ECHO "JM_SCRIPT: setting job state to pending" >> $grami_logfile
-       gram_job_state=$GLOBUS_GRAM_CLIENT_JOB_STATE_PENDING
+       gram_job_state=$GLOBUS_GRAM_PROTCOL_JOB_STATE_PENDING
    else
        $DEBUG_ECHO "JM_SCRIPT: setting job state to active" >> $grami_logfile
-       gram_job_state=$GLOBUS_GRAM_CLIENT_JOB_STATE_ACTIVE
+       gram_job_state=$GLOBUS_GRAM_PROTCOL_JOB_STATE_ACTIVE
    fi
 else
    $DEBUG_ECHO "JM_SCRIPT: prun id and ps id not equal" >> $grami_logfile
@@ -75,7 +75,7 @@ else
    if [ ! -z ${prun_id} ]; then	  # probably not possible but just in case...
       $DEBUG_ECHO "JM_SCRIPT: bad prun id ${prun_id}" >> $grami_logfile
       $DEBUG_ECHO "JM_SCRIPT: setting job state to failed" >> $grami_logfile
-      gram_job_state=$GLOBUS_GRAM_CLIENT_JOB_STATE_FAILED
+      gram_job_state=$GLOBUS_GRAM_PROTCOL_JOB_STATE_FAILED
    fi  
 fi
 
@@ -88,7 +88,7 @@ if [ -s $prun_err_file ] ; then
     cat $prun_err_file >> $grami_logfile
 
     $DEBUG_ECHO "JM_SCRIPT: setting job state to failed" >> $grami_logfile
-    gram_job_state=$GLOBUS_GRAM_CLIENT_JOB_STATE_FAILED
+    gram_job_state=$GLOBUS_GRAM_PROTCOL_JOB_STATE_FAILED
 fi
 
 # As the reservation will continue to exist, even when the job has finished,

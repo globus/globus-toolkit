@@ -23,7 +23,7 @@ arg_file=$1
 # check for the argument file if it does not exist
 # then return with an error immediately.
 if [ ! -f $arg_file ] ; then
-   echo GRAM_SCRIPT_ERROR:$GLOBUS_GRAM_CLIENT_ERROR_BAD_SCRIPT_ARG_FILE
+   echo GRAM_SCRIPT_ERROR:$GLOBUS_GRAM_PROTCOL_ERROR_BAD_SCRIPT_ARG_FILE
    exit 1
 fi
  
@@ -31,7 +31,7 @@ signal_file=$2
 # check for the signal file if it does not exist
 # then return with an error immediately.
 if [ ! -f $signal_file ] ; then
-   echo GRAM_SCRIPT_ERROR:$GLOBUS_GRAM_CLIENT_ERROR_BAD_SCRIPT_ARG_FILE
+   echo GRAM_SCRIPT_ERROR:$GLOBUS_GRAM_PROTCOL_ERROR_BAD_SCRIPT_ARG_FILE
    exit 1
 fi
 

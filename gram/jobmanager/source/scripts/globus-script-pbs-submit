@@ -41,7 +41,7 @@ arg_file=$1
 # then return with an error immediately
 
 if [ ! -f $arg_file ] ; then
-   echo GRAM_SCRIPT_ERROR:$GLOBUS_GRAM_CLIENT_ERROR_BAD_SCRIPT_ARG_FILE
+   echo GRAM_SCRIPT_ERROR:$GLOBUS_GRAM_PROTOCOL_ERROR_BAD_SCRIPT_ARG_FILE
    exit 1
 fi
 
@@ -105,7 +105,7 @@ if [ ! -z "${grami_queue}" ]; then
         $DEBUG_ECHO PBS queue [$grami_queue] found >> $grami_logfile
     else
         $DEBUG_ECHO PBS queue [$grami_queue] DOES NOT exist; exiting with exit code 1 >> $grami_logfile
-        echo GRAM_SCRIPT_ERROR:$GLOBUS_GRAM_CLIENT_ERROR_INVALID_QUEUE
+        echo GRAM_SCRIPT_ERROR:$GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_QUEUE
     exit 1
     fi
 else
@@ -130,11 +130,11 @@ elif [ $grami_job_type = "2" ] ; then
 elif [ $grami_job_type = "3" ] ; then
    $DEBUG_ECHO "JM_SCRIPT: ERROR: jobtype parameter not supported "
                >> $grami_logfile
-   echo "GRAM_SCRIPT_ERROR:$GLOBUS_GRAM_CLIENT_ERROR_JOBTYPE_NOT_SUPPORTED"
+   echo "GRAM_SCRIPT_ERROR:$GLOBUS_GRAM_PROTOCOL_ERROR_JOBTYPE_NOT_SUPPORTED"
    exit 1
 else
    $DEBUG_ECHO "JM_SCRIPT: error: invalid jobtype parameter" >> $grami_logfile
-   echo GRAM_SCRIPT_ERROR:$GLOBUS_GRAM_CLIENT_ERROR_INVALID_JOBTYPE
+   echo GRAM_SCRIPT_ERROR:$GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_JOBTYPE
    exit 1
 fi
 
@@ -285,6 +285,7 @@ elif [ $pbs_jobtype = "multiple" ] ; then
            counter=`expr $counter + 1`
         done
         echo "wait" >> $PBS_JOB_SCRIPT;
+   fi
 else
     echo "$grami_program $new_grami_args < $grami_stdin" >> $PBS_JOB_SCRIPT
 fi
@@ -307,22 +308,23 @@ if (test "$?" -eq "0") then
    if [ "${job_id}" = "" ] ; then
       $DEBUG_ECHO "job *NOT* submitted successfully!" >> $grami_logfile
       $DEBUG_ECHO "failed getting the pbs jobid for the job!" >> $grami_logfile
-      echo "GRAM_SCRIPT_ERROR:$GLOBUS_GRAM_CLIENT_ERROR_GETTING_JOBID"
+      echo "GRAM_SCRIPT_ERROR:$GLOBUS_GRAM_PROTOCOL_ERROR_GETTING_JOBID"
    else
       echo "grami_job_id=$job_id" >> $arg_file
       echo "GRAM_SCRIPT_JOB_ID:$job_id"
       $DEBUG_ECHO "job submitted successfully!" >> $grami_logfile
       $DEBUG_ECHO "returning job state: 1" >> $grami_logfile
-      echo "GRAM_SCRIPT_JOB_ID:$job_id"
-      echo "GRAM_SCRIPT_SUCCESS:$GLOBUS_GRAM_CLIENT_JOB_STATE_PENDING"
+      echo "GRAM_SCRIPT_JOB_ID:"$job_id
+      echo "GRAM_SCRIPT_SUCCESS:"$GLOBUS_GRAM_PROTOCOL_JOB_STATE_PENDING
       # Remove temporary job script file
-      ${rm} $PBS_JOB_SCRIPT $PBS_JOB_OUT $PBS_JOB_ERR
+      ${rm} -f $PBS_JOB_SCRIPT $PBS_JOB_OUT $PBS_JOB_ERR
       $DEBUG_ECHO "exiting gram_script_pbs_submit\n\n" >> $grami_logfile
-      exit
+      exit 0
    fi
 else
    $DEBUG_ECHO "job *NOT* submitted successfully!" >> $grami_logfile
-   echo "GRAM_SCRIPT_ERROR:$GLOBUS_GRAM_CLIENT_ERROR_JOB_EXECUTION_FAILED"
+   echo "GRAM_SCRIPT_ERROR:$GLOBUS_GRAM_PROTOCOL_ERROR_JOB_EXECUTION_FAILED"
+   exit 0
 fi
 
 # We got problems if we get this far.
