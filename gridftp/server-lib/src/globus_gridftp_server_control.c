@@ -3089,6 +3089,7 @@ globus_gridftp_server_control_begin_transfer(
         {
             globus_reltime_t                delay;
 
+            op->event.stripe_count = op->server_handle->stripe_count;
             op->done = GLOBUS_FALSE;
             op->ref++;
             op->event.stripe_total_bytes = (globus_off_t *)

@@ -205,7 +205,6 @@ typedef struct globus_i_gsc_data_s
 
 typedef enum globus_i_gsc_op_type_e
 {
-    GLOBUS_L_GSC_OP_TYPE_DONE,
     GLOBUS_L_GSC_OP_TYPE_AUTH,
     GLOBUS_L_GSC_OP_TYPE_RESOURCE,
     GLOBUS_L_GSC_OP_TYPE_CREATE_PASV,
