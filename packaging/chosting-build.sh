@@ -1,7 +1,7 @@
 #!/bin/sh
 
 BASEDIR=$PWD
-GT2PKGS="core common xio user_env"
+GT2PKGS="core common xio user_env side_tools"
 GT3PKGS=chosting
 
 PKGLIST=globus_core,globus_common,globus_common_setup,globus_user_env,globus_axiscpp,globus_expat,globus_axiscpp_wsdl2ws,globus_axiscpp_transport_stdio,globus_axis_server_engine,globus_axis_server_test,globus_service_GetQuoteCPP
