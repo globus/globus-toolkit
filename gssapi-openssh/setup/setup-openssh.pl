@@ -6,11 +6,34 @@
 # adapted from 'fixpath', located in the openssh-3.0.2p1 package
 #
 
+my $gpath = $ENV{GPT_LOCATION};
+if (!defined($gpath))
+{
+    $gpath = $ENV{GLOBUS_LCATION};
+}
+if (!defined($gpath))
+{
+    die "GPT_LOCATION or GLOBUS_LOCATION needs to be set before running this script"
+}
+
+#
+# i'm including this because other perl scripts in the gpt setup directories
+# do so
+#
+
+@INC = (@INC, "$gpath/lib/perl");
+
+my $globusdir = $gpath;
+my $setupdir = "$globusdir/setup/globus";
+my $myname = "setup-openssh.pl";
+
+print "$myname: Configuring gsi-openssh package\n";
+
 #
 # Set up path prefixes for use in the path translations
 #
 
-$prefix = "/home/cphillip/gsi-openssh/install";
+$prefix = $globusdir;
 $exec_prefix = "$prefix";
 $bindir = "$exec_prefix/bin";
 $libexecdir = "$exec_prefix/libexec";
@@ -130,5 +153,6 @@ sub runkeygen
 }
 
 fixpaths();
-
 runkeygen();
+
+exit 0;
