@@ -106,6 +106,12 @@ GetOptions(
           ) or pod2usage(2);
 
 #
+# miscellaneous initialization functions
+#
+
+setPrivilegeSeparation(0);
+
+#
 # main execution.  This should find its way into a subroutine at some future
 # point.
 #
