@@ -6,11 +6,11 @@ include $(top_srcdir)/globus_automake_pre_top
 SUBDIRS = \
 	pkgdata \
 	modules \
-	commands \
 	doxygen
 
 EXTRA_DIST = \
 	version.h.in \
+	extensions.h.in \
 	configure.in.in
 
 # Sources contains all of the source files in the directory.
@@ -31,6 +31,7 @@ Sources = \
 	globus_i_gfs_acl.h 		\
 	globus_i_gfs_data.c 		\
 	globus_i_gfs_data.h 		\
+    globus_i_gfs_cas.c          \
 	globus_i_gfs_ipc.c 		\
 	globus_i_gfs_ipc.h 		\
 	globus_i_gfs_control.c 		\
@@ -99,8 +100,7 @@ globus_gridftp_server_LDFLAGS = $(GPT_LDFLAGS)
 # from the dependent packages
 globus_gridftp_server_LDADD = \
 	$(GPT_PGM_LINKS) \
-	$(MODULE_LIBS) \
-	$(COMMAND_LIBS)
+	$(MODULE_LIBS)
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

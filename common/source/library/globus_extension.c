@@ -46,7 +46,8 @@ GlobusDebugDefine(GLOBUS_EXTENSION);
 enum globus_l_extension_debug_levels
 {
     GLOBUS_L_EXTENSION_DEBUG_TRACE      = 1,
-    GLOBUS_L_EXTENSION_DEBUG_DLL        = 2
+    GLOBUS_L_EXTENSION_DEBUG_VERBOSE    = 2,
+    GLOBUS_L_EXTENSION_DEBUG_DLL        = 4
 };
 
 typedef struct globus_l_extension_module_s
@@ -126,7 +127,7 @@ globus_l_extension_activate(void)
     
     if(!initialized)
     {
-        GlobusDebugInit(GLOBUS_EXTENSION, TRACE DLL);
+        GlobusDebugInit(GLOBUS_EXTENSION, TRACE VERBOSE DLL);
         GlobusExtensionDebugEnter();
     
         globus_rmutex_init(&globus_l_libtool_mutex, NULL);
@@ -295,8 +296,8 @@ globus_l_extension_dlopen(
             
             GlobusExtensionDebugPrintf(
                 GLOBUS_L_EXTENSION_DEBUG_DLL,
-                ("Couldn't dlopen %s: %s\n",
-                    library, error ? error : "(null)"));
+                ("[%s] Couldn't dlopen %s: %s\n",
+                    _globus_func_name, library, error ? error : "(null)"));
         }
     }
     
@@ -320,8 +321,8 @@ globus_l_extension_get_module(
         
         GlobusExtensionDebugPrintf(
             GLOBUS_L_EXTENSION_DEBUG_DLL,
-            ("Couldn't find module descriptor : %s\n",
-            error ? error : "(null)"));
+            ("[%s] Couldn't find module descriptor : %s\n",
+                _globus_func_name, error ? error : "(null)"));
     }
     
     return module;
@@ -650,6 +651,11 @@ globus_extension_lookup(
                 if(entry->owner)
                 {
                     entry->owner->ref++;
+                  
+                    GlobusExtensionDebugPrintf(
+                        GLOBUS_L_EXTENSION_DEBUG_VERBOSE,
+                        ("[%] Accessing entry %s within %s\n",
+                            _globus_func_name, symbol, entry->owner->name));
                 }
                 
                 *handle = entry;

@@ -107,9 +107,13 @@ typedef struct
     
     /* data descriptor */
     int                                 send_flags;
+    
+    globus_bool_t                       global;
 } globus_l_attr_t;
 
-/* default attr */
+/* default attr (never put any string literals in here, else they may be
+ * freed by the affect global attr stuff)
+ */
 static globus_l_attr_t                  globus_l_xio_tcp_attr_default =
 {
     GLOBUS_NULL,                        /* listener_serv */
@@ -134,7 +138,8 @@ static globus_l_attr_t                  globus_l_xio_tcp_attr_default =
     0,                                  /* connector_min_port */
     0,                                  /* connector_max_port */
     
-    0                                   /* send_flags */
+    0,                                  /* send_flags */
+    GLOBUS_FALSE                        /* global */
 };
 
 /*
@@ -229,8 +234,17 @@ globus_l_xio_tcp_attr_cntl(
 
     GlobusXIOTcpDebugEnter();
     attr = (globus_l_attr_t *) driver_attr;
+    if(attr->global && cmd != GLOBUS_XIO_TCP_AFFECT_ATTR_DEFAULTS)
+    {
+        attr = &globus_l_xio_tcp_attr_default;
+    }
+    
     switch(cmd)
     {
+      case GLOBUS_XIO_TCP_AFFECT_ATTR_DEFAULTS:
+        attr->global = va_arg(ap, globus_bool_t);
+        break;
+        
       /**
        *  server attrs
        */
@@ -552,6 +566,10 @@ globus_l_xio_tcp_attr_copy(
             goto error_listener_serv;
         }
     }
+    
+    /* copies do not inherit the affect_global */
+    attr->global = GLOBUS_FALSE;
+    
     *dst = attr;
     
     GlobusXIOTcpDebugExit();

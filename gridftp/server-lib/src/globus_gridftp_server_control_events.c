@@ -43,7 +43,7 @@ globus_i_gsc_reverse_restart(
 
     if(in_range == NULL)
     {
-        globus_range_list_insert(out_range, 0, -1);
+        globus_range_list_insert(out_range, 0, GLOBUS_RANGE_LIST_MAX);
     }
     else
     {
@@ -65,7 +65,8 @@ globus_i_gsc_reverse_restart(
             globus_range_list_insert(out_range, offset, length);
         }
         globus_range_list_remove_at(in_range, 0, &offset, &length);
-        globus_range_list_insert(out_range, offset + length, -1);
+        globus_range_list_insert(
+            out_range, offset + length, GLOBUS_RANGE_LIST_MAX);
     }
 }
 
@@ -96,6 +97,8 @@ globus_i_gsc_event_start(
         event_mask & GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_PERF)
     {
         event->stripe_count = op->server_handle->stripe_count;
+        event->stripe_total = (globus_off_t *)globus_calloc(
+            sizeof(globus_off_t) * event->stripe_count, 1);
 
         /* send out the first one */
         for(ctr = 0; ctr < op->event.stripe_count; ctr++)
@@ -180,6 +183,7 @@ globus_l_gsc_unreg_perf_marker(
 
     globus_mutex_lock(&op->server_handle->mutex);
     {
+        globus_free(event->stripe_total);
         globus_i_gsc_op_destroy(op);
     }
     globus_mutex_unlock(&op->server_handle->mutex);
@@ -284,18 +288,26 @@ globus_l_gsc_send_restart(
     int                                 size;
     globus_off_t                        offset;
     globus_off_t                        length;
+    globus_range_list_t                 new_range_list;
 
-    size = globus_range_list_size(range_list);
+    globus_range_list_merge(
+        &new_range_list, op->perf_range_list, range_list);
+    globus_range_list_destroy(op->perf_range_list);
+    op->perf_range_list = new_range_list;
+
+    size = globus_range_list_size(new_range_list);
     if(size < 1)
     {
-        msg = globus_common_create_string("111 Range Marker 0-0\r\n");
+        /* sending 0-0 is useless, and it causes a problem with our client
+            when markers are sent before the retr begins
+        msg = globus_common_create_string("111 Range Marker 0-0\r\n"); */
     }
     else
     {    
         msg = globus_common_create_string("111 Range Marker");
         for(ctr = 0; ctr < size; ctr++)
         {
-            globus_range_list_at(range_list, ctr, &offset, &length);
+            globus_range_list_at(new_range_list, ctr, &offset, &length);
     
             tmp_msg = globus_common_create_string("%s%c%"
                 GLOBUS_OFF_T_FORMAT"-%"GLOBUS_OFF_T_FORMAT,
@@ -306,9 +318,10 @@ globus_l_gsc_send_restart(
         tmp_msg = globus_common_create_string("%s%s", msg, "\r\n");
         globus_free(msg);
         msg = tmp_msg;
+        
+        globus_i_gsc_intermediate_reply(op, msg);
+        globus_free(msg);
     }    
-    globus_i_gsc_intermediate_reply(op, msg);
-    globus_free(msg);
 }
 
 /********************************************************************
@@ -368,10 +381,19 @@ globus_gridftp_server_control_event_send_perf(
 
     globus_mutex_lock(&op->server_handle->mutex);
     {
+        if(op->event.stripe_total == NULL)
+        {
+            globus_mutex_unlock(&op->server_handle->mutex);
+            return GlobusGridFTPServerErrorParameter("op");
+        }
+        op->event.stripe_total[stripe_ndx] += nbytes;
         if(op->event.perf_running)
         {
             globus_l_gsc_send_perf(
-                op, stripe_ndx, op->event.stripe_count, nbytes);
+                op, 
+                stripe_ndx, 
+                op->event.stripe_count, 
+                op->event.stripe_total[stripe_ndx]);
         }
     }
     globus_mutex_unlock(&op->server_handle->mutex);

@@ -335,6 +335,7 @@ globus_l_gsc_cmd_mdtm_cb(
     char *                                  path,
     globus_gridftp_server_control_stat_t *  stat_info,
     int                                     stat_count,
+    uid_t                                   uid,
     void *                                  user_arg)
 {
     int                                     code;
@@ -587,6 +588,7 @@ globus_l_gsc_cmd_cwd_cb(
     char *                                  path,
     globus_gridftp_server_control_stat_t *  stat_info,
     int                                     stat_count,
+    uid_t                                   uid,
     void *                                  user_arg)
 {
     int                                     code;
@@ -629,7 +631,7 @@ globus_l_gsc_cmd_cwd_cb(
     else
     {
         if(!(S_IXOTH & stat_info->mode && S_IROTH & stat_info->mode) &&
-            !(stat_info->uid == op->server_handle->uid && 
+            !(stat_info->uid == uid && 
                 S_IXUSR & stat_info->mode && S_IRUSR & stat_info->mode))
         {
             code = 550;
@@ -759,6 +761,7 @@ globus_l_gsc_cmd_stat_cb(
     char *                                  path,
     globus_gridftp_server_control_stat_t *  stat_info,
     int                                     stat_count,
+    uid_t                                   uid,
     void *                                  user_arg)
 {
     int                                     code;
@@ -797,8 +800,7 @@ globus_l_gsc_cmd_stat_cb(
         else
         {
             tmp_ptr = globus_i_gsc_mlsx_line_single(
-                op->server_handle->opts.mlsx_fact_str, op->server_handle->uid, 
-                stat_info);
+                op->server_handle->opts.mlsx_fact_str, uid, stat_info);
         }
         code = 213;
         msg =  globus_common_create_string(
@@ -891,6 +893,7 @@ globus_l_gsc_cmd_size_cb(
     char *                                  path,
     globus_gridftp_server_control_stat_t *  stat_info,
     int                                     stat_count,
+    uid_t                                   uid,
     void *                                  user_arg)
 {
     int                                     code;
@@ -1292,6 +1295,7 @@ globus_l_gsc_cmd_opts(
     int                                     argc,
     void *                                  user_arg)
 {
+    globus_bool_t                           done = GLOBUS_FALSE;
     int                                     tmp_i;
     char                                    tmp_s[1024];
     char *                                  msg;
@@ -1314,28 +1318,42 @@ globus_l_gsc_cmd_opts(
     }
     else if(strcmp("RETR", cmd_a[1]) == 0)
     {
-        msg = "200 OPTS Command Successful.\r\n";
-        if(sscanf(cmd_a[2], "Parallelism=%d,%*d,%*d;", &tmp_i) == 1)
+        tmp_ptr = cmd_a[2];
+
+        done = GLOBUS_FALSE;
+        while(*tmp_ptr != '\0')
         {
-            opts->parallelism = tmp_i;
-        }
-        else if(sscanf(cmd_a[2], "PacketSize=%d;", &tmp_i) == 1)
-        {
-            opts->packet_size = tmp_i;
-        }
-        else if(sscanf(cmd_a[2], "WindowSize=%d;", &tmp_i) == 1)
-        {
-            opts->send_buf = tmp_i;
-        }
-        else if(sscanf(cmd_a[2], "StripeLayout=%s;", tmp_s) == 1)
-        {
-        }
-        else if(sscanf(cmd_a[2], "BlockSize=%d;", &tmp_i) == 1)
-        {
-        }
-        else
-        {
-            msg = "500 OPTS failed.\r\n";
+            msg = "200 OPTS Command Successful.\r\n";
+            if(sscanf(tmp_ptr, "Parallelism=%d,%*d,%*d;", &tmp_i) == 1)
+            {
+                opts->parallelism = tmp_i;
+            }
+            else if(sscanf(tmp_ptr, "PacketSize=%d;", &tmp_i) == 1)
+            {
+                opts->packet_size = tmp_i;
+            }
+            else if(sscanf(tmp_ptr, "WindowSize=%d;", &tmp_i) == 1)
+            {
+                opts->send_buf = tmp_i;
+            }
+            else if(sscanf(tmp_ptr, "StripeLayout=%s;", tmp_s) == 1)
+            {
+            }
+            else if(sscanf(tmp_ptr, "BlockSize=%d;", &tmp_i) == 1)
+            {
+            }
+            else
+            {
+                msg = "500 OPTS failed.\r\n";
+                done = GLOBUS_TRUE;
+            }
+            tmp_ptr = strchr(tmp_ptr, ';');
+            if(tmp_ptr == NULL)
+            {
+                msg = "500 OPTS failed.\r\n";
+                done = GLOBUS_TRUE;
+            }
+            tmp_ptr++;
         }
     }
     else if(strcmp("PASV", cmd_a[1]) == 0 || 
@@ -1937,6 +1955,7 @@ globus_l_gsc_cmd_pasv(
             op,
             wrapper->max,
             wrapper->prt,
+            NULL,
             globus_l_gsc_cmd_pasv_cb,
             wrapper);
         if(res != GLOBUS_SUCCESS)
@@ -2573,6 +2592,7 @@ globus_l_gsc_cmd_stor_retr(
             wrapper->op,
             wrapper->max,
             wrapper->prt,
+            wrapper->path,
             globus_l_gsc_cmd_pasv_cb,
             wrapper);
         if(res != GLOBUS_SUCCESS)
@@ -3091,6 +3111,8 @@ globus_i_gsc_add_commands(
     /* add features */
     globus_gridftp_server_control_add_feature(server_handle, "MDTM");
     globus_gridftp_server_control_add_feature(server_handle, "REST STREAM");
+    globus_gridftp_server_control_add_feature(server_handle, "SPOR");
+    globus_gridftp_server_control_add_feature(server_handle, "SPAS");
     globus_gridftp_server_control_add_feature(server_handle, "ESTO");
     globus_gridftp_server_control_add_feature(server_handle, "ERET");
     globus_gridftp_server_control_add_feature(server_handle, "MLST Type*;Size*;Modify*;Perm*;Charset;UNIX.mode*;Unique*;");    

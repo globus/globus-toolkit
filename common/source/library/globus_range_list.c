@@ -36,6 +36,62 @@ globus_range_list_init(
     return GLOBUS_SUCCESS;
 }
 
+int
+globus_range_list_merge(
+    globus_range_list_t *               dest,
+    globus_range_list_t                 src1,
+    globus_range_list_t                 src2)
+{
+    int                                 size;
+    int                                 rc;
+    int                                 i;
+    globus_off_t                        offset;
+    globus_off_t                        length;
+
+    rc = globus_range_list_init(dest);
+    if(rc != 0)
+    {
+        return -1;
+    }
+
+    size = globus_range_list_size(src1);
+    for(i = 0; i < size; i++)
+    {
+        rc = globus_range_list_at(src1, i, &offset, &length);
+        if(rc != 0)
+        {
+            goto err;
+        }
+        rc = globus_range_list_insert(*dest, offset, length);
+        if(rc != 0)
+        {
+            goto err;
+        }
+    }
+    size = globus_range_list_size(src2);
+    for(i = 0; i < size; i++)
+    {
+        rc = globus_range_list_at(src2, i, &offset, &length);
+        if(rc != 0)
+        {
+            goto err;
+        }
+        rc = globus_range_list_insert(*dest, offset, length);
+        if(rc != 0)
+        {
+            goto err;
+        }
+    }
+
+    return GLOBUS_SUCCESS;
+
+  err:
+
+    globus_range_list_destroy(*dest);    
+    return -1;
+}
+
+
 void
 globus_range_list_destroy(
     globus_range_list_t                 range_list)
@@ -72,6 +128,15 @@ globus_range_list_insert(
     globus_size_t                       ent_end;
     globus_bool_t                       done = GLOBUS_FALSE;
 
+    if(offset < 0)
+    {
+        return GLOBUS_RANGE_LIST_ERROR_PARAMETER;
+    }
+    if(length == 0)
+    {
+        return GLOBUS_SUCCESS;
+    }
+    
     if(range_list->head == NULL)
     {
         new_ent = (globus_l_range_ent_t *) globus_malloc(
@@ -89,16 +154,30 @@ globus_range_list_insert(
         return GLOBUS_SUCCESS;
     }
 
-    end_offset = offset + length;
+    if(length == GLOBUS_RANGE_LIST_MAX)
+    {
+        end_offset = GLOBUS_RANGE_LIST_MAX;
+    }
+    else
+    {
+        end_offset = offset + length;
+    }
 
     prev = NULL;
     ent = range_list->head;
     while(ent != NULL && !done)
     {
-        ent_end = ent->offset + ent->length;
+        if(ent->length == GLOBUS_RANGE_LIST_MAX)
+        {
+            ent_end = GLOBUS_RANGE_LIST_MAX;
+        }
+        else
+        {
+            ent_end = ent->offset + ent->length;
+        }
         next = ent->next;
         /* if it is discontigous and in front of this one */
-        if(end_offset < ent->offset)
+        if(end_offset < ent->offset && end_offset != GLOBUS_RANGE_LIST_MAX)
         {
             new_ent = (globus_l_range_ent_t *) globus_malloc(
                 sizeof(globus_l_range_ent_t));
@@ -121,19 +200,34 @@ globus_range_list_insert(
             done = GLOBUS_TRUE;
         }
         /* if it is merging */
-        else if(end_offset >= ent->offset && offset <= ent_end)
+        else if((end_offset >= ent->offset || 
+            end_offset == GLOBUS_RANGE_LIST_MAX) 
+            && (offset <= ent_end || 
+            ent_end == GLOBUS_RANGE_LIST_MAX))
         {
             if(offset < ent->offset)
             {
                 ent->offset = offset;
             }
-            if(end_offset > ent_end)
+            if(end_offset == GLOBUS_RANGE_LIST_MAX || 
+                ent_end == GLOBUS_RANGE_LIST_MAX)
+            {
+                ent->length = GLOBUS_RANGE_LIST_MAX;
+            }
+            else if(end_offset > ent_end)
             {
                 ent->length = end_offset - ent->offset;
             }
             if(next != NULL && end_offset >= next->offset)
             {
-                ent->length = next->offset + next->length - ent->offset;
+                if(next->length == GLOBUS_RANGE_LIST_MAX)
+                {
+                    ent->length = GLOBUS_RANGE_LIST_MAX;    
+                }
+                else
+                {   
+                    ent->length = next->offset + next->length - ent->offset;
+                }
                 range_list->size--;
                 ent->next = next->next;
                 globus_free(next);
@@ -162,6 +256,126 @@ globus_range_list_insert(
         globus_assert(prev != NULL);
         prev->next = new_ent;
         range_list->size++;
+    }
+
+    return GLOBUS_SUCCESS;
+}
+
+int
+globus_range_list_remove(
+    globus_range_list_t                 range_list,
+    globus_off_t                        offset,
+    globus_off_t                        length)
+{
+    globus_l_range_ent_t *              prev;
+    globus_l_range_ent_t *              ent;
+    globus_l_range_ent_t *              next;
+    globus_l_range_ent_t *              new_ent;
+    globus_size_t                       end_offset;
+    globus_size_t                       ent_end;
+    globus_bool_t                       done = GLOBUS_FALSE;
+
+    if(offset < 0)
+    {
+        return GLOBUS_RANGE_LIST_ERROR_PARAMETER;
+    }
+    if(length == 0)
+    {
+        return GLOBUS_SUCCESS;
+    }
+
+    if(length == GLOBUS_RANGE_LIST_MAX)
+    {
+        end_offset = GLOBUS_RANGE_LIST_MAX;
+    }
+    else
+    {
+        end_offset = offset + length;
+    }
+    prev = NULL;
+    ent = range_list->head;
+    while(ent != NULL && !done)
+    {
+        next = ent->next;
+        if(ent->length == GLOBUS_RANGE_LIST_MAX)
+        {
+            ent_end = GLOBUS_RANGE_LIST_MAX;
+        }
+        else
+        {
+            ent_end = ent->offset + ent->length;
+        }
+        
+        /* this range is all foul, remove it */
+        if(ent->offset >= offset && 
+            ((ent_end <= end_offset && ent_end != GLOBUS_RANGE_LIST_MAX) || 
+            end_offset == GLOBUS_RANGE_LIST_MAX))
+        {
+            if(prev == NULL)
+            {
+                range_list->head = next;
+            }
+            else
+            {
+                prev->next = next;
+            }
+            range_list->size--;
+            globus_free(ent);
+        }
+        /* this range starts fair and extends foul, adjust length */
+        else if(ent->offset < offset && 
+            (ent_end < end_offset || end_offset == GLOBUS_RANGE_LIST_MAX) && 
+            (ent_end > offset || ent_end == GLOBUS_RANGE_LIST_MAX))
+        {   
+            ent->length = offset - ent->offset;
+            prev = ent;
+        }
+        /* this range starts foul and extends fair, adjust offset */
+        else if(ent->offset >= offset && ent->offset < end_offset &&
+            (ent_end > end_offset || ent_end == GLOBUS_RANGE_LIST_MAX))
+        {
+            ent->offset = end_offset;
+            prev = ent;
+            done = GLOBUS_TRUE;
+        }
+        /* this range starts fair and ends fair, but crosses foul,
+             adjust offset and length */
+        else if(ent->offset < offset && 
+            (ent_end > end_offset || ent_end == GLOBUS_RANGE_LIST_MAX))
+        {
+            new_ent = (globus_l_range_ent_t *) globus_malloc(
+                sizeof(globus_l_range_ent_t));
+            if(new_ent == NULL)
+            {
+                globus_assert(0);
+            }
+            new_ent->offset = end_offset;
+            if(ent_end == GLOBUS_RANGE_LIST_MAX)
+            {
+                new_ent->length = GLOBUS_RANGE_LIST_MAX;    
+            }
+            else
+            {   
+                new_ent->length = ent_end - new_ent->offset;
+            }
+            ent->length = offset - ent->offset;
+            ent->next = new_ent;
+    
+            range_list->size++;
+            
+            prev = ent;
+            done = GLOBUS_TRUE;
+        }
+        /* this range is all fair */
+        else
+        {
+            if(ent->offset > end_offset && end_offset != GLOBUS_RANGE_LIST_MAX)
+            {
+                done = GLOBUS_TRUE;
+            }
+            prev = ent;
+        }
+        ent = next;
     }
 
     return GLOBUS_SUCCESS;

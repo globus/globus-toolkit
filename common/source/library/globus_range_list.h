@@ -4,11 +4,13 @@
 #include "globus_common_include.h"
 /********************************************************************
  *
- * This file defines the list_t type
+ * This file defines the globus_range_list_t type
  *
  *
  ********************************************************************/
 EXTERN_C_BEGIN
+
+#define GLOBUS_RANGE_LIST_MAX -1
 
 typedef enum
 {
@@ -17,6 +19,12 @@ typedef enum
 } globus_range_list_error_type_t;
 
 typedef struct globus_l_range_list_s *  globus_range_list_t;
+
+int
+globus_range_list_merge(
+    globus_range_list_t *               dest,
+    globus_range_list_t                 src1,
+    globus_range_list_t                 src2);
 
 int
 globus_range_list_init(
@@ -28,6 +36,12 @@ globus_range_list_destroy(
 
 int
 globus_range_list_insert(
+    globus_range_list_t                 range_list,
+    globus_off_t                        offset,
+    globus_off_t                        length);
+
+int
+globus_range_list_remove(
     globus_range_list_t                 range_list,
     globus_off_t                        offset,
     globus_off_t                        length);

@@ -1,3 +1,58 @@
+Immediate:
+----------
+5) test suite
+    single local 
+        non-daemon
+        daemon
+        detached
+        inetd
+    single remote data-node 
+        non-daemon
+        daemon
+        detached
+        inetd 
+7) merge branch to trunk and verify nothing broke
+8) update doc to reflect striping info and current issues/limitations
+
+
+file not trunc on striped puts, since they all look like partials, also
+    truncating on pasv stor... who truncates, and have to deal with
+    data coming before the 150 response
+
+fix up error in data.c and dsi, or make use result_t over ipc temporarily
+
+make abort go
+
+clean up memory and locking in data.c
+
+clean up rest of stuff from pre-dsi change (old attrs that just copy to new
+    info structs, etc)
+
+think if broadcast would be quick enough, and do correct connection 
+    count stuff if not (for eofs)
+
+add symlink_target to stat buffer, server-lib stuff to display it in mlsx
+
+add security to ipc
+
+update doc to reflect striping info and current issues/limitations
+
+check if threaded works (and fix if easy) so we can at least list it as a known issue
+
+verify test suite on following instances:
+    single local non-daemon, daemon, detached and inetd
+    single remote and data-node non-daemon, daemon, detached and inetd 
+    4 stripe remote in same modes (general success here, not expected to pass everything)
+                 
+check what version this should be, and change package name 
+
+merge branch to trunk and verify nothing broke
+
+
+
+
+**OLD ALPHA STUFF:
+
 MUST HAVE
 --------------------------------------------------------------
 SERVER:
@@ -8,11 +63,9 @@ SERVER:
 -server mem management... i know there are some leaks with attrs and now with instance for event stuff
 -mimic wu cmdline opt names when applicable i.e. -S -p etc etc (important now so people don't start using opts that we will drop)
 -verify inetd is prepped right
--return from event cb immediately
 
 LIB:
 -verify feat list
--decide if locking in event cb is right api decision
 
 BOTH:
 -add proper return vals/messages for error situations
@@ -22,9 +75,7 @@ BOTH:
 --------------------------------------------------------------
 
 OTHER: (non-code)
-merge with trunk (i assume 3.3. will be cut from trunk)
 update gridftp-server-stable-branch tag
-verify shit still works after that!
 
 
 
@@ -34,7 +85,6 @@ if time, desire, etc etc:
 SERVER:
 -make forking/daemon mode better (maybe leave this out for now)
 -define logging classes in config
--implement setuid/setgid to anonymous_user
 -produce netlogger output (based on event timer i guess?... -Z option in wu)
 -global config opts can be non-overridable, or forced to a range
 -think about config val checking/verification
@@ -48,26 +98,3 @@ LIB:
 --------------------------------------------------------------
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-(old shit that was already here)
-partial
--- add offset to tranfer func callout
-
-test
---crazy messages sent to server
-
-errors
--- create error codes for user
--- check proper replys etc
