@@ -183,14 +183,14 @@ globus_gram_k5_globuskmap( char * globusid, char ** command)
 	      if (!strcmp(globusid, f_globusid)) {
 		    *command = strdup(&line[offset]);
             DEEDEBUG2("Globus command= %s\n",*command);
-            close(fd);
+            fclose(fd);
 		    return(0);
  
 	      }
 	    }
 	  }
 	}
-	close(fd);
+	fclose(fd);
 	return(-1); /* not found */	
   }
   return(-2);   /* open failed */
