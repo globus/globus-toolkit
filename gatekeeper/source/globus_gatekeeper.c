@@ -1036,7 +1036,9 @@ static void doit()
     netlen_t            peerlen;
     char *              peernum;
     char *              x509_delegate;
-    size_t				length;
+    size_t	        length;
+    char *              http_message;
+    size_t	        http_length;
     
 #ifdef GSS_AUTHENTICATION
     /* GSSAPI assist variables */
@@ -1246,27 +1248,55 @@ static void doit()
      * wrapped.
      */
 
+    /*
+     * read HTTP message, extract service name from the header.
+     */
     major_status = globus_gss_assist_get_unwrap(&minor_status,
 				 		context_handle,
-						&service_name,
-						&length,
+						&http_message,
+						&http_length,
 						&token_status,
 						globus_gss_assist_token_get_fd,
 						stdin,
 						logging_usrlog?usrlog_fp:NULL);
     
     if (major_status != GSS_S_COMPLETE)
-      {
+    {
 	failure4(FAILED_SERVICELOOKUP,
-	 "Reading service GSS failed Major:%8.8x Minor:%8.8x Token:%8.8x\n",
-		 major_status,minor_status,token_status);
-      }
+		 "Reading incoming message GSS failed Major:%8.8x "
+		 "Minor:%8.8x Token:%8.8x\n",
+		 major_status,
+		 minor_status,
+		 token_status);
+    }
+
+    for (length=0; length<http_length && http_message[length]!='\n'; length++)
+	;
+
+    if ((length==0) || (length>=http_length))
+    {
+	failure4(FAILED_SERVICELOOKUP,
+		 "Incoming message has invalid first-line length %ld\n",
+		 length);
+
+    }
+
+    http_message[length] = '\0';
+    service_name = (char *) malloc(length);
+    if (1 != sscanf(http_message, "POST /%s", service_name))
+    {
+	failure4(FAILED_SERVICELOOKUP, 
+		 "Unable to extract service name from incoming message\n");
+    }
+
+    free(http_message);
+    length = strlen(service_name);
     
     /*DEE should do sanity check on length, and null term */
     if (length > 256 || service_name[length-1] != '\0')
-      {
+    {
 	failure(FAILED_SERVICELOOKUP, "Service name malformed");
-      }
+    }
     
     notice2(LOG_NOTICE,"Requested service:%s", service_name);
 

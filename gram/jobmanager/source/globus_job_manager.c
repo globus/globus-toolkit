@@ -341,10 +341,10 @@ main(int argc,
 	
     /* gssapi */
 
-    OM_uint32			major_status = 0;
-    OM_uint32			minor_status = 0;
+    OM_uint32			        major_status = 0;
+    OM_uint32		                minor_status = 0;
     int					token_status = 0;
-    gss_ctx_id_t		context_handle = GSS_C_NO_CONTEXT;
+    gss_ctx_id_t	                context_handle = GSS_C_NO_CONTEXT;
     char				tmp_version[64];
 	
     char *				jrbuf;
@@ -882,11 +882,11 @@ main(int argc,
          * then get the job
          * request buffer using gssapi wrap and unwrap
          */
-
-        if (globus_gss_assist_import_sec_context(&minor_status,
-                                                &context_handle,
-                                                &token_status,
-                                                -1,
+        if (globus_gss_assist_import_sec_context(
+	                   &minor_status,
+			   &context_handle,
+			   &token_status,
+			   -1,
                             request->jobmanager_log_fp) != GSS_S_COMPLETE)
         {
             grami_fprintf( request->jobmanager_log_fp,
@@ -897,18 +897,31 @@ main(int argc,
         grami_fprintf(request->jobmanager_log_fp,
             "JM: context loaded\n");
 
-        /* context loaded */
+	/* TODO:
+	   reply = "HTTP/1.1 200 OK"...
+	   */
 
+	major_status = globus_gss_assist_wrap_send(
+	                        &minor_status,
+				context_handle,
+				(char *)reply,
+				strlen((char *)reply) + 1,
+				&token_status,
+				globus_gss_assist_token_send_fd,
+				stdout,
+				request->jobmanager_log_fp);
+	
         /* Get the job request from client as wrapped message */
 
-        major_status = globus_gss_assist_get_unwrap(&minor_status,
-                                                context_handle,
-                                                &jrbuf,
-                                                &jrbuf_size,
-                                                &token_status,
-                                                globus_gss_assist_token_get_fd,
-                                                stdin,
-                                                request->jobmanager_log_fp);
+        major_status = globus_gss_assist_get_unwrap(
+	                     &minor_status,
+			     context_handle,
+			     &jrbuf,
+			     &jrbuf_size,
+			     &token_status,
+			     globus_gss_assist_token_get_fd,
+			     stdin,
+			     request->jobmanager_log_fp);
 
         if (major_status != GSS_S_COMPLETE)
         {

@@ -23,11 +23,18 @@ EXTERN_C_BEGIN
 #if !(GLOBUS_GRAM_HTTP_TRACE_MALLOC)
 
 #define globus_gram_http_malloc(type,count) \
-               (type *) globus_libc_malloc(count*sizeof(type))
+    (type *) globus_libc_malloc(count*sizeof(type))
+    
 #define globus_gram_http_free(ptr) \
-               if (ptr) globus_libc_free(ptr)
+    if (ptr) globus_libc_free(ptr)
 
 #else
+    
+#define globus_gram_http_malloc(type,n) \
+    (type *) globus_gram_http_real_malloc(n*sizeof(type), __FILE__, __LINE__)
+    
+#define globus_gram_http_free(ptr) if (ptr) \
+    globus_gram_http_real_free(ptr,__FILE__,__LINE__)
 
 void*
 globus_gram_http_real_malloc(globus_size_t asize, char * file, int line);
@@ -35,16 +42,10 @@ globus_gram_http_real_malloc(globus_size_t asize, char * file, int line);
 void
 globus_gram_http_real_free(void * ptr, char * file, int line);
 
-#define globus_gram_http_malloc(type,n) \
-    (type *) globus_gram_http_real_malloc(n*sizeof(type), __FILE__, __LINE__)
-
-#define globus_gram_http_free(ptr) if (ptr) \
-    globus_gram_http_real_free(ptr,__FILE__,__LINE__)
-
 #endif
 
 #define GRAM_GOES_HTTP 1
-#define GLOBUS_GRAM_HTTP_BUFSIZE     1024
+#define GLOBUS_GRAM_HTTP_BUFSIZE     64000
 
 #define GLOBUS_GRAM_HTTP_QUERY_JOB_STATUS      1
 #define GLOBUS_GRAM_HTTP_QUERY_JOB_CANCEL      2

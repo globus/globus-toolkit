@@ -1437,7 +1437,6 @@ globus_l_gram_http_post( char *                          url,
     int                             rc;
 
     handle  = my_malloc(globus_io_handle_t,1);
-
     if ((rc = globus_gram_http_attach(url, handle, attr))
 	|| (rc = globus_gram_http_frame( message,
 					 msgsize,
@@ -1448,16 +1447,13 @@ globus_l_gram_http_post( char *                          url,
 	my_free(status);
 	return GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED;	
     }
-
     verbose(notice("http_post : writing size=%d on %d\n%s----\n",
 		   sendbufsize, handle->fd, (char *) sendbuf));
-    
     res = globus_io_register_write( handle,
 				    sendbuf,
 				    sendbufsize,
 				    callback,
 				    status );
-
     if (res != GLOBUS_SUCCESS)
     {
 	my_free(sendbuf);
@@ -1465,7 +1461,6 @@ globus_l_gram_http_post( char *                          url,
 	my_free(status);
 	return GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED;
     }
-
     return GLOBUS_SUCCESS;
 }
 

@@ -585,7 +585,6 @@ int
 globus_gram_client_job_cancel(char * job_contact)
 {
     int                           rc;
-    int                           version;
     char                          query[GLOBUS_GRAM_HTTP_BUFSIZE];
     globus_size_t                 querysize;
     globus_gram_http_monitor_t    monitor;
@@ -596,12 +595,12 @@ globus_gram_client_job_cancel(char * job_contact)
     globus_cond_init(&monitor.cond, (globus_condattr_t *) NULL);
     monitor.done = GLOBUS_FALSE;
 
+    /* TODO: pack query */
     globus_libc_sprintf( query,
-			 "%d %d\n",
-			 GLOBUS_GRAM_PROTOCOL_VERSION,
+			 "%d null",
 			 GLOBUS_GRAM_HTTP_QUERY_JOB_CANCEL );
 
-    querysize = strlen(query);
+    querysize = strlen(query)+1;
 
     rc = globus_gram_http_post_and_get(
 	    job_contact,
@@ -613,8 +612,6 @@ globus_gram_client_job_cancel(char * job_contact)
     if (rc!=GLOBUS_SUCCESS)
 	goto globus_gram_client_job_cancel_done;
 
-    
-
     globus_mutex_lock(&monitor.mutex);
     while (!monitor.done)
     {
@@ -623,21 +620,17 @@ globus_gram_client_job_cancel(char * job_contact)
     rc = monitor.errorcode;
     globus_mutex_unlock(&monitor.mutex);
 
-    GLOBUS_L_CHECK_IF_INITIALIZED;
-
     if (rc == GLOBUS_SUCCESS && querysize > 0)
     {
-	if (2 != sscanf(query, "%d %d", &version, &rc))
+	/* TODO: unpack query */
+	if (1 != sscanf(query, "%d", &rc))
 	    rc = GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED;
-	else if (version != GLOBUS_GRAM_PROTOCOL_VERSION)
-	    rc = GLOBUS_GRAM_CLIENT_ERROR_VERSION_MISMATCH;
     }
 
  globus_gram_client_job_cancel_done:
     
     globus_mutex_destroy(&monitor.mutex);
     globus_cond_destroy(&monitor.cond);
-    
     
     return rc;
 }

@@ -94,7 +94,12 @@ globus_l_gram_client_error_strings[] =
     "the provided RSL 'min_memory' parameter is invalid",
     "the provided RSL 'max_memory' parameter is invalid",
     "the RSL 'min_memory' value is not zero or greater",
-    "the RSL 'max_memory' value is not zero or greater"
+    "the RSL 'max_memory' value is not zero or greater",
+    "the creation of a HTTP message failed",
+    "parsing incoming HTTP message failed",
+    "the packing of information into a HTTP message failed"
+    "an incoming HTTP message did not include the necessary information"
+    "the job manager was unable the service the client request"
 };
 
 const char *
