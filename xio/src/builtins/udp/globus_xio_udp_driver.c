@@ -72,6 +72,7 @@ typedef struct
     char *                              bind_address;
     globus_bool_t                       restrict_port;
     globus_bool_t                       resuseaddr;
+    globus_bool_t                       no_ipv6;
     int                                 sndbuf;
     int                                 rcvbuf;
     
@@ -92,6 +93,7 @@ static globus_l_attr_t                  globus_l_xio_udp_attr_default =
     GLOBUS_NULL,                        /* bind_address */
     GLOBUS_TRUE,                        /* restrict_port */
     GLOBUS_FALSE,                       /* reuseaddr */
+    GLOBUS_FALSE,                       /* no_ipv6 */
     0,                                  /* sndbuf (system default) */     
     0,                                  /* rcvbuf (system default) */
     
@@ -117,6 +119,7 @@ typedef struct
     globus_xio_system_handle_t          handle;
     globus_bool_t                       connected;
     globus_bool_t                       converted;
+    globus_bool_t                       no_ipv6;
 } globus_l_handle_t;
 
 static
@@ -205,7 +208,8 @@ globus_result_t
 globus_l_xio_udp_get_addrinfo(
     const char *                        host,
     const char *                        port,
-    globus_addrinfo_t **                addrinfo)
+    globus_addrinfo_t **                addrinfo,
+    globus_bool_t                       no_ipv6)
 {
     globus_result_t                     result;
     globus_addrinfo_t                   addrinfo_hints;
@@ -214,7 +218,7 @@ globus_l_xio_udp_get_addrinfo(
     /* setup hints for types of connectable sockets we want */
     memset(&addrinfo_hints, 0, sizeof(globus_addrinfo_t));
     addrinfo_hints.ai_flags = 0;
-    addrinfo_hints.ai_family = PF_UNSPEC;
+    addrinfo_hints.ai_family = no_ipv6 ? PF_INET : PF_UNSPEC;
     addrinfo_hints.ai_socktype = SOCK_DGRAM;
     addrinfo_hints.ai_protocol = 0;
     
@@ -399,7 +403,18 @@ globus_l_xio_udp_attr_cntl(
         out_bool = va_arg(ap, globus_bool_t *);
         *out_bool = attr->resuseaddr;
         break;
+      
+      /* globus_bool_t                  no_ipv6 */
+      case GLOBUS_XIO_UDP_SET_NO_IPV6:
+        attr->no_ipv6 = va_arg(ap, globus_bool_t);
+        break;
         
+      /* globus_bool_t *                no_ipv6_out */
+      case GLOBUS_XIO_UDP_GET_NO_IPV6:
+        out_bool = va_arg(ap, globus_bool_t *);
+        *out_bool = attr->no_ipv6;
+        break;
+    
       /* int                            sndbuf */
       case GLOBUS_XIO_UDP_SET_SNDBUF:
         attr->sndbuf = va_arg(ap, int);
@@ -468,7 +483,10 @@ globus_l_xio_udp_attr_cntl(
         if(contact_info.host && contact_info.port)
         {
             result = globus_l_xio_udp_get_addrinfo(
-                contact_info.host, contact_info.port, &save_addrinfo);
+                contact_info.host,
+                contact_info.port,
+                &save_addrinfo,
+                attr->no_ipv6);
             globus_xio_contact_destroy(&contact_info);
             if(result != GLOBUS_SUCCESS)
             {
@@ -860,7 +878,7 @@ globus_l_xio_udp_create_listener(
     /* setup hints for types of connectable sockets we want */
     memset(&addrinfo_hints, 0, sizeof(globus_addrinfo_t));
     addrinfo_hints.ai_flags = GLOBUS_AI_PASSIVE;
-    addrinfo_hints.ai_family = PF_UNSPEC;
+    addrinfo_hints.ai_family = handle->no_ipv6 ? PF_INET : PF_UNSPEC;
     addrinfo_hints.ai_socktype = SOCK_DGRAM;
     addrinfo_hints.ai_protocol = 0;
     
@@ -962,7 +980,8 @@ error_getaddrinfo:
 static
 globus_result_t
 globus_l_xio_udp_handle_init(
-    globus_l_handle_t **                handle)
+    globus_l_handle_t **                handle,
+    const globus_l_attr_t *             attr)
 {
     globus_result_t                     result;
     GlobusXIOName(globus_l_xio_udp_handle_init);
@@ -976,6 +995,7 @@ globus_l_xio_udp_handle_init(
     
     (*handle)->connected = GLOBUS_FALSE;
     (*handle)->converted = GLOBUS_FALSE;
+    (*handle)->no_ipv6 = attr->no_ipv6;
     
     return GLOBUS_SUCCESS;
 
@@ -1006,7 +1026,8 @@ globus_l_xio_udp_connect(
     int                                 rc;
     GlobusXIOName(globus_l_xio_udp_connect);
     
-    result = globus_l_xio_udp_get_addrinfo(host, port, &save_addrinfo);
+    result = globus_l_xio_udp_get_addrinfo(
+        host, port, &save_addrinfo, handle->no_ipv6);
     if(result != GLOBUS_SUCCESS)
     {
         result = GlobusXIOErrorWrapFailed(
@@ -1079,7 +1100,7 @@ globus_l_xio_udp_open(
     attr = (globus_l_attr_t *) 
         (driver_attr ? driver_attr : &globus_l_xio_udp_attr_default);
     
-    result = globus_l_xio_udp_handle_init(&handle);
+    result = globus_l_xio_udp_handle_init(&handle, attr);
     if(result != GLOBUS_SUCCESS)
     {
         result = GlobusXIOErrorWrapFailed(
@@ -1490,7 +1511,7 @@ globus_l_xio_udp_cntl(
             
             globus_xio_contact_destroy(&contact_info);
             memset(&addr, 0, sizeof(addr));
-            addr.sin_family = AF_UNSPEC;
+            addr.sin_family = PF_UNSPEC;
             
             do
             {
@@ -1540,7 +1561,7 @@ globus_l_xio_udp_init(
     if(result != GLOBUS_SUCCESS)
     {
         result = GlobusXIOErrorWrapFailed(
-            "globus_l_xio_udp_handle_init", result);
+            "globus_xio_driver_init", result);
         goto error_init;
     }
 

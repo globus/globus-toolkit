@@ -54,6 +54,10 @@ typedef enum
     GLOBUS_XIO_UDP_SET_REUSEADDR,
     /* globus_bool_t *                  resuseaddr_out */
     GLOBUS_XIO_UDP_GET_REUSEADDR,
+    /* globus_bool_t                    no_ipv6 */
+    GLOBUS_XIO_UDP_SET_NO_IPV6,
+    /* globus_bool_t *                  no_ipv6_out */
+    GLOBUS_XIO_UDP_GET_NO_IPV6,
     
     /**
      *  handle attrs/cntls

@@ -92,6 +92,7 @@ typedef struct
     char *                              bind_address;
     globus_bool_t                       restrict_port;
     globus_bool_t                       resuseaddr;
+    globus_bool_t                       no_ipv6;
     
     /* handle attrs */
     globus_bool_t                       keepalive;
@@ -122,6 +123,7 @@ static globus_l_attr_t                  globus_l_xio_tcp_attr_default =
     GLOBUS_NULL,                        /* bind_address */
     GLOBUS_TRUE,                        /* restrict_port */
     GLOBUS_FALSE,                       /* reuseaddr */
+    GLOBUS_FALSE,                       /* no_ipv6 */
     
     GLOBUS_FALSE,                       /* keepalive */  
     GLOBUS_FALSE,                       /* linger */     
@@ -456,6 +458,17 @@ globus_l_xio_tcp_attr_cntl(
       case GLOBUS_XIO_TCP_GET_REUSEADDR:
         out_bool = va_arg(ap, globus_bool_t *);
         *out_bool = attr->resuseaddr;
+        break;
+      
+      /* globus_bool_t                  no_ipv6 */
+      case GLOBUS_XIO_TCP_SET_NO_IPV6:
+        attr->no_ipv6 = va_arg(ap, globus_bool_t);
+        break;
+        
+      /* globus_bool_t *                no_ipv6_out */
+      case GLOBUS_XIO_TCP_GET_NO_IPV6:
+        out_bool = va_arg(ap, globus_bool_t *);
+        *out_bool = attr->no_ipv6;
         break;
         
       /**
@@ -1091,7 +1104,7 @@ globus_l_xio_tcp_create_listener(
     /* setup hints for types of connectable sockets we want */
     memset(&addrinfo_hints, 0, sizeof(globus_addrinfo_t));
     addrinfo_hints.ai_flags = GLOBUS_AI_PASSIVE;
-    addrinfo_hints.ai_family = PF_UNSPEC;
+    addrinfo_hints.ai_family = attr->no_ipv6 ? PF_INET : PF_UNSPEC;
     addrinfo_hints.ai_socktype = SOCK_STREAM;
     addrinfo_hints.ai_protocol = 0;
     
@@ -1245,9 +1258,16 @@ globus_l_xio_tcp_server_init(
     else
     {
         /* user specified handle */
-        /* XXX should i apply other attrs here? */
         server->listener_handle = attr->handle;
         server->converted = GLOBUS_TRUE;
+        result = globus_l_xio_tcp_apply_handle_attrs(
+            attr, server->listener_handle, GLOBUS_FALSE, GLOBUS_FALSE);
+        if(result != GLOBUS_SUCCESS)
+        {
+            result = GlobusXIOErrorWrapFailed(
+                "globus_l_xio_tcp_apply_handle_attrs", result);
+            goto error_listener;
+        }
     }
     
     GlobusXIOTcpDebugExit();
@@ -1523,7 +1543,7 @@ globus_l_xio_tcp_bind_local(
     GlobusXIOTcpDebugEnter();
     memset(&addrinfo_hints, 0, sizeof(globus_addrinfo_t));
     addrinfo_hints.ai_flags = GLOBUS_AI_PASSIVE;
-    addrinfo_hints.ai_family = PF_UNSPEC;
+    addrinfo_hints.ai_family = attr->no_ipv6 ? PF_INET : PF_UNSPEC;
     addrinfo_hints.ai_socktype = SOCK_STREAM;
     addrinfo_hints.ai_protocol = 0;
     
@@ -1782,7 +1802,7 @@ globus_l_xio_tcp_connect(
     /* setup hints for types of connectable sockets we want */
     memset(&addrinfo_hints, 0, sizeof(globus_addrinfo_t));
     addrinfo_hints.ai_flags = 0;
-    addrinfo_hints.ai_family = PF_UNSPEC;
+    addrinfo_hints.ai_family = attr->no_ipv6 ? PF_INET : PF_UNSPEC;
     addrinfo_hints.ai_socktype = SOCK_STREAM;
     addrinfo_hints.ai_protocol = 0;
     
