@@ -401,6 +401,7 @@ globus_l_gram_client_authenticate(char * gatekeeper_url,
     globus_byte_t                tmp_version;
     char *                       gatekeeper_host;
     char *                       gatekeeper_princ;
+	char * 						 gatekeeper_service = "jobmanager";
     unsigned short               gatekeeper_port = 0;
     char *                       auth_msg_buf;
     size_t                       auth_msg_buf_size;
@@ -409,7 +410,7 @@ globus_l_gram_client_authenticate(char * gatekeeper_url,
     OM_uint32                    minor_status = 0;
     int                          token_status = 0;
     OM_uint32                    ret_flags = 0;
-    char *cp, *sp, *qp;
+    char *cp, *sp, *qp, *pp;
 
 
     GLOBUS_L_LOCK;
@@ -427,6 +428,11 @@ globus_l_gram_client_authenticate(char * gatekeeper_url,
                 *qp++ = '\0';
                 gatekeeper_princ = qp;
             }
+			if ((pp = strchr(sp,'/')))
+			{
+				*pp++ = '\0';
+				gatekeeper_service = pp;
+			}
             gatekeeper_port = atoi(sp);
         }
         else
@@ -444,8 +450,9 @@ globus_l_gram_client_authenticate(char * gatekeeper_url,
     /* Connecting to the gatekeeper.
      */
 
-    grami_fprintf(globus_l_print_fp, "Connecting to %s:%d:%s\n",
-		  gatekeeper_host, gatekeeper_port, gatekeeper_princ);
+    grami_fprintf(globus_l_print_fp, "Connecting to %s:%d/%s:%s\n",
+		  gatekeeper_host, gatekeeper_port, 
+		  gatekeeper_service, gatekeeper_princ);
 
     rc = globus_nexus_fd_connect(gatekeeper_host,
 				 gatekeeper_port,
@@ -454,6 +461,7 @@ globus_l_gram_client_authenticate(char * gatekeeper_url,
     {
         grami_fprintf(globus_l_print_fp,
               " globus_nexus_fd_connect failed.  rc = %d\n", rc);
+		free(gatekeeper_host);
 	GLOBUS_L_UNLOCK;
         return (GLOBUS_GRAM_CLIENT_ERROR_CONNECTION_FAILED);
     }
@@ -497,6 +505,7 @@ globus_l_gram_client_authenticate(char * gatekeeper_url,
 							   pcontext_handle,
 							   GSS_C_NO_BUFFER);
         globus_nexus_fd_close(*gatekeeper_fd);
+		free(gatekeeper_host);
         GLOBUS_L_UNLOCK;
         return (GLOBUS_GRAM_CLIENT_ERROR_AUTHORIZATION);
     }
@@ -521,19 +530,21 @@ globus_l_gram_client_authenticate(char * gatekeeper_url,
     {
         grami_fprintf(globus_l_print_fp,
 	      "Authorization message not received");
-	GLOBUS_L_UNLOCK;
-	return (GLOBUS_GRAM_CLIENT_ERROR_AUTHORIZATION);
+		free(gatekeeper_host);
+		GLOBUS_L_UNLOCK;
+		return (GLOBUS_GRAM_CLIENT_ERROR_AUTHORIZATION);
     }
 
     if (auth_msg_buf_size > 1 )
     { 
         grami_fprintf(globus_l_print_fp,
               "authorization buffer = %s\n", auth_msg_buf);
-	gss_delete_sec_context(&minor_status,
+		gss_delete_sec_context(&minor_status,
 						   pcontext_handle,
 						   GSS_C_NO_BUFFER);
-	globus_nexus_fd_close(*gatekeeper_fd);
-	GLOBUS_L_UNLOCK;
+		globus_nexus_fd_close(*gatekeeper_fd);
+		free(gatekeeper_host);
+		GLOBUS_L_UNLOCK;
 
         if (strncmp(auth_msg_buf, "ERROR: gatekeeper misconfigured", 31) == 0)
         {
@@ -549,6 +560,7 @@ globus_l_gram_client_authenticate(char * gatekeeper_url,
         tmp_version =  *auth_msg_buf;
         if (tmp_version != GLOBUS_GRAM_PROTOCOL_VERSION)
         {
+			free(gatekeeper_host);
             return (GLOBUS_GRAM_CLIENT_ERROR_VERSION_MISMATCH);
         }
     }
@@ -564,8 +576,8 @@ globus_l_gram_client_authenticate(char * gatekeeper_url,
 
 	if (globus_gss_assist_wrap_send(&minor_status,
 					*pcontext_handle,
-					"jobmanager",
-					strlen("jobmanager")+1,
+					gatekeeper_service,
+					strlen(gatekeeper_service)+1,
 					&token_status,
 					globus_gss_assist_token_send_nexus,
                     (void *) gatekeeper_fd,
@@ -577,6 +589,7 @@ globus_l_gram_client_authenticate(char * gatekeeper_url,
 							   pcontext_handle,
 							   GSS_C_NO_BUFFER);
 		globus_nexus_fd_close(*gatekeeper_fd);
+		free(gatekeeper_host);
 		GLOBUS_L_UNLOCK;
 		return (GLOBUS_GRAM_CLIENT_ERROR_AUTHORIZATION);
 	}
@@ -598,8 +611,9 @@ globus_l_gram_client_authenticate(char * gatekeeper_url,
     {
         grami_fprintf(globus_l_print_fp,
 	      "Service message not received");
-	GLOBUS_L_UNLOCK;
-	return (GLOBUS_GRAM_CLIENT_ERROR_AUTHORIZATION);
+		free(gatekeeper_host);
+		GLOBUS_L_UNLOCK;
+		return (GLOBUS_GRAM_CLIENT_ERROR_AUTHORIZATION);
     }
 
     if (auth_msg_buf_size > 1 )
@@ -610,6 +624,7 @@ globus_l_gram_client_authenticate(char * gatekeeper_url,
 							   pcontext_handle,
 							   GSS_C_NO_BUFFER);
 		globus_nexus_fd_close(*gatekeeper_fd);
+		free(gatekeeper_host);
 		GLOBUS_L_UNLOCK;
 		return (GLOBUS_GRAM_CLIENT_ERROR_AUTHORIZATION);
     }
@@ -620,6 +635,7 @@ globus_l_gram_client_authenticate(char * gatekeeper_url,
 		  "WARNING: No authentication performed\n");
 #endif /* GSS_AUTHENTICATION */
 
+	free(gatekeeper_host);
     GLOBUS_L_UNLOCK;
     return(0);
 
