@@ -205,6 +205,8 @@ globus_uuid_create(
             /* either we're generating these too fast or someone changed
              * clock on us, get new sequence number */
             globus_l_uuid_sequence = ((uint16_t) rand() & 0x3fff) | 0x8000;
+            memcpy(&globus_l_uuid_last_time,
+                &current_time, sizeof(current_time));
         }
         sequence = globus_l_uuid_sequence;
     }
