@@ -310,7 +310,6 @@ AC_MSG_CHECKING(for pthreads)
                 LAC_THREADS_ADD_DEFINE(HAVE_PTHREAD_PREEMPTIVE)
                 LAC_THREADS_ADD_DEFINE(HAVE_THREAD_SAFE_STDIO)
                 LAC_THREADS_ADD_DEFINE(HAVE_THREAD_SAFE_SELECT) 
-                lac_cv_threads_LIBS="-lpthread"
               ;;
 	      *-hp-hpux10* | *-hp-hpux11* )
 		LAC_THREADS_ADD_DEFINE(_REENTRANT)
