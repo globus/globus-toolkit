@@ -104,20 +104,6 @@ AC_SUBST(EXEEXT)
 
 GPT_INIT
 
-# These files are not used outside of automake.  But the makefile still
-# has them as dependent targets.
-if test ! -h globus_automake_targets; then
-    echo "installing extra automake files"
-    ln -s $GLOBUS_INSTALL_PATH/share/globus_aclocal/automake_targets \
-    globus_automake_targets
-    ln -s $GLOBUS_INSTALL_PATH/share/globus_aclocal/automake_rules \
-    globus_automake_rules
-    ln -s $GLOBUS_INSTALL_PATH/share/globus_aclocal/automake_top_rules \
-    globus_automake_top_rules
-fi
-
-
-
 
 define([AM_PROG_LIBTOOL],[
 	LIBTOOL='$(SHELL) $(GLOBUS_INSTALL_PATH)/sbin/libtool-$(GLOBUS_FLAVOR_NAME)'

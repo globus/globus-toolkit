@@ -13,4 +13,3 @@ SUBDIRS = aclocal config scripts tests pkgdata doxygen
 EXTRA_DIST = bootstrap
 
 include $(top_srcdir)/aclocal/automake_rules
-include $(top_srcdir)/aclocal/automake_top_rules
