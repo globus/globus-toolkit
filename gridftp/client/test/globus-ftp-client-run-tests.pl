@@ -43,6 +43,12 @@ GetOptions( 'runserver' => \$runserver,
             'runwuserver' => \$runwuserver,
             'nogsi' => \$nogsi);
 
+if(defined($nogsi) or defined($ENV{FTP_TEST_NO_GSI}))
+{
+    $nogsi = 1;
+    $ENV{FTP_TEST_NO_GSI} = 1;
+    print "Not using GSI security.\n";
+}
 if(defined($runserver))
 {
     $server_pid = setup_server();
@@ -111,12 +117,9 @@ sub setup_server()
     my $server_port = 0;
     my $server_nosec = "";
     my $subject;
-    if(defined($nogsi) or defined($ENV{FTP_TEST_NO_GSI}))
+    if(defined($nogsi))
     {
         $server_nosec = "-aa";
-        $nogsi = 1;
-        $ENV{FTP_TEST_NO_GSI} = 1;
-        print "Not using GSI security.\n";
     }
 
     my $server_args = "-s -no-chdir -d 0 -p $server_port $server_nosec";
