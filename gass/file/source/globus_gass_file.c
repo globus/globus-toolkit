@@ -319,7 +319,7 @@ globus_gass_fopen(char *filename,
 
     if(fd >= 0)
     {
-	globus_gass_file_diagnostics_printf("Opening FILE with fd = %i\n", fd);
+	/*globus_gass_file_diagnostics_printf("Opening FILE with fd = %i\n", fd);*/
 	return fdopen(fd, type);
     }
     else
