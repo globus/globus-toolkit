@@ -24,7 +24,7 @@
 #include <libxslt/extensions.h> 
 #include <libxslt/xsltInternals.h>
 #include <libxslt/xsltutils.h>
-#include <libexslt/exslt.h>
+#include <elibxslt/exslt.h>
 #endif /* XMLSEC_NO_XSLT */
 
 #include <xmlsec/xmlsec.h>
