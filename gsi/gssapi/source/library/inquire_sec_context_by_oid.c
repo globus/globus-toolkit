@@ -18,7 +18,7 @@
 
 static char *rcsid = "$Id$";
 
-extern const gss_OID_desc * const gss_ext_x509_cert_chain;
+extern const gss_OID_desc * const gss_ext_x509_cert_chain_oid;
 
 /**
  * @name Inquire Sec Context by OID
@@ -44,6 +44,7 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
     ASN1_OCTET_STRING *                 asn1_oct_string;
     gss_buffer_desc                     data_set_buffer;
     globus_result_t                     local_result = GLOBUS_SUCCESS;
+    unsigned char *                     tmp_ptr;
     static char *                       _function_name_ =
         "gss_inquire_sec_context_by_oid";
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
@@ -138,11 +139,11 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
         goto exit;
     }
 
-    if(((gss_OID_desc *)desired_object)->length ==
-       gss_ext_x509_cert_chain->length &&
+    if(((gss_OID_desc *)desired_object)->length !=
+       gss_ext_x509_cert_chain_oid->length ||
        memcmp(((gss_OID_desc *)desired_object)->elements,
-              gss_ext_x509_cert_chain->elements,
-              gss_ext_x509_cert_chain->length))
+              gss_ext_x509_cert_chain_oid->elements,
+              gss_ext_x509_cert_chain_oid->length))
     {
         /* figure out what object was asked for */
         
@@ -235,7 +236,7 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
         for(chain_index = 0; chain_index < cert_count; chain_index++)
         {
             cert = sk_X509_value(cert_chain, chain_index);
-            
+
             data_set_buffer.length = i2d_X509(cert, NULL);
 
             if(data_set_buffer.length < 0)
@@ -257,7 +258,9 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
                 goto exit;                
             }
 
-            if(i2d_X509(cert,&(data_set_buffer.value)) < 0)
+            tmp_ptr = data_set_buffer.value;
+            
+            if(i2d_X509(cert,&tmp_ptr) < 0)
             {
                 free(data_set_buffer.value);
                 GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
@@ -267,7 +270,7 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
                 major_status = GSS_S_FAILURE;
                 goto exit;                
             }
-            
+
             major_status = gss_add_buffer_set_member(
                 &local_minor_status,
                 &data_set_buffer,
