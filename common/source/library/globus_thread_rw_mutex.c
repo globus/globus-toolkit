@@ -153,13 +153,12 @@ globus_i_rw_mutex_signal(
         {
             do
             {
-                /* take this reader out of the queue and signal it */
-                rw_lock->waiters = waiter->pnext;
-                
                 rw_lock->readers++;
                 waiter->acquired = GLOBUS_TRUE;
                 globus_cond_signal(&waiter->cond);
                 
+                /* just signaled this reader, take out of the queue */
+                rw_lock->waiters = waiter = waiter->pnext;
             } while(waiter && waiter->is_reader);
         }
         else if(rw_lock->readers == 0)
@@ -173,7 +172,7 @@ globus_i_rw_mutex_signal(
         }
         
         /* if we took the last waiter, reset the tail pointer */
-        if(!waiter)
+        if(!rw_lock->waiters)
         {
             rw_lock->tail = &rw_lock->waiters;
         }
