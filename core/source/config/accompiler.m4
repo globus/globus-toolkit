@@ -234,6 +234,7 @@ case ${host}--$1 in
                 AC_PATH_PROGS(lac_cv_CC, $CC gcc)
             else
                 AC_PATH_PROGS(lac_cv_CC, $CC ecc cc)
+                lac_CFLAGS="$lac_CFLAGS -restrict"
             fi
             
             AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC CC c++ g++ gcc)
