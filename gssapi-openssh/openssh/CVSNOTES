@@ -1,0 +1,48 @@
+CVSNOTES
+========
+
+This file contains notes regarding the files stored in the openssh CVS module that
+contains the GSI-OpenSSH code.  Consider it a living document.
+
+  [ Generic Tag Merging ]
+
+    1. Set up your environment to point to the correct CVS repository.
+
+          $  export CVSROOT="/afs/ncsa/projects/globus/Repository"
+
+    2. Commit any locally-modified files and tag the repository before the merge.
+
+          $ cvs commit
+          $ cvs tag <tagName>-premerge
+
+    2. Merge the changes from your original base merge point to your new base merge
+       point.
+
+          $ cvs update -kk -j<originalBase> -j<newBase>
+
+    3. Retrieve a list of any conflicts that were discovered as a result of the
+       merge.
+
+          $ cvs -n update | grep C
+
+    4. Resolve all of the conflicts in each of the listed files.
+
+    5. Commit all of the files in your working directory to the repository and tag
+       the repository.
+
+          $ cvs commit
+          $ cvs tag <tagName>-merged
+
+  [ History ]
+
+    2002/09/23
+    ----------
+      Action: Merge
+        - occurred on: GPT branch (OPENSSH_3_1P1_GSSAPI_GPT-branch)
+        - original base: OPENSSH_3_4P1_GSI_20020701
+        - new base: OPENSSH_3_4P1_GSI_20020923
+      Conflicts: 1
+        - configure.ac
+            resolved by ignoring mainline changes and keeping the text that was
+            originally in the file on this branch.  (We require a specified flavor type
+            where the trunk can compensate in that case.)
