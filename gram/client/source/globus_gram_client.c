@@ -107,10 +107,10 @@ notice(char *s);
 
 #ifdef GSS_AUTHENTICATION
 static int
-grami_ggg_get_token_nexus(void * arg, void ** bufp, int * sizep);
+grami_ggg_get_token_nexus(void * arg, void ** bufp, size_t * sizep);
 
 static int 
-grami_ggg_send_token_nexus( void * arg,  void * buf, int size);
+grami_ggg_send_token_nexus( void * arg,  void * buf, size_t size);
 #endif
 /******************************************************************************
                        Define module specific variables
@@ -147,7 +147,7 @@ Parameters:
 Returns:
 ******************************************************************************/
 static int
-grami_ggg_get_token_nexus(void * arg, void ** bufp, int * sizep)
+grami_ggg_get_token_nexus(void * arg, void ** bufp, size_t * sizep)
 {
 	unsigned char int_buf[4];
 	int    	size;
@@ -207,7 +207,7 @@ Parameters:
 Returns:
 ******************************************************************************/
 static int
-grami_ggg_send_token_nexus( void *arg,  void *buf, int size)
+grami_ggg_send_token_nexus( void *arg,  void *buf, size_t size)
 {
 	unsigned char int_buf[4];
 	int * 	fd = (int *) arg;
