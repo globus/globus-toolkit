@@ -196,18 +196,18 @@ GSS_CALLCONV gss_init_delegation(
             }
         }
 
-        if(!proxy_sign_ext(0,
-                           cred->pcd->ucert,
-                           cred->pcd->upkey,
-                           EVP_md5(),
-                           reqp,
-                           &ncert,
-                           0,
-                           /*time_req, why can we use GSS_C_INDEFINITE here?*/
-                           0, /* don't want limited proxy */
-                           0,
-                           "proxy",
-                           extensions))
+        if(proxy_sign_ext(0,
+                          cred->pcd->ucert,
+                          cred->pcd->upkey,
+                          EVP_md5(),
+                          reqp,
+                          &ncert,
+                          0,
+                          /*time_req, why can we use GSS_C_INDEFINITE here?*/
+                          0, /* don't want limited proxy */
+                          0,
+                          "proxy",
+                          extensions))
         {
             /* should probably return a error related to not being
                able to sign the cert */
