@@ -180,6 +180,8 @@ globus_module_descriptor_t              globus_i_gsi_sysconfig_module;
             globus_gsi_sysconfig_get_gridmap_filename_win32
 #    define GLOBUS_GSI_SYSCONFIG_GET_AUTHZ_CONF_FILENAME \
             globus_gsi_sysconfig_get_authz_conf_filename_win32
+#    define GLOBUS_GSI_SYSCONFIG_GET_GAA_CONF_FILENAME \
+            globus_gsi_sysconfig_get_gaa_conf_filename_win32
 #    define GLOBUS_GSI_SYSCONFIG_IS_SUPERUSER \
             globus_gsi_sysconfig_is_superuser_win32
 #    define GLOBUS_GSI_SYSCONFIG_GET_USER_ID_STRING \
@@ -360,6 +362,24 @@ globus_module_descriptor_t              globus_i_gsi_sysconfig_module;
  */
 #    define GLOBUS_GSI_SYSCONFIG_GET_AUTHZ_CONF_FILENAME \
             globus_gsi_sysconfig_get_authz_conf_filename_unix
+
+/**
+ * Determine the location of the authorization library callout config file. 
+ * @ingroup globus_gsi_system_config_defines
+ * @hideinitializer
+ * See globus_gsi_sysconfig_get_authz_lib_conf_filename_unix()
+ */
+#    define GLOBUS_GSI_SYSCONFIG_GET_AUTHZ_LIB_CONF_FILENAME \
+            globus_gsi_sysconfig_get_authz_lib_conf_filename_unix
+
+/**
+ * Determine the location of the GAA callout config file. 
+ * @ingroup globus_gsi_system_config_defines
+ * @hideinitializer
+ * See globus_gsi_sysconfig_get_gaa_conf_filename_unix()
+ */
+#    define GLOBUS_GSI_SYSCONFIG_GET_GAA_CONF_FILENAME \
+            globus_gsi_sysconfig_get_gaa_conf_filename_unix
 /**
  * Determine whether the current user is the super user
  * @ingroup globus_gsi_system_config_defines
@@ -611,6 +631,10 @@ globus_gsi_sysconfig_get_gridmap_filename_unix(
 
 globus_result_t
 globus_gsi_sysconfig_get_authz_conf_filename_unix(
+    char **                             filename);
+
+globus_result_t
+globus_gsi_sysconfig_get_gaa_conf_filename_unix(
     char **                             filename);
 
 #endif /* WIN32 */
