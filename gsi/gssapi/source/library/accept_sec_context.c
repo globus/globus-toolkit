@@ -378,6 +378,9 @@ GSS_CALLCONV gss_accept_sec_context(
             local_result = globus_gsi_cred_set_cert_chain(
                 delegated_cred,
                 cert_chain);
+
+            sk_X509_pop_free(cert_chain, X509_free);
+            
             if(local_result != GLOBUS_SUCCESS)
             {
                 GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(

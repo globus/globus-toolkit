@@ -55,7 +55,6 @@ GSS_CALLCONV gss_inquire_cred_by_oid(
     ASN1_OBJECT *                       desired_asn1_obj;
     ASN1_OCTET_STRING *                 asn1_oct_string;
     gss_buffer_desc                     data_set_buffer;
-    gss_ctx_id_desc *                   context = NULL;
     int                                 chain_index;
     int                                 found_index;
     globus_result_t                     local_result = GLOBUS_SUCCESS;
@@ -104,8 +103,8 @@ GSS_CALLCONV gss_inquire_cred_by_oid(
         goto exit;
     }
 
-    local_result = globus_gsi_callback_get_cert_chain(
-        context->callback_data,
+    local_result = globus_gsi_cred_get_cert_chain(
+        ((gss_cred_id_desc *)cred_handle)->cred_handle,
         &cert_chain);
     if(local_result != GLOBUS_SUCCESS)
     {
@@ -113,6 +112,7 @@ GSS_CALLCONV gss_inquire_cred_by_oid(
             minor_status, local_result,
             GLOBUS_GSI_GSSAPI_ERROR_WITH_CALLBACK_DATA);
         major_status = GSS_S_FAILURE;
+        cert_chain = NULL;
         goto exit;
     }
 
@@ -215,6 +215,11 @@ GSS_CALLCONV gss_inquire_cred_by_oid(
 
  exit:
 
+    if(cert_chain != NULL)
+    {
+        sk_X509_pop_free(cert_chain, X509_free);
+    }
+    
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;
 }

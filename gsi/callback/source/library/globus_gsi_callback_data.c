@@ -75,10 +75,10 @@ globus_gsi_callback_data_destroy(
         goto exit;
     }
 
-/*      if(callback_data->cert_chain) */
-/*      { */
-/*          sk_X509_pop_free(callback_data->cert_chain, X509_free); */
-/*      } */
+    if(callback_data->cert_chain)
+    { 
+        sk_X509_pop_free(callback_data->cert_chain, X509_free); 
+    } 
     
     if(callback_data->cert_dir)
     {
@@ -90,7 +90,6 @@ globus_gsi_callback_data_destroy(
     globus_object_free(globus_error_get(callback_data->error));
 
     globus_libc_free(callback_data);
-    callback_data = NULL;
 
  exit:
     GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
@@ -138,8 +137,8 @@ globus_gsi_callback_data_copy(
 
     for(index = 0; index < sk_X509_num(source->cert_chain); ++index)
     {
-        if(!sk_X509_insert((*dest)->cert_chain, 
-                           sk_X509_value(source->cert_chain, index),
+        if(!sk_X509_insert((*dest)->cert_chain,
+                           X509_dup(sk_X509_value(source->cert_chain, index)),
                            index))
         {
             GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
@@ -432,20 +431,20 @@ globus_gsi_callback_set_cert_chain(
              _function_name_));
         goto exit;
     }
-
-/*      if(callback_data->cert_chain) */
-/*      { */
-/*          sk_X509_pop_free(callback_data->cert_chain, X509_free); */
-/*          callback_data->cert_chain = NULL; */
-/*      } */
+    
+    if(callback_data->cert_chain) 
+    { 
+        sk_X509_pop_free(callback_data->cert_chain, X509_free); 
+        callback_data->cert_chain = NULL; 
+    } 
 
     callback_data->cert_chain = sk_X509_new_null();
     
     for(index = 0; index < sk_X509_num(cert_chain); ++index)
     {
         if(!sk_X509_insert(callback_data->cert_chain,
-                          sk_X509_value(cert_chain, index),
-                          index))
+                           X509_dup(sk_X509_value(cert_chain, index)),
+                           index))
         {
             GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
                 result,
