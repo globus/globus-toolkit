@@ -964,8 +964,6 @@ try_password_authentication(char *prompt)
  * kerberos 5 distribution.
  */
 
-gss_cred_id_t gss_cred = GSS_C_NO_CREDENTIAL;
-
 static void display_status_1(m, code, type)
  char *m;
  OM_uint32 code;
@@ -998,12 +996,17 @@ static void display_gssapi_status(msg, maj_stat, min_stat)
 }
 
 #ifdef GSI
-int get_gsi_cred()
+char * get_gsi_name()
 {
   OM_uint32 maj_stat;
   OM_uint32 min_stat;
+  gss_name_t pname = GSS_C_NO_NAME;
+  gss_buffer_desc tmpname;
+  gss_buffer_t tmpnamed = &tmpname;
+  char *retname;
   gss_OID_set oidset;
-  
+  gss_cred_id_t gss_cred = GSS_C_NO_CREDENTIAL;
+
   debug("calling gss_acquire_cred");
   gss_create_empty_oid_set(&min_stat,&oidset);
   gss_add_oid_set_member(&min_stat,&supported_mechs[GSI].oid,&oidset);
@@ -1022,18 +1025,6 @@ int get_gsi_cred()
     gss_cred = GSS_C_NO_CREDENTIAL; /* should not be needed */
     return 0;
   }
-
-  return 1;     /* Success */
-}
-
-char * get_gsi_name()
-{
-  OM_uint32 maj_stat;
-  OM_uint32 min_stat;
-  gss_name_t pname = GSS_C_NO_NAME;
-  gss_buffer_desc tmpname;
-  gss_buffer_t tmpnamed = &tmpname;
-  char *retname;
 
   debug("calling gss_inquire_cred");
   maj_stat = gss_inquire_cred(&min_stat,
@@ -1262,7 +1253,7 @@ int try_gssapi_authentication(char *host, Options *options)
   do {
     maj_stat =
       gss_init_sec_context(&min_stat,
-                           gss_cred,
+                           GSS_C_NO_CREDENTIAL,
                            &gss_context,
                            target_name,
                            &mech_oid,
@@ -1661,7 +1652,6 @@ ssh_userauth1(const char *local_user, const char *server_user, char *host,
    */
   if ((supported_authentications & (1 << SSH_AUTH_GSSAPI)) &&
       options.gss_authentication) {
-    if (get_gsi_cred()) {
       char * retname;
       char * newname;
 
@@ -1687,8 +1677,7 @@ ssh_userauth1(const char *local_user, const char *server_user, char *host,
           }
         }
       }
-    }
-    debug("server_user %s", server_user);
+      debug("server_user %s", server_user);
   }
 #endif /* GSI */
 #endif /* GSSAPI */
