@@ -9,6 +9,9 @@ SUBDIRS= \
 	config \
 	doxygen
 
+sbin_SCRIPTS= \
+	config.guess
+
 EXTRA_DIST = \
 	version.h.in 
 
