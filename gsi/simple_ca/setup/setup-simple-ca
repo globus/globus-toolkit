@@ -168,9 +168,9 @@ while test -z "${got_subject}" ; do
 	read casubject
 	echo ""
 	if test -n "${casubject}"; then
-	    GSI_CA_NAME=`echo ${casubject} | ${GLOBUS_SH_SED-sed} -e "s/cn=\([^,]*\),.*/\1/"`
-	    GSI_CA_BASE_DN=`echo ${casubject} | ${GLOBUS_SH_SED-sed} -e "s/cn=[^,]*,\(.*\)/\1/"`
-            HAS_GLOBUS_NS=`echo ${GSI_CA_BASE_DN} | ${GLOBUS_SH_SED-sed} -e "s/[^o]*\(o=Globus,\s*o=Grid\)/\1/"`
+	    GSI_CA_NAME=`echo ${casubject} | ${GLOBUS_SH_SED-sed} -e "s/cn=\([^,]*\),.*/\1/i"`
+	    GSI_CA_BASE_DN=`echo ${casubject} | ${GLOBUS_SH_SED-sed} -e "s/cn=[^,]*,\(.*\)/\1/i"`
+            HAS_GLOBUS_NS=`echo ${GSI_CA_BASE_DN} | ${GLOBUS_SH_SED-sed} -e "s/[^o]*\(o=Globus,\s*o=Grid\)/\1/i"`
 	    check_for_globus_ns "$GSI_CA_BASE_DN"
 	    if test -z "${GSI_CA_NAME}" || 
                test -z "${GSI_CA_BASE_DN}"; then
@@ -494,16 +494,31 @@ install_security_config() {
 
     cd ${current_dir}
 
-    if test -z "${GPT_LOCATION}"; then
-        GPT_LOCATION=${GLOBUS_LOCATION}
+    LOCS="GPT_LOCATION GLOBUS_LOCATION"
+    BUILDS="gpt-build globus-build"
+    if [ -f ${GPT_LOCATION}/sbin/gpt-build ]; then
+	buildcmd=${GPT_LOCATION}/sbin/gpt-build
+    elif [ -f ${GPT_LOCATION}/sbin/globus-build ]; then
+	buildcmd=${GPT_LOCATION}/sbin/globus-build
+    elif [ -f ${GLOBUS_LOCATION}/sbin/gpt-build ]; then
+	buildcmd=${GLOBUS_LOCATION}/sbin/gpt-build
+    elif [ -f ${GLOBUS_LOCATION}/sbin/globus-build ]; then
+	buildcmd=${GLOBUS_LOCATION}/sbin/globus-build
     fi
 
-    ${GPT_LOCATION}/sbin/gpt-build -force \
-    ${GRID_CA_DIR}/${CA_UTILS_PACKAGE}
+    ${buildcmd} -force ${GRID_CA_DIR}/${CA_UTILS_PACKAGE}
+    
+    if [ ! $? -eq 0 ]; then
+	echo "ERROR:  could not run build command: ${buildcmd} -force ${GRID_CA_DIR}/${CA_UTILS_PACKAGE}"
+	exit 1;
+    fi
 
     finish_simple_ca_setup
 
-    ${GPT_LOCATION}/sbin/gpt-postinstall
+    SIMPLE_CA_SETUP_TMP_WORKING_DIR=$PWD
+    cd ${GLOBUS_LOCATION}/setup/globus/
+    ./setup-ssl-utils.${CA_CERT_HASH}
+    cd $SIMPLE_CA_SETUP_TMP_WORKING_DIR
 }
 
 ################################################################
@@ -597,11 +612,11 @@ cd ${tmp_ca_setup_dir}
 #${GLOBUS_SH_CHMOD-chmod} 0700 bootstrap
 ${GLOBUS_SH_CHMOD-chmod} 0700 configure
 
-#./bootstrap
+./bootstrap
 ./configure
 make dist
 
-CA_UTILS_PACKAGE=globus_simple_ca_${CA_CERT_HASH}_setup-0.9.tar.gz
+CA_UTILS_PACKAGE=globus_simple_ca_${CA_CERT_HASH}_setup-0.12.tar.gz
 
 if test ! -f ${tmp_ca_setup_dir}/${CA_UTILS_PACKAGE}; then
     echo ""
@@ -610,7 +625,7 @@ if test ! -f ${tmp_ca_setup_dir}/${CA_UTILS_PACKAGE}; then
     exit 1;
 fi
 
-# versions of this generated package should not be changed ever
+# versions of this generated package should not be changed without changing the package metadata as well.
 ${GLOBUS_SH_CP-cp} ${tmp_ca_setup_dir}/${CA_UTILS_PACKAGE} ${GRID_CA_DIR}/${CA_UTILS_PACKAGE}
 
 ${GLOBUS_SH_RM-rm} -rf ${tmp_ca_setup_dir}

@@ -153,7 +153,7 @@ fi
 
 trusted_certs_dir=$secconfdir/certificates/
 
-if [ $secconfdir -ef "${GLOBUS_LOCATION}/etc/" ]; then
+if [ $secconfdir -eq "${GLOBUS_LOCATION}/etc/" ]; then
     trusted_certs_dir=${GLOBUS_LOCATION}/share/certificates/
 fi
 
