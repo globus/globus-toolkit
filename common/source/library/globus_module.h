@@ -95,3 +95,4 @@ globus_module_get_module_pointer(
     globus_module_descriptor_t *            mod);
 
 #endif /* GLOBUS_INCLUDE_GLOBUS_MODULE */
+

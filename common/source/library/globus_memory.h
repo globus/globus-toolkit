@@ -93,3 +93,4 @@ globus_memory_destroy(
 EXTERN_C_END
 
 #endif /* GLOBUS_INCLUDE_GLOBUS_CALLBACK */
+

@@ -415,3 +415,4 @@ globus_i_thread_ignore_sigpipe(void)
 /* globus_i_thread_ignore_sigpipe() */
 
 #endif
+

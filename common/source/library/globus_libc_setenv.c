@@ -184,3 +184,4 @@ globus_l_libc_findenv(name, offset)
 	}
     return (NULL);
 }
+

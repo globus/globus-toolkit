@@ -86,3 +86,4 @@ globus_priority_q_priority_at(
 EXTERN_C_END
 
 #endif /* GLOBUS_COMMON_PRIORITY_Q_H */
+

@@ -36,3 +36,4 @@ extern char *globus_get_unique_session_string(void);
 EXTERN_C_END
 
 #endif
+

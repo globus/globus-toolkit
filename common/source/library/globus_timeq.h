@@ -118,3 +118,4 @@ globus_timeq_time_at(
 EXTERN_C_END
 
 #endif /* GLOBUS_COMMON_TIMEQ_H */
+

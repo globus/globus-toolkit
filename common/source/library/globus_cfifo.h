@@ -44,3 +44,4 @@ globus_cfifo_dequeue (globus_cfifo_t *fifo);
 EXTERN_C_END
 
 #endif /* GLOBUS_COMMON_CFIFO_H */
+

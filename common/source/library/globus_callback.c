@@ -1467,3 +1467,4 @@ void print_inside_info(int type)
 {
     globus_libc_printf("q size = %d", globus_timeq_size(&globus_l_callback_q));
 }
+

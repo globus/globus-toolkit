@@ -104,3 +104,4 @@ globus_hashtable_ulong_keyeq(
 EXTERN_C_END
 
 #endif /* GLOBUS_COMMON_HASHTABLE_H */
+

@@ -85,3 +85,4 @@ int globus_i_thread_ignore_sigpipe(void);
 EXTERN_C_END
 
 #endif
+

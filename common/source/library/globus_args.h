@@ -196,3 +196,4 @@ globus_validate_filename( char *    value,
 EXTERN_C_END
 
 #endif /* ifndef GLOBUS_ARGS_H */
+

@@ -53,3 +53,4 @@ globus_symboltable_destroy (globus_symboltable_t *table);
 EXTERN_C_END
 
 #endif /* GLOBUS_COMMON_SYMBOLTABLE_H */
+

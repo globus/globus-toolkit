@@ -108,3 +108,4 @@ globus_fifo_move(
 EXTERN_C_END
 
 #endif /* GLOBUS_COMMON_FIFO_H */
+

@@ -345,3 +345,4 @@ globus_priority_q_fifo_cmp_func(
 {
     return -1;
 }
+

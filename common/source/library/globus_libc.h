@@ -17,15 +17,6 @@ EXTERN_C_BEGIN
 /*
  * Reentrant lock
  */
-#if !defined HAVE_DIR_PTR
-
-typedef struct _DIR_S 
-{
-    char              d_name[128];
-} DIR;
-
-#endif
-
 #ifdef BUILD_LITE
 
 #define globus_macro_libc_lock() (0)
@@ -243,3 +234,4 @@ int globus_libc_readdir_r(DIR *dirp,
 EXTERN_C_END
 
 #endif
+

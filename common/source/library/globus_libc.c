@@ -994,7 +994,6 @@ globus_libc_usleep(long usec)
     }
 #   endif
     
-	sleep
     select(0, NULL, NULL, NULL, &timeout);
     
 #   if !defined(HAVE_THREAD_SAFE_SELECT)
@@ -2582,4 +2581,5 @@ globus_l_libc_i00afunc (long address)
 #endif /* CRAY */
 #endif /* !defined (__GNUC__) || __GNUC__ < 2 */
 #endif /* TARGET_ARCH_CRAYT3E */
+
 

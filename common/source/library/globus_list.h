@@ -100,3 +100,4 @@ globus_list_free (globus_list_t *head);
 EXTERN_C_END
 
 #endif /* GLOBUS_LIST_H */
+

@@ -779,3 +779,4 @@ globus_thread_postfork(void)
 {
 /* Do nothing */
 }
+

@@ -245,3 +245,4 @@ globus_memory_destroy(
     
     return GLOBUS_TRUE;
 }
+

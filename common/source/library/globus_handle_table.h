@@ -141,3 +141,4 @@ globus_handle_table_lookup(
 EXTERN_C_END
 
 #endif /* GLOBUS_INCLUDE_HANDLE_TABLE_H */
+

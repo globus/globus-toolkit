@@ -243,3 +243,4 @@ globus_reltime_cmp(
 EXTERN_C_END
 
 #endif /* GLOBUS_TIME_H */
+
