@@ -22,8 +22,16 @@ print "Creating globus-hostname\n";
 print "Creating globus-domainname\n";
 my $result = `$setupdir/setup-common-sh-scripts`;
 $result = system("chmod 0755 $setupdir/globus-hostname");
+
+if (!(-d $globusdir/bin)){
+	$result = system("mkdir $globusdir/bin");
+}
+	
 $result = system("cp globus-hostname $globusdir/bin");
 $result = system("cp globus-hostname $globusdir/bin/globus-domainname");
+
+$result = system("chmod 0755 $globusdir/bin/globus-hostname");
+$result = system("chmod 0755 $globusdir/bin/globus-domainname");
 
 my $hostname = `$setupdir/globus-hostname`;
 
