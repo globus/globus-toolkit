@@ -51,6 +51,7 @@ EXTERN_C_BEGIN
 #include "globus_thread_pool.h"
 #include "globus_handle_table.h"
 #include "globus_callback.h"
+#include "globus_logging.h"
 #include "globus_memory.h"
 #include "globus_print.h"
 #include "globus_tilde_expand.h"
