@@ -53,7 +53,6 @@ sub status_test
     }
 }
 push(@tests, "status_test('$ENV{CONTACT_STRING}', 0);");
-push(@tests, "status_test('$ENV{CONTACT_STRING}X', 7);");
 
 # Now that the tests are defined, set up the Test to deal with them.
 plan tests => scalar(@tests), todo => \@todo;

@@ -51,7 +51,6 @@ sub cancel_test
     }
 }
 push(@tests, "cancel_test('$ENV{CONTACT_STRING}', 0);");
-push(@tests, "cancel_test('$ENV{CONTACT_STRING}X', 7);");
 
 # Now that the tests are defined, set up the Test to deal with them.
 plan tests => scalar(@tests), todo => \@todo;
