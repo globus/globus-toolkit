@@ -3599,9 +3599,6 @@ globus_l_gass_copy_write_from_queue(
 	    globus_l_gass_copy_wait_for_ftp_callbacks(handle);
 	    /* do cleanup */
 
-	    globus_l_gass_copy_state_free(handle->state);
-	    handle->state = GLOBUS_NULL;
-
             if(handle->performance)
             {
                 if(state->dest.mode == GLOBUS_GASS_COPY_URL_MODE_FTP)
@@ -3613,6 +3610,9 @@ globus_l_gass_copy_write_from_queue(
                     globus_l_gass_copy_perf_cancel_local_callback(handle->performance);
                 }
             }
+
+	    globus_l_gass_copy_state_free(handle->state);
+	    handle->state = GLOBUS_NULL;
 
 #ifdef GLOBUS_I_GASS_COPY_DEBUG
 	    if(handle->state == GLOBUS_NULL)
