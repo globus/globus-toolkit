@@ -13,6 +13,9 @@ Sources = \
 	gaa_init.c \
 	gaa_plugin_private.h
 
+setup_DATA = \
+	globus_gaa.conf
+
 INCLUDES += $(GPT_INCLUDES)
 
 include_HEADERS= \
