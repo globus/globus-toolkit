@@ -232,6 +232,7 @@ main(int argc, char *argv[])
     /* Make sure all's well with the storage directory. */
     if (myproxy_check_storage_dir() == -1) {
 	myproxy_log_verror();
+	myproxy_log("Exiting.  Please fix errors with storage directory and restart.");
 	exit(1);
     }
 
