@@ -843,10 +843,10 @@ my $i;
 
     print WINMAKE "\$\(DS_POSTBUILD_DEP\) : \"\$\(OUTDIR\)\\$FullLibraryName.lib\"\n";
     if($BuildConfig eq "debug") {
-        print WINMAKE "    copy Debug\\$FullLibraryName.lib $GlobusLocation\\lib\\*\.*\n";
+        print WINMAKE "    copy \$\(OUTDIR\)\\$FullLibraryName.lib $GlobusLocation\\lib\\*\.*\n";
         }
     else {
-        print WINMAKE "    copy Release\\$FullLibraryName.lib $GlobusLocation\\lib\\*\.*\n";
+        print WINMAKE "    copy \$\(OUTDIR\)\\$FullLibraryName.lib $GlobusLocation\\lib\\*\.*\n";
         }
     print WINMAKE "\n";
 
@@ -1533,12 +1533,12 @@ my $i;
 
     print WINMAKE "\$\(DS_POSTBUILD_DEP\) : \"\$\(OUTDIR\)\\$FullLibraryName.lib\"\n";
     if($BuildConfig eq "debug") {
-        print WINMAKE "    copy Debug\\$FullLibraryName.lib $GlobusLocation\\lib\\*\.*\n";
-        print WINMAKE "    copy Debug\\$FullLibraryName.dll $GlobusLocation\\bin\\*\.*\n";
-        print WINMAKE "    copy Debug\\$FullLibraryName.pdb $GlobusLocation\\bin\\*\.*\n";
+        print WINMAKE "    copy \$\(OUTDIR\)\\$FullLibraryName.lib $GlobusLocation\\lib\\*\.*\n";
+        print WINMAKE "    copy \$\(OUTDIR\)\\$FullLibraryName.dll $GlobusLocation\\bin\\*\.*\n";
+        print WINMAKE "    copy \$\(OUTDIR\)\\$FullLibraryName.pdb $GlobusLocation\\bin\\*\.*\n";
         }
     else {
-        print WINMAKE "    copy Release\\$FullLibraryName.lib $GlobusLocation\\lib\\*\.*\n";
+        print WINMAKE "    copy \$\(OUTDIR\)\\$FullLibraryName.lib $GlobusLocation\\lib\\*\.*\n";
         }
     print WINMAKE "\n";
 
