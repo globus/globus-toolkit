@@ -1098,11 +1098,6 @@ int i = 0;
     data = -1;
     type = TYPE_A;
 
-i = 0;
-while(i)
-{
-    usleep(1);
-}
     /*
      *  globus hack added by JB
      *  initialize handle and put it into ascii mode
@@ -6579,7 +6574,8 @@ SIGNAL_TYPE myoob(int sig)
 	dologout(0);
     }
     upper(cp);
-    if (strcasecmp(cp, "ABOR\r\n") == 0) {
+    if (strcasecmp(cp, "ABOR\r\n") == 0) 
+    {
 	tmpline[0] = '\0';
 	reply(426, "Transfer aborted. Data connection closed.");
 	reply(226, "Abort successful");
@@ -6590,7 +6586,16 @@ SIGNAL_TYPE myoob(int sig)
 	    ftwflag++;
 	    return;
 	}
-	wu_longjmp(urgcatch, 1);
+#       if  defined(USE_GLOBUS_DATA_CODE)
+        {
+            g_abort();
+            return;
+        }
+#       else
+        { 
+	    wu_longjmp(urgcatch, 1);
+        }
+#       endif
     }
     if (strcasecmp(cp, "STAT\r\n") == 0) {
 	tmpline[0] = '\0';
