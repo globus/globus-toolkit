@@ -95,6 +95,7 @@ gp -a \
         utp\
         xio \
         callout\
+        usage\
 	icu4c
 
 gs -a \
