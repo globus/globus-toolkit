@@ -6,6 +6,9 @@ AC_DEFUN(LAC_CPU_SET,
     AC_REQUIRE([AC_CANONICAL_HOST])
 
     case $host in
+        *86_64*)
+            lac_cv_CPU="x86_64"
+        ;;        
         *86*)
             lac_cv_CPU="x86"
         ;;        

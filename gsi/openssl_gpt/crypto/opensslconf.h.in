@@ -67,6 +67,9 @@
 #   ifndef BF_PTR
 #       undef BF_PTR
 #   endif
+#   ifndef BF_PTR2
+#       undef BF_PTR2
+#   endif
 #endif
 
 #ifdef HEADER_RC4_H
