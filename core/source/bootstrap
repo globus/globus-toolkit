@@ -8,7 +8,7 @@ error()
     exit 1
 }
 
-libtoolize --copy --force || error
+libtoolize --automake --copy --force || error
 aclocal -I config || error
 if test -f acconfig.h ; then
     autoheader || error
