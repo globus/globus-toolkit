@@ -45,6 +45,24 @@ AC_ARG_ENABLE(authorization,
 			  and can be used with krb5],
 [authorization_type=$enableval], [authorization_type="krb5"])
 
+GPT_LINKTYPE=shared
+AC_ARG_ENABLE(static-only,
+              [ --enable-static-only      Don't do any dynamic linking],
+	      [
+	      case $enableval in
+	        no)
+		  GPT_LINKTYPE="shared"
+		  ;;
+		yes)
+		  GPT_LINKTYPE="static"
+		  GPT_LDFLAGS=" -all-static $GPT_LDFLAGS"
+		  ;;
+		*)
+		  AC_MSG_ERROR(--enable-static-only has no arguments)
+		  ;;
+	      esac
+	      ])
+AC_SUBST(GPT_LDFLAGS)
 AC_ARG_WITH(globus-paths,
 [  --with-globus-paths     Use ftp configuration files in \$GLOBUS_LOCATION],
 [globus_paths=$withval], [globus_paths="no"])
@@ -55,7 +73,7 @@ fi
 
 AC_ARG_WITH(flavor,
 [  --with-flavor=FLAVOR    Choose globus flavor],
-                    globus_cv_flavor=$withval)
+                    globus_flavor=$withval)
 AC_ARG_WITH(krb5-dir,
 [  --with-krb5-dir=<DIR>   Location of krb5],
 [krb5_dir=$withval], 
@@ -103,7 +121,8 @@ if test "$gssapi_type" = "globus" ; then
 	AC_MSG_CHECKING(Globus GSSAPI dependencies)
 
 	gpt_build_config -src=pkg_data_src-gssapi.gpt \
-	                 -flavor=${globus_cv_flavor} > /dev/null
+	                 -flavor=${globus_flavor} \
+			 -link $GPT_LINKTYPE > /dev/null
 	if test "$?" = "0"; then
 	    AC_MSG_RESULT(ok)
 	else
@@ -113,7 +132,7 @@ if test "$gssapi_type" = "globus" ; then
 	rm gpt_build_temp.sh
 
 	inc="${GLOBUS_LOCATION}/include"
-	GSSAPI_CFLAGS="-I${inc} -I${inc}/${globus_cv_flavor} ${GPT_CONFIG_CFLAGS}"
+	GSSAPI_CFLAGS="-I${inc} -I${inc}/${globus_flavor} ${GPT_CONFIG_CFLAGS}"
 	GSSAPI_LDFLAGS="-L${GLOBUS_LOCATION}/lib ${GPT_CONFIG_LIBS}"
 	GSSAPI_LIBS="${GPT_CONFIG_PGM_LINKS}"
     
@@ -163,9 +182,9 @@ elif test "$gssapi_type" = "krb5" ; then
 	    AC_MSG_CHECKING(Globus gridmap dependencies)
 
 	    inc="${GLOBUS_LOCATION}/include"
-	    GLOBUS_GRIDMAP_CFLAGS="-I${inc} -I${inc}/${globus_cv_flavor} ${GPT_CONFIG_CFLAGS}"
+	    GLOBUS_GRIDMAP_CFLAGS="-I${inc} -I${inc}/${globus_flavor} ${GPT_CONFIG_CFLAGS}"
 	    GLOBUS_GRIDMAP_LDFLAGS="-L${GLOBUS_LOCATION}/lib ${GPT_CONFIG_LIBS}"
-	    GLOBUS_GRIDMAP_LIBS="-lglobus_gss_assist_${globus_cv_flavor}"
+	    GLOBUS_GRIDMAP_LIBS="-lglobus_gss_assist_${globus_flavor}"
     
             GSSAPI_CFLAGS="$GSSAPI_LIBS $GLOBUS_GRIDMAP_CFLAGS"
             GSSAPI_LDFLAGS="$GSSAPI_LIBS $GLOBUS_GRIDMAP_LDFLAGS"
@@ -318,7 +337,7 @@ AC_DEFUN(CHECK_SETJMP,[
 
 AC_DEFUN(CHECK_GLOBUS_DEVELOPMENT_PATH,[dnl
 
-	GLOBUS_FLAVOR_NAME=$globus_cv_flavor
+	GLOBUS_FLAVOR_NAME=$globus_flavor
 
 	if test -z "$GLOBUS_FLAVOR_NAME" -o "$GLOBUS_FLAVOR_NAME" = "no"; then
             AC_MSG_ERROR(must specify globus flavor)
@@ -371,7 +390,8 @@ AC_ARG_ENABLE(globus-data, [  --disable-globus-data   don't use globus data code
 	AC_MSG_CHECKING(Globus data dependencies)
 
 	gpt_build_config -src=pkg_data_src.gpt \
-	                 -flavor=${globus_cv_flavor} > /dev/null
+	                 -flavor=${globus_flavor} \
+			 -link $GPT_LINKTYPE > /dev/null
 	if test "$?" = "0"; then
 	    AC_MSG_RESULT(ok)
 	else
@@ -381,7 +401,7 @@ AC_ARG_ENABLE(globus-data, [  --disable-globus-data   don't use globus data code
 	rm gpt_build_temp.sh
 
 	inc="${GLOBUS_LOCATION}/include"
-	GLOBUS_DATA_CFLAGS="-I${inc} -I${inc}/${globus_cv_flavor} ${GPT_CONFIG_CFLAGS}"
+	GLOBUS_DATA_CFLAGS="-I${inc} -I${inc}/${globus_flavor} ${GPT_CONFIG_CFLAGS}"
 	GLOBUS_DATA_LDFLAGS="-L${GLOBUS_LOCATION}/lib ${GPT_CONFIG_LIBS}"
 	GLOBUS_DATA_LIBS="${GPT_CONFIG_PGM_LINKS}"
     
@@ -508,3 +528,132 @@ AC_DEFUN(CHECK_STAT_WORKS,[dnl
      ])
 
 AC_SUBST(GLOBUS_LIBTOOL)
+
+
+
+
+dnl
+dnl Doxygen related macros
+dnl
+
+
+
+AC_DEFUN(LAC_DOXYGEN_PROJECT,dnl
+[
+    lac_doxygen_project=`echo "$1" | sed -e 's/_/ /g'`
+    AC_SUBST(lac_doxygen_project)
+])
+
+AC_DEFUN(LAC_DOXYGEN_SOURCE_DIRS,dnl
+[
+    lac_doxygen_srcdirs=[$1]
+    AC_SUBST(lac_doxygen_srcdirs)
+])
+
+
+AC_DEFUN(LAC_DOXYGEN_OUTPUT_TAGFILE,dnl
+[
+    lac_doxygen_output_tagfile=[$1]
+    AC_SUBST(lac_doxygen_output_tagfile)
+])
+
+AC_DEFUN(LAC_DOXYGEN_TAGFILES,dnl
+[
+    lac_doxygen_tagfiles=""
+    for x in "" $1; do
+        if test "X$x" != "X" ; then
+	    lac_tag_base=`echo ${x} | sed -e 's|.*/||' -e 's|\.tag$||'`
+	    lac_tag="${lac_tag_base}.tag"
+            lac_doxygen_tagfiles="$lac_doxygen_tagfiles $x"
+            lac_doxygen_internal_tagfiles="$lac_doxygen_internal_tagfiles ${x}i"
+	    lac_doxygen_installdox="$lac_doxygen_installdox -l${lac_tag}@../../${lac_tag_base}/html"
+	fi
+    done
+    AC_SUBST(lac_doxygen_tagfiles)
+    AC_SUBST(lac_doxygen_internal_tagfiles)
+    AC_SUBST(lac_doxygen_installdox)
+])
+
+AC_DEFUN(LAC_DOXYGEN_FILE_PATTERNS,dnl
+[
+    lac_doxygen_file_patterns=[$1]
+])
+
+AC_DEFUN(LAC_DOXYGEN_EXAMPLE_DIR,dnl
+[
+    lac_doxygen_examples=[$1]
+])
+
+AC_DEFUN(LAC_DOXYGEN_PREDEFINES,dnl
+[
+    lac_doxygen_predefines=[$1]
+])
+
+AC_DEFUN(LAC_DOXYGEN,dnl
+[
+    AC_ARG_ENABLE(doxygen,
+	changequote(<<, >>)dnl	
+	<<  --enable-doxygen[=PATH]	use Doxygen to generate documentation>>,
+	changequote([, ])dnl
+	[
+	    if test "$enableval" = "yes"; then
+		AC_PATH_PROG(DOXYGEN,
+		    doxygen,
+		    [
+			AC_MSG_ERROR(Doxygen installation not found)
+		    ])
+	    else
+		DOXYGEN="$enableval"
+		AC_SUBST(DOXYGEN)
+	    fi
+	],
+	[
+	    DOXYGEN=""
+	    AC_SUBST(DOXYGEN)
+	])
+
+
+    AC_ARG_ENABLE(internal-doc,
+    [  --enable-internal-doc	Generate Doxygen documentation for
+				 internal functions. Requires --enable-doxygen],
+    [
+	DOXYFILE="Doxyfile-internal"
+	AC_SUBST(DOXYFILE) 
+    ],
+    [
+	DOXYFILE="Doxyfile"
+	AC_SUBST(DOXYFILE)
+    ])
+
+
+    if test -n "$DOXYGEN" ; then
+	AC_PATH_PROG(DOT, dot)
+	
+	if test -z "$GLOBUS_PERL" ; then
+	   AC_PATH_PROG(PERL, perl)
+	else
+	    PERL="$GLOBUS_PERL"
+	    AC_SUBST(PERL)
+	fi
+	if test "$DOT" != ""; then
+	    HAVE_DOT=YES
+	else
+	    HAVE_DOT=NO
+	fi
+
+	AC_SUBST(HAVE_DOT)
+
+	LAC_DOXYGEN_SOURCE_DIRS($1)
+	LAC_DOXYGEN_FILE_PATTERNS($2)	
+
+	LAC_DOXYGEN_PROJECT($GPT_NAME)
+	LAC_DOXYGEN_OUTPUT_TAGFILE($GPT_NAME)
+
+	LAC_DOXYGEN_TAGFILES($tagfiles)
+
+	AC_SUBST(lac_doxygen_file_patterns)
+	AC_SUBST(lac_doxygen_examples)
+	AC_SUBST(lac_doxygen_predefines)
+    fi
+]
+)

@@ -774,7 +774,7 @@ cmd: USER SP username CRLF
 		    CHECKNULL($6));
 #endif
 	    if ($2 && $6 != NULL && !restrict_check($6))
-		store($6, "r+", 0, (int) $4.offset);
+		store($6, "r+", 0, $4.offset);
 	    if ($6 != NULL)
 		free($6);
 	}
@@ -1623,7 +1623,7 @@ rcmd: RNFR check_login SP pathname CRLF
 		dologout(0);
 	    }
 	    if (log_commands)
-		syslog(LOG_INFO, "REST %d", (int) restart_point);
+		syslog(LOG_INFO, "REST %d", (int) $4);
 	    if ($2)
 	    {
 #           if USE_GLOBUS_DATA_CODE
@@ -2337,6 +2337,7 @@ char * feattab[] =
     "SIZE",
 #ifdef USE_GLOBUS_DATA_CODE
     "PARALLEL",
+    "DCAU",
 #endif
     NULL
 };

@@ -27,9 +27,11 @@ prefix=@prefix@
 exec_prefix=@exec_prefix@
 srcdir=@srcdir@
 mandir=@mandir@
+datadir=@datadir@
 INSTALL=@INSTALL@
 INSTALL_PROGRAM=@INSTALL_PROGRAM@
 INSTALL_DATA=@INSTALL_DATA@
+DOXYGEN=@DOXYGEN@
 
 all:
 	(cd support ; $(MAKE) all)
@@ -44,11 +46,24 @@ all:
 	@CPLN@ src/ckconfig bin
 	@CPLN@ src/ftprestart bin
 	size bin/ftpd bin/ftpshut bin/ftpcount bin/ftpwho bin/ckconfig bin/ftprestart
+	if test -n "$(DOXYGEN)"; then \
+	    $(DOXYGEN) Doxyfile ; \
+	fi
+	$(MAKE) filelist
+
+filelist:
+	rm -f filelist
+	cat fl > filelist
+	if test -n "$(DOXYGEN)"; then \
+	    cat fl.doxygen >> filelist ; \
+	fi
+
 clean:
 	(cd support ; $(MAKE) clean)
 	(cd util/privatepw ; $(MAKE) clean)
 	(cd src ; $(MAKE) clean)
 	-rm -rf bin
+	-rm filelist
 distclean: clean
 	(cd support ; $(MAKE) distclean)
 	(cd util/privatepw ; $(MAKE) distclean)
@@ -58,7 +73,7 @@ distclean: clean
 	-rm -f support/*~
 	-rm -f doc/*~
 	-rm -f util/*~
-	-rm -f config.log config.status config.cache Makefile config.h
+	-rm -f config.log config.status config.cache Makefile config.h Doxyfile
 install: all
 	@echo installing binaries.
 	-@mkdir -p $(DESTDIR)/@sbindir@
@@ -66,6 +81,7 @@ install: all
 	-@mkdir -p $(DESTDIR)/$(mandir)/man8
 	-@mkdir -p $(DESTDIR)/$(mandir)/man1
 	-@mkdir -p $(DESTDIR)/$(mandir)/man5
+	-@mkdir -p $(DESTDIR)/$(datadir)/doc/globus_gsi_wuftpd/html
 	-@mkdir -p $(DESTDIR)/@ETCDIR@
 	@INSTALL_PROGRAM@ -m 755 bin/ftpd $(DESTDIR)/@sbindir@/in.ftpd
 	@INSTALL_PROGRAM@ -m 755 bin/ftpshut $(DESTDIR)/@sbindir@/ftpshut
@@ -89,3 +105,10 @@ install: all
 	@INSTALL_DATA@ -m 644 util/privatepw/privatepw.8 $(DESTDIR)/$(mandir)/man8/privatepw.8
 	@if test ! -f $(DESTDIR)/@ETCDIR@/ftpaccess; then echo "Since you didn't have a ftpaccess file, the sample has been"; echo "installed to $(DESTDIR)/@ETCDIR@/ftpaccess."; echo "You will probably want to edit it."; @INSTALL@ -c -m 644 doc/examples/ftpaccess $(DESTDIR)/@ETCDIR@/ftpaccess; fi
 	@if test ! -f $(DESTDIR)/@ETCDIR@/ftpconversions; then echo "Since you didn't have a ftpconversions file, the sample has been"; echo "installed to $(DESTDIR)/@ETCDIR@/ftpconversions."; echo "You will probably want to edit it."; @INSTALL@ -c -m 644 doc/examples/ftpconversions $(DESTDIR)/@ETCDIR@/ftpconversions; fi
+	if test -n "$(DOXYGEN)"; then \
+	    for x in doc/html/*; do \
+		base=`basename $$x` ; \
+		docdir=$(DESTDIR)$(datadir)/doc/globus_gsi_wuftpd/html ; \
+	        @INSTALL_DATA@ -m 644 $$x $$docdir/$$base ; \
+	    done ; \
+	fi

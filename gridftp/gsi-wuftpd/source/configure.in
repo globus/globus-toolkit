@@ -47,6 +47,7 @@ fi
 AC_SUBST(AR)
 AC_HEADER_STDC
 AC_HEADER_TIME
+LAC_DOXYGEN(.)
 
 dnl Quick hack: Let the source know we don't want stuff like
 dnl #ifdef LINUX...
@@ -1006,4 +1007,4 @@ if test ! -d util ; then
 	mkdir util
 fi
 
-AC_OUTPUT(Makefile src/Makefile support/Makefile util/privatepw/Makefile src/pathnames.h)
+AC_OUTPUT(Makefile Doxyfile src/Makefile support/Makefile util/privatepw/Makefile src/pathnames.h)

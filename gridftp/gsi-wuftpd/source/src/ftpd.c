@@ -83,20 +83,20 @@
 
 /**** added by JB **********/
 #if defined(THROUGHPUT)
-#   define SEND_DATA(__name, __instr, __outstr, __blksize, __length)    \
-        send_data(__name, __instr, __outstr, __blksize, __length)
+#   define SEND_DATA(__name, __instr, __outstr, __blksize, __logical_offset, __length)    \
+        send_data(__name, __instr, __outstr, __blksize, __logical_offset, __length)
 #else
-#   define SEND_DATA(__name, __instr, __outstr, __blksize, __length)    \
+#   define SEND_DATA(__name, __instr, __outstr, __blksize, __logical_offset, __length)    \
         send_data(__instr, __outstr, __blksize, __length)
 #endif
 
 #ifdef USE_GLOBUS_DATA_CODE
 #   if defined(THROUGHPUT)
-#       define G_SEND_DATA(__name, __instr, __h, __off, __blksize, __length, __size)  \
-            g_send_data(__name, __instr, __h, __off,(off_t) __blksize, (off_t)__length, __size)
+#       define G_SEND_DATA(__name, __instr, __h, __off, __blksize, __logical_offset, __length, __size)  \
+            g_send_data(__name, __instr, __h, __off,(off_t) __blksize, (off_t) __logical_offset, (off_t)__length, __size)
 #   else
-#       define G_SEND_DATA(__name, __instr, __h, __off, __blksize, __length, __size)  \
-            g_send_data(__instr, __h, __off, (off_t)__blksize, (off_t)__length, __size)
+#       define G_SEND_DATA(__name, __instr, __h, __off, __blksize, __logical_offset, __length, __size)  \
+            g_send_data(__instr, __h, __off, (off_t)__blksize, (off_t) __logical_offset, (off_t)__length, __size)
 #   endif
 #endif
 
@@ -2214,9 +2214,8 @@ void user(char *name)
 		 * We always needs the PASS command for our state machine
 		 * so we always send back 331, even though we may just
 		 * need a dummy password.
-         * But the Kerberos ftpd sends 232 if OK as per draft 8
-         */
-        reply(gssapi_user_is_good? 232 : 331, 
+		 */
+        reply(331, 
 			  "GSSAPI user %s is%s authorized as %s%s",
 		      gssapi_name,
 		      (gssapi_user_is_good ? "" : " not"),
@@ -4256,7 +4255,7 @@ retrieve(
     char realname[MAXPATHLEN];
     int stat_ret = -1;
 
-    int                            tmp_restart; /* added by JB */
+    int                            tmp_restart = 0; /* added by JB */
 
     extern int checknoretrieve(char *);
 
@@ -4540,7 +4539,7 @@ retrieve(
     }
     else if(offset != -1)
     {
-        tmp_restart = offset;
+        tmp_restart += offset;
     }
     else
     {
@@ -4553,16 +4552,17 @@ retrieve(
 #       ifdef BUFFER_SIZE
             TransferComplete = G_SEND_DATA(name, fin, 
                                    &g_data_handle, tmp_restart,
-                                   BUFFER_SIZE, length, st.st_size);
+                                   BUFFER_SIZE, offset==-1?0:offset, length, st.st_size);
 #       else
 #           ifdef HAVE_ST_BLKSIZE
                 TransferComplete = G_SEND_DATA(name, fin, &g_data_handle, 
-                                       tmp_restart, st.st_blksize * 2, length,
+                                       tmp_restart, st.st_blksize * 2,
+				       offset==-1?0:offset, length,
 				       st.st_size);
 #           else
                 TransferComplete = G_SEND_DATA(name, fin, 
                                        &g_data_handle, tmp_restart, BUFSIZ, 
-                                       length, st.st_size);
+                                       offset==-1?0:offset, length, st.st_size);
 #           endif
 #       endif
     }
@@ -5017,7 +5017,7 @@ store(
     }
     else if(offset != -1)
     {
-        tmp_restart = offset;
+        tmp_restart += offset;
     }
     else
     {

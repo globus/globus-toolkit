@@ -640,7 +640,7 @@ gssapi_handle_auth_data(char *data, int length)
     OM_uint32 accept_min;
     OM_uint32 stat_maj;
     OM_uint32 stat_min;
-    gss_ctx_id_t g_deleg_ctx = GSS_C_NO_CREDENTIAL;
+    gss_cred_id_t g_deleg_cred = GSS_C_NO_CREDENTIAL;
 
 
     gss_OID mechid;
@@ -756,14 +756,17 @@ gssapi_handle_auth_data(char *data, int length)
 					    &out_tok, /* output_token */
 					    &ret_flags,
 					    NULL, 	/* ignore time_rec */
-					    &g_deleg_ctx   /* ignore del_cred_handle */
+					    &g_deleg_cred   /* ignore del_cred_handle */
 					    );
 
 #if USE_GLOBUS_DATA_CODE
 	/* Don't write code like this. */
 	if (accept_maj == GSS_S_COMPLETE) {
+	    extern globus_ftp_control_dcau_t                g_dcau;
+
 	    g_data_handle.cc_handle.auth_info.delegated_credential_handle =
-		g_deleg_ctx;
+		g_deleg_cred;
+	    globus_ftp_control_local_dcau(&g_data_handle, &g_dcau);
 	}
 #endif
 	if ((accept_maj == GSS_S_COMPLETE) ||

@@ -104,9 +104,8 @@ typedef struct globus_i_wu_monitor_s
     globus_fifo_t	       ranges;
 
     /* Performance update messages */
-    struct timeval	       last_perf_update;
+    time_t		       last_perf_update;
     globus_off_t	       all_transferred;
-    globus_off_t	       accum_bytes;
     globus_callback_handle_t   callback_handle;
     globus_ftp_control_handle_t *
 			       handle;
@@ -363,9 +362,8 @@ wu_monitor_reset(
     mon->count = 0;
     mon->offset = -1;
     mon->fd = -1;
-    gettimeofday(&mon->last_perf_update, GLOBUS_NULL);
-    mon->last_range_update = mon->last_perf_update.tv_sec;
-    mon->accum_bytes = 0;
+    mon->last_perf_update = time(GLOBUS_NULL);
+    mon->last_range_update = mon->last_perf_update;
     mon->callback_handle = 0;
     globus_fifo_init(&mon->ranges);
 }
@@ -422,8 +420,13 @@ G_ENTER();
     wu_monitor_init(&g_monitor);
     g_monitor.handle = &g_data_handle;
 
-    g_dcau.mode = GLOBUS_FTP_CONTROL_DCAU_NONE;
+    globus_ftp_control_handle_init(&g_data_handle);
 
+    g_dcau.mode = GLOBUS_FTP_CONTROL_DCAU_SELF;
+    res = globus_ftp_control_local_dcau(
+	    &g_data_handle,
+	    &g_dcau);
+    assert(res == GLOBUS_SUCCESS);
 
     a = (char *)&his_addr;
     host_port.host[0] = (int)a[0];
@@ -432,7 +435,6 @@ G_ENTER();
     host_port.host[3] = (int)a[3];
     host_port.port = 21;
 
-    globus_ftp_control_handle_init(&g_data_handle);
     res = globus_ftp_control_local_port(
               &g_data_handle,
               &host_port);
@@ -665,6 +667,7 @@ g_send_data(
     globus_ftp_control_handle_t *                   handle,
     off_t                                           offset,
     off_t                                           blksize,
+    off_t					    logical_offset,
     off_t                                           length,
     off_t					    size)
 #else
@@ -673,6 +676,7 @@ g_send_data(
     globus_ftp_control_handle_t *                   handle,
     off_t                                           offset,
     off_t                                           blksize,
+    off_t					    logical_offset,
     off_t                                           length,
     off_t					    size)
 #endif
@@ -698,11 +702,7 @@ g_send_data(
     int                                             ctr;
     off_t                                           skipped_offset;
     char                                            error_buf[1024];
-#if defined(STRIPED_SERVER_BACKEND)
-    bmap_offs_t                                     offs_out = -1;
-#else
     off_t                                          offs_out = -1;
-#endif
 
 #ifdef THROUGHPUT
     int                                             bps;
@@ -780,7 +780,9 @@ g_send_data(
               (void *)&g_monitor);
     if(res != GLOBUS_SUCCESS)
     {
-        sprintf(error_buf, "Connect_write() failed: %s.", globus_object_printable_to_string(globus_error_get(res)));
+        sprintf(error_buf,
+		"Connect_write() failed: %s.",
+		globus_object_printable_to_string(globus_error_get(res)));
         goto data_err;
     }
 
@@ -948,7 +950,7 @@ g_send_data(
                           handle,
                           buf,
                           cnt,
-                          offset,
+                          offset - logical_offset,
                           eof,
                           data_write_callback,
                           &g_monitor);
@@ -1758,12 +1760,11 @@ data_read_callback(
                 globus_cond_signal(&monitor->cond);
 	    }
 	}
-	monitor->accum_bytes += length;
 	monitor->all_transferred += length;
 
         if(eof)
         {
-g_eof_receive = GLOBUS_TRUE;
+            g_eof_receive = GLOBUS_TRUE;
             monitor->count++;
             globus_cond_signal(&monitor->cond);
             globus_free(buffer);
@@ -1982,13 +1983,9 @@ static globus_bool_t
 globus_l_wu_perf_update(
     globus_i_wu_monitor_t *		monitor)
 {
-    struct timeval tv;
     unsigned int 			num_channels;
-    double 				elapsed;
-    double 				throughput;
     globus_ftp_control_handle_t *	handle;
-    time_t				time;
-    struct tm *				tm;
+    time_t				t;
 
     if(!g_send_restart_info)
     {
@@ -1996,34 +1993,17 @@ globus_l_wu_perf_update(
     }
     handle = monitor->handle;
 
-    gettimeofday(&tv, NULL);
-    time = tv.tv_sec;
-    tm = gmtime(&time);
-    globus_ftp_control_data_query_channels(handle, &num_channels, 0);
+    t = time(NULL);
 	
-    elapsed = (double)(tv.tv_sec - monitor->last_perf_update.tv_sec);
-	
-    elapsed += (double)((tv.tv_usec - monitor->last_perf_update.tv_usec))
-	               / (double) 1000000.0;
-    throughput = ((double)monitor->accum_bytes) / elapsed;
-
     G_EXIT();	
-    lreply(112,
-	   "Perf Marker %04d%02d%02d%02d%02d%02d.%06d",
-	   tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday,
-	   tm->tm_hour, tm->tm_min, tm->tm_sec,
-	   tv.tv_usec);
-    lreply(0, " AllTransferred: %ld", (long) monitor->all_transferred);
-    lreply(0, " AllConnections: %u", num_channels);
-    lreply(0, " AllThroughput: %f", throughput);
-    
-    lreply(0, " StripeTransferred: 0 %ld", (long) monitor->all_transferred);
-    lreply(0, " StripeConnections: 0 %u", num_channels);
-    lreply(0, " StripeThroughput: 0 %f", throughput);
+    lreply(112, "Perf Marker");
+    lreply(0, " Timestamp: %ld", (long) t);
+    lreply(0, " Stripe Index: 0");
+    lreply(0, " Stripe Bytes Transferred: %" GLOBUS_OFF_T_FORMAT, 
+	    monitor->all_transferred);
     reply(112, "End");
 
-    monitor->accum_bytes = 0;
-    monitor->last_perf_update = tv;
+    monitor->last_perf_update = t;
 
     return GLOBUS_TRUE;
 }
