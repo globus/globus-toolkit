@@ -277,11 +277,19 @@ static int                         graml_stderr_count;
 
 #define GRAM_TIMED_WAIT(wait_time) { \
     globus_abstime_t abs; \
+    int save_errno; \
     abs.tv_sec = time(GLOBUS_NULL) + wait_time; \
     abs.tv_nsec = 0; \
-    globus_cond_timedwait(&graml_api_cond, \
-			  &graml_api_mutex, \
-                          &abs); \
+    while(1) \
+    { \
+        save_errno = globus_cond_timedwait(&graml_api_cond, \
+			                   &graml_api_mutex, \
+                                           &abs); \
+        if(save_errno == ETIMEDOUT) \
+        { \
+	    break; \
+        } \
+    } \
 }
 
 /******************************************************************************
@@ -1558,7 +1566,7 @@ int main(int argc,
 	GRAM_LOCK;
         while (!graml_jm_done)
         {
-	    GRAM_TIMED_WAIT(10); /*request->poll_frequency);*/
+	    GRAM_TIMED_WAIT(request->poll_frequency);
 	    
 	    /* 
 	     * handler may have occurred while we were unlocked,
@@ -3924,6 +3932,7 @@ globus_l_jm_http_query_callback( void *               arg,
 	request->status = GLOBUS_GRAM_CLIENT_JOB_STATE_FAILED;
 	status = request->status;
 	graml_jm_done = 1;
+	globus_cond_signal(&graml_api_cond);
 	GRAM_UNLOCK;
     }
     else if (strcmp(query,"status")==0)
