@@ -2221,11 +2221,6 @@ globus_l_ftp_client_extended_get(
     if((!attr) || (! *attr ) ||
 	    ((*attr) && (*attr)->mode == GLOBUS_FTP_CONTROL_MODE_STREAM))
     {
-        if((handle->partial_offset != -1 && handle->partial_end_offset != -1)
-           && handle->partial_offset > handle->base_offset)
-        {
-	    handle->base_offset = handle->partial_offset;
-        }
 	if(restart && restart->type == GLOBUS_FTP_CLIENT_RESTART_STREAM)
 	{
 	   if(((!attr) || (!*attr) ||
@@ -2712,11 +2707,6 @@ globus_l_ftp_client_extended_put(
     if((!attr) || (!*attr) ||
 	    ((*attr) && (*attr)->mode == GLOBUS_FTP_CONTROL_MODE_STREAM))
     {
-        if((handle->partial_offset != -1 && handle->partial_end_offset != -1)
-           && handle->partial_offset > handle->base_offset)
-        {
-	    handle->base_offset = handle->partial_offset;
-        }
 	if(restart && restart->type == GLOBUS_FTP_CLIENT_RESTART_STREAM)
 	{
 	   if(((!attr) || (!*attr) ||

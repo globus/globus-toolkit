@@ -109,7 +109,7 @@ globus_l_ftp_client_buffer_cmd_info_t globus_l_ftp_client_buffer_cmd_info[] =
     {"SITE RBUFSZ", GLOBUS_FALSE, GLOBUS_TRUE },
     {"SITE RBUFSIZ", GLOBUS_FALSE, GLOBUS_TRUE },
     {"SITE STORBUFIZE", GLOBUS_TRUE, GLOBUS_FALSE },
-    {"SITE SBUSSZ", GLOBUS_TRUE, GLOBUS_FALSE },
+    {"SITE SBUFSZ", GLOBUS_TRUE, GLOBUS_FALSE },
     {"SITE SBUFSIZ", GLOBUS_TRUE, GLOBUS_FALSE },
     {"SITE BUFSIZE", GLOBUS_TRUE, GLOBUS_TRUE },
     {"SBUF", GLOBUS_TRUE, GLOBUS_TRUE },
@@ -1084,9 +1084,21 @@ redo:
     case GLOBUS_FTP_CLIENT_TARGET_SETUP_DCAU:
 	target->state = GLOBUS_FTP_CLIENT_TARGET_DCAU;
 
-	if(target->attr->dcau.mode == target->dcau.mode)
+	if(target->attr->dcau.mode == target->dcau.mode &&
+	   target->dcau.mode != GLOBUS_FTP_CONTROL_DCAU_DEFAULT)
 	{
 	    goto skip_dcau;
+	}
+	if(target->attr->dcau.mode == GLOBUS_FTP_CONTROL_DCAU_DEFAULT &&
+	   !target->features[GLOBUS_FTP_CLIENT_FEATURE_DCAU])
+	{
+	    goto skip_dcau;
+	}
+	if(target->attr->dcau.mode == GLOBUS_FTP_CONTROL_DCAU_DEFAULT &&
+	   (target->dcau.mode == GLOBUS_FTP_CONTROL_DCAU_SELF ||
+	    target->dcau.mode == GLOBUS_FTP_CONTROL_DCAU_DEFAULT))
+	{
+	    goto finish_dcau;
 	}
 	/* changing DCAU forces us to trash our old data connections */
 	memset(&target->cached_data_conn,
@@ -1099,7 +1111,8 @@ redo:
 	    &target->url,
 	    target->mask,
 	    "DCAU %c%s%s" CRLF,
-	    (char) target->attr->dcau.mode,
+	    (char) target->attr->dcau.mode == GLOBUS_FTP_CONTROL_DCAU_DEFAULT
+	        ? GLOBUS_FTP_CONTROL_DCAU_SELF : target->attr->dcau.mode, 
 	    target->attr->dcau.mode == GLOBUS_FTP_CONTROL_DCAU_SUBJECT
 		? " " : "",
 	    target->attr->dcau.mode == GLOBUS_FTP_CONTROL_DCAU_SUBJECT
@@ -1173,7 +1186,22 @@ redo:
 		    globus_libc_free(tmp_subj);
 		}
 	    }
-	    target->dcau.mode = target->attr->dcau.mode;
+	finish_dcau:
+	    if(target->attr->dcau.mode == GLOBUS_FTP_CONTROL_DCAU_DEFAULT)
+	    {
+	        if(!target->features[GLOBUS_FTP_CLIENT_FEATURE_DCAU])
+		{
+		    target->dcau.mode = GLOBUS_FTP_CONTROL_DCAU_NONE;
+		}
+		else
+		{
+		    target->dcau.mode = GLOBUS_FTP_CONTROL_DCAU_SELF;
+		}
+	    }
+	    else
+	    {
+		target->dcau.mode = target->attr->dcau.mode;
+	    }
 
 	    result = globus_ftp_control_local_dcau(target->control_handle,
 						   &target->dcau);
@@ -3089,6 +3117,16 @@ globus_l_ftp_client_parse_feat(
 	    {
 		target->features[GLOBUS_FTP_CLIENT_FEATURE_DCAU]
 			= GLOBUS_FTP_CLIENT_TRUE;
+		/* Per our extensions document, if server publishes
+		 * DCAU feature, it must default to DCAU S(elf) 
+		 * if we used RFC 2228 authentication.
+		 *
+		 * gsi-wuftpd 0.5 and below are broken in this regard.
+		 */
+		if(target->url.scheme_type == GLOBUS_URL_SCHEME_GSIFTP)
+		{
+		    target->dcau.mode = GLOBUS_FTP_CONTROL_DCAU_DEFAULT;
+		}
 	    }
 	    else if(strncmp(feature_label, "ESTO", 4) == 0)
 	    {

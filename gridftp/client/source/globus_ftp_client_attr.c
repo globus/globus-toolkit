@@ -596,7 +596,7 @@ globus_ftp_client_operationattr_init(
     i_attr->type			= GLOBUS_FTP_CONTROL_TYPE_IMAGE;
     i_attr->mode			= GLOBUS_FTP_CONTROL_MODE_STREAM;
     i_attr->append			= GLOBUS_FALSE;
-    i_attr->dcau.mode			= GLOBUS_FTP_CONTROL_DCAU_NONE;
+    i_attr->dcau.mode			= GLOBUS_FTP_CONTROL_DCAU_DEFAULT;
     i_attr->data_prot			= GLOBUS_FTP_CONTROL_PROTECTION_CLEAR;
     i_attr->read_all			= GLOBUS_FALSE;
     i_attr->read_all_intermediate_callback= GLOBUS_NULL;
@@ -1111,6 +1111,19 @@ error_exit:
  * buffer can make a significant impact on the performance of a file
  * transfer. The user may set the buffer to either a system-dependent
  * default value, or to a fixed value.
+ *
+ * The actual implementation of this attribute is designed to be as widely
+ * interoperable as possible. In addition to supporting the SBUF command
+ * described in the GridFTP protocol extensions document, it also supports
+ * other commands and site commands which are used by other servers to
+ * set TCP buffer sizes. These are 
+ * - SITE RETRBUFSIZE
+ * - SITE RBUFSZ
+ * - SITE RBUFSIZ
+ * - SITE STORBUFIZE
+ * - SITE SBUFSZ
+ * - SITE SBUFSIZ
+ * - SITE BUFSIZE
  *
  * This attribute is affects any type of data transfer done with the
  * ftp client library.
@@ -1842,10 +1855,15 @@ error_exit:
  * attribute set.
  * @ingroup globus_ftp_client_operationattr
  *
+ * Data channel authentication is a GridFTP extension, and may not be
+ * supported by all servers. If a server supports it, then the default
+ * is to delegate a credential to the server, and authenticate all
+ * data channels with that delegated credential.
+ *
  * @param attr
  *        The attribute set to query or modify.
  * @param dcau
- *        The value of data channel authentication attribute. 
+ *        The value of data channel authentication attribute.
  */
 globus_result_t
 globus_ftp_client_operationattr_set_dcau(
