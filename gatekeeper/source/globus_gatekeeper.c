@@ -1168,12 +1168,12 @@ static void doit()
     /* GSSAPI assist variables */
     OM_uint32           major_status = 0;
     OM_uint32           minor_status = 0;
-    OM_uint32           minor_status2 = 0;
     int                 token_status = 0;
     OM_uint32           ret_flags = 0;
     gss_buffer_desc     context_token = GSS_C_EMPTY_BUFFER;
+#if 0
     gss_buffer_desc     option_token = GSS_C_EMPTY_BUFFER;
-    gss_OID_set_desc    extension_oids;
+#endif
     FILE *              context_tmpfile = NULL;
 
     /* Authorization variables */
@@ -1412,7 +1412,7 @@ static void doit()
     {
         failure2(FAILED_SERVICELOOKUP,
                  "Incoming message has invalid first-line length %ld\n",
-                 length);
+                 (long) length);
 
     }
 
@@ -1531,6 +1531,14 @@ static void doit()
             "Requested service: %s %s",
             service_name,
             (got_ping_request) ? "[PING ONLY]" : "");
+
+    /* Don't allow the client to look for service files outside of the 
+     * service directory
+     */
+    if (strchr(service_name, '/') != NULL)
+    {
+        failure2(FAILED_SERVICELOOKUP, "Invalid service name %s", service_name);
+    }
 
     if ((rc = globus_gatekeeper_util_globusxmap(
 		genfilename(gatekeeperhome,grid_services,service_name), 
@@ -1861,7 +1869,7 @@ static void doit()
         unsetenv("X509_USER_CERT"); /* unset it */
 
 	/* SLANG - can't unset this, otherwise jobmanager won't know where to look. */
-	/* unsetenv("X509_USER_PROXY"); /* unset it  */
+	/* unsetenv("X509_USER_PROXY"); */
     }
 
     /* for tranition, if gatekeeper has the path, set it
