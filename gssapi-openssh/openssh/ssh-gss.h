@@ -86,11 +86,13 @@ typedef struct {
 } Gssctxt;
 
 extern ssh_gssapi_mech supported_mechs[];
+extern char gssprefix[];
 extern gss_buffer_desc gssapi_client_name;
 extern gss_cred_id_t   gssapi_client_creds;
 extern enum ssh_gss_id gssapi_client_type;
 
-char *ssh_gssapi_mechanisms(int server, char *host);
+char *ssh_gssapi_mechanisms(char *host);
+char *ssh_server_gssapi_mechanisms();
 gss_OID ssh_gssapi_id_kex(Gssctxt *ctx, char *name);
 void ssh_gssapi_set_oid_data(Gssctxt *ctx, void *data, size_t len);
 void ssh_gssapi_set_oid(Gssctxt *ctx, gss_OID oid);

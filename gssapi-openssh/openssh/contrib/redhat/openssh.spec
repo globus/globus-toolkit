@@ -1,4 +1,4 @@
-%define ver 3.5p1
+%define ver 3.6.1p1
 %define rel 1
 
 # OpenSSH privilege separation requires a user & group ID
@@ -21,7 +21,7 @@
 %define scard 0
 
 # Use GTK2 instead of GNOME in gnome-ssh-askpass
-%define gtk2 0
+%define gtk2 1
 
 # Is this build for RHL 6.x?
 %define build6x 0

@@ -6,6 +6,7 @@
 #include "config.h"
 
 /* OpenBSD function replacements */
+#include "basename.h"
 #include "bindresvport.h"
 #include "getcwd.h"
 #include "realpath.h"
@@ -26,6 +27,7 @@
 #include "glob.h"
 #include "readpassphrase.h"
 #include "getopt.h"
+#include "vis.h"
 
 /* Home grown routines */
 #include "bsd-arc4random.h"

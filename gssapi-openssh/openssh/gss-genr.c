@@ -98,7 +98,7 @@ char gssprefix[]=KEX_GSS_SHA1;
  */
  
 char * 
-ssh_gssapi_mechanisms(int server,char *host) {
+ssh_gssapi_mechanisms(char *host) {
 	gss_OID_set 	supported;
 	OM_uint32	maj_status, min_status;
 	Buffer		buf;
@@ -110,7 +110,7 @@ ssh_gssapi_mechanisms(int server,char *host) {
 
 	if (datafellows & SSH_OLD_GSSAPI) return NULL;
 	
-	PRIVSEP(gss_indicate_mechs(&min_status, &supported));
+	gss_indicate_mechs(&min_status, &supported);
 	
 	buffer_init(&buf);	
 
@@ -122,13 +122,9 @@ ssh_gssapi_mechanisms(int server,char *host) {
 			present=0;
 		}
 		if (present) {
-		    	if ((server && 
-		    	     !GSS_ERROR(PRIVSEP(ssh_gssapi_server_ctx(&ctx,
-		    	  			            &supported_mechs[i].oid)))) 
-		    	    || (!server &&
-		    	        !GSS_ERROR(ssh_gssapi_client_ctx(&ctx,
-		    	 			       &supported_mechs[i].oid,
-		    	 			       host)))) {
+		    	if (!GSS_ERROR(ssh_gssapi_client_ctx(&ctx,
+					               &supported_mechs[i].oid,
+		    	 		               host))) {
 				/* Append gss_group1_sha1_x to our list */
 				if (++mech_count > 1) {
 				    buffer_append(&buf, ",", 1);
@@ -161,31 +157,6 @@ ssh_gssapi_mechanisms(int server,char *host) {
 	else
 	   return(mechs);
 }
-
-void ssh_gssapi_supported_oids(gss_OID_set *oidset) {
-	enum ssh_gss_id i =0;
-	OM_uint32 maj_status,min_status;
-	int present;
-	gss_OID_set supported;
-	
-	gss_create_empty_oid_set(&min_status,oidset);
-	PRIVSEP(gss_indicate_mechs(&min_status, &supported));
-
-	while (supported_mechs[i].name!=NULL) {
-		if ((maj_status=gss_test_oid_set_member(&min_status,
-						       &supported_mechs[i].oid,
-						       supported,
-						       &present))) {
-			present=0;
-		}
-		if (present) {
-			gss_add_oid_set_member(&min_status,
-					       &supported_mechs[i].oid,
-				       	       oidset);	
-		}
-		i++;
-	}
-}	
 
 /* Set the contexts OID from a data stream */
 void ssh_gssapi_set_oid_data(Gssctxt *ctx, void *data, size_t len) { 
@@ -249,10 +220,9 @@ gss_OID ssh_gssapi_id_kex(Gssctxt *ctx, char *name) {
 
 
 /* All this effort to report an error ... */
-static void
-ssh_gssapi_error_ex(gss_OID mech, OM_uint32 major_status,
-		    OM_uint32 minor_status,
-		    int send_packet) {
+void
+ssh_gssapi_error(gss_OID mech, OM_uint32 major_status,
+		 OM_uint32 minor_status) {
 	OM_uint32 lmaj, lmin;
         gss_buffer_desc msg = {0,NULL};
         OM_uint32 ctx;
@@ -260,44 +230,26 @@ ssh_gssapi_error_ex(gss_OID mech, OM_uint32 major_status,
         ctx = 0;
 	/* The GSSAPI error */
         do {
-        	lmaj = PRIVSEP(gss_display_status(&lmin, major_status,
-						  GSS_C_GSS_CODE,
-						  mech,
-						  &ctx, &msg));
+        	lmaj = gss_display_status(&lmin, major_status,
+					  GSS_C_GSS_CODE,
+					  mech, &ctx, &msg);
         	if (lmaj == GSS_S_COMPLETE) {
         	    	debug((char *)msg.value);
-			if (send_packet) packet_send_debug((char *)msg.value);
         	    	(void) gss_release_buffer(&lmin, &msg);
         	}
         } while (ctx!=0);	   
 
         /* The mechanism specific error */
         do {
-        	lmaj = PRIVSEP(gss_display_status(&lmin, minor_status,
-						  GSS_C_MECH_CODE,
-						  mech,
-						  &ctx, &msg));
+        	lmaj = gss_display_status(&lmin, minor_status,
+					  GSS_C_MECH_CODE,
+					  mech, &ctx, &msg);
         	if (lmaj == GSS_S_COMPLETE) {
         	    	debug((char *)msg.value);
-			if (send_packet) packet_send_debug((char *)msg.value);
         	    	(void) gss_release_buffer(&lmin, &msg);
         	}
         } while (ctx!=0);
 }
-
-void
-ssh_gssapi_error(gss_OID mech,OM_uint32 major_status,OM_uint32 minor_status) {
-    ssh_gssapi_error_ex(mech, major_status, minor_status, 0);
-}
-
-void
-ssh_gssapi_send_error(gss_OID mech,
-		      OM_uint32 major_status,OM_uint32 minor_status) {
-    ssh_gssapi_error_ex(mech, major_status, minor_status, 1);
-}
-
-
-
 
 /* Initialise our GSSAPI context. We use this opaque structure to contain all
  * of the data which both the client and server need to persist across
@@ -387,59 +339,6 @@ ssh_gssapi_init_ctx(Gssctxt *ctx, int deleg_creds, gss_buffer_desc *recv_tok,
       		ssh_gssapi_error(ctx->oid,maj_status,min_status);
       	}
       	return(maj_status);
-}
-
-/* Wrapper arround accept_sec_context
- * Requires that the context contains:
- *    oid		
- *    credentials	(from ssh_gssapi_acquire_cred)
- */
-OM_uint32 ssh_gssapi_accept_ctx(Gssctxt *ctx,gss_buffer_desc *recv_tok,
-				gss_buffer_desc *send_tok, OM_uint32 *flags) 
-{
-	OM_uint32 maj_status, min_status;
-	gss_OID mech;
-	
-	maj_status=gss_accept_sec_context(&min_status,
-					  &ctx->context,
-					  ctx->creds,
-					  recv_tok,
-					  GSS_C_NO_CHANNEL_BINDINGS,
-					  &ctx->client,
-					  &mech, /* read-only pointer */
-					  send_tok,
-					  flags,
-					  NULL,
-					  &ctx->client_creds);
-	if (GSS_ERROR(maj_status)) {
-		ssh_gssapi_send_error(ctx->oid,maj_status,min_status);
-	}
-	
-	if (ctx->client_creds) {
-		debug("Received some client credentials");
-	} else {
-		debug("Got no client credentials");
-	}
-
-	/* FIXME: We should check that the me
-	 * the one that we asked for (in ctx->oid) */
-
-	ctx->status=maj_status;
-	
-	/* Now, if we're complete and we have the right flags, then
-	 * we flag the user as also having been authenticated
-	 */
-	
-	if (((flags==NULL) || ((*flags & GSS_C_MUTUAL_FLAG) && 
-	                       (*flags & GSS_C_INTEG_FLAG))) &&
-	    (maj_status == GSS_S_COMPLETE)) {
-		if (ssh_gssapi_getclient(ctx,&gssapi_client_type,
-	  			         &gssapi_client_name,
-	  			         &gssapi_client_creds))
-	  		fatal("Couldn't convert client name");
-	}
-
-	return(maj_status);
 }
 
 /* Create a service name for the given host */
@@ -561,14 +460,6 @@ ssh_gssapi_sign(Gssctxt *ctx, gss_buffer_desc *buffer, gss_buffer_desc *hash) {
 	return(maj_status);
 }
 
-OM_uint32
-ssh_gssapi_server_ctx(Gssctxt **ctx,gss_OID oid) {
-	if (*ctx) ssh_gssapi_delete_ctx(ctx);
-	ssh_gssapi_build_ctx(ctx);
-	ssh_gssapi_set_oid(*ctx,oid);
-	return(ssh_gssapi_acquire_cred(*ctx));
-}
-
 OM_uint32 
 ssh_gssapi_client_ctx(Gssctxt **ctx,gss_OID oid, char *host) {
 	gss_buffer_desc token = {0,NULL};
@@ -582,5 +473,5 @@ ssh_gssapi_client_ctx(Gssctxt **ctx,gss_OID oid, char *host) {
 	gss_release_buffer(&minor,&token);
 	return(major);
 }
-                                                                                        
+
 #endif /* GSSAPI */

@@ -10,7 +10,7 @@
  */
 
 #include "includes.h"
-RCSID("$OpenBSD: auth1.c,v 1.44 2002/09/26 11:38:43 markus Exp $");
+RCSID("$OpenBSD: auth1.c,v 1.47 2003/02/06 21:22:42 markus Exp $");
 
 #include "xmalloc.h"
 #include "rsa.h"
@@ -46,7 +46,7 @@ auth1_gss_protocol_error(int type, u_int32_t plen, void *ctxt)
 {
   Authctxt *authctxt = ctxt;
   /* Other side told us to abort, dont need to tell him */ 
-  /* maybe we can us some other method. */
+  /* maybe we can use some other method. */
   if (type == SSH_MSG_AUTH_GSSAPI_ABORT) {
       log("auth1: GSSAPI aborting");
       dispatch_set(SSH_MSG_AUTH_GSSAPI_TOKEN, NULL);
@@ -282,7 +282,7 @@ do_authloop(Authctxt *authctxt)
 						snprintf(info, sizeof(info),
 						    " tktuser %.100s",
 						    client_user);
- 
+
  						/* Send response to client */
  						packet_start(
 						    SSH_SMSG_AUTH_KERBEROS_RESPONSE);
@@ -324,6 +324,11 @@ do_authloop(Authctxt *authctxt)
 			}
 			dispatch_init(&auth1_gss_protocol_error);
 			method_gssapi.userauth(authctxt);
+			if (!authctxt->postponed) { /* failed before starting dispatch */
+				authctxt->success = 0;
+				authctxt->postponed = 0;
+				break;
+			}
 			dispatch_run(DISPATCH_BLOCK, &authctxt->success, authctxt);
 			if (authctxt->postponed) { /* failed, try other methods */
 				authctxt->success = 0;
@@ -450,7 +455,6 @@ do_authloop(Authctxt *authctxt)
 			debug("rcvd SSH_CMSG_AUTH_TIS_RESPONSE");
 			if (options.challenge_response_authentication == 1) {
 				char *response = packet_get_string(&dlen);
-				debug("got response '%s'", response);
 				packet_check_eom();
 				authenticated = verify_response(authctxt, response);
 				memset(response, 'r', dlen);
@@ -494,8 +498,7 @@ do_authloop(Authctxt *authctxt)
 		}
 #else
 		/* Special handling for root */
-		if (!use_privsep &&
-		    authenticated && authctxt->pw->pw_uid == 0 &&
+		if (authenticated && authctxt->pw->pw_uid == 0 &&
 		    !auth_root_allowed(get_authname(type)))
 			authenticated = 0;
 #endif
