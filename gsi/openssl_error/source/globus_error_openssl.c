@@ -12,6 +12,7 @@
 
 #include "globus_error_openssl.h"
 #include "openssl/err.h"
+#include "version.h"
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 
