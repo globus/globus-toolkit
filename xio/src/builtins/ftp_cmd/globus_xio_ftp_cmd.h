@@ -3,10 +3,11 @@
 
 #include "globus_common.h"
 
-enum
+typedef enum globus_xio_ftp_cmd_attr_type_e
 {
+    GLOBUS_XIO_DRIVER_FTP_CMD_FORCE_SERVER,
     GLOBUS_XIO_DRIVER_FTP_CMD_BUFFER
-};
+} globus_xio_ftp_cmd_attr_type_t;
 
 
 #endif

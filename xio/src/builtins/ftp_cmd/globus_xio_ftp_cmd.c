@@ -23,6 +23,7 @@ typedef struct globus_l_xio_ftp_cmd_handle_s
 typedef struct
 {
     globus_bool_t                       create_buffer_mode;
+    globus_bool_t                       force_server;
 } globus_l_xio_ftp_cmd_attr_t;
 /**************************************************************************
  *                    function prototypes
@@ -46,7 +47,7 @@ globus_l_xio_ftp_cmd_read_cb(
  *************************************************************************/
 #include "version.h"
 
-static globus_module_descriptor_t       globus_i_xio_ftp_cmd_module =
+globus_module_descriptor_t       globus_i_xio_ftp_cmd_module =
 {
     "globus_xio_ftp_cmd",
     globus_l_xio_ftp_cmd_activate,
@@ -74,7 +75,9 @@ globus_l_xio_ftp_cmd_complete_command(
     globus_size_t *                     end_offset)
 {
     globus_byte_t *                     tmp_ptr;
-    globus_size_t                       end_off;
+    globus_size_t                       len;
+    globus_byte_t *                     start_ptr;
+    globus_bool_t                       done = GLOBUS_FALSE;
 
     /* all a 0 length to be passed */
     if(length == 0)
@@ -82,16 +85,9 @@ globus_l_xio_ftp_cmd_complete_command(
         return GLOBUS_FALSE;
     }
 
-    tmp_ptr = globus_libc_memrchr(buffer, '\r', length);
+    tmp_ptr = globus_libc_memmem(buffer, length, "\r\n", 2);
     /* IF There is no '\r' */
     if(tmp_ptr == NULL)
-    {
-        return GLOBUS_FALSE;
-    }
-    end_off = tmp_ptr - buffer;
-
-    /* if the '\r' is the last character, or the next isn't '\n' */
-    if(end_off == length - 1 || tmp_ptr[1] != '\n')
     {
         return GLOBUS_FALSE;
     }
@@ -99,26 +95,30 @@ globus_l_xio_ftp_cmd_complete_command(
     /* if server we are done as soon as we get \r\n */
     if(!client)
     {
-        *end_offset = end_off;
+        *end_offset = tmp_ptr - buffer + 2;
         return GLOBUS_TRUE;
     }
 
-    /* server must check for continuation commands */
-    tmp_ptr = globus_libc_memrchr(buffer, '\r', end_off - 1);
-    /* if not found just check from start */
-    if(tmp_ptr == NULL)
+    start_ptr = buffer;
+    len = length;
+    while(!done)
     {
-        tmp_ptr = buffer;
-    }
-    else
-    {
-        tmp_ptr += 2; /* move beyound \r\n */
-    }
-    /* if 4th colums is a space and first is a number we are done */
-    if(tmp_ptr[3] == ' ' && isdigit(tmp_ptr[0]))
-    {
-        *end_offset = end_off;
-        return GLOBUS_TRUE;
+        /* if 4th colums is a space and first is a number we are done */
+        if(start_ptr[3] == ' ' && isdigit(start_ptr[0]))
+        {
+            *end_offset = tmp_ptr - buffer + 2;
+            return GLOBUS_TRUE;
+        }
+        else
+        {
+            len -= start_ptr - tmp_ptr - 2;
+            start_ptr = tmp_ptr + 2;
+            tmp_ptr = globus_libc_memmem(start_ptr, len, "\r\n", 2);
+            if(tmp_ptr == NULL)
+            {
+                done = GLOBUS_TRUE;;
+            }
+        }
     }
 
     return GLOBUS_FALSE;
@@ -133,14 +133,12 @@ globus_l_xio_ftp_cmd_attr_init(
     GlobusXIOName(globus_l_xio_ftp_cmd_attr_init);
     
     attr = (globus_l_xio_ftp_cmd_attr_t *)
-        globus_malloc(sizeof(globus_l_xio_ftp_cmd_attr_t));
+        globus_calloc(sizeof(globus_l_xio_ftp_cmd_attr_t), 1);
     if(!attr)
     {
         res = GlobusXIOErrorMemory("attr");
         goto error;
     }
-    
-    attr->create_buffer_mode = GLOBUS_FALSE;
 
     *out_driver_attr = attr;
     
@@ -165,6 +163,7 @@ globus_l_xio_ftp_cmd_attr_copy(
     {
         src_attr = (globus_l_xio_ftp_cmd_attr_t *) src_driver_attr;
         dest_attr->create_buffer_mode = src_attr->create_buffer_mode;
+        dest_attr->force_server = src_attr->force_server;
         
         *out_driver_attr = dest_attr;
     }
@@ -196,6 +195,10 @@ globus_l_xio_ftp_cmd_attr_cntl(
     {
         case GLOBUS_XIO_DRIVER_FTP_CMD_BUFFER:
             attr->create_buffer_mode = va_arg(ap, globus_bool_t);
+            break;
+
+        case GLOBUS_XIO_DRIVER_FTP_CMD_FORCE_SERVER:
+            attr->force_server = va_arg(ap, globus_bool_t);
             break;
 
         default:
@@ -273,8 +276,15 @@ globus_l_xio_ftp_cmd_open(
         res = GlobusXIOErrorMemory("handle");
         return res;
     }
-    
-    handle->client = driver_link ? GLOBUS_FALSE : GLOBUS_TRUE;
+
+    if(attr != NULL && attr->force_server)
+    {
+        handle->client = GLOBUS_FALSE;
+    }
+    else
+    {    
+        handle->client = driver_link ? GLOBUS_FALSE : GLOBUS_TRUE;
+    }
     handle->create_buffer_mode = attr 
         ? attr->create_buffer_mode : GLOBUS_FALSE;
 
@@ -295,7 +305,38 @@ globus_l_xio_ftp_cmd_open(
         globus_l_xio_ftp_cmd_open_cb,
         handle);
 
-    return GLOBUS_SUCCESS;
+    return res;
+}
+
+
+static void
+globus_l_xio_ftp_cmd_write_cb(
+    globus_xio_operation_t              op,
+    globus_result_t                     result,
+    globus_size_t                       nbytes,
+    void *                              user_arg)
+{
+    globus_xio_driver_finished_write(op, result, nbytes);
+}
+                                                                                
+static globus_result_t
+globus_l_xio_ftp_cmd_write(
+    void *                              driver_specific_handle,
+    const globus_xio_iovec_t *          iovec,
+    int                                 iovec_count,
+    globus_xio_operation_t              op)
+{
+    globus_result_t                     res;
+
+    res = globus_xio_driver_pass_write(
+        op,
+        iovec,
+        iovec_count,
+        globus_xio_operation_get_wait_for(op),
+        globus_l_xio_ftp_cmd_write_cb,
+        NULL);
+
+    return res;
 }
 
 globus_result_t
@@ -331,10 +372,11 @@ globus_l_xio_ftp_cmd_request_data(
     else
     {
         handle->out_iovec[0].iov_base = globus_fifo_dequeue(&handle->read_q);
-        handle->out_iovec[0].iov_len = strlen(handle->out_iovec[0].iov_base);
+        handle->out_iovec[0].iov_len = 
+            strlen((char*)handle->out_iovec[0].iov_base);
 
         globus_xio_driver_finished_read(
-            op, GLOBUS_SUCCESS, handle->iovec.iov_len);
+            op, GLOBUS_SUCCESS, handle->out_iovec[0].iov_len);
     }
 
     return res;
@@ -379,22 +421,22 @@ globus_l_xio_ftp_cmd_read_cb(
                     tmp_ptr++;
                     end_offset--;
                 }
+
                 /* copy it into its own buffer */
                 done_buf = globus_malloc(end_offset+1);
-                memcpy(done_buf, handle->buffer, end_offset+1);
+                memcpy(done_buf, handle->buffer, end_offset);
                 done_buf[end_offset] = '\0';
                 globus_fifo_enqueue(&handle->read_q, done_buf);
 
-                remain = handle->buffer_ndx - end_offset - 2;
+                remain = handle->buffer_ndx - end_offset;
                 if(remain > 0)
                 {
                     memmove(
                         handle->buffer,
-                        &handle->buffer[handle->buffer_ndx],
+                        &handle->buffer[end_offset],
                         remain);
                 }
                 handle->buffer_ndx = remain;
-
                 complete = globus_l_xio_ftp_cmd_complete_command(
                     handle->buffer,
                     handle->buffer_ndx,
@@ -489,7 +531,7 @@ globus_l_xio_ftp_cmd_load(
         globus_l_xio_ftp_cmd_open,
         globus_l_xio_ftp_cmd_close,
         globus_l_xio_ftp_cmd_read,
-        NULL, /* leave write null for now */
+        globus_l_xio_ftp_cmd_write,
         NULL,
         NULL);
 
@@ -513,8 +555,6 @@ globus_l_xio_ftp_cmd_load(
 
     return GLOBUS_SUCCESS;
 }
-
-
 
 static void
 globus_l_xio_ftp_cmd_unload(

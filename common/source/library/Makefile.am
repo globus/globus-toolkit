@@ -34,6 +34,8 @@ Sources= \
 	globus_libc_setenv.c \
 	globus_list.c \
 	globus_list.h \
+	globus_logging.c \
+	globus_logging.h \
 	globus_memory.c \
 	globus_memory.h \
 	globus_module.c \
@@ -48,6 +50,8 @@ Sources= \
 	globus_print.h \
 	globus_priority_q.c \
 	globus_priority_q.h \
+    globus_range_list.c \
+    globus_range_list.h \
 	globus_release.h \
 	globus_strptime.c \
 	globus_strptime.h \
@@ -84,6 +88,7 @@ flavorinclude_HEADERS = \
 	globus_hashtable.h \
 	globus_fifo.h \
 	globus_symboltable.h \
+    globus_logging.h    \
 	globus_object.h \
 	globus_object_hierarchy.h \
 	globus_error.h \
@@ -98,6 +103,7 @@ flavorinclude_HEADERS = \
 	globus_memory.h \
 	globus_print.h \
 	globus_priority_q.h \
+	globus_range_list.h \
 	globus_tilde_expand.h \
 	globus_libc.h \
 	globus_debug.h \
