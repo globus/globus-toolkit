@@ -25,6 +25,7 @@ if (!defined($gpath))
 
 @INC = (@INC, "$gpath/lib/perl");
 
+my ($proto) = setup_proto();
 my ($source_host, $source_file, $local_copy) = setup_remote_source();
 
 =head2 I<basic_func> (Test 1-2)
@@ -56,7 +57,7 @@ sub basic_func
     {
         FtpTestLib::push_proxy("/dev/null");
     }
-    my $command = "$test_exec -s 'gsiftp://$source_host$source_file' > $tmpname 2>/dev/null";
+    my $command = "$test_exec -s '$proto$source_host$source_file' > $tmpname 2>/dev/null";
     $errors = run_command($command, $use_proxy ? 0 : -1);
     if($errors eq "" && $use_proxy)
     {
@@ -99,7 +100,7 @@ and no core file is generated.
 sub bad_url
 {
     my ($errors,$rc) = ("",0);
-    my ($bogus_url) = new Globus::URL("gsiftp://$source_host$source_file");
+    my ($bogus_url) = new Globus::URL("$proto$source_host$source_file");
 
     $bogus_url->{path} = "/no-such-file-here";
     my $command = "$test_exec -s ".$bogus_url->to_string()." >/dev/null 2>/dev/null";
@@ -132,7 +133,7 @@ sub abort_test
     my ($errors,$rc) = ("", 0);
     my ($abort_point) = shift;
 
-    my $command = "$test_exec -a $abort_point -s 'gsiftp://$source_host$source_file' >/dev/null 2>&1";
+    my $command = "$test_exec -a $abort_point -s '$proto$source_host$source_file' >/dev/null 2>&1";
     $errors = run_command($command, -2);
     if($errors eq "")
     {
@@ -162,7 +163,7 @@ sub restart_test
     my ($errors,$rc) = ("",0);
     my ($restart_point) = shift;
 
-    my $command = "$test_exec -r $restart_point -s 'gsiftp://$source_host$source_file' > $tmpname 2>/dev/null";
+    my $command = "$test_exec -r $restart_point -s '$proto$source_host$source_file' > $tmpname 2>/dev/null";
     $errors = run_command($command, 0);
     if($errors eq "")
     {
@@ -218,7 +219,7 @@ sub dcau_test
     my ($errors,$rc) = ("",0);
     my ($dcau, $desired_rc) = @_;
 
-    my $command = "$test_exec -c $dcau -s 'gsiftp://$source_host$source_file' > $tmpname 2>/dev/null";
+    my $command = "$test_exec -c $dcau -s '$proto$source_host$source_file' > $tmpname 2>/dev/null";
     $errors = run_command($command, $desired_rc);
     if($errors eq "" && $desired_rc == 0)
     {
@@ -283,7 +284,7 @@ sub prot_test
     my ($errors,$rc) = ("",0);
     my ($prot, $desired_rc) = @_;
 
-    my $command = "$test_exec -c self -t $prot -s 'gsiftp://$source_host$source_file' > $tmpname 2>/dev/null";
+    my $command = "$test_exec -c self -t $prot -s '$proto$source_host$source_file' > $tmpname 2>/dev/null";
     $errors = run_command($command, $desired_rc);
     if($errors eq "" && $desired_rc == 0)
     {
@@ -318,7 +319,7 @@ sub perf_test
     my $tmpname = POSIX::tmpnam();
     my ($errors,$rc) = ("",0);
 
-    my $command = "$test_exec -M -s 'gsiftp://$source_host$source_file' > $tmpname 2>/dev/null";
+    my $command = "$test_exec -M -s '$proto$source_host$source_file' > $tmpname 2>/dev/null";
     $errors = run_command($command, 0);
     if($errors eq "")
     {
@@ -351,7 +352,7 @@ sub throughput_test
     my $tmpname = POSIX::tmpnam();
     my ($errors,$rc) = ("",0);
 
-    my $command = "$test_exec -T -s 'gsiftp://$source_host$source_file' > $tmpname 2>/dev/null";
+    my $command = "$test_exec -T -s '$proto$source_host$source_file' > $tmpname 2>/dev/null";
     $errors = run_command($command, 0);
     if($errors eq "")
     {
@@ -393,7 +394,7 @@ sub restart_plugin_test
 	$other_args = "";
     }
 
-    my $command = "$test_exec -s 'gsiftp://$source_host$source_file' -f 0,0,0,0 $other_args > $tmpname 2>/dev/null";
+    my $command = "$test_exec -s '$proto$source_host$source_file' -f 0,0,0,0 $other_args > $tmpname 2>/dev/null";
     $errors = run_command($command, 0);
     if($errors eq "")
     {

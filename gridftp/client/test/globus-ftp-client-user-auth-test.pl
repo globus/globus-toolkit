@@ -22,6 +22,7 @@ if (!defined($gpath))
 
 @INC = (@INC, "$gpath/lib/perl");
 
+my ($proto) = setup_proto();
 my ($source_host, $source_file, $local_copy) = setup_remote_source();
 
 # Test #1. User specifies the correct authorization information.
@@ -50,7 +51,7 @@ sub correct_auth
 
     chomp($hostname);
     
-    my $command = "$test_exec -s gsiftp://$source_host$source_file -A '$hostname' >$tmpname 2>/dev/null";
+    my $command = "$test_exec -s $proto$source_host$source_file -A '$hostname' >$tmpname 2>/dev/null";
     $errors = run_command($command, 0);
     if($errors eq "")
     {
@@ -84,7 +85,7 @@ sub incorrect_auth
     my ($hostname) = ("googly_goodness");
     unlink($tmpname);
 
-    my $command = "$test_exec -s gsiftp://$source_host$source_file -A 'host\@$hostname' >$tmpname 2>/dev/null";
+    my $command = "$test_exec -s $proto$source_host$source_file -A 'host\@$hostname' >$tmpname 2>/dev/null";
     $errors = run_command($command, 1);
     if($errors eq "")
     {
