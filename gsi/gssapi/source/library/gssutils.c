@@ -114,8 +114,13 @@ gss_create_and_fill_context(
             return GSS_S_FAILURE;
         }
         
+        memset(context,0,sizeof(gss_ctx_id_desc));
         *context_handle_P = context;
         context->ctx_flags = 0;
+    }
+    else
+    {
+        context = *context_handle_P;
     }
     
     context->target_name = NULL;
@@ -936,3 +941,41 @@ err:
 #endif
     return major_status;
 }
+
+int gss_verify_extensions_callback(
+    proxy_verify_desc *                 pvd,
+    X509_EXTENSION *                    extension)
+{
+    gss_OID_set                         extension_oids;
+    ASN1_OBJECT *                       extension_obj;
+    int                                 i;
+    gss_OID_desc                        oid;
+    
+    extension_oids = (gss_OID_set) pvd->extension_oids;
+
+    if(extension_oids == GSS_C_NO_OID_SET)
+    {
+        return 0;
+    }
+    
+    extension_obj = X509_EXTENSION_get_object(extension);
+
+    for(i=0;i<extension_oids->count;i++)
+    {
+        oid = extension_oids->elements[i];
+        if((extension_obj->length == oid.length) &&
+           !memcmp(extension_obj->data, oid.elements, extension_obj->length))
+        {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+
+
+
+
+
+

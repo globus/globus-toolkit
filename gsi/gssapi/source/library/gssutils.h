@@ -63,6 +63,10 @@ gss_create_and_fill_cred(
     STACK_OF(X509)  *                   cert_chain,
     BIO *                               bp);
 
+int gss_verify_extensions_callback(
+    proxy_verify_desc *                 pvd,
+    X509_EXTENSION *                    extension);
+
 /* following added for ssleay */
 
 OM_uint32
