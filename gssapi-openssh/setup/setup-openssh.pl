@@ -183,21 +183,21 @@ if ( !getPrivilegeSeparation() )
     print "    this feature, your system appears to require some additional\n";
     print "    configuration.\n";
     print "\n";
-    print "    To enable privilege separation:\n";
+    print "    Perform the following steps to enable privilege separation:\n";
     print "\n";
-    print "    \tIf the system user 'sshd' does not already exist,\n";
-    print "    \tadd a user with that username.\n";
+    print "    \t1) If the system user 'sshd' does not already exist, add a\n";
+    print "    \t   user with that username.\n";
     print "\n";
-    print "    \tVerify that /var/empty exists, is owned by root,\n";
-    print "    \tand has a mode of 0700.\n";
+    print "    \t2) Verify that /var/empty exists, is owned by root, and has\n";
+    print "    \t   a mode of 0700.\n";
     print "\n";
-    print "    \tEnable the feature UsePrivilegeSeparation in\n";
-    print "    \t\$GLOBUS_LOCATION/etc/ssh/sshd_config.\n";
+    print "    \t3) Enable the feature UsePrivilegeSeparation in\n";
+    print "    \t   \$GLOBUS_LOCATION/etc/ssh/sshd_config.\n";
 }
 
 print "\n";
-print "For more information about GSI-Enabled OpenSSH, visit:\n";
-print "<http://www.ncsa.uiuc.edu/Divisions/ACES/GSI/openssh/>\n";
+print "  o For more information about GSI-Enabled OpenSSH, visit:\n";
+print "    <http://www.ncsa.uiuc.edu/Divisions/ACES/GSI/openssh/>\n";
 
 #
 # give the user a chance to read all of this output
