@@ -606,6 +606,64 @@ checkstat(
 
 }
 
+
+/**********************************************************************
+Function:       checkcert()
+Description:    check the status of a certificate file
+Parameters:
+Returns:
+                0 pass all the following tests
+                1 does not exist
+                2 not owned by user
+                3 writable by someone else
+                4 zero length
+**********************************************************************/
+static int
+checkcert(
+    const char*                         filename)
+{
+    struct stat                         stx;
+
+    if (stat(filename,&stx) != 0)
+    {
+        return 1;
+    }
+
+    /*
+     * use any stat output as random data, as it will 
+     * have file sizes, and last use times in it. 
+     */
+    RAND_add((void*)&stx,sizeof(stx),2);
+
+#if !defined(WIN32) && !defined(TARGET_ARCH_CYGWIN)
+    if (stx.st_uid != getuid())
+    {
+#ifdef DEBUG
+        fprintf(stderr,"checkstat:%s:uid:%d:%d\n",filename,
+                stx.st_uid, getuid());
+#endif
+        return 2;
+    }
+
+    if (stx.st_mode & 022)
+    {
+#ifdef DEBUG
+        fprintf(stderr,"checkstat:%s:mode:%o\n",filename,stx.st_mode);
+#endif
+        return 3;
+    }
+    
+#endif /* !WIN32 && !TARGET_ARCH_CYGWIN */
+
+    if (stx.st_size == 0)
+    {
+        return 4;
+    }
+    return 0;
+
+}
+
+
 /***********************************************************************
 Function: proxy_cred_desc_new()
 
@@ -3253,7 +3311,7 @@ proxy_get_filenames(
                 user_cert = default_user_cert;
                 user_key = default_user_key;
 
-                if(checkstat(user_cert) ||
+                if(checkcert(user_cert) ||
                    checkstat(user_key))
                 {
                     len = strlen(home) + strlen(X509_DEFAULT_PKCS12_FILE) + 2;
