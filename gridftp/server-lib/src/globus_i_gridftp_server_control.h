@@ -187,6 +187,9 @@ typedef struct globus_i_gsc_user_funcs_s
     globus_gridftp_server_control_list_cb_t             list_cb;
     globus_gridftp_server_control_resource_cb_t         resource_cb;
     globus_gridftp_server_control_cb_t                  done_cb;
+    globus_gridftp_server_control_log_cb_t              log_func;
+    int                                                 log_mask;
+    void *                                              log_arg;
 } globus_i_gsc_user_funcs_t;
 
 typedef struct globus_i_gsc_restart_s
@@ -508,5 +511,11 @@ globus_i_gsc_restart_destroy(
 globus_bool_t
 globus_i_guc_data_object_destroy(
     globus_i_gsc_server_handle_t *      server_handle);
+
+void
+globus_i_gsc_log(
+    globus_i_gsc_server_handle_t *      server_handle,
+    const char *                        command,
+    int                                 mask);
 
 #endif

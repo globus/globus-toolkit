@@ -347,6 +347,19 @@ globus_i_gsc_op_destroy(
     }
 }
 
+void
+globus_i_gsc_log(
+    globus_i_gsc_server_handle_t *      server_handle,
+    const char *                        command,
+    int                                 mask)
+{
+    if(mask & server_handle->funcs.log_mask)
+    {
+        server_handle->funcs.log_func(
+            server_handle, command, server_handle->funcs.log_arg);
+    }
+}
+
 /************************************************************************
  *                      state machine functions
  *                      -----------------------
@@ -1482,7 +1495,7 @@ globus_l_gsc_cmd_site(
     char *                              tmp_ptr;
 
     /* to upper in the actual initial buffer */
-    for(tmp_ptr = strstr(full_command, cmd_a[1]); *tmp_ptr != '\0'; tmp_ptr++)
+    for(tmp_ptr = strstr(full_command, cmd_a[1]); *tmp_ptr != ' '; tmp_ptr++)
     {
         *tmp_ptr = toupper(*tmp_ptr);
     }
@@ -1541,6 +1554,10 @@ globus_l_gsc_command_callout(
                 the command does not exist */
             if(op->cmd_list == NULL)
             {
+                /* log unknown */
+                globus_i_gsc_log(server_handle, op->command, 
+                    GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_ERROR);
+
                 globus_i_gsc_op_destroy(op);
                 res = globus_l_gsc_final_reply(server_handle, msg);
                 done = GLOBUS_TRUE;
@@ -1977,6 +1994,8 @@ globus_gridftp_server_control_start(
         server_handle->funcs.data_destroy_cb = i_attr->funcs.data_destroy_cb;
         server_handle->funcs.list_cb = i_attr->funcs.list_cb;
         server_handle->funcs.resource_cb = i_attr->funcs.resource_cb;
+        server_handle->funcs.log_func = i_attr->funcs.log_func;
+        server_handle->funcs.log_mask = i_attr->funcs.log_mask;
         server_handle->funcs.done_cb = done_cb;
 
         globus_hashtable_copy(
@@ -2018,7 +2037,7 @@ globus_gridftp_server_control_start(
         server_handle->type = 'A';
         server_handle->mode = 'S';
         server_handle->prot = 'C';
-        server_handle->dcau = 'A';
+        server_handle->dcau = 'N';
 
         if(i_attr->idle_timeout > 0)
         {
@@ -2949,22 +2968,12 @@ globus_i_gsc_authenticate(
         if(type == GLOBUS_XIO_GSSAPI_FTP_SECURE)
         {
             type = GLOBUS_GRIDFTP_SERVER_LIBRARY_GSSAPI;
+            op->server_handle->dcau = 'A';
         }
         else
         {
             type = GLOBUS_GRIDFTP_SERVER_LIBRARY_NONE;
-            op->server_handle->subject = GLOBUS_NULL;
-            op->server_handle->del_cred = GLOBUS_NULL;
-            op->server_handle->prot = 'C';
-            op->server_handle->dcau = 'N';
         }
-    }
-    else
-    {
-        op->server_handle->subject = GLOBUS_NULL;
-        op->server_handle->del_cred = GLOBUS_NULL;
-        op->server_handle->prot = 'C';
-        op->server_handle->dcau = 'N';
     }
     /* call out to user */
     if(op->server_handle->funcs.auth_cb != NULL)

@@ -378,9 +378,27 @@ globus_gridftp_server_abort_disable(
     globus_gridftp_server_control_op_t  op);
 
 /**
- *  data connection interface functions
- *
+ *  logging callback
  */
+enum
+{
+    GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_SECURITY = 0x0001,
+    GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_TRANSFER = 0x0004,
+    GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_TRANSFER_STATE = 0x0008,
+    GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_FILE_COMMANDS = 0x0010,
+    GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_ERROR = 0x0020,
+    GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_SITE = 0x0040,
+    GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_LIST = 0x0080,
+    GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_OTHER = 0x0100,
+    GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_ALL = 0xFFFF
+};
+
+
+typedef void
+(*globus_gridftp_server_control_log_cb_t)(
+    globus_gridftp_server_control_t     server_handle,
+    const char *                        full_command,
+    void *                              user_arg);
 
 /** 
  *  create a passive data object
@@ -519,6 +537,13 @@ globus_gridftp_server_control_attr_data_functions(
     globus_gridftp_server_control_active_connect_cb_t   active_func,
     globus_gridftp_server_control_passive_connect_cb_t  passive_func,
     globus_gridftp_server_control_data_destroy_cb_t     destroy_func);
+
+globus_result_t
+globus_gridftp_server_control_attr_set_log(
+    globus_gridftp_server_control_attr_t    server_attr,
+    globus_gridftp_server_control_log_cb_t  log_func,
+    int                                     log_mask,
+    void *                                  user_arg);
 
 /**
  *  initialize the server
