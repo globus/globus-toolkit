@@ -1741,7 +1741,7 @@ globus_xio_register_close(
 
     globus_mutex_lock(&handle->context->mutex);
     {
-        if(handle->state != GLOBUS_XIO_HANDLE_STATE_OPEN)
+        if(handle->state == GLOBUS_XIO_HANDLE_STATE_CLOSING)
         {
             globus_mutex_unlock(&handle->context->mutex);
             res = GlobusXIOErrorInvalidState(handle->state);

@@ -1119,7 +1119,7 @@ globus_xio_driver_finished_accept_DEBUG(
 
     if(_my_op->caller_ndx == 0 && !_op->blocking)
     {
-        _space = _op->_op_handle->space;
+        _space = _op->_op_server->space;
     }
     if(_my_op->in_register ||
         _space != GLOBUS_CALLBACK_GLOBAL_SPACE)

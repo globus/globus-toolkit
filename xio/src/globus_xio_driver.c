@@ -106,8 +106,6 @@ globus_i_xio_driver_start_close(
         op->ref--;
         if(op->ref == 0)
         {
-            /* not sure about this assert yet */
-            globus_assert(res == GLOBUS_SUCCESS || can_fail);
             GlobusXIOOperationDestroy(op);
             GlobusIXIOHandleDec(destroy_handle, handle);
         }
