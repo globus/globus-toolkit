@@ -1,6 +1,7 @@
 SHELL	=	/bin/sh
 VPATH	=	@srcdir@
 srcdir	=	@srcdir@
+prefix	=	@prefix@
 
 #
 # Set this for the makefile_header below
