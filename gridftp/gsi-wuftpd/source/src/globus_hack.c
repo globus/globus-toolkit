@@ -780,7 +780,7 @@ g_send_data(
               (void *)&g_monitor);
     if(res != GLOBUS_SUCCESS)
     {
-        sprintf(error_buf, "Connect_write() failed");
+        sprintf(error_buf, "Connect_write() failed: %s.", globus_object_printable_to_string(globus_error_get(res)));
         goto data_err;
     }
 
