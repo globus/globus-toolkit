@@ -89,12 +89,13 @@ typedef struct globus_io_select_info_s
 typedef struct globus_io_cancel_info_s
 {
     globus_io_handle_t *		handle;
+    globus_callback_handle_t            callback_handle;
     globus_io_callback_t 		read_callback;
     void *				read_arg;
-    globus_io_destructor_t		read_destructor;
+    globus_io_destructor_t	        read_destructor;
     globus_io_callback_t		write_callback;
     void *				write_arg;
-    globus_io_destructor_t		write_destructor;
+    globus_io_destructor_t	        write_destructor;
     globus_io_callback_t		except_callback;
     void *				except_arg;
     globus_io_callback_t		cancel_callback;
@@ -249,6 +250,11 @@ static globus_io_cancel_info_t *	globus_l_io_cancel_tail;
  * reduce the number of malloc/frees done.
  */
 static globus_io_cancel_info_t *	globus_l_io_cancel_free_list;
+/**
+ * The cancel structures that have callbacks waiting to fire them
+ */
+static globus_io_cancel_info_t *	globus_l_io_cancel_pending_list;
+
 /**
  * List of pending read operations which do not need the select to be
  * done in order to complete them. This is used to dispatch buffered
@@ -1330,6 +1336,13 @@ globus_io_register_select(
 }
 /* globus_io_register_select() */
 
+/* the entire globus io cancel method has been completely complicated by the
+ * new 'register all callbacks' method of firing user callbacks.
+ *
+ * this entire file really should just be re-written before ever trying to
+ * understand it
+ * JL
+ */
 void
 globus_i_io_register_cancel(
     globus_io_handle_t *		handle,
@@ -1406,10 +1419,13 @@ globus_i_io_register_cancel(
         if(perform_callbacks)
 	{
 	    cancel_info->read_callback = select_info->read_callback;
+	    cancel_info->read_destructor = select_info->read_destructor;
+	    cancel_info->read_arg = select_info->read_arg;
 	}
-        
-        cancel_info->read_arg = select_info->read_arg;
-	cancel_info->read_destructor = select_info->read_destructor;
+        else if(select_info->read_destructor)
+        {
+            select_info->read_destructor(select_info->read_arg);
+    	}
 	
         select_info->read_callback = GLOBUS_NULL;
         select_info->read_destructor = GLOBUS_NULL;
@@ -1445,11 +1461,14 @@ globus_i_io_register_cancel(
         if(perform_callbacks)
 	{
 	    cancel_info->write_callback = select_info->write_callback;
+	    cancel_info->write_destructor = select_info->write_destructor;
+	    cancel_info->write_arg = select_info->write_arg;
 	}
-        
-        cancel_info->write_arg = select_info->write_arg;
-	cancel_info->write_destructor = select_info->write_destructor;
-	
+        else if(select_info->write_destructor)
+        {
+            select_info->write_destructor(select_info->write_arg);
+    	}
+    	
         select_info->write_callback = GLOBUS_NULL;
         select_info->write_destructor = GLOBUS_NULL;
     }
@@ -1757,6 +1776,34 @@ globus_l_io_kickout_cancel_cb(
     
     cancel_info = (globus_io_cancel_info_t *) user_args;
     
+    /* first remove from cancel pending list */
+    globus_i_io_mutex_lock();
+    {
+        globus_io_cancel_info_t **          ci;
+        
+        if(globus_l_io_shutdown_called)
+        {
+            goto exit;
+        }
+        
+        globus_callback_unregister(
+            cancel_info->callback_handle,
+            GLOBUS_NULL,
+            GLOBUS_NULL);
+            
+        ci = &globus_l_io_cancel_pending_list;
+        while(*ci && *ci != cancel_info)
+        {
+            ci = &(*ci)->next;
+        }
+        
+        if(*ci)
+        {
+            *ci = (*ci)->next;
+        }
+    }
+    globus_i_io_mutex_unlock();
+    
     if(cancel_info->read_callback)
     {
         err = globus_io_error_construct_io_cancelled(
@@ -1768,10 +1815,6 @@ globus_l_io_kickout_cancel_cb(
             cancel_info->read_arg,
             cancel_info->handle,
             globus_error_put(err));
-    }
-    else if(cancel_info->read_destructor && cancel_info->read_arg)
-    {
-        cancel_info->read_destructor(cancel_info->read_arg);
     }
     
     if(cancel_info->write_callback)
@@ -1785,10 +1828,6 @@ globus_l_io_kickout_cancel_cb(
             cancel_info->write_arg,
             cancel_info->handle,
             globus_error_put(err));
-    }
-    else if(cancel_info->write_destructor && cancel_info->write_arg)
-    {
-        cancel_info->write_destructor(cancel_info->write_arg);
     }
     
     if(cancel_info->except_callback)
@@ -1817,7 +1856,8 @@ globus_l_io_kickout_cancel_cb(
     {
         cancel_info->next = globus_l_io_cancel_free_list;
         globus_l_io_cancel_free_list = cancel_info;
-        
+
+exit:
         globus_l_io_pending_count--;
         if(globus_l_io_pending_count == 0)
         {
@@ -1947,10 +1987,13 @@ globus_l_io_handle_events(
 		globus_l_io_cancel_tail,
 		cancel_info);
             
+            cancel_info->next = globus_l_io_cancel_pending_list;
+            globus_l_io_cancel_pending_list = cancel_info;
+            
             globus_l_io_pending_count++;
             
             result = globus_callback_space_register_abstime_oneshot(
-                GLOBUS_NULL,
+                &cancel_info->callback_handle,
                 &time_now,
                 globus_l_io_kickout_cancel_cb,
                 cancel_info,
@@ -2401,6 +2444,7 @@ globus_l_io_activate(void)
     globus_l_io_cancel_list = GLOBUS_NULL;
     globus_l_io_cancel_tail = GLOBUS_NULL;
     globus_l_io_cancel_free_list = GLOBUS_NULL;
+    globus_l_io_cancel_pending_list = GLOBUS_NULL;
 
     globus_l_io_reads = GLOBUS_NULL;
 
@@ -2607,6 +2651,7 @@ globus_l_io_deactivate(void)
 {
     int					fd;
     int					rc = 0;
+    globus_result_t                     result;
 
     globus_i_io_debug_printf(3, (stderr, "globus_l_io_deactivate(): entering\n"));
 
@@ -2621,7 +2666,50 @@ globus_l_io_deactivate(void)
     {
 	globus_l_io_select_wakeup();
     }
+    
+    /* cancel any outstanding callbacks */
+    for (fd = 0; fd < globus_l_io_fd_tablesize; fd++)
+    {
+	globus_io_select_info_t *	select_info;
 
+	select_info = globus_l_io_fd_table[fd];
+
+	if(select_info != GLOBUS_NULL)
+	{
+	    globus_i_io_register_cancel(
+                select_info->handle,
+                GLOBUS_FALSE,
+                GLOBUS_NULL,
+                GLOBUS_NULL,
+                GLOBUS_NULL);
+	}
+    }
+    
+    /* cancel any outstanding cancels */
+    while(globus_l_io_cancel_pending_list)
+    {
+        globus_io_cancel_info_t *	cancel_info;
+        
+        cancel_info = globus_l_io_cancel_pending_list;
+        
+        result = globus_callback_unregister(
+            cancel_info->callback_handle,
+            GLOBUS_NULL,
+            GLOBUS_NULL);
+            
+        if(result == GLOBUS_SUCCESS)
+        {
+            globus_l_io_pending_count--;
+        }
+        
+        /* take this out of the pending list and put it on the 
+         * active list so the destructors can be called later
+         */
+        globus_l_io_cancel_pending_list = cancel_info->next;
+        
+        cancel_info->next = globus_l_io_cancel_list;
+        globus_l_io_cancel_list = cancel_info;
+    }
     /*
      * Wait for any outstanding calls into the handler (or handler thread)
      * to complete. 
@@ -2653,22 +2741,8 @@ globus_l_io_deactivate(void)
      */
     for (fd = 0; fd < globus_l_io_fd_tablesize; fd++)
     {
-	globus_io_select_info_t *	select_info;
-
-	select_info = globus_l_io_fd_table[fd];
-
-	if(select_info != GLOBUS_NULL)
+	if(globus_l_io_fd_table[fd])
 	{
-	    if(select_info->read_arg &&
-	       select_info->read_destructor)
-	    {
-		select_info->read_destructor(select_info->read_arg);
-	    }
-	    if(select_info->write_arg &&
-	       select_info->write_destructor)
-	    {
-		select_info->write_destructor(select_info->write_arg);
-	    }
 	    globus_l_io_table_remove_fd(fd);
 	}
     }
