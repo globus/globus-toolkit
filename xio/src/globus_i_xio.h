@@ -98,60 +98,107 @@ struct globus_i_xio_driver_target_stack_s
     void *                                      target;
 }
 
-
-struct globus_i_xio_driver_op_stack_s
-{
-    /* the aray of drivers and driver specific data */
-    struct globus_xio_driver_s *                driver;
-    void *                                      driver_handle;
-    void *                                      driver_attr;
-
-    /* callback information */
-    globus_xio_callback_t                       open_close_cb;  
-    globus_xio_data_callback_t                  data_cb;
-    void *                                      user_ptr;
-};
-
-
 struct globus_i_xio_target_s
 {
     struct globus_i_xio_driver_target_stack_s * target_stack;
     int                                         stack_size;
 };
 
-struct globus_i_xio_handle_s
-{
-    struct globus_i_xio_driver_target_stack_s * target_stack;
-    int                                         stack_size;
-    globus_mutex_t                              mutex;
 
-};
+typedef struct globus_i_xio_handle_s
+{
+    globus_mutex_t                              mutex;
+    globus_memory_t                             op_memory;
+
+    int                                         stack_size;
+    globus_i_xio_context_t *                    context_array;
+} globus_i_xio_handle_t;
+
+/*
+ *  represents an entry in the array of open handles.
+ *
+ *  each entry is maped to a driver in the stack
+ */
+typedef struct globus_i_xio_context_entry_s
+{
+    globus_xio_driver_t *                       driver;
+    void *                                      driver_handle;
+    void *                                      driver_attr;
+    globus_bool_t                               is_limited;
+} globus_i_xio_context_entry_t;
+
+/* 
+ *  a stretchy array
+ */
+typedef struct globus_i_xio_context_s
+{
+    int                                         ref;
+    int                                         size;
+    globus_i_xio_context_entry_t                entry_array[1];
+} globus_i_xio_context_t;
+
+/*
+ *  represents a entry in an array of operations.  each entry
+ *  is mapped to a driver at the same index.
+ */
+typedef struct globus_i_xio_op_entry_s
+{
+    /* callback info arrays */
+    globus_xio_driver_callback_t                cb;
+    globus_xio_driver_data_callback_t           data_cb;
+    void *                                      user_arg;
+    globus_size_t                               wait_for_bytes;
+    globus_size_t                               nbytes;
+    globus_iovec_t                              iovec;
+    int                                         iovec_count;
+
+    globus_bool_t                               in_register;
+} globus_i_xio_op_entry_t;
 
 /*
  *  represents a requested io operation (open close read or write).
  */
-struct globus_i_xio_operation_s
-{   
+typedef struct globus_i_xio_operation_s
+{
+    /* operation type */
     globus_i_xio_operation_type_t               op_type;
 
-    struct globus_i_xio_handle_s *              xio_handle;
-    /* this is simply a convenience pointer, can be accessedd from handle */
-    struct globus_i_xio_driver_op_stack_s *     driver_stack;
-    /* tracks the position into the driver stack */
-    int                                         current_driver_ndx;
+    /* cancel members */
+    globus_mutex_t                              cancel_mutex;
+    /* flag to determine if cancel should happen */
+    globus_bool_t                               progress;
+    globus_xio_driver_cancel_callback_t         cancel_callback;
+    globus_bool_t                               canceled;
+    globus_callback_handle_t                    cancel_callback_handle;
 
-    /* data operation members */
-    globus_iovec_t                              iovec;
-    int                                         iovec_count;
-    struct globus_i_xio_data_descriptor_s *     data_desc;
+    /* reference count for destruction */
+    int                                         ref;
+    globus_bool_t                               destroy_me;
+
+
+    globus_i_xio_handle_t *                     xio_handle;
 
     int                                         close_how;
 
-    /* callback pointer info */
-    globus_xio_callback_t                       open_close_cb;  
+    /* user callback variables */
+    globus_xio_callback_t                       cb;
     globus_xio_data_callback_t                  data_cb;
-    void *                                      user_ptr;
-};
+    globus_xio_callback_space_t                 space;
+
+    /* result code saved in op for kickouts */
+    globus_result_t                             cached_res;
+
+    /* size of the arrays */
+    int                                         stack_size;
+    /* convience pointer, really owned by handle */
+    globus_i_xio_context_t *                    context;
+    /* data descriptor */
+    globus_i_xio_data_descriptor_t *            data_desc;
+    /* current index in the driver stack */
+    int                                         ndx;
+    /* entry for each thing driver in the stack */
+    globus_i_xio_op_entry_s                     entry_array[1];
+} globus_i_xio_operation_t;
 
 
 
