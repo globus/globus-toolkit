@@ -159,7 +159,7 @@ main(int argc, char *argv[])
 
     /* Run grid-proxy-init to create a proxy */
     if (grid_proxy_init(cred_lifetime, proxyfile) != 0) {
-        fprintf(stderr, "Program grid_proxy_init failed\n");
+        fprintf(stderr, "grid-proxy-init failed\n");
         goto cleanup;
     }
 
