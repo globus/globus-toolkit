@@ -337,7 +337,7 @@ globus_l_xio_gridftp_handle_destroy(
 
     GlobusXIOGridftpDebugEnter();
     result = globus_ftp_client_handle_flush_url_state(
-				handle->ftp_handle, handle->url);
+                                handle->ftp_handle, handle->url);
     if (result != GLOBUS_SUCCESS)
     {
         result = GlobusXIOErrorWrapFailed(
@@ -727,10 +727,10 @@ globus_l_xio_gridftp_process_pending_ops(
             error_info = (globus_i_xio_gridftp_error_info_t *)
                     globus_malloc(sizeof(globus_i_xio_gridftp_error_info_t));
             error_info->op = requestor->op;
-	    /* 
-	     * As I dont use this across cb's, I just store result rather than 
+            /* 
+             * As I dont use this across cb's, I just store result rather than 
              * error object
-	     */
+             */
             error_info->result = result;
             globus_list_insert(error_list, error_info);
             globus_memory_push_node(
@@ -755,10 +755,10 @@ globus_l_xio_gridftp_process_pending_ops(
             error_info = (globus_i_xio_gridftp_error_info_t *)
                 globus_malloc(sizeof(globus_i_xio_gridftp_error_info_t));
             error_info->op = requestor->op;
-	    /* 
-	     * As I dont use this across cb's, I just store result rather than 
+            /* 
+             * As I dont use this across cb's, I just store result rather than 
              * error object
-	     */
+             */
             error_info->result = result;
             globus_list_insert(error_list, error_info);
             globus_memory_push_node(
@@ -874,16 +874,16 @@ globus_i_xio_gridftp_finish_failed_ops(
     do 
     {   
         error_info = (globus_i_xio_gridftp_error_info_t *)
-				globus_list_remove(error_list, *error_list);
+                                globus_list_remove(error_list, *error_list);
         if (reading)
         {
             globus_xio_driver_finished_read(
-				error_info->op, error_info->result, 0);
+                                error_info->op, error_info->result, 0);
         }
         else
         {    
             globus_xio_driver_finished_write(
-				error_info->op, error_info->result, 0);
+                                error_info->op, error_info->result, 0);
         }
         globus_free(error_info);
     } while (!globus_list_empty(*error_list));
@@ -928,11 +928,11 @@ globus_l_xio_gridftp_xfer_cb(
     }
     if (close == GLOBUS_TRUE)
     {
-	globus_xio_operation_t close_op;
+        globus_xio_operation_t close_op;
         /*
-	 * If close was called in 'ABORT_PENDING' state, a close requestor 
-	 * would have been enqueued in the pending_ops_q
-	 */
+         * If close was called in 'ABORT_PENDING' state, a close requestor 
+         * would have been enqueued in the pending_ops_q
+         */
         requestor = (globus_i_xio_gridftp_requestor_t*)
                         globus_fifo_dequeue(&handle->pending_ops_q);
         close_op = requestor->op;
@@ -1029,17 +1029,17 @@ globus_l_xio_gridftp_write_cb(
     }
     if (--requestor->finished_count == 0)
     {
-	requestor_op = requestor->op;
+        requestor_op = requestor->op;
         globus_mutex_unlock(&handle->mutex); 
-	/* 
-	 * unlock the mutex here coz i cant call disable_cancel with lock held
-	 * (lock inversion issues)
-	 */
+        /* 
+         * unlock the mutex here coz i cant call disable_cancel with lock held
+         * (lock inversion issues)
+         */
         globus_xio_operation_disable_cancel(requestor_op);
         globus_mutex_lock(&handle->mutex);
         handle->outstanding_io_count--;
         result = globus_l_xio_gridftp_change_state(
-					handle, &close, &error_list);
+                                        handle, &close, &error_list);
         /* xio wouldn't call close while there is an outstanding operation */
         globus_assert(close == GLOBUS_FALSE);
         if (result != GLOBUS_SUCCESS)
@@ -1183,7 +1183,7 @@ globus_l_xio_gridftp_read_cb(
             requestor->saved_error = globus_error_get(requestor_result);
             /* read will be finished in xfer_cb, so we need to store offset */
             requestor->offset = offset;
-	    requestor->length = length;
+            requestor->length = length;
         }
     }
     else
@@ -1759,11 +1759,11 @@ globus_l_xio_gridftp_close(
             requestor = (globus_i_xio_gridftp_requestor_t *)
                         globus_memory_pop_node(&handle->requestor_memory);
             requestor->op = op;
-	    /* 
-	     * Here, as a special case, close requestor is put in pending_ops_q
-	     * (pending_ops_q usually contain only read/write requestors). 
-	     * After transfer is aborted, close will be finished (in xfer_cb)
-	     */
+            /* 
+             * Here, as a special case, close requestor is put in pending_ops_q
+             * (pending_ops_q usually contain only read/write requestors). 
+             * After transfer is aborted, close will be finished (in xfer_cb)
+             */
             globus_fifo_enqueue(&handle->pending_ops_q, requestor);
             handle->state = GLOBUS_XIO_GRIDFTP_ABORT_PENDING_CLOSING;   
             break;

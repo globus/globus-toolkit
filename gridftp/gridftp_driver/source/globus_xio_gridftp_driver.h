@@ -136,7 +136,7 @@ typedef enum
 {
     /*
      * handle cntls
-     */		
+     */         
 
     /** GlobusVarArgEnum(handle)
      * Reposition the offset of the file being read/written.
@@ -352,7 +352,7 @@ typedef enum
      */
     GLOBUS_XIO_GRIDFTP_GET_CONTROL_PROTECTION
 
-} globus_xio_gridftp_cmd_t;	
+} globus_xio_gridftp_cmd_t;     
 
 /**  
  * GRIDFTP driver specific types
