@@ -255,21 +255,20 @@ globus_gsi_proxy_sign_req(
         /* ERROR */
     }
 
+    /* create proxy subject name */
+    globus_i_gsi_proxy_set_subject(new_pc, issuer_credential->cert, common_name);
+
     X509_set_version(new_pc, 3);
     X509_set_serialNumber(new_pc, 
                           X509_get_serialNumber(issuer_credential->cert));
 
-
+    globus_i_gsi_proxy_set_pc_times(new_pc, issuer_credential->cert);
 
     X509_set_pubkey(new_pc, X509_REQ_get_pubkey(handle->req));
 
     X509_set_issuer_name(new_pc, 
                          X509_get_subject_name(issuer_credential->cert));
 
-    /* create proxy subject name */
-    
-    
-    
     /* add the extensions from the proxy cert request 
      * to the new proxy cert */    
     pc_req_extensions = X509_REQ_get_extensions(handle->req);
@@ -281,6 +280,11 @@ globus_gsi_proxy_sign_req(
         X509_EXTENSION_free(tmp_ext);
     }
     sk_X509_EXTENSION_free(pc_req_extensions);
+
+    if(!X509_sign(new_pc, handle->pkey, EVP_md5()))
+    {
+        /* ERROR */
+    }
 
     return GLOBUS_SUCCESS;
 }
@@ -337,9 +341,10 @@ void globus_i_gsi_proxy_create_private_key_cb(BIO * output)
     BIO_printf(output, "+");
 }
 
-void globus_i_gsi_proxy_set_pc_times(
+globus_result_t 
+globus_i_gsi_proxy_set_pc_times(
     X509 *                              new_pc,
-    X509 *                              issuer_cred)
+    X509 *                              issuer_cert)
 {
     ASN1_UTCTIME *                      pc_notAfter;
     int                                 skew_mins = 5;
@@ -351,10 +356,10 @@ void globus_i_gsi_proxy_set_pc_times(
     tmp_time = time(NULL) + ((long) 60 * 60 * hours);
 
     /* check that issuer cert won't expire before new proxy cert */
-    if(X509_cmp_time(X509_get_notAfter(issuer_cred->cert), tmp_time) < 0)
+    if(X509_cmp_time(X509_get_notAfter(issuer_cert->cert), tmp_time) < 0)
     {
         pc_notAfter = 
-            ASN1_UTCTIME_dup(X509_get_notAfter(issuer_cred->cert));
+            ASN1_UTCTIME_dup(X509_get_notAfter(issuer_cert->cert));
     }
     else
     {
@@ -364,5 +369,47 @@ void globus_i_gsi_proxy_set_pc_times(
     X509_set_notAfter(new_pc, pc_notAfter);
 
     ASN1_UTCTIME_free(pc_notAfter);
+
+    return GLOBUS_SUCCESS;
 }
     
+globus_result_t 
+globus_i_gsi_proxy_set_subject(
+    X509 *                              new_pc,
+    X509 *                              issuer_cert,
+    char *                              common_name)
+
+{
+
+    X509_NAME *                         pc_name;
+    X509_NAME_ENTRY *                   pc_name_entry;
+
+    if((pc_name = X509_NAME_dup(X509_get_subject_name(isser_cert))) == NULL)
+    {
+        /* ERROR */
+    }
+       
+    if(pc_name_entry = 
+       X509_NAME_ENTRY_create_by_NID(NULL, NID_commonName,
+                                     V_ASN1_APP_CHOOSE,
+                                     (unsigned char *) common_name,
+                                     -1) == NULL)
+    {
+        /* ERROR */
+    }
+
+    if(!X509_NAME_add_entry(pc_name,
+                            pc_name_entry,
+                            X509_NAME_entry_count(pc_name),
+                            0) == NULL)
+    {
+        /* ERROR */
+    }
+    
+    X509_set_subject_name(new_pc, pc_name);
+
+    X509_NAME_free(pc_name);
+    X509_NAME_ENTRY_free(pc_name_entry);
+    
+    return GLOBUS_SUCCESS;
+}
