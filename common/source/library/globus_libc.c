@@ -2008,6 +2008,21 @@ globus_libc_readdir_r(DIR *dirp,
 #   endif
 }
 
+int
+globus_libc_vprintf_length(const char * fmt, va_list ap)
+{
+    static FILE *			devnull = GLOBUS_NULL;
+
+    globus_libc_lock();
+    if(devnull == GLOBUS_NULL)
+    {
+	devnull = fopen("/dev/null", "w");
+    }
+    globus_libc_unlock();
+
+    return globus_libc_vfprintf(devnull, fmt, ap);
+}
+
 #ifdef TARGET_ARCH_CRAYT3E
 /* for alloca on T3E */
 #if !defined (__GNUC__) || __GNUC__ < 2
