@@ -301,23 +301,6 @@ reaper(int s)
 #   endif
 } /* reaper() */
 
-#ifdef SIGCRAY13
-/******************************************************************************
-Function:	handle_sigcray13()
-Description:	Handle SIGCRAY13 signal by ignoring it. We have no idea what
-		this signal is.
-Parameters:	Signal number
-Returns:	Nothing
-******************************************************************************/
-void 
-handle_sigcray13(int s)
-{
-    /* Ignore this */
-
-} /* handle_sigcray13() */
-
-#endif /* SIGCRAY13 */
-
 /******************************************************************************
 Function:       genfilename()
 Description:    generate an absolute file name given a starting prefix,
@@ -839,25 +822,6 @@ main(int xargc,
     }
 #endif
 
-    /*
-     * Setup SIGCRAY13 signal handler to handle gatekeeper death from unknowm
-     * CRAY13 signal.
-     */
-#ifdef SIGCRAY13
-#ifdef HAS_BSD_SIGNAL
-    signal(SIGCRAY13, handle_sigcray13);
-#else /* !HAS_BSD_SIGNAL */
-    {
-	struct sigaction act;
-	act.sa_handler = handle_sigcray13;
-	sigemptyset(&act.sa_mask);
-	sigaddset(&act.sa_mask, SIGCRAY13);
-	act.sa_flags = 0;
-	sigaction(SIGCRAY13, &act, NULL);
-    }
-#endif /* !HAS_BSD_SIGNAL */
-#endif /* SIGCRAY13 */
- 
     if (run_from_inetd)
     {
         logging_phase2();

@@ -1123,8 +1123,16 @@ cray_setup (uid_t uid, const char *username)
 
   /* Now call setjob to create a new job(/session).  This assigns a new Session
      ID and session table entry to the calling process.  This process will be
-     the first process in the job/session. */
-  if ((jid = setjob (uid, WJSIGNAL)) < 0) {
+     the first process in the job/session.
+
+     Setting the second argument to 0 means that no signal will be
+     generated when the job terminates.  Previously the second argument
+     was sent to WJSIGNAL (SIGCRAY13), but since there was no call to
+     waitjob() this wasn't useful.  (It could be used to clean up
+     a temporary directory.)  See Globus Req #3010.
+             -- Keith Thompson, kst@sdsc.edu
+     */
+  if ((jid = setjob (uid, 0)) < 0) {
       debug("System call setjob failure: %s", strerror(errno));
       packet_disconnect("System call setjob failure.");
   }
