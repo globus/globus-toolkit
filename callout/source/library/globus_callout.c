@@ -289,8 +289,11 @@ globus_callout_read_config(
     char *                              pound;
     int                                 index;
     int                                 rc;
+    int                                 i;
     globus_result_t                     result;
     globus_i_callout_data_t *           datum = NULL;
+    globus_i_callout_data_t *           existing_datum;
+    
 
     static char *                       _function_name_ =
         "globus_callout_read_config";
@@ -355,6 +358,8 @@ globus_callout_read_config(
         }
 
         memset(datum,'\0',sizeof(globus_i_callout_data_t));
+
+        datum->next = datum;
         
         datum->file = strdup(library);
 
@@ -372,17 +377,31 @@ globus_callout_read_config(
             goto error_exit;
         }
         
-        datum->type = strdup(type);
+        datum->type = malloc(strlen(type) + 1);
 
         if(datum->type == NULL)
         {
             GLOBUS_CALLOUT_MALLOC_ERROR(result);
             goto error_exit;
         }
+
+        for(i = 0;i < strlen(type);i++)
+        {
+            datum->type[i] = tolower(type[i]);
+        }
+
+        datum->type[i] = '\0';
         
         if((rc = globus_hashtable_insert(&handle->symbol_htable,
                                          datum->type,
-                                         datum)) < 0)
+                                         datum)) == -1)
+        {
+            existing_datum = globus_hashtable_lookup(&handle->symbol_htable,
+                                                     datum->type);
+            datum->next = existing_datum->next;
+            existing_datum->next = datum;
+        }
+        else if(rc < 0)
         {
             GLOBUS_CALLOUT_ERROR_RESULT(
                 result,
@@ -443,7 +462,8 @@ globus_callout_register(
     int                                 rc;
     globus_result_t                     result;
     globus_i_callout_data_t *           datum = NULL;
-
+    globus_i_callout_data_t *           existing_datum;
+    
     static char *                       _function_name_ =
         "globus_callout_register";
 
@@ -461,6 +481,8 @@ globus_callout_register(
     }
     
     memset(datum,'\0',sizeof(globus_i_callout_data_t));
+
+    datum->next = datum;
     
     datum->file = strdup(library);
     
@@ -488,7 +510,14 @@ globus_callout_register(
     
     if((rc = globus_hashtable_insert(&handle->symbol_htable,
                                      datum->type,
-                                     datum)) < 0)
+                                     datum)) == -1)
+    {
+        existing_datum = globus_hashtable_lookup(&handle->symbol_htable,
+                                                 datum->type);
+        datum->next = existing_datum->next;
+        existing_datum->next = datum;
+    }
+    else if(rc < 0)
     {
         GLOBUS_CALLOUT_ERROR_RESULT(
             result,
@@ -548,6 +577,7 @@ globus_callout_call_type(
     ...)
 {
     globus_i_callout_data_t *           datum;
+    globus_i_callout_data_t *           current_datum;
     lt_ptr                              function;
     globus_result_t                     result = GLOBUS_SUCCESS;
     va_list                             ap;
@@ -570,80 +600,87 @@ globus_callout_call_type(
         goto exit;
     }
 
-    dlhandle = globus_hashtable_lookup(&handle->library_htable,
-                                       datum->file);
+    current_datum = datum->next;
 
-    if(dlhandle == NULL)
+    do
     {
-        dlhandle = malloc(sizeof(lt_dlhandle));
+        dlhandle = globus_hashtable_lookup(&handle->library_htable,
+                                           current_datum->file);
 
         if(dlhandle == NULL)
         {
-            GLOBUS_CALLOUT_MALLOC_ERROR(result);
+            dlhandle = malloc(sizeof(lt_dlhandle));
+            
+            if(dlhandle == NULL)
+            {
+                GLOBUS_CALLOUT_MALLOC_ERROR(result);
+            }
+            
+            *dlhandle = NULL;
+            rc = globus_hashtable_insert(&handle->library_htable,
+                                         datum->file,
+                                         dlhandle);
+            if(rc < 0)
+            {
+                free(dlhandle);
+                GLOBUS_CALLOUT_ERROR_RESULT(
+                    result,
+                    GLOBUS_CALLOUT_ERROR_WITH_HASHTABLE,
+                    ("globus_hashtable_insert retuned %d", rc));
+                goto exit;
+            }            
         }
-        
-        *dlhandle = NULL;
-        rc = globus_hashtable_insert(&handle->library_htable,
-                                     datum->file,
-                                     dlhandle);
-        if(rc < 0)
-        {
-            free(dlhandle);
-            GLOBUS_CALLOUT_ERROR_RESULT(
-                result,
-                GLOBUS_CALLOUT_ERROR_WITH_HASHTABLE,
-                ("globus_hashtable_insert retuned %d", rc));
-            goto exit;
-        }                             
-    }
     
-    if(*dlhandle == NULL)
-    {
-        /* first time a symbol is referenced in this library -> need to open it
-         */
-
-        *dlhandle = lt_dlopenext(datum->file);
-
         if(*dlhandle == NULL)
+        {
+            /* first time a symbol is referenced in this library ->
+             * need to open it
+             */
+            
+            *dlhandle = lt_dlopenext(datum->file);
+            
+            if(*dlhandle == NULL)
+            {
+                GLOBUS_CALLOUT_ERROR_RESULT(
+                    result,
+                    GLOBUS_CALLOUT_ERROR_WITH_DL,
+                    ("couldn't dlopen %s: %s\n",
+                     datum->file,
+                     (dlerror = lt_dlerror()) ? dlerror : "(null)"));
+                goto exit;
+            }
+        }
+
+        function = lt_dlsym(*dlhandle, datum->symbol);
+
+        if(function == NULL)
         {
             GLOBUS_CALLOUT_ERROR_RESULT(
                 result,
                 GLOBUS_CALLOUT_ERROR_WITH_DL,
-                ("couldn't dlopen %s: %s\n",
+                ("symbol %s could not be found in %s: %s\n",
+                 datum->symbol,
                  datum->file,
                  (dlerror = lt_dlerror()) ? dlerror : "(null)"));
             goto exit;
         }
 
-    }
-
-    function = lt_dlsym(*dlhandle, datum->symbol);
-
-    if(function == NULL)
-    {
-        GLOBUS_CALLOUT_ERROR_RESULT(
-            result,
-            GLOBUS_CALLOUT_ERROR_WITH_DL,
-            ("symbol %s could not be found in %s: %s\n",
-             datum->symbol,
-             datum->file,
-             (dlerror = lt_dlerror()) ? dlerror : "(null)"));
-        goto exit;
-    }
-
-    va_start(ap,type);
+        va_start(ap,type);
     
-    result = ((globus_callout_function_t) function)(ap);
-
-    va_end(ap);
-
-    if(result != GLOBUS_SUCCESS)
-    {
-        GLOBUS_CALLOUT_ERROR_CHAIN_RESULT(
-            result,
-            GLOBUS_CALLOUT_ERROR_CALLOUT_ERROR);
-        goto exit;
+        result = ((globus_callout_function_t) function)(ap);
+        
+        va_end(ap);
+        
+        if(result != GLOBUS_SUCCESS)
+        {
+            GLOBUS_CALLOUT_ERROR_CHAIN_RESULT(
+                result,
+                GLOBUS_CALLOUT_ERROR_CALLOUT_ERROR);
+            goto exit;
+        }
+        current_datum = current_datum->next;
     }
+    while(current_datum != datum->next);
     
  exit:
     GLOBUS_I_CALLOUT_DEBUG_EXIT;
