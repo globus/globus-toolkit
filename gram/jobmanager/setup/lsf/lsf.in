@@ -166,7 +166,15 @@ EOF
     {
 	$max_memory = $description->max_memory() * 1024;
 
-	$lsf_job_script->print("#BSUB -M $max_memory\n");
+	if($description->jobtype() eq 'multiple')
+	{
+	    $total_max_memory = $max_memory * $description->count();
+	}
+	else
+	{
+	    $total_max_memory = $max_memory;
+	}
+	$lsf_job_script->print("#BSUB -M ${total_max_memory}\n");
     }
     $lsf_job_script->print("#BSUB -i " . $description->stdin() . "\n");
     $lsf_job_script->print("#BSUB -e " . $description->stderr() . "\n");
