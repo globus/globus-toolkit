@@ -1,4 +1,5 @@
 BUNDLE gt4-c-ws-core
+        globus_xio_buffer
 	globus_libxml2
 	globus_js
 	globus_wsdl_parser

@@ -10,7 +10,7 @@ globus_soap_message                     chosting/message/source
 globus_handler_ws_addressing            chosting/handlers/addressing/source
 CounterService_client_bindings          chosting/samples/counter/source tar
 globus_c_wsrf_sample_counter_test       chosting/samples/counter/test
-
+globus_xio_buffer                       chosting/transport/buffer/source
 
 # older C-bindings packages
 
