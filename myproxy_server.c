@@ -140,9 +140,6 @@ main(int argc, char *argv[])
 
     myproxy_log("%s pid=%d starting at %s", server_context->my_name,
 		getpid(), timestamp());
-   
-    /* Set up server socket attributes */
-    listenfd = myproxy_init_server(socket_attrs, MYPROXYSERVER_PORT);
 
     /* Set up signal handling to deal with zombie processes left over  */
     my_signal(SIGCHLD, sig_chld);
