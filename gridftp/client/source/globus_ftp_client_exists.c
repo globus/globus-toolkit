@@ -329,7 +329,7 @@ globus_l_ftp_client_exist_callback(
 	    }
 	    else
 	    {
-		result = globus_ftp_client_list(
+		result = globus_ftp_client_verbose_list(
 			handle,
 			info->url_string,
 			&info->attr,

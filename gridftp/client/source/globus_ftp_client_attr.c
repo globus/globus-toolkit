@@ -682,6 +682,17 @@ globus_ftp_client_operationattr_destroy(
 
 	goto error_exit;
     }
+    if(*attr == GLOBUS_NULL)
+    {
+	err = globus_error_construct_string(
+		GLOBUS_FTP_CLIENT_MODULE,
+		GLOBUS_NULL,
+		"[%s] Cannot destoy invalid attribute at %s\n",
+		GLOBUS_FTP_CLIENT_MODULE->module_name,
+		myname);
+
+	goto error_exit;
+    }
     i_attr = *(globus_i_ftp_client_operationattr_t **) attr;
 
     if(i_attr->auth_info.user)

@@ -4619,7 +4619,7 @@ globus_i_ftp_client_target_activate(
 	    handle,
 	    &target->url,
 	    target->mask,
-	    "NOOP");
+	    "NOOP" CRLF);
 
 	if(handle->state == desired_state)
 	{
@@ -4651,6 +4651,7 @@ globus_i_ftp_client_target_activate(
 error_exit:
     return err;
 }
+/* globus_i_ftp_client_target_activate() */
 
 void
 globus_i_ftp_client_force_close_callback(
@@ -4705,6 +4706,11 @@ globus_i_ftp_client_force_close_callback(
 	    client_handle->pasv_address = GLOBUS_NULL;
 
 	    client_handle->num_pasv_addresses = 0;
+	}
+	if(client_handle->err)
+	{
+	    globus_object_free(client_handle->err);
+	    client_handle->err = GLOBUS_NULL;
 	}
 
 	err = globus_i_ftp_client_restart_register_oneshot(client_handle);

@@ -654,7 +654,7 @@ globus_ftp_client_plugin_restart_put(
  *        be immediately restarted.
  */
 globus_result_t
-globus_ftp_client_plugin_restart_transfer(
+globus_ftp_client_plugin_restart_third_party_transfer(
     globus_ftp_client_handle_t *		handle,
     const char *				source_url,
     globus_ftp_client_operationattr_t *		source_attr,
@@ -690,8 +690,136 @@ globus_ftp_client_plugin_restart_transfer(
 							restart_marker,
 							when);
 }
-/* globus_ftp_client_plugin_restart_transfer() */
+/* globus_ftp_client_plugin_restart_third_party_transfer() */
 
+/**
+ * Restart a size check operation.
+ * @ingroup globus_ftp_client_plugins
+ *
+ * This function will cause the currently executing size check operation
+ * to be restarted. When a restart happens, the operation will be
+ * silently aborted, and then restarted with potentially a new URL and 
+ * attributes.
+ *
+ * The user will not receive any notification that a restart has
+ * happened. Each plugin which is interested in size operations will
+ * receive a size callback with the restart boolean set to GLOBUS_TRUE.
+ *
+ * @param handle
+ *        The handle which is associated with the operation.
+ * @param source_url
+ *        The source URL of the size check. This may be different than
+ *        the original operations URL, if the plugin decides to redirect to 
+ *        another FTP server due to performance or reliability
+ *        problems with the original URL.
+ * @param source_attr
+ *        The attributes to use for the new operation. This may be a
+ *        modified version of the original operations's attribute set.
+ * @param when
+ *        Absolute time for when to restart the size check. The current
+ *        control and data connections will be stopped
+ *        immediately. If this completes before <b>when</b>, then the 
+ *	  restart will be delayed until that time. Otherwise, it will
+ *        be immediately restarted.
+ */
+globus_result_t
+globus_ftp_client_plugin_restart_size(
+    globus_ftp_client_handle_t *		handle,
+    const char *				url,
+    globus_ftp_client_operationattr_t *		attr,
+    globus_abstime_t *				when)
+{
+    globus_object_t *				err;
+    globus_i_ftp_client_handle_t *		i_handle;
+    static char * myname = "globus_ftp_client_plugin_restart_size";
+
+    if(url == GLOBUS_NULL)
+    {
+	err = globus_error_construct_string(
+	    GLOBUS_FTP_CLIENT_MODULE,
+	    GLOBUS_NULL,
+	    "[%s] NULL url at %s\n",
+	    GLOBUS_FTP_CLIENT_MODULE->module_name,
+	    myname);
+
+	return globus_error_put(err);
+    }
+
+    i_handle = *handle;
+
+    return globus_l_ftp_client_plugin_restart_operation(i_handle,
+							url,
+							attr,
+							GLOBUS_NULL,
+							GLOBUS_NULL,
+							GLOBUS_NULL,
+							when);
+}
+/* globus_ftp_client_plugin_restart_size() */
+
+/**
+ * Restart a modification time check operation.
+ * @ingroup globus_ftp_client_plugins
+ *
+ * This function will cause the currently executing modification time check
+ * operation to be restarted. When a restart happens, the operation will be
+ * silently aborted, and then restarted with potentially a new URL and
+ * attributes.
+ *
+ * The user will not receive any notification that a restart has happened. Each
+ * plugin which is interested in modification time operations will receive a
+ * modification time callback with the restart boolean set to GLOBUS_TRUE.
+ *
+ * @param handle
+ *        The handle which is associated with the operation.
+ * @param source_url
+ *        The source URL of the modification time check. This may be different
+ *        than the original operations URL, if the plugin decides to redirect
+ *        to another FTP server due to performance or reliability problems with
+ *        the original URL.
+ * @param source_attr
+ *        The attributes to use for the new operation. This may be a
+ *        modified version of the original operations's attribute set.
+ * @param when
+ *        Absolute time for when to restart the modification time check. The
+ *        current control and data connections will be stopped immediately. If
+ *        this completes before <b>when</b>, then the restart will be delayed
+ *        until that time. Otherwise, it will be immediately restarted.
+ */
+globus_result_t
+globus_ftp_client_plugin_restart_modification_time(
+    globus_ftp_client_handle_t *		handle,
+    const char *				url,
+    globus_ftp_client_operationattr_t *		attr,
+    globus_abstime_t *				when)
+{
+    globus_object_t *				err;
+    globus_i_ftp_client_handle_t *		i_handle;
+    static char * myname = "globus_ftp_client_plugin_restart_modification_time";
+
+    if(url == GLOBUS_NULL)
+    {
+	err = globus_error_construct_string(
+	    GLOBUS_FTP_CLIENT_MODULE,
+	    GLOBUS_NULL,
+	    "[%s] NULL url at %s\n",
+	    GLOBUS_FTP_CLIENT_MODULE->module_name,
+	    myname);
+
+	return globus_error_put(err);
+    }
+
+    i_handle = *handle;
+
+    return globus_l_ftp_client_plugin_restart_operation(i_handle,
+							url,
+							attr,
+							GLOBUS_NULL,
+							GLOBUS_NULL,
+							GLOBUS_NULL,
+							when);
+}
+/* globus_ftp_client_plugin_restart_modification_time() */
 /**
  * Abort a transfer operation.
  * @ingroup globus_ftp_client_plugins
@@ -1219,7 +1347,6 @@ globus_l_ftp_client_plugin_restart_operation(
 
     if(source_url != GLOBUS_NULL)
     {
-	
 	restart_info->source_url = globus_libc_strdup(source_url);
 	if(restart_info->source_url == GLOBUS_NULL)
 	{
@@ -2168,11 +2295,23 @@ globus_i_ftp_client_plugin_notify_command(
     globus_i_ftp_client_handle_t *		handle,
     const globus_url_t *			url,
     globus_ftp_client_plugin_command_mask_t	command_mask,
-    const char *				command_name)
+    const char *				command_spec,
+    ...)
 {
+    va_list					ap;
     globus_i_ftp_client_plugin_t *		plugin;
     globus_list_t *				tmp;
+    int						len;
+    char *					tmpstr;
     globus_bool_t				unlocked = GLOBUS_FALSE;
+
+    va_start(ap, command_spec);
+
+    len = globus_libc_vprintf_length(command_spec, ap);
+    tmpstr = globus_libc_malloc(len + 1);
+    globus_libc_vsprintf(tmpstr, command_spec, ap);
+
+    va_end(ap);
 
     handle->notify_in_progress++;
 
@@ -2195,9 +2334,10 @@ globus_i_ftp_client_plugin_notify_command(
 				   plugin->plugin_specific,
 				   handle->handle,
 				   url,
-				   command_name);
+				   tmpstr);
 	}
     }
+    globus_libc_free(tmpstr);
     if(unlocked)
     {
 	globus_i_ftp_client_handle_lock(handle);

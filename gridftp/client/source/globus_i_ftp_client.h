@@ -215,6 +215,9 @@ typedef enum
     GLOBUS_FTP_CLIENT_TARGET_START, 
     GLOBUS_FTP_CLIENT_TARGET_CONNECT,
     GLOBUS_FTP_CLIENT_TARGET_AUTHENTICATE,
+    GLOBUS_FTP_CLIENT_TARGET_SETUP_SITE_FAULT,
+    GLOBUS_FTP_CLIENT_TARGET_SITE_FAULT,
+    GLOBUS_FTP_CLIENT_TARGET_SETUP_SITE_HELP,
     GLOBUS_FTP_CLIENT_TARGET_SITE_HELP,
     GLOBUS_FTP_CLIENT_TARGET_FEAT,
     GLOBUS_FTP_CLIENT_TARGET_SETUP_CONNECTION,
@@ -809,7 +812,8 @@ globus_i_ftp_client_plugin_notify_command(
     globus_i_ftp_client_handle_t *		handle,
     const globus_url_t *			url,
     globus_ftp_client_plugin_command_mask_t	command_mask,
-    const char *				command_name);
+    const char *				command_spec,
+    ...);
 
 void
 globus_i_ftp_client_plugin_notify_response(

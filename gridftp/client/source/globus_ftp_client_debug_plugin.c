@@ -249,27 +249,15 @@ globus_l_ftp_client_debug_plugin_copy(
     {
 	goto error_exit;
     }
-    result = globus_ftp_client_debug_plugin_init(newguy);
+    result = globus_ftp_client_debug_plugin_init(newguy,
+						 d->stream,
+						 d->text);
     if(result != GLOBUS_SUCCESS)
     {
 	goto free_exit;
     }
-    result = globus_ftp_client_debug_plugin_set_stream(newguy,
-					               d->stream);
-    if(result != GLOBUS_SUCCESS)
-    {
-	goto destroy_exit;
-    }
-    result = globus_ftp_client_debug_plugin_set_text(newguy,
-	                                             d->text);
-    if(result != GLOBUS_SUCCESS)
-    {
-	goto destroy_exit;
-    }
     return newguy;
 
-destroy_exit:
-    globus_ftp_client_debug_plugin_destroy(newguy);
 free_exit:
     globus_libc_free(newguy);
 error_exit:
@@ -335,6 +323,9 @@ globus_l_ftp_client_debug_plugin_authenticate(
     const globus_ftp_control_auth_info_t *	auth_info)
 {
     globus_l_ftp_client_debug_plugin_t *	d;
+    char *					scheme_string[2] =
+                                                    { "ftp", "gsiftp" };
+    char					portstring[10];
 
     d = (globus_l_ftp_client_debug_plugin_t *) plugin_specific;
 
@@ -343,10 +334,15 @@ globus_l_ftp_client_debug_plugin_authenticate(
 	return;
     }
 
+    sprintf(portstring, "%d", url->port);
+
     fprintf(d->stream, "%s%sauthenticating with %s://%s%s%s\n",
 	    d->text ? d->text : "",
 	    d->text ? ": " : "",
-	    url->host);
+	    scheme_string[url->scheme_type == GLOBUS_URL_SCHEME_GSIFTP],
+	    url->host,
+	    url->port ? ":" : "",
+	    url->port ? portstring : "");
 }
 /* globus_l_ftp_client_debug_plugin_authenticate() */
 
@@ -871,7 +867,9 @@ globus_l_ftp_client_debug_plugin_complete(
  */
 globus_result_t
 globus_ftp_client_debug_plugin_init(
-    globus_ftp_client_plugin_t *		plugin)
+    globus_ftp_client_plugin_t *		plugin,
+    FILE *					stream,
+    const char *				text)
 {
     globus_l_ftp_client_debug_plugin_t *	d;
     globus_object_t *				err;
@@ -901,8 +899,8 @@ globus_ftp_client_debug_plugin_init(
 				 myname));
     }
 
-    d->stream = stderr;
-    d->text = GLOBUS_NULL;
+    d->stream = stream;
+    d->text = globus_libc_strdup(text);
 
     result = globus_ftp_client_plugin_init(plugin,
 				  GLOBUS_L_FTP_CLIENT_DEBUG_PLUGIN_NAME,
@@ -944,131 +942,6 @@ result_exit:
     return globus_error_put(result);
 }
 /* globus_ftp_client_debug_plugin_init() */
-
-/**
- * Set the debugging plugin's output stream.
- * @ingroup globus_ftp_client_debug_plugin
- *
- * This function sets the FILE stream to be used by the GridFTP debugging
- * plugin. This stream must not be closed while a GridFTP handle has a
- * reference to this plugin.
- *
- * @param plugin
- *        A pointer to a GridFTP debugging plugin, previously initialized by
- *        calling globus_ftp_client_debug_plugin_init()
- * @param stream
- *        A stdio FILE stream pointer to which debugging messages should be
- *        sent.
- *
- * @return This function returns an error if
- * - plugin is NULL
- * - stream is NULL
- * - plugin is not a debugging plugin
- */
-globus_result_t
-globus_ftp_client_debug_plugin_set_stream(
-    globus_ftp_client_plugin_t *		plugin,
-    FILE *					stream)
-{
-    globus_l_ftp_client_debug_plugin_t *	d;
-    globus_result_t				result;
-    static char * myname = "globus_ftp_client_debug_plugin_set_stream";
-
-    GLOBUS_L_FTP_CLIENT_DEBUG_PLUGIN_RETURN(plugin);
-
-    if(stream == GLOBUS_NULL)
-    {
-	return globus_error_put(globus_error_construct_string(\
-		GLOBUS_FTP_CLIENT_MODULE,\
-		GLOBUS_NULL,\
-		"[%s] Invalid stream at %s\n",\
-		GLOBUS_FTP_CLIENT_MODULE->module_name,\
-		myname));\
-    }
-
-    result = globus_ftp_client_plugin_get_plugin_specific(plugin,
-	                                                  (void **) &d);
-    if(result != GLOBUS_SUCCESS)
-    {
-	return result;
-    }
-    d->stream = stream;
-
-    return GLOBUS_SUCCESS;
-}
-/* globus_ftp_client_debug_plugin_set_stream() */
-
-/**
- * Set the debugging plugin's text.
- * @ingroup globus_ftp_client_debug_plugin
- *
- * This function sets the text to be used to start all messages printed to
- * the plugins FILE stream. This may be NULL (the default), if no
- * application-specific message is needed.
- *
- * Messages from teh debugging plugin will be prefixed by the text string
- * followed by a colon, if the text string is non-NULL.
- *
- * @param plugin
- *        A pointer to a GridFTP debugging plugin, previously initialized by
- *        calling globus_ftp_client_debug_plugin_init()
- * @param text
- *        An arbitrary string to be prepended to the debugging plugin's
- *        messages.
- *
- * @return This function returns an error if
- * - plugin is NULL
- * - stream is NULL
- * - plugin is not a debugging plugin
- */
-globus_result_t
-globus_ftp_client_debug_plugin_set_text(
-    globus_ftp_client_plugin_t *		plugin,
-    const char *				text)
-{
-    globus_l_ftp_client_debug_plugin_t *	d;
-    globus_result_t				result;
-    char *					tmp;
-    static char * myname = "globus_ftp_client_debug_plugin_set_text";
-
-    GLOBUS_L_FTP_CLIENT_DEBUG_PLUGIN_RETURN(plugin);
-
-    result = globus_ftp_client_plugin_get_plugin_specific(plugin,
-	                                                  (void **) &d);
-    if(result != GLOBUS_SUCCESS)
-    {
-	return result;
-    }
-
-    tmp = d->text;
-
-    if(text)
-    {
-	d->text = globus_libc_strdup(text);
-	if(d->text == GLOBUS_NULL)
-	{
-	    d->text = tmp;
-
-	    return globus_error_put(globus_error_construct_string(
-			GLOBUS_FTP_CLIENT_MODULE,
-			GLOBUS_NULL,
-			"[%s] Out of memory at %s\n",
-			 GLOBUS_FTP_CLIENT_MODULE->module_name,
-			 myname));
-	}
-    }
-    else
-    {
-	d->text = GLOBUS_NULL;
-    }
-    if(tmp)
-    {
-	globus_libc_free(tmp);
-    }
-
-    return GLOBUS_SUCCESS;
-}
-/* globus_ftp_client_debug_plugin_set_text() */
 
 /**
  * Destroy an instance of the GridFTP debugging plugin

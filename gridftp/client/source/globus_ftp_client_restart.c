@@ -37,6 +37,12 @@ globus_l_ftp_client_restart_transfer_callback(
     globus_abstime_t *			time_stop,
     void *				user_arg);
 
+static
+globus_bool_t
+globus_l_ftp_client_restart_no_connection(
+    globus_abstime_t *				time_stop,
+    void *					user_arg);
+
 /**
  * Register the oneshot event which will restart the current transfer 
  * after a delay.
@@ -723,7 +729,10 @@ globus_i_ftp_client_restart(
 	   handle->op == GLOBUS_FTP_CLIENT_RMDIR  ||
 	   handle->op == GLOBUS_FTP_CLIENT_MOVE   ||
 	   handle->op == GLOBUS_FTP_CLIENT_NLST   ||
-	   handle->op == GLOBUS_FTP_CLIENT_LIST)
+	   handle->op == GLOBUS_FTP_CLIENT_LIST   ||
+	   handle->op == GLOBUS_FTP_CLIENT_SIZE   ||
+	   handle->op == GLOBUS_FTP_CLIENT_MDTM
+	   )
 	{
 	    result = globus_ftp_control_force_close(
 		handle->source->control_handle,
@@ -737,6 +746,31 @@ globus_i_ftp_client_restart(
 		handle->source->state = GLOBUS_FTP_CLIENT_TARGET_FAULT;
 
 		globus_i_ftp_client_plugin_notify_restart(handle);
+	    }
+	    else if(handle->source->state == GLOBUS_FTP_CLIENT_TARGET_CONNECT)
+	    {
+		int rc;
+		err = globus_error_get(result);
+
+		handle->state = GLOBUS_FTP_CLIENT_HANDLE_RESTART;
+		handle->restart_info = restart_info;
+		handle->source->state = GLOBUS_FTP_CLIENT_TARGET_FAULT;
+
+		globus_i_ftp_client_plugin_notify_restart(handle);
+
+		rc = globus_callback_register_oneshot(
+			GLOBUS_NULL,
+			&globus_i_reltime_infinity,
+			globus_l_ftp_client_restart_no_connection,
+			handle->source,
+			GLOBUS_NULL,
+			GLOBUS_NULL);
+
+		if(rc == GLOBUS_SUCCESS)
+		{
+		    globus_object_free(err);
+		    err = GLOBUS_NULL;
+		}
 	    }
 	    else
 	    {
@@ -818,5 +852,23 @@ globus_i_ftp_client_restart(
     return err;
 }
 /* globus_i_ftp_client_restart() */
+
+static
+globus_bool_t
+globus_l_ftp_client_restart_no_connection(
+    globus_abstime_t *				time_stop,
+    void *					user_arg)
+{
+    globus_i_ftp_client_target_t *		target;
+
+    target = user_arg;
+
+    globus_i_ftp_client_force_close_callback(
+	    target,
+	    target->control_handle,
+	    GLOBUS_NULL,
+	    GLOBUS_NULL);
+    return GLOBUS_TRUE;
+}
 
 #endif

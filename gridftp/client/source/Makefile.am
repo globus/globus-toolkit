@@ -16,6 +16,7 @@ SUBDIRS= \
 # will need to be seperated into seperate macros.
 Sources= \
 	globus_ftp_client_debug_plugin.h \
+	globus_ftp_client_restart_plugin.h \
 	globus_ftp_client.h \
 	globus_ftp_client_plugin.h \
 	globus_i_ftp_client.h \
@@ -24,6 +25,7 @@ Sources= \
 	globus_ftp_client_data.c \
 	globus_ftp_client_exists.c \
 	globus_ftp_client_debug_plugin.c \
+	globus_ftp_client_restart_plugin.c \
 	globus_ftp_client_handle.c \
 	globus_ftp_client_plugin.c \
 	globus_ftp_client_restart.c \
@@ -42,6 +44,7 @@ INCLUDES += $(GPT_INCLUDES)
 # a list of header files that are to be installed in $prefix/include
 include_HEADERS= \
 	globus_ftp_client_debug_plugin.h \
+	globus_ftp_client_restart_plugin.h \
 	globus_ftp_client.h \
 	globus_ftp_client_plugin.h
 
@@ -52,6 +55,8 @@ lib_LTLIBRARIES = libglobus_ftp_client_$(GLOBUS_FLAVOR_NAME).la
 libglobus_ftp_client___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
 libglobus_ftp_client___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS)
 libglobus_ftp_client___GLOBUS_FLAVOR_NAME__la_LIBADD = $(GPT_LIB_LINKS)
+
+EXTRA_DIST = globus_ftp_client_restart_plugin.example
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

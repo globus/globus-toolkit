@@ -96,7 +96,7 @@ globus_ftp_client_plugin_command_mask_t;
  *        by the user.
  *
  * @return A pointer to a plugin. This plugin copy must remain valid
- *         until the copy's @link globus_ftp_client_destroy_t
+ *         until the copy's @link globus_ftp_client_plugin_destroy_t
  *         destroy @endlink function
  *         is called on the copy.
  *
@@ -824,13 +824,27 @@ globus_ftp_client_plugin_restart_put(
     globus_abstime_t *				when);
 
 globus_result_t
-globus_ftp_client_plugin_restart_transfer(
+globus_ftp_client_plugin_restart_third_party_transfer(
     globus_ftp_client_handle_t *		handle,
     const char *				source_url,
     globus_ftp_client_operationattr_t *		source_attr,
     const char *				dest_url,
     globus_ftp_client_operationattr_t *		dest_attr,
     globus_ftp_client_restart_marker_t *	restart,
+    globus_abstime_t *				when);
+
+globus_result_t
+globus_ftp_client_plugin_restart_size(
+    globus_ftp_client_handle_t *		handle,
+    const char *				url,
+    globus_ftp_client_operationattr_t *		attr,
+    globus_abstime_t *				when);
+
+globus_result_t
+globus_ftp_client_plugin_restart_modification_time(
+    globus_ftp_client_handle_t *		handle,
+    const char *				url,
+    globus_ftp_client_operationattr_t *		attr,
     globus_abstime_t *				when);
 
 globus_result_t

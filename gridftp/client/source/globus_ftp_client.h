@@ -138,8 +138,6 @@ typedef union
 globus_ftp_client_restart_marker_t;
 
 /**
- * @struct globus_ftp_client_handle_t
- *
  * FTP Client Handle.
  * @ingroup globus_ftp_client_handle
  *
@@ -155,9 +153,7 @@ globus_ftp_client_restart_marker_t;
 typedef struct globus_i_ftp_client_handle_t * globus_ftp_client_handle_t;
 
 /**
- * @struct globus_ftp_client_plugin_t
- *
- * FTP Client plugin.
+ * FTP Client plugin
  * @ingroup globus_ftp_client_plugins
  * 
  * An FTP Client plugin is used to add restart, monitoring, 
@@ -232,8 +228,6 @@ typedef void (*globus_ftp_client_data_callback_t) (
     globus_bool_t				eof);
 
 /**
- * @struct gobus_ftp_client_operationattr_t
- *
  * Operation Attributes.
  * @ingroup globus_ftp_client_operationattr
  *
@@ -250,7 +244,6 @@ typedef struct globus_i_ftp_client_operationattr_t *
 globus_ftp_client_operationattr_t;
 
 /**
- * @struct globus_ftp_client_handleattr_t
  * Handle Attributes.
  * @ingroup globus_ftp_client_handleattr
  *
@@ -260,9 +253,8 @@ globus_ftp_client_operationattr_t;
  *
  * @see globus_ftp_client_handle_t, @ref globus_ftp_client_handleattr
  */
-typedef struct globus_i_ftp_client_handleattr_t *
-globus_ftp_client_handleattr_t;
-
+typedef struct
+    globus_i_ftp_client_handleattr_t * globus_ftp_client_handleattr_t;
 /**
  * @defgroup globus_ftp_client_restart_marker Restart Markers
  *
