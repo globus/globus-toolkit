@@ -165,6 +165,8 @@ sub setup_environment()
 
     print "Setting up environment and checking dependencies...\n";
 
+    #TODO: figure out package list first, then set
+    # cvs_build_hash appropriately.q
     if ( $cvs_build_hash{'gt3'} eq 1  )
     {
 	check_java_env();
@@ -429,6 +431,42 @@ sub paranoia
     }
 }
 
+#TODO: Make all system() calls logging() calls instead.
+# --------------------------------------------------------------------
+sub log_system
+# --------------------------------------------------------------------
+{
+    my ($command, $log) = @_;
+
+    my $output;
+    my $res;
+
+    if ( $verbose )
+    {
+	# This contruction is like piping through tee
+	# except that I can get the return code too.
+	open LOG, $log;
+	open FOO, "$command 2>&1 |";
+
+	while (<FOO>)
+	{
+	    print;
+	    print LOG;
+	}
+
+	close FOO;
+	$res = $?;
+    }
+    else
+    {
+	$output =  ">> $log 2>&1";
+	system("$command $output");
+	$res = $?
+    }
+
+    return $res;
+}
+
 # --------------------------------------------------------------------
 sub install_gpt2()
 # --------------------------------------------------------------------
@@ -478,6 +516,7 @@ sub gpt_get_version
 sub install_gt2_autotools()
 # --------------------------------------------------------------------
 {
+    my $res;
     chdir cvs_subdir('autotools');
 
     if ( -e 'autotools/bin/automake' )
@@ -488,8 +527,9 @@ sub install_gt2_autotools()
 	print "Logging to ${log_dir}/gt2-autotools.log\n";
 
 	if ( -e "side_tools/build-autotools" )
-	{
-	    system("./side_tools/build-autotools > ${log_dir}/gt2-autotools.log 2>&1");
+	{	    
+	    $res = log_system("./side_tools/build-autotools",
+		    "${log_dir}/gt2-autotools.log");
 	} else {
 	    die "ERROR: side_tools/build-autotools doesn't exist.  Check cvs logs.";
 	}
@@ -499,7 +539,7 @@ sub install_gt2_autotools()
 	    print "\tAutotools dies the first time through sometimes due to\n";
 	    print "\temacs .texi issues.  I am trying again.\n";
 
-	    system("./side_tools/build-autotools >> ${log_dir}/gt2-autotools.log 2>&1");
+	    log_system("./side_tools/build-autotools >> ${log_dir}/gt2-autotools.log 2>&1");
 	    if ( $? ne 0 )
 	    {
 		die "ERROR: Error building autotools.  Check log.\n";
@@ -640,7 +680,8 @@ sub cvs_checkout_generic ()
 	    $cvsopts = "";
 	}
 
-	system("cvs -d $cvsroot co $cvsopts $module > $cvs_logs/" . $dir . ".log 2>&1");
+	log_system("cvs -d $cvsroot co $cvsopts $module",
+		   "$cvs_logs/" . $dir . ".log");
 
 	if ( $? ne 0 )
 	{
@@ -667,7 +708,8 @@ sub cvs_checkout_generic ()
 		if ( -d "CVS" )
 		{
 		    print "Logging to ${cvs_logs}/" . $dir . "-${f}.log\n";
-		    system("cvs -z3 -qq up -dP > ${cvs_logs}/" . $dir . "-${f}.log 2>&1");
+		    log_system("cvs -z3 -qq up -dP",
+			       "${cvs_logs}/" . $dir . "-${f}.log");
 		    paranoia "Trouble with cvs up on tree $tree.";
 		}
 		chdir "..";
@@ -762,16 +804,17 @@ sub package_source_gpt()
 
 	print "Following GPT packaging for $package.\n";
 
-	if ( $package eq "globus_openssl" )
+	if ( $package eq "globus_openssl" or
+	     $package eq "globus_gsoap_soapcpp2")
 	{
 	    print "\tUsing openssl_tools version of autotools.\n";
 	    my $OPATH = $ENV{PATH};
 	    $ENV{PATH} = cvs_subdir('autotools') . "/autotools/openssl_tools/bin" . ":$OPATH";
-	    system("(./bootstrap) > $pkglog/$package 2>&1");
-	    paranoia("globus_openssl bootstrap failed.");
+	    log_system("./bootstrap", "$pkglog/$package");
+	    paranoia("$package bootstrap failed.");
 	    $ENV{PATH} = $OPATH;
 	} else {
-	    system("(./bootstrap) > $pkglog/$package 2>&1");
+	    log_system("./bootstrap", "$pkglog/$package");
 	    paranoia("$package bootstrap failed.");
 	}
 
@@ -786,29 +829,37 @@ sub package_source_gpt()
 	    #Strip leading dirs off of $subdir
 	    my ($otherdirs, $tardir) = $subdir =~ m!(.+/)([^/]+)$!;
 
-	    system("(make distcean) >> $pkglog/$package 2>&1");
-	    # This will only succeed if we are building for the second time.
-	    # paranoia "make distclean failed for $package";
+	    if ( -e Makefile )
+	    {
+		log_system("make distcean", "$pkglog/$package");
+		paranoia "make distclean failed for $package";
+	    }
 
 	    chdir "..";
 	    
-	    # The dir we are tarring is probably called "source" in CVS.  mv it to package name.
-	    system("(mv $tardir $package-$version)  >> $pkglog/$package 2>&1");
+	    # The dir we are tarring is probably called "source" in CVS.
+	    # mv it to package name.
+	    log_system("mv $tardir $package-$version)",
+		       "$pkglog/$package");
 	    paranoia "system() call failed.  See $pkglog/$package.";
-	    system("(tar cf $package_output/$tarfile.tar $package-$version) >> $pkglog/$package 2>&1");
+	    log_system("tar cf $package_output/$tarfile.tar $package-$version",
+		       "$pkglog/$package");
 	    paranoia "system() call failed.  See $pkglog/$package.";
-	    system("gzip -f $package_output/$tarfile.tar");
+	    log_system("gzip -f $package_output/$tarfile.tar",
+		       "$pkglog/$package");
 	    paranoia "system() call failed.  See $pkglog/$package.";
 
 	    # Move it back so future builds find it.
-	    system("(mv $package-$version $tardir) >> $pkglog/$package 2>&1");
+	    log_system("mv $package-$version $tardir",
+		       "$pkglog/$package");
 	    paranoia "system() call failed.  See $pkglog/$package.";
 	} else {	
-	    system("(./configure --with-flavor=$flavor) >> $pkglog/$package 2>&1");
+	    log_system("./configure --with-flavor=$flavor",
+		       "$pkglog/$package");
 	    paranoia "configure failed.  See $pkglog/$package.";
-	    system("(make dist) >> $pkglog/$package 2>&1");
+	    log_system("make dist", "$pkglog/$package");
 	    paranoia "make dist failed.  See $pkglog/$package.";
-	    system("cp *.tar.gz $package_output");
+	    log_system("cp *.tar.gz $package_output", "$pkglog/$package");
 	    paranoia "cp failed.  See $pkglog/$package.";
 	    $ENV{'GPT_IGNORE_DEPS'}="";
 	}
@@ -832,10 +883,12 @@ sub package_source_pnb()
     chdir $subdir;
 
     my $version = gpt_get_version("pkg_data_src.gpt");
-    system("(gzip -dc $tarfile | tar xf -) > $pkglog/$package 2>&1");
-    paranoia "gzip failed.  See $pkglog/$package.";
+    log_system("gzip -dc $tarfile | tar xf -",
+	       "$pkglog/$package");
+    paranoia "Untarring $package failed.  See $pkglog/$package.";
     chdir $tarbase;
-    system("(patch -N -s -p1 -i ../patches/$patchfile)  >> $pkglog/$package 2>&1");
+    log_system("patch -N -s -p1 -i ../patches/$patchfile",
+	       "$pkglog/$package");
     paranoia "patch failed.  See $pkglog/$package.";
 
     # Strip off leading directory component
@@ -845,15 +898,19 @@ sub package_source_pnb()
 
     # The dir we are tarring is probably called "source" in CVS.
     # mv it to package name so tarball looks correct.
-    system("(mv $tardir $package-$version)  >> $pkglog/$package 2>&1");
+    log_system("mv $tardir $package-$version",
+	       "$pkglog/$package");
     paranoia "a system() failed.  See $pkglog/$package.";
-    system("(tar cf $package_output/${package}-${version}.tar $package-$version) >> $pkglog/$package 2>&1");
+    log_system("tar cf $package_output/${package}-${version}.tar $package-$version",
+	       "$pkglog/$package");
     paranoia "a system() failed.  See $pkglog/$package.";
-    system("gzip -f $package_output/${package}-${version}.tar");
+    log_system("gzip -f $package_output/${package}-${version}.tar",
+	       "$pkglog/$package");
     paranoia "a system() failed.  See $pkglog/$package.";
 
     # Move it back so future builds find it.
-    system("(mv $package-$version $tardir) >> $pkglog/$package 2>&1");
+    log_system("mv $package-$version $tardir",
+	       "$pkglog/$package");
     paranoia "a system() failed.  See $pkglog/$package.";
 }
 
@@ -872,22 +929,24 @@ sub package_source_tar()
 	print "$subdir does not exist, skipping\n";
     } else {
 	print "Creating source directory for $package\n";
-	system("rm -fr $destdir");
+	log_system("rm -fr $destdir", "$pkglog/$package");
 
 	mkdir $destdir;
-	system("cp -Rp $subdir/* $destdir");
+	log_system("cp -Rp $subdir/* $destdir", "$pkglog/$package");
 	paranoia "Failed to copy $subdir to $destdir for $package.";
-	system("touch $destdir/INSTALL");
+	log_system("touch $destdir/INSTALL", "$pkglog/$package");
 	paranoia "touch $destdir/INSTALL failed";
 
 	if ( -e "$destdir/pkgdata/pkg_data_src.gpt" )
 	{
-	    system("cp $destdir/pkgdata/pkg_data_src.gpt $destdir/pkgdata/pkg_data_src.gpt.in");
+	    log_system("cp $destdir/pkgdata/pkg_data_src.gpt $destdir/pkgdata/pkg_data_src.gpt.in",
+		       "$pkglog/$package");
 	    paranoia "Metadata copy failed for $package.";
 	} else {
-	    system("mkdir $destdir/pkgdata/");
+	    log_system("mkdir $destdir/pkgdata/", "$pkglog/$package");
 	    paranoia "mkdir failed during $package.";
-	    system("cp $top_dir/package-list/$package/pkg_data_src.gpt  $destdir/pkgdata/pkg_data_src.gpt.in");
+	    log_system("cp $top_dir/package-list/$package/pkg_data_src.gpt  $destdir/pkgdata/pkg_data_src.gpt.in",
+		   "$pkglog/$package");
 	    paranoia "Metadata copy failed for $package.";
 	    print "\tUsed pkgdata from package-list, not cool.\n";
 	}
@@ -898,7 +957,8 @@ sub package_source_tar()
 	my $tarfile = "$package-$version";
 	
 	chdir $source_output;
-	system("tar czf $package_output/$tarfile.tar.gz $package_name");
+	log_system("tar czf $package_output/$tarfile.tar.gz $package_name",
+		   "$pkglog/$package");
 	paranoia "tar failed for $package.";
     }
 }
@@ -933,6 +993,7 @@ sub bundle_sources()
 	    print PKG "$package\n";
 	}
 	#TODO: Let user choose deps/nodeps
+	#TODO: backticks make me nervous about using log_system
 	system("($ENV{'GPT_LOCATION'}/sbin/gpt-bundle -nodeps -bn=$bundle -bv=1.0 -srcdir=$bundle `cat $bundle/packaging_list`) > $bundlelog/$bundle 2>&1");
 	paranoia("Bundling of $bundle failed.  See $bundlelog/$bundle.");
     }
