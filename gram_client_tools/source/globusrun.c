@@ -103,6 +103,10 @@ static
 int
 globus_l_globusrun_refresh_proxy(
     char *			job_contact);
+static
+int
+globus_l_globusrun_stop_manager(
+    char *			job_contact);
 
 #if 0 /* unimplemented */
 
@@ -234,6 +238,10 @@ static char *  long_usage = \
 "    -refresh-proxy | -y <job ID>\n"\
 "           Cause globusrun to delegate a new proxy to the job named by the\n"\
 "           <job ID>\n"\
+"    -stop-manager <job  ID>\n"\
+"           Cause globusrun to stop the job manager, without killing the\n"\
+"           job. If the save_state RSL attribute is present, then a\n"\
+"           job manager can be restarted by using the restart RSL attribute.\n"\
 "\n"\
 "    Diagnostic Options\n"\
 "    -p | -parse\n"\
@@ -340,6 +348,7 @@ test_integer( char *   value,
 enum { arg_i = 1, arg_q, arg_o, arg_s, arg_w, arg_n, arg_l, arg_b,
 	     arg_p, arg_d, arg_a,
 	     arg_r, arg_f, arg_k, arg_y, arg_mpirun, arg_status,
+	     arg_stop_manager,
 	     arg_mdshost, arg_mdsport, arg_mdsbasedn, arg_mdstimeout,
 	     arg_num = arg_mdstimeout };
 
@@ -379,6 +388,7 @@ static int arg_f_mode = O_RDONLY;
     oneargdef(arg_r, "-r", "-resource", GLOBUS_NULL, GLOBUS_NULL);
     oneargdef(arg_k, "-k", "-kill", test_job_id, GLOBUS_NULL);
     oneargdef(arg_y, "-y", "-refresh-proxy", test_job_id, GLOBUS_NULL);
+    oneargdef(arg_stop_manager, "-stop-manager", NULL, test_job_id, GLOBUS_NULL);
     oneargdef(arg_mpirun, "-mpirun", GLOBUS_NULL, test_integer, GLOBUS_NULL);
     oneargdef(arg_status, "-status", GLOBUS_NULL, test_job_id, GLOBUS_NULL);
     oneargdef(arg_mdshost, "-mdshost", GLOBUS_NULL, test_hostname, GLOBUS_NULL);
@@ -395,7 +405,7 @@ static int arg_f_mode = O_RDONLY;
 	setupopt(arg_w); setupopt(arg_n); setupopt(arg_l); setupopt(arg_b); \
 	setupopt(arg_p); setupopt(arg_d); setupopt(arg_a); \
 	setupopt(arg_r); setupopt(arg_f); setupopt(arg_k); setupopt(arg_y); \
-	setupopt(arg_mpirun); \
+	setupopt(arg_mpirun); setupopt(arg_stop_manager); \
 	setupopt(arg_status); setupopt(arg_mdshost); setupopt(arg_mdsport); \
 	setupopt(arg_mdsbasedn); setupopt(arg_mdstimeout);
 
@@ -572,6 +582,9 @@ static int arg_f_mode = O_RDONLY;
 	case arg_mpirun:
 	    /* no-op */
 	    break;
+
+	case arg_stop_manager:
+	    return globus_l_globusrun_stop_manager(instance->values[0]);
 
 	case arg_status:
 	    return(globus_l_globusrun_status_job(instance->values[0]));
@@ -2106,6 +2119,28 @@ globus_l_globusrun_refresh_proxy(
     return err;
 }
 
+static
+int
+globus_l_globusrun_stop_manager(
+    char *			job_contact)
+{
+    int err;
+    int tmp1,tmp2;
+
+    err = globus_gram_client_job_signal(
+            job_contact,
+	    GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_STOP_MANAGER,
+	    NULL,
+	    &tmp1,
+	    &tmp2);
+
+    if(err != GLOBUS_SUCCESS)
+    {
+	globus_libc_fprintf(stderr, "Error stopping job manager: %s\n",
+		            globus_gram_client_error_string(err));
+    }
+    return err;
+}
 /******************************************************************************
 Function: globus_l_globusrun_status_job()
 
