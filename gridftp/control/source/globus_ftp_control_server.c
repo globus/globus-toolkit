@@ -1672,10 +1672,11 @@ globus_l_ftp_control_auth_read_cb(
                         cc_handle->auth_info.encrypt = GLOBUS_TRUE;
                     }
                     
-                    maj_stat = gss_export_name(
+                    maj_stat = gss_display_name(
                         &min_stat,
                         cc_handle->auth_info.target_name,
-                        &subject_buf);
+                        &subject_buf,
+                        GSS_C_NO_OID);
 
                     cc_handle->auth_info.auth_gssapi_subject =
                         globus_libc_malloc(sizeof(char)*
