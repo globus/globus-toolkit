@@ -77,8 +77,6 @@ typedef enum
     GLOBUS_CALLBACK_ERROR_MEMORY_ALLOC,
     /** One of the arguments is NULL or out of range */
     GLOBUS_CALLBACK_ERROR_INVALID_ARGUMENT,
-    /** Attempt to unregister running callback, unregister will be deferred */
-    GLOBUS_CALLBACK_ERROR_CANCEL_RUNNING,
     /** Attempt to unregister callback again */
     GLOBUS_CALLBACK_ERROR_ALREADY_CANCELED,
     /** Attempt to retrieve info about a callback not in callers's stack */
@@ -228,7 +226,7 @@ typedef struct globus_l_callback_space_attr_s * globus_callback_space_attr_t;
  * (explicitly, or implicitly via globus_cond_wait()).  Also, if
  * globus_callback_unregister() is called to cancel this periodic from within 
  * this callback, it is guaranteed that the callback will NOT be requeued again
- * (will still return GLOBUS_CALLBACK_ERROR_CANCEL_RUNNING).
+ * 
  *
  * @param time_now
  *        The current time
@@ -396,10 +394,13 @@ globus_callback_space_register_periodic(
  *
  * If the callback is currently running (or unstoppably about to be run), then
  * the callback is prevented from being requeued, but, the 'official' cancel
- * is deferred until the last running instance of the callback returns.  In 
- * this case, GLOBUS_CALLBACK_ERROR_CANCEL_RUNNING is returned.  (This is an 
- * informative error) If you need to know when the callback is guaranteed to 
- * have been canceled, pass an unregister callback.
+ * is deferred until the last running instance of the callback returns. If you 
+ * need to know when the callback is guaranteed to have been canceled, pass an 
+ * unregister callback.
+ *
+ * If you would like to know if you unregistered a callback before it ran, 
+ * pass storage for a boolean 'active'.  This will be GLOBUS_TRUE if callback
+ * was running.  GLOBUS_FALSE otherwise.
  *
  * @param callback_handle
  *        the handle received from a globus_callback_space_register_*()
@@ -412,9 +413,12 @@ globus_callback_space_register_periodic(
  * @param unreg_args
  *        user args that will be passed to the unregister callback
  *
+ * @param active
+ *        storage for an indication of whether the callback was running when
+ *        this call was made
+ *
  * @return
  *        - GLOBUS_CALLBACK_ERROR_INVALID_CALLBACK_HANDLE
- *        - GLOBUS_CALLBACK_ERROR_CANCEL_RUNNING
  *        - GLOBUS_CALLBACK_ERROR_ALREADY_CANCELED
  *        - GLOBUS_SUCCESS
  * 
@@ -425,7 +429,8 @@ globus_result_t
 globus_callback_unregister(
     globus_callback_handle_t            callback_handle,
     globus_callback_func_t              unregister_callback,
-    void *                              unreg_args);
+    void *                              unreg_args,
+    globus_bool_t *                     active);
 
 /**
  * Adjust the period of a periodic callback.

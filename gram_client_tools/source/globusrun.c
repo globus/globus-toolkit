@@ -132,7 +132,7 @@ globus_l_globusrun_signal(int signum, RETSIGTYPE (*func)(int));
                    void *                              user_args);
 
 #   define globus_l_globusrun_remove_cancel_poll()  \
-    globus_callback_unregister(globus_l_run_callback_handle, GLOBUS_NULL, GLOBUS_NULL);
+    globus_callback_unregister(globus_l_run_callback_handle, GLOBUS_NULL, GLOBUS_NULL, GLOBUS_NULL);
 #else
 #   define globus_l_globusrun_remove_cancel_poll()
 #endif
@@ -1244,6 +1244,7 @@ globus_l_globusrun_gramrun(char * request_string,
 	    globus_callback_unregister(
 	        globus_l_run_callback_handle,
 	        GLOBUS_NULL,
+	        GLOBUS_NULL, 
 	        GLOBUS_NULL);
 	}
 #       endif
@@ -1475,6 +1476,7 @@ globus_l_globusrun_durocrun(char *request_string,
 	{
 	    globus_callback_unregister(
 	        globus_l_run_callback_handle,
+	        GLOBUS_NULL,
 	        GLOBUS_NULL,
 	        GLOBUS_NULL);
 	}

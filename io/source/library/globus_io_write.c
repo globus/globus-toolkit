@@ -293,6 +293,14 @@ globus_io_register_write(
 					      nbytes,
 					      &iov,
 					      &iovcnt);
+    
+    if(rc == GLOBUS_SUCCESS)
+    {
+        rc = globus_i_io_start_operation(
+            handle,
+            GLOBUS_I_IO_WRITE_OPERATION);
+    }
+    
     if(rc != GLOBUS_SUCCESS)
     {
 	err = globus_error_get(rc);
@@ -315,23 +323,30 @@ globus_io_register_write(
 	/* No security wrapping was done, so we can send the buffer
 	 * with a single write
 	 */
-	rc = globus_i_io_register_write_func(handle,
-					     globus_l_io_write_callback,
-					     (void *) info,
-					     globus_l_io_write_info_destroy);
+	    rc = globus_i_io_register_operation(
+            handle,
+            globus_l_io_write_callback,
+            info,
+            globus_l_io_write_info_destroy,
+            GLOBUS_TRUE,
+            GLOBUS_I_IO_WRITE_OPERATION);
     }
     else
     {
 	/* Security wrapping was done, so the data may be spread over
 	 * multiple GSSAPI tokens in the iovec array.
 	 */
-	rc = globus_i_io_register_write_func(handle,
-					     globus_l_io_writev_callback,
-					     (void *) info,
-					     globus_l_io_write_info_destroy);
+	    rc = globus_i_io_register_operation(
+            handle,
+            globus_l_io_writev_callback,
+            info,
+            globus_l_io_write_info_destroy,
+            GLOBUS_TRUE,
+            GLOBUS_I_IO_WRITE_OPERATION);
     }
     if(rc != GLOBUS_SUCCESS)
     {
+        globus_i_io_end_operation(handle, GLOBUS_I_IO_WRITE_OPERATION);
 	err = globus_error_get(rc);
 	globus_l_io_write_info_destroy(info);
 
@@ -493,6 +508,14 @@ globus_io_register_send(
 					      nbytes,
 					      &iov,
 					      &iovcnt);
+    
+    if(rc == GLOBUS_SUCCESS)
+    {
+        rc = globus_i_io_start_operation(
+            handle,
+            GLOBUS_I_IO_WRITE_OPERATION);
+    }
+    
     if(rc != GLOBUS_SUCCESS)
     {
 	err = globus_error_get(rc);
@@ -515,23 +538,30 @@ globus_io_register_send(
 	/* No security wrapping was done, so we can send the buffer
 	 * with a single write
 	 */
-	rc = globus_i_io_register_write_func(handle,
-					     globus_l_io_send_callback,
-					     (void *) info,
-					     globus_l_io_write_info_destroy);
+	    rc = globus_i_io_register_operation(
+            handle,
+            globus_l_io_send_callback,
+            info,
+            globus_l_io_write_info_destroy,
+            GLOBUS_TRUE,
+            GLOBUS_I_IO_WRITE_OPERATION);
     }
     else
     {
 	/* Security wrapping was done, so the data may be spread over
 	 * multiple GSSAPI tokens in the iovec array.
 	 */
-	rc = globus_i_io_register_write_func(handle,
-					     globus_l_io_sendmsg_callback,
-					     (void *) info,
-					     globus_l_io_write_info_destroy);
+	    rc = globus_i_io_register_operation(
+            handle,
+            globus_l_io_sendmsg_callback,
+            info,
+            globus_l_io_write_info_destroy,
+            GLOBUS_TRUE,
+            GLOBUS_I_IO_WRITE_OPERATION);
     }
     if(rc != GLOBUS_SUCCESS)
     {
+        globus_i_io_end_operation(handle, GLOBUS_I_IO_WRITE_OPERATION);
 	err = globus_error_get(rc);
 	globus_l_io_write_info_destroy(info);
 
@@ -700,6 +730,14 @@ globus_io_register_writev(
 					   iovcnt,
 					   &new_iov,
 					   &new_iovcnt);
+    
+    if(rc == GLOBUS_SUCCESS)
+    {
+        rc = globus_i_io_start_operation(
+            handle,
+            GLOBUS_I_IO_WRITE_OPERATION);
+    }
+    
     if(rc != GLOBUS_SUCCESS)
     {
 	err = globus_error_get(rc);
@@ -719,12 +757,17 @@ globus_io_register_writev(
 				    callback, /* iov_callback */
 				    callback_arg); /*argument*/
 
-    rc = globus_i_io_register_write_func(handle,
-					 globus_l_io_writev_callback,
-					 (void *) writev_info,
-					 globus_l_io_write_info_destroy);
+    rc = globus_i_io_register_operation(
+        handle,
+        globus_l_io_writev_callback,
+        writev_info,
+        globus_l_io_write_info_destroy,
+        GLOBUS_TRUE,
+        GLOBUS_I_IO_WRITE_OPERATION);
+            
     if(rc != GLOBUS_SUCCESS)
     {
+        globus_i_io_end_operation(handle, GLOBUS_I_IO_WRITE_OPERATION);
 	err = globus_error_get(rc);
 	
 	globus_l_io_write_info_destroy(writev_info);
@@ -2184,13 +2227,24 @@ globus_l_io_write_callback(
     }
     else
     {
-	/* write not yet satisfied, so reregister with the event driver */
-	globus_i_io_mutex_lock();
-	globus_i_io_register_write_func(handle,
-					globus_l_io_write_callback,
-					(void *) write_info,
-					globus_l_io_write_info_destroy);
-	globus_i_io_mutex_unlock();
+        /* write not yet satisfied, so reregister with the event driver */
+        globus_i_io_mutex_lock();
+        
+        result = globus_i_io_register_operation(
+                handle,
+                globus_l_io_write_callback,
+                write_info,
+                globus_l_io_write_info_destroy,
+                GLOBUS_TRUE,
+                GLOBUS_I_IO_WRITE_OPERATION);
+
+        globus_i_io_mutex_unlock();
+        
+        if(result != GLOBUS_SUCCESS)
+        {
+            err = globus_error_get(result);
+            goto error_exit;
+        }
     }
 
     return;
@@ -2285,13 +2339,24 @@ globus_l_io_send_callback(
     }
     else
     {
-	/* write not yet satisfied, so reregister with the event driver */
-	globus_i_io_mutex_lock();
-	globus_i_io_register_write_func(handle,
-					globus_l_io_send_callback,
-					(void *) write_info,
-					globus_l_io_write_info_destroy);
-	globus_i_io_mutex_unlock();
+        /* write not yet satisfied, so reregister with the event driver */
+        globus_i_io_mutex_lock();
+        
+        result = globus_i_io_register_operation(
+            handle,
+            globus_l_io_send_callback,
+            write_info,
+            globus_l_io_write_info_destroy,
+            GLOBUS_TRUE,
+            GLOBUS_I_IO_WRITE_OPERATION);
+
+        globus_i_io_mutex_unlock();
+        
+        if(result != GLOBUS_SUCCESS)
+        {
+            err = globus_error_get(result);
+            goto error_exit;
+        }
     }
 
     return;
@@ -2422,12 +2487,23 @@ globus_l_io_writev_callback(
     }
     else
     {
-	globus_i_io_mutex_lock();
-	globus_i_io_register_write_func(handle,
-					globus_l_io_writev_callback,
-					(void *) writev_info,
-					globus_l_io_write_info_destroy);
-	globus_i_io_mutex_unlock();
+        globus_i_io_mutex_lock();
+        
+        result = globus_i_io_register_operation(
+            handle,
+            globus_l_io_writev_callback,
+            writev_info,
+            globus_l_io_write_info_destroy,
+            GLOBUS_TRUE,
+            GLOBUS_I_IO_WRITE_OPERATION);
+
+        globus_i_io_mutex_unlock();
+        
+        if(result != GLOBUS_SUCCESS)
+        {
+            err = globus_error_get(result);
+            goto error_exit;
+        }
     }
     return;
 
@@ -2582,12 +2658,23 @@ globus_l_io_sendmsg_callback(
     }
     else
     {
-	globus_i_io_mutex_lock();
-	globus_i_io_register_write_func(handle,
-					globus_l_io_writev_callback,
-					(void *) writev_info,
-					globus_l_io_write_info_destroy);
-	globus_i_io_mutex_unlock();
+        globus_i_io_mutex_lock();
+        
+        result = globus_i_io_register_operation(
+            handle,
+            globus_l_io_writev_callback,
+            writev_info,
+            globus_l_io_write_info_destroy,
+            GLOBUS_TRUE,
+            GLOBUS_I_IO_WRITE_OPERATION);
+
+        globus_i_io_mutex_unlock();
+        
+        if(result != GLOBUS_SUCCESS)
+        {
+            err = globus_error_get(result);
+            goto error_exit;
+        }
     }
     return;
 

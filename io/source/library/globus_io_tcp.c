@@ -300,40 +300,69 @@ globus_io_tcp_register_connect(
     if(handle->securesocket_attr.authentication_mode ==
        GLOBUS_IO_SECURE_AUTHENTICATION_MODE_NONE)
     {
-	globus_i_io_callback_info_t *	info;
-	
-	info = (globus_i_io_callback_info_t *)
-	    globus_malloc(sizeof(globus_i_io_callback_info_t));
-	info->callback = callback;
-	info->callback_arg = callback_arg;
-	
-	rc = globus_i_io_register_write_func(handle,
-					     globus_i_io_connect_callback,
-					     info,
-					     globus_i_io_default_destructor);
+        globus_i_io_callback_info_t *   info;
+        
+        info = (globus_i_io_callback_info_t *)
+            globus_malloc(sizeof(globus_i_io_callback_info_t));
+        info->callback = callback;
+        info->callback_arg = callback_arg;
+        
+        rc = globus_i_io_start_operation(
+            handle,
+            GLOBUS_I_IO_WRITE_OPERATION);
+        
+        if(rc == GLOBUS_SUCCESS)
+        {
+            rc = globus_i_io_register_operation(
+                handle,
+                globus_i_io_connect_callback,
+                info,
+                globus_i_io_default_destructor,
+                GLOBUS_TRUE,
+                GLOBUS_I_IO_WRITE_OPERATION);
+            
+            if(rc != GLOBUS_SUCCESS)
+            {
+                globus_i_io_end_operation(handle, GLOBUS_I_IO_WRITE_OPERATION);
+            }
+        }
     }
     else
     {
-	globus_i_io_callback_info_t *	info;
-	
-	info = (globus_i_io_callback_info_t *)
-	    globus_malloc(sizeof(globus_i_io_callback_info_t));
-	info->callback = callback;
-	info->callback_arg = callback_arg;
-	
-	rc = globus_i_io_register_write_func(handle,
-					     globus_i_io_securesocket_register_connect_callback,
-					     info,
-					     globus_i_io_default_destructor);
+        globus_i_io_callback_info_t *   info;
+        
+        info = (globus_i_io_callback_info_t *)
+            globus_malloc(sizeof(globus_i_io_callback_info_t));
+        info->callback = callback;
+        info->callback_arg = callback_arg;
+        
+        rc = globus_i_io_start_operation(
+            handle,
+            GLOBUS_I_IO_READ_OPERATION | GLOBUS_I_IO_WRITE_OPERATION);
+        
+        if(rc == GLOBUS_SUCCESS)
+        {
+            rc = globus_i_io_register_operation(
+                handle,
+                globus_i_io_securesocket_register_connect_callback,
+                info,
+                globus_i_io_default_destructor,
+                GLOBUS_TRUE,
+                GLOBUS_I_IO_WRITE_OPERATION);
+            
+            if(rc != GLOBUS_SUCCESS)
+            {
+                globus_i_io_end_operation(handle, GLOBUS_I_IO_WRITE_OPERATION);
+            }
+        }
     }
-    
-    err = globus_error_get(rc);
 
     globus_i_io_mutex_unlock();
 
     if(rc != GLOBUS_SUCCESS)
     {
-	goto error_exit;
+        err = globus_error_get(rc);
+        goto error_exit;
     }
     
     return GLOBUS_SUCCESS;
@@ -932,29 +961,59 @@ globus_io_tcp_register_accept(
     if(new_handle->securesocket_attr.authentication_mode ==
        GLOBUS_IO_SECURE_AUTHENTICATION_MODE_NONE)
     {
-	new_handle->state = GLOBUS_IO_HANDLE_STATE_CONNECTED;
-	globus_i_io_register_write_func(new_handle,
-				      callback,
-				      callback_arg,
-				      GLOBUS_NULL);
+        new_handle->state = GLOBUS_IO_HANDLE_STATE_CONNECTED;
+        
+        rc = globus_i_io_start_operation(
+            new_handle,
+            GLOBUS_I_IO_WRITE_OPERATION);
+        
+        if(rc == GLOBUS_SUCCESS)
+        {
+            rc = globus_i_io_register_operation(
+                new_handle,
+                callback,
+                callback_arg,
+                GLOBUS_NULL,
+                GLOBUS_TRUE,
+                GLOBUS_I_IO_WRITE_OPERATION);
+            
+            if(rc != GLOBUS_SUCCESS)
+            {
+                globus_i_io_end_operation(handle, GLOBUS_I_IO_WRITE_OPERATION);
+            }
+        }
     }
     else
     {
-	globus_i_io_callback_info_t *	info;
-	
-	info = (globus_i_io_callback_info_t *)
-	    globus_malloc(sizeof(globus_i_io_callback_info_t));
-	info->callback = callback;
-	info->callback_arg = callback_arg;
-	
-	rc = globus_i_io_securesocket_register_accept(new_handle,
-						      globus_i_io_accept_callback,
-						      info);
-	if(rc != GLOBUS_SUCCESS)
-	{
-	    err = globus_error_get(rc);
-	    goto error_exit;
-	}
+        globus_i_io_callback_info_t *   info;
+        
+        info = (globus_i_io_callback_info_t *)
+            globus_malloc(sizeof(globus_i_io_callback_info_t));
+        info->callback = callback;
+        info->callback_arg = callback_arg;
+        
+        rc = globus_i_io_start_operation(
+            new_handle,
+            GLOBUS_I_IO_READ_OPERATION | GLOBUS_I_IO_WRITE_OPERATION);
+        
+        if(rc == GLOBUS_SUCCESS)
+        {
+            rc = globus_i_io_securesocket_register_accept(
+                new_handle,
+                globus_i_io_accept_callback,
+                info);
+            
+            if(rc != GLOBUS_SUCCESS)
+            {
+                globus_i_io_end_operation(handle, GLOBUS_I_IO_WRITE_OPERATION);
+            }
+        }
+    }
+    
+    if(rc != GLOBUS_SUCCESS)
+    {
+        err = globus_error_get(rc);
+        goto error_exit;
     }
     
     globus_i_io_debug_printf(1, (stderr, "%s(): exit\n",

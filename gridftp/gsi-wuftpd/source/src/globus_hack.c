@@ -1678,7 +1678,8 @@ g_receive_data(
 		globus_callback_unregister(
 		    g_monitor.callback_handle,
 		    GLOBUS_NULL,
-		    GLOBUS_NULL);
+		    GLOBUS_NULL,
+            GLOBUS_NULL);
 
                 G_EXIT();
                 perror_reply(451, "Local resource failure: malloc");
@@ -1734,7 +1735,8 @@ g_receive_data(
 	    globus_callback_unregister(
 		    g_monitor.callback_handle,
 		    GLOBUS_NULL,
-		    GLOBUS_NULL);
+		    GLOBUS_NULL,
+            GLOBUS_NULL);
 
             G_EXIT();
 	    goto bail;
@@ -1781,6 +1783,7 @@ g_receive_data(
     globus_callback_unregister(
         g_monitor.callback_handle,
         GLOBUS_NULL,
+        GLOBUS_NULL,
         GLOBUS_NULL);
 
     alarm(0);
@@ -1804,6 +1807,7 @@ g_receive_data(
     globus_callback_unregister(
         g_monitor.callback_handle,
         GLOBUS_NULL,
+        GLOBUS_NULL,
         GLOBUS_NULL);
 
     alarm(0);
@@ -1822,6 +1826,7 @@ g_receive_data(
     G_File_Close(&g_monitor.io_handle, 0);
     globus_callback_unregister(
         g_monitor.callback_handle,
+        GLOBUS_NULL,
         GLOBUS_NULL,
         GLOBUS_NULL);
 

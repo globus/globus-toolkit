@@ -814,7 +814,8 @@ cancel_handler(
         globus_callback_handle_t *   handle;
 
         handle = (globus_callback_handle_t *) user_arg;
-        globus_callback_unregister(*handle, GLOBUS_NULL, GLOBUS_NULL);
+        globus_callback_unregister(
+            *handle, GLOBUS_NULL, GLOBUS_NULL, GLOBUS_NULL);
         globus_mutex_lock(&cancel_signal_mutex);
         {
             verbose_printf(3, "signaling cancel_signal_cond\n");
@@ -1151,7 +1152,8 @@ random_stress_count_handler(
         }
         else if(*x == 50)
         {
-            globus_callback_unregister(stress_callback_handle, GLOBUS_NULL, GLOBUS_NULL);
+            globus_callback_unregister(
+                stress_callback_handle, GLOBUS_NULL, GLOBUS_NULL, GLOBUS_NULL);
             random_stress_registered = GLOBUS_FALSE;
         }
     }

@@ -681,12 +681,27 @@ globus_i_io_register_read(
     read_info->nbytes_read = 0;
     read_info->arg = callback_arg;
     read_info->callback = callback;
-
-    rc = globus_i_io_register_read_func(handle,
-				        globus_l_io_read_callback,
-				        (void *) read_info,
-				        globus_i_io_default_destructor,
-					GLOBUS_TRUE);
+    
+    rc = globus_i_io_start_operation(
+        handle,
+        GLOBUS_I_IO_READ_OPERATION);
+    
+    if(rc == GLOBUS_SUCCESS)
+    {
+        rc = globus_i_io_register_operation(
+            handle,
+            globus_l_io_read_callback,
+            read_info,
+            globus_i_io_default_destructor,
+            GLOBUS_TRUE,
+            GLOBUS_I_IO_READ_OPERATION);
+        
+        if(rc != GLOBUS_SUCCESS)
+        {
+            globus_i_io_end_operation(handle, GLOBUS_I_IO_READ_OPERATION);
+        }
+    }
+    
     if(rc != GLOBUS_SUCCESS)
     {
 	err = globus_error_get(rc);
@@ -847,14 +862,25 @@ globus_l_io_read_callback(
 	    }
 	    else
 	    {
-		globus_i_io_mutex_lock();
-		globus_i_io_register_read_func(handle,
-					       globus_l_io_read_callback,
-					       (void *)read_info,
-					       globus_i_io_default_destructor,
-					       GLOBUS_TRUE);
-		globus_i_io_mutex_unlock();
-	        done = GLOBUS_TRUE;
+            globus_i_io_mutex_lock();
+            
+            result = globus_i_io_register_operation(
+                handle,
+                globus_l_io_read_callback,
+                read_info,
+                globus_i_io_default_destructor,
+                GLOBUS_TRUE,
+                GLOBUS_I_IO_READ_OPERATION);
+            
+            globus_i_io_mutex_unlock();
+            
+            if(result != GLOBUS_SUCCESS)
+            {
+                err = globus_error_get(result);
+                goto error_exit;
+            }
+            
+            done = GLOBUS_TRUE;
 	    }
 	}
 	else if (n_read == 0)
@@ -885,12 +911,23 @@ globus_l_io_read_callback(
 	    {
 		/* We've read all we can for now.  So repost the read. */
 		globus_i_io_mutex_lock();
-		globus_i_io_register_read_func(handle,
-					       globus_l_io_read_callback,
-					       (void *) read_info,
-					       globus_i_io_default_destructor,
-					       GLOBUS_TRUE);
+		
+		result = globus_i_io_register_operation(
+            handle,
+            globus_l_io_read_callback,
+            read_info,
+            globus_i_io_default_destructor,
+            GLOBUS_TRUE,
+            GLOBUS_I_IO_READ_OPERATION);
+		
 		globus_i_io_mutex_unlock();
+		
+		if(result != GLOBUS_SUCCESS)
+        {
+            err = globus_error_get(result);
+            goto error_exit;
+        }
+            
 		done = GLOBUS_TRUE;
 	    }
 	    else

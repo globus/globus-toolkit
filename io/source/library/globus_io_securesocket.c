@@ -82,13 +82,6 @@ typedef struct
 } globus_io_secure_read_info_t;
 
 static
-void
-globus_l_io_oneshot_auth_callback(
-    const globus_abstime_t *            time_now,
-    const globus_abstime_t *            time_stop,
-    void *                              user_args);
-
-static
 globus_bool_t
 globus_l_io_is_ssl_packet(void * token);
 
@@ -296,7 +289,6 @@ globus_i_io_securesocket_register_accept(
     OM_uint32                   maj_stat;
     OM_uint32                   min_stat;
     globus_object_t *               err;
-    globus_reltime_t                    delay_time;
     
     info = (globus_i_io_callback_info_t *)
         globus_malloc(sizeof(globus_i_io_callback_info_t));
@@ -319,16 +311,10 @@ globus_i_io_securesocket_register_accept(
                 (int) maj_stat,
                 (int) min_stat,
                 0);
-
-            info->err = err;
-            GlobusTimeReltimeSet(delay_time, 0, 0);
-            globus_callback_space_register_oneshot(
-                GLOBUS_NULL,
-                &delay_time,
-                globus_l_io_oneshot_auth_callback,
-                (void *) info,
-                handle->socket_attr.space);
-            return GLOBUS_SUCCESS;
+            
+            globus_free(info);
+            
+            return globus_error_put(err);
         }
     }
 
@@ -356,16 +342,10 @@ globus_i_io_securesocket_register_accept(
                 (int) maj_stat,
                 (int) min_stat,
                 0);
-
-            info->err = err;
-            GlobusTimeReltimeSet(delay_time, 0, 0);
-            globus_callback_space_register_oneshot(
-                GLOBUS_NULL,
-                &delay_time,
-                globus_l_io_oneshot_auth_callback,
-                (void *) info,
-                handle->socket_attr.space);
-            return GLOBUS_SUCCESS;
+            
+            globus_free(info);
+            
+            return globus_error_put(err);
         }
     }
     
@@ -423,15 +403,14 @@ globus_i_io_securesocket_register_accept(
     /* I need a token before I can start the iterations, so:
      */
     accept_info->maj_stat = GSS_S_CONTINUE_NEEDED;
-
-    globus_i_io_register_read_func(
+    
+    return globus_i_io_register_operation(
         handle,
         globus_l_io_read_auth_token,
-        (void *) accept_info,
+        accept_info,
         GLOBUS_NULL,
-        GLOBUS_TRUE);
-
-    return GLOBUS_SUCCESS;
+        GLOBUS_TRUE,
+        GLOBUS_I_IO_READ_OPERATION);
 }
 /* globus_i_io_securesocket_register_accept() */
 
@@ -1645,12 +1624,14 @@ globus_l_io_secure_read_callback(
     else
     {
         /* re-register read */
-        rc = globus_i_io_register_read_func(
+        rc = globus_i_io_register_operation(
             handle,
             globus_l_io_secure_read_callback,
             secure_read_info,
             globus_i_io_default_destructor,
-            GLOBUS_TRUE);
+            GLOBUS_TRUE,
+            GLOBUS_I_IO_READ_OPERATION);
+        
         if(rc != GLOBUS_SUCCESS)
         {
             err = globus_error_get(rc);
@@ -1809,13 +1790,16 @@ globus_i_io_securesocket_register_read(
          * copied enough data from the buffer, otherwise, we just need
          * to kick out an event from the handle_events loop
          */
-        rc = globus_i_io_register_read_func(handle,
-                                            globus_l_io_secure_read_callback,
-                                            secure_read_info,
-                                            globus_i_io_default_destructor,
-                                            (num_read >= wait_for_nbytes)
-                                            ? GLOBUS_FALSE /* don't select */
-                                            : GLOBUS_TRUE /* select */);
+        rc = globus_i_io_register_operation(
+            handle,
+            globus_l_io_secure_read_callback,
+            secure_read_info,
+            globus_i_io_default_destructor,
+            num_read >= wait_for_nbytes
+                ? GLOBUS_FALSE
+                : GLOBUS_TRUE,
+            GLOBUS_I_IO_READ_OPERATION);
+            
         if(rc != GLOBUS_SUCCESS)
         {
             err = globus_error_get(rc);
@@ -1911,43 +1895,46 @@ globus_l_io_init_sec_context(
             0);
         goto error_exit;
     }
-
+    
+    result = GLOBUS_SUCCESS;
+    
     if(init_info->output_buflen != 0)
     {
         /* send token asynchronously. When completed, this will register
          * a receive of the input token, or call the user code, depending
          * on init_info->maj_stat
          */
-        globus_i_io_register_write_func(
+        result = globus_i_io_register_operation(
             handle,
             globus_l_io_write_auth_token,
-            (void *) init_info,
-            GLOBUS_NULL);
-        globus_i_io_mutex_unlock();
+            init_info,
+            GLOBUS_NULL,
+            GLOBUS_TRUE,
+            GLOBUS_I_IO_WRITE_OPERATION);
     }
     else
     {
         if(init_info->maj_stat == GSS_S_CONTINUE_NEEDED)
         {
             /* get another token */
-            globus_i_io_register_read_func(
+            result = globus_i_io_register_operation(
                 handle,
                 globus_l_io_read_auth_token,
-                (void *) init_info,
+                init_info,
                 GLOBUS_NULL,
-                GLOBUS_TRUE);
-            globus_i_io_mutex_unlock();
+                GLOBUS_TRUE,
+                GLOBUS_I_IO_READ_OPERATION);
         }
         else
         {
-            result = GLOBUS_SUCCESS;
             if(handle->securesocket_attr.auth_callback)
             {
                 result = globus_l_io_securesocket_call_auth_callback(handle);
                 if(result != GLOBUS_SUCCESS)
                 {
                     /* not authorized */
-                    globus_i_io_close(handle);
+                    err = globus_error_get(result);
+                    goto error_exit;
                 }
             }
             globus_i_io_mutex_unlock();
@@ -1955,12 +1942,22 @@ globus_l_io_init_sec_context(
             /* completed */
             init_info->callback(init_info->callback_arg,
                                 handle,
-                                result,
+                                GLOBUS_SUCCESS,
                                 init_info);
             globus_free(init_info);
+            
+            goto exit;
         }
     }
     
+    if(result != GLOBUS_SUCCESS)
+    {
+        err = globus_error_get(result);
+        goto error_exit;
+    }
+    
+    globus_i_io_mutex_unlock();
+exit:    
     globus_i_io_debug_printf(3, (stderr, 
         "globus_l_io_init_sec_context(): exiting, fd=%d\n", 
         handle->fd));
@@ -1968,7 +1965,7 @@ globus_l_io_init_sec_context(
     return;
     
 error_exit:
-
+    
     err = globus_io_error_construct_authentication_failed(
         GLOBUS_IO_MODULE,
         err,
@@ -1976,7 +1973,7 @@ error_exit:
         (int) init_info->maj_stat,
         (int) init_info->min_stat,
         0);
-
+        
     globus_i_io_close(handle);
 
     globus_i_io_mutex_unlock();
@@ -2052,30 +2049,34 @@ globus_l_io_accept_sec_context(
             0);
         goto error_exit;
     }
-
+    
+    result = GLOBUS_SUCCESS;
     if(accept_info->output_buflen != 0)
     {
         /* send token asynchronously. When completed, this will register
          * a receive of the input token, or call the user code, depending
          * on init_info->maj_stat
          */
-        globus_i_io_register_write_func(
+        result = globus_i_io_register_operation(
             handle,
             globus_l_io_write_auth_token,
-            (void *) accept_info,
-            GLOBUS_NULL);
+            accept_info,
+            GLOBUS_NULL,
+            GLOBUS_TRUE,
+            GLOBUS_I_IO_WRITE_OPERATION);
     }
     else
     {
         if(accept_info->maj_stat == GSS_S_CONTINUE_NEEDED)
         {
             /* get another token */
-            globus_i_io_register_read_func(
+            result = globus_i_io_register_operation(
                 handle,
                 globus_l_io_read_auth_token,
-                (void *) accept_info,
+                accept_info,
                 GLOBUS_NULL,
-                GLOBUS_TRUE);
+                GLOBUS_TRUE,
+                GLOBUS_I_IO_READ_OPERATION);
         }
         else
         {
@@ -2094,7 +2095,13 @@ globus_l_io_accept_sec_context(
             return;
         }
     }
-
+    
+    if(result != GLOBUS_SUCCESS)
+    {
+        err = globus_error_get(result);
+        goto error_exit;
+    }
+    
     globus_i_io_mutex_unlock();
 
     return;
@@ -2275,12 +2282,13 @@ globus_l_io_write_auth_token(
     /* once we've sent a token, and we know that we are not done yet,
      * we need to read another token to feed into the iterator
      */
-    result = globus_i_io_register_read_func(
+    result = globus_i_io_register_operation(
         handle,
         globus_l_io_read_auth_token,
-        (void *) init_info,
+        init_info,
         GLOBUS_NULL,
-        GLOBUS_TRUE);
+        GLOBUS_TRUE,
+        GLOBUS_I_IO_READ_OPERATION);
 
     if(result != GLOBUS_SUCCESS)
     {
@@ -2299,12 +2307,22 @@ do_return:
     return;
 
 continue_write:
-    globus_i_io_register_write_func(
+
+    result = globus_i_io_register_operation(
         handle,
         globus_l_io_write_auth_token,
-        (void *) init_info,
-        GLOBUS_NULL);
+        init_info,
+        GLOBUS_NULL,
+        GLOBUS_TRUE,
+        GLOBUS_I_IO_WRITE_OPERATION);
+    
+    if(result != GLOBUS_SUCCESS)
+    {
+        err = globus_error_get(result);
 
+        goto error_exit;
+    }
+    
     globus_i_io_mutex_unlock();
     
     globus_i_io_debug_printf(3, (stderr, 
@@ -2383,13 +2401,14 @@ globus_l_io_read_auth_token(
     
         goto do_return;
     }
-
-    result = globus_i_io_register_read_func(
+    
+    result = globus_i_io_register_operation(
         handle,
         globus_l_io_read_auth_token,
-        (void *) init_info,
+        init_info,
         GLOBUS_NULL,
-        GLOBUS_TRUE);
+        GLOBUS_TRUE,
+        GLOBUS_I_IO_READ_OPERATION);
 
     if(result != GLOBUS_SUCCESS)
     {
@@ -2652,24 +2671,6 @@ error_exit:
     globus_free(callback_info);
 }
 /* globus_l_io_secure_accept_callback() */
-
-static
-void
-globus_l_io_oneshot_auth_callback(
-    const globus_abstime_t *            time_now,
-    const globus_abstime_t *            time_stop,
-    void *                              user_args)
-{
-    globus_i_io_callback_info_t *   info;
-
-    info = (globus_i_io_callback_info_t *) user_args;
-
-    info->callback(info->callback_arg,
-                   info->handle,
-                   globus_error_put(info->err));
-    globus_free(info);
-}
-/* globus_l_io_oneshot_auth_callback() */
 
 static
 globus_bool_t
@@ -2988,16 +2989,29 @@ globus_io_register_init_delegation(
     
     globus_i_io_mutex_lock();
     
-    globus_i_io_register_read_func(
-                handle,
-                globus_l_io_init_delegation,
-                init_info,
-                GLOBUS_NULL,
-                GLOBUS_FALSE);
+    rc = globus_i_io_start_operation(
+        handle,
+        GLOBUS_I_IO_READ_OPERATION | GLOBUS_I_IO_WRITE_OPERATION);
+    
+    if(rc == GLOBUS_SUCCESS)
+    {
+        rc = globus_i_io_register_operation(
+            handle,
+            globus_l_io_init_delegation,
+            init_info,
+            GLOBUS_NULL,
+            GLOBUS_FALSE,
+            GLOBUS_I_IO_READ_OPERATION);
+        
+        if(rc != GLOBUS_SUCCESS)
+        {
+            globus_i_io_end_operation(handle, GLOBUS_I_IO_READ_OPERATION);
+        }
+    }
     
     globus_i_io_mutex_unlock();
     
-    return GLOBUS_SUCCESS;
+    return rc;
 } /* globus_io_register_init_delegation */
 
 
@@ -3221,16 +3235,29 @@ globus_io_register_accept_delegation(
     
     globus_i_io_mutex_lock();
     
-    globus_i_io_register_read_func(
-                handle,
-                globus_l_io_accept_delegation,
-                accept_info,
-                GLOBUS_NULL,
-                GLOBUS_FALSE);
+    rc = globus_i_io_start_operation(
+        handle,
+        GLOBUS_I_IO_READ_OPERATION | GLOBUS_I_IO_WRITE_OPERATION);
+    
+    if(rc == GLOBUS_SUCCESS)
+    {
+        rc = globus_i_io_register_operation(
+            handle,
+            globus_l_io_accept_delegation,
+            accept_info,
+            GLOBUS_NULL,
+            GLOBUS_FALSE,
+            GLOBUS_I_IO_READ_OPERATION);
+        
+        if(rc != GLOBUS_SUCCESS)
+        {
+            globus_i_io_end_operation(handle, GLOBUS_I_IO_READ_OPERATION);
+        }
+    }
     
     globus_i_io_mutex_unlock();
     
-    return GLOBUS_SUCCESS;
+    return rc;
 }
 
 
@@ -3421,31 +3448,33 @@ globus_l_io_init_delegation(
     init_info->output_buflen = output_token.length;
     init_info->output_buffer = output_token.value;
     
+    result = GLOBUS_SUCCESS;
     if(init_info->output_buflen != 0)
     {
         /* send token asynchronously. When completed, this will register
          * a receive of the input token, or call the user code, depending
          * on init_info->maj_stat
          */
-        globus_i_io_register_write_func(
+        result = globus_i_io_register_operation(
             handle,
             globus_l_io_write_auth_token,
-            (void *) init_info,
-            GLOBUS_NULL);
-        globus_i_io_mutex_unlock();
+            init_info,
+            GLOBUS_NULL,
+            GLOBUS_TRUE,
+            GLOBUS_I_IO_WRITE_OPERATION);
     }
     else
     {
         if(init_info->maj_stat == GSS_S_CONTINUE_NEEDED)
         {
             /* get another token */
-            globus_i_io_register_read_func(
+            result = globus_i_io_register_operation(
                 handle,
                 globus_l_io_read_auth_token,
-                (void *) init_info,
+                init_info,
                 GLOBUS_NULL,
-                GLOBUS_TRUE);
-            globus_i_io_mutex_unlock();
+                GLOBUS_TRUE,
+                GLOBUS_I_IO_READ_OPERATION);
         }
         else
         {
@@ -3457,8 +3486,19 @@ globus_l_io_init_delegation(
                                 GLOBUS_SUCCESS,
                                 init_info);
             globus_free(init_info);
+            
+            return;
         }
     }
+    
+    if(result != GLOBUS_SUCCESS)
+    {
+        err = globus_error_get(result);
+        goto error_exit;
+    }
+    
+    globus_i_io_mutex_unlock();
+    
     return;
     
 error_exit:
@@ -3548,31 +3588,33 @@ globus_l_io_accept_delegation(
     accept_info->output_buflen = output_token.length;
     accept_info->output_buffer = output_token.value;
     
+    result = GLOBUS_SUCCESS;
     if(accept_info->output_buflen != 0)
     {
         /* send token asynchronously. When completed, this will register
          * a receive of the input token, or call the user code, depending
          * on accept_info->maj_stat
          */
-        globus_i_io_register_write_func(
+        result = globus_i_io_register_operation(
             handle,
             globus_l_io_write_auth_token,
-            (void *) accept_info,
-            GLOBUS_NULL);
-        globus_i_io_mutex_unlock();
+            accept_info,
+            GLOBUS_NULL,
+            GLOBUS_TRUE,
+            GLOBUS_I_IO_WRITE_OPERATION);
     }
     else
     {
         if(accept_info->maj_stat == GSS_S_CONTINUE_NEEDED)
         {
             /* get another token */
-            globus_i_io_register_read_func(
+            result = globus_i_io_register_operation(
                 handle,
                 globus_l_io_read_auth_token,
-                (void *) accept_info,
+                accept_info,
                 GLOBUS_NULL,
-                GLOBUS_TRUE);
-            globus_i_io_mutex_unlock();
+                GLOBUS_TRUE,
+                GLOBUS_I_IO_READ_OPERATION);
         }
         else
         {
@@ -3584,8 +3626,17 @@ globus_l_io_accept_delegation(
                                   GLOBUS_SUCCESS,
                                   accept_info);
             globus_free(accept_info);
+            return;
         }
     }
+    
+    if(result != GLOBUS_SUCCESS)
+    {
+        err = globus_error_get(result);
+        goto error_exit;
+    }
+    
+    globus_i_io_mutex_unlock();
     return;
     
 error_exit:

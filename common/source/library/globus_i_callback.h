@@ -41,16 +41,6 @@
             (func),                                                         \
             (argument)))
 
-#define GLOBUS_L_CALLBACK_CONSTRUCT_CANCEL_RUNNING(func)                    \
-    globus_error_put(                                                       \
-        globus_error_construct_error(                                       \
-            GLOBUS_CALLBACK_MODULE,                                         \
-            GLOBUS_NULL,                                                    \
-            GLOBUS_CALLBACK_ERROR_CANCEL_RUNNING,                           \
-            "[%s] Attempt to unregister a running callback, unregister has" \
-            " been deferred.",                                              \
-            (func)))
-
 #define GLOBUS_L_CALLBACK_CONSTRUCT_ALREADY_CANCELED(func)                  \
     globus_error_put(                                                       \
         globus_error_construct_error(                                       \

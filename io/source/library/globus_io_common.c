@@ -459,12 +459,26 @@ globus_io_register_listen(
 	goto error_exit;
     }
     
+    rc = globus_i_io_start_operation(
+        handle,
+        GLOBUS_I_IO_READ_OPERATION);
+    
+    if(rc == GLOBUS_SUCCESS)
+    {
+        rc = globus_i_io_register_operation(
+            handle,
+            callback,
+            callback_arg,
+            GLOBUS_NULL,
+            GLOBUS_TRUE,
+            GLOBUS_I_IO_READ_OPERATION);
+        
+        if(rc != GLOBUS_SUCCESS)
+        {
+            globus_i_io_end_operation(handle, GLOBUS_I_IO_READ_OPERATION);
+        }
+    }
 
-    rc = globus_i_io_register_read_func(handle,
-					callback,
-					callback_arg,
-					GLOBUS_NULL,
-					GLOBUS_TRUE);
     if(rc != GLOBUS_SUCCESS)
     {
 	err = globus_error_get(rc);

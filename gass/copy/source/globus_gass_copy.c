@@ -1131,7 +1131,7 @@ globus_l_gass_copy_perf_cancel_local_callback(
     globus_gass_copy_perf_info_t *          perf_info)
 {
     globus_callback_unregister(
-        perf_info->local_cb_handle, GLOBUS_NULL, GLOBUS_NULL);
+        perf_info->local_cb_handle, GLOBUS_NULL, GLOBUS_NULL, GLOBUS_NULL);
 }
 
 static

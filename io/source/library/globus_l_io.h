@@ -113,6 +113,13 @@ extern globus_bool_t                      g_globus_i_io_use_netlogger;
 #endif
 #endif
 
+typedef enum
+{
+    GLOBUS_I_IO_READ_OPERATION,
+    GLOBUS_I_IO_WRITE_OPERATION,
+    GLOBUS_I_IO_EXCEPT_OPERATION
+} globus_i_io_operation_type_t;
+
 extern globus_mutex_t			globus_i_io_mutex;
 extern globus_cond_t			globus_l_io_cond;
 extern int			        globus_i_io_mutex_cnt;
@@ -250,19 +257,23 @@ globus_i_io_setup_nonblocking(
     globus_io_handle_t *		handle);
 
 globus_result_t
-globus_i_io_register_read_func(
-    globus_io_handle_t *		handle,
-    globus_io_callback_t		callback_func,
-    void *				callback_arg,
-    globus_io_destructor_t 		arg_destructor,
-    globus_bool_t			select_before_callback);
+globus_i_io_start_operation(
+    globus_io_handle_t *                handle,
+    globus_i_io_operation_type_t        ops);
+
+void
+globus_i_io_end_operation(
+    globus_io_handle_t *                handle,
+    globus_i_io_operation_type_t        op);
 
 globus_result_t
-globus_i_io_register_write_func(
-    globus_io_handle_t *		handle,
-    globus_io_callback_t		callback_func,
-    void *				callback_arg,
-    globus_io_destructor_t 		arg_destructor);
+globus_i_io_register_operation(
+    globus_io_handle_t *                handle,
+    globus_io_callback_t                callback_func,
+    void *                              callback_arg,
+    globus_io_destructor_t              arg_destructor,
+    globus_bool_t                       needs_select,
+    globus_i_io_operation_type_t        op);
 
 /* internal functions defined in globus_io_read.c */
 globus_result_t

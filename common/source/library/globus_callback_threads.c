@@ -678,7 +678,8 @@ globus_result_t
 globus_callback_unregister(
     globus_callback_handle_t            callback_handle,
     globus_callback_func_t              unregister_callback,
-    void *                              unreg_args)
+    void *                              unreg_args,
+    globus_bool_t *                     active)
 {
     globus_l_callback_info_t *          callback_info;
     
@@ -739,11 +740,12 @@ globus_callback_unregister(
         /* this decrements the user's reference */
         globus_l_callback_info_dec_ref(callback_handle);
         
-        /* this is not really an error, just informing the user that I have
-         * deffered the cancel until the callback is no longer running
-         */
-        return GLOBUS_L_CALLBACK_CONSTRUCT_CANCEL_RUNNING(
-            "globus_callback_unregister");
+        if(active)
+        {
+            *active = GLOBUS_TRUE;
+        }
+        
+        return GLOBUS_SUCCESS;
     }
     else
     {
@@ -781,6 +783,11 @@ globus_callback_unregister(
         {
             /* not kicking one out, so decr last ref */
             globus_l_callback_info_dec_ref(callback_handle);
+        }
+        
+        if(active)
+        {
+            *active = GLOBUS_FALSE;
         }
         
         return GLOBUS_SUCCESS;

@@ -3761,6 +3761,7 @@ globus_result_t
 globus_ftp_client_abort(
     globus_ftp_client_handle_t *		u_handle)
 {
+    globus_bool_t                   active;
     globus_object_t *				err;
     globus_result_t				result;
     globus_i_ftp_client_handle_t *		handle;
@@ -3910,12 +3911,13 @@ globus_ftp_client_abort(
 	goto unlock_error;
 
     case GLOBUS_FTP_CLIENT_HANDLE_RESTART:
-	result = globus_callback_unregister(
+	globus_callback_unregister(
 	    handle->restart_info->callback_handle,
 	    GLOBUS_NULL,
-	    GLOBUS_NULL);
+	    GLOBUS_NULL,
+	    &active);
 
-	if(result != GLOBUS_SUCCESS)
+	if(active)
 	{
 	    /* 
 	     * The callback is about to start, but needs the lock. We will just

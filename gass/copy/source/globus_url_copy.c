@@ -72,7 +72,7 @@ globus_l_globus_url_copy_signal_wakeup(
     void *                              user_args);
 
 #define globus_l_globus_url_copy_remove_cancel_poll() \
-    globus_callback_unregister(globus_l_callback_handle, GLOBUS_NULL, GLOBUS_NULL)
+    globus_callback_unregister(globus_l_callback_handle, GLOBUS_NULL, GLOBUS_NULL, GLOBUS_NULL)
 #else
 #define globus_l_globus_url_copy_remove_cancel_poll()
 #endif

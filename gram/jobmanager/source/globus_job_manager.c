@@ -2376,9 +2376,11 @@ int main(int argc,
 	globus_callback_unregister(
            stat_cleanup_poll_handle,
            GLOBUS_NULL,
+           GLOBUS_NULL,
            GLOBUS_NULL);
 	globus_callback_unregister(
            gass_poll_handle,
+           GLOBUS_NULL,
            GLOBUS_NULL,
            GLOBUS_NULL);
     } /* endif */
@@ -2387,6 +2389,7 @@ int main(int argc,
     {
        globus_callback_unregister(
            ttl_update_handle,
+           GLOBUS_NULL,
            GLOBUS_NULL,
            GLOBUS_NULL);
     }
