@@ -98,6 +98,16 @@ killem ()
 {
     found=false
     foundit=false
+
+    if test -z "${GLOBUS_SH_WHOAMI}"; then
+	if test -z "${LOGNAME}"; then
+	    user=$USER
+	else
+	    user=$LOGNAME
+	fi
+    else
+	user=`${GLOBUS_SH_WHOAMI}`
+    fi
     for dir in `${GLOBUS_SH_FIND-find} ${file_location} \
         -name .gass_cache -prune -exec /bin/true {} \; -o \
         -name ${file_prefix}\* -type d -print 2>/dev/null`
@@ -128,7 +138,9 @@ killem ()
                     ${GLOBUS_SH_KILL-kill} -9 $pid &
                 fi
                 cd
+		statedir="${local_tmpdir}/${user}/`echo \"${dir}\" | sed -e 's|.*/||'`"
                 ${GLOBUS_SH_RM-rm} -rf ${dir} &
+		${GLOBUS_SH_RM-rm} -rf "${statedir}" &
             fi
         fi
     done
@@ -214,6 +226,7 @@ cleanup ()
 {
     if [ ${docleanup} = true ]; then
         ${GLOBUS_SH_RM-rm} -rf ${scratch}
+        ${GLOBUS_SH_RM-rm} -rf ${statefiledir}
         docleanup=false
     fi
 }
@@ -313,15 +326,22 @@ fi
 verify_setup
 
 scratch="${file_location}/${file_prefix}.$$"
+statefiledir="${local_tmpdir}/${user}/${file_prefix}.$$"
 
 trap cleanup 0 1 2 3 6 9 12 15
 
 
 docleanup=true
 ${GLOBUS_SH_MKDIR-mkdir} -p ${scratch}
+${GLOBUS_SH_MKDIR-mkdir} -p "${statefiledir}"
+
+if test $? != 0; then
+    echo "Error making state file dir (${statefiledir})." 1>&2
+    exit 1
+fi
 
 for file in gridmap services.conf gatekeeper.conf jobmanager.conf gatekeeper.log ; do
-    ${GLOBUS_SH_RM-rm} -f {scratch}/${file}
+    ${GLOBUS_SH_RM-rm} -f ${scratch}/${file}
 done
 
 subject=`${bindir}/grid-proxy-info -subject|sed 's!/CN=proxy!!g'`
@@ -364,6 +384,7 @@ host_osversion=`${GLOBUS_SH_UNAME-uname} -r`
 -globus-host-osversion ${host_osversion}
 -save-logfile ${log}
 -machine-type unknown
+-state-file-dir ${statefiledir}
 ${startargs}
 EOF
 

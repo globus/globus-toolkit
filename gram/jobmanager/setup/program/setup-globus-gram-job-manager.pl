@@ -26,7 +26,7 @@ my $sysconfdir	= "$globusdir/etc";
 my $libexecdir	= "$globusdir/libexec";
 my $bindir	= "$globusdir/bin";
 my $sbindir	= "$globusdir/sbin";
-my $state_dir   = "$globusdir/tmp";
+my $state_dir   = "$globusdir/tmp/gram_job_state";
 my $help	= 0;
 
 GetOptions('state-dir|s=s' => \$state_dir,
@@ -85,14 +85,14 @@ sub setup_state_dir
 	    {
 		print STDERR "WARNING: It looks like $built_path may not be on a local filesystem. WARNING: The test for local file systems is not 100% reliable. Ignore the below if this is a false positive.\n WARNING: The jobmanager requires state dir to be on a local filesystem\n WARNING: Rerun the jobmanager setup script with the -state-dir=<state dir> option.";
 	    }
-	    mkdir($built_path, 0755) ||
+	    mkdir($built_path, 0777) ||
                 die "Unable to create directory $built_path\n";
 	    chmod(0755, $built_path) ||
 	        die "Can't set permissions on $built_path\n";
 	}
     }
     
-    if(!((stat($state_dir))[2] & oct(01777)))
+    if(((stat($state_dir))[2] & oct(01777)) != oct(01777))
     {
         chmod(01777, $state_dir) || die "Can't set permissions on $state_dir\n";
     }
