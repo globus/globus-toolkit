@@ -6,6 +6,15 @@
 # description: GSI-OpenSSH server daemon
 #
 
+### BEGIN INIT INFO
+# Provides: sshd
+# Required-Start: $network
+# Required-Stop: $network
+# Default-Start: 2 3 4 5
+# Default-Stop: 0 1 6
+# Description: Start the sshd daemon
+### END INIT INFO
+
 GLOBUS_LOCATION="@GLOBUS_LOCATION@"
 export GLOBUS_LOCATION
 
