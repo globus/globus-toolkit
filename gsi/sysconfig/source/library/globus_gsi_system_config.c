@@ -2435,30 +2435,67 @@ globus_gsi_sysconfig_get_username_unix(
     char **                             username)
 {
     globus_result_t                     result = GLOBUS_SUCCESS;
-    struct passwd *                     passwd_username;
+    struct passwd                       pwd;
+    struct passwd *                     pwd_result;
+    char *                              buf;
+    int                                 buf_len;
     static char *                       _function_name_ =
         "globus_gsi_sysconfig_get_username_unix";
 
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_ENTER;
 
+    /* the below seems to be fairly portable */
     
-    passwd_username = getpwuid(geteuid());
-    
-    if(result == GLOBUS_SUCCESS && passwd_username && 
-       passwd_username->pw_name) 
-    { 
-        *username = malloc(strlen(passwd_username->pw_name) + 1);
-        if(!*username)
-        {
-            result = GLOBUS_GSI_SYSTEM_CONFIG_MALLOC_ERROR;
-            goto exit;
-        }
+    buf_len = sysconf(_SC_GETPW_R_SIZE_MAX) + 1;
 
-        strncpy(*username, passwd_username->pw_name, 
-                strlen(passwd_username->pw_name) + 1);
+    buf = malloc(buf_len);
+
+    if(buf == NULL)
+    {
+        result = GLOBUS_GSI_SYSTEM_CONFIG_MALLOC_ERROR;
+        goto exit;
+    }
+    
+    if(globus_libc_getpwuid_r(geteuid(),
+                              &pwd,
+                              buf,
+                              buf_len,
+                              &pwd_result) != 0)
+    {
+        GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_PW_ENTRY,
+            ("Error occured for uid: %d",geteuid()));        
+        goto exit;
     }
 
+    if(pwd_result == NULL || pwd_result->pwd_name == NULL)
+    {
+        GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_PW_ENTRY,
+            ("Error occured for uid: %d",geteuid()));        
+        goto exit;        
+    }
+
+    *username = malloc(strlen(pwd->pw_name) + 1);
+
+    if(!*username)
+    {
+        result = GLOBUS_GSI_SYSTEM_CONFIG_MALLOC_ERROR;
+        goto exit;
+    }
+        
+    strncpy(*username, pwd->pw_name, 
+            strlen(pwd->pw_name) + 1);
+    
  exit:
+
+    if(buf != NULL)
+    {
+        free(buf);
+    }
+    
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_EXIT;
     return result;
 }
@@ -2789,7 +2826,10 @@ globus_gsi_sysconfig_get_home_dir_unix(
     globus_gsi_statcheck_t *            status)
 {
     char *                              temp_home_dir;
-    struct passwd *                     user_info;
+    struct passwd                       pwd;
+    struct passwd *                     pwd_result;
+    char *                              buf;
+    int                                 buf_len;
     globus_result_t                     result;
     static char *                        _function_name_ =
         "globus_i_gsi_sysconfig_get_home_dir_unix";
@@ -2798,14 +2838,43 @@ globus_gsi_sysconfig_get_home_dir_unix(
 
     *home_dir = NULL;
 
-    user_info = getpwuid(geteuid());
+    /* the below seems to be fairly portable */
+    
+    buf_len = sysconf(_SC_GETPW_R_SIZE_MAX) + 1;
 
-    if(user_info && user_info->pw_dir) 
-    { 
-        temp_home_dir = malloc(strlen(user_info->pw_dir) + 1);
-        strncpy(temp_home_dir, user_info->pw_dir, 
-                strlen(user_info->pw_dir) + 1);
-    } 
+    buf = malloc(buf_len);
+
+    if(buf == NULL)
+    {
+        result = GLOBUS_GSI_SYSTEM_CONFIG_MALLOC_ERROR;
+        goto exit;
+    }
+    
+    if(globus_libc_getpwuid_r(geteuid(),
+                              &pwd,
+                              buf,
+                              buf_len,
+                              &pwd_result) != 0)
+    {
+        GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_PW_ENTRY,
+            ("Error occured for uid: %d",geteuid()));        
+        goto exit;
+    }
+
+    if(pwd_result == NULL || pwd_result->pwd_dir == NULL)
+    {
+        GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_PW_ENTRY,
+            ("Error occured for uid: %d",geteuid()));        
+        goto exit;        
+    }
+
+    temp_home_dir = malloc(strlen(pwd_result->pw_dir) + 1);
+    strncpy(temp_home_dir, pwd_result->pw_dir, 
+            strlen(pwd_result->pw_dir) + 1);
 
     if(temp_home_dir)
     {
@@ -2829,7 +2898,7 @@ globus_gsi_sysconfig_get_home_dir_unix(
             result,
             GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_HOME_DIR,
             ("Could not get a defined HOME directory for user id: %d\n",
-             getuid()));
+             geteuid()));
         goto exit;
     }
 
@@ -2837,6 +2906,11 @@ globus_gsi_sysconfig_get_home_dir_unix(
 
  exit:
 
+    if(buf != NULL)
+    {
+        free(buf);
+    }
+    
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_EXIT;
     return result;
 }
