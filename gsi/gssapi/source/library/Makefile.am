@@ -37,8 +37,10 @@ Sources_GSS_EXTENSIONS = \
 	init_delegation.c \
 	inquire_cred_by_oid.c \
 	inquire_sec_context_by_oid.c \
-	release_buffer_set.c \
-	set_sec_context_option.c 
+	buffer_set.c \
+	set_sec_context_option.c \
+	set_group.c \
+	get_group.c
 
 flavorinclude_HEADERS = \
 	gssapi.h \

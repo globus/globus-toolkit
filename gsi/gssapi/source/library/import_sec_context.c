@@ -407,7 +407,7 @@ GSS_CALLCONV gss_import_sec_context(
     if (!ssl_cipher_get_evp(s->session,
                             &s->s3->tmp.new_sym_enc,
                             &s->s3->tmp.new_hash,
-                            &s->s3->tmp.new_compression))
+                            (SSL_COMP **) &s->s3->tmp.new_compression))
     {
 #else
     if (!ssl_cipher_get_evp(s->session->cipher,
@@ -435,7 +435,7 @@ GSS_CALLCONV gss_import_sec_context(
     if (!ssl_cipher_get_evp(s->session,
                             &s->s3->tmp.new_sym_enc,
                             &s->s3->tmp.new_hash,
-                            &s->s3->tmp.new_compression))
+                            (SSL_COMP **) &s->s3->tmp.new_compression))
     {
 #else
     if (!ssl_cipher_get_evp(s->session->cipher,

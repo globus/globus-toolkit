@@ -77,6 +77,147 @@ my_memccmp(unsigned char *              s1,
     return 0;
 }
 
+/**
+ * Compare the proxy group information in two gss_name_t structures.
+ *
+ * This function compares the group information contained in two GSS
+ * names. The function returns a favorable result if one of the
+ * following conditions are met:
+ *  - Neither of the names carry any group information.
+ *  - One of the names contains group information and none of the
+ *    subgroups are untrusted.
+ *  - Both names carry group information and subgroups are identical
+ *    up to min(number of subgroups in name one, number of subgroups
+ *    in name two). Furthermore, all of the remaining "uncompared"
+ *    subgroups must be trusted.
+ *
+ * @param name1
+ *        GSS name used in the comparison.
+ * @param name2
+ *        GSS name used in the comparison.
+ *
+ * @return
+ *       1 if comparison was favorable
+ *       0 if it wasn't
+ */
+ 
+static int gss_l_compare_group(
+    const gss_name_desc *               name1,
+    const gss_name_desc *               name2)
+{
+    int                                 i;
+    int                                 num_group_elements1;
+    int                                 num_group_elements2;
+
+
+    /* if there are no groups we compare favorably */
+    
+    if(name1->group == NULL &&
+       name1->group_types == NULL &&
+       name2->group == NULL &&
+       name2->group_types == NULL)
+    {
+        return 1;
+    }
+
+    /* if only one cert is in a group we check that it is in a trusted
+     * group
+     */
+    
+    if(name1->group != NULL &&
+       name1->group_types != NULL &&
+       name2->group == NULL &&
+       name2->group_types == NULL)
+    {
+        for(i=0;i<sk_num(name1->group);i++)
+        {
+            if(ASN1_BIT_STRING_get_bit(name1->group_types,i))
+            {
+                return 0;
+            }
+        }
+    }
+
+    if(name1->group == NULL &&
+       name1->group_types == NULL &&
+       name2->group != NULL &&
+       name2->group_types != NULL)
+    {
+        for(i=0;i<sk_num(name2->group);i++)
+        {
+            if(ASN1_BIT_STRING_get_bit(name2->group_types,i))
+            {
+                return 0;
+            }
+        }
+    }
+
+    /* if both certs are in groups we check that the shorter (ie the
+     * group with fewest elements) group matches the corresponding
+     * part of the other certifcate's group and that the remaining
+     * part of the longer group contains only trusted subgroups.
+     */
+    
+    if(name1->group != NULL &&
+       name1->group_types != NULL &&
+       name2->group != NULL &&
+       name2->group_types != NULL)
+    {
+        num_group_elements1 = sk_num(name1->group);
+        num_group_elements2 = sk_num(name2->group);
+
+        if(num_group_elements1 < num_group_elements2)
+        {
+            for(i=0;i<num_group_elements1;i++)
+            {
+                if(ASN1_BIT_STRING_get_bit(name1->group_types,i) !=
+                   ASN1_BIT_STRING_get_bit(name2->group_types,i) ||
+                   strcmp(sk_value(name1->group,i),
+                          sk_value(name2->group,i)))
+                {
+                    return 0;
+                }
+            }
+
+            for(i=num_group_elements1;i<num_group_elements2;i++)
+            {
+                if(ASN1_BIT_STRING_get_bit(name2->group_types,i))
+                {
+                    return 0;
+                }
+            }
+        }
+        else
+        {
+            for(i=0;i<num_group_elements2;i++)
+            {
+                if(ASN1_BIT_STRING_get_bit(name1->group_types,i) !=
+                   ASN1_BIT_STRING_get_bit(name2->group_types,i) ||
+                   strcmp(sk_value(name1->group,i),
+                          sk_value(name2->group,i)))
+                {
+                    return 0;
+                }
+            }
+            
+            for(i=num_group_elements2;i<num_group_elements1;i++)
+            {
+                if(ASN1_BIT_STRING_get_bit(name2->group_types,i))
+                {
+                    return 0;
+                }
+            }
+            
+        }
+        return 1;
+    }
+
+    return 0;
+}
+
+
+
+
 /**********************************************************************
 Function:   gss_compare_name
 
@@ -150,7 +291,15 @@ GSS_CALLCONV gss_compare_name(
         free(s);
     }
 #endif
-        
+
+    /* compare group membership */
+
+    if(!gss_l_compare_group(name1,name2))
+    {
+        *name_equal = 0;
+        return GSS_S_COMPLETE;
+    }
+    
     /* 
      * if we are comparing a host based name, we only need to compare
      * the service/FQDN from both
@@ -288,3 +437,5 @@ GSS_CALLCONV gss_compare_name(
     return GSS_S_COMPLETE ;
 
 } /* gss_compare_name */
+
+

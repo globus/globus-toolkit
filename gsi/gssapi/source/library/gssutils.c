@@ -59,29 +59,50 @@ gss_copy_name_to_name(
 {
     gss_name_desc *                     output_name;
     X509_NAME *                         x509n = NULL;
+    STACK *                             group = NULL;
+    ASN1_BIT_STRING *                   group_types = NULL;
+    int                                 i;
+    
+    output_name = (gss_name_desc *) malloc(sizeof(gss_name_desc));
 
-	output_name = (gss_name_desc *) malloc(sizeof(gss_name_desc));
-	if (output_name == NULL)
+    if (output_name == NULL)
+    {
+        GSSerr(GSSERR_F_NAME_TO_NAME, GSSERR_R_OUT_OF_MEMORY);
+        return GSS_S_FAILURE ;
+    }
+    
+    if(input->x509n != NULL)
+    {
+        x509n = X509_NAME_dup(input->x509n);
+        if (x509n == NULL)
         {
-		GSSerr(GSSERR_F_NAME_TO_NAME, GSSERR_R_OUT_OF_MEMORY);
-		return GSS_S_FAILURE ;
-	}
-
-        if(input->x509n != NULL)
-        {
-            x509n = X509_NAME_dup(input->x509n);
-            if (x509n == NULL)
-            {
-		return GSS_S_FAILURE;
-            }
+            return GSS_S_FAILURE;
         }
+    }
 
-	output_name->name_oid = input->name_oid;
+    if(input->group != NULL &&
+       input->group_types != NULL)
+    {
+        group_types = ASN1_BIT_STRING_new();
+        group = sk_new_null();
 
-	output_name->x509n = x509n;
-	*output = output_name;
- 
-	return  GSS_S_COMPLETE;
+        for(i=0;i<sk_num(input->group);i++)
+        {
+            sk_insert(group,strdup(sk_value(input->group,i)),i);
+            ASN1_BIT_STRING_set_bit(
+                group_types,i,
+                ASN1_BIT_STRING_get_bit(input->group_types,i));
+        }
+    }
+    
+    output_name->name_oid = input->name_oid;
+    output_name->x509n = x509n;
+    output_name->group = group;
+    output_name->group_types = group_types;
+    
+    *output = output_name;
+    
+    return  GSS_S_COMPLETE;
 }
 
 /**********************************************************************
@@ -313,7 +334,7 @@ gss_create_and_fill_context(
             {
                 sk_SSL_CIPHER_unshift(
                     context->gs_ssl->cipher_list,
-                    sk_SSL_CIPHER_pop(context->gs_ssl->cipher_list));
+                    sk_pop(context->gs_ssl->cipher_list));
             }
         }
     }
@@ -692,68 +713,226 @@ gs_retrieve_peer(
     gss_ctx_id_desc *                   context_handle,
     const gss_cred_usage_t              cred_usage) 
 {
-	gss_name_desc *                 outname;
-	X509 *                          peer = NULL;
-	X509_NAME *                     subject;
+    OM_uint32                           major_status = GSS_S_COMPLETE;
+    gss_name_desc *                     outname;
+    X509 *                              peer = NULL;
+    STACK_OF(X509_EXTENSION) *          extensions;
+    X509_EXTENSION *                    ex;
+    X509 *                              cert;
+    ASN1_OBJECT *                       asn1_obj;
+    ASN1_OCTET_STRING *                 asn1_oct_string;
+    X509_NAME *                         subject = NULL;
+    STACK *                             group = NULL;
+    ASN1_BIT_STRING *                   group_types = NULL;
+    int                                 i;
+    int                                 j = 0;
+    int                                 cert_count;
+    char *                              subgroup;
+        
 
-	if (context_handle->gs_ssl->session)
+    if (context_handle->gs_ssl->session)
+    {
+        peer = context_handle->gs_ssl->session->peer;
+    }
+    
+    outname = ( gss_name_desc *)malloc(sizeof(gss_name_desc));
+    
+    if (outname == NULL)
+    {
+        GSSerr(GSSERR_F_GS_RETRIEVE_PEER, GSSERR_R_OUT_OF_MEMORY);
+        major_status = GSS_S_FAILURE;
+        goto err;
+    }
+    
+    
+    if (peer == NULL)
+    {
+        outname->name_oid =  GSS_C_NT_ANONYMOUS;
+    }
+    else
+    {
+        subject = X509_NAME_dup(X509_get_subject_name(peer));
+        
+        if(subject == NULL)
         {
-		peer = context_handle->gs_ssl->session->peer;
-	}
+            GSSerr(GSSERR_F_GS_RETRIEVE_PEER, GSSERR_R_PROCESS_CERT);
+            major_status = GSS_S_FAILURE;
+            goto err;
+        }
 
-        outname = ( gss_name_desc *)malloc(sizeof(gss_name_desc));
-        if (outname == NULL)
+#ifdef DEBUG
+        {
+            char *s;
+            s = X509_NAME_oneline(subject,NULL,0);
+            fprintf(stderr,"gs_retrieve_peer: X509 subject: %s\n", s);
+            free(s);
+        }
+#endif
+        
+        /*
+         * drop all the /CN=proxy entries 
+         */
+        proxy_get_base_name(subject);
+        
+        outname->name_oid =  GSS_C_NO_OID;
+        
+#ifdef DEBUG
+        { 
+            char * s;
+            s = X509_NAME_oneline(subject,NULL,0);
+            fprintf(stderr,"X509 subject after proxy : %s\n", s);
+            free(s);
+        }
+#endif
+
+        /*
+         * Figure out the group name
+         */
+
+        cert_count = context_handle->pvd.cert_depth;
+        
+        group = sk_new_null();
+
+        if(group == NULL)
         {
             GSSerr(GSSERR_F_GS_RETRIEVE_PEER, GSSERR_R_OUT_OF_MEMORY);
-            return GSS_S_FAILURE;
+            major_status = GSS_S_FAILURE;
+            goto err;
         }
-
         
-	if (peer == NULL)
-        {
-            subject = NULL;
+        group_types = ASN1_BIT_STRING_new();
 
-            outname->name_oid =  GSS_C_NT_ANONYMOUS;
-	}
-        else
+        if(group_types == NULL)
         {
-            subject = X509_NAME_dup(X509_get_subject_name(peer));
-#ifdef DEBUG
+            GSSerr(GSSERR_F_GS_RETRIEVE_PEER, GSSERR_R_OUT_OF_MEMORY);
+            major_status = GSS_S_FAILURE;
+            goto err;
+        }
+    
+        while(cert_count-- &&
+              (cert = sk_X509_value(context_handle->pvd.cert_chain,
+                                    cert_count)))
+        {
+            extensions = cert->cert_info->extensions;
+
+            for (i=0;i<sk_X509_EXTENSION_num(extensions);i++)
             {
-		char *s;
-		s = X509_NAME_oneline(subject,NULL,0);
-		fprintf(stderr,"gs_retrieve_peer: X509 subject: %s\n", s);
-		free(s);
-            }
-#endif
+                ex = (X509_EXTENSION *) sk_X509_EXTENSION_value(extensions,i);
+                asn1_obj = X509_EXTENSION_get_object(ex);
 
-            /*
-             * drop all the /CN=proxy entries 
-             */
-            proxy_get_base_name(subject);
+                /* if statement is kind of ugly, but I couldn't find a
+                 * better way
+                 */
             
-            outname->name_oid =  GSS_C_NO_OID;
-            
-#ifdef DEBUG
-            { 
-		char * s;
-		s = X509_NAME_oneline(subject,NULL,0);
-		fprintf(stderr,"X509 subject after proxy : %s\n", s);
-		free(s);
+                if((asn1_obj->length == gss_trusted_group->length) &&
+                   !memcmp(asn1_obj->data,
+                           gss_trusted_group->elements,
+                           asn1_obj->length))
+                {
+                    /* found a trusted group match */
+                    asn1_oct_string = X509_EXTENSION_get_data(ex);
+                
+                    subgroup = malloc(asn1_oct_string->length + 1);
+
+                    if(subgroup == NULL)
+                    {
+                        GSSerr(GSSERR_F_GS_RETRIEVE_PEER,
+                               GSSERR_R_OUT_OF_MEMORY);
+                        major_status = GSS_S_FAILURE;
+                        goto err;
+                    }
+                    
+                    memcpy((void *) subgroup,
+                           asn1_oct_string->data,
+                           asn1_oct_string->length);
+
+                    /* terminate string */
+
+                    subgroup[asn1_oct_string->length] = '\0';
+
+                    sk_insert(group,subgroup,j);
+                    j++;
+                    
+                    /* assume one extension per cert */
+                
+                    break;
+                }
+                else if((asn1_obj->length == gss_untrusted_group->length) &&
+                        !memcmp(asn1_obj->data,
+                                gss_untrusted_group->elements,
+                                asn1_obj->length))
+                {
+                    /* found a untrusted group match */
+                    asn1_oct_string = X509_EXTENSION_get_data(ex);
+                
+                    subgroup = malloc(asn1_oct_string->length + 1);
+
+                    if(subgroup == NULL)
+                    {
+                        GSSerr(GSSERR_F_GS_RETRIEVE_PEER,
+                               GSSERR_R_OUT_OF_MEMORY);
+                        major_status = GSS_S_FAILURE;
+                        goto err;
+                    }
+                    
+                    memcpy((void *) subgroup,
+                           asn1_oct_string->data,
+                           asn1_oct_string->length);
+
+                    /* terminate string */
+
+                    subgroup[asn1_oct_string->length] = '\0';
+
+                    sk_insert(group,subgroup,j);
+                    ASN1_BIT_STRING_set_bit(group_types,j,1);
+                    j++;
+                    
+                    /* assume one extension per cert */
+                
+                    break;
+                }
             }
-#endif
         }
+    }
+    
+    outname->x509n = subject;
+    outname->group = group;
+    outname->group_types = group_types;
+    
+    if (cred_usage == GSS_C_INITIATE)
+    {
+        context_handle->target_name = outname;
+    }
+    else
+    {
+        context_handle->source_name = outname;
+    }
+    
+    return GSS_S_COMPLETE;
 
-        outname->x509n = subject;
-        
-	if (cred_usage == GSS_C_INITIATE) {
-		context_handle->target_name = outname;
-	}
-        else
-        {
-		context_handle->source_name = outname;
-	}
-	return GSS_S_COMPLETE ;
+err:
+
+    if(outname != NULL)
+    {
+        free(outname);
+    }
+
+    if(subject != NULL)
+    {
+        X509_NAME_free(subject);
+    }
+
+    if(group != NULL)
+    {
+        sk_pop_free(group,free);
+    }
+
+    if(group_types != NULL)
+    {
+        ASN1_BIT_STRING_free(group_types);
+    }
+
+    return major_status;
 }
 
 OM_uint32
@@ -792,6 +971,10 @@ gss_create_anonymous_cred(
     newcred->globusid->name_oid = GSS_C_NT_ANONYMOUS;
 
     newcred->globusid->x509n = NULL;
+
+    newcred->globusid->group = NULL;
+
+    newcred->globusid->group_types = NULL;
     
     newcred->gs_bio_err = BIO_new_fp(stderr,BIO_NOCLOSE);
 
@@ -1029,6 +1212,8 @@ gss_create_and_fill_cred(
         goto err;
     }
     newcred->globusid->name_oid = GSS_C_NO_OID;
+    newcred->globusid->group = NULL;
+    newcred->globusid->group_types = NULL;
     newcred->globusid->x509n =
         X509_NAME_dup(X509_get_subject_name(newcred->pcd->ucert));
 
@@ -1037,7 +1222,7 @@ gss_create_and_fill_cred(
         GSSerr(GSSERR_F_ACQUIRE_CRED,GSSERR_R_PROCESS_CERT);
         goto err;
     }
-	
+
     /* now strip off any /CN=proxy entries */
 
     proxy_get_base_name(newcred->globusid->x509n);

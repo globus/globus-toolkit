@@ -75,6 +75,7 @@ GSS_CALLCONV gss_import_name(
     const gss_OID                       input_name_type,
     gss_name_t *                        output_name_P)
 {
+    OM_uint32                           major_status = GSS_S_COMPLETE;
     gss_name_desc *                     output_name;
     X509_NAME *                         x509n;
     X509_NAME_ENTRY *                   ne;
@@ -96,22 +97,32 @@ GSS_CALLCONV gss_import_name(
     
     if (output_name == NULL)
     {
+        GSSerr(GSSERR_F_IMPORT_NAME, GSSERR_R_OUT_OF_MEMORY);
+        *minor_status = gsi_generate_minor_status();
+        major_status = GSS_S_FAILURE;
         goto err;
     } 
+    
+    output_name->group = NULL;
+    output_name->group_types = NULL;
 
+    
     if(g_OID_equal(input_name_type,
                    GSS_C_NT_ANONYMOUS))
     {
         output_name->name_oid = input_name_type;
         output_name->x509n = NULL;
-        output_name->group = NULL;
         *output_name_P = output_name;
-        return GSS_S_COMPLETE ;
+        return major_status;
     }
     
     x509n = X509_NAME_new();
+    
     if (x509n == NULL)
     {
+        GSSerr(GSSERR_F_IMPORT_NAME, GSSERR_R_OUT_OF_MEMORY);
+        *minor_status = gsi_generate_minor_status();
+        major_status = GSS_S_FAILURE;
         goto err; 
     }
    
@@ -123,6 +134,9 @@ GSS_CALLCONV gss_import_name(
     len = input_name_buffer->length;
     if ((buf = (char *)malloc(len+1)) == NULL)
     {
+        GSSerr(GSSERR_F_IMPORT_NAME, GSSERR_R_OUT_OF_MEMORY);
+        *minor_status = gsi_generate_minor_status();
+        major_status = GSS_S_FAILURE;
         goto err;
     }
 
@@ -178,6 +192,9 @@ GSS_CALLCONV gss_import_name(
                 cp = strchr(np,'=');
                 if (cp == NULL)
                 {
+                    GSSerr(GSSERR_F_IMPORT_NAME, GSSERR_R_UNEXPECTED_FORMAT);
+                    *minor_status = gsi_generate_minor_status();
+                    major_status = GSS_S_BAD_NAME;
                     goto err;
                 }
                 *cp = '\0';           /* terminate name string */
@@ -212,6 +229,10 @@ GSS_CALLCONV gss_import_name(
                     nid=OBJ_txt2nid(np);
                     if (nid == NID_undef)
                     {
+                        GSSerr(GSSERR_F_IMPORT_NAME,
+                               GSSERR_R_UNEXPECTED_FORMAT);
+                        *minor_status = gsi_generate_minor_status();
+                        major_status = GSS_S_BAD_NAME;
                         goto err;
                     }
                 }
@@ -222,6 +243,9 @@ GSS_CALLCONV gss_import_name(
                                                  -1);
                 if (ne == NULL)
                 {
+                    GSSerr(GSSERR_F_IMPORT_NAME, GSSERR_R_UNEXPECTED_FORMAT);
+                    *minor_status = gsi_generate_minor_status();
+                    major_status = GSS_S_BAD_NAME;
                     goto err;
                 }
                 
@@ -230,6 +254,9 @@ GSS_CALLCONV gss_import_name(
                                          X509_NAME_entry_count(x509n),
                                          0))
                 {
+                    GSSerr(GSSERR_F_IMPORT_NAME, GSSERR_R_UNEXPECTED_FORMAT);
+                    *minor_status = gsi_generate_minor_status();
+                    major_status = GSS_S_BAD_NAME;
                     goto err;
                 }
             }
@@ -283,9 +310,8 @@ GSS_CALLCONV gss_import_name(
     }
     output_name->name_oid = input_name_type;
     output_name->x509n = x509n;
-    output_name->group = NULL;
     *output_name_P = output_name;
-    return GSS_S_COMPLETE ;
+    return major_status ;
 err:
     if (ne)
     {
@@ -304,10 +330,6 @@ err:
         free(buf);
     }
     
-    GSSerr(GSSERR_F_IMPORT_NAME, GSSERR_R_UNEXPECTED_FORMAT);
-    
-    *minor_status = gsi_generate_minor_status();
-    
-    return GSS_S_BAD_NAME ;
+    return major_status;
     
 } /* gss_import_name */

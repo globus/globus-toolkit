@@ -63,44 +63,48 @@ CVS Information:
 
 #define GSSERR_F_BASE                   100
 
-#define GSSERR_F_ACCEPT_SEC             GSSERR_F_BASE + 0
-#define GSSERR_F_ACQUIRE_CRED           GSSERR_F_BASE + 1
-#define GSSERR_F_COMPARE_NAME           GSSERR_F_BASE + 2
-#define GSSERR_F_DELETE_SEC             GSSERR_F_BASE + 3
-#define GSSERR_F_EXPORT_NAME            GSSERR_F_BASE + 4
-#define GSSERR_F_GLOBUSFILE             GSSERR_F_BASE + 5
-#define GSSERR_F_IMPORT_NAME            GSSERR_F_BASE + 6
-#define GSSERR_F_INIT_SEC               GSSERR_F_BASE + 7
-#define GSSERR_F_RELEASE_BUFFER         GSSERR_F_BASE + 8
-#define GSSERR_F_RELEASE_CRED           GSSERR_F_BASE + 9
-#define GSSERR_F_RELEASE_NAME           GSSERR_F_BASE + 10
+#define GSSERR_F_ACCEPT_SEC                GSSERR_F_BASE + 0
+#define GSSERR_F_ACQUIRE_CRED              GSSERR_F_BASE + 1
+#define GSSERR_F_COMPARE_NAME              GSSERR_F_BASE + 2
+#define GSSERR_F_DELETE_SEC                GSSERR_F_BASE + 3
+#define GSSERR_F_EXPORT_NAME               GSSERR_F_BASE + 4
+#define GSSERR_F_GLOBUSFILE                GSSERR_F_BASE + 5
+#define GSSERR_F_IMPORT_NAME               GSSERR_F_BASE + 6
+#define GSSERR_F_INIT_SEC                  GSSERR_F_BASE + 7
+#define GSSERR_F_RELEASE_BUFFER            GSSERR_F_BASE + 8
+#define GSSERR_F_RELEASE_CRED              GSSERR_F_BASE + 9
+#define GSSERR_F_RELEASE_NAME              GSSERR_F_BASE + 10
 /* In gssutil.c: */
-#define GSSERR_F_NAME_TO_NAME           GSSERR_F_BASE + 11
-#define GSSERR_F_CREATE_FILL            GSSERR_F_BASE + 12
-#define GSSERR_F_GS_HANDSHAKE           GSSERR_F_BASE + 13
-#define GSSERR_F_GS_RETRIEVE_PEER       GSSERR_F_BASE + 14
+#define GSSERR_F_NAME_TO_NAME              GSSERR_F_BASE + 11
+#define GSSERR_F_CREATE_FILL               GSSERR_F_BASE + 12
+#define GSSERR_F_GS_HANDSHAKE              GSSERR_F_BASE + 13
+#define GSSERR_F_GS_RETRIEVE_PEER          GSSERR_F_BASE + 14
 
-#define GSSERR_F_WRAP                   GSSERR_F_BASE + 15
-#define GSSERR_F_UNWRAP                 GSSERR_F_BASE + 16
-#define GSSERR_F_GET_MIC                GSSERR_F_BASE + 17
-#define GSSERR_F_VERIFY_MIC             GSSERR_F_BASE + 18
+#define GSSERR_F_WRAP                      GSSERR_F_BASE + 15
+#define GSSERR_F_UNWRAP                    GSSERR_F_BASE + 16
+#define GSSERR_F_GET_MIC                   GSSERR_F_BASE + 17
+#define GSSERR_F_VERIFY_MIC                GSSERR_F_BASE + 18
 
-#define GSSERR_F_IMPORT_SEC             GSSERR_F_BASE + 19
-#define GSSERR_F_EXPORT_SEC             GSSERR_F_BASE + 20
+#define GSSERR_F_IMPORT_SEC                GSSERR_F_BASE + 19
+#define GSSERR_F_EXPORT_SEC                GSSERR_F_BASE + 20
 
-#define GSSERR_F_IMPORT_CRED            GSSERR_F_BASE + 21
-#define GSSERR_F_EXPORT_CRED            GSSERR_F_BASE + 22
-#define GSSERR_F_READ                   GSSERR_F_BASE + 23
-#define GSSERR_F_WRITE                  GSSERR_F_BASE + 24
-#define GSSERR_F_INIT_DELEGATION        GSSERR_F_BASE + 25
-#define GSSERR_F_ACCEPT_DELEGATION      GSSERR_F_BASE + 26
-#define GSSERR_F_INQUIRE_BY_OID         GSSERR_F_BASE + 27
-#define GSSERR_F_INQUIRE_CONTEXT        GSSERR_F_BASE + 28
-#define GSSERR_F_ADD_OID_SET_MEMBER     GSSERR_F_BASE + 29
-#define GSSERR_F_CREATE_EMPTY_OID_SET   GSSERR_F_BASE + 30
-#define GSSERR_F_TEST_OID_SET_MEMBER    GSSERR_F_BASE + 31
-#define GSSERR_F_SET_SEC_CONTEXT_OPT    GSSERR_F_BASE + 32
-
+#define GSSERR_F_IMPORT_CRED               GSSERR_F_BASE + 21
+#define GSSERR_F_EXPORT_CRED               GSSERR_F_BASE + 22
+#define GSSERR_F_READ                      GSSERR_F_BASE + 23
+#define GSSERR_F_WRITE                     GSSERR_F_BASE + 24
+#define GSSERR_F_INIT_DELEGATION           GSSERR_F_BASE + 25
+#define GSSERR_F_ACCEPT_DELEGATION         GSSERR_F_BASE + 26
+#define GSSERR_F_INQUIRE_BY_OID            GSSERR_F_BASE + 27
+#define GSSERR_F_INQUIRE_CONTEXT           GSSERR_F_BASE + 28
+#define GSSERR_F_ADD_OID_SET_MEMBER        GSSERR_F_BASE + 29
+#define GSSERR_F_CREATE_EMPTY_OID_SET      GSSERR_F_BASE + 30
+#define GSSERR_F_TEST_OID_SET_MEMBER       GSSERR_F_BASE + 31
+#define GSSERR_F_SET_SEC_CONTEXT_OPT       GSSERR_F_BASE + 32
+#define GSSERR_F_CREATE_EMPTY_BUFFER_SET   GSSERR_F_BASE + 33
+#define GSSERR_F_ADD_BUFFER_SET_MEMBER     GSSERR_F_BASE + 34
+#define GSSERR_F_RELEASE_BUFFER_SET        GSSERR_F_BASE + 35
+#define GSSERR_F_SET_GROUP                 GSSERR_F_BASE + 36
+#define GSSERR_F_GET_GROUP                 GSSERR_F_BASE + 37
 
 /*
  * GSI minor error code
@@ -141,6 +145,7 @@ CVS Information:
 #define GSSERR_R_ADD_EXT                        GSSERR_R_BASE + 22
 #define GSSERR_R_REMOTE_CERT_VERIFY_FAILED      GSSERR_R_BASE + 23
 #define GSSERR_R_OUT_OF_MEMORY                  GSSERR_R_BASE + 24
+#define GSSERR_R_BAD_NAME                       GSSERR_R_BASE + 25
 /* NOTE: Don't go over 1000 here or will conflict with errors in sslutils.h */
 
 /* Old error codes in case anyone is using them */
@@ -284,7 +289,8 @@ typedef struct gss_name_desc_struct {
     /* gss_buffer_desc  name_buffer ; */
     gss_OID                             name_oid;
     X509_NAME *                         x509n;
-    STACK_OF(ASN1_OCTET_STRING) *       group;
+    STACK *                             group;
+    ASN1_BIT_STRING *                   group_types;
 } gss_name_desc ;
 
 typedef struct gss_cred_id_desc_struct {
@@ -333,6 +339,12 @@ const gss_OID_desc * const gss_mech_globus_gssapi_ssleay;
 extern
 const gss_OID_desc * const gss_restrictions_extension;
 
+extern
+const gss_OID_desc * const gss_trusted_group;
+
+extern
+const gss_OID_desc * const gss_untrusted_group;
+
 /**********************************************************************
                                Function prototypes
 **********************************************************************/
@@ -341,6 +353,6 @@ int
 ERR_load_gsserr_strings(int);
 
 OM_uint32
-convert_minor_codes(const int lib, const int reason);
+gsi_generate_minor_status();
 
 #endif /* _GSSAPI_SSLEAY_H */

@@ -24,8 +24,8 @@ OM_uint32
 GSS_CALLCONV gss_accept_delegation(
     OM_uint32 *                         minor_status,
     const gss_ctx_id_t                  context_handle,
-    const gss_OID_set                   restriction_oids,
-    const gss_buffer_set_t              restriction_buffers,
+    const gss_OID_set                   extension_oids,
+    const gss_buffer_set_t              extension_buffers,
     const gss_buffer_t                  input_token,
     OM_uint32                           time_req,
     OM_uint32 *                         time_rec,
@@ -85,9 +85,9 @@ GSS_CALLCONV gss_accept_delegation(
         goto err;
     }
 
-    if(restriction_oids != GSS_C_NO_OID_SET &&
-       (restriction_buffers == GSS_C_NO_BUFFER_SET ||
-        restriction_oids->count != restriction_buffers->count))
+    if(extension_oids != GSS_C_NO_OID_SET &&
+       (extension_buffers == GSS_C_NO_BUFFER_SET ||
+        extension_oids->count != extension_buffers->count))
     {
         GSSerr(GSSERR_F_ACCEPT_DELEGATION,GSSERR_R_BAD_ARGUMENT);
         *minor_status = gsi_generate_minor_status();

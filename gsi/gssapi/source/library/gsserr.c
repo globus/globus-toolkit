@@ -72,6 +72,12 @@ static ERR_STRING_DATA gsserr_str_functs[]=
  {ERR_PACK(0,GSSERR_F_READ,0),"gs_read"},
  {ERR_PACK(0,GSSERR_F_WRITE,0),"gs_write"},
  {ERR_PACK(0,GSSERR_F_SET_SEC_CONTEXT_OPT,0),"gss_set_sec_context_option"},
+ {ERR_PACK(0,GSSERR_F_SET_SEC_CONTEXT_OPT,0),"gss_set_sec_context_option"},
+ {ERR_PACK(0,GSSERR_F_CREATE_EMPTY_BUFFER_SET,0),"gss_create_empty_buffer_set"},
+ {ERR_PACK(0,GSSERR_F_ADD_BUFFER_SET_MEMBER,0),"gss_add_buffer_set_member"},
+ {ERR_PACK(0,GSSERR_F_RELEASE_BUFFER_SET,0),"gss_release_buffer_set"},
+ {ERR_PACK(0,GSSERR_F_SET_GROUP,0),"gss_set_group"},
+ {ERR_PACK(0,GSSERR_F_GET_GROUP,0),"gss_get_group"},
  {0,NULL}
 };
 
@@ -85,6 +91,7 @@ static ERR_STRING_DATA gsserr_str_reasons[]=
  {GSSERR_R_PROXY_VIOLATION, "Peer is using (limited) proxy"},
  {GSSERR_R_PROXY_NOT_RECEIVED, "Failed to receive proxy request"},
  {GSSERR_R_BAD_ARGUMENT, "Bad argument"},
+ {GSSERR_R_BAD_NAME, "Bad GSS name"},
  {GSSERR_R_IMPEXP_BIO_SSL, "Internal SSL problem"},
  {GSSERR_R_IMPEXP_NO_CIPHER, "Cipher not available"},
  {GSSERR_R_IMPEXP_BAD_LEN, "Token is wrong length"},

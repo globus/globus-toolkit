@@ -32,8 +32,8 @@ GSS_CALLCONV gss_init_delegation(
     const gss_ctx_id_t                  context_handle,
     const gss_cred_id_t                 cred_handle,
     const gss_OID                       desired_mech,
-    const gss_OID_set                   restriction_oids,
-    const gss_buffer_set_t              restriction_buffers,
+    const gss_OID_set                   extension_oids,
+    const gss_buffer_set_t              extension_buffers,
     const gss_buffer_t                  input_token,
     OM_uint32                           time_req,
     gss_buffer_t                        output_token)
@@ -48,6 +48,7 @@ GSS_CALLCONV gss_init_delegation(
     STACK_OF(X509_EXTENSION) *          extensions = NULL;
     int                                 i;
     int                                 cert_chain_length = 0;
+    int                                 found_group_extension = 0;
     
 #ifdef DEBUG
     fprintf(stderr, "init_delegation:\n") ;
@@ -103,9 +104,9 @@ GSS_CALLCONV gss_init_delegation(
         goto err;
     }
 
-    if(restriction_oids != GSS_C_NO_OID_SET &&
-       (restriction_buffers == GSS_C_NO_BUFFER_SET ||
-        restriction_oids->count != restriction_buffers->count))
+    if(extension_oids != GSS_C_NO_OID_SET &&
+       (extension_buffers == GSS_C_NO_BUFFER_SET ||
+        extension_oids->count != extension_buffers->count))
     {
         GSSerr(GSSERR_F_INIT_DELEGATION,GSSERR_R_BAD_ARGUMENT);
         *minor_status = gsi_generate_minor_status();
@@ -180,15 +181,34 @@ GSS_CALLCONV gss_init_delegation(
             goto err;
         }
 
-        /* add the restrictions here */
+        /* add the extensions here */
 
-        if(restriction_oids != GSS_C_NO_OID_SET)
+        if(extension_oids != GSS_C_NO_OID_SET)
         {
-            for(i = 0;i < restriction_oids->count;i++)
+            for(i = 0;i < extension_oids->count;i++)
             {
+                if(g_OID_equal((gss_OID) &extension_oids->elements[i],
+                               gss_trusted_group) ||
+                   g_OID_equal((gss_OID) &extension_oids->elements[i],
+                               gss_untrusted_group))
+                {
+                    if(found_group_extension)
+                    {
+                        /* only one group extension allowed */
+                        GSSerr(GSSERR_F_INIT_SEC,GSSERR_R_ADD_EXT);
+                        major_status = GSS_S_FAILURE;
+                        *minor_status = gsi_generate_minor_status();
+                        return major_status;
+                    }
+                    else
+                    {
+                        found_group_extension = 1;
+                    }
+                }
+                   
                 if ((ex = proxy_extension_create(
-                         (gss_OID) &restriction_oids->elements[i],
-                         (gss_buffer_t) &restriction_buffers->elements[i]))
+                         (gss_OID) &extension_oids->elements[i],
+                         (gss_buffer_t) &extension_buffers->elements[i]))
                     == NULL)
                 {
                     GSSerr(GSSERR_F_INIT_SEC,GSSERR_R_ADD_EXT);
@@ -318,6 +338,14 @@ proxy_extension_create(
     if(g_OID_equal(extension_oid, gss_restrictions_extension))
     {
         asn1_obj = OBJ_txt2obj("RESTRICTEDRIGHTS",0);   
+    }
+    else if(g_OID_equal(extension_oid, gss_trusted_group))
+    {
+        asn1_obj = OBJ_txt2obj("TRUSTED_GROUP",0);   
+    }
+    else if(g_OID_equal(extension_oid, gss_untrusted_group))
+    {
+        asn1_obj = OBJ_txt2obj("UNTRUSTED_GROUP",0);   
     }
     else
     {
