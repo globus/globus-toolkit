@@ -55,6 +55,8 @@ int
 globus_extension_deactivate(
     const char *                        extension_name);
 
+typedef struct globus_l_extension_handle_s * globus_extension_handle_t;
+
 typedef struct
 {
     globus_hashtable_t                  table;
@@ -78,21 +80,30 @@ globus_extension_registry_remove(
 /**
  * Get the datum associated with symbol in this registry.
  * 
- * You MUST call globus_extension_registry_put() when you are done using
- * the data.  the get() and put() calls handle the reference counting that
- * prevents an extension from being unloaded while things it provides are
+ * You MUST call globus_extension_release() when you are done using
+ * the data.  the lookup() and release() calls handle the reference counting
+ * that prevents an extension from being unloaded while things it provides are
  * being used.
+ * 
+ * release() could potentially block as a result of module deactivation and
+ * unloading.  ensuring that globus_extension_deactivate() is not called with
+ * outstanding references will prevent that.
  */
 void *
-globus_extension_registry_get(
+globus_extension_lookup(
+    globus_extension_handle_t *         handle,
     globus_extension_registry_t *       registry,
     const char *                        symbol);
 
 void
-globus_extension_registry_put(
-    globus_extension_registry_t *       registry,
-    const char *                        symbol);
+globus_extension_release(
+    globus_extension_handle_t           handle);
 
+/*
+ XXXX need some kind of error match function. what about module descriptors in
+ error objects.. sure to be a headache.
+ */
+ 
 EXTERN_C_END
 
 #endif
