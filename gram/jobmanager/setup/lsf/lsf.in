@@ -10,12 +10,13 @@ package Globus::GRAM::JobManager::lsf;
 
 @ISA = qw(Globus::GRAM::JobManager);
 
-my ($lsf_profile, $mpirun, $bsub, $bjobs, $bkill);
+my ($lsf_profile, $mpirun, $bsub, $bjobs, $bkill, $bhist);
 
 BEGIN
 {
     $lsf_profile = '@LSF_PROFILE@';
     $mpirun = '@MPIRUN@';
+    $bhist  = ". $lsf_profile && @BHIST@";
     $bsub   = ". $lsf_profile && @BSUB@";
     $bjobs  = ". $lsf_profile && @BJOBS@";
     $bkill  = ". $lsf_profile && @BKILL@";
@@ -337,8 +338,19 @@ sub poll
     # return code 255 = "Job <123> is not found"
     if($exit_code == 255)
     {
-        $self->log("bjobs rc is 255 == Job <123> is not found == DONE");
-        $state = Globus::GRAM::JobState::DONE;
+        $self->log("bjobs rc is 255 == Job <123> is not found, running bhist");
+        # The job was not found. It can also be that it queried
+        # LSF too soon: using bhist to determine whether the job
+        # was actually submitted
+        $statusBhist = system("$bhist $job_id 1>/dev/null 2>/dev/null");
+        if ($statusBhist eq 0) {
+            $self->log("The job actually was submitted, reporting PENDING");
+	    $state = Globus::GRAM::JobState::PENDING;
+        } else {
+            $bhistCode = $statusBhist >> 8;
+            $self->log("Neither bhist knows anything about the job, exit code $bhistCode, reporting FAILED");
+	    $state = Globus::GRAM::JobState::FAILED;
+	}
 	$self->nfssync( $description->stdout() )
 	    if $description->stdout() ne '';
 	$self->nfssync( $description->stderr() )

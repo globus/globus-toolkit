@@ -81,6 +81,11 @@ if test "$BKILL" = "no"; then
     AC_MSG_ERROR([Cannot locate bkill])
 fi
 
+AC_PATH_PROG(BHIST, bhist, no)
+if test "$BHIST" = "no"; then
+    AC_MSG_ERROR([Cannot locate bhist])
+fi
+
 prefix='$(GLOBUS_LOCATION)'
 exec_prefix='$(GLOBUS_LOCATION)'
 libexecdir=${prefix}/libexec
