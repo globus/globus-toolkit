@@ -65,6 +65,7 @@ libmyproxy___GLOBUS_FLAVOR_NAME__la_LIBADD = $(GPT_LIB_LINKS)
 
 bin_PROGRAMS= \
 	myproxy-init \
+	myproxy-info \
 	myproxy-destroy \
 	myproxy-get-delegation
 
@@ -75,6 +76,12 @@ myproxy_init_SOURCES = 	myproxy_init.c
 myproxy_init_LDFLAGS = $(GPT_LDFLAGS)
 
 myproxy_init_LDADD = $(GPT_PGM_LINKS) ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la
+
+myproxy_info_SOURCES = 	myproxy_info.c
+
+myproxy_info_LDFLAGS = $(GPT_LDFLAGS)
+
+myproxy_info_LDADD = $(GPT_PGM_LINKS) ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la
 
 myproxy_destroy_SOURCES = myproxy_destroy.c
 
