@@ -7,6 +7,7 @@ SUBDIRS = . $(XMLSEC_CRYPTO_LIST)
 
 INCLUDES = \
 	-DPACKAGE=\"@PACKAGE@\" \
+	-DGLOBUS_FLAVOR_NAME=\"@GLOBUS_FLAVOR_NAME@\" \
 	-I$(top_srcdir) \
 	-I$(top_srcdir)/include \
 	$(XMLSEC_DEFINES) \
