@@ -207,9 +207,6 @@ popen_failed:
     globus_libc_free(pipe_cmd);
     globus_libc_free(script_context);
 
-    request->failure_code =
-	GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_JOBMANAGER_SCRIPT;
-
     return GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_JOBMANAGER_SCRIPT;
 }
 /* globus_l_gram_job_manager_script_run() */
@@ -411,10 +408,8 @@ globus_gram_job_manager_script_submit(
         globus_gram_job_manager_request_log(request,
               "JMI: Failed to open gram script argument file. %s\n",
               script_arg_file );
-        request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
-        request->failure_code =
-              GLOBUS_GRAM_PROTOCOL_ERROR_ARG_FILE_CREATION_FAILED;
-        return(GLOBUS_FAILURE);
+
+	return GLOBUS_GRAM_PROTOCOL_ERROR_ARG_FILE_CREATION_FAILED;
     }
 
     globus_l_gram_job_manager_script_write_description(
@@ -543,10 +538,7 @@ globus_gram_job_manager_script_poll(
     if (rc != GLOBUS_SUCCESS)
     {
         globus_gram_job_manager_request_log(request,
-              "JMI: returning with error: %d\n", rc);
-
-	request->failure_code = rc;
-	request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
+              "JMI: poll returning with error: %d\n", rc);
 
         return rc;
     }
@@ -595,10 +587,7 @@ globus_gram_job_manager_script_cancel(
         globus_gram_job_manager_request_log(request,
               "JMI: Failed to open gram script argument file. %s\n",
               script_arg_file );
-        request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
-        request->failure_code =
-              GLOBUS_GRAM_PROTOCOL_ERROR_ARG_FILE_CREATION_FAILED;
-        return(GLOBUS_FAILURE);
+	return GLOBUS_GRAM_PROTOCOL_ERROR_ARG_FILE_CREATION_FAILED;
     }
 
     globus_l_gram_job_manager_script_write_description(
@@ -620,9 +609,6 @@ globus_gram_job_manager_script_cancel(
     {
         globus_gram_job_manager_request_log(request,
               "JMI: returning with error: %d\n", rc);
-
-	request->failure_code = rc;
-	request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
 
         return rc;
     }
@@ -719,23 +705,21 @@ globus_gram_job_manager_script_make_scratchdir(
 
     script_arg_file = tempnam(NULL, "gram_make_scratchdir");
 
+    if (!request)
+        return(GLOBUS_FAILURE);
+
     rc = globus_l_gram_request_validate(request);
 
     if (rc != GLOBUS_SUCCESS)
         return rc;
-
-    if (!request)
-        return(GLOBUS_FAILURE);
 
     if ((script_arg_fp = fopen(script_arg_file, "w")) == NULL)
     {
 	globus_gram_job_manager_request_log(request,
               "JMI: Failed to open gram script argument file. %s\n",
               script_arg_file );
-        request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
-        request->failure_code = 
-              GLOBUS_GRAM_PROTOCOL_ERROR_ARG_FILE_CREATION_FAILED;
-        return(GLOBUS_FAILURE);
+
+        return GLOBUS_GRAM_PROTOCOL_ERROR_ARG_FILE_CREATION_FAILED;
     }
 
 
@@ -799,10 +783,8 @@ globus_gram_job_manager_script_rm_scratchdir(
 	globus_gram_job_manager_request_log(request,
               "JMI: Failed to open gram script argument file. %s\n",
               script_arg_file );
-        request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
-        request->failure_code = 
-              GLOBUS_GRAM_PROTOCOL_ERROR_ARG_FILE_CREATION_FAILED;
-        return(GLOBUS_FAILURE);
+
+        return GLOBUS_GRAM_PROTOCOL_ERROR_ARG_FILE_CREATION_FAILED;
     }
 
     scratch_dir = globus_l_gram_job_manager_script_prepare_param(
@@ -831,9 +813,6 @@ globus_gram_job_manager_script_rm_scratchdir(
     {
         globus_gram_job_manager_request_log(request,
               "JMI: returning with error: %d\n", rc);
-
-	request->failure_code = rc;
-	request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
 
         return rc;
     }
@@ -869,10 +848,8 @@ globus_gram_job_manager_script_stage_in(
 	globus_gram_job_manager_request_log(request,
               "JMI: Failed to open gram script argument file. %s\n",
               script_arg_file );
-        request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
-        request->failure_code = 
-              GLOBUS_GRAM_PROTOCOL_ERROR_ARG_FILE_CREATION_FAILED;
-        return(GLOBUS_FAILURE);
+
+        return GLOBUS_GRAM_PROTOCOL_ERROR_ARG_FILE_CREATION_FAILED;
     }
 
     globus_l_gram_job_manager_script_write_description(
@@ -892,13 +869,10 @@ globus_gram_job_manager_script_stage_in(
 
     if (rc != GLOBUS_SUCCESS)
     {
-	request->failure_code = rc;
-	request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
-
 	globus_gram_job_manager_request_log(request,
-              "JMI: returning with error: %d\n", request->failure_code );
+              "JMI: returning with error: %d\n", rc );
 
-        return(GLOBUS_FAILURE);
+        return rc;
     }
 
     globus_gram_job_manager_request_log(request,
@@ -934,10 +908,8 @@ globus_gram_job_manager_script_stage_out(
 	globus_gram_job_manager_request_log(request,
               "JMI: Failed to open gram script argument file. %s\n",
               script_arg_file );
-        request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
-        request->failure_code = 
-              GLOBUS_GRAM_PROTOCOL_ERROR_ARG_FILE_CREATION_FAILED;
-        return(GLOBUS_FAILURE);
+
+        return GLOBUS_GRAM_PROTOCOL_ERROR_ARG_FILE_CREATION_FAILED;
     }
 
     globus_l_gram_job_manager_script_write_description(
@@ -957,13 +929,10 @@ globus_gram_job_manager_script_stage_out(
 
     if (rc != GLOBUS_SUCCESS)
     {
-	request->failure_code = rc;
-	request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
-
 	globus_gram_job_manager_request_log(request,
-              "JMI: returning with error: %d\n", request->failure_code );
+              "JMI: returning with error: %d\n", rc );
 
-        return(GLOBUS_FAILURE);
+        return rc;
     }
 
     globus_gram_job_manager_request_log(request,
@@ -999,10 +968,8 @@ globus_gram_job_manager_script_file_cleanup(
 	globus_gram_job_manager_request_log(request,
               "JMI: Failed to open gram script argument file. %s\n",
               script_arg_file );
-        request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
-        request->failure_code = 
-              GLOBUS_GRAM_PROTOCOL_ERROR_ARG_FILE_CREATION_FAILED;
-        return(GLOBUS_FAILURE);
+
+        return GLOBUS_GRAM_PROTOCOL_ERROR_ARG_FILE_CREATION_FAILED;
     }
 
     globus_l_gram_job_manager_script_write_description(
@@ -1022,13 +989,10 @@ globus_gram_job_manager_script_file_cleanup(
 
     if (rc != GLOBUS_SUCCESS)
     {
-	request->failure_code = rc;
-	request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
-
 	globus_gram_job_manager_request_log(request,
-              "JMI: returning with error: %d\n", request->failure_code );
+              "JMI: returning with error: %d\n", rc );
 
-        return(GLOBUS_FAILURE);
+        return rc;
     }
 
     globus_gram_job_manager_request_log(request,
@@ -1087,9 +1051,6 @@ globus_gram_job_manager_script_cache_cleanup(
         globus_gram_job_manager_request_log(request,
               "JMI: returning with error: %d\n", rc);
 
-	request->failure_code = rc;
-	request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
-
         return rc;
     }
 
@@ -1121,10 +1082,8 @@ globus_gram_job_manager_script_remote_io_file_create(
 	globus_gram_job_manager_request_log(request,
               "JMI: Failed to open gram script argument file. %s\n",
               script_arg_file );
-        request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
-        request->failure_code = 
-              GLOBUS_GRAM_PROTOCOL_ERROR_ARG_FILE_CREATION_FAILED;
-        return(GLOBUS_FAILURE);
+
+        return GLOBUS_GRAM_PROTOCOL_ERROR_ARG_FILE_CREATION_FAILED;
     }
 
     globus_l_gram_job_manager_script_write_description(
@@ -1149,9 +1108,6 @@ globus_gram_job_manager_script_remote_io_file_create(
     {
         globus_gram_job_manager_request_log(request,
               "JMI: returning with error: %d\n", rc);
-
-	request->failure_code = rc;
-	request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
 
         return rc;
     }
@@ -1184,10 +1140,8 @@ globus_gram_job_manager_script_proxy_relocate(
 	globus_gram_job_manager_request_log(request,
               "JMI: Failed to open gram script argument file. %s\n",
               script_arg_file );
-        request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
-        request->failure_code = 
-              GLOBUS_GRAM_PROTOCOL_ERROR_ARG_FILE_CREATION_FAILED;
-        return(GLOBUS_FAILURE);
+
+        return GLOBUS_GRAM_PROTOCOL_ERROR_ARG_FILE_CREATION_FAILED;
     }
 
     globus_l_gram_job_manager_script_write_description(
@@ -1212,9 +1166,6 @@ globus_gram_job_manager_script_proxy_relocate(
     {
         globus_gram_job_manager_request_log(request,
               "JMI: returning with error: %d\n", rc);
-
-	request->failure_code = rc;
-	request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
 
         return rc;
     }
@@ -1248,10 +1199,8 @@ globus_gram_job_manager_script_proxy_update(
 	globus_gram_job_manager_request_log(request,
               "JMI: Failed to open gram script argument file. %s\n",
               script_arg_file );
-        request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
-        request->failure_code = 
-              GLOBUS_GRAM_PROTOCOL_ERROR_ARG_FILE_CREATION_FAILED;
-        return(GLOBUS_FAILURE);
+
+        return GLOBUS_GRAM_PROTOCOL_ERROR_ARG_FILE_CREATION_FAILED;
     }
 
     globus_l_gram_job_manager_script_write_description(
@@ -1276,9 +1225,6 @@ globus_gram_job_manager_script_proxy_update(
     {
         globus_gram_job_manager_request_log(request,
               "JMI: returning with error: %d\n", rc);
-
-	request->failure_code = rc;
-	request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
 
         return rc;
     }
