@@ -36,13 +36,13 @@ paradigm:
 Step 1: Run './configure'
    You will need to provide one of the following arguments:
 
-	--with-gsi=<path to standalone gsi installation>
-		Use this option when building with a standalone
-		version of the GSI.
-
         --with-globus-flavor=<Globus Grid API bundle flavor>
 		The GLOBUS_LOCATION environment variable must also be
 		set when building with the Globus Grid API bundle.
+
+	--with-gsi=<path to standalone gsi installation>
+		Use this option when building with a standalone
+		version of the GSI.
 
    You may also want to provide one or more of the following
    arguments:
