@@ -97,6 +97,9 @@ extern "C" {
 #define X509_USER_DELEG_FILE    "x509up_p"
 #define X509_USER_PROXY_FILE    "x509up_u"
 
+/* This is added after the CA name hash to make the policy filename */
+#define SIGNING_POLICY_FILE_EXTENSION	".signing_policy"
+
 #ifdef WIN32
 #define GSI_REGISTRY_DIR "software\\Globus\\GSI"
 #define X509_DEFAULT_CERT_DIR  	".globus\\certificates"
@@ -167,6 +170,7 @@ unsigned long ERR_get_error_line_data(char **file,int *line,
 #define PRXYERR_F_INIT_CRED			105
 #define PRXYERR_F_LOCAL_CREATE		106
 #define PRXYERR_F_CB_NO_PW			107
+#define PRXYERR_F_GET_CA_SIGN_PATH	108
 
 /* 
  * defines for reasons 
@@ -216,6 +220,7 @@ unsigned long ERR_get_error_line_data(char **file,int *line,
 #define PRXYERR_R_EXT_ADD				139
 #define PRXYERR_R_DELEGATE_COPY			140
 #define PRXYERR_R_DELEGATE_CREATE		141
+#define PRXYERR_R_BUFFER_TOO_SMALL		142
 
 /**********************************************************************
                                Type definitions
