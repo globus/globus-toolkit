@@ -199,7 +199,7 @@ createScript () {
    echo "#@ initialdir       = ${grami_directory}"
    echo "#@ class            = ${grami_queue}"
    echo "#@ Requirements     = ${grami_requirements}"
-   echo "#@ Restart     = ${grami_requirements}"
+   echo "#@ Restart          = no"
    echo "#" 
 
    if [ -n "${new_grami_env}" ] ; then
