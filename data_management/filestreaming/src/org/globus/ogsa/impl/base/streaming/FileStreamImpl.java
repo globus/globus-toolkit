@@ -392,11 +392,13 @@ public class FileStreamImpl extends GridServiceImpl {
         }
     }
 
-    public void start() throws InvalidUrlFault, InvalidPathFault,
-            FileTransferFault, CredentialsFault {
-        if (logger.isDebugEnabled()) {
-            logger.debug("starting stream");
-        }
+    public void start() 
+	throws InvalidUrlFault, 
+	       InvalidPathFault,
+	       FileTransferFault, 
+	       CredentialsFault,
+	       RemoteException {
+	logger.debug("starting stream");
 
 	Subject subject = SecurityManager.getManager().getSubject(this);
 	// extract gss credential from subject
