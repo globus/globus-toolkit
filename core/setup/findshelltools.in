@@ -111,7 +111,7 @@ AC_PATH_PROG(GLOBUS_SH_WHOAMI, whoami)
 AC_PATH_PROG(GLOBUS_SH_VMSTAT, vmstat)
 
 #--
-# OPTIONAL system section: needed only for HP-UX
+# OPTIONAL system section: needed only for HP-UX and Solaris
 #
 AC_PATH_PROG(GLOBUS_SH_SYSINFO, sysinfo)
 

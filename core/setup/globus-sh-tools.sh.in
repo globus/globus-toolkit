@@ -64,7 +64,7 @@ GLOBUS_SH_WHOAMI="@GLOBUS_SH_WHOAMI@"
 GLOBUS_SH_VMSTAT="@GLOBUS_SH_VMSTAT@"
 
 #--
-# OPTIONAL system section: needed only for HP-UX
+# OPTIONAL system section: needed only for HP-UX and Solaris
 #
 GLOBUS_SH_SYSINFO="@GLOBUS_SH_SYSINFO@"
 
