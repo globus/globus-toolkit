@@ -232,7 +232,7 @@ main(int argc, char **argv)
     }
     else
     {
-	fd_dest = 0;
+	fd_dest = 1;
     }
 
 
