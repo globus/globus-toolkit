@@ -2994,7 +2994,8 @@ globus_io_init_delegation(
 {
     globus_i_io_monitor_t       monitor;
     globus_result_t         rc;
-
+    globus_callback_space_t             saved_space;
+    
     globus_mutex_init(&monitor.mutex, GLOBUS_NULL);
     globus_cond_init(&monitor.cond, GLOBUS_NULL);
     monitor.done = GLOBUS_FALSE;
@@ -3002,6 +3003,10 @@ globus_io_init_delegation(
     monitor.err = GLOBUS_NULL;
     monitor.use_err = GLOBUS_FALSE;
     monitor.data = globus_malloc(sizeof(globus_io_delegation_data_t));
+
+    /* we're going to poll on global space, save users space */
+    saved_space = handle->space;
+    handle->space = GLOBUS_CALLBACK_GLOBAL_SPACE;
     
     rc = globus_io_register_init_delegation(handle,
                                             cred_handle,
@@ -3025,6 +3030,8 @@ globus_io_init_delegation(
         }
     }
     globus_mutex_unlock(&monitor.mutex);
+
+    handle->space = saved_space;
 
     globus_mutex_destroy(&monitor.mutex);
     globus_cond_destroy(&monitor.cond);
@@ -3214,7 +3221,8 @@ globus_io_accept_delegation(
     globus_i_io_monitor_t       monitor;
     globus_result_t         rc;
     static char *           myname= "globus_io_accept_delegation";
-
+    globus_callback_space_t             saved_space;
+    
     if(delegated_cred == GLOBUS_NULL)
     {
         rc = globus_error_put(
@@ -3237,6 +3245,10 @@ globus_io_accept_delegation(
     monitor.use_err = GLOBUS_FALSE;
     monitor.data = globus_malloc(sizeof(globus_io_delegation_data_t));
     
+    /* we're going to poll on global space, save users space */
+    saved_space = handle->space;
+    handle->space = GLOBUS_CALLBACK_GLOBAL_SPACE;
+
     rc = globus_io_register_accept_delegation(handle,
                                               restriction_oids,
                                               restriction_buffers,
@@ -3258,6 +3270,8 @@ globus_io_accept_delegation(
         }
     }
     globus_mutex_unlock(&monitor.mutex);
+
+    handle->space = saved_space;
 
     globus_mutex_destroy(&monitor.mutex);
     globus_cond_destroy(&monitor.cond);
