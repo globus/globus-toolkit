@@ -111,7 +111,7 @@ const char *default_authz_file(void);
 #define X509_LOCAL_TRUSTED_CERT_DIR     ".globus\\certificates"
 #define X509_DEFAULT_CERT_DIR           x509_default_cert_dir()
 #define X509_INSTALLED_CERT_DIR         x509_installed_cert_dir()
-#define X509_LOCAL_CERT_DIR             x509_local_cert_dir()
+#define X509_LOCAL_CERT_DIR             ".globus"
 #define DEFAULT_GRIDMAP                 default_gridmap()
 #define INSTALLED_GRIDMAP               installed_gridmap()
 #define LOCAL_GRIDMAP                   ".gridmap"
