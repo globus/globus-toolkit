@@ -57,6 +57,7 @@ typedef struct globus_l_gram_conf_values_s
     char *         osversion;
     char *         cputype;
     char *         manufacturer;
+    char *         job_reporting_dir;
     char *         machine_type;
     char *         platform;
     int            keep_to_seconds;
@@ -515,7 +516,7 @@ globus_l_gram_write_gram_cldif_file(globus_l_gram_conf_values_t * vals,
 
 
 /******************************************************************************
-Function:       globus_l_gram_get_globus_values()
+Function:       globus_l_gram_check_globus_jobs()
 Description:
 Parameters:
 Returns:
@@ -526,8 +527,7 @@ globus_l_gram_check_globus_jobs( globus_l_gram_conf_values_t * vals,
 {
     globus_gram_scheduler_t *  q_node;
     char stat_file_path[256];
-    char jobmanager_status_dir[256];
-    DIR * status_dir;
+    DIR * reporting_dir;
     struct stat statbuf;
     struct dirent * dir_entry;
     char match_str[56];
@@ -542,28 +542,29 @@ globus_l_gram_check_globus_jobs( globus_l_gram_conf_values_t * vals,
     if (!vals->publish_jobs)
        return;
 
-    sprintf(jobmanager_status_dir, "%s/var", vals->home_dir);
+    if (vals->job_reporting_dir == GLOBUS_NULL)
+       return;
 
-    status_dir = globus_libc_opendir(jobmanager_status_dir);
-    if(status_dir == GLOBUS_NULL)
+    reporting_dir = globus_libc_opendir(vals->job_reporting_dir);
+    if(reporting_dir == GLOBUS_NULL)
     {
         fprintf(stderr, 
             "ERROR: unable to open jobmanager status directory.\n");
         fprintf(stderr, 
-            "     directory = %s.\n", jobmanager_status_dir);
+            "     directory = %s.\n", vals->job_reporting_dir);
         return;
     }
 
     now = (unsigned long) time(NULL);
     sprintf(match_str, "%s_", vals->rdn);
 
-    for(globus_libc_readdir_r(status_dir, &dir_entry);
+    for(globus_libc_readdir_r(reporting_dir, &dir_entry);
         dir_entry != GLOBUS_NULL;
-        globus_libc_readdir_r(status_dir, &dir_entry))
+        globus_libc_readdir_r(reporting_dir, &dir_entry))
     {
         if ( strstr(dir_entry->d_name, match_str) )
         {
-            sprintf(stat_file_path, "%s/%s", jobmanager_status_dir,
+            sprintf(stat_file_path, "%s/%s", vals->job_reporting_dir,
                                       dir_entry->d_name);
 
             if (stat(stat_file_path, &statbuf) == 0)
@@ -590,7 +591,7 @@ globus_l_gram_check_globus_jobs( globus_l_gram_conf_values_t * vals,
         q_node->entry_list = globus_list_copy_reverse(q_node->entry_list);
     }
 
-    globus_libc_closedir(status_dir);
+    globus_libc_closedir(reporting_dir);
 
 } /* globus_l_gram_check_globus_jobs() */
 
@@ -863,6 +864,7 @@ globus_l_gram_conf_values_init(globus_l_gram_conf_values_t * vals)
     vals->condor_os = GLOBUS_NULL;
     vals->conf_file = GLOBUS_NULL;
     vals->cldif_file = GLOBUS_NULL;
+    vals->job_reporting_dir = GLOBUS_NULL;
     vals->machine_type = GLOBUS_NULL;
     vals->publish_jobs = GLOBUS_TRUE;
     vals->platform = GLOBUS_NULL;
@@ -1067,6 +1069,11 @@ globus_l_gram_get_conf_values(globus_l_gram_conf_values_t * vals)
                  && (i + 1 < z))
         {
             vals->cputype = arg[i+1];
+        }
+        else if ((strcasecmp(arg[i], "-job-reporting-dir") == 0)
+                 && (i + 1 < z))
+        {
+            vals->job_reporting_dir = arg[i+1];
         }
         else if ((strcasecmp(arg[i], "-machine-type") == 0)
                  && (i + 1 < z))
