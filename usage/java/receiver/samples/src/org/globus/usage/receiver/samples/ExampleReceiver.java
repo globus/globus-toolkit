@@ -29,7 +29,9 @@ public class ExampleReceiver {
         try {
             props = new Properties();
             propsIn = Receiver.class.getResourceAsStream("/udpUsage.properties");
-            props.load(propsIn);
+            if (propsIn != null) {
+                props.load(propsIn);
+            }
 
             databaseDriverClass = props.getProperty("database-driver");
             databaseURL = props.getProperty("database-url");
@@ -46,10 +48,9 @@ public class ExampleReceiver {
             }
             
             if (port == 0) {
-                log.fatal("You must specify listening port either on the command line or in the properties file.");
-                throw new Exception();
+                throw new Exception("You must specify listening port either on the command line or in the properties file.");
             }
-
+            
             /*When creating the receiver, pass it the port to listen on,
               the database connection class to use, the url to connect to your
               database, and the database table where default packets will be written
@@ -74,7 +75,7 @@ public class ExampleReceiver {
             log.fatal("An IOException occurred when trying to create Receiver:" +e.getMessage());
         }
         catch (Exception e) {
-            log.fatal("An exception occurred: "+e.getMessage());
+            log.fatal("An exception occurred: " + e.getMessage(), e);
         }
 
         /*That's all... this thread ends, but the receiver has started listener

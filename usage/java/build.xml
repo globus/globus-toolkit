@@ -2,6 +2,9 @@
 
 <project default="all" basedir=".">
 
+    <property name="env.GLOBUS_LOCATION" value="../../wsrf/install"/>
+    <property name="deploy.dir" location="${env.GLOBUS_LOCATION}"/>
+
     <target name="all" depends="deploy"/>
 
     <target name="deploy">
@@ -20,4 +23,19 @@
         <ant dir="receiver/samples" target="clean"/>
     </target>
         
+    <target name="receiver"> 
+         <java classname="org.globus.usage.receiver.samples.ExampleReceiver" 
+              dir="${deploy.dir}"
+              fork="true" 
+              failonerror="true">
+            <classpath>
+               <pathelement location="${deploy.dir}"/>
+               <fileset dir="${deploy.dir}/lib">
+                 <include name="*.jar"/>
+               </fileset>
+            </classpath>
+            <arg value="3333"/>
+        </java>
+    </target>
+
 </project>
