@@ -38,9 +38,16 @@ globus_i_xio_http_handle_init(
 {
     globus_result_t                     result;
 
-    result = globus_i_xio_http_request_copy(
-            &http_handle->request_info,
-            &attr->request);
+    if (target->is_client)
+    {
+        result = globus_i_xio_http_request_copy(
+                &http_handle->request_info,
+                &attr->request);
+    }
+    else
+    {
+        result = globus_i_xio_http_request_init(&http_handle->request_info);
+    }
     if (result != GLOBUS_SUCCESS)
     {
         goto error_exit;
@@ -51,10 +58,8 @@ globus_i_xio_http_handle_init(
     {
         goto free_request_exit;
     }
-    http_handle->response_info.request_callback =
-        attr->request_callback;
-    http_handle->response_info.request_callback_arg =
-        attr->request_callback_arg;
+    http_handle->response_info.callback = attr->request_callback;
+    http_handle->response_info.callback_arg = attr->request_callback_arg;
 
     result = globus_i_xio_http_target_copy(&http_handle->target_info, target);
     if (result != GLOBUS_SUCCESS)

@@ -274,6 +274,8 @@ globus_xio_http_version_t;
  * Callback type for indicating that the HTTP request is available.
  * @ingroup http_api
  *
+ * @param user_arg
+ *        Pointer to user data.
  * @param result
  *        The result of parsing the request line and headers. If this is
  *        not GLOBUS_SUCCESS, then the status_code and reason_phrase will
@@ -295,6 +297,7 @@ globus_xio_http_version_t;
  * @see GLOBUS_XIO_HTTP_ATTR_SET_REQUEST_CALLBACK
  */
 typedef void (*globus_xio_http_request_ready_callback_t) (
+    void *                              user_arg,
     globus_result_t                     result,
     const char *                        method,
     const char *                        uri,
@@ -305,6 +308,8 @@ typedef void (*globus_xio_http_request_ready_callback_t) (
  * Callback type for indicating that the HTTP response is available.
  * @ingroup http_api
  *
+ * @param user_arg
+ *        Pointer to user data.
  * @param result
  *        The result of parsing the response line and headers. If this is
  *        not GLOBUS_SUCCESS, then the status_code and reason_phrase will
@@ -326,6 +331,7 @@ typedef void (*globus_xio_http_request_ready_callback_t) (
  * @see GLOBUS_XIO_HTTP_ATTR_SET_RESPONSE_CALLBACK
  */
 typedef void (*globus_xio_http_response_ready_callback_t) (
+    void *                              user_arg,
     globus_result_t                     result,
     int                                 status_code,
     const char *                        reason_phrase,

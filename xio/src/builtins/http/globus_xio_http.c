@@ -22,13 +22,6 @@ static
 int
 globus_l_xio_http_deactivate(void);
 
-extern
-globus_result_t
-globus_i_xio_http_copy_blob(
-    globus_fifo_t *                     iovecs,
-    const unsigned char *               data,
-    size_t                              datalen);
-
 static globus_module_descriptor_t  globus_i_xio_http_module =
 {
     "globus_xio_http",                  /*module name*/
@@ -178,6 +171,7 @@ globus_i_xio_http_copy_blob(
 
         iov->iov_len += to_copy;
         datalen -= to_copy;
+        data += to_copy;
     }
     return GLOBUS_SUCCESS;
 }

@@ -385,15 +385,6 @@ globus_i_xio_http_server_write_response(
          * headers
          */
         if (http_handle->request_info.http_version
-                == GLOBUS_XIO_HTTP_VERSION_1_0)
-        {
-            /*
-             * RFC 2616 (section 3.6) says: A server MUST NOT send
-             * transfer-codings to an HTTP/1.0 client, so we don't set anything
-             * here unless we have a content length
-             */
-        }
-        if (http_handle->request_info.http_version
                 == GLOBUS_XIO_HTTP_VERSION_1_0 ||
             (http_handle->response_info.headers.transfer_encoding
                 == GLOBUS_XIO_HTTP_TRANSFER_ENCODING_IDENTITY &&
@@ -497,6 +488,8 @@ globus_i_xio_http_server_write_response(
         goto free_operation_exit;
     }
     globus_fifo_destroy(&iovecs);
+
+    http_handle->response_info.headers_sent = GLOBUS_TRUE;
 
     return GLOBUS_SUCCESS;
 
@@ -682,7 +675,7 @@ globus_l_xio_http_server_read_request_callback(
     {
         http_handle->request_info.headers.entity_needed = GLOBUS_TRUE;
     }
-    else if (http_handle->response_info.headers.content_length_set)
+    else if (http_handle->request_info.headers.content_length_set)
     {
         http_handle->request_info.headers.entity_needed = GLOBUS_TRUE;
     }
@@ -919,12 +912,13 @@ globus_l_xio_http_server_call_ready_callback(
     globus_i_xio_http_handle_t *        http_handle,
     globus_result_t                     result)
 {
-    if (http_handle->response_info.request_callback == NULL)
+    if (http_handle->response_info.callback == NULL)
     {
         /* User is missing out */
         return;
     }
-    http_handle->response_info.request_callback(
+    http_handle->response_info.callback(
+            http_handle->response_info.callback_arg,
             result,
             http_handle->request_info.method,
             http_handle->request_info.uri,

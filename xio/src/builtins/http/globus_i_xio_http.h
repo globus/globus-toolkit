@@ -186,11 +186,11 @@ typedef struct
      * server.
      */
     globus_xio_http_response_ready_callback_t
-                                        ready_callback;
+                                        callback;
     /**
      * Callback function argument.
      */
-    void *                              ready_callback_arg;
+    void *                              callback_arg;
 
     /**
      * Information about headers associated with this request
@@ -234,11 +234,11 @@ typedef struct
      * Function to be called when the request is parsed by the HTTP driver.
      */
     globus_xio_http_request_ready_callback_t
-                                        request_callback;
+                                        callback;
     /**
      * Callback function argument.
      */
-    void *                              request_callback_arg;
+    void *                              callback_arg;
 
     /**
      * Read operation to process response.

@@ -278,10 +278,14 @@ globus_l_xio_http_client_write_request(
                     GLOBUS_XIO_HTTP_TRANSFER_ENCODING_IDENTITY) &&
                     http_handle->request_info.headers.content_length_set))
         {
-            GLOBUS_XIO_HTTP_COPY_BLOB(&iovecs,
-                    "Transfer-Encoding: identity\r\n",
-                    29,
-                    free_iovecs_exit);
+            if (http_handle->request_info.http_version !=
+                    GLOBUS_XIO_HTTP_VERSION_1_0)
+            {
+                GLOBUS_XIO_HTTP_COPY_BLOB(&iovecs,
+                        "Transfer-Encoding: identity\r\n",
+                        29,
+                        free_iovecs_exit);
+            }
 
             GLOBUS_XIO_HTTP_COPY_BLOB(&iovecs,
                     "Content-Length: ",
@@ -546,22 +550,12 @@ globus_l_xio_http_client_read_response_callback(
     }
 
     /* Parsed all header information */
-    if (result != GLOBUS_SUCCESS ||
-            http_handle->response_info.status_code > 300)
-    {
-        /*
-         * Server isn't handling this request. The user shouldn't send any
-         * more data.
-         */
-        http_handle->request_info.headers.entity_needed = GLOBUS_FALSE;
-    }
-
     http_handle->parsed_headers = GLOBUS_TRUE;
 
     /* Decide whether we think reads should be done on this response */
 
-    if (http_handle->response_info.http_version == 
-            GLOBUS_XIO_HTTP_VERSION_1_0)
+    if (http_handle->request_info.http_version == GLOBUS_XIO_HTTP_VERSION_1_0 ||
+        http_handle->response_info.http_version == GLOBUS_XIO_HTTP_VERSION_1_0)
     {
         /* Don't know, don't care, will read until EOF */
         http_handle->response_info.headers.entity_needed = GLOBUS_TRUE;
@@ -784,12 +778,13 @@ globus_l_xio_http_client_call_ready_callback(
     globus_i_xio_http_handle_t *        http_handle,
     globus_result_t                     result)
 {
-    if (http_handle->request_info.ready_callback == NULL)
+    if (http_handle->request_info.callback == NULL)
     {
         /* User is missing out */
         return;
     }
-    http_handle->request_info.ready_callback(
+    http_handle->request_info.callback(
+            http_handle->request_info.callback_arg,
             result,
             http_handle->response_info.status_code,
             http_handle->response_info.reason_phrase,

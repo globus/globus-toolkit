@@ -133,8 +133,8 @@ globus_i_xio_http_request_copy(
         goto free_method_exit;
     }
 
-    dest->ready_callback = src->ready_callback;
-    dest->ready_callback_arg = src->ready_callback_arg;
+    dest->callback = src->callback;
+    dest->callback_arg = src->callback_arg;
 
     return res;
 

@@ -1005,6 +1005,7 @@ globus_i_xio_http_write_callback(
 {
     globus_i_xio_http_handle_t *        http_handle = user_arg;
     globus_i_xio_http_header_info_t *   headers;
+    va_list                             dummy;
 
     if (http_handle->target_info.is_client)
     {
@@ -1034,14 +1035,31 @@ globus_i_xio_http_write_callback(
         {
             nbytes -= http_handle->write_operation.iov[0].iov_len;
         }
+        /*
+         * Free our copy of the iovec with the chunk framing
+         */
+        globus_libc_free(http_handle->write_operation.iov);
     }
-    globus_libc_free(http_handle->write_operation.iov);
+    else if (headers->content_length_set)
+    {
+        headers->content_length -= nbytes;
+    }
     http_handle->write_operation.iov = NULL;
     http_handle->write_operation.iovcnt = 0;
     http_handle->write_operation.operation = NULL;
     http_handle->write_operation.nbytes = 0;
     http_handle->write_operation.wait_for = 0;
 
+    if (headers->transfer_encoding
+            == GLOBUS_XIO_HTTP_TRANSFER_ENCODING_IDENTITY &&
+        headers->content_length_set && headers->content_length == 0)
+    {
+        /* Wrote the end of the content */
+        globus_i_xio_http_handle_cntl(
+                http_handle,
+                GLOBUS_XIO_HTTP_HANDLE_SET_END_OF_ENTITY, dummy); 
+
+    }
     globus_xio_driver_finished_write(op, result, nbytes);
 }
 /* globus_i_xio_http_write_callback() */

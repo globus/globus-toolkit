@@ -125,8 +125,8 @@ globus_i_xio_http_response_copy(
         goto free_reason_phrase_exit;
     }
 
-    dest->request_callback = src->request_callback;
-    dest->request_callback = src->request_callback_arg;
+    dest->callback = src->callback;
+    dest->callback = src->callback_arg;
     dest->read_operation = src->read_operation;
 
     return res;

@@ -167,10 +167,10 @@ globus_i_xio_http_attr_cntl(
             break;
 
         case GLOBUS_XIO_HTTP_ATTR_SET_RESPONSE_CALLBACK:
-            attr->request.ready_callback = va_arg(
+            attr->request.callback = va_arg(
                     ap,
                     globus_xio_http_response_ready_callback_t);
-            attr->request.ready_callback_arg = va_arg(ap, void *);
+            attr->request.callback_arg = va_arg(ap, void *);
             break;
 
         default:

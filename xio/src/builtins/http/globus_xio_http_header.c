@@ -120,6 +120,7 @@ globus_i_xio_http_header_parse(
     char *                              header_name;
     char *                              header_value;
     int                                 rc;
+
     GlobusXIOName(globus_i_xio_http_header_parse);
 
     if (http_handle->target_info.is_client)
@@ -149,10 +150,10 @@ globus_i_xio_http_header_parse(
             return GLOBUS_SUCCESS;
         }
 
-        if ((eol - current_offset + 1) < http_handle->read_buffer_valid)
+        if ((eol - current_offset + 2) < http_handle->read_buffer_valid)
         {
             /* Peek ahead for LWS for multi-line headers */
-            if (*(eol+1) == ' ' || *(eol+1) == '\t')
+            if (*(eol+2) == ' ' || *(eol+2) == '\t')
             {
                 /*
                  * first char after eol is space or tab---convert CRLF
@@ -231,13 +232,6 @@ globus_i_xio_http_header_parse(
                 + http_handle->read_buffer_offset);
         http_handle->read_buffer_valid -= parsed;
         http_handle->read_buffer_offset += parsed;
-
-        if (headers->transfer_encoding
-                != GLOBUS_XIO_HTTP_TRANSFER_ENCODING_CHUNKED &&
-            headers->content_length_set)
-        {
-            http_handle->read_chunk_left = headers->content_length;
-        }
     }
     else
     {
