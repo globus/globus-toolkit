@@ -609,6 +609,7 @@ globus_i_gsi_gss_create_and_fill_context(
     if(context)
     {
         globus_libc_free(context);
+        *context_handle_P = NULL;
     }
 
  exit:
@@ -760,6 +761,8 @@ globus_i_gsi_gss_get_token(
 
         while(len < output_token->length)
         { 
+            int                         len, rc;
+            
             rc = BIO_read(write_bio,
                           output_token->value,
                           output_token->length);
@@ -771,7 +774,7 @@ globus_i_gsi_gss_get_token(
             {
                 GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
                     minor_status, 
-                    GLOBUS_GSI_GSSAPI_ERROR_WITH_TOKEN,
+                    GLOBUS_GSI_GSSAPI_ERROR_TOKEN_FAIL,
                     ("Error reading token from BIO: %d\n", rc));
                 major_status = GSS_S_FAILURE;
                 goto exit;

@@ -72,6 +72,7 @@ GSS_CALLCONV gss_acquire_cred(
     gss_OID_set *                       actual_mechs,
     OM_uint32 *                         time_rec) 
 {
+    char *                              desired_name_string = NULL;
     OM_uint32                           major_status = GSS_S_NO_CRED;
     OM_uint32                           local_minor_status;
 
@@ -110,11 +111,26 @@ GSS_CALLCONV gss_acquire_cred(
         *time_rec = GSS_C_INDEFINITE;
     }
 
+    if(desired_name_P)
+    {
+        desired_name_string = X509_NAME_oneline(
+            ((gss_name_desc *)desired_name_P)->x509n,
+            NULL, 0);
+        if(!desired_name_string)
+        {
+            GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
+                minor_status,
+                GLOBUS_GSI_GSSAPI_ERROR_WITH_OPENSSL,
+                ("Couldn't get subject name of desired name struct"));
+            goto error;
+        }
+    }
+
     major_status = globus_i_gsi_gss_cred_read(
         &local_minor_status,
         cred_usage,
         output_cred_handle_P,
-        (const char *)desired_name_P);
+        desired_name_string);
 
     if(GSS_ERROR(major_status))
     {
@@ -124,9 +140,19 @@ GSS_CALLCONV gss_acquire_cred(
         goto error;
     }
 
+    if(desired_name_string)
+    {
+        free(desired_name_string);
+    }
+
     goto exit;
 
  error:
+
+    if(desired_name_string)
+    {
+        free(desired_name_string);
+    }
 
     if(*output_cred_handle_P)
     {

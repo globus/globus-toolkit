@@ -1,12 +1,12 @@
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
- * @file unwrap.c
- * @author Sam Lang, Sam Meder
- *
- * $RCSfile$
- * $Revision$
- * $Date$
- */
+* @file unwrap.c
+* @author Sam Lang, Sam Meder
+*
+* $RCSfile$
+* $Revision$
+* $Date$
+*/
 #endif
 
 static char *rcsid = "$Id$";
@@ -15,7 +15,6 @@ static char *rcsid = "$Id$";
 #include "globus_i_gsi_gss_utils.h"
 #include "gssapi_openssl.h"
 #include <string.h>
-
 #include "ssl_locl.h"
 
 /**
@@ -227,7 +226,6 @@ GSS_CALLCONV gss_unwrap(
         /* now get the date from SSL. 
          * We don't know how big it is, so assume the max?
          */
-
         while((rc = SSL_read(context->gss_ssl, 
                              readarea, sizeof(readarea))) > 0)
         {
