@@ -2,7 +2,7 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="7.00"
-	Name="DebugLib"
+	Name="gass_server_ez"
 	ProjectGUID="{78A00573-72A5-4B03-A1C4-4F1AFA91BCA3}"
 	Keyword="Win32Proj">
 	<Platforms>
@@ -33,7 +33,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)/globus_gass_server_ez_win32dbg.lib"/>
+				OutputFile="$(OutDir)/libglobus_gass_server_ez_win32dbg.lib"/>
 			<Tool
 				Name="VCMIDLTool"/>
 			<Tool

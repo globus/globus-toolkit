@@ -2,7 +2,7 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="7.00"
-	Name="DebugLibThr"
+	Name="gass_transfer_LibThr"
 	ProjectGUID="{25C247EC-2E23-48FF-8A64-6C924D62258C}"
 	Keyword="Win32Proj">
 	<Platforms>
@@ -33,7 +33,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)/globus_gass_transfer_win32dbgthr.lib"/>
+				OutputFile="$(OutDir)/libglobus_gass_transfer_win32dbgthr.lib"/>
 			<Tool
 				Name="VCMIDLTool"/>
 			<Tool
