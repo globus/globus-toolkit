@@ -187,7 +187,14 @@ myproxy_log(const char *format, ...)
 void
 myproxy_log_verror()
 {
-    do_log(verror_get_string(), LOG_ERR);
+    char *string;
+    
+    string = verror_get_string();
+    
+    if (string != NULL)
+    {
+	do_log(verror_get_string(), LOG_ERR);
+    }
 
     if (verror_get_errno() != 0)
     {
