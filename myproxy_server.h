@@ -6,10 +6,6 @@
 #ifndef __MYPROXY_SERVER_H
 #define __MYPROXY_SERVER_H
 
-#ifndef MYPROXY_SERVER_DIR
-#define MYPROXY_SERVER_DIR	"/usr/local/myproxy-server"
-#endif /* !MYPROXY_SERVER_DIR */ 
-
 /* Minimum pass phrase length */
 #define MIN_PASS_PHRASE_LEN		6
 

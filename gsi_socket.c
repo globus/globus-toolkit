@@ -728,7 +728,6 @@ GSI_SOCKET_use_creds(GSI_SOCKET *self,
 {
     int return_code = GSI_SOCKET_ERROR;
     
-#ifdef GSI_SOCKET_SSLEAY
     if (creds == NULL)
     {
 	/* XXX Do nothing for now */
@@ -738,7 +737,6 @@ GSI_SOCKET_use_creds(GSI_SOCKET *self,
     {
         return_code = (mysetenv("X509_USER_PROXY", creds, 1) == -1) ? GSI_SOCKET_ERROR : GSI_SOCKET_SUCCESS;
     }
-#endif /* GSI_SOCKET_SSLEAY */
 
     return return_code;
 }
