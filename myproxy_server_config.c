@@ -207,6 +207,11 @@ line_parse_callback(void *context_arg,
 	context->passphrase_policy_pgm = strdup(tokens[1]);
     }
 
+    if (strcmp(directive, "max_proxy_lifetime") == 0)
+    {
+	context->max_proxy_lifetime = 60*60*atoi(tokens[1]);
+    }
+
     return_code = 0;
     
   error:

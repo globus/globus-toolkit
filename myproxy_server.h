@@ -22,6 +22,7 @@ typedef struct
   char **default_retriever_dns;/* List of DNs we'll delegate to */
   char **authorized_renewer_dns; /* List of DNs that can renew creds */
   char **default_renewer_dns; /* List of DNs that can renew creds */
+  int max_proxy_lifetime;	/* Max life (in seconds) of retrieved creds */
 } myproxy_server_context_t;
 
 

@@ -78,7 +78,8 @@ void send_response(myproxy_socket_attrs_t *server_attrs,
 void get_proxy(myproxy_socket_attrs_t *server_attrs, 
 	       myproxy_creds_t *creds,
 	       myproxy_request_t *request,
-	       myproxy_response_t *response);
+	       myproxy_response_t *response,
+	       int max_proxy_lifetime);
 
 void put_proxy(myproxy_socket_attrs_t *server_attrs, 
 	      myproxy_creds_t *creds, 
@@ -383,7 +384,8 @@ handle_client(myproxy_socket_attrs_t *attrs,
 	send_response(attrs, server_response, client_name);
 	
 	/* Delegate the credential and set final server_response */
-        get_proxy(attrs, client_creds, client_request, server_response);
+        get_proxy(attrs, client_creds, client_request, server_response,
+		  context->max_proxy_lifetime);
         break;
 
 
@@ -677,11 +679,16 @@ void send_response(myproxy_socket_attrs_t *attrs, myproxy_response_t *response,
 void get_proxy(myproxy_socket_attrs_t *attrs, 
 	       myproxy_creds_t *creds,
 	       myproxy_request_t *request,
-	       myproxy_response_t *response) 
+	       myproxy_response_t *response,
+               int max_proxy_lifetime)
 {
     int min_lifetime;
   
     min_lifetime = MIN(creds->lifetime, request->proxy_lifetime);
+
+    if (max_proxy_lifetime) {
+	min_lifetime = MIN(min_lifetime, max_proxy_lifetime);
+    }
 
     if (myproxy_init_delegation(attrs, creds->location, min_lifetime,
 				request->passphrase) < 0) {

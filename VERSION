@@ -3,6 +3,10 @@ This version should be compatible with all versions since v0.2.
 
 Version History
 ---------------
+v0.6.0 XX XX 2004 (GPT package version 1.12)
+  - added max_proxy_lifetime server configuration option for limiting
+    the lifetime of retrieved credentials
+
 v0.5.9 28 Jan 2004 (GPT package version 1.11)
   - removed requirement for /dev/urandom and instead let OpenSSL seed
     its random number generator itself using its standard methods
