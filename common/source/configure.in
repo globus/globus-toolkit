@@ -80,9 +80,6 @@ AC_OUTPUT(
 	doxygen/Makefile
 	doxygen/Doxyfile 
 	doxygen/Doxyfile-internal	
-	tests/run-tests
-	tests/globus_thread_test.sh
-	tests/Makefile
 	,
 	$GLOBUS_INSTALL_PATH/sbin/gpt_generate_bin_pkg_data \
 	--flavor=$GLOBUS_FLAVOR_NAME "./pkgdata/pkg_data_src.gpt"
