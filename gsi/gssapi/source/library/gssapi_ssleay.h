@@ -306,6 +306,7 @@ typedef struct gss_cred_id_desc_struct {
 } gss_cred_id_desc ;
 
 typedef struct gss_ctx_id_desc_struct{
+    globus_mutex_t                      mutex;
     proxy_verify_desc                   pvd; /* used for verify_callback */
     proxy_verify_ctx_desc               pvxd;
     gss_name_desc *                     source_name;                 
@@ -339,16 +340,19 @@ typedef struct gss_ctx_id_desc_struct{
 **********************************************************************/
 
 extern
-const gss_OID_desc * const gss_mech_globus_gssapi_ssleay;
+const gss_OID_desc * const              gss_mech_globus_gssapi_ssleay;
 
 extern
-const gss_OID_desc * const gss_restrictions_extension;
+const gss_OID_desc * const              gss_restrictions_extension;
 
 extern
-const gss_OID_desc * const gss_trusted_group;
+const gss_OID_desc * const              gss_trusted_group;
 
 extern
-const gss_OID_desc * const gss_untrusted_group;
+const gss_OID_desc * const              gss_untrusted_group;
+
+extern
+globus_thread_once_t                    once_control;
 
 /**********************************************************************
                                Function prototypes

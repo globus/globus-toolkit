@@ -4,7 +4,7 @@ init_sec_context.c:
 
 Description:
     GSSAPI routine to initiate the sending of a security context
-	See: <draft-ietf-cat-gssv2-cbind-04.txt>
+    See: <draft-ietf-cat-gssv2-cbind-04.txt>
 CVS Information:
 
     $Source$
@@ -41,8 +41,8 @@ static char *rcsid = "$Header$";
 Function: gss_init_sec_context
 
 Description:
-	Called by the client in a loop, it will return a token
-	to be sent to the accept_sec_context running in the server. 
+    Called by the client in a loop, it will return a token
+    to be sent to the accept_sec_context running in the server. 
 Parameters:
 
 Returns:
@@ -66,14 +66,14 @@ GSS_CALLCONV gss_init_sec_context(
 {
 
     gss_ctx_id_desc *                   context = NULL;
-    OM_uint32 		                major_status = 0;
-    OM_uint32 		                inv_minor_status = 0;
-    OM_uint32 		                inv_major_status = 0;
+    OM_uint32                           major_status = 0;
+    OM_uint32                           inv_minor_status = 0;
+    OM_uint32                           inv_major_status = 0;
     X509_REQ *                          reqp = NULL;
     X509 *                              ncert = NULL;
     X509 *                              current_cert = NULL;
-    int  			        rc;
-    char 			        cbuf[1];
+    int                                 rc;
+    char                                cbuf[1];
     time_t                              goodtill = 0;
     int                                 cert_count = 0;
     globus_proxy_type_t                 proxy_type = GLOBUS_FULL_PROXY;
@@ -87,6 +87,13 @@ GSS_CALLCONV gss_init_sec_context(
 
     context = *context_handle_P;
 
+    /* module activation if not already done by calling
+     * globus_module_activate
+     */
+    
+    globus_thread_once(
+        &once_control,
+        (void (*)(void))globus_i_gsi_gssapi_module.activation_func);
 
     if(req_flags & GSS_C_ANON_FLAG & GSS_C_DELEG_FLAG)
     {
@@ -104,13 +111,6 @@ GSS_CALLCONV gss_init_sec_context(
                 "\n**********\ninit_sec_context: uid=%d pid=%d\n**********\n",
                 getuid(), getpid()) ;
 #endif /* DEBUG */
-
-        /* 
-         * We are going to use the SSL error routines, get them
-         * initilized early. They may be called more then once. 
-         */
-
-        ERR_load_gsserr_strings(0);  
 
 #ifdef DEBUG
         fprintf(stderr, "Creating context w/%s.\n",
@@ -177,7 +177,7 @@ GSS_CALLCONV gss_init_sec_context(
     	if (major_status != GSS_S_COMPLETE)
         {
             return major_status;
-    	}
+        }
     }
 
 
@@ -267,7 +267,7 @@ GSS_CALLCONV gss_init_sec_context(
                 break;
             }
         }
-	
+    
         context->ret_flags |= GSS_C_MUTUAL_FLAG;
         context->ret_flags |= GSS_C_PROT_READY_FLAG; 
         context->ret_flags |= GSS_C_INTEG_FLAG
@@ -288,7 +288,7 @@ GSS_CALLCONV gss_init_sec_context(
             context->gs_state = GS_CON_ST_DONE;
             break;
         }
-			
+            
         /*
          * If we have completed the handshake, but dont
          * have any more data to send, we can send the flag
@@ -305,7 +305,7 @@ GSS_CALLCONV gss_init_sec_context(
 
     case(GS_CON_ST_FLAGS):
         if (input_token->length > 0)
-        {	
+        {   
             BIO_read(context->gs_sslbio,cbuf,1);
         }
 
@@ -322,7 +322,7 @@ GSS_CALLCONV gss_init_sec_context(
             context->gs_state=GS_CON_ST_DONE;
         } 
         break;
-			
+            
     case(GS_CON_ST_REQ):
         /* DEE? needs error processing here */
         /* Get the cert req */
@@ -366,7 +366,7 @@ GSS_CALLCONV gss_init_sec_context(
         X509_free(ncert);
         ncert = NULL;
         break;
-			
+            
     case(GS_CON_ST_CERT): ;
     case(GS_CON_ST_DONE): ;
     } /* end of switch for gs_con_st */

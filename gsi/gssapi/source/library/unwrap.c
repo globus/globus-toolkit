@@ -71,6 +71,7 @@ GSS_CALLCONV gss_unwrap(
     gss_buffer_t                        mic_buf = &mic_buf_desc;
     gss_buffer_desc                     data_buf_desc;
     gss_buffer_t                        data_buf = &data_buf_desc;
+    OM_uint32                           major_status = GSS_S_COMPLETE;
     
     *minor_status = 0;
     output_message_buffer->value = NULL;
@@ -81,6 +82,10 @@ GSS_CALLCONV gss_unwrap(
         return GSS_S_NO_CONTEXT;
     }
 
+    /* lock the context mutex */
+    
+    globus_mutex_lock(&context->mutex);
+    
     if(context->ctx_flags & GSS_I_PROTECTION_FAIL_ON_CONTEXT_EXPIRATION)
     {
         time_t                          current_time;
@@ -89,7 +94,8 @@ GSS_CALLCONV gss_unwrap(
 
         if(current_time > context->goodtill)
         {
-            return GSS_S_CONTEXT_EXPIRED;
+            major_status = GSS_S_CONTEXT_EXPIRED;
+            goto err;
         }
     }
 
@@ -132,7 +138,8 @@ GSS_CALLCONV gss_unwrap(
         if (input_message_buffer->length != 
             (5 + mic_buf->length + data_buf->length))
         {
-            return GSS_S_DEFECTIVE_TOKEN;
+            major_status = GSS_S_DEFECTIVE_TOKEN;
+            goto err;
         }
                 
         /*
@@ -145,7 +152,8 @@ GSS_CALLCONV gss_unwrap(
         {
             GSSerr(GSSERR_F_UNWRAP, GSSERR_R_OUT_OF_MEMORY);
             *minor_status = gsi_generate_minor_status();
-            return GSS_S_FAILURE;
+            major_status = GSS_S_FAILURE;
+            goto err;
         }
         output_message_buffer->length = data_buf->length;
         memcpy(output_message_buffer->value, 
@@ -161,11 +169,11 @@ GSS_CALLCONV gss_unwrap(
 #ifdef DEBUG
         fprintf(stderr,"gss_unwrap: calling verify_mic\n");
 #endif
-        return gss_verify_mic(minor_status,
-                              context_handle,
-                              output_message_buffer,
-                              mic_buf,
-                              qop_state);               
+        major_status = gss_verify_mic(minor_status,
+                                      context_handle,
+                                      output_message_buffer,
+                                      mic_buf,
+                                      qop_state);               
     }
     else
     {
@@ -178,7 +186,8 @@ GSS_CALLCONV gss_unwrap(
                          NULL,
                          input_message_buffer) != GSS_S_COMPLETE)
         {
-            return GSS_S_DEFECTIVE_TOKEN;       
+            major_status = GSS_S_DEFECTIVE_TOKEN;
+            goto err;
         }
 
         /* now get the date from SSL. 
@@ -197,10 +206,9 @@ GSS_CALLCONV gss_unwrap(
                     rc,
                     SSL_get_error(context->gs_ssl, rc));
             ERR_add_error_data(1,errbuf);
-        
             *minor_status = gsi_generate_minor_status();
-
-            return GSS_S_FAILURE;
+            major_status = GSS_S_FAILURE;
+            goto err;
         }
         else if (rc == 0)
         {
@@ -211,7 +219,8 @@ GSS_CALLCONV gss_unwrap(
         {
             if ((output_message_buffer->value = (char *)malloc(rc)) == NULL)
             {
-                return GSS_S_FAILURE;
+                major_status = GSS_S_FAILURE;
+                goto err;
             }
             output_message_buffer->length = rc;
             memcpy(output_message_buffer->value, readarea, rc);
@@ -229,8 +238,13 @@ GSS_CALLCONV gss_unwrap(
                 *conf_state = 1;
             }
         }
-        return GSS_S_COMPLETE;
     }
+err:
+    /* unlock the context mutex */
+    
+    globus_mutex_unlock(&context->mutex);
+
+    return major_status;
 }
 
 /**********************************************************************
@@ -283,4 +297,5 @@ GSS_CALLCONV gss_unseal(
 
   return major_status;
 }
+
 

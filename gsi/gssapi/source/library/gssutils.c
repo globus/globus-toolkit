@@ -27,18 +27,6 @@ static char *rcsid = "$Header$";
 #include <stdlib.h>
 
 /**********************************************************************
-                               Type definitions
-**********************************************************************/
-
-/**********************************************************************
-                          Module specific prototypes
-**********************************************************************/
-
-/**********************************************************************
-                       Define module specific variables
-**********************************************************************/
-
-/**********************************************************************
 Function: gss_copy_name_to_name() 
 
 Description:
@@ -165,7 +153,8 @@ gss_create_and_fill_context(
     context->locally_initiated = (cred_usage == GSS_C_INITIATE);
     context->ctx_flags |= GSS_I_CTX_INITIALIZED;
     context->goodtill = 0;
-    
+    globus_mutex_init(&context->mutex, NULL);
+
     proxy_verify_ctx_init(&(context->pvxd));
     proxy_verify_init(&(context->pvd), &(context->pvxd));
 
@@ -232,40 +221,16 @@ gss_create_and_fill_context(
         major_status = gss_copy_name_to_name(&context->target_name,
                                              context->cred_handle->globusid);
     }
-
-    /* Set the verify callback to test our proxy 
-     * policies. 
-     * The SSL_set_verify does not appear to work as 
-     * expected. The SSL_CTX_set_verify does more,
-     * it also sets the X509_STORE_set_verify_cb_func
-     * which is what we want. This occurs in both 
-     * SSLeay 0.8.1 and 0.9.0 
-     */
-
+    
     if (context->cred_handle->pcd->certdir)
     {
         context->pvxd.certdir = strdup(context->cred_handle->pcd->certdir);
     }
 
-    SSL_CTX_set_verify(context->cred_handle->pcd->gs_ctx,
-                       SSL_VERIFY_PEER,
-                       proxy_verify_callback);
 
 #ifdef DEBUG
     fprintf(stderr,"SSL_CTX_set_app_data to pvd %p\n",
             context->pvd);
-#endif
-#if SSLEAY_VERSION_NUMBER >= 0x0090581fL
-    /*
-     * for now we will accept any purpose, as Globus does
-     * nor have any restrictions such as this is an SSL client
-     * or SSL server. Globus certificates are not required
-     * to have these fields set today.
-     * DEE - Need  to look at this in future if we use 
-     * certificate extensions...  
-     */
-    SSL_CTX_set_purpose(context->cred_handle->pcd->gs_ctx,
-			X509_PURPOSE_ANY);
 #endif
 
     /* setup the SSL  for the gs_shuffle routine */

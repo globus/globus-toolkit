@@ -235,7 +235,7 @@ GSS_CALLCONV gss_wrap(
     gss_buffer_desc                     mic_buf_desc;
     gss_buffer_t                        mic_buf =
         (gss_buffer_desc *) &mic_buf_desc;
-    OM_uint32                           major_status;
+    OM_uint32                           major_status = GSS_S_COMPLETE;
     OM_uint32                           minor_status2;
     unsigned char *                     p;
     
@@ -253,6 +253,11 @@ GSS_CALLCONV gss_wrap(
         return GSS_S_NO_CONTEXT;
     }
 
+    /* lock the context mutex */
+    
+    globus_mutex_lock(&context->mutex);
+
+    
     if(context->ctx_flags & GSS_I_PROTECTION_FAIL_ON_CONTEXT_EXPIRATION)
     {
         time_t                          current_time;
@@ -261,7 +266,8 @@ GSS_CALLCONV gss_wrap(
 
         if(current_time > context->goodtill)
         {
-            return GSS_S_CONTEXT_EXPIRED;
+            major_status = GSS_S_CONTEXT_EXPIRED;
+            goto err;
         }
     }
 
@@ -272,9 +278,13 @@ GSS_CALLCONV gss_wrap(
         /*
          * Do our integrity protection using the get_mic
          * Allows for large blocks, no encryption. 
-         * Not ture SSL.  
+         * Not pure SSL.  
          * DEE Should check compatability flag too. 
          */
+
+        /* unlock the context mutex */
+        
+        globus_mutex_unlock(&context->mutex);
         
         if ((major_status = gss_get_mic(minor_status,
                                         context_handle,
@@ -285,6 +295,10 @@ GSS_CALLCONV gss_wrap(
             return  major_status;
         }
 
+        /* lock the context mutex */
+        
+        globus_mutex_lock(&context->mutex);
+        
         output_message_buffer->value = 
             (char *)malloc(5 + mic_buf->length + 
                            input_message_buffer->length);
@@ -293,7 +307,8 @@ GSS_CALLCONV gss_wrap(
             GSSerr(GSSERR_F_WRAP, GSSERR_R_OUT_OF_MEMORY);
             *minor_status = gsi_generate_minor_status();
             gss_release_buffer(&minor_status2, mic_buf);
-            return GSS_S_FAILURE;
+            major_status = GSS_S_FAILURE;
+            goto err;
         }
 
         output_message_buffer->length = 5 + mic_buf->length + 
@@ -312,7 +327,6 @@ GSS_CALLCONV gss_wrap(
         {
             *conf_state = 0;
         }
-        return GSS_S_COMPLETE;
     } 
     else
     {
@@ -333,8 +347,8 @@ GSS_CALLCONV gss_wrap(
                     input_message_buffer->length,
                     SSL_get_error(context->gs_ssl, rc));
             ERR_add_error_data(1,errbuf);
-            
-            return GSS_S_FAILURE;
+            major_status = GSS_S_FAILURE;
+            goto err;
         }
         if (conf_state)
         {
@@ -350,10 +364,16 @@ GSS_CALLCONV gss_wrap(
         }
         /* get the data from the write BIO */
         
-        return gs_get_token(context,
-                            NULL,
-                            output_message_buffer);
+        major_status =  gs_get_token(context,
+                                     NULL,
+                                     output_message_buffer);
     }
+err:
+    /* unlock the context mutex */
+    
+    globus_mutex_unlock(&context->mutex);
+
+    return major_status;
 }
 
 /**********************************************************************
@@ -387,4 +407,14 @@ GSS_CALLCONV gss_seal(
                     conf_state,
                     output_message_buffer);
 }
+
+
+
+
+
+
+
+
+
+
 

@@ -109,10 +109,6 @@ GSS_CALLCONV gss_export_sec_context(
         goto end;
     }
 
-    s = context->gs_ssl;
-
-    interprocess_token->length = 0;
-
     /* Open mem bio for writing the session */
     
     if ((bp = BIO_new(BIO_s_mem())) == NULL)
@@ -122,7 +118,15 @@ GSS_CALLCONV gss_export_sec_context(
         major_status = GSS_S_FAILURE;
         goto end;
     }
-	
+
+    /* lock the context mutex */
+    
+    globus_mutex_lock(&context->mutex);
+    
+    s = context->gs_ssl;
+
+    interprocess_token->length = 0;
+
     /*
      * We need to save:
      * version of this routine. 
@@ -278,6 +282,10 @@ GSS_CALLCONV gss_export_sec_context(
     interprocess_token->value = cp;
     major_status = GSS_S_COMPLETE;
 
+    /* unlock the context mutex */
+    
+    globus_mutex_unlock(&context->mutex);
+    
     /* Now delete the GSS context as per RFC */
 #ifndef __CYGWIN__	 
     major_status = gss_delete_sec_context(minor_status,
