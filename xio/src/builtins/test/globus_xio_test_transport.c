@@ -523,11 +523,14 @@ globus_l_xio_test_close(
     globus_result_t                     res = GLOBUS_SUCCESS;
     GlobusXIOName(globus_l_xio_test_close);
 
+    GlobusXIODebugInternalEnter();
+
     dh = (globus_l_xio_test_handle_t *) driver_handle;
 
     if(dh->failure == GLOBUS_XIO_TEST_FAIL_PASS_CLOSE)
     {
-        return GlobusXIOErrorTestError(GLOBUS_XIO_TEST_FAIL_PASS_CLOSE);
+        res = GlobusXIOErrorTestError(GLOBUS_XIO_TEST_FAIL_PASS_CLOSE);
+        goto err;
     }
     else if(dh->failure == GLOBUS_XIO_TEST_FAIL_FINISH_CLOSE)
     {
@@ -571,7 +574,13 @@ globus_l_xio_test_close(
             GLOBUS_CALLBACK_GLOBAL_SPACE);
     }
 
+    GlobusXIODebugInternalExit();
     return GLOBUS_SUCCESS;
+
+  err:
+
+    GlobusXIODebugInternalExitWithError();
+    return res;
 }
 
 /*
@@ -775,7 +784,8 @@ globus_l_xio_test_transport_load(
         globus_l_xio_test_close,
         globus_l_xio_test_read,
         globus_l_xio_test_write,
-        globus_l_xio_test_cntl);
+        globus_l_xio_test_cntl,
+        NULL);
 
     globus_xio_driver_set_client(
         driver,

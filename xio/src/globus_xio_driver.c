@@ -168,7 +168,7 @@ globus_i_xio_handle_destroy(
         {
             GlobusXIODebugPrintf(
                 GLOBUS_XIO_DEBUG_INFO,
-                ("[globus_i_xio_handle_dec] :: signalling handle unload.\n"));
+                ("[globus_i_xio_handle_destroy] :: signalling handle unload.\n"));
 
             handle->sd_monitor->count--;
             handle->sd_monitor = NULL;
@@ -1150,7 +1150,8 @@ globus_xio_driver_set_transport(
     globus_xio_driver_close_t               close_func,
     globus_xio_driver_read_t                read_func,
     globus_xio_driver_write_t               write_func,
-    globus_xio_driver_handle_cntl_t         handle_cntl_func)
+    globus_xio_driver_handle_cntl_t         handle_cntl_func,
+    globus_xio_driver_push_driver_t         push_driver_func)
 {
     GlobusXIOName(globus_xio_driver_set_transport);
 
@@ -1160,6 +1161,7 @@ globus_xio_driver_set_transport(
     driver->read_func = read_func;
     driver->write_func = write_func;
     driver->handle_cntl_func = handle_cntl_func;
+    driver->push_driver_func = push_driver_func;
     GlobusXIODebugExit();
 
     return GLOBUS_SUCCESS;

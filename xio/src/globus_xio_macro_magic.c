@@ -242,9 +242,11 @@ globus_xio_driver_open_deliver_DEBUG(
                 GlobusXIOContextStateChange(_my_context,
                     GLOBUS_XIO_CONTEXT_STATE_CLOSED);
                 _close_kickout = GLOBUS_TRUE;
-                _close_op = _my_context->close_op;
-                if(_close_op != NULL)
+                if(!_my_context->close_started &&
+                    _my_context->close_op != NULL)
                 {
+                    _my_context->close_started = GLOBUS_TRUE;
+                    _close_op = _my_context->close_op;
                     _close_op->cached_res = GlobusXIOErrorCanceled();
                 }
                 break;
@@ -253,7 +255,12 @@ globus_xio_driver_open_deliver_DEBUG(
                 break;
 
             case GLOBUS_XIO_CONTEXT_STATE_CLOSING:
-                _close_op = _my_context->close_op;
+                if(!_my_context->close_started &&
+                    _my_context->close_op != NULL)
+                {
+                    _my_context->close_started = GLOBUS_TRUE;
+                    _close_op = _my_context->close_op;
+                }
                 break;
 
             default:
@@ -392,9 +399,11 @@ globus_xio_driver_pass_close_DEBUG(
                 close barrier and this level has not created any driver ops.
                 in this case outstanding_operations is garentueed to be zero
             */
+            globus_assert(!_my_context->close_started);
             if(_my_context->outstanding_operations == 0)
             {
                 _pass = GLOBUS_TRUE;
+                _my_context->close_started = GLOBUS_TRUE;
             }
             /* cache the op for close barrier */
             else
@@ -704,11 +713,13 @@ globus_xio_driver_write_deliver_DEBUG(
         if((_my_context->state == GLOBUS_XIO_CONTEXT_STATE_CLOSING ||
             _my_context->state ==
                 GLOBUS_XIO_CONTEXT_STATE_EOF_DELIVERED_AND_CLOSING) &&
-            _my_context->outstanding_operations == 0)
+            _my_context->outstanding_operations == 0 &&
+            !_my_context->close_started)
         {
             globus_assert(_my_context->close_op != NULL);
             _close = GLOBUS_TRUE;
             _close_op = _my_context->close_op;
+            _my_context->close_started = GLOBUS_TRUE;
         }
     }
     globus_mutex_unlock(&_context->mutex);
@@ -1056,9 +1067,11 @@ globus_xio_driver_read_deliver_DEBUG(
         if((_my_context->state == GLOBUS_XIO_CONTEXT_STATE_CLOSING ||
             _my_context->state ==
                 GLOBUS_XIO_CONTEXT_STATE_EOF_DELIVERED_AND_CLOSING) &&
-           _my_context->outstanding_operations == 0)
+           _my_context->outstanding_operations == 0 &&
+            !_my_context->close_started)
         {
             _close = GLOBUS_TRUE;
+            _my_context->close_started = GLOBUS_TRUE;
         }
     }
     globus_mutex_unlock(&_context->mutex);

@@ -2208,7 +2208,8 @@ globus_l_xio_tcp_init(
         globus_l_xio_tcp_close,
         globus_l_xio_tcp_read,
         globus_l_xio_tcp_write,
-        globus_l_xio_tcp_cntl);
+        globus_l_xio_tcp_cntl,
+        NULL);
 
     globus_xio_driver_set_client(
         driver,

@@ -389,7 +389,7 @@ typedef void
     void *                                  user_arg);
 
 
-typedef globus_result_t
+typedef void
 (*globus_xio_driver_push_driver_t)(
     globus_xio_driver_t                     driver,
     globus_xio_stack_t                      stack);
@@ -1326,7 +1326,8 @@ globus_xio_driver_set_transport(
     globus_xio_driver_close_t               close_func,
     globus_xio_driver_read_t                read_func,
     globus_xio_driver_write_t               write_func,
-    globus_xio_driver_handle_cntl_t         handle_cntl_func);
+    globus_xio_driver_handle_cntl_t         handle_cntl_func,
+    globus_xio_driver_push_driver_t         push_driver_func);
 
 /**
  *  @ingroup driver_pgm

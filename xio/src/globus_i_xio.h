@@ -337,6 +337,9 @@ typedef struct globus_i_xio_context_entry_s
     /* every level but the top MUST be GLOBAL_SPACE */
     globus_bool_t                           read_eof;
 
+    /* is this hacky? */
+    globus_bool_t                           close_started;
+
     struct globus_i_xio_op_s *              open_op;
     struct globus_i_xio_op_s *              close_op;
     globus_list_t *                         eof_op_list;
@@ -537,6 +540,8 @@ typedef struct globus_i_xio_driver_s
     globus_xio_driver_target_init_t         target_init_func;
     globus_xio_driver_target_cntl_t         target_cntl_func;
     globus_xio_driver_target_destroy_t      target_destroy_func;
+
+    globus_xio_driver_push_driver_t         push_driver_func;
 
     /*
      * target init functions.  Must have client or server

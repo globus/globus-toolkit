@@ -1506,7 +1506,8 @@ globus_l_xio_udp_init(
         globus_l_xio_udp_close,
         globus_l_xio_udp_read,
         globus_l_xio_udp_write,
-        globus_l_xio_udp_cntl);
+        globus_l_xio_udp_cntl,
+        NULL);
 
     globus_xio_driver_set_client(
         driver,
