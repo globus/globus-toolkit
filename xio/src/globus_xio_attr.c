@@ -1,6 +1,5 @@
 #include "globus_common.h"
 #include "globus_i_xio.h"
-#include "globus_xio_pass.h"
 
 /*******************************************************************
  *                     internal functions

@@ -1,6 +1,5 @@
 #include "globus_i_xio.h"
 #include "globus_xio.h"
-#include "globus_xio_pass.h"
 #include "globus_xio_driver.h"
 /*
  *  note:

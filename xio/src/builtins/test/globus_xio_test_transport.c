@@ -531,12 +531,6 @@ globus_l_xio_test_cntl(
     return GLOBUS_SUCCESS;
 }
 
-globus_xio_driver_t
-globus_xio_driver_test_transport_get_driver()
-{
-    return  NULL;
-}
-
 static globus_result_t
 globus_l_xio_test_transport_load(
     globus_xio_driver_t *               out_driver,
@@ -633,5 +627,15 @@ int
 globus_l_xio_test_deactivate(void)
 {
     return globus_module_deactivate(GLOBUS_COMMON_MODULE);
+}
+
+globus_xio_driver_t
+globus_xio_driver_test_transport_get_driver()
+{
+    globus_xio_driver_t                 driver;
+
+    globus_l_xio_test_transport_load(&driver, NULL);
+
+    return driver;
 }
 
