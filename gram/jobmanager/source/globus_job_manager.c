@@ -500,7 +500,7 @@ main(int argc,
             nexus_cond_wait(&graml_jm_monitor.cond, 
                             &graml_jm_monitor.mutex);
             */
-	    nexus_usleep(1000000);
+	    globus_libc_usleep(1000000);
     	    nexus_fd_handle_events(GLOBUS_NEXUS_FD_POLL_NONBLOCKING_ALL, 
                                    &message_handled);
 	    if (--skip_poll <= 0)
