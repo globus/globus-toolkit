@@ -889,9 +889,11 @@ globus_l_xio_gsi_unwrapped_buffer_to_iovec(
                    handle->user_iovec[handle->user_iovec_index].iov_len -
                    handle->user_iovec_offset);
             *bytes_read +=
-                handle->user_iovec[handle->user_iovec_index].iov_len;
+                (handle->user_iovec[handle->user_iovec_index].iov_len -
+                 handle->user_iovec_offset);
             handle->unwrapped_buffer_offset +=
-                handle->user_iovec[handle->user_iovec_index].iov_len;
+                (handle->user_iovec[handle->user_iovec_index].iov_len -
+                 handle->user_iovec_offset);
             handle->user_iovec_offset = 0; 
         }
     }
@@ -1947,7 +1949,7 @@ globus_l_xio_gsi_read_cb(
     
     while(frame_length + offset + header <= handle->bytes_read &&
           (wait_for > 0 || bytes_read > 0) && no_header == GLOBUS_FALSE &&
-          result == GLOBUS_SUCCESS)
+          result == GLOBUS_SUCCESS && handle->unwrapped_buffer == NULL)
     {
         offset += header;
         
@@ -2220,6 +2222,7 @@ globus_l_xio_gsi_read(
             
             while(frame_length + offset + header <= handle->bytes_read &&
                   (wait_for > 0 || bytes_read > 0) &&
+                  handle->unwrapped_buffer == NULL &&
                   no_header == GLOBUS_FALSE)
             {
                 offset += header;
