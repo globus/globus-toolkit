@@ -46,6 +46,7 @@
  * OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+#include <globus_config.h>
 #include <config.h>
 
 #ifdef HAVE_GSSAPI_H
