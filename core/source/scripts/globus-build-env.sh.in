@@ -1,3 +1,6 @@
+
+MP=@MP@
+
 CC=@CC@
 CPP="@CPP@"
 CFLAGS="@CFLAGS@"

@@ -98,7 +98,9 @@ AC_ARG_ENABLE(insure,
 
 AC_ARG_WITH(mp,
 	[  --with-mp=protocol            include the IBM SP MPL, MPI, or Paragon INX protocols],
-	[case $withval in
+	[
+	lac_cv_MP=$withval
+	case $withval in
 		mpl)
              		LAC_COMPILERS_MPL
 			;;
@@ -223,6 +225,7 @@ LAC_THREADS
 
 LAC_COMPILERS_SET($lac_threads_type)
 
+LAC_SUBSTITUTE_COMPILER_VAR(MP)
 LAC_SUBSTITUTE_COMPILER_VAR(CC)
 LAC_SUBSTITUTE_COMPILER_VAR(CPP)
 LAC_SUBSTITUTE_COMPILER_VAR(CFLAGS)
