@@ -38,6 +38,12 @@ if ( $?GLOBUS_PATH ) then
     if ( $?MANPATH ) then
         setenv MANPATH `echo "${MANPATH}" | sed -e "s%:${GLOBUS_PATH}[^:]*%%g" -e "s%^${GLOBUS_PATH}[^:]*:\{0,1\}%%"`
     endif
+    if ( $?LD_LIBRARYN32_PATH ) then
+        setenv LD_LIBRARYN32_PATH `echo "${LD_LIBRARYN32_PATH}" | sed -e "s%:${GLOBUS_PATH}[^:]*%%g" -e "s%^${GLOBUS_PATH}[^:]*:\{0,1\}%%"`
+    endif
+    if ( $?LD_LIBRARY64_PATH ) then
+        setenv LD_LIBRARY64_PATH `echo "${LD_LIBRARY64_PATH}" | sed -e "s%:${GLOBUS_PATH}[^:]*%%g" -e "s%^${GLOBUS_PATH}[^:]*:\{0,1\}%%"`
+    endif
 endif
 
 setenv PATH `echo "${PATH}" | sed -e "s%:${GLOBUS_LOCATION}[^:]*%%g" -e "s%^${GLOBUS_LOCATION}[^:]*:\{0,1\}%%"`
@@ -47,6 +53,12 @@ setenv SHLIB_PATH `echo "${SHLIB_PATH}" | sed -e "s%:${GLOBUS_LOCATION}[^:]*%%g"
 setenv SASL_PATH `echo "${SASL_PATH}" | sed -e "s%:${GLOBUS_LOCATION}[^:]*%%g" -e "s%^${GLOBUS_LOCATION}[^:]*:\{0,1\}%%"`
 if ( $?MANPATH ) then
     setenv MANPATH `echo "${MANPATH}" | sed -e "s%:${GLOBUS_LOCATION}[^:]*%%g" -e "s%^${GLOBUS_LOCATION}[^:]*:\{0,1\}%%"`
+endif
+if ( $?LD_LIBRARYN32_PATH ) then
+    setenv LD_LIBRARYN32_PATH `echo "${LD_LIBRARYN32_PATH}" | sed -e "s%:${GLOBUS_LOCATION}[^:]*%%g" -e "s%^${GLOBUS_LOCATION}[^:]*:\{0,1\}%%"`
+endif
+if ( $?LD_LIBRARY64_PATH ) then
+    setenv LD_LIBRARY64_PATH `echo "${LD_LIBRARY64_PATH}" | sed -e "s%:${GLOBUS_LOCATION}[^:]*%%g" -e "s%^${GLOBUS_LOCATION}[^:]*:\{0,1\}%%"`
 endif
 
 setenv GLOBUS_PATH "${GLOBUS_LOCATION}"
@@ -84,3 +96,18 @@ if ( "X${SASL_PATH}" != "X" ) then
 endif
 setenv SASL_PATH "${GLOBUS_LOCATION}/lib/sasl${DELIM}${SASL_PATH}"
 
+if ( $?LD_LIBRARYN32_PATH ) then
+    set DELIM
+    if ( "X${LD_LIBRARYN32_PATH}" != "X" ) then
+        set DELIM=:
+    endif
+    setenv LD_LIBRARYN32_PATH "${GLOBUS_LOCATION}/lib${DELIM}${LD_LIBRARYN32_PATH}"
+endif
+
+if ( $?LD_LIBRARY64_PATH ) then
+    set DELIM
+    if ( "X${LD_LIBRARY64_PATH}" != "X" ) then
+        set DELIM=:
+    endif
+    setenv LD_LIBRARY64_PATH "${GLOBUS_LOCATION}/lib${DELIM}${LD_LIBRARY64_PATH}"
+endif

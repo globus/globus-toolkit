@@ -117,7 +117,7 @@ disable_module:
 int
 test2()
 {
-    char *				callback_contact[2];
+    char *				callback_contact[3];
     char *				job_contact;
     int					rc;
     monitor_t				monitor;
@@ -347,9 +347,6 @@ disable_module:
 int
 main(int argc, char *argv[])
 {
-    char *				callback_contact;
-    char *				job_contact;
-    monitor_t				monitor;
     int					rc = 0;
     int					test_num = 0;
     int					not_ok = 0;

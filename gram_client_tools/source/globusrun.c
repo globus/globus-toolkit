@@ -99,6 +99,11 @@ globus_l_globusrun_fault_callback(void *   user_arg,
 static char **
 globus_l_globusrun_duroc_subjob_labels(char *   request_string);
 
+static
+int
+globus_l_globusrun_refresh_proxy(
+    char *			job_contact);
+
 #if 0 /* unimplemented */
 
 static int
@@ -226,6 +231,9 @@ static char *  long_usage = \
 "           or -interactive, and is also incompatible with multi-request jobs.\n" \
 "           The \"handle\" or job ID of the submitted job will be written on\n" \
 "           stdout.\n"\
+"    -refresh-proxy | -y <job ID>\n"\
+"           Cause globusrun to delegate a new proxy to the job named by the\n"\
+"           <job ID>\n"\
 "\n"\
 "    Diagnostic Options\n"\
 "    -p | -parse\n"\
@@ -331,7 +339,7 @@ test_integer( char *   value,
 
 enum { arg_i = 1, arg_q, arg_o, arg_s, arg_w, arg_n, arg_l, arg_b,
 	     arg_p, arg_d, arg_a,
-	     arg_r, arg_f, arg_k, arg_mpirun, arg_status,
+	     arg_r, arg_f, arg_k, arg_y, arg_mpirun, arg_status,
 	     arg_mdshost, arg_mdsport, arg_mdsbasedn, arg_mdstimeout,
 	     arg_num = arg_mdstimeout };
 
@@ -370,6 +378,7 @@ static int arg_f_mode = O_RDONLY;
     oneargdef(arg_f, "-f", "-file", globus_validate_filename, &arg_f_mode);
     oneargdef(arg_r, "-r", "-resource", GLOBUS_NULL, GLOBUS_NULL);
     oneargdef(arg_k, "-k", "-kill", test_job_id, GLOBUS_NULL);
+    oneargdef(arg_y, "-y", "-refresh-proxy", test_job_id, GLOBUS_NULL);
     oneargdef(arg_mpirun, "-mpirun", GLOBUS_NULL, test_integer, GLOBUS_NULL);
     oneargdef(arg_status, "-status", GLOBUS_NULL, test_job_id, GLOBUS_NULL);
     oneargdef(arg_mdshost, "-mdshost", GLOBUS_NULL, test_hostname, GLOBUS_NULL);
@@ -385,7 +394,8 @@ static int arg_f_mode = O_RDONLY;
 	setupopt(arg_i); setupopt(arg_q); setupopt(arg_o); setupopt(arg_s); \
 	setupopt(arg_w); setupopt(arg_n); setupopt(arg_l); setupopt(arg_b); \
 	setupopt(arg_p); setupopt(arg_d); setupopt(arg_a); \
-	setupopt(arg_r); setupopt(arg_f); setupopt(arg_k); setupopt(arg_mpirun); \
+	setupopt(arg_r); setupopt(arg_f); setupopt(arg_k); setupopt(arg_y); \
+	setupopt(arg_mpirun); \
 	setupopt(arg_status); setupopt(arg_mdshost); setupopt(arg_mdsport); \
 	setupopt(arg_mdsbasedn); setupopt(arg_mdstimeout);
 
@@ -408,8 +418,6 @@ static int arg_f_mode = O_RDONLY;
 	char *                             request_file      = GLOBUS_NULL;
 	char *                             rm_contact        = GLOBUS_NULL;
 	char *                             program           = GLOBUS_NULL;
-	globus_bool_t                      no_more_options   = GLOBUS_FALSE;
-	globus_bool_t                      usage_error       = GLOBUS_FALSE;
 	globus_bool_t                      ignore_ctrlc      = GLOBUS_FALSE;
 	globus_rsl_t *                     request_ast       = GLOBUS_NULL;
 	globus_list_t *                    options_found     = GLOBUS_NULL;
@@ -419,7 +427,6 @@ static int arg_f_mode = O_RDONLY;
 	unsigned long                      options           = 0UL;
 	int                                mpirun_version    = 0;
 	int                                err               = GLOBUS_SUCCESS;
-	int                                i;
 	globus_gass_transfer_listener_t   listener		 =GLOBUS_NULL;
 	globus_gass_transfer_listenerattr_t * attr		 =GLOBUS_NULL;
 	char *                             scheme		 =GLOBUS_NULL;
@@ -559,6 +566,9 @@ static int arg_f_mode = O_RDONLY;
 	    return(globus_l_globusrun_kill_job(instance->values[0]));
 	    break;
 
+	case arg_y:
+	    return globus_l_globusrun_refresh_proxy(instance->values[0]);
+	    break;
 	case arg_mpirun:
 	    /* no-op */
 	    break;
@@ -1016,8 +1026,6 @@ globus_l_globusrun_rsl_gass_subst(globus_rsl_t *request,
     else if(globus_rsl_is_boolean(request))
     {
 	globus_list_t *l;
-	globus_bool_t stdout_exists = GLOBUS_FALSE;
-	globus_bool_t stderr_exists = GLOBUS_FALSE;
 
 	l = globus_rsl_boolean_get_operand_list(request);
 	while(!globus_list_empty(l))
@@ -1154,6 +1162,18 @@ globus_l_globusrun_gram_callback_func(void *user_arg,
 	if(monitor->verbose)
 	{
 	    globus_libc_printf("GLOBUS_GRAM_PROTOCOL_JOB_STATE_PENDING\n");
+	}
+	break;
+    case GLOBUS_GRAM_PROTOCOL_JOB_STATE_STAGE_IN:
+	if(monitor->verbose)
+	{
+	    globus_libc_printf("GLOBUS_GRAM_PROTOCOL_JOB_STATE_STAGE_IN\n");
+	}
+	break;
+    case GLOBUS_GRAM_PROTOCOL_JOB_STATE_STAGE_OUT:
+	if(monitor->verbose)
+	{
+	    globus_libc_printf("GLOBUS_GRAM_PROTOCOL_JOB_STATE_STAGE_OUT\n");
 	}
 	break;
     case GLOBUS_GRAM_PROTOCOL_JOB_STATE_ACTIVE:
@@ -1404,7 +1424,6 @@ globus_l_globusrun_durocrun(char *request_string,
     int results_count;
     int *results;
     int err=0;
-    char *callback_contact;
     globus_bool_t verbose = !(options & (GLOBUSRUN_ARG_QUIET));
 
     /* trap SIGINTs until job is submitted, then potentially ignore them */
@@ -1493,8 +1512,6 @@ globus_l_globusrun_durocrun(char *request_string,
     if ( err == GLOBUS_DUROC_SUCCESS )
     {
 	int i;
-	FILE *fp;
-	char **subjob_labels;
 
 	if(options & GLOBUSRUN_ARG_DRYRUN)
 	{
@@ -2069,6 +2086,26 @@ globus_l_globusrun_kill_job(char * job_contact)
     return err;
 }
 
+static
+int
+globus_l_globusrun_refresh_proxy(
+    char *			job_contact)
+{
+    int err;
+    
+    err = globus_gram_client_job_refresh_credentials(
+	    job_contact,
+	    GSS_C_NO_CREDENTIAL);
+
+    if ( err != GLOBUS_SUCCESS )
+    {
+	globus_libc_fprintf(stderr, "Error refreshing proxy: %s\n",
+		            globus_gram_client_error_string(err));
+    }
+
+    return err;
+}
+
 /******************************************************************************
 Function: globus_l_globusrun_status_job()
 
@@ -2276,9 +2313,6 @@ globus_l_globusrun_get_credential(void)
     OM_uint32			major_status = 0;
     OM_uint32			minor_status = 0;
     gss_cred_id_t		credential = GSS_C_NO_CREDENTIAL;
-    OM_uint32			req_flags  = GSS_C_MUTUAL_FLAG;
-    OM_uint32			ret_flags  = 0;
-    int				token_status = 0;
     gss_buffer_desc		tmp_buffer_desc = GSS_C_EMPTY_BUFFER;
     gss_buffer_t		tmp_buffer = &tmp_buffer_desc;
     gss_name_t			my_name = GSS_C_NO_NAME;

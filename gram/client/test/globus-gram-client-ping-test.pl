@@ -6,7 +6,7 @@ use strict;
 use POSIX;
 use Test;
 
-my $test_exec = $ENV{GLOBUS_LOCATION} . '/test/' . 'globus-gram-client-ping-test';
+my $test_exec = 'globus-gram-client-ping-test';
 
 my $gpath = $ENV{GLOBUS_LOCATION};
 

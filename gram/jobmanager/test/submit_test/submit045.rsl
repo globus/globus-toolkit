@@ -1,0 +1,3 @@
+&(rsl_substitution=(a b) ($(a) foo))
+ (executable=/bin/echo)
+ (arguments=$(b))

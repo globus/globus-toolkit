@@ -76,6 +76,7 @@ static char *  LONG_USAGE = \
 "        -strength             Key size (in bits)\n" \
 "        -all                  All above options in a human readable format\n"\
 "        -text                 All of the certificate\n"\
+"        -path                 Pathname of proxy file\n"\
 "\n" \
 "    [options to -exists]      (if none are given, H = B = 0 are assumed)\n" \
 "        -hours H       (-h)   time requirement for proxy to be valid\n" \
@@ -249,7 +250,8 @@ main(int argc, char* argv[])
 		 (strcmp(argp,"-type")==0)     ||
 		 (strcmp(argp,"-timeleft")==0) ||
 		 (strcmp(argp,"-text")==0) ||
-		 (strcmp(argp,"-all")==0)  )
+		 (strcmp(argp,"-all")==0) ||
+		 (strcmp(argp,"-path")==0))
 	{
 	    continue;
 	}
@@ -341,11 +343,11 @@ main(int argc, char* argv[])
     {
 	char *  tstr;
 	int     res = 0;
-	for (tstr=subject; !res && (int)(*tstr); tstr++)
+	for (tstr=subject; (int)(*tstr); tstr++)
 	{
-	    if (strncmp(tstr,"/CN=limited proxy", 16)==0)
+	    if (strncmp(tstr,"/CN=limited proxy", 17)==0)
 		res=1;
-	    else if (strncmp(tstr,"/CN=proxy", 9)==0)
+	    else if (strncmp(tstr,"/CN=proxy", 9)==0 && res != 1)
 		res=2;
 	}
 	proxy_type = (res) ? ((res==1) ? "limited" : "full") : "not a proxy";
@@ -409,6 +411,10 @@ main(int argc, char* argv[])
 	{
 	    i++;
 	    continue;
+	}
+	else if (strcmp(argp,"-path") == 0)
+	{
+	    printf("path     : %s\n", proxy_file);
 	}
     }
 

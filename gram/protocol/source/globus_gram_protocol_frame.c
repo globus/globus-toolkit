@@ -1,4 +1,5 @@
 #include "globus_i_gram_protocol.h"
+#include <string.h>
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 
@@ -9,6 +10,42 @@ globus_l_gram_protocol_lookup_reason(
 
 #endif
 
+/**
+ * @defgroup globus_gram_protocol_framing Message Framing
+ * @ingroup globus_gram_protocol_functions
+ *
+ * The functions in this section take GRAM request (or query) and
+ * reply messages, and frame them with HTTP headers, so that they can be
+ * sent. These functions should be used when an application wants to control
+ * the way that the GRAM Protocol messages are sent, while still using
+ * the standard message formatting and framing routines. An alternative
+ * set of functions in the @ref globus_gram_protocol_io section of the manual
+ * combine message framing with callback-driven I/O.
+ */
+
+/**
+ * Frame a GRAM query
+ * @ingroup globus_gram_protocol_framing
+ *
+ * Adds an HTTP frame around a GRAM protocol message. The frame is
+ * constructed from the URL, the GRAM protocol message type header,
+ * and a message length header. The framed message is returned
+ * in a new string pointed to by @a framedmsg parameter and the
+ * length of the framed message is returned in the @a framedsize parameter.
+ *
+ * @param url
+ *        The URL of the GRAM resource to contact.
+ * @param msg
+ *        The message to be framed.
+ * @param msgsize
+ *        The length of the unframed message.
+ * @param framedmsg
+ *        A return parameter, which will contain the framed message
+ *        upon this function's return.
+ * @param framedsize
+ *        A return parameter, which will contain the length of the
+ *        framed message.
+ */
 int
 globus_gram_protocol_frame_request(
     const char *			url,
@@ -91,11 +128,28 @@ globus_gram_protocol_frame_request(
     return GLOBUS_SUCCESS;
 }
 
-
-
-/*
- * Function:	globus_gram_protocol_frame_reply()
+/**
+ * Frame a GRAM reply
+ * @ingroup globus_gram_protocol_framing
  *
+ * Adds an HTTP frame around a GRAM protocol reply. The frame is
+ * constructed from the message code passed as the first parameter.
+ * The framed reply is returned
+ * in a new string pointed to by @a framedmsg parameter and the
+ * length of the framed reply is returned in the @a framedsize parameter.
+ *
+ * @param code
+ *        The HTTP response code to associate with this reply.
+ * @param msg
+ *        The reply to be framed.
+ * @param msgsize
+ *        The length of the unframed reply.
+ * @param framedmsg
+ *        A return parameter, which will contain the framed reply
+ *        upon this function's return.
+ * @param framedsize
+ *        A return parameter, which will contain the length of the
+ *        framed reply.
  */
 int
 globus_gram_protocol_frame_reply(

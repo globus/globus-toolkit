@@ -1,0 +1,2 @@
+&(executable=/bin/true)
+ (arguments=$(GLOBUS_GATEKEEPER_HOST))

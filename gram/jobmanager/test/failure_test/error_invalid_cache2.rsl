@@ -1,0 +1,3 @@
+(* GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_CACHE *)
+&(executable=/bin/true)
+ (gass_cache=/etc)

@@ -37,12 +37,13 @@ Syntax: globus-personal-gatekeeper [options]
     -debug
     Displays extra output
 
-    -start [-jmtype <type>] [-port <port>]
+    -start [-jmtype <type>] [-port <port>] [-log=always|never|on_error]
     Starts a new gatekeeper, mapping default service to a
     jobmanager. By default, the jobmanager is configured with
     jmtype=fork. The option -port can be used to restrict the
     gatekeeper to use a particular port. The default is to let the
-    system choose a port.
+    system choose a port. The -log switch causes the job manager
+    to choose when log files will be created in the user's home directory.
 
     -list
     Scans for active personal gatekeepers. If found, an
@@ -100,7 +101,7 @@ killem ()
         if [ -n "${dir}" ]; then
             found=true
             if [ -r ${dir}/gatekeeper.log ]; then
-                contact="`${GLOBUS_SH_GREP-grep} GRAM ${dir}/gatekeeper.log |
+                contact="`${GLOBUS_SH_GREP-grep} 'GRAM contact' ${dir}/gatekeeper.log |
                     ${GLOBUS_SH_TAIL-tail} -1 |
                     ${GLOBUS_SH_SED-sed} s/\^.\*GRAM contact://`"
                 ${debug} "found contact= [${contact}]"
@@ -147,7 +148,7 @@ findit ()
         if [ -n "${dir}" ]; then
             found=true
             if [ -r ${dir}/gatekeeper.log ]; then
-                contact="`${GLOBUS_SH_GREP-grep} GRAM ${dir}/gatekeeper.log |
+                contact="`${GLOBUS_SH_GREP-grep} 'GRAM contact' ${dir}/gatekeeper.log |
                     ${GLOBUS_SH_TAIL-tail} -1 |
                     ${GLOBUS_SH_SED-sed} s/\^.\*$host/$host/`"
 
@@ -175,7 +176,7 @@ listem ()
         if [ -n "${dir}" ]; then
             found=true
             if [ -r ${dir}/gatekeeper.log ]; then
-                contact="`${GLOBUS_SH_GREP-grep} GRAM ${dir}/gatekeeper.log |
+                contact="`${GLOBUS_SH_GREP-grep} 'GRAM contact' ${dir}/gatekeeper.log |
                     ${GLOBUS_SH_TAIL-tail} -1 |
                     ${GLOBUS_SH_SED-sed} s/\^.\*$host/$host/`"
                 ${debug} "found contact= [${contact}]"
@@ -219,18 +220,12 @@ docleanup=false
 startnew=false
 host=`${bindir}/globus-hostname`
 file_location="$HOME/.globus"
-file_prefix=".personal-gatekeeper.$host"
+file_prefix="personal-gatekeeper.$host"
+log=on_error
+startargs=''
 
 while [ -n "$1" ]; do
     case "$1" in
-    -jmtype)
-    jmtype="$2"
-    shift
-    ;;
-    -port)
-    port="$2"
-    shift
-    ;;
     -kill)
     verify_setup
     killem "$2"
@@ -251,6 +246,33 @@ while [ -n "$1" ]; do
     ;;
     -start)
     startnew=true
+    shift
+    while [ -n "$1" ]; do
+        case $1 in
+	    -jmtype)
+		jmtype="$2"
+		shift
+		;;
+	-log)
+		if test "$2" = "on_error" -o "$2" = "always" -o "$2" = "never"
+                then
+		    log=$2
+		else
+		    globus_args_unrecognized_option "$1"
+		fi
+		shift
+		;;
+	-port)
+		port="$2"
+		shift
+		;;
+	*)
+		startargs="$startargs $1"
+		;;
+	esac
+	shift
+    done
+    break
     ;;
     -debug)
     debug=echo
@@ -318,7 +340,6 @@ host_osversion=`${GLOBUS_SH_UNAME-uname} -r`
 
     ${GLOBUS_SH_CAT-cat} > ${scratch}/jobmanager.conf <<EOF
 -home ${GLOBUS_LOCATION}
--e ${libexecdir}
 -type ${jmtype}
 -rdn jobmanager 
 -globus-gatekeeper-subject "${subject}"
@@ -326,8 +347,9 @@ host_osversion=`${GLOBUS_SH_UNAME-uname} -r`
 -globus-host-manufacturer ${host_manufacturer}
 -globus-host-osname ${host_osname}
 -globus-host-osversion ${host_osversion}
--save-logfile on_error
+-save-logfile ${log}
 -machine-type unknown
+${startargs}
 EOF
 
 docleanup=false
@@ -356,7 +378,7 @@ shallexit=
 count=0
 while [ ${count} -lt 5 -a -z "${contact}" -a -z "${shallexit}" ]; do
     ${GLOBUS_SH_SLEEP-sleep} 1
-    contact="`${GLOBUS_SH_GREP-grep} GRAM ${scratch}/gatekeeper.log`"
+    contact="`${GLOBUS_SH_GREP-grep} 'GRAM contact' ${scratch}/gatekeeper.log`"
     shallexit="`${GLOBUS_SH_GREP-grep} FAILED_PLEASE_EXIT ${scratch}/gatekeeper.log`"
     count=`${GLOBUS_SH_EXPR-expr} ${count} + 1`
 done
@@ -365,15 +387,16 @@ if [ ${count} -ge 5 -o -n "${shallexit}" ]; then
     echo "ERROR: gatekeeper did not start up properly" >&2
     docleanup=true
     exit 1
+else
+    host=`echo "$contact" | ${GLOBUS_SH_CUT-cut} -d: -f4`
+    port=`echo "$contact" | ${GLOBUS_SH_CUT-cut} -d: -f5`
+
+    ${GLOBUS_SH_CAT-cat} >> ${scratch}/jobmanager.conf <<EOF
+-globus-gatekeeper-host $host
+-globus-gatekeeper-port $port
+EOF
+
 fi
 
+
 exit 0
-
-
-
-
-
-
-
-
-

@@ -100,6 +100,8 @@ globus_module_descriptor_t globus_i_gass_cache_module =
    before using it. A list of handlers could be used...*/
 static char globus_l_gass_cache_is_init;
 static char globus_l_gass_cache_is_not_init;
+static int globus_l_gass_cache_pid;
+static int globus_l_gass_cache_fn_fudge;
 
 /* it is fine to declare those macro here, together with the var. they uses  */
 #define CHECK_CACHE_IS_INIT() if (cache_handle->init != &globus_l_gass_cache_is_init) return(GLOBUS_GASS_CACHE_ERROR_CACHE_NOT_OPENED)
@@ -274,6 +276,8 @@ globus_l_gass_cache_module_activate(void)
     remove(file1);
  real_exit:
 #endif
+    globus_l_gass_cache_pid = globus_libc_getpid();
+    globus_l_gass_cache_fn_fudge = 0;
     return GLOBUS_SUCCESS;
 }
 
@@ -490,13 +494,13 @@ globus_l_gass_cache_write_comment(
 /*
  * globus_l_gass_cache_write_one_str()
  * 
- * Write one string of variable lenght (buff_pt*) into the file fd,
- * by writing first its lenght (in ascii coded decimal format) and then
+ * Write one string of variable length (buff_pt*) into the file fd,
+ * by writing first its length (in ascii coded decimal format) and then
  * the string itself.
  *    
  * Parameters:
  *
- *     buff_pt - pointer to the string of variable lenght to be writen.
+ *     buff_pt - pointer to the string of variable length to be writen.
  *
  *     fd - descriptor of the file to write in.
  *
@@ -516,7 +520,7 @@ globus_l_gass_cache_write_one_str(
     unsigned int size;  
 
     
-    /* write buffer lenght, including \n */
+    /* write buffer length, including \n */
     size = strlen(buff_pt) +1;	/* include the terminating null char     */
     globus_libc_sprintf(size_s,"%40u",size);
     /* 40 is for GLOBUS_L_GASS_CACHE_L_LENGHT !!!    */
@@ -588,12 +592,12 @@ globus_l_gass_cache_write_one_str(
 /*
  * globus_l_gass_cache_read_one_str()
  * 
- * Read one string of variable lenght from the file fd.
- *     Read first the string lenght from the file (ascii coded decimal), then
+ * Read one string of variable length from the file fd.
+ *     Read first the string length from the file (ascii coded decimal), then
  *     allocate the memory for the string and at last, read the string
  *     and return the address of this buffer.
  *     
- *     fd must be positioned in the file at a place where a "variable-lenght"
+ *     fd must be positioned in the file at a place where a "variable-length"
  *     followed by the string itself are expected.
  *    
  * Parameters: 
@@ -620,7 +624,7 @@ globus_l_gass_cache_read_one_str(
     size_t size;  
 
     
-    /* read buffer lenght, including \n */
+    /* read buffer length, including \n */
     while ( read(fd, size_s,sizeof(size_s)) != sizeof(size_s) )
     {
 	if (errno != EINTR)
@@ -687,7 +691,7 @@ globus_l_gass_cache_read_nb_entries(
     /* ascii coded size of the next data to read */
     char size_s[GLOBUS_L_GASS_CACHE_L_LENGHT+1];
 
-    /* read buffer lenght, including \n */
+    /* read buffer length, including \n */
     while ( read(cache_handle->state_file_fd,
 	      size_s,sizeof(size_s)) != sizeof(size_s) )
     {
@@ -798,7 +802,7 @@ globus_l_gass_cache_write_nb_entries(
  *   - Eache entry is preceded by a "header" : #
  *   - numerical values are ascii coded into a fixed number of char:
  *     GLOBUS_L_GASS_CACHE_L_LENGHT
- *   - Eache string (url, filename,...) is preceded by is lenght, coded as
+ *   - Eache string (url, filename,...) is preceded by is length, coded as
  *     described above
  *    
  * Parameters:
@@ -2144,7 +2148,7 @@ globus_gass_cache_open(char                *cache_directory_path,
     int         rc;		/* general purpose returned code           */
     char *      pt;		/* general purpose returned pointer        */
 
-    int         f_name_lenght;	/* too verify the lenght of the file names */
+    int         f_name_length;	/* too verify the length of the file names */
     char        f_name[PATH_MAX+1];/* path name of the 3 files we */
 				     /* will open */
 #   if defined GLOBUS_L_GASS_CACHE_LOG
@@ -2165,8 +2169,8 @@ globus_gass_cache_open(char                *cache_directory_path,
     /* if cache_directory_path empty (""), behave as if NULL */
     if ( cache_directory_path != GLOBUS_NULL) 
     {	
-	f_name_lenght=strlen(cache_directory_path);
-	if ( f_name_lenght == 0 )
+	f_name_length=strlen(cache_directory_path);
+	if ( f_name_length == 0 )
 	{
 	    cache_directory_path = GLOBUS_NULL;
 
@@ -2183,8 +2187,8 @@ globus_gass_cache_open(char                *cache_directory_path,
 	/* if GLOBUS_GASS_CACHE_DEFAUL empty (""), behave as if not defined */
 	if ( pt != GLOBUS_NULL)
 	{
-	    f_name_lenght=strlen(pt);
-	    if ( f_name_lenght == 0)
+	    f_name_length=strlen(pt);
+	    if ( f_name_length == 0)
 	    {
 		pt = GLOBUS_NULL;
 	    }
@@ -2198,8 +2202,8 @@ globus_gass_cache_open(char                *cache_directory_path,
 
 	    if ( globus_libc_gethomedir(homedir,PATH_MAX) == GLOBUS_SUCCESS)
 	    {
-		f_name_lenght=strlen(homedir);
-		if ( f_name_lenght > 0)
+		f_name_length=strlen(homedir);
+		if ( f_name_length > 0)
 		    pt = homedir;
 	    }
 	    
@@ -2210,12 +2214,12 @@ globus_gass_cache_open(char                *cache_directory_path,
 		return ( GLOBUS_GASS_CACHE_ERROR_NO_HOME );
 	    }
 	    
-	    if ((f_name_lenght +
+	    if ((f_name_length +
 		 strlen(GLOBUS_L_GASS_CACHE_DEFAULT_DIR_NAME))>=PATH_MAX)
 	    {
 		CACHE_TRACE("ENAMETOOLONG");
-                printf("NAMETOOLONG: f_name_lenght: %d, default_name_length: %d, filename_max: %d\n",
-                       f_name_lenght,
+                printf("NAMETOOLONG: f_name_length: %d, default_name_length: %d, filename_max: %d\n",
+                       f_name_length,
                        strlen(GLOBUS_L_GASS_CACHE_DEFAULT_DIR_NAME),
                        PATH_MAX);
 		return ( GLOBUS_GASS_CACHE_ERROR_NAME_TOO_LONG);
@@ -2259,7 +2263,7 @@ globus_gass_cache_open(char                *cache_directory_path,
 	}
 	else /* *pt is not null or empty */
 	{
-	    if (f_name_lenght >= PATH_MAX)
+	    if (f_name_length >= PATH_MAX)
 	    {
 		CACHE_TRACE("ENAMETOOLONG");
 		return ( GLOBUS_GASS_CACHE_ERROR_NAME_TOO_LONG);
@@ -2269,25 +2273,14 @@ globus_gass_cache_open(char                *cache_directory_path,
     }
     else			/* cache_directory_path is valid */
     {
-	/* For the first version, we do not accept a  cache_directory_path */
-#       if 0
+	/* for the version which will accept a cache directory not null  */
+	if (f_name_length >= PATH_MAX)
 	{
-	    /* for the version which will accept a cache directory not null  */
-	    if (f_name_lenght >= PATH_MAX)
-	    {
-		CACHE_TRACE("ENAMETOOLONG");
-		return ( GLOBUS_GASS_CACHE_ERROR_NAME_TOO_LONG);
-	    }
-	    strcpy(cache_handle->cache_directory_path,
-		   cache_directory_path);
+	    CACHE_TRACE("ENAMETOOLONG");
+	    return ( GLOBUS_GASS_CACHE_ERROR_NAME_TOO_LONG);
 	}
-#       else
-	{
-	    CACHE_TRACE("Parameter cache_directory_path must be NULL when calling globus_gass_cache_open() in this version of GLOBUS_GASS_CACHE\n");
-	    return (GLOBUS_GASS_CACHE_ERROR_INVALID_PARRAMETER);
-	}
-#       endif
-
+	strcpy(cache_handle->cache_directory_path,
+	       cache_directory_path);
     }
     GLOBUS_L_GASS_CACHE_LG2(" cache directory :%s ",
 		 cache_handle->cache_directory_path );
@@ -2323,7 +2316,7 @@ globus_gass_cache_open(char                *cache_directory_path,
     }
 
     /* here I suppose cache_directory_path existe and is a directory */
-    if ((f_name_lenght + LONGER_NAME_USED )>=PATH_MAX)
+    if ((f_name_length + LONGER_NAME_USED )>=PATH_MAX)
     {
 	CACHE_TRACE("ENAMETOOLONG");
 	return ( GLOBUS_GASS_CACHE_ERROR_NAME_TOO_LONG);

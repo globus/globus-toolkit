@@ -1,44 +1,47 @@
 include $(top_srcdir)/globus_automake_pre
 
-globus_gram_job_manager_scripts = \
-	globus-script-condor-poll \
-	globus-script-condor-rm \
-	globus-script-condor-submit \
-	globus-script-easymcs-poll \
-	globus-script-easymcs-rm \
-	globus-script-easymcs-submit \
-	globus-script-glunix-poll \
-	globus-script-glunix-rm \
-	globus-script-glunix-submit \
-	globus-script-grd-poll \
-	globus-script-grd-rm \
-	globus-script-grd-submit \
-	globus-script-loadleveler-poll \
-	globus-script-loadleveler-rm \
-	globus-script-loadleveler-signal \
-	globus-script-loadleveler-submit \
-	globus-script-lsf-poll \
-	globus-script-lsf-rm \
-	globus-script-lsf-submit \
-	globus-script-nqe-poll \
-	globus-script-nqe-rm \
-	globus-script-nqe-submit \
-	globus-script-nswc-poll \
-	globus-script-nswc-rm \
-	globus-script-nswc-signal \
-	globus-script-nswc-submit \
-	globus-script-pbs-poll \
-	globus-script-pbs-rm \
-	globus-script-pbs-submit \
-	globus-script-pexec-poll \
-	globus-script-pexec-rm \
-	globus-script-pexec-submit \
-	globus-script-prun-poll \
-	globus-script-prun-rm \
-	globus-script-prun-submit
+# Extra directories we install files into
+globusperldir=$(GLOBUS_LOCATION)/lib/perl/Globus/GRAM
+perldocdir=$(GLOBUS_LOCATION)/share/doc/perl/Globus/GRAM
 
-libexec_SCRIPTS = $(globus_gram_job_manager_scripts)
+# Not handled by automake, because of :: in the destination file names
+MAN_DIR=$(GLOBUS_LOCATION)/man/man3
 
-EXTRA_DIST = $(globus_gram_job_manager_scripts)
+# Where targets are installed
+globusperl_DATA = JobDescription.pm JobManager.pm
+perldoc_DATA = JobManager.html JobDescription.html
+noinst_DATA = JobManager.3 JobDescription.3
+
+# Files which we want to put in the source package
+EXTRA_DIST = $(globusperl_DATA) $(perldoc_DATA) $(noinst_DATA)\
+	     create_rsl_documentation.pl
+
+SUFFIXES = .pm .html .3
+
+.pm.html:
+	pod2html --noindex $*.pm | \
+	    sed -e 's,</HEAD>,<LINK REL="stylesheet" HREF="../../../../doxygen/globus.css"></HEAD>,' > $*.html
+
+
+.pm.3:
+	pod2man --section=3 $*.pm > $*.3
+
+install-data-local:
+	$(mkinstalldirs) $(DESTDIR)$(MAN_DIR)
+	for manpage in $(noinst_DATA); do \
+	    $(INSTALL_DATA) $$manpage $(DESTDIR)$(MAN_DIR)/Globus::GRAM::$$manpage; \
+	done
+
+# The default filelist-noinstDATA rule will list each of the man pages
+# in the filelist in the root directory. This added dependency will add those
+# files in the correct place as well.
+filelist-noinstDATA: filelist-man
+
+filelist-man:
+	@list='$(noinst_DATA)'; for p in $$list; do \
+		echo "$(DESTDIR)$(MAN_DIR)/Globus::GRAM::$$p" >> $(FILELIST_FILE); \
+	done
+
+MAINTAINERCLEANFILES = $(perldoc_DATA) $(noinst_DATA)
 
 include $(top_srcdir)/globus_automake_post

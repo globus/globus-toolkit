@@ -9,6 +9,7 @@ setup_SCRIPTS = \
 setup_DATA = \
 	globus-script-initializer \
 	globus-sh-tools-vars.sh.in \
+	Paths.pm \
 	globus-makefile-header.in
 
 SUBDIRS = pkgdata
@@ -19,6 +20,7 @@ EXTRA_DIST = findshelltools \
 	setup-globus-core.pl \
 	globus-script-initializer \
 	globus-sh-tools-vars.sh.in \
+	Paths.in \
 	globus-makefile-header.in
 
 include $(top_srcdir)/globus_automake_post

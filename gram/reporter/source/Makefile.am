@@ -5,7 +5,6 @@ include $(top_srcdir)/globus_automake_pre_top
 # SUBDIRS is an automake macro which contains 
 # the list of subdirectories that have Makefile.am's
 SUBDIRS= \
-	scripts \
 	pkgdata
 
 # Sources contains all of the source files in the directory.

@@ -3,10 +3,20 @@
 
 static
 void
-callback_func(void * user_callback_arg,
-	      char * job_contact,
-	      int state,
-	      int errorcode);
+callback_func(
+    void *				user_callback_arg,
+    char *				job_contact,
+    int					state,
+    int					job_failure_code);
+
+static
+void
+nonblocking_callback_func(
+    void *				user_callback_arg,
+    globus_gram_protocol_error_t	errorcode,
+    const char *			job_contact,
+    globus_gram_protocol_job_state_t	state,
+    globus_gram_protocol_error_t	job_failure_code);
 
 typedef struct
 {
@@ -20,10 +30,8 @@ typedef struct
 
 int main(int argc, char ** argv)
 {
-    int					job_state_mask;
     int					rc;
     char *				callback_contact;
-    char *				job_contact;
     char *				rm_contact;
     char *				specification;
     my_monitor_t			Monitor;
@@ -65,7 +73,7 @@ int main(int argc, char ** argv)
 	                 GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE|
 	                 GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED,
 		         callback_contact,
-		         callback_func,
+		         nonblocking_callback_func,
 			 &Monitor);
 
     if(rc != GLOBUS_SUCCESS)
@@ -97,38 +105,49 @@ callback_func(void * user_callback_arg,
               int state,
               int errorcode)
 {
+    nonblocking_callback_func(user_callback_arg,
+	                      0,
+			      job_contact,
+			      state,
+			      errorcode);
+}
+
+static
+void
+nonblocking_callback_func(
+    void *				user_callback_arg,
+    globus_gram_protocol_error_t	errorcode,
+    const char *			job_contact,
+    globus_gram_protocol_job_state_t	state,
+    globus_gram_protocol_error_t	job_failure_code)
+{
     my_monitor_t * Monitor = (my_monitor_t *) user_callback_arg;
 
+    globus_mutex_lock(&Monitor->mutex);
     if(Monitor->job_contact == GLOBUS_NULL)
     {
-        globus_mutex_lock(&Monitor->mutex);
-	Monitor->job_contact = job_contact;
-        globus_mutex_unlock(&Monitor->mutex);
+	Monitor->job_contact = globus_libc_strdup(job_contact);
     }
+
     switch(state)
     {
     case GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED:
-        globus_mutex_lock(&Monitor->mutex);
         Monitor->done = GLOBUS_TRUE;
-	Monitor->errorcode = state;
+	Monitor->errorcode = job_failure_code;
         globus_cond_signal(&Monitor->cond);
-        globus_mutex_unlock(&Monitor->mutex);
 	break;
     case GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE:
-        globus_mutex_lock(&Monitor->mutex);
         Monitor->done = GLOBUS_TRUE;
         globus_cond_signal(&Monitor->cond);
-        globus_mutex_unlock(&Monitor->mutex);
 	break;
     default:
-        globus_mutex_lock(&Monitor->mutex);
 	if(errorcode != 0)
 	{
 	    Monitor->done = GLOBUS_TRUE;
 	    Monitor->errorcode = errorcode;
 	}
         globus_cond_signal(&Monitor->cond);
-        globus_mutex_unlock(&Monitor->mutex);
 	break;
     }
+    globus_mutex_unlock(&Monitor->mutex);
 }

@@ -1,0 +1,2 @@
+&(executable = $(GLOBUS_LOCATION) # "/bin/globus-sh-exec")
+ (arguments  = -e '$GLOBUS_PERL -e ''print STDERR "stderr\n"; print "stdout\n";''')

@@ -100,6 +100,10 @@ int main(int argc, char *argv[])
 	globus_cond_wait(&monitor.cond, &monitor.mutex);
     }
     rc = monitor.errorcode;
+    if(rc == GLOBUS_GRAM_PROTOCOL_ERROR_USER_CANCELLED)
+    {
+	rc = GLOBUS_SUCCESS;
+    }
 destroy_callback_contact:
     globus_gram_client_callback_disallow(callback_contact);
     globus_libc_free(callback_contact);
