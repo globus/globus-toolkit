@@ -22,11 +22,13 @@ my $cmd;
 my $non_cluster		= 0;
 my $cpu_per_node	= 1;
 my $remote_shell	= 'default';
+my $validate_queues	= 1;
 
 GetOptions('service-name|s=s' => \$name,
            'non-cluster' => \$non_cluster,
            'cpu-per-node=i' => \$cpu_per_node,
 	   'remote-shell=s' => \$remote_shell,
+	   'validate-queues=s' => \$validate_queues,
 	   'force|f' => \$force,
 	   'help|h|?' => \$help);
 
@@ -45,6 +47,15 @@ if($force != 0)
 else
 {
     $force = '';
+}
+
+if($validate_queues ne 'no')
+{
+   $validate_queues = 1;
+}
+else
+{
+   $validate_queues = 0;
 }
 
 if($non_cluster != 0)
@@ -68,6 +79,37 @@ if($? != 0)
 $cmd = "$libexecdir/globus-job-manager-service-add -m pbs -s \"$name\" $force";
 system("$cmd >/dev/null 2>/dev/null");
 
+if($validate_queues)
+{
+    # Customize validation file with queue info
+    open(QSTAT, "qstat -Q |");
+
+    # discard header
+    $_ = <QSTAT>;
+    $_ = <QSTAT>;
+    my @queues = ();
+
+    while(<QSTAT>)
+    {
+	chomp;
+
+	$_ =~ m/^(\S+)/;
+
+	push(@queues, $1);
+    }
+
+    if(@queues)
+    {
+	open(VALIDATION_FILE, ">$ENV{GLOBUS_LOCATION}/share/globus-gram-job-manager-rsl-validation/pbs.rvf");    
+
+	print VALIDATION_FILE "Attribute: queue\n";
+	print VALIDATION_FILE join(" ", "Values:", @queues);
+
+	close VALIDATION_FILE;
+    }
+}
+
+
 if($? == 0)
 {
     $metadata->finish();
@@ -85,6 +127,7 @@ sub usage
 	  "          [--non-cluster]\n".
 	  "          [--cpu-per-node=COUNT]\n".
 	  "          [--remote-shell=rsh|ssh]\n".
+	  "          [--validate-queues=yes|no]\n".
           "          [--force|-f]\n".
 	  "          [--help|-h]\n";
     exit 1;
