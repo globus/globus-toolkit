@@ -249,3 +249,11 @@ BUNDLE gt4-webmds
         globus_wsrf_mds_webmds_file_source
         globus_wsrf_mds_webmds_xml_dom_source
         globus_wsrf_mds_webmds_resource_property_source
+
+BUNDLE gt4-replicator
+        globus_wsrf_replicator_client_java
+        globus_wsrf_replicator_common_java
+        globus_wsrf_replicator_common_schema
+        globus_wsrf_replicator_service_java
+        globus_database_common
+
