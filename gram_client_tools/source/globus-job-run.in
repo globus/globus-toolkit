@@ -811,15 +811,19 @@ then
     fi
 
     gassflag=""
+    batchflag="-fast-batch"
     if [ ${job_needs_gass_output} = true ]; then
 	gassflag="-o"
+	batchflag="-b"
     fi
     if [ ${job_needs_gass_read}   = true ] || \
        [ ${stage_executable}      = true ] ; then
 	gassflag="-s"
+	batchflag="-b"
     fi
     if [ ${job_needs_gass_write}  = true ]; then
 	gassflag="-w"
+	batchflag="-b"
     fi
 
     case "${PROGRAM_NAME}:${job_is_multi}" in
@@ -828,7 +832,7 @@ then
 	    error_exit 1
 	    ;;
 	*submit:false)
-	    globusrun_args="${gassflag} -b -r \"${job_contact}\" -f ${rslfile}"
+	    globusrun_args="${gassflag} ${batchflag} -r \"${job_contact}\" -f ${rslfile}"
 	    ;;
 	*run:true)
 	    globusrun_args="${gassflag} -f ${rslfile}"
