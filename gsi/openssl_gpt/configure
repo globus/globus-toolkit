@@ -13108,10 +13108,10 @@ EOF
                 *x86*)
                     # gcc
                     lac_BN_LLONG="1"
-                    lac_RC4_INT="unsigned char"
-                    lac_RC4_CHUNK="unsigned long"
+                    lac_DES_PTR="1"
+                    lac_DES_RISC1="1"
                     lac_DES_UNROLL="1"
-                    lac_BF_PTR="1"
+                    lac_RC4_INDEX="1"
                 ;;
                 *ia64*)
                     # gcc
