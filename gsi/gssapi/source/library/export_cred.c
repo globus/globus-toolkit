@@ -162,6 +162,7 @@ GSS_CALLCONV gss_export_cred(
             GLOBUS_GSI_SYSCONFIG_GET_UNIQUE_PROXY_FILENAME(&proxy_filename);
         if(local_result != GLOBUS_SUCCESS)
         {
+            proxy_filename = NULL;
             GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
                 minor_status, local_result,
                 GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_PROXY);
@@ -188,7 +189,6 @@ GSS_CALLCONV gss_export_cred(
             "X509_USER_PROXY=%s",
             proxy_filename);
         export_buffer->length = strlen((char *) export_buffer->value);
-        free(proxy_filename);
     }
     else
     {
@@ -202,6 +202,11 @@ GSS_CALLCONV gss_export_cred(
 
  exit:
 
+    if(proxy_filename != NULL)
+    { 
+        free(proxy_filename);
+    }
+    
     if (bp) 
     {
         BIO_free(bp);

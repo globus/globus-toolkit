@@ -1,2 +1,2 @@
-gssapi_anonymous_test.c:182: Successfully established anonymous security context
-gssapi_anonymous_test.c:204: Received subject name: <anonymous>
+gssapi_anonymous_test.c:200: Successfully established anonymous security context
+gssapi_anonymous_test.c:222: Received subject name: <anonymous>

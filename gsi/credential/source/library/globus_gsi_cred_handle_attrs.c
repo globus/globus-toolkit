@@ -79,6 +79,7 @@ globus_gsi_cred_handle_attrs_init(
     if((result = GLOBUS_GSI_SYSCONFIG_GET_CERT_DIR(
         &(*handle_attrs)->ca_cert_dir)) != GLOBUS_SUCCESS)
     {
+        (*handle_attrs)->ca_cert_dir = NULL;
         goto error_exit;
     }
 

@@ -192,7 +192,7 @@ globus_gss_assist_gridmap(
             ("The DN: %s could not be mapped to a valid user in the "
              "gridmap file: %s.",
              globusidp,
-             gridmap_filename ? gridmap_filename : "(NULL)"));
+             gridmap_filename != NULL ? gridmap_filename : "(NULL)"));
 
         free(gridmap_filename);
         goto exit;
@@ -305,7 +305,7 @@ globus_gss_assist_userok(
          "gridmap file: %s",
          globusid,
          userid,
-         gridmap_filename));
+         gridmap_filename != NULL ? gridmap_filename : "(NULL)"));
     free(gridmap_filename);
 
  exit:
@@ -430,7 +430,7 @@ globus_gss_assist_map_local_user(
             GLOBUS_GSI_GSS_ASSIST_ERROR_IN_GRIDMAP_NO_USER_ENTRY,
             ("No DN entry found for user: %s in gridmap file: %s",
              local_user,
-             gridmap_filename));
+             gridmap_filename != NULL ? gridmap_filename : "(NULL)"));
         free(gridmap_filename);
         goto exit;
     }
@@ -515,6 +515,7 @@ globus_i_gss_assist_gridmap_find_dn(
     result = GLOBUS_GSI_SYSCONFIG_GET_GRIDMAP_FILENAME(&gridmap_filename);
     if(result != GLOBUS_SUCCESS)
     {
+        gridmap_filename = NULL;
         GLOBUS_GSI_GSS_ASSIST_ERROR_CHAIN_RESULT(
             result,
             GLOBUS_GSI_GSS_ASSIST_ERROR_WITH_GRIDMAP);
@@ -649,6 +650,7 @@ globus_i_gss_assist_gridmap_find_local_user(
     result = GLOBUS_GSI_SYSCONFIG_GET_GRIDMAP_FILENAME(&gridmap_filename);
     if(result != GLOBUS_SUCCESS)
     {
+        gridmap_filename = NULL;
         GLOBUS_GSI_GSS_ASSIST_ERROR_CHAIN_RESULT(
             result,
             GLOBUS_GSI_GSS_ASSIST_ERROR_WITH_GRIDMAP);

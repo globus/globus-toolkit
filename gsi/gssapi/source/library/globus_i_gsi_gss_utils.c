@@ -2094,8 +2094,10 @@ globus_i_gsi_gssapi_init_ssl_context(
 
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
+    globus_fifo_init(&ca_cert_file_list);
+    
     cred_handle = (gss_cred_id_desc *) credential;
-
+    
     if(cred_handle == NULL)
     {
         major_status = GSS_S_FAILURE;
@@ -2153,6 +2155,7 @@ globus_i_gsi_gssapi_init_ssl_context(
         local_result = GLOBUS_GSI_SYSCONFIG_GET_CERT_DIR(&ca_cert_dir);
         if(local_result != GLOBUS_SUCCESS)
         {
+            ca_cert_dir = NULL;
             major_status = GSS_S_FAILURE;
             GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
                 minor_status, local_result,
@@ -2186,8 +2189,6 @@ globus_i_gsi_gssapi_init_ssl_context(
      * to have these fields set today.
      */
     SSL_CTX_set_purpose(cred_handle->ssl_context, X509_PURPOSE_ANY);
-
-    globus_fifo_init(&ca_cert_file_list);
 
     local_result = GLOBUS_GSI_SYSCONFIG_GET_CA_CERT_FILES(ca_cert_dir, 
                                                           &ca_cert_file_list);
@@ -2235,8 +2236,6 @@ globus_i_gsi_gssapi_init_ssl_context(
         X509_free(ca_cert);
         ca_cert = NULL;
     }
-
-    globus_fifo_destroy(&ca_cert_file_list);
 
     if(anon_ctx != GLOBUS_I_GSI_GSS_ANON_CONTEXT)
     {
@@ -2374,6 +2373,13 @@ globus_i_gsi_gssapi_init_ssl_context(
         free(ca_cert_dir);
     }
 
+    while((ca_filename = (char *) globus_fifo_dequeue(&ca_cert_file_list))
+           != NULL)
+    {
+        free(ca_filename);
+    }
+    globus_fifo_destroy(&ca_cert_file_list);
+    
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;
 }

@@ -208,6 +208,7 @@ int main(
             default_file);
         if(result != GLOBUS_SUCCESS)
         {
+            free(default_full_file);
             globus_libc_fprintf(
                 stderr,
                 "\nERROR: Couldn't remove the all the files "

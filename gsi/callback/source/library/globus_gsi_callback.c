@@ -836,6 +836,7 @@ globus_i_gsi_callback_check_gaa_auth(
 
     if(result != GLOBUS_SUCCESS)
     {
+        ca_policy_file_path = NULL;
         GLOBUS_GSI_CALLBACK_ERROR_CHAIN_RESULT(
             result,
             GLOBUS_GSI_CALLBACK_ERROR_WITH_SIGNING_POLICY);
