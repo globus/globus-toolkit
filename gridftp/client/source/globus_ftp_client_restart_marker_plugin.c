@@ -609,6 +609,9 @@ globus_ftp_client_restart_marker_plugin_init(
     ps->marker_cb      = marker_cb;
     ps->complete_cb    = complete_cb;
 
+    ps->error_url      = GLOBUS_NULL;
+    ps->error_obj      = GLOBUS_NULL;
+
     globus_mutex_init(&ps->lock, GLOBUS_NULL);
 
     result = globus_ftp_client_plugin_init(
