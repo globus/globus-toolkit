@@ -351,7 +351,7 @@ case ${host}--$1 in
             *   )  lac_64bit_flag="-n32" ;;
         esac
 
-	AC_PATH_PROGS(lac_cv_CC, $CC cc gcc)
+	dnl AC_PATH_PROGS(lac_cv_CC, $CC cc gcc)
 
 	if test "$GLOBUS_CC" = "gcc"; then
 	    AC_PATH_PROGS(lac_cv_CC, $CC gcc)
