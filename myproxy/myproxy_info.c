@@ -1,5 +1,5 @@
 /*
- * myproxy-init
+ * myproxy-info
  *
  * Client program to inqure a proxy on a myproxy-server
  */

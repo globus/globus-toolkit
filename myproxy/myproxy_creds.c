@@ -167,6 +167,51 @@ void my_init_table(SQLHDBC hdbc, SQLHSTMT hstmt)
     mycon(hdbc,rc);
 }
 
+i
+#define MAX_VARCHAR_LEN 255
+
+/* Retrieve data		                          *
+*********************************************************/
+void my_retrieve(SQLHDBC hdbc, SQLHSTMT hstmt)
+{
+  SQLRETURN   rc;
+  SQLINTEGER  id;
+  SQLCHAR     name[50];
+  
+  char owner[255], 
+
+   printf ("mpi-0");
+  printf("\nmy_retrieve:\n");
+
+   rc = SQLBindCol(hstmt,1, SQL_C_CHAR, owner,  
+                      MAX_VARCHAR_LEN,NULL);
+   mystmt(hstmt,rc);
+    
+   rc = SQLBindCol(hstmt,1, SQL_C_CHAR, owner,  
+                      MAX_VARCHAR_LEN,NULL);
+   mystmt(hstmt,rc);
+    
+   rc = SQLBindCol(hstmt,1, SQL_C_CHAR, owner,  
+                      MAX_VARCHAR_LEN,NULL);
+   mystmt(hstmt,rc);
+    
+   printf ("mpi-9");
+   rc = SQLExecute (hstmt);
+   mystmt (hstmt, rc);
+   printf ("mpi-10");
+
+    /* Free statement param resorces */
+    rc = SQLFreeStmt(hstmt, SQL_RESET_PARAMS);
+    mystmt(hstmt,rc);
+
+    /* Free statement cursor resorces */
+    rc = SQLFreeStmt(hstmt, SQL_CLOSE);
+    mystmt(hstmt,rc);
+
+    /* commit the transaction */
+    rc = SQLEndTran(SQL_HANDLE_DBC, hdbc, SQL_COMMIT);
+    mycon(hdbc,rc);
+}
 
 
 /* Insert data using parameters                          *
@@ -823,6 +868,9 @@ read_data_file(struct myproxy_creds *creds,
         goto error;
     }
 
+    memset (&mydbase, 0, sizeof (mydbase));
+    read_from_database();
+
     /* Success */
     return_code = 0;
     
@@ -834,6 +882,34 @@ read_data_file(struct myproxy_creds *creds,
     
     return return_code;
 }
+
+void read_from_database()
+{
+  SQLHENV    henv;
+  SQLHDBC    hdbc;
+  SQLHSTMT   hstmt;
+  SQLINTEGER narg;
+
+    mydsn = strdup (dbase_name);
+    myuid = strdup ("root");
+    mypwd = strdup ("");
+   /*
+    * connect to MySQL server
+    */ 
+    myconnect(&henv,&hdbc,&hstmt);
+
+    /*
+     * retrieve data
+    */
+    my_retrieve(hdbc, hstmt);
+
+    /*
+     * disconnect from the server, by freeing all resources
+    */
+    mydisconnect(&henv,&hdbc,&hstmt);
+
+}
+
 
 void write_to_database()
 {

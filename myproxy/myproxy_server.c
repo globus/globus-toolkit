@@ -332,9 +332,6 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
     client_creds->cred_name = strdup ("DEFAULT_CREDENTIAL_NAME!@#$%^&*()");    //initialize with defaults
     client_creds->cred_desc = strdup ("This is the default credential description");
 
-    /* Set response OK unless error... */
-    server_response->response_type =  MYPROXY_OK_RESPONSE;
- 
     /* Create a new gsi socket */
     attrs->gsi_socket = GSI_SOCKET_new(attrs->socket_fd);
     if (attrs->gsi_socket == NULL) {
