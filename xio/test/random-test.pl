@@ -23,7 +23,7 @@ my $test_name="framework";
 my @drivers;
 push(@drivers, "");
 push(@drivers, "-D debug");
-push(@drivers, "-D test_bounce_transform");
+push(@drivers, "-D bounce");
 
 sub basic_tests
 {

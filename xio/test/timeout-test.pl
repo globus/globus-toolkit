@@ -23,9 +23,9 @@ my $test_name="timeout";
 my @drivers;
 push(@drivers, "");
 push(@drivers, "-D debug");
-push(@drivers, "-D test_bounce_transform");
-push(@drivers, "-D debug -D test_bounce_transform");
-push(@drivers, "-D debug -D test_bounce_transform -D debug");
+push(@drivers, "-D bounce");
+push(@drivers, "-D debug -D bounce");
+push(@drivers, "-D debug -D bounce -D debug");
 
 my @timeout_position;
 push(@timeout_position, "O");

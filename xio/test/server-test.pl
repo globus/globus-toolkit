@@ -22,11 +22,11 @@ my $inline_finish;
 my @drivers;
 push(@drivers, "");
 push(@drivers, "-D debug");
-push(@drivers, "-D test_bounce_transform");
-push(@drivers, "-D debug -D test_bounce_transform");
-push(@drivers, "-D test_bounce_transform -D debug");
-push(@drivers, "-D debug -D test_bounce_transform -D debug");
-push(@drivers, "-D test_bounce_transform -D debug -D test_bounce_transform");
+push(@drivers, "-D bounce");
+push(@drivers, "-D debug -D bounce");
+push(@drivers, "-D bounce -D debug");
+push(@drivers, "-D debug -D bounce -D debug");
+push(@drivers, "-D bounce -D debug -D bounce");
 
 my $test_name="framework";
 my $server_flag="-s";
