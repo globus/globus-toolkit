@@ -2063,7 +2063,7 @@ globus_l_io_poll(
                 &new_period)) 
             {
                 globus_callback_adjust_period(
-                    &globus_l_io_callback_handle,
+                    globus_l_io_callback_handle,
                     &new_period);
             }
         }
