@@ -31,7 +31,7 @@ Southern California. All Rights Reserved.
   <!--
   <property name="ogsacore.javadir" value="${user.home}/.globus/ogsa/impl/java"/>
   -->
-  <property name="ogsacore.javadir" value="${user.home}/.globus/ogsa-tp5"/>
+  <property name="ogsacore.javadir" value="${user.home}/.globus/ogsa-alpha"/>
   <property file="${ogsacore.javadir}/ogsa.properties"/>
   <property name="ogsacore.builddir" value="${ogsacore.javadir}/build" />
   <property name="ogsacore.libdir" value="${ogsacore.javadir}/lib" />
