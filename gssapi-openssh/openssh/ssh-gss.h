@@ -27,11 +27,10 @@
 #include "kex.h"
 #include "buffer.h"
 
-#include <gssapi.h>
+#include "gssapi_krb.h"
 
 #ifdef KRB5
 #ifndef HEIMDAL
-#include <gssapi_generic.h>
 
 /* MIT Kerberos doesn't seem to define GSS_NT_HOSTBASED_SERVICE */
 
@@ -55,12 +54,12 @@
 #define SSH2_MSG_USERAUTH_GSSAPI_EXCHANGE_COMPLETE	63    
 
 enum ssh_gss_id {
-#ifdef KRB5
-	GSS_KERBEROS,
-#endif
 #ifdef GSI
 	GSS_GSI,
 #endif /* GSI */
+#ifdef KRB5
+	GSS_KERBEROS,
+#endif
 	GSS_LAST_ENTRY
 };
 

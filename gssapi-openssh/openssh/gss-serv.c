@@ -249,7 +249,7 @@ ssh_gssapi_krb5_storecreds() {
 #endif /* KRB5 */
 
 #ifdef GSI
-#include <globus_gss_assist.h>
+#include "globus_gss_assist_gsi.h"
 
 /*
  * Check if this user is OK to login under GSI. User has been authenticated
@@ -363,16 +363,16 @@ void
 ssh_gssapi_storecreds()
 {
 	switch (gssapi_client_type) {
-#ifdef KRB5
-	case GSS_KERBEROS:
-		ssh_gssapi_krb5_storecreds();
-		break;
-#endif
 #ifdef GSI
 	case GSS_GSI:
 		ssh_gssapi_gsi_storecreds();
 		break;
 #endif /* GSI */
+#ifdef KRB5
+	case GSS_KERBEROS:
+		ssh_gssapi_krb5_storecreds();
+		break;
+#endif
 	case GSS_LAST_ENTRY:
 		/* GSSAPI not used in this authentication */
 		debug("No GSSAPI credentials stored");
