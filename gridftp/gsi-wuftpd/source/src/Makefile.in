@@ -23,6 +23,10 @@
 # $Id$
 #
 
+# For gmake virtual path support
+srcdir = @srcdir@
+VPATH = @srcdir@
+
 #
 # Generic Makefile for autoconf'ed build
 #
@@ -59,14 +63,14 @@ OBJS   = ${UTIL_OBJS} ftpd.o ftpcmd.o glob.o logwtmp.o popen.o access.o \
 	$(GSSAPI_OBJS) $(AFS_OBJS)
 
 .c.o:
-	$(CC) $(CFLAGS) -I.. -I../support -c -o $@ $<
+	$(CC) $(CFLAGS) -I. -I.. -I$(srcdir)/.. -I../support -c -o $@ $<
 
 all: ftpd ftpcount ftpshut ftprestart ckconfig
 
 ${OBJS}: config.h ../config.h pathnames.h
 
-ftpcmd.c: config.h ../config.h pathnames.h ftpcmd.y
-	$(YACC) ftpcmd.y
+ftpcmd.c: config.h ../config.h pathnames.h $(srcdir)/ftpcmd.y
+	$(YACC) $(srcdir)/ftpcmd.y
 	mv -f y.tab.c ftpcmd.c
 
 ftpcount: ${UTIL_OBJS} ftpcount.o 
@@ -85,7 +89,7 @@ ftpd: ${OBJS}
 	$(CC) $(CFLAGS) -o $@ ${OBJS} -L../support $(LIBS)
 
 vers.c: ftpcmd.c
-	sh newvers.sh
+	sh $(srcdir)/newvers.sh
 
 clean:
 	rm -f ${OBJS} ftpd ftpcmd.c ftpshut ftpshut.o 

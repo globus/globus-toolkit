@@ -45,8 +45,8 @@
 #include <time.h>
 #include <grp.h>
 #include <unistd.h>
-#include "../../src/config.h"
-#include "../../src/pathnames.h"
+#include "config.h"
+#include "pathnames.h"
 
 #define BUFLEN 256
 #define GROUPLEN 8

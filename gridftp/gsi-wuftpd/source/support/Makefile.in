@@ -23,6 +23,10 @@
 # $Id$
 #
 
+# For gmake virtual path support
+srcdir = @srcdir@
+VPATH = @srcdir@
+
 AR = @AR@ cq
 
 OBJS   = @AUTHUSER@ @FTW@ @GETUSERSHELL@ @SCO@ @SNPRINTF@ @STRCASESTR@ @STRDUP@ @STRERROR@ @STRSEP@ @STRSTR@ @SYSLOG@ @GLOB@ @STRCASECMP@ @STRNCASECMP@
@@ -40,4 +44,4 @@ distclean: clean
 	-rm -f Makefile
 
 .c.o:
-	@CC@ @CFLAGS@ -c -o $@ $<
+	@CC@ @CFLAGS@ -I. -c -o $@ $<

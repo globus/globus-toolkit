@@ -1023,4 +1023,10 @@ dnl ===========================================================================
 dnl Write results...
 dnl ============================================================================
 
+dnl If we are configuring in a directory different from where the source
+dnl is configure needs a little help making the directories.
+if test ! -d util ; then
+	mkdir util
+fi
+
 AC_OUTPUT(Makefile src/Makefile support/Makefile util/privatepw/Makefile src/pathnames.h)

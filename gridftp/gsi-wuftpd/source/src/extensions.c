@@ -950,7 +950,13 @@ int is_shutdown(int quiet, int new)
 
 void newer(char *date, char *path, int showlots)
 {
+#if 0
+    /*
+     * I believe this declaration is unneeded and seems to be broken
+     * if <ftw.h> is included - vwelch 7/12/00
+     */
     extern int ftw(const char *path, int (*fn) (char *, struct stat *, int), int depth);
+#endif /* 0 */
     struct tm tm;
 
     if (sscanf(date, "%04d%02d%02d%02d%02d%02d",
