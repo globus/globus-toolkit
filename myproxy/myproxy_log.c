@@ -15,6 +15,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <unistd.h>
 
 /**********************************************************************
  *
@@ -54,11 +55,15 @@ static struct myproxy_log_context my_context =
 static void
 do_log(const char *string, int level)
 {
+    /*
+     * We always want to use '"%s", string' when logging in case
+     * string itself contains a '%s".
+     */
     if (my_context.syslog_facility != 0) 
     {
-	/* Use "%s" here to prevent problems from "%s" in string. */
-	syslog(my_context.syslog_facility|level, "%s: %s",
-	       my_context.syslog_name, string);
+	/* syslog() seems to automatically prepend process name */
+	syslog(my_context.syslog_facility|level, "<%d> %s",
+	       getpid(), string);
     }
     
     if (my_context.log_stream != NULL)
