@@ -467,8 +467,9 @@ proxy_extension_create(
         goto err;
     }
 
-    asn1_oct_string->data = extension_data->value;
-    asn1_oct_string->length = extension_data->length;
+    ASN1_OCTET_STRING_set(asn1_oct_string,
+                          (unsigned char *) extension_data->value,
+                          extension_data->length);
 
     if (!(ex = X509_EXTENSION_create_by_OBJ(NULL, asn1_obj, 
                                             crit, asn1_oct_string)))
@@ -488,6 +489,6 @@ err:
     {
         ASN1_OBJECT_free(asn1_obj);
     }
-    
+
     return ex;
 }
