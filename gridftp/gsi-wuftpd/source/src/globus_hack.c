@@ -1,26 +1,12 @@
 #define OUTSTANDING_READ_COUNT                      4
 
+#include  <globus_common.h>
 #include <setjmp.h>
 #include "config.h"
 #include "proto.h"
 #include "../support/ftp.h"
 
 #if defined(USE_GLOBUS_DATA_CODE)
-
-
-#if defined(USE_LONGJMP)
-#define wu_longjmp(x, y)        longjmp((x), (y))
-#define wu_setjmp(x)            setjmp(x)
-#ifndef JMP_BUF
-#define JMP_BUF                 jmp_buf
-#endif
-#else
-#define wu_longjmp(x, y)        siglongjmp((x), (y))
-#define wu_setjmp(x)            sigsetjmp((x), 1)
-#ifndef JMP_BUF
-#define JMP_BUF                 sigjmp_buf
-#endif
-#endif
 
 typedef struct globus_i_wu_montor_s
 {
@@ -40,7 +26,6 @@ typedef struct globus_i_wu_montor_s
  *  global varials from ftpd.c
  */
 extern int logged_in;
-extern JMP_BUF urgcatch;
 extern int transflag;
 extern int retrieve_is_data;
 extern int type;
@@ -315,12 +300,14 @@ g_send_data(
     char *                                          name,
     FILE *                                          instr,
     globus_ftp_control_handle_t *                   handle,
+    int                                             offset,
     off_t                                           blksize,
     off_t                                           length)
 #else
 g_send_data(
     FILE *                                          instr,
     globus_ftp_control_handle_t *                   handle,
+    int                                             offset,
     off_t                                           blksize,
     off_t                                           length)
 #endif
@@ -351,6 +338,10 @@ g_send_data(
 
     wu_monitor_reset(&g_monitor);
 
+    if(offset == -1)
+    {
+        offset = 0;
+    }
     /*
      *  perhaps a time out should be added here
      */
@@ -453,7 +444,7 @@ g_send_data(
             res = globus_ftp_control_data_write(
                       handle,
                       buf,
-                      cnt,
+                      cnt + offset,
                       jb_count,
                       eof,
                       data_write_callback,

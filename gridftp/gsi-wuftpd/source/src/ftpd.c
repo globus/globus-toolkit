@@ -92,11 +92,11 @@
 
 #ifdef USE_GLOBUS_DATA_CODE
 #   if defined(THROUGHPUT)
-#       define G_SEND_DATA(__name, __instr, __h, __blksize, __length)  \
-            g_send_data(__name, __instr, __h, __blksize, __length)
+#       define G_SEND_DATA(__name, __instr, __h, __off, __blksize, __length)  \
+            g_send_data(__name, __instr, __h, __off, __blksize, __length)
 #   else
-#       define G_SEND_DATA(__name, __instr, __h, __blksize, __length)  \
-            g_send_data(__instr, __h, __blksize, __length)
+#       define G_SEND_DATA(__name, __instr, __h, __off, __blksize, __length)  \
+            g_send_data(__instr, __h, __off, __blksize, __length)
 #   endif
 #endif
 
@@ -4431,14 +4431,15 @@ void retrieve(char *cmd, char *name, int offset, int length)
     {
 #       ifdef BUFFER_SIZE
             TransferComplete = G_SEND_DATA(name, fin, 
-                                   g_control_channel, BUFFER_SIZE, length);
+                                   g_control_channel, offset, 
+                                   BUFFER_SIZE, length);
 #       else
 #           ifdef HAVE_ST_BLKSIZE
                 TransferComplete = G_SEND_DATA(name, fin, &g_data_handle, 
-                                       st.st_blksize * 2, length);
+                                       offset, st.st_blksize * 2, length);
 #           else
                 TransferComplete = G_SEND_DATA(name, fin, 
-                                       &g_data_handle, BUFSIZ);
+                                       &g_data_handle, offset, BUFSIZ);
 #           endif
 #       endif
     }

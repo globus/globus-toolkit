@@ -76,12 +76,22 @@ int access_ok(int);
 #if defined(USE_GLOBUS_DATA_CODE)
 
 int
+#ifdef THROUGHPUT
 g_send_data(
     char *                                          name,
     FILE *                                          instr,
     globus_ftp_control_handle_t *                   handle,
+    int                                             offset,
     off_t                                           blksize,
     off_t                                           length);
+#else
+g_send_data(
+    FILE *                                          instr,
+    globus_ftp_control_handle_t *                   handle,
+    int                                             offset,
+    off_t                                           blksize,
+    off_t                                           length);
+#endif
 
 int
 g_receive_data(
