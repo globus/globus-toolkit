@@ -3733,14 +3733,20 @@ globus_l_gass_transfer_http_accept(
 	{
 	    goto free_auth_data;
 	}
-	rc = globus_gass_transfer_secure_requestattr_get_authorization(
-	    attr,
-	    &l_proto->request->authorization_mode,
-	    &l_proto->request->authorized_subject);
-
-	if(rc != GLOBUS_SUCCESS)
+	if(attr != GLOBUS_NULL)
 	{
-	    goto free_auth_data;
+	    if(*attr != GLOBUS_NULL)
+	    {
+		rc = globus_gass_transfer_secure_requestattr_get_authorization(
+		    attr,
+		    &l_proto->request->authorization_mode,
+		    &l_proto->request->authorized_subject);
+
+		if(rc != GLOBUS_SUCCESS)
+		{
+		    goto free_auth_data;
+		}
+	    }
 	}
 	result = globus_io_secure_authorization_data_set_callback(
 	    &data,

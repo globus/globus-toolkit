@@ -398,10 +398,17 @@ globus_i_gass_transfer_request_init(
     globus_fifo_init(&req->pending_data);
     if(attr)
     {
-	req->attr = globus_object_copy(*attr);
-	if(req->attr == GLOBUS_NULL)
+	if(*attr)
 	{
-	    goto free_fifo;
+	    req->attr = globus_object_copy(*attr);
+	    if(req->attr == GLOBUS_NULL)
+	    {
+	        goto free_fifo;
+	    }
+	}
+	else
+	{
+	    req->attr = GLOBUS_NULL;
 	}
     }
     else
@@ -464,7 +471,7 @@ globus_i_gass_transfer_request_destroy(
 	
 	if(req->attr)
 	{
-		globus_object_free(req->attr);
+	    globus_object_free(req->attr);
 	}
 	globus_fifo_destroy(&req->pending_data);
 	globus_free(req->url);
