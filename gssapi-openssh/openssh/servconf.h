@@ -98,6 +98,11 @@ typedef struct {
 #ifdef AFS
 	int     afs_token_passing;	/* If true, permit AFS token passing. */
 #endif
+#ifdef SESSION_HOOKS
+        int     session_hooks_allow;        /* If true, permit user hooks */
+        char*   session_hooks_startup_cmd;  /* cmd to be executed before */
+        char*   session_hooks_shutdown_cmd; /* cmd to be executed after */
+#endif
 	int     password_authentication;	/* If true, permit password
 						 * authentication. */
 	int     kbd_interactive_authentication;	/* If true, permit */

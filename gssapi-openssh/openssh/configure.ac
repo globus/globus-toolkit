@@ -2109,6 +2109,11 @@ AC_ARG_WITH(afs,
 )
 LIBS="$LIBS $KLIBS $K5LIBS"
 
+AC_ARG_WITH(session-hooks,
+        [  --with-session-hooks    Enable hooks for executing external commands                                       before/after a session],
+        [ AC_DEFINE(SESSION_HOOKS) ]
+)
+
 # Looking for programs, paths and files
 
 PRIVSEP_PATH=/var/empty

@@ -226,6 +226,9 @@
 /* Define if you want GSI/Globus authentication support */
 #undef GSI
 
+/* Define this if you want support for startup/shutdown hooks */
+#undef SESSION_HOOKS
+
 /* Define if you want S/Key support */
 #undef SKEY
 
