@@ -176,6 +176,7 @@ globus_jobmanager_request_init(globus_gram_jobmanager_request_t ** request)
     r->my_stdin = NULL;
     r->my_stdout = NULL;
     r->my_stderr = NULL;
+    r->status = GLOBUS_GRAM_CLIENT_JOB_STATE_FAILED;
     r->count = 0;
     r->host_count = 0;
     r->queue = NULL;
