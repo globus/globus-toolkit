@@ -502,28 +502,24 @@ globus_i_rsl_assist_get_ldap_param(char ** server,
 	}
 
     }
-    /* fall back to defaults */
-    if (*server  ==GLOBUS_NULL)
+    /* No longer fail back on the hardcoded */
+    /* defaults they don't exist */
+
+    if (*server == GLOBUS_NULL)
     {
-	globus_libc_lock();
-	*server=strdup(GRID_INFO_HOST);
-	globus_libc_unlock();
+      goto globus_i_rsl_assist_get_ldap_param_ERR;
     }
     if (*base_dn==GLOBUS_NULL)
     {
-	globus_libc_lock();
-	*base_dn=strdup(GRID_INFO_BASEDN);
-	globus_libc_unlock();
+      goto globus_i_rsl_assist_get_ldap_param_ERR;
     }
     if (port_str==GLOBUS_NULL)
     {
-	*port=atoi(GRID_INFO_PORT);
+      goto globus_i_rsl_assist_get_ldap_param_ERR;
     }
-    else
-    {
-	*port=atoi(port_str);
-	globus_libc_free(port_str);
-    }
+
+    *port=atoi(port_str);
+    globus_libc_free(port_str);
 
     /*globus_libc_printf("RESULT %s %s %d\n",*server,*base_dn, *port);
      */
