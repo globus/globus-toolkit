@@ -160,7 +160,7 @@ extern int
 globus_gram_client_job_contact_free(char * job_contact);
 
 extern const char *
-globus_gram_client_error_string(int error_code);
+globus_gram_client_protocol_string(int error_code);
 
 extern int
 globus_gram_client_version(void);
