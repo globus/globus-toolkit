@@ -299,7 +299,13 @@ dir_iter() {
 #iterate over package names
 package_iter() {
 	for f in $@; do
-		iter_generic package-list/$f;
+		if [ -d package-list/$f ]; then
+			iter_generic package-list/$f;
+		elif [ -d package-list-cdeps/$f ]; then
+			iter_generic package-list-cdeps/$f;
+		else
+			echo No package found matching the name $f
+		fi
 	done
 }
 
