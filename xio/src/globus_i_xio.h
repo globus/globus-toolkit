@@ -39,6 +39,24 @@
             GLOBUS_XIO_ERROR_DRIVER_NOT_FOUND,                              \
             "[%s] given driver not found",                                  \
             (func)))
+
+#define GlobusXIOErrorOperationCanceled(func)                               \
+    globus_error_put(                                                       \
+        globus_error_construct_error(                                       \
+            GLOBUS_XIO_MODULE,                                              \
+            NULL,                                                           \
+            GLOBUS_XIO_ERROR_DRIVER_NOT_FOUND,                              \
+            "[%s] operation was canceled",                                  \
+            (func)))
+
+#define GlobusXIOErrorPassToFar(func)                                       \
+    globus_error_put(                                                       \
+        globus_error_construct_error(                                       \
+            GLOBUS_XIO_MODULE,                                              \
+            NULL,                                                           \
+            GLOBUS_XIO_ERROR_DRIVER_NOT_FOUND,                              \
+            "[%s] at bottom of stack.",                                     \
+            (func)))
 /***************************************************************************
  *                    Internally exposed data structures
  **************************************************************************/

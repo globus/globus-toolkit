@@ -97,6 +97,8 @@ do                                                                  \
     _h = (h);                                                       \
     globus_mutex_lock(_h->mutex);                                   \
     /* create operation for the open */                             \
+    globus_list_inset(&_h->op_list, _op);                           \
+    _h->ref++;                                                      \
     _op = (globus_i_xio_operation_t * )                             \
             globus_memory_pop_node(&_h->op_memory);                 \
     _op->op_type = type;                                            \
@@ -119,78 +121,207 @@ do                                                                  \
                                                                     \
     _op = (op);                                                     \
     assert(_op->ref == 0);                                          \
-    globus_mutex_lock(_op->xio_handle->mutex);                      \
+    globus_list_remove(&_op->xio_handle->op_list,                   \
+        globus_list_search(_op->xio_handle->op_list, _op));         \
+    _op->xio_handle->ref--;                                         \
     globus_memory_push_node(&_op->xio_handle->op_memory, _op);      \
-    globus_mutex_unlock(_op->xio_handle->mutex);                    \
+} while(0)
+
+#define                                                                 \
+Globus_XIO_Driver_Pass_Write(out_res, op, iovec, iovec_count, cb,       \
+    user_arg)                                                           \
+do                                                                      \
+{                                                                       \
+    globus_i_xio_operation_t *                      _op;                \
+    globus_xio_data_callback_t                      _cb;                \
+    void *                                          _user_arg;          \
+    globus_iovec_t *                                _iovec;             \
+    int                                             _iovec_count;       \
+    globus_i_xio_op_entry_t *                       _entry;             \
+                                                                        \
+    _op = (op);                                                         \
+    _iovec = (iovec);                                                   \
+    _iovec_count = (iovec_count);                                       \
+    _cb = (cb);                                                         \
+    _user_arg = (user_arg);                                             \
+                                                                        \
+    if(_op->canceled)                                                   \
+    {                                                                   \
+        out_res = GlobusXIOErrorOperationCanceled(                      \
+                        "Globus_XIO_Driver_Pass_Write");                \
+    }                                                                   \
+    /* if at bottom of the stack we cannot pass further down */         \
+    else if(_op->ndx == _op->stack_size)                                \
+    {                                                                   \
+        out_res = GlobusXIOErrorPassToFar(                              \
+                        "Globus_XIO_Driver_Pass_Write");                \
+    }                                                                   \
+    else                                                                \
+    {                                                                   \
+        _op->progress = GLOBUS_TRUE;                                    \
+        _entry = &_op->entry_array[_op->ndx];                           \
+        _entry->cb = _cb; /* this may result in a casting error */      \
+        _entry->user_arg = _user_arg;                                   \
+        _entry->iovec = iovec;                                          \
+        _entry->iovec_count = iovec_count;                              \
+        /* set the callstack flag */                                    \
+        _entry->in_register = GLOBUS_TRUE;                              \
+        /* find next slot. start on next and find first interseted */   \
+        _op->ndx++;                                                     \
+        while(_op->context[_op->ndx]->driver->write_func == NULL &&     \
+              _op->ndx < _op->stack_size)                               \
+        {                                                               \
+            _op->ndx++;                                                 \
+        }                                                               \
+                                                                        \
+        _context = &_op->context[_op->ndx];                             \
+        out_res = context->driver->write_func(                          \
+                        _context->driver_handle,                        \
+                        _entry->iovec,                                  \
+                        _entry->iovec_count,                            \
+                        _op);                                           \
+                                                                        \
+        /* flip the callstack flag */                                   \
+        _entry->in_register = GLOBUS_FALSE;                             \
+        out_context = _op->context;                                     \
+    }                                                                   \
 } while(0)
 
 
-Globus_XIO_Driver_Pass_Open(out_res, out_context, op, cb, user_arg)
-do 
-{
-    globus_i_xio_operation_t *                      _op;
-    globus_xio_callback_t                           _cb;
-    void *                                          _user_arg;
-    globus_i_xio_context_t *                        _context;
-    globus_i_xio_op_entry_t *                       _entry;
+#define                                                                 \
+Globus_XIO_Driver_Finished_Write(op, result, nwritten)                  \
+do                                                                      \
+{                                                                       \
+    globus_result_t                                 _res;               \
+    globus_i_xio_operation_t *                      _op;                \
+    globus_i_xio_op_entry_t *                       _entry;             \
+                                                                        \
+    /* set local pointers for all macro parameters */                   \
+    _op = (op);                                                         \
+    _res = (result);                                                    \
+                                                                        \
+    assert(_op->ndx > 0);                                               \
+    _op->progress = GLOBUS_TRUE;                                        \
+    /*                                                                  \
+     * this means that we are finishing with a different context        \
+     * copy the finishing one into the operations;                      \
+     */                                                                 \
+    if(_op->context != _context && _context != NULL)                    \
+    {                                                                   \
+        /* iterate through them all and copy handles into new slot */   \
+        for(ctr = _op->ndx; ctr < _op->stack_size; ctr++)               \
+        {                                                               \
+            _op->context[ctr].driver_handle =                           \
+                _control[ctr].driver_handle;                            \
+        }                                                               \
+    }                                                                   \
+    /*                                                                  \
+     * if limited we will do nothing here                               \
+     */                                                                 \
+    if(!_op->entry_array[_op->ndx]->is_limited)                         \
+    {                                                                   \
+        /* find next interested driver */                               \
+        _op->ndx--;                                                     \
+        while(_op->entry_array[_op->ndx].data_cb == NULL &&             \
+                _op->ndx != 0)                                          \
+        {                                                               \
+            _op->ndx--;                                                 \
+        }                                                               \
+        _entry = &_op->entry_array[_op->ndx];                           \
+        _entry->nbytes = (nwritten);                                    \
+        /* if one is found call it, otherwise no callback is called */  \
+        if(_entry->data_cb)                                             \
+        {                                                               \
+            /* if in register thread then kick out a 1 shot */          \
+            if(entry->in_register = GLOBUS_FALSE)                       \
+            {                                                           \
+                _op->cached_res = _res;                                 \
+                globus_callback_space_register_oneshot(                 \
+                    NULL,                                               \
+                    NULL,                                               \
+                    globus_l_xio_data_driver_kickout,                   \
+                    (void *)_op,                                        \
+                    GLOBUS_CALLBACK_GLOBAL_SPACE);                      \
+            }                                                           \
+            /* if not in a register just call it */                     \
+            else                                                        \
+            {                                                           \
+                _entry->data_cb(_op, _res, _nwritten, _entry->user_arg);\
+            }                                                           \
+        }                                                               \
+    }                                                                   \
+} while (0)
 
-    _op = (op);
-    _cb = (cb);
-    _user_arg = (user_arg);
 
-    /* if an error occurs it is up to level above to clean up */
-    /* 
-     *  if op is canceled just return an error
-     *  error can then be passed on back up the stack with finished op
-     */
-    if(_op->canceled)
-    {
-        out_res = ERROR;
-    }
-    /* if at bottom of the stack we cannot pass further down */
-    else if(_op->ndx == _op->stack_size)
-    {
-        out_res = ERROR;
-    }
-    else
-    {
-        /* state that progress has been made */
-        _op->progress = GLOBUS_TRUE;
-        /* assign callback info in current slot */
-        _entry = &_op->entry_array[_op->ndx];
-        _entry->cb = _cb; /* this may result in a casting error */
-        _entry->user_arg = _user_arg;
-        /* set the callstack flag */
-        _entry->in_register = GLOBUS_TRUE;
-        /* find next slot. start on next and find first interseted */
-        _op->ndx++; 
-        while(_op->context[_op->ndx]->driver->open_func == NULL &&
-              _op->ndx < _op->stack_size)
-        {
-            _op->ndx++;
-        }
-
-        /* 
-         * if a open function is not found anywhere on the stack we have 
-         * problems.  this hsould not happen ever, it is checked when
-         * the stack is built.  if this does happen there is most likely
-         * memory curroption
-         */
-        assert(_op->context[_op->ndx]->driver->open_func != NULL);
-
-        /* call the next interface function in the stack */
-        _context = &_op->context[_op->ndx];
-        out_res = context->driver->open_func(
-                        &_context->driver_handle,
-                        _context->driver_attr,
-                        _context->target,
-                        _op->context,
-                        _op);
-
-        /* flip the callstack flag */
-        _entry->in_register = GLOBUS_FALSE;
-        out_context = _op->context;
-    }
+#define \
+Globus_XIO_Driver_Pass_Open(out_res, out_context, op, cb, user_arg)     \
+do                                                                      \
+{                                                                       \
+    globus_i_xio_operation_t *                      _op;                \
+    globus_xio_callback_t                           _cb;                \
+    void *                                          _user_arg;          \
+    globus_i_xio_context_t *                        _context;           \
+    globus_i_xio_op_entry_t *                       _entry;             \
+                                                                        \
+    _op = (op);                                                         \
+    _cb = (cb);                                                         \
+    _user_arg = (user_arg);                                             \
+                                                                        \
+    /* if an error occurs it is up to level above to clean up */        \
+    /*                                                                  \
+     *  if op is canceled just return an error                          \
+     *  error can then be passed on back up the stack with finished op  \
+     */                                                                 \
+    if(_op->canceled)                                                   \
+    {                                                                   \
+        out_res = GlobusXIOErrorOperationCanceled(                      \
+                        "Globus_XIO_Driver_Pass_Write");                \
+    }                                                                   \
+    /* if at bottom of the stack we cannot pass further down */         \
+    else if(_op->ndx == _op->stack_size)                                \
+    {                                                                   \
+        out_res = GlobusXIOErrorPassToFar(                              \
+                        "Globus_XIO_Driver_Pass_Write");                \
+    }                                                                   \
+    else                                                                \
+    {                                                                   \
+        /* state that progress has been made */                         \
+        _op->progress = GLOBUS_TRUE;                                    \
+        /* assign callback info in current slot */                      \
+        _entry = &_op->entry_array[_op->ndx];                           \
+        _entry->cb = _cb; /* this may result in a casting error */      \
+        _entry->user_arg = _user_arg;                                   \
+        /* set the callstack flag */                                    \
+        _entry->in_register = GLOBUS_TRUE;                              \
+        /* find next slot. start on next and find first interseted */   \
+        _op->ndx++;                                                     \
+        while(_op->context[_op->ndx]->driver->open_func == NULL &&      \
+              _op->ndx < _op->stack_size)                               \
+        {                                                               \
+            _op->ndx++;                                                 \
+        }                                                               \
+                                                                        \
+        /*                                                              \
+         * if a open function is not found anywhere on the stack we have \
+         * problems.  this hsould not happen ever, it is checked when   \
+         * the stack is built.  if this does happen there is most likely\
+         * memory curroption                                            \
+         */                                                             \
+        assert(_op->context[_op->ndx]->driver->open_func != NULL);      \
+                                                                        \
+        /* call the next interface function in the stack */             \
+        _context = &_op->context[_op->ndx];                             \
+        out_res = context->driver->open_func(                           \
+                        &_context->driver_handle,                       \
+                        _context->driver_attr,                          \
+                        _context->target,                               \
+                        _op->context,                                   \
+                        _op);                                           \
+                                                                        \
+        /* flip the callstack flag */                                   \
+        _entry->in_register = GLOBUS_FALSE;                             \
+        out_context = _op->context;                                     \
+    }                                                                   \
 } while(0)
 
 Globus_XIO_Driver_Finished_Open(context, open_op, res)
@@ -200,7 +331,6 @@ do
     globus_i_xio_context_t *                        _context;
     globus_i_xio_operation_t *                      _op;
     globus_i_xio_op_entry_t *                       _entry;
-    globus_reltime_t                                delay_time;
 
     /* set local pointers for all macro parameters */
     _op = (open_op);
@@ -208,7 +338,6 @@ do
     _res = (res);
 
     assert(_op->ndx > 0);
-
     _op->progress = GLOBUS_TRUE;
     /* 
      * this means that we are finishing with a different context 
@@ -237,11 +366,6 @@ do
         /* if one is found call it, otherwise no callback is called */
         if(_entry->cb)
         {
-            /* if we have been canceled set error appropriately */
-            if(_op->canceled)
-            {
-                _res = CANCELLED_ERROR;
-            }
             /* if in register thread then kick out a 1 shot */
             if(entry->in_register = GLOBUS_FALSE)
             {
@@ -250,7 +374,7 @@ do
                 globus_callback_space_register_oneshot(
                     NULL,
                     delay_time,
-                    globus_l_xio_open_user_kickout,
+                    globus_l_xio_open_driver_kickout,
                     (void *)_op,
                     GLOBUS_CALLBACK_GLOBAL_SPACE);
             }
@@ -263,9 +387,53 @@ do
     }
 } while (0)
 
+#define GlobusIXIOOperationFree(op)                                 \
+do                                                                  \
+{                                                                   \
+    globus_i_xio_operation_t *                          _op;        \
+                                                                    \
+    _op = (op);                                                     \
+    assert(_op->ref == 0);                                          \
+                                                                    \
+    globus_list_remove(&_op->xio_handle->op_list,                   \
+        globus_list_search(_op->xio_handle->op_list, _op));         \
+    globus_memory_push(&_op->xio_handle->op_memory, _op);           \
+} while(0)
+
 /********************************************************************
  *                      Internal functions 
  *******************************************************************/
+
+/*
+ *   this is called locked
+ *
+ *   if RETURNS true then the user should free the structure
+ */
+globus_bool_t
+globus_i_xio_handle_dec(
+    globus_i_xio_handle_t *                     xio_handle)
+{
+    xio_handle->ref--;
+    if(xio_handle->ref == 0)
+    {
+        /* if the handle ref gets down to zero we must be in one
+         * of the followninf staes.  The statement is that the handle
+         * only goes away when it is closed or a open fails
+         */
+        assert(xio_handle->state == GLOBUS_XIO_HANDLE_STATE_OPEN_FAILED ||
+            xio_handle->state == GLOBUS_XIO_HANDLE_STATE_CLOSED);
+
+        /* TODO: we may need  to kick out a callback */
+        if(xio_handle->state == GLOBUS_XIO_HANDLE_STATE_CLOSED)
+        {
+        }
+
+        /* TODO: dec context ref */
+        return GLOBUS_TRUE;
+    }
+
+    return GLOBUS_FALSE;
+}
 
 /*
  *  this could be built into the finished macro
@@ -276,42 +444,44 @@ globus_i_xio_top_open_callback(
     globus_result_t                             result,
     void *                                      user_arg)
 {
+    globus_bool_t                               destroy_handle = GLOBUS_FALSE;
     globus_i_xio_handle_t *                     xio_handle;
+    globus_result_t                             res = GLOBUS_SUCCESS;
 
     xio_handle = op->xio_handle;
     /* set handle state to OPENED */
-    globus_mutex_lock(&op->xio_handle->mutex);
+    globus_mutex_lock(&xio_handle->mutex);
     {
-        if(res != GLOBUS_SUCCESS)
+        if(result != GLOBUS_SUCCESS)
         {
-            /* clean up the resources */
-            op->xio_handle->GLOBUS_XIO_HANDLE_STATE_OPEN_FAILED;
+            /* TODO: clean up the resources */
+            xio_handle->state = GLOBUS_XIO_HANDLE_STATE_OPEN_FAILED;
+            res = result;
         }
         else
         {
-            op->xio_handle->GLOBUS_XIO_HANDLE_STATE_OPEN;
+            xio_handle->state = GLOBUS_XIO_HANDLE_STATE_OPEN;
         }
-    }
-    globus_mutex_unlock(&op->xio_handle->mutex);
 
-    globus_mutex_lock(&op->xio_handle->op_mutex);
-    {
-        if(op->timeout_set)
+        /* set to finished */
+        op->op_type = GLOBUS_L_XIO_OPERATION_TYPE_FINISHED;
+
+        if(op->timeout_cb != NULL)
         {
             /* 
              * unregister the cancel
              */
             op->timeout_set = GLOBUS_FALSE;
+
+            /* if the unregister fails we will get the callback */
             if(globus_i_xio_timer_unregister_timeout(op))
             {
                 /* at this point we know timeout won't happen */
-                globus_list_remove(&op->xio_handle->op_list, 
-                    globus_list_search(op->xio_handle->op_list, op));
-                globus_l_xio_op_dec(op);
+                op->ref--;
             }
         }
     }
-    globus_mutex_unlock(&op->xio_handle->op_mutex);
+    globus_mutex_unlock(&xio_handle->mutex);
 
     /* 
      *  when at the top don't worry about the cancel
@@ -321,15 +491,14 @@ globus_i_xio_top_open_callback(
      *  if in a space or within the register call stack
      *  we must register a one shot
      */
+    op->cached_res = res;
     if(op->space != GLOBUS_CALLBACK_GLOBAL_SPACE || 
        entry->in_register)
     {
         /* register a oneshot callback */
-        GlobusTimeReltimeSet(delay_time, 0, 0);
-        op->cached_res = res;
         globus_callback_space_register_oneshot(
             NULL,
-            delay_time,
+            NULL,
             globus_l_xio_open_user_kickout,
             (void *)op,
             op->space);
@@ -337,12 +506,7 @@ globus_i_xio_top_open_callback(
     /* in all other cases we can just call callback */
     else
     {
-        globus_mutex_lock(&op->cancel_mutex);
-        {
-            globus_l_xio_op_dec(op);
-        }
-        globus_mutex_unlock(&op->cancel_mutex);
-        op->cb(op->xio_handle, res, op->user_arg);
+        globus_l_xio_open_user_kickout((void *)op);
     }
 }
 
@@ -359,18 +523,40 @@ globus_l_xio_open_user_kickout(
     void *                                      user_arg)
 {
     globus_i_xio_operation_t *                  op;
+    globus_i_xio_handle_t *                     xio_handle;
 
     op = (globus_i_xio_operation_t *) user_arg;
+    xio_handle = op->xio_handle;
 
-    /* if going out to user space */
-    op->cb(op->xio_handle, op->cached_res, op->user_arg);
+    op->cb(xio_handle, op->cached_res, op->user_arg);
 
-    /* clean up the op */
-    globus_mutex_lock(&_op->cancel_mutex);
+    globus_mutex_lock(&xio_handle->mutex);
     {
-        globus_l_xio_op_dec(_op);
+        /* decrement reference for the open operation */
+        op->ref--;
+        if(op->ref == 0)
+        {
+            GlobusIXIOOperationFree(op);
+            /* remove refrence for operation */
+            destroy_handle = globus_i_xio_handle_dec(xio_handle);
+            /* destroy handle cannot possibly be true yet */
+            assert(!destroy_handle);
+        }
+
+        /* if the open failed or we are closing */
+        if(res != GLOBUS_SUCCESS && 
+           (xio_handle->state == OPEN_FAILED ||
+            xio_handle->state == CLOSED))
+        {
+            destroy_handle = globus_i_xio_handle_dec(xio_handle);
+        }
     }
-    globus_mutex_unlock(&_op->cancel_mutex);
+    globus_mutex_unlock(&xio_handle->mutex);
+
+    if(destroy_handle)
+    {
+        Globus_I_XIO_Handle_Destroy(xio_handle);
+    }
 }
 
 /*
@@ -391,6 +577,20 @@ globus_l_xio_open_driver_kickout(
         op->entry_array[op->ndx].user_arg);
 }
 
+void
+globus_l_xio_data_driver_kickout(
+    void *                                      user_arg)
+{
+    globus_i_xio_operation_t *                  op;
+
+    op = (globus_i_xio_operation_t *) user_arg;
+    op->entry_array[op->ndx].data_cb(
+        op, 
+        op->cached_res, 
+        op->entry_array[op->ndx].nbytes,
+        op->entry_array[op->ndx].user_arg);
+}
+
 globus_bool_t
 globus_l_xio_timeout_callback(
     void *                                      user_arg)
@@ -398,25 +598,48 @@ globus_l_xio_timeout_callback(
     globus_i_xio_operation_t *                  op;
     globus_bool_t                               rc = GLOBUS_FALSE;
     globus_bool_t                               tmp_rc;
+    globus_bool_t                               punt;
+    globus_bool_t                               destroy_handle = GLOBUS_FALSE;
+    globus_i_xio_handle_t *                     xio_handle;
 
     op = (globus_i_xio_operation_t *) user_arg;
+    xio_handle = op->xio_handle;
 
-    globus_mutex_lock(&op->xio_handle->op_mutex);
+    globus_mutex_lock(&xio_handle->mutex);
     {
+        /* user alread got finished callback, nothing to cancel */
         if(op->op_type == GLOBUS_L_XIO_OPERATION_TYPE_FINISHED)
         {
-            globus_l_xio_op_dec(op);
+            rc = GLOBUS_TRUE;
+            punt = GLOBUS_TRUE;
+
+            /* if finished we will not call callback but we need to doc
+               the reference and free the operation.  if the handle is
+               in the open failed or close state we may need to 
+               free the memory associated with it */
+            op->ref--;
+            if(op->ref == 0)
+            {
+                GlobusIXIOOperationFree(op);
+                destroy_handle = globus_i_xio_handle_dec(xio_handle);
+            }
+        }
+        else if(op->block_timeout)
+        {
+            rc = GLOBUS_FALSE;
+            punt = GLOBUS_TRUE;
         }
     }
-    globus_mutex_unlock(&op->xio_handle->op_mutex);
+    globus_mutex_unlock(&xio_handle->mutex);
 
-    if(op->block_timeout)
+    if(destroy_handle)
     {
-        return GLOBUS_FALSE;
+        Globus_I_XIO_Handle_Destroy(xio_handle);
     }
-    /* destroy op */
-    if(destroy_op)
+
+    if(punt)
     {
+        return rc;
     }
 
     /* if we get here there beter be user interest */
@@ -433,7 +656,7 @@ globus_l_xio_timeout_callback(
          * this insures that the driver will not receive a callback 
          * once CancelDisallow is called 
          */
-        globus_mutex_lock(&op->xio_handle->op_mutex);
+        globus_mutex_lock(&xio_handle->cancel_mutex);
         {
             /* 
              * if the user oks the cancel then remove the timeout from 
@@ -452,65 +675,95 @@ globus_l_xio_timeout_callback(
             if(op->cancel_callback != NULL)
             {
                 op->cancel_callback(op);
-                /* it is possible that the driver rejected the cancel request */
-                if(!op->canceled)
-                {
-                    /* the driver may have aborted the cancel.  I am not
-                       sure if we will need thins.  notifing the driver is
-                       enough the cancel comes back when ready */
-                    op->canceled = GLOBUS_TRUE;
-                }
-                else
-                {
-                    /* remove from the op list */
-                }
+            }
+            /* it is possible that the driver rejected the cancel request */
+            if(!op->canceled)
+            {
+                /* the driver may have aborted the cancel.  I am not
+                   sure if we will need thins.  notifing the driver is
+                   enough the cancel comes back when ready */
+                op->canceled = GLOBUS_TRUE;
+            }
+            else
+            {
+                /* remove from the op list */
             }
             rc = GLOBUS_FALSE;
         }
-        globus_mutex_lock(&op->xio_handle->op_mutex);
+        globus_mutex_lock(&xio_handle->cancel_mutex);
     }
 
     return rc;
 }
 
-void
-globus_l_xio_handle_dec(
-    globus_i_xio_handle_t *                     xio_handle)
-{
-    xio_handle->ref--;
-    if(xio_handle-ref == 0)
-    {
-        /* the reference count should only be at zero in these 2 states */
-        assert(xio_handle->state == GLOBUS_XIO_HANDLE_STATE_CLOSED ||
-               xio_handle->state == GLOBUS_XIO_HANDLE_STATE_FAILED);
-
-        /* destroy the handle */
-    }
-}
-
 /*
- *  this should be called with the operation cancel mutex locked 
+ *  this is called locked
  */
-void
-globus_l_xio_op_dec(
-    globus_i_xio_operation_t *          op)
+globus_result_t
+globus_l_xio_register_writev(
+    globus_xio_handle_t                         xio_handle,
+    globus_iovec_t *                            iovec,
+    int                                         iovec_count,
+    globus_i_xio_data_descriptor_t              dd,
+    globus_xio_callback_t                       cb,
+    void *                                      user_arg)
 {
-    globus_i_xio_handle_t *                     xio_handle;
+    globus_i_xio_operation_t *                  l_op;
+    globus_result_t                             res;
 
-    op->ref--;
-    if(op->ref == 0)
+    /* 
+     * create operation for open.  this will add operation to the handles
+     * op list and increase the reference count
+     */
+    Globus_I_XIO_Operation_Create(l_op, GLOBUS_XIO_OPERATION_TYPE_WRITE, \
+        xio_handle);
+    if(l_op == NULL)
     {
-        xio_handle = op->xio_handle;
-        /* clean up the resources */
-        globus_memory_push(&xio_handle->op_memory, op);
-
-        globus_mutex_lock(xio_handle->mutex);
-        {
-            globus_l_xio_handle_dec(xio_handle)
-            /* possibly need a signal here */
-        }
-        globus_mutex_unlock(xio_handle->mutex);
+        return GlobusXIOErrorMemoryAlloc("globus_xio_register_open");
     }
+    op->space = Globus_XIO_DD_Get_Space(dd);
+    op->op_type = GLOBUS_XIO_OPERATION_TYPE_WRITE;
+
+    /* register timeout */
+    if(xio_handle->write_timeout_cb != NULL)
+    {
+        /* op the operatin reference count for this */
+        op->ref++;
+        op->timeout_cb = xio_handle->write_timeout_cb;
+        res = globus_i_xio_timer_register_timeout(
+                g_globus_l_xio_timeout_timer,
+                op,
+                &op->progress,
+                globus_l_xio_timeout_callback,
+                &l_handle->open_timeout_period);
+        if(res != GLOBUS_SUCCESS)
+        {
+            goto err;
+        }
+    }
+
+    Globus_XIO_Driver_Pass_Write(res, l_op, iovec, iovec_count,         \
+        globus_i_xio_top_open_callback, (void *)l_op);
+    if(res != GLOBUS_SUCCESS)
+    {
+        goto err;
+    }
+
+    return GLOBUS_SUCCESS;
+
+  err:
+
+    if(l_op != NULL)
+    {
+        l_op->ref--;
+        Globus_I_XIO_Operation_Destroy(l_op);
+
+        /* remove the refernce of the operation, but assert thta it is not 0 */
+        destroy_handle = globus_i_xio_handle_dec(xio_handle); 
+        assert(!destroy_handle);
+    }
+
+    return res;
 }
 
 /********************************************************************
@@ -602,23 +855,33 @@ globus_xio_register_open(
      */
     l_context->ref++;
     /* allocate and intialize the handle structure */
-    Globus_I_XIO_Handle_Init(l_handle, l_target, l_context);
+    Globus_I_XIO_Handle_Create(l_handle, l_target, l_context);
     if(l_handle == NULL)
     {
         res = GlobusXIOErrorMemoryAlloc("globus_xio_register_open");
         goto err;
     }
+    /* set state to opening */
+    l_handle->GLOBUS_XIO_HANDLE_STATE_OPENING;
 
+    /* get timeouts */
     l_handle->open_timeout = Globus_I_XIO_Attr_Open_Timeout(attr);
-    GlobusTimeReltimeCopy(l_handle->open_timeout_period, attr->open_timeout_period);
+    GlobusTimeReltimeCopy(l_handle->open_timeout_period,                \
+        attr->open_timeout_period);
     l_handle->read_timeout = Globus_I_XIO_Attr_Read_Timeout(attr);
-    GlobusTimeReltimeCopy(l_handle->read_timeout_period, attr->read_timeout_period);
+    GlobusTimeReltimeCopy(l_handle->read_timeout_period,                \
+        attr->read_timeout_period);
     l_handle->write_timeout = Globus_I_XIO_Attr_Write_Timeout(attr);
-    GlobusTimeReltimeCopy(l_handle->write_timeout_period, attr->write_timeout_period);
+    GlobusTimeReltimeCopy(l_handle->write_timeout_period,               \
+        attr->write_timeout_period);
     l_handle->close_timeout = Globus_I_XIO_Attr_Close_Timeout(attr);
-    GlobusTimeReltimeCopy(l_handle->close_timeout_period, attr->close_timeout_period);
+    GlobusTimeReltimeCopy(l_handle->close_timeout_period,               \
+        attr->close_timeout_period);
 
-    /* create operation for the open */
+    /* 
+     * create operation for open.  this will add operation to the handles
+     * op list and increase the reference count
+     */
     Globus_I_XIO_Operation_Create(op, GLOBUS_XIO_OPERATION_TYPE_OPEN, l_handle);
     if(l_op == NULL)
     {
@@ -662,6 +925,7 @@ globus_xio_register_open(
      * error handling 
      */
   err:
+    /* TODO: make sure this doesn't trip an assertion */
     /* do not properly destry since this is a malloc failure */
     if(l_op != NULL)
     {
@@ -690,7 +954,7 @@ globus_xio_register_read(
     globus_xio_data_descriptor_t                data_desc,
     globus_xio_callback_t                       cb,
     void *                                      user_arg)
-{
+{        
 }
 
 globus_result_t
@@ -702,7 +966,74 @@ globus_xio_register_write(
     globus_xio_callback_t                       cb,
     void *                                      user_arg)
 {
+    /* error echecking */
+    if(handle == NULL)
+    {
+        return GlobusXIOErrorBadParameter("globus_xio_register_read");
+    }
+    if(buffer == NULL)
+    {
+        return GlobusXIOErrorBadParameter("globus_xio_register_read");
+    }
+    if(buffer_length <= 0)
+    {
+        return GlobusXIOErrorBadParameter("globus_xio_register_read");
+    }
+
+    if(xio_handle->state != GLOBUS_XIO_HANDLE_STATE_OPEN)
+    {
+    }
 }
+
+globus_result_t
+globus_xio_register_writev(
+    globus_xio_handle_t                         handle,
+    globus_iovec_t *                            iovec,
+    int                                         iovec_count,
+    globus_xio_data_descriptor_t                data_desc,
+    globus_xio_callback_t                       cb,
+    void *                                      user_arg)
+{
+    globus_i_xio_handle_t *                     xio_handle;
+    globus_result_t                             res;
+
+    xio_handle = handle;
+    /* error echecking */
+    if(handle == NULL)
+    {
+        return GlobusXIOErrorBadParameter("globus_xio_register_read");
+    }
+    if(buffer == NULL)
+    {
+        return GlobusXIOErrorBadParameter("globus_xio_register_read");
+    }
+    if(buffer_length <= 0)
+    {
+        return GlobusXIOErrorBadParameter("globus_xio_register_read");
+    }
+
+    globus_mutex_lock(xio_handle->mutex);
+    {
+        if(xio_handle->state != GLOBUS_XIO_HANDLE_STATE_OPEN)
+        {
+            res = ERROR
+        }
+        else
+        {
+            res = globus_l_xio_register_writev(
+                    xio_handle,
+                    iovec,
+                    iovec_count,
+                    dd,
+                    cb,
+                    user_arg);
+        }
+    }
+    globus_mutex_lock(xio_handle->mutex);
+
+    return res;
+}
+
 
 globus_result_t
 globus_xio_register_close(
