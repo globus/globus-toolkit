@@ -81,7 +81,7 @@ globus_gss_assist_get_unwrap(
 
       GLOBUS_I_GSI_GSS_ASSIST_DEBUG_FPRINTF(
           3, (globus_i_gsi_gss_assist_debug_fstream,
-              "unwrap: maj: %8.8x min: %8.8x inlen: %u outlen: %u\n",
+              _GASL("unwrap: maj: %8.8x min: %8.8x inlen: %u outlen: %u\n"),
               (unsigned int) major_status, 
               (unsigned int) *minor_status, 
               input_token->length,
@@ -96,7 +96,7 @@ globus_gss_assist_get_unwrap(
   
   if (fperr && (major_status != GSS_S_COMPLETE || *token_status != 0)) {
       globus_gss_assist_display_status(stderr,
-                                       "gss_assist_get_unwrap failure:",
+                                       _GASL("gss_assist_get_unwrap failure:"),
                                        major_status,
                                        *minor_status,
                                        *token_status);

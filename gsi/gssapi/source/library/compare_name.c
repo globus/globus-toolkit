@@ -100,7 +100,7 @@ GSS_CALLCONV gss_compare_name(
     {
         char *                          subject;
 
-        GLOBUS_I_GSI_GSSAPI_DEBUG_PRINT(2, "Comparing names:\n");
+        GLOBUS_I_GSI_GSSAPI_DEBUG_PRINT(2, _GGSL("Comparing names:\n"));
         subject = X509_NAME_oneline(name1->x509n, NULL, 0);
         GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
             2, (globus_i_gsi_gssapi_debug_fstream, "%s\n", subject));
@@ -137,7 +137,7 @@ GSS_CALLCONV gss_compare_name(
     {
 
         GLOBUS_I_GSI_GSSAPI_DEBUG_PRINT(
-            2, "Comparing GSS_C_NT_HOSTBASED_SERVICE names\n");
+            2, _GGSL("Comparing GSS_C_NT_HOSTBASED_SERVICE names\n"));
 
         ne1 = NULL;
         ne2 = NULL;

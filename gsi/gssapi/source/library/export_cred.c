@@ -69,7 +69,7 @@ GSS_CALLCONV gss_export_cred(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
-            ("NULL or emtpy export_buffer parameter passed to function: %s",
+            (_GGSL("NULL or emtpy export_buffer parameter passed to function: %s"),
              _function_name_));
         goto exit;
     }
@@ -83,7 +83,7 @@ GSS_CALLCONV gss_export_cred(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
-            ("NULL or emtpy export_buffer parameter passed to function: %s",
+            (_GGSL("NULL or emtpy export_buffer parameter passed to function: %s"),
              _function_name_));
         goto exit;
     }
@@ -95,8 +95,8 @@ GSS_CALLCONV gss_export_cred(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_BAD_MECH,
-            ("The desired mechanism of: %s, is not supported by this "
-             "GSS implementation", desired_mech->elements));
+            (_GGSL("The desired mechanism of: %s, is not supported by this "
+             "GSS implementation"), desired_mech->elements));
         goto exit;
     }
 
@@ -113,7 +113,7 @@ GSS_CALLCONV gss_export_cred(
             GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
                 minor_status,
                 GLOBUS_GSI_GSSAPI_ERROR_WITH_OPENSSL,
-                ("Couldn't initialize IO bio for exporting credential"));
+                (_GGSL("Couldn't initialize IO bio for exporting credential")));
             major_status = GSS_S_FAILURE;
             goto exit;
         }
@@ -196,7 +196,7 @@ GSS_CALLCONV gss_export_cred(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
-            ("Unrecognized option_req of: %d", option_req));
+            (_GGSL("Unrecognized option_req of: %d", option_req)));
         goto exit;
     }
 

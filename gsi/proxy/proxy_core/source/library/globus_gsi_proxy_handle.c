@@ -66,7 +66,7 @@ globus_gsi_proxy_handle_init(
         GLOBUS_GSI_PROXY_ERROR_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE,
-            ("NULL handle passed to function: %s", _function_name_));
+            (_PCSL("NULL handle passed to function: %s"), _function_name_));
         goto exit;
     }
 
@@ -90,7 +90,7 @@ globus_gsi_proxy_handle_init(
         GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_X509_REQ,
-            ("Couldn't create new X509_REQ structure for handle"));
+            (_PCSL("Couldn't create new X509_REQ structure for handle")));
         goto free_handle;
     }
 
@@ -100,7 +100,7 @@ globus_gsi_proxy_handle_init(
         GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_PROXYCERTINFO,
-            ("Error initializing new PROXYCERTINFO struct"));
+            (_PCSL("Error initializing new PROXYCERTINFO struct")));
         goto free_handle;
     }
     
@@ -221,7 +221,7 @@ globus_gsi_proxy_handle_get_req(
         GLOBUS_GSI_PROXY_ERROR_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE,
-            ("Invalid handle (NULL) passed to function"));
+            (_PCSL("Invalid handle (NULL) passed to function")));
         goto exit;
     }
 
@@ -230,7 +230,7 @@ globus_gsi_proxy_handle_get_req(
         GLOBUS_GSI_PROXY_ERROR_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_X509_REQ,
-            ("Invalid req pointer passed to function"));
+            (_PCSL("Invalid req pointer passed to function")));
         goto exit;
     }
 
@@ -241,7 +241,7 @@ globus_gsi_proxy_handle_get_req(
         GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_X509_REQ,
-            ("X509_REQ could not be copied"));
+            (_PCSL("X509_REQ could not be copied")));
         goto exit;
     }
 
@@ -280,7 +280,7 @@ globus_gsi_proxy_handle_set_req(
         GLOBUS_GSI_PROXY_ERROR_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE,
-            ("Invalid handle (NULL) passed to function"));
+            (_PCSL("Invalid handle (NULL) passed to function")));
         goto exit;
     }
     
@@ -298,7 +298,7 @@ globus_gsi_proxy_handle_set_req(
             GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_PROXY_ERROR_WITH_X509_REQ,
-                ("Couldn't copy X509_REQ"));
+                (_PCSL("Couldn't copy X509_REQ")));
             goto exit;
         }
     }
@@ -349,7 +349,7 @@ globus_gsi_proxy_handle_get_private_key(
         GLOBUS_GSI_PROXY_ERROR_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE,
-            ("Invalid handle (NULL) passed to function"));
+            (_PCSL("Invalid handle (NULL) passed to function")));
         goto exit;
     }
     
@@ -358,7 +358,7 @@ globus_gsi_proxy_handle_get_private_key(
         GLOBUS_GSI_PROXY_ERROR_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_PRIVATE_KEY,
-            ("Invalid proxy_key (NULL) passed to function"));
+            (_PCSL("Invalid proxy_key (NULL) passed to function")));
         goto exit;
     }
 
@@ -367,7 +367,7 @@ globus_gsi_proxy_handle_get_private_key(
         GLOBUS_GSI_PROXY_ERROR_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_PRIVATE_KEY,
-            ("handle's proxy key hasn't been initialized"));
+            (_PCSL("handle's proxy key hasn't been initialized")));
         goto exit;
     }
 
@@ -380,8 +380,8 @@ globus_gsi_proxy_handle_get_private_key(
         GLOBUS_GSI_PROXY_ERROR_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_PRIVATE_KEY,
-            ("Couldn't convert private key from internal"
-             "to DER encoded form"));
+            (_PCSL("Couldn't convert private key from internal"
+             "to DER encoded form")));
         goto exit;
         
     }
@@ -403,8 +403,8 @@ globus_gsi_proxy_handle_get_private_key(
         GLOBUS_GSI_PROXY_ERROR_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_PRIVATE_KEY,
-            ("Couldn't convert private key from internal"
-             "to DER encoded form"));
+            (_PCSL("Couldn't convert private key from internal"
+             "to DER encoded form")));
         goto exit;
         
     }
@@ -417,7 +417,7 @@ globus_gsi_proxy_handle_get_private_key(
         GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_PRIVATE_KEY,
-            ("Error converting DER encoded private key to internal form"));
+            (_PCSL("Error converting DER encoded private key to internal form")));
         goto exit;
     }
     
@@ -464,7 +464,7 @@ globus_gsi_proxy_handle_set_private_key(
         GLOBUS_GSI_PROXY_ERROR_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE,
-            ("Invalid handle (NULL) passed to function"));
+            (_PCSL("Invalid handle (NULL) passed to function")));
         goto exit;
     }
 
@@ -484,8 +484,8 @@ globus_gsi_proxy_handle_set_private_key(
             GLOBUS_GSI_PROXY_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_PROXY_ERROR_WITH_PRIVATE_KEY,
-                ("Couldn't convert private key from internal"
-                 "to DER encoded form"));
+                (_PCSL("Couldn't convert private key from internal"
+                 "to DER encoded form")));
             goto exit;
             
         }
@@ -507,8 +507,8 @@ globus_gsi_proxy_handle_set_private_key(
             GLOBUS_GSI_PROXY_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_PROXY_ERROR_WITH_PRIVATE_KEY,
-                ("Couldn't convert private key from internal"
-                 "to DER encoded form"));
+                (_PCSL("Couldn't convert private key from internal"
+                 "to DER encoded form")));
             goto exit;
             
         }
@@ -521,7 +521,7 @@ globus_gsi_proxy_handle_set_private_key(
             GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_PROXY_ERROR_WITH_PRIVATE_KEY,
-                ("Error converting DER encoded private key to internal form"));
+                (_PCSL("Error converting DER encoded private key to internal form")));
             goto exit;
         }
     }
@@ -572,7 +572,7 @@ globus_gsi_proxy_handle_get_type(
         GLOBUS_GSI_PROXY_ERROR_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE,
-            ("Invalid handle (NULL) passed to function"));
+            (_PCSL("Invalid handle (NULL) passed to function")));
         goto exit;
     }
 
@@ -615,7 +615,7 @@ globus_gsi_proxy_handle_set_type(
         GLOBUS_GSI_PROXY_ERROR_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE,
-            ("Invalid handle (NULL) passed to function"));
+            (_PCSL("Invalid handle (NULL) passed to function")));
         goto exit;
     }
 
@@ -696,7 +696,7 @@ globus_gsi_proxy_handle_set_policy(
         GLOBUS_GSI_PROXY_ERROR_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE,
-            ("NULL handle passed to function: %s", _function_name_));
+            (_PCSL("NULL handle passed to function: %s"), _function_name_));
         goto exit;
     }
     
@@ -712,7 +712,7 @@ globus_gsi_proxy_handle_set_policy(
         GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_PROXYPOLICY,
-            ("Invalid numeric ID: %d", policy_language_NID));
+            (_PCSL("Invalid numeric ID: %d"), policy_language_NID));
         goto exit;
     }
 
@@ -721,7 +721,7 @@ globus_gsi_proxy_handle_set_policy(
         GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_PROXYPOLICY,
-            ("PROXYPOLICY of proxy handle could not be initialized"));
+            (_PCSL("PROXYPOLICY of proxy handle could not be initialized")));
         goto exit;
     }
 
@@ -731,7 +731,7 @@ globus_gsi_proxy_handle_set_policy(
         GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_PROXYPOLICY,
-            ("PROXYPOLICY of proxy handle could not be initialized"));
+            (_PCSL("PROXYPOLICY of proxy handle could not be initialized")));
         goto exit;
     }
        
@@ -782,7 +782,7 @@ globus_gsi_proxy_handle_get_policy(
         GLOBUS_GSI_PROXY_ERROR_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE,
-            ("NULL handle passed to function: %s", _function_name_));
+            (_PCSL("NULL handle passed to function: %s"), _function_name_));
         goto exit;
     }
 
@@ -841,7 +841,7 @@ globus_gsi_proxy_handle_set_pathlen(
         GLOBUS_GSI_PROXY_ERROR_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE,
-            ("NULL handle passed to function: %s", _function_name_));
+            (_PCSL("NULL handle passed to function: %s"), _function_name_));
         goto exit;
     }
 
@@ -850,8 +850,8 @@ globus_gsi_proxy_handle_set_pathlen(
         GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_PATHLENGTH,
-            ("Error setting the path length of the PROXYCERTINFO extension "
-             "in the proxy handle"));
+            (_PCSL("Error setting the path length of the PROXYCERTINFO extension "
+             "in the proxy handle")));
         goto exit;
     }
 
@@ -896,7 +896,7 @@ globus_gsi_proxy_handle_get_pathlen(
         GLOBUS_GSI_PROXY_ERROR_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE,
-            ("NULL handle passed to function: %s", _function_name_));
+            (_PCSL("NULL handle passed to function: %s"), _function_name_));
         goto exit;
     }
     *pathlen = PROXYCERTINFO_get_path_length(handle->proxy_cert_info);
@@ -944,7 +944,7 @@ globus_gsi_proxy_handle_get_time_valid(
         GLOBUS_GSI_PROXY_ERROR_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE,
-            ("NULL handle passed to function: %s", _function_name_));
+            (_PCSL("NULL handle passed to function: %s"), _function_name_));
         goto exit;
     }
 
@@ -985,7 +985,7 @@ globus_gsi_proxy_handle_set_time_valid(
         GLOBUS_GSI_PROXY_ERROR_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE,
-            ("NULL handle passed to function: %s", _function_name_));
+            (_PCSL("NULL handle passed to function: %s"), _function_name_));
         goto exit;
     }
 
@@ -1030,7 +1030,7 @@ globus_gsi_proxy_handle_clear_cert_info(
         GLOBUS_GSI_PROXY_ERROR_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE,
-            ("NULL handle passed to function: %s", _function_name_));
+            (_PCSL("NULL handle passed to function: %s"), _function_name_));
         goto exit;
     }
 
@@ -1041,7 +1041,7 @@ globus_gsi_proxy_handle_clear_cert_info(
         GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_PROXYCERTINFO,
-            ("PROXYCERTINFO could not be initialized"));
+            (_PCSL("PROXYCERTINFO could not be initialized")));
         goto exit;
     }
 
@@ -1093,7 +1093,7 @@ globus_gsi_proxy_handle_get_proxy_cert_info(
         GLOBUS_GSI_PROXY_ERROR_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE,
-            ("Invalid handle (NULL) passed to function"));
+            (_PCSL("Invalid handle (NULL) passed to function")));
         goto exit;
     }
 
@@ -1102,7 +1102,7 @@ globus_gsi_proxy_handle_get_proxy_cert_info(
         GLOBUS_GSI_PROXY_ERROR_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_PROXYCERTINFO,
-            ("Invalid PROXYCERTINFO passed to function"));
+            (_PCSL("Invalid PROXYCERTINFO passed to function")));
         goto exit;
     }
 
@@ -1114,7 +1114,7 @@ globus_gsi_proxy_handle_get_proxy_cert_info(
             GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_PROXY_ERROR_WITH_PROXYCERTINFO,
-                ("Couldn't copy PROXYCERTINFO structure"));
+                (_PCSL("Couldn't copy PROXYCERTINFO structure")));
             goto exit;
         }
     }
@@ -1160,7 +1160,7 @@ globus_gsi_proxy_handle_set_proxy_cert_info(
         GLOBUS_GSI_PROXY_ERROR_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE,
-            ("Invalid handle (NULL) passed to function"));
+            (_PCSL("Invalid handle (NULL) passed to function")));
         goto exit;
     }
 
@@ -1178,7 +1178,7 @@ globus_gsi_proxy_handle_set_proxy_cert_info(
             GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_PROXY_ERROR_WITH_PROXYCERTINFO,
-                ("Couldn't copy PROXYCERTINFO"));
+                (_PCSL("Couldn't copy PROXYCERTINFO")));
             goto exit;
         }
     }
@@ -1445,7 +1445,7 @@ globus_gsi_proxy_handle_get_common_name(
         GLOBUS_GSI_PROXY_ERROR_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE,
-            ("Invalid handle (NULL) passed to function"));
+            (_PCSL("Invalid handle (NULL) passed to function")));
         goto exit;
     }
 
@@ -1454,7 +1454,7 @@ globus_gsi_proxy_handle_get_common_name(
         GLOBUS_GSI_PROXY_ERROR_RESULT(
             result,
             GLOBUS_GSI_PROXY_INVALID_PARAMETER,
-            ("Invalid common name passed to function"));
+            (_PCSL("Invalid common name passed to function")));
         goto exit;
     }
 
@@ -1509,7 +1509,7 @@ globus_gsi_proxy_handle_set_common_name(
         GLOBUS_GSI_PROXY_ERROR_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE,
-            ("Invalid handle (NULL) passed to function"));
+            (_PCSL("Invalid handle (NULL) passed to function")));
         goto exit;
     }
 
@@ -1571,7 +1571,7 @@ globus_gsi_proxy_handle_set_is_limited(
         GLOBUS_GSI_PROXY_ERROR_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE,
-            ("Invalid handle (NULL) passed to function"));
+            (_PCSL("Invalid handle (NULL) passed to function")));
         goto exit;
     }
 

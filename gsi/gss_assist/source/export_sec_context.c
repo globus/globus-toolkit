@@ -103,7 +103,7 @@ globus_gss_assist_export_sec_context(
         GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
             local_result,
             GLOBUS_GSI_GSS_ASSIST_ERROR_EXPORTING_CONTEXT,
-            ("Error attempting to write 4 bytes to file descriptor"));
+            (_GASL("Error attempting to write 4 bytes to file descriptor")));
         *minor_status = (OM_uint32) local_result;
         major_status = GSS_S_FAILURE;
         goto err;
@@ -116,8 +116,8 @@ globus_gss_assist_export_sec_context(
         GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
             local_result,
             GLOBUS_GSI_GSS_ASSIST_ERROR_EXPORTING_CONTEXT,
-            ("Error attempting to write %d bytes of export token "
-             "to file descriptor.", export_token.length));
+            (_GASL("Error attempting to write %d bytes of export token "
+             "to file descriptor."), export_token.length));
         *minor_status = (OM_uint32) local_result;
         major_status = GSS_S_FAILURE;
         goto err;
@@ -156,12 +156,12 @@ globus_gss_assist_export_sec_context(
         {
             globus_gss_assist_display_status(
                 fperr,
-                "gss_assist_import_sec_context failure:",
+                _GASL("gss_assist_import_sec_context failure:"),
                 major_status,
                 *minor_status,
                 *token_status);
 
-            fprintf(fperr, "token_status%d\n", *token_status);
+            fprintf(fperr, _GASL("token_status%d\n"), *token_status);
         }
 
         *minor_status = (OM_uint32) globus_error_put(error_copy);

@@ -67,7 +67,7 @@ GSS_CALLCONV gss_create_empty_buffer_set(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status, 
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
-            ("NULL parameters passed to function: %s",
+            (_GGSL("NULL parameters passed to function: %s"),
              _function_name_));
         goto exit;
     }
@@ -145,7 +145,7 @@ GSS_CALLCONV gss_add_buffer_set_member(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
-            ("Invalid buffer_set passed to function"));
+            (_GGSL("Invalid buffer_set passed to function")));
         goto exit;
     }
         
@@ -244,7 +244,7 @@ GSS_CALLCONV gss_release_buffer_set(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status, 
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
-            ("NULL parameters passed to function: %s",
+            (_GGSL("NULL parameters passed to function: %s")),
              _function_name_));
         major_status = GSS_S_FAILURE;
         goto exit;

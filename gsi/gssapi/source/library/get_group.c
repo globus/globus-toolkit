@@ -75,7 +75,7 @@ GSS_CALLCONV gss_get_group(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status, major_status,
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
-            ("NULL parameter minor_status passed to function: %s",
+            (_GGSL("NULL parameter minor_status passed to function: %s"),
              _function_name_));
         goto exit;
     }
@@ -88,7 +88,7 @@ GSS_CALLCONV gss_get_group(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status, major_status,
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
-            ("Invalid group name passed to function: %s",
+            (_GGSL("Invalid group name passed to function: %s"),
              _function_name_));
         goto exit;
     }
@@ -99,7 +99,7 @@ GSS_CALLCONV gss_get_group(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status, major_status,
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
-            ("Invalid group passed to function: %s",
+            (_GGSL("Invalid group passed to function: %s"),
              _function_name_));
         goto exit;
     }
@@ -110,7 +110,7 @@ GSS_CALLCONV gss_get_group(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status, major_status,
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
-            ("Invalid group types passed to function: %s",
+            (_GGSL("Invalid group types passed to function: %s"),
              _function_name_));
         goto exit;
     }

@@ -266,7 +266,7 @@ globus_gsi_callback_get_X509_STORE_callback_data_index(
             GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_CALLBACK_ERROR_WITH_CALLBACK_DATA_INDEX,
-                ("Couldn't create external data index for SSL object"));
+                (_CLS("Couldn't create external data index for SSL object")));
             goto exit;
         }
     }
@@ -317,7 +317,7 @@ globus_gsi_callback_get_SSL_callback_data_index(
             GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_CALLBACK_ERROR_WITH_CALLBACK_DATA_INDEX,
-                ("Couldn't create external data index for SSL object"));
+                (_CLS("Couldn't create external data index for SSL object")));
             goto exit;
         }
     }
@@ -656,8 +656,8 @@ globus_i_gsi_callback_cred_verify(
                 GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
                     result,
                     GLOBUS_GSI_CALLBACK_ERROR_CERT_NOT_YET_VALID,
-                    ("Cert with subject: %s is not yet valid"
-		     "- check clock skew between hosts.", subject_name));
+                    (_CLS("Cert with subject: %s is not yet valid"
+		     "- check clock skew between hosts."), subject_name));
             }
             else if (x509_context->error == 
                      X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY)
@@ -665,15 +665,15 @@ globus_i_gsi_callback_cred_verify(
                 GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
                     result,
                     GLOBUS_GSI_CALLBACK_ERROR_CANT_GET_LOCAL_CA_CERT,
-                    ("Cannot find issuer certificate for "
-		     "local credential with subject: %s", subject_name));
+                    (_CLS("Cannot find issuer certificate for "
+		     "local credential with subject: %s"), subject_name));
             }
             else if (x509_context->error == X509_V_ERR_CERT_HAS_EXPIRED)
             {
                 GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
                     result,
                     GLOBUS_GSI_CALLBACK_ERROR_CERT_HAS_EXPIRED,
-                    ("Credential with subject: %s has expired.", subject_name));
+                    (_CLS("Credential with subject: %s has expired."), subject_name));
             }
             else
             {
@@ -843,8 +843,8 @@ globus_i_gsi_callback_check_proxy(
                 GLOBUS_GSI_CALLBACK_ERROR_RESULT(
                     result,
                     GLOBUS_GSI_CALLBACK_ERROR_LIMITED_PROXY,
-                    ("Can't sign a cert with a limited proxy "
-                     "as the signer"));
+                    (_CLS("Can't sign a cert with a limited proxy "
+                     "as the signer")));
                 x509_context->error = X509_V_ERR_CERT_SIGNATURE_FAILURE;
                 goto exit;
             }
@@ -958,8 +958,8 @@ globus_i_gsi_callback_check_revoked(
 	    GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
 		result,
 		GLOBUS_GSI_CALLBACK_ERROR_INVALID_CRL,
-		("Couldn't get the issuer certificate of the CRL with "
-		 "subject: %s", subject_string));
+		(_CLS("Couldn't get the issuer certificate of the CRL with "
+		 "subject: %s"), subject_string));
             OPENSSL_free(subject_string);
             x509_context->error = X509_V_ERR_CRL_SIGNATURE_FAILURE;
             goto free_X509_object;
@@ -972,7 +972,7 @@ globus_i_gsi_callback_check_revoked(
             GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_CALLBACK_ERROR_INVALID_CRL,
-                ("Couldn't verify that the available CRL is valid"));
+                (_CLS("Couldn't verify that the available CRL is valid")));
             x509_context->error = X509_V_ERR_CRL_SIGNATURE_FAILURE;
             X509_free(issuer);
             goto free_X509_object;
@@ -985,7 +985,7 @@ globus_i_gsi_callback_check_revoked(
             GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_CALLBACK_ERROR_INVALID_CRL,
-                ("Couldn't verify that the available CRL is valid"));
+                (_CLS("Couldn't verify that the available CRL is valid")));
             x509_context->error = X509_V_ERR_CRL_SIGNATURE_FAILURE;
             EVP_PKEY_free(issuer_key);
             goto free_X509_object;
@@ -1001,7 +1001,7 @@ globus_i_gsi_callback_check_revoked(
             GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_CALLBACK_ERROR_INVALID_CRL,
-                ("In the available CRL, the thisUpdate field is not valid"));
+                (_CLS("In the available CRL, the thisUpdate field is not valid")));
             x509_context->error = X509_V_ERR_ERROR_IN_CRL_LAST_UPDATE_FIELD;
             goto free_X509_object;
         }
@@ -1011,7 +1011,7 @@ globus_i_gsi_callback_check_revoked(
             GLOBUS_GSI_CALLBACK_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_CALLBACK_ERROR_INVALID_CRL,
-                ("The available CRL is not yet valid"));
+                (_CLS("The available CRL is not yet valid")));
             x509_context->error = X509_V_ERR_CRL_NOT_YET_VALID;
             goto free_X509_object;
         }
@@ -1022,7 +1022,7 @@ globus_i_gsi_callback_check_revoked(
             GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_CALLBACK_ERROR_INVALID_CRL,
-                ("In the available CRL, the nextUpdate field is not valid"));
+                (_CLS("In the available CRL, the nextUpdate field is not valid")));
             x509_context->error = X509_V_ERR_ERROR_IN_CRL_NEXT_UPDATE_FIELD;
             goto free_X509_object;
         }
@@ -1032,7 +1032,7 @@ globus_i_gsi_callback_check_revoked(
             GLOBUS_GSI_CALLBACK_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_CALLBACK_ERROR_INVALID_CRL,
-                ("The available CRL has expired"));
+                (_CLS("The available CRL has expired")));
             x509_context->error = X509_V_ERR_CRL_HAS_EXPIRED;
             goto free_X509_object;
         }
@@ -1063,8 +1063,8 @@ globus_i_gsi_callback_check_revoked(
                 GLOBUS_GSI_CALLBACK_ERROR_RESULT(
                     result,
                     GLOBUS_GSI_CALLBACK_ERROR_REVOKED_CERT,
-                    ("Serial number = %ld (0x%lX) "
-		     "Subject=%s",
+                    (_CLS("Serial number = %ld (0x%lX) "
+		     "Subject=%s"),
                      serial, serial, subject_string));
 
                 x509_context->error = X509_V_ERR_CERT_REVOKED;
@@ -1190,7 +1190,7 @@ globus_i_gsi_callback_check_gaa_auth(
         GLOBUS_GSI_CALLBACK_ERROR_RESULT(
             result,
             GLOBUS_GSI_CALLBACK_ERROR_WITH_SIGNING_POLICY,
-            ("The signing policy file doesn't exist or can't be read"));
+            (_CLS("The signing policy file doesn't exist or can't be read")));
         x509_context->error = X509_V_ERR_APPLICATION_VERIFICATION;
         goto exit;
     }
@@ -1213,8 +1213,8 @@ globus_i_gsi_callback_check_gaa_auth(
         GLOBUS_GSI_CALLBACK_ERROR_RESULT(
             result,
             GLOBUS_GSI_CALLBACK_ERROR_OLD_GAA,
-            ("Couldn't initialize OLD GAA: "
-             "Minor status=%d", policy_db->error_code));
+            (_CLS("Couldn't initialize OLD GAA: "
+             "Minor status=%d"), policy_db->error_code));
         x509_context->error = X509_V_ERR_APPLICATION_VERIFICATION;
         globus_mutex_unlock(&globus_l_gsi_callback_oldgaa_mutex);
         goto exit;
@@ -1230,8 +1230,8 @@ globus_i_gsi_callback_check_gaa_auth(
         GLOBUS_GSI_CALLBACK_ERROR_RESULT(
             result,
             GLOBUS_GSI_CALLBACK_ERROR_OLD_GAA,
-            ("Could not get policy info: "
-             "Minor status=%d", minor_status));
+            (_CLS("Could not get policy info: "
+             "Minor status=%d"), minor_status));
         x509_context->error =  X509_V_ERR_APPLICATION_VERIFICATION;
         globus_mutex_unlock(&globus_l_gsi_callback_oldgaa_mutex);
         goto exit;
@@ -1250,8 +1250,8 @@ globus_i_gsi_callback_check_gaa_auth(
         GLOBUS_GSI_CALLBACK_ERROR_RESULT(
             result,
             GLOBUS_GSI_CALLBACK_ERROR_OLD_GAA,
-            ("Error checking certificate with subject %s"
-             "against signing policy file %s",
+            (_CLS("Error checking certificate with subject %s"
+             "against signing policy file %s"),
              subject_name == NULL ? "NULL" : subject_name,
              ca_policy_file_path == NULL ? "NULL" : ca_policy_file_path));
         x509_context->error = X509_V_ERR_INVALID_PURPOSE; 
@@ -1320,7 +1320,7 @@ globus_i_gsi_callback_check_gaa_auth(
         GLOBUS_GSI_CALLBACK_ERROR_RESULT(
             result,
             GLOBUS_GSI_CALLBACK_ERROR_OLD_GAA,
-            ("CA policy violation: %s", 
+            (_CLS("CA policy violation: %s"), 
              error_string ? error_string : "<no reason given>"));
         x509_context->error = X509_V_ERR_INVALID_PURPOSE; 
         goto exit;
@@ -1383,8 +1383,8 @@ globus_i_gsi_callback_check_critical_extensions(
             GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_CALLBACK_ERROR_VERIFY_CRED,
-                ("Couldn't get critical extension of "
-                 "certificate being verified"));
+                (_CLS("Couldn't get critical extension of "
+                 "certificate being verified")));
             x509_context->error = X509_V_ERR_CERT_REJECTED;
             goto exit;
         }
@@ -1395,8 +1395,8 @@ globus_i_gsi_callback_check_critical_extensions(
             GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_CALLBACK_ERROR_VERIFY_CRED,
-                ("Couldn't get object form of X509 extension for "
-                 "the certificate being verified."));
+                (_CLS("Couldn't get object form of X509 extension for "
+                 "the certificate being verified.")));
             x509_context->error = X509_V_ERR_CERT_REJECTED;
             goto exit;
         }
@@ -1413,8 +1413,8 @@ globus_i_gsi_callback_check_critical_extensions(
                 GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
                     result,
                     GLOBUS_GSI_CALLBACK_ERROR_VERIFY_CRED,
-                    ("Can't get DER encoded extension "
-                     "data from X509 extension object"));
+                    (_CLS("Can't get DER encoded extension "
+                     "data from X509 extension object")));
                 x509_context->error = X509_V_ERR_CERT_REJECTED;
                 goto exit;
             }
@@ -1431,8 +1431,8 @@ globus_i_gsi_callback_check_critical_extensions(
                 GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
                     result,
                     GLOBUS_GSI_CALLBACK_ERROR_VERIFY_CRED,
-                    ("Can't convert DER encoded PROXYCERTINFO "
-                     "extension to internal form"));
+                    (_CLS("Can't convert DER encoded PROXYCERTINFO "
+                     "extension to internal form")));
                 x509_context->error = X509_V_ERR_CERT_REJECTED;
                 goto exit;
             }
@@ -1470,9 +1470,9 @@ globus_i_gsi_callback_check_critical_extensions(
                     GLOBUS_GSI_CALLBACK_ERROR_RESULT(
                         result,
                         GLOBUS_GSI_CALLBACK_ERROR_VERIFY_CRED,
-                        ("Certificate has unknown critical extension "
+                        (_CLS("Certificate has unknown critical extension "
                          "with numeric ID: %d, "
-                         "rejected during validation", nid));
+                         "rejected during validation"), nid));
                     x509_context->error = X509_V_ERR_CERT_REJECTED;
                     goto exit;
                 }
@@ -1482,9 +1482,9 @@ globus_i_gsi_callback_check_critical_extensions(
                 GLOBUS_GSI_CALLBACK_ERROR_RESULT(
                     result,
                     GLOBUS_GSI_CALLBACK_ERROR_VERIFY_CRED,
-                    ("Certificate has unknown critical extension, "
+                    (_CLS("Certificate has unknown critical extension, "
                      "with numeric ID: %d, "
-                     "rejected during validation", nid));
+                     "rejected during validation"), nid));
                 x509_context->error = X509_V_ERR_CERT_REJECTED;
                 goto exit;
             }
@@ -1546,7 +1546,7 @@ globus_i_gsi_callback_check_path_length(
                 GLOBUS_GSI_CALLBACK_ERROR_RESULT(
                     result,
                     GLOBUS_GSI_CALLBACK_ERROR_VERIFY_CRED,
-                    ("Path length of proxy cert has exceeded the limit"));
+                    (_CLS("Path length of proxy cert has exceeded the limit")));
             }
         }
     }

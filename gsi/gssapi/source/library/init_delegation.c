@@ -121,7 +121,7 @@ GSS_CALLCONV gss_init_delegation(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
-            ("Invalid context_handle passed to function"));
+            (_GGSL("Invalid context_handle passed to function")));
         major_status = GSS_S_FAILURE;
         goto exit;
     }
@@ -140,7 +140,7 @@ GSS_CALLCONV gss_init_delegation(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
-            ("Couldn't initialize delegation credential handle"));
+            (_GGSL("Couldn't initialize delegation credential handle")));
         major_status = GSS_S_FAILURE;
         goto exit;
     }
@@ -151,7 +151,7 @@ GSS_CALLCONV gss_init_delegation(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
-            ("Invalid desired_mech passed to function"));
+            (_GGSL("Invalid desired_mech passed to function")));
         major_status = GSS_S_FAILURE;
         goto exit;
     }
@@ -163,7 +163,7 @@ GSS_CALLCONV gss_init_delegation(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
-            ("Invalid extension parameters passed to function"));
+            (_GGSL("Invalid extension parameters passed to function")));
         major_status = GSS_S_FAILURE;
         goto exit;
     }
@@ -173,7 +173,7 @@ GSS_CALLCONV gss_init_delegation(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
-            ("Invalid output_token passed to function"));
+            (_GGSL("Invalid output_token passed to function")));
         major_status = GSS_S_FAILURE;
         goto exit;
     }
@@ -206,8 +206,8 @@ GSS_CALLCONV gss_init_delegation(
             GLOBUS_GSI_GSSAPI_ERROR_RESULT(
                 minor_status,
                 GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
-                ("Invalid input_token passed to function: "
-                 "delegation is not at initial state"));
+                (_GGSL("Invalid input_token passed to function: "
+                 "delegation is not at initial state")));
             major_status = GSS_S_FAILURE;
             goto mutex_unlock;
         }
@@ -358,8 +358,8 @@ GSS_CALLCONV gss_init_delegation(
                 GLOBUS_GSI_GSSAPI_ERROR_RESULT(
                     minor_status,
                     GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
-                    ("A restricted globus proxy may not be created "
-                     "from a legacy globus proxy"));
+                    (_GGSL("A restricted globus proxy may not be created "
+                     "from a legacy globus proxy")));
                 context->delegation_state = GSS_DELEGATION_DONE;
                 major_status = GSS_S_FAILURE;
                 goto mutex_unlock;
@@ -437,7 +437,7 @@ GSS_CALLCONV gss_init_delegation(
                 GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
                     minor_status,
                     GLOBUS_GSI_GSSAPI_ERROR_WITH_OPENSSL,
-                    ("Couldn't get cert from cert chain"));
+                    (_GGSL("Couldn't get cert from cert chain")));
                 major_status = GSS_S_FAILURE;
                 context->delegation_state = GSS_DELEGATION_DONE;
                 goto mutex_unlock;

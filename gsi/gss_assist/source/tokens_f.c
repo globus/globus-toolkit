@@ -74,14 +74,14 @@ globus_gss_assist_token_get_fd(
     fd = (FILE *) arg;
     if ((bytesread = fread(int_buf, 1, 4, fd)) != 4)
     {
-        fprintf(stderr,"Failed reading length %d\n",bytesread);
+        fprintf(stderr,_GASL("Failed reading length %d\n"),bytesread);
         return_value = GLOBUS_GSS_ASSIST_TOKEN_EOF;
         goto exit;
     }
     
     GLOBUS_I_GSI_GSS_ASSIST_DEBUG_FPRINTF(
         4, (globus_i_gsi_gss_assist_debug_fstream,
-            "token read:%2.2x%2.2x%2.2x%2.2x\n",
+            _GASL("token read:%2.2x%2.2x%2.2x%2.2x\n"),
             int_buf[0],int_buf[1],int_buf[2],int_buf[3]));
 
     /*
@@ -104,14 +104,14 @@ globus_gss_assist_token_get_fd(
         {
             GLOBUS_I_GSI_GSS_ASSIST_DEBUG_FPRINTF(
                 3, (globus_i_gsi_gss_assist_debug_fstream,
-                    "FAILED READING EXTRA BYTE\n"));
+                    _GASL("FAILED READING EXTRA BYTE\n")));
             return_value =  GLOBUS_GSS_ASSIST_TOKEN_EOF;
             goto exit;
         }
         
         GLOBUS_I_GSI_GSS_ASSIST_DEBUG_FPRINTF(
             4, (globus_i_gsi_gss_assist_debug_fstream,
-                "reading SSL token %.2x%.2x%.2x%.2x%.2x\n",
+                _GASL("reading SSL token %.2x%.2x%.2x%.2x%.2x\n"),
                 int_buf[0], int_buf[1], int_buf[2], int_buf[3], int_buf[4]));
         
         if ((int_buf[0] & 0x80)) {
@@ -183,7 +183,7 @@ globus_gss_assist_token_get_fd(
         {
             GLOBUS_I_GSI_GSS_ASSIST_DEBUG_FPRINTF(
                 3, (globus_i_gsi_gss_assist_debug_fstream,
-                    "READ SHORT: %d, %d\n", dsize, bytesread));
+                    _GASL("READ SHORT: %d, %d\n"), dsize, bytesread));
             return_value = GLOBUS_GSS_ASSIST_TOKEN_EOF;
             goto exit;
         }
@@ -210,7 +210,7 @@ globus_gss_assist_token_get_fd(
         {
             GLOBUS_I_GSI_GSS_ASSIST_DEBUG_FPRINTF(
                 3, (globus_i_gsi_gss_assist_debug_fstream,
-                    "read short: %d, %d\n", size, bytesread));
+                    _GASL("read short: %d, %d\n"), size, bytesread));
             return_value = GLOBUS_GSS_ASSIST_TOKEN_EOF;
             goto exit;
         }
@@ -351,7 +351,7 @@ globus_gss_assist_token_send_fd_ex(
 
     GLOBUS_I_GSI_GSS_ASSIST_DEBUG_FPRINTF(
         3, (globus_i_gsi_gss_assist_debug_fstream,
-            "send_token: flags: %d length: %u\n",
+            _GASL("send_token: flags: %d length: %u\n"),
             ex->flags, size));
 
     if (!(size > 5 && header[0] <= 26 && header[0] >= 20
@@ -368,7 +368,7 @@ globus_gss_assist_token_send_fd_ex(
             
             GLOBUS_I_GSI_GSS_ASSIST_DEBUG_FPRINTF(
                 3, (globus_i_gsi_gss_assist_debug_fstream,
-                    "with 4 byte length"));
+                    _GASL("with 4 byte length")));
             
             if (fwrite(int_buf ,1 ,4 , fd) != 4)
             {

@@ -78,7 +78,7 @@ globus_gss_assist_import_sec_context(
             GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
                 local_result,
                 GLOBUS_GSI_GSS_ASSIST_ERROR_IMPORTING_CONTEXT,
-                ("environment variable: GRID_SECURITY_CONTEXT_FD not set"));
+                (_GASL("environment variable: GRID_SECURITY_CONTEXT_FD not set")));
             *minor_status = (OM_uint32) local_result;
             goto err;
         }
@@ -89,8 +89,8 @@ globus_gss_assist_import_sec_context(
             GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
                 local_result,
                 GLOBUS_GSI_GSS_ASSIST_ERROR_IMPORTING_CONTEXT,
-                ("Environment variable GRID_SECURITY_CONTEXT_FD set to "
-                 "invalid valie"));
+                (_GASL("Environment variable GRID_SECURITY_CONTEXT_FD set to "
+                 "invalid valie")));
             *minor_status = (OM_uint32) local_result;
             goto err;
         }
@@ -106,7 +106,7 @@ globus_gss_assist_import_sec_context(
         GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
             local_result,
             GLOBUS_GSI_GSS_ASSIST_ERROR_WITH_TOKEN,
-            ("Couldn't read token size bytes from file descriptor."));
+            (_GASL("Couldn't read token size bytes from file descriptor.")));
         *minor_status = (OM_uint32) local_result;
         major_status = GSS_S_FAILURE;
         goto err;
@@ -124,7 +124,7 @@ globus_gss_assist_import_sec_context(
         GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
             local_result,
             GLOBUS_GSI_GSS_ASSIST_ERROR_WITH_TOKEN,
-            ("Couldn't allocate memory for context token."));
+            (_GASL("Couldn't allocate memory for context token.")));
         *minor_status = (OM_uint32) local_result;
         major_status = GSS_S_FAILURE;
         goto err;
@@ -137,7 +137,7 @@ globus_gss_assist_import_sec_context(
         GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
             local_result,
             GLOBUS_GSI_GSS_ASSIST_ERROR_WITH_TOKEN,
-            ("Couldn't read %d bytes of data for context token.",
+            (_GASL("Couldn't read %d bytes of data for context token."),
              context_token.length));
         *minor_status = (OM_uint32) local_result;
         major_status = GSS_S_FAILURE;
@@ -182,14 +182,14 @@ globus_gss_assist_import_sec_context(
 
             globus_gss_assist_display_status(
                 fperr,
-                "gss_assist_import_sec_context failure:",
+                _GASL("gss_assist_import_sec_context failure:"),
                 major_status,
                 *minor_status,
                 *token_status);
 
             *minor_status = (OM_uint32) globus_error_put(error_copy);
             
-            fprintf(fperr, "token_status%d\n", *token_status);
+            fprintf(fperr, _GASL("token_status%d\n"), *token_status);
         }
     }
 

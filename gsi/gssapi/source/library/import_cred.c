@@ -96,7 +96,7 @@ GSS_CALLCONV gss_import_cred(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status, 
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
-            ("Invalid import_buffer passed to function: %s",
+            (_GGSL("Invalid import_buffer passed to function: %s"),
              _function_name_));
         major_status = GSS_S_FAILURE;
         goto exit;
@@ -107,7 +107,7 @@ GSS_CALLCONV gss_import_cred(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
-            ("Invalid output_cred_handle parameter passed to function: %s",
+            (_GGSL("Invalid output_cred_handle parameter passed to function: %s"),
              _function_name_));
         major_status = GSS_S_FAILURE;
         goto exit;
@@ -119,7 +119,7 @@ GSS_CALLCONV gss_import_cred(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_BAD_MECH,
-            ("The desired_mech: %s, is not supported",
+            (_GGSL("The desired_mech: %s, is not supported"),
              ((gss_OID_desc *)desired_mech)->elements));
         major_status = GSS_S_BAD_MECH;
         goto exit;
@@ -144,7 +144,7 @@ GSS_CALLCONV gss_import_cred(
                 GLOBUS_GSI_GSSAPI_ERROR_RESULT(
                     minor_status,
                     GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
-                    ("Import buffer does not contain a ="));
+                    (_GGSL("Import buffer does not contain a =")));
                 major_status = GSS_S_FAILURE;
                 goto exit;
             }
@@ -156,7 +156,7 @@ GSS_CALLCONV gss_import_cred(
                 GLOBUS_GSI_GSSAPI_ERROR_RESULT(
                     minor_status,
                     GLOBUS_GSI_GSSAPI_ERROR_IMPORT_FAIL,
-                    ("Couldn't open the file: %s",
+                    (_GGSL("Couldn't open the file: %s"),
                      filename));
                 major_status = GSS_S_FAILURE;
                 goto exit;
@@ -170,7 +170,7 @@ GSS_CALLCONV gss_import_cred(
             GLOBUS_GSI_GSSAPI_ERROR_RESULT(
                 minor_status,
                 GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
-                ("Invalid option req of: %d, not supported",
+                (_GGSL("Invalid option req of: %d, not supported"),
                  option_req));
             major_status = GSS_S_FAILURE;
             goto exit;
@@ -181,7 +181,7 @@ GSS_CALLCONV gss_import_cred(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_TOKEN_FAIL,
-            ("Invalid token passed to function"));
+            (_GGSL("Invalid token passed to function")));
         major_status = GSS_S_DEFECTIVE_TOKEN;
         goto exit;
     }

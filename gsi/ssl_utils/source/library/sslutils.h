@@ -90,6 +90,7 @@ extern
 globus_module_descriptor_t		globus_i_gsi_ssl_utils_module;
 
 
+#define _SUSL(s) globus_common_i18n_get_string(GLOBUS_GSI_SSL_UTILS_MODULE,s)
 
 /**********************************************************************
                                Define constants
