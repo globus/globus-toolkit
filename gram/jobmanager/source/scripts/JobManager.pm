@@ -84,6 +84,10 @@ sub new
     }
 
     bless $self, $class;
+
+    $self->log("New JobManager created.");
+
+    return $self;
 }
 
 =item $manager->log($string)
@@ -424,7 +428,7 @@ sub stage_in
     my $description = $self->{JobDescription};
     my $cache_pgm = "$Globus::Core::Paths::bindir/globus-gass-cache";
     my $url_copy = "$Globus::Core::Paths::bindir/globus-url-copy";
-    my $tag = $ENV{GLOBUS_GRAM_JOB_CONTACT};
+    my $tag = $description->cache_tag() or $ENV{GLOBUS_GRAM_JOB_CONTACT};
     my ($remote, $local, $cached);
 
     if($description->executable() =~ m|^[a-zA-Z]+://|)
@@ -505,7 +509,7 @@ sub stage_out
     my $self = shift;
     my $description = $self->{JobDescription};
     my $url_copy = "$Globus::Core::Paths::bindir/globus-url-copy";
-    my $tag = $ENV{GLOBUS_GRAM_JOB_CONTACT};
+    my $tag = $description->cache_tag() or $ENV{GLOBUS_GRAM_JOB_CONTACT};
 
     foreach ($description->file_stage_out())
     {

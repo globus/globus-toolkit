@@ -75,6 +75,13 @@ globus_l_gram_job_manager_print_rsl(
     globus_rsl_t *			ast_node);
 
 static
+int
+globus_l_gram_job_manager_script_write_description(
+    FILE *				fp,
+    globus_gram_jobmanager_request_t *	request,
+    ...);
+
+static
 char *
 globus_l_gram_job_manager_script_prepare_param(
     const char *			param);
@@ -408,23 +415,13 @@ globus_gram_job_manager_script_submit(
         return(GLOBUS_FAILURE);
     }
 
-    fprintf(script_arg_fp, "\n$rsl = {\n");
-    globus_l_gram_job_manager_print_rsl(
-            script_arg_fp,
-            request->rsl);
+    globus_l_gram_job_manager_script_write_description(
+	    script_arg_fp,
+	    request,
+	    "stdout", 's', stdout_filename,
+	    "stderr", 's', stderr_filename,
+	    NULL);
 
-    if(request->jobmanager_logfile)
-    {
-        fprintf(script_arg_fp, ",\nlogfile => [ '%s' ]",
-                request->jobmanager_logfile);
-    }
-    /* Override stdout/stderr rsl values with our local values. */
-    fprintf(script_arg_fp, ",\n"
-			   "    stdout => [ '%s' ],\n"
-			   "    stderr => [ '%s' ]\n"
-			   "};\n",
-			   stdout_filename,
-			   stderr_filename);
     fclose(script_arg_fp);
 
     /*
@@ -524,25 +521,13 @@ globus_gram_job_manager_script_poll(
         return(GLOBUS_FAILURE);
     }
 
-    fprintf(script_arg_fp, "\n$rsl = {\n");
-    globus_l_gram_job_manager_print_rsl(
-            script_arg_fp,
-            request->rsl);
+    globus_l_gram_job_manager_script_write_description(
+	    script_arg_fp,
+	    request,
+	    "stdout", 's', stdout_filename,
+	    "stderr", 's', stderr_filename,
+	    NULL);
 
-    if(request->jobmanager_logfile)
-    {
-        fprintf(script_arg_fp, ",\nlogfile => [ '%s' ]",
-                request->jobmanager_logfile);
-    }
-    /* Override stdout/stderr rsl values with our local values. */
-    fprintf(script_arg_fp, ",\n"
-			   "    stdout => [ '%s' ],\n"
-			   "    stderr => [ '%s' ],\n"
-			   "    jobid  => [ '%s' ]\n"
-			   "};\n",
-			   stdout_filename,
-			   stderr_filename,
-			   request->job_id);
     fclose(script_arg_fp);
 
     rc = globus_l_gram_job_manager_script_run(
@@ -609,21 +594,11 @@ globus_gram_job_manager_script_cancel(
         return(GLOBUS_FAILURE);
     }
 
-    fprintf(script_arg_fp, "\n$rsl = {\n");
-    globus_l_gram_job_manager_print_rsl(
-            script_arg_fp,
-            request->rsl);
+    globus_l_gram_job_manager_script_write_description(
+	    script_arg_fp,
+	    request,
+	    NULL);
 
-    if(request->jobmanager_logfile)
-    {
-        fprintf(script_arg_fp, ",\nlogfile => [ '%s' ]",
-                request->jobmanager_logfile);
-    }
-    /* Override stdout/stderr rsl values with our local values. */
-    fprintf(script_arg_fp, ",\n"
-			   "    jobid  => [ '%s' ]\n"
-			   "};\n",
-			   request->job_id);
     fclose(script_arg_fp);
 
     rc = globus_l_gram_job_manager_script_run(
@@ -669,7 +644,6 @@ globus_gram_job_manager_script_signal(
     char *				script_cmd = "signal";
     int					rc;
     char *				tmp_signalfilename = NULL;
-    char *				signal_arg = NULL;
 
     if (!request)
         return(GLOBUS_FAILURE);
@@ -688,39 +662,17 @@ globus_gram_job_manager_script_signal(
         return(GLOBUS_GRAM_PROTOCOL_ERROR_ARG_FILE_CREATION_FAILED);
     }
 
-    /* Escape single quotes in the signal arg */
-    if(query->signal_arg)
-    {
-	signal_arg = globus_l_gram_job_manager_script_prepare_param(
-		signal_arg);
-
-	if(signal_arg == GLOBUS_NULL)
-	{
-	    globus_gram_job_manager_request_log(request,
-				  "JMI: Failed to escape %s\n",
-				  signal_arg);
-	    return GLOBUS_FAILURE;
-	}
-    }
-
     /*
      * add the signal and signal_arg to the script arg file
      */
-    fprintf(signal_arg_fp,
-	    "$description = {\n"
-	    "    jobid => [ %s ],\n"
-	    "    signal => [ %d ],\n",
-	    request->job_id,
-	    query->signal);
-
-    if(signal_arg)
-    {
-	fprintf(signal_arg_fp,
-		" signalarg => [ '%s' ]\n"
-		"};\n",
-		signal_arg);
-	globus_libc_free(signal_arg);
-    }
+    globus_l_gram_job_manager_script_write_description(
+	    signal_arg_fp,
+	    request,
+	    "jobid", 's', request->job_id,
+	    "signal", 'd', query->signal,
+	    "signalarg", 's', query->signal_arg,
+	    NULL);
+	    
 
     fclose(signal_arg_fp);
 
@@ -751,7 +703,6 @@ globus_gram_job_manager_script_make_scratchdir(
     char *				script_cmd = "make_scratchdir";
     int					rc;
     FILE *				script_arg_fp;
-    char *				scratch_dir_base;
     char *				script_arg_file;
 
     script_arg_file = tempnam(NULL, "gram_make_scratchdir");
@@ -770,18 +721,13 @@ globus_gram_job_manager_script_make_scratchdir(
         return(GLOBUS_FAILURE);
     }
 
-    scratch_dir_base = globus_l_gram_job_manager_script_prepare_param(
-	    request->scratch_dir_base);
 
-    fprintf(script_arg_fp,
-	    "$description = { "
-	    "    scratchdirbase => [ '%s' ],"
-	    "    scratchdir => [ '%s' ]"
-	    "};\n",
-	    scratch_dir_base,
-	    scratch_dir);
-
-    globus_libc_free(scratch_dir_base);
+    globus_l_gram_job_manager_script_write_description(
+	    script_arg_fp,
+	    request,
+	    "scratchdirbase", 's', request->scratch_dir_base,
+	    "scratchdir", 's', scratch_dir,
+	    NULL);
 
     fclose(script_arg_fp);
 
@@ -902,30 +848,11 @@ globus_gram_job_manager_script_stage_in(
         return(GLOBUS_FAILURE);
     }
 
-    fprintf(script_arg_fp, "\n$rsl = {\n");
-    globus_l_gram_job_manager_print_rsl(
+    globus_l_gram_job_manager_script_write_description(
 	    script_arg_fp,
-	    request->rsl);
-    if(request->jobmanager_logfile)
-    {
-	fprintf(script_arg_fp, ",\nlogfile => [ '%s' ]",
-		request->jobmanager_logfile); 
-    }
-    globus_l_gram_job_manager_print_staging_list(
 	    request,
-	    script_arg_fp,
-	    GLOBUS_GRAM_JOB_MANAGER_STAGE_IN);
-    globus_l_gram_job_manager_print_staging_list(
-	    request,
-	    script_arg_fp,
-	    GLOBUS_GRAM_JOB_MANAGER_STAGE_IN_SHARED);
-    globus_l_gram_job_manager_print_staging_list(
-	    request,
-	    script_arg_fp,
-	    GLOBUS_GRAM_JOB_MANAGER_STAGE_OUT);
-
-    fprintf(script_arg_fp, "};\n");
-
+	    NULL);
+	    
     fclose(script_arg_fp);
 
     rc = globus_l_gram_job_manager_script_run(
@@ -981,16 +908,10 @@ globus_gram_job_manager_script_stage_out(
         return(GLOBUS_FAILURE);
     }
 
-    fprintf(script_arg_fp, "\n$rsl = {\n");
-    globus_l_gram_job_manager_print_rsl(
+    globus_l_gram_job_manager_script_write_description(
 	    script_arg_fp,
-	    request->rsl);
-    if(request->jobmanager_logfile)
-    {
-	fprintf(script_arg_fp, ",\nlogfile => [ '%s' ]",
-		request->jobmanager_logfile); 
-    }
-    fprintf(script_arg_fp, "};\n");
+	    request,
+	    NULL);
 
     fclose(script_arg_fp);
 
@@ -1047,16 +968,11 @@ globus_gram_job_manager_script_file_cleanup(
         return(GLOBUS_FAILURE);
     }
 
-    fprintf(script_arg_fp, "\n$rsl = {\n");
-    globus_l_gram_job_manager_print_rsl(
+    globus_l_gram_job_manager_script_write_description(
 	    script_arg_fp,
-	    request->rsl);
-    if(request->jobmanager_logfile)
-    {
-	fprintf(script_arg_fp, ",\nlogfile => [ '%s' ]",
-		request->jobmanager_logfile); 
-    }
-    fprintf(script_arg_fp, "};\n");
+	    request,
+	    NULL);
+
     fclose(script_arg_fp);
 
     rc = globus_l_gram_job_manager_script_run(
@@ -1174,15 +1090,10 @@ globus_gram_job_manager_script_remote_io_file_create(
         return(GLOBUS_FAILURE);
     }
 
-    fprintf(script_arg_fp,
-	    "$description = {\ncachetag => ['%s'],\n",
-	    request->cache_tag);
-
-    globus_l_gram_job_manager_print_rsl(
+    globus_l_gram_job_manager_script_write_description(
 	    script_arg_fp,
-	    request->rsl);
-
-    fprintf(script_arg_fp, "\n};\n");
+	    request,
+	    NULL);
 
     fclose(script_arg_fp);
 
@@ -1237,15 +1148,10 @@ globus_gram_job_manager_script_proxy_relocate(
         return(GLOBUS_FAILURE);
     }
 
-    fprintf(script_arg_fp,
-	    "$description = {\ncachetag => ['%s'],\n",
-	    request->cache_tag);
-
-    globus_l_gram_job_manager_print_rsl(
+    globus_l_gram_job_manager_script_write_description(
 	    script_arg_fp,
-	    request->rsl);
-
-    fprintf(script_arg_fp, "\n};\n");
+	    request,
+	    NULL);
 
     fclose(script_arg_fp);
 
@@ -1624,6 +1530,97 @@ globus_l_gram_job_manager_print_rsl(
     return 0;
 }
 /* globus_l_gram_job_manager_print_rsl() */
+
+static
+int
+globus_l_gram_job_manager_script_write_description(
+    FILE *				fp,
+    globus_gram_jobmanager_request_t *	request,
+    ...)
+{
+    va_list				ap;
+    char *				attribute;
+    char				format;
+    char *				string_value;
+    int					int_value;
+    char *				prepared;
+
+    va_start(ap, request);
+
+    fprintf(fp, "$description =\n{\n");
+
+    globus_l_gram_job_manager_print_rsl(fp, request->rsl);
+
+    /* Other non-rsl or rsl-override attributes */
+    while(1)
+    {
+	attribute = va_arg(ap, char *);
+
+	if(!attribute)
+	{
+	    break;
+	}
+	format = (char) va_arg(ap, int);
+
+	switch(format)
+	{
+	  case 's':
+	    string_value = va_arg(ap, char *);
+	    if(string_value)
+	    {
+		prepared = globus_l_gram_job_manager_script_prepare_param(
+			string_value);
+
+		fprintf(fp, ",\n    '%s' => [ '%s' ]", attribute, prepared);
+		globus_libc_free(prepared);
+	    }
+	    break;
+
+	  case 'i':
+	  case 'd':
+	    int_value = va_arg(ap, int);
+	    fprintf(fp, ",\n    '%s' => [ '%d' ]", attribute, int_value);
+	    break;
+	}
+    }
+    va_end(ap);
+
+    if(request->jobmanager_logfile)
+    {
+	fprintf(fp,
+		",\n    'logfile' => [ '%s' ]",
+		request->jobmanager_logfile);
+    }
+    if(request->job_id)
+    {
+	fprintf(fp,
+		",\n    'jobid' => [ '%s' ]",
+		request->job_id);
+    }
+    if(request->cache_tag)
+    {
+	fprintf(fp,
+		",\n    'cachetag' => [ '%s' ]",
+		request->cache_tag);
+    }
+
+    globus_l_gram_job_manager_print_staging_list(
+	    request,
+	    fp,
+	    GLOBUS_GRAM_JOB_MANAGER_STAGE_IN);
+    globus_l_gram_job_manager_print_staging_list(
+	    request,
+	    fp,
+	    GLOBUS_GRAM_JOB_MANAGER_STAGE_IN_SHARED);
+    globus_l_gram_job_manager_print_staging_list(
+	    request,
+	    fp,
+	    GLOBUS_GRAM_JOB_MANAGER_STAGE_OUT);
+    fprintf(fp, "\n};\n");
+
+    return GLOBUS_SUCCESS;
+}
+/* globus_l_gram_job_manager_script_write_description() */
 
 /**
  * Escape single quotes within a string
