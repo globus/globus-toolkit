@@ -843,6 +843,10 @@ main(int argc,
         globus_symboltable_insert(symbol_table,
                                 (void *) "HOME",
                                 (void *) graml_env_home);
+
+        globus_symboltable_insert(symbol_table,
+                                (void *) "GLOBUS_GRAM_JOB_CONTACT",
+                                (void *) graml_job_contact);
         if (graml_env_logname)
             globus_symboltable_insert(symbol_table,
                                 (void *) "LOGNAME",
