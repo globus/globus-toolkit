@@ -354,13 +354,14 @@ globus_l_xio_driver_open_op_kickout(
     GlobusXIODebugInternalEnter();
 
     op = (globus_i_xio_op_t *) user_arg;
-/*
+
     my_op = &op->entry[op->ndx - 1];
     op->ndx = my_op->caller_ndx;
     ndx = op->ndx;
     my_op->cb(op, op->cached_res, my_op->user_arg);
-*/
+
     GlobusIXIODriverOpenDeliver(op, ndx);
+
     GlobusXIODebugInternalExit();
 }
 

@@ -734,8 +734,8 @@ extern globus_cond_t                        globus_l_cond;
         globus_xio_driver_finished_open_DEBUG(                              \
             _in_context, _in_dh, _in_op, _in_res)
 
-#   define GlobusIXIODriverOpenDeliver(op, ndx)                             \
-        globus_xio_driver_open_deliver_DEBUG(op, ndx)
+#   define GlobusIXIODriverOpenDeliver(_X_op, _X_ndx)                       \
+        globus_xio_driver_open_deliver_DEBUG(_X_op, _X_ndx)
 
 #   define GlobusXIODriverPassClose(                                        \
             _out_res, _in_op, _in_cb, _in_ua)                               \

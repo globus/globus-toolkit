@@ -207,12 +207,9 @@ globus_xio_driver_open_deliver_DEBUG(
     GlobusXIOName(GlobusIXIODriverOpenDeliver);
 
     _op = (_in_op);
-    _my_op = &_op->entry[_op->ndx - 1];
-    _op->ndx = _my_op->caller_ndx;
     _context = _op->_op_context;
     _handle = _op->_op_handle;
-    _my_context = &_context->entry[_op->ndx];
-    _my_op->cb(_op, _op->cached_res, _my_op->user_arg);
+    _my_context = &_context->entry[_in_ndx];
 
     /* LOCK */
     globus_mutex_lock(&_context->mutex);
