@@ -2928,3 +2928,28 @@ gaa_verify_cred(gaa_cred *cred)
 	return(GAA_STATUS(GAA_S_INVALID_ARG, 0));
     return(cred->mechinfo->cred_verify(cred, cred->mechinfo->param));
 }
+
+/**
+ * gaa_x_getpolicy_param
+ *
+ * Returns the parameter for the installed getpolicy plugin.
+ *
+ * @param gaa
+ *        input -- the gaa pointer to inspect
+ * @param gaa
+ *        output  -- a pointer to the getpolicy callback's parameter.
+
+ *  @retval GAA_S_SUCCESS
+ *          success
+ *  @retval GAA_S_INVALID_ARG
+ *          gaa is null, or no getpolicy plugin is installed
+ */
+
+extern gaa_status
+gaa_x_get_getpolicy_param(gaa_ptr gaa, void **param)
+{
+    if (gaa == 0 || gaa->getpolicy == 0)
+	return(GAA_S_INVALID_ARG);
+    *param = gaa->getpolicy->param;
+    return(GAA_S_SUCCESS);
+}
