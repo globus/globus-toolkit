@@ -439,6 +439,7 @@ globus_i_xio_http_server_write_response(
                     free_iovecs_error);
         }
     }
+    GLOBUS_XIO_HTTP_COPY_BLOB(&iovecs, "\r\n", 2, free_iovecs_error);
 
     http_handle->header_iovcnt = globus_fifo_size(&iovecs);
     http_handle->header_iovec = globus_libc_malloc(
@@ -465,10 +466,10 @@ globus_i_xio_http_server_write_response(
         globus_libc_free(iov);
     }
 
-    if (http_handle->write_operation.operation == NULL)
+    if (op == NULL)
     {
         result = globus_xio_driver_operation_create(
-                &http_handle->write_operation.operation,
+                &op,
                 http_handle->handle);
 
         free_op = GLOBUS_TRUE;
@@ -477,6 +478,7 @@ globus_i_xio_http_server_write_response(
             goto free_headers_exit;
         }
     }
+
     /* Stash user buffer info until we've sent response headers */
     http_handle->write_operation.operation = op;
     http_handle->write_operation.iov = (globus_xio_iovec_t *) iovec;
@@ -484,7 +486,7 @@ globus_i_xio_http_server_write_response(
     http_handle->write_operation.wait_for = 0;
 
     result = globus_xio_driver_pass_write(
-            op,
+            http_handle->write_operation.operation,
             http_handle->header_iovec,
             http_handle->header_iovcnt,
             send_size,
@@ -826,7 +828,7 @@ globus_l_xio_http_server_parse_request(
 
         rc = sscanf(current_offset, "%*s %n", &parsed);
 
-        if (rc < 1)
+        if (rc < 0)
         {
             result = GlobusXIOHttpErrorParse("Method", current_offset);
 
@@ -847,7 +849,7 @@ globus_l_xio_http_server_parse_request(
         current_offset += parsed;
         
         rc = sscanf(current_offset, "%*s %n", &parsed);
-        if (rc < 1)
+        if (rc < 0)
         {
             result = GlobusXIOHttpErrorParse("Request-URI", current_offset);
 

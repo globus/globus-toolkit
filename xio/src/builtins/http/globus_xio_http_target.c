@@ -155,22 +155,28 @@ globus_i_xio_http_target_copy(
 
     dest->is_client = src->is_client;
 
-    dest->host = globus_libc_strdup(src->host);
-
-    if (dest->host == NULL)
+    if (src->host != NULL)
     {
-        res = GlobusXIOErrorMemory("host");
+        dest->host = globus_libc_strdup(src->host);
 
-        goto error_exit;
+        if (dest->host == NULL)
+        {
+            res = GlobusXIOErrorMemory("host");
+
+            goto error_exit;
+        }
     }
 
-    dest->uri = globus_libc_strdup(src->uri);
-
-    if (dest->uri == NULL)
+    if (src->uri != NULL)
     {
-        res = GlobusXIOErrorMemory("uri");
+        dest->uri = globus_libc_strdup(src->uri);
 
-        goto free_host_exit;
+        if (dest->uri == NULL)
+        {
+            res = GlobusXIOErrorMemory("uri");
+
+            goto free_host_exit;
+        }
     }
 
     return res;
