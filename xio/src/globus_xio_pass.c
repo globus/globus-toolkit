@@ -1087,7 +1087,6 @@ globus_xio_driver_finished_read(
                     globus_assert(0);
                     break;
             }
-            my_context->read_eof = GLOBUS_TRUE;
             my_context->read_operations--;
             if(my_context->read_operations > 0)
             {
@@ -1201,7 +1200,7 @@ globus_xio_driver_read_delivered(
             globus_i_xio_op_destroy(op, &destroy_handle);
         }
         purge = GLOBUS_FALSE;
-        if(my_context->read_eof && my_context->read_operations == 0)
+        if(my_context->read_operations == 0)
         {
             /* just delivered an eof op */
             switch(my_context->state)

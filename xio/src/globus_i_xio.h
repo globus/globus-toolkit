@@ -393,8 +393,6 @@ typedef struct globus_i_xio_context_entry_s
     int                                     outstanding_operations;
     int                                     read_operations;
 
-    globus_bool_t                           read_eof;
-
     /* is this hacky? */
     globus_bool_t                           close_started;
 
