@@ -38,9 +38,11 @@
 #include "kex.h"
 #include "auth.h"
 #include "log.h"
+#include "channels.h"
 #include "session.h"
 #include "dispatch.h"
 #include "servconf.h"
+#include "compat.h"
 
 #include "ssh-gss.h"
 
@@ -402,7 +404,7 @@ ssh_gssapi_do_child(char ***envp, u_int *envsizep)
 #endif
 	case GSS_LAST_ENTRY:
 		debug("No GSSAPI credentials stored");
-		
+		break;
 	default:
 		log("ssh_gssapi_do_child: Unknown mechanism");
 	}
@@ -439,13 +441,13 @@ ssh_gssapi_userok(char *user)
 int
 userauth_external(Authctxt *authctxt)
 {
-	packet_done();
+	packet_check_eom();
 
 	return(ssh_gssapi_userok(authctxt->user));
 }
 
-void input_gssapi_token(int type, int plen, void *ctxt);
-void input_gssapi_exchange_complete(int type, int plen, void *ctxt);
+void input_gssapi_token(int type, u_int32_t plen, void *ctxt);
+void input_gssapi_exchange_complete(int type, u_int32_t plen, void *ctxt);
 
 /* We only support those mechanisms that we know about (ie ones that we know
  * how to check local user kuserok and the like
@@ -459,9 +461,16 @@ userauth_gssapi(Authctxt *authctxt)
 	gss_OID_set	supported;
 	int		present;
 	OM_uint32	ms;
+	u_int		len;
 	
 	if (!authctxt->valid || authctxt->user == NULL)
 		return 0;
+		
+	if (datafellows & SSH_OLD_GSSAPI) {
+		debug("Early drafts of GSSAPI userauth not supported");
+		return 0;
+	}
+	
 	mechs=packet_get_int();
 	if (mechs==0) {
 		debug("Mechanism negotiation is not supported");
@@ -472,7 +481,8 @@ userauth_gssapi(Authctxt *authctxt)
 	do {
 		if (oid.elements)
 			xfree(oid.elements);
-		oid.elements = packet_get_string(&oid.length);
+		oid.elements = packet_get_string(&len);
+		oid.length = len;
 		gss_test_oid_set_member(&ms, &oid, supported, &present);
 		mechs--;
 	} while (mechs>0 && !present);
@@ -507,7 +517,7 @@ userauth_gssapi(Authctxt *authctxt)
 }
 
 void
-input_gssapi_token(int type, int plen, void *ctxt)
+input_gssapi_token(int type, u_int32_t plen, void *ctxt)
 {
 	Authctxt *authctxt = ctxt;
 	Gssctxt *gssctxt;
@@ -522,10 +532,11 @@ input_gssapi_token(int type, int plen, void *ctxt)
 	recv_tok.value=packet_get_string(&recv_tok.length);
 	
 	maj_status=ssh_gssapi_accept_ctx(gssctxt, &recv_tok, &send_tok, NULL);
-	packet_done();
+	packet_check_eom();
 	
 	if (GSS_ERROR(maj_status)) {
 		/* Failure <sniff> */
+		ssh_gssapi_send_error(maj_status,min_status);
 		authctxt->postponed = 0;
 		dispatch_set(SSH2_MSG_USERAUTH_GSSAPI_TOKEN, NULL);
 		userauth_finish(authctxt, 0, "gssapi");
@@ -553,7 +564,7 @@ input_gssapi_token(int type, int plen, void *ctxt)
  */
  
 void
-input_gssapi_exchange_complete(int type, int plen, void *ctxt)
+input_gssapi_exchange_complete(int type, u_int32_t plen, void *ctxt)
 {
 	Authctxt *authctxt = ctxt;
 	Gssctxt *gssctxt;
