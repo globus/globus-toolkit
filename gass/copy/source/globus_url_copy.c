@@ -220,10 +220,6 @@ static globus_args_option_descriptor_t args_options[arg_num];
 static globus_bool_t globus_l_globus_url_copy_ctrlc = GLOBUS_FALSE;
 static globus_bool_t globus_l_globus_url_copy_ctrlc_handled = GLOBUS_FALSE;
 static globus_bool_t verbose_flag = GLOBUS_FALSE;
-/*
- *  net logger handle
- */
-static NLhandle   *                    g_globus_nl_handle;
 
 /*
 #define GLOBUS_BUILD_WITH_NETLOGGER 1
@@ -754,10 +750,6 @@ main(int argc, char **argv)
             globus_l_globus_url_copy_ctrlc_handled = GLOBUS_TRUE;
         }
     }
-
-#if defined(USE_NETLOGGER)
-    NetLoggerClose(lp);
-#endif
 
     if (verbose_flag)
     {
