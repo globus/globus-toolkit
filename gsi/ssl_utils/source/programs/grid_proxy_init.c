@@ -482,21 +482,41 @@ main(
 
     if(restriction_filename)
     {
+        int restriction_buf_size = 0;
+        
         if(!(fp = fopen(restriction_filename,"r")))
         {
-            fprintf(stderr,"Unable to open restrictions file\n");
+            fprintf(stderr,"\nUnable to open restrictions file\n");
             goto err;
         }
-        
-        restriction_buf = (char *) malloc(512);
-        
-        while(restriction_buf_len !=
-              (restriction_buf_len += 
-               fread(&restriction_buf[restriction_buf_len],1,512,fp)))
+
+        do 
         {
+            restriction_buf_size += 512;
+            
+            /* First time through this is a essentially a malloc() */
             restriction_buf = realloc(restriction_buf,
-                                      restriction_buf_len + 512);
+                                      restriction_buf_size);
+
+            if (restriction_buf == NULL)
+            {
+                fprintf(stderr, "\nmalloc() failed\n");
+                goto err;
+            }
+
+            restriction_buf_len += 
+                fread(&restriction_buf[restriction_buf_len], 1, 512, fp);
+
+            /*
+             * If we read 512 bytes then restriction_buf_len and
+             * restriction_buf_size will be equal and there is
+             * probably more to read. Even if there isn't more
+             * to read, no harm is done, we just allocate 512
+             * bytes we don't end up using.
+             */
         }
+        while (restriction_buf_len == restriction_buf_size);
+
     }
     
     if (proxy_create_local(pcd,
