@@ -46,15 +46,18 @@ ${short_usage}
   the signed certificate to file specified by -out.
 
   Options:
-    -force             : Sign a certificate request with subject that
-                         matches an already signed certificate.
-    -dir <cadir>       : Set the configure directory of the CA
-    -in  <cert req>    : The cert request to sign, if not 
-                         given a request is expected from stdin
-    -out <signed cert> : The newly signed cert.  If not given,
-                         the cert is written to stdout
-    -<openssl option>  : Any of the options alllowed with the openssl ca command
-    -openssl-help      : List possible options to the openssl ca command and exit
+    -force                   : Sign a certificate request with subject that
+                               matches an already signed certificate.
+    -dir <cadir>             : Set the configure directory of the CA
+    -in  <cert req>          : The cert request to sign, if not 
+                               given a request is expected from stdin
+    -out <signed cert>       : The newly signed cert.  If not given,
+                               the cert is written to stdout
+    -<openssl option>        : Any of the options alllowed with the openssl ca command
+    -openssl-help            : List possible options to the openssl ca command and exit
+    -passin pass:<password>  : This is an openssl option.  Specify the password
+                               for the CA private key if you don't care about
+                               security
 EOF
 }
 
