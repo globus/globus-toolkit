@@ -45,7 +45,7 @@ code:
     globus_result_t                     res;
     globus_xio_driver_t                 driver;
 
-    res = globus_xio_driver_load(&driver, "file");
+    res = globus_xio_load_driver(&driver, "file");
 </PRE>
 
 If upon completion of the above function call res == GLOBUS_SUCCESS then
@@ -104,7 +104,7 @@ performing IO operations on the handle globus_xio_close(handle) should be
 called.
 <BR>
 <h3><a name="PayOff">Pay Off</a></h3>
-This may seem like quite a bit of effort for simple reading a file, and it is.
+This May seem like quite a bit of effort for simple reading a file, and it is.
 However the advantages become clear when exploring the swapping of other 
 drivers.  In the above example it would be trivial to change the io operations
 from file IO to TCP, or HTTP, or ftp.  All the the user would need to do is 
