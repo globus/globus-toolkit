@@ -11,7 +11,7 @@
 /* any periodic with period (in the global space) smaller than this is 
  * going to get its own thread
  */
-#define GLOBUS_L_CALLBACK_OWN_THREAD_PERIOD 5000  /* 5ms */
+#define GLOBUS_L_CALLBACK_OWN_THREAD_PERIOD 50  /* 5ms */
 
 extern pid_t                        globus_l_callback_main_thread;
 
@@ -2163,7 +2163,7 @@ globus_callback_get_timeout(
         
     if(!restart_info || restart_info->own_thread)
     {
-        GlobusTimeReltimeSet(*time_left, 0, 5000);
+        GlobusTimeReltimeSet(*time_left, 0, GLOBUS_L_CALLBACK_OWN_THREAD_PERIOD);
 
         return GLOBUS_FALSE;
     }
