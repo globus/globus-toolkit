@@ -1,3 +1,4 @@
+#include "globus_i_xio.h"
 #include "globus_xio_driver.h"
 #include "globus_xio_file_driver.h"
 
@@ -625,35 +626,43 @@ globus_l_xio_file_cntl(
     return GLOBUS_SUCCESS;
 }
 
-static struct globus_i_xio_driver_s     globus_l_xio_file_info =
+globus_xio_driver_t
+globus_l_xio_file_create_driver(
+    globus_xio_driver_t *                   out_driver)
 {
-    /*
-     *  main io interface functions
-     */
-    GLOBUS_NULL,                        /* transform_open_func */
-    globus_l_xio_file_open,             /* transport_open_func */
-    globus_l_xio_file_close,            /* close_func          */
-    globus_l_xio_file_read,             /* read_func           */
-    globus_l_xio_file_write,            /* write_func          */
-    globus_l_xio_file_cntl,             /* handle_cntl_func    */
+    globus_xio_driver_t                     driver;
+    globus_result_t                         res;
 
-    globus_l_xio_file_target_init,      /* target_init_func    */
-    GLOBUS_NULL,                        /* target_cntl_func    */
-    globus_l_xio_file_target_destroy,   /* target_destroy_finc */
+    res = globus_xio_driver_init(&driver, NULL);
+    if(res != GLOBUS_SUCCESS)
+    {
+        return res;
+    }
 
-    /*
-     *  No server functions.
-     */
-    GLOBUS_NULL,                        /* server_init_func    */
-    GLOBUS_NULL,                        /* server_accept_func  */
-    GLOBUS_NULL,                        /* server_destroy_func */
-    GLOBUS_NULL,                        /* server_cntl_func    */
+    globus_xio_driver_set_transport(
+        driver,
+        globus_l_xio_file_open,
+        globus_l_xio_file_close,
+        globus_l_xio_file_read,
+        globus_l_xio_file_write,
+        globus_l_xio_file_cntl);
 
-    /*
-     *  driver attr functions.  All or none may be NULL
-     */
-    globus_l_xio_file_attr_init,        /* attr_init_func      */
-    globus_l_xio_file_attr_copy,        /* attr_copy_func      */
-    globus_l_xio_file_attr_cntl,        /* attr_cntl_func      */
-    globus_l_xio_file_attr_destroy      /* attr_destroy_func   */
-};
+    globus_xio_driver_set_client(
+        driver,
+        globus_l_xio_file_target_init,
+        NULL,
+        globus_l_xio_file_target_destroy);
+
+    globus_xio_driver_set_attr(
+        driver,
+        globus_l_xio_file_attr_init,
+        globus_l_xio_file_attr_copy,
+        globus_l_xio_file_attr_cntl,
+        globus_l_xio_file_attr_destroy);
+
+    *out_driver = driver;
+
+    return GLOBUS_SUCCESS;
+}
+
+
