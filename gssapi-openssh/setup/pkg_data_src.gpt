@@ -4,7 +4,7 @@
 <gpt_package_metadata Format_Version="0.01" Name="gsi_openssh_setup" >
 
   <Aging_Version Age="0" Major="1" Minor="0" />
-  <Description>GSI binary package openssh version 3.0.2p1 with patches (setup)</Description>
+  <Description>GSI-OpenSSH 3.1p1 setup package</Description>
   <Functional_Group >gsi_openssh</Functional_Group>
   <Version_Stability Release="alpha" />
 
@@ -14,7 +14,7 @@
       <Setup_Dependency Name="globus_core_setup" > <Version > <Simple_Version Major="0" /> </Version> </Setup_Dependency>
     </Source_Setup_Dependency>
 
-    <Version_Label>3.0.2p1</Version_Label>
+    <Version_Label>3.1p1</Version_Label>
 
     <With_Flavors build="no" />
 
