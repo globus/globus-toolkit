@@ -29,22 +29,60 @@ EXTERN_C_BEGIN
 #include <openssl/x509.h>
 
 /**
- * @defgroup globus_gsi_system_config Globus Credential System Config API
+ * @mainpage Globus GSI System Config API
+ *
+ * This API provides helper functions for detecting installation and
+ * environment specific settings applicabale to GSI. It also servers as a
+ * abstraction layer for OS specific programming details. This is achieves by
+ * defining preprocessor symbols that point at the correct platform specific
+ * function. <b>You should never use the platform specific functions
+ * directly.</b>.
+ * Any program that uses Globus GSi System Config functions must include
+ * "globus_gsi_system_config.h".  
+ *
+ * @htmlonly
+ * <a href="main.html" target="_top">View documentation without frames</a><br>
+ * <a href="index.html" target="_top">View documentation with frames</a><br>
+ * @endhtmlonly
+ */
+
+/**
+ * @defgroup globus_gsi_system_config_defines Defines
+ *
+ * These precompiler defines allow for a platform (ie Win32 vs UNIX)
+ * independent API.
+ *
+ */
+
+
+/**
+ * @defgroup globus_gsi_sysconfig_unix Functions for UNIX platforms
+ *
+ * These functions implement the UNIX version of the Globus GSI System
+ * Configuration API. <b>They should never be called directly, please use the
+ * provided platform independent defines.</b>
  *
  */
 
 /**
- * @defgroup globus_gsi_system_config_win32 Globus Credential 
- * System Config API for Win32 platforms
+ * @defgroup globus_gsi_sysconfig_win32 Functions for Win32 platforms 
+ *
+ * These functions implement the Win32 version of the Globus GSI System
+ * Configuration API. <b>They should never be called directly, please use the
+ * provided platform independent defines.</b>
  *
  */
 
 /**
- * @defgroup globus_gsi_system_config_unix Globus Credential System Config
- * API for Unix platforms
+ * @defgroup globus_gsi_sysconfig_shared Functions for all platforms
+ *
+ * These functions are platform independent members of the Globus GSI System
+ * Configuration API. 
  *
  */
 
+
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @defgroup globus_i_gsi_system_config Internal Globus Credential
  * System Config API
@@ -62,10 +100,40 @@ EXTERN_C_BEGIN
  * System Config API for Unix platforms
  *
  */
+#endif
 
+/** 
+ * @defgroup globus_gsi_sysconfig_activation Activation
+ *
+ * Globus GSI System Configuration API uses standard Globus module activation
+ * and deactivation.  Before any Globus GSI System Configuration API functions
+ * are called, the following function must be called:
+ *
+ * @code
+ *      globus_module_activate(GLOBUS_GSI_SYSCONFIG_MODULE)
+ * @endcode
+ *
+ *
+ * This function returns GLOBUS_SUCCESS if the Globus GSI System Configuration
+ * API was successfully initialized, and you are therefore allowed to
+ * subsequently call Globus GSI System Configuration API functions.  Otherwise,
+ * an error code is returned, and Globus GSI Credential functions should not be
+ * subsequently called. This function may be called multiple times.
+ *
+ * To deactivate Globus GSI System Configuration API, the following function
+ * must be called: 
+ *
+ * @code
+ *    globus_module_deactivate(GLOBUS_GSI_SYSCONFIG_MODULE)
+ * @endcode
+ *
+ * This function should be called once for each time Globus GSI System
+ * Configuration API was activated. 
+ *
+ */
 
 /** Module descriptor
- * @ingroup globus_gsi_credential_activation
+ * @ingroup globus_gsi_sysconfig_activation
  * @hideinitializer
  */
 #define GLOBUS_GSI_SYSCONFIG_MODULE    (&globus_i_gsi_sysconfig_module)
@@ -117,52 +185,212 @@ globus_module_descriptor_t              globus_i_gsi_sysconfig_module;
 #    define GLOBUS_GSI_SYSCONFIG_GET_USERNAME \
             globus_gsi_sysconfig_get_username_win32
 #else
+/**
+ * Set the correct file permissions on a private key.
+ * @ingroup globus_gsi_system_config_defines
+ * @hideinitializer
+ * See globus_gsi_sysconfig_set_key_permissions_unix() and
+ * globus_gsi_sysconfig_set_key_permissions_win32()
+ */
 #    define GLOBUS_GSI_SYSCONFIG_SET_KEY_PERMISSIONS \
             globus_gsi_sysconfig_set_key_permissions_unix
+/**
+ * Get the current users home directory
+ * @ingroup globus_gsi_system_config_defines
+ * @hideinitializer
+ * See globus_gsi_sysconfig_get_home_dir_unix() and
+ * globus_gsi_sysconfig_get_home_dir_win32()
+ */
 #    define GLOBUS_GSI_SYSCONFIG_GET_HOME_DIR \
             globus_gsi_sysconfig_get_home_dir_unix
+/**
+ * Check for the correct file permissions on a private key.
+ * @ingroup globus_gsi_system_config_defines
+ * @hideinitializer
+ * See globus_gsi_sysconfig_check_keyfile_unix() and
+ * globus_gsi_sysconfig_check_keyfile_win32()
+ */
 #    define GLOBUS_GSI_SYSCONFIG_CHECK_KEYFILE \
             globus_gsi_sysconfig_check_keyfile_unix
+/**
+ * Check for the correct file permissions on a certificate.
+ * @ingroup globus_gsi_system_config_defines
+ * @hideinitializer
+ * See globus_gsi_sysconfig_check_certfile_unix() and
+ * globus_gsi_sysconfig_check_certfile_win32()
+ */
 #    define GLOBUS_GSI_SYSCONFIG_CHECK_CERTFILE \
             globus_gsi_sysconfig_check_certfile_unix
+/**
+ * Check whether a given file exists
+ * @ingroup globus_gsi_system_config_defines
+ * @hideinitializer
+ * See globus_gsi_sysconfig_file_exists_unix() and
+ * globus_gsi_sysconfig_file_exists_win32()
+ */
 #    define GLOBUS_GSI_SYSCONFIG_FILE_EXISTS \
             globus_gsi_sysconfig_file_exists_unix
+/**
+ * Determine the location of the trusted certificates directory
+ * @ingroup globus_gsi_system_config_defines
+ * @hideinitializer
+ * See globus_gsi_sysconfig_get_cert_dir_unix() and
+ * globus_gsi_sysconfig_get_cert_dir_win32()
+ */
 #    define GLOBUS_GSI_SYSCONFIG_GET_CERT_DIR \
             globus_gsi_sysconfig_get_cert_dir_unix
+/**
+ * Determine the location of the users certificate and private key
+ * @ingroup globus_gsi_system_config_defines
+ * @hideinitializer
+ * See globus_gsi_sysconfig_get_user_cert_filename_unix() and
+ * globus_gsi_sysconfig_get_user_cert_filename_win32()
+ */
 #    define GLOBUS_GSI_SYSCONFIG_GET_USER_CERT_FILENAME \
             globus_gsi_sysconfig_get_user_cert_filename_unix
+/**
+ * Determine the location of the host certificate and private key
+ * @ingroup globus_gsi_system_config_defines
+ * @hideinitializer
+ * See globus_gsi_sysconfig_get_host_cert_filename_unix() and
+ * globus_gsi_sysconfig_get_host_cert_filename_win32()
+ */
 #    define GLOBUS_GSI_SYSCONFIG_GET_HOST_CERT_FILENAME \
             globus_gsi_sysconfig_get_host_cert_filename_unix
+/**
+ * Determine the location of a service certificate and private key
+ * @ingroup globus_gsi_system_config_defines
+ * @hideinitializer
+ * See globus_gsi_sysconfig_get_service_cert_filename_unix() and
+ * globus_gsi_sysconfig_get_service_cert_filename_win32()
+ */
 #    define GLOBUS_GSI_SYSCONFIG_GET_SERVICE_CERT_FILENAME \
             globus_gsi_sysconfig_get_service_cert_filename_unix
+/**
+ * Determine the location of a proxy certificate and private key
+ * @ingroup globus_gsi_system_config_defines
+ * @hideinitializer
+ * See globus_gsi_sysconfig_get_proxy_filename_unix() and
+ * globus_gsi_sysconfig_get_proxy_filename_win32()
+ */
 #    define GLOBUS_GSI_SYSCONFIG_GET_PROXY_FILENAME \
             globus_gsi_sysconfig_get_proxy_filename_unix
+/**
+ * Determine the name of the signing policy file for a given CA
+ * @ingroup globus_gsi_system_config_defines
+ * @hideinitializer
+ * See globus_gsi_sysconfig_get_signing_policy_filename_unix() and
+ * globus_gsi_sysconfig_get_signing_policy_filename_win32()
+ */
 #    define GLOBUS_GSI_SYSCONFIG_GET_SIGNING_POLICY_FILENAME \
             globus_gsi_sysconfig_get_signing_policy_filename_unix
+/**
+ * Get a list of of trusted CA certificate filenames in a trusted CA
+ * certificate directory. 
+ * @ingroup globus_gsi_system_config_defines
+ * @hideinitializer
+ * See globus_gsi_sysconfig_get_ca_cert_files_unix() and
+ * globus_gsi_sysconfig_get_ca_cert_files_win32()
+ */
 #    define GLOBUS_GSI_SYSCONFIG_GET_CA_CERT_FILES \
             globus_gsi_sysconfig_get_ca_cert_files_unix
+/**
+ * Get the current working directory
+ * @ingroup globus_gsi_system_config_defines
+ * @hideinitializer
+ * See globus_gsi_sysconfig_get_current_working_dir_unix() and
+ * globus_gsi_sysconfig_get_current_working_dir_win32()
+ */
 #    define GLOBUS_GSI_SYSCONFIG_GET_CURRENT_WORKING_DIR \
             globus_gsi_sysconfig_get_current_working_dir_unix
+/**
+ * Prepend the current working directory to the give filename
+ * @ingroup globus_gsi_system_config_defines
+ * @hideinitializer
+ * See globus_gsi_sysconfig_make_absolute_path_for_filename_unix() and
+ * globus_gsi_sysconfig_make_absolute_path_for_filename_win32()
+ */
 #    define GLOBUS_GSI_SYSCONFIG_MAKE_ABSOLUTE_PATH_FOR_FILENAME \
             globus_gsi_sysconfig_make_absolute_path_for_filename_unix
+/**
+ * Split directory component of path from filename.
+ * @ingroup globus_gsi_system_config_defines
+ * @hideinitializer
+ * See globus_gsi_sysconfig_split_dir_and_filename_unix() and
+ * globus_gsi_sysconfig_split_dir_and_filename_win32()
+ */
 #    define GLOBUS_GSI_SYSCONFIG_SPLIT_DIR_AND_FILENAME \
             globus_gsi_sysconfig_split_dir_and_filename_unix
+/**
+ * Remove all proxies owned by current uid 
+ * @ingroup globus_gsi_system_config_defines
+ * @hideinitializer
+ * See globus_gsi_sysconfig_remove_all_owned_files_unix() and
+ * globus_gsi_sysconfig_remove_all_owned_files_win32()
+ */
 #    define GLOBUS_GSI_SYSCONFIG_REMOVE_ALL_OWNED_FILES \
             globus_gsi_sysconfig_remove_all_owned_files_unix
+/**
+ * Determine the location of the grid map file. 
+ * @ingroup globus_gsi_system_config_defines
+ * @hideinitializer
+ * See globus_gsi_sysconfig_get_gridmap_filename_unix() and
+ * globus_gsi_sysconfig_get_gridmap_filename_win32()
+ */
 #    define GLOBUS_GSI_SYSCONFIG_GET_GRIDMAP_FILENAME \
             globus_gsi_sysconfig_get_gridmap_filename_unix
+/**
+ * Determine the location of the authorization callout config file. 
+ * @ingroup globus_gsi_system_config_defines
+ * @hideinitializer
+ * See globus_gsi_sysconfig_get_authz_conf_filename_unix()
+ */
 #    define GLOBUS_GSI_SYSCONFIG_GET_AUTHZ_CONF_FILENAME \
             globus_gsi_sysconfig_get_authz_conf_filename_unix
+/**
+ * Determine whether the current user is the super user
+ * @ingroup globus_gsi_system_config_defines
+ * @hideinitializer
+ * See globus_gsi_sysconfig_is_superuser_unix() and
+ * globus_gsi_sysconfig_is_superuser_win32()
+ */
 #    define GLOBUS_GSI_SYSCONFIG_IS_SUPERUSER \
             globus_gsi_sysconfig_is_superuser_unix
+/**
+ * Get the current UID in string form
+ * @ingroup globus_gsi_system_config_defines
+ * @hideinitializer
+ * See globus_gsi_sysconfig_get_user_id_string_unix() and
+ * globus_gsi_sysconfig_get_user_id_string_win32()
+ */
 #    define GLOBUS_GSI_SYSCONFIG_GET_USER_ID_STRING \
             globus_gsi_sysconfig_get_user_id_string_unix
+/**
+ * Get the current PID in string form
+ * @ingroup globus_gsi_system_config_defines
+ * @hideinitializer
+ * See globus_gsi_sysconfig_get_proc_id_string_unix() and
+ * globus_gsi_sysconfig_get_proc_id_string_win32()
+ */
 #    define GLOBUS_GSI_SYSCONFIG_GET_PROC_ID_STRING \
             globus_gsi_sysconfig_get_proc_id_string_unix
+/**
+ * Get the current user name 
+ * @ingroup globus_gsi_system_config_defines
+ * @hideinitializer
+ * See globus_gsi_sysconfig_get_username_unix() and
+ * globus_gsi_sysconfig_get_username_win32()
+ */
 #    define GLOBUS_GSI_SYSCONFIG_GET_USERNAME \
             globus_gsi_sysconfig_get_username_unix
 #endif
 
+/**
+ * Generate a unqiue proxy file name
+ * @ingroup globus_gsi_system_config_defines
+ * @hideinitializer
+ * See globus_gsi_sysconfig_get_unique_proxy_filename() 
+ */
 #define     GLOBUS_GSI_SYSCONFIG_GET_UNIQUE_PROXY_FILENAME \
             globus_gsi_sysconfig_get_unique_proxy_filename
 
