@@ -50,7 +50,6 @@ EXTERN_C_BEGIN
 #include "globus_gsi_credential.h"
 #endif
 
-
 /**
  * @defgroup globus_gsi_proxy_activation Activation
  *
@@ -117,7 +116,8 @@ typedef struct globus_l_gsi_proxy_handle_s * globus_gsi_proxy_handle_t;
  * @see globus_gsi_proxy_handle_t, @ref globus_gsi_proxy_handle_attrs
  */
 
-typedef struct globus_l_gsi_proxy_handle_attrs_s * globus_gsi_proxy_handle_attrs_t;
+typedef struct 
+globus_l_gsi_proxy_handle_attrs_s *     globus_gsi_proxy_handle_attrs_t;
 
 /**
  * @defgroup globus_gsi_proxy_handle Handle Management
@@ -141,7 +141,7 @@ globus_gsi_proxy_handle_init(
 
 globus_result_t
 globus_gsi_proxy_handle_destroy(
-    globus_gsi_proxy_handle_t *         handle);
+    globus_gsi_proxy_handle_t           handle);
 
 globus_result_t
 globus_gsi_proxy_handle_set_policy(
@@ -153,6 +153,7 @@ globus_result_t
 globus_gsi_proxy_handle_get_policy(
     globus_gsi_proxy_handle_t           handle,
     unsigned char **                    policy,
+    int *                               policy_length,
     int *                               policy_NID);
 
 globus_result_t
@@ -170,7 +171,7 @@ globus_gsi_proxy_handle_get_group(
 globus_result_t
 globus_gsi_proxy_handle_set_pathlen(
     globus_gsi_proxy_handle_t           handle,
-    int                                 pathlen);
+    long                                pathlen);
 
 globus_result_t
 globus_gsi_proxy_handle_get_pathlen(
@@ -202,7 +203,7 @@ globus_gsi_proxy_handle_attrs_init(
 
 globus_result_t
 globus_gsi_proxy_handle_attrs_destroy(
-    globus_gsi_proxy_handle_attrs_t *   handle_attrs);
+    globus_gsi_proxy_handle_attrs_t     handle_attrs);
 
 globus_result_t
 globus_gsi_proxy_handle_attrs_copy(

@@ -59,12 +59,14 @@ globus_gsi_proxy_handle_attrs_init(
  */
 globus_result_t
 globus_gsi_proxy_handle_attrs_destroy(
-    globus_gsi_proxy_handle_attrs_t *   handle_attrs)
+    globus_gsi_proxy_handle_attrs_t     handle_attrs)
 {
     return GLOBUS_SUCCESS;
 }
 /* globus_gsi_proxy_handle_destroy() */
 /*@}*/
+
+
 /**
  * @name Copy Attributes
  */
@@ -82,8 +84,8 @@ globus_gsi_proxy_handle_attrs_destroy(
  */
 globus_result_t
 globus_gsi_proxy_handle_attrs_copy(
-    globus_gsi_proxy_handle_attrs_t *   a,
-    globus_gsi_proxy_handle_attrs_t *   b)
+    globus_gsi_proxy_handle_attrs_t     a,
+    globus_gsi_proxy_handle_attrs_t     b)
 {
     return GLOBUS_SUCCESS;
 }

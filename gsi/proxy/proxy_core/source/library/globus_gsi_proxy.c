@@ -41,7 +41,6 @@ static
 int
 globus_l_gsi_proxy_activate(void)
 {
-    globus_module_activate(GLOBUS_GSI_CREDENTIAL_MODULE);
     return GLOBUS_SUCCESS;
 }
 
@@ -53,7 +52,6 @@ static
 int
 globus_l_gsi_proxy_deactivate(void)
 {
-    globus_module_deactivate(GLOBUS_GSI_CREDENTIAL_MODULE);
     return GLOBUS_SUCCESS;
 }
 /* globus_l_gsi_proxy_deactivate() */
@@ -89,8 +87,10 @@ globus_gsi_proxy_create_req(
     char *                              pci_DER;            
     X509_EXTENSION *                    pci_ext;
     STACK_OF(X509_EXTENSION) *          extensions;
+    ASN1_OCTET_STRING *                 pci_DER_string;
     int                                 pci_NID;
     int                                 pci_critical;
+    int                                 pci_DER_length;
 
     int                                 key_bits = 1024;
     RSA *                               rsa_key;
@@ -100,11 +100,13 @@ globus_gsi_proxy_create_req(
     /* create a stdout bio for sending key generation 
      * progress information */
     stdout_bio = BIO_new(BIO_s_file());
-    BIO_set_fp(bp, stdout, BIO_NOCLOSE);
+    BIO_set_fp(stdout_bio, stdout, BIO_NOCLOSE);
 
     /* First, generate and setup private/public key pair */
     rsa_key = RSA_generate_key(key_bits, PRIME_START, 
-                               globus_i_private_key_processing_callback, stdout_bio);
+                               (void (*)()) 
+                               globus_i_gsi_proxy_create_private_key_cb, 
+                               (char *) stdout_bio);
 
     if(rsa_key == NULL)
     {
@@ -120,22 +122,25 @@ globus_gsi_proxy_create_req(
 
     X509_REQ_set_pubkey(handle->req, handle->proxy_key);
 
-    i2d_X509_REQ_bio(output_bio, handle->req);
-
     /* create the X509 extension from the PROXYCERTINFO */
     pci_NID = OBJ_create(PROXYCERTINFO_OID, 
                          PROXYCERTINFO_SN, 
                          PROXYCERTINFO_LN);
-    i2d_PROXYCERTINFO(handle->proxy_cert_info, &pci_DER);
+    pci_DER_length = i2d_PROXYCERTINFO(handle->proxy_cert_info, 
+                          (unsigned char **) &pci_DER);
+
+    pci_DER_string = ASN1_OCTET_STRING_new();
+    pci_DER_string->data = pci_DER;
+    pci_DER_string->length = pci_DER_length;
 
     /* set the extensions's critical value */
     pci_critical = 
         PROXYCERTINFO_get_restriction(handle->proxy_cert_info) ? 1 : 0;
     pci_ext = 
-        X509_EXTENSION_create_by_NID(pci_ext, 
+        X509_EXTENSION_create_by_NID(& pci_ext, 
                                      pci_NID, 
                                      pci_critical, 
-                                     pci_DER);
+                                     pci_DER_string);
 
     /* get the list of extensions from the X509_REQ,
      * and add the PROXYCERTINFO extension to the list
@@ -143,6 +148,9 @@ globus_gsi_proxy_create_req(
     extensions = X509_REQ_get_extensions(handle->req);
     sk_X509_EXTENSION_push(extensions, pci_ext);
     X509_REQ_add_extensions(handle->req, extensions);
+
+    /* write the request to the BIO */
+    i2d_X509_REQ_bio(output_bio, handle->req);
 
     sk_X509_EXTENSION_free(extensions);
     X509_EXTENSION_free(pci_ext);
@@ -179,8 +187,8 @@ globus_gsi_proxy_inquire_req(
 {
     X509_REQ *                          request = NULL;
 
-    d2i_X509_REQ_bio(input_bio, request);
-    if(
+    d2i_X509_REQ_bio(input_bio, & request);
+/*      if( */
     
     return GLOBUS_SUCCESS;
 }
@@ -220,7 +228,7 @@ globus_gsi_proxy_sign_req(
 {
     int                                 hours = 24;
     int                                 clock_skew_minutes = 5;
-    EVP_MD *                            signing_algorithm,
+    EVP_MD *                            signing_algorithm;
     char *                              common_name;
     char *                              proxy_subject;
     X509 *                              new_pc;
@@ -228,8 +236,10 @@ globus_gsi_proxy_sign_req(
     STACK_OF(X509_EXTENSION) *          pc_extensions;
     ASN1_UTCTIME *                      pc_notAfter;
     X509_EXTENSION *                    tmp_ext;
+    EVP_PKEY *                          issuer_pkey;
     long                                tmp_time;
     int                                 ext_num;
+    int                                 ext_index;
     int                                 res;
     
     res = X509_REQ_verify(handle->req, X509_REQ_get_pubkey(handle->req));
@@ -250,7 +260,7 @@ globus_gsi_proxy_sign_req(
 
     new_pc = X509_new();
 
-    if(new_proxycert == NULL)
+    if(new_pc == NULL)
     {
         /* ERROR */
     }
@@ -272,19 +282,24 @@ globus_gsi_proxy_sign_req(
     /* add the extensions from the proxy cert request 
      * to the new proxy cert */    
     pc_req_extensions = X509_REQ_get_extensions(handle->req);
-    ext_num = sk_X509_EXTENSION_num(req_extensions);
+    ext_num = sk_X509_EXTENSION_num(pc_req_extensions);
     for(ext_index = 0; ext_index < ext_num; ++ext_index)
     {
         tmp_ext = sk_X509_EXTENSION_value(pc_req_extensions, ext_index);
-        X509_add_ext(new_pc, tmp_ext);
+        X509_add_ext(new_pc, tmp_ext, ext_index);
         X509_EXTENSION_free(tmp_ext);
     }
     sk_X509_EXTENSION_free(pc_req_extensions);
 
-    if(!X509_sign(new_pc, handle->pkey, EVP_md5()))
+    /* sign the new certificate */
+    globus_gsi_cred_get_key(issuer_credential, &issuer_pkey);
+    if(!X509_sign(new_pc, issuer_pkey, EVP_md5()))
     {
         /* ERROR */
     }
+
+    /* write out the X509 certificate in DER encoded format to the BIO */
+    i2d_X509_bio(output_bio, new_pc);
 
     return GLOBUS_SUCCESS;
 }
@@ -336,7 +351,9 @@ globus_gsi_proxy_assemble_cred(
  * this could be modified to return more status information
  * if required.
  */
-void globus_i_gsi_proxy_create_private_key_cb(BIO * output)
+void 
+globus_i_gsi_proxy_create_private_key_cb(
+    BIO *                               output)
 {
     BIO_printf(output, "+");
 }
@@ -356,10 +373,10 @@ globus_i_gsi_proxy_set_pc_times(
     tmp_time = time(NULL) + ((long) 60 * 60 * hours);
 
     /* check that issuer cert won't expire before new proxy cert */
-    if(X509_cmp_time(X509_get_notAfter(issuer_cert->cert), tmp_time) < 0)
+    if(X509_cmp_time(X509_get_notAfter(issuer_cert), & tmp_time) < 0)
     {
         pc_notAfter = 
-            ASN1_UTCTIME_dup(X509_get_notAfter(issuer_cert->cert));
+            M_ASN1_UTCTIME_dup(X509_get_notAfter(issuer_cert));
     }
     else
     {
@@ -384,16 +401,16 @@ globus_i_gsi_proxy_set_subject(
     X509_NAME *                         pc_name;
     X509_NAME_ENTRY *                   pc_name_entry;
 
-    if((pc_name = X509_NAME_dup(X509_get_subject_name(isser_cert))) == NULL)
+    if((pc_name = X509_NAME_dup(X509_get_subject_name(issuer_cert))) == NULL)
     {
         /* ERROR */
     }
        
-    if(pc_name_entry = 
-       X509_NAME_ENTRY_create_by_NID(NULL, NID_commonName,
+    if((pc_name_entry = 
+       X509_NAME_ENTRY_create_by_NID(& pc_name_entry, NID_commonName,
                                      V_ASN1_APP_CHOOSE,
                                      (unsigned char *) common_name,
-                                     -1) == NULL)
+                                     -1)) == NULL)
     {
         /* ERROR */
     }
@@ -401,7 +418,7 @@ globus_i_gsi_proxy_set_subject(
     if(!X509_NAME_add_entry(pc_name,
                             pc_name_entry,
                             X509_NAME_entry_count(pc_name),
-                            0) == NULL)
+                            0))
     {
         /* ERROR */
     }
