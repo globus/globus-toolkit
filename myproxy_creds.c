@@ -1382,28 +1382,29 @@ myproxy_print_cred_info(myproxy_creds_t *creds, FILE *out)
     for (; creds; creds = creds->next) {
 	time_t time_diff = 0, now = 0;
 	float days = 0.0;
-	if (creds->owner_name) printf("owner: %s\n", creds->owner_name);
-	if (creds->username)   printf("username: %s\n", creds->username);
-        if (creds->credname)   printf("  name: %s\n", creds->credname);
-	if (creds->creddesc)   printf("  description: %s\n", creds->creddesc);
-	if (creds->retrievers) printf("  retrieval policy: %s\n",
-				      creds->retrievers);
-	if (creds->renewers)   printf("  renewal policy: %s\n",
-				      creds->renewers);
-	if (creds->lockmsg)    printf("  locked: %s\n", creds->lockmsg);
+	if (creds->owner_name) fprintf(out, "owner: %s\n", creds->owner_name);
+	if (creds->username)   fprintf(out, "username: %s\n", creds->username);
+        if (creds->credname)   fprintf(out, "  name: %s\n", creds->credname);
+	if (creds->creddesc)   fprintf(out, "  description: %s\n",
+				       creds->creddesc);
+	if (creds->retrievers) fprintf(out, "  retrieval policy: %s\n",
+				       creds->retrievers);
+	if (creds->renewers)   fprintf(out, "  renewal policy: %s\n",
+				       creds->renewers);
+	if (creds->lockmsg)    fprintf(out, "  locked: %s\n", creds->lockmsg);
 	now = time(0);
 	if (creds->end_time > now) {
 	    time_diff = creds->end_time - now;
 	    days = time_diff / 86400.0;
 	}
-	printf("  timeleft: %ld:%02ld:%02ld", 
-	       (long)(time_diff / 3600),
-	       (long)(time_diff % 3600) / 60,
-	       (long)time_diff % 60 );
+	fprintf(out, "  timeleft: %ld:%02ld:%02ld", 
+		(long)(time_diff / 3600),
+		(long)(time_diff % 3600) / 60,
+		(long)time_diff % 60 );
 	if (days > 1.0) {
-	    printf("  (%.1f days)\n", days);
+	    fprintf(out, "  (%.1f days)\n", days);
 	} else {
-	    printf("\n");
+	    fprintf(out, "\n");
 	}
     }
     return 0;
