@@ -5,6 +5,7 @@
 # in all cases.
 
 prefix=@prefix@
+exec_prefix=@prefix@
 libexecdir=@libexecdir@
  
 LOCALDOMAIN=@LOCALDOMAIN@
