@@ -65,6 +65,7 @@ globus_hostname2contacts        gram/globus-hostname2contacts   dirt.sh
 globus_simple_ca                gsi/simple_ca/source            dirt.sh
 globus_simple_ca_setup          gsi/simple_ca/setup             dirt.sh
 globus_proxy_ssl                gsi/proxy/proxy_ssl/source      dirt.sh
+globus_proxy_ssl_test           gsi/proxy/proxy_ssl/test        dirt.sh
 globus_proxy_core               gsi/proxy/proxy_core/source     dirt.sh
 globus_proxy_utils              gsi/proxy/proxy_utils/source    dirt.sh
 globus_cert_utils               gsi/cert_utils/source           dirt.sh
@@ -75,6 +76,7 @@ globus_gsi_trusted_ca           gsi/trusted_ca/setup            dirt.sh
 globus_gram_reporter            gram/reporter/source            dirt.sh
 globus_gram_reporter_setup      gram/reporter/setup             dirt.sh
 globus_gsi_openssl_error        gsi/openssl_error/source        dirt.sh
+globus_openssl_error_test       gsi/openssl_error/test          dirt.sh
 gaa_core			gsi/gaa/gaa_core/source		dirt.sh
 gaa_debug			gsi/gaa/gaa_debug/source	dirt.sh
 gaa_plugin			gsi/gaa/gaa_plugin/source	dirt.sh
@@ -85,6 +87,7 @@ gaa_util			gsi/gaa_util/source		dirt.sh
 globus_auth			gsi/globus_auth/source		dirt.sh
 globus_auth_test		gsi/globus_auth/test		dirt.sh
 globus_gss_assist		gsi/gss_assist/source		dirt.sh
+globus_gss_assist_test		gsi/gss_assist/test		dirt.sh
 globus_gss_ext_compat		gsi/gss_ext_compat/source	dirt.sh
 globus_gssapi_gsi		gsi/gssapi/source		dirt.sh
 globus_gssapi_gsi_test		gsi/gssapi/test			dirt.sh
