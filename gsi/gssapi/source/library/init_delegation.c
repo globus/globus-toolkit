@@ -100,8 +100,7 @@ GSS_CALLCONV gss_init_delegation(
     X509 *                              cert = NULL;
     STACK_OF(X509) *                    cert_chain = NULL;
     PROXYCERTINFO *                     pci;
-    globus_gsi_cert_utils_cert_type_t   cert_type =
-        GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_PROXY;
+    globus_gsi_cert_utils_cert_type_t   cert_type;
     int                                 index;
     globus_result_t                     local_result = GLOBUS_SUCCESS;
     static char *                       _function_name_ =
@@ -281,25 +280,18 @@ GSS_CALLCONV gss_init_delegation(
         }
         else if(req_flags & GSS_C_GLOBUS_DELEGATE_LIMITED_PROXY_FLAG)
         {
-            if(cert_type != GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_PROXY)
+            if(GLOBUS_GSI_CERT_UTILS_IS_GSI_2_PROXY(cert_type))
             { 
                 cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_LIMITED_PROXY;
             }
             else
             {
-                major_status = GSS_S_FAILURE;
-                GLOBUS_GSI_GSSAPI_ERROR_RESULT(
-                    minor_status,
-                    GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
-                    ("Can't delegate a legacy globus limited"
-                     " proxy from a draft compliant proxy"));
-                context->delegation_state = GSS_DELEGATION_DONE;
-                goto mutex_unlock;
+                cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_LIMITED_PROXY;
             }
         }
         else if(cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_EEC)
         {
-            cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_PROXY;
+            cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_IMPERSONATION_PROXY;
         }
         
         local_result =
@@ -336,14 +328,13 @@ GSS_CALLCONV gss_init_delegation(
         /* set the proxycertinfo here */
         if(extension_oids != GSS_C_NO_OID_SET)
         {
-            if(cert_type != GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_PROXY)
+            if(!GLOBUS_GSI_CERT_UTILS_IS_GSI_3_PROXY(cert_type))
             {
                 GLOBUS_GSI_GSSAPI_ERROR_RESULT(
                     minor_status,
                     GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
-                    ("A legacy globus proxy may not be created "
-                     "from a draft compliant or proxy or contain user "
-                     "defined extensions."));
+                    ("A restricted globus proxy may not be created "
+                     "from a legacy globus proxy"));
                 context->delegation_state = GSS_DELEGATION_DONE;
                 major_status = GSS_S_FAILURE;
                 goto mutex_unlock;

@@ -568,7 +568,7 @@ globus_i_gsi_callback_check_proxy(
             goto exit;
         }
 
-        if (cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_LIMITED_PROXY)
+        if (GLOBUS_GSI_CERT_UTILS_IS_LIMITED_PROXY(cert_type))
         {
             /*
              * If its a limited proxy, it means its use has been limited 
@@ -1062,6 +1062,7 @@ globus_i_gsi_callback_check_critical_extensions(
     X509_EXTENSION *                    extension = NULL;
     ASN1_OCTET_STRING *                 ext_data = NULL;
     PROXYCERTINFO *                     proxycertinfo = NULL;
+    PROXYPOLICY *                       policy = NULL;
     int                                 nid;
     int                                 pci_NID;
     int                                 critical_position = -1;
@@ -1156,6 +1157,21 @@ globus_i_gsi_callback_check_critical_extensions(
                         callback_data->proxy_depth + path_length;
                 }
             }
+
+            policy = PROXYCERTINFO_get_policy(proxycertinfo);
+
+            if(policy && policy->policy)
+            {
+                GLOBUS_GSI_CALLBACK_ERROR_RESULT(
+                    result,
+                    GLOBUS_GSI_CALLBACK_ERROR_VERIFY_CRED,
+                    ("Certificate has unknown critical extension, "
+                     "with numeric ID: %d, "
+                     "rejected during validation",
+                     OBJ_obj2nid(PROXYPOLICY_get_policy_language(policy))));
+                x509_context->error = X509_V_ERR_CERT_REJECTED;
+                goto exit;
+            }
         }
         
         if(nid != NID_basic_constraints &&
@@ -1175,7 +1191,7 @@ globus_i_gsi_callback_check_critical_extensions(
                         GLOBUS_GSI_CALLBACK_ERROR_VERIFY_CRED,
                         ("Certificate has unknown critical extension "
                          "with numeric ID: %d, "
-                         "rejected during verification", nid));
+                         "rejected during validation", nid));
                     x509_context->error = X509_V_ERR_CERT_REJECTED;
                     goto exit;
                 }
@@ -1187,7 +1203,7 @@ globus_i_gsi_callback_check_critical_extensions(
                     GLOBUS_GSI_CALLBACK_ERROR_VERIFY_CRED,
                     ("Certificate has unknown critical extension, "
                      "with numeric ID: %d, "
-                     "rejected during verification", nid));
+                     "rejected during validation", nid));
                 x509_context->error = X509_V_ERR_CERT_REJECTED;
                 goto exit;
             }

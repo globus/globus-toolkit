@@ -27,6 +27,7 @@ globus_l_gsi_cert_utils_error_strings[GLOBUS_GSI_CERT_UTILS_ERROR_LAST] =
 /* 5 */   "Out of memory",
 /* 6 */   "Error parsing subject name",
 /* 7 */   "Proxy does not comply with proxy certificate standard"
+/* 8 */   "Error determining certificate type"
 };
 
 /* ERROR FUNCTIONS */
