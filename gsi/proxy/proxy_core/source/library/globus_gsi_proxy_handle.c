@@ -1,6 +1,7 @@
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_gsi_proxy_handle.c
+ * @file Sam Meder, Sam Lang
  *
  * $RCSfile$
  * $Revision$
@@ -27,7 +28,10 @@
  * operations at a time.
  *
  * @param handle
- *        The handle to be initialized.
+ *        A pointer to the handle to be initialized.  If the
+ *        handle is originally NULL, space is allocated for it.
+ *        Otherwise, the current values of the handle are overwritten.
+ *        
  * @param handle_attrs
  *        Initial attributes to be used to create this handle.
  * @return
@@ -41,12 +45,20 @@ globus_gsi_proxy_handle_init(
     globus_gsi_proxy_handle_attrs_t     handle_attrs)
 {
     globus_gsi_proxy_handle_t           hand;
-    if(handle != NULL)
+
+    const char *                        _FUNCTION_NAME_ =
+        "globus_gsi_proxy_handle_init";
+
+    /* setup the handle */
+    if(handle == NULL)
     {
-        /* ERROR: The handle isn't null - don't want to overwrite it */
-        return 
-        GLOBUS_GSI_PROXY_ERROR_RESULT(
-            GLOBUS_GSI_PROXY_ERROR_NON_NULL_HANDLE_ATTRS);
+        return GLOBUS_GSI_PROXY_ERROR_RESULT(
+            GLOBUS_GSI_PROXY_ERROR_NULL_HANDLE);
+    }
+    if(*handle != NULL)
+    {
+        return GLOBUS_GSI_PROXY_ERROR_RESULT(
+            GLOBUS_GSI_PROXY_ERROR_NON_NULL_HANDLE);
     }
 
     *handle = (globus_gsi_proxy_handle_t) 
@@ -55,29 +67,26 @@ globus_gsi_proxy_handle_init(
     hand = *handle; 
 
     /* initialize the private key */
-    hand->proxy_key = EVP_PKEY_new();
-    if(hand->proxy_key == NULL)
+    if((hand->proxy_key = EVP_PKEY_new()) == NULL)
     {
-        /* ERROR: EVP_PKEY_new() returned an error */
-        return GLOBUS_GSI_PROXY_OPENSSL_ERROR(GLOBUS_GSI_PROXY_OPENSSL_ERROR);
+        return GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
+            GLOBUS_GSI_PROXY_ERROR_OPENSSL_ERROR);
     }
 
     /* initialize the X509 request structure */
-    hand->req = X509_REQ_new();
-    if(hand->req == NULL)
+    if((hand->req = X509_REQ_new()) == NULL)
     {
-        /* ERROR: X509_REQ_new returned an error */
-        return GLOBUS_GSI_PROXY_OPENSSL_ERROR(GLOBUS_GSI_PROXY_OPENSSL_ERROR);
+        return GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
+            GLOBUS_GSI_PROXY_ERROR_OPENSSL_ERROR);
     }
 
     /* initialize the handle attributes */
     hand->attrs = handle_attrs;
 
-    hand->proxy_cert_info = PROXYCERTINFO_new();
-    if(hand->proxy_cert_info == NULL)
+    if((hand->proxy_cert_info = PROXYCERTINFO_new()) == NULL)
     {        
-        /* ERROR: PROXYCERTINFO_new() returned an error */
-        return GLOBUS_GSI_PROXY_OPENSSL_ERROR(GLOBUS_GSI_PROXY_OPENSSL_ERROR);
+        return GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
+            GLOBUS_GSI_PROXY_ERROR_OPENSSL_ERROR);
     }
 
     hand->signing_algorithm = DEFAULT_SIGNING_ALGORITHM;
@@ -113,7 +122,7 @@ globus_gsi_proxy_handle_destroy(
     {
         /* free each of the pointers in the handle struct */
         X509_REQ_free(handle->req);
-        EVP_KEY_free(handle->proxy_key);
+        EVP_PKEY_free(handle->proxy_key);
         globus_gsi_proxy_handle_attrs_destroy(handle->attrs);
         PROXYCERTINFO_free(handle->proxy_cert_info);
 
@@ -127,6 +136,96 @@ globus_gsi_proxy_handle_destroy(
 /* globus_gsi_proxy_handle_destroy */
 /*@}*/
 
+/**
+ * Copy 
+ * @ingroup globus_gsi_proxy_handle
+ */
+/* @{ */
+/**
+ * Make a copy of the handle.  There probably shouldn't be multiple
+ * copies of a handle lying around, since a handle should only be
+ * used for once sequence of operations, so this function should be used
+ * sparingly, if at all.
+ *
+ * @param a
+ *        The original handle to copy
+ * @param b
+ *        The copied handle
+ * @return
+ *        GLOBUS_SUCCESS if the copy was successful, an error
+ *        otherwise
+ */
+globus_result_t
+globus_gsi_proxy_handle_copy(
+    globus_gsi_proxy_handle_t           a,
+    globus_gsi_proxy_handle_t *         b)
+{
+    int                                 len;
+    unsigned char *                     der_encoded;
+    globus_gsi_proxy_handle_attrs_t     b_attrs;
+    globus_result_t                     result;
+    const char *                        _FUNCTION_NAME_ =
+        "globus_gsi_proxy_handle_copy";
+
+    if(a == NULL)
+    {
+        return GLOBUS_GSI_PROXY_ERROR_RESULT(
+            GLOBUS_GSI_PROXY_ERROR_NULL_HANDLE);
+    }
+    if(b != NULL)
+    {
+        return GLOBUS_GSI_PROXY_ERROR_RESULT(
+            GLOBUS_GSI_PROXY_ERROR_NON_NULL_HANDLE);
+    }
+    
+    if((result = globus_gsi_proxy_handle_attrs_copy(a->attrs, & b_attrs)) 
+       != GLOBUS_SUCCESS)
+    {
+        return globus_error_put(
+            globus_error_construct_error(
+                GLOBUS_GSI_PROXY_MODULE,
+                globus_error_get(result),
+                GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE_ATTRS,
+                globus_l_gsi_proxy_error_strings[
+                    GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE_ATTRS],
+                "Error copying handle attributes"));
+    }
+                
+    if((result = globus_gsi_proxy_handle_init(b, b_attrs)) != GLOBUS_SUCCESS)
+    {
+        return globus_error_put(
+            globus_error_construct_error(
+                GLOBUS_GSI_PROXY_MODULE,
+                globus_error_get(result),
+                GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE,
+                globus_l_gsi_proxy_error_strings[
+                    GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE],
+                "Error initializing proxy handle"));
+    }
+
+    if(((*b)->req = X509_REQ_dup(a->req)) == NULL)
+    {
+        return GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
+            GLOBUS_GSI_PROXY_ERROR_WITH_X509_REQ);
+    }
+
+    len = i2d_PrivateKey(a->proxy_key, &der_encoded);
+
+    if(!d2i_PrivateKey(a->proxy_key->type, 
+                       & (*b)->proxy_key, 
+                       &der_encoded, len))
+    {
+        return GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
+            GLOBUS_GSI_PROXY_ERROR_WITH_PRIVATE_KEY);
+    }
+
+    (*b)->time_valid = a->time_valid;
+    (*b)->clock_skew = a->clock_skew;
+
+    globus_free(der_encoded);
+
+    return GLOBUS_SUCCESS;
+}
 
 /**
  * @name Set Policy
@@ -158,6 +257,8 @@ globus_gsi_proxy_handle_set_policy(
     int                                 policy_NID)
 {
     PROXYRESTRICTION *                  restriction;
+    const char *                        _FUNCTION_NAME_ =
+        "globus_gsi_proxy_handle_set_policy";
     
     if(handle == NULL)
     {
@@ -172,7 +273,7 @@ globus_gsi_proxy_handle_set_policy(
     {
         return 
         GLOBUS_GSI_PROXY_ERROR_RESULT(
-            GLOBUS_GSI_PROXY_ERROR_BAD_PROXYRESTRICTION);
+            GLOBUS_GSI_PROXY_ERROR_WITH_PROXYRESTRICTION);
     }
     
     return GLOBUS_SUCCESS;
@@ -211,6 +312,9 @@ globus_gsi_proxy_handle_get_policy(
     int *                               policy_length,
     int *                               policy_NID)
 {
+    const char *                        _FUNCTION_NAME_ =
+        "globus_gsi_proxy_handle_get_policy";
+
     if(handle == NULL)
     {
         return GLOBUS_GSI_PROXY_ERROR_RESULT(
@@ -260,6 +364,9 @@ globus_gsi_proxy_handle_set_group(
     int                                 attached)
 {
     PROXYGROUP *                        proxygroup;
+
+    const char *                        _FUNCTION_NAME_ =
+        "globus_gsi_proxy_handle_set_group";
     
     if(handle == NULL)
     {
@@ -271,7 +378,7 @@ globus_gsi_proxy_handle_set_group(
        !PROXYGROUP_set_attached(proxygroup, attached))
     {
         return GLOBUS_GSI_PROXY_ERROR_RESULT(
-            GLOBUS_GSI_PROXY_ERROR_BAD_PROXYGROUP);
+            GLOBUS_GSI_PROXY_ERROR_WITH_PROXYGROUP);
     }
 
     return GLOBUS_SUCCESS;
@@ -295,6 +402,8 @@ globus_gsi_proxy_handle_set_group(
  *        The handle to be interrogated.
  * @param group
  *        The group identifier.
+ * @param group_length
+ *        The length of the group identifier.
  * @param attached
  *        The attachment state of the group
  * @return
@@ -307,9 +416,11 @@ globus_result_t
 globus_gsi_proxy_handle_get_group(
     globus_gsi_proxy_handle_t           handle,
     unsigned char **                    group,
+    long *                              group_length,
     int *                               attached)
 {
-    long                                group_length;
+    const char *                        _FUNCTION_NAME_ =
+        "globus_gsi_proxy_handle_get_group";
 
     if(handle == NULL)
     {
@@ -318,7 +429,7 @@ globus_gsi_proxy_handle_get_group(
     }
 
     *group = PROXYGROUP_get_name(
-        PROXYCERTINFO_get_group(handle->proxy_cert_info), & group_length);
+        PROXYCERTINFO_get_group(handle->proxy_cert_info), group_length);
     *attached = *PROXYGROUP_get_attached(
         PROXYCERTINFO_get_group(handle->proxy_cert_info));
 
@@ -354,6 +465,9 @@ globus_gsi_proxy_handle_set_pathlen(
     globus_gsi_proxy_handle_t           handle,
     long                                pathlen)
 {
+    const char *                        _FUNCTION_NAME_ =
+        "globus_gsi_proxy_handle_set_pathlen";
+
     if(handle == NULL)
     {
         return GLOBUS_GSI_PROXY_ERROR_RESULT(
@@ -362,7 +476,7 @@ globus_gsi_proxy_handle_set_pathlen(
     if(!PROXYCERTINFO_set_path_length(handle->proxy_cert_info, &pathlen))
     {
         return GLOBUS_GSI_PROXY_ERROR_RESULT(
-            GLOBUS_GSI_PROXY_ERROR_BAD_PATHLENGTH);
+            GLOBUS_GSI_PROXY_ERROR_WITH_PATHLENGTH);
     }
     return GLOBUS_SUCCESS;
 }
@@ -396,6 +510,9 @@ globus_gsi_proxy_handle_get_pathlen(
     globus_gsi_proxy_handle_t           handle,
     int *                               pathlen)
 {
+    const char *                        _FUNCTION_NAME_ =
+        "globus_gsi_proxy_handle_get_pathlen";
+
     if(handle == NULL)
     {
         return GLOBUS_GSI_PROXY_ERROR_RESULT(
@@ -431,6 +548,9 @@ globus_result_t
 globus_gsi_proxy_handle_clear_cert_info(
     globus_gsi_proxy_handle_t           handle)
 {
+    const char *                        _FUNCTION_NAME_ =
+        "globus_gsi_proxy_handle_clear_cert_info";
+
     if(handle == NULL)
     {
         return GLOBUS_GSI_PROXY_ERROR_RESULT(
@@ -440,7 +560,8 @@ globus_gsi_proxy_handle_clear_cert_info(
     handle->proxy_cert_info = PROXYCERTINFO_new();
     if(handle->proxy_cert_info == NULL)
     {
-        return GLOBUS_GSI_OPENSSL_ERROR;
+        return GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
+            GLOBUS_GSI_PROXY_ERROR_OPENSSL_ERROR);
     }
     return GLOBUS_SUCCESS;
 }
@@ -472,6 +593,9 @@ globus_gsi_proxy_handle_set_signing_algorithm(
     globus_gsi_proxy_handle_t           handle,
     EVP_MD *                            algorithm)
 {
+    const char *                        _FUNCTION_NAME_ =
+        "globus_gsi_proxy_handle_set_signing_algorithm";
+
     if(handle == NULL)
     {
         return GLOBUS_GSI_PROXY_ERROR_RESULT(
@@ -508,6 +632,9 @@ globus_gsi_proxy_handle_get_signing_algorithm(
     globus_gsi_proxy_handle_t           handle,
     EVP_MD **                           algorithm)
 {
+    const char *                        _FUNCTION_NAME_ =
+        "globus_gsi_proxy_handle_get_signing_algorithm";
+
     if(handle == NULL)
     {
         return GLOBUS_GSI_PROXY_ERROR_RESULT(
@@ -543,6 +670,9 @@ globus_gsi_proxy_handle_set_time_valid(
     globus_gsi_proxy_handle_t           handle,
     int                                 time_valid)
 {
+    const char *                        _FUNCTION_NAME_ =
+        "globus_gsi_proxy_handle_set_time_valid";
+
     if(handle == NULL)
     {
         return GLOBUS_GSI_PROXY_ERROR_RESULT(
@@ -578,9 +708,13 @@ globus_gsi_proxy_handle_get_time_valid(
     globus_gsi_proxy_handle_t           handle,
     int *                               time_valid)
 {
+    const char *                        _FUNCTION_NAME_ =
+        "globus_gsi_proxy_handle_get_time_valid";
+
     if(handle == NULL)
     {
-        return GLOBUS_GSI_PROXY_ERROR(GLOBUS_GSI_PROXY_ERROR_NULL_HANDLE);
+        return GLOBUS_GSI_PROXY_ERROR_RESULT(
+            GLOBUS_GSI_PROXY_ERROR_NULL_HANDLE);
     }
     *time_valid = handle->time_valid;
     return GLOBUS_SUCCESS;
@@ -611,9 +745,13 @@ globus_gsi_proxy_handle_set_clock_skew_allowable(
     globus_gsi_proxy_handle_t           handle,
     int                                 skew)
 {
+    const char *                        _FUNCTION_NAME_ =
+        "globus_gsi_proxy_handle_set_clock_skew_allowable";
+
     if(handle == NULL)
     {
-        return GLOBUS_GSI_PROXY_ERROR(GLOBUS_GSI_PROXY_ERROR_NULL_HANDLE);
+        return GLOBUS_GSI_PROXY_ERROR_RESULT(
+            GLOBUS_GSI_PROXY_ERROR_NULL_HANDLE);
     }
     handle->clock_skew = skew;
     return GLOBUS_SUCCESS;
@@ -645,9 +783,13 @@ globus_gsi_proxy_handle_get_clock_skew_allowable(
     globus_gsi_proxy_handle_t           handle,
     int *                               skew)
 {
+    const char *                        _FUNCTION_NAME_ =
+        "globus_gsi_proxy_handle_get_clock_skew_allowable";
+
     if(handle == NULL)
     {
-        return GLOBUS_GSI_PROXY_ERROR(GLOBUS_GSI_PROXY_ERROR_NULL_HANDLE);
+        return GLOBUS_GSI_PROXY_ERROR_RESULT(
+            GLOBUS_GSI_PROXY_ERROR_NULL_HANDLE);
     }
     *skew = handle->clock_skew;
     return GLOBUS_SUCCESS;

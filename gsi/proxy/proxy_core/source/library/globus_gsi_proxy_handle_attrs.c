@@ -1,4 +1,4 @@
-q#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_gsi_proxy_handle_attrs.c
  *
@@ -39,17 +39,28 @@ globus_result_t
 globus_gsi_proxy_handle_attrs_init(
     globus_gsi_proxy_handle_attrs_t *   handle_attrs)
 {
+    const char *                        _FUNCTION_NAME_ =
+        "globus_gsi_proxy_handle_attrs_init";
+
     globus_gsi_proxy_handle_attrs_t     attrs;
 
-    if(handle_attrs != NULL)
+    if(handle_attrs == NULL)
     {
-        return
-        GLOBUS_GSI_PROXY_ERROR_RESULT(
+        return GLOBUS_GSI_PROXY_ERROR_RESULT(
+            GLOBUS_GSI_PROXY_ERROR_NULL_HANDLE_ATTRS);
+    }
+    if(*handle_attrs != NULL)
+    {
+        return GLOBUS_GSI_PROXY_ERROR_RESULT(
             GLOBUS_GSI_PROXY_ERROR_NON_NULL_HANDLE_ATTRS);
     }
 
-    *handle_attrs = (globus_gsi_proxy_handle_attrs_t)
-        globus_malloc(sizeof(globus_i_gsi_proxy_handle_attrs_t));
+    if((*handle_attrs = (globus_gsi_proxy_handle_attrs_t)
+       globus_malloc(sizeof(globus_i_gsi_proxy_handle_attrs_t))) == NULL)
+    {
+        return GLOBUS_GSI_PROXY_ERROR_RESULT(
+            GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE_ATTRS);
+    }
 
     attrs = *handle_attrs;
 
@@ -202,6 +213,8 @@ globus_gsi_proxy_handle_attrs_get_init_prime(
     int *                               prime)
 {
     *prime = handle_attrs->init_prime;
+
+    return GLOBUS_SUCCESS;
 };
 /* @} */
 
@@ -224,8 +237,32 @@ globus_gsi_proxy_handle_attrs_get_init_prime(
 globus_result_t
 globus_gsi_proxy_handle_attrs_copy(
     globus_gsi_proxy_handle_attrs_t     a,
-    globus_gsi_proxy_handle_attrs_t     b)
+    globus_gsi_proxy_handle_attrs_t *   b)
 {
+    globus_result_t                     result;
+
+    const char *                        _FUNCTION_NAME_ =
+        "globus_gsi_proxy_handle_attrs_copy";
+    
+    if(a == NULL)
+    {
+        return GLOBUS_GSI_PROXY_ERROR_RESULT(
+            GLOBUS_GSI_PROXY_ERROR_NULL_HANDLE_ATTRS);
+    }
+    if(b != NULL)
+    {
+        return GLOBUS_GSI_PROXY_ERROR_RESULT(
+            GLOBUS_GSI_PROXY_ERROR_NON_NULL_HANDLE_ATTRS);
+    }
+
+    if((result = globus_gsi_proxy_handle_attrs_init(b)) != GLOBUS_SUCCESS)
+    {
+        return result;
+    }
+
+    (*b)->key_bits = a->key_bits;
+    (*b)->init_prime = a->init_prime;
+
     return GLOBUS_SUCCESS;
 }
 /* globus_gsi_proxy_handle_attrs_copy() */

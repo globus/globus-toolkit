@@ -48,6 +48,9 @@ EXTERN_C_BEGIN
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 #include "globus_gsi_credential.h"
+#include <globus_error_generic.h>
+#include "globus_error_openssl.h"
+#include <openssl/evp.h>
 #endif
 
 /**
@@ -94,7 +97,7 @@ globus_module_descriptor_t		globus_i_gsi_proxy_module;
  * @ingroup globus_gsi_proxy_handle
  *
  * An GSI Proxy handle is used to associate state with a group of
- * operations. Handles can have
+ * operations. Handles can have immutable
  * @ref globus_gsi_proxy_handle_attrs_t "attributes"
  * associated with them. All proxy @link
  * globus_gsi_proxy_operations operations @endlink take a handle pointer
@@ -104,20 +107,39 @@ globus_module_descriptor_t		globus_i_gsi_proxy_module;
  * globus_gsi_proxy_handle_destroy(), globus_gsi_proxy_handle_attrs_t
  */
 
-typedef struct globus_l_gsi_proxy_handle_s * globus_gsi_proxy_handle_t;
+typedef struct globus_l_gsi_proxy_handle_s * 
+                                        globus_gsi_proxy_handle_t;
 
 /**
  * Handle Attributes.
  * @ingroup globus_gsi_proxy_handle_attrs
- *
- * Handle attributes are currently not used, but are provided for
- * extensibility.
+ * 
+ * A GSI Proxy handle attributes type is used to associate immutable
+ * parameter values with a @ref globus_gsi_proxy_handle_t handle.
+ * A handle attributes object should be created with immutable parameters
+ * and then passed to the proxy handle init 
+ * function @ref globus_gsi_proxy_handle_init().
  *
  * @see globus_gsi_proxy_handle_t, @ref globus_gsi_proxy_handle_attrs
  */
 
 typedef struct 
 globus_l_gsi_proxy_handle_attrs_s *     globus_gsi_proxy_handle_attrs_t;
+
+/**
+ * Globus Proxy Type Enum
+ * @ingroup globus_gsi_proxy
+ *
+ * SLANG: This enum needs documentation
+ */
+typedef enum
+{
+    GLOBUS_ERROR_PROXY = -1,
+    GLOBUS_NOT_PROXY = 0,
+    GLOBUS_FULL_PROXY = 1,
+    GLOBUS_LIMITED_PROXY = 2,
+    GLOBUS_RESTRICTED_PROXY = 3
+} globus_proxy_type_t;
 
 /**
  * @defgroup globus_gsi_proxy_handle Handle Management
@@ -134,33 +156,6 @@ globus_l_gsi_proxy_handle_attrs_s *     globus_gsi_proxy_handle_attrs_t;
 
 #ifndef DOXYGEN
 
-#include <globus_error_generic.h>
-#include "globus_error_openssl.h"
-
-#define GLOBUS_GSI_PROXY_ERROR_CONSTRUCT(_ERRORTYPE_) \
-    globus_error_construct_error(
-        GLOBUS_GSI_PROXY_MODULE, \
-        NULL, \
-        _ERRORTYPE_, \
-        (__FILE__":"__LINE__), \
-        globus_l_gsi_proxy_error_strings[_ERRORTYPE_])
-
-#define GLOBUS_GSI_PROXY_ERROR_RESULT(_ERRORTYPE_) \
-    globus_error_put(GLOBUS_GSI_PROXY_ERROR_CONSTRUCT(_ERRORTYPE_))
-
-#define OPENSSL_ERROR_STRING_CONSTRUCT \
-    ("GSI Proxy Error: "__FILE__":"__LINE__)
-
-#define GLOBUS_GSI_PROXY_OPENSSL_ERROR_CONSTRUCT(_ERRORTYPE_) \
-    globus_error_wrap_openssl_error( \
-        GLOBUS_GSI_PROXY_MODULE, \
-        OPENSSL_ERROR_STRING_CONSTRUCT, \
-        _ERRORTYPE_, \
-        globus_l_gsi_proxy_error_strings[_ERRORTYPE_])
-
-#define GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(_ERRORTYPE_) \
-    globus_error_put(GLOBUS_GSI_PROXY_OPENSSL_ERROR_CONSTRUCT(_ERRORTYPE_))
-
 globus_result_t
 globus_gsi_proxy_handle_init(
     globus_gsi_proxy_handle_t *         handle,
@@ -169,6 +164,11 @@ globus_gsi_proxy_handle_init(
 globus_result_t
 globus_gsi_proxy_handle_destroy(
     globus_gsi_proxy_handle_t           handle);
+
+globus_result_t
+globus_gsi_proxy_handle_copy(
+    globus_gsi_proxy_handle_t           a,
+    globus_gsi_proxy_handle_t *         b);
 
 globus_result_t
 globus_gsi_proxy_handle_set_policy(
@@ -193,6 +193,7 @@ globus_result_t
 globus_gsi_proxy_handle_get_group(
     globus_gsi_proxy_handle_t           handle,
     unsigned char **                    group,
+    long *                              group_length,
     int *                               attached);
 
 globus_result_t
@@ -268,7 +269,7 @@ globus_gsi_proxy_handle_attrs_destroy(
 globus_result_t
 globus_gsi_proxy_handle_attrs_copy(
     globus_gsi_proxy_handle_attrs_t     a,
-    globus_gsi_proxy_handle_attrs_t     b);
+    globus_gsi_proxy_handle_attrs_t *   b);
 
 #endif
 

@@ -2,6 +2,7 @@
 /**
  * @file globus_i_gsi_proxy.h
  * Globus GSI Proxy Library
+ * @author Sam Meder, Sam Lang
  *
  * $RCSfile$
  * $Revision$
@@ -26,9 +27,36 @@
 
 EXTERN_C_BEGIN
 
+#define GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(_ERRORTYPE_) \
+    globus_i_gsi_proxy_openssl_error_result( \
+        _ERRORTYPE_, \
+        __FILE__, \
+        _FUNCTION_NAME_, \
+        __LINE__, \
+        NULL)
+
+#define GLOBUS_GSI_PROXY_ERROR_RESULT(_ERRORTYPE_) \
+    globus_i_gsi_proxy_error_result( \
+        _ERRORTYPE_, \
+        __FILE__, \
+        _FUNCTION_NAME_, \
+        __LINE__, \
+        NULL)
+
+#define GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(_TOP_RESULT_, _ERRORTYPE_) \
+    globus_i_gsi_proxy_error_chain_result( \
+        _TOP_RESULT_, \
+        _ERRORTYPE_, \
+        __FILE__, \
+        _FUNCTION_NAME_, \
+        __LINE__, \
+        NULL)
+
+#include "globus_gsi_proxy_constants.h"
+extern char * globus_l_gsi_proxy_error_strings[GLOBUS_GSI_PROXY_ERROR_LAST];
 /**
  * Handle attributes.
- * @ingroup globus_gsi_proxy_handle_attrs
+ * @ingroup globus_gsi_credential_handle_attrs
  */
 
 /**
@@ -62,7 +90,7 @@ typedef struct globus_l_gsi_proxy_handle_attrs_s
  * This structure contains all of the state associated with a proxy
  * handle.
  *
- * @see globus_proxy_handle_handle_init(), globus_ftp_proxy_handle_destroy()
+ * @see globus_proxy_handle_init(), globus_proxy_handle_destroy()
  */
 
 typedef struct globus_l_gsi_proxy_handle_s
@@ -116,6 +144,63 @@ globus_i_gsi_proxy_set_subject(
     X509 *                              new_pc, 
     X509 *                              issuer_cert,
     char *                              common_name);
+
+globus_result_t
+globus_i_gsi_proxy_openssl_error_result(
+    int                                 error_type,
+    const char *                        filename,
+    const char *                        function_name,
+    int                                 line_number,
+    const char *                        format,
+    ...);
+
+globus_object_t *
+globus_i_gsi_proxy_openssl_error_construct(
+    int                                 error_type,
+    const char *                        filename,
+    const char *                        function_name,
+    int                                 line_number,
+    const char *                        format,
+    va_list                             ap);
+
+globus_result_t
+globus_i_gsi_proxy_error_result(
+    int                                 error_type,
+    const char *                        filename,
+    const char *                        function_name,
+    int                                 line_number,
+    const char *                        format,
+    ...);
+
+globus_object_t *
+globus_i_gsi_proxy_error_construct(
+    int                                 error_type,
+    const char *                        filename,
+    const char *                        function_name,
+    int                                 line_number,
+    const char *                        format,
+    va_list                             ap);
+
+globus_result_t
+globus_i_gsi_proxy_error_chain_result(
+    globus_result_t                     chain_result,
+    int                                 error_type,
+    const char *                        filename,
+    const char *                        function_name,
+    int                                 line_number,
+    const char *                        format,
+    ...);
+
+globus_object_t *
+globus_i_gsi_proxy_error_chain_construct(
+    globus_result_t                     chain_result,
+    int                                 error_type,
+    const char *                        filename,
+    const char *                        function_name,
+    int                                 line_number,
+    const char *                        format,
+    va_list                             ap);
+
 
 EXTERN_C_END
 
