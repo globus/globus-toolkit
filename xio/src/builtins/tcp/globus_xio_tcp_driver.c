@@ -1919,7 +1919,7 @@ globus_l_xio_tcp_write(
     GlobusXIOName(globus_l_xio_tcp_write);
 
     handle = (globus_l_handle_t *) driver_handle;
-    attr = (globus_l_attr_t *) GlobusXIOOperationGetDataDescriptor(op);
+    GlobusXIOOperationGetDataDescriptor(attr, op, GLOBUS_FALSE);
     
     if(GlobusXIOOperationGetWaitFor(op) == 0)
     {

@@ -129,9 +129,9 @@ do                                                                          \
 {                                                                           \
     if((_in_op)->entry[(_in_op)->ndx - 1].dd != NULL)                       \
     {                                                                       \
-        _out_dd = (_in_op)->entry[(_in_op)->ndx - 1].dd;                    \
+        (void *) _out_dd = (_in_op)->entry[(_in_op)->ndx - 1].dd;           \
     }                                                                       \
-    else if((_in_op)->user_dd != NULL || _force_create)                     \
+    else if((_in_op)->user_dd || _force_create)                             \
     {                                                                       \
         globus_i_xio_driver_t *                     _dd_driver;             \
         globus_result_t                             _res;                   \
@@ -139,7 +139,7 @@ do                                                                          \
         _dd_driver =                                                        \
             (_in_op)->_op_context->entry[(_in_op)->ndx - 1].driver;         \
                                                                             \
-        _res = _dd_driver->attr_init_func(&(_out_dd));                      \
+        _res = _dd_driver->attr_init_func((void **)&(_out_dd));             \
         if(_res != GLOBUS_SUCCESS)                                          \
         {                                                                   \
             _out_dd = NULL;                                                 \

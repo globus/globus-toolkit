@@ -1212,16 +1212,8 @@ globus_l_xio_udp_read(
     addr = GLOBUS_NULL;
     if(!handle->connected)
     {
-        attr = (globus_l_attr_t *) GlobusXIOOperationGetDataDescriptor(op);
-    
-        /* XXXX temporary */
-        if(!attr)
-        {
-            globus_l_xio_udp_attr_init(&attr);
-            GlobusXIOOperationSetDataDescriptor(op, attr);
-        }
-    
-        if(attr && attr->use_addr)
+        GlobusXIOOperationGetDataDescriptor(attr, op, GLOBUS_FALSE);
+        if(attr)
         {
             addr = &attr->addr;
             attr->use_addr = GLOBUS_TRUE;
@@ -1303,7 +1295,7 @@ globus_l_xio_udp_write(
     addr = GLOBUS_NULL;
     if(!handle->connected)
     {
-        attr = (globus_l_attr_t *) GlobusXIOOperationGetDataDescriptor(op);
+        GlobusXIOOperationGetDataDescriptor(attr, op, GLOBUS_FALSE);
         if(attr && attr->use_addr)
         {
             addr = &attr->addr;
