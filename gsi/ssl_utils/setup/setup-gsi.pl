@@ -37,6 +37,7 @@ if(defined($opt_help))
 }
 
 my $setupdir = "$globusdir/setup/globus/";
+my $trusted_certs_dir = undef;
 
 my $target_dir = "";
 
@@ -51,23 +52,16 @@ if(defined($opt_nonroot))
 	$target_dir = "$opt_nonroot";
     }
 
+    $trusted_certs_dir = $globusdir . "/share/certificates/";    
 }
 else
 {
-   $target_dir = "/etc/grid-security";
+   $target_dir = "/etc/grid-security/";
+   $trusted_certs_dir = $target_dir . "/certificates/";
 }
     
 $ENV{GRID_SECURITY_DIR} = "$target_dir";
-
-my $trusted_certs_dir;
-if($target_dir eq "/etc/grid-security/") 
-{
-    $trusted_certs_dir = $target_dir . "/certificates";
-} 
-else 
-{
-    $trusted_certs_dir = $globusdir . "/share/certificates";
-}
+$ENV{TRUSTED_CA_DIR}    = "$trusted_certs_dir";
 
 my $myname = "setup-gsi";
 
@@ -91,6 +85,7 @@ else
   print "Making $target_dir...\n";
 
   $result = system("mkdir $target_dir");
+  $result += system("mkdir $trusted_certs_dir");
 
   if ($result != 0) 
   {
