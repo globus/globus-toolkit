@@ -422,7 +422,7 @@ CA setup complete.
 The following commands will now be run to setup the security
 configuration files for this CA:
 
-\$GLOBUS_LOCATION/sbin/globus-build -install-only \\
+\$GPT_LOCATION/sbin/globus-build -install-only \\
 ${GRID_CA_DIR}/${CA_UTILS_PACKAGE}
 
 \$GLOBUS_LOCATION/setup/globus-postinstall.sh
@@ -444,7 +444,11 @@ install_security_config() {
 
     cd ${current_dir}
 
-    ${GLOBUS_LOCATION}/sbin/globus-build -install-only \
+    if test -z "${GPT_LOCATION}"; then
+        GPT_LOCATION=${GLOBUS_LOCATION}
+    fi
+
+    ${GPT_LOCATION}/sbin/globus-build -install-only \
     ${GRID_CA_DIR}/${CA_UTILS_PACKAGE}
 
     ${GLOBUS_LOCATION}/setup/globus-postinstall.sh
