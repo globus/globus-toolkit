@@ -10,6 +10,8 @@ static globus_mutex_t                       globus_l_mutex;
 static globus_cond_t                        globus_l_cond;
 static globus_bool_t                        globus_l_done = GLOBUS_FALSE;
 
+static void *                               globus_l_data_handle = 0x50;
+
 void
 test_res(
     globus_result_t                         res,
@@ -46,16 +48,33 @@ globus_l_done_cb(
 }
 
 void
+data_func(
+    globus_gridftp_server_control_operation_t       op,
+    void *                                          data_handle,
+    const char *                                    local_target,
+    const char *                                    mod_name,
+    const char *                                    mod_parms)
+{
+    globus_gridftp_server_control_finished_data(op, GLOBUS_SUCCESS);
+}
+
+void
 port_connect(
     globus_gridftp_server_control_operation_t       op,
     globus_gridftp_server_control_network_protocol_t net_prt,
     const char **                                   cs,
     int                                             cs_count)
 {
-    globus_gridftp_server_control_finished_active_connect(
+    globus_result_t                                 res;
+
+    fprintf(stderr, "port_connect() : start\n");
+    res = globus_gridftp_server_control_finished_active_connect(
         op,
-        NULL,
-        GLOBUS_SUCCESS);
+        globus_l_data_handle,
+        GLOBUS_SUCCESS,
+        GLOBUS_GRIDFTP_SERVER_CONTROL_DATA_DIR_BI);
+
+    test_res(res, __LINE__);
 }
 
 void
@@ -64,14 +83,28 @@ passive_connect(
     globus_gridftp_server_control_network_protocol_t net_prt,
     int                                             max)
 {
+    globus_result_t                                 res;
     char *                                          cs[] = 
         {"127.0.0.1:8888", NULL};
-    globus_gridftp_server_control_passive_connect(
+
+    fprintf(stderr, "passive_connect() : start\n");
+    res = globus_gridftp_server_control_finished_passive_connect(
         op,
-        NULL,
+        globus_l_data_handle,
         GLOBUS_SUCCESS,
+        GLOBUS_GRIDFTP_SERVER_CONTROL_DATA_DIR_BI,
         (const char **) cs,
         1);
+    test_res(res, __LINE__);
+}
+
+void
+data_destroy(
+    void *                                          data_handle)
+{
+    globus_assert(globus_l_data_handle == data_handle);
+
+    fprintf(stderr, "data_destroy() : start\n");
 }
 
 void
@@ -111,14 +144,14 @@ resource_func(
     {
         gs_stat_buf = (globus_gridftp_server_control_stat_t *)
             globus_malloc(sizeof(globus_gridftp_server_control_stat_t));
-        gs_stat_buf->st_mode = stat_buf.st_mode;
-        gs_stat_buf->st_uid = stat_buf.st_uid;
-        gs_stat_buf->st_gid = stat_buf.st_gid;
+        gs_stat_buf->mode = stat_buf.st_mode;
+        gs_stat_buf->uid = stat_buf.st_uid;
+        gs_stat_buf->gid = stat_buf.st_gid;
         gs_stat_buf->atime = stat_buf.st_atime;
         gs_stat_buf->mtime = stat_buf.st_mtime;
         gs_stat_buf->ctime = stat_buf.st_ctime;
-        gs_stat_buf->st_size = stat_buf.st_size;
-        gs_stat_buf->st_nlink = stat_buf.st_nlink;
+        gs_stat_buf->size = stat_buf.st_size;
+        gs_stat_buf->nlink = stat_buf.st_nlink;
 
         globus_gridftp_server_control_finished_resource(
             op, GLOBUS_SUCCESS, gs_stat_buf, 1);
@@ -203,12 +236,14 @@ main(
     res = globus_gridftp_server_control_attr_set_done(ftp_attr, globus_l_done_cb);
     test_res(res, __LINE__);
 
-    res = globus_gridftp_server_control_attr_set_passive(
-        ftp_attr, passive_connect);
+    res = globus_gridftp_server_control_attr_add_recv(ftp_attr, "A", data_func);
     test_res(res, __LINE__);
 
-    res = globus_gridftp_server_control_attr_set_active(
-        ftp_attr, port_connect);
+    res = globus_gridftp_server_control_attr_add_send(ftp_attr, "A", data_func);
+    test_res(res, __LINE__);
+
+    res = globus_gridftp_server_control_attr_data_functions(
+        ftp_attr, port_connect, passive_connect, data_destroy);
     test_res(res, __LINE__);
 
     globus_mutex_lock(&globus_l_mutex);

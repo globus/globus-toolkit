@@ -77,11 +77,17 @@ typedef void
  *
  *  event infor will come in here too.  not sure how yet
  */
-typedef globus_result_t
+typedef void
 (*globus_gridftp_server_control_data_callback_t)(
     globus_gridftp_server_control_t                 server,
     globus_result_t                                 res,
-    globus_bool_t                                   complete,
+    void *                                          user_arg);
+
+typedef void
+(*globus_gridftp_server_control_event_callback_t)(
+    globus_gridftp_server_control_t                 server,
+    unsigned int                                    code,
+    const char *                                    msg,
     void *                                          user_arg);
 
 /*
@@ -135,20 +141,20 @@ globus_result_t
 globus_gridftp_server_control_pmod_send(
     globus_gridftp_server_control_t                 server,
     const char *                                    src_path,
-    const globus_addrinfo_t *                       dest_addr,
     const char *                                    mod_name,
     const char *                                    mod_parms,
     globus_gridftp_server_control_data_callback_t   data_cb,
+    globus_gridftp_server_control_event_callback_t  event_cb,
     void *                                          user_arg);
 
 globus_result_t
 globus_gridftp_server_control_pmod_receive(
     globus_gridftp_server_control_t                 server,
-    const globus_addrinfo_t *                       src_addr,
     const char *                                    dest_path,
     const char *                                    mod_name,
     const char *                                    mod_parms,
     globus_gridftp_server_control_data_callback_t   data_cb,
+    globus_gridftp_server_control_event_callback_t  event_cb,
     void *                                          user_arg);
 
 /*

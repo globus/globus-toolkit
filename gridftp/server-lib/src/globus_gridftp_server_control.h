@@ -1,5 +1,5 @@
-#if !defined GLOBUS_GRIDFTP_SERVER_H
-#define GLOBUS_GRIDFTP_SERVER_H
+#if !defined GLOBUS_GRIDFTP_SERVER_CONTROL_H
+#define GLOBUS_GRIDFTP_SERVER_CONTROL_H
 
 #include "globus_xio.h"
 #include "globus_common.h"
@@ -7,10 +7,10 @@
 
 /*
  *  types
- */
 struct globus_i_gsc_server_s;
 struct globus_i_gsc_attr_s;
 struct globus_i_gsc_op_s;
+ */
 
 typedef struct globus_i_gsc_server_s *      
     globus_gridftp_server_control_t;
@@ -23,21 +23,29 @@ typedef time_t                                      globus_time_t;
 
 typedef struct globus_gridftp_server_control_stat_s
 {
-    int                                             st_mode;
-    int                                             st_nlink;
-    uid_t                                           st_uid;
-    gid_t                                           st_gid;
-    globus_size_t                                   st_size;
-    globus_time_t                                   mtime;
+    int                                             mode;
+    int                                             nlink;
+    char                                            name[MAXPATHLEN];
+    uid_t                                           uid;
+    gid_t                                           gid;
+    globus_size_t                                   size;
     globus_time_t                                   atime;
     globus_time_t                                   ctime;
+    globus_time_t                                   mtime;
 } globus_gridftp_server_control_stat_t;
 
 typedef enum globus_gridftp_server_control_network_protocol_e
 {
-    GLOBUS_GRIDFTP_SERVER_CONTROL_PROTOCOL_IPV4,
+    GLOBUS_GRIDFTP_SERVER_CONTROL_PROTOCOL_IPV4 = 1,
     GLOBUS_GRIDFTP_SERVER_CONTROL_PROTOCOL_IPV6,
 } globus_gridftp_server_control_network_protocol_t;
+
+typedef enum globus_i_gsc_data_dir_e
+{
+    GLOBUS_GRIDFTP_SERVER_CONTROL_DATA_DIR_STOR = 0x01,
+    GLOBUS_GRIDFTP_SERVER_CONTROL_DATA_DIR_RETR = 0x02,
+    GLOBUS_GRIDFTP_SERVER_CONTROL_DATA_DIR_BI = 0x03,
+} globus_gridftp_server_control_data_dir_t;
 
 /*
  *  This funciton is called to tell the user a client is
@@ -109,7 +117,9 @@ typedef void
 (*globus_gridftp_server_control_data_func_t)(
     globus_gridftp_server_control_operation_t       op,
     void *                                          data_handle,
-    const char *                                    local_target);
+    const char *                                    local_target,
+    const char *                                    mod_name,
+    const char *                                    mod_parms);
 
 /**
  *  globus_gridftp_server_data_create_t
@@ -130,6 +140,18 @@ typedef void
     globus_gridftp_server_control_network_protocol_t net_prt,
     const char **                                   cs,
     int                                             cs_count);
+
+/**
+ *  globus_gridftp_server_data_destroy_t
+ *
+ *  The library notifies the user that it no longer needs the data connection
+ *  by calling this interface function.  Upon returning from this function
+ *  the data object is considered destroyed.
+ */
+typedef void
+(*globus_gridftp_server_control_data_destroy_t)(
+    void *                                          user_data_handle);
+
 /*
  *  globus_gridftp_server_control_finished_resource()
  *
@@ -195,14 +217,11 @@ globus_gridftp_server_attr_add_send(
     globus_gridftp_server_control_data_func_t       send_func);
 
 globus_result_t
-globus_gridftp_server_control_attr_set_passive(
+globus_gridftp_server_control_attr_data_functions(
     globus_gridftp_server_control_attr_t            server_attr,
-    globus_gridftp_server_control_passive_connect_t passive_func);
-
-globus_result_t
-globus_gridftp_server_control_attr_set_active(
-    globus_gridftp_server_control_attr_t            server_attr,
-    globus_gridftp_server_control_active_connect_t  active_func);
+    globus_gridftp_server_control_active_connect_t  active_func,
+    globus_gridftp_server_control_passive_connect_t passive_func,
+    globus_gridftp_server_control_data_destroy_t    destroy_func);
 
 /***************************************************************************
  *                      start up
@@ -370,26 +389,17 @@ globus_result_t
 globus_gridftp_server_control_finished_active_connect(
     globus_gridftp_server_control_operation_t       op,
     void *                                          user_data_handle,
-    globus_result_t                                 res);
+    globus_result_t                                 res,
+    globus_gridftp_server_control_data_dir_t        data_dir);
 
 globus_result_t
-globus_gridftp_server_control_passive_connect(
+globus_gridftp_server_control_finished_passive_connect(
     globus_gridftp_server_control_operation_t       op,
     void *                                          user_data_handle,
     globus_result_t                                 res,
+    globus_gridftp_server_control_data_dir_t        data_dir,
     const char **                                   cs,
     int                                             cs_count);
-/**
- *  globus_gridftp_server_data_destroy_t
- *
- *  The library notifies the user that it no longer needs the data connection
- *  by calling this interface function.  Upon returning from this function
- *  the data object is considered destroyed.
- */
-globus_result_t
-(*globus_gridftp_server_control_data_destroy_t)(
-    void *                                          user_data_handle);
-
 /**
  *  globus_gridftp_server_data_disconnected
  *
@@ -407,8 +417,8 @@ globus_gridftp_server_control_disconnected(
  *  failure the user must call this function to notify the user of
  *  completion.
  */
-void
-globus_gridftp_server_finished_data(
+globus_result_t
+globus_gridftp_server_control_finished_data(
     globus_gridftp_server_control_operation_t       op,
     globus_result_t                                 res);
 

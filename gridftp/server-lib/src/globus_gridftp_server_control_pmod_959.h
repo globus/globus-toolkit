@@ -20,6 +20,11 @@ typedef struct globus_l_gsc_959_read_ent_s * globus_gsc_pmod_959_op_t;
 globus_result_t
 globus_l_gsc_959_init();
 
+globus_result_t
+globus_gsc_pmod_959_intermediate_reply(
+    globus_gsc_pmod_959_op_t                op,
+    char *                                  reply_msg);
+
 void
 globus_gsc_pmod_959_finished_op(
     globus_gsc_pmod_959_op_t                op,

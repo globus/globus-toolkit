@@ -1,5 +1,5 @@
-#if !defined(GLOBUS_I_GRIDFTP_SERVER_H)
-#define GLOBUS_I_GRIDFTP_SERVER_H 1
+#if !defined(GLOBUS_I_GRIDFTP_SERVER_CONTROL_H)
+#define GLOBUS_I_GRIDFTP_SERVER_CONTROL_H 1
 
 #ifdef __GNUC__
 #define GlobusGridFTPServerName(func) static const char * _gridftp_server_name __attribute__((__unused__)) = #func
@@ -154,6 +154,19 @@ typedef enum globus_gridftp_server_error_type_e
     GLOBUS_GRIDFTP_SERVER_CONTROL_MALFORMED_COMMAND,
 } globus_gridftp_server_error_type_t;
 
+typedef enum globus_i_gsc_conn_dir_e
+{
+    GLOBUS_I_GSC_CONN_DIR_PASV,
+    GLOBUS_I_GSC_CONN_DIR_PORT,
+} globus_i_gsc_conn_dir_t;
+
+typedef struct globus_i_gsc_data_s
+{
+    void *                                          user_handle;
+    globus_gridftp_server_control_data_dir_t        data_dir;
+    globus_i_gsc_conn_dir_t                         conn_dir;
+} globus_i_gsc_data_t;
+
 typedef struct globus_i_gsc_server_s
 {
     int                                             version_ctl;
@@ -202,9 +215,11 @@ typedef struct globus_i_gsc_server_s
     int                                             ref;
     globus_i_gs_state_t                             state;
 
+    globus_i_gsc_data_t *                           data_object;
     globus_fifo_t                                   data_q;
     globus_gridftp_server_control_passive_connect_t passive_func;
     globus_gridftp_server_control_active_connect_t  active_func;
+    globus_gridftp_server_control_data_destroy_t    data_destroy_func;
 
     globus_gridftp_server_control_callback_t        user_stop_func;
     globus_gridftp_server_control_resource_callback_t resource_func;
@@ -218,6 +233,7 @@ typedef enum globus_i_gsc_op_type_e
     GLOBUS_L_GSC_OP_TYPE_CREATE_PASV,
     GLOBUS_L_GSC_OP_TYPE_CREATE_PORT,
     GLOBUS_L_GSC_OP_TYPE_DESTROY,
+    GLOBUS_L_GSC_OP_TYPE_DATA,
 } globus_i_gsc_op_type_t;
 
 typedef struct globus_i_gsc_op_s
@@ -227,6 +243,7 @@ typedef struct globus_i_gsc_op_s
     globus_i_gsc_server_t *                         server;
     globus_result_t                                 res;
 
+    /* stuff for auth */
     char *                                          username;
     char *                                          password;
     gss_cred_id_t                                   cred;
@@ -234,14 +251,23 @@ typedef struct globus_i_gsc_op_s
     globus_gridftp_server_control_pmod_auth_callback_t auth_cb;
     globus_gridftp_server_control_pmod_stat_callback_t stat_cb;
 
+    /* stuff for resource */
     char *                                          path;
     globus_gridftp_server_control_resource_mask_t   mask;
 
+    /* stuff for port/pasv */
     char **                                         cs;
     int                                             max_cs;
     int                                             net_prt;
     globus_gridftp_server_control_pmod_passive_callback_t passive_cb;
     globus_gridftp_server_control_pmod_port_callback_t  port_cb;
+
+    /* stuff for transfer */
+    char *                                          mod_name;
+    char *                                          mod_parms;
+    globus_gridftp_server_control_data_func_t       user_data_cb;
+    globus_gridftp_server_control_data_callback_t   data_cb;
+    globus_gridftp_server_control_event_callback_t  event_cb;
 
     void *                                          user_arg;
 } globus_i_gsc_op_t;
@@ -261,6 +287,7 @@ typedef struct globus_i_gsc_attr_s
     globus_gridftp_server_control_auth_callback_t   auth_func;
     globus_gridftp_server_control_passive_connect_t passive_func;
     globus_gridftp_server_control_active_connect_t  active_func;
+    globus_gridftp_server_control_data_destroy_t    data_destroy_func;
 } globus_i_gsc_attr_t;
 
 

@@ -839,15 +839,44 @@ globus_l_gsc_959_stop(
     return GLOBUS_SUCCESS;
 }
 
+globus_result_t
+globus_gsc_pmod_959_intermediate_reply(
+    globus_gsc_pmod_959_op_t                        op,
+    char *                                          reply_msg)
+{
+    globus_l_gsc_959_read_ent_t *                   read_ent;
+    globus_l_gsc_959_handle_t *                     handle;
+    globus_result_t                                 res;
+
+    read_ent = (globus_l_gsc_959_read_ent_t *) op;
+    handle = read_ent->handle;
+
+    globus_mutex_lock(&handle->mutex);
+    {
+        handle->ref++;
+        res = globus_l_gsc_959_reply(
+                    handle,
+                    reply_msg);
+        if(res != GLOBUS_SUCCESS)
+        {
+            handle->ref--;
+            globus_l_gsc_959_panic(handle, res);
+        }
+    }
+    globus_mutex_unlock(&handle->mutex);
+
+    return res;
+}
+
 void
 globus_gsc_pmod_959_finished_op(
-    globus_gsc_pmod_959_op_t                op,
-    char *                                  reply_msg)
+    globus_gsc_pmod_959_op_t                        op,
+    char *                                          reply_msg)
 {
-    globus_l_gsc_959_read_ent_t *           read_ent;
-    globus_l_gsc_959_handle_t *             handle;
-    globus_result_t                         res;
-    globus_bool_t                           stopping = GLOBUS_FALSE;
+    globus_l_gsc_959_read_ent_t *                   read_ent;
+    globus_l_gsc_959_handle_t *                     handle;
+    globus_result_t                                 res;
+    globus_bool_t                                   stopping = GLOBUS_FALSE;
     GlobusGridFTPServerName(globus_gsc_pmod_959_finished_op);
 
     read_ent = (globus_l_gsc_959_read_ent_t *) op;
@@ -1010,16 +1039,16 @@ globus_gsc_pmod_959_finished_op(
  */
 static void 
 globus_l_gsc_959_reply_cb(
-    globus_xio_handle_t                     xio_handle,
-    globus_result_t                         result,
-    globus_byte_t *                         buffer,
-    globus_size_t                           length,
-    globus_size_t                           nbytes,
-    globus_xio_data_descriptor_t            data_desc,
-    void *                                  user_arg)
+    globus_xio_handle_t                             xio_handle,
+    globus_result_t                                 result,
+    globus_byte_t *                                 buffer,
+    globus_size_t                                   length,
+    globus_size_t                                   nbytes,
+    globus_xio_data_descriptor_t                    data_desc,
+    void *                                          user_arg)
 {
-    globus_result_t                         res;
-    globus_l_gsc_959_handle_t *             handle;
+    globus_result_t                                 res;
+    globus_l_gsc_959_handle_t *                     handle;
     GlobusGridFTPServerName(globus_l_gsc_959_reply_cb);
 
     globus_free(buffer);
@@ -1100,11 +1129,11 @@ globus_l_gsc_959_reply_cb(
 
 static globus_result_t
 globus_l_gsc_959_reply(
-    globus_l_gsc_959_handle_t *             handle,
-    const char *                            message)
+    globus_l_gsc_959_handle_t *                     handle,
+    const char *                                    message)
 {
-    globus_result_t                         res;
-    char *                                  tmp_ptr;
+    globus_result_t                                 res;
+    char *                                          tmp_ptr;
     GlobusGridFTPServerName(globus_l_gsc_959_reply);
 
     globus_mutex_lock(&handle->mutex);
@@ -1137,16 +1166,16 @@ globus_l_gsc_959_reply(
 
 globus_result_t
 globus_gsc_pmod_959_command_add(
-    globus_gsc_pmod_959_handle_t            handle,
-    const char *                            command_name,
-    globus_gsc_pmod_959_command_func_t      command_func,
-    globus_gsc_959_command_desc_t           desc,
-    const char *                            help,
-    void *                                  user_arg)
+    globus_gsc_pmod_959_handle_t                    handle,
+    const char *                                    command_name,
+    globus_gsc_pmod_959_command_func_t              command_func,
+    globus_gsc_959_command_desc_t                   desc,
+    const char *                                    help,
+    void *                                          user_arg)
 {
-    globus_list_t *                         list;
-    globus_result_t                         res;
-    globus_l_gsc_959_cmd_ent_t *            cmd_ent;
+    globus_list_t *                                 list;
+    globus_result_t                                 res;
+    globus_l_gsc_959_cmd_ent_t *                    cmd_ent;
     GlobusGridFTPServerName(globus_gsc_pmod_959_command_add);
 
     if(handle == NULL)

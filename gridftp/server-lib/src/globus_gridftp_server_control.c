@@ -77,13 +77,19 @@ char *
 globus_i_gsc_concat_path(
     globus_i_gsc_server_t *                         i_server,
     const char *                                    in_path);
+
+globus_bool_t
+globus_i_gridftp_server_control_cs_verify(
+    const char *                                    cs,
+    globus_gridftp_server_control_network_protocol_t net_prt);
+
 /**************************************************************************
  *                         global data members 
  *
  *************************************************************************/
 globus_module_descriptor_t      globus_i_gridftp_server_control_module =
 {
-    "globus_gridftp_server",
+    "globus_gridftp_server_control",
     globus_l_gsc_activate,
     globus_l_gsc_deactivate,
     GLOBUS_NULL,
@@ -254,6 +260,7 @@ globus_gridftp_server_control_start(
         i_server->done_func = i_attr->done_func;
         i_server->passive_func = i_attr->passive_func;
         i_server->active_func = i_attr->active_func;
+        i_server->data_destroy_func = i_attr->data_destroy_func;
 
         globus_fifo_init(&i_server->data_q);
 
@@ -359,16 +366,18 @@ globus_gridftp_server_control_stop(
  */
 static void
 globus_l_gsc_user_op_kickout(
-    void *                                  user_arg)
+    void *                                          user_arg)
 {
-    globus_i_gsc_op_t *                      i_op;
+    globus_i_gsc_server_t *                         i_server;
+    globus_i_gsc_op_t *                             i_op;
 
     i_op = (globus_i_gsc_op_t *) user_arg;
+    i_server = i_op->server;
 
     switch(i_op->type)
     {
         case GLOBUS_L_GSC_OP_TYPE_AUTH:
-            i_op->server->auth_cb(
+            i_server->auth_cb(
                 i_op,
                 i_op->username,
                 i_op->password,
@@ -377,25 +386,54 @@ globus_l_gsc_user_op_kickout(
             break;
 
         case GLOBUS_L_GSC_OP_TYPE_RESOURCE:
-            i_op->server->resource_func(
+            i_server->resource_func(
                 i_op,
                 i_op->path,
                 i_op->mask);
             break;
 
         case GLOBUS_L_GSC_OP_TYPE_CREATE_PASV:
-            i_op->server->passive_func(
+            /*
+             *  all of this should be safe outside of lock
+             */
+            /* the data channel is not cacheable so destroy it */
+            if(i_server->data_object != NULL)
+            {
+                i_server->data_destroy_func(
+                    i_server->data_object->user_handle);
+                globus_free(i_server->data_object);
+                i_server->data_object = NULL;
+            }
+            /* call the user passive func */
+            i_server->passive_func(
                 i_op,
                 i_op->net_prt,
                 i_op->max_cs);
             break;
 
         case GLOBUS_L_GSC_OP_TYPE_CREATE_PORT:
+            if(i_server->data_object != NULL)
+            {
+                i_server->data_destroy_func(
+                    i_server->data_object->user_handle);
+                globus_free(i_server->data_object);
+                i_server->data_object = NULL;
+            }
             i_op->server->active_func(
                 i_op,
                 i_op->net_prt,
                 (const char **)i_op->cs,
                 i_op->max_cs);
+            break;
+
+        case GLOBUS_L_GSC_OP_TYPE_DATA:
+            globus_assert(i_server->data_object != NULL);
+            i_op->user_data_cb(
+                i_op,
+                i_server->data_object->user_handle,
+                i_op->path,
+                i_op->mod_name,
+                i_op->mod_parms);
             break;
 
         default:
@@ -1088,13 +1126,189 @@ globus_l_gsc_op_destroy(
     globus_free(i_op);
 }
 
+/*
+ *  data transfer
+ */
+globus_result_t
+globus_gridftp_server_control_finished_data(
+    globus_gridftp_server_control_operation_t       op,
+    globus_result_t                                 res)
+{
+    globus_i_gsc_op_t *                             i_op;
+    GlobusGridFTPServerName(globus_gridftp_server_control_finished_data);
+    globus_i_gsc_server_t *                         i_server;
+
+    i_op = (globus_i_gsc_op_t *) op;
+    if(i_op == NULL)
+    {
+        return GlobusGridFTPServerErrorParameter("op");
+    }
+    if(i_op->type != GLOBUS_L_GSC_OP_TYPE_DATA)
+    {
+        return GlobusGridFTPServerErrorParameter("op");
+    }
+
+    i_server = i_op->server;
+
+    i_op->data_cb(
+        i_server,
+        res,
+        i_op->user_arg);
+
+    globus_l_gsc_op_destroy(i_op);
+    globus_mutex_lock(&i_server->mutex);
+    {
+        globus_l_gsc_callback_return(i_server);
+    }
+    globus_mutex_unlock(&i_server->mutex);
+
+    return GLOBUS_SUCCESS;
+}
+
+globus_result_t
+globus_l_gsc_pmod_data_transfer(
+    globus_i_gsc_server_t *                         i_server,
+    const char *                                    path,
+    const char *                                    module_name,
+    const char *                                    module_parms,
+    globus_gridftp_server_control_data_callback_t   data_cb,
+    globus_gridftp_server_control_event_callback_t  event_cb,
+    globus_gridftp_server_control_data_dir_t        dir,
+    void *                                          user_arg)
+{
+    globus_result_t                                 res;
+    globus_i_gsc_op_t *                             i_op;
+    GlobusGridFTPServerName(globus_l_gsc_pmod_data_transfer);
+
+    if(i_server == NULL)
+    {
+        return GlobusGridFTPServerErrorParameter("server");
+    }
+    if(path == NULL)
+    {
+        return GlobusGridFTPServerErrorParameter("path");
+    }
+    if(data_cb == NULL)
+    {
+        return GlobusGridFTPServerErrorParameter("data_cb");
+    }
+
+    i_op = (globus_i_gsc_op_t *) globus_malloc(sizeof(globus_i_gsc_op_t));
+    if(i_op == NULL)
+    {
+        return GlobusGridFTPServerErrorMemory("i_op");
+    }
+    memset(i_op, '\0', sizeof(globus_i_gsc_op_t));
+
+    i_op->server = i_server;
+    i_op->type = GLOBUS_L_GSC_OP_TYPE_DATA;
+    i_op->res = GLOBUS_SUCCESS;
+    i_op->user_arg = user_arg;
+    i_op->mod_name = globus_libc_strdup(module_name);
+    i_op->mod_parms = globus_libc_strdup(module_parms);
+    i_op->path = globus_libc_strdup(path);
+
+    i_op->data_cb = data_cb;
+    i_op->event_cb = event_cb;
+
+    globus_mutex_lock(&i_op->server->mutex);
+    {
+        if(!(i_server->data_object->data_dir & dir))
+        {
+            globus_mutex_unlock(&i_op->server->mutex);
+            globus_free(i_op);
+            return GlobusGridFTPServerErrorMemory("i_server");
+        }
+
+        if(dir == GLOBUS_GRIDFTP_SERVER_CONTROL_DATA_DIR_STOR)
+        {
+            i_op->user_data_cb = (globus_gridftp_server_control_data_func_t)
+                globus_hashtable_lookup(
+                    &i_server->recv_table, (void *)module_name);
+        }
+        else if(dir == GLOBUS_GRIDFTP_SERVER_CONTROL_DATA_DIR_RETR)
+        {
+            i_op->user_data_cb = (globus_gridftp_server_control_data_func_t)
+                globus_hashtable_lookup(
+                    &i_server->send_table, (void *) module_name);
+        }
+        else
+        {
+            globus_assert(GLOBUS_FALSE);
+        }
+        res = globus_l_gsc_perform_op(i_op);
+    }
+    globus_mutex_unlock(&i_op->server->mutex);
+    if(res != GLOBUS_SUCCESS)
+    {
+        globus_free(i_op);
+    }
+
+    return res;
+}
+
+globus_result_t
+globus_gridftp_server_control_pmod_send(
+    globus_gridftp_server_control_t                 server,
+    const char *                                    path,
+    const char *                                    module_name,
+    const char *                                    module_parms,
+    globus_gridftp_server_control_data_callback_t   data_cb,
+    globus_gridftp_server_control_event_callback_t  event_cb,
+    void *                                          user_arg)
+{
+    globus_result_t                                 res;
+
+    res = globus_l_gsc_pmod_data_transfer(
+        server,
+        path,
+        module_name,
+        module_parms,
+        data_cb,
+        event_cb,
+        GLOBUS_GRIDFTP_SERVER_CONTROL_DATA_DIR_RETR,
+        user_arg);
+
+    return res;
+}
+    
+globus_result_t
+globus_gridftp_server_control_pmod_receive(
+    globus_gridftp_server_control_t                 server,
+    const char *                                    path,
+    const char *                                    module_name,
+    const char *                                    module_parms,
+    globus_gridftp_server_control_data_callback_t   data_cb,
+    globus_gridftp_server_control_event_callback_t  event_cb,
+    void *                                          user_arg)
+{
+    globus_result_t                                 res;
+
+    res = globus_l_gsc_pmod_data_transfer(
+        server,
+        path,
+        module_name,
+        module_parms,
+        data_cb,
+        event_cb,
+        GLOBUS_GRIDFTP_SERVER_CONTROL_DATA_DIR_STOR,
+        user_arg);
+
+    return res;
+}
+
+/*
+ *  data connection setup
+ */
 globus_result_t
 globus_l_gridftp_server_control_connect(
     globus_i_gsc_op_t *                             i_op,
     void *                                          user_data_handle,
     globus_result_t                                 res,
+    globus_gridftp_server_control_data_dir_t        data_dir,
     const char **                                   cs,
-    int                                             cs_count)
+    int                                             cs_count,
+    globus_i_gsc_conn_dir_t                         conn_dir)
 {
     void *                                          tmp_ptr;
     globus_i_gsc_server_t *                         i_server;
@@ -1104,8 +1318,24 @@ globus_l_gridftp_server_control_connect(
     {
         return GlobusGridFTPServerErrorParameter("op");
     }
+    if(i_op->type != GLOBUS_L_GSC_OP_TYPE_CREATE_PASV &&
+        i_op->type != GLOBUS_L_GSC_OP_TYPE_CREATE_PORT)
+    {
+        return GlobusGridFTPServerErrorParameter("op");
+    }
 
+    /*
+     *  all of this should be ok outside of lock.  the user should never
+     *  get more than 1 valid connetion object at a time, and we can 
+     *  only get this far with a valid connection type.
+     */
     i_server = i_op->server;
+    globus_assert(i_server->data_object == NULL);
+    i_server->data_object = globus_malloc(sizeof(globus_i_gsc_data_t));
+    i_server->data_object->user_handle = user_data_handle;
+    i_server->data_object->data_dir = data_dir;
+    i_server->data_object->conn_dir = conn_dir;
+
     if(i_op->type == GLOBUS_L_GSC_OP_TYPE_CREATE_PASV)
     {
         i_op->passive_cb(
@@ -1125,9 +1355,8 @@ globus_l_gridftp_server_control_connect(
     }
     else
     {
-        return GlobusGridFTPServerErrorParameter("op");
+        globus_assert(GLOBUS_FALSE);
     }
-
 
     globus_mutex_lock(&i_server->mutex);
     {
@@ -1157,33 +1386,53 @@ globus_l_gridftp_server_control_connect(
 }
 
 globus_result_t
-globus_gridftp_server_control_passive_connect(
+globus_gridftp_server_control_finished_passive_connect(
     globus_gridftp_server_control_operation_t       op,
     void *                                          user_data_handle,
     globus_result_t                                 res,
+    globus_gridftp_server_control_data_dir_t        data_dir,
     const char **                                   cs,
     int                                             cs_count)
 {
+    int                                             ctr;
+    globus_i_gsc_op_t *                             i_op;
+    GlobusGridFTPServerName(globus_gridftp_server_control_passive_connect);
+
+    i_op = (globus_i_gsc_op_t *) op;
+
+    for(ctr = 0; ctr < cs_count; ctr++)
+    {
+        if(!globus_i_gridftp_server_control_cs_verify(cs[ctr], i_op->net_prt))
+        {
+            return GlobusGridFTPServerErrorParameter("cs");
+        }
+    }
+
     return globus_l_gridftp_server_control_connect(
         op,
         user_data_handle,
         res,
+        data_dir,
         cs,
-        cs_count);
+        cs_count,
+        GLOBUS_I_GSC_CONN_DIR_PASV);
 }
 
 globus_result_t
 globus_gridftp_server_control_finished_active_connect(
     globus_gridftp_server_control_operation_t       op,
     void *                                          user_data_handle,
-    globus_result_t                                 res)
+    globus_result_t                                 res,
+    globus_gridftp_server_control_data_dir_t        data_dir)
 {
     return globus_l_gridftp_server_control_connect(
         op,
         user_data_handle,
         res,
+        data_dir,
         NULL,
-        0);
+        0,
+        GLOBUS_I_GSC_CONN_DIR_PORT);
 }
 
 globus_result_t
@@ -1620,4 +1869,70 @@ globus_i_gsc_concat_path(
     }
 
     return tmp_path;
+}
+
+globus_bool_t
+globus_i_gridftp_server_control_cs_verify(
+    const char *                                    cs,
+    globus_gridftp_server_control_network_protocol_t net_prt)
+{
+    int                                             sc;
+    int                                             ctr;
+    unsigned int                                    ip[8];
+    unsigned int                                    port;
+    char *                                          host_str;
+
+    if(cs == NULL)
+    {
+        return GLOBUS_FALSE;
+    }
+
+    if(net_prt == GLOBUS_GRIDFTP_SERVER_CONTROL_PROTOCOL_IPV4)
+    {
+        sc = sscanf(cs, " %d.%d.%d.%d:%d",
+                &ip[0],
+                &ip[1],
+                &ip[2],
+                &ip[3],
+                &port);
+        if(sc != 5)
+        {
+            return GLOBUS_FALSE;
+        }
+        if(ip[0] > 255 ||
+           ip[1] > 255 ||
+           ip[2] > 255 ||
+           ip[3] > 255 ||
+           port > 65536)
+        {
+            return GLOBUS_FALSE;
+        }
+
+        return GLOBUS_TRUE;
+    }
+    else if(net_prt == GLOBUS_GRIDFTP_SERVER_CONTROL_PROTOCOL_IPV6)
+    {
+        host_str = globus_malloc(strlen(cs));
+        sc = sscanf(cs, " [ %s ]:%d", host_str, &port);
+        if(sc != 2)
+        {
+            globus_free(host_str);
+            return GLOBUS_FALSE;
+        }
+
+        /* verify that the string contains nothing but numbers and ':' */
+        for(ctr = 0; ctr < strlen(cs); ctr++)
+        {
+            if(cs[ctr] != ':' && !isdigit(cs[ctr]))
+            {
+                globus_free(host_str);
+                return GLOBUS_FALSE;
+            }
+        }
+
+        globus_free(host_str);
+        return GLOBUS_TRUE;
+    }
+
+    return GLOBUS_FALSE;
 }
