@@ -1,4 +1,4 @@
-<head><title>Globus Toolkit 3.2 Information Management Release Notes</title>
+<head><title>Globus Toolkit 3.2 Index Services Release Notes</title>
 <link href="../../../../CSS/style.css" rel="stylesheet" type="text/css">
 <style type="text/css">
 <!--
@@ -8,9 +8,10 @@
 </head>
 
 <?php include( "http://www-unix.globus.org/include/globus_header.inc" ); ?>
-<h1>GT3.2  Information Management (formerly MDS) Release Notes</h1>
-
-<p>This 3.2  release of the GT Information Management components contains bug
+<p class="small"><a href="http://www.globus.org">Globus</a> &gt; <a href="http://www-unix.globus.org/toolkit/">Toolkit</a> &gt; <a href="../index.html">Release
+    Notes</a> &gt; <a href="index.html">3.2</a> &gt; Index Service &lt;</p>
+<h1>Globus Toolkit&reg; 3.2 Index Service Release Notes</h1>
+<p>This 3.2  release of the Index Services components contains bug
   
 
 fixes, performance and stability improvements, and a few new features.&nbsp; 
@@ -25,7 +26,8 @@ data aggregation strategies.&nbsp; As a result of these changes, the Index
 
 Service (and other services that incorporate the Aggregator components) 
 
-can now aggregate service data from other services by using the <strong>ServiceGroup</strong> port type and <strong>IndexingServiceGroup</strong> operation provider.&nbsp; </p>
+can now aggregate service data from other services by using the <strong>ServiceGroup</strong> port
+type and <strong>IndexingServiceGroup</strong> operation provider.&nbsp; </p>
 
 <p>Service Data aggregated in this fashion will be 
 
@@ -42,7 +44,6 @@ enabled by the service administrator via the <code>server-config.wsdd</code> fil
 <a href="http://bonsai.globus.org/cvsquery.cgi?treeid=default&module=all&branch=HEAD&branchtype=match&dir=information_services&file=&filetype=match&who=&whotype=match&sortby=Date&hours=2&date=explicit&mindate=11%2F5%2F2003&maxdate=2%2F13%2F2004&cvsroot=%2Fhome%2Fglobdev%2FCVS%2Fgridservices">
 
 here</a>.
-<span class="style1">(?)</span>
 <ul>
 
 	<li><a href="#newfeatures">New Index Service Features</a></li>
@@ -137,7 +138,7 @@ log4j.properties to monitor performance and service events:</p>
 
 #log4j.category.org.globus.ogsa.impl.base.index.IndexingServiceGroupRegistrationProvider.performance=DEBUG</p>
 
-<a name="registry"><h2>Registering any grid service to the GT3.2 Index Service (RegistryPublishProvider)</h2></a>
+<h2><a name="registry">Registering any grid service to the GT3.2 Index Service (RegistryPublishProvider)</a></h2>
 
 <p>Any GT3.2 service can be registered to a GT3.2 index service using the core 
 
@@ -187,65 +188,47 @@ refer to the index service you want to register with.<br>
 
 &nbsp;</li>
 
-	<li>Edit the resource service's deployment descriptor in server-config.wsdd:</li>
+	<li>Edit the resource service's deployment descriptor in server-config.wsdd:<br>
 
-
-
-	<br>
-
-&nbsp;<ul>
-
+&nbsp;
+<ul>
+  
 	<li>Add the RegistryPublishProvider operation provider:</li>
-
-	<br>
-
-&nbsp;<ul>
-
+	  <br>
+  
+&nbsp;
+  <ul>
+    
 	<li>Load server-config.wsdd into a text editor<br>
-
+      
 &nbsp;</li>
-
-	<li>Find the &lt;service&gt; definition for the 
-
+	    <li>Find the &lt;service&gt; definition for the 
+      
 resource service <br>
-
+      
 &nbsp;</li>
-
-	<li>Find the operationProviders parameter for that service<br>
-
+	    <li>Find the operationProviders parameter for that service<br>
+      
 &nbsp;</li>
-
-	<li>Add the following string to the end of the operationProviders parameter. Note that this is a 
-
-space-separated (<b>not</b> comma-separated) field:<br></li></ul>
-
-
-
-<p class="command">
-
-org.globus.ogsa.impl.core.registry.RegistryPublishProvider<p>
-
-<p>
-
-
-
-
-
-	<li>Add a new parameter to the resource service's deployment descriptor:
-
+	    <li>Add the following string to the end of the operationProviders parameter. Note that this is a 
+      
+space-separated (<b>not</b> comma-separated) field:</li>
+  </ul>
+  <p class="command">
+    
+org.globus.ogsa.impl.core.registry.RegistryPublishProvider
+  <li>Add a new parameter to the resource service's deployment descriptor:
+    
 	</li>
-
-<p>
-
-<p class="command">
-
-&lt;parameter name=&quot;registrationConfig&quot; value=&quot;etc/registration_config.xml&quot; /&gt;<p>
-
+  <p class="command"> &lt;parameter name=&quot;registrationConfig&quot; value=&quot;etc/registration_config.xml&quot; /&gt;
+  <p>
+    
 </ul>
+	</li>
 
 </ol>
 
-<a name="example"><h2>Example Registration Configuration File</h2></a>
+<h2><a name="example">Example Registration Configuration File</a></h2>
 
 <p>
 

@@ -1,0 +1,44 @@
+<head><title>Globus Toolkit 3.2 GSI Release Notes</title>
+<link href="../../../../CSS/style.css" rel="stylesheet" type="text/css">
+</head>
+
+<?php include( "http://www-unix.globus.org/include/globus_header.inc" ); ?>
+
+
+
+    <p class="small"><a href="http://www.globus.org">Globus</a> &gt; <a href="http://www-unix.globus.org/toolkit/">Toolkit</a> &gt; <a href="../index.html">Release
+        Notes</a> &gt; <a href="index.html">3.2</a> &gt; GSI &lt;</p>
+    <h1>Globus Toolkit&reg; 3.2  GSI Release Notes</h1>
+<h2>Improvements/Bug Details </h2>
+<ul>
+  <li>CRL Support for Java GSI libraries
+  <li>Support for authorization callouts. These callouts can be used to replace
+      gridmap based authorization/mapping and to enforce finer grained authorization
+      in the GT2 GRAM component. More information can be found <a href="http://www-unix.globus.org/security/callouts/">here </a>
+  <li>OpenSSL has been upgraded to version 0.9.7. If you have DNs in your grid-mapfile
+      that contain a USERID component, you will need to update these (see <a href="http://bugzilla.globus.org/globus/show_bug.cgi?id=575">bug
+      575 for details) </a>
+  <li>grid-proxy-init now checks that the certificate and the private key match
+  <li>CRL checking for C GSI libraries now handles the lastUpdate field and
+      no longer assumes that the nextUpdate field is always present, which means
+      that CRLs without a nextUpdate field no longer cause an error and don't
+      expire.
+  <li>The SimpleCA packages are now included in the standard distribution
+  <li>The Globus CA setup package is now no longer part of the distribution.
+      Users requiring certificates for testing should take a look at the <a href="http://gcs.globus.org:8080/gcs">Globus
+      Certificate Service </a> or Simple CA. <strong>Note that you will not be
+      able to run grid-cert-request until you have installed a CA setup package </strong>.
+  <li>CA setup packages (GCS and SimpleCA) are now non-interactive.
+  <li>grid-cert-renew has been removed from the distribution
+  <li>For grid services specific security changes please see the <a href="http://www-unix.globus.org/toolkit/3.2beta/core_notes.html">core
+        release notes </a>
+  <li>The grid-default-ca utility has been added to the distribution
+  <li>Various minor API changes have been made (Proxy Core, Cert Utils, System
+      Config)
+  <li>Fixed bugs 590, 978, 982, 1018, 1028, 1091, 1126, 1143, 1151, 1171, 1304,
+      1308 </li>
+</ul>
+<p>&nbsp;</p>
+<p>
+          <?php include("http://www-unix.globus.org/include/globus_footer.inc"); ?>
+</p>
