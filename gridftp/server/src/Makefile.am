@@ -6,7 +6,6 @@ include $(top_srcdir)/globus_automake_pre_top
 SUBDIRS = \
 	pkgdata \
 	modules \
-	commands \
 	doxygen
 
 EXTRA_DIST = \

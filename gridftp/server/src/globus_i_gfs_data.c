@@ -1,8 +1,12 @@
 
 #include "globus_i_gridftp_server.h"
+/* provides local_extensions */
+#include "extensions.h"
 
 static globus_gfs_storage_iface_t *     dsi = NULL;
 static void *                           dsi_user_arg = NULL;
+globus_extension_registry_t             globus_i_gfs_dsi_registry;
+globus_extension_handle_t               active_dsi_handle;
 
 void
 globus_i_gfs_monitor_init(
@@ -50,13 +54,37 @@ globus_i_gfs_monitor_signal(
 void
 globus_i_gfs_data_init()
 {
-    if(globus_i_gfs_config_string("remote"))
+    char *                              dsi_name;
+    
+    dsi_name = globus_i_gfs_config_string("dsi");
+    
+    globus_extension_register_builtins(local_extensions);
+    
+    dsi = (globus_gfs_storage_iface_t *) globus_extension_lookup(
+        &active_dsi_handle, GLOBUS_GFS_DSI_REGISTRY, dsi_name);
+    if(!dsi)
     {
-        dsi = &globus_gfs_remote_dsi_iface;
+        char                            buf[256];
+        
+        snprintf(buf, 256, "globus_gridftp_server_%s", dsi_name);
+        buf[255] = 0;
+    
+        if(globus_extension_activate(buf) != GLOBUS_SUCCESS)
+        {
+            globus_i_gfs_log_message(
+                GLOBUS_I_GFS_LOG_ERR, "Unable to activate %s\n", buf);
+            exit(1);
+        }
+        
+        dsi = (globus_gfs_storage_iface_t *) globus_extension_lookup(
+            &active_dsi_handle, GLOBUS_GFS_DSI_REGISTRY, dsi_name);
     }
-    else
+    
+    if(!dsi)
     {
-        dsi = &globus_gfs_file_dsi_iface;
+        globus_i_gfs_log_message(
+           GLOBUS_I_GFS_LOG_ERR, "Couldn't find the %s extension\n", dsi_name);
+        exit(1);
     }
     
     if(dsi->init_func != NULL)

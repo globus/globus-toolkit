@@ -21,28 +21,16 @@ delim=
 if test "X$modules" != "X" ; then
   echo
   for module in $modules ; do
-    modules_makefiles="$modules_makefiles modules/$module/Makefile"
-    echo "Including module: $module"
-  done
-else
-  echo "none found"
-fi
-
-echo -n "Checking for commands... "
-commands=`ls commands | grep -v CVS | grep -v Makefile`
-commands_makefiles=
-delim=
-if test "X$commands" != "X" ; then
-  echo
-  for command in $commands ; do
-    commands_makefiles="$commands_makefiles commands/$command/Makefile"
-    echo "Including command: $command"
+    if test -f modules/$module/Makefile.am ; then
+        modules_makefiles="$modules_makefiles modules/$module/Makefile"
+        echo "Including module: $module"
+    fi
   done
 else
   echo "none found"
 fi
 
 cp -f configure.in.in configure.in
-echo "$modules_makefiles $commands_makefiles)" >> configure.in
+echo "$modules_makefiles)" >> configure.in
 
 . ${GLOBUS_LOCATION}/libexec/globus-bootstrap.sh

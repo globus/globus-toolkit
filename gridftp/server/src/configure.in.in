@@ -17,22 +17,22 @@ dnl Build hooks for all 'builtin' modules
 echo -n "Checking for builtin modules... "
 MODULE_DIRS=.
 MODULE_LIBS=
-MODULE_HOOKS_DEC=
-MODULE_HOOKS_DEF=
+BUILTIN_EXTENSIONS_DEC=
+BUILTIN_EXTENSIONS_DEF=
 modules=`ls modules | grep -v CVS | grep -v Makefile`
 delim=
 if test "X$modules" != "X" ; then
   echo
   for module in $modules ; do
-    MODULE_DIRS="$MODULE_DIRS $module"
-        
-    lib_name="modules/${module}/libglobus_gridftp_server_${module}_${GLOBUS_FLAVOR_NAME}.la"
-    MODULE_LIBS="$MODULE_LIBS $lib_name"
-    
-    MODULE_HOOKS_DEC="$MODULE_HOOKS_DEC $delim globus_i_gridftp_server_${module}_module"
-    MODULE_HOOKS_DEF="$MODULE_HOOKS_DEF $delim &globus_i_gridftp_server_${module}_module"
-    delim=","
-    echo "Including module: $module"
+    if test -f builtins/$builtin/Makefile.in ; then
+      MODULE_DIRS="$MODULE_DIRS $module"
+      lib_name="modules/${module}/libglobus_gridftp_server_${module}_${GLOBUS_FLAVOR_NAME}.la"
+      MODULE_LIBS="$MODULE_LIBS $lib_name"
+      
+      BUILTIN_EXTENSIONS_DEC="${BUILTIN_EXTENSIONS_DEC}GlobusExtensionDeclareModule(globus_gridftp_server_${module}) ;"
+      BUILTIN_EXTENSIONS_DEF="$BUILTIN_EXTENSIONS_DEF {\"${module}\", GlobusExtensionMyModule(globus_gridftp_server_${module})},"
+      echo "Including module: $module"
+    fi
   done
 else
   echo "none found"
@@ -42,36 +42,6 @@ AC_SUBST(MODULE_DIRS)
 AC_SUBST(MODULE_LIBS)
 AC_SUBST(MODULE_HOOKS_DEC)
 AC_SUBST(MODULE_HOOKS_DEF)
-
-dnl Build hooks for all 'builtin' commands
-echo -n "Checking for builtin commands... "
-COMMAND_DIRS=.
-COMMAND_LIBS=
-COMMAND_HOOKS_DEC=
-COMMAND_HOOKS_DEF=
-commands=`ls commands | grep -v CVS | grep -v Makefile`
-delim=
-if test "X$commands" != "X" ; then
-  echo
-  for command in $commands ; do
-    COMMAND_DIRS="$COMMAND_DIRS $command"
-        
-    lib_name="commands/${command}/libglobus_gridftp_server_${command}_${GLOBUS_FLAVOR_NAME}.la"
-    COMMAND_LIBS="$COMMAND_LIBS $lib_name"
-    
-    COMMAND_HOOKS_DEC="$COMMAND_HOOKS_DEC $delim globus_i_gridftp_server_${command}_command"
-    COMMAND_HOOKS_DEF="$COMMAND_HOOKS_DEF $delim &globus_i_gridftp_server_${command}_command"
-    delim=","
-    echo "Including command: $command"
-  done
-else
-  echo "none found"
-fi
-
-AC_SUBST(COMMAND_DIRS)
-AC_SUBST(COMMAND_LIBS)
-AC_SUBST(COMMAND_HOOKS_DEC)
-AC_SUBST(COMMAND_HOOKS_DEF)
 
 LAC_DOXYGEN("../")
 

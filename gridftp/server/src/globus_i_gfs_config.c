@@ -48,7 +48,8 @@ static const globus_l_gfs_config_option_t option_list[] =
  {"remote", "remote", NULL, "-remote", "-r", GLOBUS_L_GFS_CONFIG_STRING, 0, NULL, NULL},
  {"debug_level", "debug_level", NULL, "-debug", "-d", GLOBUS_L_GFS_CONFIG_INT, 1, NULL, NULL},
  {"last_option", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_BOOL, 0, NULL, NULL},
- {"community", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_LIST, 0, NULL, NULL} 
+ {"community", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_LIST, 0, NULL, NULL},
+ {"dsi", "storage_type", NULL, "-dsi", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, "file", NULL}
 };
 
 static int option_count = sizeof(option_list) / sizeof(globus_l_gfs_config_option_t);

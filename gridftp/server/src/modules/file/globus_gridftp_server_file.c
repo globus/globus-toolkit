@@ -2,7 +2,8 @@
 #include "globus_gridftp_server.h"
 #include "globus_xio.h"
 #include "globus_xio_file_driver.h"
-#include <openssl/md5.h>
+#include "openssl/md5.h"
+#include "version.h"
 
 typedef struct
 {
@@ -50,39 +51,6 @@ typedef struct
 } globus_l_buffer_info_t;
 
 static globus_xio_driver_t              globus_l_gfs_file_driver;
-
-/* XXX static */
-int
-globus_l_gfs_file_activate(void)
-{
-    if(globus_module_activate(GLOBUS_XIO_MODULE) != GLOBUS_SUCCESS)
-    {
-        goto error_activate;
-    }
-    
-    if(globus_xio_driver_load(
-        "file", &globus_l_gfs_file_driver) != GLOBUS_SUCCESS)
-    {
-        goto error_load_file;
-    }
-    
-    return GLOBUS_SUCCESS;
-    
-error_load_file:
-    globus_module_deactivate(GLOBUS_XIO_MODULE);
-    
-error_activate:
-    return GLOBUS_FAILURE;
-}
-
-/* XXX static */
-int
-globus_l_gfs_file_deactivate(void)
-{
-    globus_xio_driver_unload(globus_l_gfs_file_driver);
-    
-    return globus_module_deactivate(GLOBUS_XIO_MODULE);
-}
 
 /**
  * stat calls
@@ -153,7 +121,7 @@ globus_l_gfs_file_copy_stat(
     strcpy(stat_object->name, filename);
 }
 
-/* XXX static */
+static
 globus_result_t
 globus_l_gfs_file_stat(
     globus_gfs_operation_t   op,
@@ -275,7 +243,7 @@ error_stat1:
 }
 
 
-/* XXX static */
+static
 globus_result_t
 globus_l_gfs_file_mkdir(
     globus_gfs_operation_t   op,
@@ -1073,7 +1041,7 @@ error_attr:
     return result;
 }
 
-/* XXX static */
+static
 globus_result_t
 globus_l_gfs_file_recv(
     globus_gfs_operation_t   op,
@@ -1526,7 +1494,7 @@ error_open:
     globus_l_gfs_send_monitor_destroy(monitor);
 }
 
-/* XXX static */
+static
 globus_result_t
 globus_l_gfs_file_send(
     globus_gfs_operation_t   op,
@@ -1573,8 +1541,15 @@ error_alloc:
     return result;
 }
 
+static
+int
+globus_l_gfs_file_activate(void);
 
-globus_gfs_storage_iface_t              globus_gfs_file_dsi_iface = 
+static
+int
+globus_l_gfs_file_deactivate(void);
+
+static globus_gfs_storage_iface_t       globus_gfs_file_dsi_iface = 
 {
     NULL, /* globus_l_gfs_file_init, */
     NULL, /* globus_l_gfs_file_destroy, */
@@ -1589,3 +1564,55 @@ globus_gfs_storage_iface_t              globus_gfs_file_dsi_iface =
     globus_l_gfs_file_stat,
     NULL
 };
+
+GlobusExtensionDefineModule(globus_gridftp_server_file) =
+{
+    "globus_gridftp_server_file",
+    globus_l_gfs_file_activate,
+    globus_l_gfs_file_deactivate,
+    GLOBUS_NULL,
+    GLOBUS_NULL,
+    &local_version
+};
+
+static
+int
+globus_l_gfs_file_activate(void)
+{
+    if(globus_module_activate(GLOBUS_XIO_MODULE) != GLOBUS_SUCCESS)
+    {
+        goto error_activate;
+    }
+    
+    if(globus_xio_driver_load(
+        "file", &globus_l_gfs_file_driver) != GLOBUS_SUCCESS)
+    {
+        goto error_load_file;
+    }
+    
+    globus_extension_registry_add(
+        GLOBUS_GFS_DSI_REGISTRY,
+        "file",
+        GlobusExtensionMyModule(globus_gridftp_server_file),
+        &globus_l_gfs_file_dsi_iface);
+    
+    return GLOBUS_SUCCESS;
+    
+error_load_file:
+    globus_module_deactivate(GLOBUS_XIO_MODULE);
+    
+error_activate:
+    return GLOBUS_FAILURE;
+}
+
+static
+int
+globus_l_gfs_file_deactivate(void)
+{
+    globus_extension_registry_remove(
+        GLOBUS_GFS_DSI_REGISTRY, "file");
+        
+    globus_xio_driver_unload(globus_l_gfs_file_driver);
+    
+    return globus_module_deactivate(GLOBUS_XIO_MODULE);
+}
