@@ -1,6 +1,6 @@
 
 #if !defined(_GLOBUS_I_GRAM_HTTP_H)
-    #define _GLOBUS_I_GRAM_HTTP_H
+#    define _GLOBUS_I_GRAM_HTTP_H
 
 #ifndef EXTERN_C_BEGIN
 #    ifdef __cplusplus
