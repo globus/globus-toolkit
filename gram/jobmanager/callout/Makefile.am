@@ -5,17 +5,6 @@ SUBDIRS = \
 	pkgdata \
 	doxygen
 
-# Extra directories we install files into
-confdir = $(datadir)/$(PACKAGE)
-
-Data = \
-	gsi-authz.conf
-
-conf_DATA = $(Data)
-
-
-EXTRA_DIST = $(Data)
-
 INCLUDES += $(GPT_INCLUDES)
 
 lib_LTLIBRARIES = libglobus_gram_jobmanager_callout_$(GLOBUS_FLAVOR_NAME).la

@@ -10,7 +10,7 @@ INCLUDES += $(GPT_INCLUDES)
 flavorinclude_HEADERS= \
 	globus_gram_jobmanager_callout_error.h
 
-lib_LTLIBRARIES = libglobus_gram_jobmanager_callout_error_$(GLOBUS_FLAVOR_NAME).la
+lib_LTLIBRARIES = libglobus_gram_job_manager_callout_error_$(GLOBUS_FLAVOR_NAME).la
 
 libglobus_gram_job_manager_callout_error___GLOBUS_FLAVOR_NAME__la_LIBADD = \
 	@GPT_LIB_LINKS@

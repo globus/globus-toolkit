@@ -89,6 +89,14 @@
             <pkg_libs>-lglobus_callout</pkg_libs>
         </Build_Environment>
 
+        <Source_Setup_Dependency PkgType="rtl">
+            <Setup_Dependency Name="globus_gram_job_manager_setup_callout"> 
+                <Version>
+                    <Simple_Version Major="0"/>
+                </Version>
+            </Setup_Dependency>
+        </Source_Setup_Dependency>
+
     </src_pkg>
 
 </gpt_package_metadata>
