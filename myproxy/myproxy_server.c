@@ -4,31 +4,7 @@
  * program to store user's delegated credentials for later retrieval
  */
 
-#include "myproxy.h"
-#include "myproxy_server.h"
-#include "myproxy_creds.h"
-#include "myproxy_log.h"
-#include "gnu_getopt.h"
-#include "verror.h"
-#include "string_funcs.h"
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <signal.h> 
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h> 
-#include <sys/ioctl.h>
-#include <sys/socket.h>
-#include <sys/wait.h> 
-#include <netinet/in.h>	/* Might be needed before <arpa/inet.h> */
-#include <arpa/inet.h> 
-#include <unistd.h>
-#include <netdb.h> 
-#include <errno.h>
-#include <assert.h>
-#include <string.h>
-#include <time.h>
+#include "myproxy_common.h"	/* all needed headers included here */
 
 #define MIN(x,y) ((x) < (y) ? (x) : (y))
 

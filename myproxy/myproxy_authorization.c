@@ -1,17 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <errno.h>
-
-/* passwd: */
-#include <string.h>
-
-/* cert: *.h */
-#include "ssl_utils.h"
-
-#include "myproxy_authorization.h"
-#include "myproxy_creds.h"
-#include "myproxy_server.h" /* for MIN_PASS_PHRASE_LEN */
-#include "verror.h"
+#include "myproxy_common.h"	/* all needed headers included here */
 
 struct authorization_func {
    char * (*create_server_data) (void);

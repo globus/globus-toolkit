@@ -6,16 +6,7 @@
  * See myproxy_server.h for documentation.
  */
 
-#include "myproxy_server.h"
-#include "vparse.h"
-#include "verror.h"
-#include "string_funcs.h"
-
-#include <sys/param.h>
-#include <errno.h>
-#include <string.h>
-#include <stdlib.h>
-#include <assert.h>
+#include "myproxy_common.h"	/* all needed headers included here */
 
 #if defined(HAVE_REGCOMP) && defined(HAVE_REGEX_H)
 #include <regex.h>

@@ -5,21 +5,7 @@
  */
 
 
-#include "verror.h"
-
-#include <stdio.h>
-#include <errno.h>
-#include <assert.h>
-#include <stdlib.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <string.h>
-#include <sys/param.h>
-
-/* Must be included after stdio.h */
-#include "ssl_utils.h"
+#include "myproxy_common.h"	/* all needed headers included here */
 
 #define PEM_CALLBACK(func)	func, NULL
 #define PEM_NO_CALLBACK		NULL, NULL

@@ -4,17 +4,7 @@
  * Client program to inqure a proxy on a myproxy-server
  */
 
-#include "myproxy.h"
-#include "myproxy_server.h"
-#include "myproxy_log.h"
-#include "ssl_utils.h"
-#include "gnu_getopt.h"
-#include "verror.h"
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <assert.h>
+#include "myproxy_common.h"	/* all needed headers included here */
 
 static char usage[] = \
 "\n"\

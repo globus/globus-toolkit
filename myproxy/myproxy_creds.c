@@ -6,29 +6,7 @@
  * See myproxy_creds.h for documentation.
  */
 
-#include "myproxy.h"
-#include "myproxy_creds.h"
-#include "myproxy_log.h"
-
-#include "myproxy_server.h"
-
-#include "verror.h"
-#include "string_funcs.h"
-#include "ssl_utils.h"
-
-#include <stdio.h>
-#include <errno.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <string.h>
-#include <sys/param.h>
-#include <assert.h>
-#include <sys/stat.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <dirent.h>
+#include "myproxy_common.h"	/* all needed headers included here */
 
 /*
  * Doesn't always seem to be define in <unistd.h>

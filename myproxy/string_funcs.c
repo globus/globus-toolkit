@@ -6,13 +6,7 @@
  * See string_funcs.h for documentation.
  */
 
-#include "string_funcs.h"
-
-#include <string.h>
-#include <stdio.h>
-#include <stdarg.h>
-#include <assert.h>
-#include <stdlib.h>
+#include "myproxy_common.h"	/* all needed headers included here */
 
 /**********************************************************************
  *

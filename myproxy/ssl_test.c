@@ -1,11 +1,5 @@
 
-#include <stdio.h>
-#include <pwd.h>
-
-#include <x509.h>
-
-#include "ssl_utils.h"
-#include "verror.h"
+#include "myproxy_common.h"	/* all needed headers included here */
 
 main(int argc, char **argv)
 {

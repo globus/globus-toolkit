@@ -5,25 +5,7 @@
  *
  */
 
-#include "myproxy.h"
-#include "myproxy_log.h"
-#include "gsi_socket.h"
-#include "verror.h"
-#include "string_funcs.h"
-
-#include <errno.h> 
-#include <stdarg.h>
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/param.h>
-#include <netinet/in.h>
-#include <netdb.h> 
-#include <unistd.h>
-#include <assert.h>
-#include <limits.h>
+#include "myproxy_common.h"	/* all needed headers included here */
 
 /**********************************************************************
  *
