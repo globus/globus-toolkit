@@ -2,6 +2,8 @@
 #include "gaa_private.h"
 #include <string.h>
 
+static char *rcsid = "$Header$";
+
 /** @defgroup gaa_policy_static "static routines from gaa_core/gaa_policy.c"
  */
 
@@ -301,6 +303,8 @@ gaa_match_rights(gaa_ptr		gaa,
 	return(GAA_STATUS(GAA_S_INVALID_ARG, 0));
     }
     if ((status = gaa_l_match_authority(rright, pright, match)) != GAA_S_SUCCESS)
+	return(status);
+    if (*match == 0)
 	return(status);
     if ((ai = gaa_i_find_authinfo(gaa, pright)) == 0)
 	return(GAA_STATUS(GAA_S_NO_AUTHINFO_CALLBACK, 0));    
