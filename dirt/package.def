@@ -102,6 +102,7 @@ globus_mds_common		mds/common/source		dirt.sh
 globus_mds_common_setup		mds/common/setup		dirt.sh
 globus_mds_gris			mds/gris/source			dirt.sh
 globus_mds_gris_setup		mds/gris/setup			dirt.sh
+globus_mds_test 		mds/tests			dirt.sh
 globus_mds_back_giis		mds/openldap/giis-ldapmodules	dirt.sh
 globus_ldapmodules		mds/openldap/ldapmodules	dirt.sh
 globus_user_env			user_env/source			dirt.sh
