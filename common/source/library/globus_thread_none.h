@@ -93,10 +93,12 @@ typedef int globus_thread_once_t;
     (*(M) ? 1 : globus_macro_mutex_lock(M))
 
 #define globus_macro_cond_init(C,A) \
-    (((A) ? (*(C) = *((int *)(A))) : (*(C) = GLOBUS_CALLBACK_GLOBAL_SPACE)), 0)
+    (((A) ? (*(C) = *((int *)(A))) \
+     : (*(C) = GLOBUS_CALLBACK_GLOBAL_SPACE)), \
+    (globus_callback_reference_space(*(C)) ? 1 : 0))
     
 #define globus_macro_cond_destroy(C) \
-    (*(C) = 0)
+    (globus_callback_space_destroy(*(C)),(*(C) = GLOBUS_NULL_HANDLE))
     
 #define globus_macro_cond_wait(C,M) \
     ( ((*(M)) = 0), \
@@ -118,13 +120,16 @@ typedef int globus_thread_once_t;
     (globus_callback_signal_poll(), 0)
 
 #define globus_macro_condattr_init(A) \
-    ((*(A) = GLOBUS_CALLBACK_GLOBAL_SPACE), 0)
+    (globus_callback_reference_space(GLOBUS_CALLBACK_GLOBAL_SPACE), \
+    (*(A) = GLOBUS_CALLBACK_GLOBAL_SPACE), 0)
     
 #define globus_macro_condattr_destroy(A) \
-    (*(A) = 0)
+    (globus_callback_space_destroy(*(A)), (*(A) = 0))
 
 #define globus_macro_condattr_setspace(A, S) \
-    ((*(A) = (S)), 0)
+    ((globus_callback_reference_space((S)) \
+     ? 1
+     : globus_callback_space_destroy(*(A)), (*(A) = (S)), 0))
 
 #define globus_macro_condattr_getspace(A, S) \
     ((*(S) = *(A)), 0)

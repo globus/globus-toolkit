@@ -806,21 +806,25 @@ globus_callback_space_reference(
     globus_callback_space_t             space);
 
 /**
- * Destroy a user space
+ * Destroy a reference to a user space
  *
- * This will destroy a previously initialized space.  Space will not actually
- * be destroyed until all callbacks registered with this space have been run
- * and unregistered (if the user has a handle to that callback)
+ * This will destroy a reference to a previously initialized space.  Space will
+ * not actually be destroyed until all callbacks registered with this space 
+ * have been run and unregistered (if the user has a handle to that callback)
+ * AND all references (from globus_callback_space_reference()) have been
+ * destroyed.
  *
  * @param space
  *        space to destroy, previously initialized by 
- *        globus_callback_space_init()
+ *        globus_callback_space_init() or referenced with 
+ *        globus_callback_space_reference()
  *
  * @return
  *        - GLOBUS_CALLBACK_ERROR_INVALID_SPACE
  *        - GLOBUS_SUCCESS
  * 
  * @see globus_callback_space_init()
+ * @see globus_callback_space_reference()
  */
 globus_result_t
 globus_callback_space_destroy(
