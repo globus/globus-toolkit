@@ -1,3 +1,10 @@
+/*
+ * Copyright Patrick Powell 1995
+ * This code is based on code written by Patrick Powell (papowell@astart.com)
+ * It may be used for any purpose as long as this notice remains intact
+ * on all source code distributions
+ */
+
 /**************************************************************
  * Original:
  * Patrick Powell Tue Apr 11 09:48:21 PDT 1995

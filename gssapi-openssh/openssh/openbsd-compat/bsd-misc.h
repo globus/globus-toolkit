@@ -80,5 +80,14 @@ int truncate (const char *path, off_t length);
 int setgroups(size_t size, const gid_t *list);
 #endif
 
+#if !defined(HAVE_NANOSLEEP) && !defined(HAVE_NSLEEP)
+#ifndef HAVE_STRUCT_TIMESPEC
+struct timespec {
+	time_t	tv_sec;
+	long	tv_nsec;
+};
+#endif
+int nanosleep(const struct timespec *req, struct timespec *rem);
+#endif
 
 #endif /* _BSD_MISC_H */

@@ -4,10 +4,10 @@
 #define _BSD_MKTEMP_H
 
 #include "config.h"
-#ifndef HAVE_MKDTEMP
+#if !defined(HAVE_MKDTEMP) || defined(HAVE_STRICT_MKSTEMP)
 int mkstemps(char *path, int slen);
 int mkstemp(char *path);
 char *mkdtemp(char *path);
-#endif /* !HAVE_MKDTEMP */
+#endif /* !defined(HAVE_MKDTEMP) || defined(HAVE_STRICT_MKSTEMP) */
 
 #endif /* _BSD_MKTEMP_H */
