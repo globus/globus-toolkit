@@ -370,6 +370,7 @@ typedef struct
     char *				job_reporting_dir;
     char *				job_reporting_file;
     char *				cache_location;
+    globus_bool_t			relocated_proxy;
 }
 globus_gram_jobmanager_request_t;
 

@@ -119,6 +119,7 @@ globus_gram_job_manager_state_machine(
     globus_rsl_t *			original_rsl;
     globus_rsl_t *			restart_rsl;
     globus_gram_job_manager_query_t *	query;
+    globus_bool_t			first_poll = GLOBUS_FALSE;
 
     GLOBUS_GRAM_JOB_MANAGER_DEBUG_STATE(request, "entering");
 
@@ -293,21 +294,11 @@ globus_gram_job_manager_state_machine(
                                 (void *) "HOME",
                                 (void *) request->home);
 
-	globus_gram_job_manager_rsl_env_add(
-	    request->rsl,
-	    "HOME",
-	    request->home);
-
         if (request->logname)
 	{
             globus_symboltable_insert(&request->symbol_table,
                                 (void *) "LOGNAME",
                                 (void *) request->logname);
-
-	    globus_gram_job_manager_rsl_env_add(
-		request->rsl,
-		"LOGNAME",
-		request->logname);
 	}
 
         if (request->globus_id)
@@ -447,11 +438,6 @@ globus_gram_job_manager_state_machine(
 	}
 	if(request->cache_location)
 	{
-	    globus_gram_job_manager_rsl_env_add(
-		request->rsl,
-		"GLOBUS_GASS_CACHE_DEFAULT",
-		request->cache_location);
-
 	    globus_libc_setenv(
 		"GLOBUS_GASS_CACHE_DEFAULT",
 		request->cache_location,
@@ -605,6 +591,28 @@ globus_gram_job_manager_state_machine(
       case GLOBUS_GRAM_JOB_MANAGER_STATE_PRE_MAKE_SCRATCHDIR:
 	request->jobmanager_state =
 	    GLOBUS_GRAM_JOB_MANAGER_STATE_MAKE_SCRATCHDIR;
+
+	/* Add job manager-generated environment strings. This
+	 * must be done after a RESTART rsl is validated
+	 */
+	if(request->cache_location)
+	{
+	    globus_gram_job_manager_rsl_env_add(
+		request->rsl,
+		"GLOBUS_GASS_CACHE_DEFAULT",
+		request->cache_location);
+	}
+	if(request->logname)
+	{
+	    globus_gram_job_manager_rsl_env_add(
+		request->rsl,
+		"LOGNAME",
+		request->logname);
+	}
+	globus_gram_job_manager_rsl_env_add(
+	    request->rsl,
+	    "HOME",
+	    request->home);
 
 	globus_gram_job_manager_reporting_file_start_cleaner(request);
 
@@ -856,6 +864,7 @@ globus_gram_job_manager_state_machine(
 		"X509_USER_PROXY",
 		request->x509_user_proxy);
 	    rc = globus_gram_job_manager_register_proxy_timeout(request);
+	    request->relocated_proxy = GLOBUS_TRUE;
 	}
 
 	if(request->save_state)
@@ -1035,8 +1044,9 @@ globus_gram_job_manager_state_machine(
 	}
 	request->jobmanager_state =
 	    GLOBUS_GRAM_JOB_MANAGER_STATE_POLL1;
-	break;
-
+	first_poll = GLOBUS_TRUE;
+	
+	/* FALLSTHROUGH so we can do a quick 1st poll */
       case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL1:
 	if(request->unsent_status_change && request->save_state)
 	{
@@ -1088,18 +1098,21 @@ globus_gram_job_manager_state_machine(
 	    }
 	    request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_POLL2;
 
-	    /* Register next poll of job state */
-	    GlobusTimeReltimeSet(delay_time, request->poll_frequency, 0);
+	    if(! first_poll)
+	    {
+		/* Register next poll of job state */
+		GlobusTimeReltimeSet(delay_time, request->poll_frequency, 0);
 
-	    globus_callback_register_oneshot(
-		    &request->poll_timer,
-		    &delay_time,
-		    globus_gram_job_manager_state_machine_callback,
-		    request,
-		    GLOBUS_NULL,
-		    GLOBUS_NULL);
+		globus_callback_register_oneshot(
+			&request->poll_timer,
+			&delay_time,
+			globus_gram_job_manager_state_machine_callback,
+			request,
+			GLOBUS_NULL,
+			GLOBUS_NULL);
 
-	    event_registered = GLOBUS_TRUE;
+		event_registered = GLOBUS_TRUE;
+	    }
 	}
 	break;
 

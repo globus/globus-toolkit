@@ -62,6 +62,7 @@ globus_gram_job_manager_request_init(
     r->scratch_dir_base = GLOBUS_NULL;
     r->in_handler = GLOBUS_FALSE;
     r->validation_records = NULL;
+    r->relocated_proxy = GLOBUS_FALSE;
     globus_fifo_init(&r->pending_queries);
     globus_gram_job_manager_output_init(r);
     globus_mutex_init(&r->mutex, GLOBUS_NULL);

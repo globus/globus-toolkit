@@ -343,6 +343,10 @@ main(
                     "Note: if type=condor then\n"
                     "      -condor-os & -condor-arch are required.\n"
                     "\n");
+	    if(globus_libc_getenv("X509_USER_PROXY"))
+	    {
+		remove(globus_libc_getenv("X509_USER_PROXY"));
+	    }
             exit(1);
         }
         else
@@ -392,6 +396,13 @@ main(
 		    : "",
 		(request->status == GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED)
 		    ? ")" : "");
+    }
+    else if((!request->relocated_proxy) &&
+	    globus_gram_job_manager_gsi_used(request) &&
+	    request->jobmanager_state != GLOBUS_GRAM_JOB_MANAGER_STATE_DONE &&
+	    globus_libc_getenv("X509_USER_PROXY"))
+    {
+	remove(globus_libc_getenv("X509_USER_PROXY"));
     }
     rc = globus_module_deactivate_all();
     if (rc != GLOBUS_SUCCESS)
