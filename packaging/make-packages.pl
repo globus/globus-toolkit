@@ -40,9 +40,9 @@ my %prereq_archives = (
 # TODO: Add explicit CVSROOT
 # TODO: Allow per-package module specification
 my %cvs_archives = (
-     'gt2' => [ "/home/globdev/CVS/globus-packages", "all", $cvs_prefix . "gt2-cvs", "HEAD" ],
-     'gt3' => [ "/home/globdev/CVS/gridservices", "all", $cvs_prefix . "ogsa-cvs", "HEAD" ],
-     'cbindings' => [ "/home/globdev/CVS/gridservices", "ogsa-c", $cvs_prefix . "cbindings", "HEAD" ],
+     'gt2' => [ "/home/globdev/CVS/globus-packages", "gp", $cvs_prefix . "gt2-cvs", "HEAD" ],
+     'gt3' => [ "/home/globdev/CVS/globus-packages", "gs", $cvs_prefix . "ogsa-cvs", "HEAD" ],
+     'cbindings' => [ "/home/globdev/CVS/globus-packages", "ogsa-c", $cvs_prefix . "cbindings", "HEAD" ],
      'autotools' => [ "/home/globdev/CVS/globus-packages", "side_tools", $cvs_prefix . "autotools", "HEAD" ]
       );
 
