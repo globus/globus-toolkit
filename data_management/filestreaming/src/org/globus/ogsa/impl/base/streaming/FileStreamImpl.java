@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Vector;
 
 import javax.xml.namespace.QName;
+import javax.security.auth.Subject;
 
 import org.apache.axis.MessageContext;
 import org.apache.commons.logging.Log;
@@ -34,8 +35,9 @@ import org.globus.ogsa.GridContext;
 import org.globus.ogsa.GridServiceException;
 import org.globus.ogsa.impl.ogsi.GridServiceImpl;
 import org.globus.ogsa.impl.security.authentication.SecureServicePropertiesHelper;
-import org.globus.ogsa.impl.security.authentication.SecurityManager;
+import org.globus.ogsa.impl.security.SecurityManager;
 import org.globus.ogsa.impl.security.authentication.Constants;
+import org.globus.gsi.jaas.JaasGssUtil;
 import org.globus.ogsa.repository.ServiceNode;
 import org.globus.ogsa.utils.AnyHelper;
 import org.globus.ogsa.utils.QueryHelper;
@@ -213,9 +215,12 @@ public class FileStreamImpl extends GridServiceImpl {
         if (logger.isDebugEnabled()) {
             logger.debug("starting stream");
         }
-        GSSCredential credential
-            = SecureServicePropertiesHelper.getCredential(this);
-        this.proxy = credential;
+
+	// FIXME: this can be done automatically if sec. descriptor is set
+	// get service subject
+	Subject subject = SecurityManager.getManager().getSubject(this);
+	// extract gss credential from subject
+	this.proxy = JaasGssUtil.getCredential(subject);
 
         if(this.outputFollower == null) {
             this.outputFollower = new Tail();
