@@ -675,9 +675,9 @@ int i = 0;
 
     closelog();
 #ifdef FACILITY
-    openlog("ftpd", LOG_PID | LOG_NDELAY, FACILITY);
+    openlog("gridftpd", LOG_PID | LOG_NDELAY, FACILITY);
 #else
-    openlog("ftpd", LOG_PID);
+    openlog("gridftpd", LOG_PID);
 #endif
 
 #ifdef SecureWare
@@ -8095,9 +8095,9 @@ void do_daemon(int argc, char **argv, char **envp)
 	    close(i);
 	}
 #ifdef FACILITY
-	openlog("ftpd", LOG_PID | LOG_NDELAY, FACILITY);
+	openlog("gridftpd", LOG_PID | LOG_NDELAY, FACILITY);
 #else
-	openlog("ftpd", LOG_PID);
+	openlog("gridftpd", LOG_PID);
 #endif
 
 	/* junk stderr */
@@ -8189,9 +8189,9 @@ void do_daemon(int argc, char **argv, char **envp)
 	    if (lsock != 0 && lsock != 1)
 		close(lsock);
 #ifdef FACILITY
-	    openlog("ftpd", LOG_PID | LOG_NDELAY, FACILITY);
+	    openlog("gridftpd", LOG_PID | LOG_NDELAY, FACILITY);
 #else
-	    openlog("ftpd", LOG_PID);
+	    openlog("gridftpd", LOG_PID);
 #endif
 	    return;
 	}
