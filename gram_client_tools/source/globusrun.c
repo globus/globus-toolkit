@@ -448,8 +448,14 @@ static int arg_f_mode = O_RDONLY;
 	    globus_libc_fprintf(stderr, "Error initializing globus\n");
 	    return 1;
 	}
+        err = globus_module_activate(GLOBUS_GSI_GSS_ASSIST_MODULE);
+        if ( err != GLOBUS_SUCCESS )
+        {
+            globus_libc_fprintf(stderr, "Error initializing GSI GSS ASSIST\n");
+            return 1;
+        }
         err = globus_module_activate(GLOBUS_GRAM_CLIENT_MODULE);
-	if(err != GLOBUS_SUCCESS)
+	if ( err != GLOBUS_SUCCESS)
 	{
 	    globus_libc_fprintf(stderr,
 				"Error initializing GRAM: %s\n",
