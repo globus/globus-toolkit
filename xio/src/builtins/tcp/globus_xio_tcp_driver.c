@@ -1753,14 +1753,18 @@ globus_l_xio_tcp_system_connect_cb(
     GlobusXIOTcpDebugEnter();
     connect_info = (globus_l_connect_info_t *) user_arg;
     
-    if(result != GLOBUS_SUCCESS && !globus_xio_error_is_canceled(result))
+    if(result != GLOBUS_SUCCESS)
     {
-        globus_result_t                 res;
-        
-        res = globus_l_xio_tcp_connect_next(connect_info);
-        if(res == GLOBUS_SUCCESS)
+        GlobusIXIOTcpCloseFd(connect_info->handle->handle);
+        if(!globus_xio_operation_is_canceled(connect_info->op))
         {
-            goto error_tryagain;
+            globus_result_t                 res;
+            
+            res = globus_l_xio_tcp_connect_next(connect_info);
+            if(res == GLOBUS_SUCCESS)
+            {
+                goto error_tryagain;
+            }
         }
     }
     
@@ -1862,6 +1866,7 @@ globus_l_xio_tcp_connect_next(
             {
                 result = GlobusXIOErrorWrapFailed(
                     "globus_xio_system_register_connect", result);
+                GlobusIXIOTcpCloseFd(fd);
                 continue;
             }
 
