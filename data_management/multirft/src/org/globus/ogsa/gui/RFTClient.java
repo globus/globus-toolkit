@@ -40,7 +40,7 @@ import org.w3c.dom.Element;
 import javax.xml.rpc.Stub;
 import org.globus.ogsa.utils.GetOpts;
 import org.globus.ogsa.impl.security.authentication.Constants;
-import org.globus.gsi.gssapi.auth.NoAuthorization;
+import org.globus.ogsa.impl.security.authorization.NoAuthorization;
 import org.globus.axis.gsi.GSIConstants;
 
 public class RFTClient {
@@ -119,19 +119,19 @@ public class RFTClient {
                 new MultiFileRFTDefinitionServiceGridLocator();
             RFTPortType rftPort =
                 loc.getMultiFileRFTDefinitionPort(locator);
-             ((Stub)rftPort)._setProperty(GSIConstants.GSI_AUTHORIZATION, NoAuthorization.getInstance());
-             ((Stub)rftPort)._setProperty(GSIConstants.GSI_MODE, GSIConstants.GSI_MODE_FULL_DELEG);
-             ((Stub)rftPort)._setProperty(Constants.MSG_SEC_TYPE, Constants.SIGNATURE);
+
+	    ((Stub)rftPort)._setProperty(Constants.AUTHORIZATION, 
+					 NoAuthorization.getInstance());
+	    ((Stub)rftPort)._setProperty(GSIConstants.GSI_MODE, 
+					 GSIConstants.GSI_MODE_FULL_DELEG);
+	    ((Stub)rftPort)._setProperty(Constants.GSI_SEC_CONV, 
+					 Constants.SIGNATURE);
+
            /* WSDLReferenceType ref = (WSDLReferenceType) locator.getReference()[0];
-            
             opts.setOptions( ((Stub)factory));
-            
             //AnyHelper.setAny(extension,requestElement);
           //  extension.set_any(any); 
-
-            ((Stub)factory)._setProperty(GSIConstants.GSI_AUTHORIZATION, NoAuthorization.getInstance());
-            ((Stub)factory)._setProperty(GSIConstants.GSI_MODE, GSIConstants.GSI_MODE_FULL_DELEG);
-            ((Stub)factory)._setProperty(Constants.MSG_SEC_TYPE, Constants.SIGNATURE); */
+	  */
 
            int requestid = rftPort.start();
            System.out.println("Request id: " + requestid);

@@ -133,7 +133,7 @@ public class FileStreamTestCase extends GridTestCase {
                 this.gridServiceLocator.getFactoryPort(
                     this.factoryHandleLocator));
         fileStreamFactory.getStub()._setProperty(
-                Constants.MSG_SEC_TYPE,
+                Constants.GSI_SEC_CONV,
                 Constants.SIGNATURE);
         fileStreamFactory.getStub()._setProperty(
                 Constants.AUTHORIZATION,
@@ -211,10 +211,10 @@ public class FileStreamTestCase extends GridTestCase {
             return;
         }
 
-       ((Stub) fileStream)._setProperty(Constants.MSG_SEC_TYPE,
-                                        Constants.SIGNATURE);
-       ((Stub) fileStream)._setProperty(Constants.AUTHORIZATION,
-                                        SelfAuthorization.getInstance());
+	((Stub) fileStream)._setProperty(Constants.GSI_SEC_CONV,
+					 Constants.SIGNATURE);
+	((Stub) fileStream)._setProperty(Constants.AUTHORIZATION,
+					 SelfAuthorization.getInstance());
 
         sendTestPattern(0);
 
