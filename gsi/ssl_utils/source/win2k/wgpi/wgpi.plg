@@ -1,0 +1,36 @@
+--------------------Configuration: wgpi - Win32 Release--------------------
+Begining build with project "C:\gsi\wgpi_win32\wgpi.dsp", at root.
+Active configuration is Win32 (x86) Application (based on Win32 (x86) Application)
+
+Project's tools are:
+			"32-bit C/C++ Compiler for 80x86" with flags "/nologo /MD /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_AFXDLL" /Fp"Release/wgpi.pch" /Yu"stdafx.h" /Fo"Release/" /Fd"Release/" /FD /c "
+			"OLE Type Library Maker" with flags "/nologo /D "NDEBUG" /mktyplib203 /o NUL /win32 "
+			"Win32 Resource Compiler" with flags "/l 0x409 /fo"Release/wgpi.res" /d "NDEBUG" /d "_AFXDLL" "
+			"Browser Database Maker" with flags "/nologo /o"Release/wgpi.bsc" "
+			"COFF Linker for 80x86" with flags "/nologo /subsystem:windows /incremental:no /pdb:"Release/wgpi.pdb" /machine:I386 /out:"Release/wgpi.exe" "
+			"Custom Build" with flags ""
+			"<Component 0xa>" with flags ""
+
+Creating temp file "c:\windows\TEMP\RSPC2B3.TMP" with contents </nologo /MD /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_AFXDLL" /Fp"Release/wgpi.pch" /Yu"stdafx.h" /Fo"Release/" /Fd"Release/" /FD /c 
+"C:\gsi\wgpi_win32\wgpiDlg.cpp"
+>
+Creating command line "cl.exe @c:\windows\TEMP\RSPC2B3.TMP" 
+Creating temp file "c:\windows\TEMP\RSPC2B4.TMP" with contents </nologo /subsystem:windows /incremental:no /pdb:"Release/wgpi.pdb" /machine:I386 /out:"Release/wgpi.exe" 
+.\Release\StdAfx.obj
+.\Release\WgciCreate.obj
+.\Release\wgpi.obj
+.\Release\wgpiDlg.obj
+.\Release\WgpiOptions.obj
+.\Release\WgpiView.obj
+.\Release\wgpi.res
+..\out32\gsilib32.lib
+"..\..\OpenSSL-0.9.6\src\out32dll\libeay32.lib"
+"..\..\OpenSSL-0.9.6\src\out32dll\ssleay32.lib">
+Creating command line "link.exe @c:\windows\TEMP\RSPC2B4.TMP" 
+Compiling...
+wgpiDlg.cpp
+Linking...
+
+
+
+wgpi.exe - 0 error(s), 0 warning(s)
