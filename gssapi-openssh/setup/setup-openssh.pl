@@ -172,8 +172,8 @@ print "\n";
 print "    to prepare your environment for running the gsi_openssh\n";
 print "    executables.\n";
 print "\n";
-print "    \"Utopian Prime Minister bad!  GSI-OpenSSH *good*!\"\n";
-print "    \t--( Jacobim Mugatu )--\n";
+print "    Jacobim Mugatu says,\n";
+print "    \t\"Utopian Prime Minister Bad!  GSI-OpenSSH Good!\"\n";
 print "---------------------------------------------------------------------\n";
 print "$myname: Finished configuring package 'gsi_openssh'.\n";
 
