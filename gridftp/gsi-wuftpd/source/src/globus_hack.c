@@ -1277,7 +1277,7 @@ g_send_data(
 
         if(l_timed_out)
         {
-            sprintf(error_buf, "TImed out");
+            sprintf(error_buf, "Timed out");
             goto data_err;
         }
 
@@ -1453,7 +1453,10 @@ data_write_callback(
     globus_i_wu_monitor_t *                         monitor;
 
     monitor = (globus_i_wu_monitor_t *)callback_arg;
-
+    
+    (void) signal(SIGALRM, g_alarm_signal);
+    alarm(timeout_data);
+    
     /* added for SC01 ProxyServer demo */
     if(!error)
     {
