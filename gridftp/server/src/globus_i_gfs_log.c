@@ -107,8 +107,6 @@ globus_i_gfs_log_open()
     else if(strcmp(module, "syslog") == 0)
     {
         log_mod = &globus_logging_syslog_module;
-        printf("syslog module not yet implemented\n");
-        exit(2);
         /* set syslog options and pass in log_arg */
     }
     else

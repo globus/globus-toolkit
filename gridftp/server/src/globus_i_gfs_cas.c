@@ -99,6 +99,18 @@ globus_gfs_acl_cas_authorize(
     return GLOBUS_GFS_ACL_COMPLETE;
 }
 
+static void
+globus_gfs_acl_cas_destroy_cb(
+    void *                              callback_arg,
+    globus_gsi_authz_handle_t           handle,
+    globus_result_t                     result)
+{
+    GlobusGFSName(globus_gfs_acl_cas_cb);
+    GlobusGFSDebugEnter();
+
+
+    GlobusGFSDebugExit();
+}
 
 static void
 globus_gfs_acl_cas_destroy(
@@ -109,8 +121,8 @@ globus_gfs_acl_cas_destroy(
     GlobusGFSDebugEnter();
 
     cas_handle = (globus_gsi_authz_handle_t) out_handle;
-
-/* XXX //    globus_gsi_authz_handle_destroy(cas_handle, NULL, NULL); */
+    globus_gsi_authz_handle_destroy(
+        cas_handle, globus_gfs_acl_cas_destroy_cb, NULL);
 
     GlobusGFSDebugExit();
 }
