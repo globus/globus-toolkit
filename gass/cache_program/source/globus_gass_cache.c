@@ -14,6 +14,8 @@ CVS Information:
 /******************************************************************************
                              Include header files
 ******************************************************************************/
+#include "globus_common.h"
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <fcntl.h>
