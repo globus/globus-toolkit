@@ -31,6 +31,7 @@
 	<include name="**/IPTimeMonitorPacket.class"/>
 	<include name="**/GFTPMonitorPacket.class"/>
 	<include name="**/ExampleGFTPSender.class"/>
+	<include name="**/CustomByteBuffer.class"/>
       </fileset>
       <fileset file="./udpUsage.properties"/>
       <fileset file="./log4j.properties"/>
@@ -63,7 +64,7 @@
     </java>
   </target>
 
-<!--
+
   <target name="do-junit-tests">
     <path id="junit.classpath">
       <fileset dir="/home/jdicarlo/java-software/junit3.8.1/">
@@ -75,16 +76,18 @@
     <javac srcdir="." destdir="./dist/" includes = "src/**, tests/**">
       <classpath>
 	<path refid="junit.classpath"/>
+	<path refid="lib.classpath"/>
       </classpath>
     </javac>
 
     <java classname="junit.textui.TestRunner">
       <classpath>
 	<pathelement path="./dist"/>
+	<path refid="lib.classpath"/>
 	<path refid="junit.classpath"/>
       </classpath>
-      <arg value="UnitTester"/>
+      <arg value="org.globus.usage.ByteBufferTester"/>
     </java>
-  </target> -->
+  </target>
 
 </project>
