@@ -100,7 +100,7 @@ server-install:	$(SERVER_PROGS)
 	done
 	@if test ! -f $(MYPROXY_SERVER_DIR)/etc/myproxy-server.config ; then \
 	  echo Copy base server configuration file to $(MYPROXY_SERVER_DIR)/etc/myproxy-server.config ;\
-	  $(INSTALL) -o $(INSTALL_OWNER) -m 644 -c myproxy-server.config $(MYPROXY_SERVER_DIR)/etc/myproxy-server.config ;\
+	  $(INSTALL) -o $(INSTALL_OWNER) -m 644 -c ${srcdir}/myproxy-server.config $(MYPROXY_SERVER_DIR)/etc/myproxy-server.config ;\
 	fi
 	@if test ! -d $(MYPROXY_SERVER_DIR)/store ; then \
 	  echo Creating credentials storage directory $(MYPROXY_SERVER_DIR)/store ;\
