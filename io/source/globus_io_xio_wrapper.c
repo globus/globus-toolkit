@@ -2028,13 +2028,21 @@ globus_l_io_tcp_create_listener(
         goto error_alloc;
     }
     
-    if(iattr->authentication_mode == GLOBUS_IO_SECURE_AUTHENTICATION_MODE_NONE)
+    if(iattr->authorization_mode == GLOBUS_IO_SECURE_AUTHENTICATION_MODE_NONE)
     {
         stack = globus_l_io_tcp_stack;
     }
     else
     {
         stack = globus_l_io_gsi_stack;
+        result = globus_io_attr_get_secure_authorization_mode(
+            &iattr,
+            &ihandle->authorization_mode,
+            &ihandle->authz_data);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error_gsi;
+        }
     }
     
     result = globus_xio_server_create(
@@ -2076,6 +2084,7 @@ error_server_cntl:
     globus_xio_server_close(ihandle->xio_server);
     
 error_server:
+error_gsi:
     globus_l_io_handle_destroy(ihandle);
     
 error_alloc:
@@ -2241,15 +2250,19 @@ globus_l_io_tcp_register_accept(
 {
     globus_result_t                     result;
     globus_l_io_handle_t *              ihandle;
+    globus_l_io_handle_t *              ilistener_handle;
     globus_l_io_bounce_t *              bounce_info;
     globus_xio_target_t                 target;
+    globus_l_io_attr_t *                iattr;
+    globus_xio_attr_t                   xio_attr;
     GlobusIOName(globus_io_tcp_register_accept);
     
     GlobusLIOCheckNullParam(new_handle);
     GlobusLIOCheckNullParam(callback);
     GlobusLIOCheckHandle(listener_handle, GLOBUS_I_IO_TCP_HANDLE);
     
-    if(!(*listener_handle)->xio_target)
+    ilistener_handle = *listener_handle;
+    if(!ilistener_handle->xio_target)
     {
         result = globus_error_put(
             globus_io_error_construct_not_initialized(
@@ -2262,9 +2275,11 @@ globus_l_io_tcp_register_accept(
         goto error_target;
     }
     
+    iattr = GLOBUS_NULL;
     if(attr)
     {
         GlobusLIOCheckAttr(attr, GLOBUS_I_IO_TCP_ATTR);
+        iattr = *attr;
     }
     
     result = GlobusLIOMalloc(bounce_info, globus_l_io_bounce_t);
@@ -2287,14 +2302,92 @@ globus_l_io_tcp_register_accept(
     bounce_info->cancel_info = GLOBUS_NULL;
     *new_handle = ihandle;
     
-    target = (*listener_handle)->xio_target;
-    (*listener_handle)->xio_target = GLOBUS_NULL;
+    if(iattr)
+    {
+        /* copy auth data from user attr and verify */
+        result = globus_io_attr_get_secure_authorization_mode(
+            &iattr,
+            &ihandle->authorization_mode,
+            &ihandle->authz_data);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error_gsi;
+        }
+        
+        if((ilistener_handle->authorization_mode == 
+            GLOBUS_IO_SECURE_AUTHENTICATION_MODE_NONE ||
+            ihandle->authorization_mode == 
+                GLOBUS_IO_SECURE_AUTHENTICATION_MODE_NONE) &&
+            ilistener_handle->authorization_mode != 
+                ihandle->authorization_mode)
+        {
+            result = globus_error_put(
+                globus_error_construct_error(
+                    GLOBUS_XIO_MODULE,
+                    GLOBUS_NULL,
+                    GLOBUS_XIO_ERROR_PARAMETER,
+                    "[%s:%d] Globus IO-XIO requires that the attrs"
+                        " passed to globus_io_tcp_create_listener and"
+                        " globus_io_tcp_register_accept either both require"
+                        " authentication or both not require it",
+                    _io_name, __LINE__));
+            goto error_gsi;
+        }
+        
+        xio_attr = iattr->attr;
+    }
+    else
+    {
+        /* copy auth data from listener handle */
+        ihandle->authorization_mode = ilistener_handle->authorization_mode;
+        result = GlobusLIOMalloc(
+            ihandle->authz_data, globus_l_io_secure_authorization_data_t);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error_gsi;
+        }
+        memset(
+            ihandle->authz_data,
+            0,
+            sizeof(globus_l_io_secure_authorization_data_t));
+            
+        if(ihandle->authorization_mode ==
+             GLOBUS_IO_SECURE_AUTHORIZATION_MODE_IDENTITY)
+        {
+            OM_uint32               major_status;
+            OM_uint32               minor_status;
+
+            major_status = gss_duplicate_name(
+                &minor_status,
+                ilistener_handle->authz_data->identity,
+                &ihandle->authz_data->identity);
+            if(GSS_ERROR(major_status))
+            {
+                result = GlobusLIOErrorWrapGSSFailed(
+                    "gss_duplicate_name", major_status, minor_status);
+                goto error_gsi;
+            }
+        }
+        else if(ihandle->authorization_mode ==
+             GLOBUS_IO_SECURE_AUTHORIZATION_MODE_IDENTITY)
+        {
+            ihandle->authz_data->callback = 
+                ilistener_handle->authz_data->callback;
+            ihandle->authz_data->callback_arg = 
+                ilistener_handle->authz_data->callback_arg;
+        }
+
+        xio_attr = ilistener_handle->xio_attr;
+    }
+    
+    target = ilistener_handle->xio_target;
+    ilistener_handle->xio_target = GLOBUS_NULL;
     
     globus_mutex_lock(&ihandle->pending_lock);
     {
         result = globus_xio_register_open(
             &ihandle->xio_handle,
-            attr ? (*attr)->attr : GLOBUS_NULL,
+            xio_attr,
             target,
             globus_l_io_bounce_authz_cb,
             bounce_info);
@@ -2311,6 +2404,7 @@ globus_l_io_tcp_register_accept(
     return GLOBUS_SUCCESS;
 
 error_open:
+error_gsi:
     globus_l_io_handle_destroy(ihandle);
 error_handle:
     globus_free(bounce_info);
