@@ -23,7 +23,7 @@ print "Creating globus-domainname\n";
 my $result = `$setupdir/setup-common-sh-scripts`;
 $result = system("chmod 0755 $setupdir/globus-hostname");
 
-if (!(-d $globusdir/bin)){
+if (!(-d "$globusdir/bin")){
 	$result = system("mkdir $globusdir/bin");
 }
 	
