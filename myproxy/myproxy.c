@@ -781,7 +781,7 @@ convert_message(const char			*buffer,
      *
      * Yes, this needs complete revamping.
      */
-    buffer_copy = malloc(buffer_len);
+    buffer_copy = malloc(buffer_len+1);
     
     if (buffer_copy == NULL)
     {
@@ -791,6 +791,7 @@ convert_message(const char			*buffer,
     }
 
     memcpy(buffer_copy, buffer, buffer_len);
+    buffer_copy[buffer_len] = '\0';
     
     /*
      * Our current position in buffer is in buffer_p. Since we're
