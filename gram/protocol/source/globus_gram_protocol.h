@@ -16,34 +16,6 @@ EXTERN_C_BEGIN
 
 #include <globus_io.h>
 
-
-#define GLOBUS_GRAM_HTTP_TRACE_MALLOC 0
-
-
-#if !(GLOBUS_GRAM_HTTP_TRACE_MALLOC)
-
-#define globus_gram_http_malloc(type,count) \
-    (type *) globus_libc_malloc(count*sizeof(type))
-    
-#define globus_gram_http_free(ptr) \
-    if (ptr) globus_libc_free(ptr)
-
-#else
-    
-#define globus_gram_http_malloc(type,n) \
-    (type *) globus_gram_http_real_malloc(n*sizeof(type), __FILE__, __LINE__)
-    
-#define globus_gram_http_free(ptr) if (ptr) \
-    globus_gram_http_real_free(ptr,__FILE__,__LINE__)
-
-void*
-globus_gram_http_real_malloc(globus_size_t asize, char * file, int line);
-
-void
-globus_gram_http_real_free(void * ptr, char * file, int line);
-
-#endif
-
 #define GRAM_GOES_HTTP 1
 #define GLOBUS_GRAM_HTTP_BUFSIZE     64000
 
@@ -163,27 +135,24 @@ globus_gram_http_post_and_get( char *                         url,
 			       globus_gram_http_monitor_t *   monitor);
 
 
-/* I don't use these --frame functions right now.  --Steve A, 7/20/99 */
-/* frame message with HTTP headers */
+/* Frame a request message with HTTP headers */
 int
-globus_gram_http_frame(globus_byte_t *    msg,
-		       globus_size_t      msgsize,
-		       globus_byte_t **   httpmsg,        /* gets allocated */
-		       globus_size_t *    httpsize);
+globus_gram_http_frame_request(globus_byte_t *	  uri,
+			       globus_byte_t *	  hostname,
+			       globus_byte_t *    msg,
+			       globus_size_t	  msgsize,
+			       globus_byte_t **   framedmsg,
+			       globus_size_t *	  framedsize);
 
-/* create HTTP error message */
+/* Frame a response message with HTTP headers */
 int
-globus_gram_http_frame_error(int                errortype,
-                             globus_byte_t **   httpmsg,  /* gets allocated */
-			     globus_size_t *    httpsize);
+globus_gram_http_frame_response(int		   code,
+				globus_byte_t *    msg,
+				globus_size_t      msgsize,
+				globus_byte_t **   framedmsg,
+				globus_size_t *    framedsize);
 
 
-/* unframe HTTP message */
-int
-globus_gram_http_unframe(globus_byte_t *    httpmsg,
-			 globus_size_t      httpsize,
-			 globus_byte_t **   message,      /* gets allocated */
-			 globus_size_t *    msgsize);
 
 /* These functions pack and unpack GRAM requests into HTTP format
    They come in two forms right now, depending upon how they handle
