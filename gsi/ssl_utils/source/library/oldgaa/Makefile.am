@@ -22,7 +22,7 @@ noinst_LTLIBRARIES = libglobus_oldgaa_$(GLOBUS_FLAVOR_NAME).la
 
 INCLUDES = $(GPT_INCLUDES)
 
-AM_CFLAGS = -DDEBUG
+#AM_CFLAGS = -DDEBUG
 
 libglobus_oldgaa___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
 
