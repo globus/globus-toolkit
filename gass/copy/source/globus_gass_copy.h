@@ -43,7 +43,9 @@
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 #include "globus_common.h"
 #include "globus_gass_transfer.h"
-#include "globus_ftp.h"
+/*
+#include "globus_ftp_client.h"
+*/
 #include "globus_io.h"
 #endif
 
@@ -83,10 +85,10 @@ globus_module_descriptor_t        globus_i_gass_copy_module;
 /**
  * gass copy handle
  */
-struct globus_gass_copy_handle_s
+typedef struct globus_gass_copy_handle_s
 {
     void *				user_pointer;
-    globus_ftp_client_handle_t	        ftp_handle;
+    /*  globus_ftp_client_handle_t	        ftp_handle; */
     globus_io_handle_t *		io_handle;
 
 } globus_gass_copy_handle_t;
@@ -95,14 +97,17 @@ struct globus_gass_copy_handle_s
  * GASS copy attribute structure.  Contains any/all attributes that are
  * required to perform the supported transfer methods (ftp, gass, io).
  */
-struct globus_gass_copy_attr_s
+typedef struct globus_gass_copy_attr_s
 {
-    globus_io_file_type                 file_type;
+    /*
+      globus_io_file_type                 file_type;
     globus_io_authorization_t	        io_auth;
     globus_io_secure_channel_t          secure_channel_info;
+    
     globus_ftp_control_striping_t       stripe_info;
     globus_ftp_control_parallel_t       parallel_info;
     globus_ftp_control_tcpbuffer_t      tcpbuffer_info;
+    */
     globus_gass_transfer_requestattr_t  gass_requestattr;
 } globus_gass_copy_attr_t;
 
@@ -222,6 +227,7 @@ globus_gass_copy_get_user_pointer(
  * Set Attribute functions
  */
 
+#ifdef USE_FTP
 /* TCP buffer/window size */
 globus_result_t
 globus_gass_copy_attr_set_tcpbuffer(
@@ -251,7 +257,7 @@ globus_result_t
 globus_gass_copy_attr_set_secure_channel(
     globus_gass_copy_attr_t * attr,
     globus_io_secure_channel_t * secure_channel_info);
-
+#endif
 /**
  * Get Attribute functions
  */

@@ -4,7 +4,7 @@
 /**
  * valid URL schemes
  */
-enum
+typedef enum
 {
     GLOBUS_I_GASS_COPY_URL_SCHEME_UNSUPPORTED,
     GLOBUS_I_GASS_COPY_URL_SCHEME_FTP,
@@ -15,7 +15,7 @@ enum
 /**
  * valid target modes
  */
-enum
+typedef enum
 {
     GLOBUS_I_GASS_COPY_TARGET_MODE_FTP,
     GLOBUS_I_GASS_COPY_TARGET_MODE_GASS,
@@ -25,7 +25,7 @@ enum
 /**
  * target status
  */
-enum
+typedef enum
 {
     GLOBUS_I_GASS_COPY_TARGET_INITIAL,
     GLOBUS_I_GASS_COPY_TARGET_READY,
@@ -36,19 +36,40 @@ enum
 /** 
  * valid state numbers (aka states)
  */
-enum
+typedef enum
 {
     GLOBUS_I_GASS_COPY_STATE_INITIAL,
     GLOBUS_I_GASS_COPY_STATE_SOURCE_READY,
     GLOBUS_I_GASS_COPY_STATE_TRANSFER_IN_PROGRESS,
     GLOBUS_I_GASS_COPY_STATE_READ_COMPLETE,
-    GLOBUS_I_GASS_COPY_STATE_WRITE_COMPLETE
+    GLOBUS_I_GASS_COPY_STATE_WRITE_COMPLETE,
 } globus_i_gass_copy_state_number_t;
+
+/**
+ * The buffer structure used for read/write queue entries
+ */
+typedef struct
+{
+    globus_byte_t *                     bytes;
+    globus_size_t                       nbytes;
+    globus_size_t                       offset;
+    globus_bool_t                       last_data;
+} globus_i_gass_copy_buffer_t;
+
+/**
+ * The state monitor struct
+ */
+typedef struct
+{
+    globus_mutex_t                      mutex;
+    globus_cond_t                       cond;
+    volatile globus_bool_t              done;
+} globus_i_gass_copy_monitor_t;
 
 /**
  * GASS copy target (e.g. source, destination) transfer information.
  */
-struct globus_i_gass_copy_target_s
+typedef struct globus_i_gass_copy_state_target_s
 {
     /**
      * url for file transfer
@@ -98,9 +119,12 @@ struct globus_i_gass_copy_target_s
         /**
          * ftp specific data
          */
+
 	struct /* GLOBUS_I_GASS_COPY_TARGET_MODE_FTP */
 	{
+#ifdef USE_FTP
 	    globus_ftp_handle *			handle;
+#endif
 	    int					n_channels;
 	    int					n_reads_posted;
 	} ftp;
@@ -121,8 +145,9 @@ struct globus_i_gass_copy_target_s
          */
 	struct /* GLOBUS_I_GASS_COPY_TARGET_MODE_IO */
 	{
+#ifdef USE_IO
 	    globus_io_handle *			handle;
-
+#endif
             /**
              * If the IO handle was passed as an argument then FALSE
              * If the IO handle was created internally then TRUE
@@ -153,12 +178,12 @@ typedef struct globus_i_gass_copy_state_s
     /**
      * Source information for the file transfer
      */
-    globus_i_gass_copy_state_target_t	source;
+    globus_i_gass_copy_target_t	source;
 
     /**
      * Dest information for the file transfer
      */
-    globus_i_gass_copy_state_target_t	dest;
+    globus_i_gass_copy_target_t	dest;
 
     /**
      * Used for keeping state of the transfer.
@@ -207,26 +232,6 @@ typedef struct globus_i_gass_copy_state_s
     
 } globus_i_gass_copy_state_t;
 
-/**
- * The buffer structure used for read/write queue entries
- */
-typedef struct
-{
-    globus_byte_t *                     bytes;
-    globus_size_t                       nbytes;
-    globus_size_t                       offset;
-    globus_bool_t                       last_data;
-} globus_i_gass_copy_buffer_t;
-
-/**
- * The state monitor struct
- */
-typedef struct
-{
-    globus_mutex_t                      mutex;
-    globus_cond_t                       cond;
-    volatile globus_bool_t              done;
-} globus_i_gass_copy_monitor_t;
 
 #endif
 
