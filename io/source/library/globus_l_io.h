@@ -115,9 +115,9 @@ extern globus_bool_t                      g_globus_i_io_use_netlogger;
 
 typedef enum
 {
-    GLOBUS_I_IO_READ_OPERATION,
-    GLOBUS_I_IO_WRITE_OPERATION,
-    GLOBUS_I_IO_EXCEPT_OPERATION
+    GLOBUS_I_IO_READ_OPERATION = 1,
+    GLOBUS_I_IO_WRITE_OPERATION = 2,
+    GLOBUS_I_IO_EXCEPT_OPERATION = 4
 } globus_i_io_operation_type_t;
 
 extern globus_mutex_t			globus_i_io_mutex;

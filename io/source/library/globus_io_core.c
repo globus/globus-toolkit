@@ -702,7 +702,7 @@ globus_i_io_end_operation(
     globus_i_io_debug_printf(3,
         (stderr, "%s(): entering, fd=%d\n", myname, handle->fd));
     
-    select_info = globus_l_io_fd_table[operation_info->handle->fd];
+    select_info = globus_l_io_fd_table[handle->fd];
     
     /* if operation_start was called, cant be null */
     globus_assert(select_info);
