@@ -173,7 +173,9 @@ typedef enum globus_xio_server_state_e
 {
     GLOBUS_XIO_SERVER_STATE_OPEN,
     GLOBUS_XIO_SERVER_STATE_ACCEPTING,
-    GLOBUS_XIO_SERVER_STATE_COMPLETEING,
+    GLOBUS_XIO_SERVER_STATE_COMPLETING,
+    GLOBUS_XIO_SERVER_STATE_CLOSE_PENDING,
+    GLOBUS_XIO_SERVER_STATE_CLOSING,
     GLOBUS_XIO_SERVER_STATE_CLOSED,
 } globus_xio_server_state_t;
 
@@ -255,6 +257,8 @@ typedef struct globus_i_xio_server_s
     int                                     ref;
     globus_mutex_t                          mutex;
     globus_callback_space_t                 space;
+
+    globus_bool_t                           blocking;
 
     int                                     stack_size;
     globus_i_xio_server_entry_t             entry[1];
@@ -525,6 +529,28 @@ typedef struct globus_i_xio_driver_s
     globus_xio_driver_attr_destroy_t        attr_destroy_func;
 } globus_i_xio_driver_t;
 
+
+/*
+ *  wrapper struct
+ */
+typedef struct globus_i_xio_blocking_s
+{
+    globus_mutex_t                          mutex;
+    globus_cond_t                           cond;
+    globus_bool_t                           done;
+    globus_size_t                           nbytes;
+    globus_i_xio_op_t *                     op;
+    globus_xio_data_descriptor_t            data_desc;
+    globus_result_t                         res;
+} globus_i_xio_blocking_t;
+
+
+globus_i_xio_blocking_t *
+globus_i_xio_blocking_alloc();
+
+void
+globus_i_xio_blocking_destroy(
+    globus_i_xio_blocking_t *               info);
 
 /*************************************************************************
  *                     internal function signatures

@@ -332,34 +332,40 @@ globus_xio_stack_destroy(
 /**
  *  server 
  */
-globus_result_t
-globus_xio_server_init(
-    globus_xio_server_t *                   server,
-    globus_xio_attr_t                       server_attr,
-    globus_xio_stack_t                      stack);
-
-/**
- *  This is used to get the contact string 
- *
- *  TODO: define all possible values for cmd
- */
-globus_result_t
-globus_xio_server_cntl(
-    globus_xio_server_t                     server,
-    globus_xio_driver_t                     driver,
-    int                                     cmd,
-    ...);
-
-/**
- * in tcp driver case this is an accept
- */
-
 typedef void
 (*globus_xio_accept_callback_t)(
     globus_xio_server_t                     server,
     globus_xio_target_t                     target,
     globus_result_t                         result,
     void *                                  user_arg);
+
+typedef void
+(*globus_xio_server_callback_t)(
+    globus_xio_server_t                     server,
+    void *                                  user_arg);
+
+globus_result_t
+globus_xio_server_create(
+    globus_xio_server_t *                   server,
+    globus_xio_attr_t                       server_attr,
+    globus_xio_stack_t                      stack);
+
+globus_result_t
+globus_xio_server_register_close(
+    globus_xio_server_t                     server,
+    globus_xio_server_callback_t            cb,
+    void *                                  user_arg);
+
+globus_result_t
+globus_xio_server_close(
+    globus_xio_server_t                     server);
+
+globus_result_t
+globus_xio_server_cntl(
+    globus_xio_server_t                     server,
+    globus_xio_driver_t                     driver,
+    int                                     cmd,
+    ...);
 
 globus_result_t
 globus_xio_server_accept(
@@ -373,10 +379,6 @@ globus_xio_server_register_accept(
     globus_xio_attr_t                       accept_attr,
     globus_xio_accept_callback_t            cb,
     void *                                  user_arg);
-
-globus_result_t
-globus_xio_server_destroy(
-    globus_xio_server_t                     server);
 
 /**
  *  client init

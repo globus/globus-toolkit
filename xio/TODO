@@ -6,4 +6,5 @@ better driver detection and per driver config
 tests
 -----
 try read after read eof delivered
-cancel open before open callback
+
+ake a note of it... and add two points for discussion 1) dealing with callback spaces in a will_block 2) will_block callback can be called multiple times, so make it safe for this (prolly by checking same state that will be checked when user cb returns"

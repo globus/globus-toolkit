@@ -65,6 +65,10 @@ do                                                                      \
  *                       Internal functions
  *                       ------------------
  *************************************************************************/
+globus_result_t
+globus_l_xio_close_server(
+    globus_i_xio_server_t *                 xio_server);
+
 /*
  *  this is the only mechanism for delivering a callback to the user 
  */
@@ -137,11 +141,16 @@ globus_l_xio_server_accept_kickout(
 
         switch(xio_server->state)
         {
-            case GLOBUS_XIO_SERVER_STATE_COMPLETEING:
+            case GLOBUS_XIO_SERVER_STATE_COMPLETING:
                 xio_server->state = GLOBUS_XIO_SERVER_STATE_OPEN;
                 break;
+
+            case GLOBUS_XIO_SERVER_STATE_CLOSE_PENDING:
+                xio_server->state = GLOBUS_XIO_SERVER_STATE_CLOSING;
+                globus_l_xio_close_server(xio_server);
+                break;
+
             case GLOBUS_XIO_SERVER_STATE_ACCEPTING:
-            case GLOBUS_XIO_SERVER_STATE_CLOSED:
                 break;
 
             default:
@@ -211,7 +220,19 @@ globus_i_xio_server_accept_callback(
         }
         xio_op->state = GLOBUS_XIO_OP_STATE_FINISH_WAITING;
 
-        xio_server->state = GLOBUS_XIO_SERVER_STATE_COMPLETEING;
+        switch(xio_server->state)
+        {
+            case GLOBUS_XIO_SERVER_STATE_ACCEPTING:
+                xio_server->state = GLOBUS_XIO_SERVER_STATE_COMPLETING;
+                break;
+
+            /* nothing to do for this case */
+            case GLOBUS_XIO_SERVER_STATE_CLOSE_PENDING:
+                break;
+
+            default:
+                globus_assert(0);
+        }
     }
     globus_mutex_unlock(&xio_server->mutex);
 
@@ -379,6 +400,92 @@ globus_l_xio_accept_timeout_callback(
     return rc;
 }
 
+
+
+void
+globus_l_xio_server_close_kickout(
+    void *                                  user_arg)
+{
+    globus_i_xio_server_t *                 xio_server;
+    globus_bool_t                           destroy_server = GLOBUS_FALSE;
+
+    xio_server = (globus_i_xio_server_t *) user_arg;
+
+    globus_mutex_lock(&xio_server->mutex);
+    {
+        /* dec refrence count then free.  this makes sure we don't
+           free while in a user callback */
+        GlobusIXIOServerDec(destroy_server, xio_server);
+        xio_server->state = GLOBUS_XIO_SERVER_STATE_CLOSED;
+    }
+    globus_mutex_unlock(&xio_server->mutex);
+
+    if(destroy_server)
+    {
+        GlobusIXIOServerDestroy(xio_server);
+    }
+}
+/*
+ *  this is called locked
+ */
+globus_result_t
+globus_l_xio_close_server(
+    globus_i_xio_server_t *                 xio_server)
+{
+    int                                     ctr;
+    globus_result_t                         res = GLOBUS_SUCCESS;
+    globus_result_t                         tmp_res;
+    globus_callback_space_t                 space = 
+                                                GLOBUS_CALLBACK_GLOBAL_SPACE;
+    GlobusXIOName(globus_l_xio_close_server);
+
+    for(ctr = 0; ctr < xio_server->stack_size; ctr++)
+    {
+        if(xio_server->entry[ctr].driver->server_destroy_func != NULL)
+        {
+            /* possible to lose a driver res, but you know.. so what? */
+            tmp_res = xio_server->entry[ctr].driver->server_destroy_func(
+                        xio_server->entry[ctr].server_handle);
+            if(tmp_res != GLOBUS_SUCCESS)
+            {
+                res = GlobusXIOErrorWrapFailed("server_destroy", tmp_res);
+            }
+        }
+    }
+
+    if(!xio_server->blocking)
+    {
+        space = xio_server->space;
+    }
+    globus_callback_space_register_oneshot(
+        NULL,
+        NULL,
+        globus_l_xio_server_close_kickout,
+        (void *)xio_server,
+        space);
+
+    return res;
+}
+
+void
+globus_l_xio_server_close_cb(
+    globus_xio_server_t                     server,
+    void *                                  user_arg)
+{
+    globus_i_xio_blocking_t *               info;
+
+    info = (globus_i_xio_blocking_t *) user_arg;
+
+    globus_mutex_lock(&info->mutex);
+    {
+        info->done = GLOBUS_TRUE;
+        globus_cond_signal(&info->cond);
+    }
+    globus_mutex_unlock(&info->mutex);
+}
+
+
+
 /**************************************************************************
  *                         API functions
  *                         -------------
@@ -388,7 +495,7 @@ globus_l_xio_accept_timeout_callback(
  *  initialize a server structure
  */
 globus_result_t
-globus_xio_server_init(
+globus_xio_server_create(
     globus_xio_server_t *                   server,
     globus_xio_attr_t                       server_attr,
     globus_xio_stack_t                      stack)
@@ -596,7 +703,7 @@ globus_xio_server_register_accept(
     globus_mutex_lock(&xio_server->mutex);
     {
         if(xio_server->state != GLOBUS_XIO_SERVER_STATE_OPEN &&
-           xio_server->state != GLOBUS_XIO_SERVER_STATE_COMPLETEING)
+           xio_server->state != GLOBUS_XIO_SERVER_STATE_COMPLETING)
         {
             globus_mutex_unlock(&xio_server->mutex);
             res = GlobusXIOErrorInvalidState(xio_server->state);
@@ -733,7 +840,7 @@ globus_xio_server_cancel_accept(
     globus_mutex_lock(&xio_server->mutex);
     {
         if(xio_server->state != GLOBUS_XIO_SERVER_STATE_ACCEPTING &&
-           xio_server->state != GLOBUS_XIO_SERVER_STATE_COMPLETEING)
+           xio_server->state != GLOBUS_XIO_SERVER_STATE_COMPLETING)
         {
             res = GlobusXIOErrorInvalidState(xio_server->state);
         }
@@ -774,15 +881,14 @@ globus_xio_server_cancel_accept(
  *  destroy the server
  */
 globus_result_t
-globus_xio_server_destroy(
-    globus_xio_server_t                     server)
+globus_xio_server_register_close(
+    globus_xio_server_t                     server,
+    globus_xio_server_callback_t            cb,
+    void *                                  user_arg)
 {
     globus_i_xio_server_t *                 xio_server;
     globus_result_t                         res = GLOBUS_SUCCESS;
-    globus_result_t                         tmp_res;
-    globus_bool_t                           destroy_server = GLOBUS_FALSE;
-    int                                     ctr;
-    GlobusXIOName(globus_xio_server_destroy);
+    GlobusXIOName(globus_xio_server_register_close);
 
     GlobusXIODebugEnter();
     if(server == NULL)
@@ -795,41 +901,32 @@ globus_xio_server_destroy(
 
     globus_mutex_lock(&xio_server->mutex);
     {
-        if(xio_server->state == GLOBUS_XIO_SERVER_STATE_ACCEPTING ||
+        if(xio_server->state == GLOBUS_XIO_SERVER_STATE_CLOSE_PENDING ||
+           xio_server->state == GLOBUS_XIO_SERVER_STATE_CLOSING ||
            xio_server->state == GLOBUS_XIO_SERVER_STATE_CLOSED)
         {
             res = GlobusXIOErrorInvalidState(xio_server->state);
         }
         else
         {
-            xio_server->state = GLOBUS_XIO_SERVER_STATE_CLOSED;
-            for(ctr = 0; ctr < xio_server->stack_size; ctr++)
+            switch(xio_server->state)
             {
-                if(xio_server->entry[ctr].driver->server_destroy_func != NULL)
-                {
-                    /* possible to lose a driver res, but you know.. so what? */
-                    tmp_res = 
-                        xio_server->entry[ctr].driver->server_destroy_func(
-                            xio_server->entry[ctr].server_handle);
-                    if(tmp_res != GLOBUS_SUCCESS)
-                    {
-                        res = GlobusXIOErrorWrapFailed(
-                                "server_destroy", tmp_res);
-                    }
-                }
-            }
+                case GLOBUS_XIO_SERVER_STATE_ACCEPTING:
+                    xio_server->state = GLOBUS_XIO_SERVER_STATE_CLOSE_PENDING;
+                    break;
 
-            /* dec refrence count then free.  this makes sure we don't free
-               while in a user callback */
-            GlobusIXIOServerDec(destroy_server, xio_server);
+                case GLOBUS_XIO_SERVER_STATE_OPEN:
+                case GLOBUS_XIO_SERVER_STATE_COMPLETING:
+                    xio_server->state = GLOBUS_XIO_SERVER_STATE_CLOSING;
+                    globus_l_xio_close_server(xio_server);
+                    break;
+
+                default:
+                    globus_assert(0);
+            }
         }
     }
     globus_mutex_unlock(&xio_server->mutex);
-
-    if(destroy_server)
-    {
-        GlobusIXIOServerDestroy(xio_server);
-    }
 
     if(res != GLOBUS_SUCCESS)
     {
@@ -844,6 +941,62 @@ globus_xio_server_destroy(
     GlobusXIODebugExitWithError();
     return res;
 }
+
+/*  
+ *  destroy the server
+ */ 
+globus_result_t
+globus_xio_server_close(
+    globus_xio_server_t                     server)
+{
+    globus_i_xio_server_t *                 xio_server;
+    globus_result_t                         res = GLOBUS_SUCCESS;
+    globus_i_xio_blocking_t *               info;
+    GlobusXIOName(globus_xio_server_close);
+
+    GlobusXIODebugEnter();
+    if(server == NULL) 
+    {
+        res = GlobusXIOErrorParameter("server");
+        goto err;
+    }
+
+    info = globus_i_xio_blocking_alloc();
+    if(info == GLOBUS_NULL)
+    {
+        res = GlobusXIOErrorMemory("internal");
+        goto err;
+    }
+    
+    xio_server = (globus_i_xio_server_t *) server;
+
+    globus_mutex_lock(&info->mutex);
+    {
+        xio_server->blocking = GLOBUS_TRUE;
+        res = globus_xio_server_register_close(xio_server, 
+                globus_l_xio_server_close_cb, info);
+
+        while(!info->done)
+        {
+            globus_cond_wait(&info->cond, &info->mutex);
+        }
+    }
+    globus_mutex_unlock(&info->mutex);
+
+    if(res != GLOBUS_SUCCESS)
+    {
+        globus_i_xio_blocking_destroy(info);
+        goto err;
+    }
+
+    GlobusXIODebugExit();
+    return GLOBUS_SUCCESS;
+
+  err:
+    GlobusXIODebugExitWithError();
+    return res;
+}
+
 
 
 globus_result_t

@@ -292,6 +292,11 @@ globus_l_xio_operation_kickout(
         case GLOBUS_XIO_OPERATION_TYPE_OPEN:
             GlobusXIODriverFinishedOpen(ow->dh->context, ow->dh, ow->op, \
                 ow->res);
+            if(ow->res != GLOBUS_SUCCESS)
+            {
+                globus_xio_driver_context_close(ow->dh->context);
+                globus_l_xio_test_attr_destroy(ow->dh);
+            }
             break;
 
         case GLOBUS_XIO_OPERATION_TYPE_CLOSE:
@@ -464,6 +469,11 @@ globus_l_xio_test_open(
     {
         test_inline_blocker(&dh->delay);
         GlobusXIODriverFinishedOpen(context, dh, op, res);
+        if(res != GLOBUS_SUCCESS)
+        {
+            globus_xio_driver_context_close(dh->context);
+            globus_l_xio_test_attr_destroy(dh);
+        }
     }
     else
     {

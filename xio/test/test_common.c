@@ -451,6 +451,7 @@ main(
     globus_hashtable_destroy(&globus_l_test_hash);
 
     globus_module_deactivate(GLOBUS_COMMON_MODULE);
+    globus_module_deactivate_all();
 
     return rc;
 }

@@ -1943,28 +1943,13 @@ globus_xio_handle_cntl(
  *                          blocking calls
  *                          --------------
  ***********************************************************************/
-/*
- *  wrapper struct
- */
-typedef struct globus_l_xio_blocking_s
+globus_i_xio_blocking_t *
+globus_i_xio_blocking_alloc()
 {
-    globus_mutex_t                          mutex;
-    globus_cond_t                           cond;
-    globus_bool_t                           done;
-    globus_size_t                           nbytes;
-    globus_i_xio_op_t *                     op;
-    globus_xio_data_descriptor_t            data_desc;
-    globus_result_t                         res;
-} globus_l_xio_blocking_t;
+    globus_i_xio_blocking_t *               info;
 
-
-globus_l_xio_blocking_t *
-globus_l_xio_blocking_alloc()
-{
-    globus_l_xio_blocking_t *               info;
-
-    info = (globus_l_xio_blocking_t *) 
-                globus_malloc(sizeof(globus_l_xio_blocking_t));
+    info = (globus_i_xio_blocking_t *) 
+                globus_malloc(sizeof(globus_i_xio_blocking_t));
     globus_mutex_init(&info->mutex, NULL);
     globus_cond_init(&info->cond, NULL);
     info->done = GLOBUS_FALSE;
@@ -1973,8 +1958,8 @@ globus_l_xio_blocking_alloc()
 }
 
 void
-globus_l_xio_blocking_destroy(
-    globus_l_xio_blocking_t *               info)
+globus_i_xio_blocking_destroy(
+    globus_i_xio_blocking_t *               info)
 {
     globus_mutex_destroy(&info->mutex);
     globus_cond_destroy(&info->cond);
@@ -1987,15 +1972,15 @@ globus_l_xio_blocking_cb(
     globus_result_t                             result,
     void *                                      user_arg)
 {
-    globus_l_xio_blocking_t *               info;
+    globus_i_xio_blocking_t *               info;
 
-    info = (globus_l_xio_blocking_t *) user_arg;
+    info = (globus_i_xio_blocking_t *) user_arg;
 
     globus_mutex_lock(&info->mutex);
     {
         info->res = result;
         info->done = GLOBUS_TRUE;
-        globus_cond_signal(&info->signal);
+        globus_cond_signal(&info->cond);
     }
     globus_mutex_unlock(&info->mutex);
 }
@@ -2010,9 +1995,9 @@ globus_l_xio_blocking_data_cb(
     globus_xio_data_descriptor_t                data_desc,
     void *                                      user_arg)
 {
-    globus_l_xio_blocking_t *               info;
+    globus_i_xio_blocking_t *               info;
     
-    info = (globus_l_xio_blocking_t *) user_arg;
+    info = (globus_i_xio_blocking_t *) user_arg;
 
     globus_mutex_lock(&info->mutex);
     {
@@ -2020,7 +2005,7 @@ globus_l_xio_blocking_data_cb(
         info->data_desc = data_desc;
         info->nbytes = nbytes;
         info->done = GLOBUS_TRUE;
-        globus_cond_signal(&info->signal);
+        globus_cond_signal(&info->cond);
     }
     globus_mutex_unlock(&info->mutex);
 }
@@ -2035,14 +2020,14 @@ globus_l_xio_blocking_iov_cb(
     globus_xio_data_descriptor_t            data_desc,
     void *                                  user_arg)
 {
-    globus_l_xio_blocking_t *               info;
+    globus_i_xio_blocking_t *               info;
 
-    info = (globus_l_xio_blocking_t *) user_arg;
+    info = (globus_i_xio_blocking_t *) user_arg;
 
     globus_mutex_lock(&info->mutex);
     {
         info->done = GLOBUS_TRUE;
-        globus_cond_signal(&info->signal);
+        globus_cond_signal(&info->cond);
     }
     globus_mutex_unlock(&info->mutex);
 }
@@ -2059,7 +2044,7 @@ globus_xio_open(
     globus_i_xio_context_t *                context = NULL;
     globus_result_t                         res = GLOBUS_SUCCESS;
     int                                     ctr;
-    globus_l_xio_blocking_t *               info;
+    globus_i_xio_blocking_t *               info;
     globus_callback_space_t                 space = 
             GLOBUS_CALLBACK_GLOBAL_SPACE;
     GlobusXIOName(globus_xio_register_open);
@@ -2106,7 +2091,7 @@ globus_xio_open(
         goto op_alloc_err;
     }
 
-    info = globus_l_xio_blocking_alloc();
+    info = globus_i_xio_blocking_alloc();
     if(info == NULL)
     {
         res = GlobusXIOErrorMemory("internal strucature");
@@ -2183,6 +2168,7 @@ globus_xio_open(
         res = info->res;
         goto register_err;
     }
+    globus_i_xio_blocking_destroy(info);
 
     *user_handle = handle;
 
@@ -2194,7 +2180,7 @@ globus_xio_open(
      * error handling 
      */
   register_err:
-    globus_l_xio_blocking_destroy(info);
+    globus_i_xio_blocking_destroy(info);
 
   info_alloc_error:
     GlobusXIOOperationDestroy(op);
@@ -2229,7 +2215,7 @@ globus_xio_read(
     globus_result_t                         res;
     globus_i_xio_handle_t *                 handle;
     int                                     ref = 0;
-    globus_l_xio_blocking_t *               info;
+    globus_i_xio_blocking_t *               info;
     GlobusXIOName(globus_xio_read);
 
     GlobusXIODebugEnter();
@@ -2265,7 +2251,7 @@ globus_xio_read(
         ref = 1;
     }
 
-    info = globus_l_xio_blocking_alloc();
+    info = globus_i_xio_blocking_alloc();
     if(info == NULL)
     {
         res = GlobusXIOErrorMemory("internal strucature");
@@ -2316,14 +2302,14 @@ globus_xio_read(
         res = info->res;
         goto alloc_error;
     }
-    globus_l_xio_blocking_destroy(info);
+    globus_i_xio_blocking_destroy(info);
 
     GlobusXIODebugExit();
     return GLOBUS_SUCCESS;
 
   register_error:
     globus_mutex_unlock(&info->mutex);
-    globus_l_xio_blocking_destroy(info);
+    globus_i_xio_blocking_destroy(info);
   alloc_error:
     /* desroy op */
 
@@ -2351,7 +2337,7 @@ globus_xio_readv(
     globus_result_t                         res;
     globus_i_xio_handle_t *                 handle;
     int                                     ref = 0;
-    globus_l_xio_blocking_t *               info;
+    globus_i_xio_blocking_t *               info;
     GlobusXIOName(globus_xio_readv);
 
     GlobusXIODebugEnter();
@@ -2387,7 +2373,7 @@ globus_xio_readv(
         ref = 1;
     }
 
-    info = globus_l_xio_blocking_alloc();
+    info = globus_i_xio_blocking_alloc();
     if(info == NULL)
     {
         res = GlobusXIOErrorMemory("internal strucature");
@@ -2436,14 +2422,14 @@ globus_xio_readv(
         res = info->res;
         goto alloc_error;
     }
-    globus_l_xio_blocking_destroy(info);
+    globus_i_xio_blocking_destroy(info);
 
     GlobusXIODebugExit();
     return GLOBUS_SUCCESS;
 
   register_error:
     globus_mutex_unlock(&info->mutex);
-    globus_l_xio_blocking_destroy(info);
+    globus_i_xio_blocking_destroy(info);
   alloc_error:
     /* desroy op */
 
@@ -2473,7 +2459,7 @@ globus_xio_write(
     globus_result_t                         res;
     globus_i_xio_handle_t *                 handle;
     int                                     ref = 0;
-    globus_l_xio_blocking_t *               info;
+    globus_i_xio_blocking_t *               info;
     GlobusXIOName(globus_xio_write);
 
     GlobusXIODebugEnter();
@@ -2509,7 +2495,7 @@ globus_xio_write(
         ref = 1;
     }
 
-    info = globus_l_xio_blocking_alloc();
+    info = globus_i_xio_blocking_alloc();
     if(info == NULL)
     {
         res = GlobusXIOErrorMemory("internal strucature");
@@ -2560,14 +2546,14 @@ globus_xio_write(
         res = info->res;
         goto alloc_error;
     }
-    globus_l_xio_blocking_destroy(info);
+    globus_i_xio_blocking_destroy(info);
 
     GlobusXIODebugExit();
     return GLOBUS_SUCCESS;
 
   register_error:
     globus_mutex_unlock(&info->mutex);
-    globus_l_xio_blocking_destroy(info);
+    globus_i_xio_blocking_destroy(info);
   alloc_error:
     /* desroy op */
 
@@ -2594,7 +2580,7 @@ globus_xio_writev(
     globus_result_t                         res;
     globus_i_xio_handle_t *                 handle;
     int                                     ref = 0;
-    globus_l_xio_blocking_t *               info;
+    globus_i_xio_blocking_t *               info;
     GlobusXIOName(globus_xio_writev);
 
     GlobusXIODebugEnter();
@@ -2630,7 +2616,7 @@ globus_xio_writev(
         ref = 1;
     }
 
-    info = globus_l_xio_blocking_alloc();
+    info = globus_i_xio_blocking_alloc();
     if(info == NULL)
     {
         res = GlobusXIOErrorMemory("internal strucature");
@@ -2679,14 +2665,14 @@ globus_xio_writev(
         res = info->res;
         goto alloc_error;
     }
-    globus_l_xio_blocking_destroy(info);
+    globus_i_xio_blocking_destroy(info);
 
     GlobusXIODebugExit();
     return GLOBUS_SUCCESS;
 
   register_error:
     globus_mutex_unlock(&info->mutex);
-    globus_l_xio_blocking_destroy(info);
+    globus_i_xio_blocking_destroy(info);
   alloc_error:
     /* desroy op */
 
@@ -2709,7 +2695,7 @@ globus_xio_close(
     globus_result_t                         res;
     int                                     ctr;
     globus_i_xio_op_t *                     op;
-    globus_l_xio_blocking_t *               info;
+    globus_i_xio_blocking_t *               info;
     GlobusXIOName(globus_xio_register_close);
 
     GlobusXIODebugEnter();
@@ -2744,7 +2730,7 @@ globus_xio_close(
         goto param_error;
     }
 
-    info = globus_l_xio_blocking_alloc();
+    info = globus_i_xio_blocking_alloc();
     if(info == NULL)
     {
         res = GlobusXIOErrorMemory("internal strucature");
