@@ -81,6 +81,8 @@ globus_l_openssl_deactivate(void)
     int                                 i;
 
     OBJ_cleanup();
+
+    ERR_clear_error();
     
     CRYPTO_set_id_callback(NULL);
     CRYPTO_set_locking_callback(NULL);
