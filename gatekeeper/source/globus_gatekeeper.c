@@ -58,7 +58,12 @@ CVS Information:
 #endif
 
 #include "globus_gss_assist.h"
+#include "globus_gsi_gss_constants.h"
 #include "gssapi.h"
+
+extern
+const gss_OID_desc * const              gss_mech_globus_gssapi_openssl;
+
 
 #ifndef _HAVE_GSI_EXTENDED_GSSAPI
 #include "globus_gss_ext_compat.h"
@@ -147,8 +152,15 @@ static gss_ctx_id_t  context_handle    = GSS_C_NO_CONTEXT;
  *
  */
 
-extern
-const gss_OID_desc * const gss_restrictions_extension;
+/* 
+ * the following commented out by SLANG - restrictions don't 
+ * currently work with latest gsi code.
+ */
+
+/*
+ * extern
+ * const gss_OID_desc * const gss_restrictions_extension; 
+ */
 
 /******************************************************************************
                        Define module specific variables
@@ -907,7 +919,6 @@ main(int xargc,
                                          major_status,
                                          minor_status,
                                          0);
-
         failure(FAILED_SERVER, "GSS failed to get server credentials\n");
     }
 
@@ -1163,7 +1174,6 @@ static void doit()
     gss_buffer_desc     option_token = GSS_C_EMPTY_BUFFER;
     gss_OID_set_desc    extension_oids;
     FILE *              context_tmpfile = NULL;
-    char *              delcname = NULL;
 
     /* Authorization variables */
     int                 rc;
@@ -1258,8 +1268,13 @@ static void doit()
      * don't need any special processing
      */
 
-    extension_oids.elements = (gss_OID) gss_restrictions_extension;
-    extension_oids.count = 1;
+/*
+ * this needs to be fixed in newer version of gsi that will
+ * use the cert info extensions code
+ */
+
+/*      extension_oids.elements = (gss_OID) gss_restrictions_extension; */
+/*      extension_oids.count = 1; */
     
     option_token.value = (void *) &extension_oids;
 #if 0
@@ -1336,41 +1351,6 @@ static void doit()
      */
 
     notice2(LOG_NOTICE, "Authenticated globus user: %s", client_name);
-
-#ifdef CLASS_ADD
-    {
-        /* This is only a sample to show the class adds */
-        gss_buffer_desc * class_add_array = NULL;
-        gss_buffer_desc * class_add_array_entry = NULL;
-
-        minor_status = 0xdee0;
-        major_status = gss_inquire_context(&minor_status,
-                                           context_handle,
-                                           NULL,
-                                           (gss_name_t) &class_add_array,
-                                           NULL,
-                                           NULL,
-                                           NULL,
-                                           NULL,
-                                           NULL);
-        if (minor_status == 0xdee1) {
-            fprintf(stderr,"ClassADD strings:\n");
-            class_add_array_entry = class_add_array;
-            while(class_add_array_entry->length != -1) {
-                if (class_add_array_entry->length) { 
-                    fprintf(stderr,"   %5d %*s\n", 
-                            class_add_array_entry->length,
-                            class_add_array_entry->length,
-                            class_add_array_entry->value);
-                    free(class_add_array_entry->value);
-                } else
-                    fprintf(stderr,"      0\n");
-                class_add_array_entry++;        
-            }
-            free(class_add_array);     
-        }
-    }
-#endif
 
     /*
      * now do authorization  i.e. globus userid must be in the 
@@ -1683,25 +1663,34 @@ static void doit()
 
     if (delegated_cred_handle)
     {
-        minor_status = 0xdee0;
-        major_status = gss_inquire_cred(&minor_status,
-                                        delegated_cred_handle,
-                                        (gss_name_t *) &delcname,
-                                        NULL,
-                                        NULL,
-                                        NULL);
-        if (major_status == GSS_S_COMPLETE )
+        gss_buffer_t                    deleg_proxy_filename_buffer;
+        major_status = gss_export_cred(&minor_status,
+                                       delegated_cred_handle,
+                                       gss_mech_globus_gssapi_openssl,
+                                       GSS_IMPEXP_MECH_SPECIFIC,
+                                       deleg_proxy_filename_buffer);
+        if (major_status == GSS_S_COMPLETE)
         {
-            if  ( minor_status == 0xdee1 && delcname)
-            {
-                char * cp;
+            setenv("X509_USER_DELEG_PROXY", 
+                   deleg_proxy_filename_buffer, 1);
+            globus_libc_free(deleg_proxy_filename_buffer->value);
+        }
+        else
+        {
+            globus_object_t *           error_obj;
+            char *                      error_chain_string;
 
-                cp = strchr(delcname,'=');
-                *cp = '\0';
-                cp++;
-                setenv(delcname,cp,1);
-                delcname = NULL;
-            }
+            error_obj = globus_error_get((globus_result_t) minor_status);
+            error_chain_string = globus_error_print_chain(error_obj);
+
+            notice2(LOG_ERR, "ERROR: Unable to export credential\n%s\n",
+                    error_chain_string);
+
+            globus_object_free(error_obj);
+            globus_libc_free(error_chain_string);
+
+            failure(FAILED_SERVER, 
+                    "ERROR: gatekeeper misconfigured");
         }
     }
 
@@ -1854,7 +1843,7 @@ static void doit()
         unsetenv("X509_USER_CERT"); /* unset it */
 
 	/* SLANG - can't unset this, otherwise jobmanager won't know where to look. */
-	/* unsetenv("X509_USER_PROXY"); /* unset it  */
+	/* unsetenv("X509_USER_PROXY");  unset it  */
     }
 
     /* for tranition, if gatekeeper has the path, set it
