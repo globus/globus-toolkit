@@ -7,7 +7,7 @@ globus_source ${libexecdir}/globus-sh-tools.sh
 # So we need to add it here
 #
 if [ -z "$GLOBUS_SH_VARIABLES_SET" ]; then
-    for _var in `${GLOBUS_SH_SED} -n '/^GLOBUS_SH/s/=.*$//p' \
+    for _var in `${GLOBUS_SH_SED} -n '/^    GLOBUS_SH/s/=.*$//p' \
         ${libexecdir}/globus-sh-tools.sh`
     do
         export ${_var}
@@ -113,35 +113,39 @@ trap CleanUp 0 1 2 3 9 12 13 14 15
 sh_exec_cleanup_file=""
 
 case "$1" in
-    -l | -list)
-	ListDefinedValues
-	exit 0
-	;;
-    -e | -exec)
-	USER=`${GLOBUS_SH_WHOAMI-whoami}`
-	file=/tmp/globus-sh-exec-script.${USER}.$$
-	sh_exec_cleanup_file=${file}
-	shift
-	echo "$@" > ${file}
-	ProcessScript ""
-	;;	
+    -h|-help|-usage)
+        long_usage
+        exit 0
+        ;;
+    -l|-list)
+        ListDefinedValues
+        exit 0
+        ;;
+    -e|-exec)
+        USER=`${GLOBUS_SH_WHOAMI-whoami}`
+        file=/tmp/globus-sh-exec-script.${USER}.$$
+        sh_exec_cleanup_file=${file}
+        shift
+        echo "$@" > ${file}
+        ProcessScript ""
+        ;;	
     https:*)
-	USER=`${GLOBUS_SH_WHOAMI-whoami}`
-	file=/tmp/globus-sh-exec-script.${USER}.$$
-	sh_exec_cleanup_file=${file}
-	${bindir}/globus-url-copy $1 file:${file}
-	status=$?
-	if [ ${status} -ne 0 ]; then
-	    echo "Error getting remote file" 1>&2
-	    exit 1
-	fi
-	shift
-	ProcessScript "$@"
-	;;
-    .* | /* | *) 
-	file=$1
-	shift
-	ProcessScript "$@"
-	;;
+        USER=`${GLOBUS_SH_WHOAMI-whoami}`
+        file=/tmp/globus-sh-exec-script.${USER}.$$
+        sh_exec_cleanup_file=${file}
+        ${bindir}/globus-url-copy $1 file:${file}
+        status=$?
+        if [ ${status} -ne 0 ]; then
+            echo "Error getting remote file" 1>&2
+            exit 1
+        fi
+        shift
+        ProcessScript "$@"
+        ;;
+    .*|/*|*) 
+        file=$1
+        shift
+        ProcessScript "$@"
+        ;;
 esac
 
