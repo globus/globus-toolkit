@@ -52,7 +52,6 @@ public class GFTPTextPacket extends GFTPMonitorPacket {
 	    this.senderAddress = 
 		InetAddress.getByAddress(ipBytes);
 	} catch (UnknownHostException uhe) {
-	    log.warn("This packet came from a host I can't identify");
 	    this.senderAddress = null;
 	}
 
