@@ -431,8 +431,7 @@ static int arg_f_mode = O_RDONLY;
 	if(err != GLOBUS_SUCCESS)
 	{
 	    globus_libc_fprintf(stderr,
-				"\n%s: Error initializing GRAM: %s\n",
-				program,
+				"Error initializing GRAM: %s\n",
 				globus_gram_protocol_error_string(err));
             globus_module_deactivate_all();
 	    return 1;
