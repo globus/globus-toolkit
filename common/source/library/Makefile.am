@@ -5,6 +5,7 @@ Sources= \
 	globus_args.h \
 	globus_callback.c \
 	globus_callback.h \
+	globus_common_paths.c \
 	globus_cfifo.c \
 	globus_cfifo.h \
 	globus_common.c \

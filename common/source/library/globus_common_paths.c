@@ -21,10 +21,6 @@ CVS Information:
 #include <string.h>
 #endif
 
-static char *  globus_l_common_install_path_services = GLOBUS_SERVICES_PREFIX;
-static char *  globus_l_common_install_path_tools    = GLOBUS_TOOLS_PREFIX;
-
-
 /******************************************************************************
                            ERROR object declaration
 
@@ -115,73 +111,9 @@ globus_l_common_env_path( char** bufp, char* name )
 
 
 globus_result_t
-globus_common_install_path( char **   bufp )
+globus_location( char **   bufp )
 {
-#if 1
      return globus_l_common_env_path(bufp, "GLOBUS_LOCATION");
-#else    
-    /* NOTE: this is temporarily, to ease development. */
-    globus_result_t  res;
-
-    res = globus_l_common_env_path(bufp, "GLOBUS_LOCATION");
-
-    if (res == GLOBUS_SUCCESS)
-	return GLOBUS_SUCCESS;
-
-    *bufp = globus_libc_strdup(globus_l_common_install_path_root);
-    if (! *bufp)
-    {
-	return GLOBUS_COMMON_PATH_ERROR_INSTANCE("malloc error");
-    }
-    return GLOBUS_SUCCESS;
-#endif
-}
-
-globus_result_t
-globus_common_deploy_path( char **   bufp )
-{
-    return globus_l_common_env_path(bufp, "GLOBUS_DEPLOY_PATH");
-}
-
-
-
-/*****************************************************************************
-  if we have a flat install structure (tools==services==prefix), then
-  configure sets tools and services to "", otherwise the full paths.
-*****************************************************************************/
-
-globus_result_t
-globus_l_common_subpath( char **  bufp, char * subpath )
-{
-    *bufp = GLOBUS_NULL;
-    if (strlen(subpath) == 0)
-    {
-	return globus_common_install_path( bufp );
-    }
-
-    *bufp = globus_libc_strdup(subpath);
-    if (! *bufp)
-    {
-	return GLOBUS_COMMON_PATH_ERROR_INSTANCE("malloc error");
-    }
-
-    return GLOBUS_SUCCESS;
-}
-
-
-globus_result_t
-globus_common_services_path( char **   bufp )
-{
-    return globus_l_common_subpath(bufp,
-				   globus_l_common_install_path_services);
-}
-
-
-globus_result_t
-globus_common_tools_path( char **   bufp )
-{
-    return globus_l_common_subpath(bufp,
-				   globus_l_common_install_path_tools);
 }
 
 
@@ -250,7 +182,7 @@ globus_common_get_attribute_from_config_file( char *   deploy_path,
     *value = GLOBUS_NULL;
     deploy = deploy_path;
 
-    if (!deploy && (result=globus_common_deploy_path(&deploy)))
+    if (!deploy && (result=globus_location(&deploy)))
 	return result;
 
     filename = globus_malloc(strlen(deploy) +

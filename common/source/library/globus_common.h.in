@@ -317,16 +317,7 @@ extern globus_module_descriptor_t	globus_i_common_module;
 ******************************************************************************/
 
 globus_result_t
-globus_common_install_path(  char **   bufp );
-
-globus_result_t
-globus_common_services_path( char **   bufp );
-
-globus_result_t
-globus_common_tools_path(    char **   bufp );
-
-globus_result_t
-globus_common_deploy_path(   char **   bufp );
+globus_location (  char **   bufp );
 
 /* returns value of GLOBUS_LOCATION in the deploy dir config file */
 globus_result_t

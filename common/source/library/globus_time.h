@@ -148,8 +148,8 @@ typedef struct timeval  globus_reltime_t;
 
 #define  GlobusTimeReltimeMultiply(Reltime, Factor)       \
 {                                                         \
-   (Reltime).tv_usec *= 2;                                \
-   (Reltime).tv_sec *= 2;                                 \
+   (Reltime).tv_usec *= Factor;                           \
+   (Reltime).tv_sec *= Factor;                            \
                                                           \
     if((Reltime).tv_usec >= 1000000)                      \
     {                                                     \
