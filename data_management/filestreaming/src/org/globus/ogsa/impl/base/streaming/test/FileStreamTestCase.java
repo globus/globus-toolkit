@@ -28,7 +28,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import org.globus.axis.gsi.GSIConstants;
-import org.globus.gsi.gssapi.auth.SelfAuthorization;
+import org.globus.ogsa.impl.security.authorization.SelfAuthorization;
 import org.globus.gsi.gssapi.GSSConstants;
 
 import org.globus.ogsa.base.streaming.FileStreamOptionsType;
@@ -136,7 +136,7 @@ public class FileStreamTestCase extends GridTestCase {
                 Constants.MSG_SEC_TYPE,
                 Constants.SIGNATURE);
         fileStreamFactory.getStub()._setProperty(
-                GSIConstants.GSI_AUTHORIZATION,
+                Constants.AUTHORIZATION,
                 SelfAuthorization.getInstance());
         fileStreamFactory.getStub()._setProperty(
                 GSIConstants.GSI_MODE,
@@ -213,7 +213,7 @@ public class FileStreamTestCase extends GridTestCase {
 
        ((Stub) fileStream)._setProperty(Constants.MSG_SEC_TYPE,
                                         Constants.SIGNATURE);
-       ((Stub) fileStream)._setProperty(GSIConstants.GSI_AUTHORIZATION,
+       ((Stub) fileStream)._setProperty(Constants.AUTHORIZATION,
                                         SelfAuthorization.getInstance());
 
         sendTestPattern(0);
