@@ -70,6 +70,7 @@ void arc4random_stir(void)
 		fatal("Couldn't obtain random bytes (error %ld)",
 		    ERR_get_error());
 	RC4_set_key(&rc4, sizeof(rand_buf), rand_buf);
+	RC4(&rc4, sizeof(rand_buf), rand_buf, rand_buf);
 	memset(rand_buf, 0, sizeof(rand_buf));
 
 	rc4_ready = REKEY_BYTES;
