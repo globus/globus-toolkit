@@ -28,10 +28,13 @@ public class ExampleReceiver {
           default port and database connection information:*/
         try {
             props = new Properties();
-            propsIn = Receiver.class.getResourceAsStream("/udpUsage.properties");
+            propsIn = Receiver.class.getResourceAsStream("/receiver.properties");
             if (propsIn != null) {
                 props.load(propsIn);
             }
+	    else {
+		log.error("Can't open properties file receiver.properties.");
+	    }
 
             databaseDriverClass = props.getProperty("database-driver");
             databaseURL = props.getProperty("database-url");
@@ -53,8 +56,9 @@ public class ExampleReceiver {
             
             /*When creating the receiver, pass it the port to listen on,
               the database connection class to use, the url to connect to your
-              database, and the database table where default packets will be written
-              if no other handler takes them:*/
+              database, and the database table where default packets will be
+	      written if no other handler takes them:*/
+	    log.info("Starting receiver on port "+port+"; will write to database at "+databaseURL+".");
             receiver = new Receiver(port, 
                                     databaseDriverClass, 
                                     databaseURL,

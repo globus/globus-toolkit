@@ -16,6 +16,7 @@
     <property name="build.dir"  location="build"/>
     <property name="build.dest" location="build/classes"/>
     <property name="build.lib.dir" location="build/lib"/>
+    <property name="properties.dir" location="etc"/>
     <property name="build.packages" location=
         "${deploy.dir}/share/globus_wsrf_common/build-packages.xml"/>
     <property name="java.debug" value="on"/>
@@ -43,6 +44,7 @@
     </target>
 
     <target name="jar" depends="compile">
+        <copy file="${properties.dir}/receiver.properties" todir="${build.dest}"/>
         <jar destfile="${build.lib.dir}/${jar.name}" basedir="${build.dest}"/>
     </target>
 
