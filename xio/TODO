@@ -8,10 +8,6 @@ driver op cancel needs to remember who canceled it so the flag can be reset when
 
 also, if something like target init or server accept fails somewhere along the way, the success targets need to be destroyed (same for attr, etc)
 
-1) add _client_init() that can be called from acept interface
-3) fix race 
-4) Add driver operation cancel, for ANY op
-   -- it takes context, if op is not greater than context, then fail
 6) add globus_assert(result != success || prev_res == success)
 
 -- take ref on driver handle to prevent close barrier

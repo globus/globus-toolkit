@@ -37,7 +37,9 @@ typedef enum  test_next_op_e
 typedef struct bounce_handle_s
 {
     globus_mutex_t                      mutex;
-    globus_bool_t                       closed;
+    globus_bool_t                       closed_iface;
+    globus_bool_t                       closed_cb;
+    globus_bool_t                       open_cb;
     globus_xio_driver_handle_t          dh;
 } bounce_handle_t;
 
@@ -67,6 +69,19 @@ bounce_data_cb(
     globus_xio_operation_t              op,
     globus_result_t                     result,
     globus_size_t                       nbytes,
+    void *                              user_arg);
+
+
+static void
+close_bounce_cb(
+    globus_xio_operation_t              op,
+    globus_result_t                     result,
+    void *                              user_arg);
+
+static void
+open_bounce_cb(
+    globus_xio_operation_t              op,
+    globus_result_t                     result,
     void *                              user_arg);
 
 static void
@@ -178,12 +193,8 @@ test_bounce_next_op(
 
         case TEST_CLOSE:
             info->next_op = TEST_FINISH;
-        GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_STATE,
-            ("[%s] : pre pass_close\n", _xio_name));
-            res = globus_xio_driver_pass_close(op,
-                bounce_cb, (void*)info);
-        GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_STATE,
-            ("[%s] : post pass_close\n", _xio_name));
+            res = globus_xio_driver_pass_close(op, close_bounce_cb,
+                (void*)info);
             break;
 
         case TEST_FINISH:
@@ -275,6 +286,38 @@ bounce_data_cb(
     GlobusXIODebugInternalExit();
 }
 
+static void
+close_bounce_cb(
+    globus_xio_operation_t                  op,
+    globus_result_t                         result,
+    void *                                  user_arg)
+{
+    bounce_info_t *                         info;
+
+    info = (bounce_info_t *) user_arg;
+    /* verify close callback isn't called twice */
+    globus_assert(info->handle->closed_cb == GLOBUS_FALSE);
+    info->handle->closed_cb = GLOBUS_TRUE;
+
+    bounce_cb(op, result, user_arg);
+}
+
+static void
+open_bounce_cb(
+    globus_xio_operation_t                  op,
+    globus_result_t                         result,
+    void *                                  user_arg)
+{
+    bounce_info_t *                         info;
+
+    info = (bounce_info_t *) user_arg;
+    /* verify open callback isn't called twice */
+    globus_assert(info->handle->open_cb == GLOBUS_FALSE);
+    info->handle->open_cb = GLOBUS_TRUE;
+
+    bounce_cb(op, result, user_arg);
+}
+
 globus_result_t
 globus_l_xio_bounce_open(
     void *                              driver_target,
@@ -295,10 +338,12 @@ globus_l_xio_bounce_open(
     info->start_op = TEST_OPEN;
     info->handle = (bounce_handle_t *) globus_malloc(sizeof(bounce_handle_t));  
     globus_mutex_init(&info->handle->mutex, NULL);
-    info->handle->closed = GLOBUS_FALSE;
+    info->handle->closed_iface = GLOBUS_FALSE;
+    info->handle->closed_cb = GLOBUS_FALSE;
+    info->handle->open_cb = GLOBUS_FALSE;
 
     res = globus_xio_driver_pass_open(&info->handle->dh, op, 
-                bounce_cb, (void*)info);
+                open_bounce_cb, (void*)info);
     if(res != GLOBUS_SUCCESS)
     {
         bounce_handle_destroy(info->handle);
@@ -341,6 +386,11 @@ globus_l_xio_bounce_close(
     info->iovec_count = 1;
 
     info->handle = driver_handle;
+
+    /* verify close isn't called twice */
+    globus_assert(info->handle->closed_iface == GLOBUS_FALSE);
+
+    info->handle->closed_iface = GLOBUS_TRUE;
 
     res = test_bounce_next_op(info, op);
     if(res != GLOBUS_SUCCESS)

@@ -231,7 +231,13 @@ globus_i_xio_server_post_accept(
             case GLOBUS_XIO_SERVER_STATE_CLOSING:
                 xio_server->op = NULL;
                 break;
-                
+
+            /* This can happen if when the callback is called the user
+                registers another accept and that accept callback is
+                called before the first callback returns.  */
+            case GLOBUS_XIO_SERVER_STATE_OPEN:
+                break;
+
             case GLOBUS_XIO_SERVER_STATE_ACCEPTING:
                 break;
 

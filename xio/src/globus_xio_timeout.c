@@ -143,7 +143,8 @@ globus_i_xio_timer_unregister_timeout(
     globus_list_t *                                 list;
     globus_list_t *                                 tmp_list = NULL;
     globus_bool_t                                   found = GLOBUS_FALSE;
-    globus_i_xio_timer_entry_t *                    entry;
+    /* intialize to remove warning, but not needed */
+    globus_i_xio_timer_entry_t *                    entry = NULL;
     GlobusXIOName(globus_i_xio_timer_unregister_timeout);
 
     GlobusXIODebugInternalEnter();

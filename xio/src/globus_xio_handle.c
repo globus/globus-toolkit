@@ -1045,12 +1045,15 @@ globus_l_xio_timeout_callback(
 {
     globus_i_xio_op_t *                     op;
     globus_i_xio_handle_t *                 handle;
-    globus_bool_t                           rc;
+    /* rc is definitly set elsewhere but this gets rid of compiler warning
+        and lets me know that i knew what i was doing */
+    globus_bool_t                           rc = GLOBUS_FALSE;
     globus_bool_t                           fire_callback;
     globus_bool_t                           destroy_handle = GLOBUS_FALSE;
     globus_bool_t                           cancel;
     globus_bool_t                           timeout = GLOBUS_FALSE;
-    globus_callback_func_t                  delayed_cb;
+    /* delayed_cb is in same situation as rc */
+    globus_callback_func_t                  delayed_cb = NULL;
     globus_callback_space_t                 space =
                             GLOBUS_CALLBACK_GLOBAL_SPACE;                   
     GlobusXIOName(globus_l_xio_timeout_callback);
@@ -1591,7 +1594,6 @@ globus_l_xio_register_close(
         {
             globus_i_xio_op_destroy(op, &destroy_handle);
         }
-
     }
     globus_mutex_unlock(&handle->context->mutex);
     if(destroy_handle)
@@ -1606,6 +1608,9 @@ globus_l_xio_register_close(
 
     globus_mutex_lock(&handle->context->mutex);
     {
+        /* the handle is closed since we will return a failure */
+        handle->state = GLOBUS_XIO_HANDLE_STATE_CLOSED;
+
         GlobusXIOOpDec(op); /* dec for the register */
         globus_assert(op->ref > 0);
 
@@ -2177,7 +2182,8 @@ globus_xio_register_close(
     void *                                  user_arg)
 {
     globus_result_t                         res;
-    globus_i_xio_op_t *                     op;
+    /* initialize to remove warn, but not needed */
+    globus_i_xio_op_t *                     op = NULL;
     globus_bool_t                           pass = GLOBUS_TRUE;
     GlobusXIOName(globus_xio_register_close);
 

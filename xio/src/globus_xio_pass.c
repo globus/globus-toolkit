@@ -359,6 +359,8 @@ globus_xio_driver_pass_close(
     op->progress = GLOBUS_TRUE;
     op->block_timeout = GLOBUS_FALSE;
 
+    my_context = &context->entry[op->ndx];
+
     if(op->canceled && op->type != GLOBUS_XIO_OPERATION_TYPE_OPEN)
     {
         GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE,
@@ -368,7 +370,6 @@ globus_xio_driver_pass_close(
     else
     {
         prev_ndx = op->ndx;
-        my_context = &context->entry[op->ndx];
 
         do
         {
@@ -442,14 +443,15 @@ globus_xio_driver_pass_close(
         }
         globus_mutex_unlock(&context->mutex);
 
+        my_op->cb = (in_cb);
+        my_op->user_arg = (in_ua);
+        my_op->prev_ndx = prev_ndx;
+
         if(deliver_type != GLOBUS_XIO_OPERATION_TYPE_FINISHED)
         {
             globus_i_xio_driver_deliver_op(op, prev_ndx, deliver_type);
         }
 
-        my_op->cb = (in_cb);
-        my_op->user_arg = (in_ua);
-        my_op->prev_ndx = prev_ndx;
         /* op can be checked outside of lock */
         if(pass)
         {
@@ -831,7 +833,7 @@ globus_xio_driver_pass_read(
     globus_i_xio_context_entry_t *          my_context;
     globus_i_xio_context_t *                context;
     int                                     prev_ndx;
-    globus_result_t                         res;
+    globus_result_t                         res = GLOBUS_SUCCESS;
     globus_bool_t                           close = GLOBUS_FALSE;
     globus_xio_driver_t                     driver;
     globus_bool_t                           destroy_handle = GLOBUS_FALSE;
