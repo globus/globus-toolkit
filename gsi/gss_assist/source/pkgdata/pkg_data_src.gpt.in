@@ -15,7 +15,7 @@
 </Source_Dependencies>
  
 <Source_Dependencies Type="lib_link" >
-<Dependency Name="globus_gssapi_gsi" Package="dev"><Version><Simple_Version Major="2"></Simple_Version></Version></Dependency>
+<Dependency Name="globus_gssapi_gsi"><Version><Simple_Version Major="2"></Simple_Version></Version></Dependency>
 </Source_Dependencies>
                        
 
