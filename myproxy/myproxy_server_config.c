@@ -213,20 +213,6 @@ line_parse_callback(void *context_arg,
 	}
     }
 
-    if (strcmp (directive, "default_database_name") == 0)
-    {
-	int index = 1; /* Skip directive */
-
-	matched = 1;
-	
-	if (tokens[index] == NULL)
-	{
-		context->dbase_name = NULL;
-		goto error;
-	}
-	context->dbase_name = strdup (tokens[index]);
-    }
-   
     return_code = 0;
     
   error:
