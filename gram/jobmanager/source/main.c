@@ -36,6 +36,7 @@
 #include "globus_io.h"
 #include "globus_gass_transfer.h"
 #include "globus_ftp_client.h"
+#include "globus_gram_jobmanager_callout_error.h"
 
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
@@ -595,6 +596,12 @@ globus_l_gram_job_manager_activate(void)
 	fprintf(stderr, "callout module activation failed with rc=%d\n", rc);
 	goto callout_failed;
     }
+    rc = globus_module_activate(GLOBUS_GRAM_JOBMANAGER_CALLOUT_ERROR_MODULE);
+    if (rc != GLOBUS_SUCCESS)
+    {
+	fprintf(stderr, "jobmanager callout error module activation failed with rc=%d\n", rc);
+	goto jobmanager_callout_error_failed;
+    }
     rc = globus_module_activate(GLOBUS_GSI_GSS_ASSIST_MODULE);
     if (rc != GLOBUS_SUCCESS)
     {
@@ -657,7 +664,7 @@ globus_l_gram_job_manager_activate(void)
 	fprintf(stderr, "ftp client module activation failed with rc=%d\n", rc);
 	goto ftp_client_failed;
     }
-
+    
 ftp_client_failed:
 gass_transfer_failed:
 nexus_failed:
@@ -668,6 +675,7 @@ io_failed:
 gss_assist_failed:
 gsi_sysconfig_failed:
 callout_failed:
+jobmanager_callout_error_failed:
     if(rc)
     {
 	globus_module_deactivate_all();

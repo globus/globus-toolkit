@@ -96,6 +96,12 @@
                     <Simple_Version Major="6"/>
                 </Version>
             </Dependency>
+
+            <Dependency Name="globus_gram_jobmanager_callout_error">
+                <Version>
+                    <Simple_Version Major="0"/>
+                </Version>
+            </Dependency>
         </Source_Dependencies>
 
         <Source_Dependencies Type="pgm_link">
@@ -174,6 +180,12 @@
             <Dependency Name="globus_nexus">
                 <Version>
                     <Simple_Version Major="6"/>
+                </Version>
+            </Dependency>
+
+            <Dependency Name="globus_gram_jobmanager_callout_error">
+                <Version>
+                    <Simple_Version Major="0"/>
                 </Version>
             </Dependency>
         </Source_Dependencies>

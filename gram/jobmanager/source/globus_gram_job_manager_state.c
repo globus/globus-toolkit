@@ -15,6 +15,7 @@
 #include "globus_callout_constants.h"
 #include "globus_gsi_system_config.h"
 #include "globus_gsi_system_config_constants.h"
+#include "globus_gram_jobmanager_callout_error.h"
 
 #include <string.h>
 
@@ -824,10 +825,36 @@ globus_gram_job_manager_state_machine(
                     globus_object_free(error);
                 }
                 else
-                {
+                { 
+                    if(globus_error_match(
+                           error,
+                           GLOBUS_GRAM_JOBMANAGER_CALLOUT_ERROR_MODULE,
+                           GLOBUS_GRAM_JOBMANAGER_CALLOUT_AUTHZ_DENIED)
+                       == GLOBUS_TRUE)
+                    {
+                        rc = GLOBUS_GRAM_PROTOCOL_ERROR_AUTHORIZATION_DENIED;
+                    }
+                    else if(globus_error_match(
+                                error,
+                                GLOBUS_GRAM_JOBMANAGER_CALLOUT_ERROR_MODULE,
+                                GLOBUS_GRAM_JOBMANAGER_CALLOUT_AUTHZ_DENIED_INVALID_JOB)
+                            == GLOBUS_TRUE)
+                    {
+                        rc = GLOBUS_GRAM_PROTOCOL_ERROR_AUTHORIZATION_DENIED_JOB_ID;
+                    }
+                    else if(globus_error_match(
+                                error,
+                                GLOBUS_GRAM_JOBMANAGER_CALLOUT_ERROR_MODULE,
+                                GLOBUS_GRAM_JOBMANAGER_CALLOUT_AUTHZ_DENIED_BAD_EXECUTABLE)
+                            == GLOBUS_TRUE)
+                    {
+                        rc = GLOBUS_GRAM_PROTOCOL_ERROR_AUTHORIZATION_DENIED_EXECUTABLE;
+                    }
+
+                    /* rc already contains default error */
+
                     globus_object_free(error);
-                    request->failure_code =
-                        GLOBUS_GRAM_PROTOCOL_ERROR_AUTHORIZATION_DENIED;
+                    request->failure_code = rc;
                     request->jobmanager_state =
                         GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
                     break;

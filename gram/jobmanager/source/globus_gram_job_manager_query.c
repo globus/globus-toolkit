@@ -14,6 +14,7 @@
 #include "globus_callout_constants.h"
 #include "globus_gsi_system_config.h"
 #include "globus_gsi_system_config_constants.h"
+#include "globus_gram_jobmanager_callout_error.h"
 #include <string.h>
 #endif
 
@@ -247,7 +248,33 @@ globus_gram_job_manager_query_callback(
             }
             else
             {
-                rc = GLOBUS_GRAM_PROTOCOL_ERROR_AUTHORIZATION_DENIED;
+                if(globus_error_match(
+                       error,
+                       GLOBUS_GRAM_JOBMANAGER_CALLOUT_ERROR_MODULE,
+                       GLOBUS_GRAM_JOBMANAGER_CALLOUT_AUTHZ_DENIED)
+                   == GLOBUS_TRUE)
+                {
+                    rc = GLOBUS_GRAM_PROTOCOL_ERROR_AUTHORIZATION_DENIED;
+                }
+                else if(globus_error_match(
+                            error,
+                            GLOBUS_GRAM_JOBMANAGER_CALLOUT_ERROR_MODULE,
+                            GLOBUS_GRAM_JOBMANAGER_CALLOUT_AUTHZ_DENIED_INVALID_JOB)
+                        == GLOBUS_TRUE)
+                {
+                    rc = GLOBUS_GRAM_PROTOCOL_ERROR_AUTHORIZATION_DENIED_JOB_ID;
+                }
+                else if(globus_error_match(
+                            error,
+                            GLOBUS_GRAM_JOBMANAGER_CALLOUT_ERROR_MODULE,
+                            GLOBUS_GRAM_JOBMANAGER_CALLOUT_AUTHZ_DENIED_BAD_EXECUTABLE)
+                        == GLOBUS_TRUE)
+                {
+                    rc = GLOBUS_GRAM_PROTOCOL_ERROR_AUTHORIZATION_DENIED_EXECUTABLE;
+                }
+                
+                /* rc already contains default error */
+                
                 globus_object_free(error);
                 goto unpack_failed;
             }
