@@ -34,7 +34,6 @@ extern globus_ftp_control_dcau_t                g_dcau;
 
 static globus_bool_t                            g_send_perf_update;
 static globus_bool_t                            g_send_range;
-static int                                      g_window_size;
 
 #ifdef GLOBUS_AUTHORIZATION
 static globus_authorization_handle_t globus_auth_handle;
@@ -52,13 +51,10 @@ static globus_size_t                            g_blksize = 65536;
 /*
  *  globals used for netlogger times
  */
-static struct timeval                           g_transfer_start_time;
-static struct timeval                           g_transfer_end_time;
 static int                                      g_perf_log_file_fd = -1;
 static int                                      g_tcp_buffer_size = 0;
 static char *                                   g_perf_progname = NULL;
 static char                                     g_perf_hostname[256];
-static char                                     g_perf_dest_str[256];
 static struct timeval                           g_perf_start_tv;
 static struct timeval                           g_perf_end_tv;
 static globus_ftp_control_host_port_t           g_perf_address;
@@ -916,7 +912,6 @@ g_send_data(
 {
     int                                             jb_count;
     int                                             jb_len;
-    register int                                    c;
     register int                                    cnt = 0;
     globus_byte_t *                                 buf = GLOBUS_NULL;
     int                                             filefd;
@@ -924,8 +919,6 @@ g_send_data(
     globus_bool_t                                   aborted;
     int                                             cb_count = 0;
     globus_result_t                                 res;
-    int                                             buffer_ndx;
-    int                                             file_ndx;
     int                                             connection_count = 4;
     globus_bool_t                                   l_timed_out = GLOBUS_FALSE;
     globus_ftp_control_parallelism_t                parallelism;
@@ -933,7 +926,6 @@ g_send_data(
     off_t *                                         length_a;
     int                                             count_a;
     int                                             ctr;
-    off_t                                           skipped_offset;
     char                                            error_buf[1024];
     off_t                                           offs_out = -1;
     off_t                                           blksize;
@@ -1375,7 +1367,6 @@ g_send_data(
   /*
    *  FILE_ERR
    */
-  file_err:
     alarm(0);
     transflag = 0;
     G_EXIT();
@@ -1521,13 +1512,8 @@ g_receive_data(
     off_t                                    offset,
     char *                                   fname)
 {
-    register int                             c;
-    int                                      cnt = 0;
-    int                                      bare_lfs = 0;
     globus_byte_t *                          buf;
-    int                                      netfd;
     int                                      filefd;
-    globus_bool_t                            eof = GLOBUS_FALSE;
     globus_bool_t                            l_timed_out;
     globus_bool_t                            l_error;
     globus_bool_t                            aborted;
@@ -1801,7 +1787,6 @@ g_receive_data(
     goto bail;
 
 
-  file_err:
     globus_callback_unregister(
         g_monitor.callback_handle,
         GLOBUS_NULL,
@@ -2205,7 +2190,6 @@ static globus_bool_t
 globus_l_wu_perf_update(
     globus_i_wu_monitor_t *		monitor)
 {
-    unsigned int 			num_channels;
     globus_ftp_control_handle_t *	handle;
     int                                 tenth;
     struct timeval                      tv;
@@ -2386,11 +2370,11 @@ g_write_to_log_file(
     int                                     code,
     char *                                  type)
 {
-    int                                     rc;
     time_t                                  start_time_time;
     time_t                                  end_time_time;
-    struct tm *                             start_tm_time;
-    struct tm *                             end_tm_time;
+    struct tm *                             tmp_tm_time;
+    struct tm                               start_tm_time;
+    struct tm                               end_tm_time;
     char                                    out_buf[512];
     char                                    user_buf[32];
     int                                     stream_count; 
@@ -2398,13 +2382,11 @@ g_write_to_log_file(
     globus_result_t                         res;
     int                                     ctr;
     unsigned int                            tmp_i;
-    int                                     ndx;
     char                                    volume[80];
     char                                    cwd[124];
     char                                    l_fname[124];
-    uid_t                                   user_id;
     struct passwd *                         pw_ent;
-    int                                     win_size;
+    long                                     win_size;
     int                                     opt_dir;
 
     /* if fd is -1 we are not logging */
@@ -2414,18 +2396,20 @@ g_write_to_log_file(
     }
 
     start_time_time = (time_t)start_gtd_time->tv_sec;
-    start_tm_time = gmtime(&start_time_time);
-    if(start_tm_time == NULL)
+    tmp_tm_time = gmtime(&start_time_time);
+    if(tmp_tm_time == NULL)
     {
         return;
     }
+    start_tm_time = *tmp_tm_time;
 
     end_time_time = (time_t)end_gtd_time->tv_sec;
-    end_tm_time = gmtime(&end_time_time);
-    if(end_tm_time == NULL)
+    tmp_tm_time = gmtime(&end_time_time);
+    if(tmp_tm_time == NULL)
     {
         return;
     }
+    end_tm_time = *tmp_tm_time;
 
     pw_ent = getpwuid(geteuid());
     if(pw_ent != NULL)
@@ -2493,11 +2477,11 @@ g_write_to_log_file(
     }
 
     sprintf(out_buf, 
-        "DATE=%d%d%d%d%d%d.%d "
+        "DATE=%04d%02d%02d%02d%02d%02d.%d "
         "HOST=%s "
         "PROG=%s "
         "NL.EVNT=FTP_INFO "
-        "START=%d%d%d%d%d%d.%d "
+        "START=%04d%02d%02d%02d%02d%02d.%d "
         "%s "
         "FILE=%s "
         "BUFFER=%ld "
@@ -2510,29 +2494,29 @@ g_write_to_log_file(
         "TYPE=%s " 
         "CODE=%d\n",
         /* end time */
-        end_tm_time->tm_year,
-        end_tm_time->tm_mon,
-        end_tm_time->tm_mday,
-        end_tm_time->tm_hour,
-        end_tm_time->tm_min,
-        end_tm_time->tm_sec,
-        end_gtd_time->tv_usec,
+        end_tm_time.tm_year,
+        end_tm_time.tm_mon,
+        end_tm_time.tm_mday,
+        end_tm_time.tm_hour,
+        end_tm_time.tm_min,
+        end_tm_time.tm_sec,
+        (int) end_gtd_time->tv_usec,
         g_perf_hostname,
         g_perf_progname,
         /* start time */
-        start_tm_time->tm_year,
-        start_tm_time->tm_mon,
-        start_tm_time->tm_mday,
-        start_tm_time->tm_hour,
-        start_tm_time->tm_min,
-        start_tm_time->tm_sec,
-        start_gtd_time->tv_usec,
+        start_tm_time.tm_year,
+        start_tm_time.tm_mon,
+        start_tm_time.tm_mday,
+        start_tm_time.tm_hour,
+        start_tm_time.tm_min,
+        start_tm_time.tm_sec,
+        (int) start_gtd_time->tv_usec,
         /* other args */
         user_buf,
         fname,
         win_size,
-        blksize,
-        nbytes,
+        (long) blksize,
+        (long) nbytes,
         volume,
         stream_count, 
         stripe_count,
