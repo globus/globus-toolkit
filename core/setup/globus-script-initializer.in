@@ -3,78 +3,79 @@
 GLOBUS_DEPLOY_PATH=                # This line is overwritten during deployment
 GLOBUS_DEPLOYED='FALSE'            # This line is overwritten during deployment
 
-    if [ "X${GLOBUS_DEPLOYED}" = "XTRUE" ]; then
-	if [ -z "${GLOBUS_DEPLOY_PATH}" ]; then
-	    echo "ERROR: environment variable GLOBUS_DEPLOY_PATH not defined"  1>&2
-	    exit 1
-	fi
-	if [ -z "${GLOBUS_INSTALL_PATH}" ]; then
-	    if [ ! -r "${GLOBUS_DEPLOY_PATH}/etc/globus-install-path.sh" ]; then
-	        echo "ERROR: cannot read ${GLOBUS_DEPLOY_PATH}/etc/globus-install-path.sh" 1>&2
-		exit 1
-	    fi
-	    . "${GLOBUS_DEPLOY_PATH}/etc/globus-install-path.sh"
-	    if [ -z "${GLOBUS_INSTALL_PATH}" ]; then
-		echo "ERROR: environment variable GLOBUS_INSTALL_PATH not defined"  1>&2
-		echo "in ${GLOBUS_DEPLOY_PATH}/etc/globus-install-path.sh"         1>&2
-		exit 1
-	    fi
-	fi
-    else 
-	if [ -z "${GLOBUS_INSTALL_PATH}" ]; then
-	    echo "WARNING: environment variable GLOBUS_INSTALL_PATH not defined"  1>&2
-	    # we really should do a exit 1 here, but for easier development
-	    # testing, fall back on ${prefix}.
-	    GLOBUS_INSTALL_PATH=@prefix@
-	fi
+  if [ "X${GLOBUS_DEPLOYED}" = "XTRUE" ]; then
+    if [ -z "${GLOBUS_DEPLOY_PATH}" ]; then
+      echo "ERROR: environment variable GLOBUS_DEPLOY_PATH not defined"  1>&2
+      exit 1
     fi
-    if [ "X${GLOBUS_DEPLOYED}" = "XTRUE" ]; then
-	export GLOBUS_DEPLOY_PATH
-	prefix=${GLOBUS_DEPLOY_PATH}
-	exec_prefix=${GLOBUS_DEPLOY_PATH}
-    else
-	prefix="${GLOBUS_INSTALL_PATH}"
-	exec_prefix=@installed_exec_prefix@
+    if [ -z "${GLOBUS_INSTALL_PATH}" ]; then
+      if [ ! -r "${GLOBUS_DEPLOY_PATH}/etc/globus-install-path.sh" ]; then
+        echo "ERROR: cannot read ${GLOBUS_DEPLOY_PATH}/etc/globus-install-path.sh" 1>&2
+	exit 1
+      fi
+      . "${GLOBUS_DEPLOY_PATH}/etc/globus-install-path.sh"
+      if [ -z "${GLOBUS_INSTALL_PATH}" ]; then
+        echo "ERROR: environment variable GLOBUS_INSTALL_PATH not defined"  1>&2
+        echo "in ${GLOBUS_DEPLOY_PATH}/etc/globus-install-path.sh"         1>&2
+        exit 1
+      fi
     fi
-    export GLOBUS_INSTALL_PATH
-    sbindir=${exec_prefix}/sbin
-    bindir=${exec_prefix}/bin
-    libdir=${exec_prefix}/lib
-    libexecdir=${exec_prefix}/libexec
-    includedir=${exec_prefix}/include
-    datadir=${prefix}/share
-    sysconfdir=${prefix}/etc
-    sharedstatedir=${prefix}/com
-    localstatedir=${prefix}/var
-    tmpdir=@tmpdir@
-    local_tmpdir=@local_tmpdir@
-    secure_tmpdir=@secure_tmpdir@
+  else 
+    if [ -z "${GLOBUS_INSTALL_PATH}" ]; then
+      echo "WARNING: environment variable GLOBUS_INSTALL_PATH not defined"  1>&2
+      # we really should do a exit 1 here, but for easier development
+      # testing, fall back on ${prefix}.
+      GLOBUS_INSTALL_PATH=@prefix@
+    fi
+  fi
 
+  if [ "X${GLOBUS_DEPLOYED}" = "XTRUE" ]; then
+    export GLOBUS_DEPLOY_PATH
+    prefix=${GLOBUS_DEPLOY_PATH}
+    exec_prefix=${GLOBUS_DEPLOY_PATH}
+  else
+    prefix="${GLOBUS_INSTALL_PATH}"
+y    exec_prefix=@installed_exec_prefix@
+  fi
+  export GLOBUS_INSTALL_PATH
+  sbindir=${exec_prefix}/sbin
+  bindir=${exec_prefix}/bin
+  libdir=${exec_prefix}/lib
+  libexecdir=${exec_prefix}/libexec
+  includedir=${exec_prefix}/include
+  datadir=${prefix}/share
+  sysconfdir=${prefix}/etc
+  sharedstatedir=${prefix}/com
+  localstatedir=${prefix}/var
+  tmpdir=@tmpdir@
+  local_tmpdir=@local_tmpdir@
+  secure_tmpdir=@secure_tmpdir@
+
+  if [ -z "${GLOBUS_SSL_PATH}" ]; then
+    if [ ! -r "${exec_prefix}/etc/globus-ssl-path.sh" ]; then
+      echo "ERROR: cannot read ${exec_prefix}/etc/globus-ssl-path.sh" 1>&2
+      exit 1
+    fi
+    . "${exec_prefix}/etc/globus-ssl-path.sh"
     if [ -z "${GLOBUS_SSL_PATH}" ]; then
-	if [ ! -r "${exec_prefix}/etc/globus-ssl-path.sh" ]; then
-	    echo "ERROR: cannot read ${exec_prefix}/etc/globus-ssl-path.sh" 1>&2
-	    exit 1
-	fi
-	. "${exec_prefix}/etc/globus-ssl-path.sh"
-	if [ -z "${GLOBUS_SSL_PATH}" ]; then
-	    echo "ERROR: environment variable GLOBUS_SSL_PATH not defined"  1>&2
-	    echo "in ${exec_prefix}/etc/globus-ssl-path.sh"         1>&2
-	    exit 1
-	fi
+      echo "ERROR: environment variable GLOBUS_SSL_PATH not defined"  1>&2
+      echo "in ${exec_prefix}/etc/globus-ssl-path.sh"         1>&2
+      exit 1
     fi
-    if [ -z "$GLOBUS_SH_VARIABLES_SET" ]; then
-        if [ ! -r ${exec_prefix}/etc/globus-sh-commands.sh ] ; then
-	    echo "ERROR: cannot read ${exec_prefix}/etc/globus-sh-commands.sh" 1>&2
-	    exit 1
-	fi
-	. ${exec_prefix}/etc/globus-sh-commands.sh
-	for _var in `${GLOBUS_SH_SED} -n '/^GLOBUS_SH/s/=.*$//p' \
-		     ${exec_prefix}/etc/globus-sh-commands.sh`
-	do
-	    export ${_var}
-	done
-	GLOBUS_SH_VARIABLES_SET="Y"
-	export GLOBUS_SH_VARIABLES_SET
+  fi
+  if [ -z "$GLOBUS_SH_VARIABLES_SET" ]; then
+    if [ ! -r ${exec_prefix}/etc/globus-sh-commands.sh ] ; then
+      echo "ERROR: cannot read ${exec_prefix}/etc/globus-sh-commands.sh" 1>&2
+      exit 1
     fi
+    . ${exec_prefix}/etc/globus-sh-commands.sh
+    for _var in `${GLOBUS_SH_SED} -n '/^GLOBUS_SH/s/=.*$//p' \
+      ${exec_prefix}/etc/globus-sh-commands.sh`
+    do
+      export ${_var}
+    done
+    GLOBUS_SH_VARIABLES_SET="Y"
+    export GLOBUS_SH_VARIABLES_SET
+  fi
 
-    ################# END    Inserted by configure #############
+  ################# END    Inserted by configure #############
