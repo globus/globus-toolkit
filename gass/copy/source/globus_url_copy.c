@@ -674,14 +674,6 @@ main(int argc, char **argv)
     }
 #   endif
 
-#if defined(USE_NETLOGGER)
-    lp = NetLoggerOpen(NL_FILE,
-                       "globus-url-copy",
-                       "/home/smartin/nl_file",
-                       "w",
-                       0);
-#endif
-
     if (verbose_flag)
     {
         result = globus_gass_copy_register_performance_cb(
@@ -756,10 +748,6 @@ main(int argc, char **argv)
             globus_l_globus_url_copy_ctrlc_handled = GLOBUS_TRUE;
         }
     }
-
-#if defined(USE_NETLOGGER)
-    NetLoggerClose(lp);
-#endif
 
     if (verbose_flag)
     {
