@@ -1,3 +1,12 @@
 contact string details
 
 reexamine build process
+
+remove context from transport and hide context else where
+
+need dd_cntl and handle_cntl via op
+
+drivers should take globus_url_t instead of string contact string
+
+need clean method of getting contact string
+
