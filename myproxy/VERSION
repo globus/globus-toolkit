@@ -4,6 +4,8 @@ This version should be compatible with all versions since v0.2.
 Version History
 ---------------
 v0.6.3 XX XX 200X (GPT package version 1.15)
+  - update GPT packaging for compatibility with GT 3.9.3
+    (globus_gssapi_gsi-4.0)
   - added support for $GT_PROXY_MODE="old" in myproxy-get-delegation,
     to retrieve a "legacy globus proxy" from an end-entity certificate
     stored in the MyProxy repository.
