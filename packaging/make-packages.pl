@@ -23,6 +23,7 @@ my $pkglog = $log_dir . "/package-logs";
 my $bundlelog = $log_dir . "/bundle-logs";
 my $source_output = $top_dir . "/source-output";
 my $package_output = $top_dir . "/package-output";
+my $bin_output = $top_dir . "/bin-pkg-output";
 my $bundle_output = $top_dir . "/bundle-output";
 
 # What do I need to clean up from old buids?
@@ -36,6 +37,7 @@ my %prereq_archives = (
 
 # tree_name => [ cvs directory, module, checkout-dir tag ]
 # TODO: Add explicit CVSROOT
+# TODO: Allow per-package module specification
 my %cvs_archives = (
      'gt2' => [ "/home/globdev/CVS/globus-packages", "all", "gt2-cvs", "HEAD" ],
      'gt3' => [ "/home/globdev/CVS/gridservices", "all", "ogsa-cvs", "HEAD" ],
@@ -113,7 +115,9 @@ setup_environment();
 if ( not $noupdates )
 {
     # Need autotools for gt2 or gt3
-    if ($cvs_build_hash{'gt2'} eq 1 or $cvs_build_hash{'gt3'} eq 1)
+    if ($cvs_build_hash{'gt2'} eq 1 or
+	$cvs_build_hash{'gt3'} eq 1 or
+	$cvs_build_hash{'cbindings'} eq 1)
     {
 	$cvs_build_hash{'autotools'} = 1;
 	push @cvs_build_list, 'autotools';
@@ -143,6 +147,7 @@ if ( not $skipbundle )
 if ( $install )
 {
     install_bundles();
+    generate_bin_packages();
 } else {
     print "Not installing bundle without -install= set.\n";
 }
@@ -154,6 +159,9 @@ exit 0;
 sub setup_environment()
 # --------------------------------------------------------------------
 {
+    $cvs_archives{'autotools'}[3] = $cvs_archives{'gt2'}[3];
+    $cvs_archives{'cbindings'}[3] = $cvs_archives{'gt3'}[3];
+
     if ( not defined(@cvs_build_list) )
     {
 	@cvs_build_list = ("autotools", "gt2", "gt3", "cbindings");
@@ -967,6 +975,9 @@ sub package_source_tar()
 	    log_system("cp $top_dir/package-list/$package/pkg_data_src.gpt  $destdir/pkgdata/pkg_data_src.gpt.in",
 		   "$pkglog/$package");
 	    paranoia "Metadata copy failed for $package.";
+	    log_system("cp $top_dir/package-list/$package/filelist  $destdir/",
+		   "$pkglog/$package");
+	    paranoia "Filelist copy failed for $package.";
 	    print "\tUsed pkgdata from package-list, not cool.\n";
 	}
     
@@ -1018,7 +1029,7 @@ sub bundle_sources()
     }
 }
 
-
+#TODO: Allow users to specify pre-existing binary bundles too.
 # --------------------------------------------------------------------
 sub install_bundles
 # --------------------------------------------------------------------
@@ -1038,6 +1049,15 @@ sub install_bundles
 
 }
 
+# --------------------------------------------------------------------
+sub generate_bin_packages
+# --------------------------------------------------------------------
+{
+    mkdir $bin_output;
+    chdir $bin_output;
+
+    log_system("$ENV{'GPT_LOCATION'}/sbin/gpt-pkg $verbose", "$log_dir/binary_packaging");
+}
 
 END{}
 1;

@@ -30,6 +30,7 @@ BUNDLE mmjfs
 	mmjfs_fork_setup
 
 BUNDLE mmjfs-static
+	globus_libxml2
 	globus_grim_devel
 	globus_grim
 
