@@ -760,7 +760,7 @@ globus_l_gfs_data_event_cb(
     globus_gfs_data_event_reply_t *     reply,
     void *                              user_arg)
 {
-    globus_result_t                     result;
+    globus_result_t                     result = GLOBUS_SUCCESS;
     globus_gridftp_server_control_op_t  op;
     globus_l_gfs_request_info_t *       request;
     GlobusGFSName(globus_l_gfs_data_event_cb);
@@ -788,39 +788,23 @@ globus_l_gfs_data_event_cb(
             break;
         
         case GLOBUS_GFS_EVENT_TRANSFER_CONNECTED:
-            result = globus_gridftp_server_control_begin_transfer(op);
-            if(result != GLOBUS_SUCCESS)
-            {
-                globus_i_gfs_log_result("control_begin_transfer error:", result);
-            }
+            globus_gridftp_server_control_begin_transfer(op);
             break;
         
         case GLOBUS_GFS_EVENT_DISCONNECTED:
-            result = globus_gridftp_server_control_disconnected(
+            globus_gridftp_server_control_disconnected(
                 request->instance->server_handle, 
                 reply->data_arg);
-            if(result != GLOBUS_SUCCESS)
-            {
-                globus_i_gfs_log_result("control_disconnected error:", result);
-            }
             break;
         
         case GLOBUS_GFS_EVENT_BYTES_RECVD:
-            result = globus_gridftp_server_control_event_send_perf(
+            globus_gridftp_server_control_event_send_perf(
                 op, reply->node_ndx, reply->recvd_bytes);
-            if(result != GLOBUS_SUCCESS)
-            {
-                globus_i_gfs_log_result("control_send_perf error:", result);
-            }
             break;
         
         case GLOBUS_GFS_EVENT_RANGES_RECVD:
-            result = globus_gridftp_server_control_event_send_restart(
+            globus_gridftp_server_control_event_send_restart(
                op, reply->recvd_ranges);
-            if(result != GLOBUS_SUCCESS)
-            {
-                globus_i_gfs_log_result("control_send_restart error:", result);
-            }
             break;
         
         default:
@@ -835,7 +819,6 @@ globus_l_gfs_data_transfer_cb(
     globus_gfs_data_reply_t *           reply,
     void *                              user_arg)
 {
-    globus_result_t                     result;
     globus_gridftp_server_control_op_t  op;
     globus_l_gfs_request_info_t *       request;
     char *                              tmp_str;
@@ -848,26 +831,18 @@ globus_l_gfs_data_transfer_cb(
     {
         tmp_str = globus_error_print_friendly(
             globus_error_peek(reply->result));
-        result = globus_gridftp_server_control_finished_transfer(
+        globus_gridftp_server_control_finished_transfer(
             op,
             GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_ACTION_FAILED,
             tmp_str);
-        if(result != GLOBUS_SUCCESS)
-        {
-            globus_i_gfs_log_result("control_finished_transfer error:", result);
-        }
         globus_free(tmp_str);
     }
     else
     {
-        result = globus_gridftp_server_control_finished_transfer(
+        globus_gridftp_server_control_finished_transfer(
             op,
             GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS,
             GLOBUS_NULL);
-        if(result != GLOBUS_SUCCESS)
-        {
-            globus_i_gfs_log_result("control_finished_transfer error:", result);
-        }
     }
     if(!request->transfer_events)
     {
