@@ -2,7 +2,7 @@ include $(top_srcdir)/globus_automake_pre
 
 bin_PROGRAMS = grid-proxy-init grid-proxy-info grid-proxy-destroy 
 
-INCLUDES =  -I$(top_srdir) $(GPT_INCLUDES) 
+INCLUDES =  -I$(top_srcdir) $(GPT_INCLUDES) 
 
 grid_proxy_init_SOURCES = grid_proxy_init.c
 grid_proxy_destroy_SOURCES = grid_proxy_destroy.c
