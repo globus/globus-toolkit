@@ -29,7 +29,7 @@ typedef enum
     GLOBUS_XIO_SYSTEM_TRUNC     = O_TRUNC,
     /** Open for append */
     GLOBUS_XIO_SYSTEM_APPEND    = O_APPEND
-} globus_xio_system_flag_t;
+} globus_xio_system_open_flag_t;
 
 typedef enum
 {
