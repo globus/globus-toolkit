@@ -186,17 +186,16 @@ globus_i_ftp_client_response_callback(
     int						rc, oldrc, i;
     static char * myname = "globus_i_ftp_client_response_callback";
     
-    globus_i_ftp_client_debug_printf(1, (stderr, 
-        "globus_i_ftp_client_response_callback() entering\n"));
-    
     target = (globus_i_ftp_client_target_t *) user_arg;
     client_handle = target->owner;
-
+    
+    globus_i_ftp_client_debug_printf(1, (stderr, 
+        "globus_i_ftp_client_response_callback() entering\n"));
+    globus_i_ftp_client_debug_states(2, client_handle);
+    
     globus_assert(! GLOBUS_I_FTP_CLIENT_BAD_MAGIC(&client_handle));
 
     globus_i_ftp_client_handle_lock(client_handle);
-    
-    globus_i_ftp_client_debug_states(2, client_handle);
     
     globus_i_ftp_client_plugin_notify_response(
 	client_handle,
@@ -206,7 +205,7 @@ globus_i_ftp_client_response_callback(
 	response);
 
     if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
-       client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART)
+        client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART)
     {
 	goto finish;
     }
@@ -233,7 +232,8 @@ redo:
 		&target->auth_info);
 
 	    if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
-	       client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART)
+	       client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART ||
+	       client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_FAILURE)
 	    {
 		break;
 	    }
@@ -329,7 +329,8 @@ redo:
 	    tmpstr);
 
 	if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
-	   client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART)
+	    client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART ||
+	    client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_FAILURE)
 	{
 	    break;
 	}
@@ -390,7 +391,8 @@ redo:
 	    "SITE HELP" CRLF);
 
 	if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
-	   client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART)
+	    client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART ||
+	    client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_FAILURE)
 	{
 	    break;
 	}
@@ -441,7 +443,8 @@ redo:
 	    "FEAT" CRLF);
 
 	if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
-	   client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART)
+	    client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART ||
+	    client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_FAILURE)
 	{
 	    break;
 	}
@@ -511,7 +514,8 @@ redo:
 	    (char) target->attr->type);
 
 	if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
-	   client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART)
+	    client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART ||
+	    client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_FAILURE)
 	{
 	    break;
 	}
@@ -585,7 +589,8 @@ redo:
 	    (char) target->attr->mode);
 
 	if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
-	   client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART)
+	    client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART ||
+	    client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_FAILURE)
 	{
 	    break;
 	}
@@ -702,7 +707,8 @@ redo:
 	    target->url.url_path);
 
 	if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
-	   client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART)
+	    client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART ||
+	    client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_FAILURE)
 	{
 	    break;
 	}
@@ -862,7 +868,8 @@ redo:
 	    target->attr->buffer.fixed.size);
 
 	if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
-	   client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART)
+	    client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART ||
+	    client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_FAILURE)
 	{
 	    break;
 	}
@@ -974,7 +981,8 @@ redo:
 		parallelism_opt ? parallelism_opt : "");
 
 	if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
-	   client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART)
+	    client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART ||
+	    client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_FAILURE)
 	{
 	    if(parallelism_opt)
 	    {
@@ -1128,7 +1136,8 @@ redo:
 		? target->attr->dcau.subject.subject : "");
 
 	if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
-	   client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART)
+	    client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART ||
+            client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_FAILURE)
 	{
 	    break;
 	}
@@ -1254,7 +1263,8 @@ redo:
 	    pbsz);
 
 	if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
-	   client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART)
+	    client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART ||
+	    client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_FAILURE)
 	{
 	    break;
 	}
@@ -1339,7 +1349,8 @@ redo:
 	    (char) target->attr->data_prot);
 
 	if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
-	   client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART)
+	    client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART ||
+	    client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_FAILURE)
 	{
 	    break;
 	}
@@ -1471,7 +1482,8 @@ redo:
 	    tmpstr);
 
 	if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
-	    client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART)
+	    client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART ||
+	    client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_FAILURE)
 	{
 	    break;
 	}
@@ -1575,7 +1587,8 @@ redo:
 		tmpstr);
 
 	    if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
-	       client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART)
+	       client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART ||
+	       client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_FAILURE)
 	    {
 		globus_libc_free(tmpstr);
 		break;
@@ -1774,7 +1787,8 @@ redo:
 	        : client_handle->restart_marker.stream.offset);
 
 	if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
-	   client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART)
+	    client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART ||
+	    client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_FAILURE)
 	{
 	    break;
 	}
@@ -1827,7 +1841,8 @@ redo:
 		tmpstr);
 
 	    if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
-	       client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART)
+	       client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART ||
+	       client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_FAILURE)
 	    {
 		break;
 	    }
@@ -1945,7 +1960,8 @@ redo:
 	    target->url.url_path);
 
 	if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
-	   client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART)
+	    client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART ||
+	    client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_FAILURE)
 	{
 	    break;
 	}
@@ -1997,7 +2013,8 @@ redo:
 	    target->url.url_path);
 
 	if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
-	   client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART)
+	    client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART ||
+	    client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_FAILURE)
 	{
 	    break;
 	}
@@ -2033,7 +2050,8 @@ redo:
 	    target->url.url_path);
 
 	if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
-	   client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART)
+	    client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART ||
+	    client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_FAILURE)
 	{
 	    break;
 	}
@@ -2069,7 +2087,8 @@ redo:
 	    target->url.url_path);
 
 	if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
-	   client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART)
+	    client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART ||
+	    client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_FAILURE)
 	{
 	    break;
 	}
@@ -2115,7 +2134,8 @@ redo:
 	    dest_url.url_path);
 
 	if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
-	   client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART)
+	    client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART ||
+	    client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_FAILURE)
 	{
             globus_url_destroy(&dest_url);
 	    break;
@@ -2156,7 +2176,8 @@ redo:
 	    target->url.url_path);
 
 	if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
-	   client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART)
+	    client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART ||
+	    client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_FAILURE)
 	{
 	    break;
 	}
@@ -2192,7 +2213,8 @@ redo:
 	    target->url.url_path);
 
 	if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
-	   client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART)
+	    client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART ||
+	    client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_FAILURE)
 	{
 	    break;
 	}
@@ -2228,7 +2250,8 @@ redo:
 	    target->url.url_path);
 
 	if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
-	   client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART)
+	    client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART ||
+	    client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_FAILURE)
 	{
 	    break;
 	}
@@ -2292,7 +2315,8 @@ redo:
 		target->url.url_path);
 	}
 	if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
-	   client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART)
+	    client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART ||
+	    client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_FAILURE)
 	{
 	    break;
 	}
@@ -2371,7 +2395,8 @@ redo:
 		target->url.url_path);
 	}
 	if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
-	   client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART)
+	    client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART ||
+	    client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_FAILURE)
 	{
 	    break;
 	}
@@ -2449,7 +2474,8 @@ redo:
 	}
 
 	if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
-	   client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART)
+	    client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART ||
+            client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_FAILURE)
 	{
 	    break;
 	}
@@ -2535,7 +2561,8 @@ redo:
 	}
 
 	if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
-	   client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART)
+	    client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART ||
+	    client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_FAILURE)
 	{
 	    break;
 	}
@@ -2618,10 +2645,12 @@ redo:
 
 		    globus_object_free(error);
 
-		    if(client_handle->state
-		       == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
-		       client_handle->state
-		       == GLOBUS_FTP_CLIENT_HANDLE_RESTART)
+		    if(client_handle->state == 
+		        GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
+		        client_handle->state == 
+		            GLOBUS_FTP_CLIENT_HANDLE_RESTART ||
+	                client_handle->state == 
+	                    GLOBUS_FTP_CLIENT_HANDLE_FAILURE)
 		    {
 			break;
 		    }
@@ -2697,7 +2726,8 @@ redo:
 		client_handle->err);
 
 	    if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
-	       client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART)
+	       client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART ||
+	       client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_FAILURE)
 	    {
 		break;
 	    }
@@ -2833,6 +2863,7 @@ redo:
 	goto do_return;
 
     case GLOBUS_FTP_CLIENT_TARGET_FAULT:
+    case GLOBUS_FTP_CLIENT_TARGET_CLOSED:
 	/*
 	 * This state only happens if this is a callback which was a
 	 * result of a force_close. We do nothing, and the force_close
@@ -2911,16 +2942,16 @@ redo:
 	    if(registered == GLOBUS_FALSE)
 	    {
 		globus_assert(error ||
-			      client_handle->state ==
-			      GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
-			      client_handle->state ==
-			      GLOBUS_FTP_CLIENT_HANDLE_ABORT);
+		    client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
+		    client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART ||
+	            client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_FAILURE);
 		/*
 		 * A restart or abort happened during activation, before any
 		 * callbacks were registered. We must deal with them here.
 		 */
 		if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
-		   client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART)
+		    client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART ||
+	            client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_FAILURE)
 		{
 		    break;
 		}
@@ -3369,6 +3400,26 @@ globus_l_ftp_client_parallelism_string(
 }
 
 /**
+ * faked force close oneshot wrapper
+ */
+void
+globus_i_ftp_client_faked_force_close_callback(
+    const globus_abstime_t *            time_now,
+    const globus_abstime_t *            time_stop,
+    void *                              user_args)
+{
+    globus_i_ftp_client_target_t *      target;
+    
+    target = (globus_i_ftp_client_target_t *) user_args;
+    
+    globus_i_ftp_client_force_close_callback(
+        target,
+        target->control_handle,
+        GLOBUS_SUCCESS /* don't care */,
+        GLOBUS_NULL);
+}
+
+/**
  * Handle a connection fault.
  *
  * This function is called from the FTP state machine when a fault
@@ -3400,6 +3451,7 @@ globus_l_ftp_client_connection_error(
     
     globus_i_ftp_client_debug_printf(1, 
         (stderr, "globus_l_ftp_client_connection_error() entering\n"));
+    globus_i_ftp_client_debug_states(2, client_handle);
 
     if(client_handle->err == GLOBUS_NULL)
     {
@@ -3416,13 +3468,7 @@ globus_l_ftp_client_connection_error(
 	    client_handle->err = GLOBUS_I_FTP_CLIENT_ERROR_PROTOCOL_ERROR();
 	}
     }
-
-    if(error)
-    {
-	/* Mark the target for destruction, since we faulted on it. */
-	target->state = GLOBUS_FTP_CLIENT_TARGET_FAULT;
-    }
-
+    
     /*
      * Now, let's figure out to cope with this fault. Get/Put are
      * similar, but 3rd party transfer is rather different
@@ -3432,6 +3478,12 @@ globus_l_ftp_client_connection_error(
        client_handle->op == GLOBUS_FTP_CLIENT_NLST ||
        client_handle->op == GLOBUS_FTP_CLIENT_PUT)
     {
+        if(error)
+        {
+            /* Mark the target for destruction, since we faulted on it. */
+            target->state = GLOBUS_FTP_CLIENT_TARGET_FAULT;
+        }
+        
 	/* If we haven't been restarted yet, then we will deal with
 	 * the fault here.
 	 */
@@ -3461,7 +3513,8 @@ globus_l_ftp_client_connection_error(
 		globus_i_ftp_client_transfer_complete(client_handle);
                 globus_i_ftp_client_debug_printf(1, 
                     (stderr, "globus_l_ftp_client_connection_error() exiting\n"));
-
+                globus_i_ftp_client_debug_states(2, client_handle);
+                
 		return;
 	    }
 	}
@@ -3496,89 +3549,95 @@ globus_l_ftp_client_connection_error(
 	    if(other_target->state == GLOBUS_FTP_CLIENT_TARGET_START ||
 	       other_target->state == GLOBUS_FTP_CLIENT_TARGET_SETUP_CONNECTION)
 	    {
-		/*
-		 * Kill the current target---the other one is idle
-		 */
-		result = globus_ftp_control_force_close(
-		    target->control_handle,
-		    globus_i_ftp_client_force_close_callback,
-		    target);
-                
-                globus_i_ftp_client_handle_unlock(client_handle);
-                
-		if(result != GLOBUS_SUCCESS)
-		{
-		    /* Shoot, that didn't work. Fake it. */
-		    globus_i_ftp_client_force_close_callback(
-			target,
-			target->control_handle,
-			GLOBUS_SUCCESS /* don't care */,
-			GLOBUS_NULL);
-		}
-                
-                globus_i_ftp_client_debug_printf(1, 
-                    (stderr, "globus_l_ftp_client_connection_error() exiting\n"));
-
-		return;
+	        if(target->state != GLOBUS_FTP_CLIENT_TARGET_FAULT &&
+	            target->state != GLOBUS_FTP_CLIENT_TARGET_CLOSED)
+	        {
+	            target->state = GLOBUS_FTP_CLIENT_TARGET_FAULT;
+	            
+                    /*
+                     * Kill the current target---the other one is idle
+                     */
+                    result = globus_ftp_control_force_close(
+                        target->control_handle,
+                        globus_i_ftp_client_force_close_callback,
+                        target);
+                        
+                    if(result != GLOBUS_SUCCESS)
+                    {
+                        /* Shoot, that didn't work. Fake it. */
+                        globus_callback_register_oneshot(
+                            GLOBUS_NULL,
+                            &globus_i_reltime_zero,
+                            globus_i_ftp_client_faked_force_close_callback,
+                            target);
+                    }
+                }
 	    }
 	    else
 	    {
-		/*
-		 * If the target is doing something else, then we will
-		 * just kill it.
-		 */
-		other_target->state = GLOBUS_FTP_CLIENT_TARGET_FAULT;
-
-		result = globus_ftp_control_force_close(
-		    other_target->control_handle,
-		    globus_i_ftp_client_force_close_callback,
-		    other_target);
-		if(result)
-		{
-		    /* Shoot, that didn't work. Fake it */
-
-		    globus_i_ftp_client_handle_unlock(client_handle);
-
-		    globus_i_ftp_client_force_close_callback(
-			other_target,
-			other_target->control_handle,
-			GLOBUS_SUCCESS /* don't care */,
-			GLOBUS_NULL);
-
-		    globus_i_ftp_client_handle_lock(client_handle);
-		}
-
-		/*
-		 * Kill the current target---the other one is idle now.
-		 */
-		target->state = GLOBUS_FTP_CLIENT_TARGET_FAULT;
-
-		result = globus_ftp_control_force_close(
-		    target->control_handle,
-		    globus_i_ftp_client_force_close_callback,
-		    target);
+	        if(other_target->state != GLOBUS_FTP_CLIENT_TARGET_FAULT &&
+	            other_target->state != GLOBUS_FTP_CLIENT_TARGET_CLOSED)
+	        {
+                    /*
+                     * If the target is doing something else, then we will
+                     * just kill it.
+                     */
+                    other_target->state = GLOBUS_FTP_CLIENT_TARGET_FAULT;
+        
+                    result = globus_ftp_control_force_close(
+                        other_target->control_handle,
+                        globus_i_ftp_client_force_close_callback,
+                        other_target);
+                    if(result)
+                    {
+                        /* Shoot, that didn't work. Fake it */
+                        globus_callback_register_oneshot(
+                            GLOBUS_NULL,
+                            &globus_i_reltime_zero,
+                            globus_i_ftp_client_faked_force_close_callback,
+                            other_target);
+                    }
+                }
                 
-                globus_i_ftp_client_handle_unlock(client_handle);
-
-		if(result != GLOBUS_SUCCESS)
-		{
-		    /* Shoot, that didn't work. Fake it. */
-		    globus_i_ftp_client_force_close_callback(
-			target,
-			target->control_handle,
-			GLOBUS_SUCCESS /* don't care */,
-			GLOBUS_NULL);
-		}
-                
-                globus_i_ftp_client_debug_printf(1, 
-                    (stderr, "globus_l_ftp_client_connection_error() exiting\n"));
-
-		return;
+                if(target->state != GLOBUS_FTP_CLIENT_TARGET_FAULT &&
+	            target->state != GLOBUS_FTP_CLIENT_TARGET_CLOSED)
+	        {
+    		    /*
+                     * Kill the current target---the other one is idle now.
+                     */
+                    target->state = GLOBUS_FTP_CLIENT_TARGET_FAULT;
+    
+                    result = globus_ftp_control_force_close(
+                        target->control_handle,
+                        globus_i_ftp_client_force_close_callback,
+                        target);
+                    
+                    if(result != GLOBUS_SUCCESS)
+                    {
+                        /* Shoot, that didn't work. Fake it. */
+                        globus_callback_register_oneshot(
+                            GLOBUS_NULL,
+                            &globus_i_reltime_zero,
+                            globus_i_ftp_client_faked_force_close_callback,
+                            target);
+                    }
+                }
 	    }
 	}
+	else if(error)
+        {
+            /* Mark the target for destruction, since we faulted on it. */
+            target->state = GLOBUS_FTP_CLIENT_TARGET_FAULT;
+        }
     }
     else /* commands that don't involve a data channel*/
     {
+        if(error)
+        {
+            /* Mark the target for destruction, since we faulted on it. */
+            target->state = GLOBUS_FTP_CLIENT_TARGET_FAULT;
+        }
+        
 	/* If we haven't been restarted yet, then we will deal with
 	 * the fault here.
 	 */
@@ -3598,7 +3657,8 @@ globus_l_ftp_client_connection_error(
     
     globus_i_ftp_client_debug_printf(1, 
         (stderr, "globus_l_ftp_client_connection_error() exiting\n"));
-
+    globus_i_ftp_client_debug_states(2, client_handle);
+    
     return;
 }
 /* globus_l_ftp_client_connection_error() */

@@ -7306,7 +7306,8 @@ globus_l_ftp_stream_listen_callback(
         /*
          *  if all is well register an accept
          */
-        else
+        else if(dc_handle->state == GLOBUS_FTP_DATA_STATE_CONNECT_READ ||
+            dc_handle->state == GLOBUS_FTP_DATA_STATE_CONNECT_WRITE)
         {
             data_conn = callback_info->data_conn;
             transfer_handle->ref++;
@@ -7964,10 +7965,8 @@ globus_l_ftp_eb_listen_callback(
          *  once the connection is accepted), register an accept, and
          *  re-register the listener.
          */
-        else
+        else if(dc_handle->state == GLOBUS_FTP_DATA_STATE_CONNECT_READ)
         {
-            globus_assert(dc_handle->state == GLOBUS_FTP_DATA_STATE_CONNECT_READ);
-
             /*
              *  inc reference count for accept
              */

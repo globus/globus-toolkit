@@ -4345,7 +4345,9 @@ globus_i_ftp_client_force_close_callback(
 
     target->state = GLOBUS_FTP_CLIENT_TARGET_CLOSED;
 
-    if(client_handle->op == GLOBUS_FTP_CLIENT_TRANSFER)
+    if(client_handle->op == GLOBUS_FTP_CLIENT_TRANSFER &&
+        !(client_handle->source->state == GLOBUS_FTP_CLIENT_TARGET_CLOSED &&
+        client_handle->dest->state == GLOBUS_FTP_CLIENT_TARGET_CLOSED))
     {
 	if((client_handle->source->state != GLOBUS_FTP_CLIENT_TARGET_CLOSED &&
 	    client_handle->source->state != GLOBUS_FTP_CLIENT_TARGET_START &&

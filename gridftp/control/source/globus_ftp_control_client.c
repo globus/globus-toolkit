@@ -3051,9 +3051,11 @@ globus_l_ftp_control_send_cmd_cb(
 	    {
 		handle->cc_handle.cc_state = GLOBUS_FTP_CONTROL_CLOSING;
 		
+		/* do this in call_close_cb 
 		globus_i_ftp_control_auth_info_destroy(
 		    &(handle->cc_handle.auth_info));
-
+                 */
+                 
 		handle->cc_handle.cb_count++;
 
 		globus_mutex_unlock(&(handle->cc_handle.mutex));
@@ -3334,8 +3336,10 @@ globus_ftp_control_force_close(
 	    {
 	        connected = GLOBUS_FALSE;
 	    }
-	    globus_i_ftp_control_auth_info_destroy(
-		&(handle->cc_handle.auth_info));
+	    /* do this in call_close_cb 
+            globus_i_ftp_control_auth_info_destroy(
+                &(handle->cc_handle.auth_info));
+             */
 	    handle->cc_handle.close_cb = callback;
 	    handle->cc_handle.close_cb_arg = callback_arg;
 	    handle->cc_handle.cc_state = GLOBUS_FTP_CONTROL_CLOSING;
@@ -3362,6 +3366,9 @@ globus_ftp_control_force_close(
 	{
 	    globus_mutex_lock(&(handle->cc_handle.mutex));
 	    {
+	        globus_i_ftp_control_auth_info_destroy(
+                    &(handle->cc_handle.auth_info));
+                
 		handle->cc_handle.cb_count--;
 		handle->cc_handle.cc_state = GLOBUS_FTP_CONTROL_UNCONNECTED;
 		
@@ -3807,9 +3814,9 @@ globus_i_ftp_control_auth_info_destroy(
 	    
 	    auth_info->delegated_credential_handle = GSS_C_NO_CREDENTIAL;
 	}
+	
+	auth_info->authenticated = GLOBUS_FALSE;
     }
-
-    auth_info->authenticated = GLOBUS_FALSE;
 
     return GLOBUS_SUCCESS;
 }
@@ -4534,6 +4541,9 @@ globus_i_ftp_control_call_close_cb(
     
     globus_mutex_lock(&handle->cc_handle.mutex);
     {
+        globus_i_ftp_control_auth_info_destroy(
+            &(handle->cc_handle.auth_info));
+                
 	handle->cc_handle.cc_state = GLOBUS_FTP_CONTROL_UNCONNECTED;
 	
 	if(handle->cc_handle.signal_deactivate == GLOBUS_TRUE)
