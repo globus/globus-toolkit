@@ -94,6 +94,8 @@ int main(int argc, char *argv[])
     char proxyfile[64] = "";
     int rval=1;
 
+    myproxy_log_use_stream (stderr);
+
     creds = ssl_credentials_new();
     init_arguments (argc, argv, &my_creds);
 

@@ -71,6 +71,8 @@ main(int argc, char *argv[])
     myproxy_request_t      *client_request;
     myproxy_response_t     *server_response;
 
+    myproxy_log_use_stream (stderr);
+
     my_setlinebuf(stdout);
     my_setlinebuf(stderr);
 
