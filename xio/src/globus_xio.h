@@ -13,8 +13,8 @@
  *
  * - @ref GLOBUS_XIO_API
  * - @ref GLOBUS_XIO_API_ASSIST 
- * - @ref drivers
- * - @ref driver_api
+ * - @ref globus_xio_driver
+ * - @ref driver_pgm
  */
 
 /**
@@ -159,7 +159,7 @@
  ************************************************************************/
 
 /**
- * \ingroup GLOBUS_XIO_API_ASSIST
+ * \addtogroup GLOBUS_XIO_API_ASSIST
  *
  *  \par User Attributes
  *  Globus XIO uses a single attribute object for all of its functions.
@@ -180,7 +180,7 @@
  */
 
 /**
- *  @ingroup GLOBUS_XIO_API
+ *  \ingroup GLOBUS_XIO_API
  *  Intialize a globus xio attribute.
  *
  *  @param attr
@@ -339,7 +339,7 @@ typedef void
  *         An out parameter.  Once the function successfully returns this
  *         will point to a valid server object.
  *
- *  @param attr
+ *  @param server_attr
  *         an attributre structure used to alter the default server 
  *         intialization.  This will mostly be used in a driver specific manner.
  *         can be NULL.
@@ -766,11 +766,8 @@ globus_xio_handle_cancel_operations(
  *  @param handle
  *         the handle to be closed.
  *
- *  @param how 
- *         how indicates what direction to shutdown
- *         SHUT_RD
- *         SHUT_WR
- *         SHUT_RDWR
+ *  @param attr
+ *         how to close attribute
  *
  *  @param cb
  *         The function to be called when the close operation completes.

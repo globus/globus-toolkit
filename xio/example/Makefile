@@ -2,9 +2,12 @@ include makefile_header
 
 all: globus-xio-telnet globus-xio-email globus-xio-udp-echo globus-xio-http-app
 
-globus-xio-email: globus_xio_email.c
-	$(GLOBUS_CC) $(GLOBUS_CFLAGS) $(GLOBUS_INCLUDES) -o globus-xio-email \
-        globus_xio_email.c $(GLOBUS_LDFLAGS) $(GLOBUS_LIBS) $(GLOBUS_PKG_LIBS)
+globus-xio-example: globus_xio_example.c
+	$(GLOBUS_CC) $(GLOBUS_CFLAGS) $(GLOBUS_INCLUDES) -o globus-xio-example \
+        globus_xio_example.c $(GLOBUS_LDFLAGS) $(GLOBUS_LIBS) $(GLOBUS_PKG_LIBS)
+globus-xio-email: globus_xio_example.c
+	$(GLOBUS_CC) $(GLOBUS_CFLAGS) $(GLOBUS_INCLUDES) -o globus-xio-example \
+        globus_xio_example.c $(GLOBUS_LDFLAGS) $(GLOBUS_LIBS) $(GLOBUS_PKG_LIBS)
 
 globus-xio-telnet: globus_xio_telnet.c
 	$(GLOBUS_CC) $(GLOBUS_CFLAGS) $(GLOBUS_INCLUDES) -o globus-xio-telnet \
