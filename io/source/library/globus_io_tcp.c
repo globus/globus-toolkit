@@ -159,6 +159,12 @@ globus_io_tcp_register_connect(
 		myname));
     }
     
+    rc = globus_i_io_initialize_handle(handle,
+                                       GLOBUS_IO_HANDLE_TYPE_TCP_CONNECTED);
+    if(rc != GLOBUS_SUCCESS)
+    {
+	return rc;
+    }
     rc = globus_i_io_copy_tcpattr_to_handle(attr,
 					    handle);
     if(rc != GLOBUS_SUCCESS)
@@ -492,6 +498,12 @@ globus_io_tcp_create_listener(
 		myname));
     }
 
+    rc = globus_i_io_initialize_handle(handle,
+                                       GLOBUS_IO_HANDLE_TYPE_TCP_CONNECTED);
+    if(rc != GLOBUS_SUCCESS)
+    {
+	return rc;
+    }
     globus_i_io_debug_printf(3,
 			     ("%s(): entering\n", myname));
 
@@ -760,6 +772,15 @@ globus_io_tcp_register_accept(
 	}
     }
 
+
+    rc = globus_i_io_initialize_handle(new_handle,
+				       GLOBUS_IO_HANDLE_TYPE_TCP_CONNECTED);
+    if(rc != GLOBUS_SUCCESS)
+    {
+	err = globus_error_get(rc);
+
+	goto restore_listener_error_exit;
+    }
     /* Set state of new handle to be the same as the modified listener */
     rc = globus_i_io_copy_tcpattr_to_handle(attr,
 					    new_handle);
@@ -774,11 +795,6 @@ globus_io_tcp_register_accept(
 
     proceed = GLOBUS_FALSE;
 
-    new_handle->state = GLOBUS_IO_HANDLE_STATE_INVALID;
-    new_handle->type = GLOBUS_IO_HANDLE_TYPE_TCP_CONNECTED;
-    new_handle->user_pointer = GLOBUS_NULL;
-    new_handle->context = GSS_C_NO_CONTEXT;
-    
     /* make the new socket by calling accept() */
     while(!proceed)
     {
@@ -1372,6 +1388,107 @@ globus_io_tcp_get_security_context(
     return globus_error_put(err);
 }
 /* globus_io_tcp_get_security_context() */
+
+/**
+ * Extract the delegated credential from a Globus I/O handle.
+ *
+ * @param handle
+ *        The Globus I/O handle to query. This may only be used on handles
+ *        created by calling globus_io_tcp_register_accept() or
+ *        globus_io_tcp_accept().
+ * @param cred
+ *        The handle's delegated credential will be copied into this parameter.
+ *        Note that a shallow copy operation is done. If the credential is
+ *        needed beyond the lifetime of the handle, it should be exported and
+ *        then re-imported using the gssapi. If no security attributes are set
+ *        on the handle, then this parameter will be set to GSS_C_NO_CONTEXT.
+ *
+ * @return
+ * This function returns GLOBUS_SUCCESS if successful, or a globus_result_t
+ * indicating the error that occurred.
+ * @retval GLOBUS_IO_ERROR_TYPE_NULL_PARAMETER
+ * The handle or context parameters were GLOBUS_NULL.
+ * @retval GLOBUS_IO_ERROR_TYPE_INVALID_TYPE
+ * The handle is not a TCP handle.
+ * @retval GLOBUS_IO_ERROR_TYPE_NOT_INITIALIZED
+ * The handle is not connected.
+ * @ingroup tcp
+ */
+globus_result_t
+globus_io_tcp_get_delegated_credential(
+    globus_io_handle_t *		handle,
+    gss_cred_id_t *			cred)
+{
+   globus_object_t *			err;
+   static char *			myname="globus_io_tcp_get_delegated_credential";
+
+    if(handle == GLOBUS_NULL)
+    {
+	return globus_error_put(
+	    globus_io_error_construct_null_parameter(
+		GLOBUS_IO_MODULE,
+		GLOBUS_NULL,
+		"handle",
+		1,
+		myname));
+    }
+    if(cred == GLOBUS_NULL)
+    {
+	return globus_error_put(
+	    globus_io_error_construct_null_parameter(
+		GLOBUS_IO_MODULE,
+		GLOBUS_NULL,
+		"cred",
+		2,
+		myname));
+    }
+    globus_i_io_mutex_lock();
+    if(handle->type != GLOBUS_IO_HANDLE_TYPE_TCP_CONNECTED)
+    {
+	err = globus_io_error_construct_invalid_type(
+	    GLOBUS_IO_MODULE,
+	    GLOBUS_NULL,
+	    "handle",
+	    1,
+	    myname,
+	    "GLOBUS_IO_HANDLE_TYPE_TCP_CONNECTED");
+
+	goto error_exit;
+    }
+
+    switch(handle->state)
+    {
+      case GLOBUS_IO_HANDLE_STATE_CONNECTED:
+	break;
+      default:
+	err = globus_io_error_construct_not_initialized(
+	   GLOBUS_IO_MODULE,
+	   GLOBUS_NULL,
+	   "handle",
+	   1,
+	   myname);
+    }
+
+    if(handle->securesocket_attr.authentication_mode ==
+       GLOBUS_IO_SECURE_AUTHENTICATION_MODE_NONE)
+    {
+        *cred = GSS_C_NO_CREDENTIAL;
+    }
+    else
+    {
+        *cred = handle->delegated_credential;
+    }
+
+    globus_i_io_mutex_unlock();
+
+    return GLOBUS_SUCCESS;
+
+  error_exit:
+    globus_i_io_mutex_unlock();
+
+    return globus_error_put(err);
+}
+/* globus_io_tcp_get_delegated_credential() */
 
 /**
  * @name TCP Attributes

@@ -773,6 +773,7 @@ struct globus_io_handle_s
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
     int						fd;
     gss_ctx_id_t				context;
+    gss_cred_id_t				delegated_credential;
     globus_size_t				max_wrap_length;
 
     /* attribute instance data for this handle */
@@ -1015,6 +1016,11 @@ globus_result_t
 globus_io_tcp_get_security_context(
     globus_io_handle_t *		handle,
     gss_ctx_id_t *			context);
+
+globus_result_t
+globus_io_tcp_get_delegated_credential(
+    globus_io_handle_t *		handle,
+    gss_cred_id_t *			cred);
 
 globus_result_t
 globus_io_tcp_posix_convert(

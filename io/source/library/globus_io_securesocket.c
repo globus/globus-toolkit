@@ -1748,7 +1748,7 @@ globus_l_io_accept_sec_context(
 	accept_info->input_token.token_length,
 	(void **) &accept_info->output_buffer,
 	&accept_info->output_buflen,
-	NULL);
+	&handle->delegated_credential);
 
     if(accept_info->input_token.token)
     {

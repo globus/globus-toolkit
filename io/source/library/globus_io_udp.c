@@ -25,9 +25,6 @@ static char *rcsid = "$Header$";
  */
 
 
-/******************************************************************************
-			     Include header files
-******************************************************************************/
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 #   include "globus_l_io.h"
 #   include <assert.h>
@@ -419,15 +416,18 @@ globus_io_udp_bind(
 	     myname));
     }
 
+    rc = globus_i_io_initialize_handle(handle,
+				       GLOBUS_IO_HANDLE_TYPE_UDP_UNCONNECTED);
+    if(rc != GLOBUS_SUCCESS)
+    {
+	return rc;
+    }
     rc = globus_i_io_copy_udpattr_to_handle(attr, 
 					    handle);
     if(rc != GLOBUS_SUCCESS)
     {
         return rc;
     }
-
-    handle->state = GLOBUS_IO_HANDLE_STATE_INVALID;
-    handle->type = GLOBUS_IO_HANDLE_TYPE_UDP_UNCONNECTED;
 
     /* create the udp socket and set options */
     rc = globus_l_io_udp_create_socket(handle);

@@ -598,15 +598,22 @@ globus_i_io_handle_destroy(
 	maj = gss_delete_sec_context(&min,
 				     &handle->context,
 				     GLOBUS_NULL);
+	handle->context = GSS_C_NO_CONTEXT;
     }
     handle->context = GSS_C_NO_CONTEXT;
+    if(handle->delegated_credential != GSS_C_NO_CREDENTIAL)
+    {
+	maj = gss_release_cred(&min,
+		               &handle->delegated_credential);
+	handle->delegated_credential = GSS_C_NO_CREDENTIAL;
+    }
     if(handle->securesocket_attr.credential != GSS_C_NO_CREDENTIAL &&
        handle->securesocket_attr.internal_credential)
     {
 	maj = gss_release_cred(&min,
 			       &handle->securesocket_attr.credential);
+       handle->securesocket_attr.credential = GSS_C_NO_CREDENTIAL;
     }
-
 }
 
 /* callbacks */
@@ -804,6 +811,7 @@ globus_i_io_initialize_handle(
 {
     handle->fd = -1;
     handle->context = GSS_C_NO_CONTEXT;
+    handle->delegated_credential = GSS_C_NO_CREDENTIAL;
     handle->max_wrap_length = 0;
     memset(&handle->socket_attr,
            '\0',
@@ -814,6 +822,9 @@ globus_i_io_initialize_handle(
     memset(&handle->tcp_attr,
            '\0',
            sizeof(globus_i_io_tcpattr_instance_t));
+    memset(&handle->udp_attr,
+	   '\0',
+	   sizeof(globus_i_io_udpattr_instance_t));
     handle->file_attr.file_type = GLOBUS_IO_FILE_TYPE_BINARY;
 
     handle->type = type;
