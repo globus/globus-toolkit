@@ -381,12 +381,14 @@ EOF
     }
 
     $self->nfssync( $pbs_job_script_name );
+    $self->log("submitting job -- $qsub < $pbs_job_script_name $errfile");
     chomp($job_id = `$qsub < $pbs_job_script_name $errfile`);
 
     if($? == 0)
     {
 	#system("$cache_pgm -cleanup-url $script_url");
 
+        $self->log("job submission successful, setting state to PENDING");
 	return {JOB_ID => $job_id,
 	        JOB_STATE => Globus::GRAM::JobState::PENDING };
     }
@@ -406,11 +408,13 @@ sub poll
 
     $self->log("polling job $job_id");
 
-    # Get first line matching job id
+    # Get job id from the full qstat output.
     $_ = (grep(/job_state/, $self->pipe_out_cmd($qstat, '-f', $job_id)))[0];
     # get the exit code of the qstat command.  for info search $CHILD_ERROR
     # in perlvar documentation.
     $exit_code = $? >> 8;
+
+    $self->log("qstat job_state line is: $_");
 
     # return code 153 = "Unknown Job Id".
     # verifying that the job is no longer there.
