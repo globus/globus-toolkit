@@ -23,7 +23,7 @@ static int globus_l_gsi_gss_assist_deactivate(void);
 int                               globus_i_gsi_gss_assist_debug_level = 0;
 FILE *                            globus_i_gsi_gss_assist_debug_fstream = NULL;
 
-globus_mutex_t                    globus_i_gsi_gss_assist_mutex = NULL;
+globus_mutex_t                    globus_i_gsi_gss_assist_mutex;
 
 /**
  * Module descriptor static initializer.
