@@ -152,7 +152,7 @@ print_cred_info(myproxy_creds_t *creds)
 
     if (creds->owner_name == NULL && creds->next == NULL)
     {
-	printf ("No credentials present !!\n");
+	printf ("No credentials present.\n");
 	return;
     }
 
@@ -164,7 +164,7 @@ print_cred_info(myproxy_creds_t *creds)
     	printf("username: %s\n", creds->username);
 
         if (creds->credname) {
-            printf("%s:\n", creds->credname);
+            printf("  name: %s\n", creds->credname);
 	}
         if (creds->creddesc) {
             printf("  description: %s\n", creds->creddesc);
