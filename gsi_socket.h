@@ -72,6 +72,19 @@ void GSI_SOCKET_clear_error(GSI_SOCKET *gsi_socket);
 int GSI_SOCKET_authentication_init(GSI_SOCKET *gsi_socket);
 
 /*
+ * GSI_SOCKET_use_creds()
+ *
+ * Use the credentials pointed to by creds for authentication.
+ * The exact contents of creds is mechanism-specific, but is
+ * generally a filename. If creds == NULL, the defaults credentials
+ * should be used.
+ *
+ * Returns GSI_SOCKET_SUCCESS on success, GSI_SOCKET_ERROR otherwise.
+ */
+int GSI_SOCKET_use_creds(GSI_SOCKET *gsi_socket,
+			 const char *creds);
+
+/*
  * GSI_SOCKET_authentication_accept()
  *
  * Perform the server-side authentication process.

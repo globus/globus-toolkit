@@ -582,6 +582,31 @@ GSI_SOCKET_clear_error(GSI_SOCKET *self)
 
 
 int
+GSI_SOCKET_use_creds(GSI_SOCKET *self,
+		     const char *creds)
+{
+    int return_code = GSI_SOCKET_ERROR;
+    
+#ifdef GSI_SOCKET_SSLEAY
+    if (creds == NULL)
+    {
+	/* Unset environment variables so libs use default */
+	myunsetenv("X509_USER_PROXY");
+	myunsetenv("X509_USER_KEY");
+	myunsetenv("X509_USER_CERT");
+	return_code = GSI_SOCKET_SUCCESS;
+    }
+    else
+    {
+	return_code = (mysetenv("X509_USER_PROXY", creds, 1) == -1) ?
+	    GSI_SOCKET_ERROR : GSI_SOCKET_SUCCESS;
+    }
+#endif /* GSI_SOCKET_SSLEAY */
+
+    return return_code;
+}
+
+int
 GSI_SOCKET_authentication_init(GSI_SOCKET *self)
 {
     gss_cred_id_t		creds = GSS_C_NO_CREDENTIAL;
