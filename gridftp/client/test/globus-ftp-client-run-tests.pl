@@ -76,6 +76,8 @@ push(@INC, $ENV{GLOBUS_LOCATION} . "/lib/perl");
 
 eval runtests(@tests);
 
+$@ && print "$@";
+
 if($server_pid)
 {
     kill(9,$server_pid);
