@@ -146,6 +146,9 @@ ftp_authorization_initialize_sc(gss_ctx_id_t    ctx,
 void 
 ftp_authorization_cleanup(void);
 
+extern char **
+ftp_i_list_possible_actions();
+
 #endif /* GLOBUS_AUTHORIZATION */
 #endif /* GSSAPI_GLOBUS */
 

@@ -2585,6 +2585,22 @@ int ftp_check_authorization(char * object,
     return 1;
 }
 
+char **
+ftp_i_list_possible_actions()
+{
+    static char *actions[] =
+    {
+	"create",
+	"read",
+	"lookup",
+	"write",
+	"delete",
+	"chdir",
+	0
+    };
+    return(actions);
+}
+
 /*
  * ftp_authorization_initialize()
  *
@@ -2603,17 +2619,8 @@ int ftp_authorization_initialize(char *         cffile,
                                  int            errstr_len)
 {
     globus_auth_result_t                result;
-    char *                              actions[] =
-        {
-            "create",
-            "read",
-            "lookup",
-            "write",
-            "delete",
-            0
-        };
     char *                              service_type = "file";
-    char                                urlbase[262];    
+    char                                urlbase[262];
 
     strcpy(urlbase,"ftp://");
 
@@ -2624,10 +2631,9 @@ int ftp_authorization_initialize(char *         cffile,
     }
 
     urlbase[261]='\0';
-    
     result = globus_authorization_handle_init(&globus_auth_handle,
                                               cffile,
-                                              actions,
+                                              ftp_i_list_possible_actions(),
                                               urlbase,
                                               service_type);
 

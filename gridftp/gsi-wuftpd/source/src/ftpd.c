@@ -6375,7 +6375,33 @@ void cwd(char *path)
 {
     struct aclmember *entry = NULL;
     char cdpath[MAXPATHLEN + 1];
+#ifdef GLOBUS_AUTHORIZATION
+    char **actions;
+    int ok = 0;
+    char realname[MAXPATHLEN];
+#endif /* GLOBUS_AUTHORIZATION */
 
+#ifdef GLOBUS_AUTHORIZATION
+    wu_realpath(path, realname, chroot_path);
+
+    for (actions = ftp_i_list_possible_actions(); *actions && ! ok; actions++)
+    {
+       if (ftp_check_authorization(realname, *actions))
+	   ok = 1;
+    }
+
+    if (! ok)
+    {
+	reply(GLOBUS_AUTHORIZATION_PERMISSION_DENIED_REPLY_CODE,
+	      "\"%s\": Permission denied by proxy credential (no permission on directory)",
+	      realname);
+	syslog(GLOBUS_AUTHORIZATION_PERMISSION_DENIED_SYSLOG_LEVEL,
+	       "%s of %s tried to cd to directory %s",
+	       pw->pw_name, remoteident, realname);
+	return;
+    }
+#endif /* GLOBUS_AUTHORIZATION */
+    
     if (chdir(path) < 0) {
 	/* alias checking */
 	while (getaclentry("alias", &entry) && ARG0 && ARG1 != NULL) {
