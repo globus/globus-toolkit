@@ -226,9 +226,16 @@ to use another CA.
 7. Setting up sample CGI script on portal
 -----------------------------------------
 
-The directory web/ contains a simple HTML file specifying a form to request a proxy. After filling out the form, the CGI script, myproxy-get-delegation.cgi runs myproxy-get-delegation with the user supplied input and returns the output of the command. 
+The  directory web/ contains a simple  HTML file  specifying a form to
+request   a  proxy.  After  filling out   the  form,   the CGI script,
+myproxy-get-delegation.cgi runs   myproxy-get-delegation with the user
+supplied input and returns the output of the command.
 
-The CGI script myproxy-get-delegation.cgi is intended to demonstrate the use of myproxy-get-delegation and can be modified to suit a particular portals requirements. If a proxy is succesfully retrieved from myproxy-server, it will store the proxy in the top-level directory under <username>.cred.
+The CGI script myproxy-get-delegation.cgi is intended to demonstrate
+the use of myproxy-get-delegation and can be modified to suit a
+particular portals requirements. If a proxy is succesfully retrieved
+from myproxy-server, it will store the proxy in the top-level
+directory under <username>.cred.
 
 
 ----
