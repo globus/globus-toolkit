@@ -115,7 +115,8 @@ ws -a \
 	ws-cas\
 	ws-delegation\
 	wsrf\
-	database
+	database\
+	usage
 
 wsc -a \
 	ogsa-c\
