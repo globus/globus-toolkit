@@ -48,6 +48,10 @@ public class MyMarkerListener
     GridFTPPerfMarkerElement gridFTPPerfMarkerElement;
     long size;
 
+    public MyMarkerListener() {
+        list = new ByteRangeList();
+    }
+
     public MyMarkerListener(TransferDbOptions dbOptions, 
                             FileTransferProgressType transferProgress, 
                             ServiceDataSet serviceData, 
@@ -76,8 +80,51 @@ public class MyMarkerListener
             logger.error("Cannot create DbAdapter" + re.getMessage());
         }
     }
+    
+    public void setTransferDbOptions(TransferDbOptions dbOptions) 
+    throws RemoteException {
+        dbAdapter = new TransferDbAdapter(dbOptions);
+    }
+    public void setTransferProgress(FileTransferProgressType transferProgress) {
+        this.transferProgress = transferProgress;
+    }
 
-    /**
+    public void setServiceDataSet(ServiceDataSet serviceData) {
+        this.serviceData = serviceData;
+    }
+
+    public void setTransferProgress(ServiceData transferProgressData) {
+        this.transferProgressData = transferProgressData;
+    }
+
+    public void setSize(long size) {
+        this.size = size;
+    }
+    public void setRestartMarkerServiceDataType(ServiceData restartMarkerServiceDataType) {
+        this.restartMarkerServiceDataType = restartMarkerServiceDataType;
+    }
+    
+    public void setFileTransferRestartMarker(FileTransferRestartMarker restartMarkerType) {
+        this.restartMarkerType = restartMarkerType;
+    }
+
+    public void setGridFTPRestartMarkerSD(ServiceData gridFTPRestartMarkerSD) {
+        this.gridFTPRestartMarkerSD = gridFTPRestartMarkerSD;
+    }
+    
+    public void setGridFTPRestartMarkerElement(GridFTPRestartMarkerElement gridFTPRestartMarkerElement) {
+        this.gridFTPRestartMarkerElement = gridFTPRestartMarkerElement;
+    }
+
+    public void setGridFTPPerfMarkerSD(ServiceData gridFTPPerfMarkerSD) {
+        this.gridFTPPerfMarkerSD = gridFTPPerfMarkerSD;
+    }
+
+    public void setGridFTPPerfMarkerElement(GridFTPPerfMarkerElement gridFTPPerfMarkerElement) {
+        this.gridFTPPerfMarkerElement = gridFTPPerfMarkerElement;
+    }
+
+     /**
      * DOCUMENT ME!
      * 
      * @return DOCUMENT ME! 

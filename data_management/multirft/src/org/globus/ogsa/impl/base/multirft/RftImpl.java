@@ -111,6 +111,7 @@ public class RftImpl
     private int transferJobId_ = 0;
     private boolean check = false; // check to update transferids of Status SDEs
     Vector activeTransferThreads;
+    Vector transferClients;
 
     public RftImpl() {
         super("MultifileRFTService");
@@ -296,6 +297,7 @@ public class RftImpl
                                               userName, password);
             dbAdapter = TransferDbAdapter.setupDBConnection(dbOptions);
             activeTransferThreads = new Vector();
+            transferClients = new Vector();
 
             if (persistentRequestIdString != null) {
                 logger.debug(
@@ -505,6 +507,26 @@ public class RftImpl
         }
     }
 
+    public TransferClient getTransferClient(String sourceURL,String destinationURL) 
+    throws MalformedURLException  {
+        TransferClient transferClient = null;
+        logger.debug("Inside getTransferClient");
+        for(int i=0;i<this.transferClients.size();i++) {
+            TransferClient tempTransferClient = (TransferClient) this.transferClients.elementAt(i);
+            GlobusURL source = tempTransferClient.getSourceURL();
+            GlobusURL destination = tempTransferClient.getDestinationURL();
+            int status = tempTransferClient.getStatus();
+            GlobusURL tempSource = new GlobusURL(sourceURL);
+            GlobusURL tempDest = new GlobusURL(destinationURL);
+            if((source.getHost().equals(tempSource.getHost())) && (destination.getHost().equals(tempDest.getHost())) && 
+                ((status==0)||(status==2))) {
+                transferClient = tempTransferClient;
+                return transferClient;
+            }
+        }
+        return transferClient;
+    }
+            
     public class TransferThread
         extends Thread {
 
@@ -519,6 +541,9 @@ public class RftImpl
             this.transferJob = transferJob;
             this.attempts = transferJob.getAttempts();
             this.status = transferJob.getStatus();
+        }
+        public void setTransferClient(TransferClient transferClient) {
+            this.transferClient = transferClient;
         }
 
         /**
@@ -548,6 +573,11 @@ public class RftImpl
 
                 try {
                     logger.debug("in run");
+                    transferClient = getTransferClient(transferJob.getSourceUrl(),
+                    transferJob.getDestinationUrl());
+                    
+                    if(transferClient==null) {
+                    logger.debug("No transferClient in the pool");
                     transferClient = new TransferClient(tempId, 
                                                         transferJob.getSourceUrl(), 
                                                         transferJob.getDestinationUrl(), 
@@ -563,6 +593,12 @@ public class RftImpl
                                                         gridFTPPerfMarkerSD, 
                                                         gridFTPPerfMarkerSDE, 
                                                         rftOptions);
+                    transferClients.add(transferClient);
+                    } else {
+                        logger.debug("Reusing TransferClient from the pool");
+                        transferClient.setSourceURL(transferJob.getSourceUrl());
+                        transferClient.setDestinationURL(transferJob.getDestinationUrl());
+                    }
                 } catch (Exception e) {
                     logger.error("Error in Transfer Client" + e.toString(), e);
                     transferJob.setStatus(TransferJob.STATUS_FAILED);
@@ -593,7 +629,6 @@ public class RftImpl
                 if (restartMarker != null) {
                     transferClient.setRestartMarker(restartMarker);
 
-                    //ADD STUFF HERE
                 }
 
                 if (transferClient != null) {

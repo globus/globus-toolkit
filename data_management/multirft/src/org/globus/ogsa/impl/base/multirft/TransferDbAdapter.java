@@ -386,25 +386,10 @@ public class TransferDbAdapter {
         return activeTransfers;
     }
 
-    public TransferJob getTransferJob(int requestId)
-                               throws RftDBException {
-
-        Connection c = getDBConnection();
-        TransferJob transferJob = null;
-
-        try {
-
-            Statement st = c.createStatement();
-            StringBuffer query = new StringBuffer(5000);
-            query.append("SELECT * FROM transfer where request_id=");
-            query.append(requestId);
-            query.append(" AND status=4");
-            logger.debug(
-                    "Getting TransferJob from Database:" + query.toString());
-
-            ResultSet rs = st.executeQuery(query.toString());
-
-            while (rs != null && rs.next()) {
+    private TransferJob getTransferJobFromRS(ResultSet rs) 
+    throws SQLException {
+         TransferJob transferJob = null;
+         while (rs != null && rs.next()) {
 
                 TransferType transfer = new TransferType();
                 transfer.setTransferId(rs.getInt(1)); //TransferID
@@ -423,6 +408,53 @@ public class TransferDbAdapter {
                 transfer.setRftOptions(rftOptions);
                 transferJob = new TransferJob(transfer, status, attempts);
             }
+        return transferJob;
+    }
+
+    public TransferJob getTransferJob(int requestId, String destination,String source)
+    throws RftDBException {
+        Connection c = getDBConnection();
+        TransferJob transferJob = null;
+        try {
+            Statement st = c.createStatement();
+            StringBuffer query = new StringBuffer(5000);
+            query.append("Select * from transfer where request_id=");
+            query.append(requestId);
+            query.append(" AND status=4 AND source_url like '%");
+            query.append("source%' AND dest_url like '%destination%'");
+            logger.debug("getting transferjob " + query.toString());
+            ResultSet rs = st.executeQuery(query.toString());
+            transferJob = getTransferJobFromRS(rs);
+        }catch (SQLException e) {
+            logger.error(
+                    "Unable to retrieve transfers for requestid:" + 
+                    requestId);
+            returnDBConnection(c);
+            throw new RftDBException("Unable to retrieve transfers for requestid", 
+                                     e);
+        }
+        return transferJob;
+    }
+
+            
+    public TransferJob getTransferJob(int requestId)
+                               throws RftDBException {
+
+        Connection c = getDBConnection();
+        TransferJob transferJob = null;
+
+        try {
+
+            Statement st = c.createStatement();
+            StringBuffer query = new StringBuffer(5000);
+            query.append("SELECT * FROM transfer where request_id=");
+            query.append(requestId);
+            query.append(" AND status=4");
+            logger.debug(
+                    "Getting TransferJob from Database:" + query.toString());
+
+            ResultSet rs = st.executeQuery(query.toString());
+            transferJob = getTransferJobFromRS(rs);
         } catch (SQLException e) {
             logger.error(
                     "Unable to retrieve transfers for requestid:" + 

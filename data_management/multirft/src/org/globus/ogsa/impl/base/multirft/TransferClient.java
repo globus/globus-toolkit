@@ -76,8 +76,123 @@ public class TransferClient {
     String sourceSubjectName;
     String destinationSubjectName;
     String subjectName;
+    TransferDbOptions dbOptions;
     private static Logger logger = Logger.getLogger(TransferClient.class.getName());
 
+    public TransferClient() {
+    }
+    public void setSourceURL(String sourceURL)
+    throws RemoteException {
+        try {
+            this.sourceGlobusURL = new GlobusURL(sourceURL);
+        } catch(Exception e) {
+            status=2;
+            logger.debug("Invalid Source URL");
+            throw new RemoteException(MessageUtils.toString(e));
+        }
+    }
+    public void setDestinationURL(String destinationURL) 
+    throws RemoteException {
+        try {
+            this.destinationGlobusURL = new GlobusURL(destinationURL);
+        } catch(Exception e) {
+            status=2;
+            logger.debug("Invalid Destination URL"); 
+            throw new RemoteException(MessageUtils.toString(e));
+        }
+    }
+    public GlobusURL getSourceURL() {
+        return this.sourceGlobusURL;
+    }
+    public GlobusURL getDestinationURL() {
+        return this.destinationGlobusURL;
+    }
+    public void setSourceHost(String sourceURL)
+    throws RemoteException {
+        try {
+            this.sourceGlobusURL = new GlobusURL(sourceURL);
+            this.sourceHost = new GridFTPClient(this.sourceGlobusURL.getHost(),
+                                            this.sourceGlobusURL.getPort());
+        } catch(Exception e) {
+            status=2;
+            logger.debug("Unable to create GridFTP Client to : " + this.sourceGlobusURL.getHost());
+            throw new RemoteException(MessageUtils.toString(e));
+        }
+    }
+    public void setDestinationHost(String destURL)
+    throws RemoteException {
+        try {
+            this.destinationGlobusURL = new GlobusURL(destURL);
+            this.destinationHost = new GridFTPClient(this.destinationGlobusURL.getHost(),
+                                            this.destinationGlobusURL.getPort());
+        } catch(Exception e) {
+            status=2;
+            logger.debug("Unable to create GridFTP Client to : " + this.destinationGlobusURL.getHost());
+            throw new RemoteException(MessageUtils.toString(e));
+        }
+    }
+    public void setCredential(String proxyPath) 
+    throws org.ietf.jgss.GSSException {
+        this.credential = loadCredential(proxyPath);
+    } 
+    public void initialize()
+    throws RemoteException {
+        try {
+            setTransferParams(this.destinationHost,this.credential);
+            setTransferParams(this.sourceHost,this.credential);
+            this.size = this.sourceHost.getSize(this.sourcePath);
+        } catch(Exception e) {
+            throw new RemoteException(MessageUtils.toString(e));
+        }
+    }
+        
+    public void setTransferId(int transferId) {
+        this.transferid= transferId;
+    }
+    public void setRftOptions(RFTOptionsType rftOptions) {
+        this.rftOptions = rftOptions;
+    }
+    public void setDbOptions(TransferDbOptions dbOptions) {
+        this.dbOptions = dbOptions;
+    }
+    public void setMyMarkerListener(FileTransferProgressType transferProgress,
+                                    ServiceDataSet serviceData, 
+                                    ServiceData transferProgressData, 
+                                    ServiceData restartMarkerServiceData, 
+                                    FileTransferRestartMarker restartMarker, 
+                                    ServiceData gridFTPRestartMarkerSD, 
+                                    GridFTPRestartMarkerElement gridFTPRestartMarkerElement, 
+                                    ServiceData gridFTPPerfMarkerSD, 
+                                    GridFTPPerfMarkerElement gridFTPPerfMarkerElement) {
+        this.markerListener = new MyMarkerListener(this.dbOptions,transferProgress,
+                                                    serviceData,transferProgressData,this.size,
+                                                    restartMarkerServiceData,restartMarker,
+                                                    gridFTPRestartMarkerSD,gridFTPRestartMarkerElement,
+                                                    gridFTPPerfMarkerSD,gridFTPPerfMarkerElement);
+        this.markerListener.setTransferId(this.transferid);
+    }
+
+    public void setAuthorization() {
+        subjectName = this.rftOptions.getSubjectName();
+        sourceSubjectName = this.rftOptions.getSourceSubjectName();
+        destinationSubjectName = this.rftOptions.getDestinationSubjectName();
+
+        if (subjectName != null) {
+            destinationHost.setAuthorization(new IdentityAuthorization(
+                                                         subjectName));
+            sourceHost.setAuthorization(new IdentityAuthorization(
+                                                    subjectName));
+        }
+        if (sourceSubjectName != null) {
+            sourceHost.setAuthorization(new IdentityAuthorization(
+                                                    sourceSubjectName));
+        }
+
+        if (destinationSubjectName != null) {
+            destinationHost.setAuthorization(new IdentityAuthorization(
+                                                         destinationSubjectName));
+        }
+    }
     public TransferClient(int transferid, String sourceURL, 
                           String destinationURL, String proxyPath, 
                           TransferDbOptions dbOptions, 
@@ -155,11 +270,11 @@ public class TransferClient {
             logger.debug("Transfer Id in TransferClient : " + transferid);
         } catch (MalformedURLException mue) {
             status = 2;
-            logger.error("Error in TransferClient", mue);
+            logger.error("Error in TransferClient:Invalid URLs", mue);
         }
          catch (Exception e) {
             status = 2;
-            logger.error("Error in TransferClient:Invalid URLs", e);
+            logger.error("Error in TransferClient", e);
             throw new RemoteException(MessageUtils.toString(e));
         }
     }
