@@ -521,14 +521,16 @@ globus_l_gfs_config_misc()
         globus_list_t *                 community_list = NULL;
         char *                          p;
         int                             i;
-        char *                          org_value;
         community = (globus_i_gfs_community_t *)
             globus_malloc(sizeof(globus_i_gfs_community_t)); 
         if(!value)
         {
             value = globus_libc_strdup("");
         }
-        org_value = value;
+        else
+        {
+            globus_l_gfs_config_set("dsi", "remote");                
+        }            
         community->cs_count = 1;
         
         p = strchr(value, ',');
