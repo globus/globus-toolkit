@@ -1,0 +1,17 @@
+
+This is MyProxy v0.9 for use with the Grid Security Infrastructure v? 
+or the Globus Metacomputing Toolkit v.1.1.3.
+
+Information on GSI and Globus can be found at:
+http://www.globus.org/security/v1.1 
+http://www.globus.org.
+
+Please see INSTALL for directions on compiling MyProxy.
+
+MyProxy allows web servers and clients to securely store and retrieve delegated Grid credentials. The four main programs are:
+	- myproxy-init
+	- myproxy-get-delegation
+	- myproxy-destroy
+	- myproxy-server
+
+ The client myproxy-init will create a proxy (using grid-proxy-init), a credential with a limited lifetime that can act on your behalf. Mutual authentciation between the client and the myproxy-server is performed using the GSI and the proxy is delegated to the myproxy-server where is stored  
