@@ -227,8 +227,8 @@ input_userauth_request(int type, u_int32_t seq, void *ctxt)
 	}
 	/* reset state */
 #ifdef GSSAPI
-	dispatch_set(SSH2_MSG_USERAUTH_GSSAPI_TOKEN, &protocol_error);
-	dispatch_set(SSH2_MSG_USERAUTH_GSSAPI_EXCHANGE_COMPLETE, &protocol_error);
+	dispatch_set(SSH2_MSG_USERAUTH_GSSAPI_TOKEN, NULL);
+	dispatch_set(SSH2_MSG_USERAUTH_GSSAPI_EXCHANGE_COMPLETE, NULL);
 #endif
 	auth2_challenge_stop(authctxt);
 	authctxt->postponed = 0;
@@ -626,19 +626,6 @@ authmethods_get(void)
 	Authmethod *method = NULL;
 	Buffer b;
 	char *list;
-
-	for (method = authmethods; method->name != NULL; method++) {
-		if (strcmp(method->name, "none") == 0)
-			continue;
-		if (method->enabled != NULL && *(method->enabled) != 0) {
-			if (size != 0)
-				size += strlen(DELIM);
-			size += strlen(method->name);
-		}
-	}
-	size++;			/* trailing '\0' */
-	list = xmalloc(size);
-	list[0] = '\0';
 
 	buffer_init(&b);
 	for (method = authmethods; method->name != NULL; method++) {
