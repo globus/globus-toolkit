@@ -11,17 +11,17 @@ GlobusDebugDefine(GLOBUS_XIO_FILE);
 #define GlobusXIOFileDebugEnter()                                           \
     GlobusXIOFileDebugPrintf(                                               \
         GLOBUS_L_XIO_FILE_DEBUG_TRACE,                                      \
-        ("[%s] Entering\n", _xio_name))
+        (_XIOSL("[%s] Entering\n"), _xio_name))
         
 #define GlobusXIOFileDebugExit()                                            \
     GlobusXIOFileDebugPrintf(                                               \
         GLOBUS_L_XIO_FILE_DEBUG_TRACE,                                      \
-        ("[%s] Exiting\n", _xio_name))
+        (_XIOSL("[%s] Exiting\n"), _xio_name))
 
 #define GlobusXIOFileDebugExitWithError()                                   \
     GlobusXIOFileDebugPrintf(                                               \
         GLOBUS_L_XIO_FILE_DEBUG_TRACE,                                      \
-        ("[%s] Exiting with error\n", _xio_name))
+        (_XIOSL("[%s] Exiting with error\n"), _xio_name))
 
 enum globus_l_xio_error_levels
 {
@@ -594,7 +594,7 @@ globus_l_xio_file_write(
     
     GlobusXIOFileDebugPrintf(
         GLOBUS_L_XIO_FILE_DEBUG_INFO,
-        ("[%s] count=%d, 1st buflen=%d\n",
+        (_XIOSL("[%s] count=%d, 1st buflen=%d\n"),
             _xio_name, iovec_count, (int) iovec[0].iov_len));
             
     handle = (globus_l_handle_t *) driver_specific_handle;

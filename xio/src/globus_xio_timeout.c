@@ -128,10 +128,10 @@ globus_i_xio_timer_register_timeout(
             if(res != GLOBUS_SUCCESS)
             {
                 globus_panic(GLOBUS_XIO_MODULE, res, 
-                    "globus_callback_adjust_period should always return success"
+                    _XIOSL("globus_callback_adjust_period should always return success"
                     " in this case\n"
                     "timer @ 0x%x\n"
-                    " globus_callback_adjust_period(%d, 0x%x);\n",
+                    " globus_callback_adjust_period(%d, 0x%x);\n"),
                     timer->periodic_handle,
                     &timer->minimal_delay);
             }

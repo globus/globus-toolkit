@@ -4,6 +4,16 @@
 #include "globus_common.h"
 #include "globus_gridftp_server_control.h"
 
+#define _GSSL(s) globus_common_i18n_get_string_by_key(\
+		    NULL, \
+		    "globus_gridftp_server", \
+		    s)
+
+#define _FSSL(s,p) globus_common_i18n_get_string_by_key(\
+		     p, \
+		    "globus_gridftp_server", \
+		    s)
+
 extern globus_extension_registry_t      globus_i_gfs_dsi_registry;
 #define GLOBUS_GFS_DSI_REGISTRY         &globus_i_gfs_dsi_registry
 

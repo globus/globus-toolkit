@@ -416,7 +416,7 @@ globus_openssl_error_handle_get_reason(
 
     if(handle != NULL)
     {
-        reason = ERR_reason_error_string(handle->error_code);
+        reason = _GOESL(ERR_reason_error_string(handle->error_code));
         goto done;
     }
     

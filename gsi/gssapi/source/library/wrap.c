@@ -63,7 +63,7 @@ GSS_CALLCONV gss_wrap_size_limit(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
-            ("Invalid context handle passed to function"));
+            (_GGSL("Invalid context handle passed to function")));
         goto exit;
     }
     
@@ -182,7 +182,7 @@ GSS_CALLCONV gss_wrap(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
-            ("Invalid context handle passed to function"));
+            (_GGSL("Invalid context handle passed to function")));
         goto exit;
     }
 
@@ -214,7 +214,7 @@ GSS_CALLCONV gss_wrap(
             GLOBUS_GSI_GSSAPI_ERROR_RESULT(
                 minor_status,
                 GLOBUS_GSI_GSSAPI_ERROR_EXPIRED_CREDENTIAL,
-                ("Expired credential: %s < %s", 
+                (_GGSL("Expired credential: %s < %s"), 
                  ctime(&context_goodtill), ctime(&current_time)));
             goto unlock_mutex_error;
         }
@@ -284,8 +284,8 @@ GSS_CALLCONV gss_wrap(
             GLOBUS_GSI_GSSAPI_ERROR_RESULT(
                 minor_status,
                 GLOBUS_GSI_GSSAPI_ERROR_WRAP_BIO,
-                ("SSL failed wrapping entire message: "
-                 "SSL_write wrote %d bytes, should be %d bytes",
+                (_GGSL("SSL failed wrapping entire message: "
+                 "SSL_write wrote %d bytes, should be %d bytes"),
                  rc, input_message_buffer->length));
             major_status = GSS_S_FAILURE;
             goto unlock_mutex_error;

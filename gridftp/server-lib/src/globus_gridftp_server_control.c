@@ -30,7 +30,7 @@ do                                                                      \
         globus_panic(                                                   \
             &globus_i_gsc_module,                                       \
             _res,                                                       \
-            "one shot failed.");                                        \
+            _FSCSL("one shot failed."));                                        \
     }                                                                   \
 } while(0)
 
@@ -50,7 +50,7 @@ do                                                                      \
         globus_panic(                                                   \
             &globus_i_gsc_module,                                       \
             _res,                                                       \
-            "one shot failed.");                                        \
+            _FSCSL("one shot failed."));                                        \
     }                                                                   \
 } while(0)
 
@@ -70,7 +70,7 @@ do                                                                      \
         globus_panic(                                                   \
             &globus_i_gsc_module,                                       \
             _res,                                                       \
-            "one shot failed.");                                        \
+            _FSCSL("one shot failed."));                                        \
     }                                                                   \
 } while(0)
 
@@ -271,7 +271,7 @@ globus_l_gsc_timeout_cb(
         else
         {
             globus_l_gsc_final_reply(server_handle, 
-                "421 Idle Timeout: closing control connection.\r\n");
+                _FSMSL("421 Idle Timeout: closing control connection.\r\n"));
             rc = GLOBUS_TRUE;
         }
     }
@@ -533,7 +533,7 @@ globus_l_gsc_read_cb(
                         server_handle->state=GLOBUS_L_GSC_STATE_PROCESSING;
                         res = globus_l_gsc_final_reply(
                             server_handle,
-                            "226 Abort successful\r\n");
+                            _FSMSL("226 Abort successful\r\n"));
                         if(res != GLOBUS_SUCCESS)
                         {
                             goto err_unlock;
@@ -695,7 +695,7 @@ globus_i_gsc_terminate(
             /* ignore return code, we are stopping so it doesn' matter */
             globus_l_gsc_flush_reads(
                 server_handle,
-                "421 Service not available, closing control connection.\r\n");
+                _FSMSL("421 Service not available, closing control connection.\r\n"));
 //            res = globus_l_gsc_final_reply(server_handle, msg);
             globus_xio_handle_cancel_operations(
                 server_handle->xio_handle,
@@ -765,7 +765,7 @@ globus_l_gsc_finished_op(
             if(reply_msg == NULL && op->cmd_list == NULL)
             {
                 server_handle->outstanding_op = NULL;
-                reply_msg = "500 Command not supported.\r\n";
+                reply_msg = _FSMSL("500 Command not supported.\r\n");
             }
             if(reply_msg == NULL)
             {
@@ -791,7 +791,7 @@ globus_l_gsc_finished_op(
             globus_i_gsc_op_destroy(op);
             if(reply_msg == NULL)
             {
-                reply_msg = "426 Command Aborted.\r\n";
+                reply_msg = _FSMSL("426 Command Aborted.\r\n");
             }
 
             server_handle->abort_cnt = globus_fifo_size(&server_handle->read_q);
@@ -806,14 +806,14 @@ globus_l_gsc_finished_op(
             }
             res = globus_l_gsc_flush_reads(
                     server_handle,
-                    "426 Command Aborted.\r\n");
+                    _FSMSL("426 Command Aborted.\r\n"));
             if(res != GLOBUS_SUCCESS)
             {
                 goto err;
             }
             res = globus_l_gsc_final_reply(
                     server_handle,
-                    "226 Abort successful\r\n");
+                    _FSMSL("226 Abort successful\r\n"));
             if(res != GLOBUS_SUCCESS)
             {
                 goto err;
@@ -1255,7 +1255,7 @@ globus_i_guc_data_object_destroy(
                 GLOBUS_CALLBACK_GLOBAL_SPACE);
             if(res != GLOBUS_SUCCESS)
             {
-                globus_panic(&globus_i_gsc_module, res, "one shot failed.");
+                globus_panic(&globus_i_gsc_module, res, _FSCSL("one shot failed."));
             }
             rc = GLOBUS_TRUE;
         }
@@ -1668,7 +1668,7 @@ globus_l_gsc_command_callout(
 
         auth = server_handle->authenticated;
 
-        msg = "500 Invalid command.\r\n";
+        msg = _FSMSL("500 Invalid command.\r\n");
         while(!done)
         {
             /* if we ran out of commands before finishing tell the client
@@ -1691,12 +1691,12 @@ globus_l_gsc_command_callout(
                 op->cmd_list = globus_list_rest(op->cmd_list);
                 if(!auth && !(cmd_ent->desc & GLOBUS_GSC_COMMAND_PRE_AUTH))
                 {
-                    msg = "530 Please login with USER and PASS.\r\n";
+                    msg = _FSMSL("530 Please login with USER and PASS.\r\n");
                 }
                 else if(auth && 
                     !(cmd_ent->desc & GLOBUS_GSC_COMMAND_POST_AUTH))
                 {
-                    msg = "503 You are already logged in.\r\n";
+                    msg = _FSMSL("503 You are already logged in.\r\n");
                 }
                 else
                 {
@@ -1715,7 +1715,7 @@ globus_l_gsc_command_callout(
         if(argc < cmd_ent->min_argc)
         {
             globus_gsc_959_finished_command(op,
-                "501 Syntax error in parameters or arguments.\r\n");
+                _FSMSL("501 Syntax error in parameters or arguments.\r\n"));
         }
         else if(server_handle->fault_cmd != NULL)
         {
@@ -2381,14 +2381,14 @@ globus_i_gsc_command_panic(
             GLOBUS_XIO_CANCEL_READ);
         globus_l_gsc_flush_reads(
             op->server_handle,
-            "421 Service not available, closing control connection.\r\n");
+            _FSMSL("421 Service not available, closing control connection.\r\n"));
         op->server_handle->state = GLOBUS_L_GSC_STATE_STOPPING;
 
         /* not much can be done about an error here, we are terminating 
             anyway */
         res = globus_l_gsc_final_reply(
                 op->server_handle,
-                "421 Service not available, closing control connection.\r\n");
+                _FSMSL("421 Service not available, closing control connection.\r\n"));
     }
     globus_mutex_unlock(&op->server_handle->mutex);
 
@@ -2559,7 +2559,7 @@ globus_i_gsc_get_help(
     if(command_name == NULL)
     {
         help_str = globus_libc_strdup(
-            "214-The following commands are recognized:");
+            _FSMSL("214-The following commands are recognized:"));
         tmp_ptr = help_str;
         globus_hashtable_to_list(&server_handle->cmd_table, &list);
         cmd_ctr = 0;
@@ -2606,7 +2606,7 @@ globus_i_gsc_get_help(
             globus_hashtable_to_list(
                 &server_handle->site_cmd_table, &site_list);
             help_str = globus_common_create_string(
-                "214-Help for %s:\r\n", command_name);
+                _FSMSL("214-Help for %s:\r\n"), command_name);
             while(!globus_list_empty(site_list))
             {
                 list = (globus_list_t *) globus_list_first(site_list);
@@ -2626,7 +2626,7 @@ globus_i_gsc_get_help(
                 }
                 site_list = globus_list_rest(site_list);
             }
-            tmp_ptr = globus_common_create_string("%s214 End.\r\n", help_str);
+            tmp_ptr = globus_common_create_string(_FSMSL("%s214 End.\r\n"), help_str);
             globus_free(help_str);
 
             return tmp_ptr;
@@ -2638,11 +2638,11 @@ globus_i_gsc_get_help(
             if(list == NULL)
             {
                 return globus_common_create_string(
-                    "502 Unknown command '%s'.\r\n", command_name);
+                    _FSMSL("502 Unknown command '%s'.\r\n"), command_name);
             }
 
             help_str = globus_common_create_string(
-                "214-Help for %s:\r\n", command_name);
+                _FSMSL("214-Help for %s:\r\n"), command_name);
             while(!globus_list_empty(list))
             {
                 cmd_ent = (globus_l_gsc_cmd_ent_t *) globus_list_first(list);
@@ -2655,7 +2655,7 @@ globus_i_gsc_get_help(
                 }
                 list = globus_list_rest(list);
             }
-            tmp_ptr = globus_common_create_string("%s214 End.\r\n", help_str);
+            tmp_ptr = globus_common_create_string(_FSMSL("%s214 End.\r\n"), help_str);
             globus_free(help_str);
 
             return tmp_ptr;
@@ -4146,13 +4146,13 @@ globus_gridftp_server_control_begin_transfer(
         if(op->server_handle->data_object->first_use)
         {
             res = globus_i_gsc_intermediate_reply(
-                op, "150 Begining transfer.\r\n");
+                op, _FSMSL("150 Begining transfer.\r\n"));
             op->server_handle->data_object->first_use = GLOBUS_FALSE;
         }
         else
         {
             res = globus_i_gsc_intermediate_reply(
-                op, "125 Begining transfer; reusing existing data connection.\r\n");
+                op, _FSMSL("125 Begining transfer; reusing existing data connection.\r\n"));
         }
     }
     globus_mutex_unlock(&op->server_handle->mutex);

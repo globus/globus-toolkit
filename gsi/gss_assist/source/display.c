@@ -201,7 +201,7 @@ globus_gss_assist_display_status_str(
     *str = NULL;
     
     msg = globus_gss_assist_strcatr(msg,
-                                    comment ? comment : "GSS failure: ",
+                                    comment ? comment : _GASL("GSS failure: "),
                                     NULL,0,
                                     "\n");
     if(!msg)
@@ -272,16 +272,16 @@ globus_gss_assist_display_status_str(
         if (GSS_CALLING_ERROR(major_status) ==
             GSS_S_CALL_INACCESSIBLE_READ)
         {
-            reason1 = "read failure:";
+            reason1 = _GASL("read failure:");
         }
         else if (GSS_CALLING_ERROR(major_status) ==
                    GSS_S_CALL_INACCESSIBLE_WRITE)
         {
-            reason1 = "write failure:";
+            reason1 = _GASL("write failure:");
         }
         else
         {
-            reason1 = "failure:";
+            reason1 = _GASL("failure:");
         }
 
         if (token_status > 0)
@@ -289,16 +289,16 @@ globus_gss_assist_display_status_str(
             switch (token_status)
             {
               case GLOBUS_GSS_ASSIST_TOKEN_ERR_MALLOC:
-                reason2 = "malloc failed";
+                reason2 = _GASL("malloc failed");
                 break;
               case GLOBUS_GSS_ASSIST_TOKEN_ERR_BAD_SIZE:
-                reason2 = "token length invalid";
+                reason2 = _GASL("token length invalid");
                 break;
               case GLOBUS_GSS_ASSIST_TOKEN_EOF:
-                reason2 = "Connection closed";
+                reason2 = _GASL("Connection closed");
                 break;
               default:
-                reason2 = "unknown";
+                reason2 = _GASL("unknown");
                 break;
             }
         }
@@ -311,7 +311,7 @@ globus_gss_assist_display_status_str(
 #endif
             if (reason2 == NULL)
             {
-                reason2 = "unknown";
+                reason2 = _GASL("unknown");
             }
         }
         sprintf(buf,"    globus_gss_assist token :%d: %s %s\n",

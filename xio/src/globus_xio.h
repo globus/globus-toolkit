@@ -965,6 +965,9 @@ globus_xio_server_register_signal_handler(
 extern globus_module_descriptor_t       globus_i_xio_module;
 #define GLOBUS_XIO_MODULE &globus_i_xio_module
 
+#define _XIOSL(s) globus_common_i18n_get_string( \
+		     GLOBUS_XIO_MODULE, \
+		     s)
 EXTERN_C_END
 
 #endif

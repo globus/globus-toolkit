@@ -557,7 +557,7 @@ globus_gsi_sysconfig_set_key_permissions_win32(
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
             result,
             GLOBUS_GSI_SYSCONFIG_ERROR_FILE_IS_DIR,
-            ("File: %s", filename));
+            (_GSSL("File: %s"), filename));
         goto exit;
     }
     else if(!S_ISREG(stx.st_mode))
@@ -565,7 +565,7 @@ globus_gsi_sysconfig_set_key_permissions_win32(
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
             result,
             GLOBUS_GSI_SYSCONFIG_ERROR_FILE_NOT_REGULAR,
-            ("File: %s", filename));
+            (_GSSL("File: %s"), filename));
         goto exit;
     }
     else if(stx.st_nlink != 1)
@@ -573,7 +573,7 @@ globus_gsi_sysconfig_set_key_permissions_win32(
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
             result,
             GLOBUS_GSI_SYSCONFIG_ERROR_FILE_HAS_LINKS,
-            ("File: %s", filename));
+            (_GSSL("File: %s"), filename));
         goto exit;
     }
 
@@ -641,7 +641,7 @@ globus_gsi_sysconfig_get_home_dir_win32(
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
         	result,
             GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_HOME_DIR,
-            ("Could not get a home directory for this machine"));
+            (_GSSL("Could not get a home directory for this machine")));
 
         goto exit;
     }
@@ -652,7 +652,7 @@ globus_gsi_sysconfig_get_home_dir_win32(
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
         	result,
             GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_HOME_DIR,
-            ("Could not get a home directory for this machine"));
+            (_GSSL("Could not get a home directory for this machine")));
 
         goto exit;
     }
@@ -682,7 +682,7 @@ globus_gsi_sysconfig_get_home_dir_win32(
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
             result,
             GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_HOME_DIR,
-            ("Could not get a defined HOME directory\n"));
+            (_GSSL("Could not get a defined HOME directory\n")));
         goto exit;
     }
 
@@ -734,7 +734,7 @@ globus_gsi_sysconfig_file_exists_win32(
             GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_SYSCONFIG_ERROR_FILE_DOES_NOT_EXIST,
-                ("%s is not a valid file", filename));            
+                (_GSSL("%s is not a valid file"), filename));            
             goto exit;
             
           case EACCES:
@@ -742,7 +742,7 @@ globus_gsi_sysconfig_file_exists_win32(
             GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_SYSCONFIG_ERROR_FILE_BAD_PERMISSIONS,
-                ("Could not read %s", filename));            
+                (_GSSL("Could not read %s"), filename));            
             goto exit;
 
           default:
@@ -772,7 +772,7 @@ globus_gsi_sysconfig_file_exists_win32(
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
             result,
             GLOBUS_GSI_SYSCONFIG_ERROR_FILE_ZERO_LENGTH,
-            ("File: %s", filename));            
+            (_GSSL("File: %s"), filename));            
         goto exit;
     }
 
@@ -781,7 +781,7 @@ globus_gsi_sysconfig_file_exists_win32(
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
             result,
             GLOBUS_GSI_SYSCONFIG_ERROR_FILE_IS_DIR,
-            ("File: %s", filename));       
+            (_GSSL("File: %s"), filename));       
     }
     else if((stx.st_mode & S_IFMT) &
             ~ (S_IFREG | S_IFDIR))
@@ -789,7 +789,7 @@ globus_gsi_sysconfig_file_exists_win32(
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
             result,
             GLOBUS_GSI_SYSCONFIG_ERROR_FILE_NOT_REGULAR,
-            ("File: %s", filename));
+            (_GSSL("File: %s"), filename));
     }
 
  exit:
@@ -837,7 +837,7 @@ globus_gsi_sysconfig_dir_exists_win32(
             GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_SYSCONFIG_ERROR_FILE_DOES_NOT_EXIST,
-                ("%s is not a valid directory", filename));            
+                (_GSSL("%s is not a valid directory"), filename));            
             goto exit;
             
           case EACCES:
@@ -845,7 +845,7 @@ globus_gsi_sysconfig_dir_exists_win32(
             GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_SYSCONFIG_ERROR_FILE_BAD_PERMISSIONS,
-                ("Could not read %s", filename));            
+                (_GSSL("Could not read %s"), filename));            
             goto exit;
 
           default:
@@ -877,7 +877,7 @@ globus_gsi_sysconfig_dir_exists_win32(
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
             result,
             GLOBUS_GSI_SYSCONFIG_ERROR_FILE_IS_DIR,
-            ("%s is not a directory", filename));       
+            (_GSSL("%s is not a directory"), filename));       
     }
 
  exit:
@@ -929,7 +929,7 @@ globus_gsi_sysconfig_check_keyfile_win32(
             GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_SYSCONFIG_ERROR_FILE_DOES_NOT_EXIST,
-                ("%s is not a valid file", filename));
+                (_GSSL("%s is not a valid file"), filename));
             goto exit;
             
           case EACCES:
@@ -937,7 +937,7 @@ globus_gsi_sysconfig_check_keyfile_win32(
             GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_SYSCONFIG_ERROR_FILE_BAD_PERMISSIONS,
-                ("Could not read %s", filename));            
+                (_GSSL("Could not read %s"), filename));            
             goto exit;
 
           default:
@@ -974,7 +974,7 @@ globus_gsi_sysconfig_check_keyfile_win32(
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
             result,
             GLOBUS_GSI_SYSCONFIG_ERROR_FILE_ZERO_LENGTH,
-            ("File: %s", filename));            
+            (_GSSL("File: %s"), filename));            
         goto exit;
     }
 
@@ -984,7 +984,7 @@ globus_gsi_sysconfig_check_keyfile_win32(
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
             result,
             GLOBUS_GSI_SYSCONFIG_ERROR_FILE_IS_DIR,
-            ("File: %s", filename));        
+            (_GSSL("File: %s"), filename));        
     }
     else if((stx.st_mode & S_IFMT)
             & ~(S_IFREG | S_IFDIR))
@@ -992,7 +992,7 @@ globus_gsi_sysconfig_check_keyfile_win32(
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
             result,
             GLOBUS_GSI_SYSCONFIG_ERROR_FILE_NOT_REGULAR,
-            ("File: %s", filename));
+            (_GSSL("File: %s"), filename));
     }
 
  exit:
@@ -1046,7 +1046,7 @@ globus_gsi_sysconfig_check_certfile_win32(
             GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_SYSCONFIG_ERROR_FILE_DOES_NOT_EXIST,
-                ("%s is not a valid file", filename));
+                (_GSSL("%s is not a valid file"), filename));
             goto exit;
 
           case EACCES:
@@ -1054,7 +1054,7 @@ globus_gsi_sysconfig_check_certfile_win32(
             GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_SYSCONFIG_ERROR_FILE_BAD_PERMISSIONS,
-                ("Could not read %s", filename));
+                (_GSSL("Could not read %s"), filename));
             goto exit;
 
           default:
@@ -1091,7 +1091,7 @@ globus_gsi_sysconfig_check_certfile_win32(
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
             result,
             GLOBUS_GSI_SYSCONFIG_ERROR_FILE_ZERO_LENGTH,
-            ("File: %s", filename));            
+            (_GSSL("File: %s"), filename));            
         goto exit;
     }
 
@@ -1100,7 +1100,7 @@ globus_gsi_sysconfig_check_certfile_win32(
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
             result,
             GLOBUS_GSI_SYSCONFIG_ERROR_FILE_IS_DIR,
-            ("File: %s", filename));
+            (_GSSL("File: %s"), filename));
     }
     else if((stx.st_mode & S_IFMT) &
             ~(S_IFREG | S_IFDIR))
@@ -1108,7 +1108,7 @@ globus_gsi_sysconfig_check_certfile_win32(
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
             result,
             GLOBUS_GSI_SYSCONFIG_ERROR_FILE_NOT_REGULAR,
-            ("File: %s", filename));
+            (_GSSL("File: %s"), filename));
     }
 
  exit:
@@ -1430,7 +1430,7 @@ globus_gsi_sysconfig_get_username_win32(
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
      	    result,
             GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_HOME_DIR,
-            ("Could not find username for this use"));
+            (_GSSL("Could not find username for this use")));
      }
 
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_EXIT;
@@ -1637,12 +1637,12 @@ globus_gsi_sysconfig_get_cert_dir_win32(
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
             result,
             GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_CERT_DIR,
-            ("The trusted certificates directory could not be "
+            (_GSSL("The trusted certificates directory could not be "
              "found in any of the following locations: \n"
              "1) env. var. X509_CERT_DIR\n"
              "2) $HOME/.globus/certificates\n"
              "3) /etc/grid-security/certificates"
-             "\n4) $GLOBUS_LOCATION/share/certificates\n"));
+             "\n4) $GLOBUS_LOCATION/share/certificates\n")));
 
         goto done;
     }
@@ -1872,10 +1872,10 @@ globus_gsi_sysconfig_get_user_cert_filename_win32(
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
             result,
             GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_CERT_STRING,
-            ("The user cert could not be found in: \n"
+            (_GSSL("The user cert could not be found in: \n"
              "1) env. var. X509_USER_CERT\n"
              "2) $HOME/.globus/usercert.pem\n"
-             "3) $HOME/.globus/usercred.p12\n\n"));
+             "3) $HOME/.globus/usercred.p12\n\n")));
         goto done;
     }
 
@@ -1884,10 +1884,10 @@ globus_gsi_sysconfig_get_user_cert_filename_win32(
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
             result,
             GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_KEY_STRING,
-            ("The user key could not be found in:\n,"
+            (_GSSL("The user key could not be found in:\n,"
              "1) env. var. X509_USER_KEY\n"
              "2) $HOME/.globus/userkey.pem\n"
-             "3) $HOME/.globus/usercred.p12\n\n"));
+             "3) $HOME/.globus/usercred.p12\n\n")));
         goto done;
     }
 
@@ -2145,7 +2145,7 @@ globus_gsi_sysconfig_get_host_cert_filename_win32(
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
             result,
             GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_CERT_FILENAME,
-            ("The host cert could not be found in: \n"
+            (_GSSL("The host cert could not be found in: \n"
              "1) env. var. X509_USER_CERT\n"
              "2) /etc/grid-security/hostcert.pem\n"
              "3) $GLOBUS_LOCATION/etc/hostcert.pem\n"
@@ -2154,7 +2154,7 @@ globus_gsi_sysconfig_get_host_cert_filename_win32(
              "1) env. var. X509_USER_KEY\n"
              "2) /etc/grid-security/hostkey.pem\n"
              "3) $GLOBUS_LOCATION/etc/hostkey.pem\n"
-             "4) $HOME/.globus/hostkey.pem\n\n"));
+             "4) $HOME/.globus/hostkey.pem\n\n")));
         goto done;
     }
     
@@ -2245,7 +2245,7 @@ globus_gsi_sysconfig_get_service_cert_filename_win32(
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
             result,
             GLOBUS_GSI_SYSCONFIG_INVALID_ARG,
-            ("Empty service name"));
+            (_GSSL("Empty service name")));
         goto done;
     }
     
@@ -2460,7 +2460,7 @@ globus_gsi_sysconfig_get_service_cert_filename_win32(
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
             result,
             GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_CERT_FILENAME,
-            ("\nThe service cert could not be found in: \n"
+            (_GSSL("\nThe service cert could not be found in: \n"
              "1) env. var. X509_USER_CERT\n"
              "2) /etc/grid-security/%s/%scert.pem\n"
              "3) $GLOBUS_LOCATION/etc/%s/%scert.pem\n"
@@ -2469,7 +2469,7 @@ globus_gsi_sysconfig_get_service_cert_filename_win32(
              "1) env. var. X509_USER_KEY\n"
              "2) /etc/grid-security/%s/%skey.pem\n"
              "3) $GLOBUS_LOCATION/etc/%s/%skey.pem\n"
-             "4) $HOME/.globus/%s/%skey.pem\n\n",
+             "4) $HOME/.globus/%s/%skey.pem\n\n"),
              service_name, service_name,
              service_name, service_name,
              service_name, service_name,
@@ -2638,9 +2638,9 @@ globus_gsi_sysconfig_get_proxy_filename_win32(
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT( 
             result,
             GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_PROXY_FILENAME,
-            ("A file location for%s the proxy cert could not be found in: \n"
+            (_GSSL("A file location for%s the proxy cert could not be found in: \n"
              "1) env. var. X509_USER_PROXY\n"
-             "2) /tmp/x509up_u%s\n",
+             "2) /tmp/x509up_u%s\n"),
              (proxy_file_type == GLOBUS_PROXY_FILE_INPUT) ? "" : " writing",
              user_id_string ? user_id_string : "NULL"));
         
@@ -2705,7 +2705,7 @@ globus_gsi_sysconfig_get_ca_cert_files_win32(
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
             result,
             GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_CA_CERT_FILENAMES,
-            ("NULL parameter ca_cert_dir passed to function: %s",
+            (_GSSL("NULL parameter ca_cert_dir passed to function: %s"),
              _function_name_));
         goto exit;
     }
@@ -2715,7 +2715,7 @@ globus_gsi_sysconfig_get_ca_cert_files_win32(
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
             result,
             GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_CA_CERT_FILENAMES,
-            ("NULL parameter ca_cert_list passed to function: %s",
+            (_GSSL("NULL parameter ca_cert_list passed to function: %s"),
              _function_name_));
         goto exit;
     }
@@ -2765,7 +2765,7 @@ globus_gsi_sysconfig_get_ca_cert_files_win32(
             GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_CA_CERT_FILENAMES,
-                ("Couldn't get full pathname for CA cert"));
+                (_GSSL("Couldn't get full pathname for CA cert")));
             goto exit;
         }
         
@@ -3016,7 +3016,7 @@ globus_gsi_sysconfig_get_gridmap_filename_win32(
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
             result,
             GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_GRIDMAP_FILENAME,
-            ("A valid gridmap file could not be found."));
+            (_GSSL("A valid gridmap file could not be found.")));
         goto exit;
     }
 
@@ -3680,7 +3680,7 @@ globus_gsi_sysconfig_get_signing_policy_filename_win32(
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
             result,
             GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_SIGNING_POLICY,
-            ("NULL parameter ca_name passed to: %s", _function_name_));
+            (_GSSL("NULL parameter ca_name passed to: %s"), _function_name_));
         goto exit;
     }
 
@@ -3798,7 +3798,7 @@ globus_gsi_sysconfig_set_key_permissions_unix(
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
             result,
             GLOBUS_GSI_SYSCONFIG_ERROR_FILE_IS_DIR,
-            ("File: %s", filename));
+            (_GSSL("File: %s"), filename));
         goto exit;
     }
     else if(!S_ISREG(stx.st_mode))
@@ -3806,7 +3806,7 @@ globus_gsi_sysconfig_set_key_permissions_unix(
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
             result,
             GLOBUS_GSI_SYSCONFIG_ERROR_FILE_NOT_REGULAR,
-            ("File: %s", filename));
+            (_GSSL("File: %s"), filename));
         goto exit;
     }
     else if(stx.st_nlink != 1)
@@ -3814,7 +3814,7 @@ globus_gsi_sysconfig_set_key_permissions_unix(
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
             result,
             GLOBUS_GSI_SYSCONFIG_ERROR_FILE_HAS_LINKS,
-            ("File: %s", filename));
+            (_GSSL("File: %s"), filename));
         goto exit;
     }
     else if(stx.st_ino != stx2.st_ino || stx.st_dev != stx2.st_dev)
@@ -3822,7 +3822,7 @@ globus_gsi_sysconfig_set_key_permissions_unix(
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
             result,
             GLOBUS_GSI_SYSCONFIG_ERROR_FILE_HAS_CHANGED,
-            ("File: %s", filename));
+            (_GSSL("File: %s"), filename));
         goto exit;
     }
 
@@ -3956,7 +3956,7 @@ globus_gsi_sysconfig_get_username_unix(
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
             result,
             GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_PW_ENTRY,
-            ("Error occured for uid: %d",geteuid()));        
+            (_GSSL("Error occured for uid: %d"),geteuid()));        
         goto exit;
     }
 
@@ -3965,7 +3965,7 @@ globus_gsi_sysconfig_get_username_unix(
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
             result,
             GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_PW_ENTRY,
-            ("Error occured for uid: %d",geteuid()));        
+            (_GSSL("Error occured for uid: %d"),geteuid()));        
         goto exit;        
     }
 
@@ -4353,7 +4353,7 @@ globus_gsi_sysconfig_get_home_dir_unix(
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
             result,
             GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_PW_ENTRY,
-            ("Error occured for uid: %d",geteuid()));        
+            (_GSSL("Error occured for uid: %d"),geteuid()));        
         goto exit;
     }
 
@@ -4362,7 +4362,7 @@ globus_gsi_sysconfig_get_home_dir_unix(
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
             result,
             GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_PW_ENTRY,
-            ("Error occured for uid: %d",geteuid()));        
+            (_GSSL("Error occured for uid: %d"),geteuid()));        
         goto exit;        
     }
 
@@ -4389,7 +4389,7 @@ globus_gsi_sysconfig_get_home_dir_unix(
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
             result,
             GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_HOME_DIR,
-            ("Could not get a defined HOME directory for user id: %d\n",
+            (_GSSL("Could not get a defined HOME directory for user id: %d\n"),
              geteuid()));
         goto exit;
     }
@@ -4445,7 +4445,7 @@ globus_gsi_sysconfig_file_exists_unix(
             GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_SYSCONFIG_ERROR_FILE_DOES_NOT_EXIST,
-                ("%s is not a valid file", filename));            
+                (_GSSL("%s is not a valid file"), filename));            
             goto exit;
             
           case EACCES:
@@ -4453,7 +4453,7 @@ globus_gsi_sysconfig_file_exists_unix(
             GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_SYSCONFIG_ERROR_FILE_BAD_PERMISSIONS,
-                ("Could not read %s", filename));            
+                (_GSSL("Could not read %s"), filename));            
             goto exit;
 
           default:
@@ -4483,7 +4483,7 @@ globus_gsi_sysconfig_file_exists_unix(
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
             result,
             GLOBUS_GSI_SYSCONFIG_ERROR_FILE_ZERO_LENGTH,
-            ("File: %s", filename));            
+            (_GSSL("File: %s"), filename));            
         goto exit;
     }
 
@@ -4492,7 +4492,7 @@ globus_gsi_sysconfig_file_exists_unix(
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
             result,
             GLOBUS_GSI_SYSCONFIG_ERROR_FILE_IS_DIR,
-            ("File: %s", filename));       
+            (_GSSL("File: %s"), filename));       
     }
     else if((stx.st_mode & S_IFMT) &
             ~ (S_IFREG | S_IFLNK | S_IFDIR))
@@ -4500,7 +4500,7 @@ globus_gsi_sysconfig_file_exists_unix(
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
             result,
             GLOBUS_GSI_SYSCONFIG_ERROR_FILE_NOT_REGULAR,
-            ("File: %s", filename));
+            (_GSSL("File: %s"), filename));
     }
 
  exit:
@@ -4547,7 +4547,7 @@ globus_gsi_sysconfig_dir_exists_unix(
             GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_SYSCONFIG_ERROR_FILE_DOES_NOT_EXIST,
-                ("%s is not a valid directory", filename));            
+                (_GSSL("%s is not a valid directory"), filename));            
             goto exit;
             
           case EACCES:
@@ -4555,7 +4555,7 @@ globus_gsi_sysconfig_dir_exists_unix(
             GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_SYSCONFIG_ERROR_FILE_BAD_PERMISSIONS,
-                ("Could not read %s", filename));            
+                (_GSSL("Could not read %s"), filename));            
             goto exit;
 
           default:
@@ -4585,7 +4585,7 @@ globus_gsi_sysconfig_dir_exists_unix(
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
             result,
             GLOBUS_GSI_SYSCONFIG_ERROR_FILE_ZERO_LENGTH,
-            ("File: %s", filename));            
+            (_GSSL("File: %s"), filename));            
         goto exit;
     }
 
@@ -4594,7 +4594,7 @@ globus_gsi_sysconfig_dir_exists_unix(
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
             result,
             GLOBUS_GSI_SYSCONFIG_ERROR_FILE_IS_DIR,
-            ("%s is not a directory", filename));       
+            (_GSSL("%s is not a directory"), filename));       
     }
 
  exit:
@@ -4646,7 +4646,7 @@ globus_gsi_sysconfig_check_keyfile_unix(
             GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_SYSCONFIG_ERROR_FILE_DOES_NOT_EXIST,
-                ("%s is not a valid file", filename));
+                (_GSSL("%s is not a valid file"), filename));
             goto exit;
             
           case EACCES:
@@ -4654,7 +4654,7 @@ globus_gsi_sysconfig_check_keyfile_unix(
             GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_SYSCONFIG_ERROR_FILE_BAD_PERMISSIONS,
-                ("Could not read %s", filename));            
+                (_GSSL("Could not read %s"), filename));            
             goto exit;
 
           default:
@@ -4683,7 +4683,7 @@ globus_gsi_sysconfig_check_keyfile_unix(
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
             result,
             GLOBUS_GSI_SYSCONFIG_ERROR_FILE_NOT_OWNED,
-            ("%s is not owned by current user", filename));    
+            (_GSSL("%s is not owned by current user"), filename));    
         goto exit;
     }
 
@@ -4698,7 +4698,7 @@ globus_gsi_sysconfig_check_keyfile_unix(
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
             result,
             GLOBUS_GSI_SYSCONFIG_ERROR_FILE_BAD_PERMISSIONS,
-            ("Permissions on %s are too permissive. Maximum allowable permissions are 600", filename));
+            (_GSSL("Permissions on %s are too permissive. Maximum allowable permissions are 600"), filename));
         goto exit;
     }
 
@@ -4707,7 +4707,7 @@ globus_gsi_sysconfig_check_keyfile_unix(
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
             result,
             GLOBUS_GSI_SYSCONFIG_ERROR_FILE_ZERO_LENGTH,
-            ("File: %s", filename));            
+            (_GSSL("File: %s"), filename));            
         goto exit;
     }
 
@@ -4716,7 +4716,7 @@ globus_gsi_sysconfig_check_keyfile_unix(
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
             result,
             GLOBUS_GSI_SYSCONFIG_ERROR_FILE_IS_DIR,
-            ("File: %s", filename));        
+            (_GSSL("File: %s"), filename));        
     }
     else if((stx.st_mode & S_IFMT)
             & ~(S_IFLNK | S_IFREG | S_IFDIR))
@@ -4724,7 +4724,7 @@ globus_gsi_sysconfig_check_keyfile_unix(
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
             result,
             GLOBUS_GSI_SYSCONFIG_ERROR_FILE_NOT_REGULAR,
-            ("File: %s", filename));
+            (_GSSL("File: %s"), filename));
     }
 
  exit:
@@ -4775,7 +4775,7 @@ globus_gsi_sysconfig_check_certfile_unix(
             GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_SYSCONFIG_ERROR_FILE_DOES_NOT_EXIST,
-                ("%s is not a valid file", filename));
+                (_GSSL("%s is not a valid file"), filename));
             goto exit;
 
           case EACCES:
@@ -4783,7 +4783,7 @@ globus_gsi_sysconfig_check_certfile_unix(
             GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_SYSCONFIG_ERROR_FILE_BAD_PERMISSIONS,
-                ("Could not read %s", filename));
+                (_GSSL("Could not read %s"), filename));
             goto exit;
 
           default:
@@ -4812,7 +4812,7 @@ globus_gsi_sysconfig_check_certfile_unix(
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
             result,
             GLOBUS_GSI_SYSCONFIG_ERROR_FILE_NOT_OWNED,
-            ("%s is not owned by current user", filename));    
+            (_GSSL("%s is not owned by current user"), filename));    
         goto exit;
     }
 
@@ -4827,7 +4827,7 @@ globus_gsi_sysconfig_check_certfile_unix(
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
             result,
             GLOBUS_GSI_SYSCONFIG_ERROR_FILE_BAD_PERMISSIONS,
-            ("Permissions on %s are too permissive. Maximum allowable permissions are 644", filename));
+            (_GSSL("Permissions on %s are too permissive. Maximum allowable permissions are 644"), filename));
         goto exit;
     }
     
@@ -4836,7 +4836,7 @@ globus_gsi_sysconfig_check_certfile_unix(
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
             result,
             GLOBUS_GSI_SYSCONFIG_ERROR_FILE_ZERO_LENGTH,
-            ("File: %s", filename));            
+            (_GSSL("File: %s"), filename));            
         goto exit;
     }
 
@@ -4845,7 +4845,7 @@ globus_gsi_sysconfig_check_certfile_unix(
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
             result,
             GLOBUS_GSI_SYSCONFIG_ERROR_FILE_IS_DIR,
-            ("File: %s", filename));
+            (_GSSL("File: %s"), filename));
     }
     else if((stx.st_mode & S_IFMT) &
             ~(S_IFREG | S_IFLNK | S_IFDIR))
@@ -4853,7 +4853,7 @@ globus_gsi_sysconfig_check_certfile_unix(
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
             result,
             GLOBUS_GSI_SYSCONFIG_ERROR_FILE_NOT_REGULAR,
-            ("File: %s", filename));
+            (_GSSL("File: %s"), filename));
     }
 
  exit:
@@ -5010,12 +5010,12 @@ globus_gsi_sysconfig_get_cert_dir_unix(
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
             result,
             GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_CERT_DIR,
-            ("The trusted certificates directory could not be "
+            (_GSSL("The trusted certificates directory could not be "
              "found in any of the following locations: \n"
              "1) env. var. X509_CERT_DIR\n"
              "2) $HOME/.globus/certificates\n"
              "3) /etc/grid-security/certificates"
-             "\n4) $GLOBUS_LOCATION/share/certificates\n"));
+             "\n4) $GLOBUS_LOCATION/share/certificates\n")));
 
         goto done;
     }
@@ -5244,10 +5244,10 @@ globus_gsi_sysconfig_get_user_cert_filename_unix(
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
             result,
             GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_CERT_STRING,
-            ("The user cert could not be found in: \n"
+            (_GSSL("The user cert could not be found in: \n"
              "1) env. var. X509_USER_CERT\n"
              "2) $HOME/.globus/usercert.pem\n"
-             "3) $HOME/.globus/usercred.p12\n\n"));
+             "3) $HOME/.globus/usercred.p12\n\n")));
         goto done;
     }
 
@@ -5256,10 +5256,10 @@ globus_gsi_sysconfig_get_user_cert_filename_unix(
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
             result,
             GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_KEY_STRING,
-            ("The user key could not be found in:\n,"
+            (_GSSL("The user key could not be found in:\n,"
              "1) env. var. X509_USER_KEY\n"
              "2) $HOME/.globus/userkey.pem\n"
-             "3) $HOME/.globus/usercred.p12\n\n"));
+             "3) $HOME/.globus/usercred.p12\n\n")));
         goto done;
     }
 
@@ -5517,7 +5517,7 @@ globus_gsi_sysconfig_get_host_cert_filename_unix(
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
             result,
             GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_CERT_FILENAME,
-            ("The host cert could not be found in: \n"
+            (_GSSL("The host cert could not be found in: \n"
              "1) env. var. X509_USER_CERT\n"
              "2) /etc/grid-security/hostcert.pem\n"
              "3) $GLOBUS_LOCATION/etc/hostcert.pem\n"
@@ -5526,7 +5526,7 @@ globus_gsi_sysconfig_get_host_cert_filename_unix(
              "1) env. var. X509_USER_KEY\n"
              "2) /etc/grid-security/hostkey.pem\n"
              "3) $GLOBUS_LOCATION/etc/hostkey.pem\n"
-             "4) $HOME/.globus/hostkey.pem\n\n"));
+             "4) $HOME/.globus/hostkey.pem\n\n")));
         goto done;
     }
     
@@ -5616,7 +5616,7 @@ globus_gsi_sysconfig_get_service_cert_filename_unix(
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
             result,
             GLOBUS_GSI_SYSCONFIG_INVALID_ARG,
-            ("Empty service name"));
+            (_GSSL("Empty service name")));
         goto done;
     }
     
@@ -5831,7 +5831,7 @@ globus_gsi_sysconfig_get_service_cert_filename_unix(
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
             result,
             GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_CERT_FILENAME,
-            ("\nThe service cert could not be found in: \n"
+            (_GSSL("\nThe service cert could not be found in: \n"
              "1) env. var. X509_USER_CERT\n"
              "2) /etc/grid-security/%s/%scert.pem\n"
              "3) $GLOBUS_LOCATION/etc/%s/%scert.pem\n"
@@ -5840,7 +5840,7 @@ globus_gsi_sysconfig_get_service_cert_filename_unix(
              "1) env. var. X509_USER_KEY\n"
              "2) /etc/grid-security/%s/%skey.pem\n"
              "3) $GLOBUS_LOCATION/etc/%s/%skey.pem\n"
-             "4) $HOME/.globus/%s/%skey.pem\n\n",
+             "4) $HOME/.globus/%s/%skey.pem\n\n"),
              service_name, service_name,
              service_name, service_name,
              service_name, service_name,
@@ -6002,9 +6002,9 @@ globus_gsi_sysconfig_get_proxy_filename_unix(
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT( 
             result,
             GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_PROXY_FILENAME,
-            ("A file location for%s the proxy cert could not be found in: \n"
+            (_GSSL("A file location for%s the proxy cert could not be found in: \n"
              "1) env. var. X509_USER_PROXY\n"
-             "2) /tmp/x509up_u%s\n",
+             "2) /tmp/x509up_u%s\n"),
              (proxy_file_type == GLOBUS_PROXY_FILE_INPUT) ? "" : " writing",
              user_id_string ? user_id_string : "NULL"));
         
@@ -6091,7 +6091,7 @@ globus_gsi_sysconfig_get_signing_policy_filename_unix(
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
             result,
             GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_SIGNING_POLICY,
-            ("NULL parameter ca_name passed to: %s", _function_name_));
+            (_GSSL("NULL parameter ca_name passed to: %s"), _function_name_));
         goto exit;
     }
 
@@ -6177,7 +6177,7 @@ globus_gsi_sysconfig_get_ca_cert_files_unix(
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
             result,
             GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_CA_CERT_FILENAMES,
-            ("NULL parameter ca_cert_dir passed to function: %s",
+            (_GSSL("NULL parameter ca_cert_dir passed to function: %s"),
              _function_name_));
         goto exit;
     }
@@ -6187,7 +6187,7 @@ globus_gsi_sysconfig_get_ca_cert_files_unix(
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
             result,
             GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_CA_CERT_FILENAMES,
-            ("NULL parameter ca_cert_list passed to function: %s",
+            (_GSSL("NULL parameter ca_cert_list passed to function: %s"),
              _function_name_));
         goto exit;
     }
@@ -6233,7 +6233,7 @@ globus_gsi_sysconfig_get_ca_cert_files_unix(
             GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_CA_CERT_FILENAMES,
-                ("Couldn't get full pathname for CA cert"));
+                (_GSSL("Couldn't get full pathname for CA cert")));
             goto exit;
         }
         
@@ -6523,7 +6523,7 @@ globus_gsi_sysconfig_get_gridmap_filename_unix(
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
             result,
             GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_GRIDMAP_FILENAME,
-            ("A valid gridmap file could not be found."));
+            (_GSSL("A valid gridmap file could not be found.")));
         goto exit;
     }
 
@@ -7141,7 +7141,7 @@ globus_gsi_sysconfig_get_unique_proxy_filename(
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
             result,
             GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_DELEG_FILENAME,
-            ("Could not get a unique filename for the temporary proxy cert"));
+            (_GSSL("Could not get a unique filename for the temporary proxy cert")));
         goto done;
     }
     

@@ -146,7 +146,7 @@ globus_gss_assist_gridmap(
         GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
             result,
             GLOBUS_GSI_GSS_ASSIST_ERROR_WITH_ARGUMENTS,
-            ("Params passed to function are NULL"));
+            (_GASL("Params passed to function are NULL")));
         goto exit;
     }
 
@@ -174,7 +174,7 @@ globus_gss_assist_gridmap(
             GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_GSS_ASSIST_ERROR_WITH_GRIDMAP,
-                ("Invalid (NULL) user id values"));
+                (_GASL("Invalid (NULL) user id values")));
             goto exit;
 	}
 
@@ -188,7 +188,7 @@ globus_gss_assist_gridmap(
             GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_GSS_ASSIST_ERROR_WITH_GRIDMAP,
-                ("Duplicate string operation failed"));
+                (_GASL("Duplicate string operation failed")));
 	    goto exit;
 	}
     }
@@ -202,8 +202,8 @@ globus_gss_assist_gridmap(
         GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
             result,
             GLOBUS_GSI_GSS_ASSIST_ERROR_IN_GRIDMAP_NO_USER_ENTRY,
-            ("The DN: %s could not be mapped to a valid user in the "
-             "gridmap file: %s.",
+            (_GASL("The DN: %s could not be mapped to a valid user in the "
+             "gridmap file: %s."),
              globusidp,
              gridmap_filename != NULL ? gridmap_filename : "(NULL)"));
 
@@ -270,7 +270,7 @@ globus_gss_assist_userok(
         GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
             result,
             GLOBUS_GSI_GSS_ASSIST_ERROR_WITH_ARGUMENTS,
-            ("Arguments passed to function are NULL"));
+            (_GASL("Arguments passed to function are NULL")));
         goto exit;
     }
     
@@ -288,7 +288,7 @@ globus_gss_assist_userok(
         GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
             result,
             GLOBUS_GSI_GSS_ASSIST_ERROR_IN_GRIDMAP_NO_USER_ENTRY,
-            ("The DN: %s does not map to the username: %s",
+            (_GASL("The DN: %s does not map to the username: %s"),
              globusid,
              userid));
 	goto exit;
@@ -298,7 +298,7 @@ globus_gss_assist_userok(
         GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
             result,
             GLOBUS_GSI_GSS_ASSIST_ERROR_WITH_GRIDMAP,
-            ("The gridmap is malformated.  No user id's could be be found."));
+            (_GASL("The gridmap is malformated.  No user id's could be be found.")));
         goto exit;
     }
 
@@ -314,8 +314,8 @@ globus_gss_assist_userok(
     GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
         result,
         GLOBUS_GSI_GSS_ASSIST_ERROR_USER_ID_DOESNT_MATCH,
-        ("The user id: %s, doesn't match the the DN: %s, in the "
-         "gridmap file: %s",
+        (_GASL("The user id: %s, doesn't match the the DN: %s, in the "
+         "gridmap file: %s"),
          globusid,
          userid,
          gridmap_filename != NULL ? gridmap_filename : "(NULL)"));
@@ -391,7 +391,7 @@ globus_gss_assist_map_local_user(
         GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
             result,
             GLOBUS_GSI_GSS_ASSIST_ERROR_WITH_ARGUMENTS,
-            ("Arguments passed to the function are NULL."));
+            (_GASL("Arguments passed to the function are NULL.")));
         goto exit;
     }
 
@@ -416,8 +416,8 @@ globus_gss_assist_map_local_user(
             GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_GSS_ASSIST_ERROR_WITH_GRIDMAP,
-                ("The gridmap file: %s is formatted incorrectly.  No "
-                 "distinguished names could be found."));
+                (_GASL("The gridmap file: %s is formatted incorrectly.  No "
+                 "distinguished names could be found.")));
             goto exit;
         }
 
@@ -430,7 +430,7 @@ globus_gss_assist_map_local_user(
             GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_GSS_ASSIST_ERROR_WITH_GRIDMAP,
-                ("The string duplication operation failed."));
+                (_GASL("The string duplication operation failed.")));
             goto exit;
 	}
     }
@@ -441,7 +441,7 @@ globus_gss_assist_map_local_user(
         GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
             result,
             GLOBUS_GSI_GSS_ASSIST_ERROR_IN_GRIDMAP_NO_USER_ENTRY,
-            ("No DN entry found for user: %s in gridmap file: %s",
+            (_GASL("No DN entry found for user: %s in gridmap file: %s"),
              local_user,
              gridmap_filename != NULL ? gridmap_filename : "(NULL)"));
         free(gridmap_filename);
@@ -521,7 +521,7 @@ globus_i_gss_assist_gridmap_find_dn(
         GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
             result,
             GLOBUS_GSI_GSS_ASSIST_ERROR_WITH_ARGUMENTS,
-            ("The DN passed to function is NULL."));
+            (_GASL("The DN passed to function is NULL.")));
 	goto exit;
     }
 
@@ -542,7 +542,7 @@ globus_i_gss_assist_gridmap_find_dn(
         GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
             result,
             GLOBUS_GSI_GSS_ASSIST_ERROR_WITH_GRIDMAP,
-            ("Couldn't open gridmap file: %s for reading.",
+            (_GASL("Couldn't open gridmap file: %s for reading."),
              gridmap_filename));
         goto exit;
     }
@@ -656,7 +656,7 @@ globus_i_gss_assist_gridmap_find_local_user(
         GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
             result,
             GLOBUS_GSI_GSS_ASSIST_ERROR_WITH_ARGUMENTS,
-            ("Arguments passed to function are NULL."));
+            (_GASL("Arguments passed to function are NULL.")));
         goto exit;
     }
 
@@ -677,7 +677,7 @@ globus_i_gss_assist_gridmap_find_local_user(
         GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
             result,
             GLOBUS_GSI_GSS_ASSIST_ERROR_WITH_GRIDMAP,
-            ("Can't open the file: %s", gridmap_filename));
+            (_GASL("Can't open the file: %s"), gridmap_filename));
         goto exit;
     }
 
@@ -795,7 +795,7 @@ globus_i_gss_assist_gridmap_parse_line(
         GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
             result,
             GLOBUS_GSI_GSS_ASSIST_ERROR_WITH_GRIDMAP,
-            ("Arguments passed to function are NULL."));
+            (_GASL("Arguments passed to function are NULL.")));
 	goto exit;
     }
 
@@ -837,8 +837,8 @@ globus_i_gss_assist_gridmap_parse_line(
                 GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
                     result,
                     GLOBUS_GSI_GSS_ASSIST_ERROR_INVALID_GRIDMAP_FORMAT,
-                    ("A closing quote is missing in the gridmap file, "
-                     "on the line:\n%s\n",
+                    (_GASL("A closing quote is missing in the gridmap file, "
+                     "on the line:\n%s\n"),
                      line));
                 goto exit;
             }
@@ -857,7 +857,7 @@ globus_i_gss_assist_gridmap_parse_line(
             GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_GSS_ASSIST_ERROR_INVALID_GRIDMAP_FORMAT,
-                ("Nothing follows the DN on the line:\n%s\n",
+                (_GASL("Nothing follows the DN on the line:\n%s\n"),
                  line));
             goto exit;
         }
@@ -904,7 +904,7 @@ globus_i_gss_assist_gridmap_parse_line(
                     __FILE__,
                     _function_name_,
                     __LINE__,
-                    "Could not allocate enough memory"));
+                    _GASL("Could not allocate enough memory")));
 		goto error_exit;
             }
 
@@ -922,7 +922,7 @@ globus_i_gss_assist_gridmap_parse_line(
                 __FILE__,
                 _function_name_,
                 __LINE__,
-                "Could not allocate enough memory"));
+                _GASL("Could not allocate enough memory")));
             goto error_exit;
         }
 
@@ -958,7 +958,7 @@ globus_i_gss_assist_gridmap_parse_line(
             __FILE__,
             _function_name_,
             __LINE__,
-            "Could not allocate enough memory"));
+            _GASL("Could not allocate enough memory")));
         goto error_exit;
     }
 
@@ -1112,7 +1112,7 @@ globus_i_gss_assist_gridmap_parse_globusid(
         GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
             result,
             GLOBUS_GSI_GSS_ASSIST_ERROR_WITH_ARGUMENTS,
-            ("Arguments passed to function are NULL."));
+            (_GASL("Arguments passed to function are NULL.")));
         goto exit;
     }
 
@@ -1128,7 +1128,7 @@ globus_i_gss_assist_gridmap_parse_globusid(
             __FILE__,
             _function_name_,
             __LINE__,
-            "Could not allocate enough memory"));
+            _GASL("Could not allocate enough memory")));
         goto exit;
     }
 
@@ -1186,7 +1186,7 @@ globus_i_gss_assist_gridmap_parse_globusid(
                     __FILE__,
                     _function_name_,
                     __LINE__,
-                    "Could not allocate enough memory"));
+                    _GASL("Could not allocate enough memory")));
                 goto exit;
 	    }
             
@@ -1294,7 +1294,7 @@ globus_gss_assist_lookup_all_globusid(
         GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
             res,
             GLOBUS_GSI_GSS_ASSIST_ERROR_WITH_ARGUMENTS,
-            ("An argument passed to function is NULL."));
+            (_GASL("An argument passed to function is NULL.")));
 
         goto exit;
     }
@@ -1317,7 +1317,7 @@ globus_gss_assist_lookup_all_globusid(
         GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
             res,
             GLOBUS_GSI_GSS_ASSIST_ERROR_WITH_GRIDMAP,
-            ("Couldn't open gridmap file: %s for reading.",
+            (_GASL("Couldn't open gridmap file: %s for reading."),
              gridmap_filename));
 
         goto exit;
@@ -1599,7 +1599,7 @@ globus_l_gss_assist_gridmap_lookup(
             GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_GSS_ASSIST_GRIDMAP_LOOKUP_FAILED,
-                ("Could not map %s\n", peer_name_buffer.value));
+                (_GASL("Could not map %s\n"), peer_name_buffer.value));
             gss_release_buffer(&minor_status, &peer_name_buffer);
             goto error;
         }
@@ -1609,7 +1609,7 @@ globus_l_gss_assist_gridmap_lookup(
             GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_GSS_ASSIST_BUFFER_TOO_SMALL,
-                ("Local identity length: %d Buffer length: %d\n",
+                (_GASL("Local identity length: %d Buffer length: %d\n"),
                  strlen(local_identity), identity_buffer_length));
         }
         else
@@ -1627,7 +1627,7 @@ globus_l_gss_assist_gridmap_lookup(
             GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_GSS_ASSIST_GRIDMAP_LOOKUP_FAILED,
-                ("Could not map %s to %s\n",
+                (_GASL("Could not map %s to %s\n"),
                  peer_name_buffer.value,
                  desired_identity));
         }

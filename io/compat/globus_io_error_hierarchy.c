@@ -19,14 +19,14 @@ globus_i_io_error_string_func ( globus_object_t * error )
         function = globus_io_error_internal_error_get_function(error);
         if(function)
         {
-            string = "an internal error_occurred in %s";
+            string = _IOSL("an internal error_occurred in %s");
             tmp = globus_malloc(strlen(string) + strlen(function)+1);
 
             sprintf(tmp, string, function);
 
             return tmp;
         }
-        string = "an internal error_occurred in globus_io";
+        string = _IOSL("an internal error_occurred in globus_io");
     }
     else if(globus_object_type_match(type, GLOBUS_IO_ERROR_TYPE_READ_ALREADY_REGISTERED))
     {
@@ -36,13 +36,13 @@ globus_i_io_error_string_func ( globus_object_t * error )
 
         if(handle)
         {
-            string = "the handle %p was already registered for reading";
+            string = _IOSL("the handle %p was already registered for reading");
             tmp = globus_malloc(strlen(string) + 64 + 1);
             sprintf(tmp, string, handle);
 
             return tmp;
         }
-        string = "the handle was already registered for reading";
+        string = _IOSL("the handle was already registered for reading");
     }
     else if(globus_object_type_match(type, GLOBUS_IO_ERROR_TYPE_WRITE_ALREADY_REGISTERED))
     {
@@ -52,13 +52,13 @@ globus_i_io_error_string_func ( globus_object_t * error )
 
         if(handle)
         {
-            string = "the handle %p was already registered for writing";
+            string = _IOSL("the handle %p was already registered for writing");
             tmp = globus_malloc(strlen(string) + 64 + 1);
             sprintf(tmp, string, handle);
 
             return tmp;
         }
-        string = "the handle was already registered for writing";
+        string = _IOSL("the handle was already registered for writing");
     }
     else if(globus_object_type_match(type, GLOBUS_IO_ERROR_TYPE_EXCEPT_ALREADY_REGISTERED))
     {
@@ -68,13 +68,13 @@ globus_i_io_error_string_func ( globus_object_t * error )
 
         if(handle)
         {
-            string = "the handle %p was already registered for exception events";
+            string = _IOSL("the handle %p was already registered for exception events");
             tmp = globus_malloc(strlen(string) + 64 + 1);
             sprintf(tmp, string, handle);
 
             return tmp;
         }
-        string = "the handle was already registered for exception events";
+        string = _IOSL("the handle was already registered for exception events");
     }
     else if(globus_object_type_match(type, GLOBUS_IO_ERROR_TYPE_CLOSE_ALREADY_REGISTERED))
     {
@@ -84,13 +84,13 @@ globus_i_io_error_string_func ( globus_object_t * error )
 
         if(handle)
         {
-            string = "the handle %p was already registered for closing";
+            string = _IOSL("the handle %p was already registered for closing");
             tmp = globus_malloc(strlen(string) + 64 + 1);
             sprintf(tmp, string, handle);
 
             return tmp;
         }
-        string = "the handle was already registered for closing";
+        string = _IOSL("the handle was already registered for closing");
     }
     else if(globus_object_type_match(type, GLOBUS_IO_ERROR_TYPE_REGISTRATION_ERROR))
     {
@@ -100,13 +100,13 @@ globus_i_io_error_string_func ( globus_object_t * error )
 
         if(handle)
         {
-            string = "a registration operation failed for handle %p";
+            string = _IOSL("a registration operation failed for handle %p");
             tmp = globus_malloc(strlen(string) + 64 + 1);
             sprintf(tmp, string, handle);
 
             return tmp;
         }
-        string = "a registration operation failed";
+        string = _IOSL("a registration operation failed");
     }
     else if(globus_object_type_match(type, GLOBUS_IO_ERROR_TYPE_NULL_PARAMETER))
     {
@@ -118,13 +118,13 @@ globus_i_io_error_string_func ( globus_object_t * error )
 
         if(func)
         {
-            string = "a NULL parameter was passed as argument %d to %s";
+            string = _IOSL("a NULL parameter was passed as argument %d to %s");
             tmp = globus_malloc(strlen(string) + strlen(func) + 64 + 1);
             sprintf(tmp, string, position, func);
 
             return tmp;
         }
-        string = "a NULL parameter";
+        string = _IOSL("a NULL parameter");
     }
     else if(globus_object_type_match(type, GLOBUS_IO_ERROR_TYPE_BAD_POINTER))
     {
@@ -136,13 +136,13 @@ globus_i_io_error_string_func ( globus_object_t * error )
 
         if(func)
         {
-            string = "a bad pointer was passed as argument %d to %s";
+            string = _IOSL("a bad pointer was passed as argument %d to %s");
             tmp = globus_malloc(strlen(string) + strlen(func) + 64 + 1);
             sprintf(tmp, string, position, func);
 
             return tmp;
         }
-        string = "a bad pointer";
+        string = _IOSL("a bad pointer");
     }
     else if(globus_object_type_match(type, GLOBUS_IO_ERROR_TYPE_IMMUTABLE_ATTRIBUTE))
     {
@@ -151,7 +151,7 @@ globus_i_io_error_string_func ( globus_object_t * error )
         attribute = globus_io_error_immutable_attribute_get_attribute_name(error);
         if(attribute)
         {
-            string = "an attempt to change the immutable attribute %s";
+            string = _IOSL("an attempt to change the immutable attribute %s");
             
             tmp = globus_malloc(strlen(string) + strlen(attribute) + 1);
 
@@ -159,7 +159,7 @@ globus_i_io_error_string_func ( globus_object_t * error )
 
             return tmp;
         }
-        string = "an attempt to change an immutable attribute";
+        string = _IOSL("an attempt to change an immutable attribute");
     }
     else if(globus_object_type_match(type, GLOBUS_IO_ERROR_TYPE_INVALID_TYPE))
     {
@@ -174,7 +174,7 @@ globus_i_io_error_string_func ( globus_object_t * error )
         if(func != GLOBUS_NULL &&
            type_name != GLOBUS_NULL)
         {
-            string = "argument %d to %s should be of type %s\n";
+            string = _IOSL("argument %d to %s should be of type %s\n");
             
             tmp = globus_malloc(strlen(string) + strlen(func) + strlen(type_name)+ 1);
 
@@ -182,7 +182,7 @@ globus_i_io_error_string_func ( globus_object_t * error )
 
             return tmp;
         }
-        string = "an argument of incorrect type for an operation\n";
+        string = _IOSL("an argument of incorrect type for an operation\n");
     }
     else if(globus_object_type_match(type, GLOBUS_IO_ERROR_TYPE_ATTRIBUTE_MISMATCH))
     {
@@ -194,7 +194,7 @@ globus_i_io_error_string_func ( globus_object_t * error )
 
         if(attr1 && attr2)
         {
-            string = "attribute %s is incompatible with %s";
+            string = _IOSL("attribute %s is incompatible with %s");
 
             tmp = globus_malloc(strlen(string) + strlen(attr1) + strlen(attr2) + 1);
             sprintf(tmp, string, attr1, attr2);
@@ -202,7 +202,7 @@ globus_i_io_error_string_func ( globus_object_t * error )
             return tmp;
         }
 
-        string = "an attempt to apply incompatible attributes";
+        string = _IOSL("an attempt to apply incompatible attributes");
     }
     else if(globus_object_type_match(type, GLOBUS_IO_ERROR_TYPE_HOST_NOT_FOUND))
     {
@@ -212,7 +212,7 @@ globus_i_io_error_string_func ( globus_object_t * error )
 
         if(name)
         {
-            string = "the name %s could not be resolved";
+            string = _IOSL("the name %s could not be resolved");
 
             tmp = globus_malloc(strlen(string) + strlen(name) + 1);
 
@@ -220,7 +220,7 @@ globus_i_io_error_string_func ( globus_object_t * error )
 
             return tmp;
         }
-        string = "a host name could not be resolved";
+        string = _IOSL("a host name could not be resolved");
     }
     else if(globus_object_type_match(type, GLOBUS_IO_ERROR_TYPE_INVALID_NAME))
     {
@@ -230,26 +230,26 @@ globus_i_io_error_string_func ( globus_object_t * error )
 
         if(name)
         {
-            string = "the name %s could not be used";
+            string = _IOSL("the name %s could not be used");
 
             tmp = globus_malloc(strlen(string) + strlen(name) + 1);
 
             sprintf(tmp, string, name);
         }
 
-        string = "a name could not be used";
+        string = _IOSL("a name could not be used");
     }
     else if(globus_object_type_match(type, GLOBUS_IO_ERROR_TYPE_RESTRICTED_PORT))
     {
-        string = "the process has insufficient permissions to use the desired port";
+        string = _IOSL("the process has insufficient permissions to use the desired port");
     }
     else if(globus_object_type_match(type, GLOBUS_IO_ERROR_TYPE_PORT_IN_USE))
     {
-        string = "the requested port was already in use";
+        string = _IOSL("the requested port was already in use");
     }
     else if(globus_object_type_match(type, GLOBUS_IO_ERROR_TYPE_INVALID_PORT))
     {
-        string = "the requested port could not be used";
+        string = _IOSL("the requested port could not be used");
     }
     else if(globus_object_type_match(type, GLOBUS_IO_ERROR_TYPE_NOT_INITIALIZED))
     {
@@ -261,13 +261,13 @@ globus_i_io_error_string_func ( globus_object_t * error )
 
         if(func)
         {
-            string = "an uninitialied data structure was passed as argument %d to %s";
+            string = _IOSL("an uninitialied data structure was passed as argument %d to %s");
             tmp = globus_malloc(strlen(string) + strlen(func) + 64 + 1);
             sprintf(tmp, string, position, func);
 
             return tmp;
         }
-        string = "an uninitialized data structure";
+        string = _IOSL("an uninitialized data structure");
     }
     else if(globus_object_type_match(type, GLOBUS_IO_ERROR_TYPE_BAD_PARAMETER))
     {
@@ -279,13 +279,13 @@ globus_i_io_error_string_func ( globus_object_t * error )
 
         if(func)
         {
-            string = "a bad parameter was passed as argument %d to %s";
+            string = _IOSL("a bad parameter was passed as argument %d to %s");
             tmp = globus_malloc(strlen(string) + strlen(func) + 64 + 1);
             sprintf(tmp, string, position, func);
 
             return tmp;
         }
-        string = "a bad parameter was passed to this function";
+        string = _IOSL("a bad parameter was passed to this function");
     }
     else if(globus_object_type_match(type, GLOBUS_IO_ERROR_TYPE_SYSTEM_FAILURE))
     {
@@ -296,7 +296,7 @@ globus_i_io_error_string_func ( globus_object_t * error )
 
         if(save_errno)
         {
-            string = "a system call failed (%s)";
+            string = _IOSL("a system call failed (%s)");
 
             tmp = globus_malloc(
                 strlen(string) 
@@ -306,19 +306,19 @@ globus_i_io_error_string_func ( globus_object_t * error )
             
             return tmp;
         }
-        string = "a system call failed";
+        string = _IOSL("a system call failed");
     }
     else if(globus_object_type_match(type, GLOBUS_IO_ERROR_TYPE_EOF))
     {
-        string = "an end-of-file was reached";
+        string = _IOSL("an end-of-file was reached");
     }
     else if(globus_object_type_match(type, GLOBUS_IO_ERROR_TYPE_IO_CANCELLED))
     {
-        string = "an I/O operation was cancelled";
+        string = _IOSL("an I/O operation was cancelled");
     }
     else if(globus_object_type_match(type, GLOBUS_IO_ERROR_TYPE_IO_FAILED))
     {
-        string = "an I/O operation failed";
+        string = _IOSL("an I/O operation failed");
     }
     else if(globus_object_type_match(type, GLOBUS_IO_ERROR_TYPE_AUTHENTICATION_FAILED))
     {
@@ -332,7 +332,7 @@ globus_i_io_error_string_func ( globus_object_t * error )
             min_stat = globus_io_error_security_failed_get_min_stat(error);
 
             globus_gss_assist_display_status_str (&string,
-                                                  "authentication failed:",
+                                                  _IOSL("authentication failed:"),
                                                   maj_stat,
                                                   min_stat,
                                                   0);
@@ -340,7 +340,7 @@ globus_i_io_error_string_func ( globus_object_t * error )
         }
         else
         {
-            string = "an authentication operation failed";
+            string = _IOSL("an authentication operation failed");
         }
     }
     else if(globus_object_type_match(type, GLOBUS_IO_ERROR_TYPE_UNAUTHORIZED_IDENTITY))
@@ -355,7 +355,7 @@ globus_i_io_error_string_func ( globus_object_t * error )
             min_stat = globus_io_error_security_failed_get_min_stat(error);
 
             globus_gss_assist_display_status_str (&string,
-                                                  "unauthorized identity:",
+                                                  _IOSL("unauthorized identity:"),
                                                   maj_stat,
                                                   min_stat,
                                                   0);
@@ -364,7 +364,7 @@ globus_i_io_error_string_func ( globus_object_t * error )
 
         else
         {
-            string = "an unauthorized identity";
+            string = _IOSL("an unauthorized identity");
         }
     }
     else if(globus_object_type_match(type, GLOBUS_IO_ERROR_TYPE_AUTHORIZATION_FAILED))
@@ -379,7 +379,7 @@ globus_i_io_error_string_func ( globus_object_t * error )
             min_stat = globus_io_error_security_failed_get_min_stat(error);
 
             globus_gss_assist_display_status_str (&string,
-                                                  "authorization failed:",
+                                                  _IOSL("authorization failed:"),
                                                   maj_stat,
                                                   min_stat,
                                                   0);
@@ -387,7 +387,7 @@ globus_i_io_error_string_func ( globus_object_t * error )
         }
         else
         {
-            string = "an authorization operation failed";
+            string = _IOSL("an authorization operation failed");
         }
     }
     else if(globus_object_type_match(type, GLOBUS_IO_ERROR_TYPE_BAD_PROTECTION))
@@ -402,7 +402,7 @@ globus_i_io_error_string_func ( globus_object_t * error )
             min_stat = globus_io_error_security_failed_get_min_stat(error);
 
             globus_gss_assist_display_status_str (&string,
-                                                  "protection failed:",
+                                                  _IOSL("protection failed:"),
                                                   maj_stat,
                                                   min_stat,
                                                            0);
@@ -410,7 +410,7 @@ globus_i_io_error_string_func ( globus_object_t * error )
         }
         else
         {
-            string = "a protection operation failed";
+            string = _IOSL("a protection operation failed");
         }
     }
     else if(globus_object_type_match(type, GLOBUS_IO_ERROR_TYPE_NO_SEC_CONTEXT))
@@ -425,7 +425,7 @@ globus_i_io_error_string_func ( globus_object_t * error )
             min_stat = globus_io_error_security_failed_get_min_stat(error);
 
             globus_gss_assist_display_status_str (&string,
-                                                  "no security context:",
+                                                  _IOSL("no security context:"),
                                                   maj_stat,
                                                   min_stat,
                                                   0);
@@ -433,7 +433,7 @@ globus_i_io_error_string_func ( globus_object_t * error )
         }
         else
         {
-            string = "no security context";
+            string = _IOSL("no security context");
         }
     }
     else if(globus_object_type_match(type, GLOBUS_IO_ERROR_TYPE_CONTEXT_EXPIRED))
@@ -448,7 +448,7 @@ globus_i_io_error_string_func ( globus_object_t * error )
             min_stat = globus_io_error_security_failed_get_min_stat(error);
             
             globus_gss_assist_display_status_str (&string,
-                                                  "security context expired:",
+                                                  _IOSL("security context expired:"),
                                                   maj_stat,
                                                   min_stat,
                                                   0);
@@ -456,7 +456,7 @@ globus_i_io_error_string_func ( globus_object_t * error )
         }
         else
         {
-            string = "a security context expired";
+            string = _IOSL("a security context expired");
         }
     }
     else if(globus_object_type_match(type, GLOBUS_IO_ERROR_TYPE_CREDENTIALS_EXPIRED))
@@ -471,7 +471,7 @@ globus_i_io_error_string_func ( globus_object_t * error )
             min_stat = globus_io_error_security_failed_get_min_stat(error);
             
             globus_gss_assist_display_status_str (&string,
-                                                  "credential expired:",
+                                                  _IOSL("credential expired:"),
                                                   maj_stat,
                                                   min_stat,
                                                   0);
@@ -479,7 +479,7 @@ globus_i_io_error_string_func ( globus_object_t * error )
         }
         else
         {
-            string = "a security credential expired";
+            string = _IOSL("a security credential expired");
         }
     }
     else if(globus_object_type_match(type, GLOBUS_IO_ERROR_TYPE_NO_CREDENTIALS))
@@ -494,7 +494,7 @@ globus_i_io_error_string_func ( globus_object_t * error )
             min_stat = globus_io_error_security_failed_get_min_stat(error);
             
             globus_gss_assist_display_status_str (&string,
-                                                  "no credentials:",
+                                                  _IOSL("no credentials:"),
                                                   maj_stat,
                                                   min_stat,
                                                   0);
@@ -502,7 +502,7 @@ globus_i_io_error_string_func ( globus_object_t * error )
         }
         else
         {
-            string = "no credentials";
+            string = _IOSL("no credentials");
         }
     }
     else if(globus_object_type_match(type, GLOBUS_IO_ERROR_TYPE_INVALID_CREDENTIALS))
@@ -517,7 +517,7 @@ globus_i_io_error_string_func ( globus_object_t * error )
             min_stat = globus_io_error_security_failed_get_min_stat(error);
             
             globus_gss_assist_display_status_str (&string,
-                                                  "invalid credentials:",
+                                                  _IOSL("invalid credentials:"),
                                                   maj_stat,
                                                   min_stat,
                                                   0);
@@ -525,7 +525,7 @@ globus_i_io_error_string_func ( globus_object_t * error )
         }
         else
         {
-            string = "invalid credentials";
+            string = _IOSL("invalid credentials");
         }
     }
     else if(globus_object_type_match(type, GLOBUS_IO_ERROR_TYPE_SECURITY_FAILED))
@@ -540,7 +540,7 @@ globus_i_io_error_string_func ( globus_object_t * error )
             min_stat = globus_io_error_security_failed_get_min_stat(error);
             
             globus_gss_assist_display_status_str (&string,
-                                                  "security failure:",
+                                                  _IOSL("security failure:"),
                                                   maj_stat,
                                                   min_stat,
                                                   0);
@@ -548,12 +548,12 @@ globus_i_io_error_string_func ( globus_object_t * error )
         }
         else
         {
-            string = "a security operation failed";
+            string = _IOSL("a security operation failed");
         }
     }
     else
     {
-        string = "an unknown error occurred";
+        string = _IOSL("an unknown error occurred");
     }
 
     return globus_libc_strdup(string);

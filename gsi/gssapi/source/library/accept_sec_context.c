@@ -75,7 +75,7 @@ GSS_CALLCONV gss_accept_sec_context(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
-            ("Parameter context_handle_P passed to function: %s is NULL",
+            (_GGSL("Parameter context_handle_P passed to function: %s is NULL"),
              _function_name_));
         major_status = GSS_S_FAILURE;
         goto exit;
@@ -237,7 +237,7 @@ GSS_CALLCONV gss_accept_sec_context(
                     GLOBUS_GSI_GSSAPI_ERROR_RESULT(
                         minor_status,
                         GLOBUS_GSI_GSSAPI_ERROR_PROXY_VIOLATION,
-                        ("Function set to not accept limited proxies"));
+                        (_GGSL("Function set to not accept limited proxies")));
                     context->gss_state = GSS_CON_ST_DONE;
                     break;
                 }
@@ -297,7 +297,7 @@ GSS_CALLCONV gss_accept_sec_context(
             {
                 GLOBUS_GSI_GSSAPI_ERROR_RESULT(minor_status,
                                                GLOBUS_GSI_GSSAPI_ERROR_WITH_DELEGATION,
-                                               ("Delegation protocol violation"));
+                                               (_GGSL("Delegation protocol violation")));
                 context->gss_state = GSS_CON_ST_DONE;
                 major_status = GSS_S_FAILURE;
             }

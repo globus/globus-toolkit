@@ -152,7 +152,7 @@ globus_ftp_control_server_handle_init(
             globus_error_construct_string(
                 GLOBUS_FTP_CONTROL_MODULE,
                 GLOBUS_NULL,
-                "globus_ftp_control_server_handle_init: handle argument is NULL")
+                _FCSL("globus_ftp_control_server_handle_init: handle argument is NULL"))
             );
     }
 
@@ -200,7 +200,7 @@ globus_ftp_control_server_handle_destroy(
             globus_error_construct_string(
                 GLOBUS_FTP_CONTROL_MODULE,
                 GLOBUS_NULL,
-                "globus_ftp_control_server_handle_destroy: handle argument is NULL")
+                _FCSL("globus_ftp_control_server_handle_destroy: handle argument is NULL"))
             );
     }
 
@@ -212,7 +212,7 @@ globus_ftp_control_server_handle_destroy(
             globus_error_construct_string(
                 GLOBUS_FTP_CONTROL_MODULE,
                 GLOBUS_NULL,
-                "globus_ftp_control_server_handle_destroy: handle is still listening")
+                _FCSL("globus_ftp_control_server_handle_destroy: handle is still listening"))
             );
     }
     
@@ -271,7 +271,7 @@ globus_ftp_control_server_listen(
             globus_error_construct_string(
                 GLOBUS_FTP_CONTROL_MODULE,
                 GLOBUS_NULL,
-                "globus_ftp_control_server_listen: handle argument is NULL")
+                _FCSL("globus_ftp_control_server_listen: handle argument is NULL"))
             );
     }
 
@@ -281,7 +281,7 @@ globus_ftp_control_server_listen(
             globus_error_construct_string(
                 GLOBUS_FTP_CONTROL_MODULE,
                 GLOBUS_NULL,
-                "globus_ftp_control_server_listen: port argument is NULL")
+                _FCSL("globus_ftp_control_server_listen: port argument is NULL"))
             );
     }
 
@@ -291,7 +291,7 @@ globus_ftp_control_server_listen(
             globus_error_construct_string(
                 GLOBUS_FTP_CONTROL_MODULE,
                 GLOBUS_NULL,
-                "globus_ftp_control_server_listen: Argument callback is NULL")
+                _FCSL("globus_ftp_control_server_listen: Argument callback is NULL"))
             );
     }
 
@@ -310,7 +310,7 @@ globus_ftp_control_server_listen(
                 globus_error_construct_string(
                     GLOBUS_FTP_CONTROL_MODULE,
                     GLOBUS_NULL,
-                    "globus_ftp_control_server_listen: Other operation already in progress")
+                    _FCSL("globus_ftp_control_server_listen: Other operation already in progress"))
                 );
         }
     }
@@ -474,7 +474,7 @@ globus_ftp_control_command_init(
             globus_error_construct_string(
                 GLOBUS_FTP_CONTROL_MODULE,
                 GLOBUS_NULL,
-                "globus_ftp_control_command_init: malloc failed"));
+                _FCSL("globus_ftp_control_command_init: malloc failed")));
     }
 
     j=0;
@@ -564,7 +564,7 @@ globus_ftp_control_command_destroy(
             globus_error_construct_string(
                 GLOBUS_FTP_CONTROL_MODULE,
                 GLOBUS_NULL,
-                "globus_ftp_control_command_destroy: command argument is NULL")
+                _FCSL("globus_ftp_control_command_destroy: command argument is NULL"))
             );
     }
     
@@ -633,7 +633,7 @@ globus_ftp_control_command_copy(
             globus_error_construct_string(
                 GLOBUS_FTP_CONTROL_MODULE,
                 GLOBUS_NULL,
-                "globus_ftp_control_command_copy: dest argument is NULL")
+                _FCSL("globus_ftp_control_command_copy: dest argument is NULL"))
             ); 
     }
 
@@ -643,7 +643,7 @@ globus_ftp_control_command_copy(
             globus_error_construct_string(
                 GLOBUS_FTP_CONTROL_MODULE,
                 GLOBUS_NULL,
-                "globus_ftp_control_command_copy: src argument is NULL")
+                _FCSL("globus_ftp_control_command_copy: src argument is NULL"))
             ); 
     }
 
@@ -657,7 +657,7 @@ globus_ftp_control_command_copy(
             globus_error_construct_string(
                 GLOBUS_FTP_CONTROL_MODULE,
                 GLOBUS_NULL,
-                "globus_ftp_control_command_copy: strdup failed")
+                _FCSL("globus_ftp_control_command_copy: strdup failed"))
             ); 
     }
    
@@ -702,7 +702,7 @@ globus_ftp_control_command_copy(
                     globus_error_construct_string(
                         GLOBUS_FTP_CONTROL_MODULE,
                         GLOBUS_NULL,
-                        "globus_ftp_control_command_copy: strdup failed")
+                        _FCSL("globus_ftp_control_command_copy: strdup failed"))
                     ); 
             }
         }
@@ -727,7 +727,7 @@ globus_ftp_control_command_copy(
                 globus_error_construct_string(
                     GLOBUS_FTP_CONTROL_MODULE,
                     GLOBUS_NULL,
-                    "globus_ftp_control_command_copy: malloc failed")
+                    _FCSL("globus_ftp_control_command_copy: malloc failed"))
                 ); 
         }
         
@@ -756,7 +756,7 @@ globus_ftp_control_command_copy(
             globus_error_construct_string(
                 GLOBUS_FTP_CONTROL_MODULE,
                 GLOBUS_NULL,
-                "globus_ftp_control_command_copy: Unknown command")
+                _FCSL("globus_ftp_control_command_copy: Unknown command"))
             ); 
     }
     
@@ -796,7 +796,7 @@ globus_ftp_control_server_stop(
             globus_error_construct_string(
                 GLOBUS_FTP_CONTROL_MODULE,
                 GLOBUS_NULL,
-                "globus_ftp_control_server_stop: listener argument is NULL")
+                _FCSL("globus_ftp_control_server_stop: listener argument is NULL"))
             );
     }
 
@@ -806,7 +806,7 @@ globus_ftp_control_server_stop(
             globus_error_construct_string(
                 GLOBUS_FTP_CONTROL_MODULE,
                 GLOBUS_NULL,
-                "globus_ftp_control_server_stop: callback argument is NULL")
+                _FCSL("globus_ftp_control_server_stop: callback argument is NULL"))
             );
     }
     
@@ -832,7 +832,7 @@ globus_ftp_control_server_stop(
             globus_error_construct_string(
                 GLOBUS_FTP_CONTROL_MODULE,
                 GLOBUS_NULL,
-                "globus_ftp_control_server_stop: malloc failed")
+                _FCSL("globus_ftp_control_server_stop: malloc failed"))
             );
     }
 
@@ -955,7 +955,7 @@ globus_ftp_control_server_accept(
             globus_error_construct_string(
                 GLOBUS_FTP_CONTROL_MODULE,
                 GLOBUS_NULL,
-                "globus_ftp_control_server_accept: handle argument is NULL")
+                _FCSL("globus_ftp_control_server_accept: handle argument is NULL"))
             );
     }
 
@@ -965,7 +965,7 @@ globus_ftp_control_server_accept(
             globus_error_construct_string(
                 GLOBUS_FTP_CONTROL_MODULE,
                 GLOBUS_NULL,
-                "globus_ftp_control_server_accept: listener argument is NULL")
+                _FCSL("globus_ftp_control_server_accept: listener argument is NULL"))
             ); 
     }
 
@@ -979,7 +979,7 @@ globus_ftp_control_server_accept(
                 globus_error_construct_string(
                     GLOBUS_FTP_CONTROL_MODULE,
                     GLOBUS_NULL,
-                    "globus_ftp_control_server_accept: server not listening")
+                    _FCSL("globus_ftp_control_server_accept: server not listening"))
                 );
         }
     }
@@ -1001,7 +1001,7 @@ globus_ftp_control_server_accept(
                 globus_error_construct_string(
                     GLOBUS_FTP_CONTROL_MODULE,
                     GLOBUS_NULL,
-                    "globus_ftp_control_server_accept: Other operation already in progress")
+                    _FCSL("globus_ftp_control_server_accept: Other operation already in progress"))
                 );
         }
     }
@@ -1183,7 +1183,7 @@ globus_ftp_control_server_authenticate(
             globus_error_construct_string(
                 GLOBUS_FTP_CONTROL_MODULE,
                 GLOBUS_NULL,
-                "globus_ftp_control_server_authenticate: handle argument is NULL")
+                _FCSL("globus_ftp_control_server_authenticate: handle argument is NULL"))
             );
     }
 
@@ -1204,7 +1204,7 @@ globus_ftp_control_server_authenticate(
                 globus_error_construct_string(
                     GLOBUS_FTP_CONTROL_MODULE,
                     GLOBUS_NULL,
-                    "globus_ftp_control_server_accept: Other operation already in progress")
+                    _FCSL("globus_ftp_control_server_accept: Other operation already in progress"))
                 );
         }
     }
@@ -1518,7 +1518,7 @@ globus_l_ftp_control_auth_read_cb(
                     error=globus_error_construct_string(
                         GLOBUS_FTP_CONTROL_MODULE,
                         GLOBUS_NULL,
-                        "globus_l_ftp_control_auth_read_cb: Authentication mechanism not supported");
+                        _FCSL("globus_l_ftp_control_auth_read_cb: Authentication mechanism not supported"));
                     goto error_cmd_destroy;
                 }
                 
@@ -1528,7 +1528,7 @@ globus_l_ftp_control_auth_read_cb(
                     error=globus_error_construct_string(
                         GLOBUS_FTP_CONTROL_MODULE,
                         GLOBUS_NULL,
-                        "globus_l_ftp_control_auth_read_cb: GSSAPI authentication not allowed");
+                        _FCSL("globus_l_ftp_control_auth_read_cb: GSSAPI authentication not allowed"));
                     goto error_cmd_destroy;
                 }
                 
@@ -1538,7 +1538,7 @@ globus_l_ftp_control_auth_read_cb(
                     error=globus_error_construct_string(
                         GLOBUS_FTP_CONTROL_MODULE,
                         GLOBUS_NULL,
-                        "globus_l_ftp_control_auth_read_cb: AUTH must be the first command in the authentication sequence");
+                        _FCSL("globus_l_ftp_control_auth_read_cb: AUTH must be the first command in the authentication sequence"));
                     goto error_cmd_destroy;
                 }
                 
@@ -1552,7 +1552,7 @@ globus_l_ftp_control_auth_read_cb(
                     error=globus_error_construct_string(
                         GLOBUS_FTP_CONTROL_MODULE,
                         GLOBUS_NULL,
-                        "globus_l_ftp_control_auth_read_cb: globus_gss_assist_acquire_cred failed");
+                        _FCSL("globus_l_ftp_control_auth_read_cb: globus_gss_assist_acquire_cred failed"));
                     goto error_cmd_destroy;  
                 }
                 else
@@ -1570,7 +1570,7 @@ globus_l_ftp_control_auth_read_cb(
                     error=globus_error_construct_string(
                         GLOBUS_FTP_CONTROL_MODULE,
                         GLOBUS_NULL,
-                        "globus_l_ftp_control_auth_read_cb: strdup failed");
+                        _FCSL("globus_l_ftp_control_auth_read_cb: strdup failed"));
                     goto error_cmd_destroy;   
                 }
 
@@ -1599,7 +1599,7 @@ globus_l_ftp_control_auth_read_cb(
                     error=globus_error_construct_string(
                         GLOBUS_FTP_CONTROL_MODULE,
                         GLOBUS_NULL,
-                        "globus_l_ftp_control_auth_read_cb: ADAT must be preceded by either AUTH or ADAT");
+                        _FCSL("globus_l_ftp_control_auth_read_cb: ADAT must be preceded by either AUTH or ADAT"));
                     goto error_cmd_destroy;
                 }
 
@@ -1614,7 +1614,7 @@ globus_l_ftp_control_auth_read_cb(
                     error=globus_error_construct_string(
                         GLOBUS_FTP_CONTROL_MODULE,
                         GLOBUS_NULL,
-                        "globus_l_ftp_control_auth_read_cb: malloc failed");
+                        _FCSL("globus_l_ftp_control_auth_read_cb: malloc failed"));
                     goto error_cmd_destroy;
                 }
                 
@@ -1689,7 +1689,7 @@ globus_l_ftp_control_auth_read_cb(
                         error=globus_error_construct_string(
                             GLOBUS_FTP_CONTROL_MODULE,
                             GLOBUS_NULL,
-                            "globus_l_ftp_control_auth_read_cb: malloc failed");
+                            _FCSL("globus_l_ftp_control_auth_read_cb: malloc failed"));
                         goto error_cmd_destroy;
                     }
 
@@ -1714,7 +1714,7 @@ globus_l_ftp_control_auth_read_cb(
                                 error=globus_error_construct_string(
                                     GLOBUS_FTP_CONTROL_MODULE,
                                     GLOBUS_NULL,
-                                    "globus_l_ftp_control_auth_read_cb: strdup failed");
+                                    _FCSL("globus_l_ftp_control_auth_read_cb: strdup failed"));
                                 goto error_cmd_destroy;   
                             }
                         }
@@ -1729,7 +1729,7 @@ globus_l_ftp_control_auth_read_cb(
                                 error=globus_error_construct_string(
                                     GLOBUS_FTP_CONTROL_MODULE,
                                     GLOBUS_NULL,
-                                    "globus_l_ftp_control_auth_read_cb: malloc failed");
+                                    _FCSL("globus_l_ftp_control_auth_read_cb: malloc failed"));
                                 goto error_cmd_destroy;
                             }
                     
@@ -1810,7 +1810,7 @@ globus_l_ftp_control_auth_read_cb(
                         error=globus_error_construct_string(
                             GLOBUS_FTP_CONTROL_MODULE,
                             GLOBUS_NULL,
-                            "globus_l_ftp_control_auth_read_cb: malloc failed");
+                            _FCSL("globus_l_ftp_control_auth_read_cb: malloc failed"));
                         goto error_cmd_destroy;
                     }
                     
@@ -1851,7 +1851,7 @@ globus_l_ftp_control_auth_read_cb(
                     error=globus_error_construct_string(
                         GLOBUS_FTP_CONTROL_MODULE,
                         GLOBUS_NULL,
-                        "globus_l_ftp_control_auth_read_cb: gss_accept_sec_context failed");
+                        _FCSL("globus_l_ftp_control_auth_read_cb: gss_accept_sec_context failed"));
                     goto error_cmd_destroy;
                 }
                 break;
@@ -1864,7 +1864,7 @@ globus_l_ftp_control_auth_read_cb(
                     error=globus_error_construct_string(
                         GLOBUS_FTP_CONTROL_MODULE,
                         GLOBUS_NULL,
-                        "globus_l_ftp_control_auth_read_cb: USER must either be preceded by ADAT or be the first command");
+                        _FCSL("globus_l_ftp_control_auth_read_cb: USER must either be preceded by ADAT or be the first command"));
                     goto error_cmd_destroy;
                 }
                 
@@ -1877,7 +1877,7 @@ globus_l_ftp_control_auth_read_cb(
                     error=globus_error_construct_string(
                         GLOBUS_FTP_CONTROL_MODULE,
                         GLOBUS_NULL,
-                        "globus_l_ftp_control_auth_read_cb: GSSAPI authentication required");
+                        _FCSL("globus_l_ftp_control_auth_read_cb: GSSAPI authentication required"));
                     goto error_cmd_destroy; 
                 }
                 
@@ -1889,7 +1889,7 @@ globus_l_ftp_control_auth_read_cb(
                     error=globus_error_construct_string(
                         GLOBUS_FTP_CONTROL_MODULE,
                         GLOBUS_NULL,
-                        "globus_l_ftp_control_auth_read_cb: strdup failed");
+                        _FCSL("globus_l_ftp_control_auth_read_cb: strdup failed"));
                     goto error_cmd_destroy;
                 }
                 
@@ -1954,7 +1954,7 @@ globus_l_ftp_control_auth_read_cb(
                         error=globus_error_construct_string(
                             GLOBUS_FTP_CONTROL_MODULE,
                             GLOBUS_NULL,
-                            "globus_l_ftp_control_auth_read_cb: strdup failed");
+                            _FCSL("globus_l_ftp_control_auth_read_cb: strdup failed"));
                         goto error_cmd_destroy;
                     }
                     
@@ -1997,7 +1997,7 @@ globus_l_ftp_control_auth_read_cb(
                     error=globus_error_construct_string(
                         GLOBUS_FTP_CONTROL_MODULE,
                         GLOBUS_NULL,
-                        "globus_l_ftp_control_auth_read_cb: USER command not allowed");
+                        _FCSL("globus_l_ftp_control_auth_read_cb: USER command not allowed"));
                     goto error_cmd_destroy;
                 }
                 break;
@@ -2009,7 +2009,7 @@ globus_l_ftp_control_auth_read_cb(
                     error=globus_error_construct_string(
                         GLOBUS_FTP_CONTROL_MODULE,
                         GLOBUS_NULL,
-                        "globus_l_ftp_control_auth_read_cb: PASS must be preceded by USER");
+                        _FCSL("globus_l_ftp_control_auth_read_cb: PASS must be preceded by USER"));
                     goto error_cmd_destroy;
                 }
 
@@ -2023,7 +2023,7 @@ globus_l_ftp_control_auth_read_cb(
                     error=globus_error_construct_string(
                         GLOBUS_FTP_CONTROL_MODULE,
                         GLOBUS_NULL,
-                        "globus_l_ftp_control_auth_read_cb: No password given");
+                        _FCSL("globus_l_ftp_control_auth_read_cb: No password given"));
                     goto error_cmd_destroy;
                 }
                 
@@ -2067,7 +2067,7 @@ globus_l_ftp_control_auth_read_cb(
                         error=globus_error_construct_string(
                             GLOBUS_FTP_CONTROL_MODULE,
                             GLOBUS_NULL,
-                            "globus_l_ftp_control_auth_read_cb: strdup failed");
+                            _FCSL("globus_l_ftp_control_auth_read_cb: strdup failed"));
                         goto error_cmd_destroy;
                     }
                     
@@ -2115,7 +2115,7 @@ globus_l_ftp_control_auth_read_cb(
                     error=globus_error_construct_string(
                         GLOBUS_FTP_CONTROL_MODULE,
                         GLOBUS_NULL,
-                        "globus_l_ftp_control_auth_read_cb: ACCT must be preceded by either USER or PASS");
+                        _FCSL("globus_l_ftp_control_auth_read_cb: ACCT must be preceded by either USER or PASS"));
                     goto error_cmd_destroy;
                 }
 
@@ -2127,7 +2127,7 @@ globus_l_ftp_control_auth_read_cb(
                     error=globus_error_construct_string(
                         GLOBUS_FTP_CONTROL_MODULE,
                         GLOBUS_NULL,
-                        "globus_l_ftp_control_auth_read_cb: no account given");
+                        _FCSL("globus_l_ftp_control_auth_read_cb: no account given"));
                     goto error_cmd_destroy;
                 }
                 
@@ -2168,7 +2168,7 @@ globus_l_ftp_control_auth_read_cb(
                     error=globus_error_construct_string(
                         GLOBUS_FTP_CONTROL_MODULE,
                         GLOBUS_NULL,
-                        "globus_l_ftp_control_auth_read_cb: ACCT not allowed");
+                        _FCSL("globus_l_ftp_control_auth_read_cb: ACCT not allowed"));
                     goto error_cmd_destroy;
                 }
                 break;
@@ -2176,7 +2176,7 @@ globus_l_ftp_control_auth_read_cb(
                 error=globus_error_construct_string(
                     GLOBUS_FTP_CONTROL_MODULE,
                     GLOBUS_NULL,
-                    "globus_l_ftp_control_auth_read_cb: Command not part of authentication process");
+                    _FCSL("globus_l_ftp_control_auth_read_cb: Command not part of authentication process"));
                 goto error_cmd_destroy;
             }
             
@@ -2196,7 +2196,7 @@ globus_l_ftp_control_auth_read_cb(
             error=globus_error_construct_string(
                 GLOBUS_FTP_CONTROL_MODULE,
                 GLOBUS_NULL,
-                "globus_l_ftp_control_auth_read_cb: malloc failed");
+                _FCSL("globus_l_ftp_control_auth_read_cb: malloc failed"));
             goto error_auth_destroy;
         }
         
@@ -2291,7 +2291,7 @@ globus_ftp_control_read_commands(
             globus_error_construct_string(
                 GLOBUS_FTP_CONTROL_MODULE,
                 GLOBUS_NULL,
-                "globus_ftp_control_read_commands: handle argument is NULL")
+                _FCSL("globus_ftp_control_read_commands: handle argument is NULL"))
             );
     }
 
@@ -2312,7 +2312,7 @@ globus_ftp_control_read_commands(
                 globus_error_construct_string(
                     GLOBUS_FTP_CONTROL_MODULE,
                     GLOBUS_NULL,
-                    "globus_ftp_control_read_commands: handle is not connected or other operation is in progress")
+                    _FCSL("globus_ftp_control_read_commands: handle is not connected or other operation is in progress"))
                 );
         }
     }
@@ -2469,7 +2469,7 @@ globus_l_ftp_control_read_command_cb(
                 error=globus_error_construct_string(
                     GLOBUS_FTP_CONTROL_MODULE,
                     GLOBUS_NULL,
-                    "globus_l_ftp_control_read_command_cb: malloc failed");
+                    _FCSL("globus_l_ftp_control_read_command_cb: malloc failed"));
                 goto error_auth_destroy;
             }
             
@@ -2600,7 +2600,7 @@ globus_ftp_control_send_response(
             globus_error_construct_string(
                 GLOBUS_FTP_CONTROL_MODULE,
                 GLOBUS_NULL,
-                "globus_ftp_control_send_response: handle argument is NULL")
+                _FCSL("globus_ftp_control_send_response: handle argument is NULL"))
             );
     }
 
@@ -2623,7 +2623,7 @@ globus_ftp_control_send_response(
             globus_error_construct_string(
                 GLOBUS_FTP_CONTROL_MODULE,
                 GLOBUS_NULL,
-                "globus_ftp_control_send_response: Unable to determine total length of response string")
+                _FCSL("globus_ftp_control_send_response: Unable to determine total length of response string"))
             );
         goto return_error;
     }
@@ -2637,7 +2637,7 @@ globus_ftp_control_send_response(
             globus_error_construct_string(
                 GLOBUS_FTP_CONTROL_MODULE,
                 GLOBUS_NULL,
-                "globus_ftp_control_send_response: malloc failed")
+                _FCSL("globus_ftp_control_send_response: malloc failed"))
             );
         goto return_error;
     }
@@ -2655,7 +2655,7 @@ globus_ftp_control_send_response(
             globus_error_construct_string(
                 GLOBUS_FTP_CONTROL_MODULE,
                 GLOBUS_NULL,
-                "globus_ftp_control_send_response: Response string construction failed")
+                _FCSL("globus_ftp_control_send_response: Response string construction failed"))
         );
         va_end(ap);
         goto return_error;
@@ -2688,7 +2688,7 @@ globus_ftp_control_send_response(
             globus_error_construct_string(
                 GLOBUS_FTP_CONTROL_MODULE,
                 GLOBUS_NULL,
-                "globus_ftp_control_send_response: malloc failed")
+                _FCSL("globus_ftp_control_send_response: malloc failed"))
             );
         globus_libc_free(buf);
         goto return_error;
@@ -2720,7 +2720,7 @@ globus_ftp_control_send_response(
                 globus_error_construct_string(
                     GLOBUS_FTP_CONTROL_MODULE,
                     GLOBUS_NULL,
-                    "globus_ftp_control_send_response: handle is not connected/authenticated")
+                    _FCSL("globus_ftp_control_send_response: handle is not connected/authenticated"))
                 );
             goto return_error;
         }
@@ -2944,7 +2944,7 @@ globus_i_ftp_control_decode_command(
             globus_error_construct_string(
                 GLOBUS_FTP_CONTROL_MODULE,
                 GLOBUS_NULL,
-                "globus_i_ftp_control_decode_command: cmd argument is NULL")
+                _FCSL("globus_i_ftp_control_decode_command: cmd argument is NULL"))
             );
     }
     
@@ -2958,7 +2958,7 @@ globus_i_ftp_control_decode_command(
             globus_error_construct_string(
                 GLOBUS_FTP_CONTROL_MODULE,
                 GLOBUS_NULL,
-                "globus_ftp_control_decode_command: malloc failed")
+                _FCSL("globus_ftp_control_decode_command: malloc failed"))
             );
     }
     
@@ -2968,7 +2968,7 @@ globus_i_ftp_control_decode_command(
             globus_error_construct_string(
                 GLOBUS_FTP_CONTROL_MODULE,
                 GLOBUS_NULL,
-                "globus_ftp_control_decode_command: parse error")
+                _FCSL("globus_ftp_control_decode_command: parse error"))
             );
         goto decode_error;
     }
@@ -2989,7 +2989,7 @@ globus_i_ftp_control_decode_command(
             globus_error_construct_string(
                 GLOBUS_FTP_CONTROL_MODULE,
                 GLOBUS_NULL,
-                "globus_ftp_control_decode_command: parse error")
+                _FCSL("globus_ftp_control_decode_command: parse error"))
             );
         goto decode_error;
     }
@@ -3003,7 +3003,7 @@ globus_i_ftp_control_decode_command(
             globus_error_construct_string(
                 GLOBUS_FTP_CONTROL_MODULE,
                 GLOBUS_NULL,
-                "globus_ftp_control_decode_command: encryption not supported")
+                _FCSL("globus_ftp_control_decode_command: encryption not supported"))
             );
         goto decode_error;
     }
@@ -3014,7 +3014,7 @@ globus_i_ftp_control_decode_command(
             globus_error_construct_string(
                 GLOBUS_FTP_CONTROL_MODULE,
                 GLOBUS_NULL,
-                "globus_ftp_control_decode_command: parse error")
+                _FCSL("globus_ftp_control_decode_command: parse error"))
             );
         goto decode_error;
     }
@@ -3027,7 +3027,7 @@ globus_i_ftp_control_decode_command(
             globus_error_construct_string(
                 GLOBUS_FTP_CONTROL_MODULE,
                 GLOBUS_NULL,
-                "globus_ftp_control_decode_command: malloc failed")
+                _FCSL("globus_ftp_control_decode_command: malloc failed"))
             );
         goto decode_error;
     }
@@ -3058,7 +3058,7 @@ globus_i_ftp_control_decode_command(
             globus_error_construct_string(
                 GLOBUS_FTP_CONTROL_MODULE,
                 GLOBUS_NULL,
-                "globus_ftp_control_decode_command: failed to unwrap command")
+                _FCSL("globus_ftp_control_decode_command: failed to unwrap command"))
             );
         
         globus_libc_free(*decoded_cmd);
@@ -3137,7 +3137,7 @@ globus_i_ftp_control_encode_reply(
             globus_error_construct_string(
                 GLOBUS_FTP_CONTROL_MODULE,
                 GLOBUS_NULL,
-                "globus_i_ftp_control_encode_reply: NULL argument detected")
+                _FCSL("globus_i_ftp_control_encode_reply: NULL argument detected"))
             );
     }
     
@@ -3158,7 +3158,7 @@ globus_i_ftp_control_encode_reply(
             globus_error_construct_string(
                 GLOBUS_FTP_CONTROL_MODULE,
                 GLOBUS_NULL,
-                "globus_i_ftp_control_encode_reply: gss_wrap failed")
+                _FCSL("globus_i_ftp_control_encode_reply: gss_wrap failed"))
             );
     }
 
@@ -3172,7 +3172,7 @@ globus_i_ftp_control_encode_reply(
             globus_error_construct_string(
                 GLOBUS_FTP_CONTROL_MODULE,
                 GLOBUS_NULL,
-                "globus_i_ftp_control_encode_reply: malloc failed")
+                _FCSL("globus_i_ftp_control_encode_reply: malloc failed"))
             );
     }
 
@@ -3596,7 +3596,7 @@ globus_result_t globus_l_ftp_control_parse_string_arg(
             globus_error_construct_string(
                 GLOBUS_FTP_CONTROL_MODULE,
                 GLOBUS_NULL,
-                "globus_ftp_control_command_init: malloc failed"));
+                _FCSL("globus_ftp_control_command_init: malloc failed")));
     }
         
     sscanf(command->noop.raw_command,"%*s%n",
@@ -3660,7 +3660,7 @@ globus_result_t globus_l_ftp_control_parse_opts_cmd(
             globus_error_construct_string(
                 GLOBUS_FTP_CONTROL_MODULE,
                 GLOBUS_NULL,
-                "globus_ftp_control_command_init: malloc failed"));
+                _FCSL("globus_ftp_control_command_init: malloc failed")));
     }
 
     command->opts.cmd_opts = 
@@ -3673,7 +3673,7 @@ globus_result_t globus_l_ftp_control_parse_opts_cmd(
             globus_error_construct_string(
                 GLOBUS_FTP_CONTROL_MODULE,
                 GLOBUS_NULL,
-                "globus_ftp_control_command_init: malloc failed"));
+                _FCSL("globus_ftp_control_command_init: malloc failed")));
     }
             
     if(sscanf(command->noop.raw_command,"%*s %s %s",
@@ -3781,7 +3781,7 @@ globus_result_t globus_l_ftp_control_parse_spor_cmd(
             globus_error_construct_string(
                 GLOBUS_FTP_CONTROL_MODULE,
                 GLOBUS_NULL,
-                "globus_ftp_control_command_init: malloc failed"));
+                _FCSL("globus_ftp_control_command_init: malloc failed")));
     }
         
     command->spor.num_args = j;

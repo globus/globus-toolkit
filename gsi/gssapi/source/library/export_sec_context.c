@@ -78,8 +78,8 @@ GSS_CALLCONV gss_export_sec_context(
     GLOBUS_GSI_GSSAPI_ERROR_RESULT(
         minor_status,
         GLOBUS_GSI_GSSAPI_ERROR_UNSUPPORTED,
-        ("This function does not currently support the "
-         "Windows platform"));
+        (_GGSL("This function does not currently support the "
+         "Windows platform")));
     goto exit;
 #endif
 
@@ -92,7 +92,7 @@ GSS_CALLCONV gss_export_sec_context(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
-            ("Invalid context handle passed to the function: %s",
+            (_GGSL("Invalid context handle passed to the function: %s"),
              _function_name_));
         goto exit;
     }
@@ -104,7 +104,7 @@ GSS_CALLCONV gss_export_sec_context(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
-            ("Invalid interprocess token parameter passed to function: %s",
+            (_GGSL("Invalid interprocess token parameter passed to function: %s"),
              _function_name_));
         goto exit;
     }
@@ -117,7 +117,7 @@ GSS_CALLCONV gss_export_sec_context(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_IMPEXP_BIO_SSL,
-            ("NULL bio for serializing SSL handle"));
+            (_GGSL("NULL bio for serializing SSL handle")));
         goto exit;
     }
 
@@ -143,7 +143,7 @@ GSS_CALLCONV gss_export_sec_context(
         GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_IMPEXP_BIO_SSL,
-            ("Couln't retrieve SSL session handle from SSL"));
+            (_GGSL("Couln't retrieve SSL session handle from SSL")));
         major_status = GSS_S_FAILURE;
         goto unlock_mutex;
     }
@@ -206,7 +206,7 @@ GSS_CALLCONV gss_export_sec_context(
         GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_IMPEXP_BIO_SSL,
-            ("Couldn't get data from BIO for serializing SSL handle"));
+            (_GGSL("Couldn't get data from BIO for serializing SSL handle")));
         major_status = GSS_S_FAILURE;
         goto unlock_mutex;
     }

@@ -14,6 +14,10 @@ EXTERN_C_BEGIN
 
 extern globus_module_descriptor_t       globus_l_io_module;
 
+#define _IOSL(s) globus_common_i18n_get_string( \
+			GLOBUS_IO_MODULE, \
+			s)
+
 typedef struct globus_l_io_handle_s *   globus_io_handle_t;
 typedef struct globus_l_io_attr_s *     globus_io_attr_t;
 /*** XXXX ***/

@@ -648,7 +648,7 @@ globus_l_io_cancel_complete(
                 globus_panic(
                     GLOBUS_IO_MODULE,
                     result,
-                    "[%s:%d] Couldn't register callback",
+                    _IOSL("[%s:%d] Couldn't register callback"),
                     _io_name,
                     __LINE__);
             }
@@ -755,7 +755,7 @@ globus_l_io_bounce_io_cb(
             globus_panic(
                 GLOBUS_IO_MODULE,
                 result,
-                "[%s:%d] Couldn't register callback",
+                _IOSL("[%s:%d] Couldn't register callback"),
                 _io_name,
                 __LINE__);
         }
@@ -863,7 +863,7 @@ globus_l_io_bounce_iovec_cb(
             globus_panic(
                 GLOBUS_IO_MODULE,
                 result,
-                "[%s:%d] Couldn't register callback",
+                _IOSL("[%s:%d] Couldn't register callback"),
                 _io_name,
                 __LINE__);
         }
@@ -964,7 +964,7 @@ globus_l_io_bounce_authz_cb(
             globus_panic(
                 GLOBUS_IO_MODULE,
                 result,
-                "[%s:%d] Couldn't register callback",
+                _IOSL("[%s:%d] Couldn't register callback"),
                 _io_name,
                 __LINE__);
         }
@@ -1154,7 +1154,7 @@ globus_l_io_bounce_listen_cb(
             globus_panic(
                 GLOBUS_IO_MODULE,
                 result,
-                "[%s:%d] Couldn't register callback",
+                _IOSL("[%s:%d] Couldn't register callback"),
                 _io_name,
                 __LINE__);
         }
@@ -2525,10 +2525,10 @@ globus_l_io_tcp_register_accept(
                     __FILE__,
                     _io_name,
                     __LINE__,
-                    "Globus IO-XIO requires that the attrs"
+                    _IOSL("Globus IO-XIO requires that the attrs"
                         " passed to globus_io_tcp_create_listener and"
                         " globus_io_tcp_register_accept either both require"
-                        " authentication or both not require it"));
+                        " authentication or both not require it")));
             goto error_gsi;
         }
     }
@@ -3584,7 +3584,7 @@ globus_l_io_bounce_close_cb(
             globus_panic(
                 GLOBUS_IO_MODULE,
                 result,
-                "[%s:%d] Couldn't register callback",
+                _IOSL("[%s:%d] Couldn't register callback"),
                 _io_name,
                 __LINE__);
         }
@@ -3652,7 +3652,7 @@ globus_l_io_server_close_cb(
             globus_panic(
                 GLOBUS_IO_MODULE,
                 result,
-                "[%s:%d] Couldn't register callback",
+                _IOSL("[%s:%d] Couldn't register callback"),
                 _io_name,
                 __LINE__);
         }
@@ -4055,7 +4055,7 @@ globus_io_register_select(
                 __FILE__,
                 _io_name,
                 __LINE__,
-                "Globus IO-XIO does not support use of the except callback"));
+                _IOSL("Globus IO-XIO does not support use of the except callback")));
         goto error_notsupported;
     }
     

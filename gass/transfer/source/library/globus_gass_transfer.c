@@ -109,7 +109,7 @@ globus_l_gass_transfer_deactivate(void)
     globus_i_gass_transfer_deactivating = GLOBUS_TRUE;
     
 #if DEBUG_GASS_TRANSFER
-    printf("Entering globus_l_gass_transfer_deactivate()\n");
+    printf(_GTSL("Entering globus_l_gass_transfer_deactivate()\n"));
 #endif
     
     rest = globus_i_gass_transfer_requests;
@@ -130,7 +130,7 @@ globus_l_gass_transfer_deactivate(void)
 	    tmp);
 	
 #if DEBUG_GASS_TRANSFER
-	printf("failing: %s\n", req->url);
+	printf(_GTSL("failing: %s\n"), req->url);
 #endif
 	rc = globus_i_gass_transfer_fail(
 	    tmp,
@@ -173,7 +173,7 @@ globus_l_gass_transfer_deactivate(void)
 	  (!globus_list_empty(globus_i_gass_transfer_listeners)))
     {
 #if DEBUG_GASS_TRANSFER
-	printf("waiting for requests\n");
+	printf(_GTSL("waiting for requests\n"));
 #endif
 	globus_cond_wait(&globus_i_gass_transfer_shutdown_cond,
 			 &globus_i_gass_transfer_mutex);	 
@@ -217,7 +217,7 @@ globus_l_gass_transfer_deactivate(void)
     globus_module_deactivate(GLOBUS_COMMON_MODULE);
 
 #if DEBUG_GASS_TRANSFER
-    printf("Exiting globus_l_gass_transfer_deactivate()\n");
+    printf(_GTSL("Exiting globus_l_gass_transfer_deactivate()\n"));
 #endif
 
     return GLOBUS_SUCCESS;

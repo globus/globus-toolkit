@@ -818,7 +818,7 @@ globus_i_gass_transfer_request_destroy(
 				 (void *) request);
 	
 #if DEBUG_GASS_TRANSFER
-	printf("removing from list\n");
+	printf(_GTSL("removing from list\n"));
 #endif
 	globus_list_remove(&globus_i_gass_transfer_requests,
 			   tmp);

@@ -81,8 +81,8 @@ globus_l_xio_server_destroy(
             {
                 GlobusXIODebugPrintf(
                     GLOBUS_XIO_DEBUG_INFO,
-                        ("[globus_i_xio_handle_destroy]"
-                        " :: signalling handle unload.\n"));
+                        (_XIOSL("[globus_i_xio_handle_destroy]"
+                        " :: signalling handle unload.\n")));
 
                 xio_server->sd_monitor->count--;
                 if(xio_server->sd_monitor->count == 0)
@@ -1056,7 +1056,7 @@ globus_xio_server_cntl(
             }
             if(!found)
             {
-                res = GlobusXIOErrorInvalidDriver("not found");
+                res = GlobusXIOErrorInvalidDriver(_XIOSL("not found"));
             }
         }
     }
@@ -1700,7 +1700,7 @@ globus_xio_contact_parse(
                     s = strchr(working, '>');
                     if(!s)
                     {
-                        result = GlobusXIOErrorContactString("expecting >");
+                        result = GlobusXIOErrorContactString(_XIOSL("expecting >"));
                         goto error_format;
                     }
                     *s = 0;
@@ -1771,7 +1771,7 @@ globus_xio_contact_parse(
                 }
                 else if(*s)
                 {
-                    result = GlobusXIOErrorContactString("expecting : or /");
+                    result = GlobusXIOErrorContactString(_XIOSL("expecting : or /"));
                     goto error_format;
                 }
                 
@@ -1839,7 +1839,7 @@ globus_xio_contact_parse(
                     s = strchr(working, ']');
                     if(!s)
                     {
-                        result = GlobusXIOErrorContactString("expecting ]");
+                        result = GlobusXIOErrorContactString(_XIOSL("expecting ]"));
                         goto error_format;
                     }
                     

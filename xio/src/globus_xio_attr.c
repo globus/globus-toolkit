@@ -156,8 +156,8 @@ globus_xio_attr_destroy(
             {
                 GlobusXIODebugPrintf(
                     GLOBUS_XIO_DEBUG_INFO_VERBOSE, 
-                    ("[globus_xio_attr_destroy]: destroying attr @0x%x "
-                        "driver @0x%x, %s\n", 
+                    (_XIOSL("[globus_xio_attr_destroy]: destroying attr @0x%x "
+                        "driver @0x%x, %s\n"), 
                     attr,
                     attr->entry[ctr].driver,
                     attr->entry[ctr].driver->name));
@@ -682,7 +682,7 @@ globus_xio_stack_push_driver(
         if(driver->transport_open_func == NULL)
         {
             res = GlobusXIOErrorInvalidDriver(
-                "open function not defined");
+                _XIOSL("open function not defined"));
             goto err;
         }
         else
@@ -694,7 +694,7 @@ globus_xio_stack_push_driver(
     else if(driver->transport_open_func != NULL)
     {
         res = GlobusXIOErrorInvalidDriver(
-            "transport can only be at bottom of stack");
+            _XIOSL("transport can only be at bottom of stack"));
         goto err;
     }
     else

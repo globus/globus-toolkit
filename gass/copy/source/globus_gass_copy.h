@@ -82,6 +82,11 @@ EXTERN_C_BEGIN
 extern
 globus_module_descriptor_t        globus_i_gass_copy_module;
 
+#define _GASCSL(s) globus_common_i18n_get_string( \
+		     GLOBUS_GASS_COPY_MODULE, \
+		     s)
+
+
 typedef struct globus_gass_copy_state_s globus_gass_copy_state_t;
 typedef struct globus_gass_copy_handle_s globus_gass_copy_handle_t;
 typedef struct globus_gass_copy_perf_info_s globus_gass_copy_perf_info_t;

@@ -14,7 +14,7 @@
 
 #ifdef HEADER_CRYPTLIB_H
 #   ifndef OPENSSLDIR
-#       define OPENSSLDIR "/home/bresnaha/Dev/Globus-trunk/GL"
+#       define OPENSSLDIR "/sandbox/blau/i18n3/INSTALL/"
 #   endif
 #endif
 

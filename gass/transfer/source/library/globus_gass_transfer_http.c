@@ -113,7 +113,7 @@ globus_l_gass_transfer_http_activate(void)
     }
 #   endif
     
-    debug_printf(1, ("Entering %s()\n",myname));
+    debug_printf(1, (_GTSL("Entering %s()\n"),myname));
     globus_module_activate(GLOBUS_COMMON_MODULE);
     globus_module_activate(GLOBUS_GSI_GSS_ASSIST_MODULE);
     globus_module_activate(GLOBUS_IO_MODULE);
@@ -166,12 +166,12 @@ globus_l_gass_transfer_http_activate(void)
 	
     globus_l_gass_transfer_http_subject_name = name_buffer.value;
 
-    debug_printf(1, ("Exiting %s()\n",myname));
+    debug_printf(1, (_GTSL("Exiting %s()\n"),myname));
     
     return GLOBUS_SUCCESS;
 
  error_exit:
-    debug_printf(1, ("Exiting %s()\n",myname));
+    debug_printf(1, (_GTSL("Exiting %s()\n"),myname));
 
     return GLOBUS_FAILURE;
 }
@@ -180,7 +180,7 @@ int
 globus_l_gass_transfer_http_deactivate(void)
 {
     MYNAME(globus_l_gass_transfer_http_deactivate);
-    debug_printf(1, ("Entering %s()\n",myname));
+    debug_printf(1, (_GTSL("Entering %s()\n"),myname));
 
     globus_l_gass_transfer_http_lock();
     while(globus_l_gass_transfer_http_closing > 0)
@@ -196,7 +196,7 @@ globus_l_gass_transfer_http_deactivate(void)
     globus_free(globus_l_gass_transfer_http_subject_name);
 
     globus_module_deactivate(GLOBUS_COMMON_MODULE);
-    debug_printf(1, ("Exiting %s()\n",myname));
+    debug_printf(1, (_GTSL("Exiting %s()\n"),myname));
     return GLOBUS_SUCCESS;
 }
 
@@ -262,7 +262,7 @@ globus_l_gass_transfer_http_send(
     globus_reltime_t                            delay_time;
     MYNAME(globus_l_gass_transfer_http_send);
     
-    debug_printf(1, ("Entering %s()\n",myname));
+    debug_printf(1, (_GTSL("Entering %s()\n"),myname));
     globus_l_gass_transfer_http_lock();
     new_proto = (globus_gass_transfer_http_request_proto_t *) proto;
     new_proto->last_data = last_data;
@@ -323,7 +323,7 @@ globus_l_gass_transfer_http_send(
 	    num_iovecs = 3;
 	}
 
-	debug_printf(4, ("%s(): Registering writev\n", myname));
+	debug_printf(4, (_GTSL("%s(): Registering writev\n"), myname));
 	result = globus_io_register_writev(
 	    &new_proto->handle,
 	    new_proto->iov,
@@ -334,7 +334,7 @@ globus_l_gass_transfer_http_send(
     else
     {
 	/* send data raw */
-	debug_printf(4, ("%s(): Registering writev\n", myname));
+	debug_printf(4, (_GTSL("%s(): Registering writev\n"), myname));
 	result = globus_io_register_write(
 	    &new_proto->handle,
 	    new_proto->user_buffer,
@@ -351,7 +351,7 @@ globus_l_gass_transfer_http_send(
 	 */
 	globus_l_gass_transfer_http_unlock();
 
-	debug_printf(1, ("exiting %s()\n",myname));
+	debug_printf(1, (_GTSL("exiting %s()\n"),myname));
 	return;
     }
 
@@ -361,7 +361,7 @@ globus_l_gass_transfer_http_send(
 
     GlobusTimeReltimeSet(delay_time, 0, 0);
 
-    debug_printf(4, ("%s(): Registering oneshot\n", myname));
+    debug_printf(4, (_GTSL("%s(): Registering oneshot\n"), myname));
     globus_callback_register_oneshot(
         GLOBUS_NULL,
 	&delay_time,
@@ -369,7 +369,7 @@ globus_l_gass_transfer_http_send(
 	(void *) new_proto);
 
     globus_l_gass_transfer_http_unlock();
-    debug_printf(1, ("exiting %s()\n",myname));
+    debug_printf(1, (_GTSL("exiting %s()\n"),myname));
 }
 /* globus_l_gass_transfer_http_send() */
 
@@ -397,7 +397,7 @@ globus_l_gass_transfer_http_receive(
     globus_reltime_t                                    delay_time;
     MYNAME(globus_l_gass_transfer_http_receive);
     
-    debug_printf(1, ("Entering %s()\n",myname));
+    debug_printf(1, (_GTSL("Entering %s()\n"),myname));
     
     globus_l_gass_transfer_http_lock();
     new_proto = (globus_gass_transfer_http_request_proto_t *) proto;
@@ -416,7 +416,7 @@ globus_l_gass_transfer_http_receive(
     new_proto->oneshot_registered = GLOBUS_TRUE;
 
     GlobusTimeReltimeSet(delay_time, 0, 0);
-    debug_printf(4, ("%s(): Registering oneshot\n", myname));
+    debug_printf(4, (_GTSL("%s(): Registering oneshot\n"), myname));
     globus_callback_register_oneshot(
         GLOBUS_NULL,
 	&delay_time,
@@ -424,7 +424,7 @@ globus_l_gass_transfer_http_receive(
 	(void *) new_proto);
 
     globus_l_gass_transfer_http_unlock();
-    debug_printf(1, ("exiting %s()\n",myname));
+    debug_printf(1, (_GTSL("exiting %s()\n"),myname));
 }
 /* globus_l_gass_transfer_http_receive() */
 
@@ -447,7 +447,7 @@ globus_l_gass_transfer_http_fail(
     globus_bool_t				signalled;
     MYNAME(globus_l_gass_transfer_http_fail);
 
-    debug_printf(1, ("entering %s()\n",myname));
+    debug_printf(1, (_GTSL("entering %s()\n"),myname));
 
     new_proto = (globus_gass_transfer_http_request_proto_t *) proto;
 
@@ -500,7 +500,7 @@ globus_l_gass_transfer_http_fail(
         }
     }
     globus_l_gass_transfer_http_unlock();
-    debug_printf(1, ("Exiting %s()\n",myname));
+    debug_printf(1, (_GTSL("Exiting %s()\n"),myname));
 }
 /* globus_l_gass_transfer_http_fail() */
 
@@ -516,7 +516,7 @@ globus_l_gass_transfer_http_write_callback(
     globus_gass_transfer_http_request_proto_t *		proto;
     MYNAME(globus_l_gass_transfer_http_write_callback);
 
-    debug_printf(3, ("Entering %s()\n",myname));
+    debug_printf(3, (_GTSL("Entering %s()\n"),myname));
     proto = (globus_gass_transfer_http_request_proto_t *) callback_arg;
 
     globus_l_gass_transfer_http_lock();
@@ -555,7 +555,7 @@ globus_l_gass_transfer_http_write_callback(
 							 offset,
 							 failed,
 							 GLOBUS_TRUE);
-		debug_printf(3, ("Exiting %s()\n",myname));
+		debug_printf(3, (_GTSL("Exiting %s()\n"),myname));
 		return;
 	    }
 	    else
@@ -567,7 +567,7 @@ globus_l_gass_transfer_http_write_callback(
 		proto->waiting_for_response = GLOBUS_TRUE;
 		globus_l_gass_transfer_http_unlock();
 
-		debug_printf(3, ("Exiting %s()\n",myname));
+		debug_printf(3, (_GTSL("Exiting %s()\n"),myname));
 		return;
 	    }
 	}
@@ -594,7 +594,7 @@ globus_l_gass_transfer_http_write_callback(
 		nbytes_sent,
 		fail,
 		GLOBUS_TRUE);
-	    debug_printf(3, ("Exiting %s()\n",myname));
+	    debug_printf(3, (_GTSL("Exiting %s()\n"),myname));
 
 	    return;
 	}
@@ -621,7 +621,7 @@ globus_l_gass_transfer_http_write_callback(
 						 fail,
 						 last_data);
     }
-    debug_printf(3, ("Exiting %s()\n",myname));
+    debug_printf(3, (_GTSL("Exiting %s()\n"),myname));
     return;
 }
 /* globus_l_gass_transfer_http_write_callback() */
@@ -639,7 +639,7 @@ globus_l_gass_transfer_http_writev_callback(
     globus_gass_transfer_http_request_proto_t *		proto;
     MYNAME(globus_l_gass_transfer_http_writev_callback);
 
-    debug_printf(3, ("Entering %s()\n",myname));
+    debug_printf(3, (_GTSL("Entering %s()\n"),myname));
     proto = (globus_gass_transfer_http_request_proto_t *) callback_arg;
 
     globus_l_gass_transfer_http_lock();
@@ -677,7 +677,7 @@ globus_l_gass_transfer_http_writev_callback(
 							 offset,
 							 failed,
 							 GLOBUS_TRUE);
-		debug_printf(3, ("Exiting %s()\n",myname));
+		debug_printf(3, (_GTSL("Exiting %s()\n"),myname));
 		return;
 	    }
 	    else
@@ -689,7 +689,7 @@ globus_l_gass_transfer_http_writev_callback(
 		proto->waiting_for_response = GLOBUS_TRUE;
 		globus_l_gass_transfer_http_unlock();
 
-		debug_printf(3, ("Exiting %s()\n",myname));
+		debug_printf(3, (_GTSL("Exiting %s()\n"),myname));
 		return;
 	    }
 	}
@@ -715,7 +715,7 @@ globus_l_gass_transfer_http_writev_callback(
 		nbytes_sent,
 		fail,
 		GLOBUS_TRUE);
-	    debug_printf(3, ("Exiting %s()\n",myname));
+	    debug_printf(3, (_GTSL("Exiting %s()\n"),myname));
 	    return;
 	}
     }
@@ -739,7 +739,7 @@ globus_l_gass_transfer_http_writev_callback(
 						 nbytes_sent,
 						 fail,
 						 GLOBUS_FALSE);
-	debug_printf(3, ("Exiting %s()\n",myname));
+	debug_printf(3, (_GTSL("Exiting %s()\n"),myname));
 	return;
     }
 }
@@ -768,7 +768,7 @@ globus_l_gass_transfer_http_read_callback(
     globus_gass_transfer_http_request_proto_t *		proto;
     MYNAME(globus_l_gass_transfer_http_read_callback);
     
-    debug_printf(3, ("Entering %s()\n",myname));
+    debug_printf(3, (_GTSL("Entering %s()\n"),myname));
     
     proto = (globus_gass_transfer_http_request_proto_t *) callback_arg;
 
@@ -778,7 +778,7 @@ globus_l_gass_transfer_http_read_callback(
 
 	err = globus_error_get(result);
 	tmpstr = globus_object_printable_to_string(err);
-	debug_printf(5, ("%s(): Error: %s\n", myname, tmpstr));
+	debug_printf(5, (_GTSL("%s(): Error: %s\n"), myname, tmpstr));
 	globus_libc_free(tmpstr);
     }
 
@@ -861,7 +861,7 @@ globus_l_gass_transfer_http_read_callback(
 	offset += sprintf(response + offset,
 			  CRLF);
 
-	debug_printf(4,("%s(): Registering write\n",myname));
+	debug_printf(4,(_GTSL("%s(): Registering write\n"),myname));
 	globus_io_register_write(&proto->handle,
 				 (globus_byte_t *) response,
 				 strlen(response),
@@ -908,7 +908,7 @@ globus_l_gass_transfer_http_read_callback(
 	request = proto->request;
 
 	globus_l_gass_transfer_http_unlock();
-	debug_printf(2, ("calling globus_gass_transfer_proto_receive_complete()"));
+	debug_printf(2, (_GTSL("calling globus_gass_transfer_proto_receive_complete()")));
 	globus_gass_transfer_proto_receive_complete(request,
 						    buf,
 						    offset,
@@ -927,7 +927,7 @@ globus_l_gass_transfer_http_read_callback(
 	globus_object_free(err);
     }
 
-    debug_printf(3, ("Exiting %s()\n",myname));
+    debug_printf(3, (_GTSL("Exiting %s()\n"),myname));
     return;
 }
 /* globus_l_gass_transfer_http_read_callback() */
@@ -955,7 +955,7 @@ globus_l_gass_transfer_http_read_buffered_callback(
     globus_gass_transfer_http_request_proto_t *		proto;
     MYNAME(globus_l_gass_transfer_http_read_buffered_callback);
 
-    debug_printf(3, ("Entering %s()\n",myname));
+    debug_printf(3, (_GTSL("Entering %s()\n"),myname));
 
     proto = (globus_gass_transfer_http_request_proto_t *) callback_arg;
 
@@ -965,7 +965,7 @@ globus_l_gass_transfer_http_read_buffered_callback(
 
 	err = globus_error_get(result);
 	tmpstr = globus_object_printable_to_string(err);
-	debug_printf(5, ("%s(): %s\n", myname, tmpstr));
+	debug_printf(5, (_GTSL("%s(): %s\n"), myname, tmpstr));
 	globus_libc_free(tmpstr);
     }
 
@@ -1022,7 +1022,7 @@ globus_l_gass_transfer_http_read_buffered_callback(
 	offset += sprintf(response + offset,
 			  CRLF);
 
-	debug_printf(4,("%s(): Registering write\n",myname));
+	debug_printf(4,(_GTSL("%s(): Registering write\n"),myname));
 	globus_io_register_write(&proto->handle,
 				 (globus_byte_t *) response,
 				 strlen(response),
@@ -1076,13 +1076,13 @@ globus_l_gass_transfer_http_read_buffered_callback(
 	globus_l_gass_transfer_http_signal();
 	globus_l_gass_transfer_http_unlock();
 
-	debug_printf(2, ("calling globus_gass_transfer_proto_receive_complete()\n"));
+	debug_printf(2, (_GTSL("calling globus_gass_transfer_proto_receive_complete()\n")));
 	globus_gass_transfer_proto_receive_complete(request,
 						    buf,
 						    offset,
 						    failure,
 						    last_data);
-        debug_printf(3, ("Exiting %s()\n",myname));
+        debug_printf(3, (_GTSL("Exiting %s()\n"),myname));
 	return;
     }
     else
@@ -1102,7 +1102,7 @@ globus_l_gass_transfer_http_read_buffered_callback(
     {
 	globus_object_free(err);
     }
-    debug_printf(3, ("Exiting %s()\n",myname));
+    debug_printf(3, (_GTSL("Exiting %s()\n"),myname));
     return;
 
   error_exit:
@@ -1128,14 +1128,14 @@ globus_l_gass_transfer_http_read_buffered_callback(
 	offset = proto->user_offset;
 
 	globus_l_gass_transfer_http_unlock();
-	debug_printf(2, ("calling globus_gass_transfer_proto_receive_complete()"));
+	debug_printf(2, (_GTSL("calling globus_gass_transfer_proto_receive_complete()")));
 	globus_gass_transfer_proto_receive_complete(request,
 						    buf,
 						    offset,
 						    GLOBUS_TRUE,
 						    GLOBUS_TRUE);
     }
-    debug_printf(3, ("Exiting %s()\n",myname));
+    debug_printf(3, (_GTSL("Exiting %s()\n"),myname));
     return;
 }
 /* globus_l_gass_transfer_http_read_buffered_callback() */
@@ -1162,7 +1162,7 @@ globus_l_gass_transfer_http_close_callback(
     globus_gass_transfer_http_request_proto_t *		proto;
     MYNAME(globus_l_gass_transfer_http_close_callback);
 
-    debug_printf(3, ("Entering %s()\n",myname));
+    debug_printf(3, (_GTSL("Entering %s()\n"),myname));
     proto = (globus_gass_transfer_http_request_proto_t *) callback_arg;
 
     globus_l_gass_transfer_http_lock();
@@ -1220,7 +1220,7 @@ globus_l_gass_transfer_http_register_close(
 
     globus_l_gass_transfer_http_closing++;
     
-    debug_printf(4,("%s(): registering close on %p\n", myname, &proto->handle));
+    debug_printf(4,(_GTSL("%s(): registering close on %p\n"), myname, &proto->handle));
     result = globus_io_register_close(
 	&proto->handle,
 	globus_l_gass_transfer_http_close_callback,
@@ -1252,13 +1252,13 @@ globus_l_gass_transfer_http_listener_close_callback(
 					proto;
     MYNAME(globus_l_gass_transfer_http_listener_close_callback);
 
-    debug_printf(3, ("Entering %s()\n",myname));
+    debug_printf(3, (_GTSL("Entering %s()\n"),myname));
     proto = (globus_gass_transfer_http_listener_proto_t *) callback_arg;
 
     globus_l_gass_transfer_http_lock();
     globus_l_gass_transfer_http_listener_close(proto);
     globus_l_gass_transfer_http_unlock();
-    debug_printf(3, ("Exiting %s()\n",myname));    
+    debug_printf(3, (_GTSL("Exiting %s()\n"),myname));    
 }
 /* globus_l_gass_transfer_http_listener_close_callback() */
 
@@ -1297,7 +1297,7 @@ globus_l_gass_transfer_http_register_listener_close(
     MYNAME(globus_l_gass_transfer_http_register_listener_close);
     globus_l_gass_transfer_http_closing++;
 
-    debug_printf(4,("%s(): registering close on %p\n", myname, &proto->handle));
+    debug_printf(4,(_GTSL("%s(): registering close on %p\n"), myname, &proto->handle));
     result = globus_io_register_close(
 	&proto->handle,
 	globus_l_gass_transfer_http_listener_close_callback,
@@ -1349,7 +1349,7 @@ globus_l_gass_transfer_http_destroy(
     globus_gass_transfer_http_request_proto_t *		new_proto;
     MYNAME(globus_l_gass_transfer_http_destroy);
 
-    debug_printf(1, ("entering %s()\n",myname));
+    debug_printf(1, (_GTSL("entering %s()\n"),myname));
     new_proto = (globus_gass_transfer_http_request_proto_t *) proto;
 
     globus_l_gass_transfer_http_lock();
@@ -1365,7 +1365,7 @@ globus_l_gass_transfer_http_destroy(
 	globus_l_gass_transfer_http_proto_destroy(new_proto);
     }
     globus_l_gass_transfer_http_unlock();
-    debug_printf(1, ("exiting %s()\n",myname));
+    debug_printf(1, (_GTSL("exiting %s()\n"),myname));
 }
 /* globus_l_gass_transfer_http_destroy() */
 
@@ -1387,7 +1387,7 @@ globus_l_gass_transfer_http_listener_destroy(
     globus_gass_transfer_http_listener_proto_t *new_proto;
     MYNAME(globus_l_gass_transfer_http_listener_destroy);
 
-    debug_printf(1, ("entering %s()\n",myname));
+    debug_printf(1, (_GTSL("entering %s()\n"),myname));
     new_proto = (globus_gass_transfer_http_listener_proto_t *) proto;
 
     globus_l_gass_transfer_http_lock();
@@ -1400,7 +1400,7 @@ globus_l_gass_transfer_http_listener_destroy(
 	globus_l_gass_transfer_http_listener_proto_destroy(new_proto);
     }
     globus_l_gass_transfer_http_unlock();
-    debug_printf(1, ("exiting %s()\n",myname));
+    debug_printf(1, (_GTSL("exiting %s()\n"),myname));
 }
 /* globus_l_gass_transfer_http_listener_destroy() */
 
@@ -1424,12 +1424,12 @@ globus_l_gass_transfer_http_listen(
     globus_reltime_t                            delay_time;
     MYNAME(globus_l_gass_transfer_http_listen);
 
-    debug_printf(1, ("entering %s()\n",myname));
+    debug_printf(1, (_GTSL("entering %s()\n"),myname));
     new_proto = (globus_gass_transfer_http_listener_proto_t *) proto;
 
     globus_l_gass_transfer_http_lock();
 
-    debug_printf(4,("%s(): registering listen on %p\n",
+    debug_printf(4,(_GTSL("%s(): registering listen on %p\n"),
 		    myname,
 		    &new_proto->handle));
     result = globus_io_tcp_register_listen(
@@ -1440,7 +1440,7 @@ globus_l_gass_transfer_http_listen(
     if(result != GLOBUS_SUCCESS)
     {
         GlobusTimeReltimeSet(delay_time, 0, 0);
-	debug_printf(4,("%s(): registering oneshot because listen failed\n",
+	debug_printf(4,(_GTSL("%s(): registering oneshot because listen failed\n"),
 		    myname));
 	globus_callback_register_oneshot(
 	    GLOBUS_NULL,
@@ -1454,7 +1454,7 @@ globus_l_gass_transfer_http_listen(
 	new_proto->state = GLOBUS_GASS_TRANSFER_HTTP_LISTENER_LISTENING;
     }
     globus_l_gass_transfer_http_unlock();
-    debug_printf(1, ("exiting %s()\n",myname));
+    debug_printf(1, (_GTSL("exiting %s()\n"),myname));
 }
 /* globus_l_gass_transfer_http_listen() */
 
@@ -1469,7 +1469,7 @@ globus_l_gass_transfer_http_listen_callback(
     globus_gass_transfer_listener_t		listener;
     MYNAME(globus_l_gass_transfer_http_listen_callback);
     
-    debug_printf(3, ("Entering %s()\n",myname));    
+    debug_printf(3, (_GTSL("Entering %s()\n"),myname));    
 
     proto = (globus_gass_transfer_http_listener_proto_t *) callback_arg;
     globus_l_gass_transfer_http_lock();
@@ -1495,9 +1495,9 @@ globus_l_gass_transfer_http_listen_callback(
     listener = proto->listener;
     globus_l_gass_transfer_http_unlock();
 
-    debug_printf(2, ("calling globus_gass_transfer_proto_listener_ready()"));
+    debug_printf(2, (_GTSL("calling globus_gass_transfer_proto_listener_ready()")));
     globus_gass_transfer_proto_listener_ready(listener);
-    debug_printf(3, ("Exiting %s()\n",myname));
+    debug_printf(3, (_GTSL("Exiting %s()\n"),myname));
 }
 /* globus_l_gass_transfer_http_listen_callback() */
 
@@ -1511,7 +1511,7 @@ globus_l_gass_transfer_http_accept_callback(
     globus_gass_transfer_http_listener_proto_t *l;
     MYNAME(globus_l_gass_transfer_http_accept_callback);
     
-    debug_printf(3, ("Entering %s()\n",myname));
+    debug_printf(3, (_GTSL("Entering %s()\n"),myname));
     globus_l_gass_transfer_http_lock();
 
     fflush(stdout);
@@ -1536,12 +1536,12 @@ globus_l_gass_transfer_http_accept_callback(
 		result,
 		l->request->response_buffer,
 		0);
-            debug_printf(3, ("Exiting globus_l_gass_transfer_http_accept_callback()\n"));        
+            debug_printf(3, (_GTSL("Exiting globus_l_gass_transfer_http_accept_callback()\n")));        
 	    return;
 	}
 	else
 	{
-            debug_printf(4, ("%s(): Registering read on %p\n",
+            debug_printf(4, (_GTSL("%s(): Registering read on %p\n"),
 			     myname,
 			     &l->request->handle));        
 	    globus_io_register_read(&l->request->handle,
@@ -1572,7 +1572,7 @@ globus_l_gass_transfer_http_accept_callback(
 	globus_assert(l->state != GLOBUS_GASS_TRANSFER_HTTP_LISTENER_CLOSING1);
     }
     globus_l_gass_transfer_http_unlock();
-    debug_printf(3, ("Exiting %s()\n", myname));        
+    debug_printf(3, (_GTSL("Exiting %s()\n"), myname));        
 }
 /* globus_l_gass_transfer_http_accept_callback() */
 
@@ -1672,7 +1672,7 @@ globus_l_gass_transfer_http_request_refer(
 
     globus_gass_transfer_referral_destroy(&referral);
 
-    debug_printf(4, ("%s(): Registering write on %p\n",
+    debug_printf(4, (_GTSL("%s(): Registering write on %p\n"),
 		     myname,
 		     &proto->handle));        
     globus_io_register_write(&proto->handle,
@@ -1777,7 +1777,7 @@ globus_l_gass_transfer_http_request_deny(
 
     globus_free(message);
 
-    debug_printf(4, ("%s(): Registering write on %p\n",
+    debug_printf(4, (_GTSL("%s(): Registering write on %p\n"),
 		     myname,
 		     &proto->handle));        
     globus_io_register_write(&proto->handle,
@@ -1882,7 +1882,7 @@ globus_l_gass_transfer_http_request_authorize(
     {
 	proto->state = GLOBUS_GASS_TRANSFER_HTTP_STATE_RESPONDING;
 
-	debug_printf(4, ("%s(): registering write on %p\n",
+	debug_printf(4, (_GTSL("%s(): registering write on %p\n"),
 			 myname,
 			 &proto->handle));
 
@@ -1897,7 +1897,7 @@ globus_l_gass_transfer_http_request_authorize(
 	proto->state = GLOBUS_GASS_TRANSFER_HTTP_STATE_IDLE;
   
         GlobusTimeReltimeSet(delay_time, 0, 0);
-	debug_printf(4, ("%s(): registering oneshot\n",
+	debug_printf(4, (_GTSL("%s(): registering oneshot\n"),
 			 myname));
 	globus_callback_register_oneshot(
 	    GLOBUS_NULL,
@@ -1939,7 +1939,7 @@ globus_l_gass_transfer_http_write_response(
 	    
 	    request = proto->request;
 
-	    debug_printf(2, ("calling globus_gass_transfer_proto_request_ready"));
+	    debug_printf(2, (_GTSL("calling globus_gass_transfer_proto_request_ready")));
 	    globus_gass_transfer_proto_request_ready(request,
 						     (globus_gass_transfer_request_proto_t *) proto);
 	    return;
@@ -1966,7 +1966,7 @@ globus_l_gass_transfer_http_authorization_callback(
     int						rc;
     MYNAME(globus_l_gass_transfer_http_authorization_callback);
 
-    debug_printf(3, ("Entering %s()\n",myname));
+    debug_printf(3, (_GTSL("Entering %s()\n"),myname));
     globus_l_gass_transfer_http_lock();
     proto = (globus_gass_transfer_http_listener_proto_t *) arg;
 
@@ -2007,7 +2007,7 @@ globus_l_gass_transfer_http_authorization_callback(
   finish:
     globus_l_gass_transfer_http_unlock();
 
-    debug_printf(3, ("Exiting globus_l_gass_transfer_http_authorization_callback()\n"));
+    debug_printf(3, (_GTSL("Exiting globus_l_gass_transfer_http_authorization_callback()\n")));
     return rc;
 }
 /* globus_l_gass_transfer_http_authorization_callback() */
@@ -2077,7 +2077,7 @@ globus_l_gass_transfer_http_new_request(
     globus_reltime_t                            delay_time;
     MYNAME(globus_l_gass_transfer_http_new_request);
     
-    debug_printf(1, ("Entering %s()\n",myname));
+    debug_printf(1, (_GTSL("Entering %s()\n"),myname));
     switch(globus_gass_transfer_request_get_type(request))
     {
       case GLOBUS_GASS_TRANSFER_REQUEST_TYPE_GET:
@@ -2339,7 +2339,7 @@ globus_l_gass_transfer_http_new_request(
 	{
 	    proto->proxy_url.port = GLOBUS_L_DEFAULT_HTTPS_PORT;
 	}
-	debug_printf(4,("%s(): Registering connect to %s\n",
+	debug_printf(4,(_GTSL("%s(): Registering connect to %s\n"),
 			myname,
 			proto->proxy_url.host));
 	result = globus_io_tcp_register_connect(
@@ -2362,7 +2362,7 @@ globus_l_gass_transfer_http_new_request(
 	{
 	    proto->url.port = GLOBUS_L_DEFAULT_HTTPS_PORT;
 	}
-	debug_printf(4,("%s(): Registering connect to %s\n",
+	debug_printf(4,(_GTSL("%s(): Registering connect to %s\n"),
 			myname,
 			proto->url.host));
 	result = globus_io_tcp_register_connect(
@@ -2384,7 +2384,7 @@ globus_l_gass_transfer_http_new_request(
     }
     /* Success! */
     globus_io_tcpattr_destroy(&tcp_attr);
-    debug_printf(1, ("Exiting globus_l_gass_transfer_new_request()\n"));
+    debug_printf(1, (_GTSL("Exiting globus_l_gass_transfer_new_request()\n")));
     return ;
 
   url_error:
@@ -2401,7 +2401,7 @@ globus_l_gass_transfer_http_new_request(
   error_exit:
   
     GlobusTimeReltimeSet(delay_time, 0, 0);
-    debug_printf(4,("%s(): Registering oneshot\n",
+    debug_printf(4,(_GTSL("%s(): Registering oneshot\n"),
 			myname));
     globus_callback_register_oneshot(
         GLOBUS_NULL,
@@ -2409,7 +2409,7 @@ globus_l_gass_transfer_http_new_request(
 	globus_l_gass_transfer_http_callback_denied,
 	(void *) request);
 
-    debug_printf(1, ("Exiting %s()\n",myname));
+    debug_printf(1, (_GTSL("Exiting %s()\n"),myname));
 }
 /* globus_l_gass_transfer_http_new_request() */
 
@@ -2431,12 +2431,12 @@ globus_l_gass_transfer_http_new_requestattr(
     globus_object_t *				obj;
     MYNAME(globus_l_gass_transfer_http_new_requestattr);
 
-    debug_printf(1, ("Entering %s()\n",myname));
+    debug_printf(1, (_GTSL("Entering %s()\n"),myname));
     if(strcmp(url_scheme, "https") == 0)
     {
 	obj = globus_object_construct(GLOBUS_GASS_OBJECT_TYPE_SECURE_REQUESTATTR);
 
-	debug_printf(1, ("Exiting %s()\n",myname));
+	debug_printf(1, (_GTSL("Exiting %s()\n"),myname));
 	return
 	    globus_gass_transfer_secure_requestattr_initialize(
 		obj,
@@ -2454,7 +2454,7 @@ globus_l_gass_transfer_http_new_requestattr(
     {
 	obj = globus_object_construct(GLOBUS_GASS_OBJECT_TYPE_SOCKET_REQUESTATTR);
 
-	debug_printf(1, ("Exiting %s()\n", myname));
+	debug_printf(1, (_GTSL("Exiting %s()\n"), myname));
 	return
 	    globus_gass_transfer_socket_requestattr_initialize(
 		obj,
@@ -2468,7 +2468,7 @@ globus_l_gass_transfer_http_new_requestattr(
     }
     else
     {
-	debug_printf(1, ("Exiting %s()\n", myname));
+	debug_printf(1, (_GTSL("Exiting %s()\n"), myname));
 	return GLOBUS_NULL;
     }
 }
@@ -2492,13 +2492,13 @@ globus_l_gass_transfer_http_new_listenerattr(
     globus_object_t *				obj;
     MYNAME(globus_l_gass_transfer_http_new_listenerattr);
     
-    debug_printf(1, ("Entering %s()\n", myname));
+    debug_printf(1, (_GTSL("Entering %s()\n"), myname));
     if(strcmp(url_scheme, "https") == 0 ||
        strcmp(url_scheme, "http") == 0)
     {
 	obj = globus_object_construct(GLOBUS_GASS_OBJECT_TYPE_LISTENERATTR);
 
-	debug_printf(1, ("Exiting %s()\n",myname));
+	debug_printf(1, (_GTSL("Exiting %s()\n"),myname));
 	return
 	    globus_gass_transfer_listenerattr_initialize(
 		obj,
@@ -2507,7 +2507,7 @@ globus_l_gass_transfer_http_new_listenerattr(
     }
     else
     {
-	debug_printf(1, ("Exiting %s()\n",myname));
+	debug_printf(1, (_GTSL("Exiting %s()\n"),myname));
 	return GLOBUS_NULL;
     }
 }
@@ -2544,7 +2544,7 @@ globus_l_gass_transfer_http_new_listener(
     globus_size_t				url_size;
     MYNAME(globus_l_gass_transfer_http_new_listener);
     
-    debug_printf(1, ("Entering %s()\n",myname));
+    debug_printf(1, (_GTSL("Entering %s()\n"),myname));
     globus_io_tcpattr_init(&tcpattr);
 
     globus_io_attr_set_socket_keepalive(&tcpattr, GLOBUS_TRUE);
@@ -2668,7 +2668,7 @@ globus_l_gass_transfer_http_new_listener(
 
     proto->state = GLOBUS_GASS_TRANSFER_HTTP_LISTENER_STARTING;
     *ret_proto = (globus_gass_transfer_listener_proto_t *) proto;
-    debug_printf(1, ("Exiting %s()\n",myname));
+    debug_printf(1, (_GTSL("Exiting %s()\n"),myname));
     return GLOBUS_SUCCESS;
 
   free_auth_data:
@@ -2678,7 +2678,7 @@ globus_l_gass_transfer_http_new_listener(
   free_tcpattr:
     globus_io_tcpattr_destroy(&tcpattr);
 
-    debug_printf(1, ("Exiting %s()\n",myname));
+    debug_printf(1, (_GTSL("Exiting %s()\n"),myname));
     return GLOBUS_FAILURE;
 }
 /* globus_l_gass_transfer_http_new_listener() */
@@ -2704,7 +2704,7 @@ globus_l_gass_transfer_http_close_listener(
     globus_gass_transfer_http_listener_proto_t *
 						new_proto;
     MYNAME(globus_l_gass_transfer_http_close_listener);
-    debug_printf(1, ("entering %s()\n",myname));
+    debug_printf(1, (_GTSL("entering %s()\n"),myname));
     new_proto = (globus_gass_transfer_http_listener_proto_t *) proto;
 
     globus_l_gass_transfer_http_lock();
@@ -2749,7 +2749,7 @@ globus_l_gass_transfer_http_close_listener(
 	}
     }
     globus_l_gass_transfer_http_unlock();
-    debug_printf(1, ("exiting %s()\n",myname));
+    debug_printf(1, (_GTSL("exiting %s()\n"),myname));
     return;
 }
 /* globus_l_gass_transfer_http_close_listener() */
@@ -2782,7 +2782,7 @@ globus_l_gass_transfer_http_connect_callback(
     char *					msg;
     MYNAME(globus_l_gass_transfer_http_connect_callback);
     
-    debug_printf(3, ("Entering %s()\n", myname));
+    debug_printf(3, (_GTSL("Entering %s()\n"), myname));
     /*
      * In this function, we have completed the TCP (and SSL)
      * connection protocol, and will send our request to the
@@ -2812,7 +2812,7 @@ globus_l_gass_transfer_http_connect_callback(
     }
 
     /* Send our command to the server */
-    debug_printf(4,("%s(): Registering write on %p\n",
+    debug_printf(4,(_GTSL("%s(): Registering write on %p\n"),
 		    myname,
 		    &proto->handle));
     
@@ -2827,7 +2827,7 @@ globus_l_gass_transfer_http_connect_callback(
     {
 	proto->state = GLOBUS_GASS_TRANSFER_HTTP_STATE_REQUESTING;
 	globus_l_gass_transfer_http_unlock();
-        debug_printf(3, ("Exiting %s()\n",myname));    
+        debug_printf(3, (_GTSL("Exiting %s()\n"),myname));    
 	return;
     }
 
@@ -2856,12 +2856,12 @@ globus_l_gass_transfer_http_connect_callback(
     globus_l_gass_transfer_http_unlock();
 
     /* Signal Denial to the GASS system */
-    debug_printf(2, ("calling globus_gass_transfer_proto_request_denied"));
+    debug_printf(2, (_GTSL("calling globus_gass_transfer_proto_request_denied")));
     globus_gass_transfer_proto_request_denied(
 	request,
 	code,
 	msg);
-    debug_printf(3, ("Exiting %s()\n",myname));
+    debug_printf(3, (_GTSL("Exiting %s()\n"),myname));
 }
 /* globus_l_gass_transfer_http_connect_callback() */
 
@@ -2893,7 +2893,7 @@ globus_l_gass_transfer_http_command_callback(
     char *					reason;
     MYNAME(globus_l_gass_transfer_http_command_callback);
     
-    debug_printf(3, ("Entering %s()\n",myname));
+    debug_printf(3, (_GTSL("Entering %s()\n"),myname));
  
     /*
      * In this function, we have completed sending our request
@@ -2939,7 +2939,7 @@ globus_l_gass_transfer_http_command_callback(
 	 */
 	proto->state = GLOBUS_GASS_TRANSFER_HTTP_STATE_IDLE;
 
-	debug_printf(4,("%s(): Registering read on %p\n",
+	debug_printf(4,(_GTSL("%s(): Registering read on %p\n"),
 			myname,
 			&proto->handle));
 	
@@ -2956,21 +2956,21 @@ globus_l_gass_transfer_http_command_callback(
 	}
 	globus_l_gass_transfer_http_unlock();
 	
-	debug_printf(2, ("calling globus_gass_transfer_proto_request_ready"));
+	debug_printf(2, (_GTSL("calling globus_gass_transfer_proto_request_ready")));
 
         globus_gass_transfer_proto_request_ready(
 	    proto->request,
 	    (globus_gass_transfer_request_proto_t *) proto);
 
 
-        debug_printf(3, ("Exiting %s()\n",myname));
+        debug_printf(3, (_GTSL("Exiting %s()\n"),myname));
 	return;
       case GLOBUS_GASS_TRANSFER_REQUEST_TYPE_GET:
 	/*
 	 * If we are a "GET" request we can't do anything
 	 * until the server sends us some info, anyway
 	 */
-	debug_printf(4,("%s(): Registering read on %p\n",
+	debug_printf(4,(_GTSL("%s(): Registering read on %p\n"),
 			myname,
 			&proto->handle));
 	result = globus_io_register_read(
@@ -2986,7 +2986,7 @@ globus_l_gass_transfer_http_command_callback(
 	    goto deny_exit;
 	}
 	globus_l_gass_transfer_http_unlock();
-        debug_printf(3, ("Exiting %s()\n",myname));
+        debug_printf(3, (_GTSL("Exiting %s()\n"),myname));
 	return;
       default:
 	globus_assert(proto->type !=
@@ -3016,12 +3016,12 @@ globus_l_gass_transfer_http_command_callback(
     globus_l_gass_transfer_http_unlock();
 
     /* Signal Denial to the GASS system */
-    debug_printf(2, ("calling globus_gass_transfer_proto_request_denied"));
+    debug_printf(2, (_GTSL("calling globus_gass_transfer_proto_request_denied")));
     globus_gass_transfer_proto_request_denied(
 	request,
 	code,
 	reason);
-    debug_printf(3, ("Exiting %s()\n",myname));
+    debug_printf(3, (_GTSL("Exiting %s()\n"),myname));
 }
 /* globus_l_gass_transfer_http_command_callback() */
 
@@ -3041,7 +3041,7 @@ globus_l_gass_transfer_http_response_callback(
     char * reason;
     MYNAME(globus_l_gass_transfer_http_response_callback);
 
-    debug_printf(3, ("Entering %s()\n",myname));
+    debug_printf(3, (_GTSL("Entering %s()\n"),myname));
     proto = (globus_gass_transfer_http_request_proto_t *) arg;
     if(result != GLOBUS_SUCCESS)
     {
@@ -3049,7 +3049,7 @@ globus_l_gass_transfer_http_response_callback(
 
 	err = globus_error_get(result);
 	tmpstr = globus_object_printable_to_string(err);
-	debug_printf(5, ("globus_l_gass_transfer_http_read_callback(): %s", tmpstr));
+	debug_printf(5, (_GTSL("globus_l_gass_transfer_http_read_callback(): %s"), tmpstr));
 	globus_libc_free(tmpstr);
     }
 
@@ -3072,7 +3072,7 @@ globus_l_gass_transfer_http_response_callback(
 	globus_l_gass_transfer_http_unlock();
 
 	/* TODO: Evaluate error object, or response from the server here */
-	debug_printf(2, ("calling globus_gass_transfer_proto_request_denied"));
+	debug_printf(2, (_GTSL("calling globus_gass_transfer_proto_request_denied")));
 	globus_gass_transfer_proto_request_denied(
 	    request,
 	    GLOBUS_L_DEFAULT_FAILURE_CODE,
@@ -3083,7 +3083,7 @@ globus_l_gass_transfer_http_response_callback(
 	    globus_object_free(err);
 	}
 
-        debug_printf(3, ("Exiting globus_l_gass_transfer_http_response_callback()\n"));        
+        debug_printf(3, (_GTSL("Exiting globus_l_gass_transfer_http_response_callback()\n")));        
 	return;
     }
 
@@ -3174,7 +3174,7 @@ globus_l_gass_transfer_http_response_callback(
 		    globus_l_gass_transfer_http_register_close(proto);
 		    
 		    globus_l_gass_transfer_http_unlock();
-		    debug_printf(2, ("calling globus_gass_transfer_proto_request_referred"));
+		    debug_printf(2, (_GTSL("calling globus_gass_transfer_proto_request_referred")));
 		    globus_gass_transfer_proto_request_referred(
 			request,
 			referral,
@@ -3313,7 +3313,7 @@ globus_l_gass_transfer_http_response_callback(
 		proto->state = GLOBUS_GASS_TRANSFER_HTTP_STATE_IDLE;
 		globus_l_gass_transfer_http_unlock();
 
-		debug_printf(2, ("calling globus_gass_transfer_proto_request_ready"));		globus_gass_transfer_proto_request_ready(
+		debug_printf(2, (_GTSL("calling globus_gass_transfer_proto_request_ready")));		globus_gass_transfer_proto_request_ready(
 		    proto->request,
 		    (globus_gass_transfer_request_proto_t *) proto);
 	    }
@@ -3348,11 +3348,11 @@ globus_l_gass_transfer_http_response_callback(
 		    globus_l_gass_transfer_http_register_close(proto);
 		    
 		    globus_l_gass_transfer_http_unlock();
-		    debug_printf(2, ("calling globus_gass_transfer_proto_request_referred"));
+		    debug_printf(2, (_GTSL("calling globus_gass_transfer_proto_request_referred")));
 		    globus_gass_transfer_proto_request_referred(request,
 								referral,
 								referral_count);
-                    debug_printf(3, ("Exiting globus_l_gass_transfer_http_response_callback()\n"));        
+                    debug_printf(3, (_GTSL("Exiting globus_l_gass_transfer_http_response_callback()\n")));        
 		    return;
 		}
 		else
@@ -3363,12 +3363,12 @@ globus_l_gass_transfer_http_response_callback(
 	
 		    globus_l_gass_transfer_http_unlock();
 
-		    debug_printf(2, ("calling globus_gass_transfer_proto_request_referred"));
+		    debug_printf(2, (_GTSL("calling globus_gass_transfer_proto_request_referred")));
 		    globus_gass_transfer_proto_request_referred(request,
 								referral,
 								referral_count);
 		    
-                    debug_printf(3, ("Exiting globus_l_gass_transfer_http_response_callback()\n"));        
+                    debug_printf(3, (_GTSL("Exiting globus_l_gass_transfer_http_response_callback()\n")));        
 		    return;
 		}
 	    }
@@ -3419,13 +3419,13 @@ globus_l_gass_transfer_http_response_callback(
 	    globus_assert(proto->type !=
 			  GLOBUS_GASS_TRANSFER_REQUEST_TYPE_INVALID);
 	    globus_assert(GLOBUS_FALSE);
-            debug_printf(3, ("Exiting globus_l_gass_transfer_http_response_callback()\n"));        
+            debug_printf(3, (_GTSL("Exiting globus_l_gass_transfer_http_response_callback()\n")));        
 	    return;
 	}
     }
     while(proto->code == 0 ||
 	  proto->code == 100);
-    debug_printf(3, ("Exiting globus_l_gass_transfer_http_response_callback()\n"));        
+    debug_printf(3, (_GTSL("Exiting globus_l_gass_transfer_http_response_callback()\n")));        
     return;
 
   repost_read:
@@ -3467,7 +3467,7 @@ globus_l_gass_transfer_http_response_callback(
     }
 
     /* Register another read */
-    debug_printf(4,("%s(): Registering read on %p\n",
+    debug_printf(4,(_GTSL("%s(): Registering read on %p\n"),
 		    myname,
 		    &proto->handle));
     result = globus_io_register_read(&proto->handle,
@@ -3485,7 +3485,7 @@ globus_l_gass_transfer_http_response_callback(
     }
     globus_l_gass_transfer_http_unlock();
 
-    debug_printf(3, ("Exiting globus_l_gass_transfer_http_response_callback()\n"));        
+    debug_printf(3, (_GTSL("Exiting globus_l_gass_transfer_http_response_callback()\n")));        
     return;
 
   deny_exit:
@@ -3507,11 +3507,11 @@ globus_l_gass_transfer_http_response_callback(
     
     globus_l_gass_transfer_http_unlock();
 
-    debug_printf(2, ("calling globus_gass_transfer_proto_request_denied"));
+    debug_printf(2, (_GTSL("calling globus_gass_transfer_proto_request_denied")));
     globus_gass_transfer_proto_request_denied(request,
 					      code,
 					      reason);
-    debug_printf(3, ("Exiting globus_l_gass_transfer_http_response_callback()\n"));        
+    debug_printf(3, (_GTSL("Exiting globus_l_gass_transfer_http_response_callback()\n")));        
     return;
 
   put_success_exit:
@@ -3532,14 +3532,14 @@ globus_l_gass_transfer_http_response_callback(
 	globus_l_gass_transfer_http_register_close(proto);
     
 	globus_l_gass_transfer_http_unlock();
-	debug_printf(2, ("calling globus_gass_transfer_proto_send_complete()"));
+	debug_printf(2, (_GTSL("calling globus_gass_transfer_proto_send_complete()")));
 	globus_gass_transfer_proto_send_complete(request,
 						 buffer,
 						 offset,
 						 failure,
 						 GLOBUS_TRUE);
 
-        debug_printf(3, ("Exiting globus_l_gass_transfer_http_response_callback()\n"));        
+        debug_printf(3, (_GTSL("Exiting globus_l_gass_transfer_http_response_callback()\n")));        
 	return;
     }
   put_fail_exit:
@@ -3563,13 +3563,13 @@ globus_l_gass_transfer_http_response_callback(
 	globus_l_gass_transfer_http_register_close(proto);
 	
 	globus_l_gass_transfer_http_unlock();
-	debug_printf(2, ("calling globus_gass_transfer_proto_send_complete()"));
+	debug_printf(2, (_GTSL("calling globus_gass_transfer_proto_send_complete()")));
 	globus_gass_transfer_proto_send_complete(request,
 						 buffer,
 						 offset,
 						 failed,
 						 GLOBUS_TRUE);
-        debug_printf(3, ("Exiting globus_l_gass_transfer_http_response_callback()\n"));        
+        debug_printf(3, (_GTSL("Exiting globus_l_gass_transfer_http_response_callback()\n")));        
 	return;
 
     }
@@ -3578,7 +3578,7 @@ globus_l_gass_transfer_http_response_callback(
 	proto->failure_occurred = GLOBUS_TRUE;
 	globus_l_gass_transfer_http_unlock();
     }
-    debug_printf(3, ("Exiting globus_l_gass_transfer_http_response_callback()\n"));        
+    debug_printf(3, (_GTSL("Exiting globus_l_gass_transfer_http_response_callback()\n")));        
 }
 /* globus_l_gass_transfer_http_response_callback() */
 
@@ -3599,7 +3599,7 @@ globus_l_gass_transfer_http_request_callback(
     globus_gass_transfer_request_t			request;
     MYNAME(globus_l_gass_transfer_http_request_callback);
 
-    debug_printf(3, ("Entering %s()\n",myname));
+    debug_printf(3, (_GTSL("Entering %s()\n"),myname));
     l_proto = (globus_gass_transfer_http_listener_proto_t *) arg;
     proto = l_proto->request;
 
@@ -3609,7 +3609,7 @@ globus_l_gass_transfer_http_request_callback(
 
 	err = globus_error_get(result);
 	tmpstr = globus_object_printable_to_string(err);
-	debug_printf(5, ("globus_l_gass_transfer_http_read_callback(): %s", tmpstr));
+	debug_printf(5, (_GTSL("globus_l_gass_transfer_http_read_callback(): %s", tmpstr)));
 	globus_libc_free(tmpstr);
     }
 
@@ -3834,7 +3834,7 @@ globus_l_gass_transfer_http_request_callback(
 	(globus_gass_transfer_request_proto_t *) proto);
 
 
-    debug_printf(3, ("Exiting globus_l_gass_transfer_http_request_callback()\n"));
+    debug_printf(3, (_GTSL("Exiting globus_l_gass_transfer_http_request_callback()\n")));
     return;
 
   repost_read:
@@ -3866,7 +3866,7 @@ globus_l_gass_transfer_http_request_callback(
     }
 
     /* Register another read */
-    debug_printf(4,("%s(): Registering read on %p\n",
+    debug_printf(4,(_GTSL("%s(): Registering read on %p\n"),
 		    myname,
 		    &proto->handle));
     result = globus_io_register_read(&proto->handle,
@@ -3884,7 +3884,7 @@ globus_l_gass_transfer_http_request_callback(
     }
     globus_l_gass_transfer_http_unlock();
 
-    debug_printf(3, ("Exiting globus_l_gass_transfer_http_request_callback()\n"));
+    debug_printf(3, (_GTSL("Exiting globus_l_gass_transfer_http_request_callback()\n")));
     return;
 
   deny_exit:
@@ -3914,7 +3914,7 @@ globus_l_gass_transfer_http_request_callback(
 	request,
 	(globus_gass_transfer_request_proto_t *) GLOBUS_NULL);
 
-    debug_printf(3, ("Exiting globus_l_gass_transfer_http_request_callback()\n"));
+    debug_printf(3, (_GTSL("Exiting globus_l_gass_transfer_http_request_callback()\n")));
     return;
 }
 /* globus_l_gass_transfer_http_request_callback() */
@@ -3927,17 +3927,17 @@ globus_l_gass_transfer_http_callback_send_callback(
     globus_gass_transfer_http_request_proto_t *		proto;
     MYNAME(globus_l_gass_transfer_http_callback_send_callback);
 
-    debug_printf(3, ("Entering %s()\n",myname));
+    debug_printf(3, (_GTSL("Entering %s()\n",myname)));
     
     proto = (globus_gass_transfer_http_request_proto_t *) arg;
 
-    debug_printf(2, ("calling globus_gass_transfer_proto_send_complete()"));
+    debug_printf(2, (_GTSL("calling globus_gass_transfer_proto_send_complete()")));
     globus_gass_transfer_proto_send_complete(proto->request,
 					     proto->user_buffer,
 					     proto->user_offset,
 					     proto->failure_occurred,
 					     proto->failure_occurred);
-    debug_printf(3, ("Exiting globus_l_gass_transfer_http_callback_send_callback()\n"));
+    debug_printf(3, (_GTSL("Exiting globus_l_gass_transfer_http_callback_send_callback()\n")));
 }
 
 
@@ -3950,7 +3950,7 @@ globus_l_gass_transfer_http_callback_ready_callback(
 
     proto = (globus_gass_transfer_http_request_proto_t *) arg;
 
-    debug_printf(2, ("calling globus_gass_transfer_proto_request_ready"));
+    debug_printf(2, (_GTSL("calling globus_gass_transfer_proto_request_ready")));
     globus_gass_transfer_proto_request_ready(proto->request,
 					     (globus_gass_transfer_request_proto_t *) proto);
 }
@@ -4001,7 +4001,7 @@ globus_l_gass_transfer_http_callback_listen_callback(
     listener = proto->listener;
     globus_l_gass_transfer_http_unlock();
 
-    debug_printf(2, ("calling globus_gass_transfer_proto_listener_ready()"));
+    debug_printf(2, (_GTSL("calling globus_gass_transfer_proto_listener_ready()")));
     globus_gass_transfer_proto_listener_ready(listener);
 }
 /* globus_l_gass_transfer_http_callback_listen_callback() */
@@ -4028,7 +4028,7 @@ globus_l_gass_transfer_http_accept(
     globus_reltime_t                            delay_time;
     MYNAME(globus_l_gass_transfer_http_accept);
 
-    debug_printf(1, ("entering %s()\n",myname));
+    debug_printf(1, (_GTSL("entering %s()\n"),myname));
     l_proto = (globus_gass_transfer_http_listener_proto_t *) proto;
 
     /* Allocate proto instance */
@@ -4211,7 +4211,7 @@ globus_l_gass_transfer_http_accept(
     /* Register accept with new request */
     l_proto->state = GLOBUS_GASS_TRANSFER_HTTP_LISTENER_ACCEPTING;
 
-    debug_printf(4,("%s(): Registering accept on %p\n",
+    debug_printf(4,(_GTSL("%s(): Registering accept on %p\n"),
 		    myname,
 		    &l_proto->handle));
     result = globus_io_tcp_register_accept(&l_proto->handle,
@@ -4226,7 +4226,7 @@ globus_l_gass_transfer_http_accept(
 
     globus_io_tcpattr_destroy(&tcp_attr);
 
-    debug_printf(1, ("exiting %s()\n",myname));
+    debug_printf(1, (_GTSL("exiting %s()\n"),myname));
     return;
 
   free_auth_data:
@@ -4242,7 +4242,7 @@ globus_l_gass_transfer_http_accept(
     globus_l_gass_transfer_http_unlock();
 
     GlobusTimeReltimeSet(delay_time, 0, 0);
-    debug_printf(4,("%s(): Registering oneshot\n",
+    debug_printf(4,(_GTSL("%s(): Registering oneshot\n"),
 			myname));
     kickout = globus_libc_malloc(
             sizeof(globus_l_gass_transfer_failed_kickout_closure_t));
@@ -4256,7 +4256,7 @@ globus_l_gass_transfer_http_accept(
 	globus_l_gass_transfer_http_accept_failed_kickout,
 	kickout);
 
-    debug_printf(1, ("exiting %s()\n",myname));
+    debug_printf(1, (_GTSL("exiting %s()\n"),myname));
 }
 /* globus_l_gass_transfer_http_accept() */
 
@@ -4314,7 +4314,7 @@ globus_l_gass_transfer_http_register_read(
 	   maximum = proto->length - proto->handled;
 	}
 
-	debug_printf(4,("%s(): Registering read on %p\n",
+	debug_printf(4,(_GTSL("%s(): Registering read on %p\n"),
 		    myname,
 		    &proto->handle));
 	return
@@ -4350,7 +4350,7 @@ globus_l_gass_transfer_http_register_read(
 	    proto->parsed_offset = 0;
 	}
 
-	debug_printf(4,("%s(): Registering read on %p\n",
+	debug_printf(4,(_GTSL("%s(): Registering read on %p\n"),
 			myname,
 			&proto->handle));
 	return
@@ -6316,7 +6316,7 @@ globus_l_gass_transfer_http_callback_denied(
 
     request = (globus_gass_transfer_request_t) arg;
     
-    debug_printf(2, ("calling globus_gass_transfer_proto_request_denied"));
+    debug_printf(2, (_GTSL("calling globus_gass_transfer_proto_request_denied")));
     globus_gass_transfer_proto_request_denied(
 	request,
 	GLOBUS_L_DEFAULT_FAILURE_CODE,

@@ -66,7 +66,7 @@ globus_xio_driver_load(
     
         if(globus_extension_activate(buf) != GLOBUS_SUCCESS)
         {
-            result = GlobusXIOErrorInvalidDriver("extension activate failed");
+            result = GlobusXIOErrorInvalidDriver(_XIOSL("extension activate failed"));
             goto error_activate;
         }
         
@@ -77,14 +77,14 @@ globus_xio_driver_load(
     
     if(!hook)
     {
-        result = GlobusXIOErrorInvalidDriver("driver lookup failed");
+        result = GlobusXIOErrorInvalidDriver(_XIOSL("driver lookup failed"));
         goto error_hook;
     }
     
     result = hook->init(out_driver);
     if(result != GLOBUS_SUCCESS)
     {
-        result = GlobusXIOErrorWrapFailed("globus_xio_driver_init_t", result);
+        result = GlobusXIOErrorWrapFailed(_XIOSL("globus_xio_driver_init_t"), result);
         goto error_init;
     }
     

@@ -66,7 +66,7 @@ globus_i_gsi_gss_assist_error_result(
         function_name,
         line_number, 
         "%s%s%s",
-        globus_l_gsi_gss_assist_error_strings[error_type],
+        _GASL(globus_l_gsi_gss_assist_error_strings[error_type]),
         short_desc ? ": " : "",
         short_desc ? short_desc : "");
 
@@ -108,7 +108,7 @@ globus_i_gsi_gss_assist_error_chain_result(
             function_name,
             line_number, 
             "%s%s%s",
-            globus_l_gsi_gss_assist_error_strings[error_type],
+            _GASL(globus_l_gsi_gss_assist_error_strings[error_type]),
             short_desc ? ": " : "",
             short_desc ? short_desc : "");
 
