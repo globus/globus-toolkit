@@ -474,8 +474,8 @@ public class RftImpl
      */
     public void preDestroy(GridContext context) 
     throws GridServiceException {
-        super.preDestroy(context);
         logger.debug("RFT instance destroyed");
+        super.preDestroy(context);
     }
 
     /**
