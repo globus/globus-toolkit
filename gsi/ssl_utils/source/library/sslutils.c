@@ -4289,7 +4289,7 @@ i2d_integer_bio(
 
     ASN1_i2d_bio(i2d_ASN1_INTEGER, bp, (unsigned char *) asn1_int);
     
-    ASN1_INETGER_free(asn1_int);
+    ASN1_INTEGER_free(asn1_int);
     
 }
 
@@ -4305,7 +4305,7 @@ d2i_integer_bio(
                  (unsigned char **)(&asn1_int));
     
     *v = ASN1_INTEGER_get(asn1_int);
-    ASN1_INETGER_free(asn1_int);
+    ASN1_INTEGER_free(asn1_int);
 
     return *v;
 }
