@@ -347,6 +347,7 @@ globus_l_gass_transfer_http_send(
 
     debug_printf(4, ("%s(): Registering oneshot\n", myname));
     globus_callback_register_oneshot(
+        GLOBUS_NULL,
 	&delay_time,
 	globus_l_gass_transfer_http_callback_send_callback,
 	(void *) new_proto,
@@ -403,6 +404,7 @@ globus_l_gass_transfer_http_receive(
     GlobusTimeReltimeSet(delay_time, 0, 0);
     debug_printf(4, ("%s(): Registering oneshot\n", myname));
     globus_callback_register_oneshot(
+        GLOBUS_NULL,
 	&delay_time,
 	globus_l_gass_transfer_http_callback_read_buffered_callback,
 	(void *) new_proto,
@@ -1425,6 +1427,7 @@ globus_l_gass_transfer_http_listen(
 	debug_printf(4,("%s(): registering oneshot because listen failed\n",
 		    myname));
 	globus_callback_register_oneshot(
+	    GLOBUS_NULL,
 	    &delay_time,
 	    globus_l_gass_transfer_http_callback_listen_callback,
 	    (void *) new_proto,
@@ -1883,6 +1886,7 @@ globus_l_gass_transfer_http_request_authorize(
 	debug_printf(4, ("%s(): registering oneshot\n",
 			 myname));
 	globus_callback_register_oneshot(
+	    GLOBUS_NULL,
 	    &delay_time,
 	    globus_l_gass_transfer_http_callback_ready_callback,
 	    (void *) proto,
@@ -2383,6 +2387,7 @@ globus_l_gass_transfer_http_new_request(
     debug_printf(4,("%s(): Registering oneshot\n",
 			myname));
     globus_callback_register_oneshot(
+        GLOBUS_NULL,
 	&delay_time,
 	globus_l_gass_transfer_http_callback_denied,
 	(void *) request,

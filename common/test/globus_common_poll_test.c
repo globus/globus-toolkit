@@ -15,7 +15,7 @@ basic_handler(
     void *                              user_arg);
 
 globus_bool_t
-basic_test(globus_wakeup_func_t wakeup);
+basic_test(globus_callback_wakeup_func_t wakeup);
 
 globus_mutex_t                        basic_test_mutex;
 globus_cond_t                         basic_test_cond;
@@ -29,7 +29,7 @@ basic_periodic_handler(
     void *                              user_arg);
     
 globus_bool_t
-basic_periodic_test(globus_wakeup_func_t wakeup);
+basic_periodic_test(globus_callback_wakeup_func_t wakeup);
 
 globus_mutex_t                        basic_periodic_test_mutex;
 globus_cond_t                         basic_periodic_test_cond;
@@ -51,7 +51,7 @@ cancel_handler(
     void *                              user_arg);
 
 globus_bool_t
-cancel_test(globus_wakeup_func_t wakeup);
+cancel_test(globus_callback_wakeup_func_t wakeup);
 
 globus_mutex_t                        cancel_test_mutex;
 globus_cond_t                         cancel_test_cond;
@@ -67,7 +67,7 @@ nested_wait_handler(
     void *                              user_arg);
 
 globus_bool_t
-nested_wait_test(globus_wakeup_func_t wakeup);
+nested_wait_test(globus_callback_wakeup_func_t wakeup);
 
 globus_mutex_t                        nested_wait_A_mutex;
 globus_cond_t                         nested_wait_A_cond;
@@ -76,7 +76,7 @@ globus_cond_t                         nested_wait_B_cond;
 globus_bool_t                         nested_wait_test_done;
 
 globus_bool_t
-time_starve_test(globus_wakeup_func_t wakeup);
+time_starve_test(globus_callback_wakeup_func_t wakeup);
 
 void verbose_printf(int level, char * s, ...);
 
@@ -133,7 +133,7 @@ globus_mutex_t        cpu_hog_mutex;
 globus_abstime_t      cpu_hog_stop_time;
 
 globus_bool_t
-cpu_hog_restart_test(globus_wakeup_func_t wakeup);
+cpu_hog_restart_test(globus_callback_wakeup_func_t wakeup);
 
 void
 cpu_hog_restart_block_handler(
@@ -165,7 +165,7 @@ static globus_bool_t                  random_stress_wakeme;
 
  
 globus_bool_t
-random_stress_test(globus_wakeup_func_t wakeup);
+random_stress_test(globus_callback_wakeup_func_t wakeup);
 
 void
 random_stress_own_thread_handler(
@@ -213,7 +213,7 @@ static globus_callback_handle_t       adjust_callback_handle_2;
 
 globus_bool_t
 adjust_period_test(
-    globus_wakeup_func_t              wakeup);
+    globus_callback_wakeup_func_t              wakeup);
 
 void
 adjust_period_requeue_callback(
@@ -235,7 +235,7 @@ main(int argc, char * argv[])
    int                         tests_passed = 0;
    int                         passes = 1;
    int                         ctr;
-   globus_wakeup_func_t        wakeup = GLOBUS_NULL;
+   globus_callback_wakeup_func_t        wakeup = GLOBUS_NULL;
 
 #  if !defined(BUILD_LITE)
    {
@@ -385,7 +385,7 @@ main(int argc, char * argv[])
  * BASIC TEST
  */
 globus_bool_t
-basic_test(globus_wakeup_func_t wakeup)
+basic_test(globus_callback_wakeup_func_t wakeup)
 {
    globus_reltime_t              start_time;
 
@@ -405,6 +405,7 @@ basic_test(globus_wakeup_func_t wakeup)
    /* register basic callback */
    verbose_printf(3, "basic_test(), registering oneshot\n");
    globus_callback_register_oneshot(
+       GLOBUS_NULL,
        &start_time,
        basic_handler,
        GLOBUS_NULL,
@@ -471,7 +472,7 @@ basic_periodic_handler(
 
 globus_bool_t
 basic_periodic_test(
-    globus_wakeup_func_t              wakeup)
+    globus_callback_wakeup_func_t              wakeup)
 {
    globus_reltime_t              start_time;
    globus_reltime_t              period_time;
@@ -541,7 +542,7 @@ basic_periodic_test(
  *  NESTED WAIT TEST
  */
 globus_bool_t
-nested_wait_test(globus_wakeup_func_t wakeup)
+nested_wait_test(globus_callback_wakeup_func_t wakeup)
 {
    globus_reltime_t           start_time;
 
@@ -635,7 +636,7 @@ nested_wait_handler(
  * MULTIQ TEST
  */
 globus_bool_t 
-time_starve_test(globus_wakeup_func_t wakeup)
+time_starve_test(globus_callback_wakeup_func_t wakeup)
 {
    int                          count_1 = 0;
    int                          count_2 = 0;
@@ -847,7 +848,7 @@ cancel_handler(
         globus_callback_handle_t *   handle;
 
         handle = (globus_callback_handle_t *) user_arg;
-        globus_callback_register_cancel_periodic(*handle, GLOBUS_NULL, GLOBUS_NULL);
+        globus_callback_unregister(*handle, GLOBUS_NULL, GLOBUS_NULL);
         globus_mutex_lock(&cancel_signal_mutex);
         {
             verbose_printf(3, "signaling cancel_signal_cond\n");
@@ -863,7 +864,7 @@ cancel_handler(
 }
 
 globus_bool_t
-cancel_test(globus_wakeup_func_t wakeup)
+cancel_test(globus_callback_wakeup_func_t wakeup)
 {
    globus_callback_handle_t       handle;
    globus_reltime_t               start_time; 
@@ -959,7 +960,7 @@ void verbose_printf(int level, char * s, ...)
  */
 globus_bool_t
 cpu_hog_restart_test(
-    globus_wakeup_func_t                wakeup)
+    globus_callback_wakeup_func_t                wakeup)
 {
    globus_bool_t                        expired = GLOBUS_FALSE;
    int                                  save_errno;
@@ -1081,7 +1082,7 @@ cpu_hog_restart_time_handler(
  *  RANDOM STRESS test
  */
 globus_bool_t
-random_stress_test(globus_wakeup_func_t wakeup)
+random_stress_test(globus_callback_wakeup_func_t wakeup)
 {
     int                               ctr;
     int                               count = 0;
@@ -1129,6 +1130,7 @@ random_stress_test(globus_wakeup_func_t wakeup)
                 GLOBUS_NULL);
 
     globus_callback_register_oneshot(
+                GLOBUS_NULL,
                 &delay,
                 random_stress_own_thread_handler,
                 GLOBUS_NULL,
@@ -1165,7 +1167,7 @@ random_stress_test(globus_wakeup_func_t wakeup)
         }
         globus_mutex_unlock(&random_stress_mutex);
         
-        globus_callback_blocking_cancel_periodic(callback_handle);
+        globus_callback_blocking_unregister(callback_handle);
         random_stress_registered = GLOBUS_FALSE;
     }
 
@@ -1286,7 +1288,7 @@ random_stress_own_thread_wakeup(
  * Adjust period test
  */
 globus_bool_t
-adjust_period_test(globus_wakeup_func_t wakeup)
+adjust_period_test(globus_callback_wakeup_func_t wakeup)
 {
     globus_reltime_t                   period;
     globus_reltime_t                   delay;

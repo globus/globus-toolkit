@@ -26,7 +26,6 @@ globus_l_ftp_client_abort_callback(
     const globus_abstime_t *                    time_now,
     const globus_abstime_t *                    time_stop,
     void *					user_arg);
-
 #endif
 
 #define GLOBUS_L_DATA_ERET_FORMAT_STRING \
@@ -3765,7 +3764,6 @@ globus_ftp_client_abort(
     globus_object_t *				err;
     globus_result_t				result;
     globus_i_ftp_client_handle_t *		handle;
-    globus_result_t     			res;
     static char * myname = "globus_ftp_client_abort";
     
     globus_i_ftp_client_debug_printf(1, 
@@ -3910,33 +3908,52 @@ globus_ftp_client_abort(
 	goto unlock_error;
 
     case GLOBUS_FTP_CLIENT_HANDLE_RESTART:
-        globus_callback_register_cancel_periodic(
-            handle->restart_info->callback_handle,
-            GLOBUS_NULL,
-            GLOBUS_NULL);
-        
-        /* if the callback was waiting on the lock, it will immediately
-         * return when it sees the handle has been aborted
-         */
-        if(handle->err)
-        {
-            globus_object_free(handle->err);
-        }
-        handle->err = GLOBUS_I_FTP_CLIENT_ERROR_OPERATION_ABORTED();
-        
-        res = globus_callback_register_oneshot(
-            &globus_i_reltime_zero,
-            globus_l_ftp_client_abort_callback,
-            handle,
-            GLOBUS_NULL,
-            GLOBUS_NULL);
-        
-        if(res != GLOBUS_SUCCESS)
-        {
-            err = globus_error_get(res);
-            goto unlock_error;
-        }
-        handle->state = GLOBUS_FTP_CLIENT_HANDLE_ABORT;
+	result = globus_callback_unregister(
+	    &handle->restart_info->callback_handle,
+	    GLOBUS_NULL,
+	    GLOBUS_NULL);
+
+	if(result != GLOBUS_SUCCESS)
+	{
+	    /* 
+	     * The callback is about to start, but needs the lock. We will just
+	     * set the handle state and then return, the callback will
+	     * notify the plugins about the abort.
+	     */
+	    handle->state = GLOBUS_FTP_CLIENT_HANDLE_ABORT;
+	    if(handle->err)
+	    {
+		globus_object_free(handle->err);
+	    }
+	    handle->err = GLOBUS_I_FTP_CLIENT_ERROR_OPERATION_ABORTED();
+	}
+	else
+	{
+	    /*
+	     * We killed the callback before it could happen.
+	     * Now we can safely register a oneshot to terminate
+	     * this transfer for good.
+	     */
+	    if(handle->err)
+	    {
+		globus_object_free(handle->err);
+	    }
+	    handle->err = GLOBUS_I_FTP_CLIENT_ERROR_OPERATION_ABORTED();
+
+	    result = globus_callback_register_oneshot(
+		GLOBUS_NULL,
+		&globus_i_reltime_zero,
+		globus_l_ftp_client_abort_callback,
+		handle,
+		GLOBUS_NULL,
+		GLOBUS_NULL);
+
+	    if(result != GLOBUS_SUCCESS)
+	    {
+		goto unlock_error;
+	    }
+	    handle->state = GLOBUS_FTP_CLIENT_HANDLE_ABORT;
+	}
 	break;
 	    
     case GLOBUS_FTP_CLIENT_HANDLE_THIRD_PARTY_TRANSFER_ONE_COMPLETE:

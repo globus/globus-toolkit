@@ -317,7 +317,7 @@ globus_cond_t                           globus_i_io_cond;
 int                                     globus_i_io_mutex_cnt;
 int                                     globus_i_io_cond_cnt;
 
-globus_wakeup_func_t                    globus_l_io_core_wakeup_func_ptr;
+static globus_callback_wakeup_func_t    globus_l_io_core_wakeup_func_ptr;
 static globus_l_io_adaptive_skip_poll_t globus_l_io_skip_poll_info;
 static globus_bool_t                    globus_l_io_use_skip_poll;
 
@@ -1866,6 +1866,7 @@ globus_l_io_handle_events(
             globus_l_io_pending_count++;
             
             result = globus_callback_space_register_abstime_oneshot(
+                GLOBUS_NULL,
                 &time_now,
                 globus_l_io_kickout_read_cb,
                 select_info,
@@ -1897,6 +1898,7 @@ globus_l_io_handle_events(
             globus_l_io_pending_count++;
             
             result = globus_callback_space_register_abstime_oneshot(
+                GLOBUS_NULL,
                 &time_now,
                 globus_l_io_kickout_cancel_cb,
                 cancel_info,
@@ -2056,6 +2058,7 @@ globus_l_io_handle_events(
                         globus_l_io_pending_count++;
                         
                         result = globus_callback_space_register_abstime_oneshot(
+                            GLOBUS_NULL,
                             &time_now,
                             globus_l_io_kickout_read_cb,
                             select_info,
@@ -2089,6 +2092,7 @@ globus_l_io_handle_events(
                         globus_l_io_pending_count++;
                         
                         result = globus_callback_space_register_abstime_oneshot(
+                            GLOBUS_NULL,
                             &time_now,
                             globus_l_io_kickout_write_cb,
                             select_info,
@@ -2122,6 +2126,7 @@ globus_l_io_handle_events(
                         globus_l_io_pending_count++;
                         
                         result = globus_callback_space_register_abstime_oneshot(
+                            GLOBUS_NULL,
                             &time_now,
                             globus_l_io_kickout_except_cb,
                             select_info,
@@ -2570,7 +2575,7 @@ globus_l_io_deactivate(void)
      * to complete. 
      */
     globus_l_io_pending_count++;
-    globus_callback_register_cancel_periodic(
+    globus_callback_unregister(
         globus_l_io_callback_handle,
         globus_l_unregister_periodic_cb,
         GLOBUS_NULL);

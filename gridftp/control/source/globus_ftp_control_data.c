@@ -1000,6 +1000,7 @@ globus_l_ftp_control_data_eb_connect_write(
                     /* register a on shot for connection */
                     GlobusTimeReltimeSet(reltime, 0, 0);
                     globus_callback_register_oneshot(
+                        GLOBUS_NULL,
                         &reltime,
                         globus_l_ftp_control_reuse_connect_callback,
                         (void *) connect_cb_info,
@@ -1183,6 +1184,7 @@ globus_l_ftp_control_data_eb_connect_read(
                     /* register a on shot for connection */
                     GlobusTimeReltimeSet(reltime, 0, 0);
                     globus_callback_register_oneshot(
+                        GLOBUS_NULL,
                         &reltime,
                         globus_l_ftp_control_reuse_connect_callback,
                         (void *) connect_cb_info,
@@ -5359,6 +5361,7 @@ globus_i_ftp_control_release_data_info(
     {
         GlobusTimeReltimeSet(reltime, 0, 0);
         globus_callback_register_oneshot(
+            GLOBUS_NULL,
             &reltime,
             globus_l_ftp_control_release_data_kickout,
             (void *) cb_ent,
@@ -5605,6 +5608,7 @@ globus_l_ftp_data_eb_poll(
                                 /* kick out a callback */
                                 GlobusTimeReltimeSet(reltime, 0, 0);
                                 globus_callback_register_oneshot(
+                                    GLOBUS_NULL,
                                     &reltime,
                                     globus_l_ftp_control_send_data_kickout,
                                     (void *) entry,
@@ -5753,6 +5757,7 @@ globus_l_ftp_data_eb_poll(
                     transfer_handle->big_buffer = GLOBUS_NULL;
                     GlobusTimeReltimeSet(reltime, 0, 0);
                     globus_callback_register_oneshot(
+                        GLOBUS_NULL,
                         &reltime,
                         globus_l_ftp_control_command_kickout,
                         (void *) entry,
@@ -5787,6 +5792,7 @@ globus_l_ftp_data_eb_poll(
 
                     GlobusTimeReltimeSet(reltime, 0, 0);
                     globus_callback_register_oneshot(
+                        GLOBUS_NULL,
                         &reltime,
                         globus_l_ftp_control_command_kickout,
                         (void *) entry,
@@ -6467,6 +6473,7 @@ globus_l_error_flush_command_q(
 
         GlobusTimeReltimeSet(reltime, 0, 0);
         globus_callback_register_oneshot(
+            GLOBUS_NULL,
             &reltime,
             globus_l_ftp_control_command_flush_callback,
             (void *) entry,
@@ -6668,6 +6675,7 @@ globus_l_ftp_control_dc_dec_ref(
 	    globus_result_t             res;
             GlobusTimeReltimeSet(reltime, 0, 0);
             res = globus_callback_register_oneshot(
+                         GLOBUS_NULL,
                          &reltime,
                          globus_l_ftp_control_close_kickout,
                          (void *)dc_handle,

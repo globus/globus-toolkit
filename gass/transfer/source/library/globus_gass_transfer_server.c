@@ -893,6 +893,7 @@ globus_i_gass_transfer_close_listener(
 
         GlobusTimeReltimeSet(delay_time, 0, 0);
 	globus_callback_register_oneshot(
+	    GLOBUS_NULL,
 	    &delay_time,
 	    globus_l_gass_transfer_callback_close_callback,
 	    (void *) listener,

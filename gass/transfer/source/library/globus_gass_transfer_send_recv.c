@@ -453,6 +453,7 @@ globus_i_gass_transfer_fail(
 	 */
         GlobusTimeReltimeSet(delay_time, 0, 0);
 	globus_callback_register_oneshot(
+	    GLOBUS_NULL,
 	    &delay_time,
 	    globus_l_gass_transfer_drain_callbacks,
 	    (void *) request,

@@ -44,7 +44,7 @@ typedef struct
 
     int                                 running_count;
 
-    globus_unregister_callback_func_t   unregister_callback;
+    globus_callback_unregister_func_t   unregister_callback;
     void *                              unreg_args;
 
     globus_l_callback_space_t *         my_space;
@@ -114,6 +114,16 @@ static globus_l_callback_restart_info_t * globus_l_callback_restart_info;
             GLOBUS_CALLBACK_ERROR_BLOCKING_CANCEL_RUNNING,                  \
             "[%s] Cannot do a blocking cancel on a callback running in "    \
             "your stack",                                                   \
+            (func)))
+
+#define GLOBUS_L_CALLBACK_CONSTRUCT_CANCEL_RUNNING(func)                    \
+    globus_error_put(                                                       \
+        globus_error_construct_error(                                       \
+            GLOBUS_CALLBACK_MODULE,                                         \
+            GLOBUS_NULL,                                                    \
+            GLOBUS_CALLBACK_ERROR_CANCEL_RUNNING,                           \
+            "[%s] Attempt to unregister a running callback, unregister has" \
+            ",been defferred."                                              \
             (func)))
 
 #define GLOBUS_L_CALLBACK_CONSTRUCT_NO_ACTIVE_CALLBACK(func)                \
@@ -417,7 +427,7 @@ globus_l_callback_register(
     if(callback_handle)
     {
         /* if user passed callback_handle, there are two refs to this
-         * info, me and user.  User had better cancel or destroy this handle
+         * info, me and user.  User had better unregister this handle
          * to free up the memory
          */
         callback_info->handle =
@@ -456,10 +466,11 @@ globus_l_callback_register(
 
 globus_result_t
 globus_callback_space_register_oneshot(
+    globus_callback_handle_t *          callback_handle,
     const globus_reltime_t *            delay_time,
     globus_callback_func_t              callback_func,
     void *                              callback_user_args,
-    globus_wakeup_func_t                wakeup_func,
+    globus_callback_wakeup_func_t       wakeup_func,
     void *                              wakeup_user_args,
     globus_callback_space_t             space)
 {
@@ -475,7 +486,7 @@ globus_callback_space_register_oneshot(
     GlobusTimeAbstimeInc(start_time, *delay_time);
 
     return globus_l_callback_register(
-        GLOBUS_NULL,
+        callback_handle,
         &start_time,
         GLOBUS_NULL,
         callback_func,
@@ -502,7 +513,7 @@ globus_callback_space_register_periodic(
     const globus_reltime_t *            period,
     globus_callback_func_t              callback_func,
     void *                              callback_user_args,
-    globus_wakeup_func_t                wakeup_func,
+    globus_callback_wakeup_func_t       wakeup_func,
     void *                              wakeup_user_args,
     globus_callback_space_t             space)
 {
@@ -550,10 +561,11 @@ globus_callback_space_register_periodic(
 
 globus_result_t
 globus_callback_space_register_abstime_oneshot(
+    globus_callback_handle_t *          callback_handle,
     const globus_abstime_t *            start_time,
     globus_callback_func_t              callback_func,
     void *                              callback_user_args,
-    globus_wakeup_func_t                wakeup_func,
+    globus_callback_wakeup_func_t       wakeup_func,
     void *                              wakeup_user_args,
     globus_callback_space_t             space)
 {
@@ -564,7 +576,7 @@ globus_callback_space_register_abstime_oneshot(
     }
 
     return globus_l_callback_register(
-        GLOBUS_NULL,
+        callback_handle,
         start_time,
         GLOBUS_NULL,
         callback_func,
@@ -600,7 +612,7 @@ globus_l_callback_cancel_kickout_cb(
 }
 
 /**
- * globus_callback_register_cancel_periodic
+ * globus_callback_unregister
  *
  * external function that cancels a previously registered callback.  will not
  * interrupt an already running callback.  also handles case where callback has
@@ -610,14 +622,13 @@ globus_l_callback_cancel_kickout_cb(
  * the combination of this func and adjust period may cause some confusion in
  * understanding the operation.  remember that adjust period can make a
  * callback appear to be a oneshot (if adjust period is passed a null period,
- * is_periodic will become false)... rest assured, that if the user has the
- * callback handle, it started out as a periodic.
+ * is_periodic will become false)... 
  */
 
 globus_result_t
-globus_callback_register_cancel_periodic(
+globus_callback_unregister(
     globus_callback_handle_t            callback_handle,
-    globus_unregister_callback_func_t   unregister_callback,
+    globus_callback_unregister_func_t   unregister_callback,
     void *                              unreg_args)
 {
     globus_l_callback_info_t *          callback_info;
@@ -633,7 +644,7 @@ globus_callback_register_cancel_periodic(
          * it has to exist
          */
         return GLOBUS_L_CALLBACK_CONSTRUCT_INVALID_CALLBACK_HANDLE(
-            "globus_callback_register_cancel_periodic");
+            "globus_callback_unregister");
     }
 
     callback_info->unregister_callback = unregister_callback;
@@ -654,6 +665,12 @@ globus_callback_register_cancel_periodic(
 
         /* this decrements the user's reference */
         globus_l_callback_info_dec_ref(callback_info);
+        
+        /* this is not really an error, just informing the user that I have
+         * deffered the cancel until the callback is no longer running
+         */
+        return GLOBUS_L_CALLBACK_CONSTRUCT_CANCEL_RUNNING(
+            "globus_callback_unregister");
     }
     else
     {
@@ -665,7 +682,7 @@ globus_callback_register_cancel_periodic(
          */
         if(globus_priority_q_remove(
             &callback_info->my_space->queue, callback_info) ||
-            !unregister_callback || !unregister_callback)
+            !unregister_callback)
         {
             globus_l_callback_info_dec_ref(callback_info);
         }
@@ -680,13 +697,13 @@ globus_callback_register_cancel_periodic(
                 GLOBUS_NULL,
                 callback_info->my_space->handle);
         }
+        
+        return GLOBUS_SUCCESS;
     }
-
-    return GLOBUS_SUCCESS;
 }
 
 /**
- * globus_callback_blocking_cancel
+ * globus_callback_blocking_unregister
  *
  * external function which unregisters callback
  *
@@ -695,7 +712,7 @@ globus_callback_register_cancel_periodic(
  */
 
 globus_result_t
-globus_callback_blocking_cancel_periodic(
+globus_callback_blocking_unregister(
     globus_callback_handle_t            callback_handle)
 {
     globus_l_callback_info_t *          callback_info;
@@ -711,14 +728,14 @@ globus_callback_blocking_cancel_periodic(
          * it has to exist
          */
         return GLOBUS_L_CALLBACK_CONSTRUCT_INVALID_CALLBACK_HANDLE(
-            "globus_callback_blocking_cancel_periodic");
+            "globus_callback_blocking_unregister");
     }
 
     if(callback_info->running_count > 0)
     {
         /* I cant block waiting for a running callback, it will never finish */
         return GLOBUS_L_CALLBACK_CONSTRUCT_BLOCKING_CANCEL_RUNNING(
-            "globus_callback_blocking_cancel_periodic");
+            "globus_callback_blocking_unregister");
     }
     else
     {
@@ -771,7 +788,7 @@ globus_callback_adjust_period(
     if(!(callback_info))
     {
         return GLOBUS_L_CALLBACK_CONSTRUCT_INVALID_CALLBACK_HANDLE(
-            "globus_callback_blocking_cancel_periodic");
+            "globus_callback_adjust_period");
     }
 
     if(!new_period || globus_time_reltime_is_infinity(new_period))
@@ -819,9 +836,12 @@ globus_callback_adjust_period(
             callback_info->running_count == 0)
         {
             /* it wasnt in the queue and its not running...  we must have
-             * previously set the period to infinity... I need to requeue it
+             * previously set this non-periodic... I need to requeue it
              * and take my ref to it back
              */
+            GlobusTimeAbstimeGetCurrent(callback_info->start_time);
+            GlobusTimeAbstimeInc(callback_info->start_time, *new_period);
+
             globus_l_callback_requeue(callback_info);
             globus_handle_table_increment_reference(
                 &globus_l_callback_handle_table, callback_handle);
@@ -1311,35 +1331,6 @@ globus_callback_get_timeout(
     }
 
     return GLOBUS_FALSE;
-}
-
-
-/**
- * globus_callback_get_timestop
- *
- * get the current timeout.  returns false on failure
- */
-
-globus_bool_t
-globus_callback_get_timestop(
-    globus_abstime_t *                  time_stop)
-{
-    if(!time_stop)
-    {
-        return GLOBUS_FALSE;
-    }
-
-    if(globus_l_callback_restart_info)
-    {
-        GlobusTimeAbstimeCopy(
-            *time_stop, *globus_l_callback_restart_info->timeout);
-    }
-    else
-    {
-        GlobusTimeAbstimeCopy(*time_stop, globus_i_abstime_infinity);
-    }
-
-    return GLOBUS_TRUE;
 }
 
 globus_bool_t

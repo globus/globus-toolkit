@@ -323,6 +323,7 @@ globus_i_io_securesocket_register_accept(
             info->err = err;
             GlobusTimeReltimeSet(delay_time, 0, 0);
             globus_callback_space_register_oneshot(
+                GLOBUS_NULL,
                 &delay_time,
                 globus_l_io_oneshot_auth_callback,
                 (void *) info,
@@ -361,6 +362,7 @@ globus_i_io_securesocket_register_accept(
             info->err = err;
             GlobusTimeReltimeSet(delay_time, 0, 0);
             globus_callback_space_register_oneshot(
+                GLOBUS_NULL,
                 &delay_time,
                 globus_l_io_oneshot_auth_callback,
                 (void *) info,

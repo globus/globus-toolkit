@@ -69,7 +69,8 @@ int main()
 	done = GLOBUS_FALSE;
 
         GlobusTimeReltimeSet(delay_time, tests[i][0], 0);	
-	globus_callback_register_oneshot(&delay_time,
+	globus_callback_register_oneshot(GLOBUS_NULL,
+	                                 &delay_time,
 					 wakeup_func,
 					 GLOBUS_NULL,
 					 GLOBUS_NULL,

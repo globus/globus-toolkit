@@ -196,9 +196,13 @@ globus_i_io_attr_activate(void)
     globus_l_io_fileattr_default.file_type = GLOBUS_IO_FILE_TYPE_BINARY;
 }
 
-
+/**
+ * @name Callback Spaces
+ * */
+/* @{ */
 /**
  * globus_io_attr_set_callback_space
+ * @ingroup attr
  *
  * Use this to associate a callback space with a globus_io_handle_t.  When
  * a space is associated with a globus io handle, all callbacks that are 
@@ -255,6 +259,7 @@ globus_io_attr_set_callback_space(
 
 /**
  * globus_io_attr_get_callback_space
+ * @ingroup attr
  *
  * Use this to get the callback space associated with a globus_io_attr_t. 
  *
@@ -303,6 +308,7 @@ globus_io_attr_get_callback_space(
     
     return GLOBUS_SUCCESS;
 }
+/* @} */
 
 /****************************************************************
  *                      NETLOGGER

@@ -1679,7 +1679,7 @@ g_receive_data(
             if ((buf = (globus_byte_t *) globus_malloc(buffer_size)) == NULL)
             {
                 transflag = 0;
-		globus_callback_register_cancel_periodic(
+		globus_callback_unregister(
 		    g_monitor.callback_handle,
 		    GLOBUS_NULL,
 		    GLOBUS_NULL);
@@ -1735,7 +1735,7 @@ g_receive_data(
         {
             alarm(0);
             g_force_close(cb_count);
-	    globus_callback_register_cancel_periodic(
+	    globus_callback_unregister(
 		    g_monitor.callback_handle,
 		    GLOBUS_NULL,
 		    GLOBUS_NULL);
@@ -1782,7 +1782,7 @@ g_receive_data(
 
     g_force_close(cb_count);
 
-    globus_callback_register_cancel_periodic(
+    globus_callback_unregister(
         g_monitor.callback_handle,
         GLOBUS_NULL,
         GLOBUS_NULL);
@@ -1805,7 +1805,7 @@ g_receive_data(
 
 
   file_err:
-    globus_callback_register_cancel_periodic(
+    globus_callback_unregister(
         g_monitor.callback_handle,
         GLOBUS_NULL,
         GLOBUS_NULL);
@@ -1824,7 +1824,7 @@ g_receive_data(
 
   clean_exit:
     G_File_Close(&g_monitor.io_handle, 0);
-    globus_callback_register_cancel_periodic(
+    globus_callback_unregister(
         g_monitor.callback_handle,
         GLOBUS_NULL,
         GLOBUS_NULL);
