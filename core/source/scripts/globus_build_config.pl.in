@@ -183,7 +183,7 @@ B<globus_build_config.pl> makes sure that every library is listed only once.  Th
 
 Notice that in the After, -lm is listed only once near the end of the list.
 
-=head BUGS
+=head1 BUGS
 
 Circular dependencies between libraries are not supported.  These
 dependencies are usually resolved by listing one of the libraries
