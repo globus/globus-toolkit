@@ -89,9 +89,10 @@ gss_copy_name_to_name(
         for(i=0;i<sk_num(input->group);i++)
         {
             sk_insert(group,strdup(sk_value(input->group,i)),i);
-            ASN1_BIT_STRING_set_bit(
-                group_types,i,
-                ASN1_BIT_STRING_get_bit(input->group_types,i));
+            if(ASN1_BIT_STRING_get_bit(input->group_types,i))
+            {
+                ASN1_BIT_STRING_set_bit(group_types,i,1);
+            }
         }
     }
     
@@ -725,7 +726,7 @@ gs_retrieve_peer(
     STACK *                             group = NULL;
     ASN1_BIT_STRING *                   group_types = NULL;
     int                                 i;
-    int                                 j = 0;
+    int                                 j=0;
     int                                 cert_count;
     char *                              subgroup;
         
@@ -850,7 +851,7 @@ gs_retrieve_peer(
 
                     subgroup[asn1_oct_string->length] = '\0';
 
-                    sk_insert(group,subgroup,j);
+                    sk_push(group,subgroup);
                     j++;
                     
                     /* assume one extension per cert */
@@ -883,10 +884,10 @@ gs_retrieve_peer(
 
                     subgroup[asn1_oct_string->length] = '\0';
 
-                    sk_insert(group,subgroup,j);
+                    sk_push(group,subgroup);
                     ASN1_BIT_STRING_set_bit(group_types,j,1);
                     j++;
-                    
+
                     /* assume one extension per cert */
                 
                     break;
@@ -1051,6 +1052,7 @@ gss_create_and_fill_cred(
     STACK_OF(X509_EXTENSION) *          extensions;
     X509_EXTENSION *                    ex;
     X509 *                              cert;
+    X509 *                              previous_cert;
     ASN1_OBJECT *                       asn1_obj;
     ASN1_OCTET_STRING *                 asn1_oct_string;
     int                                 status;
@@ -1264,10 +1266,23 @@ gss_create_and_fill_cred(
     }
 
     cert = newcred->pcd->ucert;
+    previous_cert=NULL;
     cert_count--;
 
-        do
+    do
     {
+        if(previous_cert != NULL)
+        {
+            if(!X509_verify(previous_cert,X509_get_pubkey(cert)))
+            {
+                GSSerr(GSSERR_F_ACQUIRE_CRED,
+                       GSSERR_R_UNORDERED_CHAIN);
+                major_status = GSS_S_FAILURE;
+                goto err;
+            }
+        }
+
+        previous_cert = cert;
         extensions = cert->cert_info->extensions;
         
         for (i=0;i<sk_X509_EXTENSION_num(extensions);i++)
@@ -1305,9 +1320,9 @@ gss_create_and_fill_cred(
 
                 subgroup[asn1_oct_string->length] = '\0';
 
-                sk_insert(newcred->globusid->group,subgroup,j);
+                sk_push(newcred->globusid->group,subgroup);
                 j++;
-                    
+                
                 /* assume one extension per cert */
                 
                 break;
@@ -1338,10 +1353,11 @@ gss_create_and_fill_cred(
                 
                 subgroup[asn1_oct_string->length] = '\0';
 
-                sk_insert(newcred->globusid->group,subgroup,j);
-                ASN1_BIT_STRING_set_bit(newcred->globusid->group_types,j,1);
+                sk_push(newcred->globusid->group,subgroup);
+                ASN1_BIT_STRING_set_bit(newcred->globusid->group_types,
+                                        j,1);
                 j++;
-                    
+                
                 /* assume one extension per cert */
                 
                 break;

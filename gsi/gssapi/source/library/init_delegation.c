@@ -341,11 +341,11 @@ proxy_extension_create(
     }
     else if(g_OID_equal(extension_oid, gss_trusted_group))
     {
-        asn1_obj = OBJ_txt2obj("TRUSTED_GROUP",0);   
+        asn1_obj = OBJ_txt2obj("TRUSTEDGROUP",0);   
     }
     else if(g_OID_equal(extension_oid, gss_untrusted_group))
     {
-        asn1_obj = OBJ_txt2obj("UNTRUSTED_GROUP",0);   
+        asn1_obj = OBJ_txt2obj("UNTRUSTEDGROUP",0);   
     }
     else
     {

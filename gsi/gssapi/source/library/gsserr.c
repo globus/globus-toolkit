@@ -106,6 +106,7 @@ static ERR_STRING_DATA gsserr_str_reasons[]=
  {GSSERR_R_REMOTE_CERT_VERIFY_FAILED, "remote side did not "
   "like my creds for unknown reason\n     check server logs for details"},
  {GSSERR_R_OUT_OF_MEMORY, "Out of memory"},
+ {GSSERR_R_UNORDERED_CHAIN, "Cert chain not in signing order"},
  {0,NULL}
 };
 

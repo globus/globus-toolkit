@@ -146,6 +146,7 @@ CVS Information:
 #define GSSERR_R_REMOTE_CERT_VERIFY_FAILED      GSSERR_R_BASE + 23
 #define GSSERR_R_OUT_OF_MEMORY                  GSSERR_R_BASE + 24
 #define GSSERR_R_BAD_NAME                       GSSERR_R_BASE + 25
+#define GSSERR_R_UNORDERED_CHAIN                GSSERR_R_BASE + 26
 /* NOTE: Don't go over 1000 here or will conflict with errors in sslutils.h */
 
 /* Old error codes in case anyone is using them */

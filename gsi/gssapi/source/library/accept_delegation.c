@@ -186,8 +186,6 @@ GSS_CALLCONV gss_accept_delegation(
 
         cert_chain = sk_X509_new_null();
 
-        /* probably messing up the cert chain */
-        
         for(i=0;i<cert_chain_length;i++)
         {
             sk_X509_insert(cert_chain,

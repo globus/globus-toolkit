@@ -106,6 +106,7 @@ static int gss_l_compare_group(
     const gss_name_desc *               name2)
 {
     int                                 i;
+    int                                 j;
     int                                 num_group_elements1;
     int                                 num_group_elements2;
 
@@ -168,18 +169,21 @@ static int gss_l_compare_group(
 
         if(num_group_elements1 < num_group_elements2)
         {
-            for(i=0;i<num_group_elements1;i++)
+            j = num_group_elements2;
+            
+            for(i=num_group_elements1-1;i>=0;i--)
             {
+                j--;
                 if(ASN1_BIT_STRING_get_bit(name1->group_types,i) !=
-                   ASN1_BIT_STRING_get_bit(name2->group_types,i) ||
+                   ASN1_BIT_STRING_get_bit(name2->group_types,j) ||
                    strcmp(sk_value(name1->group,i),
-                          sk_value(name2->group,i)))
+                          sk_value(name2->group,j)))
                 {
                     return 0;
                 }
             }
 
-            for(i=num_group_elements1;i<num_group_elements2;i++)
+            for(i=0;i<num_group_elements2-num_group_elements1;i++)
             {
                 if(ASN1_BIT_STRING_get_bit(name2->group_types,i))
                 {
@@ -189,20 +193,22 @@ static int gss_l_compare_group(
         }
         else
         {
-            for(i=0;i<num_group_elements2;i++)
+            j = num_group_elements1;
+            for(i=num_group_elements2-1;i>=0;i--)
             {
-                if(ASN1_BIT_STRING_get_bit(name1->group_types,i) !=
+                j--;
+                if(ASN1_BIT_STRING_get_bit(name1->group_types,j) !=
                    ASN1_BIT_STRING_get_bit(name2->group_types,i) ||
-                   strcmp(sk_value(name1->group,i),
+                   strcmp(sk_value(name1->group,j),
                           sk_value(name2->group,i)))
                 {
                     return 0;
                 }
             }
             
-            for(i=num_group_elements2;i<num_group_elements1;i++)
+            for(i=0;i<num_group_elements1-num_group_elements2;i++)
             {
-                if(ASN1_BIT_STRING_get_bit(name2->group_types,i))
+                if(ASN1_BIT_STRING_get_bit(name1->group_types,i))
                 {
                     return 0;
                 }
