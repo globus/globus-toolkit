@@ -116,7 +116,7 @@ typedef enum
 typedef struct globus_gass_copy_performance_s
 {
     globus_gass_copy_status_t status;
-    int                       bytes_transfered;
+    unsigned long   bytes_transfered;
     int             transfer_rate;
 } globus_gass_copy_performance_t;
 

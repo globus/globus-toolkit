@@ -131,7 +131,7 @@ typedef struct globus_i_gass_copy_state_target_s
     /**
      * The total number of bytes transfered
      */
-    int                                         n_bytes_transfered;
+    unsigned long                               n_bytes_transfered;
 
     /**
      * The total number of bytes transfered in this time period.
