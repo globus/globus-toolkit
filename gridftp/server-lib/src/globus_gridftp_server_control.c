@@ -1521,6 +1521,7 @@ globus_l_gsc_command_callout(
                 the command does not exist */
             if(op->cmd_list == NULL)
             {
+                globus_i_gsc_op_destroy(op);
                 res = globus_l_gsc_final_reply(server_handle, msg);
                 done = GLOBUS_TRUE;
             }
