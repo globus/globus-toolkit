@@ -19,6 +19,7 @@ static char *rcsid = "$Header$";
 
 #include "gssapi_ssleay.h"
 #include "gssutils.h"
+#include <string.h>
 
 static X509_EXTENSION *
 proxy_extension_create(
@@ -190,7 +191,6 @@ GSS_CALLCONV gss_init_delegation(
                 {
                     GSSerr(GSSERR_F_INIT_SEC,GSSERR_R_ADD_EXT);
                     major_status = GSS_S_FAILURE;
-                    /* free ex here ? */
                     goto err;
                 }
             }
@@ -248,9 +248,8 @@ GSS_CALLCONV gss_init_delegation(
         /* push the cert used to sign the proxy */
         
         i2d_X509_bio(context->gs_sslbio,cred->pcd->ucert);
-        
-        context->delegation_state = GS_DELEGATION_START; /* reset state
-                                                    machine */
+        /* reset state machine */
+        context->delegation_state = GS_DELEGATION_START; 
         X509_free(ncert);
         ncert = NULL;
         break;

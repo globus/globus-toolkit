@@ -23,6 +23,7 @@ static char *rcsid = "$Header$";
 #include "gssapi_ssleay.h"
 #include "gssutils.h"
 #include <ctype.h>
+#include <string.h>
 
 /**********************************************************************
                                Type definitions

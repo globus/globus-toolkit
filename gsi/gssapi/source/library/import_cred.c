@@ -68,7 +68,6 @@ GSS_CALLCONV gss_import_cred(
 {
     OM_uint32                           major_status = 0;
     BIO *                               bp = NULL;
-    int                                 rc = 0;
     char *                              filename;
     FILE *                              fp;
     

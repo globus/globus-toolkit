@@ -22,6 +22,7 @@ static char *rcsid = "$Header$";
 
 #include "gssapi.h"
 #include "gssapi_ssleay.h"
+#include "gssutils.h"
 #include <stdlib.h>
 #include <sys/stat.h>
 
@@ -69,11 +70,7 @@ GSS_CALLCONV gss_acquire_cred(
     gss_OID_set *                       actual_mechs,
     OM_uint32 *                         time_rec) 
 {
-    gss_cred_id_desc **                 output_cred_handle = 
-        (gss_cred_id_desc **) output_cred_handle_P ;
     OM_uint32                           major_status = GSS_S_NO_CRED;
-    gss_cred_id_desc *                  newcred ;
-    int                                 status;
 
 #ifdef DEBUG
     fprintf(stderr,"acquire_cred:usage=%d\n",cred_usage);

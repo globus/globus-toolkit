@@ -19,6 +19,7 @@ static char *rcsid = "$Header$";
 
 #include "gssapi_ssleay.h"
 #include "gssutils.h"
+#include <string.h>
 
 OM_uint32
 GSS_CALLCONV gss_inquire_sec_context_by_oid(

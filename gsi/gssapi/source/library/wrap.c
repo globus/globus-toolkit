@@ -26,6 +26,7 @@ static char *rcsid = "$Header$";
 #include "gssapi.h"
 #include "gssutils.h"
 #include "gssapi_ssleay.h"
+#include <string.h>
 
 /**********************************************************************
                                Type definitions
@@ -219,8 +220,6 @@ GSS_CALLCONV gss_wrap
 {
  
 	gss_ctx_id_desc  *context = (gss_ctx_id_desc *)context_handle; 
-	int 			md_size;
-	SSL3_RECORD		save_rec;
 	gss_buffer_desc mic_buf_desc;
 	gss_buffer_t    mic_buf = (gss_buffer_desc *) &mic_buf_desc;
 	OM_uint32  major_status;

@@ -116,8 +116,6 @@ GSS_CALLCONV gss_accept_delegation(
         return major_status;
     }
 
-    /* need to check for errors and mem leaks */
-    
     switch(context->delegation_state)
     {
 
@@ -191,11 +189,16 @@ GSS_CALLCONV gss_accept_delegation(
                                                 NULL);
         sk_X509_pop_free(cert_chain, X509_free);
 
-        /* do I need to free key and cert here if major_status !=
-         * GSS_S_COMPLETE ?
-         */
+        /* reset state machine */
         
         context->delegation_state = GS_DELEGATION_START;
+
+        if(major_status != GSS_S_COMPLETE)
+        {
+            X509_free(dcert);
+            EVP_PKEY_free(context->dpkey);
+            goto err;
+        }
     }
 
     /* returns empty token when there is no output */

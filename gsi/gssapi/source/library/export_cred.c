@@ -25,6 +25,7 @@ static char *rcsid = "$Header$";
 
 #include "gssapi_ssleay.h"
 #include "gssutils.h"
+#include <string.h>
 
 /* Only build if we have the extended GSSAPI */
 /* See gssapi.hin for details */
@@ -64,7 +65,6 @@ GSS_CALLCONV gss_export_cred(
 {
     OM_uint32                           major_status = 0;
     BIO *                               bp = NULL;
-    int                                 rc;
     gss_cred_id_desc *                  cred_desc;
 
     cred_desc = (gss_cred_id_desc *) cred_handle;
@@ -110,11 +110,11 @@ GSS_CALLCONV gss_export_cred(
 	
         bp = BIO_new(BIO_s_mem());
 	
-        if (rc = proxy_marshal_bp(bp,
-                                  cred_desc->pcd->ucert,	
-                                  cred_desc->pcd->upkey,
-                                  NULL,
-                                  cred_desc->pcd->cert_chain))
+        if (proxy_marshal_bp(bp,
+                             cred_desc->pcd->ucert,	
+                             cred_desc->pcd->upkey,
+                             NULL,
+                             cred_desc->pcd->cert_chain))
         {
             GSSerr(GSSERR_F_EXPORT_CRED,GSSERR_R_EXPORT_FAIL);
             *minor_status = GSSERR_R_EXPORT_FAIL;
@@ -147,11 +147,11 @@ GSS_CALLCONV gss_export_cred(
     }
     else if(option_req == 1)
     {
-        if (rc = proxy_marshal_tmp(cred_desc->pcd->ucert,	
-                                   cred_desc->pcd->upkey,
-                                   NULL,
-                                   cred_desc->pcd->cert_chain,
-                                   &(export_buffer->value)))
+        if (proxy_marshal_tmp(cred_desc->pcd->ucert,	
+                              cred_desc->pcd->upkey,
+                              NULL,
+                              cred_desc->pcd->cert_chain,
+                              &(export_buffer->value)))
         {
             GSSerr(GSSERR_F_EXPORT_CRED,GSSERR_R_EXPORT_FAIL);
             *minor_status = GSSERR_R_EXPORT_FAIL;

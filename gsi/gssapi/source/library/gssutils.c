@@ -22,6 +22,7 @@ static char *rcsid = "$Header$";
 
 #include "gssapi_ssleay.h"
 #include "gssutils.h"
+#include "sslutils.h"
 #include <string.h>
 #include <stdlib.h>
 
@@ -840,7 +841,6 @@ gss_create_and_fill_cred(
 
     {
         int n;
-        int m;
         int i;
         int j;
         SSL_CIPHER * cipher;
