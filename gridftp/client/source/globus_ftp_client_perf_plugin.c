@@ -201,10 +201,9 @@ perf_plugin_data_cb(
 
     if(ps->use_data && !error)
     {
-        time_now = time(NULL);
-
         globus_mutex_lock(&ps->lock);
 
+        time_now = time(NULL);
         ps->nbytes += length;
 
         if(ps->marker_cb && time_now > ps->last_time)
