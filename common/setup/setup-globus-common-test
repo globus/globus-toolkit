@@ -11,12 +11,12 @@ fi
 
 . $GLOBUS_LOCATION/libexec/globus-sh-tools.sh
 
-if test "x$GLOBUS_PERL" = "x"; then
-    echo "ERROR Please specify GLOBUS_PERL" >&2
+if test "x$GLOBUS_SH_PERL" = "x"; then
+    echo "ERROR Please specify GLOBUS_SH_PERL" >&2
     exit 1
 fi
 
-PERL="$GLOBUS_PERL"
+PERL="$GLOBUS_SH_PERL"
 
 for i in $GLOBUS_LOCATION/test/globus_common*.pl \
          $GLOBUS_LOCATION/test/run-common-tests.pl; do

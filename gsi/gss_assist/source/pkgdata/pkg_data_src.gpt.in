@@ -3,7 +3,7 @@
 
 <gpt_package_metadata Name="globus_gss_assist" Format_Version="0.02">
 
-  <Aging_Version Major="2" Minor="0" Age="0"/>
+  <Aging_Version Major="2" Minor="1" Age="0"/>
   <Description >GSSAPI Assist library</Description>
   <Functional_Group >Security</Functional_Group>
   <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@" />
