@@ -228,7 +228,7 @@ extern int port_allowed(const char *remoteaddr);
     char *String;
     int Number;
     struct {
-	int mode;
+	char mode;
 	off_t offset;
 	off_t length;
     } estor_eret;
@@ -637,8 +637,10 @@ cmd: USER SP username CRLF
     | ERET check_login SP eret_mode SP pathname CRLF
 	=	{
 	    if (log_commands)
-		syslog(LOG_INFO, "ERET %c %d %d %s", $4.mode,
-		       $4.offset, $4.length, CHECKNULL($6));
+		syslog(
+		    LOG_INFO,
+		    "ERET %c %" GLOBUS_OFF_T_FORMAT " %" GLOBUS_OFF_T_FORMAT " %s",
+		    $4.mode,$4.offset, $4.length, CHECKNULL($6));
 	    if ($2 && $6 != NULL && !restrict_check($6)) {
 		retrieve_is_data = 1;
 		retrieve((char *) NULL, $6, $4.offset, $4.length);
@@ -649,7 +651,7 @@ cmd: USER SP username CRLF
     | ESTO check_login SP esto_mode SP pathname CRLF
         =	{
 	    if (log_commands)
-		syslog(LOG_INFO, "ESTO %c %d %s", $4.mode, $4.offset, CHECKNULL($6));
+		syslog(LOG_INFO, "ESTO %c %" GLOBUS_OFF_T_FORMAT " %s", $4.mode, $4.offset, CHECKNULL($6));
 	    if ($2 && $6 != NULL && !restrict_check($6))
 		store($6, "r+", 0, (int) $4.offset);
 	    if ($6 != NULL)
@@ -1781,14 +1783,14 @@ bufsize: NUMBER
 
 esto_mode: A SP OFFSET
     =	        {
-	$$.mode = A;
+	$$.mode = 'A';
 	$$.offset = $3;
     }
     ;
 
 eret_mode: P SP OFFSET SP LENGTH
     =	        {
-	$$.mode = P;
+	$$.mode = 'P';
 	$$.offset = $3;
 	$$.length = $5;
     }
