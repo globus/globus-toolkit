@@ -2,14 +2,15 @@
 <!DOCTYPE gpt_package_metadata SYSTEM "globus_package.dtd">
 
 <gpt_package_metadata Name="globus_user_env" Format_Version="0.02">
-<Aging_Version Major="2" Minor="0" Age="0"/>
-<Description>
-</Description>
-<Version_Stability Release="experimental"/>
-<src_pkg>
 
-<With_Flavors build="no" />
+  <Aging_Version Major="2" Minor="0" Age="0"/>
+  <Description>User Environment Support</Description>
+  <Functional_Group >Miscellaneous</Functional_Group>
+  <Version_Stability Release="alpha" />
 
-</src_pkg>
+  <src_pkg>
+    <With_Flavors build="no" />
+  </src_pkg>
+
 </gpt_package_metadata>
 
