@@ -103,6 +103,10 @@ The MyProxy username need not correspond to a real Unix username.
 Specifies the lifetime of the credential stored on the
 .BR myproxy-server (8)
 in hours.  Default: 1 week (168 hours)
+Specify 
+.I 0
+for the maximum possible lifetime, i.e., the lifetime of
+the original credential.
 .TP
 .BI -t " hours, " --proxy_lifetime " hours"
 Specifies the maximum lifetime of credentials retrieved from the
