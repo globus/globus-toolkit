@@ -46,7 +46,8 @@ all:
 	@CPLN@ src/ftpcount bin/ftpwho
 	@CPLN@ src/ckconfig bin
 	@CPLN@ src/ftprestart bin
-	size bin/ftpd bin/ftpshut bin/ftpcount bin/ftpwho bin/ckconfig bin/ftprestart
+	@CPLN@ src/ftpmlsd bin
+	size bin/ftpd bin/ftpshut bin/ftpcount bin/ftpwho bin/ckconfig bin/ftprestart bin/ftpmlsd
 	if test -n "$(DOXYGEN)"; then \
 	    $(DOXYGEN) Doxyfile ; \
 	fi
@@ -90,6 +91,7 @@ install: all
 	@INSTALL_PROGRAM@ -m 755 bin/ftpwho $(DESTDIR)@bindir@/ftpwho
 	@INSTALL_PROGRAM@ -m 755 bin/ckconfig $(DESTDIR)@sbindir@/ckconfig
 	@INSTALL_PROGRAM@ -m 755 bin/ftprestart $(DESTDIR)@sbindir@/ftprestart
+	@INSTALL_PROGRAM@ -m 755 bin/ftpmlsd $(DESTDIR)@bindir@/ftpmlsd
 	@INSTALL_PROGRAM@ -m 755 util/privatepw/privatepw $(DESTDIR)@sbindir@/privatepw
 	@echo installing manpages.
 	-@mkdir -p $(mandir)

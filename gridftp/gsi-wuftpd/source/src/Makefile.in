@@ -70,13 +70,13 @@ GSSAPI_OBJS = $(GSSAPI_SRC:.c=.o)
 AFS_SRC = @AFS_SRC@
 AFS_OBJS = $(AFS_SRC:.c=.o)
 
-SRCS   = ${UTIL_OBJS} mlsd.c mlsx.c mlst.c ftpd.c ftpcmd.c glob.c logwtmp.c popen.c access.c \
+SRCS   = ${UTIL_OBJS} ftpmlsd.c mlsx.c ftpd.c ftpcmd.c glob.c logwtmp.c popen.c access.c \
 	extensions.c realpath.c acl.c private.c authenticate.c conversions.c \
 	rdservers.c paths.c hostacc.c sigfix.c auth.c routevector.c \
 	restrict.c domain.c wu_fnmatch.c timeout.c getpwnam.c globus_hack.c \
 	$(GSSAPI_SRC) $(AFS_SRC)
 
-OBJS   = ${UTIL_OBJS} mlsx.o mlst.o ftpd.o ftpcmd.o glob.o logwtmp.o popen.o access.o \
+OBJS   = ${UTIL_OBJS} mlsx.o ftpd.o ftpcmd.o glob.o logwtmp.o popen.o access.o \
 	extensions.o realpath.o acl.o private.o authenticate.o conversions.o \
 	rdservers.o paths.o hostacc.o sigfix.o auth.o routevector.o \
 	restrict.o domain.o wu_fnmatch.o timeout.o getpwnam.o globus_hack.o \
@@ -85,7 +85,7 @@ OBJS   = ${UTIL_OBJS} mlsx.o mlst.o ftpd.o ftpcmd.o glob.o logwtmp.o popen.o acc
 .c.o:
 	$(COMPILE) $(CFLAGS) -I. -I.. -I$(srcdir) -I$(srcdir)/.. -I../support -c -o $@ $<
 
-all: ftpd ftpcount ftpshut ftprestart ckconfig mlsd
+all: ftpd ftpcount ftpshut ftprestart ckconfig ftpmlsd
 
 ${OBJS}: config.h ../config.h pathnames.h
 
@@ -99,8 +99,8 @@ ftpcount: ${UTIL_OBJS} ftpcount.o
 ftpshut: ${UTIL_OBJS} ftpshut.o rdservers.o 
 	$(LINK) $(CFLAGS) -o $@ ${UTIL_OBJS} ftpshut.o rdservers.o -L../support $(LDFLAGS) $(LIBS)
 
-mlsd: ${UTIL_OBJS} mlsd.o mlsx.o
-	$(LINK) $(CFLAGS) -o $@ ${UTIL_OBJS} mlsx.o mlsd.o -L../support $(LDFLAGS) $(LIBS)
+ftpmlsd: ${UTIL_OBJS} ftpmlsd.o mlsx.o ftpd.o
+	$(LINK) $(CFLAGS) -o $@ ${UTIL_OBJS} ftpd.o mlsx.o mlsd.o -L../support $(LDFLAGS) $(LIBS)
 
 ftprestart: ${UTIL_OBJS} ftprestart.o rdservers.o 
 	$(LINK) $(CFLAGS) -o $@ ${UTIL_OBJS} ftprestart.o rdservers.o -L../support $(LDFLAGS) $(LIBS)
@@ -114,7 +114,7 @@ ftpd: ${OBJS}
 vers.c: version.h
 
 clean:
-	rm -f ${OBJS} ftpd ftpcmd.c ftpshut ftpshut.o 
+	rm -f ${OBJS} ftpd ftpcmd.c ftpshut ftpshut.o ftpmlsd ftpmlsd.o
 	rm -f ftprestart ftprestart.o ftpcount ftpcount.o
 	rm -f core index index.o ckconfig ckconfig.o *.lo
 	rm -rf .libs

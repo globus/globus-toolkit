@@ -863,59 +863,66 @@ cmd: USER SP username CRLF
 #endif
 	}
     | MLST check_login CRLF
-	=	{
-	    if(exit_at == MLST)
-	    {
-		dologout(0);
-	    }
-	    if (log_commands)
-		syslog(LOG_INFO, "mlst dummy");
-        mlst(getcwd((char *)0, 2048),get_mlsx_options());
-	}
-
-    | MLST check_login SP pathname CRLF
-	=	{
-	    if(exit_at == MLST)
-	    {
-		dologout(0);
-	    }
-	    if (log_commands)
-		syslog(LOG_INFO, "mlst dummy");
-        mlst($4,get_mlsx_options());
-	}
-
-
-    | MLSD check_login CRLF
-	=	{
-        char *workStr = malloc(2048);
-        sprintf(workStr, "%s %s", get_mlsx_options(), getcwd((char *)0, 2048));
+        =       {
+            if(exit_at == MLST)
+            {
+                dologout(0);
+            }
+            if(log_commands)
+                syslog(LOG_INFO, "MLST");
+            if($2 && !restrict_check("."))
+            {
+                mlst(NULL);
+            }
+        }
         
-	    if(exit_at == MLST)
-	    {
-		dologout(0);
-	    }
-	    if (log_commands)
-		syslog(LOG_INFO, "MLSD");
-        retrieve("mlsd %s",workStr,-1,-1);
-	}
+    | MLST check_login SP pathname CRLF
+        =       {
+            if(exit_at == MLST)
+            {
+                dologout(0);
+            }
+            if (log_commands)
+                syslog(LOG_INFO, "MLST %s", CHECKNULL($4));
+            if($2 && $4 && !restrict_check($4))
+            {
+                mlst($4);
+            }
+            if($4 != NULL)
+                free($4);
+        }
+        
+    | MLSD check_login CRLF
+        =       {
+            if(exit_at == MLSD)
+            {
+                dologout(0);
+            }
+            if(log_commands)
+                syslog(LOG_INFO, "MLSD");
+            if($2 && !restrict_check("."))
+            {
+                retrieve_is_data = 0;
+                mlsd(NULL);
+            }
+        }
+        
     | MLSD check_login SP pathname CRLF
-	=	{
-        char *workStr = malloc(2048);
-        sprintf(workStr, "%s %s", get_mlsx_options(), $4);
-
-	    if(exit_at == LIST)
-	    {
-		dologout(0);
-	    }
-	    if (log_commands)
-		syslog(LOG_INFO, "LIST %s", CHECKNULL($4));
-	    if ($2 && $4 != NULL && !restrict_list_check($4)) {
-		retrieve_is_data = 0;
-        retrieve("mlsd %s", workStr, -1, -1);
-	    }
-	    if ($4 != NULL)
-		free($4);
-	}
+        =       {
+        if(exit_at == MLSD)
+            {
+                dologout(0);
+            }
+            if (log_commands)
+                syslog(LOG_INFO, "MLSD %s", CHECKNULL($4));
+            if($2 && $4 && !restrict_list_check($4))
+            {
+                retrieve_is_data = 0;
+                mlsd($4);
+            }
+            if($4 != NULL)
+                free($4);
+        }
 
     | LIST check_login CRLF
 	=	{
@@ -1920,9 +1927,8 @@ opts:
     {
         mlsx_options($4);
     }
-
+    |
     SP RETR SP retr_option_list 
-    
     ;
 
 byte_range_list:
@@ -3039,23 +3045,6 @@ int yylex(void)
 		cbuf[cpos] = c;
 		return DELAYED_PASV;
 	    }
-        /*
-	    else if(strcasecmp(cp, "mlst" == 0)
-	    {
-		cbuf[cpos] = c;
-		return MLST;
-	    }
-	    else if(strcasecmp(cp, "mlsd") == 0)
-	    {
-		cbuf[cpos] = c;
-		return MLSD;
-	    }
-	    else if(strcasecmp(cp, "mlsx") == 0)
-	    {
-		cbuf[cpos] = c;
-		return MLSX;
-	    }
-        */
 	    else
 	    {
 		yylval.String = copy(cp);
