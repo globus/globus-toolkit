@@ -8,6 +8,7 @@ SUBDIRS = \
 	doxygen
 
 Scripts = \
+	TESTS.pl \
 	globus-io-authorization-test.pl \
         globus-io-file-test.pl \
         globus-io-tcp-test.pl \
