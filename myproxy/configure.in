@@ -30,12 +30,12 @@ AC_SUBST(MYPROXY_CLIENT_DIR)
 
 
 AC_MSG_CHECKING(for GSI installation path)
-GSI_INSTALL_PATH=""
+GSI_INSTALL_PATH="$GLOBUS_LOCATION"
 GLOBUS_FLAVOR=""
 
-dnl --with-globus
-AC_ARG_WITH(globus,
-	[  --with-globus=PATH           Specify Globus install path (for GSI)],
+dnl --with-gsi
+AC_ARG_WITH(gsi,
+	[  --with-gsi=PATH              Specify GSI install path],
 	GSI_INSTALL_PATH=$withval)
 
 dnl --with-globus-flavor
@@ -43,14 +43,9 @@ AC_ARG_WITH(globus-flavor,
 	[  --with-globus-flavor=FLAVOR  Specify Globus build flavor],
 	GLOBUS_FLAVOR=$withval)
 
-dnl --with-gsi
-AC_ARG_WITH(gsi,
-	[  --with-gsi=PATH              Specify GSI install path],
-	GSI_INSTALL_PATH=$withval)
-
 dnl Check GSI_INSTALL_PATH
 if test -z "${GSI_INSTALL_PATH}" ; then
-	AC_MSG_ERROR(Must specify --with-gsi or --with-globus)
+	AC_MSG_ERROR(Must set GLOBUS_LOCATION or specify --with-gsi)
 fi
 
 if test ! -d "${GSI_INSTALL_PATH}" ; then
