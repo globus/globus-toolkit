@@ -9,7 +9,7 @@
 /*
  * myproxy_read_passphrase()
  *
- * Issue a standard prompt and read the pass phrase from standard in
+ * Issue a standard prompt and read the pass phrase from the tty
  * and place it into the given buffer with length given by buffer_len.
  * If pass phrase is greater than buffer_len bytes, it is silently
  * truncated.
@@ -20,6 +20,14 @@ int myproxy_read_passphrase(char		*buffer,
 			    int			buffer_len);
 
 /*
+ * myproxy_read_passphrase_stdin()
+ *
+ * Same as myproxy_read_passphrase() except reads pass phrase from stdin.
+ */
+int myproxy_read_passphrase_stdin(char		*buffer,
+				  int		buffer_len);
+
+/*
  * myproxy_read_verified_passphrase()
  *
  * Same as myproxy_read_passphrase except the user is prompted
@@ -27,6 +35,5 @@ int myproxy_read_passphrase(char		*buffer,
  */
 int myproxy_read_verified_passphrase(char	*buffer,
 				     int	buffer_len);
-
 
 #endif /* _MYPROXY_READ_PASS_H */

@@ -41,6 +41,7 @@ static char usage[] = \
 "       -X | --match_cn_only              Set CN matching mode (default)\n"
 "                                         for following policy options\n"
 "       -n | --no_passphrase              Disable passphrase authentication\n"
+"       -S | --stdin_pass                 Read passphrase from stdin\n"
 "       -d | --dn_as_username             Use the proxy certificate subject\n"
 "                                         (DN) as the default username,\n"
 "                                         instead of the LOGNAME env. var.\n"
@@ -69,17 +70,19 @@ struct option long_options[] =
   {"match_cn_only", 	    no_argument, NULL, 'X'},
   {"credname",	      required_argument, NULL, 'k'},
   {"creddesc",	      required_argument, NULL, 'K'},
+  {"stdin_pass",            no_argument, NULL, 'S'},
   {0, 0, 0, 0}
 };
 
 /*colon following an option indicates option takes an argument */
-static char short_options[] = "uhD:s:p:t:c:l:vVndr:R:xXaAk:K:";
+static char short_options[] = "uhs:p:t:c:l:vVndr:R:xXaAk:K:S";
 
 static char version[] =
 "myproxy-init version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
 
 static int use_empty_passwd = 0;
 static int dn_as_username = 0;
+static int read_passwd_from_stdin = 0;
 
 /* Function declarations */
 int init_arguments(int argc, char *argv[], 
@@ -173,10 +176,14 @@ main(int argc, char *argv[])
 
     /* Allow user to provide a passphrase */
     if (!use_empty_passwd) {
-	if (myproxy_read_verified_passphrase(client_request->passphrase,
-					     sizeof(client_request->passphrase)) == -1) {
-	    fprintf(stderr, "%s\n",
-		    verror_get_string());
+	int rval;
+	if (read_passwd_from_stdin) {
+	    rval = myproxy_read_passphrase_stdin(client_request->passphrase, sizeof(client_request->passphrase));
+	} else {
+	    rval = myproxy_read_verified_passphrase(client_request->passphrase, sizeof(client_request->passphrase));
+	}
+	if (rval == -1) {
+	    fprintf(stderr, "%s\n", verror_get_string());
 	    goto cleanup;
 	}
     }
@@ -401,6 +408,9 @@ init_arguments(int argc,
 	case 'K':  /*credential description*/
 	    request->creddesc = strdup (gnu_optarg);
 	    break;
+	case 'S':
+	    read_passwd_from_stdin = 1;
+	    break;
 
         default:  
 	    fprintf(stderr, usage);
@@ -436,7 +446,8 @@ grid_proxy_init(int seconds, const char *proxyfile) {
 
     hours = seconds / SECONDS_PER_HOUR;
     
-    sprintf(command, "grid-proxy-init -valid %d:0 -out %s", hours, proxyfile);
+    sprintf(command, "grid-proxy-init -valid %d:0 -out %s%s", hours, proxyfile,
+	    read_passwd_from_stdin ? " -pwstdin" : "");
     rc = system(command);
 
     return rc;

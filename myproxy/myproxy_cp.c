@@ -24,6 +24,7 @@ static char usage[] = \
 "                                         (DN) as the default username,\n"
 "                                         instead of the LOGNAME env. var.\n"
 "       -k | --credname        <name>     Specify credential name\n"
+"       -S | --stdin_pass                 Read passphrase from stdin\n"
 "\n";
 
 struct option long_options[] =
@@ -37,10 +38,11 @@ struct option long_options[] =
     {"version",                no_argument, NULL, 'V'},
     {"dn_as_username",   no_argument, NULL, 'd'},
     {"credname",	 required_argument, NULL, 'k'},
+    {"stdin_pass",             no_argument, NULL, 'S'},
     {0, 0, 0, 0}
 };
 
-static char short_options[] = "hus:p:l:t:vVdk:";
+static char short_options[] = "hus:p:l:t:vVdk:S";
 
 static char version[] =
 "myproxy-cp version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
@@ -57,12 +59,13 @@ init_arguments(int argc, char *argv[],
 #define my_setlinebuf(stream)	setvbuf((stream), (char *) NULL, _IOLBF, 0)
 
 static int dn_as_username = 0;
+static int read_passwd_from_stdin = 0;
 
 int
 main(int argc, char *argv[]) 
 {    
     char *pshost;
-    int requestlen, responselen; 
+    int requestlen, responselen, rval;
     char request_buffer[1024], response_buffer[1024];
     myproxy_socket_attrs_t *socket_attrs;
     myproxy_request_t      *client_request;
@@ -98,16 +101,28 @@ main(int argc, char *argv[])
 
     /*Accept credential passphrase*/
     fprintf (stdout, "Credential Passphrase:\n");
-    if (myproxy_read_passphrase(client_request->passphrase,
-				sizeof(client_request->passphrase)) == -1) {
+    if (read_passwd_from_stdin) {
+	rval = myproxy_read_passphrase_stdin(client_request->passphrase,
+					     sizeof(client_request->passphrase));
+    } else {
+	rval = myproxy_read_passphrase(client_request->passphrase,
+				       sizeof(client_request->passphrase));
+    }
+    if (rval == -1) {
 	fprintf(stderr, "Error reading passphrase\n");
 	return 1;
     }
 
     /* Accept new passphrase */
     fprintf (stdout, "\nNew Passphrase:\n");
-    if (myproxy_read_verified_passphrase (client_request->new_passphrase,
-			    sizeof(client_request->new_passphrase)) == -1) {
+    if (read_passwd_from_stdin) {
+	rval = myproxy_read_passphrase_stdin(client_request->new_passphrase,
+					     sizeof(client_request->new_passphrase));
+    } else {
+	rval = myproxy_read_verified_passphrase(client_request->new_passphrase,
+						sizeof(client_request->new_passphrase));
+    }
+    if (rval == -1) {
 	fprintf (stderr, "%s\n", verror_get_string());
 	return 1;
     }
@@ -245,6 +260,9 @@ init_arguments(int argc,
                        username instead of LOGNAME */
             dn_as_username = 1;
             break;
+	case 'S':
+	    read_passwd_from_stdin = 1;
+	    break;
         default:        /* print usage and exit */ 
 	    fprintf(stderr, usage);
 	    exit(1);
