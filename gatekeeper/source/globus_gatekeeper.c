@@ -1984,7 +1984,7 @@ failure(short failure_type, char * s)
 	case FAILED_NOLOGIN:
 	case FAILED_AUTHENTICATION:
 	default: 
-	    response = ("HTTP/1.1 404 Not Found\015\012"
+	    response = ("HTTP/1.1 500 Internal Server Error\015\012"
 			"Connection: close\015\012"
 			"\015\012");
 	    break;
