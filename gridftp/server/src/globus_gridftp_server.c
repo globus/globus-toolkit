@@ -505,6 +505,11 @@ globus_i_gfs_server_closed()
 {
     globus_result_t                     result;
     
+
+    if(globus_i_gfs_config_bool("inetd"))
+    {
+        exit(0);
+    }
     globus_mutex_lock(&globus_l_gfs_mutex);
     {
         if(--globus_l_gfs_open_count == 0 && globus_l_gfs_terminated)

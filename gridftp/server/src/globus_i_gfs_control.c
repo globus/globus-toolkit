@@ -65,7 +65,6 @@ globus_l_gfs_channel_close_cb(
     
     globus_free(instance->remote_contact);
     globus_free(instance);
-    
     globus_i_gfs_server_closed();
 }
 

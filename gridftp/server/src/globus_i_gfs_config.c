@@ -383,6 +383,7 @@ globus_l_config_loadfile(
     out_buf = (char *) malloc((file_len + 1) * sizeof(char));	
     if(!out_buf)
     {
+        fclose(file);
         goto error;
     }
 
