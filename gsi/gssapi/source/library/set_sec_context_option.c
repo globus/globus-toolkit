@@ -62,7 +62,7 @@ gss_set_sec_context_option(
 
     *minor_status = 0;
     
-    if(context == NULL)
+    if(context_handle == NULL)
     {
         GSSerr(GSSERR_F_SET_SEC_CONTEXT_OPT,GSSERR_R_BAD_ARGUMENT);
         *minor_status = gsi_generate_minor_status();
