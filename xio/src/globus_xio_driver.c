@@ -1818,3 +1818,118 @@ globus_xio_driver_set_attr(
     return GLOBUS_SUCCESS;
 }
 
+void
+globus_xio_operation_block_timeout(
+    globus_xio_operation_t              op)
+{
+    op->block_timeout = GLOBUS_TRUE;
+}
+
+void
+globus_xio_operation_unblock_timeout(
+    globus_xio_operation_t              op)
+{
+    op->block_timeout = GLOBUS_FALSE;
+}
+
+void
+globus_xio_operation_refresh_timeout(
+    globus_xio_operation_t              op)
+{
+    op->progress = GLOBUS_TRUE;
+}
+
+/** returns true if operation already canceled */
+globus_bool_t
+globus_xio_operation_enable_cancel(
+    globus_xio_operation_t              op,
+    globus_xio_driver_cancel_callback_t cb,
+    void *                              user_arg)
+{
+    globus_bool_t                       already_canceled;
+    globus_mutex_t *                    mutex;
+
+    if(op->type == GLOBUS_XIO_OPERATION_TYPE_ACCEPT)
+    {
+        mutex = &op->_op_server->mutex;
+    }
+    else
+    {
+        mutex = &op->_op_context->mutex;
+    }
+    
+    globus_mutex_lock(mutex);
+    {
+        already_canceled = op->canceled != 0;
+        if(op->canceled == 0)
+        {
+            op->cancel_cb = cb;
+            op->cancel_arg = user_arg;
+        }
+    }
+    globus_mutex_unlock(mutex);
+    
+    return already_canceled;
+}
+
+void
+globus_xio_operation_disable_cancel(
+    globus_xio_operation_t              op)
+{
+    globus_mutex_t *                    mutex;
+
+    if(op->type == GLOBUS_XIO_OPERATION_TYPE_ACCEPT)
+    {
+        mutex = &op->_op_server->mutex;
+    }
+    else
+    {
+        mutex = &op->_op_context->mutex;
+    }
+    
+    globus_mutex_lock(mutex);
+    {
+        op->cancel_cb = NULL;
+        op->cancel_arg = NULL;
+    }
+    globus_mutex_unlock(mutex);
+}
+
+globus_size_t
+globus_xio_operation_get_wait_for(
+    globus_xio_operation_t              op)
+{
+    return op->entry[op->ndx - 1]._op_ent_wait_for;
+}
+
+void *
+globus_xio_operation_get_driver_specific(
+    globus_xio_operation_t              op)
+{
+    return op->_op_context->entry[op->ndx - 1].driver_handle;
+}
+
+globus_xio_driver_handle_t
+globus_xio_operation_get_driver_handle(
+    globus_xio_operation_t              op)
+{
+    return &op->_op_context->entry[op->ndx];
+}
+
+void *
+globus_xio_operation_get_data_descriptor(
+    globus_xio_operation_t              op,
+    globus_bool_t                       force_create)
+{
+    if(op->entry[op->ndx - 1].dd == NULL && (op->is_user_dd || force_create))
+    {
+        /* need to create a dd */
+        if(op->_op_context->entry[op->ndx - 1].driver->attr_init_func(
+            &op->entry[op->ndx - 1].dd) != GLOBUS_SUCCESS)
+        {
+            op->entry[op->ndx - 1].dd = NULL;
+        }
+    }
+    
+    return op->entry[op->ndx - 1].dd;
+}

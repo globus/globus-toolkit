@@ -1,4 +1,3 @@
-#include "globus_i_xio.h"
 #include "globus_xio_driver.h"
 #include "globus_xio_udt_driver.h"
 #include "version.h"
@@ -6321,7 +6320,7 @@ globus_l_xio_udt_open(
 	goto error_open;	
     }
     
-    handle->driver_handle = GlobusXIOOperationGetDriverHandle(op);
+    handle->driver_handle = globus_xio_operation_get_driver_handle(op);
     if(handle->server)
     {
         globus_xio_contact_t            new_contact_info;
@@ -7148,7 +7147,7 @@ globus_l_xio_udt_read(
         handle->read_buf->user_iovec_count = iovec_count;
 	handle->user_read_op = op;
 	handle->read_buf->wait_for =
-	    GlobusXIOOperationGetWaitFor(handle->user_read_op);
+	    globus_xio_operation_get_wait_for(handle->user_read_op);
 	GlobusXIOUdtDebugPrintf(
 	    GLOBUS_L_XIO_UDT_DEBUG_INTERNAL_TRACE,
 	    ("inside read wait_for = %d len = %d\n",
@@ -8197,8 +8196,9 @@ error:
 static
 globus_result_t
 globus_l_xio_udt_server_init(
-    void **                             out_ds_server,
-    void *                              driver_attr)
+    void *                              driver_attr,
+    const globus_xio_contact_t *        contact_info,
+    globus_xio_operation_t              op)
 {
     globus_l_handle_t *			handle;
     globus_l_server_t *                 server;
@@ -8208,7 +8208,8 @@ globus_l_xio_udt_server_init(
     int					res;	
     globus_l_xio_udt_handshake_t *    handshake;
     int					handshake_size;
-    char*				cs;	
+    globus_xio_contact_t                my_contact_info;
+    char *                              cs;
     GlobusXIOName(globus_l_xio_udt_server_init);
 
     GlobusXIOUdtDebugEnter();
@@ -8266,18 +8267,6 @@ globus_l_xio_udt_server_init(
 	goto error_open;
     }
     	
-    result = globus_xio_handle_cntl(
-		server->xio_handle,
-		globus_l_xio_udt_server_udp_driver,
-		GLOBUS_XIO_UDP_GET_NUMERIC_CONTACT,
-		&cs);
-    fprintf(stderr, "%s\n", cs);
-    globus_free(cs);	
-    if (result != GLOBUS_SUCCESS)	
-    {
-	goto error_handle_cntl;
-    }
-
     result = globus_xio_data_descriptor_init(
 	&server->read_data_desc, 
 	server->xio_handle);
@@ -8339,6 +8328,18 @@ globus_l_xio_udt_server_init(
 	result = GlobusXIOErrorMemory("handshake");
 	goto error_handshake;
     }
+    
+    result = globus_xio_handle_cntl(
+        server->xio_handle,
+        globus_l_xio_udt_server_udp_driver,
+        GLOBUS_XIO_UDP_GET_CONTACT,
+        &cs);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_read;
+    }
+    globus_xio_contact_parse(&my_contact_info, cs);
+    
     result = globus_xio_register_read(
 		server->xio_handle,
                 (globus_byte_t*)handshake,
@@ -8349,8 +8350,16 @@ globus_l_xio_udt_server_init(
 		handle);
     if (result != GLOBUS_SUCCESS)
 	goto error_read;
-	
-    *out_ds_server = server;
+    
+    result = globus_xio_driver_pass_server_init(
+        op, &my_contact_info, server);
+    globus_xio_contact_destroy(&my_contact_info);
+    
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_read;
+    }
+        
     GlobusXIOUdtDebugExit();
     return GLOBUS_SUCCESS;
 
@@ -8376,7 +8385,6 @@ error_dd_init:
     globus_xio_data_descriptor_destroy(server->read_data_desc);
 
 error_read_dd_init:
-error_handle_cntl:
 error_open:
     globus_xio_close(server->xio_handle, NULL);
     

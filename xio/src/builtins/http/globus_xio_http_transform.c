@@ -1,5 +1,4 @@
 #include "globus_i_xio_http.h"
-#include "globus_i_xio.h"
 #include <limits.h>
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
@@ -252,7 +251,7 @@ globus_l_xio_http_open(
     snprintf(port_buf, sizeof(port_buf), "%hu", http_handle->target_info.port);
     new_contact_info.port = port_buf;
     
-    http_handle->handle = GlobusXIOOperationGetDriverHandle(op);
+    http_handle->handle = globus_xio_operation_get_driver_handle(op);
 
     result = globus_xio_driver_pass_open(
         op,
@@ -403,7 +402,7 @@ globus_i_xio_http_read(
     http_handle->read_operation.iovcnt = iovec_count;
     http_handle->read_operation.operation = op;
     http_handle->read_operation.nbytes = 0;
-    http_handle->read_operation.wait_for = GlobusXIOOperationGetWaitFor(op);
+    http_handle->read_operation.wait_for = globus_xio_operation_get_wait_for(op);
 
     for (i = 0; i < iovec_count; i++)
     {
@@ -1187,7 +1186,7 @@ globus_i_xio_http_write(
                     op,
                     (globus_xio_iovec_t *) iovec,
                     iovec_count,
-                    GlobusXIOOperationGetWaitFor(op),
+                    globus_xio_operation_get_wait_for(op),
                     globus_i_xio_http_write_callback,
                     http_handle);
             break;

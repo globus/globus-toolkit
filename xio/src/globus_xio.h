@@ -354,6 +354,25 @@ globus_xio_server_create(
 
 /**
  *  @ingroup GLOBUS_XIO_API
+ *  get contact string
+ *
+ *  This function allows the user to get the contact string for a server.
+ *  this string could be used as the contact string for the client side.
+ *
+ *  @param server
+ *         An initialized server handle created with globus_xio_server_create()
+ *
+ *  @param contact_string
+ *         an out varibale.  Will point to a newly allocated string on success.
+ *         must be freed by the caller.
+ */
+globus_result_t
+globus_xio_server_get_contact_string(
+    globus_xio_server_t                 server,
+    char **                             contact_string);
+
+/**
+ *  @ingroup GLOBUS_XIO_API
  *  post a close on a server object
  *
  *  This function registers a close operation on a server.  When the user
@@ -613,9 +632,9 @@ globus_xio_handle_cntl(
  *      auth-part:
  *          &lt;user&gt; [ ":" &lt;password&gt; ] "@" 
  *      host-part:
- *          [ "<" &lt;subject&gt; ">" ] host-name [ ":" &lt;port or service&gt; ]
+ *          [ "&lt;" &lt;subject&gt; "&gt;" ] host-name [ ":" &lt;port or service&gt; ]
  *      host-name:
- *          &lt;hostname&rt; | &lt;dotted quad&rt; | "[" &lt;ipv6 address&gt; "]"
+ *          &lt;hostname&gt; | &lt;dotted quad&gt; | "[" &lt;ipv6 address&gt; "]"
  *    </pre>
  *
  *    Except for use as the above delimeters, the following special characters
@@ -623,7 +642,7 @@ globus_xio_handle_cntl(
  *    
  *    <pre>
  *    "/" and "@" in location except subject
- *    "<" and ">" in location
+ *    "&lt;" and "&gt;" in location
  *    ":" everywhere except subject
  *    "%" everywhere (can be encoded with %HH or %%)
  *    </pre>

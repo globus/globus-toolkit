@@ -1,4 +1,3 @@
-#include "globus_i_xio.h"
 #include "globus_xio_driver.h"
 #include "globus_xio_udp_driver.h"
 #include "version.h"
@@ -1043,7 +1042,8 @@ globus_l_xio_udp_system_close_cb(
     
     op = (globus_xio_operation_t) user_arg;
     
-    handle = GlobusXIOOperationGetDriverSpecificHandle(op);
+    handle = (globus_l_handle_t *)
+        globus_xio_operation_get_driver_specific(op);
     
     globus_xio_driver_finished_close(op, result);
     globus_l_xio_udp_handle_destroy(handle);
@@ -1134,7 +1134,7 @@ globus_l_xio_udp_read(
     if(!handle->connected)
     {
         attr = (globus_l_attr_t *)
-            GlobusXIOOperationGetDataDescriptor(op, GLOBUS_TRUE);
+            globus_xio_operation_get_data_descriptor(op, GLOBUS_TRUE);
         if(attr)
         {
             addr = &attr->addr;
@@ -1143,7 +1143,7 @@ globus_l_xio_udp_read(
     }
     
     /* if buflen and waitfor are both 0, we behave like register select */
-    if(GlobusXIOOperationGetWaitFor(op) == 0 &&
+    if(globus_xio_operation_get_wait_for(op) == 0 &&
         (iovec_count > 1 || iovec[0].iov_len > 0))
     {
         globus_size_t                   nbytes;
@@ -1173,7 +1173,7 @@ globus_l_xio_udp_read(
             handle->handle,
             iovec,
             iovec_count,
-            GlobusXIOOperationGetWaitFor(op),
+            globus_xio_operation_get_wait_for(op),
             0,
             addr,
             globus_l_xio_udp_system_read_cb,
@@ -1207,7 +1207,7 @@ globus_l_xio_udp_write(
     if(!handle->connected)
     {
         attr = (globus_l_attr_t *)
-            GlobusXIOOperationGetDataDescriptor(op, GLOBUS_FALSE);
+            globus_xio_operation_get_data_descriptor(op, GLOBUS_FALSE);
         if(attr && attr->use_addr)
         {
             addr = &attr->addr;

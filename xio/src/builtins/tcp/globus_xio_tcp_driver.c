@@ -1,4 +1,3 @@
-#include "globus_i_xio.h"
 #include "globus_xio_driver.h"
 #include "globus_xio_tcp_driver.h"
 #include "version.h"
@@ -1125,12 +1124,15 @@ error_getaddrinfo:
 static
 globus_result_t
 globus_l_xio_tcp_server_init(
-    void **                             out_server,
-    void *                              driver_attr)
+    void *                              driver_attr,
+    const globus_xio_contact_t *        contact_info,
+    globus_xio_operation_t              op)
 {
     globus_l_server_t *                 server;
     globus_l_attr_t *                   attr;
     globus_result_t                     result;
+    globus_xio_contact_t                my_contact_info;
+    char *                              cs;
     GlobusXIOName(globus_l_xio_tcp_server_init);
     
     GlobusXIOTcpDebugEnter();
@@ -1143,7 +1145,6 @@ globus_l_xio_tcp_server_init(
         result = GlobusXIOErrorMemory("server");
         goto error_server;
     }
-    *out_server = server;
     server->converted = GLOBUS_FALSE;
     
     if(attr->handle == GLOBUS_XIO_TCP_INVALID_HANDLE)
@@ -1171,9 +1172,46 @@ globus_l_xio_tcp_server_init(
         }
     }
     
+    result = globus_l_xio_tcp_contact_string(
+        server->listener_handle,
+        GLOBUS_XIO_TCP_GET_LOCAL_CONTACT,
+        &cs);
+    if(result != GLOBUS_SUCCESS)
+    {
+        result = GlobusXIOErrorWrapFailed(
+            "globus_l_xio_tcp_contact_string", result);
+        goto error_pass;
+    }
+    
+    result = globus_xio_contact_parse(&my_contact_info, cs);
+    globus_free(cs);
+    if(result != GLOBUS_SUCCESS)
+    {
+        result = GlobusXIOErrorWrapFailed(
+            "globus_xio_contact_parse", result);
+        goto error_pass;
+    }
+    
+    result = globus_xio_driver_pass_server_init(op, &my_contact_info, server);
+    globus_xio_contact_destroy(&my_contact_info);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_pass;
+    }
+    
     GlobusXIOTcpDebugExit();
     return GLOBUS_SUCCESS;
 
+error_pass:
+    if(!server->converted)
+    {
+        int                             rc;
+        do
+        {
+            rc = close(server->listener_handle);
+        } while(rc < 0 && errno == EINTR);
+    }
+    
 error_listener:
     globus_free(server);
     
@@ -1837,7 +1875,8 @@ globus_l_xio_tcp_system_close_cb(
     GlobusXIOTcpDebugEnter();
     op = (globus_xio_operation_t) user_arg;
     
-    handle = GlobusXIOOperationGetDriverSpecificHandle(op);
+    handle = (globus_l_handle_t *)
+        globus_xio_operation_get_driver_specific(op);
     
     globus_xio_driver_finished_close(op, result);
     globus_l_xio_tcp_handle_destroy(handle);
@@ -1927,7 +1966,7 @@ globus_l_xio_tcp_read(
     handle = (globus_l_handle_t *) driver_specific_handle;
     
     /* if buflen and waitfor are both 0, we behave like register select */
-    if(GlobusXIOOperationGetWaitFor(op) == 0 &&
+    if(globus_xio_operation_get_wait_for(op) == 0 &&
         (iovec_count > 1 || iovec[0].iov_len > 0))
     {
         globus_size_t                   nbytes;
@@ -1947,7 +1986,7 @@ globus_l_xio_tcp_read(
             handle->handle,
             iovec,
             iovec_count,
-            GlobusXIOOperationGetWaitFor(op),
+            globus_xio_operation_get_wait_for(op),
             globus_l_xio_tcp_system_read_cb,
             op);
         if(result != GLOBUS_SUCCESS)
@@ -2007,10 +2046,10 @@ globus_l_xio_tcp_write(
 
     handle = (globus_l_handle_t *) driver_specific_handle;
     attr = (globus_l_attr_t *)
-        GlobusXIOOperationGetDataDescriptor(op, GLOBUS_FALSE);
+        globus_xio_operation_get_data_descriptor(op, GLOBUS_FALSE);
     
     /* if buflen and waitfor are both 0, we behave like register select */
-    if(GlobusXIOOperationGetWaitFor(op) == 0 &&
+    if(globus_xio_operation_get_wait_for(op) == 0 &&
         (iovec_count > 1 || iovec[0].iov_len > 0))
     {
         globus_size_t                   nbytes;
@@ -2045,7 +2084,7 @@ globus_l_xio_tcp_write(
                 handle->handle,
                 iovec,
                 iovec_count,
-                GlobusXIOOperationGetWaitFor(op),
+                globus_xio_operation_get_wait_for(op),
                 attr->send_flags,
                 GLOBUS_NULL,
                 globus_l_xio_tcp_system_write_cb,
@@ -2058,7 +2097,7 @@ globus_l_xio_tcp_write(
                 handle->handle,
                 iovec,
                 iovec_count,
-                GlobusXIOOperationGetWaitFor(op),
+                globus_xio_operation_get_wait_for(op),
                 globus_l_xio_tcp_system_write_cb,
                 op);
         }

@@ -1,6 +1,5 @@
 #include "globus_xio_driver.h"
 #include "globus_xio_load.h"
-#include "globus_i_xio.h"
 #include "globus_common.h"
 #include "globus_xio_op.h"
 
@@ -150,7 +149,7 @@ globus_l_xio_op_open_cb(
         op_handle->iovec.iov_base = &op_handle->bs_buf;
         op_handle->iovec.iov_len = 1;
         op_handle->close_op = NULL;
-        op_handle->driver_handle = GlobusXIOOperationGetDriverHandle(op);
+        op_handle->driver_handle = globus_xio_operation_get_driver_handle(op);
 
         globus_mutex_init(&op_handle->mutex, NULL);
 
@@ -245,7 +244,7 @@ globus_l_xio_op_read(
     globus_result_t                     res;
     globus_size_t                       wait_for;
 
-    wait_for = GlobusXIOOperationGetWaitFor(op);
+    wait_for = globus_xio_operation_get_wait_for(op);
 
     res = globus_xio_driver_pass_read(op, 
         (globus_xio_iovec_t *)iovec, iovec_count, wait_for,
@@ -278,7 +277,7 @@ globus_l_xio_op_write(
     globus_result_t                     res;
     globus_size_t                       wait_for;
 
-    wait_for = GlobusXIOOperationGetWaitFor(op);
+    wait_for = globus_xio_operation_get_wait_for(op);
 
     res = globus_xio_driver_pass_write(op, (globus_xio_iovec_t *)iovec, 
         iovec_count, wait_for,

@@ -830,12 +830,11 @@ globus_xio_server_create(
     globus_list_t *                     list;
     globus_i_xio_server_t *             xio_server = NULL;
     globus_result_t                     res;
-    globus_bool_t                       done = GLOBUS_FALSE;
     int                                 ctr;
-    int                                 ctr2;
-    int                                 tmp_size;
     int                                 stack_size;
     void *                              ds_attr = NULL;
+    globus_i_xio_op_t *                 xio_op = NULL;
+    globus_xio_contact_t                contact_info;
     GlobusXIOName(globus_xio_server_init);
 
     GlobusXIODebugEnter();
@@ -854,22 +853,31 @@ globus_xio_server_create(
         res = GlobusXIOErrorParameter("stack is empty");
         goto err;
     }
-
+    
     /* take what the user stack has at the time of registration */
     globus_mutex_lock(&stack->mutex);
     {
         stack_size = globus_list_size(stack->driver_stack);
-        tmp_size = sizeof(globus_i_xio_server_t) +
-                    (sizeof(globus_i_xio_server_entry_t) * (stack_size - 1));
-        xio_server = (globus_i_xio_server_t *) globus_malloc(tmp_size);
+        xio_op = (globus_i_xio_op_t *)
+            globus_calloc(1, sizeof(globus_i_xio_op_t) + 
+                (sizeof(globus_i_xio_op_entry_t) * (stack_size - 1)));
+        if(xio_op == NULL)
+        {
+            globus_mutex_unlock(&stack->mutex);
+            res = GlobusXIOErrorMemory("operation");
+            goto err;
+        }
+    
+        xio_server = (globus_i_xio_server_t *)
+            globus_calloc(1, sizeof(globus_i_xio_server_t) +
+                (sizeof(globus_i_xio_server_entry_t) * (stack_size - 1)));
         if(xio_server == NULL)
         {
-            globus_mutex_lock(&stack->mutex);
+            globus_mutex_unlock(&stack->mutex);
             res = GlobusXIOErrorMemory("server");
             goto err;
         }
 
-        memset(xio_server, '\0', tmp_size);
         xio_server->stack_size = globus_list_size(stack->driver_stack);
         xio_server->ref = 1;
         xio_server->state = GLOBUS_XIO_SERVER_STATE_OPEN;
@@ -884,44 +892,38 @@ globus_xio_server_create(
             xio_server->space = server_attr->space;
             globus_callback_space_reference(xio_server->space);
         }
+        
+        /* Only using this op for its index, really... things like type
+         * and state don't matter to me.  I will also be using the open_attr
+         * field for the server attr.
+         */
+        xio_op->_op_server = xio_server;
+        xio_op->stack_size = xio_server->stack_size;
+        
         /* walk through the stack and add each entry to the array */
         ctr = 0;
         for(list = stack->driver_stack;
-            !globus_list_empty(list) && !done;
+            !globus_list_empty(list);
             list = globus_list_rest(list))
         {
             xio_server->entry[ctr].driver = (globus_xio_driver_t)
                 globus_list_first(list);
 
-            /* no sense bothering if attr is NULL */
             if(server_attr != NULL)
             {
                 GlobusIXIOAttrGetDS(ds_attr, server_attr,               \
                     xio_server->entry[ctr].driver);
+                xio_op->entry[ctr].open_attr = ds_attr;
             }
-            /* call the driver init function */
-            xio_server->entry[ctr].server_handle = NULL;
-            if(xio_server->entry[ctr].driver->server_init_func != NULL)
-            {
-                res = xio_server->entry[ctr].driver->server_init_func(
-                        &xio_server->entry[ctr].server_handle,
-                        ds_attr);
-                if(res != GLOBUS_SUCCESS)
-                {
-                    /* clean up all the initialized servers */
-                    for(ctr2 = 0; ctr2 < ctr; ctr2++)
-                    {
-                        xio_server->entry[ctr].driver->server_destroy_func(
-                            xio_server->entry[ctr].server_handle);
-                    }
-                    done = GLOBUS_TRUE;
-                }
-            }
+            
             ctr++;
         }
     }
     globus_mutex_unlock(&stack->mutex);
-
+    
+    xio_op->ndx = xio_op->stack_size;
+    memset(&contact_info, 0, sizeof(contact_info));
+    res = globus_xio_driver_pass_server_init(xio_op, &contact_info, NULL);
     if(res != GLOBUS_SUCCESS)
     {
         goto err;
@@ -939,8 +941,51 @@ globus_xio_server_create(
     return GLOBUS_SUCCESS;
 
   err:
+    if(xio_op)
+    {
+        globus_free(xio_op);
+    }
     *server = NULL;
 
+    GlobusXIODebugExitWithError();
+    return res;
+}
+
+globus_result_t
+globus_xio_server_get_contact_string(
+    globus_xio_server_t                 server,
+    char **                             contact_string)
+{
+    globus_result_t                     res;
+    GlobusXIOName(globus_xio_server_get_contact_string);
+
+    GlobusXIODebugEnter();
+    if(contact_string == NULL)
+    {
+        res = GlobusXIOErrorParameter("contact_string");
+        goto err;
+    }
+    *contact_string = NULL;
+    if(server == NULL)
+    {
+        res = GlobusXIOErrorParameter("server");
+        goto err;
+    }
+    
+    if(server->contact_string)
+    {
+        *contact_string = globus_libc_strdup(server->contact_string);
+        if(!*contact_string)
+        {
+            res = GlobusXIOErrorMemory("contact_string");
+            goto err;
+        }
+    }
+    
+    GlobusXIODebugExit();
+    return GLOBUS_SUCCESS;
+    
+err:
     GlobusXIODebugExitWithError();
     return res;
 }
@@ -1767,4 +1812,102 @@ error_format:
     globus_xio_contact_destroy(contact_info);
     GlobusXIODebugInternalExitWithError();
     return result;
+}
+
+/* this is more than enough for the 7 possible fields now
+ * be sure to update this if it can get bigger
+ */
+#define GLOBUS_L_XIO_LAYOUT_SIZE        20
+globus_result_t
+globus_xio_contact_info_to_string(
+    const globus_xio_contact_t *        contact_info,
+    char **                             contact_string)
+{
+    globus_bool_t                       path_only = GLOBUS_FALSE;
+    globus_bool_t                       host_port_only = GLOBUS_FALSE;
+   
+    const char *                        layout[GLOBUS_L_XIO_LAYOUT_SIZE];
+    int                                 i = GLOBUS_L_XIO_LAYOUT_SIZE;
+    GlobusXIOName(globus_xio_contact_info_to_string);
+
+    GlobusXIODebugInternalEnter();
+    
+    if(contact_info->resource &&
+        !contact_info->scheme && 
+        !contact_info->host)
+    {
+        path_only = GLOBUS_TRUE;
+    }
+    
+    if(contact_info->host && contact_info->port && !contact_info->scheme && 
+        !contact_info->resource && !contact_info->user &&
+        !contact_info->subject)
+    {
+        host_port_only = GLOBUS_TRUE;
+    }
+    
+    if(contact_info->resource)
+    {
+        layout[--i] = contact_info->resource;
+        if(!path_only && *contact_info->resource != '/')
+        {
+            layout[--i] = "/";
+        }
+    }
+    
+    if(contact_info->host)
+    {
+        if(contact_info->port)
+        {
+            layout[--i] = contact_info->port;
+            layout[--i] = ":";
+        }
+    
+        if(strchr(contact_info->host, ':'))
+        {
+            layout[--i] = "]";
+            layout[--i] = contact_info->host;
+            layout[--i] = "[";
+        }
+        else
+        {
+            layout[--i] = contact_info->host;
+        }
+        
+        if(contact_info->subject)
+        {
+            layout[--i] = ">";
+            layout[--i] = contact_info->subject;
+            layout[--i] = "<";
+        }
+        
+        if(contact_info->user)
+        {
+            layout[--i] = "@";
+            
+            if(contact_info->pass)
+            {
+                layout[--i] = contact_info->pass;
+                layout[--i] = ":";
+            }
+            
+            layout[--i] = contact_info->user;
+        }
+    }
+    
+    if(contact_info->scheme)
+    {
+        layout[--i] = "://";
+        layout[--i] = contact_info->scheme;
+    }
+    else if(!path_only && !host_port_only)
+    {
+        layout[--i] = "xio://";
+    }
+    
+    *contact_string = globus_libc_join(
+        &layout[i], GLOBUS_L_XIO_LAYOUT_SIZE - i);
+    
+    GlobusXIODebugInternalExit();
+    return GLOBUS_SUCCESS;
 }

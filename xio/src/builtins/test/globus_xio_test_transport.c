@@ -1,6 +1,6 @@
 #include "globus_xio_driver.h"
-#include "globus_xio_load.h"
 #include "globus_i_xio.h"
+#include "globus_xio_load.h"
 #include "globus_common.h"
 #include "globus_xio_test_transport.h"
 
@@ -324,7 +324,7 @@ globus_l_xio_operation_kickout(
 
     globus_assert(ow != GLOBUS_SUCCESS);
 
-    GlobusXIODriverDisableCancel(ow->op);
+    globus_xio_operation_disable_cancel(ow->op);
 
     GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE, 
         ("[globus_l_xio_test_operation_kickout] : finishing with=%d\n", 
@@ -378,8 +378,9 @@ globus_l_xio_operation_kickout(
 
 static globus_result_t
 globus_l_xio_test_server_init(
-    void **                             out_server,
-    void *                              driver_attr)
+    void *                              driver_attr,
+    const globus_xio_contact_t *        contact_info,
+    globus_xio_operation_t              op)
 {
     globus_l_xio_test_handle_t *        server;
 
@@ -391,9 +392,8 @@ globus_l_xio_test_server_init(
     /* copy the attr to a handle */
     globus_l_xio_test_attr_copy((void **)&server, driver_attr);
 
-    *out_server = server;
-    
-    return GLOBUS_SUCCESS;
+    return globus_xio_driver_pass_server_init(
+        op, contact_info, server);
 }
 
 static globus_result_t
@@ -427,15 +427,12 @@ globus_l_xio_test_accept(
     {
         globus_l_xio_test_op_wrapper_t * ow;
         globus_reltime_t *              delay;
-        globus_bool_t                   canceled;
 
         XIOTestCreateOpWraper(ow, server, accept_op, res, 0);
         ow->type = GLOBUS_XIO_OPERATION_TYPE_ACCEPT;
 
         delay = &server->delay;
-        GlobusXIODriverEnableCancel(accept_op, canceled, cancel_cb, ow);
-
-        if(canceled)
+        if(globus_xio_operation_enable_cancel(accept_op, cancel_cb, ow))
         {
             delay = NULL;
             ow->canceled = GLOBUS_TRUE;
@@ -526,14 +523,12 @@ globus_l_xio_test_open(
     else
     {
         globus_l_xio_test_op_wrapper_t * ow;
-        globus_bool_t                   canceled;
 
         XIOTestCreateOpWraper(ow, dh, op, res, 0);
         ow->type = GLOBUS_XIO_OPERATION_TYPE_OPEN;
 
         delay = &dh->delay;
-        GlobusXIODriverEnableCancel(op, canceled, cancel_cb, ow);
-        if(canceled)
+        if(globus_xio_operation_enable_cancel(op, cancel_cb, ow))
         {
             delay = NULL;
             ow->canceled = GLOBUS_TRUE;
@@ -591,15 +586,13 @@ globus_l_xio_test_close(
     {
         globus_l_xio_test_op_wrapper_t * ow;
         globus_reltime_t *              delay;
-        globus_bool_t                   canceled;
         globus_reltime_t                end_time;
 
         XIOTestCreateOpWraper(ow, dh, op, res, 0);
         ow->type = GLOBUS_XIO_OPERATION_TYPE_CLOSE;
 
         delay = &dh->delay;
-        GlobusXIODriverEnableCancel(op, canceled, cancel_cb, ow);
-        if(canceled)
+        if(globus_xio_operation_enable_cancel(op, cancel_cb, ow))
         {
             delay = NULL;
             ow->canceled = GLOBUS_TRUE;
@@ -658,7 +651,7 @@ globus_l_xio_test_read(
     nbytes = dh->chunk_size;
     if(dh->chunk_size == -1)
     {
-        nbytes = GlobusXIOOperationGetWaitFor(op);
+        nbytes = globus_xio_operation_get_wait_for(op);
     }
 
     tb = 0;
@@ -686,15 +679,13 @@ globus_l_xio_test_read(
     {
         globus_l_xio_test_op_wrapper_t * ow;
         globus_reltime_t *              delay;
-        globus_bool_t                   canceled;
         globus_reltime_t                end_time;
 
         XIOTestCreateOpWraper(ow, dh, op, res, nbytes);
         ow->type = GLOBUS_XIO_OPERATION_TYPE_READ;
 
         delay = &dh->delay;
-        GlobusXIODriverEnableCancel(op, canceled, cancel_cb, ow);
-        if(canceled)
+        if(globus_xio_operation_enable_cancel(op, cancel_cb, ow))
         {
             delay = NULL;
             ow->canceled = GLOBUS_TRUE;
@@ -749,7 +740,7 @@ globus_l_xio_test_write(
     nbytes = dh->chunk_size;
     if(dh->chunk_size == -1)
     {
-        nbytes = GlobusXIOOperationGetWaitFor(op);
+        nbytes = globus_xio_operation_get_wait_for(op);
     }
 
     tb = 0;
@@ -772,15 +763,13 @@ globus_l_xio_test_write(
     {
         globus_l_xio_test_op_wrapper_t * ow;
         globus_reltime_t *              delay;
-        globus_bool_t                   canceled;
         globus_reltime_t                end_time;
 
         XIOTestCreateOpWraper(ow, dh, op, res, nbytes);
         ow->type = GLOBUS_XIO_OPERATION_TYPE_WRITE;
 
         delay = &dh->delay;
-        GlobusXIODriverEnableCancel(op, canceled, cancel_cb, ow);
-        if(canceled)
+        if(globus_xio_operation_enable_cancel(op, cancel_cb, ow))
         {
             delay = NULL;
             ow->canceled = GLOBUS_TRUE;

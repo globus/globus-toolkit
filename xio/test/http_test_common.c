@@ -217,10 +217,8 @@ http_test_server_init(
     {
         goto destroy_attr_error;
     }
-    result = globus_xio_server_cntl(
+    result = globus_xio_server_get_contact_string(
             server->server,
-            tcp_driver,
-            GLOBUS_XIO_TCP_GET_LOCAL_CONTACT,
             &server->contact);
     if (result != GLOBUS_SUCCESS)
     {

@@ -1,6 +1,5 @@
 #include "globus_xio_driver.h"
 #include "globus_xio_load.h"
-#include "globus_i_xio.h"
 #include "globus_common.h"
 #include "globus_xio_queue.h"
 
@@ -203,7 +202,7 @@ globus_l_xio_queue_read(
 
     handle = (globus_xio_driver_queue_handle_t *) driver_specific_handle;
 
-    wait_for = GlobusXIOOperationGetWaitFor(op);
+    wait_for = globus_xio_operation_get_wait_for(op);
 
     globus_mutex_lock(&handle->mutex);
     {
@@ -312,7 +311,7 @@ globus_l_xio_queue_write(
     GlobusXIOName(globus_l_xio_queue_write);
 
     handle = (globus_xio_driver_queue_handle_t *) driver_specific_handle;
-    wait_for = GlobusXIOOperationGetWaitFor(op);
+    wait_for = globus_xio_operation_get_wait_for(op);
 
     globus_mutex_lock(&handle->mutex);
     {

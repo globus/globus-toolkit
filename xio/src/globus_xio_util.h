@@ -357,4 +357,9 @@ globus_xio_contact_parse(
     globus_xio_contact_t *              contact_info,
     const char *                        contact_string);
 
+globus_result_t
+globus_xio_contact_info_to_string(
+    const globus_xio_contact_t *        contact_info,
+    char **                             contact_string);
+
 #endif

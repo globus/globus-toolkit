@@ -1,6 +1,5 @@
 #include "globus_xio_driver.h"
 #include "globus_xio_load.h"
-#include "globus_i_xio.h"
 #include "globus_common.h"
 #include "globus_error_string.h"
 #include "globus_xio_gssapi_ftp.h"
@@ -1538,7 +1537,7 @@ globus_l_xio_gssapi_ftp_decode_adat(
  */
 static void
 globus_l_xio_gssapi_ftp_accept_cb(
-    globus_i_xio_op_t *                 op,
+    globus_xio_operation_t              op,
     globus_result_t                     result,
     void *                              user_arg)
 {

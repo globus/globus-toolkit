@@ -1,5 +1,4 @@
 #include "globus_i_xio_http.h"
-#include "globus_i_xio.h"
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
@@ -602,7 +601,7 @@ globus_l_xio_http_server_write_response_callback(
                     op,
                     http_handle->write_operation.iov,
                     http_handle->write_operation.iovcnt,
-                    GlobusXIOOperationGetWaitFor(op),
+                    globus_xio_operation_get_wait_for(op),
                     globus_i_xio_http_write_callback,
                     http_handle);
         }

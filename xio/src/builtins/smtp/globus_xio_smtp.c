@@ -1,6 +1,5 @@
 #include "globus_xio_driver.h"
 #include "globus_xio_load.h"
-#include "globus_i_xio.h"
 #include "globus_common.h"
 #include "globus_error_string.h"
 #include "globus_xio_smtp.h"
@@ -408,7 +407,7 @@ globus_l_xio_smtp_write(
 
     info = (l_smtp_info_t *) driver_specific_handle;
 
-    wait_for = GlobusXIOOperationGetWaitFor(op);
+    wait_for = globus_xio_operation_get_wait_for(op);
 
     globus_xio_driver_pass_write(op, 
         (globus_xio_iovec_t *)iovec, iovec_count, wait_for,

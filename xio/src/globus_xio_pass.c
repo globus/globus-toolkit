@@ -1397,3 +1397,44 @@ globus_xio_driver_finished_accept(
     }
     GlobusXIODebugInternalExit();
 }
+
+globus_result_t
+globus_xio_driver_pass_server_init(
+    globus_xio_operation_t              op,
+    const globus_xio_contact_t *        contact_info,
+    void *                              driver_server)
+{
+    globus_i_xio_server_t *             server;
+    globus_result_t                     res;
+    GlobusXIOName(globus_xio_driver_pass_server_init);
+    
+    GlobusXIODebugInternalEnter();
+    server = op->_op_server;
+    op->progress = GLOBUS_TRUE;
+    op->block_timeout = GLOBUS_FALSE;
+    if(op->ndx < op->stack_size)
+    {
+        server->entry[op->ndx].server_handle = driver_server;
+    }
+    
+    while(--op->ndx >= 0 &&
+        server->entry[op->ndx].driver->server_init_func == NULL)
+    { }
+    
+    if(op->ndx >= 0)
+    {
+        res = server->entry[op->ndx].driver->server_init_func(
+            op->entry[op->ndx].open_attr,
+            contact_info,
+            op);
+    }
+    else
+    {
+        res = globus_xio_contact_info_to_string(
+            contact_info, &server->contact_string);
+    }
+    
+    GlobusXIODebugInternalExit();
+    
+    return res;
+}

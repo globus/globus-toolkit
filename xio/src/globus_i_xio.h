@@ -347,6 +347,7 @@ typedef struct globus_i_xio_server_s
     globus_callback_space_t             space;
 
     globus_bool_t                       blocking;
+    char *                              contact_string;
     
     int                                 stack_size;
     globus_i_xio_server_entry_t         entry[1];

@@ -1,4 +1,3 @@
-#include "globus_i_xio.h"
 #include "globus_xio_driver.h"
 #include "globus_xio_file_driver.h"
 #include "version.h"
@@ -448,7 +447,8 @@ globus_l_xio_file_system_close_cb(
     
     op = (globus_xio_operation_t) user_arg;
     
-    handle = GlobusXIOOperationGetDriverSpecificHandle(op);
+    handle = (globus_l_handle_t *)
+        globus_xio_operation_get_driver_specific(op);
     
     globus_xio_driver_finished_close(op, result);
     globus_l_xio_file_handle_destroy(handle);
@@ -541,7 +541,7 @@ globus_l_xio_file_read(
     handle = (globus_l_handle_t *) driver_specific_handle;
     
     /* if buflen and waitfor are both 0, we behave like register select */
-    if(GlobusXIOOperationGetWaitFor(op) == 0 &&
+    if(globus_xio_operation_get_wait_for(op) == 0 &&
         (iovec_count > 1 || iovec[0].iov_len > 0))
     {
         globus_size_t                   nbytes;
@@ -563,7 +563,7 @@ globus_l_xio_file_read(
             handle->handle,
             iovec,
             iovec_count,
-            GlobusXIOOperationGetWaitFor(op),
+            globus_xio_operation_get_wait_for(op),
             globus_l_xio_file_system_read_cb,
             op);
     }
@@ -613,7 +613,7 @@ globus_l_xio_file_write(
     handle = (globus_l_handle_t *) driver_specific_handle;
     
     /* if buflen and waitfor are both 0, we behave like register select */
-    if(GlobusXIOOperationGetWaitFor(op) == 0 &&
+    if(globus_xio_operation_get_wait_for(op) == 0 &&
         (iovec_count > 1 || iovec[0].iov_len > 0))
     {
         globus_size_t                   nbytes;
@@ -635,7 +635,7 @@ globus_l_xio_file_write(
             handle->handle,
             iovec,
             iovec_count,
-            GlobusXIOOperationGetWaitFor(op),
+            globus_xio_operation_get_wait_for(op),
             globus_l_xio_file_system_write_cb,
             op);
     }

@@ -468,7 +468,7 @@ globus_l_xio_gsi_link_destroy(
 
 void
 globus_l_xio_gsi_accept_cb(
-    globus_i_xio_op_t *                 op,
+    globus_xio_operation_t              op,
     globus_result_t                     result,
     void *                              user_arg)
 {
@@ -531,21 +531,36 @@ globus_l_xio_gsi_accept(
     return result;
 }
 
+
 static
 globus_result_t
 globus_l_xio_gsi_server_init(
-    void **                             out_server,
-    void *                              driver_attr)
+    void *                              driver_attr,
+    const globus_xio_contact_t *        contact_info,
+    globus_xio_operation_t              op)
 {
+    globus_result_t                     result;
+    void *                              server = NULL;
+    
     if(driver_attr)
     {
-        return globus_l_xio_gsi_attr_copy(out_server, driver_attr);
+        result =  globus_l_xio_gsi_attr_copy(&server, driver_attr);
+        if(result != GLOBUS_SUCCESS)
+        {
+            return result;
+        }
     }
-    else
+    
+    result = globus_xio_driver_pass_server_init(op, contact_info, server);
+    if(result != GLOBUS_SUCCESS)
     {
-        *out_server = NULL;
-        return GLOBUS_SUCCESS;
+        if(server)
+        {
+            globus_l_xio_gsi_attr_destroy(server);
+        }
     }
+    
+    return result;
 }
 
 static
@@ -1561,7 +1576,7 @@ globus_l_xio_gsi_open(
         handle->ret_flags = handle->attr->req_flags;
     }
     
-    handle->xio_driver_handle = GlobusXIOOperationGetDriverHandle(op);
+    handle->xio_driver_handle = globus_xio_operation_get_driver_handle(op);
     result = globus_xio_driver_pass_open(
         op, contact_info, globus_l_xio_gsi_open_cb, handle);
 
@@ -1725,7 +1740,7 @@ globus_l_xio_gsi_read_cb(
     
     /* figure out how much more to read */
     
-    wait_for = GlobusXIOOperationGetWaitFor(op);
+    wait_for = globus_xio_operation_get_wait_for(op);
 
     wait_for -= handle->bytes_returned;
 
@@ -1918,7 +1933,7 @@ globus_l_xio_gsi_read(
 
     handle = (globus_l_handle_t *) driver_specific_handle;
     
-    wait_for = GlobusXIOOperationGetWaitFor(op);
+    wait_for = globus_xio_operation_get_wait_for(op);
 
     GlobusXIOGSIDebugPrintf(
         GLOBUS_XIO_GSI_DEBUG_INTERNAL_TRACE,
@@ -2251,7 +2266,7 @@ globus_l_xio_gsi_write_cb(
     }
 
     if(result != GLOBUS_SUCCESS &&
-       nbytes != GlobusXIOOperationGetWaitFor(op))
+       nbytes != globus_xio_operation_get_wait_for(op))
     {
         handle->bytes_written = 0;
     }
@@ -2299,7 +2314,7 @@ globus_l_xio_gsi_write(
 
     /* get wait_for here */
     
-    wait_for = GlobusXIOOperationGetWaitFor(op);
+    wait_for = globus_xio_operation_get_wait_for(op);
         
     if(iovec_count < 1)
     {

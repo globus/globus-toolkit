@@ -2059,11 +2059,8 @@ globus_l_io_tcp_create_listener(
         char *                          contact_string;
         char *                          s;
         
-        result = globus_xio_server_cntl(
-            ihandle->xio_server,
-            globus_l_io_tcp_driver,
-            GLOBUS_XIO_TCP_GET_LOCAL_CONTACT,
-            &contact_string);
+        result = globus_xio_server_get_contact_string(
+            ihandle->xio_server, &contact_string);
         if(result != GLOBUS_SUCCESS)
         {
             goto error_server_cntl;

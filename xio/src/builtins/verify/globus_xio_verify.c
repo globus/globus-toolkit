@@ -1,6 +1,5 @@
 #include "globus_xio_driver.h"
 #include "globus_xio_load.h"
-#include "globus_i_xio.h"
 #include "globus_common.h"
 #include "globus_xio_verify.h"
 
@@ -90,12 +89,12 @@ globus_l_xio_verify_attr_copy(
 
 static globus_result_t
 globus_l_xio_verify_server_init(
-    void **                             out_server,
-    void *                              driver_attr)
+    void *                              driver_attr,
+    const globus_xio_contact_t *        contact_info,
+    globus_xio_operation_t              op)
 {
-    *out_server = (void *)strdup(_SERVER);
-
-    return GLOBUS_SUCCESS;
+    return globus_xio_driver_pass_server_init(
+        op, contact_info, strdup(_SERVER));
 }
 
 static globus_result_t
@@ -117,7 +116,7 @@ globus_l_xio_verify_link_destroy(
 
 void
 globus_l_xio_verify_accept_cb(
-    globus_i_xio_op_t *                 op,
+    globus_xio_operation_t              op,
     globus_result_t                     result,
     void *                              user_arg)
 {
@@ -280,7 +279,7 @@ globus_l_xio_verify_read(
         globus_assert(!"Handle string doesn't match");
     }
 
-    wait_for = GlobusXIOOperationGetWaitFor(op);
+    wait_for = globus_xio_operation_get_wait_for(op);
 
     res = globus_xio_driver_pass_read(op, (globus_xio_iovec_t *)iovec, 
         iovec_count, wait_for,
@@ -320,7 +319,7 @@ globus_l_xio_verify_write(
         globus_assert(!"Handle string doesn't match");
     }
 
-    wait_for = GlobusXIOOperationGetWaitFor(op);
+    wait_for = globus_xio_operation_get_wait_for(op);
 
     res = globus_xio_driver_pass_write( 
         op, (globus_xio_iovec_t *) iovec, iovec_count, wait_for, 

@@ -417,7 +417,7 @@ globus_l_xio_bounce_read(
     GlobusXIOName(globus_l_xio_bounce_read);
 
     GlobusXIODebugInternalEnter();
-    wait_for = GlobusXIOOperationGetWaitFor(op);
+    wait_for = globus_xio_operation_get_wait_for(op);
 
     info = (bounce_info_t *)
                 globus_malloc(sizeof(bounce_info_t));
@@ -460,7 +460,7 @@ globus_l_xio_bounce_write(
     GlobusXIOName(globus_l_xio_bounce_write);
 
     GlobusXIODebugInternalEnter();
-    wait_for = GlobusXIOOperationGetWaitFor(op);
+    wait_for = globus_xio_operation_get_wait_for(op);
 
     info = (bounce_info_t *)
                 globus_malloc(sizeof(bounce_info_t));

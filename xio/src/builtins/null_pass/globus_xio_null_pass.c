@@ -1,6 +1,5 @@
 #include "globus_xio_driver.h"
 #include "globus_xio_load.h"
-#include "globus_i_xio.h"
 #include "globus_common.h"
 #include "globus_xio_null_pass.h"
 
@@ -22,12 +21,14 @@ globus_module_descriptor_t              globus_i_xio_null_pass_module =
     &local_version
 };
 
+
 static globus_result_t
 globus_l_xio_null_pass_server_init(
-    void **                             out_server,
-    void *                              driver_attr)
+    void *                              driver_attr,
+    const globus_xio_contact_t *        contact_info,
+    globus_xio_operation_t              op)
 {
-    return GLOBUS_SUCCESS;
+    return globus_xio_driver_pass_server_init(op, contact_info, NULL);
 }
 
 static globus_result_t
@@ -116,7 +117,7 @@ globus_l_xio_null_pass_read(
     globus_result_t                     res;
     globus_size_t                       wait_for;
 
-    wait_for = GlobusXIOOperationGetWaitFor(op);
+    wait_for = globus_xio_operation_get_wait_for(op);
 
     res = globus_xio_driver_pass_read(op, 
         (globus_xio_iovec_t *)iovec, iovec_count, wait_for, NULL, NULL);
@@ -138,7 +139,7 @@ globus_l_xio_null_pass_write(
     globus_result_t                     res;
     globus_size_t                       wait_for;
 
-    wait_for = GlobusXIOOperationGetWaitFor(op);
+    wait_for = globus_xio_operation_get_wait_for(op);
 
     res = globus_xio_driver_pass_write(op, 
         (globus_xio_iovec_t *)iovec, iovec_count, wait_for, NULL, NULL);

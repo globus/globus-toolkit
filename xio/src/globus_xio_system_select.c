@@ -1,6 +1,5 @@
 
 #include "globus_common.h"
-#include "globus_i_xio.h"
 #include "globus_xio_system.h"
 #include "globus_xio_driver.h"
 
@@ -689,15 +688,13 @@ globus_l_xio_system_register_read(
     globus_l_operation_info_t *         read_info)
 {
     globus_result_t                     result;
-    globus_bool_t                       canceled;
     GlobusXIOName(globus_l_xio_system_register_read);
 
     GlobusXIOSystemDebugEnterFD(fd);
 
     /* I have to do this outside the lock because of lock inversion issues */
-    GlobusXIODriverEnableCancel(
-        read_info->op, canceled, globus_l_xio_system_cancel_cb, read_info);
-    if(canceled)
+    if(globus_xio_operation_enable_cancel(
+        read_info->op, globus_l_xio_system_cancel_cb, read_info))
     {
         result = GlobusXIOErrorCanceled();
         goto error_cancel_enable;
@@ -757,7 +754,7 @@ error_canceled:
 error_deactivated:
     read_info->state = GLOBUS_L_OPERATION_COMPLETE;
     globus_mutex_unlock(&globus_l_xio_system_fdset_mutex);
-    GlobusXIODriverDisableCancel(read_info->op);
+    globus_xio_operation_disable_cancel(read_info->op);
 
 error_cancel_enable:
     GlobusXIOSystemDebugExitWithErrorFD(fd);
@@ -771,15 +768,13 @@ globus_l_xio_system_register_write(
     globus_l_operation_info_t *         write_info)
 {
     globus_result_t                     result;
-    globus_bool_t                       canceled;
     GlobusXIOName(globus_l_xio_system_register_write);
 
     GlobusXIOSystemDebugEnterFD(fd);
 
     /* I have to do this outside the lock because of lock inversion issues */
-    GlobusXIODriverEnableCancel(
-        write_info->op, canceled, globus_l_xio_system_cancel_cb, write_info);
-    if(canceled)
+    if(globus_xio_operation_enable_cancel(
+        write_info->op, globus_l_xio_system_cancel_cb, write_info))
     {
         result = GlobusXIOErrorCanceled();
         goto error_cancel_enable;
@@ -839,7 +834,7 @@ error_canceled:
 error_deactivated:
     write_info->state = GLOBUS_L_OPERATION_COMPLETE;
     globus_mutex_unlock(&globus_l_xio_system_fdset_mutex);
-    GlobusXIODriverDisableCancel(write_info->op);
+    globus_xio_operation_disable_cancel(write_info->op);
 
 error_cancel_enable:
     GlobusXIOSystemDebugExitWithErrorFD(fd);
@@ -892,7 +887,7 @@ globus_l_xio_system_kickout(
 
     GlobusXIOSystemDebugEnterFD(op_info->fd);
 
-    GlobusXIODriverDisableCancel(op_info->op);
+    globus_xio_operation_disable_cancel(op_info->op);
 
     switch(op_info->type)
     {
@@ -1540,7 +1535,7 @@ globus_l_xio_system_handle_read(
     read_info = globus_l_xio_system_read_operations[fd];
     result = GLOBUS_SUCCESS;
 
-    GlobusXIOOperationRefreshTimeout(read_info->op);
+    globus_xio_operation_refresh_timeout(read_info->op);
 
     if(read_info->state == GLOBUS_L_OPERATION_CANCELED)
     {
@@ -1731,7 +1726,7 @@ globus_l_xio_system_handle_write(
     result = GLOBUS_SUCCESS;
     write_info = globus_l_xio_system_write_operations[fd];
 
-    GlobusXIOOperationRefreshTimeout(write_info->op);
+    globus_xio_operation_refresh_timeout(write_info->op);
 
     if(write_info->state == GLOBUS_L_OPERATION_CANCELED)
     {
