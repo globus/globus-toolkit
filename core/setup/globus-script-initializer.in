@@ -22,7 +22,7 @@ if [ "X${GLOBUS_DEPLOYED}" = "XTRUE" ]; then
     fi
 else 
     if [ -z "${GLOBUS_INSTALL_PATH}" ]; then
-	echo "WARNING: environment variable GLOBUS_INSTALL_PATH not defined"  1>&2
+	echo "ERROR: environment variable GLOBUS_INSTALL_PATH not defined"  1>&2
 	# for easier development testing, fall back on ${prefix} and don't exit
 	# GLOBUS_INSTALL_PATH=@prefix@
 	exit 1
