@@ -3,6 +3,7 @@ use Globus::GRAM::JobState;
 use Globus::GRAM::JobManager;
 use Globus::Core::Paths;
 
+use IO::File;
 use POSIX;
 use Config;
 
