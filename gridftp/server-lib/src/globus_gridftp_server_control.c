@@ -164,7 +164,7 @@ static globus_size_t                    globus_l_gsc_fake_buffer_len = 1;
 static globus_gridftp_server_control_attr_t globus_l_gsc_default_attr;
 static globus_xio_driver_t              globus_l_gsc_tcp_driver;
 static globus_xio_driver_t              globus_l_gsc_gssapi_ftp_driver;
-static globus_xio_driver_t              globus_l_gsc_ftp_cmd_driver;
+static globus_xio_driver_t              globus_l_gsc_telnet_driver;
 
 GlobusDebugDefine(GLOBUS_GRIDFTP_SERVER_CONTROL);
 
@@ -185,7 +185,7 @@ globus_l_gsc_activate()
     {
         return GLOBUS_FAILURE;
     }
-    res = globus_xio_driver_load("telnet", &globus_l_gsc_ftp_cmd_driver);
+    res = globus_xio_driver_load("telnet", &globus_l_gsc_telnet_driver);
     if(res != GLOBUS_SUCCESS)
     {
         return GLOBUS_FAILURE;
@@ -213,7 +213,7 @@ globus_l_gsc_deactivate()
     globus_gridftp_server_control_attr_destroy(globus_l_gsc_default_attr);
 
     globus_xio_driver_unload(globus_l_gsc_tcp_driver);
-    globus_xio_driver_unload(globus_l_gsc_ftp_cmd_driver);
+    globus_xio_driver_unload(globus_l_gsc_telnet_driver);
     globus_xio_driver_unload(globus_l_gsc_gssapi_ftp_driver);
 
     rc = globus_module_deactivate(GLOBUS_XIO_MODULE);
@@ -1904,7 +1904,7 @@ globus_gridftp_server_control_start(
         else
         {
             res = globus_xio_stack_push_driver(
-                xio_stack, globus_l_gsc_ftp_cmd_driver);
+                xio_stack, globus_l_gsc_telnet_driver);
         }
         if(res != GLOBUS_SUCCESS)
         {
@@ -1912,15 +1912,15 @@ globus_gridftp_server_control_start(
             goto err;
         }
 
-        res = globus_xio_attr_cntl(xio_attr, globus_l_gsc_ftp_cmd_driver,
-                GLOBUS_XIO_DRIVER_FTP_CMD_FORCE_SERVER, GLOBUS_TRUE);
+        res = globus_xio_attr_cntl(xio_attr, globus_l_gsc_telnet_driver,
+                GLOBUS_XIO_TELNET_FORCE_SERVER, GLOBUS_TRUE);
         if(res != GLOBUS_SUCCESS)
         {
             globus_mutex_unlock(&server_handle->mutex);
             goto err;
         }
-        res = globus_xio_attr_cntl(xio_attr, globus_l_gsc_ftp_cmd_driver,
-                GLOBUS_XIO_DRIVER_FTP_CMD_BUFFER, GLOBUS_TRUE);
+        res = globus_xio_attr_cntl(xio_attr, globus_l_gsc_telnet_driver,
+                GLOBUS_XIO_TELNET_BUFFER, GLOBUS_TRUE);
         if(res != GLOBUS_SUCCESS)
         {
             globus_mutex_unlock(&server_handle->mutex);

@@ -5,7 +5,7 @@
 #include "globus_xio.h"
 #include "globus_xio_system.h"
 #include "globus_xio_tcp_driver.h"
-#include "globus_xio_ftp_cmd.h"
+#include "globus_xio_telnet.h"
 #include "globus_xio_gssapi_ftp.h"
 
 #define GLOBUS_GRIDFTP_VERSION_CTL              1
