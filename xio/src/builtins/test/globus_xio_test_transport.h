@@ -14,6 +14,8 @@ typedef enum globus_xio_test_failure_e
     GLOBUS_XIO_TEST_FAIL_FINISH_READ,
     GLOBUS_XIO_TEST_FAIL_PASS_WRITE,
     GLOBUS_XIO_TEST_FAIL_FINISH_WRITE,
+    GLOBUS_XIO_TEST_FAIL_PASS_ACCEPT,
+    GLOBUS_XIO_TEST_FAIL_FINISH_ACCEPT,
 } globus_xio_test_failure_t;
 
 enum

@@ -230,6 +230,8 @@ do                                                                          \
 
 #define GlobusXIOOperationGetContext(_in_op)                                \
     &((_in_op)->_op_context->entry[_in_op->ndx - 1])
+
+#define GlobusXIOOperationGetDataDescriptor(op) NULL
 /*********************************************************************
  *              function signatures used by the macros
  ********************************************************************/

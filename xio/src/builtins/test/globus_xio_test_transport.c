@@ -251,6 +251,90 @@ globus_l_xio_operation_kickout(
     }    
 
 }
+
+/**********************************
+ *  server stuff
+ *********************************/
+
+globus_result_t
+static globus_result_t
+globus_l_xio_test_server_init(
+    void **                             out_server,
+    void *                              driver_attr)
+{
+    globus_l_xio_test_handle_t *        server;
+
+    if(attr == NULL)
+    {
+        driver_attr = &globus_l_default_attr;
+    }
+
+    /* copy the attr to a handle */
+    globus_l_xio_test_attr_copy((void **)&server, driver_attr);
+
+    *out_server = server;
+    
+    return GLOBUS_SUCCESS;
+}
+
+static globus_result_t
+globus_l_xio_test_accept(
+    void *                              driver_server,
+    void *                              driver_attr,
+    globus_xio_operation_t              accept_op)
+{
+    globus_l_xio_test_handle_t *        attr;
+
+    attr = (globus_l_xio_test_handle_t *) driver_server;
+
+    if(attr->failure & GLOBUS_XIO_TEST_FAIL_PASS_ACCEPT)
+    {
+        return GlobusXIOErrorLazy();
+    }
+    else if(attr->failure & GLOBUS_XIO_TEST_FAIL_FINISH_ACCEPT)
+    {
+        res = GlobusXIOErrorLazy();
+    }
+
+    if(dh->inline_finish)
+    {
+        GlobusXIODriverFinishedAccept(context, dh, op, res);
+    }
+    else
+    {
+        globus_l_xio_test_op_wrapper_t *    ow;
+
+        XIOTestCreateOpWraper(ow, attr, op, res, 0);
+
+        globus_callback_space_register_oneshot(
+            NULL,
+            &dh->delay,
+            globus_l_xio_operation_kickout,
+            (void *) ow,
+            GLOBUS_CALLBACK_GLOBAL_SPACE);
+    }
+
+    return GLOBUS_SUCCESS;
+}
+
+static globus_result_t
+globus_l_xio_test_server_cntl(
+    void *                              driver_server,
+    int                                 cmd,
+    va_list                             ap)
+{
+    globus_l_xio_test_handle_t *        attr;
+}
+
+static globus_result_t
+globus_l_xio_test_server_destroy(
+    void *                              driver_server)
+{
+    globus_free(driver_server);
+}
+
+
+
 /*
  *  open a file
  */
@@ -494,8 +578,8 @@ static struct globus_i_xio_driver_s globus_l_xio_test_info =
     /*
      *  No server functions.
      */
-    NULL,                                        /* server_init_func    */
-    NULL,                                        /* server_accept_func  */
+    globus_l_xio_test_server_init,               /* server_init_func    */
+    globus_l_xio_test_accept,                    /* server_accept_func  */
     NULL,                                        /* server_destroy_func */
     NULL,                                        /* server_cntl_func    */
 
