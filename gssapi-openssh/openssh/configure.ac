@@ -140,16 +140,7 @@ case "$host" in
 	AC_DEFINE(BROKEN_SETREGID)
 	;;
 *-*-darwin*)
-	AC_MSG_CHECKING(if we have working getaddrinfo)
-	AC_TRY_RUN([#include <mach-o/dyld.h>
-main() { if (NSVersionOfRunTimeLibrary("System") >= (60 << 16))
-		exit(0);
-	else
-		exit(1);
-}], [AC_MSG_RESULT(working)],
-	[AC_MSG_RESULT(buggy)
-	AC_DEFINE(BROKEN_GETADDRINFO)],
-	[AC_MSG_RESULT(assume it is working)])
+	AC_DEFINE(BROKEN_GETADDRINFO)
 	AC_DEFINE(SETEUID_BREAKS_SETUID)
 	AC_DEFINE(BROKEN_SETREUID)
 	AC_DEFINE(BROKEN_SETREGID)
