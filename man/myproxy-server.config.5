@@ -1,4 +1,4 @@
-.TH myproxy-server.config 5 "2003-4-29" "NCSA" "MyProxy"
+.TH myproxy-server.config 5 "2003-5-29" "NCSA" "MyProxy"
 .SH NAME
 myproxy-server.config \- myproxy-server configuration file
 .SH DESCRIPTION
@@ -18,6 +18,13 @@ The
 .B myproxy-server -c
 option can be used to specify an alternative location.
 The file installed by default does not allow any requests.
+.PP
+The file also supports a
+.B passphrase_policy_program
+command for specifying an external program for evaluating the quality
+of users' passphrases.  A sample program is installed in
+.I $GLOBUS_LOCATION/share/myproxy/myproxy-passphrase-policy
+but is not enabled by default.
 .PP
 Lines in the configuration file use limited regular expressions
 for matching the distinguished names (DNs) of classes of users.
@@ -117,6 +124,18 @@ which allows any client to pass the per-credential policy
 check.  (The client must still pass the 
 .B authorized_renewers
 check.)
+.TP
+.BI passphrase_policy_program " full-path-to-script"
+This line specifies a script to run whenever a passphrase is set or
+changed for implementing a local password policy.
+The script is passed the new passphrase via stdin and is passed the
+following arguments: username, distinguished name, credential name (if
+any), per-credential retriever policy (if any), and per-credential
+renewal policy (if any).
+If the passphrase is acceptable, the script should exit with status 0.
+Otherwise, it should exit with non-zero status, causing the operation
+in progress (credential load, passphrase change) to fail with the error
+message provided by the script's stdout.
 .SH FILES
 .TP
 .I /etc/myproxy-server.config
@@ -128,6 +147,9 @@ A different location can be specified by using the
 .BR myproxy-server (8)
 .B -c
 option.
+.TP
+.I $GLOBUS_LOCATION/share/myproxy/myproxy-passphrase-policy
+A sample program for evaluating passphrase quality.
 .SH ENVIRONMENT
 .TP
 .B GLOBUS_LOCATION
