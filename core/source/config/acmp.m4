@@ -5,7 +5,7 @@ AC_DEFUN(LAC_MP,
     LAC_MP_ARGS
     LAC_MP_INC_ARGS
 
-    if test "$build_arg_mpi" == "yes" ; then
+    if test "$build_arg_mpi" = "yes" ; then
         if test "$mpi_own_lib" = "yes" ; then
             echo "Using user provided MPI libs"
             MP=mpi
