@@ -56,7 +56,7 @@
  * [including the GNU Public Licence.]
  */
 /* ====================================================================
- * Copyright (c) 1998-2001 The OpenSSL Project.  All rights reserved.
+ * Copyright (c) 1998-2002 The OpenSSL Project.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -122,6 +122,7 @@
 #include <openssl/evp.h>
 #include <openssl/x509.h>
 #include "ssl_locl.h"
+#include "cryptlib.h"
 
 static SSL_METHOD *ssl3_get_server_method(int ver);
 static int ssl3_get_client_hello(SSL *s);
@@ -167,7 +168,6 @@ int ssl3_accept(SSL *s)
 	long num1;
 	int ret= -1;
 	int new_state,state,skip=0;
-	int got_new_session=0;
 
 	RAND_add(&Time,sizeof(Time),0);
 	ERR_clear_error();
@@ -280,7 +280,7 @@ int ssl3_accept(SSL *s)
 			s->shutdown=0;
 			ret=ssl3_get_client_hello(s);
 			if (ret <= 0) goto end;
-			got_new_session=1;
+			s->new_session = 2;
 			s->state=SSL3_ST_SW_SRVR_HELLO_A;
 			s->init_num=0;
 			break;
@@ -513,7 +513,7 @@ int ssl3_accept(SSL *s)
 
 			s->init_num=0;
 
-			if (got_new_session) /* skipped if we just sent a HelloRequest */
+			if (s->new_session == 2) /* skipped if we just sent a HelloRequest */
 				{
 				/* actually not necessarily a 'new' session  */
 				
@@ -712,7 +712,7 @@ static int ssl3_get_client_hello(SSL *s)
 		SSLerr(SSL_F_SSL3_GET_CLIENT_HELLO,SSL_R_NO_CIPHERS_SPECIFIED);
 		goto f_err;
 		}
-	if ((i+p) > (d+n))
+	if ((p+i) >= (d+n))
 		{
 		/* not enough data */
 		al=SSL_AD_DECODE_ERROR;
@@ -769,6 +769,13 @@ static int ssl3_get_client_hello(SSL *s)
 
 	/* compression */
 	i= *(p++);
+	if ((p+i) > (d+n))
+		{
+		/* not enough data */
+		al=SSL_AD_DECODE_ERROR;
+		SSLerr(SSL_F_SSL3_GET_CLIENT_HELLO,SSL_R_LENGTH_MISMATCH);
+		goto f_err;
+		}
 	q=p;
 	for (j=0; j<i; j++)
 		{
@@ -816,7 +823,7 @@ static int ssl3_get_client_hello(SSL *s)
 	/* TLS does not mind if there is extra stuff */
 	if (s->version == SSL3_VERSION)
 		{
-		if (p > (d+n))
+		if (p < (d+n))
 			{
 			/* wrong number of bytes,
 			 * there could be more to follow */
@@ -942,6 +949,7 @@ static int ssl3_send_server_hello(SSL *s)
 			s->session->session_id_length=0;
 
 		sl=s->session->session_id_length;
+		die(sl <= sizeof s->session->session_id);
 		*(p++)=sl;
 		memcpy(p,s->session->session_id,sl);
 		p+=sl;

@@ -228,7 +228,7 @@ typedef struct evp_pkey_md_st
 			EVP_rsa_octet_string(),EVP_mdc2())
 #define EVP_dsa_sha() \
 		EVP_PKEY_MD_add(NID_dsaWithSHA,\
-			EVP_dsa(),EVP_mdc2())
+			EVP_dsa(),EVP_sha())
 #define EVP_dsa_sha1() \
 		EVP_PKEY_MD_add(NID_dsaWithSHA1,\
 			EVP_dsa(),EVP_sha1())
@@ -499,7 +499,7 @@ typedef int (EVP_PBE_KEYGEN)(EVP_CIPHER_CTX *ctx, const char *pass, int passlen,
 #define EVP_CIPHER_key_length(e)	((e)->key_len)
 #define EVP_CIPHER_iv_length(e)		((e)->iv_len)
 #define EVP_CIPHER_flags(e)		((e)->flags)
-#define EVP_CIPHER_mode(e)		((e)->flags) & EVP_CIPH_MODE)
+#define EVP_CIPHER_mode(e)		(((e)->flags) & EVP_CIPH_MODE)
 
 #define EVP_CIPHER_CTX_cipher(e)	((e)->cipher)
 #define EVP_CIPHER_CTX_nid(e)		((e)->cipher->nid)
