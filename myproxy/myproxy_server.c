@@ -368,6 +368,15 @@ handle_client(myproxy_socket_attrs_t *attrs,
 	    respond_with_error_and_die(attrs,
 				       "requested credentials have expired");
 	}
+
+	/* Are credentials locked? */
+	if (client_creds->lockmsg) {
+	    char *error, *msg="credential locked\n";
+	    error = malloc(strlen(msg)+strlen(client_creds->lockmsg)+1);
+	    strcpy(error, msg);
+	    strcat(error, client_creds->lockmsg);
+	    respond_with_error_and_die(attrs, error);
+	}
 	
 	/* Send initial OK response */
 	send_response(attrs, server_response, client_name);

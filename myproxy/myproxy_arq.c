@@ -28,6 +28,9 @@ static char usage[] =
 "    -t | --time_left    <hours>     Query for creds with lifetime greater \n"
 "                                    than specified <hours>\n"
 "    -r | --remove                   Remove credentials matching query\n"
+"    -L | --lock         <msg>       Lock access to credential(s).\n"
+"                                    Specified msg will be returned instead.\n"
+"    -U | --unlock                   Unlock previously locked credential(s).\n"
 "    -v | --verbose                  Display debugging messages\n"
 "    -V | --version                  Displays version\n"
 "\n";
@@ -41,13 +44,15 @@ struct option long_options[] =
     {"expiring_in", required_argument, NULL, 'e'},
     {"time_left",   required_argument, NULL, 't'},
     {"storage",	    required_argument, NULL, 's'},
+    {"lock",        required_argument, NULL, 'L'},
+    {"unlock",            no_argument, NULL, 'U'},
     {"verbose",           no_argument, NULL, 'v'},
     {"version",           no_argument, NULL, 'V'},
     {"remove",            no_argument, NULL, 'r'},
     {0, 0, 0, 0}
 };
 
-static char short_options[] = "hul:k:e:t:s:vVr";
+static char short_options[] = "hul:k:e:t:s:vVrL:U";
 
 static char version[] =
 BINARY_NAME "version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
@@ -55,26 +60,42 @@ BINARY_NAME "version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
 /* Function declarations */
 void init_arguments(int argc, char *argv[]);
 
-void print_cred_info(myproxy_creds_t *creds);
 void do_remove_creds(myproxy_creds_t *creds);
+void do_lock_creds(myproxy_creds_t *creds);
+void do_unlock_creds(myproxy_creds_t *creds);
 
 struct myproxy_creds cred = {0};
 int remove_creds = 0;
+char *lock_msg = NULL;
+int unlock_creds = 0;
 
 int
 main(int argc, char *argv[]) 
 {
-   /* Initialize arguments*/
+    int numcreds;
+
+    /* Initialize arguments*/
     init_arguments(argc, argv);
 
-    if (myproxy_admin_retrieve_all(&cred) < 0) {
+    numcreds = myproxy_admin_retrieve_all(&cred);
+    if (numcreds < 0) {
         myproxy_log_verror();
         fprintf (stderr, "Failed to read credentials.\n%s\n",
 		 verror_get_string());
+	exit(1);
+    } else if (numcreds == 0) {
+	printf("No credentials found.\n");
     } else if (remove_creds) {
 	do_remove_creds (&cred);
+    } else if (lock_msg) {
+	do_lock_creds (&cred);
+    } else if (unlock_creds) {
+	do_unlock_creds (&cred);
     } else {
-	print_cred_info (&cred);
+	if (myproxy_print_cred_info(&cred, stdout) < 0) {
+	    fprintf(stderr, "%s\n", verror_get_string());
+	    exit(1);
+	}
     }
 
     return 0;
@@ -113,6 +134,12 @@ init_arguments(int argc,
 	case 'r':	/* remove */
 	    remove_creds = 1;
 	    break;
+	case 'L':	/* lock */
+	    lock_msg = strdup(gnu_optarg);
+	    break;
+	case 'U':	/* unlock */
+	    unlock_creds = 1;
+	    break;
 	case 'v':	/* verbose */
 	    myproxy_debug_set_level(1);
 	    break;
@@ -131,67 +158,9 @@ init_arguments(int argc,
 }
 
 void
-print_cred_info(myproxy_creds_t *creds)
-{
-    int first_time = 1;
-    if (!creds) return;
-
-    if (creds->owner_name == NULL && creds->next == NULL)
-    {
-	printf ("No credentials present.\n");
-	return;
-    }
-
-    for (; creds; creds = creds->next) {
-        time_t time_diff, now;
-        float days;
-
-    	printf("owner: %s\n", creds->owner_name);
-    	printf("username: %s\n", creds->username);
-
-        if (creds->credname) {
-            printf("  name: %s\n", creds->credname);
-	}
-        if (creds->creddesc) {
-            printf("  description: %s\n", creds->creddesc);
-        }
-        if (creds->retrievers) {
-            printf("  retrieval policy: %s\n", creds->retrievers);
-        }
-        if (creds->renewers) {
-            printf("  renewal policy: %s\n", creds->renewers);
-        }
-        now = time(0);
-        if (creds->end_time > now) {
-            time_diff = creds->end_time - now;
-            days = time_diff / 86400.0;
-        } else {
-            time_diff = 0;
-            days = 0.0;
-        }
-        printf("  timeleft: %ld:%02ld:%02ld",
-               (long)(time_diff / 3600),
-               (long)(time_diff % 3600) / 60,
-               (long)time_diff % 60 );
-        if (days > 1.0) {
-            printf("  (%.1f days)\n", days);
-        } else {
-            printf("\n");
-        }
-        first_time = 0;
-    }
-}
-
-void
 do_remove_creds(myproxy_creds_t *creds)
 {
     if (!creds) return;
-
-    if (creds->owner_name == NULL && creds->next == NULL)
-    {
-	printf("No credentials present.\n");
-	return;
-    }
 
     for (; creds; creds = creds->next) {
 	if (myproxy_creds_delete(creds) == 0) {
@@ -200,6 +169,44 @@ do_remove_creds(myproxy_creds_t *creds)
 		   creds->credname ? creds->credname : "default");
 	} else {
 	    fprintf(stderr, "Failed to remove credential for user %s "
+		    "(name: %s).\n%s\n", creds->username,
+		    creds->credname ? creds->credname : "default",
+		    verror_get_string());
+	}
+    }
+}
+
+void
+do_lock_creds(myproxy_creds_t *creds)
+{
+    if (!creds) return;
+
+    for (; creds; creds = creds->next) {
+	if (myproxy_creds_lock(creds, lock_msg) == 0) {
+	    printf("Credential for user %s (name: %s) locked.\n",
+		   creds->username,
+		   creds->credname ? creds->credname : "default");
+	} else {
+	    fprintf(stderr, "Failed to lock credential for user %s "
+		    "(name: %s).\n%s\n", creds->username,
+		    creds->credname ? creds->credname : "default",
+		    verror_get_string());
+	}
+    }
+}
+
+void
+do_unlock_creds(myproxy_creds_t *creds)
+{
+    if (!creds) return;
+
+    for (; creds; creds = creds->next) {
+	if (myproxy_creds_unlock(creds) == 0) {
+	    printf("Credential for user %s (name: %s) unlocked.\n",
+		   creds->username,
+		   creds->credname ? creds->credname : "default");
+	} else {
+	    fprintf(stderr, "Failed to unlock credential for user %s "
 		    "(name: %s).\n%s\n", creds->username,
 		    creds->credname ? creds->credname : "default",
 		    verror_get_string());
