@@ -92,6 +92,10 @@ AC_DEFUN(LAC_COMPILER_SET_OPTIMIZATIONS,
                     # gcc
                     lac_CFLAGS="$lac_CFLAGS -mcpu=ultrasparc -O3 -fomit-frame-pointer -Wall -Wa,-Av8plus"
                 ;;
+                *x86_64*)
+                    # gcc
+                    lac_CFLAGS="$lac_CFLAGS -O3 -Wall"
+                ;;
                 *x86*)
                     # gcc
                     lac_CFLAGS="$lac_CFLAGS -O3 -fomit-frame-pointer -mcpu=i486 -Wall"
@@ -197,6 +201,10 @@ AC_DEFUN(LAC_COMPILER_SET_DEFINES,
                 *sun4u*)
                     # gcc
                     lac_CFLAGS="$lac_CFLAGS -DB_ENDIAN -DTERMIO -DULTRASPARC"
+                ;;
+                *x86_64*)
+                    # gcc
+                    lac_CFLAGS="$lac_CFLAGS -m64 -DL_ENDIAN -DTERMIO -DMD32_REG_T=int"
                 ;;
                 *x86*|*ia64*|*alpha*)
                     # gcc
