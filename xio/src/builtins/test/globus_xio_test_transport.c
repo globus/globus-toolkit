@@ -505,3 +505,14 @@ static struct globus_i_xio_driver_s globus_l_xio_test_info =
     globus_l_xio_test_attr_cntl,                 /* attr_cntl_func      */
     globus_l_xio_test_attr_destroy,              /* attr_destroy_func   */
 };
+
+globus_xio_driver_t
+globus_xio_driver_test_transport_get_driver()
+{
+    globus_xio_driver_t                         driver;
+
+    driver = (globus_xio_driver_t) &globus_l_xio_test_info;
+
+    return driver;
+}
+
