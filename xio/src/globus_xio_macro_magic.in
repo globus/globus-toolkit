@@ -1,0 +1,77 @@
+1 #include "globus_i_xio.h"
+
+1 void
+1 globus_xio_driver_pass_open_DEBUG(
+1     globus_result_t * _out_res,
+1     globus_xio_context_t * _out_context,
+1     globus_xio_operation_t  _in_op,
+1     globus_xio_driver_callback_t _in_cb,
+1     void * _in_user_arg) 
+2 #define GlobusXIODriverPassOpen_DEDUG(_out_res, _out_context,               \
+2            _in_op, _in_cb, _in_user_arg)                                   \
+2 do                                                                          \
+{                                                                           \
+    globus_i_xio_op_t *                             _op;                    \
+    globus_i_xio_handle_t *                         _handle;                \
+    globus_i_xio_context_t *                        _context;               \
+    globus_i_xio_context_entry_t *                  _my_context;            \
+    globus_i_xio_context_entry_t *                  _next_context;          \
+    globus_i_xio_op_entry_t *                       _next_op;               \
+    globus_i_xio_op_entry_t *                       _my_op;                 \
+    int                                             _caller_ndx;            \
+    globus_result_t                                 _res;
+    GlobusXIOName(GlobusXIODriverPassOpen);                                 \
+                                                                            \
+    globus_assert(_op->ndx < _op->stack_size);                              \
+    _op = (_in_op);                                                         \
+    _handle = _op->_op_handle;                                              \
+    _context = _handle->context;                                            \
+    _my_context = &_context->entry[_op->ndx];                               \
+    _my_context->state = GLOBUS_XIO_HANDLE_STATE_OPENING;                   \
+    _caller_ndx = _op->ndx;                                                 \
+                                                                            \
+    if(_op->canceled)                                                       \
+    {                                                                       \
+        _res = GlobusXIOErrorCanceled();                                    \
+    }                                                                       \
+    else                                                                    \
+    {                                                                       \
+        _op->progress = GLOBUS_TRUE;                                        \
+        _op->block_timeout = GLOBUS_FALSE;                                  \
+        _my_op = &_op->entry[_op->ndx];                                     \
+        _my_op->cb = (_in_cb);                                              \
+        _my_op->user_arg = (_in_user_arg);                                  \
+        _my_op->in_register = GLOBUS_TRUE;                                  \
+        do                                                                  \
+        {                                                                   \
+            _op->ndx++;                                                     \
+            _next_op = &_op->entry[_op->ndx];                               \
+            _next_context = &_context->entry[_op->ndx];                     \
+        }                                                                   \
+        while(_next_context->driver->transport_open_func == NULL &&         \
+              _next_context->driver->transform_open_func == NULL);          \
+        _next_op->caller_ndx = _caller_ndx;                                 \
+        /* at time that stack is built this will be varified */             \
+        globus_assert(_op->ndx <= _context->stack_size);                    \
+        if(_op->ndx == _op->stack_size)                                     \
+        {                                                                   \
+            _res = _next_context->driver->transport_open_func(              \
+                        _next_op->target,                                   \
+                        _next_op->attr,                                     \
+                        _my_context,                                        \
+                        _op);                                               \
+        }                                                                   \
+        else                                                                \
+        {                                                                   \
+            _res = _next_context->driver->transform_open_func(              \
+                        _next_op->target,                                   \
+                        _next_op->attr,                                     \
+                        _op);                                               \
+        }                                                                   \
+        _my_op->in_register = GLOBUS_FALSE;                                 \
+        GlobusXIODebugSetOut(_out_context, _my_context);                    \
+        GlobusXIODebugSetOut(_out_res, _res);                               \
+    }                                                                       \
+}                                                                           \
+2 while(0)
+

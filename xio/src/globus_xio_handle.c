@@ -58,7 +58,7 @@ do                                                                          \
         GlobusTimeReltimeCopy(_h->read_timeout_period,                      \
             _a->read_timeout_period);                                       \
         _h->write_timeout_cb = _a->write_timeout_cb;                        \
-        GlobusTimeReltimeCopy(handle->write_timeout_period,                 \
+        GlobusTimeReltimeCopy(_h->write_timeout_period,                     \
             _a->write_timeout_period);                                      \
         _h->close_timeout_cb = _a->close_timeout_cb;                        \
         GlobusTimeReltimeCopy(_h->close_timeout_period,                     \

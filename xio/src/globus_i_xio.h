@@ -411,4 +411,36 @@ globus_i_xio_context_destroy(
 
 extern globus_i_xio_timer_t                    globus_l_xio_timeout_timer;
 
+/* macro games */
+#if defined(BUILD_DEBUG)
+
+#   define GlobusXIODebugSetOut(_dst, _src) *(_dst) = (_src)
+
+    void
+    globus_xio_driver_pass_open_DEBUG(
+        globus_result_t *                           _out_res,
+        globus_xio_context_t *                      _out_context,
+        globus_xio_operation_t                      _in_op,
+        globus_xio_driver_callback_t                _in_cb,
+        void *                                      _in_user_arg);
+
+#   define GlobusXIODriverPassOpen(                                        \
+            _out_res, _out_context, _in_op, _in_cb, _in_user_arg)           \
+        globus_xio_driver_pass_open_DEBUG(                                  \
+            &_out_res, &_out_context,  _in_op, _in_cb, _in_user_arg)
+
+#else /* BUILD_DEBUG */
+
+#   include "globus_xio_macro_magic.h"
+
+#   define GlobusXIODebugSetOut(_dst, _src) _dst = (_src)
+
+#   define GlobusXIODriverPassOpen(                                        \
+            _out_res, _out_context, _in_op, _in_cb, _in_user_arg)       \
+            GlobusXIODriverPassOpen_DEDUG(                                  \
+                _out_res, _out_context, _in_op, _in_cb, _in_user_arg)
+
+#endif /* BUILD_DEBUG */
+
+
 #endif
