@@ -51,6 +51,7 @@ int main(int argc, char **argv)
     unsigned long default_options=GASSD_DEFAULT_OPTIONS;
     unsigned long options=0UL;
     signed char c;
+    int rc;
     
     globus_module_activate(GLOBUS_NEXUS_MODULE);
 
@@ -122,12 +123,12 @@ int main(int argc, char **argv)
 		options &= ~GLOBUS_GASS_SERVER_EZ_CLIENT_SHUTDOWN_ENABLE;
 		break;
 	    default:
-		printf("Disabling unknown option %s\n", optarg);
+		globus_libc_printf("Disabling unknown option %s\n", optarg);
 	    }
 	    break;
 	case 'h':
 	case '?':
-	    printf("usage: %s\n"
+	    globus_libc_printf("usage: %s\n"
 		   "\t-p port\t\t\tSpecify port for server\n"
 		   "\t-s silent mode\t\tDon't output server URL\n"
 		   "\t-l line buffer\t\tLine buffer files when writing\n"
@@ -148,16 +149,28 @@ int main(int argc, char **argv)
         options = default_options;
     }
     
-    globus_gass_server_ez_init(&port,
-			&url,
-			options,
-			options & GLOBUS_GASS_SERVER_EZ_CLIENT_SHUTDOWN_ENABLE
-			? client_shutdown_callback
-			: (globus_gass_server_ez_client_shutdown_t) GLOBUS_NULL);
-    
+    rc = globus_gass_server_ez_init(
+	&port,
+	&url,
+	options,
+	options & GLOBUS_GASS_SERVER_EZ_CLIENT_SHUTDOWN_ENABLE
+	? client_shutdown_callback
+	: (globus_gass_server_ez_client_shutdown_t) GLOBUS_NULL);
+    if(rc != GLOBUS_SUCCESS)
+    {
+	if(port == 0)
+	{
+	    globus_libc_printf("Error: Cannot listen on port\n");
+	    return -1;
+	}
+	else
+	{
+	    globus_libc_printf("Error: Failed to initialize gass server library\n");
+	}
+    }
     if(!silent)
     {
-	printf("%s\n",url);
+	globus_libc_printf("%s\n",url);
 	fflush(stdout);
     }
 
