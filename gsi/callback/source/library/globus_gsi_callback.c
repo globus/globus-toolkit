@@ -45,7 +45,7 @@ FILE *                           globus_i_gsi_callback_debug_fstream = NULL;
  */
 globus_module_descriptor_t globus_i_gsi_callback_module =
 {
-    "globus_module",
+    "globus_gsi_callback_module",
     globus_l_gsi_callback_activate,
     globus_l_gsi_callback_deactivate,
     GLOBUS_NULL,
