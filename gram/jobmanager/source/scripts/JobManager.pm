@@ -139,11 +139,20 @@ sub nfssync
     my $now = time();
     unless ( utime( $now, $now, $object ) ) 
     {
+        $self->log( "NFS sync for $object failed (may be harmless): $!" );
+
 	# object did not exist
 	if ( $create_p ) 
 	{
 	    local(*TEMP);
-	    close(TEMP) if ( open( TEMP, ">$object" ) );
+	    if ( open( TEMP, ">$object" ) ) {
+                close(TEMP);
+                $self->log( "NFS sync created $object" );
+                utime($now, $now, $object) ||
+                    $self->log( "NFS sync still unable to access $object" );
+            } else {
+                $self->log( "NFS sync could not create $object: $!" );
+            }
 	}
     }
     $self->log( "Sent NFS sync for $object" );
@@ -455,8 +464,7 @@ sub rewrite_urls
 {
     my $self = shift;
     my $description = $self->{JobDescription};
-    my $tag = $description->cache_tag()
-        or $tag = $ENV{'GLOBUS_GRAM_JOB_CONTACT'};
+    my $tag = $description->cache_tag() || $ENV{'GLOBUS_GRAM_JOB_CONTACT'};
     my $url;
     my $filename;
 
@@ -727,8 +735,7 @@ sub cache_cleanup
 {
     my $self = shift;
     my $description = $self->{JobDescription};
-    my $tag = $description->cache_tag()
-        or $tag = $ENV{'GLOBUS_GRAM_JOB_CONTACT'};
+    my $tag = $description->cache_tag() || $ENV{'GLOBUS_GRAM_JOB_CONTACT'};
 
     $self->log("cache_cleanup(enter)");
     if ( ! defined $tag )
@@ -802,7 +809,9 @@ sub remote_io_file_create
     }
 
     return Globus::GRAM::Error::WRITING_REMOTE_IO_URL
-        if($result eq '');
+        if ($result eq '');
+
+    $self->nfssync($result, 0);
 
     $self->log("remote_io_file_create(exit)");
     return { REMOTE_IO_FILE => $result };
@@ -878,8 +887,17 @@ Create a new process to run the first argument application with the
 remaining arguments (which may be empty). No shell metacharacter will
 be evaluated, avoiding a shell invocation. Stderr is redirected to 
 /dev/null and stdout is being captured by the parent process, which
-is also the result returned. Use this function as more efficient
-backticks, if you can do not need shell metacharacter evaluation. 
+is also the result returned.  In list mode, all lines are
+returned, in scalar mode, only the first line is being returned. The
+line termination character is already cut off. Use this function as
+more efficient backticks, if you do not need shell metacharacter
+evaluation.
+
+Caution: This function deviates in two manners from regular backticks.
+Firstly, it chomps the line terminator from the output. Secondly, it
+returns only the first line in scalar context instead of a multiline
+concatinated string. As with regular backticks, the result may be
+undefined in scalar context, if no result exists.
 
 A child error code with an exit code of 127 indicates that the application
 could not be run. The scalar result returned by this function is usually

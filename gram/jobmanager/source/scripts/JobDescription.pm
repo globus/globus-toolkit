@@ -76,20 +76,23 @@ sub new
     my $proto = shift;
     my $class = ref($proto) || $proto;
     my $desc = shift;
-    my $self = ();
+    my $self = {};
 
-    if ( ref ( $desc ) eq "HASH" )
+    if (defined ($desc))
     {
-	foreach my $Key ( keys %{$desc} )
-	{
-	    $self->{$Key} = $desc->{$Key};
-	}
-    }
-    else
-    {
-	my $desc_fn = $desc;
-	$self = require "$desc_fn";
-	$self->{_description_file} = $desc_fn;
+        if ( ref ( $desc ) eq "HASH" )
+        {
+            foreach my $Key ( keys %{$desc} )
+            {
+                $self->{$Key} = $desc->{$Key};
+            }
+        }
+        else
+        {
+            my $desc_fn = $desc;
+            $self = require "$desc_fn";
+            $self->{_description_file} = $desc_fn;
+        }
     }
 
     bless $self, $class;
@@ -119,7 +122,11 @@ sub add
     $attr =~ s/_//g;
     $attr = lc($attr);
 
-    $self->{$attr} = [$value];
+    if ( ref($value) eq 'ARRAY' ) {
+        $self->{$attr} = $value;
+    } else {
+        $self->{$attr} = [ $value ];
+    }
 }
 
 =item $description->I<save>([$filename])
@@ -133,7 +140,7 @@ the object.
 sub save
 {
     my $self = shift;
-    my $filename = shift or $filename = "$self->{_description_file}.new";
+    my $filename = shift || "$self->{_description_file}.new";
     local(*OUT);	     	# protect
 
     if ( open( OUT, '>' . $filename ) ) 
@@ -141,7 +148,7 @@ sub save
 	print OUT '$description = {', "\n";
 	foreach ( keys %{$self} ) 
 	{
-	    print OUT '   \'', $_, ' => ';
+	    print OUT '   \'', $_, '\' => ';
 	    $self->print_recursive( \*OUT, $self->{$_} );
 	    print OUT ",\n";
 	}
@@ -153,9 +160,13 @@ sub save
 	# FIXME: what shall we do, if we cannot open the file?
     }
 
-    if ( $filename eq "$self->{_description_file}.new" )
+    if ( exists($self->{_description_file}) )
     {
-	rename("$self->{_description_file}.new", $self->{_description_file});
+        if ( $filename eq "$self->{_description_file}.new" )
+        {
+            rename("$self->{_description_file}.new",
+                    $self->{_description_file});
+        }
     }
 
     return 0;

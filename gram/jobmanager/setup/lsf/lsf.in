@@ -187,8 +187,10 @@ EOF
 	print JOB "#BSUB -M ${total_max_memory}\n";
     }
     print JOB '#BSUB -i ', $description->stdin(), "\n";
-    print JOB '#BSUB -e ', $description->stderr(), "\n";
     print JOB '#BSUB -o ', $description->stdout(), "\n";
+    $self->nfssync( $description->stdout(), 1 );
+    print JOB '#BSUB -e ', $description->stderr(), "\n";
+    $self->nfssync( $description->stderr(), 1 );
     print JOB "#BSUB -N\n";
     print JOB '#BSUB -n ', $description->count(), "\n";
 
@@ -391,7 +393,7 @@ sub poll
             # can recover and the submitted job is fine.
             # We want the JM to ignore this poll and keep the same state
             # as the previous state.  Returning an empty hash will do the job.
-            $self->log("bjobs returned an unknown response.  Telling JM to ignore this poll");
+            $self->log("bjobs returned an unknown response.  Telling JM to ignore this poll ($_) ($exit_code)");
             return {};
         }
     }
@@ -406,8 +408,8 @@ sub cancel
     my $job_id = $description->jobid();
 
     $self->log("cancel job $job_id");
-    # needs to be back-ticks to source lsf profile
-    system("$bkill $job_id >/dev/null 2>/dev/null");
+    #system("$bkill $job_id >/dev/null 2>/dev/null");
+    $self->fork_and_exec_cmd( $bkill, $job_id );
 
     if($? == 0)
     {
