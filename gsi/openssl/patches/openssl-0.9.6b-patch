@@ -51,7 +51,6 @@ diff -r -u openssl-0.9.6b/Configure openssl-0.9.6b-patched/Configure
  
  open(IN,'<crypto/opensslv.h') || die "unable to read opensslv.h:$!\n";
  while (<IN>)
-Only in openssl-0.9.6b-patched/: Configure~
 diff -r -u openssl-0.9.6b/Makefile openssl-0.9.6b-patched/Makefile
 --- openssl-0.9.6b/Makefile	Mon Jul  9 09:59:47 2001
 +++ openssl-0.9.6b-patched/Makefile	Thu Oct 11 14:36:32 2001
@@ -220,7 +219,6 @@ diff -r -u openssl-0.9.6b/Makefile.org openssl-0.9.6b-patched/Makefile.org
  
  Makefile.ssl: Makefile.org
  	@echo "Makefile.ssl is older than Makefile.org."
-Only in openssl-0.9.6b-patched/: Makefile.org~
 diff -r -u openssl-0.9.6b/Makefile.ssl openssl-0.9.6b-patched/Makefile.ssl
 --- openssl-0.9.6b/Makefile.ssl	Mon Jul  9 09:59:47 2001
 +++ openssl-0.9.6b-patched/Makefile.ssl	Thu Oct 11 12:11:06 2001
@@ -305,11 +303,9 @@ diff -r -u openssl-0.9.6b/Makefile.ssl openssl-0.9.6b-patched/Makefile.ssl
  
  Makefile.ssl: Makefile.org
  	@echo "Makefile.ssl is older than Makefile.org."
-Only in openssl-0.9.6b-patched/: Makefile.ssl~
-Only in openssl-0.9.6b-patched/: Makefile~
 diff -r -u openssl-0.9.6b/config openssl-0.9.6b-patched/config
 --- openssl-0.9.6b/config	Fri Mar 30 09:49:08 2001
-+++ openssl-0.9.6b-patched/config	Fri Oct 12 19:10:00 2001
++++ openssl-0.9.6b-patched/config	Thu Oct 18 16:16:29 2001
 @@ -318,9 +318,11 @@
  case "$i" in 
  -d*) PREFIX="debug-";;
@@ -379,7 +375,18 @@ diff -r -u openssl-0.9.6b/config openssl-0.9.6b-patched/config
  # read the output of the embedded GuessOS 
  read GUESSOS
  
-@@ -419,7 +457,11 @@
+@@ -408,10 +446,6 @@
+ 	OUT="irix-mips3-$CC"
+ 	;;
+   mips4-sgi-irix64)
+-	echo "WARNING! If you wish to build 64-bit library, then you have to"
+-	echo "         invoke './Configure irix64-mips4-$CC' *manually*."
+-	echo "         Type return if you want to continue, Ctrl-C to abort."
+-	read waste < /dev/tty
+         CPU=`(hinv -t cpu) 2>/dev/null | sed 's/^CPU:[^R]*R\([0-9]*\).*/\1/'`
+         CPU=${CPU:-0}
+         if [ $CPU -ge 5000 ]; then
+@@ -419,7 +453,11 @@
          else
                  options="$options -mips3"
          fi
@@ -392,7 +399,7 @@ diff -r -u openssl-0.9.6b/config openssl-0.9.6b-patched/config
  	;;
    alpha-*-linux2)
          ISA=`awk '/cpu model/{print$4}' /proc/cpuinfo`
-@@ -463,10 +505,9 @@
+@@ -463,10 +501,9 @@
    sun4u*-*-solaris2)
  	ISA64=`(isalist) 2>/dev/null | grep sparcv9`
  	if [ "$ISA64" != "" -a "$CC" = "cc" -a $CCVER -ge 50 ]; then
@@ -406,7 +413,6 @@ diff -r -u openssl-0.9.6b/config openssl-0.9.6b-patched/config
  	fi
  	OUT="solaris-sparcv9-$CC" ;;
    sun4m-*-solaris2)	OUT="solaris-sparcv8-$CC" ;;
-Only in openssl-0.9.6b-patched/: config~
 diff -r -u openssl-0.9.6b/crypto/asn1/a_d2i_fp.c openssl-0.9.6b-patched/crypto/asn1/a_d2i_fp.c
 --- openssl-0.9.6b/crypto/asn1/a_d2i_fp.c	Fri Apr 23 17:08:07 1999
 +++ openssl-0.9.6b-patched/crypto/asn1/a_d2i_fp.c	Thu Oct 11 11:54:39 2001
