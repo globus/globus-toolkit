@@ -14,7 +14,7 @@ ltconfig
 ltmain.sh
 version.h
 find-pbs-tools
-globus_pbs_job_manager_setup-[0-9]*
+globus_gram_job_manager_setup_pbs-[0-9]*
 *.lo
 *.la
 .libs
