@@ -15,18 +15,20 @@ the conf file and on the command line, the values from the conf file will
 override.
 
 Arguments looked for in the job manager's configuration file include:
-   -home
-   -globus-gatekeeper-host
-   -globus-gatekeeper-port
-   -globus-gatekeeper-subject
-   -globus-host-manufacturer
-   -globus-host-osname
-   -globus-host-osversion
-   -globus-host-cputype
-   -job-reporting-dir
-   -machine-type
-   -condor-arch
-   -condor-os
+<dl>
+    <dt> -home </dt>
+    <dt> -globus-gatekeeper-host </dt>
+    <dt> -globus-gatekeeper-port </dt>
+    <dt> -globus-gatekeeper-subject </dt>
+    <dt> -globus-host-manufacturer </dt>
+    <dt> -globus-host-osname </dt>
+    <dt> -globus-host-osversion </dt>
+    <dt> -globus-host-cputype </dt>
+    <dt> -job-reporting-dir </dt>
+    <dt> -machine-type </dt>
+    <dt> -condor-arch </dt>
+    <dt> -condor-os </dt>
+</dl>
    
 @par -home GLOBUS_LOCATION
 Set the GLOBUS_LOCATION environment variable to the specified Globus-Location.
@@ -55,13 +57,12 @@ not publish job information.
 This argument uniquely identifies the job manager service for a host.  For
 example, if 2 pbs job manager services are installed on a host, the -rdn arg
 will uniquely identify them.  -rdn jobmanager-pbs-1 and -rdn jobmanager-pbs-2.
-
-The GRAM reporter uses this argument to construct a complete dn for the MDS
-objects.
+The GRAM reporter uses this argument to construct a complete dn for the GRAM
+job manager MDS objects.
 
 @par -dmdn <base domain name>
 This argument is used as the base dn under which the GRAM reporter objects will
-be published.  Typically the base dn for the host object.
+be published.  Typically, this value is the dn for the host object.
 
 @par -keep-to <seconds>
 Sets the number of seconds that the objects are valid for.  The default is 600
