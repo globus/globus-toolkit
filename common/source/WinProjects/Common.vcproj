@@ -9,8 +9,8 @@
 				Name="Win32"/>
 			<Configuration
 				Name="Debug|Win32"
-				IntermediateDirectory="Debug"
-				OutputDirectory="Debug"
+				IntermediateDirectory="Build"
+				OutputDirectory="Build"
 				ConfigurationType="4"
 				CharacterSet="2">
 				<Tool
@@ -31,7 +31,7 @@
 					Name="VCCustomBuildTool"/>
 				<Tool
 					Name="VCLibrarianTool"
-					OutputFile="$(GLOBUS_LOCATION)\lib\globus_common.lib"/>
+					OutputFile="$(OutDir)\globus_common.lib"/>
 				<Tool
 					Name="VCMIDLTool"
 					TargetEnvironment="1"/>
