@@ -44,8 +44,8 @@ typedef struct
 {
     /* contains library name only with no XXextensionXX or path */
     char *                              library_name;
+    long                                ref;
     long                                module_ref;
-    long                                external_ref;
     globus_module_descriptor_t *        module;
     lt_dlhandle                         dlhandle;
 } globus_l_extension_handle_t;
@@ -154,6 +154,9 @@ error_dlinit:
 
 /**
  * called locked 
+ * 
+ * dont call until ref goes to 0 or proxy deavtivate is called
+ * (circumventing my deactivate procedure)
  */
 static
 void
@@ -171,9 +174,8 @@ globus_l_extension_shutdown_extension(
         if(handle->module)
         {
             /* this will cause this function to be re-entered to do the 
-             * bottom half (the proxy cb will take the ref back)
+             * bottom half
              */
-            handle->module_ref++;
             globus_module_deactivate(handle->module);
             return;
         }
@@ -190,7 +192,14 @@ globus_l_extension_shutdown_extension(
         }
     }
     
-    if(handle->module_ref == 0 && handle->external_ref == 0)
+    /** if this is not zero, then we must have been called by the deactivate
+     * proxy (on behalf of globus_module_deactivate_all() or someone getting
+     * a hold of our module descriptor and deactivating it themself
+     * 
+     * this will be non-zero if users still have outstanding
+     * references on our registries when that circumvented deactivate occurred.
+     */
+    if(handle->ref == 0)
     {
         lt_dlclose(handle->dlhandle);
         globus_free(handle->library_name);
@@ -214,7 +223,7 @@ globus_l_extension_deactivate_proxy(
     
     globus_rmutex_lock(&globus_l_extension_mutex);
     {
-        handle->module_ref--;
+        handle->ref -= handle->module_ref;
         globus_l_extension_shutdown_extension(handle, GLOBUS_TRUE);
     }
     globus_rmutex_unlock(&globus_l_extension_mutex);
@@ -269,7 +278,7 @@ globus_extension_activate(
             }
             
             handle->module_ref = 1;
-            handle->external_ref = 0;
+            handle->ref = 1;
             handle->library_name = globus_libc_strdup(library);
             if(!handle->library_name)
             {
@@ -300,6 +309,9 @@ globus_extension_activate(
                 goto error_module;
             }
             
+            globus_hashtable_insert(
+                &globus_l_extension_dlls, handle->library_name, handle);
+                
             last_handle = (globus_l_extension_handle_t *)
                 globus_thread_getspecific(globus_l_extension_owner_key);
             globus_thread_setspecific(globus_l_extension_owner_key, handle);
@@ -311,15 +323,13 @@ globus_extension_activate(
                 globus_l_extension_owner_key, last_handle);
             if(rc != GLOBUS_SUCCESS)
             {
-                goto error_module;
+                goto error_activate;
             }
-            
-            globus_hashtable_insert(
-                &globus_l_extension_dlls, handle->library_name, handle);
         }
         else
         {
             handle->module_ref++;
+            handle->ref++;
         }
     }
     globus_rmutex_unlock(&globus_l_extension_mutex);
@@ -327,6 +337,9 @@ globus_extension_activate(
     GlobusExtensionDebugExit();
     return GLOBUS_SUCCESS;
 
+error_activate:
+    globus_hashtable_remove(
+        &globus_l_extension_dlls, handle->library_name);
 error_module:
     lt_dlclose(handle->dlhandle);
 error_dll:
@@ -368,7 +381,8 @@ globus_extension_deactivate(
             goto error_lookup;
         }
         
-        if(--handle->module_ref == 0)
+        handle->module_ref--;
+        if(--handle->ref == 0)
         {
             globus_l_extension_shutdown_extension(handle, GLOBUS_FALSE);
         }
@@ -516,7 +530,7 @@ globus_extension_registry_get(
             {
                 datum = entry->datum;
                 entry->ref++;
-                entry->owner->external_ref++;
+                entry->owner->ref++;
             }
         }
     }
@@ -545,7 +559,7 @@ globus_extension_registry_put(
                 globus_hashtable_lookup(&registry->table, (void *) symbol);
             if(entry)
             {
-                if(--entry->owner->external_ref == 0)
+                if(--entry->owner->ref == 0)
                 {
                     owner = entry->owner;
                 }
@@ -557,7 +571,7 @@ globus_extension_registry_put(
                     globus_free(entry);
                 }
                 
-                if(owner && owner->module_ref == 0)
+                if(owner)
                 {
                     globus_l_extension_shutdown_extension(owner, GLOBUS_FALSE);
                 }
