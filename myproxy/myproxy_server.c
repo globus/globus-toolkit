@@ -743,6 +743,9 @@ void put_proxy(myproxy_socket_attrs_t *attrs,
     /* Accept delegated credentials from client */
     if (myproxy_accept_delegation(attrs, delegfile, sizeof(delegfile)) < 0) {
 	myproxy_log_verror();
+        response->response_type =  MYPROXY_ERROR_RESPONSE; 
+        strcat(response->error_string, "Failed to accept credentials.\n"); 
+	return;
     }
 
     myproxy_debug("  Accepted delegation: %s", delegfile);
