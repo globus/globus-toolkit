@@ -112,15 +112,25 @@ GetOptions(
 
 print "$myname: Configuring package 'gsi_openssh'...\n";
 print "---------------------------------------------------------------------\n";
-print "Hi, I'm the setup script for the gsi_openssh package!  There\n";
-print "are some last minute details that I've got to set straight\n";
-print "in the sshd config file, along with generating the ssh keys\n";
-print "for this machine (if it doesn't already have them).\n";
+print "Hi, I'm the setup script for the gsi_openssh package!  I will create\n";
+print "a number of configuration files based on your local system setup.  I\n";
+print "will also attempt to copy or create a number of SSH key pairs for\n";
+print "this machine.\n";
 print "\n";
-print "If I find a pair of host keys in /etc/ssh, I will copy them into\n";
-print "\$GLOBUS_LOCATION/etc/ssh.  If they aren't present, I will generate\n";
-print "them for you.\n";
+print "(Loosely, if I find a pair of host keys in /etc/ssh, I will copy them\n";
+print "into \$GLOBUS_LOCATION/etc/ssh.  Otherwise, I will generate them for\n";
+print "you.)\n";
 print "\n";
+
+if ( isForced() )
+{
+    print "WARNING:\n";
+    print "\n";
+    print "    Using the '-force' flag will cause all gsi_openssh_setup files to\n";
+    print "    be removed and replaced by new versions!  Backup any critical\n";
+    print "    SSH configuration files before you choose to continue!\n";
+    print "\n";
+}
 
 $response = query_boolean("Do you wish to continue with the setup package?","y");
 if ($response eq "n")
