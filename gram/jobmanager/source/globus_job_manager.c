@@ -1131,6 +1131,11 @@ int main(int argc,
         globus_symboltable_insert(symbol_table,
                                 (void *) "GLOBUS_GRAM_JOB_CONTACT",
                                 (void *) graml_job_contact);
+	globus_symboltable_insert(
+		symbol_table,
+		(void *) "GLOBUS_GRAM_FEATURE_SCHEDULER_SPECIFIC",
+		(void *) "true");
+
         if (graml_env_logname)
             globus_symboltable_insert(symbol_table,
                                 (void *) "LOGNAME",
@@ -2965,6 +2970,8 @@ globus_l_gram_request_fill(globus_rsl_t * rsl_tree,
     char * gram_myjob;
     char * staged_file_path;
     char * ptr;
+    int count;
+    globus_list_t * scheduler_specific_list;
 
     if (rsl_tree == NULL)
     {
@@ -3701,6 +3708,109 @@ globus_l_gram_request_fill(globus_rsl_t * rsl_tree,
     {
         req->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_RSL_ENVIRONMENT;
         return(GLOBUS_FAILURE);
+    }
+
+
+    {
+	char *newvar;
+	char *newval;
+	int i;
+	int rc;
+
+	/* add duct environment string to environment */
+	rc = globus_l_gram_duct_environment(req->count,
+					    gram_myjob,
+					    &newvar,
+					    &newval);
+	if(rc == GLOBUS_SUCCESS)
+	{
+	    for(i = 0; req->environment[i] != GLOBUS_NULL; i++)
+	    {
+		;
+	    }
+
+	    req->environment = (char **)
+		globus_libc_realloc(req->environment,
+				    (i+3) * sizeof(char *));
+	    req->environment[i] = newvar;
+	    ++i;
+	    req->environment[i] = newval;
+	    ++i;
+	    req->environment[i] = GLOBUS_NULL;
+
+            if (globus_l_gram_rsl_env_add(rsl_tree, newvar, newval) != 0)
+            {
+                globus_jobmanager_log( req->jobmanager_log_fp,
+                        "JM: ERROR adding %s to the environment= parameter "
+                        "of the RSL.\n", newvar);
+            }
+	}
+    }
+
+    /**********************************
+     *  GET SCHEDULER_SPECIFIC PARAM
+     */
+    globus_jobmanager_log( req->jobmanager_log_fp,
+	    "JM: Getting scheduler specific parameters\n");
+    scheduler_specific_list = globus_rsl_param_get_values(
+	    rsl_tree,
+	    GLOBUS_GRAM_PROTOCOL_SCHEDULER_SPECIFIC_PARAM);
+    if(scheduler_specific_list)
+    {
+	int i;
+	int j;
+
+	globus_jobmanager_log( req->jobmanager_log_fp,
+		"JM: Checking scheduler specific parameters\n");
+	count = globus_list_size(scheduler_specific_list);
+
+	req->scheduler_specific = globus_libc_malloc(
+		sizeof(globus_gram_job_manager_scheduler_specific_t) *
+		(globus_list_size(scheduler_specific_list) + 1));
+	i = 0;
+	while(!globus_list_empty(scheduler_specific_list))
+	{
+	    globus_rsl_value_t * value;
+	    globus_list_t * valuelist;
+
+	    value = globus_list_first(scheduler_specific_list);
+	    scheduler_specific_list = globus_list_rest(scheduler_specific_list);
+	    if(! globus_rsl_value_is_sequence(value))
+	    {
+		req->failure_code =
+		    GLOBUS_GRAM_PROTOCOL_ERROR_RSL_SCHEDULER_SPECIFIC;
+		globus_libc_free(req->scheduler_specific);
+		req->scheduler_specific = GLOBUS_NULL;
+
+		return(GLOBUS_FAILURE);
+	    }
+	    valuelist = globus_rsl_value_sequence_get_value_list(
+		    value);
+	    req->scheduler_specific[i].option_name =
+			globus_rsl_value_literal_get_string(
+			    globus_list_first(valuelist));
+
+	    globus_rsl_assist_string_canonicalize(
+		    req->scheduler_specific[i].option_name);
+
+	    valuelist = globus_list_rest(valuelist);
+	    req->scheduler_specific[i].option_string =
+		globus_libc_malloc(sizeof(char *) *
+			           globus_list_size(valuelist) + 1);
+	    j = 0;
+	    while(!globus_list_empty(valuelist))
+	    {
+		req->scheduler_specific[i].option_string[j] =
+		    globus_libc_strdup(globus_rsl_value_literal_get_string(
+				globus_list_first(valuelist)));
+		j++;
+		valuelist = globus_list_rest(valuelist);
+	    }
+	    req->scheduler_specific[i].option_string[j] = GLOBUS_NULL;
+	    i++;
+	}
+	req->scheduler_specific[i].option_name = GLOBUS_NULL;
+	req->scheduler_specific[i].option_string = GLOBUS_NULL;
     }
 
 
@@ -5362,8 +5472,6 @@ globus_l_jm_http_query_send_reply:
 	reply = GLOBUS_NULL;
 	replysize = 0;
     }
-    if (reply)
-	globus_libc_free(reply);
     if (query)
 	globus_libc_free(query);
 
@@ -5384,6 +5492,11 @@ globus_l_jm_http_query_send_reply:
 	                       code,
 			       reply,
 			       replysize);
+
+    if(reply)
+    {
+	globus_libc_free(reply);
+    }
 
     GRAM_LOCK;
     graml_jm_can_exit = GLOBUS_TRUE;

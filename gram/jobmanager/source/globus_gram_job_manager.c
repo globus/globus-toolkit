@@ -248,6 +248,7 @@ globus_jobmanager_request_init(globus_gram_jobmanager_request_t ** request)
     r->two_phase_commit = GLOBUS_FALSE;
     r->save_state = GLOBUS_FALSE;
     r->jm_restart = NULL;
+    r->scheduler_specific = GLOBUS_NULL;
 
     return(GLOBUS_SUCCESS);
 
@@ -844,6 +845,22 @@ globus_l_gram_request_shell(globus_gram_jobmanager_request_t * request)
     fprintf(script_arg_fp,"grami_env='%s'\n", new_param);
     fprintf(script_arg_fp,"grami_count='%u'\n", request->count);
 
+    if(request->scheduler_specific != GLOBUS_NULL)
+    {
+	int i = 0;
+
+	for(i = 0; request->scheduler_specific[i].option_name; i++)
+	{
+	    globus_l_gram_param_list_prepare(
+		    request->scheduler_specific[i].option_string,
+		    new_param,
+		    &num_in_list);
+
+	    fprintf(script_arg_fp,"grami_scheduler_specific_%s='%s'\n",
+		    request->scheduler_specific[i].option_name,
+		    new_param);
+	}
+    }
     globus_l_gram_param_prepare(request->my_stdin, new_param);
     fprintf(script_arg_fp,"grami_stdin='%s'\n", new_param);
     fprintf(script_arg_fp,"grami_stdout='%s'\n", stdout_filename);
@@ -2118,4 +2135,5 @@ globus_l_gram_request_validate(globus_gram_jobmanager_request_t * request)
 
     return(GLOBUS_SUCCESS);
 
-} /* globus_l_gram_request_validate() */
+}
+/* globus_l_gram_request_validate() */
