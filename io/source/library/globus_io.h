@@ -1222,6 +1222,17 @@ globus_io_udp_sendto(
      unsigned short                      port,
      globus_size_t *                     bytes_sent);
 
+globus_result_t
+globus_io_udp_sendvto(
+    globus_io_handle_t *                handle,
+    struct iovec *                      iov,
+    int                                 iovc,
+    int                                 flags,
+    globus_size_t                       nbytes,
+    char *                              host,
+    unsigned short                      port,
+    globus_size_t *                     bytes_sent);
+
 globus_result_t 
 globus_io_udp_register_recvfrom(
      globus_io_handle_t *                handle,
