@@ -10,7 +10,7 @@
 version="0.3"
 
 usage () {
-	echo $0: Usage:  $0 "[-p \"p1 p2 ...\"] [-t tag] [-i dir [-r] ] [-n] [-h] [-c | -j] [-a] [-s | -b] [-v]"
+	echo $0: Usage:  $0 "[-p \"p1 p2 ...\"] [-t tag] [-i dir [-r] ] [-n] [-h] [-c | -j] [-a] [-s | -b] [-v] [-f]"
 	echo
 	echo "With no arguments, checkout and build all of GT3."
 	echo "	$0 -p \"p1 p2 ...\" 	Build packages p1, p2, ..."
@@ -24,6 +24,7 @@ usage () {
 	echo "	$0 -j		Just build Java"
 	echo "	$0 -b		Install GT2 binaries, not source."
 	echo "	$0 -v		Pass -verbose to gpt-build."
+	echo "	$0 -f		Pass -force to gpt-build."
 	echo
 }
 
@@ -355,7 +356,7 @@ collate_packages() {
 install_bundle() {
 	echo Installing into $dir
 	export GLOBUS_LOCATION=$dir
-	$GPT_LOCATION/sbin/gpt-build ${verbose} gt3-all-src-1.0-src_bundle.tar.gz gcc32dbg
+	$GPT_LOCATION/sbin/gpt-build ${verbose} ${force} gt3-all-src-1.0-src_bundle.tar.gz gcc32dbg
 
 	if [ $release = 1 ]; then
 		echo Collecting GT3 binaries from $dir
@@ -421,6 +422,7 @@ read_args() {
 	anonymous=0
 	installbin=0
 	verbose=""
+	force=""
 
 	while [ x$1 != "x" ]; do
 		if [ $1 = "-t" ]; then
@@ -459,6 +461,9 @@ read_args() {
 		elif [ $1 = "-v" ]; then
 			verbose="-verbose";
 			shift;
+		elif [ $1 = "-f" ]; then
+			force="-force";
+			shift;
 		else
 			echo "Unrecognized option $1"
 			usage
@@ -494,7 +499,7 @@ if [ x"$package" != "x" ]; then
 	for f in $package; do
 		if [ -d ${f}*-src ]; then
 			tar czf package-output/${f}-${version}.tar.gz ${f}*-src
-			$GPT_LOCATION/sbin/gpt-build ${verbose} package-output/${f}-${version}.tar.gz gcc32dbg
+			$GPT_LOCATION/sbin/gpt-build ${verbose} ${force} package-output/${f}-${version}.tar.gz gcc32dbg
 		fi
 	done
 
