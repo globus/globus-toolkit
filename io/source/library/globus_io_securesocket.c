@@ -2125,6 +2125,12 @@ globus_l_io_read_auth_token(
 
     init_info = (globus_io_authentication_info_t *) arg;
 
+    if(result != GLOBUS_SUCCESS)
+    {
+	err = globus_error_get(result);
+	goto error_exit;
+    }
+
     result = globus_l_io_read_input_token(handle,
 					  &init_info->input_token);
 				 
