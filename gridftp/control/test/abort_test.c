@@ -1,5 +1,5 @@
-#include <globus_ftp_control_test.h>
-#include <test_common.h>
+#include "globus_ftp_control_test.h"
+#include "test_common.h"
 
 #define TEST_ITERATIONS                                     8
 #define NAME1              "globus_ftp_control_test_file_name1"

@@ -12,8 +12,8 @@
 #include "globus_i_gsi_credential.h"
 #include "globus_gsi_system_config.h"
 #include "globus_error_generic.h"
-#include <openssl/pem.h>
-#include <openssl/x509.h>
+#include "openssl/pem.h"
+#include "openssl/x509.h"
 
 #define GLOBUS_I_GSI_CRED_HANDLE_ATTRS_MALLOC_ERROR(_RESULT_) \
         _RESULT_ = globus_error_put(globus_error_wrap_errno_error( \

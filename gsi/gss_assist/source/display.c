@@ -11,7 +11,7 @@
 
 #include "globus_i_gss_assist.h"
 #include <stdio.h>
-#include <gssapi.h>
+#include "gssapi.h"
 #include <string.h>
 #include <stdlib.h>
 

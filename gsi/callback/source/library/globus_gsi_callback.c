@@ -15,12 +15,12 @@
 #include "globus_gsi_callback_constants.h"
 #include "globus_i_gsi_callback.h"
 #include "globus_gsi_system_config.h"
-#include <openssl/err.h>
-#include <openssl/asn1.h>
-#include <openssl/ssl.h>
-#include <openssl/crypto.h>
-#include <openssl/rand.h>
-#include <openssl/x509v3.h>
+#include "openssl/err.h"
+#include "openssl/asn1.h"
+#include "openssl/ssl.h"
+#include "openssl/crypto.h"
+#include "openssl/rand.h"
+#include "openssl/x509v3.h"
 #include "version.h"
 
 #ifndef BUILD_FOR_K5CERT_ONLY

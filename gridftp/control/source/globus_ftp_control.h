@@ -18,11 +18,11 @@
 #endif
 #endif
 
-#include <globus_common.h>
-#include <globus_error_string.h>
-#include <globus_io.h>
-#include <globus_gss_assist.h>
-#include <globus_handle_table.h>
+#include "globus_common.h"
+#include "globus_error_string.h"
+#include "globus_io.h"
+#include "globus_gss_assist.h"
+#include "globus_handle_table.h"
 
 EXTERN_C_BEGIN
 

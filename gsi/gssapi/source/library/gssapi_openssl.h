@@ -25,13 +25,13 @@
 #include "globus_gsi_credential.h"
 
 #include <stdio.h>
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include <openssl/bio.h>
-#include <openssl/pem.h>
-#include <openssl/x509.h>
-#include <openssl/x509v3.h>
-#include <openssl/stack.h>
+#include "openssl/ssl.h"
+#include "openssl/err.h"
+#include "openssl/bio.h"
+#include "openssl/pem.h"
+#include "openssl/x509.h"
+#include "openssl/x509v3.h"
+#include "openssl/stack.h"
 
 #define GLOBUS_I_GSI_GSSAPI_IMPL_VERSION            1
 

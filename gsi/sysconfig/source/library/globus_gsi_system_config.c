@@ -12,7 +12,7 @@
 #include "globus_common.h"
 #include "globus_gsi_system_config.h"
 #include "globus_i_gsi_system_config.h"
-#include <openssl/rand.h>
+#include "openssl/rand.h"
 #include <pwd.h>
 #include <time.h>
 #include <errno.h>

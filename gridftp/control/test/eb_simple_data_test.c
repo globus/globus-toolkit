@@ -1,4 +1,4 @@
-#include <globus_ftp_control_test.h>
+#include "globus_ftp_control_test.h"
 
 #define TEST_ITERATIONS                                     8
 #define NAME              "globus_ftp_control_test_file_name"

@@ -26,7 +26,7 @@ EXTERN_C_BEGIN
 
 #include "globus_common.h"
 #include "globus_gsi_system_config_constants.h"
-#include <openssl/x509.h>
+#include "openssl/x509.h"
 
 /**
  * @mainpage Globus GSI System Config API

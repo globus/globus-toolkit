@@ -42,7 +42,7 @@
  *  globus hack added by JB
  */
 #if defined(USE_GLOBUS_DATA_CODE)
-#include <globus_ftp_control.h>
+#include "globus_ftp_control.h"
 
 #if defined(STRIPED_SERVER_BACKEND)
 #include "bmap_file.h"

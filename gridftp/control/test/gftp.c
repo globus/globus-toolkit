@@ -1,5 +1,5 @@
 
-#include <globus_ftp_control.h>
+#include "globus_ftp_control.h"
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>

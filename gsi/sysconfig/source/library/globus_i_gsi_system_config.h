@@ -13,7 +13,7 @@
 #ifndef GLOBUS_I_GSI_SYSTEM_CONFIG_H
 #define GLOBUS_I_GSI_SYSTEM_CONFIG_H
 
-#include <globus_common.h>
+#include "globus_common.h"
 #include "globus_gsi_system_config_constants.h"
 #include "globus_gsi_system_config.h"
 

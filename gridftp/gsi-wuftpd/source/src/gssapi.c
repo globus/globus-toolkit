@@ -40,7 +40,7 @@ extern struct sockaddr_in ctrl_addr;
 #endif /* GSS_C_NT_HOSTBASED_SERVICE */
 #endif /* GSSAPI_KRB5 */
 
-#include <gssapi.h>
+#include "gssapi.h"
 
 #ifdef GSSAPI_GLOBUS
 char* gss_services[] = { "ftp", "host", 0 };

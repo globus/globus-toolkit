@@ -1,5 +1,5 @@
-#include <gssapi.h>
-#include <globus_gss_assist.h>
+#include "gssapi.h"
+#include "globus_gss_assist.h"
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/socket.h>

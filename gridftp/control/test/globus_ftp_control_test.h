@@ -1,8 +1,8 @@
 #if !defined(GLOUBS_FTP_CONTROL_TEST_H)
 #define GLOUBS_FTP_CONTROL_TEST_H
 
-#include <globus_ftp_control.h>
-#include <test_common.h>
+#include "globus_ftp_control.h"
+#include "test_common.h"
 /**********************************************************************
 *  TESTS
 *

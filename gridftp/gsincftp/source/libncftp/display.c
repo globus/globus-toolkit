@@ -17,7 +17,7 @@ CVS Information:
 ******************************************************************************/
 #include "globus_gss_assist.h"
 #include <stdio.h>
-#include <gssapi.h>
+#include "gssapi.h"
 #include <string.h>
 /******************************************************************************
                                Type definitions

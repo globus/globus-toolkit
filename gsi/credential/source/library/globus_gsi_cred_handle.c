@@ -11,10 +11,10 @@
 
 #include "globus_i_gsi_credential.h"
 #include "globus_gsi_system_config.h"
-#include <openssl/pem.h>
-#include <openssl/x509.h>
-#include <openssl/x509v3.h>
-#include <openssl/err.h>
+#include "openssl/pem.h"
+#include "openssl/x509.h"
+#include "openssl/x509v3.h"
+#include "openssl/err.h"
 #include <math.h>
 
 #define GLOBUS_GSI_CRED_HANDLE_MALLOC_ERROR(_LENGTH_) \
