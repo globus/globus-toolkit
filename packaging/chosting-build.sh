@@ -97,19 +97,27 @@ if test ! $? = 0; then
 	exit 1
 fi
 
-cd $BASEDIR/source-trees/autotools
+#cd $BASEDIR/source-trees/autotools
 
-cvs -d$GT2CVS co autotools side_tools
-if test ! $? = 0; then
-	echo ""
-	echo "cvs checkout of $GT2CVS failed"
-	echo ""
-	exit 1
+#cvs -d$GT2CVS co autotools side_tools
+#if test ! $? = 0; then
+#	echo ""
+#	echo "cvs checkout of $GT2CVS failed"
+#	echo ""
+#	exit 1
+#fi
+
+# check for globus autotools
+autoloc=`type autoconf | sed -e "s|autoconf is ||"`
+autopath=`echo $autoloc | sed -e "s|/bin/autoconf$||"`
+if test -d "$autopath/openssl_tools"; then
+	autotools="-noautotools"
+else
+        autotools=""
 fi
 
-
 cd $BASEDIR
-./make-packages.pl -no-updates -packages="$PKGLIST"
+./make-packages.pl $autotools --no-updates -packages="$PKGLIST"
 if test ! $? = 0; then
 	echo ""
 	echo "ERROR: make-packages.pl failed."
