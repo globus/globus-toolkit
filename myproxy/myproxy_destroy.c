@@ -5,25 +5,21 @@
  */
 
 #include "myproxy.h"
+#include "myproxy_server.h"
 #include "gnu_getopt.h"
 #include "version.h"
+#include "verror.h"
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <assert.h>
-
-
-/*
-static char usage_short[] = "\
-Usage: %s [-help] [-s server] [-p port] [-t lifetime] [-l username] ...\n\
-Try `%s --help' for more information.\n"; 
-*/
 
 
 static char usage[] = \
 "\n"\
-"Syntax: myproxy-init [-h hours] [-l username] ...\n"\
-"        myproxy-init [--usage|--help] [-v|--version]\n"\
+"Syntax: myproxy-destroy [-l username] ...\n"\
+"        myproxy-destroy [--usage|--help] [-v|--version]\n"\
 "\n"\
 "    Options\n"\
 "    --help | --usage            Displays usage\n"\
@@ -44,14 +40,14 @@ struct option long_options[] =
     {0, 0, 0, 0}
 };
 
-static char short_options[] = "us:p:t:h:v";
+static char short_options[] = "us:p:l:v";
 
 static char version[] =
-"myproxy-init version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
+"myproxy-destroy version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
 
 
 /* Function declarations */
-int  init_arguments(int argc, char *argv[], 
+void init_arguments(int argc, char *argv[], 
                     myproxy_socket_attrs_t *attrs, myproxy_request_t *request);
 int  read_passphrase(char *passphrase, const int passlen,
                      const int min, const int max);
@@ -59,10 +55,7 @@ int  read_passphrase(char *passphrase, const int passlen,
 int
 main(int argc, char *argv[]) 
 {    
-    int rc;
-    char *username; 
-    char error_string[1024];
-    char proxyfile[64];
+    char *username, *pshost; 
     char request_buffer[1024], response_buffer[1024];
     int requestlen, responselen;
 
@@ -88,17 +81,18 @@ main(int argc, char *argv[])
     client_request->username = malloc(strlen(username)+1);
     strcpy(client_request->username, username);
     
-    client_request->hours = 0;
+    pshost = getenv("MYPROXY_SERVER");
+    if (pshost != NULL) {
+	socket_attrs->pshost = malloc(strlen(pshost) + 1);
+	strcpy(socket_attrs->pshost, pshost);
+    }
+
+    client_request->lifetime_seconds = 0;
     
-    socket_attrs->psport = MYPROXYSERVER_PORT;
-    socket_attrs->pshost = malloc(strlen(MYPROXYSERVER_HOST) + 1);
-    sprintf(socket_attrs->pshost, "%s", MYPROXYSERVER_HOST);
+    socket_attrs->psport = MYPROXY_SERVER_PORT;
 
     /* Initialize client arguments and create client request object */
-    if (init_arguments(argc, argv, socket_attrs, client_request) < 0) {
-        fprintf(stderr, usage);
-        exit(1);
-    }
+    init_arguments(argc, argv, socket_attrs, client_request);
 
     /* Allow user to provide a passphrase */
     if (read_passphrase(client_request->passphrase, MAX_PASS_LEN+1, 
@@ -109,13 +103,15 @@ main(int argc, char *argv[])
     
     /* Set up client socket attributes */
     if (myproxy_init_client(socket_attrs) < 0) {
-        fprintf(stderr, "error in myproxy_init_client()\n");
+        fprintf(stderr, "error in myproxy_init_client(): %s\n",
+		verror_get_string());
         exit(1);
     }
 
     /* Authenticate client to server */
     if (myproxy_authenticate_init(socket_attrs, NULL) < 0) {
-        fprintf(stderr, "error in myproxy_authenticate_init()\n");
+        fprintf(stderr, "error in myproxy_authenticate_init(): %s\n",
+		verror_get_string());
         exit(1);
     }
 
@@ -130,7 +126,8 @@ main(int argc, char *argv[])
 
     /* Send request to the myproxy-server */
     if (myproxy_send(socket_attrs, request_buffer, requestlen) < 0) {
-        fprintf(stderr, "error in myproxy_send_request()\n");
+        fprintf(stderr, "error in myproxy_send_request(): %s,\n",
+		verror_get_string());
         exit(1);
     }
 
@@ -138,7 +135,8 @@ main(int argc, char *argv[])
     responselen = myproxy_recv(socket_attrs, 
                                response_buffer, sizeof(response_buffer));
     if (responselen < 0) {
-        fprintf(stderr, "error in myproxy_recv_response()\n");
+        fprintf(stderr, "error in myproxy_recv_response(): %s\n",
+		verror_get_string());
         exit(1);
     }
 
@@ -172,19 +170,16 @@ main(int argc, char *argv[])
     exit(0);
 }
 
-int 
+void 
 init_arguments(int argc, 
 		       char *argv[], 
 		       myproxy_socket_attrs_t *attrs,
 		       myproxy_request_t *request) 
 {   
     extern char *gnu_optarg;
-    extern int gnu_optind;
-
     int arg;
-    int arg_error = 0;
 
-    while((arg = getopt_long(argc, argv, short_options, 
+    while((arg = gnu_getopt_long(argc, argv, short_options, 
                              long_options, NULL)) != EOF) 
     {
         switch(arg) 
@@ -204,17 +199,31 @@ init_arguments(int argc,
             request->username = malloc(strlen(gnu_optarg) + 1);
             strcpy(request->username, gnu_optarg); 
             break;
-        case 'v': /* print version and exit */
+        case 'v':       /* print version and exit */
             fprintf(stderr, version);
             exit(1);
             break;
-        default: /* ignore unknown */ 
-            arg_error = -1;
+        default:        /* print usage and exit */ 
+            fprintf(stderr, usage);
+	    exit(1);
             break;	
         }
     }
 
-    return arg_error;
+    /* Check to see if username specified */
+    if (request->username == NULL) {
+	fprintf(stderr, usage);
+	fprintf(stderr, "Please specify a username!\n");
+	exit(1);
+    }
+
+    /* Check to see that lifetime is < MYPROXY_SERVER_MAX_DELEG_HOURS */
+    if (request->lifetime_seconds > 60*60*MYPROXY_SERVER_MAX_DELEG_HOURS) {
+        fprintf(stderr, "The delegated credential lifetime cannot be greater than %d.\n", MYPROXY_SERVER_MAX_DELEG_HOURS);
+        exit(1);
+    } 
+
+    return;
 }
 
 /* read_passphrase()
@@ -226,29 +235,30 @@ int
 read_passphrase(char *passphrase, const int passlen, const int min, const int max) 
 {
     int i;
-    char pass[passlen];
+    char pass[1024];
     int done = 0;
-
+ 
     assert(passphrase != NULL);
+    assert(passlen < 1024);
 
     /* Get user's passphrase */    
     do {
-        printf("Enter password to protect proxy on  myproxy-server:\n");
+        printf("Enter password to retrieve proxy on  myproxy-server:\n");
         
-        if (!(fgets(pass, passlen, stdin))) {
+        if (!(fgets(pass, 1024, stdin))) {
             fprintf(stderr,"Failed to read password from stdin\n");   
             return -1;
         }	
-        i = strlen(pass);
+        i = strlen(pass) - 1;
         if ((i < min) || (i > max)) {
-            printf("Password must be between %d and %d characters\n, min, max");
+            fprintf(stderr, "Password must be between %d and %d characters\n", min, max);
         } else {
             done = 1;
         }
     } while (!done);
     
-    if (pass[i-1] == '\n') {
-        pass[i-1] = '\0';
+    if (pass[i] == '\n') {
+        pass[i] = '\0';
     }
     strncpy(passphrase, pass, passlen);
     return 0;
