@@ -81,10 +81,10 @@ AC_ARG_ENABLE(gridftp, AC_HELP_STRING([--disable-gridftp],\
    [Don't build GridFTP.  Default is enabled.]),\
    [if test $enableval = "no"; then gridftp=" "; fi], [])
 AC_SUBST(gridftp, $gridftp)
-prewsmds="prewsmds"
-AC_ARG_ENABLE(prewsmds, AC_HELP_STRING([--disable-prewsmds],\
-   [Don't build pre-webservices mds.  Default is enabled.]),
-   [if test $enableval = "no"; then prewsmds=" "; fi], [])
+prewsmds=" "
+AC_ARG_ENABLE(prewsmds, AC_HELP_STRING([--enable-prewsmds],\
+   [Build pre-webservices mds.  Default is disabled.]),
+   [if test $enableval = "yes"; then prewsmds="prewsmds"; fi], [])
 AC_SUBST(prewsmds, $prewsmds)
 AC_ARG_WITH(iodbc, AC_HELP_STRING([--with-iodbc=dir],\
    [Use the iodbc library in dir/lib/libiodbc.so.  Required for [RLS] builds.]),
