@@ -11,16 +11,18 @@ libexecdir=@libexecdir@
 LOCALDOMAIN=@LOCALDOMAIN@
  
 if [ -x ${libexecdir}/globus-libc-hostname ]; then
-    ${libexecdir}/globus-libc-hostname;
+    GLOBUS_HOSTNAME="`${libexecdir}/globus-libc-hostname`"
 else
     FULLNAME=`@SYS_HOSTNAME@`
     BASENAME=`@SYS_HOSTNAME@ | @CUT@ -d. -f1`
  
     if [ $FULLNAME = $BASENAME ] ; then
     # Its not fully qualified
-        echo $BASENAME.${LOCALDOMAIN}
+        GLOBUS_HOSTNAME="$BASENAME.${LOCALDOMAIN}"
     else
-        echo $FULLNAME
+        GLOBUS_HOSTNAME="$FULLNAME"
    fi
 fi
 
+echo $GLOBUS_HOSTNAME
+export GLOBUS_HOSTNAME
