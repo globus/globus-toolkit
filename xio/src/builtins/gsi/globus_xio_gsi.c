@@ -1285,7 +1285,8 @@ globus_l_xio_gsi_read_token_cb(
         }
     }
     while(major_status == GSS_S_CONTINUE_NEEDED &&
-          output_token.length == 0);
+          output_token.length == 0 &&
+          handle->bytes_read > offset + 5);
         
     if(major_status == GSS_S_COMPLETE)
     {
