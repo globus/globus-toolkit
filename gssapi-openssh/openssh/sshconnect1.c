@@ -964,6 +964,11 @@ try_password_authentication(char *prompt)
 
 gss_cred_id_t gss_cred = GSS_C_NO_CREDENTIAL;
 
+void packet_get_all(void)
+{
+  buffer_clear(&incoming_packet);
+}
+
 static void display_status_1(m, code, type)
  char *m;
  OM_uint32 code;
