@@ -1,0 +1,14 @@
+globus_wsrf_gram_service-java-source        ws-gram/service/java/source 
+
+globus_wsrf_gram_utils-java-source          ws-gram/utils/java/source                       
+
+globus_wsrf_gram_common-java-source         ws-gram/common/java/source                      
+
+globus_wsrf_gram_common-schema              ws-gram/common/schema                           
+
+globus_wsrf_gram_client-java-source         ws-gram/client/java/source    
+globus_scheduler_event_generator_fork       ws-gram/job_monitoring/fork/c/source gpt
+globus_scheduler_event_generator_fork_setup ws-gram/job_monitoring/fork/c/setup gpt
+globus_scheduler_event_generator            ws-gram/job_monitoring/common/c/source gpt
+globus_wsrf_gram_job_monitoring_common_java_source ws-gram/job_monitoring/common/java/source
+globus_fork_starter                         ws-gram/job_management/fork/c/source  gpt
