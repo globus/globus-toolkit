@@ -2,7 +2,10 @@ globus_wsrf_rft_service_source              ws-transfer/reliable/service/java/so
 globus_wsrf_rft_common_java_source          ws-transfer/reliable/common/java/source
 globus_wsrf_rft_common_schema               ws-transfer/reliable/common/schema
 globus_wsrf_rft_client_java_source          ws-transfer/reliable/client/java/source
-globus_wsrf_rendezvous                      ws-rendezvous 
+globus_wsrf_delegation_common_java          ws-delegation/common/schema
+globus_wsrf_delegation_service_java         ws-delegation/service/java/source
+globus_wsrf_delegation_client_java          ws-delegation/client/java/source
+globus_wsrf_rendezvous_java                 ws-rendezvous 
 globus_wsrf_gram_service_java_source        ws-gram/service/java/source 
 
 globus_wsrf_gram_service_java_setup_common  ws-gram/service/java/setup/common gpt
