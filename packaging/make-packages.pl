@@ -25,6 +25,7 @@ my $source_output = $top_dir . "/source-output";
 my $package_output = $top_dir . "/package-output";
 my $bin_output = $top_dir . "/bin-pkg-output";
 my $bundle_output = $top_dir . "/bundle-output";
+my $bin_bundle_output = $top_dir . "/bin-bundle-output";
 
 # What do I need to clean up from old buids?
 my @cleanup_dirs = ('log-output', '$bundle_ouput/BUILD');
@@ -64,10 +65,10 @@ my $thread = "pthr";
 
 my ($install, $buildjava, $buildc, $anonymous, $noupdates, $force,
     $help, $man, $verbose, $skippackage, $skipbundle, $faster,
-    $paranoia, $version, $uncool) =
+    $paranoia, $version, $uncool, $binary) =
    (0, 1, 1, 0, 0, 0,
     0, 0, 0, 0, 0, 0,
-    0, "1.0", 0);
+    0, "1.0", 0, 0);
 
 my @user_bundles;
 my @user_packages;
@@ -85,6 +86,7 @@ GetOptions( 'i|install=s' => \$install,
 	    'v|verbose!' => \$verbose,
 	    'skippackage!' => \$skippackage,
 	    'skipbundle!' => \$skipbundle,
+	    'binary!' => \$binary,
 	    'bundles=s' => \@user_bundles,
 	    'p|packages=s' => \@user_packages,
 	    'trees=s' => \@cvs_build_list,
@@ -147,9 +149,16 @@ if ( not $skipbundle )
 if ( $install )
 {
     install_bundles();
-    generate_bin_packages();
+
 } else {
     print "Not installing bundle without -install= set.\n";
+}
+
+if ( $binary )
+{
+    generate_bin_packages();
+} else {
+    print "Not generating binary packages without -binary set.\n";
 }
 
 exit 0;
@@ -801,7 +810,7 @@ sub package_sources()
 	} elsif ( $custom eq "tar" ) { 
 	    package_source_tar($package, $subdir);
 	} else {
-	    print "ERROR: Unkown custom packaging type '$custom' for $package.\n";
+	    print "ERROR: Unknown custom packaging type '$custom' for $package.\n";
 	}
     }
     
@@ -1053,10 +1062,24 @@ sub install_bundles
 sub generate_bin_packages
 # --------------------------------------------------------------------
 {
-    mkdir $bin_output;
-    chdir $bin_output;
+    mkdir $bin_bundle_output;
+    mkdir $bundlelog;
+    chdir $bin_bundle_output;
+    my $arch=`uname -m`;
+    chomp $arch;
 
-    log_system("$ENV{'GPT_LOCATION'}/sbin/gpt-pkg $verbose", "$log_dir/binary_packaging");
+    log_system("$ENV{'GPT_LOCATION'}/sbin/gpt-pkg -all -pkgdir=$bin_output $verbose", "$log_dir/binary_packaging");
+
+    paranoia("Failure to package binaries.  See $log_dir/binary_packaging");
+
+    for my $bundle ( @bundle_build_list )
+    {
+	next if $bundle eq "" or $bundle eq "user_def";
+	print "$ENV{'GPT_LOCATION'}/sbin/gpt-bundle -bn='${bundle}-${arch}' -bv=$version -nodeps -bindir=$bin_output `cat $bundle_output/$bundle/packaging_list`\n";
+	log_system("$ENV{'GPT_LOCATION'}/sbin/gpt-bundle -bn='${bundle}-${arch}' -bv=$version -nodeps -bindir=$bin_output `cat $bundle_output/$bundle/packaging_list`", "$bundlelog/binary_$bundle");
+
+	paranoia("Failed to create binary bundle for $bundle.");
+    }
 }
 
 END{}

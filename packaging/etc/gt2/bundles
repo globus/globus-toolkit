@@ -278,3 +278,36 @@ BUNDLE	schedulers
 	globus_gram_reporter_setup_fork
 	globus_gram_reporter_setup_lsf
 	globus_gram_reporter_setup_pbs
+BUNDLE	all-test
+	globus_test
+	globus_common_test
+	globus_ftp_client_test
+	globus_gass_copy_test
+	globus_gram_client_test
+	globus_gram_client_tools_test
+	globus_gram_job_manager_test
+	globus_gram_protocol_test
+	globus_gssapi_gsi_test
+	globus_io_test
+	globus_mds_test
+	globus_openssl_error_test
+	globus_proxy_ssl_test
+BUNDLE globus-gsi
+	globus_gss_assist
+	globus_proxy_utils
+	globus_gssapi_gsi
+	globus_gsi_proxy_core
+	globus_gsi_credential
+	globus_gsi_callback
+	globus_gsi_sysconfig
+	globus_gsi_cert_utils
+	globus_openssl_module
+	globus_gsi_proxy_ssl
+	globus_gsi_openssl_error
+	globus_user_env
+	globus_trusted_ca_42864e48_setup
+	globus_proxy_wrapper
+	globus_openssl
+	globus_common_setup
+	globus_common
+	globus_core
