@@ -480,11 +480,11 @@ globus_i_gfs_ipc_data_destroy(
 }
 
 void
-globus_i_gfs_ipc_kickoff_event(
+globus_i_gfs_ipc_transfer_event(
     globus_i_gfs_server_instance_t *    instance,
     int                                 event_type)
 {
-    globus_i_gfs_data_kickoff_event(instance, event_type);
+    globus_i_gfs_data_transfer_event(instance, event_type);
     
     return;
 }

@@ -116,7 +116,7 @@ globus_i_gfs_ipc_data_destroy(
     globus_i_gfs_ipc_data_handle_t *    data_handle);
 
 void
-globus_i_gfs_ipc_kickoff_event(
+globus_i_gfs_ipc_transfer_event(
     globus_i_gfs_server_instance_t *    instance,
     int                                 event_type);
 

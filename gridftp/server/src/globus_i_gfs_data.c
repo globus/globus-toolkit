@@ -1291,14 +1291,14 @@ globus_gridftp_server_finished_transfer(
         
         if(result != GLOBUS_SUCCESS || !op->sending)
         {
-            /* 
-            globus_i_gfs_data_kickoff_event(
-                op->instance,
-                GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_PERF);
-            globus_i_gfs_data_kickoff_event(
-                op->instance,
-                GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_RESTART);
-            */
+            globus_gridftp_server_control_event_send_perf(
+               op->op_attr->control_op,
+               0,
+               op->recvd_bytes[0]);
+            globus_gridftp_server_control_event_send_restart(
+               op->op_attr->control_op,
+               op->recvd_ranges);
+           
             /* XXX mode s only */
             op->event_callback(
                 op->instance,
@@ -1668,28 +1668,78 @@ globus_gridftp_server_get_read_range(
     return; 
 }
 
-void
-globus_i_gfs_data_kickoff_event(
-    globus_i_gfs_server_instance_t *    instance,
-    int                                 event_type)
+typedef struct
 {
-    GlobusGFSName(globus_i_gfs_data_kickoff_event);
-    switch(event_type)
+    globus_l_gfs_data_operation_t *     op;
+    int                                 event_type;
+} globus_l_gfs_data_trev_bounce_t;
+
+
+void
+globus_l_gfs_data_transfer_event_kickout(
+    void *                              user_arg)
+{
+    GlobusGFSName(globus_l_gfs_data_transfer_event_kickout);
+    globus_l_gfs_data_trev_bounce_t *   bounce_info;
+    
+    bounce_info = (globus_l_gfs_data_trev_bounce_t *) user_arg;
+    
+    switch(bounce_info->event_type)
     {
       case GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_PERF:
         globus_gridftp_server_control_event_send_perf(
-           instance->op->op_attr->control_op,
+           bounce_info->op->op_attr->control_op,
            0,
-           instance->op->recvd_bytes[0]);
+           bounce_info->op->recvd_bytes[0]);
         break;
       case GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_RESTART:
         globus_gridftp_server_control_event_send_restart(
-           instance->op->op_attr->control_op,
-           instance->op->recvd_ranges);
+           bounce_info->op->op_attr->control_op,
+           bounce_info->op->recvd_ranges);
         break;
         
       default:
         break;
-    }   
-       
+    } 
+
+    globus_free(bounce_info);       
+}
+
+void
+globus_i_gfs_data_transfer_event(
+    globus_i_gfs_server_instance_t *    instance,
+    int                                 event_type)
+{
+    GlobusGFSName(globus_i_gfs_data_kickoff_event);
+    globus_result_t                     result;
+    globus_l_gfs_data_trev_bounce_t *   bounce_info;
+    
+    bounce_info = (globus_l_gfs_data_trev_bounce_t *)
+        globus_malloc(sizeof(globus_l_gfs_data_trev_bounce_t));
+    if(!bounce_info)
+    {
+        result = GlobusGFSErrorMemory("bounce_info");
+        goto error_alloc;
+    }
+    
+    bounce_info->op = instance->op;
+    bounce_info->event_type = event_type;
+    
+    result = globus_callback_register_oneshot(
+        GLOBUS_NULL,
+        GLOBUS_NULL,
+        globus_l_gfs_data_transfer_event_kickout,
+        bounce_info);
+    if(result != GLOBUS_SUCCESS)
+    {
+        result = GlobusGFSErrorWrapFailed(
+            "globus_callback_register_oneshot", result);
+        goto error_oneshot;
+    }
+    
+    return;
+    
+error_oneshot:
+error_alloc:
+    return;  
 }

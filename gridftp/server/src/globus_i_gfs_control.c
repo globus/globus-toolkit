@@ -400,7 +400,7 @@ error_ipc:
 
 static
 void
-globus_l_gfs_kickoff_event(
+globus_l_gfs_transfer_event(
     globus_gridftp_server_control_op_t      op,
     int                                     event_type,
     void *                                  user_arg)
@@ -409,7 +409,7 @@ globus_l_gfs_kickoff_event(
     
     instance = (globus_i_gfs_server_instance_t *) user_arg;
     
-    globus_i_gfs_ipc_kickoff_event(instance, event_type);
+    globus_i_gfs_ipc_transfer_event(instance, event_type);
     
     return;
 }
@@ -434,7 +434,7 @@ globus_l_gfs_ipc_event_cb(
             op,
             GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_PERF | 
             GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_RESTART,
-            globus_l_gfs_kickoff_event,
+            globus_l_gfs_transfer_event,
             instance);
         break;
       
@@ -866,7 +866,7 @@ void
 globus_l_gfs_control_log(
     globus_gridftp_server_control_t     server_handle,
     const char *                        message,
-    int                                 class,
+    int                                 type,
     void *                              user_arg)
 {
     globus_i_gfs_server_instance_t *    instance;
@@ -879,7 +879,7 @@ globus_l_gfs_control_log(
         return;
     }
 
-    switch(class)
+    switch(type)
     {
       case GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_REPLY:
         type = GLOBUS_I_GFS_LOG_CONTROL;
