@@ -1,22 +1,7 @@
 #! @SH@
 
-. $GLOBUS_INSTALL_PATH/libexec/globus-sh-tools.sh
-prefix=${GLOBUS_INSTALL_PATH}
-exec_prefix=${GLOBUS_INSTALL_PATH}
-sbindir=${exec_prefix}/sbin
-bindir=${exec_prefix}/bin
-libdir=${exec_prefix}/lib
-libexecdir=${exec_prefix}/libexec
-includedir=${exec_prefix}/include
-datadir=${prefix}/share
-sysconfdir=${prefix}/etc
-sharedstatedir=${prefix}/com
-localstatedir=${prefix}/var
-tmpdir=/tmp
-local_tmpdir=/tmp
-secure_tmpdir=/tmp
-
-
+# Inserted by configure.
+@globus_script_initializer@
 
 #
 # renew a request using a Globus 1.0 or 1.1 installation
@@ -54,10 +39,7 @@ ${short_usage}
 EOF
 }
 
-PACKAGE=@PACKAGE@
-VERSION=@VERSION@
-
-. $GLOBUS_INSTALL_PATH/libexec/globus-args-parser-header
+@globus_args_parser_header@
 
 
 MyWhich()
@@ -99,13 +81,13 @@ trap bailout 1 2 3 6 15
 #########################################################################
 # start
 
-sslexec=${GLOBUS_INSTALL_PATH}/bin/${ssl_exec_name}
-if [ -r ${GLOBUS_INSTALL_PATH}/bin/openssl ]; then
-	sslexec=${GLOBUS_INSTALL_PATH}/bin/openssl
+sslexec=${GLOBUS_SSL_PATH}/bin/${ssl_exec_name}
+if [ -r ${GLOBUS_SSL_PATH}/bin/openssl ]; then
+	sslexec=${GLOBUS_SSL_PATH}/bin/openssl
 	ssl_exec_name="openssl"
 fi
-proxy_init=${GLOBUS_INSTALL_PATH}/bin/grid-proxy-init
-proxy_destroy=${GLOBUS_INSTALL_PATH}/bin/grid-proxy-destroy
+proxy_init=${bindir}/grid-proxy-init
+proxy_destroy=${bindir}/grid-proxy-destroy
 tmpproxy=/tmp/globus-cert-renewal-temp-proxy.$$
 newcertreq=
 newkey=

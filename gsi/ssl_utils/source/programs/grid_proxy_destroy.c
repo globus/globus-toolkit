@@ -21,10 +21,6 @@ static char *rcsid = "$Header$";
                              Include header files
 **********************************************************************/
 
-#define GLOBUS_RELEASE_MAJOR 0
-#define GLOBUS_RELEASE_MINOR 0
-#define GLOBUS_RELEASE_BETA  0
-#define GLOBUS_RELEASE_PATCH 0
 
 #ifndef DEFAULT_SECURE_TMP_DIR
 #ifndef WIN32
@@ -166,21 +162,13 @@ int main(int argc, char **argv)
     else
 	program = argv[0];
 
-#    if (GLOBUS_RELEASE_NOT_BETA == GLOBUS_RELEASE_BETA)
-#        define version_format "%d.%d.%d\n"
-#    else
-#        define version_format "%d.%d.%db%d\n"
-#    endif
-
 #   define args_show_version() \
     { \
 	char buf[64]; \
 	sprintf( buf, \
-		 version_format, \
-		 GLOBUS_RELEASE_MAJOR, \
-		 GLOBUS_RELEASE_MINOR, \
-		 GLOBUS_RELEASE_PATCH, \
-		 GLOBUS_RELEASE_BETA ); \
+		 "%s-%s", \
+		 PACKAGE, \
+		 VERSION); \
 	fprintf(stderr, "%s", buf); \
 	exit(0); \
     }

@@ -1,22 +1,11 @@
 #! @SH@
-. $GLOBUS_INSTALL_PATH/libexec/globus-sh-tools.sh
-prefix=${GLOBUS_INSTALL_PATH}
-exec_prefix=${GLOBUS_INSTALL_PATH}
-sbindir=${exec_prefix}/sbin
-bindir=${exec_prefix}/bin
-libdir=${exec_prefix}/lib
-libexecdir=${exec_prefix}/libexec
-includedir=${exec_prefix}/include
-datadir=${prefix}/share
-sysconfdir=${prefix}/etc
-sharedstatedir=${prefix}/com
-localstatedir=${prefix}/var
-tmpdir=/tmp
-local_tmpdir=/tmp
-secure_tmpdir=/tmp
 
+# Inserted by configure.
+@globus_script_initializer@
 
 # create a globus-ssleay.conf file with the proper o's and ou's
+
+
 ssleay_conf=$sysconfdir/globus-ssleay.conf
 ssleay_user_conf=$sysconfdir/globus-user-ssleay.conf
 ssleay_host_conf=$sysconfdir/globus-host-ssleay.conf

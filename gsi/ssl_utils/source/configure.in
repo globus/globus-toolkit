@@ -10,7 +10,7 @@ AM_PROG_LIBTOOL
 dnl config header goes here
 
 dnl Initialize the automake rules the last argument
-AM_INIT_AUTOMAKE(globus_ssl_utils, 2.0.0)
+AM_INIT_AUTOMAKE($GPT_NAME, $GPT_VERSION)
 
 
 GPT_SET_LIBS("-lglobus_gaa_$GLOBUS_FLAVOR_NAME -lssl_$GLOBUS_FLAVOR_NAME -lcrypto_$GLOBUS_FLAVOR_NAME")

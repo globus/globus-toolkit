@@ -1,22 +1,7 @@
 #! @SH@
 
-. $GLOBUS_INSTALL_PATH/libexec/globus-sh-tools.sh
-prefix=${GLOBUS_INSTALL_PATH}
-exec_prefix=${GLOBUS_INSTALL_PATH}
-sbindir=${exec_prefix}/sbin
-bindir=${exec_prefix}/bin
-libdir=${exec_prefix}/lib
-libexecdir=${exec_prefix}/libexec
-includedir=${exec_prefix}/include
-datadir=${prefix}/share
-sysconfdir=${prefix}/etc
-sharedstatedir=${prefix}/com
-localstatedir=${prefix}/var
-tmpdir=/tmp
-local_tmpdir=/tmp
-secure_tmpdir=/tmp
-
-
+# Inserted by configure.
+@globus_script_initializer@
 
 #
 # Sample script to generate a certificate request which can be sent 
@@ -51,19 +36,16 @@ ${short_usage}
 EOF
 }
 
-PACKAGE=@PACKAGE@
-VERSION=@VERSION@
-
-. $GLOBUS_INSTALL_PATH/libexec/globus-args-parser-header
+@globus_args_parser_header@
 
 
 gssapi_authentication=@GSSAPI_TYPE@
 
 #SSL related needs
-PATH=${GLOBUS_INSTALL_PATH}/bin:${PATH}
-SSLEAY="${GLOBUS_INSTALL_PATH}/bin/ssleay"
-if [ -r ${GLOBUS_INSTALL_PATH}/bin/openssl ]; then
-    SSLEAY="${GLOBUS_INSTALL_PATH}/bin/openssl"
+PATH=${GLOBUS_SSL_PATH}/bin:${PATH}
+SSLEAY="${GLOBUS_SSL_PATH}/bin/ssleay"
+if [ -r ${GLOBUS_SSL_PATH}/bin/openssl ]; then
+    SSLEAY="${GLOBUS_SSL_PATH}/bin/openssl"
 fi
 SSLEAY_CONFIG="${sysconfdir}/globus-user-ssleay.conf"
 SSLEAY_USER_CONFIG="${sysconfdir}/globus-user-ssleay.conf"
