@@ -32,7 +32,10 @@ CVS Information:
 #include "globus_gram_client.h"
 #include "grami_fprintf.h"
 #include "globus_rsl.h"
+/*
 #include "globus_gram_job_manager.h"
+*/
+#include "globus_i_gram_handlers.h"
 #if defined(TARGET_ARCH_SOLARIS)
 #include <netdb.h>
 #endif
