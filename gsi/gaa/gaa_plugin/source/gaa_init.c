@@ -52,6 +52,10 @@ gaa_l_plugin_read_getpolicy(gaa_plugin_getpolicy_args *gpargs, FILE *cffile,
 			    char *str);
 
 static gaa_status
+gaa_l_x_plugin_read_authz_id(gaa_plugin_authz_id_args *gpargs, FILE *cffile,
+			     char *str);
+
+static gaa_status
 gaa_l_plugin_parse_boolean(int *result, char *str);
 
 static gaa_status
@@ -161,8 +165,8 @@ gaa_l_init(gaa_ptr *			gaa,
     gaa_plugin_matchrights_args		mrargs;
     gaa_plugin_getpolicy_args		gpargs;
     gaa_plugin_mutex_args		mxargs;
+    gaa_plugin_authz_id_args		azargs;
     char *				s;
-    int					err;
 
     if (gaa == 0)
 	return(GAA_STATUS(GAA_S_INVALID_ARG, 0));
@@ -261,6 +265,16 @@ gaa_l_init(gaa_ptr *			gaa,
 		 gaa_plugin_install_mutex_callbacks(&mxargs)) != GAA_S_SUCCESS)
 		return(status);
 	}
+	else if (strcmp(tok, "get_authz_identity") == 0)
+	{
+	    if ((status =
+		 gaa_l_x_plugin_read_authz_id(&azargs, cffile,
+					      next)) != GAA_S_SUCCESS)
+		return(status);
+	    if ((status =
+		 gaa_plugin_install_authz_id(*gaa, &azargs)) != GAA_S_SUCCESS)
+		return(status);
+	}
 
     }
     fclose(cffile);
@@ -296,8 +310,6 @@ gaa_l_plugin_read_miargs(gaa_plugin_mechinfo_args *miargs,
 {
     char *				next = 0;
     char *				tok = 0;
-    char				buf[2048];
-    char				ebuf[2048];
     int					firstbrace = 0;
     gaa_status				status;
     int					i = 0;
@@ -398,8 +410,6 @@ gaa_l_plugin_read_ceargs(gaa_plugin_cond_eval_args *ceargs,
 {
     char *				next = 0;
     char *				tok = 0;
-    char				buf[2048];
-    char				ebuf[2048];
     int					firstbrace = 0;
     gaa_status				status;
     int					i;
@@ -498,8 +508,6 @@ gaa_l_plugin_read_aiargs(gaa_plugin_authinfo_args *aiargs,
 {
     char *				next = 0;
     char *				tok = 0;
-    char				buf[2048];
-    char				ebuf[2048];
     int					firstbrace = 0;
     gaa_status				status;
     gaa_l_plugin_cfg_info		cfinfo[DEF_CFINFO_SIZE];
@@ -596,8 +604,6 @@ gaa_l_plugin_read_matchrights(gaa_plugin_matchrights_args *mrargs,
 {
     char *				next = 0;
     char *				tok = 0;
-    char				buf[2048];
-    char				ebuf[2048];
     int					firstbrace = 0;
     gaa_status				status;
     gaa_l_plugin_cfg_info		cfinfo[DEF_CFINFO_SIZE];
@@ -674,8 +680,6 @@ gaa_l_plugin_read_getpolicy(gaa_plugin_getpolicy_args *gpargs,
 {
     char *				next = 0;
     char *				tok = 0;
-    char				buf[2048];
-    char				ebuf[2048];
     int					firstbrace = 0;
     gaa_status				status;
     gaa_l_plugin_cfg_info		cfinfo[DEF_CFINFO_SIZE];
@@ -719,6 +723,84 @@ gaa_l_plugin_read_getpolicy(gaa_plugin_getpolicy_args *gpargs,
 	else
 	{
 	    gaacore_set_err("gaa_init: bad text after \"getpolicy\"");
+	    return(GAA_STATUS(GAA_S_CONFIG_ERR, 0));
+	}
+    }
+    return(gaa_l_plugin_read_cfinfo(cfinfo, cffile, next, firstbrace));
+}
+
+#ifdef DOCUMENT_INTERNAL_FUNCTIONS
+/** gaa_l_plugin_read_getpolicy()
+ *
+ *  @ingroup gaa_plugin_init_static
+ * 
+ * Read getpolicy args from a configuration file.  Called by gaa_init().
+ *
+ * @param gpargs
+ *        output args to fill in
+ * @param cffile
+ *        input config file
+ * @param str
+ *        input string (leftover text from other config-reading routines)
+ *
+ * @retval GAA_S_SUCCESS
+ *         success
+ * @retval GAA_S_INTERNAL_ERR
+ *         cffile or gpargs is null.
+ * @retval GAA_S_CONFIG_ERR
+ *         syntax error in getpolicy entry.
+ */
+#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
+static gaa_status
+gaa_l_x_plugin_read_authz_id(gaa_plugin_authz_id_args *azargs,
+			    FILE *		     cffile,
+			    char *		     str)
+{
+    char *				next = 0;
+    char *				tok = 0;
+    int					firstbrace = 0;
+    gaa_status				status;
+    gaa_l_plugin_cfg_info		cfinfo[DEF_CFINFO_SIZE];
+    int					i = 0;
+
+    if (cffile == 0 || azargs == 0)
+	return(GAA_STATUS(GAA_S_INTERNAL_ERR, 0));
+
+    i = 0;
+    if ((status = gaa_l_plugin_init_cfinfo(cfinfo, i++, sizeof(cfinfo),
+			      "get_authz_identity",
+			      gaa_l_plugin_symdesc_cfg,
+			      &azargs->get_authz_id)) != GAA_S_SUCCESS)
+	return(status);
+
+    if ((status = gaa_l_plugin_init_cfinfo(cfinfo, i++, sizeof(cfinfo),
+			      "params",
+			      gaa_l_plugin_param_cfg,
+			      &azargs->param)) != GAA_S_SUCCESS)
+	return(status);
+
+    if ((status = gaa_l_plugin_init_cfinfo(cfinfo, i++, sizeof(cfinfo),
+			      "sym_params",
+			      gaa_l_plugin_symparam_cfg,
+			      &azargs->param)) != GAA_S_SUCCESS)
+	return(status);
+
+    if ((status = gaa_l_plugin_init_cfinfo(cfinfo, i++, sizeof(cfinfo),
+			      "freeparam",
+			      gaa_l_plugin_symdesc_cfg,
+			      &azargs->freeparam)) != GAA_S_SUCCESS)
+	return(status);
+
+    if (cffile == 0)
+	return(GAA_STATUS(GAA_S_INTERNAL_ERR, 0));
+    gaa_plugin_init_authz_id_args(azargs);
+    if (tok = gaautil_gettok(next, &next))
+    {
+	if (strcmp(tok, "{") == 0)
+	    firstbrace++;
+	else
+	{
+	    gaacore_set_err("gaa_init: bad text after \"get_authz_identity\"");
 	    return(GAA_STATUS(GAA_S_CONFIG_ERR, 0));
 	}
     }
@@ -803,8 +885,6 @@ gaa_l_plugin_read_valinfo(gaa_plugin_valinfo_args *viargs,
 {
     char *				next = 0;
     char *				tok = 0;
-    char				buf[2048];
-    char				ebuf[2048];
     int					firstbrace = 0;
     gaa_status				status;
     gaa_l_plugin_cfg_info		cfinfo[DEF_CFINFO_SIZE];
@@ -994,7 +1074,6 @@ gaa_l_plugin_parse_param(gaa_plugin_parameter *    param,
 			 gaa_plugin_parameter_type type)
 {
     char *				s;
-    char **				p;
     gaa_status				status = GAA_S_SUCCESS;
 
     if (param == 0)
@@ -1175,8 +1254,6 @@ gaa_l_plugin_read_mxargs(gaa_plugin_mutex_args *mxargs,
 {
     char *				next = 0;
     char *				tok = 0;
-    char				buf[2048];
-    char				ebuf[2048];
     int					firstbrace = 0;
     gaa_status				status;
     int					i = 0;
