@@ -1468,7 +1468,7 @@ sub package_source_gpt()
             log_system("mv $tardir $package-$version",
                        "$pkglog/$package");
             paranoia "system() call failed.  See $pkglog/$package.";
-            log_system("tar cf $package_output/$tarfile.tar $package-$version",
+            log_system("tar chf $package_output/$tarfile.tar $package-$version",
                        "$pkglog/$package");
             paranoia "system() call failed.  See $pkglog/$package.";
             log_system("gzip -f $package_output/$tarfile.tar",
@@ -1538,7 +1538,7 @@ sub package_source_pnb()
     log_system("mv $tardir $package-$version",
                "$pkglog/$package");
     paranoia "a system() failed.  See $pkglog/$package.";
-    log_system("tar cf $package_output/${package}-${version}.tar $package-$version",
+    log_system("tar chf $package_output/${package}-${version}.tar $package-$version",
                "$pkglog/$package");
     paranoia "a system() failed.  See $pkglog/$package.";
     log_system("gzip -f $package_output/${package}-${version}.tar",
@@ -1608,7 +1608,7 @@ sub package_source_tar()
         my $tarfile = "$package-$version";
         
         chdir $source_output;
-        log_system("tar cvzf $package_output/$tarfile.tar.gz $package_name",
+        log_system("tar cvhzf $package_output/$tarfile.tar.gz $package_name",
                    "$pkglog/$package");
         paranoia "tar failed for $package.";
         return "$package_output/$tarfile.tar.gz";
