@@ -1,4 +1,0 @@
-name=mjs_pbs_setup
-subdir=program_execution/mjs-pbs-setup
-build="custom"
-output=mjs_pbs_setup-*.tar.gz
