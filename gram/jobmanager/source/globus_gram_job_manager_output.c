@@ -1449,7 +1449,7 @@ globus_l_gram_job_manager_output_destination_open(
         rc = globus_gass_cache_add(
 		&request->cache_handle,
 		destination->url,
-		request->cache_tag,
+               destination->tag ? destination->tag : request->cache_tag,
 		GLOBUS_TRUE,
 		&timestamp,
 		&local_filename);
@@ -1461,7 +1461,7 @@ globus_l_gram_job_manager_output_destination_open(
 	rc = globus_gass_cache_add_done(
 		&request->cache_handle,
 		destination->url,
-		request->cache_tag,
+               destination->tag ? destination->tag : request->cache_tag,
 		0);
 	if(rc != GLOBUS_SUCCESS)
 	{
