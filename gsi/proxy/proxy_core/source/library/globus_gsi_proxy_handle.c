@@ -638,6 +638,20 @@ globus_gsi_proxy_handle_set_type(
             handle, NULL, 0, OBJ_sn2nid(LIMITED_PROXY_SN));
         break;
         
+      case GLOBUS_GSI_CERT_UTILS_TYPE_RFC_IMPERSONATION_PROXY:
+        result = globus_gsi_proxy_handle_set_policy(
+            handle, NULL, 0, OBJ_sn2nid(IMPERSONATION_PROXY_SN));
+        break;
+
+      case GLOBUS_GSI_CERT_UTILS_TYPE_RFC_INDEPENDENT_PROXY:
+        result = globus_gsi_proxy_handle_set_policy(
+            handle, NULL, 0, OBJ_sn2nid(INDEPENDENT_PROXY_SN));
+        break;
+
+      case GLOBUS_GSI_CERT_UTILS_TYPE_RFC_LIMITED_PROXY:
+        result = globus_gsi_proxy_handle_set_policy(
+            handle, NULL, 0, OBJ_sn2nid(LIMITED_PROXY_SN));
+        break;
       default:
         break;
     }
