@@ -97,7 +97,7 @@
             __FILE__,                                                        \
             _xio_name,                                                       \
             __LINE__,                                                        \
-            _XIOSL("The peer authenticated to %s. Expected the peer "               \
+            _XIOSL("The peer authenticated as %s. Expected the peer "               \
             "to authenticate as %s"), (_peer_name), (_expected_name)))
 
 
