@@ -1130,8 +1130,17 @@ cmd: USER SP username CRLF
 	=	{
 	    if (log_commands)
 		syslog(LOG_INFO, "SIZE %s", CHECKNULL($4));
-	    if ($2 && $4 && !restrict_check($4)) {
-		sizecmd($4);
+	    if ($2 && $4 && !restrict_check($4)) 
+            {
+#               if defined(STRIPED_SERVER_BACKEND)
+                {
+                    stripd_server_size($4);
+                }
+#               else
+                {
+		    sizecmd($4);
+                }
+#               endif
 	    }
 	    if ($4 != NULL)
 		free($4);

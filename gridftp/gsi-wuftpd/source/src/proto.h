@@ -46,6 +46,11 @@
 
 #if defined(STRIPED_SERVER_BACKEND)
 #include "bmap_file.h"
+
+void
+stripd_server_size(
+    char *                          filename);
+
 #endif
 
 #endif

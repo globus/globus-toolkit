@@ -1966,4 +1966,38 @@ g_set_tcp_buffer(int size)
 	                                    &tcpbuffer);
     }
 }
+
+#if defined(STRIPED_SERVER_BACKEND)
+
+void
+stripd_server_size(
+    char *                          filename)
+{
+    int                             ret;
+    bmap_file_t *                   bp;
+    bmap_offs_t                     size;
+
+    ret = bmap_file_open(&bp, filename, O_RDONLY, -1);
+    if(ret != 0)
+    {
+        reply(550, "File %s could not be opened.", filename);
+        return;
+    }
+    size = bmap_file_size(bp);
+    bmap_file_close(bp);
+
+    switch (type) 
+    {
+        case TYPE_L:
+        case TYPE_I:
+            reply(213, "%qu", size);
+            break;
+
+        case TYPE_A:
+        default:
+          reply(504, "SIZE not implemented for Type %c.", "?AEIL"[type]);
+    }
+}
+#endif /* (STRIPED_SERVER_BACKEND */
+
 #endif /* USE_GLOBUS_DATA_CODE */
