@@ -39,6 +39,12 @@ globus_l_gram_protocol_activate(void)
     int					result;
     char *				message;
 
+    result = globus_module_activate(GLOBUS_GSI_GSS_ASSIST_MODULE);
+    if(result != GLOBU_SUCCESS)
+    {
+        return GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES;
+    }
+
     result = globus_module_activate(GLOBUS_IO_MODULE);
     if(result != GLOBUS_SUCCESS)
     {
@@ -117,6 +123,7 @@ globus_l_gram_protocol_deactivate(void)
     globus_mutex_unlock(&globus_i_gram_protocol_mutex);
     globus_mutex_destroy(&globus_i_gram_protocol_mutex);
 
+    globus_module_deactivate(GLOBUS_GSI_GSS_ASSIST_MODULE);
     globus_module_deactivate(GLOBUS_IO_MODULE);
     /*
      * GSSAPI - cleanup of the credential

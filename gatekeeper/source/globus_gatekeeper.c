@@ -421,6 +421,12 @@ main(int xargc,
     OM_uint32 major_status = 0;
     OM_uint32 minor_status = 0;
 
+    rc = globus_module_activate(GLOBUS_GSI_GSS_ASSIST_MODULE);
+    if(rc != GLOBUS_SUCCESS)
+    {
+        exit(1);
+    }
+
 #if defined(TARGET_ARCH_CRAYT3E)
     unicos_init();
 #endif
@@ -1101,6 +1107,13 @@ main(int xargc,
             close(connection_fd);
         }
     }
+
+    rc = globus_module_deactivate(GLOBUS_GSI_GSS_ASSIST_MODULE);
+    if(rc != GLOBUS_SUCCESS)
+    {
+        exit(1);
+    }
+
     return 0;
 }
 
@@ -1258,11 +1271,12 @@ static void doit()
      * don't need any special processing
      */
 
+#if 0
     extension_oids.elements = (gss_OID) gss_restrictions_extension;
     extension_oids.count = 1;
     
     option_token.value = (void *) &extension_oids;
-#if 0
+
     /* don't use this code until we require CAS for the gatekeeper */
     major_status = gss_set_sec_context_option(
         &minor_status,

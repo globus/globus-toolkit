@@ -269,6 +269,12 @@ globus_i_gram_client_deactivate(void)
 	return(rc);
     }
 
+    rc = globus_module_deactivate(GLOBUS_GSI_GSS_ASSIST_MODULE);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        return(rc);
+    }
+
     rc = globus_module_deactivate(GLOBUS_IO_MODULE);
     if (rc != GLOBUS_SUCCESS)
     {
