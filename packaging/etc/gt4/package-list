@@ -1,4 +1,5 @@
 globus_wsrf_rft_service_java                ws-transfer/reliable/service/java/source
+globus_wsrf_rft_service_java_setup          ws-transfer/reliable/service/java/setup
 globus_wsrf_rft_common_java                 ws-transfer/reliable/common/java/source
 globus_wsrf_rft_common_schema               ws-transfer/reliable/common/schema
 globus_wsrf_rft_client_java                 ws-transfer/reliable/client/java/source
