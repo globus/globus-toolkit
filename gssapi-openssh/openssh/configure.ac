@@ -2177,6 +2177,21 @@ AC_ARG_ENABLE(suid-ssh,
 )
 AC_SUBST(SSHMODE)
 
+AC_MSG_CHECKING(whether to build only static binaries)
+AC_ARG_ENABLE(static-only,
+[  --enable-static-only    Build only static binaries
+  --disable-static-only   Build shared binaries where supported (default)],
+[ case "$enableval" in
+  yes)
+       AC_MSG_RESULT(yes)
+       CFLAGS="$CFLAGS -static"
+       LDFLAGS="$LDFLAGS -static"
+       ;;
+  *)   AC_MSG_RESULT(no)
+       ;;
+  esac ],
+  AC_MSG_RESULT(no)
+)
 
 # Where to place sshd.pid
 piddir=/var/run
