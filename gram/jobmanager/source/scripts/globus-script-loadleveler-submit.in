@@ -38,7 +38,6 @@ cat=${GLOBUS_SH_CAT-cat}
 sed=${GLOBUS_SH_SED-sed}
 rm=${GLOBUS_SH_RM-rm}
 date=${GLOBUS_SH_DATE-date}
-date=${GLOBUS_SH_DATE-date}
 poe=${GLOBUS_SH_POE-poe}
 ################################################
 
