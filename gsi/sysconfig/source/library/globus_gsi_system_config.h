@@ -37,7 +37,7 @@ EXTERN_C_BEGIN
  * defining preprocessor symbols that point at the correct platform specific
  * function. <b>You should never use the platform specific functions
  * directly.</b>.
- * Any program that uses Globus GSi System Config functions must include
+ * Any program that uses Globus GSI System Config functions must include
  * "globus_gsi_system_config.h".  
  *
  * @htmlonly

@@ -16,7 +16,7 @@
  * terms of a globus_error_t.
  *
  * Any program that uses Globus GSSAPI Error functions must include
- * "globus_common.h". 
+ * "globus_error_gssapi.h". 
  *
  * @htmlonly
  * <a href="main.html" target="_top">View documentation without frames</a><br>
