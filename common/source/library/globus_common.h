@@ -35,7 +35,6 @@ CVS Information:
 #include "globus_thread_pool.h"
 #include "globus_handle_table.h"
 #include "globus_callback.h"
-#include "globus_timeq.h"
 #include "globus_memory.h"
 #include "globus_print.h"
 #include "globus_tilde_expand.h"
