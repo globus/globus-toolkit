@@ -16,9 +16,9 @@ Dist_Scripts = \
 	grid-cert-renew \
 	grid-change-pass-phrase \
 	grid-cert-request \
-	grid-mapfile-add-entry \
-	grid-mapfile-delete-entry \
-	grid-mapfile-check-consistency
+	grid-mapfile-add-entry.in \
+	grid-mapfile-delete-entry.in \
+	grid-mapfile-check-consistency.in
 
 bin_SCRIPTS = $(User_Scripts)
 

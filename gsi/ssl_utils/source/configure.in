@@ -77,6 +77,9 @@ AC_OUTPUT(
 	library/oldgaa/Makefile
 	programs/Makefile
 	programs/grid-cert-info
+        programs/grid-mapfile-add-entry
+	programs/grid-mapfile-delete-entry
+	programs/grid-mapfile-check-consistency
 )
 
 
