@@ -132,9 +132,11 @@ globus_l_callback_attach_approval(void * user_arg,
                                   globus_nexus_startpoint_t * sp);
 
 static void 
-globus_l_job_request_reply_handler(globus_nexus_endpoint_t * endpoint,
-                                   globus_nexus_buffer_t * buffer,
-                                   globus_bool_t is_non_threaded);
+globus_l_job_request_reply_data_handler(void * arg,
+					globus_io_handle_t * handle,
+					globus_result_t result,
+					globus_byte_t * buf,
+					globus_size_t nbytes);
 
 static void 
 globus_l_callback_handler(globus_nexus_endpoint_t * endpoint,
@@ -401,18 +403,12 @@ globus_l_gram_client_authenticate(
 {
     globus_io_attr_t             tcp_attr;
     int                          rc;
+    globus_result_t              result;
     int                          tmp_version;
     char *                       gatekeeper_host;
     char *                       gatekeeper_princ;
     char * 			 gatekeeper_service = "jobmanager";
     unsigned short               gatekeeper_port = 0;
-    char *                       auth_msg_buf;
-    size_t                       auth_msg_buf_size;
-    /* GSSAPI assist variables */
-    OM_uint32                    major_status = 0;
-    OM_uint32                    minor_status = 0;
-    int                          token_status = 0;
-    OM_uint32                    ret_flags = 0;
     char *cp, *sp, *qp, *pp;
 
 
@@ -456,211 +452,46 @@ globus_l_gram_client_authenticate(
     grami_fprintf(globus_l_print_fp, "Connecting to %s:%d/%s:%s\n",
 		  gatekeeper_host, gatekeeper_port, 
 		  gatekeeper_service, gatekeeper_princ);
-/*
-    rc = globus_nexus_fd_connect(gatekeeper_host,
-				 gatekeeper_port,
-				 gatekeeper_fd);
-    if (rc != 0
-*/
+
+    /* We use globus_io security to authenticate w/ the gatekeeper
+     * and wrap the session. */
     globus_io_tcpattr_init(&tcp_attr);
-    if(
-       globus_io_tcp_connect(
-            gatekeeper_host,
-	    gatekeeper_port,
-	    &tcp_attr,
-	    gatekeeper_handle) != GLOBUS_SUCCESS)
+
+    result = globus_io_attr_set_secure_authentication_mode (
+		   &tcp_attr,
+		   GLOBUS_IO_SECURE_AUTHENTICATION_MODE_GSSAPI,
+		   /* KARLCZ: fill in credential arg */);
+    if ( result != GLOBUS_SUCCESS ) {
+      /* KARLCZ: handle failure */
+    }
+
+    result = globus_io_attr_set_secure_channel_mode (
+		   &tcp_attr,
+		   GLOBUS_IO_SECURE_CHANNEL_MODE_GSI_WRAP);
+    if ( result != GLOBUS_SUCCESS ) {
+      /* KARLCZ: handle failure */
+    }
+
+    if( (result = globus_io_tcp_connect(
+				       gatekeeper_host,
+				       gatekeeper_port,
+				       &tcp_attr,
+				       gatekeeper_handle))
+	!= GLOBUS_SUCCESS )
     {
         grami_fprintf(globus_l_print_fp,
               " globus_io_tcp_connect failed.\n");
 		free(gatekeeper_host);
 	GLOBUS_L_UNLOCK;
+
+	/* KARLCZ: interrogate result to choose the correct error code */
         return (GLOBUS_GRAM_CLIENT_ERROR_CONNECTION_FAILED);
-    }
-
-#ifdef GSS_AUTHENTICATION
-    /*
-     * Now that TCP connection established, use the connection
-     * to do the GSSAPI authentication to the gatekeeper
-     * we will use the assist functions.
-     * Since this is user to the gatekeeper, we want delegation
-     * if possible. We specify the services we would like,
-     * mutual authentication, delegation.
-     * We might also want sequence, and integraty.
-     */
-
-
-    grami_fprintf(globus_l_print_fp,
-		  "Starting authentication to %s\n", gatekeeper_princ);
-
-    major_status = globus_gss_assist_init_sec_context(&minor_status,
-                    credential_handle,
-                    pcontext_handle,
-                    gatekeeper_princ,
-                    gss_flags,
-                    &ret_flags,
-                    &token_status,
-                    globus_gss_assist_token_get_nexus,
-                    (void *) (gatekeeper_handle),
-                    globus_gss_assist_token_send_nexus,
-                    (void *) (gatekeeper_handle));
-
-    if (major_status != GSS_S_COMPLETE)
-    {
-        globus_gss_assist_display_status(stderr,
-                    "GSS Authentication failure:globus_gram_client\n ",
-                     major_status,
-                     minor_status,
-                     token_status);
-
-		gss_delete_sec_context(&minor_status,
-							   pcontext_handle,
-							   GSS_C_NO_BUFFER);
-        globus_io_close(gatekeeper_handle);
-		free(gatekeeper_host);
-        GLOBUS_L_UNLOCK;
-        return (GLOBUS_GRAM_CLIENT_ERROR_AUTHORIZATION);
-    }
-
-    /*
-     * Use the get_unwrap routine to read a status
-     * message from the gatekeeper after the GSSAPI
-     * authentication has completed.
-	 * This is either the version number or an error
-	 * message. This is done
-     * since authorization is done outside of GSSAPI.
-     */
-
-	if (globus_gss_assist_get_unwrap(&minor_status,
-				*pcontext_handle,
-				&auth_msg_buf,
-				&auth_msg_buf_size,
-				&token_status,
-				globus_gss_assist_token_get_nexus,
-				(void *)(gatekeeper_handle),
-				globus_l_print_fp) != GSS_S_COMPLETE)
-    {
-        grami_fprintf(globus_l_print_fp,
-	      "Authorization message not received");
-		free(gatekeeper_host);
-		GLOBUS_L_UNLOCK;
-		return (GLOBUS_GRAM_CLIENT_ERROR_AUTHORIZATION);
-    }
-
-	if (auth_msg_buf_size < 9 
-			|| strncmp(auth_msg_buf,"VERSION=",8)
-			|| ((auth_msg_buf[auth_msg_buf_size-1] != '\0')
-				&& auth_msg_buf[auth_msg_buf_size-1] != '\n'))
-    { 
-        grami_fprintf(globus_l_print_fp,
-              "authorization buffer = %s\n", auth_msg_buf);
-		gss_delete_sec_context(&minor_status,
-						   pcontext_handle,
-						   GSS_C_NO_BUFFER);
-		globus_io_close(gatekeeper_handle);
-		free(gatekeeper_host);
-		GLOBUS_L_UNLOCK;
-
-        if (strncmp(auth_msg_buf, "ERROR: gatekeeper misconfigured", 31) == 0)
-        {
-	    return (GLOBUS_GRAM_CLIENT_ERROR_GATEKEEPER_MISCONFIGURED);
-        }
-        else
-        {
-	    return (GLOBUS_GRAM_CLIENT_ERROR_AUTHORIZATION);
-        }
-    }
-    else
-    {
-        tmp_version =  atoi(auth_msg_buf+8);
-        if (tmp_version != GLOBUS_GRAM_PROTOCOL_VERSION)
-        {
-			free(gatekeeper_host);
-            return (GLOBUS_GRAM_CLIENT_ERROR_VERSION_MISMATCH);
-        }
     }
 
     grami_fprintf(globus_l_print_fp,
 		  "Authentication/authorization complete\n");
 
-	free(auth_msg_buf);
-	auth_msg_buf = NULL;
-
-	/* send the service name */ 
-	/*DEE for now this is hardcoded as "jobmanager" */
-
-	if (globus_gss_assist_wrap_send(&minor_status,
-					*pcontext_handle,
-					gatekeeper_service,
-					strlen(gatekeeper_service)+1,
-					&token_status,
-					globus_gss_assist_token_send_nexus,
-                                       (void *) (gatekeeper_handle),
-					globus_l_print_fp) != GSS_S_COMPLETE)
-    {
-		grami_fprintf(globus_l_print_fp,
-			"Send of service name failed");
-		gss_delete_sec_context(&minor_status,
-							   pcontext_handle,
-							   GSS_C_NO_BUFFER);
-		globus_io_close(gatekeeper_handle);
-		free(gatekeeper_host);
-		GLOBUS_L_UNLOCK;
-		return (GLOBUS_GRAM_CLIENT_ERROR_AUTHORIZATION);
-	}
-
-    /*
-     * Use the get_unwrap to read a status
-     * message from the gatekeeper or from the service after the GSSAPI
-	 * authorization complete and the service has been selected. 
-     */
-
-	if (globus_gss_assist_get_unwrap(&minor_status,
-				*pcontext_handle,
-				&auth_msg_buf,
-				&auth_msg_buf_size,
-				&token_status,
-				globus_gss_assist_token_get_nexus,
-				(void *)(gatekeeper_handle),
-				globus_l_print_fp) != GSS_S_COMPLETE)
-    {
-        grami_fprintf(globus_l_print_fp,
-	      "Service message not received");
-		free(gatekeeper_host);
-		GLOBUS_L_UNLOCK;
-		return (GLOBUS_GRAM_CLIENT_ERROR_AUTHORIZATION);
-    }
-
-	if (auth_msg_buf_size < 9 
-			|| strncmp(auth_msg_buf,"VERSION=",8)
-			|| ((auth_msg_buf[auth_msg_buf_size-1] != '\0')
-				&& auth_msg_buf[auth_msg_buf_size-1] != '\n'))
-    { 
-        grami_fprintf(globus_l_print_fp,
-              "service error buffer = %s\n", auth_msg_buf);
-		gss_delete_sec_context(&minor_status,
-							   pcontext_handle,
-							   GSS_C_NO_BUFFER);
-		globus_io_close(gatekeeper_handle);
-		free(gatekeeper_host);
-		GLOBUS_L_UNLOCK;
-		return (GLOBUS_GRAM_CLIENT_ERROR_AUTHORIZATION);
-    }
-    else
-    {
-        tmp_version =  atoi(auth_msg_buf+8);
-        if (tmp_version != GLOBUS_GRAM_PROTOCOL_VERSION)
-        {
-			free(gatekeeper_host);
-            return (GLOBUS_GRAM_CLIENT_ERROR_VERSION_MISMATCH);
-        }
-    }
-
-#else
-    grami_fprintf(globus_l_print_fp,
-		  "WARNING: No authentication performed\n");
-#endif /* GSS_AUTHENTICATION */
-
-	free(gatekeeper_host);
+    free(gatekeeper_host);
     GLOBUS_L_UNLOCK;
     return(0);
 
@@ -707,10 +538,7 @@ globus_gram_client_ping(char * gatekeeper_url)
         if (rc != GLOBUS_GRAM_CLIENT_ERROR_VERSION_MISMATCH)
             return(rc);
     }
-	
-	gss_delete_sec_context(&minor_status,
-			       &context_handle,
-			       GSS_C_NO_BUFFER);
+
     globus_io_close(&gatekeeper_handle);
 
     return(0);
@@ -732,21 +560,13 @@ globus_gram_client_job_request(char * gatekeeper_url,
 			       char ** job_contact)
 {
     int                             size;
-    int                             contact_msg_size;
     int                             count;
     int                             rc;
     globus_io_handle_t              gatekeeper_handle;
-    globus_byte_t                   type;
-    globus_byte_t *                 contact_msg_buffer;
-    globus_byte_t *                 tmp_buffer;
-    globus_nexus_endpointattr_t     reply_epattr;
-    globus_nexus_endpoint_t         reply_ep;
-    globus_nexus_startpoint_t       reply_sp;
+    globus_byte_t *                 request_buffer;
+    int                             request_buffer_size;
     globus_l_job_request_monitor_t  job_request_monitor;
-	gss_ctx_id_t                    context_handle = GSS_C_NO_CONTEXT;
-	OM_uint32                       minor_status = 0;
-	int								token_status = 0;
-
+    gss_ctx_id_t                    context_handle = GSS_C_NO_CONTEXT;
 
     grami_fprintf(globus_l_print_fp, "in globus_gram_client_job_request()\n");
 
@@ -756,20 +576,22 @@ globus_gram_client_job_request(char * gatekeeper_url,
     }
 
     /*
-    * we will use the assist functions.
+    * we will use the globus_io functions.
     * Since this is user to the gatekeeper, we want delegation
     * if possible. We specify the services we would like,
     * mutual authentication, delegation.
     * We might also want sequence, and integraty.
     * 
-    * As a gram client, we will be delegating our proxy
-    * to a foreign site, and want to limit its usefullness
-    * in order to abide by the Globus security policy. 
-    * Gatekeepers are set up to not accept a limited proxy
-    * for authentication. 
-    * We also only want to authenticate to real gatekeepers
-    * not to limited proxy gatekeepers too. 
     */
+
+    globus_mutex_init(&job_request_monitor.mutex, (globus_mutexattr_t *) NULL);
+    globus_cond_init(&job_request_monitor.cond, (globus_condattr_t *) NULL);
+    job_request_monitor.done = GLOBUS_FALSE;
+    job_request_monitor.read_nbytes = 0;
+    job_request_monitor.read_buffer = globus_malloc (
+					     sizeof(globus_byte_t)
+					     * KARLCZ_MAX_MESSAGE_SIZE);
+
     if ((rc = globus_l_gram_client_authenticate(
 		  gatekeeper_url,
 #ifdef GSS_C_GLOBUS_LIMITED_PROXY_FLAG
@@ -780,121 +602,84 @@ globus_gram_client_job_request(char * gatekeeper_url,
                   &gatekeeper_handle,
 	          &context_handle)) != 0)
     {
-        return(rc);
+      goto globus_l_gram_client_job_request_authenticate_error;
     }
+
+    
+    globus_io_register_read (&gatekeeper_handle,
+			     job_request_monitor.read_buf 
+			     + job_request_monitor.read_nbytes,
+			     KARLCZ_MAX_MESSAGE_SIZE
+			     - job_request_monitor.read_nbytes,
+			     1 /* deliver immediately */,
+			     0 /* flags ? */,
+			     globus_l_gram_request_reply_data_handler,
+			     (void *) & job_request_monitor);
 
     GLOBUS_L_LOCK;
 
-    globus_mutex_init(&job_request_monitor.mutex, (globus_mutexattr_t *) NULL);
-    globus_cond_init(&job_request_monitor.cond, (globus_condattr_t *) NULL);
-    job_request_monitor.done = GLOBUS_FALSE;
-
-    globus_nexus_endpointattr_init(&reply_epattr);
-    globus_nexus_endpointattr_set_handler_table(&reply_epattr,
-				globus_l_job_request_reply_handler_table,
-				1);
-    globus_nexus_endpoint_init(&reply_ep, &reply_epattr);
-    globus_nexus_endpoint_set_user_pointer(&reply_ep, &job_request_monitor);
-    globus_nexus_startpoint_bind(&reply_sp, &reply_ep);
-
-    type  = (globus_byte_t)(GLOBUS_DC_FORMAT_LOCAL);
-    size  = globus_nexus_sizeof_byte(1);
-    size += globus_nexus_sizeof_int(1);
-    size += globus_nexus_sizeof_int(1);
-    size += globus_nexus_sizeof_int(1);
-    size += globus_nexus_sizeof_char(strlen(description));
-    size += globus_nexus_sizeof_int(1);
-    size += globus_nexus_sizeof_int(1);
-    if (callback_url)
-    {
-        size += globus_nexus_sizeof_char(strlen(callback_url));
-    }
-    size += globus_nexus_sizeof_startpoint(&reply_sp, 1);
-
-    if (size >= GLOBUS_GRAM_CLIENT_MAX_MSG_SIZE)
-    {
-	GLOBUS_L_UNLOCK;
-	return (GLOBUS_GRAM_CLIENT_ERROR_INVALID_REQUEST);
+    rc = globus_l_gram_pack_http_job_request (
+		       &request_buffer,
+		       &request_buffer_size,
+		       description /* user's RSL */,
+		       job_state_mask /* integer */,
+		       callback_url /* user's state listener URL */);
+    if (rc != GLOBUS_SUCCESS) {
+      goto globus_l_gram_client_job_request_pack_error;
     }
 
-    /*
-     * size is the size of the message without the extra int.
-     */
-    contact_msg_size = size;
-    tmp_buffer = (globus_byte_t *) globus_malloc(contact_msg_size);
-    contact_msg_buffer = tmp_buffer;
-
-    /*
-     * Pack the rest of the message that goes to the gram_job_manager
-     */
-    *tmp_buffer++ = (globus_byte_t) type;
-    globus_nexus_user_put_int(&tmp_buffer, &GLOBUS_GRAM_PROTOCOL_VERSION, 1);
-    globus_nexus_user_put_int(&tmp_buffer, &size, 1);
-    count= strlen(description);
-    globus_nexus_user_put_int(&tmp_buffer, &count, 1);
-    globus_nexus_user_put_char(&tmp_buffer, (char *) description,
-			       strlen(description));
-    globus_nexus_user_put_int(&tmp_buffer, (int *) &job_state_mask, 1);
-    if (callback_url)
     {
-        count= strlen(callback_url);
-        globus_nexus_user_put_int(&tmp_buffer, &count, 1);
-        globus_nexus_user_put_char(&tmp_buffer,
-				   (char *) callback_url,
-				   strlen(callback_url));
-    }
-    else
-    {
-        count=0;
-        globus_nexus_user_put_int(&tmp_buffer, &count, 1);
-    }
+      int bytes_written;
 
-    globus_nexus_user_put_startpoint_transfer(&tmp_buffer, &reply_sp, 1);
+      rc = globus_io_write (&gatekeeper_handle,
+			    request_buffer,
+			    request_buffer_size,
+			    0 /* no flags? */,
+			    &bytes_written);
+      if (rc != GLOBUS_SUCCESS) {
+	rc = GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED;
+	goto globusl_gram_client_job_request_write_error;
+      }
 
-	if (globus_gss_assist_wrap_send(&minor_status,
-					context_handle,
-					(char *)contact_msg_buffer,
-					size,
-					&token_status,
-					globus_gss_assist_token_send_nexus,
-                                        (void *)  &gatekeeper_handle,
-					globus_l_print_fp) != GSS_S_COMPLETE)
-    {
-		gss_delete_sec_context(&minor_status,
-							   &context_handle,
-							   GSS_C_NO_BUFFER);
-        globus_io_close(&gatekeeper_handle);
-        GLOBUS_L_UNLOCK;
-        return (GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED);
-    }
+      assert (bytes_written==request_buffer_size);
+    }     
 
     globus_mutex_lock(&job_request_monitor.mutex);
     while (!job_request_monitor.done)
     {
          globus_cond_wait(&job_request_monitor.cond,
-                   &job_request_monitor.mutex);
+			  &job_request_monitor.mutex);
     }
     globus_mutex_unlock(&job_request_monitor.mutex);
 
     globus_mutex_destroy(&job_request_monitor.mutex);
     globus_cond_destroy(&job_request_monitor.cond);
 
-    if (job_request_monitor.job_status == 0)
+    if ( (job_request_monitor.job_status == 0)
+	 && (job_contact != NULL) )
     {
-        * job_contact = (char *) 
-           globus_malloc(strlen(job_request_monitor.job_contact_str) + 1);
-
-        strcpy(* job_contact, job_request_monitor.job_contact_str);
+      * job_contact = globus_libc_strdup (job_request_monitor.job_contact_str);
     }
 
-    globus_free(contact_msg_buffer);
-	gss_delete_sec_context(&minor_status,
-						   &context_handle,
-						   GSS_C_NO_BUFFER);
     globus_io_close(&gatekeeper_handle);
+
     GLOBUS_L_UNLOCK;
     return(job_request_monitor.job_status);
 
+
+ globus_l_gram_client_job_request_send_error:
+    globus_free (request_buffer);
+
+ globus_l_gram_client_job_request_pack_error:
+    globus_io_close (&gatekeeper_handle);
+    GLOBUS_L_UNLOCK;
+
+ globus_l_gram_client_job_request_authenticate_error:
+    globus_free (job_request_monitor.read_buffer);
+    globus_mutex_destroy(&job_request_monitor.mutex);
+    globus_cond_destroy(&job_request_monitor.cond);
+    
+    return rc;
 } /* globus_gram_client_job_request() */
 
 
@@ -947,52 +732,47 @@ Parameters:
 Returns:
 ******************************************************************************/
 static void 
-globus_l_job_request_reply_handler(globus_nexus_endpoint_t * endpoint,
-                                globus_nexus_buffer_t * buffer,
-                                globus_bool_t is_non_threaded)
+globus_l_job_request_reply_data_handler(
+		void *               job_request_reply_monitor_vp,
+		globus_io_handle_t * gatekeeper_handle,
+		globus_result_t      read_result,
+		globus_byte_t *      buffer,
+		globus_size_t        nbytes)
+					
 {
-    int               size;
-    int               count = 0;
-    int               format;
-    int               gram_version;
-    globus_byte_t     bformat;
-    globus_byte_t *   ptr;
     globus_l_job_request_monitor_t * job_request_monitor;
 
-    job_request_monitor = (globus_l_job_request_monitor_t * )
-                           globus_nexus_endpoint_get_user_pointer(endpoint);
+    job_request_monitor = ((globus_l_job_request_monitor_t * )
+                           job_request_reply_monitor_vp);
+    assert (job_request_monitor!=NULL);
 
-    grami_fprintf(globus_l_print_fp,
-		  "in globus_l_job_request_reply_handler()\n");
+    globus_mutex_lock (&(job_request_monitor.mutex));
 
-    globus_mutex_lock(&job_request_monitor->mutex);
+    job_request_monitor.read_nbytes += nbytes;
 
-    globus_nexus_get_int(buffer, &gram_version, 1);
-    if (gram_version != GLOBUS_GRAM_PROTOCOL_VERSION)
-    {
-       job_request_monitor->job_status = 
-             GLOBUS_GRAM_CLIENT_ERROR_VERSION_MISMATCH;
+    if ( KARLCZ_message_complete ) {
+      job_request_monitor.status = KARLCZ_http_status;
+      job_request_monitor.job_contact_str = KARLCZ_http_job_contact;
+
+      job_request_monitor.read_nbytes = 0;
+      job_request_monitor.done = GLOBUS_TRUE;
+      globus_cond_broadcast (&(job_request_monitor.mutex));
     }
-    else
-    {
-
-        globus_nexus_get_int(buffer, &(job_request_monitor->job_status), 1);
-
-        if (job_request_monitor->job_status == 0)
-        {
-            globus_nexus_get_int(buffer, &count, 1);
-            globus_nexus_get_char(buffer,
-                                  job_request_monitor->job_contact_str,
-                                  count);
-        }
+    else {
+      /* message incomplete,
+       * register to read more data as it arrives */
+      globus_io_register_read (&gatekeeper_handle,
+			       job_request_monitor.read_buffer 
+			       + job_request_monitor.read_nbytes,
+			       KARLCZ_MAX_MESSAGE_SIZE
+			       - job_request_monitor.read_nbytes,
+			       1 /* deliver immediately */,
+			       0 /* flags ? */,
+			       globus_l_gram_request_reply_data_handler,
+			       (void *) & job_request_monitor);
     }
 
-    *(job_request_monitor->job_contact_str+count)= '\0';
-
-    /* got all of the message */
-    job_request_monitor->done = GLOBUS_TRUE;
-    globus_cond_signal(&job_request_monitor->cond);
-    globus_mutex_unlock(&job_request_monitor->mutex);
+    globus_mutex_unlock (&(job_request_monitor.mutex));
 } /* globus_l_job_request_reply_handler() */
 
 
@@ -1037,70 +817,12 @@ globus_gram_client_job_cancel(char * job_contact)
 
     globus_mutex_init(&cancel_monitor.mutex, (globus_mutexattr_t *) NULL);
     globus_cond_init(&cancel_monitor.cond, (globus_condattr_t *) NULL);
-
-    globus_mutex_lock(&cancel_monitor.mutex);
     cancel_monitor.done = GLOBUS_FALSE;
-    globus_mutex_unlock(&cancel_monitor.mutex);
 
-    globus_nexus_endpointattr_init(&epattr);
-    globus_nexus_endpointattr_set_handler_table(&epattr,
-						globus_l_cancel_handler_table,
-						1);
-    globus_nexus_endpoint_init(&ep, &epattr);
-    globus_nexus_endpoint_set_user_pointer(&ep, &cancel_monitor);
-    globus_nexus_startpoint_bind(&sp, &ep);
+    /* KARLCZ: globus_io connect w/ security to URL in job_contact
+     * use cancel_monitor.handle */
 
-    rc = globus_nexus_attach( job_contact, &sp_to_job_manager);
-    if (rc != 0)
-    {
-        grami_fprintf(globus_l_print_fp,
-	       "globus_nexus_attach returned %d\n", rc);
 
-	GLOBUS_L_UNLOCK;
-
-        if (rc == GLOBUS_NEXUS_ERROR_CONNECT_FAILED ||
-            rc == GLOBUS_NEXUS_ERROR_BAD_PROTOCOL)
-        {
-            return(GLOBUS_GRAM_CLIENT_ERROR_CONTACTING_JOB_MANAGER);
-        }
-        else if (rc == GLOBUS_NEXUS_ERROR_BAD_URL)
-        {
-            return(GLOBUS_GRAM_CLIENT_ERROR_INVALID_JOB_CONTACT);
-        }
-        else
-        {
-            return(GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED);
-        }
-    }
-
-    size =  globus_nexus_sizeof_int(1);
-    size += globus_nexus_sizeof_startpoint(&sp, 1);
-    globus_nexus_buffer_init(&buffer, size, 0);
-    globus_nexus_put_int(&buffer, &GLOBUS_GRAM_PROTOCOL_VERSION, 1);
-    globus_nexus_put_startpoint_transfer(&buffer, &sp, 1);
-
-    rc = globus_nexus_send_rsr(&buffer,
-			       &sp_to_job_manager,
-			       GLOBUS_I_GRAM_JOB_MANAGER_CANCEL_HANDLER_ID,
-			       GLOBUS_TRUE,
-			       GLOBUS_FALSE);
-    if (rc != 0)
-    {
-        grami_fprintf(globus_l_print_fp,
-	       "globus_nexus_attach returned %d\n", rc);
-	GLOBUS_L_UNLOCK;
-        if (rc == GLOBUS_NEXUS_ERROR_CONNECT_FAILED ||
-            rc == GLOBUS_NEXUS_ERROR_BAD_PROTOCOL)
-        {
-            return(GLOBUS_GRAM_CLIENT_ERROR_CONTACTING_JOB_MANAGER);
-        }
-        else
-        {
-            return(GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED);
-        }
-    }
-
-    globus_nexus_startpoint_destroy(&sp_to_job_manager);
 
     globus_mutex_lock(&cancel_monitor.mutex);
     while (!cancel_monitor.done)
@@ -1125,36 +847,38 @@ Parameters:
 Returns:
 ******************************************************************************/
 static void 
-globus_l_cancel_callback_handler(globus_nexus_endpoint_t * endpoint,
-                              globus_nexus_buffer_t * buffer,
-                              globus_bool_t is_non_threaded)
+globus_l_cancel_callback_handler()
 {
-    int gram_version;
     globus_l_cancel_monitor_t * cancel_monitor;
 
-    cancel_monitor = 
-        (globus_l_cancel_monitor_t *)
-	globus_nexus_endpoint_get_user_pointer(endpoint);
+    cancel_monitor = ((globus_l_cancel_monitor_t * )
+		      cancel_monitor_vp);
+    assert (cancel_monitor!=NULL);
 
-    grami_fprintf(globus_l_print_fp,
-		  "in globus_l_cancel_callback_handler()\n");
+    globus_mutex_lock (&(cancel_monitor.mutex));
 
-    globus_mutex_lock(&cancel_monitor->mutex);
-    globus_nexus_get_int(buffer, &gram_version, 1);
-    if (gram_version != GLOBUS_GRAM_PROTOCOL_VERSION)
-    {
-        cancel_monitor->cancel_status = 
-             GLOBUS_GRAM_CLIENT_ERROR_VERSION_MISMATCH;
+    cancel_monitor.read_nbytes += nbytes;
+
+    if ( KARLCZ_message_complete ) {
+      cancel_monitor.status = KARLCZ_http_status;
+      cancel_monitor.done = GLOBUS_TRUE;
+      globus_cond_broadcast (&(_monitor.mutex));
     }
-    else
-    {
-        globus_nexus_get_int(buffer, &cancel_monitor->cancel_status, 1);
+    else {
+      /* message incomplete,
+       * register to read more data as it arrives */
+      globus_io_register_read (&(cancel_monitor.handle),
+			       cancel_monitor.read_buffer 
+			       + cancel_monitor.read_nbytes,
+			       KARLCZ_MAX_MESSAGE_SIZE
+			       - cancel_monitor.read_nbytes,
+			       1 /* deliver immediately */,
+			       0 /* flags ? */,
+			       globus_l_cancel_callback_handler,
+			       (void *) cancel_monitor);
     }
-    
-    cancel_monitor->done = GLOBUS_TRUE;
-    globus_cond_signal(&cancel_monitor->cond);
-    globus_mutex_unlock(&cancel_monitor->mutex);
 
+    globus_mutex_unlock (&(cancel_monitor.mutex));
 } /* globus_l_cancel_callback_handler() */
 
 
@@ -1169,108 +893,6 @@ globus_gram_client_job_status(char * job_contact,
                               int  * job_status,
                               int  * failure_code)
 {
-    int                             rc;
-    int                             size;
-    globus_nexus_buffer_t           buffer;
-    globus_nexus_startpoint_t       sp_to_job_manager;
-    globus_nexus_startpoint_t       sp;
-    globus_nexus_endpoint_t         ep;
-    globus_nexus_endpointattr_t     epattr;
-    globus_l_status_monitor_t       status_monitor;
-
-    grami_fprintf(globus_l_print_fp, "in globus_gram_client_job_status()\n");
-
-    GLOBUS_L_LOCK;
-
-    globus_mutex_init(&status_monitor.mutex, (globus_mutexattr_t *) NULL);
-    globus_cond_init(&status_monitor.cond, (globus_condattr_t *) NULL);
-
-    globus_mutex_lock(&status_monitor.mutex);
-    status_monitor.done = GLOBUS_FALSE;
-    globus_mutex_unlock(&status_monitor.mutex);
-
-    globus_nexus_endpointattr_init(&epattr);
-    globus_nexus_endpointattr_set_handler_table(&epattr,
-                                        globus_l_job_status_handler_table,
-                                        1);
-    globus_nexus_endpoint_init(&ep, &epattr);
-    globus_nexus_endpoint_set_user_pointer(&ep, &status_monitor);
-    globus_nexus_startpoint_bind(&sp, &ep);
-
-    rc = globus_nexus_attach(job_contact, &sp_to_job_manager);
-
-    if (rc != 0)
-    {
-        grami_fprintf(globus_l_print_fp,
-               "globus_nexus_attach returned %d\n", rc);
-
-        GLOBUS_L_UNLOCK;
-
-        if (rc == GLOBUS_NEXUS_ERROR_CONNECT_FAILED ||
-            rc == GLOBUS_NEXUS_ERROR_BAD_PROTOCOL)
-        {
-            *failure_code=GLOBUS_GRAM_CLIENT_ERROR_CONTACTING_JOB_MANAGER;
-        }
-        else if (rc == GLOBUS_NEXUS_ERROR_BAD_URL)
-        {
-            *failure_code=GLOBUS_GRAM_CLIENT_ERROR_INVALID_JOB_CONTACT;
-        }
-        else
-        {
-            *failure_code=GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED;
-        }
-
-        *job_status = 0;
-        return(GLOBUS_FAILURE);
-    }
-
-    size =  globus_nexus_sizeof_int(1);
-    size += globus_nexus_sizeof_startpoint(&sp, 1);
-    globus_nexus_buffer_init(&buffer, size, 0);
-    globus_nexus_put_int(&buffer, &GLOBUS_GRAM_PROTOCOL_VERSION, 1);
-    globus_nexus_put_startpoint_transfer(&buffer, &sp, 1);
-
-    rc = globus_nexus_send_rsr(&buffer,
-                               &sp_to_job_manager,
-                               GLOBUS_I_GRAM_JOB_MANAGER_STATUS_HANDLER_ID,
-                               GLOBUS_TRUE,
-                               GLOBUS_FALSE);
-    if (rc != 0)
-    {
-        grami_fprintf(globus_l_print_fp,
-               "globus_nexus_attach returned %d\n", rc);
-        GLOBUS_L_UNLOCK;
-        
-        if (rc == GLOBUS_NEXUS_ERROR_CONNECT_FAILED ||
-            rc == GLOBUS_NEXUS_ERROR_BAD_PROTOCOL)
-        {
-            *failure_code=GLOBUS_GRAM_CLIENT_ERROR_CONTACTING_JOB_MANAGER;
-        }
-        else
-        {
-            *failure_code=GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED;
-        }
-
-        *job_status = 0;
-        return(GLOBUS_FAILURE);
-    }
-
-    globus_nexus_startpoint_destroy(&sp_to_job_manager);
-
-    globus_mutex_lock(&status_monitor.mutex);
-    while (!status_monitor.done)
-    {
-        globus_cond_wait(&status_monitor.cond, &status_monitor.mutex);
-    }
-    globus_mutex_unlock(&status_monitor.mutex);
-
-    globus_mutex_destroy(&status_monitor.mutex);
-    globus_cond_destroy(&status_monitor.cond);
-
-    GLOBUS_L_UNLOCK;
-    *failure_code = 0;
-    *job_status = status_monitor.job_status;
-    return(GLOBUS_SUCCESS);
 
 } /* globus_gram_client_job_status */
 
@@ -1286,30 +908,6 @@ globus_l_job_status_callback_handler(globus_nexus_endpoint_t * endpoint,
                                      globus_nexus_buffer_t * buffer,
                                      globus_bool_t is_non_threaded)
 {
-    int gram_version;
-    globus_l_status_monitor_t * status_monitor;
-
-    status_monitor = (globus_l_status_monitor_t *)
-        globus_nexus_endpoint_get_user_pointer(endpoint);
-
-    grami_fprintf(globus_l_print_fp,
-                  "in globus_l_job_status_callback_handler()\n");
-
-    globus_mutex_lock(&status_monitor->mutex);
-    globus_nexus_get_int(buffer, &gram_version, 1);
-    if (gram_version != GLOBUS_GRAM_PROTOCOL_VERSION)
-    {
-        status_monitor->job_status =
-             GLOBUS_GRAM_CLIENT_ERROR_VERSION_MISMATCH;
-    }
-    else
-    {
-        globus_nexus_get_int(buffer, &status_monitor->job_status, 1);
-    }
-
-    status_monitor->done = GLOBUS_TRUE;
-    globus_cond_signal(&status_monitor->cond);
-    globus_mutex_unlock(&status_monitor->mutex);
 
 } /* globus_l_job_status_callback_handler() */
 
@@ -1326,51 +924,6 @@ globus_gram_client_callback_allow(
     void * user_callback_arg,
     char ** callback_contact)
 {
-    int			  rc;
-    unsigned short 	  port = 0;
-    char * 		  host;
-    globus_l_callback_t *	  callback;
-    globus_nexus_endpointattr_t  epattr;
-
-    grami_fprintf(globus_l_print_fp, 
-		  "in globus_gram_client_callback_allow()\n");
-
-    GLOBUS_L_LOCK;
-
-    callback =
-	(globus_l_callback_t *) globus_malloc(sizeof(globus_l_callback_t));
-    callback->callback_func =
-	(globus_gram_client_callback_func_t) callback_func;
-    callback->user_callback_arg = user_callback_arg;
-    globus_nexus_endpointattr_init(&epattr);
-    globus_nexus_endpointattr_set_handler_table(&epattr,
-						callback_handler_table,
-						1);
-    globus_nexus_endpoint_init(&(callback->endpoint), &epattr);
-    globus_nexus_endpoint_set_user_pointer(&(callback->endpoint), callback);
-    
-    rc = globus_nexus_allow_attach(&port, &host,
-	     	            globus_l_callback_attach_approval,
-		            (void *) callback);
-       
-    if (rc != 0)
-    {
-        grami_fprintf(globus_l_print_fp, 
-              "globus_nexus_allow_attach returned %d\n", rc);
-        return (1);
-    }
-
-    /*
-     * add 13 for x-nexus stuff plus 1 for the null
-     */
-    *callback_contact = (char *) 
-       globus_malloc(sizeof(port) + MAXHOSTNAMELEN + 13);
-
-    sprintf(* callback_contact, "x-nexus://%s:%hu/", host, port);
-
-    GLOBUS_L_UNLOCK;
-
-    return(0);
 
 } /* globus_gram_client_callback_allow() */
 
@@ -1410,128 +963,6 @@ globus_gram_client_job_callback_register(char * job_contact,
                                          int * job_status,
                                          int * failure_code)
 {
-    int                             rc;
-    int                             size;
-    int                             count;
-    globus_nexus_buffer_t           buffer;
-    globus_nexus_startpoint_t       sp_to_job_manager;
-    globus_nexus_startpoint_t       sp;
-    globus_nexus_endpoint_t         ep;
-    globus_nexus_endpointattr_t     epattr;
-    globus_l_register_monitor_t     register_monitor;
-
-    grami_fprintf(globus_l_print_fp,
-                  "in globus_gram_client_job_callback_register()\n");
-
-    GLOBUS_L_LOCK;
-
-    globus_mutex_init(&register_monitor.mutex, (globus_mutexattr_t *) NULL);
-    globus_cond_init(&register_monitor.cond, (globus_condattr_t *) NULL);
-
-    globus_mutex_lock(&register_monitor.mutex);
-    register_monitor.done = GLOBUS_FALSE;
-    globus_mutex_unlock(&register_monitor.mutex);
-
-    globus_nexus_endpointattr_init(&epattr);
-    globus_nexus_endpointattr_set_handler_table(&epattr,
-					globus_l_job_register_handler_table,
-					1);
-    globus_nexus_endpoint_init(&ep, &epattr);
-    globus_nexus_endpoint_set_user_pointer(&ep, &register_monitor);
-    globus_nexus_startpoint_bind(&sp, &ep);
-
-    rc = globus_nexus_attach(job_contact, &sp_to_job_manager);
-    if (rc != 0)
-    {
-        grami_fprintf(globus_l_print_fp,
-	       "globus_nexus_attach returned %d\n", rc);
-
-	GLOBUS_L_UNLOCK;
-
-        if (rc == GLOBUS_NEXUS_ERROR_CONNECT_FAILED ||
-            rc == GLOBUS_NEXUS_ERROR_BAD_PROTOCOL)
-        {
-            *failure_code=GLOBUS_GRAM_CLIENT_ERROR_CONTACTING_JOB_MANAGER;
-        }
-        else if (rc == GLOBUS_NEXUS_ERROR_BAD_URL)
-        {
-            *failure_code=GLOBUS_GRAM_CLIENT_ERROR_INVALID_JOB_CONTACT;
-        }
-        else
-        {
-            *failure_code=GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED;
-        }
-
-        *job_status = 0;
-        return(GLOBUS_FAILURE);
-    }
-
-    count= strlen(callback_contact);
-
-    size =  globus_nexus_sizeof_int(1);
-    size += globus_nexus_sizeof_startpoint(&sp, 1);
-    size += globus_nexus_sizeof_int(1);
-    size += globus_nexus_sizeof_char(count);
-    size += globus_nexus_sizeof_int(1);
-
-    globus_nexus_buffer_init(&buffer, size, 0);
-    globus_nexus_put_int(&buffer, &GLOBUS_GRAM_PROTOCOL_VERSION, 1);
-    globus_nexus_put_startpoint_transfer(&buffer, &sp, 1);
-
-    globus_nexus_put_int(&buffer, &count, 1);
-    globus_nexus_put_char(&buffer, (char *) callback_contact, count);
-    globus_nexus_put_int(&buffer, (int *) &job_state_mask, 1);
-
-    rc = globus_nexus_send_rsr(&buffer,
-			       &sp_to_job_manager,
-			       GLOBUS_I_GRAM_JOB_MANAGER_REGISTER_HANDLER_ID,
-			       GLOBUS_TRUE,
-			       GLOBUS_FALSE);
-    if (rc != 0)
-    {
-        grami_fprintf(globus_l_print_fp,
-	       "globus_nexus_send_rsr returned %d\n", rc);
-	GLOBUS_L_UNLOCK;
-
-        if (rc == GLOBUS_NEXUS_ERROR_CONNECT_FAILED ||
-            rc == GLOBUS_NEXUS_ERROR_BAD_PROTOCOL)
-        {
-            *failure_code=GLOBUS_GRAM_CLIENT_ERROR_CONTACTING_JOB_MANAGER;
-        }
-        else
-        {
-            *failure_code=GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED;
-        }
-
-        *job_status = 0;
-        return(GLOBUS_FAILURE);
-    }
-
-    globus_nexus_startpoint_destroy(&sp_to_job_manager);
-
-    globus_mutex_lock(&register_monitor.mutex);
-    while (!register_monitor.done)
-    {
-        globus_cond_wait(&register_monitor.cond, &register_monitor.mutex);
-    }
-    globus_mutex_unlock(&register_monitor.mutex);
-
-    globus_mutex_destroy(&register_monitor.mutex);
-    globus_cond_destroy(&register_monitor.cond);
-
-    GLOBUS_L_UNLOCK;
-    if (register_monitor.register_status == GLOBUS_SUCCESS)
-    {
-        *job_status = register_monitor.job_status;
-        *failure_code = 0;
-        return (GLOBUS_SUCCESS);
-    }
-    else
-    {
-        *job_status = 0;
-        *failure_code = register_monitor.register_status;
-        return (GLOBUS_FAILURE);
-    }
 
 } /* globus_gram_client_job_callback_register() */
 
@@ -1547,31 +978,6 @@ globus_l_job_callback_register_handler(globus_nexus_endpoint_t * endpoint,
                                        globus_nexus_buffer_t * buffer,
                                        globus_bool_t is_non_threaded)
 {
-    int gram_version;
-    globus_l_register_monitor_t * register_monitor;
-
-    register_monitor = (globus_l_register_monitor_t *)
-        globus_nexus_endpoint_get_user_pointer(endpoint);
-
-    grami_fprintf(globus_l_print_fp,
-                  "in globus_l_job_callback_register_handler()\n");
-
-    globus_mutex_lock(&register_monitor->mutex);
-    globus_nexus_get_int(buffer, &gram_version, 1);
-    if (gram_version != GLOBUS_GRAM_PROTOCOL_VERSION)
-    {
-        register_monitor->register_status =
-             GLOBUS_GRAM_CLIENT_ERROR_VERSION_MISMATCH;
-    }
-    else
-    {
-        globus_nexus_get_int(buffer, &register_monitor->job_status, 1);
-        globus_nexus_get_int(buffer, &register_monitor->register_status, 1);
-    }
-
-    register_monitor->done = GLOBUS_TRUE;
-    globus_cond_signal(&register_monitor->cond);
-    globus_mutex_unlock(&register_monitor->mutex);
 
 } /* globus_l_job_callback_register_handler() */
 
@@ -1588,129 +994,6 @@ globus_gram_client_job_callback_unregister(char * job_contact,
                                            int * job_status,
                                            int * failure_code)
 {
-    int                             rc;
-    int                             size;
-    int                             count;
-    globus_nexus_buffer_t           buffer;
-    globus_nexus_startpoint_t       sp_to_job_manager;
-    globus_nexus_startpoint_t       sp;
-    globus_nexus_endpoint_t         ep;
-    globus_nexus_endpointattr_t     epattr;
-    globus_l_unregister_monitor_t   unregister_monitor;
-
-    grami_fprintf(globus_l_print_fp,
-                  "in globus_gram_client_job_callback_unregister()\n");
-
-    GLOBUS_L_LOCK;
-
-    globus_mutex_init(&unregister_monitor.mutex, (globus_mutexattr_t *) NULL);
-    globus_cond_init(&unregister_monitor.cond, (globus_condattr_t *) NULL);
-
-    globus_mutex_lock(&unregister_monitor.mutex);
-    unregister_monitor.done = GLOBUS_FALSE;
-    globus_mutex_unlock(&unregister_monitor.mutex);
-
-    globus_nexus_endpointattr_init(&epattr);
-    globus_nexus_endpointattr_set_handler_table(&epattr,
-					globus_l_job_unregister_handler_table,
-					1);
-    globus_nexus_endpoint_init(&ep, &epattr);
-    globus_nexus_endpoint_set_user_pointer(&ep, &unregister_monitor);
-    globus_nexus_startpoint_bind(&sp, &ep);
-
-    rc = globus_nexus_attach(job_contact, &sp_to_job_manager);
-    if (rc != 0)
-    {
-        grami_fprintf(globus_l_print_fp,
-	       "globus_nexus_attach returned %d\n", rc);
-
-	GLOBUS_L_UNLOCK;
-
-        *job_status = 0;
-
-        if (rc == GLOBUS_NEXUS_ERROR_CONNECT_FAILED ||
-            rc == GLOBUS_NEXUS_ERROR_BAD_PROTOCOL)
-        {
-            *failure_code=GLOBUS_GRAM_CLIENT_ERROR_CONTACTING_JOB_MANAGER;
-        }
-        else if (rc == GLOBUS_NEXUS_ERROR_BAD_URL)
-        {
-            *failure_code=GLOBUS_GRAM_CLIENT_ERROR_INVALID_JOB_CONTACT;
-        }
-        else
-        {
-            *failure_code=GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED;
-        }
-
-        return(GLOBUS_FAILURE);
-    }
-
-    count= strlen(callback_contact);
-
-    size =  globus_nexus_sizeof_int(1);
-    size += globus_nexus_sizeof_startpoint(&sp, 1);
-    size += globus_nexus_sizeof_int(1);
-    size += globus_nexus_sizeof_char(count);
-
-    globus_nexus_buffer_init(&buffer, size, 0);
-    globus_nexus_put_int(&buffer, &GLOBUS_GRAM_PROTOCOL_VERSION, 1);
-    globus_nexus_put_startpoint_transfer(&buffer, &sp, 1);
-
-    globus_nexus_put_int(&buffer, &count, 1);
-    globus_nexus_put_char(&buffer, (char *) callback_contact, count);
-
-    rc = globus_nexus_send_rsr(&buffer,
-			       &sp_to_job_manager,
-			       GLOBUS_I_GRAM_JOB_MANAGER_UNREGISTER_HANDLER_ID,
-			       GLOBUS_TRUE,
-			       GLOBUS_FALSE);
-    if (rc != 0)
-    {
-        grami_fprintf(globus_l_print_fp,
-	       "globus_nexus_send_rsr returned %d\n", rc);
-
-	GLOBUS_L_UNLOCK;
-
-        *job_status = 0;
-
-        if (rc == GLOBUS_NEXUS_ERROR_CONNECT_FAILED ||
-            rc == GLOBUS_NEXUS_ERROR_BAD_PROTOCOL)
-        {
-            *failure_code=GLOBUS_GRAM_CLIENT_ERROR_CONTACTING_JOB_MANAGER;
-        }
-        else
-        {
-            *failure_code=GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED;
-        }
-
-        return(GLOBUS_FAILURE);
-    }
-
-    globus_nexus_startpoint_destroy(&sp_to_job_manager);
-
-    globus_mutex_lock(&unregister_monitor.mutex);
-    while (!unregister_monitor.done)
-    {
-        globus_cond_wait(&unregister_monitor.cond, &unregister_monitor.mutex);
-    }
-    globus_mutex_unlock(&unregister_monitor.mutex);
-
-    globus_mutex_destroy(&unregister_monitor.mutex);
-    globus_cond_destroy(&unregister_monitor.cond);
-
-    GLOBUS_L_UNLOCK;
-    if (unregister_monitor.unregister_status == GLOBUS_SUCCESS)
-    {
-        *job_status = unregister_monitor.job_status;
-        *failure_code = 0;
-        return (GLOBUS_SUCCESS);
-    }
-    else
-    {
-        *job_status = 0;
-        *failure_code = unregister_monitor.unregister_status;
-        return (GLOBUS_FAILURE);
-    }
 
 } /* globus_gram_client_job_callback_unregister() */
 
@@ -1726,31 +1009,6 @@ globus_l_job_callback_unregister_handler(globus_nexus_endpoint_t * endpoint,
                                          globus_nexus_buffer_t * buffer,
                                          globus_bool_t is_non_threaded)
 {
-    int gram_version;
-    globus_l_unregister_monitor_t * unregister_monitor;
-
-    unregister_monitor = (globus_l_unregister_monitor_t *)
-        globus_nexus_endpoint_get_user_pointer(endpoint);
-
-    grami_fprintf(globus_l_print_fp,
-                  "in globus_l_job_callback_unregister_handler()\n");
-
-    globus_mutex_lock(&unregister_monitor->mutex);
-    globus_nexus_get_int(buffer, &gram_version, 1);
-    if (gram_version != GLOBUS_GRAM_PROTOCOL_VERSION)
-    {
-        unregister_monitor->unregister_status =
-             GLOBUS_GRAM_CLIENT_ERROR_VERSION_MISMATCH;
-    }
-    else
-    {
-        globus_nexus_get_int(buffer, &unregister_monitor->job_status, 1);
-        globus_nexus_get_int(buffer, &unregister_monitor->unregister_status, 1);
-    }
-
-    unregister_monitor->done = GLOBUS_TRUE;
-    globus_cond_signal(&unregister_monitor->cond);
-    globus_mutex_unlock(&unregister_monitor->mutex);
 
 } /* globus_l_job_callback_unregister_handler() */
 
@@ -1766,38 +1024,7 @@ globus_l_callback_handler(globus_nexus_endpoint_t * endpoint,
                        globus_nexus_buffer_t * buffer,
                        globus_bool_t is_non_threaded)
 {
-    int gram_version;
-    int count;
-    int state;
-    int errorcode;
-    globus_l_callback_t * callback;
-    char job_contact[GLOBUS_GRAM_CLIENT_MAX_MSG_SIZE];
-
-    grami_fprintf(globus_l_print_fp, "in globus_l_callback_handler()\n");
-
-    callback = (globus_l_callback_t *)
-	globus_nexus_endpoint_get_user_pointer(endpoint);
-    
-    globus_nexus_get_int(buffer, &gram_version, 1);
-    if (gram_version != GLOBUS_GRAM_PROTOCOL_VERSION)
-    {
-        strcpy(job_contact, "ERROR: globus gram version mismatch");
-        state = GLOBUS_GRAM_CLIENT_JOB_STATE_FAILED;
-        errorcode = GLOBUS_GRAM_CLIENT_JOB_STATE_FAILED;
-    }
-    else
-    {
-        globus_nexus_get_int(buffer, &count, 1);
-        globus_nexus_get_char(buffer, job_contact, count);
-        *(job_contact+count)= '\0';
-        globus_nexus_get_int(buffer, &state, 1);
-        globus_nexus_get_int(buffer, &errorcode, 1);
-    }
-    
-    (*callback->callback_func)(callback->user_callback_arg, 
-			       job_contact, 
-			       state,
-			       errorcode);
+ 
 } /* globus_l_callback_handler() */
 
 
@@ -1810,34 +1037,6 @@ Returns:
 int 
 globus_gram_client_callback_disallow(char * callback_contact)
 {
-    int			  rc;
-    unsigned short 	  port = 0;
-    char * 		  host;
-
-    grami_fprintf(globus_l_print_fp, 
-         "in globus_gram_client_callback_disallow()\n");
-
-    if (callback_contact == NULL)
-    {
-        grami_fprintf(globus_l_print_fp, "ERROR: NULL contact URL.\n");
-        return (1);
-    }
-
-    grami_fprintf(globus_l_print_fp,
-          "in globus_gram_client_callback_disallow()\n");
-
-    if (globus_nexus_split_url(callback_contact,
-			       &host,
-			       &port,
-			       NULL) != 0)
-    {
-        grami_fprintf(globus_l_print_fp, "ERROR: invalid contact url.\n");
-        return (1);
-    }
-
-    globus_nexus_disallow_attach(port);
-       
-    return(0);
 
 } /* globus_gram_client_callback_allow() */
 
@@ -1854,85 +1053,7 @@ globus_gram_client_job_start_time(char * job_contact,
                     globus_gram_client_time_t * estimate,
                     globus_gram_client_time_t * interval_size)
 {
-    int                               rc;
-    int                               size;
-    globus_nexus_buffer_t             buffer;
-    globus_nexus_startpoint_t         sp_to_job_manager;
-    globus_nexus_startpoint_t         sp;
-    globus_nexus_endpoint_t           ep;
-    globus_nexus_endpointattr_t       epattr;
-    globus_l_start_time_monitor_t     start_time_monitor;
-
-    grami_fprintf(globus_l_print_fp,
-		  "in globus_gram_client_job_start_time()\n");
-
-    GLOBUS_L_LOCK;
-
-    globus_mutex_init(&start_time_monitor.mutex, (globus_mutexattr_t *) NULL);
-    globus_cond_init(&start_time_monitor.cond, (globus_condattr_t *) NULL);
-
-    globus_mutex_lock(&start_time_monitor.mutex);
-    start_time_monitor.done = GLOBUS_FALSE;
-    globus_mutex_unlock(&start_time_monitor.mutex);
-
-    globus_nexus_endpointattr_init(&epattr);
-    globus_nexus_endpointattr_set_handler_table(&epattr,
-                                         globus_l_start_time_handler_table,
-                                         1);
-    globus_nexus_endpoint_init(&ep, &epattr);
-    globus_nexus_endpoint_set_user_pointer(&ep, &start_time_monitor);
-    globus_nexus_startpoint_bind(&sp, &ep);
-
-    rc = globus_nexus_attach(job_contact, &sp_to_job_manager);
-    if (rc != 0)
-    {
-        grami_fprintf(globus_l_print_fp,
-	       "globus_nexus_attach returned %d\n", rc);
-	GLOBUS_L_UNLOCK;
-	return (GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED);
-    }
-
-    size  = globus_nexus_sizeof_int(1);
-    size += globus_nexus_sizeof_float(1);
-    size += globus_nexus_sizeof_startpoint(&sp, 1);
-
-    globus_nexus_buffer_init(&buffer, size, 0);
-    globus_nexus_put_int(&buffer, &GLOBUS_GRAM_PROTOCOL_VERSION, 1);
-    globus_nexus_put_float(&buffer, &required_confidence, 1);
-    globus_nexus_put_startpoint_transfer(&buffer, &sp, 1);
-
-    rc = globus_nexus_send_rsr(&buffer,
-			       &sp_to_job_manager,
-			       GLOBUS_I_GRAM_JOB_MANAGER_START_TIME_HANDLER_ID,
-			       GLOBUS_TRUE,
-			       GLOBUS_FALSE);
-
-    if (rc != 0)
-    {
-        grami_fprintf(globus_l_print_fp,
-	       "globus_nexus_send_rsr returned %d\n", rc);
-	GLOBUS_L_UNLOCK;
-	return (GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED);
-    }
-
-    globus_nexus_startpoint_destroy(&sp_to_job_manager);
-
-    globus_mutex_lock(&start_time_monitor.mutex);
-    while (!start_time_monitor.done)
-    {
-        globus_cond_wait(&start_time_monitor.cond, &start_time_monitor.mutex);
-    }
-    globus_mutex_unlock(&start_time_monitor.mutex);
-
-    globus_mutex_destroy(&start_time_monitor.mutex);
-    globus_cond_destroy(&start_time_monitor.cond);
-
-    rc = start_time_monitor.start_time_status;
-    estimate->dumb_time = start_time_monitor.start_time_estimate;
-    interval_size->dumb_time = start_time_monitor.start_time_interval_size;
  
-    GLOBUS_L_UNLOCK;
-    return (rc);
 
 } /* globus_gram_client_job_start_time() */
 
@@ -1948,38 +1069,6 @@ globus_l_start_time_callback_handler(globus_nexus_endpoint_t * endpoint,
                                   globus_nexus_buffer_t * buffer,
                                   globus_bool_t is_non_threaded)
 {
-    int gram_version;
-    globus_l_start_time_monitor_t * start_time_monitor;
-
-    start_time_monitor = (globus_l_start_time_monitor_t *)
-                         globus_nexus_endpoint_get_user_pointer(endpoint);
-
-    grami_fprintf(globus_l_print_fp,
-		  "in globus_l_start_time_callback_handler()\n");
-
-    globus_mutex_lock(&start_time_monitor->mutex);
-
-    globus_nexus_get_int(buffer, &gram_version, 1);
-    if (gram_version != GLOBUS_GRAM_PROTOCOL_VERSION)
-    {
-        start_time_monitor->start_time_status = 
-            GLOBUS_GRAM_CLIENT_ERROR_VERSION_MISMATCH;
-        start_time_monitor->start_time_estimate = 0;
-        start_time_monitor->start_time_interval_size = 0;
-    }
-    else
-    {
-        globus_nexus_get_int(buffer,
-                             &start_time_monitor->start_time_status, 1);
-        globus_nexus_get_int(buffer, 
-                             &start_time_monitor->start_time_estimate, 1);
-        globus_nexus_get_int(buffer,
-			     &start_time_monitor->start_time_interval_size, 1);
-    }
-    
-    start_time_monitor->done = GLOBUS_TRUE;
-    globus_cond_signal(&start_time_monitor->cond);
-    globus_mutex_unlock(&start_time_monitor->mutex);
 
 } /* globus_l_start_time_callback_handler() */
 
