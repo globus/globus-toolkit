@@ -122,8 +122,7 @@ flavorinclude_HEADERS = \
 	globus_common_include.h
 
 
-lib_LTLIBRARIES = libglobus_common_$(GLOBUS_FLAVOR_NAME).la \
-		  libglobus_ext_test$(GLOBUS_FLAVOR_NAME).la
+lib_LTLIBRARIES = libglobus_common_$(GLOBUS_FLAVOR_NAME).la 
 
 INCLUDES = @GPT_INCLUDES@
 

@@ -114,16 +114,8 @@ typedef struct globus_barrier_s
     globus_cond_t       cond;
     int                 count;
 } globus_barrier_t;
-typedef 
-void
-(*print_function_t)( 
-                    const char *                        fmt,
-                   ...);
 
 
-extern print_function_t                 globus_i18n_func;
-extern globus_extension_registry_t             test_registry;
-#define TEST_REGISTRY                   &test_registry;
 /******************************************************************************
 			       Define constants
 ******************************************************************************/
@@ -152,8 +144,8 @@ char *
 
 extern get_string_by_key_t              globus_i18n_get_string_by_key_func;
 
-extern globus_extension_registry_t      test_registry;
-#define TEST_REGISTRY &test_registry
+extern globus_extension_registry_t i18n_registry;
+#define I18N_REGISTRY &i18n_registry
 
 char *
 globus_common_i18n_get_string(

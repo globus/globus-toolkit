@@ -62,7 +62,7 @@ globus_module_descriptor_t		globus_i_common_module =
 };
 
 
-globus_extension_registry_t      test_registry;
+globus_extension_registry_t      i18n_registry;
 get_string_by_key_t              globus_common_i18n_get_string_by_key;
 
 /******************************************************************************
@@ -112,7 +112,7 @@ globus_l_common_activate(void)
     else
     {
         globus_common_i18n_get_string_by_key = globus_extension_lookup(
-		    		&handle, &test_registry, "get_string_by_key");
+		    		&handle, &i18n_registry, "get_string_by_key");
         if(!globus_common_i18n_get_string_by_key)
         {
             /* too lazy to check the rc from globus_extension_activate */

@@ -8,7 +8,7 @@
 #else
 #include "ltdl.h"
 #endif
-
+#include "globus_common.h"
 /* provides local_version and build_flavor */
 #include "version.h"
 
@@ -297,7 +297,7 @@ globus_l_extension_dlopen(
             
             GlobusExtensionDebugPrintf(
                 GLOBUS_L_EXTENSION_DEBUG_DLL,
-                ("[%s] Couldn't dlopen %s: %s\n",
+                (_GCSL("[%s] Couldn't dlopen %s: %s\n"),
                     _globus_func_name, library, error ? error : "(null)"));
         }
     }
@@ -322,7 +322,7 @@ globus_l_extension_get_module(
         
         GlobusExtensionDebugPrintf(
             GLOBUS_L_EXTENSION_DEBUG_DLL,
-            ("[%s] Couldn't find module descriptor : %s\n",
+            (_GCSL("[%s] Couldn't find module descriptor : %s\n"),
                 _globus_func_name, error ? error : "(null)"));
     }
     
@@ -687,7 +687,7 @@ globus_extension_lookup(
                   
                     GlobusExtensionDebugPrintf(
                         GLOBUS_L_EXTENSION_DEBUG_VERBOSE,
-                        ("[%] Accessing entry %s within %s\n",
+                        (_GCSL("[%] Accessing entry %s within %s\n"),
                             _globus_func_name, symbol, entry->owner->name));
                 }
                 

@@ -16,6 +16,7 @@ CVS Information:
 			     Include header files
 ******************************************************************************/
 #include "globus_common_include.h"
+#include "globus_common.h"
 #include "globus_module.h"
 #include "globus_list.h"
 #include "globus_thread_common.h"
@@ -732,7 +733,7 @@ globus_version_print(
     }
     else
     {
-        globus_libc_fprintf(stream, "<no version>\n");
+        globus_libc_fprintf(stream, _GCSL("<no version>\n"));
     }
 }
 

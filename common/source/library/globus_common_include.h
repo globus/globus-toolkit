@@ -16,7 +16,6 @@
 
 extern const char * _globus_func_name;
 
-
 #define _GCSL(s) globus_common_i18n_get_string(GLOBUS_COMMON_MODULE,\
 		               s)
 

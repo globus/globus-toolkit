@@ -16,6 +16,7 @@
 #include "globus_libc.h"
 #include "globus_list.h"
 #include <string.h>
+#include "globus_common.h"
 
 const char *                            _globus_func_name = NULL;
 
@@ -936,7 +937,7 @@ globus_error_print_friendly(
         verbose = globus_error_print_chain(error);
         if(verbose || i > 0)
         {
-            layout[i++] = "\nVerbose error follows:\n";
+            layout[i++] = _GCSL("\nVerbose error follows:\n");
             layout[i++] = verbose;
         }
         
