@@ -28,8 +28,7 @@ AC_MSG_CHECKING(for type of gssapi support)
 AC_ARG_ENABLE(gssapi,
 [  --enable-gssapi=<type>      Specify type of GSSAPI
                               Options are: krb5, globus, gsi],
-[gssapi_type=$enableval 
- echo "setting gssapi_type to $enableval"], [gssapi_type="none"])
+[gssapi_type=$enableval], [gssapi_type="none"])
 
 AC_ARG_WITH(gssapi,
 [  --with-gssapi=<type>        Obsolete. Use --enable-gssapi instead.],
