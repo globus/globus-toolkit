@@ -14,7 +14,7 @@ BUNDLE gt4-java-ws-core
         globus_java_ws_core_resolver_test
 
 BUNDLE gt4-c-ws-core
-	globus_c_wsdl_parser
+        globus_c_wsdl_parser
         globus_c_wsrf_cgen
         globus_c_wsrf_core_bindings
         globus_c_wsrf_sample_counter_bindings
@@ -31,10 +31,10 @@ BUNDLE gt4-mds
         globus_wsrf_servicegroup
 
 BUNDLE gt4-rft
-    globus_wsrf_rft_client_java
-	globus_wsrf_rft_service_java
-	globus_wsrf_rft_common_java
-	globus_wsrf_rft_common_schema
+        globus_wsrf_rft_client_java
+        globus_wsrf_rft_service_java
+        globus_wsrf_rft_common_java
+        globus_wsrf_rft_common_schema
 
 BUNDLE gt4-gram
         globus_user_env
@@ -53,35 +53,35 @@ BUNDLE gt4-gram
         globus_wsrf_gram_service_java_setup_multi
         globus_wsrf_gram_service_java_setup_fork
         globus_wsrf_gram_client_java
-                
+                                
 BUNDLE gt4-gram-pbs
         globus_wsrf_gram_service_java_setup_pbs
         globus_scheduler_event_generator_pbs
         globus_scheduler_event_generator_pbs_setup
         globus_gram_job_manager_setup_pbs
-        
+                
 BUNDLE gt4-gram-condor
         globus_wsrf_gram_service_java_setup_condor
         globus_scheduler_event_generator_condor
-        globus_scheduler_event_generator_condor_setup        
+        globus_scheduler_event_generator_condor_setup                
         globus_gram_job_manager_setup_condor
 
 BUNDLE gt4-gram-lsf
-        globus_wsrf_gram_service_java_setup_lsf        
+        globus_wsrf_gram_service_java_setup_lsf                
         globus_scheduler_event_generator_lsf
-        globus_scheduler_event_generator_lsf_setup        
+        globus_scheduler_event_generator_lsf_setup                
         globus_gram_job_manager_setup_lsf
 
 BUNDLE gt4-cas
-       globus_wsrf_cas_client_java
-       globus_wsrf_cas_service_java
-       globus_wsrf_cas_service_unit_test
-       globus_wsrf_cas_common
-       globus_wsrf_cas_utils_java
+        globus_wsrf_cas_client_java
+        globus_wsrf_cas_service_java
+        globus_wsrf_cas_service_unit_test
+        globus_wsrf_cas_common
+        globus_wsrf_cas_utils_java
 
 BUNDLE gt4-delegation
-       globus_wsrf_delegation_client_java
-       globus_wsrf_delegation_service_java
-       globus_wsrf_delegation_service_java_test
-       globus_wsrf_delegation_common_java
-		
+        globus_wsrf_delegation_client_java
+        globus_wsrf_delegation_service_java
+        globus_wsrf_delegation_service_java_test
+        globus_wsrf_delegation_common_java
+

@@ -11,7 +11,7 @@ if [ x$GLOBUS_LOCATION = x ]; then
 else
 	INSTALL=--install=$GLOBUS_LOCATION
 fi
-export GPT_LOCATION=`pwd`/gpt-3.0.1
+export GPT_LOCATION=$GLOBUS_LOCATION
 
 ./make-packages.pl -t2=$TAG2 -t3=$TAG3 --bundles="$INSTALL_BUNDLES" $INSTALL $@
 if [ $? -ne 0 ]; then
