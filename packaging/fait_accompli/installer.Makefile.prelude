@@ -8,6 +8,12 @@ FLAVOR=@flavor@
 THR=@thr@
 @aixargs@
 
+# Cleanup targets
+clean:
+	rm -f gpt-stamp
+distclean: clean
+	rm -f Makefile
+
 # Functional group dependencies, expressed in bundles.
 common: gpt globus_core globus_libtool globus_common globus_common_setup
 i18n: gpt common globus-internationalization globus-internationalization-thr
