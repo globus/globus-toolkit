@@ -3,10 +3,12 @@ package org.globus.usage.receiver.samples;
 import java.io.InputStream;
 import java.io.IOException;
 import java.util.Properties;
-import java.net.DatagramSocket;
+import java.net.Socket;
+import java.net.ServerSocket;
 import java.net.SocketException;
-import java.net.DatagramPacket;
-import java.net.SocketAddress;
+import java.io.PrintWriter;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -102,56 +104,62 @@ public class ExampleReceiver {
 }
 
 
+
 /*Thread used for interprocess communication, so that the receiver can be
-  started/stopped/monitored remotely.*/
+  started/stopped/monitored remotely.  Accepts TCP socket connections on the control port.*/
 class ControlSocketThread extends Thread {
 
+    private ServerSocket serverSocket;
+    private Socket clientSocket;
     private boolean shutDown;
     private Receiver receiver;
     private int controlPort;
-    private DatagramSocket inSock, outSock;
+
+    static Log log = LogFactory.getLog(ControlSocketThread.class);
 
     public ControlSocketThread (Receiver receiver, int controlPort) throws SocketException {
 	this.receiver = receiver;
 	this.controlPort = controlPort;
 	this.shutDown = false;
-	inSock = new DatagramSocket(controlPort);
-	outSock = new DatagramSocket();
+
+	try {
+	    serverSocket = new ServerSocket(controlPort);
+	} catch (IOException e) {
+	    log.error("Couldn't open server socket on port "+controlPort);
+	}
     }
 
     public void run() {
-	/*When we get a packet on the control socket, either respond with
+	/*When we get a connection on the control socket, either respond with
 	  the receiver.getStatus(), or shut down the receiver.*/
-	DatagramPacket inPacket, outPacket;
-	byte[] outBuffer;
-	byte[] inBuffer = new byte[100];
-	SocketAddress remoteAddr;
+    
+	PrintWriter out;
+	BufferedReader in;
+	String inputLine, outputLine;
 
 	while (!shutDown) {
-	    //receive packet on controlPort.
 	    try {
-		inPacket = new DatagramPacket(inBuffer, inBuffer.length);
-		inSock.receive(inPacket);
+		clientSocket = serverSocket.accept();
+		out = new PrintWriter(clientSocket.getOutputStream(), true);
+		//in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
 
-		if (true == false/*packet is shutdown packet*/) {
-		    receiver.shutDown();
-		    shutDown = true;
-		}
-		else {
-		    //send back packet with receiver.getStatus();
-		    remoteAddr = inPacket.getSocketAddress();
-		    outBuffer = receiver.getStatus().getBytes();
-		    outPacket = new DatagramPacket(outBuffer, outBuffer.length, remoteAddr);
-		    outSock.send(outPacket);
-		}
+		out.println(receiver.getStatus());
+		out.close();
+	    } catch (IOException e) {
+		log.error("Accept failed on port " + controlPort);
 	    }
-	    catch (Exception e) {}
 	}
 
 	try {
-	    inSock.close();
-	    outSock.close();
+	    clientSocket.close();
+	    serverSocket.close();
 	} catch (Exception e) {}
     }
 
+    /*Shuts down both this thread and the receiver.*/
+    public void allShutDown() {
+	this.shutDown = true;
+	receiver.shutDown();
+    }
+    
 }
