@@ -2165,7 +2165,7 @@ globus_i_wu_free_ranges(
 }
 
 static int
-globus_l_wu_count_digits(int num)
+globus_l_wu_count_digits(globus_off_t num)
 {
     int digits = 1;
 
