@@ -2103,14 +2103,11 @@ globus_l_xio_gssapi_ftp_write_cb(
 
     globus_mutex_lock(&handle->mutex);
     {
-        handle->write_posted = GLOBUS_FALSE;
-
-    GlobusXIOGssapiftpDebugFinishWrite();
-        globus_xio_driver_finished_write(op, result, nbytes);
-
         globus_free(handle->auth_write_iov.iov_base);
+        handle->write_posted = GLOBUS_FALSE;
     }
     globus_mutex_unlock(&handle->mutex);
+    globus_xio_driver_finished_write(op, result, nbytes);
 
     GlobusXIOGssapiftpDebugExit();
 }
