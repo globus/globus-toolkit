@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE gpt_package_metadata SYSTEM "package.dtd">
 
-<gpt_package_metadata Format_Version="0.02" Name="globus_gram_reporter_lsf_setup" >
+<gpt_package_metadata Format_Version="0.02" Name="globus_gram_reporter_condor_setup" >
 
   <Aging_Version Age="0" Major="1" Minor="0" />
-  <Description >GRAM Reporter Setup for LSF</Description>
+  <Description >GRAM Reporter Setup for Condor</Description>
   <Functional_Group >ResourceManagement</Functional_Group>
   <Version_Stability Release="Beta" />
 
@@ -26,14 +26,14 @@
     </Build_Environment>
 
     <Post_Install_Message >
-      The setup-globus-gram-reporter-lsf setup script must be run before data is available from the MDS
+      The setup-globus-gram-reporter-condor setup script must be run before data is available from the MDS
     </Post_Install_Message>
 
     <Post_Install_Program >
-      setup-globus-gram-reporter-lsf
+      setup-globus-gram-reporter-condor
     </Post_Install_Program>
 
-    <Setup Name="globus_gram_reporter_lsf_setup" >
+    <Setup Name="globus_gram_reporter_condor_setup" >
       <Aging_Version Age="0" Major="2" Minor="0" />
     </Setup>
 
