@@ -1,11 +1,4 @@
 include $(top_srcdir)/globus_automake_pre
-include $(top_srcdir)/globus_automake_pre_top
-
-# SUBDIRS is an automake macro which contains 
-# the list of subdirectories that have Makefile.am's
-SUBDIRS= \
-	pkgdata \
-	doxygen
 
 # Sources contains all of the source files in the directory.
 # Header files are included because automake will generate dependency targets 
@@ -78,5 +71,4 @@ libglobus_gass_transfer___GLOBUS_FLAVOR_NAME__la_LIBADD = $(GPT_LIB_LINKS)
 
 
 include $(top_srcdir)/globus_automake_post
-include $(top_srcdir)/globus_automake_post_top
 
