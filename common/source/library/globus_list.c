@@ -68,10 +68,6 @@ void *
 globus_list_first(
     globus_list_t * head)
 {
-	// TESTING!!!
-	//static int count= 1;
-	//fprintf( stderr, "globus_list_first() called; count = %d\n", count++ );
-	// END TESTING!!!
     assert (head != GLOBUS_NULL);
     return (void *) head->datum;
 }

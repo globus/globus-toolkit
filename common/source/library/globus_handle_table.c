@@ -73,7 +73,6 @@ globus_handle_table_init(
             sizeof(globus_l_handle_entry_t *));
     if(!handle_table->table)
     {
-		// clean up
 		globus_libc_free( handle_table );
 
         return GLOBUS_FAILURE;
