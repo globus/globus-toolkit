@@ -821,14 +821,10 @@ globus_rsl_value_free_recursive (globus_rsl_value_t * globus_rsl_value_ptr)
 
             while (! globus_list_empty(tmp_rsl_list))
             {
-                tmp_rsl_value_ptr = (globus_rsl_value_t *) globus_list_first
-                     (tmp_rsl_list);
+                tmp_rsl_value_ptr = (globus_rsl_value_t *)
+		    globus_list_remove(&tmp_rsl_list, tmp_rsl_list);
                 globus_rsl_value_free_recursive(tmp_rsl_value_ptr);
-
-                tmp_rsl_list = globus_list_rest(tmp_rsl_list);
             }
-
-            globus_list_free(tmp_rsl_list);
 
             break;
 
