@@ -85,12 +85,13 @@ fi
 
 ${GLOBUS_SH_RM-rm} -f ${private_key}.new
 ${SSLEAY} rsa -des3 -in ${private_key} -out ${private_key}.new
-if [ $? = 0 ]; then
+if test $? -eq 0 ; then
     ${GLOBUS_SH_CHMOD-chmod} 0400 ${private_key}.new
     ${GLOBUS_SH_RM-rm} -f ${private_key}.old
     ${GLOBUS_SH_CP-cp} -p ${private_key} ${private_key}.old
     ${GLOBUS_SH_MV-mv} -f ${private_key}.new ${private_key}
 else
     echo "Failed to change passphrase" >&2
+    exit 1
 fi
 
