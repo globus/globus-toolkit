@@ -6,7 +6,7 @@ CPP="@CPP@"
 CFLAGS="@CFLAGS@"
 
 
-LD=@CC@
+LD=@LD@
 LDFLAGS="@LDFLAGS@"
 LIBS="@LIBS@"
 
