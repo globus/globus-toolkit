@@ -25,10 +25,6 @@
       <Build_Step>cp ./sshd_config.in INSTALLDIR_GPTMACRO/setup/gsi_openssh_setup/sshd_config.in</Build_Step>
       <Build_Step>cp ./moduli INSTALLDIR_GPTMACRO/setup/gsi_openssh_setup/moduli</Build_Step>
 
-      <Build_Step>mkdir -p INSTALLDIR_GPTMACRO/man/man5/</Build_Step>
-      <Build_Step>cp ./ssh_config.5 INSTALLDIR_GPTMACRO/man/man5/ssh_config.5</Build_Step>
-      <Build_Step>cp ./sshd_config.5 INSTALLDIR_GPTMACRO/man/man5/sshd_config.5</Build_Step>
-
     </Build_Instructions>
 
     <Post_Install_Program >
