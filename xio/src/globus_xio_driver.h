@@ -410,6 +410,12 @@ globus_xio_driver_handle_cntl(
     int                                     cmd,
     ...);
 
+globus_result_t
+globus_xio_driver_attr_cntl(
+    globus_xio_operation_t                  op,
+    globus_xio_driver_t                     driver,
+    int                                     cmd,
+    ...);
 
 /**
  *  @ingroup driver_pgm

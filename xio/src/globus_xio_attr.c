@@ -82,13 +82,7 @@ globus_xio_attr_cntl(
 {
     va_list                                 ap;
     globus_result_t                         res;
-    void *                                  ds;
     globus_i_xio_attr_t *                   attr;
-    globus_xio_attr_cmd_t                   general_cmd;
-    globus_xio_timeout_server_callback_t    server_timeout_cb;
-    globus_xio_timeout_callback_t           timeout_cb;
-    globus_reltime_t *                      delay_time;
-    globus_callback_space_t                 space;
     GlobusXIOName(globus_xio_attr_cntl);
 
     GlobusXIODebugEnter();
@@ -111,109 +105,11 @@ globus_xio_attr_cntl(
     }
 #   endif
 
-    if(driver != NULL)
+    res = globus_i_xio_driver_attr_cntl(attr, driver, cmd, ap);
+    if(res != GLOBUS_SUCCESS)
     {
-        GlobusIXIOAttrGetDS(ds, attr, driver);
-        if(ds == NULL)
-        {
-            res = driver->attr_init_func(&ds);
-            if(res != GLOBUS_SUCCESS)
-            {
-                goto err;
-            }
-            if(attr->ndx >= attr->max)
-            {
-                attr->max *= 2;
-                attr->entry = (globus_i_xio_attr_ent_t *)
-                    globus_realloc(attr->entry, attr->max *
-                            sizeof(globus_i_xio_attr_ent_t));
-            }
-            attr->entry[attr->ndx].driver = driver;
-            attr->entry[attr->ndx].driver_data = ds;
-            attr->ndx++;
-        }
-        res = driver->attr_cntl_func(ds, cmd, ap);
-        if(res != GLOBUS_SUCCESS)
-        {
-            goto err;
-        }
-    }
-    else
-    {
-        general_cmd = cmd;
-
-        switch(general_cmd)
-        {
-            case GLOBUS_XIO_ATTR_SET_TIMEOUT_ALL:
-                timeout_cb = va_arg(ap, globus_xio_timeout_callback_t);
-                delay_time = va_arg(ap, globus_reltime_t *);
-
-                attr->open_timeout_cb = timeout_cb;
-                attr->close_timeout_cb = timeout_cb;
-                attr->read_timeout_cb = timeout_cb;
-                attr->write_timeout_cb = timeout_cb;
-
-                GlobusTimeReltimeCopy(attr->open_timeout_period, *delay_time);
-                GlobusTimeReltimeCopy(attr->close_timeout_period, *delay_time);
-                GlobusTimeReltimeCopy(attr->read_timeout_period, *delay_time);
-                GlobusTimeReltimeCopy(attr->write_timeout_period, *delay_time);
-
-                break;
-
-            case GLOBUS_XIO_ATTR_SET_TIMEOUT_OPEN:
-                timeout_cb = va_arg(ap, globus_xio_timeout_callback_t);
-                delay_time = va_arg(ap, globus_reltime_t *);
-
-                attr->open_timeout_cb = timeout_cb;
-                GlobusTimeReltimeCopy(attr->open_timeout_period, *delay_time);
-                break;
-
-            case GLOBUS_XIO_ATTR_SET_TIMEOUT_CLOSE:
-                timeout_cb = va_arg(ap, globus_xio_timeout_callback_t);
-                delay_time = va_arg(ap, globus_reltime_t *);
-
-                attr->close_timeout_cb = timeout_cb;
-                GlobusTimeReltimeCopy(attr->close_timeout_period, *delay_time);
-                break;
-
-            case GLOBUS_XIO_ATTR_SET_TIMEOUT_READ:
-                timeout_cb = va_arg(ap, globus_xio_timeout_callback_t);
-                delay_time = va_arg(ap, globus_reltime_t *);
-
-                attr->read_timeout_cb = timeout_cb;
-                GlobusTimeReltimeCopy(attr->read_timeout_period, *delay_time);
-                break;
-
-            case GLOBUS_XIO_ATTR_SET_TIMEOUT_WRITE:
-                timeout_cb = va_arg(ap, globus_xio_timeout_callback_t);
-                delay_time = va_arg(ap, globus_reltime_t *);
-
-                attr->write_timeout_cb = timeout_cb;
-                GlobusTimeReltimeCopy(attr->write_timeout_period, *delay_time);
-                break;
-
-            case GLOBUS_XIO_ATTR_SET_TIMEOUT_ACCEPT:
-                server_timeout_cb = 
-                    va_arg(ap, globus_xio_timeout_server_callback_t);
-                delay_time = va_arg(ap, globus_reltime_t *);
-
-                attr->accept_timeout_cb = server_timeout_cb;
-                GlobusTimeReltimeCopy(attr->accept_timeout_period, *delay_time);
-                break;
-
-            case GLOBUS_XIO_ATTR_SET_SPACE:
-                space = va_arg(ap, globus_callback_space_t);
-                res = globus_callback_space_reference(space);
-                if(res != GLOBUS_SUCCESS)
-                {
-                    goto err;
-                }
-                globus_callback_space_destroy(attr->space);
-                attr->space = space;
-                break;
-        } 
-
-        res = GLOBUS_SUCCESS;
+        va_end(ap);
+        goto err;
     }
 
     va_end(ap);
@@ -222,8 +118,6 @@ globus_xio_attr_cntl(
     return GLOBUS_SUCCESS;
 
   err:
-
-    va_end(ap);
 
     GlobusXIODebugExitWithError();
     return res;
