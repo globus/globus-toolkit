@@ -25,15 +25,13 @@ static char usage[] = \
 "       -p | --psport          <port #>   Port of the myproxy-server\n"
 "       -a | --authorization   <path>     Use credential for authorization\n"
 "                                         (instead of passphrase)\n"
-#if defined(HAVE_LIBSASL2)
-"       -m | --sasl_mechanism             Use SASL (Kerberos) mechanism for authorization\n"
-#endif
 "       -d | --dn_as_username             Use subject of the authorization\n"
 "                                         credential (or default credential\n"
 "                                         if -a not used) as the default\n"
 "                                         username instead of $LOGNAME\n"
 "       -k | --credname        <name>     Specify credential name\n"
 "       -S | --stdin_pass                 Read passphrase from stdin\n"
+"       -n | --no_passphrase              Don't prompt for passphrase\n"
 "\n";
 
 struct option long_options[] =
@@ -48,14 +46,14 @@ struct option long_options[] =
     {"verbose",                no_argument, NULL, 'v'},
     {"version",                no_argument, NULL, 'V'},
     {"authorization",    required_argument, NULL, 'r'},
-    {"sasl_mechanism",         no_argument, NULL, 'm'},
     {"dn_as_username",         no_argument, NULL, 'd'},
     {"credname",	 required_argument, NULL, 'k'},
     {"stdin_pass",             no_argument, NULL, 'S'},
+    {"no_passphrase",         no_argument, NULL, 'n'},
     {0, 0, 0, 0}
 };
 
-static char short_options[] = "hus:p:l:t:o:vVa:dk:Sm";
+static char short_options[] = "hus:p:l:t:o:vVa:dk:Sn";
 
 static char version[] =
 "myproxy-get-delegation version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
@@ -72,11 +70,10 @@ init_arguments(int argc, char *argv[],
 #define my_setlinebuf(stream)	setvbuf((stream), (char *) NULL, _IOLBF, 0)
 
 /* location of delegated proxy */
-char *outputfile = NULL;
-char *creds_to_authorization = NULL;
-int kerberos_to_authorization = 0;
+static char *outputfile = NULL;
 static int dn_as_username = 0;
 static int read_passwd_from_stdin = 0;
+static int use_empty_passwd = 0;
 
 int
 main(int argc, char *argv[]) 
@@ -110,11 +107,14 @@ main(int argc, char *argv[])
 						GLOBUS_PROXY_FILE_OUTPUT);
     }
 
-    if ( (creds_to_authorization == NULL) && (kerberos_to_authorization == 0) ){
+    if (!use_empty_passwd) {
        /* Allow user to provide a passphrase */
 	int rval;
 	if (read_passwd_from_stdin) {
-	    rval = myproxy_read_passphrase_stdin(client_request->passphrase, sizeof(client_request->passphrase), NULL);
+	    rval = myproxy_read_passphrase_stdin(
+			   client_request->passphrase,
+			   sizeof(client_request->passphrase),
+			   NULL);
 	} else {
 	    rval = myproxy_read_passphrase(client_request->passphrase,
 					   sizeof(client_request->passphrase),
@@ -128,11 +128,11 @@ main(int argc, char *argv[])
 
     if (client_request->username == NULL) { /* set default username */
 	if (dn_as_username) {
-	    if (creds_to_authorization) {
-		if (ssl_get_base_subject_file(creds_to_authorization,
+	    if (client_request->authzcreds) {
+		if (ssl_get_base_subject_file(client_request->authzcreds,
 					      &client_request->username)) {
 		    fprintf(stderr, "Cannot get subject name from %s\n",
-			    creds_to_authorization);
+			    client_request->authzcreds);
 		    return 1;
 		}
 	    } else {
@@ -153,8 +153,8 @@ main(int argc, char *argv[])
 	}
     }
 
-    if (myproxy_get_delegation(socket_attrs, client_request, 
-	    creds_to_authorization, kerberos_to_authorization, server_response, outputfile)!=0) {
+    if (myproxy_get_delegation(socket_attrs, client_request,
+			       server_response, outputfile)!=0) {
 	fprintf(stderr, "Failed to receive a proxy.\n");
 	return 1;
     }
@@ -206,10 +206,10 @@ init_arguments(int argc,
 	    outputfile = strdup(gnu_optarg);
             break;    
 	case 'a':       /* special authorization */
-	    creds_to_authorization = strdup(gnu_optarg);
+	    request->authzcreds = strdup(gnu_optarg);
 	    break;
-	case 'm':       /* user SASL (Kerberos) authorization */
-	    kerberos_to_authorization = 1;
+	case 'n':       /* no passphrase */
+	    use_empty_passwd = 1;
 	    break;
 	case 'v':
 	    myproxy_debug_set_level(1);
