@@ -497,7 +497,13 @@ globus_gass_copy_glob_expand_url(
      const char *                        url, 
      globus_gass_copy_attr_t *           attr, 
      globus_fifo_t *                     url_list); 
-
+globus_result_t
+globus_gass_copy_mkdir(
+    globus_gass_copy_handle_t * handle,
+    char * url,
+    globus_gass_copy_attr_t * attr,
+    globus_gass_copy_callback_t callback_func,
+    void * callback_arg);
 
 
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */

@@ -64,6 +64,9 @@ typedef struct
     globus_bool_t                       encrypt_data;
     globus_bool_t                       cancelled;
     globus_bool_t                       recurse;
+    int                                 restart_retries;
+    int                                 restart_interval;
+    int                                 restart_timeout;
     
     /* the need for 2 is due to the fact that gass copy is
      * not copying attributes
@@ -187,15 +190,23 @@ globus_l_guc_destroy_url_list(
 #define GLOBUS_URL_COPY_ARG_BINARY      2
 #define GLOBUS_URL_COPY_ARG_VERBOSE     4
 
-const char * oneline_usage
-    = "globus-url-copy [-help | -usage] [-version[s]] [-vb] [-dbg] [-b | -a]\n"
-      "                        [-s <subject>] [-ds <subject>] [-ss <subject>]\n"
-      "                        [-tcp-bs <size>] [-bs <size>] [-p <parallelism>]\n"
-      "                        [-notpt] [-nodcau]\n"
-      "                        sourceURL destURL";
+const char * oneline_usage =
+"globus-url-copy [-help | -usage] [-version[s]] [-vb] [-dbg] [-b | -a]\n"
+"                        [-q] [-r] [-rst] [-f <filename>]\n"
+"                        [-s <subject>] [-ds <subject>] [-ss <subject>]\n"
+"                        [-tcp-bs <size>] [-bs <size>] [-p <parallelism>]\n"
+"                        [-notpt] [-nodcau]\n"
+"                        <sourceURL> <destURL>";
 
 const char * long_usage =
-"\nglobus-url-copy [options] sourceURL destURL\n"
+"\nglobus-url-copy [options] <sourceURL> <destURL>\n"
+"globus-url-copy [options] -f <filename>\n\n"
+
+"<sourceURL> may contain wildcard characters * ? and [ ] character ranges.\n"
+"If <sourceURL> is a directory, all files within that directory will be copied.\n"
+"<destURL> must be a directory if multiple files are being copied.\n"
+"Any url specifying a directory must end with '/'\n\n"
+
 "OPTIONS\n"
 "\t -help | -usage\n"
 "\t      Print help\n"
@@ -204,17 +215,38 @@ const char * long_usage =
 "\t -versions\n"
 "\t      Print the versions of all modules that this program uses\n"
 "\t -a | -ascii\n"
-"\t      convert the file to/from ASCII format to/from local file format\n"
+"\t      Convert the file to/from ASCII format to/from local file format\n"
 "\t -b | -binary\n"
 "\t      Do not apply any conversion to the files. *default*\n"
+"\t -f <filename>\n" 
+"\t      Read a list of url pairs from filename.  each line should contain\n"
+"\t      <sourceURL> <destURL>\n"
+"\t      blank lines and lines beginning with # will be ignored.\n"
+"\t -r | -recurse\n" 
+"\t      Copy files in subdirectories\n"
+
 "\t -q | -quiet \n"
-"\t      suppress all output for successful operation\n"
+"\t      Suppress all output for successful operation\n"
 "\t -vb | -verbose \n"
-"\t      during the transfer, display the number of bytes transferred\n"
+"\t      During the transfer, display the number of bytes transferred\n"
 "\t      and the transfer rate per second\n"
 "\t -dbg | -debugftp \n"
 "\t      Debug ftp connections.  Prints control channel communication\n"
 "\t      to stderr\n"
+"\t -rst | -restart \n"
+"\t      Restart failed ftp operations.\n"
+"\t -rst | -restart \n"
+"\t      Restart failed ftp operations.\n"
+"\t -rst-retries <retries>\n"
+"\t      The maximum number of times to retry the operation before giving\n"
+"\t      up on the transfer.  Use 0 for infinite.  Default is 5.\n"
+"\t -rst-interval <seconds>\n"
+"\t      The interval in seconds to wait after a failure before retrying\n"
+"\t      the transfer.  Use 0 for an exponential backoff.  Default is 0.\n"
+"\t -rst-timeout <seconds>\n"
+"\t      Maximum time after a failure to keep retrying.  Use 0 for no\n" 
+"\t      timeout.  Default is 0.\n"
+
 "\t -s  <subject> | -subject <subject>\n"
 "\t      Use this subject to match with both the source and dest servers\n"
 "\t -ss <subject> | -source-subject <subject>\n"
@@ -228,7 +260,7 @@ const char * long_usage =
 "\t      specify the size (in bytes) of the buffer to be used by the\n"
 "\t      underlying transfer methods\n"
 "\t -p <parallelism> | -parallel <parallelism>\n"
-"\t      specify the number of streams to be used in the ftp transfer\n"
+"\t      specify the number of parallel data connections should be used.\n"
 
 "\t -notpt | -no-third-party-transfers\n"
 "\t      turn third-party transfers off (on by default)\n"
@@ -275,7 +307,7 @@ test_integer( char *   value,
               void *   ignored,
               char **  errmsg )
 {
-    int  res = (atoi(value) <= 0);
+    int  res = (atoi(value) < 0);
     if (res)
         *errmsg = strdup("argument is not a positive integer");
     return res;
@@ -291,7 +323,10 @@ enum
     arg_vb,
     arg_q, 
     arg_debugftp, 
-    arg_restart, 
+    arg_restart,
+    arg_rst_retries, 
+    arg_rst_interval, 
+    arg_rst_timeout, 
     arg_ss, 
     arg_ds, 
     arg_tcp_bs,
@@ -339,6 +374,9 @@ oneargdef(arg_p, "-p", "-parallel", test_integer, GLOBUS_NULL);
 oneargdef(arg_s, "-s", "-subject", GLOBUS_NULL, GLOBUS_NULL);
 oneargdef(arg_ss, "-ss", "-source-subject", GLOBUS_NULL, GLOBUS_NULL);
 oneargdef(arg_ds, "-ds", "-dest-subject", GLOBUS_NULL, GLOBUS_NULL);
+oneargdef(arg_rst_retries, "-rst-retries", "-restart-retries", test_integer, GLOBUS_NULL);
+oneargdef(arg_rst_interval, "-rst-interval", "-restart-interval", test_integer, GLOBUS_NULL);
+oneargdef(arg_rst_timeout, "-rst-timeout", "-restart-timeout", test_integer, GLOBUS_NULL);
 
 
 static globus_args_option_descriptor_t args_options[arg_num];
@@ -354,6 +392,9 @@ static globus_args_option_descriptor_t args_options[arg_num];
     setupopt(arg_vb);                   \
     setupopt(arg_debugftp);             \
     setupopt(arg_restart);              \
+    setupopt(arg_rst_retries);          \
+    setupopt(arg_rst_interval);         \
+    setupopt(arg_rst_timeout);          \
     setupopt(arg_ss);                   \
     setupopt(arg_ds);                   \
     setupopt(arg_tcp_bs);               \
@@ -886,6 +927,7 @@ globus_l_guc_transfer_files(
     int                                          ret_val = 0;
     globus_bool_t                                new_url;
         
+    
     globus_mutex_init(&monitor.mutex, GLOBUS_NULL);
     globus_cond_init(&monitor.cond, GLOBUS_NULL);
 
@@ -961,6 +1003,111 @@ globus_l_guc_transfer_files(
                          globus_l_url_copy_monitor_callback,
                          (void *) &monitor);
         }
+        else if(dst_url[strlen(dst_url) - 1] == '/')
+        {
+            if (!g_quiet_flag)
+            {
+                src_filename = strrchr(src_url, '/');               
+                while(src_filename > src_url && *src_filename == '/')
+                {
+                    src_filename--;
+                }
+                while(src_filename > src_url && *src_filename != '/')
+                {
+                    src_filename--;
+                }
+                src_filename++;
+                
+                dst_filename = strrchr(dst_url, '/');               
+                while(dst_filename > dst_url && *dst_filename == '/')
+                {
+                    dst_filename--;
+                }
+                while(dst_filename > dst_url && *dst_filename != '/')
+                {
+                    dst_filename--;
+                }
+                dst_filename++;
+
+                if(src_url_base == GLOBUS_NULL || 
+                    src_filename - src_url != src_url_base_len ||
+                    strncmp(src_url, src_url_base, src_filename - src_url))
+                {
+                    if(src_url_base != GLOBUS_NULL)
+                    {
+                        globus_free(src_url_base);
+                    }
+                    src_url_base = globus_libc_strdup(src_url);
+
+                    src_url_base_len = src_filename - src_url;
+                    src_url_base[src_url_base_len] = '\0';
+                    new_url = GLOBUS_TRUE;
+                }
+                else
+                {
+                    new_url = GLOBUS_FALSE;
+                }
+                
+                if(dst_url_base == GLOBUS_NULL || 
+                    dst_filename - dst_url != dst_url_base_len ||
+                    strncmp(dst_url, dst_url_base, dst_filename - dst_url))
+                {
+                    if(dst_url_base != GLOBUS_NULL)
+                    {
+                        globus_free(dst_url_base);
+                    }
+                    dst_url_base = globus_libc_strdup(dst_url);
+
+                    dst_url_base_len = dst_filename - dst_url;
+                    dst_url_base[dst_url_base_len] = '\0';
+                    new_url = GLOBUS_TRUE;
+                }
+                
+                if(new_url)
+                {
+                    globus_libc_fprintf(stdout, "%s  -->  %s\n", 
+                        src_url_base, 
+                        dst_url_base);
+                }
+                
+                if(!strcmp(src_filename, dst_filename))
+                {
+                    globus_libc_fprintf(stdout, "  %s\n", src_filename);
+                }
+                else
+                {
+                    globus_libc_fprintf(stdout, "  %s  ->  %s\n",
+                        src_filename, dst_filename);
+                }
+                //printf("making directory %s\n", dst_url);
+            }
+            
+            result = globus_gass_copy_mkdir(
+                gass_copy_handle,
+                dst_url,
+                dest_gass_copy_attr,
+                NULL,
+                NULL);
+                
+            if(result != GLOBUS_SUCCESS)
+            {
+               // goto error_mkdir;  
+            }
+    
+            monitor.done = GLOBUS_TRUE;
+
+        result = globus_l_guc_expand_url(
+                     url_pair,
+                     guc_info,
+                     source_gass_copy_attr,       
+                     gass_copy_handle);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error_mkdir;
+        }
+            
+            
+        }        
         else
         {
             if (!g_quiet_flag)
@@ -1100,6 +1247,10 @@ globus_l_guc_transfer_files(
     globus_cond_destroy(&monitor.cond);
     globus_mutex_destroy(&monitor.mutex);
 
+
+return ret_val;
+
+error_mkdir:
 return ret_val;
 
 }
@@ -1131,6 +1282,9 @@ globus_l_guc_parse_arguments(
     guc_info->options = 0UL;
     guc_info->source_subject = NULL;
     guc_info->dest_subject = NULL;
+    guc_info->restart_retries = 5;
+    guc_info->restart_interval = 0;
+    guc_info->restart_timeout = 0;
 
     /* determine the program name */
     if (strrchr(argv[0],'/'))
@@ -1214,6 +1368,15 @@ globus_l_guc_parse_arguments(
             break;
         case arg_restart:
             g_use_restart = GLOBUS_TRUE;
+            break;
+        case arg_rst_retries:
+            guc_info->restart_retries = atoi(instance->values[0]);
+            break;
+        case arg_rst_interval:
+            guc_info->restart_interval = atoi(instance->values[0]);
+            break;
+        case arg_rst_timeout:
+            guc_info->restart_timeout = atoi(instance->values[0]);
             break;
         case arg_recurse:
             guc_info->recurse = GLOBUS_TRUE;
@@ -1361,7 +1524,75 @@ globus_l_guc_expand_urls(
             src_url,
             guc_info->source_subject);
 
+        /* expand globbed urls */
+        result = globus_l_guc_expand_url(
+                     user_url_pair,
+                     guc_info,
+                     gass_copy_attr,       
+                     gass_copy_handle);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error_expand;
+        }
                     
+                    
+        globus_ftp_client_operationattr_destroy(&guc_info->source_ftp_attr);
+
+
+        
+        globus_free(user_url_pair->src_url);
+        globus_free(user_url_pair->dst_url);
+        globus_free(user_url_pair);
+        
+    }
+
+    return GLOBUS_SUCCESS;
+error_too_many_matches:
+    globus_libc_fprintf(stderr, 
+        "Multiple source urls cannot be copied "
+        "to the same destination url:\n\t%s\n",
+        dst_url);        
+            
+error_expand:
+    globus_ftp_client_operationattr_destroy(&guc_info->source_ftp_attr);
+
+    globus_fifo_destroy(&matched_url_list);
+    
+    globus_free(user_url_pair->src_url);
+    globus_free(user_url_pair->dst_url);
+    globus_free(user_url_pair);
+ 
+    return result;                
+}
+
+
+
+static
+globus_result_t
+globus_l_guc_expand_url(
+    globus_l_guc_src_dst_pairs_t *               user_url_pair,
+    globus_l_guc_info_t *                        guc_info,
+    globus_gass_copy_attr_t *                    gass_copy_attr,   
+    globus_gass_copy_handle_t *                  gass_copy_handle)
+{
+    globus_fifo_t                                matched_url_list;
+    char *                                       src_url;
+    char *                                       dst_url;
+    int                                          url_len;
+    globus_l_guc_src_dst_pairs_t *               expanded_url_pair;
+    char *                                       matched_src_url;
+    char *                                       matched_file;
+    int                                          base_url_len;
+    char *                                       matched_dest_url;
+    globus_result_t                              result;
+    globus_io_handle_t *                         source_io_handle = GLOBUS_NULL;
+    globus_bool_t                                dst_is_file;
+        
+                    
+        src_url = user_url_pair->src_url;
+        dst_url = user_url_pair->dst_url;
+
+
         base_url_len = strrchr(src_url, '/') - src_url + 1;
         
         globus_fifo_init(&matched_url_list);
@@ -1403,7 +1634,8 @@ globus_l_guc_expand_urls(
             {
                 if(guc_info->recurse)
                 {
-                    result = globus_gass_copy_glob_expand_url(
+                    
+                /*    result = globus_gass_copy_glob_expand_url(
                                 gass_copy_handle,
                                 matched_src_url,
                                 gass_copy_attr,
@@ -1418,6 +1650,16 @@ globus_l_guc_expand_urls(
                     {
                         goto error_too_many_matches;
                     }
+                  */  
+                    matched_dest_url = (char *)
+                        globus_malloc((url_len + 
+                                   strlen(matched_file) + 1) * 
+                                   sizeof(char));
+                    sprintf(matched_dest_url, 
+                        "%s%s", 
+                        dst_url, 
+                        matched_file);
+   
                 }
                 else
                 {
@@ -1452,15 +1694,11 @@ globus_l_guc_expand_urls(
                 expanded_url_pair);
         }
 
-        globus_ftp_client_operationattr_destroy(&guc_info->source_ftp_attr);
 
         globus_fifo_destroy(&matched_url_list);
         
-        globus_free(user_url_pair->src_url);
-        globus_free(user_url_pair->dst_url);
-        globus_free(user_url_pair);
         
-    }
+
 
     return GLOBUS_SUCCESS;
 error_too_many_matches:
@@ -1470,16 +1708,13 @@ error_too_many_matches:
         dst_url);        
             
 error_expand:
-    globus_ftp_client_operationattr_destroy(&guc_info->source_ftp_attr);
 
     globus_fifo_destroy(&matched_url_list);
-    
-    globus_free(user_url_pair->src_url);
-    globus_free(user_url_pair->dst_url);
-    globus_free(user_url_pair);
- 
+     
     return result;                
 }
+
+
 
 static
 int
@@ -1493,6 +1728,7 @@ globus_l_guc_init_gass_copy_handle(
     globus_ftp_client_plugin_t                      restart_plugin;
     globus_reltime_t                                interval;
     globus_abstime_t                                timeout;
+    globus_abstime_t *                              timeout_p = GLOBUS_NULL;
     globus_gass_copy_handleattr_t                   gass_copy_handleattr;
 
     globus_gass_copy_handleattr_init(&gass_copy_handleattr);
@@ -1536,14 +1772,19 @@ globus_l_guc_init_gass_copy_handle(
 
     if(g_use_restart)
     {
-        GlobusTimeReltimeSet(interval, 0, 0);
-        GlobusTimeAbstimeSet(timeout, 60, 0);
+        GlobusTimeReltimeSet(interval, guc_info->restart_interval, 0);
         
+        if(guc_info->restart_timeout)
+        {
+            GlobusTimeAbstimeSet(timeout, guc_info->restart_timeout, 0);
+            timeout_p = &timeout;
+        }
+            
         result = globus_ftp_client_restart_plugin_init(
             &restart_plugin,
-            5, /* retry times 0=forever */
+            guc_info->restart_retries, /* retry times 0=forever */
             &interval, /* time between tries 0=exponential backoff */
-            &timeout); /* absolute timeout */
+            timeout_p); /* absolute timeout NULL=inifinte */
         if(result != GLOBUS_SUCCESS)
         {
             fprintf(stderr, "Error: Unable to init debug plugin %s\n",

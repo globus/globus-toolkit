@@ -4522,7 +4522,7 @@ globus_gass_copy_register_url_to_url(
 	myname);
       return globus_error_put(err);
     }
-
+    
     result = globus_gass_copy_get_url_mode(
 	source_url,
 	&source_url_mode);
@@ -6730,12 +6730,12 @@ globus_l_gass_copy_glob_parse_ftp_list(
             break;
           
           case GLOBUS_GASS_COPY_FTP_LIST_ENTRY_DIR:
-            if(0)
+            if(1)
             { 
                 filename_len = strlen(filename);
      
                 matched_url = (char *) 
-                    globus_malloc((info->base_url_len + filename_len + 4) * 
+                    globus_malloc((info->base_url_len + filename_len + 3) * 
                                    sizeof(char));
                 
                 if(matched_url == GLOBUS_NULL)
@@ -6749,11 +6749,10 @@ globus_l_gass_copy_glob_parse_ftp_list(
                     goto error_malloc;
                 }
     
-                sprintf(matched_url, "%s/%s", info->base_url, filename);
-                
+                sprintf(matched_url, "%s/%s/", info->base_url, filename);
                 globus_fifo_enqueue(info->url_list, matched_url);
                 
-                printf("%s\n",matched_url);
+         /*       printf("%s\n",matched_url);
                 glob_pattern = info->glob_pattern;
                 base_url = info->base_url;
                 base_url_len = info->base_url_len;
@@ -6763,7 +6762,7 @@ globus_l_gass_copy_glob_parse_ftp_list(
                 info->base_url = matched_url;
                 info->base_url_len += filename_len + 1;
                 result = globus_l_gass_copy_glob_ftp_list(info);
-                                
+                               
                 if(result != GLOBUS_SUCCESS)
                 {
                     goto error_recurse;
@@ -6771,6 +6770,7 @@ globus_l_gass_copy_glob_parse_ftp_list(
                 info->glob_pattern = glob_pattern;
                 info->base_url = base_url ;
                 info->base_url_len = base_url_len;
+           */     
             }            
             break;
             
@@ -6903,4 +6903,139 @@ error_before_callback:
     return;
 }
 
+globus_result_t
+globus_gass_copy_mkdir(
+    globus_gass_copy_handle_t * handle,
+    char * url,
+    globus_gass_copy_attr_t * attr,
+    globus_gass_copy_callback_t callback_func,
+    void * callback_arg)
+{   
+    globus_result_t                     result;
+    globus_gass_copy_url_mode_t         url_mode;
+    globus_l_gass_copy_glob_info_t      info;
+    
+    result = globus_gass_copy_get_url_mode(
+        url,
+        &url_mode);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_exit;
+    }
+    
+    if(url_mode == GLOBUS_GASS_COPY_URL_MODE_FTP)
+    {
+
+        info.callbacks_left = 1;
+        info.result = GLOBUS_SUCCESS;
+
+
+        globus_mutex_init(&info.mutex, GLOBUS_NULL);
+        globus_cond_init(&info.cond, GLOBUS_NULL);
+        
+        result = globus_ftp_client_mkdir(
+            &handle->ftp_handle,
+            url,
+            attr->ftp_attr,
+            globus_l_gass_copy_ftp_client_op_done_callback,
+            &info);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error_ftp_mkdir;
+        }
+
+
+        globus_mutex_lock(&info.mutex);
+        while(info.callbacks_left > 0)
+        {
+            globus_cond_wait(&info.cond, &info.mutex);
+        }
+        result = info.result;
+        globus_mutex_unlock(&info.mutex);
+        
+        globus_cond_destroy(&info.cond);
+        globus_mutex_destroy(&info.mutex);
+        
+         
+    }
+    else if(url_mode == GLOBUS_GASS_COPY_URL_MODE_IO)
+    {
+        result = globus_l_gass_copy_mkdir_file(url);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error_file_mkdir;
+        }
+        
+    }
+    else
+    {
+        //unsupported
+    }
+    
+    return GLOBUS_SUCCESS;
+    
+error_exit:
+error_ftp_mkdir:
+error_file_mkdir:
+
+    return result;
+    
+}
+
+
+
+
+
+static
+globus_result_t
+globus_l_gass_copy_mkdir_file(
+    char *                              url)
+{
+    int                                 rc;
+    globus_url_t                        parsed_url;
+    globus_result_t                     result;
+    
+    rc = globus_url_parse(url, &parsed_url);
+    
+    if(rc != 0)
+    {
+        result = -1;
+        goto error_url;
+    }
+    
+    if(parsed_url.url_path == GLOBUS_NULL)
+    {
+        goto error_null_path;
+    }
+    
+    rc = mkdir(parsed_url.url_path, 0777);
+
+    if(rc != 0)
+    {
+        result = -1;
+        goto error_mkdir;
+    }
+    
+    return GLOBUS_SUCCESS;
+
+error_mkdir:    
+error_null_path:
+    globus_url_destroy(&parsed_url);
+    
+error_url:
+
+    return result;
+    
+}
+
+/*
+
+globus_result_t
+globus_ftp_client_mkdir(
+    globus_ftp_client_handle_t *		handle,
+    const char *				url,
+    globus_ftp_client_operationattr_t *		attr,
+    globus_ftp_client_complete_callback_t	complete_callback,
+    void *					callback_arg);
+*/
 
