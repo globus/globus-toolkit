@@ -10,7 +10,7 @@
             NULL,                                                       \
             location,                                                   \
             __FILE__,                                                   \
-            _globus_func_name,                                          \
+            _xio_name,                                                  \
             __LINE__,                                                   \
             "I am soooo lazy"))
 
