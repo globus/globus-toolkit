@@ -120,7 +120,6 @@ main(
     globus_xio_attr_t                       attr;
 
     rc = globus_module_activate(GLOBUS_XIO_MODULE);
-    rc = globus_module_activate(GLOBUS_XIO_TEST_TRANSPORT_DRIVER_MODULE);
     globus_assert(rc == 0);
 
     globus_xio_driver_load("test", &driver);
