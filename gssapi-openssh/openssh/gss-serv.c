@@ -228,16 +228,6 @@ ssh_gssapi_krb5_storecreds() {
 	
 	krb5_free_principal(krb_context,princ);
 
-	#ifdef HEIMDAL
-	if ((problem = krb5_cc_copy_cache(krb_context, 
-					   gssapi_client_creds->ccache,
-					   ccache))) {
-		log("krb5_cc_copy_cache(): %.100s", 
-			krb5_get_err_text(krb_context,problem));
-		krb5_cc_destroy(krb_context,ccache);
-		return;
-	}
-	#else
 	if ((maj_status = gss_krb5_copy_ccache(&min_status, 
 					       gssapi_client_creds, 
 					       ccache))) {
@@ -246,7 +236,6 @@ ssh_gssapi_krb5_storecreds() {
 		krb5_cc_destroy(krb_context,ccache);
 		return;
 	}
-	#endif
 	
 	krb5_cc_close(krb_context,ccache);
 
@@ -309,6 +298,7 @@ ssh_gssapi_gsi_storecreds()
 	OM_uint32	major_status;
 	OM_uint32	minor_status;
 	
+	/* should use gss_export_cred() instead */
 	
 	if (gssapi_client_creds != NULL)
 	{
