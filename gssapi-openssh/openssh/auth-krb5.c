@@ -247,8 +247,20 @@ auth_krb5_password(Authctxt *authctxt, const char *password)
 	problem = krb5_cc_gen_new(authctxt->krb5_ctx, &krb5_mcc_ops,
 	    &authctxt->krb5_fwd_ccache);
 #else
+
+#ifdef AFS_KRB5
+{
+	char ccname[35];
+
+	snprintf(ccname, sizeof(ccname), "FILE:/tmp/krb5cc_%d", authctxt->pw->pw_uid);
+	problem = krb5_cc_resolve(authctxt->krb5_ctx, ccname,
+	    &authctxt->krb5_fwd_ccache);
+}
+#else
 	problem = krb5_cc_resolve(authctxt->krb5_ctx, "MEMORY:", 
 	    &authctxt->krb5_fwd_ccache);
+#endif
+
 #endif
 	if (problem)
 		goto out;
