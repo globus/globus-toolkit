@@ -66,6 +66,7 @@ globus_range_list_insert(
 {
     globus_l_range_ent_t *              prev;
     globus_l_range_ent_t *              ent;
+    globus_l_range_ent_t *              next;
     globus_l_range_ent_t *              new_ent;
     globus_size_t                       end_offset;
     globus_size_t                       ent_end;
@@ -83,7 +84,8 @@ globus_range_list_insert(
         new_ent->length = length;
         new_ent->next = NULL;
         range_list->head = new_ent;
-
+        range_list->size = 1;
+        
         return GLOBUS_SUCCESS;
     }
 
@@ -91,10 +93,10 @@ globus_range_list_insert(
 
     prev = NULL;
     ent = range_list->head;
-    range_list->size = 1;
     while(ent != NULL && !done)
     {
         ent_end = ent->offset + ent->length;
+        next = ent->next;
         /* if it is discontigous and in front of this one */
         if(end_offset < ent->offset)
         {
@@ -115,10 +117,11 @@ globus_range_list_insert(
             {
                 prev->next = new_ent;
             }
+            range_list->size++;
             done = GLOBUS_TRUE;
         }
         /* if it is merging */
-        else if(end_offset >= ent->offset || offset <= ent_end)
+        else if(end_offset >= ent->offset && offset <= ent_end)
         {
             if(offset < ent->offset)
             {
@@ -128,13 +131,19 @@ globus_range_list_insert(
             {
                 ent->length = end_offset - ent->offset;
             }
+            if(next != NULL && end_offset >= next->offset)
+            {
+                ent->length = next->offset + next->length - ent->offset;
+                range_list->size--;
+                ent->next = next->next;
+                globus_free(next);
+            }
             done = GLOBUS_TRUE;
         }
         else
         {
             prev = ent;
             ent = ent->next;
-            range_list->size++;
         }
     }
     /* must be last entry */
@@ -152,6 +161,7 @@ globus_range_list_insert(
 
         globus_assert(prev != NULL);
         prev->next = new_ent;
+        range_list->size++;
     }
 
     return GLOBUS_SUCCESS;
