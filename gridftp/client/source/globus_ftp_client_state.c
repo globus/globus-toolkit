@@ -3155,6 +3155,8 @@ globus_l_ftp_client_parse_feat(
 	    }
 	    else if(strncmp(feature_label, "SBUF", 4) == 0)
 	    {
+		int i;
+
 		target->features[GLOBUS_FTP_CLIENT_FEATURE_SBUF]
 			= GLOBUS_FTP_CLIENT_TRUE;
 		/* If SBUF is supported, then don't bother with other
