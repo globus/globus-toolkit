@@ -683,7 +683,7 @@ case ${host}--$1 in
             if test "$GLOBUS_CC" = "gcc"; then
                 AC_PATH_PROGS(lac_cv_CC, $CC gcc)
         	lac_CFLAGS="$lac_CFLAGS -fno-common"
-        	lac_CPPFLAGS="$lac_CPPFLAGS -traditional-cpp"
+        	lac_CPPFLAGS="$lac_CPPFLAGS -no-cpp-precomp"
             else
                 AC_PATH_PROGS(lac_cv_CC, $CC cc)
             fi
@@ -698,7 +698,7 @@ case ${host}--$1 in
 
         lac_CFLAGS="$lac_CFLAGS -I/sw/include"
         lac_CXXFLAGS="$lac_CXXFLAGS -I/sw/include"
-        lac_CPPFLAGS="$lac_CPPFLAGS -I/sw/include -traditional-cpp"
+        lac_CPPFLAGS="$lac_CPPFLAGS -I/sw/include -no-cpp-precomp"
         lac_LDFLAGS="$lac_LDFLAGS -L/sw/lib"
       ;;
     * )
