@@ -5398,6 +5398,9 @@ globus_gsi_sysconfig_get_authz_conf_filename_unix(
             GLOBUS_GSI_SYSCONFIG_ERROR_FILE_NOT_REGULAR,
             ("%s is not a valid authorization callout config file",
              authz_filename));
+        GLOBUS_GSI_SYSCONFIG_ERROR_CHAIN_RESULT(
+            result,
+            GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_AUTHZ_FILENAME);
         goto exit;
       case GLOBUS_FILE_DOES_NOT_EXIST:
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
@@ -5405,6 +5408,9 @@ globus_gsi_sysconfig_get_authz_conf_filename_unix(
             GLOBUS_GSI_SYSCONFIG_ERROR_FILE_DOES_NOT_EXIST,
             ("%s is not a valid authorization callout config file",
              authz_filename));
+        GLOBUS_GSI_SYSCONFIG_ERROR_CHAIN_RESULT(
+            result,
+            GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_AUTHZ_FILENAME);
         goto exit;
       case GLOBUS_FILE_BAD_PERMISSIONS:
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
@@ -5412,6 +5418,9 @@ globus_gsi_sysconfig_get_authz_conf_filename_unix(
             GLOBUS_GSI_SYSCONFIG_ERROR_FILE_BAD_PERMISSIONS,
             ("%s is not a valid authorization callout config file",
              authz_filename));
+        GLOBUS_GSI_SYSCONFIG_ERROR_CHAIN_RESULT(
+            result,
+            GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_AUTHZ_FILENAME);
         goto exit;
       case GLOBUS_FILE_DIR:
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
@@ -5419,6 +5428,9 @@ globus_gsi_sysconfig_get_authz_conf_filename_unix(
             GLOBUS_GSI_SYSCONFIG_ERROR_FILE_IS_DIR,
             ("%s is not a valid authorization callout config file",
              authz_filename));
+        GLOBUS_GSI_SYSCONFIG_ERROR_CHAIN_RESULT(
+            result,
+            GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_AUTHZ_FILENAME);
         goto exit;
     }
     
