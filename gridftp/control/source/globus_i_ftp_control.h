@@ -8,6 +8,8 @@
 #define GLOBUS_I_TELNET_SYNCH "\xFF\xF2"
 #define GLOBUS_I_TELNET_IAC '\xFF'
 
+#include "globus_config.h"
+
 FILE *          globus_i_ftp_control_devnull;
 
 typedef enum
@@ -207,7 +209,7 @@ do {                                                        \
 	globus_libc_fprintf message;                        \
     }                                                       \
 } while (0)
-
+#else
 #define globus_i_ftp_control_debug_printf(level, message)
 #endif
 

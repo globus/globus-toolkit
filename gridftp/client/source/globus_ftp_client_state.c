@@ -177,7 +177,6 @@ globus_i_ftp_client_response_callback(
     globus_i_ftp_client_target_t *		target;
     globus_i_ftp_client_handle_t *		client_handle;
     globus_result_t				result;
-    globus_object_t *                           caller_error = error;
     globus_bool_t				registered=GLOBUS_FALSE;
     char *					tmpstr = GLOBUS_NULL;
     const char *				buffer_cmd = GLOBUS_NULL;
