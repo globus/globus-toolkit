@@ -6,8 +6,20 @@
 #ifndef _SSL_UTILS_H
 #define _SSL_UTILS_H
 
-#include "sslutil.h"
+#include <openssl/ssl.h>
+#include <openssl/x509.h>
+#include <openssl/x509v3.h>
+#include <openssl/md5.h>
+#include <openssl/err.h>
+#include <openssl/pem.h>
+#include <openssl/rand.h>
+#include <openssl/des.h>
 #include <time.h>
+
+#include <globus_gsi_callback.h>
+#include <globus_gsi_cert_utils.h>
+#include <globus_gsi_system_config.h>
+#include <globus_gsi_system_config_constants.h>
 
 struct _ssl_credentials;
 typedef struct _ssl_credentials SSL_CREDENTIALS;
@@ -148,7 +160,7 @@ int ssl_proxy_delegation_init(SSL_CREDENTIALS	**new_creds,
 			      unsigned char	**buffer,
 			      int		*buffer_length,
 			      int		requested_bits,
-			      void		(*callback)(int,int,char *));
+			      void		(*callback)(int,int,void *));
 
 
 /*
@@ -307,5 +319,12 @@ int ssl_verify_gsi_chain(SSL_CREDENTIALS *chain, X509 **peer);
  *
  */
 int ssl_get_times(const char *proxyfile, time_t *not_before, time_t *not_after);
+
+/*
+ * ssl_error_to_verror()
+ *
+ * Transfer an error description out of the ssl error handler to verror.
+ */
+void ssl_error_to_verror();
 
 #endif /* _SSL_UTILS_H */
