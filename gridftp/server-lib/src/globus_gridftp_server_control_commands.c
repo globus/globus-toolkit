@@ -1234,6 +1234,7 @@ globus_l_gsc_cmd_opts(
     int                                     argc,
     void *                                  user_arg)
 {
+    globus_bool_t                           done = GLOBUS_FALSE;
     int                                     tmp_i;
     char                                    tmp_s[1024];
     char *                                  msg;
@@ -1256,28 +1257,42 @@ globus_l_gsc_cmd_opts(
     }
     else if(strcmp("RETR", cmd_a[1]) == 0)
     {
-        msg = "200 OPTS Command Successful.\r\n";
-        if(sscanf(cmd_a[2], "Parallelism=%d,%*d,%*d;", &tmp_i) == 1)
+        tmp_ptr = cmd_a[2];
+
+        done = GLOBUS_FALSE;
+        while(*tmp_ptr != '\0')
         {
-            opts->parallelism = tmp_i;
-        }
-        else if(sscanf(cmd_a[2], "PacketSize=%d;", &tmp_i) == 1)
-        {
-            opts->packet_size = tmp_i;
-        }
-        else if(sscanf(cmd_a[2], "WindowSize=%d;", &tmp_i) == 1)
-        {
-            opts->send_buf = tmp_i;
-        }
-        else if(sscanf(cmd_a[2], "StripeLayout=%s;", tmp_s) == 1)
-        {
-        }
-        else if(sscanf(cmd_a[2], "BlockSize=%d;", &tmp_i) == 1)
-        {
-        }
-        else
-        {
-            msg = "500 OPTS failed.\r\n";
+            msg = "200 OPTS Command Successful.\r\n";
+            if(sscanf(tmp_ptr, "Parallelism=%d,%*d,%*d;", &tmp_i) == 1)
+            {
+                opts->parallelism = tmp_i;
+            }
+            else if(sscanf(tmp_ptr, "PacketSize=%d;", &tmp_i) == 1)
+            {
+                opts->packet_size = tmp_i;
+            }
+            else if(sscanf(tmp_ptr, "WindowSize=%d;", &tmp_i) == 1)
+            {
+                opts->send_buf = tmp_i;
+            }
+            else if(sscanf(tmp_ptr, "StripeLayout=%s;", tmp_s) == 1)
+            {
+            }
+            else if(sscanf(tmp_ptr, "BlockSize=%d;", &tmp_i) == 1)
+            {
+            }
+            else
+            {
+                msg = "500 OPTS failed.\r\n";
+                done = GLOBUS_TRUE;
+            }
+            tmp_ptr = strchr(tmp_ptr, ';');
+            if(tmp_ptr == NULL)
+            {
+                msg = "500 OPTS failed.\r\n";
+                done = GLOBUS_TRUE;
+            }
+            tmp_ptr++;
         }
     }
     else if(strcmp("PASV", cmd_a[1]) == 0 || 

@@ -378,6 +378,11 @@ globus_gridftp_server_control_event_send_perf(
 
     globus_mutex_lock(&op->server_handle->mutex);
     {
+        if(op->event.stripe_total == NULL)
+        {
+            globus_mutex_unlock(&op->server_handle->mutex);
+            return GlobusGridFTPServerErrorParameter("op");
+        }
         op->event.stripe_total[stripe_ndx] += nbytes;
         if(op->event.perf_running)
         {
