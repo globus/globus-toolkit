@@ -4,7 +4,11 @@ include $(GSI_DEVELOPMENT_PATH)/etc/makefile_header
 
 LINK		=	$(CC)
 
-GSI_SOCKET_CFLAGS	=	-DGSI_SOCKET_SSLEAY $(CFLAGS) -Wall
+GLOBUS_CFLAGS	=	$(INSTALL_INCLUDE)
+DEFS		=	@DEFS@
+CFLAGS		=	$(DEFS) $(GLOBUS_CFLAGS)
+
+GSI_SOCKET_CFLAGS	=	-DGSI_SOCKET_SSLEAY $(CFLAGS)
 ####
 
 TARGETS	=	gsi-socket-test myproxy-init myproxy-destroy myproxy-get-delegation myproxy-server
