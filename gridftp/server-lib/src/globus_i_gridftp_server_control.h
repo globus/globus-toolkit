@@ -3,6 +3,10 @@
 
 #include "globus_gridftp_server_control.h"
 #include "globus_xio.h"
+#include "globus_xio_system.h"
+#include "globus_xio_tcp_driver.h"
+#include "globus_xio_ftp_cmd.h"
+#include "globus_xio_gssapi_ftp.h"
 
 #define GLOBUS_GRIDFTP_SERVER_HASHTABLE_SIZE    256
 #define GLOBUS_GRIDFTP_VERSION_CTL              1
@@ -198,6 +202,7 @@ typedef void
 
 typedef struct globus_i_gsc_data_s
 {
+    struct globus_i_gsc_server_handle_s *   server_handle;
     int                                     stripe_count;
     void *                                  user_handle;
     globus_gridftp_server_control_data_dir_t dir;
@@ -329,6 +334,7 @@ typedef struct globus_i_gsc_attr_s
     char *                                  base_dir;
     char *                                  post_auth_banner;
     char *                                  pre_auth_banner;
+    globus_gridftp_server_control_security_type_t   security;
 
     globus_i_gsc_user_funcs_t               funcs;
 } globus_i_gsc_attr_t;
@@ -367,6 +373,7 @@ typedef struct globus_i_gsc_server_handle_s
 
     char *                                  username;
     char *                                  pw;
+    char *                                  subject;
     uid_t                                   uid;
     char                                    dcau;
     char                                    prot;

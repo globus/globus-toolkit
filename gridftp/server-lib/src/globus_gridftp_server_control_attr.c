@@ -187,6 +187,34 @@ globus_gridftp_server_control_attr_add_type(
 }
 
 globus_result_t
+globus_gridftp_server_control_attr_set_security(
+    globus_gridftp_server_control_attr_t    in_attr,
+    globus_gridftp_server_control_security_type_t sec)
+{
+    globus_i_gsc_attr_t *                   attr;
+    globus_result_t                         res;
+    GlobusGridFTPServerName(globus_gridftp_server_control_attr_set_security);
+
+    GlobusGridFTPServerDebugEnter();
+    if(in_attr == NULL)
+    {
+        res = GlobusGridFTPServerErrorParameter("in_attr");
+        goto err;
+    }
+    attr = in_attr;
+
+    attr->security = sec;
+
+    GlobusGridFTPServerDebugExit();
+    return GLOBUS_SUCCESS;
+
+  err:
+
+    GlobusGridFTPServerDebugExitWithError();
+    return res;
+}
+
+globus_result_t
 globus_gridftp_server_control_attr_add_mode(
     globus_gridftp_server_control_attr_t    in_attr,
     char                                    mode)

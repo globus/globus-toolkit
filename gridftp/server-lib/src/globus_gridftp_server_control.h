@@ -4,6 +4,7 @@
 #include "globus_xio.h"
 #include "globus_common.h"
 #include "globus_gss_assist.h"
+#include "globus_xio_system.h"
 
 typedef struct globus_i_gsc_restart_s * globus_gridftp_server_control_restart_t;
 typedef struct globus_i_gsc_server_handle_s * globus_gridftp_server_control_t;
@@ -25,6 +26,12 @@ typedef enum globus_gsc_error_type_e
     GLOBUS_GRIDFTP_SERVER_CONTROL_ERROR_PATH,
     GLOBUS_GRIDFTP_SERVER_CONTROL_ERROR_SYNTAX
 } globus_gridftp_server_control_error_type_t;
+
+typedef enum globus_gsc_security_type_e
+{
+    GLOBUS_GRIDFTP_SERVER_LIBRARY_NONE,
+    GLOBUS_GRIDFTP_SERVER_LIBRARY_GSSAPI
+} globus_gridftp_server_control_security_type_t;
 
 #ifdef __GNUC__
 #define GlobusGridFTPServerName(func) static const char * _gridftp_server_name __attribute__((__unused__)) = #func
@@ -177,6 +184,7 @@ typedef enum globus_gridftp_server_control_event_type_e
 typedef void
 (*globus_gridftp_server_control_auth_cb_t)(
     globus_gridftp_server_control_op_t      op,
+    const char *                            subject,
     const char *                            user_name,
     const char *                            pw);
 
@@ -190,9 +198,7 @@ globus_result_t
 globus_gridftp_server_control_finished_auth(
     globus_gridftp_server_control_op_t      op,
     globus_result_t                         res,
-    uid_t                                   uid,
-    gss_cred_id_t                           cred,
-    gss_cred_id_t                           del_cred);
+    uid_t                                   uid);
 
 /**
  *  mask type.
@@ -383,6 +389,11 @@ globus_gridftp_server_control_attr_set_message(
     globus_gridftp_server_control_attr_t    in_attr,
     char *                                  message);
 
+globus_result_t
+globus_gridftp_server_control_attr_set_security(
+    globus_gridftp_server_control_attr_t    in_attr,
+    globus_gridftp_server_control_security_type_t sec);
+
 /*
  *  if module name is NULL then it is the default handler
  */
@@ -456,7 +467,7 @@ globus_result_t
 globus_gridftp_server_control_start(
     globus_gridftp_server_control_t         server,
     globus_gridftp_server_control_attr_t    attr,
-    globus_xio_handle_t                     xio_handle,
+    globus_xio_system_handle_t              system_handle,
     globus_gridftp_server_control_cb_t      done_cb,
     void *                                  user_arg);
 
@@ -502,19 +513,11 @@ globus_gridftp_server_control_get_cwd(
     char **                                 cwd_string);
 
 globus_result_t
-globus_gridftp_server_control_get_dcau(
+globus_gridftp_server_control_get_data_auth(
     globus_gridftp_server_control_op_t      op,
-    char *                                  dcau);
-
-globus_result_t
-globus_gridftp_server_control_get_prot(
-    globus_gridftp_server_control_op_t      op,
-    char *                                  prot);
-
-globus_result_t
-globus_gridftp_server_control_get_list_type(
-    globus_gridftp_server_control_op_t      op,
-    int *                                   out_type);
+    char *                                  dcau,
+    char *                                  prot,
+    gss_cred_id_t *                         del_cred);
 
 globus_bool_t
 globus_gridftp_server_control_authenticated(

@@ -164,10 +164,9 @@ transfer(
 void
 auth_func(
     globus_gridftp_server_control_op_t      op,
+    const char *                            subject,
     const char *                            user_name,
-    const char *                            pw,
-    gss_cred_id_t                           cred,
-    gss_cred_id_t                           del_cred)
+    const char *                            pw)
 {
     fprintf(stderr, "User: %s Pass: %s\n", user_name, pw);
 
@@ -188,43 +187,28 @@ main(
     char **                                 argv)
 {
     globus_xio_driver_t                     tcp_driver;
-    globus_xio_driver_t                     ftp_driver;
     globus_xio_stack_t                      stack;
-    globus_xio_attr_t                       xio_attr;
     globus_xio_handle_t                     xio_handle;
     globus_xio_server_t                     xio_server;
     globus_result_t                         res;
     char *                                  cs;
     globus_gridftp_server_control_attr_t    ftp_attr;
     globus_gridftp_server_control_t         ftp_server;
-    int                                     mode;
-    char *                                  driver_name;
+    globus_xio_system_handle_t              system_handle;
 
     globus_module_activate(GLOBUS_XIO_MODULE);
     globus_module_activate(GLOBUS_GRIDFTP_SERVER_CONTROL_MODULE);
 
-    if(argc > 1)
-    {
-        mode = GLOBUS_XIO_GSSAPI_ATTR_TYPE_SUPER_MODE;
-        driver_name = "gssapi_ftp";
-    }
-    else
-    {
-        mode = GLOBUS_XIO_DRIVER_FTP_CMD_BUFFER;
-        driver_name = "ftp_cmd";
-    }
     /*
      *  set up the xio handle
      */
     res = globus_xio_driver_load("tcp", &tcp_driver);
     test_res(res, __LINE__);
 
-    res = globus_xio_driver_load(driver_name, &ftp_driver);
-    test_res(res, __LINE__);
     res = globus_xio_stack_init(&stack, NULL);
-    res = globus_xio_stack_push_driver(stack, tcp_driver);
     test_res(res, __LINE__);
-    res = globus_xio_stack_push_driver(stack, ftp_driver);
+
+    res = globus_xio_stack_push_driver(stack, tcp_driver);
     test_res(res, __LINE__);
 
     res = globus_xio_server_create(&xio_server, NULL, stack);
@@ -237,15 +221,6 @@ main(
     res = globus_xio_server_accept(&xio_handle, xio_server);
     test_res(res, __LINE__);
 
-    fprintf(stdout, "opening handle\n");
-    res = globus_xio_attr_init(&xio_attr);
-    test_res(res, __LINE__);
-    res = globus_xio_attr_cntl(
-        xio_attr, ftp_driver, mode, GLOBUS_TRUE);
-    test_res(res, __LINE__);
-    res = globus_xio_open(xio_handle, NULL, xio_attr);
-    test_res(res, __LINE__);
-
     fprintf(stdout, "xio connection esstablished.\n");
     /*
      *  server connection is all set up, hand it to server_lib
@@ -255,6 +230,17 @@ main(
 
     res = globus_gridftp_server_control_attr_init(&ftp_attr);
     test_res(res, __LINE__);
+
+    if(argc > 1)
+    {
+        globus_gridftp_server_control_attr_set_security(
+            ftp_attr, GLOBUS_GRIDFTP_SERVER_LIBRARY_GSSAPI);
+    }
+    else
+    {
+        globus_gridftp_server_control_attr_set_security(
+            ftp_attr, GLOBUS_GRIDFTP_SERVER_LIBRARY_NONE);
+    }
 
     res = globus_gridftp_server_control_attr_set_auth(ftp_attr, auth_func);
     test_res(res, __LINE__);
@@ -272,11 +258,17 @@ main(
 
     res = globus_gridftp_server_control_attr_add_send(
         ftp_attr, NULL, transfer);
+    test_res(res, __LINE__);
+
+    res = globus_xio_handle_cntl(xio_handle, tcp_driver,
+            GLOBUS_XIO_TCP_GET_HANDLE, &system_handle);
+    test_res(res, __LINE__);
 
     globus_mutex_lock(&globus_l_mutex);
     {
         res = globus_gridftp_server_control_start(
-            ftp_server, ftp_attr, xio_handle, globus_l_done_cb, FTP_USER_ARG);
+            ftp_server, ftp_attr, system_handle, 
+            globus_l_done_cb, FTP_USER_ARG);
         test_res(res, __LINE__);
 
         while(!globus_l_done)
