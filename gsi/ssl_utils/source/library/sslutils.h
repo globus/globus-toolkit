@@ -240,17 +240,17 @@ unsigned long ERR_get_error_line_data(char **file,int *line,
 **********************************************************************/
 
 typedef struct proxy_cred_desc_struct {
-	X509                     *ucert ;
-	EVP_PKEY                 *upkey ;
-	STACK_OF(X509)           *cert_chain ;
-	SSL_CTX                  *gs_ctx ;
+	X509 *                   ucert ;
+	EVP_PKEY *               upkey ;
+	STACK_OF(X509) *         cert_chain ;
+	SSL_CTX *                gs_ctx ;
 	unsigned long            hSession ; /* smart card session handle */
 	unsigned long            hPrivKey ; /* private key session handle */
-	char					 *certdir ;
-	char					 *certfile;
-	int						 num_null_enc_ciphers;
-	int                  	type; /*  for gsi err messages */
-  	int 			owner; /* for gsi error messages */
+	char *                   certdir ;
+	char *                   certfile;
+	int                      num_null_enc_ciphers;
+	int                  	 type; /*  for gsi err messages */
+  	int 			 owner; /* for gsi error messages */
 }  proxy_cred_desc;
 
 /* proxy_verify_ctx_desc - common to all verifys */

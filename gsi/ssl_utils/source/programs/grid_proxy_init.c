@@ -165,34 +165,34 @@ kpcallback(int p, int n)
 
 int main(int argc, char **argv)
 {
-	int                  ret_status  = 0;
-    int                  bits        = 512;   /* default proxy to 512 bits */
-    int                  hours       = 12;    /* default to a 12 hour cert */
-    int                  limit_proxy = 0;     /* dont restrict the proxy */
-    int                  verify      = 0;
-    int                  i;
-	int					 j;
-    char *               certfile    = NULL;
-    char *               keyfile     = NULL;
-    char *               outfile     = NULL;
-    char *               certdir     = NULL;
-    char *               certcafile  = NULL;
-    char *               pin         = NULL;
-    char *               argp;
-    char *               program;
-    proxy_cred_desc *    pcd         = NULL;
-    proxy_verify_desc    pvd;
+    int                   ret_status  = 0;
+    int                   bits        = 512;   /* default proxy to 512 bits */
+    int                   hours       = 12;    /* default to a 12 hour cert */
+    int                   limit_proxy = 0;     /* dont restrict the proxy */
+    int                   verify      = 0;
+    int                   i;
+    int                   j;
+    char *                certfile    = NULL;
+    char *                keyfile     = NULL;
+    char *                outfile     = NULL;
+    char *                certdir     = NULL;
+    char *                certcafile  = NULL;
+    char *                pin         = NULL;
+    char *                argp;
+    char *                program;
+    proxy_cred_desc *     pcd         = NULL;
+    proxy_verify_desc     pvd;
     proxy_verify_ctx_desc pvxd;
-    BIO *                bio_err;
-	X509 *               xcert;
-	time_t               time_after;
-	time_t               time_now;
-	time_t               time_diff;
-	time_t				 time_after_proxy;
-	ASN1_UTCTIME *       asn1_time = NULL;
+    BIO *                 bio_err;
+    X509 *                xcert;
+    time_t                time_after;
+    time_t                time_now;
+    time_t                time_diff;
+    time_t		  time_after_proxy;
+    ASN1_UTCTIME *        asn1_time = NULL;
 #ifdef CLASS_ADD
-	void *				 class_add_buf = NULL;
-	size_t				 class_add_buf_len = 0;
+    void *		  class_add_buf = NULL;
+    size_t		  class_add_buf_len = 0;
 #endif
 
 

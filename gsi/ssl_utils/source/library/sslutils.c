@@ -182,22 +182,41 @@ Returns :
         same as X509_NAME_cmp 
 ********************************************************************/
 static int
-X509_NAME_cmp_no_set(X509_NAME *a, X509_NAME *b)
+X509_NAME_cmp_no_set(
+    X509_NAME *                         a,
+    X509_NAME *                         b)
 {
-    int i,j;
-    X509_NAME_ENTRY *na,*nb;
+    int                                 i;
+    int                                 j;
+    X509_NAME_ENTRY *                   na;
+    X509_NAME_ENTRY *                   nb;
 
-    if (sk_X509_NAME_ENTRY_num(a->entries) != sk_X509_NAME_ENTRY_num(b->entries))
-        return(sk_X509_NAME_ENTRY_num(a->entries)-sk_X509_NAME_ENTRY_num(b->entries));
+    if (sk_X509_NAME_ENTRY_num(a->entries) !=
+	sk_X509_NAME_ENTRY_num(b->entries))
+    {
+        return(sk_X509_NAME_ENTRY_num(a->entries) -
+	       sk_X509_NAME_ENTRY_num(b->entries));
+    }
+    
     for (i=sk_X509_NAME_ENTRY_num(a->entries)-1; i>=0; i--)
     {
-        na=sk_X509_NAME_ENTRY_value(a->entries,i);
-        nb=sk_X509_NAME_ENTRY_value(b->entries,i);
-        j=na->value->length-nb->value->length;
-        if (j) return(j);
-        j=memcmp(na->value->data,nb->value->data,
-		 na->value->length);
-        if (j) return(j);
+        na = sk_X509_NAME_ENTRY_value(a->entries,i);
+        nb = sk_X509_NAME_ENTRY_value(b->entries,i);
+        j = na->value->length-nb->value->length;
+
+	if (j)
+	{
+	    return(j);
+	}
+	
+        j = memcmp(na->value->data,
+		   nb->value->data,
+		   na->value->length);
+        if (j)
+	{
+	    return(j);
+	}
+	
         /*j=na->set-nb->set; */
         /* if (j) return(j); */
     }
@@ -207,10 +226,14 @@ X509_NAME_cmp_no_set(X509_NAME *a, X509_NAME *b)
      * types. */
     for (i=sk_X509_NAME_ENTRY_num(a->entries)-1; i>=0; i--)
     {
-        na=sk_X509_NAME_ENTRY_value(a->entries,i);
-        nb=sk_X509_NAME_ENTRY_value(b->entries,i);
-        j=OBJ_cmp(na->object,nb->object);
-        if (j) return(j);
+        na = sk_X509_NAME_ENTRY_value(a->entries,i);
+        nb = sk_X509_NAME_ENTRY_value(b->entries,i);
+        j = OBJ_cmp(na->object,nb->object);
+
+        if (j)
+	{
+	    return(j);
+	}
     }
     return(0);
 }
@@ -224,10 +247,16 @@ Descriptions:
     to using uid 0 and pid 0 Need to look at this better for NT. 
 ******************************************************************/
 static unsigned long
-getuid() { return 0;}
+getuid()
+{
+    return 0;
+}
 
 static int
-getpid() { return 0;}
+getpid()
+{
+    return 0;
+}
 
 #endif /* WIN32 */
 
@@ -263,10 +292,10 @@ get_ca_signing_policy_path(
     const char *                        cert_dir,
     X509_NAME *                         ca_name)
 {
-    char                                *buffer;
+    char *                              buffer;
     unsigned int                        buffer_len;
     unsigned long                       hash;
-    int status;
+    int                                 status;
     
     if ((cert_dir == NULL) ||
         (ca_name == NULL)) 
@@ -296,12 +325,13 @@ get_ca_signing_policy_path(
 }
 
 #if SSLEAY_VERSION_NUMBER < 0x0900
+
 /**********************************************************************
 Function: ERR_add_error_data()
 
 Description:
     Dummy routine only defined if running with SSLeay-0.8.x 
-        this feature was introduced with SSLeay-0.9.0
+    this feature was introduced with SSLeay-0.9.0
 
 Parameters:
 
@@ -319,23 +349,30 @@ Function: ERR_get_error_line_data()
 
 Description:
     Dummy routine only defined if running with SSLeay-0.8.x 
-        this feature was introduced with SSLeay-0.9.0. We will
-        simulate it for 0.8.1
+    this feature was introduced with SSLeay-0.9.0. We will
+    simulate it for 0.8.1
 
 Parameters:
 
 Returns:
 **********************************************************************/
 unsigned long 
-ERR_get_error_line_data(char **file,int *line,
-			char **data, int *flags)
+ERR_get_error_line_data(
+    char **                             file,
+    int *                               line,
+    char **                             data,
+    int *                               flags)
 {
-    if (data) {
+    if (data)
+    {
 	*data = "";
     }
-    if (flags) {
+    
+    if (flags)
+    {
 	*flags = 0;
     }
+    
     return (ERR_get_error_line(file, line));
 }
 
@@ -356,39 +393,43 @@ Returns:
 **********************************************************************/
 
 int
-ERR_load_prxyerr_strings(int i)
+ERR_load_prxyerr_strings(
+    int                                 i)
 {
-    static int init=1;
-        
-    struct stat stx;
+    static int                          init = 1;
+    struct stat                         stx;
     clock_t cputime;
 #if SSLEAY_VERSION_NUMBER  >= 0x00904100L
-    const char *randfile;
+    const char *                        randfile;
 #else
-    char *randfile;
+    char *                              randfile;
 #endif
-    char *egd_path;
-    char buffer[200];
+    char *                              egd_path;
+    char                                buffer[200];
         
 #ifdef DEBUG
     fprintf(stderr,"ERR_load_prxyerr_strings, init=%d,i=%d\n",init,i);
 #endif
 
-    if (init) {
-        init=0;
+    if (init)
+    {
+        init = 0;
 #ifndef RAND_DO_NOT_USE_CLOCK
 	clock(); 
 #endif
-	if (i == 0) {
+	if (i == 0)
+	{
 	    SSL_load_error_strings();
 	}
+	
 	OBJ_create("1.3.6.1.4.1.3536.1.1.1.1","CLASSADD","ClassAdd");
 	OBJ_create("0.9.2342.19200300.100.1.1","USERID","userId");
 
 	ERR_load_strings(ERR_LIB_USER+i,prxyerr_str_functs);
 	ERR_load_strings(ERR_LIB_USER+i,prxyerr_str_reasons);
 	ERR_user_lib_prxyerr_number = ERR_LIB_USER+i;
-	/*
+
+        /*
 	 * We need to get a lot of randomness for good security
 	 * OpenSSL will use /dev/urandom (if available),
 	 * uid, time, and gid. 
@@ -409,8 +450,10 @@ ERR_load_prxyerr_strings(int i)
 	 * But /dev/random and/or egd should be enough.
 	 */
 
-	randfile=RAND_file_name(buffer,200);
-	if (randfile) {
+	randfile = RAND_file_name(buffer,200);
+
+	if (randfile)
+	{
 	    RAND_load_file(randfile,1024L*1024L);
 	}
 
@@ -420,22 +463,25 @@ ERR_load_prxyerr_strings(int i)
 	 * See the OpenSSL crypto/rand/rand_egd.c 
 	 */
 	egd_path = getenv("EGD_PATH");
-	if (egd_path == NULL) {
+	if (egd_path == NULL)
+	{
 	    egd_path = "/etc/entropy";
 	}
 	RAND_egd(egd_path);
 #endif
                 
 	/* if still not enough entropy*/
-	if (RAND_status() == 0) {
+	if (RAND_status() == 0)
+	{
 	    stat("/tmp",&stx); /* get times /tmp was modified */
 	    RAND_add((void*)&stx,sizeof(stx),16);
 	}
 
 #ifndef RAND_DO_NOT_USE_CLOCK
-	cputime=clock();
+	cputime = clock();
 	RAND_add((void*)&cputime, sizeof(cputime),8);
 #endif
+	
 #if defined(DEBUG) || defined(DEBUGX)
 	fprintf(stderr,"ERR_load_prxyerr_strings RAND_status=%d,i=%d\n",
 		RAND_status(),i);
@@ -468,13 +514,16 @@ Returns:
                 4 zero length
 **********************************************************************/
 static int
-checkstat(const char* filename)
+checkstat(
+    const char*                         filename)
 {
-    struct stat stx;
+    struct stat                         stx;
 
-    if (stat(filename,&stx) != 0) {
+    if (stat(filename,&stx) != 0)
+    {
         return 1;
     }
+
     /*
      * use any stat output as random data, as it will 
      * have file sizes, and last use times in it. 
@@ -482,22 +531,27 @@ checkstat(const char* filename)
     RAND_add((void*)&stx,sizeof(stx),2);
 
 #if !defined(WIN32) && !defined(TARGET_ARCH_CYGWIN)
-    if (stx.st_uid != getuid()) {
+    if (stx.st_uid != getuid())
+    {
 #ifdef DEBUG
         fprintf(stderr,"checkstat:%s:uid:%d:%d\n",filename,
 		stx.st_uid, getuid());
 #endif
         return 2;
     }
-    if (stx.st_mode & 066) {
+
+    if (stx.st_mode & 066)
+    {
 #ifdef DEBUG
         fprintf(stderr,"checkstat:%s:mode:%o\n",filename,stx.st_mode);
 #endif
         return 3;
     }
+    
 #endif /* !WIN32 && !TARGET_ARCH_CYGWIN */
 
-    if (stx.st_size == 0) {
+    if (stx.st_size == 0)
+    {
 	return 4;
     }
     return 0;
@@ -514,10 +568,12 @@ Description:
 proxy_cred_desc *
 proxy_cred_desc_new() 
 {
-    proxy_cred_desc * pcd;
+    proxy_cred_desc *                   pcd;
 
     pcd = (proxy_cred_desc *)malloc(sizeof(proxy_cred_desc));
-    if (pcd) {
+    
+    if (pcd)
+    {
 	pcd->ucert = NULL;
 	pcd->upkey = NULL;
 	pcd->cert_chain = NULL;
@@ -530,6 +586,7 @@ proxy_cred_desc_new()
 	pcd->type = CRED_TYPE_PERMANENT;
 	pcd->owner = CRED_OWNER_USER;
     }
+    
     return pcd;
 }
 /**********************************************************************
@@ -548,35 +605,50 @@ Returns:
 **********************************************************************/
 
 int
-proxy_load_user_proxy(STACK_OF(X509) *cert_chain,
-		      char *file, BIO * bp)
+proxy_load_user_proxy(
+    STACK_OF(X509) *                    cert_chain,
+    char *                              file,
+    BIO *                               bp)
 {
 
-    int ret=-1;
-    BIO *in=NULL;
-    int i,count=0;
-    X509 *x=NULL;
+    int                                 ret = -1;
+    BIO *                               in = NULL;
+    int                                 i;
+    int                                 count=0;
+    X509 *                              x = NULL;
 
-    if (bp) {
+    if (bp)
+    {
 	in = bp;
-    } else {
-	if (file == NULL) return(1);
-	in=BIO_new(BIO_s_file());
+    }
+    else
+    {
+	if (file == NULL)
+	{
+	    return(1);
+	}
+	in = BIO_new(BIO_s_file());
     }
 
-    if ((in == NULL) || (!bp && BIO_read_filename(in,file) <= 0)) {
+    if ((in == NULL) || (!bp && BIO_read_filename(in,file) <= 0))
+    {
 	X509err(PRXYERR_F_PROXY_LOAD,ERR_R_SYS_LIB);
 	goto err;
     }
 
-    for (;;) {
-	x=PEM_read_bio_X509(in,NULL, OPENSSL_PEM_CB(NULL,NULL));
-	if (x == NULL) {
+    for (;;)
+    {
+	x = PEM_read_bio_X509(in,NULL, OPENSSL_PEM_CB(NULL,NULL));
+	if (x == NULL)
+	{
 	    if ((ERR_GET_REASON(ERR_peek_error()) ==
-		 PEM_R_NO_START_LINE) && (count > 0)) {
+		 PEM_R_NO_START_LINE) && (count > 0))
+	    {
 		ERR_clear_error();
 		break;
-	    } else {
+	    }
+	    else
+	    {
 		X509err(PRXYERR_F_PROXY_LOAD,
 			ERR_R_PEM_LIB);
 		goto err;
@@ -585,30 +657,41 @@ proxy_load_user_proxy(STACK_OF(X509) *cert_chain,
 
 #ifdef DEBUG
 	{
-	    char *s;
-	    s=X509_NAME_oneline(X509_get_subject_name(x),NULL,0);
+	    char *                      s;
+	    s = X509_NAME_oneline(X509_get_subject_name(x),NULL,0);
 	    fprintf(stderr,"Loading %d %p from user_proxy %s\n",
 		    count,x,s);
 	    free(s);
 	}
 #endif
 
-	if (bp || count) {
+	if (bp || count)
+	{
 	    i = sk_X509_insert(cert_chain,x,sk_X509_num(cert_chain));
 
-	    x=NULL;
+	    x = NULL;
 	}
+	
 	count++;
-	if (x) {
+
+	if (x)
+	{
 	    X509_free(x);
-	    x=NULL;
+	    x = NULL;
 	}
     }
-    ret=count;
+    ret = count;
         
-  err:
-    if (x != NULL) X509_free(x);
-    if (!bp && in != NULL) BIO_free(in);
+ err:
+    if (x != NULL)
+    {
+	X509_free(x);
+    }
+    
+    if (!bp && in != NULL)
+    {
+	BIO_free(in);
+    }
     return(ret);
 }
 
@@ -628,42 +711,53 @@ Returns:
 **********************************************************************/
 
 int
-proxy_genreq(X509 *ucert,
-	     X509_REQ **reqp,
-	     EVP_PKEY **pkeyp,
-	     int bits,
-	     int (*callback)(),
-	     proxy_cred_desc * pcd)
+proxy_genreq(
+    X509 *                              ucert,
+    X509_REQ **                         reqp,
+    EVP_PKEY **                         pkeyp,
+    int                                 bits,
+    int                                 (*callback)(),
+    proxy_cred_desc *                   pcd)
 
 {
-    RSA *rsa=NULL;
-    EVP_PKEY *pkey=NULL;
-    EVP_PKEY *upkey=NULL;
-    X509_NAME *name=NULL; 
-    X509_REQ *req=NULL;
-    X509_NAME_ENTRY *ne=NULL;
-    int rbits;
+    RSA *                               rsa = NULL;
+    EVP_PKEY *                          pkey = NULL;
+    EVP_PKEY *                          upkey = NULL;
+    X509_NAME *                         name = NULL; 
+    X509_REQ *                          req = NULL;
+    X509_NAME_ENTRY *                   ne = NULL;
+    int                                 rbits;
 
-    if (bits) {
+    if (bits)
+    {
 	rbits = bits;
-    } else if (ucert) { 
-	if ((upkey = X509_get_pubkey(ucert)) == NULL) {
+    }
+    else if (ucert)
+    { 
+	if ((upkey = X509_get_pubkey(ucert)) == NULL)
+	{
 	    PRXYerr(PRXYERR_F_PROXY_GENREQ,PRXYERR_R_PROCESS_PROXY_KEY);
 	    goto err;
 	}
-	if (upkey->type != EVP_PKEY_RSA) {
+	
+	if (upkey->type != EVP_PKEY_RSA)
+	{
 	    PRXYerr(PRXYERR_F_PROXY_GENREQ,PRXYERR_R_PROCESS_PROXY_KEY);
 	    goto err;
 	}
+	
 	rbits = 8 * EVP_PKEY_size(upkey);
-    } else {
+    }
+    else
+    {
 	bits = 512;
     }
 #ifdef DEBUG
     fprintf(stderr,"Using %d bits for proxy key\n",rbits);
 #endif
 
-    if ((pkey = EVP_PKEY_new()) == NULL) {
+    if ((pkey = EVP_PKEY_new()) == NULL)
+    {
 	PRXYerr(PRXYERR_F_PROXY_GENREQ,PRXYERR_R_PROCESS_PROXY_KEY);
 	goto err;
     }
@@ -673,53 +767,71 @@ proxy_genreq(X509 *ucert,
      * the declaration of RSA_generate_key() in OpenSSL.  It may
      * trigger a warning if you compile with SSLeay.
      */
-    if ((rsa = RSA_generate_key(rbits,RSA_F4,
+    if ((rsa = RSA_generate_key(rbits,
+				RSA_F4,
                                 (void (*)(int,int,void *))callback
-                                ,NULL)) == NULL) {
-	PRXYerr(PRXYERR_F_PROXY_GENREQ,PRXYERR_R_PROCESS_PROXY_KEY);
-	goto err;
-    }
-    if (!EVP_PKEY_assign_RSA(pkey,rsa)) {
+                                ,NULL)) == NULL)
+    {
 	PRXYerr(PRXYERR_F_PROXY_GENREQ,PRXYERR_R_PROCESS_PROXY_KEY);
 	goto err;
     }
     
-    if ((req = X509_REQ_new()) == NULL) {
+    if (!EVP_PKEY_assign_RSA(pkey,rsa))
+    {
+	PRXYerr(PRXYERR_F_PROXY_GENREQ,PRXYERR_R_PROCESS_PROXY_KEY);
+	goto err;
+    }
+    
+    if ((req = X509_REQ_new()) == NULL)
+    {
 	PRXYerr(PRXYERR_F_PROXY_GENREQ,PRXYERR_R_PROCESS_REQ);
 	goto err;
     }
 
     X509_REQ_set_version(req,0L);
 
-    if (ucert) {
+    if (ucert)
+    {
 
-	if ((name=X509_NAME_dup(X509_get_subject_name(ucert))) == NULL) {
+	if ((name = X509_NAME_dup(X509_get_subject_name(ucert))) == NULL)
+	{
 	    PRXYerr(PRXYERR_F_PROXY_GENREQ,PRXYERR_R_PROCESS_REQ);
 	    goto err;
 	}
-    } else {
-	name=X509_NAME_new();
+    }
+    else
+    {
+	name = X509_NAME_new();
     }
                 
         
-    if ((ne=X509_NAME_ENTRY_create_by_NID(NULL,NID_commonName,
-					  V_ASN1_APP_CHOOSE,(unsigned char *)"proxy",-1)) == NULL) {
+    if ((ne = X509_NAME_ENTRY_create_by_NID(NULL,NID_commonName,
+					    V_ASN1_APP_CHOOSE,
+					    (unsigned char *)"proxy",
+					    -1)) == NULL)
+    {
 	PRXYerr(PRXYERR_F_PROXY_GENREQ,PRXYERR_R_PROCESS_REQ);
 	goto err;
     }
-    X509_NAME_add_entry(name,ne,X509_NAME_entry_count(name),fix_add_entry_asn1_set_param);
+    
+    X509_NAME_add_entry(name,
+			ne,
+			X509_NAME_entry_count(name),
+			fix_add_entry_asn1_set_param);
 
     X509_REQ_set_subject_name(req,name);
     X509_NAME_free(name);
     name = NULL;
     X509_REQ_set_pubkey(req,pkey);
 
-    if (!X509_REQ_sign(req,pkey,EVP_md5())) {
+    if (!X509_REQ_sign(req,pkey,EVP_md5()))
+    {
 	PRXYerr(PRXYERR_F_PROXY_GENREQ,PRXYERR_R_PROCESS_SIGN);
 	goto err;
     }
         
-    if (ne) {
+    if (ne)
+    {
 	X509_NAME_ENTRY_free(ne);
 	ne = NULL;
     }
@@ -728,20 +840,25 @@ proxy_genreq(X509 *ucert,
     *reqp = req;
     return 0;
 
-  err:
-    if(rsa) {
+ err:
+    if(rsa)
+    {
 	RSA_free(rsa);
     }
-    if (pkey) {
+    if (pkey)
+    {
 	EVP_PKEY_free(pkey);
     }
-    if (name) {
+    if (name)
+    {
 	X509_NAME_free(name);
     }
-    if (req) {
+    if (req)
+    {
 	X509_REQ_free(req);
     }
-    if (ne) {
+    if (ne)
+    {
 	X509_NAME_ENTRY_free(ne);
     }
     return 1;
@@ -762,17 +879,26 @@ Returns:
 **********************************************************************/
 
 int
-proxy_sign(X509 *ucert,
-	   EVP_PKEY *upkey,
-	   EVP_MD *method,
-	   X509_REQ *req,
-	   X509 **ncertp,
-	   int hours,
-	   int limit_proxy)
+proxy_sign(
+    X509 *                              ucert,
+    EVP_PKEY *                          upkey,
+    EVP_MD *                            method,
+    X509_REQ *                          req,
+    X509 **                             ncertp,
+    int                                 hours,
+    int                                 limit_proxy)
 {
-    return proxy_sign_ext( 0, ucert, upkey, method, 
-			   req, ncertp, hours*60*60, limit_proxy,
-			   0, "proxy", NULL);
+    return proxy_sign_ext(0,
+			  ucert,
+			  upkey,
+			  method, 
+			  req,
+			  ncertp,
+			  hours*60*60,
+			  limit_proxy,
+			  0,
+			  "proxy",
+			  NULL);
 }
 /**********************************************************************
 Function: proxy_sign_ext()
@@ -794,42 +920,46 @@ Returns:
 **********************************************************************/
 
 int
-proxy_sign_ext(int function,
-	       X509 *ucert,
-	       EVP_PKEY *upkey,
-	       EVP_MD *method,
-	       X509_REQ *req,
-	       X509 **ncertp,
-	       int seconds,
-	       int limit_proxy,
-	       int serial,
-	       char * newcn,
-	       STACK_OF(X509_EXTENSION) *cextensions)
+proxy_sign_ext(
+    int                                 function,
+    X509 *                              ucert,
+    EVP_PKEY *                          upkey,
+    EVP_MD *                            method,
+    X509_REQ *                          req,
+    X509 **                             ncertp,
+    int                                 seconds,
+    int                                 limit_proxy,
+    int                                 serial,
+    char *                              newcn,
+    STACK_OF(X509_EXTENSION) *          cextensions)
 {
-    EVP_PKEY *npkey=NULL;
-    EVP_PKEY *pktmp=NULL;
-    X509 *ncert;
-    X509_CINF *nci;
-    X509_CINF *uci;
+    EVP_PKEY *                          npkey = NULL;
+    EVP_PKEY *                          pktmp = NULL;
+    X509 *                              ncert;
+    X509_CINF *                         nci;
+    X509_CINF *                         uci;
 
-    X509_NAME *name=NULL; 
-    X509_NAME_ENTRY *ne=NULL;
-    X509_EXTENSION *ex=NULL;
-    X509_EXTENSION *ex2=NULL;
-    int copy_ext;
-    int nid;
-    int i;
+    X509_NAME *                         name = NULL; 
+    X509_NAME_ENTRY *                   ne = NULL;
+    X509_EXTENSION *                    ex = NULL;
+    X509_EXTENSION *                    ex2 = NULL;
+    int                                 copy_ext;
+    int                                 nid;
+    int                                 i;
 
-    uci=ucert->cert_info;
+    uci = ucert->cert_info;
 
     if ((req->req_info == NULL) ||
 	(req->req_info->pubkey == NULL) ||
 	(req->req_info->pubkey->public_key == NULL) ||
-	(req->req_info->pubkey->public_key->data == NULL)) {
+	(req->req_info->pubkey->public_key->data == NULL))
+    {
 	PRXYerr(PRXYERR_F_PROXY_SIGN,PRXYERR_R_MALFORM_REQ);
 	goto err;
     }
-    if ((npkey=X509_REQ_get_pubkey(req)) == NULL) {
+    
+    if ((npkey=X509_REQ_get_pubkey(req)) == NULL)
+    {
 	PRXYerr(PRXYERR_F_PROXY_SIGN,PRXYERR_R_MALFORM_REQ);
 	goto err;
     }
@@ -837,13 +967,17 @@ proxy_sign_ext(int function,
 #ifdef DEBUG
     fprintf(stderr,"Verifying request\n");
 #endif
-    i=X509_REQ_verify(req,npkey);
-    if (i < 0) {
+
+    i = X509_REQ_verify(req,npkey);
+
+    if (i < 0)
+    {
 	PRXYerr(PRXYERR_F_PROXY_SIGN,PRXYERR_R_SIG_VERIFY);
 	goto err;
     }
 
-    if (i == 0) {
+    if (i == 0)
+    {
 	PRXYerr(PRXYERR_F_PROXY_SIGN,PRXYERR_R_SIG_BAD);
 	goto err;
     }
@@ -861,26 +995,37 @@ proxy_sign_ext(int function,
      * and add the namecn.
      */
 
-    if ((name=X509_NAME_dup(X509_get_subject_name(ucert))) == NULL) {
+    if ((name = X509_NAME_dup(X509_get_subject_name(ucert))) == NULL)
+    {
 	PRXYerr(PRXYERR_F_PROXY_SIGN,PRXYERR_R_PROCESS_PROXY);
 	goto err;
     }
 
-    if ((ne=X509_NAME_ENTRY_create_by_NID(NULL,NID_commonName,
-					  V_ASN1_APP_CHOOSE,(unsigned char *)newcn,-1)) == NULL) {
+    if ((ne = X509_NAME_ENTRY_create_by_NID(NULL,NID_commonName,
+					    V_ASN1_APP_CHOOSE,
+					    (unsigned char *)newcn,
+					    -1)) == NULL)
+    {
 	PRXYerr(PRXYERR_F_PROXY_SIGN,PRXYERR_R_PROCESS_PROXY);
 	goto err;
     }
 
-    if (!X509_NAME_add_entry(name,ne,X509_NAME_entry_count(name),fix_add_entry_asn1_set_param)) {
+    if (!X509_NAME_add_entry(name,
+			     ne,
+			     X509_NAME_entry_count(name),
+			     fix_add_entry_asn1_set_param))
+    {
 	PRXYerr(PRXYERR_F_PROXY_SIGN,PRXYERR_R_PROCESS_PROXY);
 	goto err;
     }
+    
     X509_NAME_ENTRY_free(ne);
     ne = NULL;
 
-    if (function == 0) {
-	if (X509_NAME_cmp_no_set(name,req->req_info->subject)) {
+    if (function == 0)
+    {
+	if (X509_NAME_cmp_no_set(name,req->req_info->subject))
+	{
 	    PRXYerr(PRXYERR_F_PROXY_SIGN,PRXYERR_R_PROXY_NAME_BAD);
 	    goto err;
 	}
@@ -890,67 +1035,90 @@ proxy_sign_ext(int function,
 	 * change the last entry to "limited proxy". 
 	 */
 
-	if (limit_proxy) {
-	    if (!X509_NAME_delete_entry(name,X509_NAME_entry_count(name)-1)) {
+	if (limit_proxy)
+	{
+	    if (!X509_NAME_delete_entry(name,X509_NAME_entry_count(name)-1))
+	    {
 		PRXYerr(PRXYERR_F_PROXY_SIGN,PRXYERR_R_PROCESS_PROXY);
 		goto err;
 	    }
                 
-	    if ((ne=X509_NAME_ENTRY_create_by_NID(NULL,NID_commonName,
-						  V_ASN1_APP_CHOOSE,(unsigned char *)"limited proxy",-1))
-		== NULL) {
+	    if ((ne = X509_NAME_ENTRY_create_by_NID(NULL,
+						    NID_commonName,
+						    V_ASN1_APP_CHOOSE,
+						    (unsigned char *)
+						    "limited proxy",
+						    -1)) == NULL)
+	    {
 		PRXYerr(PRXYERR_F_PROXY_SIGN,PRXYERR_R_PROCESS_PROXY);
 		goto err;
 	    }
 
-	    if (!X509_NAME_add_entry(name,ne,X509_NAME_entry_count(name),fix_add_entry_asn1_set_param)) {
+	    if (!X509_NAME_add_entry(name,
+				     ne,
+				     X509_NAME_entry_count(name),
+				     fix_add_entry_asn1_set_param))
+	    {
 		PRXYerr(PRXYERR_F_PROXY_SIGN,PRXYERR_R_PROCESS_PROXY);
 		goto err;
 	    }
+	    
 	    X509_NAME_ENTRY_free(ne);
 	    ne = NULL;
 	}
     }
 
-    if ((ncert=X509_new()) == NULL) {
+    if ((ncert = X509_new()) == NULL)
+    {
 	PRXYerr(PRXYERR_F_PROXY_SIGN,PRXYERR_R_PROCESS_PROXY);
 	goto err;
     }
 
-    nci=ncert->cert_info;
+    nci = ncert->cert_info;
 
-    if(!X509_set_subject_name(ncert,name)) {
+    if(!X509_set_subject_name(ncert,name))
+    {
 	PRXYerr(PRXYERR_F_PROXY_SIGN,PRXYERR_R_PROCESS_PROXY);
 	goto err;
     }
+
     X509_NAME_free(name);
-    name=NULL;
+    name = NULL;
 
     /* DEE? will use same serial number, this may help
      * with revocations, or may cause problems.
      */
     if (!ASN1_INTEGER_set(X509_get_serialNumber(ncert),
-			  serial? serial:ASN1_INTEGER_get(X509_get_serialNumber(ucert)))) {
+			  serial? serial:
+			  ASN1_INTEGER_get(X509_get_serialNumber(ucert))))
+    {
 	PRXYerr(PRXYERR_F_PROXY_SIGN,PRXYERR_R_PROCESS_PROXY);
 	goto err;
     }
 
-    if (function == 0) {
+    if (function == 0)
+    {
 	name = X509_NAME_dup(X509_get_subject_name(ucert));
-    } else {
+    }
+    else
+    {
 	name = X509_NAME_dup(X509_get_issuer_name(ucert));
     }
-    if (name == NULL) {
+    
+    if (name == NULL)
+    {
 	PRXYerr(PRXYERR_F_PROXY_SIGN,PRXYERR_R_PROCESS_PROXY);
 	goto err;
     }
 
-    if (!X509_set_issuer_name(ncert,name)) {
+    if (!X509_set_issuer_name(ncert,name))
+    {
 	PRXYerr(PRXYERR_F_PROXY_SIGN,PRXYERR_R_PROCESS_PROXY);
 	goto err;
     }
+    
     X509_NAME_free(name);
-    name=NULL;
+    name = NULL;
 
     /* Allow for a five minute clock skew here. */
  
@@ -960,25 +1128,31 @@ proxy_sign_ext(int function,
      * hours or the ucert notAfter
      * for now use seconds if not zero. 
      */
-    if (seconds) {
+    
+    if (seconds)
+    {
 	X509_gmtime_adj(X509_get_notAfter(ncert),(long)seconds);
-    } else {
+    }
+    else
+    {
 	X509_set_notAfter(ncert, uci->validity->notAfter);
     }
 
     /* transfer the public key from req to new cert */
     /* DEE? should this be a dup? */
     X509_PUBKEY_free(nci->key);
-    nci->key=req->req_info->pubkey;
-    req->req_info->pubkey=NULL;
+    nci->key = req->req_info->pubkey;
+    req->req_info->pubkey = NULL;
 
     /*
      * We can now add additional extentions here
      * such as to control the usage of the cert
      */
 
-    if (nci->version == NULL) {
-	if ((nci->version=ASN1_INTEGER_new()) == NULL) {
+    if (nci->version == NULL)
+    {
+	if ((nci->version = ASN1_INTEGER_new()) == NULL)
+	{
 	    PRXYerr(PRXYERR_F_PROXY_SIGN,PRXYERR_R_PROCESS_PROXY);
 	    goto err;
 	}
@@ -988,26 +1162,30 @@ proxy_sign_ext(int function,
     /* Free the current entries if any, there should not
      * be any I belive 
      */
-    if (nci->extensions != NULL) {
+    if (nci->extensions != NULL)
+    {
 	sk_X509_EXTENSION_pop_free(nci->extensions,X509_EXTENSION_free);
     }
         
     /* Add extensions provuded by the client */
 
-    if (cextensions) {
+    if (cextensions)
+    {
 
 #ifdef  DEBUG
         fprintf(stderr,"adding %d client extensions\n",
 		sk_X509_EXTENSION_num(cextensions));
 #endif
-	if ((nci->extensions=sk_X509_EXTENSION_new_null()) == NULL) {
+	if ((nci->extensions = sk_X509_EXTENSION_new_null()) == NULL)
+	{
 	    PRXYerr(PRXYERR_F_PROXY_SIGN,PRXYERR_R_DELEGATE_COPY);
 	}
 
 	/* Lets 'copy' the client extensions to the new proxy */
 	/* we should look at the type, and only copy some */
 
-	for (i=0; i<sk_X509_EXTENSION_num(cextensions); i++) {
+	for (i=0; i<sk_X509_EXTENSION_num(cextensions); i++)
+	{
 	    copy_ext = 1;
 	    ex = sk_X509_EXTENSION_value(cextensions,i);
 	    nid = OBJ_obj2nid(X509_EXTENSION_get_object(ex));
@@ -1018,14 +1196,17 @@ proxy_sign_ext(int function,
 		copy_ext = 1;
 	    }
                         
-	    if (copy_ext) {
-		ex2=X509_EXTENSION_dup(ex);
-		if (ex2 == NULL) {
+	    if (copy_ext)
+	    {
+		ex2 = X509_EXTENSION_dup(ex);
+		if (ex2 == NULL)
+		{
 		    PRXYerr(PRXYERR_F_PROXY_SIGN,PRXYERR_R_DELEGATE_COPY);
 		    goto err;
 		}
                 
-		if (!sk_X509_EXTENSION_push(nci->extensions, ex2)) {
+		if (!sk_X509_EXTENSION_push(nci->extensions, ex2))
+		{
 		    PRXYerr(PRXYERR_F_PROXY_SIGN,PRXYERR_R_DELEGATE_COPY);
 		    goto err;
 		}
@@ -1040,14 +1221,16 @@ proxy_sign_ext(int function,
      * it is adding from the key to be used to sign to the 
      * new certificate any info DSA may need
      */
-    pktmp=X509_get_pubkey(ncert);
+    pktmp = X509_get_pubkey(ncert);
     if (EVP_PKEY_missing_parameters(pktmp) &&
-	!EVP_PKEY_missing_parameters(upkey)) {
+	!EVP_PKEY_missing_parameters(upkey))
+    {
 	EVP_PKEY_copy_parameters(pktmp,upkey);
     }
 #endif
 
-    if (!X509_sign(ncert,upkey,method)) {
+    if (!X509_sign(ncert,upkey,method))
+    {
 	PRXYerr(PRXYERR_F_PROXY_SIGN,PRXYERR_R_PROCESS_SIGNC);
 	goto err;
     }
@@ -1059,11 +1242,14 @@ proxy_sign_ext(int function,
     *ncertp = ncert;
     return 0;
 
-  err:
-    if (name) {
+ err:
+    if (name)
+    {
 	X509_NAME_free(name);
     }
-    if (ne) {
+
+    if (ne)
+    {
 	X509_NAME_ENTRY_free(ne);
     }
 
@@ -1082,26 +1268,27 @@ Parameters:
 Returns:
 **********************************************************************/
 int
-proxy_marshal_tmp(X509 *ncert,
-		  EVP_PKEY *npkey,
-		  X509 *ucert,
-		  STACK_OF(X509) *cert_chain,
-		  char ** crednamep)
+proxy_marshal_tmp(
+    X509 *                              ncert,
+    EVP_PKEY *                          npkey,
+    X509 *                              ucert,
+    STACK_OF(X509) *                    cert_chain,
+    char **                             crednamep)
 {
-    struct stat stx;
-    char filename[L_tmpnam+256];
-    char tmpfname[L_tmpnam];
-    char *tfp;
-    char *envstr;
-    int i;
-    int rc;
-    FILE *fp;
-    BIO *bp;
+    struct stat                         stx;
+    char                                filename[L_tmpnam+256];
+    char                                tmpfname[L_tmpnam];
+    char *                              tfp;
+    char *                              envstr;
+    int                                 i = 0;
+    int                                 rc;
+    FILE *                              fp;
+    BIO *                               bp;
 
 #ifdef DEBUG
     fprintf(stderr,"proxy_marshal_tmp\n");
 #endif
-    i=0;
+
     /*
      * use the unique part of the Posix, ANSI C tmpnam 
      * as part of our file name for thread safty. 
@@ -1109,22 +1296,29 @@ proxy_marshal_tmp(X509 *ncert,
      */
     tfp = tmpnam(tmpfname);
     tfp = strrchr(tfp,'/');
-    tfp ++;
-    do {
+    tfp++;
+
+    do
+    {
 	sprintf(filename,"%s%s%s%d.%s.%d",
 		DEFAULT_SECURE_TMP_DIR,
 		FILE_SEPERATOR,
 		X509_USER_DELEG_FILE,
-		getpid(),tfp,i++);
-    } while(stat(filename,&stx) == 0);
+		getpid(),
+		tfp,
+		i++);
+    }
+    while(stat(filename,&stx) == 0);
 
-    if ((fp = fopen(filename,"w")) == NULL) {
+    if ((fp = fopen(filename,"w")) == NULL)
+    {
 	PRXYerr(PRXYERR_F_PROXY_TMP,PRXYERR_R_PROBLEM_PROXY_FILE);
 	return 1;
     }
 
     if ((envstr = (char *)malloc(strlen(X509_USER_DELEG_PROXY) +
-				 strlen(filename) + 2)) == NULL) {
+				 strlen(filename) + 2)) == NULL)
+    {
 	PRXYerr(PRXYERR_F_PROXY_TMP,ERR_R_MALLOC_FAILURE);
 	return 1;
     }
@@ -1132,12 +1326,15 @@ proxy_marshal_tmp(X509 *ncert,
     strcat(envstr,"=");
     strcat(envstr,filename);
 
-    if (crednamep) {
+    if (crednamep)
+    {
 	*crednamep = envstr;
 #ifdef DEBUG
 	fprintf(stderr,"Using filename %s\n",filename);
 #endif
-    } else {
+    }
+    else
+    {
 #ifdef DEBUG
 	fprintf(stderr,"Setting ENV %s\n",envstr);
 #endif
@@ -1145,7 +1342,8 @@ proxy_marshal_tmp(X509 *ncert,
     }
 
 #ifndef WIN32
-    if (chmod(filename,0600) != 0) {
+    if (chmod(filename,0600) != 0)
+    {
 	PRXYerr(PRXYERR_F_PROXY_TMP,PRXYERR_R_PROBLEM_PROXY_FILE);
 	return 2;
     }
@@ -1155,7 +1353,8 @@ proxy_marshal_tmp(X509 *ncert,
     BIO_set_fp(bp,fp,BIO_NOCLOSE);
     rc = proxy_marshal_bp(bp,ncert,npkey,ucert,cert_chain);
     BIO_free(bp);
-    if (fp != stdout) {
+    if (fp != stdout)
+    {
 	fclose(fp);
     }
 
@@ -1174,14 +1373,15 @@ Parameters:
 Returns:
 **********************************************************************/
 int
-proxy_marshal_bp(BIO *bp,
-		 X509 *ncert,
-		 EVP_PKEY *npkey,
-		 X509 *ucert,
-		 STACK_OF(X509) *cert_chain)
+proxy_marshal_bp(
+    BIO *                               bp,
+    X509 *                              ncert,
+    EVP_PKEY *                          npkey,
+    X509 *                              ucert,
+    STACK_OF(X509) *                    cert_chain)
 {
-    int i;
-    X509 *cert;
+    int                                 i;
+    X509 *                              cert;
 
 #ifdef DEBUG2
     fprintf(stderr,"proxy_marsh_bp:\n");
@@ -1189,37 +1389,46 @@ proxy_marshal_bp(BIO *bp,
 
 #ifdef DEBUG
     {
-	char *s;
+	char * s;
 	s = X509_NAME_oneline(X509_get_subject_name(ncert),NULL,0);
 	fprintf(stderr,"  ncert:%s\n",s);
 	free(s);
     }
 #endif
 
-    if (!PEM_write_bio_X509(bp,ncert)) {
+    if (!PEM_write_bio_X509(bp,ncert))
+    {
 	return 1;
     }
 
-    if (!PEM_write_bio_RSAPrivateKey(bp,npkey->pkey.rsa,
-				     NULL,NULL,0,OPENSSL_PEM_CB(NULL,NULL))) {
+    if (!PEM_write_bio_RSAPrivateKey(bp,
+				     npkey->pkey.rsa,
+				     NULL,
+				     NULL,
+				     0,
+				     OPENSSL_PEM_CB(NULL,NULL)))
+    {
 	return 2;
     }
 
-    if (ucert) {
+    if (ucert)
+    {
 #ifdef DEBUG
 	{
-	    char *s;
+	    char * s;
 	    s = X509_NAME_oneline(X509_get_subject_name(ucert),NULL,0);
 	    fprintf(stderr,"  ucert:%s\n",s);
 	    free(s);
 	}
 #endif
-	if (!PEM_write_bio_X509(bp,ucert)) {
+	if (!PEM_write_bio_X509(bp,ucert))
+	{
 	    return 3;
 	}
     }
 
-    if (cert_chain) {
+    if (cert_chain)
+    {
                         
 #ifdef DEBUG
 	fprintf(stderr,"proxy_marshal cert_chain:%d\n",
@@ -1230,24 +1439,29 @@ proxy_marshal_bp(BIO *bp,
 	 * proxy cert, or any self signed certs
 	 */
 
-	for(i=sk_X509_num(cert_chain)-1;i>=0;i--) {
-	    cert= sk_X509_value(cert_chain,i);
+	for(i=sk_X509_num(cert_chain)-1;i>=0;i--)
+	{
+	    cert = sk_X509_value(cert_chain,i);
 	    if (!(!X509_NAME_cmp_no_set(X509_get_subject_name(cert),
 					X509_get_subject_name(ncert)) 
-		  || (ucert && !X509_NAME_cmp_no_set(X509_get_subject_name(cert),
-						     X509_get_subject_name(ucert)))  
+		  || (ucert &&
+		      !X509_NAME_cmp_no_set(X509_get_subject_name(cert),
+					    X509_get_subject_name(ucert)))  
 		  || !X509_NAME_cmp_no_set(X509_get_subject_name(cert),
-					   X509_get_issuer_name(cert)))) {
+					   X509_get_issuer_name(cert))))
+	    {
 #ifdef DEBUG
 		{
-		    char *s;
+		    char * s;
 		    s = X509_NAME_oneline(X509_get_subject_name(cert),
-					  NULL,0);
+					  NULL,
+					  0);
 		    fprintf(stderr,"  cert:%s\n",s);
 		    free(s);
 		}
 #endif
-		if (!PEM_write_bio_X509(bp,cert)) {
+		if (!PEM_write_bio_X509(bp,cert))
+		{
 		    return 4;
 		}
 	    }
@@ -1268,10 +1482,12 @@ Returns:
 **********************************************************************/
 
 void 
-proxy_verify_init(proxy_verify_desc * pvd, proxy_verify_ctx_desc *pvxd)
+proxy_verify_init(
+    proxy_verify_desc *                 pvd,
+    proxy_verify_ctx_desc *             pvxd)
 {
 
-    pvd->magicnum=PVD_MAGIC_NUMBER; /* used for debuging */
+    pvd->magicnum = PVD_MAGIC_NUMBER; /* used for debuging */
     pvd->flags = 0;
     pvd->previous = NULL;
     pvd->pvxd = pvxd;
@@ -1292,10 +1508,11 @@ Returns:
 **********************************************************************/
 
 void 
-proxy_verify_ctx_init(proxy_verify_ctx_desc * pvxd)
+proxy_verify_ctx_init(
+    proxy_verify_ctx_desc *             pvxd)
 {
 
-    pvxd->magicnum=PVXD_MAGIC_NUMBER; /* used for debuging */
+    pvxd->magicnum = PVXD_MAGIC_NUMBER; /* used for debuging */
     pvxd->certdir = NULL;
     pvxd->goodtill = 0;
 
@@ -1311,10 +1528,11 @@ Returns:
 **********************************************************************/
 
 void 
-proxy_verify_release(proxy_verify_desc * pvd)
+proxy_verify_release(
+    proxy_verify_desc *                 pvd)
 {
-
-    if (pvd->cert_chain) {
+    if (pvd->cert_chain)
+    {
 	sk_X509_pop_free(pvd->cert_chain,X509_free);
     }
     pvd->cert_chain = NULL;
@@ -1332,10 +1550,11 @@ Returns:
 **********************************************************************/
 
 void 
-proxy_verify_ctx_release(proxy_verify_ctx_desc * pvxd)
+proxy_verify_ctx_release(
+    proxy_verify_ctx_desc *             pvxd)
 {
-
-    if (pvxd->certdir) {
+    if (pvxd->certdir)
+    {
 	free(pvxd->certdir);
 	pvxd->certdir = NULL;
     }
@@ -1357,7 +1576,8 @@ Returns:
 **********************************************************************/
 
 static int 
-proxy_app_verify_callback(X509_STORE_CTX *ctx)
+proxy_app_verify_callback(
+    X509_STORE_CTX *                    ctx)
 {
         
 #ifdef DEBUG
@@ -1400,28 +1620,34 @@ Returns:
 
 *********************************************************************/
 
-proxy_check_proxy_name(X509 * cert)
+proxy_check_proxy_name(
+    X509 *                              cert)
 {
-    int  ret = 0;
-    X509_NAME * subject;
-    X509_NAME * issuer;
-    X509_NAME *name = NULL;
-    X509_NAME_ENTRY *ne = NULL;
-    ASN1_STRING *data;
+    int                                 ret = 0;
+    X509_NAME *                         subject;
+    X509_NAME *                         issuer;
+    X509_NAME *                         name = NULL;
+    X509_NAME_ENTRY *                   ne = NULL;
+    ASN1_STRING *                       data;
 
 
-    subject=X509_get_subject_name(cert);
-    ne=X509_NAME_get_entry(subject, X509_NAME_entry_count(subject)-1);
-    if (!OBJ_cmp(ne->object,OBJ_nid2obj(NID_commonName))) {
-	data=X509_NAME_ENTRY_get_data(ne);
+    subject = X509_get_subject_name(cert);
+    ne = X509_NAME_get_entry(subject, X509_NAME_entry_count(subject)-1);
+    if (!OBJ_cmp(ne->object,OBJ_nid2obj(NID_commonName)))
+    {
+	data = X509_NAME_ENTRY_get_data(ne);
 	if ((data->length == 5 && 
 	     !memcmp(data->data,"proxy",5)) || 
 	    (data->length == 13 && 
-	     !memcmp(data->data,"limited proxy",13))) {
+	     !memcmp(data->data,"limited proxy",13)))
+	{
         
-	    if (data->length == 13) {
+	    if (data->length == 13)
+	    {
 		ret = 2; /* its a limited proxy */
-	    } else {
+	    }
+	    else
+	    {
 		ret = 1; /* its a proxy */
 	    }
 #ifdef DEBUG
@@ -1437,18 +1663,22 @@ proxy_check_proxy_name(X509 * cert)
 
 	    /* DEE? needs some more err processing here */
 
-	    name=X509_NAME_dup(X509_get_issuer_name(cert));
-	    ne=X509_NAME_ENTRY_create_by_NID(NULL,NID_commonName,
-					     V_ASN1_APP_CHOOSE,
-					     (ret == 2) ?
-					     (unsigned char *)"limited proxy" :
-					     (unsigned char *)"proxy",
-					     -1);
+	    name = X509_NAME_dup(X509_get_issuer_name(cert));
+	    ne = X509_NAME_ENTRY_create_by_NID(NULL,
+					       NID_commonName,
+					       V_ASN1_APP_CHOOSE,
+					       (ret == 2) ?
+					       (unsigned char *)
+					       "limited proxy" :
+					       (unsigned char *)"proxy",
+					       -1);
 
 	    X509_NAME_add_entry(name,ne,X509_NAME_entry_count(name),0);
 	    X509_NAME_ENTRY_free(ne);
-	    ne=NULL;
-	    if (X509_NAME_cmp_no_set(name,subject)) {
+	    ne = NULL;
+
+	    if (X509_NAME_cmp_no_set(name,subject))
+	    {
 		/*
 		 * Reject this certificate, only the user
 		 * may sign the proxy
@@ -1479,16 +1709,21 @@ Returns:
 **********************************************************************/
 
 int 
-proxy_check_issued(X509_STORE_CTX *ctx, X509 *x, X509 *issuer)
+proxy_check_issued(
+    X509_STORE_CTX *                    ctx,
+    X509 *                              x,
+    X509 *                              issuer)
 {
-    int ret;
-    int ret_code = 1;
+    int                                 ret;
+    int                                 ret_code = 1;
         
     ret = X509_check_issued(issuer, x);
-    if (ret != X509_V_OK) {
+    if (ret != X509_V_OK)
+    {
 	ret_code = 0;
-	switch (ret) {
-	  case X509_V_ERR_AKID_SKID_MISMATCH:
+	switch (ret)
+	{
+	case X509_V_ERR_AKID_SKID_MISMATCH:
 	    /* 
 	     * If the proxy was created with a previous version of Globus
 	     * where the extensions where copied from the user certificate
@@ -1498,18 +1733,19 @@ proxy_check_issued(X509_STORE_CTX *ctx, X509 *x, X509 *issuer)
 	     * At which time we may want to add the akid extension to the proxy.
 	     */
 
-	  case X509_V_ERR_KEYUSAGE_NO_CERTSIGN:
+	case X509_V_ERR_KEYUSAGE_NO_CERTSIGN:
 	    /*
 	     * If this is a proxy certificate then the issuer
 	     * does not need to have the key_usage set.
 	     * So check if its a proxy, and ignore
 	     * the error if so. 
 	     */
-	    if (proxy_check_proxy_name(x) >= 1) {
+	    if (proxy_check_proxy_name(x) >= 1)
+	    {
 		ret_code = 1;
 	    }
 	    break;
-	  default:
+	default:
 	    break;
 	}
     }
@@ -1548,22 +1784,25 @@ Returns:
 **********************************************************************/
 
 int 
-proxy_verify_callback(int ok, X509_STORE_CTX * ctx)
+proxy_verify_callback(
+    int                                 ok,
+    X509_STORE_CTX *                    ctx)
 {
-    X509_OBJECT obj;
-    X509_CRL *crl;
-    X509_CRL_INFO * crl_info;
-    X509_REVOKED * revoked;
-    char *s = NULL;
-    SSL *ssl = NULL;
-    proxy_verify_desc *pvd;
-    int     itsaproxy = 0;
-    int i,n;
-    int ret;
-    time_t  goodtill;
-    char *ca_policy_file_path = NULL;
-    char *cert_dir            = NULL;
-    char *ca_policy_filename  = "ca-signing-policy.conf";
+    X509_OBJECT                         obj;
+    X509_CRL *                          crl;
+    X509_CRL_INFO *                     crl_info;
+    X509_REVOKED *                      revoked;
+    char *                              s = NULL;
+    SSL *                               ssl = NULL;
+    proxy_verify_desc *                 pvd;
+    int                                 itsaproxy = 0;
+    int                                 i;
+    int                                 n;
+    int                                 ret;
+    time_t                              goodtill;
+    char *                              ca_policy_file_path = NULL;
+    char *                              cert_dir            = NULL;
+    char *                              ca_policy_filename  = "ca-signing-policy.conf";
 
     /*
      * If we are being called recursivly to check delegate
@@ -1577,12 +1816,16 @@ proxy_verify_callback(int ok, X509_STORE_CTX * ctx)
 #ifdef DEBUG
     fprintf(stderr,"\nproxy_verify_callback\n");
 #endif
-    if ((pvd = (proxy_verify_desc *)X509_STORE_CTX_get_ex_data(ctx,
-							       PVD_STORE_EX_DATA_IDX))) {
+    if ((pvd = (proxy_verify_desc *)
+	 X509_STORE_CTX_get_ex_data(ctx,
+				    PVD_STORE_EX_DATA_IDX)))
+    {
 #ifdef DEBUG
         fprintf(stderr,"Called with alternate ex_data\n");
 #endif
-    } else {
+    }
+    else
+    {
 	ssl = (SSL *)X509_STORE_CTX_get_app_data(ctx);
 	pvd = (proxy_verify_desc *)SSL_get_ex_data(ssl,
 						   PVD_SSL_EX_DATA_IDX);
@@ -1596,7 +1839,8 @@ proxy_verify_callback(int ok, X509_STORE_CTX * ctx)
      * how the callback and app_data are handled
      */
 
-    if(pvd->magicnum != PVD_MAGIC_NUMBER) {
+    if(pvd->magicnum != PVD_MAGIC_NUMBER)
+    {
 	PRXYerr(PRXYERR_F_VERIFY_CB,ERR_R_FATAL);
 	return(0);
     }
@@ -1604,18 +1848,24 @@ proxy_verify_callback(int ok, X509_STORE_CTX * ctx)
 #ifdef DEBUG
     fprintf(stderr," magicnum=%d,OK=%d\n",
 	    pvd->magicnum, ok);
-    s=X509_NAME_oneline(X509_get_subject_name(ctx->current_cert),NULL,0);
-    if (ok) {
+    s = X509_NAME_oneline(X509_get_subject_name(ctx->current_cert),NULL,0);
+    
+    if (ok)
+    {
 	fprintf(stderr,"ctx->error_depth=%d %s\n",ctx->error_depth,
 		s?s:"no-subject");
-    } else {
+    }
+    else
+    {
 	fprintf(stderr,"ctx->error_depth=%d error=%d %s\n",
 		ctx->error_depth,ctx->error,s?s:"no-subject");
     }
-    if (s) {
+    
+    if (s)
+    {
 	free(s);
     }
-    s=NULL;
+    s = NULL;
     fprintf(stderr,"pvd->proxy_depth=%d, pvd->cert_depth=%d\n",
 	    pvd->proxy_depth, pvd->cert_depth);
 #endif
@@ -1625,10 +1875,12 @@ proxy_verify_callback(int ok, X509_STORE_CTX * ctx)
      * can be disregarded. 
      */
         
-    if (!ok) {
-	switch (ctx->error) {
+    if (!ok)
+    {
+	switch (ctx->error)
+	{
 #if SSLEAY_VERSION_NUMBER >=  0x0090581fL
-	  case X509_V_ERR_PATH_LENGTH_EXCEEDED:
+	case X509_V_ERR_PATH_LENGTH_EXCEEDED:
 #ifdef DEBUG
 	    fprintf(stderr,"X509_V_ERR_PATH_LENGTH_EXCEEDED\n");
 #endif
@@ -1639,16 +1891,18 @@ proxy_verify_callback(int ok, X509_STORE_CTX * ctx)
 	     * but it may check for it anyway.
 	     */
 
-	    if (!(ctx->current_cert->ex_flags & EXFLAG_BCONS)) {
-		ok=1;
+	    if (!(ctx->current_cert->ex_flags & EXFLAG_BCONS))
+	    {
+		ok = 1;
 	    }
 	    break;
 #endif
-	  default:
+	default:
 	    break;
 	}                       
 	/* if already failed, skip the rest, but add error messages */
-	if (!ok) {
+	if (!ok)
+	{
 	    goto fail_verify;
 	}
 #ifdef DEBUG
@@ -1671,13 +1925,16 @@ proxy_verify_callback(int ok, X509_STORE_CTX * ctx)
      */
         
     ret = proxy_check_proxy_name(ctx->current_cert);
-    if (ret < 0) {
+    if (ret < 0)
+    {
 	PRXYerr(PRXYERR_F_VERIFY_CB,PRXYERR_R_BAD_PROXY_ISSUER);
-	ctx->error=X509_V_ERR_CERT_SIGNATURE_FAILURE;
+	ctx->error = X509_V_ERR_CERT_SIGNATURE_FAILURE;
 	goto fail_verify;
     }
-    if (ret > 0) {  /* Its a proxy */
-	if (ret == 2) {
+    if (ret > 0)
+    {  /* Its a proxy */
+	if (ret == 2)
+	{
 	    /*
 	     * If its a limited proxy, it means it use has been limited 
 	     * during delegation. It can not sign other certs i.e.  
@@ -1696,12 +1953,13 @@ proxy_verify_callback(int ok, X509_STORE_CTX * ctx)
 
 	    pvd->limited_proxy = 1; /* its a limited proxy */
 
-	    if (ctx->error_depth)  {
+	    if (ctx->error_depth)
+	    {
 		/* tried to sign a cert with a limited proxy */
 		/* i.e. there is still another cert on the chain */
 		/* indicating we are trying to sign it! */
 		PRXYerr(PRXYERR_F_VERIFY_CB,PRXYERR_R_LPROXY_MISSED_USED);
-		ctx->error=X509_V_ERR_CERT_SIGNATURE_FAILURE;
+		ctx->error = X509_V_ERR_CERT_SIGNATURE_FAILURE;
 		goto fail_verify;
 	    }
 	}
@@ -1713,7 +1971,8 @@ proxy_verify_callback(int ok, X509_STORE_CTX * ctx)
 	itsaproxy = 1;
     }
 
-    if (!itsaproxy) {
+    if (!itsaproxy)
+    {
                         
 #ifdef X509_V_ERR_CERT_REVOKED
 	/* 
@@ -1734,14 +1993,17 @@ proxy_verify_callback(int ok, X509_STORE_CTX * ctx)
 	 * this allows the CA to revoke its own cert as well. 
 	 */
         
-	if (X509_STORE_get_by_subject(ctx, X509_LU_CRL, 
-				      X509_get_subject_name(ctx->current_cert),&obj)) {
+	if (X509_STORE_get_by_subject(ctx,
+				      X509_LU_CRL, 
+				      X509_get_subject_name(ctx->current_cert),
+				      &obj))
+	{
 	    crl =  obj.data.crl;
 	    crl_info = crl->crl;
 #ifdef DEBUG
 	    {
-		BIO *bp;
-		bp=BIO_new_fp(stderr,BIO_NOCLOSE);
+		BIO * bp;
+		bp = BIO_new_fp(stderr,BIO_NOCLOSE);
                                 
 		fprintf(stderr,"CRL last Update: ");
 		ASN1_UTCTIME_print(bp, crl_info->lastUpdate);
@@ -1754,23 +2016,27 @@ proxy_verify_callback(int ok, X509_STORE_CTX * ctx)
 	    /* verify the signature on this CRL */
 
 	    if (X509_CRL_verify(crl,
-				X509_get_pubkey(ctx->current_cert)) <= 0) {
+				X509_get_pubkey(ctx->current_cert)) <= 0)
+	    {
 		PRXYerr(PRXYERR_F_VERIFY_CB,PRXYERR_R_CRL_SIGNATURE_FAILURE);
-		ctx->error=X509_V_ERR_CRL_SIGNATURE_FAILURE;
+		ctx->error = X509_V_ERR_CRL_SIGNATURE_FAILURE;
 		goto fail_verify;
 	    }
 
 	    /* Check date see if expired */
 
-	    i=X509_cmp_current_time(crl_info->nextUpdate);
-	    if (i == 0) {
+	    i = X509_cmp_current_time(crl_info->nextUpdate);
+	    if (i == 0)
+	    {
 		PRXYerr(PRXYERR_F_VERIFY_CB,PRXYERR_R_CRL_NEXT_UPDATE_FIELD);
-		ctx->error=X509_V_ERR_ERROR_IN_CRL_NEXT_UPDATE_FIELD;
+		ctx->error = X509_V_ERR_ERROR_IN_CRL_NEXT_UPDATE_FIELD;
 		goto fail_verify;
 	    }
-	    if (i < 0) {
+	    
+	    if (i < 0)
+	    {
 		PRXYerr(PRXYERR_F_VERIFY_CB,PRXYERR_R_CRL_HAS_EXPIRED);
-		ctx->error=X509_V_ERR_CRL_HAS_EXPIRED;
+		ctx->error = X509_V_ERR_CRL_HAS_EXPIRED;
 		goto fail_verify;
 	    }
 	}
@@ -1778,39 +2044,44 @@ proxy_verify_callback(int ok, X509_STORE_CTX * ctx)
 	/* now check if the issuer has a CRL, and we are revoked */
 
 	if (X509_STORE_get_by_subject(ctx, X509_LU_CRL, 
-				      X509_get_issuer_name(ctx->current_cert),&obj)) {
-	    crl=obj.data.crl;
-	    crl_info=crl->crl;
+				      X509_get_issuer_name(ctx->current_cert),
+				      &obj))
+	{
+	    crl = obj.data.crl;
+	    crl_info = crl->crl;
 #ifdef DEBUG
 	    fprintf(stderr,"Checking  CRL\n");
 #endif
 	    /* check if this cert is revoked */
 
-	    n=sk_X509_REVOKED_num(crl_info->revoked);
-	    for (i=0; i<n; i++) {
-		revoked = (X509_REVOKED *)sk_X509_REVOKED_value(crl_info->revoked,i);
+	    n = sk_X509_REVOKED_num(crl_info->revoked);
+	    for (i=0; i<n; i++)
+	    {
+		revoked = (X509_REVOKED *)sk_X509_REVOKED_value(
+		    crl_info->revoked,i);
 
 		if(!ASN1_INTEGER_cmp(revoked->serialNumber,
-				     X509_get_serialNumber(ctx->current_cert))) {
+				     X509_get_serialNumber(ctx->current_cert)))
+		{
 		    long serial;
 		    char buf[256];
 		    PRXYerr(PRXYERR_F_VERIFY_CB,PRXYERR_R_CERT_REVOKED);
 		    serial = ASN1_INTEGER_get(revoked->serialNumber);
 		    sprintf(buf,"%ld (0x%lX)",serial,serial);
 		    s = X509_NAME_oneline(X509_get_subject_name(
-					      ctx->current_cert),NULL,0);
-                                
+			ctx->current_cert),NULL,0);
+		    
 		    ERR_add_error_data(4,"Serial number = ",buf,
 				       " Subject=",s);
 
-		    ctx->error=X509_V_ERR_CERT_REVOKED;
+		    ctx->error = X509_V_ERR_CERT_REVOKED;
 #ifdef DEBUG
 		    fprintf(stderr,"revolked %lX\n",
 			    ASN1_INTEGER_get(revoked->serialNumber));
                                                 
 #endif
 		    free(s);
-		    s=NULL;
+		    s = NULL;
 		    goto fail_verify;
 		}
 	    }
@@ -1820,14 +2091,15 @@ proxy_verify_callback(int ok, X509_STORE_CTX * ctx)
         /* Do not need to check self signed certs against ca_policy_file */
 
         if (X509_NAME_cmp(X509_get_subject_name(ctx->current_cert),
-			  X509_get_issuer_name(ctx->current_cert))) {
-
-
-	    cert_dir = pvd->pvxd->certdir ? pvd->pvxd->certdir : getenv(X509_CERT_DIR);
+			  X509_get_issuer_name(ctx->current_cert)))
+	{
+	    cert_dir = pvd->pvxd->certdir ? pvd->pvxd->certdir :
+		getenv(X509_CERT_DIR);
 
 	    ca_policy_file_path =
-		get_ca_signing_policy_path(cert_dir,
-					   X509_get_issuer_name(ctx->current_cert));
+		get_ca_signing_policy_path(
+		    cert_dir,
+		    X509_get_issuer_name(ctx->current_cert));
                 
 	    if (ca_policy_file_path == NULL)
 	    {
@@ -1842,7 +2114,7 @@ proxy_verify_callback(int ok, X509_STORE_CTX * ctx)
 	    {
 		PRXYerr(PRXYERR_F_VERIFY_CB, PRXYERR_R_CA_POLICY_PARSE);
 		ERR_add_error_data(2,"File=",ca_policy_file_path);
-		ctx->error=X509_V_ERR_INVALID_PURPOSE;
+		ctx->error = X509_V_ERR_INVALID_PURPOSE;
 		goto fail_verify;
 	    }
 
@@ -1851,9 +2123,9 @@ proxy_verify_callback(int ok, X509_STORE_CTX * ctx)
 #endif /* DEBUG */
 
 	    {
-		char *error_string = NULL;
-		char *issuer_name;
-		char *subject_name;
+		char * error_string = NULL;
+		char * issuer_name;
+		char * subject_name;
 #ifndef NO_OLDGAA_API
 		oldgaa_rights_ptr            rights          = NULL;
 		oldgaa_policy_ptr            policy_handle   = NULL;
@@ -1862,17 +2134,21 @@ proxy_verify_callback(int ok, X509_STORE_CTX * ctx)
 		oldgaa_options_ptr           options         = NULL;
 		oldgaa_error_code            result;
 		oldgaa_data_ptr              policy_db       = OLDGAA_NO_DATA;
-		uint32                    minor_status;
+		uint32                       minor_status;
 #else /* Von's code */
 		int result;
 
 #endif /* #ifndef NO_OLDGAA_API */
 
 
-		subject_name = X509_NAME_oneline(X509_get_subject_name(ctx->current_cert),
-						 NULL, 0);
-		issuer_name = X509_NAME_oneline(X509_get_issuer_name(ctx->current_cert),
-						NULL, 0);
+		subject_name = X509_NAME_oneline(
+		    X509_get_subject_name(ctx->current_cert),
+		    NULL,
+		    0);
+		issuer_name = X509_NAME_oneline(
+		    X509_get_issuer_name(ctx->current_cert),
+		    NULL,
+		    0);
 
 #ifndef NO_OLDGAA_API
  
@@ -1883,29 +2159,32 @@ proxy_verify_callback(int ok, X509_STORE_CTX * ctx)
 					    issuer_name,
 					    subject_name,
 					    ca_policy_file_path  
-		   )!= OLDGAA_SUCCESS) 
+		    )!= OLDGAA_SUCCESS) 
 
 		{
 		    char buf[256];
 		    sprintf(buf,"Minor status=%d", policy_db->error_code);
 		    PRXYerr(PRXYERR_F_VERIFY_CB, PRXYERR_R_CA_POLICY_RETRIEVE);
-		    ERR_add_error_data(3,buf,"\n        ", policy_db->error_str);
+		    ERR_add_error_data(3,buf,"\n        ",
+				       policy_db->error_str);
 		    ctx->error=X509_V_ERR_INVALID_PURPOSE;
 		    goto fail_verify;
 		}
 
 
-		if(oldgaa_get_object_policy_info(&minor_status,  
-						 OLDGAA_NO_DATA,
-						 policy_db,
-						 oldgaa_globus_policy_retrieve,
-						 &policy_handle) != OLDGAA_SUCCESS)
+		if(oldgaa_get_object_policy_info(
+		    &minor_status,  
+		    OLDGAA_NO_DATA,
+		    policy_db,
+		    oldgaa_globus_policy_retrieve,
+		    &policy_handle) != OLDGAA_SUCCESS)
 		{
 		    char buf[256];
 		    sprintf(buf,"Minor status=%d", minor_status);
 		    PRXYerr(PRXYERR_F_VERIFY_CB, PRXYERR_R_CA_POLICY_PARSE);
-		    ERR_add_error_data(3,buf,"\n        ", policy_db->error_str);
-		    ctx->error=X509_V_ERR_INVALID_PURPOSE;
+		    ERR_add_error_data(3,buf,"\n        ",
+				       policy_db->error_str);
+		    ctx->error = X509_V_ERR_INVALID_PURPOSE;
 		    goto fail_verify;
 		}
 
@@ -1918,17 +2197,23 @@ proxy_verify_callback(int ok, X509_STORE_CTX * ctx)
 
                 
 #ifdef DEBUG
-		fprintf(stderr,"oldgaa result: %d(0 yes, 1 no, -1 maybe)\n", result);
+		fprintf(stderr,
+			"oldgaa result: %d(0 yes, 1 no, -1 maybe)\n",
+			result);
 		if(detailed_answer) 
 		{ 
 		    fprintf(stderr, "\nprint detailed answer:\n\n");
 #ifndef WIN32
-		    if(detailed_answer->rights) oldgaa_globus_print_rights(detailed_answer->rights);
+		    if(detailed_answer->rights)
+		    {
+			oldgaa_globus_print_rights(detailed_answer->rights);
+		    }
 #endif
 		}
 #endif
 
-		if (policy_handle) {
+		if (policy_handle)
+		{
 		    oldgaa_release_principals(&minor_status, &policy_handle);
 		}
 
@@ -1988,7 +2273,8 @@ proxy_verify_callback(int ok, X509_STORE_CTX * ctx)
      */
 
     goodtill = ASN1_UTCTIME_mktime(X509_get_notAfter(ctx->current_cert));
-    if (pvd->pvxd->goodtill == 0 || goodtill < pvd->pvxd->goodtill) {
+    if (pvd->pvxd->goodtill == 0 || goodtill < pvd->pvxd->goodtill)
+    {
 	pvd->pvxd->goodtill = goodtill;
     }
         
@@ -1997,9 +2283,11 @@ proxy_verify_callback(int ok, X509_STORE_CTX * ctx)
      * This is used to create a new proxy by delegation. 
      */
 
-    if (pvd->cert_chain == NULL) {
+    if (pvd->cert_chain == NULL)
+    {
 	pvd->cert_chain = sk_X509_new_null();
     }
+    
     sk_X509_push(pvd->cert_chain, X509_dup(ctx->current_cert));
 
     pvd->cert_depth++;
@@ -2013,19 +2301,20 @@ proxy_verify_callback(int ok, X509_STORE_CTX * ctx)
         
     return(ok);
 
-  fail_verify:
+ fail_verify:
     if (ca_policy_file_path != NULL)
     {
 	free(ca_policy_file_path);
     }
 
-    if (ctx->current_cert) {
+    if (ctx->current_cert)
+    {
 	char *subject_s = NULL;
 	char *issuer_s = NULL;
                 
-	subject_s=X509_NAME_oneline(
+	subject_s = X509_NAME_oneline(
 	    X509_get_subject_name(ctx->current_cert),NULL,0);
-	issuer_s=X509_NAME_oneline(
+	issuer_s = X509_NAME_oneline(
 	    X509_get_issuer_name(ctx->current_cert),NULL,0);
 
 	PRXYerr(PRXYERR_F_VERIFY_CB,PRXYERR_R_CB_CALLED_WITH_ERROR);
@@ -2055,45 +2344,56 @@ Returns:
 **********************************************************************/
 
 int
-proxy_verify_cert_chain( X509 *ucert,
-			 STACK_OF(X509) * cert_chain,
-			 proxy_verify_desc * pvd)
+proxy_verify_cert_chain(
+    X509 *                              ucert,
+    STACK_OF(X509) *                    cert_chain,
+    proxy_verify_desc *                 pvd)
 {
-    int i,j;
-    int retval = 0;
-    X509_STORE * cert_store = NULL;
-    X509_LOOKUP * lookup = NULL;
-    X509_STORE_CTX csc;
-    X509 * xcert = NULL;
-    X509 * scert = NULL;
+    int                                 i;
+    int	                                j;
+    int                                 retval = 0;
+    X509_STORE *                        cert_store = NULL;
+    X509_LOOKUP *                       lookup = NULL;
+    X509_STORE_CTX                      csc;
+    X509 *                              xcert = NULL;
+    X509 *                              scert = NULL;
 #ifdef DEBUG
     fprintf(stderr,"proxy_verify_cert_chain\n");
 #endif
     scert = ucert;
-    cert_store=X509_STORE_new();
+    cert_store = X509_STORE_new();
     X509_STORE_set_verify_cb_func(cert_store, proxy_verify_callback);
-    if (cert_chain != NULL) {
-	for (i=0;i<sk_X509_num(cert_chain);i++) {
+    if (cert_chain != NULL)
+    {
+	for (i=0;i<sk_X509_num(cert_chain);i++)
+	{
 	    xcert = sk_X509_value(cert_chain,i);
-	    if (!scert) {
+	    if (!scert)
+	    {
 		scert = xcert;
-	    } else {
+	    }
+	    else
+	    {
 #ifdef DEBUG
 		{
-		    char *s;
-		    s=X509_NAME_oneline(X509_get_subject_name(xcert),
+		    char * s;
+		    s = X509_NAME_oneline(X509_get_subject_name(xcert),
 					NULL,0);
 		    fprintf(stderr,"Adding %d %p %s\n",i,xcert,s);
 		    free(s);
 		}
 #endif
 		j = X509_STORE_add_cert(cert_store, xcert);
-		if (!j) {
+		if (!j)
+		{
 		    if ((ERR_GET_REASON(ERR_peek_error()) ==
-			 X509_R_CERT_ALREADY_IN_HASH_TABLE)) {
+			 X509_R_CERT_ALREADY_IN_HASH_TABLE))
+		    {
 			ERR_clear_error();
 			break;
-		    } else {
+		    }
+		    else
+		    {
                         /*DEE need errprhere */
 			goto err;
 		    }
@@ -2101,8 +2401,8 @@ proxy_verify_cert_chain( X509 *ucert,
 	    }
 	}
     }
-    if ((lookup=X509_STORE_add_lookup(cert_store,
-				      X509_LOOKUP_hash_dir())))
+    if ((lookup = X509_STORE_add_lookup(cert_store,
+					X509_LOOKUP_hash_dir())))
     {
 	X509_LOOKUP_add_dir(lookup,pvd->pvxd->certdir,X509_FILETYPE_PEM);
 	X509_STORE_CTX_init(&csc,cert_store,scert,NULL);
@@ -2114,13 +2414,14 @@ proxy_verify_cert_chain( X509 *ucert,
 	X509_STORE_CTX_set_ex_data(&csc,
 				   PVD_STORE_EX_DATA_IDX, (void *)pvd);
                  
-	if(!X509_verify_cert(&csc)) {
+	if(!X509_verify_cert(&csc))
+	{
 	    goto err;
 	}
     } 
     retval = 1;
 
-  err:
+ err:
     return retval;
 }
 #endif /* NO_PROXY_VERIFY_CALLBACK */
@@ -2138,31 +2439,39 @@ Returns:
 **********************************************************************/
 
 int
-proxy_get_base_name(X509_NAME *subject)
+proxy_get_base_name(
+    X509_NAME *                        subject)
 {
-    X509_NAME_ENTRY *ne;
-    ASN1_STRING *data;
+    X509_NAME_ENTRY *                  ne;
+    ASN1_STRING *                      data;
 
     /* 
      * drop all the /CN=proxy entries 
      */
-    for(;;) {
-	ne=X509_NAME_get_entry(subject,
-			       X509_NAME_entry_count(subject)-1);
-	if (!OBJ_cmp(ne->object,OBJ_nid2obj(NID_commonName))) {
-	    data=X509_NAME_ENTRY_get_data(ne);
+    for(;;)
+    {
+	ne = X509_NAME_get_entry(subject,
+				 X509_NAME_entry_count(subject)-1);
+	if (!OBJ_cmp(ne->object,OBJ_nid2obj(NID_commonName)))
+	{
+	    data = X509_NAME_ENTRY_get_data(ne);
 	    if ((data->length == 5 && 
 		 !memcmp(data->data,"proxy",5)) ||
 		(data->length == 13 && 
-		 !memcmp(data->data,"limited proxy",13))) {
-		ne=X509_NAME_delete_entry(subject,
-					  X509_NAME_entry_count(subject)-1);      
+		 !memcmp(data->data,"limited proxy",13)))
+	    {
+		ne = X509_NAME_delete_entry(subject,
+					    X509_NAME_entry_count(subject)-1);
 		X509_NAME_ENTRY_free(ne);
 		ne = NULL;
-	    } else {
+	    }
+	    else
+	    {
 		break;
 	    }
-	} else {
+	}
+	else
+	{
 	    break;
 	}
     }
@@ -2258,76 +2567,87 @@ Returns:
 **********************************************************************/
 
 int
-proxy_get_filenames(int proxy_in,
-		    char **p_cert_file,
-		    char **p_cert_dir,
-		    char **p_user_proxy,
-		    char **p_user_cert,
-		    char **p_user_key)
+proxy_get_filenames(
+    int                                 proxy_in,
+    char **                             p_cert_file,
+    char **                             p_cert_dir,
+    char **                             p_user_proxy,
+    char **                             p_user_cert,
+    char **                             p_user_key)
 {
 
-    int status = -1;
-    int len;
-    char *cert_file = NULL;
-    char *cert_dir = NULL;
-    char *user_proxy = NULL;
-    char *user_cert = NULL;
-    char *user_key = NULL;
-    char *home = NULL;
-    char *default_user_proxy = NULL;
-    char *default_user_cert = NULL;
-    char *default_user_key = NULL;
-    char *default_cert_dir = NULL;
-    char *installed_cert_dir = NULL;
+    int                                 status = -1;
+    int                                 len;
+    char *                              cert_file = NULL;
+    char *                              cert_dir = NULL;
+    char *                              user_proxy = NULL;
+    char *                              user_cert = NULL;
+    char *                              user_key = NULL;
+    char *                              home = NULL;
+    char *                              default_user_proxy = NULL;
+    char *                              default_user_cert = NULL;
+    char *                              default_user_key = NULL;
+    char *                              default_cert_dir = NULL;
+    char *                              installed_cert_dir = NULL;
 #ifdef WIN32
-    HKEY hkDir = NULL;
-    char val_user_cert[512];
-    char val_user_key[512];
-    char val_user_proxy[512];
-    char val_cert_dir[512];
-    char val_cert_file[512];
-    LONG lval;
-    DWORD type;
+    HKEY                                hkDir = NULL;
+    char                                val_user_cert[512];
+    char                                val_user_key[512];
+    char                                val_user_proxy[512];
+    char                                val_cert_dir[512];
+    char                                val_cert_file[512];
+    LONG                                lval;
+    DWORD                               type;
 #endif
 
 #ifdef WIN32
     RegOpenKey(HKEY_CURRENT_USER,GSI_REGISTRY_DIR,&hkDir);
 #endif
 
-    if (p_cert_dir) {
+    if (p_cert_dir)
+    {
 	cert_dir = *p_cert_dir;
     }
 
 
-    if (!cert_dir) {
+    if (!cert_dir)
+    {
 	cert_dir = (char *)getenv(X509_CERT_DIR);
     }
 #ifdef WIN32
-    if (!cert_dir) {
+    if (!cert_dir)
+    {
 	lval = sizeof(val_cert_dir)-1;
 	if (hkDir && (RegQueryValueEx(hkDir,"x509_cert_dir",0,&type,
-				      val_cert_dir,&lval) == ERROR_SUCCESS)) {
+				      val_cert_dir,&lval) == ERROR_SUCCESS))
+	{
 	    cert_dir = val_cert_dir;
 	}
     }
 #endif
-    if (p_cert_file) {
+    if (p_cert_file)
+    {
 	cert_file = *p_cert_file;
     }
-    if (!cert_file) {
+    
+    if (!cert_file)
+    {
 	cert_file = (char *)getenv(X509_CERT_FILE);
     }
 #ifdef WIN32
-    if (!cert_file) {
+    if (!cert_file)
+    {
 	lval = sizeof(val_cert_file)-1;
 	if (hkDir && (RegQueryValueEx(hkDir,"x509_cert_file",0,&type,
-				      val_cert_file,&lval) == ERROR_SUCCESS)) {
+				      val_cert_file,&lval) == ERROR_SUCCESS))
+	{
 	    cert_file = val_cert_file;
 	}
     }
 #endif
         
-    if (cert_dir == NULL) {
+    if (cert_dir == NULL)
+    {
 
 	/*
 	 * If ~/.globus/certificates exists, then use that
@@ -2345,7 +2665,8 @@ proxy_get_filenames(int proxy_in,
 	{
 	    len = strlen(home) + strlen(X509_DEFAULT_CERT_DIR) + 2;
 	    default_cert_dir = (char *)malloc(len);
-	    if (!default_cert_dir) {
+	    if (!default_cert_dir)
+	    {
 		PRXYerr(PRXYERR_F_INIT_CRED,ERR_R_MALLOC_FAILURE);
 		goto err;
 	    }
@@ -2456,16 +2777,20 @@ proxy_get_filenames(int proxy_in,
 	    (cert_dir ? cert_dir : "null"));
 #endif /* DEBUG */
 
-    if (cert_dir) {
-	if (checkstat(cert_dir)  == 1) {
+    if (cert_dir)
+    {
+	if (checkstat(cert_dir)  == 1)
+	{
 	    PRXYerr(PRXYERR_F_INIT_CRED,PRXYERR_R_PROCESS_CERTS); 
 	    ERR_add_error_data(2,"x509_cert_dir=",cert_dir);
 	    goto err;
 	}
     }
 
-    if (cert_file) {
-	if (checkstat(cert_file)  == 1) {
+    if (cert_file)
+    {
+	if (checkstat(cert_file)  == 1)
+	{
 	    PRXYerr(PRXYERR_F_INIT_CRED,PRXYERR_R_PROCESS_CERTS); 
 	    ERR_add_error_data(2,"x509_cert_file=",cert_file);
 	    goto err;
@@ -2478,29 +2803,36 @@ proxy_get_filenames(int proxy_in,
      * If not, get the X509_USER_CERT and X509_USER_KEY
      * if not, use ~/.globus/usercert.pem ~/.globus/userkey.pem
      */
-    if (p_user_proxy) {
+    if (p_user_proxy)
+    {
 	user_proxy = *p_user_proxy;
     }
-    if (!user_proxy) {
+    
+    if (!user_proxy)
+    {
 	user_proxy = (char *)getenv(X509_USER_PROXY);
     }
 #ifdef WIN32
-    if (!user_proxy) {
+    if (!user_proxy)
+    {
 	lval = sizeof(val_user_proxy)-1;
 	if (hkDir && (RegQueryValueEx(hkDir,"x509_user_proxy",0,&type,
-				      val_user_proxy,&lval) == ERROR_SUCCESS)) {
+				      val_user_proxy,&lval) == ERROR_SUCCESS))
+	{
 	    user_proxy = val_user_proxy;
 	}
     }
 #endif
-    if (!user_proxy || getenv("X509_RUN_AS_SERVER")) {
+    if (!user_proxy || getenv("X509_RUN_AS_SERVER"))
+    {
 	unsigned long uid;
 	uid = getuid();
 	len = strlen(DEFAULT_SECURE_TMP_DIR) 
 	    + strlen(X509_USER_PROXY_FILE) 
 	    + 64; 
-	default_user_proxy = (char *)malloc(len);
-	if (!default_user_proxy) {
+	default_user_proxy = (char *) malloc(len);
+	if (!default_user_proxy)
+	{
 	    PRXYerr(PRXYERR_F_INIT_CRED,ERR_R_MALLOC_FAILURE);
 	    goto err;
 	}
@@ -2511,70 +2843,103 @@ proxy_get_filenames(int proxy_in,
 		uid);
 
 #ifndef WIN32
-	if ((!proxy_in || getuid() != 0) && checkstat(default_user_proxy) == 0) 
+	if ((!proxy_in || getuid() != 0)
+	    && checkstat(default_user_proxy) == 0) 
 #endif
 	{
 	    user_proxy = default_user_proxy;
 	}
     }
-    if (proxy_in && user_proxy) {
+    if (proxy_in && user_proxy)
+    {
 	user_cert = user_proxy;
 	user_key = user_proxy;
-    } else {
-	if (!user_proxy && !proxy_in) {
+    }
+    else
+    {
+	if (!user_proxy && !proxy_in)
+	{
 	    user_proxy = default_user_proxy;
 	}
-	if (p_user_cert) {
+
+	if (p_user_cert)
+	{
 	    user_cert = *p_user_cert;
 	}
-	if(!user_cert) {
+
+	if(!user_cert)
+	{
 	    user_cert = (char *)getenv(X509_USER_CERT);
 	}
 
 #ifdef WIN32
-	if (!user_cert) {
+	if (!user_cert)
+	{
 	    lval = sizeof(val_user_cert)-1;
-	    if (hkDir && (RegQueryValueEx(hkDir,"x509_user_cert",0,&type,
-					  val_user_cert,&lval) == ERROR_SUCCESS)) {
+	    if (hkDir && (RegQueryValueEx(
+		hkDir,
+		"x509_user_cert",
+		0,
+		&type,
+		val_user_cert,&lval) == ERROR_SUCCESS))
+	    {
 		user_cert = val_user_cert;
 	    }
 	}
 #endif
-	if (user_cert) {
-	    if (p_user_key) {
+	if (user_cert)
+	{
+	    if (p_user_key)
+	    {
 		user_key = *p_user_key;
 	    }
-	    if (!user_key) {
+	    if (!user_key)
+	    {
 		user_key = (char *)getenv(X509_USER_KEY);
 	    }
 #ifdef WIN32
-	    if (!user_key) {
+	    if (!user_key)
+	    {
 		lval = sizeof(val_user_key)-1;
-		if (hkDir && (RegQueryValueEx(hkDir,"x509_user_key",0,&type,
-					      val_user_key,&lval) == ERROR_SUCCESS)) {
+		if (hkDir && (RegQueryValueEx(
+		    hkDir,
+		    "x509_user_key",
+		    0,
+		    &type,
+		    val_user_key,&lval) == ERROR_SUCCESS))
+		{
 		    user_key = val_user_key;
 		}
 	    }
 #endif
-	    if (!user_key) {
+	    if (!user_key)
+	    {
 		user_key = user_cert;
 	    }
-	} else {
+	}
+	else
+	{
 #ifndef WIN32
-	    if (getuid() == 0) {
-		if (checkstat(X509_DEFAULT_HOST_CERT) != 1) {
+	    if (getuid() == 0)
+	    {
+		if (checkstat(X509_DEFAULT_HOST_CERT) != 1)
+		{
 		    user_cert = X509_DEFAULT_HOST_CERT;
 		}
-		if (checkstat(X509_DEFAULT_HOST_KEY) != 1) {
+		if (checkstat(X509_DEFAULT_HOST_KEY) != 1)
+		{
 		    user_key = X509_DEFAULT_HOST_KEY;
 		}
-	    } else 
+	    }
+	    else 
 #endif
 	    {
-		if (!home) {
+		if (!home)
+		{
 		    home = getenv("HOME");
 		}
-		if (!home) {
+		if (!home)
+		{
 #ifndef WIN32
 		    PRXYerr(PRXYERR_F_INIT_CRED,PRXYERR_R_NO_HOME);
 		    goto err;
@@ -2582,17 +2947,22 @@ proxy_get_filenames(int proxy_in,
 		    home = "c:\\";
 #endif
 		}
+		
 		len = strlen(home) + strlen(X509_DEFAULT_USER_CERT) + 2;
 		default_user_cert = (char *)malloc(len);
-		if (!default_user_cert) {
+
+		if (!default_user_cert)
+		{
 		    PRXYerr(PRXYERR_F_INIT_CRED,ERR_R_MALLOC_FAILURE);
 		    goto err;
 		} 
+
 		sprintf(default_user_cert,"%s%s%s",
 			home, FILE_SEPERATOR, X509_DEFAULT_USER_CERT);
 		len = strlen(home) + strlen(X509_DEFAULT_USER_KEY) + 2;
 		default_user_key = (char *)malloc(len);
-		if (!default_user_key) {
+		if (!default_user_key)
+		{
 		    PRXYerr(PRXYERR_F_INIT_CRED,ERR_R_MALLOC_FAILURE);
 		    goto err;
 		}
@@ -2610,42 +2980,57 @@ proxy_get_filenames(int proxy_in,
 	    user_cert, user_key);
 #endif
     status = 0;
-  err:
-    if (p_cert_file && cert_file) {
+ err:
+    if (p_cert_file && cert_file)
+    {
 	*p_cert_file = strdup(cert_file);
     }
-    if (p_cert_dir && cert_dir) {
+    if (p_cert_dir && cert_dir)
+    {
 	*p_cert_dir = strdup(cert_dir);
     }
-    if (p_user_proxy && user_proxy) {
+    if (p_user_proxy && user_proxy)
+    {
 	*p_user_proxy = strdup(user_proxy);
     }
-    if (p_user_cert && user_cert) {
+    if (p_user_cert && user_cert)
+    {
 	*p_user_cert = strdup(user_cert);
     }
-    if (p_user_key && user_key) {
+    if (p_user_key && user_key)
+    {
 	*p_user_key = strdup(user_key);
     }
         
 #ifdef WIN32
-    if (hkDir) {
+    if (hkDir)
+    {
 	RegCloseKey(hkDir);
     }
 #endif
 
-    if (default_user_proxy) {
+    if (default_user_proxy)
+    {
 	free(default_user_proxy);
     }
-    if (installed_cert_dir) {
+
+    if (installed_cert_dir)
+    {
 	free(installed_cert_dir);
     }
-    if (default_cert_dir) {
+
+    if (default_cert_dir)
+    {
 	free(default_cert_dir);
     }
-    if (default_user_cert) {
+
+    if (default_user_cert)
+    {
 	free(default_user_cert);
     }
-    if (default_user_key) {
+
+    if (default_user_key)
+    {
 	free(default_user_key);
     }
 
@@ -2664,17 +3049,20 @@ Returns:
 **********************************************************************/
 
 int
-proxy_load_user_cert(proxy_cred_desc * pcd, 
-		     const char * user_cert,
-		     int (*pw_cb)(), BIO *bp)
+proxy_load_user_cert(
+    proxy_cred_desc *                   pcd, 
+    const char *                        user_cert,
+    int                                 (*pw_cb)(),
+    BIO *                               bp)
 {
-    int status = -1;
-    FILE *fp;
-    int (*xpw_cb)();
+    int                                 status = -1;
+    FILE *                              fp;
+    int                                 (*xpw_cb)();
 
     xpw_cb = pw_cb;
 #ifdef WIN32
-    if (!xpw_cb) {
+    if (!xpw_cb)
+    {
 	xpw_cb = read_passphrase_win32;
     }
 #endif
@@ -2683,50 +3071,58 @@ proxy_load_user_cert(proxy_cred_desc * pcd,
     fprintf(stderr,"proxy_load_user_cert\n");
 #endif
     /* Check arguments */
-    if (!bp && !user_cert) {
+    if (!bp && !user_cert)
+    {
 	PRXYerr(PRXYERR_F_INIT_CRED,PRXYERR_R_PROBLEM_NOCERT_FILE);
-	ERR_add_error_data(1, 
-			   "\n        No certificate file found");
+	ERR_add_error_data(1, "\n        No certificate file found");
 	goto err;   
     }
 
-    if (!bp && !strncmp(user_cert,"SC:",3)) {
+    if (!bp && !strncmp(user_cert,"SC:",3))
+    {
 #ifdef USE_PKCS11
-        char *cp;
-        char *kp;
+        char * cp;
+        char * kp;
         int rc;
 
         cp = user_cert + 3;
         kp = strchr(cp,':');
-        if (kp == NULL) {
+        if (kp == NULL)
+	{
             PRXYerr(PRXYERR_F_INIT_CRED,PRXYERR_R_PROBLEM_NOCERT_FILE);
             ERR_add_error_data(2, "\n        SmartCard reference=",
 			       user_cert);
             goto err;
         }
         kp++; /* skip the : */
-        if (pcd->hSession == 0) {
+        if (pcd->hSession == 0)
+	{
             rc = sc_init(&(pcd->hSession), cp, NULL, NULL, CKU_USER, 0);
-            if (rc) {
+            if (rc)
+	    {
                 PRXYerr(PRXYERR_F_INIT_CRED,PRXYERR_R_PROCESS_CERT);
-                ERR_add_error_data(1,
-				   "\n        Failed to open session to smartcard");
+                ERR_add_error_data(
+		    1,
+		    "\n        Failed to open session to smartcard");
                 goto err;
             }
         }
         rc = sc_get_cert_obj_by_label(pcd->hSession,kp,
 				      &(pcd->ucert));
-        if (rc) {
+        if (rc)
+	{
             PRXYerr(PRXYERR_F_INIT_CRED,PRXYERR_R_PROCESS_CERT);
-            ERR_add_error_data(2,
-			       "\n        Could not find certificate on smartcard, label=",
-			       kp);
+            ERR_add_error_data(
+		2,
+		"\n        Could not find certificate on smartcard, label=",
+		kp);
             goto err;
         }
 #else
         PRXYerr(PRXYERR_F_INIT_CRED,PRXYERR_R_PROCESS_CERT);
-        ERR_add_error_data(1,
-			   "\n       Smartcard support not compiled with this program");
+        ERR_add_error_data(
+	    1,
+	    "\n       Smartcard support not compiled with this program");
         goto err;
 
 	/*
@@ -2735,23 +3131,32 @@ proxy_load_user_cert(proxy_cred_desc * pcd,
 	 */ 
 
 #endif /* USE_PKCS11 */
-    } else {
-	if (bp) {
+    }
+    else
+    {
+	if (bp)
+	{
 	    if (PEM_read_bio_X509(bp,&(pcd->ucert),
-				  OPENSSL_PEM_CB(NULL,NULL)) == NULL) {
+				  OPENSSL_PEM_CB(NULL,NULL)) == NULL)
+	    {
 		PRXYerr(PRXYERR_F_INIT_CRED,PRXYERR_R_PROCESS_CERT);
 		goto err;
 
 	    }
-	} else {
-
-	    if((fp = fopen(user_cert,"r")) == NULL) {
+	}
+	else
+	{
+	    if((fp = fopen(user_cert,"r")) == NULL)
+	    {
 		PRXYerr(PRXYERR_F_INIT_CRED,PRXYERR_R_PROBLEM_NOCERT_FILE);
 		ERR_add_error_data(2, "\n        File=", user_cert);
 		goto err;
 	    }
 
-	    if (PEM_read_X509(fp,&(pcd->ucert),OPENSSL_PEM_CB(NULL,NULL)) == NULL) {
+	    if (PEM_read_X509(fp,
+			      &(pcd->ucert),
+			      OPENSSL_PEM_CB(NULL,NULL)) == NULL)
+	    {
 		PRXYerr(PRXYERR_F_INIT_CRED,PRXYERR_R_PROCESS_CERT);
 		ERR_add_error_data(2, "\n        File=", user_cert);
 		fclose(fp);
@@ -2761,7 +3166,7 @@ proxy_load_user_cert(proxy_cred_desc * pcd,
 	}
     }
     status = 0;
-  err:
+ err:
 
     return status;
 }
@@ -2781,20 +3186,23 @@ Returns:
 **********************************************************************/
 
 int
-proxy_load_user_key(proxy_cred_desc * pcd, 
-                    const char * user_key,
-		    int (*pw_cb)(), BIO * bp)
+proxy_load_user_key(
+    proxy_cred_desc *                   pcd, 
+    const char *                        user_key,
+    int                                 (*pw_cb)(),
+    BIO *                               bp)
 {
-    unsigned long error;
-    int mismatch = 0;
-    int status = -1;
-    FILE *fp;
-    EVP_PKEY *ucertpkey;
-    int (*xpw_cb)();
+    unsigned long                       error;
+    int                                 mismatch = 0;
+    int                                 status = -1;
+    FILE *                              fp;
+    EVP_PKEY *                          ucertpkey;
+    int                                 (*xpw_cb)();
 
     xpw_cb = pw_cb;
 #ifdef WIN32
-    if (!xpw_cb) {
+    if (!xpw_cb)
+    {
 	xpw_cb = read_passphrase_win32;
     }
 #endif
@@ -2804,15 +3212,16 @@ proxy_load_user_key(proxy_cred_desc * pcd,
 #endif
 
     /* Check arguments */
-    if (!bp && !user_key) {
+    if (!bp && !user_key)
+    {
 	PRXYerr(PRXYERR_F_INIT_CRED,PRXYERR_R_PROBLEM_NOKEY_FILE);
-	ERR_add_error_data(1, 
-			   "\n        No key file found");
+	ERR_add_error_data(1,"\n        No key file found");
 	goto err;   
     }
 
             
-    if (!bp && !strncmp(user_key,"SC:",3)) {
+    if (!bp && !strncmp(user_key,"SC:",3))
+    {
 #ifdef USE_PKCS11
         char *cp;
         char *kp;
@@ -2820,35 +3229,41 @@ proxy_load_user_key(proxy_cred_desc * pcd,
 
         cp = user_key + 3;
         kp = strchr(cp,':');
-        if (kp == NULL) {
+        if (kp == NULL)
+	{
             PRXYerr(PRXYERR_F_INIT_CRED,PRXYERR_R_PROBLEM_KEY_FILE);
-            ERR_add_error_data(2, 
-			       "\n        SmartCard reference=",user_key);
+            ERR_add_error_data(2,"\n        SmartCard reference=",user_key);
             goto err;
         }
         kp++; /* skip the : */
-        if (pcd->hSession == 0) {
+        if (pcd->hSession == 0)
+	{
             rc = sc_init(&(pcd->hSession), cp, NULL, NULL, CKU_USER, 0);
-            if (rc) {
+            if (rc)
+	    {
                 PRXYerr(PRXYERR_F_INIT_CRED,PRXYERR_R_PROCESS_KEY);
-                ERR_add_error_data(1,
-				   "\n        Failed to open session to smartcard");
+                ERR_add_error_data(
+		    1,
+		    "\n        Failed to open session to smartcard");
                 goto err;
             }
         }
         rc = sc_get_priv_key_obj_by_label(pcd->hSession,kp,
 					  &(pcd->upkey));
-        if (rc) {
+        if (rc)
+	{
             PRXYerr(PRXYERR_F_INIT_CRED,PRXYERR_R_PROCESS_KEY);
-            ERR_add_error_data(2,
-			       "\n        Could not find key on smartcard, label=",
-			       kp);
+            ERR_add_error_data(
+		2,
+		"\n        Could not find key on smartcard, label=",
+		kp);
             goto err;
         }
 #else
         PRXYerr(PRXYERR_F_INIT_CRED,PRXYERR_R_PROCESS_KEY);
-        ERR_add_error_data(1,
-			   "\n       Smartcard support not compiled with this program");
+        ERR_add_error_data(
+	    1,
+	    "\n       Smartcard support not compiled with this program");
         goto err;
 
 	/*
@@ -2857,16 +3272,22 @@ proxy_load_user_key(proxy_cred_desc * pcd,
 	 */ 
 
 #endif /* USE_PKCS11 */
-    } else {
-
-	if (bp) {
+    }
+    else
+    {
+	if (bp)
+	{
 	    if (PEM_read_bio_PrivateKey(bp,&(pcd->upkey),
-					OPENSSL_PEM_CB(xpw_cb,NULL)) == NULL) {
+					OPENSSL_PEM_CB(xpw_cb,NULL)) == NULL)
+	    {
 		PRXYerr(PRXYERR_F_INIT_CRED,PRXYERR_R_PROCESS_KEY);
 		goto err;
 	    }
-	} else {
-	    if ((fp = fopen(user_key,"r")) == NULL) {
+	}
+	else
+	{
+	    if ((fp = fopen(user_key,"r")) == NULL)
+	    {
 		PRXYerr(PRXYERR_F_INIT_CRED,PRXYERR_R_PROBLEM_NOKEY_FILE);
 		ERR_add_error_data(2, "\n        File=",user_key);
 		goto err;
@@ -2876,26 +3297,35 @@ proxy_load_user_key(proxy_cred_desc * pcd,
 	     * only be the user
 	     */
 
-	    if (checkstat(user_key)) {
+	    if (checkstat(user_key))
+	    {
 		PRXYerr(PRXYERR_F_INIT_CRED,PRXYERR_R_PROBLEM_KEY_FILE);
 		ERR_add_error_data(2, "\n        File=", user_key);
 		fclose(fp);
 		goto err;
 	    }
 
-	    if (PEM_read_PrivateKey(fp,&(pcd->upkey), OPENSSL_PEM_CB(xpw_cb,NULL)) == NULL) {
+	    if (PEM_read_PrivateKey(fp,
+				    &(pcd->upkey),
+				    OPENSSL_PEM_CB(xpw_cb,NULL)) == NULL)
+	    {
 		fclose(fp);
 		error = ERR_peek_error();
 		if (error == ERR_PACK(ERR_LIB_PEM,
 				      PEM_F_DEF_CALLBACK,
-				      PEM_R_PROBLEMS_GETTING_PASSWORD)) {
+				      PEM_R_PROBLEMS_GETTING_PASSWORD))
+		{
 		    ERR_clear_error(); 
-		}else if (error == ERR_PACK(ERR_LIB_EVP,
-					    EVP_F_EVP_DECRYPTFINAL,
-					    EVP_R_BAD_DECRYPT)) {
+		}
+		else if (error == ERR_PACK(ERR_LIB_EVP,
+					   EVP_F_EVP_DECRYPTFINAL,
+					   EVP_R_BAD_DECRYPT))
+		{
 		    ERR_clear_error();
 		    PRXYerr(PRXYERR_F_INIT_CRED,PRXYERR_R_WRONG_PASSPHRASE);
-		} else {
+		}
+		else
+		{
 		    PRXYerr(PRXYERR_F_INIT_CRED,PRXYERR_R_PROCESS_KEY);
 		    ERR_add_error_data(2, "\n        File=", user_key);
 		}
@@ -2910,18 +3340,24 @@ proxy_load_user_key(proxy_cred_desc * pcd,
      * Dont want a mixup of keys and certs
      * Will only check rsa type for now. 
      */
-    if (pcd->ucert) {
+    if (pcd->ucert)
+    {
 	ucertpkey =  X509_PUBKEY_get(X509_get_X509_PUBKEY(pcd->ucert));
-	if (ucertpkey!= NULL  && ucertpkey->type == pcd->upkey->type) {
-	    if (ucertpkey->type == EVP_PKEY_RSA) {
+	if (ucertpkey!= NULL  && ucertpkey->type == pcd->upkey->type)
+	{
+	    if (ucertpkey->type == EVP_PKEY_RSA)
+	    {
 		/* add in key as random data too */
-		if (ucertpkey->pkey.rsa != NULL) {
-		    if(ucertpkey->pkey.rsa->p != NULL) {
+		if (ucertpkey->pkey.rsa != NULL)
+		{
+		    if(ucertpkey->pkey.rsa->p != NULL)
+		    {
 			RAND_add((void*)ucertpkey->pkey.rsa->p->d,
 				 BN_num_bytes(ucertpkey->pkey.rsa->p),
 				 BN_num_bytes(ucertpkey->pkey.rsa->p));
 		    }
-		    if(ucertpkey->pkey.rsa->q != NULL) {
+		    if(ucertpkey->pkey.rsa->q != NULL)
+		    {
 			RAND_add((void*)ucertpkey->pkey.rsa->q->d,
 				 BN_num_bytes(ucertpkey->pkey.rsa->q),
 				 BN_num_bytes(ucertpkey->pkey.rsa->q));
@@ -2929,26 +3365,37 @@ proxy_load_user_key(proxy_cred_desc * pcd,
 		}
 		if ((ucertpkey->pkey.rsa != NULL) && 
 		    (ucertpkey->pkey.rsa->n != NULL) &&
-		    (pcd->upkey->pkey.rsa != NULL) ) {
+		    (pcd->upkey->pkey.rsa != NULL) )
+		{
 		    if (pcd->upkey->pkey.rsa->n != NULL
-			&& BN_num_bytes(pcd->upkey->pkey.rsa->n)) {
-			if (BN_cmp(ucertpkey->pkey.rsa->n,pcd->upkey->pkey.rsa->n)) {
+			&& BN_num_bytes(pcd->upkey->pkey.rsa->n))
+		    {
+			if (BN_cmp(ucertpkey->pkey.rsa->n,
+				   pcd->upkey->pkey.rsa->n))
+			{
 			    mismatch=1;
 			}
-		    } else {
-			pcd->upkey->pkey.rsa->n = BN_dup(ucertpkey->pkey.rsa->n);
-			pcd->upkey->pkey.rsa->e = BN_dup(ucertpkey->pkey.rsa->e);
+		    }
+		    else
+		    {
+			pcd->upkey->pkey.rsa->n =
+			    BN_dup(ucertpkey->pkey.rsa->n);
+			pcd->upkey->pkey.rsa->e =
+			    BN_dup(ucertpkey->pkey.rsa->e);
 #ifdef DEBUG2
 			fprintf(stderr,"LITRONIC HACK- copying modulus and exponent\n");
 #endif
 		    }
 		}
 	    }
-	} else {
+	}
+	else
+	{
 	    mismatch=1;
 	}
         
-	if (mismatch) {
+	if (mismatch)
+	{
 	    PRXYerr(PRXYERR_F_INIT_CRED,PRXYERR_R_KEY_CERT_MISMATCH);
 	    goto err;
 	}
@@ -2956,7 +3403,7 @@ proxy_load_user_key(proxy_cred_desc * pcd,
 
     status = 0;
 
-  err:
+ err:
     /* DEE need more cleanup */
     return status;
 
@@ -2976,26 +3423,30 @@ Returns:
 **********************************************************************/
 
 int
-proxy_init_cred(proxy_cred_desc * pcd, int (*pw_cb)(), BIO *bp)
+proxy_init_cred(
+    proxy_cred_desc *                   pcd,
+    int                                 (*pw_cb)(),
+    BIO *                               bp)
 {
         
-    int status = -1;
-    int len;
-    int i,j;
-    char *cert_file = NULL;
-    char *cert_dir = NULL;
-    char *user_proxy = NULL;
-    char *user_cert = NULL;
-    char *user_key = NULL;
-    char *fname = NULL;
-    X509_STORE_CTX csc;
+    int                                 status = -1;
+    int                                 len;
+    int                                 i;
+    int                                 j;
+    char *                              cert_file = NULL;
+    char *                              cert_dir = NULL;
+    char *                              user_proxy = NULL;
+    char *                              user_cert = NULL;
+    char *                              user_key = NULL;
+    char *                              fname = NULL;
+    X509_STORE_CTX                      csc;
 #ifndef WIN32
-    DIR *dirp = NULL;
-    struct dirent *direntp;
+    DIR *                               dirp = NULL;
+    struct dirent *                     direntp;
 #endif
-    FILE *fp = NULL;
-    X509 * ccert = NULL;
-    X509 * xcert = NULL;
+    FILE *                              fp = NULL;
+    X509 *                              ccert = NULL;
+    X509 *                              xcert = NULL;
 
 #if 0
     pcd->gs_ctx = NULL;
@@ -3011,15 +3462,19 @@ proxy_init_cred(proxy_cred_desc * pcd, int (*pw_cb)(), BIO *bp)
 			    &cert_dir,
 			    (pcd->ucert||pcd->upkey)? NULL : &user_proxy,
 			    pcd->ucert? NULL : &user_cert,
-			    pcd->upkey? NULL : &user_key)) {
+			    pcd->upkey? NULL : &user_key))
+    {
 	goto err;
     }
 
-    if (cert_dir) {
+    if (cert_dir)
+    {
 	pcd->certdir = strdup(cert_dir);
 
     }
-    if (cert_file) {
+
+    if (cert_file)
+    {
 	pcd->certfile = strdup(cert_file);
     }
 
@@ -3038,13 +3493,15 @@ proxy_init_cred(proxy_cred_desc * pcd, int (*pw_cb)(), BIO *bp)
 
     SSLeay_add_ssl_algorithms();
     pcd->gs_ctx = SSL_CTX_new(SSLv3_method());
-    if(pcd->gs_ctx == NULL) {
+    if(pcd->gs_ctx == NULL)
+    {
 	goto err;
     }
 
 #if SSLEAY_VERSION_NUMBER >=  0x0090600fL
     SSL_CTX_set_cert_verify_callback(pcd->gs_ctx, 
-				     proxy_app_verify_callback,NULL);
+				     proxy_app_verify_callback,
+				     NULL);
 #endif
 
     /* set a small limit on ssl session-id reuse */
@@ -3052,7 +3509,9 @@ proxy_init_cred(proxy_cred_desc * pcd, int (*pw_cb)(), BIO *bp)
     SSL_CTX_sess_set_cache_size(pcd->gs_ctx,5);
 
     if (!SSL_CTX_load_verify_locations(pcd->gs_ctx,
-				       cert_file, cert_dir))  {
+				       cert_file,
+				       cert_dir))
+    {
 	PRXYerr(PRXYERR_F_INIT_CRED,PRXYERR_R_PROCESS_CERTS);
 	ERR_add_error_data(4, "\n        x509_cert_file=", 
 			   (cert_file) ? cert_file: "NONE" ,
@@ -3069,13 +3528,14 @@ proxy_init_cred(proxy_cred_desc * pcd, int (*pw_cb)(), BIO *bp)
      * Some Java implementations insist on having this. 
      */
 
-    if (cert_file) {
+    if (cert_file)
+    {
 	SSL_CTX_set_client_CA_list(pcd->gs_ctx,
 				   SSL_load_client_CA_file(cert_file));
-	if (!SSL_CTX_get_client_CA_list(pcd->gs_ctx)) {
+	if (!SSL_CTX_get_client_CA_list(pcd->gs_ctx))
+	{
 	    PRXYerr(PRXYERR_F_INIT_CRED,PRXYERR_R_PROBLEM_CLIENT_CA);
-	    ERR_add_error_data(2,"\n        File=",
-			       cert_file);
+	    ERR_add_error_data(2,"\n        File=", cert_file);
 	    goto err;
 	}
     }
@@ -3097,11 +3557,13 @@ proxy_init_cred(proxy_cred_desc * pcd, int (*pw_cb)(), BIO *bp)
      */ 
 
 #ifndef WIN32
-    if ((dirp = opendir(cert_dir)) != NULL) {
+    if ((dirp = opendir(cert_dir)) != NULL)
+    {
 #ifdef DEBUG
 	fprintf(stderr,"looking for CA certs\n");
 #endif
-	while ( (direntp = readdir( dirp )) != NULL ) {
+	while ( (direntp = readdir( dirp )) != NULL )
+	{
 	    /* look for hashed file names hhhhhhhh.n */
 	    len = strlen(direntp->d_name);
 	    if ((len >= 10)
@@ -3109,11 +3571,12 @@ proxy_init_cred(proxy_cred_desc * pcd, int (*pw_cb)(), BIO *bp)
 		&& (strspn(direntp->d_name, 
 			   "0123456789abcdefABCDEF") == 8)
 		&& (strspn((direntp->d_name + 9),
-			   "0123456789") == (len - 9))) {
-                                        
+			   "0123456789") == (len - 9)))
+	    {
 		fname = (char *)malloc(strlen(cert_dir) + 
 				       strlen(direntp->d_name) + 2);
-		if (!fname) {
+		if (!fname)
+		{
 		    PRXYerr(PRXYERR_F_INIT_CRED,ERR_R_MALLOC_FAILURE);
 		    goto err;
 		}
@@ -3124,18 +3587,21 @@ proxy_init_cred(proxy_cred_desc * pcd, int (*pw_cb)(), BIO *bp)
 #ifdef DEBUG
 		fprintf(stderr,"CA cert=%s\n",fname);
 #endif
-		if ((fp = fopen(fname,"r")) == NULL) {
+		if ((fp = fopen(fname,"r")) == NULL)
+		{
 		    PRXYerr(PRXYERR_F_INIT_CRED,
 			    PRXYERR_R_PROBLEM_NOCERT_FILE);
 		    ERR_add_error_data(2, "\n        File=", fname);
 		    goto err;
 		}
 
-		if (PEM_read_X509(fp,&ccert,OPENSSL_PEM_CB(NULL,NULL)) == NULL) {
+		if (PEM_read_X509(fp,&ccert,OPENSSL_PEM_CB(NULL,NULL)) == NULL)
+		{
 		    PRXYerr(PRXYERR_F_INIT_CRED,PRXYERR_R_PROCESS_CERT);
 		    ERR_add_error_data(2, "\n        File=", fname);
 		    goto err;
 		}
+
 		free(fname);
 		fname = NULL;
 		fclose(fp);
@@ -3148,36 +3614,54 @@ proxy_init_cred(proxy_cred_desc * pcd, int (*pw_cb)(), BIO *bp)
     }
 #endif /* WIN32 */
 
-    if (!pcd->ucert) {
+    if (!pcd->ucert)
+    {
 	if (proxy_load_user_cert(pcd, user_cert,
-				 pw_cb, NULL)) {
+				 pw_cb, NULL))
+	{
 	    goto err;
 	}
-	if (proxy_check_proxy_name(pcd->ucert)>0) pcd->type = CRED_TYPE_PROXY;
-	else pcd->type = CRED_TYPE_PERMANENT;		
-    } else pcd->type = CRED_TYPE_PERMANENT;
+	
+	if (proxy_check_proxy_name(pcd->ucert)>0)
+	{
+	    pcd->type = CRED_TYPE_PROXY;
+	}
+	else
+	{
+	    pcd->type = CRED_TYPE_PERMANENT;
+	}
+    }
+    else
+    {
+	pcd->type = CRED_TYPE_PERMANENT;
+    }
 
-    if (!pcd->upkey) {
+    if (!pcd->upkey)
+    {
 	if (proxy_load_user_key(pcd, user_key,
-				pw_cb, NULL)) {
+				pw_cb, NULL))
+	{
 	    goto err;
 	}
     }
                         
-    if (!SSL_CTX_use_certificate(pcd->gs_ctx,pcd->ucert)) {
+    if (!SSL_CTX_use_certificate(pcd->gs_ctx,pcd->ucert))
+    {
         PRXYerr(PRXYERR_F_INIT_CRED,PRXYERR_R_PROCESS_CERT);
 	ERR_add_error_data(2,"\n        File=", user_cert);
         goto err;
     }
     /* test if the cert is still valid */
-    if (X509_cmp_current_time(X509_get_notAfter(pcd->ucert)) <= 0) {
+    if (X509_cmp_current_time(X509_get_notAfter(pcd->ucert)) <= 0)
+    {
         PRXYerr(PRXYERR_F_INIT_CRED,PRXYERR_R_CERT_EXPIERED);
 	ERR_add_error_data(2,"\n        File=", user_cert);
         status = PRXYERR_R_CERT_EXPIERED;
         goto err;
     }
 
-    if (!SSL_CTX_use_PrivateKey(pcd->gs_ctx, pcd->upkey)) {
+    if (!SSL_CTX_use_PrivateKey(pcd->gs_ctx, pcd->upkey))
+    {
         PRXYerr(PRXYERR_F_INIT_CRED,PRXYERR_R_PROCESS_KEY);
 	ERR_add_error_data(2, "\n        File=", user_key);
         goto err;
@@ -3190,40 +3674,49 @@ proxy_init_cred(proxy_cred_desc * pcd, int (*pw_cb)(), BIO *bp)
      */
 
 
-    if (bp || user_proxy) {
-	if (pcd->cert_chain == NULL) {
+    if (bp || user_proxy)
+    {
+	if (pcd->cert_chain == NULL)
+	{
 	    pcd->cert_chain = sk_X509_new_null();
 	}
+	
         if (proxy_load_user_proxy(pcd->cert_chain,
-				  user_proxy, bp) < 0) {
+				  user_proxy, bp) < 0)
+	{
             PRXYerr(PRXYERR_F_INIT_CRED,PRXYERR_R_PROCESS_PROXY);
-	    if (user_proxy) { 
-		ERR_add_error_data(2,"\n        x509_user_proxy=", 
-				   user_proxy);
+	    if (user_proxy)
+	    { 
+		ERR_add_error_data(2,"\n        x509_user_proxy=", user_proxy);
 	    }
             goto err;
         }
     }
-    if (pcd->cert_chain) {
-
-	for (i=0;i<sk_X509_num(pcd->cert_chain);i++) {
+    if (pcd->cert_chain)
+    {
+	for (i=0;i<sk_X509_num(pcd->cert_chain);i++)
+	{
 	    xcert = sk_X509_value(pcd->cert_chain,i);
 
 #ifdef DEBUG
 	    {
-		char *s;
+		char * s;
 		s=X509_NAME_oneline(X509_get_subject_name(xcert),NULL,0);
 		fprintf(stderr,"Adding to X509_STORE %d %p %s\n",i,xcert,s);
 		free(s);
 	    }
 #endif
 	    j = X509_STORE_add_cert(pcd->gs_ctx->cert_store,xcert);
-	    if (!j) {
+	    if (!j)
+	    {
 		if ((ERR_GET_REASON(ERR_peek_error()) ==
-		     X509_R_CERT_ALREADY_IN_HASH_TABLE)) {
+		     X509_R_CERT_ALREADY_IN_HASH_TABLE))
+		{
 		    ERR_clear_error();
 		    break;
-		} else {
+		}
+		else
+		{
 		    goto err;
 		}
 	    }
@@ -3231,31 +3724,39 @@ proxy_init_cred(proxy_cred_desc * pcd, int (*pw_cb)(), BIO *bp)
     }
 
     status = 0;
-  err:
-    if (fname) {
+ err:
+    if (fname)
+    {
 	free(fname);
     }
-    if (fp) {
+    if (fp)
+    {
 	fclose(fp);
     }
 #ifndef WIN32
-    if (dirp) {
+    if (dirp)
+    {
 	closedir(dirp);
     }
 #endif
-    if(cert_file) {
+    if(cert_file)
+    {
 	free(cert_file);
     }
-    if(cert_dir) {
+    if(cert_dir)
+    {
 	free(cert_dir);
     }
-    if(user_proxy) {
+    if(user_proxy)
+    {
 	free(user_proxy);
     }
-    if(user_cert) {
+    if(user_cert)
+    {
 	free(user_cert);
     }
-    if(user_key) {
+    if(user_key)
+    {
 	free(user_key);
     }
     return status;
@@ -3275,25 +3776,31 @@ Returns:
 **********************************************************************/
 
 int
-proxy_cred_desc_free(proxy_cred_desc * pcd)
+proxy_cred_desc_free(
+    proxy_cred_desc *                   pcd)
 {
-    if (pcd) {
-	if (pcd->ucert != NULL) {
+    if (pcd)
+    {
+	if (pcd->ucert != NULL)
+	{
 	    X509_free(pcd->ucert);
 	    pcd->ucert = NULL;
 	}
 
-	if (pcd->upkey != NULL) {
+	if (pcd->upkey != NULL)
+	{
 	    EVP_PKEY_free(pcd->upkey);
 	    pcd->upkey = NULL;
 	}
 
-	if (pcd->cert_chain != NULL) {
+	if (pcd->cert_chain != NULL)
+	{
 	    sk_X509_pop_free(pcd->cert_chain,X509_free);
 	    pcd->cert_chain = NULL;
 	}
 
-	if (pcd->gs_ctx) {
+	if (pcd->gs_ctx)
+	{
 	    /*
 	     * SSLeay or OpenSSL map not free the  
 	     * session cache as expected when calling SSL_CTX_free
@@ -3301,16 +3808,19 @@ proxy_cred_desc_free(proxy_cred_desc * pcd)
 	    SSL_CTX_free(pcd->gs_ctx);
 	    pcd->gs_ctx = NULL;     
 	}
-	if (pcd->certdir) {
+	if (pcd->certdir)
+	{
 	    free(pcd->certdir);
 	    pcd->certdir = NULL;
 	}
-	if (pcd->certfile) {
+	if (pcd->certfile)
+	{
 	    free(pcd->certfile);
 	    pcd->certfile = NULL;
 	}
 #ifdef USE_PKCS11
-	if (pcd->hSession) {
+	if (pcd->hSession)
+	{
 	    sc_final(pcd->hSession);
 	    pcd->hSession = 0;
 	}
@@ -3333,38 +3843,39 @@ Returns:
 **********************************************************************/
 
 int
-proxy_create_local(proxy_cred_desc * pcd,
-		   const char * outfile,
-		   int hours,
-		   int bits,
-		   int limit_proxy,
-		   int (*kpcallback)(),
-		   char * class_add_buf,
-		   int class_add_buf_len)
+proxy_create_local(
+    proxy_cred_desc *                   pcd,
+    const char *                        outfile,
+    int                                 hours,
+    int                                 bits,
+    int                                 limit_proxy,
+    int                                 (*kpcallback)(),
+    char *                              class_add_buf,
+    int                                 class_add_buf_len)
 {
         
-    int status = -1;
-    FILE *fpout = NULL;
-    X509 *ncert = NULL; 
-    EVP_PKEY *npkey;
-    X509_REQ *req;
-    BIO *bp = NULL;
-    STACK_OF(X509_EXTENSION) *extensions = NULL;
-    X509_EXTENSION *ex = NULL;
+    int                                 status = -1;
+    FILE *                              fpout = NULL;
+    X509 *                              ncert = NULL; 
+    EVP_PKEY *                          npkey;
+    X509_REQ *                          req;
+    BIO *                               bp = NULL;
+    STACK_OF(X509_EXTENSION) *          extensions = NULL;
+    X509_EXTENSION *                    ex = NULL;
 
     fpout=fopen(outfile,"w");
-    if (fpout == NULL) {
+    if (fpout == NULL)
+    {
 	PRXYerr(PRXYERR_F_LOCAL_CREATE,PRXYERR_R_PROBLEM_PROXY_FILE);
-	ERR_add_error_data(2, "\n        Open failed for File=",
-			   outfile);
+	ERR_add_error_data(2,"\n        Open failed for File=",outfile);
 	goto err;
     }
 
 #ifndef WIN32
-    if (fchmod(fileno(fpout),0600) == -1) {
+    if (fchmod(fileno(fpout),0600) == -1)
+    {
 	PRXYerr(PRXYERR_F_LOCAL_CREATE,PRXYERR_R_PROBLEM_PROXY_FILE);
-	ERR_add_error_data(2, "\n        chmod failed for File=",
-			   outfile);
+	ERR_add_error_data(2, "\n        chmod failed for File=",outfile);
 	goto err;
     }
 #endif
@@ -3375,7 +3886,8 @@ proxy_create_local(proxy_cred_desc * pcd,
      */ 
 
     if (proxy_genreq(pcd->ucert,&req,&npkey,bits,
-		     (int (*)())kpcallback, pcd)) {
+		     (int (*)())kpcallback, pcd))
+    {
 	goto err;
     }
 
@@ -3385,20 +3897,24 @@ proxy_create_local(proxy_cred_desc * pcd,
 #ifdef DEBUG
     fprintf(stderr,"Adding Extensions to request\n");
 #endif
-    if ((extensions = sk_X509_EXTENSION_new_null()) == NULL) {
+    if ((extensions = sk_X509_EXTENSION_new_null()) == NULL)
+    {
 	PRXYerr(PRXYERR_F_PROXY_SIGN,PRXYERR_R_CLASS_ADD_EXT);
 	goto err;
     }
         
 #ifdef CLASS_ADD
-    if (class_add_buf && class_add_buf_len > 0) {
+    if (class_add_buf && class_add_buf_len > 0)
+    {
 	if ((ex = proxy_extension_class_add_create(class_add_buf,
-						   class_add_buf_len)) == NULL) {
+						   class_add_buf_len)) == NULL)
+	{
 	    PRXYerr(PRXYERR_F_PROXY_SIGN,PRXYERR_R_CLASS_ADD_EXT);
 	    goto err;
 	}
                 
-	if (!sk_X509_EXTENSION_push(extensions, ex)) {
+	if (!sk_X509_EXTENSION_push(extensions, ex))
+	{
 	    PRXYerr(PRXYERR_F_PROXY_SIGN,PRXYERR_R_CLASS_ADD_EXT);
 	    goto err;
 	}
@@ -3407,21 +3923,25 @@ proxy_create_local(proxy_cred_desc * pcd,
 
     if (proxy_sign_ext(0, pcd->ucert,pcd->upkey,
 		       EVP_md5(),req,&ncert,hours*60*60,
-		       limit_proxy,0, "proxy", extensions)) {
+		       limit_proxy,0, "proxy", extensions))
+    {
 	goto err;
     }
         
-    if ((bp=BIO_new(BIO_s_file())) != NULL) {
+    if ((bp=BIO_new(BIO_s_file())) != NULL)
+    {
         BIO_set_fp(bp,fpout,BIO_NOCLOSE);
     }
 
-    if (proxy_marshal_bp(bp,ncert,npkey,pcd->ucert,pcd->cert_chain)) {
+    if (proxy_marshal_bp(bp,ncert,npkey,pcd->ucert,pcd->cert_chain))
+    {
 	goto err;
     }
 
     status = 0;
-  err:
-    if (ncert) {
+ err:
+    if (ncert)
+    {
 	X509_free(ncert);
     }
     if (bp)
@@ -3433,10 +3953,12 @@ proxy_create_local(proxy_cred_desc * pcd,
 	fclose(fpout);
     }
 
-    if (extensions) {
+    if (extensions)
+    {
 	sk_X509_EXTENSION_pop_free(extensions, X509_EXTENSION_free);
     }
-    if (ex) {
+    if (ex)
+    {
 	X509_EXTENSION_free(ex);
     }
 
@@ -3460,43 +3982,63 @@ Returns:
 **********************************************************************/
 
 time_t
-ASN1_UTCTIME_mktime(ASN1_UTCTIME * ctm)
+ASN1_UTCTIME_mktime(
+    ASN1_UTCTIME *                      ctm)
 {
-    char *str;
-    time_t offset;
-    char buff1[24],*p;
-    int i;
-    struct tm tm;
+    char *                              str;
+    time_t                              offset;
+    char                                buff1[24];
+    char *                              p;
+    int                                 i;
+    struct tm                           tm;
 
-    p=buff1;
-    i=ctm->length;
-    str=(char *)ctm->data;
-    if ((i < 11) || (i > 17)) return(0);
+    p = buff1;
+    i = ctm->length;
+    str = (char *)ctm->data;
+    if ((i < 11) || (i > 17))
+    {
+	return(0);
+    }
     memcpy(p,str,10);
-    p+=10;
-    str+=10;
+    p += 10;
+    str += 10;
 
     if ((*str == 'Z') || (*str == '-') || (*str == '+'))
-    { *(p++)='0'; *(p++)='0'; }
-    else    { *(p++)= *(str++); *(p++)= *(str++); }
+    {
+	*(p++)='0'; *(p++)='0';
+    }
+    else
+    {
+	*(p++)= *(str++); *(p++)= *(str++);
+    }
     *(p++)='Z';
     *(p++)='\0';
 
     if (*str == 'Z')
-offset=0;
+    {
+	offset=0;
+    }
     else
     {
         if ((*str != '+') && (str[5] != '-'))
-return(0);
+	{
+	    return(0);
+	}
         offset=((str[1]-'0')*10+(str[2]-'0'))*60;
         offset+=(str[3]-'0')*10+(str[4]-'0');
         if (*str == '-')
-offset=-offset;
+	{
+	    offset=-offset;
+	}
     }
 
     tm.tm_isdst = 0;
     tm.tm_year = (buff1[0]-'0')*10+(buff1[1]-'0');
-    if (tm.tm_year < 70) tm.tm_year+=100;
+
+    if (tm.tm_year < 70)
+    {
+	tm.tm_year+=100;
+    }
         
     tm.tm_mon   = (buff1[2]-'0')*10+(buff1[3]-'0')-1;
     tm.tm_mday  = (buff1[4]-'0')*10+(buff1[5]-'0');
@@ -3540,9 +4082,10 @@ Returns:
 **********************************************************************/
 
 int
-proxy_password_callback_no_prompt(char *buffer,
-				  int size,
-				  int w)
+proxy_password_callback_no_prompt(
+    char *                              buffer,
+    int                                 size,
+    int                                 w)
 {
     PRXYerr(PRXYERR_F_CB_NO_PW,PRXYERR_R_CB_NO_PW);
 
@@ -3565,21 +4108,24 @@ Returns:
 **********************************************************************/
 
 X509_EXTENSION *
-proxy_extension_class_add_create(void *buffer,
-				 size_t length)
+proxy_extension_class_add_create(
+    void *                              buffer,
+    size_t                              length)
 
 {
-    X509_EXTENSION * ex = NULL;
-    ASN1_OBJECT *class_add_obj=NULL;
-    ASN1_OCTET_STRING *class_add_oct=NULL;
-    int crit = 0;
+    X509_EXTENSION *                    ex = NULL;
+    ASN1_OBJECT *                       class_add_obj = NULL;
+    ASN1_OCTET_STRING *                 class_add_oct = NULL;
+    int                                 crit = 0;
 
-    if(!(class_add_obj = OBJ_nid2obj(OBJ_txt2nid("CLASSADD")))) {
+    if(!(class_add_obj = OBJ_nid2obj(OBJ_txt2nid("CLASSADD"))))
+    {
 	PRXYerr(PRXYERR_F_PROXY_SIGN,PRXYERR_R_CLASS_ADD_OID);
 	goto err;
     }
 
-    if(!(class_add_oct = ASN1_OCTET_STRING_new())) {
+    if(!(class_add_oct = ASN1_OCTET_STRING_new()))
+    {
 	PRXYerr(PRXYERR_F_PROXY_SIGN,PRXYERR_R_CLASS_ADD_EXT);
 	goto err;
     }
@@ -3588,7 +4134,8 @@ proxy_extension_class_add_create(void *buffer,
     class_add_oct->length = length;
 
     if (!(ex = X509_EXTENSION_create_by_OBJ(NULL, class_add_obj, 
-					    crit, class_add_oct))) {
+					    crit, class_add_oct)))
+    {
 	PRXYerr(PRXYERR_F_PROXY_SIGN,PRXYERR_R_CLASS_ADD_EXT);
 	goto err;
     }
@@ -3596,12 +4143,18 @@ proxy_extension_class_add_create(void *buffer,
 
     return ex;
 
-  err:
-    if (class_add_oct) {
+ err:
+    if (class_add_oct)
+    {
 	ASN1_OCTET_STRING_free(class_add_oct);
     }
-    if (class_add_obj) {
+    
+    if (class_add_obj)
+    {
 	ASN1_OBJECT_free(class_add_obj);
     }
     return NULL;
 }
+
+
+
