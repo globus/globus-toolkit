@@ -15,6 +15,14 @@ Sources= \
 	globus_error.h \
 	globus_error_hierarchy.c \
 	globus_error_hierarchy.h \
+	globus_error_generic.c \
+	globus_i_error_generic.c \
+	globus_error_generic.h \
+	globus_i_error_generic.h \
+	globus_error_errno.c \
+	globus_i_error_errno.c \
+	globus_error_errno.h \
+	globus_i_error_errno.h \
 	globus_fifo.c \
 	globus_fifo.h \
 	globus_handle_table.c \
@@ -77,6 +85,8 @@ flavorinclude_HEADERS = \
 	globus_error.h \
 	globus_error_hierarchy.h \
 	globus_error_string.h \
+	globus_error_generic.h \
+	globus_error_errno.h \
 	globus_time.h \
 	globus_thread_pool.h \
 	globus_handle_table.h \
