@@ -398,8 +398,9 @@ store_credential( char *delegfile,
     certend += strlen(ENDCERT);
     size = certend-certstart;
 
-    char *newcert = malloc( size );;
+    char *newcert = malloc( size+1 );
     strncpy( newcert, certstart, size );
+    newcert[size] = '\0';
 
     buffer2file( certificate, newcert );
 
@@ -418,8 +419,9 @@ store_credential( char *delegfile,
     keyend += strlen(ENDKEY);
     size = keyend-keystart;
 
-    char *newkey = malloc( size );;
+    char *newkey = malloc( size+1 );
     strncpy( newkey, keystart, size );
+    newkey[size] = '\0';
 
     buffer2file( key, newkey );
 
