@@ -2547,6 +2547,7 @@ globus_l_xio_gssapi_ftp_handle_cntl(
     va_list                             ap)
 {
     char **                             out_subject;
+    int *                               out_type;
     gss_cred_id_t *                     out_cred;
     gss_cred_id_t *                     out_del_cred;
     globus_result_t                     res = GLOBUS_SUCCESS;
@@ -2559,10 +2560,25 @@ globus_l_xio_gssapi_ftp_handle_cntl(
 
     switch(cmd)
     {
-        case GLOBUS_XIO_DRIVER_GSSAPI_FTP_GET_DATA_CRED:
+        case GLOBUS_XIO_DRIVER_GSSAPI_FTP_GET_AUTH:
+            out_type = va_arg(ap, int *);
             out_cred = va_arg(ap, gss_cred_id_t *);
             out_del_cred = va_arg(ap, gss_cred_id_t *);
             out_subject = va_arg(ap, char **);
+
+            switch(ds_handle->state)
+            {
+                case GSSAPI_FTP_STATE_OPEN:
+                    *out_type = GLOBUS_XIO_GSSAPI_FTP_SECURE;
+                    break;
+                case GSSAPI_FTP_STATE_OPEN_CLEAR:
+                    *out_type = GLOBUS_XIO_GSSAPI_FTP_CLEAR;
+                    break;
+                default:
+                    *out_type = GLOBUS_XIO_GSSAPI_FTP_NONE;
+                    break;
+            }
+
             *out_cred = ds_handle->cred_handle;
             *out_del_cred = ds_handle->delegated_cred_handle;
             *out_subject = ds_handle->auth_gssapi_subject;

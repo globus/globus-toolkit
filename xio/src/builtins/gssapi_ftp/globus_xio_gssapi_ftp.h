@@ -15,7 +15,7 @@ typedef enum
 
 typedef enum globus_xio_gssapi_handle_cntl_type_e
 {
-    GLOBUS_XIO_DRIVER_GSSAPI_FTP_GET_DATA_CRED,
+    GLOBUS_XIO_DRIVER_GSSAPI_FTP_GET_AUTH,
 } globus_xio_gssapi_handle_cntl_type_t;
 
 
@@ -106,6 +106,13 @@ enum
     GLOBUS_XIO_GSSAPI_FTP_ERROR_ALLOC,
     GLOBUS_XIO_GSSAPI_FTP_ERROR_AUTH,
     GLOBUS_XIO_GSSAPI_FTP_ERROR_QUIT
+};
+
+enum
+{
+    GLOBUS_XIO_GSSAPI_FTP_SECURE,
+    GLOBUS_XIO_GSSAPI_FTP_CLEAR,
+    GLOBUS_XIO_GSSAPI_FTP_NONE
 };
 
 #endif
