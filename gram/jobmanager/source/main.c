@@ -17,12 +17,14 @@
 #endif
 
 #include <stdio.h>
-#include <malloc.h>
+
+#ifdef HAVE_MALLOC_H
+#   include <malloc.h>
+#endif
 
 #include "gssapi.h"
 #include "globus_gss_assist.h"
 
-#include "globus_common.h"
 #include "globus_gram_job_manager.h"
 #include "globus_gram_protocol.h"
 #include "globus_rsl.h"

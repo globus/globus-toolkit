@@ -13,7 +13,6 @@ LAC_DOXYGEN(["../library"])
 
 AM_CONFIG_HEADER(config.h)
 
-AC_CHECK_HEADERS(malloc.h sys/time.h unistd.h)
 
 AC_MSG_CHECKING(checking for time_t timezone in <time.h>)
 AC_TRY_COMPILE(

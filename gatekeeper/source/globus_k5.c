@@ -61,10 +61,13 @@ Include header files
 #include <locale.h>
 #include <pwd.h>
 #include <string.h>
-#include <malloc.h>
 #include <unistd.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
+
+#ifdef HAVE_MALLOC_H
+#   include <malloc.h>
+#endif
 
 #include "globus_gatekeeper_utils.h"
 

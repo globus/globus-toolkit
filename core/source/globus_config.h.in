@@ -49,6 +49,7 @@
 #undef TARGET_ARCH_X86
 #undef TARGET_ARCH_IA64
 
+#undef HAVE_MALLOC_H
 #undef HAVE_PWD_H
 #undef HAVE_DIRENT_H
 #undef HAVE_SYS_FILE_H

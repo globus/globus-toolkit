@@ -11,7 +11,7 @@
 
 #include "globus_i_gss_assist.h"
 #include <gssapi.h>
-#include <malloc.h>
+#include <unistd.h>
 
 extern
 const gss_OID_desc * const gss_proxycertinfo_extension;

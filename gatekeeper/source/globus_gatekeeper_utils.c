@@ -26,11 +26,14 @@ CVS Information:
 #include <locale.h>
 #include <pwd.h>
 #include <string.h>
-#include <malloc.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
 #include <errno.h>
 #include <unistd.h>
+
+#ifdef HAVE_MALLOC_H
+#   include <malloc.h>
+#endif
 
 #if defined(TARGET_ARCH_CRAYT3E)
 #include "unicos.h"
