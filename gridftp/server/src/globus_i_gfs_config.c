@@ -55,7 +55,7 @@ static const globus_l_gfs_config_option_t option_list[] =
 {NULL, "Authentication, Authorization, and Security Options", NULL, NULL, NULL, 0, 0, NULL, NULL},
  {"auth_level", "auth_level", NULL, "auth-level", NULL, GLOBUS_L_GFS_CONFIG_INT, -1, NULL,
     "0 = No authentication or authorization. 1 = Authentication only.  "
-    "2 = Authorization only. 3 = Authentication and authorization.  "
+    "2 = Authentication and authorization.  "
     "If not set uses level 3 for frontends and level 1 for data nodes."},
  {"allow_from", "allow_from", NULL, "allow-from", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "Only allow connections from these source ip addresses.  Specify a comma "
@@ -1035,7 +1035,7 @@ globus_l_gfs_config_misc()
         }
         else
         {
-            globus_l_gfs_config_set("auth_level", 3, NULL);
+            globus_l_gfs_config_set("auth_level", 2, NULL);
         }
     }
 
