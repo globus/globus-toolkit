@@ -200,7 +200,8 @@ my @statres = stat "$globusdir/etc/globus_packages/globus_ssl_utils_setup/pkg_da
 
 if($statres[4] != $EUID)
 {
-   ($EUID,$EGID) = ($statres[4],$statres[5]);
+    $EGID = $statres[5];
+    $EUID = $statres[4];
 }
 
 my $metadata = new Grid::GPT::Setup(package_name => "globus_ssl_utils_setup");
