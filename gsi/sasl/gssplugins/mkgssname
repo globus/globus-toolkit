@@ -34,16 +34,16 @@ cat << __EOF__
  * several routines are from Meyer's draft
  */
 
+#include <stdio.h>
+#include <openssl/md5.h>
+
+#include "config.h"
+
 #ifdef HAVE_GSSAPI_H
 #include <gssapi.h>
 #else
 #include <gssapi/gssapi.h>
 #endif
-
-#include <stdio.h>
-#include <openssl/md5.h>
-
-#include "config.h"
 
 
 #define SASL_MECHNAMEMAX 20
