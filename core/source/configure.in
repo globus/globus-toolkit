@@ -79,11 +79,6 @@ if test "$GLOBUS_THREADS" = "no" ; then
 fi
 AC_SUBST(GLOBUS_THREADS)
 
-dnl check for perl
-
-AC_PATH_PROGS(PERL, perl)
-LAC_COMMANDS
-
 dnl Automake is using these for executables somehow
 AC_OBJEXT
 AC_EXEEXT
@@ -91,9 +86,7 @@ AC_EXEEXT
 
 AC_OUTPUT(Makefile
        	scripts/globus-build-env-$GLOBUS_FLAVOR_NAME.sh:scripts/globus-build-env.sh.in
-	scripts/globus-sh-tools.sh
 	scripts/Makefile
-	scripts/globus_build_config.pl
 	aclocal/Makefile
 	aclocal/automake_config
 	config/Makefile
