@@ -13,7 +13,7 @@
 // Global, allocated at runtime
 char* version;
 
-#define GSI_WUFTP_VER_LEN_MAX 128
+#define GSI_WUFTP_VER_LEN_MAX 1024
 
 /*!
 @brief Builds global version string from module information
@@ -36,22 +36,31 @@ int
 gsi_wuftp_get_version(void)
 {
   int                           rc;
-  const char                    server_name[] = "GridFTP Server";
-  const char                    gsi_string[] = 
-    " -- CAS enabled [GSI patch 0.5] wu-2.6.2(1)";
 
   /* Allocate space in the global space for the version string */
   version = globus_libc_malloc(sizeof(char) * GSI_WUFTP_VER_LEN_MAX);
   if(version == GLOBUS_NULL)
     return(GLOBUS_FAILURE);
 
-  rc = globus_libc_sprintf(version, "%s %d.%d %s (%d, %d)",
-			   server_name,
-			   local_version.major,
-			   local_version.minor,
-			   gsi_string,
-			   local_version.timestamp,
-			   local_version.branch_id);
+  rc = globus_libc_sprintf(
+      version,
+      "GridFTP Server %d.%d"
+#ifdef GLOBUS_AUTHORIZATION
+      " CAS enabled" 
+#endif
+      " GSSAPI type"
+#ifdef GSSAPI_GLOBUS
+      " Globus/GSI SSLeay"
+#endif
+#ifdef GSSAPI_KRB5
+      " Kerberos 5"
+#endif
+      " wu-2.6.2 (%d-%d)",
+      local_version.major,
+      local_version.minor,
+      local_version.timestamp,
+      local_version.branch_id);
 
   return(GLOBUS_SUCCESS);
 }
+
