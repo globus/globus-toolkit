@@ -29,7 +29,6 @@
 #ifdef GSSAPI
 
 #include "ssh.h"
-#include "ssh2.h"
 #include "xmalloc.h"
 #include "buffer.h"
 #include "bufaux.h"
@@ -39,7 +38,6 @@
 #include "cipher.h"
 #include "kex.h"
 #include "log.h"
-#include "compat.h"
 #include "monitor_wrap.h"
 #include "canohost.h"
 #include "ssh2.h"
