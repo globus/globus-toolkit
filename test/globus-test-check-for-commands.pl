@@ -57,7 +57,7 @@ sub check_for_commands
         }
         else 
         {
-            $u->report("SUCCESS");
+            $u->report("FAILURE");
         }
     }
 }   
