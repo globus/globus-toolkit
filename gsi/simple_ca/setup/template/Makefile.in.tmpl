@@ -69,13 +69,15 @@ AS = @AS@
 CC = @CC@
 CFLAGS = @CFLAGS@
 CPP = @CPP@
+CPPFLAGS = @CPPFLAGS@
 CROSS = @CROSS@
 CXX = @CXX@
 CXXCPP = @CXXCPP@
 CXXFLAGS = @CXXFLAGS@
+DIRT_BRANCH_ID = @DIRT_BRANCH_ID@
+DIRT_TIMESTAMP = @DIRT_TIMESTAMP@
 DLLTOOL = @DLLTOOL@
 DOXYGEN = @DOXYGEN@
-ECHO = @ECHO@
 EXEEXT = @EXEEXT@
 F77 = @F77@
 F77FLAGS = @F77FLAGS@
@@ -96,6 +98,8 @@ GPT_LIBS = @GPT_LIBS@
 GPT_LIB_LINKS = @GPT_LIB_LINKS@
 GPT_LINKTYPE = @GPT_LINKTYPE@
 GPT_LOCATION = @GPT_LOCATION@
+GPT_MAJOR_VERSION = @GPT_MAJOR_VERSION@
+GPT_MINOR_VERSION = @GPT_MINOR_VERSION@
 GPT_PGM_LINKS = @GPT_PGM_LINKS@
 INSURE = @INSURE@
 LD = @LD@
@@ -108,8 +112,8 @@ MAKEINFO = @MAKEINFO@
 OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
 PACKAGE = @PACKAGE@
+PERL = @PERL@
 RANLIB = @RANLIB@
-STRIP = @STRIP@
 VERSION = @VERSION@
 builddir = @builddir@
 cross_compiling = @cross_compiling@
@@ -135,27 +139,36 @@ docdir = $(GLOBUS_LOCATION)/share/doc
 LINK_BAK = orig
 AUTOMAKE_OPTIONS = no-dependencies
 
-Scripts =  	setup-ssl-utils-sh-scripts 	setup-ssl-utils 	setup-ssl-utils.pl 	setup-gsi 	setup-gsi.pl 	grid-cert-request-config.in 	grid-security-config.in 	grid-default-ca
+# the value of this variable gets replace when a specific
+# ca package is generated
+CACERT_HASH = __CACERT_HASH__
+
+Scripts =  	setup-ssl-utils-sh-scripts 	setup-ssl-utils 	setup-ssl-utils.pl 	setup-gsi 	setup-gsi.pl 	grid-cert-request-config.in 	grid-security-config.in 	setup-ssl-utils-sh-scripts.in
+
+
+Data =  	grid-security.conf.$(CACERT_HASH) 	globus-ssl.conf 	$(CACERT_HASH).0 	$(CACERT_HASH).signing_policy
+
+
+bin_SCRIPTS =  	grid-cert-request         grid-default-ca
 
 
 setup_SCRIPTS = $(Scripts)
 
-setup_DATA =  	globus-ssl.conf 	grid-security.conf.__CACERT_HASH__ 	__CACERT_HASH__.0 	__CACERT_HASH__.signing_policy
-
+setup_DATA = $(Data)
 
 SUBDIRS = pkgdata
 
-EXTRA_DIST =  	$(Scripts) 	grid-default-ca 	grid-security.conf.__CACERT_HASH__ 	globus-ssl.conf 	__CACERT_HASH__.0 	__CACERT_HASH__.signing_policy bootstrap         globus_automake_pre         globus_automake_post         globus_automake_pre_top         globus_automake_post_top
+EXTRA_DIST =  	$(Scripts) 	$(Data) 	grid-cert-request 	grid-default-ca bootstrap         globus_automake_pre         globus_automake_post         globus_automake_pre_top         globus_automake_post_top
 
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
 CONFIG_CLEAN_FILES = 
-SCRIPTS =  $(setup_SCRIPTS)
+SCRIPTS =  $(bin_SCRIPTS) $(setup_SCRIPTS)
 
 DATA =  $(setup_DATA)
 
 DIST_COMMON =  Makefile.am Makefile.in aclocal.m4 config.guess \
-config.sub configure configure.in install-sh ltmain.sh missing \
+config.sub configure configure.in install-sh ltconfig ltmain.sh missing \
 mkinstalldirs
 
 
@@ -179,6 +192,25 @@ config.status: $(srcdir)/configure $(CONFIG_STATUS_DEPENDENCIES)
 	$(SHELL) ./config.status --recheck
 $(srcdir)/configure: @MAINTAINER_MODE_TRUE@$(srcdir)/configure.in $(ACLOCAL_M4) $(CONFIGURE_DEPENDENCIES)
 	cd $(srcdir) && $(AUTOCONF)
+
+install-binSCRIPTS: $(bin_SCRIPTS)
+	@$(NORMAL_INSTALL)
+	$(mkinstalldirs) $(DESTDIR)$(bindir)
+	@list='$(bin_SCRIPTS)'; for p in $$list; do \
+	  if test -f $$p; then \
+	    echo " $(INSTALL_SCRIPT) $$p $(DESTDIR)$(bindir)/`echo $$p|sed '$(transform)'`"; \
+	    $(INSTALL_SCRIPT) $$p $(DESTDIR)$(bindir)/`echo $$p|sed '$(transform)'`; \
+	  else if test -f $(srcdir)/$$p; then \
+	    echo " $(INSTALL_SCRIPT) $(srcdir)/$$p $(DESTDIR)$(bindir)/`echo $$p|sed '$(transform)'`"; \
+	    $(INSTALL_SCRIPT) $(srcdir)/$$p $(DESTDIR)$(bindir)/`echo $$p|sed '$(transform)'`; \
+	  else :; fi; fi; \
+	done
+
+uninstall-binSCRIPTS:
+	@$(NORMAL_UNINSTALL)
+	list='$(bin_SCRIPTS)'; for p in $$list; do \
+	  rm -f $(DESTDIR)$(bindir)/`echo $$p|sed '$(transform)'`; \
+	done
 
 install-setupSCRIPTS: $(setup_SCRIPTS)
 	@$(NORMAL_INSTALL)
@@ -374,7 +406,7 @@ check-am: all-am
 check: check-recursive
 installcheck-am:
 installcheck: installcheck-recursive
-install-exec-am:
+install-exec-am: install-binSCRIPTS
 install-exec: install-exec-recursive
 
 install-data-am: install-setupSCRIPTS install-setupDATA
@@ -383,7 +415,8 @@ install-data: install-data-recursive
 install-am: all-am
 	@$(MAKE) $(AM_MAKEFLAGS) install-exec-am install-data-am
 install: install-recursive
-uninstall-am: uninstall-setupSCRIPTS uninstall-setupDATA
+uninstall-am: uninstall-binSCRIPTS uninstall-setupSCRIPTS \
+		uninstall-setupDATA
 uninstall: uninstall-recursive
 all-am: Makefile $(SCRIPTS) $(DATA)
 all-redirect: all-recursive
@@ -391,7 +424,8 @@ install-strip:
 	$(MAKE) $(AM_MAKEFLAGS) AM_INSTALL_PROGRAM_FLAGS=-s install
 installdirs: installdirs-recursive
 installdirs-am:
-	$(mkinstalldirs)  $(DESTDIR)$(setupdir) $(DESTDIR)$(setupdir)
+	$(mkinstalldirs)  $(DESTDIR)$(bindir) $(DESTDIR)$(setupdir) \
+		$(DESTDIR)$(setupdir)
 
 
 mostlyclean-generic:
@@ -425,12 +459,12 @@ maintainer-clean-am:  maintainer-clean-tags maintainer-clean-generic \
 maintainer-clean: maintainer-clean-recursive
 	-rm -f config.status
 
-.PHONY: uninstall-setupSCRIPTS install-setupSCRIPTS uninstall-setupDATA \
-install-setupDATA install-data-recursive uninstall-data-recursive \
-install-exec-recursive uninstall-exec-recursive installdirs-recursive \
-uninstalldirs-recursive all-recursive check-recursive \
-installcheck-recursive info-recursive dvi-recursive \
-mostlyclean-recursive distclean-recursive clean-recursive \
+.PHONY: uninstall-binSCRIPTS install-binSCRIPTS uninstall-setupSCRIPTS \
+install-setupSCRIPTS uninstall-setupDATA install-setupDATA \
+install-data-recursive uninstall-data-recursive install-exec-recursive \
+uninstall-exec-recursive installdirs-recursive uninstalldirs-recursive \
+all-recursive check-recursive installcheck-recursive info-recursive \
+dvi-recursive mostlyclean-recursive distclean-recursive clean-recursive \
 maintainer-clean-recursive tags tags-recursive mostlyclean-tags \
 distclean-tags clean-tags maintainer-clean-tags distdir info-am info \
 dvi-am dvi check check-am installcheck-am installcheck install-exec-am \
@@ -439,7 +473,6 @@ uninstall-am uninstall all-redirect all-am all installdirs-am \
 installdirs mostlyclean-generic distclean-generic clean-generic \
 maintainer-clean-generic clean mostlyclean distclean maintainer-clean
 
-	setup-ssl-utils-sh-scripts.in
 
 dist-hook:
 	$(GPT_LOCATION)/sbin/gpt_create_automake_rules --excludes=doxygen -srcdir=$(top_distdir)
@@ -453,16 +486,69 @@ unlink-am:
 
 filelist-am:
 
-link: link-recursive link-setupDATA link-setupSCRIPTS 
+link: link-recursive link-binSCRIPTS link-setupDATA link-setupSCRIPTS 
 	:
 
-unlink: unlink-recursive unlink-setupDATA unlink-setupSCRIPTS 
+unlink: unlink-recursive unlink-binSCRIPTS unlink-setupDATA unlink-setupSCRIPTS 
 	:
 
-.PHONY: link unlink link-recursive unlink-recursive link-am unlink-am filelist-amlink-setupDATA unlink-setupDATA filelist-setupDATA link-setupSCRIPTS unlink-setupSCRIPTS filelist-setupSCRIPTS 
+.PHONY: link unlink link-recursive unlink-recursive link-am unlink-am filelist-amlink-binSCRIPTS unlink-binSCRIPTS filelist-binSCRIPTS link-setupDATA unlink-setupDATA filelist-setupDATA link-setupSCRIPTS unlink-setupSCRIPTS filelist-setupSCRIPTS 
 
-filelist: filelist-recursive filelist-setupDATA filelist-setupSCRIPTS 
+filelist: filelist-recursive filelist-binSCRIPTS filelist-setupDATA filelist-setupSCRIPTS 
 	:
+
+
+
+
+link-binSCRIPTS: $(bin_SCRIPTS)
+	@$(NORMAL_INSTALL)
+	@$(mkinstalldirs) $(DESTDIR)$(bindir)
+	@list='$(bin_SCRIPTS)'; for p in $$list; do \
+	  mydir=`pwd`; \
+	  target_p=$(DESTDIR)$(bindir)/`echo $$p|sed '$(transform)'`; \
+	  if test -f $$p; then \
+		if test -f $$target_p -a ! -h $$target_p; then \
+			echo "mv $$target_p $$target_p.$(LINK_BAK)"; \
+			mv $$target_p $$target_p.$(LINK_BAK); \
+		fi; \
+		if test ! -h $$target_p; then \
+			echo "ln -s $$mydir/$$p $$target_p"; \
+			ln -s $$mydir/$$p $$target_p; \
+		fi; \
+	  else if test -f $(srcdir)/$$p; then \
+		cd $(srcdir); \
+		fullsrcdir=`pwd`; \
+		cd $$mydir; \
+		if test -f $$target_p -a ! -h $$target_p; then \
+			echo "mv $$target_p $$target_p.$(LINK_BAK)"; \
+			mv $$target_p $$target_p.$(LINK_BAK); \
+		fi; \
+		if test ! -h $$target_p; then \
+			echo "ln -s $$fullsrcdir/$$p $$target_p"; \
+			ln -s $$fullsrcdir/$$p $$target_p; \
+		fi; \
+	  else :; fi; fi; \
+	done
+
+unlink-binSCRIPTS:
+	@$(NORMAL_UNINSTALL)
+	@list='$(bin_SCRIPTS)'; for p in $$list; do \
+	    	target_p=$(DESTDIR)$(bindir)/`echo $$p|sed '$(transform)'`; \
+		if test -h $$target_p; then \
+			echo "rm $$target_p"; \
+			rm $$target_p; \
+		fi; \
+		if test -f $$target_p.$(LINK_BAK); then \
+			echo "mv $$target_p.$(LINK_BAK) $$target_p"; \
+			mv $$target_p.$(LINK_BAK) $$target_p; \
+		fi; \
+	done
+
+filelist-binSCRIPTS:
+	@list='$(bin_SCRIPTS)'; for p in $$list; do \
+	  echo "$(DESTDIR)$(bindir)/$$p" >> $(FILELIST_FILE); \
+	done
+
 
 
 

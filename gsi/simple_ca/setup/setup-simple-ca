@@ -481,7 +481,7 @@ fi
 # versions of this generated package should not be changed ever
 ${GLOBUS_SH_CP-cp} ${tmp_ca_setup_dir}/${CA_UTILS_PACKAGE} ${GRID_CA_DIR}/${CA_UTILS_PACKAGE}
 
-${GLOBUS_SH_RM-rm} -rf ${tmp_ca_setup_dir}
+#${GLOBUS_SH_RM-rm} -rf ${tmp_ca_setup_dir}
 
 echo "done."
 echo

@@ -1,35 +1,55 @@
 include $(top_srcdir)/globus_automake_pre
-include $(top_srcdir)/globus_automake_pre_top
 
-Scripts = \
-	setup-ssl-utils-sh-scripts \
-	setup-ssl-utils \
-	setup-ssl-utils.pl \
-	setup-gsi \
-	setup-gsi.pl \
-	grid-cert-request-config.in \
-	grid-security-config.in \
-	grid-default-ca
-	
+flavordir = $(GLOBUS_LOCATION)/etc/$(PACKAGE)
 
-setup_SCRIPTS = $(Scripts)
+FILELIST_FILES = noflavor_data.filelist \
+	$(GLOBUS_FLAVOR_NAME)_dev.filelist \
+	noflavor_doc.filelist \
+	$(GLOBUS_FLAVOR_NAME)_pgm.filelist \
+	$(GLOBUS_FLAVOR_NAME)_pgm_static.filelist \
+	$(GLOBUS_FLAVOR_NAME)_rtl.filelist
 
-setup_DATA = \
-	globus-ssl.conf \
-	grid-security.conf.__CACERT_HASH__ \
-	__CACERT_HASH__.0 \
-	__CACERT_HASH__.signing_policy
 
-SUBDIRS = pkgdata
+METADATA_FILES = \
+	pkg_data_noflavor_data.gpt \
+	pkg_data_$(GLOBUS_FLAVOR_NAME)_dev.gpt \
+	pkg_data_noflavor_doc.gpt \
+	pkg_data_$(GLOBUS_FLAVOR_NAME)_pgm.gpt \
+	pkg_data_$(GLOBUS_FLAVOR_NAME)_pgm_static.gpt \
+	pkg_data_$(GLOBUS_FLAVOR_NAME)_rtl.gpt
 
-EXTRA_DIST = \
-	$(Scripts) \
-	grid-default-ca \
-	grid-security.conf.__CACERT_HASH__ \
-	globus-ssl.conf \
-	__CACERT_HASH__.0 \
-	__CACERT_HASH__.signing_policy
-	setup-ssl-utils-sh-scripts.in
-	
+pkg_DATA = $(FILELIST_FILES) $(METADATA_FILES)
+
+filelist_file: $(MAKEFILE_AMS)
+	@mydir=`pwd`; \
+	if test -f "master.filelist"; then \
+		rm $(FILELIST_FILE); \
+	fi
+
+all_filelists: filelist_file
+	 @(cd .. && $(MAKE) $(AM_MAKEFLAGS) filelist) \
+## This trick allows "-k" to keep its natural meaning when running a
+## recursive rule.
+	  || case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac;
+
+
+$(FILELIST_FILES): sort_filelist
+
+sort_filelist: all_filelists
+	$(GPT_LOCATION)/sbin/gpt_sort_filelist  --flavor=$(GLOBUS_FLAVOR_NAME) ./master.filelist
+
+
+$(METADATA_FILES): pkg_data_src.gpt
+	$(GPT_LOCATION)/sbin/gpt_generate_bin_pkg_data  \
+	--flavor=$(GLOBUS_FLAVOR_NAME) pkg_data_src.gpt
+
+
+distclean-local:
+	@if test -f master.filelist; then \
+		rm *.filelist; \
+	fi; \
+	if test -f pkg_data_noflavor_data.gpt; then \
+		rm pkg_data_*.gpt; \
+	fi
+
 include $(top_srcdir)/globus_automake_post
-include $(top_srcdir)/globus_automake_post_top

@@ -1,6 +1,10 @@
 include $(top_srcdir)/globus_automake_pre
 include $(top_srcdir)/globus_automake_pre_top
 
+# the value of this variable gets replace when a specific
+# ca package is generated
+CACERT_HASH=__CACERT_HASH__
+
 Scripts = \
 	setup-ssl-utils-sh-scripts \
 	setup-ssl-utils \
@@ -9,27 +13,29 @@ Scripts = \
 	setup-gsi.pl \
 	grid-cert-request-config.in \
 	grid-security-config.in \
-	grid-default-ca
-	
+	setup-ssl-utils-sh-scripts.in
+
+Data = \
+	grid-security.conf.$(CACERT_HASH) \
+	globus-ssl.conf \
+	$(CACERT_HASH).0 \
+	$(CACERT_HASH).signing_policy
+
+bin_SCRIPTS = \
+	grid-cert-request \
+        grid-default-ca
 
 setup_SCRIPTS = $(Scripts)
 
-setup_DATA = \
-	globus-ssl.conf \
-	grid-security.conf.__CACERT_HASH__ \
-	__CACERT_HASH__.0 \
-	__CACERT_HASH__.signing_policy
+setup_DATA = $(Data)
 
 SUBDIRS = pkgdata
 
 EXTRA_DIST = \
 	$(Scripts) \
-	grid-default-ca \
-	grid-security.conf.__CACERT_HASH__ \
-	globus-ssl.conf \
-	__CACERT_HASH__.0 \
-	__CACERT_HASH__.signing_policy
-	setup-ssl-utils-sh-scripts.in
-	
+	$(Data) \
+	grid-cert-request \
+	grid-default-ca
+
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

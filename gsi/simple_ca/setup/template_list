@@ -14,6 +14,7 @@ install-sh
 mkinstalldirs
 missing
 ltmain.sh
+ltconfig
 ca-signing-policy.conf.tmpl
 grid-security.conf.tmpl
 setup-gsi.pl.tmpl
@@ -29,3 +30,4 @@ grid-default-ca
 pkgdata/pkg_data_src.gpt.in.tmpl
 pkgdata/Makefile.am
 pkgdata/Makefile.in
+grid-cert-request
