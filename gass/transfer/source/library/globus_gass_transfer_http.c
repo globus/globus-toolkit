@@ -2931,7 +2931,9 @@ globus_l_gass_transfer_http_command_callback(
 	}
 	globus_l_gass_transfer_http_unlock();
 	
-	debug_printf(2, ("calling globus_gass_transfer_proto_request_ready"));	globus_gass_transfer_proto_request_ready(
+	debug_printf(2, ("calling globus_gass_transfer_proto_request_ready"));
+
+        globus_gass_transfer_proto_request_ready(
 	    proto->request,
 	    (globus_gass_transfer_request_proto_t *) proto);
 
