@@ -650,6 +650,12 @@ globus_gsc_959_finished_command(
     globus_gsc_959_op_t                     op,
     char *                                  reply_msg);
 
+int
+globus_gridftp_server_control_restart_get(
+    globus_gridftp_server_control_restart_t restart,
+    globus_off_t *                          offset,
+    globus_off_t *                          length);
+
 extern globus_module_descriptor_t      globus_i_gsc_module;
 
 #define GLOBUS_GRIDFTP_SERVER_CONTROL_MODULE (&globus_i_gsc_module)

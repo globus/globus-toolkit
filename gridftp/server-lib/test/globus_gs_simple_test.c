@@ -2,6 +2,7 @@
 #include "globus_gridftp_server_control.h"
 #include "globus_xio_tcp_driver.h"
 #include "globus_xio_ftp_cmd.h"
+#include "globus_xio_gssapi_ftp.h"
 
 #define REPLY_220 "220 Hello there\r\n"
 #define FTP_USER_ARG (void*)0x15
@@ -27,9 +28,9 @@ test_res(
         return;
     }
                                                                                 
-    fprintf(stderr, "ERROR at line:%d: %s\n", 
+    fprintf(stderr, "ERROR at line: %d: %s\n", 
         line,
-        globus_object_printable_to_string(
+        globus_error_print_chain(
             globus_error_get(res)));
                                                                                 
     globus_assert(0);
@@ -94,10 +95,9 @@ static void
 list_cb(
     globus_gridftp_server_control_op_t      op,
     void *                                  data_handle,
-    const char *                            path,
-    globus_gridftp_server_control_resource_mask_t   mask)
+    const char *                            path)
 {
-    globus_gridftp_server_control_begin_transfer(op);
+    globus_gridftp_server_control_begin_transfer(op, 0);
     globus_gridftp_server_control_finished_transfer(op, GLOBUS_SUCCESS);
 }
 
@@ -144,9 +144,10 @@ transfer(
     void *                                  data_handle,
     const char *                            local_target,
     const char *                            mod_name,
-    const char *                            mod_parms)
+    const char *                            mod_parms,
+    globus_gridftp_server_control_restart_t restart)
 {
-    globus_gridftp_server_control_begin_transfer(op);
+    globus_gridftp_server_control_begin_transfer(op, 0);
     globus_gridftp_server_control_finished_transfer(op, GLOBUS_SUCCESS);
 }
 
@@ -198,7 +199,7 @@ main(
     res = globus_xio_driver_load("tcp", &tcp_driver);
     test_res(res, __LINE__);
 
-    res = globus_xio_driver_load("ftp_cmd", &ftp_driver);
+    res = globus_xio_driver_load("gssapi_ftp", &ftp_driver);
     test_res(res, __LINE__);
     res = globus_xio_stack_init(&stack, NULL);
     res = globus_xio_stack_push_driver(stack, tcp_driver);
@@ -220,7 +221,7 @@ main(
     res = globus_xio_attr_init(&xio_attr);
     test_res(res, __LINE__);
     res = globus_xio_attr_cntl(
-        xio_attr, ftp_driver, GLOBUS_XIO_DRIVER_FTP_CMD_BUFFER, GLOBUS_TRUE);
+        xio_attr, ftp_driver, GLOBUS_XIO_GSSAPI_ATTR_TYPE_SUPER_MODE, GLOBUS_TRUE);
     test_res(res, __LINE__);
     res = globus_xio_open(xio_handle, NULL, xio_attr);
     test_res(res, __LINE__);

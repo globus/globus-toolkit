@@ -113,7 +113,11 @@ do                                                                      \
     }                                                                   \
 } while(0)
 
-
+typedef struct globus_l_gsc_restart_ent_s
+{
+    globus_off_t                            offset;
+    globus_off_t                            length;
+} globus_l_gsc_restart_ent_t;
 
 typedef struct globus_l_gsc_cmd_ent_s
 {
@@ -3118,8 +3122,128 @@ void
 globus_gridftp_server_control_list_buffer_free(
     globus_byte_t *                         buffer)
 {
-    /* TODO: better verification if buffers get optimized,
-        else op arg is not very useful */
     globus_free(buffer);
+}
+
+int
+globus_l_gsc_restart_q_cmp(
+    void *                                  p1,
+    void *                                  p2)
+{
+    globus_l_gsc_restart_ent_t *            ent1;
+    globus_l_gsc_restart_ent_t *            ent2;
+
+    ent1 = (globus_l_gsc_restart_ent_t *) p1;
+    ent2 = (globus_l_gsc_restart_ent_t *) p2;
+
+    if(ent1->offset == ent2->offset)
+    {
+        return 0;
+    }
+    else if(ent1->offset < ent2->offset)
+    {
+        return 1;
+    }
+    else
+    {
+        return -1;
+    }
+}
+
+globus_i_gsc_restart_t *
+globus_i_gsc_restart_create()
+{
+    globus_i_gsc_restart_t *                restart;
+
+    restart = (globus_i_gsc_restart_t *)
+        globus_calloc(sizeof(globus_i_gsc_restart_t), 1);
+    if(restart == NULL)
+    {
+        return NULL;
+    }
+    globus_priority_q_init(&restart->q, globus_l_gsc_restart_q_cmp);
+
+    return restart;
+}
+
+void
+globus_i_gsc_restart_add(
+    globus_i_gsc_restart_t *                restart,
+    globus_off_t                            offset,
+    globus_off_t                            length)
+{
+    globus_l_gsc_restart_ent_t *            ent;
+
+    ent = (globus_l_gsc_restart_ent_t *)
+        globus_malloc(sizeof(globus_l_gsc_restart_ent_t));
+    ent->offset = offset;
+    ent->offset = offset;
+
+    globus_priority_q_enqueue(&restart->q, ent, ent);
+}
+
+int
+globus_gridftp_server_control_restart_get(
+    globus_i_gsc_restart_t *                restart,
+    globus_off_t *                          offset,
+    globus_off_t *                          length)
+{
+    int                                     size;
+    globus_l_gsc_restart_ent_t *            ent;
+
+    if(restart->offset_a == NULL)
+    {
+        size = globus_priority_q_size(&restart->q);
+        restart->offset_a = (globus_off_t *) 
+            globus_malloc(sizeof(globus_off_t) * size);
+        restart->length_a = (globus_off_t *) 
+            globus_malloc(sizeof(globus_off_t) * size);
+
+        while(!globus_priority_q_empty(&restart->q))
+        {
+            ent = (globus_l_gsc_restart_ent_t *)
+                globus_priority_q_dequeue(&restart->q);
+
+            restart->offset_a[restart->size] = ent->offset + ent->length;
+            ent = (globus_l_gsc_restart_ent_t *)
+                globus_priority_q_first(&restart->q);
+            restart->length_a[restart->size] = 
+                ent->offset - restart->offset_a[restart->size];
+
+            restart->size++;
+        }
+    }
+
+    if(restart->ndx >= size)
+    {
+        return -1;
+    }
+    if(offset != NULL)
+    {
+        *offset = restart->offset_a[restart->ndx];
+    }
+    if(length != NULL)
+    {
+        *length = restart->length_a[restart->ndx];
+    }
+    restart->ndx++;
+
+    return 0;
+}
+
+void
+globus_i_gsc_restart_destroy(
+    globus_i_gsc_restart_t *                restart)
+{
+    if(restart->offset_a != NULL)
+    {
+        globus_free(restart->offset_a);
+    }
+    if(restart->length_a != NULL)
+    {
+        globus_free(restart->length_a);
+    }
+    globus_priority_q_destroy(&restart->q);
+    globus_free(restart);
 }
 

@@ -1107,6 +1107,63 @@ globus_l_gsc_cmd_site(
     globus_i_gsc_command_panic(op);
 }
 
+static void
+globus_l_gsc_cmd_rest(
+    globus_i_gsc_op_t *                     op,
+    const char *                            full_command,
+    char **                                 cmd_a,
+    int                                     argc,
+    void *                                  user_arg)
+{
+    globus_i_gsc_restart_t *                restart_marker;
+    globus_off_t                            offset;
+    globus_off_t                            length;
+    int                                     sc;
+    char *                                  tmp_ptr;
+
+    restart_marker = globus_i_gsc_restart_create();
+    /* mode s */
+    if(strchr(cmd_a[1], '-') == NULL)
+    {
+        sc = sscanf(cmd_a[1], "%"GLOBUS_OFF_T_FORMAT, &length);
+        if(sc != 0)
+        {
+            globus_gsc_959_finished_command(op, "501 bad parameter.\r\n");
+            globus_i_gsc_restart_destroy(restart_marker);
+        }
+
+        globus_i_gsc_restart_add(restart_marker, 0, length);
+    }
+    /* mode e */
+    else
+    {
+        tmp_ptr = cmd_a[1];
+        while(tmp_ptr != NULL)
+        {
+            sc = sscanf(cmd_a[1], 
+                "%"GLOBUS_OFF_T_FORMAT"-%"GLOBUS_OFF_T_FORMAT, 
+                &offset, &length);
+            if(sc != 2)
+            {
+                globus_gsc_959_finished_command(
+                    op, "501 bad paremeter.\r\n");
+                globus_i_gsc_restart_destroy(restart_marker);
+                return;
+            }
+
+            globus_i_gsc_restart_add(restart_marker, 0, length);
+            tmp_ptr = strchr(tmp_ptr, ',');
+        }
+    }
+    if(op->server_handle->restart_marker != NULL)
+    {
+        globus_i_gsc_restart_destroy(op->server_handle->restart_marker);
+    }
+    op->server_handle->restart_marker = restart_marker;
+    globus_gsc_959_finished_command(op, 
+    "350 Restart Marker OK. Send STORE or RETRIEVE to initiate transfer.\r\n");
+}
+
 /*************************************************************************
  *                  data connection esstablishement
  *                  -------------------------------
@@ -2236,6 +2293,16 @@ globus_i_gsc_add_commands(
         1,
         1,
         "214 Syntax: QUIT (close control connection)\r\n",
+        NULL);
+
+    globus_gsc_959_command_add(
+        server_handle,
+        "RETR", 
+        globus_l_gsc_cmd_rest,
+        GLOBUS_GSC_COMMAND_POST_AUTH,
+        2,
+        2,
+        "214 Syntax: REST [<sp> restart marker]\r\n",
         NULL);
 
     globus_gsc_959_command_add(

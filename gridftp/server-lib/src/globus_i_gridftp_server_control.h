@@ -218,8 +218,11 @@ typedef enum globus_i_gsc_op_type_e
 
 typedef struct globus_i_gsc_restart_s
 {
-    globus_off_t                            offset;
-    globus_off_t                            length;
+    globus_off_t *                          offset_a;
+    globus_off_t *                          length_a;
+    int                                     size;
+    int                                     ndx;
+    globus_priority_q_t                     q;
 } globus_i_gsc_restart_t;
 
 typedef struct globus_i_gsc_op_s
@@ -529,5 +532,19 @@ globus_i_gsc_mlsx_line(
 char *
 globus_i_gsc_string_to_959(
     const char *                            in_str);
+
+globus_i_gsc_restart_t *
+globus_i_gsc_restart_create();
+
+void
+globus_i_gsc_restart_add(
+    globus_i_gsc_restart_t *                restart,
+    globus_off_t                            offset,
+    globus_off_t                            length);
+
+void
+globus_i_gsc_restart_destroy(
+    globus_i_gsc_restart_t *                restart);
+
 
 #endif
