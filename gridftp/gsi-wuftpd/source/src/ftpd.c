@@ -4431,15 +4431,16 @@ void retrieve(char *cmd, char *name, int offset, int length)
     {
 #       ifdef BUFFER_SIZE
             TransferComplete = G_SEND_DATA(name, fin, 
-                                   g_control_channel, offset, 
+                                   g_control_channel, tmp_restart,
                                    BUFFER_SIZE, length);
 #       else
 #           ifdef HAVE_ST_BLKSIZE
                 TransferComplete = G_SEND_DATA(name, fin, &g_data_handle, 
-                                       offset, st.st_blksize * 2, length);
+                                       tmp_restart, st.st_blksize * 2, length);
 #           else
                 TransferComplete = G_SEND_DATA(name, fin, 
-                                       &g_data_handle, offset, BUFSIZ, length);
+                                       &g_data_handle, tmp_restart, BUFSIZ, 
+                                       length);
 #           endif
 #       endif
     }
