@@ -33,6 +33,9 @@ print "creating globus-makefile-header\n";
 $result = system("cp $setupdir/globus-makefile-header $globusdir/sbin");
 $result = system("chmod 0755 $globusdir/sbin/globus-makefile-header");
 
+$result = system("cp $setupdir/globus-makefile-header.gpt1 $globusdir/sbin");
+$result = system("chmod 0755 $globusdir/sbin/globus-makefile-header.gpt1");
+
 print "Done\n";
 
 $metadata->finish();

@@ -226,4 +226,5 @@ AC_PATH_PROG(GLOBUS_SH_PS, ps)
 
 AC_OUTPUT(globus-sh-tools.sh
 	  globus-makefile-header
+	  globus-makefile-header.gpt1
 	)
