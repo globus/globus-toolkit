@@ -27,8 +27,9 @@ AC_OUTPUT(
 	doxygen/Doxyfile
 	doxygen/Doxyfile-internal
 	,
-	$GLOBUS_LOCATION/sbin/gpt_generate_bin_pkg_data \
+	$GPT_LOCATION/sbin/gpt_generate_bin_pkg_data \
 	--flavor=$GLOBUS_FLAVOR_NAME "./pkgdata/pkg_data_src.gpt"
 	,
 	GLOBUS_FLAVOR_NAME=$GLOBUS_FLAVOR_NAME
+	GPT_LOCATION=$GPT_LOCATION
 )
