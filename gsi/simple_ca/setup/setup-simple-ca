@@ -16,6 +16,29 @@ recho() {
     echo $ECHOOPTION $@ $ECHOTAIL
 }
 
+my_mkdir() {
+
+    ${GLOBUS_SH_MKDIR-mkdir} ${1}
+    res=$?
+    if test $? -ne 0; then
+        echo ""
+        echo "ERROR: Failed to make directory: ${1}"
+        echo "Check permissions of base dir"
+        echo ""
+        exit 1
+    fi
+}
+
+check_file() {
+    if test ! -f $1; then
+        echo ""
+        echo "ERROR: Problem with install: $1 does not exist!"
+        echo "Please report this error to discuss@globus.org"
+        echo ""
+        exit 1
+    fi
+}
+
 ############################################################
 # grid-ca-setup: Set up the CA configuration
 ############################################################
@@ -30,14 +53,40 @@ make_template_ca_setup() {
     template_package_file=${template_package_dir}/globus_simple_ca_setup_template.tar.gz
     tmp_ca_setup_dir=${GLOBUS_SH_TMP-/tmp/}/${USER}_tmp_ca_setup
     ${GLOBUS_SH_MKDIR-mkdir} -p ${tmp_ca_setup_dir}
+    if test $? -ne 0; then
+        echo ""
+        echo "Failed to create directory: ${tmp_ca_setup_dir}."
+        echo "Do you have write permissions to /tmp?"
+        echo ""
+        exit 1
+    fi
+
     current_dir=${PWD}
     cd ${tmp_ca_setup_dir}
+    if test $? -ne 0; then
+        echo ""
+        echo "Failed to access directory ${tmp_ca_setup_dir}"
+        echo ""
+        exit 1
+    fi
     
     ${GLOBUS_SH_GZIP-gzip} -dc ${template_package_file} | ${GLOBUS_SH_TAR-tar} xf -
+    if test $? -ne 0; then
+        echo ""
+        echo "Failed to extract tarball: ${template_package_file}"
+        echo "to location ${tmp_ca_setup_dir}"
+        echo ""
+        exit 1
+    fi
 
     grid_security_conf_template=${tmp_ca_setup_dir}/grid-security.conf.tmpl
+    check_file ${grid_security_conf_template}
+
     ca_signing_policy_conf_template=${tmp_ca_setup_dir}/ca-signing-policy.conf.tmpl
+    check_file ${ca_signing_policy_conf_template}
+
     ssl_conf_template=${tmp_ca_setup_dir}/globus-ssl.conf.tmpl
+    check_file ${ssl_conf_template}
 }
 
 ############################################################
@@ -46,7 +95,7 @@ make_template_ca_setup() {
 ############################################################
 create_ca_directory() {
 
-${GLOBUS_SH_MORE-cat} <<EOF
+${GLOBUS_SH_CAT-cat} <<EOF
  
 
     C e r t i f i c a t e    A u t h o r i t y    S e t u p
@@ -55,7 +104,7 @@ This script will setup a Certificate Authority for signing Globus
 users certificates.  It will also generate a simple CA package
 that can be distributed to the users of the CA.
 
-The CA information about the certificates it distrubtes will
+The CA information about the certificates it distributes will
 be kept in:
 
 ${GRID_CA_DIR}
@@ -64,13 +113,16 @@ EOF
 grid_ca_conf=${GRID_CA_DIR}/grid-ca-ssl.conf
 
 if test -d "${GRID_CA_DIR}"; then
-    echo ""
-    echo "ERROR: It looks like a CA has already been setup at this location."
-    recho "Do you want to overwrite this CA? (y/n) [n]: "
-    read tmp_answer
-    overwrite_answer=${tmp_answer:-n}
-    if test ! `echo ${overwrite_answer} | ${GLOBUS_SH_TR-tr} 'A-Z' 'a-z' | ${GLOBUS_SH_CUT-cut} -c1` = 'y'; then
-	exit;
+
+    if test -z "${force}"; then
+        echo ""
+        echo "ERROR: It looks like a CA has already been setup at this location."
+        recho "Do you want to overwrite this CA? (y/n) [n]: "
+        read tmp_answer
+        overwrite_answer=${tmp_answer:-n}
+        if test ! `echo ${overwrite_answer} | ${GLOBUS_SH_TR-tr} 'A-Z' 'a-z' | ${GLOBUS_SH_CUT-cut} -c1` = 'y'; then
+            exit 1;
+        fi
     fi
 else
     if test ! -d "${HOME}/.globus" && test -n "${default_loc}"; then
@@ -95,12 +147,29 @@ CA_CERT_FILE=${GRID_CA_DIR}/cacert.pem
 ${GLOBUS_SH_RM-rm} -rf ${GRID_CA_DIR}
 
 # from the CA.sh script - setup the CA directory 
-${GLOBUS_SH_MKDIR-mkdir} ${GRID_CA_DIR} ${GRID_CA_DIR}/certs/    \
-			 ${GRID_CA_DIR}/crl/ ${GRID_CA_DIR}/newcerts/ \
-			 ${GRID_CA_DIR}/private/  
+my_mkdir ${GRID_CA_DIR}
+my_mkdir ${GRID_CA_DIR}/certs/
+my_mkdir ${GRID_CA_DIR}/crl/
+my_mkdir ${GRID_CA_DIR}/newcerts/
+my_mkdir ${GRID_CA_DIR}/private/
 
 echo "01" > ${GRID_CA_DIR}/serial
+if test $? -ne 0; then
+    echo ""
+    echo "ERROR: Could not write to ${GRID_CA_DIR}/serial"
+    echo "Check permissions on the dir"
+    echo ""
+    exit 1
+fi
+
 touch ${GRID_CA_DIR}/index.txt
+if test $? -ne 0; then
+    echo ""
+    echo "ERROR: Could not write to ${GRID_CA_DIR}/index.txt"
+    echo "Check the permissions on the dir"
+    echo ""
+    exit 1
+fi
 
 # sets the permissions of the CA directory
 ${GLOBUS_SH_CHMOD-chmod} ${CA_DIR_PERMS}  \
@@ -111,6 +180,13 @@ ${GRID_CA_DIR}/newcerts/                  \
 ${GRID_CA_DIR}/private/                   \
 ${GRID_CA_DIR}/serial                     \
 ${GRID_CA_DIR}/index.txt
+
+if test $? -ne 0; then
+    echo ""
+    echo "ERROR: Failed to chmod files in ${CA_DIR_PERMS}"
+    echo ""
+    exit 1
+fi
 
 }
 
@@ -133,6 +209,34 @@ fi
 echo "simpleCA-${tmp_hostname}"
 }
 
+split_subject() {
+
+    casubject="${1}"
+
+    GSI_CA_NAME=`echo ${casubject} | ${GLOBUS_SH_SED-sed} -e "s/[Cc][Nn]=\([^,]*\),.*/\1/"`
+    GSI_CA_BASE_DN=`echo ${casubject} | ${GLOBUS_SH_SED-sed} -e "s/[Cc][Nn]=[^,]*,\(.*\)/\1/"`
+    HAS_GLOBUS_NS=`echo ${GSI_CA_BASE_DN} | ${GLOBUS_SH_SED-sed} -e "s/.*\([Oo]=[Gg][Ll][Oo][Bb][Uu][Ss],[ ]*[Oo]=[Gg][Rr][Ii][Dd]\)/\1/"` 
+    check_for_globus_ns "$GSI_CA_BASE_DN"
+    if test -z "${GSI_CA_NAME}" || 
+        test -z "${GSI_CA_BASE_DN}"; then
+        echo "" 
+        echo "The subject: ${casubject} is not a valid subject name"
+        echo "Use the default subject name if you don't know the correct"
+        echo "format to use"
+        return 1
+    elif test "`check_for_globus_ns "$GSI_CA_BASE_DN"`" = "YES"; then
+        echo ""
+        echo "ERROR: The Globus namespace (o=Globus, o=Grid) is restricted."
+        echo "Please use a different namespace."
+        
+        GSI_CA_BASE_DN="ou=${CA_ORG_NAME}, ou=GlobusTest, o=Grid"
+        GSI_CA_NAME="Globus Simple CA"
+        return 1
+    else
+        return 0
+    fi
+}
+
 ############################################################
 # get_ca_info: gets the CA information from the user to 
 #              create the CA certificate
@@ -146,57 +250,64 @@ GSI_CA_BASE_DN="ou=${CA_ORG_NAME}, ou=GlobusTest, o=Grid"
 GSI_CA_NAME="Globus Simple CA"
 
 got_subject=""
+
 while test -z "${got_subject}" ; do
 
     casubject="cn=${GSI_CA_NAME}, ${GSI_CA_BASE_DN}"
+    if test -n "${request_subject}"; then
+        casubject="${request_subject}"
+    fi
 	
     echo ""
     echo "The unique subject name for this CA is:"
     echo ""
     echo "${casubject}"
     echo ""
-    recho "Do you want to keep this as the CA subject (y/n) [y]: "
 
-    read _answer
-    answer=${_answer:-y}
-    first_char_answer="`echo ${answer} | ${GLOBUS_SH_TR-tr} 'A-Z' 'a-z' | ${GLOBUS_SH_CUT-cut} -c1`";
+    if test -n "${noint}" || test -n "${request_subject}"; then
+        split_subject "${request_subject:-casubject}"
+        if test $? -eq 0; then
+            got_subject="yes"
+        else
+            exit 1
+        fi
+    else
 
-    if test "${first_char_answer}" = "n"; then
-    
-	echo ""
-	recho "Enter a unique subject name for this CA: "
-	read casubject
-	echo ""
-	if test -n "${casubject}"; then
-	    GSI_CA_NAME=`echo ${casubject} | ${GLOBUS_SH_SED-sed} -e "s/[Cc][Nn]=\([^,]*\),.*/\1/"`
-	    GSI_CA_BASE_DN=`echo ${casubject} | ${GLOBUS_SH_SED-sed} -e "s/[Cc][Nn]=[^,]*,\(.*\)/\1/"`
-            HAS_GLOBUS_NS=`echo ${GSI_CA_BASE_DN} | ${GLOBUS_SH_SED-sed} -e "s/.*\([Oo]=[Gg][Ll][Oo][Bb][Uu][Ss],[ ]*[Oo]=[Gg][Rr][Ii][Dd]\)/\1/"` 
-	    check_for_globus_ns "$GSI_CA_BASE_DN"
-	    if test -z "${GSI_CA_NAME}" || 
-               test -z "${GSI_CA_BASE_DN}"; then
-		echo "" 
-		echo "The subject: ${casubject} is not a valid subject name"
-		echo "Use the default subject name if you don't know the correct"
-		echo "format to use"
-	    elif test "`check_for_globus_ns "$GSI_CA_BASE_DN"`" = "YES"; then
-                echo ""
-                echo "ERROR: The Globus namespace (o=Globus, o=Grid) is restricted."
-                echo "Please use a different namespace."
-                
-                GSI_CA_BASE_DN="ou=${CA_ORG_NAME}, ou=GlobusTest, o=Grid"
-                GSI_CA_NAME="Globus Simple CA"
-
-            else
-		got_subject="yes"
-	    fi
-	fi
-     elif test "${first_char_answer}" = "y"; then
-	got_subject="yes"
-     fi
-
+        recho "Do you want to keep this as the CA subject (y/n) [y]: "
+        
+        read _answer
+        answer=${_answer:-y}
+        first_char_answer="`echo ${answer} | ${GLOBUS_SH_TR-tr} 'A-Z' 'a-z' | ${GLOBUS_SH_CUT-cut} -c1`";
+        
+        if test "${first_char_answer}" = "n"; then
+            
+            echo ""
+            recho "Enter a unique subject name for this CA: "
+            read casubject
+            echo ""
+            if test -n "${casubject}"; then
+                split_subject "${casubject}"
+                if test $? -eq 0; then
+                    got_subject="yes"
+                fi
+            fi
+        elif test "${first_char_answer}" = "y"; then
+            got_subject="yes"
+        else
+            echo ""
+            echo "Please answer 'y' or 'n'"
+            echo ""
+        fi
+    fi
 done
 
 get_ca_email=""
+
+if test -n "${request_email}" || test -n "${noint}"; then
+    GSI_CA_EMAIL_ADDR=${request_email}
+    get_ca_email="done"
+fi
+
 while test -z "${get_ca_email}"; do
 
     echo ""
@@ -207,8 +318,13 @@ while test -z "${get_ca_email}"; do
 	get_ca_email="done"
     fi
 done
-    
-${GLOBUS_SH_MORE-cat}  <<EOF
+
+
+if test -n "${request_days}"; then
+    CA_CERT_DAYS=${request_days}
+elif test -z "${noint}"; then
+
+${GLOBUS_SH_CAT-cat}  <<EOF
 
 The CA certificate has an expiration date. Keep in mind that 
 once the CA certificate has expired, all the certificates 
@@ -223,6 +339,8 @@ recho "[default: 5 years (1825 days)]: "
 read _CA_CERT_DAYS
 CA_CERT_DAYS=${_CA_CERT_DAYS:-${CA_CERT_DAYS}}
 echo
+
+fi
 
 return
 }
@@ -258,7 +376,17 @@ save_ca_settings() {
     env_replace DEFAULT GSI_CA_NAME       |\
     env_replace DEFAULT GSI_CA_EMAIL_ADDR |\
     env_replace DEFAULT GSI_HOST_BASE_DN  |\
-    env_replace DEFAULT GSI_USER_BASE_DN  > ${grid_security_conf_template}
+    env_replace DEFAULT GSI_USER_BASE_DN  > ${grid_security_conf_template}.1
+
+    if test $? -ne 0; then
+        echo ""
+        echo "ERROR: Failed to modify file ${grid_security_conf_template}"
+        echo "Check that the file exists and permissions are valid"
+        echo ""
+        exit 1
+    fi
+
+    ${GLOBUS_SH_MV-mv} ${grid_security_conf_template}.1 ${grid_security_conf_template}
 }
 
 ############################################################
@@ -398,6 +526,8 @@ ${GLOBUS_SH_AWK-awk}  < $_config_file '
 ############################################################
 generate_ca_certificate() {
 
+check_file ${grid_security_conf_template}
+
 . ${grid_security_conf_template}
 
 ca_ssl_conf_template=${tmp_ca_setup_dir}/grid-ca-ssl.conf.tmpl
@@ -406,20 +536,50 @@ tmp_ca_conf=${GLOBUS_SH_TMP-/tmp/}/tmp_ssl.conf.1.$$
 
 ${GLOBUS_SH_SED-sed} -e "1,/BEGIN CONFIG/p" -e d \
 		     < $ca_ssl_conf_template > $tmp_ca_conf
+if test $? -ne 0; then
+    echo ""
+    echo "ERROR: Failed to write to ${tmp_ca_conf}"
+    echo ""
+    exit 1
+fi
 
 ${GLOBUS_SH_SED-sed} -e "s|^dir\([^=]*\)=.*$|dir\1= ${GRID_CA_DIR}|" \
 		     < $tmp_ca_conf > $grid_ca_conf
+if test $? -ne 0; then
+    echo ""
+    echo "ERROR: Failed to write to ${grid_ca_conf}"
+    echo ""
+    exit 1
+fi
 
 ${GLOBUS_SH_RM-rm} -f ${tmp_ca_conf}
 
 ldap_dn_to_ssl_dn "${GSI_CA_BASE_DN}" >> $grid_ca_conf
 ${GLOBUS_SH_SED-sed} -e "/END CONFIG/,\$p" -e d < $ca_ssl_conf_template >> $grid_ca_conf
 
+if test $? -ne 0; then
+    echo ""
+    echo "ERROR: Failed to write to ${grid_ca_conf}"
+    echo ""
+    exit 1
+fi
+
 CA_REQ_INPUT=${GLOBUS_SH_TMP-/tmp}/tmp_openssl_input.conf.1.$$
+
 create_input_file "${GSI_CA_NAME}" "${grid_ca_conf}" > ${CA_REQ_INPUT}
+check_file ${CA_REQ_INPUT}
+
+if test -n "${request_password}"; then
+    password_option="-passout pass:${request_password} "
+elif test -n "${noint}"; then
+    password_option="-passout pass:globus "
+else
+    password_option=""
+fi
 
 # create CA certificate request
-${openssl_cmd} req ${openssl_options} -config "${grid_ca_conf}" -x509 -days ${CA_CERT_DAYS} \
+${openssl_cmd} req ${openssl_options} ${password_option} -config "${grid_ca_conf}" \
+                   -x509 -days ${CA_CERT_DAYS} \
                    -newkey rsa:1024 -keyout ${CA_KEY_FILE} \
                    -out ${CA_CERT_FILE} < ${CA_REQ_INPUT} 
 RET=$?
@@ -442,7 +602,7 @@ fi
 ###########################################################
 emit_directions () {
 
-${GLOBUS_SH_MORE-cat} <<EOF
+${GLOBUS_SH_CAT-cat} <<EOF
 
 A self-signed certificate has been generated 
 for the Certificate Authority with the subject: 
@@ -549,6 +709,7 @@ generate_setup_file() {
     ${GLOBUS_SH_SED-sed} -e "s|__CACERT_HASH__|${CA_CERT_HASH}|g" \
 			 "${tmp_ca_setup_dir}/${file_pre}.tmpl" \
       > "${tmp_ca_setup_dir}/${file_pre}"
+    check_file ${tmp_ca_setup_dir}/${file_pre}
 }
 
 ############################################################
@@ -571,6 +732,7 @@ CA_CERT_HASH=`${openssl_cmd} x509 -hash -noout -in ${CA_CERT_FILE}`
 
 # creating <HASH>.0
 ${GLOBUS_SH_CAT-cat} ${CA_CERT_FILE} > ${tmp_ca_setup_dir}/${CA_CERT_HASH}.0
+check_file "${CA_CERT_HASH}.0"
 
 # creating <HASH>.signing_policy file
 CA_CERT_SUBJECT="`${openssl_cmd} x509 -text -noout -in ${CA_CERT_FILE} |\
@@ -584,9 +746,11 @@ ${GLOBUS_SH_SED-sed} -e "s|CA_SUBJECT_NAME|${CA_CERT_SUBJECT}|" \
 		     -e "s|CA_HASH|${CA_CERT_HASH}|" \
 		     -e "s|CA_SIGNING_POLICY|${CA_COND_SUBJECT}|" \
 		     ${ca_signing_policy_conf_template} > ${tmp_ca_setup_dir}/${CA_CERT_HASH}.signing_policy
+check_file "${CA_CERT_HASH}.signing_policy"
 
 # creating grid-security.conf.HASH
 ${GLOBUS_SH_CP-cp} ${grid_security_conf_template} ${tmp_ca_setup_dir}/grid-security.conf.${CA_CERT_HASH}
+check_file ${tmp_ca_setup_dir}/grid-security.conf.${CA_CERT_HASH}
 
 # creating files that need HASH of ca cert
 generate_setup_file "setup-gsi.pl"
@@ -601,11 +765,21 @@ generate_setup_file "/pkgdata/pkg_data_src.gpt"
 generate_setup_file "setup-ssl-utils"
 generate_setup_file "setup-ssl-utils.__CACERT_HASH__"
 ${GLOBUS_SH_CP-cp} "${tmp_ca_setup_dir}/globus-ssl.conf.tmpl" "${tmp_ca_setup_dir}/globus-ssl.conf"
+check_file "${tmp_ca_setup_dir}/globus-ssl.conf"
+
 ${GLOBUS_SH_CP-cp} "${tmp_ca_setup_dir}/setup-ssl-utils.__CACERT_HASH__" "${tmp_ca_setup_dir}/setup-ssl-utils.${CA_CERT_HASH}"
+check_file "${tmp_ca_setup_dir}/setup-ssl-utils.${CA_CERT_HASH}"
+
 echo ""
 recho "creating CA config package..."
 
 cd ${tmp_ca_setup_dir}
+if test $? -ne 0; then
+    echo ""
+    echo "ERROR: Failed to change working directory to: ${tmp_ca_setup_dir}"
+    echo ""
+    exit 1
+fi
 
 #${GLOBUS_SH_CHMOD-chmod} 0700 bootstrap
 ${GLOBUS_SH_CHMOD-chmod} 0700 configure
@@ -615,7 +789,21 @@ CA_UTILS_PACKAGE=$CA_UTILS_PACKAGE_DIR.tar.gz
 
 #./bootstrap
 ./configure
+if test $? -ne 0; then
+    echo ""
+    echo "ERROR: Unable to configure the simple_ca ${CA_CERT_HASH} setup package"
+    echo ""
+    exit 1
+fi
+
 make distdir
+if test $? -ne 0; then
+    echo ""
+    echo "ERROR: Unable to create simple_ca ${CA_CERT_HASH} setup package distribution directory"
+    echo ""
+    exit 1
+fi
+
 ${GLOBUS_SH_CHMOD-chmod} -R a+r ${CA_UTILS_PACKAGE_DIR}
 ${GLOBUS_SH_TAR-tar} cvf $CA_UTILS_PACKAGE_DIR.tar $CA_UTILS_PACKAGE_DIR
 if test $? -ne 0; then 
@@ -656,6 +844,7 @@ echo
 do_trap() {
 
     echo ""
+    echo ""
     echo "Normal program execution interrupted.  You will"
     echo "need to rerun the script:"
     echo ""
@@ -683,7 +872,25 @@ if test -z "${GLOBUS_LOCATION}"; then
     exit 1
 fi
 
+if test ! -f ${GLOBUS_LOCATION}/libexec/globus-script-initializer; then
+    echo ""
+    echo "ERROR: Your globus install has not been setup correctly"
+    echo "${GLOBUS_LOCATION}/libexec/globus-script-initializer not found"
+    echo "You most likely need to run gpt-postinstall for this globus install"
+    echo ""
+    exit 1
+fi
+
 . ${GLOBUS_LOCATION}/libexec/globus-script-initializer
+
+if test ! -f ${GLOBUS_LOCATION}/libexec/globus-sh-tools-vars.sh; then
+    echo ""
+    echo "ERROR: Invalid globus install and setup"
+    echo "${libexecdir}/globus-sh-tools-vars.sh not found"
+    echo ""
+    exit 1
+fi
+
 globus_source ${libexecdir}/globus-sh-tools-vars.sh
 
 PROGRAM_NAME=`echo $0 | ${GLOBUS_SH_SED-sed} 's|.*/||g'`
@@ -695,20 +902,50 @@ long_usage () {
 
 ${short_usage}
 
+  Note: Many of the following options can be used instead of allowing
+        the script to interactively request configration info.  If
+        its not clear what to do, let the interactive prompts guide you.
+
   Options:
     -help               : shows this help message
     -?
     -h
     -usage
+    -dir <loc>            : Will put the Simple CA in <loc>
+    -force                : Overwite existing CA install if one exists
+    -subject <CA subject> : Subject of the CA.  
+                            If not specified the default is used.
+                            Format: "cn=Globus,ou=Globus,o=Grid"
+                            Notice no spaces!  
+    -email <address>      : The email of the CA.  Default is empty.
+    -days <num>           : Expiration of CA certificate 
+                            (default: 1852 days or 5 years)
+    -pass <password>      : CA password for private key.  Since the
+                            password is visible to utilities, this
+                            form should only be used where security is
+                            not important.
+    -nobuild              : Don't build the generated setup package
+    -noint                : Force script to not be interactive.  This
+                            will choose defaults for parameters specified
+                            on the command line.  In this case the CA's
+                            private key password will be: 'globus'.  This
+                            option also implies -force.
 
-    -openssl-help       : Show help text for openssl
+    -openssl-help         : Show help text for openssl
  
-    -dir <loc>          : Will put the Simple CA in <loc>
-
     [<openssl options>] : Give openssl options to pass to the
-                          openssl command
+                          openssl command.  Use with caution, some
+                          options will conflict with this script.
 EOF
 }
+
+if test ! -f ${libexecdir}/globus-args-parser-header; then
+    echo ""
+    echo "ERROR: Invalid globus install"
+    echo "${libexecdir}/globus-args-parser-header not found"
+    echo ""
+    exit 1
+fi
 
 . $libexecdir/globus-args-parser-header
 
@@ -735,6 +972,36 @@ readCommandLine () {
          fi
          
          shift ; shift
+         ;;
+     -force)
+         force="yes"
+         shift
+         ;;
+     -subject)
+         request_subject="${2}"
+         echo "REQS: ${request_subject}"
+         shift ; shift
+         ;;
+     -email)
+         request_email="${2}"
+         shift ; shift
+         ;;
+     -days)
+         request_expire="${2}"
+         shift ; shift
+         ;;
+     -pass)
+         request_password="${2}"
+         shift ; shift
+         ;;
+     -nobuild)
+         nobuild="yes"
+         shift
+         ;;
+     -noint)
+         noint="yes"
+         force="yes"
+         shift
          ;;
      -openssl-help)
          shift;
