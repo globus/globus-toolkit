@@ -32,7 +32,7 @@ GetOptions('service-name|s=s' => \$name,
 &usage if $help;
 
 my $metadata =
-    new Grid::GPT::Setup(package_name => "globus_remote_job_manager_setup");
+    new Grid::GPT::Setup(package_name => "globus_job_manager_setup_remote");
 
 my $globusdir	= $ENV{GLOBUS_LOCATION};
 my $libexecdir	= "$globusdir/libexec";
@@ -60,7 +60,7 @@ if($? != 0)
 }
 
 # Create service
-$cmd = "$libexecdir/globus-add-job-manager-service -m remote -s \"$name\" $force";
+$cmd = "$libexecdir/globus-job-manager-service-add -m remote -s \"$name\" $force";
 system("$cmd >/dev/null 2>/dev/null");
 
 if($? == 0)
