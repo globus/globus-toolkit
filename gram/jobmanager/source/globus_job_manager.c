@@ -1020,6 +1020,28 @@ grami_jm_request_params(globus_rsl_t * description_tree,
     else
         params->gram_myjob = GLOBUS_GRAM_CLIENT_DEFAULT_MYJOB;
 
+    /**********************************
+     *  GET QUEUE PARAM
+     */
+    globus_rsl_param_get(description_tree,
+                       GLOBUS_GRAM_CLIENT_QUEUE_PARAM,
+                       &tmp_param);
+    if (tmp_param[0])
+        params->queue = tmp_param[0];
+    else
+        params->queue = NULL;
+ 
+    /**********************************
+     *  GET PROJECT PARAM
+     */
+    globus_rsl_param_get(description_tree,
+                       GLOBUS_GRAM_CLIENT_PROJECT_PARAM,
+                       &tmp_param);
+    if (tmp_param[0])
+        params->project = tmp_param[0];
+    else
+        params->project = NULL;
+
     /********************************** 
      *  GET ENVIRONMENT PARAM
      */
