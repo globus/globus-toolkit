@@ -99,19 +99,18 @@ static
 void
 globus_l_gfs_auth_request(
     globus_gridftp_server_control_op_t  op,
+    globus_gridftp_server_control_security_type_t secure_type,
     const char *                        subject,
     const char *                        user_name,
     const char *                        pw)
 {
-
     globus_result_t                     result; 
     int                                 rc;
     char *                              local_name;
     struct passwd *                     pwent;
 
 /* XXX add error responses */
-    if((!globus_i_gfs_config_bool("no_gssapi") && !globus_i_gfs_config_bool("allow_clear")) ||
-    (!strcmp(user_name, ":globus-mapping:") && globus_i_gfs_config_bool("allow_clear")))
+    if(secure_type == GLOBUS_GRIDFTP_SERVER_LIBRARY_GSSAPI)
     {
         rc = globus_gss_assist_gridmap((char *) subject, &local_name);
         if(rc != 0)
