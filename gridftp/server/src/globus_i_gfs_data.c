@@ -2920,6 +2920,10 @@ globus_l_gfs_data_begin_cb(
             globus_gfs_ipc_reply_event(op->ipc_handle, &event_reply);
         }
 
+        globus_i_gfs_log_message(
+            GLOBUS_I_GFS_LOG_INFO,
+            "Data transfer started\n");
+
         if(!op->writing && op->data_handle->info.mode == 'E')
         {   
             /* send first 0 byte marker */
@@ -3105,6 +3109,10 @@ globus_l_gfs_data_end_transfer_kickout(
             }
         }
         gettimeofday(&end_timeval, NULL);
+
+        globus_i_gfs_log_message(
+            GLOBUS_I_GFS_LOG_INFO,
+            "Data transfer done\n");
 
         if(globus_i_gfs_config_string("log_transfer"))
         {

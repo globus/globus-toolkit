@@ -396,6 +396,11 @@ globus_l_gfs_auth_session_cb(
     }
     else
     {
+        globus_i_gfs_log_message(
+            GLOBUS_I_GFS_LOG_INFO,
+            "User %s successfully authorized\n",
+            reply->info.session.username);
+
         if(reply->info.session.home_dir != NULL && 
             globus_i_gfs_config_bool("chdir_on_login"))
         {
