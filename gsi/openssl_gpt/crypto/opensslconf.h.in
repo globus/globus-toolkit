@@ -7,7 +7,7 @@
 
 #ifdef HEADER_CRYPTLIB_H
 #   ifndef OPENSSLDIR
-#       undef OPENSSLDIR 
+#       undef OPENSSLDIR
 #   endif
 #endif
 

@@ -48,7 +48,7 @@ AC_DEFUN(LAC_CRYPTO_SET,
 [
     # defaults:
 
-    lac_OPENSSLDIR=$GLOBUS_LOCATION
+    lac_OPENSSLDIR="$GLOBUS_LOCATION"
     lac_SIXTY_FOUR_BIT_LONG=""
     lac_SIXTY_FOUR_BIT=""
     lac_THIRTY_TWO_BIT="1"
