@@ -337,6 +337,8 @@ globus_l_gsc_cmd_mdtm_cb(
     int                                     stat_count,
     void *                                  user_arg)
 {
+    int                                     code;
+    char *                                  tmp_ptr;
     struct tm *                             tm;
     char *                                  msg;
     GlobusGridFTPServerName(globus_l_gsc_cmd_mdtm_cb);
@@ -346,21 +348,31 @@ globus_l_gsc_cmd_mdtm_cb(
         switch(response_type)
         {
             default:
+                code = 500;
                 /* TODO: evaulated error type */
-                msg = globus_libc_strdup("500 Command failed\r\n");
+                msg = globus_libc_strdup("Command failed");
                 break;
         }
     }
     else
     {
         tm = gmtime(&stat_info[0].mtime);
+        code = 213;
         msg =  globus_common_create_string(
-            "213 %04d%02d%02d%02d%02d%02d\r\n",
+            "%04d%02d%02d%02d%02d%02d",
             tm->tm_year+1900, tm->tm_mon+1, tm->tm_mday, 
             tm->tm_hour, tm->tm_min, tm->tm_sec);
     }
 
-    globus_gsc_959_finished_command(op, msg);
+    if(response_msg != NULL)
+    {
+        tmp_ptr = msg;
+        msg = globus_common_create_string("%s : %s", msg, response_msg);
+        free(tmp_ptr);
+    }
+    tmp_ptr = globus_i_gsc_string_to_959(code, msg);
+    globus_gsc_959_finished_command(op, tmp_ptr);
+    globus_free(tmp_ptr);
     if(stat_info != NULL)
     {
         globus_free(stat_info);
@@ -516,8 +528,10 @@ globus_l_gsc_cmd_cwd_cb(
     int                                     stat_count,
     void *                                  user_arg)
 {
+    int                                     code;
     char *                                  l_path;
     char *                                  msg = NULL;
+    char *                                  tmp_ptr;
     GlobusGridFTPServerName(globus_l_gsc_cmd_cwd_cb);
 
     /*
@@ -529,28 +543,27 @@ globus_l_gsc_cmd_cwd_cb(
         switch(response_type)
         {
             case GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_PATH_INVALID:
+                code = 550;
                 msg = globus_common_create_string(
-                    "550 %s: No such file or directory.\r\n",
-                    path);
+                    "%s: No such file or directory.", path);
                 break;
 
             case GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_ACCESS_DENINED:
-                msg = globus_common_create_string(
-                    "553 Permission denied.\r\n");
+                code = 553;
+                msg = globus_common_create_string("Permission denied.");
                 break;
 
             default:
+                code = 550;
                 msg = globus_common_create_string(
-                    "550 %s: Could not change directory.\r\n",
-                    path);
+                    "%s: Could not change directory.", path);
                 break;
         }
     }
     else if(!S_ISDIR(stat_info->mode))
     {
-        msg = globus_common_create_string(
-            "550 %s: Not a directory.\r\n",
-            path);
+        code = 550;
+        msg = globus_common_create_string("%s: Not a directory.", path);
     }
     else
     {
@@ -558,17 +571,16 @@ globus_l_gsc_cmd_cwd_cb(
             !(stat_info->uid == op->server_handle->uid && 
                 S_IXUSR & stat_info->mode && S_IRUSR & stat_info->mode))
         {
-            msg = globus_common_create_string(
-                "550 %s: Permission denied\r\n",
-                path);
+            code = 550;
+            msg = globus_common_create_string("%s: Permission denied", path);
         }
         else
         {
             l_path = globus_i_gsc_concat_path(op->server_handle, path);
             if(l_path == NULL)
             {
-                msg = globus_common_create_string(
-                    "550 %s: Could not change directory.\r\n",
+                code = 550;
+                msg = globus_common_create_string("Could not change directory.",
                     path);
             }
             else
@@ -578,7 +590,8 @@ globus_l_gsc_cmd_cwd_cb(
                     globus_free(op->server_handle->cwd);
                 }
                 op->server_handle->cwd = globus_libc_strdup(path);
-                msg = globus_libc_strdup("250 CWD command successful.\r\n");
+                code = 250;
+                msg = globus_libc_strdup("CWD command successful.");
             }
         }
     }
@@ -587,8 +600,15 @@ globus_l_gsc_cmd_cwd_cb(
         globus_i_gsc_command_panic(op);
         goto err;
     }
-
-    globus_gsc_959_finished_command(op, msg);
+    if(response_msg != NULL)
+    {
+        tmp_ptr = msg;
+        msg = globus_common_create_string("%s : %s", msg, response_msg);
+        free(tmp_ptr);
+    }
+    tmp_ptr = globus_i_gsc_string_to_959(code, msg);
+    globus_gsc_959_finished_command(op, tmp_ptr);
+    globus_free(tmp_ptr);
     globus_free(msg);
 
     return;
@@ -680,6 +700,7 @@ globus_l_gsc_cmd_stat_cb(
     int                                     stat_count,
     void *                                  user_arg)
 {
+    int                                     code;
     char *                                  msg;
     char *                                  tmp_ptr;
     GlobusGridFTPServerName(globus_l_gsc_cmd_stat_cb);
@@ -689,17 +710,20 @@ globus_l_gsc_cmd_stat_cb(
         switch(response_type)
         {
             case GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_PATH_INVALID:
+                code = 550;
                 msg = globus_common_create_string(
-                    "550 No such file or directory.\r\n");
+                    "No such file or directory.");
                 break;
 
             case GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_ACCESS_DENINED:
+                code = 553;
                 msg = globus_common_create_string(
-                    "553 Permission denied.\r\n");
+                    "Permission denied.");
                 break;
 
             default:
-                msg = globus_libc_strdup("500 Command failed\r\n");
+                code = 500;
+                msg = globus_libc_strdup("Command failed");
                 break;
         }
     }
@@ -715,12 +739,21 @@ globus_l_gsc_cmd_stat_cb(
                 op->server_handle->opts.mlsx_fact_str, op->server_handle->uid, 
                 stat_info);
         }
+        code = 213;
         msg =  globus_common_create_string(
-            "213-status of %s\r\n %s\r\n213 End of Status\r\n", 
+            "status of %s\n %s\n",
             op->path, tmp_ptr);
     }
 
-    globus_gsc_959_finished_command(op, msg);
+    if(response_msg != NULL)
+    {
+        tmp_ptr = msg;
+        msg = globus_common_create_string("%s : %s", msg, response_msg);
+        free(tmp_ptr);
+    }
+    tmp_ptr = globus_i_gsc_string_to_959(code, msg);
+    globus_gsc_959_finished_command(op, tmp_ptr);
+    globus_free(tmp_ptr);
     if(stat_info != NULL)
     {
         globus_free(stat_info);
@@ -799,6 +832,8 @@ globus_l_gsc_cmd_size_cb(
     int                                     stat_count,
     void *                                  user_arg)
 {
+    int                                     code;
+    char *                                  tmp_ptr;
     char *                                  msg = NULL;
     GlobusGridFTPServerName(globus_l_gsc_cmd_size_cb);
 
@@ -808,31 +843,42 @@ globus_l_gsc_cmd_size_cb(
         switch(response_type)
         {
             case GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_PATH_INVALID:
+                code = 550;
                 msg = globus_common_create_string(
-                    "550 No such file.\r\n");
+                    "No such file.");
                 break;
 
             case GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_ACCESS_DENINED:
+                code = 553;
                 msg = globus_common_create_string(
-                    "553 Permission denied.\r\n");
+                    "Permission denied.");
                 break;
 
             default:
-                msg = globus_libc_strdup("500 Command failed\r\n");
+                code = 550;
+                msg = globus_libc_strdup("Command failed");
                 break;
         }
     }
     else
     {
-        msg = globus_common_create_string("213 %d\r\n", stat_info->size);
+        code = 213;
+        msg = globus_common_create_string("%d", stat_info->size);
     }
     if(msg == NULL)
     {
         globus_i_gsc_command_panic(op);
         goto err;
     }
-    globus_gsc_959_finished_command(op, msg);
-    
+    if(response_msg != NULL)
+    {
+        tmp_ptr = msg;
+        msg = globus_common_create_string("%s : %s", msg, response_msg);
+        free(tmp_ptr);
+    }
+    tmp_ptr = globus_i_gsc_string_to_959(code, msg);
+    globus_gsc_959_finished_command(op, tmp_ptr);
+    globus_free(tmp_ptr);
     globus_free(msg);
     
     return;
@@ -962,6 +1008,7 @@ globus_l_gsc_auth_cb(
     char *                                  response_msg,
     void *                                  user_arg)
 {
+    int                                     code;
     char *                                  msg;
     char *                                  tmp_ptr;
 
@@ -969,28 +1016,36 @@ globus_l_gsc_auth_cb(
     {
         if(op->server_handle->post_auth_banner == NULL)
         {
+            code = 230;
             msg = globus_common_create_string(
-                "230 User %s logged in.\r\n",
+                "User %s logged in.",
                 op->server_handle->username);
         }
         else
         {
-            tmp_ptr = globus_common_create_string(
+            code = 230;
+            msg = globus_common_create_string(
                 "User %s logged in.\n%s",
                 op->server_handle->username,
                 op->server_handle->post_auth_banner);
-            msg = globus_i_gsc_string_to_959(230, tmp_ptr);
-            globus_free(tmp_ptr);
         }
     }
     else
     {
-        msg = globus_common_create_string("530 Login incorrect.\r\n");
+        code = 530;
+        msg = globus_common_create_string("Login incorrect.");
     }
     globus_i_gsc_log(op->server_handle, op->command,
         GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_SECURITY);
-    globus_gsc_959_finished_command(op, msg);
-
+    if(response_msg != NULL)
+    {
+        tmp_ptr = msg;
+        msg = globus_common_create_string("%s : %s", msg, response_msg);
+        free(tmp_ptr);
+    }
+    tmp_ptr = globus_i_gsc_string_to_959(code, msg);
+    globus_gsc_959_finished_command(op, tmp_ptr);
+    globus_free(tmp_ptr);
     globus_free(msg);
 }
 
@@ -1846,19 +1901,32 @@ globus_l_gsc_cmd_port_cb(
     char *                                  response_msg,
     void *                                  user_arg)
 {
+    int                                     code;
+    char *                                  msg;
+    char *                                  tmp_ptr;
+
     if(response_type != GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS)
     {
         /* TODO: evaulated error type */
-        globus_gsc_959_finished_command(
-            op, "500 PORT Command failed.\r\n");
+        code = 500;
+        msg = strdup("PORT Command failed.");
     }
     else
     {
         /* if port is successful we know that we are not delaying the pasv */
         op->server_handle->opts.delayed_passive = GLOBUS_FALSE;
-        globus_gsc_959_finished_command(
-            op, "200 PORT Command successful.\r\n");
+        code = 200;
+        msg = strdup("PORT Command successful.");
     }
+    if(response_msg != NULL)
+    {
+        tmp_ptr = msg;
+        msg = globus_common_create_string("%s : %s", msg, response_msg);
+        free(tmp_ptr);
+    }
+    tmp_ptr = globus_i_gsc_string_to_959(code, msg);
+    globus_gsc_959_finished_command(op, tmp_ptr);
+    globus_free(tmp_ptr);
 }
 
 static void
@@ -2164,6 +2232,9 @@ globus_l_gsc_data_cb(
     char *                                  response_msg,
     void *                                  user_arg)
 {
+    int                                     code;
+    char *                                  msg;
+    char *                                  tmp_ptr;
     globus_l_gsc_cmd_wrapper_t *            wrapper;
 
     wrapper = (globus_l_gsc_cmd_wrapper_t *) user_arg;
@@ -2171,13 +2242,24 @@ globus_l_gsc_data_cb(
     if(response_type != GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS)
     {
         /* TODO: evaulated error type */
-        globus_gsc_959_finished_command(wrapper->op, "500 Command failed\r\n");
+        code = 500;
+        msg = strdup("Command failed.");
     }
     else
     {
-        globus_gsc_959_finished_command(
-            wrapper->op, "226 Transfer Complete.\r\n");
+        code = 226;
+        msg = strdup("Transfer Complete.");
     }
+    if(response_msg != NULL)
+    {
+        tmp_ptr = msg;
+        msg = globus_common_create_string("%s : %s", msg, response_msg);
+        free(tmp_ptr);
+    }
+    tmp_ptr = globus_i_gsc_string_to_959(code, msg);
+    globus_gsc_959_finished_command(wrapper->op, tmp_ptr);
+    globus_free(tmp_ptr);
+    globus_free(msg);
 
     if(wrapper->mod_name)
     {

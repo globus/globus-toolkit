@@ -339,6 +339,10 @@ globus_i_gsc_op_destroy(
             globus_free(op->cs);
         }
         globus_free(op->command);
+        if(op->response_msg != NULL)
+        {
+            globus_free(op->response_msg);
+        }
 
         op->server_handle->ref--;
         globus_l_gsc_server_ref_check(op->server_handle);
@@ -700,12 +704,12 @@ globus_l_gsc_finished_op(
 
     server_handle = op->server_handle;
 
-    server_handle->outstanding_op = NULL;
     switch(server_handle->state)
     {
         case GLOBUS_L_GSC_STATE_PROCESSING:
             if(reply_msg == NULL && op->cmd_list == NULL)
             {
+                server_handle->outstanding_op = NULL;
                 reply_msg = "500 Command not supported.\r\n";
             }
             if(reply_msg == NULL)
@@ -714,6 +718,7 @@ globus_l_gsc_finished_op(
             }
             else
             {
+                server_handle->outstanding_op = NULL;
                 globus_i_gsc_op_destroy(op);
                 res = globus_l_gsc_final_reply(
                         server_handle,
@@ -727,6 +732,7 @@ globus_l_gsc_finished_op(
 
         case GLOBUS_L_GSC_STATE_ABORTING:
 
+            server_handle->outstanding_op = NULL;
             globus_i_gsc_op_destroy(op);
             if(reply_msg == NULL)
             {
@@ -760,11 +766,13 @@ globus_l_gsc_finished_op(
             break;
 
         case GLOBUS_L_GSC_STATE_ABORTING_STOPPING:
+            server_handle->outstanding_op = NULL;
             server_handle->state = GLOBUS_L_GSC_STATE_STOPPING;
             globus_i_gsc_op_destroy(op);
             break;
 
         case GLOBUS_L_GSC_STATE_STOPPING:
+            server_handle->outstanding_op = NULL;
             globus_i_gsc_op_destroy(op);
             server_handle->ref--;
             globus_l_gsc_server_ref_check(server_handle);
@@ -1607,7 +1615,10 @@ globus_l_gsc_command_callout(
                 argc,
                 cmd_ent->user_arg);
         }
-        globus_l_gsc_free_command_array(cmd_array);
+        if(argc != -1)
+        {
+            globus_l_gsc_free_command_array(cmd_array);
+        }
     }
 }
 
