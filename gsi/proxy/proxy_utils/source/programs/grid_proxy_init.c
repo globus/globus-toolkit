@@ -470,8 +470,8 @@ main(
     if(!user_cert_filename || !user_key_filename)
     {
         result = GLOBUS_GSI_SYSCONFIG_GET_USER_CERT_FILENAME(
-            &tmp_user_cert_filename,
-            &tmp_user_key_filename);
+            user_cert_filename ? NULL : &tmp_user_cert_filename,
+            user_key_filename ? NULL : &tmp_user_key_filename);
         if(result != GLOBUS_SUCCESS)
         {
             globus_libc_fprintf(stderr,
@@ -480,7 +480,8 @@ main(
             GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
         }
 
-        if(tmp_user_cert_filename == tmp_user_key_filename)
+        if(tmp_user_cert_filename &&
+           tmp_user_cert_filename == tmp_user_key_filename)
         {
             /* supposed to be a pkcs12 formated credential */
             user_cert_filename = user_key_filename
