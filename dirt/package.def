@@ -142,3 +142,4 @@ globus_authz_test               gsi/authz/test                  dirt.sh
 globus_authz_null_callout       gsi/authz_null_callout/source   dirt.sh
 globus_authz_gaa_callout        gsi/authz_gaa_callout/source    dirt.sh
 gaa_simple_test                 gsi/gaa_callbacks/gaa_simple/test dirt.sh
+globus_xsd_type                 chosting/schema/xsd/source      dirt.sh
