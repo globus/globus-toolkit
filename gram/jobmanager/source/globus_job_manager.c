@@ -1693,10 +1693,15 @@ globus_l_gram_request_fill(globus_rsl_t * rsl_tree,
             req->jobtype = GLOBUS_GRAM_JOBMANAGER_JOBTYPE_MPI;
         else if (strncmp(tmp_param[0], "single", 6) == 0)
             req->jobtype = GLOBUS_GRAM_JOBMANAGER_JOBTYPE_SINGLE;
+        else if (strncmp(tmp_param[0], "multiple", 8) == 0)
+            req->jobtype = GLOBUS_GRAM_JOBMANAGER_JOBTYPE_MULTIPLE;
         else if (strncmp(tmp_param[0], "condor", 6) == 0)
             req->jobtype = GLOBUS_GRAM_JOBMANAGER_JOBTYPE_CONDOR;
         else
-            req->jobtype = GLOBUS_GRAM_JOBMANAGER_JOBTYPE_MULTIPLE;
+        {
+            req->failure_code = GLOBUS_GRAM_CLIENT_ERROR_INVALID_JOBTYPE;
+            return(GLOBUS_FAILURE);
+        }
     }
     else
     {
@@ -1716,7 +1721,16 @@ globus_l_gram_request_fill(globus_rsl_t * rsl_tree,
     }
 
     if (tmp_param[0])
+    {
+        if ((strncmp(tmp_param[0], "collective", 10) != 0) &&
+            (strncmp(tmp_param[0], "independent", 11) != 0))
+        {
+            req->failure_code = GLOBUS_GRAM_CLIENT_ERROR_INVALID_GRAM_MYJOB;
+            return(GLOBUS_FAILURE);
+        }
+
         gram_myjob = tmp_param[0];
+    }
     else
         gram_myjob = GLOBUS_GRAM_CLIENT_DEFAULT_MYJOB;
 
