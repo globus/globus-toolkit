@@ -14,6 +14,8 @@ TESTS_ENVIRONMENT = GLOBUS_INSTALL_PATH="$(top_builddir)/tests/globus"
 TESTS = ${MY_TESTS}
 
 clean-local:
-	rm -r ./globus
+	@if test -d "./globus"; then \
+	rm -r ./globus; \
+	fi
 
 include $(top_srcdir)/aclocal/automake_rules
