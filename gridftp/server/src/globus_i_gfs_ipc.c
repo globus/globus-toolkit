@@ -553,6 +553,7 @@ globus_gfs_ipc_open(
     globus_i_gfs_ipc_handle_t *         ipc = NULL;
     globus_result_t                     res;
     globus_xio_stack_t                  xio_stack;
+    globus_xio_attr_t                   xio_attr;
     GlobusGFSName(globus_gfs_ipc_open);
     
     if(ipc_handle == NULL)
@@ -630,6 +631,17 @@ globus_gfs_ipc_open(
         {
             goto err;
         }
+        res = globus_xio_attr_init(&xio_attr);
+        if(res != GLOBUS_SUCCESS)
+        {
+            goto err;
+        }
+        res = globus_xio_attr_cntl(xio_attr, globus_l_gfs_tcp_driver,
+            GLOBUS_XIO_TCP_SET_NODELAY, GLOBUS_TRUE);
+        if(res != GLOBUS_SUCCESS)
+        {
+            goto err;
+        }
 
         res = globus_xio_handle_create(&ipc->xio_handle, xio_stack);
         if(res != GLOBUS_SUCCESS)
@@ -639,7 +651,7 @@ globus_gfs_ipc_open(
         res = globus_xio_register_open(
             ipc->xio_handle,
             ipc->contact_string,
-            NULL,
+            xio_attr,
             globus_l_gfs_ipc_open_cb,
             ipc);
         if(res != GLOBUS_SUCCESS)
@@ -647,6 +659,7 @@ globus_gfs_ipc_open(
             goto err;
         }
         
+        globus_xio_attr_destroy(xio_attr);
         globus_xio_stack_destroy(xio_stack);
 
     }
@@ -734,6 +747,13 @@ globus_gfs_ipc_handle_create(
     {
         goto err;
     }
+    res = globus_xio_attr_cntl(xio_attr, globus_l_gfs_tcp_driver,
+        GLOBUS_XIO_TCP_SET_NODELAY, GLOBUS_TRUE);
+    if(res != GLOBUS_SUCCESS)
+    {
+        goto err;
+    }
+
     res = globus_xio_handle_create(&xio_handle, xio_stack);
     if(res != GLOBUS_SUCCESS)
     {
