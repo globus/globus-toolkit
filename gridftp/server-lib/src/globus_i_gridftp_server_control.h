@@ -546,8 +546,8 @@ globus_i_gsc_restart_create();
 void
 globus_i_gsc_restart_add(
     globus_i_gsc_restart_t *                restart,
-    globus_off_t                            offset,
-    globus_off_t                            length);
+    globus_off_t                            start_off,
+    globus_off_t                            end_off);
 
 void
 globus_i_gsc_restart_destroy(

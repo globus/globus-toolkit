@@ -3272,15 +3272,15 @@ globus_i_gsc_restart_create()
 void
 globus_i_gsc_restart_add(
     globus_i_gsc_restart_t *                restart,
-    globus_off_t                            offset,
-    globus_off_t                            length)
+    globus_off_t                            start_off,
+    globus_off_t                            end_off)
 {
     globus_l_gsc_restart_ent_t *            ent;
 
     ent = (globus_l_gsc_restart_ent_t *)
         globus_malloc(sizeof(globus_l_gsc_restart_ent_t));
-    ent->offset = offset;
-    ent->length = length;
+    ent->offset = start_off;
+    ent->length = end_off - start_off;
 
     globus_priority_q_enqueue(&restart->q, ent, ent);
 }
