@@ -1,7 +1,7 @@
 <project name="UDPUsage" default="compile" basedir=".">
 
   <path id="lib.classpath">
-    <fileset dir="./lib/"/>
+    <fileset dir="./lib/">
       <include name="**/*.jar"/>
     </fileset>
   </path>
@@ -12,7 +12,7 @@
 	<include name="**/*.class"/>
       </fileset>
       <fileset dir=".">
-	<include name="UDPUsage.jar"/>
+	<include name="*.jar"/>
       </fileset>
     </delete>
 
