@@ -50,11 +50,15 @@ globus_gram_rsl_reporter_LDADD = \
 	./libglobus_gram_job_manager_$(GLOBUS_FLAVOR_NAME).la $(GPT_PGM_LINKS)
 
 # Files which we want to put in the source package
-EXTRA_DIST = globus-personal-gatekeeper $(validation_DATA) \
-	$(sysconf_DATA) version.h.in \
-	globus_job_manager_rsl_validation.dox    main.dox \
-	globus_gram_job_manager_rsl.dox \
-	dirt.sh
+EXTRA_DIST = globus-personal-gatekeeper \
+	     $(validation_DATA) \
+	     $(sysconf_DATA) version.h.in \
+	     globus_job_manager_rsl_validation.dox \
+	     globus_gram_job_manager_rsl.dox \
+	     globus_gram_job_manager_script_interface.dox \
+	     globus_gram_job_manager_script_tutorial.dox \
+	     main.dox \
+	     dirt.sh
 
 BUILT_SOURCES = globus_gram_job_manager_rsl.dox
 
