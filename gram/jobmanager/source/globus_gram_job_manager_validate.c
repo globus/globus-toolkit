@@ -74,8 +74,12 @@ globus_l_gram_job_manager_insert_default_rsl(
     					when);
 
 static
+globus_gram_job_manager_validation_record_t *
+globus_l_gram_job_manager_validation_record_new(void);
+
+static
 void
-globus_l_gram_job_manager_free_validation_record(
+globus_l_gram_job_manager_validation_record_free(
     globus_gram_job_manager_validation_record_t *
     					record);
 
@@ -226,7 +230,7 @@ read_scheduler_validation_failed:
     {
 	while(!globus_list_empty(request->validation_records))
 	{
-	    globus_l_gram_job_manager_free_validation_record(
+	    globus_l_gram_job_manager_validation_record_free(
 		    globus_list_remove(&request->validation_records,
 				       request->validation_records));
 	}
@@ -348,6 +352,8 @@ globus_l_gram_job_manager_read_validation_file(
     char *				attribute;
     char *				value;
     globus_list_t *			node;
+    globus_gram_job_manager_validation_record_t *
+					old_record = NULL;
     char *				data = NULL;
     int					i;
     int					j;
@@ -502,16 +508,13 @@ globus_l_gram_job_manager_read_validation_file(
 	}
 	if(tmp == GLOBUS_NULL)
 	{
-	    tmp = globus_libc_calloc(1, 
-		    sizeof(globus_gram_job_manager_validation_record_t));
+	    tmp = globus_l_gram_job_manager_validation_record_new();
 	    if(tmp == NULL)
 	    {
 		rc = GLOBUS_GRAM_PROTOCOL_ERROR_READING_VALIDATION_FILE;
 
 		goto error_exit;
 	    }
-	    /* Default to publishable */
-	    tmp->publishable = GLOBUS_TRUE;
 	}
 	/* Compare token names against known attributes */
 	if(strcasecmp(attribute, "attribute") == 0)
@@ -639,19 +642,79 @@ globus_l_gram_job_manager_read_validation_file(
 		    request->validation_records, 
 		    globus_l_gram_job_manager_attribute_match,
 		    tmp->attribute);
+
 	    if(node)
 	    {
 		/*
-		 * Validation record already exists, replace it with new
-		 * values
+		 * Validation record already exists; override changed
+		 * values.
 		 */
-		globus_l_gram_job_manager_free_validation_record(
-			globus_list_remove(&request->validation_records, node));
-	    }
+		old_record = globus_list_first(node);
 
-	    /* Insert into validation record list */
-	    globus_list_insert(&request->validation_records, tmp);
-	    tmp = GLOBUS_NULL;
+		if(tmp->description)
+		{
+		    if(old_record->description)
+		    {
+			globus_libc_free(old_record->description);
+		    }
+		    old_record->description = tmp->description;
+		    tmp->description = NULL;
+		}
+		if(tmp->default_value)
+		{
+		    if(old_record->default_value)
+		    {
+			globus_libc_free(old_record->default_value);
+		    }
+		    old_record->default_value = tmp->default_value;
+		    tmp->default_value = NULL;
+		}
+		if(tmp->enumerated_values)
+		{
+		    if(old_record->enumerated_values)
+		    {
+			globus_libc_free(old_record->enumerated_values);
+		    }
+		    old_record->enumerated_values = tmp->enumerated_values;
+		    tmp->enumerated_values = NULL;
+		}
+		if(tmp->required_when != -1)
+		{
+		    old_record->required_when = tmp->required_when;
+		}
+		if(tmp->default_when != -1)
+		{
+		    old_record->default_when = tmp->default_when;
+		}
+		if(tmp->valid_when != -1)
+		{
+		    old_record->valid_when = tmp->valid_when;
+		}
+		if(tmp->publishable)
+		{
+		    old_record->publishable = tmp->publishable;
+		}
+		globus_l_gram_job_manager_validation_record_free(tmp);
+		tmp = GLOBUS_NULL;
+	    }
+	    else
+	    {
+		if(tmp->required_when == -1)
+		{
+		    tmp->required_when = 0;
+		}
+		if(tmp->default_when == -1)
+		{
+		    tmp->default_when = 0;
+		}
+		if(tmp->valid_when == -1)
+		{
+		    tmp->valid_when = 0;
+		}
+		/* Insert into validation record list */
+		globus_list_insert(&request->validation_records, tmp);
+		tmp = GLOBUS_NULL;
+	    }
 	}
     }
 
@@ -664,7 +727,7 @@ error_exit:
     }
     if(tmp)
     {
-	globus_l_gram_job_manager_free_validation_record(tmp);
+	globus_l_gram_job_manager_validation_record_free(tmp);
     }
     return rc;
 }
@@ -985,6 +1048,29 @@ globus_l_gram_job_manager_attribute_exists(
 }
 /* globus_l_gram_job_manager_attribute_exists() */
 
+static
+globus_gram_job_manager_validation_record_t *
+globus_l_gram_job_manager_validation_record_new(void)
+{
+    globus_gram_job_manager_validation_record_t *
+					tmp;
+
+    tmp = globus_libc_malloc(
+	    sizeof(globus_gram_job_manager_validation_record_t));
+
+    tmp->attribute = NULL;
+    tmp->description = NULL;
+    tmp->default_value = NULL;
+    tmp->enumerated_values = NULL;
+    tmp->required_when = -1;
+    tmp->default_when = -1;
+    tmp->valid_when = -1;
+    tmp->publishable = GLOBUS_TRUE;
+
+    return tmp;
+}
+/* globus_l_gram_job_manager_validation_record_new() */
+
 /**
  * Free a validation record
  *
@@ -996,7 +1082,7 @@ globus_l_gram_job_manager_attribute_exists(
  */
 static
 void
-globus_l_gram_job_manager_free_validation_record(
+globus_l_gram_job_manager_validation_record_free(
     globus_gram_job_manager_validation_record_t *
     					record)
 {
@@ -1022,7 +1108,7 @@ globus_l_gram_job_manager_free_validation_record(
     }
     globus_libc_free(record);
 }
-/* globus_l_gram_job_manager_free_validation_record() */
+/* globus_l_gram_job_manager_validation_record_free() */
 
 static
 void
