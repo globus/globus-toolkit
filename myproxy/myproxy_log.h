@@ -45,6 +45,14 @@ void myproxy_log(const char *format, ...);
 void myproxy_log_verror();
 
 /*
+ * myproxy_log_perror()
+ *
+ * Log the error message followed by a description of the current
+ * errror in errno.
+ */
+void myproxy_log_perror(const char *format, ...);
+
+/*
  * myproxy_log_close()
  *
  * Shutdown logging and deallocate any memory associated with it.
