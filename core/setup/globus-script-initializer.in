@@ -44,7 +44,7 @@ if [ "X${GLOBUS_DEPLOYED}" = "XTRUE" ]; then
 else
     prefix="${GLOBUS_INSTALL_PATH}"
     exec_prefix=@installed_exec_prefix@
-    if [ "X${GLOBUS_ARCH_INDEPENDENT}" = "XTRUE" ]; then
+    if [ "X${GLOBUS_ARCHITECTURE_INDEPENDENT}" = "XTRUE" ]; then
 	if [ '@installed_exec_prefix@' != '${prefix}' ] ; then
 	    arch="`${GLOBUS_INSTALL_PATH}/sbin/config.guess`"
 	    exec_prefix="${prefix}/services/${arch}"
