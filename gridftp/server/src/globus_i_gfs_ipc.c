@@ -3374,7 +3374,8 @@ globus_gfs_ipc_init()
 
     community_list = globus_i_gfs_config_list("community");
 
-    globus_assert(globus_list_empty(community_list));
+    globus_assert(!globus_list_empty(community_list) && 
+        "i said it wouldnt be empty");
 
     globus_l_gfs_ipc_community_default = 
         (globus_i_gfs_community_t *) globus_list_first(community_list);

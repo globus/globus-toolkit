@@ -519,6 +519,9 @@ globus_gfs_ipc_handle_get_by_contact(
     globus_gfs_ipc_error_callback_t     error_cb,
     void *                              error_user_arg);
 
+void
+globus_gfs_ipc_init();
+
 /* 
  *   community functions
  */

@@ -507,6 +507,7 @@ globus_l_gfs_file_activate();
     globus_i_gfs_config_init(argc, argv);
     globus_i_gfs_log_open();
     globus_i_gfs_data_init();
+    globus_gfs_ipc_init();
 
     globus_mutex_init(&globus_l_gfs_mutex, GLOBUS_NULL);
     globus_cond_init(&globus_l_gfs_cond, GLOBUS_NULL);
