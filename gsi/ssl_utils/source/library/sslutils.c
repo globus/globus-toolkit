@@ -3223,6 +3223,9 @@ proxy_init_cred(proxy_cred_desc * pcd, int (*pw_cb)(), BIO *bp)
 		}
 	    }
 	}
+	if (i) pcd->type = CRED_TYPE_PROXY;
+	else pcd->type = CRED_TYPE_PERMANENT;
+
     } else pcd->type = CRED_TYPE_PERMANENT;
 
     status = 0;
