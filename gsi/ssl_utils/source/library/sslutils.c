@@ -2860,10 +2860,7 @@ Description:
     shared director and file. One of these must be present.
     if not use $HOME/.globus/certificates
         or /etc/grid-security/certificates
-        or $GLOBUS_DEPLOY_PATH/share/certificates
         or $GLOBUS_LOCATION/share/certificates
-        or $GSI_DEPLOY_PATH/share/certificates
-        or $GSI_INSTALL_PATH/share/certificates
 
     The file with the key must be owned by the user,
     and readable only by the user. This could be the X509_USER_PROXY,
@@ -3058,34 +3055,17 @@ proxy_get_filenames(
         {
             /*
              * ...else look for (in order)
-             * $GLOBUS_DEPLOY_PATH/share/certificates
              * $GLOBUS_LOCATION/share/certficates
              */
             char *globus_location;
 
-
-            globus_location = getenv("GLOBUS_DEPLOY_PATH");
-
-            if (!globus_location)
-            {               
-                globus_location = getenv("GLOBUS_LOCATION");
-            }
-
-            if (!globus_location)
-            {
-                globus_location = getenv("GSI_DEPLOY_PATH");
-            }
-
-            if (!globus_location)
-            {
-                globus_location = getenv("GSI_INSTALL_PATH");
-            }
+            globus_location = getenv("GLOBUS_LOCATION");
 
             if (globus_location)
             {
 #ifdef DEBUG
                 fprintf(stderr,
-                        "Checking for certdir in Globus install/deploy path (%s)\n",
+                        "Checking for certdir in Globus path (%s)\n",
                         globus_location);
 #endif /* DEBUG */
 
