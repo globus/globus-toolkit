@@ -89,6 +89,11 @@ RCSID("$OpenBSD: sshd.c,v 1.242 2002/05/15 15:47:49 mouring Exp $");
 #include "ssh-gss.h"
 #endif
 
+#ifdef GSSAPI
+#include <openssl/md5.h>
+#include "bufaux.h"
+#endif /* GSSAPI */
+
 #ifdef LIBWRAP
 #include <tcpd.h>
 #include <syslog.h>
@@ -1012,6 +1017,10 @@ main(int ac, char **av)
 	if (test_flag)
 		exit(0);
 
+#ifdef GSSAPI
+	ssh_gssapi_clean_env();
+#endif /* GSSAPI */
+
 #ifndef HAVE_CYGWIN
 	/*
 	 * Clear out any supplemental groups we may have inherited.  This
@@ -1626,6 +1635,12 @@ do_ssh1_kex(void)
 #endif
 	if (options.challenge_response_authentication == 1)
 		auth_mask |= 1 << SSH_AUTH_TIS;
+
+#ifdef GSSAPI
+  	if (options.gss_authentication)
+    		auth_mask |= 1 << SSH_AUTH_GSSAPI;
+#endif
+
 	if (options.password_authentication)
 		auth_mask |= 1 << SSH_AUTH_PASSWORD;
 	packet_put_int(auth_mask);
@@ -1717,6 +1732,49 @@ do_ssh1_kex(void)
 		for (i = 0; i < 16; i++)
 			session_id[i] = session_key[i] ^ session_key[i + 16];
 	}
+
+#ifdef GSSAPI
+  /*
+   * Before we destroy the host and server keys, hash them so we can
+   * send the hash over to the client via a secure channel so that it
+   * can verify them.
+   */
+  {
+    MD5_CTX md5context;
+    Buffer buf;
+    unsigned char *data;
+    unsigned int data_len;
+    extern unsigned char ssh1_key_digest[];      /* in gss-serv.c */
+
+
+    debug("Calculating MD5 hash of server and host keys...");
+
+    /* Write all the keys to a temporary buffer */
+    buffer_init(&buf);
+
+    /* Server key */
+    buffer_put_bignum(&buf, sensitive_data.server_key->rsa->e);
+    buffer_put_bignum(&buf, sensitive_data.server_key->rsa->n);
+
+    /* Host key */
+    buffer_put_bignum(&buf, sensitive_data.ssh1_host_key->rsa->e);
+    buffer_put_bignum(&buf, sensitive_data.ssh1_host_key->rsa->n);
+
+    /* Get the resulting data */
+    data = (unsigned char *) buffer_ptr(&buf);
+    data_len = buffer_len(&buf);
+
+    /* And hash it */
+    MD5_Init(&md5context);
+    MD5_Update(&md5context, data, data_len);
+    MD5_Final(ssh1_key_digest, &md5context);
+
+    /* Clean up */
+    buffer_clear(&buf);
+    buffer_free(&buf);
+  }
+#endif /* GSSAPI */
+
 	/* Destroy the private and public keys. No longer. */
 	destroy_sensitive_data();
 

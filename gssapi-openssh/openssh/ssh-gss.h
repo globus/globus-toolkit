@@ -120,4 +120,5 @@ void ssh_gssapi_server(Kex *kex, Buffer *client_kexinit,
 void ssh_gssapi_do_child(char ***envp, u_int *envsizep);                 
 void ssh_gssapi_cleanup_creds(void *ignored);
 void ssh_gssapi_storecreds();
+void ssh_gssapi_clean_env();
 #endif /* GSSAPI */

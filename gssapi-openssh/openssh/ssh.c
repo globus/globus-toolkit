@@ -664,8 +664,11 @@ again:
 
 	seed_rng();
 
-	if (options.user == NULL)
-		options.user = xstrdup(pw->pw_name);
+        if (options.user == NULL) {
+                options.user = xstrdup(pw->pw_name);
+                options.implicit = 1;
+        }
+        else options.implicit = 0;
 
 	if (options.hostname != NULL)
 		host = options.hostname;
