@@ -209,11 +209,20 @@ globus_l_gram_jm_check_status(
     void *				callback_arg);
 
 void
-globus_l_jm_http_query_callback( void *                arg,
-				 globus_io_handle_t *  handle,
-				 globus_byte_t *       buf,
-				 globus_size_t         nbytes,
-				 int                   errorcode);
+globus_l_jm_http_query_callback(
+    void *                              arg,
+    globus_io_handle_t *                handle,
+    globus_byte_t *                     buf,
+    globus_size_t                       nbytes,
+    int                                 errorcode);
+
+void
+graml_jm_close_connection_after_write(
+    void *                              arg,
+    globus_io_handle_t *                handle,
+    globus_result_t                     result,
+    globus_byte_t *                     buf,
+    globus_size_t                       nbytes);
 
 /******************************************************************************
                        Define variables for external use
@@ -255,15 +264,16 @@ static int              globus_l_gram_stderr_fd=-1;
 
 globus_list_t *  globus_l_gram_client_contacts = GLOBUS_NULL;
 
-static int                         graml_my_count;
-static nexus_endpoint_t            graml_GlobalEndpoint;
-static globus_mutex_t              graml_api_mutex;
-static globus_cond_t               graml_api_cond;
-static int                         graml_stdout_count;
-static int                         graml_stderr_count;
-static globus_bool_t               graml_api_mutex_is_initialized = GLOBUS_FALSE;
-static globus_bool_t               graml_jm_done = GLOBUS_FALSE;
-static globus_bool_t               graml_jm_can_exit = GLOBUS_TRUE;
+static int                   graml_my_count;
+static nexus_endpoint_t      graml_GlobalEndpoint;
+static globus_mutex_t        graml_api_mutex;
+static globus_cond_t         graml_api_cond;
+static int                   graml_stdout_count;
+static int                   graml_stderr_count;
+static globus_bool_t         graml_api_mutex_is_initialized = GLOBUS_FALSE;
+static globus_bool_t         graml_jm_done = GLOBUS_FALSE;
+static globus_bool_t         graml_jm_can_exit = GLOBUS_TRUE;
+static globus_list_t *       graml_jm_outstanding_connections = GLOBUS_NULL;
  
 #define GRAM_LOCK { \
     int err; \
@@ -371,6 +381,13 @@ int main(int argc,
     if (rc != GLOBUS_SUCCESS)
     {
 	fprintf(stderr, "common module activation failed with rc=%d\n", rc);
+	exit(1);
+    }
+
+    rc = globus_module_activate(GLOBUS_IO_MODULE);
+    if (rc != GLOBUS_SUCCESS)
+    {
+	fprintf(stderr, "io activation failed with rc=%d\n", rc);
 	exit(1);
     }
 
@@ -1686,10 +1703,6 @@ int main(int argc,
 	    }
         } /* endwhile */
 
-	/* 
-	 * make sure we issue any last outstanding queries (no new ones are
-	 * accepted once graml_jm_done = TRUE
-	 */
 	while (!graml_jm_can_exit)
 	{
 	    globus_cond_wait(&graml_api_cond, &graml_api_mutex);
@@ -1698,10 +1711,7 @@ int main(int argc,
 
 	globus_callback_unregister(stat_cleanup_poll_handle);
 	globus_callback_unregister(gass_poll_handle);
-
     } /* endif */
-
-    globus_gram_http_callback_disallow(graml_job_contact);
 
     grami_fprintf( request->jobmanager_log_fp,
           "JM: we're done.  doing cleanup\n");
@@ -1789,12 +1799,13 @@ int main(int argc,
 
     grami_fprintf( request->jobmanager_log_fp, "JM: freeing RSL.\n");
 
-
     if (graml_rsl_tree)
         globus_rsl_free_recursive(graml_rsl_tree);
 
     grami_fprintf( request->jobmanager_log_fp,
           "JM: starting deactivate routines.\n");
+
+    globus_gram_http_callback_disallow(graml_job_contact);
 
     rc = globus_module_deactivate(GLOBUS_GRAM_JOBMANAGER_MODULE);
     if (rc != GLOBUS_SUCCESS)
@@ -1837,6 +1848,42 @@ int main(int argc,
     if (rc != GLOBUS_SUCCESS)
     {
 	fprintf(stderr, "nexus deactivation failed with rc=%d\n", rc);
+	exit(1);
+    }
+
+    /* 
+     * make sure we issue any last outstanding queries
+     */
+    {
+	globus_list_t *                list;
+	globus_gram_http_monitor_t *   monitor;
+	
+	for (list=graml_jm_outstanding_connections;
+	     list;
+	     list = globus_list_rest(list))
+	{
+	    monitor = globus_list_first(list);
+	    globus_mutex_lock(&monitor->mutex);
+	    {
+		while (!monitor->done)
+		    globus_cond_wait(&monitor->cond, &monitor->mutex);
+	    }
+	    globus_mutex_unlock(&monitor->mutex);
+	    
+	    globus_mutex_destroy(&monitor->mutex);
+	    globus_cond_destroy(&monitor->mutex);
+	    globus_libc_free(monitor);
+	}
+	
+	if (graml_jm_outstanding_connections)
+	    globus_list_free(graml_jm_outstanding_connections);
+	
+    }
+    
+    rc = globus_module_deactivate(GLOBUS_IO_MODULE);
+    if (rc != GLOBUS_SUCCESS)
+    {
+	fprintf(stderr, "io deactivation failed with rc=%d\n", rc);
 	exit(1);
     }
 
@@ -1927,6 +1974,7 @@ globus_l_gram_client_callback(int status, int failure_code)
     globus_size_t                       msgsize;
     globus_list_t *                     tmp_list;
     globus_l_gram_client_contact_t *    client_contact_node;
+    globus_gram_http_monitor_t *        monitor;
 
     tmp_list = globus_l_gram_client_contacts;
     message = GLOBUS_NULL;
@@ -1959,10 +2007,18 @@ globus_l_gram_client_callback(int status, int failure_code)
         if ((status & client_contact_node->job_state_mask) &&
             client_contact_node->failed_count < 4)
         {
+	    monitor = (globus_gram_http_monitor_t *)
+		globus_libc_malloc(sizeof(globus_gram_http_monitor_t));
+
+	    globus_mutex_init(&monitor->mutex, GLOBUS_NULL);
+	    globus_cond_init(&monitor->cond, GLOBUS_NULL);
+	    monitor->done = GLOBUS_FALSE;
+	    
             grami_fprintf( graml_log_fp,
                 "JM: sending callback of status %d to %s.\n", status,
                 client_contact_node->contact);
 
+	    GRAM_LOCK;
             rc = globus_gram_http_post_and_get(
 		             client_contact_node->contact,
 		             client_contact_node->contact,
@@ -1971,14 +2027,21 @@ globus_l_gram_client_callback(int status, int failure_code)
 			     msgsize,
 			     GLOBUS_NULL,                   /* ignore reply */
 			     GLOBUS_NULL,
-			     GLOBUS_NULL );                 /* no monitor */
+			     monitor );
 
-	    if (rc != GLOBUS_SUCCESS)       /* connect failed, most likely */
+	    if (rc==GLOBUS_SUCCESS)       
+	    {
+		globus_list_insert(&graml_jm_outstanding_connections,
+				   (void *) monitor);
+	    }
+	    else                             /* connect failed, most likely */
 	    {
 		grami_fprintf( graml_log_fp,
 			       "JM: callback failed, rc = %d\n", rc );
+		globus_libc_free(monitor);
                 client_contact_node->failed_count++;
 	    }
+	    GRAM_UNLOCK;
         }
 
         tmp_list = globus_list_rest (tmp_list);
@@ -3876,6 +3939,7 @@ globus_l_jm_http_query_callback( void *               arg,
 {
     globus_gram_jobmanager_request_t *   request;
     globus_l_gram_client_contact_t *     callback;
+    globus_gram_http_monitor_t *         monitor;
     globus_list_t *                      tmp_list;
     globus_list_t *                      next_list;
     globus_size_t                        replysize;
@@ -4064,17 +4128,51 @@ globus_l_jm_http_query_send_reply:
 	grami_fprintf( request->jobmanager_log_fp, "-------------------\n");
     }
 
+    monitor = (globus_gram_http_monitor_t *)
+	globus_libc_malloc(sizeof(globus_gram_http_monitor_t));
+
+    globus_mutex_init(&monitor->mutex, GLOBUS_NULL);
+    globus_cond_init(&monitor->cond, GLOBUS_NULL);
+    monitor->done = GLOBUS_FALSE;
+
     globus_io_register_write(
 	handle,
 	sendbuf,
 	sendsize,
-	globus_gram_http_close_after_write,
-	GLOBUS_NULL );
+	graml_jm_close_connection_after_write,
+	monitor );
 
     GRAM_LOCK;
     graml_jm_can_exit = GLOBUS_TRUE;
+    globus_list_insert(&graml_jm_outstanding_connections,
+		       (void *) monitor);
     GRAM_UNLOCK;
 }
     
 
+void
+graml_jm_close_connection_after_write(
+    void *                              arg,
+    globus_io_handle_t *                handle,
+    globus_result_t                     result,
+    globus_byte_t *                     buf,
+    globus_size_t                       nbytes)
+{
+    globus_gram_http_monitor_t *  monitor;
+
+    monitor = (globus_gram_http_monitor_t *) arg;
+
+    globus_mutex_lock(&monitor->mutex);
+    {
+	monitor->done = GLOBUS_TRUE;
+	globus_cond_signal(&monitor->cond);
+    }
+    globus_mutex_unlock(&monitor->mutex);
+
+    globus_gram_http_close_after_write( arg,
+					handle,
+					result,
+					buf,
+					nbytes);
+}
 
