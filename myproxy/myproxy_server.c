@@ -43,7 +43,7 @@ static char usage[] = \
 struct option long_options[] =
 {
     {"debug",            no_argument, NULL, 'd'},
-    {"help",             no_argument, NULL, 'u'},
+    {"help",             no_argument, NULL, 'h'},
     {"port",       required_argument, NULL, 'p'},
     {"config",     required_argument, NULL, 'c'},       
     {"usage",            no_argument, NULL, 'u'},
@@ -51,7 +51,7 @@ struct option long_options[] =
     {0, 0, 0, 0}
 };
 
-static char short_options[] = "hc:p:v";
+static char short_options[] = "dhc:p:vu";
 
 static char version[] =
 "myproxy-server version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
@@ -365,6 +365,10 @@ init_arguments(int argc, char *argv[],
             break;
         case 'v': /* print version and exit */
             fprintf(stderr, version);
+            exit(1);
+            break;
+	case 'u': /* print version and exit */
+            fprintf(stderr, usage);
             exit(1);
             break;
         case 'd':
