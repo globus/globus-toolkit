@@ -5,7 +5,7 @@ dnl are defined. We'll just use the standard interfaces in a LITE environment,
 dnl and copy things into the user buffers as neccessary.
 
 AC_DEFUN(CHECK_REENTRANT_FUNCS,[
-if test $GLOBUS_THREADS != "no"; then
+if test $GLOBUS_THREADS != "none"; then
 AC_CHECK_FUNCS(gethostbyaddr_r, [
 	AC_MSG_CHECKING(number of arguments to gethostbyaddr_r)
 	globus_gethostbyaddr_args=no
@@ -68,7 +68,7 @@ fi
 
 AC_CHECK_FUNCS(gethostbyname)
 
-if test $GLOBUS_THREADS != "no"; then
+if test $GLOBUS_THREADS != "none"; then
 AC_CHECK_FUNCS(gethostbyname_r, [
          AC_MSG_CHECKING(number of arguments to gethostbyname_r)
 	 globus_gethostbyname_args=no
@@ -120,7 +120,7 @@ fi
 
 AC_CHECK_FUNCS(ctime)
 
-if test $GLOBUS_THREADS != "no"; then
+if test $GLOBUS_THREADS != "none"; then
     AC_CHECK_FUNCS(ctime_r, 
         [
             AC_MSG_CHECKING(number of arguments to ctime_r)
@@ -177,7 +177,7 @@ AC_MSG_RESULT($globus_pw_comment)
 
 
 AC_CHECK_FUNCS(getpwnam)
-if test $GLOBUS_THREADS != "no"; then
+if test $GLOBUS_THREADS != "none"; then
 AC_CHECK_FUNCS(getpwnam_r, 
     [
         AC_MSG_CHECKING(number of arguments to getpwnam_r)
@@ -223,7 +223,7 @@ fi
 
 AC_CHECK_FUNCS(getpwuid)
 
-if test $GLOBUS_THREADS != "no"; then
+if test $GLOBUS_THREADS != "none"; then
 AC_CHECK_FUNCS(getpwuid_r, 
     [
         AC_MSG_CHECKING(number of arguments to getpwuid_r)
@@ -267,7 +267,7 @@ AC_CHECK_FUNCS(getpwuid_r,
     ])
 fi
 
-if test $GLOBUS_THREADS != "no"; then
+if test $GLOBUS_THREADS != "none"; then
 AC_CHECK_FUNCS(readdir_r, 
     [
         AC_MSG_CHECKING(number of arguments to readdir_r)
