@@ -40,7 +40,6 @@ CVS Information:
 #include "globus_gram_client.h"
 #include "globus_gram_job_manager.h"
 #include "globus_i_gram_version.h"
-#include "globus_i_gram_handlers.h"
 #include "grami_fprintf.h"
 #include "globus_rsl.h"
 #include "globus_gass_file.h"
@@ -119,30 +118,29 @@ globus_l_gram_jm_write(int fd, globus_byte_t *buffer, size_t length);
 char *
 globus_i_filename_callback_func(int stdout_flag);
 
-static void 
-globus_l_gram_cancel_handler(nexus_endpoint_t * endpoint,
-                             nexus_buffer_t * buffer,
-                             globus_bool_t is_non_threaded_handler);
+static int
+globus_l_gram_cancel_handler( globus_gram_jobmanager_request_t *   request,
+			      globus_byte_t **                     reply );
 
-static void
-globus_l_gram_status_handler(nexus_endpoint_t * endpoint,
-                             nexus_buffer_t * buffer,
-                             globus_bool_t is_non_threaded_handler);
+static int
+globus_l_gram_status_handler( globus_gram_jobmanager_request_t *   request,
+			      globus_byte_t **                     reply );
 
-static void 
-globus_l_gram_register_handler(nexus_endpoint_t * endpoint,
-                               nexus_buffer_t * buffer,
-                               globus_bool_t is_non_threaded_handler);
+static int 
+globus_l_gram_register_handler( char *            contact,
+				int               state_mask,
+				globus_byte_t **  reply );
 
-static void 
-globus_l_gram_unregister_handler(nexus_endpoint_t * endpoint,
-                                 nexus_buffer_t * buffer,
-                                 globus_bool_t is_non_threaded_handler);
+static int
+globus_l_gram_unregister_handler( char *          contact,
+				  globus_byte_t **  reply );
 
-static void 
-globus_l_gram_start_time_handler(nexus_endpoint_t * endpoint,
-                                 nexus_buffer_t * buffer,
-                                 globus_bool_t is_non_threaded_handler);
+static int
+globus_l_gram_start_time_handler( 
+    globus_gram_jobmanager_request_t * request,
+    float                              confidence,
+    globus_byte_t **                   reply );
+
 
 static int 
 globus_l_gram_status_file_gen(char * request_string,
@@ -230,11 +228,11 @@ globus_l_gram_jm_check_status(
     void *				callback_arg);
 
 void
-globus_l_jm_http_query_callback( void * arg,
-				 globus_io_handle_t * handle,
-				 globus_result_t result,
-				 globus_byte_t * buf,
-				 globus_size_t nbytes);
+globus_l_jm_http_query_callback( void *                arg,
+				 globus_io_handle_t *  handle,
+				 globus_byte_t *       buf,
+				 globus_size_t         nbytes,
+				 int                   errorcode);
 
 /******************************************************************************
                        Define variables for external use
@@ -245,26 +243,6 @@ extern int errno;
 /******************************************************************************
                        Define module specific variables
 ******************************************************************************/
-
-/* In threaded nexus, nexus_attach() will deadlock if the called from a
- * non-threaded handler
- */
-static globus_nexus_handler_t graml_handlers[] =
-{ 
-#ifdef BUILD_LITE
-    {GLOBUS_NEXUS_HANDLER_TYPE_NON_THREADED, globus_l_gram_cancel_handler},
-    {GLOBUS_NEXUS_HANDLER_TYPE_NON_THREADED, globus_l_gram_start_time_handler},
-    {GLOBUS_NEXUS_HANDLER_TYPE_NON_THREADED, globus_l_gram_status_handler},
-    {GLOBUS_NEXUS_HANDLER_TYPE_NON_THREADED, globus_l_gram_register_handler},
-    {GLOBUS_NEXUS_HANDLER_TYPE_NON_THREADED, globus_l_gram_unregister_handler},
-#else
-    {GLOBUS_NEXUS_HANDLER_TYPE_THREADED, globus_l_gram_cancel_handler},
-    {GLOBUS_NEXUS_HANDLER_TYPE_THREADED, globus_l_gram_start_time_handler},
-    {GLOBUS_NEXUS_HANDLER_TYPE_THREADED, globus_l_gram_status_handler},
-    {GLOBUS_NEXUS_HANDLER_TYPE_THREADED, globus_l_gram_register_handler},
-    {GLOBUS_NEXUS_HANDLER_TYPE_THREADED, globus_l_gram_unregister_handler},
-#endif  /* BUILD_LITE */
-};
 
 /*
  *                                                reason needed
@@ -1477,8 +1455,8 @@ main(int argc,
 	    /* send this reply back down the socket to the client */
 	    globus_gss_assist_wrap_send(&minor_status,
 					context_handle,
-					reply,
-					strlen(reply) + 1,
+					(char *)reply,
+					strlen((char *)reply) + 1,
 					&token_status,
 					globus_gss_assist_token_send_fd,
 					stdout,
@@ -1547,8 +1525,8 @@ main(int argc,
 	    /* send this reply back down the socket to the client */
 	    globus_gss_assist_wrap_send(&minor_status,
 					context_handle,
-					reply,
-					strlen(reply) + 1,
+					(char *)reply,
+					strlen((char *)reply) + 1,
 					&token_status,
 					globus_gss_assist_token_send_fd,
 					stdout,
@@ -1927,10 +1905,10 @@ globus_l_gram_client_callback(int status, int failure_code)
                 "JM: sending callback of status %d to %s.\n", status,
                 client_contact_node->contact);
 
-            rc = globus_gram_http_post( client_contact_node->contact_str,
+            rc = globus_gram_http_post( client_contact_node->contact,
 					GLOBUS_NULL,        /* default attr */
 					message,
-					strlen(message)+1,
+					strlen((char *)message)+1,
 					GLOBUS_NULL );      /* no monitor */
 
 	    if (rc != GLOBUS_SUCCESS)       /* connect failed, most likely */
@@ -2863,15 +2841,11 @@ Parameters:
 Returns:
 ******************************************************************************/
 static void 
-globus_l_gram_cancel_handler(globus_nexus_endpoint_t * endpoint,
-                             globus_nexus_buffer_t * buffer,
-                             globus_bool_t is_non_threaded_handler)
+globus_l_gram_cancel_handler(globus_gram_jobmanager_request_t *   request,
+			     globus_byte_t **                     reply)
 {
     int                                rc;
     int                                size;
-    int                                gram_version;
-    globus_nexus_startpoint_t          reply_sp;
-    globus_nexus_buffer_t              reply_buffer;
     globus_gram_jobmanager_request_t * request;
 
     request = (globus_gram_jobmanager_request_t * )
@@ -4228,13 +4202,14 @@ globus_l_jm_http_query_callback( void *               arg,
 				 globus_size_t        nbytes,
 				 int                  errorcode)
 {
-    char            message[GLOBUS_GRAM_HTTP_BUFSIZE];
-    globus_size_t   msgsize;
-    int             version;
-    int             query;
-    int             rc;
-    int *           tstatus = GLOBUS_NULL;
-    char *          p;
+    globus_gram_jobmanager_request_t *   request,
+    globus_byte_t *                      message;
+    globus_size_t                        msgsize;
+    globus_byte_t *                      httpbuf;
+    globus_size_t                        bufsize;
+    int                                  version;
+    int                                  query;
+    int                                  rc;
 
     if (errorcode != GLOBUS_SUCCESS)
     {
@@ -4245,69 +4220,50 @@ globus_l_jm_http_query_callback( void *               arg,
 	globus_io_register_close( handle,
 				  globus_gram_http_close_callback,
 				  GLOBUS_NULL );
+	return;
     }
-    else
-    {
-	globus_libc_printf("jm_read_callback : rc = %d message = %s \n",
-			   rc,
-			   message);
 
-	if ((rc != GLOBUS_SUCCESS)
-	    || (2!=sscanf(message, "%d\n%d", &version, &query))
-	    || (version != GLOBUS_GRAM_PROTOCOL_VERSION))
-	{
-	    globus_libc_printf("jm_read_callback : msg error\n");
-	    globus_gram_http_frame_error( buf );
-	}
-	else
-	{
-	    globus_io_handle_get_user_pointer( handle,
-					       (void **) &tstatus );
-	    rc = GLOBUS_SUCCESS;
-	    switch(query)
-	    {
-	    case GLOBUS_I_GRAM_JOB_MANAGER_CANCEL_HANDLER_ID:
-		*tstatus = GLOBUS_GRAM_CLIENT_JOB_STATE_DONE;
-		globus_libc_sprintf(
-		    message,
-		    "%d\n%d\n",
-		    GLOBUS_GRAM_PROTOCOL_VERSION,
-		    GLOBUS_SUCCESS );
-		break;
+    /* TODO: unpack buf */
 
-	    case GLOBUS_I_GRAM_JOB_MANAGER_STATUS_HANDLER_ID:
-		globus_libc_sprintf(
-		    message,
-		    "%d\n%d %d\n",
-		    GLOBUS_GRAM_PROTOCOL_VERSION,
-		    *tstatus,
-		    GLOBUS_SUCCESS );
-		break;
+    globus_libc_free(buf);
 
-	     default:
-		 globus_libc_printf("ouch...\n");
-		 ++rc;
-		 break;
-	     }
-	    
-	    if (rc == GLOBUS_SUCCESS)
-		rc = globus_gram_http_frame( (globus_byte_t *) message,
-					     (globus_size_t) strlen(message),
-					     buf );
-	    if (rc != GLOBUS_SUCCESS)
-		globus_gram_http_frame_error(buf);
-	}
-	globus_libc_printf("jm_read_callback : write on %d\n%s-----\n",
-			   handle->fd,
-			   (char *) buf); 
+    globus_io_handle_get_user_pointer( handle,
+				       (void **) &request );
 
-	/* release mutex */
+    /* 
+     * TODO: switch on query type, call different handlers. They all return
+     * a packed reply in "message", or error in rc.
+     */
+
+     if (rc==GLOBUS_SUCCESS)
+     {
+	 rc = globus_gram_http_frame( message,
+				      msgsize,
+				      &httpbuf,
+				      &bufsize );
+     }
+     if (rc!=GLOBUS_SUCCESS)
+     {
+	 globus_gram_http_frame_error( rc,
+				       &httpbuf,
+				       &bufsize );
+     }
+
+     globus_libc_free(message);
 	
-	result = globus_io_register_write(
-	    handle,
-	    buf,
-	    GLOBUS_GRAM_HTTP_BUFSIZE,
-	    globus_gram_http_close_after_read_or_write,
-	    GLOBUS_NULL );
-    }
+     if (GLOBUS_SUCCESS != globus_io_register_write(
+                                 handle,     
+				 httpbuf,
+				 bufsize,
+				 globus_gram_http_close_after_write,
+				 GLOBUS_NULL) )
+     {
+	 globus_libc_free(httpbuf);
+	 globus_io_register_close(
+	     handle,
+	     globus_gram_http_close_callback,
+	     GLOBUS_NULL );
+     }
 }
+
+
