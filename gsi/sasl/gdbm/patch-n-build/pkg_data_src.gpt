@@ -25,7 +25,7 @@
 
       <Build_Step>MAKE_GPTMACRO distclean</Build_Step>
       <Build_Step Macro_Args="libs='ltdl'">RUN_FLAVOR_MAKEFILES_GPTMACRO</Build_Step>
-      <Build_Step>./configure --prefix=INSTALLDIR_GPTMACRO</Build_Step>
+      <Build_Step>CONFIGENV_GPTMACRO ./configure --prefix=INSTALLDIR_GPTMACRO</Build_Step>
       <Build_Step>MAKE_GPTMACRO</Build_Step>
       <Build_Step>MAKE_GPTMACRO DESTDIR_GPTMACRO install</Build_Step>
       <Build_Step>RUN_FLAVOR_INSTALL_GPTMACRO</Build_Step>
