@@ -70,9 +70,6 @@ EXTERN_C_END
 #include "globus_error_errno.h"
 #include "globus_error_generic.h"
 
-#ifndef HAVE_ALLOCA_H
-#undef HAVE_ALLOCA_H
-#endif
 
 # if !defined(alloca)
 /* AIX requires this to be the first thing in the file.  */

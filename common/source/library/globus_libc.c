@@ -30,6 +30,27 @@ CVS Information:
 #include <arpa/inet.h>
 #endif
 
+# if !defined(alloca)
+/* AIX requires this to be the first thing in the file.  */
+#ifdef __GNUC__
+# define alloca __builtin_alloca
+#else
+# if HAVE_ALLOCA_H
+#  include <alloca.h>
+# else
+#  ifdef _AIX
+#pragma alloca
+#  else
+#   ifndef alloca /* predefined by HP cc +Olibcalls */
+#     ifndef _CRAYT3E
+char *alloca ();
+#     endif
+#   endif
+#  endif
+# endif
+#endif
+#endif
+
 #if !defined(MAXPATHLEN) 
 #   include <sys/param.h>
 #   define MAXPATHLEN PATH_MAX
