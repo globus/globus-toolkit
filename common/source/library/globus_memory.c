@@ -21,6 +21,10 @@ CVS Information:
 
 #include <assert.h>
 
+/* #define GLOBUS_MEMORY_DEBUG_LEAKS 1 */
+
+#ifndef GLOBUS_MEMORY_DEBUG_LEAKS
+
 globus_mutex_t                     globus_i_memory_mutex;
 
 #define I_ALIGN_SIZE               sizeof(long)
@@ -189,3 +193,48 @@ globus_memory_destroy(
     globus_mutex_destroy(&mem_info->lock);
     return GLOBUS_TRUE;
 }
+
+#else
+
+globus_bool_t
+globus_memory_init(
+    globus_memory_t *         mem_info,
+    int                       node_size,
+    int                       node_count)
+{
+    mem_info->node_size = node_size;
+
+    return GLOBUS_TRUE;
+}
+
+globus_bool_t
+globus_memory_create_list(
+    globus_memory_t * mem_info)
+{
+    return GLOBUS_TRUE;
+}
+
+void *
+globus_memory_pop_node(
+    globus_memory_t * mem_info)
+{
+    return globus_malloc(mem_info->node_size);
+}
+
+globus_bool_t
+globus_memory_push_node(
+    globus_memory_t *          mem_info,
+    void *                      buffer)
+{
+    globus_free(buffer);
+    return GLOBUS_TRUE;
+}
+
+globus_bool_t
+globus_memory_destroy(
+    globus_memory_t * mem_info)
+{
+    return GLOBUS_TRUE;
+}
+
+#endif
