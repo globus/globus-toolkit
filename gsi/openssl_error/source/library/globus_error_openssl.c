@@ -13,11 +13,13 @@
 #include <openssl/err.h>
 #include "globus_i_error_openssl.h"
 #include "globus_common.h"
+#include "globus_openssl.h"
 #include "version.h"
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 
-int globus_i_gsi_openssl_error_debug_level = 0;
+int                         globus_i_gsi_openssl_error_debug_level = 0;
+FILE *                      globus_i_gsi_openssl_error_debug_fstream = NULL;
 
 static int globus_l_gsi_openssl_error_activate(void);
 static int globus_l_gsi_openssl_error_deactivate(void);
@@ -42,11 +44,12 @@ static
 int
 globus_l_gsi_openssl_error_activate(void)
 {
+    globus_bool_t                       result = GLOBUS_TRUE;
     char *                              tmp_string;
     static char *                       _function_name_ =
         "globus_l_gsi_openssl_error_activate";
 
-    tmp_string = globus_module_getenv("GLOBUS_GIS_CRED_DEBUG_LEVEL");
+    tmp_string = globus_module_getenv("GLOBUS_GIS_OPENSSL_ERROR_DEBUG_LEVEL");
     if(tmp_string != GLOBUS_NULL)
     {
         globus_i_gsi_openssl_error_debug_level = atoi(tmp_string);
@@ -57,15 +60,33 @@ globus_l_gsi_openssl_error_activate(void)
         }
     }
 
+    tmp_string = globus_module_getenv("GLOBUS_GSI_OPENSSL_ERROR_DEBUG_FILE");
+    if(tmp_string != GLOBUS_NULL)
+    {
+        globus_i_gsi_openssl_error_debug_fstream = fopen(tmp_string, "w");
+        if(globus_i_gsi_openssl_error_debug_fstream == NULL)
+        {
+            result = GLOBUS_NULL;
+            goto exit;
+        }
+    }
+    else
+    {
+        globus_i_gsi_openssl_error_debug_fstream = stderr;
+    }
+
     GLOBUS_I_GSI_OPENSSL_ERROR_DEBUG_ENTER;
+
+    globus_module_activate(GLOBUS_OPENSSL_MODULE);
 
     /* initializes arrays for the error handling library containing
      * function names, library names, and reasons for errors
      */
     ERR_load_crypto_strings();
 
+ exit:
     GLOBUS_I_GSI_OPENSSL_ERROR_DEBUG_EXIT;
-    return GLOBUS_SUCCESS;
+    return result;
 }
 
 /**
@@ -85,7 +106,15 @@ globus_l_gsi_openssl_error_deactivate(void)
      */
     ERR_free_strings();
 
+    globus_module_deactivate(GLOBUS_OPENSSL_MODULE);
+
     GLOBUS_I_GSI_OPENSSL_ERROR_DEBUG_EXIT;
+
+    if(globus_i_gsi_openssl_error_debug_fstream != stderr)
+    {
+        fclose(globus_i_gsi_openssl_error_debug_fstream);
+    }
+
     return GLOBUS_SUCCESS;
 }
 
