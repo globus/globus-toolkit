@@ -9,5 +9,3 @@ fi
 
 cp ../packages-harvest/gsi_openssh-$VERSION-src.tar.gz ./work/sources/
 cp ../packages-harvest/gsi_openssh_setup-$VERSION-src.tar.gz ./work/sources/
-cp ../packages-harvest/gsi_openssh_compat-$VERSION-src.tar.gz ./work/sources/
-
