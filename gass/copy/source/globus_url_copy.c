@@ -200,7 +200,7 @@ main(int argc, char **argv)
 		argv[0],
 		destURL,
 		errno);
-	    rc=-2;
+	    rc=-3;
 	    goto end;
 	}
     }
@@ -223,7 +223,7 @@ main(int argc, char **argv)
 		    "Error reading from sourceURL %s: error code: %d\n",
 		    sourceURL,
 		    errno);
-		rc=-1;
+		rc=-4;
 		goto end;
 	    }
 	}
@@ -247,7 +247,7 @@ main(int argc, char **argv)
 		    "Error writing to destURL %s: error code: %d\n",
 		    sourceURL,
 		    errno);
-		rc=-1;
+		rc=-5;
 		goto end;
 	    }
 	    if (nb_written!=-1)
