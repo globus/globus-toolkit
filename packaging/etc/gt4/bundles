@@ -1,0 +1,15 @@
+BUNDLE gt4-java-ws-core
+        globus_ws_core_schema
+        globus_java_ws_core_common
+        globus_java_ws_core_tools
+        globus_java_ws_core_tools_test
+        globus_java_ws_core
+        globus_java_ws_core_test_base
+        globus_java_ws_core_test_interop
+        globus_java_ws_core_test_unit
+        globus_java_ws_core_management_sample
+        globus_java_ws_core_counter_sample
+        globus_java_ws_core_resolver
+        globus_java_ws_core_resolver_test
+
+
