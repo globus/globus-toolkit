@@ -128,6 +128,9 @@ do                                                                          \
 #define GlobusXIOOperationGetDataDescriptor(op)                             \
     ((_in_op)->_op_context->entry[_in_op->ndx - 1].dd)
 
+#define GlobusXIOOperationSetDataDescriptor(op, dd)                         \
+    ((_in_op)->_op_context->entry[_in_op->ndx - 1].dd) = (dd)
+
 
 /*******************************************************************
  *                      driver interface
