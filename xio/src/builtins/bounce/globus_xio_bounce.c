@@ -47,6 +47,7 @@ typedef struct bounce_info_s
     int                                 iovec_count;
     globus_size_t                       wait_for;
     globus_xio_iovec_t                  tmp_iovec;
+    globus_mutex_t                      mutex;
 } bounce_info_t;
 
 void
@@ -81,7 +82,7 @@ test_bounce_finish_op(
             break;
     
         case TEST_OPEN:
-            GlobusXIODriverFinishedOpen(info->context, \
+            GlobusXIODriverFinishedOpen(info->context, 
                 NULL, op, info->res);
             break;
 
@@ -96,6 +97,7 @@ test_bounce_finish_op(
             break;
     }
 
+    globus_mutex_destroy(&info->mutex);
     globus_free(info);
 }
 
@@ -110,15 +112,12 @@ test_bounce_next_op(
     switch(info->next_op)
     {
         case TEST_OPEN:
-            GlobusXIODriverPassOpen(res, &info->context, op, \
-                bounce_cb, (void*)info);
-
             info->next_op = TEST_READ;
+            GlobusXIODriverPassOpen(res, &info->context, op,
+                bounce_cb, (void*)info);
             break;
 
         case TEST_READ:
-            GlobusXIODriverPassRead(res, op, info->iovec, info->iovec_count, \
-                info->wait_for, bounce_data_cb, (void *)info);
             if(info->bounce_count == info->max_count)
             {
                 info->bounce_count = 0;
@@ -135,12 +134,12 @@ test_bounce_next_op(
                     info->next_op = TEST_FINISH;
                 }
             }
+            GlobusXIODriverPassRead(res, op, info->iovec, info->iovec_count,
+                info->wait_for, bounce_data_cb, (void *)info);
 
             break;
 
         case TEST_WRITE:
-            GlobusXIODriverPassWrite(res, op, info->iovec, info->iovec_count, \
-                info->wait_for, bounce_data_cb, (void *)info);
             if(info->bounce_count == info->max_count)
             {
                 info->bounce_count = 0;
@@ -157,12 +156,14 @@ test_bounce_next_op(
                     info->next_op = TEST_FINISH;
                 }
             }
+            GlobusXIODriverPassWrite(res, op, info->iovec, info->iovec_count,
+                info->wait_for, bounce_data_cb, (void *)info);
             break;
 
         case TEST_CLOSE:
-            GlobusXIODriverPassClose(res, op, \
+            info->next_op = TEST_FINISH;
+            GlobusXIODriverPassClose(res, op,
                 bounce_cb, (void*)info);
-                info->next_op = TEST_FINISH;
             break;
 
         case TEST_FINISH:
@@ -247,8 +248,9 @@ globus_l_xio_bounce_open(
     info->bounce_count = 0;
     info->max_count = MAX_COUNT;
     info->start_op = TEST_OPEN;
+    globus_mutex_init(&info->mutex, NULL);
 
-    GlobusXIODriverPassOpen(res, &info->context, op, \
+    GlobusXIODriverPassOpen(res, &info->context, op, 
                 bounce_cb, (void*)info);
 
 

@@ -53,6 +53,11 @@ parse_parameters(
     globus_xio_attr_t                       attr);
 
 int
+unload_main(
+    int                                     argc,
+    char **                                 argv);
+
+int
 read_barrier_main(
     int                                     argc,
     char **                                 argv);

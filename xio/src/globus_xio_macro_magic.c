@@ -202,10 +202,9 @@ globus_xio_driver_open_deliver_DEBUG(
     int                                             _in_ndx)
 {
     globus_i_xio_op_t *                     _op;
-    globus_i_xio_op_t *                     _close_op;
+    globus_i_xio_op_t *                     _close_op = NULL;
     globus_i_xio_context_entry_t *          _my_context;
     globus_i_xio_context_t *                _context;
-    globus_bool_t                           _close = GLOBUS_FALSE;
     globus_bool_t                           _close_kickout = GLOBUS_FALSE;
     globus_bool_t                           _destroy_context = GLOBUS_FALSE;
     globus_bool_t                           _destroy_handle = GLOBUS_FALSE;
@@ -234,17 +233,18 @@ globus_xio_driver_open_deliver_DEBUG(
             /* this happens when the open fails and the user calls close */
             case GLOBUS_XIO_CONTEXT_STATE_OPENING_AND_CLOSING:
                 _my_context->state = GLOBUS_XIO_CONTEXT_STATE_CLOSED;
-                _close = GLOBUS_TRUE;
                 _close_kickout = GLOBUS_TRUE;
                 _close_op = _my_context->close_op;
-                _close_op->cached_res = GlobusXIOErrorCanceled();
+                if(_close_op != NULL)
+                {
+                    _close_op->cached_res = GlobusXIOErrorCanceled();
+                }
                 break;
 
             case GLOBUS_XIO_CONTEXT_STATE_OPEN:
                 break;
 
             case GLOBUS_XIO_CONTEXT_STATE_CLOSING:
-                _close = GLOBUS_TRUE;
                 _close_op = _my_context->close_op;
                 break;
 
@@ -270,9 +270,8 @@ globus_xio_driver_open_deliver_DEBUG(
         }
         globus_i_xio_handle_destroy(_handle);
     }
-    if(_close)
+    if(_close_op != NULL)
     {
-        globus_assert(_close_op != NULL);
         /* if closed before fully opened and open was successful we need
            to start the regular close process */
         if(!_close_kickout)

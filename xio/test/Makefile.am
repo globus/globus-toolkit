@@ -20,7 +20,7 @@ Sources=                                \
 
 INCLUDES += $(GPT_INCLUDES)
 
-test_PROGRAMS= \
+test_PROGRAMS=                          \
 	framework_test
 
 framework_test_SOURCES = $(Sources)

@@ -85,6 +85,23 @@ globus_l_xio_handle_cancel_operations(
     int                                     mask);
 
 void
+globus_i_xio_monitor_init(
+    globus_i_xio_monitor_t *                monitor)
+{
+    globus_mutex_init(&monitor->mutex, NULL);
+    globus_cond_init(&monitor->cond, NULL);
+    monitor->count = 0;
+}
+
+void
+globus_i_xio_monitor_destroy(
+    globus_i_xio_monitor_t *                monitor)
+{
+    globus_mutex_destroy(&monitor->mutex);
+    globus_cond_destroy(&monitor->cond);
+}
+
+void
 globus_l_xio_deactivate_close_cb(
     globus_xio_handle_t                     handle,
     globus_result_t                         result,
@@ -133,34 +150,21 @@ globus_l_xio_oneshot_wrapper_cb(
     globus_free(space_info);
 }
 
-static void
-globus_i_xio_close_handles_cb(
-    globus_xio_handle_t                     handle,
-    globus_result_t                         result,
-    void *                                  user_arg)
-{
-    int *                                   close_cnt;
-
-    close_cnt = (int *) user_arg;
-
-    globus_mutex_lock(&globus_l_mutex);
-    {
-        *close_cnt--;
-        globus_cond_signal(&globus_l_cond);
-    }
-    globus_mutex_unlock(&globus_l_mutex);
-}
-
 void
 globus_i_xio_close_handles(
     globus_xio_driver_t                     driver)
 {
+    globus_bool_t                           destroy_handle = GLOBUS_FALSE;
+    globus_bool_t                           destroy_context = GLOBUS_FALSE;
     globus_list_t *                         list;
     globus_list_t *                         tmp_list;
+    globus_list_t *                         c_handles = NULL;
     globus_xio_handle_t                     handle;
     globus_bool_t                           found;
     int                                     ctr;
-    int                                     close_cnt = 0;
+    globus_i_xio_monitor_t                  monitor;
+
+    globus_i_xio_monitor_init(&monitor);
 
     /*
      *  take a snap shot of the list of handles.  If a new one is
@@ -179,26 +183,28 @@ globus_i_xio_close_handles(
             /* recursive mutex */
             globus_mutex_lock(&handle->context->mutex);
             {
-                if(handle->state != GLOBUS_XIO_HANDLE_STATE_CLOSING)
+                found = GLOBUS_FALSE;
+                for(ctr = 0; 
+                    ctr < handle->context->stack_size && !found; 
+                    ctr++)
                 {
-                    found = GLOBUS_FALSE;
-                    for(ctr = 0; 
-                        ctr < handle->context->stack_size && !found; 
-                        ctr++)
+                    /* cancel on al handles */
+                    if(driver == NULL || 
+                        handle->context->entry[ctr].driver == driver)
                     {
-                        if(driver == NULL || 
-                            handle->context->entry[ctr].driver == driver)
-                        {
-                            globus_list_remove(
-                                &globus_l_outstanding_handles_list, list);
-                            found = GLOBUS_TRUE;
-                            globus_xio_register_close(
-                                handle,
-                                NULL,
-                                globus_i_xio_close_handles_cb,
-                                &close_cnt);
+                        monitor.count++;
+                        globus_assert(handle->sd_monitor == NULL);
+                        handle->sd_monitor = &monitor;
+                        handle->shutting_down = GLOBUS_TRUE;
 
-                            handle->shutting_down = GLOBUS_TRUE;
+                        /* have to remove from list else user may unload
+                           another driver with this handle */
+                        globus_list_remove(
+                            &globus_l_outstanding_handles_list, list);
+                        found = GLOBUS_TRUE;
+                        if(handle->state != GLOBUS_XIO_HANDLE_STATE_CLOSING)
+                        {
+                            globus_list_insert(&c_handles, handle);
                         }
                     }
                 }
@@ -206,13 +212,54 @@ globus_i_xio_close_handles(
             globus_mutex_unlock(&handle->context->mutex);
         }
         globus_list_free(tmp_list);
-
-        while(close_cnt != 0)
-        {
-            globus_cond_wait(&globus_l_cond, &globus_l_mutex);
-        }
     }
     globus_mutex_unlock(&globus_l_mutex);
+
+    globus_mutex_lock(&monitor.mutex);
+    {
+        for(list = c_handles; 
+            !globus_list_empty(list); 
+            list = globus_list_rest(list))
+        {
+            handle = (globus_xio_handle_t) globus_list_first(list);
+
+            globus_xio_register_close(
+                handle,
+                NULL,
+                NULL,
+                NULL);
+        }
+        while(monitor.count != 0)
+        {
+            globus_cond_wait(&monitor.cond, &monitor.mutex);
+        }
+    }
+    globus_mutex_unlock(&monitor.mutex);
+
+    /* clean them all up */
+    while(!globus_list_empty(c_handles))
+    {
+        handle = (globus_xio_handle_t)
+            globus_list_remove(&c_handles, c_handles);
+
+        globus_mutex_lock(&handle->context->mutex);
+        {
+            globus_i_xio_handle_dec(
+                handle, &destroy_handle, &destroy_context);
+        }
+        globus_mutex_unlock(&handle->context->mutex);
+
+        if(destroy_handle)
+        {
+            if(destroy_context)
+            {
+                globus_i_xio_context_destroy(handle->context);
+            }
+            globus_i_xio_handle_destroy(handle);
+        }
+    }
+
+    globus_i_xio_monitor_destroy(&monitor);
 }
 
 void
@@ -486,12 +533,27 @@ globus_l_xio_open_close_callback_kickout(
         if(op->type == GLOBUS_XIO_OPERATION_TYPE_CLOSE)
         {
             handle->state = GLOBUS_XIO_HANDLE_STATE_CLOSED;
- 
-            globus_i_xio_handle_dec(
-                handle, &destroy_handle, &destroy_context);
-            /* destroy handle cannot possibly be true yet 
-                the handle stll has the operation reference */
-            globus_assert(!destroy_handle);
+
+            if(handle->shutting_down)
+            {
+                globus_assert(handle->sd_monitor != NULL);
+
+                globus_mutex_lock(&handle->sd_monitor->mutex);
+                {
+                    handle->sd_monitor->count--;
+                    globus_cond_signal(
+                        &handle->sd_monitor->cond);
+                }
+                globus_mutex_unlock(&handle->sd_monitor->mutex);
+            }
+            else
+            { 
+                globus_i_xio_handle_dec(
+                    handle, &destroy_handle, &destroy_context);
+                /* destroy handle cannot possibly be true yet 
+                    the handle stll has the operation reference */
+                globus_assert(!destroy_handle);
+            }
             handle->close_op = NULL;
         }
         else if(op->type == GLOBUS_XIO_OPERATION_TYPE_OPEN)

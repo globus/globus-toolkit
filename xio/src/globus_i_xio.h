@@ -138,6 +138,21 @@ struct globus_i_xio_context_s;
 struct globus_i_xio_op_s;
 struct globus_i_xio_target_s;
 
+typedef struct globus_i_xio_monitor_s
+{
+    globus_mutex_t                          mutex;
+    globus_cond_t                           cond;
+    globus_bool_t                           count;
+} globus_i_xio_monitor_t;
+
+void
+globus_i_xio_monitor_init(
+    globus_i_xio_monitor_t *                monitor);
+
+void
+globus_i_xio_monitor_destroy(
+    globus_i_xio_monitor_t *                monitor);
+
 typedef struct globus_i_xio_attr_ent_s
 {
     globus_xio_driver_t                     driver;
@@ -212,7 +227,9 @@ typedef struct globus_i_xio_server_s
 
 typedef struct globus_i_xio_handle_s
 {
+    globus_i_xio_monitor_t *                sd_monitor;
     globus_bool_t                           shutting_down;
+
     globus_list_t *                         cb_list;
     globus_mutex_t                          cancel_mutex;
     int                                     ref;
