@@ -155,8 +155,6 @@ SSL_USER_CONFIG=${trusted_certs_dir}/globus-user-ssl.conf.${CA_HASH}
 SSL_HOST_CONFIG=${trusted_certs_dir}/globus-host-ssl.conf.${CA_HASH}
 security_conf=${trusted_certs_dir}/grid-security.conf.${CA_HASH}
 
-. ${security_conf}
-
 }
 
 
