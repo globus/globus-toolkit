@@ -1,0 +1,45 @@
+include $(top_srcdir)/globus_automake_targets
+
+Sources = \
+	accept_sec_context.c \
+	acquire_cred.c \
+	compare_name.c \
+	delete_sec_context.c \
+	display_name.c \
+	display_status.c \
+	export_name.c \
+	export_sec_context.c \
+	get_mic.c \
+	gsserr.c \
+	gssutils.c \
+	gssutils.h \
+	import_name.c \
+	import_sec_context.c \
+	init_sec_context.c \
+	inquire_cred.c \
+	inquire_context.c \
+	release_cred.c \
+	release_name.c \
+	unwrap.c \
+	verify_mic.c \
+	wrap.c \
+	import_cred.c \
+	export_cred.c \
+	release_buffer.c \
+	gssapi_working.c \
+	gssapi.h
+
+include_HEADERS= \
+	gssapi.h
+
+lib_LTLIBRARIES = libglobus_gssapi_gsi_$(GLOBUS_FLAVOR_NAME).la
+
+INCLUDES = $(GPT_INCLUDES)
+
+libglobus_gssapi_gsi___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
+
+libglobus_gssapi_gsi___GLOBUS_FLAVOR_NAME__la_LIBADD = $(GPT_LIBS)
+libglobus_gssapi_gsi___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS)
+
+include $(top_srcdir)/globus_automake_rules
+include $(top_srcdir)/globus_automake_top_rules
