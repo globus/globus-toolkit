@@ -368,6 +368,28 @@ myproxy_serialize_request(const myproxy_request_t *request, char *data, const in
 
     }
 
+    if (request->cred_name!= NULL)
+    { 
+      len = concatenate_strings(data, datalen, MYPROXY_CRED_NAME_STRING,
+			      request->cred_name, "\n", NULL); 
+      if (len < 0)
+        return -1;
+
+      totlen += len;
+
+    }
+
+    if (request->cred_desc != NULL)
+    { 
+      len = concatenate_strings(data, datalen, MYPROXY_CRED_DESC_STRING,
+			      request->cred_desc, "\n", NULL); 
+      if (len < 0)
+        return -1;
+
+      totlen += len;
+
+    }
+
     //myproxy_log (DBG_HI, debug_level, "OK\n");
     for (authorized_services = request->authorized_service_dns;
 	 authorized_services; authorized_services++) {
@@ -534,6 +556,56 @@ myproxy_deserialize_request(const char *data, const int datalen,
          request->renewers = strdup(buf);
     
          if (request->renewers == NULL)
+         {
+	  verror_put_string("strdup() failed");
+	  verror_put_errno(errno);
+	  return -1;
+         }
+       }
+
+    len = convert_message(data, datalen,
+			  MYPROXY_CRED_NAME_STRING,
+			  CONVERT_MESSAGE_DEFAULT_FLAGS,
+			  buf, sizeof(buf));
+
+    if (len == -2)  /*-2 indicates string not found*/
+       request->cred_name = NULL;
+    else
+       if (len <= -1)
+       {
+ 	verror_prepend_string("Error parsing renewer from client request");
+	return -1;
+       }
+       else
+       {
+         request->cred_name = strdup(buf);
+    
+         if (request->cred_name == NULL)
+         {
+	  verror_put_string("strdup() failed");
+	  verror_put_errno(errno);
+	  return -1;
+         }
+       }
+
+    len = convert_message(data, datalen,
+			  MYPROXY_CRED_DESC_STRING,
+			  CONVERT_MESSAGE_DEFAULT_FLAGS,
+			  buf, sizeof(buf));
+
+    if (len == -2)  /*-2 indicates string not found*/
+       request->cred_desc = NULL;
+    else
+       if (len <= -1)
+       {
+ 	verror_prepend_string("Error parsing renewer from client request");
+	return -1;
+       }
+       else
+       {
+         request->cred_desc = strdup(buf);
+    
+         if (request->cred_desc == NULL)
          {
 	  verror_put_string("strdup() failed");
 	  verror_put_errno(errno);

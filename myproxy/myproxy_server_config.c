@@ -221,6 +221,21 @@ line_parse_callback(void *context_arg,
 	    index++;
 	}
     }
+
+    if (strcmp (directive, "default_database_name") == 0)
+    {
+	int index = 1; /* Skip directive */
+
+	matched = 1;
+	
+	if (tokens[index] == NULL)
+	{
+		context->dbase_name = NULL;
+		goto error;
+	}
+	context->dbase_name = strdup (tokens[index]);
+    }
+	
     
     if (!matched)
     {

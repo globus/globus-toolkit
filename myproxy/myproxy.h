@@ -29,6 +29,8 @@
 #define MYPROXY_LIFETIME_STRING     "LIFETIME="
 #define MYPROXY_RETRIEVER_STRING     "RETRIEVER="
 #define MYPROXY_RENEWER_STRING     "RENEWER="
+#define MYPROXY_CRED_NAME_STRING   "CRED_NAME="
+#define MYPROXY_CRED_DESC_STRING   "CRED_DESC="
 #define MYPROXY_AUTHORIZATION_STRING "AUTHORIZATION_DATA="
 #define MYPROXY_AUTH_SERVICE_STRING "AUTHORIZED_SERVICE="
 #define MYPROXY_AUTH_CLIENT_STRING  "AUTHORIZED_CLIENT="
@@ -81,6 +83,8 @@ typedef struct
     char                         **authorized_client_dns;
     char                         *retrievers;
     char                         *renewers;
+    char			 *cred_name;
+    char			 *cred_desc;
 } myproxy_request_t;
 
 /* A server response object */

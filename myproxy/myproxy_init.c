@@ -48,6 +48,8 @@ static char usage[] = \
 "       -d | --dn_as_username             Use the proxy certificate subject\n"
 "                                         (DN) as the default username,\n"
 "                                         instead of the LOGNAME env. var.\n"
+"	-k | --cred_name <name>		  Specifies credential name\n"
+"	-K | --cred_desc <description>	  Specifies credential description"
 "\n";
 
 struct option long_options[] =
@@ -69,10 +71,12 @@ struct option long_options[] =
   {"renewable_by",    required_argument, NULL, 'R'},
   {"regex_dn_match",        no_argument, NULL, 'x'},
   {"match_cn_only", 	    no_argument, NULL, 'X'},
+  {"cred_name",	      required_argument, NULL, 'k'},
+  {"cred_desc",	      required_argument, NULL, 'K'},
   {0, 0, 0, 0}
 };
 
-static char short_options[] = "uhD:s:p:t:c:l:vndr:R:xXaA";  //colon following an option indicates option takes an argument
+static char short_options[] = "uhD:s:p:t:c:l:vndr:R:xXaAk:K:";  //colon following an option indicates option takes an argument
 
 static char version[] =
 "myproxy-init version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
@@ -357,6 +361,12 @@ init_arguments(int argc,
 	    break;
 	case 'A':  /*allow anonymous renewers*/
 	    request->renewers = strdup ("*");
+	    break;
+	case 'k':  /*credential name*/
+	    request->cred_name = strdup (gnu_optarg);
+	    break;
+	case 'K':  /*credential description*/
+	    request->cred_desc = strdup (gnu_optarg);
 	    break;
         default:  
 	    fprintf(stderr, usage);

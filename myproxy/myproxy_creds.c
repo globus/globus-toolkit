@@ -30,6 +30,8 @@
 
 struct myproxy_database mydbase; //database structure
 
+char *cred_name, *cred_desc, *dbase_name;
+
 /*
  * Doesn't always seem to be define in <unistd.h>
  */
@@ -132,29 +134,32 @@ file_exists(const char *path)
 void my_init_table(SQLHDBC hdbc, SQLHSTMT hstmt)
 {
   SQLRETURN   rc;
-
   printf("\nmy_init_table:\n");
 
     /* drop table 'main' if it already exists */
     printf(" creating table 'main'\n");
 
+#ifdef NOTREQ
     rc = SQLExecDirect(hstmt,"DROP TABLE if exists main",SQL_NTS);
     mystmt(hstmt,rc);
+
 
     /* commit the transaction */
     rc = SQLEndTran(SQL_HANDLE_DBC, hdbc, SQL_COMMIT);
     mycon(hdbc,rc);
+#endif
 
     /* create the table 'main' */
-    rc = SQLExecDirect(hstmt,"CREATE TABLE main(\
-                                owner varchar(255),\
-                                passphrase varchar(255),\
-                                lifetime int(10) unsigned, \
-                                retrievers varchar(255), \
-                                renewers varchar (255), \
-                                cred_name varchar (255), \
-                                cred_desc text, \
-                                credentials text)", SQL_NTS);
+    rc = SQLExecDirect(hstmt,"CREATE TABLE IF NOT EXISTS main(\
+                                owner VARCHAR(255) NOT NULL,\
+                                passphrase VARCHAR(255),\
+                                lifetime INT (10) UNSIGNED, \
+                                retrievers VARCHAR(255), \
+                                renewers VARCHAR(255), \
+                                cred_name VARCHAR(200) NOT NULL, \
+                                cred_desc TEXT, \
+                                credentials TEXT, \
+				PRIMARY KEY (owner, cred_name))", SQL_NTS);
     mystmt(hstmt,rc);
 
     /* commit the transaction*/
@@ -209,15 +214,24 @@ void my_param_insert(SQLHDBC hdbc, SQLHSTMT hstmt)
    mystmt (hstmt, rc);
 
    printf ("mpi-6");
-   rc = SQLBindParameter (hstmt,6, SQL_PARAM_INPUT, SQL_VARCHAR, SQL_C_CHAR, 255, 0, mydbase.cred_name, strlen (mydbase.cred_name), NULL);
+   if (mydbase.cred_name == NULL)
+       rc = SQLBindParameter (hstmt,6, SQL_PARAM_INPUT, SQL_VARCHAR, SQL_C_CHAR, 255, 0, "", 0, NULL);
+   else
+       rc = SQLBindParameter (hstmt,6, SQL_PARAM_INPUT, SQL_VARCHAR, SQL_C_CHAR, 255, 0, mydbase.cred_name, strlen (mydbase.cred_name), NULL);
    mystmt (hstmt, rc);
 
    printf ("mpi-7");
-   rc = SQLBindParameter (hstmt, 7, SQL_PARAM_INPUT, SQL_VARCHAR, SQL_C_CHAR, 65535, 0, mydbase.cred_desc, strlen(mydbase.cred_desc), NULL);
+   if (mydbase.cred_desc == NULL)
+       rc = SQLBindParameter (hstmt, 7, SQL_PARAM_INPUT, SQL_VARCHAR, SQL_C_CHAR, 65535, 0, "", 0, NULL);
+   else
+       rc = SQLBindParameter (hstmt, 7, SQL_PARAM_INPUT, SQL_VARCHAR, SQL_C_CHAR, 65535, 0, mydbase.cred_desc, strlen(mydbase.cred_desc), NULL);
    mystmt (hstmt, rc);
 
    printf ("mpi-8");
-   rc = SQLBindParameter (hstmt, 8, SQL_PARAM_INPUT, SQL_VARCHAR, SQL_C_CHAR, 65535, 0, mydbase.credentials, strlen (mydbase.credentials), NULL);
+   if (mydbase.credentials == NULL)
+       rc = SQLBindParameter (hstmt, 8, SQL_PARAM_INPUT, SQL_VARCHAR, SQL_C_CHAR, 65535, 0, "",0, NULL);
+   else
+       rc = SQLBindParameter (hstmt, 8, SQL_PARAM_INPUT, SQL_VARCHAR, SQL_C_CHAR, 65535, 0, mydbase.credentials, strlen (mydbase.credentials), NULL);
    mystmt (hstmt, rc);
 
    printf ("mpi-9");
@@ -524,7 +538,11 @@ copy_file(const char *source,
                 verror_put_string("writing %s", dest);
                 goto error;
             }
-        }
+    	/* Temporary */
+    	mydbase.cred_name = strdup (cred_name);
+    	mydbase.cred_desc = strdup (cred_desc);
+    	mydbase.credentials = strdup (buffer); 
+      }
     }
     while (bytes_read > 0);
     
@@ -547,10 +565,6 @@ copy_file(const char *source,
         }
     }
     
-    /* Temporary */
-    mydbase.cred_name = strdup ("My credential");
-    mydbase.cred_desc = strdup ("This is my credential");
-    mydbase.credentials = strdup ("FGH45bF4GFbASCf232cwdxc232DSDFHH"); 
 
     return return_code;
 }
@@ -822,7 +836,7 @@ void write_to_database()
   SQLHSTMT   hstmt;
   SQLINTEGER narg;
 
-    mydsn = strdup ("mydbase");
+    mydsn = strdup (dbase_name);
     myuid = strdup ("root");
     mypwd = strdup ("");
    /*

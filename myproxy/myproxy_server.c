@@ -40,31 +40,33 @@ static char usage[] = \
 "        myproxy-server [-h|-help] [-v|-version]\n"\
 "\n"\
 "   Options\n"\
-"       -h | --help                Displays usage\n"\
+"       -h | --help                	Displays usage\n"\
 "       -u | --usage                             \n"\
 "                                               \n"\
-"       -v | --version             Displays version\n"\
-"       -d | --debug               Turns on debugging\n"\
-"       -D | --debug_level <level> Sets debug level (0,1,2)\n"
-"       -c | --config              Specifies configuration file to use\n"\
-"       -p | --port <portnumber>   Specifies the port to run on\n"\
-"       -s | --storage <directory> Specifies the credential storage directory\n"\
+"       -v | --version             	Displays version\n"\
+"       -d | --debug               	Turns on debugging\n"\
+"       -D | --debug_level <level> 	Sets debug level (0,1,2)\n"
+"       -c | --config              	Specifies configuration file to use\n"\
+"       -p | --port <portnumber>   	Specifies the port to run on\n"\
+"       -s | --storage <directory> 	Specifies the credential storage directory\n"\
+"	-b | --database_name <name>	Specifies the database name to store credentials\n"\
 "\n";
 
 struct option long_options[] =
 {
-    {"debug",            no_argument, NULL, 'd'},
-    {"debug_level",required_argument, NULL, 'D'},
-    {"help",             no_argument, NULL, 'h'},
-    {"port",       required_argument, NULL, 'p'},
-    {"config",     required_argument, NULL, 'c'},       
-    {"storage",    required_argument, NULL, 's'},       
-    {"usage",            no_argument, NULL, 'u'},
-    {"version",          no_argument, NULL, 'v'},
+    {"debug",            	no_argument, NULL, 'd'},
+    {"debug_level",	required_argument, NULL, 'D'},
+    {"help",             	no_argument, NULL, 'h'},
+    {"port",      	required_argument, NULL, 'p'},
+    {"config",     	required_argument, NULL, 'c'},       
+    {"storage",    	required_argument, NULL, 's'},       
+    {"usage",            	no_argument, NULL, 'u'},
+    {"version",          	no_argument, NULL, 'v'},
+    {"database_name", 	required_argument, NULL, 'b'},
     {0, 0, 0, 0}
 };
 
-static char short_options[] = "dhc:p:s:vuD:";
+static char short_options[] = "dhc:p:s:vuD:b:";
 
 static char version[] =
 "myproxy-server version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
@@ -133,6 +135,8 @@ static int debug = 0;
 
 static int debug_level = DBG_IN;   
 
+extern char *cred_name, *cred_desc, *dbase_name;
+
 int
 main(int argc, char *argv[]) 
 {    
@@ -176,6 +180,18 @@ main(int argc, char *argv[])
 	fprintf(stderr, "%s %s\n", verror_get_string(), verror_strerror());
 	exit(1);
     }
+
+    if (dbase_name == NULL)   //user hasn't specified a dbase name. use default
+    {
+	if (server_context->dbase_name == NULL) //default dbase name not specified. halt
+	{
+	   fprintf (stderr, "Storage database name not specified in command line or in configuration file\n");
+	   exit (1);
+	}
+      
+	dbase_name = strdup (server_context->dbase_name);
+    }
+
     
     /* 
      * Test to see if we're run out of inetd 
@@ -312,6 +328,9 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
     client_context = malloc(sizeof(*client_context));
     memset(client_context, 0, sizeof(*client_context));
 
+    cred_name = strdup ("DEFAULT_CREDENTIAL_NAME!@#$%^&*()");    //initialize with defaults
+    cred_desc = strdup ("This is the default credential description");
+
     /* Set response OK unless error... */
     server_response->response_type =  MYPROXY_OK_RESPONSE;
  
@@ -412,6 +431,13 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
     {
 	client_creds->renewers = NULL;
     }
+
+    /* Copy credential name and description, if present */
+    if (client_request->cred_name != NULL)
+	cred_name = strdup (client_request->cred_name);
+  
+    if (client_request->cred_desc != NULL)
+	cred_desc = strdup (client_request->cred_desc);
 
     /* First level authorization checking happens here. */
     if (myproxy_authorize_accept(context, attrs, 
@@ -662,6 +688,10 @@ init_arguments(int argc, char *argv[],
         case 'D':
             debug_level = atoi (gnu_optarg);
             break;
+	case 'b':
+	    free (dbase_name);
+	    dbase_name = strdup (gnu_optarg);
+	    break;
         default: /* ignore unknown */ 
             arg_error = -1;
             break;	
