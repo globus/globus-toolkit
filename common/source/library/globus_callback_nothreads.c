@@ -190,8 +190,8 @@ globus_l_callback_requeue(
 static
 void
 globus_l_callback_blocked_cb(
-    globus_callback_space_t             space,
     globus_thread_callback_index_t      index,
+    globus_callback_space_t             space,
     void *                              user_args)
 {
     globus_l_callback_restart_info_t *  restart_info;
@@ -1110,6 +1110,7 @@ globus_callback_space_poll(
     globus_abstime_t                    time_now;
     globus_l_callback_restart_info_t *  last_restart_info;
     globus_l_callback_restart_info_t    restart_info;
+    globus_thread_callback_index_t      idx;
 
     i_space = GLOBUS_NULL;
 
@@ -1126,7 +1127,7 @@ globus_callback_space_poll(
     globus_thread_blocking_callback_push(
         globus_l_callback_blocked_cb,
         &restart_info,
-        GLOBUS_NULL);
+        &idx);
     
     if(!timestop)
     {
@@ -1274,7 +1275,7 @@ globus_callback_space_poll(
     
     globus_l_callback_restart_info = last_restart_info;
     
-    globus_thread_blocking_callback_pop(GLOBUS_NULL);
+    globus_thread_blocking_callback_pop(&idx);
 }
 
 void

@@ -1501,8 +1501,8 @@ globus_l_callback_requeue(
 static
 void
 globus_l_callback_blocked_cb(
-    globus_callback_space_t             space,
     globus_thread_callback_index_t      index,
+    globus_callback_space_t             space,
     void *                              user_args)
 {
     globus_l_callback_restart_info_t *  restart_info;
@@ -1620,7 +1620,7 @@ globus_callback_space_poll(
     globus_l_callback_restart_info_t    restart_info;
     globus_abstime_t                    l_timestop;
     globus_l_callback_space_t *         i_space;
-    int                                 restart_index;
+    globus_thread_callback_index_t      restart_index;
     
     if(space == GLOBUS_CALLBACK_GLOBAL_SPACE)
     {
@@ -1756,7 +1756,7 @@ globus_callback_space_poll(
     globus_thread_setspecific(
         globus_l_callback_restart_info_key, last_restart_info);
         
-    globus_thread_blocking_callback_pop(GLOBUS_NULL);
+    globus_thread_blocking_callback_pop(&restart_index);
 }
 
 void
@@ -1784,7 +1784,7 @@ globus_l_callback_thread_callback(
     globus_l_callback_info_t *          callback_info;
     globus_abstime_t                    time_now;
     globus_l_callback_restart_info_t    restart_info;
-    int                                 restart_index;
+    globus_thread_callback_index_t      restart_index;
     globus_bool_t                       run_now;
     globus_l_callback_space_t *         i_space;
     
@@ -1988,7 +1988,7 @@ globus_l_callback_thread_poll(
     globus_l_callback_info_t *          callback_info;
     globus_abstime_t                    next_ready_time;
     globus_l_callback_restart_info_t    restart_info;
-    int                                 restart_index;
+    globus_thread_callback_index_t      restart_index;
     globus_bool_t                       gets_own_thread;
     globus_l_callback_space_t *         i_space;
     
