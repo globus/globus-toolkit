@@ -2,32 +2,29 @@
 #include "gaa_core.h"
 #include "gaa_debug.h"
 #include "gaa_simple.h"
+#include "globus_error_string.h"
 
 /* ERROR MACROS */
 
-#define GLOBUS_GSI_AUTHZ_NO_CONFIG_FILE(_NULL_) \
-    globus_error_put(globus_error_wrap_errno_error( \
-        GLOBUS_GSI_AUTHZ_MODULE, \
-        errno, \
-        GLOBUS_GSI_AUTHZ_ERROR_ERRNO, \
-        "%s:%d: GAA-API configuration file ENV missing.", \
-        __FILE__, __LINE__))
-
-
 #define GLOBUS_GSI_AUTHZ_GAA_CALLOUT_GAA_ERROR(__RESULT,__GAA_FUNC, __GAA_STATUS) \
-{                                                             \
-    char _tmp_str_[512]; \
-    globus_libc_snprintf(_tmp_str_, sizeof(_tmp_str_), "%s failed: %s (%s)", \
-    __GAA_FUNC, gaa_x_majstat_str(__GAA_STATUS), gaa_get_err()); \
-    GLOBUS_GSI_AUTHZ_CALLOUT_ERROR(__RESULT, GLOBUS_GSI_AUTHZ_CALLOUT_AUTHZ_CALLOUT_ERROR, _tmp_str_); \
-}
+    (__RESULT) = \
+        globus_error_put(globus_error_construct_string( \
+            GLOBUS_GSI_AUTHZ_MODULE, \
+	    GLOBUS_NULL, \
+            "%s:%d: %s returned %s (%s)", \
+            __FILE__, __LINE__, __GAA_FUNC, \
+            gaa_x_majstat_str(__GAA_STATUS), \
+	    gaa_get_err()));
 
 #define GLOBUS_GSI_AUTHZ_GAA_CALLOUT_GAA_DENIED_ACCESS(__RESULT,__GAA_FUNC, __GAA_STATUS, __GAA_ANSWER, __GAA) \
 {                                                             \
-    char _tmp_str_[2048], _tmp_str1_[2048]; \
-    globus_libc_snprintf(_tmp_str_, sizeof(_tmp_str_), "%s denied access: %s (%s)", \
-    __GAA_FUNC, gaa_x_majstat_str(__GAA_STATUS), gaadebug_answer_string(__GAA, _tmp_str1_, sizeof(_tmp_str1_), __GAA_ANSWER)); \
-    GLOBUS_GSI_AUTHZ_CALLOUT_ERROR(__RESULT, GLOBUS_GSI_AUTHZ_CALLOUT_AUTHZ_DENIED_BY_CALLOUT, _tmp_str_); \
+    char _tmp_str_[2048];           \
+        globus_error_put(globus_error_construct_string( \
+            GLOBUS_GSI_AUTHZ_MODULE, \
+	    GLOBUS_NULL, \
+            "%s:%d: %s denied access %s (%s)", \
+    __GAA_FUNC, gaa_x_majstat_str(__GAA_STATUS), \
+    gaadebug_answer_string(__GAA, _tmp_str_, sizeof(_tmp_str_), __GAA_ANSWER))); \
 }
 
 /* DEBUG MACROS */

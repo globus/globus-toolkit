@@ -209,7 +209,7 @@ server_func(
 	    result = globus_gsi_authorize(authz_handle,
 					  request_action,
 					  request_object,
-					  authtest_l_authorize_callback,
+					  authtest_l_authorize_callback, 
 					  "authorize_callback_arg");
 	    if (result == GLOBUS_SUCCESS)
 	    {
@@ -227,14 +227,17 @@ server_func(
     result = globus_gsi_authz_handle_destroy(authz_handle,
 					     authtest_l_authz_handle_destroy_callback,
 					     "authz_handle_destroy_arg");
+    if (result != GLOBUS_SUCCESS)
     {
 	fprintf(stderr, "SERVER: authz_handle_destroy failed: %s\n",
 		globus_error_print_chain(globus_error_get(result)));
     }
 
-    if (globus_module_deactivate(GLOBUS_GSI_AUTHZ_MODULE) != GLOBUS_SUCCESS)
+    result = globus_module_deactivate(GLOBUS_GSI_AUTHZ_MODULE);
+    if (result != GLOBUS_SUCCESS)
     {
-	fprintf(stderr, "SERVER: deactivation of authz module failed\n");
+	fprintf(stderr, "SERVER: deactivation of authz module failed: %s\n",
+		globus_error_print_chain(globus_error_get(result)));
 	exit(1);
     }
 
@@ -307,9 +310,16 @@ authtest_l_handle_init_callback(void *				cb_arg,
 				globus_gsi_authz_handle_t 	handle,
 				globus_result_t		result)
 {
-    printf("in authtest_l_handle_init_callback, arg is %s, result is %x\n",
-	   (char *)cb_arg,
-	   (unsigned)result);
+    printf("in authtest_l_handle_init_callback, arg is %s\n",
+	   (char *)cb_arg);
+    if (result == GLOBUS_SUCCESS)
+    {
+	printf("handle_init succeeded\n");
+    }
+    else
+    {
+	printf("handle_init failed\n");
+    }
 }
 
 static void
@@ -317,9 +327,16 @@ authtest_l_authorize_callback(void *				cb_arg,
 			      globus_gsi_authz_handle_t 	handle,
 			      globus_result_t			result)
 {
-    printf("in authtest_l_authorize_callback, arg is %s, result is %x\n",
-	   (char *)cb_arg,
-	   (unsigned)result);
+    printf("in authtest_l_authorize_callback, arg is %s\n",
+	   (char *)cb_arg);
+    if (result == GLOBUS_SUCCESS)
+    {
+	printf("authorization succeeded\n");
+    }
+    else
+    {
+	printf("authorization failed\n");
+    }
 }
 
 static void
@@ -327,7 +344,14 @@ authtest_l_authz_handle_destroy_callback(void *				cb_arg,
 					 globus_gsi_authz_handle_t 	handle,
 					 globus_result_t		result)
 {
-    printf("in authtest_l_authz_handle_destroy_callback, arg is %s, result is %x\n",
-	   (char *)cb_arg,
-	   (unsigned)result);
+    printf("in authtest_l_authz_handle_destroy_callback, arg is %s\n",
+	   (char *)cb_arg);
+    if (result == GLOBUS_SUCCESS)
+    {
+	printf("handle_destroy succeeded\n");
+    }
+    else
+    {
+	printf("handle_destroy failed\n");
+    }
 }

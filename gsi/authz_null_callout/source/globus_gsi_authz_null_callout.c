@@ -198,16 +198,14 @@ int
 authz_null_handle_destroy_callout(
     va_list                             ap)
 {
-    globus_gsi_authz_handle_t * handle;
-    void * authz_system_state;
+    globus_gsi_authz_handle_t 		handle;
+    void * 				authz_system_state;
     
-    int                             result = (int) GLOBUS_SUCCESS;
-    static char *                   _function_name_ =
+    int                             	result = (int) GLOBUS_SUCCESS;
+    static char *                   	_function_name_ =
 	"authz_null_handle_destroy_callout";
-    globus_gsi_authz_handle_t		handle;
     globus_gsi_authz_cb_t		callback;
     void *				callback_arg;
-    void * 				authz_system_state;
     
     
     handle = va_arg(ap, globus_gsi_authz_handle_t);

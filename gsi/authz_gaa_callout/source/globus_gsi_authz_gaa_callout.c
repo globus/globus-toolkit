@@ -2,6 +2,7 @@
 #include "globus_gsi_authz.h"
 #include "globus_i_gsi_authz_gaa_callout.h"
 #include "globus_gsi_authz_callout_error.h"
+#include "globus_gsi_system_config.h"
 #include "gaa.h"
 #include "gaa_plugin.h"
 #include "gaa_gss_generic.h"
@@ -77,12 +78,9 @@ globus_gsi_authz_gaa_system_init_callout(
 	goto end;
 
     }
-    my_state->gaa_config_file_name = globus_module_getenv("GLOBUS_GSI_AUTHZ_GAA_CONFIG_FILE");
-    if(my_state->gaa_config_file_name == GLOBUS_NULL)
+    result = GLOBUS_GSI_SYSCONFIG_GET_GAA_CONF_FILENAME(&(my_state->gaa_config_file_name));
+    if (result != GLOBUS_SUCCESS)
     {
-	GLOBUS_GSI_AUTHZ_CALLOUT_ERROR(result,
-				       GLOBUS_GSI_AUTHZ_CALLOUT_CONFIGURATION_ERROR,
-				       "No GAA config file defined");
 	goto end;
     }
 
@@ -131,7 +129,8 @@ globus_gsi_authz_gaa_system_destroy_callout(
 	/*
 	 * don't free gaa_state->gaa_config_file_name -- it wasn't malloc'd.
 	 */
-	free(gaa_state);
+	globus_libc_free(gaa_state->gaa_config_file_name);
+	globus_libc_free(gaa_state);
     }
     
     
@@ -250,7 +249,8 @@ globus_gsi_authz_gaa_handle_init_callout(
 	 (void *)gaa_state->gaa_config_file_name)) != GAA_S_SUCCESS)
     {
 	GLOBUS_GSI_AUTHZ_GAA_CALLOUT_GAA_ERROR(result, "gaa_initialize", status);
-    GLOBUS_I_GSI_AUTHZ_GAA_CALLOUT_DEBUG_FPRINTF4(
+
+	GLOBUS_I_GSI_AUTHZ_GAA_CALLOUT_DEBUG_FPRINTF4(
 	GLOBUS_I_GSI_AUTHZ_GAA_CALLOUT_DEBUG_TRACE,
 	"%s: gaa_init(%s) failed: %s\n",
 	_function_name_,
