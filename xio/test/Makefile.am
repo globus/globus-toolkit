@@ -15,6 +15,7 @@ Sources=                                \
 	space_test.c                    \
 	timeout_test.c                  \
 	close_barrier_test.c            \
+	close_barrier2_test.c           \
 	close_cancel_test.c             \
 	cancel_test.c                   \
 	server2_test.c                  \

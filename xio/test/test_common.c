@@ -366,6 +366,11 @@ main(
     globus_assert(rc == 0);
     rc = globus_hashtable_insert(
         &globus_l_test_hash, 
+        "close2_barrier",
+        close_barrier2_main);
+    globus_assert(rc == 0);
+    rc = globus_hashtable_insert(
+        &globus_l_test_hash, 
         "framework",
         framework_main);
     globus_assert(rc == 0);
