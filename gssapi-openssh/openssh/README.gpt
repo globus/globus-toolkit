@@ -11,4 +11,4 @@ the command-line to gpt-build as in:
       GSI_OPENSSH_GPTMACRO="..."
 
 [ Linux ]
-GSI_OPENSSH_GPTMACRO="--disable-suid-ssh --with-md5-passwords"
+GSI_OPENSSH_GPTMACRO="--disable-suid-ssh --with-md5-passwords --with-tcp-wrappers"
