@@ -5,7 +5,7 @@
 
 if [ -z "$GLOBUS_LOCATION" ]; then
     echo "ERROR: environment variable GLOBUS_LOCATION not defined"  1>&2
-    exit 1
+    return 1
 fi
 
 if [ -n "$GLOBUS_PATH" ]; then
