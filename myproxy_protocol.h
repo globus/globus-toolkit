@@ -56,6 +56,7 @@ typedef struct
     char                         *renewers;
     char			 *credname;
     char			 *creddesc;
+    char			 *authzcreds;
 } myproxy_request_t;
 
 /* A server response object */
@@ -185,7 +186,10 @@ int myproxy_recv_ex(myproxy_socket_attrs_t *attrs, char **data);
  *
  * returns 0 on success, -1 on error 
  */
-int myproxy_init_delegation(myproxy_socket_attrs_t *attrs, const char *delegfile, const int lifetime_seconds, char *passphrase);
+int myproxy_init_delegation(myproxy_socket_attrs_t *attrs,
+			    const char *delegfile,
+			    const int lifetime_seconds,
+			    char *passphrase);
 
 /*
  * myproxy_accept_delegation()
@@ -194,14 +198,16 @@ int myproxy_init_delegation(myproxy_socket_attrs_t *attrs, const char *delegfile
  *
  * returns 0 on success, -1 on error 
  */
-int myproxy_accept_delegation(myproxy_socket_attrs_t *attrs, char *data, const int datalen, char *passphrase);
+int myproxy_accept_delegation(myproxy_socket_attrs_t *attrs, char *data,
+			      const int datalen, char *passphrase);
 
 /*
  * myproxy_free()
  * 
  * Frees up memory used for creating request, response and socket objects 
  */
-void myproxy_free(myproxy_socket_attrs_t *attrs, myproxy_request_t *request, myproxy_response_t *response);
+void myproxy_free(myproxy_socket_attrs_t *attrs, myproxy_request_t *request,
+		  myproxy_response_t *response);
 
 /*
  * myproxy_recv_response()
@@ -210,7 +216,8 @@ void myproxy_free(myproxy_socket_attrs_t *attrs, myproxy_request_t *request, myp
  * myproxy_deserialize_response() with some error checking.
  *
  */
-int myproxy_recv_response(myproxy_socket_attrs_t *attrs, myproxy_response_t *response); 
+int myproxy_recv_response(myproxy_socket_attrs_t *attrs,
+			  myproxy_response_t *response); 
 
 /*
  * myproxy_handle_authorization()
@@ -221,8 +228,6 @@ int myproxy_recv_response(myproxy_socket_attrs_t *attrs, myproxy_response_t *res
  */
 int myproxy_handle_authorization(myproxy_socket_attrs_t *attrs,
 				 myproxy_response_t *server_response,
-				 myproxy_request_t *client_request,
-				 char *certfile,
-				 int  use_kerberos);
+				 myproxy_request_t *client_request);
 
 #endif /* __MYPROXY_PROTOCOL_H */
