@@ -14,7 +14,6 @@ CVS Information:
 ******************************************************************************/
 
 #if !defined(GLOBUS_INCLUDE_GLOBUS_COMMON_H)
-#ifndef SWIG
 #define GLOBUS_INCLUDE_GLOBUS_COMMON_H 1
 
 #ifndef EXTERN_C_BEGIN
@@ -29,15 +28,10 @@ CVS Information:
 
 EXTERN_C_BEGIN
 
-/* endif SWIG */
-#endif
 /******************************************************************************
 			       Type definitions
 ******************************************************************************/
 
-#ifndef SWIG
-
-EXTERN_C_END
 /******************************************************************************
 		      Include globus_common header files
 ******************************************************************************/
@@ -96,9 +90,6 @@ char *alloca ();
 #   include <sys/param.h>
 #   define MAXPATHLEN PATH_MAX
 #endif
-EXTERN_C_BEGIN
-/* endif SWIG */
-#endif
 
 /* most network-related functions (getpeername, getsockname,...) have
    an int* as argument, except AIX which uses size_t*. This will
@@ -124,8 +115,6 @@ typedef struct globus_barrier_s
 			       Define constants
 ******************************************************************************/
 
-#ifndef SWIG
- 
 /******************************************************************************
 			  Module activation structure
 ******************************************************************************/
@@ -148,8 +137,5 @@ globus_common_get_attribute_from_config_file( char *   deploy_path,
 					      char *   attribute,
 					      char **  value );
 
-/* endif SWIG */
-#endif
- 
 EXTERN_C_END
 #endif /* GLOBUS_INCLUDE_GLOBUS_COMMON_H */
