@@ -22,10 +22,10 @@ typedef void
 
 
 globus_result_t
-globus_i_gfs_data_request_resource(
+globus_i_gfs_data_request_stat(
     globus_gfs_ipc_handle_t             ipc_handle,
     int                                 id,
-    globus_gfs_stat_state_t *       resource_state,
+    globus_gfs_stat_state_t *       stat_state,
     globus_i_gfs_data_callback_t        cb,
     void *                              user_arg);
 

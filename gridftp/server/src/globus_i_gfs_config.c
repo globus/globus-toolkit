@@ -563,9 +563,8 @@ globus_l_gfs_config_misc()
         community->name = globus_libc_strdup("default");
         community->root = globus_libc_strdup("/");
         community->cs_count = 1;
-        community->contact_strings = (char **) globus_malloc(sizeof(char *));
-        *community->contact_strings = (char *)
-             globus_libc_strdup(value);
+        community->cs = (char **) globus_malloc(sizeof(char *));
+        *community->cs = (char *) globus_libc_strdup(value);
         
         globus_list_insert(&community_list, community);  
         

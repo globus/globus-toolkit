@@ -18,5 +18,8 @@ char *
 globus_i_gfs_config_string(
     const char *                        option_name);
 
+globus_list_t *
+globus_i_gfs_config_list(
+    const char *                        option_name);
 
 #endif

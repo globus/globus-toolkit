@@ -32,7 +32,7 @@ typedef enum
     GLOBUS_GFS_IPC_TYPE_ACTIVE,
     GLOBUS_GFS_IPC_TYPE_DESTROY,
     GLOBUS_GFS_IPC_TYPE_TRANSFER,
-    GLOBUS_GFS_IPC_TYPE_RESOURCE
+    GLOBUS_GFS_IPC_TYPE_STAT
 } globus_gfs_ipc_request_type_t;
 
 typedef enum
@@ -42,6 +42,15 @@ typedef enum
     GLOBUS_GFS_IPC_USER_TYPE_CHAR,
     GLOBUS_GFS_IPC_USER_TYPE_STRING
 } globus_gfs_ipc_user_type_t;
+
+typedef struct globus_i_gfs_community_s
+{
+    char *                              root;
+    char *                              name;
+    int                                 cs_count;
+    char **                             cs;
+} globus_i_gfs_community_t;
+
 /*
  *  replying
  *
@@ -70,12 +79,12 @@ typedef struct globus_gfs_ipc_command_reply_s
     char *                              created_dir;
 } globus_gfs_ipc_command_reply_t;
 
-typedef struct globus_gfs_ipc_resource_reply_s
+typedef struct globus_gfs_ipc_stat_reply_s
 {
     globus_gridftp_server_stat_t *      stat_info;
     int                                 stat_count;
     uid_t                               uid;
-} globus_gfs_ipc_resource_reply_t;
+} globus_gfs_ipc_stat_reply_t;
 
 typedef struct globus_i_gfs_ipc_reply_s
 {
@@ -93,7 +102,7 @@ typedef struct globus_i_gfs_ipc_reply_s
     {
         globus_gfs_ipc_data_reply_t     data;
         globus_gfs_ipc_command_reply_t  command;
-        globus_gfs_ipc_resource_reply_t resource;
+        globus_gfs_ipc_stat_reply_t stat;
     } info;
 
 } globus_gfs_ipc_reply_t;
@@ -398,21 +407,21 @@ globus_gfs_ipc_request_passive_data(
     void *                              user_arg);
 
 /*
- *  send resource request
+ *  send stat request
  */
 typedef globus_result_t
-(*globus_gfs_ipc_iface_resource_t)(
+(*globus_gfs_ipc_iface_stat_t)(
     globus_gfs_ipc_handle_t             ipc_handle,
     int                                 id,
-    globus_gfs_stat_state_t *       resource_state,
+    globus_gfs_stat_state_t *       stat_state,
     globus_i_gfs_ipc_data_callback_t          cb,
     void *                              user_arg);
 
 globus_result_t
-globus_gfs_ipc_request_resource(
+globus_gfs_ipc_request_stat(
     globus_gfs_ipc_handle_t             ipc_handle,
     int *                               id,
-    globus_gfs_stat_state_t *       resource_state,
+    globus_gfs_stat_state_t *       stat_state,
     globus_gfs_ipc_callback_t           cb,
     void *                              user_arg);
 
@@ -442,7 +451,7 @@ typedef void
     int                                 data_connection_id);
 
 globus_result_t
-globus_gfs_ipc_data_destroy(
+globus_gfs_ipc_request_data_destroy(
     globus_gfs_ipc_handle_t             ipc_handle,
     int                                 data_connection_id);
 
@@ -454,7 +463,7 @@ typedef struct globus_i_gfs_ipc_iface_s
     globus_gfs_ipc_iface_active_data_t  active_func;
     globus_gfs_ipc_iface_passive_data_t passive_func;
     globus_gfs_ipc_iface_data_destroy_t data_destroy_func;
-    globus_gfs_ipc_iface_resource_t     resource_func;
+    globus_gfs_ipc_iface_stat_t     stat_func;
     globus_gfs_ipc_iface_list_t         list_func;
     globus_gfs_ipc_iface_transfer_event_t transfer_event_func;
     globus_gfs_ipc_iface_set_cred_t     set_cred;
@@ -491,14 +500,33 @@ globus_gfs_ipc_handle_release(
     globus_gfs_ipc_handle_t             ipc_handle);
 
 globus_result_t
-globus_gfs_ipc_handle_obtain(
+globus_gfs_ipc_handle_get(
     const char *                        user_id,
+    const char *                        pathname,
     globus_gfs_ipc_iface_t *            iface,
-    const char *                        contact_string,
     globus_gfs_ipc_open_close_callback_t cb,
     void *                              user_arg,
     globus_gfs_ipc_error_callback_t     error_cb,
     void *                              error_user_arg);
+
+globus_result_t
+globus_gfs_ipc_handle_get_by_contact(
+    const char *                        user_id,
+    const char *                        contact_string,
+    globus_gfs_ipc_iface_t *            iface,
+    globus_gfs_ipc_open_close_callback_t cb,
+    void *                              user_arg,
+    globus_gfs_ipc_error_callback_t     error_cb,
+    void *                              error_user_arg);
+
+/* 
+ *   community functions
+ */
+globus_result_t
+globus_gfs_community_get_nodes(
+    const char *                        pathname,
+    char **                             contact_strings,
+    int *                               count);
 
 extern globus_gfs_ipc_iface_t  globus_gfs_ipc_default_iface;
 

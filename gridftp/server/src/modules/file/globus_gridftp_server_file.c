@@ -85,7 +85,7 @@ globus_l_gfs_file_deactivate(void)
 }
 
 /**
- * resource calls
+ * stat calls
  */
  
 /* basepath and filename must be MAXPATHLEN long 
