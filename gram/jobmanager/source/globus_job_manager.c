@@ -15,6 +15,8 @@ CVS Information:
 /******************************************************************************
                              Include header files
 ******************************************************************************/
+#include "globus_common.h"
+
 #include <stdio.h>
 #include <malloc.h>
 #include <sys/param.h>
@@ -26,6 +28,7 @@ CVS Information:
 #include <memory.h>
 #include <fcntl.h>
 #include <stdlib.h>
+
 #include "globus_nexus.h"
 #include "globus_gram_client.h"
 #include "grami_fprintf.h"
@@ -248,7 +251,7 @@ main(int argc,
         else
         {
 	    GRAM_UNLOCK;
-            fprintf(stderr, "Usage: %s [-h deploy home dir ] "
+            fprintf(stderr, "Usage: %s [-home deploy home dir ] "
                                       "[-e lib exe dir] "
                                       "[-d debug print] "
                                       "[-t test dat file]\n", argv[0]);
@@ -591,6 +594,7 @@ main(int argc,
 
     grami_fprintf( grami_log_fp, "JM: exiting gram_job_request\n");
 
+    
     rc = globus_module_deactivate(GLOBUS_GASS_FILE_MODULE);
     if (rc != GLOBUS_SUCCESS)
     {
