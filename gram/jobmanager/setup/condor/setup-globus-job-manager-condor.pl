@@ -39,9 +39,9 @@ if($? != 0)
     exit 2;
 }
 
-chmod 0755, 'globus-condor-print-config';
+chmod 0755, './globus-condor-print-config';
 
-my $condor_jm_config = `globus-condor-print-config`;
+my $condor_jm_config = `./globus-condor-print-config`;
 chomp($condor_jm_config);
 
 # Create service
