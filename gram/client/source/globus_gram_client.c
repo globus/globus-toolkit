@@ -322,7 +322,7 @@ gram_job_request(char * gatekeeper_url,
     char *                       gatekeeper_princ;
     unsigned short               gatekeeper_port = 0;
     char *                       auth_msg_buf;
-    int                          auth_msg_buf_size;
+    size_t                       auth_msg_buf_size;
     nexus_byte_t                 type;
     nexus_byte_t *               contact_msg_buffer;
     nexus_byte_t *               tmp_buffer;
@@ -469,8 +469,41 @@ gram_job_request(char * gatekeeper_url,
 
     if (rc != 0)
     {
-        fprintf(stderr, "GSS authentication failed. rc = %8.8x\n", rc);
-        return (GRAM_ERROR_AUTHORIZATION);
+      char * reason;
+      switch (rc) {
+        case 0x000d0002:
+         reason = "Globusids of gatekeeper and contact do not match.";
+         break;
+        case 0x000d0003:
+          reason="Globusid of gatekeeper not found in .globushost.";
+          break;
+        case 0x000d0004:
+          reason="Gatekeeper sent DENIED message.";
+          break;
+        case 0x000d0005:
+          reason="Problem creating security context.";
+          break;
+        case 0x000d0006:
+          reason="wrong password.";
+          break;
+        case 0x000d0007:
+          reason="Globusid of user not found in globusmap.";
+          break;
+        case 0x000d0101:
+          reason="Failed to write token, communication problem.";
+          break;
+        case 0x000d0102:
+          reason="Failed to read token, communication problem.";
+          break;
+        default:
+          reason="Other failure";
+          break;
+      }
+      fprintf(stderr, 
+	   "GSS authentication failed. rc = %8.8x\n Reason : %s\n",
+	    rc, reason);
+		nexus_fd_close(gatekeeper_fd);
+      return (GRAM_ERROR_AUTHORIZATION);
     }
 
 	if (grami_ggg_get_token_nexus((void *) &gatekeeper_fd,
@@ -482,6 +515,7 @@ gram_job_request(char * gatekeeper_url,
 	if (auth_msg_buf_size > 1 )
 	{
 		fprintf(stderr, auth_msg_buf);
+		nexus_fd_close(gatekeeper_fd);
 		return (GRAM_ERROR_AUTHORIZATION);
 	}
 
@@ -499,6 +533,7 @@ gram_job_request(char * gatekeeper_url,
     if (rc != 0)
     {
         fprintf(stderr, "nexus_fd_register_for_write failed\n");
+		nexus_fd_close(gatekeeper_fd);
         return (GRAM_ERROR_PROTOCOL_FAILED);
     }
 
@@ -524,6 +559,7 @@ gram_job_request(char * gatekeeper_url,
     free(contact_msg_buffer);
 */
 
+	nexus_fd_close(gatekeeper_fd);
     return(job_request_monitor.job_status);
 
 } /* gram_job_request() */
