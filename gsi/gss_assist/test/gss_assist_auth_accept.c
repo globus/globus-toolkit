@@ -19,7 +19,8 @@ int main(int argc, char * argv[])
     gss_ctx_id_t                        accept_context = GSS_C_NO_CONTEXT;
     OM_uint32                           ret_flags;
     int                                 sock, connect_sock;
-    FILE *                              stre;
+    FILE *                              infd;
+    FILE *                              outfd;
     char *                              print_buffer = NULL;
     char *                              recv_buffer = NULL;
     int                                 buffer_length;
@@ -72,9 +73,14 @@ int main(int argc, char * argv[])
         exit(1);
     }
 
-    stre = fdopen(connect_sock, "r+");
-    setbuf(stre, NULL);
+    infd = fdopen(dup(connect_sock), "r");
+    setbuf(infd, NULL);
+
+    outfd = fdopen(dup(connect_sock), "w");
+    setbuf(outfd, NULL);
     
+    close(connect_sock);
+
     /* ACCEPTOR PROCESS */
     major_status = globus_gss_assist_acquire_cred(&minor_status,
                                                   GSS_C_ACCEPT,
@@ -101,9 +107,9 @@ int main(int argc, char * argv[])
         &token_status,
         &delegated_init_cred,
         globus_gss_assist_token_get_fd,
-        (void *) (stre),
+        (void *) (infd),
         globus_gss_assist_token_send_fd,
-        (void *) (stre));
+        (void *) (outfd));
     if(GSS_ERROR(major_status))
     {
         globus_gss_assist_display_status(
@@ -132,7 +138,7 @@ int main(int argc, char * argv[])
         &buffer_length,
         &token_status,
         globus_gss_assist_token_get_fd,
-        (void *) (stre),
+        (void *) (infd),
         stdout);
     if(GSS_ERROR(major_status))
     {
@@ -169,7 +175,7 @@ int main(int argc, char * argv[])
         &buffer_length,
         &token_status,
         globus_gss_assist_token_get_fd,
-        (void *) (stre),
+        (void *) (infd),
         stdout);
     if(GSS_ERROR(major_status))
     {
@@ -204,7 +210,7 @@ int main(int argc, char * argv[])
         sizeof(accept_message),
         &token_status,
         globus_gss_assist_token_send_fd,
-        (void *) (stre),
+        (void *) (outfd),
         stdout);
     if(GSS_ERROR(major_status))
     {
@@ -224,7 +230,7 @@ int main(int argc, char * argv[])
         &buffer_length,
         &token_status,
         globus_gss_assist_token_get_fd,
-        (void *) (stre),
+        (void *) (infd),
         stdout);
     if(GSS_ERROR(major_status))
     {
@@ -259,7 +265,7 @@ int main(int argc, char * argv[])
         sizeof(accept_message),
         &token_status,
         globus_gss_assist_token_send_fd,
-        (void *) (stre),
+        (void *) (outfd),
         stdout);
     if(GSS_ERROR(major_status))
     {
@@ -299,7 +305,13 @@ int main(int argc, char * argv[])
         exit(1);
     }
 
-    if(fclose(stre) == EOF)
+    if(fclose(infd) == EOF)
+    {
+        perror("closing stream socket");
+        exit(1);
+    }
+
+    if(fclose(outfd) == EOF)
     {
         perror("closing stream socket");
         exit(1);
