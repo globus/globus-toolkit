@@ -899,7 +899,7 @@ main(
         globus_libc_fprintf(
             stderr,
             "\n\nERROR: Your certificate has expired: %s\n\n", 
-            asctime(localtime(&lifetime)));
+            asctime(localtime(&goodtill)));
         exit(2);
     }
     else if(lifetime < (valid * 60))
