@@ -24,7 +24,7 @@ if (!defined($gpath))
   }
   if (!defined($gpath))
   {
-	     die "GPT_LOCATION or GLOBUS_LOCATION needs to be set before running this script"
+	     die "ERROR: GPT_LOCATION or GLOBUS_LOCATION needs to be set before running this script"
      }
       
      @INC = (@INC, "$gpath/lib/perl");
@@ -46,14 +46,14 @@ if(!defined($gpt))
 }
 if(!defined($gpt))
 {
-  die "GPT_LOCATION or GLOBUS_LOCATION needs to be set before running this script\n";
+  die "ERROR: GPT_LOCATION or GLOBUS_LOCATION needs to be set before running this script\n";
 }
 
 my $globus=$ENV{GLOBUS_LOCATION};
 
 if(!defined($globus))
 {
-  die "GLOBUS_LOCATION needs to be set before running this script\n";
+  die "ERROR: GLOBUS_LOCATION needs to be set before running this script\n";
 }
 
 my %hash;
@@ -109,7 +109,7 @@ push @temp_header, "GLOBUS_LDFLAGS=\" -L$ENV{GLOBUS_LOCATION}/lib\n";
 push @temp_header, "GLOBUS_PKG_LIBS=\"$pkglibslist\"\n";
 push @temp_header, "GLOBUS_LIBTOOL=$globus/sbin/libtool-$flavor\n";
 
-open(IN, "$globus/libexec/globus-build-env-$flavor.sh") || die "Cannot open GLOBUS_LOCATION/libexec/globus-build-env-$flavor.sh\n";
+open(IN, "$globus/libexec/globus-build-env-$flavor.sh") || die "ERROR: Cannot open GLOBUS_LOCATION/libexec/globus-build-env-$flavor.sh\n";
 
 while(<IN>)
 { 
@@ -130,7 +130,7 @@ while(<IN>)
 
 #END of Section one:  prepending GLOBUS_
 close (IN);
-open(IN, "$globus/libexec/globus-sh-tools-vars.sh") || die "Cannot open GLOBUS_LOCATION/libexec/globus-sh-tools-vars.sh\n";
+open(IN, "$globus/libexec/globus-sh-tools-vars.sh") || die "ERROR: Cannot open GLOBUS_LOCATION/libexec/globus-sh-tools-vars.sh\n";
 while(<IN>) 
 {
 	if(m!\S!)  

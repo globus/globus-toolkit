@@ -1,4 +1,4 @@
-#!/usr/bin/env perl 
+#!/usr/bin/env perl
 
 use strict;
 
@@ -12,7 +12,7 @@ my $gpath;
 
 if ( !defined($gpt_path) && !defined($globus_path) )
 {
-    die("GPT_LOCATION or GLOBUS_LOCATION needs to be set before running this script");
+    die("ERROR: GPT_LOCATION or GLOBUS_LOCATION needs to be set before running this script");
 }
 
 if ( defined($gpt_path) )
@@ -20,7 +20,7 @@ if ( defined($gpt_path) )
     $gpath = $gpt_path;
     if ( ! -d $gpath )
     {
-        die("$gpath doesn't exist!\n");
+        die("ERROR: $gpath doesn't exist!\n");
     }
 }
 
@@ -29,7 +29,7 @@ if ( !defined($gpath) && defined($globus_path) )
     $gpath = $globus_path;
     if ( ! -d $gpath )
     {
-        die("$gpath doesn't exist!\n");
+        die("ERROR: $gpath doesn't exist!\n");
     }
 }
 
@@ -287,7 +287,7 @@ sub getBuildEnvLines
     my($header) = @_;
     my($copy);
 
-    open(IN, "$globus_path/libexec/globus-build-env-$flavor.sh") || die "Cannot open $globus_path/libexec/globus-build-env-$flavor.sh!\n$common_error\n";
+    open(IN, "$globus_path/libexec/globus-build-env-$flavor.sh") || die "ERROR: Cannot open $globus_path/libexec/globus-build-env-$flavor.sh!\n$common_error\n";
 
     while (<IN>)
     { 
@@ -318,7 +318,7 @@ sub getBuildShellTools
     my($header) = @_;
     my($copy);
 
-    open(IN, "$globus_path/libexec/globus-sh-tools-vars.sh") || die "Cannot open $globus_path/libexec/globus-sh-tools-vars.sh!\n$common_error\n";
+    open(IN, "$globus_path/libexec/globus-sh-tools-vars.sh") || die "ERROR: Cannot open $globus_path/libexec/globus-sh-tools-vars.sh!\n$common_error\n";
 
     while (<IN>) 
     {
