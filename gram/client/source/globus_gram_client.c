@@ -940,7 +940,7 @@ globus_gram_client_job_cancel(char * job_contact)
     globus_nexus_endpoint_set_user_pointer(&ep, &cancel_monitor);
     globus_nexus_startpoint_bind(&sp, &ep);
 
-    rc = globus_nexus_attach(job_contact, &sp_to_job_manager);
+    rc = globus_nexus_attach( job_contact, &sp_to_job_manager);
     if (rc != 0)
     {
         grami_fprintf(globus_l_print_fp,
@@ -1295,8 +1295,8 @@ Returns:
 ******************************************************************************/
 int 
 globus_gram_client_job_callback_register(char * job_contact,
+                                         const int job_state_mask,
                                          const char * callback_contact,
-                                         int job_state_mask,
                                          int * job_status,
                                          int * failure_code)
 {
@@ -1370,7 +1370,7 @@ globus_gram_client_job_callback_register(char * job_contact,
 
     globus_nexus_put_int(&buffer, &count, 1);
     globus_nexus_put_char(&buffer, (char *) callback_contact, count);
-    globus_nexus_put_int(&buffer, &job_state_mask, 1);
+    globus_nexus_put_int(&buffer, (int *) &job_state_mask, 1);
 
     rc = globus_nexus_send_rsr(&buffer,
 			       &sp_to_job_manager,

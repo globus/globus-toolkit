@@ -305,8 +305,8 @@ globus_gram_client_job_status(char * job_contact,
 
 extern int
 globus_gram_client_job_callback_register(char * job_contact,
+                                         const int job_state_mask,
                                          const char * callback_contact,
-                                         int job_state_mask,
                                          int * job_status,
                                          int * failure_code);
 
