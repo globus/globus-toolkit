@@ -38,8 +38,10 @@ CVS Information:
 #include "globus_gass_server_ez.h"
 #include "globus_rsl.h"
 
+#if 0
 #include "lber.h"
 #include "ldap.h"
+#endif
 
 #include "globus_rsl_assist.h"
 #include "globus_gss_assist.h"
@@ -207,16 +209,6 @@ static char *  long_usage = \
 "           Cause SIGINT to terminate globusrun, while leaving the\n"\
 "           submitted job to run to completion. By default the SIGINT\n"\
 "           signal will be trapped and the job will be terminated\n"\
-"    -mdshost   <mds ldap server hostname>\n"\
-"    -mdsport   <mds ldap server port to contact>\n"\
-"    -T | -mdstimeout <timeout in seconds>\n"\
-"    -mdsbasedn <mds ldap server hostname>\n"\
-"           mdshost, mdsport and mdsbasedn let you overwrite the default\n"\
-"           information necessary to contact the MDS ldap server. Used only\n"\
-"           together with the option -list\n"\
-"           Those options can also be set using the environment variable \n"\
-"           GRID_INFO_HOST, GRID_INFO_PORT, GRID_INFO_TIMEOUT and\n"\
-"           GRID_INFO_BASEDN.\n"\
 "    -k | -kill <job ID>\n"\
 "           Kill a disconnected globusrun job\n"\
 "    -status <job ID>\n"\
@@ -245,6 +237,17 @@ static char *  long_usage = \
 "\n";
 
 #if 0 /* unimplemented */
+
+"    -mdshost   <mds ldap server hostname>\n"\
+"    -mdsport   <mds ldap server port to contact>\n"\
+"    -T | -mdstimeout <timeout in seconds>\n"\
+"    -mdsbasedn <mds ldap server hostname>\n"\
+"           mdshost, mdsport and mdsbasedn let you overwrite the default\n"\
+"           information necessary to contact the MDS ldap server. Used only\n"\
+"           together with the option -list\n"\
+"           Those options can also be set using the environment variable \n"\
+"           GRID_INFO_HOST, GRID_INFO_PORT, GRID_INFO_TIMEOUT and\n"\
+"           GRID_INFO_BASEDN.\n"\
 
 "    -l | -list\n"\
 "           List disconnected globusrun jobs\n"
@@ -284,7 +287,7 @@ test_job_id( char *    value,
 {
     int res = (strncmp(value,"https://", strlen("https://")));
     if (res)
-	*errmsg = strdup("invalid format of job ID");
+	*errmsg = globus_libc_strdup("invalid format of job ID");
     return res;
 }
 
@@ -304,7 +307,7 @@ test_hostname( char *   value,
 					   1024,
 					   &rc     );
     if (hostent == GLOBUS_NULL)
-	*errmsg = strdup("cannot resolve hostname");
+	*errmsg = globus_libc_strdup("cannot resolve hostname");
     return rc;
 }
 
@@ -315,7 +318,7 @@ test_integer( char *   value,
 {
     int  res = (atoi(value) <= 0);
     if (res)
-	*errmsg = strdup("argument is not a positive integer");
+	*errmsg = globus_libc_strdup("argument is not a positive integer");
     return res;
 }
 
@@ -452,7 +455,7 @@ static int arg_f_mode = O_RDONLY;
 	}
 
 	if (argc > 1)
-	    request_string = strdup(argv[1]);
+	    request_string = globus_libc_strdup(argv[1]);
 
 	for (list = options_found;
 	     !globus_list_empty(list);
@@ -513,7 +516,7 @@ static int arg_f_mode = O_RDONLY;
 		break;
 
 	    case arg_f:
-		request_file = strdup(instance->values[0]);
+		request_file = globus_libc_strdup(instance->values[0]);
 	    break;
 
 	case arg_k:
@@ -630,7 +633,7 @@ static int arg_f_mode = O_RDONLY;
 					      * (len + 1));
 	    i=0;
 
-	    while ( (i<=len)  && read(fd, &c, 1) > 0)
+	    while ( (i<len)  && read(fd, &c, 1) > 0)
 	    {
 		request_string[i] = c;
 		i++;
@@ -1026,7 +1029,7 @@ globus_l_globusrun_rsl_gass_subst(globus_rsl_t *request,
 	{
 	    globus_list_insert(
 		globus_rsl_boolean_get_operand_list_ref(request),
-		globus_rsl_parse(strdup(globusrun_gass_url_string)));
+		globus_rsl_parse(globus_libc_strdup(globusrun_gass_url_string)));
 	    level++;
 	}
     }
@@ -2224,11 +2227,11 @@ globus_l_globusrun_duroc_subjob_labels(char *request_string)
 	globus_libc_lock();
 	if(values[0] != GLOBUS_NULL)
 	{
-	    subjob_labels[i] = strdup(values[0]);
+	    subjob_labels[i] = globus_libc_strdup(values[0]);
 	}
 	else
 	{
-	    subjob_labels[i] = strdup("<no label>");
+	    subjob_labels[i] = globus_libc_strdup("<no label>");
 	}
 	globus_libc_unlock();
 
@@ -2344,7 +2347,7 @@ globus_l_globusrun_get_credential(void)
 	return GLOBUS_NULL;
     }
 
-    name = strdup((char *) tmp_buffer_desc.value);
+    name = globus_libc_strdup((char *) tmp_buffer_desc.value);
 
     gss_release_buffer(&minor_status,
 		       tmp_buffer);

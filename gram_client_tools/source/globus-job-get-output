@@ -12,7 +12,7 @@ globus_source ${libexecdir}/globus-sh-tools.sh
 
 progname=`echo $0 | ${GLOBUS_SH_SED-sed} -e 's|^.*/\([^/]*\)|\1|g'`
 
-short_usage="$progname [-help] [-f N] [-tail N] -out|-err <jobID>"
+short_usage="$progname [-help] [-f N] [-tail N] [-r <resource manager>] -out|-err <jobID>"
 
 long_usage()
 {
@@ -30,6 +30,8 @@ Usage: ${short_usage}
     Options:
 	-help, -usage           Display usage
 	-version                Display version
+	-resource               Fetch output using the specified resource
+                                manager
 	-out, -err              Show stdout OR stderr of remote job
 	-tail N           (-t)  Show last N lines of output
 	-follow N         (-f)  Show last N lines of output and any new line
@@ -37,7 +39,7 @@ Usage: ${short_usage}
 EOF
 }
 
-globus_source ${libexecdir}/globus-args-parser-header
+globus_source ${libexecdir}/globus-args-parser-header $*
 
 if [ $# -lt 1 ]; then
     globus_args_short_usage
@@ -47,6 +49,7 @@ fi
 outopt=
 erropt=
 jobid=
+resource=
 tailopt=no
 followopt=no
 dryrun=eval
@@ -61,6 +64,13 @@ while [ -n "$1" ]; do
 	    ;;
 	-err)
 	    erropt=true
+	    ;;
+	-resource)
+	    if [ -z "$2" ]; then
+		globus_args_option_error "$1" "need a resource contact string"
+	    fi
+	    resource="$2"
+	    shift
 	    ;;
 	-t|-tail|-f|-follow)
 	    if [ -z "$2" ]; then
@@ -123,8 +133,10 @@ if [ "${followopt}" != no -a "${tailopt}" != no ]; then
     exit 1
 fi
 
-host=`echo ${jobid} | ${GLOBUS_SH_AWK} -F: '{print $2}' | \
+if [ -z "${resource}" ]; then
+    resource=`echo ${jobid} | ${GLOBUS_SH_AWK} -F: '{print $2}' | \
 	${GLOBUS_SH_SED-sed} 's|/||g'`
+fi
 
 ${bindir}/grid-proxy-info -exists
 if [ $? -ne 0 ]; then
@@ -152,7 +164,7 @@ case ${tailopt}:${followopt} in
 	;;
 esac
 
-${bindir}/globusrun -o -r "$host" \
+${bindir}/globusrun -o -r "$resource" \
     "&(executable=\$(GLOBUS_LOCATION)/bin/globus-sh-exec)(arguments=-exec \"file=\`\${bindir}/globus-gass-cache -query x-gass-cache://${jobid}${stream}\`; ${command} \$file\")"
 
 exit $?
