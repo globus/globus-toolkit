@@ -133,6 +133,8 @@ static const globus_l_gfs_config_option_t option_list[] =
  {"versions", NULL, NULL, "-versions", "-V", GLOBUS_L_GFS_CONFIG_BOOL, 0, NULL,
     "Show version information for all loaded globus libraries."},
 /* internal use */
+ {"fqdn", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
+    NULL /* used to store list of known backends and associated info */},
  {"community", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_LIST, 0, NULL,
     NULL /* used to store list of known backends and associated info */},
  {"module_list", "module_list", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_LIST, 0, NULL,
@@ -649,7 +651,7 @@ globus_l_gfs_config_misc()
             local_version.timestamp,
             local_version.branch_id);
         globus_l_gfs_config_set("banner", 0, data);
-        globus_free(hostname);
+        globus_l_gfs_config_set("fqdn", 0, hostname);
     }
 
     if((value = globus_i_gfs_config_string("login_msg_file")) != GLOBUS_NULL)

@@ -57,15 +57,20 @@ globus_gfs_acl_cas_authorize(
     globus_result_t *                   out_res)
 {
     globus_gsi_authz_handle_t           cas_handle;
+    char *                              full_object;
 
     cas_handle = (globus_gsi_authz_handle_t) out_handle;
 
+    full_object = globus_common_create_string(
+        "ftp://%s%s", acl_handle->hostname, object);
+        
     *out_res = globus_gsi_authorize(
         cas_handle,
         action,
-        object,
+        full_object,
         globus_gfs_acl_cas_cb,
         acl_handle);
+    globus_free(full_object);
     if(*out_res != GLOBUS_SUCCESS)
     {
         goto err;

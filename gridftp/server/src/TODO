@@ -21,7 +21,7 @@ striping:
 -- consolidate some restart ranges instead of sending one from every stripe
 
 ipc:
-XX connect backwards
+XX connect backwards!! 0
 
 logging:
 -- instrument code
