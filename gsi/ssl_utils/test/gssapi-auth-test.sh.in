@@ -140,7 +140,7 @@ cat ${CLIENT_PASSPHRASE_FILE} | ${GRID_PROXY_INIT} -pwstdin > ${GSS_CLIENT_PROXY
 
 STATUS=$?
 if [ ${STATUS} -ne 0 ]; then
-  echo "Error getting proxy certificate"
+  echo "Error getting proxy certificate: status is ${STATUS}"
   cat ${GSS_CLIENT_PROXY_INIT_LOG}
   cleanup
   exit ${STATUS}
@@ -156,7 +156,7 @@ ${GSS_CLIENT} -port ${PORT} localhost "${SERVICE}" "${MESSAGE}"
 STATUS=$?
 
 if [ ${STATUS} -ne 0 ]; then
-  echo "Error running GSS test"
+  echo "Error running GSS test: status is ${STATUS}"
   echo ""
   cleanup
   echo "Server log:"
