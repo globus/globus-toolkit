@@ -100,7 +100,6 @@ BUNDLE globus-resource-management-client
         globus_callout
 	globus_data_conversion
 	globus_openssl
-	globus_proxy_wrapper
 	globus_user_env
 	globus_gsi_openssl_error
 	globus_gsi_proxy_ssl
@@ -211,7 +210,6 @@ BUNDLE globus-data-management-client
 	globus_libtool
         globus_callout
 	globus_openssl
-	globus_proxy_wrapper
 	globus_user_env
 	globus_gsi_openssl_error
 	globus_gsi_proxy_ssl
@@ -305,7 +303,6 @@ BUNDLE globus-information-services-client THREADED
 	globus_mds_common
 	globus_mds_common_setup
 	globus_openssl
-	globus_proxy_wrapper
 	globus_user_env
 	globus_cyrus-sasl
 	globus_gsi_openssl_error
@@ -365,7 +362,6 @@ BUNDLE globus-gsi
 	globus_gsi_proxy_ssl
 	globus_gsi_openssl_error
 	globus_user_env
-	globus_proxy_wrapper
 	globus_openssl
 	globus_libtool
         globus_callout
@@ -382,7 +378,6 @@ BUNDLE globus-rls-server THREADED
         globus_common_setup
         globus_libtool
         globus_openssl
-        globus_proxy_wrapper
         globus_user_env
         globus_gsi_openssl_error
         globus_gsi_proxy_ssl
@@ -461,7 +456,6 @@ BUNDLE gt2-unthreaded
 	globus_openssl
 	globus_openssl_module
 	globus_proxy_utils
-	globus_proxy_wrapper
 	globus_rsl
 	globus_rsl_assist
 	globus_simple_ca
@@ -510,7 +504,6 @@ BUNDLE gt2-threaded THREADED
 	globus_openssl
 	globus_openssl_module
 	globus_proxy_utils
-	globus_proxy_wrapper
 	globus_rsl
 	globus_sasl_gssapi_gsi
 	globus_user_env
@@ -553,7 +546,6 @@ BUNDLE globus-common-libs
         gssapi_error
         globus_user_env
         globus_simple_ca
-        globus_proxy_wrapper
         globus_simple_ca_setup
         globus_xio
         globus_io
