@@ -166,9 +166,12 @@ globus_l_extension_activate(void)
         globus_rmutex_init(&globus_l_extension_mutex, NULL);
         globus_thread_key_create(&globus_l_extension_owner_key, NULL);
         
-        globus_location(&tmp);
-        globus_l_globus_location = globus_common_create_string("%s/lib", tmp);
-        globus_free(tmp);
+        if(globus_location(&tmp) == GLOBUS_SUCCESS)
+        {
+            globus_l_globus_location =
+                globus_common_create_string("%s/lib", tmp);
+            globus_free(tmp);
+        }
         
         initialized = GLOBUS_TRUE;
         GlobusExtensionDebugExit();
@@ -310,20 +313,30 @@ globus_l_extension_dlopen(
         else
         {
             name = basename + 1;
-            search_path = globus_common_create_string(
-                "%s/%s", globus_l_globus_location, path);
+            if(globus_l_globus_location)
+            {
+                /* if globus_location is not set, then it's likely I won't
+                 * find the library
+                 */
+                search_path = globus_common_create_string(
+                    "%s/%s", globus_l_globus_location, path);
+            }
         }
     }
     
     globus_l_libtool_mutex_lock();
     
-    if((save_path = (char *) lt_dlgetsearchpath()))
+    if(search_path || globus_l_globus_location)
     {
-        /* libtool frees this pointer before setting the next one */
-        save_path = globus_libc_strdup(save_path);
-    }
+        if((save_path = (char *) lt_dlgetsearchpath()))
+        {
+            /* libtool frees this pointer before setting the next one */
+            save_path = globus_libc_strdup(save_path);
+        }
     
-    lt_dlsetsearchpath(search_path ? search_path : globus_l_globus_location);
+        lt_dlsetsearchpath(
+            search_path ? search_path : globus_l_globus_location);
+    }
     
     snprintf(library, 1024, "lib%s_%s", name, build_flavor);
     library[1023] = 0;
@@ -346,14 +359,18 @@ globus_l_extension_dlopen(
             GLOBUS_L_EXTENSION_DEBUG_DLL,
             (_GCSL("[%s] Couldn't dlopen %s in %s (or LD_LIBRARY_PATH): %s\n"),
              _globus_func_name, library,
-             search_path ? search_path : globus_l_globus_location,
+             search_path ? search_path : globus_l_globus_location 
+                ? globus_l_globus_location : "(default)",
              error ? error : "(null)"));
     }
     
-    lt_dlsetsearchpath(save_path);
-    if(save_path)
+    if(search_path || globus_l_globus_location)
     {
-        globus_free(save_path);
+        lt_dlsetsearchpath(save_path);
+        if(save_path)
+        {
+            globus_free(save_path);
+        }
     }
     globus_l_libtool_mutex_unlock();
     

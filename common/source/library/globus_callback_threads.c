@@ -2826,7 +2826,7 @@ globus_l_callback_thread_signal_poll(
             if(rc > 0)
             {
                 /* buggy linux returning signum,
-                 * although... some systems are return errors here as
+                 * although... some systems are returning errors here as
                  * positive numbers (aix).. will have to weed them out
                  * as they turn up
                  */

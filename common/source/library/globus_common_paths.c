@@ -95,7 +95,6 @@ globus_l_common_env_path( char** bufp, char* name )
     p = globus_libc_getenv(name);
     if (!p || strlen(p)==0)
     {
-	globus_libc_fprintf(stderr,_GCSL("ERROR: %s not defined\n"), name);
 	globus_libc_sprintf(errmsg,_GCSL("Environment variable %s is not set"), name);
 	return GLOBUS_COMMON_PATH_ERROR_INSTANCE(errmsg);
     }
