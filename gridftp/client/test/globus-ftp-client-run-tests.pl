@@ -91,7 +91,7 @@ sub setup_server()
     my $server_pid;
     my $server_prog = "$globus_location/sbin/in.ftpd";
     my $server_host = "localhost";
-    my $server_port = 3131;
+    my $server_port = 0;
     my $server_args = "-a -s -p $server_port";
     my $subject;
     
@@ -121,7 +121,12 @@ sub setup_server()
         print "Unable to start server\n";
         exit 1;
     }
-    
+
+    $_ = `ps -p $server_pid -o args`;
+    s/ftpd: accepting connections on port (\d+)/\1/;
+    $server_port = $1;
+
+
     $ENV{GLOBUS_FTP_CLIENT_TEST_SUBJECT} = $subject;
     $ENV{FTP_TEST_SOURCE_HOST} = "$server_host:$server_port";
     $ENV{FTP_TEST_DEST_HOST} = "$server_host:$server_port";   
