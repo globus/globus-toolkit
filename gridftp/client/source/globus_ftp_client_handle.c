@@ -512,6 +512,308 @@ error:
 /* globus_ftp_client_handle_get_user_pointer() */
 /*@}*/
 
+
+/**
+ * @name Plugins
+ */
+/*@{*/
+/**
+ * Add a plugin to an FTP client handle.
+ * @ingroup globus_ftp_client_handle
+ *
+ * This function adds a plugin to an FTP client handle after it has been
+ * created. Plugins may be added to an ftp client handle whenever an operation
+ * is not in progress. The plugin will be appended to the list of plugins
+ * present in the handle, and will be invoked during any subsequent operations
+ * processed with this handle.
+ *
+ * Only one instance of a particular plugin may be added to a particular
+ * handle.
+ *
+ * Plugins may be removed from a handle by calling
+ * globus_ftp_client_remove_plugin().
+ *
+ * @param handle
+ *        The FTP client handle to set or query.
+ * @param plugin
+ *        A pointer to the plugin structure to add to this handle.
+ * @see globus_ftp_client_remove_plugin(),
+ *      globus_ftp_clent_handleattr_add_plugin(),
+ *      globus_ftp_clent_handleattr_remove_plugin()
+ */
+globus_result_t
+globus_ftp_client_handle_add_plugin(
+    globus_ftp_client_handle_t *		handle,
+    globus_ftp_client_plugin_t *		plugin)
+{
+    globus_object_t *				err;
+    globus_result_t				result;
+    globus_i_ftp_client_handle_t *		i_handle;
+    globus_list_t *				node;
+    globus_ftp_client_plugin_t *		tmp;
+    static char * myname = "globus_ftp_client_handle_add_plugin";
+
+    if(handle == GLOBUS_NULL)
+    {
+	err = globus_error_construct_string(
+	    GLOBUS_FTP_CLIENT_MODULE,
+	    GLOBUS_NULL,
+	    "[%s] Cannot add plugin to a NULL handle at %s\n",
+	    GLOBUS_FTP_CLIENT_MODULE->module_name,
+	    myname);
+
+	goto error;
+    }
+    if(plugin == GLOBUS_NULL)
+    {
+	err = globus_error_construct_string(
+	    GLOBUS_FTP_CLIENT_MODULE,
+	    GLOBUS_NULL,
+	    "[%s] Cannot add NULL plugin to a handle at %s\n",
+	    GLOBUS_FTP_CLIENT_MODULE->module_name,
+	    myname);
+
+	goto error;
+    }
+    if(*plugin == GLOBUS_NULL)
+    {
+	err = globus_error_construct_string(
+		GLOBUS_FTP_CLIENT_MODULE,
+		GLOBUS_NULL,
+		"[%s] Cannot add invalid plugin at %s\n",
+		GLOBUS_FTP_CLIENT_MODULE->module_name,
+		myname);
+	goto error;
+    }
+    if((*plugin)->plugin_name == GLOBUS_NULL ||
+       (*plugin)->copy_func == GLOBUS_NULL ||
+       (*plugin)->destroy_func == GLOBUS_NULL)
+    {
+	err = globus_error_construct_string(
+		GLOBUS_FTP_CLIENT_MODULE,
+		GLOBUS_NULL,
+		"[%s] Cannot add invali plugin at %s\n",
+		GLOBUS_FTP_CLIENT_MODULE->module_name,
+		myname);
+	goto error;
+    }
+    if(GLOBUS_I_FTP_CLIENT_BAD_MAGIC(handle))
+    {
+	err = globus_error_construct_string(
+	    GLOBUS_FTP_CLIENT_MODULE,
+	    GLOBUS_NULL,
+	    "[%s] Cannot add plugin to an uninitialized handle at %s\n",
+	    GLOBUS_FTP_CLIENT_MODULE->module_name,
+	    myname);
+	goto error;
+    }
+    i_handle = *(globus_i_ftp_client_handle_t **) handle;
+    globus_i_ftp_client_handle_lock(i_handle);
+
+    if(i_handle->op != GLOBUS_FTP_CLIENT_IDLE)
+    {
+	err = globus_error_construct_string(
+	    GLOBUS_FTP_CLIENT_MODULE,
+	    GLOBUS_NULL,
+	    "[%s} Cannot add plugin to a handle actively processing an operation at %s\n",
+	    GLOBUS_FTP_CLIENT_MODULE->module_name,
+	    myname);
+	goto unlock_error;
+    }
+
+    node = globus_list_search_pred(i_handle->attr.plugins,
+	                           globus_i_ftp_client_plugin_list_search,
+				   (*plugin)->plugin_name);
+    if(node)
+    {
+	err = globus_error_construct_string(
+		GLOBUS_FTP_CLIENT_MODULE,
+		GLOBUS_NULL,
+		"[%s] Plugin %s already associated with attribute set at %s\n",
+		GLOBUS_FTP_CLIENT_MODULE->module_name,
+		(*plugin)->plugin_name,
+		myname);
+	goto unlock_error;
+    }
+    else
+    {
+	globus_list_t ** last_node_ptr;
+	tmp = (*plugin)->copy_func(plugin,
+		                   (*plugin)->plugin_specific);
+
+	if(tmp)
+	{
+	    (*tmp)->plugin = tmp;
+
+	    /* Append this plugin to the end of the plugin list */
+	    last_node_ptr = &i_handle->attr.plugins;
+	    while(! globus_list_empty(*last_node_ptr))
+	    {
+		last_node_ptr = globus_list_rest_ref(*last_node_ptr);
+	    }
+	    globus_list_insert(last_node_ptr, *tmp);
+	}
+	else
+	{
+	    err = globus_error_construct_string(
+		GLOBUS_FTP_CLIENT_MODULE,
+		GLOBUS_NULL,
+		"[%s] Out of memory at %s\n",
+		GLOBUS_FTP_CLIENT_MODULE->module_name,
+		(*plugin)->plugin_name,
+		myname);
+	    goto unlock_error;
+	}
+    }
+
+    globus_i_ftp_client_handle_unlock(i_handle);
+
+    return GLOBUS_SUCCESS;
+
+unlock_error:
+    globus_i_ftp_client_handle_unlock(i_handle);
+error:
+    return globus_error_put(err);
+}
+/* globus_ftp_client_handle_add_plugin() */
+
+/**
+ * Remove a plugin to an FTP client handle.
+ * @ingroup globus_ftp_client_handle
+ *
+ * This function removes a plugin from an FTP client handle after it has been
+ * created. Plugins may be removed from an ftp client handle whenever an
+ * operation is not in progress. The plugin will be removed from the list of
+ * plugins, and will not be used during any subsequent operations processed
+ * with this handle.
+ *
+ * This function can remove plugins which were added at 
+ * @ref globus_ftp_client_handle_init() "handle initialization time"
+ * or by calling globus_ftp_client_handle_add_plugin().
+ *
+ * @param handle
+ *        The FTP client handle to set or query.
+ * @param plugin
+ *        A pointer to the plugin structure to remove from this handle.
+ *
+ * @see globus_ftp_client_add_plugin(),
+ *      globus_ftp_clent_handleattr_add_plugin(),
+ *      globus_ftp_clent_handleattr_remove_plugin()
+ */
+globus_result_t
+globus_ftp_client_handle_remove_plugin(
+    globus_ftp_client_handle_t *		handle,
+    globus_ftp_client_plugin_t *		plugin)
+{
+    globus_object_t *				err;
+    globus_result_t				result;
+    globus_i_ftp_client_handle_t *		i_handle;
+    globus_list_t *				node;
+    globus_i_ftp_client_plugin_t *		tmp;
+    static char * myname = "globus_ftp_client_handle_add_plugin";
+
+    if(handle == GLOBUS_NULL)
+    {
+	err = globus_error_construct_string(
+	    GLOBUS_FTP_CLIENT_MODULE,
+	    GLOBUS_NULL,
+	    "[%s] Cannot add plugin to a NULL handle at %s\n",
+	    GLOBUS_FTP_CLIENT_MODULE->module_name,
+	    myname);
+
+	goto error;
+    }
+    if(plugin == GLOBUS_NULL)
+    {
+	err = globus_error_construct_string(
+	    GLOBUS_FTP_CLIENT_MODULE,
+	    GLOBUS_NULL,
+	    "[%s] Cannot add NULL plugin to a handle at %s\n",
+	    GLOBUS_FTP_CLIENT_MODULE->module_name,
+	    myname);
+
+	goto error;
+    }
+    if(*plugin == GLOBUS_NULL)
+    {
+	err = globus_error_construct_string(
+		GLOBUS_FTP_CLIENT_MODULE,
+		GLOBUS_NULL,
+		"[%s] Cannot add invalid plugin at %s\n",
+		GLOBUS_FTP_CLIENT_MODULE->module_name,
+		myname);
+	goto error;
+    }
+    if((*plugin)->plugin_name == GLOBUS_NULL ||
+       (*plugin)->copy_func == GLOBUS_NULL ||
+       (*plugin)->destroy_func == GLOBUS_NULL)
+    {
+	err = globus_error_construct_string(
+		GLOBUS_FTP_CLIENT_MODULE,
+		GLOBUS_NULL,
+		"[%s] Cannot add invali plugin at %s\n",
+		GLOBUS_FTP_CLIENT_MODULE->module_name,
+		myname);
+	goto error;
+    }
+    if(GLOBUS_I_FTP_CLIENT_BAD_MAGIC(handle))
+    {
+	err = globus_error_construct_string(
+	    GLOBUS_FTP_CLIENT_MODULE,
+	    GLOBUS_NULL,
+	    "[%s] Cannot add plugin to an uninitialized handle at %s\n",
+	    GLOBUS_FTP_CLIENT_MODULE->module_name,
+	    myname);
+	goto error;
+    }
+    i_handle = *(globus_i_ftp_client_handle_t **) handle;
+    globus_i_ftp_client_handle_lock(i_handle);
+
+    if(i_handle->op != GLOBUS_FTP_CLIENT_IDLE)
+    {
+	err = globus_error_construct_string(
+	    GLOBUS_FTP_CLIENT_MODULE,
+	    GLOBUS_NULL,
+	    "[%s} Cannot add plugin to a handle actively processing an operation at %s\n",
+	    GLOBUS_FTP_CLIENT_MODULE->module_name,
+	    myname);
+	goto unlock_error;
+    }
+
+    node = globus_list_search_pred(i_handle->attr.plugins,
+	                           globus_i_ftp_client_plugin_list_search,
+				   (*plugin)->plugin_name);
+    if(! node)
+    {
+	err = globus_error_construct_string(
+		GLOBUS_FTP_CLIENT_MODULE,
+		GLOBUS_NULL,
+		"[%s] Plugin %s not associated with handle at %s\n",
+		GLOBUS_FTP_CLIENT_MODULE->module_name,
+		(*plugin)->plugin_name,
+		myname);
+	goto unlock_error;
+    }
+    else
+    {
+	tmp = globus_list_remove(&i_handle->attr.plugins, node);
+	tmp->destroy_func(tmp->plugin,
+			  tmp->plugin_specific);
+    }
+
+    globus_i_ftp_client_handle_unlock(i_handle);
+
+    return GLOBUS_SUCCESS;
+
+unlock_error:
+    globus_i_ftp_client_handle_unlock(i_handle);
+error:
+    return globus_error_put(err);
+}
+/* globus_ftp_client_handle_remove_plugin() */
+
+/*@}*/
+
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * Allocate and initialize a ftp client target.

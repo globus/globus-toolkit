@@ -352,6 +352,17 @@ globus_result_t
 globus_ftp_client_handle_get_user_pointer(
     const globus_ftp_client_handle_t *		handle,
     void **					user_pointer);
+
+globus_result_t
+globus_ftp_client_handle_add_plugin(
+    globus_ftp_client_handle_t *		handle,
+    globus_ftp_client_plugin_t *		plugin);
+
+globus_result_t
+globus_ftp_client_handle_remove_plugin(
+    globus_ftp_client_handle_t *		handle,
+    globus_ftp_client_plugin_t *		plugin);
+
 #endif
 
 /**
