@@ -151,12 +151,28 @@ static int globus_l_gsi_authz_activate(void)
         /* call authz system init callout */
         /* the callout type is "GLOBUS_GSI_AUTHZ_SYSTEM_INIT" */
         /* arguments are: void ** authz_system_state, ie &authz_system_state */
-        rc = (int)globus_callout_call_type(callout_handle,
-                                           "GLOBUS_GSI_AUTHZ_SYSTEM_INIT",
-                                           &authz_system_state);
-        if(rc != (int)GLOBUS_SUCCESS)
+        result = globus_callout_call_type(callout_handle,
+                                          "GLOBUS_GSI_AUTHZ_SYSTEM_INIT",
+                                          &authz_system_state);
+        if(result != GLOBUS_SUCCESS)
         {
-            goto free_handle;
+            error = globus_error_get(result);
+            
+            if(globus_error_match(
+                   error,
+                   GLOBUS_CALLOUT_MODULE,
+                   GLOBUS_CALLOUT_ERROR_TYPE_NOT_REGISTERED)
+               == GLOBUS_TRUE)
+            {
+                globus_object_free(error);
+            }
+            else
+            {
+                result = globus_error_put(error);
+                GLOBUS_GSI_AUTHZ_ERROR_WITH_CALLOUT(result);
+                rc = (int) result;
+                goto free_handle;
+            }
         }
     }
 
