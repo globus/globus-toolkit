@@ -257,7 +257,7 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
                 goto exit;                
             }
 
-            if(i2d(cert,&(data_set_buffer.value)) < 0)
+            if(i2d_X509(cert,&(data_set_buffer.value)) < 0)
             {
                 free(data_set_buffer.value);
                 GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
