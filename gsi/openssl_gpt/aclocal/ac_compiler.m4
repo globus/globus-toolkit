@@ -11,6 +11,11 @@ dnl LAC_COMPILER_ARGS()
 
 AC_DEFUN(LAC_COMPILER_ARGS,
 [
+    AC_ARG_WITH([dso],
+        [AC_HELP_STRING([--with-dso],
+        [Enable DSO module])],
+        [],
+        [])
 ])
 
 dnl LAC_COMPILER()
@@ -34,10 +39,17 @@ AC_DEFUN(LAC_COMPILER_SET,
 [
     # defaults:
 
-    lac_CFLAGS="$CFLAGS -DDSO_DLFCN -DHAVE_DLFCN_H"
-    lac_DSO_DLFCN="1"
-    lac_HAVE_DLFCN_H="1"
+    lac_CFLAGS="$CFLAGS"
+    lac_DSO_DLFCN=""
+    lac_HAVE_DLFCN_H=""
     lac_THREADS=""
+
+    if test "$with_dso" = "yes"; then
+        lac_CFLAGS="$CFLAGS -DDSO_DLFCN -DHAVE_DLFCN_H"
+        lac_DSO_DLFCN="1"
+        lac_HAVE_DLFCN_H="1"
+    fi
+
 
     if test ! "$GLOBUS_THREADS" = "none"; then
         lac_CFLAGS="$lac_CFLAGS -DTHREADS"

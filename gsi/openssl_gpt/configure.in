@@ -3,7 +3,7 @@ dnl
 AC_REVISION($Revision$)
 AC_INIT(Makefile.am)
 
-# libtool hack
+dnl libtool hack
 
 with_tags=
 
@@ -19,6 +19,17 @@ LD=$save_LD
 CXXCPP=$save_CXXCPP
 
 OPENSSL_INIT
+
+dnl static linking hack
+
+if test $GPT_LINKTYPE = "static"; then
+    with_dso="no"
+else
+    with_dso="yes"
+    # Need to determine if we need -ldl or -ldld
+    # maybe should be replaced with the libtool dl library
+    LAC_CHECK_DL_LIB
+fi
 
 dnl config header goes here
 
@@ -43,10 +54,6 @@ LAC_COMPILER
 
 CHECK_NEED_LSOCKET
 CHECK_NEED_LNSL
-
-# Need to determine if we need -ldl or -ldld
-
-LAC_CHECK_DL_LIB
 
 GPT_SET_LIBS(["$DL_LIB $EXTERNAL_LIBS"])	
 
