@@ -63,7 +63,7 @@
 
         <xsd:complexType name="CredentialsFault">
             <xsd:complexContent>
-                <xsd:extension base="ogsi:FaultType"/>
+                <xsd:extension base="tns:FileTransferFault"/>
             </xsd:complexContent>
         </xsd:complexType>
 

@@ -199,7 +199,7 @@ public class FileStreamImpl extends GridServiceImpl {
                         InvalidUrlFault.class,
                         message, null, this);
 
-                f.setUrl(url.toString());
+                f.setUrl(url.getURL());
 
                 throw f;
             }
@@ -207,25 +207,25 @@ public class FileStreamImpl extends GridServiceImpl {
             message = MessageUtils.getMessage(
                     FILE_STREAMING_RESOURCES,
                     "FileTransferFault00",
-                    new String [] { url.toString() });
+                    new String [] { url.getURL() });
             FileTransferFault f =
                     (FileTransferFault) FaultHelper.makeFault(
                     FileTransferFault.class,
                     message, fe, this);
             f.setSourcePath(sourcePath);
             try {
-                f.setDestinationUrl(new URI(url.toString()));
+                f.setDestinationUrl(new URI(url.getURL()));
             } catch(MalformedURIException muri) {
                 message = MessageUtils.getMessage(
                         FILE_STREAMING_RESOURCES,
                         "InvalidUrlFault00",
-                        new String [] { url.toString() });
+                        new String [] { url.getURL() });
                 InvalidUrlFault fault =
                         (InvalidUrlFault) FaultHelper.makeFault(
                         InvalidUrlFault.class,
                         message, muri, this);
 
-                fault.setUrl(url.toString());
+                fault.setUrl(url.getURL());
 
                 throw fault;
             }
@@ -235,25 +235,25 @@ public class FileStreamImpl extends GridServiceImpl {
             message = MessageUtils.getMessage(
                     FILE_STREAMING_RESOURCES,
                     "FileTransferFault00",
-                    new String [] { url.toString() });
+                    new String [] { url.getURL() });
             FileTransferFault f =
                     (FileTransferFault) FaultHelper.makeFault(
                     FileTransferFault.class,
                     message, ge, this);
             f.setSourcePath(sourcePath);
             try {
-                f.setDestinationUrl(new URI(url.toString()));
+                f.setDestinationUrl(new URI(url.getURL()));
             } catch(MalformedURIException muri) {
                 message = MessageUtils.getMessage(
                         FILE_STREAMING_RESOURCES,
                         "InvalidUrlFault00",
-                        new String [] { url.toString() });
+                        new String [] { url.getURL() });
                 InvalidUrlFault fault =
                         (InvalidUrlFault) FaultHelper.makeFault(
                         InvalidUrlFault.class,
                         message, null, this);
 
-                fault.setUrl(url.toString());
+                fault.setUrl(url.getURL());
 
                 throw fault;
             }
@@ -263,11 +263,28 @@ public class FileStreamImpl extends GridServiceImpl {
             message = MessageUtils.getMessage(
                     FILE_STREAMING_RESOURCES,
                     "CredentialsFault00",
-                    new String [] { url.toString() });
+                    new String [] { url.getURL() });
             CredentialsFault f =
                     (CredentialsFault) FaultHelper.makeFault(
                     CredentialsFault.class,
                     message, gse, this);
+            f.setSourcePath(sourcePath);
+            try {
+                f.setDestinationUrl(new URI(url.getURL()));
+            } catch(MalformedURIException muri) {
+                message = MessageUtils.getMessage(
+                        FILE_STREAMING_RESOURCES,
+                        "InvalidUrlFault00",
+                        new String [] { url.getURL() });
+                InvalidUrlFault fault =
+                        (InvalidUrlFault) FaultHelper.makeFault(
+                        InvalidUrlFault.class,
+                        message, null, this);
+
+                fault.setUrl(url.getURL());
+
+                throw fault;
+            }
             throw f;
         } catch(IOException ioe) {
             if (protocol.equalsIgnoreCase("file")) {
@@ -285,25 +302,25 @@ public class FileStreamImpl extends GridServiceImpl {
                 message = MessageUtils.getMessage(
                         FILE_STREAMING_RESOURCES,
                         "FileTransferFault00",
-                        new String [] { url.toString() });
+                        new String [] { url.getURL() });
                 FileTransferFault f =
                         (FileTransferFault) FaultHelper.makeFault(
                         FileTransferFault.class,
                         message, ioe, this);
                 f.setSourcePath(sourcePath);
                 try {
-                    f.setDestinationUrl(new URI(url.toString()));
+                    f.setDestinationUrl(new URI(url.getURL()));
                 } catch(MalformedURIException muri) {
                     message = MessageUtils.getMessage(
                             FILE_STREAMING_RESOURCES,
                             "InvalidUrlFault00",
-                            new String [] { url.toString() });
+                            new String [] { url.getURL() });
                     InvalidUrlFault fault =
                             (InvalidUrlFault) FaultHelper.makeFault(
                             InvalidUrlFault.class,
                             message, null, this);
 
-                    fault.setUrl(url.toString());
+                    fault.setUrl(url.getURL());
 
                     throw fault;
                 }
