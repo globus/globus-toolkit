@@ -61,7 +61,7 @@ if ( ( -d "$globusdir/etc/grid-services" ) &&
                     "globus-job-manager ".
                     "-conf $globusdir/etc/globus-job-manager.conf ".
                     "-type fork -rdn jobmanager -machine-type unknown ".
-                    "-publish-jobs";
+                    "-publish-jobs\n";
 
       $need_print=0;
       close(SERVICE);
