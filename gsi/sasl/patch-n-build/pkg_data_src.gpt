@@ -28,7 +28,7 @@
       <Build_Step>patch -N -p1 -i ../patches/cyrus-sasl-1.5.27-patch</Build_Step>
       <Build_Step>MAKE_GPTMACRO distclean</Build_Step>
 
-      <Build_Step Macro_Args="libs='ssl crypto sasl annonymous cramm5 digestmd5 plain'">
+      <Build_Step Macro_Args="libs='ssl crypto sasl'">
         RUN_FLAVOR_MAKEFILES_GPTMACRO
       </Build_Step>
 	<Build_Step>touch aclocal.m4</Build_Step>
