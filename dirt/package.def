@@ -177,4 +177,4 @@ globus_gram_local_proxy_tool ws-gram/service/proxy-tool/source dirt.sh
 globus_gridmap_and_execute ws-gram/service/gridmap_and_execute/source dirt.sh
 globus_gridmap_and_execute_test ws-gram/service/gridmap_and_execute/test dirt.sh
 globus_c_delegation_client_util ws-delegation/client/c/util dirt.sh
-
+globus_c_ws_security wsrf/c/core/security/source dirt.sh
