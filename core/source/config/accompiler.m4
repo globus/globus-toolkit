@@ -18,7 +18,6 @@ dnl   CFLAGS
 dnl   CXX
 dnl   CXXCPP
 dnl   CXXFLAGS
-dnl   LD
 dnl   LDFLAGS
 dnl   LIBS
 dnl   AR
@@ -49,7 +48,6 @@ dnl   lac_cv_CPPFLAGS
 dnl   lac_cv_CXX
 dnl   lac_cv_CXXCPP
 dnl   lac_cv_CXXFLAGS
-dnl   lac_cv_LD
 dnl   lac_cv_LDFLAGS
 dnl   lac_cv_LIBS
 dnl   lac_cv_AR
@@ -133,7 +131,6 @@ LAC_SUBSTITUTE_COMPILER_VAR(CPPFLAGS)
 LAC_SUBSTITUTE_COMPILER_VAR(CXX)
 LAC_SUBSTITUTE_COMPILER_VAR(CXXCPP)
 LAC_SUBSTITUTE_COMPILER_VAR(CXXFLAGS)
-LAC_SUBSTITUTE_COMPILER_VAR(LD)
 LAC_SUBSTITUTE_COMPILER_VAR(LDFLAGS)
 LAC_SUBSTITUTE_COMPILER_VAR(LIBS)
 LAC_SUBSTITUTE_COMPILER_VAR(AR)
@@ -605,7 +602,6 @@ case ${host}--$1 in
                 AC_PATH_PROGS(lac_cv_CPP, $CPP cpp,[],/usr/lib:$PATH)
                 dnl other parts of the toolchain needs to know about 32/64 bits
                 if test "$lac_cv_build_64bit" = "yes"; then
-                    lac_cv_LD="/usr/bin/ld -b64 -brtl"
                     lac_LDFLAGS="-b64 -brtl $lac_LDFLAGS"
                     lac_cv_AR="/usr/bin/ar -X64"
                     lac_ARFLAGS="-X64 $lac_ARFLAGS"
@@ -614,7 +610,6 @@ case ${host}--$1 in
                     lac_NM="/usr/bin/nm -X64 -B"
                     lac_OBJECT_MODE="64"
                 else
-                    lac_cv_LD="/usr/bin/ld -b32 -brtl"
                     lac_LDFLAGS="-b32 -brtl $lac_LDFLAGS"
                     lac_cv_AR="/usr/bin/ar -X32"
                     lac_ARFLAGS="-X32 $lac_ARFLAGS"
@@ -704,7 +699,6 @@ case ${host}--$1 in
                 AC_PATH_PROGS(lac_cv_CPP, $CPP cpp,[],/usr/lib:$PATH)
                 dnl other parts of the toolchain needs to know about 32/64 bits
                 if test "$lac_cv_build_64bit" = "yes"; then
-                    lac_cv_LD="/usr/bin/ld -b64 -brtl"
                     lac_LDFLAGS="-b64 -brtl $lac_LDFLAGS"
                     lac_cv_AR="/usr/bin/ar -X64"
                     lac_ARFLAGS="-X64 $lac_ARFLAGS"
@@ -713,7 +707,6 @@ case ${host}--$1 in
                     lac_NM="/usr/bin/nm -X64 -B"
                     lac_OBJECT_MODE="64"
                 else
-                    lac_cv_LD="/usr/bin/ld -b32 -brtl"
                     lac_LDFLAGS="-b32 -brtl $lac_LDFLAGS"
                     lac_cv_AR="/usr/bin/ar -X32"
                     lac_ARFLAGS="-X32 $lac_ARFLAGS"
@@ -943,7 +936,6 @@ AC_CACHE_CHECK("F90 flags", lac_cv_F90FLAGS, lac_cv_F90FLAGS="$lac_F90FLAGS")
 
 
 CC="$lac_cv_CC"
-LD="$lac_cv_LD"
 CFLAGS="$lac_cv_CFLAGS"
 AC_PROG_CC
 CROSS="$cross_compiling"
