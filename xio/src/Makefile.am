@@ -11,7 +11,8 @@ Sources= \
 	globus_xio_pass.c                           \
 	globus_xio_attr.c                           \
 	globus_xio_timeout.c                        \
-	globus_xio_server.c
+	globus_xio_server.c \
+        globus_xio_util.c
 
 flavorinclude_HEADERS = \
     globus_xio.h

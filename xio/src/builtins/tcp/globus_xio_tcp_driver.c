@@ -1,6 +1,16 @@
 #include "globus_xio_driver.h"
 #include "globus_xio_tcp_driver.h"
 
+#define GlobusXIOTcpErrorNoAddrs()                                          \
+    globus_error_put(                                                       \
+        globus_error_construct_error(                                       \
+            &globus_i_xio_tcp_module,                                       \
+            GLOBUS_NULL,                                                    \
+            GLOBUS_XIO_TCP_ERROR_NO_ADDRS,                                  \
+            "[%s:%d] No addrs for INET family",                             \
+            _xio_name, __LINE__))
+
+
 #define GlobusIXIOTcpCloseFd(fd)                                            \
     do                                                                      \
     {                                                                       \
@@ -131,6 +141,7 @@ globus_l_xio_tcp_get_env_pair(
     int *                               max)
 {
     char *                              min_max;
+    GlobusXIOName(globus_l_xio_tcp_get_env_pair);
 
     min_max = globus_module_getenv(env_name);
 
@@ -148,6 +159,7 @@ globus_l_xio_tcp_activate(void)
 {
     int                                 min;
     int                                 max;
+    GlobusXIOName(globus_l_xio_tcp_activate);
     
     if(globus_l_xio_tcp_get_env_pair(
         "GLOBUS_XIO_TCP_LISTEN_RANGE", &min, &max) && min <= max)
@@ -170,6 +182,8 @@ static
 int
 globus_l_xio_tcp_deactivate(void)
 {
+    GlobusXIOName(globus_l_xio_tcp_deactivate);
+    
     globus_l_xio_tcp_attr_default.listener_min_port = 0;
     globus_l_xio_tcp_attr_default.listener_max_port = 0;
     globus_l_xio_tcp_attr_default.connector_min_port = 0;
@@ -188,6 +202,7 @@ globus_l_xio_tcp_attr_init(
 {
     globus_l_attr_t *                   attr;
     globus_result_t                     result;
+    GlobusXIOName(globus_l_xio_tcp_attr_init);
     
     /*
      *  create a tcp attr structure and intialize its values
@@ -195,8 +210,7 @@ globus_l_xio_tcp_attr_init(
     attr = (globus_l_attr_t *) globus_malloc(sizeof(globus_l_attr_t));
     if(!attr)
     {
-        result = GLOBUS_XIO_ERROR_CONSTRUCT_MEMORY(
-            "globus_l_xio_tcp_attr_init", "attr");
+        result = GlobusXIOErrorMemory("attr");
         goto error_attr;
     }
     
@@ -225,6 +239,7 @@ globus_l_xio_tcp_attr_cntl(
     int *                               out_int;
     globus_bool_t *                     out_bool;
     globus_result_t                     result;
+    GlobusXIOName(globus_l_xio_tcp_attr_cntl);
 
     attr = (globus_l_attr_t *) driver_attr;
     switch(cmd)
@@ -254,8 +269,7 @@ globus_l_xio_tcp_attr_cntl(
             attr->listener_serv = globus_libc_strdup(attr->listener_serv);
             if(!attr->listener_serv)
             {
-                result = GLOBUS_XIO_ERROR_CONSTRUCT_MEMORY(
-                    "globus_l_xio_tcp_attr_cntl", "listener_serv");
+                result = GlobusXIOErrorMemory("listener_serv");
                 goto error_memory;
             }
         }
@@ -269,8 +283,7 @@ globus_l_xio_tcp_attr_cntl(
             *out_string = globus_libc_strdup(attr->listener_serv);
             if(!*out_string)
             {
-                result = GLOBUS_XIO_ERROR_CONSTRUCT_MEMORY(
-                    "globus_l_xio_tcp_attr_cntl", "listener_serv_out");
+                result = GlobusXIOErrorMemory("listener_serv_out");
                 goto error_memory;
             }
         }
@@ -329,8 +342,7 @@ globus_l_xio_tcp_attr_cntl(
             attr->bind_address = globus_libc_strdup(attr->bind_address);
             if(!attr->bind_address)
             {
-                result = GLOBUS_XIO_ERROR_CONSTRUCT_MEMORY(
-                    "globus_l_xio_tcp_attr_cntl", "bind_address");
+                result = GlobusXIOErrorMemory("bind_address");
                 goto error_memory;
             }
         }
@@ -344,8 +356,7 @@ globus_l_xio_tcp_attr_cntl(
             *out_string = globus_libc_strdup(attr->bind_address);
             if(!*out_string)
             {
-                result = GLOBUS_XIO_ERROR_CONSTRUCT_MEMORY(
-                    "globus_l_xio_tcp_attr_cntl", "bind_address_out");
+                result = GlobusXIOErrorMemory("bind_address_out");
                 goto error_memory;
             }
         }
@@ -482,8 +493,7 @@ globus_l_xio_tcp_attr_cntl(
         break;
         
       default:
-        result = GLOBUS_XIO_ERROR_CONSTRUCT_INVALID_COMMAND(
-            "globus_l_xio_tcp_attr_cntl", cmd);
+        result = GlobusXIOErrorInvalidCommand(cmd);
         goto error_invalid;
         break;
     }
@@ -506,12 +516,12 @@ globus_l_xio_tcp_attr_copy(
 {
     globus_l_attr_t *                   attr;
     globus_result_t                     result;
+    GlobusXIOName(globus_l_xio_tcp_attr_copy);
 
     attr = (globus_l_attr_t *) globus_malloc(sizeof(globus_l_attr_t));
     if(!attr)
     {
-        result = GLOBUS_XIO_ERROR_CONSTRUCT_MEMORY(
-            "globus_l_xio_tcp_attr_copy", "attr");
+        result = GlobusXIOErrorMemory("attr");
         goto error_attr;
     }
     
@@ -521,8 +531,7 @@ globus_l_xio_tcp_attr_copy(
         attr->bind_address = globus_libc_strdup(attr->bind_address);
         if(!attr->bind_address)
         {
-            result = GLOBUS_XIO_ERROR_CONSTRUCT_MEMORY(
-                "globus_l_xio_tcp_attr_copy", "bind_address");
+            result = GlobusXIOErrorMemory("bind_address");
             goto error_bind_address;
         }
     }
@@ -531,8 +540,7 @@ globus_l_xio_tcp_attr_copy(
         attr->listener_serv = globus_libc_strdup(attr->listener_serv);
         if(!attr->listener_serv)
         {
-            result = GLOBUS_XIO_ERROR_CONSTRUCT_MEMORY(
-                "globus_l_xio_tcp_attr_copy", "listener_serv");
+            result = GlobusXIOErrorMemory("listener_serv");
             goto error_listener_serv;
         }
     }
@@ -562,6 +570,7 @@ globus_l_xio_tcp_attr_destroy(
     void *                              driver_attr)
 {
     globus_l_attr_t *                   attr;
+    GlobusXIOName(globus_l_xio_tcp_attr_destroy);
     
     attr = (globus_l_attr_t *) driver_attr;
     if(attr->bind_address)
@@ -586,12 +595,12 @@ globus_l_xio_tcp_apply_bind_attrs(
 {
     globus_result_t                     result;
     int                                 int_one = 1;
+    GlobusXIOName(globus_l_xio_tcp_apply_bind_attrs);
     
     if(attr->resuseaddr &&
         setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &int_one, sizeof(one)) < 0)
     {
-        result = GLOBUS_XIO_ERROR_CONSTRUCT_ERRNO(
-            "globus_l_xio_tcp_apply_bind_attrs", errno);
+        result = GlobusXIOErrorSystemError("setsockopt", errno);
         goto error_sockopt;
     }
     
@@ -610,12 +619,15 @@ globus_l_xio_tcp_apply_handle_attrs(
 {
     globus_result_t                     result;
     int                                 int_one = 1;
+    GlobusXIOName(globus_l_xio_tcp_apply_handle_attrs);
     
     if(do_bind_attrs)
     {
         result = globus_l_xio_tcp_apply_bind_attrs(attr, fd);
         if(result != GLOBUS_SUCCESS)
         {
+            result = GlobusXIOErrorWrapFailed(
+                "globus_l_xio_tcp_apply_bind_attrs", result);
             goto error_bind_attrs;
         }
     }
@@ -623,8 +635,7 @@ globus_l_xio_tcp_apply_handle_attrs(
     if(attr->keepalive &&
        setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, &int_one, sizeof(int_one)) < 0)
     {
-        result = GLOBUS_XIO_ERROR_CONSTRUCT_ERRNO(
-            "globus_l_xio_tcp_apply_handle_attrs", errno);
+        result = GlobusXIOErrorSystemError("setsockopt", errno);
         goto error_sockopt;
     }
     
@@ -637,8 +648,7 @@ globus_l_xio_tcp_apply_handle_attrs(
         
         if(setsockopt(fd, SOL_SOCKET, SO_LINGER, &linger, sizeof(linger)) < 0)
         {
-            result = GLOBUS_XIO_ERROR_CONSTRUCT_ERRNO(
-                "globus_l_xio_tcp_apply_handle_attrs", errno);
+            result = GlobusXIOErrorSystemError("setsockopt", errno);
             goto error_sockopt;
         }
     }
@@ -646,8 +656,7 @@ globus_l_xio_tcp_apply_handle_attrs(
     if(attr->oobinline &&
        setsockopt(fd, SOL_SOCKET, SO_OOBINLINE, &int_one, sizeof(int_one)) < 0)
     {
-        result = GLOBUS_XIO_ERROR_CONSTRUCT_ERRNO(
-            "globus_l_xio_tcp_apply_handle_attrs", errno);
+        result = GlobusXIOErrorSystemError("setsockopt", errno);
         goto error_sockopt;
     }
 
@@ -661,8 +670,7 @@ globus_l_xio_tcp_apply_handle_attrs(
         if(setsockopt(
             fd, IPPROTO_TCP, TCP_RFC1323, &int_one, sizeof(int_one)) < 0)
         {
-            result = GLOBUS_XIO_ERROR_CONSTRUCT_ERRNO(
-                "globus_l_xio_tcp_apply_handle_attrs", errno);
+            result = GlobusXIOErrorSystemError("setsockopt", errno);
             goto error_sockopt;
         }
     }
@@ -672,8 +680,7 @@ globus_l_xio_tcp_apply_handle_attrs(
         setsockopt(
            fd, SOL_SOCKET, SO_SNDBUF, &attr->sndbuf, sizeof(attr->sndbuf)) < 0)
     {
-        result = GLOBUS_XIO_ERROR_CONSTRUCT_ERRNO(
-            "globus_l_xio_tcp_apply_handle_attrs", errno);
+        result = GlobusXIOErrorSystemError("setsockopt", errno);
         goto error_sockopt;
     }
     
@@ -681,16 +688,14 @@ globus_l_xio_tcp_apply_handle_attrs(
         setsockopt(
            fd, SOL_SOCKET, SO_RCVBUF, &attr->rcvbuf, sizeof(attr->rcvbuf)) < 0)
     {
-        result = GLOBUS_XIO_ERROR_CONSTRUCT_ERRNO(
-            "globus_l_xio_tcp_apply_handle_attrs", errno);
+        result = GlobusXIOErrorSystemError("setsockopt", errno);
         goto error_sockopt;
     }
     
     if(attr->nodelay &&
        setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &int_one, sizeof(int_one)) < 0)
     {
-        result = GLOBUS_XIO_ERROR_CONSTRUCT_ERRNO(
-            "globus_l_xio_tcp_apply_handle_attrs", errno);
+        result = GlobusXIOErrorSystemError("setsockopt", errno);
         goto error_sockopt;
     }
 
@@ -714,6 +719,7 @@ globus_l_xio_tcp_target_init(
     globus_l_target_t *                 target;
     globus_l_attr_t *                   attr;
     globus_result_t                     result;
+    GlobusXIOName(globus_l_xio_tcp_target_init);
     
     attr = (globus_l_attr_t *) driver_attr;
     
@@ -721,8 +727,7 @@ globus_l_xio_tcp_target_init(
     target = (globus_l_target_t *) globus_malloc(sizeof(globus_l_target_t));
     if(!target)
     {
-        result = GLOBUS_XIO_ERROR_CONSTRUCT_MEMORY(
-            "globus_l_xio_tcp_target_init", "target");
+        result = GlobusXIOErrorMemory("target");
         goto error_target;
     }
     
@@ -734,8 +739,7 @@ globus_l_xio_tcp_target_init(
         target->contact_string = globus_libc_strdup(contact_string);
         if(!target->contact_string)
         {
-            result = GLOBUS_XIO_ERROR_CONSTRUCT_MEMORY(
-                "globus_l_xio_tcp_target_init", "contact_string");
+            result = GlobusXIOErrorMemory("contact_string");
             goto error_contact_string;
         }
     }
@@ -755,6 +759,56 @@ error_target:
     return result;
 }
 
+static
+globus_result_t
+globus_l_xio_tcp_target_cntl(
+    void *                              driver_target,
+    int                                 cmd,
+    va_list                             ap)
+{
+    globus_l_target_t *                 target;
+    globus_result_t                     result;
+    globus_sockaddr_t *                 out_sock;
+    int                                 sock_len = sizeof(globus_sockaddr_t);
+    GlobusXIOName(globus_l_xio_tcp_target_cntl);
+
+    target = (globus_l_target_t *) driver_target;
+    switch(cmd)
+    {
+      /* globus_sockaddr_t *            sock_name_out */
+      case GLOBUS_XIO_TCP_GET_LOCAL_ADDRESS:
+        out_sock = va_arg(ap, globus_sockaddr_t *);
+        if(getsockname(target->handle, out_sock, &sock_len) < 0)
+        {
+            result = GlobusXIOErrorSystemError("getsockname", errno);
+            goto error_sockopt;
+        }
+        break;
+        
+      /* globus_sockaddr_t *            peer_name_out */
+      case GLOBUS_XIO_TCP_GET_REMOTE_ADDRESS:
+        out_sock = va_arg(ap, globus_sockaddr_t *);
+        if(getpeername(target->handle, out_sock, &sock_len) < 0)
+        {
+            result = GlobusXIOErrorSystemError("getpeername", errno);
+            goto error_sockopt;
+        }
+        break;
+        
+      default:
+        result = GlobusXIOErrorInvalidCommand(cmd);
+        goto error_invalid;
+        break;
+    }
+
+    return GLOBUS_SUCCESS;
+
+error_invalid:
+error_address:
+error_sockopt:
+    return result;
+}
+
 /*
  *  destroy the target structure
  */
@@ -764,6 +818,7 @@ globus_l_xio_tcp_target_destroy(
     void *                              driver_target)
 {
     globus_l_target_t *                 target;
+    GlobusXIOName(globus_l_xio_tcp_target_destroy);
     
     target = (globus_l_target_t *) driver_target;
     
@@ -771,6 +826,11 @@ globus_l_xio_tcp_target_destroy(
     {
         globus_free(target->contact_string);
     }
+    if(target->handle != GLOBUS_XIO_TCP_INVALID_HANDLE)
+    {
+        GlobusIXIOTcpCloseFd(target->handle);
+    }
+    
     globus_free(target);
 
     return GLOBUS_SUCCESS;
@@ -789,6 +849,7 @@ globus_l_xio_tcp_bind(
     globus_bool_t                       done;
     globus_sockaddr_t                   myaddr;
     globus_result_t                     result;
+    GlobusXIOName(globus_l_xio_tcp_bind);
     
     GlobusLibcSockaddrGetPort(*addr, port);
     
@@ -811,8 +872,7 @@ globus_l_xio_tcp_bind(
         {
             if(++port > max_port)
             {
-                result = GLOBUS_XIO_ERROR_CONSTRUCT_ERRNO(
-                    "globus_l_xio_tcp_bind", errno);
+                result = GlobusXIOErrorSystemError("bind", errno);
                 goto error_bind;
             }
         }
@@ -841,6 +901,10 @@ globus_l_xio_tcp_create_listener(
     char                                portbuf[10];
     char *                              port;
     int                                 fd;
+    int                                 save_errno;
+    GlobusXIOName(globus_l_xio_tcp_create_listener);
+    
+    save_errno = 0;
     
     if(attr->listener_serv)
     {
@@ -854,7 +918,7 @@ globus_l_xio_tcp_create_listener(
     
     /* setup hints for types of connectable sockets we want */
     memset(&addrinfo_hints, 0, sizeof(globus_addrinfo_t));
-    addrinfo_hints.ai_flags = AI_PASSIVE;
+    addrinfo_hints.ai_flags = GLOBUS_AI_PASSIVE;
     addrinfo_hints.ai_family = PF_UNSPEC;
     addrinfo_hints.ai_socktype = SOCK_STREAM;
     addrinfo_hints.ai_protocol = 0;
@@ -874,6 +938,7 @@ globus_l_xio_tcp_create_listener(
 
     if(result != GLOBUS_SUCCESS)
     {
+        result = GlobusXIOErrorWrapFailed("globus_libc_getaddrinfo", result);
         goto error_getaddrinfo;
     }
     
@@ -899,6 +964,8 @@ globus_l_xio_tcp_create_listener(
             result = globus_l_xio_tcp_apply_bind_attrs(attr, fd);
             if(result != GLOBUS_SUCCESS)
             {
+                result = GlobusXIOErrorWrapFailed(
+                    "globus_l_xio_tcp_apply_bind_attrs", result);
                 GlobusIXIOTcpCloseFd(fd);
                 continue;
             }
@@ -911,6 +978,8 @@ globus_l_xio_tcp_create_listener(
                 attr->restrict_port ? attr->listener_max_port : 0);
             if(result != GLOBUS_SUCCESS)
             {
+                result = GlobusXIOErrorWrapFailed(
+                    "globus_l_xio_tcp_bind", result);
                 GlobusIXIOTcpCloseFd(fd);
                 continue;
             }
@@ -925,13 +994,11 @@ globus_l_xio_tcp_create_listener(
         {
             if(save_errno == 0)
             {
-                result = GLOBUS_XIO_TCP_CONSTRUCT_NO_ADDRS(
-                    "globus_l_xio_tcp_create_listener");
+                result = GlobusXIOTcpErrorNoAddrs();
             }
             else
             {
-                result = GLOBUS_XIO_ERROR_CONSTRUCT_ERRNO(
-                    "globus_l_xio_tcp_create_listener", errno);
+                result = GlobusXIOErrorSystemError("socket", save_errno);
             }
         }
         
@@ -942,8 +1009,7 @@ globus_l_xio_tcp_create_listener(
         fd, 
         (attr->listener_backlog < 0 ? SOMAXCONN : attr->listener_backlog)) < 0)
     {
-        result = GLOBUS_XIO_ERROR_CONSTRUCT_ERRNO(
-            "globus_l_xio_tcp_create_listener", errno);
+        result = GlobusXIOErrorSystemError("listen", errno);
         goto error_listen;
     }
     
@@ -974,6 +1040,7 @@ globus_l_xio_tcp_server_init(
     globus_l_server_t *                 server;
     globus_l_attr_t *                   attr;
     globus_result_t                     result;
+    GlobusXIOName(globus_l_xio_tcp_server_init);
     
     attr = (globus_l_attr_t *) 
         (driver_attr ? driver_attr : &globus_l_xio_tcp_attr_default);
@@ -981,8 +1048,7 @@ globus_l_xio_tcp_server_init(
     server = (globus_l_server_t *) globus_malloc(sizeof(globus_l_server_t));
     if(!server)
     {
-        result = GLOBUS_XIO_ERROR_CONSTRUCT_MEMORY(
-            "globus_l_xio_tcp_server_init", "server");
+        result = GlobusXIOErrorMemory("server");
         goto error_server;
     }
     *out_server = server;
@@ -992,6 +1058,8 @@ globus_l_xio_tcp_server_init(
         result = globus_l_xio_tcp_create_listener(handle, attr);
         if(result != GLOBUS_SUCCESS)
         {
+            result = GlobusXIOErrorWrapFailed(
+                "globus_l_xio_tcp_create_listener", result);
             goto error_listener;
         }
     }
@@ -1012,7 +1080,7 @@ error_server:
 
 typedef struct
 {
-    globus_xio_driver_operation_t       op;
+    globus_xio_operation_t       op;
     globus_l_target_t *                 target;
 } globus_l_accept_info_t;
 
@@ -1023,6 +1091,7 @@ globus_l_xio_tcp_system_accept_cb(
     void *                              user_arg)
 {
     globus_l_accept_info_t *            accept_info;
+    GlobusXIOName(globus_l_xio_tcp_system_accept_cb);
     
     accept_info = (globus_l_accept_info_t *) user_arg;
     
@@ -1043,13 +1112,14 @@ globus_result_t
 globus_l_xio_tcp_server_accept(
     void *                              driver_server,
     void *                              driver_attr,
-    globus_xio_driver_operation_t       op)
+    globus_xio_operation_t       op)
 {
     globus_l_server_t *                 server;
     globus_l_attr_t *                   attr;
     globus_l_target_t *                 target;
     globus_result_t                     result;
     globus_l_accept_info_t *            accept_info;
+    GlobusXIOName(globus_l_xio_tcp_server_accept);
 
     server = (globus_l_server_t *) driver_server;
     attr = (globus_l_attr_t *) driver_attr;
@@ -1058,8 +1128,7 @@ globus_l_xio_tcp_server_accept(
     target = (globus_l_target_t *) globus_malloc(sizeof(globus_l_target_t));
     if(!target)
     {
-        result = GLOBUS_XIO_ERROR_CONSTRUCT_MEMORY(
-            "globus_l_xio_tcp_server_accept", "target");
+        result = GlobusXIOErrorMemory("target");
         goto error_target;
     }
     
@@ -1077,8 +1146,7 @@ globus_l_xio_tcp_server_accept(
             globus_malloc(sizeof(globus_l_accept_info_t));
         if(!accept_info)
         {
-            result = GLOBUS_XIO_ERROR_CONSTRUCT_MEMORY(
-                "globus_l_xio_tcp_server_accept", "accept_info");
+            result = GlobusXIOErrorMemory("accept_info");
             goto error_info;
         }
         
@@ -1093,6 +1161,8 @@ globus_l_xio_tcp_server_accept(
             accept_info);
         if(result != GLOBUS_SUCCESS)
         {
+            result = GlobusXIOErrorWrapFailed(
+                "globus_xio_system_register_accept", result);
             goto error_register;
         }
     }
@@ -1124,24 +1194,24 @@ globus_l_xio_tcp_server_cntl(
     char                                port[10];
     int                                 ni_flags;
     char **                             out_string;
+    GlobusXIOName(globus_l_xio_tcp_server_cntl);
     
     server = (globus_l_server_t *) driver_server;
     sock_len = sizeof(sock_name);
-    ni_flags = NI_NUMERICSERV;
+    ni_flags = GLOBUS_NI_NUMERICSERV;
     
     switch(cmd)
     {
       /* char **                        contact_string_out */
       case GLOBUS_XIO_TCP_GET_NUMERIC_CONTACT:
-        ni_flags |= NI_NUMERICHOST;
+        ni_flags |= GLOBUS_NI_NUMERICHOST;
         /* fall through */
       
       /* char **                        contact_string_out */
       case GLOBUS_XIO_TCP_GET_CONTACT:
         if(getsockname(server->listener_handle, &sock_name, &sock_len) < 0)
         {
-            result = GLOBUS_XIO_ERROR_CONSTRUCT_ERRNO(
-                "globus_l_xio_tcp_cntl", errno);
+            result = GlobusXIOErrorSystemError("getsockname", errno);
             goto error_sockopt;
         }
         
@@ -1149,15 +1219,15 @@ globus_l_xio_tcp_server_cntl(
             &sock_name, host, sizeof(host), port, sizeof(port), ni_flags);
         if(result != GLOBUS_SUCCESS)
         {
+            result = GlobusXIOErrorWrapFailed(
+                "globus_libc_getnameinfo", result);
             goto error_nameinfo;
         }
         
-        /* XXX put contact string together */
         cs = globus_malloc(strlen(host) + strlen(port) + 2);
         if(!cs)
         {
-            result = GLOBUS_XIO_ERROR_CONSTRUCT_MEMORY(
-                "globus_l_xio_tcp_server_cntl", "contact_string");
+            result = GlobusXIOErrorMemory("contact_string");
             goto error_memory;
         }
         
@@ -1167,8 +1237,7 @@ globus_l_xio_tcp_server_cntl(
         break;
     
       default:
-        result = GLOBUS_XIO_ERROR_CONSTRUCT_INVALID_COMMAND(
-            "globus_l_xio_tcp_server_cntl", cmd);
+        result = GlobusXIOErrorInvalidCommand(cmd);
         goto error_invalid;
         break;
     }
@@ -1190,6 +1259,7 @@ globus_l_xio_tcp_server_destroy(
     globus_result_t                     result;
     globus_l_server_t *                 server;
     int                                 rc;
+    GlobusXIOName(globus_l_xio_tcp_server_destroy);
     
     server = (globus_l_server_t *) driver_server;
     
@@ -1200,8 +1270,7 @@ globus_l_xio_tcp_server_destroy(
     
     if(rc < 0)
     {
-        result = GLOBUS_XIO_ERROR_CONSTRUCT_ERRNO(
-            "globus_l_xio_tcp_server_destroy", errno);
+        result = GlobusXIOErrorSystemError("close", errno);
         goto error_close;
     }                          
     
@@ -1219,12 +1288,12 @@ globus_l_xio_tcp_handle_init(
     globus_l_handle_t **                handle)
 {
     globus_result_t                     result;
+    GlobusXIOName(globus_l_xio_tcp_handle_init);
     
     *handle = (globus_l_handle_t *) globus_malloc(sizeof(globus_l_handle_t));
     if(!*handle)
     {
-        result = GLOBUS_XIO_ERROR_CONSTRUCT_MEMORY(
-            "globus_l_xio_tcp_handle_init", "handle");
+        result = GlobusXIOErrorMemory("handle");
         goto error_handle;
     }
     
@@ -1239,6 +1308,8 @@ void
 globus_l_xio_tcp_handle_destroy(
     globus_l_handle_t *                 handle)
 {
+    GlobusXIOName(globus_l_xio_tcp_handle_destroy);
+    
     globus_free(handle);
 }
 
@@ -1253,6 +1324,7 @@ globus_l_xio_tcp_bind_local(
     globus_addrinfo_t *                 addrinfo;
     globus_addrinfo_t                   addrinfo_hints;
     char *                              port = "0";
+    GlobusXIOName(globus_l_xio_tcp_bind_local);
     
     memset(&addrinfo_hints, 0, sizeof(globus_addrinfo_t));
     addrinfo_hints.ai_flags = AI_PASSIVE;
@@ -1264,6 +1336,7 @@ globus_l_xio_tcp_bind_local(
         attr->bind_address, port, &addrinfo_hints, &save_addrinfo);
     if(result != GLOBUS_SUCCESS)
     {
+        result = GlobusXIOErrorWrapFailed("globus_libc_getaddrinfo", result);
         goto error_getaddrinfo;
     }
     
@@ -1284,6 +1357,8 @@ globus_l_xio_tcp_bind_local(
                 attr->restrict_port ? attr->connector_max_port : 0);
             if(result != GLOBUS_SUCCESS)
             {
+                result = GlobusXIOErrorWrapFailed(
+                    "globus_l_xio_tcp_bind", result);
                 continue;
             }
             
@@ -1295,8 +1370,7 @@ globus_l_xio_tcp_bind_local(
     {
         if(result == GLOBUS_SUCCESS)
         {
-            result = GLOBUS_XIO_TCP_CONSTRUCT_NO_ADDRS(
-                "globus_l_xio_tcp_bind_local");
+            result = GlobusXIOTcpErrorNoAddrs();
         }
         
         goto error_no_addrinfo;
@@ -1315,7 +1389,7 @@ error_getaddrinfo:
 
 typedef struct
 {
-    globus_xio_driver_operation_t       op;
+    globus_xio_operation_t       op;
     globus_l_handle_t *                 handle;
     globus_l_handle_t *                 attr;
     globus_addrinfo_t *                 save_addrinfo;
@@ -1329,6 +1403,7 @@ globus_l_xio_tcp_system_connect_cb(
     void *                              user_arg)
 {
     globus_l_connect_info_t *           connect_info;
+    GlobusXIOName(globus_l_xio_tcp_system_connect_cb);
     
     connect_info = (globus_l_connect_info_t *) user_arg;
     
@@ -1381,6 +1456,7 @@ globus_l_xio_tcp_connect_next(
     int                                 save_errno;
     globus_sockaddr_t                   myaddr;
     globus_l_attr_t *                   attr;
+    GlobusXIOName(globus_l_xio_tcp_connect_next);
     
     attr = connect_info->attr;
     result = GLOBUS_SUCCESS;
@@ -1394,7 +1470,7 @@ globus_l_xio_tcp_connect_next(
         {
             int                             len;
     
-            GlobusLibcSizeofSockaddr(*addrinfo->ai_addr, len);
+            GlobusLibcSockaddrLen(*addrinfo->ai_addr, len);
             globus_assert(
                 addrinfo->ai_addrlen == len && "Size assumption incorrect!");
         }
@@ -1415,6 +1491,8 @@ globus_l_xio_tcp_connect_next(
             result = globus_l_xio_tcp_apply_handle_attrs(attr, fd, GLOBUS_TRUE);
             if(result != GLOBUS_SUCCESS)
             {
+                result = GlobusXIOErrorWrapFailed(
+                    "globus_l_xio_tcp_apply_handle_attrs", result);
                 GlobusIXIOTcpCloseFd(fd);
                 continue;
             }
@@ -1426,6 +1504,8 @@ globus_l_xio_tcp_connect_next(
                 result = globus_l_xio_tcp_bind_local(fd, attr);
                 if(result != GLOBUS_SUCCESS)
                 {
+                    result = GlobusXIOErrorWrapFailed(
+                        "globus_l_xio_tcp_bind_local", result);
                     GlobusIXIOTcpCloseFd(fd);
                     continue;
                 }
@@ -1444,6 +1524,8 @@ globus_l_xio_tcp_connect_next(
                 connect_info);
             if(result != GLOBUS_SUCCESS)
             {
+                result = GlobusXIOErrorWrapFailed(
+                    "globus_xio_system_register_connect", result);
                 continue;
             }
 
@@ -1457,13 +1539,11 @@ globus_l_xio_tcp_connect_next(
         {
             if(save_errno == 0)
             {
-                result = GLOBUS_XIO_TCP_CONSTRUCT_NO_ADDRS(
-                    "globus_l_xio_tcp_connect_next");
+                result = GlobusXIOTcpErrorNoAddrs();
             }
             else
             {
-                result = GLOBUS_XIO_ERROR_CONSTRUCT_ERRNO(
-                    "globus_l_xio_tcp_connect_next", errno);
+                result = GlobusXIOErrorSystemError("socket", save_errno);
             }
         }
         
@@ -1479,7 +1559,7 @@ error_no_addrinfo:
 static
 globus_result_t
 globus_l_xio_tcp_connect(
-    globus_xio_driver_operation_t       op,
+    globus_xio_operation_t       op,
     globus_l_handle_t *                 handle,
     globus_l_attr_t *                   attr,
     const char *                        contact_string)
@@ -1488,8 +1568,26 @@ globus_l_xio_tcp_connect(
     globus_addrinfo_t *                 addrinfo;
     globus_addrinfo_t                   addrinfo_hints;
     globus_l_connect_info_t *           connect_info;
+    char *                              host;
+    char *                              port;
+    GlobusXIOName(globus_l_xio_tcp_connect);
     
-    /* XXX need to decompose contact string into host/port */
+    host = globus_libc_strdup(contact_string);
+    if(!host)
+    {
+        result = GlobusXIOErrorMemory("cs_copy");
+        goto error_cs_copy;
+    }
+    
+    port = strrchr(host, ':');
+    if(!port)
+    {
+        result = GlobusXIOErrorContactString("missing ':'");
+        goto error_bad_contact;
+    }
+    
+    *port = 0;
+    port++;
     
     /* setup hints for types of connectable sockets we want */
     memset(&addrinfo_hints, 0, sizeof(globus_addrinfo_t));
@@ -1501,6 +1599,8 @@ globus_l_xio_tcp_connect(
     result = globus_libc_getaddrinfo(host, port, &addrinfo_hints, &addrinfo);
     if(result != GLOBUS_SUCCESS)
     {
+        result = GlobusXIOErrorWrapFailed(
+            "globus_libc_getaddrinfo", result);
         goto error_getaddrinfo;
     }
     
@@ -1508,14 +1608,15 @@ globus_l_xio_tcp_connect(
         globus_malloc(sizeof(globus_l_connect_info_t));
     if(!connect_info)
     {
-        result = GLOBUS_XIO_ERROR_CONSTRUCT_MEMORY(
-            "globus_l_xio_tcp_connect", "connect_info");
+        result = GlobusXIOErrorMemory("connect_info");
         goto error_info;
     }
     
     result = globus_l_xio_tcp_attr_copy(&connect_info->attr, attr);
     if(result != GLOBUS_SUCCESS)
     {
+        result = GlobusXIOErrorWrapFailed(
+            "globus_l_xio_tcp_attr_copy", result);
         goto error_attr;
     }
     
@@ -1527,8 +1628,12 @@ globus_l_xio_tcp_connect(
     result = globus_l_xio_tcp_connect_next(connect_info);
     if(result != GLOBUS_SUCCESS)
     {
+        result = GlobusXIOErrorWrapFailed(
+            "globus_l_xio_tcp_connect_next", result);
         goto error_connect_next;
     }
+    
+    free(host);
     
     return GLOBUS_SUCCESS;
 
@@ -1542,6 +1647,10 @@ error_info:
     globus_libc_freeaddrinfo(save_addrinfo);
 
 error_getaddrinfo:
+error_bad_contact:
+    globus_free(host);
+
+error_cs_copy:
     return result;
 }
 
@@ -1555,12 +1664,13 @@ globus_l_xio_tcp_open(
     void *                              driver_attr,
     void *                              driver_target,
     globus_xio_driver_context_t         context,
-    globus_xio_driver_operation_t       op)
+    globus_xio_operation_t       op)
 {
     globus_l_handle_t *                 handle;
     const globus_l_target_t *           target;
     const globus_l_attr_t *             attr;
     globus_result_t                     result;
+    GlobusXIOName(globus_l_xio_tcp_open);
     
     target = (globus_l_target_t *) driver_target;
     attr = (globus_l_attr_t *) 
@@ -1569,6 +1679,8 @@ globus_l_xio_tcp_open(
     result = globus_l_xio_tcp_handle_init(&handle);
     if(result != GLOBUS_SUCCESS)
     {
+        result = GlobusXIOErrorWrapFailed(
+            "globus_l_xio_tcp_handle_init", result);
         goto error_handle;
     }
     *out_handle = handle;
@@ -1579,16 +1691,22 @@ globus_l_xio_tcp_open(
             op, handle, attr, target->contact_string);
         if(result != GLOBUS_SUCCESS)
         {
+            result = GlobusXIOErrorWrapFailed(
+                "globus_l_xio_tcp_connect", result);
             goto error_connect;
         }
     }
     else
     {
         handle->handle = target->handle;
+        /* so handle isnt closed when target is destroyed */
+        target->handle = GLOBUS_XIO_TCP_INVALID_HANDLE;
         result = globus_l_xio_tcp_apply_handle_attrs(
             attr, handle->handle, GLOBUS_FALSE);
         if(result != GLOBUS_SUCCESS)
         {
+            result = GlobusXIOErrorWrapFailed(
+                "globus_l_xio_tcp_apply_handle_attrs", result);
             goto error_attrs;
         }
         
@@ -1611,11 +1729,12 @@ globus_l_xio_tcp_system_close_cb(
     globus_result_t                     result,
     void *                              user_arg)
 {
-    globus_xio_driver_operation_t       op;
+    globus_xio_operation_t       op;
     globus_xio_driver_context_t         context;
     globus_l_handle_t *                 handle;
+    GlobusXIOName(globus_l_xio_tcp_system_close_cb);
     
-    op = (globus_xio_driver_operation_t) user_arg;
+    op = (globus_xio_operation_t) user_arg;
     
     context = GlobusXIOOperationGetContext(op);
     handle = GlobusXIOOperationGetDriverHandle(op);
@@ -1633,10 +1752,11 @@ globus_result_t
 globus_l_xio_tcp_close(
     void *                              driver_handle,
     globus_xio_driver_context_t         context,
-    globus_xio_driver_operation_t       op)
+    globus_xio_operation_t       op)
 {
     globus_l_handle_t *                 handle;
     globus_result_t                     result;
+    GlobusXIOName(globus_l_xio_tcp_close);
 
     handle = (globus_l_handle_t *) driver_handle;
         
@@ -1647,6 +1767,8 @@ globus_l_xio_tcp_close(
         op);
     if(result != GLOBUS_SUCCESS)
     {
+        result = GlobusXIOErrorWrapFailed(
+            "globus_xio_system_register_close", result);
         goto error_register;
     }
 
@@ -1666,9 +1788,10 @@ globus_l_xio_tcp_system_read_cb(
     globus_size_t                       nbytes,
     void *                              user_arg)
 {
-    globus_xio_driver_operation_t       op;
+    globus_xio_operation_t       op;
+    GlobusXIOName(globus_l_xio_tcp_system_read_cb);
     
-    op = (globus_xio_driver_operation_t) user_arg;
+    op = (globus_xio_operation_t) user_arg;
     globus_xio_driver_finished_read(op, result, nbytes);
 }
 
@@ -1681,9 +1804,10 @@ globus_l_xio_tcp_read(
     void *                              driver_handle,
     const globus_xio_iovec_t *          iovec,
     int                                 iovec_count,
-    globus_xio_driver_operation_t       op)
+    globus_xio_operation_t       op)
 {
     globus_l_handle_t *                 handle;
+    GlobusXIOName(globus_l_xio_tcp_read);
 
     handle = (globus_l_handle_t *) driver_handle;
     
@@ -1721,9 +1845,10 @@ globus_l_xio_tcp_system_write_cb(
     globus_size_t                       nbytes,
     void *                              user_arg)
 {
-    globus_xio_driver_operation_t       op;
+    globus_xio_operation_t       op;
+    GlobusXIOName(globus_l_xio_tcp_system_write_cb);
     
-    op = (globus_xio_driver_operation_t) user_arg;
+    op = (globus_xio_operation_t) user_arg;
     globus_xio_driver_finished_write(op, result, nbytes);
 }
 
@@ -1736,10 +1861,11 @@ globus_l_xio_tcp_write(
     void *                              driver_handle,
     const globus_xio_iovec_t *          iovec,
     int                                 iovec_count,
-    globus_xio_driver_operation_t       op)
+    globus_xio_operation_t       op)
 {
     globus_l_handle_t *                 handle;
     globus_l_attr_t *                   attr;
+    GlobusXIOName(globus_l_xio_tcp_write);
 
     handle = (globus_l_handle_t *) driver_handle;
     attr = (globus_l_attr_t *) GlobusXIOOperationDataDescriptor(op);
@@ -1815,6 +1941,7 @@ globus_l_xio_tcp_cntl(
     int                                 in_int;
     globus_sockaddr_t *                 out_sock;
     int                                 sock_len = sizeof(globus_sockaddr_t);
+    GlobusXIOName(globus_l_xio_tcp_cntl);
 
     handle = (globus_l_handle_t *) driver_handle;
     switch(cmd)
@@ -1825,8 +1952,7 @@ globus_l_xio_tcp_cntl(
         if(setsockopt(
             fd, SOL_SOCKET, SO_KEEPALIVE, &in_bool, sizeof(in_bool)) < 0)
         {
-            result = GLOBUS_XIO_ERROR_CONSTRUCT_ERRNO(
-                "globus_l_xio_tcp_cntl", errno);
+            result = GlobusXIOErrorSystemError("setsockopt", errno);
             goto error_sockopt;
         }
         break;
@@ -1837,8 +1963,7 @@ globus_l_xio_tcp_cntl(
         if(getsockopt(
             fd, SOL_SOCKET, SO_KEEPALIVE, out_bool, sizeof(globus_bool_t)) < 0)
         {
-            result = GLOBUS_XIO_ERROR_CONSTRUCT_ERRNO(
-                "globus_l_xio_tcp_cntl", errno);
+            result = GlobusXIOErrorSystemError("getsockopt", errno);
             goto error_sockopt;
         }
         break;
@@ -1855,8 +1980,7 @@ globus_l_xio_tcp_cntl(
             if(setsockopt(
                 fd, SOL_SOCKET, SO_LINGER, &linger, sizeof(linger)) < 0)
             {
-                result = GLOBUS_XIO_ERROR_CONSTRUCT_ERRNO(
-                    "globus_l_xio_tcp_cntl", errno);
+                result = GlobusXIOErrorSystemError("setsockopt", errno);
                 goto error_sockopt;
             }
         }
@@ -1871,8 +1995,7 @@ globus_l_xio_tcp_cntl(
             if(getsockopt(
                 fd, SOL_SOCKET, SO_LINGER, &linger, sizeof(linger)) < 0)
             {
-                result = GLOBUS_XIO_ERROR_CONSTRUCT_ERRNO(
-                    "globus_l_xio_tcp_cntl", errno);
+                result = GlobusXIOErrorSystemError("getsockopt", errno);
                 goto error_sockopt;
             }
             
@@ -1889,8 +2012,7 @@ globus_l_xio_tcp_cntl(
         if(setsockopt(
             fd, SOL_SOCKET, SO_OOBINLINE, &in_bool, sizeof(in_bool)) < 0)
         {
-            result = GLOBUS_XIO_ERROR_CONSTRUCT_ERRNO(
-                "globus_l_xio_tcp_cntl", errno);
+            result = GlobusXIOErrorSystemError("setsockopt", errno);
             goto error_sockopt;
         }
         break;
@@ -1901,8 +2023,7 @@ globus_l_xio_tcp_cntl(
         if(getsockopt(
             fd, SOL_SOCKET, SO_OOBINLINE, out_bool, sizeof(globus_bool_t)) < 0)
         {
-            result = GLOBUS_XIO_ERROR_CONSTRUCT_ERRNO(
-                "globus_l_xio_tcp_cntl", errno);
+            result = GlobusXIOErrorSystemError("getsockopt", errno);
             goto error_sockopt;
         }
         break;
@@ -1912,8 +2033,7 @@ globus_l_xio_tcp_cntl(
         in_int = va_arg(ap, int);
         if(setsockopt(fd, SOL_SOCKET, SO_SNDBUF, &in_int, sizeof(in_int)) < 0)
         {
-            result = GLOBUS_XIO_ERROR_CONSTRUCT_ERRNO(
-                "globus_l_xio_tcp_cntl", errno);
+            result = GlobusXIOErrorSystemError("setsockopt", errno);
             goto error_sockopt;
         }
         break;
@@ -1923,8 +2043,7 @@ globus_l_xio_tcp_cntl(
         out_int = va_arg(ap, int *);
         if(getsockopt(fd, SOL_SOCKET, SO_SNDBUF, out_int, sizeof(int)) < 0)
         {
-            result = GLOBUS_XIO_ERROR_CONSTRUCT_ERRNO(
-                "globus_l_xio_tcp_cntl", errno);
+            result = GlobusXIOErrorSystemError("getsockopt", errno);
             goto error_sockopt;
         }
         break;
@@ -1934,8 +2053,7 @@ globus_l_xio_tcp_cntl(
         in_int = va_arg(ap, int);
         if(setsockopt(fd, SOL_SOCKET, SO_RCVBUF, &in_int, sizeof(in_int)) < 0)
         {
-            result = GLOBUS_XIO_ERROR_CONSTRUCT_ERRNO(
-                "globus_l_xio_tcp_cntl", errno);
+            result = GlobusXIOErrorSystemError("setsockopt", errno);
             goto error_sockopt;
         }
         break;
@@ -1945,8 +2063,7 @@ globus_l_xio_tcp_cntl(
         out_int = va_arg(ap, int *);
         if(getsockopt(fd, SOL_SOCKET, SO_RCVBUF, out_int, sizeof(int)) < 0)
         {
-            result = GLOBUS_XIO_ERROR_CONSTRUCT_ERRNO(
-                "globus_l_xio_tcp_cntl", errno);
+            result = GlobusXIOErrorSystemError("getsockopt", errno);
             goto error_sockopt;
         }
         break;
@@ -1957,8 +2074,7 @@ globus_l_xio_tcp_cntl(
         if(setsockopt(
             fd, IPPROTO_TCP, TCP_NODELAY, &in_bool, sizeof(in_bool)) < 0)
         {
-            result = GLOBUS_XIO_ERROR_CONSTRUCT_ERRNO(
-                "globus_l_xio_tcp_cntl", errno);
+            result = GlobusXIOErrorSystemError("setsockopt", errno);
             goto error_sockopt;
         }
         break;
@@ -1969,8 +2085,7 @@ globus_l_xio_tcp_cntl(
         if(getsockopt(
             fd, IPPROTO_TCP, TCP_NODELAY, out_bool, sizeof(globus_bool_t)) < 0)
         {
-            result = GLOBUS_XIO_ERROR_CONSTRUCT_ERRNO(
-                "globus_l_xio_tcp_cntl", errno);
+            result = GlobusXIOErrorSystemError("getsockopt", errno);
             goto error_sockopt;
         }
         break;
@@ -1980,8 +2095,7 @@ globus_l_xio_tcp_cntl(
         out_sock = va_arg(ap, globus_sockaddr_t *);
         if(getsockname(handle->handle, out_sock, &sock_len) < 0)
         {
-            result = GLOBUS_XIO_ERROR_CONSTRUCT_ERRNO(
-                "globus_l_xio_tcp_cntl", errno);
+            result = GlobusXIOErrorSystemError("getsockname", errno);
             goto error_sockopt;
         }
         break;
@@ -1991,15 +2105,13 @@ globus_l_xio_tcp_cntl(
         out_sock = va_arg(ap, globus_sockaddr_t *);
         if(getpeername(handle->handle, out_sock, &sock_len) < 0)
         {
-            result = GLOBUS_XIO_ERROR_CONSTRUCT_ERRNO(
-                "globus_l_xio_tcp_cntl", errno);
+            result = GlobusXIOErrorSystemError("getpeername", errno);
             goto error_sockopt;
         }
         break;
         
       default:
-        result = GLOBUS_XIO_ERROR_CONSTRUCT_INVALID_COMMAND(
-            "globus_l_xio_tcp_cntl", cmd);
+        result = GlobusXIOErrorInvalidCommand(cmd);
         goto error_invalid;
         break;
     }
@@ -2024,6 +2136,7 @@ static globus_xio_driver_t globus_l_xio_tcp_info =
     globus_l_xio_tcp_cntl,                      /* handle_cntl_func    */
 
     globus_l_xio_tcp_target_init,               /* target_init_func    */
+    globus_l_xio_tcp_target_cntl,               /* target_cntl_func    */
     globus_l_xio_tcp_target_destory,            /* target_destroy_finc */
 
     globus_l_xio_tcp_server_init,               /* server_init_func    */

@@ -8,16 +8,6 @@
 /*************************************************************************
  *    define types
  ************************************************************************/
-struct globus_i_xio_handle_s;
-struct globus_i_xio_context_s;
-struct globus_i_xio_target_s;
-struct globus_i_xio_op_s;
-struct globus_i_xio_driver_s;
-struct globus_i_xio_attr_s;
-struct globus_i_xio_stack_s;
-struct globus_i_xio_server_s;
-struct globus_i_xio_dd_s;
-
 typedef struct globus_i_xio_handle_s *          globus_xio_handle_t;
 typedef struct globus_i_xio_context_entry_s *   globus_xio_context_t;
 typedef struct globus_i_xio_target_s *          globus_xio_target_t;
@@ -56,12 +46,21 @@ typedef enum globus_i_xio_signal_type_e
 
 typedef enum
 {
-    GLOBUS_XIO_ERROR_BAD_PARAMETER_ERROR = 1024,
-    GLOBUS_XIO_ERROR_MEMORY_ALLOC,
-    GLOBUS_XIO_ERROR_DRIVER_NOT_FOUND,
-    GLOBUS_XIO_ERROR_INVALID_STACK,
-    GLOBUS_XIO_OPERATION_CANCELED,
-    GLOBUS_XIO_ERROR_HANDLE_BAD_STATE,
-} globus_xio_error_t;
+    GLOBUS_XIO_ERROR_CANCELED,
+    GLOBUS_XIO_ERROR_TIMEDOUT,
+    GLOBUS_XIO_ERROR_EOF,
+    GLOBUS_XIO_ERROR_COMMAND,
+    GLOBUS_XIO_ERROR_CONTACT_STRING,
+    GLOBUS_XIO_ERROR_PARAMETER,
+    GLOBUS_XIO_ERROR_MEMORY,
+    GLOBUS_XIO_ERROR_SYSTEM_ERROR,
+    GLOBUS_XIO_ERROR_SYSTEM_RESOURCE,
+    GLOBUS_XIO_ERROR_STACK,
+    GLOBUS_XIO_ERROR_DRIVER,
+    GLOBUS_XIO_ERROR_PASS,
+    GLOBUS_XIO_ERROR_ALREADY_REGISTERED,
+    GLOBUS_XIO_ERROR_STATE,
+    GLOBUS_XIO_ERROR_WRAPPED
+} globus_xio_error_type_t;
 
 #endif

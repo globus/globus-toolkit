@@ -11,6 +11,11 @@
 
 typedef enum
 {
+    GLOBUS_XIO_TCP_ERROR_NO_ADDRS
+} globus_xio_tcp_error_type_t;
+
+typedef enum
+{
     /**
      *  target/server attrs
      */
@@ -106,7 +111,7 @@ typedef enum
     GLOBUS_XIO_TCP_GET_SEND_FLAGS,
     
     /**
-     * handle cntls
+     * handle/target cntls
      */
     /* globus_sockaddr_t *              sock_name_out */
     GLOBUS_XIO_TCP_GET_LOCAL_ADDRESS,

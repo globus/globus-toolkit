@@ -13,7 +13,7 @@
         globus_error_construct_error(                                       \
             GLOBUS_XIO_MODULE,                                              \
             NULL,                                                           \
-            GLOBUS_XIO_ERROR_BAD_PARAMETER_ERROR,                           \
+            GLOBUS_XIO_ERROR_PARAMETER,                           \
             "[%s] Bad parameter",                                           \
             (func)))
 
@@ -22,7 +22,7 @@
         globus_error_construct_error(                                       \
             GLOBUS_XIO_MODULE,                                              \
             NULL,                                                           \
-            GLOBUS_XIO_ERROR_BAD_PARAMETER_ERROR,                           \
+            GLOBUS_XIO_ERROR_PARAMETER,                           \
             "[%s] malloc failure",                                          \
             (func)))
 
@@ -31,7 +31,7 @@
         globus_error_construct_error(                                       \
             GLOBUS_XIO_MODULE,                                              \
             NULL,                                                           \
-            GLOBUS_XIO_ERROR_INVALID_STACK,                                 \
+            GLOBUS_XIO_ERROR_STACK,                                 \
             "[%s] stack is not valid",                                      \
             (func)))
 
@@ -40,7 +40,7 @@
         globus_error_construct_error(                                       \
             GLOBUS_XIO_MODULE,                                              \
             NULL,                                                           \
-            GLOBUS_XIO_ERROR_DRIVER_NOT_FOUND,                              \
+            GLOBUS_XIO_ERROR_DRIVER,                              \
             "[%s] given driver not found",                                  \
             (func)))
 
@@ -49,7 +49,7 @@
         globus_error_construct_error(                                       \
             GLOBUS_XIO_MODULE,                                              \
             NULL,                                                           \
-            GLOBUS_XIO_ERROR_DRIVER_NOT_FOUND,                              \
+            GLOBUS_XIO_ERROR_DRIVER,                              \
             "[%s] operation was canceled",                                  \
             (func)))
 
@@ -58,7 +58,7 @@
         globus_error_construct_error(                                       \
             GLOBUS_XIO_MODULE,                                              \
             NULL,                                                           \
-            GLOBUS_XIO_ERROR_DRIVER_NOT_FOUND,                              \
+            GLOBUS_XIO_ERROR_DRIVER,                              \
             "[%s] at bottom of stack.",                                     \
             (func)))
 
@@ -67,7 +67,7 @@
         globus_error_construct_error(                                       \
             GLOBUS_XIO_MODULE,                                              \
             NULL,                                                           \
-            GLOBUS_XIO_ERROR_DRIVER_NOT_FOUND,                              \
+            GLOBUS_XIO_ERROR_DRIVER,                              \
             "[%s] The handle is not in the open state.",                    \
             (func)))
 
@@ -76,7 +76,7 @@
         globus_error_construct_error(                                       \
             GLOBUS_XIO_MODULE,                                              \
             NULL,                                                           \
-            GLOBUS_XIO_ERROR_HANDLE_BAD_STATE,                              \
+            GLOBUS_XIO_ERROR_STATE,                              \
             "[%s] The handle is not is a proper statefor the request",      \
             (func)))
 
@@ -85,7 +85,7 @@
         globus_error_construct_error(                                       \
             GLOBUS_XIO_MODULE,                                              \
             NULL,                                                           \
-            GLOBUS_XIO_OPERATION_CANCELED,                                  \
+            GLOBUS_XIO_ERROR_CANCELED,                                  \
             "The requsted operation was canceled."))                        \
 
 #define GlobusXIOErrorOperationNotFound(func)                               \
@@ -93,7 +93,7 @@
         globus_error_construct_error(                                       \
             GLOBUS_XIO_MODULE,                                              \
             NULL,                                                           \
-            GLOBUS_XIO_OPERATION_CANCELED,                                  \
+            GLOBUS_XIO_ERROR_CANCELED,                                  \
             "The requsted operation was canceled.",                         \
             (func)))                                                        \
 
@@ -102,7 +102,7 @@
         globus_error_construct_error(                                       \
             GLOBUS_XIO_MODULE,                                              \
             NULL,                                                           \
-            GLOBUS_XIO_OPERATION_CANCELED,                                  \
+            GLOBUS_XIO_ERROR_CANCELED,                                  \
             "Eof on this handle."))
 
 #define GlobusXIOErrorLazy()                                                \
@@ -110,7 +110,7 @@
         globus_error_construct_error(                                       \
             GLOBUS_XIO_MODULE,                                              \
             NULL,                                                           \
-            GLOBUS_XIO_OPERATION_CANCELED,                                  \
+            GLOBUS_XIO_ERROR_CANCELED,                                  \
             "Error Type Undefined."))
 
 
