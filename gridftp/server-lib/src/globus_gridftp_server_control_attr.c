@@ -424,3 +424,54 @@ globus_gridftp_server_control_attr_set_done(
 
     return res;
 }
+
+globus_result_t
+globus_gridftp_server_control_attr_set_passive(
+    globus_gridftp_server_control_attr_t            server_attr,
+    globus_gridftp_server_control_passive_connect_t passive_func)
+{
+    globus_i_gsc_attr_t *                           attr;
+    globus_result_t                                 res;
+    GlobusGridFTPServerName(globus_gridftp_server_control_attr_set_passive);
+
+    if(server_attr == NULL)
+    {
+        res = GlobusGridFTPServerErrorParameter("server_attr");
+        goto err;
+    }
+    attr = (globus_i_gsc_attr_t *) server_attr;
+
+    attr->passive_func = passive_func;
+
+    return GLOBUS_SUCCESS;
+
+  err:
+
+    return res;
+}
+
+globus_result_t
+globus_gridftp_server_control_attr_set_active(
+    globus_gridftp_server_control_attr_t            server_attr,
+    globus_gridftp_server_control_active_connect_t  active_func)
+{
+    globus_i_gsc_attr_t *                           attr;
+    globus_result_t                                 res;
+    GlobusGridFTPServerName(globus_gridftp_server_control_attr_set_active);
+
+    if(server_attr == NULL)
+    {
+        res = GlobusGridFTPServerErrorParameter("server_attr");
+        goto err;
+    }
+    attr = (globus_i_gsc_attr_t *) server_attr;
+
+    attr->active_func = active_func;
+
+    return GLOBUS_SUCCESS;
+
+  err:
+
+    return res;
+}
+

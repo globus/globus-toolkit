@@ -46,6 +46,22 @@ globus_l_done_cb(
 }
 
 void
+passive_connect(
+    globus_gridftp_server_control_operation_t       op,
+    globus_gridftp_server_control_network_protocol_t net_prt,
+    int                                             max)
+{
+    char *                                          cs[] = 
+        {"127.0.0.1:8888", NULL};
+    globus_gridftp_server_control_passive_connect(
+        op,
+        NULL,
+        GLOBUS_SUCCESS,
+        (const char *) cs,
+        1);
+}
+
+void
 auth_func(
     globus_gridftp_server_control_operation_t   op,
     const char *                            user_name,
@@ -172,6 +188,10 @@ main(
     test_res(res, __LINE__);
 
     res = globus_gridftp_server_control_attr_set_done(ftp_attr, globus_l_done_cb);
+    test_res(res, __LINE__);
+
+    res = globus_gridftp_server_control_attr_set_passive(
+        ftp_attr, passive_connect);
     test_res(res, __LINE__);
 
     globus_mutex_lock(&globus_l_mutex);

@@ -10,15 +10,12 @@
  */
 struct globus_i_gsc_server_s;
 struct globus_i_gsc_attr_s;
-struct globus_i_gsc_data_s;
 struct globus_i_gsc_op_s;
 
 typedef struct globus_i_gsc_server_s *      
     globus_gridftp_server_control_t;
 typedef struct globus_i_gsc_attr_s *        
     globus_gridftp_server_control_attr_t;
-typedef struct globus_i_gsc_data_s *        
-    globus_gridftp_server_control_data_t;
 typedef struct globus_i_gsc_op_s *          
     globus_gridftp_server_control_operation_t;
 
@@ -35,6 +32,12 @@ typedef struct globus_gridftp_server_control_stat_s
     globus_time_t                                   atime;
     globus_time_t                                   ctime;
 } globus_gridftp_server_control_stat_t;
+
+typedef enum globus_gridftp_server_control_network_protocol_e
+{
+    GLOBUS_GRIDFTP_SERVER_CONTROL_PROTOCOL_IPV4,
+    GLOBUS_GRIDFTP_SERVER_CONTROL_PROTOCOL_IPV6,
+} globus_gridftp_server_control_network_protocol_t;
 
 /*
  *  This funciton is called to tell the user a client is
@@ -105,9 +108,28 @@ typedef void
 typedef void
 (*globus_gridftp_server_control_data_func_t)(
     globus_gridftp_server_control_operation_t       op,
-    globus_gridftp_server_control_data_t            data_object,
+    void *                                          data_handle,
     const char *                                    local_target);
 
+/**
+ *  globus_gridftp_server_data_create_t
+ *
+ *  This function is called to notify the user that a new data connection
+ *  is needed.  The user must query the data_object to find out specific
+ *  information about how and where the connection should be made.
+ */
+typedef void
+(*globus_gridftp_server_control_passive_connect_t)(
+    globus_gridftp_server_control_operation_t       op,
+    globus_gridftp_server_control_network_protocol_t net_prt,
+    int                                             max);
+
+typedef void
+(*globus_gridftp_server_control_active_connect_t)(
+    globus_gridftp_server_control_operation_t       op,
+    globus_gridftp_server_control_network_protocol_t net_prt,
+    const char **                                   cs,
+    int                                             cs_count);
 /*
  *  globus_gridftp_server_control_finished_resource()
  *
@@ -171,6 +193,16 @@ globus_gridftp_server_attr_add_send(
     globus_gridftp_server_control_attr_t            in_attr,
     const char *                                    module_name,
     globus_gridftp_server_control_data_func_t       send_func);
+
+globus_result_t
+globus_gridftp_server_control_attr_set_passive(
+    globus_gridftp_server_control_attr_t            server_attr,
+    globus_gridftp_server_control_passive_connect_t passive_func);
+
+globus_result_t
+globus_gridftp_server_control_attr_set_active(
+    globus_gridftp_server_control_attr_t            server_attr,
+    globus_gridftp_server_control_active_connect_t  active_func);
 
 /***************************************************************************
  *                      start up
@@ -326,17 +358,6 @@ globus_gridftp_server_control_authenticated(
  **************************************************************************/
 
 /**
- *  globus_gridftp_server_data_create_t
- *
- *  This function is called to notify the user that a new data connection
- *  is needed.  The user must query the data_object to find out specific
- *  information about how and where the connection should be made.
- */
-typedef globus_result_t
-(*globus_gridftp_server_data_create_t)(
-    globus_gridftp_server_control_data_t            data_object);
-
-/**
  *  globus_gridftp_server_data_connected
  *
  *  After a receving notification that a connection should be made via 
@@ -346,10 +367,18 @@ typedef globus_result_t
  *  likely want to) associate its on memory with this data object here.
  */
 globus_result_t
-globus_gridftp_server_data_connected(
-    globus_gridftp_server_control_data_t            data_object,
-    void *                                          user_arg);
+globus_gridftp_server_control_finished_active_connect(
+    globus_gridftp_server_control_operation_t       op,
+    void *                                          user_data_handle,
+    globus_result_t                                 res);
 
+globus_result_t
+globus_gridftp_server_control_passive_connect(
+    globus_gridftp_server_control_operation_t       op,
+    void *                                          user_data_handle,
+    globus_result_t                                 res,
+    const char **                                   cs,
+    int                                             cs_count);
 /**
  *  globus_gridftp_server_data_destroy_t
  *
@@ -358,8 +387,8 @@ globus_gridftp_server_data_connected(
  *  the data object is considered destroyed.
  */
 globus_result_t
-(*globus_gridftp_server_data_destroy_t)(
-    globus_gridftp_server_control_data_t            data_object);
+(*globus_gridftp_server_control_data_destroy_t)(
+    void *                                          user_data_handle);
 
 /**
  *  globus_gridftp_server_data_disconnected
@@ -370,8 +399,8 @@ globus_result_t
  *  globus_gridftp_server_data_destroy_t.
  */
 globus_result_t
-globus_gridftp_server_data_disconnected(
-    globus_gridftp_server_control_data_t            data_object);
+globus_gridftp_server_control_disconnected(
+    void *                                          user_data_handle);
 
 /*
  *  when a transfer is completed, either successfully or due to
@@ -437,7 +466,7 @@ globus_gridftp_server_enable_event(
     globus_gridftp_server_event_type_t      event_type,
     globus_gridftp_server_event_callback_t  event_cb,
     void *                                  user_arg);
-                                                                                
+
 globus_result_t
 globus_gridftp_server_disable_event(
     globus_gridftp_server_control_operation_t       op,

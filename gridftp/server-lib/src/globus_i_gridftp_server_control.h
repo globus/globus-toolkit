@@ -123,7 +123,7 @@ GlobusDebugDeclare(GLOBUS_GRIDFTP_SERVER_CONTROL);
 
 struct globus_i_gs_attr_s;
 
-typedef enum
+typedef enum globus_gridftp_server_debug_levels_e
 { 
     GLOBUS_GRIDFTP_SERVER_CONTROL_DEBUG_ERROR = 1,
     GLOBUS_GRIDFTP_SERVER_CONTROL_DEBUG_WARNING = 2,
@@ -133,7 +133,7 @@ typedef enum
     GLOBUS_GRIDFTP_SERVER_CONTROL_DEBUG_INFO_VERBOSE = 32,
 } globus_gridftp_server_debug_levels_t;
 
-typedef enum
+typedef enum globus_i_gs_state_e
 {
     GLOBUS_L_GS_STATE_NONE,
     GLOBUS_L_GS_STATE_OPEN,
@@ -143,8 +143,7 @@ typedef enum
     GLOBUS_L_GS_STATE_ERROR,
 } globus_i_gs_state_t;
 
-
-typedef enum
+typedef enum globus_gridftp_server_error_type_e
 {
     GLOBUS_GRIDFTP_SERVER_CONTROL_ERROR_PARAMETER,
     GLOBUS_GRIDFTP_SERVER_CONTROL_ERROR_STATE,
@@ -203,6 +202,10 @@ typedef struct globus_i_gsc_server_s
     int                                             ref;
     globus_i_gs_state_t                             state;
 
+    globus_fifo_t                                   data_q;
+    globus_gridftp_server_control_passive_connect_t passive_func;
+    globus_gridftp_server_control_active_connect_t  active_func;
+
     globus_gridftp_server_control_callback_t        user_stop_func;
     globus_gridftp_server_control_resource_callback_t resource_func;
     globus_gridftp_server_control_callback_t        done_func;
@@ -212,6 +215,9 @@ typedef enum globus_i_gsc_op_type_e
 {
     GLOBUS_L_GSC_OP_TYPE_AUTH,
     GLOBUS_L_GSC_OP_TYPE_RESOURCE,
+    GLOBUS_L_GSC_OP_TYPE_CREATE_PASV,
+    GLOBUS_L_GSC_OP_TYPE_CREATE_PORT,
+    GLOBUS_L_GSC_OP_TYPE_DESTROY,
 } globus_i_gsc_op_type_t;
 
 typedef struct globus_i_gsc_op_s
@@ -231,6 +237,12 @@ typedef struct globus_i_gsc_op_s
     char *                                          path;
     globus_gridftp_server_control_resource_mask_t   mask;
 
+    char **                                         cs;
+    int                                             max_cs;
+    int                                             net_prt;
+    globus_gridftp_server_control_pmod_passive_callback_t passive_cb;
+    globus_gridftp_server_control_pmod_port_callback_t  port_cb;
+
     void *                                          user_arg;
 } globus_i_gsc_op_t;
 
@@ -247,12 +259,10 @@ typedef struct globus_i_gsc_attr_s
     char *                                          types;
     char *                                          base_dir;
     globus_gridftp_server_control_auth_callback_t   auth_func;
+    globus_gridftp_server_control_passive_connect_t passive_func;
+    globus_gridftp_server_control_active_connect_t  active_func;
 } globus_i_gsc_attr_t;
 
-typedef struct globus_i_gsc_data_s
-{
-
-} globus_i_gsc_data_t;
 
 extern globus_hashtable_t               globus_i_gs_default_attr_command_hash;
 
