@@ -133,9 +133,9 @@ globus_l_gsi_proxy_deactivate(void)
 
     GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
 
-    globus_module_deactivate(GLOBUS_OPENSSL_MODULE);
-
     X509V3_EXT_cleanup();
+
+    globus_module_deactivate(GLOBUS_OPENSSL_MODULE);
 
     globus_module_deactivate(GLOBUS_GSI_CREDENTIAL_MODULE);
 
