@@ -45,8 +45,8 @@ EXTERN_C_BEGIN
 #include "openssl/ssl.h"
 #include "openssl/err.h"
 #include "openssl/bio.h"
-#include "openssl/pem.h"
 #include "openssl/x509.h"
+#include "openssl/pem.h"
 #include "openssl/stack.h"
 
 
