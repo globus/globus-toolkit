@@ -30,7 +30,7 @@
 
 . ${libexecdir}/globus-gram-constants
 
-qstat=${GLOBUS_SH_GRD_QSTAT-qstat}
+qstat=${GLOBUS_SH_QSTAT-qstat}
 grep=${GLOBUS_SH_GREP-grep}
 awk=${GLOBUS_SH_AWK-awk}
 sed=${GLOBUS_SH_SED-sed}
@@ -56,16 +56,16 @@ else
     DEBUG_ECHO=echo
 fi
 
-#assumption is that the q_stat path will take the form
+#assumption is that the qstat path will take the form
 # /<dir>/<dir>.../<grd_root>/bin/<grd_arch>/qstat
 # so parse the command from the end to get the GRD ROOT dir.
 #
 # from the qsub path, remove the last slash and all that follows it.
 # Leaving the directory.  Not all systems have dirname.
-grd_dir=`echo $q_stat | $sed 's|/[^/][^/]*$||'`
+grd_dir=`echo $qstat | $sed 's|/[^/][^/]*$||'`
 
 # remove everything up to the last slash.  Leaving the grd arch value.
-GRD_ARCH=`echo $grd_dir | $sed 's|.*/||'
+GRD_ARCH=`echo $grd_dir | $sed 's|.*/||'`
 
 #remove the next 2 subdir (e.g. <bin>/<arch>) leaving the grd_root
 grd_dir=`echo $grd_dir | $sed 's|/[^/][^/]*$||'`

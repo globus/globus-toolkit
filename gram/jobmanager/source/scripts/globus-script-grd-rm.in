@@ -14,7 +14,10 @@
 
 . ${libexecdir}/globus-gram-constants
 
-qdel=${GLOBUS_SH_GRD_QDEL-qdel}
+grep=${GLOBUS_SH_GREP-grep}
+awk=${GLOBUS_SH_AWK-awk}
+sed=${GLOBUS_SH_SED-sed}
+qdel=${GLOBUS_SH_QDEL-qdel}
 
 arg_file=$1
 
@@ -37,6 +40,24 @@ else
 fi
 
 $DEBUG_ECHO in gram_script_grd_rm >> $grami_logfile
+
+#assumption is that the qdel path will take the form
+# /<dir>/<dir>.../<grd_root>/bin/<grd_arch>/qdel
+# so parse the command from the end to get the GRD ROOT dir.
+#
+# from the qsub path, remove the last slash and all that follows it.
+# Leaving the directory.  Not all systems have dirname.
+grd_dir=`echo $qdel | $sed 's|/[^/][^/]*$||'`
+
+# remove everything up to the last slash.  Leaving the grd arch value.
+GRD_ARCH=`echo $grd_dir | $sed 's|.*/||'`
+
+#remove the next 2 subdir (e.g. <bin>/<arch>) leaving the grd_root
+grd_dir=`echo $grd_dir | $sed 's|/[^/][^/]*$||'`
+GRD_ROOT=`echo $grd_dir | $sed 's|/[^/][^/]*$||'`
+
+export GRD_ROOT
+. $GRD_ROOT/default/common/settings.sh
 
 # Delete job using GRD qdel command
 
