@@ -5,24 +5,24 @@
 use strict;
 
 my $CVSROOT             = $ENV{'CVSROOT'};
-my $PMT_DIR             = "$CVSROOT/pmt_active";
-my $PMT_PACKAGE_DEF     = "$PMT_DIR/package.def";
-my $PMT_BRANCH_DEF      = "$PMT_DIR/branch.def";
-my $PMT_TEMPLATE_DIR    = "$PMT_DIR/templates";
+my $DIRT_DIR            = "$CVSROOT/dirt_active";
+my $DIRT_PACKAGE_DEF    = "$DIRT_DIR/package.def";
+my $DIRT_BRANCH_DEF     = "$DIRT_DIR/branch.def";
+my $DIRT_TEMPLATE_DIR   = "$DIRT_DIR/templates";
 
 # verify location of package and branch databases
-(-d $PMT_DIR)           || die("PMT Error: Can't find PMT dir at $PMT_DIR!");
-(-f $PMT_PACKAGE_DEF)   || die("PMT Error: Missing package defs at $PMT_PACKAGE_DEF!");
-(-f $PMT_BRANCH_DEF)    || die("PMT Error: Missing branch defs at $PMT_BRANCH_DEF!");
-(-d $PMT_TEMPLATE_DIR)  || die("PMT Error: Can't find template dir at $PMT_TEMPLATE_DIR!");
+(-d $DIRT_DIR)           || die("DIRT Error: Can't find DIRT dir at $DIRT_DIR!");
+(-f $DIRT_PACKAGE_DEF)   || die("DIRT Error: Missing package defs at $DIRT_PACKAGE_DEF!");
+(-f $DIRT_BRANCH_DEF)    || die("DIRT Error: Missing branch defs at $DIRT_BRANCH_DEF!");
+(-d $DIRT_TEMPLATE_DIR)  || die("DIRT Error: Can't find template dir at $DIRT_TEMPLATE_DIR!");
 
 # using RESPOSITORY and package db, find this package's root dir and template file
 # if none can be found, we dont do anything for this package
 
-open(PACKAGE_DEF, $PMT_PACKAGE_DEF)
-    || die("PMT Error: could not open $PMT_PACKAGE_DEF");
+open(PACKAGE_DEF, $DIRT_PACKAGE_DEF)
+    || die("DIRT Error: could not open $DIRT_PACKAGE_DEF");
 
-my $repository          = shift(@ARGV) || die("PMT Error: Missing argument!");
+my $repository          = shift(@ARGV) || die("DIRT Error: Missing argument!");
 my $package_loc;
 my $template_filename;
 
@@ -42,7 +42,7 @@ while(!$package_loc && defined($_ = <PACKAGE_DEF>))
         }
         elsif(@fields)
         {
-            print("PMT Warning: Ignoring bad line in $PMT_PACKAGE_DEF\n$_\n");
+            print("DIRT Warning: Ignoring bad line in $DIRT_PACKAGE_DEF\n$_\n");
         }
     }
 }
@@ -54,9 +54,9 @@ if(!$package_loc)
     exit(0);
 }
 
-my $template_file = "$PMT_TEMPLATE_DIR/$template_filename";
+my $template_file = "$DIRT_TEMPLATE_DIR/$template_filename";
 (-f $template_file)
-    || die("PMT Error: Missing template file at $template_file\n");
+    || die("DIRT Error: Missing template file at $template_file\n");
 
 # see if the RCS file exists. if not, its never been requested for
 # any branches yet, so we dont need to do anything
@@ -66,7 +66,7 @@ if(!-f $rcsfile)
 {
     $rcsfile = "$package_loc/Attic/$template_filename,v";
     (-f $rcsfile) 
-        || print("PMT Warning: Package defined for PMT but no users\n") && exit(0);
+        || print("DIRT Warning: Package defined for DIRT but no users\n") && exit(0);
 }
 
 # parse log message for the tags we need to update
@@ -167,7 +167,7 @@ if(s/.*symbolic names:\s*(.*)keyword substitution:.*/$1/s)
                 # branch
                 
                 # any other output is erroneous
-                die("PMT Error: couldn't parse rlog output");
+                die("DIRT Error: couldn't parse rlog output");
             }
         }
         else
@@ -179,7 +179,7 @@ if(s/.*symbolic names:\s*(.*)keyword substitution:.*/$1/s)
 }
 else
 {
-    die("PMT Error: couldn't parse rlog output");
+    die("DIRT Error: couldn't parse rlog output");
 }
 
 my $count = scalar(keys(%tags));
@@ -193,8 +193,8 @@ if($count == 0)
 # (1 is always used for trunk, dont need to lookup)
 if(!($count == 1 && $tags{'TRUNK'}))
 {
-    open(BRANCH_DEF, $PMT_BRANCH_DEF)
-        || die("PMT Error: could not open $PMT_BRANCH_DEF");
+    open(BRANCH_DEF, $DIRT_BRANCH_DEF)
+        || die("DIRT Error: could not open $DIRT_BRANCH_DEF");
 
     while($count && defined($_ = <BRANCH_DEF>))
     {
@@ -211,7 +211,7 @@ if(!($count == 1 && $tags{'TRUNK'}))
             }
             elsif(@fields)
             {
-                print("PMT Warning: Ignoring bad line in $PMT_BRANCH_DEF\n$_\n");
+                print("DIRT Warning: Ignoring bad line in $DIRT_BRANCH_DEF\n$_\n");
             }
         }
     }
@@ -225,8 +225,8 @@ if(!($count == 1 && $tags{'TRUNK'}))
         {
             if($val == 0)
             {
-                print("PMT Warning: Can't find branch id for $key...\n");
-                print("PMT Warning: Using 0\n");
+                print("DIRT Warning: Can't find branch id for $key...\n");
+                print("DIRT Warning: Using 0\n");
             }
         }
     }
@@ -245,11 +245,11 @@ if(!(-d $lockfile  && -o $lockfile))
     {
         if(!-d $lockfile)
         {
-            die("PMT Error: could not create lock: $!");
+            die("DIRT Error: could not create lock: $!");
         }
         else
         {
-            print("PMT Waiting 15 seconds to acquire lock...\n");
+            print("DIRT Waiting 15 seconds to acquire lock...\n");
             sleep 15;
         }
     }
@@ -265,24 +265,24 @@ my $timestring = gmtime($timestamp);
 while((my $tag, my $tag_id) = each(%tags))
 {
     system("rm -f $parsed_file");
-    system("co -q -l$tag_version{$tag} $parsed_file $rcsfile");
+    system("co -q -l$tag_version{$tag} $parsed_file $rcsfile 2> /dev/null");
 
     system("cat $template_file | "
-        . "sed -e 's/\@PMT_TIMESTAMP\@/$timestamp/' "
-        . "-e 's/\@PMT_BRANCH_ID\@/$tag_id/' > $parsed_file");
+        . "sed -e 's/\@DIRT_TIMESTAMP\@/$timestamp/' "
+        . "-e 's/\@DIRT_BRANCH_ID\@/$tag_id/' > $parsed_file");
     
     system("ci -r$tag_version{$tag} -d'$timestring' -m. $parsed_file $rcsfile");
 }
 
-print("PMT: $template_filename has been updated.\n");
-print("PMT: You should do a cvs update in this package's root directory\n");
+print("DIRT: $template_filename has been updated.\n");
+print("DIRT: You should do a cvs update in this package's root directory\n");
 
 # unlock version file
 if($remove_lock)
 {
     if(!rmdir($lockfile))
     {
-        die("PMT Error: unable to remove lock: $!");
+        die("DIRT Error: unable to remove lock: $!");
     }
 }
 

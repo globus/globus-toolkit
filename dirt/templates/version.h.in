@@ -1,8 +1,8 @@
-globus_version_t pmt_local_version = 
+globus_version_t local_version = 
 {
     @PACKAGE_MAJOR@,
     @PACKAGE_MINOR@,
-    @PMT_TIMESTAMP@,
-    @PMT_BRANCH_ID@
+    @DIRT_TIMESTAMP@,
+    @DIRT_BRANCH_ID@
 };
 
