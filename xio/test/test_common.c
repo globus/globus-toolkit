@@ -1,3 +1,4 @@
+#include <unistd.h>
 #include "globus_common.h"
 #include "globus_hashtable.h"
 #include "globus_xio_bounce.h"
@@ -120,6 +121,8 @@ parse_parameters(
     optind = 0;
     /* parse the parameters */
     globus_l_test_info.server = GLOBUS_FALSE;
+    argc--;
+    argv++;
     while((c = getopt(argc, argv, "siF:d:c:R:W:r:w:b:D:X:")) != -1)
     {
         switch(c)
@@ -247,7 +250,7 @@ parse_parameters(
         test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
     }
 
-    return optind;
+    return optind+1;
 }
 
 int
