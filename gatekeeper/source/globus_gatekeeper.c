@@ -1159,7 +1159,6 @@ static void doit()
     OM_uint32           ret_flags = 0;
     gss_buffer_desc     context_token = GSS_C_EMPTY_BUFFER;
     gss_buffer_desc     option_token = GSS_C_EMPTY_BUFFER;
-    gss_buffer_set_desc restriction_buffers = GSS_C_EMPTY_BUFFER_SET;
     gss_OID_set_desc    extension_oids;
     FILE *              context_tmpfile = NULL;
     char *              delcname = NULL;
@@ -1324,14 +1323,6 @@ static void doit()
                  "GSS failed Major:%8.8x Minor:%8.8x Token:%8.8x\n",
                  major_status,minor_status,token_status);
     }
-
-    /* check if the peer cert has any restrictions in it */
-/*
-    maj_stat = gss_inquire_sec_context_by_oid(&min_stat,
-                                              context_handle,
-                                              gss_restrictions_extension,
-                                              &restriction_buffers);
-*/
     
     /* now OK to send wrapped error message */
     ok_to_send_errmsg = 1;
