@@ -1,24 +1,53 @@
-/**********************************************************************
-
-accept_delegation.c:
-
-Description:
-    GSSAPI routine to accept the delegation of a credential
-
-CVS Information:
-
-    $Source$
-    $Date$
-    $Revision$
-    $Author$
-
-**********************************************************************/
-
-
 static char *rcsid = "$Header$";
 
 #include "gssapi_ssleay.h"
 #include "gssutils.h"
+
+/**
+ * Accept a delegated credential.
+ *
+ * This functions drives the accepting side of the credential
+ * delegation process. It is expected to be called in tandem with the
+ * gss_init_delegation function.
+ *
+ * @param minor_status
+ *        The minor status returned by this function. This paramter
+ *        will be 0 upon success.
+ * @param context_handle
+ *        The security context over which the credential is
+ *        delegated. 
+ * @param extension_oids
+ *        A set of extension oids corresponding to buffers in the
+ *        extension_buffers paramter below. May be
+ *        GSS_C_NO_BUFFER_SET. Currently not used.
+ * @param extension_buffers
+ *        A set of extension buffers corresponding to oids in the
+ *        extension_oids paramter above. May be
+ *        GSS_C_NO_BUFFER_SET. Currently not used. 
+ * @param input_token
+ *        The token that was produced by a prior call to
+ *        gss_init_delegation. 
+ * @param time_req
+ *        The requested period of validity (seconds) of the delegated
+ *        credential. May be NULL.
+ * @param time_rec
+ *        This parameter will contain the received period of the
+ *        delegated credential upon success. May be NULL.
+ * @param delegated_cred_handle
+ *        This parameter will contain the delegated credential upon
+ *        success. 
+ * @param mech_type
+ *        Returns the security mechanism upon success. Currently not
+ *        implemented. May be NULL.
+ * @param output_token
+ *        A token that should be passed to gss_init_delegation if the
+ *        return value is GSS_S_CONTINUE_NEEDED.
+ * @return
+ *        GSS_S_COMPLETE upon successful completion
+ *        GSS_S_CONTINUE_NEEDED if the function needs to be called
+ *                              again.
+ *        GSS_S_FAILURE upon failure
+ */
 
 OM_uint32
 GSS_CALLCONV gss_accept_delegation(
@@ -70,14 +99,6 @@ GSS_CALLCONV gss_accept_delegation(
     }
 
     if(delegated_cred_handle == NULL)
-    {
-        GSSerr(GSSERR_F_ACCEPT_DELEGATION,GSSERR_R_BAD_ARGUMENT);
-        *minor_status = gsi_generate_minor_status();
-        major_status = GSS_S_FAILURE;
-        goto err;
-    }
-
-    if(mech_type == NULL)
     {
         GSSerr(GSSERR_F_ACCEPT_DELEGATION,GSSERR_R_BAD_ARGUMENT);
         *minor_status = gsi_generate_minor_status();

@@ -26,6 +26,50 @@ proxy_extension_create(
     const gss_OID                       extension_oid,
     const gss_buffer_t                  extension_data);
 
+/**
+ * Initiate the delegation of a credential.
+ *
+ * This functions drives the initiating side of the credential
+ * delegation process. It is expected to be called in tandem with the
+ * gss_accept_delegation function.
+ *
+ * @param minor_status
+ *        The minor status returned by this function. This paramter
+ *        will be 0 upon success.
+ * @param context_handle
+ *        The security context over which the credential is
+ *        delegated. 
+ * @param cred_handle
+ *        The credential to be delegated.
+ * @param desired_mech
+ *        The desired security mechanism. Currently not used. May be
+ *        GSS_C_NO_OID. 
+ * @param extension_oids
+ *        A set of extension oids corresponding to buffers in the
+ *        extension_buffers paramter below. The extensions specified
+ *        will be added to the delegated credential. May be
+ *        GSS_C_NO_BUFFER_SET. 
+ * @param extension_buffers
+ *        A set of extension buffers corresponding to oids in the
+ *        extension_oids paramter above. May be
+ *        GSS_C_NO_BUFFER_SET.
+ * @param input_token
+ *        The token that was produced by a prior call to
+ *        gss_accept_delegation. This parameter will be ignored the
+ *        first time this function is called.
+ * @param time_req
+ *        The requested period of validity (seconds) of the delegated
+ *        credential. May be NULL.
+ * @param output_token
+ *        A token that should be passed to gss_accept_delegation if the
+ *        return value is GSS_S_CONTINUE_NEEDED.
+ * @return
+ *        GSS_S_COMPLETE upon successful completion
+ *        GSS_S_CONTINUE_NEEDED if the function needs to be called
+ *                              again.
+ *        GSS_S_FAILURE upon failure
+ */
+
 OM_uint32
 GSS_CALLCONV gss_init_delegation(
     OM_uint32 *                         minor_status,

@@ -873,8 +873,8 @@ GSS_CALLCONV GSS_FUNC(gss_accept_delegation)
      const gss_buffer_t,     /* input_token */
      OM_uint32,              /* time_req */
      OM_uint32 *,            /* time_rec */
-     gss_cred_id_t *,        /* cred_handle */
-     gss_OID *,              /* desired_mech */
+     gss_cred_id_t *,        /* delegated_cred_handle */
+     gss_OID *,              /* mech_type */
      gss_buffer_t);          /* output_token */
 
 GSS_MAKE_TYPEDEF
