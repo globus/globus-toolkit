@@ -596,7 +596,7 @@ globus_i_gfs_config_init(
     global_config_file = "/etc/grid-security/gridftp.conf";
     local_config_file = NULL;
 
-    for(arg_num = 0; arg_num < argc; ++arg_num)
+    for(arg_num = 0; arg_num < argc; arg_num++)
     {
         argp = argv[arg_num];
         if(*argp == '-' && *++argp == 'c' && argv[arg_num + 1])

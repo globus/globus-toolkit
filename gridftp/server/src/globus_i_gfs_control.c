@@ -280,15 +280,9 @@ globus_l_gfs_request_auth(
         }
         auth_info->username = globus_libc_strdup(pwent->pw_name);
     }
-    else if(globus_i_gfs_config_bool("allow_anonymous"))
+    else if(globus_i_gfs_config_bool("allow_anonymous") && current_uid == 0)
     {   
-        if(current_uid == 0)
-        {
-           err_msg = globus_common_create_string(
-                "Invalid authentication method");
-            goto error;
-        }
-        else if(globus_i_gfs_config_bool("inetd") || 
+        if(globus_i_gfs_config_bool("inetd") || 
             globus_i_gfs_config_bool("daemon"))
         {            
             anon_usr = globus_i_gfs_config_string("anonymous_user");
@@ -342,6 +336,13 @@ globus_l_gfs_request_auth(
                 goto error;
             }
         }
+        else
+        {
+           err_msg = globus_common_create_string(
+                "Invalid authentication method");
+            goto error;
+        }
+
     }     
                       
     auth_info->response = 
