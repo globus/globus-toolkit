@@ -123,7 +123,7 @@ myproxy_authorize_init(myproxy_socket_attrs_t *attrs,
    /* just pointer into server_response->authorization_data, no memory is 
       allocated for this pointer */
    int return_status = -1;
-   char buffer[8192];
+   char *buffer = NULL;
    int bufferlen;
 
    do {
@@ -152,9 +152,10 @@ myproxy_authorize_init(myproxy_socket_attrs_t *attrs,
        	    goto end;
 	 }
 
-	 if (d->client_data_len + sizeof(int) > sizeof(buffer)) {
-	       verror_put_string("Internal buffer too small");
-	       goto end;
+	 buffer = malloc(d->client_data_len + sizeof(int));
+	 if (!buffer) {
+	     verror_put_string("malloc() failed");
+	     goto end;
 	 }
 	 (*buffer) = d->method;
 	 bufferlen = d->client_data_len + sizeof(int);
@@ -172,6 +173,7 @@ myproxy_authorize_init(myproxy_socket_attrs_t *attrs,
    return_status = 0;
 end:
    myproxy_free(NULL, NULL, server_response);
+   if (buffer) free(buffer);
 
    return return_status;
 }
