@@ -2330,14 +2330,23 @@ globus_l_io_poll(
     {
         GlobusTimeAbstimeDiff(time_left, *time_now, *time_stop);
     }
-          
+    
+    /* 
+     * need to think about what it means for the select wakeup to be fired
+     * its no longer synchronous with the event poller, this means that the
+     * num of active fds can go to 0.  If this happens, we will continue to
+     * loop around here until the select wakup is re-registered.  So, I added
+     * the globus_l_io_fd_num_set > 0 check
+     */
     globus_i_io_mutex_lock();
+    
     do
     {
         events_handled = 
             globus_l_io_handle_events(&time_left);
     }
     while(events_handled == 0 &&
+        globus_l_io_fd_num_set > 0
 	  !globus_l_io_shutdown_called &&
           !globus_callback_get_timeout(&time_left));
 
