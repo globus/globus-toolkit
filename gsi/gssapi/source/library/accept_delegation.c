@@ -171,6 +171,14 @@ GSS_CALLCONV gss_accept_delegation(
          */
 
         dcert = d2i_X509_bio(context->gs_sslbio, NULL);
+
+        if(dcert == NULL)
+        {
+            major_status = GSS_S_FAILURE;
+            *minor_status = gsi_generate_minor_status();
+            goto err;
+        }
+        
 #ifdef DEBUG
         X509_print_fp(stderr,dcert);
 #endif
