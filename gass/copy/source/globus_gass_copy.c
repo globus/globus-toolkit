@@ -15,7 +15,9 @@ static int globus_l_gass_copy_activate(void);
 static int globus_l_gass_copy_deactivate(void);
 
 
-#define GLOBUS_I_GASS_COPY_DEBUG
+/* uncomment this line for debug messages
+   #define GLOBUS_I_GASS_COPY_DEBUG
+*/
 
 #define globus_i_gass_copy_set_error(handle, error) \
 { \
