@@ -113,10 +113,17 @@ extern globus_bool_t                      g_globus_i_io_use_netlogger;
 #endif
 #endif
 
+typedef enum
+{
+    GLOBUS_I_IO_READ_OPERATION = 1,
+    GLOBUS_I_IO_WRITE_OPERATION = 2,
+    GLOBUS_I_IO_EXCEPT_OPERATION = 4
+} globus_i_io_operation_type_t;
+
 extern globus_mutex_t			globus_i_io_mutex;
 extern globus_cond_t			globus_l_io_cond;
-extern volatile int			globus_i_io_mutex_cnt;
-extern volatile int			globus_l_io_cond_cnt;
+extern int			        globus_i_io_mutex_cnt;
+extern int			        globus_l_io_cond_cnt;
 
 extern globus_bool_t *                  globus_i_io_tcp_used_port_table;
 extern unsigned short                   globus_i_io_tcp_used_port_min;
@@ -126,14 +133,6 @@ extern unsigned short                   globus_i_io_udp_used_port_min;
 extern unsigned short                   globus_i_io_udp_used_port_max;
 
 extern int                              globus_i_io_skip_poll_frequency;
-
-#if defined(BUILD_LITE)
-#   define globus_i_io_mutex_lock()
-#   define globus_i_io_mutex_unlock()
-#   define globus_l_io_mutex_acquired() (GLOBUS_TRUE)
-#   define globus_l_io_cond_signal()
-#   define globus_l_io_cond_wait()
-#else  /* defined(BUILD_LITE) */
 
 #   define globus_l_io_mutex_acquired() ((globus_i_io_mutex_cnt > 0)	\
 				       ? GLOBUS_TRUE			\
@@ -162,6 +161,14 @@ extern int                              globus_i_io_skip_poll_frequency;
 	}						\
     }
 
+#   define globus_l_io_cond_broadcast()			\
+    {							\
+	if (globus_i_io_cond_cnt > 0)			\
+	{						\
+	    globus_cond_broadcast(&globus_i_io_cond);	\
+	}						\
+    }
+
 #   define globus_l_io_cond_wait()				\
     {								\
         globus_i_io_mutex_cnt--;				\
@@ -170,7 +177,7 @@ extern int                              globus_i_io_skip_poll_frequency;
         globus_i_io_cond_cnt--;					\
         globus_i_io_mutex_cnt++;				\
     }
-#endif /* (else) defined(BUILD_LITE) */
+
 extern int globus_i_io_debug_level;
 
 #ifdef BUILD_DEBUG
@@ -182,7 +189,7 @@ extern int globus_i_io_debug_level;
 do { \
     if (globus_i_io_debug(level)) \
     { \
-	globus_libc_printf message; \
+	globus_libc_fprintf message; \
     } \
 } while (0)
 #else
@@ -195,7 +202,7 @@ typedef struct
     globus_cond_t			cond;
     globus_object_t *			err;
     globus_bool_t			use_err;
-    volatile globus_bool_t		done;
+    globus_bool_t		        done;
     globus_size_t			nbytes;
     void *                              data;
 } globus_i_io_monitor_t;
@@ -207,6 +214,11 @@ globus_i_common_get_env_pair(
     char * env_name,
     int * min,
     int * max);
+
+globus_result_t
+globus_i_io_copy_fileattr_to_handle(
+    globus_io_attr_t *			attr,
+    globus_io_handle_t *		handle);
 
 void
 globus_i_io_securesocket_copy_attr(
@@ -245,19 +257,32 @@ globus_i_io_setup_nonblocking(
     globus_io_handle_t *		handle);
 
 globus_result_t
-globus_i_io_register_read_func(
-    globus_io_handle_t *		handle,
-    globus_io_callback_t		callback_func,
-    void *				callback_arg,
-    globus_io_destructor_t 		arg_destructor,
-    globus_bool_t			select_before_callback);
+globus_i_io_start_operation(
+    globus_io_handle_t *                handle,
+    globus_i_io_operation_type_t        ops);
+
+void
+globus_i_io_end_operation(
+    globus_io_handle_t *                handle,
+    globus_i_io_operation_type_t        op);
 
 globus_result_t
-globus_i_io_register_write_func(
-    globus_io_handle_t *		handle,
-    globus_io_callback_t		callback_func,
-    void *				callback_arg,
-    globus_io_destructor_t 		arg_destructor);
+globus_i_io_register_operation(
+    globus_io_handle_t *                handle,
+    globus_io_callback_t                callback_func,
+    void *                              callback_arg,
+    globus_io_destructor_t              arg_destructor,
+    globus_bool_t                       needs_select,
+    globus_i_io_operation_type_t        op);
+
+globus_result_t
+globus_i_io_register_quick_operation(
+    globus_io_handle_t *                handle,
+    globus_io_callback_t                callback_func,
+    void *                              callback_arg,
+    globus_io_destructor_t              arg_destructor,
+    globus_bool_t                       needs_select,
+    globus_i_io_operation_type_t        op);
 
 /* internal functions defined in globus_io_read.c */
 globus_result_t
@@ -330,6 +355,16 @@ globus_result_t
 globus_i_io_socket_set_attr(
     globus_io_handle_t *		handle,
     globus_io_attr_t *			attr);
+
+void
+globus_i_io_get_callback_space(
+    globus_io_handle_t *		handle,
+    globus_callback_space_t *           space);
+
+void
+globus_i_io_set_callback_space(
+    globus_io_handle_t *		handle,
+    globus_callback_space_t             space);
 
 typedef struct
 {
@@ -418,20 +453,6 @@ globus_i_io_securesocket_register_read(
     globus_size_t                       wait_for_nbytes,
     globus_io_read_callback_t           callback,
     void *                              callback_arg);
-
-globus_result_t
-globus_i_io_unregister_read(
-    globus_io_handle_t *		handle,
-    globus_bool_t			call_destructor);
-
-globus_result_t
-globus_i_io_unregister_write(
-    globus_io_handle_t *		handle,
-    globus_bool_t			call_destructor);
-
-globus_result_t
-globus_i_io_unregister_except(
-    globus_io_handle_t *		handle);
 
 void
 globus_i_io_default_destructor(

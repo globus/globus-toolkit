@@ -14,7 +14,7 @@
       <Source_Dependencies Type="compile" >
         <Dependency Name="globus_common" >
           <Version >
-            <Simple_Version Major="2"  />
+            <Simple_Version Major="3"  />
           </Version>
         </Dependency>
         <Dependency Name="globus_core" >
@@ -31,7 +31,7 @@
       <Source_Dependencies Type="pgm_link" >
         <Dependency Name="globus_common" >
           <Version >
-            <Simple_Version Major="2"  />
+            <Simple_Version Major="3"  />
           </Version>
         </Dependency>
         <Dependency Name="globus_gram_protocol" >
