@@ -1164,6 +1164,8 @@ globus_l_ftp_control_end_of_reply(
                 return -1;
             }
 
+            response->response_buffer_size= response->response_length + 1;
+            
             memmove(&response->response_buffer[found + 1],
                     &response->response_buffer[found],
                     response->response_length-found);
