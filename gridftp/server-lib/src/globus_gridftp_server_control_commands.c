@@ -41,6 +41,25 @@ globus_l_gsc_cmd_transfer(
  *                      ---------------
  ************************************************************************/
 static void
+globus_l_gsc_cmd_all(
+    globus_i_gsc_op_t *                 op,
+    const char *                        full_command,
+    char **                             cmd_a,
+    int                                 argc,
+    void *                              user_arg)
+{
+    /* XXX could make this a switched based on user_arg */
+    if(strcmp(cmd_a[0], "STOR") != 0 &&
+        strcmp(cmd_a[0], "ESTO") != 0)
+    {
+        op->server_handle->allocated_bytes = 0;
+    }
+
+    /* do logging here */
+    globus_gsc_959_finished_command(op, NULL);
+}
+
+static void
 globus_l_gsc_cmd_stru(
     globus_i_gsc_op_t *                 op,
     const char *                        full_command,
@@ -2012,7 +2031,6 @@ globus_l_gsc_data_cb(
 
     wrapper = (globus_l_gsc_cmd_wrapper_t *) user_arg;
 
-    op->server_handle->allocated_bytes = 0;
     if(res != GLOBUS_SUCCESS)
     {
         globus_gsc_959_finished_command(wrapper->op, "500 Command failed\r\n");
@@ -2297,6 +2315,17 @@ void
 globus_i_gsc_add_commands(
     globus_i_gsc_server_handle_t *          server_handle)
 {
+    globus_gsc_959_command_add(
+        server_handle,
+        NULL,
+        globus_l_gsc_cmd_all,
+        GLOBUS_GSC_COMMAND_PRE_AUTH |
+            GLOBUS_GSC_COMMAND_POST_AUTH,
+        2,
+        2,
+        "ALLO <sp> <size>",
+        NULL);
+
     globus_gsc_959_command_add(
         server_handle,
         "ALLO", 

@@ -350,6 +350,7 @@ typedef struct globus_i_gsc_server_handle_s
     /* 
      *  read.c members 
      */
+    globus_list_t *                     all_cmd_list;
     globus_bool_t                       reply_outstanding;
     globus_xio_handle_t                 xio_handle;
     globus_l_gsc_state_t                state;

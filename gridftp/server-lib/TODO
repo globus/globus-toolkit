@@ -1,20 +1,18 @@
 PBSZ
 -- find out what the server should do (joe)
 
-TREV
-
 merge _init() with _start() and _destroy() with _stop()
 -- deal with adding commands
 
-ALLO
--- create all command interceptor
-    -- logging will work with this
+make restart a file map
+-- mostly just a rename
+-- have partial work with this
 
-help and feat
--- change help and feat so that commands add messages in a nicer way.
+logging
+-- will come from a seperate module.
 
-SITE
--- allow for site to kick out 1 command
+feat
+-- examine feat, current way is sort of lame need a nicer way.
 
 test
 --crazy messages sent to server
@@ -22,6 +20,3 @@ test
 errors
 -- create error codes for user
 -- check proper replys etc
-
-logging
--- will come from a seperate module.

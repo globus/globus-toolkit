@@ -25,6 +25,25 @@ static globus_mutex_t                       gs_l_mutex;
 static globus_cond_t                        gs_l_cond;
 
 static void
+
+globus_gs_cmd_log(
+    globus_gridftp_server_control_op_t      op,
+    const char *                            full_command,
+    char **                                 cmd_a,
+    int                                     argc,
+    void *                                  user_arg)
+{
+    time_t tm = time(NULL);
+    char * tm_str = ctime(&tm);
+    int len = strlen(tm_str);
+
+    tm_str[len - 1] = '\0';
+
+    fprintf(stdout, "%s::  %s", tm_str, full_command);
+    globus_gsc_959_finished_command(op, NULL);
+}
+
+static void
 globus_gs_cmd_site(
     globus_gridftp_server_control_op_t      op,
     const char *                            full_command,
@@ -347,8 +366,19 @@ main(
         GLOBUS_GSC_COMMAND_POST_AUTH,
         2,
         2,
-        "214 Syntax: SITE <sp> pathname\r\n",
+        "SITE <sp> MINE!!!!",
         NULL);
+
+    globus_gsc_959_command_add(
+        ftp_server,
+        NULL,
+        globus_gs_cmd_log,
+        GLOBUS_GSC_COMMAND_POST_AUTH,
+        1,
+        1,
+        "SITE <sp> MINE!!!!",
+        NULL);
+
 
     globus_mutex_lock(&globus_l_mutex);
     {

@@ -293,7 +293,7 @@ globus_l_gsc_op_create(
 
     op->server_handle = server_handle;
     op->res = GLOBUS_SUCCESS;
-    op->cmd_list = cmd_list;
+    op->cmd_list = globus_list_concat(server_handle->all_cmd_list, cmd_list);
     op->ref = 1;
 
     op->uid = -1;
@@ -2255,14 +2255,20 @@ globus_gsc_959_command_add(
         goto err;
     }
 
-    strcpy(cmd_ent->cmd_name, command_name);
     cmd_ent->cmd_cb = command_cb;
     cmd_ent->desc = desc;
     cmd_ent->user_arg = user_arg;
     cmd_ent->help = globus_libc_strdup(help);
     cmd_ent->min_argc = min_argc;
     cmd_ent->max_argc = max_argc;
+    if(command_name == NULL)
+    {
+        globus_list_insert(&server_handle->all_cmd_list, cmd_ent);
+        cmd_ent->cmd_name[0] = '\0';
+        return GLOBUS_SUCCESS;
+    }
 
+    strcpy(cmd_ent->cmd_name, command_name);
     if(strncmp("SITE ", command_name, 5) == 0 && strlen(command_name) > 5)
     {
         tmp_ptr = (char *)&command_name[5]; 
