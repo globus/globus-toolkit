@@ -16,6 +16,9 @@
 int port = 7563;		/* Default port, arbitrary */
 char *host = "localhost";
 
+int do_receive();
+int do_transmit();
+
 main(int argc,
      char *argv[])
 {
