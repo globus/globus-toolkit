@@ -104,6 +104,7 @@ BUNDLE gt4-gram
         globus_c_delegation_client_util
         globus_c_gram_client_bindings
         globus_c_rendezvous_client_bindings
+        globus_usage
         globus_c_ws_messaging
         globus_c_ws_security
         globus_c_wsdl_parser
