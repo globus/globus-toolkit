@@ -3,10 +3,25 @@
  * @mainpage Globus GSI Proxy API
  *
  * The globus_gsi_proxy library is motivated by the desire to provide
- * a abstraction layer for the proxy creation and delegation process.
+ * a abstraction layer for the proxy creation and delegation
+ * process. For background on this process please refer to the proxy
+ * certificate profile draft.
  *
  * Any program that uses Globus GSI Proxy functions must include
  * "globus_gsi_proxy.h". 
+ *
+ * We envision the API to be used in the following manner:
+ *
+ * Delegator:                           Delegatee:
+ *                                      set desired cert info
+ *                                      extension by usinf the handle
+ *                                      set functions.
+ *                                      globus_gsi_proxy_create_req
+ * globus_gsi_proxy_inquire_req
+ * modify cert info extension by using
+ * handle set/get/clear functions.
+ * globus_gsi_proxy_sign_req
+ *                                      globus_gsi_proxy_assemble_cred
  *
  * @htmlonly
  * <a href="main.html" target="_top">View documentation without frames</a><br>

@@ -66,6 +66,24 @@ globus_gsi_proxy_handle_destroy(
 /*}@*/
 
 
+/**
+ * @name Set Policy
+ */
+/*@{*/
+/**
+ * Set the policy to be used in the GSI Proxy handle.
+ * @ingroup globus_gsi_proxy_handle
+ *
+ * This function sets the policy to be used in the proxy cert
+ * info extension.
+ *
+ * @param handle
+ *        The handle to be modified.
+ * @return
+ *        GLOBUS_SUCCESS
+ *
+ * @see globus_gsi_proxy_handle_get_policy()
+ */
 globus_result_t
 globus_gsi_proxy_handle_set_policy(
     globus_gsi_proxy_handle_t           handle,
@@ -74,7 +92,28 @@ globus_gsi_proxy_handle_set_policy(
 {
     return GLOBUS_SUCCESS;
 }
+/* globus_gsi_proxy_handle_set_policy */
+/*}@*/
 
+
+/**
+ * @name Get Policy
+ */
+/*@{*/
+/**
+ * Get the policy from the GSI Proxy handle.
+ * @ingroup globus_gsi_proxy_handle
+ *
+ * This function gets the policy that is being used in the 
+ * proxy cert info extension.
+ *
+ * @param handle
+ *        The handle to be interrogated.
+ * @return
+ *        GLOBUS_SUCCESS
+ *
+ * @see globus_gsi_proxy_handle_set_policy()
+ */
 globus_result_t
 globus_gsi_proxy_handle_get_policy(
     globus_gsi_proxy_handle_t           handle,
@@ -83,7 +122,27 @@ globus_gsi_proxy_handle_get_policy(
 {
     return GLOBUS_SUCCESS;
 }
+/* globus_gsi_proxy_handle_get_policy */
+/*}@*/
 
+/**
+ * @name Set Group
+ */
+/*@{*/
+/**
+ * Set the group to be used in the GSI Proxy handle.
+ * @ingroup globus_gsi_proxy_handle
+ *
+ * This function sets the group to be used in the proxy cert
+ * info extension.
+ *
+ * @param handle
+ *        The handle to be modified.
+ * @return
+ *        GLOBUS_SUCCESS
+ *
+ * @see globus_gsi_proxy_handle_get_group()
+ */
 globus_result_t
 globus_gsi_proxy_handle_set_group(
     globus_gsi_proxy_handle_t           handle,
@@ -92,7 +151,28 @@ globus_gsi_proxy_handle_set_group(
 {
     return GLOBUS_SUCCESS;
 }
+/* globus_gsi_proxy_handle_set_group */
+/*}@*/
 
+
+/**
+ * @name Get Group
+ */
+/*@{*/
+/**
+ * Get the group from the GSI Proxy handle.
+ * @ingroup globus_gsi_proxy_handle
+ *
+ * This function gets the group that is being used in the 
+ * proxy cert info extension.
+ *
+ * @param handle
+ *        The handle to be interrogated.
+ * @return
+ *        GLOBUS_SUCCESS
+ *
+ * @see globus_gsi_proxy_handle_set_group()
+ */
 globus_result_t
 globus_gsi_proxy_handle_get_group(
     globus_gsi_proxy_handle_t           handle,
@@ -101,7 +181,28 @@ globus_gsi_proxy_handle_get_group(
 {
     return GLOBUS_SUCCESS;
 }
+/* globus_gsi_proxy_handle_get_group */
+/*}@*/
 
+
+/**
+ * @name Set Path Length
+ */
+/*@{*/
+/**
+ * Set the path length to be used in the GSI Proxy handle.
+ * @ingroup globus_gsi_proxy_handle
+ *
+ * This function sets the path length to be used in the proxy
+ * cert info extension.
+ *
+ * @param handle
+ *        The handle to be modified.
+ * @return
+ *        GLOBUS_SUCCESS
+ *
+ * @see globus_gsi_proxy_handle_get_pathlen()
+ */
 globus_result_t
 globus_gsi_proxy_handle_set_pathlen(
     globus_gsi_proxy_handle_t           handle,
@@ -109,7 +210,28 @@ globus_gsi_proxy_handle_set_pathlen(
 {
     return GLOBUS_SUCCESS;
 }
+/* globus_gsi_proxy_handle_set_pathlen */
+/*}@*/
 
+
+/**
+ * @name Get Path Length
+ */
+/*@{*/
+/**
+ * Get the path length from the GSI Proxy handle.
+ * @ingroup globus_gsi_proxy_handle
+ *
+ * This function gets the path length that is being used in the 
+ * proxy cert info extension.
+ *
+ * @param handle
+ *        The handle to be interrogated.
+ * @return
+ *        GLOBUS_SUCCESS
+ *
+ * @see globus_gsi_proxy_handle_set_pathlen()
+ */
 globus_result_t
 globus_gsi_proxy_handle_get_pathlen(
     globus_gsi_proxy_handle_t           handle,
@@ -117,12 +239,34 @@ globus_gsi_proxy_handle_get_pathlen(
 {
     return GLOBUS_SUCCESS;
 }
+/* globus_gsi_proxy_handle_get_pathlen */
+/*}@*/
 
+
+/**
+ * @name Clear Cert Info
+ */
+/*@{*/
+/**
+ * Clear the proxy cert info extension stored in the GSI Proxy handle.
+ * @ingroup globus_gsi_proxy_handle
+ *
+ * This function clears proxy cert info extension related setting in
+ * the GSI Proxy handle.
+ *
+ * @param handle
+ *        The handle to be interrogated.
+ * @return
+ *        GLOBUS_SUCCESS
+ *
+ * @see globus_gsi_proxy_handle_set_pathlen()
+ */
 globus_result_t
 globus_gsi_proxy_handle_clear_cert_info(
     globus_gsi_proxy_handle_t           handle)
 {
     return GLOBUS_SUCCESS;
 }
-
+/* globus_gsi_proxy_handle_clear_cert_info */
+/*}@*/
 
