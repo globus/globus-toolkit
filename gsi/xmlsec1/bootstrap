@@ -38,5 +38,5 @@ if [ ! -f ${GLOBUS_LOCATION}/libexec/globus-bootstrap.sh ]; then
     exit
 fi
 
-echo "WARNING: bootstrap is not running globus-bootstrap.sh.  Uncomment the command to regenerate configure files."
-#. ${GLOBUS_LOCATION}/libexec/globus-bootstrap.sh
+#echo "WARNING: bootstrap is not running globus-bootstrap.sh.  Uncomment the command to regenerate configure files."
+. ${GLOBUS_LOCATION}/libexec/globus-bootstrap.sh
