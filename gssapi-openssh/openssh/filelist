@@ -13,6 +13,7 @@ man/man1/gsiscp.1
 man/man1/gsissh.1
 man/man1/scp.1
 man/man1/sftp.1
+man/man1/slogin.1
 man/man1/ssh.1
 man/man1/ssh-add.1
 man/man1/ssh-agent.1
