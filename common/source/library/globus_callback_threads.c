@@ -17,6 +17,11 @@
  */
 #define GLOBUS_L_CALLBACK_OWN_THREAD_PERIOD 5000  /* 5ms */
 
+/* this is the number of ready oneshots that will be fired after time has
+ * expired in globus_callback_space_poll()
+ */
+#define GLOBUS_L_CALLBACK_POST_STOP_ONESHOTS 10
+
 #ifndef TARGET_ARCH_WIN32
 extern pid_t                        globus_l_callback_main_thread;
 #endif
@@ -1552,7 +1557,8 @@ void
 globus_l_callback_finish_callback(
     globus_l_callback_info_t *          callback_info,
     globus_bool_t                       restarted,
-    const globus_abstime_t *            time_now)
+    const globus_abstime_t *            time_now,
+    globus_bool_t *                     ready_oneshot)
 {
     globus_l_callback_space_t *         i_space;
     globus_bool_t                       unregister;
@@ -1576,6 +1582,21 @@ globus_l_callback_finish_callback(
         else if(callback_info->is_periodic && !restarted)
         {
             globus_l_callback_requeue(callback_info, time_now);
+        }
+        
+        if(ready_oneshot)
+        {
+            globus_l_callback_info_t *  peek;
+            
+            GlobusICallbackReadyPeak(&i_space->ready_queue, peek);
+            if(peek && !peek->is_periodic)
+            {
+                *ready_oneshot = GLOBUS_TRUE;
+            }
+            else
+            {
+                *ready_oneshot = GLOBUS_FALSE;
+            }
         }
     }
     globus_mutex_unlock(&i_space->lock);
@@ -1619,6 +1640,8 @@ globus_callback_space_poll(
     globus_abstime_t                    l_timestop;
     globus_l_callback_space_t *         i_space;
     globus_thread_callback_index_t      restart_index;
+    globus_bool_t                       yield;
+    int                                 post_stop_counter;
     
     if(space == GLOBUS_CALLBACK_GLOBAL_SPACE)
     {
@@ -1669,11 +1692,14 @@ globus_callback_space_poll(
     GlobusTimeAbstimeGetCurrent(time_now);
     
     done = GLOBUS_FALSE;
+    yield = GLOBUS_TRUE;
+    post_stop_counter = GLOBUS_L_CALLBACK_POST_STOP_ONESHOTS;
     
     do
     {
         globus_l_callback_info_t *      callback_info;
         globus_abstime_t                next_ready_time;
+        globus_bool_t                   ready_oneshot;
         
         globus_mutex_lock(&i_space->lock);
         
@@ -1682,6 +1708,7 @@ globus_callback_space_poll(
         
         if(callback_info)
         {
+            yield = GLOBUS_FALSE;
             callback_info->running_count++;
             
             globus_mutex_unlock(&i_space->lock);
@@ -1698,9 +1725,23 @@ globus_callback_space_poll(
             GlobusTimeAbstimeGetCurrent(time_now);
             
             globus_l_callback_finish_callback(
-                callback_info, restart_info.restarted, &time_now);
+                callback_info,
+                restart_info.restarted, 
+                &time_now,
+                &ready_oneshot);
             
             done = restart_info.signaled;
+            if(!done && globus_abstime_cmp(timestop, &time_now) <= 0)
+            {
+                /* time has expired, but we'll call up to 
+                 * GLOBUS_L_CALLBACK_POST_STOP_ONESHOTS oneshots
+                 * that are ready to go
+                 */
+                if(!ready_oneshot || post_stop_counter-- == 0)
+                {
+                    done = GLOBUS_TRUE;
+                }
+            }
         }
         else
         {
@@ -1717,6 +1758,7 @@ globus_callback_space_poll(
                 globus_cond_timedwait(
                     &i_space->cond, &i_space->lock, &next_ready_time);
                 i_space->idle_count--;
+                yield = GLOBUS_FALSE;
             }
             else if(globus_time_abstime_is_infinity(timestop))
             {
@@ -1726,6 +1768,7 @@ globus_callback_space_poll(
                 i_space->idle_count++;
                 globus_cond_wait(&i_space->cond, &i_space->lock);
                 i_space->idle_count--;
+                yield = GLOBUS_FALSE;
             }
             else
             {
@@ -1738,9 +1781,13 @@ globus_callback_space_poll(
             if(!done)
             {
                 GlobusTimeAbstimeGetCurrent(time_now);
+                if(globus_abstime_cmp(timestop, &time_now) <= 0)
+                {
+                    done = GLOBUS_TRUE;
+                }
             }
         }
-    } while(!done && globus_abstime_cmp(timestop, &time_now) > 0);
+    } while(!done);
 
     /*
      * If I was signaled, I need to pass that signal on to my parent poller
@@ -1755,6 +1802,12 @@ globus_callback_space_poll(
         globus_l_callback_restart_info_key, last_restart_info);
         
     globus_thread_blocking_callback_pop(&restart_index);
+    
+    if(yield)
+    {
+        /* nothing was accomplished, so yield to prevent spinning */
+        globus_thread_yield();
+    }
 }
 
 void
@@ -1885,7 +1938,7 @@ globus_l_callback_thread_callback(
     } while(run_now);
     
     globus_l_callback_finish_callback(
-        callback_info, restart_info.restarted, GLOBUS_NULL);    
+        callback_info, restart_info.restarted, GLOBUS_NULL, GLOBUS_NULL);    
     
     globus_thread_blocking_reset();
     
@@ -2077,7 +2130,10 @@ globus_l_callback_thread_poll(
                 callback_info->callback_func(callback_info->callback_args);
 
                 globus_l_callback_finish_callback(
-                    callback_info, restart_info.restarted, GLOBUS_NULL);
+                    callback_info,
+                    restart_info.restarted,
+                    GLOBUS_NULL,
+                    GLOBUS_NULL);
 
                 /* if I was restarted, a new thread has taken my place */
                 done = restart_info.restarted;

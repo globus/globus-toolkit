@@ -11,6 +11,11 @@
 #define GLOBUS_L_CALLBACK_INFO_BLOCK_SIZE 32
 #define GLOBUS_L_CALLBACK_SPACE_BLOCK_SIZE 16
 
+/* this is the number of ready oneshots that will be fired after time has
+ * expired in globus_callback_space_poll()
+ */
+#define GLOBUS_L_CALLBACK_POST_STOP_ONESHOTS 10
+
 #ifdef TARGET_ARCH_WIN32
 #define pause() Sleep(1000);
 #endif
@@ -1052,14 +1057,6 @@ globus_l_callback_get_next(
         globus_priority_q_first_priority(&i_space->timed_queue);
     if(tmp_time)
     {
-        globus_abstime_t                    l_time_now;
-        
-        if(!time_now)
-        {
-            GlobusTimeAbstimeGetCurrent(l_time_now);
-            time_now = &l_time_now;
-        }
-        
         while(tmp_time && globus_abstime_cmp(tmp_time, time_now) <= 0)
         {
             callback_info = (globus_l_callback_info_t *)
@@ -1111,6 +1108,7 @@ globus_callback_space_poll(
     globus_l_callback_restart_info_t *  last_restart_info;
     globus_l_callback_restart_info_t    restart_info;
     globus_thread_callback_index_t      idx;
+    int                                 post_stop_counter;
 
     i_space = GLOBUS_NULL;
 
@@ -1143,6 +1141,7 @@ globus_callback_space_poll(
     GlobusTimeAbstimeGetCurrent(time_now);
     
     done = GLOBUS_FALSE;
+    post_stop_counter = GLOBUS_L_CALLBACK_POST_STOP_ONESHOTS;
     
     do
     {
@@ -1211,6 +1210,20 @@ globus_callback_space_poll(
             }
             
             done = restart_info.signaled;
+            if(!done && globus_abstime_cmp(timestop, &time_now) <= 0)
+            {
+                globus_l_callback_info_t *  peek;
+               
+                /* time has expired, but we'll call up to 
+                 * GLOBUS_L_CALLBACK_POST_STOP_ONESHOTS oneshots
+                 * that are ready to go
+                 */
+                GlobusICallbackReadyPeak(&i_space->ready_queue, peek);
+                if(!peek || peek->is_periodic || post_stop_counter-- == 0)
+                {
+                    done = GLOBUS_TRUE;
+                }
+            }
         }
         else
         {
@@ -1260,9 +1273,13 @@ globus_callback_space_poll(
             if(!done)
             {
                 GlobusTimeAbstimeGetCurrent(time_now);
+                if(globus_abstime_cmp(timestop, &time_now) <= 0)
+                {
+                    done = GLOBUS_TRUE;
+                }
             }
         }
-    } while(!done && globus_abstime_cmp(timestop, &time_now) > 0);
+    } while(!done);
 
     /*
      * If I was signaled, I need to pass that signal on to my parent poller
