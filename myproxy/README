@@ -40,7 +40,7 @@ of the users credentials to the portal for use.
 The user may destroy their credentials stored with myproxy-server
 at any time using myproxy-destroy.
 
-Myproxy v0.1 has protocol differences from Myproxy v0.1 and is not
+Myproxy v0.2 has protocol differences from Myproxy v0.1 and is not
 compatible with v0.1 in any way.
 
 2. Myproxy Programs
