@@ -1,4 +1,4 @@
-all: gpt @prewsgram@ @gridftp@ @prewsmds@ @rls@ @myproxy@ @gsiopenssh@ @wsjava@ @wsmds@ @wsdel@ @wsrft@ @wsgram@ @wsgramcondor@ @wsgramlsf@ @wsgrampbs@ @wscas@ @webmds@ @wsc@ @i18n@ @tests@ @wstests@ @drs@ postinstall
+all: gpt @prewsmds@ @gridftp@ @prewsgram@ @rls@ @myproxy@ @gsiopenssh@ @wsjava@ @wsmds@ @wsdel@ @wsrft@ @wsgram@ @wsgramcondor@ @wsgramlsf@ @wsgrampbs@ @wscas@ @webmds@ @wsc@ @i18n@ @tests@ @wstests@ @drs@ postinstall
 GLOBUS_LOCATION=@prefix@
 GPT_LOCATION=@gptlocation@
 GLOBUS_IODBC_PATH=@globus_iodbc@
@@ -11,7 +11,7 @@ THR=@thr@
 # Functional group dependencies, expressed in bundles.
 common: gpt globus_core globus_libtool globus_common globus_common_setup
 i18n: gpt common globus-internationalization globus-internationalization-thr
-prews: prewsgram gridftp prewsmds
+prews: prewsmds gridftp prewsgram
 prewsgram: gpt globus-resource-management-sdk-thr globus-resource-management-server globus-resource-management-client globus-resource-management-sdk 
 gridftp: gpt globus-data-management-sdk-thr globus-data-management-server globus-data-management-client globus-data-management-sdk 
 prewsmds: gpt globus-information-services-server globus-information-services-client globus-information-services-sdk
