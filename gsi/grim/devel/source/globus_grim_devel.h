@@ -123,6 +123,30 @@ extern globus_module_descriptor_t globus_i_grim_devel_module;
 typedef void * globus_grim_config_t;
 typedef void * globus_grim_assertion_t;
 
+/**
+ * @hideinitializer
+ *
+ *  Possible error types returned by grim_devel.
+ *
+ * @see globus_generic_error_utility
+ */
+typedef enum
+{
+    /* malloc failed */
+    GLOBUS_GRIM_DEVEL_ERROR_ALLOC = 1024,
+    /* bad parameter passed to a grim devel function */
+    GLOBUS_GRIM_DEVEL_ERROR_BAD_PARAMETER,
+    /* grim devel has not been activted */
+    GLOBUS_GRIM_DEVEL_ERROR_NOT_ACTIVATED,
+    /* an expat error occurred */
+    GLOBUS_GRIM_DEVEL_ERROR_EXPAT_FAILURE,
+    /* an error occured parsing the policy */
+    GLOBUS_GRIM_DEVEL_ERROR_POLICY,
+} globus_grim_devel_error_type_t;
+
+
+
+
 /*************************************************************************
  *                   external api functions
  ************************************************************************/

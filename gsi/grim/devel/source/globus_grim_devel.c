@@ -48,6 +48,8 @@ struct globus_l_grim_assertion_s
     int                                     parse_state;
     globus_list_t *                         dna_list;
     globus_list_t *                         pt_list;
+
+    globus_result_t                         res;
 };
 
 enum globus_l_grim_assertion_parse_state_e
@@ -117,9 +119,10 @@ globus_module_descriptor_t globus_i_grim_devel_module =
     if(assertion == NULL)                                                   \
     {                                                                       \
         return globus_error_put(                                            \
-                   globus_error_construct_string(                           \
+                   globus_error_construct_error(                            \
                        GLOBUS_GRIM_DEVEL_MODULE,                            \
                        GLOBUS_NULL,                                         \
+                       GLOBUS_GRIM_DEVEL_ERROR_BAD_PARAMETER,               \
                        "[globus_grim_devel]::assertion handle is null."));  \
     }                                                                       \
     info = (struct globus_l_grim_assertion_s *) assertion;                  \
@@ -187,9 +190,10 @@ globus_grim_assertion_init(
     if(ass == NULL)
     {
         return globus_error_put(
-                   globus_error_construct_string(
+                   globus_error_construct_error(
                        GLOBUS_GRIM_DEVEL_MODULE,
                        GLOBUS_NULL,
+                       GLOBUS_GRIM_DEVEL_ERROR_ALLOC,
                        "[globus_grim_devel]:: malloc failed."));
     }
     ass->issuer = strdup(issuer);
@@ -215,17 +219,19 @@ globus_grim_assertion_init_from_buffer(
     if(assertion == NULL)
     {
         return globus_error_put(
-                   globus_error_construct_string(
+                   globus_error_construct_error(
                        GLOBUS_GRIM_DEVEL_MODULE,
                        GLOBUS_NULL,
+                       GLOBUS_GRIM_DEVEL_ERROR_BAD_PARAMETER,
                        "[globus_grim_devel]:: assertion parameter NULL."));
     }
     if(buffer == NULL)
     {
         return globus_error_put(
-                   globus_error_construct_string(
+                   globus_error_construct_error(
                        GLOBUS_GRIM_DEVEL_MODULE,
                        GLOBUS_NULL,
+                       GLOBUS_GRIM_DEVEL_ERROR_BAD_PARAMETER,
                        "[globus_grim_devel]:: buffer parameter NULL."));
     }
 
@@ -234,9 +240,10 @@ globus_grim_assertion_init_from_buffer(
     if(ass == NULL)
     {
         return globus_error_put(
-                   globus_error_construct_string(
+                   globus_error_construct_error(
                        GLOBUS_GRIM_DEVEL_MODULE,
                        GLOBUS_NULL,
+                       GLOBUS_GRIM_DEVEL_ERROR_ALLOC,
                        "[globus_grim_devel]:: malloc failed."));
     }
 
@@ -261,9 +268,10 @@ globus_grim_assertion_serialize(
     if(out_assertion_string == NULL)
     {
         return globus_error_put(
-                   globus_error_construct_string(
+                   globus_error_construct_error(
                        GLOBUS_GRIM_DEVEL_MODULE,
                        GLOBUS_NULL,
+                       GLOBUS_GRIM_DEVEL_ERROR_BAD_PARAMETER,
                        "[globus_grim_devel]:: out_assertion_string is null."));
     }
 
@@ -312,9 +320,10 @@ globus_grim_assertion_get_issuer(
     if(issuer == NULL)
     {
         return globus_error_put(
-                   globus_error_construct_string(
+                   globus_error_construct_error(
                        GLOBUS_GRIM_DEVEL_MODULE,
                        GLOBUS_NULL,
+                       GLOBUS_GRIM_DEVEL_ERROR_BAD_PARAMETER,
                        "[globus_grim_devel]:: issuer is null."));
     }
 
@@ -337,9 +346,10 @@ globus_grim_assertion_get_username(
     if(username == NULL)
     {
         return globus_error_put(
-                   globus_error_construct_string(
+                   globus_error_construct_error(
                        GLOBUS_GRIM_DEVEL_MODULE,
                        GLOBUS_NULL,
+                       GLOBUS_GRIM_DEVEL_ERROR_BAD_PARAMETER,
                        "[globus_grim_devel]:: username is null."));
     }
 
@@ -363,9 +373,10 @@ globus_grim_assertion_get_dn_array(
     if(dn_array == NULL)
     {
         return globus_error_put(
-                   globus_error_construct_string(
+                   globus_error_construct_error(
                        GLOBUS_GRIM_DEVEL_MODULE,
                        GLOBUS_NULL,
+                       GLOBUS_GRIM_DEVEL_ERROR_BAD_PARAMETER,
                        "[globus_grim_devel]:: dn_array is null."));
     }
 
@@ -431,9 +442,10 @@ globus_grim_assertion_get_port_types_array(
     if(port_types_array == NULL)
     {
         return globus_error_put(
-                   globus_error_construct_string(
+                   globus_error_construct_error(
                        GLOBUS_GRIM_DEVEL_MODULE,
                        GLOBUS_NULL,
+                       GLOBUS_GRIM_DEVEL_ERROR_BAD_PARAMETER,
                        "[globus_grim_devel]:: port_types_array is null."));
     }
 
@@ -493,9 +505,10 @@ globus_grim_assertion_set_port_types_array(
     if(config == NULL)                                                      \
     {                                                                       \
         return globus_error_put(                                            \
-                   globus_error_construct_string(                           \
+                   globus_error_construct_error(                            \
                        GLOBUS_GRIM_DEVEL_MODULE,                            \
                        GLOBUS_NULL,                                         \
+                       GLOBUS_GRIM_DEVEL_ERROR_BAD_PARAMETER,               \
                        "[globus_grim_devel]::config handle is null."));     \
     }                                                                       \
     _info = (struct globus_l_grim_conf_info_s *) config;                    \
@@ -518,9 +531,10 @@ globus_grim_config_init(
     if(info == NULL)
     {
         return globus_error_put(
-                   globus_error_construct_string(
+                   globus_error_construct_error(
                        GLOBUS_GRIM_DEVEL_MODULE,
                        GLOBUS_NULL,
+                       GLOBUS_GRIM_DEVEL_ERROR_ALLOC,
                        "[globus_grim_devel]:: malloc failed."));
     }
 
@@ -589,9 +603,10 @@ globus_grim_config_load_from_file(
     if(fptr == NULL)
     {
         return globus_error_put(
-                   globus_error_construct_string(
+                   globus_error_construct_error(
                        GLOBUS_GRIM_DEVEL_MODULE,
                        GLOBUS_NULL,
+                       GLOBUS_GRIM_DEVEL_ERROR_BAD_PARAMETER,
                        "[globus_grim_devel]:: file pointer is NULL."));
     }
 
@@ -634,9 +649,10 @@ globus_grim_config_get_max_time(
     if(max_time == NULL)
     {
         return globus_error_put(
-                   globus_error_construct_string(
+                   globus_error_construct_error(
                        GLOBUS_GRIM_DEVEL_MODULE,
                        GLOBUS_NULL,
+                       GLOBUS_GRIM_DEVEL_ERROR_BAD_PARAMETER,
                        "[globus_grim_devel]:: max_time is NULL."));
     }
 
@@ -675,9 +691,10 @@ globus_grim_config_get_default_time(
     if(default_time == NULL)
     {
         return globus_error_put(
-                   globus_error_construct_string(
+                   globus_error_construct_error(
                        GLOBUS_GRIM_DEVEL_MODULE,
                        GLOBUS_NULL,
+                       GLOBUS_GRIM_DEVEL_ERROR_BAD_PARAMETER,
                        "[globus_grim_devel]:: default_time is NULL."));
     }
 
@@ -716,9 +733,10 @@ globus_grim_config_get_key_bits(
     if(key_bits == NULL)
     {
         return globus_error_put(
-                   globus_error_construct_string(
+                   globus_error_construct_error(
                        GLOBUS_GRIM_DEVEL_MODULE,
                        GLOBUS_NULL,
+                       GLOBUS_GRIM_DEVEL_ERROR_BAD_PARAMETER,
                        "[globus_grim_devel]:: key_bits is NULL."));
     }
 
@@ -757,9 +775,10 @@ globus_grim_config_get_ca_cert_dir(
     if(ca_cert_dir == NULL)
     {
         return globus_error_put(
-                   globus_error_construct_string(
+                   globus_error_construct_error(
                        GLOBUS_GRIM_DEVEL_MODULE,
                        GLOBUS_NULL,
+                       GLOBUS_GRIM_DEVEL_ERROR_BAD_PARAMETER,
                        "[globus_grim_devel]:: ca_cert_dir is NULL."));
     }
 
@@ -799,9 +818,10 @@ globus_grim_config_get_cert_filename(
     if(cert_filename == NULL)
     {
         return globus_error_put(
-                   globus_error_construct_string(
+                   globus_error_construct_error(
                        GLOBUS_GRIM_DEVEL_MODULE,
                        GLOBUS_NULL,
+                       GLOBUS_GRIM_DEVEL_ERROR_BAD_PARAMETER,
                        "[globus_grim_devel]:: cert_filename is NULL."));
     }
 
@@ -841,9 +861,10 @@ globus_grim_config_get_key_filename(
     if(key_filename == NULL)
     {
         return globus_error_put(
-                   globus_error_construct_string(
+                   globus_error_construct_error(
                        GLOBUS_GRIM_DEVEL_MODULE,
                        GLOBUS_NULL,
+                       GLOBUS_GRIM_DEVEL_ERROR_BAD_PARAMETER,
                        "[globus_grim_devel]:: key_filename is NULL."));
     }
 
@@ -993,9 +1014,10 @@ globus_grim_devel_get_NID(
     if(!globus_l_grim_activated)
     {
         return globus_error_put(
-                   globus_error_construct_string(
+                   globus_error_construct_error(
                        GLOBUS_GRIM_DEVEL_MODULE,
                        GLOBUS_NULL,
+                       GLOBUS_GRIM_DEVEL_ERROR_NOT_ACTIVATED,
                        "[globus_grim_devel]:: Module not activated."));
     }
 
@@ -1019,17 +1041,19 @@ globus_grim_devel_port_type_file_parse(
     if(fptr == NULL)
     {
         return globus_error_put(
-                   globus_error_construct_string(
+                   globus_error_construct_error(
                        GLOBUS_GRIM_DEVEL_MODULE,
                        GLOBUS_NULL,
+                       GLOBUS_GRIM_DEVEL_ERROR_BAD_PARAMETER,
                        "[globus_grim_devel]:: File pointer is NULL."));
     }
     if(port_types == NULL)
     {
         return globus_error_put(
-                   globus_error_construct_string(
+                   globus_error_construct_error(
                        GLOBUS_GRIM_DEVEL_MODULE,
                        GLOBUS_NULL,
+                       GLOBUS_GRIM_DEVEL_ERROR_BAD_PARAMETER,
                        "[globus_grim_devel]:: port_types parameter is NULL."));
     }
 
@@ -1055,17 +1079,19 @@ globus_grim_devel_get_all_port_types(
     if(fptr == NULL)
     {
         return globus_error_put(
-                   globus_error_construct_string(
+                   globus_error_construct_error(
                        GLOBUS_GRIM_DEVEL_MODULE,
                        GLOBUS_NULL,
+                       GLOBUS_GRIM_DEVEL_ERROR_BAD_PARAMETER,
                        "[globus_grim_devel]:: File pointer is NULL."));
     }
     if(port_types == NULL)
     {
         return globus_error_put(
-                   globus_error_construct_string(
+                   globus_error_construct_error(
                        GLOBUS_GRIM_DEVEL_MODULE,
                        GLOBUS_NULL,
+                       GLOBUS_GRIM_DEVEL_ERROR_BAD_PARAMETER,
                        "[globus_grim_devel]:: port_types parameter is NULL."));
     }
 
@@ -1098,17 +1124,19 @@ globus_grim_devel_port_type_file_parse_uid(
     if(fptr == NULL)
     {
         return globus_error_put(
-                   globus_error_construct_string(
+                   globus_error_construct_error(
                        GLOBUS_GRIM_DEVEL_MODULE,
                        GLOBUS_NULL,
+                       GLOBUS_GRIM_DEVEL_ERROR_BAD_PARAMETER,
                        "[globus_grim_devel]:: File pointer is NULL."));
     }
     if(port_types == NULL)
     {
         return globus_error_put(
-                   globus_error_construct_string(
+                   globus_error_construct_error(
                        GLOBUS_GRIM_DEVEL_MODULE,
                        GLOBUS_NULL,
+                       GLOBUS_GRIM_DEVEL_ERROR_BAD_PARAMETER,
                        "[globus_grim_devel]:: port_types parameter is NULL."));
     }
 
@@ -1315,9 +1343,10 @@ globus_l_grim_devel_parse_port_type_file(
         fclose(fptr);
 
         return globus_error_put(
-                   globus_error_construct_string(
+                   globus_error_construct_error(
                        GLOBUS_GRIM_DEVEL_MODULE,
                        GLOBUS_NULL,
+                       GLOBUS_GRIM_DEVEL_ERROR_EXPAT_FAILURE,
                        "[globus_grim_devel]:: parser didn't open."));
     }
 
@@ -1338,9 +1367,10 @@ globus_l_grim_devel_parse_port_type_file(
         if(XML_Parse(p, buffer, len, len < done) == XML_STATUS_ERROR)
         {
             res = globus_error_put(
-                     globus_error_construct_string(
+                     globus_error_construct_error(
                          GLOBUS_GRIM_DEVEL_MODULE,
                          GLOBUS_NULL,
+                         GLOBUS_GRIM_DEVEL_ERROR_EXPAT_FAILURE,
                          "[globus_grim_devel]:: xml parser failure."));
             goto exit;
         }
@@ -1445,9 +1475,10 @@ globus_l_grim_parse_conf_file(
     if(p == NULL)
     {
         res = globus_error_put(
-                  globus_error_construct_string(
+                  globus_error_construct_error(
                       GLOBUS_GRIM_DEVEL_MODULE,
                       GLOBUS_NULL,
+                      GLOBUS_GRIM_DEVEL_ERROR_EXPAT_FAILURE,
                       "[globus_grim_devel]:: could not create parser."));
         goto exit;
     }
@@ -1463,9 +1494,10 @@ globus_l_grim_parse_conf_file(
         if(XML_Parse(p, buffer, len, len < done) == XML_STATUS_ERROR)
         {
             res = globus_error_put(
-                      globus_error_construct_string(
+                      globus_error_construct_error(
                         GLOBUS_GRIM_DEVEL_MODULE,
                         GLOBUS_NULL,
+                        GLOBUS_GRIM_DEVEL_ERROR_EXPAT_FAILURE,
                         "[globus_grim_devel]:: xml parse failed."));
             goto exit;
         }
@@ -1654,6 +1686,16 @@ globus_l_grim_assertion_cdata(
             tmp_s = malloc(sizeof(char) * (len + 1));
             strncpy(tmp_s, s, len);
             info->version = tmp_s;
+            /* if the versions are not the same */
+            if(strcmp(s, GRIM_ASSERTION_FORMAT_VERSION) != 0)
+            {
+                info->res = globus_error_put(
+                  globus_error_construct_error(
+                      GLOBUS_GRIM_DEVEL_MODULE,
+                      GLOBUS_NULL,
+                      GLOBUS_GRIM_DEVEL_ERROR_POLICY,
+                      "[globus_grim_devel]:: could not create parser."));
+            }
 
             break;
 
@@ -1685,14 +1727,16 @@ globus_l_grim_parse_assertion(
 
     info->dna_list = NULL;
     info->pt_list = NULL;
+    info->res = GLOBUS_SUCCESS;
     
     p = XML_ParserCreate(NULL);
     if(p == NULL)
     {
         res = globus_error_put(
-                  globus_error_construct_string(
+                  globus_error_construct_error(
                       GLOBUS_GRIM_DEVEL_MODULE,
                       GLOBUS_NULL,
+                      GLOBUS_GRIM_DEVEL_ERROR_EXPAT_FAILURE,
                       "[globus_grim_devel]:: could not create parser."));
         goto exit;
     }
@@ -1705,10 +1749,17 @@ globus_l_grim_parse_assertion(
     if(XML_Parse(p, assertion, strlen(assertion), 0) == XML_STATUS_ERROR)
     {
         res = globus_error_put( 
-                  globus_error_construct_string(
+                  globus_error_construct_error(
                     GLOBUS_GRIM_DEVEL_MODULE,
                     GLOBUS_NULL,
+                    GLOBUS_GRIM_DEVEL_ERROR_EXPAT_FAILURE,
                     "[globus_grim_devel]:: xml parse failed."));
+        goto exit;
+    }
+    if(info->res != GLOBUS_SUCCESS)
+    {
+        res = info->res;
+
         goto exit;
     }
 
