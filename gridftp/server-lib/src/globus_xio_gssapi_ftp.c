@@ -140,6 +140,7 @@ enum globus_l_xio_error_levels
 #define REPLY_334_GOOD_AUTH_TYPE "334 Using authentication type; ADAT must follow.\r\n"
 #define REPLY_530_EXPECTING_ADAT "530 Must perform GSSAPI authentication.\r\n"
 #define REPLY_530_NO_CRED "530 Server does not have credentials for GSSAPI authentication.\r\n"
+#define REPLY_530_BAD_ADAT "530 Authentication failed.\r\n"
 
 #define REPLY_235_ADAT_DATA "235 ADAT="
 #define REPLY_335_ADAT_DATA "335 ADAT="
@@ -1302,14 +1303,17 @@ globus_l_xio_gssapi_ftp_server_read_cb(
                         &complete);
                     if(res != GLOBUS_SUCCESS)
                     {
-                        goto err;
+                        /* XXX send reply but restsart to READING_AUTH */
+                        msg = strdup(REPLY_530_BAD_ADAT);
                     }
-
-                    /* if compete change to the next state */
-                    if(complete)
+                    else
                     {
-                        GlobusXIOGssapiftpDebugChangeState(handle,
-                            GSSAPI_FTP_STATE_SERVER_ADAT_REPLY);
+                        /* if compete change to the next state */
+                        if(complete)
+                        {
+                            GlobusXIOGssapiftpDebugChangeState(handle,
+                                GSSAPI_FTP_STATE_SERVER_ADAT_REPLY);
+                        }
                     }
                 }
                 break;
