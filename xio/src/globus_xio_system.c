@@ -550,12 +550,12 @@ globus_xio_system_read(
     globus_ssize_t *                    nread)
 {
     globus_result_t                     result;
-    globus_ssize_t                      nybtes;
+    globus_ssize_t                      nbytes;
     globus_ssize_t                      rc;
     int                                 save_errno;
 
     result = GLOBUS_SUCCESS;
-    nybtes = 0;
+    nbytes = 0;
     rc = 1;
 
     if(u_iovc == 1)
@@ -635,7 +635,7 @@ globus_xio_system_read_ex(
     globus_ssize_t *                    nread)
 {
     globus_result_t                     result;
-    globus_ssize_t                      nybtes;
+    globus_ssize_t                      nbytes;
     globus_ssize_t                      rc;
     int                                 save_errno;
 
@@ -645,7 +645,7 @@ globus_xio_system_read_ex(
     }
 
     result = GLOBUS_SUCCESS;
-    nybtes = 0;
+    nbytes = 0;
     rc = 1;
 
     if(u_iovc == 1)
@@ -949,12 +949,12 @@ globus_xio_system_write(
     globus_ssize_t *                    nwritten)
 {
     globus_result_t                     result;
-    globus_ssize_t                      nybtes;
+    globus_ssize_t                      nbytes;
     globus_ssize_t                      rc;
     int                                 save_errno;
 
     result = GLOBUS_SUCCESS;
-    nybtes = 0;
+    nbytes = 0;
     rc = 1;
 
     if(u_iovc == 1)
@@ -1030,7 +1030,7 @@ globus_xio_system_write_ex(
     globus_ssize_t *                    nwritten)
 {
     globus_result_t                     result;
-    globus_ssize_t                      nybtes;
+    globus_ssize_t                      nbytes;
     globus_ssize_t                      rc;
     int                                 save_errno;
 
@@ -1040,7 +1040,7 @@ globus_xio_system_write_ex(
     }
 
     result = GLOBUS_SUCCESS;
-    nybtes = 0;
+    nbytes = 0;
     rc = 1;
 
     if(u_iovc == 1)

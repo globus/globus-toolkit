@@ -65,16 +65,20 @@ main(
             target);
     assert(res != GLOBUS_SUCCESS);
 
-    res = globus_xio_read(handle, buf, sizeof(buf), NULL, &nbytes);
-    assert(res != GLOBUS_SUCCESS);
-
-    while(nbytes != -1)
+    do
     {
-        buf[nbytes] = '\0';
-        fprintf(stderr, "%s", buf);
-        res = globus_xio_read(handle, buf, sizeof(buf), NULL, &nbytes);
-        assert(res != GLOBUS_SUCCESS);
-    } 
+        res = globus_xio_read(handle, buf, sizeof(buf), 1, NULL, &nbytes);
+        if(nbytes > 0)
+        {
+            buf[nbytes] = '\0';
+            fprintf(stderr, "%s", buf);
+        }
+    } while(res == GLOBUS_SUCCESS);
+    
+    if(!globus_xio_eof(res))
+    {
+        /* bad error occurred */   
+    }
     globus_xio_close(handle);
 
     if(contact_string == NULL)

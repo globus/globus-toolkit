@@ -505,13 +505,12 @@ typedef void (*globus_xio_callback_t)(
  *  This callback is used for asychronous operations that send or receive
  *  data.
  *
- *  a size of -1 indicates end of file.
+ *  on eof, result_t will be of type GLOBUS_XIO_ERROR_EOF
  */
 typedef void (*globus_xio_data_callback_t)(
     globus_xio_handle_t                         handle, 
     globus_result_t                             result,
-    globus_byte_t *                             buffer,
-    globus_ssize_t                              nbytes, 
+    globus_size_t                               nbytes, 
     globus_xio_data_descriptor_t                data_desc,
     void *                                      user_arg);
 
@@ -560,8 +559,23 @@ globus_xio_register_read(
     globus_xio_handle_t                         handle,
     globus_byte_t *                             buffer,
     globus_size_t                               buffer_length,
+    globus_size_t                               waitforbytes,
     globus_xio_data_descriptor_t                data_desc,
-    globus_xio_callback_t                       cb,
+    globus_xio_data_callback_t                  cb,
+    void *                                      user_arg);
+
+/**
+ * Read data from a handle into a globus_xio_iovec_t (struct iovec)
+ *  @ingroup GLOBUS_XIO_API
+ */
+globus_result_t
+globus_xio_register_readv(
+    globus_xio_handle_t                         handle,
+    globus_xio_iovec_t *                        iovec,
+    int                                         iovec_count,
+    globus_size_t                               waitforbytes,
+    globus_xio_data_descriptor_t                data_desc,
+    globus_xio_data_callback_t                  cb,
     void *                                      user_arg);
 
 /**
@@ -574,7 +588,20 @@ globus_xio_register_write(
     globus_byte_t *                             buffer,
     globus_size_t                               buffer_length,
     globus_xio_data_descriptor_t                data_desc,
-    globus_xio_callback_t                       cb,
+    globus_xio_data_callback_t                  cb,
+    void *                                      user_arg);
+
+/**
+ * Write data to a handle from a globus_xio_iovec_t (struct iovec)
+ *  @ingroup GLOBUS_XIO_API
+ */
+globus_result_t
+globus_xio_register_writev(
+    globus_xio_handle_t                         handle,
+    globus_xio_iovec_t *                        iovec,
+    int                                         iovec_count,
+    globus_xio_data_descriptor_t                data_desc,
+    globus_xio_data_callback_t                  cb,
     void *                                      user_arg);
 
 /**

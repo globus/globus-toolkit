@@ -272,8 +272,8 @@ globus_xio_driver_file_read(
     globus_xio_driver_operation_t               op)
 {
     struct globus_l_xio_file_handle_s *         file_handle;
-    ssize_t                                     total_nbytes = 0;
-    ssize_t                                     nbytes;
+    globus_size_t                               total_nbytes = 0;
+    globus_ssize_t                              nbytes;
     int                                         ctr;
     globus_result_t                             res = GLOBUS_SUCCESS;
 
@@ -306,8 +306,7 @@ globus_xio_driver_file_read(
     
     if(total_nbytes == 0 && res == GLOBUS_SUCCESS)
     {
-        /* set nbytes to be EOF (represented by -1) */
-        total_nbytes = -1;
+        res = globus_xio_construct_eof();
     }
 
     /* tell globus_xio that we have finished the read operation */
@@ -328,8 +327,8 @@ globus_xio_driver_file_write(
     globus_xio_driver_operation_t               op)
 {
     struct globus_l_xio_file_handle_s *         file_handle;
-    ssize_t                                     total_nbytes = 0;
-    ssize_t                                     nbytes;
+    globus_size_t                               total_nbytes = 0;
+    globus_ssize_t                              nbytes;
     int                                         ctr;
     globus_result_t                             res = GLOBUS_SUCCESS;
 
@@ -371,7 +370,6 @@ static globus_xio_driver_t globus_xio_driver_file_info =
     globus_xio_driver_file_read,                      /* read_func           */
     globus_xio_driver_file_write,                     /* write_func          */
     NULL,                                             /* handle_cntl_func    */
-    0,                                                /* max_handle_cntl_cmd */
 
     globus_xio_driver_file_target_init,               /* target_init_func    */
     globus_xio_driver_file_target_destory,            /* target_destroy_finc */
@@ -383,7 +381,6 @@ static globus_xio_driver_t globus_xio_driver_file_info =
     NULL,                                             /* server_accept_func  */
     NULL,                                             /* server_destroy_func */
     NULL,                                             /* server_cntl_func    */
-    0,                                                /* max_server_cntl_cmd */
 
     /*
      *  driver attr functions.  All or none may be NULL
@@ -392,7 +389,6 @@ static globus_xio_driver_t globus_xio_driver_file_info =
     globus_xio_driver_file_attr_copy,                 /* attr_copy_func      */
     globus_xio_driver_file_attr_cntl,                 /* attr_cntl_func      */
     globus_xio_driver_file_attr_destroy,              /* attr_destroy_func   */
-    GLOBUS_XIO_FILE_MAX_CMD,                          /* max_attr_cntl_cmd   */
 
     /*
      *  No need for data descriptors.
@@ -400,6 +396,5 @@ static globus_xio_driver_t globus_xio_driver_file_info =
     NULL,                                             /* dd_init             */
     NULL,                                             /* dd_copy             */
     NULL,                                             /* dd_destroy          */
-    NULL,                                             /* dd_cntl             */
-    0,                                                /* max_dd_cntl_cmd     */
+    NULL                                              /* dd_cntl             */
 };
