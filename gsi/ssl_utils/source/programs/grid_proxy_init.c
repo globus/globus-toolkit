@@ -512,32 +512,12 @@ err:
 #endif
 	const char *data;
 	int line;
-	
-	/* WIN32 does not have the ERR_get_error_line_data */ 
-	/* exported, so simulate it till it is fixed */
-	/* in SSLeay-0.9.0 */
+        int flags;
 	
 	while ( ERR_peek_error() != 0 )
 	{
-	    int i;
-	    ERR_STATE *es;
-	    
-	    es = ERR_get_state();
-	    i=(es->bottom+1)%ERR_NUM_ERRORS;
-	    
-	    if (es->err_data[i] == NULL)
-		data = "";
-	    else
-		data = es->err_data[i];
-	    
-	    l=ERR_get_error_line(&file,&line);
+	    l=ERR_get_error_line_data(&file,&line,&data,&flags);
 	    if (debug)
-		/*fprintf(stderr,
-			"%s%s:\nLocation: %s:%d\n",
-			ERR_error_string(l,buf),
-            data,
-			file,
-			line);*/
 
             fprintf(stderr,
                     "%s:%s:%d%s\n",
