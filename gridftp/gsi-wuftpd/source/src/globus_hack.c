@@ -6,12 +6,6 @@
 #include "../support/ftp.h"
 #include <syslog.h>
 
-#define DEBUG_PRINT(x) \
-{ \
-    fprintf(g_out, x); \
-    fflush(g_out); \
-}
-
 extern globus_ftp_control_layout_t		g_layout;
 extern globus_ftp_control_parallelism_t		g_parallelism;
 extern globus_bool_t				g_send_restart_info;
@@ -298,10 +292,6 @@ g_start()
     globus_reltime_t                  period_time;
     globus_result_t		      res;
 
-g_out = fopen("/sandbox/bresnaha/wuftp_out", "w");
-
-DEBUG_PRINT("g_start\n");
-
     rc = globus_module_activate(GLOBUS_FTP_CONTROL_MODULE);
     assert(rc == GLOBUS_SUCCESS);
 
@@ -359,7 +349,6 @@ g_end()
     globus_result_t                                 res;
 
     G_ENTER();
-DEBUG_PRINT("g_end");
 
     wu_monitor_init(&monitor);
     /*
@@ -384,7 +373,6 @@ DEBUG_PRINT("g_end");
 
     wu_monitor_destroy(&monitor);
 
-fclose(g_out);
     globus_ftp_control_handle_destroy(&g_data_handle);
     globus_module_deactivate(GLOBUS_FTP_CONTROL_MODULE);
 
@@ -784,7 +772,7 @@ g_send_data(
                           handle,
                           buf,
                           cnt,
-                          offset,
+                          offset, /* + jb_count,*/
                           eof,
                           data_write_callback,
                           &g_monitor);
@@ -946,13 +934,10 @@ g_send_data(
             sprintf(error_buf, "Couldn't get data channdle count.");
                     goto data_err;
                 }
-            fprintf(g_out, "###-> %s\n", buf_126);
                 sprintf(&buf_126[i_126], "%d ", data_connections);
                 i_126 = strlen(buf_126);
             }
             buf_126[i_126] = '\0';
-            fprintf(g_out, "######-> %d %s\n", stripe_count, buf_126);
-            fflush(g_out);
 
             reply(126, "%s", buf_126);
             free(buf_126);
