@@ -3960,6 +3960,7 @@ globus_l_gram_stage_file(char *url, char **staged_file_path, int mode)
 	else if(rc == GLOBUS_GASS_CACHE_ADD_NEW)
 	{
 	    staged_file_url = globus_libc_malloc(strlen(*staged_file_path) + 6);
+	    globus_libc_sprintf(staged_file_url, "file:%s", *staged_file_path);
 
 	    result = globus_gass_copy_handle_init(&handle, GLOBUS_NULL);
 	    if(result != GLOBUS_SUCCESS)
@@ -3987,6 +3988,7 @@ globus_l_gram_stage_file(char *url, char **staged_file_path, int mode)
 		    globus_gass_copy_handle_destroy(&handle);
 		}
 	    }
+	    globus_libc_free(staged_file_url);
 	    globus_gass_cache_add_done(&globus_l_cache_handle,
 				       url,
 				       graml_gass_cache_tag,
