@@ -30,7 +30,7 @@ typedef struct
     int                                 nstreams;
     char                                mode;
     char                                type;
-    globus_size_t                       tcp_bufsize;
+    int                                 tcp_bufsize;
     globus_size_t                       blocksize;
 } globus_i_gfs_data_attr_t;
 
