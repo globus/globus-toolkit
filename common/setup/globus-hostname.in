@@ -1,8 +1,5 @@
 #! @SH@
 
-# Inserted by configure.
-@globus_script_initializer@
- 
 # This is a simple shell script that acts like 
 # the hostname command.  But is returns the FQN
 # in all cases.
@@ -10,6 +7,33 @@
 PROGRAM_NAME=`@ECHO@ $0 | @SED@ -e 's|.*/||g'`
 PROGRAM_VERSION=`@ECHO@ '$Revision$' | @CUT@ -d' ' -f2`
 
+short_usage="${PROGRAM_NAME} [-help] [-version]"
+
+long_usage()
+{
+   @CAT@ 1>&2 <<EOF
+
+${short_usage}
+
+    globus-hostname returns the system hostname and makes some
+    additional checks to ensure a fully qualified hostname.
+
+    Setting the environment variable GLOBUS_HOSTNAME will cause
+    globus-hostname to return that value instead. This is useful for
+    specifying the use of certain network interfaces when
+    communicating etc.
+
+EOF
+}
+
+# Inserted by configure.
+@globus_script_initializer@
+@globus_args_parser_header@
+
+if [ -n "$1" ]; then
+    globus_args_unrecognized_option "$1"
+fi
+ 
 LOCALDOMAIN=@LOCALDOMAIN@
  
 if [ -x ${libexecdir}/globus-libc-hostname ]; then
