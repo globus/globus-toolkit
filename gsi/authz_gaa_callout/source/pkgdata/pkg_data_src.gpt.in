@@ -23,6 +23,11 @@
 <Simple_Version Major="1" />
 </Version>
 </Dependency>
+<Dependency Name="gaa_debug" >
+<Version >
+<Simple_Version Major="1" />
+</Version>
+</Dependency>
 </Source_Dependencies>
 <Source_Dependencies Type="lib_link" >
 <Dependency Name="globus_authz" >
@@ -36,6 +41,11 @@
 </Version>
 </Dependency>
 <Dependency Name="gaa_plugin" >
+<Version >
+<Simple_Version Major="1" />
+</Version>
+</Dependency>
+<Dependency Name="gaa_debug" >
 <Version >
 <Simple_Version Major="1" />
 </Version>

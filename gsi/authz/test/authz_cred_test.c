@@ -33,14 +33,19 @@ process_gaa(char *gaa_config_file, gss_ctx_id_t ctx);
 
 
 static void
-authtest_l_init_callback(void *				cb_arg,
-			 globus_gsi_authz_handle_t 	handle,
-			 globus_result_t		result);
+authtest_l_handle_init_callback(void *				cb_arg,
+				globus_gsi_authz_handle_t 	handle,
+				globus_result_t		result);
 
 static void
 authtest_l_authorize_callback(void *				cb_arg,
 			      globus_gsi_authz_handle_t 	handle,
 			      globus_result_t			result);
+
+static void
+authtest_l_authz_handle_destroy_callback(void *				cb_arg,
+				   globus_gsi_authz_handle_t 	handle,
+				   globus_result_t		result);
 
 
 int
@@ -156,6 +161,9 @@ server_func(
     gss_cred_id_t                       delegated_cred = GSS_C_NO_CREDENTIAL;
     globus_result_t			result;
     globus_gsi_authz_handle_t		authz_handle;
+    char 				buf[2048];
+    char *				request_action = 0;
+    char *				request_object = 0;
     
     server_args = (struct context_arg *) arg;
 
@@ -182,26 +190,54 @@ server_func(
     result = globus_gsi_authz_handle_init(&authz_handle,
 					  servicename,
 					  context_handle,
-					  authtest_l_init_callback,
+					  authtest_l_handle_init_callback,
 					  "init callback arg");
     if (result != GLOBUS_SUCCESS)
     {
 	fprintf(stderr, "SERVER: globus_gsi_authz_handle_init failed: %s\n",
-		globus_object_printable_to_string(globus_error_get(result)));
+		globus_error_print_chain(globus_error_get(result)));
 	exit(1);
     }
 
-#ifdef notdef    
-    result = globus_gsi_authorize(handle, action, object,
-				  authtest_l_authorize_callback,
-				  "authorize callback arg");
-  if (result != GLOBUS_SUCCESS)
-  {
-      printf("authorize failed\n");
-  }
+    printf("> ");
+    while (fgets(buf, sizeof(buf), stdin)) {
+	request_action = strtok(buf, " \t\n");
+	request_object = strtok(0, " \t\n");
 
+	if (request_action && request_object)
+	{
+	    result = globus_gsi_authorize(authz_handle,
+					  request_action,
+					  request_object,
+					  authtest_l_authorize_callback,
+					  "authorize_callback_arg");
+	    if (result == GLOBUS_SUCCESS)
+	    {
+		printf("SERVER: authorize succeeded\n");
+	    }
+	    else
+	    {
+		printf("SERVER: authz denied or failed: %s\n",
+		       globus_error_print_chain(globus_error_get(result)));
+	    }
+	}
+	printf("> ");
+    }
 
-    process_authz(gaa_config_file, context_handle);
+    result = globus_gsi_authz_handle_destroy(authz_handle,
+					     authtest_l_authz_handle_destroy_callback,
+					     "authz_handle_destroy_arg");
+    {
+	fprintf(stderr, "SERVER: authz_handle_destroy failed: %s\n",
+		globus_error_print_chain(globus_error_get(result)));
+    }
+
+    if (globus_module_deactivate(GLOBUS_GSI_AUTHZ_MODULE) != GLOBUS_SUCCESS)
+    {
+	fprintf(stderr, "SERVER: deactivation of authz module failed\n");
+	exit(1);
+    }
+
 
     close(server_args->fd);
     
@@ -210,7 +246,7 @@ server_func(
     globus_gsi_gssapi_test_cleanup(&context_handle,
 				   user_id,
 				   &delegated_cred);
-#endif    
+
     return NULL;
 }
 
@@ -266,96 +302,14 @@ client_func(
     return NULL;
 }
 
-#ifdef notdef
 static void
-process_gaa(char *gaa_config_file, gss_ctx_id_t ctx)
+authtest_l_handle_init_callback(void *				cb_arg,
+				globus_gsi_authz_handle_t 	handle,
+				globus_result_t		result)
 {
-    OM_uint32				minor_status;
-    gss_buffer_set_t 			data_set = 0;
-    int 				i;
-    gaa_ptr				gaa = 0;
-    gaa_status				status;
-    char *				assertion = 0;
-    void *				getpolicy_param;
-    char				buf[1024];
-    char				rbuf[8196];
-    gaa_sc_ptr 				sc = 0;
-    gaa_policy *			policy = 0;
-    char *				repl = 0;
-    gaa_gss_generic_param_s		gaa_gss_param;
-
-    if (gss_inquire_sec_context_by_oid(&minor_status,
-				       ctx,
-				       (gss_OID) saml_extension,
-				       &data_set))
-    {
-	fprintf(stderr, "SERVER: inquire_sec_context_by_oid failed\n");
-	exit(1);
-    }
-
-    if (data_set->count < 1)
-    {
-	printf("no saml extension, skipping gaa\n");
-	return;
-    }
-
-    for (i = 0; i < data_set->count; i++)
-    {
-	printf("saml extension %d\n", i);
-	if (assertion = data_set->elements[i].value)
-	    break;
-    }
-
-    if (! assertion)
-    {
-	printf("saml extension found, but no saml assertion\n");
-	return;
-    }
-
-    printf("Assertion:\n%s\n", assertion);
-	
-    if ((status = gaa_initialize(&gaa, (void *)gaa_config_file)) != GAA_S_SUCCESS) {
-	fprintf(stderr, "init_gaa failed: %s: %s\n",
-		gaa_x_majstat_str(status), gaa_get_err());
-	exit(1);
-    }
-
-    if ((status = gaa_x_get_getpolicy_param(gaa, &getpolicy_param)) != GAA_S_SUCCESS) {
-	fprintf(stderr, "getpolicy plugin not configured");
-	exit(1);
-    }
-
-    if (getpolicy_param)
-	*((char **)getpolicy_param) = assertion;
-
-    gaa_gss_param.type = GAA_GSS_GENERIC_CTX;
-    gaa_gss_param.param.ctx = ctx;
-
-    if (status = init_sc(gaa, &sc, &gaa_gss_param))
-    {
-	fprintf(stderr, "gaa sc init failed\n");
-	exit(1);
-    }
-
-    printf("> ");
-    while (fgets(buf, sizeof(buf), stdin)) {
-	repl = process_msg(gaa, &sc, buf, rbuf, sizeof(rbuf), &users, &policy);
-	if (repl == 0)
-	    printf("(null reply)");
-	else
-	    printf("%s", repl);
-	printf("> ");
-    }
-    exit(0);
-}
-#endif
-
-static void
-authtest_l_init_callback(void *				cb_arg,
-			 globus_gsi_authz_handle_t 	handle,
-			 globus_result_t		result)
-{
-    printf("in authtest_l_init_callback, arg is %s\n", (char *)cb_arg);
+    printf("in authtest_l_handle_init_callback, arg is %s, result is %x\n",
+	   (char *)cb_arg,
+	   (unsigned)result);
 }
 
 static void
@@ -363,5 +317,17 @@ authtest_l_authorize_callback(void *				cb_arg,
 			      globus_gsi_authz_handle_t 	handle,
 			      globus_result_t			result)
 {
-    printf("in authtest_l_authorize_callback, arg is %s\n", (char *)cb_arg);
+    printf("in authtest_l_authorize_callback, arg is %s, result is %x\n",
+	   (char *)cb_arg,
+	   (unsigned)result);
+}
+
+static void
+authtest_l_authz_handle_destroy_callback(void *				cb_arg,
+					 globus_gsi_authz_handle_t 	handle,
+					 globus_result_t		result)
+{
+    printf("in authtest_l_authz_handle_destroy_callback, arg is %s, result is %x\n",
+	   (char *)cb_arg,
+	   (unsigned)result);
 }

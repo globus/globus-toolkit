@@ -124,9 +124,7 @@ authz_null_handle_init_callout(
       (unsigned)context,
       (unsigned)authz_system_state);
       
-  *handle = malloc(sizeof(globus_gsi_authz_cb_t));
-  memset(*handle, 0, sizeof(*handle));
-      
+  *handle = globus_libc_calloc(1, sizeof(globus_gsi_authz_cb_t));
   /* Do something here. */
   callback(callback_arg, callback_arg, result);
 
@@ -177,49 +175,57 @@ int
 authz_null_cancel_callout(
     va_list                             ap)
 {
-  void * authz_system_state;
+    globus_gsi_authz_handle_t           handle;
+    void * 				authz_system_state;
 
-  int                             result = (int) GLOBUS_SUCCESS;
-  static char *                   _function_name_ =
+  int                             	result = (int) GLOBUS_SUCCESS;
+  static char *                   	_function_name_ =
     "authz_null_cancel_callout";
 
-  authz_system_state = va_arg(ap, void *);
+    handle = va_arg(ap, globus_gsi_authz_handle_t);
+    authz_system_state = va_arg(ap, void *);
+    
+    GLOBUS_I_GSI_AUTHZ_NULL_CALLOUT_DEBUG_FPRINTF3(
+	GLOBUS_I_GSI_AUTHZ_NULL_CALLOUT_DEBUG_TRACE,
+	"in %s, system state is %x\n",
+	_function_name_,
+	(unsigned)authz_system_state);
 
-  GLOBUS_I_GSI_AUTHZ_NULL_CALLOUT_DEBUG_FPRINTF3(
-      GLOBUS_I_GSI_AUTHZ_NULL_CALLOUT_DEBUG_TRACE,
-      "in %s, system state is %x\n",
-      _function_name_,
-      (unsigned)authz_system_state);
-
-  /* Do something here. */
-
-  return result;
+    return result;
 }
 
 int
 authz_null_handle_destroy_callout(
     va_list                             ap)
 {
-  globus_gsi_authz_handle_t * handle;
-  void * authz_system_state;
-
-  int                             result = (int) GLOBUS_SUCCESS;
-  static char *                   _function_name_ =
-    "authz_null_handle_destroy_callout";
-
-  authz_system_state = va_arg(ap, void *);
-
-  GLOBUS_I_GSI_AUTHZ_NULL_CALLOUT_DEBUG_FPRINTF3(
-      GLOBUS_I_GSI_AUTHZ_NULL_CALLOUT_DEBUG_TRACE,
-      "in %s, system state is %x\n",
-      _function_name_,
-      (unsigned)authz_system_state);
-
-  if (handle != NULL)
-  {
-    free(handle);
-  }
-  
-  return result;
+    globus_gsi_authz_handle_t * handle;
+    void * authz_system_state;
     
+    int                             result = (int) GLOBUS_SUCCESS;
+    static char *                   _function_name_ =
+	"authz_null_handle_destroy_callout";
+    globus_gsi_authz_handle_t		handle;
+    globus_gsi_authz_cb_t		callback;
+    void *				callback_arg;
+    void * 				authz_system_state;
+    
+    
+    handle = va_arg(ap, globus_gsi_authz_handle_t);
+    callback = va_arg(ap, globus_gsi_authz_cb_t);
+    callback_arg = va_arg(ap, void *);
+    authz_system_state = va_arg(ap, void *);
+    
+    GLOBUS_I_GSI_AUTHZ_NULL_CALLOUT_DEBUG_FPRINTF3(
+	GLOBUS_I_GSI_AUTHZ_NULL_CALLOUT_DEBUG_TRACE,
+	"in %s, system state is %x\n",
+	_function_name_,
+	(unsigned)authz_system_state);
+    
+    if (handle != NULL)
+    {
+	globus_libc_free(handle);
+    }
+    
+    callback(callback_arg, handle, result);
+    return result;
 }

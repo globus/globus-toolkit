@@ -256,7 +256,7 @@ globus_gsi_authz_handle_init(
 				      context,
 				      callback,
 				      callback_arg,
-				      &authz_system_state);
+				      authz_system_state);
     if(result != GLOBUS_SUCCESS)
     {
 	goto exit;
@@ -351,6 +351,7 @@ globus_gsi_cancel_authz(
 
     result = globus_callout_call_type(callout_handle,
 				      "GLOBUS_GSI_AUTHZ_CANCEL",
+				      handle,
 				      &authz_system_state);
     if(result != GLOBUS_SUCCESS)
     {

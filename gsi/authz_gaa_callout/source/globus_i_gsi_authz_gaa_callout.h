@@ -22,11 +22,20 @@
     GLOBUS_GSI_AUTHZ_CALLOUT_ERROR(__RESULT, GLOBUS_GSI_AUTHZ_CALLOUT_AUTHZ_CALLOUT_ERROR, _tmp_str_); \
 }
 
+#define GLOBUS_GSI_AUTHZ_GAA_CALLOUT_GAA_DENIED_ACCESS(__RESULT,__GAA_FUNC, __GAA_STATUS, __GAA_ANSWER, __GAA) \
+{                                                             \
+    char _tmp_str_[2048], _tmp_str1_[2048]; \
+    globus_libc_snprintf(_tmp_str_, sizeof(_tmp_str_), "%s denied access: %s (%s)", \
+    __GAA_FUNC, gaa_x_majstat_str(__GAA_STATUS), gaadebug_answer_string(__GAA, _tmp_str1_, sizeof(_tmp_str1_), __GAA_ANSWER)); \
+    GLOBUS_GSI_AUTHZ_CALLOUT_ERROR(__RESULT, GLOBUS_GSI_AUTHZ_CALLOUT_AUTHZ_DENIED_BY_CALLOUT, _tmp_str_); \
+}
+
 /* DEBUG MACROS */
 
 #ifdef BUILD_DEBUG
 #define GLOBUS_I_GSI_AUTHZ_GAA_CALLOUT_DEBUG_ERROR 1
-#define GLOBUS_I_GSI_AUTHZ_GAA_CALLOUT_DEBUG_TRACE 2
+#define GLOBUS_I_GSI_AUTHZ_GAA_CALLOUT_DEBUG_DEBUG 2
+#define GLOBUS_I_GSI_AUTHZ_GAA_CALLOUT_DEBUG_TRACE 3
 extern int                              globus_i_gsi_authz_gaa_callout_debug_level;
 
 #define GLOBUS_I_GSI_AUTHZ_GAA_CALLOUT_DEBUG(_LEVEL_) \
@@ -95,12 +104,14 @@ extern int                              globus_i_gsi_authz_gaa_callout_debug_lev
 
 #define GLOBUS_I_GSI_AUTHZ_GAA_CALLOUT_DEBUG_ENTER \
             GLOBUS_I_GSI_AUTHZ_GAA_CALLOUT_DEBUG_FPRINTF( \
-                2, (globus_i_gsi_authz_gaa_callout_debug_fstream, \
+                GLOBUS_I_GSI_AUTHZ_GAA_CALLOUT_DEBUG_TRACE, \
+                  (globus_i_gsi_authz_gaa_callout_debug_fstream, \
                     "%s entering\n", _function_name_))
 
 #define GLOBUS_I_GSI_AUTHZ_GAA_CALLOUT_DEBUG_EXIT \
             GLOBUS_I_GSI_AUTHZ_GAA_CALLOUT_DEBUG_FPRINTF( \
-                2, (globus_i_gsi_authz_gaa_callout_debug_fstream, \
+                GLOBUS_I_GSI_AUTHZ_GAA_CALLOUT_DEBUG_TRACE, \
+                 (globus_i_gsi_authz_gaa_callout_debug_fstream, \
                     "%s exiting\n", _function_name_))
 
 
@@ -121,6 +132,7 @@ typedef struct globus_i_gsi_authz_handle_s
 {
     gaa_ptr		gaa;
     gaa_sc_ptr 		sc;
+    char *		auth;	/* authority for request rights */
     int			no_cred_extension;
 } globus_i_gsi_authz_handle_t;
 
