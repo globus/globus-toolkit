@@ -386,11 +386,11 @@ void thread_print(char * s, ...)
     va_list ap;
     pid_t   pid = getpid();
     
-    #ifdef HAVE_STDARG_H
+#ifdef HAVE_STDARG_H
         va_start(ap, s);
-    #else
+#else
 	va_start(ap);
-    #endif
+#endif
 
 #if !defined(BUILD_LITE)
     sprintf(tmp, "p#%dt#%ld::", pid, (long)globus_thread_self());
