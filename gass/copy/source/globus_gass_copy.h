@@ -83,6 +83,7 @@ globus_module_descriptor_t        globus_i_gass_copy_module;
 
 typedef struct globus_gass_copy_state_s globus_gass_copy_state_t;
 typedef struct globus_gass_copy_handle_s globus_gass_copy_handle_t;
+
 /**
  * Signature of a callback from globus_gass_copy_register_*() functions.
  * (asynchronous transfer functions)
@@ -131,7 +132,8 @@ struct globus_gass_copy_handle_s
   globus_gass_copy_status_t  status;
 
   /*
-   * pointer to the state structure which contains internal info related to a transfer
+   * pointer to the state structure which contains internal info related to a
+   * transfer
    */
   globus_gass_copy_state_t * state;
   
@@ -187,29 +189,10 @@ struct globus_gass_copy_handle_s
  */
 typedef struct globus_gass_copy_attr_s
 {
-    /*
-      globus_io_file_type                 file_type;
-    globus_io_authorization_t	        io_auth;
-    globus_io_secure_channel_t          secure_channel_info;
-    
-    globus_ftp_control_striping_t       stripe_info;
-    globus_ftp_control_parallel_t       parallel_info;
-    globus_ftp_control_tcpbuffer_t      tcpbuffer_info;
-    */
   globus_ftp_client_attr_t * ftp_attr;
   globus_io_attr_t * io;
   globus_gass_transfer_requestattr_t * gass_requestattr;
 } globus_gass_copy_attr_t;
-
-/*  ????
- *   globus_size_t                       block_size;
- *   globus_bool_t                       connection_reuse;
- *   int                                 sndbuf;
- *   int                                 rcvbuf;
- *   globus_bool_t                       nodelay;
- */
-
-
 
 /** initialization and destruction of GASS Copy handle */
 globus_result_t
@@ -325,7 +308,6 @@ globus_gass_copy_cancel(
      globus_gass_copy_handle_t * handle,
      globus_gass_copy_callback_t cancel_callback,
      void * cancel_callback_arg);
-
 
 /**
  * cache handles functions

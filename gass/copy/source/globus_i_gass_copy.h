@@ -101,9 +101,9 @@ typedef struct globus_i_gass_copy_state_target_s
     /* If the attr was passed as an argument then FALSE
      * If the attr was created internally then TRUE
      */
-  globus_bool_t			                free_attr;
+    globus_bool_t		                free_attr;
 
-  /**
+    /**
      * coordinates the modifying of the target structure
      */
     globus_mutex_t                              mutex;
@@ -116,27 +116,27 @@ typedef struct globus_i_gass_copy_state_target_s
     /**
      * Used for keeping track of  reads/writes in the read/write queue
      */
-    int                                 n_pending;
+    int                                         n_pending;
 
     /**
      * Used to limit the number of n_pending
      */
-    int                                 n_simultaneous;
+    int                                         n_simultaneous;
 
     /**
      * Used to compute the offset for ftp writes
      */
-    int                                 n_complete;
+    int                                         n_complete;
 
     /**
      * signifies the target has been successfully setup
      */
-    globus_i_gass_copy_target_status_t         status;
+    globus_i_gass_copy_target_status_t          status;
 
     /**
      * mode used to identify the below target union struct.
      */
-    globus_gass_copy_url_mode_t		mode;
+    globus_gass_copy_url_mode_t	                mode;
 
     /**
      * data required to perform each type of transfer
