@@ -1,0 +1,253 @@
+use Globus::GRAM::Error;
+use Globus::GRAM::JobState;
+use Globus::GRAM::JobManager;
+use Globus::Core::Paths;
+
+use POSIX;
+use File::stat;
+
+package Globus::GRAM::JobManager::remote;
+
+@ISA = qw(Globus::GRAM::JobManager);
+
+my ($rsh, $rcp, $host, $globus_location, $type);
+
+BEGIN
+{
+    $rsh = '@REMOTE_SHELL@';
+    $rcp =   '@REMOTE_COPY@';
+    $host = '@REMOTE_HOST@';
+    $globus_location = '@REMOTE_GLOBUS_LOCATION@';
+    $type = '@REMOTE_JOB_MANAGER_TYPE@';
+}
+
+sub new
+{
+    my $proto = shift;
+    my $class = ref($proto) || $proto;
+    my $self = $class->SUPER::new(@_);
+    
+    bless $self, $class;
+
+    $self->{hostname} = (POSIX::uname())[1];
+    return $self;
+}
+
+sub submit
+{
+    my $self = shift;
+    my $remote_cmd;
+    my $remote_stdout;
+    my $remote_stderr;
+    my $description = $self->{JobDescription};
+    my $tag = $description->cache_tag or $ENV{GLOBUS_GRAM_JOB_CONTACT};
+
+    $self->log("Creating remote cache files for stdout and stderr");
+
+    $remote_cmd = "GLOBUS_LOCATION=$globus_location;\n"
+                . "eval . \$GLOBUS_LOCATION/etc/globus-user-env.sh;\n"
+		. "globus-gass-cache -add -t $tag -n "
+		. "$ENV{GLOBUS_GRAM_JOB_CONTACT}dev/stdout file:/dev/null;\n"
+		. "globus-gass-cache -add -t $tag -n "
+		. "$ENV{GLOBUS_GRAM_JOB_CONTACT}dev/stderr file:/dev/null;\n";
+    system("echo '$remote_cmd' | $rsh $host /bin/sh - >/dev/null 2>/dev/null");
+
+    if($? != 0)
+    {
+	return Globus::GRAM::Error::OPENING_CACHE;
+    }
+          
+    $remote_cmd = "GLOBUS_LOCATION=$globus_location;\n"
+                . "eval . \$GLOBUS_LOCATION/etc/globus-user-env.sh;\n"
+		. "globus-gass-cache -query "
+		. "$ENV{GLOBUS_GRAM_JOB_CONTACT}dev/stdout\n";
+
+    $remote_stdout = `echo '$remote_cmd' | $rsh $host /bin/sh - 2>/dev/null`;
+    chomp($remote_stdout);
+
+    $remote_cmd = "GLOBUS_LOCATION=$globus_location;\n"
+                . "eval . \$GLOBUS_LOCATION/etc/globus-user-env.sh;\n"
+		. "globus-gass-cache -query "
+		. "$ENV{GLOBUS_GRAM_JOB_CONTACT}dev/stderr\n";
+    $remote_stderr = `echo '$remote_cmd' | $rsh $host /bin/sh - 2>/dev/null`;
+    chomp($remote_stderr);
+
+    $description->add('stdout', $remote_stdout);
+    $description->add('stderr', $remote_stderr);
+
+    return $self->remote_cmd('submit');
+}
+
+sub poll
+{
+    my $self = shift;
+    my $description = $self->{JobDescription};
+    my ($stdout, $stderr) = ("", "");
+    my $size;
+    my $st;
+    my $local_file;
+    my $remote_cmd;
+    my $type;
+
+    foreach $type ('stdout', 'stderr')
+    {
+	$local_file = $description->$type();
+	$st = File::stat::stat($local_file);
+	$size = $st->size;
+	$remote_cmd = "GLOBUS_LOCATION=$globus_location;\n"
+                    . "eval . \$GLOBUS_LOCATION/etc/globus-user-env.sh;\n"
+	            . "remote_file=\`globus-gass-cache "
+	            . "-query $ENV{GLOBUS_GRAM_JOB_CONTACT}dev/$type\`;\n"
+	            . "eval dd if=\"\$remote_file\" bs=1 skip=$size;\n";
+
+	system("echo '$remote_cmd' | $rsh $host /bin/sh - >>$local_file 2>/dev/null");
+    }
+    
+    return $self->remote_cmd('poll');
+}
+
+sub cancel
+{
+    my $self = shift;
+
+    return $self->remote_cmd('cancel');
+}
+
+sub signal
+{
+    my $self = shift;
+
+    return $self->remote_cmd('signal');
+}
+
+sub make_scratchdir
+{
+    my $self = shift;
+
+    return $self->remote_cmd('make_scratchdir');
+}
+
+sub remove_scratchdir
+{
+    my $self = shift;
+
+    return $self->remote_cmd('remove_scratchdir');
+}
+
+sub file_cleanup
+{
+    my $self = shift;
+
+    return $self->remote_cmd('file_cleanup');
+}
+
+sub stage_in
+{
+    my $self = shift;
+
+    return $self->remote_cmd('stage_in');
+}
+
+sub stage_out
+{
+    my $self = shift;
+
+    return $self->remote_cmd('stage_out');
+}
+
+sub cache_cleanup
+{
+    my $self = shift;
+
+    $self->remote_cmd('cache_cleanup');
+
+    return $self->SUPER::cache_cleanup();
+}
+
+sub remote_io_file_create
+{
+    my $self = shift;
+
+    return $self->remote_cmd('remote_io_file_create');
+}
+
+sub proxy_relocate
+{
+    my $self = shift;
+    my $proxy = $ENV{X509_USER_PROXY};
+
+    $self->log("Copying proxy to $host:$proxy");
+    if($proxy ne "")
+    {
+	system("$rcp $proxy $host:$proxy >/dev/null 2>/dev/null");
+	if($? != 0)
+	{
+	    $self->log("Error copying proxy to $host");
+
+	    return Globus::GRAM::Error::OPENING_USER_PROXY;
+	}
+    }
+    $self->remote_cmd('proxy_relocate');
+
+    return $self->SUPER::proxy_relocate();
+}
+
+
+sub rewrite_urls
+{
+    return ;
+}
+
+sub remote_cmd
+{
+    my $self = shift;
+    my $cmd = shift;
+    my $description = $self->{JobDescription};
+    my $remote_cmd;
+    my $args_filename;
+
+    $self->log("Entering remote_cmd");
+
+    $args_filename = $Globus::Core::Paths::local_tmpdir .
+                     "/remote_" . $self->{hostname} . "_job.$$";
+    $self->log("Saving args file to $args_filename");
+    $description->save($args_filename);
+
+    $self->log("Copying args file to $host:$args_filename");
+    system("$rcp $args_filename $host:$args_filename >/dev/null 2>/dev/null");
+
+    $remote_cmd  = "GLOBUS_LOCATION=$globus_location ;\n";
+    $remote_cmd .= "eval . \$GLOBUS_LOCATION/etc/globus-user-env.sh ; \n";
+    $remote_cmd .= "globus-gass-cache -query " .
+		  "$ENV{GLOBUS_GRAM_JOB_CONTACT}x509_user_proxy;\n";
+
+    if($cmd eq 'proxy_relocate')
+    {
+	$proxy_line="X509_USER_PROXY=$ENV{X509_USER_PROXY};\n";
+    }
+    else
+    {
+	$proxy_line="X509_USER_PROXY=\`globus-gass-cache -query $ENV{GLOBUS_GRAM_JOB_CONTACT}\`;\n";
+    }
+
+    $remote_cmd  = "GLOBUS_LOCATION=$globus_location ;\n";
+    $remote_cmd .= "eval . \$GLOBUS_LOCATION/etc/globus-user-env.sh ; \n";
+    $remote_cmd .= "$proxy_line";
+    $remote_cmd .= "GLOBUS_GRAM_JOB_CONTACT=$ENV{GLOBUS_GRAM_JOB_CONTACT} ;\n";
+    $remote_cmd .= "export GLOBUS_GRAM_JOB_CONTACT X509_USER_PROXY\n";
+    $remote_cmd .= "eval \$GLOBUS_LOCATION/libexec/globus-job-manager-script.pl "
+                 . "-m $type -f $args_filename -c $cmd;";
+    $self->log("Running remote command: $remote_cmd");
+    $response = `echo '$remote_cmd' | $rsh $host /bin/sh - 2>/dev/null`;
+    $self->log("Cleaning remote args file");
+    system("$rsh $host rm $args_filename >/dev/null 2>/dev/null");
+
+    if($cmd ne 'proxy_relocate')
+    {
+	$self->respond($response);
+    }
+
+    return {};
+}
+
+1;
