@@ -46,6 +46,7 @@ GetNodeCount () {
    # defaults...
    FREENODES=0
    TOTALNODES=0
+   smp_free_1minX100=0
 
    ${GLOBUS_LOCATION}/libexec/grid-info-cpufast-uptime -hostobj | \
    {
