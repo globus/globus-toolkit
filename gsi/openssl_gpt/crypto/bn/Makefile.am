@@ -98,6 +98,12 @@ asm/sparcv8plus.lo: asm/sparcv8plus.S
 asm/ia64.lo: asm/ia64.S
 	$(LTCOMPILE) -c asm/ia64.S -o asm/ia64.lo
 
+# mips
+
+asm/mips3.lo: asm/mips3.s
+	$(LTCOMPILE) -c asm/mips3.s -o asm/mips3.lo
+
+
 # generate the input
 
 asm/bn86unix.cpp: asm/bn-586.pl ../perlasm/x86asm.pl

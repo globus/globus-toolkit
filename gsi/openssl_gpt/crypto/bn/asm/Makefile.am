@@ -6,10 +6,11 @@ Sources = \
 	co-586.pl \
 	sparcv8.S \
 	sparcv8plus.S \
-	ia64.S
+	ia64.S \
+	mips3.s
 
 clean-local:
-	rm -f *.s *.cpp
+	rm -f *86*.s *.cpp
 
 EXTRA_DIST = $(Sources)
 

@@ -236,7 +236,7 @@ sub clean_remote_file($$)
     
     if($host =~ m/localhost/)
     {
-        system("rm -f $file") == 0 or die "rm failed";
+        unlink($file);
     }
     else
     {
@@ -267,7 +267,7 @@ sub get_remote_file($$;$)
     
     if($host =~ m/localhost/)
     {
-        system("cp $file $dest") == 0 or die "cp failed";
+        copy($file, $dest);
     }
     else
     {

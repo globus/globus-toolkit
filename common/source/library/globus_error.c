@@ -232,6 +232,21 @@ globus_error_construct_base (globus_module_descriptor_t * source_module,
   return initerror;
 }
 
+#ifdef BUILD_DEBUG
+#define globus_i_error_output_error(error) \
+    do { \
+        if(globus_i_error_output) \
+        { \
+            char *                          tmp_string; \
+            \
+            tmp_string = globus_object_printable_to_string(error); \
+            globus_libc_fprintf(stderr, "globus_error_put(): %s\n", tmp_string); \
+            globus_free(tmp_string); \
+        } \
+    } while(0)
+#else
+#define globus_i_error_output_error(error)
+#endif
 
 /**********************************************************************
  * Error Management API
@@ -242,13 +257,23 @@ static uint32_t              s_next_available_result_count;
 static globus_mutex_t        s_result_to_object_mutex;
 
 static int  s_error_cache_initialized = 0;
+static globus_bool_t globus_i_error_output = GLOBUS_FALSE;
 
 static int s_error_cache_init ()
 {
+    char *                              tmp_string;
+    
   globus_object_cache_init (&s_result_to_object_mapper);
   globus_mutex_init (&s_result_to_object_mutex, NULL);
   s_next_available_result_count = 1;
   s_error_cache_initialized = 1;
+  
+    tmp_string = globus_module_getenv("GLOBUS_ERROR_OUTPUT");
+    if(tmp_string != GLOBUS_NULL)
+    {
+        globus_i_error_output = GLOBUS_TRUE;
+    }
+    
   return GLOBUS_SUCCESS;
 }
 
@@ -292,6 +317,8 @@ globus_error_put (globus_object_t * error)
   int err;
 
   if (! s_error_cache_initialized ) return GLOBUS_SUCCESS;
+  globus_i_error_output_error(error);
+  
   err = globus_mutex_lock (&s_result_to_object_mutex);
   if (err) return NULL;
 

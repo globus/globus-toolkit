@@ -420,11 +420,15 @@ globus_l_io_select_wakeup(void)
 
     if(!globus_l_io_mutex_acquired())
     {
+    globus_i_io_debug_printf(3, 
+        (stderr, "globus_l_io_select_wakeup(): mutex ! acquired\n"));
 	return GLOBUS_FALSE;
     }
 
     if (!globus_l_io_select_active || globus_l_io_wakeup_pending)
     {
+    globus_i_io_debug_printf(3, 
+        (stderr, "globus_l_io_select_wakeup(): select_active=%d wakeup_pending=%d\n", globus_l_io_select_active, globus_l_io_wakeup_pending));
 	rc = GLOBUS_TRUE;
 	goto fn_exit;
     }
@@ -795,7 +799,7 @@ globus_i_io_register_operation(
         "globus_i_io_register_operation";
 
     globus_i_io_debug_printf(3,
-        (stderr, "%s(): entering, fd=%d\n", myname, handle->fd));
+        (stderr, "%s(): entering, fd=%d, op=%d\n", myname, handle->fd, op));
     
     switch(op)
     {
@@ -1857,7 +1861,7 @@ globus_l_io_kickout_cb(
     {
 exit:
         globus_i_io_debug_printf(6, (stderr, 
-            "globus_l_io_kickout_read_cb(): exiting, fd=%d\n", 
+            "globus_l_io_kickout_cb(): exiting, fd=%d\n", 
             handle->fd));
     
         globus_l_io_pending_count--;
@@ -2686,7 +2690,12 @@ globus_l_io_activate(void)
     {
        return rc;
     }
-
+    rc = globus_module_activate(GLOBUS_GSI_GSSAPI_MODULE);
+    if(rc != GLOBUS_SUCCESS)
+    {
+       return rc;
+    }
+    
     tmp_string = globus_module_getenv("GLOBUS_IO_DEBUG_LEVEL");
     if(tmp_string != GLOBUS_NULL)
     {
@@ -3193,11 +3202,8 @@ globus_l_io_deactivate(void)
     globus_module_deactivate(GLOBUS_ERROR_MODULE);
     globus_mutex_destroy(&globus_i_io_mutex);
     globus_cond_destroy(&globus_i_io_cond);
-    rc = globus_module_deactivate(GLOBUS_COMMON_MODULE);
-    if(rc != GLOBUS_SUCCESS)
-    {
-       return rc;
-    }
+    globus_module_deactivate(GLOBUS_GSI_GSSAPI_MODULE);
+    globus_module_deactivate(GLOBUS_COMMON_MODULE);
 
     return GLOBUS_SUCCESS;
 }

@@ -919,9 +919,8 @@ globus_l_ftp_control_stop_server_cb(
  *  When the listen callback is called (see
  *  globus_ftp_control_server_listen) a client has requested a
  *  connection.  This function must be called to accept that user
- *  connection request.  Security requirements can be set via the
- *  sec_requirements attribute.  When the given security requirements
- *  are either accepted or rejected the callback function is called.
+ *  connection request.  Once the connection is established or if
+ *  a error occurs, the callback function is called.
  * 
  *  @param listener
  *         The server object that received the connection request. 
@@ -931,18 +930,12 @@ globus_l_ftp_control_stop_server_cb(
  *         structure represents the control connection between the server
  *         and client.  It will be used to read commands from the client
  *         and send responses to the client.]
- *  @param sec_requirements
- *         This structure represents the security requirements that
- *         the user has for a given connection.  For example GSIFTP
- *         user name, password, and account.
  *  @param callback
- *         The function called when the client authorization has been
- *         accepted or rejected.
+ *         The function called when the client connection has been
+ *         accepted.
  *  @param callback_arg
  *         The user argument passed to the callback.
  *
- * @note It is up to the user of this function to send the reply to
- *       the last command of the authentication sequence.
  * @note This functions assumes the the server and control handles
  *       have been initialized prior to calling this function.
  */
@@ -1140,6 +1133,38 @@ globus_l_ftp_control_accept_cb(
     }
 }
 
+/**
+ *  Authenticate a client connection.
+ *
+ *  This function is called to authenticate a connection from
+ *  a client.
+ *
+ *  After a client connection has been accepted (using the
+ *  globus_ftp_control_server_accept call), this function should be called
+ *  to authenticate the client. The caller of this function may specify
+ *  certain authentication requirements using the auth_requirements parameter.
+ * 
+ *  @param handle
+ *         The control connection object.  This structure will be populated
+ *         and passed to the callback when the client is authorized.  This
+ *         structure represents the control connection between the server
+ *         and client.  It will be used to read commands from the client
+ *         and send responses to the client.]
+ *  @param auth_requirements
+ *         This structure represents the authentication requirements that
+ *         the user has for a given connection.  For example GSIFTP
+ *         user name, password, and account.
+ *  @param callback
+ *         The function called when the client authentication has been
+ *         accepted or rejected.
+ *  @param callback_arg
+ *         The user argument passed to the callback.
+ *
+ * @note It is up to the user of this function to send the reply to
+ *       the last command of the authentication sequence.
+ * @note This functions assumes the the server and control handles
+ *       have been initialized prior to calling this function.
+ */
 globus_result_t
 globus_ftp_control_server_authenticate( 
     globus_ftp_control_handle_t *               handle,
@@ -1245,7 +1270,7 @@ error_std:
  * Internal callback for the globus_io_register_write function.    
  * 
  * This is an internal callback used as part of the
- * globus_ftp_control_accept function. It checks the result of
+ * globus_ftp_control_authenticate function. It checks the result of
  * the write (which was used to send a response to the client), and
  * if the authentication requirements are set to NONE calls the user
  * callback and returns or registers a read in anticipation of further
@@ -1391,7 +1416,7 @@ error_auth_destroy:
  * Internal callback for the globus_io_register_read function.    
  * 
  * This is an internal callback used as part of the
- * globus_ftp_control_accept function. It checks the result of
+ * globus_ftp_control_authenticate function. It checks the result of
  * the read (which was used to read commands from the client), and
  * if a full command was received, parses it and uses it as part of the
  * specified authentication process. If authentication is complete the

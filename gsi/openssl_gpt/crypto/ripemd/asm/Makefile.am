@@ -5,7 +5,7 @@ Sources= \
 	rmd-586.pl
 
 clean-local:
-	rm -f *.s *.cpp
+	rm -f *.s *86*.cpp
 
 EXTRA_DIST = $(Sources)
 

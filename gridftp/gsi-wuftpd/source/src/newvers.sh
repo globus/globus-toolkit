@@ -26,7 +26,7 @@
 if [ ! -r edit ]; then echo 0 > edit; fi
 touch edit
 awk '	{	edit = $1 + 2; }\
-END	{	printf "char version[] = \"GridFTP Server 1.0 -- CAS enabled " > "vers.c";\
+END	{	printf "char version[] = \"GridFTP Server 1.2 -- CAS enabled " > "vers.c";\
 #LANG=
 #LC_TIME=
 		printf "[GSI patch v0.5] wu-2.6.2(%d) ", edit  >> "vers.c";\

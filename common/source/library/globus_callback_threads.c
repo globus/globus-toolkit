@@ -43,6 +43,7 @@ typedef struct
     globus_mutex_t                      lock;
     globus_cond_t                       cond;
     globus_bool_t                       shutdown;
+    int                                 idle_count;
     /* only used for serialized space shutdowns */
     int                                 thread_count; 
 } globus_l_callback_space_t;
@@ -282,6 +283,7 @@ globus_l_callback_activate()
         (globus_priority_q_cmp_func_t) globus_abstime_cmp);
     globus_mutex_init(&globus_l_callback_global_space.lock, GLOBUS_NULL);
     globus_cond_init(&globus_l_callback_global_space.cond, GLOBUS_NULL);
+    globus_l_callback_global_space.idle_count = 0;
     globus_l_callback_global_space.shutdown = GLOBUS_FALSE;
     
     globus_list_insert(
@@ -295,8 +297,6 @@ globus_l_callback_activate()
     
     globus_thread_key_create(
         &globus_l_callback_restart_info_key, GLOBUS_NULL);
-    globus_thread_setspecific(
-        globus_l_callback_restart_info_key, GLOBUS_NULL);
     
     globus_l_callback_max_polling_threads = GLOBUS_CALLBACK_POLLING_THREADS;
     tmp_string = globus_module_getenv("GLOBUS_CALLBACK_POLLING_THREADS");
@@ -517,11 +517,16 @@ globus_l_callback_register(
             &i_space->queue,
             callback_info,
             &callback_info->start_time);
-            
-        globus_cond_signal(&i_space->cond);
+        
+        if(i_space->idle_count > 0)
+        {
+            globus_cond_signal(&i_space->cond);
+        }
     }
     globus_mutex_unlock(&i_space->lock);
     
+    globus_thread_yield();
+ 
     return GLOBUS_SUCCESS;
 }
 
@@ -913,9 +918,9 @@ globus_callback_adjust_period(
         }
         
         /* spaces with threaded behavior use the global queue.  I need to
-         * wake up any sleeping threads to let them know about knew work 
+         * wake up any sleeping threads to let them know about new work 
          */
-        if(callback_info->in_queue)
+        if(callback_info->in_queue && callback_info->my_space->idle_count > 0)
         {
             globus_cond_signal(&callback_info->my_space->cond);
         }
@@ -988,6 +993,7 @@ globus_callback_space_init(
         globus_cond_init(&i_space->cond, GLOBUS_NULL);
         i_space->behavior = behavior;
         i_space->shutdown = GLOBUS_FALSE;
+        i_space->idle_count = 0;
         
         /* this is only tracked for serialized spaces */
         i_space->thread_count = 1;
@@ -1205,44 +1211,32 @@ globus_l_callback_get_next(
     globus_abstime_t *                  tmp_time;
     globus_l_callback_info_t *          callback_info;
 
-    if(!globus_priority_q_empty(queue))
+    callback_info = GLOBUS_NULL;
+    
+    tmp_time = (globus_abstime_t *)
+        globus_priority_q_first_priority(queue);
+    if(tmp_time && globus_abstime_cmp(tmp_time, time_now) <= 0)
     {
+        /* we got one */
+        callback_info = (globus_l_callback_info_t *)
+            globus_priority_q_dequeue(queue);
+        
+        callback_info->in_queue = GLOBUS_FALSE;
+        
+        /* get the next ready time */
         tmp_time = (globus_abstime_t *)
             globus_priority_q_first_priority(queue);
-        if(globus_abstime_cmp(tmp_time, time_now) > 0)
-        {
-            /* not ready yet */
-            GlobusTimeAbstimeCopy(*ready_time, *tmp_time);
-            callback_info = GLOBUS_NULL;
-        }
-        else
-        {
-            /* we got one */
-            callback_info = (globus_l_callback_info_t *)
-                globus_priority_q_dequeue(queue);
-            
-            callback_info->in_queue = GLOBUS_FALSE;
-            
-            /* get the next ready time */
-            tmp_time = (globus_abstime_t *)
-                globus_priority_q_first_priority(queue);
-            if(tmp_time)
-            {
-                GlobusTimeAbstimeCopy(*ready_time, *tmp_time);
-            }
-            else
-            {
-                /* queue is empty */
-                GlobusTimeAbstimeCopy(*ready_time, globus_i_abstime_infinity);
-            }
-        }
+    }
+    
+    if(tmp_time)
+    {
+        GlobusTimeAbstimeCopy(*ready_time, *tmp_time);
     }
     else
     {
         GlobusTimeAbstimeCopy(*ready_time, globus_i_abstime_infinity);
-        callback_info = GLOBUS_NULL;
     }
-
+            
     return callback_info;
 }
 
@@ -1274,7 +1268,7 @@ globus_l_callback_requeue(
 
     if(globus_abstime_cmp(&time_now, &callback_info->start_time) > 0)
     {
-        /* we're running way behind, reset start time to current time
+        /* we're running behind, reset start time to current time
          */
         GlobusTimeAbstimeCopy(callback_info->start_time, time_now);
     }
@@ -1286,7 +1280,10 @@ globus_l_callback_requeue(
     
     callback_info->in_queue = GLOBUS_TRUE;
     
-    globus_cond_signal(&callback_info->my_space->cond);
+    if(callback_info->my_space->idle_count > 0)
+    {
+        globus_cond_signal(&callback_info->my_space->cond);
+    }
 }
 
 /**
@@ -1531,15 +1528,19 @@ globus_callback_space_poll(
                  * the main threadm in which case, he shouldnt be calling
                  * for a shutdown
                  */
+                i_space->idle_count++;
                 globus_cond_timedwait(
                     &i_space->cond, &i_space->lock, &next_ready_time);
+                i_space->idle_count--;
             }
             else if(globus_time_abstime_is_infinity(timestop))
             {
                 /* we can only get here if queue is empty
                  * and we are blocking forever. 
                  */
-                 globus_cond_wait(&i_space->cond, &i_space->lock);
+                i_space->idle_count++;
+                globus_cond_wait(&i_space->cond, &i_space->lock);
+                i_space->idle_count--;
             }
             else
             {
@@ -1659,11 +1660,13 @@ globus_l_callback_thread_callback(
                     {
                         do
                         {
+                            i_space->idle_count++;
                             globus_cond_timedwait(
                                 &i_space->cond,
                                 &i_space->lock,
                                 &callback_info->start_time);
-                             
+                            i_space->idle_count--;
+                            
                             GlobusTimeAbstimeGetCurrent(time_now);
                             
                         } while(globus_abstime_cmp(
@@ -1700,6 +1703,9 @@ globus_l_callback_thread_callback(
     
     globus_thread_blocking_reset();
     
+    globus_thread_setspecific(
+        globus_l_callback_restart_info_key, GLOBUS_NULL);
+        
     /* this thread is exiting */
     globus_mutex_lock(&globus_l_callback_thread_lock);
     {
@@ -1712,6 +1718,74 @@ globus_l_callback_thread_callback(
     globus_mutex_unlock(&globus_l_callback_thread_lock);
     
     return GLOBUS_NULL;
+}
+
+static
+void
+globus_l_callback_serialized_cleanup(
+    globus_l_callback_space_t *         i_space,
+    globus_bool_t                       restarted)
+{
+    if(restarted)
+    {
+        globus_mutex_lock(&i_space->lock);
+        {
+            i_space->thread_count--;
+            if(i_space->thread_count == 0)
+            {
+                globus_cond_signal(&i_space->cond);
+            }
+        }
+        globus_mutex_unlock(&i_space->lock);
+    }
+    else
+    {
+        globus_bool_t                   free_space;
+        
+        free_space = GLOBUS_FALSE;
+        
+        globus_mutex_lock(&globus_l_callback_thread_lock);
+        {
+            if(!globus_l_callback_shutting_down)
+            {
+                /* space was shutdown... clean up */
+                /* I dont clean up the space in the case of module shutdown
+                 * since there may be some references to this space.  When 
+                 * the space handle table is destroyed, the destructor for
+                 * this space will clean up the resources
+                 */
+                free_space = GLOBUS_TRUE;
+            }
+        }
+        globus_mutex_unlock(&globus_l_callback_thread_lock);
+        
+        if(free_space)
+        {
+            /* wait for all the threads that might be in blocked callbacks
+             * to exit
+             */
+            globus_mutex_lock(&i_space->lock);
+            {
+                i_space->thread_count--;
+                while(i_space->thread_count > 0)
+                {
+                    globus_cond_wait(&i_space->cond, &i_space->lock);
+                }
+            }
+            globus_mutex_unlock(&i_space->lock);
+        
+            globus_priority_q_destroy(&i_space->queue);
+            globus_mutex_destroy(&i_space->lock);
+            globus_cond_destroy(&i_space->cond);
+                
+            globus_mutex_lock(&globus_l_callback_space_lock);
+            {
+                globus_memory_push_node(
+                    &globus_l_callback_space_memory, i_space);
+            }
+            globus_mutex_unlock(&globus_l_callback_space_lock);
+        }
+    }
 }
 
 /* internal polling function 
@@ -1759,7 +1833,9 @@ globus_l_callback_thread_poll(
             {
                 if(globus_priority_q_empty(&i_space->queue))
                 {
+                    i_space->idle_count++;
                     globus_cond_wait(&i_space->cond, &i_space->lock);
+                    i_space->idle_count--;
                 }
                 else
                 {
@@ -1770,8 +1846,10 @@ globus_l_callback_thread_poll(
                         
                     if(!callback_info)
                     {
+                        i_space->idle_count++;
                         globus_cond_timedwait(
                             &i_space->cond, &i_space->lock, &next_ready_time);
+                        i_space->idle_count--;
                     }
                     else
                     {
@@ -1854,68 +1932,11 @@ globus_l_callback_thread_poll(
     
     if(i_space->behavior == GLOBUS_CALLBACK_SPACE_BEHAVIOR_SERIALIZED)
     {
-        if(restart_info.restarted)
-        {
-            globus_mutex_lock(&i_space->lock);
-            {
-                i_space->thread_count--;
-                if(i_space->thread_count == 0)
-                {
-                    globus_cond_signal(&i_space->cond);
-                }
-            }
-            globus_mutex_unlock(&i_space->lock);
-        }
-        else
-        {
-            globus_bool_t               free_space;
-            
-            free_space = GLOBUS_FALSE;
-            
-            globus_mutex_lock(&globus_l_callback_thread_lock);
-            {
-                if(!globus_l_callback_shutting_down)
-                {
-                    /* space was shutdown... clean up */
-                    /* I dont clean up the space in the case of module shutdown
-                     * since there may be some references to this space.  When 
-                     * the space handle table is destroyed, the destructor for
-                     * this space will clean up the resources
-                     */
-                    free_space = GLOBUS_TRUE;
-                }
-            }
-            globus_mutex_unlock(&globus_l_callback_thread_lock);
-            
-            if(free_space)
-            {
-                /* wait for all the threads that might be in blocked callbacks
-                 * to exit
-                 */
-                globus_mutex_lock(&i_space->lock);
-                {
-                    i_space->thread_count--;
-                    while(i_space->thread_count > 0)
-                    {
-                        globus_cond_wait(&i_space->cond, &i_space->lock);
-                    }
-                }
-                globus_mutex_unlock(&i_space->lock);
-            
-                globus_priority_q_destroy(&i_space->queue);
-                globus_mutex_destroy(&i_space->lock);
-                globus_cond_destroy(&i_space->cond);
-                    
-                globus_mutex_lock(&globus_l_callback_space_lock);
-                {
-                    globus_memory_push_node(
-                        &globus_l_callback_space_memory, i_space);
-                }
-                globus_mutex_unlock(&globus_l_callback_space_lock);
-            }
-            
-        }
+        globus_l_callback_serialized_cleanup(i_space, restart_info.restarted);
     }
+    
+    globus_thread_setspecific(
+        globus_l_callback_restart_info_key, GLOBUS_NULL);
         
     /* this thread is exiting */
     globus_mutex_lock(&globus_l_callback_thread_lock);

@@ -143,13 +143,17 @@ globus_l_thread_pool_key_clean()
 	    list = globus_list_rest(list))
         {
             key_node = globus_list_first(list);
-	    if(key_node->dest_func != GLOBUS_NULL)
+            user_arg = globus_thread_getspecific(key_node->key);
+            
+	    if(user_arg)
 	    {
-	        user_arg = globus_thread_getspecific(key_node->key);
-
-                key_node->dest_func(user_arg);
+	        globus_thread_setspecific(key_node->key, GLOBUS_NULL);
+	        
+	        if(key_node->dest_func != GLOBUS_NULL)
+    	        {
+                    key_node->dest_func(user_arg);
+                }
             }
-	    globus_thread_setspecific(key_node->key, GLOBUS_NULL);
         }
     }
     globus_mutex_unlock(&globus_l_thread_pool_key_mutex);
