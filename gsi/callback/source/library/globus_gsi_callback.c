@@ -1134,6 +1134,8 @@ globus_i_gsi_callback_check_critical_extensions(
                     &ext_data->data,
                     ext_data->length)) == NULL)
             {
+                ASN1_OCTET_STRING_free(ext_data);
+                proxycertinfo = NULL;
                 GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
                     result,
                     GLOBUS_GSI_CALLBACK_ERROR_VERIFY_CRED,
