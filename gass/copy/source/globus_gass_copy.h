@@ -189,6 +189,14 @@ struct globus_gass_copy_handle_s
    */
   int                                 buffer_length;
 
+  /*
+   * says whether third_party transfers should be used (for ftp to
+   * ftp transfers).  if set to FALSE, the default,
+   * globus_ftp_client_third_party_transfer() will be used.  if set to
+   * TRUE, gass_copy will manage the transfer
+   */
+  globus_bool_t                       no_third_party_transfers;
+  
   globus_ftp_client_handle_t	      ftp_source_handle;
   globus_ftp_client_handle_t	      ftp_dest_handle;
 };
@@ -241,6 +249,26 @@ globus_result_t
 globus_gass_copy_set_buffer_length(
     globus_gass_copy_handle_t * handle,
     int length);
+
+/** get the size of the buffer being used for the transfers */
+globus_result_t
+globus_gass_copy_get_buffer_length(
+    globus_gass_copy_handle_t * handle,
+    int * length);
+
+/** sets whether third_party transfers should be used for ftp to
+  * ftp transfers */
+globus_result_t
+globus_gass_copy_set_no_third_party_transfers(
+    globus_gass_copy_handle_t * handle,
+    globus_bool_t no_third_party_transfers);
+
+/** get the size of the buffer being used for the transfers */
+globus_result_t
+globus_gass_copy_get_no_third_party_transfers(
+    globus_gass_copy_handle_t * handle,
+    globus_bool_t * no_third_party_transfers);
+
 
 /* find out what transfer mode will be used for a given url, so that the proper attributes may be passed to one of the copy function */
 globus_result_t

@@ -19,7 +19,7 @@ static int globus_l_gass_copy_deactivate(void);
 #define GLOBUS_I_GASS_COPY_TIMING
 
 /* uncomment this line for debug messages */
-/*#define GLOBUS_I_GASS_COPY_DEBUG*/
+/* #define GLOBUS_I_GASS_COPY_DEBUG */
 
 
 #define globus_i_gass_copy_set_error(handle, error) \
@@ -89,24 +89,38 @@ int
 globus_l_gass_copy_deactivate(void)
 {
     int rc;
-    
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
+    globus_libc_fprintf(stderr,"GASS_COPY: about to globus_module_deactivate(GLOBUS_FTP_CLIENT_MODULE) \n");
+#endif
     rc = globus_module_deactivate(GLOBUS_FTP_CLIENT_MODULE); 
 
     if (rc != GLOBUS_SUCCESS)
     {
 	return(rc);
     }
-      
+
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
+    globus_libc_fprintf(stderr,"GASS_COPY: about to globus_module_deactivate(GLOBUS_IO_MODULE) \n");
+#endif
+    
     rc = globus_module_deactivate(GLOBUS_IO_MODULE);
     if (rc != GLOBUS_SUCCESS)
     {
 	return(rc);
     }
+
+#ifdef GLOBUS_I_GASS_COPY_DEBUG    
+    globus_libc_fprintf(stderr,"GASS_COPY: about to globus_module_deactivate(GLOBUS_GASS_TRANSFER_MODULE) \n");
+#endif
+    
     rc = globus_module_deactivate(GLOBUS_GASS_TRANSFER_MODULE);
     if (rc != GLOBUS_SUCCESS)
     {
 	return(rc);
     }
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
+    globus_libc_fprintf(stderr,"GASS_COPY: done globus_module_deactivate(GLOBUS_GASS_TRANSFER_MODULE) \n");
+#endif
     
     return 0;
 } /* globus_i_gass_copy_deactivate() */
@@ -199,6 +213,7 @@ globus_gass_copy_handle_init(
             return result;
     
         handle->external_third_party = GLOBUS_FALSE;
+	handle->no_third_party_transfers = GLOBUS_FALSE;
 	handle->state = GLOBUS_NULL;
 	handle->status = GLOBUS_GASS_COPY_STATUS_NONE;
 	handle->buffer_length = 1024*1024;
@@ -389,6 +404,128 @@ globus_gass_copy_set_buffer_length(
     }
 } /* globus_gass_copy_set_buffer_length() */
 
+/**
+ * Get the size of the buffer being used for doing transfers
+ *
+ * This function allows the user to get the size of the buffer that is being
+ * used for doing transfers.
+ *
+ * @param handle
+ *       Get the buffer length for transfers associated with this handle.
+ * @param length
+ *       The length, in bytes, of the buffer.
+ *
+ * @return
+ *       This function returns GLOBUS_SUCCESS if successful, or a
+ *       globus_result_t indicating the error that occurred.
+ */
+globus_result_t
+globus_gass_copy_get_buffer_length(
+    globus_gass_copy_handle_t * handle,
+    int * length)
+{
+    globus_object_t * err;
+    static char * myname="globus_gass_copy_get_buffer_length";
+    if (handle)
+    {
+	*length = handle->buffer_length;
+	return GLOBUS_SUCCESS;
+    }
+    else
+    {
+	err = globus_error_construct_string(
+	    GLOBUS_GASS_COPY_MODULE,
+	    GLOBUS_NULL,
+	    "[%s]: BAD_PARAMETER, handle is NULL",
+	    myname);
+
+	return globus_error_put(err);
+    }
+} /* globus_gass_copy_get_buffer_length() */
+
+/**
+ * Turn third-party transfers on or off. (They are on by default.)
+ *
+ * This function allows the user to turn third-party transfers on or off for 
+ * ftp to ftp transfers associated with a particular handle.  This is often desired
+ * if one of the servers involved in the transfer does not allow third-party transfers.
+ *
+ * @param handle
+ *       Turn third-party transfers on or off for transfers associated with this handle.
+ *       They are on by default.
+ * @param no_third_party_transfers
+ *       GLOBUS_FALSE if third-party transfers should be used.
+ *       GLOBUS_TRUE if third-party transfers should not be used.
+ *
+ * @return
+ *       This function returns GLOBUS_SUCCESS if successful, or a
+ *       globus_result_t indicating the error that occurred.
+ */
+globus_result_t
+globus_gass_copy_set_no_third_party_transfers(
+    globus_gass_copy_handle_t * handle,
+    globus_bool_t no_third_party_transfers)
+{
+    globus_object_t * err;
+    static char * myname="globus_gass_copy_set_no_third_party_transfers";
+    if (handle)
+    {
+	handle->no_third_party_transfers = no_third_party_transfers;
+	return GLOBUS_SUCCESS;
+    }
+    else
+    {
+	err = globus_error_construct_string(
+	    GLOBUS_GASS_COPY_MODULE,
+	    GLOBUS_NULL,
+	    "[%s]: BAD_PARAMETER, handle is NULL",
+	    myname);
+
+	return globus_error_put(err);
+    }
+} /* globus_gass_copy_set_no_third_party_transfers() */
+
+/**
+ * See if third-party transfers are turned on or off. (They are on by default.)
+ *
+ * This function allows the user to see if third-party transfers are turned on or off for 
+ * ftp to ftp transfers associated with a particular handle.  This is often desired
+ * if one of the servers involved in the transfer does not allow third-party transfers.
+ *
+ * @param handle
+ *       See if third-party transfers are turned on or off for transfers associated with this handle.
+ *       They are on by default.
+ * @param no_third_party_transfers
+ *       GLOBUS_FALSE if third-party transfers should be used.
+ *       GLOBUS_TRUE if third-party transfers should not be used.
+ *
+ * @return
+ *       This function returns GLOBUS_SUCCESS if successful, or a
+ *       globus_result_t indicating the error that occurred.
+ */
+globus_result_t
+globus_gass_copy_get_no_third_party_transfers(
+    globus_gass_copy_handle_t * handle,
+    globus_bool_t * no_third_party_transfers)
+{
+    globus_object_t * err;
+    static char * myname="globus_gass_copy_get_no_third_party_transfers";
+    if (handle)
+    {
+	*no_third_party_transfers = handle->no_third_party_transfers;
+	return GLOBUS_SUCCESS;
+    }
+    else
+    {
+	err = globus_error_construct_string(
+	    GLOBUS_GASS_COPY_MODULE,
+	    GLOBUS_NULL,
+	    "[%s]: BAD_PARAMETER, handle is NULL",
+	    myname);
+
+	return globus_error_put(err);
+    }
+} /* globus_gass_copy_get_no_third_party_transfers() */
 
 /**
  * Initialize an attribute structure
@@ -3908,8 +4045,9 @@ globus_gass_copy_register_url_to_url(
     globus_libc_fprintf(stderr, "dest target populated\n");
 #endif
 	
-    if (   (source_url_mode == GLOBUS_GASS_COPY_URL_MODE_FTP)
-	   && (dest_url_mode == GLOBUS_GASS_COPY_URL_MODE_FTP) )
+    if (   (source_url_mode == GLOBUS_GASS_COPY_URL_MODE_FTP) &&
+	   (dest_url_mode == GLOBUS_GASS_COPY_URL_MODE_FTP) &&
+	   !handle->no_third_party_transfers )
     {
 	
 #ifdef GLOBUS_I_GASS_COPY_DEBUG
