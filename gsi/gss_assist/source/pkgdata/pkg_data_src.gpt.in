@@ -41,6 +41,14 @@
             </Dependency>
         </Source_Dependencies>
 
+        <Source_Dependencies Type="pgm_runtime">
+            <Dependency Name="globus_common" Package="pgm">
+                <Version>
+                    <Simple_Version Major="3"/>
+                </Version>
+            </Dependency>        
+        </Source_Dependencies>
+
         <Source_Setup_Dependency PkgType="rtl">
             <Setup_Dependency Name="trusted_ca_setup"> 
                 <Version> 
