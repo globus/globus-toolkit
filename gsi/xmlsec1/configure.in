@@ -1062,9 +1062,10 @@ pkgdata/pkg_data_src.gpt
 dnl COPYING should be in "srcdir" not in "builddir"
 (cd $srcdir && rm -f COPYING.LIB COPYING && $LN_S Copyright COPYING)
 
-if test "z$XMLSEC_NO_OPENSSL" != "z1" ; then
+dnl we are always linking with the globus openssl package
+dnl if test "z$XMLSEC_NO_OPENSSL" != "z1" ; then
 AC_OUTPUT([include/xmlsec/openssl/Makefile src/openssl/Makefile])
-fi
+dnl fi
 
 if test "z$XMLSEC_NO_GNUTLS" != "z1" ; then
 AC_OUTPUT([include/xmlsec/gnutls/Makefile src/gnutls/Makefile])
