@@ -197,6 +197,10 @@ globus_gram_protocol_unpack_status_update_message(
 const char *
 globus_gram_protocol_error_string(int error_code);
 
+/* To be used only by the GRAM client API */
+void
+globus_gram_protocol_error_7_hack_replace_message(const char * message);
+
 /*
  * RSL Parameters
  */

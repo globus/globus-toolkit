@@ -32,7 +32,8 @@ globus_l_gram_protocol_activate(void)
 {
     OM_uint32				major_status;
     OM_uint32				minor_status;
-    globus_result_t			result;
+    int					result;
+    char *				message;
 
     result = globus_module_activate(GLOBUS_IO_MODULE);
     if(result != GLOBUS_SUCCESS)
@@ -55,11 +56,13 @@ globus_l_gram_protocol_activate(void)
 
     if (major_status != GSS_S_COMPLETE)
     {
-        globus_gss_assist_display_status(stderr,
+        globus_gss_assist_display_status_str(
+		&message,
                 "gram_init failure:",
                 major_status,
                 minor_status,
                 0);
+	globus_gram_protocol_error_7_hack_replace_message(message);
 
 	globus_module_deactivate(GLOBUS_IO_MODULE);
 

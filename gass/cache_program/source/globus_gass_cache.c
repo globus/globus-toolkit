@@ -203,9 +203,8 @@ static globus_args_option_descriptor_t args_options[n_args];
 #define globus_l_args_error(a) \
 { \
     globus_libc_fprintf(stderr, \
-			"\nERROR: " \
-			a \
-			"\n"); \
+			"\nERROR: %s\n", \
+			a); \
     globus_l_args_usage(); \
 }    
 
@@ -232,22 +231,23 @@ main(int argc, char **argv)
     char *                             name              = GLOBUS_NULL;
     char *                             tag               = GLOBUS_NULL;
     int                                rc;
+    int		       		       failed_gram_init  = GLOBUS_SUCCESS;
     
-    if (rc = globus_module_activate(GLOBUS_GRAM_CLIENT_MODULE))
+    if (GLOBUS_SUCCESS !=
+	    (rc = globus_module_activate(GLOBUS_GRAM_CLIENT_MODULE)))
     {
-	globus_libc_fprintf(stderr,
-			    "ERROR initializing GRAM: %s\n",
-			    globus_gram_protocol_error_string(rc));
-	exit(1);
+	failed_gram_init = rc;
     }
-    if (rc = globus_module_activate(GLOBUS_GASS_SERVER_EZ_MODULE))
+    if (GLOBUS_SUCCESS !=
+	    (rc = globus_module_activate(GLOBUS_GASS_SERVER_EZ_MODULE)))
     {
 	globus_libc_fprintf(stderr,
 			    "ERROR initializing GASS server: %d\n",
 			    rc);
 	exit(1);
     }
-    if(rc = globus_module_activate(GLOBUS_GASS_COPY_MODULE))
+    if(GLOBUS_SUCCESS != 
+	    (rc = globus_module_activate(GLOBUS_GASS_COPY_MODULE)))
     {
 	globus_libc_printf("Error %d activating GASS copy library\n",
 			   rc);
@@ -331,6 +331,10 @@ main(int argc, char **argv)
 
 	case arg_r:
 	    resource = globus_libc_strdup(instance->values[0]);
+	    if(failed_gram_init != GLOBUS_SUCCESS)
+	    {
+		globus_l_args_error(globus_gram_client_error_string(failed_gram_init));
+	    }
 	    if (globus_gram_client_ping(resource))
 		globus_l_args_error("cannot authenticate to remote resource");
 	    break;
@@ -546,13 +550,9 @@ globus_l_cache_remote_op( globus_l_cache_op_t op,
     char                                      spec[1024];
     char *                                    server_url	= GLOBUS_NULL;
     char *                                    scheme            = GLOBUS_NULL;
-    unsigned short                            port              = 0;
     globus_gass_transfer_listener_t           listener;
     globus_gass_transfer_listenerattr_t *     attr              = GLOBUS_NULL;
     globus_gass_transfer_requestattr_t *      reqattr           = GLOBUS_NULL;
-    int					return_code = GLOBUS_SUCCESS;
-    
-    
 
     rc = globus_gram_client_callback_allow(globus_l_cache_callback_func,
 			                   GLOBUS_NULL,
@@ -560,7 +560,7 @@ globus_l_cache_remote_op( globus_l_cache_op_t op,
     if ( rc != GLOBUS_SUCCESS )
     {
 	printf("Error allowing GRAM callback: %s\n",
-	       globus_gram_protocol_error_string(rc));
+	       globus_gram_client_error_string(rc));
 	globus_module_deactivate_all();
 	exit(1);
     }
@@ -622,6 +622,8 @@ globus_l_cache_remote_op( globus_l_cache_op_t op,
     }
     globus_mutex_unlock(&globus_l_cache_monitor_mutex);
     globus_gass_server_ez_shutdown(listener);
+
+    return GLOBUS_SUCCESS;
 } /* globus_l_cache_remote_op() */
 
 /******************************************************************************
