@@ -865,8 +865,8 @@ globus_l_gsc_pmod_959_cmd_pass(
         sc = sscanf(full_command, "%*s %s", pass);
         if(sc != 1)
         {
-            msg = "503 Login with USER first.\r\n";
-            globus_gsc_pmod_959_finished_op(wrapper->op, msg);
+            msg = "502 Invalid Parameter.\r\n";
+            globus_gsc_pmod_959_finished_op(op, msg);
         }
         else
         {
@@ -2039,6 +2039,9 @@ globus_l_gsc_pmod_959_cmd_stor_retr(
         /* error */
         if(tmp_ptr == '\0')
         {
+            globus_free(wrapper);
+            globus_gsc_pmod_959_finished_op(op, "500 command failed.\r\n");
+            return;
         }
 
         path = globus_libc_strdup(tmp_ptr);
@@ -2053,11 +2056,19 @@ globus_l_gsc_pmod_959_cmd_stor_retr(
             mod_name);
         if(sc != 1)
         {
+            globus_free(mod_name);
+            globus_free(wrapper);
+            globus_gsc_pmod_959_finished_op(op, "500 command failed.\r\n");
+            return;
         }
 
         tmp_ptr = strstr(mod_name, "=\"");
         if(tmp_ptr == NULL)
         {
+            globus_free(mod_name);
+            globus_free(wrapper);
+            globus_gsc_pmod_959_finished_op(op, "500 command failed.\r\n");
+            return;
         }
 
         *tmp_ptr = '\0';

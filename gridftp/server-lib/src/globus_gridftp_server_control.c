@@ -261,6 +261,8 @@ globus_gridftp_server_control_start(
         i_server->passive_func = i_attr->passive_func;
         i_server->active_func = i_attr->active_func;
         i_server->data_destroy_func = i_attr->data_destroy_func;
+        i_server->default_stor = i_attr->default_stor;
+        i_server->default_retr = i_attr->default_retr;
 
         globus_fifo_init(&i_server->data_q);
 
@@ -1268,21 +1270,43 @@ globus_l_gsc_pmod_data_transfer(
 
         if(dir == GLOBUS_GRIDFTP_SERVER_CONTROL_DATA_DIR_STOR)
         {
-            i_op->user_data_cb = (globus_gridftp_server_control_data_func_t)
-                globus_hashtable_lookup(
-                    &i_server->recv_table, (void *)module_name);
+            if(module_name == NULL)
+            {
+                i_op->user_data_cb = i_server->default_stor;
+            }
+            else
+            {
+                i_op->user_data_cb = (globus_gridftp_server_control_data_func_t)
+                    globus_hashtable_lookup(
+                        &i_server->recv_table, (void *)module_name);
+            }
         }
         else if(dir == GLOBUS_GRIDFTP_SERVER_CONTROL_DATA_DIR_RETR)
         {
-            i_op->user_data_cb = (globus_gridftp_server_control_data_func_t)
-                globus_hashtable_lookup(
-                    &i_server->send_table, (void *) module_name);
+            if(module_name == NULL)
+            {
+                i_op->user_data_cb = i_server->default_retr;
+            }
+            else
+            {
+                i_op->user_data_cb = (globus_gridftp_server_control_data_func_t)
+                    globus_hashtable_lookup(
+                        &i_server->send_table, (void *) module_name);
+            }
         }
         else
         {
             globus_assert(GLOBUS_FALSE);
         }
-        res = globus_l_gsc_perform_op(i_op);
+
+        if(i_op->user_data_cb == NULL)
+        {
+            res = GlobusGridFTPServerErrorParameter("module_name");
+        }
+        else
+        {
+            res = globus_l_gsc_perform_op(i_op);
+        }
     }
     globus_mutex_unlock(&i_op->server->mutex);
     if(res != GLOBUS_SUCCESS)

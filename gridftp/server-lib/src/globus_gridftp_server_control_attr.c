@@ -253,11 +253,17 @@ globus_gridftp_server_control_attr_add_recv(
         goto err;
     }
 
-    globus_hashtable_insert(
-        &attr->recv_func_table,
-        (void *)module_name,
-        recv_func);
-
+    if(module_name == NULL)
+    {
+        attr->default_stor = recv_func;
+    }
+    else
+    {
+        globus_hashtable_insert(
+            &attr->recv_func_table,
+            (void *)module_name,
+            recv_func);
+    }
     GlobusGridFTPServerDebugExit();
 
     return GLOBUS_SUCCESS;
@@ -300,11 +306,17 @@ globus_gridftp_server_control_attr_add_send(
         goto err;
     }
 
-    globus_hashtable_insert(
-        &attr->send_func_table,
-        (void *)module_name,
-        send_func);
-
+    if(module_name == NULL)
+    {
+        attr->default_retr = send_func;
+    }
+    else
+    {
+        globus_hashtable_insert(
+            &attr->send_func_table,
+            (void *)module_name,
+            send_func);
+    }
     GlobusGridFTPServerDebugExit();
 
     return GLOBUS_SUCCESS;
