@@ -1617,9 +1617,9 @@ globus_l_callback_thread_callback(
                         
                         GlobusTimeAbstimeGetCurrent(time_now);
                         
-                    } while(!globus_l_callback_shutting_down &&
-                        globus_abstime_cmp(
-                            &time_now, &callback_info->start_time) < 0);
+                    } while(globus_abstime_cmp(
+                        &time_now, &callback_info->start_time) < 0 &&
+                        !globus_l_callback_shutting_down);
                 }
                 else
                 {
