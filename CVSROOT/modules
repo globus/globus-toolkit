@@ -48,4 +48,5 @@ all -a \
         side_tools\
         testing\
         user_env\
+        tarfiles\
         mpich_g2
