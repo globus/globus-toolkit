@@ -58,6 +58,8 @@ globus_ftp_client_handleattr_init(
 		myname));
     }
     i_attr->nl_handle = GLOBUS_NULL;
+    i_attr->nl_ftp = GLOBUS_FALSE;
+    i_attr->nl_io = GLOBUS_FALSE;
     *attr = i_attr;
     
     return GLOBUS_SUCCESS;
@@ -367,6 +369,17 @@ globus_ftp_client_handleattr_set_netlogger(
     globus_ftp_client_handleattr_t *            attr,
     globus_netlogger_handle_t *                 nl_handle)
 {
+    return globus_ftp_client_handleattr_set_netlogger_ftp_io(
+               attr, nl_handle, GLOBUS_TRUE, GLOBUS_TRUE);
+}
+
+globus_result_t
+globus_ftp_client_handleattr_set_netlogger_ftp_io(
+    globus_ftp_client_handleattr_t *            attr,
+    globus_netlogger_handle_t *                 nl_handle,
+    globus_bool_t                               ftp,
+    globus_bool_t                               io)
+{
     globus_object_t *                           err = GLOBUS_SUCCESS;
     globus_i_ftp_client_handleattr_t *          i_attr;
     static char * myname = "globus_ftp_client_handleattr_set_netlogger";
@@ -393,6 +406,8 @@ globus_ftp_client_handleattr_set_netlogger(
     }
     i_attr = *(globus_i_ftp_client_handleattr_t **) attr;
 
+    i_attr->nl_ftp = ftp;
+    i_attr->nl_io = io;
     i_attr->nl_handle = nl_handle;
 
     return GLOBUS_SUCCESS;
@@ -2689,6 +2704,8 @@ globus_i_ftp_client_handleattr_copy(
     
     dest->cache_all = src->cache_all;
     dest->nl_handle = src->nl_handle;
+    dest->nl_ftp = src->nl_ftp;
+    dest->nl_io = src->nl_io;
     dest->url_cache = GLOBUS_NULL;
     dest->plugins = GLOBUS_NULL;
     

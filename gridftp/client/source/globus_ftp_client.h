@@ -417,6 +417,13 @@ globus_ftp_client_handleattr_set_netlogger(
     globus_netlogger_handle_t *	                nl_handle);
 
 globus_result_t
+globus_ftp_client_handleattr_set_netlogger_ftp_io(
+    globus_ftp_client_handleattr_t *            attr,
+    globus_netlogger_handle_t *                 nl_handle,
+    globus_bool_t                               ftp,
+    globus_bool_t                               io);
+
+globus_result_t
 globus_ftp_client_handleattr_remove_plugin(
     globus_ftp_client_handleattr_t *		attr,
     globus_ftp_client_plugin_t *		plugin);

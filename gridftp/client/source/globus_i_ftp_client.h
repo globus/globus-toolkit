@@ -154,6 +154,8 @@ typedef struct globus_i_ftp_client_handleattr_t
     /*
      *  NETLOGGER
      */
+    globus_bool_t                               nl_ftp;
+    globus_bool_t                               nl_io;
     globus_netlogger_handle_t *                 nl_handle;
 }
 globus_i_ftp_client_handleattr_t;
