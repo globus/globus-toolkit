@@ -7,7 +7,6 @@
 #include "myproxy.h"
 #include "myproxy_log.h"
 #include "gnu_getopt.h"
-#include "version.h"
 #include "verror.h"
 #include "myproxy_read_pass.h"
 #include "ssl_utils.h"
