@@ -2946,7 +2946,7 @@ proxy_get_filenames(
          * If ~/.globus/certificates exists, then use that
          */
         home = getenv("HOME");
-#ifndef WIN32
+#ifdef WIN32
         /* Under windows use c:\windows as default home */
         if (!home)
         {

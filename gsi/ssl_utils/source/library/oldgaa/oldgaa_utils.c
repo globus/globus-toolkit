@@ -461,14 +461,14 @@ oldgaa_regex_matches_string(const char * const  string,
   }
 
 
-  if(!strcmp(string,regex))
+  if(!strcasecmp(string,regex))
   {
       result = 1;
   }
   else
   {
       if((star = strrchr(regex,'*')) &&
-         !strncmp(regex,string,(int) (star-regex)/sizeof(char)))
+         !strncasecmp(regex,string,(int) (star-regex)/sizeof(char)))
       {
           result = 1;
       }
