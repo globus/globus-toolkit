@@ -188,7 +188,8 @@ myproxy_init_client(myproxy_socket_attrs_t *attrs) {
 
     if (connect(attrs->socket_fd, (struct sockaddr *) &sin, sizeof(sin)) < 0) {
         verror_put_errno(errno);
-        verror_put_string("Unable to connect to %s\n", attrs->pshost);
+        verror_put_string("Unable to connect to %s:%d\n", attrs->pshost,
+			  attrs->psport);
         return -1;
     }
 
