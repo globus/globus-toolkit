@@ -339,9 +339,10 @@ globus_gridftp_server_operation_finished(
         case GLOBUS_GFS_OP_SESSION_START:
             if(op->session_handle)
             {
-                op->session_handle->session_arg = finished_info->session_id;
+                op->session_handle->session_arg = 
+                    (void *) finished_info->session_id;
             }
-            finished_info->session_id = op->session_handle;
+            finished_info->session_id = (int) op->session_handle;
             break;
         default:
             break;

@@ -214,9 +214,20 @@ globus_l_gfs_auth_data_cb(
     globus_result_t                     result)
 {
     globus_l_gfs_auth_info_t *          auth_info;  
-
+    gss_cred_id_t                       delegated_cred;
     auth_info = (globus_l_gfs_auth_info_t *) user_arg;
 
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto err;
+    }
+    
+    result = globus_gridftp_server_control_get_data_auth(
+        auth_info->control_op, 
+        NULL, 
+        NULL,
+        NULL, 
+        &delegated_cred);
     if(result != GLOBUS_SUCCESS)
     {
         goto err;
@@ -226,7 +237,7 @@ globus_l_gfs_auth_data_cb(
         NULL,
         0,
         auth_info->username,
-        NULL,
+        delegated_cred,
         globus_l_gfs_auth_session_cb,
         auth_info);
 
