@@ -11,6 +11,7 @@ include $(top_srcdir)/globus_automake_pre_top
 
 Scripts = \
 	setup-ssl-utils-sh-scripts \
+	setup-ssl-utils-sh-scripts.in \
 	setup-ssl-utils \
 	setup-ssl-utils.pl \
 	setup-gsi \
