@@ -10,7 +10,7 @@ AM_PROG_LIBTOOL
 dnl config header goes here
 
 dnl Initialize the automake rules the last argument
-AM_INIT_AUTOMAKE($GPT_NAME, $GPT_VERSION)
+AM_INIT_AUTOMAKE($GPT_NAME, $GPT_VERSION, 0)
 AM_CONFIG_HEADER(library/globus_gssapi_config.h library/gssapi.h)
 
 if test "$cross_compiling" = "no"; then
