@@ -1,6 +1,6 @@
 /* cmds.c
  *
- * Copyright (c) 1996 Mike Gleason, NCEMRSoft.
+ * Copyright (c) 1996-2001 Mike Gleason, NCEMRSoft.
  * All rights reserved.
  *
  */
@@ -17,17 +17,19 @@ FTPChdir(const FTPCIPtr cip, const char *const cdCwd)
 	if (strcmp(cip->magic, kLibraryMagic))
 		return (kErrBadMagic);
 
-	if ((cdCwd == NULL) || (cdCwd[0] == '\0')) {
+	if (cdCwd == NULL) {
 		result = kErrInvalidDirParam;
 		cip->errNo = kErrInvalidDirParam;
 	} else {
-		if (strcmp(cdCwd, "..") == 0)
+		if (cdCwd[0] == '\0')	/* But allow FTPChdir(cip, ".") to go through. */
+			result = 2;	
+		else if (strcmp(cdCwd, "..") == 0)
 			result = FTPCmd(cip, "CDUP");
 		else
 			result = FTPCmd(cip, "CWD %s", cdCwd);
 		if (result >= 0) {
 			if (result == 2) {
-				result = 0;
+				result = kNoErr;
 			} else {
 				result = kErrCWDFailed;
 				cip->errNo = kErrCWDFailed;
@@ -140,11 +142,9 @@ FTPRmdirRecursiveL2(const FTPCIPtr cip)
 		} else {
 			/* Assume it was a file -- remove it. */
 			result = FTPDelete(cip, file, kRecursiveNo, kGlobNo);
-			if (result != kNoErr) {
-				/* We couldn't remove the file.
-				 * Try continuing to remove the rest.
-				 */
-			}
+			/* Try continuing to remove the rest,
+			 * even if this failed.
+			 */
 		}
 	}
 	DisposeLineListContents(&fileList);
@@ -321,10 +321,14 @@ FTPChdirAndGetCWD(const FTPCIPtr cip, const char *const cdCwd, char *const newCw
 	if (strcmp(cip->magic, kLibraryMagic))
 		return (kErrBadMagic);
 
-	if ((newCwd == NULL) || (cdCwd == NULL) || (cdCwd[0] == '\0')) {
+	if ((newCwd == NULL) || (cdCwd == NULL)) {
 		result = kErrInvalidDirParam;
 		cip->errNo = kErrInvalidDirParam;
 	} else {
+		if (cdCwd[0] == '\0') {	/* But allow FTPChdir(cip, ".") to go through. */
+			result = FTPGetCWD(cip, newCwd, newCwdSize);
+			return (result);
+		}
 		rp = InitResponse();
 		if (rp == NULL) {
 			result = kErrMallocFailed;
@@ -369,10 +373,106 @@ FTPChdirAndGetCWD(const FTPCIPtr cip, const char *const cdCwd, char *const newCw
 
 
 int
-FTPMkdir(const FTPCIPtr cip, const char *const newDir, const int recurse)
+FTPChdir3(FTPCIPtr cip, const char *const cdCwd, char *const newCwd, const size_t newCwdSize, int flags)
+{
+	char *cp, *startcp;
+	int result;
+	int lastSubDir;
+	int mkd, pwd;
+
+	if (cip == NULL)
+		return (kErrBadParameter);
+	if (strcmp(cip->magic, kLibraryMagic))
+		return (kErrBadMagic);
+
+	if (cdCwd == NULL) {
+		result = kErrInvalidDirParam;
+		cip->errNo = kErrInvalidDirParam;
+		return result;
+	}
+
+	if (flags == kChdirOnly)
+		return (FTPChdir(cip, cdCwd));
+	if (flags == kChdirAndGetCWD) {
+		return (FTPChdirAndGetCWD(cip, cdCwd, newCwd, newCwdSize));
+	} else if (flags == kChdirAndMkdir) {
+		result = FTPMkdir(cip, cdCwd, kRecursiveYes);
+		if (result == kNoErr)
+			result = FTPChdir(cip, cdCwd);
+		return result;
+	} else if (flags == (kChdirAndMkdir|kChdirAndGetCWD)) {
+		result = FTPMkdir(cip, cdCwd, kRecursiveYes);
+		if (result == kNoErr)
+			result = FTPChdirAndGetCWD(cip, cdCwd, newCwd, newCwdSize);
+		return result;
+	}
+
+	/* else: (flags | kChdirOneSubdirAtATime) == true */
+	
+	cp = cip->buf;
+	cp[cip->bufSize - 1] = '\0';
+	(void) Strncpy(cip->buf, cdCwd, cip->bufSize);
+	if (cp[cip->bufSize - 1] != '\0')
+		return (kErrBadParameter);
+	
+	mkd = (flags & kChdirAndMkdir);
+	pwd = (flags & kChdirAndGetCWD);
+
+	if ((cdCwd[0] == '\0') || (strcmp(cdCwd, ".") == 0)) {
+		result = 0;
+		if (flags == kChdirAndGetCWD)
+			result = FTPGetCWD(cip, newCwd, newCwdSize);
+		return (result);
+	}
+
+	lastSubDir = 0;
+	do {
+		startcp = cp;
+		cp = StrFindLocalPathDelim(cp);
+		if (cp != NULL) {
+			/* If this is the first slash in an absolute
+			 * path, then startcp will be empty.  We will
+			 * use this below to treat this as the root
+			 * directory.
+			 */
+			*cp++ = '\0';
+		} else {
+			lastSubDir = 1;
+		}
+		if (strcmp(startcp, ".") == 0) {
+			result = 0;
+			if ((lastSubDir != 0) && (pwd != 0))
+				result = FTPGetCWD(cip, newCwd, newCwdSize);
+		} else if ((lastSubDir != 0) && (pwd != 0)) {
+			result = FTPChdirAndGetCWD(cip, (*startcp != '\0') ? startcp : "/", newCwd, newCwdSize);
+		} else {
+			result = FTPChdir(cip, (*startcp != '\0') ? startcp : "/");
+		}
+		if (result < 0) {
+			if ((mkd != 0) && (*startcp != '\0')) {
+				if (FTPCmd(cip, "MKD %s", startcp) == 2) {
+					result = FTPChdir(cip, startcp);
+				} else {
+					/* couldn't change nor create */
+					cip->errNo = result;
+				}
+			} else {
+				cip->errNo = result;
+			}
+		}
+	} while ((!lastSubDir) && (result == 0));
+
+	return (result);
+}	/* FTPChdir3 */
+
+
+
+
+int
+FTPMkdir2(const FTPCIPtr cip, const char *const newDir, const int recurse, const char *const curDir)
 {
 	int result, result2;
-	char *cp, *newTreeStart;
+	char *cp, *newTreeStart, *cp2;
 	char dir[512];
 	char dir2[512];
 	char c;
@@ -385,6 +485,33 @@ FTPMkdir(const FTPCIPtr cip, const char *const newDir, const int recurse)
 	if ((newDir == NULL) || (newDir[0] == '\0')) {
 		cip->errNo = kErrInvalidDirParam;
 		return (kErrInvalidDirParam);
+	}
+
+	/* Preserve old working directory. */
+	if ((curDir == NULL) || (curDir[0] == '\0')) {
+		/* This hack is nice so you can eliminate an
+		 * unnecessary "PWD" command on the server,
+		 * since if you already knew what directory
+		 * you're in.  We want to minimize the number
+		 * of client-server exchanges when feasible.
+		 */
+		(void) FTPGetCWD(cip, cip->buf, cip->bufSize);
+	}
+
+	result = FTPChdir(cip, newDir);
+	if (result == kNoErr) {
+		/* Directory already exists -- but we
+		 * must now change back to where we were.
+		 */
+		result2 = FTPChdir(cip, ((curDir == NULL) || (curDir[0] == '\0')) ? cip->buf : curDir);
+		if (result2 < 0) {
+			result = kErrCannotGoToPrevDir;
+			cip->errNo = kErrCannotGoToPrevDir;
+			return (result);
+		}
+
+		/* Don't need to create it. */
+		return (kNoErr);
 	}
 
 	if (recurse == kRecursiveNo) {
@@ -400,13 +527,6 @@ FTPMkdir(const FTPCIPtr cip, const char *const newDir, const int recurse)
 			}
 		}
 	} else {
-		/* Preserve old working directory. */
-		(void) FTPGetCWD(cip, cip->buf, cip->bufSize);
-
-		result = FTPChdir(cip, newDir);
-		if (result == 0)
-			goto goback;	/* Already there. */
-
 		(void) STRNCPY(dir, newDir);
 
 		/* Strip trailing slashes. */
@@ -416,7 +536,7 @@ FTPMkdir(const FTPCIPtr cip, const char *const newDir, const int recurse)
 				if ((newDir == NULL) || (newDir[0] == '\0')) {
 					cip->errNo = kErrInvalidDirParam;
 					result = kErrInvalidDirParam;
-					goto goback;
+					return (result);
 				}
 			}
 			if ((*cp != '/') && (*cp != '\\')) {
@@ -427,6 +547,22 @@ FTPMkdir(const FTPCIPtr cip, const char *const newDir, const int recurse)
 		}
 		(void) STRNCPY(dir2, dir);
 
+		if ((strrchr(dir, '/') == dir) || (strrchr(dir, '\\') == dir)) {
+			/* Special case "mkdir /subdir" */
+			result = FTPCmd(cip, "MKD %s", dir);
+			if (result < 0) {
+				return (result);
+			}
+			if (result != 2) {
+				Error(cip, kDontPerror, "MKD %s failed; [%s]\n", dir, cip->lastFTPCmdResultStr);
+				result = kErrMKDFailed;
+				cip->errNo = kErrMKDFailed;
+				return (result);
+			}
+			/* Haven't chdir'ed, don't need to goto goback. */
+			return (kNoErr);
+		}
+
 		for (;;) {
 			cp = strrchr(dir, '/');
 			if (cp == NULL)
@@ -436,28 +572,35 @@ FTPMkdir(const FTPCIPtr cip, const char *const newDir, const int recurse)
 				if (dir[0] == '\0') {
 					result = kErrMKDFailed;
 					cip->errNo = kErrMKDFailed;
-					goto goback;
+					return (result);
 				}
+				/* Note: below we will refer to cp + 1
+				 * which is why we set cp to point to
+				 * the byte before the array begins!
+				 */
 				cp = dir - 1;
 				break;
 			}
 			if (cp == dir) {
 				result = kErrMKDFailed;
 				cip->errNo = kErrMKDFailed;
-				goto goback;
+				return (result);
 			}
 			*cp = '\0';
 			result = FTPChdir(cip, dir);
-			if (result == 0)
+			if (result == 0) {
 				break;	/* Found a valid parent dir. */
+				/* from this point, we need to preserve old dir. */
+			}
 		}
 
 		newTreeStart = dir2 + ((cp + 1) - dir);
 		for (cp = newTreeStart; ; ) {
-			cp = strchr(cp, '/');
+			cp2 = cp;
+			cp = strchr(cp2, '/');
 			c = '/';
 			if (cp == NULL)
-				cp = strchr(cp, '\\');
+				cp = strchr(cp2, '\\');
 			if (cp != NULL) {
 				c = *cp;
 				*cp = '\0';
@@ -483,15 +626,22 @@ FTPMkdir(const FTPCIPtr cip, const char *const newDir, const int recurse)
 		result = kNoErr;
 
 goback:
-		result2 = FTPChdir(cip, cip->buf);
+		result2 = FTPChdir(cip, ((curDir == NULL) || (curDir[0] == '\0')) ? cip->buf : curDir);
 		if ((result == 0) && (result2 < 0)) {
 			result = kErrCannotGoToPrevDir;
 			cip->errNo = kErrCannotGoToPrevDir;
 		}
 	}
 	return (result);
-}	/* FTPMkdir */
+}	/* FTPMkdir2 */
 
+
+
+int
+FTPMkdir(const FTPCIPtr cip, const char *const newDir, const int recurse)
+{
+	return (FTPMkdir2(cip, newDir, recurse, NULL));
+}	/* FTPMkdir */
 
 
 
@@ -524,6 +674,10 @@ FTPFileModificationTime(const FTPCIPtr cip, const char *const file, time_t *cons
 			if (result < 0) {
 				DoneWithResponse(cip, rp);
 				return (result);
+			} else if (strncmp(rp->msg.first->line, "19100", 5) == 0) {
+				Error(cip, kDontPerror, "Warning: Server has Y2K Bug in \"MDTM\" command.\n");
+				cip->errNo = kErrMDTMFailed;
+				result = kErrMDTMFailed;
 			} else if (result == 2) {
 				*mdtm = UnMDTMDate(rp->msg.first->line);
 				cip->hasMDTM = kCommandAvailable;
@@ -587,11 +741,12 @@ FTPRemoteHelp(const FTPCIPtr cip, const char *const pattern, const LineListPtr l
 	int result;
 	ResponsePtr rp;
 
-	if (cip == NULL)
+	if ((cip == NULL) || (llp == NULL))
 		return (kErrBadParameter);
 	if (strcmp(cip->magic, kLibraryMagic))
 		return (kErrBadMagic);
 
+	InitLineList(llp);
 	rp = InitResponse();
 	if (rp == NULL) {
 		result = kErrMallocFailed;
@@ -1160,6 +1315,7 @@ FTPFileExistsNlst(const FTPCIPtr cip, const char *const file)
 	}
 
 	/* Check the requested item. */
+	InitLineList(&fileList);
 	if (
 		((FTPListToMemory2(cip, file, &fileList, "", 0, (int *) 0)) == kNoErr) &&
 		(fileList.nLines >= 1) &&
@@ -1170,13 +1326,13 @@ FTPFileExistsNlst(const FTPCIPtr cip, const char *const file)
 
 	) {
 		/* The item existed. */
-		DisposeLineListContents(&fileList);
 		result = kNoErr;
 	} else {
 		cip->errNo = kErrNLSTFailed;
 		result = kErrNLSTFailed;
 	}
 
+	DisposeLineListContents(&fileList);
 	return (result);
 }	/* FTPFileExistsNlst*/
 

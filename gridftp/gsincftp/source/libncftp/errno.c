@@ -1,10 +1,11 @@
 /* errno.c
  *
- * Copyright (c) 1996 Mike Gleason, NCEMRSoft.
+ * Copyright (c) 1996-2001 Mike Gleason, NCEMRSoft.
  * All rights reserved.
  *
  */
 
+#define _libncftp_errno_c_ 1
 #include "syshdrs.h"
 	
 static const char *gErrList[kErrLast - kErrFirst + 2] = {
@@ -101,10 +102,13 @@ static const char *gErrList[kErrLast - kErrFirst + 2] = {
 	"item exists, but cannot tell if it is a file or directory",	/* -190 */
 	"not a directory",						/* -191 */
 	"directory recursion limit reached",				/* -192 */
-	"timed out while waiting for server response",		/* -193 */
-	"data transfer timed out",							/* -194 */
+	"timed out while waiting for server response",			/* -193 */
+	"data transfer timed out",					/* -194 */
+	"canceled by user",						/* -195 */
 	NULL,								
 };
+
+int gLibNcFTP_Uses_Me_To_Quiet_Variable_Unused_Warnings = 0;
 
 const char *
 FTPStrError(int e)

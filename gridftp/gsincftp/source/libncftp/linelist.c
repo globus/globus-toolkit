@@ -1,6 +1,6 @@
 /* linelist.c
  *
- * Copyright (c) 1996 Mike Gleason, NCEMRSoft.
+ * Copyright (c) 1996-2001 Mike Gleason, NCEMRSoft.
  * All rights reserved.
  *
  */
@@ -23,7 +23,6 @@ StrDup(const char *buf)
 		(void) memcpy(cp, buf, len);
 	return (cp);
 }	/* StrDup */
-
 
 
 
@@ -580,7 +579,7 @@ int
 ComputeRNames(FileInfoListPtr dst, const char *dstdir, int pflag, int nochop)
 {
 	FileInfoPtr lp, lp2;
-	char buf[512];
+	char *buf;
 	char *cp;
 
 	if (dstdir == NULL)
@@ -589,62 +588,69 @@ ComputeRNames(FileInfoListPtr dst, const char *dstdir, int pflag, int nochop)
 	for (lp = dst->first; lp != NULL; lp = lp2) {
 		lp2 = lp->next;
 
+		buf = NULL;
 		if (nochop != 0) {
 			if ((dstdir[0] != '\0') && (strcmp(dstdir, "."))) {
-				(void) STRNCPY(buf, dstdir);
-				(void) STRNCAT(buf, "/");
-				(void) STRNCAT(buf, lp->relname);
+				if (Dynscat(&buf, dstdir, "/", lp->relname, 0) == NULL)
+					goto memerr;
 
 				if (pflag != 0) {
 					/* Init lname to parent dir name of remote dir */
 					cp = strrchr(dstdir, '/');
 					if (cp == NULL)
 						cp = strrchr(dstdir, '\\');
-					if (cp != NULL)
-						lp->lname = StrDup(cp + 1);
+					if (cp != NULL) {
+						if (Dynscat(&lp->lname, cp + 1, 0) == NULL)
+							goto memerr;
+						TVFSPathToLocalPath(lp->lname);
+					}
 				}
 			} else {
-				(void) STRNCPY(buf, lp->relname);
+				if (Dynscat(&buf, lp->relname, 0) == NULL)
+					goto memerr;
 			}
-			lp->rname = StrDup(buf);
-			if (lp->rname == NULL)
-				return (-1);
 		} else {
 			if ((dstdir[0] != '\0') && (strcmp(dstdir, "."))) {
-				(void) STRNCPY(buf, dstdir);
-				(void) STRNCAT(buf, "/");
 				cp = strrchr(lp->relname, '/');
 				if (cp == NULL)
 					cp = strrchr(lp->relname, '\\');
 				if (cp != NULL) {
-					(void) STRNCAT(buf, cp + 1);
+					cp++;
 				} else {
-					(void) STRNCAT(buf, lp->relname);
+					cp = lp->relname;
 				}
+				if (Dynscat(&buf, dstdir, "/", cp, 0) == NULL)
+					goto memerr;
 
 				if (pflag != 0) {
 					/* Init lname to parent dir name of remote dir */
 					cp = strrchr(dstdir, '/');
 					if (cp == NULL)
 						cp = strrchr(dstdir, '\\');
-					if (cp != NULL)
-						lp->lname = StrDup(cp + 1);
+					if (cp != NULL) {
+						if (Dynscat(&lp->lname, cp + 1, 0) == NULL)
+							goto memerr;
+						TVFSPathToLocalPath(lp->lname);
+					}
 				}
 			} else {
 				cp = strrchr(lp->relname, '/');
 				if (cp == NULL)
 					cp = strrchr(lp->relname, '\\');
 				if (cp != NULL) {
-					(void) STRNCPY(buf, cp + 1);
+					cp++;
 				} else {
-					(void) STRNCPY(buf, lp->relname);
+					cp = lp->relname;
 				}
+				if (Dynscat(&buf, cp, 0) == NULL)
+					goto memerr;
 			}
-			lp->rname = StrDup(buf);
-			if (lp->rname == NULL)
-				return (-1);
 		}
-		TVFSPathToLocalPath(lp->lname);
+		lp->rname = buf;
+		if (lp->rname == NULL) {
+memerr:
+			return (-1);
+		}
 		LocalPathToTVFSPath(lp->rname);
 	}
 	return (0);
@@ -657,7 +663,7 @@ int
 ComputeLNames(FileInfoListPtr dst, const char *srcdir, const char *dstdir, int nochop)
 {
 	FileInfoPtr lp, lp2;
-	char buf[512];
+	char *buf;
 	char *cp;
 
 	if (srcdir != NULL) {
@@ -673,56 +679,55 @@ ComputeLNames(FileInfoListPtr dst, const char *srcdir, const char *dstdir, int n
 	for (lp = dst->first; lp != NULL; lp = lp2) {
 		lp2 = lp->next;
 
-		buf[0] = '\0';
+		buf = NULL;
 		if (nochop != 0) {
 			if ((dstdir[0] != '\0') && (strcmp(dstdir, "."))) {
-				(void) STRNCAT(buf, dstdir);
-				(void) STRNCAT(buf, "/");
+				if (Dynscat(&buf, dstdir, "/", 0) == NULL)
+					goto memerr;
 			}
 			if (lp->lname != NULL) {
-				(void) STRNCAT(buf, lp->lname);
-				(void) STRNCAT(buf, "/");
-				free(lp->lname);
-				lp->lname = NULL;
+				if (Dynscat(&buf, lp->lname, "/", 0) == NULL)
+					goto memerr;
 			} else if (srcdir != NULL) {
-				(void) STRNCAT(buf, srcdir);
-				(void) STRNCAT(buf, "/");
+				if (Dynscat(&buf, srcdir, "/", 0) == NULL)
+					goto memerr;
 			}
-			(void) STRNCAT(buf, lp->relname);
+			if (Dynscat(&buf, lp->relname, 0) == NULL)
+				goto memerr;
 		} else {
 			if ((dstdir[0] != '\0') && (strcmp(dstdir, "."))) {
-				(void) STRNCAT(buf, dstdir);
-				(void) STRNCAT(buf, "/");
-				if (lp->lname != NULL) {
-					free(lp->lname);
-					lp->lname = NULL;
-				}
 				cp = strrchr(lp->relname, '/');
 				if (cp == NULL)
 					cp = strrchr(lp->relname, '\\');
 				if (cp == NULL) {
-					(void) STRNCAT(buf, lp->relname);
+					cp = lp->relname;
 				} else {
-					(void) STRNCAT(buf, cp + 1);
+					cp++;
 				}
+				if (Dynscat(&buf, dstdir, "/", cp, 0) == NULL)
+					goto memerr;
 			} else {
-				if (lp->lname != NULL) {
-					free(lp->lname);
-					lp->lname = NULL;
-				}
 				cp = strrchr(lp->relname, '/');
 				if (cp == NULL)
 					cp = strrchr(lp->relname, '\\');
 				if (cp == NULL) {
-					(void) STRNCAT(buf, lp->relname);
+					cp = lp->relname;
 				} else {
-					(void) STRNCAT(buf, cp + 1);
+					cp++;
 				}
+				if (Dynscat(&buf, cp, 0) == NULL)
+					goto memerr;
 			}
 		}
-		lp->lname = StrDup(buf);
-		if (lp->lname == NULL)
+		if (buf == NULL) {
+memerr:
 			return (-1);
+		}
+		if (lp->lname != NULL) {
+			free(lp->lname);
+			lp->lname = NULL;
+		}
+		lp->lname = buf;
 		TVFSPathToLocalPath(lp->lname);
 	}
 	return (0);

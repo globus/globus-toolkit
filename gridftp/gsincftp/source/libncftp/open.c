@@ -1,6 +1,6 @@
 /* open.c
  *
- * Copyright (c) 1996 Mike Gleason, NCEMRSoft.
+ * Copyright (c) 1996-2001 Mike Gleason, NCEMRSoft.
  * All rights reserved.
  *
  */
@@ -25,6 +25,9 @@ FTPDeallocateHost(const FTPCIPtr cip)
 		cip->startingWorkingDirectory = NULL;
 	}
 
+#if USE_SIO
+	DisposeSReadlineInfo(&cip->ctrlSrl);
+#endif
 	DisposeLineListContents(&cip->lastFTPCmdResultLL);
 }	/* FTPDeallocateHost */
 
@@ -85,6 +88,7 @@ FTPInitializeAnonPassword(const FTPLIPtr lip)
 	FTPInitializeOurHostName(lip);
 
 	if (lip->defaultAnonPassword[0] == '\0') {
+#ifdef SPAM_PROBLEM_HAS_BEEN_SOLVED_FOREVER
 		GetUsrName(lip->defaultAnonPassword, sizeof(lip->defaultAnonPassword));
 		(void) STRNCAT(lip->defaultAnonPassword, "@");
 
@@ -93,6 +97,9 @@ FTPInitializeAnonPassword(const FTPLIPtr lip)
 		 */
 		if (lip->htried > 0)
 			(void) STRNCAT(lip->defaultAnonPassword, lip->ourHostName);
+#else
+		(void) STRNCPY(lip->defaultAnonPassword, "NcFTP@");
+#endif
 	}
 }	/* FTPInitializeAnonPassword */
 
@@ -294,7 +301,9 @@ okay:
 		free(cip->startingWorkingDirectory);
 		cip->startingWorkingDirectory = NULL;
 	}
-	if (FTPGetCWD(cip, cwd, sizeof(cwd)) == kNoErr) {
+	if ((cip->doNotGetStartingWorkingDirectory == 0) &&
+		(FTPGetCWD(cip, cwd, sizeof(cwd)) == kNoErr))
+	{
 		cip->startingWorkingDirectory = StrDup(cwd);
 	}
 
@@ -380,6 +389,23 @@ FTPQueryFeatures(const FTPCIPtr cip)
 	if (strcmp(cip->magic, kLibraryMagic))
 		return (kErrBadMagic);
 
+	if (cip->serverType == kServerTypeNetWareFTP) {
+		/* NetWare 5.00 server freaks out when
+		 * you give it a command it doesn't
+		 * recognize, so cheat here and return.
+		 */
+		cip->hasPASV = kCommandAvailable;
+		cip->hasSIZE = kCommandNotAvailable;
+		cip->hasMDTM = kCommandNotAvailable;
+		cip->hasREST = kCommandNotAvailable;
+		cip->NLSTfileParamWorks = kCommandAvailable;
+		cip->hasUTIME = kCommandNotAvailable;
+		cip->hasCLNT = kCommandNotAvailable;
+		cip->hasMLST = kCommandNotAvailable;
+		cip->hasMLSD = kCommandNotAvailable;
+		return (kNoErr);
+	}
+
 	rp = InitResponse();
 	if (rp == NULL) {
 		cip->errNo = kErrMallocFailed;
@@ -402,14 +428,12 @@ FTPQueryFeatures(const FTPCIPtr cip)
 				cip->hasMDTM = kCommandAvailable;
 				cip->hasREST = kCommandAvailable;
 				cip->NLSTfileParamWorks = kCommandAvailable;
-				result = 0;
 			} else if (cip->serverType == kServerTypeNcFTPd) {
 				cip->hasPASV = kCommandAvailable;
 				cip->hasSIZE = kCommandAvailable;
 				cip->hasMDTM = kCommandAvailable;
 				cip->hasREST = kCommandAvailable;
 				cip->NLSTfileParamWorks = kCommandAvailable;
-				result = 0;
 			}
 
 			/* Newer commands are only shown in FEAT,
@@ -419,7 +443,6 @@ FTPQueryFeatures(const FTPCIPtr cip)
 			cip->hasMLST = kCommandNotAvailable;
 			cip->hasMLSD = kCommandNotAvailable;
 		} else {
-			result = kNoErr;
 			cip->hasFEAT = kCommandAvailable;
 
 			for (lp = rp->msg.first; lp != NULL; lp = lp->next) {
@@ -460,31 +483,38 @@ FTPQueryFeatures(const FTPCIPtr cip)
 			}
 		}
 
-		if (result == 0) {
-			ReInitResponse(cip, rp);
-			result = RCmd(cip, rp, "HELP SITE");
-			if (result == 2) {
-				for (lp = rp->msg.first; lp != NULL; lp = lp->next) {
-					cp = lp->line;
-					if (strstr(cp, "RETRBUFSIZE") != NULL)
-						cip->hasRETRBUFSIZE = kCommandAvailable;
-					if (strstr(cp, "RBUFSZ") != NULL)
-						cip->hasRBUFSZ = kCommandAvailable;
-					if (((p = strstr(cp, "RBUFSIZ")) != NULL) && (!isupper(p[-1])))
-						cip->hasRBUFSIZ = kCommandAvailable;
-					if (strstr(cp, "STORBUFSIZE") != NULL)
-						cip->hasSTORBUFSIZE = kCommandAvailable;
-					if (strstr(cp, "SBUFSIZ") != NULL)
-						cip->hasSBUFSIZ = kCommandAvailable;
-					if (strstr(cp, "SBUFSZ") != NULL)
-						cip->hasSBUFSZ = kCommandAvailable;
-				}
+		ReInitResponse(cip, rp);
+		result = RCmd(cip, rp, "HELP SITE");
+		if (result == 2) {
+			for (lp = rp->msg.first; lp != NULL; lp = lp->next) {
+				cp = lp->line;
+				if (strstr(cp, "RETRBUFSIZE") != NULL)
+					cip->hasRETRBUFSIZE = kCommandAvailable;
+				if (strstr(cp, "RBUFSZ") != NULL)
+					cip->hasRBUFSZ = kCommandAvailable;
+				/* See if RBUFSIZ matches (but not STORBUFSIZE) */
+				if (
+					((p = strstr(cp, "RBUFSIZ")) != NULL) &&
+					(
+					 	(p == cp) ||
+						((p > cp) && (!isupper(p[-1])))
+					)
+				)
+					cip->hasRBUFSIZ = kCommandAvailable;
+				if (strstr(cp, "STORBUFSIZE") != NULL)
+					cip->hasSTORBUFSIZE = kCommandAvailable;
+				if (strstr(cp, "SBUFSIZ") != NULL)
+					cip->hasSBUFSIZ = kCommandAvailable;
+				if (strstr(cp, "SBUFSZ") != NULL)
+					cip->hasSBUFSZ = kCommandAvailable;
+				if (strstr(cp, "BUFSIZE") != NULL)
+					cip->hasBUFSIZE = kCommandAvailable;
 			}
 		}
 		DoneWithResponse(cip, rp);
 	}
 
-	return (result);
+	return (kNoErr);
 }	/* FTPQueryFeatures */
 
 
@@ -833,7 +863,12 @@ FTPOpenHost(const FTPCIPtr cip)
 			/* Close and try again. */
 			(void) FTPCloseHost(cip);
 
-			if ((result == kErrBadRemoteUserOrPassword) || (result == kErrBadRemoteUser)) {
+			/* Originally we also stopped retyring if
+			 * we got kErrBadRemoteUser and non-anonymous,
+			 * but some FTP servers apparently do their
+			 * max user check after the username is sent.
+			 */
+			if (result == kErrBadRemoteUserOrPassword /* || (result == kErrBadRemoteUser) */) {
 				if (strcmp(cip->user, "anonymous") != 0) {
 					/* Non-anonymous login was denied, and
 					 * retrying is not going to help.
@@ -841,7 +876,7 @@ FTPOpenHost(const FTPCIPtr cip)
 					break;
 				}
 			}
-		} else if ((result != kErrConnectRetryableErr) && (result != kErrConnectRefused)) {
+		} else if ((result != kErrConnectRetryableErr) && (result != kErrConnectRefused) && (result != kErrRemoteHostClosedConnection)) {
 			/* Irrecoverable error, so don't bother redialing.
 			 * The error message should have already been printed
 			 * from OpenControlConnection().
@@ -915,7 +950,7 @@ FTPOpenHostNoLogin(const FTPCIPtr cip)
 			/* Not logging in... */
 			if (result == kNoErr)
 				break;
-		} else if ((result != kErrConnectRetryableErr) && (result != kErrConnectRefused)) {
+		} else if ((result != kErrConnectRetryableErr) && (result != kErrConnectRefused) && (result != kErrRemoteHostClosedConnection)) {
 			/* Irrecoverable error, so don't bother redialing.
 			 * The error message should have already been printed
 			 * from OpenControlConnection().
@@ -1019,6 +1054,14 @@ FTPRebuildConnectionInfo(const FTPLIPtr lip, const FTPCIPtr cip)
 	cip->progress = NULL;
 	cip->rname = NULL;
 	cip->lname = NULL;
+	cip->onConnectMsgProc = NULL;
+	cip->redialStatusProc = NULL;
+	cip->printResponseProc = NULL;
+	cip->onLoginMsgProc = NULL;
+	cip->passphraseProc = NULL;
+	cip->startingWorkingDirectory = NULL;
+	cip->asciiFilenameExtensions = NULL;
+
 	(void) memset(&cip->lastFTPCmdResultLL, 0, sizeof(LineList));
 
 	/* Allocate a new buffer. */
@@ -1046,6 +1089,17 @@ FTPRebuildConnectionInfo(const FTPLIPtr lip, const FTPCIPtr cip)
 		cip->ctrlSocketW = kClosedFileDescriptor;
 		return (kErrFdopenW);
 	}
+
+#if USE_SIO
+	if (InitSReadlineInfo(&cip->ctrlSrl, cip->ctrlSocketR, cip->srlBuf, sizeof(cip->srlBuf), (int) cip->ctrlTimeout, 1) < 0) {
+		cip->errNo = kErrFdopenW;
+		CloseFile(&cip->cin);
+		cip->errNo = kErrFdopenW;
+		cip->ctrlSocketR = kClosedFileDescriptor;
+		cip->ctrlSocketW = kClosedFileDescriptor;
+		return (kErrFdopenW);
+	}
+#endif
 	return (kNoErr);
 }	/* FTPRebuildConnectionInfo */
 

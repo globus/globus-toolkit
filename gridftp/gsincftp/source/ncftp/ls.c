@@ -1,6 +1,6 @@
 /* ls.c
  *
- * Copyright (c) 1992-1999 by Mike Gleason.
+ * Copyright (c) 1992-2001 by Mike Gleason.
  * All rights reserved.
  * 
  */
@@ -141,6 +141,10 @@ LsCacheAdd(const char *const itempath, FileInfoListPtr files)
 	char *cp;
 	int j;
 
+	/* Never cache empty listings in case of errors */
+	if (files->nFileInfos == 0)
+		return;
+
 	j = LsCacheLookup(itempath);
 	if (j >= 0) {
 		/* Directory was already in there;
@@ -191,7 +195,7 @@ LsC(FileInfoListPtr dirp, int endChars, FILE *stream)
 	screenColumns = gScreenColumns;
 	if (screenColumns > 400)
 		screenColumns = 400;
-	ncol = (screenColumns - 1) / (dirp->maxFileLen + 2 + /*1or0*/ endChars);
+	ncol = (screenColumns - 1) / ((int) dirp->maxFileLen + 2 + /*1or0*/ endChars);
 	if (ncol < 1)
 		ncol = 1;
 	colw = (screenColumns - 1) / ncol; 
@@ -228,8 +232,7 @@ LsC(FileInfoListPtr dirp, int endChars, FILE *stream)
 				}
 			}
 		}
-		for (cp1 = buf + sizeof(buf); *--cp1 == ' '; )
-			;
+		for (cp1 = buf + sizeof(buf); *--cp1 == ' '; ) {}
 		++cp1;
 		*cp1++ = '\n';
 		*cp1 = '\0';
@@ -296,7 +299,7 @@ LsL(FileInfoListPtr dirp, int endChars, int linkedTo, FILE *stream)
 	fTail[1] = '\0';
 
 	(void) time(&gNowPlus1Hr);
-	gNowMinus6Mon = gNowPlus1Hr - 15552000L;
+	gNowMinus6Mon = gNowPlus1Hr - 15552000;
 	gNowPlus1Hr += 3600;
 
 	diritemv = dirp->vec;
@@ -309,7 +312,7 @@ LsL(FileInfoListPtr dirp, int endChars, int linkedTo, FILE *stream)
 		plugspec,
 #endif
 		"%%-%ds",
-		dirp->maxPlugLen
+		(int) dirp->maxPlugLen
 	);
 
 	if (dirp->maxPlugLen < 29) {
@@ -655,7 +658,7 @@ LLs(const char *const item, int listmode, const char *const options, FILE *strea
 	LineList ll;
 	FileInfoPtr fip, fip2;
 	FileInfoList fil;
-	struct stat st;
+	struct Stat st;
 	int result;
 	size_t len;
 
@@ -727,7 +730,7 @@ LLs(const char *const item, int listmode, const char *const options, FILE *strea
 	
 	for (fip = fil.first; fip != NULL; fip = fip2) {
 		fip2 = fip->next;
-		if (stat(fip->relname, &st) < 0) {
+		if (Stat(fip->relname, &st) < 0) {
 			fip2 = RemoveFileInfo(&fil, fip);
 			continue;
 		}

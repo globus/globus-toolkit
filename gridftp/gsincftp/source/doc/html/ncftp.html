@@ -7,19 +7,17 @@
 <A HREF="#toc">Table of Contents</A><P>
 
 <H2><A NAME="sect0" HREF="#toc0">Name</A></H2>
-<blockquote>
+<UL>
   <b>NcFTP</b> - Browser
 program for the File Transfer Protocol
-  <p>&nbsp;</p>
-</blockquote>
+</UL>
 <H2><A NAME="sect1" HREF="#toc1">Synopsis</A></H2>
-<blockquote>
+<UL>
 <P>
 <B>ncftp</B> [<I>host</I>]<I></I> <P>
-<B>ncftp</B> [<I>ftp://host.name/directory/</I>] <P>
-&nbsp;
+<B>ncftp</B> [<I>ftp://host.name/directory/</I>] 
  
-</blockquote>
+</UL>
  
 <H2><A NAME="sect2" HREF="#toc2">Description</A></H2>
  <P>
@@ -41,8 +39,37 @@ The <I>ncftp</I> distribution comes with the
 useful utility programs <I><I>ncftpget</I>(1)</I> and <I><I>ncftpput</I>(1)</I> which were designed
 to do command-line FTP. In particular, they are very handy for shell scripts.
 This version of <I>ncftp</I> no longer does command-line FTP, since the main <I>ncftp</I>
-program is more of a browser-type program. <P>
-&nbsp;  
+program is more of a browser-type program.</P>
+
+
+<H3><A NAME="sect2a" HREF="#toc2a">Options</A></H3>
+<P>
+The  program allows you to specify a host or directory URL
+on the command line.  This is a synonym for running  ncftp
+and then using the open command.  A few command-line flags
+are allowed with this mode:
+<UL>
+<table width=100%>
+	<tr>
+		<td width=50><B>-u</B> <I>XX</I></td>
+		<td>Use username <I>XX</I> instead of anonymous.</td>
+	</tr>
+	<tr>
+		<td width=50><B>-p</B> <I>XX</I></td>
+		<td>Use password <I>XX</I> with the username.</td>
+	</tr>
+	<tr>
+		<td width=50><B>-j</B> <I>XX</I></td>
+		<td>Use account <I>XX</I> in supplement to the username and password (deprecated)</td>
+	</tr>
+	<tr>
+		<td width=50><B>-P</B> <I>XX</I></td>
+		<td>Use port number <I>XX</I> instead of the default FTP service port (21).</td>
+	</tr>
+</table>
+</UL>
+</P>
+
 <H3><A NAME="sect3" HREF="#toc3">Introduction to the Command Shell</A></H3>
 
 <P>
@@ -53,10 +80,10 @@ you need to know the symbolic name of the remote system, or its <I>Internet
 Protocol</I>  (IP) address. For example, a symbolic name might be ``typhoon.unl.edu,''
 and its IP address could be ``129.93.33.24.'' To open a connection to that system,
 you use the program's <I>open</I> command: 
-<blockquote>
+<UL>
 <PRE>open typhoon.unl.edu
 open 129.93.33.24</PRE>  
-</blockquote>
+</UL>
   <P>
 Both of these try to open the machine called typhoon at the <I>University
 of Nebraska</I>. Using the symbolic name is the preferred way, because IP addresses
@@ -88,9 +115,9 @@ The
 purpose of the program is to exchange data with other systems. You can use
 the program's  <I>get</I> command to copy a file from the remote system to your
 local system: 
-<blockquote>
+<UL>
 <PRE>get README.txt</PRE>  
-</blockquote>
+</UL>
   <P>
 The program will display the progress of the transfer on the screen,
 so you can tell how much needs to be done before the transfer finishes.
@@ -98,9 +125,9 @@ When the transfer does finish, then you can enter more commands to the
 program's command shell. <P>
 You can use the program's <I>put</I> command to copy a file
 from your system to the remote system:
-<blockquote>
+<UL>
 <PRE>put something.tar</PRE>  
-</blockquote>
+</UL>
   <P>
 When you are finished using the remote system, you can open another one
 or use the <I>quit</I> <P>
@@ -125,35 +152,35 @@ If you just type</DD>
 
 </DL>
 
-<blockquote>
-  <blockquote>
+<UL>
+  <UL>
     <pre>help</pre>
-  </blockquote>
-</blockquote>
+  </UL>
+</UL>
  
 <DL>
 
-<blockquote>
+<UL>
 
 <DT> from the command shell, the program prints the names of all of the
   supported commands. From there, you can get specific help for a command
 by typing the command after, for example: </DT>
-</blockquote>
+</UL>
 </DL>
 
-<blockquote>
-  <blockquote>
+<UL>
+  <UL>
     <pre>help open</pre>
-  </blockquote>
-</blockquote>
+  </UL>
+</UL>
  
 <DL>
 
-<blockquote>
+<UL>
 
-<DT> prints information about the <i>open</i> command. </DT>
+</UL>
 
-</blockquote>
+<ul> prints information about the <i>open</i> command. </ul>
 
   <dd>&nbsp;</dd>
 </DL>
@@ -200,12 +227,12 @@ on November 6, you could try:</DD>
 
 </DL>
 
-<blockquote>
-  <blockquote>
+<UL>
+  <UL>
     <pre>bgget -@ 19971106030000 /pub/idstuff/quake/q2_100.zip</pre>
     <pre>&nbsp;</pre>
-  </blockquote>
-</blockquote>
+  </UL>
+</UL>
 <pre>bgstart</pre>
  
 <DL>
@@ -286,33 +313,33 @@ that someone told you about. From the root directory, you could:</DD>
 
 </DL>
 
-<blockquote>
-  <blockquote>
+<UL>
+  <UL>
     <pre>cd pub
 cd news
 cd comp.sources.d</pre>
-  </blockquote>
-</blockquote>
+  </UL>
+</UL>
  
 <DL>
 
-<blockquote>
+<UL>
 
 <DT> or, more concisely, </DT>
-</blockquote>
+</UL>
 </DL>
 
-<blockquote>
-  <blockquote>
+<UL>
+  <UL>
     <pre>cd /pub/news/comp.sources.d</pre>
-  </blockquote>
-</blockquote>
+  </UL>
+</UL>
  
 <DL>
 
-<blockquote>
+<UL>
 
-</blockquote>
+</UL>
 <DD> Then, commands such as <I>get</I>, <I>put</I>, and <I>ls</I> could
 be used to refer to items in that directory.&nbsp; Some shells in the <I>UNIX</I> environment
 have a feature I like, which is switching to the previous directory. Like
@@ -320,12 +347,12 @@ those shells, you can do:</DD>
 
 </DL>
 
-<blockquote>
-  <blockquote>
+<UL>
+  <UL>
     <pre>cd -</pre>
-  </blockquote>
+  </UL>
   <p> to change to the last directory you were in.</p>
-</blockquote>
+</UL>
 <pre>&nbsp;</pre>
 <pre>chmod</pre>
  
@@ -359,17 +386,17 @@ for internal testing. You could type</DD>
 
 </DL>
 
-<blockquote>
-  <blockquote>
+<UL>
+  <UL>
     <pre>debug 1</pre>
-  </blockquote>
-</blockquote>
+  </UL>
+</UL>
  
 <DL>
 
-<blockquote>
+<UL>
 
-</blockquote>
+</UL>
 <DD> to turn debugging mode on.&nbsp; Then you could see all messages between
 the program and the remote server, and things that are only printed in
 debugging mode. However, this information is also available in the <I>$HOME/.ncftp/trace</I>
@@ -390,27 +417,27 @@ instance</DD>
 
 </DL>
 
-<blockquote>
-  <blockquote>
+<UL>
+  <UL>
     <pre>dir -rt</pre>
-  </blockquote>
-</blockquote>
+  </UL>
+</UL>
  
 <DL>
 
-<blockquote>
+<UL>
 
 <DT> would try to act like </DT>
-</blockquote>
+</UL>
 </DL>
 
-<blockquote>
-  <blockquote>
+<UL>
+  <UL>
     <pre>/bin/ls -lrt</pre>
-  </blockquote>
+  </UL>
   <p>would on <i>UNIX</i>.</p>
   <p>&nbsp;</p>
-</blockquote>
+</UL>
 <pre>get</pre>
  
 <DL>
@@ -422,26 +449,26 @@ try:</DD>
 
 </DL>
 
-<blockquote>
-  <blockquote>
+<UL>
+  <UL>
     <p> get README README.too</p>
-  </blockquote>
-</blockquote>
+  </UL>
+</UL>
  
 <DL>
 
-<blockquote>
+<UL>
 
 <DT> You could also accomplish that by using a wildcard
 expression, such as: </DT>
-</blockquote>
+</UL>
 </DL>
 
-<blockquote>
-  <blockquote>
+<UL>
+  <UL>
     <pre>get README*</pre>
-  </blockquote>
-</blockquote>
+  </UL>
+</UL>
  
 <DL>
 
@@ -451,11 +478,11 @@ file called <I>ReadMe.txt</I> but name it locally as <I>README</I>:</DD>
 
 </DL>
 
-<blockquote>
-  <blockquote>
+<UL>
+  <UL>
     <pre>get -z ReadMe.txt README</pre>
-  </blockquote>
-</blockquote>
+  </UL>
+</UL>
  
 <DL>
 
@@ -472,22 +499,23 @@ to an existing file. You can do this by using the ``-A'' flag, for example</DD>
 
 </DL>
 
-<blockquote>
-  <blockquote>
+<UL>
+  <UL>
     <pre>get -A log.11</pre>
-  </blockquote>
-</blockquote>
+  </UL>
+</UL>
  
 <DL>
 
-<blockquote>
+<UL>
 
-<DT> would append to a file named ``log.11'' if it existed locally.
-</DT>
-</blockquote>
-<DD>Another thing you can do is delete a remote file after you download it.
+</UL>
+
+<ul><P>would append to a file named ``log.11'' if it existed locally.
+
+<p>Another thing you can do is delete a remote file after you download it.
 This can be useful when a remote host expects a file to be removed when
-it has been retrieved. Use the double-D flag, such as ``get&nbsp;-DD'' to do this. </DD>
+it has been retrieved. Use the double-D flag, such as ``get&nbsp;-DD'' to do this. </ul>
 
 <DT>&nbsp;
 </DT>
@@ -542,12 +570,12 @@ as you would in your command shell, so you can do things like:</DD>
 
 </DL>
 
-<blockquote>
-  <blockquote>
+<UL>
+  <UL>
     <pre>lcd ~/doclls -lrt p*.txt</pre>
     <pre>&nbsp;</pre>
-  </blockquote>
-</blockquote>
+  </UL>
+</UL>
 <pre>lmkdir</pre>
  
 <DL>
@@ -557,63 +585,33 @@ as you would in your command shell, so you can do things like:</DD>
 <dt>&nbsp;</dt>
 </DL>
 
-<pre>lookup</pre>
- 
-<DL>
+<tt>lookup</tt>
 
-<DD>
-The program also has a built-in interface to the name service via the <I>lookup</I>
-command. This means you can lookup entries for remote hosts, like:</DD>
+<UL>
+<P>The program also has a built-in interface to the name service via the <I>lookup</I>
+command. This means you can lookup entries for remote hosts, like:</P>
+<UL>
+<pre>lookup cse.unl.edu ftp.cs.unl.edu sphygmomanometer.unl.edu</pre>
+</UL>
+<P>prints:
 
-</DL>
-
-<blockquote>
-  <blockquote>
-    <pre>lookup cse.unl.edu ftp.cs.unl.edu sphygmomanometer.unl.edu</pre>
-  </blockquote>
- 
-<DL>
-
-<blockquote>
-
-</blockquote>
-
-<DT> prints: </DT>
-</DL>
-
-  <blockquote>
+<UL>
 
 <pre>cse.unl.edu&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;129.93.33.1
 typhoon.unl.edu&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;129.93.33.24
 sphygmomanometer.unl.edu&nbsp;&nbsp;129.93.33.126</pre>
-  </blockquote>
-</blockquote>
- 
-<DL>
 
-<blockquote>
+</UL>
 
-<DT> There is also a more detailed option, enabled with ``-v,'' i.e.: </DT>
-</blockquote>
-</DL>
+<p> There is also a more detailed option, enabled with ``-v,'' i.e.: </p>
+<UL>
+<pre>lookup -v cse.unl.edu ftp.cs.unl.edu</pre>
 
-<blockquote>
-  <blockquote>
-    <pre>lookup -v cse.unl.edu ftp.cs.unl.edu</pre>
-  </blockquote>
-</blockquote>
- 
-<DL>
+</UL>
 
-<blockquote>
-
-<DT> prints: </DT>
-</blockquote>
-</DL>
-
-<blockquote>
-  <blockquote>
-    <pre>cse.unl.edu:
+<p>prints:</p>
+<UL>
+<pre>cse.unl.edu:
 &nbsp;&nbsp;&nbsp;&nbsp;Name:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;cse.unl.edu
 &nbsp;&nbsp;&nbsp;&nbsp;Address:&nbsp;&nbsp;129.93.33.1
 
@@ -621,42 +619,22 @@ ftp.cs.unl.edu:
 &nbsp;&nbsp;&nbsp;&nbsp;Name:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;typhoon.unl.edu
 &nbsp;&nbsp;&nbsp;&nbsp;Alias:&nbsp;&nbsp;&nbsp;&nbsp;<a href="ftp://ftp.cs.unl.edu">ftp.cs.unl.edu</a>
 &nbsp;&nbsp;&nbsp;&nbsp;Address:&nbsp;&nbsp;129.93.33.24</pre>
-  </blockquote>
-</blockquote>
- 
-<DL>
 
-<DD> You can also give <I>IP</I> addresses, so this would work too:</DD>
+</UL>
 
-</DL>
-
-<blockquote>
-  <blockquote>
+<p>You can also give <I>IP</I> addresses, so this would work too:</p>
+<UL>
     <pre>lookup 129.93.33.24</pre>
-  </blockquote>
-</blockquote>
- 
-<DL>
+</UL>
+<p> prints: </p>
+<UL>
+<pre>typhoon.unl.edu&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;129.93.33.24</pre>
 
-<blockquote>
+</UL>
 
-<DT> prints: </DT>
-</blockquote>
-</DL>
+</UL>
 
-<blockquote>
-  <blockquote>
-    <pre>typhoon.unl.edu&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;129.93.33.24</pre>
-  </blockquote>
-</blockquote>
- 
-<DL>
-
-<DD>  </DD>
-
-</DL>
-
-<p>lpage</p>
+<pre>lpage</pre>
  
 <DL>
 
@@ -716,32 +694,32 @@ with <I>ls</I>, for instance</DD>
 
 </DL>
 
-<blockquote>
-  <blockquote>
+<UL>
+  <UL>
     <pre>ls -rt</pre>
-  </blockquote>
-</blockquote>
+  </UL>
+</UL>
  
 <DL>
 
-<blockquote>
+<UL>
 
 <DT> would try to act like </DT>
-</blockquote>
+</UL>
 </DL>
 
-<blockquote>
-  <blockquote>
+<UL>
+  <UL>
     <pre>/bin/ls -CFrt</pre>
-  </blockquote>
-</blockquote>
+  </UL>
+</UL>
  
 <DL>
 
-<blockquote>
+<UL>
+<P> would on <i>UNIX</i>.</p>
+</UL>
 
-<DT> would on <i>UNIX</i>. </DT>
-</blockquote>
 <DD><I>ncftp </I>has a powerful built-in system for dealing
 with directory listings. It tries to cache each one, so if you list the
 same directory, odds are it will display instantly. Behind the scenes, <I>ncftp</I>
@@ -777,17 +755,34 @@ This example shows how to <I>open</I> the host ``bowser.nintendo.co.jp'' using t
 
 </DL>
 
-<blockquote>
-  <blockquote>
+<UL>
+  <UL>
     <pre>open -u mario bowser.nintendo.co.jp</pre>
-  </blockquote>
-</blockquote>
- 
-<DL>
+  </UL>
 
-<DD>  </DD>
+  <P>Here is a list of flags you can use with the open command:
+<UL>
+<table width=100%>
+	<tr>
+		<td width=50><B>-u</B> <I>XX</I></td>
+		<td>Use username <I>XX</I> instead of anonymous.</td>
+	</tr>
+	<tr>
+		<td width=50><B>-p</B> <I>XX</I></td>
+		<td>Use password <I>XX</I> with the username.</td>
+	</tr>
+	<tr>
+		<td width=50><B>-j</B> <I>XX</I></td>
+		<td>Use account <I>XX</I> in supplement to the username and password (deprecated)</td>
+	</tr>
+	<tr>
+		<td width=50><B>-P</B> <I>XX</I></td>
+		<td>Use port number <I>XX</I> instead of the default FTP service port (21).</td>
+	</tr>
+</table>
+</UL>
 
-</DL>
+</UL>
 
 <pre>page</pre>
  
@@ -822,10 +817,10 @@ directory, you could try:</DD>
 
 </DL>
 
-<blockquote>
-  <blockquote>
+<UL>
+  <UL>
     <pre>put xx.zip yy.zip</pre>
-  </blockquote>
+  </UL>
  
 <DL>
 
@@ -833,10 +828,10 @@ directory, you could try:</DD>
 </DT>
 </DL>
 
-  <blockquote>
+  <UL>
     <pre>put *.zip</pre>
-  </blockquote>
-</blockquote>
+  </UL>
+</UL>
  
 <DL>
 
@@ -846,11 +841,11 @@ host, you can use the ``-z'' flag. This example shows how to upload a file calle
 
 </DL>
 
-<blockquote>
-  <blockquote>
+<UL>
+  <UL>
     <pre>put -z ncftpd-2.0.6.tar.gz NFTPD206.TGZ</pre>
-  </blockquote>
-</blockquote>
+  </UL>
+</UL>
  
 <DL>
 
@@ -865,19 +860,19 @@ do this by using the ``-A'' flag, for example </DD>
 
 </DL>
 
-<blockquote>
-  <blockquote>
+<UL>
+  <UL>
     <pre>put -A log11.txt</pre>
-  </blockquote>
-</blockquote>
+  </UL>
+</UL>
  
 <DL>
 
-<blockquote>
+<UL>
+<p> would append to a file named ``log11.txt'' if it existed on
+the remote server. </p>
+</UL>
 
-<DT> would append to a file named ``log11.txt'' if it existed on
-the remote server. </DT>
-</blockquote>
 <DD>Another thing you can do is delete a local file after
 you upload it. Use the double-D flag, such as ``put&nbsp;-DD'' to do this. </DD>
 
@@ -931,11 +926,11 @@ you can use the <I>rename</I> command, like:</DD>
 
 </DL>
 
-<blockquote>
-  <blockquote>
+<UL>
+  <UL>
     <pre>rename SPHYGMTR.TAR sphygmomanometer-2.3.1.tar</pre>
-  </blockquote>
-</blockquote>
+  </UL>
+</UL>
 <p>&nbsp;</p>
 <pre>rhelp</pre>
  
@@ -949,25 +944,25 @@ be able to give a parameter to the server also, like: </DD>
 
 </DL>
 
-<blockquote>
-  <blockquote>
+<UL>
+  <UL>
     <pre>rhelp NLST</pre>
-  </blockquote>
-</blockquote>
+  </UL>
+</UL>
  
 <DL>
 
-<blockquote>
+<UL>
 
 <DT> One server responded: </DT>
-</blockquote>
+</UL>
 </DL>
 
-<blockquote>
-  <blockquote>
+<UL>
+  <UL>
     <pre>Syntax: NLST [ &lt;sp&gt; path-name ]</pre>
-  </blockquote>
-</blockquote>
+  </UL>
+</UL>
  
 <DL>
 
@@ -1008,35 +1003,33 @@ saved between runs in the <I>$HOME/.ncftp/prefs</I> file. The basic syntax is:</
 
 </DL>
 
-<blockquote>
-  <blockquote>
+<UL>
+  <UL>
     <pre>set &lt;option&gt; &lt;value&gt;</pre>
-  </blockquote>
-</blockquote>
+  </UL>
+</UL>
  
 <DL>
 
-<blockquote>
+<UL>
 
 <DT> For example, to change the value you use for the anonymous
 password, you might do: </DT>
-</blockquote>
+</UL>
 </DL>
 
-<blockquote>
-  <blockquote>
+<UL>
+  <UL>
     <pre>set anon-password ncftp@ncftp.com</pre>
-  </blockquote>
-</blockquote>
+  </UL>
+</UL>
  
 <DL>
 
-<blockquote>
-
-<DT> See the <a href="#sect5"> next section</a> for a list of things
-you change. </DT>
-</blockquote>
-<DD> </DD>
+<UL>
+<p> See the <a href="#sect5"> next section</a> for a list of things
+you change. </p>
+</UL>
 
 </DL>
 
@@ -1050,11 +1043,11 @@ such as:</DD>
 
 </DL>
 
-<blockquote>
-  <blockquote>
+<UL>
+  <UL>
     <pre>show anon-password</pre>
-  </blockquote>
-</blockquote>
+  </UL>
+</UL>
  
 <DL>
 
@@ -1072,31 +1065,26 @@ vary of course, such as:</DD>
 
 </DL>
 
-<blockquote>
-  <blockquote>
+<UL>
+  <UL>
     <pre>site chmod 644 README</pre>
-  </blockquote>
-</blockquote>
+  </UL>
+</UL>
  
-<DL>
+<UL>
+<p> Actually, <I>ncftp</I>'s <I>chmod</I> command really does the
+above. </p>
 
-<DD> Actually, <I>ncftp</I>'s <I>chmod</I> command really does the
-above. </DD>
+<p>Try doing one of these to see what the remote server supports, if
+any: </p>
+</UL>
 
-<DT>&nbsp; </DT>
-<blockquote>
-
-<DT>Try doing one of these to see what the remote server supports, if
-any: </DT>
-</blockquote>
-</DL>
-
-<blockquote>
-  <blockquote>
-    <pre>rhelp SITE</pre>
-    <pre>site help</pre>
-  </blockquote>
-</blockquote>
+<UL>
+  <UL>
+    <P><TT>rhelp SITE</TT>
+    <BR><TT>site help</TT>
+  </UL>
+</UL>
  
 <DL>
 
@@ -1114,13 +1102,13 @@ this.  Try one of these:</DD>
 
 </DL>
 
-<blockquote>
-  <blockquote>
+<UL>
+  <UL>
     <pre>type ascii
 type binary
 type image</pre>
-  </blockquote>
-</blockquote>
+  </UL>
+</UL>
  
 <DL>
 
@@ -1139,22 +1127,16 @@ process' <I>umask</I> on the remote server, if it has any concept of a umask, i.
 
 </DL>
 
-<blockquote>
-  <blockquote>
+<UL>
+  <UL>
     <pre>umask 077</pre>
-  </blockquote>
-</blockquote>
+  </UL>
+</UL>
  
-<DL>
-
-<blockquote>
-
-<DT> However, this is not a standard command, so remote FTP servers may not support it.
-</DT>
-</blockquote>
-<DD>&nbsp;  </DD>
-
-</DL>
+<UL>
+<p> However, this is not a standard command, so remote FTP servers may not support it.</p>
+</UL>
+<br>
 
 <pre>version</pre>
  
@@ -1178,6 +1160,25 @@ to use your E-mail address as a courtesy to the site administrator. If you
 change this, be aware that some sites require (i.e. they check for) valid
 E-mail addresses.  </DD>
 
+<dt>&nbsp;</dt>
+</DL>
+
+<pre>auto-resume</pre>
+
+<DL>
+<DD>
+<I>NcFTP</I> 3 now prompts the user by  default  when  you
+try to download a file that already exists locally,
+or upload a  file  that  already  exists  remotely.
+Older versions of the program automatically guessed
+whether to overwrite the existing file  or  attempt
+to resume where it left off, but sometimes the program
+would guess wrong.  If you would  prefer  that
+the  program always guess which action to take, set
+this variable to <i>yes</i>, otherwise, leave it set to <i>no</i>
+and the program will prompt you for which action to
+take.
+</DD>
 <dt>&nbsp;</dt>
 </DL>
 
@@ -1282,7 +1283,16 @@ deems necessary.  </DD>
 transfer status. Select from meter <I>2</I>, <I>1</I>, or <I>0</I>.  </DD>
 
 <dt>&nbsp;</dt>
+
 </DL>
+
+<pre>redial-delay</pre>
+  
+<UL>
+<P>When a host is busy or unavailable, the program waits this number of seconds before trying again.&nbsp;
+  The smallest you can set this is to 10 seconds -- so if you were planning on being inconsiderate,
+  think again.  </P>
+</UL>
 
 <pre>save-passwords</pre>
   
@@ -1329,9 +1339,9 @@ placed a firewall between your machine and the Internet, and that you cannot
 reach external hosts. <P>
 The answer may be as simple as setting <I>ncftp</I> to use
 <I>passive</I> mode only, which you can do from a <I>ncftp</I> command prompt like this:
-<blockquote>
+<UL>
 <PRE>set passive yes</PRE>  
-</blockquote>
+</UL>
   <P>
 The reason for this is because many firewalls do not allow incoming connections
 to the site, but do allow users to establish outgoing connections. A passive
@@ -1353,43 +1363,43 @@ local network. <P>
 &nbsp;  
 <H2><A NAME="sect7" HREF="#toc7">Files</A></H2>
  
-<blockquote>
+<UL>
  
 <DL>
 
-<DT>$HOME/.ncftp/batchlog</DT>
+<DT><tt>$HOME/.ncftp/batchlog</tt></DT>
 <DD>Information for background data
 transfer processes. </DD>
 
-<DT>$HOME/.ncftp/bookmarks</DT>
+<DT><tt>$HOME/.ncftp/bookmarks</tt></DT>
 <DD>Saves bookmark and host information.
 </DD>
 
-<DT>$HOME/.ncftp/firewall</DT>
+<DT><tt>$HOME/.ncftp/firewall</tt></DT>
 <DD>Firewall access configuration file. </DD>
 
-<DT>$HOME/.ncftp/prefs</DT>
+<DT><tt>$HOME/.ncftp/prefs</tt></DT>
 <DD>Program
 preferences. </DD>
 
-<DT>$HOME/.ncftp/spool/</DT>
+<DT><tt>$HOME/.ncftp/spool/</tt></DT>
 <DD>Directory where background jobs are stored
 in the form of spool configuration files. </DD>
 
-<DT>$HOME/.ncftp/trace</DT>
+<DT><tt>$HOME/.ncftp/trace</tt></DT>
 <DD>Debugging output
 for entire program run. </DD>
 
-<DT>$HOME/.ncftp/v3init</DT>
+<DT><tt>$HOME/.ncftp/v3init</tt></DT>
 <DD>Used to tell if this version of
 the program has run before.  </DD>
 </DL>
 
-</blockquote>
+</UL>
 
 <H2><A NAME="sect8" HREF="#toc8">Environment</A></H2>
  
-<blockquote>
+<UL>
  
 <DL>
 
@@ -1422,9 +1432,10 @@ optional except for those users whose home directory is the root directory.
 to determine how many screen columns the terminal has.  </DD>
 </DL>
 
-</blockquote>
+</UL>
 
 <H2><A NAME="sect9" HREF="#toc9">Bugs</A></H2>
+<UL>
  <P>
 There are no
 such sites named <I>bowser.nintendo.co.jp</I> or <I>sphygmomanometer.unl.edu</I>. <P>
@@ -1432,24 +1443,31 @@ Auto-resume
 should check the file timestamps instead of relying upon just the file
 sizes, but it is difficult to do this reliably within FTP. <P>
 Directory caching
-and recursive downloads depend on <I>UNIX</I>-like behavior of the remote host. <P>
+and recursive downloads depend on <I>UNIX</I>-like behavior of the remote host. 
+</UL>
+ <P>
 &nbsp;
  
 <H2><A NAME="sect10" HREF="#toc10">Author</A></H2>
+<UL>
  <P>
 Mike Gleason, NcFTP Software <a href="mailto:(mgleason@ncftp.com">(mgleason@ncftp.com</a>).
+</UL>
  <P>
 &nbsp;  
 <H2><A NAME="sect11" HREF="#toc11">See Also</A></H2>
+<UL>
  <P>
 <I><I>ncftpput</I>(1)</I>,
 <I><I>ncftpget</I>(1)</I>, <I><I>ncftpbatch</I>(1)</I>, <I><I>ftp</I>(1)</I>, <I><I>rcp</I>(1)</I>, <I><I>tftp</I>(1)</I>. <P>
 <I>LibNcFTP</I>  (<a href="http://www.ncftp.com/libncftp/">http://www.ncftp.com/libncftp</a>/).
 <P>
 <I>NcFTPd</I>  (<a href="http://www.ncftp.com/ncftpd/">http://www.ncftp.com/ncftpd/</a>).
+</UL>
 <P>
 &nbsp;  
 <H2><A NAME="sect12" HREF="#toc12">Thanks</A></H2>
+<UL>
  <P>
 Thanks to everyone who uses
 the program. Your support is what drives me to improve the program! <P>
@@ -1472,17 +1490,22 @@ original filename completion code for version 2.3.0 and 2.4.2. <P>
 Thanks to DaviD
 W. Sanderson (dws@ora.com), for helping me out with the man page. <P>
 Thanks to
-those of you at UNL who appreciate my work. <P>
+those of you at <a href="http://www.unl.edu"> UNL</a> who appreciate my work. <P>
 Thanks to Red Hat Software for
 honoring my licensing agreement, but more importantly, thanks for providing
-a solid and affordable development platform. <P>
+a solid and affordable development platform. 
+</UL>
+ <P>
 &nbsp;  
 <H2><A NAME="sect13" HREF="#toc13">Apologies</A></H2>
+<UL>
  <P>
 To the users, for
 not being able to respond personally to most of your inquiries. <P>
 To Phil,
-for things not being the way they should be. <P>
+for things not being the way they should be. 
+</UL>
+ <P>
 
 <HR><P>
 <A NAME="toc"><B>Table of Contents</B></A>

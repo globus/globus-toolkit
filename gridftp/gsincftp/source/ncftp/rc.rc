@@ -63,8 +63,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 3,0,0,20
- PRODUCTVERSION 3,0,0,20
+ FILEVERSION 3,0,3,24
+ PRODUCTVERSION 3,0,3,24
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x29L
@@ -82,14 +82,14 @@ BEGIN
             VALUE "Comments", " \0"
             VALUE "CompanyName", "NcFTP Software\0"
             VALUE "FileDescription", " \0"
-            VALUE "FileVersion", "3.0 beta 20\0"
+            VALUE "FileVersion", "3.0.3\0"
             VALUE "InternalName", " \0"
-            VALUE "LegalCopyright", "Copyright © 1999\0"
+            VALUE "LegalCopyright", "Copyright © 2000\0"
             VALUE "LegalTrademarks", " \0"
             VALUE "OriginalFilename", "ncftp.exe\0"
             VALUE "PrivateBuild", " \0"
             VALUE "ProductName", " \0"
-            VALUE "ProductVersion", " \0"
+            VALUE "ProductVersion", "3.0.3\0"
             VALUE "SpecialBuild", " \0"
         END
     END

@@ -48,13 +48,48 @@ Timeout after
 .I XX
 seconds.
 .TP 8
+.B -E
+Use regular (PORT) data connections.
+.TP 8
 .B -F
 Use passive (PASV) data connections.
+The default is to use passive, but to fallback to
+regular if the passive connection fails or times out.
 .TP 8
 .BI "-r " "XX"
 Redial a maximum of 
 .I XX
 times until connected to the remote FTP server.
+.TP 8
+.BI "-W " "XX"
+Send raw FTP command
+.I XX
+after logging in.
+.TP 8
+.BI "-X " "XX"
+Send raw FTP command
+.I XX
+after each file transferred.
+.TP 8
+.BI "-Y " "XX"
+Send raw FTP command
+.I XX
+before logging out.
+.IP
+The
+.BR "-W" ", " "-X" ", and " "-Y"
+options are useful for advanced users who need to tweak
+behavior on some servers.
+For example, users accessing mainframes might need to send
+some special SITE commands to set blocksize and record format information.
+.IP
+When using those options, you can use a newline character to delimit
+multiple commands.
+For the
+.B "-X"
+option, you can use the cookie
+.B %s
+to expand into the name of the file that was transferred.
 .\"-------
 .SH "DESCRIPTION"
 .\"-------
@@ -75,7 +110,7 @@ flag, to print one file per line:
 .RS 4
 .br
 .sp
-$ ncftpls -1 ftp://ftp.probe.net/pub/ncftp/
+$ ncftpls -1 ftp://ftp.ncftp.com/pub/ncftp/
 .RE
 .PP
 You can also do a remote "ls\ \-l", by using "ncftpls\ \-l".
@@ -87,7 +122,7 @@ do this:
 .RS 4
 .br
 .sp
-$ ncftpls -x "-lrt" ftp://ftp.probe.net/pub/ncftp/
+$ ncftpls -x "-lrt" ftp://ftp.ncftp.com/pub/ncftp/
 .RE
 .PP
 By default the program tries to open the remote host

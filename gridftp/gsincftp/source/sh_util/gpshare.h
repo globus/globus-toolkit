@@ -16,7 +16,8 @@ typedef enum ExitStatus {
 	kExitBadConfigFile,
 	kExitInitLibraryFailed,
 	kExitInitConnInfoFailed,
-	kExitSpoolFailed
+	kExitSpoolFailed,
+	kExitNoMemory
 } ExitStatus;
 
 #define kKilobyte 1024
@@ -44,3 +45,4 @@ void InitWinsock(void);
 int GetDefaultProgressMeterSetting(void);
 FILE *OpenPager(void);
 void ClosePager(FILE *fp);
+int AdditionalCmd(FTPCIPtr const cip, const char *const spec, const char *const arg);

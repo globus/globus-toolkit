@@ -1,5 +1,8 @@
 /* ncftpput.c
  *
+ * Copyright (c) 1996-2001 Mike Gleason, NCEMRSoft.
+ * All rights reserved.
+ *
  * A simple, non-interactive utility to send files to a remote FTP server.
  * Very useful in shell scripts!
  */
@@ -18,10 +21,12 @@
 #	include "..\ncftp\util.h"
 #	include "..\ncftp\spool.h"
 #	include "..\ncftp\pref.h"
+#	include "..\ncftp\getline.h"
 #else
 #	include "../ncftp/util.h"
 #	include "../ncftp/spool.h"
 #	include "../ncftp/pref.h"
+#	include "../ncftp/getline.h"
 #endif
 
 #include "gpshare.h"
@@ -70,16 +75,22 @@ Usage(void)
 	(void) fprintf(fp, "\
   -c     Use stdin as input file to write on remote host.\n\
   -A     Append to remote files instead of overwriting them.\n\
-  -z/-Z  Do (do not) not try to resume uploads (default: -Z).\n\
+  -z/-Z  Do (do not) try to resume uploads (default: -Z).\n\
   -T XX  Upload into temporary files prefixed by XX.\n");
 	(void) fprintf(fp, "\
   -S XX  Upload into temporary files suffixed by XX.\n\
   -DD    Delete local file after successfully uploading it.\n\
-  -b     Run in background (submit job to \"ncftpbatch\").\n\
-  -F     Use passive (PASV) data connections.\n\
-  -y     Try using \"SITE UTIME\" to preserve timestamps on remote host.\n\
+  -b     Run in background (submit job to \"ncftpbatch\" and run).\n\
+  -bb    Same as \"-b\" but queue only (do not run \"ncftpbatch\").\n\
+  -E     Use regular (PORT) data connections.\n\
+  -F     Use passive (PASV) data connections (default).\n\
+  -y     Try using \"SITE UTIME\" to preserve timestamps on remote host.\n");
+	(void) fprintf(fp, "\
   -B XX  Try setting the SO_SNDBUF size to XX.\n\
   -r XX  Redial XX times until connected.\n\
+  -W XX  Send raw FTP command XX after logging in.\n\
+  -X XX  Send raw FTP command XX after each file transferred.\n\
+  -Y XX  Send raw FTP command XX before logging out.\n\
   -R     Recursive mode; copy whole directory trees.\n");
 	(void) fprintf(fp, "\nExamples:\n\
   ncftpput -u gleason -p my.password Elwood.probe.net /home/gleason stuff.txt\n\
@@ -99,8 +110,9 @@ Usage(void)
 
 
 static void
-Abort(int sigNumUNUSED)
+Abort(int UNUSED(sigNum))
 {
+	LIBNCFTP_USE_VAR(sigNum);
 	signal(SIGINT, Abort);
 
 	/* Hopefully the I/O operation in progress
@@ -121,11 +133,11 @@ Abort(int sigNumUNUSED)
 
 
 static int
-Copy(FTPCIPtr cip, char *dstdir, char **files, int rflag, int xtype, int appendflag, const char *tmppfx, const char *tmpsfx, int resumeflag, int deleteflag)
+Copy(FTPCIPtr cip, const char *const dstdir, char **const files, const int rflag, const int xtype, const int appendflag, const char *const tmppfx, const char *const tmpsfx, const int resumeflag, const int deleteflag, const char *const perfilecmd)
 {
 	int i;
 	int result;
-	char *file;
+	const char *file;
 	int rc = 0;
 
 	for (i=0; ; i++) {
@@ -140,8 +152,10 @@ Copy(FTPCIPtr cip, char *dstdir, char **files, int rflag, int xtype, int appendf
 #endif
 			xtype, appendflag, tmppfx, tmpsfx, resumeflag, deleteflag, NoConfirmResumeUploadProc, 0);
 		if (result != 0) {
-			(void) fprintf(stderr, "ncftpput: file send error: %s.\n", FTPStrError(result));
+			FTPPerror(cip, result, kErrCouldNotStartDataTransfer, "ncftpput", file);
 			rc = result;
+		} else {
+			(void) AdditionalCmd(cip, perfilecmd, file);
 		}
 	}
 	return (rc);
@@ -177,9 +191,12 @@ main(int argc, char **argv)
 	char *ufilep;
 	const char *udirp;
 	char ufile[256];
-	char *password;
+	char precmd[128], postcmd[128], perfilecmd[128];
 
 	InitWinsock();
+#ifdef SIGPOLL
+	NcSignal(SIGPOLL, (FTPSigProc) SIG_IGN);
+#endif
 	result = FTPInitLibrary(&gLib);
 	if (result < 0) {
 		(void) fprintf(stderr, "ncftpput: init library error %d (%s).\n", result, FTPStrError(result));
@@ -193,6 +210,9 @@ main(int argc, char **argv)
 		exit(kExitInitConnInfoFailed);
 	}
 
+	InitUserInfo();
+	fi.dataPortMode = kFallBackToSendPortMode;
+	LoadFirewallPrefs(0);
 	if (gFwDataPortMode >= 0)
 		fi.dataPortMode = gFwDataPortMode;
 	fi.xferTimeout = 60 * 60;
@@ -202,19 +222,25 @@ main(int argc, char **argv)
 	fi.errLog = stderr;
 	(void) STRNCPY(fi.user, "anonymous");
 	progmeters = GetDefaultProgressMeterSetting();
+	precmd[0] = '\0';
+	postcmd[0] = '\0';
+	perfilecmd[0] = '\0';
 
-	while ((c = getopt(argc, argv, "P:u:j:p:e:d:U:t:mar:RvVf:AT:S:FcyZzDbB:")) > 0) switch(c) {
+	while ((c = getopt(argc, argv, "P:u:j:p:e:d:U:t:mar:RvVf:AT:S:EFcyZzDbB:W:X:Y:")) > 0) switch(c) {
 		case 'P':
 			fi.port = atoi(optarg);	
 			break;
 		case 'u':
 			(void) STRNCPY(fi.user, optarg);
+			memset(optarg, '*', strlen(fi.user));
 			break;
 		case 'j':
 			(void) STRNCPY(fi.acct, optarg);
+			memset(optarg, '*', strlen(fi.acct));
 			break;
 		case 'p':
 			(void) STRNCPY(fi.pass, optarg);	/* Don't recommend doing this! */
+			memset(optarg, '*', strlen(fi.pass));
 			break;
 		case 'e':
 			if (strcmp(optarg, "stdout") == 0)
@@ -277,11 +303,11 @@ main(int argc, char **argv)
 		case 'S':
 			tmpsfx = optarg;
 			break;
+		case 'E':
+			fi.dataPortMode = kSendPortMode;
+			break;
 		case 'F':
-			if (fi.dataPortMode == kPassiveMode)
-				fi.dataPortMode = kSendPortMode;
-			else
-				fi.dataPortMode = kPassiveMode;
+			fi.dataPortMode = kPassiveMode;
 			break;
 		case 'c':
 			ftpcat = 1;
@@ -300,6 +326,15 @@ main(int argc, char **argv)
 			break;
 		case 'B':
 			fi.dataSocketSBufSize = (size_t) atol(optarg);	
+			break;
+		case 'W':
+			STRNCPY(precmd, optarg);
+			break;
+		case 'X':
+			STRNCPY(perfilecmd, optarg);
+			break;
+		case 'Y':
+			STRNCPY(postcmd, optarg);
 			break;
 		default:
 			Usage();
@@ -329,17 +364,9 @@ main(int argc, char **argv)
 		}
 	}
 
-	InitUserInfo();
-	LoadFirewallPrefs(0);
-
 	if (strcmp(fi.user, "anonymous") && strcmp(fi.user, "ftp")) {
 		if (fi.pass[0] == '\0') {
-			password = GetPass2("Password: ");		
-			if (password != NULL) {
-				(void) STRNCPY(fi.pass, password);
-				/* Don't leave cleartext password in memory. */
-				(void) memset(password, 0, strlen(fi.pass));
-			}
+			(void) gl_getpass("Password: ", fi.pass, sizeof(fi.pass));
 		}
 	}
 
@@ -386,6 +413,9 @@ main(int argc, char **argv)
 				rflag,
 				deleteflag,
 				fi.dataPortMode,
+				precmd,
+				perfilecmd,
+				postcmd,
 				(time_t) 0	/* when: now */
 			);
 			if (result == 0) {
@@ -394,7 +424,9 @@ main(int argc, char **argv)
 			}
 		}
 		if (spooled > 0) {
-			RunBatch(0, NULL);
+			if (batchmode == 1) {
+				RunBatch(0, NULL);
+			}
 			DisposeWinsock(0);
 			exit(kExitSuccess);
 		}
@@ -410,34 +442,61 @@ main(int argc, char **argv)
 		DisposeWinsock(0);
 		exit((int) es);
 	}
+
+	if (fi.hasCLNT != kCommandNotAvailable)
+		(void) FTPCmd(&fi, "CLNT NcFTPPut %.5s %s", gVersion + 11, gOS);
+
 	if (Umask != NULL) {
 		errstr = "could not set umask on remote host";
 		result = FTPUmask(&fi, Umask);
 		if (result != 0)
-			(void) fprintf(stderr, "ncftpput: umask failed: %s.\n", FTPStrError(result));
+			FTPPerror(&fi, result, kErrUmaskFailed, "ncftpput", "could not set umask");
 	}
-	if (wantMkdir != 0) {
-		errstr = "could not mkdir on remote host";
-		result = FTPMkdir(&fi, dstdir, kRecursiveYes);
-		if (result != 0)
-			(void) fprintf(stderr, "ncftpput: mkdir failed: %s.\n", FTPStrError(result));
+
+	errstr = "could not run pre-command remote host";
+	(void) AdditionalCmd(&fi, precmd, NULL);
+
+	if (dstdir != NULL) {
+		es = kExitChdirTimedOut;
+		if (wantMkdir != 0) {
+			errstr = "could not create and chdir on remote host";
+			result = FTPChdir3(&fi, dstdir, NULL, 0, kChdirOneSubdirAtATime|kChdirAndMkdir);
+		} else {
+			errstr = "could not chdir on remote host";
+			result = FTPChdir3(&fi, dstdir, NULL, 0, kChdirOneSubdirAtATime);
+		}
 	}
+
+	if (result != 0) {
+		FTPPerror(&fi, result, kErrCWDFailed, "ncftpput: Could not change to directory", dstdir);
+		(void) FTPCloseHost(&fi);
+		es = kExitChdirFailed;
+		DisposeWinsock(0);
+		exit((int) es);
+	}
+
 	if (result >= 0) {
 		errstr = "could not write to file on remote host";
 		es = kExitXferTimedOut;
 		(void) signal(SIGINT, Abort);
 		if (ftpcat == 0) {
-			if (Copy(&fi, dstdir, files, rflag, xtype, appendflag, (const char *) tmppfx, (const char *) tmpsfx, resumeflag, deleteflag) < 0)
+			if (Copy(&fi, "", files, rflag, xtype, appendflag, (const char *) tmppfx, (const char *) tmpsfx, resumeflag, deleteflag, perfilecmd) < 0)
 				es = kExitXferFailed;
 			else
 				es = kExitSuccess;
 		} else {
+			fi.progress = (FTPProgressMeterProc) 0;
 			if (FTPPutOneFile2(&fi, NULL, argv[optind + 1], xtype, STDIN_FILENO, appendflag, tmppfx, tmpsfx) < 0)
 				es = kExitXferFailed;
-			else
+			else {
 				es = kExitSuccess;
+				(void) AdditionalCmd(&fi, perfilecmd, argv[optind + 1]);
+			}
 		}
 	}
+
+	errstr = "could not run post-command remote host";
+	(void) AdditionalCmd(&fi, postcmd, NULL);
 	
 	(void) FTPCloseHost(&fi);
 	DisposeWinsock(0);

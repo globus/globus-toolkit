@@ -102,4 +102,4 @@ CPPFLAGS=`echo "$CPPFLAGS" | sed 's/^ *//;s/ *$//;s/  */ /g'`
 CFLAGS=`echo "$CFLAGS" | sed 's/^ *//;s/ *$//;s/  */ /g'`
 DEFS=`echo "$DEFS" | sed 's/^ *//;s/ *$//;s/  */ /g'`
 
-AC_OUTPUT([Makefile ucase_c/Makefile ucase_s/Makefile time_c/Makefile time_s/Makefile srltest/Makefile])
+AC_OUTPUT([Makefile ucase_c/Makefile ucase_s/Makefile time_c/Makefile time_s/Makefile srltest/Makefile sendmessage/Makefile])

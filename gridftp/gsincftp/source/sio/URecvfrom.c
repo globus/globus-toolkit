@@ -34,7 +34,7 @@ URecvfrom(int sfd, char *const buf, size_t size, int fl, struct sockaddr_un *con
 	time(&now);
 	done = now + tlen;
 	tleft = (int) (done - now);
-	while (1) {
+	forever {
 		*ualen = sizeof(struct sockaddr_un);
 		(void) alarm((unsigned int) tleft);
 		nread = recvfrom(sfd, buf, size, fl,

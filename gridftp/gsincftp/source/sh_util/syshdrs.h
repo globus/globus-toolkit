@@ -33,6 +33,9 @@
 #	include <errno.h>
 #	include <stdio.h>
 #	include <string.h>
+#	ifdef HAVE_STRINGS_H
+#		include <strings.h>
+#	endif
 #	include <stddef.h>
 #	include <stdlib.h>
 #	include <ctype.h>
@@ -46,7 +49,7 @@
 #	include <assert.h>
 #	define strcasecmp stricmp
 #	define strncasecmp strnicmp
-#	define sleep(a) Sleep(a * 1000)
+#	define sleep WinSleep
 #	ifndef S_ISREG
 #		define S_ISREG(m)      (((m) & _S_IFMT) == _S_IFREG)
 #		define S_ISDIR(m)      (((m) & _S_IFMT) == _S_IFDIR)
@@ -100,6 +103,9 @@
 #	include <errno.h>
 #	include <stdio.h>
 #	include <string.h>
+#	ifdef HAVE_STRINGS_H
+#		include <strings.h>
+#	endif
 #	include <stddef.h>
 #	include <stdlib.h>
 #	include <ctype.h>
@@ -142,6 +148,46 @@
 #endif
 
 #define NDEBUG 1			/* For assertions. */
+
+#if defined(HAVE_LONG_LONG) && defined(HAVE_OPEN64)
+#	define Open open64
+#else
+#	define Open open
+#endif
+
+#if defined(HAVE_LONG_LONG) && defined(HAVE_STAT64) && defined(HAVE_STRUCT_STAT64)
+#	define Stat stat64
+#	ifdef HAVE_FSTAT64
+#		define Fstat fstat64
+#	else
+#		define Fstat fstat
+#	endif
+#	ifdef HAVE_LSTAT64
+#		define Lstat lstat64
+#	else
+#		define Lstat lstat
+#	endif
+#else
+#	define Stat stat
+#	define Fstat fstat
+#	define Lstat lstat
+#endif
+
+#if defined(HAVE_LONG_LONG) && defined(HAVE_LSEEK64)
+#	define Lseek(a,b,c) lseek64(a, (longest_int) b, c)
+#elif defined(HAVE_LONG_LONG) && defined(HAVE_LLSEEK)
+#	if 1
+#		if defined(LINUX) && (LINUX <= 23000)
+#			define Lseek(a,b,c) lseek(a, (off_t) b, c)
+#		else
+#			define Lseek(a,b,c) llseek(a, (longest_int) b, c)
+#		endif
+#	else
+#		define Lseek(a,b,c) lseek(a, (off_t) b, c)
+#	endif
+#else
+#	define Lseek(a,b,c) lseek(a, (off_t) b, c)
+#endif
 
 
 #include <Strn.h>			/* Library header. */

@@ -77,6 +77,9 @@
 /* Result of "uname -a" */
 #undef UNAME
 
+/* Define if you have the fstat64 function.  */
+#undef HAVE_FSTAT64
+
 /* Define if you have the getcwd function.  */
 #undef HAVE_GETCWD
 
@@ -95,8 +98,20 @@
 /* Define if you have the inet_ntop function.  */
 #undef HAVE_INET_NTOP
 
+/* Define if you have the llseek function.  */
+#undef HAVE_LLSEEK
+
+/* Define if you have the lseek64 function.  */
+#undef HAVE_LSEEK64
+
+/* Define if you have the lstat64 function.  */
+#undef HAVE_LSTAT64
+
 /* Define if you have the mktime function.  */
 #undef HAVE_MKTIME
+
+/* Define if you have the open64 function.  */
+#undef HAVE_OPEN64
 
 /* Define if you have the res_init function.  */
 #undef HAVE_RES_INIT
@@ -109,6 +124,9 @@
 
 /* Define if you have the socket function.  */
 #undef HAVE_SOCKET
+
+/* Define if you have the stat64 function.  */
+#undef HAVE_STAT64
 
 /* Define if you have the strcasecmp function.  */
 #undef HAVE_STRCASECMP

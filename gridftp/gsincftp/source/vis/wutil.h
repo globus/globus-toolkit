@@ -17,4 +17,5 @@ void Beep(int on);
 void WAttr(WINDOW *w, int attr, int on);
 void swclrtoeol(WINDOW *w);
 void WAddCenteredStr(WINDOW *w, int y, const char *str);
+int PrintDimensions(int);
 int InitWindows(void);

@@ -100,8 +100,13 @@ The default is to
 .I not
 try to resume (\-Z).
 .TP 8
+.B -E
+Use regular (PORT) data connections.
+.TP 8
 .B -F
 Use passive (PASV) data connections.
+The default is to use passive, but to fallback to
+regular if the passive connection fails or times out.
 .TP 8
 .B -DD
 Delete local file after successfully uploading it.
@@ -111,13 +116,66 @@ Try using "SITE UTIME" to preserve timestamps on remote host.
 Not many remote FTP servers support this, so it may not work.
 .TP 8
 .B -b
-Run in background (by submitting a job to
+Run in background (by submitting a batch job and then spawning
 .IR ncftpbatch ")."
+.TP 8
+.B -bb
+Similar to
+.B -b
+option, but only submits the batch job.
+You will need to run
+.I ncftpbatch
+for the batch job to be processed.
+This is useful if you already have a
+.I ncftpbatch
+process running, or wish to have better control of when batch
+jobs are processed.
+.IP
+For example,
+if you wanted to do background processing of three
+files all on the same remote server, it is more polite
+to use just one
+.I ncftpbatch
+process to process the three jobs sequentially, rather than
+having three 
+.I ncftpbatch
+processes open three simultaneous FTP sessions to the same
+server.
 .TP 8
 .BI "-B " "XX"
 Try setting the TCP/IP socket buffer size to
 .I XX
 bytes.
+.TP 8
+.BI "-W " "XX"
+Send raw FTP command
+.I XX
+after logging in.
+.TP 8
+.BI "-X " "XX"
+Send raw FTP command
+.I XX
+after each file transferred.
+.TP 8
+.BI "-Y " "XX"
+Send raw FTP command
+.I XX
+before logging out.
+.IP
+The
+.BR "-W" ", " "-X" ", and " "-Y"
+options are useful for advanced users who need to tweak
+behavior on some servers.
+For example, users accessing mainframes might need to send
+some special SITE commands to set blocksize and record format information.
+.IP
+When using those options, you can use a newline character to delimit
+multiple commands.
+For the
+.B "-X"
+option, you can use the cookie
+.B %s
+to expand into the name of the file that was transferred.
 .\"-------
 .SH "DESCRIPTION"
 .\"-------
@@ -169,11 +227,11 @@ Nevertheless, if you choose to use the
 option the file should look something like this:
 .RS
 .sp
-host Bozo.probe.net
+host sphygmomanometer.ncftp.com
 .br
 user gleason
 .br
-pass mypasswd
+pass mypassword
 .br
 .sp
 .RE
@@ -208,7 +266,7 @@ flag.
 Example:
 .RS 4
 .sp
-$ ncftpput -R ftp.probe.net /incoming /tmp/stuff
+$ ncftpput -R pikachu.nintendo.co.jp /incoming /tmp/stuff
 .br
 .sp
 .RE
@@ -237,7 +295,7 @@ Here is an example that uploads to the file
 filename:
 .RS 4
 .sp
-$ ncftpput -S \.tmp Bozo\.probe\.net /pub/incoming /a/README
+$ ncftpput -S \.tmp bowser\.nintendo\.co\.jp /pub/incoming /a/README
 .RE
 .PP
 A neat way to pipe the output from any local command into
@@ -250,7 +308,7 @@ The following example shows how to make a backup and store
 it on a remote machine:
 .RS 4
 .sp
-$ tar cf / | ncftpput -c Bozo\.probe\.net /usr/local/backup.tar
+$ tar cf / | ncftpput -c sonic\.sega\.co\.jp /usr/local/backup.tar
 .RE
 .\"-------
 .SH "DIAGNOSTICS"

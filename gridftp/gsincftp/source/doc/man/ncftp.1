@@ -131,6 +131,36 @@ the main
 .I ncftp
 program is more of a browser-type program.
 .\"-------
+.SS "OPTIONS"
+.\"-------
+The program allows you to specify a host or directory URL
+on the command line.  This is a synonym for running
+.I ncftp
+and then using the
+.I open
+command.
+A few command-line flags are allowed with this mode:
+.TP 8
+.BI "-u " "XX"
+Use username
+.I XX
+instead of anonymous.
+.TP 8
+.BI "-p " "XX"
+Use password
+.I XX
+with the username.
+.TP 8
+.BI "-j " "XX"
+Use account 
+.I XX
+in supplement to the username and password (deprecated).
+.TP 8
+.BI "-P " "XX"
+Use port number
+.I XX
+instead of the default FTP service port (21).
+.\"-------
 .SS "INTRODUCTION TO THE COMMAND SHELL"
 .\"-------
 .PP
@@ -667,6 +697,30 @@ using the username ``mario:''
 .Xs
 open -u mario bowser.nintendo.co.jp
 .De
+.IP
+Here is a list of options available for use with the
+.I open
+command:
+.IP
+.BI "-u " "XX"
+Use username
+.I XX
+instead of anonymous.
+.IP
+.BI "-p " "XX"
+Use password
+.I XX
+with the username.
+.IP
+.BI "-j " "XX"
+Use account 
+.I XX
+in supplement to the username and password (deprecated).
+.IP
+.BI "-P " "XX"
+Use port number
+.I XX
+instead of the default FTP service port (21).
 .\"-------
 .IP page
 .\"-------
@@ -891,6 +945,22 @@ courtesy to the site administrator.
 If you change this, be aware that some sites require (i.e. they
 check for) valid E-mail addresses.
 .\"-------
+.IP "auto\-resume"
+.\"-------
+.I NcFTP
+3 now prompts the user by default when you try to download
+a file that already exists locally, or upload a file that
+already exists remotely.
+Older versions of the program automatically guessed whether to overwrite
+the existing file or attempt to resume where it left off,
+but sometimes the program would guess wrong.
+If you would prefer that the program always guess which
+action to take, set this variable to
+.IR yes ","
+otherwise, leave it set to
+.I "no"
+and the program will prompt you for which action to take.
+.\"-------
 .IP "autosave\-bookmark\-changes"
 .\"-------
 With the advent of version 3 of
@@ -975,6 +1045,14 @@ You can change how the program reports file transfer status.
 Select from meter
 .IR 2 ", " 1 ", or " 0 "."
 .\"-------
+.IP "redial\-delay"
+.\"-------
+When a host is busy or unavailable, the program waits
+this number of seconds before trying again.
+The smallest you can set this is to 10 seconds --
+so if you were planning on being inconsiderate,
+think again.
+.\"-------
 .IP "save\-passwords"
 .\"-------
 If you set this variable to
@@ -1017,7 +1095,7 @@ mode only, which you can do from a
 .I ncftp
 command prompt like this:
 .Ds
-set passive yes
+set passive on
 .De
 .PP
 The reason for this is because many firewalls do not allow incoming

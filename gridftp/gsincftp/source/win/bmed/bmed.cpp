@@ -101,7 +101,7 @@ void CBmedApp::SendSelectedBookmarkToNcFTP(void)
 	hMailSlot = ::CreateFile(
          kNcFTPBookmarksMailslot,
          GENERIC_WRITE, 
-         0,              // no sharing 
+         FILE_SHARE_READ,// share with other readers
          NULL,           // no security attributes
          OPEN_EXISTING,  // opens existing pipe 
          0,              // default attributes 

@@ -6,6 +6,7 @@
 
 int gWinInit = 0;
 int gScreenWidth = 0;
+int gScreenHeight = 0;
 
 void
 EndWin(void)
@@ -246,7 +247,7 @@ void WAddCenteredStr(WINDOW *w, int y, const char *str)
 	int maxy, maxx;
 
 	getmaxyx(w, maxy, maxx);
-	x = (maxx - strlen(str)) / 2;
+	x = (maxx - (int) strlen(str)) / 2;
 	if (x < 0)
 		x = 0;
 	wmove(w, y, x);
@@ -257,9 +258,9 @@ void WAddCenteredStr(WINDOW *w, int y, const char *str)
 
 
 static void
-SigTerm(int unused)
+SigTerm(int UNUSED(sig))
 {
-	unused = 1;
+	LIBNCFTP_USE_VAR(sig);
 	Exit(1);
 }	/* SigTerm */
 
@@ -269,9 +270,9 @@ SigTerm(int unused)
 #ifndef NCURSES_VERSION
 #ifdef SIGTSTP
 static void
-SigTstp(int unused)
+SigTstp(int UNUSED(sig))
 {
-	unused = 1;
+	LIBNCFTP_USE_VAR(sig);
 	/* TO-DO */
 
 	/* Ncurses is smart enough to handle this for us,
@@ -303,6 +304,7 @@ InitWindows(void)
 
 	getmaxyx(stdscr, maxy, maxx);
 	gScreenWidth = maxx;
+	gScreenHeight = maxy;
 
 #ifndef NCURSES_VERSION
 #ifdef SIGTSTP
@@ -315,3 +317,36 @@ InitWindows(void)
 
 	return (0);
 }	/* InitWindows */
+
+
+
+int
+PrintDimensions(int shortMode)
+{
+	int maxy = 0, maxx = 0;
+	char buf[128];
+
+	initscr();
+	if (stdscr == NULL)
+		return (-1);
+	getmaxyx(stdscr, maxy, maxx);
+	endwin();
+	if ((maxx > 0) && (maxy > 0)) {
+		memset(buf, 0, sizeof(buf));
+#ifdef HAVE_SNPRINTF
+		(void) snprintf(
+			buf,
+			sizeof(buf) - 1,
+#else
+		(void) sprintf(
+			buf,
+#endif
+			(shortMode != 0) ? "%d %d\n" : "COLUMNS=%d\nLINES=%d\nexport COLUMNS\nexport LINES\n",
+			maxx,
+			maxy
+		);
+		(void) write(1, buf, strlen(buf));
+		return (0);
+	}
+	return (-1);
+}	/* PrintDimensions */

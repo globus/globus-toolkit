@@ -80,7 +80,7 @@ int
 Strntok(char *dstTokenStart, size_t tokenSize, char *buf, const char *delims)
 {
 	static char *p = NULL;
-	char *start, *end;
+	char *end;
 	char *lim;
 	char *dst;
 	int len;
@@ -97,7 +97,7 @@ Strntok(char *dstTokenStart, size_t tokenSize, char *buf, const char *delims)
 		}
 	}
 
-	for (start = p, end = p; ; end++) {
+	for (end = p; ; end++) {
 		if (*end == '\0') {
 			p = NULL;		/* This is the last token. */
 			break;
@@ -111,7 +111,7 @@ Strntok(char *dstTokenStart, size_t tokenSize, char *buf, const char *delims)
 			*dst++ = *end;
 	}
 	*dst = '\0';
-	len = dst - dstTokenStart;		/* Return length of token. */
+	len = (int) (dst - dstTokenStart);	/* Return length of token. */
 
 #if (STRN_ZERO_PAD == 1)
 	/* Pad with zeros. */

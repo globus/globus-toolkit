@@ -1,6 +1,6 @@
 /* util.c
  *
- * Copyright (c) 1996 Mike Gleason, NCEMRSoft.
+ * Copyright (c) 1996-2001 Mike Gleason, NCEMRSoft.
  * All rights reserved.
  *
  */
@@ -492,6 +492,11 @@ time_t UnMDTMDate(char *dstr)
 	time_t mt, now;
 	time_t result = kModTimeUnknown;
 
+	if (strncmp(dstr, "19100", 5) == 0) {
+		/* Server Y2K bug! */
+		return (result);
+	}
+
 	(void) time(&now);
 	t = localtime(&now);
 
@@ -571,6 +576,15 @@ SetSockBufSize(int sockfd, size_t rsize, size_t ssize)
 	int opt;
 	int optsize;
 
+#ifdef TCP_RFC1323
+	/* This is an AIX-specific socket option to do RFC1323 large windows */
+	if (ssize > 0 || rsize > 0) {
+		opt = 1;
+		optsize = sizeof(opt);
+		rc = setsockopt(sockfd, IPPROTO_TCP, TCP_RFC1323, &opt, optsize);
+	}
+#endif
+
 	if (ssize > 0) {
 		opt = (int) ssize;
 		optsize = sizeof(opt);
@@ -613,6 +627,43 @@ Scramble(unsigned char *dst, size_t dsize, unsigned char *src, char *key)
 
 
 #if defined(WIN32) || defined(_WINDOWS)
+void WinSleep(unsigned int seconds)
+{
+	DWORD now, deadline;
+	DWORD milliseconds = seconds * 1000;
+
+	if (milliseconds > 0) {
+		now = GetTickCount();
+		deadline = now + milliseconds;
+		if (now < deadline) {
+			/* Typical case */
+			do {
+				milliseconds = deadline - now;
+				Sleep(milliseconds);
+				now = GetTickCount();
+			} while (now < deadline);
+		} else {
+			/* Overflow case */
+			deadline = now - 1;
+			milliseconds -= (0xFFFFFFFF - now);
+			do {
+				Sleep(0xFFFFFFFF - now);
+				now = GetTickCount();
+			} while (now > deadline);
+			/* Counter has now wrapped around */
+			deadline = now + milliseconds;
+			do {
+				milliseconds = deadline - now;
+				Sleep(milliseconds);
+				now = GetTickCount();
+			} while (now < deadline);
+		}
+	}
+}	/* WinSleep */
+
+
+
+
 char *
 StrFindLocalPathDelim(const char *src) /* TODO: optimize */
 {
@@ -652,6 +703,23 @@ StrRFindLocalPathDelim(const char *src)	/* TODO: optimize */
 
 	return ((char *) last);
 }	/* StrRFindLocalPathDelim */
+
+
+
+
+void
+StrRemoveTrailingLocalPathDelim(char *dst)
+{
+	char *cp;
+
+	cp = StrRFindLocalPathDelim(dst);
+	if ((cp == NULL) || (cp[1] != '\0'))
+		return;
+
+	/* Note: Do not destroy a path of "/" */
+	while ((cp > dst) && (IsLocalPathDelim(*cp)))
+		*cp-- = '\0';
+}	/* StrRemoveTrailingLocalPathDelim */
 
 
 
@@ -696,6 +764,23 @@ LocalPathToTVFSPath(char *dst)
 
 
 
+void
+StrRemoveTrailingSlashes(char *dst)
+{
+	char *cp;
+
+	cp = strrchr(dst, '/');
+	if ((cp == NULL) || (cp[1] != '\0'))
+		return;
+
+	/* Note: Do not destroy a path of "/" */
+	while ((cp > dst) && (*cp == '/'))
+		*cp-- = '\0';
+}	/* StrRemoveTrailingSlashes */
+
+
+
+
 int
 MkDirs(const char *const newdir, int mode1)
 {
@@ -706,7 +791,7 @@ MkDirs(const char *const newdir, int mode1)
 	struct _stat st;
 	char *share;
 #else
-	struct stat st;
+	struct Stat st;
 	mode_t mode = (mode_t) mode1;
 #endif
 
@@ -739,7 +824,7 @@ MkDirs(const char *const newdir, int mode1)
 	}
 #else
 	if (access(newdir, F_OK) == 0) {
-		if (stat(newdir, &st) < 0)
+		if (Stat(newdir, &st) < 0)
 			return (-1);
 		if (! S_ISDIR(st.st_mode)) {
 			errno = ENOTDIR;
@@ -824,6 +909,12 @@ MkDirs(const char *const newdir, int mode1)
 			 */
 			if (sl != NULL)
 				*sl = LOCAL_PATH_DELIM;
+
+			/* We refer to cp + 1 below,
+			 * so this is why we can
+			 * set "cp" to point to the
+			 * byte before the array starts.
+			 */
 			cp = s - 1;
 			break;
 		}
@@ -864,6 +955,68 @@ MkDirs(const char *const newdir, int mode1)
 	}
 	return (0);
 }	/* MkDirs */
+
+
+
+
+int
+FilenameExtensionIndicatesASCII(const char *const pathName, const char *const extnList)
+{
+	const char *extn;
+	char *cp;
+	int c;
+	char extnPattern[16];
+
+	extn = pathName + strlen(pathName) - 1;
+	forever {
+		if (extn <= pathName)
+			return (0);	/* End of pathname, no extension. */
+		c = (int) *--extn;
+		if (IsLocalPathDelim(c))
+			return (0);	/* End of filename, no extension. */
+		if (c == '.') {
+			extn += 1;
+			break;
+		}
+	}
+	if (strlen(extn) > (sizeof(extnPattern) - 2 - 1 - 1)) {
+		return (0);
+	}
+#ifdef HAVE_SNPRINTF
+	snprintf(extnPattern, sizeof(extnPattern),
+#else
+	sprintf(extnPattern,
+#endif
+		"|.%s|",
+		extn
+	);
+
+	cp = extnPattern;
+	forever {
+		c = *cp;
+		if (c == '\0')
+			break;
+		if (isupper(c)) {
+			c = tolower(c);
+			*cp++ = (char) c;
+		} else {
+			cp++;
+		}
+	}
+
+	/* Extension list is specially formatted, like this:
+	 *
+	 * 	|ext1|ext2|ext3|...|extN|
+	 *
+	 * I.e, each filename extension is delimited with 
+	 * a pipe, and we always begin and end the string
+	 * with a pipe.
+	 */
+	if (strstr(extnList, extnPattern) != NULL) {
+		return (1);
+	}
+	return (0);
+}	/* FilenameExtensionIndicatesASCII */
 
 
 

@@ -1,5 +1,8 @@
 /* gpshare.c
  *
+ * Copyright (c) 1996-2000 Mike Gleason, NCEMRSoft.
+ * All rights reserved.
+ *
  * Shared routines for ncftpget and ncftpput.
  */
 
@@ -57,7 +60,7 @@ PrSizeAndRateMeter(const FTPCIPtr cip, int mode)
 	double rate;
 	const char *rStr;
 	static const char *uStr;
-	static double uTotal, uMult;
+	static double uMult;
 	char localName[32];
 	char line[128];
 	int i;
@@ -69,7 +72,7 @@ PrSizeAndRateMeter(const FTPCIPtr cip, int mode)
 				PrStatBar(cip, mode);
 				return;
 			}
-			uTotal = FileSize((double) cip->expectedSize, &uStr, &uMult);
+			(void) FileSize((double) cip->expectedSize, &uStr, &uMult);
 
 			if (cip->lname == NULL) {
 				localName[0] = '\0';
@@ -125,7 +128,7 @@ PrSizeAndRateMeter(const FTPCIPtr cip, int mode)
 			 * stuff that might have been left over from the last
 			 * update.
 			 */
-			for (i=strlen(line); i < 80 - 2; i++)
+			for (i = (int) strlen(line); i < 80 - 2; i++)
 				line[i] = ' ';
 			line[i] = '\0';
 
@@ -259,7 +262,7 @@ PrStatBar(const FTPCIPtr cip, int mode)
 			 * stuff that might have been left over from the last
 			 * update.
 			 */
-			for (i=strlen(line); i < 80 - 2; i++)
+			for (i = (int) strlen(line); i < 80 - 2; i++)
 				line[i] = ' ';
 			line[i] = '\0';
 
@@ -385,62 +388,6 @@ SetTimeouts(const FTPCIPtr cip, const char *const argstr)
 
 
 
-
-
-char *
-GetPass2(const char *const prompt)
-{
-#ifdef HAVE_GETPASS
-	return getpass(prompt);
-#elif defined(_CONSOLE) && (defined(WIN32) || defined(_WINDOWS))
-	static char pwbuf[128];
-	char *dst, *dlim;
-	int c;
-
-	(void) memset(pwbuf, 0, sizeof(pwbuf));
-	if (! _isatty(_fileno(stdout)))
-		return (pwbuf);
-	(void) fputs(prompt, stdout);
-	(void) fflush(stdout);
-
-	for (dst = pwbuf, dlim = dst + sizeof(pwbuf) - 1;;) {
-		c = _getch();
-		if ((c == 0) || (c == 0xe0)) {
-			/* The key is a function or arrow key; read and discard. */
-			(void) _getch();
-		}
-		if ((c == '\r') || (c == '\n'))
-			break;
-		if (dst < dlim)
-			*dst++ = (char) c;
-	}
-	*dst = '\0';
-
-	(void) fflush(stdout);
-	(void) fflush(stdin);
-	return (pwbuf);
-#else
-	static char pwbuf[128];
-
-	(void) memset(pwbuf, 0, sizeof(pwbuf));
-#if defined(WIN32) || defined(_WINDOWS)
-	if (! _isatty(_fileno(stdout)))
-		return (pwbuf);
-#else
-	if (! isatty(STDERR_FILENO))
-		return (pwbuf);
-#endif
-	(void) fputs(prompt, stdout);
-	(void) fflush(stdout);
-	(void) FGets(pwbuf, sizeof(pwbuf), stdin);
-	(void) fflush(stdout);
-	(void) fflush(stdin);
-	return (pwbuf);
-#endif
-}	/* GetPass2 */
-
-
-
 void
 InitWinsock(void)
 {
@@ -501,5 +448,48 @@ void ClosePager(FILE *fp)
 	(void) pclose(fp);
 #endif
 }	/* ClosePager */
+
+
+
+
+int
+AdditionalCmd(FTPCIPtr const cip, const char *const spec, const char *const arg)
+{
+	int rc;
+	char cmd[500], *dst, *dlim;
+	const char *src, *s2;
+
+	rc = kNoErr;
+	if ((spec != NULL) && (spec[0] != '\0')) {
+		src = spec;
+		while (*src) {
+			dst = cmd;
+			dlim = cmd + sizeof(cmd) - 1;
+			for ( ; *src != '\0'; src++) {
+				if ((*src == '%') && (src[1] == 's')) {
+					for (s2 = arg; *s2 != '\0'; s2++) {
+						if (dst < dlim)
+							*dst++ = *s2;
+					}
+					src++;
+				} else if (*src == '\n') {
+					src++;
+					break;
+				} else if (*src != '\r') {
+					if (dst < dlim)
+						*dst++ = *src;
+				}
+			}
+			*dst = '\0';
+			
+			if (cmd[0] != '\0') {
+				rc = FTPCmd(cip, "%s", cmd);
+				if (rc != 2)
+					rc = kErrGeneric;
+			}
+		}
+	}
+	return (rc);
+}	/* AdditionalCmd */
 
 /* eof */

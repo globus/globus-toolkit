@@ -1,4 +1,9 @@
-/* ncftp_errno.h */
+/* ncftp_errno.h
+ *
+ * Copyright (c) 1996-2001 Mike Gleason, NCEMRSoft.
+ * All rights reserved.
+ *
+ */
 
 #ifndef kNoErr
 #	define kNoErr				0
@@ -102,6 +107,7 @@
 #define kErrFileExistsButCannotDetermineType	(-190)
 #define kErrNotADirectory			(-191)
 #define kErrRecursionLimitReached		(-192)
-#define kErrControlTimedOut				(-193)
-#define kErrDataTimedOut				(-194)
-#define kErrLast				(194)
+#define kErrControlTimedOut			(-193)
+#define kErrDataTimedOut			(-194)
+#define kErrUserCanceled			(-195)
+#define kErrLast				(195)

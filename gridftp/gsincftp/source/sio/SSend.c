@@ -44,7 +44,7 @@ SSend(int sfd, char *buf0, size_t size, int fl, int tlen)
 	nleft = (int) size;
 	time(&now);
 	done = now + tlen;
-	while (1) {
+	forever {
 		tleft = (int) (done - now);
 		if (tleft < 1) {
 			nwrote = size - nleft;

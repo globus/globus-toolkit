@@ -1,4 +1,7 @@
+#define _sio_main_c_
 #include "syshdrs.h"
+
+int gLibSio_Uses_Me_To_Quiet_Variable_Unused_Warnings = 0;
 
 #ifndef NO_SIGNALS
 

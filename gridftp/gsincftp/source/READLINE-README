@@ -1,5 +1,5 @@
 This version of NcFTP does not support GNU Readline (nor will future
-versions.  It does include an integrated command line editor, "getline."
+versions).  It does include an integrated command line editor, "getline."
 It has been enhanced by me to include a mini-VI emulation and support
 for tab completion, so for most users, "getline" will serve as a capable
 replacement.

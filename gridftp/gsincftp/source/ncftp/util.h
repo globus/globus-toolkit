@@ -1,6 +1,6 @@
 /* util.h
  *
- * Copyright (c) 1992-1999 by Mike Gleason.
+ * Copyright (c) 1992-2001 by Mike Gleason.
  * All rights reserved.
  * 
  */
@@ -73,7 +73,6 @@ int StrToBool(const char *const);
 void AbsoluteToRelative(char *const, const size_t, const char *const, const char *const, const size_t);
 int GetHostByName(char *const volatile, size_t, const char *const, int);
 time_t UnDate(char *dstr);
-void StrRemoveTrailingSlashes(char *);
 int DecodeDirectoryURL(const FTPCIPtr, char *, LineListPtr, char *, size_t);
 char *OurInstallationPath(char *const dst, const size_t siz, const char *const fname);
 #if defined(WIN32) || defined(_WINDOWS)

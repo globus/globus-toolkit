@@ -32,7 +32,7 @@ UBind(int sockfd, const char *const astr, const int nTries, const int reuseFlag)
 		if (bind(sockfd, (struct sockaddr *) &localAddr, ualen) == 0) {
 			break;
 		}
-		if (i == nTries) {
+		if (i == (unsigned int) nTries) {
 			return (-1);
 		}
 		/* Give the OS time to clean up the old socket,

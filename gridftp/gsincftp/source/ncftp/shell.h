@@ -1,6 +1,6 @@
 /* shell.h
  *
- * Copyright (c) 1992-1999 by Mike Gleason.
+ * Copyright (c) 1992-2001 by Mike Gleason.
  * All rights reserved.
  * 
  */
@@ -63,6 +63,7 @@ typedef struct Command {
 #define kCompleteLocalFile		00040
 #define kCompleteLocalDir		00100
 #define kCompleteBookmark		00200
+#define kCompletePrefOpt		00400
 
 /* shell.c */
 void InitCommandList(void);

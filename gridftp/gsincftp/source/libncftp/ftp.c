@@ -1,11 +1,11 @@
 /* ftp.c
  *
- * Copyright (c) 1996 Mike Gleason, NCEMRSoft.
+ * Copyright (c) 1996-2001 Mike Gleason, NCEMRSoft.
  * All rights reserved.
  *
  */
 
-#define _ftp_c_
+#define _libncftp_ftp_c_
 #include "syshdrs.h"
 
 char gLibNcFTPVersion[64] = kLibraryVersion;
@@ -25,7 +25,7 @@ static jmp_buf gCancelConnectJmp;
 
 
 #ifndef lint
-static char gCopyright[] = "@(#) LibNcFTP Copyright 1995-1999, by Mike Gleason.  All rights reserved.";
+static char gCopyright[] = "@(#) LibNcFTP Copyright 1995-2000, by Mike Gleason.  All rights reserved.";
 #endif
 
 #ifdef HAVE_LIBSOCKS5
@@ -365,6 +365,12 @@ OpenControlConnection(const FTPCIPtr cip, char *host, unsigned int port)
 #endif	/* NO_SIGNALS */
 	const char *firstLine, *secondLine, *srvr;
 
+	LIBNCFTP_USE_VAR(gLibNcFTPVersion);
+	LIBNCFTP_USE_VAR(gCopyright);
+#ifdef NO_SIGNALS
+	LIBNCFTP_USE_VAR(gNoSignalsMarker);
+#endif	/* NO_SIGNALS */
+
 	if (cip->firewallType == kFirewallNotInUse) {
 		fhost = host;
 		fport = port;
@@ -662,7 +668,7 @@ OpenControlConnection(const FTPCIPtr cip, char *host, unsigned int port)
 	cip->cin = NULL;
 	sock2fd = kClosedFileDescriptor;
 
-	if (InitSReadlineInfo(&cip->ctrlSrl, sockfd, cip->srlBuf, sizeof(cip->srlBuf), (int) cip->ctrlTimeout) < 0) {
+	if (InitSReadlineInfo(&cip->ctrlSrl, sockfd, cip->srlBuf, sizeof(cip->srlBuf), (int) cip->ctrlTimeout, 1) < 0) {
 		result = kErrFdopenW;
 		cip->errNo = kErrFdopenW;
 		Error(cip, kDoPerror, "Could not fdopen.\n");
@@ -732,7 +738,7 @@ OpenControlConnection(const FTPCIPtr cip, char *host, unsigned int port)
 	}
 
 	result = GetResponse(cip, rp);
-	if (result < 0) {
+	if ((result < 0) && (rp->msg.first == NULL)) {
 		goto fatal;
 	}
 	if (rp->msg.first != NULL) {
@@ -748,13 +754,16 @@ OpenControlConnection(const FTPCIPtr cip, char *host, unsigned int port)
 			srvr = "wu-ftpd";
 		} else if (strstr(firstLine, "NcFTPd") != NULL) {
 			cip->serverType = kServerTypeNcFTPd;
-			srvr = "NcFTPd";
+			srvr = "NcFTPd Server";
 		} else if (STRNEQ("ProFTPD", firstLine, 7)) {
 			cip->serverType = kServerTypeProFTPD;
 			srvr = "ProFTPD";
 		} else if (strstr(firstLine, "Microsoft FTP Service") != NULL) {
 			cip->serverType = kServerTypeMicrosoftFTP;
 			srvr = "Microsoft FTP Service";
+		} else if (strstr(firstLine, "(NetWare ") != NULL) {
+			cip->serverType = kServerTypeNetWareFTP;
+			srvr = "NetWare FTP Service";
 		} else if (STRNEQ("WFTPD", firstLine, 5)) {
 			cip->serverType = kServerTypeWFTPD;
 			srvr = "WFTPD";
@@ -770,6 +779,9 @@ OpenControlConnection(const FTPCIPtr cip, char *host, unsigned int port)
 		} else if (strstr(firstLine, "Roxen") != NULL) {
 			cip->serverType = kServerTypeRoxen;
 			srvr = "Roxen";
+		} else if (strstr(firstLine, "WS_FTP") != NULL) {
+			cip->serverType = kServerTypeWS_FTP;
+			srvr = "WS_FTP Server";
 		} else if ((secondLine != NULL) && (strstr(secondLine, "WarFTP") != NULL)) {
 			cip->serverType = kServerTypeWarFTPd;
 			srvr = "WarFTPd";
@@ -779,7 +791,7 @@ OpenControlConnection(const FTPCIPtr cip, char *host, unsigned int port)
 			PrintF(cip, "Remote server is running %s.\n", srvr);
 
 		/* Do the application's connect message callback, if present. */
-		if (cip->onConnectMsgProc != 0)
+		if ((cip->onConnectMsgProc != 0) && (rp->codeType < 4))
 			(*cip->onConnectMsgProc)(cip, rp);
 	}
 
@@ -794,6 +806,8 @@ OpenControlConnection(const FTPCIPtr cip, char *host, unsigned int port)
 		cip->errNo = kErrConnectRetryableErr;
 		goto fatal;
 	}
+	if (result < 0)		/* Some other error occurred during connect message */
+		goto fatal;
 	cip->connected = 1;
 	DoneWithResponse(cip, rp);
 	return (kNoErr);
@@ -1235,7 +1249,9 @@ int
 AcceptDataConnection(const FTPCIPtr cip)
 {
 	int newSocket;
+#ifndef NO_SIGNALS
 	int len;
+#endif
 	unsigned short remoteDataPort;
 	unsigned short remoteCtrlPort;
 
@@ -1247,11 +1263,11 @@ AcceptDataConnection(const FTPCIPtr cip)
 		 * moment we don't do anything with it though.
 		 */
 		memset(&cip->servDataAddr, 0, sizeof(cip->servDataAddr));
-		len = (int) sizeof(cip->servDataAddr);
 
 #ifdef NO_SIGNALS
 		newSocket = SAccept(cip->dataSocket, &cip->servDataAddr, (int) cip->connTimeout);
 #else	/* NO_SIGNALS */
+		len = (int) sizeof(cip->servDataAddr);
 		if (cip->connTimeout > 0)
 			(void) alarm(cip->connTimeout);
 		newSocket = accept(cip->dataSocket, (struct sockaddr *) &cip->servDataAddr, &len);

@@ -36,10 +36,14 @@ SConnect(int sfd, const struct sockaddr_in *const addr, int tlen)
 	fd_set ss, xx;
 	struct timeval tv;
 	int result;
+	int cErrno;
 #if defined(WIN32) || defined(_WINDOWS)
 	int wsaErrno;
 	int soerr, soerrsize;
-#endif;
+#else
+	int optval;
+	int optlen;
+#endif
 
 	errno = 0;
 	if (tlen <= 0) {
@@ -85,6 +89,7 @@ SConnect(int sfd, const struct sockaddr_in *const addr, int tlen)
 		shutdown(sfd, 2);
 		return (-1);
 	}
+	cErrno = errno;
 
 	forever {
 #if defined(WIN32) || defined(_WINDOWS)
@@ -141,6 +146,35 @@ SConnect(int sfd, const struct sockaddr_in *const addr, int tlen)
 		errno = result;
 		return (-1);
 	}
+
+#if defined(WIN32) || defined(_WINDOWS)
+#else
+	if (cErrno == EINPROGRESS) {
+		/*
+		 * [from Linux connect(2) page]
+		 *
+		 * EINPROGRESS
+		 *
+		 * The socket is non-blocking and the connection can­
+		 * not  be  completed immediately.  It is possible to
+		 * select(2) or poll(2) for completion  by  selecting
+		 * the  socket  for  writing.  After select indicates
+		 * writability,  use  getsockopt(2)   to   read   the
+		 * SO_ERROR  option  at level SOL_SOCKET to determine
+		 * whether connect completed  successfully  (SO_ERROR
+		 * is zero) or unsuccessfully (SO_ERROR is one of the
+		 * usual error codes  listed  above,  explaining  the
+		 * reason for the failure).
+	         */
+		optval = 0;
+		optlen = sizeof(optval);
+		if (getsockopt(sfd, SOL_SOCKET, SO_ERROR, &optval, &optlen) == 0) {
+			errno = optval;
+			if (errno != 0)
+				return (-1);
+		}
+	}
+#endif
 
 #ifdef FIONBIO
 	opt = 0;

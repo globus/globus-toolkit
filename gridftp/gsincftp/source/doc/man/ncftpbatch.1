@@ -17,18 +17,19 @@ ncftpbatch - Batch FTP job processor daemon
 .SS
 Command line flags:
 .TP 8
-.RI "-d"
+.B "-d"
 Begin background processing of FTP jobs in the current user's
 $HOME/.ncftp/spool directory.
 This returns immediately, because a daemon process is spawned
 and ran in the background.
 .TP 8
-\-l
+.B \-l
 Lists the contents of the user's job queue.
 .TP 8
-\-D
-This is like \-d, except that the process does not become
-a daemon.
+.B \-D
+This is like
+.BR \-d ","
+except that the process does not become a daemon.
 .\"-------
 .SH "DESCRIPTION"
 .\"-------
@@ -49,6 +50,16 @@ daemon dies unexpectedly the jobs that are left in the queue will
 not be processed until another instance of
 .I ncftpbatch
 is run.
+.PP
+.I ncftpget
+and
+.I ncftpput
+can also be used to submit jobs for batch processing, using
+those utilities'
+.B \-b
+command-line flag.
+If desired, you can also manually create the spool files
+although this procedure is not documented here.
 .\"-------
 .SH "DIAGNOSTICS"
 .\"-------

@@ -4,7 +4,7 @@
 #
 #-----------------------------------------------------------------------------
 PKGNAME=libncftp
-VERSION=3.0b1
+VERSION=3.0.1
 PREFIX=@prefix@
 
 CC=@CC@
@@ -12,7 +12,7 @@ CFLAGS=@CFLAGS@
 #CC=gcc
 #CFLAGS=-g -W -Wall -Wstrict-prototypes -Wmissing-prototypes -Wmissing-declarations -Wshadow -Wbad-function-cast -Wwrite-strings -Wconversion
 VPATH=@srcdir@
-CPPFLAGS=@CPPFLAGS@ -I. -I../Strn -I../sio
+CPPFLAGS=-I. -I../Strn -I../sio @CPPFLAGS@
 
 LIB=libncftp.a
 LIBSO=libncftp.so.2
@@ -32,13 +32,15 @@ SHELL=/bin/sh
 .SUFFIXES: .c .o .so
 
 all: $(LIBSET)
-	( cd ../sio ; make )
-	( cd ../Strn ; make )
-	-[ -d ./samples/minincftp ] && cd ./samples/minincftp && make
-	-[ -d ./samples/monkey ] && cd ./samples/monkey && make
-	-[ -d ./samples/ncftpget ] && cd ./samples/ncftpget && make
-	-[ -d ./samples/ncftpls ] && cd ./samples/ncftpls && make
-	-[ -d ./samples/ncftpput ] && cd ./samples/ncftpput && make
+	( cd ../sio ; $(MAKE) )
+	( cd ../Strn ; $(MAKE) )
+	-[ -d ./samples/minincftp ] && cd ./samples/minincftp && $(MAKE)
+	-[ -d ./samples/misc ] && cd ./samples/misc && $(MAKE)
+	-[ -d ./samples/monkey ] && cd ./samples/monkey && $(MAKE)
+	-[ -d ./samples/ncftpget ] && cd ./samples/ncftpget && $(MAKE)
+	-[ -d ./samples/ncftpls ] && cd ./samples/ncftpls && $(MAKE)
+	-[ -d ./samples/ncftpput ] && cd ./samples/ncftpput && $(MAKE)
+	-[ -d ./samples/ncftpsyncput ] && cd ./samples/ncftpsyncput && $(MAKE)
 	@echo 'Done.'
 
 $(LIB): $(OBJS)
@@ -59,18 +61,24 @@ $(LIBSO): $(SOBJS)
 	-@/bin/ls -l $(LIBSOS) $(LIBSO)
 
 soinstall: $(LIBSO)
+	[ -d "$(PREFIX)/lib" ] || mkdir -m 755 "$(PREFIX)/lib"
+	[ -d "$(PREFIX)/include" ] || mkdir -m 755 "$(PREFIX)/include"
 	cp $(LIBSO) $(PREFIX)/lib/$(LIBSO)
 	( cd $(PREFIX)/lib ; /bin/rm -f $(LIBSOS) ; /bin/ln -s $(LIBSO) $(LIBSOS) )
 	cp ncftp.h ncftp_errno.h $(PREFIX)/include
 	-chmod a+r $(PREFIX)/lib/$(LIBSO) $(PREFIX)/include/ncftp.h $(PREFIX)/include/ncftp_errno.h
 
 install: $(LIB)
+	[ -d "$(PREFIX)/lib" ] || mkdir -m 755 "$(PREFIX)/lib"
+	[ -d "$(PREFIX)/include" ] || mkdir -m 755 "$(PREFIX)/include"
 	cp $(LIB) $(PREFIX)/lib/$(LIB)
 	cp ncftp.h ncftp_errno.h $(PREFIX)/include
 	-chmod a+r $(LIB) $(PREFIX)/lib/$(LIB) $(PREFIX)/include/ncftp.h $(PREFIX)/include/ncftp_errno.h
+	( cd ../sio ; $(MAKE) "PREFIX=$(PREFIX)" install )
+	( cd ../Strn ; $(MAKE) "PREFIX=$(PREFIX)" install )
 
 install_samples:
-	( cd ./samples ; make install )
+	( cd ./samples ; $(MAKE) install )
 
 .c.o:
 	$(CC) $(CFLAGS) $(DEFS) $(CPPFLAGS) $< -c
@@ -88,30 +96,20 @@ TMPDIR=/tmp
 STGZFILE=libncftp-$(VERSION)-src.tar.gz
 
 gz sgz: $(PACKAGE)
-	-@mkdir $(TMPDIR)/TAR
-	-@mkdir $(TMPDIR)/TAR/$(TARDIR)
-	-@chmod ga+r $(PACKAGE)
-	( cd .. ; find ./libncftp/ -depth -type f -print | cut -c3- | grep -v '.o$$' | grep -v '.so$$' | grep -v 'core$$' | grep -v 'Makefile$$' | grep -v 'config.log$$' | grep -v 'config.h$$' | grep -v 'config.cache$$' | grep -v 'config.status$$' | grep -v '.a$$' | grep -v '.lib$$' | grep -v '.ncb$$' | grep -v '.opt$$' | grep -v '.zip$$' | grep -v '.gz$$' | grep -v '.swp$$' | grep -v '.tar$$' | cpio -pdm $(TMPDIR)/TAR/$(TARDIR) )
-	( cd .. ; find ./sio/ -depth -type f -print | cut -c3- | grep -v '.o$$' | grep -v '.so$$' | grep -v 'core$$' | grep -v 'Makefile$$' | grep -v 'config.log$$' | grep -v 'config.h$$' | grep -v 'config.cache$$' | grep -v 'config.status$$' | grep -v '.a$$' | grep -v '.lib$$' | grep -v '.ncb$$' | grep -v '.opt$$' | grep -v '.zip$$' | grep -v '.gz$$' | grep -v '.swp$$' | grep -v '.tar$$' | cpio -pdm $(TMPDIR)/TAR/$(TARDIR) )
-	( cd .. ; find ./Strn/ -depth -type f -print | cut -c3- | grep -v '.o$$' | grep -v '.so$$' | grep -v 'core$$' | grep -v 'Makefile$$' | grep -v 'config.log$$' | grep -v 'config.h$$' | grep -v 'config.cache$$' | grep -v 'config.status$$' | grep -v '.a$$' | grep -v '.lib$$' | grep -v '.ncb$$' | grep -v '.opt$$' | grep -v '.zip$$' | grep -v '.gz$$' | grep -v '.swp$$' | grep -v '.tar$$' | cpio -pdm $(TMPDIR)/TAR/$(TARDIR) )
-	( cd /tmp/TAR ; tar cvf - $(TARDIR) | gzip -c > $(STGZFILE) )
-	cp /tmp/TAR/$(STGZFILE) .
-	-@chmod 644 $(STGZFILE)
-	-@rm -rf /tmp/TAR
-	-@ls -l $(STGZFILE)
-@Z31@
+	./mksrctar.sh $(TARDIR) $(STGZFILE)
 
 ### Cleaning supplies ########################################################
 
 clean:
 	-/bin/rm -f $(OBJS) $(SOBJS) core $(LIB) $(LIBSO) $(LIBSOS)
-	-[ -d ./samples/minincftp ] && cd ./samples/minincftp && make clean
-	-[ -d ./samples/monkey ] && cd ./samples/monkey && make clean
-	-[ -d ./samples/ncftpget ] && cd ./samples/ncftpget && make clean
-	-[ -d ./samples/ncftpls ] && cd ./samples/ncftpls && make clean
-	-[ -d ./samples/ncftpput ] && cd ./samples/ncftpput && make clean
-	( sleep 2 ; cd ../sio ; make clean )
-	( sleep 2 ; cd ../Strn ; make clean )
+	-[ -d ./samples/minincftp ] && cd ./samples/minincftp && $(MAKE) clean
+	-[ -d ./samples/monkey ] && cd ./samples/monkey && $(MAKE) clean
+	-[ -d ./samples/ncftpget ] && cd ./samples/ncftpget && $(MAKE) clean
+	-[ -d ./samples/ncftpls ] && cd ./samples/ncftpls && $(MAKE) clean
+	-[ -d ./samples/ncftpput ] && cd ./samples/ncftpput && $(MAKE) clean
+	-[ -d ./samples/ncftpsyncput ] && cd ./samples/ncftpsyncput && $(MAKE) clean
+	( sleep 2 ; cd ../sio ; $(MAKE) clean )
+	( sleep 2 ; cd ../Strn ; $(MAKE) clean )
 
 ### Dependencies #############################################################
 

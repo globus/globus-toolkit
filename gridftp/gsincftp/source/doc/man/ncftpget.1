@@ -70,8 +70,13 @@ Append to local files, instead of overwriting them.
 Do (do not) try to resume transfers.
 The default is to try to resume (\-z).
 .TP 8
+.B -E
+Use regular (PORT) data connections.
+.TP 8
 .B -F
 Use passive (PASV) data connections.
+The default is to use passive, but to fallback to
+regular if the passive connection fails or times out.
 .TP 8
 .B -DD
 Delete remote file after successfully downloading it.
@@ -79,19 +84,84 @@ Delete remote file after successfully downloading it.
 .B -R
 Recursive mode; copy whole directory trees.
 .TP 8
+.B -T
+Do not use automatic on-the-fly TAR mode for downloading whole directory trees.
+.I ncftpget
+uses TAR whenever possible since this usually preserves symbolic links
+and file permissions.
+TAR mode can also result in faster transfers for directories containing many
+small files, since a single data connection can be used rather than an FTP
+data connection for each small file.
+The downside to using TAR is that it forces downloading of the whole directory,
+even if you had previously downloaded a portion of it earlier, so you may
+want to use this option if you want to resume downloading of a directory.
+.TP 8
 .BI "-r " "XX"
 Redial a maximum of 
 .I XX
 times until connected to the remote FTP server.
 .TP 8
 .B -b
-Run in background (by submitting a job to
+Run in background (by submitting a batch job and then spawning
 .IR ncftpbatch ")."
+.TP 8
+.B -bb
+Similar to
+.B -b
+option, but only submits the batch job.
+You will need to run
+.I ncftpbatch
+for the batch job to be processed.
+This is useful if you already have a
+.I ncftpbatch
+process running, or wish to have better control of when batch
+jobs are processed.
+.IP
+For example,
+if you wanted to do background processing of three
+files all on the same remote server, it is more polite
+to use just one
+.I ncftpbatch
+process to process the three jobs sequentially, rather than
+having three 
+.I ncftpbatch
+processes open three simultaneous FTP sessions to the same
+server.
 .TP 8
 .BI "-B " "XX"
 Try setting the TCP/IP socket buffer size to
 .I XX
 bytes.
+.TP 8
+.BI "-W " "XX"
+Send raw FTP command
+.I XX
+after logging in.
+.TP 8
+.BI "-X " "XX"
+Send raw FTP command
+.I XX
+after each file transferred.
+.TP 8
+.BI "-Y " "XX"
+Send raw FTP command
+.I XX
+before logging out.
+.IP
+The
+.BR "-W" ", " "-X" ", and " "-Y"
+options are useful for advanced users who need to tweak
+behavior on some servers.
+For example, users accessing mainframes might need to send
+some special SITE commands to set blocksize and record format information.
+.IP
+When using those options, you can use a newline character to delimit
+multiple commands.
+For the
+.B "-X"
+option, you can use the cookie
+.B %s
+to expand into the name of the file that was transferred.
 .\"-------
 .SH "DESCRIPTION"
 .\"-------
@@ -120,7 +190,7 @@ Example:
 .sp
 $ cd /tmp
 .br
-$ ncftpget ftp://ftp.probe.net/pub/ncftp/ncftp.tar.Z
+$ ncftpget ftp://ftp.ncftp.com/pub/ncftp/ncftp.tar.Z
 .br
 $ zcat ncftp.tar.Z | tar xf -
 .br
@@ -161,7 +231,7 @@ Nevertheless, if you choose to use the
 option the file should look something like this:
 .RS 4
 .sp
-host Bozo.probe.net
+host sphygmomanometer.ncftp.com
 .br
 user gleason
 .br
@@ -185,11 +255,11 @@ as the name of the debugging output file, the output
 will instead print to the screen.  Example:
 .RS 4
 .sp
-$ ncftpget -d stdout ftp.probe.net . /pub/ncftp/README
+$ ncftpget -d stdout bowser.nintendo.co.jp . /pub/README
 .br
-220: ftp.probe.net FTP server ready.
+220: FTP server ready.
 .br
-Connected to ftp.probe.net.
+Connected to bowser.nintendo.co.jp.
 .br
 Cmd: USER anonymous
 .br
@@ -199,29 +269,19 @@ Cmd: PASS xxxxxxxx
 .br
 230: Welcome!
 .br
-Logged in to ftp.probe.net as anonymous.
+Logged in to bowser.nintendo.co.jp as anonymous.
 .br
 Cmd: TYPE I
 .br
 200: Type set to I.
 .br
-Cmd: SIZE /pub/ncftp/README
-.br
-550: /pub/ncftp/README: not a plain file.
-.br
-Cmd: MDTM /pub/ncftp/README
-.br
-550: /pub/ncftp/README: No such file or directory.
-.br
-Cmd: PORT 192,168,1,17,6,76
+Cmd: PORT 192,168,9,37,6,76
 .br
 200: PORT command successful.
 .br
-Cmd: RETR /pub/ncftp/README
+Cmd: RETR /pub/README
 .br
-550: /pub/ncftp/README: No such file OR directory.
-.br
-ncftpget: file retrieval error: could not start data transfer.
+550: /pub/README: File in use.
 .br
 Cmd: QUIT
 .br
@@ -247,7 +307,7 @@ is a UNIX server, or emulates UNIX's list output.
 Example:
 .RS 4
 .sp
-$ ncftpget -R ftp.probe.net /tmp /pub/ncftp
+$ ncftpget -R ftp.ncftp.com /tmp /pub/ncftp
 .br
 .sp
 .RE

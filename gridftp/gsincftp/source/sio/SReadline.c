@@ -21,7 +21,7 @@ FlushSReadlineInfo(SReadlineInfo *srl)
 
 
 int
-InitSReadlineInfo(SReadlineInfo *srl, int fd, char *buf, size_t bsize, int tlen)
+InitSReadlineInfo(SReadlineInfo *srl, int fd, char *buf, size_t bsize, int tlen, int requireEOLN)
 {
 	if (buf == NULL) {
 		if (bsize < 512)
@@ -40,6 +40,7 @@ InitSReadlineInfo(SReadlineInfo *srl, int fd, char *buf, size_t bsize, int tlen)
 	srl->bufLim = srl->buf + bsize;
 	srl->fd = fd;
 	srl->timeoutLen = tlen;
+	srl->requireEOLN = requireEOLN;
 
 	/* This line sets the buffer pointer
 	 * so that the first thing to do is reset and fill the buffer
@@ -80,14 +81,31 @@ SReadline(SReadlineInfo *srl, char *const linebuf, size_t linebufsize)
 	char *dstlim;
 	int len;
 	int nr;
+	int requireEOLN;
+	int illegals;
 
+	illegals = 0;
 	err = 0;
 	dst = linebuf;
 	dstlim = dst + linebufsize - 1;		       /* Leave room for NUL. */
 	src = srl->bufPtr;
-	for (; dst < dstlim;) {
+	requireEOLN = srl->requireEOLN;
+	if (requireEOLN)
+		dstlim--;
+	if (dstlim <= dst)
+		return (-1);				/* Buffer too small. */
+
+	forever {
+		if ((requireEOLN == 0) && (dst >= dstlim))
+			break;
 		if (src >= srl->bufLim) {
 			/* Fill the buffer. */
+			if (illegals > 1) {
+				/* Probable DOS -- return now and give you an
+				 * opportunity to handle bogus input.
+				 */
+				goto done;
+			}
 			nr = SRead(srl->fd, srl->buf, srl->bufSizeMax, srl->timeoutLen, 0);
 			if (nr == 0) {
 				/* EOF. */
@@ -100,19 +118,37 @@ SReadline(SReadlineInfo *srl, char *const linebuf, size_t linebufsize)
 			srl->bufPtr = src = srl->buf;
 			srl->bufLim = srl->buf + nr;
 		}
-		if ((*src == '\r') || (*src == '\0')) {
+		if (*src == '\0') {
 			++src;
+			illegals++;
+		} else if (*src == '\r') {
+			++src;
+			/* If the next character is a \n that is valid,
+			 * otherwise treat a stray \r as an illegal character.
+			 */
+			if ((src < srl->bufLim) && (*src != '\n'))
+				illegals++;
 		} else {
 			if (*src == '\n') {
-				*dst++ = *src++;
+				if (dst < dstlim)
+					*dst++ = *src++;
+				else
+					src++;
 				goto done;
 			}
-			*dst++ = *src++;
+			if (dst < dstlim)
+				*dst++ = *src++;
+			else
+				src++;
 		}
 	}
 
 done:
 	srl->bufPtr = src;
+	if ((requireEOLN != 0) && (dst != linebuf) && (dst[-1] != '\n'))
+		*dst++ = '\n';
+	if ((requireEOLN != 0) && (dst == linebuf) && (illegals > 0))
+		*dst++ = '\n';
 	*dst = '\0';
 	len = (int) (dst - linebuf);
 	if (err < 0)

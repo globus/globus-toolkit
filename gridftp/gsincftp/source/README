@@ -35,36 +35,14 @@ uses full-screen mode.
 To build NcFTP and the utility programs, you can simply do the following:
 
     1.  (Optional) Install ncurses (available from a GNU mirror).
-    2.  (Optional) Install GNU Readline (available from a GNU mirror).
-    3.  Run the "./configure" script in the NcFTP source directory.
-    4.  (Probably not necessary) Inspect the Makefiles in each subdirectory.
-    5.  (Probably not necessary) Browse and edit config.h.
-    6.  "make"
-    7.  "make install"
+    2.  Run the "./configure" script in the NcFTP source directory.
+    3.  (Probably not necessary) Inspect the Makefiles in each subdirectory.
+    4.  (Probably not necessary) Browse and edit config.h.
+    5.  "make"
+    6.  "make install"
 
 
-3. Filename completion
-----------------------
-
-If you want command-line editing and filename completion, you need to have
-GNU Readline built and installed already.  Once you have it installed on
-your system, NcFTP's configure script will detect it.
-
-Using this is optional.  If you decide you do not want to use Readline
-with NcFTP, reconfigure NcFTP with "./configure --disable-readline" and
-recompile.
-
-The latest version of Readline can be found at a GNU mirror (i.e.
-ftp://ftp.gnu.org/pub/gnu/).  There are also pre-built tarballs of it
-available from the NcFTP Download page (http://www.ncftp.com/download/)
-so you don't have to compile it.
-
-Note that ftp://ftp.gnu.org/pub/gnu/readline-2.2.tar.gz is NOT recommended
-for use, since it does not install correctly.  Readline 2.1 works just fine.
-Wait for a 2.2.1 or 2.3 release and don't waste your time (or mine) with 2.2.
-
-
-4. Curses (Full-screen mode)
+3. Curses (Full-screen mode)
 ----------------------------
 
 You may find that the full-screen portions of NcFTP don't compile or don't
@@ -86,21 +64,18 @@ find that ncftpbookmarks won't compile.  (Or you can just use the binaries
 that did build in the "bin" directory.)
 
 
-5. OEM installations using shared libraries
+4. OEM installations using shared libraries
 -------------------------------------------
 
 If you're daring, and want to build the best ncftp configuration, you can
 build the LibNcFTP (the FTP library which the programs use) as a shared
-library.  (And hopefully you built Readline as a shared library, too).
+library.
 
 To do that, after running configure, go to the libncftp subdirectory and
 build libncftp.so.  The Makefile shows how to do this using the GNU
 development tools, so for example under linux you would just need to
-"make shared" and then install the resulting libncftp.so.2 in your system's
+"make shared" and then install the resulting libncftp.so.3 in your system's
 shared library directory (with "make soinstall").
-
-Obviously going to the trouble of the shared installation is not recommended
-for beta versions of NcFTP.
 
 
 6.  Contact information

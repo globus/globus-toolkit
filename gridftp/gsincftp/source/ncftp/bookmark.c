@@ -1,6 +1,6 @@
 /* bookmark.c 
  *
- * Copyright (c) 1992-1999 by Mike Gleason.
+ * Copyright (c) 1992-2001 by Mike Gleason.
  * All rights reserved.
  * 
  */
@@ -734,8 +734,8 @@ SaveBookmarkTable(void)
 			}
 		}
 	}
+	CloseBookmarkFile(outfp);
 	if (SwapBookmarkFiles() < 0) {
-		CloseBookmarkFile(outfp);
 		return (-1);
 	}
 	return (0);

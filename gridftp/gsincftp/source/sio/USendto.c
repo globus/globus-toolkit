@@ -34,7 +34,7 @@ USendto(int sfd, const char *const buf, size_t size, int fl, const struct sockad
 	time(&now);
 	done = now + tlen;
 	tleft = (int) (done - now);
-	while (1) {
+	forever {
 		(void) alarm((unsigned int) tleft);
 		nwrote = sendto(sfd, buf, size, fl,
 			(struct sockaddr *) toAddr, ualen);

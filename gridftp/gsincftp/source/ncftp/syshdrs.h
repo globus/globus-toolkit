@@ -1,6 +1,6 @@
 /* syshdrs.h
  *
- * Copyright (c) 1992-1999 by Mike Gleason.
+ * Copyright (c) 1992-2001 by Mike Gleason.
  * All rights reserved.
  * 
  */
@@ -28,6 +28,9 @@
 #	include <errno.h>
 #	include <stdio.h>
 #	include <string.h>
+#	ifdef HAVE_STRINGS_H
+#		include <strings.h>
+#	endif
 #	include <stddef.h>
 #	include <stdlib.h>
 #	include <ctype.h>
@@ -41,7 +44,7 @@
 #	include <assert.h>
 #	define strcasecmp stricmp
 #	define strncasecmp strnicmp
-#	define sleep(a) Sleep(a * 1000)
+#	define sleep WinSleep
 #	ifndef S_ISREG
 #		define S_ISREG(m)      (((m) & _S_IFMT) == _S_IFREG)
 #		define S_ISDIR(m)      (((m) & _S_IFMT) == _S_IFDIR)
@@ -61,6 +64,8 @@
 #		define chdir _chdir
 #		define rmdir _rmdir
 #		define getpid _getpid
+#		define popen _popen
+#		define pclose _pclose
 #	endif
 #	ifndef unlink
 #		define unlink remove
@@ -96,6 +101,9 @@
 #	include <errno.h>
 #	include <stdio.h>
 #	include <string.h>
+#	ifdef HAVE_STRINGS_H
+#		include <strings.h>
+#	endif
 #	include <stddef.h>
 #	include <stdlib.h>
 #	include <ctype.h>
@@ -106,6 +114,10 @@
 #	include <time.h>
 #	include <pwd.h>
 #	include <fcntl.h>
+#	if defined(HAVE_SYS_IOCTL_H) && defined(HAVE_TERMIOS_H)
+#		include <sys/ioctl.h>
+#		include <termios.h>
+#	endif
 #	ifdef HAVE_LOCALE_H
 #		include <locale.h>
 #	endif
@@ -136,6 +148,46 @@
 #endif
 
 #define NDEBUG 1			/* For assertions. */
+
+#if defined(HAVE_LONG_LONG) && defined(HAVE_OPEN64)
+#	define Open open64
+#else
+#	define Open open
+#endif
+
+#if defined(HAVE_LONG_LONG) && defined(HAVE_STAT64) && defined(HAVE_STRUCT_STAT64)
+#	define Stat stat64
+#	ifdef HAVE_FSTAT64
+#		define Fstat fstat64
+#	else
+#		define Fstat fstat
+#	endif
+#	ifdef HAVE_LSTAT64
+#		define Lstat lstat64
+#	else
+#		define Lstat lstat
+#	endif
+#else
+#	define Stat stat
+#	define Fstat fstat
+#	define Lstat lstat
+#endif
+
+#if defined(HAVE_LONG_LONG) && defined(HAVE_LSEEK64)
+#	define Lseek(a,b,c) lseek64(a, (longest_int) b, c)
+#elif defined(HAVE_LONG_LONG) && defined(HAVE_LLSEEK)
+#	if 1
+#		if defined(LINUX) && (LINUX <= 23000)
+#			define Lseek(a,b,c) lseek(a, (off_t) b, c)
+#		else
+#			define Lseek(a,b,c) llseek(a, (longest_int) b, c)
+#		endif
+#	else
+#		define Lseek(a,b,c) lseek(a, (off_t) b, c)
+#	endif
+#else
+#	define Lseek(a,b,c) lseek(a, (off_t) b, c)
+#endif
 
 
 #include <Strn.h>			/* Library header. */

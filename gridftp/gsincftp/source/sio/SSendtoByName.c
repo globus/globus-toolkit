@@ -41,7 +41,7 @@ SSendtoByName(int sfd, const char *const buf, size_t size, int fl, const char *c
 	time(&now);
 	done = now + tlen;
 	tleft = (int) (done - now);
-	while (1) {
+	forever {
 		(void) alarm((unsigned int) tleft);
 		nwrote = sendto(sfd, buf, size, fl,
 				(struct sockaddr *) &toAddr,
@@ -96,7 +96,7 @@ SSendtoByName(int sfd, const char *const buf, size_t size, int fl, const char *c
 			errno = 0;
 			FD_ZERO(&ss);
 			FD_SET(sfd, &ss);
-			tv.tv_sec = tlen;
+			tv.tv_sec = tleft;
 			tv.tv_usec = 0;
 			result = select(sfd + 1, NULL, SELECT_TYPE_ARG234 &ss, NULL, SELECT_TYPE_ARG5 &tv);
 			if (result == 1) {

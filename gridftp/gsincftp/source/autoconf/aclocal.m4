@@ -1,3 +1,24 @@
+AC_DEFUN(wi_ARG_ENABLE_DEBUG, [
+# if DEBUGBUILD is yes, other macros try to set up a compilation environment
+# with debugging symbols enabled.  Example macros which are affected are
+# wi_CFLAGS and wi_SFLAG.
+#
+DEBUGBUILD=no
+DEBUGCONFIGUREFLAG=""
+AC_ARG_ENABLE(debug,
+[  --enable-debug          enable debugging symbols],
+[
+	DEBUGBUILD=yes
+	DEBUGCONFIGUREFLAG="--enable-debug"
+],[
+	DEBUGBUILD=no
+	DEBUGCONFIGUREFLAG=""
+])
+])
+dnl
+dnl
+dnl
+dnl
 AC_DEFUN(wi_EXTRA_IDIR, [
 incdir="$1"
 if test -r $incdir ; then
@@ -98,6 +119,13 @@ ifelse([$1], yes, [dnl
 b1=`cd .. ; pwd`
 b2=`cd ../.. ; pwd`
 exdirs="$HOME $j $b1 $b2 $prefix $2"
+if test -x "$HOME/bin/OS" ; then
+	b3=`$HOME/bin/OS`
+	b3="$HOME/$b3"
+	if test -d "$b3" ; then
+		exdirs="$b3 $exdirs"
+	fi
+fi
 ],[dnl
 exdirs="$prefix $2"
 ])
@@ -142,32 +170,97 @@ dnl
 AC_DEFUN(wi_HPUX_CFLAGS,
 [AC_MSG_CHECKING(if HP-UX ansi C compiler flags are needed)
 AC_REQUIRE([AC_PROG_CC])
-os=`uname -s | tr '[A-Z]' '[a-z]'`
+AC_REQUIRE([wi_OS_VAR])
 ac_cv_hpux_flags=no
 if test "$os" = hp-ux ; then
 	if test "$ac_cv_prog_gcc" = yes ; then
 		if test "$CFLAGS" != "" ; then
 			# Shouldn't be in there.
+changequote(<<, >>)dnl
 			CFLAGS=`echo "$CFLAGS" | sed 's/-A[ae]//g'`
+changequote([, ])dnl
+			case "$CFLAGS" in
+				*_HPUX_SOURCE*)
+					;;
+				*)
+					# This is required for the extended
+					# namespace.
+					#
+					CFLAGS="-D_HPUX_SOURCE $CFLAGS"
+					;;
+			esac
 		fi
 	else
 		# If you're not using gcc, then you better have a cc/c89
 		# that is usable.  If you have the barebones compiler, it
 		# won't work.  The good compiler uses -Aa for the ANSI
 		# compatible stuff.
-		x=`echo $CFLAGS | grep 'A[ae]' 2>/dev/null`
+changequote(<<, >>)dnl
+		x=`echo "$CFLAGS" | grep 'A[ae]' 2>/dev/null`
+changequote([, ])dnl
 		if test "$x" = "" ; then
 			CFLAGS="$CFLAGS -Ae"
 		fi
-		ac_cv_hpux_flags=yes
 	fi
-	# Also add _HPUX_SOURCE to get the extended namespace.
-#	x=`echo $CFLAGS | grep '_HPUX_SOURCE' 2>/dev/null`
-#	if test "$x" = "" ; then
-#		CFLAGS="$CFLAGS -D_HPUX_SOURCE"
-#	fi
+	ac_cv_hpux_flags=yes
 fi
 AC_MSG_RESULT($ac_cv_hpux_flags)
+])
+dnl
+dnl
+dnl
+AC_DEFUN(wi_SFLAG, [AC_REQUIRE([AC_PROG_CC])
+STRIP="strip"
+if test "$SFLAG" = "" ; then
+	SFLAG="-s"
+	case "$OS" in
+		macosx*)
+			SFLAG='-Wl,-x'
+			;;
+	esac
+fi
+#
+# Was it ./configure --enable-debug ?
+#
+if test "$DEBUGBUILD" = yes ; then
+	SFLAG=""
+	STRIP=":"
+fi
+case "$CFLAGS" in
+	"-g"|"-g "*|*" -g"|*" -g "*|*"-g"[0-9]*)
+		# SFLAG="# $SFLAG"
+		SFLAG=""
+		STRIP=":"
+		;;
+esac
+STRIPFLAG="$SFLAG"
+])
+dnl
+dnl
+dnl
+AC_DEFUN(wi_REQUEST_NO_Y2K_WARNINGS, [
+	wi_cv_request_no_y2k=yes
+])
+dnl
+dnl
+dnl
+AC_DEFUN(wi_CFLAGS_NO_Y2K_WARNINGS, [AC_REQUIRE([AC_PROG_CC])
+if test "$ac_cv_prog_gcc" = yes ; then
+	case "$CFLAGS" in
+		*-Wno-format-y2k*)
+			;;
+		*)
+			oldCFLAGS="$CFLAGS"
+			CFLAGS="$CFLAGS -Wno-format-y2k"
+			#
+			# Now check if this version of GCC
+			# accepts this flag...
+			#
+AC_TRY_COMPILE([],[int junk;],[],[CFLAGS="$oldCFLAGS"])
+			unset oldCFLAGS
+			;;
+	esac
+fi
 ])
 dnl
 dnl
@@ -176,20 +269,67 @@ AC_DEFUN(wi_CFLAGS, [AC_REQUIRE([AC_PROG_CC])
 AC_REQUIRE_CPP()
 wi_HPUX_CFLAGS
 	if test "$CFLAGS" = "" ; then
+		AC_MSG_WARN([Your CFLAGS environment variable was not set.  A default of \"-g\" will be used.])
 		CFLAGS="-g"
-dnl	elif test "$ac_cv_prog_gcc" = "yes" ; then
-dnl		case "$CFLAGS" in
-dnl			*"-g -O"*)
-dnl				echo "using -g as default gcc CFLAGS" 1>&6
-dnl				CFLAGS=`echo $CFLAGS | sed 's/-g\ -O[0-9]*/-g/'`
-dnl				;;
-dnl			*"-O -g"*)
-dnl				# Leave the -g, but remove all -O options.
-dnl				echo "using -g as default gcc CFLAGS" 1>&6
-dnl				CFLAGS=`echo $CFLAGS | sed 's/-O[0-9]*\ -g/-g/'`
-dnl				;;
-dnl		esac
 	fi
+	if test "x$wi_cv_request_no_y2k" = xyes ; then
+		wi_CFLAGS_NO_Y2K_WARNINGS
+	fi
+	if test "$NOOPTCFLAGS" = "" ; then
+changequote(<<, >>)dnl
+		NOOPTCFLAGS=`echo "$CFLAGS" | sed 's/[-+]O[0-9A-Za-z]*//g;s/-xO[0-9]//g;s/-Wc,-O3//g;s/-IPA//g;s/\ \ */ /g;s/^\ *//;s/\ *$//;'`
+changequote([, ])dnl
+	fi
+	if test "$DEBUGCFLAGS" = "" ; then
+		DEBUGCFLAGS="-g $NOOPTCFLAGS"
+	fi
+	#
+	# Was it ./configure --enable-debug ?
+	#
+	AC_MSG_CHECKING([if this is a debug build])
+	if test "$DEBUGBUILD" = yes ; then
+		AC_MSG_RESULT(yes)
+		CFLAGS="$DEBUGCFLAGS"
+		SFLAG=""
+		STRIPFLAG=""
+		STRIP=":"
+	else
+		AC_MSG_RESULT(no)
+	fi
+	AC_MSG_CHECKING([NOOPTCFLAGS])
+	AC_MSG_RESULT($NOOPTCFLAGS)
+	AC_MSG_CHECKING([DEBUGCFLAGS])
+	AC_MSG_RESULT($DEBUGCFLAGS)
+	AC_MSG_CHECKING([CFLAGS])
+	AC_MSG_RESULT($CFLAGS)
+])
+dnl
+dnl
+dnl
+AC_DEFUN(wi_CFLAGS_LFS64, [AC_REQUIRE([AC_PROG_CC])
+AC_REQUIRE([wi_OS_VAR])
+wi_CFLAGS
+if test "os_${os}_gcc_${ac_cv_prog_gcc}" = os_hp-ux_gcc_yes ; then
+	case "$CFLAGS" in
+		*__STDC_EXT__*)
+			;;
+		*)
+			# This is required for the extended
+			# namespace symbols for Large Files.
+			#
+			CFLAGS="-D__STDC_EXT__ $CFLAGS"
+			;;
+	esac
+fi
+case "$CFLAGS" in
+	*-D_LARGEFILE64_SOURCE*)
+		;;
+	*)
+		CFLAGS="-D_LARGEFILE64_SOURCE $CFLAGS"
+		;;
+esac
+AC_MSG_CHECKING([additional CFLAGS for LFS64 support])
+AC_MSG_RESULT($CFLAGS)
 ])
 dnl
 dnl
@@ -304,6 +444,21 @@ main()
 ])
 AC_MSG_RESULT($x)
 fi
+])
+dnl
+dnl
+dnl
+AC_DEFUN(wi_SNPRINTF, [
+wi_SPRINTF_RETVAL
+dnl Uncache these -- config.cache doesn't cache it right for this case.
+unset ac_cv_func_snprintf
+unset ac_cv_func_vsnprintf
+
+AC_CHECK_FUNCS(snprintf vsnprintf)
+wi_SNPRINTF_TERMINATES
+
+AC_CHECK_HEADERS(snprintf.h)
+wi_LIB_SNPRINTF
 ])
 dnl
 dnl
@@ -431,6 +586,45 @@ fi
 dnl
 dnl
 dnl
+AC_DEFUN(wi_LIB_TCP_WRAPPERS, [
+AC_MSG_CHECKING([for tcp wrappers library (libwrap)])
+
+AC_TRY_LINK([
+	/* includes */
+#ifdef HAVE_UNISTD_H
+#	include <unistd.h>
+#endif
+#include <sys/types.h>
+#include <stdio.h>
+
+/* These are needed if libwrap.a was compiled with
+ * PROCESS_OPTIONS defined.
+ */
+int allow_severity = 1;	/* arbitrary for this test */
+int deny_severity = 2;	/* arbitrary for this test */
+
+],[
+	/* function-body */
+	exit((allow_severity == deny_severity) ? 1 : 0);
+],[
+dnl	...Don't bother defining this symbol...
+dnl	...Check for tcpd.h instead...
+dnl	AC_DEFINE(HAVE_LIBWRAP)
+dnl
+dnl	...Don't modify LIBS, instead set WRAPLIB...
+dnl	LIBS="-lwrap  $LIBS"
+dnl
+	WRAPLIB="-lwrap"
+	wi_cv_lib_wrap_hosts_access=yes
+],[
+	WRAPLIB=""
+	wi_cv_lib_wrap_hosts_access=no
+])
+AC_MSG_RESULT($wi_cv_lib_wrap_hosts_access)
+])
+dnl
+dnl
+dnl
 AC_DEFUN(wi_NET_LIBS, [
 # Mostly for SunOS 4 -- needs to come first because other libs depend on it
 wi_LIB_44BSD
@@ -441,16 +635,31 @@ if test "$SYS" = unixware ; then
 	# So far, only UnixWare needs this.
 	AC_CHECK_LIB(gen,syslog)
 
-#
-# Disabled for UnixWare 7 and above
+	case "$OS" in
+		unixware2*)
+			if test -f /usr/ucblib/libucb.a ; then
+				LDFLAGS="$LDFLAGS -L/usr/ucblib"
+				LIBS="$LIBS -lucb"
+			fi
+			if test -f /usr/include/unistd.h ; then
+				ac_cv_header_unistd_h=yes
+			fi
 
-#	if test -f /usr/ucblib/libucb.a ; then
-#		LDFLAGS="$LDFLAGS -L/usr/ucblib"
-#		LIBS="$LIBS -lucb"
-#	fi
-#	if test -f /usr/include/unistd.h ; then
-#		ac_cv_header_unistd_h=yes
-#	fi
+			# UnixWare 2 needs both lsocket and lnsl, and configure
+			# script won't detect this condition properly because 
+			# the libraries are interdependent.
+			#
+			LIBS="$LIBS -lsocket -lnsl"
+
+			# Now look for socket()
+			#
+			# AC_CHECK_FUNC(socket,[a=yes],[a=no])
+			#
+			AC_CHECK_FUNC(socket,[a=yes],[a=no])
+			;;
+		*)
+			;;
+	esac
 fi
 
 dnl AC_CHECK_LIB(inet,main)
@@ -528,7 +737,29 @@ exit(((int) &u.ut_name) & 0xff);	/* bogus code, of course. */
 ])
 AC_MSG_RESULT($wi_cv_utmp_ut_name)
 ])
-	#undef HAVE_UTMP_UT_USER
+dnl
+dnl
+dnl
+AC_DEFUN(wi_UTMPX_UT_SYSLEN, [
+AC_MSG_CHECKING([for ut_syslen field in struct utmpx])
+AC_TRY_LINK([
+	/* includes */
+#include <unistd.h>
+#include <sys/types.h>
+#include <utmpx.h>
+],[
+struct utmpx u;
+
+u.ut_syslen = 0;
+exit(((int) &u.ut_syslen) & 0xff);	/* bogus code, of course. */
+],[
+	wi_cv_utmpx_ut_syslen=yes
+	AC_DEFINE(HAVE_UTMPX_UT_SYSLEN)
+],[
+	wi_cv_utmpx_ut_syslen=no
+])
+AC_MSG_RESULT($wi_cv_utmpx_ut_syslen)
+])
 dnl
 dnl
 dnl
@@ -621,6 +852,29 @@ exit(((int) &u.ut_host) & 0xff);	/* bogus code, of course. */
 	wi_cv_utmp_ut_host=no
 ])
 AC_MSG_RESULT($wi_cv_utmp_ut_host)
+])
+dnl
+dnl
+dnl
+AC_DEFUN(wi_STRUCT_STAT64, [
+AC_MSG_CHECKING([for struct stat64])
+AC_TRY_LINK([
+	/* includes */
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+],[
+struct stat64 st;
+
+st.st_size = 0;
+exit(((int) &st.st_size) & 0xff);	/* bogus code, of course. */
+],[
+	wi_cv_struct_stat64=yes
+	AC_DEFINE(HAVE_STRUCT_STAT64)
+],[
+	wi_cv_struct_stat64=no
+])
+AC_MSG_RESULT($wi_cv_struct_stat64)
 ])
 dnl
 dnl
@@ -800,6 +1054,33 @@ exit(((int) uaddr.sun_len);	/* bogus code, of course. */
 	wi_cv_sockaddr_un_sun_len=no
 ])
 AC_MSG_RESULT($wi_cv_sockaddr_un_sun_len)
+])
+dnl
+dnl
+dnl
+AC_DEFUN(wi_STATFS_F_BAVAIL, [
+AC_MSG_CHECKING([for f_bavail field in struct statfs])
+AC_TRY_LINK([
+	/* includes */
+#include <unistd.h>
+#include <sys/types.h>
+#ifdef HAVE_SYS_STATFS_H
+#	include <sys/statfs.h>
+#elif defined(HAVE_SYS_VFS_H)
+#	include <sys/vfs.h>
+#endif
+],[
+struct statfs st;
+
+st.f_bavail = 1;
+exit((int) st.f_bavail);	/* bogus code, of course. */
+],[
+	wi_cv_statfs_f_bavail=yes
+	AC_DEFINE(HAVE_STATFS_F_BAVAIL)
+],[
+	wi_cv_statfs_f_bavail=no
+])
+AC_MSG_RESULT($wi_cv_statfs_f_bavail)
 ])
 dnl
 dnl
@@ -1381,6 +1662,12 @@ elif test "$wi_cv_scanf_long_long" = fail ; then
 	LONGEST_INT="long"
 else
 	AC_DEFINE(HAVE_LONG_LONG)
+	if test "$wi_cv_printf_long_long$wi_cv_scanf_long_long" = "%lld%qd" ; then
+		# FreeBSD 3.2 has %lld and %qd, but we want to
+		# run on 3.1 and 3.0.
+		#
+		wi_cv_printf_long_long="%qd"
+	fi
 	AC_DEFINE_UNQUOTED(PRINTF_LONG_LONG, "$wi_cv_printf_long_long")
 	AC_DEFINE_UNQUOTED(SCANF_LONG_LONG , "$wi_cv_scanf_long_long")
 	if test "$wi_cv_printf_long_long" = "%qd" ; then
@@ -1397,6 +1684,49 @@ else
 	wi_cv_use_long_long_msg_result="yes"
 fi
 AC_MSG_RESULT($wi_cv_use_long_long_msg_result)
+])
+dnl
+dnl
+dnl
+dnl
+AC_DEFUN(wi_CREATE_TAR_FILES, [
+AC_MSG_CHECKING([how to create TAR files])
+changequote(<<, >>)dnl
+TAR=/usr/bin/tar
+if [ ! -f /usr/bin/tar ] && [ -f /bin/tar ] ; then
+	TAR=/bin/tar
+fi
+x=""
+if [ -x /usr/bin/what ] ; then
+	x=`/usr/bin/what "$TAR" 2>&1 | sed -n 's/.*pax.*/pax/g;/pax/p'`
+elif [ -x /bin/what ] ; then
+	x=`/bin/what "$TAR" 2>&1 | sed -n 's/.*pax.*/pax/g;/pax/p'`
+fi
+if [ "x$x" != "xpax" ] ; then
+	# The junk above is because Mac OS X Server's tar freaks out
+	# and does not exit if you do "tar --help".
+	#
+	x=`$TAR --help 2>&1 | sed -n 's/.*owner=NAME.*/owner=NAME/g;/owner=NAME/p'`
+fi
+case "$x" in
+	*owner=NAME*)
+		TARFLAGS="-c --owner=root --group=bin --verbose -f"
+		;;
+	*)
+		TARFLAGS="cvf"
+		x2=`gtar --help 2>&1 | sed -n 's/.*owner=NAME.*/owner=NAME/g;/owner=NAME/p'`
+		case "$x2" in
+			*owner=NAME*)
+				TARFLAGS="-c --owner=root --group=bin --verbose -f"
+				TAR=gtar
+				;;
+		esac
+		;;
+esac
+changequote([, ])dnl
+AC_SUBST(TARFLAGS)
+AC_SUBST(TAR)
+AC_MSG_RESULT([$TAR $TARFLAGS])
 ])
 dnl
 dnl
@@ -1535,6 +1865,8 @@ AC_MSG_RESULT([maxx])
 AC_DEFINE(HAVE__MAXX)
 AC_MSG_RESULT([_maxx])
 ])
+
+	AC_CHECK_FUNCS(__getmaxx __getmaxy __getbegx __getbegy)
 
 	# getbegx
 	AC_MSG_CHECKING([for getbegx() functionality in curses library])
@@ -1697,7 +2029,7 @@ dnl
 dnl
 dnl
 AC_DEFUN(wi_SHADOW_FUNCS, [
-AC_CHECK_FUNCS(md5_crypt bcrypt getspnam)
+AC_CHECK_FUNCS(md5_crypt md5crypt bcrypt getspnam)
 
 # UnixWare 7
 if test "$ac_cv_func_getspnam" = no ; then
@@ -1785,6 +2117,11 @@ AC_CHECK_LIB(security,endprpwent)
 # HP-UX
 AC_CHECK_LIB(sec,getprpwnam)
 
+if test "$ac_cv_lib_sec_getprpwnam" = no ; then
+	# DYNIX/ptx
+	AC_CHECK_LIB(sec,getspnam)
+fi
+
 if test "$check_for_libcrypt" = yes ; then
 	wi_LIB_CRYPT
 fi
@@ -1794,11 +2131,16 @@ dnl
 dnl
 dnl
 AC_DEFUN(wi_OS_VAR, [
-changequote(<<, >>)dnl
+changequote(!@, @!)dnl
+if [ -x "$HOME/bin/OS" ] ; then
+	HOME_OS=`$HOME/bin/OS`
+	HOME_OS="$HOME/$HOME_OS"
+fi
 host=`uname -n 2>/dev/null | tr '[A-Z]' '[a-z]'`
 os=`uname -s 2>/dev/null | tr '[A-Z]' '[a-z]'`
-os_v=`uname -v 2>/dev/null | sed 's/^[^0-9.]*//;s/[^0-9.]*$//' | awk '-F[-/: ]' '{print $1}'`
-os_r=`uname -r 2>/dev/null | sed 's/^[^0-9.]*//;s/[^0-9.]*$//' | awk '-F[-/: ]' '{print $1}'`
+dnl work around inability to use $1
+os_v=`uname -v 2>/dev/null | sed 's/^[^0-9.]*//;s/[^0-9.]*$//;s/pre.*//;s/test.*//' | awk '-F[-/: ]' '{n = 1; print $n; }'`
+os_r=`uname -r 2>/dev/null | sed 's/^[^0-9.]*//;s/[^0-9.]*$//;s/pre.*//;s/test.*//' | awk '-F[-/: ]' '{n = 1; print $n; }'`
 os_r1=`echo "${os_r}" | cut -c1`
 arch=`uname -m 2>/dev/null | tr '[A-Z]' '[a-z]'`
 archp=`uname -p 2>/dev/null | tr '[A-Z]' '[a-z]'`
@@ -1806,10 +2148,29 @@ OS=''
 SYS=''
 NDEFS=''
 
+# Special case a few systems where if your CFLAGS appear
+# to want to generate for 32 bit, use that mode rather
+# than 64 bit.
+#
+case "$os,$CFLAGS" in
+	irix64,*-n32*)
+		os=irix
+		# then go to regular "irix" instead of "irix64" below.
+		;;
+esac
+
 case "$os" in
 	osf1)
-		OS="digitalunix${os_r}-$arch"
-		SYS=digitalunix
+		case "$os_r" in
+			3*|4*)
+				OS="digitalunix${os_r}-$arch"
+				SYS=digitalunix
+				;;
+			*)
+				OS="tru64unix${os_r}-$arch"
+				SYS=tru64unix
+				;;
+		esac
 		NDEFS="$NDEFS -DDIGITAL_UNIX=$os_r1"
 		;;
 	aix)
@@ -1821,6 +2182,11 @@ case "$os" in
 		OS="irix${os_r}"
 		SYS=irix
 		NDEFS="$NDEFS -DIRIX=$os_r1"
+		;;
+	irix64)
+		OS="irix64_${os_r}"
+		SYS=irix64
+		NDEFS="$NDEFS -DIRIX=$os_r1 -DIRIX64=$os_r1"
 		;;
 	hp-ux)
 		os_r=`echo "${os_r}" | cut -d. -f2-`
@@ -1872,28 +2238,88 @@ case "$os" in
 				arch=x86
 				;;
 		esac
+
+		libc=""
 		os_r1=`echo "$os_r" | cut -d. -f1`
 		os_r2=`echo "$os_r" | cut -d. -f2`
 		os_r3=`echo "$os_r" | cut -d- -f1 | cut -d. -f3`
 		os_int=`expr "$os_r1" '*' 10000 + "$os_r2" '*' 1000 + "$os_r3"`
 		NDEFS="$NDEFS -DLINUX=$os_int"
-		if test -f /lib/libc-2.1.1.so ; then
-			libc="glibc2.1"
-dnl			OS="linux-$arch-$libc"
-			OS="linux-$arch"
-		elif test -f /lib/libc.so.6 ; then
-			libc="glibc2.0"
-dnl			OS="linux-$arch-$libc"
-			OS="linux-$arch"
-		elif test -f /lib/libc.so.6.1 ; then
-			libc="glibc2.0"
-dnl			OS="linux-$arch-$libc"
-			OS="linux-$arch"
-		else
-			libc="libc5"
-dnl			OS="linux-$arch-$libc"
-			OS="linux-$arch"
-		fi
+
+		vertest="./vertest.$$"
+		/bin/rm -f "$vertest" "$vertest.c"
+		cat <<EOF > "$vertest.c"
+#include <stdio.h>
+#include <gnu/libc-version.h>
+
+main()
+{
+	const char *ver = gnu_get_libc_version();
+	const char *rel = gnu_get_libc_release();
+
+	fprintf(stdout, "glibc%s\n", ver);
+	exit(0);
+}
+EOF
+		echo $ac_n "checking version of C library""... $ac_c" 1>&6
+		echo "configure:: checking version of C library" >&5
+		${CC-cc} $DEFS $CPPFLAGS $CFLAGS "$vertest.c" -o "$vertest" >/dev/null 2>&1
+		if [ -x "$vertest" ] ; then libc=`$vertest` ; fi
+		/bin/rm -f "$vertest" "$vertest.c"
+
+		case "$libc" in
+			glibc*)
+				echo "$libc" 1>&6
+				glibc_r=`echo "$libc" | sed 's/glibc//'`
+				glibc_r1=`echo "$glibc_r" | cut -d. -f1`
+				glibc_r2=`echo "$glibc_r" | cut -d. -f2`
+				glibc_r3=`echo "$glibc_r" | cut -d- -f1 | cut -d. -f3`
+				glibc_int=`expr "$glibc_r1" '*' 10000 + "$glibc_r2" '*' 1000 + "$glibc_r3"`
+				NDEFS="$NDEFS -DLINUX_GLIBC=$glibc_int"
+				libc="glibc${glibc_r1}.${glibc_r2}"
+				OS="linux-$arch"
+				;;
+			*)
+				if test -f /lib/libc-2.2.2.so ; then
+					NDEFS="$NDEFS -DLINUX_GLIBC=22002"
+					libc="glibc2.2"
+					OS="linux-$arch"
+				elif test -f /lib/libc-2.2.1.so ; then
+					NDEFS="$NDEFS -DLINUX_GLIBC=22001"
+					libc="glibc2.2"
+					OS="linux-$arch"
+				elif test -f /lib/libc-2.2.0.so ; then
+					NDEFS="$NDEFS -DLINUX_GLIBC=22000"
+					libc="glibc2.1"
+					OS="linux-$arch"
+				elif test -f /lib/libc-2.1.3.so ; then
+					NDEFS="$NDEFS -DLINUX_GLIBC=21003"
+					libc="glibc2.1"
+					OS="linux-$arch"
+				elif test -f /lib/libc-2.1.2.so ; then
+					NDEFS="$NDEFS -DLINUX_GLIBC=21002"
+					libc="glibc2.1"
+					OS="linux-$arch"
+				elif test -f /lib/libc-2.1.1.so ; then
+					NDEFS="$NDEFS -DLINUX_GLIBC=21001"
+					libc="glibc2.1"
+					OS="linux-$arch"
+				elif test -f /lib/libc.so.6 ; then
+					NDEFS="$NDEFS -DLINUX_GLIBC=20000"
+					libc="glibc2.0"
+					OS="linux-$arch"
+				elif test -f /lib/libc.so.6.1 ; then
+					NDEFS="$NDEFS -DLINUX_GLIBC=20001"
+					libc="glibc2.0"
+					OS="linux-$arch"
+				else
+					NDEFS="$NDEFS -DLINUX_LIBC=5"
+					libc="libc5"
+					OS="linux-$arch"
+				fi
+				echo "$libc" 1>&6
+				;;
+		esac
 		SYS=linux
 		;;
 	bsd/os)
@@ -1909,9 +2335,9 @@ dnl			OS="linux-$arch-$libc"
 		OS="unixware${os_v}"
 		SYS=unixware
 		;;
-	rhapsody)
-		OS="macosxserver"
-		SYS="macosxserver"
+	macos*|darwin|rhapsody)
+		OS="macosx"
+		SYS="macosx"
 		;;
 	sunos)
 		if [ "$arch" = "" ] ; then arch="sparc" ; fi
@@ -1961,4 +2387,5 @@ AC_SUBST(NDEFS)
 AC_SUBST(OS)
 AC_SUBST(host)
 AC_SUBST(SYS)
+AC_SUBST(HOME_OS)
 ])

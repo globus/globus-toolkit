@@ -22,6 +22,7 @@ typedef struct SReadlineInfo {
 	int malloc;		/* If non-zero, malloc() was used for buf. */
 	int fd;			/* File descriptor to use for I/O. */
 	int timeoutLen;		/* Timeout to use, in seconds. */
+	int requireEOLN;	/* When buffer is full, continue reading and discarding until \n? */
 } SReadlineInfo;
 #endif
 
@@ -122,6 +123,26 @@ typedef struct SReadlineInfo {
 typedef void (*sio_sigproc_t)(int);
 typedef volatile sio_sigproc_t vsio_sigproc_t;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#ifndef _sio_main_c
+extern int gLibSio_Uses_Me_To_Quiet_Variable_Unused_Warnings;
+#endif
+
+#if (defined(__GNUC__)) && (__GNUC__ >= 2)
+#	ifndef UNUSED
+#		define UNUSED(a) a __attribute__ ((unused))
+#	endif
+#	define LIBSIO_USE_VAR(a)
+#else
+#	define LIBSIO_USE_VAR(a) gLibSio_Uses_Me_To_Quiet_Variable_Unused_Warnings = (a == 0)
+#	ifndef UNUSED
+#		define UNUSED(a) a
+#	endif
+#endif
+
 /* PRead.c */
 int PRead(int, char *const, size_t, int);
 
@@ -158,7 +179,7 @@ int SRead(int, char *const, size_t, int, int);
 
 /* SReadline.c */
 void FlushSReadlineInfo(SReadlineInfo *);
-int InitSReadlineInfo(SReadlineInfo *, int, char *, size_t, int);
+int InitSReadlineInfo(SReadlineInfo *, int, char *, size_t, int, int);
 void DisposeSReadlineInfo(SReadlineInfo *);
 int SReadline(SReadlineInfo *, char *const, size_t);
 
@@ -189,6 +210,10 @@ int Sendto(int, const char *const, size_t, const struct sockaddr_in *const);
 int SSendtoByName(int, const char *const, size_t, int, const char *const, int);
 int SendtoByName(int, const char *const, size_t, const char *const);
 
+/* SWait.c */
+int SWaitUntilReadyForReading(const int sfd, const int tlen);
+int SWaitUntilReadyForWriting(const int sfd, const int tlen);
+
 /* SWrite.c */
 int SWrite(int, const char *const, size_t, int, int);
 
@@ -210,5 +235,9 @@ const char *SError(int e);
 /* main.c */
 void SIOHandler(int);
 void (*SSignal(int signum, void (*handler)(int)))(int);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* _sio_h_ */

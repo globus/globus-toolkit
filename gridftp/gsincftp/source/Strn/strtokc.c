@@ -170,7 +170,7 @@ starttok:
 
 done:
 	*dst = '\0';
-	len = dst - dstTokenStart;		/* Return length of token. */
+	len = (int) (dst - dstTokenStart);	/* Return length of token. */
 
 #if (STRN_ZERO_PAD == 1)
 	/* Pad with zeros. */

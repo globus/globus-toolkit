@@ -115,11 +115,26 @@
 /* Result of "uname -a" */
 #undef UNAME
 
+/* Define if you have the __getbegx function.  */
+#undef HAVE___GETBEGX
+
+/* Define if you have the __getbegy function.  */
+#undef HAVE___GETBEGY
+
+/* Define if you have the __getmaxx function.  */
+#undef HAVE___GETMAXX
+
+/* Define if you have the __getmaxy function.  */
+#undef HAVE___GETMAXY
+
 /* Define if you have the curs_set function.  */
 #undef HAVE_CURS_SET
 
 /* Define if you have the doupdate function.  */
 #undef HAVE_DOUPDATE
+
+/* Define if you have the fstat64 function.  */
+#undef HAVE_FSTAT64
 
 /* Define if you have the getcwd function.  */
 #undef HAVE_GETCWD
@@ -145,6 +160,15 @@
 /* Define if you have the keypad function.  */
 #undef HAVE_KEYPAD
 
+/* Define if you have the llseek function.  */
+#undef HAVE_LLSEEK
+
+/* Define if you have the lseek64 function.  */
+#undef HAVE_LSEEK64
+
+/* Define if you have the lstat64 function.  */
+#undef HAVE_LSTAT64
+
 /* Define if you have the memmove function.  */
 #undef HAVE_MEMMOVE
 
@@ -153,6 +177,9 @@
 
 /* Define if you have the nodelay function.  */
 #undef HAVE_NODELAY
+
+/* Define if you have the open64 function.  */
+#undef HAVE_OPEN64
 
 /* Define if you have the res_init function.  */
 #undef HAVE_RES_INIT
@@ -177,6 +204,9 @@
 
 /* Define if you have the snprintf function.  */
 #undef HAVE_SNPRINTF
+
+/* Define if you have the stat64 function.  */
+#undef HAVE_STAT64
 
 /* Define if you have the strcasecmp function.  */
 #undef HAVE_STRCASECMP
@@ -234,6 +264,9 @@
 
 /* Define if you have the <string.h> header file.  */
 #undef HAVE_STRING_H
+
+/* Define if you have the <strings.h> header file.  */
+#undef HAVE_STRINGS_H
 
 /* Define if you have the <sys/ioctl.h> header file.  */
 #undef HAVE_SYS_IOCTL_H

@@ -1,8 +1,4 @@
-
-
-
-
-			 The "Artistic License"
+		     The Clarified Artistic License
 
 				Preamble
 
@@ -29,24 +25,22 @@ Definitions:
 	"You" is you, if you're thinking about copying or distributing
 	this Package.
 
-	"Reasonable copying fee" is whatever you can justify on the
-	basis of media cost, duplication charges, time of people involved,
-	and so on.  (You will not be required to justify it to the
-	Copyright Holder, but only to the computing community at large
-	as a market that must bear the fee.)
+	"Distribution fee" is a fee you charge for providing a copy
+        of this Package to another party.
 
-	"Freely Available" means that no fee is charged for the item
-	itself, though there may be fees involved in handling the item.
-	It also means that recipients of the item may redistribute it
-	under the same conditions they received it.
+	"Freely Available" means that no fee is charged for the right to
+        use the item, though there may be fees involved in handling the
+        item.  It also means that recipients of the item may redistribute
+        it under the same conditions they received it.
 
 1. You may make and give away verbatim copies of the source form of the
 Standard Version of this Package without restriction, provided that you
 duplicate all of the original copyright notices and associated disclaimers.
 
 2. You may apply bug fixes, portability fixes and other modifications
-derived from the Public Domain or from the Copyright Holder.  A Package
-modified in such a way shall still be considered the Standard Version.
+derived from the Public Domain, or those made Freely Available, or from
+the Copyright Holder.  A Package modified in such a way shall still be
+considered the Standard Version.
 
 3. You may otherwise modify your copy of this Package in any way, provided
 that you insert a prominent notice in each changed file stating how and
@@ -54,10 +48,11 @@ when you changed that file, and provided that you do at least ONE of the
 following:
 
     a) place your modifications in the Public Domain or otherwise make them
-    Freely Available, such as by posting said modifications to Usenet or
-    an equivalent medium, or placing the modifications on a major archive
-    site such as uunet.uu.net, or by allowing the Copyright Holder to include
-    your modifications in the Standard Version of the Package.
+    Freely Available, such as by posting said modifications to Usenet or an
+    equivalent medium, or placing the modifications on a major network
+    archive site allowing unrestricted access to them, or by allowing the
+    Copyright Holder to include your modifications in the Standard Version
+    of the Package.
 
     b) use the modified Package only within your corporation or organization.
 
@@ -67,6 +62,11 @@ following:
     documents how it differs from the Standard Version.
 
     d) make other distribution arrangements with the Copyright Holder.
+
+    e) permit and encourge anyone who receives a copy of the modified Package
+       permission to make your modifications Freely Available
+       in some specific way.
+
 
 4. You may distribute the programs of this Package in object code or
 executable form, provided that you do at least ONE of the following:
@@ -84,16 +84,21 @@ executable form, provided that you do at least ONE of the following:
 
     d) make other distribution arrangements with the Copyright Holder.
 
-5. You may charge a reasonable copying fee for any distribution of this
-Package.  You may charge any fee you choose for support of this
-Package.  You may not charge a fee for this Package itself.  However,
-you may distribute this Package in aggregate with other (possibly
-commercial) programs as part of a larger (possibly commercial) software
-distribution provided that you do not advertise this Package as a
-product of your own.  You may embed this Package's interpreter within
-an executable of yours (by linking); this shall be construed as a mere
-form of aggregation, provided that the complete Standard Version of the
-interpreter is so embedded.
+    e) offer the machine-readable source of the Package, with your
+       modifications, by mail order.
+
+5. You may charge a distribution fee for any distribution of this Package.
+If you offer support for this Package, you may charge any fee you choose
+for that support.  You may not charge a license fee for the right to use
+this Package itself.  You may distribute this Package in aggregate with
+other (possibly commercial and possibly nonfree) programs as part of a
+larger (possibly commercial and possibly nonfree) software distribution,
+and charge license fees for other parts of that software distribution,
+provided that you do not advertise this Package as a product of your own.
+If the Package includes an interpreter, You may embed this Package's
+interpreter within an executable of yours (by linking); this shall be
+construed as a mere form of aggregation, provided that the complete
+Standard Version of the interpreter is so embedded.
 
 6. The scripts and library files supplied as input to or produced as
 output from the programs of this Package do not automatically fall
@@ -115,11 +120,11 @@ equivalent of input as in Paragraph 6, provided these subroutines do
 not change the language in any way that would cause it to fail the
 regression tests for the language.
 
-8. Aggregation of this Package with a commercial distribution is always
-permitted provided that the use of this Package is embedded; that is,
-when no overt attempt is made to make this Package's interfaces visible
-to the end user of the commercial distribution.  Such use shall not be
-construed as a distribution of this Package.
+8. Aggregation of the Standard Version of the Package with a commercial
+distribution is always permitted provided that the use of this Package
+is embedded; that is, when no overt attempt is made to make this Package's
+interfaces visible to the end user of the commercial distribution.
+Such use shall not be construed as a distribution of this Package.
 
 9. The name of the Copyright Holder may not be used to endorse or promote
 products derived from this software without specific prior written permission.

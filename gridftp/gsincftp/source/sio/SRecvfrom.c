@@ -37,7 +37,7 @@ SRecvfrom(int sfd, char *const buf, size_t size, int fl, struct sockaddr_in *con
 	time(&now);
 	done = now + tlen;
 	tleft = (int) (done - now);
-	while (1) {
+	forever {
 		alen = sizeof(struct sockaddr_in);
 		(void) alarm((unsigned int) tleft);
 		nread = recvfrom(sfd, buf, size, fl,

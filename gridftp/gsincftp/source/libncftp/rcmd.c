@@ -1,13 +1,11 @@
 /* rcmd.c
  *
- * Copyright (c) 1996 Mike Gleason, NCEMRSoft.
+ * Copyright (c) 1996-2001 Mike Gleason, NCEMRSoft.
  * All rights reserved.
  *
  */
 
 #include "syshdrs.h"
-
-static int gUnused;
 
 #if !defined(NO_SIGNALS) && (USE_SIO || !defined(SIGALRM) || !defined(SIGPIPE) || !defined(SIGINT))
 #	define NO_SIGNALS 1
@@ -22,9 +20,9 @@ static jmp_buf gBrokenCtrlJmp;
 #endif	/* HAVE_SIGSETJMP */
 
 static void
-BrokenCtrl(int signumIgnored)
+BrokenCtrl(int UNUSED(signumIgnored))
 {
-	gUnused = signumIgnored;	/* Shut up gcc */
+	LIBNCFTP_USE_VAR(signumIgnored); 		/* Shut up gcc */
 #ifdef HAVE_SIGSETJMP
 	siglongjmp(gBrokenCtrlJmp, 1);
 #else
@@ -288,7 +286,7 @@ done:
 int
 GetResponse(const FTPCIPtr cip, ResponsePtr rp)
 {
-	string str;
+	longstring str;
 	int eofError;
 	str16 code;
 	char *cp;
@@ -337,6 +335,19 @@ GetResponse(const FTPCIPtr cip, ResponsePtr rp)
 #ifdef NO_SIGNALS
 	cp = str;
 	eofError = 0;
+	if (cip->dataTimedOut > 0) {
+		/* Give up immediately unless the server had already
+		 * sent a message. Odds are since the data is timed
+		 * out, so is the control.
+		 */
+		if (SWaitUntilReadyForReading(cip->ctrlSocketR, 0) == 0) {
+			/* timeout */
+			Error(cip, kDontPerror, "Could not read reply from control connection -- timed out.\n");
+			FTPShutdownHost(vcip);
+			cip->errNo = kErrControlTimedOut;
+			return (cip->errNo);
+		}
+	}
 	result = SReadline(&cip->ctrlSrl, str, sizeof(str) - 1);
 	if (result == kTimeoutErr) {
 		/* timeout */
