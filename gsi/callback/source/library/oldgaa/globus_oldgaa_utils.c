@@ -347,20 +347,26 @@ oldgaa_globus_policy_retrieve(uint32      *minor_status,
     /* error handling */
  
     if(error_type) /* policy retrieve error */
-    {          
+    {
         policy_db->error_code = ERROR_WHILE_RETRIEVING_POLICY;
-        policy_db->error_str  = oldgaa_strcopy("error retrieving file ",
-                                               policy_db->error_str);
-        policy_db->error_str  = strcat(policy_db->error_str, policy_db->str);       
-
+        policy_db->error_str  = malloc(strlen("error retrieving file ") +
+                                       strlen(policy_db->str) + 1);
+        if(policy_db->error_str == NULL)
+        {
+            out_of_memory();
+        }
+        sprintf(policy_db->error_str,"error retrieving file %s",policy_db->str);
     }
     else          /* policy parsing error */
     { 
-        policy_db->error_str  = pcontext->parse_error;
-        policy_db->error_str  = strcat(policy_db->error_str, pcontext->str); 
-
+        policy_db->error_str  = malloc(strlen(pcontext->parse_error) +
+                                       strlen(pcontext->str) + 1);
+        if(policy_db->error_str == NULL)
+        {
+            out_of_memory();
+        }
+        sprintf(policy_db->error_str,"%s%s",pcontext->parse_error,pcontext->str);
         policy_db->error_code = m_status;
-
     }
   
     *minor_status = m_status;
