@@ -22,5 +22,10 @@ grid_proxy_init_LDADD = ../library/libglobus_ssl_utils_$(GLOBUS_FLAVOR_NAME).la 
 grid_proxy_destroy_LDADD = ../library/libglobus_ssl_utils_$(GLOBUS_FLAVOR_NAME).la @GPT_PGM_LINKS@
 grid_proxy_info_LDADD =  ../library/libglobus_ssl_utils_$(GLOBUS_FLAVOR_NAME).la @GPT_PGM_LINKS@
 
+grid_proxy_init_LDFLAGS = @GPT_LDFLAGS@
+grid_proxy_destroy_LDFLAGS = @GPT_LDFLAGS@
+grid_proxy_info_LDFLAGS = @GPT_LDFLAGS@
+
+
 include $(top_srcdir)/globus_automake_post
 
