@@ -17,6 +17,7 @@ CVS Information:
 /******************************************************************************
 			     Include header files
 ******************************************************************************/
+#include "globus_common.h"
 #include "globus_common_include.h"
 #include "globus_module.h"
 #include "globus_error.h"
@@ -28,11 +29,26 @@ CVS Information:
 /******************************************************************************
 			  Module activation structure
 ******************************************************************************/
+
+
+
 static int
 globus_l_common_activate(void);
 
 static int
 globus_l_common_deactivate(void);
+
+static char *
+globus_l_common_i18n_echo_string(
+	       	char * locale, 
+		char * resource_name, 
+		char * key);
+
+static char *
+globus_l_common_i18n_get_string_by_module(
+		char * locale,
+		globus_module_descriptor_t * module,
+		char * key);
 
 
 globus_module_descriptor_t		globus_i_common_module =
@@ -46,6 +62,9 @@ globus_module_descriptor_t		globus_i_common_module =
 };
 
 
+globus_extension_registry_t      test_registry;
+get_string_by_key_t              globus_common_i18n_get_string_by_key;
+
 /******************************************************************************
 		   globus_common module activation functions
 ******************************************************************************/
@@ -53,6 +72,7 @@ globus_module_descriptor_t		globus_i_common_module =
 static int
 globus_l_common_activate(void)
 {
+	globus_extension_handle_t           handle;
 #ifdef TARGET_ARCH_WIN32
 	int rc;
 	WORD wVersionRequested;
@@ -85,6 +105,24 @@ globus_l_common_activate(void)
 	goto error_extension;
     }
 
+    if(globus_extension_activate("globus_i18n") != GLOBUS_SUCCESS)
+    {
+	globus_common_i18n_get_string_by_key = globus_l_common_i18n_echo_string;
+    }
+    else
+    {
+        globus_common_i18n_get_string_by_key = globus_extension_lookup(
+		    		&handle, &test_registry, "get_string_by_key");
+        if(!globus_common_i18n_get_string_by_key)
+        {
+            /* too lazy to check the rc from globus_extension_activate */
+            printf("globus_i18n library did not load. "
+            "Set the GLOBUS_EXTENSION_DEBUG env for more info\n");
+            return 0;
+	}
+        globus_extension_release(handle);
+    }
+
     return GLOBUS_SUCCESS;
 
 error_extension:
@@ -112,6 +150,35 @@ globus_l_common_deactivate(void)
 #endif
 
     return GLOBUS_SUCCESS;
+}
+
+static char *
+globus_l_common_i18n_echo_string(
+	       		char * locale,
+		       	char * resource_name,
+		       	char * key) 
+{
+    return key;
+}
+
+static char *
+globus_l_common_i18n_get_string_by_module(
+		char * locale,
+		globus_module_descriptor_t * module,
+		char * key)
+{
+    if (module != GLOBUS_NULL)
+    {
+	return globus_common_i18n_get_string_by_key(locale, module->module_name, key);
+    }
+}
+
+char *
+globus_common_i18n_get_string_simple(
+		globus_module_descriptor_t * module,
+		char * key)
+{
+    return globus_l_common_i18n_get_string_by_module(NULL, module, key);
 }
 
 

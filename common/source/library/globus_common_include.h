@@ -16,6 +16,10 @@
 
 extern const char * _globus_func_name;
 
+
+#define _GCSL(s) globus_common_i18n_get_string_simple(GLOBUS_COMMON_MODULE,\
+		               s)
+
 /** GET IPv6 compatible types (at least with GNU) **/
 #ifndef __USE_POSIX
 #define __USE_POSIX
@@ -126,10 +130,6 @@ extern const char * _globus_func_name;
 
 #include <limits.h>
 #include <assert.h>
-
-#include "unicode/ures.h"
-#include "unicode/ustring.h"
-#include "unicode/udata.h" 
 
 /******************************************************************************
 				 Define macros

@@ -80,8 +80,6 @@ Sources= \
 	globus_extension.c \
 	globus_extension.h \
 	globus_common_include.h \
-	globus_i18n.c \
-	globus_i18n.h \
 	globus_uuid.c \
 	globus_uuid.h
 
@@ -121,12 +119,11 @@ flavorinclude_HEADERS = \
 	globus_extension.h \
 	globus_common.h \
 	globus_thread_$(GLOBUS_THREADS).h \
-	globus_common_include.h \
-	globus_i18n.h \
-	globus_uuid.h
+	globus_common_include.h
 
 
-lib_LTLIBRARIES = libglobus_common_$(GLOBUS_FLAVOR_NAME).la
+lib_LTLIBRARIES = libglobus_common_$(GLOBUS_FLAVOR_NAME).la \
+		  libglobus_ext_test$(GLOBUS_FLAVOR_NAME).la
 
 INCLUDES = @GPT_INCLUDES@
 
