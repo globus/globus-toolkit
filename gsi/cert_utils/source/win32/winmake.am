@@ -9,7 +9,3 @@ LibDependencies = \
     libglobus_openssl_error_$(GLOBUS_FLAVOR_NAME).lib \
     libglobus_gsi_sysconfig_$(GLOBUS_FLAVOR_NAME).lib \
     libglobus_proxy_ssl_$(GLOBUS_FLAVOR_NAME).lib
-
-# Windows Only Exports
-WinExports = \
-    globus_gsi_cert_utils_create_string
