@@ -149,6 +149,7 @@ typedef struct
 typedef struct
 {
     globus_l_io_handle_t *              handle;
+    globus_io_handle_t *                u_handle;
     union
     {
         globus_io_callback_t            non_io;
@@ -717,6 +718,10 @@ globus_l_io_bounce_authz_cb(
     
     if(result != GLOBUS_SUCCESS)
     {
+        if(ihandle->authz_data)
+        {
+            globus_free(ihandle->authz_data);
+        }
         globus_free(ihandle);
     }
     
@@ -743,16 +748,13 @@ globus_l_io_bounce_listen_cb(
         bounce_info->handle->io_handle,
         result);
     
-    /** XXX I should do this here, but I have to ref count first... handle
-     * could be destroyed in this callback
-     *
     if(bounce_info->handle->xio_target)
     {
-        user didnt 'accept' this target
+        /* user didnt 'accept' this target */
         globus_xio_target_destroy(bounce_info->handle->xio_target);
         bounce_info->handle->xio_target = GLOBUS_NULL;
     }
-     */
+
     globus_free(bounce_info);
 }
 
@@ -2214,6 +2216,7 @@ globus_io_tcp_get_local_address(
     }
     
     sscanf(cs, "%d.%d.%d.%d:%hu", &host[0], &host[1], &host[2], &host[3], port);
+    globus_free(cs);
     
     return GLOBUS_SUCCESS;
 
@@ -2272,6 +2275,7 @@ globus_io_tcp_get_remote_address(
     }
     
     sscanf(cs, "%d.%d.%d.%d:%hu", &host[0], &host[1], &host[2], &host[3], port);
+    globus_free(cs);
     
     return GLOBUS_SUCCESS;
 
@@ -3083,13 +3087,21 @@ globus_l_io_bounce_close_cb(
     
     bounce_info = (globus_l_io_bounce_t *) user_arg;
     
-    *bounce_info->handle->io_handle = GLOBUS_NULL;
+    if(bounce_info->u_handle)
+    {
+        *bounce_info->u_handle = GLOBUS_NULL;
+        if(bounce_info->handle->authz_data)
+        {
+            globus_free(bounce_info->handle->authz_data);
+        }
+        globus_free(bounce_info->handle);
+    }
+    
     bounce_info->cb.non_io(
         bounce_info->user_arg,
-        bounce_info->handle->io_handle,
+        bounce_info->u_handle,
         result);
     
-    globus_free(bounce_info->handle);
     globus_free(bounce_info);
 }
 
@@ -3104,13 +3116,17 @@ globus_l_io_server_close_cb(
     
     bounce_info = (globus_l_io_bounce_t *) user_arg;
     
-    *bounce_info->handle->io_handle = GLOBUS_NULL;
+    if(bounce_info->u_handle)
+    {
+        *bounce_info->u_handle = GLOBUS_NULL;
+        globus_free(bounce_info->handle);
+    }
+    
     bounce_info->cb.non_io(
         bounce_info->user_arg,
-        bounce_info->handle->io_handle,
+        bounce_info->u_handle,
         GLOBUS_SUCCESS);
     
-    globus_free(bounce_info->handle);
     globus_free(bounce_info);
 }
 
@@ -3128,7 +3144,6 @@ globus_io_register_close(
     GlobusLIOCheckNullParam(callback);
     GlobusLIOCheckHandle(handle, 0);
     ihandle = *handle;
-    *handle = GLOBUS_NULL;
     
     result = GlobusLIOMalloc(bounce_info, globus_l_io_bounce_t);
     if(result != GLOBUS_SUCCESS)
@@ -3137,6 +3152,7 @@ globus_io_register_close(
     }
     
     bounce_info->handle = ihandle;
+    bounce_info->u_handle = handle;
     bounce_info->cb.non_io = callback;
     bounce_info->user_arg = callback_arg;
     
