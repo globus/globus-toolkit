@@ -1,14 +1,14 @@
 CVSNOTES
 ========
 
-This file contains notes regarding the files stored in the openssh CVS module that
-contains the GSI-OpenSSH code.  Consider it a living document.
+This file contains notes regarding the files stored in the openssh CVS 
+module that contains the GSI-OpenSSH code.  Consider it a living document.
 
   [ Generic Tag Merging ]
 
-    <newBase> refers to the new tag that lives in the repository.  Supposedly, you
-    are undergoing a cvs merge because a new GSI patch has been created (along with
-    a new corresponding tag).
+    <newBase> refers to the new tag that lives in the repository.  
+    Supposedly, you are undergoing a cvs merge because a new GSI patch has 
+    been created (along with a new corresponding tag).
 
     1. Set up your environment to point to the correct CVS repository.
 
@@ -23,28 +23,28 @@ contains the GSI-OpenSSH code.  Consider it a living document.
 
           $ cvs tag <newBase>_GPT-premerge
 
-    4. Merge the changes from your original base merge point to your new base merge
-       point.
+    4. Merge the changes from your original base merge point to your new 
+       base merge point.
 
           $ cvs update -kk -jOPENSSH_GSI_GPT_BASE -j<newBase>
 
-    5. Retrieve a list of any conflicts that were discovered as a result of the
-       merge.
+    5. Retrieve a list of any conflicts that were discovered as a result 
+       of the merge.
 
           $ cvs -n update | grep C
 
     6. Resolve all of the conflicts in each of the listed files.
 
-    7. Add an entry to the History section of this file detailing your merge action,
-       along with noting conflicts that occurred and any interesting changes you had
-       to make to resolve them.
+    7. Add an entry to the History section of this file detailing your 
+       merge action, along with noting conflicts that occurred and any 
+       interesting changes you had to make to resolve them.
 
     8. Move OPENSSH_GSI_GPT_BASE.
 
           $ cvs rtag -F -r <newBase> OPENSSH_GSI_GPT_BASE openssh
 
-    9. Commit all of the files in your working directory to the repository and tag the 
-       working directory as merged.
+    9. Commit all of the files in your working directory to the 
+       repository and tag the working directory as merged.
 
           $ cvs commit
           $ cvs tag <newBase>_GPT-merged
