@@ -6,7 +6,7 @@
 static globus_mutex_t                   globus_l_ipc_mutex;
 static globus_hashtable_t               globus_l_ipc_handle_table;
 static int                              globus_l_ipc_handle_count = 0;
-static int                              globus_l_ipc_handle_max = 256;
+static int                              globus_l_ipc_handle_max = 1024;
 static globus_i_gfs_community_t *       globus_l_gfs_ipc_community_default;
 static globus_list_t *                  globus_l_gfs_ipc_community_list = NULL;
 
@@ -3727,10 +3727,11 @@ globus_gfs_ipc_handle_release(
     {
         entry = ipc_handle->cache_ptr;
         globus_assert(entry != NULL);
+        entry->in_use = GLOBUS_FALSE;
 
         /* get the list of handles for the user, insert this one and 
             put it back in table */
-        list = (globus_list_t *) globus_hashtable_lookup(
+        list = (globus_list_t *) globus_hashtable_remove(
             &globus_l_ipc_handle_table, entry->hash_str);
         globus_list_insert(&list, entry);
         globus_hashtable_insert(

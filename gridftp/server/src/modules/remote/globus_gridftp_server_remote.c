@@ -5,6 +5,7 @@
 typedef struct globus_l_gfs_remote_handle_s
 {
     const char *                        user_id;
+    globus_gfs_ipc_handle_t             ipc_handle;
 } globus_l_gfs_remote_handle_t;
 
 
@@ -54,7 +55,8 @@ globus_l_gfs_ipc_finished_cb(
    {
        globus_i_gfs_log_result("IPC ERROR", result);
    }
-
+   bounce_info->my_handle->ipc_handle = NULL;
+    
    return;
 }
 
@@ -77,12 +79,13 @@ globus_l_gfs_ipc_event_cb(
         GLOBUS_SUCCESS,
         reply);
    
+/*
    result = globus_gfs_ipc_handle_release(ipc_handle);
    if(result != GLOBUS_SUCCESS)
    {
        globus_i_gfs_log_result("IPC ERROR", result);
    }
-
+*/
    return;
 }
 
@@ -150,7 +153,7 @@ static
 globus_result_t
 globus_l_gfs_remote_stat(
     globus_gfs_operation_t              op,
-    globus_gfs_stat_info_t *           stat_info,
+    globus_gfs_stat_info_t *            stat_info,
     void *                              user_arg)
 {
     globus_l_gfs_remote_ipc_bounce_t *  bounce_info;
@@ -202,7 +205,7 @@ static
 globus_result_t
 globus_l_gfs_remote_command(
     globus_gfs_operation_t              op,
-    globus_gfs_command_info_t *        command_info,
+    globus_gfs_command_info_t *         command_info,
     void *                              user_arg)
 {
     globus_l_gfs_remote_ipc_bounce_t *  bounce_info;
@@ -255,7 +258,7 @@ static
 globus_result_t
 globus_l_gfs_remote_list(
     globus_gfs_operation_t              op,
-    globus_gfs_transfer_info_t *       transfer_info,
+    globus_gfs_transfer_info_t *        transfer_info,
     void *                              user_arg)
 {
     globus_l_gfs_remote_ipc_bounce_t *  bounce_info;
@@ -300,7 +303,9 @@ globus_l_gfs_remote_recv_kickout(
         globus_l_gfs_ipc_finished_cb,
         globus_l_gfs_ipc_event_cb,
         bounce_info); 
-
+        
+    bounce_info->my_handle->ipc_handle = ipc_handle;
+    
     return;
 }
 
@@ -308,7 +313,7 @@ static
 globus_result_t
 globus_l_gfs_remote_recv(
     globus_gfs_operation_t              op,
-    globus_gfs_transfer_info_t *       transfer_info,
+    globus_gfs_transfer_info_t *        transfer_info,
     void *                              user_arg)
 {
     globus_l_gfs_remote_ipc_bounce_t *  bounce_info;
@@ -354,6 +359,8 @@ globus_l_gfs_remote_send_kickout(
         globus_l_gfs_ipc_event_cb,
         bounce_info); 
 
+    bounce_info->my_handle->ipc_handle = ipc_handle;
+    
     return;
 }
 
@@ -361,7 +368,7 @@ static
 globus_result_t
 globus_l_gfs_remote_send(
     globus_gfs_operation_t              op,
-    globus_gfs_transfer_info_t *       transfer_info,
+    globus_gfs_transfer_info_t *        transfer_info,
     void *                              user_arg)
 {
     globus_l_gfs_remote_ipc_bounce_t *  bounce_info;
@@ -541,51 +548,23 @@ globus_l_gfs_remote_data_destroy(
 
 static
 void
-globus_l_gfs_remote_trev_kickout(
-    globus_gfs_ipc_handle_t             ipc_handle,
-    globus_result_t                     result,
-    void *                              user_arg)
-{
-    globus_l_gfs_remote_ipc_bounce_t *  bounce_info;
-    GlobusGFSName(globus_l_gfs_remote_stat);
-    
-    bounce_info = (globus_l_gfs_remote_ipc_bounce_t *)  user_arg;
-
-    result = globus_gfs_ipc_request_transfer_event(
-        ipc_handle,
-        bounce_info->trev_arg,
-        (int) bounce_info->state); 
-
-    return;
-}
-
-static
-void
 globus_l_gfs_remote_trev(
     int                                 transfer_id,
     int                                 event_type,
     void *                              user_arg)
 {
-    globus_l_gfs_remote_ipc_bounce_t *  bounce_info;
     globus_result_t                     result;
     globus_l_gfs_remote_handle_t *      my_handle;
-    GlobusGFSName(globus_l_gfs_remote_stat);
+    GlobusGFSName(globus_l_gfs_remote_trev);
     
     my_handle = (globus_l_gfs_remote_handle_t *) user_arg;
     
-    result = globus_l_gfs_remote_init_bounce_info(
-        &bounce_info, NULL, (void *) event_type, my_handle);
-    bounce_info->trev_arg = transfer_id;
-            
-    result = globus_gfs_ipc_handle_get(
-        my_handle->user_id,
-        NULL,
-        &globus_gfs_ipc_default_iface,
-        globus_l_gfs_remote_trev_kickout,
-        bounce_info,
-        globus_l_gfs_remote_ipc_error_cb,
-        bounce_info);        
-                    
+    /* lookup handle based on transfer id here */
+    result = globus_gfs_ipc_request_transfer_event(
+        my_handle->ipc_handle,
+        transfer_id,
+        event_type);
+                                 
     return;
 }
 
@@ -607,17 +586,18 @@ globus_l_gfs_remote_init(
     const char *                        user_id,
     void **                             out_user_arg)
 {
-    globus_result_t                     result;
+    globus_result_t                     result = GLOBUS_SUCCESS;
     globus_l_gfs_remote_handle_t *      my_handle;
     
     my_handle = (globus_l_gfs_remote_handle_t *) 
         globus_calloc(1, sizeof(globus_l_gfs_remote_handle_t));
         
     my_handle->user_id = globus_libc_strdup(user_id);
+    my_handle->ipc_handle = NULL;
     
     *out_user_arg = my_handle;
     
-    return GLOBUS_SUCCESS;
+    return result;
 }
                                                                                 
 void

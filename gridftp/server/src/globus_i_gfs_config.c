@@ -557,18 +557,45 @@ globus_l_gfs_config_misc()
     {
         globus_i_gfs_community_t *      community;
         globus_list_t *                 community_list;
+        char *                          p;
+        int                             i;
+        char *                          org_value;
         community = (globus_i_gfs_community_t *)
             globus_malloc(sizeof(globus_i_gfs_community_t)); 
         if(!value)
         {
             value = globus_libc_strdup("");
         }
+        org_value = value;
+        community->cs_count = 1;
+        
+        p = strchr(value, ',');
+        while(p != NULL)
+        {   
+            p++;
+            community->cs_count++;
+            p = strchr(p, ',');
+        }
+        
         community->name = globus_libc_strdup("default");
         community->root = globus_libc_strdup("/");
-        community->cs_count = 1;
-        community->cs = (char **) globus_malloc(sizeof(char *));
-        *community->cs = (char *) globus_libc_strdup(value);
+        community->cs = (char **) globus_malloc(
+            sizeof(char *) * community->cs_count);
         
+        for(i = 0; i < community->cs_count; i++)
+        {
+            p = strchr(value, ',');
+            if(p != NULL)
+            {
+                *p = '\0';
+                community->cs[i] = (char *) globus_libc_strdup(value);
+                value = p + 1;
+            }
+            else
+            {
+                community->cs[i] = (char *) globus_libc_strdup(value);
+            }
+        }
         globus_list_insert(&community_list, community);  
         
         option = (globus_l_gfs_config_option_t *) globus_hashtable_remove(
@@ -593,7 +620,7 @@ globus_l_gfs_config_misc()
             "community",
             (void *) option);
 
-        globus_free(value);
+        globus_free(org_value);
     }
     
     return GLOBUS_SUCCESS;
