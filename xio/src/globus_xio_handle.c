@@ -3304,7 +3304,7 @@ globus_xio_close(
     globus_xio_attr_t                   attr)
 {
     globus_result_t                     res = GLOBUS_SUCCESS;
-    globus_i_xio_blocking_t *           info = NULL;
+    globus_i_xio_blocking_t *           info;
     globus_bool_t                       pass = GLOBUS_TRUE;
     globus_bool_t                       destroy_handle = GLOBUS_FALSE;
     int                                 ctr;
@@ -3375,7 +3375,7 @@ globus_xio_close(
 
     if(res != GLOBUS_SUCCESS)
     {
-        goto alloc_error;
+        goto register_error;
     }
     
     if(pass)
@@ -3419,13 +3419,10 @@ globus_xio_close(
     return GLOBUS_SUCCESS;
 
   register_error:
-  alloc_error:
-    if(info)
-    {
-        globus_i_xio_blocking_destroy(info);
-    }
+    globus_i_xio_blocking_destroy(info);
+    
     /* desroy op */
-
+  alloc_error:
   param_error:
     GlobusXIODebugExitWithError();
     return res;
