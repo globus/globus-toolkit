@@ -31,7 +31,10 @@ Data= \
 	gssapi-delegation-test.stderr \
 	gssapi-limited-delegation-test.stderr \
 	gssapi-delegation-compat-test.stderr \
-	gssapi-group-test.stderr
+	gssapi-group-test.stderr \
+	dc31a685.0 \
+	dc31a685.signing_policy \
+	testcred.pem
 
 test_DATA = $(Data)
 
