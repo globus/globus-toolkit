@@ -423,16 +423,23 @@ globus_l_xio_udp_attr_cntl(
       
       /* char **                        contact_string_out */
       case GLOBUS_XIO_UDP_GET_CONTACT:
-        
-        out_string = va_arg(ap, char **);
-        result = globus_libc_addr_to_contact_string(
-            &attr->addr,
-            flags,
-            out_string);
-        if(result != GLOBUS_SUCCESS)
+        if(attr->use_addr)
         {
-            result = GlobusXIOErrorWrapFailed(
-                "globus_libc_addr_to_contact_string", result);
+            out_string = va_arg(ap, char **);
+            result = globus_libc_addr_to_contact_string(
+                &attr->addr,
+                flags,
+                out_string);
+            if(result != GLOBUS_SUCCESS)
+            {
+                result = GlobusXIOErrorWrapFailed(
+                    "globus_libc_addr_to_contact_string", result);
+                goto error_contact;
+            }
+        }
+        else
+        {
+            result = GlobusXIOUdpErrorNoAddrs();
             goto error_contact;
         }
         break;
@@ -1220,7 +1227,7 @@ globus_l_xio_udp_read(
     addr = GLOBUS_NULL;
     if(!handle->connected)
     {
-        GlobusXIOOperationGetDataDescriptor(attr, op, GLOBUS_FALSE);
+        GlobusXIOOperationGetDataDescriptor(attr, op, GLOBUS_TRUE);
         if(attr)
         {
             addr = &attr->addr;
@@ -1247,10 +1254,7 @@ globus_l_xio_udp_read(
         }
         
         globus_xio_driver_finished_read(op, result, nbytes);
-        /* dont want to return error here mainly because error could be eof, 
-         * which is against our convention to return an eof error on async
-         * calls.  Other than that, the choice is arbitrary
-         */
+
         return GLOBUS_SUCCESS;
     }
     else

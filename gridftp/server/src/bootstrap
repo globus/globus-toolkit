@@ -15,7 +15,7 @@ if [ ! -f ${GLOBUS_LOCATION}/libexec/globus-bootstrap.sh ]; then
 fi
 
 echo -n "Checking for data modules... "
-modules=`ls modules | grep -v CVS`
+modules=`ls modules | grep -v CVS | grep -v Makefile`
 modules_makefiles=
 delim=
 if test "X$modules" != "X" ; then
@@ -29,7 +29,7 @@ else
 fi
 
 echo -n "Checking for commands... "
-commands=`ls commands | grep -v CVS`
+commands=`ls commands | grep -v CVS | grep -v Makefile`
 commands_makefiles=
 delim=
 if test "X$commands" != "X" ; then

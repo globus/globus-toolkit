@@ -5,12 +5,13 @@ include $(top_srcdir)/globus_automake_pre_top
 # the list of subdirectories that have Makefile.am's
 SUBDIRS = \
 	pkgdata \
-	$(MODULE_DIRS) \
-	$(COMMAND_DIRS) \
+	modules \
+	commands \
 	doxygen
 
 EXTRA_DIST = \
-	version.h.in
+	version.h.in \
+	configure.in.in
 
 # Sources contains all of the source files in the directory.
 # Header files are included because automake will generate dependency targets 
@@ -21,7 +22,6 @@ EXTRA_DIST = \
 Sources = \
 	globus_gridftp_server.c		\
 	globus_gridftp_server.h		\
-	globus_gridftp_server_file.c  \
 	globus_i_gridftp_server.h	\
 	globus_i_gfs_log.c 		\
 	globus_i_gfs_log.h 		\
@@ -34,9 +34,7 @@ Sources = \
 	globus_i_gfs_ipc.c 		\
 	globus_i_gfs_ipc.h 		\
 	globus_i_gfs_control.c 		\
-	globus_i_gfs_control.h 		\
-	$(MODULE_SOURCES)		\
-	$(COMMAND_SOURCES)
+	globus_i_gfs_control.h
 
 # INCLUDES is an automake macro which contains 
 # the include directives (-I..) for the compiler.
@@ -99,7 +97,10 @@ globus_gridftp_server_LDFLAGS = $(GPT_LDFLAGS)
 # 
 # GPT_PGM_LINKS is a macro that contains the linker directives GPT generated 
 # from the dependent packages
-globus_gridftp_server_LDADD = $(GPT_PGM_LINKS)
+globus_gridftp_server_LDADD = \
+	$(GPT_PGM_LINKS) \
+	$(MODULE_LIBS) \
+	$(COMMAND_LIBS)
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

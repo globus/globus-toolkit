@@ -1740,18 +1740,20 @@ globus_xio_contact_parse(
                 }
             }
         }
+    
+        globus_l_xio_decode_hex(contact_info->resource);
+        globus_l_xio_decode_hex(contact_info->host);   
+        globus_l_xio_decode_hex(contact_info->port);   
+        globus_l_xio_decode_hex(contact_info->scheme); 
+        globus_l_xio_decode_hex(contact_info->user);   
+        globus_l_xio_decode_hex(contact_info->pass);   
+        globus_l_xio_decode_hex(contact_info->subject);
+                                
+        /* XXX validate some of the fields */
+        
+        globus_free(save);
     }
     
-    globus_l_xio_decode_hex(contact_info->resource);
-    globus_l_xio_decode_hex(contact_info->host);   
-    globus_l_xio_decode_hex(contact_info->port);   
-    globus_l_xio_decode_hex(contact_info->scheme); 
-    globus_l_xio_decode_hex(contact_info->user);   
-    globus_l_xio_decode_hex(contact_info->pass);   
-    globus_l_xio_decode_hex(contact_info->subject);
-                            
-    /* XXX validate some of the fields */
-                            
     return GLOBUS_SUCCESS;  
                             
 error_alloc:                
