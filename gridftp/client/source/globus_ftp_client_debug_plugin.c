@@ -739,7 +739,7 @@ globus_l_ftp_client_debug_plugin_command(
 	return;
     }
 
-    fprintf(d->stream, "%s%ssending command %s\n",
+    fprintf(d->stream, "%s%ssending command:\n%s\n",
 	    d->text ? d->text : "",
 	    d->text ? ": " : "",
 	    command_name);
@@ -768,7 +768,7 @@ globus_l_ftp_client_debug_plugin_response(
 
     if(!error)
     {
-	fprintf(d->stream, "%s%sresponse from %s: %s\n",
+	fprintf(d->stream, "%s%sresponse from %s:\n%s\n",
 		d->text ? d->text : "",
 		d->text ? ": " : "",
 		url,
