@@ -21,13 +21,6 @@
 #define MYPROXY_DEFAULT_HOURS          168     /* 1 week */
 #define MYPROXY_DEFAULT_DELEG_HOURS    2     
 
-#define MYPROXY_DEFAULT_CREDENTIAL_NAME "DEFAULT_CREDENTIAL_NAME!@#$%^&*()"
-
-#define MYPROXY_NO_NAME_STRING 			"(No Name)"
-#define MYPROXY_NO_DESCRIPTION_STRING 		"(No Description)"
-#define MYPROXY_NO_RETRIEVER_STRING  		"(No retriever string specified)"
-#define MYPROXY_NO_RENEWER_STRING		"(No renewer string specified)"
-
 /* myproxy client protocol information */
 #define MYPROXY_VERSION_STRING      "VERSION="
 #define MYPROXY_COMMAND_STRING      "COMMAND="

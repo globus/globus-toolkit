@@ -655,11 +655,11 @@ myproxy_deserialize_request(const char *data, const int datalen,
 			  buf, sizeof(buf));
 
     if (len == -2)  /*-2 indicates string not found - assign default*/
-       request->credname = strdup("DEFAULT_CREDENTIAL_NAME!@#$%^&*()");
+	request->credname = NULL;
     else
        if (len <= -1)
        {
- 	verror_prepend_string("Error parsing renewer from client request");
+ 	verror_prepend_string("Error parsing credential name from client request");
 	return -1;
        }
        else
@@ -688,7 +688,7 @@ myproxy_deserialize_request(const char *data, const int datalen,
     else
        if (len <= -1)
        {
- 	verror_prepend_string("Error parsing renewer from client request");
+ 	verror_prepend_string("Error parsing credential description from client request");
 	return -1;
        }
        else
@@ -814,7 +814,7 @@ myproxy_serialize_response(const myproxy_response_t *response,
 	/*Find out nameless credential*/
 	for (i = 0; i < (response->data).creds.num_creds; i ++)
 	{
-		if (!strcmp ((response->data).creds.info_creds[i].credname, MYPROXY_NO_NAME_STRING))
+		if (!(response->data).creds.info_creds[i].credname)
 		{
 			// credential description
 			len = concatenate_strings (data, datalen, MYPROXY_CRED_PREFIX, "_", MYPROXY_CRED_DESC_STRING, 
@@ -895,7 +895,7 @@ myproxy_serialize_response(const myproxy_response_t *response,
 
 		for (i = 0; i < (response->data).creds.num_creds-2; i ++)
 		{
-			if (strcmp ((response->data).creds.info_creds[i].credname, MYPROXY_NO_NAME_STRING))
+			if ((response->data).creds.info_creds[i].credname)
 			{
 				len = concatenate_strings (data, datalen, (response->data).creds.info_creds[i].credname, "," , NULL);
 			
@@ -917,7 +917,7 @@ myproxy_serialize_response(const myproxy_response_t *response,
 		{
 
 			// don't add default credential as it has already been added
-			if (!strcmp ((response->data).creds.info_creds[i].credname, MYPROXY_NO_NAME_STRING))
+			if (!(response->data).creds.info_creds[i].credname)
 				continue;
 
 			if ((response->data).creds.info_creds[i].creddesc != NULL)
@@ -1121,7 +1121,7 @@ myproxy_deserialize_response(myproxy_response_t *response,
 	idx = 1;
 	// Credential name
 
-	(response->data).creds.info_creds[0].credname = strdup (MYPROXY_NO_NAME_STRING);
+	(response->data).creds.info_creds[0].credname = NULL;
 
 	// credential description
 	tmp[0] = '\0';
@@ -1135,7 +1135,7 @@ myproxy_deserialize_response(myproxy_response_t *response,
 		return -1;
 
 	if (len == -2)
-		(response->data).creds.info_creds[0].creddesc = strdup(MYPROXY_NO_DESCRIPTION_STRING);
+		(response->data).creds.info_creds[0].creddesc = NULL;
 	else
 		(response->data).creds.info_creds[0].creddesc = strdup (buffer);
 		
@@ -1270,7 +1270,7 @@ myproxy_deserialize_response(myproxy_response_t *response,
 			verror_prepend_string ("Error in extracting credential description");
 			
 		if (len == -2)
-			(response->data).creds.info_creds[i+idx].creddesc = strdup (MYPROXY_NO_DESCRIPTION_STRING);
+			(response->data).creds.info_creds[i+idx].creddesc = NULL;
 		else
 			(response->data).creds.info_creds[i+idx].creddesc = strdup(buffer);
 
