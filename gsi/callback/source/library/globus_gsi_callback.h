@@ -99,7 +99,8 @@ int globus_gsi_callback_check_issued(
 
 int 
 globus_gsi_callback_X509_verify_cert(
-    X509_STORE_CTX *                    context);
+    X509_STORE_CTX *                    context,
+    void *                              arg);
 
 globus_result_t
 globus_gsi_callback_data_init(

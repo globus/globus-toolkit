@@ -8,14 +8,16 @@
  *    define types
  ************************************************************************/
 typedef struct globus_i_xio_handle_s *          globus_xio_handle_t;
-typedef struct globus_i_xio_context_entry_s *   globus_xio_context_t;
-typedef struct globus_i_xio_target_s *          globus_xio_target_t;
+typedef struct globus_i_xio_context_entry_s *   globus_xio_driver_handle_t;
+typedef struct globus_i_xio_op_s *              globus_xio_target_t;
 typedef struct globus_i_xio_op_s *              globus_xio_operation_t;
 typedef struct globus_i_xio_driver_s *          globus_xio_driver_t;
 typedef struct globus_i_xio_attr_s *            globus_xio_attr_t;
 typedef struct globus_i_xio_stack_s *           globus_xio_stack_t;
 typedef struct globus_i_xio_server_s *          globus_xio_server_t;
+typedef struct globus_i_xio_server_s *          globus_xio_driver_server_t;
 typedef struct globus_i_xio_op_s *              globus_xio_data_descriptor_t;
+
 
 typedef struct iovec                            globus_xio_iovec_t;
 
@@ -30,12 +32,15 @@ typedef struct iovec                            globus_xio_iovec_t;
  */
 typedef enum globus_i_xio_op_type_e
 {
+    GLOBUS_XIO_OPERATION_TYPE_NONE,
     GLOBUS_XIO_OPERATION_TYPE_FINISHED,
     GLOBUS_XIO_OPERATION_TYPE_OPEN,
     GLOBUS_XIO_OPERATION_TYPE_CLOSE,
     GLOBUS_XIO_OPERATION_TYPE_READ,
     GLOBUS_XIO_OPERATION_TYPE_WRITE,
     GLOBUS_XIO_OPERATION_TYPE_ACCEPT,
+    GLOBUS_XIO_OPERATION_TYPE_CLIENT,
+    GLOBUS_XIO_OPERATION_TYPE_DRIVER,
     GLOBUS_XIO_OPERATION_TYPE_DD,
 } globus_xio_operation_type_t;
 
@@ -61,7 +66,9 @@ typedef enum
     GLOBUS_XIO_ERROR_ALREADY_REGISTERED,
     GLOBUS_XIO_ERROR_STATE,
     GLOBUS_XIO_ERROR_WRAPPED,
-    GLOBUS_XIO_ERROR_NOT_REGISTERED
+    GLOBUS_XIO_ERROR_NOT_REGISTERED,
+    GLOBUS_XIO_ERROR_NOT_ACTIVATED,
+    GLOBUS_XIO_ERROR_UNLOADED
 } globus_xio_error_type_t;
 
 
@@ -91,7 +98,20 @@ typedef enum
     GLOBUS_XIO_DEBUG_TRACE = 4,
     GLOBUS_XIO_DEBUG_INTERNAL_TRACE = 8,
     GLOBUS_XIO_DEBUG_INFO = 16,
-    GLOBUS_XIO_DEBUG_INFO_VERBOSE = 32,
+    GLOBUS_XIO_DEBUG_STATE = 32,
+    GLOBUS_XIO_DEBUG_INFO_VERBOSE = 64,
 } globus_xio_debug_levels_t;
+
+typedef struct
+{
+    char *                                  unparsed;
+    char *                                  resource;
+    char *                                  host;
+    char *                                  port;
+    char *                                  scheme;
+    char *                                  user;
+    char *                                  pass;
+    char *                                  subject;
+} globus_xio_contact_t;
 
 #endif

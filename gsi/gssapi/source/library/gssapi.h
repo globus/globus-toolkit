@@ -100,10 +100,10 @@ globus_module_descriptor_t		globus_i_gsi_gssapi_module;
  * Now define the three implementation-dependent types.
  */
 
-typedef void * gss_name_t;
-typedef void * gss_ctx_id_t;
-typedef void * gss_cred_id_t;
- 
+
+typedef struct gss_name_desc_struct * gss_name_t;
+typedef struct gss_ctx_id_desc_struct * gss_ctx_id_t;
+typedef struct gss_cred_id_desc_struct * gss_cred_id_t;
 
 /*
  * The following type must be defined as the smallest natural

@@ -12,9 +12,9 @@ globus_l_xio_null_deactivate();
 
 #include "version.h"
 
-static globus_module_descriptor_t  globus_i_xio_null_module =
+globus_module_descriptor_t  globus_i_xio_null_module =
 {
-    "globus_xio_debug",
+    "globus_xio_null",
     globus_l_xio_null_activate,
     globus_l_xio_null_deactivate,
     GLOBUS_NULL,
@@ -30,7 +30,7 @@ globus_l_xio_null_load(
     globus_xio_driver_t                 driver;
     globus_result_t                     res;
 
-    res = globus_xio_driver_init(&driver, "debug", NULL);
+    res = globus_xio_driver_init(&driver, "null", NULL);
     if(res != GLOBUS_SUCCESS)
     {
         return res;
@@ -42,7 +42,8 @@ globus_l_xio_null_load(
         NULL,
         NULL,
         NULL,
-        NULL);
+        NULL,
+	NULL);
 
     globus_xio_driver_set_server(
         driver,

@@ -12,7 +12,6 @@ Scripts = \
 	globus-io-authorization-test.pl \
         globus-io-file-test.pl \
         globus-io-tcp-test.pl \
-        globus-io-udp-test.pl \
         run-io-tests.pl
 
 Data = \
@@ -45,9 +44,6 @@ test_PROGRAMS = \
 	globus_io_tcp_test_server \
 	globus_io_tcp_test_client \
 	globus_io_file_test \
-	globus_io_udp_test_server \
-	globus_io_udp_test_client \
-	globus_io_udp_test \
 	globus_io_authorization_test
 
 test_SCRIPTS = $(Scripts)
@@ -67,18 +63,6 @@ globus_io_tcp_test_client_LDADD = $(GPT_PGM_LINKS)
 globus_io_file_test_SOURCES = globus_io_file_test.c
 globus_io_file_test_LDFLAGS = $(GPT_LDFLAGS)
 globus_io_file_test_LDADD = $(GPT_PGM_LINKS)
-
-globus_io_udp_test_server_SOURCES = globus_io_udp_test_server.c
-globus_io_udp_test_server_LDFLAGS = $(GPT_LDFLAGS)
-globus_io_udp_test_server_LDADD = $(GPT_PGM_LINKS)
-
-globus_io_udp_test_client_SOURCES = globus_io_udp_test_client.c
-globus_io_udp_test_client_LDFLAGS = $(GPT_LDFLAGS)
-globus_io_udp_test_client_LDADD = $(GPT_PGM_LINKS)
-
-globus_io_udp_test_SOURCES = globus_io_udp_test.c
-globus_io_udp_test_LDFLAGS = $(GPT_LDFLAGS)
-globus_io_udp_test_LDADD = $(GPT_PGM_LINKS)
 
 globus_io_authorization_test_SOURCES = globus_io_authorization_test.c
 globus_io_authorization_test_LDFLAGS = $(GPT_LDFLAGS)

@@ -14,7 +14,7 @@
 
     <Source_Dependencies Type="compile" >
       <Dependency Name="globus_common" > <Version > <Simple_Version Major="3" /> </Version> </Dependency>
-      <Dependency Name="globus_core" > <Version > <Simple_Version Major="2" /> </Version> </Dependency>
+      <Dependency Name="globus_core" > <Version > <Simple_Version Major="3" /> </Version> </Dependency>
       <Dependency Name="globus_gram_protocol" > <Version > <Simple_Version Major="4" /> </Version> </Dependency>
       <Dependency Name="globus_io" > <Version > <Simple_Version Major="3" /> </Version> </Dependency>
     </Source_Dependencies>

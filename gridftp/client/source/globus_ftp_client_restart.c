@@ -118,7 +118,7 @@ globus_i_ftp_client_restart_register_oneshot(
         globus_assert(0 && "Unexpected operation");
     }
     
-    return result;
+    return globus_error_get(result);
 }
 /* globus_i_ftp_client_restart_register_oneshot() */
 

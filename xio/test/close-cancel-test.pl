@@ -48,7 +48,8 @@ sub close_barrier
             my $c = $_;
             foreach(@drivers)
             {
-                push(@tests, "$test_name -c $c -b $buffer_size $inline_finish $_");
+                push(@tests, "$test_name -c $c -b $buffer_size $inline_finish $_ 1");
+                push(@tests, "$test_name -c $c -b $buffer_size $inline_finish $_ 2");
             }
         }
         $inline_finish="";

@@ -5,7 +5,6 @@ AC_INIT(Makefile.am)
 
 GLOBUS_INIT
 
-
 AM_PROG_LIBTOOL
 
 dnl config header goes here
@@ -15,25 +14,11 @@ AM_INIT_AUTOMAKE($GPT_NAME, $GPT_VERSION)
 
 AM_CONFIG_HEADER(config.h library/globus_common.h:library/globus_common.h.in)
 
-dnl Determine thread library flags
-if test "x$NO_FLAVOR" = "x"; then
-LAC_THREADS
-fi
-
-AC_TYPE_SIGNAL
-
-dnl CHECK_FOR_TCPFASTACK seems currently undefined, 
-dnl probably happend during the windows merge
-dnl CHECK_FOR_TCPFASTACK
-
-CHECK_FOR_ATEXIT
-
 CHECK_REENTRANT_FUNCS
-
 
 CHECK_NEED_LNSL
 
-GPT_SET_LIBS(["$THREAD_LIB_FLAGS $EXTERNAL_LIBS"])
+GPT_SET_LIBS(["$EXTERNAL_LIBS"])
 
 AC_SUBST(GLOBUS_THREADS)
 
@@ -63,8 +48,4 @@ AC_OUTPUT(
 	doxygen/Doxyfile-internal
 	version.h
 )
-
-
-
-
 

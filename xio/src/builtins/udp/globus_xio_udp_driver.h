@@ -11,7 +11,8 @@
 
 typedef enum
 {
-    GLOBUS_XIO_UDP_ERROR_NO_ADDRS
+    GLOBUS_XIO_UDP_ERROR_NO_ADDRS,
+    GLOBUS_XIO_UDP_ERROR_SHORT_WRITE
 } globus_xio_udp_error_type_t;
 
 typedef enum

@@ -1,0 +1,1 @@
+Fix still reading from handle after QUIT

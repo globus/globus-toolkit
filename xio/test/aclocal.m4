@@ -227,6 +227,16 @@ AC_DEFUN(GPT_INIT, [
 	rm ./tmpfile.gpt
 	GPT_VERSION="$GPT_MAJOR_VERSION.$GPT_MINOR_VERSION"
 
+        # Determine if GPT is version 2.x
+
+        GPT_IS_2="no"
+
+        if test -f "$GPT_LOCATION/sbin/gpt-build"; then
+                GPT_IS_2="yes"
+        fi
+
+        AC_SUBST(GPT_IS_2)
+
 	#Default to shared, before checking static-only
 	GPT_LINKTYPE="shared"
 	# We have to figure out if we're linking only static before build_config
@@ -266,8 +276,8 @@ dnl		fi
 # The following variables are used to manage the build enviroment
 # GPT_CFLAGS, GPT_INCLUDES, GPT_PGM_LINKS, GPT_LIB_LINKS, and GPT_LDFLAGS
 # are the variables used in the Makefile.am's
-# GPT_PKG_CFLAGS, GPT_EXTERNAL_INCLUDES and GPT_EXTERNAL_LIBS are stored as 
-# build data in the packaging metadata file.
+# GPT_PKG_CFLAGS, GPT_EXTERNAL_INCLUDES and GPT_EXTERNAL_LIBS are stored 
+# as build data in the packaging metadata file.
 # GPT_CONFIG_FLAGS, GPT_CONFIG_INCLUDES, GPT_CONFIG_PGM_LINKS, and 
 # GPT_CONFIG_LIB_LINKS are returned by gpt_build_config and contain build
 # environment data from the dependent packages.

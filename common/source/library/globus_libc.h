@@ -129,7 +129,7 @@ extern void globus_libc_closedir(DIR *dirp);
 
 #endif /* HAVE_THREAD_SAFE_SELECT */
 
-     int 
+     int
      globus_libc_getpwuid_r(
         uid_t                           uid,
         struct passwd *                 pwd,
@@ -137,7 +137,7 @@ extern void globus_libc_closedir(DIR *dirp);
 	    int                             bufsize,
 	    struct passwd **                result);
 
-    int 
+    int
     globus_libc_readdir_r(
         DIR *                           dirp,
         struct dirent **                result);
@@ -171,13 +171,13 @@ globus_libc_free_memory(
 #define globus_realloc(ptr,bytes) globus_libc_realloc(ptr,bytes)
 #define globus_calloc(nobjs,bytes) globus_libc_calloc(nobjs,bytes)
 #define globus_free(ptr) globus_libc_free(ptr)
-    
+
 #if !defined(BUILD_LITE)
 
 extern void *globus_libc_malloc(size_t bytes);
 extern void *globus_libc_realloc(void *ptr,
 				 size_t bytes);
-extern void *globus_libc_calloc(size_t nobj, 
+extern void *globus_libc_calloc(size_t nobj,
 				size_t bytes);
 extern void globus_libc_free(void *ptr);
 
@@ -197,6 +197,19 @@ extern void *globus_libc_alloca(size_t bytes);
 #ifdef TARGET_ARCH_CRAYT3E
 extern void *alloca(size_t bytes);
 #endif /* TARGET_ARCH_CRAYT3E */
+
+globus_byte_t *
+globus_libc_memrchr(
+    globus_byte_t *                         s,
+    globus_byte_t                           c,
+    globus_size_t                           n);
+
+globus_byte_t *
+globus_libc_memmem(
+    globus_byte_t *                         haystack,
+    globus_size_t                           h_len,
+    globus_byte_t *                         needle,
+    globus_size_t                           n_len);
 
 /* Never a macro because globus_off_t must match largefile definition */
 extern int globus_libc_lseek(int fd, globus_off_t offset, int whence);
@@ -236,7 +249,7 @@ int globus_libc_getpwnam_r(char *name,
 			   int bufsize,
 			   struct passwd **result);
 
-int 
+int
 globus_libc_strncasecmp(
     const char *                            s1,
     const char *                            s2,
@@ -252,6 +265,20 @@ char *globus_libc_system_error_string(int the_error);
 
 char *
 globus_libc_strdup(const char * source);
+
+char *
+globus_libc_strndup(const char * string, globus_size_t length);
+
+char *
+globus_libc_strtok(
+    char *                                  s, 
+    const char *                            delim);
+
+#define globus_libc_strcmp strcmp
+#define globus_libc_strlen strlen
+
+globus_size_t
+globus_libc_strlen(const char * string);
 
 int
 globus_libc_vprintf_length(const char * fmt, va_list ap);
@@ -301,8 +328,158 @@ globus_common_v_create_nstring(
 #   define   globus_libc_seteuid(a)  seteuid(a)
 #endif
 
+/* IPv6 compatible utils */
+typedef struct sockaddr_storage         globus_sockaddr_t;
+typedef struct addrinfo                 globus_addrinfo_t;
+
+#define GlobusLibcProtocolFamilyIsIP(family)                                \
+    ((family == AF_INET ? 1 : (family == AF_INET6 ? 1 : 0)))
+
+#define GlobusLibcSockaddrSetFamily(_addr, fam)  ((struct sockaddr *) &(_addr))->sa_family = fam
+#define GlobusLibcSockaddrGetFamily(_addr)  ((struct sockaddr *) &(_addr))->sa_family
+
+#define GlobusLibcSockaddrGetPort(addr, port)                               \
+    do                                                                      \
+    {                                                                       \
+        const struct sockaddr *         _addr = (struct sockaddr *) &(addr);\
+                                                                            \
+        switch(_addr->sa_family)                                            \
+        {                                                                   \
+          case AF_INET:                                                     \
+            (port) = ntohs(((struct sockaddr_in *) _addr)->sin_port);       \
+            break;                                                          \
+                                                                            \
+          case AF_INET6:                                                    \
+            (port) = ntohs(((struct sockaddr_in6 *) _addr)->sin6_port);     \
+            break;                                                          \
+                                                                            \
+          default:                                                          \
+            globus_assert(0 &&                                              \
+                "Unknown family in GlobusLibcSockaddrGetPort");             \
+            (port) = -1;                                                    \
+            break;                                                          \
+        }                                                                   \
+    } while(0)                                                              \
+
+#define GlobusLibcSockaddrSetPort(addr, port)                               \
+    do                                                                      \
+    {                                                                       \
+        struct sockaddr *               _addr = (struct sockaddr *) &(addr);\
+                                                                            \
+        switch(_addr->sa_family)                                            \
+        {                                                                   \
+          case AF_INET:                                                     \
+            ((struct sockaddr_in *) _addr)->sin_port = htons((port));       \
+            break;                                                          \
+                                                                            \
+          case AF_INET6:                                                    \
+            ((struct sockaddr_in6 *) _addr)->sin6_port = htons((port));     \
+            break;                                                          \
+                                                                            \
+          default:                                                          \
+            globus_assert(0 &&                                              \
+                "Unknown family in GlobusLibcSockaddrSetPort");             \
+            break;                                                          \
+        }                                                                   \
+    } while(0)                                                              \
+
+#define GlobusLibcSockaddrCopy(dest_addr, source_addr, source_len)          \
+    (memcpy(&(dest_addr), &(source_addr), (source_len)))
+
+#define GlobusLibcSockaddrLen(addr, len)                                    \
+    do                                                                      \
+    {                                                                       \
+        const struct sockaddr *         _addr = &(addr);                    \
+                                                                            \
+        switch(_addr->sa_family)                                            \
+        {                                                                   \
+          case AF_INET:                                                     \
+            (len) = sizeof(struct sockaddr_in);                             \
+            break;                                                          \
+                                                                            \
+          case AF_INET6:                                                    \
+            (len) = sizeof(struct sockaddr_in6);                            \
+            break;                                                          \
+                                                                            \
+          default:                                                          \
+            globus_assert(0 &&                                              \
+                "Unknown family in GlobusLibcSizeofSockaddr");              \
+            (len) = 0;                                                      \
+            break;                                                          \
+        }                                                                   \
+    } while(0)
+
+#define GLOBUS_AI_PASSIVE               AI_PASSIVE
+#define GLOBUS_AI_NUMERICHOST           AI_NUMERICHOST
+#define GLOBUS_AI_CANONNAME             AI_CANONNAME
+
+#define GLOBUS_NI_MAXHOST               NI_MAXHOST
+#define GLOBUS_NI_NOFQDN                NI_NOFQDN
+#define GLOBUS_NI_NAMEREQD              NI_NAMEREQD
+#define GLOBUS_NI_DGRAM                 NI_DGRAM
+#define GLOBUS_NI_NUMERICSERV           NI_NUMERICSERV
+#define GLOBUS_NI_NUMERICHOST           NI_NUMERICHOST
+
+#define GLOBUS_EAI_ERROR_OFFSET         2048
+
+#define GLOBUS_EAI_FAMILY            (EAI_FAMILY     + GLOBUS_EAI_ERROR_OFFSET)
+#define GLOBUS_EAI_SOCKTYPE          (EAI_SOCKTYPE   + GLOBUS_EAI_ERROR_OFFSET)
+#define GLOBUS_EAI_BADFLAGS          (EAI_BADFLAGS   + GLOBUS_EAI_ERROR_OFFSET)
+#define GLOBUS_EAI_NONAME            (EAI_NONAME     + GLOBUS_EAI_ERROR_OFFSET)
+#define GLOBUS_EAI_SERVICE           (EAI_SERVICE    + GLOBUS_EAI_ERROR_OFFSET)
+#define GLOBUS_EAI_ADDRFAMILY        (EAI_ADDRFAMILY + GLOBUS_EAI_ERROR_OFFSET)
+#define GLOBUS_EAI_NODATA            (EAI_NODATA     + GLOBUS_EAI_ERROR_OFFSET)
+#define GLOBUS_EAI_MEMORY            (EAI_MEMORY     + GLOBUS_EAI_ERROR_OFFSET)
+#define GLOBUS_EAI_FAIL              (EAI_FAIL       + GLOBUS_EAI_ERROR_OFFSET)
+#define GLOBUS_EAI_AGAIN             (EAI_AGAIN      + GLOBUS_EAI_ERROR_OFFSET)
+#define GLOBUS_EAI_SYSTEM            (EAI_SYSTEM     + GLOBUS_EAI_ERROR_OFFSET)
+       
+globus_result_t
+globus_libc_getaddrinfo(
+    const char *                        node,
+    const char *                        service,
+    const globus_addrinfo_t *           hints,
+    globus_addrinfo_t **                res);
+
+void
+globus_libc_freeaddrinfo(
+    globus_addrinfo_t *                 res);
+
+globus_result_t
+globus_libc_getnameinfo(
+    const globus_sockaddr_t *           addr,
+    char *                              hostbuf,
+    globus_size_t                       hostbuf_len,
+    char *                              servbuf,
+    globus_size_t                       servbuf_len,
+    int                                 flags);
+
+globus_bool_t
+globus_libc_addr_is_loopback(
+    const globus_sockaddr_t *           addr);
+
+globus_bool_t
+globus_libc_addr_is_wildcard(
+    const globus_sockaddr_t *           addr);
+    
+/* use this to get a numeric contact string (ip addr.. default is hostname) */
+#define GLOBUS_LIBC_ADDR_NUMERIC        1
+/* use this if this is a local addr; will use GLOBUS_HOSTNAME if avail */
+#define GLOBUS_LIBC_ADDR_LOCAL          2
+
+/* creates a contact string of the form <host>:<port>
+ * user needs to free contact string
+ */
+globus_result_t
+globus_libc_addr_to_contact_string(
+    const globus_sockaddr_t *           addr,
+    int                                 opts_mask,
+    char **                             contact_string);
+
+int
+globus_libc_gethostaddr(
+    globus_sockaddr_t *                 addr);
+    
 EXTERN_C_END
 
 #endif
-
-

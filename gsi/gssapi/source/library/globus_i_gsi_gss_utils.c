@@ -661,7 +661,7 @@ globus_i_gsi_gss_put_token(
             BIO_free(debug_bio);
         }
     }
-    else
+    else if(input_token->length != 0)
     {
         GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
             3, (globus_i_gsi_gssapi_debug_fstream,

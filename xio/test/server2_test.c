@@ -40,7 +40,7 @@ accept_close_cb(
                 server,
                 close_cb,
                 NULL);
-        test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+        test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
 
         while(!globus_l_closed)
         {
@@ -102,10 +102,10 @@ server2_main(
     globus_cond_init(&globus_l_cond, NULL);    
 
     res = globus_xio_stack_init(&stack, NULL);
-    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
 
     res = globus_xio_attr_init(&attr);
-    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
 
     parse_parameters(argc, argv, stack, attr);
 
@@ -113,7 +113,7 @@ server2_main(
      *  create the server
      */
     res = globus_xio_server_create(&server, attr, stack);
-    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
 
     /* blocking */
     res = globus_xio_server_accept(&target, server, NULL);
@@ -126,7 +126,7 @@ server2_main(
                 NULL,
                 accept_cb,
                 &target);
-        test_res(GLOBUS_XIO_TEST_FAIL_PASS_ACCEPT, res, __LINE__);
+        test_res(GLOBUS_XIO_TEST_FAIL_PASS_ACCEPT, res, __LINE__, __FILE__);
         accept_count++;
         /* should fail */
         res = globus_xio_server_register_accept(
@@ -144,7 +144,7 @@ server2_main(
             {
                 accept_count++;
                 fprintf(stderr, 
-                    "MINOR WARNING: 2nd register accept didn't failed\n"); 
+                    "MINOR WARNING: 2nd register accept didn't fail.\n"); 
             }
 #           endif
         }
@@ -163,7 +163,7 @@ server2_main(
                 NULL,
                 accept_cb,
                 &target);
-        test_res(GLOBUS_XIO_TEST_FAIL_PASS_ACCEPT, res, __LINE__);
+        test_res(GLOBUS_XIO_TEST_FAIL_PASS_ACCEPT, res, __LINE__, __FILE__);
         res = globus_xio_server_register_close(
                 server,
                 close_cb,
@@ -176,14 +176,14 @@ server2_main(
 
         /* close called from within the accept_cb */
         res = globus_xio_server_create(&server, attr, stack);
-        test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+        test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
         globus_l_cb_cnt = 0;
         res = globus_xio_server_register_accept(
                 server,
                 NULL,
                 accept_close_cb,
                 &target);
-        test_res(GLOBUS_XIO_TEST_FAIL_PASS_ACCEPT, res, __LINE__);
+        test_res(GLOBUS_XIO_TEST_FAIL_PASS_ACCEPT, res, __LINE__, __FILE__);
         while(globus_l_cb_cnt < 2)
         {
             globus_cond_wait(&globus_l_cond, &globus_l_mutex);
@@ -191,15 +191,13 @@ server2_main(
     }
     globus_mutex_unlock(&globus_l_mutex);
 
-        
-
     globus_xio_attr_destroy(attr);
     globus_xio_stack_destroy(stack);
 
     if(globus_l_test_info.server)
     {
         res = globus_xio_server_close(server);
-        test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+        test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
     }
 
     test_common_end();

@@ -252,13 +252,13 @@ globus_gsi_gssapi_test_send_hello(
     OM_uint32                           major_status;
     OM_uint32                           minor_status;
     globus_bool_t                       result = GLOBUS_TRUE;
-    static char *                       hello = "Hello";
+    static char *                       hello = "HelloHello";
     gss_buffer_desc                     send_token = GSS_C_EMPTY_BUFFER;
     gss_buffer_desc                     input_token;
     long                                rc;
     long                                written = 0;
     
-    input_token.length = 6;
+    input_token.length = 11;
     input_token.value = hello;
     
     major_status = gss_wrap(&minor_status,
@@ -292,7 +292,7 @@ globus_gsi_gssapi_test_send_hello(
         result = GLOBUS_FALSE;
     }
 
-    /* printf("Wrote %d out of %d bytes\n", written, send_token.length); */
+    /*printf("Wrote %d out of %d bytes\n", written, send_token.length); */
     
     gss_release_buffer(&minor_status, &send_token);
 
@@ -347,7 +347,7 @@ globus_gsi_gssapi_test_receive_hello(
         goto exit;
     }
 
-    if(memcmp(output_token.value, "Hello", 6))
+    if(memcmp(output_token.value, "HelloHello", 11))
     {
         result = GLOBUS_FALSE;
     }

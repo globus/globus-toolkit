@@ -15,7 +15,7 @@ if [ ! -f ${GLOBUS_LOCATION}/libexec/globus-bootstrap.sh ]; then
 fi
 
 echo -n "Checking for builtin drivers... "
-builtins=`ls builtins | grep -v CVS`
+builtins=`ls builtins | grep -v CVS |grep -v Makefile`
 builtin_makefiles=
 delim=
 if test "X$builtins" != "X" ; then

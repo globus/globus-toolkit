@@ -83,7 +83,7 @@ data_cb(
                     NULL,
                     close_cb,
                     user_arg);
-            test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+            test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
         }
     }
     globus_mutex_unlock(&globus_l_mutex);
@@ -142,7 +142,7 @@ open_cb(
                         data_cb,
                         user_arg);
             }
-            test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+            test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
         }
     }
     globus_mutex_unlock(&globus_l_mutex);
@@ -168,10 +168,10 @@ close_barrier_main(
     globus_assert(rc == 0);
 
     res = globus_xio_attr_init(&attr);
-    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
 
     res = globus_xio_stack_init(&stack, NULL);
-    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
 
     parse_parameters(argc, argv, stack, attr);
 
@@ -179,7 +179,7 @@ close_barrier_main(
     globus_cond_init(&globus_l_cond, NULL);
 
     res = globus_xio_target_init(&target, NULL, "whatever", stack);
-    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
 
     res = globus_xio_register_open(
             &handle,
@@ -187,7 +187,7 @@ close_barrier_main(
             target,
             open_cb,
             NULL);
-    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
 
     globus_mutex_lock(&globus_l_mutex);
     {
@@ -201,10 +201,10 @@ close_barrier_main(
     globus_mutex_unlock(&globus_l_mutex);
     
     res = globus_xio_attr_destroy(attr);
-    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
 
     res = globus_xio_stack_destroy(stack);
-    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
 
     test_common_end();
 

@@ -751,7 +751,8 @@ globus_l_ftp_client_data_callback(
     /* if eof now, or eof was received before */
     if(eof || 
         (target && (target->state == GLOBUS_FTP_CLIENT_TARGET_NEED_EMPTY_QUEUE ||
-            target->state == GLOBUS_FTP_CLIENT_TARGET_NEED_EMPTY_AND_COMPLETE)))
+            target->state == GLOBUS_FTP_CLIENT_TARGET_NEED_EMPTY_AND_COMPLETE ||
+            target->state == GLOBUS_FTP_CLIENT_TARGET_FAULT)))
     {
         if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_SOURCE_RETR_OR_ERET ||
             client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_DEST_STOR_OR_ESTO ||

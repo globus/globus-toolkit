@@ -288,6 +288,7 @@ AC_CHECK_FUNCS(readdir_r,
         globus_readdir_args=no;
         AC_TRY_COMPILE(
         [
+#include "globus_config.h"
 #if defined(HAVE_DIRENT_H)
 #   include <dirent.h>
 #   define NAMLEN(dirent) strlen((dirent)->d_name)
@@ -317,6 +318,7 @@ AC_CHECK_FUNCS(readdir_r,
         if test $globus_readdir_args = no; then
             AC_TRY_COMPILE(
             [
+#include "globus_config.h"
 #if defined(HAVE_DIRENT_H)
 #   include <dirent.h>
 #   define NAMLEN(dirent) strlen((dirent)->d_name)
@@ -348,6 +350,7 @@ fi
 AC_MSG_CHECKING(if struct dirent contains d_off)
 AC_TRY_COMPILE(
     [
+#include "globus_config.h"
 #if defined(HAVE_DIRENT_H)
 #   include <dirent.h>
 #   define NAMLEN(dirent) strlen((dirent)->d_name)
@@ -375,6 +378,7 @@ AC_TRY_COMPILE(
 AC_MSG_CHECKING(if struct dirent contains d_offset)
 AC_TRY_COMPILE(
     [
+#include "globus_config.h"
 #if defined(HAVE_DIRENT_H)
 #   include <dirent.h>
 #   define NAMLEN(dirent) strlen((dirent)->d_name)
@@ -402,6 +406,7 @@ struct dirent dir;
 AC_MSG_CHECKING(if struct dirent contains d_type)
 AC_TRY_COMPILE(
     [
+#include "globus_config.h"
 #if defined(HAVE_DIRENT_H)
 #   include <dirent.h>
 #   define NAMLEN(dirent) strlen((dirent)->d_name)
@@ -429,6 +434,7 @@ struct dirent dir;
 AC_MSG_CHECKING(if struct dirent contains d_reclen)
 AC_TRY_COMPILE(
     [
+#include "globus_config.h"
 #if defined(HAVE_DIRENT_H)
 #   include <dirent.h>
 #   define NAMLEN(dirent) strlen((dirent)->d_name)

@@ -14,7 +14,6 @@ my $globus_location = $ENV{GLOBUS_LOCATION};
 
 
 @tests = qw(
-            globus-ftp-client-bad-buffer-test.pl
             globus-ftp-client-caching-get-test.pl
             globus-ftp-client-caching-transfer-test.pl
             globus-ftp-client-create-destroy-test.pl

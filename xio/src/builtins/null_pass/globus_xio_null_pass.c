@@ -4,18 +4,6 @@
 #include "globus_common.h"
 #include "globus_xio_null_pass.h"
 
-#define GLOBUS_XIO_DEBUG_DRIVER_MODULE &globus_i_xio_test_module
-
-#define XIOTestCreateOpWraper(ow, _in_dh, _in_op, res, nb)              \
-{                                                                       \
-    ow = (globus_l_xio_test_op_wrapper_t *)                             \
-            globus_malloc(sizeof(globus_l_xio_test_op_wrapper_t));      \
-    ow->dh = _in_dh;                                                    \
-    ow->op = (_in_op);                                                  \
-    ow->res = res;                                                      \
-    ow->nbytes = nb;                                                    \
-}
-
 static int
 globus_l_xio_null_pass_activate();
 
@@ -24,7 +12,7 @@ globus_l_xio_null_pass_deactivate();
 
 #include "version.h"
 
-static globus_module_descriptor_t  globus_i_xio_null_pass_module =
+globus_module_descriptor_t  globus_i_xio_null_pass_module =
 {
     "globus_xio_null_pass",
     globus_l_xio_null_pass_activate,
@@ -50,7 +38,7 @@ globus_l_xio_null_pass_accept(
 {
     globus_result_t                     res;
 
-    GlobusXIODriverPassAccept(res, accept_op, NULL, NULL);
+    res = globus_xio_driver_pass_accept(accept_op, NULL, NULL);
 
     return res;
 }
@@ -91,9 +79,9 @@ globus_l_xio_null_pass_open(
     globus_xio_operation_t              op)
 {
     globus_result_t                     res;
-    globus_xio_context_t                context;
+    globus_xio_driver_handle_t          driver_handle;
   
-    GlobusXIODriverPassOpen(res, context, op, NULL, NULL);
+    res = globus_xio_driver_pass_open(&driver_handle, op, NULL, NULL);
 
     return res;
 }
@@ -104,14 +92,14 @@ globus_l_xio_null_pass_open(
 static
 globus_result_t
 globus_l_xio_null_pass_close(
-    void *                              driver_handle,
+    void *                              driver_specific_handle,
     void *                              attr,
-    globus_xio_context_t                context,
+    globus_xio_driver_handle_t          driver_handle,
     globus_xio_operation_t              op)
 {
     globus_result_t                     res;
 
-    GlobusXIODriverPassClose(res, op, NULL, NULL);
+    res = globus_xio_driver_pass_close(op, NULL, NULL);
 
     return res;
 }
@@ -122,7 +110,7 @@ globus_l_xio_null_pass_close(
 static
 globus_result_t
 globus_l_xio_null_pass_read(
-    void *                              driver_handle,
+    void *                              driver_specific_handle,
     const globus_xio_iovec_t *          iovec,
     int                                 iovec_count,
     globus_xio_operation_t              op)
@@ -132,7 +120,8 @@ globus_l_xio_null_pass_read(
 
     wait_for = GlobusXIOOperationGetWaitFor(op);
 
-    GlobusXIODriverPassRead(res, op, iovec, iovec_count, wait_for, NULL, NULL);
+    res = globus_xio_driver_pass_read(op, 
+        (globus_xio_iovec_t *)iovec, iovec_count, wait_for, NULL, NULL);
 
     return res;
 }
@@ -143,7 +132,7 @@ globus_l_xio_null_pass_read(
 static
 globus_result_t
 globus_l_xio_null_pass_write(
-    void *                              driver_handle,
+    void *                              driver_specific_handle,
     const globus_xio_iovec_t *          iovec,
     int                                 iovec_count,
     globus_xio_operation_t              op)
@@ -153,7 +142,8 @@ globus_l_xio_null_pass_write(
 
     wait_for = GlobusXIOOperationGetWaitFor(op);
 
-    GlobusXIODriverPassWrite(res, op, iovec, iovec_count, wait_for, NULL, NULL);
+    res = globus_xio_driver_pass_write(op, 
+        (globus_xio_iovec_t *)iovec, iovec_count, wait_for, NULL, NULL);
 
     return res;
 }
@@ -161,7 +151,7 @@ globus_l_xio_null_pass_write(
 static
 globus_result_t
 globus_l_xio_null_pass_cntl(
-    void *                              driver_handle,
+    void *                              driver_specific_handle,
     int                                 cmd,
     va_list                             ap)
 {
@@ -188,7 +178,8 @@ globus_l_xio_null_pass_load(
         globus_l_xio_null_pass_close,
         globus_l_xio_null_pass_read,
         globus_l_xio_null_pass_write,
-        globus_l_xio_null_pass_cntl);
+        globus_l_xio_null_pass_cntl,
+        NULL);
 
     globus_xio_driver_set_server(
         driver,

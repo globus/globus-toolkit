@@ -158,6 +158,15 @@ server_func(
         exit(1);
     }
 
+    result = globus_gsi_gssapi_test_receive_hello(server_args->fd,
+                                                  context_handle);
+    
+    if(result == GLOBUS_FALSE)
+    {
+        fprintf(stderr, "SERVER: failed to receive hello\n");
+        exit(1);
+    }
+
     close(server_args->fd);
     
     free(server_args);
@@ -206,6 +215,14 @@ client_func(
     if(result == GLOBUS_FALSE)
     {
         fprintf(stderr, "CLIENT: Authentication failed\n");
+        exit(1);
+    }
+
+    result = globus_gsi_gssapi_test_send_hello(connect_fd, context_handle);
+    
+    if(result == GLOBUS_FALSE)
+    {
+        fprintf(stderr, "CLIENT: failed to send hello\n");
         exit(1);
     }
     

@@ -88,12 +88,12 @@ sub test_rsl
 
 	    if(File::Compare::compare($out_name, $canonical_out) != 0)
 	    {
-		$rc = "comparison of output file " . $i+1 . " failed";
+		$rc = sprintf("comparison of output file %d failed", $i+1);
 		last;
 	    }
 	    if(File::Compare::compare($err_name, $canonical_err) != 0)
 	    {
-		$rc = "comparison of error file " . $i+1 . " failed";
+		$rc = sprintf("comparison of error file %d failed", $i+1);
 		last;
 	    }
 	}

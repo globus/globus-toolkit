@@ -1234,9 +1234,8 @@ globus_ftp_client_debug_plugin_init(
     return GLOBUS_SUCCESS;
 
 result_exit:
-    err = globus_error_get(result);
     globus_ftp_client_plugin_destroy(plugin);
-    return globus_error_put(result);
+    return result;
 }
 /* globus_ftp_client_debug_plugin_init() */
 

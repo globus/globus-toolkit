@@ -56,16 +56,14 @@ globus_l_xio_timer_unregister_cb(
     }
     globus_mutex_unlock(&timer->mutex);
 
-    GlobusXIODebugInternalExit();
+    /* GlobusXIODebugInternalExit(); having this in can cause core dumps */
 }
-
 
 void
 globus_i_xio_timer_destroy(
     globus_i_xio_timer_t *                          timer)
 {
     globus_result_t                                 res;
-    globus_bool_t                                   active;
     GlobusXIOName(globus_i_xio_timer_destroy);
 
     GlobusXIODebugInternalEnter();
@@ -78,14 +76,12 @@ globus_i_xio_timer_destroy(
                 timer->periodic_handle,
                 globus_l_xio_timer_unregister_cb,
                 (void *)timer,
-                &active);
+                NULL);
+        /* logic of this code should prevent this from ever failing */
         globus_assert(res == GLOBUS_SUCCESS);
-//        if(active)
+        while(timer->running)
         {
-            while(timer->running)
-            {
-                globus_cond_wait(&timer->cond, &timer->mutex);
-            }
+            globus_cond_wait(&timer->cond, &timer->mutex);
         }
     }
     globus_mutex_unlock(&timer->mutex);
@@ -129,8 +125,16 @@ globus_i_xio_timer_register_timeout(
                     timer->periodic_handle,
                     &timer->minimal_delay);
 
-            /* parms are good so should never fail */
-            assert(res == GLOBUS_SUCCESS);
+            if(res != GLOBUS_SUCCESS)
+            {
+                globus_panic(GLOBUS_XIO_MODULE, res, 
+                    "globus_callback_adjust_period should always return success"
+                    " in this case\n"
+                    "timer @ 0x%x\n"
+                    " globus_callback_adjust_period(%d, 0x%x);\n",
+                    timer->periodic_handle,
+                    &timer->minimal_delay);
+            }
             timer->running = GLOBUS_TRUE;
         }
         globus_list_insert(&timer->op_list, entry);
@@ -148,7 +152,8 @@ globus_i_xio_timer_unregister_timeout(
     globus_list_t *                                 list;
     globus_list_t *                                 tmp_list = NULL;
     globus_bool_t                                   found = GLOBUS_FALSE;
-    globus_i_xio_timer_entry_t *                    entry;
+    /* intialize to remove warning, but not needed */
+    globus_i_xio_timer_entry_t *                    entry = NULL;
     GlobusXIOName(globus_i_xio_timer_unregister_timeout);
 
     GlobusXIODebugInternalEnter();

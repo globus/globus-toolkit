@@ -229,7 +229,8 @@ globus_gsi_callback_get_SSL_callback_data_index(
 
 int 
 globus_gsi_callback_X509_verify_cert(
-    X509_STORE_CTX *                    context)
+    X509_STORE_CTX *                    context,
+    void *                              arg)
 {
     int                                 result;
     static char *                       _function_name_ =

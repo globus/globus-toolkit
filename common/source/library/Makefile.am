@@ -63,6 +63,8 @@ Sources= \
 	globus_thread_pool.h \
 	globus_thread_rw_mutex.c \
 	globus_thread_rw_mutex.h \
+	globus_thread_rmutex.c \
+	globus_thread_rmutex.h \
 	globus_tilde_expand.c \
 	globus_time.c \
 	globus_tilde_expand.h \
@@ -103,6 +105,7 @@ flavorinclude_HEADERS = \
 	globus_strptime.h \
 	globus_thread_common.h \
 	globus_thread_rw_mutex.h \
+	globus_thread_rmutex.h \
 	globus_common.h \
 	globus_thread_$(GLOBUS_THREADS).h \
 	globus_common_include.h

@@ -17,7 +17,7 @@ accept_cb(
 {
     globus_xio_target_t *                       t;
 
-    test_res(GLOBUS_XIO_TEST_FAIL_FINISH_ACCEPT, result, __LINE__);
+    test_res(GLOBUS_XIO_TEST_FAIL_FINISH_ACCEPT, result, __LINE__, __FILE__);
     t = (globus_xio_target_t *) user_arg;
 
     globus_mutex_lock(&globus_l_mutex);
@@ -65,7 +65,7 @@ read_cb(
        !globus_xio_error_is_canceled(result) &&
        !globus_xio_error_is_timeout(result))
     {
-        test_res(GLOBUS_XIO_TEST_FAIL_FINISH_READ, result, __LINE__);
+        test_res(GLOBUS_XIO_TEST_FAIL_FINISH_READ, result, __LINE__, __FILE__);
     }
 
     info = (test_info_t *) user_arg;
@@ -94,7 +94,7 @@ read_cb(
                         NULL,
                         close_cb,
                         user_arg);
-                test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+                test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
             }
         }
         else if(!info->read_done)
@@ -107,7 +107,7 @@ read_cb(
                     NULL,
                     read_cb,
                     user_arg);
-            test_res(GLOBUS_XIO_TEST_FAIL_PASS_READ, res, __LINE__);
+            test_res(GLOBUS_XIO_TEST_FAIL_PASS_READ, res, __LINE__, __FILE__);
         }
     }
     globus_mutex_unlock(&info->mutex);
@@ -129,7 +129,7 @@ write_cb(
     if(!globus_xio_error_is_canceled(result) &&
        !globus_xio_error_is_timeout(result))
     {
-        test_res(GLOBUS_XIO_TEST_FAIL_FINISH_WRITE, result, __LINE__);
+        test_res(GLOBUS_XIO_TEST_FAIL_FINISH_WRITE, result, __LINE__, __FILE__);
     }
 
     info = (test_info_t *) user_arg;
@@ -158,7 +158,7 @@ write_cb(
                         NULL,
                         close_cb,
                         user_arg);
-                test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+                test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
             }
         }
         else if(!info->write_done)
@@ -171,7 +171,7 @@ write_cb(
                     NULL,
                     write_cb,
                     user_arg);
-            test_res(GLOBUS_XIO_TEST_FAIL_PASS_WRITE, res, __LINE__);
+            test_res(GLOBUS_XIO_TEST_FAIL_PASS_WRITE, res, __LINE__, __FILE__);
         }
     }
     globus_mutex_unlock(&info->mutex);
@@ -190,7 +190,7 @@ open_cb(
 
     info = (test_info_t *) user_arg;
 
-    test_res(GLOBUS_XIO_TEST_FAIL_FINISH_OPEN, result, __LINE__);
+    test_res(GLOBUS_XIO_TEST_FAIL_FINISH_OPEN, result, __LINE__, __FILE__);
 
     globus_mutex_lock(&info->mutex);
     {
@@ -204,7 +204,7 @@ open_cb(
                     NULL,
                     write_cb,
                     user_arg);
-            test_res(GLOBUS_XIO_TEST_FAIL_PASS_WRITE, res, __LINE__);
+            test_res(GLOBUS_XIO_TEST_FAIL_PASS_WRITE, res, __LINE__, __FILE__);
             data = GLOBUS_TRUE;
         }
 
@@ -218,7 +218,7 @@ open_cb(
                     NULL,
                     read_cb,
                     user_arg);
-            test_res(GLOBUS_XIO_TEST_FAIL_PASS_READ, res, __LINE__);
+            test_res(GLOBUS_XIO_TEST_FAIL_PASS_READ, res, __LINE__, __FILE__);
             data = GLOBUS_TRUE;
         }
 
@@ -229,7 +229,7 @@ open_cb(
                     NULL,
                     close_cb,
                     user_arg);
-                    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+                    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
         }
     }
     globus_mutex_unlock(&info->mutex);
@@ -258,24 +258,24 @@ framework_main(
     globus_cond_init(&globus_l_cond, NULL);    
 
     res = globus_xio_attr_init(&attr);
-    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
 
     res = globus_xio_stack_init(&stack, NULL);
-    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
 
     parse_parameters(argc, argv, stack, attr);
 
     if(globus_l_test_info.server)
     {
         res = globus_xio_server_create(&server, attr, stack);
-        test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+        test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
 
         res = globus_xio_server_register_accept(
                 server,
                 NULL,
                 accept_cb,
                 &target);
-        test_res(GLOBUS_XIO_TEST_FAIL_PASS_ACCEPT, res, __LINE__);
+        test_res(GLOBUS_XIO_TEST_FAIL_PASS_ACCEPT, res, __LINE__, __FILE__);
 
         globus_mutex_lock(&globus_l_mutex);
         {
@@ -290,7 +290,7 @@ framework_main(
     else
     {
         res = globus_xio_target_init(&target, NULL, "whatever", stack);
-        test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+        test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
     }
 
     res = globus_xio_register_open(
@@ -299,7 +299,7 @@ framework_main(
             target,
             open_cb,
             (void *)&globus_l_test_info);
-    test_res(GLOBUS_XIO_TEST_FAIL_PASS_OPEN, res, __LINE__);
+    test_res(GLOBUS_XIO_TEST_FAIL_PASS_OPEN, res, __LINE__, __FILE__);
 
     globus_mutex_lock(&globus_l_mutex);
     {
@@ -316,7 +316,7 @@ framework_main(
     if(globus_l_test_info.server)
     {
         res = globus_xio_server_close(server);
-        test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+        test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
     }
 
     test_common_end();

@@ -614,6 +614,7 @@ typedef struct globus_ftp_cc_handle_s
     void *                                           close_cb_arg;
     globus_object_t *                                close_result;
     globus_ftp_control_response_t                    quit_response;
+    globus_bool_t                                    signal_deactivate;
 }
 globus_ftp_cc_handle_t;
 

@@ -147,7 +147,7 @@ globus_l_ftp_client_buffer_cmd_info_t globus_l_ftp_client_buffer_cmd_info[] =
     {"SITE RETRBUFSIZE", GLOBUS_FALSE, GLOBUS_TRUE },
     {"SITE RBUFSZ", GLOBUS_FALSE, GLOBUS_TRUE },
     {"SITE RBUFSIZ", GLOBUS_FALSE, GLOBUS_TRUE },
-    {"SITE STORBUFIZE", GLOBUS_TRUE, GLOBUS_FALSE },
+    {"SITE STORBUFSIZE", GLOBUS_TRUE, GLOBUS_FALSE },
     {"SITE SBUFSZ", GLOBUS_TRUE, GLOBUS_FALSE },
     {"SITE SBUFSIZ", GLOBUS_TRUE, GLOBUS_FALSE },
     {"SITE BUFSIZE", GLOBUS_TRUE, GLOBUS_TRUE },
@@ -159,6 +159,7 @@ globus_l_ftp_client_buffer_cmd_info_t globus_l_ftp_client_buffer_cmd_info[] =
     "ERET P %"GLOBUS_OFF_T_FORMAT" %"GLOBUS_OFF_T_FORMAT" %s"CRLF
 
 /* Internal/Local Functions */
+
 /**
  * FTP response callback.
  *
@@ -183,10 +184,11 @@ void
 globus_i_ftp_client_response_callback(
     void *					user_arg,
     globus_ftp_control_handle_t *		handle,
-    globus_object_t *				error,
+    globus_object_t *				in_error,
     globus_ftp_control_response_t *		response)
 {
     globus_i_ftp_client_target_t *		target;
+    globus_object_t *                           error;
     globus_i_ftp_client_handle_t *		client_handle;
     globus_result_t				result;
     globus_bool_t				registered=GLOBUS_FALSE;
@@ -208,7 +210,16 @@ globus_i_ftp_client_response_callback(
     globus_i_ftp_client_debug_states(2, client_handle);
     
     globus_assert(! GLOBUS_I_FTP_CLIENT_BAD_MAGIC(&client_handle));
-
+    
+    if(in_error)
+    {
+        error = globus_object_copy(in_error);
+    }
+    else
+    {
+        error = GLOBUS_NULL;
+    }
+   
     globus_i_ftp_client_handle_lock(client_handle);
     
     globus_i_ftp_client_plugin_notify_response(
@@ -406,6 +417,13 @@ redo:
         { 
          error = GLOBUS_I_FTP_CLIENT_ERROR_OUT_OF_MEMORY(); 
          goto notify_fault; 
+        }
+
+        target->features = globus_i_ftp_client_features_init();
+        if(!target->features)
+        {
+            error = GLOBUS_I_FTP_CLIENT_ERROR_OUT_OF_MEMORY();
+	    goto notify_fault;
         }
 
 	globus_i_ftp_client_plugin_notify_command(
@@ -2554,7 +2572,7 @@ redo:
 	result =
 	    globus_ftp_control_data_connect_write(target->control_handle,
 						  GLOBUS_NULL,
-						  GLOBUS_NULL);
+						 GLOBUS_NULL);
 	target->state = GLOBUS_FTP_CLIENT_TARGET_STOR;
 
 	if(result != GLOBUS_SUCCESS)
@@ -2833,8 +2851,15 @@ redo:
 			client_handle,
 			target->url_string,
 			error);
-
-		    globus_object_free(error);
+                    
+                    if(client_handle->err)
+                    {
+		        globus_object_free(error);
+		    }
+		    else
+		    {
+		        client_handle->err = error;
+		    }
 
 		    if(client_handle->state == 
 		        GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
@@ -3199,6 +3224,11 @@ redo:
  finish:
     globus_i_ftp_client_handle_unlock(client_handle);
  do_return:   
+    
+    if(error)
+    {
+        globus_object_free(error);
+    }
     globus_i_ftp_client_debug_printf(1, (stderr, 
         "globus_i_ftp_client_response_callback() exiting\n"));
     globus_i_ftp_client_debug_states(2, client_handle);
@@ -3206,6 +3236,10 @@ redo:
     return;
 
  result_fault:
+    if(error)
+    {
+        globus_object_free(error);
+    }
     error = globus_error_get(result);
  notify_fault:
     globus_i_ftp_client_plugin_notify_fault(
@@ -3217,7 +3251,8 @@ redo:
 					 target,
 					 error,
 					 response);
-
+    
+    globus_object_free(error);
     globus_i_ftp_client_debug_printf(1, (stderr, 
         "globus_i_ftp_client_response_callback() exiting with error\n"));
     globus_i_ftp_client_debug_states(2, client_handle);
@@ -3255,7 +3290,7 @@ globus_l_ftp_client_parse_site_help(
     globus_ftp_control_response_t *		response)
 {
     char * p;
-        
+
     if(strstr((char *) response->response_buffer, "RETRBUFSIZE") != 0)
     {
         globus_i_ftp_client_feature_set(

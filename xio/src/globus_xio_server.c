@@ -1,5 +1,6 @@
 #include "globus_xio.h"
 #include "globus_i_xio.h"
+#include <ctype.h>
 
 /*
  *  note:
@@ -58,6 +59,7 @@ do                                                                      \
     globus_i_xio_server_t *                         _s;                 \
                                                                         \
     _s = (_in_s);                                                       \
+    globus_callback_space_destroy(_s->space);                           \
     globus_mutex_destroy(&_s->mutex);                                   \
     globus_free(_s);                                                    \
 } while (0)
@@ -80,15 +82,20 @@ globus_i_xio_server_will_block_cb(
     void *                                  user_args)
 {
     globus_i_xio_op_t *                     xio_op;
+    GlobusXIOName(globus_i_xio_server_will_block_cb);
+
+    GlobusXIODebugInternalEnter();
 
     xio_op = (globus_i_xio_op_t *) user_args;
 
     xio_op->restarted = GLOBUS_TRUE;
-    xio_op->ref++;
+    GlobusXIOOpInc(xio_op);
 
-    globus_thread_blocking_callback_pop(&wb_ndx);
+    globus_thread_blocking_callback_disable(&wb_ndx);
 
     globus_i_xio_server_post_accept(xio_op);
+
+    GlobusXIODebugInternalExit();
 }
 
 /*
@@ -100,9 +107,9 @@ globus_l_xio_server_accept_kickout(
 {
     int                                     ctr;
     int                                     wb_ndx;
-    globus_i_xio_target_t *                 xio_target = NULL;
     globus_i_xio_server_t *                 xio_server;
     globus_i_xio_op_t *                     xio_op;
+    globus_i_xio_op_t *                     target_op = NULL;
     globus_bool_t                           destroy_server = GLOBUS_FALSE;
     GlobusXIOName(globus_l_xio_server_accept_kickout);
 
@@ -112,25 +119,23 @@ globus_l_xio_server_accept_kickout(
     xio_server = xio_op->_op_server;
 
     /* create the structure if successful, otherwise the target is null */
-    if(xio_op->cached_res == GLOBUS_SUCCESS)
+    if(xio_op->cached_obj == NULL)
     {
-        xio_target = globus_malloc(sizeof(globus_i_xio_target_t) +
-                        (sizeof(globus_i_xio_target_entry_t) * 
-                            (xio_op->stack_size - 1)));
-        if(xio_target == NULL)
-        {
-            xio_op->cached_res = GlobusXIOErrorMemory("target");
-        }
-        xio_target->type = GLOBUS_XIO_TARGET_TYPE_SERVER;
+        target_op = (globus_i_xio_op_t *) globus_malloc(
+            sizeof(globus_i_xio_op_t) + (
+                sizeof(globus_i_xio_op_entry_t) * (xio_op->stack_size - 1)));
+        memset(target_op, '\0', 
+            sizeof(globus_i_xio_op_t) + (
+                sizeof(globus_i_xio_op_entry_t) * (xio_op->stack_size - 1)));
         /* initialize the target structure */
-        xio_target->stack_size = xio_op->stack_size;
-        for(ctr = 0;  ctr < xio_target->stack_size; ctr++)
+        for(ctr = 0;  ctr < xio_op->stack_size; ctr++)
         {
-            xio_target->entry[ctr].target = 
-                    xio_op->entry[ctr].target;
-            xio_target->entry[ctr].driver = 
+            target_op->entry[ctr].driver = 
                     xio_server->entry[ctr].driver;
+            target_op->entry[ctr].target = 
+                    xio_op->entry[ctr].target;
         }
+        target_op->stack_size = xio_op->stack_size;
     }
     /* if failed clean up the operation */
     else
@@ -156,19 +161,21 @@ globus_l_xio_server_accept_kickout(
     /* call the users callback */
     xio_op->_op_accept_cb(
         xio_server,
-        xio_target,
-        xio_op->cached_res,
+        target_op,
+        GlobusXIOObjToResult(xio_op->cached_obj),
         xio_op->user_arg);
+    globus_thread_blocking_callback_pop(&wb_ndx);
     if(xio_op->restarted)
     {
         globus_mutex_lock(&xio_server->mutex);
         {
-            xio_op->ref--;
+            GlobusXIOOpDec(xio_op);
 
             if(xio_op->ref == 0)
             {
                 /* remove the reference for the target on the server */
                 GlobusIXIOServerDec(destroy_server, xio_server);
+                globus_free(xio_op);
             }
         }
         globus_mutex_unlock(&xio_server->mutex);
@@ -178,8 +185,6 @@ globus_l_xio_server_accept_kickout(
         }
         return;
     }
-
-    globus_thread_blocking_callback_pop(&wb_ndx);
 
     globus_i_xio_server_post_accept(xio_op);
 
@@ -226,7 +231,13 @@ globus_i_xio_server_post_accept(
             case GLOBUS_XIO_SERVER_STATE_CLOSING:
                 xio_server->op = NULL;
                 break;
-                
+
+            /* This can happen if when the callback is called the user
+                registers another accept and that accept callback is
+                called before the first callback returns.  */
+            case GLOBUS_XIO_SERVER_STATE_OPEN:
+                break;
+
             case GLOBUS_XIO_SERVER_STATE_ACCEPTING:
                 break;
 
@@ -236,10 +247,9 @@ globus_i_xio_server_post_accept(
         }
         /* decrement reference for the callback if timeout has happened or
             isn't registered this will go to zero */
-        xio_op->ref--;
+        GlobusXIOOpDec(xio_op);
         if(xio_op->ref == 0)
         {
-            globus_free(xio_op);
             GlobusIXIOServerDec(destroy_server, xio_server);
         }
     }
@@ -277,7 +287,7 @@ globus_i_xio_server_accept_callback(
         /* if in this state it means that the user either has or is about to
            get a cancel callback.  we must delay the delivery of this
            callback until that returns */
-        xio_op->cached_res = result;
+        xio_op->cached_obj = GlobusXIOResultToObj(result);
         if(xio_op->state == GLOBUS_XIO_OP_STATE_TIMEOUT_PENDING)
         {
             accept = GLOBUS_FALSE;
@@ -290,7 +300,7 @@ globus_i_xio_server_accept_callback(
                 if(globus_i_xio_timer_unregister_timeout(
                         &globus_l_xio_timeout_timer, xio_op))
                 {
-                    xio_op->ref--;
+                    GlobusXIOOpDec(xio_op);
                     globus_assert(xio_op->ref > 0);
                 }
             }
@@ -355,7 +365,7 @@ globus_l_xio_accept_timeout_callback(
             case GLOBUS_XIO_OP_STATE_FINISH_WAITING:
 
                 /* decerement the reference for the timeout callback */
-                xio_op->ref--;
+                GlobusXIOOpDec(xio_op);
                 if(xio_op->ref == 0)
                 {
                     /* remove the reference for the target on the server */
@@ -414,9 +424,10 @@ globus_l_xio_accept_timeout_callback(
         /* if canceling set the res and we will remove this timer event */
         if(cancel)
         {
-            xio_op->cached_res = GlobusXIOErrorTimedout();
+            xio_op->cached_obj = GlobusXIOErrorObjTimedout();
             rc = GLOBUS_TRUE;
-            xio_op->canceled = GLOBUS_TRUE;
+            /* Assume all timeouts originate from user */
+            xio_op->canceled = 1;
             if(xio_op->cancel_cb)
             {
                 xio_op->cancel_cb(xio_op, xio_op->cancel_arg);
@@ -441,7 +452,7 @@ globus_l_xio_accept_timeout_callback(
         {
             /* decremenet the target reference count and insist that it is
                not zero yet */
-            xio_op->ref--;
+            GlobusXIOOpDec(xio_op);
             globus_assert(xio_op->ref > 0);
         }
     }
@@ -574,8 +585,8 @@ globus_l_server_accept_cb(
 
     globus_mutex_lock(&info->mutex);
     {
-        info->res = result;
-        info->target = target;
+        info->error_obj = GlobusXIOResultToObj(result);
+        info->target_op = target;
         info->done = GLOBUS_TRUE;
         globus_cond_signal(&info->cond);
     }
@@ -588,6 +599,7 @@ globus_l_xio_server_register_accept(
     globus_i_xio_op_t *                     xio_op,
     globus_xio_attr_t                       accept_attr)
 {
+    void *                                  driver_attr;
     globus_i_xio_server_t *                 xio_server;
     int                                     ctr;
     globus_result_t                         res = GLOBUS_SUCCESS;
@@ -613,7 +625,7 @@ globus_l_xio_server_register_accept(
         xio_op->state = GLOBUS_XIO_OP_STATE_OPERATING;
         xio_op->ref = 1;
         xio_op->cancel_cb = NULL;
-        xio_op->canceled = GLOBUS_FALSE;
+        xio_op->canceled = 0;
         xio_op->_op_server_timeout_cb = xio_server->accept_timeout;
         xio_op->ndx = 0;
         xio_op->stack_size = xio_server->stack_size;
@@ -623,14 +635,21 @@ globus_l_xio_server_register_accept(
             correct place */
         for(ctr = 0; ctr < xio_op->stack_size; ctr++)
         {
-            GlobusIXIOAttrGetDS(xio_op->entry[ctr].attr,     \
+            xio_op->entry[ctr].accept_attr = NULL;
+            GlobusIXIOAttrGetDS(driver_attr,
                 accept_attr, xio_server->entry[ctr].driver);
+
+            if(driver_attr != NULL)
+            {
+                xio_server->entry[ctr].driver->attr_copy_func(
+                    &xio_op->entry[ctr].accept_attr, driver_attr);
+            }
         }
 
         /*i deal with timeout if there is one */
         if(xio_op->_op_server_timeout_cb != NULL)
         {
-            xio_op->ref++;
+            GlobusXIOOpInc(xio_op);
             globus_i_xio_timer_register_timeout(
                 &globus_l_xio_timeout_timer,
                 xio_op,
@@ -646,8 +665,8 @@ globus_l_xio_server_register_accept(
 
     /* add reference count for the pass.  does not need to be done locked
        since no one has op until it is passed  */
-    xio_op->ref++;
-    GlobusXIODriverPassAccept(res, xio_op, \
+    GlobusXIOOpInc(xio_op);
+    res = globus_xio_driver_pass_accept(xio_op,
             globus_i_xio_server_accept_callback, NULL);
 
     if(res != GLOBUS_SUCCESS)
@@ -657,7 +676,7 @@ globus_l_xio_server_register_accept(
 
     globus_mutex_lock(&xio_server->mutex);
     {
-        xio_op->ref--;
+        GlobusXIOOpDec(xio_op);
         if(xio_op->ref == 0)
         {
             GlobusIXIOServerDec(free_server, xio_server);
@@ -674,7 +693,7 @@ globus_l_xio_server_register_accept(
 
     globus_mutex_lock(&xio_server->mutex);
     {
-        xio_op->ref--; /* dec for the register */
+        GlobusXIOOpDec(xio_op); /* dec for the register */
         globus_assert(xio_op->ref > 0);
 
         /* set target to invalid type */
@@ -686,11 +705,11 @@ globus_l_xio_server_register_accept(
             if(globus_i_xio_timer_unregister_timeout(
                     &globus_l_xio_timeout_timer, xio_op))
             {
-                xio_op->ref--;
+                GlobusXIOOpDec(xio_op);
                 globus_assert(xio_op->ref > 0);
             }
         }
-        xio_op->ref--;
+        GlobusXIOOpDec(xio_op);
         if(xio_op == 0)
         {
             GlobusIXIOServerDec(free_server, xio_server);
@@ -776,6 +795,7 @@ globus_xio_server_create(
         {
             xio_server->accept_timeout = server_attr->accept_timeout_cb;
             xio_server->space = server_attr->space;
+            globus_callback_space_reference(xio_server->space);
         }
         /* walk through the stack and add each entry to the array */
         ctr = 0;
@@ -916,7 +936,7 @@ globus_xio_server_register_accept(
     int                                     tmp_size;
     globus_result_t                         res = GLOBUS_SUCCESS;
     globus_i_xio_server_t *                 xio_server;
-    globus_i_xio_op_t *                     xio_op;
+    globus_i_xio_op_t *                     xio_op = NULL;
     GlobusXIOName(globus_xio_server_register_accept);
 
     GlobusXIODebugEnter();
@@ -956,6 +976,10 @@ globus_xio_server_register_accept(
     return GLOBUS_SUCCESS;
 
   err:
+    if(xio_op != NULL)
+    {
+        globus_free(xio_op);
+    }
 
     GlobusXIODebugExitWithError();
     return res;
@@ -991,7 +1015,8 @@ globus_xio_server_cancel_accept(
             /* the callback is called locked.  within it the driver is
                 allowed limited functionality.  by calling this locked
                 can more efficiently pass the operation down the stack */
-            xio_server->op->canceled = GLOBUS_TRUE;
+            /* Cancel originates from user */
+            xio_server->op->canceled = 1;
             if(xio_server->op->cancel_cb)
             {
                 xio_server->op->cancel_cb(xio_server->op,
@@ -1077,13 +1102,13 @@ globus_xio_server_accept(
     }
     globus_mutex_unlock(&info->mutex);
 
-    if(info->res != GLOBUS_SUCCESS)
+    if(info->error_obj != NULL)
     {
-        res = info->res;
+        res = GlobusXIOObjToResult(info->error_obj);
         goto register_error;
     }
 
-    *out_target = info->target;
+    *out_target = info->target_op;
     globus_i_xio_blocking_destroy(info);
 
     GlobusXIODebugExit();
@@ -1139,7 +1164,8 @@ globus_xio_server_register_close(
                 can more efficiently pass the operation down the stack */
             if(xio_server->op != NULL)
             {
-                xio_server->op->canceled = GLOBUS_TRUE;
+                /* cancel originates from user */
+                xio_server->op->canceled = 1;
                 if(xio_server->op->cancel_cb)
                 {
                     xio_server->op->cancel_cb(xio_server->op,
@@ -1243,7 +1269,7 @@ globus_result_t
 globus_xio_target_destroy(
     globus_xio_target_t                     target)
 {   
-    globus_i_xio_target_t *                 xio_target;
+    globus_i_xio_op_t *                     xio_op;
     globus_result_t                         res = GLOBUS_SUCCESS;
     globus_result_t                         tmp_res;
     int                                     ctr;
@@ -1258,20 +1284,20 @@ globus_xio_target_destroy(
         res = GlobusXIOErrorParameter("target");
         goto err;
     }
-    xio_target = (globus_i_xio_target_t *) target;
-    if(xio_target->type != GLOBUS_XIO_TARGET_TYPE_SERVER &&
-       xio_target->type != GLOBUS_XIO_TARGET_TYPE_CLIENT)
+    xio_op = (globus_i_xio_op_t *) target;
+    if(xio_op->type != GLOBUS_XIO_OPERATION_TYPE_ACCEPT &&
+       xio_op->type != GLOBUS_XIO_OPERATION_TYPE_CLIENT)
     {
-        res = GlobusXIOErrorInvalidState(xio_target->type);
+        res = GlobusXIOErrorInvalidState(xio_op->type);
         goto err;
     }
 
-    for(ctr = 0; ctr < xio_target->stack_size; ctr++)
+    for(ctr = 0; ctr < xio_op->stack_size; ctr++)
     {
-        if(xio_target->entry[ctr].driver->target_destroy_func != NULL)
+        if(xio_op->entry[ctr].driver->target_destroy_func != NULL)
         {
-            tmp_res = xio_target->entry[ctr].driver->target_destroy_func(
-                xio_target->entry[ctr].target);
+            tmp_res = xio_op->entry[ctr].driver->target_destroy_func(
+                xio_op->entry[ctr].target);
             /* this will effectively report the last error detected */
             if(tmp_res != GLOBUS_SUCCESS)
             {
@@ -1279,7 +1305,7 @@ globus_xio_target_destroy(
             }
         }
     }
-    globus_free((void*)xio_target);
+    globus_free((void*)xio_op);
 
     if(res != GLOBUS_SUCCESS)
     {
@@ -1308,10 +1334,10 @@ globus_xio_target_cntl(
     int                                     cmd,
     ...)
 {
-    globus_i_xio_target_t *                 xio_target;
     int                                     ctr;
     globus_result_t                         res;
     va_list                                 ap;
+    globus_i_xio_op_t *                     xio_op;
     GlobusXIOName(globus_xio_target_cntl);
 
     GlobusXIODebugEnter();
@@ -1336,16 +1362,16 @@ globus_xio_target_cntl(
     }
 #   endif
 
-    xio_target = (globus_i_xio_target_t *) target;
+    xio_op = (globus_i_xio_op_t *) target;
 
     if(driver != NULL)
     {
-        for(ctr = 0; ctr < xio_target->stack_size; ctr++)
+        for(ctr = 0; ctr < xio_op->stack_size; ctr++)
         {
-            if(xio_target->entry[ctr].driver == driver)
+            if(xio_op->entry[ctr].driver == driver)
             {
                 res = driver->target_cntl_func(
-                    xio_target->entry[ctr].target,
+                    xio_op->entry[ctr].target,
                     cmd,
                     ap);
                 va_end(ap);
@@ -1370,6 +1396,390 @@ globus_xio_target_cntl(
     return res;
 }
 
+#define GlobusLXioFreeNull(_member)                                         \
+    {                                                                       \
+        if((_member))                                                       \
+        {                                                                   \
+            globus_free((_member));                                         \
+        }                                                                   \
+    }
+    
+void
+globus_xio_contact_destroy(
+    globus_xio_contact_t *                  contact_info)
+{
+    GlobusXIOName(globus_xio_contact_destroy);
+
+    GlobusXIODebugInternalEnter();
+    
+    GlobusLXioFreeNull(contact_info->unparsed);
+    GlobusLXioFreeNull(contact_info->resource);
+    GlobusLXioFreeNull(contact_info->host);
+    GlobusLXioFreeNull(contact_info->port);
+    GlobusLXioFreeNull(contact_info->scheme);
+    GlobusLXioFreeNull(contact_info->user);
+    GlobusLXioFreeNull(contact_info->pass);
+    GlobusLXioFreeNull(contact_info->subject);
+    
+    GlobusXIODebugInternalExit();
+}
+
+static
+void
+globus_l_xio_decode_hex(
+    char *                              s)
+{
+    char *                              d;
+    char                                t;
+    
+    if(!s || !(s = strchr(s, '%')))
+    {
+        return;
+    }
+    d = s;
+    
+    while(*s)
+    {
+        t = *s;
+	if(t == '%')
+	{
+	    if(*(s + 1) == '%')
+	    {
+	        s++;
+	    }
+	    else if(isxdigit(*(s + 1)) && isxdigit(*(s + 2)))
+	    {
+		char                    hexstring[3];
+                
+		hexstring[0] = *(++s);
+		hexstring[1] = *(++s);
+		hexstring[2] = 0;
+
+		t = (char) strtol(hexstring, NULL, 16);
+	    }
+	}
+	
+	*d = t;
+	s++;
+	d++;
+    }
+
+    *d = 0;
+}
+
+/**
+ *
+ * -unparsed (up till end)
+ * 
+ * if("://" before "/")
+ *     -scheme (up till "://")
+ *     if(^ "/")
+ *         -path (up till end)
+ *     else
+ *         if("@" before "/" or "<")
+ *             -user (up till ":" or "@")
+ *             if(^ ":")
+ *                 -pass (up till "@")
+ *         if(^ "<")
+ *             -subject (up till ">:")
+ *         if(^ "[")
+ *             -host (up till "]")
+ *         else
+ *             -host (up till ":" or "/")
+ *         if(^ ":")
+ *             -port (up till "/")
+ *         if(^ "/")
+ *             -path (up till end)
+ * else
+ *     if(^ "file:")
+ *         -path (up till end)
+ *     else if(":" before end)
+ *         -host (up till ":")
+ *         -port (up till end)
+ *     else
+ *         -path (up till end)
+ */
+
+globus_result_t
+globus_xio_contact_parse(
+    globus_xio_contact_t *                  contact_info,
+    const char *                            contact_string)
+{
+    char *                                  working;
+    char *                                  save = NULL;
+    char *                                  s;
+    char *                                  p;
+    globus_result_t                         result;
+    GlobusXIOName(globus_xio_contact_parse);
+
+    GlobusXIODebugInternalEnter();
+    
+    memset(contact_info, 0, sizeof(globus_xio_contact_t));
+    if(contact_string && *contact_string)
+    {
+        contact_info->unparsed = globus_libc_strdup(contact_string);
+        if(!contact_info->unparsed)
+        {
+            goto error_alloc;
+        }
+        
+        save = globus_libc_strdup(contact_string);
+        if(!save)
+        {
+            goto error_alloc;
+        }
+        working = save;
+        
+        /* look for scheme */
+        for(s = working; *s && *s != ':' && *s != '/'; s++);
+        if(*s == ':' && *(s + 1) == '/' && *(s + 2) == '/')
+        {
+            *s = 0;
+            contact_info->scheme = globus_libc_strdup(working);
+            if(!contact_info->scheme)
+            {
+                goto error_alloc;
+            }
+            working = s + 3;
+            
+            if(*working != '/')
+            {
+                /* look for user:pass */
+                for(s = working;    
+                    *s && *s != '@' && *s != '<' && *s != '/';
+                    s++);
+                
+                if(*s == '@')
+                {
+                    p = s + 1;
+                    *s = 0;
+                    if((s = strchr(working, ':')))
+                    {
+                        *(s++) = 0;
+                        if(*s)
+                        {
+                            contact_info->pass = globus_libc_strdup(s);
+                            if(!contact_info->pass)
+                            {
+                                goto error_alloc;
+                            }
+                        }
+                    }
+                    if(*working)
+                    {
+                        contact_info->user = globus_libc_strdup(working);
+                        if(!contact_info->user)
+                        {
+                            goto error_alloc;
+                        }
+                    }
+                    working = p;
+                }
+                
+                /* look for subject */
+                if(*working == '<')
+                {
+                    working++;
+                    s = strchr(working, '>');
+                    if(!s)
+                    {
+                        result = GlobusXIOErrorContactString("expecting >");
+                        goto error_format;
+                    }
+                    *s = 0;
+                    
+                    if(*working)
+                    {
+                        contact_info->subject = globus_libc_strdup(working);
+                        if(!contact_info->subject)
+                        {
+                            goto error_alloc;
+                        }
+                    }
+                    
+                    working = s + 1;
+                    if(*working == ':')
+                    {
+                        working++;
+                    }
+                }
+                
+                /* find host:port */
+                if(*working == '[')
+                {
+                    working++;
+                    s = strchr(working, ']');
+                    if(!s)
+                    {
+                        result = GlobusXIOErrorContactString("expecting ]");
+                        goto error_format;
+                    }
+                    *(s++) = 0;
+                }
+                else
+                {
+                    for(s = working; *s && *s != ':' && *s != '/'; s++);
+                }
+                
+                if(*s == ':')
+                {
+                    *(s++) = 0;
+                    if((p = strchr(s, '/')))
+                    {
+                        *p = 0;
+                    }
+                    
+                    if(*s)
+                    {
+                        contact_info->port = globus_libc_strdup(s);
+                        if(!contact_info->port)
+                        {
+                            goto error_alloc;
+                        }
+                    }
+                    
+                    if(p)
+                    {
+                        s = p + 1;
+                    }
+                    else
+                    {
+                        /* no path, just end it here */
+                        *s = 0;
+                    }
+                }
+                else if(*s == '/')
+                {
+                    *(s++) = 0;
+                }
+                else if(*s)
+                {
+                    result = GlobusXIOErrorContactString("expecting : or /");
+                    goto error_format;
+                }
+                
+                if(*working)
+                {
+                    contact_info->host = globus_libc_strdup(working);
+                    if(!contact_info->host)
+                    {
+                        goto error_alloc;
+                    }
+                }
+                
+                working = s;
+            }
+            else
+            {
+                working++;
+            }
+            
+            /* copy path portion */
+            if(*working)
+            {
+                contact_info->resource = globus_libc_strdup(working);
+                if(!contact_info->resource)
+                {
+                    goto error_alloc;
+                }
+            }
+        }
+        else
+        {
+            /* see if its file or host:port form */
+            if(strncmp(working, "file:", 5) == 0)
+            {
+                working += 5;
+                if(*working)
+                {
+                    contact_info->resource = globus_libc_strdup(working);
+                    if(!contact_info->resource)
+                    {
+                        goto error_alloc;
+                    }
+                }
+                
+                contact_info->scheme = globus_libc_strdup("file");
+                if(!contact_info->scheme)
+                {
+                    goto error_alloc;
+                }
+            }
+            else if((s = strrchr(working, ':')))
+            {
+                *(s++) = 0;
+                if(*s)
+                {
+                    contact_info->port = globus_libc_strdup(s);
+                    if(!contact_info->port)
+                    {
+                        goto error_alloc;
+                    }
+                }
+                if(*working == '[')
+                {
+                    working++;
+                    s = strchr(working, ']');
+                    if(!s)
+                    {
+                        result = GlobusXIOErrorContactString("expecting ]");
+                        goto error_format;
+                    }
+                    
+                    *s = 0;
+                }
+                if(*working)
+                {
+                    contact_info->host = globus_libc_strdup(working);
+                    if(!contact_info->host)
+                    {
+                        goto error_alloc;
+                    }
+                }
+            }
+            else
+            {
+                contact_info->resource = globus_libc_strdup(working);
+                if(!contact_info->resource)
+                {
+                    goto error_alloc;
+                }
+                contact_info->scheme = globus_libc_strdup("file");
+                if(!contact_info->scheme)
+                {
+                    goto error_alloc;
+                }
+            }
+        }
+    
+        globus_l_xio_decode_hex(contact_info->resource);
+        globus_l_xio_decode_hex(contact_info->host);   
+        globus_l_xio_decode_hex(contact_info->port);   
+        globus_l_xio_decode_hex(contact_info->scheme); 
+        globus_l_xio_decode_hex(contact_info->user);   
+        globus_l_xio_decode_hex(contact_info->pass);   
+        globus_l_xio_decode_hex(contact_info->subject);
+                                
+        /* XXX validate some of the fields */
+        
+        globus_free(save);
+    }
+    
+    return GLOBUS_SUCCESS;  
+                            
+error_alloc:                
+    result = GlobusXIOErrorMemory("contact_info");
+
+error_format:
+    if(save)
+    {
+        globus_free(save);
+    }
+    globus_xio_contact_destroy(contact_info);
+    GlobusXIODebugInternalExitWithError();
+    return result;
+}
+
 /*
  *
  */
@@ -1381,12 +1791,11 @@ globus_xio_target_init(
     globus_xio_stack_t                      stack)
 {
     globus_result_t                         res;
-    globus_i_xio_target_t *                 xio_target;
     int                                     stack_size;
-    int                                     ctr;
     int                                     ndx;
     globus_list_t *                         list;
-    void *                                  driver_attr;
+    globus_xio_contact_t                    contact_info;
+    globus_i_xio_op_t *                     xio_op;
     GlobusXIOName(globus_xio_target_init);
 
     GlobusXIODebugEnter();
@@ -1396,91 +1805,76 @@ globus_xio_target_init(
     if(target == NULL)
     {
         res = GlobusXIOErrorParameter("target");
-        goto err;
-    }
-    if(contact_string == NULL)
-    {
-        res = GlobusXIOErrorParameter("contact_string");
-        goto err;
+        goto err_param;
     }
     if(stack == NULL)
     {
         res = GlobusXIOErrorParameter("stack");
-        goto err;
+        goto err_param;
     }
-
     stack_size = globus_list_size(stack->driver_stack);
     if(stack_size == 0)
     {
         res = GlobusXIOErrorParameter("stack_size");
-        goto err;
+        goto err_param;
     }
-
-    /* TODO: check stack, make sure it meets requirements */
-    xio_target = (globus_i_xio_target_t *)
-                    globus_malloc(sizeof(globus_i_xio_target_t) +
-                        (sizeof(globus_i_xio_target_entry_t) * 
-                            (stack_size - 1)));
-    if(xio_target == NULL)
+    res = globus_xio_contact_parse(&contact_info, contact_string);
+    if(res != GLOBUS_SUCCESS)
     {
-        res = GlobusXIOErrorMemory("target");
+        goto err_param;
+    }
+
+    xio_op = (globus_i_xio_op_t *) 
+        globus_malloc(sizeof(globus_i_xio_op_t) +
+            (sizeof(globus_i_xio_op_t) * (stack_size - 1)));
+    if(xio_op == NULL)
+    {
+        res = GlobusXIOErrorMemory("operation");
         goto err;
     }
-    memset(xio_target, '\0', sizeof(globus_i_xio_target_t) +
-        (sizeof(globus_i_xio_target_entry_t) * (stack_size - 1)));
+    memset(xio_op, '\0', 
+        sizeof(globus_i_xio_op_t) +
+            (sizeof(globus_i_xio_op_t) * (stack_size - 1)));
 
-    xio_target->type = GLOBUS_XIO_TARGET_TYPE_CLIENT;
-    /* initialize what we need of the target structure */
-    xio_target->stack_size = stack_size;
+    xio_op->type = GLOBUS_XIO_OPERATION_TYPE_CLIENT;
+    xio_op->state = GLOBUS_XIO_OP_STATE_OPERATING;
+    xio_op->ref = 1;
+    xio_op->ndx = 0;
+    xio_op->stack_size = stack_size;
 
-    driver_attr = NULL;
     ndx = 0;
     for(list = stack->driver_stack;
-    !globus_list_empty(list);
+        !globus_list_empty(list);
         list = globus_list_rest(list))
     {
-        xio_target->entry[ndx].driver = (globus_xio_driver_t) 
+        xio_op->entry[ndx].driver = (globus_xio_driver_t) 
                                         globus_list_first(list);
 
-        if(xio_target->entry[ndx].driver->target_init_func != NULL)
-        {
-            /* pull driver specific info out of target attr */
-            if(target_attr != NULL)
-            {
-                GlobusIXIOAttrGetDS(driver_attr, target_attr,               \
-                    xio_target->entry[ndx].driver);
-            }
-
-            res = xio_target->entry[ndx].driver->target_init_func(
-                    &xio_target->entry[ndx].target,
-                    driver_attr,
-                    contact_string);
-            if(res != GLOBUS_SUCCESS)
-            {
-                /* loop back through and destroy all inited targets */
-                for(ctr = 0; ctr < ndx; ctr++)
-                {
-                    /* ignore the result, but it must be passed */
-                    xio_target->entry[ndx].driver->target_destroy_func(
-                        xio_target->entry[ndx].target);
-                }
-                globus_free(xio_target);
-                goto err;
-            }
-        }
-
+        xio_op->entry[ndx].target_attr = NULL;
+        GlobusIXIOAttrGetDS(xio_op->entry[ndx].target_attr,
+            target_attr, xio_op->entry[ndx].driver);
         ndx++;
     }
     /* hell has broken loose if these are not equal */
     globus_assert(ndx == stack_size);
 
-    *target = (globus_xio_target_t) xio_target;
+    res = globus_xio_driver_client_target_pass(xio_op, &contact_info);
+    if(res != GLOBUS_SUCCESS)
+    {
+        globus_free(xio_op);
+        goto err;
+    }
+    
+    *target = xio_op;
 
+    globus_xio_contact_destroy(&contact_info);
     GlobusXIODebugExit();
     return GLOBUS_SUCCESS;
 
   err:
-
+    globus_xio_contact_destroy(&contact_info);
+    
+  err_param:
     GlobusXIODebugExitWithError();
     return res;
 }

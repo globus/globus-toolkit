@@ -13,7 +13,7 @@
         <Source_Dependencies Type="compile">
             <Dependency Name="globus_core">
                 <Version>
-                    <Simple_Version Major="2"/>
+                    <Simple_Version Major="3"/>
                 </Version>
             </Dependency>                
             <Dependency Name="globus_common">
