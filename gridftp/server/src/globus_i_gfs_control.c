@@ -196,13 +196,7 @@ globus_l_gfs_resource_request(
     globus_i_gfs_server_instance_t *    instance;
     GlobusGFSName(globus_l_gfs_resource_request);
     
-    instance = (globus_i_gfs_server_instance_t *)
-        globus_calloc(1, sizeof(globus_i_gfs_server_instance_t));
-    if(!instance)
-    {
-        result = GlobusGFSErrorMemory("instance");
-        goto error_malloc;
-    }    
+    instance = (globus_i_gfs_server_instance_t *) user_arg;
 
     result = globus_i_gfs_ipc_resource_request(
         instance,
@@ -484,13 +478,7 @@ globus_l_gfs_send_request(
     
     data = (globus_i_gfs_ipc_data_handle_t *) data_handle;
     
-    instance = (globus_i_gfs_server_instance_t *)
-        globus_calloc(1, sizeof(globus_i_gfs_server_instance_t));
-    if(!instance)
-    {
-        result = GlobusGFSErrorMemory("instance");
-        goto error_malloc;
-    }    
+    instance = (globus_i_gfs_server_instance_t *) user_arg;
 
     result = globus_l_gfs_op_attr_init(&op_attr);
     if(result != GLOBUS_SUCCESS)
@@ -559,13 +547,7 @@ globus_l_gfs_recv_request(
     
     data = (globus_i_gfs_ipc_data_handle_t *) data_handle;
     
-    instance = (globus_i_gfs_server_instance_t *)
-        globus_calloc(1, sizeof(globus_i_gfs_server_instance_t));
-    if(!instance)
-    {
-        result = GlobusGFSErrorMemory("instance");
-        goto error_malloc;
-    }
+    instance = (globus_i_gfs_server_instance_t *) user_arg;
 
     result = globus_l_gfs_op_attr_init(&op_attr);
     if(result != GLOBUS_SUCCESS)
@@ -629,13 +611,7 @@ globus_l_gfs_list_request(
     
     data = (globus_i_gfs_ipc_data_handle_t *) data_handle;
 
-    instance = (globus_i_gfs_server_instance_t *)
-        globus_calloc(1, sizeof(globus_i_gfs_server_instance_t));
-    if(!instance)
-    {
-        result = GlobusGFSErrorMemory("instance");
-        goto error_malloc;
-    }    
+    instance = (globus_i_gfs_server_instance_t *) user_arg;
 
     result = globus_i_gfs_ipc_list_request(
         instance,
@@ -752,13 +728,7 @@ globus_l_gfs_passive_data_connect(
      * optimize for when receiving data in mode E? 
      */
     
-    instance = (globus_i_gfs_server_instance_t *)
-        globus_calloc(1, sizeof(globus_i_gfs_server_instance_t));
-    if(!instance)
-    {
-        result = GlobusGFSErrorMemory("instance");
-        goto error_malloc;
-    }    
+    instance = (globus_i_gfs_server_instance_t *) user_arg;
     
     result = globus_i_gfs_ipc_passive_data_request(
         instance,
@@ -817,14 +787,8 @@ globus_l_gfs_active_data_connect(
     
     globus_l_gfs_op_to_attr(op, &attr, net_prt);
 
-    instance = (globus_i_gfs_server_instance_t *)
-        globus_calloc(1, sizeof(globus_i_gfs_server_instance_t));
-    if(!instance)
-    {
-        result = GlobusGFSErrorMemory("instance");
-        goto error_malloc;
-    }    
-    
+    instance = (globus_i_gfs_server_instance_t *) user_arg;
+        
     result = globus_i_gfs_ipc_active_data_request(
         instance,
         &attr,
@@ -1100,20 +1064,20 @@ globus_i_gfs_control_start(
         }
         globus_free(login_msg);
     }
-    
-    result = globus_gridftp_server_control_attr_set_resource(
-        attr, globus_l_gfs_resource_request, instance);
-    if(result != GLOBUS_SUCCESS)
-    {
-        goto error_attr_setup;
-    }
-    
+
     result = globus_gridftp_server_control_attr_set_auth(
         attr, globus_l_gfs_auth_request, instance);
     if(result != GLOBUS_SUCCESS)
     {
         goto error_attr_setup;
     }
+
+    result = globus_gridftp_server_control_attr_set_resource(
+        attr, globus_l_gfs_resource_request, instance);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_attr_setup;
+    }    
     
     result = globus_gridftp_server_control_attr_add_recv(
         attr, GLOBUS_NULL, globus_l_gfs_recv_request, instance);

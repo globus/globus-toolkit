@@ -409,7 +409,7 @@ globus_gridftp_server_control_attr_set_auth(
     }
 
     attr->funcs.auth_cb = auth_cb;
-    attr->funcs.auth_cb = user_arg;
+    attr->funcs.auth_arg = user_arg;
 
     GlobusGridFTPServerDebugExit();
 
