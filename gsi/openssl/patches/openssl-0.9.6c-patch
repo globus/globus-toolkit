@@ -236,7 +236,7 @@ diff -u -r openssl-0.9.6c/Makefile.org openssl-0.9.6c-patched/Makefile.org
  ALLSYMSFLAG=-bnogc
 -SHAREDFLAGS=-G -bE:lib$$i.exp -bM:SRE
 -SHAREDCMD=$(CC)
-+SHAREDFLAGS=-berok -brtl -bnortllib -bnosymbolic -bnoautoexp -bE:lib$${i}.exp -bM:SRE
++SHAREDFLAGS=-bnoentry -berok -brtl -bnortllib -bnosymbolic -bnoautoexp -bE:lib$${i}.exp -bM:SRE
  do_aix-shared:
 -	libs='-L. ${SHLIBDEPS}'; for i in ${SHLIBDIRS}; do \
 -	( set -x; \
