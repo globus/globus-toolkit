@@ -864,14 +864,25 @@ globus_l_xio_gssapi_ftp_parse_command(
                                 sizeof(char *) * cmd_len);
         }
     }
-    cmd_a[ctr] = NULL;
-
+    if(ctr == 0)
+    {
+        globus_free(cmd_a);
+        cmd_a = NULL;
+    }
+    else
+    {
+        cmd_a[ctr] = NULL;
+    }
     *out_cmd_a = cmd_a;
 
     GlobusXIOGssapiftpDebugExit();
     return GLOBUS_SUCCESS;
 
 err:
+    if(cmd_a != NULL)
+    {
+        globus_free(cmd_a);
+    }
     GlobusXIOGssapiftpDebugExitWithError();
     return res;
 }
@@ -1098,12 +1109,12 @@ globus_l_xio_gssapi_ftp_server_read_cb(
 
         in_buffer = handle->auth_read_iov.iov_base;
         in_buffer_len = handle->auth_read_iov.iov_len;
-        globus_l_xio_gssapi_ftp_parse_command(
+        res = globus_l_xio_gssapi_ftp_parse_command(
                 in_buffer,
                 in_buffer_len,
                 GLOBUS_FALSE,
                 &cmd_a);
-        if(cmd_a == NULL)
+        if(res != GLOBUS_SUCCESS || cmd_a == NULL)
         {
             res = GlobusXIOGssapiFTPAllocError();
             goto err;
@@ -1705,12 +1716,12 @@ globus_l_xio_gssapi_ftp_preauth_client_read_cb(
     {
         globus_assert(handle->client);
 
-        globus_l_xio_gssapi_ftp_parse_command(
+        res = globus_l_xio_gssapi_ftp_parse_command(
                 handle->auth_read_iov.iov_base,
                 handle->auth_read_iov.iov_len,
                 GLOBUS_TRUE,
                 &cmd_a);
-        if(cmd_a == NULL)
+        if(res != GLOBUS_SUCCESS || cmd_a == NULL)
         {
             globus_mutex_unlock(&handle->mutex);
             res = GlobusXIOGssapiFTPAllocError();
@@ -2404,12 +2415,12 @@ globus_l_xio_gssapi_ftp_client_read_cb(
         send_buffer = (char *) handle->read_iov[0].iov_base;
         if(send_buffer[0] == '6')
         {
-           globus_l_xio_gssapi_ftp_parse_command(
+           res = globus_l_xio_gssapi_ftp_parse_command(
                 handle->read_iov[0].iov_base,
                 nbytes,
                 GLOBUS_TRUE,
                 &cmd_a);
-            if(cmd_a == NULL)
+            if(res != GLOBUS_SUCCESS || cmd_a == NULL)
             {
                 res = GlobusXIOGssapiFTPAllocError();
                 goto err;
