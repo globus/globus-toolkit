@@ -614,8 +614,22 @@ cmd: USER SP username CRLF
 	=	{
 	    if (log_commands)
 		syslog(LOG_INFO, "STOR %s", CHECKNULL($4));
+#ifdef USE_GLOBUS_DATA_CODE
+	    if ($2 && $4 != NULL && !restrict_check($4))
+	    {
+	        if(! globus_fifo_empty(&g_restarts))
+		{
+		    store($4, "r+", 0, 0);
+		}
+		else
+		{
+		    store($4, "w", 0, -1);
+		}
+	    }
+#else
 	    if ($2 && $4 != NULL && !restrict_check($4))
 		store($4, "w", 0, -1);
+#endif
 	    if ($4 != NULL)
 		free($4);
 	}
