@@ -1,54 +1,66 @@
 
-/* data structures */
+#ifndef HEADER_SIGNATURE_H
+#define HEADER_SIGNATURE_H
 
-typedef struct
-{
-    ASN1_BIT_STRING *                   signature;
-    X509_ALGOR *                        algorithm;
-} X509_SIGNATURE;
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-/* functions */
+/**
+ * @defgroup signature Signature
+ *
+ * @author Sam Meder
+ * @author Sam Lang
+ * 
+ * The signature set of functions
+ * provides an interface
+ * to a signature used by proxy certificates
+ *
+ * @see Internet Draft Document: draft-ietf-pkix-proxy-01.txt
+ * for further information
+ */
 
-ASN1_METHOD * X509_SIGNATURE_asn1_method();
+#include <openssl/x509.h>
 
-X509_SIGNATURE * X509_SIGNATURE_new();
+ASN1_METHOD * X509_SIG_asn1_meth();
 
-void X509_SIGNATURE_free();
+X509_SIG * X509_SIG_dup(
+    X509_SIG *                          signature);
 
-X509_SIGNATURE * X509_SIGNATURE_dup(
-    X509_SIGNATURE *                    signature);
+int X509_SIG_cmp(
+    const X509_SIG *                    a,
+    const X509_SIG *                    b);
 
-X509_SIGNATURE * X509_SIGNATURE_cmp(
-    const X509_SIGNATURE *              a,
-    const X509_SIGNATURE *              b);
+int X509_SIG_print(
+    X509_SIG *                          signature);
 
-int X509_SIGNATURE_print(
-    X509_SIGNATURE *                    signature);
-
-int X509_SIGNATURE_print_fp(
+int X509_SIG_print_fp(
     FILE *                              fp,
-    X509_SIGNATURE *                    signature);
+    X509_SIG *                          signature);
 
-EVP_MD * X509_SIGNATURE_get_algorithm(
-    X509_SIGNATURE *                    signature);
+EVP_MD * X509_SIG_get_algorithm(
+    X509_SIG *                          signature);
 
-int X509_SIGNATURE_set_signature(
-    X509_SIGNATURE *                    signature,
+int X509_SIG_set_signature(
+    X509_SIG *                          signature,
     X509 *                              cert);
 
-unsigned char * X509_SIGNATURE_get_signature(
-    X509_SIGNATURE *                    signature,
+unsigned char * X509_SIG_get_signature(
+    X509_SIG *                          signature,
     long *                              length);
 
-int i2d_X509_SIGNATURE(
-    X509_SIGNATURE *                    signature,
+int i2d_X509_SIG(
+    X509_SIG *                          signature,
     unsigned char **                    buffer);
 
-X509_SIGNATURE * d2i_X509_SIGNATURE(
-    X509_SIGNATURE **                   signature,
+X509_SIG * d2i_X509_SIG(
+    X509_SIG **                         signature,
     unsigned char **                    buffer,
     long                                length);
 
 
+#ifdef __cplusplus
+}
+#endif
 
-
+#endif // HEADER_SIGNATURE_H
