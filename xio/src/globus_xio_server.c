@@ -1092,14 +1092,14 @@ globus_xio_server_accept(
     xio_op->blocking = GLOBUS_TRUE;
     xio_op->blocked_thread = GlobusXIOThreadSelf();
     
+    res = globus_l_xio_server_register_accept(xio_op, accept_attr);
+    if(res != GLOBUS_SUCCESS)
+    {
+        goto register_error;
+    }
+    
     globus_mutex_lock(&info->mutex);
     {
-        res = globus_l_xio_server_register_accept(xio_op, accept_attr);
-        if(res != GLOBUS_SUCCESS)
-        {
-            goto register_error;
-        }
-
         while(!info->done)
         {
             globus_cond_wait(&info->cond, &info->mutex);
@@ -1120,7 +1120,6 @@ globus_xio_server_accept(
     return GLOBUS_SUCCESS;
 
   register_error:
-    globus_mutex_unlock(&info->mutex);
     globus_i_xio_blocking_destroy(info);
     
   info_alloc_err:

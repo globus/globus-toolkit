@@ -2595,15 +2595,15 @@ globus_xio_open(
             }
         }
     }
+    
+    res = globus_l_xio_register_open(op);
+    if(res != GLOBUS_SUCCESS)
+    {
+        goto register_err;
+    }
 
     globus_mutex_lock(&info->mutex);
     {
-        res = globus_l_xio_register_open(op);
-        if(res != GLOBUS_SUCCESS)
-        {
-            goto register_err;
-        }
-
         while(!info->done)
         {
             globus_cond_wait(&info->cond, &info->mutex);
@@ -2733,14 +2733,14 @@ globus_xio_read(
     
     info->op = op;
     
+    res = globus_l_xio_register_readv(op, ref);
+    if(res != GLOBUS_SUCCESS)
+    {
+        goto register_error;
+    }
+    
     globus_mutex_lock(&info->mutex);
     {
-        res = globus_l_xio_register_readv(op, ref);
-        if(res != GLOBUS_SUCCESS)
-        {
-            goto register_error;
-        }
-
         while(!info->done)
         {
             globus_cond_wait(&info->cond, &info->mutex);
@@ -2764,7 +2764,6 @@ globus_xio_read(
     return GLOBUS_SUCCESS;
 
   register_error:
-    globus_mutex_unlock(&info->mutex);
     globus_i_xio_blocking_destroy(info);
   alloc_error:
     /* desroy op */
@@ -2854,15 +2853,15 @@ globus_xio_readv(
     op->blocked_thread = GlobusXIOThreadSelf();
     
     info->op = op;
-
+    
+    res = globus_l_xio_register_readv(op, ref);
+    if(res != GLOBUS_SUCCESS)
+    {
+        goto register_error;
+    }
+        
     globus_mutex_lock(&info->mutex);
     {
-        res = globus_l_xio_register_readv(op, ref);
-        if(res != GLOBUS_SUCCESS)
-        {
-            goto register_error;
-        }
-
         while(!info->done)
         {
             globus_cond_wait(&info->cond, &info->mutex);
@@ -2886,7 +2885,6 @@ globus_xio_readv(
     return GLOBUS_SUCCESS;
 
   register_error:
-    globus_mutex_unlock(&info->mutex);
     globus_i_xio_blocking_destroy(info);
   alloc_error:
     /* desroy op */
@@ -2982,14 +2980,14 @@ globus_xio_write(
 
     info->op = op;
 
+    res = globus_l_xio_register_writev(op, ref);
+    if(res != GLOBUS_SUCCESS)
+    {
+        goto register_error;
+    }
+    
     globus_mutex_lock(&info->mutex);
     {
-        res = globus_l_xio_register_writev(op, ref);
-        if(res != GLOBUS_SUCCESS)
-        {
-            goto register_error;
-        }
-
         while(!info->done)
         {
             globus_cond_wait(&info->cond, &info->mutex);
@@ -3013,7 +3011,6 @@ globus_xio_write(
     return GLOBUS_SUCCESS;
 
   register_error:
-    globus_mutex_unlock(&info->mutex);
     globus_i_xio_blocking_destroy(info);
   alloc_error:
     /* desroy op */
@@ -3104,14 +3101,14 @@ globus_xio_writev(
 
     info->op = op;
 
+    res = globus_l_xio_register_writev(op, ref);
+    if(res != GLOBUS_SUCCESS)
+    {
+        goto register_error;
+    }
+    
     globus_mutex_lock(&info->mutex);
     {
-        res = globus_l_xio_register_writev(op, ref);
-        if(res != GLOBUS_SUCCESS)
-        {
-            goto register_error;
-        }
-
         while(!info->done)
         {
             globus_cond_wait(&info->cond, &info->mutex);
@@ -3135,7 +3132,6 @@ globus_xio_writev(
     return GLOBUS_SUCCESS;
 
   register_error:
-    globus_mutex_unlock(&info->mutex);
     globus_i_xio_blocking_destroy(info);
   alloc_error:
     /* desroy op */
@@ -3195,16 +3191,17 @@ globus_xio_close(
         goto alloc_error;
     }
     
+    if(pass)
+    {
+        res = globus_l_xio_register_close(handle->close_op);
+        if(res != GLOBUS_SUCCESS)
+        {
+            goto register_error;
+        }
+    }
+    
     globus_mutex_lock(&info->mutex);
     {
-        if(pass)
-        {
-            res = globus_l_xio_register_close(handle->close_op);
-            if(res != GLOBUS_SUCCESS)
-            {
-                goto register_error;
-            }
-        }
         while(!info->done)
         {
             globus_cond_wait(&info->cond, &info->mutex);
@@ -3223,7 +3220,6 @@ globus_xio_close(
     return GLOBUS_SUCCESS;
 
   register_error:
-    globus_mutex_unlock(&info->mutex);
   alloc_error:
     /* desroy op */
 
