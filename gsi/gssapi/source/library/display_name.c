@@ -80,7 +80,7 @@ GSS_CALLCONV gss_display_name
         }
         else
         {
-            output_name->value = (void *) GSS_I_ANON_NAME;
+            output_name->value = (void *) strdup(GSS_I_ANON_NAME);
             output_name->length = strlen(GSS_I_ANON_NAME);
         }
   
