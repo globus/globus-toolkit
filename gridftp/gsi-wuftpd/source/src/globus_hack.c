@@ -1,6 +1,7 @@
 #include "config.h"
 #if defined(USE_GLOBUS_DATA_CODE)
 #include  <globus_common.h>
+#include  <globus_io.h>
 #include "proto.h"
 #include "../support/ftp.h"
 #include <syslog.h>
@@ -48,11 +49,14 @@ static globus_ftp_control_host_port_t           g_perf_address;
 /*
  * for globus internal netlogging
  */
-#define NETLOGGER_ON 1
-#if defined(NETLOGGER_ON)
+#if defined(GLOBUS_BUILD_WITH_NETLOGGER)
+
+#include "NetLogger.h"
+
 static globus_netlogger_handle_t                g_nl_handle;
-static NLhandle   *                             g_globus_nl_handle;
-#endif
+static NLhandle *                               g_globus_nl_handle;
+
+#endif /* NETLOGGER_ON */
 
 /* externally visible */
 char *                                          g_perf_log_file_name = NULL;
@@ -480,9 +484,9 @@ G_ENTER();
     globus_ftp_control_handle_init(&g_data_handle);
 
 #if defined(NETLOGGER_ON)
-    g_globus_nl_handle = NetLoggerOpen(argv[0], NULL, NL_ENV);
+    g_globus_nl_handle = NetLoggerOpen(g_perf_progname, NULL, NL_ENV);
     globus_netlogger_handle_init(
-        &gnl_handle,
+        &g_nl_handle,
         g_globus_nl_handle);
     globus_ftp_control_set_netlogger(
         &g_data_handle,
