@@ -27,9 +27,23 @@ FILELIST_FILE=`pwd`;
 FILELIST_FILE="$FILELIST_FILE/pkgdata/master.filelist"
 AC_SUBST(FILELIST_FILE)
 
-
-
 LAC_COMPILERS
+
+AC_ARG_ENABLE(internal-doc,
+[  --enable-am-depends		Enable automake dependency caching.
+				(Requires gcc, developers only)],
+[
+	if test "X$GCC" = "Xyes"; then
+		AUTOMAKE_OPTS=""
+	else
+		AUTOMAKE_OPTS="no-dependencies"
+	fi
+],
+[
+	AUTOMAKE_OPTS=""
+])
+
+AC_SUBST(AUTOMAKE_OPTS)
 
 LAC_TARGET_ARCH
 
@@ -67,15 +81,6 @@ dnl Automake is using these for executables somehow
 AC_OBJEXT
 AC_EXEEXT
 
-if test "X$GCC" = "Xyes"; then
-	AUTOMAKE_OPTS=""
-else
-	AUTOMAKE_OPTS="no-dependencies"
-fi
-
-AC_SUBST(AUTOMAKE_OPTS)
-
-AM_CONDITIONAL(PACKAGE_NOT_CORE, false)
 
 AC_OUTPUT(Makefile
        	scripts/globus-build-env-$GLOBUS_FLAVOR_NAME.sh:scripts/globus-build-env.sh.in
