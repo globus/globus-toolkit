@@ -15,10 +15,9 @@ globus_source ${libexecdir}/globus-sh-tools.sh
 #        	   a specific job manager. "-t X -t Y" and "-t X Y" are
 #                  equivalent, and will first search X, then Y.
 #
-#    -anonymous (-x)
-#               Use anonymous binding instead of GSSAPI.
-#
 #    -s or -service: narrow search to a particular service name.
+#
+#    -x or -anonymous : Use anonymous binding instead of GSSAPI.
 #
 #    -mdshost    H  : set non-default hostname of MDS server
 #    -mdsport    P  : set non-default port number of MDS server
@@ -80,8 +79,8 @@ Options:
     -help,-usage              Show help
     -version	              Show version
     -debug                    Show extra output
-    -anonymous         (-x)   Use anonymous binding instead of GSSAPI
     -dryrun            (-d)   Don't search: print the MDS search commands
+    -anonymous         (-x)   Use anonymous binding instead of GSSAPI
     -mdshost H         (-h)   Set non-default hostname of MDS server
     -mdsport P         (-p)   Set non-default port number of MDS server
     -mdsbasedn DN      (-b)   Set non-default base DN for MDS searches
@@ -125,6 +124,7 @@ schedulertypes=""
 anonymous_option=""
 execute=eval
 filter="${GLOBUS_SH_SED-sed} -n -e /^Mds-Service-url:/s/^Mds-Service-url://p"
+gram_filter="${GLOBUS_SH_SED-sed} -e s/x-gram:\/\///"
 user="`${GLOBUS_SH_WHOAMI}`"
 cache="${local_tmpdir}/globus-hostname2contacts.${user}.$$"
 
@@ -159,6 +159,9 @@ for arg in "$@"; do
 	    execute=echo
 	    filter=${GLOBUS_SH_CAT-cat}
 	    ;;
+	-x | -anonymous)
+	    anonymous_option="-x"
+	    ;;
 	-h | -mdshost)
 	    extra_options="${extra_options} -mdshost"
 	    parser_state=optionarg
@@ -176,9 +179,6 @@ for arg in "$@"; do
 	    extra_options="${extra_options} -mdstimeout"
 	    parser_state=optionarg
 	    ;;
-        -anonymous | -x)
-            anonymous_option="-x"
-            ;;
 	-t | -type)
 	    if [ ${doservices} = true ]; then
 		globus_args_option_error "${arg}" \
@@ -289,7 +289,7 @@ if [ ${special_search} = true ]; then
 	echo "DEBUG:   search for all schedulers" >&2
     fi
 
-    ${execute} "${mds_search_exec} ${anonymous_option} ${default_arg} ${extra_options} \
+    ${execute} "${mds_search_exec} ${anonymous_option} -nowrap ${default_arg} ${extra_options} \
                \"(${search_string})\" Mds-Service-Gram-schedulertype Mds-Service-url"\
                2> /dev/null > ${cache}
 
@@ -303,7 +303,7 @@ if [ ${special_search} = true ]; then
 	    /^Mds-Service-url/ { contact=$0;} \
 	    /^$/ { if (t) print contact; t=0; } \
 	    END { if (t) print contact; t=0; }' \
-	    ${cache} | ${filter}
+	    ${cache} | ${filter} | ${gram_filter}
 
 	${GLOBUS_SH_AWK-awk} '\
 	    BEGIN {t=0;} \
@@ -311,7 +311,7 @@ if [ ${special_search} = true ]; then
 	    /^Mds-Service-url/ { contact=$0;} \
 	    /^$/ { if (t) print contact; t=0; } \
 	    END { if (t) print contact; t=0; }' \
-	    ${cache} | ${filter}
+	    ${cache} | ${filter} | ${gram_filter}
 
 	${GLOBUS_SH_AWK-awk} '\
 	    BEGIN {t=0;} \
@@ -319,7 +319,7 @@ if [ ${special_search} = true ]; then
 	    /^Mds-Service-url/ { contact=$0;} \
 	    /^$/ { if (t) print contact; t=0; } \
 	    END { if (t) print contact; t=0; }' \
-	    ${cache} | ${filter}
+	    ${cache} | ${filter} | ${gram_filter}
     fi
 
 else
@@ -336,9 +336,9 @@ else
             searchtype="${schedulertype}"
         fi
 
-	${execute} "${mds_search_exec} ${anonymous_option} ${default_arg} ${extra_options} \
+	${execute} "${mds_search_exec} ${anonymous_option} -nowrap ${default_arg} ${extra_options} \
             	\"(${search_string}(${attr}=${searchtype}))\" Mds-Service-url" \
-        2> /dev/null | ${filter}
+        2> /dev/null | ${filter} | ${gram_filter}
     done
 fi
 #
