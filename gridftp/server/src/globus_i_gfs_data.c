@@ -21,9 +21,12 @@ typedef enum
 
 typedef enum
 {
-    GLOBUS_L_GFS_DATA_HANDLE_INUSE = 1,
-    GLOBUS_L_GFS_DATA_HANDLE_VALID,
-    GLOBUS_L_GFS_DATA_HANDLE_INVALID
+    GLOBUS_L_GFS_DATA_HANDLE_VALID = 1,
+    GLOBUS_L_GFS_DATA_HANDLE_INUSE,
+    GLOBUS_L_GFS_DATA_HANDLE_DESTROYED,
+    GLOBUS_L_GFS_DATA_HANDLE_CLOSING,
+    GLOBUS_L_GFS_DATA_HANDLE_CLOSING_AND_DESTROYED,
+    GLOBUS_L_GFS_DATA_HANDLE_CLOSED
 } globus_l_gfs_data_handle_state_t;
 
 typedef struct
@@ -36,6 +39,7 @@ typedef struct
         globus_gridftp_server_read_cb_t  read;
     } callback;
     void *                              user_arg;
+    globus_gfs_finished_info_t *        finished_info;
 } globus_l_gfs_data_bounce_t;
 
 typedef struct
@@ -48,6 +52,7 @@ typedef struct
 
 typedef struct
 {
+    globus_l_gfs_data_session_t *       session_handle;
     struct globus_l_gfs_data_operation_s * op;
     globus_l_gfs_data_handle_state_t    state;
     globus_gfs_data_info_t              info;
@@ -119,6 +124,7 @@ typedef struct
 
 typedef struct
 {
+    globus_result_t                     result;
     globus_gfs_ipc_handle_t             ipc_handle;
     int                                 id;
     globus_l_gfs_data_handle_t *        handle;
@@ -136,6 +142,7 @@ typedef struct
     char *                              contact_string;
     globus_i_gfs_data_callback_t        callback;
     void *                              user_arg;
+    globus_result_t                     result;
 } globus_l_gfs_data_passive_bounce_t;
 
 typedef struct
@@ -609,59 +616,50 @@ globus_l_gfs_data_abort_kickout(
 
 static
 void
-globus_l_gfs_data_abort_fc_cb(
-    void *                              callback_arg,
-    globus_ftp_control_handle_t *       ftp_handle,
-    globus_object_t *                   error)
-{
-    globus_l_gfs_data_operation_t *     op;
-
-    op = (globus_l_gfs_data_operation_t *) callback_arg;
-
-    globus_ftp_control_handle_destroy(&op->data_handle->data_channel);
-    globus_l_gfs_data_abort_kickout(callback_arg);
-}
-    
-static
-void
-globus_l_gfs_data_fc_finished_cb(
-    void *                              callback_arg,
-    globus_ftp_control_handle_t *       ftp_handle,
-    globus_object_t *                   error)
-{
-    globus_l_gfs_data_operation_t *     op;
-
-    op = (globus_l_gfs_data_operation_t *) callback_arg;
-
-    globus_ftp_control_handle_destroy(&op->data_handle->data_channel);
-    globus_l_gfs_data_end_transfer_kickout(callback_arg);
-}
-
-static
-void
 globus_l_gfs_data_destroy_cb(
     void *                              callback_arg,
     globus_ftp_control_handle_t *       ftp_handle,
     globus_object_t *                   error)
 {
+    globus_l_gfs_data_session_t *       session_handle;
     globus_l_gfs_data_handle_t *        data_handle;
     GlobusGFSName(globus_i_gfs_data_handle_destroy);
 
     data_handle = (globus_l_gfs_data_handle_t *) callback_arg;
+    session_handle = data_handle->session_handle;
 
-    globus_ftp_control_handle_destroy(&data_handle->data_channel);
-    globus_free(data_handle);
+    globus_mutex_lock(&session_handle->mutex);
+    {
+        switch(data_handle->state)
+        {
+            /* destroy did come from server-lib so clean it up */
+            case GLOBUS_L_GFS_DATA_HANDLE_CLOSING_AND_DESTROYED:
+                globus_ftp_control_handle_destroy(&data_handle->data_channel);
+                globus_free(data_handle);
+                break;
+
+            /* destroy has not come from server library yet so 
+                just set the state */
+            case GLOBUS_L_GFS_DATA_HANDLE_CLOSING:
+                globus_ftp_control_handle_destroy(&data_handle->data_channel);
+                data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_CLOSED;
+                break;
+
+            /* none of these are possible */
+            case GLOBUS_L_GFS_DATA_HANDLE_CLOSED:
+            case GLOBUS_L_GFS_DATA_HANDLE_DESTROYED:
+            case GLOBUS_L_GFS_DATA_HANDLE_INUSE:
+            case GLOBUS_L_GFS_DATA_HANDLE_VALID:
+            default:
+                globus_assert(0 && "possible memory corruption");
+                break;
+        }
+
+    }
+    globus_mutex_unlock(&session_handle->mutex);
 }
 
 /* 
- *  control side telling data side that it needs to tear down
- *  a data connection.  This is needed because connections maybe 
- *  cached beyond the lifespan of a transfer.
- * 
- *  if it comes in while the handle is INUSE then treat it like an abort,
- *  if it is on an invlaid handle then it is already closed and all
- *  that must be done is free the memory.  If it is valid, then we must
- *  close it
  */
 void
 globus_i_gfs_data_destroy_handle(
@@ -677,20 +675,16 @@ globus_i_gfs_data_destroy_handle(
 
     session_handle = (globus_l_gfs_data_session_t *) session_id;
     data_handle = (globus_l_gfs_data_handle_t *) data_connection_id;
-    
+
     session_handle->data_handle = NULL;
 
     globus_mutex_lock(&session_handle->mutex);
     {
         switch(data_handle->state)
         {
-            case GLOBUS_L_GFS_DATA_HANDLE_INUSE:
-                globus_assert(data_handle->op != NULL);
-                globus_l_gfs_data_start_abort(data_handle->op);
-                break;
-
             case GLOBUS_L_GFS_DATA_HANDLE_VALID:
-                data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_INVALID;
+                data_handle->state = 
+                    GLOBUS_L_GFS_DATA_HANDLE_CLOSING_AND_DESTROYED;
                 if(globus_l_gfs_dsi->data_destroy_func != NULL &&
                     !data_handle->is_mine)
                 {
@@ -698,35 +692,52 @@ globus_i_gfs_data_destroy_handle(
                 }
                 else
                 {
+                    /* set directly to closed to that when callback
+                        returns we clean it up */
                     result = globus_ftp_control_data_force_close(
                         &data_handle->data_channel,
                         globus_l_gfs_data_destroy_cb,
                         data_handle);
                     if(result != GLOBUS_SUCCESS)
                     {
-                        globus_ftp_control_handle_destroy(
-                            &data_handle->data_channel);
-                        globus_free(data_handle);
+                        /* this is strange, there is little we can do here */
                     }
                 }
                 break;
 
-            case GLOBUS_L_GFS_DATA_HANDLE_INVALID:
-                //globus_free(data_handle);
+            case GLOBUS_L_GFS_DATA_HANDLE_INUSE:
+                data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_DESTROYED;
+                globus_assert(data_handle->op != NULL);
+                globus_l_gfs_data_start_abort(data_handle->op);
                 break;
 
+
+            case GLOBUS_L_GFS_DATA_HANDLE_CLOSING:
+                data_handle->state = 
+                    GLOBUS_L_GFS_DATA_HANDLE_CLOSING_AND_DESTROYED;
+                break;
+
+            case GLOBUS_L_GFS_DATA_HANDLE_CLOSED:
+                globus_free(data_handle);
+                break;
+
+            /* we shouldn't get this callback twice */
+            case GLOBUS_L_GFS_DATA_HANDLE_CLOSING_AND_DESTROYED:
+            case GLOBUS_L_GFS_DATA_HANDLE_DESTROYED:
+                globus_assert(0 && "got destroyed callback twice");
+                break;
             default:
                 globus_assert(0 && "likey memory corruption");
+                break;
         }
     }
     globus_mutex_unlock(&session_handle->mutex);
-
     if(pass)
     {
         globus_l_gfs_dsi->data_destroy_func(
             data_connection_id, session_handle->session_arg);
+        globus_free(data_handle);
     }
-    return;    
 }
 
 static
@@ -747,11 +758,23 @@ globus_l_gfs_data_passive_kickout(
  
     reply.type = GLOBUS_GFS_OP_PASSIVE;
     reply.id = bounce_info->id;
-    reply.result = GLOBUS_SUCCESS;
+    reply.result = bounce_info->result;
     reply.info.data.data_handle_id = (int) bounce_info->handle;
     reply.info.data.bi_directional = bounce_info->bi_directional;
     reply.info.data.cs_count = 1;
     reply.info.data.contact_strings[0] = bounce_info->contact_string;
+
+    /* as soon as we finish the data handle can be in play, set its
+        state appropriately.  if not success then we never created a
+        handle */
+    if(bounce_info->result == GLOBUS_SUCCESS)
+    {
+        bounce_info->handle->state = GLOBUS_L_GFS_DATA_HANDLE_VALID;
+    }
+    else
+    {
+        globus_assert(bounce_info->handle == NULL);
+    }
 
     if(bounce_info->callback != NULL)
     {
@@ -765,12 +788,18 @@ globus_l_gfs_data_passive_kickout(
             bounce_info->ipc_handle,
             &reply);
     }
-        
+ 
     globus_free(reply.info.data.contact_strings);
     globus_free(bounce_info->contact_string);
     globus_free(bounce_info);
 }
 
+/*
+ *
+ *  NOTE: if bounce struct can't be allocated we fail. This should be 
+ *        corrected at some point, possibly by preaalocating a bunch in
+ *        in a globus_memory_t.
+ */
 void
 globus_i_gfs_data_request_passive(
     globus_gfs_ipc_handle_t             ipc_handle,
@@ -801,7 +830,7 @@ globus_i_gfs_data_request_passive(
                 "globus_l_gfs_data_operation_init", result);
             goto error_op;
         }
-        
+ 
         op->ipc_handle = ipc_handle;
         op->id = id;
         op->state = GLOBUS_L_GFS_DATA_REQUESTING;
@@ -819,6 +848,7 @@ globus_i_gfs_data_request_passive(
                 "globus_l_gfs_data_handle_init", result);
             goto error_handle;
         }
+        handle->session_handle = session_handle;
         
         address.host[0] = 1; /* prevent address lookup */
         address.port = 0;
@@ -853,9 +883,10 @@ globus_i_gfs_data_request_passive(
         if(!bounce_info)
         {
             result = GlobusGFSErrorMemory("bounce_info");
-            goto error_alloc;
+            globus_panic(NULL, result, "small malloc failure, no recovery");
         }
         
+        bounce_info->result = GLOBUS_SUCCESS;
         bounce_info->ipc_handle = ipc_handle;
         bounce_info->id = id;
         bounce_info->handle = handle;
@@ -867,30 +898,53 @@ globus_i_gfs_data_request_passive(
         session_handle->data_handle = handle;
         
         result = globus_callback_register_oneshot(
-            GLOBUS_NULL,
-            GLOBUS_NULL,
+            NULL,
+            NULL,
             globus_l_gfs_data_passive_kickout,
             bounce_info);
         if(result != GLOBUS_SUCCESS)
         {
             result = GlobusGFSErrorWrapFailed(
                 "globus_callback_register_oneshot", result);
-            goto error_oneshot;
+            globus_panic(NULL, result, "small malloc failure, no recovery");
         }
     }
     return;
 
-error_oneshot:
-    globus_free(bounce_info);
-    
-error_alloc:
-    globus_free(cs);
-    
 error_control:
-    //globus_i_gfs_data_destroy_handle(handle);
-    
+    globus_ftp_control_handle_destroy(&handle->data_channel);
+    globus_free(handle);
+
 error_handle:
 error_op:
+
+    bounce_info = (globus_l_gfs_data_passive_bounce_t *)
+        globus_malloc(sizeof(globus_l_gfs_data_passive_bounce_t));
+    if(!bounce_info)
+    {
+        result = GlobusGFSErrorMemory("bounce_info");
+        globus_panic(NULL, result, "small malloc failure, no recovery");
+    }
+    bounce_info->ipc_handle = ipc_handle;
+    bounce_info->id = id;
+    bounce_info->handle = handle;
+    bounce_info->bi_directional = GLOBUS_TRUE; /* XXX MODE S only */
+    bounce_info->contact_string = cs;
+    bounce_info->callback = cb;
+    bounce_info->user_arg = user_arg;
+    bounce_info->result = result;
+    bounce_info->handle = NULL;
+    result = globus_callback_register_oneshot(
+        NULL,
+        NULL,
+        globus_l_gfs_data_passive_kickout,
+        bounce_info);
+    if(result != GLOBUS_SUCCESS)
+    {
+        result = GlobusGFSErrorWrapFailed(
+            "globus_callback_register_oneshot", result);
+        globus_panic(NULL, result, "small malloc failure, no recovery");
+    }
     return;
 }
 
@@ -913,7 +967,19 @@ globus_l_gfs_data_active_kickout(
     reply.result = GLOBUS_SUCCESS;
     reply.info.data.data_handle_id = (int) bounce_info->handle;
     reply.info.data.bi_directional = bounce_info->bi_directional;
-    
+
+    /* as soon as we finish the data handle can be in play, set its
+        state appropriately.  if not success then we never created a
+        handle */
+    if(bounce_info->result == GLOBUS_SUCCESS)
+    {
+        bounce_info->handle->state = GLOBUS_L_GFS_DATA_HANDLE_VALID;
+    }
+    else
+    {
+        globus_assert(bounce_info->handle == NULL);
+    }
+
     if(bounce_info->callback != NULL)
     {
         bounce_info->callback(
@@ -965,7 +1031,8 @@ globus_i_gfs_data_request_active(
         op->state = GLOBUS_L_GFS_DATA_REQUESTING;
         op->callback = cb;
         op->user_arg = user_arg;
-        globus_l_gfs_dsi->active_func(op, data_info, session_handle->session_arg);
+        globus_l_gfs_dsi->active_func(
+            op, data_info, session_handle->session_arg);
     }
     else
     {
@@ -976,6 +1043,7 @@ globus_i_gfs_data_request_active(
                 "globus_l_gfs_data_handle_init", result);
             goto error_handle;
         }
+        handle->session_handle = session_handle;
         addresses = (globus_ftp_control_host_port_t *)
             globus_malloc(sizeof(globus_ftp_control_host_port_t) * 
                 data_info->cs_count);
@@ -1020,7 +1088,7 @@ globus_i_gfs_data_request_active(
         if(!bounce_info)
         {
             result = GlobusGFSErrorMemory("bounce_info");
-            goto error_alloc;
+            globus_panic(NULL, result, "small malloc failure, no recovery");
         }
         
         bounce_info->ipc_handle = ipc_handle;
@@ -1029,37 +1097,60 @@ globus_i_gfs_data_request_active(
         bounce_info->bi_directional = GLOBUS_TRUE; /* XXX MODE S only */
         bounce_info->callback = cb;
         bounce_info->user_arg = user_arg;
+        bounce_info->result = GLOBUS_SUCCESS;
         
         session_handle->data_handle = handle;
         
         result = globus_callback_register_oneshot(
-            GLOBUS_NULL,
-            GLOBUS_NULL,
+            NULL,
+            NULL,
             globus_l_gfs_data_active_kickout,
             bounce_info);
         if(result != GLOBUS_SUCCESS)
         {
             result = GlobusGFSErrorWrapFailed(
                 "globus_callback_register_oneshot", result);
-            goto error_oneshot;
+            globus_panic(NULL, result, "small malloc failure, no recovery");
         }
         
         globus_free(addresses);
     }
     return;
 
-error_oneshot:
-    globus_free(bounce_info);
-    
-error_alloc:
 error_control:
 error_format:
     globus_free(addresses);
-    
 error_addresses:
-   // globus_i_gfs_data_destroy_handle(handle);
+    globus_ftp_control_handle_destroy(&handle->data_channel);
+    globus_free(handle);
 error_handle:
 error_op:
+    bounce_info = (globus_l_gfs_data_active_bounce_t *)
+        globus_malloc(sizeof(globus_l_gfs_data_active_bounce_t));
+    if(!bounce_info)
+    {
+        result = GlobusGFSErrorMemory("bounce_info");
+        globus_panic(NULL, result, "small malloc failure, no recovery");
+    }
+    bounce_info->ipc_handle = ipc_handle;
+    bounce_info->id = id;
+    bounce_info->handle = handle;
+    bounce_info->bi_directional = GLOBUS_TRUE; /* XXX MODE S only */
+    bounce_info->callback = cb;
+    bounce_info->user_arg = user_arg;
+    bounce_info->result = result;
+    bounce_info->handle = NULL;
+    result = globus_callback_register_oneshot(
+        NULL,
+        NULL,
+        globus_l_gfs_data_active_kickout,
+        bounce_info);
+    if(result != GLOBUS_SUCCESS)
+    {
+        result = GlobusGFSErrorWrapFailed(
+            "globus_callback_register_oneshot", result);
+        globus_panic(NULL, result, "small malloc failure, no recovery");
+    }
     return;
 }
 
@@ -1487,7 +1578,6 @@ globus_l_gfs_data_begin_cb(
         /* destroy the op */
         globus_l_gfs_data_operation_destroy(op);
     }
-
     return;
 
   err:
@@ -1501,6 +1591,23 @@ globus_l_gfs_data_begin_cb(
 
 static
 void
+globus_l_gfs_data_begin_kickout(
+    void *                              callback_arg)
+{
+    globus_l_gfs_data_operation_t *     op;
+
+    op = (globus_l_gfs_data_operation_t *) callback_arg;
+    globus_l_gfs_data_begin_cb(
+        callback_arg,
+        &op->data_handle->data_channel,
+        0,
+        GLOBUS_TRUE,
+        NULL);
+}
+
+
+static
+void
 globus_l_gfs_data_end_transfer_kickout(
     void *                              user_arg)
 {
@@ -1508,16 +1615,47 @@ globus_l_gfs_data_end_transfer_kickout(
     globus_gfs_ipc_event_reply_t        event_reply;
     globus_gfs_ipc_reply_t              reply;
     globus_bool_t                       destroy_op = GLOBUS_FALSE;
+    globus_bool_t                       disconnect = GLOBUS_FALSE;
 
     op = (globus_l_gfs_data_operation_t *) user_arg;
 
     memset(&reply, '\0', sizeof(globus_gfs_ipc_reply_t));
-    if(op->data_handle->info.mode != 'E')
-    {
-        op->data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_INVALID;
-    }
 
-    if(op->data_handle->state == GLOBUS_L_GFS_DATA_HANDLE_INVALID)
+    /* deal with the data handle */
+    globus_mutex_lock(&op->session_handle->mutex);
+    {
+        globus_assert(op->data_handle != NULL);
+        switch(op->data_handle->state)
+        {
+            case GLOBUS_L_GFS_DATA_HANDLE_INUSE:
+                if(op->data_handle->info.mode != 'E')
+                {
+                    op->data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_CLOSED;
+                    disconnect = GLOBUS_TRUE;
+                }
+                else
+                {
+                    op->data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_VALID;
+
+                }
+                break;
+
+            case GLOBUS_L_GFS_DATA_HANDLE_DESTROYED:
+            case GLOBUS_L_GFS_DATA_HANDLE_CLOSING:
+            case GLOBUS_L_GFS_DATA_HANDLE_CLOSING_AND_DESTROYED:
+            case GLOBUS_L_GFS_DATA_HANDLE_CLOSED:
+                disconnect = GLOBUS_TRUE;
+                break;
+
+            case GLOBUS_L_GFS_DATA_HANDLE_VALID:
+            default:
+                globus_assert(0 && "possible memory corruption");
+                break;
+        }
+    }
+    globus_mutex_unlock(&op->session_handle->mutex);
+
+    if(disconnect)
     {
         memset(&event_reply, '\0', sizeof(globus_gfs_ipc_event_reply_t));
         event_reply.id = op->id;
@@ -1638,6 +1776,40 @@ globus_l_gfs_data_end_read_kickout(
 
 static
 void
+globus_l_gfs_data_cb_error(
+    globus_l_gfs_data_handle_t *        data_handle)
+{
+    globus_l_gfs_data_operation_t *     op;
+
+    op = data_handle->op;
+
+    globus_mutex_lock(&op->session_handle->mutex);
+    {
+        switch(data_handle->state)
+        {
+            case GLOBUS_L_GFS_DATA_HANDLE_DESTROYED:
+            case GLOBUS_L_GFS_DATA_HANDLE_INUSE:
+                data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_CLOSED;
+                /* XXX free it here ??? */
+                break;
+
+            case GLOBUS_L_GFS_DATA_HANDLE_CLOSING:
+            case GLOBUS_L_GFS_DATA_HANDLE_CLOSING_AND_DESTROYED:
+            case GLOBUS_L_GFS_DATA_HANDLE_CLOSED:
+                break;
+
+            case GLOBUS_L_GFS_DATA_HANDLE_VALID:
+            default:
+                globus_assert(0 && "possible memory corruption");
+                break;
+        }
+    }
+    globus_mutex_unlock(&op->session_handle->mutex);
+
+}
+
+static
+void
 globus_l_gfs_data_send_eof_cb(
     void *                              callback_arg,
     struct globus_ftp_control_handle_s * handle,
@@ -1649,7 +1821,7 @@ globus_l_gfs_data_send_eof_cb(
     if(error != NULL)
     {
         /* XXX this should be thread safe see not in write_eof cb */
-        op->data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_INVALID;
+        globus_l_gfs_data_cb_error(op->data_handle);
         op->cached_res = globus_error_put(error);
     }
     globus_l_gfs_data_end_transfer_kickout(op);
@@ -1680,7 +1852,7 @@ globus_l_gfs_data_write_eof_cb(
             callback after a finsihed_transfer() from the user.  we 
             could still get events or disconnects, but the abort process
             does not touch the data_handle->state */    
-        op->data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_INVALID;
+        globus_l_gfs_data_cb_error(op->data_handle);
         op->cached_res = globus_error_put(error);
         globus_l_gfs_data_end_transfer_kickout(op);
     }
@@ -1802,6 +1974,7 @@ globus_l_gfs_data_trev_kickout(
             case GLOBUS_L_GFS_DATA_ABORTING:
             case GLOBUS_L_GFS_DATA_ABORT_CLOSING:
                 pass = GLOBUS_TRUE;
+                break;
 
             case GLOBUS_L_GFS_DATA_FINISH:
                 pass = GLOBUS_FALSE;
@@ -1890,14 +2063,62 @@ globus_l_gfs_data_trev_kickout(
     globus_free(event_reply);       
 }
 
+static
+void
+globus_l_gfs_data_force_close(
+    globus_l_gfs_data_operation_t *     op)
+{
+    globus_result_t                     result;
+
+    /* handle the data_handle state machine */
+    if(op->data_handle->is_mine)
+    {
+        switch(op->data_handle->state)
+        {
+            case GLOBUS_L_GFS_DATA_HANDLE_DESTROYED:
+                op->data_handle->state = 
+                    GLOBUS_L_GFS_DATA_HANDLE_CLOSING_AND_DESTROYED;
+                result = globus_ftp_control_data_force_close(
+                    &op->data_handle->data_channel,
+                    globus_l_gfs_data_destroy_cb,
+                    op->data_handle);
+                if(result != GLOBUS_SUCCESS)
+                {
+                }
+                break;
+
+            case GLOBUS_L_GFS_DATA_HANDLE_INUSE:
+                op->data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_CLOSING;
+                result = globus_ftp_control_data_force_close(
+                    &op->data_handle->data_channel,
+                    globus_l_gfs_data_destroy_cb,
+                    op->data_handle);
+                if(result != GLOBUS_SUCCESS)
+                {
+                    op->data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_CLOSED;
+                }
+                break;
+
+            /* already started closing the handle */
+            case GLOBUS_L_GFS_DATA_HANDLE_CLOSING_AND_DESTROYED:
+            case GLOBUS_L_GFS_DATA_HANDLE_CLOSED:
+            case GLOBUS_L_GFS_DATA_HANDLE_CLOSING:
+                break;
+
+            case GLOBUS_L_GFS_DATA_HANDLE_VALID:
+            default:
+                globus_assert(0 && "only should be called when inuse");
+                break;
+        }
+    }
+}
+
 /* must be called locked */
 static
 void
 globus_l_gfs_data_start_abort(
     globus_l_gfs_data_operation_t *     op)
 {
-    globus_result_t                     res;
-
     switch(op->state)
     {
         case GLOBUS_L_GFS_DATA_REQUESTING:
@@ -1906,30 +2127,14 @@ globus_l_gfs_data_start_abort(
 
         case GLOBUS_L_GFS_DATA_CONNECTING:
         case GLOBUS_L_GFS_DATA_CONNECTED:
+            globus_l_gfs_data_force_close(op);
             op->state = GLOBUS_L_GFS_DATA_ABORT_CLOSING;
             op->ref++;
-            if(op->data_handle->is_mine)
-            {
-                res = globus_ftp_control_data_force_close(
-                    &op->data_handle->data_channel,
-                    globus_l_gfs_data_abort_fc_cb, op);
-                if(res != GLOBUS_SUCCESS)
-                {
-                    globus_callback_register_oneshot(
-                        NULL,
-                        NULL,
-                        globus_l_gfs_data_abort_kickout,
-                        op);
-                }
-            }
-            else
-            {
-                globus_callback_register_oneshot(
-                    NULL,
-                    NULL,
-                    globus_l_gfs_data_abort_kickout,
-                    op);
-            }
+            globus_callback_register_oneshot(
+                NULL,
+                NULL,
+                globus_l_gfs_data_abort_kickout,
+                op);
             break;
 
         /* everything post finished can ignore abort, because dsi is already
@@ -1948,6 +2153,7 @@ globus_l_gfs_data_start_abort(
         default:
             break;
     }
+
 }
 
 void
@@ -2185,7 +2391,7 @@ globus_i_gfs_data_session_start(
     {
         result = GlobusGFSErrorWrapFailed(
             "globus_i_gfs_data_session_start", result);
-        goto error_op;
+        globus_assert(0);
     }
     session_handle = (globus_l_gfs_data_session_t *)
         globus_calloc(1, sizeof(globus_l_gfs_data_session_t));
@@ -2194,6 +2400,13 @@ globus_i_gfs_data_session_start(
         /* XXX deal with this */
     }
     globus_mutex_init(&session_handle->mutex, NULL);
+    op->session_handle = session_handle;
+    op->ipc_handle = ipc_handle;
+    op->id = id;
+    op->uid = getuid();
+    op->state = GLOBUS_L_GFS_DATA_REQUESTING;
+    op->callback = cb;
+    op->user_arg = user_arg;
 
     if(del_cred != NULL)
     {    
@@ -2225,15 +2438,6 @@ globus_i_gfs_data_session_start(
         }
         
     }
-    
-    op->session_handle = session_handle;
-    op->ipc_handle = ipc_handle;
-    op->id = id;
-    op->uid = getuid();
-    
-    op->state = GLOBUS_L_GFS_DATA_REQUESTING;
-    op->callback = cb;
-    op->user_arg = user_arg;
     
     if(globus_l_gfs_dsi->init_func != NULL)
     {
@@ -2283,17 +2487,12 @@ globus_i_gfs_data_session_stop(
     session_handle = (globus_l_gfs_data_session_t *) session_id;
     if(session_handle != NULL)
     {
-        if(session_handle->data_handle != NULL)
-        {
-            globus_i_gfs_data_destroy_handle(
-                ipc_handle, session_id, (int) session_handle->data_handle);
-        }    
         if(globus_l_gfs_dsi->destroy_func != NULL)
         {
             globus_l_gfs_dsi->destroy_func(session_handle->session_arg);
         }
-    
-        globus_free(session_handle);
+
+//        globus_free(session_handle);
     }
 }
 
@@ -2481,18 +2680,32 @@ globus_gridftp_server_begin_transfer(
             /* if going according to plan */
             case GLOBUS_L_GFS_DATA_REQUESTING:
                 op->state = GLOBUS_L_GFS_DATA_CONNECTING;
-                if(op->writing)
+                if(op->data_handle->is_mine)
                 {
-                    result = globus_ftp_control_data_connect_write(
-                        &op->data_handle->data_channel,
-                        globus_l_gfs_data_begin_cb,
-                        op);
+                    if(op->writing)
+                    {
+                        result = globus_ftp_control_data_connect_write(
+                            &op->data_handle->data_channel,
+                            globus_l_gfs_data_begin_cb,
+                            op);
+                    }
+                    else
+                    {
+                        result = globus_ftp_control_data_connect_read(
+                            &op->data_handle->data_channel,
+                            globus_l_gfs_data_begin_cb,
+                            op);
+                    }
                 }
                 else
                 {
-                    result = globus_ftp_control_data_connect_read(
-                        &op->data_handle->data_channel,
-                        globus_l_gfs_data_begin_cb,
+                    /* rarre case where we are willing to check return code
+                        from oneshot, however, if it ever fail many many 
+                        other things are likely to break frist */
+                    result = globus_callback_register_oneshot(
+                        NULL,
+                        NULL,
+                        globus_l_gfs_data_begin_kickout,
                         op);
                 }
                 if(result != GLOBUS_SUCCESS)
@@ -2616,7 +2829,6 @@ globus_gridftp_server_finished_transfer(
     {
         /* move the data_handle state to VALID.  at first error if will
             be moved to invalid */
-        op->data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_VALID;
         switch(op->state)
         {
             /* this is the normal case */
@@ -2659,7 +2871,6 @@ globus_gridftp_server_finished_transfer(
                     op->cached_res = result;
                     goto err_lock;
                 }
-                op->data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_INVALID;
                 globus_callback_register_oneshot(
                     NULL,
                     NULL,
@@ -2695,32 +2906,42 @@ globus_gridftp_server_finished_transfer(
     return;
 
 err_lock:
-    op->data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_INVALID;
     op->state = GLOBUS_L_GFS_DATA_FINISH;
     /* do force close */
-    if(op->data_handle->is_mine)
+    globus_l_gfs_data_force_close(op);
+    globus_callback_register_oneshot(
+        NULL,
+        NULL,
+        globus_l_gfs_data_end_transfer_kickout,
+        op);
+    globus_mutex_unlock(&op->session_handle->mutex);
+}
+
+static
+void
+globus_l_gfs_operation_finished_kickout(
+    void *                              user_arg)
+{
+    globus_l_gfs_data_bounce_t *        bounce;
+    globus_l_gfs_data_operation_t *     op;
+
+    bounce = (globus_l_gfs_data_bounce_t *) user_arg;
+    op = bounce->op;
+
+    if(op->callback != NULL)
     {
-        result = globus_ftp_control_data_force_close(
-            &op->data_handle->data_channel,
-            globus_l_gfs_data_fc_finished_cb, op);
-        if(result != GLOBUS_SUCCESS)
-        {
-            globus_callback_register_oneshot(
-                NULL,
-                NULL,
-                globus_l_gfs_data_end_transfer_kickout,
-                op);
-        }
+        op->callback(
+            bounce->finished_info,
+            op->user_arg);        
     }
     else
     {
-        globus_callback_register_oneshot(
-            NULL,
-            NULL,
-            globus_l_gfs_data_end_transfer_kickout,
-            op);
+        globus_gfs_ipc_reply_finished(
+            op->ipc_handle,
+            bounce->finished_info);
     }
-    globus_mutex_unlock(&op->session_handle->mutex);
+    globus_l_gfs_data_operation_destroy(op);
+    globus_free(bounce);
 }
 
 void
@@ -2729,10 +2950,22 @@ globus_gridftp_server_operation_finished(
     globus_result_t                     result,
     globus_gfs_finished_info_t *        finished_info)
 {
+    globus_l_gfs_data_bounce_t *        bounce;
+    globus_l_gfs_data_handle_t *        data_handle;
+    GlobusGFSName(globus_gridftp_server_operation_finished);
+
+    bounce = (globus_l_gfs_data_bounce_t *)
+        globus_malloc(sizeof(globus_l_gfs_data_bounce_t));
+    if(bounce == NULL)
+    {
+        globus_panic(NULL, result, "small malloc failure, no recovery");
+    }
+    bounce->op = op;
+    bounce->finished_info = finished_info;
+
     finished_info->id = op->id;
     finished_info->result = result;
 
-    /* XXX gotta do a onesot here */
     switch(finished_info->type)
     {
         case GLOBUS_GFS_OP_SESSION_START:
@@ -2743,36 +2976,41 @@ globus_gridftp_server_operation_finished(
             }
             finished_info->session_id = (int) op->session_handle;
             break;
+
         case GLOBUS_GFS_OP_PASSIVE:
         case GLOBUS_GFS_OP_ACTIVE:
+            data_handle = (globus_l_gfs_data_handle_t *) 
+                globus_calloc(1, sizeof(globus_l_gfs_data_handle_t));
+            if(data_handle == NULL)
             {
-                globus_l_gfs_data_handle_t * data_handle;
-                data_handle = (globus_l_gfs_data_handle_t *) 
-                    globus_calloc(1, sizeof(globus_l_gfs_data_handle_t));
-                data_handle->remote_handle_id = 
-                    (int) finished_info->info.data.data_handle_id;
-                data_handle->is_mine = GLOBUS_FALSE;
-                finished_info->info.data.data_handle_id = (int) data_handle;
+                globus_panic(NULL, result, "small malloc failure, no recovery");
             }
+            data_handle->session_handle = op->session_handle;
+            data_handle->remote_handle_id = 
+                (int) finished_info->info.data.data_handle_id;
+            data_handle->is_mine = GLOBUS_FALSE;
+            data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_VALID;
+            finished_info->info.data.data_handle_id = (int) data_handle;
             break;
+
         default:
             break;
     }
 
-    if(op->callback != NULL)
+    globus_l_gfs_operation_finished_kickout(bounce);
+/*
+    result = globus_callback_register_oneshot(
+        NULL,
+        NULL,
+        globus_l_gfs_operation_finished_kickout,
+        bounce);
+    if(result != GLOBUS_SUCCESS)
     {
-        op->callback(
-            finished_info,
-            op->user_arg);        
+        result = GlobusGFSErrorWrapFailed(
+            "globus_callback_register_oneshot", result);
+        globus_panic(NULL, result, "small malloc failure, no recovery");
     }
-    else
-    {
-        globus_gfs_ipc_reply_finished(
-            op->ipc_handle,
-            finished_info);
-    }
-    globus_l_gfs_data_operation_destroy(op);
-    
+*/
     return;  
 }
     
