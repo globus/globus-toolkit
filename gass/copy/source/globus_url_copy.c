@@ -168,8 +168,8 @@ test_integer( char *   value,
     return res;
 }
 
-enum { arg_a = 1, arg_b, arg_s, arg_p, arg_vb, arg_ss, arg_ds, arg_tcp_bs, arg_bs,
-       arg_num = arg_bs };
+enum { arg_a = 1, arg_b, arg_s, arg_p, arg_vb, arg_ss, arg_ds, arg_tcp_bs, 
+       arg_bs, arg_num = arg_bs };
 
 #define listname(x) x##_aliases
 #define namedef(id,alias1,alias2) \
@@ -195,10 +195,11 @@ flagdef(arg_vb, "-vb", "-verbose");
 
 oneargdef(arg_bs, "-bs", "-block-size", test_integer, GLOBUS_NULL);
 oneargdef(arg_tcp_bs, "-tcp-bs", "-tcp-buffer-size", test_integer, GLOBUS_NULL);
+oneargdef(arg_p, "-p", "-parallel", test_integer, GLOBUS_NULL);
 oneargdef(arg_s, "-s", "-subject", GLOBUS_NULL, GLOBUS_NULL);
 oneargdef(arg_ss, "-ss", "-source-subject", GLOBUS_NULL, GLOBUS_NULL);
 oneargdef(arg_ds, "-ds", "-dest-subject", GLOBUS_NULL, GLOBUS_NULL);
-oneargdef(arg_p, "-p", "-parallel",test_integer,GLOBUS_NULL);
+
 
 static globus_args_option_descriptor_t args_options[arg_num];
 
@@ -206,7 +207,8 @@ static globus_args_option_descriptor_t args_options[arg_num];
 
 #define globus_url_copy_i_args_init() \
     setupopt(arg_a); setupopt(arg_b); setupopt(arg_s); setupopt(arg_vb); \
-    setupopt(arg_ss); setupopt(arg_ds); setupopt(arg_tcp_bs); setupopt(arg_bs);
+    setupopt(arg_ss); setupopt(arg_ds); setupopt(arg_tcp_bs); \
+    setupopt(arg_bs); setupopt(arg_p);
 
 static globus_bool_t globus_l_globus_url_copy_ctrlc = GLOBUS_FALSE;
 static globus_bool_t globus_l_globus_url_copy_ctrlc_handled = GLOBUS_FALSE;
