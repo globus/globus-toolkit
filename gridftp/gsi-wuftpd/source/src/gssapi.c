@@ -515,7 +515,7 @@ gssapi_wrap_message(char *message,
     
 
     in_buf.value = message;
-    in_buf.length = strlen(message) + 1;
+    in_buf.length = strlen(message);
 
     if (debug) {
 	syslog(LOG_DEBUG, "Calling gss_wrap() with %d byte message",
