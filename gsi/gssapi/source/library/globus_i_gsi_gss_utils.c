@@ -372,20 +372,10 @@ globus_i_gsi_gss_create_and_fill_context(
         goto free_cert_dir;
     }
 
-    if (cred_usage == GSS_C_ACCEPT)
-    {
-        SSL_set_ssl_method(context->gss_ssl, SSLv23_method());
-        SSL_set_options(context->gss_ssl, 
-                        SSL_OP_NO_SSLv2 |
-                        SSL_OP_NO_TLSv1 |
-                        SSL_OP_DONT_INSERT_EMPTY_FRAGMENTS);
-    }
-    else
-    {
-        SSL_set_ssl_method(context->gss_ssl, SSLv3_method());
-        SSL_set_options(context->gss_ssl,
-                        SSL_OP_DONT_INSERT_EMPTY_FRAGMENTS);
-    }
+    SSL_set_ssl_method(context->gss_ssl, SSLv23_method());
+    SSL_set_options(context->gss_ssl, 
+                    SSL_OP_NO_SSLv2 |
+                    SSL_OP_DONT_INSERT_EMPTY_FRAGMENTS);
 
     local_result = globus_gsi_callback_get_SSL_callback_data_index(&cb_index);
     if(local_result != GLOBUS_SUCCESS)

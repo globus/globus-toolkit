@@ -64,6 +64,7 @@ GSS_CALLCONV gss_export_sec_context(
     OM_uint32                           cred_usage;
     int                                 index;
     int                                 length;
+    int                                 rc;
     unsigned char *                     context_serialized;
     static char *                       _function_name_ =
         "gss_export_sec_context";
@@ -219,7 +220,9 @@ GSS_CALLCONV gss_export_sec_context(
         goto unlock_mutex;
     }
     
-    BIO_read(bp, (char *)context_serialized, length);
+    rc = BIO_read(bp, (char *)context_serialized, length);
+
+    globus_assert(rc == length);
     
     interprocess_token->length = length;
     interprocess_token->value = context_serialized;

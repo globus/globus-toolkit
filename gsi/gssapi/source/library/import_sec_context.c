@@ -200,7 +200,6 @@ GSS_CALLCONV gss_import_sec_context(
         goto exit; 
     } 
 
-    session = SSL_SESSION_new();
     session = d2i_SSL_SESSION_bio(bp, NULL);
 
     if (!session)
