@@ -477,22 +477,39 @@ error_exit:
     globus_libc_free(out_cache_name);
     globus_libc_free(err_cache_name);
 
-    GlobusTimeReltimeSet(delay,
-	                 GLOBUS_GRAM_JOB_MANAGER_OUTPUT_POLL_PERIOD,
-			 0);
-    GlobusTimeReltimeSet(period,
-	                 GLOBUS_GRAM_JOB_MANAGER_OUTPUT_POLL_PERIOD,
-			 0);
+    if(request->output->stderr_fd != -1 ||
+       request->output->stdout_fd != -1)
+    {
+	globus_gram_job_manager_request_log(
+		request,
+		"stdout or stderr is being used, starting to poll\n");
+	
+	GlobusTimeReltimeSet(delay,
+			     GLOBUS_GRAM_JOB_MANAGER_OUTPUT_POLL_PERIOD,
+			     0);
+	GlobusTimeReltimeSet(period,
+			     GLOBUS_GRAM_JOB_MANAGER_OUTPUT_POLL_PERIOD,
+			     0);
 
-    globus_callback_register_periodic(
-	    &request->output->callback_handle,
-	    &delay,
-	    &period,
-	    globus_l_gram_job_manager_output_poll,
-	    request);
+	globus_callback_register_periodic(
+		&request->output->callback_handle,
+		&delay,
+		&period,
+		globus_l_gram_job_manager_output_poll,
+		request);
+    }
 
+    else
+    {
+	globus_gram_job_manager_request_log(
+		request,
+		"ignoring stdout and stderr\n");
+    }
     if(request->output->pending_opens == 0)
     {
+	globus_gram_job_manager_request_log(
+		request,
+		"no opens in progress, registering state machine callback\n");
 	GlobusTimeReltimeSet(delay, 0, 0);
 
 	globus_callback_register_oneshot(

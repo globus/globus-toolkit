@@ -409,6 +409,7 @@ main(
     {
 	remove(globus_libc_getenv("X509_USER_PROXY"));
     }
+    globus_mutex_unlock(&request->mutex);
     rc = globus_module_deactivate_all();
     if (rc != GLOBUS_SUCCESS)
     {
