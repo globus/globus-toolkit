@@ -81,8 +81,10 @@ The fork starter understands the following attributes:
     arguments       Set of subfields containing the executable's arguments
                     (argv[1]...argv[n]).
     stdin           Path string to the standard input file.
-    stdout          Path string to the standard output file.
-    stderr          Path string to the standard error file.
+    stdout          Set of path strings to the standard output files for each
+                    process.
+    stderr          Set of path strings to the standard error files for each
+                    process.
 
 RSL attributes such as jobtype or library_path must be handled by the code
 which invokes the fork starter (by updating the related job attributes---
