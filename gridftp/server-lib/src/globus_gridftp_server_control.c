@@ -1997,16 +1997,22 @@ globus_gridftp_server_control_start(
         globus_xio_stack_destroy(xio_stack);
         server_handle->ref = 1;
 
-        server_handle->funcs.send_cb_table = i_attr->funcs.send_cb_table;
-        server_handle->funcs.recv_cb_table = i_attr->funcs.recv_cb_table;
         server_handle->funcs.default_send_cb = i_attr->funcs.default_send_cb;
+        server_handle->funcs.default_send_cb = i_attr->funcs.default_send_arg;
         server_handle->funcs.default_recv_cb = i_attr->funcs.default_recv_cb;
+        server_handle->funcs.default_recv_cb = i_attr->funcs.default_recv_arg;
         server_handle->funcs.auth_cb = i_attr->funcs.auth_cb;
+        server_handle->funcs.auth_cb = i_attr->funcs.auth_arg;
         server_handle->funcs.passive_cb = i_attr->funcs.passive_cb;
+        server_handle->funcs.passive_cb = i_attr->funcs.passive_arg;
         server_handle->funcs.active_cb = i_attr->funcs.active_cb;
+        server_handle->funcs.active_cb = i_attr->funcs.active_arg;
         server_handle->funcs.data_destroy_cb = i_attr->funcs.data_destroy_cb;
+        server_handle->funcs.data_destroy_cb = i_attr->funcs.data_destroy_arg;
         server_handle->funcs.list_cb = i_attr->funcs.list_cb;
+        server_handle->funcs.list_cb = i_attr->funcs.list_arg;
         server_handle->funcs.resource_cb = i_attr->funcs.resource_cb;
+        server_handle->funcs.resource_cb = i_attr->funcs.resource_arg;
         server_handle->funcs.log_func = i_attr->funcs.log_func;
         server_handle->funcs.log_arg = i_attr->funcs.log_arg;
         server_handle->funcs.log_mask = i_attr->funcs.log_mask;
