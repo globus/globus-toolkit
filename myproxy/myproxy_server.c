@@ -109,7 +109,7 @@ static int get_client_authdata(myproxy_socket_attrs_t *attrs,
 
 #if defined(HAVE_LIBSASL2)
 static int auth_sasl_negotiate_server(myproxy_socket_attrs_t *attrs,
-                      char *client_name);
+				      myproxy_request_t *client_request);
 #endif
 
 static int debug = 0;
@@ -1286,10 +1286,10 @@ get_client_authdata(myproxy_socket_attrs_t *attrs,
 
 #if defined(HAVE_LIBSASL2)
    if (auth_data->method == AUTHORIZETYPE_SASL) {
-	if (auth_sasl_negotiate_server(attrs, client_name) != SASL_OK)
-		/* it fills the client_name with Kerberos principal name */
-		goto end;
-
+       if (auth_sasl_negotiate_server(attrs, client_request) < 0) {
+	   verror_put_string("SASL negotiation failed");
+	   goto end;
+       }
    }
 #endif
    
@@ -1304,17 +1304,9 @@ end:
 
 
 #if defined(HAVE_LIBSASL2)
-char *mech = NULL, /* can force mechanism here if needed */
-  *iplocal = NULL,
-  *ipremote = NULL,
-  *service = "myproxy",
-  *localdomain = NULL,
-  *userdomain = NULL;
 sasl_conn_t *conn = NULL;
-
-
 static void
-free_conn(void)
+sasl_free_conn(void)
 {
   if (conn)
     sasl_dispose(&conn);
@@ -1440,7 +1432,7 @@ int recv_response_sasl_data(myproxy_socket_attrs_t *attrs, char *data)
 
 static int
 auth_sasl_negotiate_server(myproxy_socket_attrs_t *attrs,
-                      char *client_name)
+			   myproxy_request_t *client_request)
 {
    char  client_buffer[SASL_BUFFER_SIZE];
    int   client_data_len = 0;
@@ -1450,20 +1442,16 @@ auth_sasl_negotiate_server(myproxy_socket_attrs_t *attrs,
    sasl_security_properties_t secprops;
    int result;
 
-   /* init client_name */
-   sprintf(client_name, "/KRB=");
-
-   /* Init defaults... */
-   memset(&secprops, 0L, sizeof(secprops));
-   secprops.maxbufsize = SASL_BUFFER_SIZE;
-   secprops.max_ssf = UINT_MAX;
+   char *mech = NULL, /* can force mechanism here if needed */
+       *iplocal = NULL, *ipremote = NULL, *service = "myproxy",
+       *localdomain = NULL, *userdomain = NULL;
 
    myproxy_debug("Server: begin SASL negotiation...");
 
    result = sasl_server_init(callbacks, "myproxy");
    if (result != SASL_OK) {
        myproxy_log("Initializing libsasl failed.");
-       return SASL_FAIL;
+       return -1;
    }
 
    atexit(&sasl_done);
@@ -1478,58 +1466,55 @@ auth_sasl_negotiate_server(myproxy_socket_attrs_t *attrs,
                            &conn);
    if (result != SASL_OK) {
        myproxy_log("Allocating sasl connection state failed.");
-       return SASL_FAIL;
+       return -1;
    }
 
-   atexit(&free_conn);
+   atexit(&sasl_free_conn);
 
-   result = sasl_setprop(conn,
-                        SASL_SEC_PROPS,
-                        &secprops);
-
+    /* don't need integrity or privacy, since we're over SSL already.
+       in fact, let's disable them to avoid the overhead. */
+   memset(&secprops, 0L, sizeof(secprops));
+   result = sasl_setprop(conn, SASL_SEC_PROPS, &secprops);
    if (result != SASL_OK) {
        myproxy_log("Setting security properties failed.");
-       return SASL_FAIL;
+       return -1;
    }
 
    if (mech) {
        myproxy_debug("Forcing use of SASL mechanism %s", mech);
-       data = strdup(mech);
+       data = mech;
        if (! data) {
            myproxy_log("Duplicate string for SASL negotiation failed");
-           return SASL_FAIL;
+           return -1;
        }
        len = strlen(data);
        count = 1;
    } else {
        myproxy_debug("Generating SASL mechanism list...");
        result = sasl_listmech(conn,
-                           NULL,
-                           NULL,
-                           " ",
-                           NULL,
-                           &data,
-                           &len,
-                           &count);
+			      NULL,
+			      NULL,
+			      " ",
+			      NULL,
+			      &data,
+			      &len,
+			      &count);
        if (result != SASL_OK) {
            myproxy_log("Generating SASL mechanism list failed.");
-           return SASL_FAIL;
+           return -1;
        }
    }
 
    myproxy_debug("Sending list of %d mechanism(s): %s\n", count, data);
    send_response_sasl_data(attrs, data, len);
    
-   if(mech) {
-      free((void *)data);
-   }
-   
    myproxy_debug("Waiting for client mechanism...");
    len = recv_response_sasl_data(attrs, client_buffer);
 
    if (mech && strcasecmp(mech, client_buffer)) {
-       myproxy_log("Client chose something other than the mandatory mechanism");
-       return SASL_FAIL;
+       myproxy_log(
+		 "Client chose something other than the mandatory mechanism.");
+       return -1;
    }
    if (strlen(client_buffer) < len) {
         data = client_buffer + strlen(client_buffer) + 1;
@@ -1546,8 +1531,9 @@ auth_sasl_negotiate_server(myproxy_socket_attrs_t *attrs,
                               &data,
                               &len);
    if (result != SASL_OK && result != SASL_CONTINUE) {
-      myproxy_log("Starting SASL negotiation failed");
-      return SASL_FAIL;
+       myproxy_log("Starting SASL negotiation failed.");
+       verror_put_string(sasl_errdetail(conn));
+       return -1;
    }
 
    while (result == SASL_CONTINUE) {
@@ -1565,41 +1551,35 @@ auth_sasl_negotiate_server(myproxy_socket_attrs_t *attrs,
                                &data, &len);
 
       if (result != SASL_OK && result != SASL_CONTINUE) {
-         myproxy_log("Performing SASL negotiation failed.");
-         return SASL_FAIL;
+	  verror_put_string(sasl_errdetail(conn));
+	  myproxy_log("Performing SASL negotiation failed.");
+	  return -1;
       }
    }
    myproxy_debug("SASL negotiation complete.");
 
-   if (result == SASL_OK) {
-
-      if ( sasl_getprop(conn, SASL_USERNAME, (const void **)&data) != SASL_OK) {
-         myproxy_log("Error: Kerberos username is NULL.");
-         return SASL_FAIL;
-      }
-
-      sprintf(client_name, "/KRB=%s@", data);
-      
-      if ( sasl_getprop(conn, SASL_DEFUSERREALM, (const void **)&data) != SASL_OK) {
-         myproxy_log("Error: Kerberos realm is NULL.");
-         return SASL_FAIL;
-      }
-      
-      if (data == NULL) {
-      		krb5_context context;
-    		if (krb5_init_context(&context)) {
-          		myproxy_log("Error: init krb5_context\n");
-    		}
-		krb5_get_default_realm(context, &data);
-         	myproxy_debug("default realm: %s", data);
-		krb5_free_context(context);
-      } 
-
-      strcat(client_name, data);
-
-      myproxy_debug("Kerberos client principal: %s", client_name);
+   if (sasl_getprop(conn, SASL_USERNAME, (const void **)&data) != SASL_OK) {
+       myproxy_log("Error: SASL username is NULL.");
+       return -1;
    }
 
-   return result;
+   if (strcmp((char *)data, client_request->username) != 0) {
+       myproxy_log("Authentication failure: SASL username (%s) and "
+		   "request username (%s) differ.\n", (char *)data,
+		   client_request->username);
+   }
+
+   if (sasl_getprop(conn, SASL_AUTHUSER, (const void **)&data) != SASL_OK) {
+       myproxy_log("Error: SASL username is NULL.");
+       return -1;
+   }
+
+   if (strcmp((char *)data, client_request->username) != 0) {
+       myproxy_log("Authentication failure: SASL authuser (%s) and "
+		   "request username (%s) differ.\n", (char *)data,
+		   client_request->username);
+   }
+
+   return 0;
 }
 #endif /* defined(HAVE_LIBSASL2) */
