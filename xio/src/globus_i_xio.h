@@ -96,9 +96,16 @@ struct globus_l_xio_attr_s
 
 struct globus_i_xio_stack_s
 {
+    int                                         size;
     globus_list_t *                             driver_stack;
+    globus_xio_driver_t                         transport_driver;
 } globus_i_xio_stack_t;
 
+
+typedef struct globus_i_xio_server_entry_s
+{
+    globus_xio_driver_t                         driver;
+} globus_i_xio_server_entry_t;
 /* 
  *  
  */
@@ -166,7 +173,7 @@ typedef struct globus_i_xio_context_s
     globus_mutex_t                              mutex;
     int                                         ref;
     int                                         size;
-    globus_i_xio_context_entry_t                entry_array[1];
+    globus_i_xio_context_entry_t                entry[1];
 } globus_i_xio_context_t;
 
 /* MACROS for accessing the op_entry structure unin elements */
@@ -340,12 +347,10 @@ typedef enum globus_i_xio_op_type_e
 
 typedef enum globus_i_xio_op_state_e
 {
-    GLOBUS_XIO_TARGET_OP_ACCEPTING,
-    GLOBUS_XIO_TARGET_OP_SERVER,
-    GLOBUS_XIO_TARGET_OP_CLIENT,
-    GLOBUS_XIO_TARGET_OP_TIMEOUT_PENDING,
-    GLOBUS_XIO_TARGET_OP_ACCEPT_WAITING,
-    GLOBUS_XIO_TARGET_OP_CLOSED,
+    GLOBUS_XIO_OP_STATE_OPERATING,
+    GLOBUS_XIO_OP_STATE_TIMEOUT_PENDING,
+    GLOBUS_XIO_OP_STATE_FINISH_WAITING,
+    GLOBUS_XIO_OP_STATE_FINISHED,
 } globus_i_xio_op_state_t;
 
 typedef enum globus_xio_server_state_e
