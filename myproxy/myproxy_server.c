@@ -1456,7 +1456,7 @@ auth_sasl_negotiate_server(myproxy_socket_attrs_t *attrs,
    int result;
 
    /* init client_name */
-   sprintf(client_name, "/CN=anonymous");
+   sprintf(client_name, "/KRB=");
 
    /* Init defaults... */
    memset(&secprops, 0L, sizeof(secprops));
@@ -1583,7 +1583,7 @@ auth_sasl_negotiate_server(myproxy_socket_attrs_t *attrs,
          return SASL_FAIL;
       }
 
-      sprintf(client_name, "/CN=%s@", data);
+      sprintf(client_name, "/KRB=%s@", data);
       
       if ( sasl_getprop(conn, SASL_DEFUSERREALM, (const void **)&data) != SASL_OK) {
          myproxy_log("Error: Kerberos realm is NULL.");
