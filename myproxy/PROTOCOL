@@ -129,7 +129,7 @@ Section B
 
     RETRIEVER=<retriever_dn>
     RENEWER=<renewer_dn>
- 
+
     The intent of the VERSION string is to allow the server to know
     if it is dealing with an outdated or newer client.
  
@@ -138,7 +138,15 @@ Section B
     ASCII representation of the lifetime of the proxy to be delegated
     to the portal, in seconds. <retriever_dn> and <renewer_dn> are strings 
     specifying the retriever DN and renewer DN respectively.
- 
+
+    If multiple credentials support is enabled, the following lines will be present :
+    CRED_NAME=<credential name>
+    CRED_DESC=<credential description>
+    FORCE_CREDENTIAL_OVERWRITE=<0/1>
+
+    Credential name is a required argument while credential description is optional. 
+    Depending on whether or not the '-f' switch is specified FORCE_CREDENTIAL_OVERWRITE is 0 or 1.
+
  4) MyProxyServer will then respond with either a OK or an ERROR message.
     See Section A.6 for details.
 
@@ -185,7 +193,10 @@ Section C
     COMMAND=0
     USERNAME=<username>
     PASSPHRASE=<pass phrase>
- 
+
+    The message can also contain an optional string :
+    CRED_NAME=<credential name>
+
     The intent of the VERSION string is to allow the server to know
     if it is dealing with an outdated or newer client.
  
@@ -235,6 +246,9 @@ Section D
     USERNAME=<username>
     PASSPHRASE=<pass phrase>
  
+    The message can also contain an optional string :
+    CRED_NAME=<credential name>
+
     The intent of the VERSION string is to allow the server to know
     if it is dealing with an outdated or newer client.
  
@@ -279,9 +293,21 @@ Section E
     See section A.6 for details. If the response is OK it will also contain 
     the following strings:
     
+    CRED_DESC=<credential description>    // These provide info about default credential 
     CRED_START_TIME=<start_time>
     CRED_END_TIME=<end_time>
     CRED_OWNER=<subject_name>
+    CRED_RETRIEVER=<retriever regex>
+    CRED_RENEWER=<renewer regex>
+    
+    ADDL_CREDS=cred1,cred2,....,credn    	// These provide info about additional 
+    CRED_cred1_DESC=<credential description>    // credentials (if any)
+    CRED_cred1_START_TIME=<start_time>   
+    CRED_cred1_END_TIME=<end time>
+    CRED_cred1_OWNER=<subject name>
+    CRED_cred1_RETRIEVER=<retriever regex>
+    CRED_cred1_RENEWER=<renewer regex>
+    ....
 
     The time strings carry information on lifetime of the proxy in a
     repository. Both the times are in unix format, i.e. number seconds since
