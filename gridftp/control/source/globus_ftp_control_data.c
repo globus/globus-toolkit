@@ -7,7 +7,9 @@
 #include "globus_ftp_control.h"
 #include "globus_i_ftp_control.h"
 #include <string.h>
+#ifndef TARGET_ARCH_WIN32
 #include <sys/uio.h>
+#endif
 
 /*
  *  logging messages
