@@ -11,7 +11,6 @@ dnl LAC_ASM_ARGS()
 
 AC_DEFUN(LAC_ASM_ARGS,
 [
-
     AC_ARG_ENABLE(asm,
         [  --disable-asm                disable use of handcoded assembler],
 	    [lac_asm="$enableval"],
@@ -25,6 +24,13 @@ AC_DEFUN(LAC_ASM,
     AC_REQUIRE([AC_CANONICAL_HOST])
     AC_REQUIRE([LAC_CPU])
     LAC_ASM_ARGS
+
+    # disable asm if debug is turned on
+
+    if test "$GLOBUS_DEBUG" = "yes"; then
+        lac_asm="no"
+    fi
+
     LAC_ASM_SET
 
     LAC_SUBSTITUTE_VAR(BN_OBJ)
