@@ -688,8 +688,24 @@ globus_result_t
 globus_xio_driver_finished_close(
     globus_xio_operation_t                      op);
 
+/**
+ *  @ingroup driver_api_grp
+ *
+ *  Close a context.
+ *
+ *  Once a driver has finished using a context it should close it 
+ *  to return the resources it is using to globus_xio.  In typical
+ *  cases this function will be caled imediuately after calling 
+ *  globus_xio_driver_finished_close().  However the driver is free
+ *  tocache the context for use with handles that the user may possibily 
+ *  open in the future.
+ *
+ *  @param context
+ *         The context atd that the driver is finished using and wishes 
+ *         to close.
+ */
 globus_result_t
-globus_xio_driver_context_destroy(
+globus_xio_driver_context_close(
     globus_xio_driver_context_t                 context);
 
 /*******************************************************************

@@ -13,7 +13,6 @@ enum
     GLOBUS_XIO_FILE_GET_MODE,
     GLOBUS_XIO_FILE_SET_FLAGS,
     GLOBUS_XIO_FILE_GET_FALGS,
-    GLOBUS_XIO_FILE_GET_EOF,
     GLOBUS_XIO_FILE_MAX_CMD = GLOBUS_XIO_FILE_GET_EOF,
 }
 
@@ -183,32 +182,6 @@ globus_xio_driver_file_target_destroy(
 }
 
 /*
- *  request info from the handle
- */
-globus_result_t
-globus_xio_driver_file_handle_cntl(
-    void *                                      driver_handle,
-    int                                         cmd,
-    va_list                                     ap)
-{
-    int *                                       out_i;
-
-    switch(cmd)
-    {
-        case GLOBUS_XIO_FILE_GET_EOF:
-            out_i = va_arg(ap, int *);
-            *out_i = file_handle->eof;
-            break;
-
-        default:
-            return FILE_DRIVER_ERROR_COMMAND_NOT_FOUND;
-            break;
-    }
-
-    return GLOBUS_SUCCESS;
-}
-
-/*
  *  open a file
  */
 globus_result_t
@@ -283,6 +256,7 @@ globus_xio_driver_file_read(
     globus_xio_driver_operation_t               op)
 {
     struct globus_l_xio_file_handle_s *         file_handle;
+    ssize_t                                     total_nbytes = 0;
     ssize_t                                     nbytes;
     int                                         ctr;
 
@@ -308,7 +282,7 @@ globus_xio_driver_file_read(
         else if(nbytes == 0)
         {
             /* set nbytes in iovec to be EOF (represented by -1) */
-            iovec[ctr].nbytes = -1;
+            rovec[ctr].nbytes = -1;
             return GLOBUS_SUCCESS;
         }
         else
@@ -379,7 +353,7 @@ static globus_xio_driver_t globus_xio_driver_file_info =
     globus_xio_driver_file_close,
     globus_xio_driver_file_read,
     globus_xio_driver_file_write,     
-    globus_xio_driver_file_handle_cntl,
+    NULL,
     1,
 
     globus_xio_driver_file_target_init,
