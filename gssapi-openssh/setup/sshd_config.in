@@ -93,4 +93,4 @@ X11Forwarding yes
 Subsystem	sftp	/usr/libexec/sftp-server
 
 # where to store the pid of sshd process
-PidFile		/var/run/sshd.pid
+#PidFile		/var/run/sshd.pid
