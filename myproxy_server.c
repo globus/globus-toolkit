@@ -9,6 +9,7 @@
 #include "myproxy_creds.h"
 #include "gnu_getopt.h"
 #include "version.h"
+#include "verror.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -89,6 +90,13 @@ main(int argc, char *argv[])
         exit(1);
     }
 
+    /* Read my configuration */
+    if (myproxy_server_config_read(server_context) == -1)
+    {
+	fprintf(stderr, "%s\n", verror_get_string());
+	exit(1);
+    }
+    
     /* Set up server socket attributes */
     listenfd = myproxy_init_server(socket_attrs, MYPROXYSERVER_PORT);
     if (listenfd < 0) {

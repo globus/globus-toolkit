@@ -13,4 +13,8 @@ typedef struct
   char **authorized_service_dns; /* List of services will will delegate to */
 } myproxy_server_context_t;
 
+/* In myproxy_server_config.c */
+int mproxy_server_config_read(myproxy_server_context_t *context);
+
+
 #endif /* !__MYPROXY_SERVER_H */
