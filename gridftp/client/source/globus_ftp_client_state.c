@@ -647,7 +647,7 @@ redo:
 	{
 	    if(client_handle->op == GLOBUS_FTP_CLIENT_SIZE)
 	    {
-		result = globus_error_construct_string(
+		error = globus_error_construct_string(
 		    GLOBUS_FTP_CLIENT_MODULE,
 		    GLOBUS_NULL,
 		    "[%s] FTP server does not support SIZE\n",
@@ -655,7 +655,7 @@ redo:
 		    response->response_buffer,
 		    myname);
 
-		goto result_fault;
+		goto notify_fault;
 
 	    }
 	    goto skip_size;
@@ -1169,18 +1169,17 @@ redo:
 		    globus_libc_strdup(target->attr->dcau.subject.subject);
 		if(! target->dcau.subject.subject)
 		{
-		    result =
-			globus_error_put(
-			    globus_error_construct_string(
-				GLOBUS_FTP_CLIENT_MODULE,
-				GLOBUS_NULL,
-				"[%s] Could not allocate internal data "
-				"structure at %s\n",
-				GLOBUS_FTP_CLIENT_MODULE->module_name,
-				myname));
+		    error =
+			globus_error_construct_string(
+			    GLOBUS_FTP_CLIENT_MODULE,
+			    GLOBUS_NULL,
+			    "[%s] Could not allocate internal data "
+			    "structure at %s\n",
+			    GLOBUS_FTP_CLIENT_MODULE->module_name,
+			    myname);
 		    target->dcau.subject.subject = tmp_subj;
 
-		    goto result_fault;
+		    goto notify_fault;
 		}
 		else
 		{
