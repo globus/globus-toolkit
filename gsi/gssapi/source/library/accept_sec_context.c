@@ -66,6 +66,7 @@ GSS_CALLCONV gss_accept_sec_context(
 {
     gss_ctx_id_desc *                   context = NULL;
     OM_uint32                           major_status = 0;
+    OM_uint32                           minor_status_tmp;
     OM_uint32                           nreq_flags = 0;
     X509_REQ *                          reqp;
     int                                 rc;
@@ -331,7 +332,17 @@ GSS_CALLCONV gss_accept_sec_context(
 
     } /* end of switch for gs_con_st */
 
-    gs_get_token(minor_status,context,output_token);
+    /*
+     * Couple of notes about this gs_get_token() call:
+     *
+     * First don't mess with minor_status here as it may contain real info.
+     *
+     * Second, we want to go ahead and get an ouput token even if we previously
+     * encountered an error since the output token may contain information
+     * about the error (i.e. an SSL alert message) we want to send to the other
+     * side.
+     */
+    gs_get_token(&minor_status_tmp, context, output_token);
 
     if (context->gs_state != GS_CON_ST_DONE)
     {

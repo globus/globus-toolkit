@@ -388,18 +388,28 @@ GSS_CALLCONV gss_init_sec_context(
     case(GS_CON_ST_CERT): ;
     case(GS_CON_ST_DONE): ;
     } /* end of switch for gs_con_st */
-    if (!GSS_ERROR(major_status))
+
+    /*
+     * Couple of notes about this gs_get_token() call:
+     *
+     * First don't mess with minor_status here as it may contain real info.
+     *
+     * Second, we want to go ahead and get an ouput token even if we previously
+     * encountered an error since the output token may contain information
+     * about the error (i.e. an SSL alert message) we want to send to the other
+     * side.
+     */
+    gs_get_token(&inv_minor_status,context,output_token);
+
+    if (context->gs_state != GS_CON_ST_DONE)
     {
-        gs_get_token(minor_status,context,output_token);
-        if (context->gs_state != GS_CON_ST_DONE)
-        {
-            major_status |=GSS_S_CONTINUE_NEEDED;
-        }
-        if (ret_flags != NULL)
-        {
-            *ret_flags = context->ret_flags;
-        }
+        major_status |=GSS_S_CONTINUE_NEEDED;
     }
+    if (ret_flags != NULL)
+    {
+        *ret_flags = context->ret_flags;
+    }
+
 #if defined(DEBUG) || defined(DEBUGX)
     fprintf(stderr,"init_sec_context:major_status:%08x:gs_state:%d req_flags=%08x:ret_flags=%08x\n",
             major_status,context->gs_state,req_flags,context->ret_flags);
