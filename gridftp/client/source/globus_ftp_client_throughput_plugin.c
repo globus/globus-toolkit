@@ -1,3 +1,13 @@
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/**
+ * @file globus_ftp_client_throughput_plugin.c GridFTP Throughput Performance Plugin Implementation
+ *
+ * $RCSfile$
+ * $Revision$
+ * $Date$
+ * $Author$
+ */
+
 #include "globus_ftp_client_throughput_plugin.h"
 #include "globus_ftp_client_perf_plugin.h"
 #include <time.h>
@@ -53,6 +63,7 @@ typedef struct throughput_plugin_info_s
 
 /**
  * Perf plugin begin callback
+ * @ingroup globus_ftp_client_throughput_plugin
  *
  * This callback is called by the perf_plugin when a transfer, either a
  * get, put, or 3pt, has been started.  This will call the user's 'begin'
@@ -79,6 +90,7 @@ throughput_plugin_begin_cb(
 
 /**
  * Perf plugin marker callback
+ * @ingroup globus_ftp_client_throughput_plugin
  *
  * This callback is called by the perf_plugin when it has performance
  * data for us.  This callback will also call the user's 'per_stripe'
@@ -224,6 +236,7 @@ throughput_plugin_marker_cb(
 
 /**
  * Perf plugin complete callback
+ * @ingroup globus_ftp_client_throughput_plugin
  *
  * This callback is called by the perf_plugin when a transfer, either a
  * get, put, or 3pt, has completed (or failed).  This will call the user's
@@ -261,6 +274,7 @@ throughput_plugin_complete_cb(
 
 /**
  * Perf plugin user specific copy callback
+ * @ingroup globus_ftp_client_throughput_plugin
  *
  * This callback is called by the perf_plugin when a copy of user_specific
  * data is required (for a new copy of the perf_plugin)
@@ -304,6 +318,7 @@ throughput_plugin_user_copy_cb(
 
 /**
  * Perf plugin user specific destroy callback
+ * @ingroup globus_ftp_client_throughput_plugin
  *
  * This callback is called by the perf_plugin when a copy of user_specific
  * data needs to be destroyed (because the copy of the perf_plugin is being
@@ -330,8 +345,11 @@ throughput_plugin_user_destroy_cb(
     globus_free(info);
 }
 
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
+
 /**
  * Throughput plugin init
+ * @ingroup globus_ftp_client_throughput_plugin
  *
  * Use this function to initialize a throughput plugin. The throughput plugin
  * sits on top of the perf_plugin. The only required param is 'plugin',
@@ -440,6 +458,7 @@ globus_ftp_client_throughput_plugin_init(
 
 /**
  * Destroy throughput plugin
+ * @ingroup globus_ftp_client_throughput_plugin
  *
  * Frees up memory associated with plugin
  *

@@ -1,5 +1,27 @@
 #ifndef GLOBUS_INCLUDE_FTP_CLIENT_THROUGHPUT_PLUGIN_H
 #define GLOBUS_INCLUDE_FTP_CLIENT_THROUGHPUT_PLUGIN_H
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/**
+ * @file globus_ftp_client_throughput_plugin.h GridFTP Throughput Performance Plugin Implementation
+ *
+ * $RCSfile$
+ * $Revision$
+ * $Date$
+ * $Author$
+ */
+#endif
+
+/**
+ * @defgroup globus_ftp_client_throughput_plugin Throughput Performance Plugin
+ * @ingroup globus_ftp_client_plugins
+ *
+ * The FTP Throughput Performance plugin allows the user to obtain
+ * calculated performance information for all types of transfers except a
+ * third party transfer in which Extended Block mode is not enabled.
+ *
+ * Note: Since this plugin is built on top of the Performance Marker Plugin,
+ * it is not possible to associate both plugins with a handle
+ */
 
 #include "globus_ftp_client.h"
 #include "globus_ftp_client_plugin.h"
@@ -17,6 +39,7 @@
 EXTERN_C_BEGIN
 
 /** Module descriptor
+ * @ingroup globus_ftp_client_throughput_plugin
  */
 #define GLOBUS_FTP_CLIENT_THROUGHPUT_PLUGIN_MODULE (&globus_i_ftp_client_throughput_plugin_module)
 
@@ -25,6 +48,7 @@ globus_module_descriptor_t globus_i_ftp_client_throughput_plugin_module;
 
 /**
  * Transfer begin callback
+ * @ingroup globus_ftp_client_throughput_plugin
  *
  * This callback will be called when a transfer begins
  *
@@ -44,6 +68,7 @@ typedef void (*globus_ftp_client_throughput_plugin_begin_cb_t)(
 
 /**
  * Stripe performace throughput callback
+ * @ingroup globus_ftp_client_throughput_plugin
  *
  * This callback will be called with every performance callback that is
  * received by the perf plugin. The first
@@ -80,6 +105,7 @@ typedef void (*globus_ftp_client_throughput_plugin_stripe_cb_t)(
 
 /**
  * Total performace throughput callback
+ * @ingroup globus_ftp_client_throughput_plugin
  *
  * This callback will be called with every performance callback that is
  * received by the perf plugin. The first
@@ -112,6 +138,7 @@ typedef void (*globus_ftp_client_throughput_plugin_total_cb_t)(
 
 /**
  * Transfer complete callback
+ * @ingroup globus_ftp_client_throughput_plugin
  *
  * This callback will be called upon transfer completion (successful or
  * otherwise)

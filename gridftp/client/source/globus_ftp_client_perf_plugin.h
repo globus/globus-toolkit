@@ -1,5 +1,30 @@
 #ifndef GLOBUS_INCLUDE_FTP_CLIENT_PERF_PLUGIN_H
 #define GLOBUS_INCLUDE_FTP_CLIENT_PERF_PLUGIN_H
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/**
+ * @file globus_ftp_client_perf_plugin.h GridFTP Performance Marker Plugin Implementation
+ *
+ * $RCSfile$
+ * $Revision$
+ * $Date$
+ * $Author$
+ */
+#endif
+
+/**
+ * @defgroup globus_ftp_client_perf_plugin Performance Marker Plugin
+ * @ingroup globus_ftp_client_plugins
+ *
+ * The FTP Performance Marker plugin allows the user to obtain
+ * performance markers for all types of transfers except a
+ * third party transfer in which Extended Block mode is not enabled.
+ *
+ * These markers may be generated internally, or they may be received
+ * from a server ('put' or third_party_transfer' only).
+ *
+ * Copy constructor and destructor callbacks are also provided to allow
+ * one to more easily layer other plugins on top of this one.
+ */
 
 #include "globus_ftp_client.h"
 #include "globus_ftp_client_plugin.h"
@@ -17,6 +42,7 @@
 EXTERN_C_BEGIN
 
 /** Module descriptor
+ * @ingroup globus_ftp_client_perf_plugin
  */
 #define GLOBUS_FTP_CLIENT_PERF_PLUGIN_MODULE (&globus_i_ftp_client_perf_plugin_module)
 
@@ -25,6 +51,7 @@ globus_module_descriptor_t globus_i_ftp_client_perf_plugin_module;
 
 /**
  * Transfer begin callback
+ * @ingroup globus_ftp_client_perf_plugin
  *
  * This callback is called when a get, put, or third party transfer is
  * started.
@@ -47,6 +74,7 @@ typedef void (*globus_ftp_client_perf_plugin_begin_cb_t)(
 
 /**
  * Performance marker received callback
+ * @ingroup globus_ftp_client_perf_plugin
  *
  * This callback is called for all types of transfers except a third
  * party in which extended block mode is not used (because 112 perf markers
@@ -90,6 +118,7 @@ typedef void (*globus_ftp_client_perf_plugin_marker_cb_t)(
 
 /**
  * Transfer complete callback
+ * @ingroup globus_ftp_client_perf_plugin
  *
  * This callback will be called upon transfer completion (successful or
  * otherwise)
@@ -112,6 +141,7 @@ typedef void (*globus_ftp_client_perf_plugin_complete_cb_t)(
 
 /**
  * Copy constructor
+ * @ingroup globus_ftp_client_perf_plugin
  *
  * This callback will be called when a copy of this plugin is made,
  * it is intended to allow initialization of a new user_specific data
@@ -130,6 +160,7 @@ typedef void * (*globus_ftp_client_perf_plugin_user_copy_cb_t)(
 
 /**
  * Destructor
+ * @ingroup globus_ftp_client_perf_plugin
  *
  * This callback will be called when a copy of this plugin is destroyed,
  * it is intended to allow the user to free up any memory associated with
