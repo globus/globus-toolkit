@@ -1617,7 +1617,6 @@ globus_l_gfs_ipc_read_body_cb(
         globus_free(new_buf);
     }   
     globus_l_gfs_ipc_error_kickout(ipc, res);
-
 }
 
 static void

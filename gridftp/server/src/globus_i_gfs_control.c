@@ -780,11 +780,13 @@ globus_l_gfs_data_transfer_cb(
     }
     /* no more aborts once this returns */
     globus_gridftp_server_abort_disable(op);
+/*
     globus_i_gfs_data_request_transfer_event(
         NULL, 
         instance->session_id,
         instance->transfer_id,
         GLOBUS_GFS_EVENT_TRANSFER_COMPLETE);
+*/
 }
 
 static

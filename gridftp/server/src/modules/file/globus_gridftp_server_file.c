@@ -338,6 +338,16 @@ error_stat1:
     return;
 }
 
+static
+void
+globus_l_gfs_file_trev(
+    int                                 transfer_id,
+    int                                 event_type,
+    void *                              user_arg)
+{
+fprintf(stderr, "globus_l_gfs_file_trev() : abort\n");
+}
+
 
 static
 globus_result_t

@@ -9,12 +9,10 @@ globus_extension_handle_t               globus_i_gfs_active_dsi_handle;
 
 typedef enum
 {
-    GLOBUS_L_GFS_DATA_REQUESTING,
-    GLOBUS_L_GFS_DATA_PENDING,
+    GLOBUS_L_GFS_DATA_REQUESTING = 1,
+    GLOBUS_L_GFS_DATA_SENDING,
+    GLOBUS_L_GFS_DATA_RECVING,
     GLOBUS_L_GFS_DATA_COMPLETE,
-    GLOBUS_L_GFS_DATA_ERROR,
-    GLOBUS_L_GFS_DATA_ERROR_COMPLETE,
-    GLOBUS_L_GFS_DATA_ABORTING
 } globus_l_gfs_data_state_t;
 
 typedef struct
@@ -40,9 +38,8 @@ typedef struct globus_l_gfs_data_operation_s
 {
     globus_i_gfs_server_instance_t *    instance;
     globus_l_gfs_data_state_t           state;
-    globus_mutex_t                      lock;
+    globus_mutex_t                      mutex;
     globus_i_gfs_data_handle_t *        data_handle;
-    globus_bool_t                       sending;
     
     int                                 id;
     globus_gfs_ipc_handle_t             ipc_handle;
@@ -86,6 +83,9 @@ typedef struct globus_l_gfs_data_operation_s
     globus_i_gfs_data_callback_t        callback;
     globus_i_gfs_data_event_callback_t  event_callback;
     void *                              user_arg;
+
+    int                                 ref;
+    globus_result_t                     cached_res;
     
     globus_l_gfs_data_session_t *       session_handle;
 } globus_l_gfs_data_operation_t;
@@ -233,7 +233,7 @@ globus_l_gfs_data_operation_init(
         goto error_alloc;
     }
     
-    globus_mutex_init(&op->lock, GLOBUS_NULL);
+    globus_mutex_init(&op->mutex, GLOBUS_NULL);
     op->recvd_ranges = GLOBUS_NULL;
     globus_range_list_init(&op->recvd_ranges);
     globus_range_list_init(&op->stripe_range_list);
@@ -296,15 +296,6 @@ globus_i_gfs_data_request_stat(
     op->user_arg = user_arg;
     
     globus_l_gfs_dsi->stat_func(op, stat_info, session_handle->session_arg);
-    
-    globus_mutex_lock(&op->lock);
-    {
-        if(op->state == GLOBUS_L_GFS_DATA_REQUESTING)
-        {
-            op->state = GLOBUS_L_GFS_DATA_PENDING;
-        }
-    }
-    globus_mutex_unlock(&op->lock);
     
     return;
 
@@ -381,16 +372,7 @@ globus_i_gfs_data_request_command(
     op->user_arg = user_arg;
     
     globus_l_gfs_dsi->command_func(op, cmd_info, session_handle->session_arg);
-      
-    globus_mutex_lock(&op->lock);
-    {
-        if(op->state == GLOBUS_L_GFS_DATA_REQUESTING)
-        {
-            op->state = GLOBUS_L_GFS_DATA_PENDING;
-        }
-    }
-    globus_mutex_unlock(&op->lock);
-    
+
     return;
     
 error_op:
@@ -971,10 +953,10 @@ globus_i_gfs_data_request_recv(
     }
 
     op->ipc_handle = ipc_handle;    
+    op->ref = 1;
     op->id = id;
-    op->state = GLOBUS_L_GFS_DATA_REQUESTING;
+    op->state = GLOBUS_L_GFS_DATA_RECVING;
     op->data_handle = data_handle;
-    op->sending = GLOBUS_FALSE;
     op->range_list = recv_info->range_list;
     op->partial_offset = recv_info->partial_offset;
     op->callback = cb;
@@ -986,16 +968,7 @@ globus_i_gfs_data_request_recv(
     
     /* XXX */
     globus_l_gfs_dsi->recv_func(op, recv_info, session_handle->session_arg);
-    
-    globus_mutex_lock(&op->lock);
-    {
-        if(op->state == GLOBUS_L_GFS_DATA_REQUESTING)
-        {
-            op->state = GLOBUS_L_GFS_DATA_PENDING;
-        }
-    }
-    globus_mutex_unlock(&op->lock);
-    
+
     return;
 
 error_op:
@@ -1037,10 +1010,10 @@ globus_i_gfs_data_request_send(
         goto error_op;
     }
     op->ipc_handle = ipc_handle;    
+    op->ref = 1;
     op->id = id;
-    op->state = GLOBUS_L_GFS_DATA_REQUESTING;
+    op->state = GLOBUS_L_GFS_DATA_SENDING;
     op->data_handle = data_handle;
-    op->sending = GLOBUS_TRUE;
     op->range_list = send_info->range_list;
     op->partial_length = send_info->partial_length;
     op->partial_offset = send_info->partial_offset;
@@ -1055,19 +1028,9 @@ globus_i_gfs_data_request_send(
     op->nstreams = send_info->nstreams;
     op->eof_count = (int *) globus_malloc(op->stripe_count * sizeof(int));
 
-    
     /* XXX */
     globus_l_gfs_dsi->send_func(op, send_info, session_handle->session_arg);
-    
-    globus_mutex_lock(&op->lock);
-    {
-        if(op->state == GLOBUS_L_GFS_DATA_REQUESTING)
-        {
-            op->state = GLOBUS_L_GFS_DATA_PENDING;
-        }
-    }
-    globus_mutex_unlock(&op->lock);
-    
+
     return;
 
 error_op:
@@ -1142,8 +1105,6 @@ globus_l_gfs_data_list_stat_cb(
     return;
     
 error:
-    op->state = GLOBUS_L_GFS_DATA_ERROR;
-    globus_gridftp_server_finished_transfer(op, result); 
 
     return;
 }
@@ -1185,10 +1146,10 @@ globus_i_gfs_data_request_list(
     }
 
     data_op->ipc_handle = ipc_handle;    
+    data_op->ref = 1;
     data_op->id = id;
-    data_op->state = GLOBUS_L_GFS_DATA_PENDING;
+    data_op->state = GLOBUS_L_GFS_DATA_SENDING;
     data_op->data_handle = data_handle;
-    data_op->sending = GLOBUS_TRUE;
     data_op->list_type = list_info->list_type;
     data_op->uid = getuid();
     /* XXX */
@@ -1223,17 +1184,7 @@ globus_i_gfs_data_request_list(
         /* XXX */
         globus_l_gfs_dsi->stat_func(
             stat_op, stat_info, session_handle->session_arg);
-
-        globus_mutex_lock(&stat_op->lock);
-        {
-            if(stat_op->state == GLOBUS_L_GFS_DATA_REQUESTING)
-            {
-                stat_op->state = GLOBUS_L_GFS_DATA_PENDING;
-            }
-        }
-        globus_mutex_unlock(&stat_op->lock);
     }
-
     
     return;
 
@@ -1242,16 +1193,194 @@ error_op:
     return;
 }
 
+/***********************************************************************
+ *  finished transfer callbacks
+ *  ---------------------------
+ **********************************************************************/
+static
+void
+globus_l_gfs_data_begin_cb(
+    void *                              callback_arg,
+    struct globus_ftp_control_handle_s * handle,
+    unsigned int                        stripe_ndx,
+    globus_bool_t                       reused,
+    globus_object_t *                   error)
+{
+    globus_result_t                     res;
+    globus_gfs_ipc_event_reply_t *      event_reply;
+    globus_l_gfs_data_operation_t *     op;
 
+    op = (globus_l_gfs_data_operation_t *) callback_arg;
+
+    if(error != NULL)
+    {
+        res = globus_error_put(error);
+        goto err;
+    }
+
+    event_reply = (globus_gfs_ipc_event_reply_t *) 
+        globus_calloc(1, sizeof(globus_gfs_ipc_event_reply_t));
+    if(event_reply == NULL)
+    {
+        /* XXX or panic maybe */
+        goto err;
+    }
+    event_reply->type = GLOBUS_GFS_EVENT_TRANSFER_BEGIN;
+    event_reply->id = op->id;
+    event_reply->transfer_id = (int) op;
+    if(op->event_callback != NULL)
+    {
+        op->event_callback(event_reply, op->user_arg);
+    }
+    else
+    {
+        globus_gfs_ipc_reply_event(op->ipc_handle, event_reply);
+    }
+
+    return;
+
+  err:
+
+    /* XXX MIKEY XXX : to deal with errors like this i am just sending
+        an abort message to the DSI.  are multiple abort messages OK? */
+    return;    
+}
+
+static
+void
+globus_l_gfs_data_end_transfer_kickout(
+    void *                              user_arg)
+{
+    globus_l_gfs_data_operation_t *     op;
+    globus_gfs_ipc_event_reply_t *      event_reply;
+    globus_gfs_ipc_reply_t *            reply;
+    globus_bool_t                       destroy_op = GLOBUS_FALSE;
+
+    op = (globus_l_gfs_data_operation_t *) user_arg;
+
+    reply = (globus_gfs_ipc_reply_t *)
+        globus_calloc(1, sizeof(globus_gfs_ipc_reply_t));
+    event_reply = (globus_gfs_ipc_event_reply_t *)
+        globus_calloc(1, sizeof(globus_gfs_ipc_event_reply_t));
+
+    event_reply->id = op->id;
+    event_reply->data_handle_id = (int) op->data_handle;
+
+    /* XXX mode s only */
+    event_reply->type = GLOBUS_GFS_EVENT_DISCONNECTED;
+    if(op->event_callback != NULL)
+    {
+        op->event_callback(
+            event_reply,
+            op->user_arg);
+    }
+    else
+    {
+        globus_gfs_ipc_reply_event(
+            op->ipc_handle,
+            event_reply);
+    }
+
+    reply->type = GLOBUS_GFS_OP_TRANSFER;
+    reply->id = op->id;
+    reply->result = op->cached_res;
+    if(op->callback != NULL)
+    {
+        op->callback(reply, op->user_arg);
+    }
+    else
+    {
+        globus_gfs_ipc_reply_finished(
+            op->ipc_handle,
+            reply);
+    }
+
+    globus_mutex_lock(&op->mutex);
+    {
+        op->ref--;
+        if(op->ref == 0)
+        {
+            destroy_op = GLOBUS_TRUE;
+        }
+    }
+    globus_mutex_unlock(&op->mutex);
+
+    if(destroy_op)
+    {
+        globus_l_gfs_data_operation_destroy(op);
+    }
+}
+
+static
+void
+globus_l_gfs_data_end_read_kickout(
+    void *                              user_arg)
+{
+    globus_l_gfs_data_operation_t *     op;
+    globus_gfs_ipc_event_reply_t *      event_reply;
+    globus_gfs_ipc_reply_t *            reply;
+
+    op = (globus_l_gfs_data_operation_t *) user_arg;
+
+    reply = (globus_gfs_ipc_reply_t *)
+        globus_calloc(1, sizeof(globus_gfs_ipc_reply_t));
+    event_reply = (globus_gfs_ipc_event_reply_t *)
+        globus_calloc(1, sizeof(globus_gfs_ipc_event_reply_t));
+    if(event_reply == NULL)
+    {
+        /* XXX MIKEY XXX is panic ok here? */
+    }
+                                                                            
+    event_reply->id = op->id;
+    event_reply->recvd_bytes = op->recvd_bytes;
+    event_reply->recvd_ranges = op->recvd_ranges;
+                                                                            
+    event_reply->type = GLOBUS_GFS_EVENT_BYTES_RECVD;
+    if(op->event_callback != NULL)
+    {
+        op->event_callback(
+            event_reply,
+            op->user_arg);
+    }
+    else
+    {
+        globus_gfs_ipc_reply_event(
+            op->ipc_handle,
+            event_reply);
+    }
+
+    event_reply->type = GLOBUS_GFS_EVENT_RANGES_RECVD;
+    if(op->event_callback != NULL)
+    {
+        op->event_callback(
+            event_reply,
+            op->user_arg);
+    }
+    else
+    {
+        globus_gfs_ipc_reply_event(
+            op->ipc_handle,
+            event_reply);
+    }
+
+    globus_l_gfs_data_end_transfer_kickout(op);
+}
 
 static
 void
 globus_l_gfs_data_send_eof_cb(
-    void *                                      callback_arg,
-    struct globus_ftp_control_handle_s *        handle,
-    globus_object_t *				error)
+    void *                              callback_arg,
+    struct globus_ftp_control_handle_s * handle,
+    globus_object_t *				    error)
 {
+    globus_l_gfs_data_operation_t *     op;
 
+    op = (globus_l_gfs_data_operation_t *) callback_arg;
+    if(error != NULL)
+    {
+        op->cached_res = globus_error_put(error);
+    }
+    globus_l_gfs_data_end_transfer_kickout(op);
 }
 
 static
@@ -1266,77 +1395,53 @@ globus_l_gfs_data_write_eof_cb(
     globus_bool_t                       eof)
 {    
     /* XXX mode s only */
-    globus_gfs_ipc_reply_t *            reply;   
-    globus_gfs_ipc_event_reply_t *      event_reply; 
     globus_result_t                     result;  
     int                                 i;
-    globus_gfs_operation_t              op;
+    globus_l_gfs_data_operation_t *     op;
     GlobusGFSName(globus_l_gfs_data_write_eof_cb);
     
-    op = (globus_gfs_operation_t) user_arg;
+    op = (globus_l_gfs_data_operation_t *) user_arg;
 
-    if(op->data_handle->attr.mode == 'E')
-    {        
-        for(i = 0; i < op->stripe_count; i++)
-        {
-            op->eof_count[i] = 
-                (op->node_ndx == 0) ?
-                (op->node_count - 1) * op->data_handle->attr.nstreams :
-                0;
-        }
-
-        result = globus_ftp_control_data_send_eof(
-            &op->data_handle->data_channel,
-            op->eof_count,
-            op->stripe_count,
-            (op->node_ndx == 0) ? GLOBUS_TRUE : GLOBUS_FALSE,
-            globus_l_gfs_data_send_eof_cb,
-            op);
-        if(result != GLOBUS_SUCCESS)
-        {
-            globus_i_gfs_log_result(
-                "ERROR", result);
-        }
-    }
-    reply = (globus_gfs_ipc_reply_t *) 
-        globus_calloc(1, sizeof(globus_gfs_ipc_reply_t));
-    event_reply = (globus_gfs_ipc_event_reply_t *) 
-        globus_calloc(1, sizeof(globus_gfs_ipc_event_reply_t));
-
-    event_reply->type = GLOBUS_GFS_EVENT_DISCONNECTED;
-    event_reply->id = op->id;
-    event_reply->data_handle_id = (int) op->data_handle;
-    if(op->event_callback != NULL)
+    if(error != NULL)
     {
-        op->event_callback(
-            event_reply,
-            op->user_arg);        
+        op->cached_res = globus_error_put(error);
+        globus_l_gfs_data_end_transfer_kickout(op);
     }
     else
     {
-        globus_gfs_ipc_reply_event(
-            op->ipc_handle,
-            event_reply);
-    }
+        if(op->data_handle->attr.mode == 'E')
+        {        
+            for(i = 0; i < op->stripe_count; i++)
+            {
+                op->eof_count[i] = 
+                    (op->node_ndx == 0) ?
+                    (op->node_count - 1) * op->data_handle->attr.nstreams :
+                    0;
+            }
 
-    reply->type = GLOBUS_GFS_OP_TRANSFER;
-    reply->id = op->id;
-    reply->result = error ? 
-        globus_error_put(globus_object_copy(error)) : GLOBUS_SUCCESS;             
-    if(op->callback != NULL)
-    {
-        op->callback(
-            reply,
-            op->user_arg);        
+            result = globus_ftp_control_data_send_eof(
+                &op->data_handle->data_channel,
+                op->eof_count,
+                op->stripe_count,
+                (op->node_ndx == 0) ? GLOBUS_TRUE : GLOBUS_FALSE,
+                globus_l_gfs_data_send_eof_cb,
+                op);
+            if(result != GLOBUS_SUCCESS)
+            {
+                globus_i_gfs_log_result(
+                    "ERROR", result);
+                op->cached_res = result;
+                globus_l_gfs_data_end_transfer_kickout(op);
+            }
+            if(op->node_ndx != 0)
+            {
+            }
+        }
+        else
+        {
+            globus_l_gfs_data_end_transfer_kickout(op);
+        }
     }
-    else
-    {
-        globus_gfs_ipc_reply_finished(
-            op->ipc_handle,
-            reply);
-    }
-    
-    globus_l_gfs_data_operation_destroy(op);
 }
 
 
@@ -1401,6 +1506,7 @@ globus_l_gfs_data_transfer_event_kickout(
 {
     globus_l_gfs_data_trev_bounce_t *   bounce_info;
     globus_gfs_ipc_event_reply_t *      event_reply;
+    globus_bool_t                       destroy_op = GLOBUS_FALSE;
     GlobusGFSName(globus_l_gfs_data_transfer_event_kickout);
 
     bounce_info = (globus_l_gfs_data_trev_bounce_t *) user_arg;
@@ -1409,53 +1515,62 @@ globus_l_gfs_data_transfer_event_kickout(
          
     event_reply->id = bounce_info->op->id;
     event_reply->node_ndx = bounce_info->op->node_ndx;
-    globus_mutex_lock(&bounce_info->op->lock);
+    globus_mutex_lock(&bounce_info->op->mutex);
     {    
         switch(bounce_info->event_type)
         {
-          case GLOBUS_GFS_EVENT_BYTES_RECVD:
+            case GLOBUS_GFS_EVENT_BYTES_RECVD:
                 event_reply->recvd_bytes = bounce_info->op->recvd_bytes;
                 bounce_info->op->recvd_bytes = 0;
                 event_reply->type = GLOBUS_GFS_EVENT_BYTES_RECVD;
-            break;
+                break;
             
-          case GLOBUS_GFS_EVENT_RANGES_RECVD:
+            case GLOBUS_GFS_EVENT_RANGES_RECVD:
                 event_reply->type = GLOBUS_GFS_EVENT_RANGES_RECVD;
                 event_reply->recvd_ranges = bounce_info->op->recvd_ranges;
-            break;
+                break;
             
-          default:
-            goto error;
-            break;
+            default:
+                globus_assert(0 && "invalid state, not possible");
+                break;
         } 
-        if(bounce_info->op->event_callback != NULL)
-        {
-            bounce_info->op->event_callback(
-                event_reply,
-                bounce_info->op->user_arg);        
-        }
-        else
-        {
-            globus_gfs_ipc_reply_event(
-                bounce_info->op->ipc_handle,
-                event_reply);
-        }
-        if(bounce_info->event_type == 
-            GLOBUS_GFS_EVENT_RANGES_RECVD)
+    }
+    globus_mutex_unlock(&bounce_info->op->mutex);
+
+    if(bounce_info->op->event_callback != NULL)
+    {
+        bounce_info->op->event_callback(
+            event_reply,
+            bounce_info->op->user_arg);        
+    }
+    else
+    {
+        globus_gfs_ipc_reply_event(
+            bounce_info->op->ipc_handle,
+            event_reply);
+    }
+    globus_mutex_lock(&bounce_info->op->mutex);
+    {    
+        /* XXX MIKEY XXX  whats this all about?  should it be in other lock */
+        if(bounce_info->event_type == GLOBUS_GFS_EVENT_RANGES_RECVD)
         {
             globus_range_list_remove(
                 bounce_info->op->recvd_ranges, 0, GLOBUS_RANGE_LIST_MAX);
         }
+        bounce_info->op->ref--;
+        if(bounce_info->op->ref == 0)
+        {
+            destroy_op = GLOBUS_TRUE;
+        }
     }
-    globus_mutex_unlock(&bounce_info->op->lock);
-        
+    globus_mutex_unlock(&bounce_info->op->mutex);
+
+    if(destroy_op)
+    {
+        globus_l_gfs_data_operation_destroy(bounce_info->op);
+    }
+
     globus_free(bounce_info);       
-    return;
-    
-error:
-    globus_mutex_unlock(&bounce_info->op->lock);
-    globus_free(bounce_info); 
-    return;      
 }
 
 void
@@ -1469,74 +1584,116 @@ globus_i_gfs_data_request_transfer_event(
     globus_l_gfs_data_trev_bounce_t *   bounce_info;
     globus_l_gfs_data_session_t *       session_handle;
     globus_l_gfs_data_operation_t *     op;
+    globus_bool_t                       destroy_op = GLOBUS_FALSE;
+    globus_bool_t                       pass = GLOBUS_FALSE;
     GlobusGFSName(globus_i_gfs_data_kickoff_event);
 
     session_handle = (globus_l_gfs_data_session_t *) session_id;
     op = (globus_l_gfs_data_operation_t *) transfer_id;
-    
-    if(globus_l_gfs_dsi->trev_func != NULL && 
-        event_type & op->event_mask)
+
+    globus_mutex_lock(&op->mutex);
+    {
+        /* this is the final event.  dec reference */
+        switch(event_type)
+        {
+            /* if this event has been received we MUST be in complete state */
+            case GLOBUS_GFS_EVENT_TRANSFER_COMPLETE:
+                globus_assert(op->state == GLOBUS_L_GFS_DATA_COMPLETE);
+                pass = GLOBUS_TRUE;
+                break;
+
+            case GLOBUS_GFS_EVENT_BYTES_RECVD:
+            case GLOBUS_GFS_EVENT_RANGES_RECVD:
+
+                /* if finsihed already happened ignore these completely */
+                if(op->state == GLOBUS_L_GFS_DATA_COMPLETE)
+                {
+                    pass = GLOBUS_FALSE;
+                }
+                else
+                {
+                    /* if the DSI is handling these events */
+                    if(globus_l_gfs_dsi->trev_func != NULL ||
+                        event_type & op->event_mask)
+                    {
+                        pass = GLOBUS_TRUE;
+                    }
+                    /* if DSI not handling, take care of for them */
+                    else
+                    {
+                        pass = GLOBUS_FALSE;
+                        /* since this will be put in a callback we must up 
+                            ref */
+                        op->ref++;
+
+                        bounce_info = (globus_l_gfs_data_trev_bounce_t *)
+                            globus_malloc(
+                                sizeof(globus_l_gfs_data_trev_bounce_t));
+                        if(!bounce_info)
+                        {
+                            /* XXX MIKEY XXX can i panic herer */
+                            result = GlobusGFSErrorMemory("bounce_info");
+                        }
+                
+                        bounce_info->event_type = event_type;
+                        bounce_info->op = 
+                            (globus_l_gfs_data_operation_t *) transfer_id;
+        
+                        globus_callback_register_oneshot(
+                            NULL,
+                            NULL,
+                            globus_l_gfs_data_transfer_event_kickout,
+                            bounce_info);
+                    }
+                }
+                break;
+
+            /* if abrt or anything else pass it through if they
+                care and it isn't too late */
+            case GLOBUS_GFS_EVENT_TRANSFER_ABORT:
+            default:
+                if(op->state == GLOBUS_L_GFS_DATA_COMPLETE ||
+                    globus_l_gfs_dsi->trev_func == NULL ||
+                    !(event_type & op->event_mask))
+                {
+                    pass = GLOBUS_FALSE;
+                }
+                else
+                {
+                    pass = GLOBUS_TRUE;
+                }
+                break;
+        }
+    }
+    globus_mutex_unlock(&op->mutex);
+
+    /* if is possible that events slip through her after setting to 
+        GLOBUS_L_GFS_DATA_COMPLETE.  This is ok because the only
+        gauretee made is that none will come after 
+        GLOBUS_GFS_EVENT_TRANSFER_COMPLETE.  This is gaurenteed with
+        the reference count. */
+    if(pass)
     {
         globus_l_gfs_dsi->trev_func(
             op->transfer_id, event_type, session_handle->session_arg);
-        if(event_type == GLOBUS_GFS_EVENT_TRANSFER_COMPLETE)
+    }
+
+    if(event_type == GLOBUS_GFS_EVENT_TRANSFER_COMPLETE)
+    {
+        globus_mutex_lock(&op->mutex);
         {
-            /* destroy the transfer op here */
+            op->ref--;
+            if(op->ref == 0)
+            {
+                destroy_op = GLOBUS_TRUE;
+            }
+        }
+        globus_mutex_unlock(&op->mutex);
+        if(destroy_op)
+        {
+            globus_l_gfs_data_operation_destroy(op);
         }
     }
-    else
-    {   
-        switch(event_type)
-        {
-            case GLOBUS_GFS_EVENT_TRANSFER_COMPLETE:
-            /* destroy the transfer op here */
-                break;
-            
-            case GLOBUS_GFS_EVENT_TRANSFER_ABORT:
-                globus_mutex_lock(&op->lock);
-                {    
-                    op->state = GLOBUS_L_GFS_DATA_ABORTING;
-                }
-                globus_mutex_unlock(&op->lock);
-                globus_gridftp_server_finished_transfer(op, GLOBUS_FAILURE);
-                break;
-            
-            case GLOBUS_GFS_EVENT_BYTES_RECVD:   
-            case GLOBUS_GFS_EVENT_RANGES_RECVD:   
-                bounce_info = (globus_l_gfs_data_trev_bounce_t *)
-                    globus_malloc(sizeof(globus_l_gfs_data_trev_bounce_t));
-                if(!bounce_info)
-                {
-                    result = GlobusGFSErrorMemory("bounce_info");
-                    goto error_alloc;
-                }
-                
-                bounce_info->event_type = event_type;
-                bounce_info->op = (globus_l_gfs_data_operation_t *) transfer_id;
-                
-                result = globus_callback_register_oneshot(
-                    GLOBUS_NULL,
-                    GLOBUS_NULL,
-                    globus_l_gfs_data_transfer_event_kickout,
-                    bounce_info);
-                if(result != GLOBUS_SUCCESS)
-                {
-                    result = GlobusGFSErrorWrapFailed(
-                        "globus_callback_register_oneshot", result);
-                    goto error_oneshot;
-                }
-                break;
-            default:
-                goto error;
-                break;
-        }
-    }    
-    return;
-
-error:
-error_oneshot:
-error_alloc:
-    return;  
 }
 
 static
@@ -1677,14 +1834,6 @@ globus_i_gfs_data_session_start(
             GLOBUS_SUCCESS,                                               
             finished_info);                                       
     }    
-    globus_mutex_lock(&op->lock);
-    {
-        if(op->state == GLOBUS_L_GFS_DATA_REQUESTING)
-        {
-            op->state = GLOBUS_L_GFS_DATA_PENDING;
-        }
-    }
-    globus_mutex_unlock(&op->lock);
     
     return;
 
@@ -1749,13 +1898,8 @@ globus_gridftp_server_finished_command(
 {
     globus_gfs_ipc_reply_t *            reply;   
     GlobusGFSName(globus_gridftp_server_finished_command);
-    
-    globus_mutex_lock(&op->lock);
-    {
-        op->state = GLOBUS_L_GFS_DATA_COMPLETE;
-    }
-    globus_mutex_unlock(&op->lock);
 
+    /* XXX gotta do a oneshot */
     switch(op->command)
     {
       case GLOBUS_GFS_CMD_CKSM:
@@ -1800,31 +1944,15 @@ globus_gridftp_server_finished_command(
 
 void
 globus_gridftp_server_finished_stat(
-    globus_gfs_operation_t   op,
+    globus_gfs_operation_t              op,
     globus_result_t                     result,
-    globus_gfs_stat_t *      stat_array,
+    globus_gfs_stat_t *                 stat_array,
     int                                 stat_count)
 {
-    globus_bool_t                       delay;
     globus_l_gfs_data_stat_bounce_t * bounce_info;
     globus_gfs_stat_t *      stat_copy;
     GlobusGFSName(globus_gridftp_server_finished_stat);
-    
-    globus_mutex_lock(&op->lock);
-    {
-        if(op->state == GLOBUS_L_GFS_DATA_REQUESTING)
-        {
-            delay = GLOBUS_TRUE;
-        }
-        else
-        {
-            delay = GLOBUS_FALSE;
-        }
-        
-        op->state = GLOBUS_L_GFS_DATA_COMPLETE;
-    }
-    globus_mutex_unlock(&op->lock);
-    
+
     stat_copy = (globus_gfs_stat_t *)
         globus_malloc(sizeof(globus_gfs_stat_t) * stat_count);
     memcpy(
@@ -1832,62 +1960,31 @@ globus_gridftp_server_finished_stat(
         stat_array,
         sizeof(globus_gfs_stat_t) * stat_count);
 
-    if(delay)
+    bounce_info = (globus_l_gfs_data_stat_bounce_t *)
+        globus_malloc(sizeof(globus_l_gfs_data_stat_bounce_t));
+    if(!bounce_info)
     {
-        bounce_info = (globus_l_gfs_data_stat_bounce_t *)
-            globus_malloc(sizeof(globus_l_gfs_data_stat_bounce_t));
-        if(!bounce_info)
-        {
-            result = GlobusGFSErrorMemory("bounce_info");
-            goto error_alloc;
-        }
+        result = GlobusGFSErrorMemory("bounce_info");
+        goto error_alloc;
+    }
         
-        bounce_info->op = op;
-        bounce_info->error = result == GLOBUS_SUCCESS 
-            ? GLOBUS_NULL : globus_error_get(result);
-        bounce_info->stat_count = stat_count;
-        bounce_info->stat_array = stat_copy;
-        result = globus_callback_register_oneshot(
-            GLOBUS_NULL,
-            GLOBUS_NULL,
-            globus_l_gfs_data_stat_kickout,
-            bounce_info);
-        if(result != GLOBUS_SUCCESS)
-        {
-            result = GlobusGFSErrorWrapFailed(
-                "globus_callback_register_oneshot", result);
-            goto error_oneshot;
-        }
-    }
-    else
+    bounce_info->op = op;
+    bounce_info->error = result == GLOBUS_SUCCESS 
+        ? GLOBUS_NULL : globus_error_get(result);
+    bounce_info->stat_count = stat_count;
+    bounce_info->stat_array = stat_copy;
+    result = globus_callback_register_oneshot(
+        GLOBUS_NULL,
+        GLOBUS_NULL,
+        globus_l_gfs_data_stat_kickout,
+        bounce_info);
+    if(result != GLOBUS_SUCCESS)
     {
-        globus_gfs_ipc_reply_t *            reply;   
-        reply = (globus_gfs_ipc_reply_t *) 
-            globus_calloc(1, sizeof(globus_gfs_ipc_reply_t));
-     
-        reply->type = GLOBUS_GFS_OP_STAT;
-        reply->id = op->id;
-        reply->result = result;
-        reply->info.stat.stat_array = stat_copy;
-        reply->info.stat.stat_count = stat_count;
-        reply->info.stat.uid = op->uid;
-            
-        if(op->callback != NULL)
-        {
-            op->callback(
-                reply,
-                op->user_arg);
-        }
-        else
-        {
-            globus_gfs_ipc_reply_finished(
-                op->ipc_handle,
-                reply);
-        }
-            
-        globus_l_gfs_data_operation_destroy(op);
+        result = GlobusGFSErrorWrapFailed(
+            "globus_callback_register_oneshot", result);
+        goto error_oneshot;
     }
-    
+
     return;
 
 error_oneshot:
@@ -1898,6 +1995,7 @@ error_alloc:
         "[%s:%d] Unrecoverable error",
         _gfs_name,
         __LINE__);
+    return;
 }
 
 globus_result_t
@@ -1907,55 +2005,41 @@ globus_gridftp_server_begin_transfer(
     void *                              event_arg)
 {
     globus_result_t                     result;
-    globus_gfs_ipc_event_reply_t *      event_reply;   
     GlobusGFSName(globus_gridftp_server_begin_transfer);
     
     op->event_mask = event_mask;
     op->transfer_id = (int) event_arg;
-    
-    if(op->sending)
+
+    /* LOCK MAY NOT BE NEEDED HERE */
+    op->ref++;
+    if(op->state == GLOBUS_L_GFS_DATA_SENDING)
     {
         result = globus_ftp_control_data_connect_write(
-            &op->data_handle->data_channel, GLOBUS_NULL, GLOBUS_NULL);
+            &op->data_handle->data_channel,
+            globus_l_gfs_data_begin_cb,
+            op);
         if(result != GLOBUS_SUCCESS)
         {
             goto error_connect;
         }
     }
-    else
+    else if(op->state == GLOBUS_L_GFS_DATA_RECVING)
     {
         result = globus_ftp_control_data_connect_read(
-            &op->data_handle->data_channel, GLOBUS_NULL, GLOBUS_NULL);
+            &op->data_handle->data_channel,
+            globus_l_gfs_data_begin_cb,
+            op);
         if(result != GLOBUS_SUCCESS)
         {
             goto error_connect;
         }
-    }    
-
-    event_reply = (globus_gfs_ipc_event_reply_t *) 
-        globus_calloc(1, sizeof(globus_gfs_ipc_event_reply_t));
-
-    event_reply->type = GLOBUS_GFS_EVENT_TRANSFER_BEGIN;
-    event_reply->id = op->id;
-    event_reply->transfer_id = (int) op;
-    if(op->event_callback != NULL)
-    {
-        op->event_callback(
-            event_reply,
-            op->user_arg);        
     }
     else
     {
-        globus_gfs_ipc_reply_event(
-            op->ipc_handle,
-            event_reply);
+        globus_assert(0 && "this should not be possible");
     }
 
-    return GLOBUS_SUCCESS;
-    
 error_connect:
-    op->state = GLOBUS_L_GFS_DATA_ERROR;
-    globus_gridftp_server_finished_transfer(op, result);
     return result;
 }
 
@@ -1964,164 +2048,54 @@ globus_gridftp_server_finished_transfer(
     globus_gfs_operation_t              op,
     globus_result_t                     result)
 {
-    globus_gfs_ipc_event_reply_t *      event_reply;   
-    globus_gfs_ipc_reply_t *            reply;   
     GlobusGFSName(globus_gridftp_server_finished_transfer);
-    
-    switch(op->state)
+
+    globus_mutex_lock(&op->mutex);
     {
-      case GLOBUS_L_GFS_DATA_PENDING:
-      case GLOBUS_L_GFS_DATA_REQUESTING:
-        op->state = GLOBUS_L_GFS_DATA_COMPLETE;
-        
-        if(result == GLOBUS_SUCCESS && op->sending)
+        if(result == GLOBUS_SUCCESS)
         {
-            result = globus_ftp_control_data_write(
-                &op->data_handle->data_channel,
-                "",
-                0,
-                0,
-                GLOBUS_TRUE,
-                globus_l_gfs_data_write_eof_cb,
+            op->cached_res = GLOBUS_SUCCESS;
+            switch(op->state)
+            {
+                case GLOBUS_L_GFS_DATA_SENDING:
+                    op->state = GLOBUS_L_GFS_DATA_COMPLETE;
+                    result = globus_ftp_control_data_write(
+                        &op->data_handle->data_channel,
+                        "",
+                        0,
+                        0,
+                        GLOBUS_TRUE,
+                        globus_l_gfs_data_write_eof_cb,
+                        op);
+                break;
+
+                case GLOBUS_L_GFS_DATA_RECVING:
+                    op->state = GLOBUS_L_GFS_DATA_COMPLETE;
+                    globus_callback_register_oneshot(
+                        NULL,
+                        NULL,
+                        globus_l_gfs_data_end_read_kickout,
+                        op);
+                    break;
+
+                default:
+                    globus_assert(0 && "Invalid state");
+                    break;
+            }
+        }
+        /* if this callback returned bad or if something went wrong above
+            processing this callback */
+        if(result != GLOBUS_SUCCESS)
+        {
+            op->cached_res = result;
+            globus_callback_register_oneshot(
+                NULL,
+                NULL,
+                globus_l_gfs_data_end_transfer_kickout,
                 op);
         }
-        if(result == GLOBUS_SUCCESS && !op->sending)
-        {
-            reply = (globus_gfs_ipc_reply_t *) 
-                globus_calloc(1, sizeof(globus_gfs_ipc_reply_t));
-            event_reply = (globus_gfs_ipc_event_reply_t *) 
-                globus_calloc(1, sizeof(globus_gfs_ipc_event_reply_t));
-         
-            event_reply->id = op->id;
-            event_reply->recvd_bytes = op->recvd_bytes;
-            event_reply->recvd_ranges = op->recvd_ranges;
-            
-            event_reply->type = GLOBUS_GFS_EVENT_BYTES_RECVD;
-            if(op->event_callback != NULL)
-            {
-                op->event_callback(
-                    event_reply,
-                    op->user_arg);        
-            }
-            else
-            {
-                globus_gfs_ipc_reply_event(
-                    op->ipc_handle,
-                    event_reply);
-            }
-
-            event_reply->type = GLOBUS_GFS_EVENT_RANGES_RECVD;
-            if(op->event_callback != NULL)
-            {
-                op->event_callback(
-                    event_reply,
-                    op->user_arg);        
-            }
-            else
-            {
-                globus_gfs_ipc_reply_event(
-                    op->ipc_handle,
-                    event_reply);
-            }
-        }                
-        if(result != GLOBUS_SUCCESS || !op->sending)
-        {
-            reply = (globus_gfs_ipc_reply_t *) 
-                globus_calloc(1, sizeof(globus_gfs_ipc_reply_t));
-            event_reply = (globus_gfs_ipc_event_reply_t *) 
-                globus_calloc(1, sizeof(globus_gfs_ipc_event_reply_t));
-         
-            event_reply->id = op->id;
-            event_reply->data_handle_id = (int) op->data_handle;
-            
-            /* XXX mode s only */         
-            event_reply->type = GLOBUS_GFS_EVENT_DISCONNECTED;        
-            if(op->event_callback != NULL)
-            {
-                op->event_callback(
-                    event_reply,
-                    op->user_arg);        
-            }
-            else
-            {
-                globus_gfs_ipc_reply_event(
-                    op->ipc_handle,
-                    event_reply);
-            }
-        
-            reply->type = GLOBUS_GFS_OP_TRANSFER;
-            reply->id = op->id;
-            reply->result = result;
-            if(op->callback != NULL)
-            {
-                op->callback(
-                    reply,
-                    op->user_arg);        
-            }
-            else
-            {
-                globus_gfs_ipc_reply_finished(
-                    op->ipc_handle,
-                    reply);
-            }
-            
-            globus_l_gfs_data_operation_destroy(op);
-        }
-        break;
-        
-      case GLOBUS_L_GFS_DATA_ERROR_COMPLETE:
-        op->state = GLOBUS_L_GFS_DATA_COMPLETE;
-        
-        globus_l_gfs_data_operation_destroy(op);
-        break;
-      
-      /* this state always means this was called internally */
-      case GLOBUS_L_GFS_DATA_ERROR:
-      case GLOBUS_L_GFS_DATA_ABORTING:
-        reply = (globus_gfs_ipc_reply_t *) 
-            globus_calloc(1, sizeof(globus_gfs_ipc_reply_t));
-        event_reply = (globus_gfs_ipc_event_reply_t *) 
-            globus_calloc(1, sizeof(globus_gfs_ipc_event_reply_t));
-
-        event_reply->type = GLOBUS_GFS_EVENT_DISCONNECTED;
-        event_reply->id = op->id;
-        event_reply->data_handle_id = (int) op->data_handle;
-        if(op->event_callback != NULL)
-        {
-            op->event_callback(
-                event_reply,
-                op->user_arg);        
-        }
-        else
-        {
-            globus_gfs_ipc_reply_event(
-                op->ipc_handle,
-                event_reply);
-        }
-
-        reply->type = GLOBUS_GFS_OP_TRANSFER;
-        reply->id = op->id;
-        reply->result = result;                    
-        if(op->callback != NULL)
-        {
-            op->callback(
-                reply,
-                op->user_arg);        
-        }
-        else
-        {
-            globus_gfs_ipc_reply_finished(
-                op->ipc_handle,
-                reply);
-        }
-
-        op->state = GLOBUS_L_GFS_DATA_ERROR_COMPLETE;
-        break;
-
-      default:
-        globus_assert(0 && "Invalid state");
-        break;
     }
+    globus_mutex_unlock(&op->mutex);
 }
 
 void
@@ -2133,6 +2107,7 @@ globus_gridftp_server_operation_finished(
     finished_info->id = op->id;
     finished_info->result = result;
 
+    /* XXX gotta do a onesot here */
     switch(finished_info->type)
     {
         case GLOBUS_GFS_OP_SESSION_START:
@@ -2171,6 +2146,7 @@ globus_gridftp_server_operation_event(
 {
     event_info->id = op->id;
 
+    /* XXX gotta do a onesot here ?? */
     switch(event_info->type)
     {
         case GLOBUS_GFS_EVENT_TRANSFER_BEGIN:
@@ -2205,12 +2181,12 @@ globus_gridftp_server_update_bytes_written(
 {
     GlobusGFSName(globus_gridftp_server_update_bytes_written);
 
-    globus_mutex_lock(&op->lock);
+    globus_mutex_lock(&op->mutex);
     {
         op->recvd_bytes += length;
         globus_range_list_insert(op->recvd_ranges, offset, length);
     }
-    globus_mutex_unlock(&op->lock);
+    globus_mutex_unlock(&op->mutex);
 
     return;
 }
@@ -2313,7 +2289,7 @@ globus_gridftp_server_get_read_range(
     int                                 i;
     GlobusGFSName(globus_gridftp_server_get_read_range);
     
-    globus_mutex_lock(&op->lock);
+    globus_mutex_lock(&op->mutex);
     {
         stripe_block_size = op->data_handle->attr.blocksize * 2;
         start_offset = op->stripe_chunk * stripe_block_size;
@@ -2393,7 +2369,7 @@ globus_gridftp_server_get_read_range(
             tmp_len = 0;
         }
     }
-    globus_mutex_unlock(&op->lock);
+    globus_mutex_unlock(&op->mutex);
     if(offset)
     {
         *offset = tmp_off;
@@ -2485,7 +2461,8 @@ globus_gridftp_server_register_write(
 
     if(op->data_handle->attr.mode == 'E')
     {
-        globus_mutex_lock(&op->lock);
+        /* XXX not sure what this is all about */
+        globus_mutex_lock(&op->mutex);
         {
             if(stripe_ndx != -1)
             {
@@ -2507,7 +2484,7 @@ globus_gridftp_server_register_write(
                 
             op->write_stripe++;
         }    
-        globus_mutex_unlock(&op->lock);
+        globus_mutex_unlock(&op->mutex);
     }
     else
     {
