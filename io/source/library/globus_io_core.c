@@ -726,11 +726,16 @@ globus_i_io_unregister_read(
 					      select_info));
     }
 
-    if(call_destructor != GLOBUS_FALSE &&
-       select_info->read_destructor != GLOBUS_NULL &&
-       select_info->read_arg)
+    if(call_destructor)
     {
-	select_info->read_destructor(select_info->read_arg);
+        if(select_info->read_destructor != GLOBUS_NULL &&
+            select_info->read_arg)
+        {
+    	    select_info->read_destructor(select_info->read_arg);
+        }
+        
+        select_info->read_callback = GLOBUS_NULL;
+        select_info->read_destructor = GLOBUS_NULL;
     }
 
     FD_CLR(handle->fd, globus_l_io_read_fds);
@@ -848,11 +853,16 @@ globus_i_io_unregister_write(
 	return globus_error_put(err);
     }
     
-    if(call_destructor != GLOBUS_FALSE &&
-       select_info->write_destructor != GLOBUS_NULL &&
-       select_info->write_arg)
+    if(call_destructor)
     {
-	select_info->write_destructor(select_info->write_arg);
+        if(select_info->write_destructor != GLOBUS_NULL &&
+            select_info->write_arg)
+        {
+    	    select_info->write_destructor(select_info->write_arg);
+        }
+        
+        select_info->write_callback = GLOBUS_NULL;
+        select_info->write_destructor = GLOBUS_NULL;
     }
 
     FD_CLR(handle->fd, globus_l_io_write_fds);
@@ -938,7 +948,8 @@ globus_i_io_register_except_func(
  */
 globus_result_t
 globus_i_io_unregister_except(
-    globus_io_handle_t *		handle)
+    globus_io_handle_t *		handle,
+    globus_bool_t			call_destructor)
 {
     globus_io_select_info_t *		select_info;
     static char *			myname="globus_i_io_unregister_except";
@@ -964,6 +975,11 @@ globus_i_io_unregister_except(
 	    myname);
 
 	return globus_error_put(err);
+    }
+    
+    if(call_destructor)
+    {
+        select_info->except_callback = GLOBUS_NULL;
     }
     
     FD_CLR(handle->fd, globus_l_io_except_fds);
@@ -1039,7 +1055,7 @@ globus_i_io_close(
 
     if(globus_l_io_except_isregistered(handle))
     {
-	globus_i_io_unregister_except(handle);
+	globus_i_io_unregister_except(handle, GLOBUS_TRUE);
 	if(rc == GLOBUS_SUCCESS)
 	{
 	    err = globus_io_error_construct_internal_error(
@@ -1152,6 +1168,11 @@ globus_i_io_close(
 	}
     }
 
+    if(globus_l_io_fd_table[handle->fd])
+    {
+        globus_l_io_fd_table[handle->fd]->handle = GLOBUS_NULL;
+    }
+    
     globus_i_io_debug_printf(3, (stderr, "%s(): exiting\n",myname));
 
     return(rc);
@@ -1476,7 +1497,9 @@ globus_i_io_register_cancel(
     cancel_except = GLOBUS_FALSE;
     if (globus_l_io_except_isregistered(select_info->handle))
     {
-	globus_i_io_unregister_except(select_info->handle);
+	globus_i_io_unregister_except(
+	    select_info->handle,
+	    GLOBUS_FALSE);
             
 	cancel_except = GLOBUS_TRUE;
     }
@@ -2217,7 +2240,7 @@ globus_l_io_handle_events(
 			    (stderr, "%s(): except, fd=%d\n", myname, fd));
 		        handle = select_info->handle;    
                         
-                        globus_i_io_unregister_except(handle);
+                        globus_i_io_unregister_except(handle, GLOBUS_FALSE);
                         globus_l_io_pending_count++;
                         
                         result = globus_callback_space_register_abstime_oneshot(
@@ -2674,7 +2697,7 @@ globus_l_io_deactivate(void)
 
 	select_info = globus_l_io_fd_table[fd];
 
-	if(select_info != GLOBUS_NULL)
+	if(select_info && select_info->handle)
 	{
 	    globus_i_io_register_cancel(
                 select_info->handle,
