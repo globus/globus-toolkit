@@ -371,6 +371,10 @@ globus_l_xio_gssapi_ftp_handle_destroy(
             &handle->gssapi_context,
             GLOBUS_NULL);
     }
+    if(handle->auth_gssapi_subject != NULL)
+    {
+        globus_free(handle->auth_gssapi_subject);
+    }
 
     globus_free(handle);
     GlobusXIOGssapiftpDebugExit();
@@ -746,6 +750,19 @@ globus_l_xio_gssapi_ftp_decode_adat(
     return res;
 }
 
+static void
+globus_l_xio_gssapi_ftp_free_cmd_a(
+    char **                             cmd_a)
+{
+    int                                 ndx;
+
+    for(ndx = 0; cmd_a[ndx] != NULL; ndx++)
+    {
+        globus_free(cmd_a[ndx]);
+    }
+    globus_free(cmd_a);
+}
+
 /*
  *  tokenize a command into a null teminated array of strings.  If the
  *  command being tokenized is a reply from the server this code will
@@ -1053,7 +1070,7 @@ globus_l_xio_gssapi_ftp_server_read_cb(
     globus_result_t                     res;
     globus_bool_t                       complete;
     globus_bool_t                       reply = GLOBUS_TRUE;
-    char **                             cmd_a;
+    char **                             cmd_a = NULL;
     GlobusXIOName(globus_l_xio_gssapi_ftp_server_read_cb);
 
     GlobusXIOGssapiftpDebugEnter();
@@ -1179,6 +1196,8 @@ globus_l_xio_gssapi_ftp_server_read_cb(
                 goto err;
             }
         }
+
+        globus_l_xio_gssapi_ftp_free_cmd_a(cmd_a);
     }
     globus_mutex_unlock(&handle->mutex);
 
@@ -1630,7 +1649,7 @@ globus_l_xio_gssapi_ftp_preauth_client_read_cb(
     char *                              send_buffer;
     char *                              tmp_buf;
     globus_l_xio_gssapi_ftp_handle_t *  handle;
-    char **                             cmd_a;
+    char **                             cmd_a = NULL;
     GlobusXIOName(globus_l_xio_gssapi_ftp_preauth_client_read_cb);
 
     GlobusXIOGssapiftpDebugEnter();
@@ -1799,6 +1818,7 @@ globus_l_xio_gssapi_ftp_preauth_client_read_cb(
                 goto err;
             }
         }
+        globus_l_xio_gssapi_ftp_free_cmd_a(cmd_a);
     }
     globus_mutex_lock(&handle->mutex);
 
@@ -1806,7 +1826,10 @@ globus_l_xio_gssapi_ftp_preauth_client_read_cb(
     return;
 
   err:
-
+    if(cmd_a != NULL)
+    {
+        globus_l_xio_gssapi_ftp_free_cmd_a(cmd_a);
+    }
     globus_xio_driver_finished_open(handle, op, res);
     GlobusXIOGssapiftpDebugExitWithError();
 }
