@@ -1061,6 +1061,7 @@ error_data:
         GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_ACTION_FAILED, 
         globus_error_print_friendly(globus_error_peek(result)));
 */
+    return;
 }
 
 static
