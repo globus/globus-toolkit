@@ -1,4 +1,4 @@
-%define ver 3.3p1
+%define ver 3.4p1
 %define rel 1
 
 # OpenSSH privilege separation requires a user & group ID
@@ -96,6 +96,10 @@ BuildPreReq: XFree86-devel
 %endif
 %if ! %{no_gnome_askpass}
 BuildPreReq: gnome-libs-devel
+%endif
+%if %{kerberos5}
+BuildPreReq: krb5-devel
+BuildPreReq: krb5-libs
 %endif
 
 %package clients
