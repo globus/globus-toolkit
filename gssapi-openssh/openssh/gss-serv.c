@@ -86,7 +86,8 @@ ssh_gssapi_supported_oids(gss_OID_set *oidset)
 	gss_OID_set supported;
 
 	gss_create_empty_oid_set(&min_status, oidset);
-	gss_indicate_mechs(&min_status, &supported);
+	/* Ask priviledged process what mechanisms it supports. */
+	PRIVSEP(gss_indicate_mechs(&min_status, &supported));
 
 	while (supported_mechs[i]->name != NULL) {
 		if (GSS_ERROR(gss_test_oid_set_member(&min_status,
