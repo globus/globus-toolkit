@@ -264,7 +264,7 @@ globus_error_set_source(
     globus_object_t *                   error,
     globus_module_descriptor_t *        source_module)
 {
-    return globus_error_base_set_source(error,source_module);
+    globus_error_base_set_source(error,source_module);
 }/* globus_error_set_source */
 /*@}*/
 
@@ -311,7 +311,7 @@ globus_error_set_cause (
     globus_object_t *                   error,
     globus_object_t *                   causal_error)
 {
-    return globus_error_base_set_cause(error,causal_error);
+    globus_error_base_set_cause(error,causal_error);
 }/* globus_error_set_cause */
 /*@}*/
 
