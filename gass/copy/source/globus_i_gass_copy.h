@@ -145,9 +145,9 @@ typedef struct globus_i_gass_copy_state_target_s
          */
 	struct /* GLOBUS_I_GASS_COPY_TARGET_MODE_IO */
 	{
-#ifdef USE_IO
-	    globus_io_handle *			handle;
-#endif
+
+	    globus_io_handle_t *		handle;
+
             /**
              * If the IO handle was passed as an argument then FALSE
              * If the IO handle was created internally then TRUE

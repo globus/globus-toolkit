@@ -89,8 +89,6 @@ typedef struct globus_gass_copy_handle_s
 {
     void *				user_pointer;
     /*  globus_ftp_client_handle_t	        ftp_handle; */
-    globus_io_handle_t *		io_handle;
-
 } globus_gass_copy_handle_t;
 
 /**
@@ -108,7 +106,8 @@ typedef struct globus_gass_copy_attr_s
     globus_ftp_control_parallel_t       parallel_info;
     globus_ftp_control_tcpbuffer_t      tcpbuffer_info;
     */
-    globus_gass_transfer_requestattr_t  gass_requestattr;
+  globus_io_attr_t * io;
+    globus_gass_transfer_requestattr_t * gass_requestattr;
 } globus_gass_copy_attr_t;
 
 /*  ????
