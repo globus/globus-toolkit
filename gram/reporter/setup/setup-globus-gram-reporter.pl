@@ -136,7 +136,7 @@ else
 system("grep \"The following lines for $selected_jm_type entry added by setup-globus-gram-reporter\" $ldif_conf >/dev/null");
 if ( ! $? )
 {
-   print "gram reporter entry for $selected_jm_type already added to $ldif_conf\n";
+   print "gram reporter entry for $selected_jm_type already added to $ldif_conf.  Skipping...\n";
 }
 else
 {
