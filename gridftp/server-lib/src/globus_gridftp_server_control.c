@@ -1605,17 +1605,19 @@ globus_l_gsc_intermediate_reply(
     globus_i_gsc_server_handle_t *          server_handle,
     const char *                            message)
 {
+    globus_size_t                           len;
     globus_result_t                         res;
     char *                                  tmp_ptr;
     GlobusGridFTPServerName(globus_l_gsc_intermediate_reply);
 
-    tmp_ptr = globus_libc_strdup(message);
     /*TODO: check state */
+
+    len = strlen(message);
     res = globus_xio_register_write(
             server_handle->xio_handle,
-            tmp_ptr,
-            strlen(tmp_ptr),
-            strlen(tmp_ptr),
+            message,
+            len,
+            len,
             NULL,
             globus_l_gsc_intermediate_reply_cb,
             server_handle);
@@ -2115,6 +2117,7 @@ globus_i_gsc_intermediate_reply(
     globus_l_gsc_reply_ent_t *              reply_ent;
     globus_i_gsc_server_handle_t *          server_handle;
     globus_result_t                         res;
+    char *                                  msg_cpy;
 
     server_handle = op->server_handle;
 
@@ -2122,7 +2125,8 @@ globus_i_gsc_intermediate_reply(
     {
         reply_ent = (globus_l_gsc_reply_ent_t *)
             globus_malloc(sizeof(globus_l_gsc_reply_ent_t));
-        reply_ent->msg = reply_msg;
+        reply_ent->msg = globus_libc_strdup(reply_msg);
+        globus_assert(reply_ent->msg != NULL); /* XXX do the right htings */
         reply_ent->op = op;
         reply_ent->final = GLOBUS_FALSE;
 
@@ -2130,10 +2134,12 @@ globus_i_gsc_intermediate_reply(
     }
     else
     {
+        msg_cpy = globus_libc_strdup(reply_msg);
+        globus_assert(msg_cpy != NULL); /* XXX do the right htings */
         server_handle->reply_outstanding = GLOBUS_TRUE;
         res = globus_l_gsc_intermediate_reply(
                 server_handle,
-                reply_msg);
+                msg_cpy);
         if(res != GLOBUS_SUCCESS)
         {
             server_handle->reply_outstanding = GLOBUS_FALSE;

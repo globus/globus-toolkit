@@ -40,7 +40,7 @@ globus_i_gsc_event_start(
     {
         event->stripe_count = op->server_handle->stripe_count;
         event->stripe_total_bytes = (globus_off_t *)
-            globus_calloc(sizeof(globus_off_t *) * event->stripe_count, 1);
+            globus_calloc(sizeof(globus_off_t) * event->stripe_count, 1);
 
         /* send out the first one */
         globus_l_gsc_send_perf_marker(op);
@@ -327,15 +327,20 @@ globus_gridftp_server_control_update_bytes(
     globus_off_t                            offset,
     globus_off_t                            length)
 {
+    GlobusGridFTPServerName(globus_gridftp_server_control_update_bytes);
+
     if(op == NULL)
     {
+        return GlobusGridFTPServerErrorParameter("op");
     }
 
     if(op->event.stripe_total_bytes == NULL)
     {
+        return GlobusGridFTPServerErrorParameter("op");
     }
     if(stripe_ndx > op->event.stripe_count || stripe_ndx < 0)
     {
+        return GlobusGridFTPServerErrorParameter("stripe_ndx");
     }
 
     op->event.stripe_total_bytes[stripe_ndx] += length;
