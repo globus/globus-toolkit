@@ -36,9 +36,9 @@
 #include "log.h"
 #include "packet.h"
 #include "dh.h"
+#include "canohost.h"
 #include "ssh2.h"
 #include "ssh-gss.h"
-#include "canohost.h"
 
 void
 kexgss_client(Kex *kex)
@@ -57,13 +57,15 @@ kexgss_client(Kex *kex)
 	char *lang;
 	int type = 0;
 	int first = 1;
-	int slen = 0, strlen;
+	int slen = 0;
+	u_int strlen;
 	
 	/* Initialise our GSSAPI world */
 	ssh_gssapi_build_ctx(&ctxt);
 	if (ssh_gssapi_client_id_kex(ctxt,kex->name)==NULL) {
 		fatal("Couldn't identify host exchange");
 	}
+
 	if (ssh_gssapi_import_name(ctxt,get_canonical_hostname(1))) {
 		fatal("Couldn't import hostname ");
 	}
@@ -92,7 +94,6 @@ kexgss_client(Kex *kex)
 
 		if (GSS_ERROR(maj_status)) {
 			if (send_tok.length!=0) {
-				/* Hmmm - not sure about this */
 				packet_start(SSH2_MSG_KEXGSS_CONTINUE);
 				packet_put_string(send_tok.value,
 						  send_tok.length);
@@ -148,19 +149,19 @@ kexgss_client(Kex *kex)
 				if (maj_status == GSS_S_COMPLETE) 
 					fatal("GSSAPI Continue received from server when complete");
 				recv_tok.value=packet_get_string(&strlen);
-				recv_tok.length=strlen; /* int vs. size_t */
+				recv_tok.length=strlen; /* u_int vs. size_t */
 				break;
 			case SSH2_MSG_KEXGSS_COMPLETE:
 				debug("Received GSSAPI_COMPLETE");
 			        packet_get_bignum2(dh_server_pub);
 			    	msg_tok.value=packet_get_string(&strlen);
-				msg_tok.length=strlen; /* int vs. size_t */
+				msg_tok.length=strlen; /* u_int vs. size_t */
 
 				/* Is there a token included? */
 				if (packet_get_char()) {
 					recv_tok.value=
 					    packet_get_string(&strlen);
-					recv_tok.length=strlen; /*int/size_t*/
+					recv_tok.length=strlen; /*u_int/size_t*/
 					/* If we're already complete - protocol error */
 					if (maj_status == GSS_S_COMPLETE)
 						packet_disconnect("Protocol error: received token when complete");

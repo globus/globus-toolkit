@@ -69,6 +69,11 @@
 # Kerberos TGT Passing only works with the AFS kaserver
 #KerberosTgtPassing no
 
+# Session hooks: if allowed, specify the commands to execute
+#AllowSessionHooks yes
+#SessionHookStartupCmd /bin/true
+#SessionHookShutdownCmd /bin/true
+
 # Set this to 'yes' to enable PAM keyboard-interactive authentication 
 # Warning: enabling this may bypass the setting of 'PasswordAuthentication'
 #PAMAuthenticationViaKbdInt no
