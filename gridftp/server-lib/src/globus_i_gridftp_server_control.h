@@ -236,6 +236,8 @@ typedef struct globus_i_gsc_op_s
     globus_i_gsc_auth_callback_t            auth_cb;
     globus_i_gsc_resource_callback_t        stat_cb;
 
+    uid_t                                   uid;
+
     /* stuff for resource */
     char *                                  path;
     globus_gridftp_server_control_resource_mask_t   mask;
@@ -263,21 +265,16 @@ typedef struct globus_i_gsc_attr_s
     int                                     version_ctl;
     globus_hashtable_t                      send_func_table;
     globus_hashtable_t                      recv_func_table;
-    globus_gridftp_server_control_resource_callback_t resource_func;
+    globus_gridftp_server_control_resource_cb_t resource_func;
     globus_gridftp_server_control_callback_t        done_func;
     char *                                  modes;
     char *                                  types;
     char *                                  base_dir;
 
-    globus_i_gsc_auth_callback_t                    auth_func;
+    globus_gridftp_server_control_auth_cb_t         auth_func;
     globus_gridftp_server_control_passive_connect_t passive_func;
     globus_gridftp_server_control_active_connect_t  active_func;
     globus_gridftp_server_control_data_destroy_t    data_destroy_func;
-
-    globus_gridftp_server_control_action_func_t     delete_func;
-    globus_gridftp_server_control_action_func_t     mkdir_func;
-    globus_gridftp_server_control_action_func_t     rmdir_func;
-    globus_gridftp_server_control_move_func_t       move_func;
 
     globus_gridftp_server_control_transfer_func_t   default_stor;
     globus_gridftp_server_control_transfer_func_t   default_retr;
@@ -360,6 +357,7 @@ typedef struct globus_i_gsc_server_handle_s
     int                                     opts_port_prt;
     int                                     opts_port_max;
 
+    globus_bool_t                           authenticated;
     /*
      *  user function pointers
      */
@@ -371,11 +369,7 @@ typedef struct globus_i_gsc_server_handle_s
     globus_gridftp_server_control_transfer_func_t   default_stor_cb;
     globus_gridftp_server_control_transfer_func_t   default_retr_cb;
 
-    /*  action functions  */
-    globus_gridftp_server_control_action_func_t     delete_cb;
-    globus_gridftp_server_control_action_func_t     mkdir_cb;
-    globus_gridftp_server_control_action_func_t     rmdir_cb;
-    globus_gridftp_server_control_move_func_t       move_cb;
+    globus_gridftp_server_control_auth_cb_t         auth_func;
 
     /* data functions */
     globus_gridftp_server_control_passive_connect_t passive_func;
@@ -383,7 +377,7 @@ typedef struct globus_i_gsc_server_handle_s
     globus_gridftp_server_control_data_destroy_t    data_destroy_func;
 
     /* list function */
-    globus_gridftp_server_control_resource_callback_t resource_func;
+    globus_gridftp_server_control_resource_cb_t resource_func;
     /* done function */
     globus_gridftp_server_control_callback_t        done_func;
 

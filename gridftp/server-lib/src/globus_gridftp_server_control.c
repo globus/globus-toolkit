@@ -857,10 +857,7 @@ globus_l_gsc_command_callout(
     globus_l_gsc_cmd_ent_t *                cmd_ent;
     globus_bool_t                           done = GLOBUS_FALSE;
 
-    if(op->server_handle->state == GLOBUS_L_GSC_STATE_OPEN)
-    {
-        auth = GLOBUS_TRUE;
-    }
+    auth = op->server_handle->authenticated;
 
     msg = "500 Invalid command.\r\n";
     while(!done)
@@ -1270,7 +1267,7 @@ globus_gridftp_server_control_start(
         globus_hashtable_copy(
             &server_handle->recv_table, &i_attr->recv_func_table, NULL);
         server_handle->resource_func = i_attr->resource_func;
-        server_handle->auth_cb = i_attr->auth_func;
+        server_handle->auth_func = i_attr->auth_func;
         server_handle->done_func = i_attr->done_func;
         server_handle->passive_func = i_attr->passive_func;
         server_handle->active_func = i_attr->active_func;
@@ -1675,104 +1672,6 @@ globus_i_gsc_get_help(
     return NULL;
 }
 
-/*
-static void
-globus_l_gsc_user_op_kickout(
-    void *                                          user_arg)
-{
-    globus_i_gsc_server_t *                         i_server;
-    globus_i_gsc_op_t *                             i_op;
-
-    i_op = (globus_i_gsc_op_t *) user_arg;
-    i_server = i_op->server;
-
-    switch(i_op->type)
-    {
-        case GLOBUS_L_GSC_OP_TYPE_AUTH:
-            i_server->auth_cb(
-                i_op,
-                i_op->username,
-                i_op->password,
-                i_op->cred,
-                i_op->del_cred);
-            break;
-
-        case GLOBUS_L_GSC_OP_TYPE_RESOURCE:
-            i_server->resource_func(
-                i_op,
-                i_op->path,
-                i_op->mask);
-            break;
-
-        case GLOBUS_L_GSC_OP_TYPE_CREATE_PASV:
-            / *
-             *  all of this should be safe outside of lock
-             * /
-            / * the data channel is not cacheable so destroy it * /
-            if(i_server->data_object != NULL)
-            {
-                i_server->data_destroy_func(
-                    i_server->data_object->user_handle);
-                globus_free(i_server->data_object);
-                i_server->data_object = NULL;
-            }
-            / * call the user passive func * /
-            i_server->passive_func(
-                i_op,
-                i_op->net_prt,
-                i_op->max_cs);
-            break;
-
-        case GLOBUS_L_GSC_OP_TYPE_CREATE_PORT:
-            if(i_server->data_object != NULL)
-            {
-                i_server->data_destroy_func(
-                    i_server->data_object->user_handle);
-                globus_free(i_server->data_object);
-                i_server->data_object = NULL;
-            }
-            i_op->server->active_func(
-                i_op,
-                i_op->net_prt,
-                (const char **)i_op->cs,
-                i_op->max_cs);
-            break;
-
-        case GLOBUS_L_GSC_OP_TYPE_DATA:
-            globus_assert(i_server->data_object != NULL);
-            i_op->user_data_cb(
-                i_op,
-                i_server->data_object->user_handle,
-                i_op->path,
-                i_op->mod_name,
-                i_op->mod_parms);
-            break;
-
-        default:
-            globus_assert(0);
-            break;
-    }
-}
-
-
-static globus_result_t
-globus_l_gsc_perform_op(
-    globus_i_gsc_op_t *                             op)
-{
-    globus_result_t                                 res = GLOBUS_SUCCESS;
-    GlobusGridFTPServerName(globus_l_gsc_perform_op);
-
-    res = globus_callback_space_register_oneshot(
-            NULL,
-            NULL,
-            globus_l_gsc_user_op_kickout,
-            (void *)op,
-            GLOBUS_CALLBACK_GLOBAL_SPACE);
-
-    return res;
-}
-
-
 globus_result_t
 globus_i_gsc_resource_query(
     globus_i_gsc_op_t *                     op,
@@ -1781,28 +1680,7 @@ globus_i_gsc_resource_query(
     globus_i_gsc_resource_callback_t        cb,
     void *                                  user_arg)
 {
-    globus_result_t                         res;
-    GlobusGridFTPServerName(globus_i_gsc_resource_query);
-
-    op->type = GLOBUS_L_GSC_OP_TYPE_RESOURCE;
-    op->res = GLOBUS_SUCCESS;
-    op->user_arg = user_arg;
-    op->stat_cb = cb;
-    op->path = globus_i_gsc_concat_path(op->server_handle, path);
-    if(user_op->path == NULL)
-    {
-        goto err;
-    }
-    res = globus_l_gsc_perform_op(user_op);
-    if(res != GLOBUS_SUCCESS)
-    {
-        goto err;
-    }
-
     return GLOBUS_SUCCESS;
-
-  err:
-    return res;
 }
 
 globus_result_t
@@ -1823,54 +1701,107 @@ globus_i_gsc_authenticate(
     op->res = GLOBUS_SUCCESS;
     op->user_arg = user_arg;
 
-    if(username != NULL)
+    if(user != NULL)
     {
         op->username = globus_libc_strdup(user);
     }
-    if(password != NULL)
+    if(pass != NULL)
     {
         op->password = globus_libc_strdup(pass);
     }
     op->cred = cred;
     op->del_cred = del_cred;
 
-    res = globus_l_gsc_perform_op(i_op);
+    /* call out to user */
+    op->server_handle->auth_func(
+        op,
+        op->username,
+        op->password,
+        op->cred,
+        op->del_cred);
 
     return res;
 }
 
 globus_result_t
-globus_i_gsc_passive(
+globus_i_gsc_port(
     globus_i_gsc_op_t *                     op,
-    int                                     max
-    int                                     net_prt,
-    globus_gridftp_server_control_pmod_passive_callback_t   cb,
+    const char **                           contact_strings,
+    int                                     stripe_count,
+    int                                     prt,
+    globus_i_gsc_port_callback_t            cb,
     void *                                  user_arg)
 {
-
-    op->res = GLOBUS_SUCCESS;
-    op->user_arg = user_arg;
-    op->max_cs = max;
-    op->net_prt = net_prt;
-    op->passive_cb = cb;
-    op->cs = NULL;
-    op->type = GLOBUS_L_GSC_OP_TYPE_CREATE_PASV;
-
-            if(!globus_fifo_empty(&i_server->data_q))
-        {
-            globus_fifo_enqueue(&i_server->data_q, i_op);
-        }
-        else
-        {
-            globus_fifo_enqueue(&i_server->data_q, i_op);
-            res = globus_l_gsc_perform_op(i_op);
-                                                                                
-            if(res != GLOBUS_SUCCESS)
-            {
-                globus_fifo_dequeue(&i_server->data_q);
-                globus_free(i_op);
-            }
-        }
-
+    return GLOBUS_SUCCESS;
 }
-*/
+
+
+globus_result_t
+globus_i_gsc_passive(
+    globus_i_gsc_op_t *                     op,
+    int                                     max,
+    int                                     net_prt,
+    globus_i_gsc_passive_callback_t         cb,
+    void *                                  user_arg)
+{
+    return GLOBUS_SUCCESS;
+}
+
+ /*************************************************************************
+ *      user command finished functions
+ *      -------------------------------
+ *  check and store parameters, then just one shot.  easiest way to go.
+ *************************************************************************/
+static void
+globus_l_gsc_command_cb_kickout(
+    void *                                  user_arg)
+{
+    globus_i_gsc_op_t *                     op;
+
+    op = (globus_i_gsc_op_t *) user_arg;
+
+    switch(op->type)
+    {
+        case GLOBUS_L_GSC_OP_TYPE_AUTH:
+            op->auth_cb(
+                op,
+                op->res,
+                op->user_arg);
+            break;
+
+        default:
+            break;
+    }
+}
+
+globus_result_t
+globus_gridftp_server_control_finished_auth(
+    globus_i_gsc_op_t *                     op,
+    globus_result_t                         res,
+    uid_t                                   uid)
+{
+    /* TODO: verify parameters */
+
+    if(res == GLOBUS_SUCCESS)
+    {
+        op->server_handle->authenticated = GLOBUS_TRUE;
+    }
+
+    op->res = res;
+    op->uid = uid;
+    res = globus_callback_space_register_oneshot(
+            NULL,
+            NULL,
+            globus_l_gsc_command_cb_kickout,
+            (void *)op,
+            GLOBUS_CALLBACK_GLOBAL_SPACE);
+    if(res != GLOBUS_SUCCESS)
+    {
+        globus_panic(
+            &globus_i_gridftp_server_control_module,
+            res,
+            "one shot failed.");
+    }
+
+    return GLOBUS_SUCCESS;
+}

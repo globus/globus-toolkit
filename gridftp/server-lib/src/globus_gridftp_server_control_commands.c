@@ -37,6 +37,12 @@ globus_l_gsc_ls_line(
     globus_gridftp_server_control_stat_t *          stat_info,
     char *                                          path);
 
+static void
+globus_l_gsc_cmd_transfer(
+    globus_l_gsc_cmd_wrapper_t *           wrapper)
+{
+    
+}
 /*************************************************************************
  *                      simple commands
  *                      ---------------

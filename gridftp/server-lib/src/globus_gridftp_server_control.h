@@ -175,7 +175,7 @@ typedef enum globus_gridftp_server_control_event_type_e
  *  globus_gridftp_server_control_finished_auth() with the appropriate values.
  */
 typedef void
-(*globus_gridftp_server_control_auth_callback_t)(
+(*globus_gridftp_server_control_auth_cb_t)(
     globus_gridftp_server_control_operation_t       op,
     const char *                                    user_name,
     const char *                                    pw,
@@ -230,7 +230,7 @@ typedef void
  *  parameters.
  */
 typedef void
-(*globus_gridftp_server_control_resource_callback_t)(
+(*globus_gridftp_server_control_resource_cb_t)(
     globus_gridftp_server_control_operation_t       op,
     const char *                                    path,
     globus_gridftp_server_control_resource_mask_t   mask);
@@ -362,12 +362,12 @@ globus_gridftp_server_control_attr_copy(
 globus_result_t
 globus_gridftp_server_control_attr_set_resource(
     globus_gridftp_server_control_attr_t            in_attr,
-    globus_gridftp_server_control_resource_callback_t resource_cb);
+    globus_gridftp_server_control_resource_cb_t     resource_cb);
 
 globus_result_t
 globus_gridftp_server_control_attr_set_auth(
     globus_gridftp_server_control_attr_t            in_attr,
-    globus_gridftp_server_control_auth_callback_t   auth_cb);
+    globus_gridftp_server_control_auth_cb_t         auth_cb);
 
 globus_result_t
 globus_gridftp_server_control_attr_set_done(
