@@ -32,7 +32,7 @@ import org.globus.ogsa.base.streaming.FileStreamPortType;
 import org.globus.ogsa.GridConstants;
 import org.globus.ogsa.GridContext;
 import org.globus.ogsa.GridServiceException;
-import org.globus.ogsa.impl.core.service.QueryHelper;
+import org.globus.ogsa.utils.QueryHelper;
 import org.globus.ogsa.impl.ogsi.GridServiceImpl;
 import org.globus.ogsa.impl.security.authentication.SecureServicePropertiesHelper;
 import org.globus.ogsa.impl.security.authentication.SecurityManager;
