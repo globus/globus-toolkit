@@ -1022,22 +1022,12 @@ globus_gram_job_manager_script_cache_cleanup(
         return(GLOBUS_FAILURE);
     }
 
-    fprintf(script_arg_fp,
-	    "$description = {\n"
-	    "    cachetag => [ '%s']",
-	    request->cache_tag);
-    
-    if(request->jobmanager_logfile)
-    {
-        fprintf(script_arg_fp, ",\nlogfile => [ '%s' ]",
-                request->jobmanager_logfile);
-    }
-    fprintf(script_arg_fp, "\n};\n");
+    globus_l_gram_job_manager_script_write_description(
+	    script_arg_fp,
+	    request,
+	    NULL);
 
     fclose(script_arg_fp);
-
-    globus_gram_job_manager_request_log(request,
-          "JMI: in globus_gram_job_manager_script_cache_cleanup()\n" );
 
     rc = globus_l_gram_job_manager_script_run(
                 request,
