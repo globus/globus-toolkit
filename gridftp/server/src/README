@@ -85,6 +85,12 @@ Command line arguments:
               default $GLOBUS_LOCATION/etc/gridftp.conf 
 -G <globus_loc> use this path as the $GLOBUS_LOCATION
 
+Striping/remote data node options:
+-dn           run as a remote data-node
+-r <host:port>[,<host:port>...]
+              list of remote data-nodes to connect to
+              
+
 Configuration file and environment variables:
 
 The configuration is loaded from /etc/grid-security/gridftp.conf and then 

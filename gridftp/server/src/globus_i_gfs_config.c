@@ -54,7 +54,8 @@ static const globus_l_gfs_config_option_t option_list[] =
  {"version", NULL, NULL, "-version", "-v", GLOBUS_L_GFS_CONFIG_BOOL, 0},
  {"versions", NULL, NULL, "-versions", "-V", GLOBUS_L_GFS_CONFIG_BOOL, 0},
  {"exec_name", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, NULL},
- {"argv", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_VOID, 0}
+ {"argv", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_VOID, 0},
+ {"argc", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_INT, 0}
 };
 
 static int option_count = sizeof(option_list) / sizeof(globus_l_gfs_config_option_t);
@@ -631,6 +632,7 @@ globus_i_gfs_config_init(
     globus_l_gfs_config_load_commandline(argc, argv);
     globus_l_gfs_config_misc();
     globus_l_gfs_config_set("argv", argv);
+    globus_l_gfs_config_set("argc", (void *) argc);
 
     globus_free(local_config_file);
         

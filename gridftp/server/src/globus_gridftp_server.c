@@ -14,6 +14,7 @@ static globus_xio_driver_t              globus_l_gfs_tcp_driver = GLOBUS_NULL;
 static globus_xio_server_t              globus_l_gfs_xio_server = GLOBUS_NULL;
 static globus_bool_t                    globus_l_gfs_xio_server_accepting;
 static globus_xio_attr_t                globus_l_gfs_xio_attr;
+static globus_bool_t                    globus_l_gfs_exit = GLOBUS_FALSE;
 
 static
 void
@@ -39,73 +40,54 @@ globus_l_gfs_bad_signal_handler(
         GLOBUS_I_GFS_LOG_ERR, 
         "an unexpected signal occured: %d\n", 
         signum);
-    exit(signum);
+    if(!globus_l_gfs_exit)
+    {
+        signal(signum, SIG_DFL);
+        raise(signum);
+    }
+    else
+    {
+        exit(signum);
+    }
+}
+
+
+static
+void 
+globus_l_gfs_sigint(
+    void *                              user_arg)
+{
+    
+    globus_mutex_lock(&globus_l_gfs_mutex);
+    {
+        globus_l_gfs_open_count = 0;
+    }
+    globus_mutex_unlock(&globus_l_gfs_mutex);
+    globus_l_gfs_terminate_server(GLOBUS_TRUE);
+    globus_i_gfs_log_message(
+        GLOBUS_I_GFS_LOG_ERR, 
+        "Server is exiting...\n");         
 }
 
 static
-void
-globus_gfs_signal_init()
+void 
+globus_l_gfs_sighup(
+    void *                              user_arg)
 {
-#   ifdef SIGKILL
-    {
-        signal(SIGKILL, globus_l_gfs_bad_signal_handler);
-    }
-#   endif
-#   ifdef SIGSEGV
-    {
-        //signal(SIGSEGV, globus_l_gfs_bad_signal_handler);
-    }
-#   endif
-#   ifdef SIGABRT
-    {
-        //signal(SIGABRT, globus_l_gfs_bad_signal_handler);
-    }
-#   endif
-#   ifdef SIGBUS
-    {
-        signal(SIGBUS, globus_l_gfs_bad_signal_handler);
-    }
-#   endif
-#   ifdef SIGFPE
-    {
-        signal(SIGFPE, globus_l_gfs_bad_signal_handler);
-    }
-#   endif
-#   ifdef SIGILL
-    {
-        signal(SIGILL, globus_l_gfs_bad_signal_handler);
-    }
-#   endif
-#   ifdef SIGIOT
-    {
-        signal(SIGIOT, globus_l_gfs_bad_signal_handler);
-    }
-#   endif
-#   ifdef SIGPIPE
-    {
-        //signal(SIGPIPE, globus_l_gfs_bad_signal_handler);
-    }
-#   endif
-#   ifdef SIGEMT
-    {
-        signal(SIGEMT, globus_l_gfs_bad_signal_handler);
-    }
-#   endif
-#   ifdef SIGSYS
-    {
-        signal(SIGSYS, globus_l_gfs_bad_signal_handler);
-    }
-#   endif
-#   ifdef SIGTRAP
-    {
-        signal(SIGTRAP, globus_l_gfs_bad_signal_handler);
-    }
-#   endif
-#   ifdef SIGSTOP
-    {
-        signal(SIGSTOP, globus_l_gfs_bad_signal_handler);
-    }
-#   endif
+    int                                 argc;
+    char **                             argv;
+
+    globus_i_gfs_log_message(
+        GLOBUS_I_GFS_LOG_INFO, 
+        "Reloading config...\n");         
+    
+    argv = (char **) globus_i_gfs_config_get("argv");
+    argc = globus_i_gfs_config_int("argc");
+    
+    globus_i_gfs_config_init(argc, argv);
+    globus_i_gfs_log_message(
+        GLOBUS_I_GFS_LOG_INFO, 
+        "Done reloading config.\n");           
 }
 
 /* now have an open channel (when we get here, we hand off to the
@@ -113,7 +95,6 @@ globus_gfs_signal_init()
  * XXX all thats left for process management is to setuid iff this is an inetd
  * instance (or spawned from this daemon code)
  */
-
 static
 void 
 globus_l_gfs_sigchld(
@@ -155,6 +136,93 @@ globus_l_gfs_sigchld(
         globus_l_gfs_open_count--;
     }
     globus_mutex_unlock(&globus_l_gfs_mutex);        
+}
+
+static
+void
+globus_l_gfs_signal_init()
+{
+    
+#   ifdef SIGINT
+    globus_callback_register_signal_handler(
+        SIGINT,
+        GLOBUS_TRUE,
+        globus_l_gfs_sigint,
+        NULL);
+#   endif
+
+#   ifdef SIGHUP
+    globus_callback_register_signal_handler(
+        SIGHUP,
+        GLOBUS_TRUE,
+        globus_l_gfs_sighup,
+        NULL);
+#   endif
+
+#   ifdef SIGKILL
+    {
+        signal(SIGKILL, globus_l_gfs_bad_signal_handler);
+    }
+#   endif
+#   ifdef SIGSEGV
+    {
+        signal(SIGSEGV, globus_l_gfs_bad_signal_handler);
+    }
+#   endif
+#   ifdef SIGABRT
+    {
+        signal(SIGABRT, globus_l_gfs_bad_signal_handler);
+    }
+#   endif
+#   ifdef SIGBUS
+    {
+        signal(SIGBUS, globus_l_gfs_bad_signal_handler);
+    }
+#   endif
+#   ifdef SIGFPE
+    {
+        signal(SIGFPE, globus_l_gfs_bad_signal_handler);
+    }
+#   endif
+#   ifdef SIGILL
+    {
+        signal(SIGILL, globus_l_gfs_bad_signal_handler);
+    }
+#   endif
+#   ifdef SIGIOT
+    {
+        signal(SIGIOT, globus_l_gfs_bad_signal_handler);
+    }
+#   endif
+#   ifdef SIGPIPE
+    {
+        signal(SIGPIPE, globus_l_gfs_bad_signal_handler);
+    }
+#   endif
+#   ifdef SIGEMT
+    {
+        signal(SIGEMT, globus_l_gfs_bad_signal_handler);
+    }
+
+#   endif
+#   ifdef SIGSYS
+    {
+        signal(SIGSYS, globus_l_gfs_bad_signal_handler);
+    }
+
+#   endif
+#   ifdef SIGTRAP
+    {
+        signal(SIGTRAP, globus_l_gfs_bad_signal_handler);
+    }
+
+#   endif
+#   ifdef SIGSTOP
+    {
+        signal(SIGSTOP, globus_l_gfs_bad_signal_handler);
+    }
+
+#   endif
 }
 
 
@@ -494,8 +562,11 @@ error_register_accept:
     globus_mutex_unlock(&globus_l_gfs_mutex);
     
 error_accept:
-    globus_i_gfs_log_result("Unable to accept connections", result);
-    globus_l_gfs_terminate_server(GLOBUS_FALSE);
+    if(!globus_l_gfs_terminated)
+    {
+        globus_i_gfs_log_result("Unable to accept connections", result);
+        globus_l_gfs_terminate_server(GLOBUS_FALSE);
+    }
 }
 
 /* start up a daemon which will spawn server instances */
@@ -602,9 +673,9 @@ main(
     
     globus_i_gfs_config_init(argc, argv);
     globus_i_gfs_log_open();
+    globus_l_gfs_signal_init();
     globus_i_gfs_data_init();
     globus_gfs_ipc_init();
-    globus_gfs_signal_init();
 
     if(globus_i_gfs_config_bool("version"))
     {
@@ -639,7 +710,7 @@ main(
     
     result = globus_xio_attr_init(&globus_l_gfs_xio_attr);
     globus_l_gfs_check_log_and_die(result);
-        
+
     if(globus_i_gfs_config_bool("inetd"))
     {
         globus_l_gfs_convert_inetd_handle();
