@@ -35,6 +35,7 @@ EXTERN_C_BEGIN
 #include "globus_common.h"
 #include "version.h"
 #include "globus_error_generic.h"
+#include "globus_error_string.h"
 
 /**
  * @defgroup globus_openssl_error_object Error Construction

@@ -11,6 +11,7 @@
 #endif
 
 #include "globus_error_openssl.h"
+#include "openssl/err.h"
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 
@@ -104,15 +105,14 @@ globus_error_wrap_openssl_error(
     int                                 linenumber;
     globus_object_t *                   temp_openssl_error = NULL;
 
-    error_code = ERR_get_error_line(&filename, &linenumber);
+    error_code = ERR_get_error_line((const char **) &filename, &linenumber);
 
     if(error_code == 0)
     {
         return globus_error_construct_error(
             base_source,
-            NULL,
+            temp_openssl_error,
             error_type,
-            openssl_error,
             "Expected an OpenSSL error.  OpenSSL Error NOT FOUND");
     }
 
@@ -134,7 +134,8 @@ globus_error_wrap_openssl_error(
             return GLOBUS_NULL;
         }
 
-        error_code = ERR_get_error_line(&filename, &linenumber);
+        error_code = ERR_get_error_line((const char **) &filename, 
+                                        &linenumber);
     }
 
     /* there shouldn't be any more errors in the 
@@ -146,6 +147,5 @@ globus_error_wrap_openssl_error(
         base_source,
         temp_openssl_error, 
         error_type,
-        openssl_error,
         error_description);
 }
