@@ -100,6 +100,7 @@ my $keyfiles = {
 my($prompt, $force, $verbose);
 
 $prompt = 1;
+$verbose = 0;
 
 GetOptions(
             'prompt!' => \$prompt,
@@ -118,36 +119,8 @@ setPrivilegeSeparation(0);
 # point.
 #
 
-print "$myname: Configuring package 'gsi_openssh'...\n";
-print "---------------------------------------------------------------------\n";
-print "Hi, I'm the setup script for the gsi_openssh package!  I will create\n";
-print "a number of configuration files based on your local system setup.  I\n";
-print "will also attempt to copy or create a number of SSH key pairs for\n";
-print "this machine.  (Loosely, if I find a pair of host keys in /etc/ssh,\n";
-print "I will copy them into \$GLOBUS_LOCATION/etc/ssh.  Otherwise, I will\n";
-print "generate them for you.)\n";
-print "\n";
-
-if ( isForced() )
-{
-    print "WARNING:\n";
-    print "\n";
-    print "    Using the '-force' flag will cause all gsi_openssh_setup files to\n";
-    print "    be removed and replaced by new versions!  Backup any critical\n";
-    print "    SSH configuration files before you choose to continue!\n";
-    print "\n";
-}
-
-$response = query_boolean("Do you wish to continue with the setup package?","y");
-if ($response eq "n")
-{
-    print "\n";
-    print "Exiting gsi_openssh setup.\n";
-
-    exit;
-}
-
-print "\n";
+debug0("$myname: Configuring package 'gsi_openssh'...\n");
+debug0("---------------------------------------------------------------------\n");
 
 makeConfDir();
 copyPRNGFile();
@@ -160,80 +133,21 @@ my $metadata = new Grid::GPT::Setup(package_name => "gsi_openssh_setup");
 
 $metadata->finish();
 
-print "\n";
-print "Additional Notes:\n";
-print "\n";
-print "  o I see that you have your GLOBUS_LOCATION environmental variable\n";
-print "    set to:\n";
-print "\n";
-print "        \"$gpath\"\n";
-print "\n";
-print "    Remember to keep this variable set (correctly) when you want to\n";
-print "    use the executables that came with this package.\n";
-print "\n";
-print "    After that you may execute, for example:\n";
-print "\n";
-print "        \$ . \$GLOBUS_LOCATION/etc/globus-user-env.sh\n";
-print "\n";
-print "    to prepare your environment for running the gsi_openssh\n";
-print "    executables.\n";
-print "\n";
-print "  o I recommend you review and customize to your liking the contents of\n";
-print "\n";
-print "        \$GLOBUS_LOCATION/etc/ssh\n";
-print "\n";
-print "    \"I can only show you the door.  You have to walk through it.\"\n";
+debug1("\n");
+debug0("Notes:\n\n");
 
-if ( !getPrivilegeSeparation() )
+if ( getPrivilegeSeparation() )
 {
-    print "\n";
-    print "  o For System Administrators:\n";
-    print "\n";
-    print "    If you are going to run the GSI-OpenSSH server, we recommend\n";
-    print "    enabling privilege separation.  Although this package supports\n";
-    print "    this feature, your system appears to require some additional\n";
-    print "    configuration.\n";
-    print "\n";
-    print "    From the file README.privsep, included as a part of the OpenSSH\n";
-    print "    distribution:\n";
-    print "\n";
-    print "        When privsep is enabled, during the pre-authentication\n";
-    print "        phase sshd will chroot(2) to \"/var/empty\" and change its\n";
-    print "        privileges to the \"sshd\" user and its primary group.  sshd\n";
-    print "        is a pseudo-account that should not be used by other\n";
-    print "        daemons, and must be locked and should contain a \"nologin\"\n";
-    print "        or invalid shell.\n";
-    print "\n";
-    print "        You should do something like the following to prepare the\n";
-    print "        privsep preauth environment:\n";
-    print "\n";
-    print "            \# mkdir /var/empty\n";
-    print "            \# chown root:sys /var/empty\n";
-    print "            \# chmod 755 /var/empty\n";
-    print "            \# groupadd sshd\n";
-    print "            \# useradd -g sshd -c 'sshd privsep' -d /var/empty \\\n";
-    print "            -s /bin/false sshd\n";
-    print "\n";
-    print "        /var/empty should not contain any files.\n";
+    debug0("  o Privilege separation is on.\n");
+}
+elsif ( !getPrivilegeSeparation() )
+{
+    debug0("  o Privilege separation is off.\n");
 }
 
-print "\n";
-print "  o For more information about GSI-Enabled OpenSSH, visit:\n";
-print "    <http://grid.ncsa.uiuc.edu/ssh/>\n";
-
-#
-# give the user a chance to read all of this output
-#
-
-if ( $prompt )
-{
-    print "\n";
-    print "Press <return> to continue... ";
-    $trash = <STDIN>;
-}
-
-print "---------------------------------------------------------------------\n";
-print "$myname: Finished configuring package 'gsi_openssh'.\n";
+debug0("  o GSI-OpenSSH website is <http://grid.ncsa.uiuc.edu/ssh/>.\n");
+debug0("---------------------------------------------------------------------\n");
+debug0("$myname: Finished configuring package 'gsi_openssh'.\n");
 
 exit;
 
@@ -269,7 +183,7 @@ sub initPRNGHash( )
     addPRNGCommand("\@PROG_IPCS\@", "ipcs");
     addPRNGCommand("\@PROG_TAIL\@", "tail");
 
-    print "Determining paths for PRNG commands...\n";
+    debug1("Determining paths for PRNG commands...\n");
 
     $paths = determinePRNGPaths();
 
@@ -334,13 +248,13 @@ sub copyPRNGFile
 
     if ( isPresent("$sysconfdir/ssh_prng_cmds") && !isForced() )
     {
-        printf("ssh_prng_cmds found and not forced.  Not installing ssh_prng_cmds...\n");
+        debug1("ssh_prng_cmds found and not forced.  Not installing ssh_prng_cmds...\n");
         return;
     }
 
     initPRNGHash();
 
-    print "Fixing paths in ssh_prng_cmds...\n";
+    debug1("Fixing paths in ssh_prng_cmds...\n");
 
     $fileInput = "$setupdir/ssh_prng_cmds.in";
     $fileOutput = "$sysconfdir/ssh_prng_cmds";
@@ -351,7 +265,7 @@ sub copyPRNGFile
 
     if ( !isReadable($fileInput) )
     {
-        printf("Cannot read $fileInput... skipping.\n");
+        debug1("Cannot read $fileInput... skipping.\n");
         return;
     }
 
@@ -524,7 +438,7 @@ sub copyKeyFiles
 
     if (@$copylist)
     {
-        print "Copying ssh host keys...\n";
+        debug1("Copying ssh host keys...\n");
 
         for my $f (@$copylist)
         {
@@ -651,11 +565,11 @@ sub makeConfDir
             return;
         }
 
-        print("${sysconfdir} already exists and is not a directory!\n");
+        debug1("${sysconfdir} already exists and is not a directory!\n");
         exit;
     }
 
-    print "Could not find ${sysconfdir} directory... creating.\n";
+    debug1("Could not find ${sysconfdir} directory... creating.\n");
     action("mkdir -p $sysconfdir");
 
     return;
@@ -756,7 +670,7 @@ sub runKeyGen
 
     if (@$gen_keys && -x $keygen)
     {
-        print "Generating ssh host keys...\n";
+        debug1("Generating ssh host keys...\n");
 
         for my $k (@$gen_keys)
         {
@@ -785,7 +699,7 @@ sub copySSHDConfigFile
     my($line, $newline);
     my($privsep_enabled);
 
-    print "Fixing paths in sshd_config...\n";
+    debug1("Fixing paths in sshd_config...\n");
 
     $fileInput = "$setupdir/sshd_config.in";
     $fileOutput = "$sysconfdir/sshd_config";
@@ -796,7 +710,7 @@ sub copySSHDConfigFile
 
     if ( !isReadable($fileInput) )
     {
-        printf("Cannot read $fileInput... skipping.\n");
+        debug1("Cannot read $fileInput... skipping.\n");
         return;
     }
 
@@ -916,25 +830,25 @@ sub prepareFileWrite
 
     if ( isPresent($file) )
     {
-        printf("$file already exists... ");
+        debug1("$file already exists... ");
 
         if ( isForced() )
         {
             if ( isWritable($file) )
             {
-                printf("removing.\n");
+                debug1("removing.\n");
                 action("rm $file");
                 return 1;
             }
             else
             {
-                printf("not writable -- skipping.\n");
+                debug1("not writable -- skipping.\n");
                 return 0;
             }
         }
         else
         {
-            printf("skipping.\n");
+            debug1("skipping.\n");
             return 0;
         }
     }
@@ -961,7 +875,7 @@ sub copyConfigFiles
     # do straight copies of the ssh_config and moduli files.
     #
 
-    printf("Copying ssh_config and moduli to their proper location...\n");
+    debug1("Copying ssh_config and moduli to their proper location...\n");
 
     copyFile("$setupdir/ssh_config", "$sysconfdir/ssh_config");
     copyFile("$setupdir/moduli", "$sysconfdir/moduli");
@@ -985,7 +899,7 @@ sub copyFile
 
     if ( !isReadable($src) )
     {
-        printf("$src is not readable... not creating $dest.\n");
+        debug1("$src is not readable... not creating $dest.\n");
         return;
     }
 
@@ -1010,7 +924,7 @@ sub copySXXScript
 
     if ( !isReadable($in) )
     {
-        printf("$in is not readable... not creating $out.\n");
+        debug1("$in is not readable... not creating $out.\n");
         return;
     }
 
@@ -1093,6 +1007,47 @@ sub writeFile
     close(OUT);
 }
 
+### debug1( $arg1, $arg2 )
+#
+# Print out a debugging message at level 1.
+#
+
+sub debug1
+{
+    debug(string => \@_, level => 1);
+}
+
+### debug0( $arg1, $arg2 )
+#
+# Print out a debugging message at level 0.
+#
+
+sub debug0
+{
+    debug(string => \@_, level => 0);
+}
+
+### debug( string => $string, level => $level )
+#
+# Print out debugging messages at various levels.  Feel free to use debugN() directly
+# which in turn calls this subroutine.
+#
+
+sub debug
+{
+    my %args = @_;
+
+    if (!defined($args{'level'}))
+    {
+        $args{'level'} = 0;
+    }
+
+    if ($verbose >= $args{'level'})
+    {
+        printf(@{$args{'string'}});
+    }
+}
+
 ### action( $command )
 #
 # run $command within a proper system() command.
@@ -1102,9 +1057,9 @@ sub action
 {
     my($command) = @_;
 
-    printf "$command\n";
+    debug1("$command\n");
 
-    my $result = system("LD_LIBRARY_PATH=\"$gpath/lib:\$LD_LIBRARY_PATH\"; $command 2>&1");
+    my $result = system("LD_LIBRARY_PATH=\"$gpath/lib:\$LD_LIBRARY_PATH\"; $command >/dev/null 2>&1");
 
     if (($result or $?) and $command !~ m!patch!)
     {
