@@ -605,6 +605,15 @@ globus_ftp_client_operationattr_init(
     i_attr->resume_third_party		= GLOBUS_FALSE;
     i_attr->force_striped		= GLOBUS_FALSE;
 
+    /*
+     *  net logger stuff
+     */
+#   if defined(GLOBUS_BUILD_WITH_NETLOGGER)
+    {
+        i_attr->nl_handle = GLOBUS_NULL;
+    }
+#   endif
+
     tmp_name = globus_libc_strdup("anonymous");
     if(tmp_name == GLOBUS_NULL)
     {
@@ -2301,6 +2310,41 @@ error_exit:
 /* globus_ftp_client_operationattr_get_append() */
 /* @} */
 
+
+#if defined(GLOBUS_BUILD_WITH_NETLOGGER)
+
+globus_result_t
+globus_ftp_client_operationattr_set_netlogger(
+    const globus_ftp_client_operationattr_t *   attr,
+    NLhandle *                                  nl_handle)
+{
+    globus_object_t *                           err;
+    globus_i_ftp_client_operationattr_t *       i_attr;
+    static char * myname = "globus_ftp_client_operationattr_set_netlogger";
+
+    if(attr == GLOBUS_NULL)
+    {
+        err = globus_error_construct_string(
+            GLOBUS_FTP_CLIENT_MODULE,
+            GLOBUS_NULL,
+            "[%s] Cannot set values on a NULL attribute at %s\n",
+            GLOBUS_FTP_CLIENT_MODULE->module_name,
+            myname);
+
+        goto error_exit;
+    }
+    i_attr = *attr;
+
+    i_attr->nl_handle = nl_handle;
+
+    return GLOBUS_SUCCESS;
+
+error_exit:
+    return globus_error_put(err);
+}
+
+#endif
+
 /**
  * @name Read into a Single Buffer
  */
@@ -2579,6 +2623,22 @@ globus_ftp_client_operationattr_copy(
     {
 	goto destroy_exit;
     }
+
+    /*
+     *  netlogger stuff
+     */
+#   if defined(GLOBUS_BUILD_WITH_NETLOGGER)
+    {
+        result = globus_ftp_client_operationattr_set_netlogger(
+                     dst,
+                     i_src->nl_handle);
+        if(result)
+        {
+            goto destroy_exit;
+        }
+    }
+#   endif
+
 
     if(!i_src->using_default_auth)
     {

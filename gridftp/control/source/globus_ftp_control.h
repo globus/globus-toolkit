@@ -24,6 +24,13 @@
 #include <globus_gss_assist.h>
 #include <globus_handle_table.h>
 
+/*
+ *  net logger headers
+ */
+#if defined(GLOBUS_BUILD_WITH_NETLOGGER)
+#include "logging.h"
+#endif
+
 
 /**
  * @mainpage Globus GSIFTP Control Connection API
@@ -653,6 +660,10 @@ typedef struct globus_i_ftp_dc_handle_s
     globus_ftp_control_callback_t               close_callback;
     void *                                      close_callback_arg;
 
+#if defined(GLOBUS_BUILD_WITH_NETLOGGER)
+    NLhandle *                                  nl_handle;
+#endif
+
     struct globus_ftp_control_handle_s *        whos_my_daddy;
 } globus_i_ftp_dc_handle_t;
 
@@ -741,6 +752,18 @@ globus_ftp_control_local_layout(
     globus_ftp_control_handle_t *               handle,
     globus_ftp_control_layout_t *               layout,
     globus_size_t                               data_size);
+
+/*
+ *  NET LOGGER STUFF
+ */
+#if defined(GLOBUS_BUILD_WITH_NETLOGGER)
+
+globus_result_t
+globus_ftp_control_set_netlogger(
+    globus_ftp_control_handle_t *               handle,
+    NLhandle *                                  nl_handle);
+
+#endif
 
 /*****************************************************************
  *  standard layout functions 

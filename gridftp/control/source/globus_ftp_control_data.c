@@ -562,30 +562,61 @@ static globus_hashtable_t           globus_l_ftp_control_data_layout_table;
 #define GLOBUS_FTP_CONTROL_DATA_DESCRIPTOR_EOR            0x80
 
 /*
- *  this should be moved into globus
+ *  NetLogger functions
  */
-void *
-globus_list_element_at(
-    globus_list_t *                             head,
-    int                                         ndx)
-{
-    int                                         ctr;
-    globus_list_t *                             list;
+#if defined(GLOBUS_BUILD_WITH_NETLOGGER)
 
-    ctr = 0;
-    for(list = head; 
-        !globus_list_empty(list); 
-        list = globus_list_rest(list))
+globus_result_t
+globus_ftp_control_set_netlogger(
+    globus_ftp_control_handle_t *               handle,
+    NLhandle *                                  nl_handle)
+{
+    globus_i_ftp_dc_handle_t *                  dc_handle;
+    globus_object_t *                           err;
+    static char *                               myname=
+                                      "globus_ftp_control_set_netlogger";
+
+    /*
+     *  error checking
+     */
+    if(handle == GLOBUS_NULL)
     {
-        if(ndx == ctr)
-        {
-            return(void *)list->datum;
-        }
-        ctr++;
+        err = globus_io_error_construct_null_parameter(
+                  GLOBUS_FTP_CONTROL_MODULE,
+                  GLOBUS_NULL,
+                  "handle",
+                  1,
+                  myname);
+        return globus_error_put(err);
     }
 
-   return GLOBUS_NULL;
+    dc_handle = &handle->dc_handle;
+    GlobusFTPControlDataTestMagic(dc_handle);
+    if(!dc_handle->initialized)
+    {
+        err = globus_io_error_construct_not_initialized(
+                  GLOBUS_FTP_CONTROL_MODULE,
+                  GLOBUS_NULL,
+                  "handle",
+                  1,
+                  myname);
+        return globus_error_put(err);
+    }
+
+    globus_mutex_lock(&dc_handle->mutex);
+    {
+        dc_handle->nl_handle = nl_handle;
+
+        globus_io_attr_netlogger_set_handle(
+            &dc_handle->io_attr,
+            nl_handle);
+    }
+    globus_mutex_unlock(&dc_handle->mutex);
+
+    return GLOBUS_SUCCESS;
 }
+
+#endif /* GLOBUS_BUILD_WITH_NETLOGGER */
 
 globus_bool_t
 globus_list_remove_element(
@@ -6373,6 +6404,10 @@ globus_i_ftp_control_data_cc_init(
             dc_handle->transfer_list = GLOBUS_NULL;
             dc_handle->close_callback = GLOBUS_NULL;
             dc_handle->close_callback_arg = GLOBUS_NULL;
+
+#if defined(GLOBUS_BUILD_WITH_NETLOGGER)
+            dc_handle->nl_handle = GLOBUS_NULL;
+#endif
 
 	    globus_io_tcpattr_init(&dc_handle->io_attr);
 	    globus_io_attr_set_tcp_nodelay(&dc_handle->io_attr, 

@@ -13,6 +13,13 @@
 #include "globus_ftp_client_plugin.h"
 #include "globus_error_string.h"
 
+/*
+ *  net logger stuff
+ */
+#if defined(GLOBUS_BUILD_WITH_NETLOGGER)
+#include "logging.h"
+#endif
+
 #ifndef GLOBUS_L_INCLUDE_FTP_CLIENT_H
 #define GLOBUS_L_INCLUDE_FTP_CLIENT_H
 
@@ -93,6 +100,10 @@ typedef struct globus_i_ftp_client_operationattr_t
     globus_bool_t                               read_all;
     globus_ftp_client_data_callback_t           read_all_intermediate_callback;
     void *                                      read_all_intermediate_callback_arg;
+
+#if defined(GLOBUS_BUILD_WITH_NETLOGGER)
+    NLhandle *                                  nl_handle;
+#endif
 }
 globus_i_ftp_client_operationattr_t;
 
