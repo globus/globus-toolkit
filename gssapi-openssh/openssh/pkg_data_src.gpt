@@ -50,7 +50,7 @@
       </Setup_Dependency>
       <Setup_Dependency Name="gsi_openssh_setup">
         <Version>
-          <Version_Range Upper_Major="2" Upper_Minor="10" Lower_Major="2" Lower_Minor="10" />
+          <Version_Range Upper_Major="2" Upper_Minor="11" Lower_Major="2" Lower_Minor="11" />
         </Version>
       </Setup_Dependency>
     </Source_Setup_Dependency>
@@ -58,7 +58,13 @@
     <Build_Instructions>
 
       <Build_Step>
-        CONFIGENV_GPTMACRO ./configure --prefix=INSTALLDIR_GPTMACRO --with-globus=INSTALLDIR_GPTMACRO --with-globus-flavor=FLAVOR_GPTMACRO GSI_OPENSSH_GPTMACRO
+        GSICFG="--prefix=INSTALLDIR_GPTMACRO --with-globus=INSTALLDIR_GPTMACRO --with-globus-flavor=FLAVOR_GPTMACRO"
+
+        if test "STATIC_LINK_GPTMACRO" = "yes"; then 
+          GSICFG="$GSICFG --with-globus-static"
+        fi
+
+        CONFIGENV_GPTMACRO ./configure GSI_OPENSSH_GPTMACRO $GSICFG
       </Build_Step>
 
       <Build_Step>
