@@ -2,7 +2,7 @@ AC_INIT(myproxy_server.c)
 
 AC_MSG_CHECKING(for myproxy-server installation prefix)
 dnl The default:
-MYPROXY_SERVER_DIR="\$(prefix)/myproxy-server"
+MYPROXY_SERVER_DIR="\$(prefix)"
 AC_ARG_WITH(myproxy-server-path,
 	[  --with-myproxy-server-path=PATH  Specify myproxy-server install prefix],
 	MYPROXY_SERVER_DIR=$withval)
