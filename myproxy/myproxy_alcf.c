@@ -47,6 +47,7 @@ static char usage[] = \
 "                                         instead of the LOGNAME env. var.\n"
 "       -k | --credname       <name>      Specifies credential name\n"
 "       -K | --creddesc       <desc>      Specifies credential description\n"
+"       -p | --passphrase     <pass>      Specifies the credential passphrase\n"
 "\n";
 
 struct option long_options[] =
@@ -70,15 +71,16 @@ struct option long_options[] =
   {"match_cn_only", 	    no_argument, NULL, 'X'},
   {"credname",	      required_argument, NULL, 'k'},
   {"creddesc",	      required_argument, NULL, 'K'},
+  {"passphrase",      required_argument, NULL, 'p'},
   {0, 0, 0, 0}
 };
 
 /*colon following an option indicates option takes an argument */
 
-static char short_options[] = "uhl:vVndr:R:xXaAk:K:t:c:y:s:";
+static char short_options[] = "uhl:vVndr:R:xXaAk:K:t:c:y:s:p:";
 
-static char *certfile;  /* certificate file name */
-static char *keyfile;  /* key file name */
+static char *certfile   = NULL;  /* certificate file name */
+static char *keyfile    = NULL;  /* key file name */
 
 static char version[] =
 "myproxy-alcf version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
@@ -101,12 +103,14 @@ int main(int argc, char *argv[])
 	if (certfile == NULL)
 	{
 		fprintf (stderr, "Specify certificate file with -c option\n");
+		fprintf(stderr, usage);
 		goto cleanup;
 	}
 
 	if (keyfile == NULL)
 	{
 		fprintf (stderr, "Specify key file with -y option\n");
+		fprintf(stderr, usage);
 		goto cleanup;
 	}
 
@@ -124,8 +128,7 @@ int main(int argc, char *argv[])
 
 		/* Read new credential passphrase */
 
-		my_creds->passphrase = NULL;
-		if (!use_empty_passwd) {
+		if (!use_empty_passwd && !my_creds->passphrase) {
 			my_creds->passphrase = (char *) malloc ((MAX_PASS_LEN+1)*sizeof(char));
 			if (myproxy_read_verified_passphrase(my_creds->passphrase,
 							     MAX_PASS_LEN) == -1) {
@@ -210,12 +213,8 @@ init_arguments(int argc,
         switch(arg) 
         {  
         case 's': /* set the credential storage directory */
-        { char *s;
-          s=(char *) malloc(strlen(gnu_optarg) + 1);
-          strcpy(s,gnu_optarg);
-          myproxy_set_storage_dir(s);
+          myproxy_set_storage_dir(gnu_optarg);
           break;
-         }
 	
 	case 'c': /* credential file name*/
 	    certfile = strdup (gnu_optarg);
@@ -334,7 +333,7 @@ init_arguments(int argc,
 	    }
 	    if (my_creds->renewers) {
 		fprintf(stderr, "Only one -A or -R option may be specified.\n");
-		goto end;
+		exit(1);
 	    }
 	    my_creds->renewers = strdup ("*");
 	    myproxy_debug("anonymous renewers allowed");
@@ -344,6 +343,9 @@ init_arguments(int argc,
 	    break;
 	case 'K':  /*credential description*/
 	    my_creds->creddesc = strdup (gnu_optarg);
+	    break;
+	case 'p':  /* credential passphrase */
+	    my_creds->passphrase = strdup(gnu_optarg);
 	    break;
 
         default:        /* print usage and exit */ 
@@ -356,7 +358,7 @@ init_arguments(int argc,
     return;
 
     end:
-     exit(-1);
+     exit(1);
 
 }
 
