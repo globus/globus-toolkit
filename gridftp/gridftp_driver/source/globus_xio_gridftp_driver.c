@@ -49,10 +49,9 @@ typedef enum globus_i_xio_gridftp_state_s
 typedef struct
 {
 
-    globus_ftp_client_handle_t          ftp_handle;
+    globus_ftp_client_handle_t *        ftp_handle;
     globus_ftp_client_operationattr_t   ftp_operation_attr;
     globus_bool_t                       partial_xfer;
-    globus_bool_t                       user_handle;
 
 } globus_l_xio_gridftp_attr_t;
 
@@ -62,13 +61,12 @@ static globus_l_xio_gridftp_attr_t      globus_l_xio_gridftp_attr_default =
     GLOBUS_NULL,
     GLOBUS_NULL,
     GLOBUS_FALSE,
-    GLOBUS_FALSE
 };
 
 typedef struct
 {
 
-    globus_ftp_client_handle_t          ftp_handle;
+    globus_ftp_client_handle_t *        ftp_handle;
     globus_l_xio_gridftp_attr_t *       attr;
     globus_i_xio_gridftp_state_t        state;  
     globus_memory_t                     requestor_memory;
@@ -124,9 +122,10 @@ globus_i_xio_gridftp_contact_info_setup(
     const globus_xio_contact_t *        src_contact_info);
 
 static
-globus_l_xio_gridftp_handle_t *
+globus_result_t
 globus_l_xio_gridftp_handle_create(
-    const globus_l_xio_gridftp_attr_t * attr,
+    globus_l_xio_gridftp_handle_t **	out_handle,
+    globus_l_xio_gridftp_attr_t * 	attr,
     const globus_xio_contact_t *        contact_info);
 
 static
@@ -241,18 +240,7 @@ GlobusXIODefineModule(gridftp) =
 };
 
 
-#define GlobusXIOGridftpHandleError()                                       \
-    globus_error_put(                                                       \
-        globus_error_construct_error(                                       \
-            GlobusXIOMyModule(gridftp),                                     \
-            GLOBUS_NULL,                                                    \
-            GLOBUS_XIO_GRIDFTP_HANDLE_ERROR,                                \
-            __FILE__,                                                       \
-            _xio_name,                                                      \
-            __LINE__,                                                       \
-            "Handle creation error"))
-
-#define GlobusXIOGridftpReadError()                                         \
+#define GlobusXIOGridftpReadError(reason)                                   \
     globus_error_put(                                                       \
         globus_error_construct_error(                                       \
             GlobusXIOMyModule(gridftp),                                     \
@@ -261,7 +249,7 @@ GlobusXIODefineModule(gridftp) =
             __FILE__,                                                       \
             _xio_name,                                                      \
             __LINE__,                                                       \
-            "Read error"))
+            "Read error: %s", (reason)))
 
 #define GlobusXIOGridftpSeekError()                                         \
     globus_error_put(                                                       \
@@ -435,6 +423,17 @@ globus_l_xio_gridftp_handle_destroy(
     GlobusXIOName(globus_l_xio_gridftp_handle_destroy);
 
     GlobusXIOGridftpDebugEnter();
+    if (!handle->attr->ftp_handle)
+    {
+        result = globus_ftp_client_handle_destroy(handle->ftp_handle);
+        if (result != GLOBUS_SUCCESS)
+        {
+            result = GlobusXIOErrorWrapFailed(
+                "globus_ftp_client_handle_destroy", result);
+            goto error;
+        }
+        globus_free(handle->ftp_handle);
+    }
     result = globus_l_xio_gridftp_attr_destroy(handle->attr);
     if(result != GLOBUS_SUCCESS)
     {
@@ -462,9 +461,10 @@ error:
  *  allocate the memory for and initialize an internal handle
  */
 static 
-globus_l_xio_gridftp_handle_t *
+globus_result_t
 globus_l_xio_gridftp_handle_create(
-    const globus_l_xio_gridftp_attr_t * attr,
+    globus_l_xio_gridftp_handle_t **    out_handle,
+    globus_l_xio_gridftp_attr_t *       attr,
     const globus_xio_contact_t *        contact_info)
 {
     globus_l_xio_gridftp_handle_t *     handle;
@@ -480,15 +480,10 @@ globus_l_xio_gridftp_handle_create(
                 globus_malloc(sizeof(globus_l_xio_gridftp_handle_t));
     if (handle == GLOBUS_NULL)
     {
+	result = GlobusXIOErrorMemory("handle");
         goto error_handle;
     }
-    /* 
-     * If attr has been initialized (ie, globus_l_xio_gridftp_attr_init has
-     * been called -- globus_l_xio_gridftp_attr_init gets called when user
-     * calls globus_xio_attr_cntl -- not when he calls globus_xio_attr_init)
-     * then ftp_operation_attr would be non-null
-     */
-    if (attr->ftp_operation_attr)
+    if (attr)
     {   
         result = globus_l_xio_gridftp_attr_copy(
                         (void**)&handle->attr, (void*)attr);
@@ -504,20 +499,19 @@ globus_l_xio_gridftp_handle_create(
         goto error_attr;
     }
     if (handle->attr->ftp_handle == GLOBUS_NULL)
-    {   
-        result = globus_ftp_client_handle_init(
-            &handle->attr->ftp_handle, 
-            GLOBUS_NULL);
-        if (result != GLOBUS_SUCCESS)
-        {
-            goto error_ftp_handle_init;
-        }
+    {
+        handle->ftp_handle = (globus_ftp_client_handle_t *)
+                            globus_malloc(sizeof(globus_ftp_client_handle_t));
+        result = globus_ftp_client_handle_init(handle->ftp_handle, NULL);
+	if (result != GLOBUS_SUCCESS)
+	{
+	    goto error_ftp_handle_init;
+	}
     }
     else
     {
-        handle->attr->user_handle = GLOBUS_TRUE;
-    }   
-
+        handle->ftp_handle = handle->attr->ftp_handle;
+    }
     globus_i_xio_gridftp_contact_info_setup(&contact_info_local, contact_info);
     result = globus_xio_contact_info_to_url(
                 &contact_info_local, 
@@ -527,7 +521,7 @@ globus_l_xio_gridftp_handle_create(
         goto error_url;
     }   
     result = globus_ftp_client_handle_cache_url_state(
-        &handle->attr->ftp_handle, 
+        handle->ftp_handle, 
         handle->url);
     if (result != GLOBUS_SUCCESS)
     {
@@ -550,18 +544,19 @@ globus_l_xio_gridftp_handle_create(
     handle->offset = 0; 
     handle->end_offset = -1; 
 
+    *out_handle = handle;
     GlobusXIOGridftpDebugExit();
-    return handle;
+    return GLOBUS_SUCCESS;
 
 error_fifo_init:
     globus_ftp_client_handle_flush_url_state(
-        &handle->attr->ftp_handle, handle->url);
+                        handle->ftp_handle, handle->url);
 error_enable_caching:
     globus_free(handle->url);   
 error_url:
-    if (!handle->attr->user_handle)
+    if (!handle->attr->ftp_handle)
     {   
-        globus_ftp_client_handle_destroy(&handle->attr->ftp_handle);
+        globus_ftp_client_handle_destroy(handle->ftp_handle);
     }
 error_ftp_handle_init:
     globus_l_xio_gridftp_attr_destroy(handle->attr);
@@ -569,7 +564,7 @@ error_attr:
     globus_free(handle);
 error_handle:
     GlobusXIOGridftpDebugExitWithError();
-    return GLOBUS_NULL;
+    return result;
 }
 
 
@@ -623,7 +618,6 @@ globus_l_xio_gridftp_open(
     globus_xio_operation_t              op)
 {
     globus_l_xio_gridftp_handle_t *     handle = GLOBUS_NULL;
-    const globus_l_xio_gridftp_attr_t * attr;
     globus_i_xio_gridftp_requestor_t *  requestor;
     globus_result_t                     result = GLOBUS_SUCCESS;
     globus_result_t                     res;
@@ -633,19 +627,18 @@ globus_l_xio_gridftp_open(
     GlobusXIOGridftpDebugEnter();
 
     globus_assert(driver_link == GLOBUS_NULL);
-    attr = (globus_l_xio_gridftp_attr_t *)
-        (driver_attr ? driver_attr : &globus_l_xio_gridftp_attr_default);
-
     if (!contact_info->resource || !contact_info->host || 
-        !contact_info->port || !contact_info->scheme)
+        !contact_info->scheme)
     {
         result = GlobusXIOErrorParameter(contact_info);
         goto error_contact_info;
     }
-    handle = globus_l_xio_gridftp_handle_create(attr, contact_info);
-    if (handle == GLOBUS_NULL)
+    result = globus_l_xio_gridftp_handle_create(
+	   	&handle, 
+		(globus_l_xio_gridftp_attr_t *) driver_attr, 
+		contact_info);
+    if (result != GLOBUS_SUCCESS)
     {
-        result = GlobusXIOGridftpHandleError();
         goto error_handle;
     }
 
@@ -685,7 +678,7 @@ globus_l_xio_gridftp_open(
         goto error_operation_canceled;
     }   
     result = globus_ftp_client_size(
-        &handle->attr->ftp_handle, 
+        handle->ftp_handle, 
         handle->url, 
         &handle->attr->ftp_operation_attr, 
         &handle->size,
@@ -820,7 +813,7 @@ globus_l_xio_gridftp_xfer_cb(
     globus_xio_operation_t              finish_op = GLOBUS_NULL;
     globus_bool_t                       direction;
     globus_size_t                       len;    
-    globus_off_t			offset;
+    globus_off_t                        offset;
     globus_result_t                     result = GLOBUS_SUCCESS;        
 
     GlobusXIOName(globus_l_xio_gridftp_xfer_cb);
@@ -904,7 +897,7 @@ globus_l_xio_gridftp_get(
     if (handle->offset > 0 || handle->partial_xfer_op)
     {
         result = globus_ftp_client_partial_get(
-            &handle->attr->ftp_handle,
+            handle->ftp_handle,
             handle->url,
             &handle->attr->ftp_operation_attr,
             GLOBUS_NULL,        /* restart marker */
@@ -916,7 +909,7 @@ globus_l_xio_gridftp_get(
     else
     {
         result = globus_ftp_client_get(
-            &handle->attr->ftp_handle,
+            handle->ftp_handle,
             handle->url,
             &handle->attr->ftp_operation_attr,
             GLOBUS_NULL,        /* restart_marker */
@@ -1140,7 +1133,6 @@ globus_l_xio_gridftp_cancel_cb(
     globus_l_xio_gridftp_handle_t *     handle;
     globus_xio_operation_t              requestor_op = GLOBUS_NULL;
     globus_bool_t                       reading;
-    globus_off_t                        offset;
     GlobusXIOName(globus_l_xio_gridftp_cancel_cb);
 
     GlobusXIOGridftpDebugEnter();       
@@ -1158,7 +1150,7 @@ globus_l_xio_gridftp_cancel_cb(
         case GLOBUS_XIO_GRIDFTP_NONE:
             break;
         case GLOBUS_XIO_GRIDFTP_OPENING:
-            globus_ftp_client_abort(&handle->attr->ftp_handle);
+            globus_ftp_client_abort(handle->ftp_handle);
             break;
         case GLOBUS_XIO_GRIDFTP_IO_PENDING:
             handle->state = GLOBUS_XIO_GRIDFTP_ABORT_PENDING;
@@ -1173,7 +1165,6 @@ globus_l_xio_gridftp_cancel_cb(
             if (requestor != GLOBUS_NULL)
             {
                 requestor_op = requestor->op;
-                offset = requestor->offset;
                 reading = handle->pending_ops_direction;
                 globus_memory_push_node(
                     &handle->requestor_memory, (void*)requestor);
@@ -1191,26 +1182,13 @@ globus_l_xio_gridftp_cancel_cb(
 
     if (requestor_op)
     {
-	globus_result_t		result;
         if (reading)
         {
-            result = globus_xio_driver_data_descriptor_cntl(
-                        requestor_op,
-                        NULL,
-                        GLOBUS_XIO_DD_SET_OFFSET,
-                        offset);
-            globus_assert(result == GLOBUS_SUCCESS);
             globus_xio_driver_finished_read(requestor_op,  
                 GlobusXIOErrorCanceled(), 0);
         }
         else
         {
-            result = globus_xio_driver_data_descriptor_cntl(
-                        requestor_op,
-                        NULL,
-                        GLOBUS_XIO_DD_SET_OFFSET,
-                        offset);
-            globus_assert(result == GLOBUS_SUCCESS);
             globus_xio_driver_finished_write(requestor_op,  
                 GlobusXIOErrorCanceled(), 0);
         }
@@ -1238,7 +1216,8 @@ globus_l_xio_gridftp_read(
     wait_for = globus_xio_operation_get_wait_for(op);
     if (wait_for != 1)
     {
-        result = GlobusXIOGridftpReadError();
+        result = GlobusXIOGridftpReadError(
+			"Waitforbytes parameter is not equal to one");
         goto error_wait_for;
     }
     handle = (globus_l_xio_gridftp_handle_t *) driver_specific_handle;
@@ -1248,7 +1227,6 @@ globus_l_xio_gridftp_read(
     requestor->op = op;
     requestor->handle = handle;
     requestor->iovec = (globus_xio_iovec_t*)iovec;
-    requestor->offset = handle->offset;
     globus_mutex_unlock(&handle->mutex);
     if (globus_xio_operation_enable_cancel(
         op, globus_l_xio_gridftp_cancel_cb, requestor))
@@ -1303,7 +1281,7 @@ globus_l_xio_gridftp_read(
                 goto error_outstanding_write;
             }           
             result = globus_ftp_client_register_read(
-                &handle->attr->ftp_handle,
+                handle->ftp_handle,
                 iovec[0].iov_base,
                 iovec[0].iov_len,
                 globus_l_xio_gridftp_read_cb,
@@ -1375,7 +1353,7 @@ globus_l_xio_gridftp_put(
     if (handle->offset > 0 || handle->partial_xfer_op)
     {
         result = globus_ftp_client_partial_put(
-            &handle->attr->ftp_handle,
+            handle->ftp_handle,
             handle->url,
             &handle->attr->ftp_operation_attr,
             GLOBUS_NULL,
@@ -1387,7 +1365,7 @@ globus_l_xio_gridftp_put(
     else
     {
         result = globus_ftp_client_put(
-            &handle->attr->ftp_handle,
+            handle->ftp_handle,
             handle->url,
             &handle->attr->ftp_operation_attr,
             GLOBUS_NULL,
@@ -1503,7 +1481,7 @@ globus_l_xio_gridftp_write(
             for (i = 0; i < iovec_count; i++)
             {    
                 result = globus_ftp_client_register_write(
-                    &handle->attr->ftp_handle,     
+                    handle->ftp_handle,     
                     iovec[i].iov_base,
                     iovec[i].iov_len,
                     offset,
@@ -1516,7 +1494,10 @@ globus_l_xio_gridftp_write(
                 }
                 offset = offset + iovec[i].iov_len;
             }
-            handle->offset = offset; 
+            if (offset > handle->offset)
+            {
+                handle->offset = offset; 
+            }
             ++handle->outstanding_io_count;                     
             handle->state = GLOBUS_XIO_GRIDFTP_IO_PENDING;
             break;
@@ -1574,12 +1555,12 @@ globus_i_xio_gridftp_abort_io(
     GlobusXIOGridftpDebugEnter();
     if (handle->outstanding_ops_direction == GLOBUS_TRUE)
     {
-        globus_ftp_client_abort(&handle->attr->ftp_handle);
+        globus_ftp_client_abort(handle->ftp_handle);
     }
     else
     {
         globus_ftp_client_register_write(
-            &handle->attr->ftp_handle,
+            handle->ftp_handle,
             &buffer,
             0,
             handle->offset,
@@ -1879,13 +1860,13 @@ globus_l_xio_gridftp_attr_cntl(
     {
 
         case GLOBUS_XIO_GRIDFTP_SET_HANDLE:
-            attr->ftp_handle = va_arg(ap, globus_ftp_client_handle_t);
+            attr->ftp_handle = va_arg(ap, globus_ftp_client_handle_t*);
             break;
 
         case GLOBUS_XIO_GRIDFTP_GET_HANDLE:
         {
-            globus_ftp_client_handle_t * ftp_handle;
-            ftp_handle = va_arg(ap, globus_ftp_client_handle_t*);
+            globus_ftp_client_handle_t ** ftp_handle;
+            ftp_handle = va_arg(ap, globus_ftp_client_handle_t**);
             *ftp_handle = attr->ftp_handle;
             break;
         }
@@ -1988,38 +1969,10 @@ globus_l_xio_gridftp_attr_cntl(
             *buf_size = tcp_buffer.fixed.size;
             break;
         }
-        /* 
-         * Type, Mode etc are defined as enums in globus_xio_gridftp_driver.h
-         */
-        case GLOBUS_XIO_GRIDFTP_SET_TYPE:
-            result = globus_ftp_client_operationattr_set_type(
-                &attr->ftp_operation_attr,
-                va_arg(ap, int));
-            if (result != GLOBUS_SUCCESS)
-            {
-                result = GlobusXIOErrorWrapFailed(
-                    "globus_ftp_client_operationattr_set_type", result);
-                goto error;     
-            }
-            break;
-
-        case GLOBUS_XIO_GRIDFTP_GET_TYPE:
-        {
-            globus_ftp_control_type_t ftp_type;
-            int * type;
-            type = va_arg(ap, int*);
-            result = globus_ftp_client_operationattr_get_type(
-                &attr->ftp_operation_attr,
-                &ftp_type);
-            if (result != GLOBUS_SUCCESS)
-            {
-                result = GlobusXIOErrorWrapFailed(
-                    "globus_ftp_client_operationattr_get_type", result);
-                goto error;     
-            }
-            *type = ftp_type;
-            break;
-        }
+	/* 
+	 * I force all the xfers to be in type I (binary). so i dont support
+	 * GLOBUS_XIO_GRIDFTP_SET/GET_TYPE 
+	 */
         case GLOBUS_XIO_GRIDFTP_SET_MODE:
             result = globus_ftp_client_operationattr_set_mode(
                 &attr->ftp_operation_attr,
@@ -2254,16 +2207,6 @@ globus_l_xio_gridftp_attr_destroy(
     GlobusXIOGridftpDebugEnter();
 
     attr = (globus_l_xio_gridftp_attr_t *) driver_attr;
-    if (!attr->user_handle)
-    {
-        result = globus_ftp_client_handle_destroy(&attr->ftp_handle);
-        if (result != GLOBUS_SUCCESS)
-        {
-            result = GlobusXIOErrorWrapFailed(
-                "globus_ftp_client_handle_destroy", result);
-            goto error;
-        }
-    }
     if (attr->ftp_operation_attr)
     {
         result = globus_ftp_client_operationattr_destroy(

@@ -23,8 +23,7 @@
  * The gridftp client driver makes use of globus ftp client library. 
  * @ref globus_xio_register_open() call creates a new ftp client handle (unless * one is set on the attr passed), establishes connection with the 
  * gridftp server. The contact string must contain the scheme, host name,
- * port at which the server is listening, subject (if necessary) and the path
- * to the file. 
+ * and the resource, optionally it might contain port and subject also.
  *
  * When the XIO handle is closed, the gridftp driver will destroy its internal
  * resources and the ftp client handle (unless this handle was set on an attr).
@@ -52,8 +51,7 @@
  * @defgroup gridftp_driver_envs Env Variables
  * @ingroup gridftp_driver
  * - GLOBUS_XIO_GRIDFTP_DEBUG Available if using a debug build. See 
- * globus_debug.h for format. The GRIDFTP driver defines the TRACE levels
- * for all function call tracing.
+ * globus_debug.h for format. 
  */
 
 /**
@@ -75,12 +73,13 @@
  * @ingroup gridftp_driver
  *
  * The errors reported by the GRIDFTP driver include GLOBUS_XIO_ERROR_EOF, 
- * GLOBUS_XIO_ERROR_CANCELED, GLOBUS_XIO_GRIDFTP_HANDLE_ERROR,
- * GLOBUS_XIO_GRIDFTP_READ_ERROR, GLOBUS_XIO_GRIDFTP_OUTSTANDING_READ_ERROR, 
- * GLOBUS_XIO_GRIDFTP_SEEK_ERROR, GLOBUS_XIO_GRIDFTP_OUTSTANDING_WRITE_ERROR,
- * GLOBUS_XIO_GRIDFTP_PENDING_READ_ERROR, 
- * GLOBUS_XIO_GRIDFTP_PENDING_WRITE_ERROR,
- * GLOBUS_XIO_GRIDFTP_OUTSTANDING_PARTIAL_XFER_ERROR
+ * GLOBUS_XIO_ERROR_CANCELED, @ref GLOBUS_XIO_GRIDFTP_READ_ERROR, 
+ * @ref GLOBUS_XIO_GRIDFTP_OUTSTANDING_READ_ERROR, 
+ * @ref GLOBUS_XIO_GRIDFTP_SEEK_ERROR, 
+ * @ref GLOBUS_XIO_GRIDFTP_OUTSTANDING_WRITE_ERROR,
+ * @ref GLOBUS_XIO_GRIDFTP_PENDING_READ_ERROR, 
+ * @ref GLOBUS_XIO_GRIDFTP_PENDING_WRITE_ERROR,
+ * @ref GLOBUS_XIO_GRIDFTP_OUTSTANDING_PARTIAL_XFER_ERROR
  *
  * @see globus_xio_driver_error_match()
  * @see globus_error_errno_match()
@@ -92,13 +91,8 @@
  */
 typedef enum
 {
-
     /**
-     * Indicates that an error occured while creating the gridftp handle
-     */
-    GLOBUS_XIO_GRIDFTP_HANDLE_ERROR,
-    /**
-     * Indicates that the waitforbytes parameter passed to read is not one
+     * Indicates that an error occured while reading data
      */
     GLOBUS_XIO_GRIDFTP_READ_ERROR,
     /**
@@ -154,7 +148,7 @@ typedef enum
      * @ingroup gridftp_driver_cntls
      *
      * @param seek_offset
-     *      Specify the desired offset.
+     *      Specifies the desired offset.
      */
     GLOBUS_XIO_GRIDFTP_SEEK,
 
@@ -166,9 +160,9 @@ typedef enum
      * @ingroup gridftp_driver_cntls
      * Do not create a new ftp client handle, use this handle instead.
      *
-     * @param ftp_handle
-     *      Use this globus ftp client handle.
-     *      Note:  close() will not be called on this handle.
+     * @param ftp_handle_pointer
+     *      Specifies the pointer to globus ftp client handle.
+     *      Note: this handle will not be destroyed.
      */
     GLOBUS_XIO_GRIDFTP_SET_HANDLE,
 
@@ -176,8 +170,8 @@ typedef enum
      * Get the ftp client handle on the attr.
      * @ingroup gridftp_driver_cntls
      *
-     * @param handle_out
-     *      The ftp client handle will be stored here. If none is set,
+     * @param ftp_handle_pointer_out
+     *      The ftp client handle pointer will be stored here. If none is set,
      *      GLOBUS_NULL will be set.
      */
     GLOBUS_XIO_GRIDFTP_GET_HANDLE,
@@ -238,28 +232,6 @@ typedef enum
      *      The send/recv buffer size will be stored here.
      */
     GLOBUS_XIO_GRIDFTP_GET_TCP_BUFFER,
-
-    /** GlobusVarArgEnum(attr)
-     * Set the data representation type used for data transfer.
-     * @ingroup gridftp_driver_cntls
-     *
-     * @param type
-     *      Specifies the data representation type. (default is binary)
-     *
-     * @see globus_l_xio_gridftp_type_t
-     */
-    GLOBUS_XIO_GRIDFTP_SET_TYPE,
-
-    /** GlobusVarArgEnum(attr)
-     * Get the data representation type on the attr.
-     * @ingroup gridftp_driver_cntls
-     *
-     * @param type_out
-     *      The data representation type will be stored here. 
-     *
-     * @see globus_l_xio_gridftp_type_t
-     */
-    GLOBUS_XIO_GRIDFTP_GET_TYPE,
 
     /** GlobusVarArgEnum(attr)
      * Set the transmission mode used for data transfer
@@ -392,14 +364,6 @@ typedef enum
  * @ingroup gridftp_driver_types
  * @hideinitializer
  */  
-typedef enum globus_l_xio_gridftp_type_e
-{
-    GLOBUS_XIO_GRIDFTP_TYPE_NONE,
-    GLOBUS_XIO_GRIDFTP_TYPE_ASCII = 'A',
-    GLOBUS_XIO_GRIDFTP_TYPE_EBCDIC = 'E',
-    GLOBUS_XIO_GRIDFTP_TYPE_IMAGE = 'I',
-    GLOBUS_XIO_GRIDFTP_TYPE_LOCAL = 'L'
-} globus_l_xio_gridftp_type_t;
 
 typedef enum globus_l_xio_gridftp_mode_e
 {
