@@ -122,15 +122,15 @@ sub setup_server()
         exit 1;
     }
 
+    select((select(SERVER), $| = 1)[0]);
+    $server_port = <SERVER>;
+    $server_port =~ s/Accepting connections on port (\d+)/\1/;
+    chomp($server_port);
+
     # sleep a second, some hosts are slow....
 
     sleep 1;
     
-    $_ = `ps -p $server_pid -o args`;
-    s/ftpd: accepting connections on port (\d+)/\1/;
-    $server_port = $1;
-
-
     $ENV{GLOBUS_FTP_CLIENT_TEST_SUBJECT} = $subject;
     $ENV{FTP_TEST_SOURCE_HOST} = "$server_host:$server_port";
     $ENV{FTP_TEST_DEST_HOST} = "$server_host:$server_port";   
