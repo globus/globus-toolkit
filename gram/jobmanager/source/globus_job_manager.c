@@ -54,6 +54,16 @@ typedef struct _graml_jm_monitor_t
 /* Only poll once every GRAM_JOB_MANAGER_POLL_FREQUENCY seconds */
 #define GRAM_JOB_MANAGER_POLL_FREQUENCY 10
 
+/* Only do status file cleanup once every 
+ * GRAM_JOB_MANAGER_STAT_FREQUENCY seconds
+ */
+#define GRAM_JOB_MANAGER_STAT_FREQUENCY 60
+
+/* remove old status files after no activity for
+ * GRAM_JOB_MANAGER_STATUS_FILE_SECONDS
+ */
+#define GRAM_JOB_MANAGER_STATUS_FILE_SECONDS 60
+
 /******************************************************************************
                           Module specific prototypes
 ******************************************************************************/
@@ -71,22 +81,20 @@ static int
 graml_attach_requested(void * arg,
                        char * url,
                        nexus_startpoint_t * sp);
+
 static int 
-graml_status_file_gen(int job_status);
+globus_l_jm_status_file_gen(int job_status);
 
 static char *
-genfilename(char * prefix, char * path, char * sufix);
+globus_l_jm_genfilename(char * prefix, char * path, char * sufix);
 
 static int
-graml_stage_file(char **url, int mode);
-
-static int 
-grami_rsl_add();
+globus_l_jm_stage_file(char **url, int mode);
 
 static int
-graml_rsl_environment_add(globus_rsl_t * ast_node,
-                          char * var,
-                          char * value);
+globus_l_jm_rsl_env_add(globus_rsl_t * ast_node,
+                        char * var,
+                        char * value);
 
 static int
 globus_l_job_manager_duct_environment(int count,
@@ -98,12 +106,18 @@ globus_l_jm_getenv_var(char * env_var_name,
                        char * default_name);
 
 static int 
-graml_rsl_add(char * attribute_name, 
-              char * attribute_value);
+globus_l_jm_rsl_add(char * attribute_name, 
+                    char * attribute_value);
 
 static void
-graml_basename(char * filepath,
-               char ** ptr_to_basename);
+globus_l_jm_basename(char * filepath,
+                     char ** ptr_to_basename);
+
+static void
+globus_l_jm_status_file_cleanup(void);
+
+static int
+globus_l_jm_tokenize(char * command, char ** args, int * n);
 
 /******************************************************************************
                        Define variables for external use
@@ -133,7 +147,9 @@ char * grami_script_arg_file = NULL;
 char * grami_jm_type = NULL;
 char * grami_logfile = NULL;
 FILE * grami_log_fp = NULL;
+int    grami_current_job_state = -1;
 
+extern int errno;
 
 /******************************************************************************
                        Define module specific variables
@@ -154,10 +170,11 @@ static nexus_handler_t graml_handlers[] =
 };
 
 static char graml_callback_contact[GLOBUS_GRAM_CLIENT_MAX_MSG_SIZE];
-static char * graml_job_contact = NULL;
-static char * graml_env_globusid = NULL;
-static char * graml_job_status  = NULL;
-static char * graml_nickname  = NULL;
+static char *  graml_job_contact = NULL;
+static char    graml_job_status_file[1024];
+static char *  graml_env_globus_id = NULL;
+static char *  graml_job_status  = NULL;
+static char *  graml_nickname  = NULL;
 static globus_rsl_t * graml_rsl_tree;
 
 static char *                      graml_jm_status_dir = NULL;
@@ -221,14 +238,13 @@ main(int argc,
     globus_gass_cache_entry_t   * cache_entries;
     int                    cache_size;
     globus_symboltable_t * symbol_table; 
-    char *                 jm_env_globus_subject;
-    char *                 jm_env_globus_site_dn;
-    char *                 jm_env_globus_gram_dn;
-    char *                 jm_env_globus_host_dn;
-    char *                 jm_env_globus_host_manufacturer;
-    char *                 jm_env_globus_host_cputype;
-    char *                 jm_env_globus_host_osname;
-    char *                 jm_env_globus_host_osversion;
+    char *                 jm_globus_site_dn = NULL;
+    char *                 jm_globus_gram_dn = NULL;
+    char *                 jm_globus_host_dn = NULL;
+    char *                 jm_globus_host_manufacturer = NULL;
+    char *                 jm_globus_host_cputype = NULL;
+    char *                 jm_globus_host_osname = NULL;
+    char *                 jm_globus_host_osversion = NULL;
     char *                 jm_globus_prefix;
 
     /* Initialize modules that I use */
@@ -284,6 +300,37 @@ main(int argc,
 
     *test_dat_file = '\0';
 
+    /* if -jmconf is passed then get the arguments from the file
+     * specified
+     */
+    if (argc == 3 && !strcmp(argv[1],"-conf"))
+    {
+        char ** newargv;
+        char * newbuf;
+        int newargc = 52;
+        int  pfd;
+
+        newargv = (char**) malloc(newargc * sizeof(char *)); /* not freeded */
+        newbuf = (char *) malloc(BUFSIZ);  /* dont free */
+        newargv[0] = argv[0];
+        pfd = open(argv[2],O_RDONLY);
+        i = read(pfd, newbuf, BUFSIZ-1);
+        if (i < 0)
+        {
+	    fprintf(stderr, "Unable to read parameters from configuration "
+                            "file\n");
+	    exit(1);
+        }
+        newbuf[i] = '\0';
+        close(pfd);
+
+        newargv[0] = argv[0];
+        newargc--;
+        globus_l_jm_tokenize(newbuf, &newargv[1], &newargc);
+        argv = newargv;
+        argc = newargc + 1;
+    }
+
     /*
      * Parse the command line arguments
      */
@@ -315,7 +362,7 @@ main(int argc,
             graml_nickname = argv[i+1];
             i++;
         }
-        else if ((strcmp(argv[i], "-jm_type") == 0)
+        else if ((strcmp(argv[i], "-type") == 0)
                  && (i + 1 < argc))
         {
             grami_jm_type = argv[i+1];
@@ -327,12 +374,56 @@ main(int argc,
             arg_libexecdir = argv[i+1];
             i++;
         }
+        else if ((strcmp(argv[i], "-globus_site_dn") == 0)
+                 && (i + 1 < argc))
+        {
+            jm_globus_site_dn = strdup(argv[i+1]);
+            i++;
+        }
+        else if ((strcmp(argv[i], "-globus_gram_dn") == 0)
+                 && (i + 1 < argc))
+        {
+            jm_globus_gram_dn = strdup(argv[i+1]);
+            i++;
+        }
+        else if ((strcmp(argv[i], "-globus_host_dn") == 0)
+                 && (i + 1 < argc))
+        {
+            jm_globus_host_dn = strdup(argv[i+1]);
+            i++;
+        }
+        else if ((strcmp(argv[i], "-globus_host_manufacturer") == 0)
+                 && (i + 1 < argc))
+        {
+            jm_globus_host_manufacturer = strdup(argv[i+1]);
+            i++;
+        }
+        else if ((strcmp(argv[i], "-globus_host_cputype") == 0)
+                 && (i + 1 < argc))
+        {
+            jm_globus_host_cputype = strdup(argv[i+1]);
+            i++;
+        }
+        else if ((strcmp(argv[i], "-globus_host_osname") == 0)
+                 && (i + 1 < argc))
+        {
+            jm_globus_host_osname = strdup(argv[i+1]);
+            i++;
+        }
+        else if ((strcmp(argv[i], "-globus_host_osversion") == 0)
+                 && (i + 1 < argc))
+        {
+            jm_globus_host_osversion = strdup(argv[i+1]);
+            i++;
+        }
         else
         {
 	    GRAM_UNLOCK;
+            fprintf(stderr, "Unknown argument %s\n", argv[i]);
             fprintf(stderr, "Usage: %s [-home deploy home dir ] "
                                       "[-e lib exe dir] "
                                       "[-d debug print] "
+                                      "[-s save files] "
                                       "[-t test dat file]\n", argv[0]);
             exit(1);
         }
@@ -381,35 +472,25 @@ main(int argc,
     grami_fprintf(grami_log_fp,"-----------------------------------------\n");
     grami_fprintf(grami_log_fp, "JM: Entering gram_job_manager main()\n");
 
-    if (graml_nickname)
+    if (!graml_nickname)
     {
-        grami_fprintf( grami_log_fp, "JM: nickname = %s\n", graml_nickname);
+        graml_nickname = globus_malloc (sizeof(char *) * 11);
+        strcpy(graml_nickname, "nonickname");
     }
 
+    grami_fprintf( grami_log_fp, "JM: nickname = %s\n", graml_nickname);
     grami_fprintf( grami_log_fp, "JM: HOME = %s\n", grami_env_home);
 
     /*
      * Getting environment variables for RSL substitution.
      */
-    grami_env_logname = globus_l_jm_getenv_var("LOGNAME", NULL);
-    jm_env_globus_subject = globus_l_jm_getenv_var("GLOBUS_SUBJECT", NULL);
-    jm_env_globus_site_dn = globus_l_jm_getenv_var("GLOBUS_SITE_DN", NULL);
-    jm_env_globus_gram_dn = globus_l_jm_getenv_var("GLOBUS_GRAM_DN", NULL);
-    jm_env_globus_host_dn = globus_l_jm_getenv_var("GLOBUS_HOST_DN", NULL);
-    jm_env_globus_host_manufacturer = 
-         globus_l_jm_getenv_var("GLOBUS_HOST_MANUFACTURER", NULL);
-    jm_env_globus_host_cputype = 
-         globus_l_jm_getenv_var("GLOBUS_HOST_CPUTYPE", NULL);
-    jm_env_globus_host_osname  = 
-         globus_l_jm_getenv_var("GLOBUS_HOST_OSNAME", NULL);
-    jm_env_globus_host_osversion = 
-         globus_l_jm_getenv_var("GLOBUS_HOST_OSVERSION", NULL);
+    grami_env_logname = globus_l_jm_getenv_var("LOGNAME", "noname");
 
     /*
      * Getting environment variables to be added to RSL.
      */
-    graml_env_globusid =
-         globus_l_jm_getenv_var("GLOBUSID", "unknown globusid");
+    graml_env_globus_id =
+         globus_l_jm_getenv_var("GLOBUS_ID", "unknown globusid");
  
     /*
      * Getting environment variables to be added to the job's environment.
@@ -423,16 +504,25 @@ main(int argc,
 
     if (jm_home_dir)
     {
-        graml_jm_status_dir = genfilename(jm_home_dir, "tmp", NULL);
+        graml_jm_status_dir = globus_l_jm_genfilename(jm_home_dir, "tmp", NULL);
+        sprintf(graml_job_status_file, "%s/%s_%s_%s.%lu",
+                                       graml_jm_status_dir,
+                                       STATUS_FILE_PREFIX,
+                                       graml_nickname,
+                                       grami_env_logname,
+                                       (unsigned long) getpid() );
+
+        grami_fprintf( grami_log_fp, "JM: graml_job_status_file = %s\n", 
+                       graml_job_status_file);
 
         if (arg_libexecdir)
         {
-            grami_jm_libexecdir = genfilename(jm_home_dir,
+            grami_jm_libexecdir = globus_l_jm_genfilename(jm_home_dir,
                                               arg_libexecdir, NULL);
         }
         else
         {
-            grami_jm_libexecdir = genfilename(jm_home_dir,
+            grami_jm_libexecdir = globus_l_jm_genfilename(jm_home_dir,
                                               "libexec", NULL);
         }
     }
@@ -440,6 +530,7 @@ main(int argc,
     {
         /* in this case a status file will not be written */
         graml_jm_status_dir = NULL;
+        graml_job_status_file[0] = '\0';
     }
 
     grami_fprintf( grami_log_fp, "JM: grami_jm_libexecdir = %s\n", 
@@ -627,38 +718,38 @@ main(int argc,
             globus_symboltable_insert(symbol_table,
                                 (void *) "LOGNAME",
                                 (void *) grami_env_logname);
-        if (jm_env_globus_subject)
+        if (graml_env_globus_id)
             globus_symboltable_insert(symbol_table,
-                                (void *) "GLOBUS_SUBJECT",
-                                (void *) jm_env_globus_subject);
-        if (jm_env_globus_site_dn)
+                                (void *) "GLOBUS_ID",
+                                (void *) graml_env_globus_id);
+        if (jm_globus_site_dn)
             globus_symboltable_insert(symbol_table,
                                 (void *) "GLOBUS_SITE_DN",
-                                (void *) jm_env_globus_site_dn);
-        if (jm_env_globus_gram_dn)
+                                (void *) jm_globus_site_dn);
+        if (jm_globus_gram_dn)
             globus_symboltable_insert(symbol_table,
                                 (void *) "GLOBUS_GRAM_DN",
-                                (void *) jm_env_globus_gram_dn);
-        if (jm_env_globus_host_dn)
+                                (void *) jm_globus_gram_dn);
+        if (jm_globus_host_dn)
             globus_symboltable_insert(symbol_table,
                                 (void *) "GLOBUS_HOST_DN",
-                                (void *) jm_env_globus_host_dn);
-        if (jm_env_globus_host_manufacturer)
+                                (void *) jm_globus_host_dn);
+        if (jm_globus_host_manufacturer)
             globus_symboltable_insert(symbol_table,
                                 (void *) "GLOBUS_HOST_MANUFACTURER",
-                                (void *) jm_env_globus_host_manufacturer);
-        if (jm_env_globus_host_cputype)
+                                (void *) jm_globus_host_manufacturer);
+        if (jm_globus_host_cputype)
             globus_symboltable_insert(symbol_table,
                                 (void *) "GLOBUS_HOST_CPUTYPE",
-                                (void *) jm_env_globus_host_cputype);
-        if (jm_env_globus_host_osname)
+                                (void *) jm_globus_host_cputype);
+        if (jm_globus_host_osname)
             globus_symboltable_insert(symbol_table,
                                 (void *) "GLOBUS_HOST_OSNAME",
-                                (void *) jm_env_globus_host_osname);
-        if (jm_env_globus_host_osversion)
+                                (void *) jm_globus_host_osname);
+        if (jm_globus_host_osversion)
             globus_symboltable_insert(symbol_table,
                                 (void *) "GLOBUS_HOST_VERSION",
-                                (void *) jm_env_globus_host_osversion);
+                                (void *) jm_globus_host_osversion);
         globus_symboltable_insert(symbol_table,
                                 (void *) "GLOBUS_PREFIX",
                                 (void *) jm_globus_prefix);
@@ -723,6 +814,7 @@ main(int argc,
     if (job_status == 0)
     {
 	int skip_poll = GRAM_JOB_MANAGER_POLL_FREQUENCY;
+	int skip_stat = GRAM_JOB_MANAGER_STAT_FREQUENCY;
         while (!graml_jm_monitor.done)
         {
             /*
@@ -736,9 +828,24 @@ main(int argc,
 	    if (--skip_poll <= 0)
 	    {
                 GRAM_LOCK;
+                /* touch the file so we know we did not crash */
+                if ( utime(graml_job_status_file, NULL) != 0 )
+                {
+                    if(errno == ENOENT)
+                    {
+                        globus_l_jm_status_file_gen(grami_current_job_state);
+                    }
+                }
 		grami_jm_poll();
                 GRAM_UNLOCK;
 		skip_poll = GRAM_JOB_MANAGER_POLL_FREQUENCY;
+	    }
+	    if (--skip_stat <= 0)
+	    {
+                GRAM_LOCK;
+                globus_l_jm_status_file_cleanup();
+                GRAM_UNLOCK;
+		skip_stat = GRAM_JOB_MANAGER_STAT_FREQUENCY;
 	    }
         } /* endwhile */
     }
@@ -910,7 +1017,7 @@ grami_jm_callback(int state, int errorcode)
 
     if (graml_jm_status_dir)
     {
-       graml_status_file_gen(state); 
+       globus_l_jm_status_file_gen(state); 
     }
 
     if (strlen(graml_callback_contact) != 0 && 
@@ -949,48 +1056,37 @@ grami_jm_callback(int state, int errorcode)
 } /* grami_jm_callback() */
 
 /******************************************************************************
-Function:       graml_status_file_gen()
+Function:       globus_l_jm_status_file_gen()
 Description:
 Parameters:
 Returns:
 ******************************************************************************/
 static int 
-graml_status_file_gen(int job_status)
+globus_l_jm_status_file_gen(int job_status)
 {
-    char               status_file[256];
     FILE *             status_fp;
     struct stat        statbuf;
     char *             request_string = NULL;
     char *             tmp_attribute;
 
-    grami_fprintf( grami_log_fp, "JM: in graml_status_file_gen\n");
+    grami_fprintf( grami_log_fp, "JM: in globus_l_jm_status_file_gen\n");
 
-    if (graml_nickname)
+    if (!graml_jm_status_dir)
     {
-        sprintf(status_file, "%s/%s_%s.%lu",
-                graml_jm_status_dir,
-                STATUS_FILE_PREFIX,
-                graml_nickname,
-                (unsigned long) getpid() );
-    }
-    else
-    {
-        sprintf(status_file, "%s/%s_no_nickname.%lu",
-                graml_jm_status_dir,
-                STATUS_FILE_PREFIX,
-                (unsigned long) getpid() );
+       return(0); 
     }
 
     /*
      * Check to see if the status file exists.  If so, then delete it.
      */
-    if (stat(status_file, &statbuf) == 0)
+    if (stat(graml_job_status_file, &statbuf) == 0)
     {
-        if (remove(status_file) != 0)
+        if (remove(graml_job_status_file) != 0)
         {
             grami_fprintf( grami_log_fp, "\n--------------------------\n");
             grami_fprintf( grami_log_fp, 
-                  "JM: Cannot remove status file --> %s\n", status_file);
+                  "JM: Cannot remove status file --> %s\n",
+                  graml_job_status_file);
             grami_fprintf( grami_log_fp, "--------------------------\n");
             return(1);
         }
@@ -1003,12 +1099,12 @@ graml_status_file_gen(int job_status)
         (job_status != GLOBUS_GRAM_CLIENT_JOB_STATE_FAILED))
     {
 
-        if ((status_fp = fopen(status_file, "a")) == NULL)
+        if ((status_fp = fopen(graml_job_status_file, "a")) == NULL)
         {
             grami_fprintf( grami_log_fp, "\n--------------------------\n");
             grami_fprintf( grami_log_fp, 
                            "JM: Cannot open status file --> %s\n",
-                           status_file);
+                           graml_job_status_file);
             grami_fprintf( grami_log_fp, "JM: job contact = %s\n",
                            graml_job_contact);
             grami_fprintf( grami_log_fp, "JM: MDS will NOT be updated!!!\n");
@@ -1022,15 +1118,13 @@ graml_status_file_gen(int job_status)
              */ 
             if (graml_job_status == NULL)
             {
-                graml_job_status = (char *) globus_malloc(sizeof(char *) * 51);
-
                 tmp_attribute = (char *) globus_malloc(sizeof(char *) * 12);
                 strcpy(tmp_attribute, "job_contact");
                 
                 /*
                  * create the RSL relation for the job contact
                  */
-                if (graml_rsl_add(tmp_attribute, graml_job_contact) != 0)
+                if (globus_l_jm_rsl_add(tmp_attribute, graml_job_contact) != 0)
                 {
                     grami_fprintf( grami_log_fp, 
                         "JM: ERROR adding %s to the RSL.\n", tmp_attribute);
@@ -1042,7 +1136,7 @@ graml_status_file_gen(int job_status)
                 tmp_attribute = (char *) globus_malloc(sizeof(char *) * 10);
                 strcpy(tmp_attribute, "globus_id");
                 
-                if (graml_rsl_add(tmp_attribute, graml_env_globusid) != 0)
+                if (globus_l_jm_rsl_add(tmp_attribute, graml_env_globus_id) != 0)
                 {
                     grami_fprintf( grami_log_fp, 
                         "JM: ERROR adding %s to the RSL.\n", tmp_attribute);
@@ -1054,7 +1148,10 @@ graml_status_file_gen(int job_status)
                 tmp_attribute = (char *) globus_malloc(sizeof(char *) * 11);
                 strcpy(tmp_attribute, "job_status");
                 
-                if (graml_rsl_add(tmp_attribute, graml_job_status) != 0)
+                /* large enough to handle any states and then some */
+                graml_job_status = (char *) globus_malloc(sizeof(char *) * 51);
+
+                if (globus_l_jm_rsl_add(tmp_attribute, graml_job_status) != 0)
                 {
                     grami_fprintf( grami_log_fp, 
                         "JM: ERROR adding %s to the RSL.\n", tmp_attribute);
@@ -1110,12 +1207,12 @@ graml_status_file_gen(int job_status)
 
     return(0);
 
-} /* graml_status_file_gen() */
+} /* globus_l_jm_status_file_gen() */
 
 int
-graml_rsl_environment_add(globus_rsl_t * ast_node,
-                          char * var,
-                          char * value)
+globus_l_jm_rsl_env_add(globus_rsl_t * ast_node,
+                        char * var,
+                        char * value)
 {
     globus_rsl_t * tmp_rsl_ptr;
     globus_list_t * tmp_rsl_list;
@@ -1134,7 +1231,7 @@ graml_rsl_environment_add(globus_rsl_t * ast_node,
             tmp_rsl_ptr = (globus_rsl_t *) globus_list_first
                  (tmp_rsl_list);
 
-            graml_rsl_environment_add(tmp_rsl_ptr,
+            globus_l_jm_rsl_env_add(tmp_rsl_ptr,
                                       var,
                                       value);
 
@@ -1172,16 +1269,15 @@ graml_rsl_environment_add(globus_rsl_t * ast_node,
 }
 
 /******************************************************************************
-Function:       graml_rsl_add()
+Function:       globus_l_jm_rsl_add()
 Description:
 Parameters:
 Returns:
 ******************************************************************************/
 static int 
-graml_rsl_add(char * attribute_name, 
-              char * attribute_value)
+globus_l_jm_rsl_add(char * attribute_name, 
+                    char * attribute_value)
 {
-
    globus_list_t * new_list;
 
    if (globus_rsl_is_boolean(graml_rsl_tree))
@@ -1205,7 +1301,7 @@ graml_rsl_add(char * attribute_name,
 
    return(0);
 
-} /* graml_rsl_add() */
+} /* globus_l_jm_rsl_add() */
 
 
 
@@ -1542,7 +1638,7 @@ grami_jm_request_params(globus_rsl_t * rsl_tree,
         if (strcmp(grami_jm_type,"loadleveler") == 0 ||
             strcmp(grami_jm_type,"easymcs") == 0 )
         {
-            graml_basename(grami_env_x509_user_proxy, &proxy_file_name);
+            globus_l_jm_basename(grami_env_x509_user_proxy, &proxy_file_name);
 
             if (proxy_file_name == NULL)
             {
@@ -1588,7 +1684,7 @@ grami_jm_request_params(globus_rsl_t * rsl_tree,
 	    params->pgm_env[i] = newval;
 	    ++i;
 	    params->pgm_env[i] = GLOBUS_NULL;
-            if (graml_rsl_environment_add(rsl_tree, newvar, newval) != 0)
+            if (globus_l_jm_rsl_env_add(rsl_tree, newvar, newval) != 0)
             {
                 grami_fprintf( grami_log_fp, 
                         "JM: ERROR adding %s to the environment= parameter "
@@ -1600,12 +1696,12 @@ grami_jm_request_params(globus_rsl_t * rsl_tree,
     /* GEM: Stage pgm and std_in to local filesystem, if they are URLs.
        Do this before paradyn rewriting.
      */
-    if (graml_stage_file(&(params->pgm), 0700) != GLOBUS_SUCCESS)
+    if (globus_l_jm_stage_file(&(params->pgm), 0700) != GLOBUS_SUCCESS)
     {
         return(GLOBUS_GRAM_CLIENT_ERROR_STAGING_EXECUTABLE);
     }
 
-    if (graml_stage_file(&(params->std_in), 0400) != GLOBUS_SUCCESS)
+    if (globus_l_jm_stage_file(&(params->std_in), 0400) != GLOBUS_SUCCESS)
     {
         return(GLOBUS_GRAM_CLIENT_ERROR_STAGING_STDIN);
     }
@@ -1617,7 +1713,7 @@ grami_jm_request_params(globus_rsl_t * rsl_tree,
             return (GLOBUS_GRAM_CLIENT_ERROR_INVALID_PARADYN);
 	}
 
-        if (graml_stage_file(&(params->pgm), 0700) != GLOBUS_SUCCESS)
+        if (globus_l_jm_stage_file(&(params->pgm), 0700) != GLOBUS_SUCCESS)
         {
             return(GLOBUS_GRAM_CLIENT_ERROR_STAGING_EXECUTABLE);
         }
@@ -1769,16 +1865,15 @@ graml_start_time_handler(nexus_endpoint_t * endpoint,
 } /* graml_start_time_handler() */
 
 /******************************************************************************
-Function:       genfilename()
+Function:       globus_l_jm_genfilename()
 Description:    generate an absolute file name given a starting prefix,
                                 a relative or absolute path, and a sufix
                                 Only use prefix if path is relative.
 Parameters:
 Returns:                a pointer to a string which could be freeded.
 ******************************************************************************/
- 
 static char *
-genfilename(char * prefixp, char * pathp, char * sufixp)
+globus_l_jm_genfilename(char * prefixp, char * pathp, char * sufixp)
 {
         char * newfilename;
         int    prefixl, pathl, sufixl;
@@ -1808,16 +1903,16 @@ genfilename(char * prefixp, char * pathp, char * sufixp)
           strcat(newfilename, sufix);
         }
         return newfilename;
-}
+} /* globus_l_jm_genfilename */
 
 /******************************************************************************
-Function:       graml_stage_file()
+Function:       globus_l_jm_stage_file()
 Description:    
 Parameters:
 Returns:
 ******************************************************************************/
 static int
-graml_stage_file(char **url, int mode)
+globus_l_jm_stage_file(char **url, int mode)
 {
     globus_url_t gurl;
     int rc;
@@ -1905,7 +2000,8 @@ graml_stage_file(char **url, int mode)
     }
 
     return(GLOBUS_SUCCESS);
-}
+
+} /* globus_l_jm_stage_file */
 
 /******************************************************************************
 Function:       globus_l_job_manager_duct_environment()
@@ -1956,8 +2052,14 @@ globus_l_job_manager_duct_environment(int count,
     (*newvar) = strdup("GLOBUS_GRAM_MYJOB_CONTACT");
 
     return GLOBUS_SUCCESS;
-}
+} /* globus_l_job_manager_duct_environment */
 
+/******************************************************************************
+Function:       globus_l_jm_getenv_var()
+Description:    
+Parameters:
+Returns:
+******************************************************************************/
 static char *
 globus_l_jm_getenv_var(char * env_var_name,
                        char * default_name)
@@ -1994,9 +2096,18 @@ globus_l_jm_getenv_var(char * env_var_name,
     }
 
     return(env_var);
-}
 
-static void graml_basename(char * filepath, char ** ptr_to_basename)
+} /* globus_l_jm_getenv_var() */
+
+/******************************************************************************
+Function:       globus_l_jm_basename()
+Description:    
+Parameters:
+Returns:
+******************************************************************************/
+static void
+globus_l_jm_basename(char * filepath,
+                     char ** ptr_to_basename)
 {
     if (filepath == NULL)
     {
@@ -2013,4 +2124,138 @@ static void graml_basename(char * filepath, char ** ptr_to_basename)
             *ptr_to_basename = *ptr_to_basename + 1;
         }
     }
-}
+} /* globus_l_jm_basename() */
+
+/******************************************************************************
+Function:       globus_l_jm_status_file_cleanup()
+Description:    
+Parameters:
+Returns:
+******************************************************************************/
+static void
+globus_l_jm_status_file_cleanup(void)
+{
+    DIR *            status_dir;
+    struct dirent *  dir_entry;
+    char             logname_string[256];
+    char             stat_file_path[1024];
+    struct stat      statbuf;
+    unsigned long    now;
+ 
+    if(graml_jm_status_dir == GLOBUS_NULL)
+    {
+        grami_fprintf( grami_log_fp, 
+            "JM: status directory not specified, cleanup cannot proceed.\n");
+        return;
+    }
+ 
+    status_dir = opendir(graml_jm_status_dir);
+    if(status_dir == GLOBUS_NULL)
+    {
+        grami_fprintf( grami_log_fp, 
+            "JM: unable to open status directory, aborting cleanup process.\n");
+        return;
+    }
+
+    sprintf(logname_string, "_%s.", grami_env_logname);
+    now = (unsigned long) time(NULL);
+
+    for(globus_libc_readdir_r(status_dir, &dir_entry);
+        dir_entry != GLOBUS_NULL;
+        globus_libc_readdir_r(status_dir, &dir_entry))
+    {
+        if (strstr(dir_entry->d_name, logname_string) != NULL)
+        {
+            sprintf(stat_file_path, "%s/%s", graml_jm_status_dir,
+                                      dir_entry->d_name);
+            grami_fprintf( grami_log_fp, 
+                   "JM: found user file --> %s\n", stat_file_path);
+            if (stat(stat_file_path, &statbuf) == 0)
+            {
+                if ( (now - (unsigned long) statbuf.st_mtime) >
+                      GRAM_JOB_MANAGER_STATUS_FILE_SECONDS )
+                {
+                    grami_fprintf( grami_log_fp, 
+                        "JM: status file has not been modified in %d seconds\n",
+                        GRAM_JOB_MANAGER_STATUS_FILE_SECONDS);
+                    if (remove(stat_file_path) != 0)
+                    {
+                        grami_fprintf( grami_log_fp, 
+                               "JM: Cannot remove old status file --> %s\n",
+                               stat_file_path);
+                    }
+                    else
+                    {
+                        grami_fprintf( grami_log_fp, 
+                               "JM: Removed old status file --> %s\n",
+                               stat_file_path);
+                    }
+                }
+            }
+        }
+    }
+    globus_libc_closedir(status_dir);
+
+} /* globus_l_jm_status_file_cleanup() */
+
+/******************************************************************************
+Function:       globus_l_jm_tokenize()
+Description:
+Parameters:
+Returns:
+******************************************************************************/
+static int
+globus_l_jm_tokenize(char * command, char ** args, int * n)
+{
+  int i, x;
+  char * cp;
+  char * cp2;
+  char ** arg;
+  char * tmp_str = NULL;
+
+  arg = args;
+  i = *n - 1;
+
+  for (cp = strtok(command, " \t\n"); cp != 0; )
+  {
+      if ( cp[0] == '\'' && cp[strlen(cp) - 1] != '\'' )
+      {
+         cp2 = strtok(NULL, "'\n");
+         tmp_str = malloc(sizeof(char *) * (strlen(cp) + strlen(cp2) + 2));
+         sprintf(tmp_str, "%s %s", &cp[1], cp2);
+      }
+      else if ( cp[0] == '"' && cp[strlen(cp) - 1] != '"' )
+      {
+         cp2 = strtok(NULL, "\"\n");
+         tmp_str = malloc(sizeof(char *) * (strlen(cp) + strlen(cp2) + 2));
+         sprintf(tmp_str, "%s %s", &cp[1], cp2);
+      }
+      else
+      {
+         if (( cp[0] == '"' && cp[strlen(cp) - 1] == '"' ) ||
+             ( cp[0] == '\'' && cp[strlen(cp) - 1] == '\'' ))
+         {
+             tmp_str = malloc(sizeof(char *) * strlen(cp));
+             x = strlen(cp)-2;
+             strncpy(tmp_str, &cp[1], x);
+             tmp_str[x] = '\0';
+         }
+         else
+         {
+             tmp_str = cp;
+         }
+      }
+
+      *arg = tmp_str;
+      i--;
+      if (i == 0)
+          return(-1); /* too many args */
+      arg++;
+      cp = strtok(NULL, " \t\n");
+  }
+
+  *arg = (char *) 0;                                        
+  *n = *n - i - 1;
+  return(0);
+
+} /* globus_l_jm_tokenize() */
