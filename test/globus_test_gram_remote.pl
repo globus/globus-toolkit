@@ -7,8 +7,9 @@
 use strict;
 use Utilities;
 
-test_gram_remote();
-
+if ($ENV{'TEST_REMOTE'}) {
+    test_gram_remote();
+}
 
 # ------------------------------------------------------------------------
 # Test GRAM remote

@@ -7,8 +7,9 @@
 use strict;
 use Utilities;
 
-test_gridftp_remote();
-
+if ($ENV{'TEST_REMOTE'}) {
+    test_gridftp_remote();
+}
 
 # ------------------------------------------------------------------------
 # Test GridFTP remote
