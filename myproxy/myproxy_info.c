@@ -176,7 +176,8 @@ main(int argc, char *argv[])
     /* Check response */
     switch(server_response->response_type) {
     case MYPROXY_ERROR_RESPONSE:
-        fprintf(stderr, "Received ERROR_RESPONSE: %s\n", server_response->error_str);
+        fprintf(stderr, "Received ERROR_RESPONSE: %s\n",
+		server_response->error_string);
         break;
     case MYPROXY_OK_RESPONSE:
 	printf("username: %s\n", client_request->username);
@@ -280,11 +281,12 @@ print_cred_info(myproxy_creds_t *creds)
 	    printf("  renewal policy: %s\n", creds->renewers);
 	}
 	now = time(0);
-	if (creds->end_time > 0) {
+	if (creds->end_time > now) {
 	    time_diff = creds->end_time - now;
 	    days = time_diff / 86400.0;
 	} else {
 	    time_diff = 0;
+	    days = 0.0;
 	}
 	printf("  timeleft: %ld:%02ld:%02ld", 
 	       (long)(time_diff / 3600),
