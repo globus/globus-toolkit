@@ -136,7 +136,6 @@ int mm_answer_krb5(int, Buffer *);
 int mm_answer_gss_setup_ctx(int, Buffer *);
 int mm_answer_gss_accept_ctx(int, Buffer *);
 int mm_answer_gss_userok(int, Buffer *);
-int mm_answer_gss_localname(int, Buffer *);
 int mm_answer_gss_sign(int, Buffer *);
 int mm_answer_gss_error(int, Buffer *);
 int mm_answer_gss_indicate_mechs(int, Buffer *);
