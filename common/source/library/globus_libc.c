@@ -3204,6 +3204,7 @@ globus_libc_getnameinfo(
     globus_result_t                     result;
 
     result = GLOBUS_SUCCESS;
+    *hostbuf = 0;
     rc = getnameinfo(
         (const struct sockaddr *) addr,
         GlobusLibcSockaddrLen(addr),
@@ -3212,6 +3213,20 @@ globus_libc_getnameinfo(
         servbuf,
         servbuf_len,
         flags);
+#ifdef TARGET_ARCH_DARWIN
+    if(rc == 0 && !*hostbuf && !(flags & GLOBUS_NI_NUMERICHOST))
+    {
+        rc = getnameinfo(
+            (const struct sockaddr *) addr,
+            GlobusLibcSockaddrLen(addr),
+            hostbuf,
+            hostbuf_len,
+            servbuf,
+            servbuf_len,
+            flags | GLOBUS_NI_NUMERICHOST);
+    }
+#endif
+
     if(rc != 0)
     {
         if(rc == EAI_SYSTEM)
