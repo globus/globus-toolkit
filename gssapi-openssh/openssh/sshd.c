@@ -1373,8 +1373,6 @@ do_ssh1_kex(void)
 	packet_set_protocol_flags(protocol_flags);
 	packet_check_eom();
 
-	packet_integrity_check(plen, 1 + 8 + slen + 4, SSH_CMSG_SESSION_KEY);
-
 	/*
 	 * Decrypt it using our private server key and private host key (key
 	 * with larger modulus first).
