@@ -66,11 +66,11 @@ my $thread = "pthr";
 my ($install, $installer, $buildjava, $buildc, $anonymous,
     $noupdates, $force, $help, $man, $verbose, $skippackage,
     $skipbundle, $faster, $paranoia, $version, $uncool,
-    $binary) =
+    $binary, $inplace) =
    (0, 0, 1, 1, 0,
     0, 0, 0, 0, 0, 0, 
     0, 0, 0, "1.0", 0, 
-    0);
+    0, 0);
 
 my @user_bundles;
 my @user_packages;
@@ -96,6 +96,7 @@ GetOptions( 'i|install=s' => \$install,
 	    'paranoia!' => \$paranoia,
 	    'version=s' => \$version,
 	    'uncool!' => \$uncool,
+	    'inplace!' => \$inplace,
 	    'help|?' => \$help,
 	    'man' => \$man,
 ) or pod2usage(2);
@@ -140,6 +141,12 @@ if ( not $skippackage )
     package_sources();
 } else {
     print "Not packaging sources with -skippackage set.\n";
+}
+
+if ( $inplace )
+{
+    print "Exiting after installation for inplace builds.\n";
+    exit;
 }
 
 if ( not $skipbundle )
@@ -835,6 +842,13 @@ sub package_sources()
 	    }
 	}
 
+	if ( $inplace )
+	{
+	    print "Not generating GPT packages.  Building $package inside CVS.\n";
+	    inplace_build($package, $subdir, $tree);
+	    next;
+	}
+
 	if ( $custom eq "gpt" ){
 	    package_source_gpt($package, $subdir, $tree);
 	} elsif ( $custom eq "pnb" ){
@@ -847,6 +861,18 @@ sub package_sources()
     }
     
     print "\n";
+}
+
+# --------------------------------------------------------------------
+sub inplace_build()
+# --------------------------------------------------------------------
+{
+    my ($package, $subdir, $tree) = @_;
+
+    chdir $subdir;
+    log_system("$ENV{'GPT_LOCATION'}/sbin/gpt-build --srcdir=. $flavor", "$pkglog/$package");
+    paranoia("Inplace build of $package failed!");
+
 }
 
 # --------------------------------------------------------------------
