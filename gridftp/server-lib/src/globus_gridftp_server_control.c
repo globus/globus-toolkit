@@ -1809,6 +1809,44 @@ globus_l_gsc_intermediate_reply(
     return res;
 }
 
+static
+void
+globus_l_gsc_hash_cmd_destroy(
+    void *                              arg)
+{
+    globus_l_gsc_cmd_ent_t *            cmd_ent;
+    globus_list_t *                     list;
+
+    list = (globus_list_t *) arg;
+
+    while(!globus_list_empty(list))
+    {
+        cmd_ent = (globus_l_gsc_cmd_ent_t *) globus_list_remove(&list, list);
+
+        if(cmd_ent->cmd_name != NULL)
+        {
+            globus_free(cmd_ent->cmd_name);
+        }
+        if(cmd_ent->help != NULL)
+        {
+            globus_free(cmd_ent->help);
+        }
+        globus_free(cmd_ent);
+    }
+}
+
+static
+void
+globus_l_gsc_hash_func_destroy(
+    void *                              arg)
+{
+    globus_i_gsc_module_func_t *        mod_func;
+
+    mod_func = (globus_i_gsc_module_func_t *) arg;
+    globus_free(mod_func->key);
+    globus_free(mod_func);
+}
+
 /************************************************************************
  *              externally visable functions
  *              ----------------------------
@@ -1872,11 +1910,8 @@ globus_result_t
 globus_gridftp_server_control_destroy(
     globus_gridftp_server_control_t     server)
 {
-    globus_i_gsc_module_func_t *        mod_func;
     char *                              tmp_ptr;
     globus_l_gsc_cmd_ent_t *            cmd_ent;
-    globus_list_t *                     list;
-    globus_list_t *                     list2;
     globus_i_gsc_server_handle_t *      server_handle;
     globus_result_t                     res;
     GlobusGridFTPServerName(globus_gridftp_server_control_destroy);
@@ -1934,26 +1969,6 @@ globus_gridftp_server_control_destroy(
         }
         globus_free(cmd_ent);
     }
-    globus_hashtable_to_list(&server_handle->cmd_table, &list);
-    while(!globus_list_empty(list))
-    {
-        list2 = (globus_list_t *) globus_list_remove(&list, list);
-        while(!globus_list_empty(list2))
-        {
-            cmd_ent = (globus_l_gsc_cmd_ent_t *)
-                globus_list_remove(&list2, list2);
-
-            if(cmd_ent->cmd_name != NULL)
-            {
-                globus_free(cmd_ent->cmd_name);
-            }
-            if(cmd_ent->help != NULL)
-            {
-                globus_free(cmd_ent->help);
-            }
-            globus_free(cmd_ent);
-        }
-    }
 
     while(!globus_list_empty(server_handle->feature_list))
     {
@@ -1962,28 +1977,17 @@ globus_gridftp_server_control_destroy(
         globus_free(tmp_ptr);
     }
 
-    globus_hashtable_to_list(&server_handle->funcs.send_cb_table, &list);
-    while(!globus_list_empty(list))
-    {
-        mod_func = (globus_i_gsc_module_func_t *) 
-            globus_list_remove(&list, list);
-        globus_free(mod_func->key);
-        globus_free(mod_func);
-    }
-    globus_hashtable_to_list(&server_handle->funcs.recv_cb_table, &list);
-    while(!globus_list_empty(list))
-    {
-        mod_func = (globus_i_gsc_module_func_t *) 
-            globus_list_remove(&list, list);
-        globus_free(mod_func->key);
-        globus_free(mod_func);
-    }
-
     globus_mutex_destroy(&server_handle->mutex);
-    globus_hashtable_destroy(&server_handle->cmd_table);
-    globus_hashtable_destroy(&server_handle->site_cmd_table);
-    globus_hashtable_destroy(&server_handle->funcs.send_cb_table);
-    globus_hashtable_destroy(&server_handle->funcs.recv_cb_table);
+
+    globus_hashtable_destroy_all(
+        &server_handle->cmd_table, globus_l_gsc_hash_cmd_destroy);
+    globus_hashtable_destroy_all(
+        &server_handle->site_cmd_table, globus_l_gsc_hash_cmd_destroy);
+
+    globus_hashtable_destroy_all(
+        &server_handle->funcs.recv_cb_table, globus_l_gsc_hash_func_destroy);
+    globus_hashtable_destroy_all(
+        &server_handle->funcs.send_cb_table, globus_l_gsc_hash_func_destroy);
     globus_fifo_destroy(&server_handle->read_q);
     globus_fifo_destroy(&server_handle->reply_q);
     globus_free(server_handle);
@@ -2206,6 +2210,7 @@ globus_gridftp_server_control_start(
     server_handle->cwd = globus_libc_strdup(i_attr->base_dir);
     if(i_attr->pre_auth_banner != NULL)
     {
+        globus_free(server_handle->pre_auth_banner);
         server_handle->pre_auth_banner = 
             globus_libc_strdup(i_attr->pre_auth_banner);
     }
@@ -2447,9 +2452,9 @@ globus_gsc_959_command_add(
     cmd_ent->cmd_name = strdup(command_name);
     if(strncmp("SITE ", command_name, 5) == 0 && strlen(command_name) > 5)
     {
-        tmp_ptr = (char *)&command_name[5]; 
+        tmp_ptr = (char *)&cmd_ent->cmd_name[5];
         while(*tmp_ptr == ' ') tmp_ptr++;
-        cmd_name = strdup(tmp_ptr);
+        cmd_name = tmp_ptr;
 
         list = (globus_list_t *) globus_hashtable_remove(
             &server_handle->site_cmd_table, cmd_name);
@@ -2460,10 +2465,10 @@ globus_gsc_959_command_add(
     else
     {
         list = (globus_list_t *) globus_hashtable_remove(
-            &server_handle->cmd_table, (char *)command_name);
+            &server_handle->cmd_table, cmd_ent->cmd_name);
         globus_list_insert(&list, cmd_ent);
         globus_hashtable_insert(
-            &server_handle->cmd_table, (char *)command_name, list);
+            &server_handle->cmd_table, cmd_ent->cmd_name, list);
     }
 
     return GLOBUS_SUCCESS;

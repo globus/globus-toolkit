@@ -253,7 +253,6 @@ globus_l_gfs_data_operation_init(
         goto error_alloc;
     }
     
-    op->recvd_ranges = GLOBUS_NULL;
     globus_range_list_init(&op->recvd_ranges);
     globus_range_list_init(&op->stripe_range_list);
     op->recvd_bytes = 0;
@@ -271,13 +270,11 @@ void
 globus_l_gfs_data_operation_destroy(
     globus_l_gfs_data_operation_t *     op)
 {
+    globus_range_list_destroy(op->recvd_ranges);
+    globus_range_list_destroy(op->stripe_range_list);
     if(op->list_type)
     {
         globus_free((char *) op->list_type);
-    }
-    if(op->recvd_ranges)
-    {
-        globus_range_list_destroy(op->recvd_ranges);
     }
     if(op->eof_count != NULL)
     {
@@ -609,6 +606,11 @@ globus_l_gfs_data_abort_fc_cb(
     globus_ftp_control_handle_t *       ftp_handle,
     globus_object_t *                   error)
 {
+    globus_l_gfs_data_operation_t *     op;
+
+    op = (globus_l_gfs_data_operation_t *) callback_arg;
+
+    globus_ftp_control_handle_destroy(&op->data_handle->data_channel);
     globus_l_gfs_data_abort_kickout(callback_arg);
 }
     
@@ -619,6 +621,11 @@ globus_l_gfs_data_fc_finished_cb(
     globus_ftp_control_handle_t *       ftp_handle,
     globus_object_t *                   error)
 {
+    globus_l_gfs_data_operation_t *     op;
+
+    op = (globus_l_gfs_data_operation_t *) callback_arg;
+
+    globus_ftp_control_handle_destroy(&op->data_handle->data_channel);
     globus_l_gfs_data_end_transfer_kickout(callback_arg);
 }
 
@@ -697,11 +704,6 @@ globus_i_gfs_data_destroy_handle(
                 break;
 
             case GLOBUS_L_GFS_DATA_HANDLE_INVALID:
-                if(data_handle->is_mine)
-                {
-                    globus_ftp_control_handle_destroy(
-                        &data_handle->data_channel);
-                }
                 globus_free(data_handle);
                 break;
 
@@ -2763,6 +2765,7 @@ globus_gridftp_server_operation_finished(
             op->ipc_handle,
             finished_info);
     }
+    globus_l_gfs_data_operation_destroy(op);
     
     return;  
 }

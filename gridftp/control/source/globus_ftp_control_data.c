@@ -7938,7 +7938,10 @@ globus_l_ftp_stream_read_callback(
          *  result will not be SUCCESS when the callback is canceled
          *  or an error occurs.
          */
-        if(result != GLOBUS_SUCCESS)
+        if(dc_handle->state == GLOBUS_FTP_DATA_STATE_CLOSING)
+        {
+        }
+        else if(result != GLOBUS_SUCCESS)
         {
             error = globus_error_get(result);
             type = globus_object_get_type(error);
@@ -7971,9 +7974,9 @@ globus_l_ftp_stream_read_callback(
                     &stripe->all_conn_list,
                     data_conn);
                 result = globus_io_register_close(
-                             &data_conn->io_handle,
-                             globus_l_ftp_stream_write_eof_callback,
-                             (void *)entry);
+                         &data_conn->io_handle,
+                         globus_l_ftp_stream_write_eof_callback,
+                         (void *)entry);
                 globus_assert(result == GLOBUS_SUCCESS);
                 entry->length = nbyte;
                 entry->offset = data_conn->offset;
