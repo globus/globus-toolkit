@@ -16,7 +16,7 @@ INCLUDES = \
 	$(NULL)
 
 lib_LTLIBRARIES = \
-	libxmlsec1-openssl_$(GLOBUS_FLAVOR_NAME).la \
+	libxmlsec1_openssl_$(GLOBUS_FLAVOR_NAME).la \
 	$(NULL)
 
 libxmlsec1_openssl___GLOBUS_FLAVOR_NAME__la_SOURCES =\

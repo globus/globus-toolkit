@@ -235,7 +235,7 @@ INCLUDES = \
 
 
 lib_LTLIBRARIES = \
-	libxmlsec1-openssl_$(GLOBUS_FLAVOR_NAME).la \
+	libxmlsec1_openssl_$(GLOBUS_FLAVOR_NAME).la \
 	$(NULL)
 
 
@@ -344,7 +344,7 @@ clean-libLTLIBRARIES:
 	  echo "rm -f \"$${dir}/so_locations\""; \
 	  rm -f "$${dir}/so_locations"; \
 	done
-libxmlsec1-openssl_$(GLOBUS_FLAVOR_NAME).la: $(libxmlsec1_openssl___GLOBUS_FLAVOR_NAME__la_OBJECTS) $(libxmlsec1_openssl___GLOBUS_FLAVOR_NAME__la_DEPENDENCIES) 
+libxmlsec1_openssl_$(GLOBUS_FLAVOR_NAME).la: $(libxmlsec1_openssl___GLOBUS_FLAVOR_NAME__la_OBJECTS) $(libxmlsec1_openssl___GLOBUS_FLAVOR_NAME__la_DEPENDENCIES) 
 	$(LINK) -rpath $(libdir) $(libxmlsec1_openssl___GLOBUS_FLAVOR_NAME__la_LDFLAGS) $(libxmlsec1_openssl___GLOBUS_FLAVOR_NAME__la_OBJECTS) $(libxmlsec1_openssl___GLOBUS_FLAVOR_NAME__la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
