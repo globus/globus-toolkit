@@ -190,6 +190,8 @@ globus_jobmanager_request_init(globus_gram_jobmanager_request_t ** request)
     r->my_stdin = NULL;
     r->my_stdout = NULL;
     r->my_stderr = NULL;
+    r->condor_os = NULL;
+    r->condor_arch = NULL;
     r->status = GLOBUS_GRAM_CLIENT_JOB_STATE_FAILED;
     r->count = 0;
     r->host_count = 0;
@@ -688,6 +690,28 @@ globus_l_gram_request_shell(globus_gram_jobmanager_request_t * request)
     globus_l_gram_param_prepare(request->project, new_param);
     fprintf(script_arg_fp,"grami_project='%s'\n", new_param);
 
+    if (strcasecmp(request->jobmanager_type, "condor") == 0)
+    {
+        if (request->condor_arch == NULL)
+        {
+           grami_fprintf( request->jobmanager_log_fp,
+                "JMI: Condor_arch must be specified when "
+                "jobmanager type is condor\n");
+           request->failure_code = GLOBUS_GRAM_CLIENT_ERROR_CONDOR_ARCH;
+           return(GLOBUS_FAILURE);
+        }
+        if (request->condor_os == NULL)
+        {
+           grami_fprintf( request->jobmanager_log_fp,
+                "JMI: Condor_os must be specified when "
+                "jobmanager type is condor\n");
+           request->failure_code = GLOBUS_GRAM_CLIENT_ERROR_CONDOR_OS;
+           return(GLOBUS_FAILURE);
+        }
+        fprintf(script_arg_fp,"grami_condor_arch='%s'\n", request->condor_arch);
+        fprintf(script_arg_fp,"grami_condor_os='%s'\n", request->condor_os);
+    }
+
     if (graml_env_krb5ccname)
     {
        fprintf(script_arg_fp,"KRB5CCNAME='%s'\n", graml_env_krb5ccname);
@@ -1169,8 +1193,8 @@ Returns:
 /*
  * globus_l_gram_environment_get()
  *
- * RSL environment vars come in pairs, first the var then the value.
- * So 2 RSL environment vars will be converted to one.
+ * environment vars come in pairs, first the var then the value.
+ * So 2 environment vars will be converted to one.
  *
  * For example:
  *       env[0] = "FOO"
@@ -1182,33 +1206,33 @@ static int
 globus_l_gram_environment_get(char *** env, FILE * log_fp)
 {
     char ** new_env;
-    int rsl_env_count;
+    int env_count;
     int i, j;
     int jm_env_num = 0;
 
-    /* count up the globus RSL environment vars */
-    for (rsl_env_count = 0; (*env)[rsl_env_count] != NULL; rsl_env_count++)
+    /* count up the environment vars */
+    for (env_count = 0; (*env)[env_count] != NULL; env_count++)
         ;
 
-    /* if the number of globus RSL environment vars is not even then the 
+    /* if the number of environment vars is not even then the 
      * parameter parsed ok, but it invalid because we assume they come in 
      * pairs.  So return an error
      */
-    if (rsl_env_count % 2)
+    if (env_count % 2)
     {
         grami_fprintf(log_fp, 
-              "JMI: Got an uneven number %d of rsl environment variables!!\n",
-                rsl_env_count);
+              "JMI: Error: Got an uneven number %d of environment variables!\n",
+                env_count);
         return(GLOBUS_GRAM_CLIENT_ERROR_BAD_RSL_ENVIRONMENT);
     }
     
     /* divided by 2 because 2 rsl env vars equal 1 var=value pair.
      */
-    rsl_env_count = rsl_env_count / 2;
+    env_count = env_count / 2;
 
     grami_fprintf(log_fp, 
-               "JMI: Got %d variables from globus RSL environment parameter\n",
-               rsl_env_count);
+          "JMI: %d variables identified in the request environment parameter\n",
+          env_count);
 
     if ( graml_env_krb5ccname ) jm_env_num++;
     if ( graml_env_nlspath ) jm_env_num++;
@@ -1217,12 +1241,12 @@ globus_l_gram_environment_get(char *** env, FILE * log_fp)
     if ( graml_env_home ) jm_env_num++;
     if ( graml_env_tz ) jm_env_num++;
     
-    grami_fprintf(log_fp, 
-               "JMI: Got %d variables from job manager's environment\n",
-                 jm_env_num);
+    grami_fprintf(log_fp, "JMI: %d variables from job manager's environment "
+                          "will be appended to the request environment.\n",
+                          jm_env_num);
 
-    new_env = (char **)globus_libc_malloc(sizeof(char *) * 
-                          (rsl_env_count + jm_env_num + 1));
+    new_env = (char **) globus_libc_malloc(sizeof(char *) * 
+                          (env_count + jm_env_num + 1));
 
     /* tack on the globus environment vars to the beginning of the list */
     for (i = 0, j=0; (*env)[i]; i++, j++)

@@ -10,15 +10,6 @@
 # The following steps are done by the system administrator
 #
 
-# 2.) choose a arch type
-#----------------------
-#condor_arch=SUN4u
-condor_arch=SUN4x
-
-# 3.) choose a operating system type
-#----------------------
-condor_opsys=SOLARIS251
-
 ################################################
 # Site-specific settings
 ################################################
@@ -81,6 +72,21 @@ else
    exit 1
 fi
 
+if [ -z "${grami_condor_arch}" ] ; then
+   $DEBUG_ECHO "JM_SCRIPT: error: condor arch parameter undefined" \
+       >> $grami_logfile
+   echo GRAM_SCRIPT_ERROR:@GLOBUS_GRAM_CLIENT_ERROR_CONDOR_ARCH@
+   exit 1
+fi
+
+if [ -z "${grami_condor_os}" ] ; then
+   $DEBUG_ECHO "JM_SCRIPT: error: condor os parameter undefined" \
+       >> $grami_logfile
+   echo GRAM_SCRIPT_ERROR:@GLOBUS_GRAM_CLIENT_ERROR_CONDOR_OS@
+   exit 1
+fi
+
+
 createScript () {
     #
     # creates a condor script.
@@ -95,8 +101,8 @@ createScript () {
     echo "Universe       = ${condor_universe}"
     echo ""
     eval echo "Executable     = ${grami_program}"
-    echo "Requirements   = OpSys == \"${condor_opsys}\""\
-                       " && Arch == \"${condor_arch}\""\
+    echo "Requirements   = OpSys == \"${grami_condor_os}\""\
+                       " && Arch == \"${grami_condor_arch}\""\
                        " && FileSystemDomain != \"xxx\""
     if test -n "${grami_args}"; then
        eval echo "Arguments      = ${grami_args}"

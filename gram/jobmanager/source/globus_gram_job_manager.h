@@ -126,6 +126,14 @@ typedef struct
 
  char * project;      /* The project to which the job should be billed */
 
+ char * condor_arch;  /* Used only when type=condor.  Must match one of the
+                       * archetecture values as defined by condor
+                       */
+
+ char * condor_os;    /* Used only when type=condor.  Must match one of the
+                       * opsys values as defined by condor
+                       */
+
  char * paradyn; 
 
  globus_gram_jobmanager_jobtype_t jobtype;   /* The way in which the job 
@@ -138,11 +146,46 @@ typedef struct
 
  globus_bool_t dryrun;    /* GLOBUS_TRUE if this is a dryrun */
 
+ /* Other opaque fields may be added here */
+
  globus_gram_job_manager_callback_func_t filename_callback_func;
 
 } globus_gram_jobmanager_request_t;
 
-/* Other opaque fields may be added here */
+typedef struct globus_l_gram_scheduler_s
+{
+    int maxtime;
+    int maxcputime;
+    int maxcount;
+    int maxrunningjobs;
+    int maxjobsinqueue;
+    int maxtotalmemory;
+    int maxsinglememory;
+    int totalnodes;
+    int freenodes;
+    char * whenactive;
+    char * status;
+    char * dispatchtype;
+    char * priority;
+    char * alloweduserlist; /* char * of globusUserNames */
+    char * jobwait;
+    char * schedulerspecific;
+    globus_list_t * entry_list; /* globus_gram_scheduler_queue_entry_t */
+} globus_gram_scheduler_t;
+
+typedef struct globus_l_gram_scheduler_entry_s
+{
+    char * local_job_id;
+    char * global_job_id;
+    char * local_user_name;
+    char * global_user_name;
+    int count;
+    char * status;
+    unsigned long start_time;
+    unsigned long finish_time;
+    char * schedulerspecific;
+    char * specification;
+} globus_gram_scheduler_entry_t;
 
 /******************************************************************************
                               Function prototypes
@@ -192,9 +235,29 @@ extern int
 globus_jobmanager_request_check(
 	globus_gram_jobmanager_request_t * request);
 
+/*-----------------------------------------------------------------------
+ * This function gets a list of the queue(s) paramters and entries managed by
+ * the GRAM.
+ */
+extern int 
+globus_gram_scheduler_queue_list_get(
+        char * script_cmd,
+	globus_list_t ** queue_list);
+
+/*-----------------------------------------------------------------------
+ * This function free the memory from a previous
+ * globus_gram_queue_list_get() call
+ */
+extern int 
+globus_gram_scheduler_queue_list_free(
+	globus_list_t * queue_list);
+
 /******************************************************************************
                                Define constants
 ******************************************************************************/
+#define GRAM_VERSION "@GRAMVERSION@"
+#define GRAM_VERSION_DATE "@GRAMVERSIONDATE@"
+#define GRAM_SECURITY "@GSSAPI_TYPE@"
 #define GLOBUS_MPIRUN_PATH "${GLOBUS_SH_MPIRUN-mpirun}"
 #define GLOBUS_POE_PATH "${GLOBUS_SH_POE-poe}"
 

@@ -88,7 +88,9 @@ globus_l_gram_client_error_strings[] =
     "the contact was not found in the job manager's client contact list",
     "connecting to the job manager failed.  Possible reasons: job terminated, invalid job contact, network problems, ...",
     "the syntax of the job contact is invalid",
-    "the executable parameter in the RSL is undefined"
+    "the executable parameter in the RSL is undefined",
+    "the job manager service is misconfigured.  condor arch undefined",
+    "the job manager service is misconfigured.  condor os undefined"
 };
 
 const char *
