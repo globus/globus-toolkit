@@ -146,8 +146,7 @@ Function: convert_minor_codes()
 
 Description:
     converts error codes created in various libraries into gss minor codes
-    currently it is only implemented to convert SSL minor codes from
-    sslutils.h
+    The top two bytes are the library the bottom two are the reason code
 
 Parameters:
     lib -  The number of the error library that
