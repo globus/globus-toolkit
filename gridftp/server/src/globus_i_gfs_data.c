@@ -921,7 +921,8 @@ globus_i_gfs_data_request_passive(
     char *                              cs;
     globus_l_gfs_data_passive_bounce_t * bounce_info;
     globus_l_gfs_data_operation_t *     op;
-    globus_l_gfs_data_session_t *       session_handle;    
+    globus_l_gfs_data_session_t *       session_handle;
+    globus_bool_t                       ipv6_addr = GLOBUS_FALSE;
     GlobusGFSName(globus_i_gfs_data_request_passive);
 
     session_handle = (globus_l_gfs_data_session_t *) session_id;
@@ -972,13 +973,21 @@ globus_i_gfs_data_request_passive(
         /* its ok to use AF_INET here since we are requesting the LOCAL
          * address.  we just use AF_INET to store the port
          */
-        
         if(globus_l_gfs_data_is_remote_node)
+        {
+            ipv6_addr = (strchr(handle->info.interface, ':') != NULL);
+        }
+        
+        if(globus_l_gfs_data_is_remote_node ||
+            (ipv6_addr && !handle->info.ipv6))
         {
             GlobusLibcSockaddrSetFamily(addr, AF_INET);
             GlobusLibcSockaddrSetPort(addr, address.port);
             result = globus_libc_addr_to_contact_string(
-                &addr, GLOBUS_LIBC_ADDR_LOCAL | GLOBUS_LIBC_ADDR_NUMERIC, &cs);
+                &addr,
+                GLOBUS_LIBC_ADDR_LOCAL | GLOBUS_LIBC_ADDR_NUMERIC |
+                    (handle->info.ipv6 ? 0 : GLOBUS_LIBC_ADDR_IPV4),
+                &cs);
             if(result != GLOBUS_SUCCESS)
             {
                 result = GlobusGFSErrorWrapFailed(
@@ -988,7 +997,7 @@ globus_i_gfs_data_request_passive(
         }
         else
         {
-            if(strchr(handle->info.interface, ':'))
+            if(ipv6_addr)
             {
                 cs = globus_common_create_string(
                     "[%s]:%d", handle->info.interface, (int) address.port);
