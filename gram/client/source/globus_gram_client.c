@@ -264,17 +264,20 @@ gram_init(int * argc, char *** argv)
     /*
      * Parse the command line arguments
      */
-    for (i = 1; i < *argc; i++)
+    if (argc && argv)
     {
-        if (strcmp((*argv)[i], "-debug") == 0)
-        {
-            print_flag = 1;
-            notice("debug messages will be printed.");
-        }
-        else
-        {
-            print_flag = 0;
-        }
+	for (i = 1; i < *argc; i++)
+	{
+	    if (strcmp((*argv)[i], "-debug") == 0)
+	    {
+		print_flag = 1;
+		notice("debug messages will be printed.");
+	    }
+	    else
+	    {
+		print_flag = 0;
+	    }
+	}
     }
 
     /* get the initial security credential for the client */ 
