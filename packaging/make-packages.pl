@@ -1109,6 +1109,8 @@ sub bundle_sources()
     }
 }
 
+#TODO: Need better way of keeping GPT version in sync with
+# the GPT version in use by mp
 # --------------------------------------------------------------------
 sub create_installer()
 # --------------------------------------------------------------------
@@ -1130,25 +1132,23 @@ if [ \$? -ne 0 ]; then
 fi
 EOF
 
-if ($cvs_build_hash{'gt3'} eq 1)
-{
-    print INS << "EOF";
-ant -h > /dev/null
-if [ \$? -ne 0 ]; then
-   echo You need a working version of ant.
-   ant -h
-   exit
-fi
-EOF
-}
-
 print INS "echo Build environment:\n";
 
 if ($cvs_build_hash{'gt3'} eq 1)
 {
     print INS << "EOF";
 type ant
+if [ \$? -ne 0 ]; then
+   echo You need a working version of ant.
+   ant -h
+   exit
+fi
 type java
+if [ \$? -ne 0 ]; then
+   echo You need a working version of java.
+   ant -h
+   exit
+fi
 EOF
 }
 
@@ -1196,6 +1196,25 @@ esac
 
 THREAD=pthr
 
+if [ ! -d gpt-3.0.1/ ]; then
+    echo Building GPT ...
+    gzip -dc gpt-3.0.1-src.tar.gz | tar xf -
+    cd gpt-3.0.1
+
+    LANG="" ./build_gpt
+    if [ \$? -ne 0 ]; then
+        echo Error building GPT
+        exit;
+    fi
+
+    cd ..
+fi
+
+if [ -d BUILD ]; then
+        rm -fr BUILD
+fi
+
+
 EOF
 
 
@@ -1213,7 +1232,12 @@ for my $bundle ( @bundle_build_list )
 	$flavorstring = "\$FLAVOR";
     }
 	
-   print INS "\$GPT_BUILD $flags $bundle.tar.gz $flavorstring\n";
+   print INS "\$GPT_BUILD $flags ${bundle}-*-src_bundle.tar.gz $flavorstring\n";
+
+   print INS "if [ \$? -ne 0 ]; then\n";
+   print INS "    echo Error building $bundle\n";
+   print INS "    exit;\n";
+   print INS "fi\n\n";
 }
 
 print INS "\$GPT_LOCATION/sbin/gpt-postinstall\n";
