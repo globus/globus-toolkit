@@ -100,8 +100,8 @@ struct globus_i_xio_driver_target_stack_s
 
 struct globus_i_xio_target_s
 {
-    struct globus_i_xio_driver_target_stack_s * target_stack;
     int                                         stack_size;
+    globus_i_xio_driver_target_stack_t          target_stack[1];
 };
 
 
@@ -109,9 +109,18 @@ typedef struct globus_i_xio_handle_s
 {
     globus_mutex_t                              mutex;
     globus_memory_t                             op_memory;
-
+    int                                         ref;
     int                                         stack_size;
     globus_i_xio_context_t *                    context_array;
+
+    globus_xio_timeout_callback                 open_timeout;
+    globus_reltime_t                            open_timeout_period;
+    globus_xio_timeout_callback                 read_timeout;
+    globus_reltime_t                            read_timeout_period;
+    globus_xio_timeout_callback                 write_timeout;
+    globus_reltime_t                            write_timeout_period;
+    globus_xio_timeout_callback                 close_timeout;
+    globus_reltime_t                            close_timeout_period;
 } globus_i_xio_handle_t;
 
 /*
@@ -124,7 +133,6 @@ typedef struct globus_i_xio_context_entry_s
     globus_xio_driver_t *                       driver;
     void *                                      driver_handle;
     void *                                      driver_attr;
-    globus_bool_t                               is_limited;
 } globus_i_xio_context_entry_t;
 
 /* 
@@ -132,6 +140,7 @@ typedef struct globus_i_xio_context_entry_s
  */
 typedef struct globus_i_xio_context_s
 {
+    globus_mutex_t                              mutex;
     int                                         ref;
     int                                         size;
     globus_i_xio_context_entry_t                entry_array[1];
@@ -153,6 +162,7 @@ typedef struct globus_i_xio_op_entry_s
     int                                         iovec_count;
 
     globus_bool_t                               in_register;
+    globus_bool_t                               is_limited;
 } globus_i_xio_op_entry_t;
 
 /*
@@ -163,13 +173,10 @@ typedef struct globus_i_xio_operation_s
     /* operation type */
     globus_i_xio_operation_type_t               op_type;
 
-    /* cancel members */
-    globus_mutex_t                              cancel_mutex;
     /* flag to determine if cancel should happen */
     globus_bool_t                               progress;
-    globus_xio_driver_cancel_callback_t         cancel_callback;
-    globus_bool_t                               canceled;
-    globus_callback_handle_t                    cancel_callback_handle;
+    globus_reltime_t                            rel_timeout;
+    globus_abstime_t                            abs_timeout;
 
     /* reference count for destruction */
     int                                         ref;
@@ -181,8 +188,6 @@ typedef struct globus_i_xio_operation_s
     int                                         close_how;
 
     /* user callback variables */
-    globus_xio_callback_t                       cb;
-    globus_xio_data_callback_t                  data_cb;
     globus_xio_callback_space_t                 space;
 
     /* result code saved in op for kickouts */
