@@ -433,14 +433,14 @@ globus_l_gsc_read_cb(
 
     server_handle = (globus_i_gsc_server_handle_t *) user_arg;
 
+    if(result != GLOBUS_SUCCESS)
+    {
+        res = result;
+        goto err;
+    }
+
     globus_mutex_lock(&server_handle->mutex);
     {
-        if(result != GLOBUS_SUCCESS)
-        {
-            res = result;
-            goto err;
-        }
-
         switch(server_handle->state)
         {
             /* OPEN: add command to the queue, it will be imediatly processed */
@@ -467,7 +467,7 @@ globus_l_gsc_read_cb(
                     if(op == NULL)
                     {
                         res = GlobusGridFTPServerControlErrorSytem();
-                        goto err;
+                        goto err_unlock;
                     }
 
                     globus_fifo_enqueue(&server_handle->read_q, op);
@@ -487,7 +487,7 @@ globus_l_gsc_read_cb(
                             (void *) server_handle);
                     if(res != GLOBUS_SUCCESS)
                     {
-                        goto err;
+                        goto err_unlock;
                     }
                 }
                 else
@@ -501,7 +501,7 @@ globus_l_gsc_read_cb(
                             "226 Abort successful\r\n");
                         if(res != GLOBUS_SUCCESS)
                         {
-                            goto err;
+                            goto err_unlock;
                         }
                         res = globus_xio_register_read(
                             xio_handle,
@@ -513,7 +513,7 @@ globus_l_gsc_read_cb(
                             (void *) server_handle);
                         if(res != GLOBUS_SUCCESS)
                         {
-                            goto err;
+                            goto err_unlock;
                         }
                     }
                     else
@@ -544,7 +544,7 @@ globus_l_gsc_read_cb(
 
             case GLOBUS_L_GSC_STATE_STOPPING:
             case GLOBUS_L_GSC_STATE_ABORTING_STOPPING:
-                goto err;
+                goto err_unlock;
                 break;
 
 
@@ -560,6 +560,9 @@ globus_l_gsc_read_cb(
 
     globus_free(buffer);
     return;
+
+  err_unlock:
+    globus_mutex_unlock(&server_handle->mutex);
 
   err:
     if(command_name != NULL)
@@ -836,35 +839,35 @@ globus_l_gsc_220_write_cb(
     server_handle = (globus_i_gsc_server_handle_t *) user_arg;
 
     globus_free(buffer);
+    if(result != GLOBUS_SUCCESS)
+    {
+        res = result;
+        goto err;
+    }
     globus_mutex_lock(&server_handle->mutex);
     {
-        if(result != GLOBUS_SUCCESS)
+        server_handle->state = GLOBUS_L_GSC_STATE_OPEN;
+        /*  post a read on the fake buffers */
+        res = globus_xio_register_read(
+            xio_handle,
+            globus_l_gsc_fake_buffer,
+            globus_l_gsc_fake_buffer_len,
+            globus_l_gsc_fake_buffer_len,
+            NULL,
+            globus_l_gsc_read_cb,
+            (void *) server_handle);
+        if(res != GLOBUS_SUCCESS)
         {
-            res = result;
-            goto err;
-        }
-        else
-        {
-            server_handle->state = GLOBUS_L_GSC_STATE_OPEN;
-            /*  post a read on the fake buffers */
-            res = globus_xio_register_read(
-                xio_handle,
-                globus_l_gsc_fake_buffer,
-                globus_l_gsc_fake_buffer_len,
-                globus_l_gsc_fake_buffer_len,
-                NULL,
-                globus_l_gsc_read_cb,
-                (void *) server_handle);
-            if(res != GLOBUS_SUCCESS)
-            {
-                goto err;
-            }
+            goto err_unlock;
         }
     }
     globus_mutex_unlock(&server_handle->mutex);
 
     GlobusGridFTPServerDebugExit();
     return;
+
+  err_unlock:
+    globus_mutex_unlock(&server_handle->mutex);
 
   err:
 
@@ -888,47 +891,45 @@ globus_l_gsc_open_cb(
 {
     globus_result_t                     res;
     globus_i_gsc_server_handle_t *      server_handle;
+    char *                              msg;
     GlobusGridFTPServerName(globus_l_gsc_open_cb);
 
     server_handle = (globus_i_gsc_server_handle_t *) user_arg;
 
+    globus_assert(server_handle->state == GLOBUS_L_GSC_STATE_OPENING);
+
+    if(result != GLOBUS_SUCCESS)
+    {
+        res = result;
+        goto err;
+    }
+
+    msg = globus_i_gsc_string_to_959(220, server_handle->pre_auth_banner);
     globus_mutex_lock(&server_handle->mutex);
     {
-        globus_assert(server_handle->state == GLOBUS_L_GSC_STATE_OPENING);
-
-        if(result != GLOBUS_SUCCESS)
-        {    
-            goto err;
-        }
-        else
+        res = globus_xio_register_write(
+            server_handle->xio_handle,
+            msg,
+            strlen(msg),
+            strlen(msg),
+            NULL,
+            globus_l_gsc_220_write_cb,
+            server_handle);
+        if(res != GLOBUS_SUCCESS)
         {
-            char *                      msg;
-
-            msg = globus_i_gsc_string_to_959(
-                220, server_handle->pre_auth_banner);
-            res = globus_xio_register_write(
-                    server_handle->xio_handle,
-                    msg,
-                    strlen(msg),
-                    strlen(msg),
-                    NULL,
-                    globus_l_gsc_220_write_cb,
-                    server_handle);
-            if(res != GLOBUS_SUCCESS)
-            {
-                goto err;
-            }
+            goto err_unlock;
         }
     }
     globus_mutex_unlock(&server_handle->mutex);
 
     return;
 
+  err_unlock:
+    globus_mutex_unlock(&server_handle->mutex);
   err:
     server_handle->cached_res = res;
     server_handle->ref--;
     globus_l_gsc_server_ref_check(server_handle);
-    globus_mutex_unlock(&server_handle->mutex);
 }
 
 /*
@@ -1576,7 +1577,6 @@ globus_l_gsc_command_callout(
         if(server_handle->state != GLOBUS_L_GSC_STATE_PROCESSING)
         {
             globus_i_gsc_op_destroy(op);
-            server_handle->ref--;
             globus_l_gsc_server_ref_check(server_handle);
             globus_mutex_unlock(&server_handle->mutex);
             return;
@@ -1927,209 +1927,195 @@ globus_gridftp_server_control_start(
         res = GlobusGridFTPServerErrorParameter("server");
         goto err;
     }
-
-    globus_mutex_lock(&server_handle->mutex);
+    if(server_handle->state != GLOBUS_L_GSC_STATE_STOPPED &&
+        server_handle->state != GLOBUS_L_GSC_STATE_NONE)
     {
-        if(server_handle->state != GLOBUS_L_GSC_STATE_STOPPED &&
-            server_handle->state != GLOBUS_L_GSC_STATE_NONE)
-        {
-            globus_mutex_unlock(&server_handle->mutex);
-            res = GlobusGridFTPServerErrorParameter("server");
-            goto err;
-        }
+        res = GlobusGridFTPServerErrorParameter("server");
+        goto err;
+    }
 
-        res = globus_xio_stack_init(&xio_stack, GLOBUS_NULL);
-        if(res != GLOBUS_SUCCESS)
-        {
-            globus_mutex_unlock(&server_handle->mutex);
-            goto err;
-        }
-        res = globus_xio_stack_push_driver(xio_stack, globus_l_gsc_tcp_driver);
-        if(res != GLOBUS_SUCCESS)
-        {
-            globus_mutex_unlock(&server_handle->mutex);
-            goto err;
-        }
+    res = globus_xio_stack_init(&xio_stack, GLOBUS_NULL);
+    if(res != GLOBUS_SUCCESS)
+    {
+        goto err;
+    }
+    res = globus_xio_stack_push_driver(xio_stack, globus_l_gsc_tcp_driver);
+    if(res != GLOBUS_SUCCESS)
+    {
+        goto err;
+    }
 
-        res = globus_xio_attr_init(&xio_attr);
+    res = globus_xio_attr_init(&xio_attr);
+    if(res != GLOBUS_SUCCESS)
+    {
+        goto err;
+    }
+    /* if gssapi might be used */
+    if(i_attr->security & GLOBUS_GRIDFTP_SERVER_LIBRARY_GSSAPI)
+    {
+        res = globus_xio_attr_cntl(xio_attr, globus_l_gsc_gssapi_ftp_driver,
+                GLOBUS_XIO_GSSAPI_ATTR_TYPE_FORCE_SERVER, GLOBUS_TRUE);
         if(res != GLOBUS_SUCCESS)
         {
-            globus_mutex_unlock(&server_handle->mutex);
-            goto err;
-        }
-        /* if gssapi might be used */
-        if(i_attr->security & GLOBUS_GRIDFTP_SERVER_LIBRARY_GSSAPI)
-        {
-            res = globus_xio_attr_cntl(xio_attr, globus_l_gsc_gssapi_ftp_driver,
-                    GLOBUS_XIO_GSSAPI_ATTR_TYPE_FORCE_SERVER, GLOBUS_TRUE);
-            if(res != GLOBUS_SUCCESS)
-            {
-                globus_mutex_unlock(&server_handle->mutex);
-                goto err;
-            }
-            res = globus_xio_stack_push_driver(
-                xio_stack, globus_l_gsc_gssapi_ftp_driver);
-
-            /* if we are allowing both types of security tell the driver
-                about it */
-            if(i_attr->security & GLOBUS_GRIDFTP_SERVER_LIBRARY_NONE)
-            {
-                res = globus_xio_attr_cntl(
-                    xio_attr, globus_l_gsc_gssapi_ftp_driver,
-                    GLOBUS_XIO_GSSAPI_ATTR_TYPE_ALLOW_CLEAR, GLOBUS_TRUE);
-            }
-        }
-        else
-        {
-            res = globus_xio_stack_push_driver(
-                xio_stack, globus_l_gsc_telnet_driver);
-        }
-        if(res != GLOBUS_SUCCESS)
-        {
-            globus_mutex_unlock(&server_handle->mutex);
             goto err;
         }
         res = globus_xio_stack_push_driver(
-            xio_stack, globus_l_gsc_queue_driver);
-        if(res != GLOBUS_SUCCESS)
-        {
-            globus_mutex_unlock(&server_handle->mutex);
-            goto err;
-        }
+            xio_stack, globus_l_gsc_gssapi_ftp_driver);
 
-        res = globus_xio_attr_cntl(xio_attr, globus_l_gsc_telnet_driver,
-                GLOBUS_XIO_TELNET_FORCE_SERVER, GLOBUS_TRUE);
-        if(res != GLOBUS_SUCCESS)
+        /* if we are allowing both types of security tell the driver
+           about it */
+        if(i_attr->security & GLOBUS_GRIDFTP_SERVER_LIBRARY_NONE)
         {
-            globus_mutex_unlock(&server_handle->mutex);
-            goto err;
+            res = globus_xio_attr_cntl(
+                xio_attr, globus_l_gsc_gssapi_ftp_driver,
+                GLOBUS_XIO_GSSAPI_ATTR_TYPE_ALLOW_CLEAR, GLOBUS_TRUE);
         }
-        res = globus_xio_attr_cntl(xio_attr, globus_l_gsc_telnet_driver,
-                GLOBUS_XIO_TELNET_BUFFER, GLOBUS_TRUE);
-        if(res != GLOBUS_SUCCESS)
-        {
-            globus_mutex_unlock(&server_handle->mutex);
-            goto err;
-        }
+    }
+    else
+    {
+        res = globus_xio_stack_push_driver(
+            xio_stack, globus_l_gsc_telnet_driver);
+    }
+    if(res != GLOBUS_SUCCESS)
+    {
+        goto err;
+    }
+    res = globus_xio_stack_push_driver(
+        xio_stack, globus_l_gsc_queue_driver);
+    if(res != GLOBUS_SUCCESS)
+    {
+        goto err;
+    }
 
-        res = globus_xio_attr_cntl(xio_attr, globus_l_gsc_tcp_driver,
-            GLOBUS_XIO_TCP_SET_HANDLE, system_handle);
-        if(res != GLOBUS_SUCCESS)
-        {
-            globus_mutex_unlock(&server_handle->mutex);
-            goto err;
-        }
-        if(res != GLOBUS_SUCCESS)
-        {
-            globus_mutex_unlock(&server_handle->mutex);
-            goto err;
-        }
-        res = globus_xio_handle_create(&server_handle->xio_handle, xio_stack);
-        if(res != GLOBUS_SUCCESS)
-        {
-            globus_mutex_unlock(&server_handle->mutex);
-            goto err;
-        }
+    res = globus_xio_attr_cntl(xio_attr, globus_l_gsc_telnet_driver,
+            GLOBUS_XIO_TELNET_FORCE_SERVER, GLOBUS_TRUE);
+    if(res != GLOBUS_SUCCESS)
+    {
+        goto err;
+    }
+    res = globus_xio_attr_cntl(xio_attr, globus_l_gsc_telnet_driver,
+            GLOBUS_XIO_TELNET_BUFFER, GLOBUS_TRUE);
+    if(res != GLOBUS_SUCCESS)
+    {
+        goto err;
+    }
 
-        server_handle->security_type = i_attr->security;
-        globus_xio_stack_destroy(xio_stack);
-        server_handle->ref = 1;
+    res = globus_xio_attr_cntl(xio_attr, globus_l_gsc_tcp_driver,
+        GLOBUS_XIO_TCP_SET_HANDLE, system_handle);
+    if(res != GLOBUS_SUCCESS)
+    {
+        goto err;
+    }
+    if(res != GLOBUS_SUCCESS)
+    {
+        goto err;
+    }
+    res = globus_xio_handle_create(&server_handle->xio_handle, xio_stack);
+    if(res != GLOBUS_SUCCESS)
+    {
+        goto err;
+    }
 
-        server_handle->funcs.default_send_cb = i_attr->funcs.default_send_cb;
-        server_handle->funcs.default_send_arg = i_attr->funcs.default_send_arg;
-        server_handle->funcs.default_recv_cb = i_attr->funcs.default_recv_cb;
-        server_handle->funcs.default_recv_arg = i_attr->funcs.default_recv_arg;
-        server_handle->funcs.auth_cb = i_attr->funcs.auth_cb;
-        server_handle->funcs.auth_arg = i_attr->funcs.auth_arg;
-        server_handle->funcs.passive_cb = i_attr->funcs.passive_cb;
-        server_handle->funcs.passive_arg = i_attr->funcs.passive_arg;
-        server_handle->funcs.active_cb = i_attr->funcs.active_cb;
-        server_handle->funcs.active_arg = i_attr->funcs.active_arg;
-        server_handle->funcs.data_destroy_cb = i_attr->funcs.data_destroy_cb;
-        server_handle->funcs.data_destroy_arg = i_attr->funcs.data_destroy_arg;
-        server_handle->funcs.list_cb = i_attr->funcs.list_cb;
-        server_handle->funcs.list_arg = i_attr->funcs.list_arg;
-        server_handle->funcs.resource_cb = i_attr->funcs.resource_cb;
-        server_handle->funcs.resource_arg = i_attr->funcs.resource_arg;
-        server_handle->funcs.log_func = i_attr->funcs.log_func;
-        server_handle->funcs.log_arg = i_attr->funcs.log_arg;
-        server_handle->funcs.log_mask = i_attr->funcs.log_mask;
-        server_handle->funcs.done_cb = done_cb;
+    server_handle->security_type = i_attr->security;
+    globus_xio_stack_destroy(xio_stack);
+    server_handle->ref = 1;
 
-        globus_hashtable_copy(
-            &server_handle->funcs.send_cb_table, 
-            &i_attr->funcs.send_cb_table, NULL);
-        globus_hashtable_copy(
-            &server_handle->funcs.recv_cb_table, 
-            &i_attr->funcs.recv_cb_table, NULL);
+    server_handle->funcs.default_send_cb = i_attr->funcs.default_send_cb;
+    server_handle->funcs.default_send_arg = i_attr->funcs.default_send_arg;
+    server_handle->funcs.default_recv_cb = i_attr->funcs.default_recv_cb;
+    server_handle->funcs.default_recv_arg = i_attr->funcs.default_recv_arg;
+    server_handle->funcs.auth_cb = i_attr->funcs.auth_cb;
+    server_handle->funcs.auth_arg = i_attr->funcs.auth_arg;
+    server_handle->funcs.passive_cb = i_attr->funcs.passive_cb;
+    server_handle->funcs.passive_arg = i_attr->funcs.passive_arg;
+    server_handle->funcs.active_cb = i_attr->funcs.active_cb;
+    server_handle->funcs.active_arg = i_attr->funcs.active_arg;
+    server_handle->funcs.data_destroy_cb = i_attr->funcs.data_destroy_cb;
+    server_handle->funcs.data_destroy_arg = i_attr->funcs.data_destroy_arg;
+    server_handle->funcs.list_cb = i_attr->funcs.list_cb;
+    server_handle->funcs.list_arg = i_attr->funcs.list_arg;
+    server_handle->funcs.resource_cb = i_attr->funcs.resource_cb;
+    server_handle->funcs.resource_arg = i_attr->funcs.resource_arg;
+    server_handle->funcs.log_func = i_attr->funcs.log_func;
+    server_handle->funcs.log_arg = i_attr->funcs.log_arg;
+    server_handle->funcs.log_mask = i_attr->funcs.log_mask;
+    server_handle->funcs.done_cb = done_cb;
 
-        if(server_handle->modes != NULL)
-        {
-            globus_free(server_handle->modes);
-        }
-        if(server_handle->types != NULL)
-        {
-            globus_free(server_handle->types);
-        }
-        /* default options */
-        strcpy(server_handle->opts.mlsx_fact_str, "TMSPUQ");
-        server_handle->opts.send_buf = -1; 
-        server_handle->opts.perf_frequency = 5;
-        server_handle->opts.restart_frequency = 5;
-        server_handle->opts.receive_buf = -1;
-        server_handle->opts.parallelism = 1;
-        server_handle->opts.packet_size = -1;
-        server_handle->opts.delayed_passive = GLOBUS_FALSE;
-        server_handle->opts.passive_only = GLOBUS_FALSE;
+    globus_hashtable_copy(
+        &server_handle->funcs.send_cb_table, 
+        &i_attr->funcs.send_cb_table, NULL);
+    globus_hashtable_copy(
+        &server_handle->funcs.recv_cb_table, 
+        &i_attr->funcs.recv_cb_table, NULL);
 
-        /* default state */
-        server_handle->modes = globus_libc_strdup(i_attr->modes);
-        server_handle->types = globus_libc_strdup(i_attr->types);
-        server_handle->type = 'A';
-        server_handle->mode = 'S';
-        server_handle->prot = 'C';
-        server_handle->dcau = 'N';
+    if(server_handle->modes != NULL)
+    {
+        globus_free(server_handle->modes);
+    }
+    if(server_handle->types != NULL)
+    {
+        globus_free(server_handle->types);
+    }
+    /* default options */
+    strcpy(server_handle->opts.mlsx_fact_str, "TMSPUQ");
+    server_handle->opts.send_buf = -1; 
+    server_handle->opts.perf_frequency = 5;
+    server_handle->opts.restart_frequency = 5;
+    server_handle->opts.receive_buf = -1;
+    server_handle->opts.parallelism = 1;
+    server_handle->opts.packet_size = -1;
+    server_handle->opts.delayed_passive = GLOBUS_FALSE;
+    server_handle->opts.passive_only = GLOBUS_FALSE;
 
-        if(i_attr->idle_timeout > 0)
-        {
-            GlobusTimeReltimeSet(delay, i_attr->idle_timeout, 0);
-            globus_xio_attr_cntl(
-                xio_attr,
-                NULL,
-                GLOBUS_XIO_ATTR_SET_TIMEOUT_ALL,
-                globus_l_gsc_timeout_cb,
-                &delay,
-                server_handle);
-        }
-        if(server_handle->cwd != NULL)
-        {
-            globus_free(server_handle->cwd);
-        }
-        server_handle->cwd = globus_libc_strdup(i_attr->base_dir);
-        if(i_attr->pre_auth_banner != NULL)
-        {
-            server_handle->pre_auth_banner = 
-                globus_libc_strdup(i_attr->pre_auth_banner);
-        }
-        if(i_attr->post_auth_banner != NULL)
-        {
-            server_handle->post_auth_banner = 
-                globus_libc_strdup(i_attr->post_auth_banner);
-        }
+    /* default state */
+    server_handle->modes = globus_libc_strdup(i_attr->modes);
+    server_handle->types = globus_libc_strdup(i_attr->types);
+    server_handle->type = 'A';
+    server_handle->mode = 'S';
+    server_handle->prot = 'C';
+    server_handle->dcau = 'N';
 
-        globus_gsc_959_command_add(
-            server_handle,
-            "SITE",
-            globus_l_gsc_cmd_site,
-            GLOBUS_GSC_COMMAND_PRE_AUTH |
-                GLOBUS_GSC_COMMAND_POST_AUTH,
-            2,
-            2,
+    if(i_attr->idle_timeout > 0)
+    {
+        GlobusTimeReltimeSet(delay, i_attr->idle_timeout, 0);
+        globus_xio_attr_cntl(
+            xio_attr,
             NULL,
-            NULL);
+            GLOBUS_XIO_ATTR_SET_TIMEOUT_ALL,
+            globus_l_gsc_timeout_cb,
+            &delay,
+            server_handle);
+    }
+    if(server_handle->cwd != NULL)
+    {
+        globus_free(server_handle->cwd);
+    }
+    server_handle->cwd = globus_libc_strdup(i_attr->base_dir);
+    if(i_attr->pre_auth_banner != NULL)
+    {
+        server_handle->pre_auth_banner = 
+            globus_libc_strdup(i_attr->pre_auth_banner);
+    }
+    if(i_attr->post_auth_banner != NULL)
+    {
+        server_handle->post_auth_banner = 
+            globus_libc_strdup(i_attr->post_auth_banner);
+    }
 
-        server_handle->funcs.done_arg = user_arg;
+    globus_gsc_959_command_add(
+        server_handle,
+        "SITE",
+        globus_l_gsc_cmd_site,
+        GLOBUS_GSC_COMMAND_PRE_AUTH |
+        GLOBUS_GSC_COMMAND_POST_AUTH,
+        2,
+        2,
+        NULL,
+        NULL);
+    server_handle->funcs.done_arg = user_arg;
 
+    globus_mutex_lock(&server_handle->mutex);
+    {
         server_handle->state = GLOBUS_L_GSC_STATE_OPENING;
         res = globus_xio_register_open(
             server_handle->xio_handle, 
@@ -2140,7 +2126,6 @@ globus_gridftp_server_control_start(
         globus_xio_attr_destroy(xio_attr);
         if(res != GLOBUS_SUCCESS)
         {
-            globus_mutex_unlock(&server_handle->mutex);
             goto err;
         }
     }
@@ -2149,6 +2134,9 @@ globus_gridftp_server_control_start(
     GlobusGridFTPServerDebugExit();
 
     return GLOBUS_SUCCESS;
+
+  err_unlock:
+    globus_mutex_unlock(&server_handle->mutex);
 
   err:
 
