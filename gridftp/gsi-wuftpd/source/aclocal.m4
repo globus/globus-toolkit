@@ -120,7 +120,7 @@ if test "$gssapi_type" = "globus" ; then
 	CHECK_GLOBUS_DEVELOPMENT_PATH()
 	AC_MSG_CHECKING(Globus GSSAPI dependencies)
 
-	gpt_build_config -src=pkg_data_src-gssapi.gpt \
+	${GPT_LOCATION}/sbin/gpt_build_config -src=pkg_data_src-gssapi.gpt \
 	                 -flavor=${globus_flavor} \
 			 -link $GPT_LINKTYPE > /dev/null
 	if test "$?" = "0"; then
@@ -389,7 +389,7 @@ AC_ARG_ENABLE(globus-data, [  --disable-globus-data   don't use globus data code
 	CHECK_GLOBUS_DEVELOPMENT_PATH()
 	AC_MSG_CHECKING(Globus data dependencies)
 
-	gpt_build_config -src=pkg_data_src.gpt \
+	${GPT_LOCATION}/sbin/gpt_build_config -src=pkg_data_src.gpt \
 	                 -flavor=${globus_flavor} \
 			 -link $GPT_LINKTYPE > /dev/null
 	if test "$?" = "0"; then
