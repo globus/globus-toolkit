@@ -146,7 +146,7 @@
 #define GlobusIXIOUtilTransferIovec(iovec, xiovec, iovc)                    \
     do                                                                      \
     {                                                                       \
-        globus_ssize_t                  _i;                                 \
+        globus_size_t                   _i;                                 \
         globus_xio_iovec_t *            _xiovec;                            \
         struct iovec *                  _iov;                               \
         int                             _iovc;                              \
@@ -165,7 +165,7 @@
 #define GlobusIXIOUtilAdjustIovec(iov, iovc, nbytes)                        \
     do                                                                      \
     {                                                                       \
-        globus_ssize_t                  _n;                                 \
+        globus_size_t                   _n;                                 \
         struct iovec *                  _iov;                               \
         int                             _iovc;                              \
         int                             _i;                                 \
@@ -192,7 +192,7 @@
     new_iov, new_iovc, iov, iovc, nbytes)                                   \
     do                                                                      \
     {                                                                       \
-        globus_ssize_t                  _n;                                 \
+        globus_size_t                   _n;                                 \
         struct iovec *                  _iov;                               \
         int                             _iovc;                              \
         struct iovec *                  _new_iov;                           \
