@@ -299,7 +299,12 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
     {
         sk_X509_pop_free(cert_chain, X509_free);
     }
-    
+    if(asn1_desired_obj)
+    {
+        asn1_desired_obj->data = NULL;
+        ASN1_OBJECT_free(asn1_desired_obj);
+    }
+        
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;
 }

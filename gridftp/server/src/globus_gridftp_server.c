@@ -736,6 +736,7 @@ globus_l_gfs_convert_inetd_handle(void)
         goto error_stack;
     }
     
+    globus_xio_stack_destroy(stack);
     GlobusGFSDebugExit();
     return GLOBUS_SUCCESS;
 
