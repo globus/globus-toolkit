@@ -76,8 +76,8 @@ globus_i_rsl_assist_extract_attribute(globus_rsl_t * rsl,
  * This function return the correct values to use when contacting/searching
  * the MDS, as defined below:
  *
- * - Scan the environment variable GLOBUS_MDS_PORT, GLOBUS_MDS_HOST and
- *   GLOBUS_MDS_BASE_DN and return there value if set.
+ * - Scan the environment variable GRID_INFO_PORT, GRID_INFO_HOST and
+ *   GRID_INFO_BASE_DN and return there value if set.
  *   Assumes arguments parsing has already overwritten env variable when
  *   option -mdshost, -mdsport or -mdsbasedn used.
  * - for each one not set, search for a grid-info.conf file and uses its

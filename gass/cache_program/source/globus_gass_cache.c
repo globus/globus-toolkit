@@ -295,19 +295,19 @@ main(int argc, char **argv)
 	    break;
 
 	case arg_h:
-	    globus_libc_setenv("GLOBUS_MDS_HOST", instance->values[0], 1);
+	    globus_libc_setenv("GRID_INFO_HOST", instance->values[0], 1);
 	    break;
 
 	case arg_p:
-	    globus_libc_setenv("GLOBUS_MDS_PORT", instance->values[0], 1);
+	    globus_libc_setenv("GRID_INFO_PORT", instance->values[0], 1);
 	    break;
 
 	case arg_b:
-	    globus_libc_setenv("GLOBUS_MDS_BASEDN", instance->values[0], 1);
+	    globus_libc_setenv("GRID_INFO_BASEDN", instance->values[0], 1);
 	    break;
 	    
 	case arg_T:
-	    globus_libc_setenv("GLOBUS_MDS_TIMEOUT", instance->values[0], 1);
+	    globus_libc_setenv("GRID_INFO_TIMEOUT", instance->values[0], 1);
 	    break;
 
 	case arg_r:
