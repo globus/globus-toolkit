@@ -12,7 +12,6 @@
 #include "globus_common.h"
 #include "globus_gsi_system_config.h"
 #include "globus_i_gsi_system_config.h"
-#include "globus_gsi_cert_utils.h"
 #include <openssl/rand.h>
 #include <pwd.h>
 #include <time.h>
@@ -282,7 +281,7 @@ globus_i_gsi_sysconfig_create_cert_dir_string(
 
     va_start(ap, format);
 
-    *cert_dir_value = globus_gsi_cert_utils_v_create_string(format, ap);
+    *cert_dir_value = globus_common_v_create_string(format, ap);
 
     va_end(ap);
 
@@ -349,7 +348,7 @@ globus_i_gsi_sysconfig_create_cert_string(
 
     va_start(ap, format);
 
-    *cert_string_value = globus_gsi_cert_utils_v_create_string(format, ap);
+    *cert_string_value = globus_common_v_create_string(format, ap);
 
     va_end(ap);
 
@@ -415,7 +414,7 @@ globus_i_gsi_sysconfig_create_key_string(
 
     va_start(ap, format);
 
-    *key_string_value = globus_gsi_cert_utils_v_create_string(format, ap);
+    *key_string_value = globus_common_v_create_string(format, ap);
     
     va_end(ap);
     
@@ -4562,7 +4561,7 @@ globus_gsi_sysconfig_get_proxy_filename_unix(
 
         if(proxy_file_type == GLOBUS_PROXY_FILE_OUTPUT)
         {
-            *user_proxy = globus_gsi_cert_utils_create_string(
+            *user_proxy = globus_common_create_string(
                 "%s%s%s%s",
                 DEFAULT_SECURE_TMP_DIR,
                 FILE_SEPERATOR,
@@ -4701,7 +4700,7 @@ globus_gsi_sysconfig_get_signing_policy_filename_unix(
 
     hash = X509_NAME_hash(ca_name);
 
-    signing_policy = globus_gsi_cert_utils_create_string(
+    signing_policy = globus_common_create_string(
         "%s%s%08lx%s", 
         ca_cert_dir, FILE_SEPERATOR, hash, SIGNING_POLICY_FILE_EXTENSION);
     
@@ -4843,7 +4842,7 @@ globus_gsi_sysconfig_get_ca_cert_files_unix(
            (status == GLOBUS_FILE_VALID))
         {
             full_filename_path = 
-                globus_gsi_cert_utils_create_string(
+                globus_common_create_string(
                     "%s%s%s", ca_cert_dir, FILE_SEPERATOR, tmp_entry->d_name);
             
             if(full_filename_path == NULL)
@@ -4938,7 +4937,7 @@ globus_gsi_sysconfig_remove_all_owned_files_unix(
                     X509_UNIQUE_PROXY_FILE,
                     strlen(X509_UNIQUE_PROXY_FILE)))
         {
-            full_filename = globus_gsi_cert_utils_create_string(
+            full_filename = globus_common_create_string(
                 "%s%s%s",
                 DEFAULT_SECURE_TMP_DIR,
                 FILE_SEPERATOR,
@@ -5068,7 +5067,7 @@ globus_gsi_sysconfig_get_gridmap_filename_unix(
        ((gridmap_env = (char *) getenv("globusmap")) != NULL) ||
        ((gridmap_env = (char *) getenv("GlobusMap")) != NULL))
     {
-        gridmap_filename = globus_gsi_cert_utils_create_string(
+        gridmap_filename = globus_common_create_string(
             "%s",
             gridmap_env);
         if(!gridmap_filename)
@@ -5084,7 +5083,7 @@ globus_gsi_sysconfig_get_gridmap_filename_unix(
         {
             /* being run as root */
             
-            gridmap_filename = globus_gsi_cert_utils_create_string(
+            gridmap_filename = globus_common_create_string(
                 "%s",
                 DEFAULT_GRIDMAP);
             if(!gridmap_filename)
@@ -5106,7 +5105,7 @@ globus_gsi_sysconfig_get_gridmap_filename_unix(
             
             if(home_dir && status == GLOBUS_FILE_DIR)
             {
-                gridmap_filename = globus_gsi_cert_utils_create_string(
+                gridmap_filename = globus_common_create_string(
                     "%s%s%s",
                     home_dir,
                     FILE_SEPERATOR,
@@ -5174,7 +5173,7 @@ globus_gsi_sysconfig_get_authz_conf_filename_unix(
 
     if((authz_env = (char *) getenv("GSI_AUTHZ_CONF"))   != NULL)
     {
-        authz_filename = globus_gsi_cert_utils_create_string(
+        authz_filename = globus_common_create_string(
             "%s",
             authz_env);
         if(!authz_filename)
@@ -5190,7 +5189,7 @@ globus_gsi_sysconfig_get_authz_conf_filename_unix(
         {
             /* being run as root */
             
-            authz_filename = globus_gsi_cert_utils_create_string(
+            authz_filename = globus_common_create_string(
                 "%s",
                 DEFAULT_AUTHZ_FILE);
             if(!authz_filename)
@@ -5212,7 +5211,7 @@ globus_gsi_sysconfig_get_authz_conf_filename_unix(
             
             if(home_dir && status == GLOBUS_FILE_DIR)
             {
-                authz_filename = globus_gsi_cert_utils_create_string(
+                authz_filename = globus_common_create_string(
                     "%s%s%s",
                     home_dir,
                     FILE_SEPERATOR,
