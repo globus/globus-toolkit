@@ -117,7 +117,7 @@ main(int argc, char *argv[])
     socket_attrs->psport = MYPROXY_SERVER_PORT;
 
     /* Initialize client arguments and create client request object */
-    init_arguments(argc, argv, socket_attrs, client_request, (int *)cred_lifetime);
+    init_arguments(argc, argv, socket_attrs, client_request, &cred_lifetime);
 
     /* Create a proxy by running [grid-proxy-init] */
     sprintf(proxyfile, "%s.%s", MYPROXY_DEFAULT_PROXY, client_request->username);
