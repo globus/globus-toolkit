@@ -93,7 +93,21 @@ sub fixpaths
     for $f (@files)
     {
         $f =~ /(.*\/)*(.*)$/;
+
+        #
+        # we really should create a random filename and make sure that it
+        # doesn't already exist (based off current time_t or something)
+        #
+
         $g = "$f.tmp";
+
+        #
+        # Grab the current mode/uid/gid for use later
+        #
+
+        $mode = (stat($f))[2];
+        $uid = (stat($f))[4];
+        $gid = (stat($f))[5];
 
         $result = system("mv $f $g");
         if ($result != 0)
@@ -121,14 +135,17 @@ sub fixpaths
         {
             die "Failed to remove $g\n";
         }
+
+        #
+        # An attempt to revert the new file back to the original file's
+        # mode/uid/gid
+        #
+
+        chmod($mode, $f);
+        chown($uid, $gid, $f);
     } # for $f
 
     return 0;
-}
-
-sub setperms()
-{
-    $result = system("chmod 755 $bindir/scp");
 }
 
 sub runkeygen
@@ -168,7 +185,6 @@ sub runkeygen
 }
 
 fixpaths();
-#setperms();
 runkeygen();
 
 my $metadata = new Grid::GPT::Setup(package_name => "gsi-openssh-setup");
