@@ -170,6 +170,7 @@ globus_c_wsrf_core_test_interop_client_test wsrf/c/core/tests/interop/test dirt.
 globus_c_wsrf_core_performance_test wsrf/c/core/tests/performance dirt.sh
 globus_notification_consumer wsrf/c/core/notification/source dirt.sh
 globus_notification_consumer_test wsrf/c/core/notification/test dirt.sh
+globus_notification_producer wsrf/c/core/notification/producer/source dirt.sh
 globus_handler_debug wsrf/c/handlers/debug/source dirt.sh
 globus_scheduler_provider_setup_fork ws-gram/discovery/provider/setup/fork dirt.sh
 globus_scheduler_provider_setup_pbs ws-gram/discovery/provider/setup/pbs dirt.sh
