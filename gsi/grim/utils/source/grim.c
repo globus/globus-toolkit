@@ -180,7 +180,7 @@ main(
      */
     if(getuid() == geteuid())
     {
-        / * log to stderr since we do not know the intended log file yet * /
+        /* log to stderr since we do not know the intended log file yet */
         fprintf(stderr, "Not running as a setuid program.  The user may must "
                         "simply use their own proxy.\n");
         return 1;
@@ -786,7 +786,6 @@ grim_write_proxy(
     X509_NAME *                                 x509_name;
     int                                         grim_NID;
     int                                         rc = 0;
-    PROXYCERTINFO *                             pci;
 
     res = globus_gsi_proxy_handle_attrs_init(&proxy_handle_attrs);
     if(res != GLOBUS_SUCCESS)
