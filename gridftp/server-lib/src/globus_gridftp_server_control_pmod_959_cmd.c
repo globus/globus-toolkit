@@ -1038,6 +1038,8 @@ globus_l_gsc_pmod_959_cmd_opts(
         if(sscanf(full_command, "%*s %*s Parallelism=%d,%*d,%*d;", &tmp_i)==1)
         {
             cmd_handle->parallelism = tmp_i;
+            globus_gridftp_server_control_set_parallelism(
+                server, cmd_handle->parallelism);
         }
         else if(
             sscanf(full_command, "%*s %*s PacketSize=%d;", &tmp_i) == 1)
@@ -1048,6 +1050,10 @@ globus_l_gsc_pmod_959_cmd_opts(
             sscanf(full_command, "%*s %*s WindowSize=%d;", &tmp_i) == 1)
         {
             cmd_handle->send_window = tmp_i;
+            globus_gridftp_server_control_set_buffer_size(
+                server,
+                0,
+                cmd_handle->send_window);
         }
         else
         {
@@ -1180,6 +1186,10 @@ globus_l_gsc_pmod_959_cmd_sbuf(
     }
     cmd_handle->send_window = tmp_i;
     cmd_handle->receive_window = tmp_i;
+    globus_gridftp_server_control_set_buffer_size(
+        server,
+        cmd_handle->receive_window,
+        cmd_handle->send_window);
 
     globus_gsc_pmod_959_finished_op(op, "200 SBUF Command Successful.\r\n");
 
@@ -1226,18 +1236,20 @@ globus_l_gsc_pmod_959_cmd_site(
     {
         cmd_handle->send_window = tmp_i;
         cmd_handle->receive_window = tmp_i;
+        globus_gridftp_server_control_set_buffer_size(
+            server,
+            cmd_handle->receive_window,
+            cmd_handle->send_window);
     }
     else if(strcmp(site_type, "RETRBUFSIZE") == 0 ||
             strcmp(site_type, "RBUFSZ") == 0 ||
             strcmp(site_type, "RBUFSIZ") == 0)
     {
         cmd_handle->receive_window = tmp_i;
-    }
-    else if(strcmp(site_type, "STORBUFSIZE") == 0 ||
-            strcmp(site_type, "SBUFSZ") == 0 ||
-            strcmp(site_type, "SBUFSIZ") == 0)
-    {
-        cmd_handle->send_window = tmp_i;
+        globus_gridftp_server_control_set_buffer_size(
+            server,
+            cmd_handle->receive_window,
+            0);
     }
     else if(strcmp(site_type, "HELP") == 0)
     {
@@ -2271,6 +2283,11 @@ globus_i_gsc_pmod_959_add_commands(
     cmd_handle->handle_959 = handle;
     cmd_handle->send_window = 65536;
     cmd_handle->receive_window = 65536;
+    res = globus_gridftp_server_control_set_buffer_size(
+        server,
+        cmd_handle->receive_window,
+        cmd_handle->send_window);
+    globus_assert(res == GLOBUS_SUCCESS);
     cmd_handle->packet_size = 65536;
     cmd_handle->parallelism = 1;
     res = globus_gridftp_server_control_set_parallelism(
