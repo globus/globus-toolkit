@@ -77,7 +77,6 @@ globus_module_descriptor_t              globus_i_gridmap_callout_error_module;
  */
 typedef enum
 {
-    
     /** Gridmap lookup failed */
     GLOBUS_GRIDMAP_CALLOUT_LOOKUP_FAILED = 0,
     /** GSSAPI error */
