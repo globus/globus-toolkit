@@ -295,7 +295,7 @@ globus_l_xio_ftp_cmd_open(
         globus_l_xio_ftp_cmd_open_cb,
         handle);
 
-    return GLOBUS_SUCCESS;
+    return res;
 }
 
 globus_result_t
