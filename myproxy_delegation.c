@@ -2,11 +2,12 @@
 
 #if defined(HAVE_LIBSASL2)
 static int
-auth_sasl_negotiate_client(myproxy_socket_attrs_t *attrs);
+auth_sasl_negotiate_client(myproxy_socket_attrs_t *attrs,
+			   myproxy_request_t *client_request);
 #endif
 
 static int myproxy_authorize_init(myproxy_socket_attrs_t *attrs,
-                                  char *passphrase,
+                                  myproxy_request_t *client_request,
 				  char *certfile,
 				  int  use_kerberos);
 
@@ -65,8 +66,8 @@ int myproxy_get_delegation(
     }
 
     /* Serialize client request object */
-    requestlen = myproxy_serialize_request(client_request, 
-                                           request_buffer, sizeof(request_buffer));
+    requestlen = myproxy_serialize_request(client_request, request_buffer,
+					   sizeof(request_buffer));
     if (requestlen < 0) {
         fprintf(stderr, "Error in myproxy_serialize_request():\n");
         return(1);
@@ -80,7 +81,7 @@ int myproxy_get_delegation(
     }
 
     /* Continue unless the response is not OK */
-    if (myproxy_authorize_init(socket_attrs, client_request->passphrase,
+    if (myproxy_authorize_init(socket_attrs, client_request,
 	                       certfile, use_kerberos) < 0) {
 	  fprintf(stderr, "%s\n",
 	          verror_get_string());
@@ -88,7 +89,8 @@ int myproxy_get_delegation(
     }
 
     /* Accept delegated credentials from server */
-    if (myproxy_accept_delegation(socket_attrs, delegfile, sizeof(delegfile), NULL) < 0) {
+    if (myproxy_accept_delegation(socket_attrs, delegfile, sizeof(delegfile),
+				  NULL) < 0) {
         fprintf(stderr, "Error in myproxy_accept_delegation(): %s\n", 
 		verror_get_string());
 	return(1);
@@ -115,7 +117,7 @@ int myproxy_get_delegation(
 
 static int
 myproxy_authorize_init(myproxy_socket_attrs_t *attrs,
-                       char *passphrase,
+                       myproxy_request_t *client_request,
 		       char *certfile,
 		       int  use_kerberos)
 {
@@ -156,8 +158,8 @@ myproxy_authorize_init(myproxy_socket_attrs_t *attrs,
 	    d = authorization_create_response(
 		              server_response->authorization_data,
 			      AUTHORIZETYPE_PASSWD,
-			      passphrase,
-			      strlen(passphrase) + 1);
+			      client_request->passphrase,
+			      strlen(client_request->passphrase) + 1);
 	 if (d == NULL) {
 	    verror_put_string("Cannot create authorization response");
        	    goto end;
@@ -180,7 +182,7 @@ myproxy_authorize_init(myproxy_socket_attrs_t *attrs,
 	 
 #if defined(HAVE_LIBSASL2)
 	 if (use_kerberos > 0) {
-		if (auth_sasl_negotiate_client(attrs) < 0)
+		if (auth_sasl_negotiate_client(attrs, client_request) < 0)
 			goto end;
 	 }
 #endif
@@ -212,10 +214,10 @@ int send_response_sasl_data(myproxy_socket_attrs_t *attrs,
     sasl_encode64(data, data_len, buf, SASL_BUFFER_SIZE, &len);
     buf[len] = '\0';
     if (result != SASL_OK) {
-       verror_put_string("Encoding data in base64 failed in send_response_sasl_data");
+       verror_put_string(
+	          "Encoding data in base64 failed in send_response_sasl_data");
        return -1;
     }
-//    printf("C: %s\n", buf);
 
     auth_data = authorization_create_response(
 	               server_response->authorization_data,
@@ -224,7 +226,8 @@ int send_response_sasl_data(myproxy_socket_attrs_t *attrs,
 		       len + 1);
 
     if (auth_data == NULL) {
-	verror_put_string("Cannot create authorization response in send_response_sasl_data");
+	verror_put_string(
+	    "Cannot create authorization response in send_response_sasl_data");
 	return -1;
     }
 
@@ -236,7 +239,8 @@ int send_response_sasl_data(myproxy_socket_attrs_t *attrs,
     (*client_buffer) = AUTHORIZETYPE_SASL;
     bufferlen = auth_data->client_data_len + sizeof(int);
 
-    memcpy(client_buffer + sizeof(int), auth_data->client_data, auth_data->client_data_len);
+    memcpy(client_buffer + sizeof(int), auth_data->client_data,
+	   auth_data->client_data_len);
 	 
     if (myproxy_send(attrs, client_buffer, bufferlen) < 0) 
        return -1;
@@ -278,149 +282,108 @@ int recv_response_sasl_data(myproxy_socket_attrs_t *attrs,
 static sasl_conn_t *conn = NULL;
 
 
-static int getrealm(void *context,
-                    int id,
-                    const char **availrealms __attribute__((unused)),
-                    const char **result)
-{
-  if (id!=SASL_CB_GETREALM) return SASL_FAIL;
-
-  *result=(char *) context;
-
-  return SASL_OK;
-}
-
-
 static int
-simple(void *context,
-       int id,
-       const char **result,
-       unsigned *len)
+sasl_string_callback(void *context,
+		     int id,
+		     const char **result,
+		     unsigned *len)
 {
-  const char *value = (const char *)context;
+    const char *value = (const char *)context;
 
-  if (! result)
-    return SASL_BADPARAM;
+    if (! result)
+	return SASL_BADPARAM;
 
-  switch (id) {
-  case SASL_CB_USER:
     *result = value;
     if (len)
-      *len = value ? strlen(value) : 0;
-    break;
-  case SASL_CB_AUTHNAME:
-    *result = value;
-    if (len)
-      *len = value ? strlen(value) : 0;
-    break;
-  case SASL_CB_LANGUAGE:
-    *result = NULL;
-    if (len)
-      *len = 0;
-    break;
-  default:
-    return SASL_BADPARAM;
-  }
+	*len = value ? strlen(value) : 0;
 
-//  printf("returning OK: %s\n", *result);
-
-  return SASL_OK;
-}
-
-
-static char *
-getpassphrase(const char *prompt)
-{
-  return getpass(prompt);
+    return SASL_OK;
 }
 
 
 static int
-getsecret(sasl_conn_t *conn,
-          void *context __attribute__((unused)),
-          int id,
-          sasl_secret_t **psecret)
+sasl_secret_callback(sasl_conn_t *conn,
+		     void *context __attribute__((unused)),
+		     int id,
+		     sasl_secret_t **psecret)
 {
-  char *password;
-  size_t len;
+    char password[MAX_PASS_LEN];
+    size_t len;
 
-  if (! conn || ! psecret || id != SASL_CB_PASS)
-    return SASL_BADPARAM;
+    if (! conn || ! psecret || id != SASL_CB_PASS)
+	return SASL_BADPARAM;
 
-  password = getpassphrase("Password: ");
-  if (! password)
-    return SASL_FAIL;
-
-  len = strlen(password);
-
-  *psecret = (sasl_secret_t *) malloc(sizeof(sasl_secret_t) + len);
-
-  if (! *psecret) {
-    memset(password, 0, len);
-    return SASL_NOMEM;
-  }
-
-  (*psecret)->len = len;
-  strcpy((char *)(*psecret)->data, password);
-  memset(password, 0, len);
-
-  return SASL_OK;
-}
-
-
-static int
-prompt(void *context __attribute__((unused)),
-       int id,
-       const char *challenge,
-       const char *prompt,
-       const char *defresult,
-       const char **result,
-       unsigned *len)
-{
-  if ((id != SASL_CB_ECHOPROMPT && id != SASL_CB_NOECHOPROMPT)
-      || !prompt || !result || !len)
-    return SASL_BADPARAM;
-
-  if (! defresult)
-    defresult = "";
-
-  fputs(prompt, stdout);
-  if (challenge)
-    printf(" [challenge: %s]", challenge);
-  printf(" [%s]: ", defresult);
-  fflush(stdout);
-
-  if (id == SASL_CB_ECHOPROMPT) {
-    char *original = getpassphrase("");
-    if (! original)
-      return SASL_FAIL;
-    if (*original)
-      *result = strdup(original);
-    else
-      *result = strdup(defresult);
-    memset(original, 0L, strlen(original));
-  } else {
-    char buf[1024];
-    fgets(buf, 1024, stdin);
-    if (buf[0]) {
-      *result = strdup(buf);
-    } else {
-      *result = strdup(defresult);
+    if (myproxy_read_passphrase(password, MAX_PASS_LEN, "Password: ") < 0){
+	return SASL_FAIL;
     }
-    memset(buf, 0L, sizeof(buf));
-  }
-  if (! *result)
-    return SASL_NOMEM;
+	
+    len = strlen(password);
 
-  *len = strlen(*result);
+    *psecret = (sasl_secret_t *) malloc(sizeof(sasl_secret_t) + len);
 
-  return SASL_OK;
+    if (! *psecret) {
+	memset(password, 0, len);
+	return SASL_NOMEM;
+    }
+
+    (*psecret)->len = len;
+    strcpy((char *)(*psecret)->data, password);
+    memset(password, 0, len);
+
+    return SASL_OK;
 }
 
 
+static int
+sasl_prompt_callback(void *context __attribute__((unused)),
+		     int id,
+		     const char *challenge,
+		     const char *prompt,
+		     const char *defresult,
+		     const char **result,
+		     unsigned *len)
+{
+    char input[MAX_PASS_LEN];
+
+    if ((id != SASL_CB_ECHOPROMPT && id != SASL_CB_NOECHOPROMPT)
+	|| !prompt || !result || !len)
+	return SASL_BADPARAM;
+
+    if (! defresult)
+	defresult = "";
+
+    fputs(prompt, stdout);
+    if (challenge)
+	printf(" [challenge: %s]", challenge);
+    printf(" [%s]: ", defresult);
+    fflush(stdout);
+
+    if (id == SASL_CB_NOECHOPROMPT) {
+	if (myproxy_read_passphrase(input, MAX_PASS_LEN, "") < 0) {
+	    return SASL_FAIL;
+	}
+    } else {
+	fgets(input, 1024, stdin);
+    }
+    if (input[0])
+	*result = strdup(input);
+    else
+	*result = strdup(defresult);
+
+    memset(input, 0L, strlen(input));
+
+    if (! *result)
+	return SASL_NOMEM;
+
+    *len = strlen(*result);
+
+    return SASL_OK;
+}
+
 
 static int
-auth_sasl_negotiate_client(myproxy_socket_attrs_t *attrs)
+auth_sasl_negotiate_client(myproxy_socket_attrs_t *attrs,
+			   myproxy_request_t      *client_request)
 {
     char server_buffer[SASL_BUFFER_SIZE];
     const char *data;
@@ -428,114 +391,26 @@ auth_sasl_negotiate_client(myproxy_socket_attrs_t *attrs)
 
     myproxy_response_t server_response;
 
-#define N_CALLBACKS (16)
+    sasl_callback_t callbacks[] = {
+	{ SASL_CB_USER, &sasl_string_callback, client_request->username },
+	{ SASL_CB_AUTHNAME, &sasl_string_callback, client_request->username },
+	{ SASL_CB_PASS, &sasl_secret_callback, NULL },
+	{ SASL_CB_ECHOPROMPT, &sasl_prompt_callback, NULL },
+	{ SASL_CB_NOECHOPROMPT, &sasl_prompt_callback, NULL },
+	{ SASL_CB_LIST_END, NULL, NULL }
+    };
 
     int result;
     sasl_security_properties_t secprops;
-    sasl_callback_t callbacks[N_CALLBACKS], *callback;
     const char *chosenmech;
-    char *mech = NULL, /* can force mechanism here if needed */
-        *iplocal = NULL,
-        *ipremote = NULL,
-        *service = "myproxy";
+    char *service = "myproxy",
+	*iplocal = NULL,
+        *ipremote = NULL;
     char fqdn[1024];
-
-    krb5_context context;
-    krb5_ccache ccache;
-    krb5_principal principal;
-    char *user_id = NULL;
-    char *realm = NULL;
-
-    if (krb5_init_context(&context)) {
-	verror_put_string("Failed to initiate krb5_context.");
-	return SASL_FAIL;
-    }
-    if (krb5_cc_default(context, &ccache)) {
-	verror_put_string("Failed to get the credential cache.");
-        krb5_free_context(context);
-	return SASL_FAIL;
-    }
-    if (krb5_cc_get_principal(context, ccache, &principal)) {
-	verror_put_string("Failed to get principal from the credential cache.");
-        krb5_free_context(context);
-	return SASL_FAIL;
-    }
-    if (krb5_unparse_name(context, principal, &user_id)) {
-	verror_put_string("Failed to unparse name from principal.");
-        krb5_free_principal(context, principal);
-        krb5_free_context(context);
-	return SASL_FAIL;
-    }
-    myproxy_debug("Kerberos principal name: %s\n", user_id);
-    krb5_free_principal(context, principal);
-    krb5_free_context(context);
-
-    realm = strchr(user_id, '@');
-    if (realm) {
-        *realm = '\0';
-        realm++;
-    }
-
-    // printf("User name: %s, realm: %s\n", user_id, realm);
 
     strcpy(fqdn, attrs->pshost);
    
     memset(server_buffer, 0, sizeof(*server_buffer));
-
-    /* Init defaults... */
-    memset(&secprops, 0L, sizeof(secprops));
-    secprops.maxbufsize = SASL_BUFFER_SIZE;
-    secprops.max_ssf = UINT_MAX;
-
-    /* Fill in the callbacks that we're providing... */
-    callback = callbacks;
-
-    /* user */
-    if (user_id) {
-        callback->id = SASL_CB_USER;
-        callback->proc = &simple;
-        callback->context = user_id;
-        ++callback;
-    }
-
-    if (realm)
-    {
-        callback->id = SASL_CB_GETREALM;
-        callback->proc = &getrealm;
-        callback->context = realm;
-        callback++;
-    }
-
-    /* password */
-    callback->id = SASL_CB_PASS;
-    callback->proc = &getsecret;
-    callback->context = NULL;
-    ++callback;
-
-    /* echoprompt */
-    callback->id = SASL_CB_ECHOPROMPT;
-    callback->proc = &prompt;
-    callback->context = NULL;
-    ++callback;
-
-    /* noechoprompt */
-    callback->id = SASL_CB_NOECHOPROMPT;
-    callback->proc = &prompt;
-    callback->context = NULL;
-    ++callback;
-
-    /* termination */
-    callback->id = SASL_CB_LIST_END;
-    callback->proc = NULL;
-    callback->context = NULL;
-    ++callback;
-
-
-      
-    if (N_CALLBACKS < callback - callbacks) {
-        verror_put_string("Out of callback space; recompile with larger N_CALLBACKS");
-	return SASL_FAIL;
-    }
 
     result = sasl_client_init(callbacks);
     if (result != SASL_OK) {
@@ -543,19 +418,16 @@ auth_sasl_negotiate_client(myproxy_socket_attrs_t *attrs)
 	return SASL_FAIL;
     }
 
-    result = sasl_client_new(service,
-                           fqdn,
-                           iplocal,ipremote,
-                           NULL, 0,
-                           &conn);
+    result = sasl_client_new(service, fqdn, iplocal, ipremote, NULL, 0, &conn);
     if (result != SASL_OK) {
         verror_put_string("Allocating sasl connection state failed");
 	return SASL_FAIL;
     }
 
-    result = sasl_setprop(conn,
-                        SASL_SEC_PROPS,
-                        &secprops);
+    /* don't need integrity or privacy, since we're over SSL already.
+       in fact, let's disable them to avoid the overhead. */
+    memset(&secprops, 0L, sizeof(secprops));
+    result = sasl_setprop(conn, SASL_SEC_PROPS, &secprops);
     if (result != SASL_OK) {
         verror_put_string("Setting security properties failed");
 	return SASL_FAIL;
@@ -602,7 +474,8 @@ auth_sasl_negotiate_client(myproxy_socket_attrs_t *attrs)
 
     while (result == SASL_CONTINUE) {
 
-	server_len = recv_response_sasl_data(attrs, &server_response, server_buffer);
+	server_len = recv_response_sasl_data(attrs, &server_response,
+					     server_buffer);
         if (server_len < 0) 
 	    return result;
 
