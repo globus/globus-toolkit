@@ -160,9 +160,9 @@ do_receive()
 	return -1;
     }
 
-    if (GSI_SOCKET_get_client_name(gsi_socket,
-				   client_name,
-				   sizeof(client_name)) == GSI_SOCKET_ERROR)
+    if (GSI_SOCKET_get_peer_name(gsi_socket,
+				 client_name,
+				 sizeof(client_name)) == GSI_SOCKET_ERROR)
     {
 	GSI_SOCKET_get_error_string(gsi_socket, error_string,
 				    sizeof(error_string));
@@ -259,7 +259,8 @@ do_transmit()
 	return -1;
     }
     
-    if (GSI_SOCKET_authentication_init(gsi_socket) == GSI_SOCKET_ERROR)
+    if (GSI_SOCKET_authentication_init(gsi_socket, "FIXME") ==
+	GSI_SOCKET_ERROR)
     {
 	GSI_SOCKET_get_error_string(gsi_socket, error_string,
 				    sizeof(error_string));
