@@ -767,7 +767,7 @@ gss_create_and_fill_cred(
             major_status =  GSS_S_CREDENTIALS_EXPIRED;
         }
 
-        if (status = PRXYERR_R_PROXY_EXPIRED)
+        if (status == PRXYERR_R_PROXY_EXPIRED)
         { 
             *minor_status =  GSSERR_R_PROXY_EXPIRED;
             major_status =  GSS_S_CREDENTIALS_EXPIRED;
