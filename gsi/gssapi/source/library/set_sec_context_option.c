@@ -61,7 +61,6 @@ gss_set_sec_context_option(
     gss_ctx_id_desc *                   context = NULL;
     OM_uint32                           major_status = GSS_S_COMPLETE;
     OM_uint32                           local_minor_status;
-    void *                              extension_oids = NULL;
     globus_result_t                     local_result = GLOBUS_SUCCESS;
     int                                 index;
     static char *                       _function_name_ =
@@ -113,13 +112,22 @@ gss_set_sec_context_option(
         memset(context, 0, sizeof(gss_ctx_id_desc));
         context->ctx_flags = 0;
 
-        local_result = globus_gsi_callback_data_init(&context->callback_data);
+        major_status = gss_create_empty_oid_set(
+            &local_minor_status,
+            (gss_OID_set *) &context->extension_oids);
+
+        /* initialize the callback_data in the context.  This needs
+         * to be done so the verify_callback func can be set later.
+         */
+        local_result = globus_gsi_callback_data_init(
+            &context->callback_data);
         if(local_result != GLOBUS_SUCCESS)
         {
             GLOBUS_GSI_GSSAPI_ERROR_RESULT(
                 minor_status,
                 GLOBUS_GSI_GSSAPI_ERROR_WITH_GSS_CONTEXT,
-                ("Could not initialize the callback_data in the context."));
+                ("The callback data in the context "
+                 "could not be initialized."));
             major_status = GSS_S_FAILURE;
             goto exit;
         }
@@ -155,30 +163,6 @@ gss_set_sec_context_option(
             goto exit;
         }
 
-        local_result = globus_gsi_callback_get_extension_oids(
-            context->callback_data,
-            (void **) &extension_oids);
-        if(local_result != GLOBUS_SUCCESS)
-        {
-            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
-                minor_status, local_result,
-                GLOBUS_GSI_GSSAPI_ERROR_WITH_CALLBACK_DATA);
-            major_status = GSS_S_FAILURE;
-            goto exit;
-        }
-
-        major_status = gss_create_empty_oid_set(
-            &local_minor_status,
-            (gss_OID_set *) &extension_oids);
-
-        if(GSS_ERROR(major_status))
-        {
-            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
-                minor_status, local_minor_status,
-                GLOBUS_GSI_GSSAPI_ERROR_WITH_OID);
-            goto exit;
-        }
-
         for(index = 0; 
             index < ((gss_OID_set_desc *) value->value)->count; 
             index++)
@@ -187,7 +171,7 @@ gss_set_sec_context_option(
                 &local_minor_status,
                 (gss_OID) 
                 &((gss_OID_set_desc *) value->value)->elements[index],
-                (gss_OID_set *) &extension_oids);
+                (gss_OID_set *) &context->extension_oids);
 
             if(GSS_ERROR(major_status))
             {
@@ -210,6 +194,20 @@ gss_set_sec_context_option(
             goto exit;
         }
 
+        /* if the extension_oids are set, 
+         * then we set them in the callback data */
+        local_result = globus_gsi_callback_set_extension_oids(
+            context->callback_data,
+            (void *) context->extension_oids);
+        if(local_result != GLOBUS_SUCCESS)
+        {
+            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                minor_status, local_result,
+                GLOBUS_GSI_GSSAPI_ERROR_WITH_CALLBACK_DATA);
+            major_status = GSS_S_FAILURE;
+            goto exit;
+        }
+
         context->ctx_flags |= GSS_I_APPLICATION_WILL_HANDLE_EXTENSIONS;
     }
     else
@@ -222,6 +220,8 @@ gss_set_sec_context_option(
         major_status = GSS_S_FAILURE;
         goto exit;
     }
+
+    *context_handle = context;
 
  exit:
 

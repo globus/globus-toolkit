@@ -244,6 +244,22 @@ globus_i_gsi_gss_create_and_fill_context(
         }
     }
     
+    /* if the extension_oids are set, then we set them in the callback data */
+    if(context->extension_oids)
+    {
+        local_result = globus_gsi_callback_set_extension_oids(
+            context->callback_data,
+            (void *) context->extension_oids);
+        if(local_result != GLOBUS_SUCCESS)
+        {
+            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                minor_status, local_result,
+                GLOBUS_GSI_GSSAPI_ERROR_WITH_CALLBACK_DATA);
+            major_status = GSS_S_FAILURE;
+            goto exit;
+        }
+    }
+    
     /* set the callback data if its OK to accept proxies
      * signed by limited proxies
      */
@@ -504,6 +520,21 @@ globus_i_gsi_gss_create_and_fill_context(
         }
     }
 
+    if(!context->extension_oids)
+    {
+        major_status = gss_create_empty_oid_set(
+            &local_minor_status,
+            (gss_OID_set *) &context->extension_oids);
+        
+        if(GSS_ERROR(major_status))
+        {
+            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                minor_status, local_minor_status,
+                GLOBUS_GSI_GSSAPI_ERROR_WITH_OID);
+            goto exit;
+        }
+    }
+    
     goto exit;
 
  free_wbio:

@@ -169,6 +169,18 @@ GSS_CALLCONV gss_delete_sec_context(
         (*context_handle)->gss_ssl = NULL;
     } 
 
+    major_status = gss_release_oid_set(
+        &minor_status,
+        &(*context_handle)->extension_oids);
+    if(GSS_ERROR(major_status))
+    {
+        GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
+            minor_status,
+            GLOBUS_GSI_GSSAPI_ERROR_WITH_OPENSSL,
+            ("Can't delete oid set."));
+        goto exit;
+    }
+
     globus_mutex_unlock(&(*context_handle)->mutex);
 
     globus_mutex_destroy(&(*context_handle)->mutex);
