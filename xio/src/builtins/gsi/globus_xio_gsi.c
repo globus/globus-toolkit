@@ -26,7 +26,7 @@ static globus_module_descriptor_t  globus_i_xio_gsi_module =
 };
 
 
-#define GLOBUS_L_XIO_GSI_CREATE_HEADER(__iovec, __length)         \
+#define GlobusLXioGsiCreateHeader(__iovec, __length)              \
     {                                                             \
         *(((unsigned char *) (__iovec).iov_base)) =               \
             (unsigned char) (((__length) >> 24) & 0xff);          \
@@ -38,7 +38,7 @@ static globus_module_descriptor_t  globus_i_xio_gsi_module =
             (unsigned char) (((__length)      ) & 0xff);          \
     }
 
-#define GLOBUS_L_XIO_GSI_GET_TOKEN_LENGTH(__iovec, __length)      \
+#define GlobusLXioGsiGetTokenLength(__iovec, __length)            \
     {                                                             \
         globus_byte_t *                 c;                        \
         c = (__iovec).iov_base;                                   \
@@ -120,7 +120,7 @@ globus_l_xio_gsi_attr_init(
     attr->mech_type = GSS_C_NO_OID;
     attr->channel_bindings = GSS_C_NO_CHANNEL_BINDINGS;
     attr->wrap = GLOBUS_FALSE;
-    attr->buffer_size = 8192; /* 8K default read buffer */
+    attr->buffer_size = 131072; /* 128K default read buffer */
     *out_attr = attr;
 
     return GLOBUS_SUCCESS;
@@ -552,7 +552,7 @@ globus_l_xio_gsi_write_token_cb(
         handle->result = result;
     }
                 
-    GlobusXIODriverPassClose(&result, op,
+    GlobusXIODriverPassClose(result, op,
                              globus_l_xio_gsi_close_cb, handle);
 
     if(result != GLOBUS_SUCCESS)
@@ -604,7 +604,7 @@ globus_l_xio_gsi_read_token_cb(
     {
         handle->bytes_read += (nbytes - 4);
     
-        GLOBUS_L_XIO_GSI_GET_TOKEN_LENGTH((handle->iovec)[1], wait_for);
+        GlobusLXioGsiGetTokenLength((handle->iovec)[1], wait_for);
 
         /* grow read buffer so we can read a full token */
         
@@ -724,7 +724,7 @@ globus_l_xio_gsi_read_token_cb(
         {
             iovec = handle->iovec;
             iovec_count = 2;
-            GLOBUS_L_XIO_GSI_CREATE_HEADER(iovec[0], output_token.length);
+            GlobusLXioGsiCreateHeader(iovec[0], output_token.length);
             
             /* needs to be reset */
             
@@ -759,7 +759,7 @@ globus_l_xio_gsi_read_token_cb(
         iovec_count = 1;
         wait_for = 15;
         
-        GlobusXIODriverPassRead(&result, op, iovec, iovec_count, wait_for,
+        GlobusXIODriverPassRead(result, op, iovec, iovec_count, wait_for,
                                 globus_l_xio_gsi_read_token_cb, handle);
         if(result != GLOBUS_SUCCESS)
         {
@@ -775,7 +775,7 @@ globus_l_xio_gsi_read_token_cb(
         handle->result = result;
     }
                 
-    GlobusXIODriverPassClose(&result, op,
+    GlobusXIODriverPassClose(result, op,
                              globus_l_xio_gsi_close_cb, handle);
     if(result != GLOBUS_SUCCESS)
     {
@@ -857,7 +857,7 @@ globus_l_xio_gsi_open_cb(
         {
             iovec = handle->iovec;
             iovec_count = 2;
-            GLOBUS_L_XIO_GSI_CREATE_HEADER(iovec[0], output_token.length);
+             GlobusLXioGsiCreateHeader(iovec[0], output_token.length);
 
             /* needs to be reset once I start reading */
             
@@ -875,7 +875,7 @@ globus_l_xio_gsi_open_cb(
             wait_for = iovec[0].iov_len;
         }
         
-        GlobusXIODriverPassWrite(&result, op, iovec, iovec_count, wait_for,
+        GlobusXIODriverPassWrite(result, op, iovec, iovec_count, wait_for,
                                  globus_l_xio_gsi_write_token_cb, handle);
         if(result != GLOBUS_SUCCESS)
         {
@@ -904,7 +904,7 @@ globus_l_xio_gsi_open_cb(
         handle->result = result;
     }
                 
-    GlobusXIODriverPassClose(&result, op,
+    GlobusXIODriverPassClose(result, op,
                              globus_l_xio_gsi_close_cb, handle);
     if(result != GLOBUS_SUCCESS)
     {
@@ -978,7 +978,7 @@ globus_l_xio_gsi_open(
         handle->ret_flags = 0;
     }
     
-    GlobusXIODriverPassOpen(&result, context, op,
+    GlobusXIODriverPassOpen(result, context, op,
                             globus_l_xio_gsi_open_cb, handle);
 
     if(result != GLOBUS_SUCCESS)
@@ -1026,9 +1026,9 @@ globus_l_xio_gsi_close(
 
     GlobusXIOName(globus_l_xio_gsi_close);
 
-    globus_l_xio_gsi_handle_destroy((globus_l_handle_t *) dirver_handle);
+    globus_l_xio_gsi_handle_destroy((globus_l_handle_t *) driver_handle);
     
-    GlobusXIODriverFinishedClose(op, result);
+    GlobusXIODriverPassClose(result, op, NULL, NULL);
     
     return result;
 }
