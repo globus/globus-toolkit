@@ -51,7 +51,7 @@ globus_i_gsi_proxy_openssl_error_result(
             filename,
             line_number,
             function_name,
-            globus_l_gsi_cred_error_strings[error_type]);
+            globus_l_gsi_proxy_error_strings[error_type]);
     
     globus_error_set_long_desc(error_object, long_desc);
 
@@ -73,7 +73,7 @@ globus_i_gsi_proxy_error_result(
     globus_result_t                     result;
 
     static char *                       _function_name_ =
-        "globus_i_gsi_cred_error_result";
+        "globus_i_gsi_proxy_error_result";
 
     GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
 
@@ -83,7 +83,7 @@ globus_i_gsi_proxy_error_result(
         error_type,
         "%s:%d: %s: %s",
         filename, line_number, function_name,
-        globus_l_gsi_cred_error_strings[error_type]);
+        globus_l_gsi_proxy_error_strings[error_type]);
 
     globus_error_set_long_desc(error_object, long_desc);
 

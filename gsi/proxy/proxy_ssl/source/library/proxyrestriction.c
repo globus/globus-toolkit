@@ -248,7 +248,6 @@ int PROXYRESTRICTION_set_policy_language(
 }
 /* @} */
 
-
 /**
  * @name Get the Policy Language Field
  */
@@ -269,7 +268,6 @@ ASN1_OBJECT * PROXYRESTRICTION_get_policy_language(
     return restriction->policy_language;
 }
 /* @} */
-
 
 /**
  * @name Set the Policy Field

@@ -142,6 +142,10 @@ globus_l_gsi_proxy_handle_attrs_s *     globus_gsi_proxy_handle_attrs_t;
 #ifndef DOXYGEN
 
 globus_result_t
+globus_gsi_proxy_get_proxycertinfo_NID(
+    int *                               pci_NID);
+
+globus_result_t
 globus_gsi_proxy_handle_init(
     globus_gsi_proxy_handle_t *         handle,
     globus_gsi_proxy_handle_attrs_t     handle_attrs);

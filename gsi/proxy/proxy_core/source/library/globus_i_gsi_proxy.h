@@ -91,30 +91,39 @@ extern FILE *                           globus_i_gsi_proxy_debug_fstream;
 
 /* ERROR MACROS */
 
-#define GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(_ERRORTYPE_, _ERRORSTR_) \
-    globus_i_gsi_proxy_openssl_error_result( \
+#define GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(_RESULT_, \
+                                              _ERRORTYPE_, _ERRORSTR_) \
+    char *                              _tmp_string_ = \
+        globus_i_gsi_proxy_create_string _ERRORSTR_; \
+    _RESULT_ = globus_i_gsi_proxy_openssl_error_result( \
         _ERRORTYPE_, \
         __FILE__, \
         _function_name_, \
         __LINE__, \
-        globus_i_gsi_proxy_create_string _ERRORSTR_)
+        _tmp_string_); \
+    globus_libc_free(_tmp_string_);
 
-#define GLOBUS_GSI_PROXY_ERROR_RESULT(_ERRORTYPE_, _ERRORSTR_) \
-    globus_i_gsi_proxy_error_result( \
+#define GLOBUS_GSI_PROXY_ERROR_RESULT(_RESULT_, \
+                                      _ERRORTYPE_, _ERRORSTR_) \
+    char *                              _tmp_string_ = \
+        globus_i_gsi_proxy_create_string _ERRORSTR_; \
+    _RESULT_ = globus_i_gsi_proxy_error_result( \
         _ERRORTYPE_, \
         __FILE__, \
         _function_name_, \
         __LINE__, \
-        globus_i_gsi_proxy_create_string _ERRORSTR_)
+        _tmp_string_); \
+    globus_libc_free(_tmp_string_);
 
-#define GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(_TOP_RESULT_, _ERRORTYPE_) \
-    globus_i_gsi_proxy_error_chain_result( \
-        _TOP_RESULT_, \
+#define GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(_RESULT_, \
+                                            _ERRORTYPE_) \
+    _RESULT_ = globus_i_gsi_proxy_error_chain_result( \
+        _RESULT_, \
         _ERRORTYPE_, \
         __FILE__, \
         _function_name_, \
         __LINE__, \
-        NULL)
+        NULL);
 
 #include "globus_gsi_proxy_constants.h"
 

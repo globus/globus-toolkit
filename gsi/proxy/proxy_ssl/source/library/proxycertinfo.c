@@ -29,7 +29,7 @@
  * pointers to routines that convert any PROXYCERTINFO
  * structure to its associated ASN1 DER encoded form
  * and vice-versa.
- *
+*
  * @return the ASN1_METHOD object
  */
 ASN1_METHOD * PROXYCERTINFO_asn1_meth()
