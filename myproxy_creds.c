@@ -823,8 +823,8 @@ myproxy_creds_retrieve(struct myproxy_creds *creds)
 
 int myproxy_creds_retrieve_all(struct myproxy_creds *creds)
 {
-    char *username = NULL, *owner_name = NULL;
-    size_t username_len;
+    char *username = NULL, *h_username = NULL, *owner_name = NULL;
+    size_t h_username_len;
     struct myproxy_creds *cur_cred = NULL, *new_cred = NULL;
     DIR *dir;
     struct dirent *de;
@@ -844,7 +844,12 @@ int myproxy_creds_retrieve_all(struct myproxy_creds *creds)
 
     /* stash username and owner_name so we can test each credential */
     username = strdup(creds->username);
-    username_len = strlen(username);
+    if (strchr(creds->username, '/')) {
+	h_username = strmd5(username, NULL);
+    } else {
+	h_username = strdup(creds->username);
+    }
+    h_username_len = strlen(h_username);
     owner_name = strdup(creds->owner_name);
 
     new_cred = creds; /* new_cred is what we're filling in */
@@ -869,11 +874,11 @@ int myproxy_creds_retrieve_all(struct myproxy_creds *creds)
 	goto error;
     }
     while ((de = readdir(dir)) != NULL) {
-	if (!strncmp(de->d_name, username, username_len) &&
-	    de->d_name[username_len] == '-' &&
+	if (!strncmp(de->d_name, h_username, h_username_len) &&
+	    de->d_name[h_username_len] == '-' &&
 	    !strncmp(de->d_name+strlen(de->d_name)-5, ".data", 5)) {
 	    char *credname, *dot;
-	    credname = strdup(de->d_name+username_len+1);
+	    credname = strdup(de->d_name+h_username_len+1);
 	    dot = strchr(credname, '.');
 	    *dot = '\0';
 	    if (new_cred->username) free(new_cred->username);
@@ -905,6 +910,7 @@ int myproxy_creds_retrieve_all(struct myproxy_creds *creds)
 
  error:
     if (username) free(username);
+    if (h_username) free(h_username);
     if (owner_name) free(owner_name);
     if (cur_cred && new_cred) {
 	myproxy_creds_free_contents(new_cred);
