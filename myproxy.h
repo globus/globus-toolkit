@@ -12,7 +12,7 @@
 #define MYPROXY_VERSION_MAJOR 0
 #define MYPROXY_VERSION_MINOR 5
 #define MYPROXY_VERSION_MICRO 2
-#define MYPROXY_VERSION_DATE "v0.5.2 28 Feb 2003"
+#define MYPROXY_VERSION_DATE "v0.5.2 10 Mar 2003"
 
 #include "gsi_socket.h"
 #include "myproxy_authorization.h"

@@ -1,9 +1,9 @@
-This is myproxy v0.5.2 28 Feb 2003
+This is myproxy v0.5.2 10 Mar 2003
 This version should be compatible with all versions since v0.2.
 
 Version History
 ---------------
-v0.5.2 28 Feb 2003 (GPT package version 1.4)
+v0.5.2 10 Mar 2003 (GPT package version 1.4)
   This version adds the myproxy-admin-query and
   myproxy-admin-load-credential commands and adds support for running
   the myproxy-server with a /CN=myproxy/fqhn credential.
