@@ -6,10 +6,10 @@
 #ifndef __MYPROXY_CREDS_H
 #define __MYPROXY_CREDS_H
 
-#include <time.h>
-
 #define REGULAR_EXP 1
 #define MATCH_CN_ONLY 0
+
+#include <time.h>
 
 struct myproxy_creds {
     char *user_name;
