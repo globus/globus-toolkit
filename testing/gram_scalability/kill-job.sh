@@ -1,11 +1,21 @@
 #!/bin/sh
 
-factory=$1
-job_id=$2
+OPTIND=0
+while getopts "u:v" arg ; do
+    if [ $arg = "u" ]; then
+        url=$OPTARG
+    elif [ $arg = "v" ]; then
+        verbose=1
+    fi
+done
 
-if [ -z $factory ]; then
-    echo "ERROR: No factory GSH specified"
+if [ -z $url ]; then
+    echo "ERROR: No job URL specified"
     exit
+fi
+
+if [ $verbose ]; then
+    echo job URL: $url
 fi
 
 if [ ! -d ./schema ]; then
@@ -16,7 +26,6 @@ begin_time=0
 end_time=0
 
 begin_time=`date +%s`
-rm -f $logfile
-$GLOBUS_LOCATION/bin/managed-job-globusrun -kill $factory/$job_id
+$GLOBUS_LOCATION/bin/managed-job-globusrun -kill $url
 end_time=`date +%s`
 echo "Time taken for managed-job-globusrun: `expr $end_time - $begin_time` Seconds"
