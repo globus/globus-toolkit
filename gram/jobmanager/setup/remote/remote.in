@@ -213,6 +213,7 @@ sub remote_cmd
     $data = join('', <$datafile>);
     $data =~ s/'/'"'"'/g;
     $datafile->close();
+    unlink($args_filename);
 
     $remote_cmd  = "GLOBUS_LOCATION=$globus_location ;\n";
     $remote_cmd .= "export GLOBUS_LOCATION;\n";
