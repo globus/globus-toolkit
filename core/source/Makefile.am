@@ -8,7 +8,9 @@ flavorincludedir = $(GLOBUS_LOCATION)/include/$(GLOBUS_FLAVOR_NAME)
 flavorinclude_HEADERS = \
 	globus_config.h
 
-SUBDIRS = aclocal config scripts tests pkgdata doxygen
+# MichaelB removed doxygen because it is not working yet.
+SUBDIRS = aclocal config scripts tests pkgdata
+
 
 EXTRA_DIST = bootstrap
 
