@@ -2585,6 +2585,7 @@ globus_l_xio_gssapi_ftp_read(
     globus_xio_operation_t              op)
 {
     globus_size_t                       finished_len = -1;
+    globus_bool_t                       finished = GLOBUS_FALSE;
     globus_l_xio_gssapi_ftp_handle_t *  handle;
     globus_result_t                     res;
     GlobusXIOName(globus_l_xio_gssapi_ftp_read);
@@ -2611,8 +2612,8 @@ globus_l_xio_gssapi_ftp_read(
                 handle->read_iov->iov_base = handle->banner;
                 handle->read_iov->iov_len = handle->banner_length;
                 finished_len = handle->banner_length;
+                finished = GLOBUS_TRUE;
                 handle->banner = NULL;
-        globus_xio_driver_finished_read(op, GLOBUS_SUCCESS, finished_len);
             }
             else
             {
@@ -2650,8 +2651,9 @@ globus_l_xio_gssapi_ftp_read(
     }	
     globus_mutex_unlock(&handle->mutex);
 
-    if(finished_len >= 0)
+    if(finished)
     {
+        globus_xio_driver_finished_read(op, GLOBUS_SUCCESS, finished_len);
     }
     GlobusXIOGssapiftpDebugExit();
     return GLOBUS_SUCCESS;
