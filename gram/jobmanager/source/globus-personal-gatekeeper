@@ -79,7 +79,7 @@ verify_setup ()
     sbindir="${GLOBUS_LOCATION}/sbin"
     libexecdir="${GLOBUS_LOCATION}/libexec"
 
-    ${bindir}/grid-proxy-info -exists -hours 1
+    ${bindir}/grid-proxy-info -exists -valid 1:0
     
     if [ $? -ne 0 ]; then
         echo "ERROR: no valid proxy, or lifetime to small (one hour)" >&2
@@ -206,7 +206,7 @@ listem ()
 cleanup ()
 {
     if [ ${docleanup} = true ]; then
-        ${GLOBUS_SH_RM-rm} -rf ${scratch}
+#        ${GLOBUS_SH_RM-rm} -rf ${scratch}
         docleanup=false
     fi
 }
