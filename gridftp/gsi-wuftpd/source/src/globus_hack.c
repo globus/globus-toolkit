@@ -1209,7 +1209,22 @@ g_send_data(
                     }
                 }
                 globus_mutex_unlock(&g_monitor.mutex);
+
+#           ifdef THROUGHPUT
+            {
+                if (bps != -1)
+                {
+                    t2 = time(NULL);
+                    if (t2 == t1)
+                    {
+                        sleep(1);
+                    }
+                    t1 = time(NULL);
+                }
             }
+#           endif
+
+            } /* end while */
             globus_mutex_lock(&g_monitor.mutex);
             {   
                 while(g_monitor.count != 0)
@@ -1242,20 +1257,7 @@ g_send_data(
             }    
 #           endif
 
-#           ifdef THROUGHPUT
-            {
-                if (bps != -1)
-                {
-                    t2 = time(NULL);
-                    if (t2 == t1)
-                    {
-                        sleep(1);
-                    }
-                    t1 = time(NULL);
-                }
-            }
-#           endif
-        } /* end while */
+        } /* end for */
 
 #       ifdef THROUGHPUT
         {
