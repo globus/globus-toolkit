@@ -944,14 +944,31 @@ do                                                                          \
 /*
  *  cancel and timeout functions 
  */
-#define GlobusXIODriverBlockTimeout(_op)                                    \
+#define GlobusXIODriverBlockTimeout(_in_op)                                 \
 do                                                                          \
 {                                                                           \
+    globus_i_xio_op_t *                             _op;                    \
+                                                                            \
+    _op = (_in_op);                                                         \
+    _op->block_timeout = GLOBUS_TRUE;                                       \
 } while(0)
 
-#define GlobusXIODriverUnblockTimeout(_op)                                  \
+#define GlobusXIODriverUnblockTimeout(_in_op)                               \
 do                                                                          \
 {                                                                           \
+    globus_i_xio_op_t *                             _op;                    \
+                                                                            \
+    _op = (_in_op);                                                         \
+    _op->block_timeout = GLOBUS_FALSE;                                      \
+} while(0)
+
+#define GlobusXIOOperationRefreshTimeout(_in_op)                            \
+do                                                                          \
+{                                                                           \
+    globus_i_xio_op_t *                             _op;                    \
+                                                                            \
+    _op = (_in_op);                                                         \
+    _op->progress = GLOBUS_TRUE;                                            \
 } while(0)
 
 #define GlobusXIODriverEnableCancel(op, canceled, cb, user_arg)             \
