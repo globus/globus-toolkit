@@ -90,6 +90,8 @@ typedef struct globus_l_xio_gssapi_ftp_handle_s
     char *                                  subject;
 
     char *                                  reply_220;
+    char *                                  banner_reply;
+    int                                     banner_ndx;
 
     globus_i_xio_gssapi_ftp_state_t         state;
 
@@ -1723,6 +1725,27 @@ globus_l_xio_gssapi_ftp_client_incoming(
             {
                 handle->state = GSSAPI_FTP_STATE_CLIENT_SENDING_AUTH;
                 send_buffer = globus_libc_strdup(CLIENT_AUTH_GSSAPI_COMMAND);
+
+                w_buf = (globus_l_xio_gssapi_buffer_t *)
+                    globus_malloc(sizeof(globus_l_xio_gssapi_buffer_t));
+                if(w_buf == NULL)
+                {
+                    res = GlobusXIOGssapiFTPAllocError();
+                    goto err;
+                }
+
+                /*
+                 *  add this as the first thing read from the server
+                 */
+                w_buf->buf = (char *)
+                    globus_malloc(handle->read_buffer_length);
+                globus_l_xio_gssapi_ftp_serialize_command_array(
+                    cmd_a,
+                    w_buf->buf,
+                    handle->read_buffer_length);
+                w_buf->length = strlen(w_buf->buf);
+                w_buf->ndx = 0;
+                globus_fifo_enqueue(&handle->unwrapped_q, w_buf);
             }
             break;
 

@@ -79,17 +79,15 @@ globus_l_xio_queue_open_cb(
     void *                              user_arg)
 {
     globus_xio_driver_queue_handle_t *  handle;
-    globus_result_t                     res;
 
     handle = (globus_xio_driver_queue_handle_t *) user_arg;
 
-    if(res != GLOBUS_SUCCESS)
+    GlobusXIODriverFinishedOpen(handle->context, handle, op, result);
+    if(result != GLOBUS_SUCCESS)
     {
         globus_l_xiod_q_handle_destroy(handle);
         handle = NULL;
     }
-
-    GlobusXIODriverFinishedOpen(handle->context, handle, op, result);
 }   
 
 static
@@ -152,17 +150,21 @@ globus_l_xio_queue_read_cb(
         res = result;
         while(!done)
         {
-            GlobusXIODriverFinishedRead(op, res, nbytes);
             if(globus_fifo_empty(&handle->read_q))
             {
                 handle->outstanding_read = GLOBUS_FALSE;
                 done = GLOBUS_TRUE;
+                /* must be after the wempty check */
+                GlobusXIODriverFinishedRead(op, res, nbytes);
             }
             else
             {
                 entry = (globus_xio_driver_queue_entry_t *)
                     globus_fifo_dequeue(&handle->read_q);
                 globus_assert(entry != NULL);
+
+                /* must be after the dequeue */
+                GlobusXIODriverFinishedRead(op, res, nbytes);
 
                 GlobusXIODriverPassRead(
                     res, 
@@ -263,11 +265,11 @@ globus_l_xio_queue_write_cb(
         res = result;
         while(!done)
         {
-            GlobusXIODriverFinishedWrite(op, res, nbytes);
             if(globus_fifo_empty(&handle->write_q))
             {
                 handle->outstanding_write = GLOBUS_FALSE;
                 done = GLOBUS_TRUE;
+                GlobusXIODriverFinishedWrite(op, res, nbytes);
             }
             else
             {
@@ -275,6 +277,7 @@ globus_l_xio_queue_write_cb(
                     globus_fifo_dequeue(&handle->write_q);
                 globus_assert(entry != NULL);
 
+                GlobusXIODriverFinishedWrite(op, res, nbytes);
                 GlobusXIODriverPassWrite(
                     res, 
                     entry->op, 

@@ -208,20 +208,6 @@
  ************************************************************************/
 
 /**
- *  @ingroup GLOBUS_XIO_API
- *  Lookup a driver structure.
- *
- *  A driver structure is a static pointer that has a globally uniques 
- *  string asociated with it.  This may cause a search in .so
- *  Initialize a handle target with a given attribute set.
- */
-
-globus_result_t
-globus_xio_load_driver(
-    globus_xio_driver_t *                   driver,
-    const char *                            driver_lookup_string);
-
-/**
  *  @page user_attr User Attributes
  *
  *  Globus XIO uses a single attribute object for all of its functions.

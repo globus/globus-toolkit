@@ -120,6 +120,12 @@ main(
     res = globus_xio_target_init(&target, NULL, cs, stack);
     test_res(res);
 
+/*    res = globus_xio_target_cntl(
+        target,
+        driver,
+        GLOBUS_XIO_GSSAPI_ATTR_TYPE_SUBJECT,
+        "/O=Grid/O=Globus/OU=mcs.anl.gov/CN=John Bresnahan/CN=1160260725");
+*/
 
     res = globus_xio_open(&xio_handle, attr, target);
     test_res(res);

@@ -733,7 +733,7 @@ globus_xio_driver_open(
  *          The requested open operation that has completed.
  *
  *  @param result
- *          Return status of the completed operation
+ *o         Return status of the completed operation
  */
 void
 globus_xio_driver_finished_open(
