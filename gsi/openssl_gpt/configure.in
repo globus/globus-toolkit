@@ -22,6 +22,7 @@ else
     # Need to determine if we need -ldl or -ldld
     # maybe should be replaced with the libtool dl library
     LAC_CHECK_DL_LIB
+    AC_ENABLE_SHARED([yes])
 fi
 
 dnl libtool hack
