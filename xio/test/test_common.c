@@ -334,6 +334,7 @@ main(
     globus_bool_t                               done = GLOBUS_FALSE;
     globus_bool_t                               file = GLOBUS_FALSE;
     char *                                      name = NULL;
+    globus_result_t                             res;
 
     globus_l_program_name = argv[0];
 
@@ -343,6 +344,15 @@ main(
     globus_assert(rc == GLOBUS_SUCCESS);
     rc = globus_extension_activate("globus_xio_test_drivers");
     globus_assert(rc == 0 && "couldnt load drivers");
+
+
+    /* lame parameter checking */
+    res = globus_xio_open(NULL, NULL, NULL);
+
+    if(!globus_xio_error_match(res, GLOBUS_XIO_ERROR_PARAMETER))
+    {
+        globus_assert(0 && "parameter test failed");
+    }
 
     /* add all the known tests to hash table */
     rc = globus_hashtable_init(

@@ -262,6 +262,31 @@ timeout_main(
     }
     globus_mutex_unlock(&globus_l_mutex);
 
+    /* run again with an ignored time out */
+    globus_l_closed = GLOBUS_FALSE;
+    globus_l_timeout = GLOBUS_FALSE;
+
+    res = globus_xio_handle_create(&handle, stack);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
+
+    res = globus_xio_register_open(
+            handle,
+            "whatever",
+            attr,
+            open_cb,
+            argv[argc-1]);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
+
+    globus_mutex_lock(&globus_l_mutex);
+    {
+        while(!globus_l_closed)
+        {
+            globus_cond_wait(&globus_l_cond, &globus_l_mutex);
+        }
+    }
+    globus_mutex_unlock(&globus_l_mutex);
+
+    /* shut it down */
     globus_xio_attr_destroy(attr);
     globus_xio_stack_destroy(stack);
  
