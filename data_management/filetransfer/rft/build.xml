@@ -26,7 +26,7 @@ Southern California. All Rights Reserved.
 
   <property file="${user.home}/build.properties"/>
   <property file="build.properties"/>
-  <property name="ogsacore.javadir" value="${user.home}/.globus/ogsa/impl/java" />
+  <property name="ogsacore.javadir" value="${user.home}/integrationTest3/ogsa/impl/java" />
   <property file="${ogsacore.javadir}/ogsa.properties"/>
   <property name="ogsacore.builddir" value="${ogsacore.javadir}/build" />
   <property name="ogsacore.libdir" value="${ogsacore.javadir}/lib" />
@@ -149,9 +149,6 @@ Southern California. All Rights Reserved.
       <fileset dir="${lib.dir}">
           <include name="**/*.jar"/>
       </fileset>
-      <fileset dir="${docs.dir}">
-        <include name="**/*.html"/>
-    </fileset>
     </copy>
     <ant antfile="${ogsacore.javadir}/build-packages.xml" target="makeClientServerGar">
       <property name="gar.name" value="${build.lib}/${package.dir}.gar"/>
@@ -170,7 +167,10 @@ Southern California. All Rights Reserved.
          <reference refid="classpath" torefid="classpath"/>
          <property name="gar.name" value="${build.lib}/${package.dir}.gar"/>       
        </ant>
-
+    <ant antfile="${ogsacore.javadir}/build-packages.xml" target="addDocs">
+        <property name="docs.dir" value="docs"/>
+         <property name="gar.name" value="${build.lib}/${package.dir}.gar"/>      
+    </ant>
    </target>
 
   <!-- =================================================================== -->
