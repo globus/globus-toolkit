@@ -30,6 +30,7 @@ my $setupdir = "$globusdir/setup/globus";
 my $myname = "setup-openssh.pl";
 
 print "$myname: Configuring package 'gsi_openssh'...\n";
+print "Run this as root for the intended effect...\n";
 
 #
 # Set up path prefixes for use in the path translations
@@ -42,9 +43,90 @@ $sbindir = "${exec_prefix}/sbin";
 $mandir = "${prefix}/man";
 $mansubdir = "man";
 $libexecdir = "${exec_prefix}/libexec";
-$sysconfdir = "${prefix}/etc";
+$sysconfdir = "/etc/ssh";
 $piddir = "/var/run";
 $xauth_path = "/usr/bin/X11/xauth";
+
+#
+# Just need a minimal action() subroutine for now..
+#
+
+sub action
+{
+    my $command = @_;
+
+    printf "$command\n";
+
+    my $result = system("$command 2>&1");
+
+    if (($result or $?) and $command !~ m!patch!)
+    {
+        die "ERROR: Unable to execute command: $!\n";
+    }
+}
+
+sub copy_setup_files
+{
+    if ( -e "${sysconfdir}/ssh_config" )
+    {
+        print "${sysconfdir}/ssh_config already exists, skipping.\n";
+    }
+    else
+    {
+        action("cp ${globusdir}/setup/globus/ssh_config ${sysconfdir}/ssh_config");
+    }
+
+    if ( -e "${sysconfdir}/sshd_config" )
+    {
+        print "${sysconfdir}/sshd_config already exists, skipping.\n";
+    }
+    else
+    {
+        action("cp ${globusdir}/setup/globus/sshd_config ${sysconfdir}/sshd_config");
+    }
+}
+
+sub runkeygen
+{
+    if ( ! -d "${sysconfdir}" )
+    {
+        print "Could not find ${sysconfdir} directory... creating\n";
+        mkdir($sysconfdir, mode);
+    }
+
+    print "Generating ssh keys (if necessary)...\n";
+    if ( -e "${sysconfdir}/ssh_host_key" )
+    {
+        print "${sysconfdir}/ssh_host_key already exists, skipping.\n";
+    }
+    else
+    {
+        # if $sysconfdir/ssh_host_key doesn't exist..
+        system("$bindir/ssh-keygen -t rsa1 -f $sysconfdir/ssh_host_key -N \"\"");
+    }
+
+    if ( -e "${sysconfdir}/ssh_host_dsa_key" )
+    {
+        print "${sysconfdir}/ssh_host_dsa_key already exists, skipping.\n";
+    }
+    else
+    {
+        # if $sysconfdir/ssh_host_dsa_key doesn't exist..
+        system("$bindir/ssh-keygen -t dsa -f $sysconfdir/ssh_host_dsa_key -N \"\"");
+    }
+
+    if ( -e "${sysconfdir}/ssh_host_rsa_key" )
+    {
+        print "${sysconfdir}/ssh_host_rsa_key already exists, skipping.\n";
+    }
+    else
+    {
+        # if $sysconfdir/ssh_host_rsa_key doesn't exist..
+        system("$bindir/ssh-keygen -t rsa -f $sysconfdir/ssh_host_rsa_key -N \"\"");
+    }
+
+    return 0;
+}
 
 sub fixpaths
 {
@@ -78,26 +160,26 @@ sub fixpaths
     # Files on which to perform path translations
     #
 
-    @files = (
-        "${bindir}/scp",
-        "${bindir}/sftp",
-        "${sbindir}/sshd",
-        "${sysconfdir}/ssh_config",
-        "${sysconfdir}/sshd_config",
-        "${sysconfdir}/moduli",
-        "${mandir}/${mansubdir}1/scp.1",
-        "${mandir}/${mansubdir}1/ssh-add.1",
-        "${mandir}/${mansubdir}1/ssh-agent.1",
-        "${mandir}/${mansubdir}1/ssh-keygen.1",
-        "${mandir}/${mansubdir}1/ssh-keyscan.1",
-        "${mandir}/${mansubdir}1/ssh.1",
-        "${mandir}/${mansubdir}8/sshd.8",
-        "${mandir}/${mansubdir}8/sftp-server.8",
-        "${mandir}/${mansubdir}1/sftp.1",
+    %files = (
+        "${bindir}/scp", 0
+        "${bindir}/sftp", 0
+        "${sbindir}/sshd", 0
+        "${sysconfdir}/ssh_config", 1
+        "${sysconfdir}/sshd_config", 1
+        "${sysconfdir}/moduli", 1
+        "${mandir}/${mansubdir}1/scp.1", 0
+        "${mandir}/${mansubdir}1/ssh-add.1", 0
+        "${mandir}/${mansubdir}1/ssh-agent.1", 0
+        "${mandir}/${mansubdir}1/ssh-keygen.1", 0
+        "${mandir}/${mansubdir}1/ssh-keyscan.1", 0
+        "${mandir}/${mansubdir}1/ssh.1", 0
+        "${mandir}/${mansubdir}8/sshd.8", 0
+        "${mandir}/${mansubdir}8/sftp-server.8", 0
+        "${mandir}/${mansubdir}1/sftp.1", 0
         );
 
     print "Translating strings in config/man files...\n";
-    for $f (@files)
+    for my $f (keys %files)
     {
         $f =~ /(.*\/)*(.*)$/;
 
@@ -116,11 +198,7 @@ sub fixpaths
         $uid = (stat($f))[4];
         $gid = (stat($f))[5];
 
-        $result = system("mv $f $g");
-        if ($result != 0)
-        {
-            die "Failed to copy $f to $g!\n";
-        }
+        action("mv $f $g");
 
         open(IN, "<$g") || die ("$0: input file $g missing!\n");
         open(OUT, ">$f") || die ("$0: unable to open output file $f!\n");
@@ -137,10 +215,13 @@ sub fixpaths
         close(OUT);
         close(IN);
 
-        $result = system("rm $g");
-        if ($result != 0)
+        if ($file{$f} eq 0)
         {
-            die "Failed to remove $g\n";
+            action("rm $g");
+        }
+        else
+        {
+            print "Left backup config file '$g'\n";
         }
 
         #
@@ -156,16 +237,7 @@ sub fixpaths
 }
 
 fixpaths();
-
-print "---------------------------------------------------------------------\n";
-print "If you would also like to run the sshd binary that came with this\n";
-print "package and you do not have host keys located in /etc, run (as root):\n";
-print "\n";
-print "  $setupdir/setup-openssh-keys\n";
-print "\n";
-print "This script creates machine-specific host keys in /etc that are\n";
-print "required by sshd.\n";
-print "---------------------------------------------------------------------\n";
+runkeygen();
 
 my $metadata = new Grid::GPT::Setup(package_name => "gsi_openssh_setup");
 
