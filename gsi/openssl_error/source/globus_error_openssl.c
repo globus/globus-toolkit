@@ -1,3 +1,4 @@
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_error_openssl.c
  * @author Sam Lang
