@@ -161,7 +161,6 @@ int
 myproxy_init_client(myproxy_socket_attrs_t *attrs) {
     struct sockaddr_in sin;
     struct hostent *host_info;
-    char error_string[1024];
     char *port_range;
     
     attrs->socket_fd = socket(AF_INET, SOCK_STREAM, 0);
