@@ -1489,7 +1489,7 @@ globus_xio_driver_merge_handle(
         dst_context->entry[ctr].driver_handle = 
             src_context->entry[ctr].driver_handle;
         GlobusXIOContextStateChange(&dst_context->entry[ctr],
-            GLOBUS_XIO_CONTEXT_STATE_OPENING);
+            GLOBUS_XIO_CONTEXT_STATE_OPEN);
     }
 
     GlobusXIODebugExit();
