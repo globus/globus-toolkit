@@ -122,6 +122,7 @@ CVS Information:
 #define GSSERR_R_BAD_DATE                   120
 #define GSSERR_R_BAD_MECH                   121
 #define GSSERR_R_ADD_EXT                    122
+#define GSSERR_R_REMOTE_CERT_VERIFY_FAILED  123
 
 /* gss versions of ssl minor errors */
 #define GSSERR_PRXY_R_FATAL                 512
@@ -164,7 +165,6 @@ CVS Information:
 #define GSSERR_PRXY_R_PROBLEM_NOCERT_FILE   548
 #define GSSERR_PRXY_R_PROBLEM_NOKEY_FILE    549
 #define GSSERR_PRXY_R_ZERO_LENGTH_KEY_FILE  550
-#define GSSERR_PRXY_R_ZERO_LENGTH_CERT_FILE 551
 #define GSSERR_PRXY_R_NO_HOME               552
 #define GSSERR_PRXY_R_LPROXY_REJECTED       553
 #define GSSERR_PRXY_R_KEY_CERT_MISMATCH     554
@@ -178,6 +178,8 @@ CVS Information:
 #define GSSERR_PRXY_R_DELEGATE_COPY         562
 #define GSSERR_PRXY_R_DELEGATE_CREATE       563
 #define GSSERR_PRXY_R_BUFFER_TOO_SMALL      564
+#define GSSERR_PRXY_R_INVALID_CERT          565
+#define GSSERR_PRXY_R_CERT_NOT_YET_VALID    566
 
 
 

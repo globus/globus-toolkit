@@ -93,6 +93,8 @@ static ERR_STRING_DATA gsserr_str_reasons[]=
  {GSSERR_R_UNEXPECTED_FORMAT, "Not in expected Format"},
  {GSSERR_R_BAD_DATE, "Cannot verify message date"},
  {GSSERR_R_BAD_MECH, "Requested mechanism not supported"},
+ {GSSERR_R_REMOTE_CERT_VERIFY_FAILED, "remote side did not "
+    "like my creds for unknown reason\n     check server logs for details"},
  {0,NULL},
 };
 
@@ -287,9 +289,6 @@ convert_minor_codes(const int lib, const int reason)
             case PRXYERR_R_ZERO_LENGTH_KEY_FILE:
                  retval = GSSERR_PRXY_R_ZERO_LENGTH_KEY_FILE;
             break;
-            case PRXYERR_R_ZERO_LENGTH_CERT_FILE:
-                 retval = GSSERR_PRXY_R_ZERO_LENGTH_CERT_FILE;
-            break;
             case PRXYERR_R_NO_HOME:
                  retval = GSSERR_PRXY_R_NO_HOME;
             break;
@@ -329,6 +328,14 @@ convert_minor_codes(const int lib, const int reason)
             case PRXYERR_R_BUFFER_TOO_SMALL:
                  retval = GSSERR_PRXY_R_BUFFER_TOO_SMALL;
             break;
+            case PRXYERR_R_CERT_NOT_YET_VALID:
+                 retval = GSSERR_PRXY_R_CERT_NOT_YET_VALID;
+            break;
+            case PRXYERR_R_INVALID_CERT:
+                 retval = GSSERR_PRXY_R_INVALID_CERT;
+            break;
+
+
         }
     }
     else if (lib ==  ERR_user_lib_gsserr_number)
