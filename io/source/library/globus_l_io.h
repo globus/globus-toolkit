@@ -182,7 +182,7 @@ extern int globus_i_io_debug_level;
 do { \
     if (globus_i_io_debug(level)) \
     { \
-	globus_libc_printf message; \
+	globus_libc_fprintf message; \
     } \
 } while (0)
 #else
