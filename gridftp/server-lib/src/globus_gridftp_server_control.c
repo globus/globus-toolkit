@@ -3888,7 +3888,7 @@ globus_gridftp_server_control_add_feature(
     globus_i_gsc_server_handle_t *      server_handle,
     const char *                        feature)
 {
-    GlobusGridFTPServerName(globus_i_gsc_resource_query);
+    GlobusGridFTPServerName(globus_gridftp_server_control_add_feature);
 
     if(server_handle == NULL)
     {
