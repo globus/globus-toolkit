@@ -1590,12 +1590,9 @@ globus_l_gfs_data_end_read_kickout(
 {
     globus_l_gfs_data_operation_t *     op;
     globus_gfs_ipc_event_reply_t *      event_reply;
-    globus_gfs_ipc_reply_t *            reply;
 
     op = (globus_l_gfs_data_operation_t *) user_arg;
 
-    reply = (globus_gfs_ipc_reply_t *)
-        globus_calloc(1, sizeof(globus_gfs_ipc_reply_t));
     event_reply = (globus_gfs_ipc_event_reply_t *)
         globus_calloc(1, sizeof(globus_gfs_ipc_event_reply_t));
     if(event_reply == NULL)
@@ -1634,7 +1631,8 @@ globus_l_gfs_data_end_read_kickout(
             op->ipc_handle,
             event_reply);
     }
-
+    globus_free(event_reply);
+    
     globus_l_gfs_data_end_transfer_kickout(op);
 }
 
