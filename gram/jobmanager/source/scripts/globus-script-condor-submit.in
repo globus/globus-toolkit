@@ -5,14 +5,6 @@
 #
 # The following steps are done by the system administrator
 #
-# 1.) choose a universe
-#----------------------
-# Vanilla jobs are jobs submitted to Condor which do not use the Condor 
-# remote system call or checkpoint services. Any Unix executable or script
-# may be submitted to Condor as a vanilla job
-
-condor_universe=vanilla
-#condor_universe=standard
 
 # 2.) choose a arch type
 #----------------------
@@ -61,28 +53,38 @@ fi
 
 $DEBUG_ECHO "JM_SCRIPT: in condor submit script" >> $grami_logfile
 
+$DEBUG_ECHO "JM_SCRIPT: in loadleveler_submit">> $grami_logfile
+
 $DEBUG_ECHO ""                                            >> $grami_logfile
 $DEBUG_ECHO ============================================  >> $grami_logfile
-$DEBUG_ECHO "JM_SCRIPT: arguments recieved...}"           >> $grami_logfile
-$DEBUG_ECHO "JM_SCRIPT: logfile   = ${grami_logfile}"     >> $grami_logfile
-$DEBUG_ECHO "JM_SCRIPT: directory = ${grami_directory}"   >> $grami_logfile
-$DEBUG_ECHO "JM_SCRIPT: program   = ${grami_program}"     >> $grami_logfile
-$DEBUG_ECHO "JM_SCRIPT: args      = ${grami_args}"        >> $grami_logfile
-$DEBUG_ECHO "JM_SCRIPT: env       = ${grami_env}"         >> $grami_logfile
-$DEBUG_ECHO "JM_SCRIPT: count     = ${grami_count}"       >> $grami_logfile
-$DEBUG_ECHO "JM_SCRIPT: stdin     = ${grami_stdin}"       >> $grami_logfile
-$DEBUG_ECHO "JM_SCRIPT: stdout    = ${grami_stdout}"      >> $grami_logfile
-$DEBUG_ECHO "JM_SCRIPT: stderr    = ${grami_stderr}"      >> $grami_logfile
-$DEBUG_ECHO "JM_SCRIPT: maxtime   = ${grami_maxtime}"     >> $grami_logfile
-$DEBUG_ECHO "JM_SCRIPT: jobtype   = ${grami_jobtype}"     >> $grami_logfile
-$DEBUG_ECHO "JM_SCRIPT: myjob     = ${grami_myjob}"       >> $grami_logfile
+$DEBUG_ECHO "JM_SCRIPT: ====argument file contents===="   >> $grami_logfile
+if [ "$DEBUG_ECHO" = "echo" ] ; then
+   cat $arg_file                                          >> $grami_logfile
+fi
+$DEBUG_ECHO "JM_SCRIPT: ====argument file contents===="   >> $grami_logfile
 $DEBUG_ECHO ""                                            >> $grami_logfile
 
-if [ ${grami_jobtype} = "mpi" ] ; then
+
+# 4 jobtypes exist               loadleveler jobtype
+# -----------------              -------------------
+# jobtype 0 = mpi        ----->  ERROR
+# jobtype 1 = single     ----->  set universe to vanilla
+# jobtype 2 = multiple   ----->  set universe to vanilla
+# jobtype 3 = condor     ----->  set universe to condor
+$DEBUG_ECHO "JM_SCRIPT: testing jobtype" >> $grami_logfile
+if [ $grami_jobtype = "0" ] ; then
+   $DEBUG_ECHO "JM_SCRIPT: error: jobtype MPI not supported " >> $grami_logfile
    echo "GRAM_SCRIPT_ERROR:@GLOBUS_GRAM_CLIENT_ERROR_MPI_NOT_SUPPORTED@"
-   $DEBUG_ECHO "JM_SCRIPT: returning script error: "\
-               "@GLOBUS_GRAM_CLIENT_ERROR_MPI_NOT_SUPPORTED@" >> $grami_logfile
-   $DEBUG_ECHO "JM_SCRIPT: exiting condor submit script" >> $grami_logfile
+   exit 1
+elif [ $grami_jobtype = "1" ] ; then
+    condor_universe="vanilla"
+elif [ $grami_jobtype = "2" ] ; then
+    condor_universe="vanilla"
+elif [ $grami_jobtype = "3" ] ; then
+    condor_universe="standard"
+else
+   $DEBUG_ECHO "JM_SCRIPT: error: invalid jobtype parameter" >> $grami_logfile
+   echo GRAM_SCRIPT_ERROR:@GLOBUS_GRAM_CLIENT_ERROR_INVALID_JOBTYPE@
    exit 1
 fi
 
