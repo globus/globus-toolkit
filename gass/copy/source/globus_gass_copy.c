@@ -470,6 +470,20 @@ globus_gass_copy_set_no_third_party_transfers(
     static char * myname="globus_gass_copy_set_no_third_party_transfers";
     if (handle)
     {
+      globus_gass_copy_status_t current_status;
+      globus_gass_copy_get_status(handle, &current_status);
+      
+      if(current_status == GLOBUS_GASS_COPY_STATUS_PENDING)
+      {
+	err = globus_error_construct_string(
+	    GLOBUS_GASS_COPY_MODULE,
+	    GLOBUS_NULL,
+	    "[%s]: Cannot change the value of no_third_party_transfers,
+                   there is a transfer currently pending on this handle",
+	    myname);
+	return globus_error_put(err);
+      }
+      else
 	handle->no_third_party_transfers = no_third_party_transfers;
 	return GLOBUS_SUCCESS;
     }
@@ -929,9 +943,15 @@ globus_l_gass_copy_generic_cancel(globus_i_gass_copy_cancel_t * cancel_info);
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 /**
- * Get the status of the current transfer.
+ * Get the status code of the current transfer.
  *
  * Get the status of the last transfer to be initiated using the given handle.
+ * Only one transfer can be active on a handle at a given time, therefore
+ * new transfers may only be initiated when the current status is one of the
+ * following: GLOBUS_GASS_COPY_STATUS_NONE,
+ *            GLOBUS_GASS_COPY_STATUS_DONE_SUCCESS,
+ *            GLOBUS_GASS_COPY_STATUS_DONE_FAILURE,
+ *            GLOBUS_GASS_COPY_STATUS_DONE_CANCELLED
  *
  * @param handle
  *      A globus_gass_copy_handle
@@ -943,15 +963,22 @@ globus_l_gass_copy_generic_cancel(globus_i_gass_copy_cancel_t * cancel_info);
  *         (A transfer is currently being set up.)
  *     GLOBUS_GASS_COPY_STATUS_TRANSFER_IN_PROGRESS
  *         (There is currently a transfer in progress.)
- *     GLOBUS_GASS_COPY_STATUS_DONE
- *         (The last transfer initiated using this handle was completed
- *          successfully.)
  *     GLOBUS_GASS_COPY_STATUS_CANCEL
- *         (The last transfer initiated using this handle was canceled by the
- *          user before completing.)
+ *         (The last transfer initiated using this handle has been cancelled by
+ *          the user before completing, and is in the process of being
+ *          cleaned up.)
  *     GLOBUS_GASS_COPY_STATUS_FAILURE
- *         (The last transfer initiated using this handle failed.)
- *         
+ *         (The last transfer initiated using this handle failed, and is in the 
+ *          process of being cleaned up.)
+ *     GLOBUS_GASS_COPY_STATUS_DONE_SUCCESS
+ *         (The last transfer initiated using this handle has completed
+ *          successfully.)
+ *     GLOBUS_GASS_COPY_STATUS_DONE_FAILURE
+ *         (The last transfer initiated using this handle failed and has
+ *          finished cleaning up.)
+  *     GLOBUS_GASS_COPY_STATUS_DONE_CANCELLED
+ *         (The last transfer initiated using this handle was cancelled
+ *          and has finished cleaning up.)
  * @return
  *       This function returns GLOBUS_SUCCESS if successful, or a
  *       globus_result_t indicating the error that occurred.
@@ -968,9 +995,6 @@ globus_gass_copy_get_status(
     {
 	switch(handle->status)
 	{
-	case GLOBUS_GASS_COPY_STATUS_FAILURE:
-	    *status = GLOBUS_GASS_COPY_STATUS_FAILURE;
-	    break;
 	case GLOBUS_GASS_COPY_STATUS_NONE:
 	    *status = GLOBUS_GASS_COPY_STATUS_NONE;
 	    break;
@@ -981,13 +1005,23 @@ globus_gass_copy_get_status(
 	case GLOBUS_GASS_COPY_STATUS_TRANSFER_IN_PROGRESS:
 	case GLOBUS_GASS_COPY_STATUS_READ_COMPLETE:
 	case GLOBUS_GASS_COPY_STATUS_WRITE_COMPLETE:
+	case GLOBUS_GASS_COPY_STATUS_DONE:
 	    *status = GLOBUS_GASS_COPY_STATUS_TRANSFER_IN_PROGRESS;
 	    break;
-	case GLOBUS_GASS_COPY_STATUS_DONE:
-	    *status = GLOBUS_GASS_COPY_STATUS_DONE;
+	case GLOBUS_GASS_COPY_STATUS_FAILURE:
+	    *status = GLOBUS_GASS_COPY_STATUS_FAILURE;
 	    break;
 	case GLOBUS_GASS_COPY_STATUS_CANCEL:
 	    *status = GLOBUS_GASS_COPY_STATUS_CANCEL;
+	    break;
+	case GLOBUS_GASS_COPY_STATUS_DONE_SUCCESS:
+	    *status = GLOBUS_GASS_COPY_STATUS_DONE_SUCCESS;
+	    break;
+	case GLOBUS_GASS_COPY_STATUS_DONE_FAILURE:
+	    *status = GLOBUS_GASS_COPY_STATUS_DONE_FAILURE;
+	    break;
+	case GLOBUS_GASS_COPY_STATUS_DONE_CANCELLED:
+	    *status = GLOBUS_GASS_COPY_STATUS_DONE_CANCELLED;
 	    break;
 	}
 	return GLOBUS_SUCCESS;
@@ -1004,6 +1038,73 @@ globus_gass_copy_get_status(
     }
 } /* globus_gass_copy_get_status() */
 
+/**
+ * Get the status string of the current transfer.
+ *
+ * Get the status of the last transfer to be initiated using the given handle.
+ * Only one transfer can be active on a handle at a given time, therefore
+ * new transfers may only be initiated when the current status is one of the
+ * following: GLOBUS_GASS_COPY_STATUS_NONE,
+ *            GLOBUS_GASS_COPY_STATUS_DONE_SUCCESS,
+ *            GLOBUS_GASS_COPY_STATUS_DONE_FAILURE,
+ *            GLOBUS_GASS_COPY_STATUS_DONE_CANCELLED
+ *
+ * @param handle
+ *      A globus_gass_copy_handle
+ *
+ * @return
+ *      Returns a pointer to a character string describing the current status
+ */
+const char *
+globus_gass_copy_get_status_string(
+    globus_gass_copy_handle_t * handle)
+{
+  globus_object_t * err;
+  static char * myname="globus_gass_copy_get_status_string";
+  globus_gass_copy_status_t status_code;
+  
+  
+static char *
+    globus_l_gass_copy_status_string[13] = 
+  {
+    "GLOBUS_GASS_COPY_STATUS_NONE",
+    "GLOBUS_GASS_COPY_STATUS_PENDING",
+    "GLOBUS_GASS_COPY_STATUS_INITIAL",
+    "GLOBUS_GASS_COPY_STATUS_SOURCE_READY",
+    "GLOBUS_GASS_COPY_STATUS_TRANSFER_IN_PROGRESS",
+    "GLOBUS_GASS_COPY_STATUS_READ_COMPLETE",
+    "GLOBUS_GASS_COPY_STATUS_WRITE_COMPLETE",
+    "GLOBUS_GASS_COPY_STATUS_DONE",
+    "GLOBUS_GASS_COPY_STATUS_FAILURE",
+    "GLOBUS_GASS_COPY_STATUS_CANCEL",
+    "GLOBUS_GASS_COPY_STATUS_DONE_SUCCESS",
+    "GLOBUS_GASS_COPY_STATUS_DONE_FAILURE",
+    "GLOBUS_GASS_COPY_STATUS_DONE_CANCELLED",
+  };
+
+
+  if(handle != GLOBUS_NULL)
+  {
+    globus_gass_copy_get_status(handle, &status_code);
+#ifdef GLOBUS_I_GASS_COPY_DEBUG    
+    /* status = globus_l_gass_copy_status_string[status_code];*/
+    globus_libc_fprintf(stderr, "globus_gass_copy_get_status_string, status_code = %d,
+         status_string = %s\n", status_code, globus_l_gass_copy_status_string[status_code]);
+#endif
+    return(globus_l_gass_copy_status_string[status_code]);
+   
+  }
+  else
+  {
+    err = globus_error_construct_string(
+        GLOBUS_GASS_COPY_MODULE,
+	GLOBUS_NULL,
+	"[%s]: BAD_PARAMETER, handle is NULL",
+	myname);
+	
+	return globus_error_put(err);
+  }
+}
 
 /**
  * Get performace values for a transfer.
@@ -1052,31 +1153,8 @@ globus_gass_copy_get_performance(
     perf_info->source_url[0]='\0';
     perf_info->dest_url[0]='\0';
 
-    switch(handle->status)
-    {
-        case GLOBUS_GASS_COPY_STATUS_FAILURE:
-            perf_info->status = GLOBUS_GASS_COPY_STATUS_FAILURE;
-            break;
-        case GLOBUS_GASS_COPY_STATUS_NONE:
-            perf_info->status = GLOBUS_GASS_COPY_STATUS_NONE;
-            break;
-        case GLOBUS_GASS_COPY_STATUS_INITIAL:
-        case GLOBUS_GASS_COPY_STATUS_SOURCE_READY:
-            perf_info->status = GLOBUS_GASS_COPY_STATUS_PENDING;
-            break;
-        case GLOBUS_GASS_COPY_STATUS_TRANSFER_IN_PROGRESS:
-        case GLOBUS_GASS_COPY_STATUS_READ_COMPLETE:
-        case GLOBUS_GASS_COPY_STATUS_WRITE_COMPLETE:
-            perf_info->status = GLOBUS_GASS_COPY_STATUS_TRANSFER_IN_PROGRESS;
-            break;
-        case GLOBUS_GASS_COPY_STATUS_DONE:
-            perf_info->status = GLOBUS_GASS_COPY_STATUS_DONE;
-            break;
-        case GLOBUS_GASS_COPY_STATUS_CANCEL:
-            perf_info->status = GLOBUS_GASS_COPY_STATUS_CANCEL;
-            break;
-    }
-
+    globus_gass_copy_get_status(handle, &(perf_info->status));
+    
     if(handle->state != GLOBUS_NULL)
     {
         double current_timestamp;
@@ -1119,13 +1197,13 @@ globus_l_gass_copy_wait_for_ftp_callbacks(
 	= &(handle->state->dest.data.ftp.monitor);
     
 #ifdef GLOBUS_I_GASS_COPY_DEBUG
-	fprintf(stderr, "wait_for_ftp_callback(): starting\n");
+	globus_libc_fprintf(stderr, "wait_for_ftp_callback(): starting\n");
 #endif
 
     if(handle->state->source.mode == GLOBUS_GASS_COPY_URL_MODE_FTP)
     {
 #ifdef GLOBUS_I_GASS_COPY_DEBUG
-	fprintf(stderr, "wait_for_ftp_callback(): waiting on source\n");
+	globus_libc_fprintf(stderr, "wait_for_ftp_callback(): waiting on source\n");
 #endif
 	globus_mutex_lock(&(source_monitor->mutex));
 	while(!source_monitor->done)
@@ -1138,7 +1216,7 @@ globus_l_gass_copy_wait_for_ftp_callbacks(
     if(handle->state->dest.mode == GLOBUS_GASS_COPY_URL_MODE_FTP)
     {
 #ifdef GLOBUS_I_GASS_COPY_DEBUG
-	fprintf(stderr, "wait_for_ftp_callback(): waiting on dest\n");
+	globus_libc_fprintf(stderr, "wait_for_ftp_callback(): waiting on dest\n");
 #endif
 	globus_mutex_lock(&(dest_monitor->mutex));
 	while(!dest_monitor->done)
@@ -1148,7 +1226,7 @@ globus_l_gass_copy_wait_for_ftp_callbacks(
 	globus_mutex_unlock(&(dest_monitor->mutex));
     }
 #ifdef GLOBUS_I_GASS_COPY_DEBUG
-	fprintf(stderr, "wait_for_ftp_callback(): exiting\n");
+	globus_libc_fprintf(stderr, "wait_for_ftp_callback(): exiting\n");
 #endif
 }/* globus_l_gass_copy_wait_for_ftp_callbacks() */
 
@@ -2322,7 +2400,7 @@ globus_l_gass_copy_io_setup_put(
 	}
 	else
 	{
-	    fprintf(stderr,
+	    globus_libc_fprintf(stderr,
                     "io_setup_put(): FAILED opening %s\n",parsed_url.url_path);
 #endif
 	}
@@ -2439,9 +2517,12 @@ globus_l_gass_copy_ftp_transfer_callback(
 #ifdef GLOBUS_I_GASS_COPY_DEBUG
 	globus_libc_fprintf(stderr, "ftp_transfer_callback(): !GLOBUS_SUCESS, error= %d\n",
             error);
+#endif
     }
     else
     {
+        copy_handle->status = GLOBUS_GASS_COPY_STATUS_DONE;
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
 	globus_libc_fprintf(stderr, "ftp_transfer_callback(): GLOBUS_SUCCESS\n");
 #endif
     }
@@ -2457,7 +2538,21 @@ globus_l_gass_copy_ftp_transfer_callback(
 
     err = copy_handle->err;
     copy_handle->err = GLOBUS_NULL;
-	    
+
+    /* set the final status of the transfer */
+    switch(copy_handle->status)
+    {
+    case GLOBUS_GASS_COPY_STATUS_DONE:
+	  copy_handle->status = GLOBUS_GASS_COPY_STATUS_DONE_SUCCESS;
+	  break;
+    case GLOBUS_GASS_COPY_STATUS_FAILURE:
+	  copy_handle->status = GLOBUS_GASS_COPY_STATUS_DONE_FAILURE;
+	  break;
+    case GLOBUS_GASS_COPY_STATUS_CANCEL:
+	  copy_handle->status = GLOBUS_GASS_COPY_STATUS_DONE_CANCELLED;
+	  break;
+    }
+    
     if(copy_handle->user_callback != GLOBUS_NULL)
 	copy_handle->user_callback(
 	    copy_handle->callback_arg,
@@ -3213,6 +3308,21 @@ globus_l_gass_copy_write_from_queue(
 #endif
 	    err = handle->err;
 	    handle->err = GLOBUS_NULL;
+
+	    /* set the final status of the transfer */
+	    switch(handle->status)
+	    {
+	    case GLOBUS_GASS_COPY_STATUS_DONE:
+	      handle->status = GLOBUS_GASS_COPY_STATUS_DONE_SUCCESS;
+	      break;
+	    case GLOBUS_GASS_COPY_STATUS_FAILURE:
+	      handle->status = GLOBUS_GASS_COPY_STATUS_DONE_FAILURE;
+	      break;
+	    case GLOBUS_GASS_COPY_STATUS_CANCEL:
+	      handle->status = GLOBUS_GASS_COPY_STATUS_DONE_CANCELLED;
+	      break;
+	    }
+	    
 	    if(handle->user_callback != GLOBUS_NULL)
 		handle->user_callback(
 		    handle->callback_arg,
@@ -3563,7 +3673,7 @@ globus_l_gass_copy_io_write_callback(
 	    if(!state->cancel) /* cancel has not been set already */
 	    {
 #ifdef GLOBUS_I_GASS_COPY_DEBUG
-	        fprintf(stderr,
+	        globus_libc_fprintf(stderr,
                     "io_write_callback(): cancel has not been set\n");
 #endif
 		globus_i_gass_copy_set_error_from_result(handle, result);
@@ -3573,7 +3683,7 @@ globus_l_gass_copy_io_write_callback(
 	    else
 	    {
 #ifdef GLOBUS_I_GASS_COPY_DEBUG
-	        fprintf(stderr,
+	        globus_libc_fprintf(stderr,
                     "io_write_callback(): cancel has already been set\n");
 #endif
 	        globus_mutex_lock(&(state->dest.mutex));
@@ -3653,6 +3763,18 @@ globus_gass_copy_url_to_url(
 	bad_param = 4;
 	goto error_exit;    
     }
+
+     /* return an error if a transfer is already in progress */
+    if(handle->status > GLOBUS_GASS_COPY_STATUS_NONE &&
+       handle->status < GLOBUS_GASS_COPY_STATUS_DONE_SUCCESS)
+    {
+      err = globus_error_construct_string(
+	GLOBUS_GASS_COPY_MODULE,
+	GLOBUS_NULL,
+	"[%s]: There is a transfer already active on this handle",
+	myname);
+      return globus_error_put(err);
+    }
     
     globus_mutex_init(&monitor.mutex, GLOBUS_NULL);
     globus_cond_init(&monitor.cond, GLOBUS_NULL);
@@ -3673,6 +3795,7 @@ globus_gass_copy_url_to_url(
     {
 	globus_mutex_destroy(&monitor.mutex);
 	globus_cond_destroy(&monitor.cond);
+	handle->status = GLOBUS_GASS_COPY_STATUS_DONE_FAILURE;
 	return(result);
     }
     /* wait on cond_wait() for completion */
@@ -3691,22 +3814,25 @@ globus_gass_copy_url_to_url(
      */
     if(monitor.use_err)
     {
-	return globus_error_put(monitor.err);
+        return globus_error_put(monitor.err);
     }
     else
     {
-	return GLOBUS_SUCCESS;
+        return GLOBUS_SUCCESS;
     }
   
 error_exit:
-    if(handle)
-	handle->status = GLOBUS_GASS_COPY_STATUS_FAILURE;
+    
     err = globus_error_construct_string(
 	GLOBUS_GASS_COPY_MODULE,
 	GLOBUS_NULL,
 	"[%s]: BAD_PARAMETER, argument %d cannot be NULL",
 	myname,
 	bad_param);
+
+    if(handle)
+	handle->status = GLOBUS_GASS_COPY_STATUS_DONE_FAILURE;
+
     return globus_error_put(err);
      
 } /* globus_gass_copy_url_to_url() */
@@ -3771,7 +3897,19 @@ globus_gass_copy_url_to_handle(
 	bad_param=4;
 	goto error_exit;
     }
-  
+
+    /* return an error if a transfer is already in progress */
+    if(handle->status > GLOBUS_GASS_COPY_STATUS_NONE &&
+       handle->status < GLOBUS_GASS_COPY_STATUS_DONE_SUCCESS)
+    {
+      err = globus_error_construct_string(
+	GLOBUS_GASS_COPY_MODULE,
+	GLOBUS_NULL,
+	"[%s]: There is a transfer already active on this handle",
+	myname);
+      return globus_error_put(err);
+    }
+    
     globus_mutex_init(&monitor.mutex, GLOBUS_NULL);
     globus_cond_init(&monitor.cond, GLOBUS_NULL);
     monitor.done = GLOBUS_FALSE;
@@ -3790,6 +3928,7 @@ globus_gass_copy_url_to_handle(
     {
 	globus_mutex_destroy(&monitor.mutex);
 	globus_cond_destroy(&monitor.cond);
+	handle->status = GLOBUS_GASS_COPY_STATUS_DONE_FAILURE;
 	return(result);
     }
   
@@ -3810,22 +3949,24 @@ globus_gass_copy_url_to_handle(
     
     if(monitor.use_err)
     {
-	return globus_error_put(monitor.err);
+        return globus_error_put(monitor.err);
     }
     else
     {
-	return GLOBUS_SUCCESS;
+        return GLOBUS_SUCCESS;
     }
     
 error_exit:
-    if(handle)
-	handle->status = GLOBUS_GASS_COPY_STATUS_FAILURE;
+    
     err = globus_error_construct_string(
 	GLOBUS_GASS_COPY_MODULE,
 	GLOBUS_NULL,
 	"[%s]: BAD_PARAMETER, argument %d cannot be NULL",
 	myname,
 	bad_param);
+
+    if(handle)
+	handle->status = GLOBUS_GASS_COPY_STATUS_DONE_FAILURE;
     return globus_error_put(err);
     
 } /* globus_gass_copy_url_to_handle() */
@@ -3887,7 +4028,19 @@ globus_gass_copy_handle_to_url(
 	bad_param=3;
 	goto error_exit;
     }
-    
+
+    /* return an error if a transfer is already in progress */
+    if(handle->status > GLOBUS_GASS_COPY_STATUS_NONE &&
+       handle->status < GLOBUS_GASS_COPY_STATUS_DONE_SUCCESS)
+    {
+      err = globus_error_construct_string(
+	GLOBUS_GASS_COPY_MODULE,
+	GLOBUS_NULL,
+	"[%s]: There is a transfer already active on this handle",
+	myname);
+      return globus_error_put(err);
+    }
+       
     globus_mutex_init(&monitor.mutex, GLOBUS_NULL);
     globus_cond_init(&monitor.cond, GLOBUS_NULL);
     monitor.done = GLOBUS_FALSE;
@@ -3906,6 +4059,7 @@ globus_gass_copy_handle_to_url(
     {
 	globus_mutex_destroy(&monitor.mutex);
 	globus_cond_destroy(&monitor.cond);
+	handle->status = GLOBUS_GASS_COPY_STATUS_DONE_FAILURE;
 	return(result);
     }
     /* wait on cond_wait() for completion */
@@ -3928,19 +4082,22 @@ globus_gass_copy_handle_to_url(
 	return globus_error_put(monitor.err);
     }
     else
-    {
+    { 
 	return GLOBUS_SUCCESS;
     }
     
 error_exit:
-    if(handle)
-	handle->status = GLOBUS_GASS_COPY_STATUS_FAILURE;
+  
     err = globus_error_construct_string(
 	GLOBUS_GASS_COPY_MODULE,
 	GLOBUS_NULL,
 	"[%s]: BAD_PARAMETER, argument %d cannot be NULL",
 	myname,
 	bad_param);
+
+    if(handle)
+	handle->status = GLOBUS_GASS_COPY_STATUS_DONE_FAILURE;
+    
     return globus_error_put(err);
   
 } /* globus_gass_copy_handle_to_url() */
@@ -4034,6 +4191,18 @@ globus_gass_copy_register_url_to_url(
 	bad_param = 4;
 	goto error_exit;    
     }
+
+    /* return an error if a transfer is already in progress */
+    if(handle->status > GLOBUS_GASS_COPY_STATUS_NONE &&
+       handle->status < GLOBUS_GASS_COPY_STATUS_DONE_SUCCESS)
+    {
+      err = globus_error_construct_string(
+	GLOBUS_GASS_COPY_MODULE,
+	GLOBUS_NULL,
+	"[%s]: There is a transfer already active on this handle",
+	myname);
+      return globus_error_put(err);
+    }
     
     result = globus_gass_copy_get_url_mode(
 	source_url,
@@ -4073,7 +4242,7 @@ globus_gass_copy_register_url_to_url(
 	    sprintf(src_msg, "  %s,  GLOBUS_GASS_COPY_URL_MODE_UNSUPPORTED.",
                     dest_url);
 	
-	handle->status = GLOBUS_GASS_COPY_STATUS_FAILURE;
+	handle->status = GLOBUS_GASS_COPY_STATUS_DONE_FAILURE;
 	err = globus_error_construct_string(
 	    GLOBUS_GASS_COPY_MODULE,
 	    GLOBUS_NULL,
@@ -4147,11 +4316,12 @@ globus_gass_copy_register_url_to_url(
               "third_party_transfer() was not GLOBUS_SUCCESS! it returned %d\n",
               result);
 #endif
-	    goto error_result_exit;
-#ifdef GLOBUS_I_GASS_COPY_DEBUG	    
+	    goto error_result_exit;	    
 	}
 	else
 	{
+	    handle->status = GLOBUS_GASS_COPY_STATUS_TRANSFER_IN_PROGRESS;
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
 	    globus_libc_fprintf(stderr,
                 "third_party_transfer() returned GLOBUS_SUCCESS\n");
 #endif
@@ -4159,13 +4329,15 @@ globus_gass_copy_register_url_to_url(
     }
     else
     {
-        /* At least one of the urls is not ftp,
-         * so we have to do the copy ourselves.
+        /* At least one of the urls is not ftp, (or thirdparty transfers
+         * have been turned off) so we have to do the copy ourselves.
          */
 	result = globus_l_gass_copy_transfer_start(handle);
 	if (result != GLOBUS_SUCCESS)
 	{
-	    /* FIXX-- free the state */
+	    /* free the state */
+	   globus_l_gass_copy_state_free(handle->state);
+	   handle->state = GLOBUS_NULL;
 	    goto error_result_exit;
 	}
     }
@@ -4174,7 +4346,7 @@ globus_gass_copy_register_url_to_url(
 
 error_exit:
     if(handle)
-	handle->status = GLOBUS_GASS_COPY_STATUS_FAILURE;
+	handle->status = GLOBUS_GASS_COPY_STATUS_DONE_FAILURE;
     err = globus_error_construct_string(
 	GLOBUS_GASS_COPY_MODULE,
 	GLOBUS_NULL,
@@ -4184,7 +4356,7 @@ error_exit:
     return globus_error_put(err);
  
 error_result_exit:
-    handle->status = GLOBUS_GASS_COPY_STATUS_FAILURE;
+    handle->status = GLOBUS_GASS_COPY_STATUS_DONE_FAILURE;
     return result;
 }/* globus_gass_copy_register_url_to_url() */
 
@@ -4258,6 +4430,18 @@ globus_gass_copy_register_url_to_handle(
 	bad_param=4;
 	goto error_exit;
     }
+
+    /* return an error if a transfer is already in progress */
+    if(handle->status > GLOBUS_GASS_COPY_STATUS_NONE &&
+       handle->status < GLOBUS_GASS_COPY_STATUS_DONE_SUCCESS)
+    {
+      err = globus_error_construct_string(
+	GLOBUS_GASS_COPY_MODULE,
+	GLOBUS_NULL,
+	"[%s]: There is a transfer already active on this handle",
+	myname);
+      return globus_error_put(err);
+    }
     
     result = globus_gass_copy_get_url_mode(
 	source_url,
@@ -4275,6 +4459,8 @@ globus_gass_copy_register_url_to_handle(
 	    myname,
 	    source_url);
 
+	handle->status = GLOBUS_GASS_COPY_STATUS_DONE_FAILURE;
+	
 	return globus_error_put(err);
     }
 
@@ -4318,7 +4504,7 @@ globus_gass_copy_register_url_to_handle(
 
 error_exit:
     if(handle)
-	handle->status = GLOBUS_GASS_COPY_STATUS_FAILURE;
+	handle->status = GLOBUS_GASS_COPY_STATUS_DONE_FAILURE;
     err = globus_error_construct_string(
 	GLOBUS_GASS_COPY_MODULE,
 	GLOBUS_NULL,
@@ -4328,7 +4514,7 @@ error_exit:
     return globus_error_put(err);
 
 error_result_exit:
-    handle->status = GLOBUS_GASS_COPY_STATUS_FAILURE;
+    handle->status = GLOBUS_GASS_COPY_STATUS_DONE_FAILURE;
     return result;
 } /* globus_gass_copy_register_url_to_handle() */
 
@@ -4403,6 +4589,18 @@ globus_gass_copy_register_handle_to_url(
 	bad_param=3;
 	goto error_exit;
     }
+
+    /* return an error if a transfer is already in progress */
+    if(handle->status > GLOBUS_GASS_COPY_STATUS_NONE &&
+       handle->status < GLOBUS_GASS_COPY_STATUS_DONE_SUCCESS)
+    {
+      err = globus_error_construct_string(
+	GLOBUS_GASS_COPY_MODULE,
+	GLOBUS_NULL,
+	"[%s]: There is a transfer already active on this handle",
+	myname);
+      return globus_error_put(err);
+    }
     
     result = globus_gass_copy_get_url_mode(
 	dest_url,
@@ -4410,8 +4608,7 @@ globus_gass_copy_register_handle_to_url(
     if(result != GLOBUS_SUCCESS) goto error_result_exit;
     
     if ( dest_url_mode == GLOBUS_GASS_COPY_URL_MODE_UNSUPPORTED)      
-    {
-	handle->status = GLOBUS_GASS_COPY_STATUS_FAILURE;
+    {	
 	err = globus_error_construct_string(
 	    GLOBUS_GASS_COPY_MODULE,
 	    GLOBUS_NULL,
@@ -4419,6 +4616,8 @@ globus_gass_copy_register_handle_to_url(
 	    myname,
 	    dest_url);
 
+	handle->status = GLOBUS_GASS_COPY_STATUS_DONE_FAILURE;
+	
 	return globus_error_put(err);
     }
 
@@ -4461,7 +4660,7 @@ globus_gass_copy_register_handle_to_url(
 
 error_exit:
     if(handle)
-	handle->status = GLOBUS_GASS_COPY_STATUS_FAILURE;
+	handle->status = GLOBUS_GASS_COPY_STATUS_DONE_FAILURE;
     err = globus_error_construct_string(
 	GLOBUS_GASS_COPY_MODULE,
 	GLOBUS_NULL,
@@ -4470,7 +4669,7 @@ error_exit:
 	bad_param);
     return globus_error_put(err);
 error_result_exit:
-    handle->status = GLOBUS_GASS_COPY_STATUS_FAILURE;
+    handle->status = GLOBUS_GASS_COPY_STATUS_DONE_FAILURE;
     return result;
 } /* globus_gass_copy_register_handle_to_url */
 
@@ -4959,7 +5158,7 @@ globus_l_gass_copy_generic_cancel(
     if (cancel_info->canceling_source)
     {
 #ifdef GLOBUS_I_GASS_COPY_DEBUG
-	fprintf(stderr, "_generic_cancel() source\n");
+	globus_libc_fprintf(stderr, "_generic_cancel() source\n");
 #endif
 	handle->state->source.status = GLOBUS_I_GASS_COPY_TARGET_DONE;
         if (handle->state->dest.status == GLOBUS_I_GASS_COPY_TARGET_DONE ||
@@ -4971,7 +5170,7 @@ globus_l_gass_copy_generic_cancel(
     else
     {
 #ifdef GLOBUS_I_GASS_COPY_DEBUG
-	fprintf(stderr, "_generic_cancel() dest\n");
+	globus_libc_fprintf(stderr, "_generic_cancel() dest\n");
 #endif
 	handle->state->dest.status = GLOBUS_I_GASS_COPY_TARGET_DONE;
         if (handle->state->source.status == GLOBUS_I_GASS_COPY_TARGET_DONE ||
@@ -4983,7 +5182,7 @@ globus_l_gass_copy_generic_cancel(
 
     globus_mutex_unlock(&(handle->state->mutex));
 #ifdef GLOBUS_I_GASS_COPY_DEBUG
-    fprintf(stderr, "_generic_cancel() before all done\n");
+    globus_libc_fprintf(stderr, "_generic_cancel() before all done\n");
 #endif
 
     if (all_done)
@@ -4999,6 +5198,20 @@ globus_l_gass_copy_generic_cancel(
 	globus_libc_fprintf(stderr,
             "     ...check to call user/cancel callbacks.\n");
 #endif
+
+	/* set the final status of the transfer */
+	switch(handle->status)
+	{
+	case GLOBUS_GASS_COPY_STATUS_FAILURE:
+	  handle->status = GLOBUS_GASS_COPY_STATUS_DONE_FAILURE;
+	  break;
+	case GLOBUS_GASS_COPY_STATUS_CANCEL:
+	  handle->status = GLOBUS_GASS_COPY_STATUS_DONE_CANCELLED;
+	  break;
+	}
+    
+
+	
 	if(handle->user_cancel_callback != GLOBUS_NULL)
         {
 #ifdef GLOBUS_I_GASS_COPY_DEBUG

@@ -97,7 +97,6 @@ typedef void (*globus_gass_copy_callback_t)(
  */
 typedef enum
 {
-    GLOBUS_GASS_COPY_STATUS_FAILURE = -1,
     GLOBUS_GASS_COPY_STATUS_NONE,
     GLOBUS_GASS_COPY_STATUS_PENDING,
     GLOBUS_GASS_COPY_STATUS_INITIAL,
@@ -106,7 +105,11 @@ typedef enum
     GLOBUS_GASS_COPY_STATUS_READ_COMPLETE,
     GLOBUS_GASS_COPY_STATUS_WRITE_COMPLETE,
     GLOBUS_GASS_COPY_STATUS_DONE,
+    GLOBUS_GASS_COPY_STATUS_FAILURE,
     GLOBUS_GASS_COPY_STATUS_CANCEL,
+    GLOBUS_GASS_COPY_STATUS_DONE_SUCCESS,
+    GLOBUS_GASS_COPY_STATUS_DONE_FAILURE,
+    GLOBUS_GASS_COPY_STATUS_DONE_CANCELLED,
 } globus_gass_copy_status_t;
 
 /**
@@ -354,12 +357,21 @@ globus_gass_copy_register_handle_to_url(
     void * callback_arg);
 
 /**
- * get the status of the current transfer
+ * get the status code of the current transfer 
  */
 globus_result_t
 globus_gass_copy_get_status(
     globus_gass_copy_handle_t * handle,
     globus_gass_copy_status_t *status);
+
+/**
+ * get the status string of the current transfer
+ */
+
+const char *
+globus_gass_copy_get_status_string(
+    globus_gass_copy_handle_t * handle);
+
 
 /**
  * get the performance info of the current transfer
