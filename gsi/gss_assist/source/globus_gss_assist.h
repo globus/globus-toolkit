@@ -325,6 +325,12 @@ globus_gss_assist_import_sec_context(
     int                                 fdp,
     FILE *                              fperr);
 
+
+globus_result_t
+globus_gss_assist_authorization_host_name(
+    char *                              hostname,
+    gss_name_t *                        authorization_hostname);
+
 /*
  * globus_gss_assist_gridmap - used to map a 
  * src_name to a local userid
