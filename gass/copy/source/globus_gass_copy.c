@@ -3056,8 +3056,11 @@ globus_l_gass_copy_io_read_callback(
 	    globus_mutex_unlock(&(state->source.mutex));
 	} /* else (there was an error) */
     }
+
+    /* cast to 64 bits if available, otherwise bad things happen */
     
-    offset = state->source.n_complete * handle->buffer_length;
+    offset = ((globus_off_t) state->source.n_complete) *
+        ((globus_off_t) handle->buffer_length);
     globus_l_gass_copy_generic_read_callback(
         handle,
         bytes,
