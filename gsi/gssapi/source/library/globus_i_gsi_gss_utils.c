@@ -613,6 +613,16 @@ globus_i_gsi_gss_put_token(
 
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
+    if(input_token == GSS_C_NO_BUFFER)
+    {
+        major_status = GSS_S_DEFECTIVE_TOKEN;
+        GLOBUS_GSI_GSSAPI_ERROR_RESULT(
+            minor_status,
+            GLOBUS_GSI_GSSAPI_ERROR_TOKEN_FAIL,
+            ("The input token is NULL (GSS_C_NO_BUFFER)\n"));
+        goto exit;        
+    }
+
     if(bio)
     {
         read_bio = bio;
@@ -656,7 +666,7 @@ globus_i_gsi_gss_put_token(
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_TOKEN_FAIL,
-            ("The input token has an invalid length of: %u", 
+            ("The input token has an invalid length of: %u\n", 
              input_token->length));
         goto exit;
     }
