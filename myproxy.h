@@ -134,7 +134,8 @@ int myproxy_init_client(myproxy_socket_attrs_t *attrs);
  *
  * returns -1 if unable to authenticate, 0 if authentication successful
  */ 
-int myproxy_authenticate_init(myproxy_socket_attrs_t *attr, const char *proxyfile);
+int myproxy_authenticate_init(myproxy_socket_attrs_t *attr,
+			      const char *proxyfile);
 
 /*
  * myproxy_authenticate_accept()
@@ -154,8 +155,8 @@ int myproxy_authenticate_accept(myproxy_socket_attrs_t *attr,
  * returns the number of characters put into the buffer 
  * (not including the trailing NULL)
  */
-int  myproxy_serialize_request(const myproxy_request_t *request, 
-			    char *data, const int datalen);
+int myproxy_serialize_request(const myproxy_request_t *request, 
+			      char *data, const int datalen);
 
 
 /*
@@ -165,8 +166,8 @@ int  myproxy_serialize_request(const myproxy_request_t *request,
  *
  * returns 0 if succesful, otherwise -1
  */
-int  myproxy_deserialize_request(const char *data, const int datalen, 
-                                 myproxy_request_t *request);
+int myproxy_deserialize_request(const char *data, const int datalen, 
+				myproxy_request_t *request);
 
 /*
  * myproxy_serialize_response()
