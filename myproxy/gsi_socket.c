@@ -961,9 +961,12 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self)
 							GSS_C_INITIATE,
 							&creds);
 
-    if (self->major_status != GSS_S_COMPLETE)
-    {
-	goto error;
+    if (self->major_status != GSS_S_COMPLETE) {
+	if (self->allow_anonymous) {
+	    req_flags |= GSS_C_ANON_FLAG;
+	} else {
+	    goto error;
+	}
     }
 #endif
 
@@ -1103,6 +1106,7 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self)
     if (self->encryption) {
       req_flags |= GSS_C_CONF_FLAG;
     }
+    req_flags |= GSS_C_INTEG_FLAG;
 
     self->major_status =
 	globus_gss_assist_init_sec_context(&self->minor_status,
@@ -1122,7 +1126,9 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self)
 	goto error;
     }
 
+    
     /* Verify that all service requests were honored. */
+    req_flags &= ~(GSS_C_ANON_FLAG); /* GSI GSSAPI doesn't set this flag */
     if ((req_flags & ret_flags) != req_flags) {
       self->error_string =
 	strdup("GSI_SOCKET requested service not supported");
