@@ -16,4 +16,5 @@ TODO list for myproxy:
 
  * myproxy-get-delegation should move delegated proxy to better named place
 
-
+ * add MYPROXY_SERVER_PORT, MYPROXY_SERVER_MAX_CRED_HOURS, MYPROXY_SERVER_MAX_DELEG_HOURS to configuration file
+    1 
