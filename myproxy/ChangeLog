@@ -1,3 +1,11 @@
+2000-10-11  Von Welch  <vwelch@ncsa.uiuc.edu>
+
+	* myproxy-programs.html: Updated myproxy-destroy docs.
+	* myproxy_destroy.c (main): Don't run grid-proxy-init, just use
+	existing user proxy.
+	(main): Don't bother prompting user for unused pass phrase, just
+	send over a dummy pass phrase.
+
 2000-10-10  Von Welch  <vwelch@ncsa.uiuc.edu>
 
 	* myproxy_server.c: Move include of <netinet/in.h> before
