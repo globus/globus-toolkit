@@ -1,7 +1,18 @@
-diff -r -u cyrus-sasl-1.5.27/configure SASL/configure
+diff -u -r -P cyrus-sasl-1.5.27/configure cyrus-sasl-1.5.27-patched/configure
 --- cyrus-sasl-1.5.27/configure	Fri Mar 23 17:48:12 2001
-+++ SASL/configure	Tue Jul 10 14:01:19 2001
-@@ -4121,9 +4121,8 @@
++++ cyrus-sasl-1.5.27-patched/configure	Mon Oct 29 15:39:45 2001
+@@ -3741,7 +3741,9 @@
+ #define WITH_DES 1
+ EOF
+ 
+-  LIB_DES="-ldes"
++  if test -z "$LIB_DES"; then
++    LIB_DES="-ldes"
++  fi
+ fi
+ 
+ 
+@@ -4121,9 +4123,8 @@
  fi
  
  
@@ -12,7 +23,7 @@ diff -r -u cyrus-sasl-1.5.27/configure SASL/configure
  ac_lib_var=`echo resolv'_'res_search | sed 'y%./+-%__p_%'`
  if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
    echo $ac_n "(cached) $ac_c" 1>&6
-@@ -4131,7 +4130,7 @@
+@@ -4131,7 +4132,7 @@
    ac_save_LIBS="$LIBS"
  LIBS="-lresolv  $LIBS"
  cat > conftest.$ac_ext <<EOF
@@ -21,7 +32,7 @@ diff -r -u cyrus-sasl-1.5.27/configure SASL/configure
  #include "confdefs.h"
  /* Override any gcc2 internal prototype to avoid an error.  */
  /* We use char because int might match the return type of a gcc2
-@@ -4142,7 +4141,7 @@
+@@ -4142,7 +4143,7 @@
  res_search()
  ; return 0; }
  EOF
@@ -30,7 +41,7 @@ diff -r -u cyrus-sasl-1.5.27/configure SASL/configure
    rm -rf conftest*
    eval "ac_cv_lib_$ac_lib_var=yes"
  else
-@@ -4175,7 +4174,7 @@
+@@ -4175,7 +4176,7 @@
    fi
  
    echo $ac_n "checking for base64_decode in -lroken""... $ac_c" 1>&6
@@ -39,7 +50,7 @@ diff -r -u cyrus-sasl-1.5.27/configure SASL/configure
  ac_lib_var=`echo roken'_'base64_decode | sed 'y%./+-%__p_%'`
  if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
    echo $ac_n "(cached) $ac_c" 1>&6
-@@ -4183,7 +4182,7 @@
+@@ -4183,7 +4184,7 @@
    ac_save_LIBS="$LIBS"
  LIBS="-lroken $LIB_CRYPT $LIBS"
  cat > conftest.$ac_ext <<EOF
@@ -48,7 +59,7 @@ diff -r -u cyrus-sasl-1.5.27/configure SASL/configure
  #include "confdefs.h"
  /* Override any gcc2 internal prototype to avoid an error.  */
  /* We use char because int might match the return type of a gcc2
-@@ -4194,7 +4193,7 @@
+@@ -4194,7 +4195,7 @@
  base64_decode()
  ; return 0; }
  EOF
@@ -57,7 +68,7 @@ diff -r -u cyrus-sasl-1.5.27/configure SASL/configure
    rm -rf conftest*
    eval "ac_cv_lib_$ac_lib_var=yes"
  else
-@@ -4232,7 +4231,7 @@
+@@ -4232,7 +4233,7 @@
  
  if test "$ac_cv_header_gssapi_h" = "yes"; then
    cat > conftest.$ac_ext <<EOF
@@ -66,7 +77,7 @@ diff -r -u cyrus-sasl-1.5.27/configure SASL/configure
  #include "confdefs.h"
  #include <gssapi.h>
  EOF
-@@ -4248,7 +4247,7 @@
+@@ -4248,7 +4249,7 @@
  
  elif test "$ac_cv_header_gssapi_gssapi_h"; then
    cat > conftest.$ac_ext <<EOF
@@ -75,7 +86,7 @@ diff -r -u cyrus-sasl-1.5.27/configure SASL/configure
  #include "confdefs.h"
  #include <gssapi/gssapi.h>
  EOF
-@@ -4266,11 +4265,11 @@
+@@ -4266,11 +4267,11 @@
  
  GSSAPI_LIBS=""
  echo $ac_n "checking GSSAPI""... $ac_c" 1>&6
@@ -89,7 +100,7 @@ diff -r -u cyrus-sasl-1.5.27/configure SASL/configure
  ac_lib_var=`echo ndbm'_'dbm_open | sed 'y%./+-%__p_%'`
  if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
    echo $ac_n "(cached) $ac_c" 1>&6
-@@ -4278,7 +4277,7 @@
+@@ -4278,7 +4279,7 @@
    ac_save_LIBS="$LIBS"
  LIBS="-lndbm  $LIBS"
  cat > conftest.$ac_ext <<EOF
@@ -98,7 +109,7 @@ diff -r -u cyrus-sasl-1.5.27/configure SASL/configure
  #include "confdefs.h"
  /* Override any gcc2 internal prototype to avoid an error.  */
  /* We use char because int might match the return type of a gcc2
-@@ -4289,7 +4288,7 @@
+@@ -4289,7 +4290,7 @@
  dbm_open()
  ; return 0; }
  EOF
@@ -107,7 +118,7 @@ diff -r -u cyrus-sasl-1.5.27/configure SASL/configure
    rm -rf conftest*
    eval "ac_cv_lib_$ac_lib_var=yes"
  else
-@@ -4310,7 +4309,7 @@
+@@ -4310,7 +4311,7 @@
  fi
  
    echo $ac_n "checking for res_search in -lresolv""... $ac_c" 1>&6
@@ -116,7 +127,7 @@ diff -r -u cyrus-sasl-1.5.27/configure SASL/configure
  ac_lib_var=`echo resolv'_'res_search | sed 'y%./+-%__p_%'`
  if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
    echo $ac_n "(cached) $ac_c" 1>&6
-@@ -4318,7 +4317,7 @@
+@@ -4318,7 +4319,7 @@
    ac_save_LIBS="$LIBS"
  LIBS="-lresolv  $LIBS"
  cat > conftest.$ac_ext <<EOF
@@ -125,7 +136,7 @@ diff -r -u cyrus-sasl-1.5.27/configure SASL/configure
  #include "confdefs.h"
  /* Override any gcc2 internal prototype to avoid an error.  */
  /* We use char because int might match the return type of a gcc2
-@@ -4329,7 +4328,7 @@
+@@ -4329,7 +4330,7 @@
  res_search()
  ; return 0; }
  EOF
@@ -134,7 +145,7 @@ diff -r -u cyrus-sasl-1.5.27/configure SASL/configure
    rm -rf conftest*
    eval "ac_cv_lib_$ac_lib_var=yes"
  else
-@@ -4356,12 +4355,12 @@
+@@ -4356,12 +4357,12 @@
    for ac_func in gsskrb5_register_acceptor_identity
  do
  echo $ac_n "checking for $ac_func""... $ac_c" 1>&6
@@ -149,7 +160,7 @@ diff -r -u cyrus-sasl-1.5.27/configure SASL/configure
  #include "confdefs.h"
  /* System header to define __stub macros and hopefully few prototypes,
      which can conflict with char $ac_func(); below.  */
-@@ -4384,7 +4383,7 @@
+@@ -4384,7 +4385,7 @@
  
  ; return 0; }
  EOF
@@ -158,7 +169,7 @@ diff -r -u cyrus-sasl-1.5.27/configure SASL/configure
    rm -rf conftest*
    eval "ac_cv_func_$ac_func=yes"
  else
-@@ -4425,7 +4424,7 @@
+@@ -4425,7 +4426,7 @@
  
  
  echo $ac_n "checking ANONYMOUS""... $ac_c" 1>&6
@@ -167,7 +178,7 @@ diff -r -u cyrus-sasl-1.5.27/configure SASL/configure
  if test "$anon" != no; then
    echo "$ac_t""enabled" 1>&6
    SASL_MECHS="$SASL_MECHS libanonymous.la"
-@@ -4461,7 +4460,7 @@
+@@ -4461,7 +4462,7 @@
  
  
  echo $ac_n "checking PLAIN""... $ac_c" 1>&6
@@ -176,7 +187,7 @@ diff -r -u cyrus-sasl-1.5.27/configure SASL/configure
  if test "$plain" != no; then
    echo "$ac_t""enabled" 1>&6
    SASL_MECHS="$SASL_MECHS libplain.la"
-@@ -4479,7 +4478,7 @@
+@@ -4479,7 +4480,7 @@
  
  
  echo $ac_n "checking LOGIN""... $ac_c" 1>&6
@@ -185,7 +196,7 @@ diff -r -u cyrus-sasl-1.5.27/configure SASL/configure
  if test "$login" != no; then
    echo "$ac_t""enabled" 1>&6
    SASL_MECHS="$SASL_MECHS liblogin.la"
-@@ -4497,7 +4496,7 @@
+@@ -4497,7 +4498,7 @@
  
  
  echo $ac_n "checking SRP""... $ac_c" 1>&6
@@ -194,7 +205,7 @@ diff -r -u cyrus-sasl-1.5.27/configure SASL/configure
  if test "$srp" != no; then
    { echo "configure: error: This is pre-alpha. You probably don't want to use this" 1>&2; exit 1; }
    echo "$ac_t""enabled" 1>&6
-@@ -4546,12 +4545,12 @@
+@@ -4546,12 +4547,12 @@
  do
  ac_safe=`echo "$ac_hdr" | sed 'y%./+-%__p_%'`
  echo $ac_n "checking for $ac_hdr that defines DIR""... $ac_c" 1>&6
@@ -209,7 +220,7 @@ diff -r -u cyrus-sasl-1.5.27/configure SASL/configure
  #include "confdefs.h"
  #include <sys/types.h>
  #include <$ac_hdr>
-@@ -4559,7 +4558,7 @@
+@@ -4559,7 +4560,7 @@
  DIR *dirp = 0;
  ; return 0; }
  EOF
@@ -218,7 +229,7 @@ diff -r -u cyrus-sasl-1.5.27/configure SASL/configure
    rm -rf conftest*
    eval "ac_cv_header_dirent_$ac_safe=yes"
  else
-@@ -4584,7 +4583,7 @@
+@@ -4584,7 +4585,7 @@
  # Two versions of opendir et al. are in -ldir and -lx on SCO Xenix.
  if test $ac_header_dirent = dirent.h; then
  echo $ac_n "checking for opendir in -ldir""... $ac_c" 1>&6
@@ -227,7 +238,7 @@ diff -r -u cyrus-sasl-1.5.27/configure SASL/configure
  ac_lib_var=`echo dir'_'opendir | sed 'y%./+-%__p_%'`
  if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
    echo $ac_n "(cached) $ac_c" 1>&6
-@@ -4592,7 +4591,7 @@
+@@ -4592,7 +4593,7 @@
    ac_save_LIBS="$LIBS"
  LIBS="-ldir  $LIBS"
  cat > conftest.$ac_ext <<EOF
@@ -236,7 +247,7 @@ diff -r -u cyrus-sasl-1.5.27/configure SASL/configure
  #include "confdefs.h"
  /* Override any gcc2 internal prototype to avoid an error.  */
  /* We use char because int might match the return type of a gcc2
-@@ -4603,7 +4602,7 @@
+@@ -4603,7 +4604,7 @@
  opendir()
  ; return 0; }
  EOF
@@ -245,7 +256,7 @@ diff -r -u cyrus-sasl-1.5.27/configure SASL/configure
    rm -rf conftest*
    eval "ac_cv_lib_$ac_lib_var=yes"
  else
-@@ -4625,7 +4624,7 @@
+@@ -4625,7 +4626,7 @@
  
  else
  echo $ac_n "checking for opendir in -lx""... $ac_c" 1>&6
@@ -254,7 +265,7 @@ diff -r -u cyrus-sasl-1.5.27/configure SASL/configure
  ac_lib_var=`echo x'_'opendir | sed 'y%./+-%__p_%'`
  if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
    echo $ac_n "(cached) $ac_c" 1>&6
-@@ -4633,7 +4632,7 @@
+@@ -4633,7 +4634,7 @@
    ac_save_LIBS="$LIBS"
  LIBS="-lx  $LIBS"
  cat > conftest.$ac_ext <<EOF
@@ -263,7 +274,7 @@ diff -r -u cyrus-sasl-1.5.27/configure SASL/configure
  #include "confdefs.h"
  /* Override any gcc2 internal prototype to avoid an error.  */
  /* We use char because int might match the return type of a gcc2
-@@ -4644,7 +4643,7 @@
+@@ -4644,7 +4645,7 @@
  opendir()
  ; return 0; }
  EOF
@@ -272,7 +283,7 @@ diff -r -u cyrus-sasl-1.5.27/configure SASL/configure
    rm -rf conftest*
    eval "ac_cv_lib_$ac_lib_var=yes"
  else
-@@ -4667,12 +4666,12 @@
+@@ -4667,12 +4668,12 @@
  fi
  
  echo $ac_n "checking for ANSI C header files""... $ac_c" 1>&6
@@ -287,7 +298,7 @@ diff -r -u cyrus-sasl-1.5.27/configure SASL/configure
  #include "confdefs.h"
  #include <stdlib.h>
  #include <stdarg.h>
-@@ -4680,7 +4679,7 @@
+@@ -4680,7 +4681,7 @@
  #include <float.h>
  EOF
  ac_try="$ac_cpp conftest.$ac_ext >/dev/null 2>conftest.out"
@@ -296,7 +307,7 @@ diff -r -u cyrus-sasl-1.5.27/configure SASL/configure
  ac_err=`grep -v '^ *+' conftest.out | grep -v "^conftest.${ac_ext}\$"`
  if test -z "$ac_err"; then
    rm -rf conftest*
-@@ -4697,7 +4696,7 @@
+@@ -4697,7 +4698,7 @@
  if test $ac_cv_header_stdc = yes; then
    # SunOS 4.x string.h does not declare mem*, contrary to ANSI.
  cat > conftest.$ac_ext <<EOF
@@ -305,7 +316,7 @@ diff -r -u cyrus-sasl-1.5.27/configure SASL/configure
  #include "confdefs.h"
  #include <string.h>
  EOF
-@@ -4715,7 +4714,7 @@
+@@ -4715,7 +4716,7 @@
  if test $ac_cv_header_stdc = yes; then
    # ISC 2.0.2 stdlib.h does not declare free, contrary to ANSI.
  cat > conftest.$ac_ext <<EOF
@@ -314,7 +325,7 @@ diff -r -u cyrus-sasl-1.5.27/configure SASL/configure
  #include "confdefs.h"
  #include <stdlib.h>
  EOF
-@@ -4736,7 +4735,7 @@
+@@ -4736,7 +4737,7 @@
    :
  else
    cat > conftest.$ac_ext <<EOF
@@ -323,7 +334,7 @@ diff -r -u cyrus-sasl-1.5.27/configure SASL/configure
  #include "confdefs.h"
  #include <ctype.h>
  #define ISLOWER(c) ('a' <= (c) && (c) <= 'z')
-@@ -4747,7 +4746,7 @@
+@@ -4747,7 +4748,7 @@
  exit (0); }
  
  EOF
@@ -332,7 +343,7 @@ diff -r -u cyrus-sasl-1.5.27/configure SASL/configure
  then
    :
  else
-@@ -4773,12 +4772,12 @@
+@@ -4773,12 +4774,12 @@
  for ac_func in strchr memcpy getpwnam getspnam gettimeofday
  do
  echo $ac_n "checking for $ac_func""... $ac_c" 1>&6
@@ -347,7 +358,7 @@ diff -r -u cyrus-sasl-1.5.27/configure SASL/configure
  #include "confdefs.h"
  /* System header to define __stub macros and hopefully few prototypes,
      which can conflict with char $ac_func(); below.  */
-@@ -4801,7 +4800,7 @@
+@@ -4801,7 +4802,7 @@
  
  ; return 0; }
  EOF
@@ -356,7 +367,7 @@ diff -r -u cyrus-sasl-1.5.27/configure SASL/configure
    rm -rf conftest*
    eval "ac_cv_func_$ac_func=yes"
  else
-@@ -4828,12 +4827,12 @@
+@@ -4828,12 +4829,12 @@
  
  sasl_cv_getsubopt=no
  echo $ac_n "checking for getsubopt""... $ac_c" 1>&6
@@ -371,7 +382,7 @@ diff -r -u cyrus-sasl-1.5.27/configure SASL/configure
  #include "confdefs.h"
  /* System header to define __stub macros and hopefully few prototypes,
      which can conflict with char getsubopt(); below.  */
-@@ -4856,7 +4855,7 @@
+@@ -4856,7 +4857,7 @@
  
  ; return 0; }
  EOF
@@ -380,7 +391,7 @@ diff -r -u cyrus-sasl-1.5.27/configure SASL/configure
    rm -rf conftest*
    eval "ac_cv_func_getsubopt=yes"
  else
-@@ -4888,12 +4887,12 @@
+@@ -4888,12 +4889,12 @@
  sasl_cv_snprintf=no
  SNPRINTFOBJS=""
  echo $ac_n "checking for snprintf""... $ac_c" 1>&6
@@ -395,7 +406,7 @@ diff -r -u cyrus-sasl-1.5.27/configure SASL/configure
  #include "confdefs.h"
  /* System header to define __stub macros and hopefully few prototypes,
      which can conflict with char snprintf(); below.  */
-@@ -4916,7 +4915,7 @@
+@@ -4916,7 +4917,7 @@
  
  ; return 0; }
  EOF
@@ -404,7 +415,7 @@ diff -r -u cyrus-sasl-1.5.27/configure SASL/configure
    rm -rf conftest*
    eval "ac_cv_func_snprintf=yes"
  else
-@@ -4940,12 +4939,12 @@
+@@ -4940,12 +4941,12 @@
  fi
  
  echo $ac_n "checking for vsnprintf""... $ac_c" 1>&6
@@ -419,7 +430,7 @@ diff -r -u cyrus-sasl-1.5.27/configure SASL/configure
  #include "confdefs.h"
  /* System header to define __stub macros and hopefully few prototypes,
      which can conflict with char vsnprintf(); below.  */
-@@ -4968,7 +4967,7 @@
+@@ -4968,7 +4969,7 @@
  
  ; return 0; }
  EOF
@@ -428,7 +439,7 @@ diff -r -u cyrus-sasl-1.5.27/configure SASL/configure
    rm -rf conftest*
    eval "ac_cv_func_vsnprintf=yes"
  else
-@@ -5004,17 +5003,17 @@
+@@ -5004,17 +5005,17 @@
  do
  ac_safe=`echo "$ac_hdr" | sed 'y%./+-%__p_%'`
  echo $ac_n "checking for $ac_hdr""... $ac_c" 1>&6
@@ -449,7 +460,7 @@ diff -r -u cyrus-sasl-1.5.27/configure SASL/configure
  ac_err=`grep -v '^ *+' conftest.out | grep -v "^conftest.${ac_ext}\$"`
  if test -z "$ac_err"; then
    rm -rf conftest*
-@@ -5041,12 +5040,12 @@
+@@ -5041,12 +5042,12 @@
  done
  
  echo $ac_n "checking for working const""... $ac_c" 1>&6
@@ -464,7 +475,7 @@ diff -r -u cyrus-sasl-1.5.27/configure SASL/configure
  #include "confdefs.h"
  
  int main() {
-@@ -5095,7 +5094,7 @@
+@@ -5095,7 +5096,7 @@
  
  ; return 0; }
  EOF
@@ -473,7 +484,7 @@ diff -r -u cyrus-sasl-1.5.27/configure SASL/configure
    rm -rf conftest*
    ac_cv_c_const=yes
  else
-@@ -5116,7 +5115,7 @@
+@@ -5116,21 +5117,21 @@
  fi
  
  echo $ac_n "checking for inline""... $ac_c" 1>&6
@@ -482,7 +493,6 @@ diff -r -u cyrus-sasl-1.5.27/configure SASL/configure
  if eval "test \"`echo '$''{'ac_cv_c_inline'+set}'`\" = set"; then
    echo $ac_n "(cached) $ac_c" 1>&6
  else
-@@ -5123,7 +5122,7 @@
    ac_cv_c_inline=no
  for ac_kw in inline __inline__ __inline; do
    cat > conftest.$ac_ext <<EOF
@@ -491,7 +501,6 @@ diff -r -u cyrus-sasl-1.5.27/configure SASL/configure
  #include "confdefs.h"
  
  int main() {
-@@ -5130,7 +5129,7 @@
  } $ac_kw foo() {
  ; return 0; }
  EOF
@@ -500,7 +509,7 @@ diff -r -u cyrus-sasl-1.5.27/configure SASL/configure
    rm -rf conftest*
    ac_cv_c_inline=$ac_kw; break
  else
-@@ -5157,12 +5156,12 @@
+@@ -5157,12 +5158,12 @@
  
  
  echo $ac_n "checking return type of signal handlers""... $ac_c" 1>&6
@@ -515,7 +524,7 @@ diff -r -u cyrus-sasl-1.5.27/configure SASL/configure
  #include "confdefs.h"
  #include <sys/types.h>
  #include <signal.h>
-@@ -5179,7 +5178,7 @@
+@@ -5179,7 +5180,7 @@
  int i;
  ; return 0; }
  EOF
@@ -524,7 +533,7 @@ diff -r -u cyrus-sasl-1.5.27/configure SASL/configure
    rm -rf conftest*
    ac_cv_type_signal=void
  else
-@@ -5200,17 +5199,17 @@
+@@ -5200,17 +5201,17 @@
  
  ac_safe=`echo "sfio.h" | sed 'y%./+-%__p_%'`
  echo $ac_n "checking for sfio.h""... $ac_c" 1>&6
@@ -545,7 +554,7 @@ diff -r -u cyrus-sasl-1.5.27/configure SASL/configure
  ac_err=`grep -v '^ *+' conftest.out | grep -v "^conftest.${ac_ext}\$"`
  if test -z "$ac_err"; then
    rm -rf conftest*
-@@ -5240,12 +5239,12 @@
+@@ -5240,12 +5241,12 @@
  for ac_func in getdomainname getpassphrase getpid
  do
  echo $ac_n "checking for $ac_func""... $ac_c" 1>&6
@@ -560,7 +569,7 @@ diff -r -u cyrus-sasl-1.5.27/configure SASL/configure
  #include "confdefs.h"
  /* System header to define __stub macros and hopefully few prototypes,
      which can conflict with char $ac_func(); below.  */
-@@ -5268,7 +5267,7 @@
+@@ -5268,7 +5269,7 @@
  
  ; return 0; }
  EOF
@@ -569,10 +578,21 @@ diff -r -u cyrus-sasl-1.5.27/configure SASL/configure
    rm -rf conftest*
    eval "ac_cv_func_$ac_func=yes"
  else
-diff -r -u cyrus-sasl-1.5.27/configure.in SASL/configure.in
+diff -u -r -P cyrus-sasl-1.5.27/configure.in cyrus-sasl-1.5.27-patched/configure.in
 --- cyrus-sasl-1.5.27/configure.in	Fri Mar 23 17:47:27 2001
-+++ SASL/configure.in	Tue Jul 10 14:01:10 2001
-@@ -492,7 +492,6 @@
++++ cyrus-sasl-1.5.27-patched/configure.in	Mon Oct 29 15:39:20 2001
+@@ -390,7 +390,9 @@
+ 
+ if test "$with_des" != no; then
+   AC_DEFINE(WITH_DES)
+-  LIB_DES="-ldes"
++  if test -z "$LIB_DES" ; then
++    LIB_DES="-ldes"
++  fi
+ fi
+ 
+ AC_SUBST(LIB_DES)
+@@ -492,7 +494,6 @@
    dnl we might need libdb
    AC_CHECK_LIB(db, db_open)
  
@@ -580,11 +600,9 @@ diff -r -u cyrus-sasl-1.5.27/configure.in SASL/configure.in
    AC_CHECK_LIB(resolv,res_search)
    if test -d ${gssapi}; then 
       CPPFLAGS="$CPPFLAGS -I$gssapi/include"
-Only in cyrus-sasl-1.5.27: configure.in.orig
-Only in cyrus-sasl-1.5.27: configure.orig
-diff -r -u cyrus-sasl-1.5.27/lib/client.c SASL/lib/client.c
+diff -u -r -P cyrus-sasl-1.5.27/lib/client.c cyrus-sasl-1.5.27-patched/lib/client.c
 --- cyrus-sasl-1.5.27/lib/client.c	Mon Mar 27 22:47:55 2000
-+++ SASL/lib/client.c	Tue Jul 10 14:01:04 2001
++++ cyrus-sasl-1.5.27-patched/lib/client.c	Mon Oct 29 15:34:23 2001
 @@ -579,7 +579,8 @@
  	    name[place]=list[pos];
  	    pos++;
@@ -595,9 +613,9 @@ diff -r -u cyrus-sasl-1.5.27/lib/client.c SASL/lib/client.c
  		place--;
  		while(pos<list_len && (isalnum((unsigned char)list[pos])
  				       || list[pos] == '_'
-diff -r -u cyrus-sasl-1.5.27/lib/dlopen.c SASL/lib/dlopen.c
+diff -u -r -P cyrus-sasl-1.5.27/lib/dlopen.c cyrus-sasl-1.5.27-patched/lib/dlopen.c
 --- cyrus-sasl-1.5.27/lib/dlopen.c	Sun Aug 13 18:44:02 2000
-+++ SASL/lib/dlopen.c	Tue Jul 10 14:01:04 2001
++++ cyrus-sasl-1.5.27-patched/lib/dlopen.c	Mon Oct 29 15:34:23 2001
 @@ -174,6 +174,7 @@
      flag = 0;
  #endif
@@ -614,9 +632,9 @@ diff -r -u cyrus-sasl-1.5.27/lib/dlopen.c SASL/lib/dlopen.c
  		/* added successfully */
  	    }
  
-diff -r -u cyrus-sasl-1.5.27/utils/sasldblistusers.c SASL/utils/sasldblistusers.c
+diff -u -r -P cyrus-sasl-1.5.27/utils/sasldblistusers.c cyrus-sasl-1.5.27-patched/utils/sasldblistusers.c
 --- cyrus-sasl-1.5.27/utils/sasldblistusers.c	Sun Mar 11 11:33:10 2001
-+++ SASL/utils/sasldblistusers.c	Tue Jul 10 14:01:11 2001
++++ cyrus-sasl-1.5.27-patched/utils/sasldblistusers.c	Mon Oct 29 15:34:23 2001
 @@ -136,7 +136,8 @@
  
      while (dkey.dptr != NULL) {

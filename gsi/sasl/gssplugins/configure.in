@@ -35,7 +35,7 @@ AC_ARG_WITH(name,
                 exit 1
                 ;;
         *)
-                $srcdir/mkgssname gssplugin > $srcdir/gssname.c
+                $srcdir/mkgssname -n $withval gssplugin > $srcdir/gssname.c
                 ;;
         esac
         ]
@@ -52,11 +52,4 @@ AC_OUTPUT(
 	doxygen/Makefile
 	doxygen/Doxyfile
 	doxygen/Doxyfile-internal
-	,
-	$GPT_LOCATION/sbin/gpt_generate_bin_pkg_data \
-	--flavor=$GLOBUS_FLAVOR_NAME "./pkgdata/pkg_data_src.gpt"
-	,
-	GLOBUS_FLAVOR_NAME=$GLOBUS_FLAVOR_NAME
-	GLOBUS_LOCATION=$GLOBUS_LOCATION
-	GPT_LOCATION=$GPT_LOCATION
 )
