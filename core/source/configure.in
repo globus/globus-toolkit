@@ -2,6 +2,23 @@ AC_REVISION($Revision$)
 AC_INIT(Makefile.am)
 AC_CONFIG_AUX_DIR(config)
 
+
+# checking for the GLOBUS_LOCATION
+
+if test "x$GLOBUS_LOCATION" = "x"; then
+    echo "ERROR Please specify GLOBUS_LOCATION" >&2
+    exit 1
+fi
+
+if test "x$GPT_LOCATION" = "x"; then
+    export GPT_LOCATION=$GLOBUS_LOCATION
+fi
+
+prefix='$(GLOBUS_LOCATION)'
+exec_prefix='$(GLOBUS_LOCATION)'
+
+# Call init macros
+
 GPT_INIT
 AM_INIT_AUTOMAKE($GPT_NAME, $GPT_VERSION,0)
 AM_CONFIG_HEADER(globus_config.h)
@@ -61,20 +78,6 @@ if test "$GLOBUS_THREADS" = "no" ; then
     GLOBUS_THREADS=none
 fi
 AC_SUBST(GLOBUS_THREADS)
-
-# checking for the GLOBUS_LOCATION
-
-if test "x$GLOBUS_LOCATION" = "x"; then
-    echo "ERROR Please specify GLOBUS_LOCATION" >&2
-    exit 1
-fi
-
-if test "x$GPT_LOCATION" = "x"; then
-    export GPT_LOCATION=$GLOBUS_LOCATION
-fi
-
-prefix='$(GLOBUS_LOCATION)'
-exec_prefix='$(GLOBUS_LOCATION)'
 
 dnl check for perl
 
