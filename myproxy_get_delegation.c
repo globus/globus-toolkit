@@ -74,6 +74,7 @@ char *outputfile = NULL;
 int
 main(int argc, char *argv[]) 
 {    
+    int rc;
     char *pshost;
     char request_buffer[1024];
     int  requestlen;
@@ -158,13 +159,14 @@ main(int argc, char *argv[])
 
     /* move delegfile to outputfile if specified */
     if (outputfile != NULL) {
-      copy_file(delegfile, outputfile, 0600);
-      unlink(delegfile);
-      strcpy(delegfile, outputfile);
-      free(outputfile);
+        copy_file(delegfile, outputfile, 0600);
+	unlink(delegfile);
+	strcpy(delegfile, outputfile);
+	free(outputfile);
     }
 
     printf("A proxy has been received for user %s in %s\n", client_request->username, delegfile);
+
     /* free memory allocated */
     myproxy_destroy(socket_attrs, client_request, server_response);
     exit(0);
@@ -251,7 +253,7 @@ read_passphrase(char *passphrase, const int passlen, const int min, const int ma
 
     /* Get user's passphrase */    
     do {
-        printf("Enter password to retrieve proxy on  myproxy-server:\n");
+        printf("Enter password to retrieve proxy on myproxy-server:\n");
         
         if (!(fgets(pass, 1024, stdin))) {
             fprintf(stderr,"Failed to read password from stdin\n");   
@@ -315,10 +317,10 @@ receive_response(myproxy_socket_attrs_t *attrs, myproxy_response_t *response) {
 /*
  * copy_file()
  *
- * Copy source to destination, creating destination if needed.
+ * Copy source to destination, creating destination if necessary
  * Set permissions on destination to given mode.
  *
- * Returns 0 on success, -1 on error.
+ * Returns 0 on success, -1 on error. 
  */
 static int
 copy_file(const char *source,
@@ -328,8 +330,9 @@ copy_file(const char *source,
     int src_fd = -1;
     int dst_fd = -1;
     int src_flags = O_RDONLY;
-    int dst_flags = O_WRONLY | O_CREAT | O_TRUNC;
+    int dst_flags = O_WRONLY | O_CREAT;
     char buffer[2048];
+    struct stat statbuf;
     int bytes_read;
     int return_code = -1;
     
@@ -344,7 +347,7 @@ copy_file(const char *source,
 	verror_put_string("opening %s for reading", source);
 	goto error;
     }
-    
+     
     dst_fd = open(dest, dst_flags, mode);
     
     if (dst_fd == -1)
