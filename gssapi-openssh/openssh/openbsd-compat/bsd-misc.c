@@ -93,8 +93,8 @@ int utimes(char *filename, struct timeval *tvp)
 {
 	struct utimbuf ub;
 
-	ub.actime = tvp->tv_sec;
-	ub.modtime = tvp->tv_usec;
+	ub.actime = tvp[0].tv_sec;
+	ub.modtime = tvp[1].tv_sec;
 	
 	return(utime(filename, &ub));
 }

@@ -17,7 +17,7 @@
 #old cvs stuff.  please update before use.  may be deprecated.
 %define use_stable	1
 %if %{use_stable}
-  %define version 	3.4p1
+  %define version 	3.5p1
   %define cvs		%{nil}
   %define release 	2
 %else
@@ -181,8 +181,6 @@ CFLAGS="$RPM_OPT_FLAGS" \
             --with-pam \
             --with-tcp-wrappers \
             --with-ipv4-default \
-	    --sysconfdir=%{_sysconfdir}/ssh \
-	    --libexecdir=%{_libexecdir}/openssh \
 	    --with-privsep-path=%{_var}/empty/sshd \
 	    #leave this line for easy edits.
 
