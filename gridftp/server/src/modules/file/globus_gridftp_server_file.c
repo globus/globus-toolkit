@@ -582,6 +582,7 @@ globus_l_gfs_file_delete_dir(
                 (dir_entry->d_name[1] == '\0' || 
                 (dir_entry->d_name[1] == '.' && dir_entry->d_name[2] == '\0')))
             {
+                globus_free(dir_entry);
                 continue;
             }
             snprintf(path, sizeof(path), "%s/%s", pathname, dir_entry->d_name);
@@ -633,6 +634,8 @@ globus_l_gfs_file_delete_dir(
 error_rmdir:    
 error_recurse:
 error_unlink2:
+        closedir(dir);
+        globus_free(dir_entry);
 error_open: 
 error_stat:
 error_unlink1:
