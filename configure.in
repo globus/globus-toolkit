@@ -35,11 +35,12 @@ else
 	# directories and run globus-development-path to find
 	# the development directory
 
-	# Make sure GLOBUS_INSTALL_PATH is set
-	if test -z "$GLOBUS_INSTALL_PATH" ; then
-		GLOBUS_INSTALL_PATH=$globus_install_dir
-		export GLOBUS_INSTALL_PATH
-	fi
+	# Set GLOBUS_INSTALL_PATH so programs will run
+	# Also override any GLOBUS_INSTALL_PATH that may be set that
+	# is pointing to a different directory
+
+	GLOBUS_INSTALL_PATH=${GLOBUS_PATH}
+	export GLOBUS_INSTALL_PATH
 
 	dev_path_program=${GLOBUS_PATH}/bin/globus-development-path
 
