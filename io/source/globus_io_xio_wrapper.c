@@ -1504,17 +1504,20 @@ globus_io_close(
     globus_io_handle_t *                handle)
 {
     globus_result_t                     result;
+    globus_l_io_handle_t *              ihandle;
     globus_l_io_monitor_t               monitor;
     GlobusIOName(globus_io_close);
     
     GlobusLIOCheckHandle(handle, 0);
+    ihandle = *handle;
+    *handle = GLOBUS_NULL;
     
     monitor.done = GLOBUS_FALSE;
     globus_mutex_init(&monitor.lock, GLOBUS_NULL);
     globus_cond_init(&monitor.cond, GLOBUS_NULL);
     
     result = globus_xio_register_close(
-        (*handle)->xio_handle,
+        ihandle->xio_handle,
         GLOBUS_NULL,
         globus_l_io_blocking_cb,
         &monitor);
@@ -1535,6 +1538,23 @@ globus_io_close(
     
     globus_mutex_destroy(&monitor.lock);
     globus_cond_destroy(&monitor.cond);
+    
+    switch(ihandle->type)
+    {
+      case GLOBUS_I_IO_FILE_HANDLE:
+        GlobusLIODriverFree(file);
+        break;
+        
+      case GLOBUS_I_IO_TCP_HANDLE:
+        GlobusLIODriverFree(tcp);
+        break;
+      
+      default:
+        globus_assert(0 && "Unexpected handle type");
+        break;
+    }
+    
+    globus_free(ihandle);
     
     if(monitor.result != GLOBUS_SUCCESS)
     {
