@@ -2469,7 +2469,7 @@ globus_gsi_sysconfig_get_username_unix(
         goto exit;
     }
 
-    if(pwd_result == NULL || pwd_result->pwd_name == NULL)
+    if(pwd_result == NULL || pwd_result->pw_name == NULL)
     {
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
             result,
@@ -2478,7 +2478,7 @@ globus_gsi_sysconfig_get_username_unix(
         goto exit;        
     }
 
-    *username = malloc(strlen(pwd->pw_name) + 1);
+    *username = malloc(strlen(pwd_result->pw_name) + 1);
 
     if(!*username)
     {
@@ -2486,8 +2486,8 @@ globus_gsi_sysconfig_get_username_unix(
         goto exit;
     }
         
-    strncpy(*username, pwd->pw_name, 
-            strlen(pwd->pw_name) + 1);
+    strncpy(*username, pwd_result->pw_name, 
+            strlen(pwd_result->pw_name) + 1);
     
  exit:
 
@@ -2863,7 +2863,7 @@ globus_gsi_sysconfig_get_home_dir_unix(
         goto exit;
     }
 
-    if(pwd_result == NULL || pwd_result->pwd_dir == NULL)
+    if(pwd_result == NULL || pwd_result->pw_dir == NULL)
     {
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
             result,
