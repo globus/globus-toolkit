@@ -111,6 +111,7 @@ globus_i_gfs_acl_init(
         goto err;
     }
     acl_handle->auth_action = strdup(resource_id);
+    if(acl_handle->auth_action == NULL)
     {
         goto err;
     }

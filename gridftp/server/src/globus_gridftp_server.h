@@ -169,6 +169,8 @@ typedef struct globus_gfs_finished_info_s
     /** result_t (will go away, use above two) */
     globus_result_t                     result;
 
+    int                                 session_id;
+
     union
     {
         globus_gfs_data_finished_info_t data;

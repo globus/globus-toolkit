@@ -204,10 +204,6 @@ globus_l_gfs_auth_data_cb(
             "internal error");
     }
 
-    globus_i_gfs_data_session_start(
-        &auth_info->instance->user_data_handle,
-        NULL,
-        auth_info->username);
 }    
 
 static
@@ -355,6 +351,16 @@ globus_l_gfs_request_auth(
     auth_info->response = 
         GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS;
 
+    res = globus_i_gfs_data_session_start(
+        &auth_info->instance->user_data_handle,
+        NULL,
+        auth_info->username);
+    if(res != GLOBUS_SUCCESS)
+    {
+        err_msg = globus_common_create_string("dsi session did not start");
+        goto error;
+    }
+
     rc = globus_i_gfs_acl_init(
         &instance->acl_handle,
         context,
@@ -363,7 +369,12 @@ globus_l_gfs_request_auth(
         &res,
         globus_l_gfs_auth_data_cb,
         auth_info);
-    if(rc == GLOBUS_GFS_ACL_COMPLETE)
+    if(rc < 0)
+    {
+        err_msg = globus_common_create_string("acl init failed");
+        goto error;
+    }
+    else if(rc == GLOBUS_GFS_ACL_COMPLETE)
     {
         globus_l_gfs_auth_data_cb(NULL, auth_info, res);
     }
