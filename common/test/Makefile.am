@@ -52,6 +52,10 @@ Scripts= \
 	globus-common-mem-test.pl \
 	globus-common-module-test.pl \
 	globus-common-fifo-test.pl \
+	globus-common-strptime-test.pl \
+	globus-common-handle-table-test.pl \
+	globus-common-libcsetenv-test.pl \
+	globus-common-list-test.pl \
 	run-common-tests.pl
 
 Data= \
@@ -65,6 +69,11 @@ Data= \
 	globus_common_url_test.stdout \
 	globus_common_mem_test.stdout \
 	globus_common_module_test.stdout \
+	globus_common_fifo_test.stdout \
+	globus_common_strptime_test.stdout \
+	globus_common_handle_table_test.stdout \
+	globus_common_libcsetenv_test.stdout \
+	globus_common_list_test.stdout \
 	globus_common_args_test.stderr \
 	globus_common_poll_test.stderr \
 	globus_common_error_string_test.stderr \
@@ -74,7 +83,12 @@ Data= \
 	globus_common_hash_test.stderr \
 	globus_common_url_test.stderr \
 	globus_common_mem_test.stderr \
-	globus_common_module_test.stderr
+	globus_common_module_test.stderr \
+	globus_common_fifo_test.stderr \
+	globus_common_strptime_test.stderr \
+	globus_common_handle_table_test.stderr \
+	globus_common_libcsetenv_test.stderr \
+	globus_common_list_test.stderr
 
 
 test_DATA = $(Data)
