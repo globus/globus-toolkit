@@ -23,9 +23,41 @@
 #    endif
 #endif
 
+#include <globus_common.h>
+
 EXTERN_C_BEGIN
 
-#include <globus_common.h>
+/**
+ * @mainpage Globus Callout API
+ *
+ * This API is intended to ease integration of configurable callouts into the
+ * Globus Toolkit and to provide a platform independent way of dealing with
+ * runtime loadable functions. It (hopefully) achieves this goal by providing
+ * the following functionality:
+ *
+ * - It provides a function for reading callout configuration files. Files are
+ *   assumed to have the following format:
+ *    - Anything after a '#' is assumed to be a comment
+ *    - Blanks lines are ignored
+ *    - Lines specifying callouts have the format
+ *      abstract type           library         symbol
+ *      where "abstract type" denotes the type of callout,
+ *      e.g. globus_gram_jobmanager_authz, "library" denotes the library the
+ *      callout can be found in and "symbol" denotes the function name of the
+ *      callout.
+ * - It provides a API function for registering callouts
+ * - All callouts are assumed to have the function signature
+ *   globus_result_t callout_func(va_list ap)
+ * - It provides a function for calling a callout given a abstract type.
+ *
+ * Any program that uses Globus Callout functions must include
+ * "globus_callout.h".  
+ *
+ * @htmlonly
+ * <a href="main.html" target="_top">View documentation without frames</a><br>
+ * <a href="index.html" target="_top">View documentation with frames</a><br>
+ * @endhtmlonly
+ */
 
 /** 
  * @defgroup globus_callout_activation Activation
@@ -56,7 +88,8 @@ EXTERN_C_BEGIN
  *
  */
 
-/** Module descriptor
+/**
+ * Module descriptor
  * @ingroup globus_callout_activation
  * @hideinitializer
  */
@@ -66,15 +99,46 @@ extern
 globus_module_descriptor_t              globus_i_callout_module;
 
 
+/**
+ * Callout handle type definition
+ * @ingroup globus_callout_handle
+ */
 typedef struct globus_i_callout_handle_s * globus_callout_handle_t;
 
+
+/**
+ * Callout function type definition
+ * @ingroup globus_callout_call
+ */
 typedef globus_result_t (*globus_callout_function_t)(
     va_list                             ap);
 
+
+/**
+ * @defgroup globus_callout_handle Callout Handle Operations
+ *
+ * Initialize and Destory a Globus Callout Handle structure.
+ *
+ * This section defines operations for initializing and destroying Globus
+ * Callout Handle structure.
+ */
 globus_result_t
 globus_callout_handle_init(
     globus_callout_handle_t *           handle);
 
+globus_result_t
+globus_callout_handle_destroy(
+    globus_callout_handle_t             handle);
+
+/**
+ * @defgroup globus_callout_config Callout Configuration
+ *
+ * Functions for registering callouts.
+ *
+ * This section defines operations for registering callouts. Callouts may be
+ * registered either through a configuration file or through calls to
+ * globus_callout_register. 
+ */
 globus_result_t
 globus_callout_read_config(
     globus_callout_handle_t             handle,
@@ -87,10 +151,14 @@ globus_callout_register(
     char *                              library,
     char *                              symbol);
 
-globus_result_t
-globus_callout_handle_destroy(
-    globus_callout_handle_t             handle);
-
+/**
+ * @defgroup globus_callout_call Callout Invocation
+ *
+ * Functions for invoking callouts.
+ *
+ * This section defines a operation for invoking callouts by their abstract
+ * type. 
+ */
 globus_result_t
 globus_callout_call_type(
     globus_callout_handle_t             handle,

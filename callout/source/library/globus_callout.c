@@ -8,22 +8,17 @@
  * $Revision$
  * $Date$
  */
-#endif
 
 #include "globus_common.h"
 #include "globus_callout_constants.h"
 #include "globus_i_callout.h"
 #include "ltdl.h"
-#include "version.h" 
+#include "version.h"
 
 #define GLOBUS_I_CALLOUT_HASH_SIZE 64
 
 static void
 globus_l_callout_library_table_element_free(
-    void *                              element);
-
-static void
-globus_l_callout_symbol_table_element_free(
     void *                              element);
 
 static globus_result_t
@@ -36,7 +31,6 @@ static int globus_l_callout_deactivate(void);
 
 int                              globus_i_callout_debug_level   = 0;
 FILE *                           globus_i_callout_debug_fstream = NULL;
-
 
 /**
  * Module descriptor static initializer.
@@ -140,7 +134,23 @@ globus_l_callout_deactivate(void)
     return result;
 }
 
+#endif
 
+/**
+ * @name Initialize Handle
+ */
+/*@{*/
+/**
+ * Initialize a Globus Callout Handle
+ * @ingroup globus_callout_handle
+ *
+ * @param handle
+ *        Pointer to the handle that is to be initialized
+ * @return
+ *        GLOBUS_SUCCESS if successful
+ *        A Globus error object on failure:
+ *            GLOBUS_CALLOUT_ERROR_WITH_HASHTABLE
+ */
 globus_result_t
 globus_callout_handle_init(
     globus_callout_handle_t *           handle)
@@ -193,9 +203,22 @@ globus_callout_handle_init(
  exit:
     
     return result;
-}
+}/*globus_callout_handle_init*/
+/*@}*/
 
-
+/**
+ * @name Destroy Handle
+ */
+/*@{*/
+/**
+ * Destroy a Globus Callout Handle
+ * @ingroup globus_callout_handle
+ *
+ * @param handle
+ *        The handle that is to be destroyed
+ * @return
+ *        GLOBUS_SUCCESS
+ */
 globus_result_t
 globus_callout_handle_destroy(
     globus_callout_handle_t             handle)
@@ -220,8 +243,39 @@ globus_callout_handle_destroy(
     GLOBUS_I_CALLOUT_DEBUG_EXIT;
 
     return result;
-}
+}/*globus_callout_handle_destroy*/
+/*@}*/
 
+/**
+ * @name Configure Callouts
+ */
+/*@{*/
+/**
+ * Read callout configuration from file.
+ * @ingroup globus_callout_config
+ *
+ * This function read a configuration file with the following format:
+ *    - Anything after a '#' is assumed to be a comment
+ *    - Blanks lines are ignored
+ *    - Lines specifying callouts have the format
+ *      abstract type           library         symbol
+ *      where "abstract type" denotes the type of callout,
+ *      e.g. globus_gram_jobmanager_authz, "library" denotes the library the
+ *      callout can be found in and "symbol" denotes the function name of the
+ *      callout.
+ *
+ * @param handle
+ *        The handle that is to be configured
+ * @param filename
+ *        The file to read configuration from
+ * @return
+ *        GLOBUS_SUCCESS
+ *        A Globus error object on failure:
+ *            GLOBUS_CALLOUT_ERROR_OPENING_CONF_FILE
+ *            GLOBUS_CALLOUT_ERROR_PARSING_CONF_FILE
+ *            GLOBUS_CALLOUT_ERROR_WITH_HASHTABLE
+ *            GLOBUS_CALLOUT_ERROR_OUT_OF_MEMORY
+ */
 globus_result_t
 globus_callout_read_config(
     globus_callout_handle_t             handle,
@@ -357,8 +411,28 @@ globus_callout_read_config(
     }
 
     return result;
-}
+}/*globus_callout_read_config*/
 
+/**
+ * Register callout configuration
+ * @ingroup globus_callout_config
+ *
+ * This function registers a callout type in the given handle.
+ *
+ * @param handle
+ *        The handle that is to be configured
+ * @param type
+ *        The abstract type of the callout
+ * @param library
+ *        The location of the library containing the callout
+ * @param symbol
+ *        The symbol (ie function name) for the callout
+ * @return
+ *        GLOBUS_SUCCESS
+ *        A Globus error object on failure:
+ *            GLOBUS_CALLOUT_ERROR_WITH_HASHTABLE
+ *            GLOBUS_CALLOUT_ERROR_OUT_OF_MEMORY
+ */
 globus_result_t
 globus_callout_register(
     globus_callout_handle_t             handle,
@@ -429,15 +503,44 @@ globus_callout_register(
 
  error_exit:
 
+    GLOBUS_I_CALLOUT_DEBUG_EXIT;
+    
     if(datum != NULL)
     {
         globus_l_callout_data_free(datum);
     }
  
     return result;
-}
+}/*globus_callout_register*/
+/*@}*/
 
 
+/**
+ * @name Invoking Callouts
+ */
+/*@{*/
+/**
+ * Call a callout of specified abstract type
+ * @ingroup globus_callout_call
+ *
+ * This function looks up the callout corresponding to the given type and
+ * invokes it with the passed arguments. If the invoked callout returns an
+ * error it will be chained to a error of the type
+ * GLOBUS_CALLOUT_ERROR_CALLOUT_ERROR.
+ *
+ * @param handle
+ *        A configured callout handle
+ * @param type
+ *        The abstract type of the callout that is to be invoked
+ * @return
+ *        GLOBUS_SUCCESS
+ *        A Globus error object on failure:
+ *            GLOBUS_CALLOUT_ERROR_TYPE_NOT_REGISTERED
+ *            GLOBUS_CALLOUT_ERROR_CALLOUT_ERROR
+ *            GLOBUS_CALLOUT_ERROR_WITH_DL
+ *            GLOBUS_CALLOUT_ERROR_WITH_HASHTABLE
+ *            GLOBUS_CALLOUT_ERROR_OUT_OF_MEMORY
+ */
 globus_result_t
 globus_callout_call_type(
     globus_callout_handle_t             handle,
@@ -533,13 +636,22 @@ globus_callout_call_type(
     result = ((globus_callout_function_t) function)(ap);
 
     va_end(ap);
+
+    if(result != GLOBUS_SUCCESS)
+    {
+        GLOBUS_CALLOUT_ERROR_CHAIN_RESULT(
+            result,
+            GLOBUS_CALLOUT_ERROR_CALLOUT_ERROR);
+        goto exit;
+    }
     
-    GLOBUS_I_CALLOUT_DEBUG_EXIT;
-
  exit:
+    GLOBUS_I_CALLOUT_DEBUG_EXIT;
     return result;
-}
+}/*globus_callout_call_type*/
+/*@}*/
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 
 static globus_result_t
 globus_l_callout_data_free(
@@ -608,3 +720,5 @@ globus_l_callout_library_table_element_free(
     GLOBUS_I_CALLOUT_DEBUG_EXIT;
     return;
 }
+
+#endif

@@ -25,7 +25,8 @@ globus_l_callout_error_strings[GLOBUS_CALLOUT_ERROR_LAST] =
 /* 3 */   "Error parsing configuration file",
 /* 4 */   "Error with dynamic library",
 /* 5 */   "Out of memory",
-/* 6 */   "The callout type has not been configured"
+/* 6 */   "The callout type has not been configured",
+/* 7 */   "The callout returned an error"
 };
 
 /* ERROR FUNCTIONS */
