@@ -113,12 +113,6 @@ dnl
 dnl
 dnl
 
-dnl Dirty hack to fix Redhat 7.1 Linux
-dnl Optimization causes strdup to be replaced with a macro that
-dnl causes a compiler error.
-
-CFLAGS=
-
 LAC_DOXYGEN([" ../ "])
 
 GLOBUS_FINALIZE
