@@ -595,6 +595,12 @@ globus_gfs_ipc_handle_release(
     globus_gfs_ipc_handle_t             ipc_handle);
 
 globus_result_t
+globus_gfs_ipc_handle_get_max_available_count(
+    const char *                        user_id,
+    const char *                        pathname,
+    int *                               count);
+
+globus_result_t
 globus_gfs_ipc_handle_get(
     int *                               handle_count,
     const char *                        user_id,
@@ -614,13 +620,6 @@ globus_gfs_ipc_handle_get_by_contact(
     void *                              user_arg,
     globus_gfs_ipc_error_callback_t     error_cb,
     void *                              error_user_arg);
-
-globus_result_t
-globus_l_gfs_community_get_nodes(
-    const char *                        pathname,
-    const char *                        user_id,
-    char ***                            contact_strings,
-    int *                               count);
 
 void
 globus_gfs_ipc_init();

@@ -2095,9 +2095,9 @@ globus_l_gsc_cmd_port(
     {
         wrapper->max = -1;
         
-        stripe_count = -2; /* for the first and last lines */
+        stripe_count = 1; /* for the first */
         p = cmd_a[1];
-        while((p = strchr(p, '\n')))
+        while((p = strchr(p, ' ')))
         {
             stripe_count++;
             p++;
@@ -2121,11 +2121,6 @@ globus_l_gsc_cmd_port(
             
     /* move to the first command argument */
     p = cmd_a[1];
-    if(stripe_count > 1)
-    {
-        /* skip first line (must exist if > 1) */
-        p = strchr(p, '\n');
-    }
     while(isspace(*p)) p++;
     if(isdigit(delim = *p))
     {

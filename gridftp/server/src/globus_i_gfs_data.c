@@ -753,8 +753,9 @@ globus_l_gfs_data_abort_kickout(
     op = (globus_l_gfs_data_operation_t *) user_arg;
 
     if(op->session_handle->dsi->trev_func != NULL &&
-        op->event_mask & GLOBUS_GFS_EVENT_TRANSFER_ABORT &&
-        op->data_handle->is_mine)
+        op->event_mask & GLOBUS_GFS_EVENT_TRANSFER_ABORT
+        /* && op->data_handle->is_mine XXX don't think this matters here */
+        )
     {
         op->session_handle->dsi->trev_func(
             op->transfer_id,
@@ -955,8 +956,7 @@ globus_i_gfs_data_destroy_handle(
                 session_handle->ref++;
                 data_handle->state = 
                     GLOBUS_L_GFS_DATA_HANDLE_CLOSING_AND_DESTROYED;
-                if(session_handle->dsi->data_destroy_func != NULL &&
-                    !data_handle->is_mine)
+                if(!data_handle->is_mine)
                 {
                     pass = GLOBUS_TRUE;
                 }
@@ -1009,7 +1009,15 @@ globus_i_gfs_data_destroy_handle(
     globus_mutex_unlock(&session_handle->mutex);
     if(pass)
     {
-        session_handle->dsi->data_destroy_func(data_connection_id, session_arg);
+        if(session_handle->dsi->data_destroy_func != NULL)
+        {                
+            session_handle->dsi->data_destroy_func(
+                data_handle->remote_handle_id, session_arg);
+        }
+        else
+        {
+            /* XXX dsi impl error, what to do? */
+        }
         globus_free(data_handle);
     }
 }
@@ -1927,7 +1935,7 @@ globus_l_gfs_data_begin_cb(
     }
     globus_mutex_unlock(&op->session_handle->mutex);
 
-    if(connect_event)
+    if(connect_event && op->data_handle->is_mine)
     {
         event_reply = (globus_gfs_ipc_event_reply_t *) 
             globus_calloc(1, sizeof(globus_gfs_ipc_event_reply_t));
@@ -2029,7 +2037,7 @@ globus_l_gfs_data_end_transfer_kickout(
     }
     globus_mutex_unlock(&op->session_handle->mutex);
 
-    if(disconnect)
+    if(disconnect && op->data_handle->is_mine)
     {
         memset(&event_reply, '\0', sizeof(globus_gfs_ipc_event_reply_t));
         event_reply.id = op->id;
@@ -2139,7 +2147,7 @@ globus_l_gfs_data_end_read_kickout(
             op->ipc_handle,
             &event_reply);
     }
-
+    
     globus_mutex_lock(&op->session_handle->mutex);
     {
         globus_assert(op->data_handle->state == GLOBUS_L_GFS_DATA_HANDLE_INUSE);
@@ -3299,34 +3307,50 @@ globus_gridftp_server_finished_transfer(
                     globus_l_gfs_data_force_close(op);
                     goto err_close;
                 }
-                if(op->writing)
+                if(op->data_handle->is_mine)
                 {
-                    result = globus_ftp_control_data_write(
-                        &op->data_handle->data_channel,
-                        "",
-                        0,
-                        0,
-                        GLOBUS_TRUE,
-                        globus_l_gfs_data_write_eof_cb,
-                        op);
-                    if(result != GLOBUS_SUCCESS)
+                    if(op->writing)
                     {
-                        op->cached_res = result;
+                        result = globus_ftp_control_data_write(
+                            &op->data_handle->data_channel,
+                            "",
+                            0,
+                            0,
+                            GLOBUS_TRUE,
+                            globus_l_gfs_data_write_eof_cb,
+                            op);
+                        if(result != GLOBUS_SUCCESS)
+                        {
+                            op->cached_res = result;
+                            globus_callback_register_oneshot(
+                                NULL,
+                                NULL,
+                                globus_l_gfs_data_end_transfer_kickout,
+                                op);
+                        }
+                    }
+                    else
+                    {
                         globus_callback_register_oneshot(
                             NULL,
                             NULL,
-                            globus_l_gfs_data_end_transfer_kickout,
+                            globus_l_gfs_data_end_read_kickout,
                             op);
                     }
                 }
                 else
                 {
+                    if(result != GLOBUS_SUCCESS)
+                    {
+                        op->cached_res = result;
+                    }
                     globus_callback_register_oneshot(
                         NULL,
                         NULL,
-                        globus_l_gfs_data_end_read_kickout,
+                        globus_l_gfs_data_end_transfer_kickout,
                         op);
-                }
+                }                        
+                    
                 break;
 
             case GLOBUS_L_GFS_DATA_REQUESTING:
@@ -3375,6 +3399,7 @@ globus_l_gfs_operation_finished_kickout(
 {
     globus_l_gfs_data_bounce_t *        bounce;
     globus_l_gfs_data_operation_t *     op;
+    globus_bool_t                       destroy_op = GLOBUS_FALSE;
 
     bounce = (globus_l_gfs_data_bounce_t *) user_arg;
     op = bounce->op;
@@ -3392,6 +3417,7 @@ globus_l_gfs_operation_finished_kickout(
             bounce->finished_info);
     }
     globus_l_gfs_data_operation_destroy(op);
+   
     globus_free(bounce);
 }
 
@@ -3403,6 +3429,7 @@ globus_gridftp_server_operation_finished(
 {
     globus_l_gfs_data_bounce_t *        bounce;
     globus_l_gfs_data_handle_t *        data_handle;
+    globus_bool_t                       kickout = GLOBUS_TRUE;
     GlobusGFSName(globus_gridftp_server_operation_finished);
 
     bounce = (globus_l_gfs_data_bounce_t *)
@@ -3419,6 +3446,12 @@ globus_gridftp_server_operation_finished(
 
     switch(finished_info->type)
     {
+        case GLOBUS_GFS_OP_TRANSFER:
+            globus_gridftp_server_finished_transfer(
+                op, finished_info->result);
+            kickout = GLOBUS_FALSE;
+            break;
+
         case GLOBUS_GFS_OP_SESSION_START:
             if(op->session_handle)
             {
@@ -3447,8 +3480,14 @@ globus_gridftp_server_operation_finished(
         default:
             break;
     }
-
-    globus_l_gfs_operation_finished_kickout(bounce);
+    if(kickout)
+    {
+        globus_l_gfs_operation_finished_kickout(bounce);
+    }
+    else
+    {
+        globus_free(bounce);
+    }
 /*
     result = globus_callback_register_oneshot(
         NULL,
@@ -3477,25 +3516,24 @@ globus_gridftp_server_operation_event(
     switch(event_info->type)
     {
         case GLOBUS_GFS_EVENT_TRANSFER_BEGIN:
-            op->transfer_id = event_info->transfer_id; 
-            event_info->transfer_id = (int) op;
+            globus_gridftp_server_begin_transfer(
+                op, event_info->event_mask, event_info->transfer_id);
             break;
         default:
+            if(op->event_callback != NULL)
+            {
+                op->event_callback(
+                    event_info,
+                    op->user_arg);        
+            }
+            else
+            {
+                globus_gfs_ipc_reply_event(
+                    op->ipc_handle,
+                    event_info);
+            }
             break;
     }        
-
-    if(op->event_callback != NULL)
-    {
-        op->event_callback(
-            event_info,
-            op->user_arg);        
-    }
-    else
-    {
-        globus_gfs_ipc_reply_event(
-            op->ipc_handle,
-            event_info);
-    }
 
     return;
 }
