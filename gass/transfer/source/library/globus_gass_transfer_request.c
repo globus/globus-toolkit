@@ -72,7 +72,7 @@ globus_gass_transfer_request_get_user_pointer(
 	globus_handle_table_lookup(&globus_i_gass_transfer_request_handles,
 				   request);
     if(req == GLOBUS_NULL||
-       req->type != GLOBUS_GASS_TRANSFER_REQUEST_TYPE_INVALID)
+       req->type == GLOBUS_GASS_TRANSFER_REQUEST_TYPE_INVALID)
     {
 	return GLOBUS_NULL;
     }

@@ -987,6 +987,11 @@ globus_l_gass_transfer_operation_complete(
 	    /* free up the proto's and GASS's reference to this request */
 	    globus_i_gass_transfer_request_destroy(request);
 
+	    if(globus_i_gass_transfer_deactivating)
+	    {
+		globus_i_gass_transfer_request_destroy(request);
+	    }
+
 	    globus_i_gass_transfer_unlock();
 	    if(fail_callback != GLOBUS_NULL)
 	    {
