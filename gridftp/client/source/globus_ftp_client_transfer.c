@@ -666,7 +666,7 @@ globus_ftp_client_delete(
     static char * myname = "globus_ftp_client_delete";
 
     /* Check arguments for validity */
-    if(handle == GLOBUS_NULL)
+    if(u_handle == GLOBUS_NULL)
     {
 	err = globus_error_construct_string(
 	    GLOBUS_FTP_CLIENT_MODULE,
