@@ -13,6 +13,12 @@
 <File>setup_globus_ca</File>
 <File>42864e48.0</File>
 <File>42864e48.signing_policy</File>
+<File>grid-cert-request-config</File>
+<File>grid-security-config</File>
+</Filelist>
+
+<Filelist Dir="etc" Flavored="no">
+<File>grid-security.conf</File>
 </Filelist>
 
 <Setup_Requirements_Message>
