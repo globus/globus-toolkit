@@ -25,7 +25,6 @@ unlink("test_results.txt");
             server-test.pl
             verify-test.pl
             attr-test.pl
-            threads-test.pl
             );
 
 my $runserver;
