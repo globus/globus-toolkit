@@ -229,4 +229,6 @@ globus_gsi_callback_set_error(
     globus_gsi_callback_data_t          callback_data,
     globus_result_t                     error);
 
+EXTERN_C_END
+
 #endif /* _GLOBUS_GSI_CALLBACK_H_ */
