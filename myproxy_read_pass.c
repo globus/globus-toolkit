@@ -69,7 +69,7 @@ read_passphrase(char				*buffer,
       case 0:
 	/* Success */
 	return_code = strlen(buffer);
-	if (return_code < MIN_PASS_PHRASE_LEN) {
+	if (return_code < MIN_PASS_PHRASE_LEN && return_code != 0) {
 	    verror_put_string("Passphrase must be at least %d characters long.",
 			      MIN_PASS_PHRASE_LEN);
 	    return_code = -1;
@@ -120,7 +120,7 @@ read_passphrase_stdin(char			*buffer,
     if (buffer[i] == '\n') {
         buffer[i] = '\0';
     }
-    if (i < MIN_PASS_PHRASE_LEN) {
+    if (i < MIN_PASS_PHRASE_LEN && i != 0) {
 	verror_put_string("Passphrase must be at least %d characters long.",
 			  MIN_PASS_PHRASE_LEN);
 	return -1;
