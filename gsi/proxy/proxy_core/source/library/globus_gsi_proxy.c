@@ -1453,6 +1453,17 @@ globus_i_gsi_proxy_set_pc_times(
 
     GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
 
+    /* check for overflow */
+
+    if(time_valid > ((time_t)(~0U>>1))/60)
+    {
+        GLOBUS_GSI_PROXY_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_PROXY_INVALID_PARAMETER,
+            ("Overflow in time value"));
+        goto exit;        
+    }
+    
     /* adjust for the allowable skew */
     if(X509_gmtime_adj(X509_get_notBefore(new_pc), (- skew_allowable)) == NULL)
     {
@@ -1464,7 +1475,6 @@ globus_i_gsi_proxy_set_pc_times(
     }
 
     tmp_time = time(NULL) + ((long) 60 * time_valid);
-    
 
     /* check that issuer cert won't expire before new proxy cert */
     if(time_valid == 0 ||

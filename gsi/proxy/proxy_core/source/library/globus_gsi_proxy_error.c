@@ -23,7 +23,8 @@ globus_l_gsi_proxy_error_strings[GLOBUS_GSI_PROXY_ERROR_LAST] =
 /* 12 */  "Error with credential handle",
 /* 13 */  "Error with credential handle attributes",
 /* 14 */  "System error",
-/* 15 */  "Unable to set proxy type"
+/* 15 */  "Unable to set proxy type",
+/* 16 */  "Invalid parameter"
 };
 
 globus_result_t
