@@ -10,18 +10,11 @@ underlying configure script.  This means that there will be a recommended set of
 configure options on a "per-platform" basis, and that you will specify these on
 the command-line to gpt-build as in:
 
-    $GPT_LOCATION/sbin/gpt-build -static gsi_openssh-<version>-src.tar.gz gcc32 \
+    $GPT_LOCATION/sbin/gpt-build gsi_openssh-<version>-src.tar.gz gcc32 \
       GSI_OPENSSH_GPTMACRO="<configureOptions>"
 
 Configure Options
 -----------------
 
-            Platform         |               Configuration
-   --------------------------+------------------------------------------
-    IA-32 Linux GCC (RedHat) | --with-md5-passwords --with-tcp-wrappers
-    IA-64 Linux GCC (RedHat) | --with-md5-passwords --with-tcp-wrappers
-      Sun Solaris VendorCC   |            --with-tcp-wrappers
-        SGI Irix VendorCC    |            --with-tcp-wrappers
-
-Run ./configure --help inside the gsi_openssh-<version>-src/ directory to get a
-full listing of the available options.
+Please see http://grid.ncsa.uiuc.edu/ssh/ for more information about the configure
+options used in this release.
