@@ -69,6 +69,17 @@ sub passwordtoolong
     exit;
 }
 
+sub invalidlifetime
+{
+    print header;
+    print "<BODY BGCOLOR=#efefef>";
+    print "<TITLE>Invalid Lifetime</TITLE>";
+    print "<H1><FONT FACE=Arial COLOR=Red><STRONG>";
+    print "The lifetime parameter must contain only digits.";
+    print "</STRONG></FONT></H1>";
+    exit;
+}
+
 sub printerror
 {
     my $errmsg = $_[0];
