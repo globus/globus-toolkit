@@ -31,7 +31,7 @@
       setup-ssl-utils
     </Post_Install_Program>
 
-    <Setup Name="globus_trusted_ca_42864e48_setup" >
+    <Setup Name="trusted_ca_setup" >
       <Aging_Version Age="0" Major="0" Minor="5" />
     </Setup>
 
