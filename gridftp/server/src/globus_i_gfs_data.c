@@ -1023,6 +1023,7 @@ globus_l_gfs_data_handle_init(
     globus_l_gfs_data_handle_t *        handle;
     globus_result_t                     result;
     globus_ftp_control_dcau_t           dcau;
+    char *                              interface;
     GlobusGFSName(globus_l_gfs_data_handle_init);
     
     handle = (globus_l_gfs_data_handle_t *) 
@@ -1041,6 +1042,15 @@ globus_l_gfs_data_handle_init(
         result = GlobusGFSErrorWrapFailed(
             "globus_ftp_control_handle_init", result);
         goto error_data;
+    }
+    
+    if((interface = globus_i_gfs_config_string("data_interface")) != NULL)
+    {
+        if(handle->info.interface != NULL)
+        {
+            globus_free(handle->info.interface);
+        }
+        handle->info.interface = globus_libc_strdup(interface);
     }
 
     handle->state = GLOBUS_L_GFS_DATA_HANDLE_VALID;

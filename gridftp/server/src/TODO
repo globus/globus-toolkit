@@ -47,7 +47,6 @@ known bugs:
 -- we don't chdir to the users home directory on successful auth, which 
     should at least be an option.  There is no way to set a cwd in the 
     server-lib though?
--- -s option (non-detached fork) has a problem where children don't die
 -- ipc local mode doesn't work (besides no way to initiate it)
 -- not calling _finish() in data.c for some request funcs that fail before
     the dsi call. 
@@ -59,4 +58,7 @@ known bugs:
     transfer_finished error, but maybe not sending disconnected? (either way, 
     data chan should be fine on transfer errors, just not data chan errors).
 -- error out of option parsing properly
+-- ipc failure while the handle is owned by the dsi destroys the handle. should
+    not free until user calls release or close, and just error out of any other
+    calls that attempt to use the handle.
     

@@ -134,42 +134,36 @@ globus_l_gfs_sigchld(
     int                                 child_status;
     int                                 child_rc;
 
-    child_pid = waitpid(-1, &child_status, WNOHANG);
-
-    if(child_pid < 0)
+    while((child_pid = waitpid(-1, &child_status, WNOHANG)) > 0)
     {
-        globus_i_gfs_log_message(
-            GLOBUS_I_GFS_LOG_ERR, 
-            "SIGCHLD handled but waitpid has error: %d\n", 
-            errno);
-    }    
-    if(WIFEXITED(child_status))
-    {
-        child_rc = WEXITSTATUS(child_status);
-        globus_i_gfs_log_message(
-            GLOBUS_I_GFS_LOG_INFO, 
-            "Child process %d ended with rc = %d\n", 
-            child_pid, 
-            child_rc);
-    }
-    else if(WIFSIGNALED(child_status))
-    {
-        globus_i_gfs_log_message(
-            GLOBUS_I_GFS_LOG_INFO, 
-            "Child process %d killed by signal %d\n",
-            child_pid, 
-            WTERMSIG(child_rc));
-    }
-
-    globus_mutex_lock(&globus_l_gfs_mutex);
-    {
-        globus_l_gfs_open_count--;
-        if(globus_l_gfs_open_count == 0)
+        if(WIFEXITED(child_status))
         {
-            globus_cond_signal(&globus_l_gfs_cond);
+            child_rc = WEXITSTATUS(child_status);
+            globus_i_gfs_log_message(
+                GLOBUS_I_GFS_LOG_INFO, 
+                "Child process %d ended with rc = %d\n", 
+                child_pid, 
+                child_rc);
         }
+        else if(WIFSIGNALED(child_status))
+        {
+            globus_i_gfs_log_message(
+                GLOBUS_I_GFS_LOG_INFO, 
+                "Child process %d killed by signal %d\n",
+                child_pid, 
+                WTERMSIG(child_rc));
+        }
+    
+        globus_mutex_lock(&globus_l_gfs_mutex);
+        {
+            globus_l_gfs_open_count--;
+            if(globus_l_gfs_open_count == 0)
+            {
+                globus_cond_signal(&globus_l_gfs_cond);
+            }
+        }
+        globus_mutex_unlock(&globus_l_gfs_mutex);   
     }
-    globus_mutex_unlock(&globus_l_gfs_mutex);        
 }
 
 static
@@ -295,7 +289,7 @@ globus_l_gfs_spawn_child(
             globus_xio_server_close(globus_l_gfs_xio_server);
             globus_l_gfs_xio_server = GLOBUS_NULL;
         }
- 
+
         rc = dup2(socket_handle, STDIN_FILENO);
         if(rc == -1)
         {
@@ -715,6 +709,7 @@ globus_result_t
 globus_l_gfs_be_daemon(void)
 {
     char *                              contact_string;
+    char *                              interface;
     globus_result_t                     result;
     globus_xio_stack_t                  stack;
     globus_xio_attr_t                   attr;
@@ -740,7 +735,18 @@ globus_l_gfs_be_daemon(void)
     {
         goto stack_error;
     }
-
+    if((interface = globus_i_gfs_config_string("control_interface")) != NULL)
+    {
+        result = globus_xio_attr_cntl(
+            attr,
+            globus_l_gfs_tcp_driver,
+            GLOBUS_XIO_TCP_SET_INTERFACE,
+            interface);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto attr_error;
+        }
+    }
     result = globus_xio_attr_cntl(
         attr,
         globus_l_gfs_tcp_driver,

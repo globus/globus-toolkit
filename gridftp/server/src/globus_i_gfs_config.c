@@ -61,9 +61,9 @@ static const globus_l_gfs_config_option_t option_list[] =
  {"connections_disabled", "connections_disabled", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
     "Disable all new connections."},
 /* execution modes */
- {"nofork", "nofork", NULL, "-nofork", "-nf", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_TRUE, NULL,
+ {"nofork", "nofork", NULL, "-nofork", "-nf", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
     "Server will not fork. All connections will work in a single process and will not setuid."},
- {"daemon", "daemon", NULL, "-daemon", "-s", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
+ {"daemon", "daemon", NULL, "-daemon", "-s", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_TRUE, NULL,
     "Run as a daemon.  All connections will fork off a new process and setuid if allowed."},
  {"detach", "detach", NULL, "-detach", "-S", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
     "Run as a background daemon detached from any controlling terminals."},
