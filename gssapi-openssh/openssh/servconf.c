@@ -597,21 +597,6 @@ parse_filename:
 			*intptr = value;
 		break;
 
-#ifdef GSSAPI
-	case sGssAuthentication:
-	    intptr = &options->gss_authentication;
-	    goto parse_flag;
-	case sGssKeyEx:
-	    intptr = &options->gss_keyex;
-	    goto parse_flag;
-	case sGssUseSessionCredCache:
-	    intptr = &options->gss_use_session_ccache;
-	    goto parse_flag;
-	case sGssCleanupCreds:
-	    intptr = &options->gss_cleanup_creds;
-	    goto parse_flag;
-#endif
-
 	case sIgnoreRhosts:
 		intptr = &options->ignore_rhosts;
 parse_flag:
