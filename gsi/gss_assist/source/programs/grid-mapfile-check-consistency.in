@@ -47,7 +47,7 @@ globus_source $libexecdir/globus-args-parser-header $@
 ##############################################
 
 secconfdir="/etc/grid-security"
-GRID_MAP_FILE=${secconfdir}/grid-mapfile
+GRID_MAP_FILE=${GRIDMAP-${secconfdir}/grid-mapfile}
 ECHO_DRYRUN=:
 
 # Parse command line arguments
