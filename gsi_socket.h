@@ -7,6 +7,8 @@
 #ifndef __GSI_SOCKET_H
 #define __GSI_SOCKET_H
 
+#include <sys/types.h>
+
 struct _gsi_socket;
 typedef struct _gsi_socket GSI_SOCKET;
 
@@ -15,6 +17,7 @@ typedef struct _gsi_socket GSI_SOCKET;
  */
 #define GSI_SOCKET_SUCCESS		0
 #define GSI_SOCKET_ERROR		-1
+#define GSI_SOCKET_TRUNCATED		-2
 
 /*
  * GSI_SOCKET_new()
@@ -36,18 +39,28 @@ void GSI_SOCKET_destroy(GSI_SOCKET *gsi_socket);
 /*
  * GSI_SOCKET_get_error_string()
  *
- * Returns a NUL-terminated string (possibly multi-lined) describing
- * the last error the occurred with this GSI_SOCKET. Returns NULL
- * if no error has occurred.
+ * Fills in buffer with a NUL-terminated string (possibly multi-lined)
+ * describing  * the last error the occurred with this GSI_SOCKET.
+ * bufferlen should be the size of buffer. It returns the number of
+ * characters actually put into buffer (not including the trailing
+ * NUL).
+ *
+ * If there is no error known of, buffer will be set to a zero-length
+ * string, and zero will be returned.
+ *
+ * If the buffer wasn't big enough and the string was truncated,
+ * -1 will be returned.
  */
-char *GSI_SOCKET_get_error_string(GSI_SOCKET *gsi_socket);
+int GSI_SOCKET_get_error_string(GSI_SOCKET *gsi_socket,
+				char *buffer,
+				int buffer_len);
 
 /*
  * GSI_SOCKET_clear_error()
  *
  * Clears any error state in the given GSI_SOCKET object.
  */
-void GSI_SOCKET_clear_error();
+void GSI_SOCKET_clear_error(GSI_SOCKET *gsi_socket);
 
 /*
  * GSI_SOCKET_authentication_init()
@@ -68,6 +81,25 @@ int GSI_SOCKET_authentication_init(GSI_SOCKET *gsi_socket);
 int GSI_SOCKET_authentication_accept(GSI_SOCKET *gsi_socket);
 
 /*
+ * GSI_SOCKET_get_client_identity()
+ *
+ * Fill in buffer with a string representation of the authenticated
+ * identity of the client on the other side of the socket.
+ *
+ * If the client is not identified, returns GSI_SOCKET_ERROR.
+ *
+ * If the buffer is too small and the string is truncated returns
+ * GSI_SOCKET_TRUNCATED.
+ *
+ * Other wise returns the number of characters written into the buffer
+ * (not including the trailing NUL).
+ *
+ */
+int GSI_SOCKET_get_client_name(GSI_SOCKET *gsi_socket,
+			       char *buffer,
+			       int buffer_len);
+
+/*
  * GSI_SOCKET_write_buffer()
  *
  * Write the given buffer to the peer. If authentication has been done,
@@ -76,7 +108,7 @@ int GSI_SOCKET_authentication_accept(GSI_SOCKET *gsi_socket);
  * Returns GSI_SOCKET_SUCCESS on success, GSI_SOCKET_ERROR otherwise.
  */
 int GSI_SOCKET_write_buffer(GSI_SOCKET *gsi_socket,
-			    char *buffer,
+			    const char *buffer,
 			    size_t buffer_len);
 
 /*
@@ -85,16 +117,21 @@ int GSI_SOCKET_write_buffer(GSI_SOCKET *gsi_socket,
  * Read the given buffer from the peer. If authentication has been done,
  * the buffer will be protected via the GSI.
  *
- * *p_buffer will be set to point at an allocated buffer containing
- * the data. It should be freed by the caller.
+ * buffer should be pointing at an allocated buffer bufferlen bytes
+ * in length.
  *
- * *p_buffer_len will be set to the length of the read data.
+ * Note that data is read like individual datagrams and not like a 
+ * stream. So if three writes are done of 150, 75 and 50 bytes, and
+ * then reads are done into a 100 byte buffer, the first read will
+ * read 100 bytes and return GSI_SOCKET_TRUNCATED, the second will
+ * read 50 bytes, the third 75 bytes and the fourth 50 bytes.
  *
- * Returns number of bytes read on success, GSI_SOCKET_ERROR otherwise.
+ * Returns number of bytes put into buffer, GSI_SOCKET_ERROR on error,
+ * GSI_SOCKET_TRUNCATED if are more bytes to be returned.
  */
-int GSI_SOCKET_write_buffer(GSI_SOCKET *gsi_socket,
-			    char **p_buffer,
-			    size_t *p_buffer_len);
+int GSI_SOCKET_read_buffer(GSI_SOCKET *gsi_socket,
+			   char *buffer,
+			   size_t buffer_len);
 
 /*
  * GSI_SOCKET_delegation_init_ext()
@@ -102,8 +139,9 @@ int GSI_SOCKET_write_buffer(GSI_SOCKET *gsi_socket,
  * Delegate credentials to the peer.
  *
  * source_credentials should be a string specifying the location
- * of the credentials to delegate. If NULL, the default
- * credentials for the current context will be used.
+ * of the credentials to delegate. This is mechanism specific,
+ * but typically a file path. If NULL, the default credentials for
+ * the current context will be used.
  *
  * flags is reserved for future use and should currently always be
  * GSI_SOCKET_DELEGATION_FLAGS_DEFAULT.
@@ -118,10 +156,10 @@ int GSI_SOCKET_write_buffer(GSI_SOCKET *gsi_socket,
  * Returns GSI_SOCKET_SUCCESS success, GSI_SOCKET_ERROR otherwise.
  */
 int GSI_SOCKET_delegation_init_ext(GSI_SOCKET *gsi_socket,
-				   char *source_credentials,
+				   const char *source_credentials,
 				   int flags,
 				   int lifetime,
-				   void *restrictions);
+				   const void *restrictions);
 /*
  * Values for GSI_SOCKET_DELEGATION_init() flags:
  */
@@ -142,16 +180,15 @@ int GSI_SOCKET_delegation_init_ext(GSI_SOCKET *gsi_socket,
  *
  * Accept delegated credentials from the peer.
  *
- * If p_target_credentials is NULL, it will be set to point to
- * a allocated string (to be freed by caller) indicating the
- * location of the received credentials. If target_credentials
- * is non-NULL it should point to a string indicating the
- * desired location for the credentials to be stored.
+ * target_credentials should point to a string indicating the
+ * desired location for the credentials to be stored (this is
+ * mechanism-specific but probably a file path). If NULL then
+ * the default location for the current context will be used.
  *
  * Returns GSI_SOCKET_SUCCESS on success, GSI_SOCKET_ERROR otherwise.
  */
 int GSI_SOCKET_delegation_accept_ext(GSI_SOCKET *gsi_socket,
-				     char **p_target_credentials);
+				     char *target_credentials);
 
 
 #endif /* !__GSI_SOCKET_H */
