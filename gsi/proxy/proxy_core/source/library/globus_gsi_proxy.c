@@ -1330,11 +1330,13 @@ globus_i_gsi_proxy_set_pc_times(
             ("Error adjusting the allowable time skew for proxy"));
         goto exit;
     }
-    
+
     tmp_time = time(NULL) + ((long) 60 * time_valid);
+    
 
     /* check that issuer cert won't expire before new proxy cert */
-    if(X509_cmp_time(X509_get_notAfter(issuer_cert), & tmp_time) < 0)
+    if(time_valid == 0 ||
+       X509_cmp_time(X509_get_notAfter(issuer_cert), & tmp_time) < 0)
     {
         if((pc_notAfter = 
             M_ASN1_UTCTIME_dup(X509_get_notAfter(issuer_cert))) == NULL)
@@ -1342,7 +1344,7 @@ globus_i_gsi_proxy_set_pc_times(
             GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_PROXY_ERROR_WITH_X509,
-                ("Error copying issuer certificate of proxy"));
+                ("Error copying issuer certificate lifetime"));
             goto exit;
         }
     }
@@ -1357,7 +1359,7 @@ globus_i_gsi_proxy_set_pc_times(
                 ("Error creating new ASN1_UTCTIME for expiration date "
                  "of proxy cert"));
         }
-
+        
         if(X509_gmtime_adj(pc_notAfter, ((long) 60 * time_valid)) == NULL)
         {
             GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
