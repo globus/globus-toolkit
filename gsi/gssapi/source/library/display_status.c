@@ -102,13 +102,17 @@ GSS_CALLCONV gss_display_status
 				reason = "Credentials Expired";
 				break;
 			case GSS_S_BAD_NAME:
-				reason = "Service or hostname could not be understood";
+				reason = "Service or hostname could "
+					  "not be understood";
 				break;
 			case GSS_S_UNAUTHORIZED:
 				reason = "Unauthorized Gatekeeper or Service";
 				break;
 			case GSS_S_NO_CRED:
 				reason = "No Credentials";			
+				break;
+			case GSS_S_BAD_SIG:
+				reason = "Invalid signature on message";
 				break;
 			default:
 				reason = "Some Other GSS failure";
