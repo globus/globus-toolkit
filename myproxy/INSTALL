@@ -1,4 +1,4 @@
-=======
+======
 INSTALL		myproxy installation directions
 =======
 
@@ -8,9 +8,10 @@ INSTALL		myproxy installation directions
  4. Installing the myproxy-server
  5. The myproxy-server.config file
  6. Installing the portal software
+ 7. Providing access from the portal
 
 
-1. Prerequisits for building
+1. Prerequisites for building
 -----------------------------
 
 In order to build the myproxy software you will need a special
@@ -55,7 +56,7 @@ Step 1: Run './configure'
 		By default this is /usr/local
 
 	--with-myproxy-client-path=<PATH>
-		Speicify myproxy client intall prefix. This is the prefix
+		Specify myproxy client intall prefix. This is the prefix
 		under which the client binaries will be installed.
 		By default this is /usr/local
 
@@ -221,6 +222,14 @@ to use another CA.
    the service certificate and key. e.g.
 	setenv X509_USER_CERT /usr/portal/cert/usercert.pem
 	setenv X509_USER_KEY /usr/portal/cert/userkey.pem
+
+7. Setting up sample CGI script on portal
+-----------------------------------------
+
+The directory web/ contains a simple HTML file specifying a form to request a proxy. After filling out the form, the CGI script, myproxy-get-delegation.cgi runs myproxy-get-delegation with the user supplied input and returns the output of the command. 
+
+The CGI script myproxy-get-delegation.cgi is intended to demonstrate the use of myproxy-get-delegation and can be modified to suit a particular portals requirements. If a proxy is succesfully retrieved from myproxy-server, it will store the proxy in the top-level directory under <username>.cred.
+
 
 ----
 End of Installation Directions
