@@ -182,7 +182,8 @@ int PROXYRESTRICTION_print_fp(
  * @param restriction the PROXYRESTRICTION to set the policy language of
  * @param policy_language the policy language to set it to
  *
- * @return 
+ * @return 1 on success, 0 on error
+ */
 int PROXYRESTRICTION_set_policy_language(
     PROXYRESTRICTION *                  restriction,
     ASN1_OBJECT *                       policy_language)
@@ -195,13 +196,34 @@ int PROXYRESTRICTION_set_policy_language(
     }
     return 0;
 }
-    
+
+/**
+ * @ingroup proxyrestriction
+ * 
+ * Gets the policy language of the PROXYRESTRICTION
+ *
+ * @param restriction the proxy restriction to get the policy language
+ * of
+ * 
+ * @return the policy language as an ASN1_OBJECT
+ */    
 ASN1_OBJECT * PROXYRESTRICTION_get_policy_language(
     PROXYRESTRICTION *                  restriction)
 {
     return restriction->policy_language;
 }
 
+/**
+ * @ingroup proxyrestriction
+ *
+ * Sets the policy of the PROXYRESTRICTION
+ *
+ * @param restriction the proxy restriction to set the policy of
+ * @param policy the policy to set it to
+ * @param length the lenght of the policy
+ *
+ * @return 1 on success, 0 on error
+ */
 int PROXYRESTRICTION_set_policy(
     PROXYRESTRICTION *                  restriction,
     unsigned char *                     policy,
@@ -215,6 +237,17 @@ int PROXYRESTRICTION_set_policy(
     return 0;
 }
 
+/**
+ * @ingroup proxyrestriction
+ *
+ * Gets the policy of a PROXYRESTRICTION
+ *
+ * @param restriction the PROXYRESTRICTION to get the policy of
+ * @param length the length of the returned policy - this value
+ *        gets set by this function
+ *
+ * @return the policy
+ */
 unsigned char * PROXYRESTRICTION_get_policy(
     PROXYRESTRICTION *                  restriction,
     int *                               length)
@@ -223,6 +256,17 @@ unsigned char * PROXYRESTRICTION_get_policy(
     return restriction->policy->data;
 }
 
+/**
+ * @ingroup proxyrestriction
+ *
+ * Converts a PROXYRESTRICTION from its internal structure
+ * to a DER encoded form
+ *
+ * @param a the PROXYRESTRICTION to convert
+ * @param pp the buffer to put the DER encoding in
+ *
+ * @return the length of the DER encoding in bytes
+ */
 int i2d_PROXYRESTRICTION(
     PROXYRESTRICTION *                  a,
     unsigned char **                    pp)
@@ -240,6 +284,20 @@ int i2d_PROXYRESTRICTION(
     M_ASN1_I2D_finish();
 }
 
+/**
+ * @ingroup proxyrestriction
+ *
+ * Converts the PROXYRESTRICTION from its DER encoded form
+ * to an internal PROXYRESTRICTION structure
+ *
+ * @param a the PROXYRESTRICTION struct to set
+ * @param pp the DER encoding to get the PROXYRESTRICTION from
+ * @param length the length of the DER encoding
+ * 
+ * @return the resulting PROXYRESTRICTION in its internal structure
+ * form - this variable has been allocated using _new routines, 
+ * so it needs to be freed once its no longer used
+ */
 PROXYRESTRICTION * d2i_PROXYRESTRICTION(
     PROXYRESTRICTION **                 a,
     unsigned char **                    pp,
