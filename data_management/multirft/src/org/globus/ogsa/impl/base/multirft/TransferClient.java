@@ -263,7 +263,8 @@ public class TransferClient {
                 logger.debug("Source url contains a directory");
                 logger.debug("More processing needs to be done");
                 this.status = 6;
-                URLExpander urlExpander = new URLExpander(this.sourceHost,this.destinationHost,sourcePath,destinationPath);
+                URLExpander urlExpander = new URLExpander
+                (this.sourceHost,this.destinationHost,sourceGlobusURL,destinationGlobusURL);
                 urlExpander.start();
         }else {
             size = sourceHost.getSize(sourcePath);    
@@ -467,7 +468,6 @@ public class TransferClient {
 
         try {
             host.authenticate(cred);
-            host.setProtectionBufferSize(16384);
 
             if (rftOptions.isBinary()) {
                 host.setType(GridFTPSession.TYPE_IMAGE);
@@ -480,6 +480,7 @@ public class TransferClient {
             if (rftOptions.isDcau()) {
                 host.setDataChannelAuthentication(
                         DataChannelAuthentication.SELF);
+                host.setProtectionBufferSize(16384);
             } else {
                 host.setLocalNoDataChannelAuthentication();
             }

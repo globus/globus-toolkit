@@ -39,10 +39,12 @@ public class TransferDbAdapter {
     final public static String multiRftURI = "multiRft";
     static int connNumber;
     static GenericObjectPool connectionPool = null;
-    static int def_activeConnections = 32;
+    static int def_activeConnections = 64;
     static byte def_onExhaustAction = 1;
-    static long def_maxWait = 100;
+    static long def_maxWait = 1000;
     static int def_idleConnections = 2;
+    RFTOptionsType globalRFTOptions;
+    int requestId;
 
     private TransferDbAdapter() {
     }
@@ -202,7 +204,6 @@ public class TransferDbAdapter {
         try {
 
             Statement statement = c.createStatement();
-            int count = 0;
             logger.debug("Inserting TransferRequest into the database");
 
             int result = statement.executeUpdate(
@@ -212,15 +213,15 @@ public class TransferDbAdapter {
                                    "SELECT COUNT(id) FROM " + "request");
 
             while (rs != null && rs.next())
-                count = rs.getInt(1);
+                this.requestId = rs.getInt(1);
 
             logger.debug("Inserted request into the database with id:" + 
-                         count);
+                         this.requestId);
 
-            int transferStore = storeTransfers(count, request);
+            int transferStore = storeTransfers(this.requestId, request);
             returnDBConnection(c);
 
-            return count;
+            return this.requestId;
         } catch (Exception e) {
             logger.error(
                     "Exception in inserting request in to the database" + 
@@ -260,13 +261,39 @@ public class TransferDbAdapter {
 
         return transferCount;
     }
+    
+    public void storeTransferJob(TransferJob transferJob) 
+    throws RftDBException {
+        Connection c = getDBConnection();
+        try {
+                Statement st = c.createStatement();
+                StringBuffer query  = new StringBuffer();
+                query.append(
+                "INSERT into transfer(request_id,source_url,dest_url," );
+                query.append("dcau,parallel_streams,tcp_buffer_size,");
+                query.append("block_size,notpt,binary_mode) VALUES(");
+                query.append(this.requestId).append(",'").append(transferJob.getSourceUrl());
+                query.append("','").append(transferJob.getDestinationUrl()).append("',");
+                query.append(this.globalRFTOptions.isDcau()).append(",").append(this.globalRFTOptions.getParallelStreams())
+                     .append(",").append(this.globalRFTOptions.getTcpBufferSize()).append(
+                        ",").append(this.globalRFTOptions.getBlockSize()).append(",").append(this.globalRFTOptions.isNotpt())
+                     .append(",").append(this.globalRFTOptions.isBinary()).append(")");
+                logger.debug("Query in storeTransfer: " );
+                logger.debug(query.toString());
+                int returnInt = st.executeUpdate(query.toString());
+        } catch (SQLException e) {
+            logger.error("Unable to insert transferJob into transfer table" +e.toString(),e);
+            throw new RftDBException("Failed to insert transferJob into DB",e);
+        }
+    }
+                
     public int storeTransfers(int requestId, 
                               TransferRequestType transferRequest)
                        throws RftDBException {
 
         Connection c = getDBConnection();
         TransferType[] transfers = transferRequest.getTransferArray();
-        RFTOptionsType globalRFTOptions = transferRequest.getRftOptions();
+        this.globalRFTOptions = transferRequest.getRftOptions();
         int returnInt = -1;
 
         for (int i = 0; i < transfers.length; i++) {
@@ -289,7 +316,7 @@ public class TransferDbAdapter {
 
                 RFTOptionsType rftOptions = transfer.getRftOptions();
                 if(rftOptions == null) {
-                    rftOptions = globalRFTOptions;
+                    rftOptions = this.globalRFTOptions;
                     logger.debug("Setting global rft options");
                 }
                 query.append(rftOptions.isDcau()).append(",").append(rftOptions.getParallelStreams())
