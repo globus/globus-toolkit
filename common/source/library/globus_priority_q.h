@@ -4,6 +4,10 @@
 /********************************************************************
  *
  *  This file defines the a priority queue for globus
+ *  It is implemented using a binary heap (minheap) and does NOT have
+ *  a fifo fallback for like priorities.  If you need fifo fallback,
+ *  you should use a compound priority with the primary priority being
+ *  the 'real' priority and the secondary being a serial number.
  *
  ********************************************************************/
 
@@ -22,8 +26,12 @@
 
 EXTERN_C_BEGIN
 
-#define __PRIORITY_Q_USE_I_MEM 1
-
+/*
+ * if priority_1 comes after priority_2, return > 0
+ * else if priority_1 comes before priority_2, return < 0
+ * else return 0
+ */
+ 
 typedef int (*globus_priority_q_cmp_func_t)(
     void *                                  priority_1,
     void *                                  priority_2);
@@ -65,6 +73,10 @@ globus_priority_q_remove(
     globus_priority_q_t *               priority_q,
     void *                              datum);
 
+/*
+ * it is acceptable to modify the priority already stored within the queue
+ * before making this call.  The old priority is not looked at
+ */
 void *
 globus_priority_q_modify(
     globus_priority_q_t *               priority_q,
