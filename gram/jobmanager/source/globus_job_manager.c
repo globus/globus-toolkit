@@ -760,6 +760,18 @@ main(int argc,
         globus_symboltable_insert(symbol_table,
                                 (void *) "GLOBUS_PREFIX",
                                 (void *) jm_globus_prefix);
+	if (strlen(GLOBUS_TOOLS_PREFIX) != 0)
+	{
+	    globus_symboltable_insert(symbol_table,
+				(void *) "GLOBUS_TOOLS_PREFIX",
+				(void *) strdup(GLOBUS_TOOLS_PREFIX));
+	}
+	if (strlen(GLOBUS_SERVICES_PREFIX) != 0)
+	{
+	    globus_symboltable_insert(symbol_table,
+				(void *) "GLOBUS_SERVICES_PREFIX",
+				(void *) strdup(GLOBUS_SERVICES_PREFIX));
+	}
     
         if (globus_rsl_eval(rsl_tree, symbol_table) != 0)
         {
