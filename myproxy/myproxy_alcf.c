@@ -168,7 +168,7 @@ int main(int argc, char *argv[])
 		    "Cannot get subject name from certificate.\n");
 	    goto cleanup;
 	}
-	my_creds->location = strdup (proxyfile);
+	my_creds->location = strdup(proxyfile);
 
 	if (myproxy_creds_store(my_creds) < 0) {
 	    myproxy_log_verror();
