@@ -1,7 +1,10 @@
-<html>
-    <head><title>Globus XIO Features</title></head>
+<?php
+$title = "Globus XIO Features";
+include_once( "/mcs/www-unix.globus.org/include/globus_header.inc" );
+?>
+
     <body>
-        <CENTER><B><H2>Globus XIO</H2></B></CENTER>
+        <CENTER><B><H1>Globus XIO</H1></B></CENTER>
 
         Globus XIO is a feature rich runtime system.  One of its two main goals
         is to provide the application developer with a simple easy to use API.

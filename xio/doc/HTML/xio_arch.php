@@ -1,24 +1,19 @@
-<html>
-<HEAD>
-    <title>Globus XIO Architecture</title>
-    <style type="text/css">
-        <!--
-            h3 { background-color: #DCE1FF; background-position: left}
-        -->
-    </style>
-</HEAD>
+<?php
+$title = "Globus XIO Architecture";
+include_once( "/mcs/www-unix.globus.org/include/globus_header.inc" );
+?>
 
     <body>
-        <CENTER><B><H2> Globus XIO Architecture</H2></B></CENTER>
+        <CENTER><B><H1> Globus XIO Architecture</H1></B></CENTER>
         <BR>
         This document shall explain the external view of the Globus XIO
         architecture.  To see an explanation of the data types used to 
         implement the system see <A HREF="xio_i_arch.html">Internal arch</A>.
         Globus XIO is broken down into two main components, framework and
         drivers.  The following picture illustrates the architecture:
-        <H3>figure 1</H3>
+        <H2>figure 1</H2>
         <IMG SRC="xio_arch.jpg" width="25%">
-        <H3>Globus XIO Framework</H3>
+        <H2>Globus XIO Framework</H2>
         <P>
         The Globus XIO framework manages io operation requests that an 
         application makes via the <A HREF="api/index.html">user API</A>
@@ -29,13 +24,13 @@
         It is the drivers themselves that are responsible for manipulating
         and transporting the data.
         <BR>
-        <H3>Drivers</H3>
+        <H2>Drivers</H2>
         <P>
         A driver is the component of Globus XIO that is responsible for 
         manipulating and transporting the users data.  There are two types
         of drivers, transform and transport. Transform drivers are those that
         manipulate the data buffers passed to it via the user API and the
-        XIO framework.  Transport drivers are those that are capable of
+        XIO framework.  Transform drivers are those that are capable of
         sending the data over a wire.
         <BR><BR>
         Drivers are grouped into stacks, that is of course one driver on 
@@ -64,7 +59,7 @@
         would be responsible for marshaling the HTTP protocol and the TCP
         driver would be responsible for shipping that protocol over the wire.
         </P>
-        <H3>Example</H3>
+        <H2>Example</H2>
         <P>
         In the following picture we illustrate a user application using Globus
         XIO to speak the GridFTP protocol across a TCP connection:
@@ -112,7 +107,7 @@
         has nothing more to do so it notifies the framework that it is 
         complete and the framework then notifies the user.
         </P>
-        <H3>Driver Interface</H3>
+        <H2>Driver Interface</H2>
         <P>
         There is a well defined interface to a driver.  Drivers are modular
         components with specific tasks.  The purpose of drivers in the globus
@@ -127,11 +122,12 @@
         via the command line) and the globus xio framework will be responsible 
         for loading that driver.
         </P>
-        <H3>Note:</H3>
+        <H2>Note:</H2>
         <P>
         The above example is simplified for the purposes of understanding.
         There are optimizations built into globus xio which alter the course
         of events outlined above.  However, conceptually the above is accurate.
         </P>
     </body>
-</html>
+
+<?php include("/mcs/www-unix.globus.org/include/globus_footer.inc"); ?>

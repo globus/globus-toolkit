@@ -1,12 +1,13 @@
-<html>
-    <head><title>Globus XIO Introduction</title></head>
-    <body>
-        <CENTER><B><H2> Globus XIO</H2></B></CENTER>
+<?php
+$title = "Globus XIO Introduction";
+include_once( "/mcs/www-unix.globus.org/include/globus_header.inc" );
+?>
+        <CENTER><B><H1> Globus XIO</H1></B></CENTER>
             <P>Globus XIO is an extensible input/output library for the Globus
             Toolkit (tm).  It provides a simple and intuitive API 
             (open/close/read/write) to swappable IO implementations.
             <BR>
-            <h3>Globus XIO has 2 main goals:</h3>
+            <h2>Globus XIO has 2 main goals:</h2>
             <UL>
                 <LI><B>Provide a single user API to all Grid IO Protocols.</B>
                 <BR><BR>
@@ -28,7 +29,7 @@
                 it is transparent to the application developer.  Therefore an
                 application programmer can code to the globus_xio user API once
                 and then focus on the applications needs throughout its life cycle.
-                If in a few years down the line they want the same application
+                If a in few years down the line they want the same application
                 to work with the latest and greatest protocol for shipping bytes
                 around the grid, they do not have to change a line of source code.
                 </LI>
@@ -54,5 +55,5 @@
                 easier to develop the transport protocols, since the only focus
                 on the developer are the details of the protocol they are creating.
             </UL>
-    </body>
-</html>
+
+<?php include("/mcs/www-unix.globus.org/include/globus_footer.inc"); ?>

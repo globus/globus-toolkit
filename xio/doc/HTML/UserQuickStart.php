@@ -1,12 +1,7 @@
-<HTML>
-<HEAD>
-    <TITLE>Globus XIO User API Quick Start Guide</TITLE>
-    <style type="text/css">
-        <!--
-            h3 { background-color: #DCE1FF; background-position: left}
-        -->
-    </style>
-</HEAD>
+<?php
+$title = "Globus XIO User API Quick Start Guide";
+include_once( "/mcs/www-unix.globus.org/include/globus_header.inc" );
+?>
 <BODY>
     <IMG SRC="globus_top.gif"><br>
     <IMG SRC="globus.gif"><br>
@@ -140,6 +135,7 @@ has the ability to be any reading client, or server, (HTTP, ftp, TCP, file,
 etc) as long as the proper drivers are in the LD_LIBRARY_PATH.  Not bad eh?
 </P>
 </BODY>
-</HTML>
+<?php include("/mcs/www-unix.globus.org/include/globus_footer.inc"); ?>
+
 
 

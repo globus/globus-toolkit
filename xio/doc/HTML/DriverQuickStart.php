@@ -1,19 +1,12 @@
-<HTML>
-<HEAD>
-    <TITLE>Globus XIO Driver Quick Start Guide</TITLE>
-    <style type="text/css">
-        <!--
-            h3 { background-color: #DCE1FF; background-position: left}
-        -->
-    </style>
-</HEAD>
-<BODY>
-    <IMG SRC="globus_top.gif"><br>
-    <IMG SRC="globus.gif"><br>
-    <IMG SRC="globus_bottom.gif"><br>
-    <H2>Globus XIO Driver Quick Start Guide</H2>
+<?php
+$title = "Globus XIO Driver Quick Start Guide";
+include_once( "/mcs/www-unix.globus.org/include/globus_header.inc" );
+?>
 
-    <h3><a name="Contents">Contents</a></h3>
+<BODY>
+    <H1>Globus XIO Driver Quick Start Guide</H1>
+
+    <H2><a name="Contents">Contents</a></H2>
     <a href="#DataStructures">Data Structures</a><br>
     <a href="#Attributes">Attributes</a><br>
     <a href="#Target">Target</a><br>
@@ -22,7 +15,7 @@
     <a href="#The_Glue">The Glue</a><br>
 
     <P>
-    <h3><a name="Introduction">Introduction</a></h3>
+    <H2><a name="Introduction">Introduction</a></H2>
 This Guide explains how to create a transport driver for Globus XIO.
 For the purpose of exploring both what a transform driver is and how to
 write one this guide will walk through an example driver.  The full source
@@ -32,12 +25,7 @@ implements a file driver for globus_xio.  If a user of globus_xio were to
 put this file at the bottom of the stack they could access files on the 
 local file system.
 
-<I>NOTE: This driver is for learning purposes only. It is written in a 
-blocking fashion and therefore could not actualy be a globus_xio driver.  It
-is required that XIO drivers be created in a nonblocking fashion.  A blocking
-example was choosen as a teaching tool due to its simplicity.</I>
-
-    <h3><a name="DataStructures">Data Structures</a></h3>
+    <H2><a name="DataStructures">Data Structures</a></H2>
 <P>
 There are three data structures that will be explored in this example:
 attribute, target, and handle.  The driver defines the memory layout of
@@ -45,7 +33,7 @@ these data structures but the globus_xio framework imposes certain
 semantics upon them.  It is up to the driver how to use them, but globus_xio
 will be expecting certain behaviors.
 </P>
-    <h3><a name="Attributes">Attributes</a></h3>
+    <H2><a name="Attributes">Attributes</a></H2>
 <P>
 Each driver may have its own attribute structure.  The attribute gives
 the globus_xio user API an opportunity to tweak parameters inside the 
@@ -217,7 +205,7 @@ driver decides either to set flags or mode from the va_args, or to return
 flags or mode to the user via a pointer in va_args.
 </P>
 
-    <h3><a name="Target">Target</a></h3>
+    <H2><a name="Target">Target</a></H2>
 <P>
 A target structure represents what a driver will open and is initialized from
 a contact string and an attribute.  In the case of a file driver the target
@@ -263,7 +251,7 @@ string.  As soon as this interface function returns that pointer is no
 longer valid.
 </P>
 
-    <h3><a name="Handle">Handle</a></h3>
+    <H2><a name="Handle">Handle</a></H2>
 <P>
 The most interesting of the 3 data types discussed here is the handle.
 Upon the handle all typical IO operations (open close read write) are
@@ -286,7 +274,7 @@ globus_xio_driver_file_read() globus_xio_driver_file_close() in
 <A HREF="globus_xio_file_driver.c"> globus_xio_file_driver.c</A> in order 
 to see how the handle structure is used.
 </P>
-    <h3><a name="IO_Op">IO Operations</a></h3>
+    <H2><a name="IO_Op">IO Operations</a></H2>
 <P>
 The read and write interface functions are called in response to a user read or
 write request.  Both functions are provided with a vector that, at the least, has the
@@ -332,7 +320,7 @@ globus_xio_driver_finished_{open, read, write, close} either while in the
 original interface call, in a separate thread, or in a separate callback kick out
 via the globus_callback API.
 </p>
-    <h3><a name="The_Glue">The Glue</a></h3>
+    <H2><a name="The_Glue">The Glue</a></H2>
 <p>
 Through a process not finalized yet, xio will request the globus_xio_driver_t
 structure from the driver.  This structure defines all of the interface functions
@@ -377,6 +365,5 @@ that the driver supports.  In detail:
 </pre>
 
 </BODY>
-</HTML>
 
-
+<?php include("/mcs/www-unix.globus.org/include/globus_footer.inc"); ?>
