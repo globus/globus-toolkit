@@ -1,0 +1,3 @@
+name=rips_pbs_provider_setup
+subdir=program_execution/rips-pbs-provider-setup
+build="custom"
