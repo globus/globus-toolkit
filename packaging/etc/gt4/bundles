@@ -1,6 +1,7 @@
 BUNDLE gt4-java-ws-core
         globus_ws_core_schema
         globus_java_ws_core_common
+        globus_java_ws_core_usage 
         globus_java_ws_core_tools
         globus_java_ws_core
         globus_java_ws_core_management_sample
