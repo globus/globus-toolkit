@@ -43,7 +43,7 @@ static char *  LONG_USAGE = \
 		 "%s-%s", \
 		 PACKAGE, \
 		 VERSION); \
-	fprintf(stderr, "%s", buf); \
+	fprintf(stderr, "%s\n", buf); \
 	exit(0); \
     }
 
@@ -143,7 +143,6 @@ int main(
 	{
 	    break;
 	}
-
 	else if (strcmp(argp, "-all") == 0)
         {
 	    all_flag++;
