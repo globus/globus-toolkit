@@ -105,6 +105,9 @@
 				RelativePath="..\library\config.h">
 			</File>
 			<File
+				RelativePath="..\library\oldgaa\oldgaa_utils.h">
+			</File>
+			<File
 				RelativePath="..\library\scutils.h">
 			</File>
 			<File

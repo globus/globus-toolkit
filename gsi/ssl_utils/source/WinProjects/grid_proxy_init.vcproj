@@ -12,6 +12,7 @@
 				IntermediateDirectory="Build"
 				OutputDirectory="Build"
 				ConfigurationType="1"
+				BuildBrowserInformation="FALSE"
 				CharacterSet="2">
 				<Tool
 					Name="VCBscMakeTool"/>
@@ -20,18 +21,21 @@
 					Optimization="0"
 					IncludePaths="$(GLOBUS_LOCATION)/include; ../library/"
 					Defines="WIN32;_DEBUG;_WINDOWS"
-					MinimalRebuild="TRUE"
+					MinimalRebuild="FALSE"
 					FullRuntimeChecks="TRUE"
 					RuntimeLibrary="5"
 					UsePrecompiledHeader="0"
+					BrowseInformation="0"
 					WarnLevel="3"
 					SuppressStartupMessage="TRUE"
-					DebugInformation="4"/>
+					DebugInformation="4"
+					CompileAs="1"/>
 				<Tool
 					Name="VCCustomBuildTool"/>
 				<Tool
 					Name="VCLinkerTool"
-					AdditionalInputs="kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib $(GLOBUS_LOCATION)/lib/libeay32.lib $(GLOBUS_LOCATION)/lib/ssleay32.lib $(OutDir)/globus_oldgaa.lib $(OutDir)/globus_sslutils.lib"/>
+					AdditionalInputs="kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib $(GLOBUS_LOCATION)/lib/libeay32.lib $(GLOBUS_LOCATION)/lib/ssleay32.lib $(OutDir)/globus_oldgaa.lib $(OutDir)/globus_sslutils.lib"
+					GenerateDebug="TRUE"/>
 				<Tool
 					Name="VCMIDLTool"
 					TargetEnvironment="1"/>
