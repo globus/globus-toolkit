@@ -56,6 +56,8 @@ static char *  long_usage = \
 "        Writes to <base URL>/dev/stderr will be forwarded to stderr\n"
 "    -p <port>\n"
 "        Start the GASS server using the specified TCP port.\n"
+"    -i | -insecure\n"
+"        Start the GASS server without using GSSAPI security.\n"
 "    -n <options>\n"
 "        Disable <options>, which is a string consisting of one or many of\n"
 "        the letters \"sclturwoe\"\n\n";
@@ -64,7 +66,7 @@ static char *  long_usage = \
 
 
 enum { arg_c = 1, arg_s, arg_l, arg_t, arg_u, arg_r, arg_w, arg_o,
-       arg_e, arg_n, arg_p, arg_num=arg_p };
+       arg_e, arg_n, arg_p, arg_i, arg_num=arg_i };
 
 #define listname(x) x##_aliases
 #define namedef(id,alias1,alias2) \
@@ -91,6 +93,7 @@ flagdef(arg_r, "-r", "-read");
 flagdef(arg_w, "-w", "-write");
 flagdef(arg_o, "-o", GLOBUS_NULL);
 flagdef(arg_e, "-e", GLOBUS_NULL);
+flagdef(arg_i, "-i", "-insecure");
 
 int
 test_dashp( char *   value,
@@ -133,7 +136,7 @@ static globus_args_option_descriptor_t args_options[arg_num];
 #define globus_i_gass_server_args_init() \
     setupopt(arg_c); setupopt(arg_s); setupopt(arg_l); setupopt(arg_t); \
     setupopt(arg_u); setupopt(arg_r); setupopt(arg_w); setupopt(arg_o); \
-    setupopt(arg_e); setupopt(arg_n); setupopt(arg_p);
+    setupopt(arg_e); setupopt(arg_n); setupopt(arg_p); setupopt(arg_i);
 
 
 static globus_bool_t done = GLOBUS_FALSE;
@@ -171,7 +174,8 @@ int main(int argc, char **argv)
     int                                rc;
     globus_gass_transfer_listener_t    listener;
     globus_gass_transfer_listenerattr_t  attr;
-    char                              scheme[6]="https";
+    char                               * scheme;
+    globus_bool_t			insecure = GLOBUS_FALSE;
     globus_gass_transfer_requestattr_t  * reqattr      = GLOBUS_NULL;
     OM_uint32                           maj_stat;
     OM_uint32                           min_stat;
@@ -229,8 +233,6 @@ int main(int argc, char **argv)
 	exit(1);
     }
 
-    globus_gass_transfer_listenerattr_init(&attr,
-					   scheme);
     for (list = options_found; 
 	 !globus_list_empty(list); 
 	 list = globus_list_rest(list))
@@ -275,6 +277,9 @@ int main(int argc, char **argv)
 		exit(1);
 	    }
 	    break;
+	case arg_i:
+	    insecure = GLOBUS_TRUE;
+	    break;
 	case arg_n:
 	    for (p=instance->values[0]; p; ++p)
 	    {
@@ -313,6 +318,17 @@ int main(int argc, char **argv)
 	}
     }
 
+    if(insecure)
+    {
+        scheme = "http";
+    }
+    else
+    {
+        scheme = "https";
+    }
+
+    globus_gass_transfer_listenerattr_init(&attr,
+					   scheme);
     globus_args_option_instance_list_free( &options_found );
 
     if(options == 0)
