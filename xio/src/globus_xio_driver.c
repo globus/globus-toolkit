@@ -644,6 +644,7 @@ globus_i_xio_driver_start_close(
     globus_i_xio_context_t *            context;
     globus_i_xio_context_entry_t *      my_context;
     globus_bool_t                       destroy_handle = GLOBUS_FALSE;
+    globus_bool_t                       destroy_context = GLOBUS_FALSE;
     GlobusXIOName(globus_i_xio_driver_start_close);
 
     GlobusXIODebugInternalEnter();
@@ -657,6 +658,8 @@ globus_i_xio_driver_start_close(
     globus_mutex_lock(&context->mutex);
     {
         GlobusXIOOpInc(op);
+        /* make sure the context lives past this op */
+        context->ref++;
     }
     globus_mutex_unlock(&context->mutex);
 
@@ -700,6 +703,11 @@ globus_i_xio_driver_start_close(
         if(op->ref == 0)
         {
             globus_i_xio_op_destroy(op, &destroy_handle);
+            context->ref--;
+            if(context->ref == 0)
+            {
+                destroy_context = GLOBUS_TRUE;
+            }
         }
     }
     globus_mutex_unlock(&context->mutex);
@@ -707,6 +715,14 @@ globus_i_xio_driver_start_close(
     if(destroy_handle)
     {
         globus_i_xio_handle_destroy(handle);
+    }
+    if(destroy_context)
+    {
+        /* the only way we'll be destroying the context is if this was a 
+         * driver op and the handle no longer exists
+         */
+        globus_assert(!destroy_handle);
+        globus_i_xio_context_destroy(context);
     }
 
     GlobusXIODebugInternalExit();
@@ -941,7 +957,7 @@ void
 globus_xio_driver_operation_destroy(
     globus_xio_operation_t              operation)
 {
-    globus_i_xio_context_t *            l_context;
+    globus_i_xio_context_t *            context;
     globus_bool_t                       destroy_context = GLOBUS_FALSE;
     globus_i_xio_op_t *                 op;
     GlobusXIOName(globus_xio_driver_operation_destroy);
@@ -949,29 +965,29 @@ globus_xio_driver_operation_destroy(
     GlobusXIODebugInternalEnter();
 
     op = operation;
-    l_context = op->_op_context;
+    context = op->_op_context;
 
-    globus_mutex_lock(&l_context->mutex);
+    globus_mutex_lock(&context->mutex);
     {
         GlobusXIOOpDec(op);
         if(op->ref == 0)
         {
-            l_context->ref--;
-            if(l_context->ref == 0)
+            context->ref--;
+            if(context->ref == 0)
             {
                 GlobusXIODebugPrintf(
                     GLOBUS_XIO_DEBUG_INFO,
       ("[globus_xio_driver_operation_destroy] :: context->ref == 0.\n"));
                 destroy_context = GLOBUS_TRUE;
             }
-            globus_memory_push_node(&l_context->op_memory, op);
+            globus_memory_push_node(&context->op_memory, op);
         }
     }
-    globus_mutex_unlock(&l_context->mutex);
+    globus_mutex_unlock(&context->mutex);
 
     if(destroy_context)
     {
-        globus_i_xio_context_destroy(l_context);
+        globus_i_xio_context_destroy(context);
     }
     GlobusXIODebugInternalExit();
 }
@@ -1027,8 +1043,10 @@ globus_xio_driver_operation_create(
     my_op->_op_ent_wait_for = 0;
     my_op->prev_ndx = -1;
     my_op->type = GLOBUS_XIO_OPERATION_TYPE_DRIVER;
-
+    
+    globus_mutex_lock(&context->mutex);
     context->ref++;
+    globus_mutex_unlock(&context->mutex);
 
     *operation = op;
 

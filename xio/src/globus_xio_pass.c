@@ -33,7 +33,8 @@ globus_xio_driver_pass_open(
     context = op->_op_context;
     op->progress = GLOBUS_TRUE;
     op->block_timeout = GLOBUS_FALSE;
-
+    
+    
     if(op->canceled)
     {
         GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE,
@@ -46,6 +47,7 @@ globus_xio_driver_pass_open(
         GlobusXIOContextStateChange(my_context,
             GLOBUS_XIO_CONTEXT_STATE_OPENING);
         my_context->outstanding_operations++;
+        context->ref++;
         prev_ndx = op->ndx;
 
         do
@@ -110,6 +112,9 @@ globus_xio_driver_pass_open(
             {
                 globus_i_xio_pass_failed(op, my_context, &close,
                     &destroy_handle);
+                context->ref--;
+                /* cant possibly be 0 while there is still this op */
+                globus_assert(context->ref > 0);
                 globus_assert(!destroy_handle);
             }
             GlobusXIOOpDec(op); /* for the pass */
@@ -229,6 +234,7 @@ globus_xio_driver_open_delivered(
     globus_i_xio_context_t *            context;
     globus_bool_t                       close_kickout = GLOBUS_FALSE;
     globus_bool_t                       destroy_handle = GLOBUS_FALSE;
+    globus_bool_t                       destroy_context = GLOBUS_FALSE;
     globus_i_xio_handle_t *             handle;
     globus_callback_space_t             space =
                             GLOBUS_CALLBACK_GLOBAL_SPACE;
@@ -272,6 +278,7 @@ globus_xio_driver_open_delivered(
             case GLOBUS_XIO_CONTEXT_STATE_OPEN_FAILED:
                 GlobusXIOContextStateChange(my_context,
                     GLOBUS_XIO_CONTEXT_STATE_CLOSED);
+                context->ref--;
                 break;
 
             /* this happens when the open fails and the user calls close */
@@ -285,6 +292,7 @@ globus_xio_driver_open_delivered(
                     close_kickout = GLOBUS_TRUE;
                     my_context->close_started = GLOBUS_TRUE;
                     close_op = my_context->close_op;
+                    context->ref--;
                 }
                 break;
 
@@ -308,6 +316,11 @@ globus_xio_driver_open_delivered(
             default:
                 globus_assert(0);
                 break;
+        }
+        
+        if(context->ref == 0)
+        {
+            destroy_context = GLOBUS_TRUE;
         }
     }
     globus_mutex_unlock(&context->mutex);
@@ -341,6 +354,14 @@ globus_xio_driver_open_delivered(
     if(destroy_handle)
     {
         globus_i_xio_handle_destroy(handle);
+    }
+    if(destroy_context)
+    {
+        /* the only way we'll be destroying the context is if this was a 
+         * driver op and the handle no longer exists
+         */
+        globus_assert(!destroy_handle);
+        globus_i_xio_context_destroy(context);
     }
 
     GlobusXIODebugInternalExit();
@@ -480,8 +501,15 @@ globus_xio_driver_pass_close(
     }
     if(res != GLOBUS_SUCCESS)
     {
-        GlobusXIOContextStateChange(my_context,
-            GLOBUS_XIO_CONTEXT_STATE_CLOSED);
+        globus_mutex_lock(&context->mutex);
+        {
+            GlobusXIOContextStateChange(my_context,
+                GLOBUS_XIO_CONTEXT_STATE_CLOSED);
+            context->ref--;
+            /* cant possibly be 0 if there is still an op */
+            globus_assert(context->ref > 0);
+        }
+        globus_mutex_unlock(&context->mutex);
     }
     GlobusXIODebugInternalExit();
 
@@ -498,6 +526,7 @@ globus_xio_driver_finished_close(
     globus_i_xio_context_t *            context;
     globus_i_xio_op_entry_t *           my_op;
     globus_result_t                     res;
+    globus_bool_t                       destroy_context = GLOBUS_FALSE;
     globus_callback_space_t             space =
                             GLOBUS_CALLBACK_GLOBAL_SPACE;
     GlobusXIOName(globus_xio_driver_finished_close);
@@ -513,9 +542,17 @@ globus_xio_driver_finished_close(
     my_op = &op->entry[op->ndx - 1];
     my_context = &context->entry[my_op->prev_ndx];
 
-    /* don't need to lock because barrier makes contntion not possible */
-    GlobusXIOContextStateChange(my_context,
-        GLOBUS_XIO_CONTEXT_STATE_CLOSED);
+    globus_mutex_lock(&context->mutex);
+    {
+        GlobusXIOContextStateChange(my_context,
+            GLOBUS_XIO_CONTEXT_STATE_CLOSED);
+        context->ref--;
+        if(context->ref == 0)
+        {
+            destroy_context = GLOBUS_TRUE;
+        }
+    }
+    globus_mutex_unlock(&context->mutex);
 
     globus_assert(op->ndx >= 0); /* otherwise we are not in bad memory */
     op->cached_obj = GlobusXIOResultToObj(res);
@@ -547,6 +584,11 @@ globus_xio_driver_finished_close(
     else
     {
         globus_l_xio_driver_op_close_kickout(op);
+    }
+    
+    if(destroy_context)
+    {
+        globus_i_xio_context_destroy(context);
     }
     GlobusXIODebugInternalExit();
 }
