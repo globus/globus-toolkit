@@ -22,7 +22,7 @@ typedef void
 void
 globus_i_gfs_data_init();
 
-globus_result_t
+void
 globus_i_gfs_data_request_stat(
     globus_gfs_ipc_handle_t             ipc_handle,
     int                                 session_id,
@@ -31,7 +31,7 @@ globus_i_gfs_data_request_stat(
     globus_i_gfs_data_callback_t        cb,
     void *                              user_arg);
 
-globus_result_t
+void
 globus_i_gfs_data_request_recv(
     globus_gfs_ipc_handle_t             ipc_handle,
     int                                 session_id,
@@ -41,7 +41,7 @@ globus_i_gfs_data_request_recv(
     globus_i_gfs_data_event_callback_t  event_cb,
     void *                              user_arg);
 
-globus_result_t
+void
 globus_i_gfs_data_request_send(
     globus_gfs_ipc_handle_t             ipc_handle,
     int                                 session_id,
@@ -51,7 +51,7 @@ globus_i_gfs_data_request_send(
     globus_i_gfs_data_event_callback_t  event_cb,
     void *                              user_arg);
 
-globus_result_t
+void
 globus_i_gfs_data_request_list(
     globus_gfs_ipc_handle_t             ipc_handle,
     int                                 session_id,
@@ -61,7 +61,7 @@ globus_i_gfs_data_request_list(
     globus_i_gfs_data_event_callback_t  event_cb,
     void *                              user_arg);
 
-globus_result_t
+void
 globus_i_gfs_data_request_command(
     globus_gfs_ipc_handle_t             ipc_handle,
     int                                 session_id,
@@ -70,7 +70,7 @@ globus_i_gfs_data_request_command(
     globus_i_gfs_data_callback_t        cb,
     void *                              user_arg);
 
-globus_result_t
+void
 globus_i_gfs_data_request_passive(
     globus_gfs_ipc_handle_t             ipc_handle,
     int                                 session_id,
@@ -79,7 +79,7 @@ globus_i_gfs_data_request_passive(
     globus_i_gfs_data_callback_t        cb,
     void *                              user_arg);
 
-globus_result_t
+void
 globus_i_gfs_data_request_active(
     globus_gfs_ipc_handle_t             ipc_handle,
     int                                 session_id,

@@ -356,7 +356,7 @@ typedef struct globus_l_gfs_data_operation_s *  globus_gfs_operation_t;
  * object pointer will then be passed back to the module with any other
  * interface call.
  */
-typedef globus_result_t
+typedef void
 (*globus_gfs_storage_init_t)(
     globus_gfs_operation_t              op,
     const char *                        user_id,
@@ -375,7 +375,7 @@ typedef void
  *
  * This defines the functions that will be called for list, send, and recv.
  */
-typedef globus_result_t
+typedef void
 (*globus_gfs_storage_transfer_t)(
     globus_gfs_operation_t              op,
     globus_gfs_transfer_info_t *        transfer_info,
@@ -387,7 +387,7 @@ typedef globus_result_t
  * This defines the function that will be called for commands.  The type
  * member of command_info specifies which command to carry out. 
  */
-typedef globus_result_t
+typedef void
 (*globus_gfs_storage_command_t)(
     globus_gfs_operation_t              op,
     globus_gfs_command_info_t *         command_info,
@@ -398,7 +398,7 @@ typedef globus_result_t
  *
  * This defines the function that will be called for a stat lookup. 
  */
-typedef globus_result_t
+typedef void
 (*globus_gfs_storage_stat_t)(
     globus_gfs_operation_t              op,
     globus_gfs_stat_info_t *            stat_info,
@@ -410,7 +410,7 @@ typedef globus_result_t
  * This defines the functions that will be called for active and passive
  * data connection creation. 
  */
-typedef globus_result_t
+typedef void
 (*globus_gfs_storage_data_t)(
     globus_gfs_operation_t              op,
     globus_gfs_data_info_t *            data_info,
@@ -522,7 +522,7 @@ globus_gridftp_server_operation_event(
  * 
  * Speficic event notification for the start of a transfer.
  */ 
-void
+globus_result_t
 globus_gridftp_server_begin_transfer(
     globus_gfs_operation_t              op,
     int                                 event_mask,

@@ -355,7 +355,7 @@ globus_gfs_ipc_set_user_buffer(
  *
  *  tell the remote process to receive a file
  */
-typedef globus_result_t
+typedef void
 (*globus_gfs_ipc_iface_recv_t)(
     globus_gfs_ipc_handle_t             ipc_handle,
     int                                 session_id,
@@ -380,7 +380,7 @@ globus_gfs_ipc_request_recv(
  *  
  *  tell remote process to send a file
  */
-typedef globus_result_t
+typedef void
 (*globus_gfs_ipc_iface_send_t)(
     globus_gfs_ipc_handle_t             ipc_handle,
     int                                 session_id,
@@ -401,7 +401,7 @@ globus_gfs_ipc_request_send(
     void *                              user_arg);
 
 
-typedef globus_result_t
+typedef void
 (*globus_gfs_ipc_iface_list_t)(
     globus_gfs_ipc_handle_t             ipc_handle,
     int                                 session_id,
@@ -427,7 +427,7 @@ globus_gfs_ipc_request_list(
  *
  *  tell remote side to execute the given command
  */
-typedef globus_result_t
+typedef void
 (*globus_gfs_ipc_iface_command_t)(
     globus_gfs_ipc_handle_t             ipc_handle,
     int                                 session_id,
@@ -450,7 +450,7 @@ globus_gfs_ipc_request_command(
  *
  *  tell remote side to create an active data connection
  */
-typedef globus_result_t
+typedef void
 (*globus_gfs_ipc_iface_active_data_t)(
     globus_gfs_ipc_handle_t             ipc_handle,
     int                                 session_id,
@@ -473,7 +473,7 @@ globus_gfs_ipc_request_active_data(
  *
  *  tell remote side to do passive data connection
  */
-typedef globus_result_t
+typedef void
 (*globus_gfs_ipc_iface_passive_data_t)(
     globus_gfs_ipc_handle_t             ipc_handle,
     int                                 session_id,
@@ -494,7 +494,7 @@ globus_gfs_ipc_request_passive_data(
 /*
  *  send stat request
  */
-typedef globus_result_t
+typedef void
 (*globus_gfs_ipc_iface_stat_t)(
     globus_gfs_ipc_handle_t             ipc_handle,
     int                                 session_id,

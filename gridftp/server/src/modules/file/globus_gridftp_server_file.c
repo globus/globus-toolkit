@@ -123,7 +123,7 @@ globus_l_gfs_file_copy_stat(
 }
 
 static
-globus_result_t
+void
 globus_l_gfs_file_stat(
     globus_gfs_operation_t   op,
     globus_gfs_stat_info_t *           stat_info,
@@ -229,7 +229,7 @@ globus_l_gfs_file_stat(
     
     globus_free(stat_array);
     
-    return GLOBUS_SUCCESS;
+    return;
 
 error_read:
     globus_free(stat_array);
@@ -241,7 +241,7 @@ error_open:
 error_alloc1:
 error_stat1:
     globus_gridftp_server_finished_stat(op, result, NULL, 0);
-    return result;
+    return;
 }
 
 
@@ -270,6 +270,7 @@ error:
     return result;
 }
 
+static
 globus_result_t
 globus_l_gfs_file_rmdir(
     globus_gfs_operation_t   op,
@@ -294,6 +295,7 @@ error:
     return result;
 }
 
+static
 globus_result_t
 globus_l_gfs_file_delete(
     globus_gfs_operation_t   op,
@@ -318,6 +320,7 @@ error:
     return result;
 }
 
+static
 globus_result_t
 globus_l_gfs_file_rename(
     globus_gfs_operation_t   op,
@@ -343,6 +346,7 @@ error:
     return result;
 }
 
+static
 globus_result_t
 globus_l_gfs_file_chmod(
     globus_gfs_operation_t   op,
@@ -370,6 +374,7 @@ error:
 
 #define GFS_CKSM_BUFSIZE 1024*1024
 
+static
 globus_result_t
 globus_l_gfs_file_cksm(
     globus_gfs_operation_t   op,
@@ -463,7 +468,8 @@ param_error:
 }
 
 
-globus_result_t
+static
+void
 globus_l_gfs_file_command(
     globus_gfs_operation_t   op,
     globus_gfs_command_info_t *        cmd_info,
@@ -509,11 +515,11 @@ globus_l_gfs_file_command(
         goto error;
     }
     
-    return GLOBUS_SUCCESS;
+    return;
 
 error:
     globus_gridftp_server_finished_command(op, result, NULL);    
-    return result;
+    return;
 }
 
 
@@ -1052,7 +1058,7 @@ error_attr:
 }
 
 static
-globus_result_t
+void
 globus_l_gfs_file_recv(
     globus_gfs_operation_t   op,
     globus_gfs_transfer_info_t *       transfer_info,
@@ -1104,14 +1110,14 @@ globus_l_gfs_file_recv(
         goto error_open;
     }
     
-    return GLOBUS_SUCCESS;
+    return;
 
 error_open:
     globus_l_gfs_recv_monitor_destroy(monitor);
     
 error_alloc:
     globus_gridftp_server_finished_transfer(op, result);
-    return result;
+    return;
 }
 
 /**
@@ -1506,7 +1512,7 @@ error_open:
 }
 
 static
-globus_result_t
+void
 globus_l_gfs_file_send(
     globus_gfs_operation_t              op,
     globus_gfs_transfer_info_t *        transfer_info,
@@ -1543,14 +1549,14 @@ globus_l_gfs_file_send(
         goto error_open;
     }
     
-    return GLOBUS_SUCCESS;
+    return;
 
 error_open:
     globus_l_gfs_send_monitor_destroy(monitor);
     
 error_alloc:  
     globus_gridftp_server_finished_transfer(op, result);
-    return result;
+    return;
 }
 
 static

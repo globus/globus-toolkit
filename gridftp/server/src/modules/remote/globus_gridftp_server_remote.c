@@ -358,7 +358,7 @@ globus_l_gfs_remote_stat_kickout(
 
 
 static
-globus_result_t
+void
 globus_l_gfs_remote_stat(
     globus_gfs_operation_t              op,
     globus_gfs_stat_info_t *            stat_info,
@@ -391,7 +391,7 @@ globus_l_gfs_remote_stat(
         GlobusGFSErrorOpFinished(bounce_info->op, result);
     }
 
-    return result;
+    return;
 }
 
 static
@@ -423,7 +423,7 @@ globus_l_gfs_remote_command_kickout(
 }
 
 static
-globus_result_t
+void
 globus_l_gfs_remote_command(
     globus_gfs_operation_t              op,
     globus_gfs_command_info_t *         command_info,
@@ -455,11 +455,11 @@ globus_l_gfs_remote_command(
     {
         GlobusGFSErrorOpFinished(bounce_info->op, result);
     }
-    return result;
+    return;
 }
 
 static
-globus_result_t
+void
 globus_l_gfs_remote_list(
     globus_gfs_operation_t              op,
     globus_gfs_transfer_info_t *        transfer_info,
@@ -505,12 +505,12 @@ globus_l_gfs_remote_list(
         GlobusGFSErrorOpFinished(bounce_info->op, result);
     }
 
-    return result;    
+    return;    
 }
 
 
 static
-globus_result_t
+void
 globus_l_gfs_remote_recv(
     globus_gfs_operation_t              op,
     globus_gfs_transfer_info_t *        transfer_info,
@@ -568,12 +568,12 @@ globus_l_gfs_remote_recv(
     {
         GlobusGFSErrorOpFinished(bounce_info->op, result);
     }
-    return result;
+    return;
 }
 
 
 static
-globus_result_t
+void
 globus_l_gfs_remote_send(
     globus_gfs_operation_t              op,
     globus_gfs_transfer_info_t *        transfer_info,
@@ -630,7 +630,7 @@ globus_l_gfs_remote_send(
     {
         GlobusGFSErrorOpFinished(bounce_info->op, result);
     }
-    return result;
+    return;
 }
 
 static
@@ -677,7 +677,7 @@ globus_l_gfs_remote_active_kickout(
 }
 
 static
-globus_result_t
+void
 globus_l_gfs_remote_active(
     globus_gfs_operation_t              op,
     globus_gfs_data_info_t *            data_info,
@@ -709,7 +709,7 @@ globus_l_gfs_remote_active(
     {
         GlobusGFSErrorOpFinished(op, result);
     }
-    return result;
+    return;
 }
 
 static
@@ -743,7 +743,7 @@ globus_l_gfs_remote_passive_kickout(
 }
 
 static
-globus_result_t
+void
 globus_l_gfs_remote_passive(
     globus_gfs_operation_t              op,
     globus_gfs_data_info_t *            data_info,
@@ -778,7 +778,7 @@ globus_l_gfs_remote_passive(
     {
         GlobusGFSErrorOpFinished(op, result);
     }
-    return result;
+    return;
 }
 
 static
@@ -875,7 +875,7 @@ globus_l_gfs_remote_set_cred(
 
 
 static
-globus_result_t
+void
 globus_l_gfs_remote_init(
     globus_gfs_operation_t              op,
     const char *                        user_id,
@@ -903,7 +903,7 @@ globus_l_gfs_remote_init(
         result,                                               
         finished_info);                                       
     
-    return result;
+    return;
 }
 
 static
