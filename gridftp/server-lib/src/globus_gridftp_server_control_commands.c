@@ -763,6 +763,7 @@ globus_l_gsc_cmd_stat_cb(
     int                                     code;
     char *                                  msg;
     char *                                  tmp_ptr;
+    char *                                  preline;
     GlobusGridFTPServerName(globus_l_gsc_cmd_stat_cb);
 
     if(response_type != GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS)
@@ -786,6 +787,7 @@ globus_l_gsc_cmd_stat_cb(
                 msg = globus_libc_strdup("Command failed");
                 break;
         }
+        preline = NULL;
     }
     else
     {
@@ -806,6 +808,7 @@ globus_l_gsc_cmd_stat_cb(
             "status of %s\n %s\n",
             op->path, tmp_ptr);
         globus_free(tmp_ptr);
+        preline = "";
     }
 
     if(response_msg != NULL)
@@ -815,7 +818,7 @@ globus_l_gsc_cmd_stat_cb(
         free(tmp_ptr);
     }
     /* set a blank preline -- mlst output already has the initial space */
-    tmp_ptr = globus_i_gsc_string_to_959(code, msg, "");
+    tmp_ptr = globus_i_gsc_string_to_959(code, msg, preline);
     globus_gsc_959_finished_command(op, tmp_ptr);
     globus_free(tmp_ptr);
     globus_free(msg);

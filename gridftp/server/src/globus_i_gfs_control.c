@@ -39,6 +39,12 @@ static globus_bool_t                    globus_l_gfs_control_active = GLOBUS_FAL
 static globus_list_t *                  globus_l_gfs_server_handle_list;
 static globus_mutex_t                   globus_l_gfs_control_mutex;
 
+char *
+globus_i_gsc_string_to_959(
+    int                                 code,
+    const char *                        in_str, 
+    const char *                        preline);
+
 void
 globus_i_gfs_control_init()
 {
@@ -246,17 +252,22 @@ globus_l_gfs_auth_session_cb(
     void *                              user_arg)
 {
     globus_l_gfs_auth_info_t *          auth_info;
+    char *                              tmp_str;
+    GlobusGFSName(globus_l_gfs_auth_session_cb);
 
     auth_info = (globus_l_gfs_auth_info_t *) user_arg;
 
     auth_info->instance->session_arg = reply->session_arg;
     if(reply->result != GLOBUS_SUCCESS)
     {
+        tmp_str = globus_error_print_friendly(
+            globus_error_peek(reply->result));
         globus_gridftp_server_control_finished_auth(
             auth_info->control_op,
             NULL,
-            GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_PANIC,
-            "internal error: session_cb");
+            GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_ACTION_FAILED,
+            tmp_str);
+        globus_free(tmp_str);
     }
     else
     {
@@ -267,7 +278,10 @@ globus_l_gfs_auth_session_cb(
             NULL);
     }
     globus_free(auth_info->session_info->username);
-    globus_free(auth_info->session_info->password);
+    if(auth_info->session_info->password != NULL)
+    {
+        globus_free(auth_info->session_info->password);
+    }
     if(auth_info->session_info->subject != NULL)
     {
         globus_free(auth_info->session_info->subject);
@@ -472,6 +486,7 @@ globus_l_gfs_data_command_cb(
 {
     globus_gridftp_server_control_op_t  op;
     char *                              msg;
+    char *                              tmp_msg;
     globus_l_gfs_request_info_t *       request;
     globus_gfs_command_info_t *         info;
     GlobusGFSName(globus_l_gfs_data_command_cb);
@@ -513,7 +528,14 @@ globus_l_gfs_data_command_cb(
     }
     else
     {
-        globus_gsc_959_finished_command(op, "500 Unknown error.\r\n");
+        msg = globus_error_print_friendly(
+            globus_error_peek(reply->result));
+        tmp_msg = globus_common_create_string("Command failed : %s", msg);
+        globus_free(msg);
+        msg = globus_i_gsc_string_to_959(500, tmp_msg, NULL);
+        globus_gsc_959_finished_command(op, msg);
+        globus_free(tmp_msg);
+        globus_free(msg);
     }
     
     info = (globus_gfs_command_info_t *) request->info;
@@ -522,6 +544,14 @@ globus_l_gfs_data_command_cb(
         if(info->pathname)
         {
             globus_free(info->pathname);
+        }
+        if(info->cksm_alg)
+        {
+            globus_free(info->cksm_alg);
+        }
+        if(info->rnfr_pathname)
+        {
+            globus_free(info->rnfr_pathname);
         }
         globus_free(info);
     }

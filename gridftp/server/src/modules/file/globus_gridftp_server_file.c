@@ -269,7 +269,7 @@ globus_l_gfs_file_stat(
     /* lstat is the same as stat when not operating on a link */
     if(lstat(stat_info->pathname, &stat_buf) != 0)
     {
-        result = GlobusGFSErrorSystemError("lstat", errno);
+        result = GlobusGFSErrorSystemError("stat", errno);
         goto error_stat1;
     }
     /* if this is a link we still need to stat to get the info we are 

@@ -288,6 +288,11 @@ globus_gfs_ipc_reply_event(
     globus_gfs_ipc_handle_t             ipc_handle,
     globus_gfs_ipc_event_reply_t *      reply);
 
+globus_result_t
+globus_gfs_ipc_reply_session(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    globus_gfs_ipc_reply_t *            reply);
+
 /*
  *  sending
  *
@@ -511,12 +516,6 @@ globus_gfs_ipc_request_stat(
     globus_gfs_ipc_handle_t             ipc_handle,
     globus_gfs_stat_info_t *            stat_info,
     globus_gfs_ipc_callback_t           cb,
-    void *                              user_arg);
-
-void
-globus_gfs_ipc_reply_session(
-    globus_gfs_ipc_handle_t             ipc,
-    globus_result_t                     result,
     void *                              user_arg);
 
 /*

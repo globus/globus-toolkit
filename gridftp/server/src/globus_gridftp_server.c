@@ -873,7 +873,13 @@ main(
     globus_l_gfs_xio_server = NULL;
 
     /* if all the want is version info print and exit */
-    if(globus_i_gfs_config_bool("version"))
+    if(globus_i_gfs_config_bool("usage"))
+    {
+        globus_i_gfs_config_display_usage();
+        rc = 0;
+        goto error_ver;
+    }
+    else if(globus_i_gfs_config_bool("version"))
     {
         globus_version_print(
             local_package_name,
@@ -883,7 +889,7 @@ main(
         rc = 0;
         goto error_ver;
     }
-    if(globus_i_gfs_config_bool("versions"))
+    else if(globus_i_gfs_config_bool("versions"))
     {
         globus_version_print(
             local_package_name,

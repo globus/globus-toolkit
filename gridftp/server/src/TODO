@@ -11,7 +11,7 @@ protocol:
 -- disable perf markers in mode S (if we must)
 ** define reply errors properly for going over ipc
 -- error out usefully to server and client when cred problem in gssapi driver
--- add blocksize and stripeblocksize via client (diableable)
+-- add blocksize and stripeblocksize via client (disableable)
 
 signal handling:
 -- SIGINT needs to handle data-node shutdown
@@ -28,7 +28,6 @@ logging:
 -- instrument code
 -- verify output format
 -- specify log format by configuration
--- configuration to choose logging module
 -- syslog module for globus_logging
 -- produce netlogger output based on perf marker info ( -Z option in wu )
 
@@ -55,5 +54,9 @@ known bugs:
 -- in server_lib globus_gsc_959_finished_command chain the message gets freed
     in instances that it should not be, everyone that calls into it frees their
     own messages.
-    
+-- "pasv/port followed by retr/stor /invalidpath (fails) retr/stor /anything"
+    causes an assertion... i think data.c is destroying the data chan on the
+    transfer_finished error, but maybe not sending disconnected? (either way, 
+    data chan should be fine on transfer errors, just not data chan errors).
+-- error out of option parsing properly
     

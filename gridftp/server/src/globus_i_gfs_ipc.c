@@ -895,6 +895,8 @@ globus_l_gfs_ipc_request_ss_body_cb(
     globus_byte_t *                     start_buf;
     globus_list_t *                     list;
     globus_i_gfs_ipc_handle_t *         ipc;
+    char *                              msg;
+    int                                 code;
     GlobusGFSName(globus_l_gfs_ipc_requestor_ss_body_cb);
 
     start_buf = buffer;
@@ -910,7 +912,15 @@ globus_l_gfs_ipc_request_ss_body_cb(
 
     /* safe because no one else has this yet */
     ipc->state = GLOBUS_GFS_IPC_STATE_IN_CB;
+    GFSDecodeUInt32(buffer, len, code);
     GFSDecodeUInt32(buffer, len, result);
+    GFSDecodeString(buffer, len, msg);
+    if(result != GLOBUS_SUCCESS && msg != NULL)
+    {
+        result = GlobusGFSErrorGeneric(msg);
+        globus_free(msg);
+        msg = NULL;
+    }
 
     if(ipc->open_cb)
     {
@@ -1391,17 +1401,18 @@ error:
         GLOBUS_I_GFS_LOG_ERR, "An accepted IPC connection failed to open\n");
 }
 
-void
+globus_result_t
 globus_gfs_ipc_reply_session(
     globus_gfs_ipc_handle_t             ipc,
-    globus_result_t                     result,
-    void *                              user_arg)
+    globus_gfs_ipc_reply_t *            reply)
 {
     globus_byte_t *                     buffer;
     globus_byte_t *                     new_buf;
     globus_byte_t *                     ptr;
     int                                 msg_size;
     globus_result_t                     res;
+    char *                              tmp_msg;
+    GlobusGFSName(globus_gfs_ipc_reply_session);
 
     globus_assert(!globus_l_gfs_ipc_requester);
  
@@ -1414,6 +1425,7 @@ globus_gfs_ipc_reply_session(
                 buffer = globus_malloc(ipc->buffer_size);
                 if(buffer == NULL)
                 {
+                    res = GlobusGFSErrorMemory("new_buf");
                     goto error;
                 }
                 ptr = buffer;
@@ -1423,7 +1435,21 @@ globus_gfs_ipc_reply_session(
                     GLOBUS_GFS_OP_SESSION_START_REPLY);
                 GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, -1);
                 GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, -1);
-                GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, result);
+                GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, reply->code);
+                GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, reply->result);
+                if(reply->msg == NULL && reply->result != GLOBUS_SUCCESS)
+                {
+                    tmp_msg = globus_error_print_friendly(
+                        globus_error_peek(reply->result));
+                    GFSEncodeString(
+                        buffer, ipc->buffer_size, ptr, tmp_msg);  
+                    globus_free(tmp_msg);              
+                }
+                else
+                {
+                    GFSEncodeString(
+                        buffer, ipc->buffer_size, ptr, reply->msg);
+                }
     
                 msg_size = ptr - buffer;
                 ptr = buffer + GFS_IPC_HEADER_SIZE_OFFSET;
@@ -1444,9 +1470,10 @@ globus_gfs_ipc_reply_session(
                 new_buf = globus_malloc(GFS_IPC_HEADER_SIZE);
                 if(new_buf == NULL)
                 {
+                    res = GlobusGFSErrorMemory("new_buf");
                     goto xio_error;
                 }
-                result = globus_xio_register_read(
+                res = globus_xio_register_read(
                     ipc->xio_handle,
                     new_buf,
                     GFS_IPC_HEADER_SIZE,
@@ -1454,12 +1481,12 @@ globus_gfs_ipc_reply_session(
                     NULL,
                     globus_l_gfs_ipc_reply_read_header_cb,
                     ipc);
-                if(result != GLOBUS_SUCCESS)
+                if(res != GLOBUS_SUCCESS)
                 {
                     goto mem_error;
                 }
 
-                ipc->user_arg = user_arg;
+                ipc->user_arg = reply->session_arg;
                 ipc->state = GLOBUS_GFS_IPC_STATE_IN_USE;
                 break;
 
@@ -1477,7 +1504,7 @@ globus_gfs_ipc_reply_session(
     }
     globus_mutex_unlock(&ipc->mutex);
 
-    return;
+    return GLOBUS_SUCCESS;
 mem_error:
     globus_free(new_buf);
 xio_error:
@@ -1485,6 +1512,7 @@ xio_error:
 error:
     globus_l_gfs_ipc_error_close(ipc);
     globus_mutex_unlock(&ipc->mutex);
+    return res;
 }
 
 static
@@ -2410,7 +2438,16 @@ globus_l_gfs_ipc_unpack_reply(
     GFSDecodeString(buffer, len, reply->msg);
     if(reply->result != GLOBUS_SUCCESS)
     {
-        reply->result = GlobusGFSErrorGeneric("unknown error");
+        if(reply->msg != NULL)
+        {
+            reply->result = GlobusGFSErrorGeneric(reply->msg);
+            globus_free(reply->msg);
+            reply->msg = NULL;
+        }
+        else    
+        {
+            reply->result = GlobusGFSErrorGeneric("unknown error");
+        }
     }
 
     /* encode the specific types */
@@ -3868,6 +3905,7 @@ globus_gfs_ipc_reply_finished(
     globus_gfs_ipc_request_t *          request;
     char                                ch;
     globus_result_t                     res;
+    char *                              tmp_msg;
     GlobusGFSName(globus_gfs_ipc_reply_finished);
 
     ipc = (globus_i_gfs_ipc_handle_t *) ipc_handle;
@@ -3918,8 +3956,20 @@ globus_gfs_ipc_reply_finished(
                 buffer, ipc->buffer_size, ptr, reply->type);
             GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, reply->code);
             GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, reply->result);
-            GFSEncodeString(
-                buffer, ipc->buffer_size, ptr, reply->msg);
+            if(reply->msg == NULL && reply->result != GLOBUS_SUCCESS)
+            {
+                tmp_msg = globus_error_print_friendly(
+                    globus_error_peek(reply->result));
+                GFSEncodeString(
+                    buffer, ipc->buffer_size, ptr, tmp_msg);  
+                globus_free(tmp_msg);              
+            }
+            else
+            {
+                GFSEncodeString(
+                    buffer, ipc->buffer_size, ptr, reply->msg);
+            }
+
 
             /* encode the specific types */
             switch(reply->type)

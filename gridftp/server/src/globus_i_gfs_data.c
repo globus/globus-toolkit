@@ -438,11 +438,13 @@ globus_l_gfs_data_auth_init_cb(
 {
     globus_l_gfs_data_operation_t *     op;
     globus_gfs_session_info_t *         session_info;
+    globus_gfs_finished_info_t          finished_info;
     GlobusGFSName(globus_l_gfs_data_auth_init_cb);
-
+    
     op = (globus_l_gfs_data_operation_t *) user_arg;
     session_info = (globus_gfs_session_info_t *) op->info_struct;
 
+    memset(&finished_info, '\0', sizeof(globus_gfs_finished_info_t));
     if(result != GLOBUS_SUCCESS)
     {
         goto error;
@@ -454,17 +456,17 @@ globus_l_gfs_data_auth_init_cb(
     }
     else
     {
+        finished_info.result = GLOBUS_SUCCESS;
+        finished_info.session_arg = op->session_handle;
+
         if(op->callback == NULL)
         {
             globus_gfs_ipc_reply_session(
-                op->ipc_handle, GLOBUS_SUCCESS, op->session_handle);
+                op->ipc_handle, &finished_info);
         }
         else
         {
-            globus_gfs_finished_info_t      finished_info;
-            finished_info.result = GLOBUS_SUCCESS;
-            finished_info.session_arg = op->session_handle;
-            
+             
             op->callback(
                 &finished_info,
                 op->user_arg);
@@ -475,16 +477,16 @@ globus_l_gfs_data_auth_init_cb(
     return;
 
 error:
+    finished_info.result = result;
+    finished_info.session_arg = NULL;
+        
     if(op->callback == NULL)
     {
-        globus_gfs_ipc_reply_session(op->ipc_handle, result, NULL);
+        globus_gfs_ipc_reply_session(
+            op->ipc_handle, &finished_info);
     }
     else
     {
-        globus_gfs_finished_info_t      finished_info;
-        finished_info.result = result;
-        finished_info.session_arg = NULL;
-        
         op->callback(
             &finished_info,
             op->user_arg);
@@ -720,19 +722,24 @@ globus_l_gfs_data_authorize(
 acl_error:
 uid_error:
 pwent_error:
-    if(op->callback == NULL)
-    {
-        globus_gfs_ipc_reply_session(op->ipc_handle, res, NULL);
-    }
-    else
     {
         globus_gfs_finished_info_t      finished_info;
+        memset(&finished_info, '\0', sizeof(globus_gfs_finished_info_t));
+    
         finished_info.result = res;
         finished_info.session_arg = NULL;
-        
-        op->callback(
-            &finished_info,
-            op->user_arg);
+            
+        if(op->callback == NULL)
+        {
+            globus_gfs_ipc_reply_session(
+                op->ipc_handle, &finished_info);
+        }
+        else
+        {
+            op->callback(
+                &finished_info,
+                op->user_arg);
+        }
     }
 }
 
@@ -4019,8 +4026,7 @@ globus_l_gfs_operation_finished_kickout(
         {
             globus_gfs_ipc_reply_session(
                 op->ipc_handle,
-                bounce->finished_info->result,
-                bounce->finished_info->session_arg);
+                bounce->finished_info);
         }
         else
         {

@@ -843,7 +843,7 @@ extern globus_gfs_storage_iface_t       globus_gfs_remote_dsi_iface;
         __FILE__,                                                           \
         _gfs_name,                                                          \
         __LINE__,                                                           \
-        "user a bad parameter %s",                                          \
+        "invalid parameter: %s",                                            \
         (param_name))                               
                                                                             
 #define GlobusGFSErrorSystemError(system_func, _errno)                      \
