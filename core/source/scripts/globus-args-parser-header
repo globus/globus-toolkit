@@ -38,12 +38,28 @@ EOF
 		    exit 0
 		    ;;
 		-version)
-		    if [ "X${PROGRAM_VERSION}" = "X" ] ; then
-		        echo "${PACKAGE} version ${VERSION}"
-		    else
+		    if [ "X${PROGRAM_NAME}" != "X" -a \
+			  "X${PROGRAM_VERSION}" != "X" ]; then
 		        echo "${PROGRAM_NAME}: ${PROGRAM_VERSION}"
+		    elif [ "X${PACKAGE}" != "X" -a \
+		           "X${VERSION}" != "X" ]; then
+			echo "${PACKAGE}: ${VERSION}"
+		    else
+			echo "No version information available."
 		    fi
 		    exit 0
+		    ;;
+		-versions)
+		    if [ -n "${PACKAGE}" -a -n "${VERSION}" -a \
+			 -n "${DIRT_TIMESTAMP}" -a -n "${DIRT_BRANCH_ID}" -a \
+			 "X${DIRT_TIMESTAMP}" != "X@DIRT_TIMESTAMP@" -a \
+			 "X${DIRT_BRANCH_ID}" != "X@DIRT_BRANCH_ID@" ];
+		    then
+			echo "${PACKAGE}: ${VERSION} (${DIRT_TIMESTAMP}-${DIRT_BRANCH_ID})"
+		    else
+			echo "No DiRT information available."
+		    fi
+		    exit 0;
 		    ;;
 	        --)
 		    _done=yes
