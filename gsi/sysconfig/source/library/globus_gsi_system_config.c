@@ -2478,7 +2478,7 @@ globus_gsi_sysconfig_get_user_id_string_unix(
 
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_ENTER;
 
-    uid = getuid();
+    uid = geteuid();
     
     len = globus_libc_printf_length("%d",uid);
 
@@ -3278,7 +3278,7 @@ globus_gsi_sysconfig_check_keyfile_unix(
      */
     RAND_add((void*)&stx,sizeof(stx),2);
 
-    if (stx.st_uid != getuid())
+    if (stx.st_uid != geteuid())
     {
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
             result,
@@ -3411,7 +3411,7 @@ globus_gsi_sysconfig_check_certfile_unix(
      */
     RAND_add((void*)&stx,sizeof(stx),2);
 
-    if (stx.st_uid != getuid())
+    if (stx.st_uid != geteuid())
     {
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
             result,
@@ -5054,7 +5054,7 @@ globus_gsi_sysconfig_remove_all_owned_files_unix(
 
             RAND_add((void *) &stx, sizeof(stx), 2);
                     
-            if(stx.st_uid == getuid())
+            if(stx.st_uid == geteuid())
             {
                 static char             msg[65]
                     = "DESTROYED BY GLOBUS\r\n";
@@ -5124,7 +5124,7 @@ globus_gsi_sysconfig_is_superuser_unix(
         "globus_gsi_sysconfig_is_superuser_unix";
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_ENTER;
 
-    if(getuid() == 0)
+    if(geteuid() == 0)
     {
         *is_superuser = 1;
     }
@@ -5181,7 +5181,7 @@ globus_gsi_sysconfig_get_gridmap_filename_unix(
 
     if(!gridmap_filename)
     {
-        if(getuid() == 0)
+        if(geteuid() == 0)
         {
             /* being run as root */
             
