@@ -93,14 +93,12 @@ main(int argc, char *argv[])
     memset(server_response, 0, sizeof(*server_response));
 
     /* Setup defaults */
-    client_request->version = malloc(strlen(MYPROXY_VERSION) + 1);
-    strcpy(client_request->version, MYPROXY_VERSION);
+    client_request->version = strdup(MYPROXY_VERSION);
     client_request->command_type = MYPROXY_GET_PROXY;
 
     pshost = getenv("MYPROXY_SERVER");
     if (pshost != NULL) {
-	socket_attrs->pshost = malloc(strlen(pshost) + 1);
-	strcpy(socket_attrs->pshost, pshost);
+	socket_attrs->pshost = strdup(pshost);
     }
 
     client_request->portal_lifetime = 60*60*MYPROXY_DEFAULT_PORTAL_HOURS;
@@ -164,12 +162,12 @@ main(int argc, char *argv[])
       copy_file(delegfile, outputfile, 0600);
       unlink(delegfile);
       strcpy(delegfile, outputfile);
+      free(outputfile);
     }
 
     printf("A proxy has been received for user %s in %s\n", client_request->username, delegfile);
     /* free memory allocated */
     myproxy_destroy(socket_attrs, client_request, server_response);
-
     exit(0);
 }
 
@@ -191,8 +189,7 @@ init_arguments(int argc,
 	  request->portal_lifetime = 60*60*atoi(gnu_optarg);
 	  break;
         case 's': 	/* pshost name */
-            attrs->pshost = malloc(strlen(gnu_optarg) + 1);
-            strcpy(attrs->pshost, gnu_optarg); 
+	    attrs->pshost = strdup(gnu_optarg);
             break;
         case 'p': 	/* psport */
             attrs->psport = atoi(gnu_optarg);
@@ -206,12 +203,10 @@ init_arguments(int argc,
             exit(1);
             break;
         case 'l':	/* username */
-            request->username = malloc(strlen(gnu_optarg) + 1);
-            strcpy(request->username, gnu_optarg); 
+            request->username = strdup(gnu_optarg);
             break;
 	case 'o':	/* output file */
-	    outputfile = malloc(strlen(gnu_optarg) + 1);
-	    strcpy(outputfile, gnu_optarg);
+	    outputfile = strdup(gnu_optarg);
             break;    
         case 'v':       /* print version and exit */
             fprintf(stderr, version);
