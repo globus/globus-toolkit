@@ -50,6 +50,7 @@ sub read_input
 	else
 	{
 	    &insert_record(\%result, $record);
+	    $record = "";
 	}
     }
     &insert_record(\%result, $record);
