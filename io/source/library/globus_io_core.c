@@ -1168,11 +1168,6 @@ globus_i_io_close(
 	}
     }
 
-    if(globus_l_io_fd_table[handle->fd])
-    {
-        globus_l_io_fd_table[handle->fd]->handle = GLOBUS_NULL;
-    }
-    
     globus_i_io_debug_printf(3, (stderr, "%s(): exiting\n",myname));
 
     return(rc);
@@ -2696,16 +2691,49 @@ globus_l_io_deactivate(void)
 	globus_io_select_info_t *	select_info;
 
 	select_info = globus_l_io_fd_table[fd];
-
-	if(select_info && select_info->handle)
-	{
-	    globus_i_io_register_cancel(
-                select_info->handle,
-                GLOBUS_FALSE,
-                GLOBUS_NULL,
-                GLOBUS_NULL,
-                GLOBUS_NULL);
-	}
+        
+        if(select_info)
+        {
+            if(select_info->read_callback)
+            {
+                /* cancel pending callback */
+                result = globus_callback_unregister(
+                    select_info->read_callback_handle,
+                    GLOBUS_NULL,
+                    GLOBUS_NULL);
+                
+                if(result == GLOBUS_SUCCESS)
+                {
+                    globus_l_io_pending_count--;
+                }
+            }
+            if(select_info->write_callback)
+            {
+                /* cancel pending callback */
+                result = globus_callback_unregister(
+                    select_info->write_callback_handle,
+                    GLOBUS_NULL,
+                    GLOBUS_NULL);
+                
+                if(result == GLOBUS_SUCCESS)
+                {
+                    globus_l_io_pending_count--;
+                }
+            }
+            if(select_info->except_callback)
+            {
+                /* cancel pending callback */
+                result = globus_callback_unregister(
+                    select_info->except_callback_handle,
+                    GLOBUS_NULL,
+                    GLOBUS_NULL);
+                
+                if(result == GLOBUS_SUCCESS)
+                {
+                    globus_l_io_pending_count--;
+                }
+            }
+        }
     }
     
     /* cancel any outstanding cancels */
