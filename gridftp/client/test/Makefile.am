@@ -70,6 +70,8 @@ test_PROGRAMS= \
 	globus-ftp-client-bad-buffer-test \
 	globus-ftp-client-cache-all-test \
 	globus-ftp-client-create-destroy-test \
+	globus-ftp-client-cksm-test \
+	globus-ftp-client-chmod-test \
 	globus-ftp-client-delete-test \
 	globus-ftp-client-exist-test \
 	globus-ftp-client-extended-get-test \
@@ -78,6 +80,8 @@ test_PROGRAMS= \
 	globus-ftp-client-extended-transfer-test \
 	globus-ftp-client-feat-test \
 	globus-ftp-client-lingering-get-test \
+	globus-ftp-client-large-file-test \
+	globus-ftp-client-mlst-test \
 	globus-ftp-client-mkdir-test \
 	globus-ftp-client-modification-time-test \
 	globus-ftp-client-move-test \
@@ -133,6 +137,9 @@ globus_ftp_client_transfer_test_LDFLAGS = $(GPT_LDFLAGS)
 globus_ftp_client_lingering_get_test_SOURCES = globus_ftp_client_lingering_get_test.c $(LibHeaders)
 globus_ftp_client_lingering_get_test_LDFLAGS = $(GPT_LDFLAGS)
 
+globus_ftp_client_large_file_test_SOURCES = globus_ftp_client_large_file_test.c $(LibHeaders)
+globus_ftp_client_large_file_test_LDFLAGS = $(GPT_LDFLAGS)
+
 globus_ftp_client_multiple_block_put_test_SOURCES = globus_ftp_client_multiple_block_put_test.c $(LibHeaders)
 globus_ftp_client_multiple_block_put_test_LDFLAGS = $(GPT_LDFLAGS)
 
@@ -169,6 +176,12 @@ globus_ftp_client_extended_get_caching_test_LDFLAGS = $(GPT_LDFLAGS)
 globus_ftp_client_read_all_test_SOURCES = globus_ftp_client_read_all_test.c $(LibHeaders)
 globus_ftp_client_read_all_test_LDFLAGS = $(GPT_LDFLAGS)
 
+globus_ftp_client_chmod_test_SOURCES = globus_ftp_client_chmod_test.c $(LibHeaders)
+globus_ftp_client_chmod_test_LDFLAGS = $(GPT_LDFLAGS)
+
+globus_ftp_client_cksm_test_SOURCES = globus_ftp_client_cksm_test.c $(LibHeaders)
+globus_ftp_client_cksm_test_LDFLAGS = $(GPT_LDFLAGS)
+
 globus_ftp_client_delete_test_SOURCES = globus_ftp_client_delete_test.c $(LibHeaders)
 globus_ftp_client_delete_test_LDFLAGS = $(GPT_LDFLAGS)
 
@@ -180,6 +193,9 @@ globus_ftp_client_rmdir_test_LDFLAGS = $(GPT_LDFLAGS)
 
 globus_ftp_client_move_test_SOURCES = globus_ftp_client_move_test.c $(LibHeaders)
 globus_ftp_client_move_test_LDFLAGS = $(GPT_LDFLAGS)
+
+globus_ftp_client_mlst_test_SOURCES = globus_ftp_client_mlst_test.c $(LibHeaders)
+globus_ftp_client_mlst_test_LDFLAGS = $(GPT_LDFLAGS)
 
 globus_ftp_client_ascii_verbose_list_test_SOURCES = globus_ftp_client_ascii_verbose_list_test.c $(LibHeaders)
 globus_ftp_client_ascii_verbose_list_test_LDFLAGS = $(GPT_LDFLAGS)
