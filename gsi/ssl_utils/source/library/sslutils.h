@@ -33,12 +33,12 @@ EXTERN_C_BEGIN
                              Include header files
 **********************************************************************/
 
+#include "globus_common.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 #include "openssl/crypto.h"
 #include "openssl/pkcs12.h"
-#include "globus_common.h"
 
 #define OPENSSL_PEM_CB(A,B)  A, B
 
