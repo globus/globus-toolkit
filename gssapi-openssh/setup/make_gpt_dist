@@ -15,8 +15,8 @@
 # to the name gpt-bundle gives in its 'packaging_list'.
 #
 
-$srcdirname = "gsi_openssh_setup-1.6-src";
-$srcpkgname = "gsi_openssh_setup-1.6-src";
+$srcdirname = "gsi_openssh_setup-1.7-src";
+$srcpkgname = "gsi_openssh_setup-1.7-src";
 
 #
 # uncomment when we've got a better place to get the current version from
