@@ -27,8 +27,8 @@ CVS Information:
 #include <sys/param.h>
 #include <sys/time.h>
 #include <nexus.h>
-#include "gram.h"
-#include "grami_rsl.h"
+#include "gram_client.h"
+#include "gram_rsl.h"
 #include "gram_job_manager.h"
 #if defined(TARGET_ARCH_SOLARIS)
 #include <netdb.h>
