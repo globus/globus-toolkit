@@ -518,13 +518,14 @@ globus_l_gsc_read_cb(
                 globus_free(command_name);
                 break;
 
+            case GLOBUS_L_GSC_STATE_STOPPED:
             case GLOBUS_L_GSC_STATE_STOPPING:
             case GLOBUS_L_GSC_STATE_ABORTING_STOPPING:
                 goto err;
                 break;
 
+
             case GLOBUS_L_GSC_STATE_OPENING:
-            case GLOBUS_L_GSC_STATE_STOPPED:
             case GLOBUS_L_GSC_STATE_ABORTING:
             default:
                 globus_assert(0 && "invalid state, likely memory curroption");
@@ -638,9 +639,9 @@ globus_i_gsc_terminate(
            In these cases there is nothing to be done. */
         case GLOBUS_L_GSC_STATE_ABORTING_STOPPING:
         case GLOBUS_L_GSC_STATE_STOPPING:
+        case GLOBUS_L_GSC_STATE_STOPPED:
             break;
 
-        case GLOBUS_L_GSC_STATE_STOPPED:
         /* no other states */
         default:
             globus_assert(0);
@@ -961,6 +962,7 @@ globus_l_gsc_final_reply_cb(
 
             case GLOBUS_L_GSC_STATE_ABORTING_STOPPING:
             case GLOBUS_L_GSC_STATE_STOPPING:
+            case GLOBUS_L_GSC_STATE_STOPPED:
 
                 globus_l_gsc_server_ref_check(server_handle);
 
@@ -970,7 +972,6 @@ globus_l_gsc_final_reply_cb(
             case GLOBUS_L_GSC_STATE_OPEN:
                 break;
 
-            case GLOBUS_L_GSC_STATE_STOPPED:
             default:
                 globus_assert(0 && "should never reach this state");
                 break;
@@ -1113,10 +1114,8 @@ globus_l_gsc_user_close_kickout(
     {
         globus_assert(server_handle->ref == 0);
         globus_assert(
-            server_handle->state == GLOBUS_L_GSC_STATE_ABORTING_STOPPING ||
-            server_handle->state == GLOBUS_L_GSC_STATE_STOPPING);
+            server_handle->state == GLOBUS_L_GSC_STATE_STOPPED);
         done_cb = server_handle->funcs.done_cb;
-        server_handle->state = GLOBUS_L_GSC_STATE_STOPPED;
     }
     globus_mutex_unlock(&server_handle->mutex);
 
@@ -1996,6 +1995,11 @@ globus_l_gsc_server_ref_check(
     globus_result_t                         res;
     GlobusGridFTPServerName(globus_l_gsc_server_ref_check);
 
+    if(server_handle->state == GLOBUS_L_GSC_STATE_STOPPED)
+    {
+        return;
+    }
+
     if(server_handle->ref == 0)
     {
         if(server_handle->data_object != NULL)
@@ -2011,6 +2015,7 @@ globus_l_gsc_server_ref_check(
             server_handle->data_object = NULL;
         }
 
+        server_handle->state = GLOBUS_L_GSC_STATE_STOPPED;
         globus_xio_attr_init(&close_attr);
         globus_xio_attr_cntl(
             close_attr, NULL, GLOBUS_XIO_ATTR_CLOSE_NO_CANCEL);
