@@ -515,8 +515,11 @@ userauth_gssapi(Authctxt *authctxt)
 	authctxt->methoddata=(void *)gssctxt;
 		
 	packet_start(SSH2_MSG_USERAUTH_REQUEST);
-        if(options.implicit) packet_put_cstring("");
-        else packet_put_cstring(authctxt->server_user);
+        if(options.implicit && !(datafellows & SSH_BUG_GSS_EMPTYUSER)) {
+	    packet_put_cstring("");
+	} else {
+	    packet_put_cstring(authctxt->server_user);
+	}
 	packet_put_cstring(authctxt->service);
         packet_put_cstring(authctxt->method->name);
 
@@ -627,8 +630,11 @@ userauth_external(Authctxt *authctxt)
                                 
         debug2("userauth_external");
         packet_start(SSH2_MSG_USERAUTH_REQUEST);
-	if(options.implicit) packet_put_cstring(""); 
-        else packet_put_cstring(authctxt->server_user);
+        if(options.implicit && !(datafellows & SSH_BUG_GSS_EMPTYUSER)) {
+	    packet_put_cstring("");
+	} else {
+	    packet_put_cstring(authctxt->server_user);
+	}
         packet_put_cstring(authctxt->service);
         packet_put_cstring(authctxt->method->name);
         packet_send();
