@@ -1075,6 +1075,7 @@ globus_i_gsi_callback_check_critical_extensions(
     int                                 pci_NID;
     int                                 critical_position = -1;
     long                                path_length;
+    unsigned char *                     tmp_data;
     globus_result_t                     result = GLOBUS_SUCCESS;
    static char *                       _function_name_ =
         "globus_i_gsi_callback_check_extensions";
@@ -1127,19 +1128,11 @@ globus_i_gsi_callback_check_critical_extensions(
                 goto exit;
             }
 
-            if((ext_data = ASN1_OCTET_STRING_dup(ext_data)) == NULL)
-            {
-                GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
-                    result,
-                    GLOBUS_GSI_CALLBACK_ERROR_VERIFY_CRED,
-                    ("Failed to copy extension data."));
-                x509_context->error = X509_V_ERR_CERT_REJECTED;
-                goto exit;                
-            }
+            tmp_data = ext_data->data;
 
             if((d2i_PROXYCERTINFO(
                     &proxycertinfo,
-                    &ext_data->data,
+                    &tmp_data,
                     ext_data->length)) == NULL)
             {
                 ASN1_OCTET_STRING_free(ext_data);

@@ -221,6 +221,7 @@ globus_gsi_cert_utils_get_cert_type(
     int                                 index;
     int                                 critical;
     BASIC_CONSTRAINTS *                 x509v3_bc;
+    unsigned char *                     tmp_data;
     static char *                       _function_name_ =
         "globus_gsi_cert_utils_get_cert_type";
     
@@ -279,18 +280,11 @@ globus_gsi_cert_utils_get_cert_type(
                 goto exit;
             }
 
-            if((ext_data = ASN1_OCTET_STRING_dup(ext_data)) == NULL)
-            {
-                GLOBUS_GSI_CERT_UTILS_OPENSSL_ERROR_RESULT(
-                    result,
-                    GLOBUS_GSI_CERT_UTILS_ERROR_NON_COMPLIANT_PROXY,
-                    ("Failed to copy extension data."));
-                goto exit;                
-            }
+            tmp_data = ext_data->data;
 
             if((d2i_PROXYCERTINFO(
                     &pci,
-                    &ext_data->data,
+                    &tmp_data,
                     ext_data->length)) == NULL)
             {
                 GLOBUS_GSI_CERT_UTILS_OPENSSL_ERROR_RESULT(
