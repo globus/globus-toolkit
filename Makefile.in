@@ -10,18 +10,18 @@ LINK		=	$(CC)
 
 GLOBUS_CFLAGS	=	$(INSTALL_INCLUDE)
 DEFS		=	@DEFS@
-CFLAGS		=	-g $(DEFS) $(GLOBUS_CFLAGS)
+CFLAGS		=	-g -Wall $(DEFS) $(GLOBUS_CFLAGS)
 
 GSI_SOCKET_CFLAGS	=	-DGSI_SOCKET_SSLEAY $(CFLAGS)
 ####
 
 TARGETS	=	gsi-socket-test myproxy-init myproxy-destroy myproxy-get-delegation myproxy-server
 
-COMMON_OBJS	= myproxy.o gsi_socket.o gnu_getopt.o gnu_getopt_long.o
+COMMON_OBJS	= myproxy.o gsi_socket.o gnu_getopt.o gnu_getopt_long.o verror.o
 INIT_OBJS	= myproxy_init.o $(COMMON_OBJS)
 DESTROY_OBJS	= myproxy_destroy.o $(COMMON_OBJS) 
 GET_OBJS	= myproxy_get_delegation.o $(COMMON_OBJS)
-SERVER_OBJS	= myproxy_server.o verror.o myproxy_creds.o \
+SERVER_OBJS	= myproxy_server.o myproxy_creds.o \
 			myproxy_log.o vparse.o myproxy_server_config.o \
 			$(COMMON_OBJS)
 
