@@ -876,6 +876,7 @@ void
 globus_i_xio_context_destroy(
     globus_i_xio_context_t *            xio_context)
 {
+    int                                 ctr;
     GlobusXIOName(globus_i_xio_context_destroy);
 
     GlobusXIODebugInternalEnter();
@@ -885,8 +886,14 @@ globus_i_xio_context_destroy(
         GLOBUS_XIO_DEBUG_INFO_VERBOSE, 
         ("  context @ 0x%x: ref=%d size=%d\n", 
             xio_context, xio_context->ref, xio_context->stack_size));
-
+    
+    for(ctr = 0; ctr < xio_context->stack_size; ctr++)
+    {
+        globus_fifo_destroy(&xio_context->entry[ctr].pending_read_queue);
+    }
+        
     globus_mutex_destroy(&xio_context->mutex);
+    globus_mutex_destroy(&xio_context->cancel_mutex);
     globus_memory_destroy(&xio_context->op_memory);
     globus_free(xio_context);
 
@@ -924,6 +931,7 @@ globus_i_xio_context_create(
         for(ctr = 0; ctr < xio_context->stack_size; ctr++)
         {
             xio_context->entry[ctr].whos_my_daddy = xio_context;
+            globus_fifo_init(&xio_context->entry[ctr].pending_read_queue);
         }
     }
 
@@ -1643,6 +1651,21 @@ globus_xio_driver_operation_cancel(
 
     GlobusXIODebugExitWithError();
     return res;
+}
+
+
+void
+globus_xio_driver_set_eof_received(
+    globus_xio_driver_handle_t          driver_handle)
+{
+    
+}
+
+globus_bool_t
+globus_xio_driver_eof_received(
+    globus_xio_driver_handle_t          driver_handle)
+{
+    return GLOBUS_FALSE;
 }
 
 /***************************************************************************

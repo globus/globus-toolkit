@@ -1584,8 +1584,10 @@ globus_l_xio_register_readv(
            handle doesn't maitain this state and Pass asserts for efficieny.
            so wee need to check it here to be nice to the user */
         if(handle->context->entry[0].state != GLOBUS_XIO_CONTEXT_STATE_OPEN &&
-           handle->context->entry[0].state != 
-            GLOBUS_XIO_CONTEXT_STATE_EOF_RECEIVED)
+            handle->context->entry[0].state != 
+                GLOBUS_XIO_CONTEXT_STATE_EOF_RECEIVED &&
+            handle->context->entry[0].state !=
+                GLOBUS_XIO_CONTEXT_STATE_EOF_DELIVERED)
         {
             res = GlobusXIOErrorInvalidState(handle->context->entry[0].state);
             goto bad_state_err;

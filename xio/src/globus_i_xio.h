@@ -402,6 +402,8 @@ typedef struct globus_i_xio_context_entry_s
     globus_i_xio_context_state_t        state;
     int                                 outstanding_operations;
     int                                 read_operations;
+    int                                 eof_operations;
+    int                                 pending_reads;
 
     /* is this hacky? */
     globus_bool_t                       close_started;
@@ -409,7 +411,7 @@ typedef struct globus_i_xio_context_entry_s
     struct globus_i_xio_op_s *          open_op;
     struct globus_i_xio_op_s *          close_op;
     globus_list_t *                     eof_op_list;
-    globus_list_t *                     read_op_list;
+    globus_fifo_t                       pending_read_queue;
     struct globus_i_xio_context_s *     whos_my_daddy;
 } globus_i_xio_context_entry_t;
 

@@ -952,7 +952,8 @@ globus_xio_driver_pass_read(
 
     /* error checking */
     globus_assert(my_context->state == GLOBUS_XIO_CONTEXT_STATE_OPEN ||
-        my_context->state == GLOBUS_XIO_CONTEXT_STATE_EOF_RECEIVED);
+        my_context->state == GLOBUS_XIO_CONTEXT_STATE_EOF_RECEIVED ||
+        my_context->state == GLOBUS_XIO_CONTEXT_STATE_EOF_DELIVERED);
     if(op->canceled)
     {
         GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE,
@@ -1001,8 +1002,25 @@ globus_xio_driver_pass_read(
             
             if(my_context->state == GLOBUS_XIO_CONTEXT_STATE_EOF_RECEIVED)
             {
+                GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO,
+                    ("[%s]: Queuing read on eof list\n", _xio_name));
+                
                 op->cached_obj = GlobusXIOErrorObjEOF();
                 globus_list_insert(&my_context->eof_op_list, op);
+                op->ref++;
+                my_context->eof_operations++;
+                pass = GLOBUS_FALSE;
+            }
+            else if(
+                my_context->state == GLOBUS_XIO_CONTEXT_STATE_EOF_DELIVERED ||
+                my_context->pending_reads > 0)
+            {
+                GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO,
+                    ("[%s]: Queuing read on pending queue\n", _xio_name));
+                    
+                /* add this to the pending queue */
+                my_context->pending_reads++;
+                globus_fifo_enqueue(&my_context->pending_read_queue, op);
                 op->ref++;
                 pass = GLOBUS_FALSE;
             }
@@ -1057,6 +1075,16 @@ globus_xio_driver_pass_read(
                     globus_i_xio_pass_failed(op, my_context, &close,
                         &destroy_handle);
                     globus_assert(!destroy_handle);
+                    
+                    my_context->read_operations--;
+                    if(my_context->read_operations == 0 &&
+                        (my_context->state ==
+                            GLOBUS_XIO_CONTEXT_STATE_EOF_RECEIVED ||
+                        my_context->state ==
+                            GLOBUS_XIO_CONTEXT_STATE_EOF_RECEIVED_AND_CLOSING))
+                    {
+                        globus_l_xio_driver_purge_read_eof(my_context);
+                    }
                 }
             }
             globus_mutex_unlock(&context->mutex);
@@ -1103,10 +1131,7 @@ globus_xio_driver_finished_read(
 
     globus_assert(op->ndx > 0);
     globus_assert(my_context->state != GLOBUS_XIO_CONTEXT_STATE_OPENING &&
-        my_context->state != GLOBUS_XIO_CONTEXT_STATE_CLOSED &&
-        my_context->state != GLOBUS_XIO_CONTEXT_STATE_EOF_DELIVERED &&
-        my_context->state !=
-            GLOBUS_XIO_CONTEXT_STATE_EOF_DELIVERED_AND_CLOSING);
+        my_context->state != GLOBUS_XIO_CONTEXT_STATE_CLOSED);
 
     my_op->_op_ent_nbytes += nbytes;
 
@@ -1135,6 +1160,7 @@ globus_xio_driver_finished_read(
                     break;
             }
             my_context->read_operations--;
+            my_context->eof_operations++;
             if(my_context->read_operations > 0)
             {
                 op->cached_obj = GlobusXIOResultToObj(res);
@@ -1202,6 +1228,142 @@ globus_xio_driver_finished_read(
     GlobusXIODebugInternalExit();
 }
 
+static
+void
+globus_l_xio_pass_pending_reads(
+    globus_i_xio_context_entry_t *      my_context)
+{
+    globus_i_xio_context_t *            context;
+    globus_bool_t                       destroy_context;
+    globus_i_xio_op_t *                 op;
+    GlobusXIOName(globus_l_xio_pass_pending_reads);
+
+    GlobusXIODebugInternalEnter();
+    
+    context = my_context->whos_my_daddy;
+    destroy_context = GLOBUS_FALSE;
+    
+    globus_mutex_lock(&context->mutex);
+    
+    /* this holds a reference on read operations to prevent any eofs from
+     * being delivered before I can dump this pending queue into the eof
+     * queue
+     */
+    my_context->read_operations++;
+    context->ref++;
+    while(my_context->pending_reads > 0)
+    {
+        /* I hold an outstanding read operation so it shouldn't be possible
+         * to enter EOF_DELIVERED here
+         */
+        globus_assert(my_context->state !=
+            GLOBUS_XIO_CONTEXT_STATE_EOF_DELIVERED);
+        
+        if(my_context->state == GLOBUS_XIO_CONTEXT_STATE_EOF_RECEIVED ||
+            my_context->state == 
+                GLOBUS_XIO_CONTEXT_STATE_EOF_RECEIVED_AND_CLOSING)
+        {
+            /* one of the reads we just dispatched caused an eof, dump
+             * the remaining in the eof queue
+             */
+            GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO,
+                ("[%s]: Dumping pending queue into eof list\n", _xio_name));
+            do
+            {
+                my_context->pending_reads--;
+                op = (globus_i_xio_op_t *)
+                    globus_fifo_dequeue(&my_context->pending_read_queue);
+                op->cached_obj = GlobusXIOErrorObjEOF();
+                globus_list_insert(&my_context->eof_op_list, op);
+                my_context->eof_operations++;
+            } while(my_context->pending_reads > 0);
+            
+            op = NULL;
+        }
+        else
+        {
+            my_context->pending_reads--;
+            op = (globus_i_xio_op_t *)
+                globus_fifo_dequeue(&my_context->pending_read_queue);
+            
+            my_context->read_operations++;
+            op->ref++; /* for the pass */
+        }
+        
+        if(op)
+        {
+            globus_i_xio_op_entry_t *   my_op;
+            globus_i_xio_context_entry_t * next_context;
+            globus_result_t             res;
+            globus_bool_t               destroy_handle;
+            
+            globus_mutex_unlock(&context->mutex);
+            
+            my_op = &op->entry[op->ndx - 1];
+            next_context = &context->entry[op->ndx - 1];
+            
+            my_op->in_register = GLOBUS_TRUE;
+                
+            if(op->canceled)
+            {
+                res = GlobusXIOErrorCanceled();
+            }
+            else
+            {
+                res = next_context->driver->read_func(
+                    next_context->driver_handle,
+                    my_op->_op_ent_iovec,
+                    my_op->_op_ent_iovec_count,
+                    op);
+            }
+            
+            if(res != GLOBUS_SUCCESS)
+            {
+                GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO,
+                    ("[%s]: Pending read failed, finishing now\n", _xio_name));
+                
+                globus_xio_driver_finished_read(op, res, 0);
+            }
+            
+            my_op->in_register = GLOBUS_FALSE;
+            
+            globus_mutex_lock(&context->mutex);
+                
+            GlobusXIOOpDec(op);
+            if(op->ref == 0)
+            {
+                globus_i_xio_op_destroy(op, &destroy_handle);
+                globus_assert(!destroy_handle);
+            }
+        }
+    }
+    
+    /* remove read operation reference and purge eofs if there are no
+     * outstanding reads
+     */
+    my_context->read_operations--;
+    if(my_context->read_operations == 0 &&
+        (my_context->state == GLOBUS_XIO_CONTEXT_STATE_EOF_RECEIVED ||
+            my_context->state ==
+                GLOBUS_XIO_CONTEXT_STATE_EOF_RECEIVED_AND_CLOSING))
+    {
+        globus_l_xio_driver_purge_read_eof(my_context);
+    }
+    
+    context->ref--;
+    if(context->ref == 0)
+    {
+        destroy_context = GLOBUS_TRUE;
+    }
+    globus_mutex_unlock(&context->mutex);
+    
+    if(destroy_context)
+    {
+        globus_i_xio_context_destroy(context);
+    }
+    
+    GlobusXIODebugInternalExit();
+}
 
 void
 globus_xio_driver_read_delivered(
@@ -1210,7 +1372,8 @@ globus_xio_driver_read_delivered(
     globus_xio_operation_type_t *       deliver_type)
 {
     globus_i_xio_context_entry_t *      my_context;
-    globus_bool_t                       purge;
+    globus_bool_t                       purge_eof;
+    globus_bool_t                       dispatch_pending = GLOBUS_FALSE;
     globus_bool_t                       close = GLOBUS_FALSE;
     globus_i_xio_context_t *            context;
     globus_bool_t                       destroy_handle = GLOBUS_FALSE;
@@ -1247,20 +1410,20 @@ globus_xio_driver_read_delivered(
         {
             globus_i_xio_op_destroy(op, &destroy_handle);
         }
-        purge = GLOBUS_FALSE;
+        purge_eof = GLOBUS_FALSE;
         if(my_context->read_operations == 0)
         {
             /* just delivered an eof op */
             switch(my_context->state)
             {
                 case GLOBUS_XIO_CONTEXT_STATE_EOF_RECEIVED:
-                    purge = GLOBUS_TRUE;
+                    purge_eof = GLOBUS_TRUE;
                     GlobusXIOContextStateChange(my_context,
                         GLOBUS_XIO_CONTEXT_STATE_EOF_DELIVERED);
                     break;
 
                 case GLOBUS_XIO_CONTEXT_STATE_EOF_RECEIVED_AND_CLOSING:
-                    purge = GLOBUS_TRUE;
+                    purge_eof = GLOBUS_TRUE;
                     GlobusXIOContextStateChange(my_context,
                         GLOBUS_XIO_CONTEXT_STATE_EOF_DELIVERED_AND_CLOSING);
                     break;
@@ -1271,6 +1434,24 @@ globus_xio_driver_read_delivered(
 
                 default:
                     globus_assert(0);
+            }
+            
+            my_context->eof_operations--;
+            if(my_context->eof_operations == 0)
+            {
+                GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO,
+                    ("[%s]: All eof ops delivered\n", _xio_name));
+                    
+                if(my_context->state == GLOBUS_XIO_CONTEXT_STATE_EOF_DELIVERED)
+                {
+                    GlobusXIOContextStateChange(my_context,
+                        GLOBUS_XIO_CONTEXT_STATE_OPEN);
+                }
+                
+                if(my_context->pending_reads > 0)
+                {
+                    dispatch_pending = GLOBUS_TRUE;
+                }
             }
         }
         else
@@ -1284,12 +1465,12 @@ globus_xio_driver_read_delivered(
                 my_context->state ==
                     GLOBUS_XIO_CONTEXT_STATE_EOF_RECEIVED_AND_CLOSING))
             {
-                purge = GLOBUS_TRUE;
+                purge_eof = GLOBUS_TRUE;
             }
         }
 
         my_context->outstanding_operations--;
-        if(purge)
+        if(purge_eof)
         {
              globus_l_xio_driver_purge_read_eof(my_context);
         }
@@ -1312,6 +1493,12 @@ globus_xio_driver_read_delivered(
         }
     }
     globus_mutex_unlock(&context->mutex);
+    
+    if(dispatch_pending)
+    {
+        globus_l_xio_pass_pending_reads(my_context);
+    }
+    
     if(close)
     {
         globus_i_xio_driver_start_close(my_context->close_op, GLOBUS_FALSE);
