@@ -1414,7 +1414,8 @@ globus_l_gram_job_manager_output_destination_open(
 		GLOBUS_TRUE,
 		&timestamp,
 		&local_filename);
-	if(rc != GLOBUS_SUCCESS)
+	if(rc != GLOBUS_GASS_CACHE_ADD_NEW &&
+	   rc != GLOBUS_GASS_CACHE_ADD_EXISTS)
 	{
 	    break;
 	}
