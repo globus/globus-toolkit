@@ -373,8 +373,8 @@ ssh_gssapi_gsi_storecreds(gss_buffer_t export_buffer)
 		}
 		else
 		{
-		    log("Failed to export delegated credentials (error %d)",
-			major_status);
+		    log("Failed to export delegated credentials (error %u)",
+			(unsigned int)major_status);
 		}
 	}
 	return 0;
