@@ -12,6 +12,7 @@ use File::Find;
 use Cwd;
 use Config;
 use FileHandle;
+use POSIX "sys_wait_h";
 
 sub new {
     my $class = shift;
@@ -79,7 +80,14 @@ sub remote {
 sub report {
     my ($self, $outcome) = @_;
 
-    print "Test Result:                                                                        [";
+    if ( $ENV{TEST_COUNTER} )
+    {
+        print "Test Result ($ENV{TEST_COUNTER} sec):                                                                 [";
+    }
+    else
+    {
+        print "Test Result:                                                                         [";
+    }
     
     if ($outcome eq "SUCCESS") {
         system("echo -en \"\\033[1;32m\"") if $self->{'color'};
@@ -109,7 +117,7 @@ sub report {
 #       [ /home/gose/test ] /bin/date
 #       Fri Jul 19 11:49:04 CDT 2002
 #
-#    The second parameter specifies a timeout value (minutes) for 
+#    The second parameter specifies a timeout value (seconds) for 
 #    the command.
 #
 # --------------------------------------------------------------------
@@ -235,6 +243,10 @@ sub wait_command()
     my $counter = 0;
     my $output;
 
+    $self->debug( "wait_command: entered" );
+    $self->debug( "wait_command: timeout = $timeout" );
+    $self->debug( "wait_command: pid = $pid" );
+
     if(!defined($timeout))
     {
         $timeout = 5;
@@ -254,20 +266,23 @@ sub wait_command()
     {
         while($rc == 0)
         {
-            # kill after $timeout minutes
+            # kill after $timeout seconds
             if($counter == $timeout)
             {
                 kill(9,$pid);
                 sleep(1);
-                $output = "Command timed out (timeout $timeout minutes).\n";
+                $output = "Command timed out (timeout $timeout seconds).\n";
+                $self->debug( "wait_command: command timed out!" );
             }
         
+            $self->debug( "wait_command: calling waitpid" );
             $rc = waitpid($pid,WNOHANG);
             
             if($rc == 0)
             {
-                sleep(60);
-                $counter++;
+                sleep(1);
+                $self->debug( "wait_command: counter = $counter" );
+                $ENV{TEST_COUNTER} = $counter++;
             }
         }
     }
