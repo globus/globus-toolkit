@@ -690,7 +690,7 @@ globus_l_cache_local_op( globus_l_cache_op_t op,
 
 		globus_gass_transfer_request_destroy(request);
 		rc = globus_gass_cache_delete(&cache_handle,
-					      url,
+					      name,
 					      tag,
 					      timestamp,
 					      GLOBUS_TRUE);
