@@ -10,6 +10,7 @@ SUBDIRS = \
 
 EXTRA_DIST = \
 	version.h.in \
+	extensions.h.in \
 	configure.in.in
 
 # Sources contains all of the source files in the directory.

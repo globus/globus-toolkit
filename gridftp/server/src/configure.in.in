@@ -57,4 +57,5 @@ AC_OUTPUT(
 	doxygen/Doxyfile
 	doxygen/Doxyfile-internal
 	version.h
+	extensions.h
 dnl NOTE: do not put anything below this line!
