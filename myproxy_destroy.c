@@ -32,11 +32,9 @@ static char usage[] = \
 "    -l | --username <username> Username for the delegated proxy\n"\
 "    -s | --pshost   <hostname> Hostname of the myproxy-server\n"\
 "    -p | --psport   #          Port of the myproxy-server\n"
-#if !defined(DN_DEFAULT_USERNAME)
 "	-d | --dn_as_username             Use the proxy certificate subject\n"
 "                                         (DN) as the default username\n"
 "                                         of the LOGNAME env. var.\n"
-#endif
 "\n";
 
 struct option long_options[] =
@@ -129,22 +127,21 @@ main(int argc, char *argv[])
     }
 
     if (client_request->username == NULL) { /* set default username */
-#if !defined(DN_DEFAULT_USERNAME)
-	if (!dn_as_username) {
-	    if (!(client_request->username = getenv("LOGNAME"))) {
-		fprintf(stderr, "Please specify a username.\n");
-		exit(1);
-	    }
-	} else {
-#endif
-	    if (ssl_get_base_subject_file(NULL, &client_request->username)) {
+	char *username = NULL;
+	if (dn_as_username) {
+	    if (ssl_get_base_subject_file(NULL,
+					  &username)) {
 		fprintf(stderr,
 			"Cannot get subject name from your certificate\n");
 		exit(1);
 	    }
-#if !defined(DN_DEFAULT_USERNAME)
+	} else {
+	    if (!(username = getenv("LOGNAME"))) {
+		fprintf(stderr, "Please specify a username.\n");
+		exit(1);
+	    }
 	}
-#endif
+	client_request->username = strdup(username);
      }
 
     /* Serialize client request object */
