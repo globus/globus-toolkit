@@ -64,7 +64,7 @@ myproxy_socket_attrs_t *socket_attrs,
 
 {    
     char delegfile[128];
-    char request_buffer[1024];
+    char request_buffer[2048];
     int  requestlen;
 
     /* Set up client socket attributes */

@@ -5,6 +5,7 @@
  */
 
 #include "myproxy.h"
+#include "myproxy_log.h"
 #include "gnu_getopt.h"
 #include "version.h"
 #include "verror.h"
@@ -20,13 +21,14 @@
 
 static char usage[] = \
 "\n"\
-"Syntax: myproxy-init [-c #hours] [-t #hours] [-l username] ...\n"\
+"Syntax: myproxy-init [-c #hours] [-t #hours] [-l username] [-r retrievers] [-w renewers] ...\n"\
 "        myproxy-init [-usage|-help] [-v|-version]\n"\
 "\n"\
 "   Options\n"\
 "       -h | --help                       Displays usage\n"
 "       -u | --usage                                    \n"
 "                                                      \n"
+"	-D | --debug_level	<level>	  Sets debug level (0,1,2)\n"
 "       -v | --version                    Displays version\n"
 "       -l | --username        <username> Username for the delegated proxy\n"
 "       -c | --cred_lifetime   <hours>    Lifetime of delegated proxy on\n" 
@@ -35,6 +37,12 @@ static char usage[] = \
 "                                         server (default 2 hours)\n"
 "       -s | --pshost          <hostname> Hostname of the myproxy-server\n"
 "					  Can also set MYPROXY_SERVER env. var.\n"
+"	-a | --allow_anonymous_retrievers Allow anonymous users to retrieve credentials\n"
+"	-A | --allow_anonymous_renewers   Allow anonymous users to renew credentials\n"
+"	-r | --retrievable_by      <dn>   Distinguished name list of allowed retrievers\n"
+"	-R | --renewable_by       <dn>    Distinguished name list of allowed renewers\n"
+"	-x | --regex_dn_match		  Set expression type to regular expression\n"
+"	-X | --match_cn_only		  Set expression type to common name\n"
 "       -p | --psport          <port #>   Port of the myproxy-server\n"
 "       -n | --no_passphrase              Disable passphrase authentication\n"
 "       -d | --dn_as_username             Use the proxy certificate subject\n"
@@ -45,6 +53,7 @@ static char usage[] = \
 struct option long_options[] =
 {
   {"help",                  no_argument, NULL, 'h'},
+  {"debug_level",     required_argument, NULL, 'D'},
   {"pshost",   	      required_argument, NULL, 's'},
   {"psport",          required_argument, NULL, 'p'},
   {"cred_lifetime",   required_argument, NULL, 'c'},
@@ -54,10 +63,16 @@ struct option long_options[] =
   {"version",               no_argument, NULL, 'v'},
   {"no_passphrase",         no_argument, NULL, 'n'},
   {"dn_as_username",        no_argument, NULL, 'd'},
+  {"allow_anonymous_retrievers", no_argument, NULL, 'a'},
+  {"allow_anonymous_renewers", no_argument, NULL, 'A'},
+  {"retrievable_by",  required_argument, NULL, 'r'},
+  {"renewable_by",    required_argument, NULL, 'R'},
+  {"regex_dn_match",        no_argument, NULL, 'x'},
+  {"match_cn_only", 	    no_argument, NULL, 'X'},
   {0, 0, 0, 0}
 };
 
-static char short_options[] = "uhs:p:t:c:l:vnd";
+static char short_options[] = "uhD:s:p:t:c:l:vndr:R:xXaA";  //colon following an option indicates option takes an argument
 
 static char version[] =
 "myproxy-init version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
@@ -75,6 +90,8 @@ int grid_proxy_destroy(const char *proxyfile);
 
 #define		SECONDS_PER_HOUR			(60 * 60)
 
+static int debug_level = DBG_IN;  //define debugging level
+
 int
 main(int argc, char *argv[]) 
 {    
@@ -89,7 +106,11 @@ main(int argc, char *argv[])
     myproxy_socket_attrs_t *socket_attrs;
     myproxy_request_t      *client_request;
     myproxy_response_t     *server_response;
-    
+
+    myproxy_debug_set_level (1);
+    myproxy_log_use_stream (stderr);
+
+    myproxy_log (0,5, "WELCOME");    
     socket_attrs = malloc(sizeof(*socket_attrs));
     memset(socket_attrs, 0, sizeof(*socket_attrs));
 
@@ -193,6 +214,8 @@ main(int argc, char *argv[])
     }
 
     /* Send request to the myproxy-server */
+    myproxy_log(DBG_HI, debug_level, "Request buffer = %s \nRequestlen = %d\n", request_buffer,requestlen);
+
     if (myproxy_send(socket_attrs, request_buffer, requestlen) < 0) {
         fprintf(stderr, "error in myproxy_send_request(): %s\n", 
 		verror_get_string());
@@ -252,6 +275,7 @@ init_arguments(int argc,
 	       int *cred_lifetime) 
 {   
     extern char *gnu_optarg;
+    int expr_type = MATCH_CN_ONLY;  //default
 
     int arg;
 
@@ -263,6 +287,9 @@ init_arguments(int argc,
 	case 'h':       /* print help and exit */
 	    fprintf(stderr, usage);
 	    return -1;
+	    break;
+	case 'D':	/* Set debug levle */
+	    debug_level = atoi (gnu_optarg);
 	    break;
 	case 'c': 	/* Specify cred lifetime in hours */
 	    *cred_lifetime  = SECONDS_PER_HOUR * atoi(gnu_optarg);
@@ -294,6 +321,42 @@ init_arguments(int argc,
 	case 'd':   /* use the certificate subject (DN) as the default
 		       username instead of LOGNAME */
 	    dn_as_username = 1;
+	    break;
+	case 'r':   /* retrievers list */
+	    if (expr_type == REGULAR_EXP)  //copy as is
+	      request->retrievers = strdup (gnu_optarg);
+	    else   //prepend a "*/CN=" string
+	    {
+		request->retrievers = (char *) malloc (strlen (gnu_optarg) + 5);
+		strcpy (request->retrievers, "*/CN=");
+		myproxy_log (DBG_HI, debug_level, "gnu-optarg  %s\n", gnu_optarg);
+		request->retrievers = strcat (request->retrievers,gnu_optarg);
+	    }
+	    break;
+	case 'R':   /* renewers list */
+	    if (expr_type == REGULAR_EXP)  //copy as is
+	      request->renewers = strdup (gnu_optarg);
+	    else   //prepend a "*/CN=" string
+	    {
+		request->renewers = (char *) malloc (strlen (gnu_optarg) + 5);
+		strcpy (request->renewers, "*/CN=");
+		myproxy_log (DBG_HI, debug_level,"gnu-optarg  %s\n", gnu_optarg);
+		request->renewers = strcat (request->renewers,gnu_optarg);
+	    }
+	    break;
+	case 'x':   /*set expression type to regex*/
+	    expr_type = REGULAR_EXP;
+	    myproxy_log(DBG_HI, debug_level,"expr-type = %d\n", expr_type);
+	    break;
+	case 'X':   /*set expression type to common name*/
+	    expr_type = MATCH_CN_ONLY;
+	    myproxy_log(DBG_HI, debug_level, "expr-type = %d\n", expr_type);
+	    break;
+	case 'a':  /*allow anonymous retrievers*/
+	    request->retrievers = strdup ("*");
+	    break;
+	case 'A':  /*allow anonymous renewers*/
+	    request->renewers = strdup ("*");
 	    break;
         default:  
 	    fprintf(stderr, usage);
@@ -354,3 +417,4 @@ grid_proxy_destroy(const char *proxyfile) {
 
     return rc;
 }
+

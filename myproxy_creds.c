@@ -452,6 +452,17 @@ write_data_file(const struct myproxy_creds *creds,
     fprintf(data_stream, "OWNER=%s\n", creds->owner_name);
     fprintf(data_stream, "PASSPHRASE=%s\n", tmp1);
     fprintf(data_stream, "LIFETIME=%d\n", creds->lifetime);
+
+    if (creds->retrievers != NULL)
+    {
+        fprintf(data_stream, "RETRIEVERS=%s\n", creds->retrievers);
+    }
+
+    if (creds->renewers != NULL)
+    {	
+        fprintf(data_stream, "RENEWERS=%s\n", creds->renewers);
+    }
+
     fprintf(data_stream, "END_OPTIONS\n");
 
     fflush(data_stream);
@@ -586,6 +597,28 @@ read_data_file(struct myproxy_creds *creds,
             creds->pass_phrase = mystrdup(value);
             
             if (creds->pass_phrase == NULL)
+            {
+                goto error;
+            }
+            continue;
+        }
+        
+        if (strcmp(variable, "RETRIEVERS") == 0)
+        {
+            creds->retrievers = mystrdup(value);
+            
+            if (creds->retrievers == NULL)
+            {
+                goto error;
+            }
+            continue;
+        }
+        
+        if (strcmp(variable, "RENEWERS") == 0)
+        {
+            creds->renewers = mystrdup(value);
+            
+            if (creds->renewers == NULL)
             {
                 goto error;
             }
@@ -754,7 +787,25 @@ myproxy_creds_retrieve(struct myproxy_creds *creds)
     {
         goto error;
     }
-    
+   
+    if (retrieved_creds.retrievers != NULL)
+    {
+       creds->retrievers = retrieved_creds.retrievers;
+    }
+    else
+    {
+       creds->retrievers = NULL;
+    }
+
+    if (retrieved_creds.renewers != NULL)
+    {
+       creds->renewers = retrieved_creds.renewers;
+    }
+    else
+    {
+       creds->renewers = NULL;
+    }
+ 
     /* Success */
     return_code = 0;
     

@@ -1,6 +1,10 @@
 MyProxyv2 protocol
 
- I) Basic Tenants:
+
+Section A
+------- -
+
+Basic Tenants:
  
  1) All communications between MyProxy process will be authenticated
     via GSSAPI. The MyProxyServer will always be the accepting side and
@@ -25,12 +29,12 @@ MyProxyv2 protocol
     An OK message will simply contain:
  
     VERSION=MYPROXYv2
-    RESPONSE=OK
+    RESPONSE=0
  
     An ERROR message will contain:
  
     VERSION=MYPROXYv2
-    RESPONSE=ERROR
+    RESPONSE=1
     ERROR=<error text>
     ERROR=<error text>
     ...
@@ -98,8 +102,11 @@ MyProxyv2 protocol
     included.
  
  ====
+
+Section B
+------- -
  
- II) MyProxyInit <-> MyProxyServer protocol
+ MyProxyInit <-> MyProxyServer protocol
  
  The following illustrates a MyProxyInit process connecting to a
  MyProxyServer process and storing a proxy for later retrieval.
@@ -108,7 +115,7 @@ MyProxyv2 protocol
     host and port as specified by it's configuration or the user.
  
  2) MyProxyInit will initiate the GSSAPI context setup loop, with
-    MyProxyServer accepting. See I.1. 
+    MyProxyServer accepting. See Section A.1. 
  
  3) MyProxyInit will then send a message to MyProxyServer containing
     the following strings:
@@ -118,6 +125,11 @@ MyProxyv2 protocol
     USERNAME=<username>
     PASSPHRASE=<pass phrase>
     LIFETIME=<lifetime>
+
+    and optional strings
+
+    RETRIEVER=<retriever_dn>
+    RENEWER=<renewer_dn>
  
     The intent of the VERSION string is to allow the server to know
     if it is dealing with an outdated or newer client.
@@ -125,10 +137,11 @@ MyProxyv2 protocol
     <username> and <pass phrase> are the strings supplied by the
     user to be used for retrieval by the portal. <lifetime> is the
     ASCII representation of the lifetime of the proxy to be delegated
-    to the portal, in seconds.
+    to the portal, in seconds. <retriever_dn> and <renewer_dn> are strings 
+    specifying the retriever DN and renewer DN respectively.
  
  4) MyProxyServer will then respond with either a OK or an ERROR message.
-    See I.7 for details.
+    See Section A.6 for details.
 
  5) Next, the server will perform delegation with the client.
     The MyProxyServer will generate a public/private key pair and send
@@ -136,22 +149,26 @@ MyProxyv2 protocol
     MyProxyInit client will sign the request with its proxy private key
     and send the new certificate and the entire certificate chain back
     to the server. 
-    See section I.8 for details of the certificate chain message.
+    See section A.8 for details of the certificate chain message.
 
  6) MyProxyServer will read the individual certificates, chain them back
-    up together into a new delegated credentials and store them. 
+    up together into a new delegated credentials and store them. The server 
+    also stores the retriever and renewer DN strings if they are specified.
 
  7) MyProxyServer will then respond with either a OK message if it
     successfully stored the proxy or an ERROR message if an error occurred. 
     For example, an error might occur when the stored proxy already exists
     for the same username but belongs to another user.
-    For the reply message details see I.7.
+    For the reply message details see section A.6.
  
  8) At this point, both sides should close the connection.
  
  ====
+
+Section C
+------- -
  
- III) MyProxyGet <-> MyProxyServer protocol
+ MyProxyGet <-> MyProxyServer protocol
  
  The following illustrates a MyProxyGet process connecting to
  a MyProxyServer process and retrieving a proxy for use.
@@ -160,7 +177,7 @@ MyProxyv2 protocol
     indicated by it's configuration or arguments.
  
  2) MyProxyGet will initiate the GSSAPI context setup loop, with
-    MyProxyServer accepting. See I.1. 
+    MyProxyServer accepting. See Section A.1. 
  
  3) MyProxyGet will then send a message to MyProxyServer containing
     the following strings:
@@ -177,7 +194,7 @@ MyProxyv2 protocol
     user to the portal to be used for retrieval by the portal.
 
  4) MyProxyServer will then respond with either a OK or an ERROR message.
-    See I.7 for details.
+    See Section A.6 for details.
  
  5) Next, the server will delegate the user credential to the client.
     The MyProxyGet will generate a public/private key pair and send
@@ -185,19 +202,22 @@ MyProxyv2 protocol
     MyProxyServer will sign the request with the private key of the stored
     user credential and send it as a new certificate back to the client 
     along with the rest of the certificate chain of the stored credential.
-    See section I.8 for details of the certificate chain message.
+    See section A.7 for details of the certificate chain message.
     The MyProxyGet will then chain up the certificates together and create
     the new user credentials.
 
  6) MyProxyServer will then respond with either a OK message if it
     successfully completed sending the certificates or an ERROR message 
-    if an error occurred. See I.7 for details.
+    if an error occurred. See section A.6 for details.
  
  7) At this point, both sides should close the connection.
 
  ====
+
+Section D
+------- -
  
- III) MyProxyDestroy <-> MyProxyServer protocol
+ MyProxyDestroy <-> MyProxyServer protocol
  
  The following illustrates a MyProxyDestroy process connecting to
  a MyProxyServer process and removing a proxy.
@@ -206,7 +226,7 @@ MyProxyv2 protocol
     indicated by it's configuration or arguments.
  
  2) MyProxyDestroy will initiate the GSSAPI context setup loop, with
-    MyProxyServer accepting. See I.1. 
+    MyProxyServer accepting. See section A.1. 
  
  3) MyProxyDestroy will then send a message to MyProxyServer containing
     the following strings:
@@ -223,7 +243,7 @@ MyProxyv2 protocol
     user to the portal used for retrieval of a proxy from the portal.
 
  4) MyProxyServer will then respond with either a OK or an ERROR message.
-    See I.7 for details.
+    See section A.6 for details.
  
  5) At this point, both sides should close the connection.
 
