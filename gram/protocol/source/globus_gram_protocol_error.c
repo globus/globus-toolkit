@@ -94,7 +94,13 @@ globus_l_gram_client_error_strings[] =
     "the provided RSL 'min_memory' parameter is invalid",
     "the provided RSL 'max_memory' parameter is invalid",
     "the RSL 'min_memory' value is not zero or greater",
-    "the RSL 'max_memory' value is not zero or greater"
+    "the RSL 'max_memory' value is not zero or greater",
+    "the GRAM client API function 'globus_gram_Client_job_request_\
+nonblocking() was called with inconsistent arguments; if the \
+is_fully_asynchronous function argument is GLOBUS_FALSE, a non-NULL\
+job_contact_collback argument must be provided",
+    "GRAM could not get enough memory"
+    
 };
 
 const char *
