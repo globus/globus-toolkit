@@ -179,9 +179,12 @@ input_userauth_request(int type, u_int32_t seq, void *ctxt)
 	if ((style = strchr(user, ':')) != NULL)
 		*style++ = 0;
 
-	authctxt->attempt++;
-	if (!authctxt->user ||
-	    strcmp(user, authctxt->user) != 0) {
+	;
+	/* If first time or username changed or implicit username,
+	   setup/reset authentication context. */
+	if ((authctxt->attempt++ == 0) ||
+	    (strcmp(user, authctxt->user) != 0) ||
+	    (strcmp(user, "") == 0)) {
 		/* setup auth context */
 		if (authctxt->user) {
 		    xfree(authctxt->user);
