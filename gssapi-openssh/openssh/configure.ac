@@ -628,7 +628,7 @@ if test "x$gsi_path" != "xno" ; then
 	. ./gpt_build_temp.sh
 	GSI_LDFLAGS="-L${gsi_path}/lib"
 	GSI_LIBS="$GPT_CONFIG_PGM_LINKS"
-	export LD_LIBRARY_PATH="${gsi_path}/lib:$LD_LIBRARY_PATH"
+	LD_LIBRARY_PATH="${gsi_path}/lib:$LD_LIBRARY_PATH"; export LD_LIBRARY_PATH
 
 	#
 	# Test Globus linkline
