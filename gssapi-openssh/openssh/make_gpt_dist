@@ -1,0 +1,58 @@
+#!/usr/bin/env perl
+
+#GPT_LOCATION and/or GLOBUS_LOCATION must be specified for most scripts
+#in the globus packages.  for this reason, this script tests to see if
+#one of the two locations is defined.
+
+my $gpath=$ENV{GPT_LOCATION};
+
+if(!defined($gpath))
+{
+  $gpath=$ENV{GLOBUS_LOCATION};
+}
+
+if(!defined($gpath))
+{
+  die "GPT_LOCATION or GLOBUS_LOCATION needs to be set before running this script";
+}
+
+#uncomment when we're more mature
+#for my $subdir ('packaging_tools', 'package_management', 'archive_compress') {
+#  chdir "$subdir" or die "Unable to cd to $subdir: $?";
+#  if(-e "config.cache")
+#    {
+#      #config.cache is tested for because it is generated when ./configure is executed
+#      #if config.cache is present, then a make distclean must be performed in order
+#      #to remove the cache.  if a make distclean is run and config.cache is not 
+#      #present, then this script will recieve a zero from the system and error.
+#      
+#      system("make distclean");
+#    }
+#
+#  chdir ".."  or die "Unable to cd to packaging: $?";
+#}
+
+# determine gpt version number
+#uncomment when we've got a better place to get the current version from
+#open (CFG, 'packaging_tools/configure.in');
+#
+#my $version;
+#for (<CFG>) {
+#  if (m!AM_INIT_AUTOMAKE\(\w+,([^,\)]+)!) {
+#    $version = $1;
+#    $version =~ s!\s+!!g;
+#  }
+#}
+
+#uncomment when we've got a better directory layout
+system("mkdir ../gpt-gsi-openssh")==0 or die "Unable to create gpt_bundle.tar: $?";
+system("cp -rf * ../gpt-gsi-openssh")==0 or die "Unable to create gpt_bundle.tar: $?";
+system("mv ../gpt-gsi-openssh ./gpt-gsi-openssh")==0 or die "Unable to move directory: $?";
+
+#system("tar -cf gpt-$version.tar gpt-$version")==0 or die "Unable to create gpt_bundle.tar: $?";
+#system("gzip -f gpt-$version.tar")==0 or die "Unable to gzip gpt_bundle.tar: $?";
+#system("rm -rf gpt-$version")==0 or die "Unable to create gpt_bundle.tar: $?";
+
+system("tar -cf gsi-openssh.tar ./gpt-gsi-openssh")==0 or die "Unable to create gpt_bundle.tar: $?";
+system("gzip -f gsi-openssh.tar")==0 or die "Unable to gzip gpt_bundle.tar: $?";
+system("rm -rf ./gpt-gsi-openssh")==0 or die "Unable to create gpt_bundle.tar: $?";
