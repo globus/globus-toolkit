@@ -15,6 +15,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <sys/timeb.h>
+#include "version.h"
 
 /* for 'get' mode (in seconds) */
 #define MIN_CB_INTERVAL 1
@@ -29,7 +30,9 @@ globus_module_descriptor_t globus_i_ftp_client_perf_plugin_module =
     GLOBUS_L_FTP_CLIENT_PERF_PLUGIN_NAME,
     globus_l_ftp_client_perf_plugin_activate,
     globus_l_ftp_client_perf_plugin_deactivate,
-    GLOBUS_NULL
+    GLOBUS_NULL,
+    GLOBUS_NULL,
+    &local_version
 };
 
 static

@@ -1685,7 +1685,12 @@ globus_ftp_client_get(
     globus_ftp_client_complete_callback_t	complete_callback,
     void *					callback_arg)
 {
-    return globus_l_ftp_client_extended_get(handle,
+    globus_result_t                             result;
+    
+    globus_i_ftp_client_debug_printf(1, 
+        (stderr, "globus_ftp_client_get() entering\n"));
+        
+    result = globus_l_ftp_client_extended_get(handle,
 					 url,
 					 attr,
 					 restart,
@@ -1694,6 +1699,10 @@ globus_ftp_client_get(
 					 -1,
 					 complete_callback,
 					 callback_arg);
+    globus_i_ftp_client_debug_printf(1, 
+        (stderr, "globus_ftp_client_get() exiting\n"));
+        
+    return result;
 }
 /* globus_ftp_client_get() */
 
@@ -1750,6 +1759,10 @@ globus_ftp_client_partial_get(
     void *					callback_arg)
 {
     char                                        alg_str_buf[128];
+    globus_result_t                             result;
+    
+    globus_i_ftp_client_debug_printf(1, 
+        (stderr, "globus_ftp_client_partial_get() entering\n"));
 
     if(partial_offset < 0)
     {
@@ -1764,7 +1777,7 @@ globus_ftp_client_partial_get(
         partial_offset, 
         partial_end_offset - partial_offset);
 
-    return globus_l_ftp_client_extended_get(
+    result = globus_l_ftp_client_extended_get(
                handle,
                url,
                attr,
@@ -1774,6 +1787,11 @@ globus_ftp_client_partial_get(
                partial_end_offset,
                complete_callback,
                callback_arg);
+    
+    globus_i_ftp_client_debug_printf(1, 
+        (stderr, "globus_ftp_client_partial_get() exiting\n"));
+        
+    return result;
 }
 /* globus_ftp_client_partial_get() */
 
@@ -1837,7 +1855,12 @@ globus_ftp_client_extended_get(
     globus_ftp_client_complete_callback_t       complete_callback,
     void *                                      callback_arg)
 {
-    return globus_l_ftp_client_extended_get(
+    globus_result_t                             result;
+    
+    globus_i_ftp_client_debug_printf(1, 
+        (stderr, "globus_ftp_client_extended_get() entering\n"));
+        
+    result = globus_l_ftp_client_extended_get(
                handle,
                url,
                attr,
@@ -1847,6 +1870,11 @@ globus_ftp_client_extended_get(
                -1,
                complete_callback,
                callback_arg);
+    
+    globus_i_ftp_client_debug_printf(1, 
+        (stderr, "globus_ftp_client_extended_get() exiting\n"));
+        
+    return result;
 }
 /* globus_ftp_client_extended_get() */
 
@@ -1867,7 +1895,10 @@ globus_l_ftp_client_extended_get(
     globus_bool_t				registered;
     globus_i_ftp_client_handle_t *		handle;
     static char * myname = "globus_ftp_client_get";
-
+    
+    globus_i_ftp_client_debug_printf(1, 
+        (stderr, "globus_l_ftp_client_extended_get() entering\n"));
+        
     /* Check arguments for validity */
     if(u_handle == GLOBUS_NULL)
     {
@@ -2039,7 +2070,10 @@ globus_l_ftp_client_extended_get(
     }
 
     globus_i_ftp_client_handle_unlock(handle);
-
+    
+    globus_i_ftp_client_debug_printf(1, 
+        (stderr, "globus_l_ftp_client_extended_get() exiting\n"));
+       
     return GLOBUS_SUCCESS;
 
     /* Error handling */
@@ -2070,6 +2104,9 @@ unlock_exit:
 
     /* And return our error */
 error_exit:
+    globus_i_ftp_client_debug_printf(1, 
+        (stderr, "globus_l_ftp_client_extended_get() exiting with error\n"));
+
     return globus_error_put(err);
 
 restart:
@@ -2081,6 +2118,9 @@ restart:
     if(!err)
     {
 	globus_i_ftp_client_handle_unlock(handle);
+        globus_i_ftp_client_debug_printf(1, (stderr, 
+            "globus_l_ftp_client_extended_get() exiting after restart\n"));
+
 	return GLOBUS_SUCCESS;
     }
     /* else fallthrough */
@@ -2115,6 +2155,9 @@ abort:
         globus_free(handle->esto_alg_str);
         handle->esto_alg_str = GLOBUS_NULL;
     }
+    
+    globus_i_ftp_client_debug_printf(1, 
+        (stderr, "globus_l_ftp_client_extended_get() exiting after abort\n"));
 
     return globus_error_put(err);
 }
@@ -2163,7 +2206,12 @@ globus_ftp_client_put(
     globus_ftp_client_complete_callback_t	complete_callback,
     void *					callback_arg)
 {
-    return globus_l_ftp_client_extended_put(handle,
+    globus_result_t                             result;
+    
+    globus_i_ftp_client_debug_printf(1, 
+        (stderr, "globus_ftp_client_put() entering\n"));
+        
+    result = globus_l_ftp_client_extended_put(handle,
 				  	    url,
 					    attr,
 					    restart,
@@ -2172,6 +2220,10 @@ globus_ftp_client_put(
 					    -1,
 					    complete_callback,
 					    callback_arg);
+    globus_i_ftp_client_debug_printf(1, 
+        (stderr, "globus_ftp_client_put() exiting\n"));
+        
+    return result;
 }
 /* globus_ftp_client_put() */
 
@@ -2220,10 +2272,14 @@ globus_ftp_client_partial_put(
     void *					callback_arg)
 {
     char                                        esto_str_buf[128];
-
+    globus_result_t                             result;
+    
+    globus_i_ftp_client_debug_printf(1, 
+        (stderr, "globus_ftp_client_partial_put() entering\n"));
+        
     sprintf(esto_str_buf, GLOBUS_L_DATA_ESTO_FORMAT_STRING, partial_offset);
 
-    return globus_l_ftp_client_extended_put(handle,
+    result = globus_l_ftp_client_extended_put(handle,
 					    url,
 					    attr,
 					    restart,
@@ -2232,6 +2288,10 @@ globus_ftp_client_partial_put(
 					    partial_end_offset,
 					    complete_callback,
 					    callback_arg);
+    globus_i_ftp_client_debug_printf(1, 
+        (stderr, "globus_ftp_client_partial_put() exiting\n"));
+        
+    return result;
 }
 /* globus_ftp_client_partial_put() */
 
@@ -2282,7 +2342,12 @@ globus_ftp_client_extended_put(
     globus_ftp_client_complete_callback_t       complete_callback,
     void *                                      callback_arg)
 {
-    return globus_l_ftp_client_extended_put(handle,
+    globus_result_t                             result;
+    
+    globus_i_ftp_client_debug_printf(1, 
+        (stderr, "globus_ftp_client_extended_put() entering\n"));
+        
+    result = globus_l_ftp_client_extended_put(handle,
                url,
                attr,
                restart,
@@ -2291,6 +2356,11 @@ globus_ftp_client_extended_put(
                -1,
                complete_callback,
                callback_arg);
+    
+    globus_i_ftp_client_debug_printf(1, 
+        (stderr, "globus_ftp_client_extended_put() exiting\n"));
+        
+    return result;
 }
 /* globus_ftp_client_extended_put() */
 
@@ -2311,7 +2381,10 @@ globus_l_ftp_client_extended_put(
     globus_bool_t				registered;
     globus_i_ftp_client_handle_t *		handle;
     static char * myname = "globus_ftp_client_put";
-
+    
+    globus_i_ftp_client_debug_printf(1, 
+        (stderr, "globus_l_ftp_client_extended_put() entering\n"));
+        
     /* Check arguments for validity */
     if(u_handle == GLOBUS_NULL)
     {
@@ -2479,7 +2552,10 @@ globus_l_ftp_client_extended_put(
 	}
     }
     globus_i_ftp_client_handle_unlock(handle);
-
+    
+    globus_i_ftp_client_debug_printf(1, 
+        (stderr, "globus_l_ftp_client_extended_put() exiting\n"));
+    
     return GLOBUS_SUCCESS;
 
     /* Error handling */
@@ -2522,6 +2598,9 @@ unlock_exit:
 
     /* And return our error */
 error_exit:
+    globus_i_ftp_client_debug_printf(1, 
+        (stderr, "globus_l_ftp_client_extended_put() exiting with error\n"));
+
     return globus_error_put(err);
 
 restart:
@@ -2533,6 +2612,9 @@ restart:
     if(!err)
     {
 	globus_i_ftp_client_handle_unlock(handle);
+	globus_i_ftp_client_debug_printf(1, (stderr, 
+            "globus_l_ftp_client_extended_put() exiting after restart\n"));
+
 	return GLOBUS_SUCCESS;
     }
     /* else fallthrough */
@@ -2553,7 +2635,10 @@ abort:
 
     globus_i_ftp_client_handle_unlock(handle);
     globus_i_ftp_client_handle_is_not_active(u_handle);
-
+    
+    globus_i_ftp_client_debug_printf(1, (stderr, 
+            "globus_l_ftp_client_extended_put() exiting after abort\n"));
+    
     return globus_error_put(err);
 }
 /* globus_l_ftp_client_extended_put() */
@@ -2607,8 +2692,12 @@ globus_ftp_client_third_party_transfer(
     globus_ftp_client_complete_callback_t	complete_callback,
     void *					callback_arg)
 {
-    return
-	globus_l_ftp_client_extended_third_party_transfer(handle,
+    globus_result_t                             result;
+    
+    globus_i_ftp_client_debug_printf(1, 
+        (stderr, "globus_ftp_client_third_party_transfer() entering\n"));
+    
+    result = globus_l_ftp_client_extended_third_party_transfer(handle,
 						       source_url,
 						       source_attr,
                                                        GLOBUS_NULL,
@@ -2620,6 +2709,10 @@ globus_ftp_client_third_party_transfer(
 						       -1,
 						       complete_callback,
 						       callback_arg);
+    globus_i_ftp_client_debug_printf(1, 
+        (stderr, "globus_ftp_client_third_party_transfer() exiting\n"));
+    
+    return result;
 }
 /* globus_ftp_client_third_party_transfer() */
 
@@ -2675,14 +2768,18 @@ globus_ftp_client_partial_third_party_transfer(
 {
     char                                        eret_alg_buf[128]; 
     char                                        esto_alg_buf[128]; 
-
+    globus_result_t                             result;
+    
+    globus_i_ftp_client_debug_printf(1, (stderr, 
+        "globus_ftp_client_partial_third_party_transfer() entering\n"));
+    
     sprintf(
         eret_alg_buf, GLOBUS_L_DATA_ERET_FORMAT_STRING,
         partial_offset, 
         partial_end_offset - partial_offset);
     sprintf(esto_alg_buf, GLOBUS_L_DATA_ESTO_FORMAT_STRING, partial_offset);
 
-    return globus_l_ftp_client_extended_third_party_transfer(
+    result = globus_l_ftp_client_extended_third_party_transfer(
                handle, 
                source_url,
                source_attr,
@@ -2695,6 +2792,11 @@ globus_ftp_client_partial_third_party_transfer(
                partial_end_offset,
                complete_callback,
                callback_arg);
+    
+    globus_i_ftp_client_debug_printf(1, (stderr, 
+        "globus_ftp_client_partial_third_party_transfer() exiting\n"));
+    
+    return result;
 }
 /* globus_ftp_client_partial_third_party_transfer() */
 
@@ -2752,7 +2854,12 @@ globus_ftp_client_extended_third_party_transfer(
     globus_ftp_client_complete_callback_t       complete_callback,
     void *                                      callback_arg)
 {
-    return globus_l_ftp_client_extended_third_party_transfer(
+    globus_result_t                             result;
+    
+    globus_i_ftp_client_debug_printf(1, (stderr, 
+        "globus_ftp_client_extended_third_party_transfer() entering\n"));
+    
+    result = globus_l_ftp_client_extended_third_party_transfer(
                handle, 
                source_url,
                source_attr,
@@ -2765,6 +2872,11 @@ globus_ftp_client_extended_third_party_transfer(
                -1,
                complete_callback,
                callback_arg);
+    
+    globus_i_ftp_client_debug_printf(1, (stderr, 
+        "globus_ftp_client_extended_third_party_transfer() exiting\n"));
+    
+    return result;
 }
 /* globus_ftp_client_extended_third_party_transfer() */
 
@@ -2792,6 +2904,9 @@ globus_l_ftp_client_extended_third_party_transfer(
     globus_i_ftp_client_operationattr_t *	use_attr;
 
     static char * myname = "globus_ftp_client_partial_third_party_transfer";
+    
+    globus_i_ftp_client_debug_printf(1, (stderr,
+        "globus_l_ftp_client_extended_third_party_transfer() entering\n"));
 
     /* Check arguments for validity */
     if(u_handle == GLOBUS_NULL)
@@ -2935,9 +3050,9 @@ globus_l_ftp_client_extended_third_party_transfer(
     {
 	use_attr = normalized_dest_attr;
     }
-    else if(source_attr)
+    else if(dest_attr)
     {
-	use_attr = *source_attr;
+	use_attr = *dest_attr;
     }
     else
     {
@@ -3020,6 +3135,10 @@ globus_l_ftp_client_extended_third_party_transfer(
 	globus_ftp_client_operationattr_destroy(&normalized_dest_attr);
     }
     globus_i_ftp_client_handle_unlock(handle);
+    
+    globus_i_ftp_client_debug_printf(1, (stderr, 
+        "globus_l_ftp_client_extended_third_party_transfer() exiting\n"));
+
     return GLOBUS_SUCCESS;
 
     /* Error handling */
@@ -3074,6 +3193,9 @@ unlock_exit:
 
     /* And return our error */
 error_exit:
+    globus_i_ftp_client_debug_printf(1, (stderr, 
+        "globus_l_ftp_client_extended_third_party_transfer() exiting with error\n"));
+
     return globus_error_put(err);
 
 restart:
@@ -3086,6 +3208,10 @@ restart:
     if(!err)
     {
 	globus_i_ftp_client_handle_unlock(handle);
+	
+	globus_i_ftp_client_debug_printf(1, (stderr, 
+            "globus_l_ftp_client_extended_third_party_transfer() exiting after restart\n"));
+
 	return GLOBUS_SUCCESS;
     }
     /* else fallthrough */
@@ -3114,6 +3240,9 @@ abort:
 
     globus_i_ftp_client_handle_unlock(handle);
     globus_i_ftp_client_handle_is_not_active(u_handle);
+    
+    globus_i_ftp_client_debug_printf(1, (stderr, 
+        "globus_l_ftp_client_extended_third_party_transfer() exiting after abort\n"));
 
     return globus_error_put(err);
 }
@@ -3636,7 +3765,10 @@ globus_ftp_client_abort(
     globus_i_ftp_client_handle_t *		handle;
     int						rc;
     static char * myname = "globus_ftp_client_abort";
-
+    
+    globus_i_ftp_client_debug_printf(1, 
+        (stderr, "globus_ftp_client_abort() entering\n"));
+    
     if(u_handle == GLOBUS_NULL)
     {
 	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("handle");
@@ -3879,10 +4011,17 @@ globus_ftp_client_abort(
 
     }
     globus_i_ftp_client_handle_unlock(handle);
+    
+    globus_i_ftp_client_debug_printf(1, 
+        (stderr, "globus_ftp_client_abort() exiting\n"));
+
     return GLOBUS_SUCCESS;
 unlock_error:
     globus_i_ftp_client_handle_unlock(handle);
 error:
+    globus_i_ftp_client_debug_printf(1, 
+        (stderr, "globus_ftp_client_abort() exiting with error\n"));
+
     return globus_error_put(err);
 }
 /* globus_ftp_client_abort() */
@@ -3915,6 +4054,9 @@ globus_i_ftp_client_transfer_complete(
     globus_ftp_client_handle_t *		handle;
     void *					callback_arg;
     globus_object_t *				error;
+
+    globus_i_ftp_client_debug_printf(1, 
+        (stderr, "globus_i_ftp_client_transfer_complete() entering\n"));
 
     /* 
      * Switch state before calling into plugins, to prevent them
@@ -4030,6 +4172,9 @@ globus_i_ftp_client_transfer_complete(
     {
 	globus_object_free(error);
     }
+    
+    globus_i_ftp_client_debug_printf(1, 
+        (stderr, "globus_i_ftp_client_transfer_complete() exiting\n"));
 }
 /* globus_i_ftp_client_transfer_complete() */
 
@@ -4060,6 +4205,9 @@ globus_i_ftp_client_target_activate(
     globus_ftp_client_handle_state_t		desired_state;
     globus_result_t				result = GLOBUS_SUCCESS;
     globus_object_t *				err;
+
+    globus_i_ftp_client_debug_printf(1, 
+        (stderr, "globus_i_ftp_client_target_activate() entering\n"));
 
     *registered = GLOBUS_FALSE;
 
@@ -4156,9 +4304,16 @@ globus_i_ftp_client_target_activate(
 	    (*registered) = GLOBUS_TRUE;
 	}
     }
+    
+    globus_i_ftp_client_debug_printf(1, 
+        (stderr, "globus_i_ftp_client_target_activate() exiting\n"));
+
     return GLOBUS_SUCCESS;
 
 error_exit:
+    globus_i_ftp_client_debug_printf(1, 
+        (stderr, "globus_i_ftp_client_target_activate() exiting with error\n"));
+
     return err;
 }
 /* globus_i_ftp_client_target_activate() */
@@ -4173,7 +4328,10 @@ globus_i_ftp_client_force_close_callback(
     globus_i_ftp_client_target_t *		target;
     globus_i_ftp_client_handle_t *		client_handle;
     globus_object_t *				err;
-
+    
+    globus_i_ftp_client_debug_printf(1, 
+        (stderr, "globus_i_ftp_client_force_close_callback() entering\n"));
+        
     target = (globus_i_ftp_client_target_t *) user_arg;
     client_handle = target->owner;
 
@@ -4195,6 +4353,10 @@ globus_i_ftp_client_force_close_callback(
 	    client_handle->dest->state != GLOBUS_FTP_CLIENT_TARGET_SETUP_CONNECTION))
 	{
 	    globus_i_ftp_client_handle_unlock(client_handle);
+	    
+            globus_i_ftp_client_debug_printf(1, (stderr, 
+                "globus_i_ftp_client_force_close_callback() exiting\n"));
+
 	    return;
 	}
     }
@@ -4247,6 +4409,10 @@ globus_i_ftp_client_force_close_callback(
 	/* This function unlocks and potentially frees the client_handle */
 	globus_i_ftp_client_transfer_complete(client_handle);
     }
+    
+    globus_i_ftp_client_debug_printf(1, 
+        (stderr, "globus_i_ftp_client_force_close_callback() exiting\n"));
+
 }
 /* globus_i_ftp_client_force_close_callback() */
 
@@ -4266,7 +4432,10 @@ globus_l_ftp_client_abort_callback(
 {
     globus_i_ftp_client_handle_t *		handle;
     handle = (globus_i_ftp_client_handle_t *) user_arg;
-
+    
+    globus_i_ftp_client_debug_printf(1, 
+        (stderr, "globus_l_ftp_client_abort_callback() entering\n"));
+        
     globus_assert(! GLOBUS_I_FTP_CLIENT_BAD_MAGIC(&handle));
     globus_i_ftp_client_handle_lock(handle);
 
@@ -4278,6 +4447,9 @@ globus_l_ftp_client_abort_callback(
 	handle->restart_info = GLOBUS_NULL;
     }
     globus_i_ftp_client_transfer_complete(handle);
+
+    globus_i_ftp_client_debug_printf(1, 
+        (stderr, "globus_l_ftp_client_abort_callback() exiting\n"));
 
     /* Dispatched an event */
     return GLOBUS_TRUE;

@@ -22,7 +22,7 @@ CVS Information:
 			     Include header files
 ******************************************************************************/
 #include "globus_common.h"
-
+#include <stdio.h>
  
 #ifndef EXTERN_C_BEGIN
 #ifdef __cplusplus
@@ -49,11 +49,21 @@ typedef void * (*globus_module_get_pointer_func_t)(void);
 
 typedef struct
 {
+    int                                 major;
+    int                                 minor;
+    /* these two members are reserved for internal Globus components */    
+    unsigned long                       timestamp;
+    int                                 branch_id;
+} globus_version_t;
+
+typedef struct
+{
     char *				module_name;
     globus_module_activation_func_t	activation_func;
     globus_module_deactivation_func_t	deactivation_func;
     globus_module_atexit_func_t		atexit_func;
     globus_module_get_pointer_func_t 	get_pointer_func;
+    globus_version_t *                  version;
 } globus_module_descriptor_t;
 
 
@@ -89,6 +99,28 @@ void *
 globus_module_get_module_pointer(
     globus_module_descriptor_t *);
 
+int
+globus_module_get_version(
+    globus_module_descriptor_t *	module_descriptor,
+    globus_version_t *                  version);
+    
+void
+globus_module_print_version(
+    globus_module_descriptor_t *	module_descriptor,
+    FILE *                              stream,
+    globus_bool_t                       verbose);
+    
+void
+globus_module_print_activated_versions(
+    FILE *                              stream,
+    globus_bool_t                       verbose);
+
+void
+globus_version_print(
+    const char *                        name,
+    const globus_version_t *            version,
+    FILE *                              stream,
+    globus_bool_t                       verbose);
 
 #ifndef SWIG
 EXTERN_C_END

@@ -6,7 +6,7 @@
   <Aging_Version Age="0" Major="1" Minor="0" />
   <Description >Test programs for the FTP Client Library</Description>
   <Functional_Group >FileAccess</Functional_Group>
-  <Version_Stability Release="alpha" />
+  <Version_Stability Release="Beta2" />
 
   <src_pkg >
 
@@ -30,6 +30,7 @@
     <Source_Dependencies Type="pgm_link" >
       <Dependency Name="globus_common" > <Version > <Simple_Version Major="2" /> </Version> </Dependency>
       <Dependency Name="globus_ftp_client" > <Version > <Simple_Version Major="1" /> </Version> </Dependency>
+      <Dependency Name="globus_ftp_client_test" > <Version > <Simple_Version Major="1" /> </Version> </Dependency>
     </Source_Dependencies>
 
     <Build_Environment >

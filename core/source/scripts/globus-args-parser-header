@@ -38,7 +38,11 @@ EOF
 		    exit 0
 		    ;;
 		-version)
-		    echo "$PACKAGE version $VERSION"
+		    if [ "X${PROGRAM_VERSION}" = "X" ] ; then
+		        echo "${PACKAGE} version ${VERSION}"
+		    else
+		        echo "${PROGRAM_NAME}: ${PROGRAM_VERSION}"
+		    fi
 		    exit 0
 		    ;;
 	        --)

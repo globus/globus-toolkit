@@ -12,6 +12,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include "version.h"
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /* Module specific macros */
@@ -255,7 +256,9 @@ globus_module_descriptor_t globus_i_ftp_client_debug_plugin_module =
     "globus_ftp_client_debug_plugin",
     globus_l_ftp_client_debug_plugin_activate,
     globus_l_ftp_client_debug_plugin_deactivate,
-    GLOBUS_NULL
+    GLOBUS_NULL,
+    GLOBUS_NULL,
+    &local_version
 };
 
 

@@ -69,6 +69,23 @@ EXTERN_C_BEGIN
 #define GLOBUS_I_FTP_CLIENT_BAD_MAGIC(h) 0
 #endif
 
+extern int globus_i_ftp_client_debug_level;
+
+#ifdef BUILD_DEBUG
+#define globus_i_ftp_client_debug(Level) \
+    (globus_i_ftp_client_debug_level >= (Level))
+
+#define globus_i_ftp_client_debug_printf(level, message) \
+do { \
+    if (globus_i_ftp_client_debug(level)) \
+    { \
+	globus_libc_fprintf message; \
+    } \
+} while (0)
+#else
+#define globus_i_ftp_client_debug_printf(level, message)
+#endif
+
 /*
  * Attributes
  */
@@ -690,6 +707,14 @@ globus_i_ftp_client_control_is_not_active(globus_ftp_control_handle_t * handle);
 const char *
 globus_i_ftp_op_to_string(
     globus_i_ftp_client_operation_t		op);
+
+const char *
+globus_i_ftp_target_state_to_string(
+    globus_ftp_client_target_state_t		target_state);
+
+const char *
+globus_i_ftp_handle_state_to_string(
+    globus_ftp_client_handle_state_t		handle_state);
 
 int
 globus_i_ftp_client_count_digits(

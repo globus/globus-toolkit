@@ -113,6 +113,7 @@ INCLUDES = @GPT_INCLUDES@
 libglobus_common___GLOBUS_FLAVOR_NAME__la_LIBADD = @GPT_LIB_LINKS@
 
 libglobus_common___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
+libglobus_common___GLOBUS_FLAVOR_NAME__la_LDFLAGS = @GPT_LDFLAGS@
 
 EXTRA_DIST = \
 	globus_thread_none.c \

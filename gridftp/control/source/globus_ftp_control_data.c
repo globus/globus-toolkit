@@ -5734,7 +5734,8 @@ globus_l_ftp_data_eb_poll(
                 if(stripe->eod_count == stripe->eods_received)
                 {
                     transfer_handle->ref++;
-                    dc_handle->state = GLOBUS_FTP_DATA_STATE_EOF;
+                    /* delay setting eof till command kickout */
+                    /* dc_handle->state = GLOBUS_FTP_DATA_STATE_EOF; */
                     TABLE_ENTRY_MALLOC(
                         entry,
                         transfer_handle->big_buffer,
@@ -5771,7 +5772,8 @@ globus_l_ftp_data_eb_poll(
                  */
                 if(stripe->eod_count == stripe->eods_received)
                 {
-                    dc_handle->state = GLOBUS_FTP_DATA_STATE_EOF;
+                    /* delay setting eof till command kickout */
+                    /* dc_handle->state = GLOBUS_FTP_DATA_STATE_EOF; */
                     entry = (globus_l_ftp_handle_table_entry_t *)
                         globus_fifo_dequeue(&stripe->command_q);
                     /*
@@ -6485,12 +6487,17 @@ globus_l_ftp_control_command_kickout(
     dc_handle = entry->dc_handle;
     GlobusFTPControlDataTestMagic(dc_handle);
     transfer_handle = entry->transfer_handle;
+    
+    if(dc_handle->state == GLOBUS_FTP_DATA_STATE_CONNECT_READ)
+    {
+       dc_handle->state = GLOBUS_FTP_DATA_STATE_EOF;
+    }
 
     if(entry->callback)
     {
         entry->callback(
             entry->callback_arg,
-            entry->dc_handle->whos_my_daddy,
+            dc_handle->whos_my_daddy,
             entry->error,
             entry->buffer,
             0,

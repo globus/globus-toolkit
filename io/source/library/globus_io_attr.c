@@ -379,11 +379,9 @@ globus_netlogger_write(
     return GLOBUS_SUCCESS;
 }
 
-
 /*
  *  netlogger handle init
  */
-
 globus_result_t
 globus_netlogger_handle_init(
     globus_netlogger_handle_t *              gnl_handle,
@@ -434,7 +432,6 @@ globus_netlogger_handle_init(
     /*
      *  make sure netlogger is active
      */
-
     if(!g_globus_i_io_use_netlogger)
     {
         return globus_error_put(
@@ -577,7 +574,6 @@ globus_netlogger_handle_destroy(
 /*
  *  copy a handle
  */
-
 globus_result_t
 globus_io_attr_netlogger_copy_handle(
     globus_netlogger_handle_t *              src,

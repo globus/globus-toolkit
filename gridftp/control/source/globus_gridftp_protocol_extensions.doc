@@ -24,7 +24,7 @@ introduced for parallel and striped data transfers. Also, a set of
 extension @ref sec_OPTS "options to RETR" are added to control
 striped data layout and parallelism.
 
-The following new feature names are to be included in the FTP server's 
+The following new feature names are to be included in the FTP server's
 response to FEAT if it implements the following sets of functionality
 
 @par PARALLEL
@@ -40,7 +40,7 @@ The server implements the ERET command as described in this document.
 @par SBUF
 The server implements the SBUF command as described in this document.
 
-@par DCAU 
+@par DCAU
 The server implements the DCAU command as described in this document,
 including the requirement that data channels are authenticated by
 default, if @ref rfc2228 "RFC 2228" authentication is used to establish
@@ -65,8 +65,8 @@ destinations sent in the SPOR command.
 
 @par DTP
 The data transfer process establishes and manages the data connection.
-The DTP can be passive or active. 
-  
+The DTP can be passive or active.
+
 @par PI
 The protocol interpreter.  The user and server sides of the protocol
 have distinct roles implemented in a user-PI and a server-PI.
@@ -114,22 +114,22 @@ have distinct roles implemented in a user-PI and a server-PI.
 
 - RFC 2228, @ref rfc2228 "FTP Security Extensions", Horowitz, M. and
   S. Lunt (October 1997)
-	- Commands used by GridFTP	
+	- Commands used by GridFTP
 		- AUTH
 		- ADAT
-		- MIC 
+		- MIC
 		- CONF
 		- ENC
 	- Features used by GridFTP
 		- GSSAPI authentication
 
 - RFC 2389, @ref rfc2389 "Feature negotiation mechanism for the File Transfer Protocol", P. Hethmon , R. Elz (August 1998)
-	- Commands used by GridFTP	
+	- Commands used by GridFTP
 		- FEAT
 		- OPTS
 	- Features used by GridFTP
 - @ref ietfftpext "FTP Extensions", R. Elz, P. Hethmon (September 2000)
-	- Commands used by GridFTP	
+	- Commands used by GridFTP
 		- SIZE
 	- Features used by GridFTP
 		- Restart of a stream mode transfer
@@ -143,7 +143,7 @@ the extended block mode. The response to this command includes a list of
 host and port addresses the server is listening on.
 
 Due to the nature of the extended block mode protocol, SPAS must be used in
-conjunction with data transfer commands which receive data (such as 
+conjunction with data transfer commands which receive data (such as
 STOR, ESTO, or APPE) and can not be used with commands which send data
 on the data channels.
 
@@ -173,7 +173,7 @@ the PASV command.
 
 @par OPTS for SPAS
 
-There are no options in this SPAS specification, and hence there is no 
+There are no options in this SPAS specification, and hence there is no
 OPTS command defined.
 
 @anchor sec_SPOR
@@ -182,10 +182,10 @@ OPTS command defined.
 This extension is to be used as a complement to the SPAS command to
 implement striped third-party transfers. This command MUST always be used in
 conjunction with the extended block mode. The argument to SPOR is a vector of
-host/TCP listener port pairs to which the server is to connect. This 
+host/TCP listener port pairs to which the server is to connect. This
 
 Due to the nature of the extended block mode protocol, SPOR must be used in
-conjunction with data transfer commands which send data (such as 
+conjunction with data transfer commands which send data (such as
 RETR, ERET, LIST, or NLST) and can not be used with commands which receive data
 on the data channels.
 
@@ -207,7 +207,7 @@ set as the PORT command described in the @ref rfc959 "ftp specification".
 
 @par OPTS for SPOR
 
-There are no options in this SPOR specification, and hence there is no 
+There are no options in this SPOR specification, and hence there is no
 OPTS command defined.
 
 @anchor sec_ERET
@@ -313,7 +313,7 @@ window size should be set accordingly by the server.
 
 @par Response Codes
 
-If the server-PI is able to set the buffer size state to the requested 
+If the server-PI is able to set the buffer size state to the requested
 <b>buffer-size</b>, then it will return a 200 reply.
 
 @note Even if the SBUF is accepted by the server, an error may occur
@@ -330,7 +330,7 @@ authentication to be performed on FTP data channels. This extension
 may only be used when the control connection was authenticated using
 RFC 2228 Security extensions.
 
-The format of the DCAU command is 
+The format of the DCAU command is
 @code
 DCAU <SP> <authentication-mode> <CRLF>
 
@@ -350,12 +350,12 @@ subject-name ::= string
   No authentication handshake will be done upon data connection
   establishment.
 - Self authentication (<b>A</b>)<br>
-  A security-protocol specific authentication will be used on the data 
-  channel. The identity of the remote data connection will be the same 
+  A security-protocol specific authentication will be used on the data
+  channel. The identity of the remote data connection will be the same
   as the identity of the user which authenticated to the control
   connection.
 - Subject-name authentication (<b>S</b>)<br>
-  A security-protocol specific authentication will be used on the data 
+  A security-protocol specific authentication will be used on the data
   channel. The identity of the remote data connection MUST match the
   supplied @b subject-name string.
 
@@ -367,7 +367,7 @@ If the security handshake fails, the server should return the error
 response 432 (Data channel authentication failed).
 
 @subsection mode_e Extended Block Mode
-The striped and parallel data transfer methods described above require 
+The striped and parallel data transfer methods described above require
 an extended transfer mode to support out-of-sequence data delivery,
 and partial data transmission per data connection. The extended block
 mode described here extends the block mode header to provide support
@@ -399,7 +399,7 @@ the byte.
 
 @code
  Code     Meaning
-            
+
   128     End of data block is EOR (Legacy)
    64     End of data block is EOF
    32     Suspected errors in data block
@@ -416,13 +416,13 @@ Some additional protocol is added to the extended block mode data
 channels, to properly handle end-of-file detection in the presence of
 an unknown number of data streams.
 
-- When no more data is to be sent on the data channel, then the sender 
+- When no more data is to be sent on the data channel, then the sender
   will mark the last block, or send a zero-length block after the last
   block with the EOD bit (8) set in the extended block header.
-- After receiving an EOD the data connection can be cached for use in a 
+- After receiving an EOD the data connection can be cached for use in a
   subsequent transfer.  To signifiy that the data connection will be closed
   the sender sets the close bit (4) in the header on the last message sent.
-- The sender communicates end of file by sending an EOF message to all 
+- The sender communicates end of file by sending an EOF message to all
   servers receiving data.  The EOF message format follows.
 
 Extended Block EOF Header
@@ -434,17 +434,17 @@ Extended Block EOF Header
 @endcode
 
 EOF Descriptor.
-The EOF header descriptor has the same definition as the regular data 
+The EOF header descriptor has the same definition as the regular data
 message header described above.
 
-EOD Count Expected. 
+EOD Count Expected.
 This 64 bit field represents the total number of data connections that
 will be established with the server receiving the file.  This number is
 used by the receiver to determine it has received all of the data.  When
 the number of EOD messages received equals the number represented by the
 "EOD Count Expected" field the receiver has hit end of file.
 
-Simply waiting for EOD on all open data connections is not sufficient.  
+Simply waiting for EOD on all open data connections is not sufficient.
 It is possible that the receiver reads an EOD message on all of its open
 data connects while an additional data connection is in flight.  If the
 receiver were to assume it reached end of file it would fail to receive
@@ -459,7 +459,7 @@ be sent to back to the client, therefore it must be possible to aggregate
 the total number of data connections used in the transfer across the
 stripes. The 126 response serves this purpose.
 
-The 126 is an intermediate response to RETR command.  It has the following 
+The 126 is an intermediate response to RETR command.  It has the following
 format.
 
 "126" <SP> 1*(count of data connections)
@@ -512,11 +512,11 @@ connection, in the following form:
 The byte ranges in the marker are an incremental set of byte ranges
 which have been stored to disk by the data server. The complete
 restart marker is a concatenation of all byte ranges received by the
-client in 111 responses. 
+client in 111 responses.
 
 The client MAY combine adjacent ranges received over several range
 responses into any number of ranges when sending the REST command to
-the server to restart a transfer. 
+the server to restart a transfer.
 
 For example, the client, on receiving the responses:
 
@@ -545,7 +545,7 @@ handle this. For example:
 111 Range Marker 30-59
 111 Range Marker 0-89
 @endcode
- 
+
 <p>
 is equivalent to
 
@@ -568,14 +568,18 @@ an additional preliminary reply MAY be transmitted over the control
 channel. This reply is of the form:
 
 @code
-   extended-perf-response  = "112-Perf Marker" CRLF 
-                             *( perf-line CRLF ) 
+   extended-perf-response  = "112-Perf Marker" CRLF
+                             <SP> "Timestamp:" <SP> <timestamp> CRLF
+			     <SP> "Stripe Index:" <SP> <stripe-number> CRLF
+			     <SP> "Stripe Bytes Transferred:" <SP> <byte count> CRLF
+			     <SP> "Total Stripe Count:" <SP> <stripe count> CRLF
                              "112 End" CRLF
-   perf-line               = <SP> "Timestamp:" <SP> <timestamp>
-			   | <SP> "Stripe Index:" <SP> <stripe-number>
-			   | <SP> "Stripe Bytes Transferred:" <SP> <byte count>
+
+   timestamp               = <number> [ "." <digit> ]
 @endcode
 <p>
+<timestamp> is seconds since the epoch
+
 The performance marker can contain these or any other perf-line facts
 which provide useful information about the current performance.
 
@@ -589,6 +593,16 @@ at the given timestamp. The meaning of the facts are
   transfer) which this marker pertains to.
 - Stripe Bytes Transferred - The number of bytes which have been received
   on this stripe.
+
+A transfer start time can be specified by a perf marker with
+'Stripe Bytes Transferred' set to zero.  Only the first marker per stripe
+can be used to specify the start time of that stripe.  Any subsequent
+markers with 'Stripe Bytes Transferred' set to zero simply indicates no data
+transfer over the interval.
+
+A server should send a 'start' marker for each stripe.  A server should also
+send a final perf marker for each stripe. This is a marker with
+'Stripe Bytes Transferred' set to the total transfer size for that stripe.
 
 @anchor sec_OPTS
 @subsection opts Options to RETR
@@ -655,7 +669,7 @@ node to at most this value.
 @subsection refs References
 
 @anchor rfc959 [1]
-Postel, J. and Reynolds, J., "<a 
+Postel, J. and Reynolds, J., "<a
 href="ftp://ftp.isi.edu/in-notes/rfc959.txt">
 FILE TRANSFER PROTOCOL (FTP)</a>", STD 9, RFC 959, October 1985.
 

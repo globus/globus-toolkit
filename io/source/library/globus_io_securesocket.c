@@ -2495,7 +2495,6 @@ globus_l_io_secure_accept_callback(
         return;
     }
 
-    
     globus_i_io_mutex_lock();
 
     /* do authorization now */

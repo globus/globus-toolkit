@@ -30,6 +30,7 @@ static char *rcsid = "$Header$";
  * Include header files
  */
 #include "globus_l_io.h"
+#include "version.h"
 
 /*
  * Define module specific constants
@@ -150,7 +151,9 @@ globus_module_descriptor_t globus_i_io_module =
     "globus_io",
     globus_l_io_activate,
     globus_l_io_deactivate,
-    GLOBUS_NULL
+    GLOBUS_NULL,
+    GLOBUS_NULL,
+    &local_version
 };
 
 /*

@@ -47,6 +47,7 @@ changequote([, ])dnl
       ])
    if test "[$]$2" != no; then
      AC_DEFINE_UNQUOTED([$1], [$]$2, [$3])
+     GPT_SET_CFLAGS("-D[$1]=[$]$2")
    fi])
 
 AC_DEFUN(AC_SYS_LARGEFILE,
@@ -68,11 +69,12 @@ AC_DEFUN(AC_SYS_LARGEFILE,
        -D?* | -I?*)
 	 AC_SYS_LARGEFILE_SPACE_APPEND(CPPFLAGS, "$ac_flag") ;;
        *)
-	 AC_SYS_LARGEFILE_SPACE_APPEND(CFLAGS, "$ac_flag") ;;
+dnl	 AC_SYS_LARGEFILE_SPACE_APPEND(CFLAGS, "$ac_flag") ;;
+	 GPT_SET_CFLAGS("$ac_flag")
        esac
      done
-     AC_SYS_LARGEFILE_SPACE_APPEND(LDFLAGS, "$ac_cv_sys_largefile_LDFLAGS")
-     AC_SYS_LARGEFILE_SPACE_APPEND(LIBS, "$ac_cv_sys_largefile_LIBS")
+        AC_SYS_LARGEFILE_SPACE_APPEND(LDFLAGS, "$ac_cv_sys_largefile_LDFLAGS")
+        AC_SYS_LARGEFILE_SPACE_APPEND(LIBS, "$ac_cv_sys_largefile_LIBS")
      AC_SYS_LARGEFILE_MACRO_VALUE(_FILE_OFFSET_BITS,
        ac_cv_sys_file_offset_bits,
        [Number of bits in a file offset, on hosts where this is settable.],

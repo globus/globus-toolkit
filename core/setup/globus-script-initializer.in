@@ -15,7 +15,7 @@ tmpdir=@tmpdir@
 local_tmpdir=@local_tmpdir@
 secure_tmpdir=@secure_tmpdir@
 
-LD_LIBRARY_PATH=$GLOBUS_LOCATION/lib
+LD_LIBRARY_PATH="$GLOBUS_LOCATION/lib:$LD_LIBRARY_PATH"
 SASL_PATH=$GLOBUS_LOCATION/lib/sasl
 export SASL_PATH
 export LD_LIBRARY_PATH

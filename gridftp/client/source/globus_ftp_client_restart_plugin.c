@@ -13,6 +13,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include "version.h"
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 #define GLOBUS_L_FTP_CLIENT_RESTART_PLUGIN_NAME "globus_ftp_client_restart_plugin"
@@ -222,7 +223,9 @@ globus_module_descriptor_t globus_i_ftp_client_restart_plugin_module =
     "globus_ftp_client_restart_plugin",
     globus_l_ftp_client_restart_plugin_activate,
     globus_l_ftp_client_restart_plugin_deactivate,
-    GLOBUS_NULL
+    GLOBUS_NULL,
+    GLOBUS_NULL,
+    &local_version
 };
 
 

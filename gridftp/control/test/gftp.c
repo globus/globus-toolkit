@@ -298,6 +298,7 @@ FILE *                                 g_infile = GLOBUS_NULL;
 char *                                 g_subject = GLOBUS_NULL;
 globus_abstime_t                       g_start_time;
 
+globus_ftp_control_dcau_t              g_dcau;
 globus_bool_t                          g_spas = GLOBUS_FALSE;
 
 void
@@ -1421,6 +1422,16 @@ user_command(
         } 
     }
     globus_mutex_unlock(&g_monitor.mutex);
+
+    if(gsi)
+    {
+        g_dcau.mode = GLOBUS_FTP_CONTROL_DCAU_SELF;
+        res = globus_ftp_control_local_dcau(
+                  &g_control_handle,
+                  &g_dcau,
+                  auth.delegated_credential_handle);
+
+    }
 
     globus_free(args[0]);
     globus_free(args[1]);

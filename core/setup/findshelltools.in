@@ -113,7 +113,7 @@ AC_PATH_PROG(GLOBUS_SH_WHOAMI, whoami)
 AC_PATH_PROG(GLOBUS_SH_VMSTAT, vmstat)
 
 #--
-# OPTIONAL system section: needed only for HP-UX
+# OPTIONAL system section: needed only for HP-UX and Solaris
 #
 AC_PATH_PROG(GLOBUS_SH_SYSINFO, sysinfo)
 
@@ -227,4 +227,5 @@ AC_PATH_PROG(GLOBUS_SH_PRUN, prun)
 AC_PATH_PROG(GLOBUS_SH_PS, ps)
 
 AC_OUTPUT(globus-sh-tools.sh
+	  globus-makefile-header
 	)

@@ -1,4 +1,4 @@
-
+ 
 
 for file in 'globus_automake_pre' \
     'globus_automake_post' \

@@ -473,6 +473,210 @@ globus_module_getenv(
 /*globus_module_getenv();*/
 
 
+/**
+ * get version associated with module
+ *
+ * This function copies the version structure associated with the module
+ * into 'version'.
+ *
+ * @param module_descriptor
+ *        pointer to a module descriptor (module does NOT need to be activated)
+ *
+ * @param version
+ *        pointer to storage for a globus_version_t.  The version will be
+ *        copied into this
+ *
+ * @return
+ *        - GLOBUS_SUCCESS
+ *        - GLOBUS_FAILURE if there is no version associated with this module
+ *          (module->version == null)
+ */
+
+int
+globus_module_get_version(
+    globus_module_descriptor_t *	module_descriptor,
+    globus_version_t *                  version)
+{
+    globus_version_t *                  module_version;
+    
+    module_version = module_descriptor->version;
+    
+    if(!module_version)
+    {
+        return GLOBUS_FAILURE;
+    }
+    
+    version->major      = module_version->major;       
+    version->minor      = module_version->minor;       
+    version->timestamp  = module_version->timestamp;   
+    version->branch_id  = module_version->branch_id;   
+
+    return GLOBUS_SUCCESS;
+}
+
+
+/**
+ * print module's version
+ *
+ * This function prints a modules version info using the standard form 
+ * provided by globus_version_print
+ *
+ * @param module_descriptor
+ *        pointer to a module descriptor (module does NOT need to be activated)
+ *
+ * @param stream
+ *        stream to print on (stdout, stderr, etc)
+ *
+ * @param verbose
+ *        If GLOBUS_TRUE, then all available version info is printed 
+ *        (ex: globus_module: 1.1 (1013708618-5))
+ *        else, only the major.minor is printed (ex: globus_module: 1.1)
+ *
+ * @return
+ *        - void
+ */
+
+void
+globus_module_print_version(
+    globus_module_descriptor_t *	module_descriptor,
+    FILE *                              stream,
+    globus_bool_t                       verbose)
+{
+    globus_version_print(
+        module_descriptor->module_name,
+        module_descriptor->version,
+        stream,
+        verbose);
+}
+
+/**
+ * print all activated modules' versions
+ *
+ * This function prints all activated modules' version info using the standard 
+ * form provided by globus_version_print
+ *
+ * @param stream
+ *        stream to print on (stdout, stderr, etc)
+ *
+ * @param verbose
+ *        If GLOBUS_TRUE, then all available version info is printed 
+ *        (ex: globus_module: 1.1 (1013708618-5))
+ *        else, only the major.minor is printed (ex: globus_module: 1.1)
+ *
+ * @return
+ *        - void
+ */
+
+void
+globus_module_print_activated_versions(
+    FILE *                              stream,
+    globus_bool_t                       verbose)
+{
+    /*
+     * If module activation hasn't been initialized then there are no
+     * activated modules
+     */
+    if(!globus_i_module_initialized)
+    {
+        return;
+    }
+    
+    globus_l_module_mutex_lock(&globus_l_module_mutex);
+    {
+        globus_list_t *		        module_list;
+        
+        module_list = globus_l_module_list;
+        while(!globus_list_empty(module_list))
+        {
+            globus_l_module_entry_t *       module_entry;
+    
+            module_entry = globus_list_first(module_list);
+            module_list = globus_list_rest(module_list);
+            
+            if(module_entry->reference_count > 0)
+            {
+                globus_version_print(
+                    module_entry->descriptor->module_name,
+                    module_entry->descriptor->version,
+                    stream,
+                    verbose);
+            }
+        }
+    }
+    globus_l_module_mutex_unlock(&globus_l_module_mutex);
+
+    return;
+}
+
+
+/**
+ * print version structure
+ *
+ * This function provides a stand way of printing version information
+ * The version is printed to stream with the following form:
+ * name: major.minor                        if verbose = false
+ * name: major.minor.timestamp-branch_id    if verbose = true
+ *
+ * In either case, if name is NULL, then only the numerical version will be 
+ * printed.
+ *
+ * @param name
+ *        A string to prefix the version.  May be NULL
+ *
+ * @param version
+ *        The version structure containing the info to print.
+ *        (May be NULL, although pointless to do so)
+ *
+ * @param stream
+ *        stream to print on (stdout, stderr, etc)
+ *
+ * @param verbose
+ *        If GLOBUS_TRUE, then all available version info is printed 
+ *        (ex: globus_module: 1.1 (1013708618-5))
+ *        else, only the major.minor is printed (ex: globus_module: 1.1)
+ *
+ * @return
+ *        - void
+ */
+
+void
+globus_version_print(
+    const char *                        name,
+    const globus_version_t *            version,
+    FILE *                              stream,
+    globus_bool_t                       verbose)
+{
+    if(name)
+    {
+        globus_libc_fprintf(stream, "%s: ", name);
+    }
+    
+    if(version)
+    {
+        if(verbose)
+        {
+            globus_libc_fprintf(
+                stream, 
+                "%d.%d (%lu-%d)\n", 
+                version->major,
+                version->minor,
+                version->timestamp,
+                version->branch_id);
+        }
+        else
+        {
+            globus_libc_fprintf(
+                stream, 
+                "%d.%d\n", 
+                version->major,
+                version->minor);
+        }
+    }
+    else
+    {
+        globus_libc_fprintf(stream, "<no version>\n");
+    }
+}
 
 
 /******************************************************************************

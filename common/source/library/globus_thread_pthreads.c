@@ -18,6 +18,7 @@ CVS Information:
 #include "globus_common.h"
 #include "globus_thread_common.h"
 #include "globus_i_thread.h"
+#include "version.h"
 
 typedef struct globus_i_thread_s
 {
@@ -100,11 +101,12 @@ static int globus_l_thread_deactivate();
 
 globus_module_descriptor_t globus_i_thread_module =
 {
-    "globus_thread",
+    "globus_thread_pthreads",
     globus_l_thread_activate,
     globus_l_thread_deactivate,
     GLOBUS_NULL,
-    GLOBUS_NULL
+    GLOBUS_NULL,
+    &local_version
 };
 
 /*

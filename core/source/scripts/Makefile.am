@@ -10,5 +10,4 @@ sbin_SCRIPTS = \
 EXTRA_DIST = globus-build-env.sh.in \
              globus-args-parser-header \
 	     globus-bootstrap.sh \
-	     globus-build-doxygen-dependencies \
-	     globus-makefile-header
+	     globus-build-doxygen-dependencies 

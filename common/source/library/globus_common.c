@@ -19,6 +19,7 @@ CVS Information:
 ******************************************************************************/
 #include "config.h"
 #include "globus_common.h"
+#include "version.h"
 
 /******************************************************************************
 			  Module activation structure
@@ -36,7 +37,8 @@ globus_module_descriptor_t		globus_i_common_module =
     globus_l_common_activate,
     globus_l_common_deactivate,
     GLOBUS_NULL,
-    GLOBUS_NULL
+    GLOBUS_NULL,
+    &local_version
 };
 
 

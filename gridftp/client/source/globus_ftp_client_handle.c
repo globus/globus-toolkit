@@ -735,6 +735,9 @@ globus_l_ftp_client_target_new(
     globus_object_t *				err;
     globus_ftp_control_dcau_t			dcau;
     int						i;
+    
+    globus_i_ftp_client_debug_printf(1, 
+        (stderr, "globus_l_ftp_client_target_new() entering\n"));
 
     target = globus_libc_malloc(sizeof(globus_i_ftp_client_target_t));
 
@@ -895,6 +898,9 @@ globus_l_ftp_client_target_new(
     /* Set the state of the new handle to the disconnected state */
     target->state = GLOBUS_FTP_CLIENT_TARGET_START;
     target->mask = GLOBUS_FTP_CLIENT_CMD_MASK_NONE;
+    
+    globus_i_ftp_client_debug_printf(1, 
+        (stderr, "globus_l_ftp_client_target_new() exiting\n"));
 
     return target;
 
@@ -911,6 +917,9 @@ free_control_handle:
 free_target:
     globus_libc_free(target);
 error_exit:
+    globus_i_ftp_client_debug_printf(1, 
+        (stderr, "globus_l_ftp_client_target_new() exiting with error\n"));
+
     return GLOBUS_NULL;
 }
 /* globus_l_ftp_client_target_new() */
@@ -933,6 +942,9 @@ globus_l_ftp_client_target_delete(
 {
     globus_result_t				result = GLOBUS_SUCCESS;
     globus_bool_t				connected;
+    
+    globus_i_ftp_client_debug_printf(1, 
+        (stderr, "globus_l_ftp_client_target_delete() entering\n"));
 
     globus_ftp_client_operationattr_destroy(&target->attr);
     target->owner = GLOBUS_NULL;
@@ -982,6 +994,10 @@ globus_l_ftp_client_target_delete(
 					  GLOBUS_SUCCESS,
 					  (void*) 0);
     }
+    
+    globus_i_ftp_client_debug_printf(1, 
+        (stderr, "globus_l_ftp_client_target_delete() exiting\n"));
+
 }
 /* globus_l_ftp_client_target_delete() */
 
@@ -1001,6 +1017,9 @@ globus_i_ftp_client_target_release(
     globus_i_ftp_client_cache_entry_t *		cache_entry;
     globus_list_t *				node;
     globus_l_ftp_client_target_search_t         searcher;
+    
+    globus_i_ftp_client_debug_printf(1, 
+        (stderr, "globus_i_ftp_client_target_release() entering\n"));
 
     /*
      * Remove the target mapping from the client handle's active
@@ -1041,11 +1060,19 @@ globus_i_ftp_client_target_release(
 	    {
 		cache_entry->target = target;
 	    }
+	    
+	        globus_i_ftp_client_debug_printf(1, 
+                    (stderr, "globus_i_ftp_client_target_release() exiting\n"));
+
 	    return;
 	}
     }
 
     globus_l_ftp_client_target_delete(target);
+    
+    globus_i_ftp_client_debug_printf(1, 
+        (stderr, "globus_i_ftp_client_target_release() exiting\n"));
+
 }
 /* globus_i_ftp_client_target_release() */
 
@@ -1085,6 +1112,9 @@ globus_i_ftp_client_target_find(
     globus_i_ftp_client_cache_entry_t *		cache_entry;
     globus_l_ftp_client_target_search_t         searcher;
     static char * myname = "globus_i_ftp_client_target_find";
+
+    globus_i_ftp_client_debug_printf(1, 
+        (stderr, "globus_i_ftp_client_target_find() entering\n"));
 
     globus_assert(handle);
     globus_assert(url);
@@ -1186,6 +1216,10 @@ globus_i_ftp_client_target_find(
     globus_url_destroy(&parsed_url);
 
     globus_i_ftp_client_control_is_active((*target)->control_handle);
+    
+    globus_i_ftp_client_debug_printf(1, 
+        (stderr, "globus_i_ftp_client_target_find() exiting\n"));
+
 
     return GLOBUS_SUCCESS;
 
@@ -1198,6 +1232,9 @@ free_target:
 free_url:
     globus_url_destroy(&parsed_url);
 error_exit:
+    globus_i_ftp_client_debug_printf(1, 
+        (stderr, "globus_i_ftp_client_target_find() exiting with error\n"));
+
     return err;
 }
 /* globus_i_ftp_client_target_find() */
@@ -1296,6 +1333,9 @@ globus_l_ftp_client_quit_callback(
 {
     globus_result_t				result;
     globus_i_ftp_client_target_t *		target;
+    
+    globus_i_ftp_client_debug_printf(1, 
+        (stderr, "globus_l_ftp_client_quit_callback() entering\n"));
 
     target = (globus_i_ftp_client_target_t * ) callback_arg;
 
@@ -1326,6 +1366,9 @@ globus_l_ftp_client_quit_callback(
 	}
 	/* Else --> leak! */
     }
+    
+    globus_i_ftp_client_debug_printf(1, 
+        (stderr, "globus_l_ftp_client_quit_callback() exiting\n"));
 }
 /* globus_l_ftp_client_quit_callback() */
 

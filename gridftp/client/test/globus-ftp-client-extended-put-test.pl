@@ -174,8 +174,12 @@ sub restart_test
 for(my $i = 1; $i <= 41; $i++)
 {
     push(@tests, "restart_test($i);");
+
+    if($i == 38)
+    {
+	push(@todo, 54 + $i);
+    }
 }
-push(@todo, 79);
 
 
 =head2 I<perf_test> (Test 95)
@@ -211,11 +215,8 @@ sub perf_test
         ok("\n# $test_exec -M \n#$errors", 'success');
     }
     unlink($tmpname);
-    if($i == 38)
-    {
-	push(@todo, 54 + $i);
-    }
 }
+
 push(@tests, "perf_test();");
 
 =head2 I<throughput_test> (Test 96)
