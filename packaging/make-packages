@@ -1,4 +1,4 @@
-#!/bin/bash
+!/bin/bash
 
 # This script iterates over directories in the subdirectory package-list
 # and package-list-cdeps.
@@ -48,6 +48,7 @@ setup_environment() {
 		fi
 	fi
 
+	echo Using JAVA_HOME of $JAVA_HOME
 	mkdir -p logs
 }
 
@@ -223,8 +224,7 @@ install_cdeps() {
 	popd
 
 	mkdir -p package-output
-	cp ogsa-cvs/ogsa-c/build_tools/ogsa_cbindings_src_bundle.tar.gz package-output
-	cp ogsa-cvs/ogsa-c/build_tools/ogsa_cbindings_bin_bundle_bin.tar.gz package-output
+	cp ogsa-cvs/ogsa-c/build_tools/source_packages/ogsa_cbindings_src_bundle_src.tar.gz package-output
 }
 
 # Tar up the source directory with packaging data and filelist.
