@@ -16,6 +16,7 @@ CVS Information:
     $Author$
 ******************************************************************************/
 #ifndef _GLOBUS_GASS_INCLUDE_GLOBUS_GASS_SIMPLE_SERVER_H_
+#ifndef SWIG
 #define _GLOBUS_GASS_INCLUDE_GLOBUS_GASS_SIMPLE_SERVER_H_
 
 #ifndef EXTERN_C_BEGIN
@@ -48,6 +49,9 @@ EXTERN_C_BEGIN
 #error "Inconsistant definition of GLOBUS_GASS_SERVER_EZ_TILDE_USER_EXPAND and GLOBUS_TILDE_USER_EXPAND"
 #endif
 
+/* endif SWIG */
+#endif
+
 typedef void (*globus_gass_server_ez_client_shutdown_t) (void);
 
 int
@@ -58,6 +62,7 @@ globus_gass_server_ez_init(unsigned short *port,
 int
 globus_gass_server_ez_shutdown(unsigned short port);
 
+#ifndef SWIG
 #define globus_gass_server_ez_poll() globus_gass_server_poll()
 /******************************************************************************
  *                    Module Definition
@@ -75,4 +80,9 @@ static globus_module_descriptor_t globus_gass_server_ez_module =
 
 EXTERN_C_END
 
+/* endif SWIG */
 #endif
+
+#endif
+
+
