@@ -137,6 +137,25 @@ void ssh_gssapi_clean_env();
 
 #ifdef GSI
 int gsi_gridmap(char *subject_name, char **mapped_name);
+#ifdef _HAVE_GSI_EXTENDED_GSSAPI
+#define HAVE_GSSAPI_EXT
+#endif
+#endif
+
+#ifdef MECHGLUE
+gss_cred_id_t __gss_get_mechanism_cred
+   (gss_cred_id_t,	/* union_cred */
+    gss_OID		/* mech_type */
+   );
+#ifndef _HAVE_GSI_EXTENDED_GSSAPI
+#define HAVE_GSSAPI_EXT
+OM_uint32 gss_export_cred
+    (OM_uint32 *,        /* minor_status */
+     const gss_cred_id_t,/* cred_handle */
+     const gss_OID,      /* desired mech */
+     OM_uint32,          /* option req */
+     gss_buffer_t);      /* output buffer */
+#endif
 #endif
 #endif /* GSSAPI */
 
