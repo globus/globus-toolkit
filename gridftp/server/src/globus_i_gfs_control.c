@@ -249,7 +249,7 @@ globus_l_gfs_ipc_event_cb(
       case GLOBUS_I_GFS_EVENT_TRANSFER_BEGIN:
         globus_gridftp_server_control_begin_transfer(
             op,
-            //GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_PERF | 
+            GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_PERF | 
             GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_RESTART);
         break;
       
