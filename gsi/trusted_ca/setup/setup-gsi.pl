@@ -207,6 +207,20 @@ if ($result != 0)
   die "Failed to set permissions on $trusted_certs_dir/${ca_install_hash}.signing_policy. Aborting.";
 }
 
+system "rm -f $target_dir/grid-security.conf";
+my $ret_value = ($? >> 8);
+system "rm -f $target_dir/globus-user-ssl.conf";
+$ret_value += ($? >> 8);
+system "rm -f $target_dir/globus-host-ssl.conf";
+$ret_value += ($? >> 8);
+
+if($ret_value > 0) { die "\nERROR: Can't delete security config files from $target_dir\n\n"; }
+
+my $ret_value  = symlink("${trusted_certs_dir}/grid-security.conf.${ca_install_hash}",   "${target_dir}/grid-security.conf");
+$ret_value += symlink("${trusted_certs_dir}/globus-user-ssl.conf.${ca_install_hash}", "${target_dir}/globus-user-ssl.conf");
+$ret_value += symlink("${trusted_certs_dir}/globus-host-ssl.conf.${ca_install_hash}", "${target_dir}/globus-host-ssl.conf");
+if($ret_value < 3) { die "\nERROR: Can't create symlinks for security config files from $trusted_certs_dir to $target_dir\n\n"; }
+
 my @statres = stat "$globusdir/etc/globus_packages/globus_trusted_ca_${ca_install_hash}_setup/pkg_data_noflavor_data.gpt";
 
 if($statres[4] != $EUID)
@@ -217,6 +231,9 @@ if($statres[4] != $EUID)
 my $metadata = new Grid::GPT::Setup(package_name => "globus_trusted_ca_${ca_install_hash}_setup");
 
 $metadata->finish();
+
+
+print "$myname: Complete\n";
 
 
 sub pod2usage 
@@ -240,20 +257,5 @@ sub pod2usage
   exit $ex;
 }
 
-system "rm -f $target_dir/grid-security.conf";
-my $ret_value = ($? >> 8);
-system "rm -f $target_dir/globus-user-ssl.conf";
-$ret_value += ($? >> 8);
-system "rm -f $target_dir/globus-host-ssl.conf";
-$ret_value += ($? >> 8);
-
-if($ret_value > 0) { die "\nERROR: Can't delete security config files from $target_dir\n\n"; }
-
-my $ret_value  = symlink("${trusted_certs_dir}/grid-security.conf.${ca_install_hash}",   "${target_dir}/grid-security.conf");
-$ret_value += symlink("${trusted_certs_dir}/globus-user-ssl.conf.${ca_install_hash}", "${target_dir}/globus-user-ssl.conf");
-$ret_value += symlink("${trusted_certs_dir}/globus-host-ssl.conf.${ca_install_hash}", "${target_dir}/globus-host-ssl.conf");
-if($ret_value < 3) { die "\nERROR: Can't create symlinks for security config files from $trusted_certs_dir to $target_dir\n\n"; }
-
-print "$myname: Complete\n";
 
 # End
