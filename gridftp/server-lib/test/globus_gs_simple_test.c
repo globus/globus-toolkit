@@ -12,7 +12,7 @@
 #define FTP_DRIVER_NAME "gssapi_ftp"
 #define MODE GLOBUS_XIO_GSSAPI_ATTR_TYPE_SUPER_MODE
 
-#define REPLY_220 "220 Hello there\r\n"
+#define REPLY_220 "220 Hello there from simple ftp.\r\n"
 #define FTP_USER_ARG (void*)0x15
 
 #define USER_DATA_HANDLE    ((void *) 0xFF)
