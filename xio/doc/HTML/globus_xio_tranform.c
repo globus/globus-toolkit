@@ -145,7 +145,7 @@ globus_xio_driver_ascii_read(
               op,
               iovec,
               iovec_count,
-              GlobusXIOOperationMinimumRead(op),
+              GlobusXIODriverOperationMinimumRead(op),
               ascii_read_callback,
               driver_handle);
 

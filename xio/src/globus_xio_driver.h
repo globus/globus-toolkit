@@ -827,7 +827,7 @@ typedef globus_result_t
  *  @param waitforbtyes
  *         The minimum number of bytes to read before returning... if a driver
  *         has no specifc requirement, he should use the user's request...
- *         available via GlobusXIOOperationMinimumRead(op)
+ *         available via GlobusXIODriverOperationMinimumRead(op)
  *  @param cb
  *         The function to be called when the operation request is 
  *         completed.
