@@ -124,6 +124,7 @@ public class RftImpl
     Vector activeTransferThreads;
     Vector transferClients;
     RFTOptionsType globalRFTOptionsType;
+    private String proxyLocation = null;
 
 
     /**
@@ -176,6 +177,7 @@ public class RftImpl
             String path = TransferClient.saveCredential( cred );
             Util.setFilePermissions( path, 600 );
             dbAdapter.storeProxyLocation( requestId, path );
+            this.proxyLocation = path;
             int transferCount = dbAdapter.getTransferCount();
 
             int temp = 0;
@@ -368,6 +370,7 @@ public class RftImpl
 
                 String proxyLocation = dbAdapter.getProxyLocation(
                         this.persistentRequestId );
+                this.proxyLocation = proxyLocation;
                 GSSCredential credential = TransferClient.loadCredential(
                         proxyLocation );
                 setNotifyProps( credential, Constants.ENCRYPTION );
@@ -540,6 +543,8 @@ public class RftImpl
     public void preDestroy( GridContext context )
              throws GridServiceException {
         super.preDestroy( context );
+        logger.debug("Removing the delegated proxy from : " + this.proxyLocation);
+        Util.destroy(this.proxyLocation);
         logger.debug( "RFT instance destroyed" );
     }
 
@@ -672,14 +677,13 @@ public class RftImpl
                 if ( rftOptions == null ) {
                     rftOptions = globalRFTOptionsType;
                 }
-                String proxyLocation = dbAdapter.getProxyLocation( requestId );
                 try {
                     transferClient = getTransferClient( transferJob.getSourceUrl(),
                             transferJob.getDestinationUrl() );
 
                     if ( (transferClient == null ) 
                         || !connectionPoolingEnabled) {
-                        logger.debug( "No transferClient reuse" );
+                        logger.debug( "No transferClient reuse" + proxyLocation );
                         transferClient = new TransferClient( tempId,
                                 transferJob.getSourceUrl(),
                                 transferJob.getDestinationUrl(),
