@@ -1,0 +1,12 @@
+This file contains any messages produced by compilers while
+running configure, to aid debugging if configure makes a mistake.
+
+configure:727: checking whether to enable maintainer-specific portions of Makefiles
+configure:988: checking for a BSD compatible install
+configure:1041: checking whether build environment is sane
+configure:1098: checking whether make sets ${MAKE}
+configure:1144: checking for working aclocal
+configure:1157: checking for working autoconf
+configure:1170: checking for working automake
+configure:1183: checking for working autoheader
+configure:1196: checking for working makeinfo
