@@ -1542,6 +1542,8 @@ globus_l_io_socketattr_copy(
     void *				src_instance_data,
     void **				dst_instance_data)
 {
+    globus_i_io_socketattr_instance_t *	instance;
+    
     globus_assert(dst_instance_data != GLOBUS_NULL);
     
     *dst_instance_data =
@@ -1552,8 +1554,9 @@ globus_l_io_socketattr_copy(
 	memcpy(*dst_instance_data,
 	       src_instance_data,
 	       sizeof(globus_i_io_socketattr_instance_t));
-	       
-	globus_callback_space_reference((*dst_instance_data)->space);
+	
+	instance = (globus_i_io_socketattr_instance_t *) *dst_instance_data;
+	globus_callback_space_reference(instance->space);
     }
 }
 /* globus_l_io_socketattr_copy() */
@@ -1573,9 +1576,13 @@ void
 globus_l_io_socketattr_destroy(
     void *				instance_data)
 {
+    globus_i_io_socketattr_instance_t *	instance;
+    
     if(instance_data)
     {
-        globus_callback_space_destroy(instance_data->space);
+        instance = (globus_i_io_socketattr_instance_t *) instance_data;
+        
+        globus_callback_space_destroy(instance->space);
         
 	globus_free(instance_data);
     }
