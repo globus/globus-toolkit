@@ -142,6 +142,7 @@ grami_ggg_get_token_nexus(void * arg, void ** bufp, int * sizep)
 	unsigned char int_buf[4];
 	int    	size;
 	void * 	cp;
+	int     err = 0;
 	int *  	fd = (int *)arg;
 	
 	if (_nx_read_blocking(*fd, int_buf, 4))
@@ -156,6 +157,15 @@ grami_ggg_get_token_nexus(void * arg, void ** bufp, int * sizep)
 			| ( ((unsigned int) int_buf[2]) << 8)
 			|   ((unsigned int) int_buf[3]) );
 
+#ifdef DEBUG   
+     fprintf(stderr, "READ token size %d %8.8x\n", size, size);
+#endif
+  if (size > 1<<24 || size < 0) 
+	{
+       size = 80;
+	   err = 1;
+	}
+
 	cp = (char *) malloc(size);
 	if (!cp) 
 	{
@@ -166,8 +176,15 @@ grami_ggg_get_token_nexus(void * arg, void ** bufp, int * sizep)
 	{
 	  fprintf(stderr,
 			"grami_ggg_get_token_nexus(): reading token\n");
-      return -1;
+      return -2;
 	} 
+
+	if (err)
+	{
+		fprintf (stderr," bad token  %c%c%c%c%s\n",
+			int_buf[0], int_buf[1], int_buf[2], int_buf[3], cp);
+		return (-3);
+	}
 	*bufp = cp;
 	*sizep = size;
 
@@ -197,12 +214,15 @@ grami_ggg_send_token_nexus( void *arg,  void *buf, int size)
 			"grami_ggg_send_token_nexus(): sending token length");
 		return -1;
 	}
+#ifdef DEBUG
+    fprintf(stderr,"WRITE token %d\n", size);
+#endif
 
 	if (_nx_write_blocking(*fd, (char *) buf, size))
 	{
 		fprintf(stderr,
     		"grami_ggg_send_token_nexus: sending token length");
-     	return -1;
+     	return -2;
 	}
 	return 0;
 }
@@ -245,6 +265,7 @@ gram_job_request(char * gatekeeper_url,
     int                          rc;
     int                          gatekeeper_fd;
     char *                       gatekeeper_host;
+	char *                       gatekeeper_princ;
     unsigned short               gatekeeper_port = 0;
     nexus_byte_t                 type;
     nexus_byte_t *               contact_msg_buffer;
@@ -320,6 +341,16 @@ gram_job_request(char * gatekeeper_url,
         fprintf(stderr, " invalid url.\n");
         return (1);
     }
+	/* for testing, will get the gatekeeper_princ from the
+	 * gatekeeper_host. Use ! as a seperator
+	 */
+		if ( gatekeeper_princ = strchr(gatekeeper_host,'!'))
+		{
+			*gatekeeper_princ = '\0';
+			gatekeeper_princ++;
+		} else
+		 gatekeeper_princ = gatekeeper_host;
+
 
     /* Connecting to the gatekeeper.
      */
@@ -340,7 +371,7 @@ gram_job_request(char * gatekeeper_url,
 
 	printf("Starting authentication to %s\n", gatekeeper_host);
 
-    rc =  grami_ggg_init(gatekeeper_host,
+    rc =  grami_ggg_init(gatekeeper_princ,
                    grami_ggg_get_token_nexus,
                    (void *) &gatekeeper_fd,
                    grami_ggg_send_token_nexus,
