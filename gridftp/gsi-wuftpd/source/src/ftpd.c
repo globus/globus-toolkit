@@ -1900,33 +1900,47 @@ void user(char *name)
     anonymous = 0;
     acl_remove();
 
-    if (!strcasecmp(name, "ftp") || !strcasecmp(name, "anonymous")) {
+    if (!strcasecmp(name, "ftp") || !strcasecmp(name, "anonymous")) 
+    {
 	struct aclmember *entry = NULL;
 	int machineok = 1;
 	char guestservername[MAXHOSTNAMELEN];
 	guestservername[0] = '\0';
 
-#ifdef NO_ANONYMOUS_ACCESS
-	reply(530, "Anonymous FTP access denied.");
-	syslog(LOG_NOTICE, "FTP LOGIN REFUSED (anonymous ftp not supported) FROM %s, %s",
-	       remoteident, name);
-	return;
-#else
-#if defined(VIRTUAL) && defined(CLOSED_VIRTUAL_SERVER)
-	if (!virtual_mode && defaultserver_private()) {
-#ifndef HELP_CRACKERS
-	    DenyLoginAfterPassword = 1;
-	    syslog(LOG_NOTICE, "FTP LOGIN REFUSED (anonymous ftp denied on default server) FROM %s, %s",
-		   remoteident, name);
-#else
-	    reply(530, "User %s access denied.", name);
-	    syslog(LOG_NOTICE,
-		   "FTP LOGIN REFUSED (anonymous ftp denied on default server) FROM %s, %s",
-		   remoteident, name);
+#       ifdef NO_ANONYMOUS_ACCESS
+        {
+	    reply(530, "Anonymous FTP access denied.");
+	    syslog(
+                LOG_NOTICE, 
+                "FTP LOGIN REFUSED (anonymous ftp not supported) FROM %s, %s",
+	        remoteident, name);
 	    return;
-#endif
+        }
+#       else
+        {
+#           if defined(VIRTUAL) && defined(CLOSED_VIRTUAL_SERVER)
+	        if (!virtual_mode && defaultserver_private()) 
+                {
+#                   ifndef HELP_CRACKERS
+                    {
+	                DenyLoginAfterPassword = 1;
+	                syslog(
+                          LOG_NOTICE, 
+ "FTP LOGIN REFUSED (anonymous ftp denied on default server) FROM %s, %s",
+               		   remoteident, name);
+                   }
+#                  else
+                   {
+                       reply(530, "User %s access denied.", name);
+	               syslog(LOG_NOTICE,
+		   "FTP LOGIN REFUSED (anonymous ftp denied on default server) FROM %s, %s",
+		       remoteident, name);
+	               return;
+                   }
+#                  endif
 	}
-#endif
+     }
+#    endif
 	if (checkuser("ftp") || checkuser("anonymous")) {
 #ifndef HELP_CRACKERS
 	    DenyLoginAfterPassword = 1;
@@ -4411,7 +4425,7 @@ void retrieve(char *cmd, char *name, int offset, int length)
     {
 #       ifdef BUFFER_SIZE
             TransferComplete = G_SEND_DATA(name, fin, 
-                                   g_control_channel, tmp_restart,
+                                   &g_data_handle, tmp_restart,
                                    BUFFER_SIZE, length);
 #       else
 #           ifdef HAVE_ST_BLKSIZE
