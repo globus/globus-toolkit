@@ -758,4 +758,8 @@ typedef enum
     GLOBUS_XIO_ERROR_INVALID_STACK,
 } globus_xio_error_t;
 
+extern globus_module_descriptor_t globus_i_xio_file_module;
+
+#define GLOBUS_XIO_MODULE &globus_i_xio_file_module;
+
 #endif

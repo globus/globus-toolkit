@@ -392,59 +392,6 @@ globus_l_xio_accept_timeout_callback(
  *************************************************************************/
 
 /*
- *  function wrappers for the macros.  no real reason to have these
- */
-globus_result_t
-globus_xio_driver_pass_accept(
-    globus_xio_driver_operation_t               accept_op,
-    globus_xio_driver_callback_t                cb,
-    void *                                      user_arg)
-{
-    globus_result_t                             res;
-
-    if(server_handle == NULL)
-    {
-        return GlobusXIOErrorBadParameter("globus_xio_server_init");
-    }
-
-    GlobusXIODriverPassServerAccept(res, accept_op, cb, user_arg);
-
-    return res;
-}
-
-void
-globus_xio_driver_finished_accept(
-    globus_xio_driver_operation_t               accept_op,
-    void *                                      driver_target,
-    globus_result_t                             result)
-{
-    if(accepted_handle == NULL)
-    {
-        return GlobusXIOErrorBadParameter("globus_xio_server_init");
-    }
-
-    GlobusXIODriverFinishedAccept(accept_op, driver_target, result);
-}
-
-void
-globus_xio_server_enable_cancel(
-    globus_xio_driver_operation_t               accept_op,
-    globus_bool_t *                             cancel_now,
-    globus_xio_driver_accept_cancel_callback_t  cancel_cb,
-    void *                                      user_arg)
-{
-    GlobusXIOServerEnableCancel(accept_op, *cancel_now, cancel_cb, user_arg);
-}
-
-void
-globus_xio_server_disable_cancel(
-    globus_xio_driver_operation_t               accept_op)
-{
-    GlobusXIOServerDisableCancel(accept_op);
-}
-
-
-/*
  *  initialize a server structure
  */
 globus_result_t

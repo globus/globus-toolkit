@@ -20,6 +20,8 @@
 {                                                                           \
     globus_i_xio_handle_t *                         _h;                     \
                                                                             \
+    globus_list_remove(&globus_i_outstanding_handles_list,                  \
+        globus_list_search(globus_i_outstanding_handles_list, _h);          \
     _h = (h);                                                               \
     globus_assert(_h->ref == 0);                                            \
     globus_mutex_destroy(_h->mutex);                                        \
@@ -57,6 +59,8 @@
             GLOBUS_XIO_HANDLE_DEFAULT_OPERATION_COUNT);                     \
         _h->stack_size = _t->stack_size;                                    \
     }                                                                       \
+                                                                            \
+    globus_list_insert(&globus_i_outstanding_handles_list, _h);             \
     h = _h;                                                                 \
 }
 
@@ -157,6 +161,67 @@ do                                                                          \
         free = GLOBUS_FALSE;                                            \
     }                                                                   \
 }
+
+/* 
+ *  module activation
+ */
+
+#include "version.h"
+
+globus_i_xio_timer_t                        globus_i_xio_timer;
+static globus_list_t *                      globus_l_outstanding_handles_list;
+static globus_mutex_t                       globus_l_mutex;
+static globus_cond_t                        globus_l_cond;
+
+static int
+globus_l_xio_activate()
+{
+    int                                                 rc;
+
+    rc = globus_module_activate(GLOBUS_COMMON_MODULE);
+    if(rc != 0)
+    {
+        return rc;
+    }
+
+    globus_mutex_init(&globus_l_mutex, NULL);
+    globus_cond_init(&globus_l_cond, NULL);
+    globus_i_xio_timer_init(&globus_i_xio_timer);
+    globus_i_outstanding_handles_list = NULL;
+
+    return GLOBUS_SUCCESS;
+}
+
+static int
+globus_l_xio_deactivate()
+{
+    globus_list_t                           list;
+
+    /* is this good enough for user callback spaces and deadlock ?? */
+    globus_mutex_lock(&globus_l_mutex);
+    {
+        while(!globus_list_empty(globus_i_outstanding_handles_list))
+        {
+            globus_cond_wait(&globus_l_cond, &globus_l_mutex);
+        }
+    }
+    globus_mutex_unlock(&globus_l_mutex);
+
+    globus_mutex_destroy(&globus_l_mutex);
+    globus_cond_destroy(&globus_l_cond);
+    globus_i_xio_timer_destroy(&globus_i_xio_timer);
+}
+
+globus_module_descriptor_t                  globus_i_xio_file_module =
+{
+    "globus_xio",
+    globus_l_xio_activate,
+    globus_l_xio_deactivate,
+    GLOBUS_NULL,
+    GLOBUS_NULL,
+    &local_version
+};
+
 /********************************************************************
  *                      Internal functions 
  *******************************************************************/
