@@ -1,5 +1,6 @@
 
 #include "globus_i_gridftp_server.h"
+#include "version.h"
 
 typedef enum
 {
@@ -48,6 +49,8 @@ static const globus_l_gfs_config_option_t option_list[] =
  {"debug_level", "debug_level", NULL, "-debug", "-d", GLOBUS_L_GFS_CONFIG_INT, (void *) 1},
  {"community", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_LIST, NULL},
  {"dsi", "storage_type", NULL, "-dsi", NULL, GLOBUS_L_GFS_CONFIG_STRING, "file"},
+ {"version", NULL, NULL, "-version", "-v", GLOBUS_L_GFS_CONFIG_BOOL, 0},
+ {"versions", NULL, NULL, "-versions", "-V", GLOBUS_L_GFS_CONFIG_BOOL, 0},
 
  {"last_option", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE}
 };
@@ -463,6 +466,14 @@ globus_l_gfs_config_misc()
         globus_l_gfs_config_set("daemon", (void *) GLOBUS_TRUE);
     } 
     
+    if((value = globus_i_gfs_config_string("hostname")) != GLOBUS_NULL)
+    {
+        rc = globus_libc_setenv("GLOBUS_HOSTNAME", value, 1);
+        if(rc)
+        {
+        }
+    }
+    
     if((bool_value = globus_i_gfs_config_bool("terse_banner")) == GLOBUS_TRUE)
     {
         globus_l_gfs_config_set("banner", "");                
@@ -471,6 +482,23 @@ globus_l_gfs_config_misc()
     {
         rc = globus_l_config_loadfile(value, &data);
         globus_l_gfs_config_set("banner", data);                
+    }
+    else
+    {
+        char *                          hostname;
+
+        hostname = globus_malloc(1024);
+        globus_libc_gethostname(hostname, 1024);
+        data = globus_common_create_string(
+            "GridFTP Server %s %d.%d (%s, %d-%d) ready.",
+            hostname,
+            local_version.major,
+            local_version.minor,
+            build_flavor,
+            local_version.timestamp,
+            local_version.branch_id);
+        globus_l_gfs_config_set("banner", data);
+        globus_free(hostname);
     }
 
     if((value = globus_i_gfs_config_string("login_msg_file")) != GLOBUS_NULL)
@@ -487,14 +515,6 @@ globus_l_gfs_config_misc()
         }
     }
 
-    if((value = globus_i_gfs_config_string("hostname")) != GLOBUS_NULL)
-    {
-        rc = globus_libc_setenv("GLOBUS_HOSTNAME", value, 1);
-        if(rc)
-        {
-        }
-    }
-    
     value = globus_i_gfs_config_string("remote");
     {
         globus_i_gfs_community_t *      community;
