@@ -8,7 +8,6 @@ typedef enum  globus_i_xio_gssapi_ftp_state_s
     /* starting state for both client and server */
     GSSAPI_FTP_STATE_NONE,
     /* server auhenticating states */
-    GSSAPI_FTP_STATE_SERVER_SENDING_220,
     GSSAPI_FTP_STATE_SERVER_READING_AUTH,
     GSSAPI_FTP_STATE_SERVER_GSSAPI_READ,
     GSSAPI_FTP_STATE_SERVER_READING_ADAT,
