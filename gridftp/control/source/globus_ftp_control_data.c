@@ -1049,6 +1049,7 @@ globus_l_ftp_control_data_eb_connect_write(
                 {
                     globus_list_remove_element(
                         &stripe->all_conn_list, data_conn);
+                    data_conn->whos_my_daddy = NULL;
                     globus_l_ftp_control_register_close_msg(
                         dc_handle,
                         data_conn);
@@ -6424,6 +6425,7 @@ globus_l_ftp_control_data_adjust_connection(
 
             data_conn->eod = GLOBUS_TRUE;
             stripe->connection_count--;
+            data_conn->whos_my_daddy = NULL;
             res = globus_l_ftp_control_register_close_msg(
                       dc_handle,
                       data_conn);
@@ -7146,7 +7148,7 @@ globus_l_ftp_io_close_callback(
 
     globus_mutex_lock(&dc_handle->mutex);
     {
-        if(stripe->eof)
+        if(stripe && stripe->eof)
         {
             eof_cb_ent = transfer_handle->eof_cb_ent;
             /* eof ent may not exist */
