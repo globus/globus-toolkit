@@ -198,15 +198,18 @@ globus_l_gram_client_parse_gatekeeper_contact( char *    contact_string,
 					       char **   gatekeeper_dn )
 {
     char *                duplicate;
-    char *                host;
-    char *                port;
-    char *                dn;
+    char *                host = NULL;
+    char *                port = NULL;
+    char *                dn = NULL;
     char *                service;
     unsigned short        iport;
 
     /*
      *  the gatekeeper contact format: [https://]<host>:<port>[/<service>]:<dn>
      */    
+
+    service = "/jobmanager";
+    iport = 1754;
 
     if ((duplicate = globus_libc_strdup(contact_string)))
     {
@@ -219,22 +222,26 @@ globus_l_gram_client_parse_gatekeeper_contact( char *    contact_string,
 	if ((port = strchr(host,':')))
 	{
 	    *port++ = '\0';
+
 	    if ((dn = strchr(port, ':'))) 
 	    {
 		*dn++ = '\0';
 	    }
-	    else
-	    {
-			dn = "";
-	    }
-	    iport = (unsigned short) atoi(port);
     
-	    if (! (service = strchr(port,'/')))
-		service = "/jobmanager";        /* yes, including the slash */
-
+	    if (service = strchr(port,'/'))
+            {
+                if ((service - port) > 1)
+                {
+	            iport = (unsigned short) atoi(port);
+                }
+            }
+            else
+            {
+                service = "/jobmanager";
+	        if (strlen(port) > 0)
+	           iport = (unsigned short) atoi(port);
+            }
 	}
-	else
-	    port = "754";
     } 
     else 
     {
@@ -253,18 +260,15 @@ globus_l_gram_client_parse_gatekeeper_contact( char *    contact_string,
      * done with the port, can now put the slash back
      */
     *gatekeeper_service = globus_libc_strdup(service);
-	if (*dn)
-	{
-    	*gatekeeper_dn = globus_libc_strdup(dn);
-	}
-	else
-	{
-		if (*gatekeeper_dn = globus_libc_malloc(6 + strlen(host)))
-		{
-			globus_libc_sprintf(*gatekeeper_dn, "host@%s",
-				host);
-		}
-	}
+
+    if ((dn) && (*dn))
+    {
+   	*gatekeeper_dn = globus_libc_strdup(dn);
+    }
+    else
+    {
+   	*gatekeeper_dn = NULL;
+    }
     globus_libc_free(duplicate);
 
     return GLOBUS_SUCCESS;
@@ -293,12 +297,12 @@ globus_l_gram_client_setup_attr_t(
 	     attrp,
 	     GLOBUS_IO_SECURE_AUTHENTICATION_MODE_GSSAPI,
 	     globus_i_gram_http_credential))
-	 || (res = globus_io_secure_authorization_data_set_identity(
+	 ||  (gatekeeper_dn ? (res = globus_io_secure_authorization_data_set_identity(
 	     &auth_data,
-	     gatekeeper_dn))
+	     gatekeeper_dn)) : 0)
 	 || (res = globus_io_attr_set_secure_authorization_mode(
 	     attrp,
-	     GLOBUS_IO_SECURE_AUTHORIZATION_MODE_IDENTITY,
+	     gatekeeper_dn ? GLOBUS_IO_SECURE_AUTHORIZATION_MODE_IDENTITY : GLOBUS_IO_SECURE_AUTHORIZATION_MODE_HOST,
 	     &auth_data))
 	 || (res = globus_io_attr_set_secure_delegation_mode(
 	     attrp,
@@ -405,7 +409,8 @@ globus_gram_client_ping_attr_failed:
     globus_libc_free(ping_service);
     globus_libc_free(url);
     globus_libc_free(service);
-    globus_libc_free(dn);
+    if (dn)
+        globus_libc_free(dn);
 
 globus_gram_client_ping_parse_failed:
     globus_mutex_destroy(&monitor.mutex);
@@ -525,7 +530,8 @@ globus_gram_client_job_request_pack_failed:
     globus_io_tcpattr_destroy (&attr);
     globus_libc_free(url);
     globus_libc_free(service);
-    globus_libc_free(dn);
+    if (dn)
+        globus_libc_free(dn);
 
 globus_gram_client_job_request_parse_failed:
     
