@@ -72,50 +72,12 @@ typedef enum
     GLOBUS_GSI_SYSCONFIG_ERROR_FILE_IS_DIR = 23,
     /** File has zero length */
     GLOBUS_GSI_SYSCONFIG_ERROR_FILE_ZERO_LENGTH = 24,
+    /** Invalid argument */
+    GLOBUS_GSI_SYSCONFIG_INVALID_ARG = 25,
     /** Last marker - never used */
-    GLOBUS_GSI_SYSCONFIG_ERROR_LAST = 25
+    GLOBUS_GSI_SYSCONFIG_ERROR_LAST = 26
 }
 globus_gsi_sysconfig_error_t;
-
-
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL 
-/**
- * Enumerator containing the results of a status check on a file
- * @ingroup globus_gsi_sysconfig_datatypes
- *  
- * The globus_gsi_statcheck_t enum provides
- * a set of values that can be used to
- * determine the status of a certificate or
- * key file.
- *
- */
-typedef enum
-{
-    /** If the status of the file being checked is valid with
-     *  respect to the type of file, this is used. For example,
-     *  if a proxy file is being checked, then its only valid
-     *  if only the user has read-only permissions on it
-     */
-    GLOBUS_FILE_VALID = 0,
-    /** The file is neither regular, a link or a directory */
-    GLOBUS_FILE_INVALID = 1,
-    /** The file is a directory */
-    GLOBUS_FILE_DIR  = 2,
-    /** The file does not exist */
-    GLOBUS_FILE_DOES_NOT_EXIST = 3,
-    /** The file is not owned by the current user */
-    GLOBUS_FILE_NOT_OWNED = 4,
-    /** The file has incorrect permissions */
-    GLOBUS_FILE_BAD_PERMISSIONS = 5,
-    /** The file has zero length */
-    GLOBUS_FILE_ZERO_LENGTH = 6,
-    /** Last marker - never used */
-    GLOBUS_FILE_STATUS_LAST = 7
-}
-globus_gsi_statcheck_t;
-
-#endif 
-
 
 /**
  * Enumerator used to keep track of input/output types of filenames

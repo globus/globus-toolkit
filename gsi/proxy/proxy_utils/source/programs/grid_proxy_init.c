@@ -564,7 +564,6 @@ main(
         /* verify that the directory path of proxy_out_filename
          * exists and is writeable
          */
-        globus_gsi_statcheck_t          file_status;
         char *                          proxy_absolute_path = NULL;
         char *                          temp_filename = NULL;
         char *                          temp_dir = NULL;
@@ -610,9 +609,8 @@ main(
             GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
         }
                 
-        result = GLOBUS_GSI_SYSCONFIG_FILE_EXISTS(temp_dir, &file_status);
-        if(result != GLOBUS_SUCCESS ||
-           file_status != GLOBUS_FILE_DIR)
+        result = GLOBUS_GSI_SYSCONFIG_DIR_EXISTS(temp_dir);
+        if(result != GLOBUS_SUCCESS)
         {
             globus_libc_fprintf(
                 stderr, 

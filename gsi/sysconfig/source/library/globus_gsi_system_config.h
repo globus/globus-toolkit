@@ -231,6 +231,15 @@ globus_module_descriptor_t              globus_i_gsi_sysconfig_module;
 #    define GLOBUS_GSI_SYSCONFIG_FILE_EXISTS \
             globus_gsi_sysconfig_file_exists_unix
 /**
+ * Check whether a given directory exists
+ * @ingroup globus_gsi_system_config_defines
+ * @hideinitializer
+ * See globus_gsi_sysconfig_dir_exists_unix() and
+ * globus_gsi_sysconfig_dir_exists_win32()
+ */
+#    define GLOBUS_GSI_SYSCONFIG_DIR_EXISTS \
+            globus_gsi_sysconfig_dir_exists_unix
+/**
  * Determine the location of the trusted certificates directory
  * @ingroup globus_gsi_system_config_defines
  * @hideinitializer
@@ -500,23 +509,23 @@ globus_gsi_sysconfig_set_key_permissions_unix(
 
 globus_result_t
 globus_gsi_sysconfig_get_home_dir_unix(
-    char **                             home_dir,
-    globus_gsi_statcheck_t *            status);
+    char **                             home_dir);
 
 globus_result_t
 globus_gsi_sysconfig_file_exists_unix(
-    const char *                        filename,
-    globus_gsi_statcheck_t *            status);
+    const char *                        filename);
+
+globus_result_t
+globus_gsi_sysconfig_dir_exists_unix(
+    const char *                        filename);
 
 globus_result_t
 globus_gsi_sysconfig_check_keyfile_unix(
-    const char *                        filename,
-    globus_gsi_statcheck_t *            status);
+    const char *                        filename);
 
 globus_result_t
 globus_gsi_sysconfig_check_certfile_unix(
-    const char *                        filename,
-    globus_gsi_statcheck_t *            status);
+    const char *                        filename);
 
 globus_result_t
 globus_gsi_sysconfig_get_cert_dir_unix(

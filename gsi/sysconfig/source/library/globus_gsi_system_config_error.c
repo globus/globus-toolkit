@@ -19,7 +19,6 @@
 char * 
 globus_l_gsi_sysconfig_error_strings[GLOBUS_GSI_SYSCONFIG_ERROR_LAST] =
 {
-
 /* 0 */   "Success",
 /* 1 */   "Could not find a valid trusted CA certificates directory",
 /* 2 */   "Error with certificate filename",
@@ -36,7 +35,7 @@ globus_l_gsi_sysconfig_error_strings[GLOBUS_GSI_SYSCONFIG_ERROR_LAST] =
 /* 13 */  "Could not find a valid gridmap file",
 /* 14 */  "Error checking superuser status",
 /* 15 */  "Error setting file permissions",
-/* 16 */  "Error getting signing policy file"
+/* 16 */  "Error getting signing policy file",
 /* 17 */  "Error getting password entry for current user",
 /* 18 */  "Could not find a valid authorization callback config file",
 /* 19 */  "Not a regular file",
@@ -44,24 +43,10 @@ globus_l_gsi_sysconfig_error_strings[GLOBUS_GSI_SYSCONFIG_ERROR_LAST] =
 /* 21 */  "File has bad permissions",
 /* 22 */  "File is not owned by current user",
 /* 23 */  "File is a directory",
-/* 24 */  "File has zero length"
+/* 24 */  "File has zero length",
+/* 25 */  "Invalid argument"
 };
-/* @} */
-
-char *
-globus_l_gsi_sysconfig_status_strings[GLOBUS_FILE_STATUS_LAST] =
-{
-
-/* 0 */    "is a valid file.",
-/* 1 */    "is a invalid file.",
-/* 2 */    "is a directory.",
-/* 3 */    "does not exist.",
-/* 4 */    "not owned by current user.",
-/* 5 */    "has invalid permissions.",
-/* 6 */    "has zero length."
-
-};
- 
+/* @} */ 
 
 
 /* ERROR FUNCTIONS */

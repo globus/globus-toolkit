@@ -133,7 +133,6 @@ main(
     int                                 arg_index;
     char *                              argp;
     char *                              proxy_filename = NULL;
-    globus_gsi_statcheck_t              status;
     char *                              subject;
     char *                              issuer;
     char *                              identity;
@@ -316,8 +315,7 @@ main(
 
     if(proxy_filename)
     {
-        result = GLOBUS_GSI_SYSCONFIG_CHECK_KEYFILE(proxy_filename,
-                                                    &status);
+        result = GLOBUS_GSI_SYSCONFIG_CHECK_KEYFILE(proxy_filename);
 
         if(result != GLOBUS_SUCCESS)
         {
@@ -325,15 +323,6 @@ main(
                 stderr,
                 "\n\nERROR: Couldn't find a valid proxy.\n");
             GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
-        }
-
-        if(status != GLOBUS_FILE_VALID)
-        {
-            globus_libc_fprintf(
-                stderr,
-                "\n\nERROR: Couldn't find a valid proxy.\n");
-            globus_module_deactivate_all();
-            exit(1);
         }
     }
     else

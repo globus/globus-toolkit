@@ -166,6 +166,12 @@ extern FILE *                           globus_i_gsi_sysconfig_debug_fstream;
                                                              NULL, \
                                                              _LONG_DESC_)
 
+#define GLOBUS_GSI_SYSCONFIG_FILE_DOES_NOT_EXIST(_RESULT) \
+    (globus_error_match(globus_error_peek(_RESULT), \
+                        GLOBUS_GSI_SYSCONFIG_MODULE, \
+                        GLOBUS_GSI_SYSCONFIG_ERROR_FILE_DOES_NOT_EXIST) == \
+     GLOBUS_TRUE)
+
 extern char *                       globus_l_gsi_sysconfig_error_strings[];
 extern char *                       globus_l_gsi_sysconfig_status_strings[];
 
@@ -173,7 +179,6 @@ globus_result_t
 globus_i_gsi_sysconfig_create_cert_dir_string(
     char **                             cert_dir,
     char **                             cert_dir_value,
-    globus_gsi_statcheck_t *            status,
     const char *                        format,
     ...);
 
@@ -181,7 +186,6 @@ globus_result_t
 globus_i_gsi_sysconfig_create_cert_string(
     char **                             cert_string,
     char **                             cert_string_value,
-    globus_gsi_statcheck_t *            status,
     const char *                        format,
     ...);
 
@@ -189,7 +193,6 @@ globus_result_t
 globus_i_gsi_sysconfig_create_key_string(
     char **                             key_string,
     char **                             key_string_value,
-    globus_gsi_statcheck_t *            status,
     const char *                        format,
     ...);
 
