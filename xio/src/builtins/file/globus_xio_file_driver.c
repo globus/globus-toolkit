@@ -82,6 +82,7 @@ typedef struct
 typedef struct
 {
     globus_xio_system_handle_t          handle;
+    globus_bool_t                       converted;
 } globus_l_handle_t;
 
 static
@@ -380,6 +381,7 @@ globus_l_xio_file_handle_init(
         result = GlobusXIOErrorMemory("handle");
         goto error_handle;
     }
+    (*handle)->converted = GLOBUS_FALSE;
     
     GlobusXIOFileDebugExit();
     return GLOBUS_SUCCESS;
@@ -507,6 +509,7 @@ globus_l_xio_file_open(
     else
     {
         handle->handle = target->handle;
+        handle->converted = GLOBUS_TRUE;
         globus_xio_driver_finished_open(driver_handle, handle, op, GLOBUS_SUCCESS);
     }
     
@@ -567,17 +570,26 @@ globus_l_xio_file_close(
     GlobusXIOFileDebugEnter();
     
     handle = (globus_l_handle_t *) driver_specific_handle;
-        
-    result = globus_xio_system_register_close(
-        op,
-        handle->handle,
-        globus_l_xio_file_system_close_cb,
-        op);
-    if(result != GLOBUS_SUCCESS)
+    
+    if(handle->converted)
     {
-        result = GlobusXIOErrorWrapFailed(
-            "globus_xio_system_register_close", result);
-        goto error_register;
+        globus_xio_driver_finished_close(op, GLOBUS_SUCCESS);
+        globus_xio_driver_handle_close(driver_handle);
+        globus_l_xio_file_handle_destroy(handle);
+    }
+    else
+    {
+        result = globus_xio_system_register_close(
+            op,
+            handle->handle,
+            globus_l_xio_file_system_close_cb,
+            op);
+        if(result != GLOBUS_SUCCESS)
+        {
+            result = GlobusXIOErrorWrapFailed(
+                "globus_xio_system_register_close", result);
+            goto error_register;
+        }
     }
     
     GlobusXIOFileDebugExit();

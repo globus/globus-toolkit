@@ -108,6 +108,7 @@ typedef struct
 {
     globus_xio_system_handle_t          handle;
     globus_bool_t                       connected;
+    globus_bool_t                       converted;
 } globus_l_handle_t;
 
 static
@@ -601,17 +602,21 @@ static
 globus_result_t
 globus_l_xio_udp_apply_handle_attrs(
     const globus_l_attr_t *             attr,
-    int                                 fd)
+    int                                 fd,
+    globus_bool_t                       converted)
 {
     globus_result_t                     result;
     int                                 int_one = 1;
     GlobusXIOName(globus_l_xio_udp_apply_handle_attrs);
     
-    /* all handles created by me are closed on exec */
-    if(fcntl(fd, F_SETFD, FD_CLOEXEC) < 0)
+    if(!converted)
     {
-        result = GlobusXIOErrorSystemError("fcntl", errno);
-        goto error_sockopt;
+        /* all handles created by me are closed on exec */
+        if(fcntl(fd, F_SETFD, FD_CLOEXEC) < 0)
+        {
+            result = GlobusXIOErrorSystemError("fcntl", errno);
+            goto error_sockopt;
+        }
     }
         
     if(attr->resuseaddr &&
@@ -758,10 +763,6 @@ globus_l_xio_udp_target_destroy(
     {
         globus_free(target->port);
     }
-    if(target->handle != GLOBUS_XIO_UDP_INVALID_HANDLE)
-    {
-        GlobusIXIOUdpCloseFd(target->handle);
-    }
     
     globus_free(target);
 
@@ -893,7 +894,8 @@ globus_l_xio_udp_create_listener(
                 continue;
             }
             
-            result = globus_l_xio_udp_apply_handle_attrs(attr, fd);
+            result = globus_l_xio_udp_apply_handle_attrs(
+                attr, fd, GLOBUS_FALSE);
             if(result != GLOBUS_SUCCESS)
             {
                 result = GlobusXIOErrorWrapFailed(
@@ -965,6 +967,7 @@ globus_l_xio_udp_handle_init(
     }
     
     (*handle)->connected = GLOBUS_FALSE;
+    (*handle)->converted = GLOBUS_FALSE;
     
     return GLOBUS_SUCCESS;
 
@@ -1090,9 +1093,9 @@ globus_l_xio_udp_open(
     else
     {
         handle->handle = target->handle;
-        /* so handle isnt closed when target is destroyed */
-        target->handle = GLOBUS_XIO_UDP_INVALID_HANDLE;
-        result = globus_l_xio_udp_apply_handle_attrs(attr, handle->handle);
+        handle->converted = GLOBUS_TRUE;
+        result = globus_l_xio_udp_apply_handle_attrs(
+            attr, handle->handle, GLOBUS_TRUE);
         if(result != GLOBUS_SUCCESS)
         {
             result = GlobusXIOErrorWrapFailed(
@@ -1119,7 +1122,10 @@ globus_l_xio_udp_open(
     return GLOBUS_SUCCESS;
 
 error_connect:
-    GlobusIXIOUdpCloseFd(handle->handle);
+    if(!handle->converted)
+    {
+        GlobusIXIOUdpCloseFd(handle->handle);
+    }
     
 error_listen:
 error_attrs:   
@@ -1166,17 +1172,26 @@ globus_l_xio_udp_close(
     GlobusXIOName(globus_l_xio_udp_close);
 
     handle = (globus_l_handle_t *) driver_specific_handle;
-        
-    result = globus_xio_system_register_close(
-        op,
-        handle->handle,
-        globus_l_xio_udp_system_close_cb,
-        op);
-    if(result != GLOBUS_SUCCESS)
+    
+    if(handle->converted)
     {
-        result = GlobusXIOErrorWrapFailed(
-            "globus_xio_system_register_close", result);
-        goto error_register;
+        globus_xio_driver_finished_close(op, GLOBUS_SUCCESS);
+        globus_xio_driver_handle_close(driver_handle);
+        globus_l_xio_udp_handle_destroy(handle);
+    }
+    else
+    {
+        result = globus_xio_system_register_close(
+            op,
+            handle->handle,
+            globus_l_xio_udp_system_close_cb,
+            op);
+        if(result != GLOBUS_SUCCESS)
+        {
+            result = GlobusXIOErrorWrapFailed(
+                "globus_xio_system_register_close", result);
+            goto error_register;
+        }
     }
 
     return GLOBUS_SUCCESS;
