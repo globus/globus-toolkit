@@ -255,6 +255,9 @@ globus_i_xio_will_block_cb(
                 break;
 
             case GLOBUS_XIO_OPERATION_TYPE_FINISHED:
+                return;
+                break;
+
             case GLOBUS_XIO_OPERATION_TYPE_CLOSE:
                 break;
 
