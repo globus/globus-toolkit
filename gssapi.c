@@ -1,7 +1,8 @@
+#ifdef BUILD_GSSAPI_PLUGIN
 /* GSSAPI SASL plugin
  * Leif Johansson
  * Rob Siemborski (SASL v2 Conversion)
- * $Id: gssapi.c,v 1.6 2004/07/27 18:35:20 jbasney Exp $
+ * $Id: gssapi.c,v 1.7 2004/07/27 21:17:15 jbasney Exp $
  */
 /* 
  * Copyright (c) 1998-2003 Carnegie Mellon University.  All rights reserved.
@@ -86,7 +87,7 @@
 
 /*****************************  Common Section  *****************************/
 
-static const char plugin_id[] = "$Id: gssapi.c,v 1.6 2004/07/27 18:35:20 jbasney Exp $";
+static const char plugin_id[] = "$Id: gssapi.c,v 1.7 2004/07/27 21:17:15 jbasney Exp $";
 
 static const char * GSSAPI_BLANK_STRING = "";
 
@@ -399,7 +400,7 @@ sasl_gss_encode(void *context, const struct iovec *invec, unsigned numiov,
     
     if(!output) return SASL_BADPARAM;
     
-    if (sasl_gss_lib_init(text->utils) != SASL_OK) return;
+    if (sasl_gss_lib_init(text->utils) != SASL_OK) return SASL_FAIL;
     
     if(numiov > 1) {
 	ret = _plug_iovec_to_buf(text->utils, invec, numiov, &text->enc_in_buf);
@@ -490,7 +491,7 @@ static int gssapi_decode_packet(void *context,
     gss_buffer_desc real_input_token, real_output_token;
     int result;
     
-    if (sasl_gss_lib_init(text->utils) != SASL_OK) return;
+    if (sasl_gss_lib_init(text->utils) != SASL_OK) return SASL_FAIL;
     
     if (text->state != SASL_GSSAPI_STATE_AUTHENTICATED) {
 	SETERROR(text->utils, "GSSAPI Failure");
@@ -697,7 +698,7 @@ gssapi_server_mech_step(void *conn_context,
     *serverout = NULL;
     *serveroutlen = 0;	
 	    
-    if (sasl_gss_lib_init(text->utils) != SASL_OK) return;
+    if (sasl_gss_lib_init(text->utils) != SASL_OK) return SASL_FAIL;
     
     switch (text->state) {
 
@@ -1272,7 +1273,7 @@ static int gssapi_client_mech_step(void *conn_context,
     *clientout = NULL;
     *clientoutlen = 0;
     
-    if (sasl_gss_lib_init(text->utils) != SASL_OK) return;
+    if (sasl_gss_lib_init(text->utils) != SASL_OK) return SASL_FAIL;
     
     switch (text->state) {
 
@@ -1703,4 +1704,4 @@ int gssapiv2_client_plug_init(const sasl_utils_t *utils __attribute__((unused)),
     
     return SASL_OK;
 }
-
+#endif
