@@ -356,8 +356,8 @@ globus_gass_server_ez_put_memory_done(globus_gass_server_put_request_t *request,
 	if(lastnl != -1)
 	{
 	    globus_i_gass_write(r->fd,
-				r->line_buffer,
-				r->line_buffer_used);
+				buffer,
+				lastnl);
 	}
 	else
 	{
