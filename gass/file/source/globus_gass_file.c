@@ -429,13 +429,13 @@ globus_gass_close(int fd)
     
     if(file == GLOBUS_NULL)
     {
-	close(fd);
+	nexus_fd_close(fd);
 	globus_gass_file_exit();
 	return 0;
     }
     else
     {
-	close(file->fd);
+	nexus_fd_close(file->fd);
 	
 	if (file->scheme_type == GLOBUS_URL_SCHEME_X_GASS_CACHE)
 	{

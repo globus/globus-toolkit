@@ -416,7 +416,7 @@ globus_gass_server_ez_put_memory_done(globus_gass_server_put_request_t *request,
 	    
 	    if(r->special == GLOBUS_FALSE)
 	    {
-		close(r->fd);
+		globus_libc_close(r->fd);
 	    }
 	    r->timestamp = (unsigned long) s.st_mtime;
 
