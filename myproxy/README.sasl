@@ -1,5 +1,4 @@
-./configure --with-flavor=gcc32dbg --with-sasl2=/usr \
-  --with-kerberos5=/usr/kerberos
+./configure --with-flavor=gcc32dbg --with-sasl2=/usr
 
 unset SASL_LIBRARY_PATH
 
