@@ -186,7 +186,7 @@ extern int port_allowed(const char *remoteaddr);
     A   B   C   E   F   I
     L   N   P   R   S   T
 
-    SP  CRLF    COMMA   STRING  NUMBER
+    SP  CRLF    COMMA   STRING  NUMBER   BIGNUM
 
     USER    PASS    ACCT    REIN    QUIT    PORT
     PASV    TYPE    STRU    MODE    RETR    STOR
@@ -198,6 +198,8 @@ extern int port_allowed(const char *remoteaddr);
 
     AUTH    ADAT    PROT    PBSZ    CCC
 
+    ESTO    ERET
+
     UMASK   IDLE    CHMOD   GROUP   GPASS   NEWER
     MINFO   INDEX   EXEC    ALIAS   CDPATH  GROUPS
     CHECKMETHOD     CHECKSUM        BUFSIZE
@@ -207,12 +209,21 @@ extern int port_allowed(const char *remoteaddr);
 %union {
     char *String;
     int Number;
+    struct {
+	int mode;
+	long long offset;
+	long long length;
+    } estor_eret;
+
+    long long Bignum;
 }
 
 %type <String>  STRING password pathname pathstring username method
 %type <Number>  NUMBER byte_size check_login form_code 
 %type <Number>  struct_code mode_code octal_number
 %type <Number>  prot_code bufsize
+%type <estor_eret> esto_mode eret_mode
+%type <Bignum>	BIGNUM OFFSET LENGTH
 
 %start  cmd_list
 
@@ -398,7 +409,7 @@ cmd: USER SP username CRLF
 		syslog(LOG_INFO, "RETR %s", CHECKNULL($4));
 	    if ($2 && $4 != NULL && !restrict_check($4)) {
 		retrieve_is_data = 1;
-		retrieve((char *) NULL, $4);
+		retrieve((char *) NULL, $4, -1, -1);
 	    }
 	    if ($4 != NULL)
 		free($4);
@@ -408,16 +419,37 @@ cmd: USER SP username CRLF
 	    if (log_commands)
 		syslog(LOG_INFO, "STOR %s", CHECKNULL($4));
 	    if ($2 && $4 != NULL && !restrict_check($4))
-		store($4, "w", 0);
+		store($4, "w", 0, -1);
 	    if ($4 != NULL)
 		free($4);
+	}
+    | ERET check_login SP eret_mode SP pathname CRLF
+	=	{
+	    if (log_commands)
+		syslog(LOG_INFO, "ERET %c %d %d %s", $4.mode,
+		       $4.offset, $4.length, CHECKNULL($6));
+	    if ($2 && $6 != NULL && !restrict_check($6)) {
+		retrieve_is_data = 1;
+		retrieve((char *) NULL, $6, (int) $4.offset, (int) $4.length);
+	    }
+	    if ($6 != NULL)
+		free($6);
+	}
+    | ESTO check_login SP esto_mode SP pathname CRLF
+        =	{
+	    if (log_commands)
+		syslog(LOG_INFO, "ESTO %c %d %s", $4.mode, $4.offset, CHECKNULL($6));
+	    if ($2 && $6 != NULL && !restrict_check($6))
+		store($6, "r+", 0, (int) $4.offset);
+	    if ($6 != NULL)
+		free($6);
 	}
     | APPE check_login SP pathname CRLF
 	=	{
 	    if (log_commands)
 		syslog(LOG_INFO, "APPE %s", CHECKNULL($4));
 	    if ($2 && $4 != NULL && !restrict_check($4))
-		store($4, "a", 0);
+		store($4, "a", 0, -1);
 	    if ($4 != NULL)
 		free($4);
 	}
@@ -445,9 +477,9 @@ cmd: USER SP username CRLF
 		retrieve_is_data = 0;
 #ifndef INTERNAL_LS
 		if (anonymous && dolreplies)
-		    retrieve(ls_long, "");
+		    retrieve(ls_long, "", -1, -1);
 		else
-		    retrieve(ls_short, "");
+		    retrieve(ls_short, "", -1, -1);
 #else
 		ls(NULL, 0);
 #endif
@@ -461,9 +493,9 @@ cmd: USER SP username CRLF
 		retrieve_is_data = 0;
 #ifndef INTERNAL_LS
 		if (anonymous && dolreplies)
-		    retrieve(ls_long, $4);
+		    retrieve(ls_long, $4, -1, -1);
 		else
-		    retrieve(ls_short, $4);
+		    retrieve(ls_short, $4, -1, -1);
 #else
 		ls($4, 0);
 #endif
@@ -849,7 +881,7 @@ cmd: USER SP username CRLF
 	    if (log_commands)
 		syslog(LOG_INFO, "STOU %s", CHECKNULL($4));
 	    if ($2 && $4 && !restrict_check($4))
-		store($4, "w", 1);
+		store($4, "w", 1, -1);
 	    if ($4 != NULL)
 		free($4);
 	}
@@ -1321,6 +1353,25 @@ check_login: /* empty */
 bufsize: NUMBER
     ;
 
+esto_mode: A SP OFFSET
+    =	        {
+	$$.mode = A;
+	$$.offset = $3;
+    }
+    ;
+
+eret_mode: P SP OFFSET SP LENGTH
+    =	        {
+	$$.mode = P;
+	$$.offset = $3;
+	$$.length = $5;
+    }
+    ;
+
+OFFSET: BIGNUM
+    ;
+LENGTH: BIGNUM
+    ;
 %%
 
 extern jmp_buf errcatch;
@@ -1335,6 +1386,15 @@ extern jmp_buf errcatch;
 #define SITECMD 7		/* SITE command */
 #define NSTR    8		/* Number followed by a string */
 #define STR3    9		/* expect STRING followed by optional SP then STRING */
+
+#define ESTOARGS 10		/* SP CHAR SP NUMBER SP STRING */
+#define EARGS1 11		/* CHAR SP NUMBER SP STRING */
+#define ERETARGS 12		/* SP CHAR SP NUMBER SP NUMBER SP STRING */
+#define EARGS2 13		/* CHAR SP NUMBER SP NUMBER SP STRING */
+#define EARGS3 14		/* SP NUMBER SP NUMBER SP STRING */
+#define EARGS4 15		/* NUMBER SP NUMBER SP STRING */
+#define EARGS5 17		/* SP NUMBER SP STRING */
+#define EARGS6 18		/* NUMBER SP STRING */
 
 struct tab cmdtab[] =
 {				/* In order defined in RFC 765 */
@@ -1392,6 +1452,9 @@ struct tab cmdtab[] =
     { "CCC",  CCC,  ARGS, 1,	"(clear command channel)" },
 #endif /* FTP_SECURITY_EXTENSIONS */
     {"MDTM", MDTM, OSTR, 1, "<sp> path-name"},
+    { "ESTO", ESTO, ESTOARGS, 1, "<sp> A <sp> <offset> <sp> <filename>" },
+    { "ERET", ERET, ERETARGS, 1, "<sp> P <sp> <offset> <sp> size <sp> <filename>" },
+
     {NULL, 0, 0, 0, 0}
 };
 
@@ -1772,6 +1835,7 @@ int yylex(void)
 		cbuf[cpos] = c;
 		return (NUMBER);
 	    }
+
 	    switch (cbuf[cpos++]) {
 
 	    case '\n':
@@ -1835,6 +1899,65 @@ int yylex(void)
 	    }
 	    break;
 
+	    case ESTOARGS:
+	    case ERETARGS:
+	    case EARGS3:
+	    case EARGS5:
+		if (cbuf[cpos] == ' ') {
+		    cpos++;
+		    state++;
+		    return (SP);
+		}
+		break;
+	    case EARGS1:
+		/* Pull off a char, go to EARGS5 */
+		if(cbuf[cpos] == 'A' || cbuf[cpos] == 'a')
+		{
+		    cpos++;
+		    state = EARGS5;
+		    return (A);
+		}
+		break;
+	    case EARGS2:
+		/* Pull off a char, go to EARGS3 */
+		if(cbuf[cpos] == 'P' || cbuf[cpos] == 'p')
+		{
+		    cpos++;
+		    state = EARGS3;
+		    return P;
+		}
+		break;
+	    case EARGS4:
+		/* Pull off a number, go to EARGS5 */
+		if (isdigit(cbuf[cpos])) {
+		    cp = &cbuf[cpos];
+		    while (isdigit(cbuf[++cpos]));
+		    c = cbuf[cpos];
+		    cbuf[cpos] = '\0';
+		    yylval.Number = atoll(cp);
+		    cbuf[cpos] = c;
+
+		    state = EARGS5;
+
+		    return (BIGNUM);
+		}
+		break;
+
+	    case EARGS6:
+		/* pull of a number, go to STR1 */
+		if (isdigit(cbuf[cpos])) {
+		    cp = &cbuf[cpos];
+		    while (isdigit(cbuf[++cpos]));
+		    c = cbuf[cpos];
+		    cbuf[cpos] = '\0';
+		    yylval.Bignum = atoll(cp);
+		    cbuf[cpos] = c;
+
+		    state = STR1;
+
+		    return (BIGNUM);
+		}
+		break;
 	default:
 	    fatal("Unknown state in scanner.");
 	}

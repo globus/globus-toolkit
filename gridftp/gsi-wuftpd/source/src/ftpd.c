@@ -523,9 +523,9 @@ void print_copyright(void);
 char *mapping_getcwd(char *path, size_t size);
 
 #ifdef THROUGHPUT
-int send_data(char *name, FILE *, FILE *, off_t);
+int send_data(char *name, FILE *, FILE *, off_t, int);
 #else
-int send_data(FILE *, FILE *, off_t);
+int send_data(FILE *, FILE *, off_t, int);
 #endif
 void dolog(struct sockaddr_in *);
 void dologout(int);
@@ -4097,7 +4097,7 @@ void ls(char *file, char nlst)
 }
 #endif /* INTERNAL_LS */
 
-void retrieve(char *cmd, char *name)
+void retrieve(char *cmd, char *name, int offset, int length)
 {
     FILE *fin = NULL, *dout;
     struct stat st, junk;
@@ -4112,6 +4112,8 @@ void retrieve(char *cmd, char *name)
     struct convert *cptr;
     char realname[MAXPATHLEN];
     int stat_ret = -1;
+
+    int                            tmp_restart; /* added by JB */
 
     extern int checknoretrieve(char *);
 
@@ -4294,7 +4296,7 @@ void retrieve(char *cmd, char *name)
 		      cptr->name);
 		return;
 	    }
-	    (void) retrieve(cptr->external_cmd, logname);
+	    (void) retrieve(cptr->external_cmd, logname, offset, length);
 
 	    goto logresults;	/* transfer of converted file completed */
 	}
@@ -4332,11 +4334,27 @@ void retrieve(char *cmd, char *name)
 	reply(550, "%s: not a plain file.", name);
 	goto done;
     }
-    if (restart_point) {
+
+
+    /* added by JB */
+    if(restart_point)
+    {
+        tmp_restart = restart_point;
+    }
+    else if(offset != -1)
+    {
+        tmp_restart = offset;
+    }
+    else
+    {
+        tmp_restart = 0;
+    }
+
+    if (tmp_restart) {
 	if (type == TYPE_A) {
 	    register int i, n, c;
 
-	    n = restart_point;
+	    n = tmp_restart;
 	    i = 0;
 	    while (i++ < n) {
 		if ((c = getc(fin)) == EOF) {
@@ -4347,7 +4365,7 @@ void retrieve(char *cmd, char *name)
 		    i++;
 	    }
 	}
-	else if (lseek(fileno(fin), restart_point, SEEK_SET) < 0) {
+	else if (lseek(fileno(fin), tmp_restart, SEEK_SET) < 0) {
 	    perror_reply(550, name);
 	    goto done;
 	}
@@ -4358,16 +4376,16 @@ void retrieve(char *cmd, char *name)
 	goto done;
 #ifdef BUFFER_SIZE
 #ifdef THROUGHPUT
-    TransferComplete = send_data(name, fin, dout, BUFFER_SIZE);
+    TransferComplete = send_data(name, fin, dout, BUFFER_SIZE, length);
 #else
-    TransferComplete = send_data(fin, dout, BUFFER_SIZE);
+    TransferComplete = send_data(fin, dout, BUFFER_SIZE, length);
 #endif
 #else
 #ifdef HAVE_ST_BLKSIZE
 #ifdef THROUGHPUT
-    TransferComplete = send_data(name, fin, dout, st.st_blksize * 2);
+    TransferComplete = send_data(name, fin, dout, st.st_blksize * 2, length);
 #else
-    TransferComplete = send_data(fin, dout, st.st_blksize * 2);
+    TransferComplete = send_data(fin, dout, st.st_blksize * 2, length);
 #endif
 #else
 #ifdef THROUGHPUT
@@ -4453,13 +4471,14 @@ void retrieve(char *cmd, char *name)
 	(*closefunc) (fin);
 }
 
-void store(char *name, char *mode, int unique)
+void store(char *name, char *mode, int unique, int offset)
 {
     FILE *fout, *din;
     struct stat st;
     int TransferIncomplete = 1;
     char *gunique(char *local);
     time_t start_time = time(NULL);
+    int                                  tmp_restart; /* added by JB */
 
     struct aclmember *entry = NULL;
 
@@ -4634,7 +4653,7 @@ void store(char *name, char *mode, int unique)
 	}
 #endif /* UPLOAD */
 
-    if (restart_point && (open_flags & O_APPEND) == 0)
+    if (restart_point && (open_flags & O_APPEND) == 0 || offset != -1)
 	mode = "r+";
 
 #ifdef UPLOAD
@@ -4654,28 +4673,51 @@ void store(char *name, char *mode, int unique)
 	perror_reply(553, name);
 	return;
     }
-    if (restart_point) {
-	if (type == TYPE_A) {
+
+    /* added offset JB */
+    if(restart_point)
+    {
+        tmp_restart = restart_point;
+    }
+    else if(offset != -1)
+    {
+        tmp_restart = offset;
+    }
+    else
+    {
+        tmp_restart = 0;
+    }
+
+    if (tmp_restart)
+    {
+	if (type == TYPE_A) 
+        {
 	    register int i, n, c;
 
-	    n = restart_point;
+            n = tmp_restart;
 	    i = 0;
-	    while (i++ < n) {
-		if ((c = getc(fout)) == EOF) {
+	    while (i++ < n) 
+            {
+		if ((c = getc(fout)) == EOF) 
+                {
 		    perror_reply(550, name);
 		    goto done;
 		}
 		if (c == '\n')
+                {
 		    i++;
+                }
 	    }
 	    /* We must do this seek to "current" position because we are
 	     * changing from reading to writing. */
-	    if (fseek(fout, 0L, SEEK_CUR) < 0) {
+	    if (fseek(fout, 0L, SEEK_CUR) < 0) 
+            {
 		perror_reply(550, name);
 		goto done;
 	    }
 	}
-	else if (lseek(fileno(fout), restart_point, SEEK_SET) < 0) {
+	else if (lseek(fileno(fout), tmp_restart, SEEK_SET) < 0) 
+        {
 	    perror_reply(550, name);
 	    goto done;
 	}
@@ -5054,11 +5096,13 @@ FILE *dataconn(char *name, off_t size, char *mode)
 
 int
 #ifdef THROUGHPUT
-    send_data(char *name, FILE *instr, FILE *outstr, off_t blksize)
+    send_data(char *name, FILE *instr, FILE *outstr, off_t blksize, int length)
 #else
-     send_data(FILE *instr, FILE *outstr, off_t blksize)
+     send_data(FILE *instr, FILE *outstr, off_t blksize, int length)
 #endif
 {
+    int                             jb_count;
+    int                             jb_i;
     register int c, cnt = 0;
     static char *buf;
     int netfd, filefd;
@@ -5089,17 +5133,26 @@ int
 	draconian_FILE = outstr;
 	(void) signal(SIGALRM, draconian_alarm_signal);
 	alarm(timeout_data);
-	while ((draconian_FILE != NULL) && ((c = getc(instr)) != EOF)) {
-	    if (++byte_count % 4096 == 0) {
+	
+	jb_count = 0;
+	while ((draconian_FILE != NULL) && 
+               (jb_count < length || length == -1) &&
+               ((c = getc(instr)) != EOF)) 
+        {
+	    if (++byte_count % 4096 == 0) 
+            {
 		(void) signal(SIGALRM, draconian_alarm_signal);
 		alarm(timeout_data);
 	    }
-	    if (c == '\n') {
+	    if (c == '\n') 
+            {
 		if (ferror(outstr))
 		    goto data_err;
 		(void) putc('\r', outstr);
+		jb_count++;
 #ifdef TRANSFER_COUNT
-		if (retrieve_is_data) {
+		if (retrieve_is_data) 
+                {
 		    data_count_total++;
 		    data_count_out++;
 		}
@@ -5107,9 +5160,14 @@ int
 		byte_count_out++;
 #endif
 	    }
+	    if(jb_count++ == length)
+	    {
+		break;
+	    }
 	    (void) putc(c, outstr);
 #ifdef TRANSFER_COUNT
-	    if (retrieve_is_data) {
+	    if (retrieve_is_data) 
+            {
 		data_count_total++;
 		data_count_out++;
 	    }
@@ -5117,12 +5175,14 @@ int
 	    byte_count_out++;
 #endif
 	}
-	if (draconian_FILE != NULL) {
+	if (draconian_FILE != NULL) 
+        {
 	    (void) signal(SIGALRM, draconian_alarm_signal);
 	    alarm(timeout_data);
 	    fflush(outstr);
 	}
-	if (draconian_FILE != NULL) {
+	if (draconian_FILE != NULL) 
+        {
 	    (void) signal(SIGALRM, draconian_alarm_signal);
 	    alarm(timeout_data);
 	    socket_flush_wait(outstr);
@@ -5167,7 +5227,28 @@ int
 	if (bps != -1)
 	    t1 = time(NULL);
 #endif
-	while ((draconian_FILE != NULL) && ((cnt = read(filefd, buf, blksize)) > 0 && write(netfd, buf, cnt) == cnt)) {
+
+        jb_count = 0;
+	while ((draconian_FILE != NULL) && 
+                (jb_count < length || length == -1))
+        {
+            if(length == -1 || length - jb_count >= blksize)
+            {
+                jb_i = blksize;
+            }
+            else
+            {
+                jb_i = length - jb_count;
+            }
+
+            /* modified by JB */
+            if((cnt = read(filefd, buf, jb_i)) <= 0 ||
+	       write(netfd, buf, cnt) != cnt)
+            {
+                break;
+            }
+            jb_count += cnt;
+
 	    (void) signal(SIGALRM, draconian_alarm_signal);
 	    alarm(timeout_data);
 	    byte_count += cnt;
@@ -5183,6 +5264,7 @@ int
 	    }
 	    byte_count_total += cnt;
 	    byte_count_out += cnt;
+
 #endif
 #ifdef THROUGHPUT
 	    if (bps != -1) {
@@ -5192,6 +5274,10 @@ int
 		t1 = time(NULL);
 	    }
 #endif
+	}
+	if(jb_count == length && length != -1)
+	{
+	    cnt = 0;
 	}
 #ifdef THROUGHPUT
 	if (bps != -1)
@@ -6623,7 +6709,7 @@ void send_file_list(char *whichfiles)
 	    if (dirname[0] == '-' && *dirlist == NULL && transflag == 0) {
 		retrieve_is_data = 0;
 #ifndef INTERNAL_LS
-		retrieve(ls_plain, dirname);
+		retrieve(ls_plain, dirname, -1, -1);
 #else
 		ls(dirname, 1);
 #endif
@@ -7719,3 +7805,4 @@ run_post_auth_process(struct passwd *pw)
     return(0);
 }
 #endif /* POST_AUTH_PROCESS */
+

@@ -162,14 +162,14 @@ int unrestricteduid(uid_t uid);
 int restrictedgid(gid_t gid);
 int unrestrictedgid(gid_t gid);
 char *opt_string(int options);
-void retrieve(char *cmd, char *name);
-void store(char *name, char *mode, int unique);
+void retrieve(char *cmd, char *name, int offset, int length);
+void store(char *name, char *mode, int unique, int offset);
 FILE *getdatasock(char *mode);
 FILE *dataconn(char *name, off_t size, char *mode);
 #ifdef THROUGHPUT
-int send_data(char *name, FILE *instr, FILE *outstr, off_t blksize);
+int send_data(char *name, FILE *instr, FILE *outstr, off_t blksize, int length);
 #else
-int send_data(FILE *instr, FILE *outstr, off_t blksize);
+int send_data(FILE *instr, FILE *outstr, off_t blksize, int length);
 #endif
 int receive_data(FILE *instr, FILE *outstr);
 void statfilecmd(char *filename);
