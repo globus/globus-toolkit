@@ -74,12 +74,15 @@ CVS Information:
 #define SC_RSA_EX_DATA_INDEX_SESSION 3
 #define SC_RSA_EX_DATA_INDEX_OBJECT  4
 
+
+/* Location where the SCERR library will be stored */  
+#define ERR_USER_LIB_SCERR_NUMBER       ((ERR_LIB_USER) +  1)
+
 /*
  * Use the SSLeay error facility with the ERR_LIB_USER
  */
 
-#define SCerr(f,r) ERR_PUT_error(ERR_user_lib_scerr_num(),(f),(r),ERR_file_name,__LINE__)
-
+#define SCerr(f,r) ERR_PUT_error(ERR_USER_LIB_SCERR_NUMBER,(f),(r),ERR_file_name,__LINE__)
 
 /*
  * defines for function codes our minor error codes
@@ -142,9 +145,6 @@ extern CK_FUNCTION_LIST_PTR pFunctionList;
 /**********************************************************************
                                Function prototypes
 **********************************************************************/
-int 
-ERR_user_lib_scerr_num();
-
 int
 ERR_load_scerr_strings(int i);
 
