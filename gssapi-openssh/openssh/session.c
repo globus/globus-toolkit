@@ -876,7 +876,6 @@ do_setup_env(Session *s, const char *shell)
 	 * the childs environment as they see fit
 	 */
 	ssh_gssapi_do_child(&env,&envsize);
-	copy_environment(environ, &env, &envsize);
 #endif
 
 	if (!options.use_login) {
