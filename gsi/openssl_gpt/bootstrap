@@ -29,3 +29,4 @@ if test ! -h pkgdata/Makefile.am ; then
     pkgdata/Makefile.am
 fi
 
+exit 0
