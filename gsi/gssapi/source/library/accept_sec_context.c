@@ -270,7 +270,7 @@ GSS_CALLCONV gss_accept_sec_context(
                 if (context->req_flags & 
                     GSS_C_GLOBUS_DONT_ACCEPT_LIMITED_PROXY_FLAG)
                 {
-                    major_status = GSS_S_DEFECTIVE_CREDENTIAL;
+                    major_status = GSS_S_UNAUTHORIZED;
                     GLOBUS_GSI_GSSAPI_ERROR_RESULT(
                         minor_status,
                         GLOBUS_GSI_GSSAPI_ERROR_PROXY_VIOLATION,

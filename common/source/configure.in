@@ -67,6 +67,7 @@ AC_OUTPUT(
 	library/Makefile
 	programs/Makefile
 	programs/globus-sh-exec
+	scripts/Makefile
 	config/Makefile
 	doxygen/Makefile
 	doxygen/Doxyfile 

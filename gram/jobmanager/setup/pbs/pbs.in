@@ -113,11 +113,11 @@ sub submit
 
     $script_url = "$tag/pbs_job_script.$$"; 
     system("$cache_pgm -add -t $tag -n $script_url file:/dev/null");
-    $pbs_job_script_name = `$cache_pgm -query $script_url`;
+    $pbs_job_script_name = `$cache_pgm -query -t $tag $script_url`;
     chomp($pbs_job_script_name);
     if($pbs_job_script_name eq "")
     {
-	return GLOBUS_GRAM_PROTOCOL_ERROR_TEMP_SCRIPT_FILE_FAILED();
+	return Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED();
     }
 
     $pbs_job_script = new IO::File($pbs_job_script_name, '>');
@@ -318,11 +318,11 @@ EOF
 
         $cmd_script_url = "$tag/pbs_cmd_script.$$";
 	system("$cache_pgm -add -t $tag -n $cmd_script_url file:/dev/null");
-	$cmd_script_name = `$cache_pgm -q $cmd_script_url`;
+	$cmd_script_name = `$cache_pgm -q -t $tag $cmd_script_url`;
 	chomp($cmd_script_name);
 	if($cmd_script_name eq "")
 	{
-	    return GLOBUS_GRAM_PROTOCOL_ERROR_TEMP_SCRIPT_FILE_FAILED();
+            return Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED();
 	}
 	$cmd_script = new IO::File($cmd_script_name, '>');
 	$cmd_script->print("#!/bin/sh\n");

@@ -1,0 +1,103 @@
+#! /usr/bin/env perl
+
+=head1 NAME
+
+B<globus_build_doxygen_dependencies> - Returns a list of documentation
+packages which the specified package depends upon.
+
+=cut
+
+use strict;
+use Getopt::Long;
+use Carp;
+
+my $gpath = $ENV{GPT_LOCATION};
+
+if (!defined($gpath))
+{
+  $gpath = $ENV{GLOBUS_LOCATION};
+
+}
+
+if (!defined($gpath))
+{
+   die "GPT_LOCATION or GLOBUS_LOCATION needs to be set before running this script"
+}
+
+@INC = (@INC, "$gpath/lib/perl");
+
+require Grid::GPT::Package;
+
+use Cwd;
+
+my $prefix = $gpath;
+my $srcfile;
+my $help;
+my $debug = 0;
+my @deps;
+
+sub pod2usage
+{
+  if($_[0])
+  {
+      print "ERROR: $_[0]\n";
+  }
+
+  print "Usage: globus_build_doxygen_dependencies -src=src_metadata_file ".
+        "[-debug]\n";
+  exit($_[0] == 0);
+}
+
+GetOptions('src=s'=> \$srcfile,
+	   'debug' => \$debug) or pod2usage(1);
+pod2usage(0) if $help;
+pod2usage('Must specify src_metadata_file') if !defined($srcfile);
+
+@deps = process_package($srcfile);
+print join(' ', map {"$prefix/share/doc/$_/html/$_.tag"} @deps) . "\n";
+
+sub process_package($)
+{
+    my $pkgfile = shift;
+    my $pkgname = shift;
+    my $deptype = $pkgname ? 'Binary_Dependencies' : 'Source_Dependencies';
+    my $pkg;
+    my $new_pkgfile;
+    my %doc_dependencies;
+    my %dependencies;
+    my %depmap = ( 'Source_Dependencies' => 'doc_runtime',
+                   'Binary_Dependencies' => 'Runtime' );
+
+    if(! -e $pkgfile)
+    {
+        croak("Failed dependency check for $pkgname");
+    }
+    $pkg = new Grid::GPT::Package;
+    $pkg->read_metadata_file($pkgfile);
+
+    # oop?
+    if(defined($pkg->{$deptype}))
+    {
+	my %hash;
+
+	%hash = %{$pkg->{$deptype}};
+
+	if(exists($hash{$depmap{$deptype}}))
+	{
+	    %doc_dependencies = %{${$pkg->{$deptype}}{$depmap{$deptype}}};
+	}
+    }
+    foreach (keys %doc_dependencies)
+    {
+        $_ = $doc_dependencies{$_}->name;
+        print STDERR "Found dependency $_\n" if $debug;
+        $dependencies{$_} = 1;
+	$new_pkgfile =
+	    "$prefix/etc/globus_packages/$_/pkg_data_noflavor_doc.gpt";
+        foreach(process_package($new_pkgfile, $_))
+	{
+	     $dependencies{$_} = 1;
+	}
+    }
+    keys %dependencies;
+}
