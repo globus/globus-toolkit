@@ -57,6 +57,8 @@ typedef struct throughput_plugin_info_s
     globus_off_t *                              cur_bytes;
 
     time_t                                      start_time;
+    globus_bool_t                               start_marker_used;
+
     int                                         num_stripes;
 
 } throughput_plugin_info_t;
@@ -117,13 +119,15 @@ throughput_plugin_marker_cb(
     int                                         i;
     float                                       instantaneous_throughput;
     float                                       avg_throughput;
-    time_t                                      total_elapsed;
+    time_t                                      elapsed;
 
     info = (throughput_plugin_info_t *) user_specific;
 
     /* init prev and cur storage if not already done so */
     if(info->prev_times == GLOBUS_NULL)
     {
+        info->start_marker_used = GLOBUS_FALSE;
+
         info->prev_times = (time_t *)
             globus_malloc(sizeof(time_t) * num_stripes);
         info->cur_times = (time_t *)
@@ -168,14 +172,40 @@ throughput_plugin_marker_cb(
         while(i--)
         {
             info->prev_times[i] = 0;
-            info->cur_times[i]  = info->start_time;
+            info->cur_times[i]  = 0;
             info->prev_bytes[i] = 0;
             info->cur_bytes[i]  = 0;
         }
     } /* init storage */
 
+    /*
+     * need to set stripe's start time
+     * check for a 'start' marker...
+     * only set the 'start' time once per stripe...
+     * first 'start' marker received also sets total transfer start time
+     * subsequent zero byte markers indicate no data
+     */
+    if(info->cur_times[stripe_ndx] == 0)
+    {
+        if(nbytes == 0)
+        {
+            info->cur_times[stripe_ndx] = time_stamp;
+
+            if(!info->start_marker_used)
+            {
+                info->start_time = time_stamp;
+                info->start_marker_used = GLOBUS_TRUE;
+            }
+        }
+        else
+        {
+            info->cur_times[stripe_ndx] = info->start_time;
+        }
+    }
+
     /* dont allow duplicate timestamps (protects div by zero)
      * or a decrease in bytes
+     * this also prevents 'start' markers from causing a callback
      */
     if(time_stamp <= info->cur_times[stripe_ndx] ||
         nbytes < info->cur_bytes[stripe_ndx])
@@ -218,16 +248,21 @@ throughput_plugin_marker_cb(
         {
             nbytes += info->cur_bytes[i];
 
-            instantaneous_throughput += (float)
-                (info->cur_bytes[i] - info->prev_bytes[i]) /
-                (info->cur_times[i] - info->prev_times[i]);
+            elapsed = info->cur_times[i] - info->prev_times[i];
 
-            total_elapsed = info->cur_times[i] - info->start_time;
+            if(elapsed)
+            {
+                instantaneous_throughput += (float)
+                    (info->cur_bytes[i] - info->prev_bytes[i]) /
+                    elapsed;
+            }
 
-            if(total_elapsed)
+            elapsed = info->cur_times[i] - info->start_time;
+
+            if(elapsed)
             {
                 avg_throughput += (float)
-                    info->cur_bytes[i] / total_elapsed;
+                    info->cur_bytes[i] / elapsed;
             }
         }
 
