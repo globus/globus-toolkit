@@ -2002,6 +2002,7 @@ proxy_verify_callback(
     X509_STORE_CTX *                    ctx)
 {
     X509_OBJECT                         obj;
+    X509 *                              cert = NULL;
     X509_CRL *                          crl;
     X509_CRL_INFO *                     crl_info;
     X509_REVOKED *                      revoked;
@@ -2102,17 +2103,14 @@ proxy_verify_callback(
 #ifdef DEBUG
             fprintf(stderr,"X509_V_ERR_PATH_LENGTH_EXCEEDED\n");
 #endif
-
-            /* 
-             * OpenSSL-0.9.5 has a bug, in that the ex_pathlen
-             * may not be set if no basic constrants are present
-             * but it may check for it anyway.
+            /*
+             * Since OpenSSL does not know about proxies,
+             * it will count them against the path length
+             * So we will ignore the errors and do our
+             * own checks later on, when we check the last
+             * certificate in the chain we will check the chain.
              */
-
-            if (!(ctx->current_cert->ex_flags & EXFLAG_BCONS))
-            {
-                ok = 1;
-            }
+            ok = 1;
             break;
 #endif
         default:
@@ -2602,6 +2600,37 @@ proxy_verify_callback(
             }
         }
     }
+
+    /*
+     * We ignored any path length restrictions above because
+     * OpenSSL was counting proxies against the limit. 
+     * If we are on the last cert in the chain, we 
+     * know how many are proxies, so we can do the 
+     * path length check now. 
+     * See x509_vfy.c check_chain_purpose
+     * all we do is substract off the proxy_dpeth 
+     */
+
+    if(ctx->current_cert == ctx->cert)
+    {
+        for (i=0; i < sk_X509_num(ctx->chain); i++)
+        {
+            cert = sk_X509_value(ctx->chain,i);
+#ifdef DEBUG
+            fprintf(stderr,"pathlen=:i=%d x=%p pl=%d\n",
+                    i, cert, cert->ex_pathlen);
+#endif
+            if (((i - pvd->proxy_depth) > 1) && (cert->ex_pathlen != -1)
+                && ((i - pvd->proxy_depth) > (cert->ex_pathlen + 1))
+                && (cert->ex_flags & EXFLAG_BCONS)) 
+            {
+                ctx->current_cert = cert; /* point at failing cert */
+                ctx->error = X509_V_ERR_PATH_LENGTH_EXCEEDED;
+                goto fail_verify;
+            }
+        }
+    }
+
 
 #ifdef DEBUG 
     fprintf(stderr,"proxy_verify_callback:returning:%d\n\n", ok);
