@@ -111,7 +111,12 @@ system("rm -rf `find . -name CVS -print`")==0 or die "Unable to remove cvs direc
 
 printf("running make distprep...\n");
 system("make -f Makefile.in distprep")==0 or die "Could not run make distprep: $?";
-
+if ( ! -e "configure" )
+{
+    printf("'make distprep' failed to create configure.\n");
+    printf("Check PATH for autoreconf.\n");
+    die;
+}
 chdir("../");
 
 #
