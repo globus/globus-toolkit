@@ -198,7 +198,6 @@ input_userauth_request(int type, u_int32_t seq, void *ctxt)
                 char *gridmapped_name = NULL;
                 struct passwd *pw = NULL;
 
-                gssapi_setup_env();
                 if(globus_gss_assist_gridmap(gssapi_client_name.value,
                                      &gridmapped_name) == 0) {
                         user = gridmapped_name;
