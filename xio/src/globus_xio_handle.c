@@ -648,7 +648,7 @@ globus_l_xio_read_write_callback_kickout(
             op->_op_mem_iovec.iov_base,
             op->_op_mem_iovec.iov_len,
             op->_op_nbytes,
-            NULL, /* TODO: dd stuff */
+            op,
             op->user_arg);
     }
     else if(op->_op_iovec_cb != NULL)
@@ -659,7 +659,7 @@ globus_l_xio_read_write_callback_kickout(
             op->_op_iovec,
             op->_op_iovec_count,
             op->_op_nbytes,
-            NULL, /* TODO: dd stuff */
+            op,
             op->user_arg);
     }
 

@@ -456,19 +456,6 @@ globus_xio_data_descriptor_destroy(
     }
     handle = op->_op_handle;
 
-    for(ctr = 0; ctr < op->stack_size; ctr++)
-    {
-        if(op->entry[ctr].dd != NULL)
-        {
-            tmp_res = op->_op_context->entry[ctr].driver->attr_destroy_func(
-                        op->entry[ctr].dd);
-            if(tmp_res != GLOBUS_SUCCESS)
-            {
-                res = tmp_res;
-            }
-        }
-    }
-
     globus_mutex_lock(&handle->context->mutex);
     {
         globus_i_xio_op_destroy(op, &destroy_handle, &destroy_context);

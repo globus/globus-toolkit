@@ -211,13 +211,23 @@ globus_i_xio_op_destroy(
 {
     globus_i_xio_handle_t *                 handle;
     globus_i_xio_context_t *                context;
+    int                                     ctr;
 
     context = op->_op_context;
     handle = op->_op_handle;
 
     globus_assert(op->ref == 0);
-    globus_memory_push_node(&context->op_memory, op);
 
+    for(ctr = 0; ctr < op->stack_size; ctr++)
+    {
+        if(op->entry[ctr].dd != NULL)
+        {
+            op->_op_context->entry[ctr].driver->attr_destroy_func(
+                op->entry[ctr].dd);
+        }
+    }
+
+    globus_memory_push_node(&context->op_memory, op);
     globus_i_xio_handle_dec(handle, destroy_handle, destroy_context);
 }
 
@@ -682,6 +692,15 @@ globus_xio_driver_context_close(
 
     return res;
 }
+
+globus_result_t
+globus_xio_driver_set_dd(
+    globus_xio_operation_t                  op,
+    void *                                  driver_dd)
+{
+
+}
+
 
 void
 globus_i_xio_context_destroy(
