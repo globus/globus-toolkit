@@ -43,10 +43,10 @@ EXTERN_C_END
 typedef globus_mutex_t                  globus_rmutex_t;
 typedef int                             globus_rmutexattr_t;
 
-#define globus_rmutex_init(x, y) 0
-#define globus_rmutex_lock(x) 0
-#define globus_rmutex_unlock(x) 0
-#define globus_rmutex_destroy(x) 0
+#define globus_rmutex_init(x, y) (*(x) = 0)
+#define globus_rmutex_lock(x) (*(x) = 1)
+#define globus_rmutex_unlock(x) (*(x) = 0)
+#define globus_rmutex_destroy(x) (*(x) = 0)
 
 #endif
 #endif

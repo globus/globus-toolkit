@@ -128,7 +128,7 @@ error_init:
     globus_module_deactivate(GLOBUS_XIO_MODULE);
     if(--hook->ref_count == 0)
     {
-        globus_module_deactivate(hook->module)
+        globus_module_deactivate(hook->module);
     }
     
 error_activate:
