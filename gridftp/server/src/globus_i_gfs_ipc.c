@@ -3274,6 +3274,7 @@ globus_l_gfs_ipc_reply_read_body_cb(
         goto mem_error;
     }
     globus_free(buffer);
+    globus_l_gfs_ipc_request_destroy(request);
 
     return;
 
