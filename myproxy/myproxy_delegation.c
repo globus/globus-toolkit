@@ -263,7 +263,6 @@ int recv_response_sasl_data(myproxy_socket_attrs_t *attrs,
 		       0);
     
     response_data = auth_data->server_data;
-//    printf("S: %s\n", response_data); 
     result = sasl_decode64(response_data, strlen(response_data), 
 		    data, SASL_BUFFER_SIZE, &len);
     if (result != SASL_OK) {
@@ -435,10 +434,10 @@ auth_sasl_negotiate_client(myproxy_socket_attrs_t *attrs)
     sasl_security_properties_t secprops;
     sasl_callback_t callbacks[N_CALLBACKS], *callback;
     const char *chosenmech;
-    char *mech = "GSSAPI",
+    char *mech = NULL, /* can force mechanism here if needed */
         *iplocal = NULL,
         *ipremote = NULL,
-        *service = "host";
+        *service = "myproxy";
     char fqdn[1024];
 
     krb5_context context;
@@ -467,7 +466,7 @@ auth_sasl_negotiate_client(myproxy_socket_attrs_t *attrs)
         krb5_free_context(context);
 	return SASL_FAIL;
     }
-    printf("Kerberos principal name: %s\n", user_id);
+    myproxy_debug("Kerberos principal name: %s\n", user_id);
     krb5_free_principal(context, principal);
     krb5_free_context(context);
 
@@ -562,16 +561,17 @@ auth_sasl_negotiate_client(myproxy_socket_attrs_t *attrs)
 	return SASL_FAIL;
     }
 
-//    puts("Waiting for mechanism list from server...");
-
-    server_len = recv_response_sasl_data(attrs, &server_response, server_buffer);
+    server_len = recv_response_sasl_data(attrs, &server_response,
+					 server_buffer);
     if (server_len < 0) {
        verror_put_string("SASL negotiation failed");
        return SASL_FAIL;
     }
 
+    myproxy_debug("Server sent SASL mechs %s.\n", server_buffer);
+
     result = sasl_client_start(conn,
-                               mech,
+                               server_buffer,
                                NULL,
                                &data,
                                &len,
@@ -582,7 +582,7 @@ auth_sasl_negotiate_client(myproxy_socket_attrs_t *attrs)
         return SASL_FAIL;
     }
 
-//    printf("Using mechanism %s\n", chosenmech);
+    myproxy_debug("Using SASL mechanism %s\n", chosenmech);
     strcpy(server_buffer, chosenmech);
     if (data) {
         if (SASL_BUFFER_SIZE - strlen(server_buffer) - 1 < len) {
@@ -601,7 +601,6 @@ auth_sasl_negotiate_client(myproxy_socket_attrs_t *attrs)
     authorization_data_free(server_response.authorization_data);
 
     while (result == SASL_CONTINUE) {
-//        puts("Waiting for server reply...");
 
 	server_len = recv_response_sasl_data(attrs, &server_response, server_buffer);
         if (server_len < 0) 
@@ -614,7 +613,6 @@ auth_sasl_negotiate_client(myproxy_socket_attrs_t *attrs)
 	    return SASL_FAIL;
         }
         if (data && len) {
-//            puts("Sending response...");
 	    send_response_sasl_data(attrs, &server_response, data, len);
         } else if (result != SASL_OK) {
 	    send_response_sasl_data(attrs, &server_response, "", 0);
@@ -623,7 +621,7 @@ auth_sasl_negotiate_client(myproxy_socket_attrs_t *attrs)
 	authorization_data_free(server_response.authorization_data);
     } 
 
-//    puts("SASL negotiation finished.");
+    myproxy_debug("SASL negotiation finished.");
 
     return result;
 }
