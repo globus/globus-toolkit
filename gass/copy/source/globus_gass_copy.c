@@ -2788,8 +2788,11 @@ globus_l_gass_copy_write_from_queue(
 	    fprintf(stderr, "write_from_queue(): done calling user callback\n");
 #endif
 	    /* if an error object was created, free it */
-	    if(handle->err != GLOBUS_NULL)
-		globus_libc_free(handle->err);
+	    if(handle)
+            {
+	        if(handle->err != GLOBUS_NULL)
+                    globus_libc_free(handle->err);
+            }
 	} /*  if(state->dest.n_pending == 0 && state->source.n_pending == 0 )*/
     } /* if both source and dest are GLOBUS_I_GASS_COPY_TARGET_DONE */
 } /* globus_l_gass_copy_write_from_queue() */
@@ -4508,8 +4511,11 @@ globus_l_gass_copy_generic_cancel(
         }
 	/* if an error object was created, free it */
 	
-	if(handle->err != GLOBUS_NULL)
-	    globus_libc_free(handle->err);
+        if (handle)
+        {
+	    if(handle->err != GLOBUS_NULL)
+	        globus_libc_free(handle->err);
+        }
 	    
     } /* if (all_done) */
 
