@@ -15,29 +15,31 @@ CLEAN_FILES = @BUILD_TARGETS@ server.log
 DISTCLEAN_FILES = Makefile config.status config.log config.cache \
 		run_security_tests.sh
 
-MY_CFLAGS = -DUSE_AUTOCONF_H -DGSSAPI_V2 -I$(BUILD_DIR_INC)
-MY_LDFLAGS = -L$(BUILD_DIR_LIB)
+MY_CFLAGS = -DUSE_AUTOCONF_H -DGSSAPI_V2 -I$(BUILD_DIR_INC) \
+		$(GLOBUS_GSSAPI_CFLAGS) $(CFLAGS)
+MY_LDFLAGS = -L$(BUILD_DIR_LIB) $(GLOBUS_GSSAPI_LDFLAGS) $(LDFLAGS)
+MY_LIBS	= $(GLOBUS_GSSAPI_LIBS) $(LIBS)
 
 @makefile_common_rules@
 @makefile_link@
 
 
-gss-server$(EXECFILE): gss-server.$(OFILE) gss-misc.$(OFILE) $(DEPLIBS)
-	$(PURIFY) $(LD) $(MY_LDFLAGS) $(GLOBUS_GSSAPI_LDFLAGS) \
+gss-server$(EXECFILE): gss-server.$(OFILE) gss-misc.$(OFILE)
+	$(PURIFY) $(LD) $(MY_LDFLAGS) \
 	-o gss-server gss-server.$(OFILE) gss-misc.$(OFILE) \
-	$(GLOBUS_GSSAPI_LIBS) $(LIBS)
+	$(MY_LIBS)
 
-gss-client$(EXECFILE): gss-client.$(OFILE) gss-misc.$(OFILE) $(DEPLIBS)
-	$(PURIFY) $(LD) $(MY_LDFLAGS) $(GLOBUS_GSSAPI_LDFLAGS) \
+gss-client$(EXECFILE): gss-client.$(OFILE) gss-misc.$(OFILE)
+	$(PURIFY) $(LD) $(MY_LDFLAGS)  \
 	-o gss-client gss-client.$(OFILE) gss-misc.$(OFILE) \
-	$(GLOBUS_GSSAPI_LIBS) $(LIBS)
+	$(MY_LIBS)
 
-gss-assist-client$(EXECFILE): gss-assist-client.$(OFILE) gss-misc.$(OFILE) $(DEPLIBS)
+gss-assist-client$(EXECFILE): gss-assist-client.$(OFILE) gss-misc.$(OFILE)
 	$(PURIFY) $(LD) $(MY_LDFLAGS) $(GLOBUS_NEXUS_LDFLAGS) \
 	-o gss-assist-client gss-assist-client.$(OFILE) gss-misc.$(OFILE) \
 	$(GLOBUS_GSSAPI_LIBS) $(GLOBUS_NEXUS_LIBS) $(LIBS)
 
-gss-client.$(OFILE):	$(SRC_DIR_THIS)/gss-client.c $(HDRS)
+gss-client.$(OFILE):	$(SRC_DIR_THIS)/gss-client.c
 	$(CC) $(MY_CFLAGS) -c $(SRC_DIR_THIS)/gss-client.c
 
 gss-assist-client.$(OFILE):	$(SRC_DIR_THIS)/gss-assist-client.c
@@ -48,3 +50,4 @@ gss-misc.$(OFILE):	$(SRC_DIR_THIS)/gss-misc.c
 
 gss-server.$(OFILE):	$(SRC_DIR_THIS)/gss-server.c
 	$(CC) $(MY_CFLAGS) -c $(SRC_DIR_THIS)/gss-server.c
+
