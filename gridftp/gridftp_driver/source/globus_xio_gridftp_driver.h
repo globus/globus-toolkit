@@ -21,7 +21,8 @@
  * @ref globus_xio_handle_create() 
  *
  * The gridftp client driver makes use of globus ftp client library. 
- * @ref globus_xio_register_open() call creates a new ftp client handle (unless * one is set on the attr passed), establishes connection with the 
+ * @ref globus_xio_register_open() call creates a new ftp client handle (unless 
+ * one is set on the attr passed), establishes connection with the 
  * gridftp server. The contact string must contain the scheme, host name,
  * and the resource, optionally it might contain port and subject also.
  *
@@ -251,7 +252,8 @@ typedef enum
     GLOBUS_XIO_GRIDFTP_GET_MODE,
 
     /** GlobusVarArgEnum(attr)
-     * Set the authentication information used to authenticate with the gridftp     * server
+     * Set the authentication information used to authenticate with the gridftp
+     * server
      * @ingroup gridftp_driver_cntls
      *
      * @param user
