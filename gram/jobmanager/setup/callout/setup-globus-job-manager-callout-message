@@ -2,7 +2,7 @@
 
 . $GLOBUS_LOCATION/libexec/globus-sh-tools.sh
 
-$GLOBUS_SH_ECHO "
+echo "
 ***************************************************************************
 
 Note: To complete setup of the example GRAM Job Manager Callout you need to 
