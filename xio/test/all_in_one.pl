@@ -24,6 +24,7 @@ my @build_tests = qw(
             timeout-test.pl
             random-test.pl
             server-test.pl
+            verify-test.pl
             );
 
 my $filename="all_tests.txt";

@@ -181,6 +181,10 @@ read_barrier_main(
     globus_xio_attr_t                       attr;
     int                                     rc;
 
+    globus_l_close_called = GLOBUS_FALSE;
+    globus_l_closed = GLOBUS_FALSE;
+    globus_l_eof_hit = GLOBUS_FALSE;
+
     rc = globus_module_activate(GLOBUS_XIO_MODULE);
     globus_assert(rc == GLOBUS_SUCCESS);
 

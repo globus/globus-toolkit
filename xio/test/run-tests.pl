@@ -21,6 +21,8 @@ unlink("test_results.txt");
             timeout-test.pl
             random-test.pl
             server-test.pl
+            verify-test.pl
+            all_in_one.pl
             );
 
 my $runserver;

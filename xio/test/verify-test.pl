@@ -33,18 +33,22 @@ push(@drivers, "-D verify -D debug -D bounce");
 sub basic_tests
 {
     my $inline_finish="-i";
-    my $delay="";
+    my $s="";
 
-    for(my $i = 0; $i < 2; $i++)
+    for(my $j = 0; $j < 2; $j++)
     {
-        foreach(@drivers)
+        for(my $i = 0; $i < 2; $i++)
         {
-            my $d=$_;
-            push(@tests, "$test_name -s -w 1 -r 0 $inline_finish $d");
-            push(@tests, "$test_name -s -w 0 -r 1 $inline_finish $d");
-            push(@tests, "$test_name -s -w 0 -r 0 $inline_finish $d");
+            foreach(@drivers)
+            {
+                my $d=$_;
+                push(@tests, "$test_name -s -w 1 -r 0 $inline_finish $d");
+                push(@tests, "$test_name -s -w 0 -r 1 $inline_finish $d");
+                push(@tests, "$test_name -s -w 0 -r 0 $inline_finish $d");
+            }
+            $inline_finish="";
         }
-        $inline_finish="";
+        $s="-s";
     }
 }
 

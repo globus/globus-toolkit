@@ -17,7 +17,7 @@ sub run_test
     unlink("$output_dir/$test_str.out");
     unlink("$output_dir/$test_str.err");
 
-    $ENV{"INSURE_REPORT_FILE_NAME"} = "$test_str";
+    $ENV{"INSURE_REPORT_FILE_NAME"} = "$output_dir/$test_str.insure";
 
     my $command = "$cmd > $output_dir/$test_str.out 2> $output_dir/$test_str.err";
     $rc = system($command);

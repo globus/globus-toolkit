@@ -157,6 +157,9 @@ close_barrier_main(
     globus_abstime_t                        end_time;
     globus_xio_attr_t                       attr;
 
+    globus_l_close_called = GLOBUS_FALSE;
+    globus_l_closed = GLOBUS_FALSE;
+
     rc = globus_module_activate(GLOBUS_XIO_MODULE);
     globus_assert(rc == 0);
 

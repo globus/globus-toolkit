@@ -256,6 +256,9 @@ framework_main(
     globus_result_t                         res;
     globus_xio_server_t                     server;
 
+    globus_l_closed = GLOBUS_FALSE;
+    globus_l_accepted = GLOBUS_FALSE;
+
     rc = globus_module_activate(GLOBUS_XIO_MODULE);
     globus_assert(rc == 0);
 

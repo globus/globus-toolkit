@@ -13,6 +13,7 @@ static char *                               globus_l_program_name;
 test_info_t                                 globus_l_test_info;
 
 static globus_hashtable_t                   globus_l_test_hash;
+static int                                  globus_l_test_count = 0;
 
 void
 failed_exit(
@@ -254,6 +255,7 @@ call_test(
     }
 
     rc = main_func(argc, argv);
+    globus_l_test_count++;
 
     return rc;
 }
@@ -271,6 +273,8 @@ test_common_end()
 
         globus_xio_driver_unload(tmp_driver);
     }
+
+    globus_free(globus_l_test_info.buffer);
 }
 
 int
@@ -295,8 +299,9 @@ make_argv(
     }
 
     size = globus_list_size(list);
-    argv = (char **) globus_malloc(size * sizeof(char *));
+    argv = (char **) globus_malloc((size + 1) * sizeof(char *));
 
+    argv[size] = NULL;
     ctr = size - 1;
     while(!globus_list_empty(list))
     {
@@ -390,8 +395,12 @@ main(
         in = fopen(name, "r");
         globus_assert(in != NULL);
 
-        while(fgets(line, 512, in) != NULL)
+        while(fgets(line, 512, in) != NULL && rc == 0)
         {
+            if(line[strlen(line) - 1] == '\n')
+            {
+                line[strlen(line) - 1] = '\0';
+            }
             cnt = make_argv(line, &out_argv);
             rc = call_test(cnt, out_argv);
 
@@ -401,8 +410,6 @@ main(
             }
             globus_free(out_argv);
         }
-        /* TODO: call function that opens file and walks through
-            all the tests in that file */
     }
     else
     {

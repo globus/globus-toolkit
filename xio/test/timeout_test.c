@@ -168,6 +168,8 @@ timeout_main(
     int                                     usecs;
     globus_reltime_t                        delay;
 
+    globus_l_closed = GLOBUS_FALSE;
+
     rc = globus_module_activate(GLOBUS_XIO_MODULE);
     globus_assert(rc == 0);
 

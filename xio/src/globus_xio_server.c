@@ -473,20 +473,22 @@ globus_xio_server_init(
             }
             /* call the driver init function */
             xio_server->entry[ctr].server_handle = NULL;
-            res = xio_server->entry[ctr].driver->server_init_func(
-                    &xio_server->entry[ctr].server_handle,
-                    ds_attr);
-            if(res != GLOBUS_SUCCESS)
+            if(xio_server->entry[ctr].driver->server_init_func != NULL)
             {
-                /* clean up all the initialized servers */
-                for(ctr2 = 0; ctr2 < ctr; ctr2++)
+                res = xio_server->entry[ctr].driver->server_init_func(
+                        &xio_server->entry[ctr].server_handle,
+                        ds_attr);
+                if(res != GLOBUS_SUCCESS)
                 {
-                    xio_server->entry[ctr].driver->server_destroy_func(
-                        xio_server->entry[ctr].server_handle);
+                    /* clean up all the initialized servers */
+                    for(ctr2 = 0; ctr2 < ctr; ctr2++)
+                    {
+                        xio_server->entry[ctr].driver->server_destroy_func(
+                            xio_server->entry[ctr].server_handle);
+                    }
+                    done = GLOBUS_TRUE;
                 }
-                done = GLOBUS_TRUE;
             }
-
             ctr++;
         }
     }
@@ -591,6 +593,7 @@ globus_xio_server_register_accept(
     void *                                  user_arg)
 {
     int                                     ctr;
+    int                                     tmp_size;
     globus_result_t                         res = GLOBUS_SUCCESS;
     globus_i_xio_server_t *                 xio_server;
     globus_i_xio_op_t *                     xio_op;
@@ -616,10 +619,10 @@ globus_xio_server_register_accept(
 
         xio_server->state = GLOBUS_XIO_SERVER_STATE_ACCEPTING;
 
-        xio_op = (globus_i_xio_op_t *)
-                        globus_malloc(sizeof(globus_i_xio_op_t) +
-                            (sizeof(globus_i_xio_op_entry_t) * 
-                                (xio_server->stack_size - 1)));
+        tmp_size = sizeof(globus_i_xio_op_t) + 
+                    (sizeof(globus_i_xio_op_entry_t) * 
+                        (xio_server->stack_size - 1));
+        xio_op = (globus_i_xio_op_t *) globus_malloc(tmp_size);
 
         if(xio_op == NULL)
         {
@@ -628,6 +631,7 @@ globus_xio_server_register_accept(
             goto err;
         }
 
+        memset(xio_op, '\0', tmp_size);
         xio_op->type = GLOBUS_XIO_OPERATION_TYPE_ACCEPT;
         xio_op->state = GLOBUS_XIO_OP_STATE_OPERATING;
         xio_op->_op_server = xio_server;
