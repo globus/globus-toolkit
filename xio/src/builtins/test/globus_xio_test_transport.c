@@ -1,4 +1,5 @@
 #include "globus_xio_driver.h"
+#include "globus_xio_load.h"
 #include "globus_i_xio.h"
 #include "globus_common.h"
 #include "globus_xio_test_transport.h"
@@ -13,13 +14,13 @@
     ow->nbytes = nb;                                                    \
 }
 
-static globus_xio_driver_t              globus_l_xio_test_info;
-
 static int
 globus_l_xio_test_activate();
 
 static int
 globus_l_xio_test_deactivate();
+
+globus_xio_driver_hook_t                globus_i_xio_test_hook;
 
 /* 
  *  handle and attr are the same structure here
@@ -533,8 +534,69 @@ globus_l_xio_test_cntl(
 globus_xio_driver_t
 globus_xio_driver_test_transport_get_driver()
 {
-    return globus_l_xio_test_info;
+    return  NULL;
 }
+
+static globus_result_t
+globus_l_xio_test_transport_load(
+    globus_xio_driver_t *               out_driver,
+    va_list                             ap)
+{
+    globus_xio_driver_t                 driver;
+    globus_result_t                     res;
+
+    res = globus_xio_driver_init(
+            &driver,
+            NULL);
+    if(res != GLOBUS_SUCCESS)
+    {
+        return res;
+    }
+
+    globus_xio_driver_set_transport(
+        driver,
+        globus_l_xio_test_open,
+        globus_l_xio_test_close,
+        globus_l_xio_test_read,
+        globus_l_xio_test_write,
+        globus_l_xio_test_cntl);
+
+    globus_xio_driver_set_client(
+        driver,
+        globus_l_xio_test_target_init,
+        NULL,
+        globus_l_xio_test_target_destroy);
+
+    globus_xio_driver_set_server(
+        driver,
+        globus_l_xio_test_server_init,
+        globus_l_xio_test_accept,
+        globus_l_xio_test_server_destroy,
+        globus_l_xio_test_server_cntl,
+        globus_l_xio_test_target_destroy);
+
+    globus_xio_driver_set_attr(
+        driver,
+        globus_l_xio_test_attr_init,
+        globus_l_xio_test_attr_copy,
+        globus_l_xio_test_attr_cntl,
+        globus_l_xio_test_attr_destroy);
+
+    *out_driver = driver;
+
+    return GLOBUS_SUCCESS;
+}
+
+static globus_result_t
+globus_l_xio_test_transport_unload(
+    globus_xio_driver_t                 driver)
+{
+    globus_xio_driver_destroy(driver);
+
+    return GLOBUS_SUCCESS;
+}
+
+
 
 static
 int
@@ -542,9 +604,12 @@ globus_l_xio_test_activate(void)
 {
     int                                 rc;
     globus_l_xio_test_handle_t *        attr;
-    globus_result_t                     res;
 
     rc = globus_module_activate(GLOBUS_COMMON_MODULE);
+    if(rc != GLOBUS_SUCCESS)
+    {
+        return rc;
+    }
 
     attr = &globus_l_default_attr;
 
@@ -555,52 +620,18 @@ globus_l_xio_test_activate(void)
     attr->read_nbytes = -1; /* default is no EOF (close only) */
     attr->chunk_size = -1; /* default: entire chunk requested */
 
-    res = globus_xio_driver_init(
-            &globus_l_xio_test_info,
-            NULL);
-    if(res != GLOBUS_SUCCESS)
-    {
-        return -1;
-    }
+    globus_i_xio_test_hook.name = "globus_xio_test_transport";
+    globus_i_xio_test_hook.module = &globus_i_xio_test_module;
+    globus_i_xio_test_hook.load = globus_l_xio_test_transport_load;
+    globus_i_xio_test_hook.unload = globus_l_xio_test_transport_unload;
 
-    globus_xio_driver_set_transport(
-        globus_l_xio_test_info,
-        globus_l_xio_test_open,
-        globus_l_xio_test_close,
-        globus_l_xio_test_read,
-        globus_l_xio_test_write,
-        globus_l_xio_test_cntl);
-
-    globus_xio_driver_set_client(
-        globus_l_xio_test_info,
-        globus_l_xio_test_target_init,
-        NULL,
-        globus_l_xio_test_target_destroy);
-
-    globus_xio_driver_set_server(
-        globus_l_xio_test_info,
-        globus_l_xio_test_server_init,
-        globus_l_xio_test_accept,
-        globus_l_xio_test_server_destroy,
-        globus_l_xio_test_server_cntl,
-        globus_l_xio_test_target_destroy);
-
-    globus_xio_driver_set_attr(
-        globus_l_xio_test_info,
-        globus_l_xio_test_attr_init,
-        globus_l_xio_test_attr_copy,
-        globus_l_xio_test_attr_cntl,
-        globus_l_xio_test_attr_destroy);
-
-    return rc;
+    return GLOBUS_SUCCESS;
 }
 
 static
 int
 globus_l_xio_test_deactivate(void)
 {
-    globus_xio_driver_destroy(globus_l_xio_test_info);
-
     return globus_module_deactivate(GLOBUS_COMMON_MODULE);
 }
 
