@@ -201,28 +201,6 @@ struct Authmethod {
 	int	*batch_flag;	/* flag in option struct that disables method */
 };
 
-void	input_userauth_success(int type, int plen, void *ctxt);
-void	input_userauth_failure(int type, int plen, void *ctxt);
-void	input_userauth_banner(int type, int plen, void *ctxt);
-void	input_userauth_error(int type, int plen, void *ctxt);
-void	input_userauth_info_req(int type, int plen, void *ctxt);
-void	input_userauth_pk_ok(int type, int plen, void *ctxt);
-
-int	userauth_none(Authctxt *authctxt);
-int	userauth_pubkey(Authctxt *authctxt);
-int	userauth_passwd(Authctxt *authctxt);
-int	userauth_kbdint(Authctxt *authctxt);
-int	userauth_hostbased(Authctxt *authctxt);
-
-#ifdef GSSAPI
-int     userauth_external(Authctxt *authctxt);
-int     userauth_gssapi(Authctxt *authctxt);
-void    input_gssapi_response(int type, int plen, void *ctxt);
-void    input_gssapi_token(int type, int plen, void *ctxt);
-void    input_gssapi_hash(int type, int plen, void *ctxt);
-int     gss_host_key_ok=0;
-#endif
-
 void	input_userauth_success(int, u_int32_t, void *);
 void	input_userauth_failure(int, u_int32_t, void *);
 void	input_userauth_banner(int, u_int32_t, void *);
@@ -235,6 +213,15 @@ int	userauth_pubkey(Authctxt *);
 int	userauth_passwd(Authctxt *);
 int	userauth_kbdint(Authctxt *);
 int	userauth_hostbased(Authctxt *);
+
+#ifdef GSSAPI
+int     userauth_external(Authctxt *authctxt);
+int     userauth_gssapi(Authctxt *authctxt);
+void    input_gssapi_response(int, u_int32_t, void *);
+void    input_gssapi_token(int, u_int32_t, void *);
+
+int     gss_host_key_ok=0;
+#endif
 
 void	userauth(Authctxt *, char *);
 
@@ -547,7 +534,7 @@ userauth_gssapi(Authctxt *authctxt)
 }
 
 void
-input_gssapi_response(int type, int plen, void *ctxt) 
+input_gssapi_response(int type, u_int32_t plen, void *ctxt) 
 {
 	Authctxt *authctxt = ctxt;
 	Gssctxt *gssctxt;
@@ -564,7 +551,7 @@ input_gssapi_response(int type, int plen, void *ctxt)
 	oidv=packet_get_string(&oidlen);
 	ssh_gssapi_set_oid_data(gssctxt,oidv,oidlen);
 	
-	packet_done();
+	packet_check_eom();
 	
 	status = ssh_gssapi_init_ctx(gssctxt, options.gss_deleg_creds,
 				     GSS_C_NO_BUFFER, &send_tok, 
@@ -585,7 +572,7 @@ input_gssapi_response(int type, int plen, void *ctxt)
 }
 
 void
-input_gssapi_token(int type, int plen, void *ctxt)
+input_gssapi_token(int type, u_int32_t plen, void *ctxt)
 {
 	Authctxt *authctxt = ctxt;
 	Gssctxt *gssctxt;
@@ -601,7 +588,7 @@ input_gssapi_token(int type, int plen, void *ctxt)
 	status=ssh_gssapi_init_ctx(gssctxt, options.gss_deleg_creds,
 				   &recv_tok, &send_tok, NULL);
 
-	packet_done();
+	packet_check_eom();
 	
 	if (GSS_ERROR(status)) {
 		/* Start again with the next method in the list */
