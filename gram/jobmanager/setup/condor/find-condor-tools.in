@@ -20,7 +20,7 @@ fi
 
 AC_ARG_WITH(condor-os,
             [ --with-condor-os=OS],
-	    [if "$withval" != yes; then
+	    [if test "$withval" != yes; then
 	         CONDOR_OS=$withval
 	     else
 	         CONDOR_OS=no
@@ -29,7 +29,7 @@ AC_ARG_WITH(condor-os,
 
 AC_ARG_WITH(condor-arch,
             [ --with-condor-arch=ARCH],
-	    [if "$withval" != yes; then
+	    [if test "$withval" != yes; then
 	         CONDOR_ARCH=$withval
 	     else
 	         CONDOR_ARCH=no

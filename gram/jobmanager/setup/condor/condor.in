@@ -17,14 +17,12 @@ package Globus::GRAM::JobManager::condor;
 
 @ISA = qw(Globus::GRAM::JobManager);
 
-my ($condor_submit, $condor_rm, $condor_arch, $condor_os);
+my ($condor_submit, $condor_rm);
 
 BEGIN
 {
     $condor_submit 	= '@CONDOR_SUBMIT@';
     $condor_rm	 	= '@CONDOR_RM@';
-    $condor_arch	= '@CONDOR_ARCH@';
-    $condor_os 		= '@CONDOR_OS@';
 }
 
 sub new
@@ -186,8 +184,8 @@ sub submit
     $script_file->print("Notification = Never\n");
     $script_file->print("Executable = " . $description->executable . "\n");
 
-    $requirements  = "OpSys == \"$condor_os\" ";
-    $requirements .= " && Arch == \"$condor_arch\" ";
+    $requirements  = "OpSys == \"" . $description->condor_os() . "\" ";
+    $requirements .= " && Arch == \"" . $description->$condor_arch() . "\" ";
     if($description->min_memory() ne "")
     {
 	$requirements .= " && Memory >= " . $description->min_memory();

@@ -25,11 +25,11 @@ mkdir $ENV{GLOBUS_LOCATION} . "/lib/perl/Globus/GRAM/JobManager", 0777;
 
 if($condor_os ne '')
 {
-    $c_opts = ' --with-condor-os=$condor_os';
+    $c_opts = " --with-condor-os=$condor_os";
 }
 if($condor_arch ne '')
 {
-    $c_opts .= ' --with-condor-arch=$condor_arch';
+    $c_opts .= " --with-condor-arch=$condor_arch";
 }
 
 print `./find-condor-tools $c_opts --cache-file=/dev/null`;
