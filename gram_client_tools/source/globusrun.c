@@ -1348,10 +1348,10 @@ globus_l_globusrun_gramrun(char * request_string,
     {
 	send_commit = GLOBUS_TRUE;
 	err = globus_gram_client_job_signal(monitor.job_contact,
-                GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_COMMIT_REQUEST,
-                            "commit",
-                            &tmp1,
-                            &tmp2);
+				GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_COMMIT_REQUEST,
+					    "commit",
+					    &tmp1,
+					    &tmp2);
     }
 
     if(err != GLOBUS_SUCCESS)
@@ -1398,10 +1398,19 @@ globus_l_globusrun_gramrun(char * request_string,
 
     globus_mutex_lock(&monitor.mutex);
 
-    if((options & GLOBUSRUN_ARG_BATCH) &&
+    /* Don't need to wait for state change for job to be submitted or killed
+     * if that's already happened or if we aren't doing any file staging in
+     * batch mode
+     */
+    if((options & (GLOBUSRUN_ARG_BATCH|GLOBUSRUN_ARG_ALLOW_READS)) &&
        (monitor.job_state != 0 &&
         monitor.job_state != GLOBUS_GRAM_PROTOCOL_JOB_STATE_UNSUBMITTED &&
         monitor.job_state != GLOBUS_GRAM_PROTOCOL_JOB_STATE_STAGE_IN))
+    {
+        monitor.done = GLOBUS_TRUE;
+    }
+    else if (GLOBUSRUN_ARG_BATCH ==
+            (options & (GLOBUSRUN_ARG_BATCH|GLOBUSRUN_ARG_ALLOW_READS)))
     {
         monitor.done = GLOBUS_TRUE;
     }
@@ -1432,10 +1441,10 @@ globus_l_globusrun_gramrun(char * request_string,
     if(send_commit == GLOBUS_TRUE)
     {
 	err = globus_gram_client_job_signal(monitor.job_contact,
-                GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_COMMIT_END,
-                            "commit",
-                            &tmp1,
-                            &tmp2);
+				GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_COMMIT_END,
+					    "commit",
+					    &tmp1,
+					    &tmp2);
     }
 
     if (options & GLOBUSRUN_ARG_BATCH)
