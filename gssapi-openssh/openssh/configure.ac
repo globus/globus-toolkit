@@ -2086,22 +2086,6 @@ main()
 		[ user_path="/usr/bin:/bin:/usr/sbin:/sbin" ],
 		[ user_path="/usr/bin:/bin:/usr/sbin:/sbin" ]
 	)
-# make sure $bindir is in USER_PATH so scp will work
-		t_bindir=`eval echo ${bindir}`
-		case $t_bindir in
-			NONE/*) t_bindir=`echo $t_bindir | sed "s~NONE~$prefix~"` ;;
-		esac
-		case $t_bindir in
-			NONE/*) t_bindir=`echo $t_bindir | sed "s~NONE~$ac_default_prefix~"` ;;
-		esac
-		echo $user_path | grep ":$t_bindir"  > /dev/null 2>&1
-		if test $? -ne 0  ; then
-			echo $user_path | grep "^$t_bindir"  > /dev/null 2>&1
-			if test $? -ne 0  ; then
-				user_path=$user_path:$t_bindir
-				AC_MSG_RESULT(Adding $t_bindir to USER_PATH so scp will work)
-			fi
-		fi
 	]
 )
 AC_DEFINE_UNQUOTED(USER_PATH, "$user_path")
