@@ -1,18 +1,15 @@
-Install GPT and the Globus Toolkit from
-<http://www.globus.org/toolkit/download/>.  Install the latest GPT
-version available.  MyProxy needs the GSI libraries from the Globus
-Toolkit.  They're available from the GSI bundle or the Resource
-Management bundles (both client and SDK are required).  You can use
-binary bundles but if you do, you must run
+First, you need to install GPT and the Globus Toolkit packages
+required for Myproxy.  Probably the easiest way to do that is to
+follow the instructions at
+<http://www.ncsa.uiuc.edu/Divisions/ACES/MyProxy/> to install the
+latest MyProxy release.  That will include all the Globus Toolkit
+packages needed by MyProxy.
 
-  $GPT_LOCATION/sbin/gpt-build gcc32dbg -nosrc
-
-after you complete the installation, as documented in the Globus
-Toolkit installation instructions.  (Replace gcc32dbg with the flavor
-of your Globus Toolkit installation.)
-
-Install the tools at
-<ftp://ftp.ncsa.uiuc.edu/aces/gpt/releases/gpt-2.1/support/>.  GPT
+Second, you need special versions of the GNU autotools for working
+with GPT.  They're in /afs/ncsa/projects/myproxy/tools.  If versions
+for your platform aren't there, you can get them from
+<ftp://ftp.ncsa.uiuc.edu/aces/gpt/releases/latest-stable/>.  They'll
+be named something like gnu-autotools-for-gpt-version-src.tar.gz.  GPT
 requires these modified versions of the GNU autotools.  They must be
 in your PATH when you run the commands below.
 
