@@ -22,7 +22,9 @@ Sources = \
 	v3_cpols.c \
 	v3_crld.c \
 	v3_purp.c \
-	v3_info.c
+	v3_info.c \
+	v3_akeya.c \
+	v3_ocsp.c
 
 opensslinclude_HEADERS = \
 	x509v3.h

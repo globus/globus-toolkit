@@ -7,7 +7,7 @@ Sources= \
 	x509_set.c x509rset.c x509_err.c \
 	x509name.c x509_v3.c x509_ext.c x509_att.c \
 	x509type.c x509_lu.c x_all.c x509_txt.c \
-	x509_trs.c by_file.c by_dir.c 
+	x509_trs.c by_file.c by_dir.c x509_cset.c
 
 opensslinclude_HEADERS= \
 	x509.h \

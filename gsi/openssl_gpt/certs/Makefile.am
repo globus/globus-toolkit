@@ -22,6 +22,9 @@ Certs = \
 	ICE.crl \
 	dsa-pca.pem \
 	pca-cert.pem \
+	RegTP-4R.pem \
+	RegTP-5R.pem \
+	RegTP-6R.pem \
 	timCA.pem \
 	vsign3.pem
 

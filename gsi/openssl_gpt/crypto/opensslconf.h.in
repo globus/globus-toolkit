@@ -11,6 +11,9 @@
 #   endif
 #endif
 
+#ifndef OPENSSL_EXPORT_VAR_AS_FUNCTION
+#    undef OPENSSL_EXPORT_VAR_AS_FUNCTION
+#endif
 
 #ifdef HEADER_BN_H
 #   ifndef SIXTY_FOUR_BIT_LONG
@@ -48,7 +51,7 @@
 #   endif
 #endif
 
-#ifdef HEADER_DES_H
+#if defined(HEADER_DES_H) || defined(HEADER_NEW_DES_H)
 #   ifndef DES_LONG
 #       undef DES_LONG
 #   endif

@@ -7,7 +7,9 @@ Sources = \
 	rand_lib.c \
 	rand_err.c \
 	rand_egd.c \
-	rand_win.c
+	rand_win.c \
+	rand_unix.c \
+	rand_os2.c
 
 Test_Sources = \
 	randtest.c

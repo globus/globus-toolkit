@@ -5,6 +5,7 @@ Sources= \
 	encode.c \
 	digest.c \
 	evp_enc.c \
+	evp_acnf.c \
 	evp_key.c \
 	e_des.c \
 	e_bf.c \
@@ -38,6 +39,7 @@ Sources= \
 	bio_enc.c \
 	evp_err.c \
 	e_null.c \
+	e_aes.c \
 	c_all.c \
 	c_allc.c \
 	c_alld.c \
@@ -54,6 +56,10 @@ opensslinclude_HEADERS= \
 noinst_HEADERS = \
 	evp_locl.h
 
+Test_Sources = \
+	evp_test.c \
+	evptests.txt
+
 noinst_LTLIBRARIES = libevp_$(GLOBUS_FLAVOR_NAME).la
 
 INCLUDES = -I$(top_srcdir)/include $(GPT_INCLUDES)
@@ -63,6 +69,8 @@ libevp___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
 libevp___GLOBUS_FLAVOR_NAME__la_LIBADD = $(GPT_LIB_LINKS) 
 
 libevp___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS)
+
+EXTRA_DIST = $(Test_Sources)
 
 include $(top_srcdir)/globus_openssl_post
 include $(top_srcdir)/globus_automake_post

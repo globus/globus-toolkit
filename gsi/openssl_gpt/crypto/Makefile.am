@@ -10,7 +10,8 @@ SUBDIRS = \
 	stack lhash rand err objects      \
 	evp asn1 pem x509 x509v3 conf     \
 	txt_db pkcs7 pkcs12 comp          \
-	perlasm 
+	perlasm aes ec engine krb5 ocsp   \
+	ui
 
 Sources = \
 	cryptlib.c \
@@ -22,7 +23,8 @@ Sources = \
 	tmdiff.c \
 	cpt_err.c \
 	ebcdic.c \
-	uid.c
+	uid.c \
+	o_times.c
 
 opensslinclude_HEADERS= \
 	crypto.h \
@@ -30,11 +32,13 @@ opensslinclude_HEADERS= \
 	opensslv.h \
 	opensslconf.h \
 	ebcdic.h \
-	symhacks.h
+	symhacks.h \
+	ossl_typ.h
 
 noinst_HEADERS= \
 	cryptlib.h \
-	md32_common.h
+	md32_common.h \
+	o_time.h
 
 
 lib_LTLIBRARIES = libcrypto_$(GLOBUS_FLAVOR_NAME).la
@@ -80,8 +84,13 @@ libcrypto___GLOBUS_FLAVOR_NAME__la_LIBADD = \
 	txt_db/libtxt_db_$(GLOBUS_FLAVOR_NAME).la \
 	pkcs7/libpkcs7_$(GLOBUS_FLAVOR_NAME).la \
 	pkcs12/libpkcs12_$(GLOBUS_FLAVOR_NAME).la \
-	comp/libcomp_$(GLOBUS_FLAVOR_NAME).la
-
+	comp/libcomp_$(GLOBUS_FLAVOR_NAME).la \
+	aes/libaes_$(GLOBUS_FLAVOR_NAME).la \
+	ec/libec_$(GLOBUS_FLAVOR_NAME).la \
+	engine/libengine_$(GLOBUS_FLAVOR_NAME).la \
+	krb5/libkrb5_$(GLOBUS_FLAVOR_NAME).la \
+	ocsp/libocsp_$(GLOBUS_FLAVOR_NAME).la \
+	ui/libui_$(GLOBUS_FLAVOR_NAME).la
 
 libcrypto___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS)
 

@@ -73,7 +73,9 @@ Modules = \
 	pkcs8.c \
 	spkac.c \
 	smime.c \
-	rand.c
+	rand.c \
+	engine.c \
+	ocsp.c
 
 Subprograms = \
 	verify \
@@ -109,11 +111,12 @@ Subprograms = \
 	pkcs8 \
 	spkac \
 	smime \
-	rand
+	rand \
+	engine \
+	ocsp
 
 noinst_HEADERS = \
 	apps.h \
-	progs.h \
 	s_apps.h \
 	testdsa.h \
 	testrsa.h

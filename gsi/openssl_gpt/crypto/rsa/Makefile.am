@@ -13,7 +13,8 @@ Sources= \
 	rsa_none.c \
 	rsa_oaep.c \
 	rsa_chk.c \
-	rsa_null.c
+	rsa_null.c \
+	rsa_asn1.c
 
 Test_Sources = \
 	rsa_test.c

@@ -7,7 +7,8 @@ Sources = \
 	sparcv8.S \
 	sparcv8plus.S \
 	ia64.S \
-	mips3.s
+	mips3.s \
+	x86_64-gcc.c
 
 clean-local:
 	rm -f *86*.s *.cpp

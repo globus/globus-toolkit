@@ -7,7 +7,8 @@ Sources= \
 	pk7_doit.c \
 	pk7_smime.c \
 	pk7_attr.c \
-	pk7_mime.c
+	pk7_mime.c \
+	pk7_asn1.c
 
 opensslinclude_HEADERS= \
 	pkcs7.h

@@ -23,7 +23,10 @@ Sources= \
 	bn_recp.c \
 	bn_mont.c \
 	bn_mpi.c \
-	bn_exp2.c
+	bn_exp2.c \
+	bn_kron.c \
+	bn_mod.c \
+	bn_sqrt.c
 
 Extra_Sources= \
 	bn_asm.c
@@ -82,6 +85,11 @@ asm/co86-sol.lo: asm/co86unix.cpp
 	$(CPP) -DSOL asm/co86unix.cpp | sed 's/^#.*//' > asm/co86-sol.s
 	$(LTCOMPILE) -c asm/co86-sol.s -o asm/co86-sol.lo
 	rm -f asm/co86-sol.s
+
+# x86_64
+
+asm/x86_64-gcc.lo: asm/x86_64-gcc.c
+	$(LTCOMPILE) -c  asm/x86_64-gcc.c -o asm/x86_64-gcc.lo
 
 # sparcv8 
 

@@ -6,7 +6,8 @@ Sources= \
 	dh_key.c \
 	dh_lib.c \
 	dh_check.c \
-	dh_err.c
+	dh_err.c \
+	dh_asn1.c
 
 Test_Sources = \
 	dhtest.c

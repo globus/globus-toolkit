@@ -10,7 +10,7 @@ Sources= \
 	fcrypt.c ofb64enc.c ofb_enc.c  pcbc_enc.c \
 	qud_cksm.c rand_key.c read_pwd.c rpc_enc.c  set_key.c  \
 	read2pwd.c xcbc_enc.c str2key.c  cfb64ede.c \
-	ofb64ede.c ede_cbcm_enc.c
+	ofb64ede.c ede_cbcm_enc.c des_old.c des_old2.c
 
 Extra_Sources= \
 	des_enc.c \
@@ -21,7 +21,8 @@ Test_Sources = \
 	destest.c
 
 opensslinclude_HEADERS= \
-	des.h
+	des.h \
+	des_old.h
 
 noinst_HEADERS = \
 	des_locl.h \

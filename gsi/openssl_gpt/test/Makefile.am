@@ -58,7 +58,10 @@ Test_Programs = \
 	dsatest \
 	ssltest \
 	rsa_test \
-	dummytest
+	evp_test \
+	ectest \
+	enginetest \
+	dummytest 
 
 Test_Targets = \
 	test_des \
@@ -90,7 +93,10 @@ Test_Targets = \
 	test_dsa \
 	test_ss \
 	test_ca \
-	test_ssl
+	test_ssl \
+	test_ec \
+	test_engine \
+	test_evp
 
 INCLUDES = -I$(top_srcdir)/include $(GPT_INCLUDES)
 
@@ -122,6 +128,9 @@ nodist_dhtest_SOURCES = dhtest.c
 nodist_dsatest_SOURCES = dsatest.c
 nodist_ssltest_SOURCES = ssltest.c
 nodist_rsa_test_SOURCES = rsa_test.c
+nodist_ectest_SOURCES = ectest.c
+nodist_enginetest_SOURCES = enginetest.c
+nodist_evp_test_SOURCES = evp_test.c
 dummytest_SOURCES = dummytest.c
 
 tests: $(Test_Programs) $(Test_Targets)
@@ -171,6 +180,15 @@ test_rc5:
 
 test_rand:
 	./randtest
+
+test_ec:
+	./ectest
+
+test_engine:
+	./enginetest
+
+test_evp:
+	./evp_test evptests.txt
 
 test_enc:
 	@sh ./testenc
