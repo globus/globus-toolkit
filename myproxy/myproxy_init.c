@@ -82,6 +82,7 @@ static char version[] =
 static int use_empty_passwd = 0;
 static int dn_as_username = 0;
 static int read_passwd_from_stdin = 0;
+static int verbose = 0;
 
 /* Function declarations */
 int init_arguments(int argc, char *argv[], 
@@ -307,6 +308,7 @@ init_arguments(int argc,
 	    break;
 	case 'v':
 	    myproxy_debug_set_level(1);
+	    verbose = 1;
 	    break;
 	case 'V': /* print version and exit */
 	    fprintf(stderr, version);
@@ -450,8 +452,9 @@ grid_proxy_init(int seconds, const char *proxyfile) {
 
     hours = seconds / SECONDS_PER_HOUR;
     
-    sprintf(command, "grid-proxy-init -valid %d:0 -out %s%s", hours, proxyfile,
-	    read_passwd_from_stdin ? " -pwstdin" : "");
+    sprintf(command, "grid-proxy-init -valid %d:0 -out %s%s%s", hours,
+	    proxyfile, read_passwd_from_stdin ? " -pwstdin" : "",
+	    verbose ? " -debug" : "");
     rc = system(command);
 
     return rc;
