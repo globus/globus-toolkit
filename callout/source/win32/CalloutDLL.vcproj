@@ -110,7 +110,7 @@ copy $(OutDir)\libglobus_callout_win32dbgdll.pdb \bin
 				RelativePath="..\library\globus_callout_error.c">
 			</File>
 			<File
-				RelativePath="win_ldtl.c">
+				RelativePath="win_ltdl.c">
 				<FileConfiguration
 					Name="Debug|Win32">
 					<Tool

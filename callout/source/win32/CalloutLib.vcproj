@@ -110,7 +110,7 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="win_ldtl.c">
+				RelativePath="win_ltdl.c">
 				<FileConfiguration
 					Name="Debug|Win32">
 					<Tool
