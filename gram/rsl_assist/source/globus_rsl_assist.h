@@ -11,7 +11,7 @@
  * $Date$
  * $Revision$
  * $Author$
-******************************************************************************/
+ */
 #ifndef _GLOBUS_RSL_ASSIST_INCLUDE_GLOBUS_RSL_ASSIST_H_
 #define _GLOBUS_RSL_ASSIST_INCLUDE_GLOBUS_RSL_ASSIST_H_
 
