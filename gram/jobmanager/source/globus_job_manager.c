@@ -539,6 +539,10 @@ int main(int argc,
         {
             publish_jobs_flag = 1;
         }
+        else if (strcmp(argv[i], "-publish-users") == 0)
+        {
+            /* NOP */ ;
+        }
         else if ((strcmp(argv[i], "-condor-arch") == 0)
                  && (i + 1 < argc))
         {
