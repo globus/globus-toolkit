@@ -36,6 +36,10 @@ typedef struct
     void *                              event_arg;
     void *                              info;
     globus_bool_t                       transfer_events;
+
+    globus_gfs_operation_type_t         bounce_type;
+    globus_i_gfs_data_callback_t        bounce_cb;
+    void *                              bounce_info; 
 } globus_l_gfs_request_info_t;
 
 typedef struct globus_l_gfs_auth_info_s
@@ -661,6 +665,7 @@ globus_l_gfs_data_command_cb(
     GlobusGFSDebugEnter();
 
     request = (globus_l_gfs_request_info_t *) user_arg;
+    info = (globus_gfs_command_info_t *) request->info;
     op = request->control_op;
 
     if(reply->result == GLOBUS_SUCCESS)
@@ -675,6 +680,8 @@ globus_l_gfs_data_command_cb(
             globus_free(msg);
             break;
           case GLOBUS_GFS_CMD_RNFR:
+            request->instance->rnfr_pathname = info->pathname;
+            info->pathname = NULL;
             globus_gsc_959_finished_command(op,
                 "350 OK. Send RNTO with destination name.\r\n");
             break;
@@ -702,7 +709,6 @@ globus_l_gfs_data_command_cb(
         globus_free(msg);
     }
     
-    info = (globus_gfs_command_info_t *) request->info;
     if(info)
     {
         if(info->pathname)
@@ -721,6 +727,55 @@ globus_l_gfs_data_command_cb(
     }
     globus_l_gfs_request_info_destroy(request);
 
+    GlobusGFSDebugExit();
+}
+
+static
+void
+globus_l_gfs_data_internal_stat_cb(
+    globus_gfs_data_reply_t *           reply,
+    void *                              user_arg)
+{
+    globus_l_gfs_request_info_t *       request;
+    globus_gfs_stat_info_t *            info;
+    GlobusGFSName(globus_l_gfs_data_internal_stat_cb);
+    GlobusGFSDebugEnter();
+
+    request = (globus_l_gfs_request_info_t *) user_arg;
+
+    globus_assert(request->bounce_cb && "Invalid internal stat");
+
+    info = (globus_gfs_stat_info_t *) request->bounce_info;
+    if(info)
+    {
+        if(info->pathname)
+        {
+            globus_free(info->pathname);
+        }
+        globus_free(info);
+    }
+    request->bounce_info = NULL;
+
+    switch(request->bounce_type)
+    {
+        case GLOBUS_GFS_OP_COMMAND:
+            {
+                globus_gfs_command_info_t * command_info;
+                globus_gfs_data_reply_t     command_reply;
+                
+                memset(&command_reply, 0, sizeof(globus_gfs_data_reply_t));
+                command_info = (globus_gfs_command_info_t *) request->info;
+                command_reply.info.command.command = command_info->command;
+                command_reply.result = reply->result;
+                
+                request->bounce_cb(&command_reply, request);
+            }
+            break;
+            
+        default:
+            break;
+    }
+    
     GlobusGFSDebugExit();
 }
 
@@ -785,7 +840,8 @@ globus_l_gfs_request_command(
     }
     else if(strcmp(cmd_array[0], "RNFR") == 0)
     {
-        /* XXX */
+        globus_gfs_stat_info_t *            stat_info;
+    
         command_info->command = GLOBUS_GFS_CMD_RNFR;
         globus_l_gfs_get_full_path(
             instance, cmd_array[1], &command_info->pathname);
@@ -793,9 +849,22 @@ globus_l_gfs_request_command(
         {
             goto err;
         }
-        instance->rnfr_pathname = globus_libc_strdup(command_info->pathname);
-        globus_gsc_959_finished_command(op,
-            "350 OK. Send RNTO with destination name.\r\n");
+        
+        stat_info = (globus_gfs_stat_info_t *) 
+            globus_calloc(1, sizeof(globus_gfs_stat_info_t));
+
+        stat_info->file_only = GLOBUS_TRUE;
+        stat_info->pathname = globus_libc_strdup(command_info->pathname);
+        request->bounce_info = stat_info;
+        request->bounce_type = GLOBUS_GFS_OP_COMMAND;
+        request->bounce_cb = globus_l_gfs_data_command_cb;
+        globus_i_gfs_data_request_stat(
+            NULL,
+            instance->session_arg,
+            0,
+            stat_info,
+            globus_l_gfs_data_internal_stat_cb,
+            request);
         done = GLOBUS_TRUE;
     }
     else if(strcmp(cmd_array[0], "RNTO") == 0)
