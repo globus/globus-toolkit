@@ -79,8 +79,8 @@ globus_jobmanager_request_init(globus_gram_jobmanager_request_t ** request)
     globus_gram_jobmanager_request_t * r;
 
     /*** creating request structure ***/
-    *request = (globus_gram_jobmanager_request_t * ) globus_libc_malloc
-                   (sizeof(globus_gram_jobmanager_request_t));
+    *request = (globus_gram_jobmanager_request_t * ) globus_libc_calloc
+                   (1, sizeof(globus_gram_jobmanager_request_t));
 
     r = *request;
 
@@ -105,6 +105,7 @@ globus_jobmanager_request_init(globus_gram_jobmanager_request_t ** request)
     r->in_handler = GLOBUS_FALSE;
     globus_i_gram_job_manager_output_init(r);
     globus_mutex_init(&r->mutex, GLOBUS_NULL);
+    r->validation_records = NULL;
     globus_cond_init(&r->cond, GLOBUS_NULL);
 
     if ( (graml_script_arg_file = tempnam(NULL, "grami")) == NULL )
@@ -642,7 +643,7 @@ globus_l_gram_param_prepare(
  *        A script return variable to be parsed out of the script's
  *        standard output. The script should return <return_var>:value,
  *        for example, GRAM_SCRIPT_SCRATCH_DIR:/path/to/created/scratch/dir
- * @param returl_val
+ * @param return_val
  *        A pointer to be set to a copy of the value of the return_var, if
  *        it is found in the script's output.
  */
@@ -1032,7 +1033,7 @@ globus_jobmanager_request_rm_scratchdir(
  *
  * @param fp
  *        The file to write to.
- * @param ast_node
+ * @param globus_rsl_value_ptr
  *        The RSL value to print.
  *
  * @return 0 on success, 1 on error.

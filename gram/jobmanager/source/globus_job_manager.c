@@ -59,28 +59,6 @@ typedef struct globus_l_gram_client_contact_s
 globus_l_gram_client_contact_t;
 
 
-typedef struct globus_l_gram_conf_values_s
-{
-    char *				type;
-    char *				condor_arch;
-    char *				condor_os;
-    char *				rdn;
-    char *				host_dn;
-    char *				org_dn;
-    char *				gate_dn;
-    char *				gate_host;
-    char *				gate_port;
-    char *				gate_subject;
-    char *				host_osname;
-    char *				host_osversion;
-    char *				host_cputype;
-    char *				host_manufacturer;
-    char *				x509_cert_dir;
-    char *				globus_location;
-    char *				tcp_port_range;
-    char *				scratch_dir_base;
-} globus_l_gram_conf_values_t;
-
 typedef struct globus_l_jm_http_query_s
 {
     void *				arg;
@@ -169,9 +147,6 @@ static int
 globus_l_gram_tokenize(char * command,
                        char ** args,
                        int * n);
-
-static void
-globus_l_gram_conf_values_init(globus_l_gram_conf_values_t * conf);
 
 void
 globus_l_jm_http_query_callback(
@@ -364,7 +339,6 @@ int main(int argc,
     globus_symboltable_t *              symbol_table = NULL;
     globus_gram_jobmanager_request_t *  request;
     globus_l_gram_client_contact_t *    client_contact_node;
-    globus_l_gram_conf_values_t         conf;
     globus_result_t                     error;
     globus_callback_handle_t		stat_cleanup_poll_handle;
     globus_callback_handle_t            ttl_update_handle;
@@ -381,6 +355,10 @@ int main(int argc,
     gss_ctx_id_t	                context_handle = GSS_C_NO_CONTEXT;
     size_t				jrbuf_size;
     int					args_fd=0;
+    char *				x509_cert_dir;
+    char *				globus_loc;
+    char *				tcp_port_range;
+    char *				scratch_dir_base;
 
     /*
      * Stdin and stdout point at socket to client
@@ -497,8 +475,6 @@ int main(int argc,
         argc = newargc + 1;
     }
 
-    globus_l_gram_conf_values_init(&conf);
-
     if (globus_jobmanager_request_init(&request) != GLOBUS_SUCCESS)
     {
         fprintf(stderr,
@@ -507,7 +483,6 @@ int main(int argc,
     }
 
     globus_mutex_lock(&request->mutex);
-
     /*
      * Parse the command line arguments
      */
@@ -553,12 +528,12 @@ int main(int argc,
         else if ((strcmp(argv[i], "-type") == 0)
                  && (i + 1 < argc))
         {
-            conf.type = argv[i+1]; i++;
+            request->jobmanager_type = globus_libc_strdup(argv[++i]);
         }
         else if ((strcmp(argv[i], "-e") == 0)
                  && (i + 1 < argc))
         {
-            libexecdir = argv[i+1]; i++;
+            libexecdir = argv[++i];
         }
         else if (strcmp(argv[i], "-publish-jobs") == 0)
         {
@@ -566,7 +541,7 @@ int main(int argc,
         }
 	else if (strcmp(argv[i], "-scratch-dir-base") == 0)
 	{
-	    conf.scratch_dir_base = argv[++i];
+	    scratch_dir_base = argv[++i];
 	}
         else if (strcmp(argv[i], "-publish-users") == 0)
         {
@@ -575,67 +550,67 @@ int main(int argc,
         else if ((strcmp(argv[i], "-condor-arch") == 0)
                  && (i + 1 < argc))
         {
-            conf.condor_arch = globus_libc_strdup(argv[i+1]); i++;
+            request->condor_arch = globus_libc_strdup(argv[++i]);
         }
         else if ((strcmp(argv[i], "-condor-os") == 0)
                  && (i + 1 < argc))
         {
-            conf.condor_os = globus_libc_strdup(argv[i+1]); i++;
+            request->condor_os = globus_libc_strdup(argv[++i]);
         }
         else if ((strcmp(argv[i], "-globus-org-dn") == 0)
                  && (i + 1 < argc))
         {
-            conf.org_dn = globus_libc_strdup(argv[i+1]); i++;
+            request->org_dn = globus_libc_strdup(argv[++i]);
         }
         else if ((strcmp(argv[i], "-globus-gatekeeper-host") == 0)
                  && (i + 1 < argc))
         {
-            conf.gate_host = globus_libc_strdup(argv[i+1]); i++;
+            request->gate_host = globus_libc_strdup(argv[++i]);
         }
         else if ((strcmp(argv[i], "-globus-gatekeeper-port") == 0)
                  && (i + 1 < argc))
         {
-            conf.gate_port = globus_libc_strdup(argv[i+1]); i++;
+            request->gate_port = globus_libc_strdup(argv[++i]);
         }
         else if ((strcmp(argv[i], "-globus-gatekeeper-subject") == 0)
                  && (i + 1 < argc))
         {
-            conf.gate_subject = globus_libc_strdup(argv[i+1]); i++;
+            request->gate_subject = globus_libc_strdup(argv[++i]);
         }
         else if ((strcmp(argv[i], "-rdn") == 0)
                  && (i + 1 < argc))
         {
-            conf.rdn = globus_libc_strdup(argv[i+1]); i++;
+            request->rdn = globus_libc_strdup(argv[++i]);
         }
         else if ((strcmp(argv[i], "-globus-host-dn") == 0)
                  && (i + 1 < argc))
         {
-            conf.host_dn = globus_libc_strdup(argv[i+1]); i++;
+            request->host_dn = globus_libc_strdup(argv[++i]);
         }
         else if ((strcmp(argv[i], "-globus-host-manufacturer") == 0)
                  && (i + 1 < argc))
         {
-            conf.host_manufacturer = globus_libc_strdup(argv[i+1]); i++;
+            request->host_manufacturer = globus_libc_strdup(argv[++i]);
         }
         else if ((strcmp(argv[i], "-globus-host-cputype") == 0)
                  && (i + 1 < argc))
         {
-            conf.host_cputype = globus_libc_strdup(argv[i+1]); i++;
+            request->host_cputype = globus_libc_strdup(argv[++i]);
         }
         else if ((strcmp(argv[i], "-globus-host-osname") == 0)
                  && (i + 1 < argc))
         {
-            conf.host_osname = globus_libc_strdup(argv[i+1]); i++;
+            request->host_osname = globus_libc_strdup(argv[++i]);
         }
         else if ((strcmp(argv[i], "-globus-tcp-port-range") == 0)
                  && (i + 1 < argc))
         {
-            conf.tcp_port_range = globus_libc_strdup(argv[i+1]); i++;
+            tcp_port_range = globus_libc_strdup(argv[++i]);
         }
         else if ((strcmp(argv[i], "-globus-host-osversion") == 0)
                  && (i + 1 < argc))
         {
-            conf.host_osversion = globus_libc_strdup(argv[i+1]); i++;
+            request->host_osversion = globus_libc_strdup(argv[++i]);
         }
         else if ((strcmp(argv[i], "-machine-type") == 0)
                  && (i + 1 < argc))
@@ -655,7 +630,7 @@ int main(int argc,
                     "\n"
                     "Required Arguments:\n"
                     "\t-type jobmanager type, i.e. fork, lsf ...\n"
-                    "\t-rdn relative domain name\n"
+                    "\t-rdn relative distinguished name\n"
                     "\t-globus-org-dn organization's domain name\n"
                     "\t-globus-host-dn host domain name\n"
                     "\t-globus-host-manufacturer manufacturer\n"
@@ -688,6 +663,7 @@ int main(int argc,
         }
     }
     graml_env_home = globus_l_gram_getenv_var("HOME", NULL);
+
     if (!graml_env_home)
     {
         /* we have to have HOME because we might need it for the default
@@ -747,7 +723,7 @@ int main(int argc,
     globus_jobmanager_log( request->jobmanager_log_fp,
           "JM: Entering gram_job_manager main().\n");
 
-    if (conf.type == GLOBUS_NULL)
+    if (request->jobmanager_type == GLOBUS_NULL)
     {
         globus_jobmanager_log( request->jobmanager_log_fp,
               "JM: Jobmanager service misconfigured. "
@@ -755,33 +731,29 @@ int main(int argc,
 	return(GLOBUS_GRAM_PROTOCOL_ERROR_GATEKEEPER_MISCONFIGURED);
     }
 
-    if (! conf.rdn)
+    if (! request->rdn)
     {
         globus_jobmanager_log( request->jobmanager_log_fp,
             "JM: -rdn parameter required\n");
         return(GLOBUS_GRAM_PROTOCOL_ERROR_GATEKEEPER_MISCONFIGURED);
     }
 
-    request->jobmanager_type = (char *) globus_libc_strdup(conf.type);
-
     if (strcasecmp(request->jobmanager_type, "condor") == 0)
     {
-        if (conf.condor_arch == NULL)
+        if (request->condor_arch == NULL)
         {
             globus_jobmanager_log( request->jobmanager_log_fp,
                 "JMI: Condor_arch must be specified when "
                 "jobmanager type is condor\n");
 	   return(GLOBUS_GRAM_PROTOCOL_ERROR_CONDOR_ARCH);
         }
-        if (conf.condor_os == NULL)
+        if (request->condor_os == NULL)
         {
            globus_jobmanager_log( request->jobmanager_log_fp,
                 "JMI: Condor_os must be specified when "
                 "jobmanager type is condor\n");
 	   return(GLOBUS_GRAM_PROTOCOL_ERROR_CONDOR_OS);
         }
-        request->condor_arch = conf.condor_arch;
-        request->condor_os = conf.condor_os;
     }
 
     globus_jobmanager_log( request->jobmanager_log_fp,
@@ -796,12 +768,12 @@ int main(int argc,
      * Getting environment variables to be added to the job's environment.
      * LOGNAME and HOME will be added as well
      */
-    conf.x509_cert_dir    = globus_l_gram_getenv_var("X509_CERT_DIR", NULL);
+    x509_cert_dir = globus_l_gram_getenv_var("X509_CERT_DIR", NULL);
 
-    if (conf.tcp_port_range)
+    if (tcp_port_range)
     {
        globus_libc_setenv("GLOBUS_TCP_PORT_RANGE",
-                          conf.tcp_port_range,
+                          tcp_port_range,
                           GLOBUS_TRUE);
     }
 
@@ -810,10 +782,10 @@ int main(int argc,
      */
 
     if (home_dir)
-        conf.globus_location = globus_libc_strdup(home_dir);
+        globus_loc = globus_libc_strdup(home_dir);
     else
     {
-        error = globus_location(&conf.globus_location);
+        error = globus_location(&globus_loc);
         if (error != GLOBUS_SUCCESS)
         {
             globus_jobmanager_log( request->jobmanager_log_fp,
@@ -824,25 +796,26 @@ int main(int argc,
 
     globus_jobmanager_log( request->jobmanager_log_fp,
         "JM: GLOBUS_DEPLOY_PATH = %s\n",
-        (conf.globus_location) ? (conf.globus_location) : "NULL");
+        (globus_loc) ? (globus_loc) : "NULL");
 
     globus_libc_setenv("GLOBUS_LOCATION",
-		       conf.globus_location,
+		       globus_loc,
 		       GLOBUS_TRUE);
 
     if (libexecdir)
     {
         request->jobmanager_libexecdir =
-            globus_l_gram_genfilename(conf.globus_location, libexecdir, NULL);
+            globus_l_gram_genfilename(globus_loc, libexecdir, NULL);
     }
     else
     {
         request->jobmanager_libexecdir =
-            globus_l_gram_genfilename(conf.globus_location, "libexec", NULL);
+            globus_l_gram_genfilename(globus_loc, "libexec", NULL);
     }
 
     globus_jobmanager_log( request->jobmanager_log_fp,
           "JM: jobmanager_libexecdir = %s\n", request->jobmanager_libexecdir);
+
 
     if(! debugging_without_client)
     {
@@ -1018,59 +991,59 @@ int main(int argc,
             globus_symboltable_insert(symbol_table,
                                 (void *) "GLOBUS_ID",
                                 (void *) graml_env_globus_id);
-        if (conf.org_dn)
+        if (request->org_dn)
             globus_symboltable_insert(symbol_table,
                                 (void *) "GLOBUS_ORG_DN",
-                                (void *) conf.org_dn);
-        if (conf.rdn)
+                                (void *) request->org_dn);
+        if (request->rdn)
             globus_symboltable_insert(symbol_table,
                                 (void *) "GLOBUS_GRAM_RDN",
-                                (void *) conf.rdn);
-        if (conf.host_dn)
+                                (void *) request->rdn);
+        if (request->host_dn)
             globus_symboltable_insert(symbol_table,
                                 (void *) "GLOBUS_HOST_DN",
-                                (void *) conf.host_dn);
-        if (conf.host_manufacturer)
+                                (void *) request->host_dn);
+        if (request->host_manufacturer)
             globus_symboltable_insert(symbol_table,
                                 (void *) "GLOBUS_HOST_MANUFACTURER",
-                                (void *) conf.host_manufacturer);
-        if (conf.host_cputype)
+                                (void *) request->host_manufacturer);
+        if (request->host_cputype)
             globus_symboltable_insert(symbol_table,
                                 (void *) "GLOBUS_HOST_CPUTYPE",
-                                (void *) conf.host_cputype);
-        if (conf.host_osname)
+                                (void *) request->host_cputype);
+        if (request->host_osname)
             globus_symboltable_insert(symbol_table,
                                 (void *) "GLOBUS_HOST_OSNAME",
-                                (void *) conf.host_osname);
-        if (conf.host_osversion)
+                                (void *) request->host_osname);
+        if (request->host_osversion)
             globus_symboltable_insert(symbol_table,
                                 (void *) "GLOBUS_HOST_OSVERSION",
-                                (void *) conf.host_osversion);
-        if (conf.gate_host)
+                                (void *) request->host_osversion);
+        if (request->gate_host)
             globus_symboltable_insert(symbol_table,
                                 (void *) "GLOBUS_GATEKEEPER_HOST",
-                                (void *) conf.gate_host);
-        if (conf.gate_port)
+                                (void *) request->gate_host);
+        if (request->gate_port)
             globus_symboltable_insert(symbol_table,
                                 (void *) "GLOBUS_GATEKEEPER_PORT",
-                                (void *) conf.gate_port);
-        if (conf.gate_subject)
+                                (void *) request->gate_port);
+        if (request->gate_subject)
             globus_symboltable_insert(symbol_table,
                                 (void *) "GLOBUS_GATEKEEPER_SUBJECT",
-                                (void *) conf.gate_subject);
-        if (conf.condor_os)
+                                (void *) request->gate_subject);
+        if (request->condor_os)
             globus_symboltable_insert(symbol_table,
                                 (void *) "GLOBUS_CONDOR_OS",
-                                (void *) conf.condor_os);
-        if (conf.condor_arch)
+                                (void *) request->condor_os);
+        if (request->condor_arch)
             globus_symboltable_insert(symbol_table,
                                 (void *) "GLOBUS_CONDOR_ARCH",
-                                (void *) conf.condor_arch);
-        if (conf.globus_location)
+                                (void *) request->condor_arch);
+        if (globus_loc)
 	{
             globus_symboltable_insert(symbol_table,
                                 (void *) "GLOBUS_LOCATION",
-                                (void *) conf.globus_location);
+                                (void *) globus_loc);
 	}
 
 	globus_jobmanager_log( request->jobmanager_log_fp,
@@ -1101,7 +1074,7 @@ int main(int argc,
 	    {
 		rc = globus_l_gram_job_manager_create_scratchdir(
 			request,
-			conf.scratch_dir_base,
+			scratch_dir_base,
 			symbol_table,
 			rsl_tree);
 	    }
@@ -1122,12 +1095,16 @@ int main(int argc,
 
     }
 
-    request->rsl = rsl_tree;
+    
+    globus_jobmanager_log( request->jobmanager_log_fp,
+          "JM: loading validation data\n", request->jobmanager_libexecdir);
+    rc = globus_i_gram_job_manager_validation_init(request);
+    globus_jobmanager_log( request->jobmanager_log_fp,
+          "JM: done loading validation data\n", request->jobmanager_libexecdir);
 
+    request->rsl = rsl_tree;
     if (rc == GLOBUS_SUCCESS && request->jm_restart == NULL)
     {
-	char *				validation_file;
-
 	globus_symboltable_insert(
 		symbol_table,
 		(void *) "GLOBUS_CACHED_STDOUT",
@@ -1158,15 +1135,10 @@ int main(int argc,
 	    globus_jobmanager_log( request->jobmanager_log_fp,
 	      "JM: <<<< final rsl specification\n");
 	}
-	validation_file = globus_l_gram_genfilename(
-		conf.globus_location,
-		"share/globus-gram-job-manager",
-		"submit.rvf");
 
 	rc = globus_gram_job_manager_validate_rsl(
 		request,
-		validation_file,
-		NULL);
+		GLOBUS_GRAM_VALIDATE_JOB_SUBMIT);
 	/*
 	 * Eval again, as some default parameters may have to be
 	 * RSL-substituted
@@ -1246,20 +1218,12 @@ int main(int argc,
 
 	if (rc == GLOBUS_SUCCESS)
 	{
-	    char *			validation_file;
-
 	    rsl_tree = globus_rsl_parse( orig_rsl );
 	    request->rsl = rsl_tree;
 
-	    validation_file = globus_l_gram_genfilename(
-		    conf.globus_location,
-		    "share/globus-gram-job-manager",
-		    "submit.rvf");
-
 	    rc = globus_gram_job_manager_validate_rsl(
 		    request,
-		    validation_file,
-		    NULL);
+		    GLOBUS_GRAM_VALIDATE_JOB_SUBMIT);
 
 	    /*
 	     * Eval again, as some default parameters may have to be
@@ -1272,19 +1236,11 @@ int main(int argc,
 
 	if (rc == GLOBUS_SUCCESS)
 	{
-	    char *			validation_file;
-
 	    request->rsl = restart_rsl_tree;
-
-	    validation_file = globus_l_gram_genfilename(
-		    conf.globus_location,
-		    "share/globus-gram-job-manager",
-		    "restart.rvf");
 
 	    rc = globus_gram_job_manager_validate_rsl(
 		    request,
-		    validation_file,
-		    NULL);
+		    GLOBUS_GRAM_VALIDATE_JOB_MANAGER_RESTART);
 
 	    /*
 	     * Eval again, as some default parameters may have to be
@@ -1331,12 +1287,12 @@ int main(int argc,
         /*
          * append some values from the conf file to the job environment
          */
-	if (conf.x509_cert_dir)
+	if (x509_cert_dir)
 	{
 	    globus_l_gram_rsl_env_add(
 		request->rsl,
 		"X509_CERT_DIR",
-		conf.x509_cert_dir);
+		x509_cert_dir);
 	}
 
 	if (graml_job_contact)
@@ -1347,20 +1303,20 @@ int main(int argc,
 		graml_job_contact);
 	}
 
-	if (conf.globus_location)
+	if (globus_loc)
 	{
 	    globus_l_gram_rsl_env_add(
 		    request->rsl,
 		    "GLOBUS_LOCATION",
-		    conf.globus_location);
+		    globus_loc);
 	}
 
-	if (conf.tcp_port_range)
+	if (tcp_port_range)
 	{
 	    globus_l_gram_rsl_env_add(
 		    request->rsl,
 		    "GLOBUS_TCP_PORT_RANGE",
-		    conf.tcp_port_range);
+		    tcp_port_range);
 	}
     }
     /* Create local file to cache output and error */
@@ -1874,14 +1830,14 @@ int main(int argc,
             if ((final_rsl_spec = globus_rsl_unparse(rsl_tree)) == GLOBUS_NULL)
                 final_rsl_spec = (char *) globus_libc_strdup("RSL UNKNOWN");
 
-            job_status_dir = globus_l_gram_genfilename(conf.globus_location,
+            job_status_dir = globus_l_gram_genfilename(globus_loc,
 						       "var",
 						       NULL);
 
             sprintf( job_status_file_path,
 		     "%s/%s_%s.%s",
 		     job_status_dir,
-		     conf.rdn,
+		     request->rdn,
 		     graml_env_logname,
 		     request->job_id );
 
@@ -2202,11 +2158,13 @@ int main(int argc,
 	fprintf(stderr,
 		"Final Job Status: %d%s%s%s\n",
 		request->status,
-		request->failure_code ? " (failed because " : "",
-		request->failure_code
+		(request->status == GLOBUS_GRAM_JOBMANAGER_STATUS_FAILED)
+		? " (failed because " : "",
+		(request->status == GLOBUS_GRAM_JOBMANAGER_STATUS_FAILED)
 		    ? globus_gram_protocol_error_string(request->failure_code)
 		    : "",
-		request->failure_code ? ")" : "");
+		(request->status == GLOBUS_GRAM_JOBMANAGER_STATUS_FAILED)
+		    ? ")" : "");
     }
     rc = globus_module_deactivate_all();
     if (rc != GLOBUS_SUCCESS)
@@ -2245,42 +2203,6 @@ int main(int argc,
 
     return(0);
 } /* main() */
-
-
-/******************************************************************************
-Function:       globus_l_gram_conf_values_init()
-Description:
-Parameters:
-Returns:
-******************************************************************************/
-static void
-globus_l_gram_conf_values_init( globus_l_gram_conf_values_t * conf )
-{
-    if (!conf)
-       return;
-
-    conf->type              = GLOBUS_NULL;
-    conf->condor_arch       = GLOBUS_NULL;
-    conf->condor_os         = GLOBUS_NULL;
-    conf->rdn               = GLOBUS_NULL;
-    conf->host_dn           = GLOBUS_NULL;
-    conf->org_dn            = GLOBUS_NULL;
-    conf->gate_dn           = GLOBUS_NULL;
-    conf->gate_host         = GLOBUS_NULL;
-    conf->gate_port         = GLOBUS_NULL;
-    conf->gate_subject      = GLOBUS_NULL;
-    conf->host_osname       = GLOBUS_NULL;
-    conf->host_osversion    = GLOBUS_NULL;
-    conf->host_cputype      = GLOBUS_NULL;
-    conf->host_manufacturer = GLOBUS_NULL;
-    conf->x509_cert_dir     = GLOBUS_NULL;
-    conf->globus_location   = GLOBUS_NULL;
-    conf->tcp_port_range    = GLOBUS_NULL;
-    conf->scratch_dir_base  = GLOBUS_NULL;
-
-    return;
-
-} /* globus_l_gram_conf_values_init() */
 
 
 /******************************************************************************

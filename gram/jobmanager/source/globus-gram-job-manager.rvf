@@ -1,18 +1,23 @@
+# RSL Validation Information for the base RSL supported by the job
+# manager
 Attribute: directory
 Description: "Specifies the path of the directory the jobmanager will use as
               the default directory for the requested job."
 Default: $(HOME)
+ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
 
 Attribute: executable
 Description: "The name of the executable file to run on the remote machine.
 	      If the value is a GASS URL, the file is transferred to the
 	      remote gass cache before executing the job and removed after
 	      the job has terminated."
-Required: yes
+ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
+RequiredWhen: GLOBUS_GRAM_JOB_SUBMIT
 
 Attribute: arguments
 Description: "The command line arguments for the executable. Use quotes, if a
 	      space is required in a single argument."
+ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
 
 Attribute: stdin
 Description: "The name of the file to be used as standard input for the
@@ -20,6 +25,7 @@ Description: "The name of the file to be used as standard input for the
 	      the file is transferred to the remote gass cache before
 	      executing the job and removed after the job has terminated."
 Default: "/dev/null"
+ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
 
 Attribute: stdout
 Description: "The name of the remote file to store the standard output from
@@ -27,6 +33,7 @@ Description: "The name of the remote file to store the standard output from
 	      the job is transferred dynamically during the execution of the
 	      job."
 Default: "/dev/null"
+ValidWhen: GLOBUS_GRAM_JOB_SUBMIT GLOBUS_GRAM_JOB_MANAGER_RESTART
 
 Attribute: stderr
 Description: "The name of the remote file to store the standard error from
@@ -34,15 +41,18 @@ Description: "The name of the remote file to store the standard error from
 	      the job is transferred dynamically during the execution of the
 	      job."
 Default: "/dev/null"
+ValidWhen: GLOBUS_GRAM_JOB_SUBMIT GLOBUS_GRAM_JOB_MANAGER_RESTART
 
 Attribute: count
 Description: "The number of executions of the executable."
 Default: 1
+ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
 
 Attribute: environment
 Description: "The environment variables that will be defined for the
 	      executable in addition to default set that is given to the job
 	      by the jobmanager."
+ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
 
 Attribute: maxtime
 Description: "The maximum walltime or cputime for a single execution of the
@@ -50,6 +60,7 @@ Description: "The maximum walltime or cputime for a single execution of the
 	      scheduler being interfaced. The units is in minutes. The value
 	      will go through an atoi() conversion in order to get an
 	      integer."
+ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
 
 Attribute: maxwalltime
 Description: "Explicitly set the maximum walltime for a single execution of
@@ -57,6 +68,7 @@ Description: "Explicitly set the maximum walltime for a single execution of
 	      through an atoi() conversion in order to get an integer. If the
 	      GRAM scheduler cannot set walltime, then an error will be
 	      returned. "
+ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
 
 Attribute: maxcputime
 Description: "Explicitly set the maximum cputime for a single execution of
@@ -64,6 +76,7 @@ Description: "Explicitly set the maximum cputime for a single execution of
 	      through an atoi() conversion in order to get an integer. If the
 	      GRAM scheduler cannot set cputime, then an error will be
 	      returned."
+ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
 
 Attribute: jobtype
 Description: "This specifies how the jobmanager should start the job.
@@ -75,6 +88,7 @@ Description: "This specifies how the jobmanager should start the job.
 	      \"condor\" universe.)"
 Values: single multiple mpi condor
 Default: multiple
+ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
 
 Attribute: grammyjob
 Description: "This specifies how the gram myjob interface will behave in the 
@@ -85,39 +99,47 @@ Description: "This specifies how the gram myjob interface will behave in the
 	      count-1 for each of the processes.)"
 Values: collective independent
 Default: collective
+ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
 
 Attribute: queue
 Description: "Target the job to a queue (class) name as defined by the
 	      scheduler at the defined (remote) resource."
+ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
 
 Attribute: project
 Description: "Target the job to be allocated to a project account as defined
 	      by the scheduler at the defined (remote) resource."
+ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
 
 Attribute: hostcount
 Description: "Only applies to clusters of SMP computers, such as newer IBM SP
 	      systems. Defines the number of nodes (\"pizza boxes\") to
 	      distribute the "count" processes across."
+ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
 
 Attribute: dryrun
 Description: "If dryrun = yes then the jobmanager will not submit the job for
 	      execution and will return success."
 Default: no
 Values: yes no
+ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
 
 Attribute: minmemory
 Description: "Specify the minumum amount of memory required for this job.
 	      Units are in Megabytes."
+ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
 
 Attribute: maxmemory
 Description: "Specify the maximum amount of memory required for this job.
 	      Units are in Megabytes."
+ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
 
 Attribute: savestate
 Description: "Causes the jobmanager to save it's job state information to a
 	      persistent file on disk. If the job manager exits or is
 	      suspended, the client can later start up a new job manager   
 	      which can continue monitoring the job."
+ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
 
 Attribute: twophase
 Description: "Use a two-phase commit for job submission and completion. The
@@ -145,6 +167,7 @@ Description: "Use a two-phase commit for job submission and completion. The
 	      In these cases, it can not be restarted, so the job manager  
 	      will not wait for the commit signal after sending the FAILED
 	      callback"
+ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
 
 Attribute: remoteiourl
 Description: "Writes the given value (a URL base string) to a file, and adds
@@ -154,12 +177,47 @@ Description: "Writes the given value (a URL base string) to a file, and adds
 	      file's contents. This is intended for jobs that want to access
 	      files via GASS, but the URL of the GASS server has changed due
 	      to a GASS server restart."
+ValidWhen: GLOBUS_GRAM_JOB_SUBMIT GLOBUS_GRAM_JOB_MANAGER_RESTART
 
 Attribute: scratchdir
 Description: "Specifies the location to create a scratch subdirectory in.
 	      A SCRATCH_DIRECTORY RSL substitution will be filled with the
 	      name of the directory which is created."
+ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
 
 Attribute: rslsubstitution
 Description: "Specifies a list of values which can be substituted into other
               rsl attributes' values through the $(SUBSTITUTION) mechanism."
+ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
+
+Attribute: restart
+Description: "Start a new job manager, but instead of submitting a new job,
+          start managing an existing job. The job manager will search for
+          the job state file created by the original job manager. If it
+          finds the file and successfully reads it, it will become the
+          new manager of the job, sending callbacks on status and
+          streaming stdout/err if appropriate. It will fail if it detects
+          that the old jobmanager is still alive (via a timestamp in the
+          state file). If stdout or stderr was being streamed over the
+          network, new stdout and stderr attributes can be specified in 
+          the restart RSL and the jobmanager will stream to the new
+          locations (useful when output is going to a GASS server started
+          by the client that's listening on a dynamic port, and the
+          client was restarted). The new job manager will return a new
+          contact string that should be used to communicate with it. If a
+          jobmanager is restarted multiple times, any of the previous   
+          contact strings can be given for the restart attribute."
+RequiredWhen: GLOBUS_GRAM_JOB_MANAGER_RESTART
+ValidWhen: GLOBUS_GRAM_JOB_MANAGER_RESTART
+
+Attribute: stdoutposition
+Description: "Specifies where in the file remote output streaming should be
+              restarted from."
+Default: 0
+ValidWhen: GLOBUS_GRAM_JOB_MANAGER_RESTART
+
+Attribute: stderrposition
+Description: "Specifies where in the file remote standard error streaming
+              should be restarted from."
+Default: 0
+ValidWhen: GLOBUS_GRAM_JOB_MANAGER_RESTART

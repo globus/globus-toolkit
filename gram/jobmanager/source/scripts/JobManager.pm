@@ -1,36 +1,48 @@
+#
+# Globus::GRAM::JobManager
+#
+# CVS Information:
+#     $Source$
+#     $Date$
+#     $Revision$
+#     $Author$
+#
+use Globus::GRAM::Error;
+use Globus::GRAM::JobState;
+use Globus::GRAM::JobSignal;
+use Globus::Core::Paths;
+
+use IO::File;
+use File::Path;
+
 =head1 NAME
 
-JobManager - Base class for all Job Manager scripts
+Globus::GRAM::JobManager - Base class for all Job Manager scripts
 
 =head1 SYNOPSIS
 
 $manager = new Globus::GRAM::JobManager($job_description);
 
 $manager->log("Starting new operation");
+$manager->submit();
 
 =head1 DESCRIPTION
 
 The Globus::GRAM::JobManager module implements the default behavior
-for a job manager scheduler interface, and provides a parser for the
+for a Job Manager scheduler interface.
 
 =cut
 
-use Globus::GRAM::Error;
-use Globus::GRAM::JobState;
-use Globus::GRAM::JobSignal;
-use IO::File;
-use File::Path;
-
 package Globus::GRAM::JobManager;
 
-=head2 new
+=head2 $manager = new Globus::GRAM::JobManager(I<$JobDescription>)
 
 Constructor for the Globus::GRAM::JobManager. This constructor expects
 to be passed a parameter consisting of a reference to a
 Globus::GRAM::JobDescription.
 
 =cut
-sub new($$)
+sub new
 {
     my $class = shift;
     my $self = {};
@@ -46,14 +58,15 @@ sub new($$)
     bless $self, $class;
 }
 
-=head2 log
+=head2 $manager->log(I<$string>)
 
 Log a message to the job manager log file. This is intended for use by
 subclasses of the JobManager class. A newline will be appended to the
 log message.
 
 =cut
-sub log($@)
+
+sub log
 {
     my $self = shift;
 
@@ -65,35 +78,47 @@ sub log($@)
     return;
 }
 
-=head2 submit
+=head2 $manager->submit()
 
 Submit a job request to the scheduler. The default implementation returns
 with the Globus::GRAM::Error::UNIMPLEMENTED error. Scheduler specific
 subclasses should reimplement this method to submit the job to the
 scheduler.
 
+A scheduler which implements this method should return a hash reference
+containing the values JOB_STATE and JOB_ID if the job request is
+successful; otherwise a Globus::GRAM::Error value should be returned.
+For example:
+
+    return {JOB_STATE => Globus::GRAM::JobState::PENDING,
+            JOB_ID => $job_id};
+
 =cut
-sub submit($)
+
+sub submit
 {
     my $self = shift;
 
-    $self->log("Job Manager Script does not implement 'submit'\n");
+    $self->log("Job Manager module does not implement 'submit'\n");
     return Globus::GRAM::Error::UNIMPLEMENTED;
 }
 
-=head2 poll
+=head2 $manager->poll()
 
 Poll a job's status. The default implementation returns
 with the Globus::GRAM::Error::UNIMPLEMENTED error. Scheduler specific
 subclasses should reimplement this method to poll the
 scheduler.
 
+A scheduler which implements this method should return a hash reference
+containing job_state.
+
 =cut
 sub poll
 {
     my $self = shift;
 
-    $self->log("Job Manager Script does not implement 'poll'\n");
+    $self->log("Job Manager module Script does not implement 'poll'\n");
     return Globus::GRAM::Error::UNIMPLEMENTED;
 }
 
@@ -105,6 +130,7 @@ subclasses should reimplement this method to remove the job
 from the scheduler.
 
 =cut
+
 sub rm
 {
     my $self = shift;
@@ -122,6 +148,7 @@ from the scheduler. This method is passed a parameter containin the
 signal number, as well as the signal-specific parameters.
 
 =cut
+
 sub signal
 {
     my $self = shift;
@@ -157,7 +184,8 @@ sub make_scratchdir
     {
         # Files with names comprised of Ascii values 48-122 should be
 	# relatively easy to remove from the shell if things go bad.
-	$tmpname = "gram" . $acceptable[rand() * $#acceptable] .
+	$tmpname = "gram" .
+	           $acceptable[rand() * $#acceptable] .
 	           $acceptable[rand() * $#acceptable] .
 	           $acceptable[rand() * $#acceptable] .
 	           $acceptable[rand() * $#acceptable] .
@@ -202,6 +230,88 @@ sub remove_scratchdir
     $self->log("Removed $count files");
 
     return {};
+}
+
+sub rewrite_urls
+{
+    my $self = shift;
+    my $description = $self->{JobDescription};
+    my $cache_pgm = "$Globus::Core::Paths::bindir/globus-gass-cache";
+    my $url;
+    my $filename;
+
+    foreach ('stdin', 'executable')
+    {
+	chomp($url = $description->$_());
+	if($url =~ m|^[a-zA-Z]+://|)
+	{
+	    chomp($filename = `$cache_pgm -query $url`);
+	    if($filename ne '')
+	    {
+		$description->add('stdin', $filename);
+	    }
+	}
+    }
+    return 0;
+}
+
+sub stage_in
+{
+    my $self = shift;
+    my $description = $self->{JobDescription};
+    my $cache_pgm = "$Globus::Core::Paths::bindir/globus-gass-cache";
+    my $url_copy = "$Globus::Core::Paths::bindir/globus-url-copy";
+    my $tag = $ENV{GLOBUS_GRAM_JOB_CONTACT};
+    my ($remote, $local, $cached);
+
+    if($description->executable() =~ m|^[a-zA-Z]+://|)
+    {
+	if(system("$cache_pgm -add -t $tag $remote >/dev/null 2>&1") != 0)
+	{
+	    return Globus::GRAM::Error::STAGE_IN_FAILED;
+	}
+    }
+    if($description->stdin() =~ m|^[a-zA-Z]+://|)
+    {
+	if(system("$cache_pgm -add -t $tag $remote >/dev/null 2>&1") != 0)
+	{
+	    return Globus::GRAM::Error::STAGE_IN_FAILED;
+	}
+    }
+    foreach ($description->stage_in())
+    {
+	($remote, $local) = ($_->[0], $_->[1]);
+
+	if($local !~ m|^/|)
+	{
+	    $local = $description->directory() . '/' . $local;
+	}
+
+	if(system("$url_copy $remote $local >/dev/null 2>&1") != 0)
+	{
+	    return Globus::GRAM::Error::STAGE_IN_FAILED;
+	}
+    }
+    foreach($description->stage_in_shared())
+    {
+	($remote, $local) = ($_->[0], $_->[1]);
+
+	if($local !~ m|^/|)
+	{
+	    $local = $description->directory() . '/' . $local;
+	}
+
+	if(system("$cache_pgm -add -t $tag $remote >/dev/null 2>&1") == 0)
+	{
+	    $cached = `$cache_pgm -query $remote`;
+	    symlink($cached, $local);
+	}
+	else
+	{
+	    return Globus::GRAM::Error::STAGE_IN_FAILED;
+	}
+    }
+    return {0};
 }
 
 1;

@@ -1,3 +1,5 @@
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+
 /******************************************************************************
 globus_gram_job_manager.h
  
@@ -160,6 +162,50 @@ typedef struct
     char *				condor_os;
 
     /**
+     * Relative distinguished name
+     *
+     * Nickname of the job manager in the MDS.
+     */
+    char *				rdn;
+
+    /**
+     * Distinguished name of the host the job manager is running on.
+     */
+    char *				host_dn;
+
+    char *				org_dn;
+
+    /**
+     * Name of the host running the gatekeeper which spawned this job manager.
+     */
+    char *				gate_host;
+
+    /**
+     * Port on which the gatekeeper which spawned this job manager is running.
+     */
+    char *				gate_port;
+    /**
+     * Gatekeeper's security subject name.
+     */
+    char *				gate_subject;
+    /**
+     * Host operating system name
+     */
+    char *				host_osname;
+    /**
+     * Host operating system version
+     */
+    char *				host_osversion;
+    /**
+     * Host CPU type
+     */
+    char *				host_cputype;
+    /**
+     * Host manufacturer
+     */
+    char *				host_manufacturer;
+
+    /**
      * Dry Run
      *
      * If this is GLOBUS_TRUE, do not actually submit the job to the scheduler,
@@ -223,8 +269,54 @@ typedef struct
     globus_mutex_t			mutex;
     globus_cond_t			cond;
     globus_bool_t			in_handler;
+    globus_list_t *			validation_records;
 }
 globus_gram_jobmanager_request_t;
+
+
+/**
+ * RSL Validation Record
+ * @ingroup globus_gram_job_manager_rsl_validation
+ *
+ * Contains Information parsed from the validation file about a single
+ * RSL parameter.
+ */
+typedef struct
+{
+    /** The name of the RSL attribute this record refers to. */
+    char *				attribute;
+    /**
+     * A textual description of the RSL parameter. This is not
+     * used other than for debugging the parser.
+     */
+    char *				description;
+    globus_bool_t			required;
+    /**
+     * Default value of the parameter to be inserted in the RSL
+     * if the parameter is not present.
+     */
+    char *				default_value;
+    /**
+     * String containing an enumeration of legal values for the
+     * RSL parameter. For example, for the grammyjob parameter, this
+     * would be "collective independent".
+     */
+    char *				enumerated_values;
+
+    /**
+     * Bitwise or of values of the
+     * globus_i_gram_job_manager_validation_when_t values, indicated
+     * when, if ever, this RSL parameter is required.
+     */
+    int					required_when;
+    /**
+     * Bitwise or of values of the
+     * globus_i_gram_job_manager_validation_when_t values, indicated
+     * when, if ever, this RSL parameter is valid.
+     */
+    int					valid_when;
+}
+globus_gram_job_manager_validation_record_t;
 
 /******************************************************************************
                               Function prototypes
@@ -302,12 +394,42 @@ globus_jobmanager_log(
     ...);
 
 /* globus_gram_job_manager_validate.c */
+
+/**
+ * @defgroup globus_gram_job_manager_rsl_validation RSL Validation
+ * RSL Validation
+ *
+ * Validates that a request's RSL contains only valid parameters, and that
+ * all required parameters are defined.
+ *
+ * RSL Validation operates on an RSL, and one or more validation files.
+ * The format of the validation files is defined in the
+ * @ref globus_gram_job_manager_rsl_validation_file
+ * section of the manual.
+ */
+
+/**
+ * Select when an RSL parameter is valid or required.
+ * @ingroup globus_gram_job_manager_rsl_validation 
+ */
+typedef enum
+{
+    GLOBUS_GRAM_VALIDATE_JOB_SUBMIT = 1,
+    GLOBUS_GRAM_VALIDATE_JOB_MANAGER_RESTART = 2
+}
+globus_i_gram_job_manager_validation_when_t;
+
+extern
+int
+globus_i_gram_job_manager_validation_init(
+    globus_gram_jobmanager_request_t *  request);
+
 extern
 int
 globus_gram_job_manager_validate_rsl(
     globus_gram_jobmanager_request_t *  request,
-    const char *                        validation_filename,
-    const char *                        scheduler_validation_filename);
+    globus_i_gram_job_manager_validation_when_t
+    					when);
 
 /* globus_gram_job_manager_output.c */
 extern
@@ -347,3 +469,4 @@ globus_i_gram_job_manager_output_close(
 EXTERN_C_END
 
 #endif /* GLOBUS_GRAM_JOB_MANAGER_INCLUDE */
+#endif /* ! GLOBUS_DONT_DOCUMENT_INTERNAL */

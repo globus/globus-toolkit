@@ -1,5 +1,5 @@
 /**
-@mainpage
+@page globus_gram_job_manager_sript_interface Script Interface
 
 <h1>Introduction</h1>
 A job manager service is configured to handle

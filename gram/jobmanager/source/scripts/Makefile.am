@@ -1,12 +1,12 @@
 include $(top_srcdir)/globus_automake_pre
 
-globus_gram_job_manager_modules = \
-    JobDescription.pm \
-    JobManager.pm
-
+# Extra directories we install files into
 globusperldir=$(GLOBUS_LOCATION)/lib/perl/Globus/GRAM
-globusperl_DATA = $(globus_gram_job_manager_modules)
 
-EXTRA_DIST = $(globus_gram_job_manager_modules)
+# Where targets are installed
+globusperl_DATA = JobDescription.pm JobManager.pm
+
+# Files which we want to put in the source package
+EXTRA_DIST = $(globusperl_DATA)
 
 include $(top_srcdir)/globus_automake_post
