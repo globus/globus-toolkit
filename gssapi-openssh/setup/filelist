@@ -1,5 +1,2 @@
 setup/globus/setup-openssh
 setup/globus/setup-openssh.pl
-setup/globus/ssh_config
-setup/globus/sshd_config
-setup/globus/moduli
