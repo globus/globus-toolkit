@@ -5,7 +5,7 @@ include $(top_srcdir)/globus_automake_pre_top
 SUBDIRS= \
 	library \
 	pkgdata \
-	doxygen
+	doxygen 
 
 EXTRA_DIST= \
         version.h \

@@ -7,6 +7,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+int (*internal_error_handler)(const char file[], int line, const char mesg[]) = 0;
+
 void
 oldgaa_gl__function_internal_error_helper(const char file[], int line, const char msg[])
 {

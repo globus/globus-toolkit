@@ -22,7 +22,7 @@ INCLUDES = -I.. @GPT_INCLUDES@ -I$(top_srcdir)/library/oldgaa
 
 libglobus_gsi_callback___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
 
-libglobus_gsi_callback___GLOBUS_FLAVOR_NAME__la_LIBADD = @GPT_LIB_LINKS@
+libglobus_gsi_callback___GLOBUS_FLAVOR_NAME__la_LIBADD = @GPT_LIB_LINKS@ 
 
 libglobus_gsi_callback___GLOBUS_FLAVOR_NAME__la_LDFLAGS = @GPT_LDFLAGS@
 

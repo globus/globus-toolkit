@@ -18,7 +18,7 @@ Sources= \
 EXTRA_DIST= \
         config.h.in
 
-noinst_LTLIBRARIES = libglobus_oldgaa_$(GLOBUS_FLAVOR_NAME).la
+lib_LTLIBRARIES = libglobus_oldgaa_$(GLOBUS_FLAVOR_NAME).la
 
 INCLUDES = $(GPT_INCLUDES) -I.
 

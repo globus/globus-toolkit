@@ -104,8 +104,4 @@ extern int (*internal_error_handler)(const char file[], int linenumber, const ch
 
 void gl_function_arguments_error(const char *format, ...);
 
-
-int (*internal_error_handler)(const char file[], int line, const char mesg[]) = 0;
-
-
 #endif /* OLDGAA_GL_INTERNAL_ERR_H */
