@@ -412,7 +412,7 @@ sub generate_build_list()
                                             $package_list{$pack}[1],
                                             $package_list{$pack}[2]);
 
-            package_source_bootstrap($pack, $subdir, $tree) unless $noupdates;
+            package_source_bootstrap($pack, $subdir, $tree);
        }
     }
 }
