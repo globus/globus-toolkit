@@ -400,12 +400,14 @@ globus_grim_config_init(
  *
  */
 globus_result_t
-globus_grim_config_init_from_file(
-    globus_grim_config_t *                  config,
+globus_grim_config_load_from_file(
+    globus_grim_config_t                    config,
     FILE *                                  fptr)
 {
-    struct globus_l_grim_conf_info_s *      info;
     globus_result_t                         res;
+    struct globus_l_grim_conf_info_s *      info;
+    
+    GlobusLGrimSetGetConfigEnter(config, info);
 
     if(fptr == NULL)
     {
@@ -415,27 +417,6 @@ globus_grim_config_init_from_file(
                        GLOBUS_NULL,
                        "[globus_grim_devel]:: file pointer is NULL."));
     }
-    if(config == NULL)
-    {
-        return globus_error_put(
-                   globus_error_construct_string(
-                       GLOBUS_GRIM_DEVEL_MODULE,
-                       GLOBUS_NULL,
-                       "[globus_grim_devel]:: config handle is NULL."));
-    }
-
-    info = (struct globus_l_grim_conf_info_s *)
-                globus_malloc(sizeof(struct globus_l_grim_conf_info_s));
-    if(info == NULL)
-    {
-        return globus_error_put(
-                   globus_error_construct_string(
-                       GLOBUS_GRIM_DEVEL_MODULE,
-                       GLOBUS_NULL,
-                       "[globus_grim_devel]:: malloc failed."));
-    }
-
-    GlobusLGrimConfInfoInit(info);
 
     res = globus_l_grim_parse_conf_file(info, fptr);
 
@@ -952,7 +933,24 @@ globus_grim_devel_port_type_file_parse_uid(
 static int 
 globus_l_grim_devel_activate()
 {
-    globus_module_activate(GLOBUS_COMMON_MODULE);
+    int                                     rc;
+
+    rc = globus_module_activate(GLOBUS_COMMON_MODULE);
+    if(rc != 0)
+    {
+        return rc;
+    }
+    rc = globus_module_activate(GLOBUS_GSI_PROXY_MODULE);
+    if(rc != 0)
+    {
+        return rc;
+    }
+    rc = globus_module_activate(GLOBUS_GSI_CALLBACK_MODULE);
+    if(rc != 0)
+    {
+        return rc;
+    }
+
     globus_l_grim_activated = GLOBUS_TRUE;
     globus_l_grim_NID = OBJ_create(GRIM_OID, GRIM_SN, GRIM_LN);
 
@@ -963,6 +961,9 @@ static int
 globus_l_grim_devel_deactivate()
 {
     globus_module_deactivate(GLOBUS_COMMON_MODULE);
+    globus_module_deactivate(GLOBUS_GSI_PROXY_MODULE);
+    globus_module_deactivate(GLOBUS_GSI_CALLBACK_MODULE);
+
     globus_l_grim_activated = GLOBUS_FALSE;
 
     return GLOBUS_SUCCESS;

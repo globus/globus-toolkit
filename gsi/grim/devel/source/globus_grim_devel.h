@@ -40,52 +40,83 @@ typedef void * globus_grim_assertion_t;
 /*************************************************************************
  *                   external api functions
  ************************************************************************/
+
+/**
+ *
+ */
 globus_result_t
 globus_grim_assertion_init(
     globus_grim_assertion_t *               assertion,
     char *                                  subject,
     char *                                  username);
 
+/**
+ *
+ */
 globus_result_t
 globus_grim_assertion_init_from_buffer(
     globus_grim_assertion_t *               assertion,
     char *                                  buffer,
     int                                     buffer_length);
 
+/**
+ *
+ */
 globus_result_t
 globus_grim_assertion_serialize(
     globus_grim_assertion_t                 assertion,
     char **                                 out_assertion_string);
 
+/**
+ *
+ */
 globus_result_t
 globus_grim_assertion_destroy(
     globus_grim_assertion_t                 assertion);
 
+/**
+ *
+ */
 globus_result_t
 globus_grim_assertion_get_subject(
     globus_grim_assertion_t                 assertion,
     char **                                 subject);
 
+/**
+ *
+ */
 globus_result_t
 globus_grim_assertion_get_username(
     globus_grim_assertion_t                 assertion,
     char **                                 username);
 
+/**
+ *
+ */
 globus_result_t
 globus_grim_assertion_get_dn_array(
     globus_grim_assertion_t                 assertion,
     char ***                                dn_array);
 
+/**
+ *
+ */
 globus_result_t
 globus_grim_assertion_set_dn_array(
     globus_grim_assertion_t                 assertion,
     char **                                 dn_array);
 
+/**
+ *
+ */
 globus_result_t
 globus_grim_assertion_get_port_types_array(
     globus_grim_assertion_t                 assertion,
     char ***                                port_types_array);
 
+/**
+ *
+ */
 globus_result_t
 globus_grim_assertion_set_port_types_array(
     globus_grim_assertion_t                 assertion,
@@ -102,8 +133,15 @@ globus_grim_config_init(
  *
  */
 globus_result_t
-globus_grim_config_init_from_file(
-    globus_grim_config_t *                  config,
+globus_grim_config_destroy(
+    globus_grim_config_t                    config);
+
+/**
+ *
+ */
+globus_result_t
+globus_grim_config_load_from_file(
+    globus_grim_config_t                    config,
     FILE *                                  fptr);
 
 /**
