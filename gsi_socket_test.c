@@ -217,7 +217,7 @@ do_transmit()
     char data[2048];
     int len;
     char error_string[1024];
-    
+
     sock = socket(AF_INET, SOCK_STREAM, 0);
     
     if (sock == -1)
@@ -284,7 +284,7 @@ do_transmit()
 
     if (GSI_SOCKET_delegation_init_ext(gsi_socket, NULL,
 				       0 /* flags */,
-				       0 /* lifetime */,
+				       3600 /* lifetime */,
 				       NULL /* restrictions */) == GSI_SOCKET_ERROR)
     {
 	GSI_SOCKET_get_error_string(gsi_socket, error_string,
