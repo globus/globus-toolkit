@@ -27,7 +27,7 @@
 
       <Build_Step>MAKE_GPTMACRO distclean</Build_Step>
 
-      <Build_Step Macro_Args="libs='ssl crypto sasl annonymous cramm5 digestmd5 plain'">
+      <Build_Step Macro_Args="libs='ssl crypto sasl anonymous crammd5 digestmd5 plain'">
         RUN_FLAVOR_MAKEFILES_GPTMACRO
       </Build_Step>
 	<Build_Step>touch aclocal.m4</Build_Step>
