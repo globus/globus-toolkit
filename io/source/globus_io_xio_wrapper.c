@@ -876,8 +876,8 @@ globus_l_io_bounce_authz_cb(
                 gss_buffer_desc         name_buffer;
                 /* copy the io crap */
                 
-                result = globus_xio_target_cntl(
-                    ihandle->xio_target,
+                result = globus_xio_handle_cntl(
+                    ihandle->xio_handle,
                     globus_l_io_tcp_driver,
                     GLOBUS_XIO_TCP_GET_REMOTE_CONTACT,
                     &cs);
