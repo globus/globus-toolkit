@@ -9,15 +9,25 @@
 # destination directory is available to the build commands as
 # \$destdir
 
-# Call with one argument to build a specific package.
-
-release="alpha"
+# Call with a package name to build a specific package.
+#	E.g., ./make-packages grim
+# Call with a CVS tag to build that tag.
+#	E.g., ./make-packages alpha2
 
 setup_environment() {
 	#If user already has a JAVA_HOME, use it
 	if [ x"$JAVA_HOME" = "x" ]; then
-		# Best guess.
-		export JAVA_HOME=/usr/java/jdk1.3.1_06
+		# For MCS machines
+		if [ -e /home/dsl/javapkgs/java-env-setup.sh ]; then
+			source /home/dsl/javapkgs/java-env-setup.sh
+		# My laptop
+		elif [ -d /usr/java/jdk1.3.1_06 ]; then
+			export JAVA_HOME=/usr/java/jdk1.3.1_06
+		else
+			echo "I can't find JAVA_HOME for your system."
+			echo "Please set JAVA_HOME before running this script"
+			exit 1
+		fi
 	fi
 
 	export OGSA_HOME=`pwd`/gt3-core/core
@@ -26,7 +36,17 @@ setup_environment() {
 # If we're on an MCS machine, just checkout from filesystem.
 # Otherwise use ssh.
 # If we have a co already, just update it.
+# Use a tag if it is passed in.
+
 checkout_cvs() {
+	tag=$1
+
+	if [ x"$tag" = "x" ]; then
+		cvs_opts="";
+	else
+		cvs_opts="-r $tag";
+	fi
+
 	if [ -d /home/globdev/CVS/gridservices ]; then
 		export CVSROOT=/home/globdev/CVS/gridservices
 	else
@@ -37,11 +57,11 @@ checkout_cvs() {
 		echo Making fresh CVS checkout
 		mkdir ogsa-cvs
 		cd ogsa-cvs
-		cvs co all
+		cvs co all $cvs_opts
 	else
 		echo Updating CVS checkout
 		cd ogsa-cvs
-		cvs -z3 -qq up all
+		cvs -z3 -qq up all $cvs_opts
 	fi
 	cd ..
 
@@ -49,12 +69,13 @@ checkout_cvs() {
 }
 
 #If GPT hasn't been built here yet, build it now.
-#Some packages use GPT_LOCATION commands in build.
+#Some packages use GPT_LOCATION commands in build-info.
+
 install_gpt() {
 	if [ -d gpt-2.2.5 ]; then
 		echo Skipping GPT installation.
 		echo Delete gpt-2.2.5 to force rebuild
-		export GPT_LOCATOIN=`pwd`/gpt-2.2.5
+		export GPT_LOCATION=`pwd`/gpt-2.2.5
 	else
 		tar xzf fait_accompli/gpt-2.2.5-src.tar.gz
 		cd gpt-2.2.5
@@ -75,9 +96,8 @@ install_gt2() {
 
 # Go to subdir, run the build script.
 # Copy gar if one is specified.
-make_package() {
+make_binary_package() {
 	export destdir=`pwd`/gt3-${name}/${name}
-	export GPT_LOCATION=`pwd`/gpt-2.2.5
 
 	if [ -d $destdir ]; then
 		echo Skipping package $name;
@@ -100,10 +120,49 @@ make_package() {
 			echo Copying GAR $gar
 			cp ogsa-cvs/$subdir/$gar $destdir
 		fi
-		if [ -f metadata/$name/pkg_data_src.gpt ]; then
-			cp metadata/$name/pkg_data_src.gpt gt3-$name
+		if [ -f package-list/$name/pkg_data_src.gpt ]; then
+			cp package-list/$name/pkg_data_src.gpt gt3-$name
 		fi
 		touch $destdir/INSTALL
+	fi
+	
+	unset destdir;
+	echo
+}
+
+# Go to subdir, run the build script.
+# Copy gar if one is specified.
+make_source_package() {
+	export destdir=`pwd`/gt3-${name}-src/
+
+	if [ -d $destdir ]; then
+		echo Skipping package $name;
+		echo Delete $destdir to force rebuild;
+	elif [ x$name = x ]; then
+		echo Skipping missing packagedata
+	else
+		echo Creating source package for $name;
+
+		pushd ogsa-cvs/$subdir
+		echo Running ant clean ...
+		ant clean
+		popd
+
+		echo Copying source dir to $destdir
+		mkdir -p $destdir
+		cp -Rp ogsa-cvs/$subdir $destdir/${name}
+
+		if [ -f package-list/$name/pkg_data_src.gpt ]; then
+			echo Copying in source metadata
+			cp package-list/$name/pkg_data_src.gpt gt3-${name}-src
+		fi
+
+		if [ -f package-list/$name/filelist ]; then
+			echo Copying in filelist
+			cp package-list/$name/filelist gt3-${name}-src
+		fi
+
+		touch $destdir/${name}/INSTALL
 	fi
 	
 	unset destdir;
@@ -117,8 +176,9 @@ unset_env() {
 
 dir_iter() {
 	for f in $1/*; do
-		source $f
-		make_package
+		source $f/build-info
+		make_source_package
+		# make_binary_package
 		unset_env
 	done
 }
@@ -138,16 +198,17 @@ collate_packages() {
 
 
 #The one-package case.
-if [ "x"$1 != "x" ]; then
+if [ x$1 != "x" && -d package-list/$1 ]; then
 	setup_environment
-	source package-list/$1
-	make_package
+	source package-list/$1/build-info
+	make_source_package
+	# make_binary_package
 	exit
 fi
 
 setup_environment
 install_gpt
-checkout_cvs
+checkout_cvs $1
 
 #This is the poor man's dependency code ...
 
