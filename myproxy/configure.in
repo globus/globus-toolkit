@@ -122,7 +122,6 @@ LAC_DOXYGEN([" ../ "])
 GLOBUS_FINALIZE
 
 AC_OUTPUT(
-	Makefile
 	pkgdata/Makefile
 	pkgdata/pkg_data_src.gpt
 	Makefile
