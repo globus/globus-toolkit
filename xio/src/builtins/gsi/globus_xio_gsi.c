@@ -16,6 +16,9 @@ static globus_l_attr_t                  globus_l_xio_gsi_attr_default =
     GLOBUS_XIO_GSI_PROTECTION_LEVEL_NONE
 };
 
+static int                              connection_count = 0;
+static globus_mutex_t                   connection_mutex;
+
 static
 void
 globus_l_xio_gsi_read_token_cb(
@@ -727,7 +730,12 @@ globus_l_xio_gsi_unwrapped_buffer_to_iovec(
         }
     }
 
- done:    
+ done:
+    GlobusXIOGSIDebugPrintf(
+        GLOBUS_XIO_GSI_DEBUG_INTERNAL_TRACE,
+        ("[%s:%d] Transferred %d bytes\n", _xio_name,
+         handle->connection_id,*bytes_read));
+
     GlobusXIOGSIDebugInternalExit();
     return result;
 }
@@ -813,6 +821,12 @@ globus_l_xio_gsi_write_token_cb(
      
     driver_handle = GlobusXIOOperationGetDriverHandle(op);
 
+
+    GlobusXIOGSIDebugPrintf(
+        GLOBUS_XIO_GSI_DEBUG_INTERNAL_TRACE,
+        ("[%s:%d] Wrote token of length %d\n", _xio_name,
+         handle->connection_id,nbytes));
+    
     /* read iovec was used to write a sec token */
     
     tmp_buffer.length = handle->read_iovec[1].iov_len;
@@ -837,6 +851,11 @@ globus_l_xio_gsi_write_token_cb(
         {
             goto error_pass_close;
         }
+
+        GlobusXIOGSIDebugPrintf(
+            GLOBUS_XIO_GSI_DEBUG_INTERNAL_TRACE,
+            ("[%s:%d] Done with security handshake\n", _xio_name,
+             handle->connection_id));
         
         globus_xio_driver_finished_open(driver_handle, handle, op, result);
         GlobusXIOGSIDebugInternalExit();
@@ -844,6 +863,11 @@ globus_l_xio_gsi_write_token_cb(
     }
     else
     {
+        GlobusXIOGSIDebugPrintf(
+            GLOBUS_XIO_GSI_DEBUG_INTERNAL_TRACE,
+            ("[%s:%d] Trying to read another token\n", _xio_name,
+             handle->connection_id));
+
         /* read another sec token */
         iovec = &(handle->read_iovec[1]);
         iovec_count = 1;
@@ -904,6 +928,7 @@ globus_l_xio_gsi_read_token_cb(
     globus_xio_iovec_t *                iovec;
     int                                 iovec_count;
     globus_size_t                       wait_for = 0;
+    globus_size_t                       tmp_wait_for = 0;
     globus_size_t                       offset;
     int                                 header;
     
@@ -931,10 +956,28 @@ globus_l_xio_gsi_read_token_cb(
     }
     else
     {
+        while(wait_for < handle->bytes_read)
+        {
+            if(globus_l_xio_gsi_is_ssl_token(&handle->read_buffer[wait_for],
+                                             &tmp_wait_for) == GLOBUS_TRUE)
+            {
+                wait_for += tmp_wait_for;
+            }
+            else
+            {
+                break;
+            }
+        }
+        
         header = 0;
     }
-    
+
     offset = wait_for + header;
+    
+    GlobusXIOGSIDebugPrintf(
+        GLOBUS_XIO_GSI_DEBUG_INTERNAL_TRACE,
+        ("[%s:%d] Bytes in buffer %d;bytes wanted %d\n", _xio_name,
+         handle->connection_id, handle->bytes_read, offset));
     
     /* grow read buffer so we can read a full token */
         
@@ -983,6 +1026,11 @@ globus_l_xio_gsi_read_token_cb(
         input_token.value = &handle->read_buffer[header];
     }
 
+    GlobusXIOGSIDebugPrintf(
+        GLOBUS_XIO_GSI_DEBUG_INTERNAL_TRACE,
+        ("[%s:%d] Read input token of length %d\n", _xio_name,
+         handle->connection_id, input_token.length));
+    
     /* init/accept sec context */
     
     if(handle->target->init == GLOBUS_TRUE)
@@ -1003,8 +1051,8 @@ globus_l_xio_gsi_read_token_cb(
 
         GlobusXIOGSIDebugPrintf(
             GLOBUS_XIO_GSI_DEBUG_INTERNAL_TRACE,
-            ("[%s] Generated output token of length %d\n", _xio_name,
-             output_token.length));
+            ("[%s:%d] Generated output token of length %d\n", _xio_name,
+             handle->connection_id, output_token.length));
         
         if(GSS_ERROR(major_status))
         {
@@ -1078,8 +1126,8 @@ globus_l_xio_gsi_read_token_cb(
 
         GlobusXIOGSIDebugPrintf(
             GLOBUS_XIO_GSI_DEBUG_INTERNAL_TRACE,
-            ("[%s] Generated output token of length %d\n", _xio_name, 
-             output_token.length));
+            ("[%s:%d] Generated output token of length %d\n", _xio_name,
+             handle->connection_id, output_token.length));
         
         if(GSS_ERROR(major_status))
         {
@@ -1189,6 +1237,10 @@ globus_l_xio_gsi_read_token_cb(
     else if(handle->done == GLOBUS_TRUE)
     {
         /* we're done */
+        GlobusXIOGSIDebugPrintf(
+            GLOBUS_XIO_GSI_DEBUG_INTERNAL_TRACE,
+            ("[%s:%d] Done with security handshake\n", _xio_name,
+             handle->connection_id));
         globus_xio_driver_finished_open(driver_handle, handle, op, result);
     }
     else
@@ -1289,8 +1341,8 @@ globus_l_xio_gsi_open_cb(
                                             &handle->time_rec);
         GlobusXIOGSIDebugPrintf(
             GLOBUS_XIO_GSI_DEBUG_INTERNAL_TRACE,
-            ("[%s] Generated output token of length %d\n", _xio_name,
-             output_token.length));
+            ("[%s:%d] Generated output token of length %d\n", _xio_name,
+             handle->connection_id, output_token.length));
 
         if(GSS_ERROR(major_status))
         {
@@ -1492,6 +1544,13 @@ globus_l_xio_gsi_open(
     handle->result = GLOBUS_SUCCESS;
     handle->read_buffer = malloc(handle->attr->buffer_size);
 
+    globus_mutex_lock(&connection_mutex);
+    {
+        handle->connection_id = connection_count;
+        connection_count++;
+    }
+    globus_mutex_unlock(&connection_mutex);
+    
     if(!handle->read_buffer)
     {
         globus_l_xio_gsi_attr_destroy(handle->attr);
@@ -3095,6 +3154,7 @@ globus_l_xio_gsi_activate(void)
     GlobusDebugInit(GLOBUS_XIO_GSI, TRACE INTERNAL_TRACE);
     GlobusXIOGSIDebugEnter();
     rc = globus_module_activate(GLOBUS_COMMON_MODULE);
+    globus_mutex_init(&connection_mutex,NULL);
     GlobusXIOGSIDebugExit();
     return rc;
 }
@@ -3110,6 +3170,7 @@ globus_l_xio_gsi_deactivate(void)
     GlobusXIOName(globus_l_xio_gsi_deactivate);
     GlobusXIOGSIDebugEnter();
     rc = globus_module_deactivate(GLOBUS_COMMON_MODULE);
+    globus_mutex_destroy(&connection_mutex);
     GlobusXIOGSIDebugExit();
     GlobusDebugDestroy(GLOBUS_XIO_GSI);
     return rc;

@@ -154,6 +154,7 @@ typedef struct
     globus_bool_t                       done;
     globus_result_t                     result;
     globus_xio_driver_handle_t          xio_driver_handle;
+    int                                 connection_id;
 } globus_l_handle_t;
 
 /*
