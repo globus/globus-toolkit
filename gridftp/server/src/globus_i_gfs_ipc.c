@@ -780,6 +780,7 @@ void
 globus_l_gfs_ipc_error_close(
     globus_i_gfs_ipc_handle_t *         ipc)
 {
+    globus_list_t *                     tmp_list;
     globus_list_t *                     list;
     globus_result_t                     res;
 
@@ -795,13 +796,21 @@ globus_l_gfs_ipc_error_close(
 
         case GLOBUS_GFS_IPC_STATE_OPEN:
 
-            list = (globus_list_t *) globus_hashtable_remove(
-                &globus_l_ipc_handle_table, &ipc->connection_info);
-            globus_list_remove(&list, globus_list_search(list, ipc));
-            if(!globus_list_empty(list))
+            if(globus_l_gfs_ipc_requester)
             {
-                globus_hashtable_insert(
-                    &globus_l_ipc_handle_table, &ipc->connection_info, list);
+                list = (globus_list_t *) globus_hashtable_remove(
+                    &globus_l_ipc_handle_table, &ipc->connection_info);
+                tmp_list = globus_list_search(list, ipc);
+                if(tmp_list)
+                {
+                    globus_list_remove(&list, tmp_list);
+                    if(!globus_list_empty(list))
+                    {
+                        globus_hashtable_insert(
+                            &globus_l_ipc_handle_table,
+                            &ipc->connection_info,list);
+                    }
+                }
             }
             /* deliberate fall through */
 
