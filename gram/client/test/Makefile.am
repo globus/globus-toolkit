@@ -53,7 +53,7 @@ test_PROGRAMS= \
 
 EXTRA_DIST = $(Scripts) $(Data) globus-gram-client-run-tests.pl.in
 
-INCLUDES += $(GPT_INCLUDES)
+INCLUDES = $(GPT_INCLUDES)
 
 LDADD = $(GPT_PGM_LINKS)
 globus_gram_client_register_callback_test_SOURCES = globus_gram_client_register_callback_test.c

@@ -22,7 +22,7 @@ test_SCRIPTS = $(Scripts)
 
 EXTRA_DIST = $(Scripts) $(Data)
 
-INCLUDES += $(GPT_INCLUDES)
+INCLUDES = $(GPT_INCLUDES)
 
 LDADD = $(GPT_PGM_LINKS)
 
@@ -31,4 +31,3 @@ test_pci_LDFLAGS = $(GPT_LDFLAGS)
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top
-include $(top_srcdir)/globus_automake_pre

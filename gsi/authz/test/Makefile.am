@@ -10,7 +10,9 @@ Sources = \
 
 Callout_sources = authz_test_callout.c
 
-INCLUDES += $(GPT_INCLUDES)
+EXTRA_DIST=
+
+INCLUDES = $(GPT_INCLUDES)
 
 authtest_SOURCES = authtest.c
 authtest_LDFLAGS = $(GPT_LDFLAGS)
@@ -25,12 +27,10 @@ lib_LTLIBRARIES = libglobus_authz_test_callout_$(GLOBUS_FLAVOR_NAME).la
 
 libglobus_authz_test_callout___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Callout_sources)
 
-libglobus_authz_test_callout___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS)
-
 libglobus_authz_test_callout___GLOBUS_FLAVOR_NAME__la_LIBADD = $(GPT_LIB_LINKS)
 
 libglobus_authz_test_callout___GLOBUS_FLAVOR_NAME__la_LDFLAGS = \
-	@GPT_LDFLAGS@ -module -rpath $(GLOBUS_LOCATION)
+	$(GPT_LDFLAGS) -module -rpath $(GLOBUS_LOCATION)
 
 
 test_PROGRAMS=authtest  authz_cred_test
