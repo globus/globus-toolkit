@@ -208,7 +208,7 @@ globus_debug_init(
 #define GlobusDebugMyPrintf(module_name, message)               do {} while(0)
 #define GlobusDebugMyTimePrintf(module_name, message)           do {} while(0)
 #define GlobusDebugMyFwrite(module_name, buffer, size, count)   do {} while(0)
-#define GlobusDebugMyFile(module_name)
+#define GlobusDebugMyFile(module_name)                          (stderr)
 #define GlobusDebugTrue(module_name, level)                     0
 
 #endif
