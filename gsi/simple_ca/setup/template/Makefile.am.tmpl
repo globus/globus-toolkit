@@ -5,6 +5,9 @@ include $(top_srcdir)/globus_automake_pre_top
 # ca package is generated
 CACERT_HASH=__CACERT_HASH__
 
+simple_ca_setupdir = ${GLOBUS_LOCATION}/setup/globus_simple_ca_${CACERT_HASH}_setup
+## simple_ca_setup = [ SCRIPTS DATA ]
+
 Scripts = \
 	setup-ssl-utils-sh-scripts \
 	setup-ssl-utils \
@@ -25,17 +28,20 @@ bin_SCRIPTS = \
 	grid-cert-request \
         grid-default-ca
 
-setup_SCRIPTS = $(Scripts)
+simple_ca_setup_SCRIPTS = $(Scripts)
 
-setup_DATA = $(Data)
+simple_ca_setup_DATA = $(Data)
+
+setup_SCRIPTS = setup-ssl-utils.$(CACERT_HASH)
 
 SUBDIRS = pkgdata
 
 EXTRA_DIST = \
 	$(Scripts) \
-	$(Data) \
+        $(Data) \
 	grid-cert-request \
-	grid-default-ca
+	grid-default-ca \
+	setup-ssl-utils.$(CACERT_HASH) 
 
 TAR=@TAR@
 

@@ -170,12 +170,22 @@ while test -z "${got_subject}" ; do
 	if test -n "${casubject}"; then
 	    GSI_CA_NAME=`echo ${casubject} | ${GLOBUS_SH_SED-sed} -e "s/cn=\([^,]*\),.*/\1/"`
 	    GSI_CA_BASE_DN=`echo ${casubject} | ${GLOBUS_SH_SED-sed} -e "s/cn=[^,]*,\(.*\)/\1/"`
-	    if test -z "${GSI_CA_NAME}" || test -z "${GSI_CA_BASE_DN}"; then
+            HAS_GLOBUS_NS=`echo ${GSI_CA_BASE_DN} | ${GLOBUS_SH_SED-sed} -e "s/[^o]*\(o=Globus,\s*o=Grid\)/\1/"`
+	    if test -z "${GSI_CA_NAME}" || 
+               test -z "${GSI_CA_BASE_DN}"; then
 		echo "" 
 		echo "The subject: ${casubject} is not a valid subject name"
 		echo "Use the default subject name if you don't know the correct"
 		echo "format to use"
-	    else
+	    elif test "`check_for_globus_ns "$GSI_CA_BASE_DN"`" = "YES"; then
+                echo ""
+                echo "ERROR: The Globus namespace (o=Globus, o=Grid) is restricted."
+                echo "Please use a different namespace."
+                
+                GSI_CA_BASE_DN="ou=${CA_ORG_NAME}, ou=GlobusTest, o=Grid"
+                GSI_CA_NAME="Globus Simple CA"
+
+            else
 		got_subject="yes"
 	    fi
 	fi
@@ -248,6 +258,45 @@ save_ca_settings() {
     env_replace DEFAULT GSI_CA_EMAIL_ADDR |\
     env_replace DEFAULT GSI_HOST_BASE_DN  |\
     env_replace DEFAULT GSI_USER_BASE_DN  > ${grid_security_conf_template}
+}
+
+############################################################
+# check_for_globus_ns: determine if the user specified subject
+#                      contians the globus namespace
+############################################################
+check_for_globus_ns() {
+    echo "$1" | ${GLOBUS_SH_AWK-awk} '
+BEGIN     { FS = ","; lastorg=0; lastou=0; hasgrid=0; }
+
+{
+    split($0, b, ",");
+    i=1;
+    while(b[i] != "")
+    {
+        split(b[i],c,"=");
+        if(tolower(c[1]) ~ /o/)
+        {
+            org[lastorg++]=c[2];
+        }
+        i++;
+    }
+}
+
+END {
+    for(i = lastorg; i > 0; i--)
+    {
+        if(tolower(org[i]) == "grid")
+        {
+            hasgrid=i;
+        }
+        
+        if(tolower(org[i]) == "globus" && hasgrid == (i + 1))
+        {
+            print "YES";
+        }
+   }
+}
+'
 }
 
 ############################################################
@@ -506,26 +555,32 @@ ${GLOBUS_SH_CP-cp} ${grid_security_conf_template} ${tmp_ca_setup_dir}/grid-secur
 
 # creating files that need HASH of ca cert
 generate_setup_file "setup-gsi.pl"
+generate_setup_file "setup-gsi"
 generate_setup_file "grid-security-config.in"
 generate_setup_file "grid-cert-request-config.in"
 generate_setup_file "Makefile.am"
 generate_setup_file "Makefile.in"
+generate_setup_file "setup-ssl-utils.pl"
 generate_setup_file "/pkgdata/pkg_data_src.gpt.in"
+generate_setup_file "/pkgdata/pkg_data_src.gpt.tmpl"
+generate_setup_file "setup-ssl-utils"
+generate_setup_file "grid-default-ca"
+generate_setup_file "setup-ssl-utils.__CACERT_HASH__"
 ${GLOBUS_SH_CP-cp} "${tmp_ca_setup_dir}/globus-ssl.conf.tmpl" "${tmp_ca_setup_dir}/globus-ssl.conf"
-
+${GLOBUS_SH_CP-cp} "${tmp_ca_setup_dir}/setup-ssl-utils.__CACERT_HASH__" "${tmp_ca_setup_dir}/setup-ssl-utils.${CA_CERT_HASH}"
 echo ""
 recho "creating CA config package..."
 
 cd ${tmp_ca_setup_dir}
 
-${GLOBUS_SH_CHMOD-chmod} 0700 bootstrap
+#${GLOBUS_SH_CHMOD-chmod} 0700 bootstrap
 ${GLOBUS_SH_CHMOD-chmod} 0700 configure
 
 #./bootstrap
 ./configure
 make dist
 
-CA_UTILS_PACKAGE=globus_simple_ca_${CA_CERT_HASH}_setup-0.5.tar.gz
+CA_UTILS_PACKAGE=globus_simple_ca_${CA_CERT_HASH}_setup-0.9.tar.gz
 
 if test ! -f ${tmp_ca_setup_dir}/${CA_UTILS_PACKAGE}; then
     echo ""
@@ -537,7 +592,7 @@ fi
 # versions of this generated package should not be changed ever
 ${GLOBUS_SH_CP-cp} ${tmp_ca_setup_dir}/${CA_UTILS_PACKAGE} ${GRID_CA_DIR}/${CA_UTILS_PACKAGE}
 
-${GLOBUS_SH_RM-rm} -rf ${tmp_ca_setup_dir}
+#${GLOBUS_SH_RM-rm} -rf ${tmp_ca_setup_dir}
 
 echo "done."
 echo
@@ -608,7 +663,7 @@ readCommandLine () {
          ;;
      -dir)
          tmp_ca_dir="$2"
-         if -z "${tmp_ca_dir}"; then
+         if test -z "${tmp_ca_dir}"; then
             echo "ERROR: the -dir option expects a directory."
             exit 1;
          fi

@@ -148,10 +148,29 @@ dnl END OF GLOBUS_INIT
 
 
 AC_DEFUN(GLOBUS_FINALIZE, [
-if test ! -z "$INSURE"; then
-	CC=$INSURE
-	LD=$INSURE
-	CXX=$INSURE
+
+lac_INSURE=$INSURE
+
+AC_ARG_ENABLE(insure,
+ 	changequote(<<, >>)dnl
+  <<--disable-insure	disable Insure++ >>,
+	changequote([, ])dnl
+	[
+		if test "$enableval" = "yes"; then
+			lac_INSURE="${INSURE-insure}"
+		else
+			lac_INSURE="$enableval"
+		fi
+	],
+	[
+		lac_INSURE=""
+	])
+
+
+if test ! -z "$lac_INSURE"; then
+	CC=$lac_INSURE
+	LD=$lac_INSURE
+	CXX=$lac_INSURE
 	AC_SUBST(CC) 
 	AC_SUBST(LD) 
 	AC_SUBST(CXX) 
@@ -247,8 +266,8 @@ dnl		fi
 # The following variables are used to manage the build enviroment
 # GPT_CFLAGS, GPT_INCLUDES, GPT_PGM_LINKS, GPT_LIB_LINKS, and GPT_LDFLAGS
 # are the variables used in the Makefile.am's
-# GPT_EXTERNAL_INCLUDES and GPT_EXTERNAL_LIBS are stored as build data in 
-# the packaging metadata file.
+# GPT_PKG_CFLAGS, GPT_EXTERNAL_INCLUDES and GPT_EXTERNAL_LIBS are stored as 
+# build data in the packaging metadata file.
 # GPT_CONFIG_FLAGS, GPT_CONFIG_INCLUDES, GPT_CONFIG_PGM_LINKS, and 
 # GPT_CONFIG_LIB_LINKS are returned by gpt_build_config and contain build
 # environment data from the dependent packages.
@@ -267,6 +286,7 @@ dnl		fi
 
 
 	AC_SUBST(GPT_CFLAGS)
+	AC_SUBST(GPT_PKG_CFLAGS)
 	AC_SUBST(GPT_INCLUDES)
 	AC_SUBST(GPT_EXTERNAL_INCLUDES)
 	AC_SUBST(GPT_EXTERNAL_LIBS)
@@ -286,6 +306,7 @@ dnl		fi
 AC_DEFUN(GPT_SET_CFLAGS, [
 	GPT_CFLAGS_TMP=$1
 	GPT_CFLAGS="$GPT_CFLAGS_TMP $GPT_CFLAGS"
+	GPT_PKG_CFLAGS="$GPT_CFLAGS_TMP $GPT_PKG_CFLAGS"
 ])
 
 AC_DEFUN(GPT_SET_INCLUDES, [

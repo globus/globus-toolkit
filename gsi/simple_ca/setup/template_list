@@ -27,8 +27,13 @@ globus_automake_post
 globus_automake_post_top
 globus_automake_pre
 globus_automake_pre_top
-grid-default-ca
+grid-default-ca.tmpl
 pkgdata/pkg_data_src.gpt.in.tmpl
 pkgdata/Makefile.am
 pkgdata/Makefile.in
-grid-cert-request
+pkgdata/pkg_data_src.gpt.tmpl
+grid-cert-request.in
+setup-ssl-utils.tmpl
+setup-ssl-utils.pl.tmpl
+setup-gsi.tmpl
+setup-ssl-utils.__CACERT_HASH__.tmpl

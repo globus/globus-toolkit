@@ -37,7 +37,7 @@ if(defined($opt_help))
    pod2usage(0);
 }
 
-my $setupdir = "$globusdir/setup/globus/";
+my $setupdir = "$globusdir/setup/globus_simple_ca___CACERT_HASH___setup/";
 
 my $target_dir = "";
 my $trusted_certs_dir = "";
@@ -218,7 +218,7 @@ if($statres[4] != $EUID)
    ($EUID,$EGID) = ($statres[4],$statres[5]);
 }
     
-my $metadata = new Grid::GPT::Setup(package_name => "globus_ssl_utils_setup");
+my $metadata = new Grid::GPT::Setup(package_name => "globus_simple_ca_${ca_install_hash}_setup");
 
 $metadata->finish();
 
