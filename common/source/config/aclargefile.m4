@@ -46,7 +46,7 @@ changequote(, )dnl
 changequote([, ])dnl
       ])
    if test "[$]$2" != no; then
-dnl     AC_DEFINE_UNQUOTED([$1], [$]$2, [$3])
+     AC_DEFINE_UNQUOTED([$1], [$]$2, [$3])
      GPT_SET_CFLAGS("-D[$1]=[$]$2")
    fi])
 
