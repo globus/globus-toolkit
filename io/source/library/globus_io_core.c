@@ -695,7 +695,7 @@ globus_i_io_end_operation(
     globus_i_io_operation_type_t        op)
 {
     globus_io_select_info_t *           select_info;
-    globus_io_operation_info_t *        operation_info
+    globus_io_operation_info_t *        operation_info;
     static char *                       myname = 
         "globus_i_io_end_operation";
 
@@ -733,17 +733,17 @@ globus_i_io_end_operation(
     
     if(select_info->read == operation_info)
     {
-        select_info->read = GLOBUS_NULL);
+        select_info->read = GLOBUS_NULL;
     }
     
     if(select_info->write == operation_info)
     {
-        select_info->write = GLOBUS_NULL);
+        select_info->write = GLOBUS_NULL;
     }
     
     if(select_info->except == operation_info)
     {
-        select_info->except = GLOBUS_NULL);
+        select_info->except = GLOBUS_NULL;
     }
     
     globus_assert(operation_info->refs == 0);
@@ -803,7 +803,7 @@ globus_i_io_register_operation(
             globus_io_error_construct_internal_error(
 	            GLOBUS_IO_MODULE,
 	            GLOBUS_NULL,
-	            myname);
+	            myname));
         
         goto exit_error;
     }
@@ -814,7 +814,7 @@ globus_i_io_register_operation(
             globus_io_error_construct_io_cancelled(
                 GLOBUS_IO_MODULE,
                 GLOBUS_NULL,
-                handle);
+                handle));
         
         goto exit_error;
     }
@@ -828,7 +828,7 @@ globus_i_io_register_operation(
                 globus_io_error_construct_read_already_registered(
                     GLOBUS_IO_MODULE,
                     GLOBUS_NULL,
-                    handle);
+                    handle));
             
             goto exit_error;
         }
@@ -843,7 +843,7 @@ globus_i_io_register_operation(
                 globus_io_error_construct_write_already_registered(
                     GLOBUS_IO_MODULE,
                     GLOBUS_NULL,
-                    handle);
+                    handle));
             
             goto exit_error;
         }
@@ -858,7 +858,7 @@ globus_i_io_register_operation(
                 globus_io_error_construct_except_already_registered(
                     GLOBUS_IO_MODULE,
                     GLOBUS_NULL,
-                    handle);
+                    handle));
             
             goto exit_error;
         }
@@ -944,7 +944,7 @@ globus_i_io_unregister_operation(
             globus_io_error_construct_internal_error(
 	            GLOBUS_IO_MODULE,
 	            GLOBUS_NULL,
-	            myname);
+	            myname));
         
         goto exit_error;
     }
@@ -952,13 +952,13 @@ globus_i_io_unregister_operation(
     switch(op)
     {
       case GLOBUS_I_IO_READ_OPERATION:
-        if(!FD_ISSET(handle->fd, globus_l_io_read_fds)))
+        if(!FD_ISSET(handle->fd, globus_l_io_read_fds))
         {
             result = globus_error_put(
                 globus_io_error_construct_internal_error(
                     GLOBUS_IO_MODULE,
                     GLOBUS_NULL,
-                    handle);
+                    handle));
             
             goto exit_error;
         }
@@ -967,13 +967,13 @@ globus_i_io_unregister_operation(
         break;
       
       case GLOBUS_I_IO_WRITE_OPERATION:
-        if(!FD_ISSET(handle->fd, globus_l_io_write_fds)))
+        if(!FD_ISSET(handle->fd, globus_l_io_write_fds))
         {
             result = globus_error_put(
                 globus_io_error_construct_internal_error(
                     GLOBUS_IO_MODULE,
                     GLOBUS_NULL,
-                    handle);
+                    handle));
             
             goto exit_error;
         }
@@ -982,13 +982,13 @@ globus_i_io_unregister_operation(
         break;
         
       case GLOBUS_I_IO_EXCEPT_OPERATION:
-        if(!FD_ISSET(handle->fd, globus_l_io_except_fds)))
+        if(!FD_ISSET(handle->fd, globus_l_io_except_fds))
         {
             result = globus_error_put(
                 globus_io_error_construct_internal_error(
                     GLOBUS_IO_MODULE,
                     GLOBUS_NULL,
-                    handle);
+                    handle));
             
             goto exit_error;
         }
