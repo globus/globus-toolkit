@@ -1,3 +1,8 @@
+2001-5-11   Jason Novotny <jdnovotny@lbl.gov>
+
+	* Created myproxy.cron.in script for server to delete
+	expired credentials. Updated INSTALL, configure.in
+
 2000-11-12  Jason Novotny <novotny@george.lbl.gov>
 
 	* myproxy_server.c: Added support for running myproxy server
