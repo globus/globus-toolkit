@@ -1,0 +1,9 @@
+
+TODO list for myproxy:
+
+ 1) myproxy-server daemon still spits messages to stdout/stderr.
+
+ 2) myproxy-server not removing delegated credentials in /tmp
+
+ 3) Add a MYPROXY_SERVER environment variable for myproxy-init
+
