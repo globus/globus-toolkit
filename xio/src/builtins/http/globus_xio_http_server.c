@@ -1060,7 +1060,7 @@ globus_i_xio_http_server_read_next_request_callback(
 {
     globus_i_xio_http_handle_t *        http_handle = user_arg;
     globus_bool_t                       done;
-    globus_result_t                     eof_result = NULL;
+    globus_result_t                     eof_result = GLOBUS_SUCCESS;
     GlobusXIOName(globus_i_xio_http_server_read_request_callback);
 
     globus_mutex_lock(&http_handle->mutex);
@@ -1118,7 +1118,7 @@ globus_i_xio_http_server_read_next_request_callback(
 
     return;
 reregister_read:
-    if (eof_result != NULL)
+    if (eof_result != GLOBUS_SUCCESS)
     {
         /* Header block wasn't complete before eof */
         result = eof_result;
