@@ -185,7 +185,6 @@ DEEDEBUG2("and uid %d\n",pw?pw->pw_uid:-111111);
 
   if (rc == 0 && getuid() == 0 && pw) {
 	  (void) chown(ccname+5,pw->pw_uid, pw->pw_gid);
-    }
   }
 
   DEEDEBUG2("globus_gram_k5_exec rc = %d\n", rc);
