@@ -327,14 +327,8 @@ globus_common_v_create_nstring(
     const char *                        format,
     va_list                             ap);
 
-#ifdef HAVE_MEMMOVE
-#  define globus_libc_memmove(d, s, n) memmove((d), (s), (n)) 
-#else
-#undef memmove
-#  define memmove(d, s, n) bcopy ((s), (d), (n))
-#  define HAVE_MEMMOVE
-#  define globus_libc_memmove(d, s, n) bcopy ((s), (d), (n))
-#endif
+/* for backwards compatibility */
+#define globus_libc_memmove(d, s, n) memmove((d), (s), (n)) 
 
 #ifdef TARGET_ARCH_HPUX
 #   define   globus_libc_setegid(a)  setresgid(-1,a,-1)
