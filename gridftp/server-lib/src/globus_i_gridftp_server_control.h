@@ -336,6 +336,7 @@ typedef struct globus_i_gsc_server_handle_s
     char *                              modes;
     char *                              types;
     int                                 stripe_count;
+    char *				lang;
 
     globus_off_t                        allocated_bytes;
 

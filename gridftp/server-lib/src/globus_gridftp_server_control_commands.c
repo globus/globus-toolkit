@@ -482,6 +482,67 @@ globus_l_gsc_cmd_type(
     }
 }
 
+/*
+ *  lang
+ */
+static void
+globus_l_gsc_cmd_lang(
+    globus_i_gsc_op_t *                     op,
+    const char *                            full_command,
+    char **                                 cmd_a,
+    int                                     argc,
+    void *                                  user_arg)
+{
+    char *                                  lang = NULL;
+
+    
+    char *                                  msg;
+
+    globus_i_gsc_log(op->server_handle, full_command,
+        GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_TRANSFER_STATE);
+    if (cmd_a[1]==NULL)
+    {
+	    /*nothing specified after LANG, keep default*/
+        msg = globus_common_create_string("200 lang set to %s.\r\n", lang);
+	op->server_handle->lang = lang;
+    }
+    else
+    {
+        lang = strdup(cmd_a[1]);
+    }
+
+    if(lang == NULL)
+    {
+        msg = globus_common_create_string("200 lang set to %s.\r\n", "EN");
+    }
+    else
+    {
+	/*Check if it is a supported language*/
+	/*As internationalization continues, this will be discovered
+	 * from configuration--hardcoded for now
+	 */
+	if (strcmp(lang, "EN")==0)
+	{	
+           msg = globus_common_create_string("200 lang set to %s.\r\n", lang);
+           op->server_handle->lang = lang;
+	}
+	else
+	{
+           msg = globus_common_create_string(
+            "501 '%s' unrecognized language.\r\n", full_command);
+	}
+    }
+    if(msg == NULL)
+    {
+        globus_i_gsc_command_panic(op);
+    }
+    else
+    {
+        globus_gsc_959_finished_command(op, msg);
+        globus_free(msg);
+    }
+}
+
 /*************************************************************************
  *                      directory functions
  *                      -------------------
@@ -2312,7 +2373,7 @@ globus_l_gsc_cmd_transfer(
                 globus_l_gsc_data_cb,
                 wrapper);
             break;
-
+	    
         default:
             globus_assert(GLOBUS_FALSE);
             break;
@@ -3017,6 +3078,16 @@ globus_i_gsc_add_commands(
         "SITE HELP: help on server commands",
         NULL);
 
+    globus_gsc_959_command_add(
+        server_handle,
+        "LANG", 
+        globus_l_gsc_cmd_lang,
+        GLOBUS_GSC_COMMAND_POST_AUTH,
+        1,
+        2,
+        "LANG: set language for messages",
+        NULL);
+    
     /* add features */
     globus_gridftp_server_control_add_feature(server_handle, "MDTM");
     globus_gridftp_server_control_add_feature(server_handle, "REST STREAM");
@@ -3026,4 +3097,6 @@ globus_i_gsc_add_commands(
     globus_gridftp_server_control_add_feature(server_handle, "SIZE");    
     globus_gridftp_server_control_add_feature(server_handle, "PARALLEL");    
     globus_gridftp_server_control_add_feature(server_handle, "DCAU");    
+    globus_gridftp_server_control_add_feature(server_handle, "LANG EN");    
+    globus_gridftp_server_control_add_feature(server_handle, "UTF8");
 }
