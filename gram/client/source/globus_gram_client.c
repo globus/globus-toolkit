@@ -583,7 +583,7 @@ globus_l_gram_client_authenticate(char * gatekeeper_url,
 
     /*
      * Use the get_unwrap to read a status
-     * message from the gatekeeper after the GSSAPI
+     * message from the gatekeeper or from the service after the GSSAPI
 	 * authorization complete and the service has been selected. 
      */
 
