@@ -3,6 +3,8 @@ A simple extensible system for remotely logging gt4 usage statistics with
 UDP packets.
 by Jonathan DiCarlo
 Jan 28, 2005
+GPT package creation by Peter Lane
+February 3, 2005
 
 Bug reports, questions, suggestions, etc. to jdicarlo@mcs.anl.gov.
 
@@ -47,27 +49,23 @@ org.globus.usage.packets contains the UsageMonitorPacket class, its
 subclasses, and the utility classes that it depends on.  Both senders and
 receivers need this package.
 
-org.globus.usage.receiver contains the Receiver class and all of the Handler
+org.globus.usage.receiver contains the Receiver class, and
+org.globus.usage.receiver.handlers contains all of the Handler
 classes that plug into the Receiver.  These depend on classes in
 org.globus.usage.packets.
 
 There are example classes ExampleGFTPSender and ExampleReceiver which are not
 part of either package.  They demonstrate how to use the packets and receiver
-packages, but they themselves are in org.globus.usage.
+packages. They are in org.globus.usage.packets.samples and
+org.globus.usage.receiver.samples respectively.
 
 Therefore, programs that want to send usage-monitor packets need to
 include only org.globus.usage.packets.*;  programs that want to receive
-packets need to include both org.globus.usage.packets.* and
-org.globus.usage.receiver.*.
+packets need to include org.globus.usage.packets.*, org.globus.usage.receiver.*,
+and org.globus.usage.receiver.handlers.*.
 
-If you run ant with no target, the default target will compile two jar files:
-GlobusUsage_Sender.jar and GlobusUsage_Receiver.jar.  Each of these is
-self-contained and contains everything needed for sending and receiving
-packets, respectively.
-
-Both sender and receiver use log4j, so you will need Apache's log4j.jar
-(included in lib/) to compile.  The receiver additionally needs a database
-driver, such as the msyql-connector-java.jar included in lib/.
+The receiver additionally needs a database driver, such as the
+msyql-connector-java.jar included in lib/.
 
 *******************************************
 How to Add your own Packet Formats:
