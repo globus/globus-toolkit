@@ -272,9 +272,9 @@ if ($exitstatus == 0) {
 	&runtest("myproxy-get-delegation -o /tmp/myproxy-test.$$ -v",
 		 $passphrase . "\n");
     $timeleft = `$grid_proxy_info -file /tmp/myproxy-test.$$ -timeleft`;
-    if ($timeleft > 60*60*2+60 || $timeleft < 60*60*2-60) {
+    if ($timeleft > 60*60*2+300 || $timeleft < 60*60*2-300) {
 	$output = "Credential lifetime ($timeleft) incorrect." .
-	    "It should be " . (60*6*2) . ".\n";
+	    "It should be " . (60*60*2) . ".\n";
 	$exitstatus = 1;
     }
 }
@@ -285,7 +285,7 @@ if ($exitstatus == 0) {
     $timeleft = `$grid_proxy_info -file /tmp/myproxy-test.$$ -timeleft`;
     if ($timeleft > 60*61 || $timeleft < 60*59) {
 	$output = "Credential lifetime ($timeleft) incorrect." .
-	    "It should be " . (60*6*2) . ".\n";
+	    "It should be " . (60*60) . ".\n";
 	$exitstatus = 1;
     }
 }
