@@ -83,7 +83,7 @@ install: all
 	-@mkdir -p $(DESTDIR)$(mandir)/man1
 	-@mkdir -p $(DESTDIR)$(mandir)/man5
 	-@mkdir -p $(DESTDIR)$(datadir)/doc/globus_gsi_wuftpd/html
-	-@mkdir -p $(DESTDIR)$(etcdir)
+	-@mkdir -p $(DESTDIR)$(sysconfdir)
 	@INSTALL_PROGRAM@ -m 755 bin/ftpd $(DESTDIR)@sbindir@/in.ftpd
 	@INSTALL_PROGRAM@ -m 755 bin/ftpshut $(DESTDIR)@sbindir@/ftpshut
 	@INSTALL_PROGRAM@ -m 755 bin/ftpcount $(DESTDIR)@bindir@/ftpcount
