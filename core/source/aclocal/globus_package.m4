@@ -63,7 +63,7 @@ AC_SUBST(OBJEXT)
 AC_SUBST(EXEEXT)
 
 GPT_INIT
-
+GPT_GENERATE_MASTER_FILELIST(pkgdata)
 
 # These files are not used outside of automake.  But the makefile still
 # has them as dependent targets.
