@@ -1,22 +1,10 @@
 #!/usr/bin/env perl
 
-#GPT_LOCATION and/or GLOBUS_LOCATION must be specified for most scripts
-#in the globus packages.  for this reason, this script tests to see if
-#one of the two locations is defined.
+$srcdirname = "gpt-gsi-openssh";
 
-my $gpath=$ENV{GPT_LOCATION};
-
-if(!defined($gpath))
-{
-  $gpath=$ENV{GLOBUS_LOCATION};
-}
-
-if(!defined($gpath))
-{
-  die "GPT_LOCATION or GLOBUS_LOCATION needs to be set before running this script";
-}
-
-#uncomment when we're more mature
+#
+# uncomment when we're more mature
+#
 #for my $subdir ('packaging_tools', 'package_management', 'archive_compress') {
 #  chdir "$subdir" or die "Unable to cd to $subdir: $?";
 #  if(-e "config.cache")
@@ -32,8 +20,11 @@ if(!defined($gpath))
 #  chdir ".."  or die "Unable to cd to packaging: $?";
 #}
 
+#
+# uncomment when we've got a better place to get the current version from
+#
 # determine gpt version number
-#uncomment when we've got a better place to get the current version from
+#
 #open (CFG, 'packaging_tools/configure.in');
 #
 #my $version;
@@ -44,12 +35,52 @@ if(!defined($gpath))
 #  }
 #}
 
-printf("moving files into source directory...\n");
-system("mkdir ../gpt-gsi-openssh")==0 or die "Unable to create gpt_bundle.tar: $?";
-system("cp -rf * ../gpt-gsi-openssh")==0 or die "Unable to create gpt_bundle.tar: $?";
-system("mv ../gpt-gsi-openssh ./gpt-gsi-openssh")==0 or die "Unable to move directory: $?";
+#
+# test to make sure we're okay to create/use the $srcdirname directories.
+#
 
-chdir("./gpt-gsi-openssh");
+if ( (!defined($srcdirname)) || length($srcdirname) le 0 )
+{
+    printf("\$srcdirname must be defined to a usable value!\n");
+    die;
+}
+
+if ( -e "../$srcdirname" )
+{
+    printf("found '$srcdirname' in parent directory... please remove before continuing\n");
+    die;
+}
+
+if ( -e "./$srcdirname" )
+{
+    printf("found '$srcdirname' in current directory... please remove before continuing\n");
+    die;
+}
+
+#
+# prep the source directory by creating a temp directory containing all of the
+# required files.
+#
+
+printf("copying files into source directory...\n");
+system("mkdir ../$srcdirname")==0 or die "Unable to create ../$srcdirname: $?";
+system("cp -rf * ../$srcdirname")==0 or die "Unable to copy . into ../$srcdirname: $?";
+system("mv ../$srcdirname ./$srcdirname")==0 or die "Unable to move $srcdirname from ../ to ./: $?";
+
+chdir("./$srcdirname");
+
+#
+# remove any 'unnecessary' files from the source directory.
+#
+
+printf("pruning source directory of extraneous files...\n");
+system("rm -rf `find . -name CVS -print`")==0 or die "Unable to remove cvs directories: $?";
+system("rm -f ./make_gpt_dist")==0 or die "Unable to remove gpt script: $?";
+system("rm -rf ./gpt")==0 or die "Unable to remove gpt directory: $?";
+
+#
+# run the standard development tools to get the necessary derived files.
+#
 
 printf("running autoheader...\n");
 system("autoheader")==0 or die "Could not run autoheader: $?";
@@ -57,18 +88,21 @@ system("autoheader")==0 or die "Could not run autoheader: $?";
 printf("running autoconf...\n");
 system("autoconf")==0 or die "Could not run autoheader: $?";
 
-#system("tar -cf gpt-$version.tar gpt-$version")==0 or die "Unable to create gpt_bundle.tar: $?";
-#system("gzip -f gpt-$version.tar")==0 or die "Unable to gzip gpt_bundle.tar: $?";
-#system("rm -rf gpt-$version")==0 or die "Unable to create gpt_bundle.tar: $?";
-
-printf("pruning source directory of extraneous files...\n");
-system("rm -rf `find . -name CVS -print`")==0 or die "Unable to remove cvs directories: $?";
-system("rm -f ./make_gpt_dist")==0 or die "Unable to remove gpt script: $?";
-system("rm -rf ./gpt")==0 or die "Unable to remove gpt directory: $?";
-
 chdir("../");
 
-printf("creating source tarball... gsi-openssh.\n");
-system("tar -cf gsi-openssh.tar ./gpt-gsi-openssh")==0 or die "Unable to create gpt_bundle.tar: $?";
-system("gzip -f gsi-openssh.tar")==0 or die "Unable to gzip gpt_bundle.tar: $?";
-system("rm -rf ./gpt-gsi-openssh")==0 or die "Unable to create gpt_bundle.tar: $?";
+#
+# create the source package from the source directory.
+#
+
+printf("creating source tarball 'gsi-openssh.tar.gz'...\n");
+system("tar -cf gsi-openssh.tar ./$srcdirname")==0 or die "Unable to create gsi-openssh.tar: $?";
+system("gzip -f gsi-openssh.tar")==0 or die "Unable to gzip gsi-openssh.tar: $?";
+
+printf("cleaning up after myself...\n");
+system("rm -rf ./$srcdirname")==0 or die "Unable to remove ./$srcdirname: $?";
+
+#
+# done.
+#
+
+printf("done.\n");
