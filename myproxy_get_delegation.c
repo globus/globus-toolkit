@@ -19,7 +19,7 @@ static char usage[] = \
 "       -V | --version                    Displays version\n"
 "       -l | --username        <username> Username for the delegated proxy\n"
 "       -t | --proxy_lifetime  <hours>    Lifetime of proxies delegated by\n" 
-"                                         the server (default 2 hours)\n"
+"                                         the server (default 12 hours)\n"
 "       -o | --out             <path>     Location of delegated proxy\n"
 "       -s | --pshost          <hostname> Hostname of the myproxy-server\n"
 "       -p | --psport          <port #>   Port of the myproxy-server\n"
