@@ -1,20 +1,50 @@
 Required software
-
     * JDK 1.4.2+
     * Ant 1.5+
     * C compiler. If gcc, version 3.2.1 or higher.
     * GNU tar
-    * JDBC compliant database. For instance, postgres
+    * JDBC compliant database. For instance, postgres 7.x
+
+Optional software:
+    * IODBC (for RLS)
+    * Tomcat (for WSRF container)
+    * junit (for java unit tests)
 
 Installing GT 3.9.3
+===================
+First, download the required software.  Be aware that apache ant
+will use the java referred to by JAVA_HOME, not necessarily the first
+java executable on your PATH.  Be sure to set JAVA_HOME to the
+top-level directory of your java installation before installing.
 
-First, download the 3.9.3 all source installer. Create a user named
-"globus". As the globus user, run
+If you want to build RLS, set GLOBUS_IODBC_PATH to point to the
+directory containing the IODBC driver.  If you do not, the build of
+RLS will be skipped.
 
-./install-wsrf /usr/local/globus-3.9.3
+Create a user named "globus". As the globus user, run
+
+globus$ export GLOBUS_LOCATION=/usr/local/globus-3.9.3
+globus$ ./install-wsrf $GLOBUS_LOCATION
 
 You may replace "/usr/local/globus-3.9.3" with whatever directory you
 wish to install to.
 
 Then see http://www-unix.globus.org/toolkit/docs/development/4.0-drafts/
 for setup details.
+
+
+Installing optional bundles
+===========================
+The schedulers/ and tests/ subdirectories contain optional bundles of
+software.  If you are installing on a machine that has the submission
+software for PBS, LSF, or Condor already installed, you may install the
+corresponding schedulers/gt4-gram-<scheduler>-3.9-src_bundle.tar.gz file.
+To do this, run:
+
+$ export GLOBUS_LOCATION=/usr/local/globus-3.9.3
+$ $GLOBUS_LOCATION/sbin/gpt-build schedulers/gt4-gram-<scheduler>-3.9-src_bundle.tar.gz
+
+If you want to install the test bundles, you will need to install junit.
+Then you may run:
+$ export GLOBUS_LOCATION=/usr/local/globus-3.9.3
+$ $GLOBUS_LOCATION/sbin/gpt-build tests/*.tar.gz
