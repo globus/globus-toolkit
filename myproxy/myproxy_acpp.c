@@ -19,11 +19,11 @@
 #include <string.h>
 #include <assert.h>
 
-#define BINARY_NAME "myproxy-acpp"
+#define BINARY_NAME "myproxy-admin-change-pass-phrase"
 
 static char usage[] = \
 "\n"\
-" Syntax:  "  BINARY_NAME "[-usage|-help] [-version]\n"\
+" Syntax:  "  BINARY_NAME " [-usage|-help] [-version]\n"\
 "\n"\
 "    Options\n"\
 "    -h | --help                	Displays usage\n"\
@@ -68,29 +68,25 @@ main(int argc, char *argv[])
     cred.passphrase = (char *) malloc (MAX_PASS_LEN+1);
     if (myproxy_read_verified_passphrase(cred.passphrase,
                                          MAX_PASS_LEN) == -1) {
-
-         fprintf(stderr, "%s\n",
-                 verror_get_string());
-
-	 goto cleanup;
+         fprintf(stderr, "%s\n", verror_get_string());
+	 exit(1);
     }
 
     myproxy_debug("Changing passphrase for username \"%s\"", cred.username);
 
     if (myproxy_admin_change_passphrase(&cred,cred.passphrase) < 0) {
         myproxy_log_verror();
-        fprintf (stderr, "Unable to change passphrase !! %s\n", verror_get_string());
+        fprintf(stderr, "Unable to change passphrase: %s\n",
+		verror_get_string());
     } else {
-        fprintf (stdout, "Password Changed !! \n");
+        fprintf(stdout, "Passphrase changed.\n");
     }
 
-    cleanup:;
     return 0;
 }
 
 void 
-init_arguments(int argc, 
-		       char *argv[], struct myproxy_creds *pcreds)
+init_arguments(int argc, char *argv[], struct myproxy_creds *pcreds)
 {
     extern char *gnu_optarg;
     int arg;
