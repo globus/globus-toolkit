@@ -798,7 +798,6 @@ data_write_callback(
     {
         monitor->count--;
         globus_cond_signal(&monitor->cond);
-
     }
     globus_mutex_unlock(&monitor->mutex);
 
