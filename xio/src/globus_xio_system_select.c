@@ -1017,6 +1017,10 @@ globus_l_xio_system_try_read(
         rc = read(fd, buf, buflen);
     } while(rc < 0 && errno == EINTR);
 
+    GlobusXIOSystemDebugPrintf(
+        GLOBUS_L_XIO_SYSTEM_DEBUG_DATA,
+        ("[%s] Read %d bytes (buflen = %d)\n", _xio_name, rc, buflen));
+
     if(rc < 0)
     {
         if(errno == EAGAIN || errno == EWOULDBLOCK)
@@ -1036,10 +1040,6 @@ globus_l_xio_system_try_read(
     }
 
     *nbytes = rc;
-
-    GlobusXIOSystemDebugPrintf(
-        GLOBUS_L_XIO_SYSTEM_DEBUG_DATA,
-        ("[%s] Read %d bytes\n", _xio_name, rc));
 
     GlobusXIOSystemDebugExitFD(fd);
     return GLOBUS_SUCCESS;

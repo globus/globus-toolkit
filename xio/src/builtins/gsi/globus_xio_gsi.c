@@ -2294,29 +2294,32 @@ globus_l_xio_gsi_read(
         /* read either a new header or a new frame */
         if(no_header == GLOBUS_TRUE)
         {
-            wait_for = 4 - handle->bytes_read + wait_for;
+            wait_for = 4 + wait_for;
         }
         else
         {
-            wait_for = frame_length - handle->bytes_read + header;
-
-            if(frame_length + header > handle->attr->buffer_size)
-            {
-                unsigned char *                 tmp_ptr;
-                
-                tmp_ptr = realloc(handle->read_buffer,
-                                  frame_length + header);
-                if(!tmp_ptr)
-                {
-                    result =
-                        GlobusXIOErrorMemory("handle->read_buffer");
-                    goto error;
-                }
-                
-                handle->attr->buffer_size = frame_length + header;
-                handle->read_buffer = tmp_ptr;
-            }
+            wait_for = frame_length + header;
         }
+
+        if(wait_for > handle->attr->buffer_size)
+        {
+            unsigned char *                 tmp_ptr;
+            
+            tmp_ptr = realloc(handle->read_buffer,
+                              wait_for);
+            if(!tmp_ptr)
+            {
+                result =
+                    GlobusXIOErrorMemory("handle->read_buffer");
+                goto error;
+            }
+            
+            handle->attr->buffer_size = wait_for;
+            handle->read_buffer = tmp_ptr;
+        }
+
+        wait_for =- handle->bytes_read;
+
         handle->read_iovec[1].iov_base =
             &(handle->read_buffer[handle->bytes_read]);
         handle->read_iovec[1].iov_len =
