@@ -99,8 +99,12 @@ HOSTNAME=mayed.mcs.anl.gov START=20050225073026.426286 END=20050225073026.560613
 
 	    temp = fields[0].split("=");
 	    hostname = temp[1]; //hostname is after first equals sign
-	    senderAddress = InetAddress.getByName(hostname);
-
+	    try {
+		senderAddress = InetAddress.getByName(hostname);
+	    } catch (UnknownHostException e) {
+		//Doesn't matter if we can't resolve this
+		//it's redundant anyway...
+	    }
 	    temp = fields[1].split("=");
 	    startTime = dateFromLogfile(temp[1]); //start date after next equals
 
@@ -127,8 +131,10 @@ HOSTNAME=mayed.mcs.anl.gov START=20050225073026.426286 END=20050225073026.560613
 		storOrRetr = STOR_CODE;
 	    else if (temp[1].equals("RETR") || temp[1].equals("ERET"))
 		storOrRetr = RETR_CODE;
-	    else
-		throw new Exception("Neither STOR nor RETR.");
+	    else {
+		storOrRetr = OTHER_TYPE_CODE;
+		log.warn("Neither STOR nor RETR.");
+	    }
 
 	    temp = fields[6].split("=");
 	    ftpReturnCode = Long.parseLong(temp[1]); 

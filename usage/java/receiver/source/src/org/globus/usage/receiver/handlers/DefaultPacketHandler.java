@@ -49,7 +49,6 @@ public class DefaultPacketHandler implements PacketHandler {
     }
    
     public void handlePacket(UsageMonitorPacket pack) {
-        Connection con = null;
         PreparedStatement stmt;
 
         try {

@@ -32,6 +32,7 @@ public class GFTPMonitorPacket extends IPTimeMonitorPacket {
 
     public final static byte STOR_CODE = 0;
     public final static byte RETR_CODE = 1;
+    public final static byte OTHER_TYPE_CODE = 2;
     /*This fixes the number of bytes used to write the GridFTP version
       string:*/
     protected final static int BYTES_FOR_VERSION = 20;
