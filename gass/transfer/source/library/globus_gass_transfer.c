@@ -199,6 +199,8 @@ globus_l_gass_transfer_deactivate(void)
      */
     globus_module_deactivate(GLOBUS_I_GASS_TRANSFER_FTP_MODULE);
 #endif
+
+    globus_i_gass_transfer_unlock();
  
     globus_module_deactivate(GLOBUS_I_GASS_TRANSFER_HTTP_MODULE);
  
@@ -207,8 +209,6 @@ globus_l_gass_transfer_deactivate(void)
 
     
     globus_hashtable_destroy(&globus_i_gass_transfer_protocols);
-
-    globus_i_gass_transfer_unlock();
 
 #if !defined(BUILD_LITE)
     globus_mutex_destroy(&globus_i_gass_transfer_mutex);
