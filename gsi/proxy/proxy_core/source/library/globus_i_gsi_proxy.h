@@ -124,8 +124,8 @@ extern FILE *                           globus_i_gsi_proxy_debug_fstream;
 #define GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(_RESULT_, \
                                             _ERRORTYPE_) \
     _RESULT_ = globus_i_gsi_proxy_error_chain_result( \
-        _RESULT_, \
-        _ERRORTYPE_, \
+        (_RESULT_), \
+        (_ERRORTYPE_), \
         __FILE__, \
         _function_name_, \
         __LINE__, \
