@@ -12,8 +12,7 @@
 
 static char usage[] = \
 "\n"\
-"Syntax: myproxy-server [-d|-debug] [-p|-port #] "\
-"[-c config-file] [-s storage-dir] ...\n"\
+"Syntax: myproxy-server [-p|-port #] [-c config-file] [-s storage-dir] ...\n"\
 "        myproxy-server [-h|-help] [-version]\n"\
 "\n"\
 "   Options\n"\
@@ -25,6 +24,7 @@ static char usage[] = \
 "       -d | --debug                Run in debug mode (don't fork)\n"\
 "       -c | --config               Specifies configuration file to use\n"\
 "       -p | --port    <portnumber> Specifies the port to run on\n"\
+"       -P | --pidfile <path>       Specifies a file to write the pid to\n"\
 "       -s | --storage <directory>  Specifies the credential storage directory\n"\
 "\n";
 
@@ -33,6 +33,7 @@ struct option long_options[] =
     {"debug",            no_argument, NULL, 'd'},
     {"help",             no_argument, NULL, 'h'},
     {"port",       required_argument, NULL, 'p'},
+    {"pidfile",    required_argument, NULL, 'P'},
     {"config",     required_argument, NULL, 'c'},       
     {"storage",    required_argument, NULL, 's'},       
     {"usage",            no_argument, NULL, 'u'},
@@ -41,7 +42,7 @@ struct option long_options[] =
     {0, 0, 0, 0}
 };
 
-static char short_options[] = "dhc:p:s:vVuD:";
+static char short_options[] = "dhc:p:P:s:vVuD:";
 
 static char version[] =
 "myproxy-server version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
@@ -96,6 +97,8 @@ static void my_failure(const char *failure_message);
 static char *timestamp(void);
 
 static int become_daemon(myproxy_server_context_t *server_context);
+
+static void write_pidfile(const char path[]);
 
 static int myproxy_authorize_accept(myproxy_server_context_t *context,
                                     myproxy_socket_attrs_t *attrs,
@@ -201,6 +204,7 @@ main(int argc, char *argv[])
     } else {    
        /* Run as a daemon */
        listenfd = myproxy_init_server(socket_attrs);
+       if (server_context->pidfile) write_pidfile(server_context->pidfile);
        /* Set up concurrent server */
        while (1) {
 	  socket_attrs->socket_fd = accept(listenfd,
@@ -507,6 +511,9 @@ init_arguments(int argc, char *argv[],
         {
         case 'p': 	/* port */
             attrs->psport = atoi(gnu_optarg);
+            break;
+        case 'P': 	/* pidfile */
+            context->pidfile = strdup(gnu_optarg);
             break;
         case 'h': 	/* print help and exit */
             fprintf(stderr, usage);
@@ -930,6 +937,22 @@ become_daemon(myproxy_server_context_t *context)
 #endif /* TIOCNOTTY */
     return 0;
 }
+
+static void
+write_pidfile(const char path[])
+{
+    FILE *f = NULL;
+
+    f = fopen(path, "wb");
+    if (f == NULL) {
+	myproxy_debug("Couldn't create pid file \"%s\": %s",
+		      path, strerror(errno));
+    } else {
+	fprintf(f, "%ld\n", (long) getpid());
+	fclose(f);
+    }
+}
+
 
 /* Check authorization for all incoming requests.  The authorization
  * rules are as follows.
