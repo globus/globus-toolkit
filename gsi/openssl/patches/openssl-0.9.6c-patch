@@ -1,6 +1,6 @@
 diff -u -r openssl-0.9.6c/Configure openssl-0.9.6c-patched/Configure
 --- openssl-0.9.6c/Configure	Thu Dec  6 07:11:39 2001
-+++ openssl-0.9.6c-patched/Configure	Fri Mar  8 11:49:05 2002
++++ openssl-0.9.6c-patched/Configure	Fri Mar  8 12:45:12 2002
 @@ -329,8 +329,8 @@
  # The intel boxes :-), It would be worth seeing if bsdi-gcc can use the
  # bn86-elf.o file file since it is hand tweaked assembler.
@@ -25,7 +25,7 @@ diff -u -r openssl-0.9.6c/Configure openssl-0.9.6c-patched/Configure
 -"aix43-cc",   "cc:-O -DAIX -DB_ENDIAN -qmaxmem=16384::(unknown)::BN_LLONG RC4_CHAR::::::::::dlfcn:",
 -"aix43-gcc",  "gcc:-O3 -DAIX -DB_ENDIAN::(unknown)::BN_LLONG RC4_CHAR::::::::::dlfcn:",
 +"aix43-cc",   "cc:-O -DAIX -DB_ENDIAN -qmaxmem=16384 -qfullpath::-qthreaded -D_THREAD_SAFE::BN_LLONG RC4_CHAR::::::::::dlfcn:aix-shared::.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
-+"aix43-gcc",  "gcc:-O3 -DAIX -DB_ENDIAN::-D_REENTRANT::BN_LLONG RC4_CHAR::::::::::dlfcn:aix-gcc-shared:-shared:.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
++"aix43-gcc",  "gcc:-O3 -DAIX -DB_ENDIAN::-D_REENTRANT::BN_LLONG RC4_CHAR::::::::::dlfcn:aix-shared::.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
 +"aix43-cc_r",   "cc_r:-O -DAIX -DB_ENDIAN -qmaxmem=16384 -qfullpath::(unknown)::BN_LLONG RC4_CHAR::::::::::dlfcn:",
 +"aix43-mpcc",   "cc:-O -DAIX -DB_ENDIAN -qmaxmem=16384 -qfullpath::(unknown)::BN_LLONG RC4_CHAR::::::::::dlfcn:",
 +"aix43-mpcc_r",   "cc_r:-O -DAIX -DB_ENDIAN -qmaxmem=16384 -qfullpath::(unknown)::BN_LLONG RC4_CHAR::::::::::dlfcn:",
@@ -34,8 +34,8 @@ diff -u -r openssl-0.9.6c/Configure openssl-0.9.6c-patched/Configure
  # Cray T90 (SDSC)
 diff -u -r openssl-0.9.6c/Makefile.org openssl-0.9.6c-patched/Makefile.org
 --- openssl-0.9.6c/Makefile.org	Wed Nov 14 04:44:11 2001
-+++ openssl-0.9.6c-patched/Makefile.org	Fri Mar  8 11:53:26 2002
-@@ -231,51 +231,63 @@
++++ openssl-0.9.6c-patched/Makefile.org	Fri Mar  8 12:58:21 2002
+@@ -231,20 +231,21 @@
  		if [ -n "$(SHARED_LIBS_LINK_EXTS)" ]; then \
  			tmp="$(SHARED_LIBS_LINK_EXTS)"; \
  			for j in $${tmp:-x}; do \
@@ -62,18 +62,7 @@ diff -u -r openssl-0.9.6c/Makefile.org openssl-0.9.6c-patched/Makefile.org
  			done; \
  		fi; \
  	done
- 
- build-shared: clean-shared do_$(SHLIB_TARGET) link-shared
- 
-+do_aix-gcc-shared:
-+	libs='-L. ${SHLIBDEPS}'; for i in ${SHLIBDIRS}; do \
-+	( set -x; ${CC}  -shared -o lib$${i}.so.${SHLIB_MAJOR}.${SHLIB_MINOR} \
-+		-Wl,-bexpall -Wl,-bnoentry ${wl}-berok \
-+		lib$${i}.a $$libs ${EX_LIBS}) || exit 1; \
-+	libs="$$libs -l$$i"; \
-+	done
-+
- do_bsd-gcc-shared: do_gnu-shared
+@@ -255,27 +256,30 @@
  do_linux-shared: do_gnu-shared
  do_gnu-shared:
  	libs='-L. ${SHLIBDEPS}'; for i in ${SHLIBDIRS}; do \
@@ -113,7 +102,7 @@ diff -u -r openssl-0.9.6c/Makefile.org openssl-0.9.6c-patched/Makefile.org
  			-set_version "${SHLIB_VERSION_HISTORY}${SHLIB_VERSION_NUMBER}" \
  			-all lib$$i.a -none $$libs ${EX_LIBS} -lc ) || exit 1; \
  		libs="$$libs -l$$i"; \
-@@ -289,10 +301,15 @@
+@@ -289,10 +293,15 @@
  	if ${DETECT_GNU_LD}; then \
  		$(MAKE) do_gnu-shared; \
  	else \
@@ -131,7 +120,7 @@ diff -u -r openssl-0.9.6c/Makefile.org openssl-0.9.6c-patched/Makefile.org
  		libs="$$libs -l$$i"; \
  		done; \
  	fi
-@@ -304,8 +321,13 @@
+@@ -304,8 +313,13 @@
  	if ${DETECT_GNU_LD}; then \
  		$(MAKE) do_gnu-shared; \
  	else \
@@ -146,7 +135,7 @@ diff -u -r openssl-0.9.6c/Makefile.org openssl-0.9.6c-patched/Makefile.org
  			-rpath  ${INSTALLTOP}/lib \
  			-set_version "${SHLIB_VERSION_HISTORY}${SHLIB_VERSION_NUMBER}" \
  			-all lib$$i.a -none $$libs ${EX_LIBS} -lc ) || exit 1; \
-@@ -319,11 +341,16 @@
+@@ -319,11 +333,16 @@
  	if ${DETECT_GNU_LD}; then \
  		$(MAKE) do_gnu-shared; \
  	else \
@@ -166,7 +155,7 @@ diff -u -r openssl-0.9.6c/Makefile.org openssl-0.9.6c-patched/Makefile.org
  		libs="$$libs -l$$i"; \
  		done; \
  	fi
-@@ -333,6 +360,11 @@
+@@ -333,6 +352,11 @@
  	if ${DETECT_GNU_LD}; then \
  		$(MAKE) do_gnu-shared; \
  	else \
@@ -178,7 +167,7 @@ diff -u -r openssl-0.9.6c/Makefile.org openssl-0.9.6c-patched/Makefile.org
  		libs='-L. ${SHLIBDEPS}'; for i in ${SHLIBDIRS}; do \
  		( PATH=/usr/ccs/bin:$$PATH ; export PATH; \
  		  find . -name "*.o" -print > allobjs ; \
-@@ -340,7 +372,7 @@
+@@ -340,7 +364,7 @@
  		  for obj in `ar t lib$$i.a` ; do \
  		    OBJS="$${OBJS} `grep $$obj allobjs`" ; \
  		  done ; \
@@ -187,7 +176,7 @@ diff -u -r openssl-0.9.6c/Makefile.org openssl-0.9.6c-patched/Makefile.org
  			-h lib$$i.so.${SHLIB_MAJOR}.${SHLIB_MINOR} \
  			$${OBJS} $$libs ${EX_LIBS} ) || exit 1; \
  		libs="$$libs -l$$i"; \
-@@ -352,33 +384,39 @@
+@@ -352,33 +376,39 @@
  	if ${DETECT_GNU_LD}; then \
  		$(MAKE) do_gnu-shared; \
  	else \
@@ -241,7 +230,7 @@ diff -u -r openssl-0.9.6c/Makefile.org openssl-0.9.6c-patched/Makefile.org
  # The following method is said to work on all platforms.  Tests will
  # determine if that's how it's gong to be used.
  # This assumes that for all but GNU systems, GNU utilities are *not* used.
-@@ -409,18 +447,26 @@
+@@ -409,18 +439,26 @@
  #  HP/UX-64bit: /usr/ccs/bin/ld
  #  AIX:		$(CC)
  ALLSYMSFLAG=-bnogc
@@ -270,7 +259,7 @@ diff -u -r openssl-0.9.6c/Makefile.org openssl-0.9.6c-patched/Makefile.org
 +		( set -x; \
 +	  	ld -r -o lib$${i}.o $(ALLSYMSFLAG) lib$${i}.a && \
 +	  	( nm -Pg lib$${i}.o | grep ' [BD] ' | cut -f1 -d' ' > lib$${i}.exp; \
-+	    	$(SHAREDCMD) $(SHAREDFLAGS) -o lib$${i}.so.${SHLIB_MAJOR}.${SHLIB_MINOR} lib$${i}.o \
++	    	$${SHAREDCMD} $(SHAREDFLAGS) -o lib$${i}.so.${SHLIB_MAJOR}.${SHLIB_MINOR} lib$${i}.o \
 +			$$libs ${EX_LIBS} ) ) \
 +		|| exit 1; \
 +		libs="$$libs -l$$i"; \
@@ -279,7 +268,7 @@ diff -u -r openssl-0.9.6c/Makefile.org openssl-0.9.6c-patched/Makefile.org
  
  Makefile.ssl: Makefile.org
  	@echo "Makefile.ssl is older than Makefile.org."
-@@ -440,7 +486,7 @@
+@@ -440,7 +478,7 @@
  		rm -f $(LIBS); \
  	fi; \
  	done;
