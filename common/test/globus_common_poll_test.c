@@ -188,12 +188,6 @@ main(int argc, char * argv[])
    int                         passes = 1;
    int                         ctr;
 
-#  if !defined(BUILD_LITE)
-   {
-       passes++;
-   }
-#  endif
-
    for(ctr = 0; ctr < argc; ctr++)
    {
        if(strcmp(argv[ctr], "-verbose") == 0)

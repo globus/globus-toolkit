@@ -422,8 +422,8 @@ STACK_OF(CONF_VALUE) * i2v_PROXYRESTRICTION(
 
     nid = OBJ_obj2nid(PROXYRESTRICTION_get_policy_language(ext));
 
-    snprintf(policy_lang, 128, " %s", 
-             (nid != NID_undef) ? OBJ_nid2ln(nid) : "UNKNOWN");
+    BIO_snprintf(policy_lang, 128, " %s", 
+                 (nid != NID_undef) ? OBJ_nid2ln(nid) : "UNKNOWN");
     
     X509V3_add_value("    Policy Language", 
                      policy_lang,
@@ -449,7 +449,7 @@ STACK_OF(CONF_VALUE) * i2v_PROXYRESTRICTION(
                 unsigned char *         last_string;
                 length = (policy_length - (tmp_string - policy)) + 9;
                 last_string = malloc(length);
-                snprintf(last_string, length, "%8s%s", "", tmp_string);
+                BIO_snprintf(last_string, length, "%8s%s", "", tmp_string);
                 X509V3_add_value(NULL, last_string, &extlist);
                 free(last_string);
                 break;

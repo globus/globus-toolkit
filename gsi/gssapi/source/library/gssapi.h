@@ -111,15 +111,13 @@ typedef void * gss_cred_id_t;
  * 32 bits of precision.
  */
 
-typedef uint32_t gss_uint32;
-
 #ifdef OM_STRING
 /*
  * We have included the xom.h header file.  Verify that OM_uint32
  * is defined correctly.
  */
 
-#if sizeof(gss_uint32) != sizeof(OM_uint32)
+#if sizeof(globus_uint) != sizeof(OM_uint32)
 #error Incompatible definition of OM_uint32 from xom.h
 #endif
 
@@ -130,7 +128,7 @@ typedef OM_object_identifier gss_OID_desc, *gss_OID;
 /*
  * We can't use X/Open definitions, so roll our own.               
  */
-typedef gss_uint32 OM_uint32;
+typedef globus_uint_t OM_uint32;
 typedef struct gss_OID_desc_struct
 {
     OM_uint32 length;

@@ -151,6 +151,21 @@ extern int globus_libc_unlock(void);
 #   define globus_libc_vsprintf vsprintf
 #endif
 
+#if ((!defined(HAVE_THREAD_SAFE_STDIO) && !defined(BUILD_LITE)) || (!defined(HAVE_SNPRINTF)))
+    extern int globus_libc_snprintf(char *s, size_t n, const char *format,
+				    ...);
+#else
+#   define globus_libc_snprintf snprintf
+#endif
+
+#if ((!defined(HAVE_THREAD_SAFE_STDIO) && !defined(BUILD_LITE)) || \
+    (!defined(HAVE_VSNPRINTF)))
+    extern int globus_libc_vsnprintf(char *s, size_t n, const char *format,
+				     va_list ap);
+#else
+#   define globus_libc_vsnprintf vsnprintf
+#endif
+
 /*
  * File I/O routines
  */

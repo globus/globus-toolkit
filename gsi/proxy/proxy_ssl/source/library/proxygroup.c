@@ -421,7 +421,7 @@ STACK_OF(CONF_VALUE) * i2v_PROXYGROUP(
     
     group_name = PROXYGROUP_get_name(ext, &group_name_length);
     name_string = malloc(group_name_length + 2);
-    snprintf(name_string, (group_name_length + 2), " %s", group_name);
+    BIO_snprintf(name_string, (group_name_length + 2), " %s", group_name);
     
     X509V3_add_value("    Group Name",
                      name_string,

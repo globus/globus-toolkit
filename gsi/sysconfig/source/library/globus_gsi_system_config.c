@@ -123,7 +123,7 @@ int globus_i_gsi_sysconfig_debug_level = 0;
  */
 globus_module_descriptor_t globus_i_gsi_sysconfig_module =
 {
-    "globus_credential",
+    "globus_sysconfig",
     globus_l_gsi_sysconfig_activate,
     globus_l_gsi_sysconfig_deactivate,
     GLOBUS_NULL,
@@ -210,7 +210,7 @@ globus_l_gsi_sysconfig_activate(void)
 
     cputime = clock();
 
-/*  #warning  RAND_add((void *) cputime, sizeof(cputime), 2); */
+    /*  #warning  RAND_add((void *) cputime, sizeof(cputime), 2); */
     
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_FPRINTF(
         2, (globus_i_gsi_sysconfig_debug_fstream,
@@ -400,7 +400,7 @@ globus_i_gsi_sysconfig_create_key_string(
     {
         result = GLOBUS_GSI_SYSTEM_CONFIG_MALLOC_ERROR;
         goto exit;
-   }
+    }
 
     result = GLOBUS_GSI_SYSCONFIG_CHECK_KEYFILE(*key_string_value, status);
     if(result != GLOBUS_SUCCESS)
@@ -561,19 +561,19 @@ globus_gsi_sysconfig_file_exists_win32(
     {
         switch (errno)
         {
-        case ENOENT:
-        case ENOTDIR:
+          case ENOENT:
+          case ENOTDIR:
             *status = GLOBUS_DOES_NOT_EXIST;
             result = GLOBUS_SUCCESS;
             goto exit;
 
-        case EACCES:
+          case EACCES:
 
             *status = GLOBUS_BAD_PERMISSIONS;
             result = GLOBUS_SUCCESS;
             goto exit;
 
-        default:
+          default:
             result = globus_error_put(
                 globus_error_wrap_errno_error(
                     GLOBUS_GSI_SYSCONFIG_MODULE,
@@ -650,19 +650,19 @@ globus_i_gsi_sysconfig_check_keyfile_win32(
     {
         switch (errno)
         {
-        case ENOENT:
-        case ENOTDIR:
+          case ENOENT:
+          case ENOTDIR:
             *status = GLOBUS_DOES_NOT_EXIST;
             result = GLOBUS_SUCCESS;
             goto exit;
 
-        case EACCES:
+          case EACCES:
 
             *status = GLOBUS_BAD_PERMISSIONS;
             result = GLOBUS_SUCCESS;
             goto exit;
 
-        default:
+          default:
             result = globus_error_put(
                 globus_error_wrap_errno_error(
                     GLOBUS_GSI_SYSCONFIG_MODULE,
@@ -738,19 +738,19 @@ globus_i_gsi_sysconfig_check_certfile_win32(
     {
         switch (errno)
         {
-        case ENOENT:
-        case ENOTDIR:
+          case ENOENT:
+          case ENOTDIR:
             *status = GLOBUS_DOES_NOT_EXIST;
             result = GLOBUS_SUCCESS;
             goto exit;
 
-        case EACCES:
+          case EACCES:
 
             *status = GLOBUS_BAD_PERMISSIONS;
             result = GLOBUS_SUCCESS;
             goto exit;
 
-        default:
+          default:
             result = globus_error_put(
                 globus_error_wrap_errno_error(
                     GLOBUS_GSI_SYSCONFIG_MODULE,
@@ -1049,9 +1049,9 @@ globus_gsi_sysconfig_get_cert_dir_win32(
                                       val_cert_dir,&lval) == ERROR_SUCCESS))
         {
             if((result = globus_i_gsi_sysconfig_create_cert_dir_string(
-                             cert_dir, 
-                             & reg_cert_dir,
-                             val_cert_dir)) != GLOBUS_SUCCESS)
+                    cert_dir, 
+                    & reg_cert_dir,
+                    val_cert_dir)) != GLOBUS_SUCCESS)
             {
                 goto error_exit;
             }
@@ -1070,12 +1070,12 @@ globus_gsi_sysconfig_get_cert_dir_win32(
         if (home) 
         {
             if((result = globus_i_gsi_sysconfig_create_cert_dir_string(
-                             cert_dir, 
-                             & local_cert_dir,
-                             "%s%s%s",
-                             home,
-                             FILE_SEPERATOR,
-                             X509_LOCAL_TRUSTED_CERT_DIR)) != GLOBUS_SUCCESS)
+                    cert_dir, 
+                    & local_cert_dir,
+                    "%s%s%s",
+                    home,
+                    FILE_SEPERATOR,
+                    X509_LOCAL_TRUSTED_CERT_DIR)) != GLOBUS_SUCCESS)
             {
                 goto error_exit;
             }
@@ -1086,9 +1086,9 @@ globus_gsi_sysconfig_get_cert_dir_win32(
     if (!(*cert_dir))
     {
         if((result = globus_i_gsi_sysconfig_create_cert_dir_string(
-                         cert_dir,
-                         & installed_cert_dir,
-                         X509_INSTALLED_TRUSTED_CERT_DIR)) != GLOBUS_SUCCESS)
+                cert_dir,
+                & installed_cert_dir,
+                X509_INSTALLED_TRUSTED_CERT_DIR)) != GLOBUS_SUCCESS)
         {
             goto error_exit;
         }
@@ -1102,12 +1102,12 @@ globus_gsi_sysconfig_get_cert_dir_win32(
         if (globus_location)
         {
             if((result = globus_i_gsi_sysconfig_create_cert_dir_string(
-                             cert_dir,
-                             & default_cert_dir,
-                             "%s%s%s",
-                             globus_location,
-                             FILE_SEPERATOR,
-                             X509_DEFAULT_TRUSTED_CERT_DIR)) != GLOBUS_SUCCESS)
+                    cert_dir,
+                    & default_cert_dir,
+                    "%s%s%s",
+                    globus_location,
+                    FILE_SEPERATOR,
+                    X509_DEFAULT_TRUSTED_CERT_DIR)) != GLOBUS_SUCCESS)
             {
                 goto error_exit;
             }
@@ -1121,18 +1121,18 @@ globus_gsi_sysconfig_get_cert_dir_win32(
     if(!(*cert_dir))
     {
         result = globus_error_put(globus_error_construct_string(
-            GLOBUS_GSI_SYSCONFIG_MODULE,
-            NULL,
-            "The trusted certificates directory could not be"
-            "found in any of the following locations: \n"
-            "1) env. var. X509_CERT_DIR=%s\n"
-            "2) registry key x509_cert_dir: %s\n"
-            "3) %s\n4) %s\n5) %s\n",
-            env_cert_dir,
-            reg_cert_dir,
-            local_cert_dir,
-            installed_cert_dir,
-            default_cert_dir));
+                                      GLOBUS_GSI_SYSCONFIG_MODULE,
+                                      NULL,
+                                      "The trusted certificates directory could not be"
+                                      "found in any of the following locations: \n"
+                                      "1) env. var. X509_CERT_DIR=%s\n"
+                                      "2) registry key x509_cert_dir: %s\n"
+                                      "3) %s\n4) %s\n5) %s\n",
+                                      env_cert_dir,
+                                      reg_cert_dir,
+                                      local_cert_dir,
+                                      installed_cert_dir,
+                                      default_cert_dir));
 
         goto error_exit;
     }
@@ -1140,7 +1140,7 @@ globus_gsi_sysconfig_get_cert_dir_win32(
     result = GLOBUS_SUCCESS;
     goto done:
 
-  error_exit:
+ error_exit:
     
     if(*cert_dir)
     {
@@ -1277,13 +1277,13 @@ globus_gsi_sysconfig_get_user_cert_filename_win32(
                           val_user_cert,&lval) == ERROR_SUCCESS))
         {
             if((result = globus_i_gsi_sysconfig_create_cert_string(
-                             user_cert,
-                             & reg_user_cert,
-                             val_user_cert)) != GLOBUS_SUCCESS ||
-                (result = globus_i_gsi_sysconfig_create_key_string(
-                              user_key,
-                              & reg_user_key,
-                              val_user_key)) != GLOBUS_SUCCESS)
+                    user_cert,
+                    & reg_user_cert,
+                    val_user_cert)) != GLOBUS_SUCCESS ||
+               (result = globus_i_gsi_sysconfig_create_key_string(
+                   user_key,
+                   & reg_user_key,
+                   val_user_key)) != GLOBUS_SUCCESS)
             {
                 goto error_exit;
             }
@@ -1298,19 +1298,19 @@ globus_gsi_sysconfig_get_user_cert_filename_win32(
         if(GLOBUS_I_GSI_SYSCONFIG_GET_HOME_DIR(&home) == GLOBUS_SUCCESS)
         {
             if((result = globus_i_gsi_sysconfig_create_cert_string(
-                             user_cert,
-                             & default_user_cert,
-                             "%s%s%s",
-                             home,
-                             DEFEAULT_SEPERATOR,
-                             X509_DEFAULT_USER_CERT)) != GLOBUS_SUCCESS ||
+                    user_cert,
+                    & default_user_cert,
+                    "%s%s%s",
+                    home,
+                    DEFEAULT_SEPERATOR,
+                    X509_DEFAULT_USER_CERT)) != GLOBUS_SUCCESS ||
                (result = globus_i_gsi_sysconfig_create_key_string(
-                              key_cert,
-                              & default_key_cert,
-                              "%s%s%s",
-                              home,
-                              DEFAULT_SEPERATOR,
-                              X509_DEFAULT_USER_KEY)) != GLOBUS_SUCCESS)
+                   key_cert,
+                   & default_key_cert,
+                   "%s%s%s",
+                   home,
+                   DEFAULT_SEPERATOR,
+                   X509_DEFAULT_USER_KEY)) != GLOBUS_SUCCESS)
             {
                 goto error_exit;
             }
@@ -1326,12 +1326,12 @@ globus_gsi_sysconfig_get_user_cert_filename_win32(
         if((result = globus_i_gsi_sysconfig_get_home_dir(&home)) == GLOBUS_SUCCESS)
         {
             if((result = globus_i_gsi_sysconfig_create_key_string(
-                              user_key,
-                              & default_pkcs12_user_cred,
-                              "%s%s%s",
-                              home,
-                              FILE_SEPERATOR,
-                              X509_DEFAULT_PKCS12_FILE)) != GLOBUS_SUCCESS)
+                    user_key,
+                    & default_pkcs12_user_cred,
+                    "%s%s%s",
+                    home,
+                    FILE_SEPERATOR,
+                    X509_DEFAULT_PKCS12_FILE)) != GLOBUS_SUCCESS)
             {
                 goto error_exit;
             }
@@ -1515,13 +1515,13 @@ globus_gsi_sysconfig_get_host_cert_filename_win32(
                                       &lval) == ERROR_SUCCESS))
         {
             if((result = globus_i_gsi_sysconfig_create_cert_string(
-                             host_cert,
-                             & reg_host_cert,
-                             val_host_cert)) != GLOBUS_SUCCESS ||
+                    host_cert,
+                    & reg_host_cert,
+                    val_host_cert)) != GLOBUS_SUCCESS ||
                (result = globus_i_gsi_sysconfig_create_cert_string(
-                             host_key,
-                             & reg_host_key,
-                             val_host_key)) != GLOBUS_SUCCESS)
+                   host_key,
+                   & reg_host_key,
+                   val_host_key)) != GLOBUS_SUCCESS)
             {
                 goto error_exit;
             }
@@ -1535,21 +1535,21 @@ globus_gsi_sysconfig_get_host_cert_filename_win32(
         if((result = globus_i_gsi_sysconfig_get_home_dir(&home)) == GLOBUS_SUCCESS)
         {
             if((result = globus_i_gsi_sysconfig_create_cert_string(
-                             host_cert,
-                             & default_host_cert,
-                             "%s%s%s%s",
-                             X509_DEFAULT_CERT_DIR,
-                             FILE_SEPERATOR,
-                             X509_HOST_PREFIX,
-                             X509_CERT_SUFFIX)) != GLOBUS_SUCCESS ||
+                    host_cert,
+                    & default_host_cert,
+                    "%s%s%s%s",
+                    X509_DEFAULT_CERT_DIR,
+                    FILE_SEPERATOR,
+                    X509_HOST_PREFIX,
+                    X509_CERT_SUFFIX)) != GLOBUS_SUCCESS ||
                (result = globus_i_gsi_sysconfig_create_key_string(
-                              host_key,
-                              & default_key_cert,
-                              "%s%s%s%s",
-                              X509_DEFAULT_CERT_DIR,
-                              FILE_SEPERATOR,
-                              X509_HOST_PREFIX,
-                              X509_KEY_SUFFIX)) != GLOBUS_SUCCESS)
+                   host_key,
+                   & default_key_cert,
+                   "%s%s%s%s",
+                   X509_DEFAULT_CERT_DIR,
+                   FILE_SEPERATOR,
+                   X509_HOST_PREFIX,
+                   X509_KEY_SUFFIX)) != GLOBUS_SUCCESS)
             {
                 goto error_exit;
             }
@@ -1564,25 +1564,25 @@ globus_gsi_sysconfig_get_host_cert_filename_win32(
         if(globus_location)
         {
             if((result = globus_i_gsi_sysconfig_create_cert_string(
-                             host_cert,
-                             & installed_host_cert,
-                             "%s%s%s%s%s%s",
-                             globus_location,
-                             FILE_SEPERATOR,
-                             X509_INSTALLED_CERT_DIR,
-                             FILE_SEPERATOR,
-                             X509_HOST_PREFIX,
-                             X509_CERT_SUFFIX)) != GLOBUS_SUCCESS ||
+                    host_cert,
+                    & installed_host_cert,
+                    "%s%s%s%s%s%s",
+                    globus_location,
+                    FILE_SEPERATOR,
+                    X509_INSTALLED_CERT_DIR,
+                    FILE_SEPERATOR,
+                    X509_HOST_PREFIX,
+                    X509_CERT_SUFFIX)) != GLOBUS_SUCCESS ||
                (result = globus_i_gsi_sysconfig_create_key_string(
-                             host_key,
-                             & installed_host_key,
-                             "%s%s%s%s%s%s",
-                             globus_location,
-                             FILE_SEPERATOR,
-                             X509_INSTALLED_CERT_DIR,
-                             FILE_SEPERATOR,
-                             X509_HOST_PREFIX,
-                             X509_KEY_SUFFIX)) != GLOBUS_SUCCESS)
+                   host_key,
+                   & installed_host_key,
+                   "%s%s%s%s%s%s",
+                   globus_location,
+                   FILE_SEPERATOR,
+                   X509_INSTALLED_CERT_DIR,
+                   FILE_SEPERATOR,
+                   X509_HOST_PREFIX,
+                   X509_KEY_SUFFIX)) != GLOBUS_SUCCESS)
             {
                 goto error_exit;
             }
@@ -1594,25 +1594,25 @@ globus_gsi_sysconfig_get_host_cert_filename_win32(
         if(GLOBUS_I_GSI_SYSCONFIG_GET_HOME_DIR(&home) == GLOBUS_SUCCESS)
         {
             if((result = globus_i_gsi_sysconfig_create_cert_string(
-                             host_cert,
-                             & local_host_cert,
-                             "%s%s%s%s%s%s",
-                             home,
-                             FILE_SEPERATOR,
-                             X509_LOCAL_CERT_DIR,
-                             FILE_SEPERATOR,
-                             X509_HOST_PREFIX,
-                             X509_CERT_SUFFIX)) != GLOBUS_SUCCESS ||
+                    host_cert,
+                    & local_host_cert,
+                    "%s%s%s%s%s%s",
+                    home,
+                    FILE_SEPERATOR,
+                    X509_LOCAL_CERT_DIR,
+                    FILE_SEPERATOR,
+                    X509_HOST_PREFIX,
+                    X509_CERT_SUFFIX)) != GLOBUS_SUCCESS ||
                (result = globus_i_gsi_sysconfig_create_key_string(
-                             host_key,
-                             & local_key_cert,
-                             "%s%s%s%s%s%s",
-                             home,
-                             FILE_SEPERATOR,
-                             X509_LOCAL_CERT_DIR,
-                             FILE_SEPERATOR,
-                             X509_HOST_PREFIX,
-                             X509_KEY_SUFFIX)) != GLOBUS_SUCCESS)
+                   host_key,
+                   & local_key_cert,
+                   "%s%s%s%s%s%s",
+                   home,
+                   FILE_SEPERATOR,
+                   X509_LOCAL_CERT_DIR,
+                   FILE_SEPERATOR,
+                   X509_HOST_PREFIX,
+                   X509_KEY_SUFFIX)) != GLOBUS_SUCCESS)
             {
                 goto error_exit;
             }
@@ -1827,13 +1827,13 @@ globus_gsi_sysconfig_get_service_cert_filename_win32(
                                       &lval) == ERROR_SUCCESS))
         {
             if((result = globus_i_gsi_sysconfig_create_cert_string(
-                             service_cert,
-                             & reg_service_cert,
-                             val_service_cert)) != GLOBUS_SUCCESS ||
+                    service_cert,
+                    & reg_service_cert,
+                    val_service_cert)) != GLOBUS_SUCCESS ||
                (result = globus_i_gsi_sysconfig_create_cert_string(
-                             service_key,
-                             & reg_service_key,
-                             val_service_key)) != GLOBUS_SUCCESS)
+                   service_key,
+                   & reg_service_key,
+                   val_service_key)) != GLOBUS_SUCCESS)
             {
                 goto error_exit;
             }
@@ -1848,25 +1848,25 @@ globus_gsi_sysconfig_get_service_cert_filename_win32(
         if((result = globus_i_gsi_sysconfig_get_home_dir(&home)) == GLOBUS_SUCCESS)
         {
             if((result = globus_i_gsi_sysconfig_create_cert_string(
-                             service_cert,
-                             & default_service_cert,
-                             "%s%s%s%s%s%s",
-                             X509_DEFAULT_CERT_DIR,
-                             FILE_SEPERATOR,
-                             service_name,
-                             FILE_SEPERATOR,
-                             service_name,
-                             X509_CERT_SUFFIX)) != GLOBUS_SUCCESS ||
+                    service_cert,
+                    & default_service_cert,
+                    "%s%s%s%s%s%s",
+                    X509_DEFAULT_CERT_DIR,
+                    FILE_SEPERATOR,
+                    service_name,
+                    FILE_SEPERATOR,
+                    service_name,
+                    X509_CERT_SUFFIX)) != GLOBUS_SUCCESS ||
                (result = globus_i_gsi_sysconfig_create_key_string(
-                              service_key,
-                              & default_key_cert,
-                              "%s%s%s%s%s%s",
-                              X509_DEFAULT_CERT_DIR,
-                              FILE_SEPERATOR,
-                              service_name,
-                              FILE_SEPERATOR,
-                              service_name,
-                              X509_KEY_SUFFIX)) != GLOBUS_SUCCESS)
+                   service_key,
+                   & default_key_cert,
+                   "%s%s%s%s%s%s",
+                   X509_DEFAULT_CERT_DIR,
+                   FILE_SEPERATOR,
+                   service_name,
+                   FILE_SEPERATOR,
+                   service_name,
+                   X509_KEY_SUFFIX)) != GLOBUS_SUCCESS)
             {
                 goto error_exit;
             }
@@ -1881,29 +1881,29 @@ globus_gsi_sysconfig_get_service_cert_filename_win32(
         if(globus_location)
         {
             if((result = globus_i_gsi_sysconfig_create_cert_string(
-                             service_cert,
-                             & installed_service_cert,
-                             "%s%s%s%s%s%s%s%s",
-                             globus_location,
-                             FILE_SEPERATOR,
-                             X509_INSTALLED_CERT_DIR,
-                             FILE_SEPERATOR,
-                             service_name,
-                             FILE_SEPERATOR,
-                             service_name,
-                             X509_CERT_SUFFIX)) != GLOBUS_SUCCESS ||
+                    service_cert,
+                    & installed_service_cert,
+                    "%s%s%s%s%s%s%s%s",
+                    globus_location,
+                    FILE_SEPERATOR,
+                    X509_INSTALLED_CERT_DIR,
+                    FILE_SEPERATOR,
+                    service_name,
+                    FILE_SEPERATOR,
+                    service_name,
+                    X509_CERT_SUFFIX)) != GLOBUS_SUCCESS ||
                (result = globus_i_gsi_sysconfig_create_key_string(
-                             service_key,
-                             & installed_service_key,
-                             "%s%s%s%s%s%s%s%s",
-                             globus_location,
-                             FILE_SEPERATOR,
-                             X509_INSTALLED_CERT_DIR,
-                             FILE_SEPERATOR,
-                             service_name,
-                             FILE_SEPERATOR,
-                             service_name,
-                             X509_KEY_SUFFIX)) != GLOBUS_SUCCESS)
+                   service_key,
+                   & installed_service_key,
+                   "%s%s%s%s%s%s%s%s",
+                   globus_location,
+                   FILE_SEPERATOR,
+                   X509_INSTALLED_CERT_DIR,
+                   FILE_SEPERATOR,
+                   service_name,
+                   FILE_SEPERATOR,
+                   service_name,
+                   X509_KEY_SUFFIX)) != GLOBUS_SUCCESS)
             {
                 goto error_exit;
             }
@@ -1915,29 +1915,29 @@ globus_gsi_sysconfig_get_service_cert_filename_win32(
         if(GLOBUS_I_GSI_SYSCONFIG_GET_HOME_DIR(&home) == GLOBUS_SUCCESS)
         {
             if((result = globus_i_gsi_sysconfig_create_cert_string(
-                             service_cert,
-                             & local_service_cert,
-                             "%s%s%s%s%s%s%s",
-                             home,
-                             FILE_SEPERATOR,
-                             X509_LOCAL_CERT_DIR,
-                             FILE_SEPERATOR,
-                             service_name,
-                             FILE_SEPERATOR,
-                             service_name,
-                             X509_CERT_SUFFIX)) != GLOBUS_SUCCESS ||
+                    service_cert,
+                    & local_service_cert,
+                    "%s%s%s%s%s%s%s",
+                    home,
+                    FILE_SEPERATOR,
+                    X509_LOCAL_CERT_DIR,
+                    FILE_SEPERATOR,
+                    service_name,
+                    FILE_SEPERATOR,
+                    service_name,
+                    X509_CERT_SUFFIX)) != GLOBUS_SUCCESS ||
                (result = globus_i_gsi_sysconfig_create_key_string(
-                             service_key,
-                             & local_key_cert,
-                             "%s%s%s%s%s%s%s%s",
-                             home,
-                             FILE_SEPERATOR,
-                             X509_LOCAL_CERT_DIR,
-                             FILE_SEPERATOR,
-                             service_name,
-                             FILE_SEPERATOR,
-                             service_name,
-                             X509_KEY_SUFFIX)) != GLOBUS_SUCCESS)
+                   service_key,
+                   & local_key_cert,
+                   "%s%s%s%s%s%s%s%s",
+                   home,
+                   FILE_SEPERATOR,
+                   X509_LOCAL_CERT_DIR,
+                   FILE_SEPERATOR,
+                   service_name,
+                   FILE_SEPERATOR,
+                   service_name,
+                   X509_KEY_SUFFIX)) != GLOBUS_SUCCESS)
             {
                 goto error_exit;
             }
@@ -2126,9 +2126,9 @@ globus_gsi_sysconfig_get_proxy_filename_win32(
                                       val_user_proxy, &lval) == ERROR_SUCCESS))
         {
             if((result = globus_i_gsi_sysconfig_create_key_string(
-                             proxy_cert,
-                             & reg_user_proxy,
-                             val_user_proxy)) != GLOBUS_SUCCESS)
+                    proxy_cert,
+                    & reg_user_proxy,
+                    val_user_proxy)) != GLOBUS_SUCCESS)
             {
                 goto error_exit;
             }
@@ -2144,19 +2144,19 @@ globus_gsi_sysconfig_get_proxy_filename_win32(
     if (!user_proxy)
     {
         if((result = GLOBUS_GSI_SYSCONFIG_GET_USER_ID_STRING(
-            &user_id_string))
+                &user_id_string))
            != GLOBUS_SUCCESS)
         {
             goto error_exit;
         }
         if((result = globus_i_gsi_sysconfig_create_key_string(
-                          user_proxy,
-                          & default_user_proxy,
-                          "%s%s%s%s",
-                          DEFAULT_SECURE_TMP_DIR,
-                          FILE_SEPERATOR,
-                          X509_USER_PROXY_FILE,
-                          user_id_string)) != GLOBUS_SUCCESS)
+                user_proxy,
+                & default_user_proxy,
+                "%s%s%s%s",
+                DEFAULT_SECURE_TMP_DIR,
+                FILE_SEPERATOR,
+                X509_USER_PROXY_FILE,
+                user_id_string)) != GLOBUS_SUCCESS)
         {
             goto error_exit;
         }
@@ -2377,8 +2377,8 @@ globus_gsi_sysconfig_get_user_id_string_unix(
 
     while(1)
     {
-        length = snprintf(*user_id_string, len,
-                           "%d", uid);
+        length = globus_libc_snprintf(*user_id_string, len,
+                                      "%d", uid);
         if(length > -1 && length < len)
         {
             break;
@@ -2434,11 +2434,11 @@ globus_gsi_sysconfig_get_username_unix(
     if(!passwd_username)
     {
         globus_error_put(globus_error_wrap_errno_error(
-            GLOBUS_GSI_SYSCONFIG_MODULE,
-            errno,
-            GLOBUS_GSI_SYSCONFIG_ERROR_ERRNO,
-            "%s:%d: Error getting passwd username from uid: %d",
-            __FILE__, __LINE__, uid));
+                             GLOBUS_GSI_SYSCONFIG_MODULE,
+                             errno,
+                             GLOBUS_GSI_SYSCONFIG_ERROR_ERRNO,
+                             "%s:%d: Error getting passwd username from uid: %d",
+                             __FILE__, __LINE__, uid));
         goto exit;
     }
         
@@ -2497,8 +2497,8 @@ globus_gsi_sysconfig_get_proc_id_string_unix(
 
     while(1)
     {
-        length = snprintf(*proc_id_string, len,
-                           "%d", pid);
+        length = globus_libc_snprintf(*proc_id_string, len,
+                                      "%d", pid);
         if(length > -1 && length < len)
         {
             break;
@@ -2581,7 +2581,7 @@ globus_gsi_sysconfig_make_absolute_path_for_filename_unix(
             result = GLOBUS_GSI_SYSTEM_CONFIG_MALLOC_ERROR;
             goto exit;
         }
-        snprintf(*absolute_path, length, "%s/%s", cwd, filename);
+        globus_libc_snprintf(*absolute_path, length, "%s/%s", cwd, filename);
     }
     else
     {
@@ -2593,7 +2593,7 @@ globus_gsi_sysconfig_make_absolute_path_for_filename_unix(
             result = GLOBUS_GSI_SYSTEM_CONFIG_MALLOC_ERROR;
             goto exit;
         }
-        snprintf(*absolute_path, length, "%s", filename);
+        globus_libc_snprintf(*absolute_path, length, "%s", filename);
     }
 
  exit:
@@ -2659,8 +2659,8 @@ globus_gsi_sysconfig_split_dir_and_filename_unix(
             goto exit;
         }
 
-        snprintf(*filename_string, filename_string_length, 
-                 "%s", full_filename); 
+        globus_libc_snprintf(*filename_string, filename_string_length, 
+                             "%s", full_filename); 
     }
     else
     {
@@ -2674,8 +2674,8 @@ globus_gsi_sysconfig_split_dir_and_filename_unix(
             goto free_filename_string;
         }
         
-        snprintf(temp_pathname, (strlen(full_filename) + 1), 
-                 "%s", full_filename);
+        globus_libc_snprintf(temp_pathname, (strlen(full_filename) + 1), 
+                             "%s", full_filename);
 
         temp_pathname[(split_index - full_filename) + 1] = '\0';
         dir_string_length = strlen(temp_pathname) + 1;
@@ -2688,7 +2688,8 @@ globus_gsi_sysconfig_split_dir_and_filename_unix(
             goto free_filename_string;
         }
 
-        snprintf(*dir_string, dir_string_length, "%s", temp_pathname);
+        globus_libc_snprintf(*dir_string,
+                             dir_string_length, "%s", temp_pathname);
         
         free(temp_pathname);
 
@@ -2772,13 +2773,13 @@ globus_gsi_sysconfig_get_current_working_dir_unix(
         }
         else if(!result_buffer)
         {
-                result = 
-                    globus_error_put(globus_error_wrap_errno_error(
-                        GLOBUS_GSI_SYSCONFIG_MODULE,
-                        errno,
-                        GLOBUS_GSI_SYSCONFIG_ERROR_ERRNO,
-                        "%s:%d: Couldn't get the current working directory",
-                        __FILE__, __LINE__));
+            result = 
+                globus_error_put(globus_error_wrap_errno_error(
+                                     GLOBUS_GSI_SYSCONFIG_MODULE,
+                                     errno,
+                                     GLOBUS_GSI_SYSCONFIG_ERROR_ERRNO,
+                                     "%s:%d: Couldn't get the current working directory",
+                                     __FILE__, __LINE__));
         }
         else
         {
@@ -2874,31 +2875,30 @@ globus_gsi_sysconfig_file_exists_unix(
     {
         switch(errno)
         {
-
-        case ENOENT:
-        case ENOTDIR:
+          case ENOENT:
+          case ENOTDIR:
             *status = GLOBUS_FILE_DOES_NOT_EXIST;
             result = GLOBUS_SUCCESS;
             goto exit;
-
-        case EACCES:
-
+            
+          case EACCES:
+            
             *status = GLOBUS_FILE_BAD_PERMISSIONS;
             result = GLOBUS_SUCCESS;
             goto exit;
 
-        default:
-        result = globus_error_put(
-            globus_error_wrap_errno_error(
-                GLOBUS_GSI_SYSCONFIG_MODULE,
-                errno,
-                GLOBUS_GSI_SYSCONFIG_ERROR_CHECKING_FILE_EXISTS,
-                __FILE__":%d:%s: Error getting status "
-                "of certificate directory: %s\n",
-                __LINE__, 
-                _function_name_,
-                filename));
-        goto exit;
+          default:
+            result = globus_error_put(
+                globus_error_wrap_errno_error(
+                    GLOBUS_GSI_SYSCONFIG_MODULE,
+                    errno,
+                    GLOBUS_GSI_SYSCONFIG_ERROR_CHECKING_FILE_EXISTS,
+                    __FILE__":%d:%s: Error getting status "
+                    "of certificate directory: %s\n",
+                    __LINE__, 
+                    _function_name_,
+                    filename));
+            goto exit;
         
         }
     }
@@ -2980,19 +2980,19 @@ globus_gsi_sysconfig_check_keyfile_unix(
     {
         switch (errno)
         {
-        case ENOENT:
-        case ENOTDIR:
+          case ENOENT:
+          case ENOTDIR:
             *status = GLOBUS_FILE_DOES_NOT_EXIST;
             result = GLOBUS_SUCCESS;
             goto exit;
 
-        case EACCES:
+          case EACCES:
 
             *status = GLOBUS_FILE_BAD_PERMISSIONS;
             result = GLOBUS_SUCCESS;
             goto exit;
 
-        default:
+          default:
             result = globus_error_put(
                 globus_error_wrap_errno_error(
                     GLOBUS_GSI_SYSCONFIG_MODULE,
@@ -3103,19 +3103,19 @@ globus_gsi_sysconfig_check_certfile_unix(
     {
         switch (errno)
         {
-        case ENOENT:
-        case ENOTDIR:
+          case ENOENT:
+          case ENOTDIR:
             *status = GLOBUS_FILE_DOES_NOT_EXIST;
             result = GLOBUS_SUCCESS;
             goto exit;
 
-        case EACCES:
+          case EACCES:
 
             *status = GLOBUS_FILE_BAD_PERMISSIONS;
             result = GLOBUS_SUCCESS;
             goto exit;
 
-        default:
+          default:
             result = globus_error_put(
                 globus_error_wrap_errno_error(
                     GLOBUS_GSI_SYSCONFIG_MODULE,
@@ -3275,13 +3275,13 @@ globus_gsi_sysconfig_get_cert_dir_unix(
         if (home) 
         {
             if((result = globus_i_gsi_sysconfig_create_cert_dir_string(
-                             cert_dir, 
-                             & local_cert_dir,
-                             & status,
-                             "%s%s%s",
-                             home,
-                             FILE_SEPERATOR,
-                             X509_LOCAL_TRUSTED_CERT_DIR)) != GLOBUS_SUCCESS)
+                    cert_dir, 
+                    & local_cert_dir,
+                    & status,
+                    "%s%s%s",
+                    home,
+                    FILE_SEPERATOR,
+                    X509_LOCAL_TRUSTED_CERT_DIR)) != GLOBUS_SUCCESS)
             {
                 goto error_exit;
             }
@@ -3292,10 +3292,10 @@ globus_gsi_sysconfig_get_cert_dir_unix(
     if (!(*cert_dir))
     {
         if((result = globus_i_gsi_sysconfig_create_cert_dir_string(
-            cert_dir,
-            &installed_cert_dir,
-            &status,
-            X509_DEFAULT_TRUSTED_CERT_DIR)) != GLOBUS_SUCCESS)
+                cert_dir,
+                &installed_cert_dir,
+                &status,
+                X509_DEFAULT_TRUSTED_CERT_DIR)) != GLOBUS_SUCCESS)
         {
             goto error_exit;
         }
@@ -3309,13 +3309,13 @@ globus_gsi_sysconfig_get_cert_dir_unix(
         if (globus_location)
         {
             if((result = globus_i_gsi_sysconfig_create_cert_dir_string(
-                cert_dir,
-                &default_cert_dir,
-                &status,
-                "%s%s%s",
-                globus_location,
-                FILE_SEPERATOR,
-                X509_INSTALLED_TRUSTED_CERT_DIR)) != GLOBUS_SUCCESS)
+                    cert_dir,
+                    &default_cert_dir,
+                    &status,
+                    "%s%s%s",
+                    globus_location,
+                    FILE_SEPERATOR,
+                    X509_INSTALLED_TRUSTED_CERT_DIR)) != GLOBUS_SUCCESS)
             {
                 goto error_exit;
             }
@@ -3346,7 +3346,7 @@ globus_gsi_sysconfig_get_cert_dir_unix(
     result = GLOBUS_SUCCESS;
     goto done;
 
-  error_exit:
+ error_exit:
     
     if(*cert_dir)
     {
@@ -3467,20 +3467,20 @@ globus_gsi_sysconfig_get_user_cert_filename_unix(
         if(GLOBUS_GSI_SYSCONFIG_GET_HOME_DIR(&home) == GLOBUS_SUCCESS)
         {
             if((result = globus_i_gsi_sysconfig_create_cert_string(
-                             user_cert,
-                             & default_user_cert,
-                             "%s%s%s",
-                             home,
-                             FILE_SEPERATOR,
-                             X509_DEFAULT_USER_CERT)) != GLOBUS_SUCCESS ||
+                    user_cert,
+                    & default_user_cert,
+                    "%s%s%s",
+                    home,
+                    FILE_SEPERATOR,
+                    X509_DEFAULT_USER_CERT)) != GLOBUS_SUCCESS ||
                (result = globus_i_gsi_sysconfig_create_key_string(
-                              user_key,
-                              & default_user_key,
-                              & status,
-                              "%s%s%s",
-                              home,
-                              FILE_SEPERATOR,
-                              X509_DEFAULT_USER_KEY)) != GLOBUS_SUCCESS)
+                   user_key,
+                   & default_user_key,
+                   & status,
+                   "%s%s%s",
+                   home,
+                   FILE_SEPERATOR,
+                   X509_DEFAULT_USER_KEY)) != GLOBUS_SUCCESS)
             {
                 *user_cert = "NULL_USER_CERT";
                 *user_key = "NULL_USER_KEY";
@@ -3499,13 +3499,13 @@ globus_gsi_sysconfig_get_user_cert_filename_unix(
            == GLOBUS_SUCCESS)
         {
             if((result = globus_i_gsi_sysconfig_create_key_string(
-                              user_key,
-                              & default_pkcs12_user_cred,
-                              & status,
-                              "%s%s%s",
-                              home,
-                              FILE_SEPERATOR,
-                              X509_DEFAULT_PKCS12_FILE)) != GLOBUS_SUCCESS)
+                    user_key,
+                    & default_pkcs12_user_cred,
+                    & status,
+                    "%s%s%s",
+                    home,
+                    FILE_SEPERATOR,
+                    X509_DEFAULT_PKCS12_FILE)) != GLOBUS_SUCCESS)
             {
                 *user_cert = "NULL_USER_CERT";
                 *user_key = "NULL_USER_KEY";
@@ -3693,22 +3693,22 @@ globus_gsi_sysconfig_get_host_cert_filename_unix(
            == GLOBUS_SUCCESS)
         {
             if((result = globus_i_gsi_sysconfig_create_cert_string(
-                             host_cert,
-                             & default_host_cert,
-                             "%s%s%s%s",
-                             X509_DEFAULT_CERT_DIR,
-                             FILE_SEPERATOR,
-                             X509_HOST_PREFIX,
-                             X509_CERT_SUFFIX)) != GLOBUS_SUCCESS ||
+                    host_cert,
+                    & default_host_cert,
+                    "%s%s%s%s",
+                    X509_DEFAULT_CERT_DIR,
+                    FILE_SEPERATOR,
+                    X509_HOST_PREFIX,
+                    X509_CERT_SUFFIX)) != GLOBUS_SUCCESS ||
                (result = globus_i_gsi_sysconfig_create_key_string(
-                              host_key,
-                              & default_host_key,
-                              & status,
-                              "%s%s%s%s",
-                              X509_DEFAULT_CERT_DIR,
-                              FILE_SEPERATOR,
-                              X509_HOST_PREFIX,
-                              X509_KEY_SUFFIX)) != GLOBUS_SUCCESS)
+                   host_key,
+                   & default_host_key,
+                   & status,
+                   "%s%s%s%s",
+                   X509_DEFAULT_CERT_DIR,
+                   FILE_SEPERATOR,
+                   X509_HOST_PREFIX,
+                   X509_KEY_SUFFIX)) != GLOBUS_SUCCESS)
             {
                 *host_cert = "NULL_HOST_CERT";
                 *host_key = "NULL_HOST_KEY";
@@ -3725,26 +3725,26 @@ globus_gsi_sysconfig_get_host_cert_filename_unix(
         if(globus_location)
         {
             if((result = globus_i_gsi_sysconfig_create_cert_string(
-                             host_cert,
-                             & installed_host_cert,
-                             "%s%s%s%s%s%s",
-                             globus_location,
-                             FILE_SEPERATOR,
-                             X509_INSTALLED_CERT_DIR,
-                             FILE_SEPERATOR,
-                             X509_HOST_PREFIX,
-                             X509_CERT_SUFFIX)) != GLOBUS_SUCCESS ||
+                    host_cert,
+                    & installed_host_cert,
+                    "%s%s%s%s%s%s",
+                    globus_location,
+                    FILE_SEPERATOR,
+                    X509_INSTALLED_CERT_DIR,
+                    FILE_SEPERATOR,
+                    X509_HOST_PREFIX,
+                    X509_CERT_SUFFIX)) != GLOBUS_SUCCESS ||
                (result = globus_i_gsi_sysconfig_create_key_string(
-                             host_key,
-                             & installed_host_key,
-                             & status,
-                             "%s%s%s%s%s%s",
-                             globus_location,
-                             FILE_SEPERATOR,
-                             X509_INSTALLED_CERT_DIR,
-                             FILE_SEPERATOR,
-                             X509_HOST_PREFIX,
-                             X509_KEY_SUFFIX)) != GLOBUS_SUCCESS)
+                   host_key,
+                   & installed_host_key,
+                   & status,
+                   "%s%s%s%s%s%s",
+                   globus_location,
+                   FILE_SEPERATOR,
+                   X509_INSTALLED_CERT_DIR,
+                   FILE_SEPERATOR,
+                   X509_HOST_PREFIX,
+                   X509_KEY_SUFFIX)) != GLOBUS_SUCCESS)
             {
                 *host_cert = "NULL_HOST_CERT";
                 *host_key = "NULL_HOST_KEY";
@@ -3945,7 +3945,7 @@ globus_gsi_sysconfig_get_service_cert_filename_unix(
                 result,
                 GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_CERT_STRING,
                 ("X509_USER_CERT=%s is not a valid service certificate file",
-                getenv(X509_USER_CERT)));
+                 getenv(X509_USER_CERT)));
             *service_cert = env_service_cert;
             goto done;
         }
@@ -4605,7 +4605,7 @@ globus_gsi_sysconfig_remove_all_owned_files_unix(
                             rec--;
                         }
                         if (left) 
-                            write(f, msg, left);
+ write(f, msg, left);
                     }
                     close(f);
                 }
@@ -4801,16 +4801,16 @@ globus_gsi_sysconfig_get_unique_proxy_filename(
     ++unique_postfix;
 
     if((result = globus_i_gsi_sysconfig_create_key_string(
-        unique_filename,
-        & default_unique_filename,
-        & status,
-        "%s%s%s%s.%s.%d",
-        DEFAULT_SECURE_TMP_DIR,
-        FILE_SEPERATOR,
-        X509_UNIQUE_PROXY_FILE,
-        proc_id_string,
-        unique_postfix,
-        ++i)) != GLOBUS_SUCCESS)
+            unique_filename,
+            & default_unique_filename,
+            & status,
+            "%s%s%s%s.%s.%d",
+            DEFAULT_SECURE_TMP_DIR,
+            FILE_SEPERATOR,
+            X509_UNIQUE_PROXY_FILE,
+            proc_id_string,
+            unique_postfix,
+            ++i)) != GLOBUS_SUCCESS)
     {
         result = GLOBUS_GSI_SYSCONFIG_ERROR_CHAIN_RESULT(
             result,

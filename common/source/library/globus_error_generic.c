@@ -188,9 +188,9 @@ globus_error_initialize_error(
 
         while (1)
         {
-            length = vsnprintf(instance_data->short_desc,
-                               size,
-                               short_desc_format,ap);
+            length = globus_libc_vsnprintf(instance_data->short_desc,
+					   size,
+					   short_desc_format,ap);
 
             if (length > -1 && length < size)
             {
@@ -438,10 +438,10 @@ globus_error_set_short_desc(
     
     while (1)
     {
-        length = vsnprintf(*instance_short_desc,
-                           size,
-                           short_desc_format,
-                           ap);
+        length = globus_libc_vsnprintf(*instance_short_desc,
+				       size,
+				       short_desc_format,
+				       ap);
         
         if (length > -1 && length < size)
         {
@@ -544,10 +544,10 @@ globus_error_set_long_desc(
     
     while (1)
     {
-        length = vsnprintf(*instance_long_desc,
-                           size,
-                           long_desc_format,
-                           ap);
+        length = globus_libc_vsnprintf(*instance_long_desc,
+				       size,
+				       long_desc_format,
+				       ap);
         
         if (length > -1 && length < size)
         {

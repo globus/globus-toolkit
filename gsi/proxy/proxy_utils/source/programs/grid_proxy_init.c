@@ -974,7 +974,6 @@ globus_i_gsi_proxy_utils_print_error(
     int                                 line)
 {
     globus_object_t *                   error_obj;
-    globus_object_t *                   base_error_obj;
 
     error_obj = globus_error_get(result);
     if(debug)
@@ -989,20 +988,6 @@ globus_i_gsi_proxy_utils_print_error(
         {
             globus_libc_free(error_string);
         }
-        base_error_obj = error_obj;
-        while(1)
-        {
-            if(!globus_error_get_cause(base_error_obj) || 
-               globus_object_get_type(
-                   globus_error_get_cause(base_error_obj)) 
-               == GLOBUS_ERROR_TYPE_OPENSSL)
-            {
-                break;
-            }
-            base_error_obj = globus_error_get_cause(base_error_obj);
-        }
-        globus_libc_fprintf(stderr, "\nBASE CAUSE: %s\n\n", 
-                            globus_error_get_long_desc(base_error_obj)); 
     }
     else 
     {

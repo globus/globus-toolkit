@@ -1147,7 +1147,7 @@ globus_result_t globus_gsi_cred_get_group_names(
     }
 
     /* adding null-terminator to group name */
-    if(snprintf(final_group_name, (group_name_length + 1),
+    if(globus_libc_snprintf(final_group_name, (group_name_length + 1),
                 "%s", group_name) < 0)
     {
         GLOBUS_GSI_CRED_ERROR_RESULT(
@@ -1236,7 +1236,7 @@ globus_result_t globus_gsi_cred_get_group_names(
             }
 
             /* adding null-terminator to group name */
-            if(snprintf(final_group_name, (group_name_length + 1),
+            if(globus_libc_snprintf(final_group_name, (group_name_length + 1),
                         "%s", group_name) < 0)
             {
                 GLOBUS_GSI_CRED_ERROR_RESULT(
@@ -1413,8 +1413,9 @@ globus_gsi_cred_get_policies(
             goto error_exit;
         }
 
-        if(snprintf(final_policy_string, (policy_string_length + 1),
-                    "%s", policy_string) < 0)
+        if(globus_libc_snprintf(final_policy_string,
+                                (policy_string_length + 1),
+                                "%s", policy_string) < 0)
         {
             GLOBUS_GSI_CRED_ERROR_RESULT(
                 result,

@@ -178,7 +178,7 @@ static char * test9[] = {
     "globus_args_test", "-file", "does/not/exist", GLOBUS_NULL };  /* fail */
 
 static char * testhnok[] = {
-    "globus_args_test", "-hn", "bolas.isi.edu", GLOBUS_NULL }; /*ok*/
+    "globus_args_test", "-hn", "www.globus.org", GLOBUS_NULL }; /*ok*/
 
 static char * testhnfail[] = {
     "globus_args_test", "-hn", "smutt.mqs.anl.gov", GLOBUS_NULL }; /*fail*/

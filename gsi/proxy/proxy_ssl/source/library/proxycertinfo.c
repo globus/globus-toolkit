@@ -775,9 +775,9 @@ STACK_OF(CONF_VALUE) * i2v_PROXYCERTINFO(
         return extlist;
     }
 
-    snprintf(tmp_string, len, " %lu (0x%lx)", 
-             PROXYCERTINFO_get_version(ext),
-             PROXYCERTINFO_get_version(ext));
+    BIO_snprintf(tmp_string, len, " %lu (0x%lx)", 
+                 PROXYCERTINFO_get_version(ext),
+                 PROXYCERTINFO_get_version(ext));
 
     X509V3_add_value("Version", tmp_string, &extlist);
     X509V3_add_value("Proxy Certificate", 
@@ -787,9 +787,9 @@ STACK_OF(CONF_VALUE) * i2v_PROXYCERTINFO(
     if(PROXYCERTINFO_get_path_length(ext) > -1)
     {
         memset(tmp_string, 0, len);
-        snprintf(tmp_string, len, " %lu (0x%lx)",
-                 PROXYCERTINFO_get_path_length(ext),
-                 PROXYCERTINFO_get_path_length(ext));
+        BIO_snprintf(tmp_string, len, " %lu (0x%lx)",
+                     PROXYCERTINFO_get_path_length(ext),
+                     PROXYCERTINFO_get_path_length(ext));
         X509V3_add_value("Path Length", tmp_string, &extlist);
     }
 

@@ -658,6 +658,109 @@ globus_libc_vsprintf(char *s, const char *format, va_list ap)
 
 #endif /* !defined(BUILD_LITE)*/
 
+static
+int
+globus_l_libc_vsnprintf(char *s, size_t n, const char *format, va_list ap)
+{
+    int rc;
+    int save_errno;
+
+    rc = globus_libc_vprintf_length( format, ap );
+
+    if ( rc < 0 )
+    {
+	return rc;
+    }
+    else if ( rc < n )
+    {
+	return vsprintf( s, format, ap );
+    }
+    else
+    {
+	char *buf = malloc( rc + 1 );
+	if (buf == NULL)
+	{
+	    return -1;
+	}
+	rc = vsprintf( buf, format, ap );
+	save_errno = errno;
+	strncpy( s, buf, n - 1 );
+	s[n - 1] = '\0';
+	free( buf );
+	errno = save_errno;
+	return rc;
+    }
+}
+
+/******************************************************************************
+Function: globus_libc_snprintf()
+
+Description: 
+
+Parameters: 
+
+Returns:
+******************************************************************************/
+#undef globus_libc_snprintf
+int
+globus_libc_snprintf(char *s, size_t n, const char *format, ...)
+{
+    va_list ap;
+    int rc;
+    int save_errno;
+
+    globus_libc_lock();
+
+#ifdef HAVE_STDARG_H
+    va_start(ap, format);
+#else
+    va_start(ap);
+#endif
+
+#if defined(HAVE_VSNPRINTF)
+    rc = vsnprintf(s, n, format, ap);
+#else
+    rc = globus_l_libc_vsnprintf(s, n, format, ap);
+#endif
+    save_errno=errno;
+
+    globus_libc_unlock();
+
+    errno=save_errno;
+    return rc;
+} /* globus_libc_snprintf() */
+
+/******************************************************************************
+Function: globus_libc_vsnprintf()
+
+Description: 
+
+Parameters: 
+
+Returns:
+******************************************************************************/
+#undef globus_libc_vsnprintf
+int
+globus_libc_vsnprintf(char *s, size_t n, const char *format, va_list ap)
+{
+    int rc;
+    int save_errno;
+    
+    globus_libc_lock();
+
+#if defined(HAVE_VSNPRINTF)
+    rc = vsnprintf(s, n, format, ap);
+#else
+    rc = globus_l_libc_vsnprintf(s, n, format, ap);
+#endif
+    save_errno=errno;
+
+    globus_libc_unlock();
+
+    errno=save_errno;
+    return rc;
+} /* globus_libc_vsnprintf() */
+
 /*
  * Print a globus_off_t to a string. The format for the off_t depends
  * on the size of the data type, which may vary with flavor and
@@ -983,7 +1086,7 @@ globus_libc_gethostbyname_r(char *hostname,
 	    hp = result;
 	    if (h_errnop != GLOBUS_NULL)
 	    {
-		*h_errnop = h_errno;
+		*h_errnop = 0;
 	    }
 	}
 	else
@@ -2017,6 +2120,7 @@ globus_libc_vprintf_length(const char * fmt, va_list ap)
     if(devnull == GLOBUS_NULL)
     {
 	devnull = fopen("/dev/null", "w");
+        fcntl(fileno(devnull), F_SETFD, FD_CLOEXEC);
     }
     globus_libc_unlock();
 

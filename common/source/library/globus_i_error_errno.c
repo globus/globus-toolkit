@@ -81,13 +81,45 @@ char *
 globus_l_error_errno_printable(
     globus_object_t *                   error)
 {
-    /* strerror is not necessarily threadsafe, may need to provide
-       some sort of threadsafe platform dependant wrapper for
-       this. Not sure how important this is.
-    */
-    return globus_libc_strdup(
-        strerror(*((int *)
-                   globus_object_get_local_instance_data(error))));
+    globus_module_descriptor_t *        base_source;
+    char *                              sys_failed =
+        "A system call failed:";
+    char *                              sys_error;
+    int                                 length = 4 + strlen(sys_failed);
+    char *                              printable;
+
+    globus_libc_lock();
+
+    sys_error = strerror(
+        *((int *) globus_object_get_local_instance_data(error)));
+    
+    length += strlen(sys_error);
+    
+    base_source = globus_error_get_source(error);
+
+    if(base_source && base_source->module_name)
+    {
+        length += strlen(base_source->module_name);
+        printable = globus_libc_malloc(length);
+        globus_libc_snprintf(printable,length,"%s: %s %s",
+                             base_source->module_name,
+                             sys_failed,
+                             sys_error);
+        
+    }
+    else
+    {
+        printable = globus_libc_malloc(length);
+        globus_libc_snprintf(printable,length,"%s %s",
+                             base_source->module_name,
+                             sys_failed,
+                             sys_error);
+    }
+    
+    globus_libc_unlock();
+    
+    return printable;
+    
 }/* globus_l_error_errno_printable */
 /*@}*/
 

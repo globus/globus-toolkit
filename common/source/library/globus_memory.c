@@ -27,7 +27,7 @@ CVS Information:
 
 static globus_mutex_t                      globus_i_memory_mutex;
 
-#define I_ALIGN_SIZE                sizeof(long)
+#define I_ALIGN_SIZE                8 /* wastes a little memory, but is safe */
 #define DEFAULT_FREE_PTRS_SIZE      16
 
 typedef struct globus_l_memory_header_s
@@ -57,7 +57,7 @@ globus_memory_init(
 {
     int                       pad;
 
-    pad = node_size % I_ALIGN_SIZE;
+    pad = I_ALIGN_SIZE - (node_size % I_ALIGN_SIZE);
 
     mem_info->total_size = node_count * (node_size + pad);
 

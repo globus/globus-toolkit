@@ -631,7 +631,7 @@ globus_gsi_cert_utils_v_create_string(
 
     while(1)
     {
-        length = vsnprintf(new_string, len, format, ap);
+        length = globus_libc_vsnprintf(new_string, len, format, ap);
         if(length > -1 && length < len)
         {
             break;
@@ -672,7 +672,7 @@ globus_gsi_cert_utils_v_create_nstring(
         return NULL;
     }
 
-    length = vsnprintf(new_string, length + 1, format, ap);
+    length = globus_libc_vsnprintf(new_string, length + 1, format, ap);
 
     GLOBUS_I_GSI_CERT_UTILS_DEBUG_EXIT;
     return new_string;

@@ -131,6 +131,22 @@ EXTERN_C_END
 #undef HAVE_SYS_FILE_H
 #endif
 
+#ifndef HAVE_INTTYPES_H
+#undef HAVE_INTTYPES_H
+#endif
+
+#ifdef SIZEOF_SHORT
+#undef SIZEOF_SHORT
+#endif
+
+#ifdef SIZEOF_INT
+#undef SIZEOF_INT
+#endif
+
+#ifdef SIZEOF_LONG
+#undef SIZEOF_LONG
+#endif
+
 /* Number of bits in a file offset, on hosts where this is settable. */
 #ifndef _FILE_OFFSET_BITS
 #undef _FILE_OFFSET_BITS

@@ -975,7 +975,7 @@ globus_l_gass_cache_build_uniqname( char **uniq )
 			(long) globus_thread_self() );
 
     /* Assign to the uniq passed in.. */
-    *uniq = strdup( uniq_string );
+    *uniq = globus_libc_strdup( uniq_string );
     if ( GLOBUS_NULL == *uniq )
     {
 	RET_ERROR( GLOBUS_GASS_CACHE_ERROR_NO_MEMORY );
@@ -1317,7 +1317,7 @@ globus_l_gass_cache_names_new_murl( const char	*mangled_url,
     }
 
     /* Copy it */
-    names->mangled_url = strdup( mangled_url );
+    names->mangled_url = globus_libc_strdup( mangled_url );
     if ( GLOBUS_NULL == names->mangled_url )
     {
 	RET_ERROR( GLOBUS_GASS_CACHE_ERROR_NO_MEMORY );
@@ -2039,7 +2039,7 @@ globus_l_gass_cache_calc_file_age( const char	*tmp_file,
     /* Do we need the tmp file? */
     if (  ( GLOBUS_NULL == file ) && ( GLOBUS_NULL != tmp_file ) )
     {
-	file = strdup( tmp_file );
+	file = globus_libc_strdup( tmp_file );
 	if ( GLOBUS_NULL == file )
 	{
 	    file = tmp_file;
@@ -2220,7 +2220,7 @@ globus_l_gass_cache_remove_dirtree( const char *base,
     unsigned	length = strlen( base );
 
     /* Make a local copy of hte full path.. */
-    fullpath = strdup( tree );
+    fullpath = globus_libc_strdup( tree );
     if ( GLOBUS_NULL == fullpath )
     {
 	RET_ERROR( -1 );
@@ -2423,7 +2423,7 @@ globus_l_gass_cache_create_uniq_global_file( const cache_names	*names )
 	    if ( uniq_list[uniq_num]->d_ino < uniq_inode )
 	    {
 		lower_inode_found = GLOBUS_TRUE;
-		TODOname = strdup( uniq_list[uniq_num]->d_name );
+		TODOname = globus_libc_strdup( uniq_list[uniq_num]->d_name );
 		TODOinode = uniq_list[uniq_num]->d_ino;
 		break;		/* Don't need to look any further */
 	    }
@@ -3048,7 +3048,7 @@ globus_l_gass_cache_find_uniq( const char	*dir,
     *uniq_count = rc;
 
     /* Copy out the name of the first one.. */
-    *uniq_file = strdup( uniq_list[0]->d_name );
+    *uniq_file = globus_libc_strdup( uniq_list[0]->d_name );
 
     /* Free the list */
     globus_l_gass_cache_scandir_free( uniq_list, *uniq_count );
@@ -3730,7 +3730,7 @@ globus_l_gass_cache_list_all_urls( const char		*search_dir,
 	}
 	else
 	{
-	    new_url_elem->mangled = strdup( base_mangled );
+	    new_url_elem->mangled = globus_libc_strdup( base_mangled );
 	    new_url_elem->next = url_list->first;
 	    url_list->first = new_url_elem;
 	    url_list->count++;
@@ -3998,7 +3998,7 @@ globus_gass_cache_open(const char		*cache_directory_path,
 		LOG_ERROR(0);
 		return ( GLOBUS_GASS_CACHE_ERROR_NAME_TOO_LONG);
 	    }
-	    cache_handle->cache_directory_path = strdup( pt );
+	    cache_handle->cache_directory_path = globus_libc_strdup( pt );
 	    if ( GLOBUS_NULL == cache_handle->cache_directory_path )
 	    {
 		LOG_ERROR( GLOBUS_GASS_CACHE_ERROR_NO_MEMORY );
@@ -4019,7 +4019,7 @@ globus_gass_cache_open(const char		*cache_directory_path,
 		return ( GLOBUS_GASS_CACHE_ERROR_NAME_TOO_LONG);
 	    }
 	    cache_handle->cache_directory_path = 
-		strdup( cache_directory_path );
+		globus_libc_strdup( cache_directory_path );
 	    if ( GLOBUS_NULL == cache_handle->cache_directory_path )
 	    {
 		LOG_ERROR( GLOBUS_GASS_CACHE_ERROR_NO_MEMORY );
@@ -4089,7 +4089,7 @@ globus_gass_cache_open(const char		*cache_directory_path,
 	    {
 		CACHE_TRACE("Could NOT open or create the log file");
 	    }
-	    cache_handle->log_file_name = strdup( log_f_name );
+	    cache_handle->log_file_name = globus_libc_strdup( log_f_name );
 	    if ( cache_handle->log_file_name == GLOBUS_NULL )
 	    {
 		CACHE_TRACE("Could NOT copy log file name");
@@ -4543,7 +4543,7 @@ globus_gass_cache_add(
     if ( retval == GLOBUS_GASS_CACHE_ADD_NEW ||
 	 retval == GLOBUS_GASS_CACHE_ADD_EXISTS )
     {
-	*local_filename = strdup( names.local_data_file );
+	*local_filename = globus_libc_strdup( names.local_data_file );
     }
 
     /* Free up the allocated memory */
@@ -5200,42 +5200,48 @@ globus_gass_cache_get_dirs( const globus_gass_cache_t	*cache_handle,
     /* Copy out the path pieces.... */
     if ( ( global_root ) && ( names.global_root ) )
     {
-	if (  ( *global_root = strdup( names.global_root ) ) == GLOBUS_NULL )
+	if (  ( *global_root = globus_libc_strdup( names.global_root ) )
+              == GLOBUS_NULL )
 	{
 	    rc = GLOBUS_GASS_CACHE_ERROR_NO_MEMORY;
 	}
     }
     if ( ( local_root ) && ( names.local_root ) )
     {
-	if (  ( *local_root = strdup( names.local_root ) ) == GLOBUS_NULL )
+	if (  ( *local_root = globus_libc_strdup( names.local_root ) )
+              == GLOBUS_NULL )
 	{
 	    rc = GLOBUS_GASS_CACHE_ERROR_NO_MEMORY;
 	}
     }
     if ( ( tmp_root ) && ( names.tmp_root ) )
     {
-	if (  ( *tmp_root = strdup( names.tmp_root ) ) == GLOBUS_NULL )
+	if (  ( *tmp_root = globus_libc_strdup( names.tmp_root ) )
+              == GLOBUS_NULL )
 	{
 	    rc = GLOBUS_GASS_CACHE_ERROR_NO_MEMORY;
 	}
     }
     if ( ( log_root ) && ( names.log_root ) )
     {
-	if (  ( *log_root = strdup( names.log_root ) ) == GLOBUS_NULL )
+	if (  ( *log_root = globus_libc_strdup( names.log_root ) )
+              == GLOBUS_NULL )
 	{
 	    rc = GLOBUS_GASS_CACHE_ERROR_NO_MEMORY;
 	}
     }
     if ( ( global_dir ) && ( names.global_dir ) )
     {
-	if (  ( *global_dir = strdup( names.global_dir ) ) == GLOBUS_NULL )
+	if (  ( *global_dir = globus_libc_strdup( names.global_dir ) )
+              == GLOBUS_NULL )
 	{
 	    rc = GLOBUS_GASS_CACHE_ERROR_NO_MEMORY;
 	}
     }
     if ( ( local_dir ) && ( names.local_dir ) )
     {
-	if (  ( *local_dir = strdup( names.local_dir ) ) == GLOBUS_NULL )
+	if (  ( *local_dir = globus_libc_strdup( names.local_dir ) )
+              == GLOBUS_NULL )
 	{
 	    rc = GLOBUS_GASS_CACHE_ERROR_NO_MEMORY;
 	}

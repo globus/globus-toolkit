@@ -10,9 +10,10 @@
  * @author Sam Lang
  */
 
-#include <string.h>
 #include "globus_common.h"
 #include "globus_i_error_openssl.h"
+#include <string.h>
+
 
 /**
  * @name Copy Error Data
@@ -210,7 +211,7 @@ globus_error_openssl_create_error_string(
 
     while(1)
     {
-        length = vsnprintf(error_string, len, format, ap);
+        length = globus_libc_vsnprintf(error_string, len, format, ap);
         if(length > -1 && length < len)
         {
             break;

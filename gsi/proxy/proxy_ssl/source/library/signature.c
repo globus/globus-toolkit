@@ -266,8 +266,8 @@ STACK_OF(CONF_VALUE) * i2v_X509_SIG(
     
     sig_nid = OBJ_obj2nid(sig->algor->algorithm);
     
-    snprintf(sig_ln, 128, " %s", 
-             (sig_nid == NID_undef) ? "UNKNOWN" : OBJ_nid2ln(sig_nid));
+    BIO_snprintf(sig_ln, 128, " %s", 
+                 (sig_nid == NID_undef) ? "UNKNOWN" : OBJ_nid2ln(sig_nid));
         
     X509V3_add_value(
         "Issuer Signature:", NULL, &extlist);
@@ -295,9 +295,9 @@ STACK_OF(CONF_VALUE) * i2v_X509_SIG(
             sig_string += 8;
         }
         
-        snprintf(sig_byte, 4, "%02x%s", 
-                 (unsigned char) sig_data[index],
-                 ((index + 1) == sig_length) ? "" : ":");
+        BIO_snprintf(sig_byte, 4, "%02x%s", 
+                     (unsigned char) sig_data[index],
+                     ((index + 1) == sig_length) ? "" : ":");
         memcpy(sig_string, sig_byte, 
                ((index + 1) == sig_length) ? 2 : 3);
         if((index + 1) == sig_length)
