@@ -218,7 +218,7 @@ main(int argc,
      * Read the size incomming message.
     if (fread(buffer, 1, 4, args_fp) <= 0)
      */
-    if (fread(buffer, 1, nexus_dc_sizeof_remote_int(format,1), args_fp) <= 0)
+    if (fread(buffer, 1, nexus_dc_sizeof_remote_int(1, format), args_fp) <= 0)
     {
         fprintf(log_fp, "fread() failed.\n");
         fprintf(stderr, "fread() failed.\n");
@@ -229,7 +229,7 @@ main(int argc,
     /*
      * Read the remainder of the incomming message.
      */
-    if (fread(buffer, 1, count - nexus_dc_sizeof_remote_int(format,1) + 1,
+    if (fread(buffer, 1, count - nexus_dc_sizeof_remote_int(1, format) + 1,
         args_fp) <= 0)
     {
         fprintf(stderr, "fread() failed.\n");
