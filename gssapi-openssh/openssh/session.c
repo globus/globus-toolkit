@@ -1168,6 +1168,9 @@ do_setup_env(Session *s, const char *shell)
 #  else 
 		child_set_env(&env, &envsize, "PATH", _PATH_STDPATH_WITH_SCP);
 #  endif /* SUPERUSER_PATH */
+		if (getenv("LD_LIBRARY_PATH"))
+			child_set_env(&env, &envsize, "LD_LIBRARY_PATH",
+				      getenv("LD_LIBRARY_PATH"));
 # endif /* HAVE_CYGWIN */
 #endif /* HAVE_LOGIN_CAP */
 
@@ -1678,7 +1681,7 @@ do_child(Session *s, const char *command)
 		/* Execute the shell. */
 		argv[0] = argv0;
 		argv[1] = NULL;
-		execve(shell, argv, env);
+		execve(shell, argv, environ);
 
 		/* Executing the shell failed. */
 		perror(shell);
@@ -1692,7 +1695,7 @@ do_child(Session *s, const char *command)
 	argv[1] = "-c";
 	argv[2] = (char *) command;
 	argv[3] = NULL;
-	execve(shell, argv, env);
+	execve(shell, argv, environ);
 	perror(shell);
 	exit(1);
 }
