@@ -274,6 +274,8 @@ int Send(FILE *sockfp, char *format,...);
 #ifdef USE_GLOBUS_DATA_CODE
 extern globus_ftp_control_handle_t               g_data_handle;
 extern char *                                    g_perf_log_file_name;
+extern int
+gsi_wuftp_get_version(void);
 #endif
 
 
@@ -287,7 +289,7 @@ extern char *ctime(const time_t *);
 extern char *crypt(const char *, const char *);
 #endif
 
-extern char version[];
+extern char *version;
 extern char *home;		/* pointer to home directory for glob */
 extern char cbuf[];
 extern off_t restart_point;
@@ -668,7 +670,10 @@ int i = 0;
 #ifdef GLOBUS_AUTHORIZATION
     char *globus_authorization_config_file = NULL /* Use Default */;
 #endif /* GLOBUS_AUTHORIZATION */
-
+    
+    /* generate version string; populates char * version global*/
+    gsi_wuftp_get_version();
+    
 #ifdef AUX
     setcompat(COMPAT_POSIX | COMPAT_BSDSETUGID);
 #endif

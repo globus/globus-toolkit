@@ -108,13 +108,12 @@ ckconfig: ${UTIL_OBJS} ckconfig.o rdservers.o
 ftpd: ${OBJS}
 	$(LINK) $(CFLAGS) -o $@ ${OBJS} -L../support $(LDFLAGS) $(LIBS)
 
-vers.c: ftpcmd.c
-	sh $(srcdir)/newvers.sh
+vers.c: version.h
 
 clean:
 	rm -f ${OBJS} ftpd ftpcmd.c ftpshut ftpshut.o 
 	rm -f ftprestart ftprestart.o ftpcount ftpcount.o
-	rm -f core index index.o ckconfig ckconfig.o vers.c
+	rm -f core index index.o ckconfig ckconfig.o
 
 distclean: clean
 	rm -f config.h Makefile edit pathnames.h

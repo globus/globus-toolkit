@@ -69,7 +69,7 @@ clean:
 
 cleandir: clean
 	rm -f tags .depend
-	rm -f vers.c edit
+	rm -f edit
 
 depend: ${SRCS} ${XSRCS}
 	${MKDEP} ${CFLAGS} ${SRCS} ${XSRCS}
@@ -136,8 +136,7 @@ sigfix.o: sigfix.c config.h ../config.h
 
 timeout.o: timeout.c config.h ../config.h extensions.h
 
-vers.c: ftpcmd.y newvers.sh
-	sh newvers.sh
+vers.c: version.h
 
 vers.o: vers.c
 

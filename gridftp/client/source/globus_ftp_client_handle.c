@@ -597,6 +597,7 @@ error:
     return globus_error_put(err);
 }
 /* globus_ftp_client_handle_add_plugin() */
+ 
 
 /**
  * Remove a plugin to an FTP client handle.
@@ -778,10 +779,20 @@ globus_l_ftp_client_target_new(
 	globus_object_free(err);
 	goto free_url_string;
     }
+    
+    /* allocate space for features */
+    target->features = globus_i_ftp_client_features_init();
+    if (result != GLOBUS_SUCCESS) 
+    {
+        goto destroy_features;
+    }
     /* Be noncommittal for now for SITE HELP and FEAT options. */
     for(i = 0; i < GLOBUS_FTP_CLIENT_FEATURE_MAX; i++)
     {
-	target->features[i] = GLOBUS_FTP_CLIENT_MAYBE;
+      globus_i_ftp_client_feature_set(target->features,
+				      i,
+				      GLOBUS_FTP_CLIENT_MAYBE);
+      
     }
     /*
      * Setup default setttings on the control handle values. We'll
@@ -910,6 +921,8 @@ destroy_attr:
     globus_ftp_client_operationattr_destroy(&target->attr);
 free_url:
     globus_url_destroy(&target->url);
+destroy_features:
+    globus_i_ftp_client_features_destroy(target->features);
 free_url_string:
     globus_libc_free(target->url_string);
 destroy_control_handle:
@@ -987,6 +1000,10 @@ globus_l_ftp_client_target_delete(
     if(target->auth_info.account)
     {
 	globus_libc_free(target->auth_info.account);
+    }
+    if(target->features)
+    {
+        globus_i_ftp_client_features_destroy(target->features);
     }
     if((!connected) || result != GLOBUS_SUCCESS)
     {

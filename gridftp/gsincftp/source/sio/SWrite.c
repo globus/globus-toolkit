@@ -86,6 +86,7 @@ done:
 
 #else
 
+
 int
 SWrite(int sfd, const char *const buf0, size_t size, int tlen, int swopts)
 {
@@ -96,6 +97,7 @@ SWrite(int sfd, const char *const buf0, size_t size, int tlen, int swopts)
 	fd_set ss;
 	struct timeval tv;
 	int result, firstWrite;
+
 
 	nleft = (int) size;
 	time(&now);
@@ -135,6 +137,7 @@ SWrite(int sfd, const char *const buf0, size_t size, int tlen, int swopts)
 				} else if (result == 0) {
 					/* timeout */		
 					nwrote = size - nleft;
+
 					if (nwrote > 0)
 						return (nwrote);
 					errno = ETIMEDOUT;
@@ -148,9 +151,17 @@ SWrite(int sfd, const char *const buf0, size_t size, int tlen, int swopts)
 		}
 		
 #if defined(WIN32) || defined(_WINDOWS)
-		nwrote = send(sfd, buf, size, 0);
+		/* PP:
+		   this caused file corruption in Unix.
+		   I am correcting this for Win too
+		   although I have not tested it there.
+		   nwrote = send(sfd, buf, size, 0); */
+		nwrote = send(sfd, buf, (size_t)nleft, 0);
 #else
-		nwrote = write(sfd, buf, size);
+		/* corrected by PP. 
+		   this caused file corruption bug
+		   nwrote = write(sfd, buf, size); */
+		nwrote = write(sfd, buf, (size_t)nleft);
 #endif
 
 		if (nwrote < 0) {
@@ -169,11 +180,13 @@ SWrite(int sfd, const char *const buf0, size_t size, int tlen, int swopts)
 		if (nleft <= 0)
 			break;
 		buf += nwrote;
+		
 		time(&now);
 	}
 	nwrote = size - nleft;
 
 done:
+	 
 	return (nwrote);
 }	/* SWrite */
 
