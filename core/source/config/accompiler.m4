@@ -67,36 +67,36 @@ dnl LAC_COMPILERS_ARGS()
 AC_DEFUN(LAC_COMPILERS_ARGS,
 [
 AC_ARG_WITH(threads,
-	[  --with-threads=TYPE		build target with threads],
-	[lac_cv_threads_type="$withval"],
-	[lac_cv_threads_type=${lac_cv_threads_type='no'}])
+        [  --with-threads=TYPE          build target with threads],
+        [lac_cv_threads_type="$withval"],
+        [lac_cv_threads_type=${lac_cv_threads_type='no'}])
 
 LAC_THREADS_ARGS
 
 AC_ARG_ENABLE(debug,
-	[  --enable-debug                compile in debugging features],
-	[lac_cv_debug="$enableval"],
-	[lac_cv_debug=${lac_cv_debug='no'}])
+        [  --enable-debug                compile in debugging features],
+        [lac_cv_debug="$enableval"],
+        [lac_cv_debug=${lac_cv_debug='no'}])
 
 AC_ARG_ENABLE(64bit,
-	[  --enable-64bit                build 64-bit objects (SGI Irix 6.x, HP HPUX 11.x, IA-64 only)],
-	[lac_cv_build_64bit="$enableval"],
-	[lac_cv_build_64bit=${lac_cv_build_64bit='no'}])
+        [  --enable-64bit                build 64-bit objects (SGI Irix 6.x, HP HPUX 11.x, IA-64 only)],
+        [lac_cv_build_64bit="$enableval"],
+        [lac_cv_build_64bit=${lac_cv_build_64bit='no'}])
 
 AC_ARG_ENABLE(insure,
- 	changequote(<<, >>)dnl
-  <<--enable-insure[=PATH]	use Insure++ [default=insure]>>,
-	changequote([, ])dnl
-	[
-		if test "$enableval" = "yes"; then
-			lac_cv_INSURE="insure"
-		else
-			lac_cv_INSURE="$enableval"
-		fi
-	],
-	[
-		lac_cv_INSURE=""
-	])
+        changequote(<<, >>)dnl
+  <<--enable-insure[=PATH]      use Insure++ [default=insure]>>,
+        changequote([, ])dnl
+        [
+                if test "$enableval" = "yes"; then
+                        lac_cv_INSURE="insure"
+                else
+                        lac_cv_INSURE="$enableval"
+                fi
+        ],
+        [
+                lac_cv_INSURE=""
+        ])
 ])
 
 AC_DEFUN(LAC_COMPILERS,
@@ -172,187 +172,234 @@ case ${host}--$1 in
         fi
         if test -z "$lac_cv_CC"; then
             AC_CHECK_PROG(lac_cv_CC, cc, cc, , , /usr/ucb/cc)
-	fi
+        fi
         dnl if test -z "$lac_cv_CC" ; then
-	dnl    AC_CHECK_PROG(lac_cv_CC, gcc, gcc)
+        dnl    AC_CHECK_PROG(lac_cv_CC, gcc, gcc)
         dnl fi
         dnl if test -n "$lac_cv_CC" ; then
         dnl    AC_PATH_PROG(lac_cv_CC, $lac_cv_CC)
-	
-	if test "$GLOBUS_CC" = "gcc"; then
-	    AC_PATH_PROGS(lac_cv_CC, $CC gcc)
-	else
-	    AC_PATH_PROGS(lac_cv_CC, $CC cc $lac_cv_CC)
-	fi
-	CC="$lac_cv_CC"
+        
+        if test "$GLOBUS_CC" = "gcc"; then
+            AC_PATH_PROGS(lac_cv_CC, $CC gcc)
+        else
+            AC_PATH_PROGS(lac_cv_CC, $CC cc $lac_cv_CC)
+        fi
+        CC="$lac_cv_CC"
         dnl fi
 
-	LAC_PROG_CC_GNU($lac_cv_CC,
-			[if test "$1" = "solaristhreads" -o "$1" = "pthreads" ; then
-				lac_CFLAGS="-D_REENTRANT $lac_CFLAGS"
-			 fi],
-			[if test "$1" = "solaristhreads" -o "$1" = "pthreads" ; then
-				lac_CFLAGS="-mt $lac_CFLAGS"
-			 fi
-			 lac_cflags_opt="-xO3"])
+        LAC_PROG_CC_GNU($lac_cv_CC,
+                        [if test "$1" = "solaristhreads" -o "$1" = "pthreads" ; then
+                                lac_CFLAGS="-D_REENTRANT $lac_CFLAGS"
+                         fi],
+                        [if test "$1" = "solaristhreads" -o "$1" = "pthreads" ; then
+                                lac_CFLAGS="-mt $lac_CFLAGS"
+                         fi
+                         lac_cflags_opt="-xO3"])
 
-	AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC CC c++ g++ gcc)
+        AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC CC c++ g++ gcc)
 
-	LAC_PROG_CC_GNU($lac_cv_CXX,
-			[if test "$1" = "solaristhreads" -o "$1" = "pthreads" ; then
-				lac_CXXFLAGS="-D_REENTRANT $lac_CXXFLAGS"
-			 fi
-			],
-			[if test "$1" = "solaristhreads" -o "$1" = "pthreads" ; then
-				lac_CXXFLAGS="-mt $lac_CXXFLAGS"
-			 fi
-			 lac_cxxflags_opt="-xO3"
-			])
-	AC_PATH_PROGS(lac_cv_F77, $F77 f77 g77)
-	AC_PATH_PROGS(lac_cv_F90, $F90 f90)
-	;;
+        LAC_PROG_CC_GNU($lac_cv_CXX,
+                        [if test "$1" = "solaristhreads" -o "$1" = "pthreads" ; then
+                                lac_CXXFLAGS="-D_REENTRANT $lac_CXXFLAGS"
+                         fi
+                        ],
+                        [if test "$1" = "solaristhreads" -o "$1" = "pthreads" ; then
+                                lac_CXXFLAGS="-mt $lac_CXXFLAGS"
+                         fi
+                         lac_cxxflags_opt="-xO3"
+                        ])
+        AC_PATH_PROGS(lac_cv_F77, $F77 f77 g77)
+        AC_PATH_PROGS(lac_cv_F90, $F90 f90)
+        ;;
     *ia64-*linux* )
         if test "$lac_cv_build_64bit" = "no"; then
             AC_MSG_ERROR(32 bits not supported on this platform)
             exit 1
         fi
-	dnl AC_PATH_PROGS(lac_cv_CC, $CC cc gcc)
-	if test "$GLOBUS_CC" = "gcc"; then
-	    AC_PATH_PROGS(lac_cv_CC, $CC gcc)
-	else
-	    AC_PATH_PROGS(lac_cv_CC, $CC cc)
-	fi
-	CC="$lac_cv_CC"
-	AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC CC c++ g++ gcc)
-	AC_PATH_PROGS(lac_cv_F77, $F77 f77)
-	AC_PATH_PROGS(lac_cv_F90, $F90 f90)
+        dnl AC_PATH_PROGS(lac_cv_CC, $CC cc gcc)
+        if test "$GLOBUS_CC" = "gcc"; then
+            AC_PATH_PROGS(lac_cv_CC, $CC gcc)
+        else
+            AC_PATH_PROGS(lac_cv_CC, $CC cc)
+        fi
+        CC="$lac_cv_CC"
+        AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC CC c++ g++ gcc)
+        AC_PATH_PROGS(lac_cv_F77, $F77 f77)
+        AC_PATH_PROGS(lac_cv_F90, $F90 f90)
         ;;
     alpha*linux* )
         if test "$lac_cv_build_64bit" = "no"; then
             AC_MSG_ERROR(32 bits not supported on this platform)
             exit 1
         fi
-	dnl AC_PATH_PROGS(lac_cv_CC, $CC cc gcc)
-	if test "$GLOBUS_CC" = "gcc"; then
-	    AC_PATH_PROGS(lac_cv_CC, $CC gcc)
-	else
-	    AC_PATH_PROGS(lac_cv_CC, $CC ccc cc)
-	fi
-	CC="$lac_cv_CC"
-	AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC CC c++ g++ gcc)
-	AC_PATH_PROGS(lac_cv_F77, $F77 f77)
-	AC_PATH_PROGS(lac_cv_F90, $F90 f90)
+        dnl AC_PATH_PROGS(lac_cv_CC, $CC cc gcc)
+        if test "$GLOBUS_CC" = "gcc"; then
+            AC_PATH_PROGS(lac_cv_CC, $CC gcc)
+        else
+            AC_PATH_PROGS(lac_cv_CC, $CC ccc cc)
+        fi
+        CC="$lac_cv_CC"
+        AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC CC c++ g++ gcc)
+        AC_PATH_PROGS(lac_cv_F77, $F77 f77)
+        AC_PATH_PROGS(lac_cv_F90, $F90 f90)
         ;;
-    *-hp-hpux11* )
-           case $lac_cv_build_64bit in
-               yes )  lac_64bit_flag="+DA2.0W"
-                      ;;
-
-               +*  )  lac_64bit_flag="$lac_cv_build_64bit"
-                      ;;
-
-               *   )  lac_64bit_flag="+DA2.0"
-                      ;;
-           esac
+    hppa1*-hp-hpux11* )
+        
+        dnl No 64bit on this platform
+        if test "$lac_cv_build_64bit" = "yes"; then
+                AC_MSG_ERROR(64 bits not supported on this platform)
+                exit 1
+        fi
 
         if test "$lac_mpi" != "yes" ; then
-	    dnl AC_PATH_PROGS(lac_cv_CC, $CC cc gcc)
-	    if test "$GLOBUS_CC" = "gcc"; then
-	        AC_PATH_PROGS(lac_cv_CC, $CC gcc)
-	    else
-	        AC_PATH_PROGS(lac_cv_CC, $CC cc)
-	    fi
-	    CC="$lac_cv_CC"
-	    LAC_PROG_CC_GNU($lac_cv_CC, ,
-		[lac_CFLAGS="$lac_64bit_flag -Ae -D_HPUX_SOURCE $lac_CFLAGS"
-                 lac_LDFLAGS="$lac_64bit_flag -Ae $lac_LDFLAGS"])
-	    AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC aCC c++ g++ gcc)
-	    LAC_PROG_CC_GNU($lac_cv_CXX, ,
-		[lac_CXXFLAGS="$lac_64bit_flag -Ae -D_HPUX_SOURCE $lac_CXXFLAGS"])
-	    AC_PATH_PROGS(lac_cv_F77, $F77 f77 g77)
-	    AC_PATH_PROGS(lac_cv_F90, $F90 f90)
+
+            dnl AC_PATH_PROGS(lac_cv_CC, $CC cc gcc)
+            if test "$GLOBUS_CC" = "gcc"; then
+                AC_PATH_PROGS(lac_cv_CC, $CC gcc)
+            else
+                AC_PATH_PROGS(lac_cv_CC, $CC cc)
+            fi
+
+            CC="$lac_cv_CC"
+            AC_PATH_PROGS(lac_cv_F77, $F77 f77 g77)
+            AC_PATH_PROGS(lac_cv_F90, $F90 f90)
+            AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC aCC c++ g++ gcc)
         else
             dnl for --with-threads=pthreads and --with-mpi, we need
             dnl to compile with an additional -lmtmpi, even when not
             dnl linking
             dnl AC_PATH_PROGS(lac_cv_CC, $CC mpicc)
-	    if test "$GLOBUS_CC" = "gcc"; then
-	        $lac_cv_CC=""
-	    else
-	        AC_PATH_PROGS(lac_cv_CC, $CC mpicc)
-	    fi
-	    CC="$lac_cv_CC"
+            if test "$GLOBUS_CC" = "gcc"; then
+                $lac_cv_CC=""
+            else
+                AC_PATH_PROGS(lac_cv_CC, $CC mpicc)
+            fi
+            CC="$lac_cv_CC"
             AC_PATH_PROGS(lac_cv_CXX, $CXX mpiCC)
-	    AC_PATH_PROGS(lac_cv_F77, $F77 mpif77)
-	    AC_PATH_PROGS(lac_cv_F90, $F90 mpif90)
+            AC_PATH_PROGS(lac_cv_F77, $F77 mpif77)
+            AC_PATH_PROGS(lac_cv_F90, $F90 mpif90)
             if test "$1" = "pthreads" ; then
                 lac_CFLAGS="$lac_CFLAGS -lmtmpi"
                 lac_CXXFLAGS="$lac_CXXFLAGS -lmtmpi"
             fi
-            LAC_PROG_CC_GNU($lac_cv_CC, ,
-                [lac_CFLAGS="$lac_64bit_flag -Ae -D_HPUX_SOURCE $lac_CFLAGS"
-                 lac_LDFLAGS="$lac_64bit_flag -Ae $lac_LDFLAGS"])
-            LAC_PROG_CC_GNU($lac_cv_CXX, ,
-                [lac_CXXFLAGS="$lac_64bit_flag -Ae -D_HPUX_SOURCE $lac_CXXFLAGS"])
         fi
+
+        LAC_PROG_CC_GNU($lac_cv_CC,[],
+            [lac_CFLAGS="+DAportable -Ae -D_HPUX_SOURCE $lac_CFLAGS"
+             lac_LDFLAGS="+DAportable -Ae $lac_LDFLAGS"])
+        LAC_PROG_CC_GNU($lac_cv_CXX,[],
+            [lac_CXXFLAGS="+DAportable -Ae -D_HPUX_SOURCE $lac_CXXFLAGS"])
+        ;;
+    *-hp-hpux11* )
+
+        case $lac_cv_build_64bit in
+            yes )
+                lac_64bit_flag="+DA2.0W"
+                ;;
+
+            +* )  
+                lac_64bit_flag="$lac_cv_build_64bit"
+                ;;
+
+            * )  
+                lac_64bit_flag="+DA2.0"
+                ;;
+        esac
+
+        if test "$lac_mpi" != "yes" ; then
+            dnl AC_PATH_PROGS(lac_cv_CC, $CC cc gcc)
+            if test "$GLOBUS_CC" = "gcc"; then
+                AC_PATH_PROGS(lac_cv_CC, $CC gcc)
+            else
+                AC_PATH_PROGS(lac_cv_CC, $CC cc)
+            fi
+            CC="$lac_cv_CC"
+            AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC aCC c++ g++ gcc)
+            AC_PATH_PROGS(lac_cv_F77, $F77 f77 g77)
+            AC_PATH_PROGS(lac_cv_F90, $F90 f90)
+        else
+            dnl for --with-threads=pthreads and --with-mpi, we need
+            dnl to compile with an additional -lmtmpi, even when not
+            dnl linking
+            dnl AC_PATH_PROGS(lac_cv_CC, $CC mpicc)
+            if test "$GLOBUS_CC" = "gcc"; then
+                $lac_cv_CC=""
+            else
+                AC_PATH_PROGS(lac_cv_CC, $CC mpicc)
+            fi
+            CC="$lac_cv_CC"
+            AC_PATH_PROGS(lac_cv_CXX, $CXX mpiCC)
+            AC_PATH_PROGS(lac_cv_F77, $F77 mpif77)
+            AC_PATH_PROGS(lac_cv_F90, $F90 mpif90)
+            if test "$1" = "pthreads" ; then
+                lac_CFLAGS="$lac_CFLAGS -lmtmpi"
+                lac_CXXFLAGS="$lac_CXXFLAGS -lmtmpi"
+            fi
+        fi
+       
+        LAC_PROG_CC_GNU($lac_cv_CC,[],
+            [lac_CFLAGS="$lac_64bit_flag -Ae -D_HPUX_SOURCE $lac_CFLAGS"
+             lac_LDFLAGS="$lac_64bit_flag -Ae $lac_LDFLAGS"])
+        LAC_PROG_CC_GNU($lac_cv_CXX,[],
+            [lac_CXXFLAGS="$lac_64bit_flag -Ae -D_HPUX_SOURCE $lac_CXXFLAGS"])
         ;;
     *-hp-hpux10*--no )
-	if test "$lac_mpi" != "yes" ; then
-	    dnl AC_PATH_PROGS(lac_cv_CC, $CC cc gcc)
-	    if test "$GLOBUS_CC" = "gcc"; then
-	        AC_PATH_PROGS(lac_cv_CC, $CC gcc)
-	    else
-	        AC_PATH_PROGS(lac_cv_CC, $CC cc)
-	    fi
-	    AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC c++ g++ gcc)
-	    AC_PATH_PROGS(lac_cv_F77, $F77 f77 g77)
-	    AC_PATH_PROGS(lac_cv_CC, $F90 f90)
-	else
-	    dnl AC_PATH_PROGS(lac_cv_CC, $CC mpicc)
-	    if test "$GLOBUS_CC" = "gcc"; then
-	        lac_cv_CC=""
-	    else
-	        AC_PATH_PROGS(lac_cv_CC, $CC mpicc)
-	    fi
-	    AC_PATH_PROGS(lac_cv_CXX, $CXX mpiCC)
-	    AC_PATH_PROGS(lac_cv_F77, $F77 mpif77)
-	    AC_PATH_PROGS(lac_cv_F90, $F90 mpif90)
-	fi
-	CC="$lac_cv_CC"
+        if test "$lac_mpi" != "yes" ; then
+            dnl AC_PATH_PROGS(lac_cv_CC, $CC cc gcc)
+            if test "$GLOBUS_CC" = "gcc"; then
+                AC_PATH_PROGS(lac_cv_CC, $CC gcc)
+            else
+                AC_PATH_PROGS(lac_cv_CC, $CC cc)
+            fi
+            AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC c++ g++ gcc)
+            AC_PATH_PROGS(lac_cv_F77, $F77 f77 g77)
+            AC_PATH_PROGS(lac_cv_CC, $F90 f90)
+        else
+            dnl AC_PATH_PROGS(lac_cv_CC, $CC mpicc)
+            if test "$GLOBUS_CC" = "gcc"; then
+                lac_cv_CC=""
+            else
+                AC_PATH_PROGS(lac_cv_CC, $CC mpicc)
+            fi
+            AC_PATH_PROGS(lac_cv_CXX, $CXX mpiCC)
+            AC_PATH_PROGS(lac_cv_F77, $F77 mpif77)
+            AC_PATH_PROGS(lac_cv_F90, $F90 mpif90)
+        fi
+        CC="$lac_cv_CC"
         LAC_PROG_CC_GNU($lac_cv_CC, ,
             [lac_CFLAGS="-Ae -D_HPUX_SOURCE $lac_CFLAGS"])
         LAC_PROG_CC_GNU($lac_cv_CXX, ,
             [lac_CXXFLAGS="-Ae -D_HPUX_SOURCE $lac_CXXFLAGS"])
         ;;
     *-hp-hpux10* )
-	if test "$GLOBUS_CC" = "gcc"; then
-	    AC_PATH_PROGS(lac_cv_CC, $CC gcc)
-	else
-	    AC_PATH_PROGS(lac_cv_CC, $CC cc)
-	fi
-	CC="$lac_cv_CC"
-	LAC_PROG_CC_GNU($lac_cv_CC, ,
-		[lac_CFLAGS="-Ae -D_HPUX_SOURCE $lac_CFLAGS"])
-	AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC CC c++ g++ gcc)
-	LAC_PROG_CC_GNU($lac_cv_CXX, ,
-		[lac_CXXFLAGS="-Ae -D_HPUX_SOURCE $lac_CXXFLAGS"])
-	if test "$1" = "pthreads" ; then
-	    lac_CFLAGS="$lac_CFLAGS -I/usr/include/reentrant"
-	    lac_CXXFLAGS="$lac_CXXFLAGS -I/usr/include/reentrant"
-	fi
+        if test "$GLOBUS_CC" = "gcc"; then
+            AC_PATH_PROGS(lac_cv_CC, $CC gcc)
+        else
+            AC_PATH_PROGS(lac_cv_CC, $CC cc)
+        fi
+        CC="$lac_cv_CC"
+        LAC_PROG_CC_GNU($lac_cv_CC, ,
+                [lac_CFLAGS="-Ae -D_HPUX_SOURCE $lac_CFLAGS"])
+        AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC CC c++ g++ gcc)
+        LAC_PROG_CC_GNU($lac_cv_CXX, ,
+                [lac_CXXFLAGS="-Ae -D_HPUX_SOURCE $lac_CXXFLAGS"])
+        if test "$1" = "pthreads" ; then
+            lac_CFLAGS="$lac_CFLAGS -I/usr/include/reentrant"
+            lac_CXXFLAGS="$lac_CXXFLAGS -I/usr/include/reentrant"
+        fi
         AC_PATH_PROGS(lac_cv_F77, $F77 f77)
-	AC_PATH_PROGS(lac_cv_F90, $F90 f90)
-	;;
+        AC_PATH_PROGS(lac_cv_F90, $F90 f90)
+        ;;
     mips-sgi-irix6* )
 
-	dnl AC_PATH_PROGS(lac_cv_CC, $CC cc gcc)
+        dnl AC_PATH_PROGS(lac_cv_CC, $CC cc gcc)
 
-	if test "$GLOBUS_CC" = "gcc"; then
-	    AC_PATH_PROGS(lac_cv_CC, $CC gcc)
-	else
-	    AC_PATH_PROGS(lac_cv_CC, $CC cc)
-	fi
-	CC="$lac_cv_CC"
+        if test "$GLOBUS_CC" = "gcc"; then
+            AC_PATH_PROGS(lac_cv_CC, $CC gcc)
+        else
+            AC_PATH_PROGS(lac_cv_CC, $CC cc)
+        fi
+        CC="$lac_cv_CC"
         
         LAC_PROG_CC_GNU([$lac_cv_CC],
                 [
@@ -370,37 +417,37 @@ case ${host}--$1 in
                 esac
                 ])      
 
-	LAC_CHECK_CFLAGS($lac_cv_CC,[$lac_64bit_flag $lac_CFLAGS],
-		[lac_CFLAGS="$lac_64bit_flag $lac_CFLAGS"
-		 lac_LDFLAGS="$lac_64bit_flag $lac_LDFLAGS"])
+        LAC_CHECK_CFLAGS($lac_cv_CC,[$lac_64bit_flag $lac_CFLAGS],
+                [lac_CFLAGS="$lac_64bit_flag $lac_CFLAGS"
+                 lac_LDFLAGS="$lac_64bit_flag $lac_LDFLAGS"])
 
-	LAC_CHECK_CFLAGS($lac_cv_CC,[-woff 1048 $lac_CFLAGS],
-		[lac_CFLAGS="-woff 1048 $lac_CFLAGS"])
+        LAC_CHECK_CFLAGS($lac_cv_CC,[-woff 1048 $lac_CFLAGS],
+                [lac_CFLAGS="-woff 1048 $lac_CFLAGS"])
 
-	LAC_CHECK_LDFLAGS($lac_cv_CC,
-		[$lac_CFLAGS],[-Wl,-woff,84 $lac_LDFLAGS],
-		[lac_LDFLAGS="-Wl,-woff,84 $lac_LDFLAGS"])
+        LAC_CHECK_LDFLAGS($lac_cv_CC,
+                [$lac_CFLAGS],[-Wl,-woff,84 $lac_LDFLAGS],
+                [lac_LDFLAGS="-Wl,-woff,84 $lac_LDFLAGS"])
 
-	AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC CC c++ g++ gcc)
-	LAC_PROG_CC_GNU($lac_cv_CXX, ,
-		[lac_CXXFLAGS="$lac_64bit_flag $lac_CXXFLAGS"])
-	LAC_CHECK_CFLAGS($lac_cv_CXX, [-woff 1048 $lac_CXXFLAGS],
-		[lac_CXXFLAGS="-woff 1048 $lac_CXXFLAGS"])
+        AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC CC c++ g++ gcc)
+        LAC_PROG_CC_GNU($lac_cv_CXX, ,
+                [lac_CXXFLAGS="$lac_64bit_flag $lac_CXXFLAGS"])
+        LAC_CHECK_CFLAGS($lac_cv_CXX, [-woff 1048 $lac_CXXFLAGS],
+                [lac_CXXFLAGS="-woff 1048 $lac_CXXFLAGS"])
 
         dnl RANLIB is more or less defunct on SIG IRIX6.
         dnl Don't set RANLIB for since if its present its
-	dnl probable gnu and is incompatible
+        dnl probable gnu and is incompatible
         dnl     This fixes the reported problem on  modi4.ncsa.uiuc.edu
-	AC_CACHE_VAL(lac_cv_RANLIB, lac_cv_RANLIB="true")
+        AC_CACHE_VAL(lac_cv_RANLIB, lac_cv_RANLIB="true")
 
         if test "$lac_mpi" = "yes" ; then
             lac_LIBS="$lac_LIBS -lmpi"
         fi
 
         AC_PATH_PROGS(lac_cv_F77, $F77 f77 f77)
-	AC_PATH_PROGS(lac_cv_F90, $F90 f90)
-	lac_F77FLAGS="$lac_64bit_flag $lac_F77FLAGS"
-	lac_F90FLAGS="$lac_64bit_flag $lac_F90FLAGS"
+        AC_PATH_PROGS(lac_cv_F90, $F90 f90)
+        lac_F77FLAGS="$lac_64bit_flag $lac_F77FLAGS"
+        lac_F90FLAGS="$lac_64bit_flag $lac_F90FLAGS"
       ;;
     *-ibm-aix*--pthreads )
         dnl No 64bit support yet
@@ -408,49 +455,49 @@ case ${host}--$1 in
                 AC_MSG_ERROR(64 bits not supported on this platform)
                 exit 1
         fi
-	if test "$lac_mpl" != "yes" -a "$lac_mpi" != "yes" ; then
-	    if test "$GLOBUS_CC" = "gcc"; then
-	        AC_PATH_PROGS(lac_cv_CC, $CC gcc)
-	    else
-	        AC_PATH_PROGS(lac_cv_CC, $CC xlc_r)
-	    fi
-	    AC_PATH_PROGS(lac_cv_CXX, $CXX xlC_r)
-	    AC_PATH_PROGS(lac_cv_F77, $F77 xlf_r)
-	    AC_PATH_PROGS(lac_cv_F90, $F90 xlf90_r)
-	    if test "$lac_cv_F90" = "xlf_r" ; then
-		lac_F90FLAGS="-qfree=f90 $lac_F90FLAGS"
-	    fi
-	else
-	    if test "$GLOBUS_CC" = "gcc"; then
-	        lac_cv_CC=""
-	    else
-	        AC_PATH_PROGS(lac_cv_CC, $CC mpcc_r)
-	    fi
-	    AC_PATH_PROGS(lac_cv_CXX, $CXX mpCC_r)
-	    AC_PATH_PROGS(lac_cv_F77, $F77 mpxlf_r)
-	    AC_PATH_PROGS(lac_cv_F90, $F90 mpxlf90_r)
-	    if test "$lac_cv_F90" = "mpxlf_r" ; then
-		lac_F90FLAGS="-qfree=f90 $lac_F90FLAGS"
-	    fi
-	fi
+        if test "$lac_mpl" != "yes" -a "$lac_mpi" != "yes" ; then
+            if test "$GLOBUS_CC" = "gcc"; then
+                AC_PATH_PROGS(lac_cv_CC, $CC gcc)
+            else
+                AC_PATH_PROGS(lac_cv_CC, $CC xlc_r)
+            fi
+            AC_PATH_PROGS(lac_cv_CXX, $CXX xlC_r)
+            AC_PATH_PROGS(lac_cv_F77, $F77 xlf_r)
+            AC_PATH_PROGS(lac_cv_F90, $F90 xlf90_r)
+            if test "$lac_cv_F90" = "xlf_r" ; then
+                lac_F90FLAGS="-qfree=f90 $lac_F90FLAGS"
+            fi
+        else
+            if test "$GLOBUS_CC" = "gcc"; then
+                lac_cv_CC=""
+            else
+                AC_PATH_PROGS(lac_cv_CC, $CC mpcc_r)
+            fi
+            AC_PATH_PROGS(lac_cv_CXX, $CXX mpCC_r)
+            AC_PATH_PROGS(lac_cv_F77, $F77 mpxlf_r)
+            AC_PATH_PROGS(lac_cv_F90, $F90 mpxlf90_r)
+            if test "$lac_cv_F90" = "mpxlf_r" ; then
+                lac_F90FLAGS="-qfree=f90 $lac_F90FLAGS"
+            fi
+        fi
 
-	CC="$lac_cv_CC"	
+        CC="$lac_cv_CC" 
         LAC_PROG_CC_GNU($lac_cv_CC,
-	    [],
-	    [
+            [],
+            [
                 AC_PATH_PROGS(lac_cv_CPP, $CPP cpp,[],/usr/lib:$PATH)
-	    ])
+            ])
 
-	lac_CFLAGS="-D_ALL_SOURCE $lac_CFLAGS"
-	lac_CXXFLAGS="-D_ALL_SOURCE $lac_CXXFLAGS"
+        lac_CFLAGS="-D_ALL_SOURCE $lac_CFLAGS"
+        lac_CXXFLAGS="-D_ALL_SOURCE $lac_CXXFLAGS"
         if test "$lac_cv_debug" = "yes"; then
-	   LAC_PROG_CC_GNU($lac_cv_CC,
-	       [],
-	       [
-	    	lac_CFLAGS="-qfullpath $lac_CFLAGS"
-	    	lac_CXXFLAGS="-qfullpath $lac_CXXFLAGS"
-	       ])
-	fi
+           LAC_PROG_CC_GNU($lac_cv_CC,
+               [],
+               [
+                lac_CFLAGS="-qfullpath $lac_CFLAGS"
+                lac_CXXFLAGS="-qfullpath $lac_CXXFLAGS"
+               ])
+        fi
       ;;
     *-ibm-aix*--no )
         dnl No 64bit support yet
@@ -458,96 +505,96 @@ case ${host}--$1 in
                 AC_MSG_ERROR(64 bits not supported on this platform)
                 exit 1
         fi
-	if test "$lac_mpl" != "yes" -a "$lac_mpi" != "yes" ; then
-	    if test "$GLOBUS_CC" = "gcc"; then
-	         AC_PATH_PROGS(lac_cv_CC, $CC gcc)
+        if test "$lac_mpl" != "yes" -a "$lac_mpi" != "yes" ; then
+            if test "$GLOBUS_CC" = "gcc"; then
+                 AC_PATH_PROGS(lac_cv_CC, $CC gcc)
             else
-	         AC_PATH_PROGS(lac_cv_CC, $CC xlc)
-	    fi
-	    AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC xlC c++ g++ gcc)
-	    AC_PATH_PROGS(lac_cv_F77, $F77 xlf)
-	    AC_PATH_PROGS(lac_cv_F90, $F90 xlf90)
-	    if test "$lac_cv_F90" = "xlf" ; then
-		lac_F90FLAGS="-qfree=f90 $lac_F90FLAGS"
-	    fi
-	else
-	    if test "$GLOBUS_CC" = "gcc"; then
-	        lac_cv_CC=""
-	    else
-	        AC_PATH_PROGS(lac_cv_CC, $CC mpcc)
-	    fi
-	    AC_PATH_PROGS(lac_cv_CXX, $CXX mpCC)
-	    AC_PATH_PROGS(lac_cv_F77, $F77 mpxlf)
-	    AC_PATH_PROGS(lac_cv_F90, $F90 mpxlf90)
-	    if test "$lac_cv_F90" = "mpxlf" ; then
-		lac_F90FLAGS="-qfree=f90 $lac_F90FLAGS"
-	    fi
-	fi
-	CC="$lac_cv_CC"	
+                 AC_PATH_PROGS(lac_cv_CC, $CC xlc)
+            fi
+            AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC xlC c++ g++ gcc)
+            AC_PATH_PROGS(lac_cv_F77, $F77 xlf)
+            AC_PATH_PROGS(lac_cv_F90, $F90 xlf90)
+            if test "$lac_cv_F90" = "xlf" ; then
+                lac_F90FLAGS="-qfree=f90 $lac_F90FLAGS"
+            fi
+        else
+            if test "$GLOBUS_CC" = "gcc"; then
+                lac_cv_CC=""
+            else
+                AC_PATH_PROGS(lac_cv_CC, $CC mpcc)
+            fi
+            AC_PATH_PROGS(lac_cv_CXX, $CXX mpCC)
+            AC_PATH_PROGS(lac_cv_F77, $F77 mpxlf)
+            AC_PATH_PROGS(lac_cv_F90, $F90 mpxlf90)
+            if test "$lac_cv_F90" = "mpxlf" ; then
+                lac_F90FLAGS="-qfree=f90 $lac_F90FLAGS"
+            fi
+        fi
+        CC="$lac_cv_CC" 
         LAC_PROG_CC_GNU($lac_cv_CC,
-	    [],
-	    [
+            [],
+            [
                 AC_PATH_PROGS(lac_cv_CPP, $CPP cpp,[],/usr/lib:$PATH)
-	    ])
+            ])
 
-	lac_CFLAGS="-D_ALL_SOURCE $lac_CFLAGS"
-	lac_CXXFLAGS="-D_ALL_SOURCE $lac_CXXFLAGS"
+        lac_CFLAGS="-D_ALL_SOURCE $lac_CFLAGS"
+        lac_CXXFLAGS="-D_ALL_SOURCE $lac_CXXFLAGS"
         if test "$lac_cv_debug" = "yes"; then
-	   LAC_PROG_CC_GNU($lac_cv_CC,
-	       [],
-	       [
-	    	lac_CFLAGS="-qfullpath $lac_CFLAGS"
-	    	lac_CXXFLAGS="-qfullpath $lac_CXXFLAGS"
-	       ])
-	fi
+           LAC_PROG_CC_GNU($lac_cv_CC,
+               [],
+               [
+                lac_CFLAGS="-qfullpath $lac_CFLAGS"
+                lac_CXXFLAGS="-qfullpath $lac_CXXFLAGS"
+               ])
+        fi
       ;;
     *-dec-osf4* | *-dec-osf5* )
         if test "$lac_cv_build_64bit" = "no"; then
             AC_MSG_ERROR(32 bits not supported on this platform, use the 64 bit flavor instead)
             exit 1
         fi
-	dnl AC_PATH_PROGS(lac_cv_CC, $CC cc gcc)
-	if test "$GLOBUS_CC" = "gcc"; then
-	     AC_PATH_PROGS(lac_cv_CC, $CC gcc)
+        dnl AC_PATH_PROGS(lac_cv_CC, $CC cc gcc)
+        if test "$GLOBUS_CC" = "gcc"; then
+             AC_PATH_PROGS(lac_cv_CC, $CC gcc)
         else
-	     AC_PATH_PROGS(lac_cv_CC, $CC cc)
-	fi
-	CC="$lac_cv_CC"
-	AC_PATH_PROGS(lac_cv_CXX, $CXX CC cxx c++ g++ gcc)
-	if test "$1" = "pthreads" ; then
+             AC_PATH_PROGS(lac_cv_CC, $CC cc)
+        fi
+        CC="$lac_cv_CC"
+        AC_PATH_PROGS(lac_cv_CXX, $CXX CC cxx c++ g++ gcc)
+        if test "$1" = "pthreads" ; then
             LAC_PROG_CC_GNU($lac_cv_CC,
-			[lac_LIBS="$lac_LIBS -lpthread"],
-			[lac_CFLAGS="-pthread $lac_CFLAGS"
+                        [lac_LIBS="$lac_LIBS -lpthread"],
+                        [lac_CFLAGS="-pthread $lac_CFLAGS"
                          lac_CPPFLAGS="-pthread $lac_CPPFLAGS"])
-	    LAC_PROG_CC_GNU($lac_cv_CXX,
-			[lac_LIBS="$lac_LIBS -lpthread"],
-			[lac_CXXFLAGS="-pthread $lac_CXXFLAGS"])
-	fi
+            LAC_PROG_CC_GNU($lac_cv_CXX,
+                        [lac_LIBS="$lac_LIBS -lpthread"],
+                        [lac_CXXFLAGS="-pthread $lac_CXXFLAGS"])
+        fi
         lac_CFLAGS="-D_OSF_SOURCE $lac_CFLAGS"
         lac_CXXFLAGS="-D_OSF_SOURCE $lac_CXXFLAGS"
-	AC_PATH_PROGS(lac_cv_F77, $F77 f77 g77)
-	AC_PATH_PROGS(lac_cv_F90, $F90 f90)
+        AC_PATH_PROGS(lac_cv_F77, $F77 f77 g77)
+        AC_PATH_PROGS(lac_cv_F90, $F90 f90)
       ;;
     alpha-cray-unicosmk* )
-	dnl Cray T3E
+        dnl Cray T3E
         dnl No 64bit support yet
         if test "$lac_cv_build_64bit" = "yes"; then
                 AC_MSG_ERROR(64 bits not supported on this platform)
                 exit 1
         fi
-	dnl AC_PATH_PROGS(lac_cv_CC, $CC cc)
-	if test "$GLOBUS_CC" = "gcc"; then
-	     AC_PATH_PROGS(lac_cv_CC, $CC gcc)
+        dnl AC_PATH_PROGS(lac_cv_CC, $CC cc)
+        if test "$GLOBUS_CC" = "gcc"; then
+             AC_PATH_PROGS(lac_cv_CC, $CC gcc)
         else
-	     AC_PATH_PROGS(lac_cv_CC, $CC cc)
-	fi
-	CC="$lac_cv_CC"
-	AC_PATH_PROGS(lac_cv_CXX, $CXX CC)
-	lac_CFLAGS="-Xm $lac_CFLAGS"
-	lac_CXXFLAGS="-Xm $lac_CXXFLAGS"
-	lac_LDFLAGS="-Xm $lac_LDFLAGS"
-	AC_PATH_PROGS(lac_cv_F77, $F77 f77)
-	AC_PATH_PROGS(lac_cv_F90, $F90 f90)
+             AC_PATH_PROGS(lac_cv_CC, $CC cc)
+        fi
+        CC="$lac_cv_CC"
+        AC_PATH_PROGS(lac_cv_CXX, $CXX CC)
+        lac_CFLAGS="-Xm $lac_CFLAGS"
+        lac_CXXFLAGS="-Xm $lac_CXXFLAGS"
+        lac_LDFLAGS="-Xm $lac_LDFLAGS"
+        AC_PATH_PROGS(lac_cv_F77, $F77 f77)
+        AC_PATH_PROGS(lac_cv_F90, $F90 f90)
       ;;
     *linux*--pthreads )
         dnl No 64bit support yet
@@ -555,16 +602,16 @@ case ${host}--$1 in
                 AC_MSG_ERROR(64 bits not supported on this platform)
                 exit 1
         fi
-	dnl AC_PATH_PROGS(lac_cv_CC, $CC cc gcc)
-	if test "$GLOBUS_CC" = "gcc"; then
-	     AC_PATH_PROGS(lac_cv_CC, $CC gcc)
+        dnl AC_PATH_PROGS(lac_cv_CC, $CC cc gcc)
+        if test "$GLOBUS_CC" = "gcc"; then
+             AC_PATH_PROGS(lac_cv_CC, $CC gcc)
         else
-	     AC_PATH_PROGS(lac_cv_CC, $CC cc)
-	fi
-	CC="$lac_cv_CC"
-	AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC CC c++ g++ gcc)
-	AC_PATH_PROGS(lac_cv_F77, $F77 f77)
-	AC_PATH_PROGS(lac_cv_F90, $F90 f90)
+             AC_PATH_PROGS(lac_cv_CC, $CC cc)
+        fi
+        CC="$lac_cv_CC"
+        AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC CC c++ g++ gcc)
+        AC_PATH_PROGS(lac_cv_F77, $F77 f77)
+        AC_PATH_PROGS(lac_cv_F90, $F90 f90)
       ;;
     * )
         dnl No 64bit support yet
@@ -572,16 +619,16 @@ case ${host}--$1 in
                 AC_MSG_ERROR(64 bits not supported on this platform)
                 exit 1
         fi
-	dnl AC_PATH_PROGS(lac_cv_CC, $CC cc gcc)
-	if test "$GLOBUS_CC" = "gcc"; then
-	     AC_PATH_PROGS(lac_cv_CC, $CC gcc)
+        dnl AC_PATH_PROGS(lac_cv_CC, $CC cc gcc)
+        if test "$GLOBUS_CC" = "gcc"; then
+             AC_PATH_PROGS(lac_cv_CC, $CC gcc)
         else
-	     AC_PATH_PROGS(lac_cv_CC, $CC cc)
-	fi
-	CC="$lac_cv_CC"
-	AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC CC c++  g++ gcc)
-	AC_PATH_PROGS(lac_cv_F77, $F77 f77 g77)
-	AC_PATH_PROGS(lac_cv_F90, $F90 f90)
+             AC_PATH_PROGS(lac_cv_CC, $CC cc)
+        fi
+        CC="$lac_cv_CC"
+        AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC CC c++  g++ gcc)
+        AC_PATH_PROGS(lac_cv_F77, $F77 f77 g77)
+        AC_PATH_PROGS(lac_cv_F90, $F90 f90)
       ;;
 esac
 
@@ -601,14 +648,14 @@ if test "$lac_cv_debug" = "yes"; then
     AC_DEFINE(BUILD_DEBUG)
 else
     if test -z "$lac_cflags_opt" ; then
-	lac_CFLAGS="-O $lac_CFLAGS"
+        lac_CFLAGS="-O $lac_CFLAGS"
     else
-	lac_CFLAGS="$lac_cflags_opt $lac_CFLAGS"
+        lac_CFLAGS="$lac_cflags_opt $lac_CFLAGS"
     fi
     if test -z "$lac_cxxflags_opt" ; then
-	lac_CXXFLAGS="-O $lac_CXXFLAGS"
+        lac_CXXFLAGS="-O $lac_CXXFLAGS"
     else
-	lac_CXXFLAGS="$lac_cxxflags_opt $lac_CXXFLAGS"
+        lac_CXXFLAGS="$lac_cxxflags_opt $lac_CXXFLAGS"
     fi
 fi
 
