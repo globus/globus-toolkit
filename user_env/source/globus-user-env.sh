@@ -13,11 +13,6 @@ if [ -z "${GLOBUS_LOCATION}" ]; then
     return 1
 fi
 
-if [ -z "${LIBPATH}" ]; then
-	LIBPATH="/usr/lib:/lib"
-	export LIBPATH
-fi
-
 if [ -n "${GLOBUS_PATH}" ]; then
     PATH=`echo "${PATH}" | sed -e "s%:${GLOBUS_PATH}[^:]*%%g" -e "s%^${GLOBUS_PATH}[^:]*:\{0,1\}%%"`
     LD_LIBRARY_PATH=`echo "${LD_LIBRARY_PATH}" | sed -e "s%:${GLOBUS_PATH}[^:]*%%g" -e "s%^${GLOBUS_PATH}[^:]*:\{0,1\}%%"`
@@ -43,10 +38,10 @@ SASL_PATH=`echo "${SASL_PATH}" | sed -e "s%:${GLOBUS_LOCATION}[^:]*%%g" -e "s%^$
 if [ -n "${MANPATH}" ]; then
     MANPATH=`echo "${MANPATH}" | sed -e "s%:${GLOBUS_LOCATION}[^:]*%%g" -e "s%^${GLOBUS_LOCATION}[^:]*:\{0,1\}%%"`
 fi
-if [ $?LD_LIBRARYN32_PATH ]; then
+if [ -n "${LD_LIBRARYN32_PATH}" ]; then
     LD_LIBRARYN32_PATH=`echo "${LD_LIBRARYN32_PATH}" | sed -e "s%:${GLOBUS_LOCATION}[^:]*%%g" -e "s%^${GLOBUS_LOCATION}[^:]*:\{0,1\}%%"`
 fi
-if [ $?LD_LIBRARY64_PATH ]; then
+if [ -n "${LD_LIBRARY64_PATH}" ]; then
     LD_LIBRARY64_PATH=`echo "${LD_LIBRARY64_PATH}" | sed -e "s%:${GLOBUS_LOCATION}[^:]*%%g" -e "s%^${GLOBUS_LOCATION}[^:]*:\{0,1\}%%"`
 fi
 
@@ -64,11 +59,11 @@ if [ -n "${LD_LIBRARY_PATH}" ]; then
 fi
 LD_LIBRARY_PATH="${GLOBUS_LOCATION}/lib${DELIM}${LD_LIBRARY_PATH}"
 
-DELIM=
-if [ -n "${LIBPATH}" ]; then
-    DELIM=:
+
+if [ -z "${LIBPATH}" ]; then
+    LIBPATH="/usr/lib:/lib"
 fi
-LIBPATH="${GLOBUS_LOCATION}/lib${DELIM}${LIBPATH}"
+LIBPATH="${GLOBUS_LOCATION}/lib:${LIBPATH}"
 
 DELIM=
 if [ -n "${SHLIB_PATH}" ]; then
