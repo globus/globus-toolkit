@@ -163,7 +163,7 @@ GSS_CALLCONV gss_import_cred(
             }
             
             bp = BIO_new(BIO_s_file());
-            BIO_set_fp(bp, fp, BIO_NOCLOSE);
+            BIO_set_fp(bp, fp, BIO_CLOSE);
         }
         else
         {
