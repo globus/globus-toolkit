@@ -79,6 +79,7 @@ typedef struct
     void *				arg;
     globus_io_read_callback_t		callback;
     globus_io_handle_t *		handle;
+    globus_bool_t	    selecting;
 } globus_io_secure_read_info_t;
 
 static
@@ -1409,60 +1410,68 @@ globus_l_io_secure_read_callback(
     /* read wrapped token data from the handle */
     if(result == GLOBUS_SUCCESS)
     {
-	/* if this is the first time we've tried to access
-	 * data from this handle, since the last unwrap, then
-	 * the fifo of wrapped buffers may be empty. otherwise,
-	 * we will use the last of the buffers, since it will
-	 * be started on. when we finish with a buffer (the
-	 * final case in the switch), we create a new one.
+        /* If we were called with selecting == true, then we
+	 * will need to try to read a new token, otherwise we
+	 * will just use data in the buffer.
 	 */
-        if(globus_fifo_empty(&handle->wrapped_buffers))
+	if(secure_read_info->selecting)
 	{
-            buffer = (globus_io_input_token_t *) 
-		globus_malloc(sizeof(globus_io_input_token_t));
-
-	    memset(buffer,
-		   '\0',
-		   sizeof(globus_io_input_token_t));
-	    /* Set this to a dummy non-zero value. Once the header
-	     * has been parsed, this will be updated.
+	    /* if this is the first time we've tried to access
+	     * data from this handle since the last unwrap, then
+	     * the fifo of wrapped buffers may be empty so we'll need
+	     * to allocate a new one.
 	     */
-	    buffer->token_to_read = 1;
-		   
-	    globus_fifo_enqueue(&handle->wrapped_buffers,
-				buffer);
-	}
-        buffer = (globus_io_input_token_t *) 
-	    globus_fifo_tail_peek(&handle->wrapped_buffers);
-
-	result = globus_l_io_read_input_token(handle,
-					      buffer);
-	if(result != GLOBUS_SUCCESS)
-	{
-	    err = globus_error_get(result);
-
-	    if(globus_io_eof(err) &&
-	       !globus_fifo_empty(&handle->unwrapped_buffers))
+	    if(globus_fifo_empty(&handle->wrapped_buffers))
 	    {
-		globus_object_free(err);
+		buffer = (globus_io_input_token_t *) 
+		    globus_malloc(sizeof(globus_io_input_token_t));
 
-		err = GLOBUS_NULL;
+		memset(buffer,
+		       '\0',
+		       sizeof(globus_io_input_token_t));
+		/* Set this to a dummy non-zero value. Once the header
+		 * has been parsed, this will be updated.
+		 */
+		buffer->token_to_read = 1;
+	       
+		globus_fifo_enqueue(&handle->wrapped_buffers,
+				    buffer);
 	    }
-	    else
-	    {
-		goto error_exit;
-	    }
-	}
-	else if(buffer->token_to_read == 0)
-	{
-	    result = globus_l_io_securesocket_unwrap_data(handle);
+	    /* This buffer will either be just allocated, or a partially
+	     * filled token buffer from a previous read
+	     */
+	    buffer = (globus_io_input_token_t *) 
+		globus_fifo_tail_peek(&handle->wrapped_buffers);
+
+	    result = globus_l_io_read_input_token(handle,
+						  buffer);
 	    if(result != GLOBUS_SUCCESS)
 	    {
-                err = globus_error_get(result);
+		err = globus_error_get(result);
 
-		goto error_exit;
+		if(globus_io_eof(err) &&
+		   !globus_fifo_empty(&handle->unwrapped_buffers))
+		{
+		    globus_object_free(err);
+
+		    err = GLOBUS_NULL;
+		}
+		else
+		{
+		    goto error_exit;
+		}
 	    }
+	    else if(buffer->token_to_read == 0)
+	    {
+		result = globus_l_io_securesocket_unwrap_data(handle);
+		if(result != GLOBUS_SUCCESS)
+		{
+		    err = globus_error_get(result);
+
+		    goto error_exit;
+		}
 	    
+	    }
 	}
     }
     else
@@ -1501,6 +1510,7 @@ globus_l_io_secure_read_callback(
     else
     {
 	/* re-register read */
+	secure_read_info->selecting = GLOBUS_TRUE;
         rc = globus_i_io_register_read_func(
 	    handle,
 	    globus_l_io_secure_read_callback,
@@ -1660,6 +1670,9 @@ globus_i_io_securesocket_register_read(
 	secure_read_info->nbytes_read = num_read;
 	secure_read_info->arg = callback_arg;
 	secure_read_info->callback = callback;
+	secure_read_info->selecting = (num_read >= wait_for_nbytes)
+                                            ? GLOBUS_FALSE /* don't select */
+                                            : GLOBUS_TRUE /* select */;
 
 	/* we need to get more data from the network if we haven't
 	 * copied enough data from the buffer, otherwise, we just need
@@ -1669,9 +1682,7 @@ globus_i_io_securesocket_register_read(
 					    globus_l_io_secure_read_callback,
 					    secure_read_info,
 					    globus_i_io_default_destructor,
-					    (num_read >= wait_for_nbytes)
-					    ? GLOBUS_FALSE /* don't select */
-					    : GLOBUS_TRUE /* select */);
+					    secure_read_info->selecting);
 	if(rc != GLOBUS_SUCCESS)
 	{
 	    err = globus_error_get(rc);
