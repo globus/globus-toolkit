@@ -71,6 +71,9 @@ graml_tree_free(gram_specification_t * sp);
 static char *
 genfilename(char * prefix, char * path, char * sufix);
 
+static void
+graml_stage_file(char *url, int mode);
+
 /******************************************************************************
                        Define variables for external use
 ******************************************************************************/
@@ -552,6 +555,7 @@ main(int argc,
 				       graml_job_contact);
 	    }
 	}
+	fflush(grami_log_fp);
 	gass_cache_list_free(cache_entries,
 			     cache_size);
 	gass_cache_close(&cache_handle);
@@ -789,6 +793,13 @@ grami_jm_request_params(gram_specification_t * description_tree,
     grami_jm_param_get(description_tree, GRAM_JOBTYPE_PARAM, params->jobtype);
     grami_jm_param_get(description_tree, GRAM_MYJOB_PARAM, params->gram_myjob);
 
+    /* GEM: Stage pgm and std_in to local filesystem, if they are URLs.
+       Do this before paradyn rewriting.
+     */
+    gass_init();
+    graml_stage_file(params->pgm, 0700);
+    graml_stage_file(params->std_in, 0400);
+    
     if (grami_is_paradyn_job(params))
     {
 	if (!grami_paradyn_rewrite_params(params))
@@ -1095,4 +1106,78 @@ genfilename(char * prefixp, char * pathp, char * sufixp)
           strcat(newfilename, sufix);
         }
         return newfilename;
+}
+
+/******************************************************************************
+Function:       graml_stage_file()
+Description:    
+Parameters:
+Returns:
+******************************************************************************/
+static void
+graml_stage_file(char *url, int mode)
+{
+    globus_url_t gurl;
+    int rc;
+
+    grami_fprintf( grami_log_fp, 
+                   "JM: staging file = %s\n", url);
+
+    rc = globus_url_parse(url, &gurl);
+    if(rc == GLOBUS_SUCCESS)	/* this is a valid URL */
+    {
+	if(gurl.scheme_type == GLOBUS_URL_SCHEME_FILE)
+	{
+	    strncpy(url, gurl.url_path, GRAM_PARAM_SIZE);
+	}
+	else
+	{
+	    gass_cache_t cache;
+	    unsigned long timestamp;
+	    char *tmpname;
+	    
+	    gass_cache_open(GLOBUS_NULL,
+			    &cache);
+	    
+	    rc = gass_cache_add(&cache,
+				url,
+				graml_job_contact,
+				GLOBUS_TRUE,
+				&timestamp,
+				&tmpname);
+	    if(rc == GASS_CACHE_ADD_EXISTS)
+	    {
+		gass_cache_add_done(&cache,
+				    url,
+				    graml_job_contact,
+				    timestamp);
+	    }
+	    else if(rc == GASS_CACHE_ADD_NEW)
+	    {
+		int fd = open(tmpname,
+			      O_WRONLY|O_TRUNC,
+			      mode);
+		
+		gass_client_get_fd(url,
+				   GLOBUS_NULL,
+				   fd,
+				   GASS_LENGTH_UNKNOWN,
+				   &timestamp,
+				   GLOBUS_NULL,
+				   GLOBUS_NULL);
+		close(fd);
+		gass_cache_add_done(&cache,
+				    url,
+				    graml_job_contact,
+				    timestamp);
+	    }
+	    strncpy(url, tmpname, GRAM_PARAM_SIZE);
+	    url[GRAM_PARAM_SIZE-1] = '\0';
+	    globus_free(tmpname);
+	    gass_cache_close(&cache);
+	}
+    }
+    globus_url_destroy(&gurl);
+    grami_fprintf( grami_log_fp, 
+                   "JM: new name = %s\n", url);
 }
