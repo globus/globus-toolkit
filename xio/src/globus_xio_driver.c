@@ -350,7 +350,8 @@ globus_i_xio_will_block_cb(
     op->restarted = GLOBUS_TRUE;
     globus_assert(op->ndx == 0);
     ndx = op->ndx;
-    while(ndx != op->stack_size)
+
+    do
     {
         globus_mutex_lock(&context->mutex);
         {
@@ -407,6 +408,7 @@ globus_i_xio_will_block_cb(
             GLOBUS_XIO_DEBUG_INFO_VERBOSE,
            ("[%s:%d] :: Index = %d\n", _xio_name, __LINE__, ndx));
     }
+    while(ndx != op->stack_size && ndx != 0);
 
   exit:
     GlobusXIODebugInternalExit();
