@@ -1,6 +1,7 @@
 #include "globus_common_include.h"
 #include "globus_object_cache.h"
 #include "globus_error.h"
+#include "globus_error_generic.h"
 #include "globus_error_hierarchy.h"
 #include "globus_libc.h"
 #include "globus_module.h"
@@ -243,8 +244,10 @@ globus_error_construct_base (globus_module_descriptor_t * source_module,
         { \
             char *                          tmp_string; \
             \
-            tmp_string = globus_object_printable_to_string(error); \
-            globus_libc_fprintf(stderr, "globus_error_put(): %s\n", tmp_string); \
+            tmp_string = globus_error_print_chain(error); \
+            if(tmp_string) \
+                globus_libc_fprintf( \
+                    stderr, "globus_error_put(): %s\n", tmp_string); \
             globus_free(tmp_string); \
         } \
     } while(0)

@@ -29,15 +29,6 @@ typedef void
     globus_size_t                       nbytes);
 
 typedef void
-(*globus_io_recv_callback_t)(
-    void *                              arg,
-    globus_io_handle_t *                handle,
-    globus_result_t                     result,
-    globus_byte_t *                     buf,
-    globus_size_t                       nbytes,
-    int                                 flags);
-
-typedef void
 (*globus_io_write_callback_t)(
     void *                              arg,
     globus_io_handle_t *                handle,
@@ -107,6 +98,11 @@ typedef enum
     GLOBUS_IO_FILE_TYPE_TEXT = GLOBUS_XIO_FILE_TEXT,
     GLOBUS_IO_FILE_TYPE_BINARY = GLOBUS_XIO_FILE_BINARY
 } globus_io_file_type_t;
+
+typedef enum
+{
+    GLOBUS_IO_SEND_MSG_OOB = GLOBUS_XIO_TCP_SEND_OOB
+} globus_io_send_flags_t;
 
 globus_result_t
 globus_io_register_cancel(
