@@ -18,6 +18,12 @@
 #include "globus_rsl.h"
 #include "globus_gass_cache.h"
 
+/* Defines */
+
+#define GLOBUS_GRAM_AUTHZ_CALLOUT_TYPE "globus_gram_jobmanager_authz"
+
+#define GLOBUS_GRAM_AUTHZ_ACTION_START "start"
+
 EXTERN_C_BEGIN
 
 /* Type definitions */

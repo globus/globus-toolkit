@@ -145,18 +145,20 @@ globus_gram_job_manager_query_callback(
 
     if (rc != GLOBUS_SUCCESS)
     {
-	goto unpack_failed;
+        goto unpack_failed;
     }
 
     globus_gram_job_manager_request_log(
-	    request,
-	    "JM : in globus_l_gram_job_manager_query_callback, query=%s\n",
-		   query);
-
+        request,
+        "JM : in globus_l_gram_job_manager_query_callback, query=%s\n",
+        query);
+    
     rest = strchr(query,' ');
     if (rest)
 	*rest++ = '\0';
 
+    /* add authz callout here */
+    
     if (strcmp(query,"cancel")==0)
     {
 	rc = globus_l_gram_job_manager_cancel(request, handle, &reply);

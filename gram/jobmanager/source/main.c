@@ -573,13 +573,20 @@ globus_l_gram_job_manager_activate(void)
 	goto common_failed;
     }
 
-    rc = globus_module_activate(GLOBUS_GSI_GSSAPI_MODULE);
+    rc = globus_module_activate(GLOBUS_GSI_GSS_ASSIST_MODULE);
     if (rc != GLOBUS_SUCCESS)
     {
-        fprintf(stderr, "gss assist activation failed with rc=%d\n", rc);
+        fprintf(stderr, "gssapi activation failed with rc=%d\n", rc);
         goto gss_assist_failed;
     }
 
+    rc = globus_module_activate(GLOBUS_GSI_SYSCONFIG_MODULE);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        fprintf(stderr, "gsi sysconfig activation failed with rc=%d\n", rc);
+        goto gsi_sysconfig_failed;
+    }
+    
     rc = globus_module_activate(GLOBUS_IO_MODULE);
     if (rc != GLOBUS_SUCCESS)
     {
@@ -637,6 +644,7 @@ gass_cache_failed:
 gram_protocol_failed:
 io_failed:
 gss_assist_failed:
+gsi_sysconfig_failed:
     if(rc)
     {
 	globus_module_deactivate_all();
