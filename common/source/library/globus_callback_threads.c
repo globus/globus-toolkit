@@ -506,6 +506,10 @@ globus_l_callback_deactivate()
         
         /* kill signal handling thread */
         globus_thread_cancel(globus_l_callback_signal_thread);
+        /* shouldn't have to do this, but osx and some 
+         * early linux ntpl need it
+         */
+        globus_cond_broadcast(&globus_l_callback_thread_cond);
         
         /* wake up any sleeping on queue */
         tmp_list = globus_l_callback_threaded_spaces;
