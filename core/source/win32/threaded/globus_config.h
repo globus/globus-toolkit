@@ -56,8 +56,9 @@
 #define HAVE_ATEXIT 1
 #define HAVE_NETINET_TCP_H 1#define HAVE_WINSOCK_H     1
 
-#define GLOBUS_OFF_T DWORDLONG
-#define GLOBUS_OFF_T_FORMAT "ld"
+//#define GLOBUS_OFF_T DWORDLONG
+#define GLOBUS_OFF_T LONGLONG
+#define GLOBUS_OFF_T_FORMAT "I64d"
 #define SIZEOF_OFF_T 8
 #define SIZEOF_INT 4
 #define SIZEOF_LONG 4
