@@ -1,3 +1,7 @@
+
+use Getopt::Long:
+use English;
+
 my $gpath = $ENV{GPT_LOCATION};
 if (!defined($gpath))
 {
@@ -10,6 +14,26 @@ if (!defined($gpath))
 }
 
 @INC = (@INC, "$gpath/lib/perl");
+
+
+$setup_gsi_options = join(" ", @ARGV);
+
+if( ! &GetOptions("nonroot|d:s") ) {
+
+    print <<EOF
+
+setup-ssl-utils [ options ...]
+
+  Options:
+    --nonroot=DIR, -d DIR      flag used to setup the grid security directory
+	                       in a non-default location (/etc/grid-security/)
+
+EOF
+    ;
+
+    exit 1;
+}
+
 
 my $globusdir = $ENV{GLOBUS_LOCATION};
 my $setupdir = "$globusdir/setup/globus";
@@ -43,6 +67,22 @@ if ($result != 0) {
   die "Failed to set permissions on $setupdir/grid-cert-request-config";
 }
 
+if(defined($opt_nonroot))
+{
+
+    print "
+
+Running: $setupdir/setup-gsi $setup_gsi_options
+
+";
+
+    system("$setupdir/setup-gsi $setup_gsi_options");
+
+    print "
+done with setup-ssl-utils.
+";
+
+} else {
 
 print "
 ***************************************************************************
@@ -62,4 +102,5 @@ Press return to continue.
 
 $foo=<STDIN>;
 
+}
 # End

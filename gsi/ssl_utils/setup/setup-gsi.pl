@@ -26,17 +26,19 @@ if (!defined($gpath))
 
 require Grid::GPT::Setup;
 
-if( ! &GetOptions("grid-security-dir|d=s") ) { 
+if( ! &GetOptions("nonroot|d:s") ) { 
 
     print <<EOF
 
-setup-gsi [-d <security config dir>]
+setup-gsi [ options ...]
 
-The setup-gsi script takes an optional argument -d, 
-and the directory that the security configuration 
-files will be placed.  If no argument is given, the 
-directory defaults to /etc/grid-security/.
-
+  Options:
+    --nonroot=DIR, -d DIR     sets the directory that the security configuration 
+	                      files will be placed.  If no argument is given, 
+	                      the config files will be placed in \$GLOBUS_LOCATION/etc/.
+			      Without the option, the script checks to see if
+			      /etc/grid-security/ is writeable, otherwise
+			      \$GLOBUS_LOCATION/etc/ is used.
 EOF
     ;
 
@@ -47,31 +49,21 @@ my $setupdir = "$globusdir/setup/globus/";
 
 my $target_dir = "";
 
-if(defined($opt_grid_security_dir) && $opt_grid_security_dir)
+
+if(defined($opt_nonroot))
 {
-   $target_dir = "$opt_grid_security_dir" . "/";
-   $ENV{GRID_SECURITY_DIR} = "$target_dir";
+    if($opt_nonroot eq "") {
+	$target_dir = $globusdir . "/etc/";
+    } else {
+	$target_dir = "$opt_nonroot";
+    }
+
+    $ENV{GRID_SECURITY_DIR} = "$target_dir";
 }
 else
 {
-   $target_dir = "/etc/grid-security/";
+   $target_dir = "/etc/grid-security";
 }
-
-# modify grid-cert-request to have correct security directory
-$reqfile = "$globusdir/bin/grid-cert-request";
-
-if( ! -w $reqfile ){
-    print "To run this script, $reqfile must be writeable\n";
-    exit 1;
-}
-
-$cert_request_buf = `cat $reqfile`;
-$cert_request_buf =~ s/secconfdir=.*/secconfdir=$target_dir/;
-
-open(CERT_REQ, ">$reqfile");
-print CERT_REQ $cert_request_buf;
-close(CERT_REQ);
-
 
 my $trusted_certs_dir;
 if($target_dir eq "/etc/grid-security/") {

@@ -10,7 +10,13 @@ fi
 
 . ${GLOBUS_LOCATION}/libexec/globus-script-initializer
 
-secconfdir=GRID_SECURITY_DIR
+if [ -z "${GRID_SECURITY_DIR}" ]; then
+    secconfdir=${GRID_SECURITY_DIR}
+else if [ -r "/etc/grid-security/globus-user-ssl.cnf" ]; then
+    secconfdir="/etc/grid-security/"
+else
+    secconfdir="${GLOBUS_LOCATION}/etc/"
+fi
 
 #
 # Sample script to generate a certificate request which can be sent 
