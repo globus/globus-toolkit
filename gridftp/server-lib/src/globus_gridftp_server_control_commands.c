@@ -1534,6 +1534,41 @@ globus_l_gsc_cmd_site_send_buf(
     }
 }
 
+/*
+ *
+ */
+static void
+globus_l_gsc_cmd_site_fault(
+    globus_i_gsc_op_t *                 op,
+    const char *                        full_command,
+    char **                             cmd_a,
+    int                                 argc,
+    void *                              user_arg)
+{
+    int                                 len;
+    int                                 ctr;
+  
+    globus_i_gsc_log(op->server_handle, full_command,
+        GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_SITE);
+
+    if(op->server_handle->fault_cmd != NULL)
+    {
+        globus_free(op->server_handle->fault_cmd);
+    }
+    op->server_handle->fault_cmd = globus_libc_strdup(cmd_a[2]);
+
+    len = strlen(op->server_handle->fault_cmd);
+    for(ctr = 0; ctr < len; ctr++)
+    {
+        op->server_handle->fault_cmd[ctr] = 
+            toupper(op->server_handle->fault_cmd[ctr]);
+    }
+    
+    globus_gsc_959_finished_command(
+        op, "200 Site Command Successful.\r\n");
+
+}
+
 static void
 globus_l_gsc_cmd_rest(
     globus_i_gsc_op_t *                     op,
@@ -3123,6 +3158,16 @@ globus_i_gsc_add_commands(
         2,
         3,
         "SITE HELP: help on server commands",
+        NULL);
+
+    globus_gsc_959_command_add(
+        server_handle,
+        "SITE FAULT", 
+        globus_l_gsc_cmd_site_fault,
+        GLOBUS_GSC_COMMAND_POST_AUTH,
+        3,
+        3,
+        "SITE FAULT: force a failure on given command",
         NULL);
 
     globus_gsc_959_command_add(

@@ -1717,6 +1717,23 @@ globus_l_gsc_command_callout(
             globus_gsc_959_finished_command(op,
                 "501 Syntax error in parameters or arguments.\r\n");
         }
+        else if(server_handle->fault_cmd != NULL)
+        {
+            if(strcmp(server_handle->fault_cmd, cmd_array[0]) == 0)
+            {
+                globus_gsc_959_finished_command(op,
+                    "501 Fault requested.\r\n");
+            }
+            else
+            {
+                cmd_ent->cmd_cb(
+                    op,
+                    op->command,
+                    cmd_array,
+                    argc,
+                    cmd_ent->user_arg);
+            }
+        }
         else
         {
             cmd_ent->cmd_cb(
@@ -1995,6 +2012,10 @@ globus_gridftp_server_control_destroy(
     if(server_handle->dcau_subject != NULL)
     {
         globus_free(server_handle->dcau_subject);
+    }
+    if(server_handle->fault_cmd != NULL)
+    {
+        globus_free(server_handle->fault_cmd);
     }
 
     while(!globus_list_empty(server_handle->all_cmd_list))

@@ -351,6 +351,9 @@ typedef struct globus_i_gsc_server_handle_s
 
     globus_off_t                        allocated_bytes;
 
+    /* force failure on this command */
+    char *                              fault_cmd;
+    
     /* opts state */
     globus_i_gsc_handle_opts_t          opts;
 
