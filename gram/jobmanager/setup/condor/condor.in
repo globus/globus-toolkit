@@ -15,11 +15,12 @@ package Globus::GRAM::JobManager::condor;
 
 @ISA = qw(Globus::GRAM::JobManager);
 
-my ($condor_submit, $condor_arch, $condor_os);
+my ($condor_submit, $condor_rm, $condor_arch, $condor_os);
 
 BEGIN
 {
     $condor_submit 	= '@CONDOR_SUBMIT@';
+    $condor_rm	 	= '@CONDOR_RM@';
     $condor_arch	= '@CONDOR_ARCH@';
     $condor_os 		= '@CONDOR_OS@';
 }
@@ -137,8 +138,6 @@ sub submit
 				    $_ =~ s/\$/\\\$/g;
 				    $_ =~ s/"/\\\"/g;
 				    $_ =~ s/`/\\\`/g;
-				    $_ =~ s/^/"/;
-				    $_ =~ s/$/"/;
 				    $_;
 				}
 				@arguments);
@@ -150,7 +149,7 @@ sub submit
 
     # Create script for condor submission
     $script_url = "$tag/condor_script.$$";
-    system("$cache_pgm -add -t $tag -n $script_url /dev/null >/dev/null");
+    system("$cache_pgm -add -t $tag -n $script_url file:/dev/null >/dev/null");
     $script_filename = `$cache_pgm -query $script_url 2>/dev/null`;
     chomp($script_filename);
 
@@ -203,7 +202,7 @@ sub submit
 
     if($? == 0)
     {
-	$response_line =(grep("submitted to cluster", <script_response>))[0];
+	$response_line =(grep(/submitted to cluster/, <$script_response>))[0];
 	$job_id = (split(/\./, (split(/\s+/, $response_line))[5]))[0];
 	$status = Globus::GRAM::JobState::PENDING;
 
@@ -246,7 +245,7 @@ sub poll
     }
     $num_done = scalar(grep(/^005/, @uniq));
     $num_run = scalar(grep(/^001/, @uniq));
-    $num_abort = scalar(grep(/^013/, @uniq));
+    $num_abort = scalar(grep(/^(013|009)/, @uniq));
 
     if($num_abort > 0)
     {
