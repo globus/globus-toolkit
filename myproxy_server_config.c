@@ -91,7 +91,6 @@ line_parse_callback(void *context_arg,
     myproxy_server_context_t *context = context_arg;
     const char *directive;
     int return_code = -1;
-    int matched = 0;
     
     assert(context != NULL);
     
@@ -109,8 +108,6 @@ line_parse_callback(void *context_arg,
 	(strcmp(directive, "accepted_credentials") == 0))
     {
 	int index = 1; /* Skip directive */
-	
-	matched = 1;
 	
 	while(tokens[index] != NULL)
 	{
@@ -133,8 +130,6 @@ line_parse_callback(void *context_arg,
     {
 	int index = 1; /* Skip directive */
 	
-	matched = 1;
-	
 	while(tokens[index] != NULL)
 	{
 	    context->authorized_retriever_dns =
@@ -153,8 +148,6 @@ line_parse_callback(void *context_arg,
     if((strcmp(directive, "default_retrievers") == 0))
     {
 	int index = 1; /* Skip directive */
-	
-	matched = 1;
 	
 	while(tokens[index] != NULL)
 	{
@@ -175,8 +168,6 @@ line_parse_callback(void *context_arg,
     {
 	int index = 1; /* Skip directive */
 	
-	matched = 1;
-	
 	while(tokens[index] != NULL)
 	{
 	    context->authorized_renewer_dns =
@@ -196,8 +187,6 @@ line_parse_callback(void *context_arg,
     {
 	int index = 1; /* Skip directive */
 	
-	matched = 1;
-	
 	while(tokens[index] != NULL)
 	{
 	    context->default_renewer_dns =
@@ -211,6 +200,11 @@ line_parse_callback(void *context_arg,
 
 	    index++;
 	}
+    }
+
+    if (strcmp(directive, "passphrase_policy_program") == 0)
+    {
+	context->passphrase_policy_pgm = strdup(tokens[1]);
     }
 
     return_code = 0;

@@ -101,6 +101,11 @@ static char *timestamp(void);
 
 static int become_daemon(myproxy_server_context_t *server_context);
 
+static int check_passphrase_policy(const char *passphrase,
+				   myproxy_server_context_t *context,
+				   myproxy_request_t *client_request,
+				   const char *client_name);
+
 static int myproxy_authorize_accept(myproxy_server_context_t *context,
                                     myproxy_socket_attrs_t *attrs,
 				    myproxy_request_t *client_request,
@@ -325,7 +330,7 @@ handle_client(myproxy_socket_attrs_t *attrs,
     if (myproxy_deserialize_request(client_buffer, requestlen, 
                                     client_request) < 0) {
 	myproxy_log_verror();
-        respond_with_error_and_die(attrs, "error");
+        respond_with_error_and_die(attrs, "error parsing request");
     }
 
     /* Check client version */
@@ -349,7 +354,7 @@ handle_client(myproxy_socket_attrs_t *attrs,
     }
 
     /* XXX Put real pass word policy here */
-    /* Allow credentials with no passwords to be stored by not retrieved. */
+    /* Allow credentials with no passwords to be stored but not retrieved. */
     if (client_request->passphrase && strlen(client_request->passphrase) &&
 	strlen(client_request->passphrase) < MIN_PASS_PHRASE_LEN) {
 	myproxy_log("client %s Pass phrase too short", client_name);
@@ -426,6 +431,12 @@ handle_client(myproxy_socket_attrs_t *attrs,
 	if (client_creds->renewers != NULL)
     	    myproxy_debug("  Renewer policy: %s", client_creds->renewers); 
 
+	if (check_passphrase_policy(client_request->passphrase,
+				    context, client_request,
+				    client_name) < 0) {
+	    respond_with_error_and_die(attrs, verror_get_string());
+	}
+
 	/* Send initial OK response */
 	send_response(attrs, server_response, client_name);
 
@@ -449,6 +460,12 @@ handle_client(myproxy_socket_attrs_t *attrs,
 	/* change credential passphrase*/
 	myproxy_log("Received client %s command: CHANGE_PASS", client_name);
 	myproxy_debug("  Username is \"%s\"", client_request->username);
+
+	if (check_passphrase_policy(client_request->new_passphrase,
+				    context, client_request,
+				    client_name) < 0) {
+	    respond_with_error_and_die(attrs, verror_get_string());
+	}
 
 	change_passwd(client_creds, client_request->new_passphrase,
 		      server_response);
@@ -935,6 +952,106 @@ become_daemon(myproxy_server_context_t *context)
     return 0;
 }
 
+/*
+ * Check new passphrase against our passphrase policy by running
+ * the external passphrase policy program.
+ *
+ * Returns 0 if passphrase is accepted and -1 otherwise.
+ */
+static int
+check_passphrase_policy(const char *passphrase,
+			myproxy_server_context_t *context,
+			myproxy_request_t *client_request,
+			const char *client_name)
+{
+    pid_t childpid;
+    int p0[2], p1[2], p2[2];
+    size_t passphrase_len = 0;
+    int exit_status;
+
+    if (!context->passphrase_policy_pgm) return 0;
+
+    myproxy_debug("Running passphrase policy program: %s",
+		  context->passphrase_policy_pgm);
+
+    if (pipe(p0) < 0 || pipe(p1) < 0 || pipe(p2) < 0) {
+	verror_put_string("pipe() failed");
+	verror_put_errno(errno);
+	return -1;
+    }
+
+    /* fork/exec passphrase policy program */
+    if ((childpid = fork()) < 0) {
+	verror_put_string("fork() failed");
+	verror_put_errno(errno);
+	return -1;
+    }
+    
+    if (childpid == 0) {	/* child */
+	close(p0[1]); close(p1[0]); close(p2[0]);
+	if (dup2(p0[0], 0) < 0 ||
+	    dup2(p1[1], 1) < 0 ||
+	    dup2(p2[1], 2) < 0)	{
+	    perror("dup2");
+	    exit(1);
+	}
+	execl(context->passphrase_policy_pgm,
+	      context->passphrase_policy_pgm,
+	      client_request->username,
+	      client_name,
+	      (client_request->credname) ? client_request->credname : "",
+	      (client_request->retrievers) ? client_request->retrievers : "",
+	      (client_request->renewers) ? client_request->renewers : "",
+	      NULL);
+	fprintf(stderr, "failed to run %s: %s\n",
+		context->passphrase_policy_pgm, strerror(errno));
+	exit(1);
+    }
+
+    close(p0[0]); close(p1[1]); close(p2[1]);
+
+    /* send passphrase to child's stdin */
+    if (passphrase) {
+	passphrase_len = strlen(passphrase);
+    }
+    if (passphrase_len) {
+	write(p0[1], passphrase, passphrase_len);
+    }
+    write(p0[1], "\n", 1);
+    close(p0[1]); 
+
+    /* wait for child */
+    if (wait4(childpid, &exit_status, 0, NULL) < 0) {
+	verror_put_string("wait() failed for passphrase policy child");
+	verror_put_errno(errno);
+	return -1;
+    }
+
+    if (exit_status != 0) { /* passphrase not allowed */
+	FILE *fp = NULL;
+	char buf[100];
+	verror_put_string("passphrase violates local policy");
+	fp = fdopen(p1[0], "r");
+	if (fp) {
+	    while (fgets(buf, 100, fp) != NULL) {
+		verror_put_string(buf);
+	    }
+	}
+	fclose(fp);
+	fp = fdopen(p2[0], "r");
+	if (fp) {
+	    while (fgets(buf, 100, fp) != NULL) {
+		verror_put_string(buf);
+	    }
+	}
+	fclose(fp);
+	return -1;
+    }
+
+    close(p1[0]); close(p2[0]);
+    return 0;
+}
+
 /* Check authorization for all incoming requests.  The authorization
  * rules are as follows.
  * GET with passphrase (credential retrieval):
@@ -1247,7 +1364,7 @@ get_client_authdata(myproxy_socket_attrs_t *attrs,
    auth_data->server_data = strdup(client_auth_data->server_data);
    auth_data->client_data = malloc(client_auth_data->client_data_len);
    if (auth_data->client_data == NULL) {
-      verror_put_string("%s", "malloc() failed");
+      verror_put_string("malloc() failed");
       verror_put_errno(errno);
       goto end;
    }
