@@ -59,8 +59,9 @@ AC_OBJEXT
 AC_EXEEXT
 
 AC_OUTPUT(Makefile
-       	globus-build-env-${globus_cv_flavor}.sh:globus-build-env.sh.in
-	globus-sh-tools.sh
+       	scripts/globus-build-env-${globus_cv_flavor}.sh:scripts/globus-build-env.sh.in
+	scripts/globus-sh-tools.sh
+	scripts/globus-args-parser-header
 	scripts/Makefile
 	scripts/globus_build_config.pl
 	aclocal/Makefile
