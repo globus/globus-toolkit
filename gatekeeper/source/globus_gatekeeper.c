@@ -2228,7 +2228,7 @@ failure(short failure_type, char * s)
     }
     if (logging_usrlog)
     {
-        fprintf(usrlog_fp, "Failure: %s\n", s);
+        fprintf(usrlog_fp, "TIME: %s PID: %d -- Failure: %s\n", timestamp(), getpid(), s);
     }
     /* 
      * attempt to send back to the gram_client one final 
@@ -2310,7 +2310,7 @@ notice(int prty, char * s)
     }
     if (logging_usrlog)
     {
-        fprintf(usrlog_fp, "Notice: %d: %s\n", prty, s);
+        fprintf(usrlog_fp, "TIME: %s PID: %d -- Notice: %d: %s\n", timestamp(), getpid(), prty, s);
     }
 } /* notice() */
 
