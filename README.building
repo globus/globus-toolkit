@@ -25,31 +25,19 @@ $ make
 To install from a CVS workspace to $GLOBUS_LOCATION:
 $ make install
 
-The rest of these instructions need to be updated for GT 2.2...
-
-To build binary packages from CVS workspace, after installing in
-$GLOBUS_LOCATION:
-$ $GPT_LOCATION/sbin/globus-build gcc32
-
-To build source packages from CVS workspace:
+To build source packages from a CVS workspace:
 $ make dist
 
 To make a source bundle, first setup a subdirectory named src-packages
-with all the needed source packages (Globus and MyProxy).  Packages
-from ftp.globus.org have known problems with their packaging data.
-Use packages from ftp.nsf-middleware.org instead.
-$ ls src-packages/
-globus_common-2.0.tar.gz        globus_openssl-0.9.tar.gz
-globus_common_setup-2.0.tar.gz  globus_ssl_utils-2.1.tar.gz
-globus_core-2.1.tar.gz          globus_ssl_utils_setup-2.0.tar.gz
-globus_core_setup-2.0.tar.gz    globus_user_env-2.1.tar.gz
-globus_gssapi_gsi-2.0.tar.gz    myproxy-1.0.tar.gz
-globus_gss_assist-2.0.tar.gz
+with all the needed source packages (Globus and MyProxy).  The easiest
+way to do this is to download the contents of the current stable src
+and update directories from ftp.globus.org.  For updated packages,
+remove the older versions or gpt-bundle will complain.
 
 Then, build a source bundle in the current working directory with:
-$ $GPT_LOCATION/sbin/gpt-bundle -srcdir=src-packages myproxy globus_core_setup globus_ssl_utils_setup globus_user_env -output=myproxy_bundle-1.0-src.tar.gz
+$ $GPT_LOCATION/sbin/gpt-bundle -srcdir=src-packages -bn=myproxy -bv=<version> myproxy globus_user_env
 
 To build a binary bundle, first setup a subdirectory named bin-packages
 with all the needed binary packages (Globus and MyProxy).
 Then, build a binary bundle in the current working directory with:
-$ $GPT_LOCATION/sbin/gpt-bundle -bindir=bin-packages myproxy-noflavor_data myproxy-gcc32_dev myproxy-gcc32_pgm myproxy-gcc32_rtl globus_ssl_utils-gcc32_pgm globus_core_setup-noflavor_pgm globus_ssl_utils_setup-noflavor_pgm globus_user_env-noflavor_data -output=myproxy_bundle-1.0-i686-pc-linux-gnu-gcc32.tar.gz
+$ $GPT_LOCATION/sbin/gpt-bundle -bindir=bin-packages -bn=myproxy -bv=<version> -all
