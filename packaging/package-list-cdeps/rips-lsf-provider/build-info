@@ -1,0 +1,4 @@
+name=rips_lsf_provider_setup
+subdir=information_services/rips-lsf-provider-setup
+build="custom"
+output=rips_lsf_provider_setup-*.tar.gz
