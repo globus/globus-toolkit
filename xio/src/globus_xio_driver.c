@@ -344,7 +344,7 @@ globus_i_xio_will_block_cb(
 
     op = (globus_i_xio_op_t *) user_args;
 
-    globus_thread_blocking_callback_pop(&wb_ndx);
+    globus_thread_blocking_callback_disable(&wb_ndx);
 
     context = op->_op_context;
     op->restarted = GLOBUS_TRUE;
@@ -394,7 +394,11 @@ globus_i_xio_will_block_cb(
                 globus_assert(0);
                 break;
         }
+
         ndx = op->entry[ndx].next_ndx;
+        GlobusXIODebugPrintf(
+            GLOBUS_XIO_DEBUG_INFO_VERBOSE,
+           ("[%s:%d] :: Index = %d\n", _xio_name, __LINE__, ndx));
     }
     GlobusXIODebugInternalExit();
 }
@@ -453,10 +457,7 @@ globus_l_xio_driver_op_write_kickout(
         my_op->_op_ent_data_cb(op, GlobusXIOObjToResult(op->cached_obj),
             my_op->_op_ent_nbytes, my_op->user_arg);
     
-        if(!op->restarted)
-        {
-            globus_thread_blocking_callback_pop(&wb_ndx);
-        }
+        globus_thread_blocking_callback_pop(&wb_ndx);
     }
     else
     {
@@ -532,10 +533,7 @@ globus_l_xio_driver_op_read_kickout(
         my_op->_op_ent_data_cb(op, GlobusXIOObjToResult(op->cached_obj),
             my_op->_op_ent_nbytes, my_op->user_arg);
     
-        if(!op->restarted)
-        {
-            globus_thread_blocking_callback_pop(&wb_ndx);
-        }
+        globus_thread_blocking_callback_pop(&wb_ndx);
     }
     else
     {
@@ -790,10 +788,7 @@ globus_l_xio_driver_open_op_kickout(
             op->blocking ? GLOBUS_CALLBACK_GLOBAL_SPACE: handle->space,
             &wb_ndx);
         my_op->cb(op, GlobusXIOObjToResult(op->cached_obj), my_op->user_arg);
-        if(!op->restarted)
-        {
-            globus_thread_blocking_callback_pop(&wb_ndx);
-        }
+        globus_thread_blocking_callback_pop(&wb_ndx);
     }
     else
     {

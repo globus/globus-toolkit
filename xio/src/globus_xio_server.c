@@ -90,7 +90,7 @@ globus_i_xio_server_will_block_cb(
     xio_op->restarted = GLOBUS_TRUE;
     GlobusXIOOpInc(xio_op);
 
-    globus_thread_blocking_callback_pop(&wb_ndx);
+    globus_thread_blocking_callback_disable(&wb_ndx);
 
     globus_i_xio_server_post_accept(xio_op);
 
@@ -165,6 +165,7 @@ globus_l_xio_server_accept_kickout(
         xio_target,
         GlobusXIOObjToResult(xio_op->cached_obj),
         xio_op->user_arg);
+    globus_thread_blocking_callback_pop(&wb_ndx);
     if(xio_op->restarted)
     {
         globus_mutex_lock(&xio_server->mutex);
@@ -184,8 +185,6 @@ globus_l_xio_server_accept_kickout(
         }
         return;
     }
-
-    globus_thread_blocking_callback_pop(&wb_ndx);
 
     globus_i_xio_server_post_accept(xio_op);
 

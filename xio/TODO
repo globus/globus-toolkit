@@ -14,16 +14,4 @@ po canceled by driver then op bounces down bug
 
 need to add driver_attr_cntl also
 
-Roland whispers to you, "attr_cntl, server_cnt, target_cntl, handle_cntl, read and write should all be passed containter structs instead of void *.  target_init, server_init, open should be passed an attr_t instead of the void *.  we need driver_attr_cntl, driver_target_cntl, driver_handle_cntl and driver_server_cntl"
-Roland whispers to you, "ok, thats the list... no more!!!"
-
-oland whispers to you, "attr_cntl, server_cnt, target_cntl, handle_cntl, read and write should all be passed containter structs instead of void *.  target_init, server_init, open should be passed an attr_t instead of the void *.  we need driver_attr_cntl, driver_target_cntl, driver_handle_cntl and driver_server_cntl"
-Roland whispers to you, "ok, thats the list... no more!!!"
-You whisper to Roland, "no more?"
-Roland whispers to you, "i know it sucks... but its the only way i see being complete"
-rw2 hehs at you.
-You whisper to Roland, "yeah.... i guess that is how itgoes"
-mlink [to you]: i hate that kareoke too
-mlink [to you]: karaoke isn't that bad when drunk, though
-You [to mlink]: seee... and you don't suck
-Roland whispers to you, "oh, yeah.. one more thing... a XioDriverGetAttr, XioDriverGetTarget, XioDriverGetServer, and XioDriverGetHandle"
+Pass Accept, get back,  pass_open, get back, pass_read... does that work?
