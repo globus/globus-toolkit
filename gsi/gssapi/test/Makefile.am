@@ -11,7 +11,7 @@ Sources= \
 	gssapi_delegation_compat_test.c \
 	gssapi_test_utils.c \
 	gssapi_test_utils.h \
-	gssapi_thread_test.c
+	gssapi_thread_test.c 
 #	gssapi_group_test.c \
 
 INCLUDES += $(GPT_INCLUDES)
@@ -88,6 +88,13 @@ gssapi_delegation_compat_test_LDFLAGS = $(GPT_LDFLAGS)
 
 gssapi_delegation_compat_test_LDADD = $(GPT_PGM_LINKS)
 
+gssapi_thread_test_SOURCES = gssapi_thread_test.c \
+                             gssapi_test_utils.c \
+                             gssapi_test_utils.h
+
+gssapi_thread_test_LDFLAGS = $(GPT_LDFLAGS)
+
+gssapi_thread_test_LDADD = $(GPT_PGM_LINKS)
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top
