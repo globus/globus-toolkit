@@ -1189,11 +1189,11 @@ globus_result_t globus_gsi_cred_get_group_names(
     {
 
         /* The first group name (at index 0 of the stack)
-     * will be from the certificate in this
-     * credential, and the following group names in the stack will
-     * be from the cert chain.
-     */
-#warning SLANG: not sure these are being added in the right order.  will have to check this later
+         * will be from the certificate in this
+         * credential, and the following group names in the stack will
+         * be from the cert chain.
+         */
+        /* #warning SLANG: not sure these are being added in the right order.  will have to check this later */
         for(index = 0; index < sk_X509_num(handle->cert_chain); ++index)
         {
             if((result = globus_i_gsi_cred_get_proxycertinfo(
