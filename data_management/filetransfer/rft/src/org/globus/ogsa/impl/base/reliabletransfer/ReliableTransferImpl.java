@@ -398,8 +398,6 @@ public class ReliableTransferImpl
         this.notifyProps = new HashMap();
         this.notifyProps.put (GSIConstants.GSI_MODE,
                               GSIConstants.GSI_MODE_NO_DELEG);
-        this.notifyProps.put (org.globus.ogsa.impl.security.authentication.Constants.ESTABLISH_CONTEXT,
-                              Boolean.TRUE);
         this.notifyProps.put (org.globus.ogsa.impl.security.authentication.Constants.MSG_SEC_TYPE,
                               msgProt);
         this.notifyProps.put (GSIConstants.GSI_AUTHORIZATION,

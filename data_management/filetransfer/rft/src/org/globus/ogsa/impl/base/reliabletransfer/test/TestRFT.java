@@ -214,7 +214,6 @@ public class TestRFT extends TestCase {
 	CreationType creation = new CreationType();
 	((Stub)factory)._setProperty(GSIConstants.GSI_AUTHORIZATION, NoAuthorization.getInstance());
 	((Stub)factory)._setProperty(GSIConstants.GSI_MODE, GSIConstants.GSI_MODE_FULL_DELEG);
-	((Stub)factory)._setProperty(Constants.ESTABLISH_CONTEXT, Boolean.TRUE);
 	((Stub)factory)._setProperty(Constants.MSG_SEC_TYPE, Constants.SIGNATURE);
 	
 	ServiceTerminationReferenceType status = factory.createService(creation);
@@ -223,7 +222,6 @@ public class TestRFT extends TestCase {
 	GridServicePortType gridServicePort = reliableTransferService.getGridServicePort(status);
 	ReliableTransferPortType rftPortType = reliableTransferService.getReliableTransferPort(status);
 	((Stub)rftPortType)._setProperty(GSIConstants.GSI_AUTHORIZATION, NoAuthorization.getInstance());
-	((Stub)rftPortType)._setProperty(Constants.ESTABLISH_CONTEXT, Boolean.TRUE);
 	((Stub)rftPortType)._setProperty(Constants.MSG_SEC_TYPE, Constants.SIGNATURE);
 
 	ReliableTransferAttributes rftAttributes = new ReliableTransferAttributes();

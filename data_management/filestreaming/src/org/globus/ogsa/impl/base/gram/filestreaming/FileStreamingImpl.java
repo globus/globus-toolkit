@@ -194,7 +194,6 @@ public class FileStreamingImpl extends SecureNotificationServiceSkeleton
         this.notifyProps = new HashMap();
         this.notifyProps.put (GSIConstants.GSI_MODE,
                               GSIConstants.GSI_MODE_NO_DELEG);
-        this.notifyProps.put(Constants.ESTABLISH_CONTEXT,Boolean.TRUE);
         this.notifyProps.put(Constants.MSG_SEC_TYPE,msgProt);
         this.notifyProps.put(GSIConstants.GSI_AUTHORIZATION, SelfAuthorization.getInstance());
         this.notifyProps.put(GSIConstants.GSI_CREDENTIALS,credential);
