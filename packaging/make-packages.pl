@@ -73,7 +73,7 @@ my $thread = "pthr";
 my ($install, $installer, $anonymous, $force,
     $noupdates, $help, $man, $verbose, $skippackage,
     $skipbundle, $faster, $paranoia, $version, $uncool,
-    $binary, $inplace, $gt2dir, $gt3dir, $doxygen,
+    $binary, $deporder, $inplace, $gt2dir, $gt3dir, $doxygen,
     $autotools, $deps, $graph, $listpack, $listbun,
     $cvsuser, $gpt, $enable_64bit ) =
    (0, 0, 0, 0,
@@ -108,6 +108,7 @@ GetOptions( 'i|install=s' => \$install,
 	    'version=s' => \$version,
 	    'uncool!' => \$uncool,
 	    'inplace!' => \$inplace,
+            'deporder!' => \$deporder,
 	    'doxygen!' => \$doxygen,
 	    'autotools!' => \$autotools,
 	    'gpt!' => \$gpt,
@@ -182,6 +183,12 @@ if ( not $noupdates )
 }
 
 build_prerequisites();
+
+if( $inplace && !$install )
+{
+    print "ERROR: -inplace requires -install\n";
+    exit 1;
+}
 
 if ( not $skippackage )
 {
@@ -845,7 +852,7 @@ sub install_globus_core()
     if ( $inplace ) {
         my $dir = $cvs_archives{gt2}[2];
         system("pushd ${dir}/core/source; ./bootstrap; popd");
-        system("$ENV{GPT_LOCATION}/sbin/gpt-build -force $verbose -coresrc=${dir}/core/source -nosrc $flavor");
+        system("pushd ${dir}/core/source; $ENV{GPT_LOCATION}/sbin/gpt-build -force $verbose $flavor; popd");
     } else {
         system("$ENV{GPT_LOCATION}/sbin/gpt-build -nosrc $verbose $flavor");
     }
@@ -1075,7 +1082,69 @@ sub cvs_checkout_generic ()
     print "\n";
 }
 
+sub topol_sort
+{
+    my $node = shift;
+    my $sorted_nodes_ref = shift;
+    my $sorted_nodes_hashref = shift;
+    my $in_call_stack = shift;
 
+    if(exists $sorted_nodes_hashref->{$node})
+    {
+        return;
+    }
+    
+    if(exists $in_call_stack->{$node})
+    {
+#        print "FAILED: A circular dependency was found with package: $node\n\n";
+        return;
+    }
+
+    my $metadatafile = package_subdir($node) . "/pkgdata/pkg_data_src.gpt.in";
+    if ( ! -e $metadatafile )
+    {
+        $metadatafile = package_subdir($node) . "/pkg_data_src.gpt";
+    }
+    if ( ! -e $metadatafile )
+    {
+        $metadatafile = package_subdir($node) . "/pkgdata/pkg_data_src.gpt";
+    }
+
+    require Grid::GPT::V1::Package;
+    my $pkg = new Grid::GPT::V1::Package;
+
+    $pkg->read_metadata_file("$metadatafile");
+    for my $dep (keys %{$pkg->{'Source_Dependencies'}->{'pkgname-list'}})
+    {
+        if(exists $package_build_hash{$dep})
+        {
+            $in_call_stack->{$node} = $node;
+            topol_sort($dep, $sorted_nodes_ref, $sorted_nodes_hashref, $in_call_stack);
+            delete $in_call_stack->{$node};
+        }
+    }
+    
+    push @{$sorted_nodes_ref}, $node;   
+    $sorted_nodes_hashref->{$node} = $node;
+}
+
+sub dep_sort_packages
+{
+    my $packages = shift;
+    my @dep_ordered = ();
+    my %tmp_hash = ();
+    my %call_stack = ();
+    
+    # need gpt for dep checking
+    install_gpt();
+
+    for my $p (@{$packages})
+    {
+        topol_sort($p, \@dep_ordered, \%tmp_hash, \%call_stack);
+    }
+
+    return @dep_ordered;
+}
 
 # --------------------------------------------------------------------
 sub package_sources()
@@ -1087,7 +1156,19 @@ sub package_sources()
     mkdir $source_output;
     mkdir $package_output;
 
-    for my $package ( keys %package_build_hash )
+    my @package_list = undef;
+
+    if($deporder || $inplace)
+    {
+        my @plist = keys %package_build_hash;
+        @package_list = dep_sort_packages(\@plist);
+    }
+    else
+    {
+        @package_list = keys %package_build_hash;
+    }
+
+    for my $package ( @package_list )
     {
 	my ($tree, $subdir, $custom) = ($package_list{$package}[0],
 					$package_list{$package}[1], 
@@ -1107,8 +1188,34 @@ sub package_sources()
 
 	if ( $inplace )
 	{
-	    print "Not generating GPT packages.  Building $package inside CVS.\n";
-	    inplace_build($package, $subdir, $tree);
+            if( $package eq "globus_core" )
+            {
+                # skip core in inplace build for now
+                print "Installing globus_core\n";
+                install_globus_core();
+                next;
+            }
+
+            if( $custom eq "gpt" ){
+                inplace_build($package, $subdir, $tree);
+            } elsif ( $custom eq "pnb" ){
+                my $packagefile = package_source_pnb($package, $subdir, $tree);
+                
+                die "ERROR: Failed to build and install tarball for $package\n" if(!defined($packagefile));
+
+                print "Installing user requested package $package to $install using flavor $flavor.\n";
+                system("$ENV{'GPT_LOCATION'}/sbin/gpt-build $force $verbose $packagefile $flavor");
+                paranoia("Building of $package failed.\n");
+            } elsif ( $custom eq "tar" ){
+                my $packagefile = package_source_tar($package, $subdir);
+
+                die "ERROR: Failed to build and install tarball for $package\n" if(!defined($packagefile));
+
+                print "Installing user requested package $package to $install using flavor $flavor.\n";
+                system("$ENV{'GPT_LOCATION'}/sbin/gpt-build $force $verbose $packagefile $flavor");
+                paranoia("Building of $package failed.\n");
+            }
+
 	    next;
 	}
 
@@ -1132,9 +1239,23 @@ sub inplace_build()
 {
     my ($package, $subdir, $tree) = @_;
 
+    print "Inplace build: $package.\n";
+
     chdir $subdir;
-    log_system("$ENV{'GPT_LOCATION'}/sbin/gpt-build $doxygen $verbose $force --srcdir=. $flavor", "$pkglog/$package");
-    paranoia("Inplace build of $package failed!");
+    log_system("./bootstrap", "$pkglog/$package");
+    paranoia("Inplace bootstrap of $package in $subdir failed!");
+    my $config_args = "";
+    if( $doxygen )
+    {
+        $config_args = $config_args . " --enable-doxygen";
+    }
+
+    log_system("./configure --with-flavor=$flavor $config_args", "$pkglog/$package");
+    paranoia("Inplace configure of $package in $subdir failed!");
+    log_system("make", "$pkglog/$package");
+    paranoia("Inplace make of $package in $subdir failed!");
+    log_system("make install", "$pkglog/$package");
+    paranoia("Inplace make install of $package in $subdir failed!");
 
 }
 
@@ -1271,6 +1392,7 @@ sub package_source_pnb()
     log_system("mv $package-$version $tardir",
 	       "$pkglog/$package");
     paranoia "a system() failed.  See $pkglog/$package.";
+    return "$package_output/${package}-${version}.tar.gz";
 }
 
 # --------------------------------------------------------------------
@@ -1285,6 +1407,7 @@ sub package_source_tar()
     if ( ! -d $subdir )
     {
 	print "$subdir does not exist for package $package.\n";
+        return undef;
     } else {
 	print "Creating source directory for $package\n";
 	log_system("rm -fr $destdir", "$pkglog/$package");
@@ -1331,6 +1454,7 @@ sub package_source_tar()
 	log_system("tar cvzf $package_output/$tarfile.tar.gz $package_name",
 		   "$pkglog/$package");
 	paranoia "tar failed for $package.";
+        return "$package_output/$tarfile.tar.gz";
     }
 }
 
