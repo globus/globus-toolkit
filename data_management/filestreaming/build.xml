@@ -49,6 +49,7 @@ Southern California. All Rights Reserved.
   <property name="package.dir" value="filestreaming"/>
   <property name="build.packages" value="build-packages.xml"/>
   <property name="test-reports.dir" value="test-reports"/>
+  <property name="nsmap.file" value="NStoPkg.properties"/>
   
   
   <!-- properties added for filestreaming -->
