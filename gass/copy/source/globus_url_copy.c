@@ -301,6 +301,8 @@ const char * long_usage =
 "  -len | -partial-length\n"
 "       length for partial ftp file transfers, used only for the source url,\n"
 "       defaults the full file.\n"
+"  -stripe\n"
+"       enable striped transfers on supported servers\n"
 "\n";
 
 /***********
@@ -2018,6 +2020,7 @@ globus_l_guc_gass_attr_init(
     globus_ftp_control_tcpbuffer_t                  tcp_buffer;
     globus_ftp_control_parallelism_t                parallelism;
     globus_ftp_control_dcau_t                       dcau;
+    globus_ftp_control_layout_t                     layout;
     
     globus_url_parse(url, &url_info);
     globus_gass_copy_get_url_mode(url, &url_mode);
@@ -2054,11 +2057,15 @@ globus_l_guc_gass_attr_init(
 
 	if (guc_info->striped)
 	{
-		globus_ftp_client_operationattr_set_mode(
-                	ftp_attr,
-                	GLOBUS_FTP_CONTROL_MODE_EXTENDED_BLOCK);
+                layout.mode = GLOBUS_FTP_CONTROL_STRIPING_PARTITIONED;
+                layout.partitioned.size = 1024*1024;
 
-		globus_ftp_client_operationattr_set_striped(ftp_attr, GLOBUS_TRUE);
+        globus_ftp_client_operationattr_set_mode(
+                    ftp_attr,
+                    GLOBUS_FTP_CONTROL_MODE_EXTENDED_BLOCK);
+
+        globus_ftp_client_operationattr_set_striped(ftp_attr, GLOBUS_TRUE);    
+                globus_ftp_client_operationattr_set_layout(ftp_attr, &layout);
 	}
 
         if (subject  ||
