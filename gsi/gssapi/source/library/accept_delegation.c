@@ -267,6 +267,7 @@ GSS_CALLCONV gss_accept_delegation(
                                                     delegated_cred);
         if(GSS_ERROR(major_status))
         {
+            globus_gsi_cred_destroy(delegated_cred);
             GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
                 minor_status, local_minor_status,
                 GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_CREDENTIAL);

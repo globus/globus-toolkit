@@ -1312,6 +1312,8 @@ globus_i_gsi_gss_cred_read_bio(
         goto exit;
     }
 
+    local_cred_handle = NULL;
+
  exit:
 
     if(local_cred_handle != NULL)
@@ -1374,6 +1376,8 @@ globus_i_gsi_gss_cred_read(
         goto exit;
     }
 
+    local_cred_handle = NULL;
+    
  exit:
 
     if(local_cred_handle != NULL)
@@ -1478,6 +1482,8 @@ globus_i_gsi_gss_cred_set(
         goto exit;
     }
 
+    local_cred_handle = NULL;
+    
  exit:
 
     if(local_cred_handle != NULL)
@@ -1566,16 +1572,7 @@ globus_i_gsi_gss_create_cred(
         goto error_exit;
     }
 
-    local_result = globus_gsi_cred_handle_copy(
-        cred_handle,
-        &newcred->cred_handle);
-    if(local_result != GLOBUS_SUCCESS)
-    {
-        GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
-            minor_status, local_result,
-            GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_CREDENTIAL);
-        goto error_exit;
-    }
+    newcred->cred_handle = cred_handle;
 
     major_status = globus_i_gsi_gssapi_init_ssl_context(
         &local_minor_status,
