@@ -134,7 +134,7 @@ AC_SUBST(FILELIST_FILE)
 
 
 AC_DEFUN(GLOBUS_FINALIZE, [
-if test ! -z $INSURE; then
+if test ! -z "$INSURE"; then
 	CC=$INSURE
 	LD=$INSURE
 	CXX=$INSURE
