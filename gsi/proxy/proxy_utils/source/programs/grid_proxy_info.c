@@ -39,6 +39,7 @@ static char *  LONG_USAGE = \
 "        -strength             Key size (in bits)\n" \
 "        -all                  All above options in a human readable format\n"\
 "        -text                 All of the certificate\n"\
+"        -path                 Pathname of proxy file\n"
 "\n" \
 "    [options to -exists]      (if none are given, H = B = 0 are assumed)\n" \
 "        -valid H:M     (-v)   time requirement for proxy to be valid\n" \
@@ -261,7 +262,8 @@ main(
 		 (strcmp(argp, "-type") == 0)     ||
 		 (strcmp(argp, "-timeleft") == 0) ||
 		 (strcmp(argp, "-text") == 0) ||
-		 (strcmp(argp, "-all") == 0))
+		 (strcmp(argp, "-all") == 0) ||
+                 (strcmp(argp, "-path") == 0))
 	{
 	    continue;
 	}
@@ -430,11 +432,13 @@ main(
 		   "issuer   : %s\n" 
 		   "type     : %s\n" 
 		   "strength : %d bits\n"
+                   "path     : %s\n"
 		   "timeleft : ",
 		   subject,
 		   issuer,
 		   proxy_type_name,
-		   strength);
+		   strength,
+                   proxy_filename);
 
 	    if (lifetime <= 0)
 		lifetime = 0;
@@ -456,6 +460,10 @@ main(
 	    arg_index++;
 	    continue;
 	}
+        else if (strcmp(argp, "-path") == 0)
+        {
+            printf("path     : %s\n", proxy_filename);
+        }
     }
 
     if (argc == 1 || (argc == 2 && strcmp(argv[1], "-debug") == 0))
