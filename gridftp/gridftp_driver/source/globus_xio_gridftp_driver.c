@@ -1183,6 +1183,7 @@ globus_l_xio_gridftp_read_cb(
             requestor->saved_error = globus_error_get(requestor_result);
             /* read will be finished in xfer_cb, so we need to store offset */
             requestor->offset = offset;
+	    requestor->length = length;
         }
     }
     else
