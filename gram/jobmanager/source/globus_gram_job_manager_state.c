@@ -896,11 +896,6 @@ globus_gram_job_manager_state_machine(
 			globus_gram_job_manager_request_log( request,
 				       "JM: error writing the state file\n");
 		}
-
-		/*
-		rc = globus_gram_job_manager_state_file_register_update(
-			request);
-		 */
 	    }
 	}
 
@@ -1545,6 +1540,10 @@ globus_gram_job_manager_state_machine(
 	break;
 
       case GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_CLOSE_OUTPUT:
+	/* Send the job manager stopped or proxy expired failure callback */
+	request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
+	globus_gram_job_manager_contact_state_callback(request);
+
 	request->jobmanager_state = 
 	    GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_DONE;
 

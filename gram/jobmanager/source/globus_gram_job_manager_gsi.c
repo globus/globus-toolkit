@@ -192,6 +192,7 @@ globus_l_gram_job_manager_proxy_expiration(
 	    "JM: User proxy expired! Abort, but leave job running!\n");
 
     globus_mutex_lock(&request->mutex);
+    request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_USER_PROXY_EXPIRED;
     switch(request->jobmanager_state)
     {
       case GLOBUS_GRAM_JOB_MANAGER_STATE_START:
@@ -201,6 +202,12 @@ globus_l_gram_job_manager_proxy_expiration(
       case GLOBUS_GRAM_JOB_MANAGER_STATE_REMOTE_IO_FILE_CREATE:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_OPEN_OUTPUT:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_PROXY_RELOCATE:
+	  /* Proxy expiration callback isn't registered until the
+	   * proxy has been relocated, so this should NEVER happen.
+	   */
+	  globus_assert(/* premature proxy expiration */0);
+	  break;
+
       case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_COMMIT_EXTEND:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_COMMITTED:
@@ -215,10 +222,12 @@ globus_l_gram_job_manager_proxy_expiration(
         if(request->save_state)
         {
 	    request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_STOP;
+	    request->unsent_status_change = GLOBUS_TRUE;
         }
         else
         {
 	    request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED;
+	    request->unsent_status_change = GLOBUS_TRUE;
         }
         break;
 
