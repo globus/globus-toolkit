@@ -814,7 +814,7 @@ case ${host}--$1 in
                 AC_MSG_ERROR(64 bits not supported on this platform)
                 exit 1
         fi
-        
+
         lac_CPPFLAGS="$lac_CPPFLAGS -I/sw/include"
         lac_LDFLAGS="$lac_LDFLAGS -L/sw/lib"
 
@@ -826,19 +826,19 @@ case ${host}--$1 in
         else
             if test "$GLOBUS_CC" = "gcc"; then
                 AC_PATH_PROGS(lac_cv_CC, $CC gcc)
-        	lac_CFLAGS="$lac_CFLAGS -fno-common"
-        	lac_CPPFLAGS="$lac_CPPFLAGS -no-cpp-precomp"
+                lac_CFLAGS="$lac_CFLAGS -fno-common"
+                lac_CPPFLAGS="$lac_CPPFLAGS -no-cpp-precomp"
             else
                 AC_PATH_PROGS(lac_cv_CC, $CC cc)
             fi
-            
-            AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC CC c++ g++ gcc)
+
+            AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC c++ g++ gcc CC)
             AC_PATH_PROGS(lac_cv_F77, $F77 f77 g77)
             AC_PATH_PROGS(lac_cv_F90, $F90 f90)
         fi
         CC="$lac_cv_CC"
-	
-	# for now assume fink is installed in /sw
+
+        # for now assume fink is installed in /sw
 
         lac_CFLAGS="$lac_CFLAGS -I/sw/include -DBIND_8_COMPAT"
         lac_CXXFLAGS="$lac_CXXFLAGS -I/sw/include"
