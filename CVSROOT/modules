@@ -46,7 +46,8 @@ all -a \
         packaging\
         replica\
         side_tools\
+        test\
         testing\
         user_env\
-        tarfiles \
+        tarfiles\
 	bundles
