@@ -62,6 +62,8 @@ static ERR_STRING_DATA gsserr_str_functs[]=
  {ERR_PACK(0,GSSERR_F_EXPORT_SEC,0),"gss_export_sec_context"},
  {ERR_PACK(0,GSSERR_F_IMPORT_CRED,0),"gss_import_cred"},
  {ERR_PACK(0,GSSERR_F_EXPORT_CRED,0),"gss_export_cred"},
+ {ERR_PACK(0,GSSERR_F_READ,0),"gs_read"},
+ {ERR_PACK(0,GSSERR_F_WRITE,0),"gs_write"},
  {0,NULL},
 };
 
@@ -81,6 +83,10 @@ static ERR_STRING_DATA gsserr_str_reasons[]=
  {GSSERR_R_CLASS_ADD_EXT, "Unable to add Class Add extension"},
  {GSSERR_R_EXPORT_FAIL, "Unable to marshal credential for export"},
  {GSSERR_R_IMPORT_FAIL, "Unable to read credential for import"},
+ {GSSERR_R_READ_BIO, "Cannot read from BIO"},
+ {GSSERR_R_WRITE_BIO, "Cannot write to BIO"},
+ {GSSERR_R_PASSED_NULL_PARAMETER, "NULL was passed as a parameter"},
+ {GSSERR_R_UNEXPECTED_FORMAT, "Not in expected Format"},
  {0,NULL},
 };
 
