@@ -143,6 +143,15 @@
             "[%s:%d] %s failed.",                                           \
             _xio_name, __LINE__, (failed_func)))                            
                                                                             
+#define GlobusXIOErrorNotRegistered()                                       \
+    globus_error_put(                                                       \
+        globus_error_construct_error(                                       \
+            GLOBUS_XIO_MODULE,                                              \
+            NULL,                                                           \
+            GLOBUS_XIO_ERROR_NOT_REGISTERED,                                \
+            "[%s:%d] Not registered.",                                      \
+            _xio_name, __LINE__))                            
+                                                                            
 #define GlobusIXIOUtilTransferIovec(iovec, xiovec, iovc)                    \
     do                                                                      \
     {                                                                       \

@@ -4,6 +4,7 @@
 #include "globus_common.h"
 #include "globus_xio.h"
 #include "globus_i_xio.h"
+#include "globus_xio_util.h"
 
 /************************************************************************
  *                      attribute macros
@@ -557,7 +558,7 @@ do                                                                          \
         }                                                                   \
         _tmp_iovec = _my_op->_op_ent_fake_iovec;                            \
                                                                             \
-        GlobusIXIOSystemTransferAdjustedIovec(                              \
+        GlobusIXIOUtilTransferAdjustedIovec(                                \
             _tmp_iovec, _iovec_count,                                       \
             _my_op->_op_ent_iovec, _my_op->_op_ent_iovec_count,             \
             _my_op->_op_ent_nbytes);                                        \
@@ -811,7 +812,7 @@ do                                                                          \
         }                                                                   \
         _tmp_iovec = _my_op->_op_ent_fake_iovec;                            \
                                                                             \
-        GlobusIXIOSystemTransferAdjustedIovec(                              \
+        GlobusIXIOUtilTransferAdjustedIovec(                                \
             _tmp_iovec, _iovec_count,                                       \
             _my_op->_op_ent_iovec, _my_op->_op_ent_iovec_count,             \
             _my_op->_op_ent_nbytes);                                        \

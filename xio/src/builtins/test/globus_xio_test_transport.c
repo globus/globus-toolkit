@@ -267,9 +267,8 @@ globus_l_xio_operation_kickout(
 static
 globus_result_t
 globus_l_xio_test_open(
-    void **                             out_handle,
-    void *                              driver_attr,
     void *                              driver_target,
+    void *                              driver_attr,
     globus_xio_context_t                context,
     globus_xio_operation_t              op)
 {
@@ -285,7 +284,7 @@ globus_l_xio_test_open(
     }
 
     /* copy the attr to a handle */
-    globus_l_xio_test_attr_copy(&dh, attr);
+    globus_l_xio_test_attr_copy((void **)&dh, attr);
     dh->context = context;
 
     if(dh->failure | GLOBUS_XIO_TEST_FAIL_PASS_OPEN)
@@ -299,7 +298,7 @@ globus_l_xio_test_open(
 
     if(dh->inline_finish)
     {
-        GlobusXIODriverFinishedOpen(context, 0x10, op, res);
+        GlobusXIODriverFinishedOpen(context, dh, op, res);
     }
     else
     {
@@ -315,8 +314,6 @@ globus_l_xio_test_open(
             GLOBUS_CALLBACK_GLOBAL_SPACE);
     }
 
-    *out_handle = dh;
-
     return GLOBUS_SUCCESS;
 }
 
@@ -327,6 +324,7 @@ static
 globus_result_t
 globus_l_xio_test_close(
     void *                              driver_handle,
+    void *                              attr,
     globus_xio_context_t                context,
     globus_xio_operation_t              op)
 {

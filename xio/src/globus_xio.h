@@ -3,6 +3,7 @@
 
 #include "globus_common.h"
 #include "globus_xio_types.h"
+#include "globus_xio_util.h"
 /**
  * @mainpage Globus XIO
  *
@@ -753,6 +754,8 @@ globus_xio_server_register_signal_handler(
     globus_xio_driver_t                         driver,
     globus_xio_callback_t                       callback,
     void *                                      user_arg);
+
+#define GlobusXIOErrorIsEOF(res) GLOBUS_FALSE
 
 extern globus_module_descriptor_t globus_i_xio_module;
 

@@ -15,6 +15,7 @@ Sources= \
         globus_xio_util.c
 
 flavorinclude_HEADERS = \
+    globus_xio_types.h                          \
     globus_xio.h
 
 lib_LTLIBRARIES = libglobus_xio_$(GLOBUS_FLAVOR_NAME).la

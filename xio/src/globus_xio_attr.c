@@ -67,10 +67,11 @@ globus_xio_attr_init(
     globus_xio_attr_t *                         attr)
 {
     globus_i_xio_attr_t *                       xio_attr;
+    GlobusXIOName(globus_xio_attr_init);
 
     if(attr == NULL)
     {
-        return GlobusXIOErrorBadParameter("globus_xio_attr_init");
+        return GlobusXIOErrorParameter("attr");
     }
    
     /* allocate the attr */ 
@@ -78,7 +79,7 @@ globus_xio_attr_init(
                 globus_malloc(sizeof(globus_i_xio_attr_t));
     if(xio_attr == NULL)
     {
-        return GlobusXIOErrorMemoryAlloc("globus_xio_attr_init");
+        return GlobusXIOErrorMemory("attr");
     }
     xio_attr->entry = (globus_i_xio_attr_ent_t *)
         globus_malloc(sizeof(globus_i_xio_attr_ent_t) *
@@ -87,7 +88,7 @@ globus_xio_attr_init(
     if(xio_attr->entry == NULL)
     {
         globus_free(xio_attr);
-        return GlobusXIOErrorMemoryAlloc("globus_xio_attr_init");
+        return GlobusXIOErrorMemory("attr->entry");
     }
 
     /* zero it out */
@@ -115,10 +116,11 @@ globus_xio_attr_cntl(
     globus_result_t                             res;
     void *                                      ds;
     globus_i_xio_attr_t *                       attr;
+    GlobusXIOName(globus_xio_attr_cntl);
 
     if(user_attr == NULL)
     {
-        return GlobusXIOErrorBadParameter("globus_xio_attr_cntl");
+        return GlobusXIOErrorParameter("user_attr");
     }
 
     attr = user_attr;
@@ -178,10 +180,11 @@ globus_xio_attr_destroy(
     int                                         ctr;
     globus_result_t                             res = GLOBUS_SUCCESS;
     globus_result_t                             tmp_res;
+    GlobusXIOName(globus_xio_attr_destroy);
 
     if(attr == NULL)
     {
-        return GlobusXIOErrorBadParameter("globus_xio_attr_destroy");
+        return GlobusXIOErrorParameter("attr");
     }
     
     for(ctr = 0; ctr < attr->max; ctr++)
@@ -212,15 +215,16 @@ globus_xio_attr_copy(
     globus_result_t                             res;
     int                                         ctr;
     int                                         ctr2;
+    GlobusXIOName(globus_xio_attr_copy);
 
     if(dst == NULL)
     {
-        return GlobusXIOErrorBadParameter("globus_xio_attr_copy");
+        return GlobusXIOErrorParameter("dst");
     }
 
     if(src == NULL)
     {
-        return GlobusXIOErrorBadParameter("globus_xio_attr_copy");
+        return GlobusXIOErrorParameter("src");
     }
 
     xio_attr_src = src;
@@ -231,7 +235,7 @@ globus_xio_attr_copy(
     /* check for memory alloc failure */
     if(xio_attr_dst == NULL)
     {
-        return GlobusXIOErrorMemoryAlloc("globus_xio_attr_copy");
+        return GlobusXIOErrorMemory("xio_attr_dst");
     }
 
     xio_attr_dst->entry = (globus_i_xio_attr_ent_t *)
@@ -240,7 +244,7 @@ globus_xio_attr_copy(
     if(xio_attr_dst->entry == NULL)
     {
         globus_free(xio_attr_dst);
-        return GlobusXIOErrorMemoryAlloc("globus_xio_attr_copy");
+        return GlobusXIOErrorMemory("xio_attr_dst->entry");
     }
 
     memset(xio_attr_dst, 0, sizeof(globus_i_xio_attr_t));
@@ -298,14 +302,15 @@ globus_xio_data_descriptor_init(
 {
     globus_i_xio_dd_t *                         xio_dd;
     int                                         ctr;
+    GlobusXIOName(globus_xio_data_descriptor_init);
 
     if(data_desc == NULL)
     {
-        return GlobusXIOErrorBadParameter("globus_xio_data_descriptor_init");
+        return GlobusXIOErrorParameter("data_desc");
     }
     if(handle == NULL)
     {
-        return GlobusXIOErrorBadParameter("globus_xio_data_descriptor_init");
+        return GlobusXIOErrorParameter("handle");
     }
 
     xio_dd = (globus_i_xio_dd_t *) globus_malloc(
@@ -314,7 +319,7 @@ globus_xio_data_descriptor_init(
     /* check for memory alloc failure */
     if(xio_dd == NULL)
     {
-        return GlobusXIOErrorMemoryAlloc("globus_xio_data_descriptor_init");
+        return GlobusXIOErrorMemory("xio_dd");
     }
 
     xio_dd->stack_size = handle->stack_size;
@@ -336,10 +341,11 @@ globus_xio_data_descriptor_destroy(
     globus_result_t                             res = GLOBUS_SUCCESS;
     globus_result_t                             tmp_res;
     globus_i_xio_dd_t *                         dd;
+    GlobusXIOName(globus_xio_data_descriptor_destroy);
 
     if(data_desc == NULL)
     {
-        return GlobusXIOErrorBadParameter("globus_xio_data_descriptor_init");
+        return GlobusXIOErrorParameter("data_desc");
     }
 
     dd = (globus_i_xio_dd_t *) data_desc;
@@ -373,10 +379,11 @@ globus_xio_data_descriptor_cntl(
     int                                         ndx;
     int                                         ctr;
     va_list                                     ap;
+    GlobusXIOName(globus_xio_data_descriptor_cntl);
 
     if(data_desc == NULL)
     {
-        return GlobusXIOErrorBadParameter("globus_xio_data_descriptor_cntl");
+        return GlobusXIOErrorParameter("data_desc");
     }
 
     if(driver != NULL)
@@ -401,8 +408,7 @@ globus_xio_data_descriptor_cntl(
         if(ndx == -1)
         {
             /* throw error */
-            return GlobusXIOErrorDriverNotFound(
-                        "globus_xio_data_descriptor_cntl");
+            return GlobusXIOErrorInvalidDriver("not found");
         }
 #       ifdef HAVE_STDARG_H
         {
@@ -443,15 +449,16 @@ globus_xio_data_descriptor_copy(
     int                                         ctr;
     int                                         ctr2;
     int                                         tmp_size;
+    GlobusXIOName(globus_xio_data_descriptor_copy);
 
     if(dst == NULL)
     {
-        return GlobusXIOErrorBadParameter("globus_xio_attr_copy");
+        return GlobusXIOErrorParameter("dst");
     }
 
     if(src == NULL)
     {
-        return GlobusXIOErrorBadParameter("globus_xio_attr_copy");
+        return GlobusXIOErrorParameter("src");
     }
 
     xio_dd_src = src;
@@ -462,7 +469,7 @@ globus_xio_data_descriptor_copy(
     /* check for memory alloc failure */
     if(xio_dd_dst == NULL)
     {
-        return GlobusXIOErrorMemoryAlloc("globus_xio_attr_copy");
+        return GlobusXIOErrorMemory("xio_dd_dst");
     }
 
     memset(xio_dd_dst, 0, tmp_size);
@@ -505,14 +512,16 @@ globus_xio_stack_init(
     globus_xio_attr_t                           stack_attr)
 {
     globus_i_xio_stack_t *                      xio_stack;
+    GlobusXIOName(globus_xio_stack_init);
 
     if(stack == NULL)
     {
-        return GlobusXIOErrorBadParameter("globus_xio_stack_init");
+        return GlobusXIOErrorParameter("stack");
     }
 
     xio_stack = globus_malloc(sizeof(globus_i_xio_stack_t));
     memset(xio_stack, '\0', sizeof(globus_i_xio_stack_t));
+    globus_mutex_init(&xio_stack->mutex, NULL);
 
     *stack = xio_stack;
 
@@ -525,62 +534,61 @@ globus_xio_stack_push_driver(
     globus_xio_driver_t                         driver)
 {
     globus_i_xio_stack_t *                      xio_stack;
+    globus_result_t                             res = GLOBUS_SUCCESS;
+    GlobusXIOName(globus_xio_stack_push_driver);
 
     if(stack == NULL)
     {
-        return GlobusXIOErrorBadParameter("globus_xio_stack_push_driver");
+        return GlobusXIOErrorParameter("stack");
     }
     if(driver == NULL)
     {
-        return GlobusXIOErrorBadParameter("globus_xio_stack_push_driver");
+        return GlobusXIOErrorParameter("driver");
     }
 
     xio_stack = (globus_i_xio_stack_t *) stack;
 
-    xio_stack->size++;
-    globus_list_insert(&xio_stack->driver_stack, driver);
-    if(xio_stack->size == 1)
+    globus_mutex_lock(&xio_stack->mutex);
     {
-        xio_stack->transport_driver = driver;
+        if(xio_stack->size == 1)
+        {
+            if(driver->transport_open_func == NULL ||
+                driver->transform_open_func != NULL)
+            {
+                res = GlobusXIOErrorInvalidDriver(
+                    "open function not defined");
+            }
+            else
+            {
+                xio_stack->transport_driver = driver;
+            }
+        }
+       
+        if(res == GLOBUS_SUCCESS)
+        {
+            xio_stack->size++;
+            globus_list_insert(&xio_stack->driver_stack, driver);
+        } 
     }
+    globus_mutex_unlock(&xio_stack->mutex);
 
-    return GLOBUS_SUCCESS;
+    return res;
 }
 
 globus_result_t
 globus_xio_stack_destroy(
     globus_xio_stack_t                          stack)
 {
+    GlobusXIOName(globus_xio_stack_destroy);
+
     if(stack == NULL)
     {
-        return GlobusXIOErrorBadParameter("globus_xio_stack_destroy");
+        return GlobusXIOErrorParameter("stack");
     }
 
+    globus_mutex_destroy(&stack->mutex);
     globus_list_free(stack->driver_stack);
+    globus_free(stack);
 
     return GLOBUS_SUCCESS;
 }
-
-void
-AttrGetDS(void * _out_ds, globus_i_xio_attr_t * _in_attr, globus_xio_driver_t _in_driver) 
-{                                                                           
-    int                                         _ctr;                       
-    globus_i_xio_attr_t *                       _attr;                      
-    globus_xio_driver_t                         _driver;                    
-    globus_i_xio_attr_ent_t *                   _entry;                     
-    void *                                      _ds = NULL;                 
-                                                                            
-    _attr = (_in_attr);                                                     
-    _driver = (_in_driver);                                                 
-                                                                            
-    _entry = _attr->entry;                                                  
-    for(_ctr = 0; _ctr < _attr->ndx && _ds == NULL; _ctr++)                 
-    {                                                                       
-        if(_entry[_ctr].driver == _driver)                                  
-        {                                                                   
-            _ds = _entry[_ctr].driver_data;                                 
-        }                                                                   
-    }                                                                       
-    _out_ds = _ds;                                                          
-} 
-

@@ -507,6 +507,7 @@ globus_l_xio_timeout_callback(
     globus_bool_t                               cancel;
     globus_bool_t                               timeout = GLOBUS_FALSE;
     globus_callback_func_t                      delayed_cb;
+    GlobusXIOName(globus_l_xio_timeout_callback);
     
     op = (globus_i_xio_op_t *) user_arg;
     handle = op->_op_handle;
@@ -587,7 +588,7 @@ globus_l_xio_timeout_callback(
         /* if canceling set the res and we will remove this timer event */
         if(cancel)
         {
-            op->cached_res = GlobusXIOErrorCanceled_();
+            op->cached_res = GlobusXIOErrorTimedout();
             rc = GLOBUS_TRUE;
             op->canceled = GLOBUS_TRUE;
             if(op->cancel_cb)
@@ -675,6 +676,7 @@ globus_l_xio_register_writev(
     globus_result_t                             res;
     globus_bool_t                               destroy_handle;
     globus_i_xio_handle_t *                     handle;
+    GlobusXIOName(globus_l_xio_register_writev);
 
     handle = op->_op_handle;
 
@@ -683,7 +685,7 @@ globus_l_xio_register_writev(
         if(handle->state != GLOBUS_XIO_HANDLE_STATE_OPEN)
         {
             globus_mutex_unlock(&handle->mutex);
-            res = GlobusXIOErrorHandleBadState("globus_xio_register_writev");
+            res = GlobusXIOErrorInvalidState(handle->state);
             goto err;
         }
 
@@ -758,6 +760,7 @@ globus_l_xio_register_readv(
     globus_bool_t                               destroy_handle;
     globus_i_xio_handle_t *                     handle;
     globus_xio_context_t                        tmp_context;
+    GlobusXIOName(globus_l_xio_register_readv);
 
     handle = op->_op_handle;
 
@@ -766,7 +769,7 @@ globus_l_xio_register_readv(
         if(handle->state != GLOBUS_XIO_HANDLE_STATE_OPEN)
         {
             globus_mutex_unlock(&handle->mutex);
-            res = GlobusXIOErrorHandleNotOpen("globus_xio_register_readv");
+            res = GlobusXIOErrorInvalidState(handle->state);
             goto err;
         }
 
@@ -1000,6 +1003,7 @@ globus_l_xio_handle_cancel_operations(
     globus_list_t *                             list;
     globus_i_xio_op_t *                         tmp_op;
     globus_result_t                             res = GLOBUS_SUCCESS;
+    GlobusXIOName(globus_l_xio_handle_cancel_operations);
 
     globus_mutex_lock(&xio_handle->cancel_mutex);
     {
@@ -1007,8 +1011,7 @@ globus_l_xio_handle_cancel_operations(
         {
             if(xio_handle->open_op == NULL)
             {
-                res = GlobusXIOErrorOperationNotFound(
-                        "globus_l_xio_handle_cancel_operations");
+                res = GlobusXIOErrorNotRegistered();
             }
             else
             {
@@ -1019,8 +1022,7 @@ globus_l_xio_handle_cancel_operations(
         {
             if(xio_handle->close_op == NULL)
             {
-                res = GlobusXIOErrorOperationNotFound(
-                        "globus_l_xio_handle_cancel_operations");
+                res = GlobusXIOErrorNotRegistered();
             }
             else
             {
@@ -1031,8 +1033,7 @@ globus_l_xio_handle_cancel_operations(
         {
             if(!globus_list_empty(xio_handle->read_op_list))
             {
-                res = GlobusXIOErrorOperationNotFound(
-                        "globus_l_xio_handle_cancel_operations");
+                res = GlobusXIOErrorNotRegistered();
             }
             else
             {
@@ -1051,8 +1052,7 @@ globus_l_xio_handle_cancel_operations(
         {
             if(!globus_list_empty(xio_handle->write_op_list))
             {
-                res = GlobusXIOErrorOperationNotFound(
-                        "globus_l_xio_handle_cancel_operations");
+                res = GlobusXIOErrorNotRegistered();
             }
             else
             {
@@ -1095,15 +1095,16 @@ globus_xio_register_open(
     globus_i_xio_context_t *                    context = NULL;
     globus_result_t                             res = GLOBUS_SUCCESS;
     int                                         ctr;
+    GlobusXIOName(globus_xio_register_open);
 
     if(handle == NULL)
     {
-        res = GlobusXIOErrorBadParameter("globus_xio_register_open");
+        res = GlobusXIOErrorParameter("handle");
         goto err;
     }
     if(target == NULL)
     {
-        res = GlobusXIOErrorBadParameter("globus_xio_register_open");
+        res = GlobusXIOErrorParameter(target);
         goto err;
     }
 
@@ -1117,7 +1118,7 @@ globus_xio_register_open(
     context = globus_i_xio_context_create(target);
     if(context == NULL)
     {
-        res = GlobusXIOErrorMemoryAlloc("globus_xio_register_open");
+        res = GlobusXIOErrorMemory("context");
         goto err;
     }
 
@@ -1125,14 +1126,14 @@ globus_xio_register_open(
     GlobusXIOHandleCreate(handle, target->stack_size, user_attr);
     if(handle == NULL)
     {
-        res = GlobusXIOErrorMemoryAlloc("globus_xio_register_open");
+        res = GlobusXIOErrorMemory("handle");
         goto err;
     }
 
     GlobusXIOOperationCreate(op, context);
     if(op == NULL)
     {
-        res = GlobusXIOErrorMemoryAlloc("globus_xio_register_open");
+        res = GlobusXIOErrorMemory("operation");
         goto err;
     }
 
@@ -1221,26 +1222,27 @@ globus_xio_register_read(
 {
     globus_i_xio_op_t *                         op;
     globus_result_t                             res;
+    GlobusXIOName(globus_xio_register_read);
     
     /* error echecking */
     if(handle == NULL)
     {
-        return GlobusXIOErrorBadParameter("globus_xio_register_write");
+        return GlobusXIOErrorParameter("handle");
     }
     if(buffer == NULL)
     {
-        return GlobusXIOErrorBadParameter("globus_xio_register_write");
+        return GlobusXIOErrorParameter("buffer");
     }
     if(buffer_length <= 0)
     {
-        return GlobusXIOErrorBadParameter("globus_xio_register_write");
+        return GlobusXIOErrorParameter("buffer_length");
     }
 
     GlobusXIOOperationCreate(op, handle->context);
     if(op == NULL)
     {
         globus_mutex_unlock(&handle->mutex);
-        res = GlobusXIOErrorMemoryAlloc("globus_xio_register_writev");
+        res = GlobusXIOErrorMemory("operation");
         goto exit;
     }
     /* set up the operation */
@@ -1284,26 +1286,27 @@ globus_xio_register_readv(
 {
     globus_result_t                             res = GLOBUS_SUCCESS;
     globus_i_xio_op_t *                         op;
+    GlobusXIOName(globus_xio_register_readv);
 
     /* error echecking */
     if(handle == NULL)
     {
-        return GlobusXIOErrorBadParameter("globus_xio_register_writev");
+        return GlobusXIOErrorParameter("handle");
     }
     if(iovec == NULL)
     {
-        return GlobusXIOErrorBadParameter("globus_xio_register_writev");
+        return GlobusXIOErrorParameter("iovec");
     }
     if(iovec_count <= 0)
     {
-        return GlobusXIOErrorBadParameter("globus_xio_register_writev");
+        return GlobusXIOErrorParameter("iovec_count");
     }
 
     GlobusXIOOperationCreate(op, handle->context);
     if(op == NULL)
     {
         globus_mutex_unlock(&handle->mutex);
-        res = GlobusXIOErrorMemoryAlloc("globus_xio_register_writev");
+        res = GlobusXIOErrorMemory("operation");
         goto err;
     }
     /* set up the operation */
@@ -1347,28 +1350,29 @@ globus_xio_register_write(
     globus_i_xio_op_t *                         op;
     globus_result_t                             res;
     globus_i_xio_handle_t *                     handle;
+    GlobusXIOName(globus_xio_register_write);
 
     handle = user_handle;
 
     /* error echecking */
     if(handle == NULL)
     {
-        return GlobusXIOErrorBadParameter("globus_xio_register_write");
+        return GlobusXIOErrorParameter("handle");
     }
     if(buffer == NULL)
     {
-        return GlobusXIOErrorBadParameter("globus_xio_register_write");
+        return GlobusXIOErrorParameter("buffer");
     }
     if(buffer_length <= 0)
     {
-        return GlobusXIOErrorBadParameter("globus_xio_register_write");
+        return GlobusXIOErrorParameter("buffer_length");
     }
 
     GlobusXIOOperationCreate(op, handle->context);
     if(op == NULL)
     {
         globus_mutex_unlock(&handle->mutex);
-        res = GlobusXIOErrorMemoryAlloc("globus_xio_register_writev");
+        res = GlobusXIOErrorMemory("operation");
         goto exit;
     }
     /* set up the operation */
@@ -1412,28 +1416,29 @@ globus_xio_register_writev(
     globus_result_t                             res = GLOBUS_SUCCESS;
     globus_i_xio_op_t *                         op;
     globus_i_xio_handle_t *                     handle;
+    GlobusXIOName(globus_xio_register_writev);
 
     handle = (globus_i_xio_handle_t *) user_handle;
 
     /* error echecking */
     if(handle == NULL)
     {
-        return GlobusXIOErrorBadParameter("globus_xio_register_writev");
+        return GlobusXIOErrorParameter("handle");
     }
     if(iovec == NULL)
     {
-        return GlobusXIOErrorBadParameter("globus_xio_register_writev");
+        return GlobusXIOErrorParameter("iovec");
     }
     if(iovec_count <= 0)
     {
-        return GlobusXIOErrorBadParameter("globus_xio_register_writev");
+        return GlobusXIOErrorParameter("iovec_count");
     }
 
     GlobusXIOOperationCreate(op, handle->context);
     if(op == NULL)
     {
         globus_mutex_unlock(&handle->mutex);
-        res = GlobusXIOErrorMemoryAlloc("globus_xio_register_writev");
+        res = GlobusXIOErrorMemory("operation");
         goto err;
     }
     /* set up the operation */
@@ -1472,11 +1477,12 @@ globus_xio_register_close(
     globus_result_t                             res;
     int                                         ctr;
     globus_i_xio_op_t *                         op;
+    GlobusXIOName(globus_xio_register_close);
 
     /* error echecking */
     if(handle == NULL)
     {
-        return GlobusXIOErrorBadParameter("globus_xio_register_close");
+        return GlobusXIOErrorParameter("handle");
     }
 
     globus_mutex_lock(&handle->mutex);
@@ -1484,7 +1490,7 @@ globus_xio_register_close(
         if(handle->state != GLOBUS_XIO_HANDLE_STATE_OPEN)
         {
             globus_mutex_unlock(&handle->mutex);
-            res = GlobusXIOErrorHandleNotOpen("globus_xio_register_close");
+            res = GlobusXIOErrorInvalidState(handle->state);
             goto err;
         }
         else
@@ -1498,7 +1504,7 @@ globus_xio_register_close(
     GlobusXIOOperationCreate(op, handle->context);
     if(op == NULL)
     {
-        res = GlobusXIOErrorMemoryAlloc("globus_xio_register_open");
+        res = GlobusXIOErrorMemory("operation");
         goto err;
     }
 
@@ -1540,12 +1546,12 @@ globus_xio_handle_cancel_operations(
 {
     globus_i_xio_handle_t *                     xio_handle;
     globus_result_t                             res;
+    GlobusXIOName(globus_xio_register_close);
 
     /* error echecking */
     if(handle == NULL)
     {
-        return GlobusXIOErrorBadParameter(                      \
-                    "globus_xio_handle_cancel_operations");
+        return GlobusXIOErrorParameter("handle");
     }
 
     xio_handle = handle;
@@ -1555,8 +1561,7 @@ globus_xio_handle_cancel_operations(
         /* if closed there is nothing to cancel */
         if(xio_handle->state == GLOBUS_XIO_HANDLE_STATE_CLOSED)
         {
-            res = GlobusXIOErrorHandleBadState(
-                        "globus_xio_handle_cancel_operations");
+            res = GlobusXIOErrorInvalidState(xio_handle->state);
         }
         else
         {

@@ -124,6 +124,7 @@ globus_xio_driver_context_close(
     globus_i_xio_context_t *                    xio_context;
     globus_bool_t                               destroy_context = GLOBUS_FALSE;
     globus_result_t                             res = GLOBUS_SUCCESS;
+    GlobusXIOName(globus_xio_driver_context_close);
 
     context_entry = context;
     xio_context = context_entry->whos_my_daddy;
@@ -132,8 +133,7 @@ globus_xio_driver_context_close(
     {
         if(context_entry->state != GLOBUS_XIO_HANDLE_STATE_CLOSED)
         {
-            res = GlobusXIOErrorHandleBadState(                     \
-                        "globus_xio_driver_context_close");
+            res = GlobusXIOErrorInvalidState(context_entry->state);
         }
         else
         {

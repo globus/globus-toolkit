@@ -78,6 +78,7 @@ globus_l_xio_server_accept_kickout(
     globus_bool_t                               destroy_server = GLOBUS_FALSE;
     globus_i_xio_server_t *                     xio_server;
     globus_i_xio_op_t *                         xio_op;
+    GlobusXIOName(globus_l_xio_server_accept_kickout);
 
     xio_op = (globus_i_xio_op_t *) user_arg;
 
@@ -89,8 +90,7 @@ globus_l_xio_server_accept_kickout(
                             (xio_op->stack_size - 1)));
         if(xio_target == NULL)
         {
-            xio_op->cached_res = GlobusXIOErrorMemoryAlloc(             \
-                "globus_l_xio_server_accept_kickout");
+            xio_op->cached_res = GlobusXIOErrorMemory("target");
         }
         xio_target->type = GLOBUS_XIO_TARGET_TYPE_SERVER;
         /* initialize the target structure */
@@ -245,6 +245,7 @@ globus_l_xio_accept_timeout_callback(
     globus_bool_t                               accept;
     globus_bool_t                               timeout = GLOBUS_FALSE;
     globus_bool_t                               destroy_server = GLOBUS_FALSE;
+    GlobusXIOName(globus_l_xio_accept_timeout_callback);
 
     xio_op = (globus_i_xio_op_t *) user_arg;
     xio_server = xio_op->_op_server;
@@ -325,8 +326,7 @@ globus_l_xio_accept_timeout_callback(
         /* if canceling set the res and we will remove this timer event */
         if(cancel)
         {
-            xio_op->cached_res = GlobusXIOErrorOperationCanceled(
-                "globus_l_xio_accept_timeout_callback");
+            xio_op->cached_res = GlobusXIOErrorTimedout();
             rc = GLOBUS_TRUE;
             xio_op->canceled = GLOBUS_TRUE;
             if(xio_op->cancel_cb)
@@ -404,18 +404,19 @@ globus_xio_server_init(
     int                                         ctr2;
     int                                         stack_size;
     void *                                      ds_attr = NULL;
+    GlobusXIOName(globus_xio_server_init);
 
     if(server == NULL)
     {
-        return GlobusXIOErrorBadParameter("globus_xio_server_init");
+        return GlobusXIOErrorParameter("server");
     }
     if(stack == NULL)
     {
-        return GlobusXIOErrorBadParameter("globus_xio_server_init");
+        return GlobusXIOErrorParameter("stack");
     }
     if(globus_list_empty(stack->driver_stack))
     {
-        return GlobusXIOErrorBadParameter("globus_xio_server_init");
+        return GlobusXIOErrorParameter("stack is empty");
     }
 
     /* take what the user stack has at the time of registration */
@@ -487,10 +488,11 @@ globus_xio_server_cntl(
     globus_result_t                             res = GLOBUS_SUCCESS;
     va_list                                     ap;
     globus_i_xio_server_t *                     xio_server;
+    GlobusXIOName(globus_xio_server_cntl);
 
     if(server == NULL)
     {
-        return GlobusXIOErrorBadParameter("globus_xio_server_cntl");
+        return GlobusXIOErrorParameter("server");
     }
 
     xio_server = (globus_i_xio_server_t *) server;
@@ -521,7 +523,7 @@ globus_xio_server_cntl(
             }
             if(!found)
             {
-                res = GlobusXIOErrorDriverNotFound("globus_xio_server_cntl");
+                res = GlobusXIOErrorInvalidDriver("not found");
             }
         }
     }
@@ -544,10 +546,11 @@ globus_xio_server_register_accept(
     globus_result_t                             res = GLOBUS_SUCCESS;
     globus_i_xio_server_t *                     xio_server;
     globus_i_xio_op_t *                         xio_op;
+    GlobusXIOName(globus_xio_server_register_accept);
 
     if(server == NULL)
     {
-        return GlobusXIOErrorBadParameter("globus_xio_server_cntl");
+        return GlobusXIOErrorParameter("server");
     }
     
     xio_server = (globus_i_xio_server_t *) server;
@@ -557,8 +560,7 @@ globus_xio_server_register_accept(
         if(xio_server->state != GLOBUS_XIO_SERVER_STATE_OPEN &&
            xio_server->state != GLOBUS_XIO_SERVER_STATE_COMPLETEING)
         {
-            res = GlobusXIOErrorHandleBadState(
-                    "globus_xio_server_register_accept");
+            res = GlobusXIOErrorInvalidState(xio_server->state);
         }
         else
         {
@@ -571,8 +573,7 @@ globus_xio_server_register_accept(
 
             if(xio_op == NULL)
             {
-                res = GlobusXIOErrorMemoryAlloc(
-                        "globus_xio_server_register_accept");
+                res = GlobusXIOErrorMemory("operation");
             }
             else
             {
@@ -655,6 +656,7 @@ globus_xio_server_cancel_accept(
 {
     globus_result_t                             res = GLOBUS_SUCCESS;
     globus_i_xio_server_t *                     xio_server;
+    GlobusXIOName(globus_xio_server_cancel_accept);
 
     xio_server = (globus_i_xio_server_t *) server;
 
@@ -663,13 +665,11 @@ globus_xio_server_cancel_accept(
         if(xio_server->state != GLOBUS_XIO_SERVER_STATE_ACCEPTING &&
            xio_server->state != GLOBUS_XIO_SERVER_STATE_COMPLETEING)
         {
-            res = GlobusXIOErrorOperationCanceled(
-                        "globus_xio_server_cancel_accept");
+            res = GlobusXIOErrorInvalidState(xio_server->state);
         }
         else if(xio_server->op->canceled)
         {
-            res = GlobusXIOErrorOperationCanceled(
-                        "globus_xio_server_cancel_accept");
+            res = GlobusXIOErrorCanceled();
         }
         else
         {
@@ -701,10 +701,11 @@ globus_xio_server_destroy(
     globus_result_t                             tmp_res;
     globus_bool_t                               destroy_server = GLOBUS_FALSE;
     int                                         ctr;
+    GlobusXIOName(globus_xio_server_destroy);
 
     if(server == NULL)
     {
-        return GlobusXIOErrorBadParameter("globus_xio_server_destroy");
+        return GlobusXIOErrorParameter("server");
     }
 
     xio_server = (globus_i_xio_server_t *) server;
@@ -714,8 +715,7 @@ globus_xio_server_destroy(
         if(xio_server->state == GLOBUS_XIO_SERVER_STATE_ACCEPTING ||
            xio_server->state == GLOBUS_XIO_SERVER_STATE_COMPLETEING)
         {
-            res = GlobusXIOErrorHandleBadState(
-                    "globus_xio_server_destroy");
+            res = GlobusXIOErrorInvalidState(xio_server->state);
         }
         else
         {
@@ -727,7 +727,7 @@ globus_xio_server_destroy(
                         xio_server->entry[ctr].server_handle);
                 if(tmp_res != GLOBUS_SUCCESS)
                 {
-                    res = GlobusXIOErrorLazy();
+                    res = GlobusXIOErrorWrapFailed("server_destroy", tmp_res);
                 }
             }
 
@@ -758,19 +758,20 @@ globus_xio_target_destroy(
     globus_result_t                             res;
     globus_result_t                             tmp_res;
     int                                         ctr;
+    GlobusXIOName(globus_xio_target_destroy);
 
     /*
      *  parameter checking 
      */
     if(target == NULL)
     {
-        return GlobusXIOErrorBadParameter("globus_xio_target_cntl");
+        return GlobusXIOErrorParameter("target");
     }
     xio_target = (globus_i_xio_target_t *) target;
     if(xio_target->type != GLOBUS_XIO_TARGET_TYPE_SERVER &&
        xio_target->type != GLOBUS_XIO_TARGET_TYPE_CLIENT)
     {
-        return GlobusXIOErrorHandleBadState("globus_xio_target_cntl");
+        return GlobusXIOErrorInvalidState(xio_target->type);
     }
 
     for(ctr = 0; ctr < xio_target->stack_size; ctr++)
@@ -805,14 +806,15 @@ globus_xio_target_cntl(
     int                                         ctr;
     globus_result_t                             res;
     va_list                                     ap;
+    GlobusXIOName(globus_xio_target_cntl);
 
     if(target == NULL)
     {
-        return GlobusXIOErrorBadParameter("globus_xio_target_cntl");
+        return GlobusXIOErrorParameter("target");
     }
     if(cmd < 0)
     {
-        return GlobusXIOErrorBadParameter("globus_xio_target_cntl");
+        return GlobusXIOErrorParameter("cmd");
     }
     
 #   ifdef HAVE_STDARG_H
@@ -870,27 +872,28 @@ globus_xio_target_init(
     int                                         ndx;
     globus_list_t *                             list;
     void *                                      driver_attr;
+    GlobusXIOName(globus_xio_target_init);
 
     /*
      *  parameter checking 
      */
     if(target == NULL)
     {
-        return GlobusXIOErrorBadParameter("globus_xio_target_init");
+        return GlobusXIOErrorParameter("target");
     }
     if(contact_string == NULL)
     {
-        return GlobusXIOErrorBadParameter("globus_xio_target_init");
+        return GlobusXIOErrorParameter("contact_string");
     }
     if(stack == NULL)
     {
-        return GlobusXIOErrorBadParameter("globus_xio_target_init");
+        return GlobusXIOErrorParameter("stack");
     }
 
     stack_size = globus_list_size(stack->driver_stack);
     if(stack_size == 0)
     {
-        res = GlobusXIOErrorInvalidStack_("globus_xio_target_init");
+        res = GlobusXIOErrorParameter("stack_size");
         return res;
     }
 
@@ -901,7 +904,7 @@ globus_xio_target_init(
                             (stack_size - 1)));
     if(xio_target == NULL)
     {
-        return GlobusXIOErrorMemoryAlloc("globus_xio_target_init");
+        return GlobusXIOErrorMemory("target");
     }
 
     xio_target->type = GLOBUS_XIO_TARGET_TYPE_CLIENT;
