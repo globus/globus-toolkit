@@ -81,13 +81,13 @@ globus_i_gsi_sysconfig_openssl_error_result(
         globus_error_wrap_openssl_error(
             GLOBUS_GSI_SYSCONFIG_MODULE,
             error_type,
-            "%s:%d: %s: %s",
+            "%s:%d: %s: %s%s%s",
             filename,
             line_number,
             function_name,
-            globus_l_gsi_sysconfig_error_strings[error_type]);    
-
-    globus_error_set_long_desc(error_object, long_desc);
+            globus_l_gsi_sysconfig_error_strings[error_type],
+            long_desc ? ": " : "",
+            long_desc ? long_desc : "");    
 
     result = globus_error_put(error_object);
     
@@ -116,11 +116,11 @@ globus_i_gsi_sysconfig_error_result(
         GLOBUS_GSI_SYSCONFIG_MODULE,
         NULL,
         error_type,
-        "%s:%d: %s: %s",
+        "%s:%d: %s: %s%s%s",
         filename, line_number, function_name, 
-        globus_l_gsi_sysconfig_error_strings[error_type]);
-
-    globus_error_set_long_desc(error_object, long_desc);
+        globus_l_gsi_sysconfig_error_strings[error_type],
+        long_desc ? ": " : "",
+        long_desc ? long_desc : "");
 
     result = globus_error_put(error_object);
 
@@ -151,11 +151,11 @@ globus_i_gsi_sysconfig_error_chain_result(
             GLOBUS_GSI_SYSCONFIG_MODULE,
             globus_error_get(chain_result),
             error_type,
-            "%s:%d: %s: %s",
+            "%s:%d: %s: %s%s%s",
             filename, line_number, function_name, 
-            globus_l_gsi_sysconfig_error_strings[error_type]);
-
-    globus_error_set_long_desc(error_object, long_desc);
+            globus_l_gsi_sysconfig_error_strings[error_type],
+            long_desc ? ": " : "",
+            long_desc ? long_desc : "");
 
     result = globus_error_put(error_object);
 
@@ -165,3 +165,17 @@ globus_i_gsi_sysconfig_error_chain_result(
 }
 
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
+
+
+
+
+
+
+
+
+
+
+
+
+
+

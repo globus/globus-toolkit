@@ -3266,10 +3266,15 @@ globus_gsi_sysconfig_get_cert_dir_unix(
     /* now check for a trusted CA directory in the user's home directory */
     if(!(*cert_dir))
     {
-        if((result = GLOBUS_GSI_SYSCONFIG_GET_HOME_DIR(&home)) 
-           != GLOBUS_SUCCESS)
+        result = GLOBUS_GSI_SYSCONFIG_GET_HOME_DIR(&home);            
+        if(result != GLOBUS_SUCCESS)
         {
-            goto error_exit;
+            /* if home doesn't exist, we move on 
+             * no error is thrown
+             */
+            globus_object_t *           error_obj;
+            error_obj = globus_error_get(result);
+            globus_object_free(error_obj);
         }
             
         if (home) 
