@@ -14,8 +14,7 @@
  *   $Revision$
  *   $Author$
  *****************************************************************************/
-#include "globus_common.h"
-#include "globus_rsl.h"
+#include "globus_rsl_assist.h"
 
 #include <string.h>
 
@@ -59,8 +58,11 @@ globus_l_rsl_assist_query_ldap(
  * and extracting the contact value for that object.
  * 
  * Parameters: 
- *  
- * Returns: 
+ *     rsl - Poiter to the RSL structure in which you want to replace the
+ *     manager Name by its Contact
+ * Returns:
+ *     GLOBUS_SUCCESS or
+ *     
  */
 int
 globus_rsl_assist_replace_manager_name(globus_rsl_t * rsl)
@@ -156,12 +158,12 @@ globus_rsl_assist_replace_manager_name(globus_rsl_t * rsl)
 		    if(value == NULL)
 		    {
 			/* ill-formed RSL, abort */
-			return -1;
+			return GLOBUS_RSL_ASSIST_ERROR_RSL_INVALID;
 		    }
 		    else if(!globus_rsl_value_is_literal(value))
 		    {
 		        /* don't process substitutions */
-			return -1;
+			return GLOBUS_RSL_ASSIST_ERROR_MANAGER_NAME_IS_NOT_LITERAL;
 		    }
 		    else
 		    {
@@ -178,6 +180,11 @@ globus_rsl_assist_replace_manager_name(globus_rsl_t * rsl)
 			/* query the ldap server to get a replacement */
 			resource_contact =
 			    globus_l_rsl_assist_query_ldap(resource_name);
+			if (resource_contact == GLOBUS_NULL)
+			{
+			    
+			    return GLOBUS_RSL_ASSIST_ERROR_GETTING_MANAGER_CONTACT;			    
+			}
 
 			/* make that into a sequence of a single literal
 			 * remember that values are always sequences
@@ -217,30 +224,36 @@ globus_rsl_assist_replace_manager_name(globus_rsl_t * rsl)
 #                       endif
 			globus_list_replace_first(lists,
 						  resource_contact_relation);
+			globus_free(resource_contact);
 		    }
 		}
 	    }
 	    lists = globus_list_rest(lists);
 	}	
     }
-    return 0;    
+    return GLOBUS_SUCCESS;    
 } /* globus_rsl_assist_replace_manager_name() */
 
 /*
  * Function: globus_rsl_assist_get_rm_contact()
  *
  * Connect to the ldap server, and search for the contact string
- * associated with the resourceManagerName.
+ * associated with the resourceManagerName, by querying the MDS.
  *
  * For the moment, just a wrapper around globus_l_rsl_assist_query_ldap(),
  * until globus_l_rsl_assist_query_ldap(), get more general...
  *
- * Parameters: 
- * 
- * Returns: 
+ * Parameters:
+ *    resourceManagerName - String containing the Name of the Resource Manager
+ *
+ * Returns:
+ *    Pointer to a newly allocated string containing the Resource
+ *    Manager Contact. This string MUST be freed by the user.
+ *    OR
+ *    GLOBUS_NULL in case of failure.
  */
 char*
-globus_rsl_assist_get_rm_contact(
+globus_i_rsl_assist_get_rm_contact(
     char* resource)
 {
     return globus_l_rsl_assist_query_ldap(resource);
@@ -277,7 +290,7 @@ globus_l_rsl_assist_query_ldap(
     if((ldap_server = ldap_open(server, port)) == GLOBUS_NULL)
     {
 	ldap_perror(ldap_server, "ldap_open");
-	exit(1);
+	return GLOBUS_NULL;
     }
 
     /* bind anonymously (we can only read public records now */
@@ -285,7 +298,7 @@ globus_l_rsl_assist_query_ldap(
     {
 	ldap_perror(ldap_server, "ldap_simple_bind_s");
 	ldap_unbind(ldap_server);
-	exit(1);
+	return GLOBUS_NULL;
     }
 
 
@@ -293,7 +306,11 @@ globus_l_rsl_assist_query_ldap(
     search_string=globus_malloc(strlen(resource)+
 				strlen(search_format)+
 				1);
-
+    if (search_string==GLOBUS_NULL)
+    {
+	ldap_unbind(ldap_server);	
+	return GLOBUS_NULL;
+    }
     /* format our query string */
     sprintf(search_string, search_format, resource);
     
@@ -318,7 +335,7 @@ globus_l_rsl_assist_query_ldap(
 	ldap_unbind(ldap_server);
 	/* ? ldap close ? */
 	globus_libc_free(search_string);
-	exit(1);
+	return GLOBUS_NULL;
     }
 
     /* we'll be satisfied with the first matching record
