@@ -29,6 +29,6 @@ awk '	{	edit = $1 + 1; }\
 END	{	printf "char version[] = \"Version wu-2.6.1(%d) ", edit > "vers.c";\
 #LANG=
 #LC_TIME=
-		printf "[GSI patch v0.5] " >> "vers.c";\
+		printf "[GSI patch v0.4b5] " >> "vers.c";\
 		printf "%d\n", edit > "edit"; }' < edit
 echo `LC_TIME=C date`'";' >> vers.c

@@ -83,20 +83,20 @@
 
 /**** added by JB **********/
 #if defined(THROUGHPUT)
-#   define SEND_DATA(__name, __instr, __outstr, __blksize, __logical_offset, __length)    \
-        send_data(__name, __instr, __outstr, __blksize, __logical_offset, __length)
+#   define SEND_DATA(__name, __instr, __outstr, __blksize, __length)    \
+        send_data(__name, __instr, __outstr, __blksize, __length)
 #else
-#   define SEND_DATA(__name, __instr, __outstr, __blksize, __logical_offset, __length)    \
+#   define SEND_DATA(__name, __instr, __outstr, __blksize, __length)    \
         send_data(__instr, __outstr, __blksize, __length)
 #endif
 
 #ifdef USE_GLOBUS_DATA_CODE
 #   if defined(THROUGHPUT)
-#       define G_SEND_DATA(__name, __instr, __h, __off, __logical_offset, __length, __size)  \
-            g_send_data(__name, __instr, __h, __off, (off_t) __logical_offset, (off_t)__length, __size)
+#       define G_SEND_DATA(__name, __instr, __h, __off, __blksize, __length, __size)  \
+            g_send_data(__name, __instr, __h, __off,(off_t) __blksize, (off_t)__length, __size)
 #   else
-#       define G_SEND_DATA(__name, __instr, __h, __off, __logical_offset, __length, __size)  \
-            g_send_data(__instr, __h, __off, (off_t) __logical_offset, (off_t)__length, __size)
+#       define G_SEND_DATA(__name, __instr, __h, __off, __blksize, __length, __size)  \
+            g_send_data(__instr, __h, __off, (off_t)__blksize, (off_t)__length, __size)
 #   endif
 #endif
 
@@ -2215,8 +2215,7 @@ void user(char *name)
 		 * so we always send back 331, even though we may just
 		 * need a dummy password.
 		 */
-        reply(331, 
-			  "GSSAPI user %s is%s authorized as %s%s",
+		reply(331, "GSSAPI user %s is%s authorized as %s%s",
 		      gssapi_name,
 		      (gssapi_user_is_good ? "" : " not"),
 		      name,
@@ -3928,15 +3927,7 @@ char *ls_file(const char *file, int nameonly, char remove_path, char classify)
     return ls_entry;
 }
 
-void 
-ls_dir(
-    char *d, 
-    char ls_a, 
-    char ls_F, 
-    char ls_l, 
-    char ls_R, 
-    char omit_total, 
-    FILE *out)
+void ls_dir(char *d, char ls_a, char ls_F, char ls_l, char ls_R, char omit_total, FILE *out)
 {
     int total;
     char *realdir;		/* fixed up value to pass to glob() */
@@ -3966,13 +3957,9 @@ ls_dir(
 	strcat(realdir, "*");
     if (strchr(realdir, '*') || strchr(realdir, '?'))
 	isDir = 1;
-    if (strcmp(realdir, "*") == 0 || 
-        strcmp(realdir + strlen(realdir) - 2, "/*") == 0)
-    {
+    if (strcmp(realdir, "*") == 0 || strcmp(realdir + strlen(realdir) - 2, "/*") == 0)
 	isDir = 2;
-    }
-    else 
-    {
+    else {
 	if (lstat(realdir, &s) == 0) {
 	    if (S_ISDIR(s.st_mode)) {
 		strcat(realdir, "/*");
@@ -3981,15 +3968,11 @@ ls_dir(
 	}
     }
 
-    if (isDir == 0) 
-    {
-	if (ls_l) 
-        {
+    if (isDir == 0) {
+	if (ls_l) {
 	    lsentry = ls_file(realdir, 0, 0, ls_F);
-	    if (lsentry != NULL) 
-            {
-		if (draconian_FILE != NULL) 
-                {
+	    if (lsentry != NULL) {
+		if (draconian_FILE != NULL) {
 		    (void) signal(SIGALRM, draconian_alarm_signal);
 		    alarm(timeout_data);
 		    fputs(lsentry, out);
@@ -3998,10 +3981,8 @@ ls_dir(
 		free(lsentry);
 	    }
 	}
-	else 
-        {
-	    if (draconian_FILE != NULL) 
-            {
+	else {
+	    if (draconian_FILE != NULL) {
 		(void) signal(SIGALRM, draconian_alarm_signal);
 		alarm(timeout_data);
 		fputs(realdir, out);
@@ -4010,10 +3991,8 @@ ls_dir(
 	}
 	free(realdir);
     }
-    else 
-    {
-	if (ls_R) 
-        {
+    else {
+	if (ls_R) {
 	    numSubdirs = 0;
 	    subdirs = (char **) malloc(200 * sizeof(char *));
 	    memset(subdirs, 0, 200 * sizeof(char *));
@@ -4042,10 +4021,7 @@ ls_dir(
 #endif
 	}
 	else if (glob(realdir, GLOB_ERR, NULL, &g) != 0)
-        {
 	    g.gl_pathc = 0;
-        }
-
 	free(realdir);
 	for (i = 0; i < g.gl_pathc; i++) {
 	    c = g.gl_pathv[i];
@@ -4114,54 +4090,35 @@ ls_dir(
     }
 }
 
-void 
-ls(
-    char *                                  file, 
-    char                                    nlst)
+void ls(char *file, char nlst)
 {
-    FILE *                                  out;
-    char                                    free_file = 0;
+    FILE *out;
+    char free_file = 0;
     char ls_l = 0, ls_a = 0, ls_R = 0, ls_F = 0;
 
     if (nlst == 0)
-    {
 	ls_l = 1;		/* LIST defaults to ls -l */
-    }
-    if (file == NULL) 
-    {
+    if (file == NULL) {
 	file = strdup(".");
 	free_file = 1;
     }
     if (strcmp(file, "*") == 0)
-    {
 	file[0] = '.';
-    }
 
-    if (file[0] == '-') 
-    {	/* options... */
-	if (strchr(file, ' ') == 0) 
-        {
+    if (file[0] == '-') {	/* options... */
+	if (strchr(file, ' ') == 0) {
 	    if (strchr(file, 'l'))
-            {
 		ls_l = 1;
-            }
 	    if (strchr(file, 'a'))
-            {
 		ls_a = 1;
-            }
 	    if (strchr(file, 'R'))
-            {
 		ls_R = 1;
-            }
 	    if (strchr(file, 'F'))
-            {
 		ls_F = 1;
-            }
 	    file = strdup(".");
 	    free_file = 1;
 	}
-	else 
-        {
+	else {
 	    if (strchr(file, 'l') != NULL && strchr(file, 'l') < strchr(file, ' '))
 		ls_l = 1;
 	    if (strchr(file, 'a') != NULL && strchr(file, 'a') < strchr(file, ' '))
@@ -4173,31 +4130,22 @@ ls(
 	    file = strchr(file, ' ');
 	}
     }
-    /* ignore additional whitespaces between parameters */
-    while (file[0] == ' ')	
-    {
+    while (file[0] == ' ')	/* ignore additional whitespaces between parameters */
 	file++;
-    }
-
-    if (strlen(file) == 0)  
-    {
+    if (strlen(file) == 0) {
 	file = strdup(".");
 	free_file = 1;
     }
 
     out = dataconn("directory listing", -1, "w");
-
     draconian_FILE = out;
 
     transflag++;
 
     fixpath(file);
-    if (file[0] == '\0') 
-    {
+    if (file[0] == '\0') {
 	if (free_file != 0)
-        {
 	    free(file);
-        }
 	file = strdup(".");
 	free_file = 1;
     }
@@ -4205,20 +4153,17 @@ ls(
     ls_dir(file, ls_a, ls_F, ls_l, ls_R, 0, out);
     data = -1;
     pdata = -1;
-    if (draconian_FILE != NULL) 
-    {
+    if (draconian_FILE != NULL) {
 	(void) signal(SIGALRM, draconian_alarm_signal);
 	alarm(timeout_data);
 	fflush(out);
     }
-    if (draconian_FILE != NULL) 
-    {
+    if (draconian_FILE != NULL) {
 	(void) signal(SIGALRM, draconian_alarm_signal);
 	alarm(timeout_data);
 	socket_flush_wait(out);
     }
-    if (draconian_FILE != NULL) 
-    {
+    if (draconian_FILE != NULL) {
 	(void) signal(SIGALRM, draconian_alarm_signal);
 	alarm(timeout_data);
 	fclose(out);
@@ -4228,18 +4173,11 @@ ls(
     transflag = 0;
     reply(226, "Transfer complete.");
     if (free_file != 0)
-    {
 	free(file);
-    }
 }
 #endif /* INTERNAL_LS */
 
-void 
-retrieve(
-    char *                                           cmd, 
-    char *                                           name, 
-    off_t                                            offset, 
-    off_t                                            length)
+void retrieve(char *cmd, char *name, off_t offset, off_t length)
 {
     FILE *fin = NULL, *dout;
     struct stat st, junk;
@@ -4255,7 +4193,7 @@ retrieve(
     char realname[MAXPATHLEN];
     int stat_ret = -1;
 
-    int                            tmp_restart = 0; /* added by JB */
+    int                            tmp_restart; /* added by JB */
 
     extern int checknoretrieve(char *);
 
@@ -4288,31 +4226,20 @@ retrieve(
 #ifdef TRANSFER_COUNT
 #ifdef TRANSFER_LIMIT
     if (retrieve_is_data)
-    {
-	if (((file_limit_data_out > 0) && 
-             (file_count_out >= file_limit_data_out))
-	    || ((file_limit_data_total > 0) && 
-               (file_count_total >= file_limit_data_total))
-	    || ((data_limit_data_out > 0) 
-               && ( (data_count_out + st.st_size) >= data_limit_data_out))
-	    || ((data_limit_data_total > 0) && 
-               ( (data_count_total + st.st_size) >= data_limit_data_total))) 
-        {
+	if (((file_limit_data_out > 0) && (file_count_out >= file_limit_data_out))
+	    || ((file_limit_data_total > 0) && (file_count_total >= file_limit_data_total))
+	    || ((data_limit_data_out > 0) && ( (data_count_out + st.st_size) >= data_limit_data_out))
+	    || ((data_limit_data_total > 0) && ( (data_count_total + st.st_size) >= data_limit_data_total))) {
 	    if (log_security)
-            {
 		if (anonymous)
-		    syslog(LOG_NOTICE, 
-          "anonymous(%s) of %s tried to retrieve %s (Transfer limits exceeded)",
+		    syslog(LOG_NOTICE, "anonymous(%s) of %s tried to retrieve %s (Transfer limits exceeded)",
 			   guestpw, remoteident, realname);
 		else
 		    syslog(LOG_NOTICE, "%s of %s tried to retrieve %s (Transfer limits exceeded)",
 			   pw->pw_name, remoteident, realname);
-            }
 	    reply(553, "Permission denied on server. (Transfer limits exceeded)");
 	    return;
 	}
-    }
-
     if (((file_limit_raw_out > 0) && (xfer_count_out >= file_limit_raw_out))
 	|| ((file_limit_raw_total > 0) && (xfer_count_total >= file_limit_raw_total))
 	|| ((data_limit_raw_out > 0) && (byte_count_out >= data_limit_raw_out))
@@ -4348,28 +4275,18 @@ retrieve(
 
 
     logname = (char *) NULL;
-    /* file does not exist */
-    if (cmd == NULL && stat_ret != 0) 
-    {
+    if (cmd == NULL && stat_ret != 0) {		/* file does not exist */
 	char *ptr;
 
-	for (cptr = cvtptr; cptr != NULL; cptr = cptr->next) 
-        {
+	for (cptr = cvtptr; cptr != NULL; cptr = cptr->next) {
 	    if (!(mangleopts & O_COMPRESS) && (cptr->options & O_COMPRESS))
-            {
 		continue;
-            }
 	    if (!(mangleopts & O_UNCOMPRESS) && (cptr->options & O_UNCOMPRESS))
-            {
 		continue;
-            }
 	    if (!(mangleopts & O_TAR) && (cptr->options & O_TAR))
-            {
 		continue;
-            }
 
-	    if ((cptr->stripfix) && (cptr->postfix)) 
-            {
+	    if ((cptr->stripfix) && (cptr->postfix)) {
 		int pfxlen = strlen(cptr->postfix);
 		int sfxlen = strlen(cptr->stripfix);
 		int namelen = strlen(name);
@@ -4387,8 +4304,7 @@ retrieve(
 		if (stat(fnbuf, &st) != 0)
 		    continue;
 	    }
-	    else if (cptr->postfix) 
-            {
+	    else if (cptr->postfix) {
 		int pfxlen = strlen(cptr->postfix);
 		int namelen = strlen(name);
 
@@ -4401,26 +4317,22 @@ retrieve(
 		if (stat(fnbuf, &st) != 0)
 		    continue;
 	    }
-	    else if (cptr->stripfix) 
-            {
+	    else if (cptr->stripfix) {
 		(void) strcpy(fnbuf, name);
 		(void) strcat(fnbuf, cptr->stripfix);
 		if (stat(fnbuf, &st) != 0)
 		    continue;
 	    }
-	    else 
-            {
+	    else {
 		continue;
 	    }
 
-	    if (S_ISDIR(st.st_mode)) 
-            {
+	    if (S_ISDIR(st.st_mode)) {
 		if (!cptr->types || !(cptr->types & T_DIR)) {
 		    reply(550, "Cannot %s directories.", cptr->name);
 		    return;
 		}
-		if ((cptr->options & O_TAR)) 
-                {
+		if ((cptr->options & O_TAR)) {
 		    strcpy(namebuf, fnbuf);
 		    strcat(namebuf, "/.notar");
 		    if (stat(namebuf, &junk) == 0) {
@@ -4481,14 +4393,11 @@ retrieve(
 	}
     }
 
-    /* no command */
-    if (cmd == NULL) 
-    {
+    if (cmd == NULL) {		/* no command */
 	fin = fopen(name, "r"), closefunc = fclose;
 	st.st_size = 0;
     }
-    else 
-    {			/* run command */
+    else {			/* run command */
 	static char line[BUFSIZ];
 
 	(void) snprintf(line, sizeof line, cmd, name), name = line;
@@ -4498,9 +4407,7 @@ retrieve(
 	st.st_blksize = BUFSIZ;
 #endif
     }
-
-    if (fin == NULL) 
-    {
+    if (fin == NULL) {
 	if (errno != 0)
 	    perror_reply(550, name);
 	if ((errno == EACCES) || (errno == EPERM))
@@ -4514,8 +4421,7 @@ retrieve(
 	return;
     }
     if (cmd == NULL &&
-	(fstat(fileno(fin), &st) < 0 || (st.st_mode & S_IFMT) != S_IFREG)) 
-    {
+	(fstat(fileno(fin), &st) < 0 || (st.st_mode & S_IFMT) != S_IFREG)) {
 #       if HAVE_BROKEN_STAT
         /* Is this safe to do on a FILE *'s fd? */
         st.st_size = lseek(fileno(fin), 0, SEEK_END);
@@ -4536,11 +4442,10 @@ retrieve(
     if(restart_point)
     {
         tmp_restart = restart_point;
-        if(offset != -1) tmp_restart += offset;
     }
     else if(offset != -1)
     {
-        tmp_restart += offset;
+        tmp_restart = offset;
     }
     else
     {
@@ -4550,14 +4455,21 @@ retrieve(
 
 #   if defined(USE_GLOBUS_DATA_CODE)
     {
-            TransferComplete = G_SEND_DATA(
-                                   name, 
-                                   fin, 
-                                   &g_data_handle, 
-                                   tmp_restart,
-                                   offset==-1?0:offset, 
-                                   length, 
-                                   st.st_size);
+#       ifdef BUFFER_SIZE
+            TransferComplete = G_SEND_DATA(name, fin, 
+                                   &g_data_handle, tmp_restart,
+                                   BUFFER_SIZE, length, st.st_size);
+#       else
+#           ifdef HAVE_ST_BLKSIZE
+                TransferComplete = G_SEND_DATA(name, fin, &g_data_handle, 
+                                       tmp_restart, st.st_blksize * 2, length,
+				       st.st_size);
+#           else
+                TransferComplete = G_SEND_DATA(name, fin, 
+                                       &g_data_handle, tmp_restart, BUFSIZ, 
+                                       length, st.st_size);
+#           endif
+#       endif
     }
 #   else
     {
@@ -5007,7 +4919,6 @@ store(
     if(restart_point)
     {
         tmp_restart = restart_point;
-        if(offset != -1) tmp_restart += offset;
     }
     else if(offset != -1)
     {
@@ -5058,7 +4969,7 @@ store(
  */
 #   if defined(USE_GLOBUS_DATA_CODE)
     {
-        TransferIncomplete = g_receive_data(&g_data_handle, fout, tmp_restart, name);
+        TransferIncomplete = g_receive_data(&g_data_handle, fout, offset, name);
     }
 #   else
     {
@@ -6683,10 +6594,8 @@ void dologout(int status)
     if (xferlog)
 	close(xferlog);
     acl_remove();
-    if(data >= 0)
-	close(data);		/* H* fix: clean up a little better */
-    if(pdata >= 0)
-	close(pdata);
+    close(data);		/* H* fix: clean up a little better */
+    close(pdata);
 #ifdef AFS
     afs_logout();
 #endif
@@ -7031,9 +6940,7 @@ static char *onefile[] =
 extern char **ftpglob(register char *v);
 extern char *globerr;
 
-void 
-send_file_list(
-    char *                                       whichfiles)
+void send_file_list(char *whichfiles)
 {
     /* static so not clobbered by longjmp(), volatile would also work */
     static FILE *dout;
@@ -7076,26 +6983,20 @@ send_file_list(
     dirp = NULL;
     sdirlist = NULL;
     wildcard = NULL;
-    if (strpbrk(whichfiles, "~{[*?") == NULL) 
-    {
-	if (whichfiles[0] == '\0') 
-        {
+    if (strpbrk(whichfiles, "~{[*?") == NULL) {
+	if (whichfiles[0] == '\0') {
 	    wildcard = strdup("*");
-	    if (wildcard == NULL) 
-            {
+	    if (wildcard == NULL) {
 		reply(550, "Memory allocation error");
 		goto globfree;
 	    }
 	    whichfiles = wildcard;
 	}
-	else 
-        {
+	else {
 	    if (statret=stat(whichfiles, &st) < 0)
 	       statret=lstat(whichfiles, &st); /* Check if it's a dangling symlink */
-	    if (statret >= 0) 
-            {
-	       if ((st.st_mode & S_IFMT) == S_IFDIR) 
-               {
+	    if (statret >= 0) {
+	       if ((st.st_mode & S_IFMT) == S_IFDIR) {
 		   wildcard = malloc(strlen(whichfiles) + 3);
 		   if (wildcard == NULL) {
 		       reply(550, "Memory allocation error");
@@ -7108,13 +7009,11 @@ send_file_list(
 	    }
 	}
     }
-    if (strpbrk(whichfiles, "~{[*?") != NULL) 
-    {
+    if (strpbrk(whichfiles, "~{[*?") != NULL) {
 	globerr = NULL;
 	dirlist = ftpglob(whichfiles);
 	sdirlist = dirlist;	/* save to free later */
-	if (globerr != NULL) 
-        {
+	if (globerr != NULL) {
 	    reply(550, globerr);
 	    goto globfree;
 	}
@@ -7140,15 +7039,11 @@ send_file_list(
 	pdata = -1;
 	goto globfree;
     }
-
-    while ((dirname = *dirlist++) != NULL) 
-    {
+    while ((dirname = *dirlist++) != NULL) {
 	statret=stat(dirname, &st);
 	if (statret < 0)
 	   statret=lstat(dirname, &st); /* Could be a dangling symlink */
-
-	if (statret < 0) 
-        {
+	if (statret < 0) {
 	    /* If user typed "ls -l", etc, and the client used NLST, do what
 	     * the user meant. */
 	    if (dirname[0] == '-' && *dirlist == NULL && transflag == 0) {
@@ -7170,19 +7065,15 @@ send_file_list(
 	    }
 	    goto globfree;
 	}
-
-	if ((st.st_mode & S_IFMT) != S_IFDIR) 
-        {
-	    if (dout == NULL) 
-            {
+	if ((st.st_mode & S_IFMT) != S_IFDIR) {
+	    if (dout == NULL) {
 		dout = dataconn("file list", (off_t) - 1, "w");
 		if (dout == NULL)
 		    goto globfree;
 		transflag++;
 		draconian_FILE = dout;
 	    }
-	    if (draconian_FILE != NULL) 
-            {
+	    if (draconian_FILE != NULL) {
 		(void) signal(SIGALRM, draconian_alarm_signal);
 		alarm(timeout_data);
 		fprintf(dout, "%s%s\n", dirname,
@@ -7192,8 +7083,7 @@ send_file_list(
 #ifdef TRANSFER_COUNT
 	    byte_count_total += strlen(dirname) + 1;
 	    byte_count_out += strlen(dirname) + 1;
-	    if (type == TYPE_A) 
-            {
+	    if (type == TYPE_A) {
 		byte_count_total++;
 		byte_count_out++;
 	    }
