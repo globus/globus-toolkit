@@ -24,13 +24,6 @@ typedef enum
     MYPROXY_AUTHORIZATION_RESPONSE
 } myproxy_proto_response_type_t;
 
-/* request type */
-typedef enum
-{
-    RETRIEVAL,
-    RENEWAL
-} _request_type;
-
 /* client/server socket attributes */
 typedef struct 
 {
