@@ -12,10 +12,11 @@ i18n: gpt globus-internationalization globus-internationalization-thr
 prewsgram: gpt globus-resource-management-server globus-resource-management-client globus-resource-management-sdk globus-resource-management-sdk-thr
 prewsgridftp: gpt globus-data-management-server globus-data-management-client globus-data-management-sdk globus-data-management-sdk-thr
 prewsmds: gpt globus-information-services-server globus-information-services-client globus-information-services-sdk
-wsjava: gpt gt4-java-ws-core
-wsmds: gpt wsjava gt4-mds
+rls: gpt globus-rls-server
+wsjava: gpt gt4-java-ws-core gt4-java-ws-core-test
+wsmds: gpt wsjava gt4-mds gt4-mds-test
 wsdel: gpt wsjava gt4-delegation
-wsrft: gpt wsjava gt4-rft gt4-rft-test
+wsrft: gpt wsjava gt4-delegation gt4-rft gt4-rft-test
 wsgram: gpt globus-resource-management-server globus-data-management-server wsjava wsrft gt4-gram gt4-gram-test
 wscas: gpt wsjava gt4-cas
 wsc: gpt gt4-c-ws-core gt4-c-ws-core-test

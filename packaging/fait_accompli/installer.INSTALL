@@ -10,8 +10,16 @@ Optional software:
     * Tomcat (for WSRF container)
     * junit (for java unit tests)
 
-Installing GT 3.9.4
-===================
+Overview:
+========
+    1.  Installing GT3.9.4 (defaults)
+    2.  Installing optional bundles
+    3.  Installing only a subset of GT3.9.4
+    4.  Platform-specific notes
+
+
+1. Installing GT 3.9.4 (defaults)
+=================================
 First, download the required software.  Be aware that apache ant
 will use the java referred to by JAVA_HOME, not necessarily the first
 java executable on your PATH.  Be sure to set JAVA_HOME to the
@@ -34,8 +42,8 @@ Then see http://www-unix.globus.org/toolkit/docs/development/3.9.4/
 for setup details.
 
 
-Installing optional bundles
-===========================
+2. Installing optional bundles
+==============================
 If you are installing on a machine or cluster that has schedulers
 installed, you can add scheduler packages by adding the following
 option to your configure line:
@@ -50,3 +58,125 @@ If you want to enable internationalization, say:
 --enable-i18n
 
 You can see configure --help for the full list of available options.
+
+
+3. Installing only a subset of GT3.9.4
+======================================
+You do not have to build every subcomponent of this release.  The
+makefile specifies subtargets for different functional subpieces.
+See the component map at
+http://www-unix.globus.org/toolkit/docs/development/4.0-drafts/GT4Facts/index.html
+for more details.
+
+Makefile targets:
+-----------------
+i18n              Internationalization libraries
+prewsgram         Pre-webservices GRAM
+prewsgridftp      GridFTP
+prewsmds          OpenLDAP-based MDS2
+wsjava            Webservices java core
+wsc               Webservices C core
+wsmds             Webservices MDS4
+wsdel             Webservices Delegation Service
+wsrft             Webservices Reliable File Transfer service
+wsgram            Webservices GRAM
+wscas             Webservices CAS
+wstests           Tests for webservices components
+prews-test        Tests for pre-webservices components
+rls               Replica Location Service
+
+Note that all of these targets require the "postinstall" target also.
+So, for instance, to build GridFTP alone, you would run:
+
+$ ./configure --prefix=/path/to/install
+$ make gridftp postinstall
+
+
+4. Platform notes
+=================
+The latest platform notes are at:
+http://www-unix.globus.org/toolkit/docs/development/4.0-drafts/admin/platforms.html
+
+    * Apple MacOS X
+    * Debian
+    * Fedora Core
+    * HP/UX
+    * IBM AIX
+    * Red Hat
+    * Sun Solaris
+    * SuSE Linux
+
+Apple MacOS X
+-------------
+Use gcc32dbg or gcc32 as flavor
+
+Debian
+------
+
+Some kernel/libc combinations trigger a threading problem. See
+bug #2194. The workaround is to set LD_ASSUME_KERNEL=2.2.5 in your
+environment.  
+
+Fedora Core
+-----------
+Fedora Core 2/3 ships with a broken ant. Install your own ant from
+http://ant.apache.org and either remove the ant RPM or edit /etc/ant.conf,
+setting ANT_HOME to your own ant installation.
+
+HP/UX
+-----
+GPT's MD5.xs needs to be patched at line 52 with 
+./gpt-3.2autotools2004/support/Digest-MD5-2.20/MD5.xs:
++ #define na PL_na
++ #define dowarn PL_dowarn
+
+Specify --with-flavor=vendorcc32 on the configure line.  GNU tar
+and GNU make are required on the PATH.
+
+Tested on a PA-RISC box with HPUX 11.11 with IPv6 patches.
+
+    * HP/UX ansiC
+    * Java 1.4.2_06
+    * Apache Ant 1.6.2
+
+IBM AIX
+-------
+Supported flavors are vendorcc32dbg/vendorcc32 and
+vendorcc64dbg/vendorcc64 using the Visual Age compilers (xlc). No gcc
+flavors are supported.
+
+It seems like some GPT patch-n-build packages are not able to pick up the
+complete 64 bit environment. If that happens, try setting OBJECT_MODE=64
+in your environment. This has to be done after GPT is built.
+
+GNU tar is required before IBM tar in the PATH.
+
+The toolkit has been tested on AIX 5.2 with:
+
+    * Visual Age C/C++ 6.0
+    * 32 bit version of IBM Java 1.4
+    * Apache Ant 1.5.4
+
+Red Hat
+-------
+No issues.
+
+Sun Solaris
+-----------
+Supported flavors are gcc32, gcc64, vendorcc32 and vendorcc64. The dbg
+flavors should work as well. For gcc64, a gcc built to target 64 bit
+object files is required.
+
+GPT has problems with the Sun provided perl and tar:
+http://www.gridpackagingtools.org/book/latest-stable/ch01s07.html
+
+The toolkit has been tested on Solaris 9 with:
+
+    * Sun Workshop 6 update 2 C 5.3
+    * gcc 3.4.3
+    * Sun Java 1.4.2_02
+    * Apache Ant 1.5.4
+
+SuSE Linux
+----------
+No issues.
