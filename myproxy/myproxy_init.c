@@ -442,10 +442,18 @@ init_arguments(int argc,
 	    break;	
         }
     }
+
+    if (gnu_optind != argc) {
+	fprintf(stderr, "%s: invalid option -- %s\n", argv[0],
+		argv[gnu_optind]);
+	fprintf(stderr, usage);
+	exit(1);
+    }
+
     /* Check to see if myproxy-server specified */
     if (attrs->pshost == NULL) {
 	fprintf(stderr, usage);
-	fprintf(stderr, "Unspecified myproxy-server! Either set the MYPROXY_SERVER environment variable or explicitly set the myproxy-server via the -s flag\n");
+	fprintf(stderr, "Unspecified myproxy-server. Please set the MYPROXY_SERVER environment variable\nor set the myproxy-server hostname via the -s flag.\n");
 	return -1;
     }
 
