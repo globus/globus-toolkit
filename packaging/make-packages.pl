@@ -1946,35 +1946,42 @@ make-packages.pl [options] [file ...]
 
 Options:
 
-    --skippackage          Don't create source packages
-    --skipbundle           Don't create source bundles
-    --install=<dir>        Install into <dir>
-    --anonymous            Use anonymous cvs checkouts
-    --cvsuser=<user>       Use "user" as account on CVS server
-    --no-updates           Don't update CVS checkouts
-    --noautotools          Don't build autotools
-    --nogpt                Don't build gpt
-    --nocore               Don't build core
-    --force                Force
-    --faster               Don't repackage if packages exist already
-    --flavor=<flv>         Set flavor base.  Default gcc32dbg
-    --gt2-tag (-t2)        Set GT2 and autotools tags.  Default HEAD
-    --gt3-tag (-t3)        Set GT3 and cbindings tags.  Default HEAD
-    --gt4-tag (-t4)        Set GT4 tags.  Default HEAD
-    --gt2-dir (-d2)        Set GT2 CVS directory.
-    --gt3-dir (-d3)        Set GT3 and cbindings CVS directory.
-    --gt4-dir (-d4)        Set GT4 CVS directory.
-    --autotools-dir        Set autotools CVS directory.
-    --verbose              Be verbose.  Also sends logs to screen.
-    --bundles="b1,b2,..."  Create bundles b1,b2,...
-    --packages="p1,p2,..." Create packages p1,p2,...
-    --deps                   Automatically include dependencies
-    --trees="t1,t2,..."    Work on trees t1,t2,... Default "gt2,gt3,gt4,cbindings"
-    --noparanoia           Don't exit at first error.
-    --inplace[=<dir>]      Build inplace. <dir> overrides the cvs directory
-                           for all trees. (ie, a dir you did a 'cvs co all' in)
-    --help                 Print usage message
-    --man                  Print verbose usage page
+    --skippackage           Don't create source packages
+    --skipbundle            Don't create source bundles
+    --install=<dir>         Install into <dir>
+    --anonymous             Use anonymous cvs checkouts
+    --cvsuser=<user>        Use "user" as account on CVS server
+    --no-updates            Don't update CVS checkouts
+    --noautotools           Don't build autotools
+    --nogpt                 Don't build gpt
+    --nocore                Don't build core
+    --force                 Force
+    --faster                Don't repackage if packages exist already
+    --flavor=<flv>          Set flavor base.  Default gcc32dbg
+    --gt2-tag (-t2)         Set GT2 and autotools tags.  Default HEAD
+    --gt3-tag (-t3)         Set GT3 and cbindings tags.  Default HEAD
+    --gt4-tag (-t4)         Set GT4 tags.  Default HEAD
+    --gt2-dir (-d2)         Set GT2 CVS directory.
+    --gt3-dir (-d3)         Set GT3 and cbindings CVS directory.
+    --gt4-dir (-d4)         Set GT4 CVS directory.
+    --autotools-dir         Set autotools CVS directory.
+    --verbose               Be verbose.  Also sends logs to screen.
+    --bundles="b1,b2,..."   Create bundles b1,b2,...
+    --packages="p1,p2,..."  Create packages p1,p2,...
+    --deps                    Automatically include dependencies
+    --trees="t1,t2,..."     Work on trees t1,t2,... Default "gt2,gt3,gt4,cbindings"
+    --noparanoia            Don't exit at first error.
+    --inplace[=<dir>]       Build inplace. <dir> overrides the cvs directory
+                            for all trees. (ie, a dir you did a 'cvs co all' in)
+    --list-packages (-lp)   Print a list of packages suitable for a Makefile.
+                            Also bootstraps those package dirs in CVS
+    --avoid-bootstrap (-ab) Avoid bootstrapping packages
+    --deps                  Read in GPT metadata and add packages that
+                            the listed bundles/packages require
+    --deporder              Build the packages in dependency order.
+                            Implied by --inplace.
+    --help                  Print usage message
+    --man                   Print verbose usage page
 
 =head1 OPTIONS
 
@@ -2057,11 +2064,30 @@ etc/*/bundles
 Create packages p1,p2,....  Packages are defined under
 etc/*/package-list
 
+=item B<--inplace=dir>
+
+Build inside of a CVS checkout.  Will not create
+any GPT packages or bundles as output.
+
 =item B<--deps>
 
 Automatically pull in dependencies.  Useful if you
 want to build one package or bundle, and only want to
 build the packages that it requires.
+
+=item B<--deporder>
+
+Read in the GPT meatadata of packages, then perform
+a topological sort before building them.  Implied
+by --inplace builds, not necessary for builds of
+dependency complete bundles.
+
+=item B<--list-packages>
+
+Print out a list of Makefile targets, and bootstrap
+the CVS subdirectories so they are ready to build.
+Used by the fait_accompli/installer.sh script
+to create the Makefile-based installer.
 
 =item B<--noparanoia>
 
