@@ -73,10 +73,8 @@ dnl	 AC_SYS_LARGEFILE_SPACE_APPEND(CFLAGS, "$ac_flag") ;;
 	 GPT_SET_CFLAGS("$ac_flag")
        esac
      done
-dnl     AC_SYS_LARGEFILE_SPACE_APPEND(LDFLAGS, "$ac_cv_sys_largefile_LDFLAGS")
-dnl     AC_SYS_LARGEFILE_SPACE_APPEND(LIBS, "$ac_cv_sys_largefile_LIBS")
-	GPT_SET_LDFLAGS("$ac_cv_sys_largefile_LDFLAGS")
-	GPT_SET_LIBS("$ac_cv_sys_largefile_LIBS")
+        AC_SYS_LARGEFILE_SPACE_APPEND(LDFLAGS, "$ac_cv_sys_largefile_LDFLAGS")
+        AC_SYS_LARGEFILE_SPACE_APPEND(LIBS, "$ac_cv_sys_largefile_LIBS")
      AC_SYS_LARGEFILE_MACRO_VALUE(_FILE_OFFSET_BITS,
        ac_cv_sys_file_offset_bits,
        [Number of bits in a file offset, on hosts where this is settable.],
