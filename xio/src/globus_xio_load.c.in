@@ -45,7 +45,7 @@ globus_i_xio_load_init(void)
 int
 globus_i_xio_load_destroy(void)
 {
-    /*** XXX need to unload all current ***/
+    /*** XXX need to unload all currently loaded drivers ***/
     globus_mutex_destroy(&globus_l_xio_load_lock);
     
     return globus_hashtable_destroy(&globus_l_xio_load_drivers);
@@ -53,7 +53,7 @@ globus_i_xio_load_destroy(void)
 
 globus_result_t
 globus_xio_driver_load(
-    const char *                        name,
+    const char *                        driver_name,
     globus_xio_driver_t *               out_driver,
     ...)
 {
@@ -66,7 +66,7 @@ globus_xio_driver_load(
     {
         hook = (globus_xio_driver_hook_t *) globus_hashtable_lookup(
             &globus_l_xio_load_drivers, 
-            (void *) name);
+            (void *) driver_name);
     }
     globus_mutex_unlock(&globus_l_xio_load_lock);
     
@@ -107,7 +107,7 @@ error_load:
 
 globus_result_t
 globus_xio_driver_unload(
-    const char *                        name,
+    const char *                        driver_name,
     globus_xio_driver_t                 driver)
 {
     globus_xio_driver_hook_t *          hook;
@@ -124,7 +124,7 @@ globus_xio_driver_unload(
     {
         hook = (globus_xio_driver_hook_t *) globus_hashtable_lookup(
             &globus_l_xio_load_drivers, 
-            (void *) name);
+            (void *) driver_name);
     }
     globus_mutex_unlock(&globus_l_xio_load_lock);
     
@@ -143,4 +143,31 @@ globus_xio_driver_unload(
 
 error_hook:
     return result;
+}
+
+globus_bool_t
+globus_xio_driver_error_match(
+    const char *                        driver_name,
+    globus_object_t *                   error,
+    int                                 type)
+{
+    globus_xio_driver_hook_t *          hook;
+    GlobusXIOName(globus_xio_driver_error_match);
+    
+    globus_mutex_lock(&globus_l_xio_load_lock);
+    {
+        hook = (globus_xio_driver_hook_t *) globus_hashtable_lookup(
+            &globus_l_xio_load_drivers, 
+            (void *) driver_name);
+    }
+    globus_mutex_unlock(&globus_l_xio_load_lock);
+    
+    if(hook)
+    {
+        return globus_error_match(error, hook->module, type);
+    }
+    else
+    {
+        return GLOBUS_FALSE;
+    }
 }

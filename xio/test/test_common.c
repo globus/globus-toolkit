@@ -40,19 +40,15 @@ test_res(
 {
     if(res != GLOBUS_SUCCESS)
     {
-#if 0
-/** need to create error match wrapper that uses driver name instead of module name... i will add this when i get back
-**/
         if(location != GLOBUS_XIO_TEST_FAIL_NONE &&
-            globus_error_match(
+            globus_xio_driver_error_match(
+                "test",
                 globus_error_peek(res),
-                GLOBUS_XIO_TEST_TRANSPORT_DRIVER_MODULE,
                 location))
         {
             fprintf(stdout, "Success: failed in the correct spot.\n");
             exit(0);
         }
-#endif
 
         failed_exit("error at line %d.", line);
     }
