@@ -105,7 +105,7 @@ Southern California. All Rights Reserved.
  <copy toDir="${schema.dir}">
     <fileset dir="${schema.origin}" casesensitive="yes"/>
  </copy>
-  <copy file="${ogsa.root}/${nsmap.file}" toDir="./"/>
+  <copy file="${schema.origin}/${nsmap.file}" toDir="./"/>
     <echo message=" Generating stubs from ./schema/base/reliable_transfer_service.wsdl" />
     <java classname="org.globus.ogsa.tools.wsdl.GSDL2Java" dir="./schema/base/reliabletransfer" fork="yes"
         classpathref="classpath" failonerror="true">
