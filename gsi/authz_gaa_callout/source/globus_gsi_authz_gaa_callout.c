@@ -172,6 +172,7 @@ globus_gsi_authz_gaa_handle_init_callout(
     gaa_cred_ptr			cred = 0;
     OM_uint32				minor_status;
     void *				getpolicy_param;
+    void *				get_authorization_identity_param;
     char *				assertion;
     int					i;
 
@@ -194,7 +195,14 @@ globus_gsi_authz_gaa_handle_init_callout(
 	(unsigned)context,
 	(unsigned)authz_system_state);
 
-    globus_assert(handle);
+    if (handle == 0)
+    {
+	GLOBUS_GSI_AUTHZ_CALLOUT_ERROR(result,
+				       GLOBUS_GSI_AUTHZ_CALLOUT_BAD_ARGUMENT_ERROR,
+				       "null handle");	
+	goto end;
+    }
+
     if ((*handle = globus_libc_calloc(1, sizeof(struct globus_i_gsi_authz_handle_s))) == 0)
     {
 	GLOBUS_GSI_AUTHZ_CALLOUT_ERRNO_ERROR(result, errno);
@@ -275,6 +283,17 @@ globus_gsi_authz_gaa_handle_init_callout(
     if (getpolicy_param)
 	*((char **)getpolicy_param) = assertion;
 
+
+    if ((status = gaa_x_get_get_authorization_identity_param(gaa, &get_authorization_identity_param)) != GAA_S_SUCCESS) {
+	GLOBUS_GSI_AUTHZ_CALLOUT_ERROR(result,
+				       GLOBUS_GSI_AUTHZ_CALLOUT_CONFIGURATION_ERROR,
+				       "No GAA get_authorization_identity parameter configured");
+	goto end;
+    }
+
+    if (get_authorization_identity_param)
+	*((char **)get_authorization_identity_param) = assertion;
+
     GLOBUS_I_GSI_AUTHZ_GAA_CALLOUT_DEBUG_FPRINTF3(
 	GLOBUS_I_GSI_AUTHZ_GAA_CALLOUT_DEBUG_DEBUG,
 	"%s: setting assertion to:\n%s\n",
@@ -329,11 +348,6 @@ globus_gsi_authz_gaa_handle_init_callout(
  end:
     if (result != GLOBUS_SUCCESS)
     {
-	if (*handle)
-	{
-	    globus_assert((*handle)->gaa == 0);
-	    globus_assert((*handle)->sc == 0);
-	}
 	if (gaa)
 	    gaa_free_gaa(gaa);
 	if (sc)
@@ -374,9 +388,28 @@ globus_gsi_authz_gaa_authorize_async_callout(
     callback_arg = va_arg(ap, void *);
     authz_system_state = va_arg(ap, void *);
 
-    globus_assert(handle != 0);
-    globus_assert(action != 0);
-    globus_assert(object != 0);
+    if (handle == 0)
+    {
+	GLOBUS_GSI_AUTHZ_CALLOUT_ERROR(result,
+				       GLOBUS_GSI_AUTHZ_CALLOUT_BAD_ARGUMENT_ERROR,
+				       "null handle");	
+	goto end;
+    }
+
+    if (action == 0)
+    {
+	GLOBUS_GSI_AUTHZ_CALLOUT_ERROR(result,
+				       GLOBUS_GSI_AUTHZ_CALLOUT_BAD_ARGUMENT_ERROR,
+				       "null action");	
+	goto end;
+    }
+    if (object == 0)
+    {
+	GLOBUS_GSI_AUTHZ_CALLOUT_ERROR(result,
+				       GLOBUS_GSI_AUTHZ_CALLOUT_BAD_ARGUMENT_ERROR,
+				       "null object");	
+	goto end;
+    }
 
     if (handle->no_cred_extension)
     {
@@ -389,7 +422,14 @@ globus_gsi_authz_gaa_authorize_async_callout(
     }
     else
     {
-	globus_assert(handle->gaa);
+	if (handle->gaa == 0)
+	{
+	    GLOBUS_GSI_AUTHZ_CALLOUT_ERROR(result,
+					   GLOBUS_GSI_AUTHZ_CALLOUT_BAD_ARGUMENT_ERROR,
+					   "bad handle");	
+	    goto end;
+	}
+
 	GLOBUS_I_GSI_AUTHZ_GAA_CALLOUT_DEBUG_FPRINTF4(
 	    GLOBUS_I_GSI_AUTHZ_GAA_CALLOUT_DEBUG_DEBUG,
 	    "%s:  doing GAA check (action %s, object %s)\n",
@@ -568,6 +608,58 @@ globus_gsi_authz_gaa_handle_destroy_callout(
 	if (handle->sc)
 	    gaa_free_sc(handle->sc);
 	free(handle);
+    }
+
+    callback(callback_arg, handle, result);
+
+    GLOBUS_I_GSI_AUTHZ_GAA_CALLOUT_DEBUG_EXIT;
+    return (int)result;
+}
+
+int
+globus_gsi_authz_gaa_get_authorization_identity_callout(
+    va_list                             ap)
+{
+    globus_gsi_authz_handle_t		handle;
+    char **				identity_ptr;
+    globus_gsi_authz_cb_t		callback;
+    void *				callback_arg;
+    void * 				authz_system_state;
+    
+    globus_result_t                    	result = GLOBUS_SUCCESS;
+    gaa_status				status;
+    static char *                   	_function_name_ =
+	"globus_gsi_authz_gaa_handle_destroy_callout";
+
+
+    GLOBUS_I_GSI_AUTHZ_GAA_CALLOUT_DEBUG_ENTER;    
+
+    handle = va_arg(ap, globus_gsi_authz_handle_t);
+    identity_ptr = va_arg(ap, char **);
+    callback = va_arg(ap, globus_gsi_authz_cb_t);
+    callback_arg = va_arg(ap, void *);
+    authz_system_state = va_arg(ap, void *);
+
+    if (handle->no_cred_extension)
+    {
+	GLOBUS_I_GSI_AUTHZ_GAA_CALLOUT_DEBUG_FPRINTF2(
+	    GLOBUS_I_GSI_AUTHZ_GAA_CALLOUT_DEBUG_DEBUG,
+	    "%s:  skipping GAA authz id lookup\n",
+	    _function_name_);
+	return(result);
+    }
+    
+	GLOBUS_I_GSI_AUTHZ_GAA_CALLOUT_DEBUG_FPRINTF2(
+	    GLOBUS_I_GSI_AUTHZ_GAA_CALLOUT_DEBUG_DEBUG,
+	    "%s:  doing GAA authz id lookup\n",
+	    _function_name_);
+
+    status = gaa_x_get_authorization_identity(handle->gaa, identity_ptr);
+    if (status != GAA_S_SUCCESS)
+    {
+	GLOBUS_GSI_AUTHZ_GAA_CALLOUT_GAA_ERROR(result,
+					       "gaa_x_get_authorization_identity",
+					       status);
     }
 
     callback(callback_arg, handle, result);

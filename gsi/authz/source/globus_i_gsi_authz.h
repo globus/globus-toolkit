@@ -3,6 +3,7 @@
 #include "globus_callback.h"
 #include "globus_gsi_authz_constants.h"
 #include "globus_gsi_authz.h"
+#include "globus_error_string.h"
 
 /* DEBUG MACROS */
 
@@ -47,7 +48,7 @@ extern FILE *                           globus_i_gsi_authz_debug_fstream;
     { \
         if (GLOBUS_I_GSI_AUTHZ_DEBUG(_LEVEL_)) \
         { \
-           _OBJ_NAME_##_print_fp(globus_i_gsi_authz_debug_fstream, _OBJ_); \
+pp           _OBJ_NAME_##_print_fp(globus_i_gsi_authz_debug_fstream, _OBJ_); \
         } \
     }
 

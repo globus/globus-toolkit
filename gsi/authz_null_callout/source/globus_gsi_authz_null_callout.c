@@ -227,3 +227,28 @@ authz_null_handle_destroy_callout(
     callback(callback_arg, handle, result);
     return result;
 }
+
+int
+globus_gsi_authz_null_get_authorization_identity_callout(
+    va_list                             ap)
+{
+    globus_gsi_authz_handle_t		handle;
+    char **				identity_ptr;
+    globus_gsi_authz_cb_t		callback;
+    void *				callback_arg;
+    void * 				authz_system_state;
+    
+    globus_result_t                    	result = GLOBUS_SUCCESS;
+    static char *                   	_function_name_ =
+	"globus_gsi_authz_null_handle_destroy_callout";
+
+
+    handle = va_arg(ap, globus_gsi_authz_handle_t);
+    identity_ptr = va_arg(ap, char **);
+    callback = va_arg(ap, globus_gsi_authz_cb_t);
+    callback_arg = va_arg(ap, void *);
+    authz_system_state = va_arg(ap, void *);
+
+    return((int) result);
+}
+

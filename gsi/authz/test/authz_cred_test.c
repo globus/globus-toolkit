@@ -47,6 +47,10 @@ authtest_l_authz_handle_destroy_callback(void *				cb_arg,
 				   globus_gsi_authz_handle_t 	handle,
 				   globus_result_t		result);
 
+static void
+authtest_l_authz_get_authz_id_callback(void *				cb_arg,
+				       globus_gsi_authz_handle_t 	handle,
+				       globus_result_t		result);
 
 int
 main(int argc, char **argv)
@@ -164,6 +168,7 @@ server_func(
     char 				buf[2048];
     char *				request_action = 0;
     char *				request_object = 0;
+    char *				identity = 0;
     
     server_args = (struct context_arg *) arg;
 
@@ -204,7 +209,25 @@ server_func(
 	request_action = strtok(buf, " \t\n");
 	request_object = strtok(0, " \t\n");
 
-	if (request_action && request_object)
+	identity = 0;
+	if (strcmp(request_action, "authz") == 0)
+	{
+	    result = globus_gsi_authz_get_authorization_identity (
+		authz_handle,
+		&identity,
+		authtest_l_authz_get_authz_id_callback,
+		"get_authz_id_callback_arg");
+	    if (result == GLOBUS_SUCCESS)
+	    {
+		printf("%s\n", (identity ? identity : ""));
+	    }
+	    else
+	    {
+		printf("SERVER: globus_gsi_authz_get_authorization_identity failed: %s\n",
+		       globus_error_print_chain(globus_error_get(result)));
+	    }
+	}
+	else if (request_action && request_object)
 	{
 	    result = globus_gsi_authorize(authz_handle,
 					  request_action,
@@ -353,5 +376,22 @@ authtest_l_authz_handle_destroy_callback(void *				cb_arg,
     else
     {
 	printf("handle_destroy failed\n");
+    }
+}
+
+static void
+authtest_l_authz_get_authz_id_callback(void *				cb_arg,
+					 globus_gsi_authz_handle_t 	handle,
+					 globus_result_t		result)
+{
+    printf("in authtest_l_authz_get_authz_id_callback, arg is %s\n",
+	   (char *)cb_arg);
+    if (result == GLOBUS_SUCCESS)
+    {
+	printf("get_authz_id succeeded\n");
+    }
+    else
+    {
+	printf("get_authz_id failed\n");
     }
 }

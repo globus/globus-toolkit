@@ -36,7 +36,7 @@ globus_module_descriptor_t globus_i_gsi_authz_module =
 */
 static globus_callout_handle_t        callout_handle;
 static void *                         authz_system_state;
-
+static char *			      effective_identity = 0;
 
 /**
  * Module activation
@@ -103,7 +103,7 @@ static int globus_l_gsi_authz_activate(void)
         goto exit;
     }
 
-    result = (int)GLOBUS_GSI_SYSCONFIG_GET_AUTHZ_CONF_FILENAME(&filename);
+    result = (int)GLOBUS_GSI_SYSCONFIG_GET_AUTHZ_LIB_CONF_FILENAME(&filename);
 
     /* initialize a globus callout handle */
     result = (int)globus_callout_handle_init(&callout_handle);
@@ -238,8 +238,17 @@ globus_gsi_authz_handle_init(
     
     GLOBUS_I_GSI_AUTHZ_DEBUG_ENTER;
 
-    globus_assert(handle);
-    globus_assert(service_name);
+    if (handle == 0)
+    {
+	result = GLOBUS_GSI_AUTHZ_ERROR_NULL_VALUE("handle");
+	goto exit;
+    }
+
+    if (service_name == 0)
+    {
+	result = GLOBUS_GSI_AUTHZ_ERROR_NULL_VALUE("service_name");
+	goto exit;
+    }
     
     /* call authz system per connection init callout */
     /* the callout type is "GLOBUS_GSI_AUTHZ_HANDLE_INIT" */
@@ -415,5 +424,69 @@ globus_gsi_authz_handle_destroy(
     GLOBUS_I_GSI_AUTHZ_DEBUG_EXIT;    
     return result;
 }
+/*globus_gsi_authz_handle_destroy*/
+/*@}*/
+
+/**
+ * @name Query for authorization identity
+ */
+/*@{*/
+/**
+ *  @param (identity_ptr)
+ *        output: the authorization identity.  This is malloc'd and should
+ *        be freed by the caller.  If the value is 0 (and this function returned
+ *	  GLOBUS_SUCCESS), the caller should use the authenticated identity.
+ *
+ *  @return 
+ *        GLOBUS_SUCCESS
+ */
+globus_result_t
+globus_gsi_authz_get_authorization_identity(
+    globus_gsi_authz_handle_t           handle,
+    char **				identity_ptr,
+    globus_gsi_authz_cb_t               callback,
+    void *                              callback_arg)
+{
+
+    /* call authz system callout to get the authorization identity */
+    /* the callout type is "GLOBUS_GSI_AUTHZ_GET_AUTHORIZATION_IDENTITY" */
+    /* arguments are: globus_gsi_authz_handle_t * handle,
+       		      char **identity_ptr,
+                      globus_gsi_authz_cb_t callback,
+                      void * callback_arg,
+                      void * authz_system_state */
+    /* should define some standard errors for this callout */    
+
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    static char *                       _function_name_ =
+	"globus_gsi_authz_get_authorization_identity";
+
+    GLOBUS_I_GSI_AUTHZ_DEBUG_ENTER;
+
+    if(callback == GLOBUS_NULL)
+    {
+	result = GLOBUS_GSI_AUTHZ_ERROR_NULL_VALUE("callback parameter");
+	goto exit;
+    }
+    
+    if(callback == GLOBUS_NULL)
+    {
+	result = GLOBUS_GSI_AUTHZ_ERROR_NULL_VALUE("identity_ptr parameter");
+	goto exit;
+    }
+    
+    result = globus_callout_call_type(callout_handle,
+				      "GLOBUS_GSI_GET_AUTHORIZATION_IDENTITY",
+				      handle,
+				      identity_ptr,
+				      callback,
+				      callback_arg,
+				      &authz_system_state);
+ exit:
+    
+    GLOBUS_I_GSI_AUTHZ_DEBUG_EXIT;    
+    return result;
+}
+
 /*globus_gsi_authz_handle_destroy*/
 /*@}*/
