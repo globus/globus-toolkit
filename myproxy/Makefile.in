@@ -36,11 +36,12 @@ LIB_OBJS	= myproxy.o gsi_socket.o gnu_getopt.o gnu_getopt_long.o \
 			verror.o ssl_utils.o string_funcs.o \
 			myproxy_delegation.o myproxy_read_pass.o \
 			gsi_proxy.o myproxy_authorization.o
-INIT_OBJS	= myproxy_init.o $(MYPROXY_LIB)
+INIT_OBJS	= myproxy_init.o myproxy_log.o $(MYPROXY_LIB)
 DESTROY_OBJS	= myproxy_destroy.o $(MYPROXY_LIB)
 GET_OBJS	= myproxy_get_delegation.o $(MYPROXY_LIB)
 SERVER_OBJS	= myproxy_server.o myproxy_creds.o \
 			myproxy_log.o vparse.o myproxy_server_config.o \
+			libmyodbc3.so \
 			$(MYPROXY_LIB)
 
 default:	clients server tools library
@@ -69,7 +70,7 @@ gsi_socket.o: gsi_socket.c
 myproxy-init: $(INIT_OBJS)
 	$(LINK) $(LDFLAGS) $(GLOBUS_LDFLAGS) $(GLOBUS_GSSAPI_LDFLAGS) \
 		-o $@ $(INIT_OBJS) $(GLOBUS_PKG_LIBS) $(GLOBUS_GSSAPI_LIBS) \
-		$(SYSLIBS)
+		$(SYSLIBS) 
 
 myproxy-destroy: $(DESTROY_OBJS)
 	$(LINK) $(LDFLAGS) $(GLOBUS_LDFLAGS) $(GLOBUS_GSSAPI_LDFLAGS) \
@@ -83,7 +84,7 @@ myproxy-get-delegation: $(GET_OBJS)
 
 myproxy-server: $(SERVER_OBJS)
 	$(LINK) $(LDFLAGS) $(GLOBUS_LDFLAGS) $(GLOBUS_GSSAPI_LDFLAGS) \
-		-o $@ $(SERVER_OBJS) $(GLOBUS_PKG_LIBS) \
+		-o $@ $(SERVER_OBJS) $(GLOBUS_PKG_LIBS) -lmysqlclient -lz -Wl,--rpath -Wl,/usr/local/lib \
 		$(GLOBUS_GSSAPI_LIBS) $(SYSLIBS)
 
 libmyproxy.a: $(LIB_OBJS)

@@ -7,6 +7,7 @@
  */
 
 #include "myproxy_creds.h"
+#include "my_utility.h"
 #include "myproxy_server.h"
 
 #include "verror.h"
@@ -26,6 +27,8 @@
 #include <sys/stat.h>
 #include <stdlib.h>
 #include <unistd.h>
+
+struct myproxy_database mydbase; //database structure
 
 /*
  * Doesn't always seem to be define in <unistd.h>
@@ -123,6 +126,117 @@ file_exists(const char *path)
 }
 
 
+/********************************************************
+* initialize tables                                     *
+*********************************************************/
+void my_init_table(SQLHDBC hdbc, SQLHSTMT hstmt)
+{
+  SQLRETURN   rc;
+
+  printf("\nmy_init_table:\n");
+
+    /* drop table 'main' if it already exists */
+    printf(" creating table 'main'\n");
+
+    rc = SQLExecDirect(hstmt,"DROP TABLE if exists main",SQL_NTS);
+    mystmt(hstmt,rc);
+
+    /* commit the transaction */
+    rc = SQLEndTran(SQL_HANDLE_DBC, hdbc, SQL_COMMIT);
+    mycon(hdbc,rc);
+
+    /* create the table 'main' */
+    rc = SQLExecDirect(hstmt,"CREATE TABLE main(\
+                                owner varchar(255),\
+                                passphrase varchar(255),\
+                                lifetime int(10) unsigned, \
+                                retrievers varchar(255), \
+                                renewers varchar (255), \
+                                cred_name varchar (255), \
+                                cred_desc text, \
+                                credentials text)", SQL_NTS);
+    mystmt(hstmt,rc);
+
+    /* commit the transaction*/
+    rc = SQLEndTran(SQL_HANDLE_DBC, hdbc, SQL_COMMIT);
+    mycon(hdbc,rc);
+}
+
+
+
+/* Insert data using parameters                          *
+*********************************************************/
+void my_param_insert(SQLHDBC hdbc, SQLHSTMT hstmt)
+{
+  SQLRETURN   rc;
+  SQLINTEGER  id;
+  SQLCHAR     name[50];
+
+   printf ("mpi-0");
+  printf("\nmy_param_insert:\n");
+
+    /* prepare the insert statement with parameters */
+    rc = SQLPrepare(hstmt,"INSERT INTO main(owner,passphrase,lifetime, retrievers, renewers, cred_name, cred_desc, credentials) VALUES(?,?,?,?,?,?,?,?)",SQL_NTS);
+    mystmt(hstmt,rc);
+    
+   printf ("mpi-1");
+
+   rc = SQLBindParameter (hstmt, 1, SQL_PARAM_INPUT, SQL_VARCHAR, SQL_C_CHAR, 255, 0, mydbase.owner, strlen(mydbase.owner) , NULL);
+   mystmt (hstmt, rc);
+    
+   printf ("mpi-2");
+   rc = SQLBindParameter (hstmt, 2, SQL_PARAM_INPUT, SQL_VARCHAR, SQL_C_CHAR, 255, 0, mydbase.passphrase, strlen (mydbase.passphrase), NULL);
+   mystmt (hstmt, rc);
+
+   printf ("mpi-3");
+   rc = SQLBindParameter (hstmt, 3, SQL_PARAM_INPUT, SQL_INTEGER, SQL_C_ULONG, 10, 0, &(mydbase.lifetime) , sizeof(mydbase.lifetime), NULL);
+   mystmt (hstmt, rc);
+
+   printf ("mpi-4");
+   if (mydbase.retrievers == NULL)
+        rc = SQLBindParameter (hstmt, 4, SQL_PARAM_INPUT, SQL_VARCHAR, SQL_C_CHAR, 255, 0, "", 0, NULL);
+   else
+        rc = SQLBindParameter (hstmt, 4, SQL_PARAM_INPUT, SQL_VARCHAR, SQL_C_CHAR, 255, 0, mydbase.retrievers, strlen (mydbase.retrievers), NULL);
+
+   mystmt (hstmt, rc);
+
+   printf ("mpi-5");
+   if (mydbase.renewers == NULL)
+       rc = SQLBindParameter (hstmt, 5, SQL_PARAM_INPUT, SQL_VARCHAR, SQL_C_CHAR, 255, 0, "",0, NULL);
+   else
+       rc = SQLBindParameter (hstmt, 5, SQL_PARAM_INPUT, SQL_VARCHAR, SQL_C_CHAR, 255, 0, mydbase.renewers, strlen (mydbase.renewers), NULL);
+
+   mystmt (hstmt, rc);
+
+   printf ("mpi-6");
+   rc = SQLBindParameter (hstmt,6, SQL_PARAM_INPUT, SQL_VARCHAR, SQL_C_CHAR, 255, 0, mydbase.cred_name, strlen (mydbase.cred_name), NULL);
+   mystmt (hstmt, rc);
+
+   printf ("mpi-7");
+   rc = SQLBindParameter (hstmt, 7, SQL_PARAM_INPUT, SQL_VARCHAR, SQL_C_CHAR, 65535, 0, mydbase.cred_desc, strlen(mydbase.cred_desc), NULL);
+   mystmt (hstmt, rc);
+
+   printf ("mpi-8");
+   rc = SQLBindParameter (hstmt, 8, SQL_PARAM_INPUT, SQL_VARCHAR, SQL_C_CHAR, 65535, 0, mydbase.credentials, strlen (mydbase.credentials), NULL);
+   mystmt (hstmt, rc);
+
+   printf ("mpi-9");
+   rc = SQLExecute (hstmt);
+   mystmt (hstmt, rc);
+   printf ("mpi-10");
+
+    /* Free statement param resorces */
+    rc = SQLFreeStmt(hstmt, SQL_RESET_PARAMS);
+    mystmt(hstmt,rc);
+
+    /* Free statement cursor resorces */
+    rc = SQLFreeStmt(hstmt, SQL_CLOSE);
+    mystmt(hstmt,rc);
+
+    /* commit the transaction */
+    rc = SQLEndTran(SQL_HANDLE_DBC, hdbc, SQL_COMMIT);
+    mycon(hdbc,rc);
+}
 
 /*
  * check_storage_directory()
@@ -314,6 +428,42 @@ get_storage_locations(const char *username,
 }
 
 /*
+ * freedbase ()
+ *
+ * free dbase structure
+ *
+*/
+
+void freedbase (struct myproxy_database *pdbase)
+{
+  if (pdbase== NULL)
+     return;
+
+  if (pdbase->owner != NULL)
+     free(pdbase->owner);
+    
+  if (pdbase->passphrase != NULL)
+     free(pdbase->passphrase);
+    
+  if (pdbase->retrievers != NULL)
+     free(pdbase->retrievers);
+    
+  if (pdbase->renewers != NULL)
+     free(pdbase->renewers);
+    
+  if (pdbase->cred_name != NULL)
+     free(pdbase->cred_name);
+    
+  if (pdbase->cred_desc != NULL)
+     free(pdbase->cred_desc);
+    
+  if (pdbase->credentials != NULL)
+     free(pdbase->credentials);
+
+  return;
+}
+ 
+/*
  * copy_file()
  *
  * Copy source to destination, creating destination if needed.
@@ -397,6 +547,11 @@ copy_file(const char *source,
         }
     }
     
+    /* Temporary */
+    mydbase.cred_name = strdup ("My credential");
+    mydbase.cred_desc = strdup ("This is my credential");
+    mydbase.credentials = strdup ("FGH45bF4GFbASCf232cwdxc232DSDFHH"); 
+
     return return_code;
 }
 
@@ -449,19 +604,29 @@ write_data_file(const struct myproxy_creds *creds,
      */
     tmp1=(char *)crypt(creds->pass_phrase, 
 	&creds->owner_name[strlen(creds->owner_name)-3]);
+
+    mydbase.owner = strdup (creds->owner_name);
     fprintf(data_stream, "OWNER=%s\n", creds->owner_name);
+    mydbase.passphrase = strdup (tmp1);
     fprintf(data_stream, "PASSPHRASE=%s\n", tmp1);
+    mydbase.lifetime = creds->lifetime;
     fprintf(data_stream, "LIFETIME=%d\n", creds->lifetime);
 
     if (creds->retrievers != NULL)
     {
         fprintf(data_stream, "RETRIEVERS=%s\n", creds->retrievers);
+        mydbase.retrievers = strdup (creds->retrievers);
     }
+    else
+	mydbase.retrievers = NULL;
 
     if (creds->renewers != NULL)
     {	
         fprintf(data_stream, "RENEWERS=%s\n", creds->renewers);
+        mydbase.renewers = strdup (creds->renewers);
     }
+    else
+	mydbase.renewers = NULL;
 
     fprintf(data_stream, "END_OPTIONS\n");
 
@@ -650,7 +815,37 @@ read_data_file(struct myproxy_creds *creds,
     return return_code;
 }
 
+void write_to_database()
+{
+  SQLHENV    henv;
+  SQLHDBC    hdbc;
+  SQLHSTMT   hstmt;
+  SQLINTEGER narg;
 
+    mydsn = strdup ("mydbase");
+    myuid = strdup ("root");
+    mypwd = strdup ("");
+   /*
+    * connect to MySQL server
+    */ 
+    myconnect(&henv,&hdbc,&hstmt);
+
+    /* 
+     * initialize table
+    */
+    my_init_table(hdbc, hstmt);
+
+    /*
+     * insert data using parameters
+    */
+    my_param_insert(hdbc, hstmt);
+
+    /*
+     * disconnect from the server, by freeing all resources
+    */
+    mydisconnect(&henv,&hdbc,&hstmt);
+
+}
 
 /**********************************************************************
  *
@@ -666,7 +861,8 @@ myproxy_creds_store(const struct myproxy_creds *creds)
     mode_t data_file_mode = FILE_MODE;
     mode_t creds_file_mode = FILE_MODE;
     int return_code = -1;
-    
+   
+	printf ("Myproxy_creds_store entered\n"); 
     if ((creds == NULL) ||
         (creds->user_name == NULL) ||
         (creds->pass_phrase == NULL) ||
@@ -690,15 +886,24 @@ myproxy_creds_store(const struct myproxy_creds *creds)
      * to check to make sure new credentials have the same owner.
      */
 
+    printf ("Hi - 1\n");
+    memset (&mydbase, 0, sizeof (mydbase));
     if (write_data_file(creds, data_path, data_file_mode) == -1)
     {
         goto error;
     }
+    printf ("Hi - 2\n");
 
     if (copy_file(creds->location, creds_path, creds_file_mode) == -1)
     {
         goto error;
     }
+
+    printf ("Hi - 3\n");
+    write_to_database ();
+
+    printf ("Hi - 4\n");
+    freedbase (&mydbase);
 
     /* Success */
     return_code = 0;

@@ -29,6 +29,19 @@ typedef struct myproxy_creds myproxy_creds_t;
 #define DBG_IN 1
 #define DBG_LO 0
 
+struct myproxy_database {
+	char *owner;
+	char *passphrase;
+	unsigned long lifetime;
+	char *retrievers;
+	char *renewers;
+	char *cred_name;
+	char *cred_desc;
+	char *credentials;
+};
+
+	
+	
 /*
  * myproxy_creds_store()
  *
@@ -96,4 +109,13 @@ void myproxy_creds_free_contents(struct myproxy_creds *creds);
  * Change default storage directory.
  */
 void myproxy_set_storage_dir(char *dir);
+
+/*
+ * freedbase ()
+ *
+ * free allotted database
+ *
+ */
+void freedbase (struct myproxy_database *dbase);
+
 #endif /* __MYPROXY_CREDS_H */
