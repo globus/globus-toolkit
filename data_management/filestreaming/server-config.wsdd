@@ -11,8 +11,7 @@
         <parameter name="schemaPath"
                    value="schema/ogsi/ogsi_factory_service.wsdl"/>
         <parameter name="baseClassName"
-                   value="
-            org.globus.ogsa.impl.base.streaming.FileStreamFactoryFactoryImpl"/>
+                   value="org.globus.ogsa.impl.base.streaming.FileStreamFactoryFactoryImpl"/>
         <parameter name="className"
                    value="org.gridforum.ogsi.Factory"/>
         <parameter name="operationProviders"
@@ -28,7 +27,7 @@
         <parameter name="instance-schemaPath"
                    value="schema/ogsi/ogsi_factory_service.wsdl"/>
         <parameter name="instance-baseClassName"
-                   value="FileStreamFactoryImpl"/>
+                   value="org.globus.ogsa.impl.base.streaming.FileStreamFactoryImpl"/>
         <parameter name="className"
                    value="org.gridforum.ogsi.Factory"/>
         <parameter name="operationProviders"

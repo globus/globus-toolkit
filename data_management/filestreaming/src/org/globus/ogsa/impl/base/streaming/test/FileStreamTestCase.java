@@ -43,6 +43,7 @@ import org.gridforum.ogsi.GridService;
 import org.gridforum.ogsi.HandleType;
 import org.gridforum.ogsi.LocatorType;
 import org.gridforum.ogsi.OGSIServiceGridLocator;
+import org.gridforum.ogsi.ReferenceType;
 
 public class FileStreamTestCase extends TestCase {
     private static final String FSFF_BASE_PATH
@@ -65,7 +66,7 @@ public class FileStreamTestCase extends TestCase {
 
     private static TestServer testServer;
 
-    private static HandleType fileStreamFactoryHandle = null;
+    private static LocatorType fileStreamFactoryHandleLocator = null;
 
     private static OGSIServiceGridLocator gridServiceLocator
         = new OGSIServiceGridLocator();
@@ -116,24 +117,32 @@ public class FileStreamTestCase extends TestCase {
         ExtensibilityType creationParameters
             = AnyHelper.getExtensibility(factoryAttributesWrapper);
 
-        LocatorType factoryHandleLocator
+        this.fileStreamFactoryHandleLocator
             = fileStreamFactoryFactory.createService(
                     null, FSF_INSTANCE_ID, creationParameters);
 
-        this.fileStreamFactoryHandle = factoryHandleLocator.getHandle(0);
+        ReferenceType[] references
+            = this.fileStreamFactoryHandleLocator.getReference();
+        for (int index=0; index<references.length; index++) {
+            if (references[index] != null) {
+                System.out.println("FSF Handle: " + references.toString());
+            }
+        }
+
     }
 
     protected void tearDown() throws Exception {
         //destroy the file stream factory
         GridService fileStreamFactory = this.gridServiceLocator.getFactoryPort(
-                    this.fileStreamFactoryHandle);
+                    this.fileStreamFactoryHandleLocator);
         fileStreamFactory.destroy();
+        System.out.println("FSF Destroyed");
     }
 
     private FileStreamPortType createFileStream() throws RemoteException  {
         GridServiceFactory fileStreamFactory = new GridServiceFactory(
                 this.gridServiceLocator.getFactoryPort(
-                    this.fileStreamFactoryHandle));
+                    this.fileStreamFactoryHandleLocator));
 
         FileStreamAttributesWrapper fileStreamAttributesWrapper
             = new FileStreamAttributesWrapper();
@@ -149,12 +158,10 @@ public class FileStreamTestCase extends TestCase {
             = fileStreamFactory.createService(
                     null, FSS_INSTANCE_ID, creationParameters);
 
-        HandleType fileStreamHandle = fileStreamHandleLocator.getHandle(0);
-
         FileStreamServiceGridLocator fileStreamLocator
             = new FileStreamServiceGridLocator();
         FileStreamPortType fileStream = fileStreamLocator.getFileStreamPort(
-                            fileStreamHandle);
+                            fileStreamHandleLocator);
 
         return fileStream;
     }
@@ -187,13 +194,8 @@ public class FileStreamTestCase extends TestCase {
         }
     }
 
-    public void testStream() {
+    public void testFileStream() {
         FileStreamPortType fileStream = null;
-
-       ((Stub) fileStream)._setProperty(Constants.MSG_SEC_TYPE,
-                                        Constants.SIGNATURE);
-       ((Stub) fileStream)._setProperty(GSIConstants.GSI_AUTHORIZATION,
-                                        SelfAuthorization.getInstance());
 
         try {
             fileStream = createFileStream();
@@ -204,6 +206,11 @@ public class FileStreamTestCase extends TestCase {
             re.printStackTrace();
             assertTrue(false);
         }
+
+       ((Stub) fileStream)._setProperty(Constants.MSG_SEC_TYPE,
+                                        Constants.SIGNATURE);
+       ((Stub) fileStream)._setProperty(GSIConstants.GSI_AUTHORIZATION,
+                                        SelfAuthorization.getInstance());
 
         sendTestPattern(0);
 

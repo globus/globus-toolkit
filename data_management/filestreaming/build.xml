@@ -28,7 +28,7 @@ Southern California. All Rights Reserved.
 
 <!-- the name of the jarfile to generate -->
   <property name="jar.file" value="filestreaming.jar" />
-  <property name="gar.file" value="filestreaming.jar" />
+  <property name="gar.file" value="filestreaming.gar" />
   <property name="build.dir" value="build" />
   <property name="Name" value="OGSA"/>
   <property name="src.dir" value="./src"/>
@@ -197,7 +197,7 @@ Southern California. All Rights Reserved.
       </fileset>
     </copy>
     <ant antfile="${ogsa.root}/${build.packages}" target="makeGar">
-      <property name="gar.name" value="${gar.file}"/>
+      <property name="gar.name" value="${build.lib}/${gar.file}"/>
       <property name="garlib.dir" value="${build.lib}"/>
       <property name="garserverdeployment.file" value="server-config.wsdd"/>
       <!--<property name="garclientdeployment.file" value="client-config.wsdd"/>
