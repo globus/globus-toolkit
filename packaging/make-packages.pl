@@ -1585,7 +1585,7 @@ case "`uname`" in
         ;;
    *)
         case "`uname -m`" in
-            alpha|ia64)
+            alpha|ia64|x86_64)
                 FLAVOR=gcc64dbg
                 ;;
             *)
