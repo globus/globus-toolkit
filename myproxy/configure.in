@@ -34,8 +34,13 @@ GSI_INSTALL_PATH=""
 
 dnl --with-globus
 AC_ARG_WITH(globus,
-	[  --with-globus=PATH           Don't use. Must build with GSI],
-	AC_MSG_ERROR(Must build MyProxy with GSI and not Globus))
+	[  --with-globus=PATH           Specify Globus install path (for GSI)],
+	GSI_INSTALL_PATH=$withval)
+
+dnl --with-globus-flavor
+AC_ARG_WITH(globus-flavor,
+	[  --with-globus-flavor=FLAVOR  Specify Globus build flavor],
+	GLOBUS_FLAVOR=$withval)
 
 dnl --with-gsi
 AC_ARG_WITH(gsi,
@@ -44,18 +49,23 @@ AC_ARG_WITH(gsi,
 
 dnl Check GSI_INSTALL_PATH
 if test -z "${GSI_INSTALL_PATH}" ; then
-	AC_MSG_ERROR(Must specify --with-gsi)
+	AC_MSG_ERROR(Must specify --with-gsi or --with-globus)
 fi
 
 if test ! -d "${GSI_INSTALL_PATH}" ; then
 	AC_MSG_ERROR(GSI install path not found: ${GSI_INSTALL_PATH})
 fi
 
-AC_MSG_RESULT($GSI_INSTALL_PATH)
-AC_SUBST(GSI_INSTALL_PATH)
+if test -x ${GSI_INSTALL_PATH}/sbin/globus-makefile-header ; then
+	# Globus 2.0 installation
+	# Build flavor must be specified.
+	if test ! -d "${GLOBUS_FLAVOR}" ; then
+		AC_MSG_ERROR(Must specify --with-globus-flavor)
+	fi
+	`${GSI_INSTALL_PATH}/sbin/globus-makefile-header ${GLOBUS_FLAVOR} > ${srcdir}/globus_makefile_header`
+        GLOBUS_MAKEFILE_HEADER=${srcdir}/globus_makefile_header
 
-AC_MSG_CHECKING(for GSI development directory)
-if test -d ${GSI_INSTALL_PATH}/lib ; then
+elif test -d ${GSI_INSTALL_PATH}/lib ; then
 	# Looks like a flat directory structure from configure/make and not
 	# gsi-install
 	GSI_DEV_PATH=${GSI_INSTALL_PATH}
@@ -95,12 +105,11 @@ else
         GLOBUS_MAKEFILE_HEADER=${GSI_DEV_PATH}/etc/makefile_header
 fi
 
-AC_MSG_RESULT($GSI_DEV_PATH)
-AC_SUBST(GSI_DEV_PATH)
+AC_MSG_RESULT($GSI_INSTALL_PATH)
 AC_SUBST(GLOBUS_MAKEFILE_HEADER)
 
 AC_ARG_ENABLE(anonymous-auth,
-	[ --disable-anonymous-auth  Disable support for SSL anonymous authentication],
+	[  --disable-anonymous-auth  Disable support for SSL anonymous authentication],
 	if test "$enableval" = yes ; then
 	   AC_MSG_RESULT([SSL anonymous authentication support enabled])
 	   AC_DEFINE(SUPPORT_SSL_ANONYMOUS_AUTH)
@@ -111,7 +120,7 @@ AC_ARG_ENABLE(anonymous-auth,
 	AC_MSG_RESULT([SSL anonymous authentication support enabled]))
 
 AC_ARG_ENABLE(conditional-encryption,
-	[ --enable-conditional-encryption  Only encrypt when sending passphrase],
+	[  --enable-conditional-encryption  Only encrypt when sending passphrase],
 	if test "$enableval" = yes ; then
 	   AC_MSG_RESULT([Conditional encryption support enabled])
 	   AC_DEFINE(CONDITIONAL_ENCRYPTION)
