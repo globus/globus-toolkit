@@ -29,6 +29,7 @@
 #include <fcntl.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
 
 #if defined(HAVE_NETINET_TCP_H)
 #   include <netinet/tcp.h>
