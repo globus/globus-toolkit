@@ -103,9 +103,12 @@ EOF
        }
     }
 
-    chomp($port_line = `grep port $gatekeeper_conf_filename`);
-    $port = (split(/port/, $port_line))[1];
-    $port =~ s/^\s+//; #strip leading whitespace
+    my $port = 0;
+    if ( open(GK_CONF, $gatekeeper_conf_filename) ) {
+      $port = (m/^(\s*)-port\s+([0-9]+)/)[1] while( ! $port && ($_=<GK_CONF>) );
+      close GK_CONF;
+    }
+
     return ($subject, $port);
 }
 
