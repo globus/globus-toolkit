@@ -6,7 +6,7 @@
   <Aging_Version Age="0" Major="2" Minor="0" />
   <Description >GRAM Job Manager Script Setup</Description>
   <Functional_Group >ResourceManagement</Functional_Group>
-  <Version_Stability Release="alpha" />
+  <Version_Stability Release="Beta" />
 
   <src_pkg >
 
@@ -24,7 +24,7 @@
     </Post_Install_Message>
 
     <Post_Install_Program >
-      globus/setup-globus-gram-job-manager-scripts
+      setup-globus-gram-job-manager-scripts
     </Post_Install_Program>
 
     <Setup Name="globus_gram_job_manager_scripts_setup" >
