@@ -26,19 +26,15 @@ my $sysconfdir	= "$globusdir/etc";
 my $libexecdir	= "$globusdir/libexec";
 my $bindir	= "$globusdir/bin";
 my $sbindir	= "$globusdir/sbin";
+my $state_dir   = "$globusdir/tmp";
+my $help	= 0;
 
-if(! -d "$globusdir/tmp")
-{
-    mkdir("$globusdir/tmp", 0777);
-    chmod(01777, "$globusdir/tmp");
-}
+GetOptions('state-dir|s=s' => \$state_dir,
+           'help|h' => \$help);
 
-if(! -d "$globusdir/tmp/gram_job_state")
-{
-    mkdir("$globusdir/tmp/gram_job_state", 0777);
-    chmod(01777, "$globusdir/tmp/gram_job_state");
-}
+&usage if($help);
 
+&setup_state_dir();
 &setup_job_manager_conf();
 &setup_script_shbang("${setupdir}/globus-job-manager-service.in",
                       "${libexecdir}/globus-job-manager-service");
@@ -49,6 +45,58 @@ if(! -d "$globusdir/tmp/gram_job_state")
 print "Done\n";
 
 $metadata->finish();
+
+sub setup_state_dir
+{
+    my $last_built_path = '';
+    my $built_path = '';
+    my @components;
+
+    print "Creating state file directory.\n";
+
+    if( $state_dir !~ m|^/|)
+    {
+	print STDERR "Invalid directory for state files \"$state_dir\"\n";
+	exit(1);
+    }
+
+    @components = split(/\//, $state_dir);
+
+    foreach(@components)
+    {
+	next if $_ eq '';
+
+	$last_built_path = $built_path;
+	$built_path .= "/$_";
+
+	if(-e $built_path && ! -d $built_path)
+	{
+	    print STDERR "Invalid path for state files: " .
+	                 "$built_path is not a directory\n";
+	    exit(1);
+	}
+	elsif(! -e $built_path)
+	{
+	    my $fs_type;
+
+	    chomp($fs_type = (split(/\n/, `df $last_built_path`))[1]);
+
+	    if($fs_type !~ m%(/dev/|swap)%)
+	    {
+		print STDERR "$built_path must be on a local filesystem\n";
+
+		exit(1);
+	    }
+	    mkdir $built_path, 0777;
+	    chmod(0755, $built_path) ||
+	        die "Can't set permissions on $built_path\n";
+	}
+    }
+
+    chmod(01777, $state_dir) || die "Can't set permissions on $state_dir\n";
+
+    print "Done.\n";
+}
 
 sub setup_job_manager_conf
 {
@@ -75,6 +123,7 @@ sub setup_job_manager_conf
 	-globus-host-osname $os_name
 	-globus-host-osversion $os_version
 	-save-logfile on_errors
+	-state-file-dir $state_dir
 	-machine-type unknown
 EOF
     $conf_file->close();
@@ -180,3 +229,12 @@ sub setup_script_shbang
     $outfile->close();
     chmod 0755, $outname;
 }
+
+sub usage
+{
+    print "Usage: $0 [options]\n".
+    "Options:  [--state-dir|-s DIR]\n".
+    "          [--help|-h]\n";
+    exit 1;
+}
+
