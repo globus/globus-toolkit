@@ -33,7 +33,6 @@ striping:
 ipc:
 ** encryption
 XX connect backwards
-** use handle_tables for psuedo-passing void *
 
 logging:
 -- instrument code
@@ -63,7 +62,4 @@ threads:
 cleanup:
 -- verify test suite
 ** clean majority of memory leaks
-
-
-
 
