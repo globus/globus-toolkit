@@ -54,7 +54,7 @@ int
 main(int argc, char *argv[])
 {
     char *pshost;
-    char request_buffer[1024], response_buffer[10240];
+    char request_buffer[1024], *response_buffer = NULL;
     int requestlen, responselen;
 
     myproxy_socket_attrs_t *socket_attrs;
@@ -145,8 +145,7 @@ main(int argc, char *argv[])
     }
 
     /* Receive a response from the server */
-    responselen = myproxy_recv(socket_attrs,
-                               response_buffer, sizeof(response_buffer));
+    responselen = myproxy_recv_ex(socket_attrs, &response_buffer);
     if (responselen < 0) {
         fprintf(stderr, "%s\n",
                 verror_get_string());
@@ -159,6 +158,8 @@ main(int argc, char *argv[])
         fprintf(stderr, "%s\n",verror_get_string());
         exit(1);
     }
+    free(response_buffer);
+    response_buffer = NULL;
 
     /* Check version */
     if (strcmp(server_response->version, MYPROXY_VERSION) != 0) {

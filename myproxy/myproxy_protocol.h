@@ -74,7 +74,8 @@ typedef struct
  *
  * Create a generic client by creating a GSI socket and connecting to a a host 
  *
- * returns the file descriptor of the connected socket or -1 if an error occurred  
+ * returns the file descriptor of the connected socket or
+ *   -1 if an error occurred
  */
 int myproxy_init_client(myproxy_socket_attrs_t *attrs);
 
@@ -141,14 +142,14 @@ myproxy_serialize_response(const myproxy_response_t *response,
  * (not including the trailing NULL)
  */
 int myproxy_deserialize_response(myproxy_response_t *response, 
-			    const char *data, const int datalen);
+				 const char *data, const int datalen);
 
 /*
  * myproxy_send()
  * 
- * Sends a buffer with possible encryption done via GSI
+ * Sends a buffer
  *
- * returns -1 if GSI_SOCKET_write_buffer failed or 0 on success
+ * returns 0 on success, -1 on error
  */
 int myproxy_send(myproxy_socket_attrs_t *attrs,
                  const char *data, const int datalen);
@@ -156,13 +157,25 @@ int myproxy_send(myproxy_socket_attrs_t *attrs,
 /*
  * myproxy_recv()
  *
- * Receives a buffer with possible encryption done via GSI 
+ * Receives a message into the buffer.
+ * Use myproxy_recv_ex() instead.
  *
- * returns 0 on success, -1 on error, -2 on truncated response
+ * returns bytes read on success, -1 on error, -2 on truncated response
  * 
  */
 int myproxy_recv(myproxy_socket_attrs_t *attrs,
 		 char *data, const int datalen);
+
+/*
+ * myproxy_recv_ex()
+ *
+ * Receives a message into a newly allocated buffer of correct size.
+ * The caller must deallocate the buffer.
+ *
+ * returns bytes read on success, -1 on error
+ * 
+ */
+int myproxy_recv_ex(myproxy_socket_attrs_t *attrs, char **data);
 
 /*
  * myproxy_init_delegation()
