@@ -1,6 +1,6 @@
 /*
- * This file is licensed under the terms of the Globus Toolkit Public
- * License, found at http://www.globus.org/toolkit/download/license.html.
+ *  This file is licensed under the terms of the Globus Toolkit Public
+ *  License, found at http://www.globus.org/toolkit/download/license.html.
  */
 package org.globus.ogsa.impl.base.multirft;
 
@@ -111,7 +111,7 @@ public class TransferClient {
         try {
             this.sourceGlobusURL = new GlobusURL( sourceURL );
         } catch ( Exception e ) {
-            setStatus ( 2 );
+            setStatus( 2 );
             logger.debug( "Invalid Source URL" );
             throw new RemoteException( MessageUtils.toString( e ) );
         }
@@ -189,7 +189,7 @@ public class TransferClient {
             this.destinationHost = new GridFTPClient( this.destinationGlobusURL.getHost(),
                     this.destinationGlobusURL.getPort() );
         } catch ( Exception e ) {
-            setStatus ( 2 );
+            setStatus( 2 );
             logger.debug( "Unable to create GridFTP Client to : " + this.destinationGlobusURL.getHost() );
             throw new RemoteException( MessageUtils.toString( e ) );
         }
@@ -201,7 +201,7 @@ public class TransferClient {
      *
      *@param  status  The new status value
      */
-    synchronized public void setStatus( int status ) {
+    public synchronized void setStatus( int status ) {
         this.status = status;
     }
 
@@ -387,9 +387,15 @@ public class TransferClient {
 
         try {
             this.transferid = transferid;
-            logger.debug("transfer id in transfer client: " + this.transferid);
+            logger.debug( "transfer id in transfer client: " + this.transferid );
             sourceGlobusURL = new GlobusURL( sourceURL );
+            if ( !( sourceGlobusURL.getProtocol() ).equals( "gsiftp" ) ) {
+                throw new RemoteException( "Invalid protocol used" );
+            }
             destinationGlobusURL = new GlobusURL( destinationURL );
+            if ( !( destinationGlobusURL.getProtocol() ).equals( "gsiftp" ) ) {
+                throw new RemoteException( "Invalid protocol used" );
+            }
             sourceHostName = sourceGlobusURL.getHost();
             destinationHostName = destinationGlobusURL.getHost();
             sourcePath = "/" + sourceGlobusURL.getPath();
@@ -425,26 +431,26 @@ public class TransferClient {
                         destinationSubjectName ) );
             }
 
-            try { 
+            try {
                 setTransferParams( destinationHost, this.credential );
-            } catch (Exception ae1) {
-                throw new RemoteException(MessageUtils.toString( ae1 ));
+            } catch ( Exception ae1 ) {
+                throw new RemoteException( MessageUtils.toString( ae1 ) );
             }
             try {
                 setTransferParams( sourceHost, this.credential );
-            } catch(Exception ae2) {
-                throw new RemoteException(MessageUtils.toString( ae2 ));
+            } catch ( Exception ae2 ) {
+                throw new RemoteException( MessageUtils.toString( ae2 ) );
             }
             counter++;
             logger.debug( "This is transfer # " + counter );
             if ( this.sourcePath.endsWith( "/" ) ) {
                 logger.debug( "Source url contains a directory" );
                 logger.debug( "More processing needs to be done" );
-                this.setStatus ( 6 );
+                this.setStatus( 6 );
                 this.urlExpander = new URLExpander
                         ( this.sourceHost, this.destinationHost, sourceGlobusURL, destinationGlobusURL );
                 this.urlExpander.start();
-            } else if ( this.status !=2 ) {
+            } else if ( this.status != 2 ) {
                 size = sourceHost.getSize( sourcePath );
                 this.markerListener = new MyMarkerListener( transferProgress,
                         serviceData,
@@ -459,10 +465,10 @@ public class TransferClient {
                 logger.debug( "Transfer Id in TransferClient : " + transferid );
             }
         } catch ( MalformedURLException mue ) {
-            setStatus ( 2 );
+            setStatus( 2 );
             logger.error( "Error in TransferClient:Invalid URLs", mue );
         } catch ( Exception e ) {
-            setStatus ( 2 );
+            setStatus( 2 );
             logger.error( "Error in TransferClient", e );
             throw new RemoteException( MessageUtils.toString( e ) );
         }
@@ -559,7 +565,7 @@ public class TransferClient {
      *
      *@return    DOCUMENT ME!
      */
-    synchronized public int getStatus() {
+    public synchronized int getStatus() {
 
         return this.status;
     }
@@ -630,7 +636,7 @@ public class TransferClient {
             this.size = sourceHost.getSize( this.sourcePath );
         } catch ( Exception e ) {
             logger.error( "Unable to get size of : " + sourcePath, e );
-            setStatus (2);
+            setStatus( 2 );
         }
 
     }
@@ -660,11 +666,12 @@ public class TransferClient {
     /**
      *  DOCUMENT ME!
      *
-     *@param  host  DOCUMENT ME!
-     *@param  cred  DOCUMENT ME!
+     *@param  host           DOCUMENT ME!
+     *@param  cred           DOCUMENT ME!
+     *@exception  Exception  Description of the Exception
      */
-    public void setTransferParams( GridFTPClient host, GSSCredential cred ) 
-    throws Exception {
+    public void setTransferParams( GridFTPClient host, GSSCredential cred )
+             throws Exception {
 
         try {
             host.authenticate( cred );
@@ -736,9 +743,11 @@ public class TransferClient {
 
     /**
      *  DOCUMENT ME!
+     *
+     *@param  useExtended  Description of the Parameter
      */
-    public void transfer(boolean useExtended) {
-        if (useExtended) {
+    public void transfer( boolean useExtended ) {
+        if ( useExtended ) {
             if ( rftOptions.isNotpt() ) {
                 noTptTransfer();
             } else {
@@ -754,6 +763,9 @@ public class TransferClient {
     }
 
 
+    /**
+     *  Description of the Method
+     */
     private void tptNonExtendedTransfer() {
 
         try {
@@ -761,8 +773,8 @@ public class TransferClient {
             sourceHost.setOptions( new RetrieveOptions( parallelism ) );
             sourceHost.setTCPBufferSize( this.tcpBufferSize );
             destinationHost.setTCPBufferSize( this.tcpBufferSize );
-            sourceHost.transfer(this.sourcePath,
-            this.destinationHost,this.destinationPath,false,this.markerListener);
+            sourceHost.transfer( this.sourcePath,
+                    this.destinationHost, this.destinationPath, false, this.markerListener );
             logger.debug( "Transfer done" );
             this.markerListener = null;
             setStatus( 0 );
@@ -774,8 +786,12 @@ public class TransferClient {
             }
         }
     }
-    
-   private void noTptNonExtendedTransfer() {
+
+
+    /**
+     *  Description of the Method
+     */
+    private void noTptNonExtendedTransfer() {
 
         try {
 
@@ -797,17 +813,19 @@ public class TransferClient {
             destinationHost.put( destinationPath, source,
                     this.markerListener );
             destinationHost.close();
-            setStatus (0);
+            setStatus( 0 );
         } catch ( FTPException e ) {
             logger.debug( "Exception in noTpt", e );
 
             if ( status != 2 ) {
-                setStatus ( 1 );
+                setStatus( 1 );
             }
         } catch ( IOException ioe ) {
             logger.debug( "IOException in noTpt", ioe );
         }
-    } 
+    }
+
+
     /**
      *  DOCUMENT ME!
      */
@@ -822,12 +840,12 @@ public class TransferClient {
                     this.destinationPath, this.markerListener );
             logger.debug( "Transfer done" );
             this.markerListener = null;
-            setStatus(0);
+            setStatus( 0 );
         } catch ( Exception e ) {
             logger.debug( "Exception in transfer", e );
 
             if ( status != 2 ) {
-                setStatus ( 1 );
+                setStatus( 1 );
             }
         }
     }
@@ -863,7 +881,7 @@ public class TransferClient {
             logger.debug( "Exception in noTpt", e );
 
             if ( status != 2 ) {
-                setStatus ( 1 );
+                setStatus( 1 );
             }
         } catch ( IOException ioe ) {
             logger.debug( "IOException in noTpt", ioe );

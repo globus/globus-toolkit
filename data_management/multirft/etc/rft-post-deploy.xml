@@ -27,7 +27,6 @@ Southern California. All Rights Reserved.
 
   <target name="setup">
 
-    <!-- generate globusrun-like launcher script -->
     <ant antfile="${build.client}" dir="${absolute.globus.location}"
          target="generateLauncher">
 
@@ -37,9 +36,5 @@ Southern California. All Rights Reserved.
         <property name="default.jvm.options"
 	          value="-Dorg.globus.ogsa.server.webroot=$GLOBUS_LOCATION/"/>
     </ant>
-
-    <replace file="${absolute.globus.location}/etc/transfer.xfr"
-             token="GLOBUS_LOCATION"
-             value="${absolute.globus.location}"/>			      				      
-  </target>
+    </target>
 </project>

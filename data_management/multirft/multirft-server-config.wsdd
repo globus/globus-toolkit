@@ -31,11 +31,10 @@
     <parameter name="dbusername" value="globus"/>
     <parameter name="password" value="dummy"/>
     <parameter name="maxAttempts" value="10"/>
-    <!--<parameter name="connection.pooling" value="true"/>-->
+    <parameter name="connection.pooling" value="false"/>
     <parameter name="instance-lifecycle" value="persistent"/>
     <parameter name="activateOnStartup" value="true"/>
 </service>
-<!-- Multi File RFT mappings -->
     
  </deployment>
                                     
