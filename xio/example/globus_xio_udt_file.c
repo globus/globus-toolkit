@@ -1,6 +1,6 @@
 #include "globus_xio.h"
 #include "globus_xio_util.h"
-#include "globus_xio_udt_driver.h"
+#include "globus_xio_udt.h"
 
 #define CHUNK_SIZE 50000
 #define FILE_NAME_LEN 25
