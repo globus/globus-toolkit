@@ -3,7 +3,7 @@
  * This file implements the list_t type
  *
  ********************************************************************/
-
+#include "globus_config.h"
 #include "globus_common_include.h"
 #include "globus_list.h"
 #include "globus_memory.h"
@@ -101,14 +101,17 @@ int
 globus_list_size(
     globus_list_t *head)
 {
-    if (globus_list_empty (head)) 
+    globus_list_t *                         list;
+    int                                     size = 0;
+
+    for(list = globus_list_first(head); 
+        !globus_list_empty(list);
+        list = globus_list_rest(list))
     {
-        return 0;
+        size++;
     }
-    else 
-    {
-        return 1 + globus_list_size (globus_list_rest (head));
-    }
+
+    return size;
 }
 
 /* return the old datum value */
@@ -129,21 +132,26 @@ globus_list_search (
     globus_list_t *head, 
     void *datum)
 {
-    if (globus_list_empty (head)) 
+    globus_list_t *                         list;
+    void *                                  td;
+
+    if(globus_list_empty(head))
     {
-        /* end of list chain */
         return GLOBUS_NULL;
     }
-    else if (globus_list_first (head) == datum) 
+
+    for(list = head; 
+        !globus_list_empty(list);
+        list = globus_list_rest(list))
     {
-        /* found list binding */
-        return head;
+        td = globus_list_first(list);
+        if(td == datum)
+        {
+            return list;
+        }
     }
-    else 
-    {
-        /* check rest of chain */
-        return globus_list_search (globus_list_rest (head), datum);
-    }
+
+    return GLOBUS_NULL;
 }
 
 globus_list_t *
@@ -250,54 +258,63 @@ globus_list_sort_merge_destructive(
     globus_list_t  * result = GLOBUS_NULL;
     globus_list_t ** result_tail = GLOBUS_NULL;
 
-  while ( (! globus_list_empty (left))
-	  && (! globus_list_empty (right)) ) {
-    if ( relation (globus_list_first (left),
+    while ( (! globus_list_empty (left))
+	      && (! globus_list_empty (right)) ) 
+    {
+        if ( relation (globus_list_first (left),
 		   globus_list_first (right),
-		   relation_args) ) {
-      if ( result_tail ) *result_tail = left;
-      else result = left;
-      result_tail = globus_list_rest_ref (left);
-      left = globus_list_rest (left);
-      *result_tail = GLOBUS_NULL;
+		   relation_args) ) 
+        {
+            if ( result_tail ) *result_tail = left;
+            else result = left;
+      
+            result_tail = globus_list_rest_ref (left);
+            left = globus_list_rest (left);
+            *result_tail = GLOBUS_NULL;
+        }
+        else 
+        {
+            if ( result_tail ) *result_tail = right;
+            else result = right;
+            result_tail = globus_list_rest_ref (right);
+            right = globus_list_rest (right);
+            *result_tail = GLOBUS_NULL;
+        }
     }
-    else {
-      if ( result_tail ) *result_tail = right;
-      else result = right;
-      result_tail = globus_list_rest_ref (right);
-      right = globus_list_rest (right);
-      *result_tail = GLOBUS_NULL;
+
+    if ( globus_list_empty (left) ) 
+    {
+        if ( result_tail ) *result_tail = right;
+        else result = right;
     }
-  }
+    else 
+    {
+        assert ( globus_list_empty (right) );
+        if ( result_tail ) *result_tail = left;
+        else result = left;
+    }
 
-  if ( globus_list_empty (left) ) {
-    if ( result_tail ) *result_tail = right;
-    else result = right;
-  }
-  else {
-    assert ( globus_list_empty (right) );
-    if ( result_tail ) *result_tail = left;
-    else result = left;
-  }
-
-  return result;
+    return result;
 }
 
 globus_list_t *
 globus_list_sort_destructive (
-    globus_list_t *head,
-	globus_list_relation_t relation,
-	void *relation_args)
+    globus_list_t *                         head,
+	globus_list_relation_t                  relation,
+	void *                                  relation_args)
 {
-    globus_list_t * left;
-    globus_list_t * right;
+    globus_list_t *                         left;
+    globus_list_t *                         right;
 
-  if ( globus_list_empty (head) 
-       || globus_list_empty (globus_list_rest (head)) ) return head;
+    if ( globus_list_empty (head) 
+       || globus_list_empty (globus_list_rest (head))) 
+    {
+        return head;
+    }
 
-  globus_list_halves_destructive (head, &left, &right);
+    globus_list_halves_destructive (head, &left, &right);
 
-  return globus_list_sort_merge_destructive (
+    return globus_list_sort_merge_destructive (
 			     globus_list_sort_destructive (left,
 							   relation,
 							   relation_args),
@@ -313,7 +330,7 @@ globus_list_sort (globus_list_t *head,
 		  globus_list_relation_t relation,
 		  void *relation_args)
 {
-  return globus_list_sort_destructive (globus_list_copy (head),
+    return globus_list_sort_destructive (globus_list_copy (head),
 				       relation,
 				       relation_args);
 }
@@ -349,12 +366,15 @@ globus_list_insert (
 globus_list_t *
 globus_list_cons (void * datum, globus_list_t * list)
 {
-  int err;
+    int err;
 
-  err = globus_list_insert (&list, datum);
-  if (err) return NULL;
+    err = globus_list_insert (&list, datum);
+    if(err) 
+    {
+        return NULL;
+    }
 
-  return list;
+    return list;
 }
 
 globus_list_t *
@@ -388,24 +408,22 @@ globus_list_copy (globus_list_t *head)
 }
 
 void *
-globus_list_remove (globus_list_t * volatile *headp, globus_list_t *entry)
+globus_list_remove(
+    globus_list_t * volatile *              headp, 
+    globus_list_t *                         entry)
 {
+    globus_list_t *                         i;
+    globus_list_t *                         j;
+    int                                     size = 0;
+    void *                                  datum;
+
     assert (headp);
     assert (entry);
-
-    if (globus_list_empty (*headp)) 
+    
+    datum = globus_list_first (entry);
+    if(*headp == entry)
     {
-        /* binding not found */
-        return GLOBUS_NULL;
-    }
-    else if ((*headp) == entry) 
-    {
-        /* found list binding */
-        void *datum;
-
-        *headp = globus_list_rest (*headp);
-        datum = globus_list_first (entry);
-
+        *headp = globus_list_rest(*headp);
         if(entry->malloced)
         {
             globus_free(entry);
@@ -416,21 +434,37 @@ globus_list_remove (globus_list_t * volatile *headp, globus_list_t *entry)
         }
         return datum;
     }
-    else 
+
+    i = *headp;
+    j = globus_list_rest(i);
+    while(!globus_list_empty(j))
     {
-        /* check rest of chain */
-        return globus_list_remove (((globus_list_t **)
-				&((*headp)->next)), entry);
+        if(entry == j)
+        {
+            j = globus_list_rest(j);
+            i->next = j;
+            if(entry->malloced)
+            {
+                globus_free(entry);
+            }
+            else
+            {
+                FREE_LIST_T(entry);
+            }
+            return datum;
+        }
+        i = globus_list_rest(i);
+        j = globus_list_rest(j);
     }
+
+    return GLOBUS_NULL;
 }
 
 void
 globus_list_free (globus_list_t *head)
 {
-  while (! globus_list_empty (head)) {
-    globus_list_remove (&head, head);
-  }
+    while (! globus_list_empty (head)) 
+    {
+        globus_list_remove (&head, head);
+    }
 }
-
-
-

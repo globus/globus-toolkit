@@ -1318,10 +1318,10 @@ globus_l_callback_queue_get_next(
 
     	    if(globus_abstime_cmp(next_time, &time_now) < 0)
     	    {
-	        callback_info = (globus_l_callback_info_t *)
+                callback_info = (globus_l_callback_info_t *)
                                   globus_timeq_dequeue(&globus_l_callback_q);
                 callback_info->running = GLOBUS_TRUE;
-	    }
+	        }
         }
     }
     globus_mutex_unlock(&globus_l_q_lock);
