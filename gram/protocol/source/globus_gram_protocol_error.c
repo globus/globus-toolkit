@@ -150,10 +150,22 @@ globus_l_gram_protocol_error_strings[GLOBUS_GRAM_PROTOCOL_ERROR_LAST] =
 /* 131 */     "the user proxy expired (job is still running)",
 /* 132 */     "the job was not submitted by original jobmanager",
 /* 133 */     "the job manager is not waiting for that commit signal",
-/* 134 */     "the provided RSL 'scheduler_specific' parameter is invalid",
+/* 134 */     "the provided RSL scheduler specific parameter is invalid",
 /* 135 */     "the job manager could not stage in a file",
 /* 136 */     "the scratch directory could not be created",
-/* 137 */     "the gass_cache attribute points to an invalid cache directory"
+/* 137 */     "the provided 'gass_cache' parameter is invalid",
+/* 138 */     "the RSL contains attributes which are not valid for job submission",
+/* 139 */     "the RSL contains attributes which are not valid for stdio update",
+/* 140 */     "the RSL contains attributes which are not valid for job restart",
+/* 141 */     "the provided RSL 'file_stage_in' parameter is invalid",
+/* 142 */     "the provided RSL 'file_stage_in_shared' parameter is invalid",
+/* 143 */     "the provided RSL 'file_stage_out' parameter is invalid",
+/* 144 */     "the provided RSL 'gass_cache' parameter is invalid",
+/* 145 */     "the provided RSL 'file_cleanup' parameter is invalid",
+/* 146 */     "the provided RSL 'scratch_dir' parameter is invalid",
+/* 147 */     "the provided scheduler-specific RSL parameter is invalid",
+/* 148 */     "a required RSL attribute was not defined in the RSL spec",
+/* 149 */     "the gass_cache attribute points to an invalid cache directory"
 };
 
 static char *
