@@ -6,7 +6,7 @@ Description:
  
 ******************************************************************************/
 #ifndef GLOBUS_INCLUDE_GLOBUS_TILDE_EXPAND_H_
-#define GLOBUS_INCLUDE_GLOBUS_TILDE_EXPANDL_H_ 1
+#define GLOBUS_INCLUDE_GLOBUS_TILDE_EXPAND_H_ 1
  
 #ifndef EXTERN_C_BEGIN
 #ifdef __cplusplus
