@@ -57,6 +57,15 @@
             GLOBUS_XIO_ERROR_DRIVER_NOT_FOUND,                              \
             "[%s] at bottom of stack.",                                     \
             (func)))
+
+#define GlobusXIOErrorHandleNotOpen(func)                                   \
+    globus_error_put(                                                       \
+        globus_error_construct_error(                                       \
+            GLOBUS_XIO_MODULE,                                              \
+            NULL,                                                           \
+            GLOBUS_XIO_ERROR_DRIVER_NOT_FOUND,                              \
+            "[%s] The handle is not in the open state.",                    \
+            (func)))
 /***************************************************************************
  *                    Internally exposed data structures
  **************************************************************************/
@@ -193,18 +202,23 @@ typedef struct globus_i_xio_operation_s
     /* operation type */
     globus_i_xio_operation_type_t               op_type;
 
+    /* user callback stuff */
+    globus_xio_data_callback_t                  data_cb;
+    globus_xio_iovec_callback_t                 iovec_cb;
+    globus_xio_callback_t                       cb;
+    globus_iovec_t *                            iovec;
+    int                                         iovec_count;
+    globus_iovec_t                              mem_iovec;
+
     /* flag to determine if cancel should happen */
     globus_bool_t                               progress;
     globus_xio_timeout_callback_t               timeout_cb;
 
     /* reference count for destruction */
     int                                         ref;
-    globus_bool_t                               destroy_me;
 
 
     globus_i_xio_handle_t *                     xio_handle;
-
-    int                                         close_how;
 
     /* user callback variables */
     globus_xio_callback_space_t                 space;

@@ -507,12 +507,27 @@ typedef void (*globus_xio_callback_t)(
  *
  *  on eof, result_t will be of type GLOBUS_XIO_ERROR_EOF
  */
-typedef void (*globus_xio_data_callback_t)(
+typedef void 
+(*globus_xio_data_callback_t)(
     globus_xio_handle_t                         handle, 
     globus_result_t                             result,
+    globus_byte_t *                             buffer,
+    globus_size_t                               buffer_length,
     globus_size_t                               nbytes, 
     globus_xio_data_descriptor_t                data_desc,
     void *                                      user_arg);
+
+typedef void 
+(*globus_xio_iovec_data_callback_t)(
+    globus_xio_handle_t                         handle,
+    globus_result_t                             result,
+    globus_iovec_t *                            iovec,
+    int                                         iovec_count,
+    globus_size_t                               nbytes,
+    globus_xio_data_descriptor_t                data_desc,
+    void *                                      user_arg);
+
+
 
 /**
  *  Query/set information or request a synchronous operation on a handle.
