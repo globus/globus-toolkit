@@ -185,6 +185,7 @@ globus_memory_destroy(
         {
             free(mem_info->free_ptrs[ctr]);
         }
+        free(mem_info->free_ptrs);
     }
     globus_mutex_unlock(&mem_info->lock);
 
