@@ -47,7 +47,8 @@ public class DefaultPacketHandler implements PacketHandler {
             
             log.debug("Will write this packet to database table"
                 + table + ": ");
-            pack.display();
+
+            log.info(pack.toString());
 
 
             Class.forName(driverClass);

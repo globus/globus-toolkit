@@ -136,7 +136,7 @@ class ReceiverThread extends Thread {
         CustomByteBuffer storage;
 
         while(stillGood) {
-            buf = new byte[UsageMonitorPacket.packetSize];
+            buf = new byte[UsageMonitorPacket.MAX_PACKET_SIZE];
             packet = new DatagramPacket(buf, buf.length);
 
             try {
