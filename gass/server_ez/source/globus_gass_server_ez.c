@@ -594,6 +594,7 @@ globus_l_gass_server_ez_register_accept_callback(
                                             GLOBUS_FALSE,
                                             globus_l_gass_server_ez_get_callback,
                                             (void *) rc);
+	  break;
 	default:
 	deny:
 	  globus_gass_transfer_deny(request, 400, "Client Error");
