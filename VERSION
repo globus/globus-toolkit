@@ -1,8 +1,13 @@
-This is myproxy v0.4.0 20 Nov 2001.
+This is myproxy v0.4.1 4 Dec 2001.
 This version should be compatible with all versions since v0.2.
 
 Version History
 ---------------
+v0.4.1 4 Dec 2001
+  This version adds support for Globus 2.0 and optionally using the
+  distinguished name from the proxy certificate as the default myproxy
+  username.
+
 v0.4.0 20 Nov 2001
   This version adds support for anonymous X.509 client authentication,
   to allow users to retrieve a credential using their myproxy
@@ -24,8 +29,6 @@ v0.2alpha3 11 Oct 2000
 v0.2alpha1 27 Sep 2000
 
 v0.2 20 Sep 2000
-
-v0.1b3 30 June 2000
 
 v0.1b3 30 June 2000
 
