@@ -22,7 +22,7 @@ noinst_HEADERS = \
 
 noinst_LTLIBRARIES = librand_$(GLOBUS_FLAVOR_NAME).la
 
-INCLUDES = -I$(top_srcdir)/include $(GPT_INCLUDES)
+INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/include $(GPT_INCLUDES)
 
 librand___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
 

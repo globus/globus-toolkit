@@ -62,7 +62,7 @@ Test_Sources = \
 
 noinst_LTLIBRARIES = libevp_$(GLOBUS_FLAVOR_NAME).la
 
-INCLUDES = -I$(top_srcdir)/include $(GPT_INCLUDES)
+INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/include $(GPT_INCLUDES)
 
 libevp___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
 

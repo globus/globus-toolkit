@@ -34,7 +34,7 @@ noinst_HEADERS = \
 
 noinst_LTLIBRARIES = libx509v3_$(GLOBUS_FLAVOR_NAME).la
 
-INCLUDES = -I$(top_srcdir)/include $(GPT_INCLUDES)
+INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/include $(GPT_INCLUDES)
 
 libx509v3___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
 

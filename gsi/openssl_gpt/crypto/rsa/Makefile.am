@@ -24,7 +24,7 @@ opensslinclude_HEADERS= \
 
 noinst_LTLIBRARIES = librsa_$(GLOBUS_FLAVOR_NAME).la
 
-INCLUDES = -I$(top_srcdir)/include $(GPT_INCLUDES)
+INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/include $(GPT_INCLUDES)
 
 librsa___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
 

@@ -24,7 +24,7 @@ Sources = \
 	cpt_err.c \
 	ebcdic.c \
 	uid.c \
-	o_times.c
+	o_time.c
 
 opensslinclude_HEADERS= \
 	crypto.h \
@@ -43,7 +43,7 @@ noinst_HEADERS= \
 
 lib_LTLIBRARIES = libcrypto_$(GLOBUS_FLAVOR_NAME).la
 
-INCLUDES = -I$(top_srcdir)/include $(GPT_INCLUDES)
+INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/include $(GPT_INCLUDES)
 
 libcrypto___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
 

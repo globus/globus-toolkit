@@ -5,6 +5,12 @@
 #   define OPENSSL_UNISTD <unistd.h>
 #endif
 
+/* don't depend on Kerberos */
+
+#ifndef OPENSSL_NO_KRB5
+#   define OPENSSL_NO_KRB5 1
+#endif
+
 #ifdef HEADER_CRYPTLIB_H
 #   ifndef OPENSSLDIR
 #       undef OPENSSLDIR

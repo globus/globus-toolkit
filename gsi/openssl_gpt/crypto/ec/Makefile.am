@@ -22,7 +22,7 @@ Test_Sources = \
 
 noinst_LTLIBRARIES = libec_$(GLOBUS_FLAVOR_NAME).la
 
-INCLUDES = -I$(top_srcdir)/include $(GPT_INCLUDES)
+INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/include $(GPT_INCLUDES)
 
 libec___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
 

@@ -29,7 +29,7 @@ noinst_HEADERS = \
 
 noinst_LTLIBRARIES = libbio_$(GLOBUS_FLAVOR_NAME).la
 
-INCLUDES = -I$(top_srcdir)/include $(GPT_INCLUDES)
+INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/include $(GPT_INCLUDES)
 
 libbio___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
 

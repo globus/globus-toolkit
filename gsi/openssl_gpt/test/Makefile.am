@@ -98,7 +98,7 @@ Test_Targets = \
 	test_engine \
 	test_evp
 
-INCLUDES = -I$(top_srcdir)/include $(GPT_INCLUDES)
+INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/include $(GPT_INCLUDES)
 
 LDADD = $(top_srcdir)/ssl/libssl_$(GLOBUS_FLAVOR_NAME).la $(top_srcdir)/crypto/libcrypto_$(GLOBUS_FLAVOR_NAME).la $(GPT_LIB_LINKS)
 
