@@ -88,6 +88,7 @@ static ERR_STRING_DATA gsserr_str_reasons[]=
  {GSSERR_R_PASSED_NULL_PARAMETER, "NULL was passed as a parameter"},
  {GSSERR_R_UNEXPECTED_FORMAT, "Not in expected Format"},
  {GSSERR_R_BAD_DATE, "Cannot verify message date"},
+ {GSSERR_R_BAD_MECH, "Requested mechanism not supported"},
  {0,NULL},
 };
 
