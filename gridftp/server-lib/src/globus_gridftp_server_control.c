@@ -999,13 +999,14 @@ globus_l_gsc_final_reply_cb(
     globus_mutex_lock(&server_handle->mutex);
     {
         server_handle->reply_outstanding = GLOBUS_FALSE;
+        server_handle->ref--;
+
         if(result != GLOBUS_SUCCESS)
         {
             res = result;
             goto err;
         }
 
-        server_handle->ref--;
         switch(server_handle->state)
         {
             case GLOBUS_L_GSC_STATE_ABORTING:
