@@ -65,6 +65,7 @@ grami_paradyn_rewrite_params(gram_request_param_t * params)
     char paradyn_port[GRAM_PARAM_SIZE];
     char paradyn_host[GRAM_PARAM_SIZE];
     char paradynd_type[GRAM_PARAM_SIZE];
+    char paradynd_location[GRAM_PARAM_SIZE*2];
 
     /*
      *  Initialize our strings
@@ -73,11 +74,12 @@ grami_paradyn_rewrite_params(gram_request_param_t * params)
     strcpy(paradyn_port,"");
     strcpy(paradyn_host,"");
     strcpy(paradynd_type,"");
+    strcpy(paradynd_location,"");
 
-    sscanf(params->paradyn,"%s %s %s",paradyn_host,paradyn_port,paradynd_type);
+    sscanf(params->paradyn,"%s %s %s %s",paradyn_host,paradyn_port,paradynd_type,paradynd_location);
 
     /*
-     *  If we haven't received all our parameters, die
+     *  If we haven't received all our necessary parameters, die
      */
 
     if (strlen(paradyn_port)  == 0 ||
@@ -89,16 +91,30 @@ grami_paradyn_rewrite_params(gram_request_param_t * params)
 
     /*
      *  Set the argument parameter
+     *
+     *  We have a hack here to put a ./ in front of the executable because
+     *  of a problem with paradynd.
      */
 
-/*    sprintf(tmp_string,"-p%s -m%s -l0 -v1 -z%s -runme %s %s"*/
 
-    sprintf(tmp_string,"-p%s -m%s -l2 -z%s -runme ./%s %s"
-                      ,paradyn_port
-                      ,paradyn_host
-                      ,paradynd_type
-                      ,params->pgm
-                      ,params->pgm_args);
+    if (params->pgm[0] != '/')
+    {
+       sprintf(tmp_string,"-p%s -m%s -l2 -z%s -runme ./%s %s"
+                         ,paradyn_port
+                         ,paradyn_host
+                         ,paradynd_type
+                         ,params->pgm
+                         ,params->pgm_args);
+    }
+    else
+    {
+       sprintf(tmp_string,"-p%s -m%s -l2 -z%s -runme %s %s"
+                         ,paradyn_port
+                         ,paradyn_host
+                         ,paradynd_type
+                         ,params->pgm
+                         ,params->pgm_args);
+    }
 
     strncpy(params->pgm_args,tmp_string,GRAM_PARAM_SIZE);
 
@@ -106,8 +122,16 @@ grami_paradyn_rewrite_params(gram_request_param_t * params)
      * Change program name to paradynd
      */
 
-    strcpy(params->pgm,grami_jm_libexecdir);
-    strcat(params->pgm,"/paradynd");
+    if (strlen(paradynd_location) == 0)
+    {
+        strcpy(params->pgm,"file://");
+        strcat(params->pgm,grami_jm_libexecdir);
+        strcat(params->pgm,"/paradynd");
+    }
+    else
+    {
+        strcpy(params->pgm,paradynd_location);
+    }
 
     return 1;
 
