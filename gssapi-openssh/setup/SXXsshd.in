@@ -1,0 +1,93 @@
+#!/bin/sh
+#
+# Init file for GSI-OpenSSH server daemon
+#
+# chkconfig: 2345 55 25
+# description: GSI-OpenSSH server daemon
+#
+
+### BEGIN INIT INFO
+# Provides: sshd
+# Required-Start: $network
+# Required-Stop: $network
+# Default-Start: 2 3 4 5
+# Default-Stop: 0 1 6
+# Description: Start the sshd daemon
+### END INIT INFO
+
+GLOBUS_LOCATION="@GLOBUS_LOCATION@"
+export GLOBUS_LOCATION
+
+. ${GLOBUS_LOCATION}/libexec/globus-script-initializer
+. ${libexecdir}/globus-sh-tools.sh
+
+PID_FILE=${localstatedir}/sshd.pid
+
+#
+# SSHD arguments can be added here within the following
+# set of double quotes.
+#
+
+SSHD_ARGS=""
+
+do_start()
+{
+    if [ ! -d $localstatedir ]; then
+        mkdir -p $localstatedir
+    fi
+    echo -n "Starting up GSI-OpenSSH sshd server... "
+    ${sbindir}/sshd $SSHD_ARGS > /dev/null 2>&1 &
+    if [ $? -eq 0 ]; then
+        echo "done."
+    else
+        echo "failed to start GSI-OpenSSH sshd server!"
+    fi
+}
+
+do_stop()
+{
+    echo -n "Stopping the GSI-OpenSSH sshd server... "
+    pid=`cat $PID_FILE`
+    kill -TERM $pid
+    sleep 2
+    kill -TERM $pid 2> /dev/null
+    rm -f $PID_FILE
+    echo "done."
+}
+
+case "$1" in
+    start)
+        if [ ! -f $PID_FILE ]; then
+            do_start
+        else
+            pid=`cat $PID_FILE`
+            psout=`ps -A | grep $pid | grep -v grep | awk "{if (\\\$1 == $pid) print}"`
+            if [ "x$psout" = "x" ]; then
+                echo "Found stale sshd pid file... removing it."
+                rm -f $PID_FILE
+                do_start
+            else
+                echo "GSI-OpenSSH sshd server is already running!"
+            fi
+        fi
+        ;;
+
+    stop)
+        if [ -f $PID_FILE ] ; then
+            do_stop
+        else
+            echo "The server's pid file does not exist!  Are you sure the server is running?"
+        fi
+        ;;
+
+    restart)
+        $0 stop
+        $0 start
+        ;;
+
+    *)
+        echo "Usage: $0 (start|stop|restart)"
+        exit 1
+esac
+
+exit 0

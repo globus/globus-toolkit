@@ -1,0 +1,38 @@
+#!/bin/sh
+#
+
+source ./scripts/version.sh
+
+NAME="gsi_openssh_bundle-$VERSION-src.tar.gz"
+
+cd work/
+
+#
+# create the bundle
+#
+
+$GPT_LOCATION/sbin/gpt-bundle -nodeps -srcdir=sources/ -output=$NAME gsi_openssh gsi_openssh_setup
+mv sources/gsi_openssh_bundle-$VERSION-src_src.tar.gz $NAME
+
+#
+# remove globus_core from it
+#
+
+mkdir -p temp/
+tar xvzf $NAME -C temp/
+cd temp/
+rm globus_core-99.tar.gz
+cat packaging_list | grep -v 'globus_core' > packaging_list
+
+#
+# create the bundle (redux)
+#
+
+tar cvzf $NAME *
+cd ../
+
+#
+# place the bundle in the parent directory
+#
+
+mv temp/$NAME ../
