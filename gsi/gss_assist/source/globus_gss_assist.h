@@ -273,6 +273,17 @@ globus_gss_assist_get_unwrap
  void *gss_assist_get_context,
  FILE * fperr);
 
+
+/*
+ * globus_gss_assist_will_handle_restrictions - used to tell openssl
+ * that the application will deal with the restrictions extension
+ */
+
+OM_uint32
+globus_gss_assist_will_handle_restrictions(
+    OM_uint32 *                         minor_status,
+    gss_ctx_id_t *                      context_handle);
+
 /*
  * globus_gss_assist_import_sec_context - read a security context
  */

@@ -15,7 +15,8 @@ Sources= \
 	init.c \
 	tokens_f.c \
 	unwrap.c \
-	wrap.c
+	wrap.c \
+	set_sec_context_opts.c
 
 include_HEADERS= \
 	globus_gss_assist.h
