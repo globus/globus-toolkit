@@ -650,7 +650,7 @@ globus_extension_lookup(
                   
                     GlobusExtensionDebugPrintf(
                         GLOBUS_L_EXTENSION_DEBUG_VERBOSE,
-                        ("[%] Accessing symbol %s within %s\n",
+                        ("[%] Accessing entry %s within %s\n",
                             _globus_func_name, symbol, entry->owner->name));
                 }
                 
