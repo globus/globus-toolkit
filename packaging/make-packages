@@ -113,6 +113,9 @@ checkout_cvs_gt2_autotools() {
 
 # Build autotools, leave it on the path
 build_gt2_autotools() {
+
+	echo Installing GT2 Autotools ...
+
 	if [ ! -d gt2-autotools ]; then
 		checkout_cvs_gt2_autotools
 		cd gt2-autotools
@@ -150,7 +153,7 @@ install_gpt_generic() {
 }
 
 install_gpt2() {
-	install_gpt_generic gpt-2.2.5 fait_accompli/gpt-2.2.5-src.tar.gz
+	install_gpt_generic gpt-2.2.9 fait_accompli/gpt-2.2.9-src.tar.gz
 }
 
 install_gpt3() {
@@ -158,9 +161,8 @@ install_gpt3() {
 }
 
 install_gt2_binary() {
-	export GLOBUS_LOCATION=$1
 	echo Installing custom GT2 bundle
-	$GPT_LOCATION/sbin/gpt-install fait_accompli/gt2_deps_gt3_alpha4-2.4_bin.tar.gz
+	GPT_LOCATION/sbin/gpt-install fait_accompli/gt2_deps_gt3_beta-2.4_bin.tar.gz
 	$GPT_LOCATION/sbin/gpt-build -force fait_accompli/globus_core-2.8.tar.gz gcc32dbg
 	$GPT_LOCATION/sbin/gpt-postinstall
 	echo
@@ -168,8 +170,8 @@ install_gt2_binary() {
 
 install_gt2_source() {
         flavor="gcc32dbg"
-	export GLOBUS_LOCATION=$1
 
+	echo Checking out GT2 CVS ...
         checkout_cvs_gt2 $gt2_branch 
 
 	cd gt2-cvs
@@ -198,6 +200,7 @@ install_cdeps() {
 	OGPT=$GPT_LOCATION
 	unset GPT_LOCATION
 
+	# $GPT_LOCATION/sbin/gpt-build -nosrc gcc32dbg
 	./cvs-build-ogsa --force gcc32dbg
 	
 	export GPT_LOCATION=$OGPT
@@ -212,9 +215,17 @@ install_cdeps() {
 	cp ogsa-cvs/ogsa-c/build_tools/bin_packages/ogsa_cbindings_bin_bundle_bin.tar.gz package-output
 }
 
-# Go to subdir, run the build script.
-# Copy gar if one is specified.
+# Tar up the source directory with packaging data and filelist.
+# Handle GPT-built source packages separately.
+# make_source_package subdir-of-package-info
 make_source_package() {
+	if [ "$build" = "custom" ]; then
+		echo Following custom build instructions for $name
+		$1/custom-build ogsa-cvs/$subdir $GPT_LOCATION $GLOBUS_LOCATION gcc32dbg
+		echo
+		return;
+	fi
+
 	export destdir=`pwd`/${name}-${version}-src/
 
 	if [ -d $destdir ]; then
@@ -271,7 +282,7 @@ unset_env() {
 iter_generic() {
 	if [ -e $1/build-info ]; then
 		source $1/build-info
-		make_source_package
+		make_source_package $1
 		unset_env
 	else
 		echo "Couldn't find $1/build-info"
@@ -314,7 +325,7 @@ collate_packages() {
 		mkdir -p release-candidate/gt3-alpha3-source-installer
 		cp gt3-all-src* release-candidate/gt3-alpha3-source-installer
 		cp fait_accompli/gt3_alpha2_src_bundle-r1_src.tar.gz release-candidate/gt3-alpha3-source-installer
-		cp fait_accompli/gpt-2.2.5-src.tar.gz release-candidate/gt3-alpha3-source-installer
+		cp fait_accompli/gpt-2.2.9-src.tar.gz release-candidate/gt3-alpha3-source-installer
 		cp fait_accompli/install-gt3-alpha3-src release-candidate/gt3-alpha3-source-installer
 		cp fait_accompli/OGSI.NET.zip release-candidate/gt3-alpha3-source-installer
 		pushd release-candidate
@@ -345,7 +356,7 @@ install_bundle() {
 		mkdir -p release-candidate/gt3-alpha3-binary-installer
 		mv gt3-all-bin* release-candidate/gt3-alpha3-binary-installer
 		cp fait_accompli/gt3_alpha2_bin_bundle-r1_bin.tar.gz release-candidate/gt3-alpha3-binary-installer
-		cp fait_accompli/gpt-2.2.5-src.tar.gz release-candidate/gt3-alpha3-binary-installer
+		cp fait_accompli/gpt-2.2.9-src.tar.gz release-candidate/gt3-alpha3-binary-installer
 		cp fait_accompli/install-gt3-alpha3-bin release-candidate/gt3-alpha3-binary-installer
 		cp fait_accompli/OGSI.NET.zip release-candidate/gt3-alpha3-binary-installer
 		cp fait_accompli/globus-rls-server-1.1-i686-pc-linux-gnu-bin.tar.gz release-candidate/gt3-alpha3-binary-installer
@@ -392,7 +403,7 @@ read_args() {
 	gt2_branch="HEAD"
 	update=1
 	anonymous=0
-	installbin=1
+	installbin=0
 
 	while [ x$1 != "x" ]; do
 		if [ $1 = "-t" ]; then
@@ -471,10 +482,20 @@ fi
 install_gpt2
 #install_gpt3
 
+#Checkout GT3 cvs
 checkout_cvs $tag
 
-#This is the poor man's dependency code ...
+#Build GT2 autotools, as globus_grim needs them
+build_gt2_autotools
 
+# If user has requested installation, go ahead and put GT2 stuff there first.
+if [ x$dir = "x" ]; then
+	export GLOBUS_LOCATION="gt2-installation"
+else
+	export GLOBUS_LOCATION=$dir
+fi
+
+#This is the poor man's dependency code ...
 if [ $buildjava = 1 ]; then
 	echo Building Java-only packages
 	dir_iter package-list
@@ -482,21 +503,10 @@ if [ $buildjava = 1 ]; then
 fi
 
 if [ $buildc = 1 ]; then
-
-	build_gt2_autotools
-
-	# If user has requested installation, go ahead and put GT2 stuff there first.
-
-	if [ x$dir = "x" ]; then
-		cinst="gt2-installation"
-	else
-		cinst=$dir
-	fi
-
 	if [ $installbin = 1 ]; then
-		install_gt2_binary $cinst
+		install_gt2_binary
 	else
-		install_gt2_source $cinst
+		install_gt2_source
 	fi
 
 	echo Building C-dependent packages
