@@ -1819,7 +1819,7 @@ globus_l_io_tcp_register_connect(
     
     if(host)
     {
-        snprintf(buf, sizeof(buf), "%s:%hd", host, port);
+        snprintf(buf, sizeof(buf), "%s:%hu", host, port);
         cs = buf;
     }
     else
