@@ -229,10 +229,12 @@ static char *  long_usage = \
 "           Print the current status of the specified job.\n"\
 "    -b | -batch\n"\
 "           Cause globusrun to terminate after the job is successfully\n"\
-"           submitted, without waiting for its completion. Useful for batch\n"\
-"           jobs. This option cannot be used together with either -server\n"\
-"           or -interactive, and is also incompatible with multi-request jobs.\n" \
-"           The \"handle\" or job ID of the submitted job will be written on\n" \
+"           submitted to the scheduler. Useful for batch jobs. This option\n"\
+"           cannot be used together with or -interactive, and is also\n"\
+"           incompatible with multi-request jobs.\n" \
+"           If used with -s, files may be staged in to the job, but stdout\n"\
+"           and stderr will not be redirected.\n"\
+"           The \"handle\" or job ID of the submitted job will be written on\n"\
 "           stdout.\n"\
 "    -refresh-proxy | -y <job ID>\n"\
 "           Cause globusrun to delegate a new proxy to the job named by the\n"\
