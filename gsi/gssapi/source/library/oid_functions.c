@@ -79,6 +79,17 @@ static const gss_OID_desc gss_proxycertinfo_extension_oid =
 const gss_OID_desc * const gss_proxycertinfo_extension = 
                 &gss_proxycertinfo_extension_oid;
 
+static const gss_OID_desc grim_policy_oid =
+     {11, "\x2b\x06\x01\x04\x01\x9b\x50\x01\x01\x01\x07"}; 
+const gss_OID_desc * const grim_policy =
+                &grim_policy_oid;
+
+static const gss_OID_desc gss_ext_x509_cert_chain_oid =
+     {11, "\x2b\x06\x01\x04\x01\x9b\x50\x01\x01\x01\x08"}; 
+const gss_OID_desc * const gss_ext_x509_cert_chain =
+                &gss_ext_x509_cert_chain_oid;
+
+
 /**
  * @name Add OID Set Member
  * @ingroup globus_gsi_gssapi
