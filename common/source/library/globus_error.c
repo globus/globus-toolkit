@@ -406,7 +406,7 @@ globus_error_put (globus_object_t * error)
   {
      new_result = s_next_available_result_count++;
   } while(globus_object_cache_lookup(
-      &s_result_to_object_mapper, (void *) new_handle) != NULL);
+      &s_result_to_object_mapper, (void *) new_result) != NULL);
 
   globus_object_cache_insert (&s_result_to_object_mapper,
 			      (void *)new_result, error);
