@@ -29,7 +29,7 @@ sub test_gram_local
     # cleanup
 
     $u->command("globus-personal-gatekeeper -killall");
-    $u->command("rm -rf \${HOME}/.globus/.gass_cache");
+#    $u->command("rm -rf \${HOME}/.globus/.gass_cache");
 
     # start new personal gatekeeper
 
@@ -168,5 +168,5 @@ sub test_gram_local
     # Cleanup
 
     $u->command("globus-personal-gatekeeper -killall");
-    $u->command("rm -rf \${HOME}/.globus/.gass_cache");
+ #   $u->command("rm -rf \${HOME}/.globus/.gass_cache");
 }
