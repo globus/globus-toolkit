@@ -161,5 +161,5 @@ sub setup_script_shbang
     }
     $infile->close();
     $outfile->close();
-    chmod 0755, $outfile;
+    chmod 0755, $outname;
 }
