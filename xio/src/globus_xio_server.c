@@ -141,10 +141,11 @@ globus_l_xio_server_accept_kickout(
                 xio_server->state = GLOBUS_XIO_SERVER_STATE_OPEN;
                 break;
             case GLOBUS_XIO_SERVER_STATE_ACCEPTING:
+            case GLOBUS_XIO_SERVER_STATE_CLOSED:
                 break;
 
             default:
-                globus_assert(0);
+                globus_assert(0 && "Unexpected state after accept callback");
                 break;
         }
         /* decrement reference for the callback if timeout has happened or
