@@ -1,11 +1,11 @@
     ################# BEGIN    Inserted by configure #############
 
-deploy_prefix=@deploy_prefix@ # This line is overwritten during deployment
-deployed='FALSE'              # This line is overwritten during deployment
+GLOBUS_DEPLOY_PATH=                # This line is overwritten during deployment
+GLOBUS_DEPLOYED='FALSE'            # This line is overwritten during deployment
 
     sslpath="${GLOBUS_SSL_PATH}"
     install="${GLOBUS_INSTALL_PATH}"
-    if [ "X${deployed}" = "XTRUE" ]; then
+    if [ "X${GLOBUS_DEPLOYED}" = "XTRUE" ]; then
 	if [ -z "${GLOBUS_DEPLOY_PATH}" ]; then
 	    echo "ERROR: environment variable GLOBUS_DEPLOY_PATH not defined"  1>&2
 	    exit 1
@@ -49,10 +49,10 @@ deployed='FALSE'              # This line is overwritten during deployment
     if [ -n "${sslpath}" ]; then
         GLOBUS_SSL_PATH="${sslpath}"
     fi
-    if [ "X${deployed}" = "XTRUE" ]; then
+    if [ "X${GLOBUS_DEPLOYED}" = "XTRUE" ]; then
 	export GLOBUS_DEPLOY_PATH
-	prefix=${deploy_prefix}
-	exec_prefix=${deploy_prefix}
+	prefix=${GLOBUS_DEPLOY_PATH}
+	exec_prefix=${GLOBUS_DEPLOY_PATH}
     else
 	prefix="${GLOBUS_INSTALL_PATH}"
 	exec_prefix=@exec_prefix@
