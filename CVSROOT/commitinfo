@@ -14,3 +14,4 @@
 # If the name "ALL" appears as a regular expression it is always used
 # in addition to the first matching regex or "DEFAULT".
 ALL perl /homes/globdev/CVS/globus-packages/cvs_scripts/commit_prep.pl -r
+ALL perl /homes/globdev/CVS/globus-packages/dirt_active/scripts/lock.pl
