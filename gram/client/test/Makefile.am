@@ -6,18 +6,27 @@ SUBDIRS= \
 
 pkgtestdir = $(GLOBUS_LOCATION)/test/$(PACKAGE)
 
-Scripts = globus-gram-client-activate-test.pl \
-          globus-gram-client-callback-contact-test.pl \
-          globus-gram-client-cancel-test.pl \
-	  globus-gram-client-nonblocking-register-test.pl \
-          globus-gram-client-ping-test.pl \
-	  globus-gram-client-refresh-credentials-test.pl \
-          globus-gram-client-register-test.pl \
-	  globus-gram-client-register-callback-test.pl \
-	  globus-gram-client-register-cancel-test.pl \
-	  globus-gram-client-register-refresh-credentials-test.pl \
-	  globus-gram-client-status-test.pl \
-	  globus-gram-client-stop-manager-test.pl
+Scripts = \
+	TESTS.pl \
+	globus-gram-client-activate-test.pl \
+	globus-gram-client-callback-contact-test.pl \
+	globus-gram-client-cancel-test.pl \
+	globus-gram-client-nonblocking-register-test.pl \
+	globus-gram-client-ping-test.pl \
+	globus-gram-client-refresh-credentials-test.pl \
+	globus-gram-client-register-test.pl \
+	globus-gram-client-register-callback-test.pl \
+	globus-gram-client-register-cancel-test.pl \
+	globus-gram-client-register-refresh-credentials-test.pl \
+	globus-gram-client-status-test.pl \
+	globus-gram-client-stop-manager-test.pl
+
+Data = \
+	dc31a685.0 \
+	dc31a685.signing_policy \
+	testcred.pem
+
+pkgtest_DATA=$(Data)
 
 pkgtest_SCRIPTS=$(Scripts) globus-gram-client-run-tests.pl
 
@@ -37,7 +46,8 @@ pkgtest_PROGRAMS= \
 	globus-gram-client-stdio-update-test \
 	globus-gram-client-stop-manager-test \
 	globus-gram-client-register-test
-EXTRA_DIST = $(Scripts) globus-gram-client-run-tests.pl.in
+
+EXTRA_DIST = $(Scripts) $(Data) globus-gram-client-run-tests.pl.in
 
 INCLUDES += $(GPT_INCLUDES)
 
