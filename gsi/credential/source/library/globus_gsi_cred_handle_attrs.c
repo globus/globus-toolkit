@@ -86,9 +86,9 @@ globus_gsi_cred_handle_attrs_init(
         (globus_gsi_cred_type_t *) 
         malloc(sizeof(globus_gsi_cred_type_t) * 5);
 
-    (*handle_attrs)->search_order[0] = GLOBUS_PROXY;
-    (*handle_attrs)->search_order[1] = GLOBUS_SERVICE;
-    (*handle_attrs)->search_order[2] = GLOBUS_HOST;
+    (*handle_attrs)->search_order[0] = GLOBUS_SERVICE;
+    (*handle_attrs)->search_order[1] = GLOBUS_HOST;
+    (*handle_attrs)->search_order[2] = GLOBUS_PROXY;
     (*handle_attrs)->search_order[3] = GLOBUS_USER;
     (*handle_attrs)->search_order[4] = GLOBUS_SO_END;
 
