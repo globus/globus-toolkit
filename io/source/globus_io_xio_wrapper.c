@@ -398,9 +398,8 @@ globus_l_io_iattr_copy(
     dest_iattr->type = source_iattr->type;
     if(dest_iattr->type == GLOBUS_I_IO_TCP_ATTR)
     {
-        dest_iattr->authentication_mode = source_iattr->type;
-        dest_iattr->authorization_mode = source_iattr->type;
-        dest_iattr->channel_mode = source_iattr->type;
+        dest_iattr->authentication_mode = source_iattr->authentication_mode;
+        dest_iattr->channel_mode = source_iattr->channel_mode;
 
         result = globus_io_attr_get_secure_authorization_mode(
             &source_iattr,
