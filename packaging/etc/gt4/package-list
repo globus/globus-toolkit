@@ -63,3 +63,13 @@ globus_c_wsrf_sample_counter_test           wsrf/c/samples/counter/test gpt
 globus_c_wsrf_sample_counter_client_bindings wsrf/c/samples/counter/source/ tar
 globus_globusrun_ws                         ws-gram/client/c/source gpt
 
+globus_wsrf_cas_client_java                 ws-cas/client/java/source
+globus_wsrf_cas_service_java                ws-cas/service/java/source
+globus_wsrf_cas_service_unit_test           ws-cas/service/java/test/unit
+globus_wsrf_cas_common                      ws-cas/common/schema
+globus_wsrf_cas_utils_java                  ws-cas/utils/java/source
+
+globus_wsrf_ds_client_java                  ws-delegation/client/java/source
+globus_wsrf_ds_service_java                 ws-delegation/service/java/source
+globus_wsrf_ds_service_test                 ws-delegation/service/java/test
+globus_wsrf_ds_common                       ws-delegation/common/schema

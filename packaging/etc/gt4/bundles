@@ -71,3 +71,17 @@ BUNDLE gt4-gram-lsf
         globus_scheduler_event_generator_lsf
         globus_scheduler_event_generator_lsf_setup        
         globus_gram_job_manager_setup_lsf
+
+BUNDLE gt4-java-cas
+       globus_wsrf_cas_client_java
+       globus_wsrf_cas_service_java
+       globus_wsrf_cas_service_unit_test
+       globus_wsrf_cas_common
+       globus_wsrf_cas_utils_java
+
+BUNDLE gt4-java-delegation-service
+       globus_wsrf_ds_client_java
+       globus_wsrf_ds_service_java
+       globus_wsrf_ds_service_test
+       globus_wsrf_ds_common
+		
