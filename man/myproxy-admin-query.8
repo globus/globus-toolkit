@@ -1,4 +1,4 @@
-.TH myproxy-admin-query 1 "2003-5-1" "NCSA" "MyProxy"
+.TH myproxy-admin-query 1 "2003-5-29" "NCSA" "MyProxy"
 .SH NAME
 myproxy-admin-query \- query MyProxy repository contents
 .SH SYNOPSIS
@@ -58,6 +58,13 @@ Remove the credentials matching the query from the repository.
 For example, 
 .I myproxy-admin-query -e 0 -r
 will remove all expired credentials from the repository.
+.TP
+.BI -L " msg, " --lock " msg"
+Places the credentials matching the query under an administrative
+lock and specifies a message to be returned on access attempts.
+.TP
+.B -U, --unlock
+Removes any administrative locks for the credentials matching the query.
 .SH "EXIT STATUS"
 0 on success, >0 on error
 .SH AUTHORS

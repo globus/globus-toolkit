@@ -293,6 +293,8 @@ get_storage_locations(const char *username,
                       const int creds_path_len,
                       char *data_path,
                       const int data_path_len,
+		      char *lock_path,
+		      const int lock_path_len,
 		      const char *credname)
 {
     int return_code = -1;
@@ -300,10 +302,12 @@ get_storage_locations(const char *username,
     char *sterile_credname = NULL;
     const char *creds_suffix = ".creds";
     const char *data_suffix = ".data";
+    const char *lock_suffix = ".lock";
     
     assert(username != NULL);
     assert(creds_path != NULL);
     assert(data_path != NULL);
+    assert(lock_path != NULL);
 
     if (check_storage_directory() == -1) {
         goto error;
@@ -324,30 +328,32 @@ get_storage_locations(const char *username,
     }
 
     creds_path[0] = '\0';
+    data_path[0] = '\0';
+    lock_path[0] = '\0';
    
-    if (!credname)
-    {
-	 
+    if (!credname) {
     	if (concatenate_strings(creds_path, creds_path_len, storage_dir,
-			    "/", sterile_username, creds_suffix, NULL) == -1)
-    	{
-        	verror_put_string("Internal error: creds_path too small: %s line %s",
-                         __FILE__, __LINE__);
-        	goto error;
+				"/", sterile_username, creds_suffix,
+				NULL) == -1) {
+	    verror_put_string("Internal error: creds_path too small: "
+			      "%s line %s", __FILE__, __LINE__);
+	    goto error;
     	}
-
-    	data_path[0] = '\0';
-    
     	if (concatenate_strings(data_path, data_path_len, storage_dir,
-			    "/", sterile_username, data_suffix, NULL) == -1)
-    	{
-        	verror_put_string("Internal error: data_path too small: %s line %s",
-              	            __FILE__, __LINE__);
-        	goto error;
+				"/", sterile_username, data_suffix,
+				NULL) == -1) {
+	    verror_put_string("Internal error: data_path too small: "
+			      "%s line %s", __FILE__, __LINE__);
+	    goto error;
     	}
-    }
-    else
-    {
+    	if (concatenate_strings(lock_path, lock_path_len, storage_dir,
+				"/", sterile_username, lock_suffix,
+				NULL) == -1) {
+	    verror_put_string("Internal error: lock_path too small: "
+			      "%s line %s", __FILE__, __LINE__);
+	    goto error;
+    	}
+    } else {
 	sterile_credname = mystrdup(credname);
 	if (sterile_credname == NULL) {
 	    goto error;
@@ -358,17 +364,22 @@ get_storage_locations(const char *username,
 				"/", sterile_username, "-",
 				sterile_credname, creds_suffix, NULL) == -1) {
          verror_put_string("Internal error: creds_path too small: %s line %s",
-			      __FILE__, __LINE__);
+			   __FILE__, __LINE__);
        	 goto error;
     	}
-
-    	data_path[0] = '\0';
-    
     	if (concatenate_strings(data_path, data_path_len, storage_dir,
 				"/", sterile_username, "-",
 				sterile_credname, data_suffix, NULL) == -1)
     	{
        	 verror_put_string("Internal error: data_path too small: %s line %s",
+       	                   __FILE__, __LINE__);
+       	 goto error;
+    	}
+    	if (concatenate_strings(lock_path, lock_path_len, storage_dir,
+				"/", sterile_username, "-",
+				sterile_credname, lock_suffix, NULL) == -1)
+    	{
+       	 verror_put_string("Internal error: lock_path too small: %s line %s",
        	                   __FILE__, __LINE__);
        	 goto error;
     	}
@@ -679,6 +690,7 @@ myproxy_creds_store(const struct myproxy_creds *creds)
 {
     char creds_path[MAXPATHLEN] = "";
     char data_path[MAXPATHLEN] = "";
+    char lock_path[MAXPATHLEN] = "";
     mode_t data_file_mode = FILE_MODE;
     mode_t creds_file_mode = FILE_MODE;
     int return_code = -1;
@@ -695,6 +707,7 @@ myproxy_creds_store(const struct myproxy_creds *creds)
     if (get_storage_locations(creds->username,
                               creds_path, sizeof(creds_path),
                               data_path, sizeof(data_path),
+			      lock_path, sizeof(lock_path),
 			      creds->credname) == -1) {
         goto error;
     }
@@ -709,6 +722,20 @@ myproxy_creds_store(const struct myproxy_creds *creds)
     if (copy_file(creds->location, creds_path, creds_file_mode) == -1) {
 	verror_put_string ("Error writing credential file");
 	goto clean_up;
+    }
+
+    /* administrative locks */
+    if (creds->lockmsg) {
+	FILE *lockfile;
+	lockfile = fopen(lock_path, "w");
+	if (!lockfile) {
+	    verror_put_string("Error writing lockfile");
+	    goto clean_up;
+	}
+	fprintf(lockfile, creds->lockmsg);
+	fclose(lockfile);
+    } else {
+	unlink(lock_path);
     }
 	
     /* Success */
@@ -732,7 +759,10 @@ myproxy_creds_retrieve(struct myproxy_creds *creds)
 {
     char creds_path[MAXPATHLEN] = "";
     char data_path[MAXPATHLEN] = "";
+    char lock_path[MAXPATHLEN] = "";
     char *username = NULL;
+    FILE *lockfile;
+    
     
     if ((creds == NULL) || (creds->username == NULL)) {
         verror_put_errno(EINVAL);
@@ -745,6 +775,7 @@ myproxy_creds_retrieve(struct myproxy_creds *creds)
     if (get_storage_locations(username,
                               creds_path, sizeof(creds_path),
                               data_path, sizeof(data_path),
+			      lock_path, sizeof(lock_path),
 			      creds->credname) == -1) {
 	return -1;
     }
@@ -757,6 +788,27 @@ myproxy_creds_retrieve(struct myproxy_creds *creds)
 	    verror_put_string("Can't read credentials");
 	}
 	return -1;
+    }
+
+    /* read lockmsg in lockfile if it exists */
+    if (creds->lockmsg) {
+	free(creds->lockmsg);
+	creds->lockmsg = NULL;
+    }
+    if ((lockfile = fopen(lock_path, "r")) != NULL) {
+	long len;
+	fseek(lockfile, 0, SEEK_END);
+	len = ftell(lockfile);
+	rewind(lockfile);
+	if (len < 0) {
+	    verror_put_string("Failed to access %s", lock_path);
+	    fclose(lockfile);
+	    return -1;
+	}
+	len++;
+	creds->lockmsg = malloc(len);
+	fgets(creds->lockmsg, len, lockfile);
+	fclose(lockfile);
     }
 
     /* reset username from stashed value */
@@ -872,7 +924,7 @@ int myproxy_admin_retrieve_all(struct myproxy_creds *creds)
     struct myproxy_creds *cur_cred = NULL, *new_cred = NULL;
     DIR *dir;
     struct dirent *de;
-    int return_code = -1;
+    int return_code = -1, numcreds=0;
     char *username = NULL, *credname = NULL;
     time_t end_time = 0, start_time = 0, now;
 
@@ -966,6 +1018,7 @@ int myproxy_admin_retrieve_all(struct myproxy_creds *creds)
 			cur_cred = new_cred;
 			new_cred = malloc(sizeof(struct myproxy_creds));
 			memset(new_cred, 0, sizeof(struct myproxy_creds));
+			numcreds++;
 		} else {
 			myproxy_creds_free_contents(new_cred);
 		}
@@ -974,7 +1027,7 @@ int myproxy_admin_retrieve_all(struct myproxy_creds *creds)
     }
     closedir(dir);
 
-    return_code = 0;
+    return_code = numcreds;
 
  error:
     if (username) free(username);
@@ -990,6 +1043,7 @@ myproxy_creds_exist(const char *username, const char *credname)
 {
     char creds_path[MAXPATHLEN] = "";
     char data_path[MAXPATHLEN] = "";
+    char lock_path[MAXPATHLEN] = "";
     int rc;
 
     if (username == NULL)
@@ -1000,8 +1054,9 @@ myproxy_creds_exist(const char *username, const char *credname)
 
     if (get_storage_locations(username,
                               creds_path, sizeof(creds_path),
-                              data_path, sizeof(data_path), credname) == -1)
-    {
+                              data_path, sizeof(data_path),
+			      lock_path, sizeof(lock_path),
+			      credname) == -1) {
 	return -1;
     }
 
@@ -1065,6 +1120,7 @@ myproxy_creds_is_owner(const char		*username,
 {
     char creds_path[MAXPATHLEN];
     char data_path[MAXPATHLEN];
+    char lock_path[MAXPATHLEN];
     struct myproxy_creds retrieved_creds = {0}; /* initialize with 0s */
     int return_code = -1;
 
@@ -1073,7 +1129,9 @@ myproxy_creds_is_owner(const char		*username,
     
     if (get_storage_locations(username,
                               creds_path, sizeof(creds_path),
-                              data_path, sizeof(data_path), credname ) == -1)
+                              data_path, sizeof(data_path),
+			      lock_path, sizeof(lock_path),
+			      credname ) == -1)
     {
         goto error;
     }
@@ -1105,6 +1163,7 @@ myproxy_creds_delete(const struct myproxy_creds *creds)
 {
     char creds_path[MAXPATHLEN];
     char data_path[MAXPATHLEN];
+    char lock_path[MAXPATHLEN];
     int return_code = -1;
     
     if ((creds == NULL) || (creds->username == NULL)) {
@@ -1115,6 +1174,7 @@ myproxy_creds_delete(const struct myproxy_creds *creds)
     if (get_storage_locations(creds->username,
                               creds_path, sizeof(creds_path),
                               data_path, sizeof(data_path),
+			      lock_path, sizeof(lock_path),
 			      creds->credname) == -1) {
         goto error;
     }
@@ -1130,6 +1190,76 @@ myproxy_creds_delete(const struct myproxy_creds *creds)
         goto error;
     }
     
+    unlink(lock_path);		/* may not exist */
+
+    /* Success */
+    return_code = 0;
+    
+  error:
+    return return_code;
+}
+
+int
+myproxy_creds_lock(const struct myproxy_creds *creds, const char *reason)
+{
+    char creds_path[MAXPATHLEN];
+    char data_path[MAXPATHLEN];
+    char lock_path[MAXPATHLEN];
+    int return_code = -1;
+    FILE *lockfile;
+    
+    if ((creds == NULL) || (creds->username == NULL) || (reason == NULL)) {
+        verror_put_errno(EINVAL);
+        return -1;
+    }
+    
+    if (get_storage_locations(creds->username,
+                              creds_path, sizeof(creds_path),
+                              data_path, sizeof(data_path),
+			      lock_path, sizeof(lock_path),
+			      creds->credname) == -1) {
+        goto error;
+    }
+
+    lockfile = fopen(lock_path, "w");
+    if (!lockfile) {
+	verror_put_errno(errno);
+	verror_put_string("Error opening lockfile for writing");
+	goto error;
+    }
+    fprintf(lockfile, "%s", reason);
+    fclose(lockfile);
+
+    /* Success */
+    return_code = 0;
+    
+  error:
+    return return_code;
+}
+
+int
+myproxy_creds_unlock(const struct myproxy_creds *creds)
+{
+    char creds_path[MAXPATHLEN];
+    char data_path[MAXPATHLEN];
+    char lock_path[MAXPATHLEN];
+    int return_code = -1;
+    
+    if ((creds == NULL) || (creds->username == NULL)) {
+        verror_put_errno(EINVAL);
+        return -1;
+    }
+    
+    if (get_storage_locations(creds->username,
+                              creds_path, sizeof(creds_path),
+                              data_path, sizeof(data_path),
+			      lock_path, sizeof(lock_path),
+			      creds->credname) == -1) {
+        goto error;
+    }
+
+    unlink(lock_path);
+
     /* Success */
     return_code = 0;
     
@@ -1145,6 +1275,7 @@ myproxy_creds_change_passphrase(const struct myproxy_creds *creds,
 {
     char creds_path[MAXPATHLEN];
     char data_path[MAXPATHLEN];
+    char lock_path[MAXPATHLEN];
     mode_t data_file_mode = FILE_MODE;
     struct myproxy_creds tmp_creds = {0}; /* initialize with 0s */
     int return_code = -1;
@@ -1159,6 +1290,7 @@ myproxy_creds_change_passphrase(const struct myproxy_creds *creds,
     if (get_storage_locations(creds->username,
                               creds_path, sizeof(creds_path),
                               data_path, sizeof(data_path),
+			      lock_path, sizeof(lock_path),
 			      creds->credname) == -1) {
         goto error;
     }
@@ -1242,4 +1374,38 @@ int myproxy_set_storage_dir(const char *dir)
 int myproxy_check_storage_dir()
 {
     return check_storage_directory();
+}
+
+int
+myproxy_print_cred_info(myproxy_creds_t *creds, FILE *out)
+{
+    if (!creds) return -1;
+    for (; creds; creds = creds->next) {
+	time_t time_diff = 0, now = 0;
+	float days = 0.0;
+	if (creds->owner_name) printf("owner: %s\n", creds->owner_name);
+	if (creds->username)   printf("username: %s\n", creds->username);
+        if (creds->credname)   printf("  name: %s\n", creds->credname);
+	if (creds->creddesc)   printf("  description: %s\n", creds->creddesc);
+	if (creds->retrievers) printf("  retrieval policy: %s\n",
+				      creds->retrievers);
+	if (creds->renewers)   printf("  renewal policy: %s\n",
+				      creds->renewers);
+	if (creds->lockmsg)    printf("  locked: %s\n", creds->lockmsg);
+	now = time(0);
+	if (creds->end_time > now) {
+	    time_diff = creds->end_time - now;
+	    days = time_diff / 86400.0;
+	}
+	printf("  timeleft: %ld:%02ld:%02ld", 
+	       (long)(time_diff / 3600),
+	       (long)(time_diff % 3600) / 60,
+	       (long)time_diff % 60 );
+	if (days > 1.0) {
+	    printf("  (%.1f days)\n", days);
+	} else {
+	    printf("\n");
+	}
+    }
+    return 0;
 }

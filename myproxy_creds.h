@@ -30,6 +30,11 @@ struct myproxy_creds {
     time_t start_time;
     time_t end_time;
 
+    /* non-NULL lockmsg indicates credential is administratively
+       locked and should not be accessible.  lockmsg should be
+       returned on any attempted access. */
+    char *lockmsg;
+
     struct myproxy_creds *next;
 };
 
@@ -54,7 +59,8 @@ int myproxy_creds_store(const struct myproxy_creds *creds);
  * Note: No checking on the passphrase or owner name is done.
  * Note: The passphrase returned in the myproxy_creds structure is crypt()'ed.
  *
- * Returns -1 on error, 0 on success.  */
+ * Returns -1 on error, 0 on success.
+ */
 int myproxy_creds_retrieve(struct myproxy_creds *creds);
 
 /*
@@ -89,7 +95,7 @@ int myproxy_creds_retrieve_all(struct myproxy_creds *creds);
  * end_time < specified time.
  * Note: The passphrase returned in the myproxy_creds structure is crypt()'ed.
  *
- * Returns -1 on error, 0 on success.
+ * Returns -1 on error, number of credentials on success.
  */
 int myproxy_admin_retrieve_all(struct myproxy_creds *creds);
 
@@ -104,6 +110,27 @@ int myproxy_admin_retrieve_all(struct myproxy_creds *creds);
 int myproxy_creds_delete(const struct myproxy_creds *creds);
 
 /*
+ * myproxy_creds_lock()
+ *
+ * Lock credentials indicated by the username and credname fields in
+ * the given myproxy_creds structure, for the specified reason.
+ * Locked credentials can not be retrieved or renewed.
+ *
+ * Returns -1 on error, 0 on success.
+ */
+int myproxy_creds_lock(const struct myproxy_creds *creds, const char *reason);
+
+/*
+ * myproxy_creds_unlock()
+ *
+ * Unlock credentials indicated by the username and credname fields in
+ * the given myproxy_creds structure.
+ *
+ * Returns -1 on error, 0 on success.
+ */
+int myproxy_creds_unlock(const struct myproxy_creds *creds);
+
+/*
  * myproxy_creds_change_passphrase()
  *
  * Change the passphrase of the credential specified by the username
@@ -112,7 +139,6 @@ int myproxy_creds_delete(const struct myproxy_creds *creds);
  *
  * Returns -1 on error, 0 on success
  */
-
 int myproxy_creds_change_passphrase(const struct myproxy_creds *creds,
 				    const char *new_passphrase);
  
@@ -159,6 +185,14 @@ int myproxy_set_storage_dir(const char *dir);
  * Returns 0 if OK, -1 if not.
  */
 int myproxy_check_storage_dir();
+
+/*
+ * myproxy_print_cred_info()
+ *
+ * Print info about creds to out.
+ * Returns 0 if OK, -1 if not.
+ */
+int myproxy_print_cred_info(myproxy_creds_t *creds, FILE *out);
 
 #endif
 

@@ -906,6 +906,31 @@ myproxy_serialize_response(const myproxy_response_t *response,
 		    goto error;
 		totlen += len;
 	    }
+	    if (cred->lockmsg) {
+		char *newline;
+		newline = strchr(cred->lockmsg, '\n');
+		if (newline) {
+		    *newline = '\0'; /* only send first line */
+		}
+		if (first_cred) {
+		    len = concatenate_strings(data, datalen,
+					      MYPROXY_CRED_PREFIX,
+					      "_", MYPROXY_LOCKMSG_STRING,
+					      cred->lockmsg, "\n", NULL);
+		} else {
+		    len = concatenate_strings(data, datalen,
+					      MYPROXY_CRED_PREFIX,
+					      "_", cred->credname,
+					      "_", MYPROXY_LOCKMSG_STRING,
+					      cred->lockmsg, "\n", NULL);
+		}
+		if (newline) {
+		    *newline = '\n';
+		}
+		if (len == -1)
+		    goto error;
+		totlen += len;
+	    }
 	    first_cred = 0;
 	}
 	if (response->info_creds->next) {
@@ -1126,6 +1151,18 @@ myproxy_deserialize_response(myproxy_response_t *response,
 	if (len >= 0)
 	    response->info_creds->renewers = strdup(buffer); 
 
+	tmp[0] = '\0';
+    	len = concatenate_strings(tmp, sizeof(tmp), MYPROXY_CRED_PREFIX,
+				  "_", MYPROXY_LOCKMSG_STRING, NULL);
+    	if (len < 0) return -1;
+		
+	len = convert_message(data, datalen, tmp,
+			      CONVERT_MESSAGE_DEFAULT_FLAGS,
+			      buffer, sizeof(buffer));
+    	if (len == -1) return -1;
+	if (len >= 0)
+	    response->info_creds->lockmsg = strdup(buffer); 
+
 	len = convert_message(data, datalen, MYPROXY_ADDITIONAL_CREDS_STRING,
 			      CONVERT_MESSAGE_DEFAULT_FLAGS, 
 			      buffer, sizeof(buffer));
@@ -1252,6 +1289,20 @@ myproxy_deserialize_response(myproxy_response_t *response,
 			
 		if (len >= 0)
 		    cred->renewers = strdup(buffer);
+
+		tmp[0] = '\0';
+		len = concatenate_strings (tmp, sizeof(tmp),
+					   MYPROXY_CRED_PREFIX, "_", strs[i],
+					   "_", MYPROXY_LOCKMSG_STRING, NULL);
+		if (len == -1) return -1;
+
+		len = convert_message(data, datalen, tmp,
+				      CONVERT_MESSAGE_DEFAULT_FLAGS,
+				      buffer, sizeof (buffer));
+		if (len == -1) return -1;
+			
+		if (len >= 0)
+		    cred->lockmsg = strdup(buffer);
 
 	    }
 	    /* de-allocate string-list from parse_add_creds() */
