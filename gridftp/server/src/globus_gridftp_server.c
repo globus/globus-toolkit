@@ -339,6 +339,11 @@ globus_l_gfs_be_daemon(void)
         GLOBUS_NULL);
     globus_l_gfs_check_log_and_die(result);
 }
+/* XXX */
+int
+globus_l_gfs_file_activate(void);
+int
+globus_l_gfs_file_deactivate(void);
 
 int
 main(
@@ -351,8 +356,6 @@ main(
     globus_module_activate(GLOBUS_FTP_CONTROL_MODULE);
     /* globus_module_activate(GLOBUS_GRIDFTP_SERVER_MODULE); */
 /* XXX */
-int
-globus_l_gfs_file_activate(void);
 globus_l_gfs_file_activate();
     
     globus_i_gfs_config_init(argc, argv);
@@ -393,8 +396,6 @@ globus_l_gfs_file_activate();
     globus_i_gfs_log_close();
     
 /* XXXX */
-int
-globus_l_gfs_file_deactivate(void);
 globus_l_gfs_file_deactivate();
     globus_module_deactivate_all();
     
