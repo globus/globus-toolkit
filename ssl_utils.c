@@ -527,44 +527,66 @@ ssl_proxy_file_destroy(const char *proxyfile)
     FILE *fp;
     long offset, i;
     char zero = '\0';
+    struct stat s;
+    int return_status = SSL_ERROR;
     
     assert(proxyfile != NULL);
 
     fp = fopen(proxyfile, "r+");
     if (!fp) {
-	verror_put_string("fopen: %s\n", strerror(errno));
-	return SSL_ERROR;
+	verror_put_string("fopen(%s): %s\n", proxyfile, strerror(errno));
+	goto error;
+    }
+    /* Don't get fooled into zeroing out the wrong file via tricks
+       with links and the like. */
+    if (fstat(fileno(fp), &s) < 0) {
+	verror_put_string("fstat(%s): %s\n", proxyfile, strerror(errno));
+	goto error;
+    }
+    if (S_ISDIR(s.st_mode)) {
+	verror_put_string("proxy file %s is a directory!\n", proxyfile);
+	goto error;
+    }
+    if (!S_ISREG(s.st_mode)) {
+	verror_put_string("proxy file %s is not a regular file!\n",
+			  proxyfile);
+	goto error;
+    }
+    if (s.st_nlink != 1) {
+	verror_put_string("proxy file %s has links!\n", proxyfile);
+	goto error;
     }
     if (fseek(fp, 0L, SEEK_END) < 0) {
-	verror_put_string("fseek: %s\n", strerror(errno));
-	fclose(fp);
-	return SSL_ERROR;
+	verror_put_string("fseek(%s): %s\n", proxyfile, strerror(errno));
+	goto error;
     }
     offset = ftell(fp);
     if (offset < 0) {
-	verror_put_string("ftell: %s\n", strerror(errno));
-	fclose(fp);
-	return SSL_ERROR;
+	verror_put_string("ftell(%s): %s\n", proxyfile, strerror(errno));
+	goto error;
     }
     if (fseek(fp, 0L, SEEK_SET) < 0) {
-	verror_put_string("fseek: %s\n", strerror(errno));
-	fclose(fp);
-	return SSL_ERROR;
+	verror_put_string("fseek(%s): %s\n", proxyfile, strerror(errno));
+	goto error;
     }
     for (i=0; i < offset; i++) {
 	if (fwrite(&zero, 1, 1, fp) != 1) {
-	    verror_put_string("fwrite: %s\n", strerror(errno));
-	    fclose(fp);
-	    return SSL_ERROR;
+	    verror_put_string("fwrite(%s): %s\n", proxyfile,
+			      strerror(errno));
+	    goto error;
 	}
     }
-    fclose(fp);
-    if (unlink(proxyfile) < 0) {
+
+    return_status = SSL_SUCCESS;
+
+ error:
+    if (fp) fclose(fp);
+    if (unlink(proxyfile) < 0) { /* always try to unlink it, even on error */
 	verror_put_string("unlink: %s\n", strerror(errno));
 	return SSL_ERROR;
     }
 
-    return SSL_SUCCESS;
+    return return_status;
 }	
 		     
 		     
