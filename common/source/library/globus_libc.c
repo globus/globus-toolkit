@@ -16,6 +16,7 @@ CVS Information:
 			     Include header files
 ******************************************************************************/
 #include "globus_libc.h"
+#include "globus_common.h"
 
 
 #ifdef HAVE_STRING_H
@@ -30,7 +31,7 @@ CVS Information:
 #include <arpa/inet.h>
 #endif
 
-#if !defined(MAXPATHLEN) 
+#if !defined(MAXPATHLEN)
 #   include <sys/param.h>
 #   define MAXPATHLEN PATH_MAX
 #endif
@@ -60,9 +61,9 @@ static void globus_l_libc_copy_pwd_data_to_buffer(struct passwd *pwd,
 /******************************************************************************
 Function: globus_libc_lock()
 
-Description: 
+Description:
 
-Parameters: 
+Parameters:
 
 Returns:
 ******************************************************************************/
@@ -80,9 +81,9 @@ globus_libc_lock(void)
 /******************************************************************************
 Function: globus_libc_unlock()
 
-Description: 
+Description:
 
-Parameters: 
+Parameters:
 
 Returns:
 ******************************************************************************/
@@ -91,7 +92,7 @@ int
 globus_libc_unlock(void)
 {
     if(globus_i_module_initialized==GLOBUS_TRUE)
-    { 
+    {
         return globus_macro_libc_unlock();
     }
     return GLOBUS_FAILURE;
@@ -101,10 +102,10 @@ globus_libc_unlock(void)
 
 /******************************************************************************
 Function: globus_libc_strncasecmp
- 
-Description: 
 
-Parameters: 
+Description:
+
+Parameters:
 
 Returns:
  ******************************************************************************/
@@ -119,7 +120,7 @@ globus_libc_strncasecmp(
 
     globus_libc_lock();
 
-#   if HAVE_STRNCASECMP    
+#   if HAVE_STRNCASECMP
     {
         rc = strncasecmp(s1, s2, n);
     }
@@ -135,7 +136,7 @@ globus_libc_strncasecmp(
 	        {
 	            rc = 0;
 	            goto exit;
-	        } 
+	        }
         	else if(s2[ctr] == '\0')
 	        {
 	            rc = -1;
@@ -181,9 +182,9 @@ globus_libc_strncasecmp(
 /******************************************************************************
 Function: globus_libc_open()
 
-Description: 
+Description:
 
-Parameters: 
+Parameters:
 
 Returns:
 ******************************************************************************/
@@ -199,7 +200,7 @@ globus_libc_open(char *path,
     int mode=0;
 
     globus_libc_lock();
-    
+
 
     if(flags & O_CREAT)
     {
@@ -227,9 +228,9 @@ globus_libc_open(char *path,
 /******************************************************************************
 Function: globus_libc_close()
 
-Description: 
+Description:
 
-Parameters: 
+Parameters:
 
 Returns:
 ******************************************************************************/
@@ -247,14 +248,14 @@ globus_libc_close(int fd)
     errno = save_errno;
     return(rc);
 } /* globus_libc_close() */
- 
- 
+
+
 /******************************************************************************
 Function: globus_libc_read()
 
-Description: 
+Description:
 
-Parameters: 
+Parameters:
 
 Returns:
 ******************************************************************************/
@@ -274,13 +275,13 @@ globus_libc_read(int fd,
     errno = save_errno;
     return(rc);
 } /* globus_libc_read() */
-   
+
 /******************************************************************************
 Function: globus_libc_writev()
 
-Description: 
+Description:
 
-Parameters: 
+Parameters:
 
 Returns:
 ******************************************************************************/
@@ -311,13 +312,13 @@ globus_libc_writev(
 		             iov[0].iov_len);
 #endif
 } /* globus_libc_writev() */
- 
+
 /******************************************************************************
 Function: globus_libc_write()
 
-Description: 
+Description:
 
-Parameters: 
+Parameters:
 
 Returns:
 ******************************************************************************/
@@ -337,13 +338,13 @@ globus_libc_write(int fd,
     errno = save_errno;
     return(rc);
 } /* globus_libc_write() */
- 
+
 /******************************************************************************
 Function: globus_libc_fstat()
 
-Description: 
+Description:
 
-Parameters: 
+Parameters:
 
 Returns:
 ******************************************************************************/
@@ -362,17 +363,17 @@ globus_libc_fstat(int fd,
     errno = save_errno;
     return(rc);
 } /* globus_libc_fstat() */
- 
+
 #endif /* !defined(HAVE_THREAD_SAFE_SELECT) && !defined(BUILD_LITE) */
 
- 
+
 #if !defined(BUILD_LITE)
 /******************************************************************************
 Function: globus_libc_malloc()
 
-Description: 
+Description:
 
-Parameters: 
+Parameters:
 
 Returns:
 ******************************************************************************/
@@ -408,7 +409,7 @@ globus_libc_malloc(
 		}
     }
 	while (!done);
-    
+
     errno = save_errno;
     return(ptr);
 }
@@ -417,9 +418,9 @@ globus_libc_malloc(
 /******************************************************************************
 Function: globus_libc_realloc()
 
-Description: 
+Description:
 
-Parameters: 
+Parameters:
 
 Returns:
 ******************************************************************************/
@@ -429,7 +430,7 @@ globus_libc_realloc(void *ptr,
 		    size_t bytes)
 {
     int save_errno;
-    
+
     globus_libc_lock();
     ptr = (void *) realloc(ptr, bytes);
     save_errno = errno;
@@ -443,9 +444,9 @@ globus_libc_realloc(void *ptr,
 /******************************************************************************
 Function: globus_libc_calloc()
 
-Description: 
+Description:
 
-Parameters: 
+Parameters:
 
 Returns:
 ******************************************************************************/
@@ -456,7 +457,7 @@ globus_libc_calloc(size_t nelem,
 {
     int save_errno;
     void *ptr;
-    
+
     globus_libc_lock();
     ptr = (void *) calloc(nelem, elsize);
     save_errno = errno;
@@ -464,15 +465,15 @@ globus_libc_calloc(size_t nelem,
     /* Should convert EWOULDBLOCK to EINTR */
     globus_libc_unlock();
     errno = save_errno;
-    return(ptr);    
+    return(ptr);
 } /* globus_libc_calloc() */
 
 /******************************************************************************
 Function: globus_libc_free()
 
-Description: 
+Description:
 
-Parameters: 
+Parameters:
 
 Returns:
 ******************************************************************************/
@@ -481,7 +482,7 @@ void
 globus_libc_free(void *ptr)
 {
     int save_errno;
-    
+
     globus_libc_lock();
     free (ptr);
     save_errno = errno;
@@ -492,13 +493,13 @@ globus_libc_free(void *ptr)
 
     return;
 } /* globus_libc_free() */
-    
+
 /******************************************************************************
 Function: globus_libc_alloca()
 
-Description: 
+Description:
 
-Parameters: 
+Parameters:
 
 Returns:
 ******************************************************************************/
@@ -508,7 +509,7 @@ globus_libc_alloca(size_t bytes)
 {
     int save_errno;
     void *ptr;
-    
+
     globus_libc_lock();
     ptr = (void *) alloca(bytes);
     save_errno = errno;
@@ -521,9 +522,9 @@ globus_libc_alloca(size_t bytes)
 /******************************************************************************
 Function: globus_libc_printf()
 
-Description: 
+Description:
 
-Parameters: 
+Parameters:
 
 Returns:
 ******************************************************************************/
@@ -554,9 +555,9 @@ globus_libc_printf(const char *format, ...)
 /******************************************************************************
 Function: globus_libc_fprintf()
 
-Description: 
+Description:
 
-Parameters: 
+Parameters:
 
 Returns:
 ******************************************************************************/
@@ -579,7 +580,7 @@ globus_libc_fprintf(FILE *strm, const char *format, ...)
 #else
     va_start(ap);
 #endif
-    
+
     rc = vfprintf(strm, format, ap);
     save_errno=errno;
 
@@ -592,9 +593,9 @@ globus_libc_fprintf(FILE *strm, const char *format, ...)
 /******************************************************************************
 Function: globus_libc_sprintf()
 
-Description: 
+Description:
 
-Parameters: 
+Parameters:
 
 Returns:
 ******************************************************************************/
@@ -613,7 +614,7 @@ globus_libc_sprintf(char *s, const char *format, ...)
 #else
     va_start(ap);
 #endif
-    
+
     rc = vsprintf(s, format, ap);
     save_errno=errno;
 
@@ -626,9 +627,9 @@ globus_libc_sprintf(char *s, const char *format, ...)
 /******************************************************************************
 Function: globus_libc_vprintf()
 
-Description: 
+Description:
 
-Parameters: 
+Parameters:
 
 Returns:
 ******************************************************************************/
@@ -653,9 +654,9 @@ globus_libc_vprintf(const char *format, va_list ap)
 /******************************************************************************
 Function: globus_libc_vfprintf()
 
-Description: 
+Description:
 
-Parameters: 
+Parameters:
 
 Returns:
 ******************************************************************************/
@@ -665,7 +666,7 @@ globus_libc_vfprintf(FILE *strm, const char *format, va_list ap)
 {
     int rc;
     int save_errno;
-    
+
     if(strm == GLOBUS_NULL)
     {
 	return -1;
@@ -684,9 +685,9 @@ globus_libc_vfprintf(FILE *strm, const char *format, va_list ap)
 /******************************************************************************
 Function: globus_libc_vsprintf()
 
-Description: 
+Description:
 
-Parameters: 
+Parameters:
 
 Returns:
 ******************************************************************************/
@@ -696,7 +697,7 @@ globus_libc_vsprintf(char *s, const char *format, va_list ap)
 {
     int rc;
     int save_errno;
-    
+
     globus_libc_lock();
 
     rc = vsprintf(s, format, ap);
@@ -719,7 +720,7 @@ globus_l_libc_vsnprintf(char *s, size_t n, const char *format, va_list ap)
     va_list ap_copy;
 
     globus_libc_va_copy(ap_copy,ap);
-    
+
     globus_libc_unlock();
     rc = globus_libc_vprintf_length( format, ap_copy);
     globus_libc_lock();
@@ -754,9 +755,9 @@ globus_l_libc_vsnprintf(char *s, size_t n, const char *format, va_list ap)
 /******************************************************************************
 Function: globus_libc_snprintf()
 
-Description: 
+Description:
 
-Parameters: 
+Parameters:
 
 Returns:
 ******************************************************************************/
@@ -792,9 +793,9 @@ globus_libc_snprintf(char *s, size_t n, const char *format, ...)
 /******************************************************************************
 Function: globus_libc_vsnprintf()
 
-Description: 
+Description:
 
-Parameters: 
+Parameters:
 
 Returns:
 ******************************************************************************/
@@ -804,7 +805,7 @@ globus_libc_vsnprintf(char *s, size_t n, const char *format, va_list ap)
 {
     int rc;
     int save_errno;
-    
+
     globus_libc_lock();
 
 #if defined(HAVE_VSNPRINTF)
@@ -832,7 +833,7 @@ globus_libc_sprint_off_t(char * s, globus_off_t off)
 }
 
 /*
- * Scan a globus_off_t from a string. Equivalent to 
+ * Scan a globus_off_t from a string. Equivalent to
  * sscanf("%d%n", off, consumed) (with %d replaced with the
  * appropriately-sized integer type.
  */
@@ -856,9 +857,9 @@ globus_libc_scan_off_t(char * s, globus_off_t * off, int * consumed)
 /******************************************************************************
 Function: globus_libc_gethostname()
 
-Description: 
+Description:
 
-Parameters: 
+Parameters:
 
 Returns:
 ******************************************************************************/
@@ -870,7 +871,7 @@ globus_libc_gethostname(char *name, int len)
     static globus_mutex_t gethostname_mutex;
     static int initialized = GLOBUS_FALSE;
     char *env;
-    
+
     globus_libc_lock();
     if(initialized == GLOBUS_FALSE)
     {
@@ -881,7 +882,7 @@ globus_libc_gethostname(char *name, int len)
     globus_libc_unlock();
 
     globus_mutex_lock(&gethostname_mutex);
-    
+
     if (hostname_length == 0U &&
         (env = globus_libc_getenv("GLOBUS_HOSTNAME")) != GLOBUS_NULL)
     {
@@ -924,7 +925,7 @@ globus_libc_gethostname(char *name, int len)
 	    struct hostent      hostent_by_addr;
 	    char                buf[500];
 	    int                 errno_by_addr;
-	    
+
 #           if defined (TARGET_ARCH_CRAYT3E) \
 			|| defined (TARGET_ARCH_CRAYT90)
             {
@@ -1040,7 +1041,7 @@ globus_libc_free_memory(
     GlobalMemoryStatusEx(&statex);
 
     *mem = statex.ullAvailPhys;
-    
+
     return 0;
 }
 
@@ -1058,7 +1059,7 @@ int
 globus_libc_getpid(void)
 {
     int pid;
-    
+
     globus_libc_lock();
 
     pid = (int) _getpid();
@@ -1093,9 +1094,9 @@ globus_libc_free_memory(
 /******************************************************************************
 Function: globus_libc_getpid()
 
-Description: 
+Description:
 
-Parameters: 
+Parameters:
 
 Returns:
 ******************************************************************************/
@@ -1103,7 +1104,7 @@ int
 globus_libc_getpid(void)
 {
     int pid;
-    
+
     globus_libc_lock();
 
     pid = (int) getpid();
@@ -1116,9 +1117,9 @@ globus_libc_getpid(void)
 /******************************************************************************
 Function: globus_libc_fork()
 
-Description: 
+Description:
 
-Parameters: 
+Parameters:
 
 Returns:
 ******************************************************************************/
@@ -1147,9 +1148,9 @@ globus_libc_fork(void)
 /******************************************************************************
 Function: globus_libc_usleep()
 
-Description: 
+Description:
 
-Parameters: 
+Parameters:
 
 Returns:
 ******************************************************************************/
@@ -1157,7 +1158,7 @@ int
 globus_libc_usleep(long usec)
 {
     struct timeval timeout;
-    
+
     timeout.tv_sec = usec/1000000;
     timeout.tv_usec = usec%1000000;
 
@@ -1166,15 +1167,15 @@ globus_libc_usleep(long usec)
 	    globus_libc_lock();
     }
 #   endif
-    
+
     select(0, NULL, NULL, NULL, &timeout);
-    
+
 #   if !defined(HAVE_THREAD_SAFE_SELECT)
     {
 	     globus_libc_unlock();
     }
 #   endif
-	
+
     return GLOBUS_SUCCESS;
 } /* globus_libc_usleep() */
 #endif /* TARGET_ARCH_WIN32 */
@@ -1182,9 +1183,9 @@ globus_libc_usleep(long usec)
 /******************************************************************************
 Function: globus_libc_wallclock()
 
-Description: 
+Description:
 
-Parameters: 
+Parameters:
 
 Returns:
 ******************************************************************************/
@@ -1204,9 +1205,9 @@ globus_libc_wallclock(void)
 /******************************************************************************
 Function: globus_libc_getbyhostname_r()
 
-Description: 
+Description:
 
-Parameters: 
+Parameters:
 
 Returns:
 ******************************************************************************/
@@ -1247,7 +1248,7 @@ globus_libc_gethostbyname_r(char *hostname,
 	    {
 	        *h_errnop = h_errno;
 	    }
-	} 
+	}
     }
 #   elif defined(GLOBUS_HAVE_GETHOSTBYNAME_R_3)
     {
@@ -1330,9 +1331,9 @@ globus_libc_gethostbyname_r(char *hostname,
 /******************************************************************************
 Function: globus_libc_gethostbyaddr_r()
 
-Description: 
+Description:
 
-Parameters: 
+Parameters:
 
 Returns:
 ******************************************************************************/
@@ -1435,18 +1436,18 @@ globus_libc_gethostbyaddr_r(char *addr,
 	GLOBUS_HAVE_GETHOSTBYADDR symbol must be defined!!!;
     }
 #   endif
-    
+
     globus_libc_unlock();
 
-    return hp;    
+    return hp;
 } /* globus_libc_gethostbyaddr_r() */
 
 /******************************************************************************
 Function: globus_libc_ctime_r()
 
-Description: 
+Description:
 
-Parameters: 
+Parameters:
 
 Returns:
 ******************************************************************************/
@@ -1456,12 +1457,12 @@ globus_libc_ctime_r(time_t *clock,
 		    int buflen)
 {
     char *tmp_buf;
-    
+
 #   if !defined(HAVE_CTIME_R)
     {
 	globus_libc_lock();
 	tmp_buf = ctime(clock);
-	
+
 	if(tmp_buf != GLOBUS_NULL)
 	{
 	    strncpy(buf,tmp_buf,buflen);
@@ -1471,7 +1472,7 @@ globus_libc_ctime_r(time_t *clock,
 	tmp_buf = buf;
     }
 #   endif
-	
+
 #   if defined(GLOBUS_HAVE_CTIME_R_2)
     {
 	tmp_buf = ctime_r(clock, buf);
@@ -1494,9 +1495,9 @@ globus_libc_ctime_r(time_t *clock,
 /******************************************************************************
 Function: globus_libc_getpwnam_r()
 
-Description: 
+Description:
 
-Parameters: 
+Parameters:
 
 Returns:
 ******************************************************************************/
@@ -1508,11 +1509,11 @@ globus_libc_getpwnam_r(char *name,
 		       struct passwd **result)
 {
     int rc=GLOBUS_SUCCESS;
-    
+
 #   if !defined(HAVE_GETPWNAM_R)
     {
 	struct passwd *tmp_pwd;
-	
+
 	globus_libc_lock();
 	tmp_pwd = getpwnam(name);
 	if(tmp_pwd != GLOBUS_NULL)
@@ -1576,9 +1577,9 @@ globus_libc_getpwnam_r(char *name,
 /******************************************************************************
 Function: globus_libc_getpwuid_r()
 
-Description: 
+Description:
 
-Parameters: 
+Parameters:
 
 Returns:
 ******************************************************************************/
@@ -1590,13 +1591,13 @@ globus_libc_getpwuid_r(uid_t uid,
 		       struct passwd **result)
 {
     int rc=GLOBUS_SUCCESS;
-    
+
 #   if !defined(HAVE_GETPWUID_R)
     {
 	struct passwd *tmp_pwd;
-	
+
 	globus_libc_lock();
-	
+
 	tmp_pwd = getpwuid(uid);
 	if(tmp_pwd != GLOBUS_NULL)
 	{
@@ -1611,7 +1612,7 @@ globus_libc_getpwuid_r(uid_t uid,
 	{
 	    rc = -1;
 	}
-	
+
 	globus_libc_unlock();
     }
 #   elif defined(GLOBUS_HAVE_GETPWUID_R_4)
@@ -1658,9 +1659,9 @@ globus_libc_getpwuid_r(uid_t uid,
 /******************************************************************************
 Function: globus_l_libc_copy_hostent_data_to_buffer()
 
-Description: 
+Description:
 
-Parameters: 
+Parameters:
 
 Returns:
 ******************************************************************************/
@@ -1693,7 +1694,7 @@ globus_l_libc_copy_hostent_data_to_buffer(struct hostent *h,
 	}
 	num_ptrs++;
     }
-    
+
     offset += num_ptrs * sizeof(char *);
 
     /* official hostname of host */
@@ -1701,7 +1702,7 @@ globus_l_libc_copy_hostent_data_to_buffer(struct hostent *h,
     {
 	size_t     cp_len;
 	size_t     name_len;
-	
+
 	name_len = strlen(h->h_name);
 	if(name_len < buflen-offset)
 	{
@@ -1725,7 +1726,7 @@ globus_l_libc_copy_hostent_data_to_buffer(struct hostent *h,
 
 	ptr = h->h_addr_list;
 	h->h_addr_list = ptr_buffer;
-	
+
 	for(; (*ptr) != GLOBUS_NULL; ptr++)
 	{
 	    if(addrsize >= buflen - offset)
@@ -1748,7 +1749,7 @@ globus_l_libc_copy_hostent_data_to_buffer(struct hostent *h,
     {
 	ptr = h->h_aliases;
 	h->h_aliases = ptr_buffer;
-	
+
 	/* host aliases */
 	for(; *ptr != GLOBUS_NULL; ptr++)
 	{
@@ -1796,9 +1797,9 @@ globus_libc_system_error_string(int the_error)
 /******************************************************************************
 Function: globus_l_libc_copy_pwd_data_to_buffer()
 
-Description: 
+Description:
 
-Parameters: 
+Parameters:
 
 Returns:
 ******************************************************************************/
@@ -1931,7 +1932,7 @@ Function: globus_libc_gethomedir()
 
 Description: wrapper around globus_libc_getpwuid_r(getuid()).
 
-Parameters: 
+Parameters:
 
 Returns:
 ******************************************************************************/
@@ -1948,7 +1949,7 @@ globus_libc_gethomedir(char *result, int bufsize)
     int                     len;
     char *                  p;
     struct passwd *         pwres;
-    
+
     globus_libc_lock();
     if (!initialized)
     {
@@ -1956,10 +1957,10 @@ globus_libc_gethomedir(char *result, int bufsize)
 			  (globus_mutexattr_t *) GLOBUS_NULL);
 	initialized = GLOBUS_TRUE;
     }
-    globus_libc_unlock();    
-    
-    globus_mutex_lock(&gethomedir_mutex);	
-    {    
+    globus_libc_unlock();
+
+    globus_mutex_lock(&gethomedir_mutex);
+    {
 	rc = 0;
 
 	if (homedir_len == 0)
@@ -1973,7 +1974,7 @@ globus_libc_gethomedir(char *result, int bufsize)
 					    buf,
 					    1024,
 					    &pwres);
-		
+
 		if (!rc && pwres && pwres->pw_dir)
 		    p = pwres->pw_dir;
 	    }
@@ -1991,7 +1992,7 @@ globus_libc_gethomedir(char *result, int bufsize)
 		    rc = -1;
 	    }
 	}
-	
+
 	if (homedir_len > bufsize)
 	    rc = -1;
 
@@ -2001,7 +2002,7 @@ globus_libc_gethomedir(char *result, int bufsize)
 	    result[homedir_len] = '\0';
 	}
     }
-    globus_mutex_unlock(&gethomedir_mutex);	
+    globus_mutex_unlock(&gethomedir_mutex);
 
     return rc;
 } /* globus_libc_gethomedir() */
@@ -2042,7 +2043,7 @@ globus_libc_strdup(const char * string)
 	    ns[l] = '\0';
 	}
     }
-    
+
     globus_mutex_unlock(&strdup_mutex);
     return ns;
 }
@@ -2057,9 +2058,9 @@ globus_libc_strdup(const char * string)
 /******************************************************************************
 Function: globus_libc_lseek()
 
-Description: 
+Description:
 
-Parameters: 
+Parameters:
 
 Returns:
 ******************************************************************************/
@@ -2080,7 +2081,7 @@ globus_libc_lseek(int fd,
     errno = save_errno;
     return(rc);
 } /* globus_libc_lseek() */
- 
+
 
 
 #undef globus_libc_opendir
@@ -2089,7 +2090,7 @@ globus_libc_opendir(char *filename)
 {
     DIR *dirp;
     int save_errno;
-    
+
     globus_libc_lock();
 
     dirp = opendir(filename);
@@ -2108,7 +2109,7 @@ globus_libc_telldir(DIR *dirp)
 {
     long pos=-1;
     int save_errno;
-    
+
 
     if(dirp != GLOBUS_NULL)
     {
@@ -2144,7 +2145,7 @@ globus_libc_seekdir(DIR *dirp,
 	seekdir(dirp, loc);
 
 	save_errno = errno;
-	
+
 	globus_libc_unlock();
 	errno = save_errno;
 	return;
@@ -2165,7 +2166,7 @@ globus_libc_rewinddir(DIR *dirp)
 	rewinddir(dirp);
 
 	save_errno = errno;
-	
+
 	globus_libc_unlock();
 	errno = save_errno;
 	return;
@@ -2185,7 +2186,7 @@ globus_libc_closedir(DIR *dirp)
 	closedir(dirp);
 
 	save_errno = errno;
-	
+
 	globus_libc_unlock();
 	errno = save_errno;
 	return;
@@ -2244,7 +2245,7 @@ globus_libc_readdir_r(DIR *dirp,
 	{
 	    entry->d_reclen = tmpdir->d_reclen;
 	}
-#       endif	
+#       endif
 	strcpy(&entry->d_name[0], &tmpdir->d_name[0]);
 
 #       if defined(HAVE_DIRENT_NAMELEN)
@@ -2252,7 +2253,7 @@ globus_libc_readdir_r(DIR *dirp,
 	    entry->d_namlen = tmpdir->d_namlen;
 	}
 #       endif
-	
+
 	*result = entry;
 	globus_libc_unlock();
 	errno = save_errno;
@@ -2268,11 +2269,11 @@ globus_libc_readdir_r(DIR *dirp,
 	    struct dirent *entry = globus_malloc(sizeof(struct dirent)
 						 + MAXPATHLEN
 						 + 1);
-	    
+
 	    rc = readdir_r(dirp, entry, result);
 
             if(rc != 0 || *result == NULL)
-            { 
+            {
 		globus_free(entry);
 		*result = GLOBUS_NULL;
             }
@@ -2347,7 +2348,7 @@ globus_libc_printf_length(const char * fmt, ...)
     va_start(ap,fmt);
 
     length = globus_libc_vprintf_length(fmt,ap);
-    
+
     va_end(ap);
 
     return length;
@@ -2768,5 +2769,102 @@ globus_l_libc_i00afunc (long address)
 #endif /* !defined (__GNUC__) || __GNUC__ < 2 */
 #endif /* TARGET_ARCH_CRAYT3E */
 
+/* IPv6 utils */
 
+globus_result_t
+globus_libc_getaddrinfo(
+    const char *                        node,
+    const char *                        service,
+    const globus_addrinfo_t *           hints,
+    globus_addrinfo_t **                res)
+{
+    int                                 rc;
+    globus_result_t                     result;
 
+    result = GLOBUS_SUCCESS;
+    rc = getaddrinfo(node, service, hints, res);
+    if(rc != 0)
+    {
+        if(rc == EAI_SYSTEM)
+        {
+            result = globus_error_put(
+                globus_error_wrap_errno_error(
+                    GLOBUS_COMMON_MODULE,
+                    errno,
+                    rc + GLOBUS_EAI_ERROR_OFFSET,
+                    "[%s] %s",
+                    "globus_libc_getaddrinfo",
+                    gai_strerror(rc)));
+        }
+        else
+        {
+            result = globus_error_put(
+                globus_error_construct_error(
+                    GLOBUS_COMMON_MODULE,
+                    GLOBUS_NULL,
+                    rc + GLOBUS_EAI_ERROR_OFFSET,
+                    "[%s] %s",
+                    "globus_libc_getaddrinfo",
+                    gai_strerror(rc)));
+        }
+    }
+
+    return result;
+}
+
+void
+globus_libc_freeaddrinfo(
+    globus_addrinfo_t *                 res)
+{
+    freeaddrinfo(res);
+}
+
+globus_result_t
+globus_libc_getnameinfo(
+    const globus_sockaddr_t *           addr,
+    char *                              hostbuf,
+    globus_size_t                       hostbuf_len,
+    char *                              servbuf,
+    globus_size_t                       servbuf_len,
+    int                                 flags)
+{
+    int                                 rc;
+    globus_result_t                     result;
+
+    result = GLOBUS_SUCCESS;
+    rc = getnameinfo(
+        (const struct sockaddr *) addr,
+        sizeof(globus_sockaddr_t),
+        hostbuf,
+        hostbuf_len,
+        servbuf,
+        servbuf_len,
+        flags);
+    if(rc != 0)
+    {
+        if(rc == EAI_SYSTEM)
+        {
+            result = globus_error_put(
+                globus_error_wrap_errno_error(
+                    GLOBUS_COMMON_MODULE,
+                    errno,
+                    rc + GLOBUS_EAI_ERROR_OFFSET,
+                    "[%s] %s",
+                    "globus_libc_getnameinfo",
+                    gai_strerror(rc)));
+        }
+        else
+        {
+            result = globus_error_put(
+                globus_error_construct_error(
+                    GLOBUS_COMMON_MODULE,
+                    GLOBUS_NULL,
+                    rc + GLOBUS_EAI_ERROR_OFFSET,
+                    "[%s] %s",
+                    "globus_libc_getnameinfo",
+                    gai_strerror(rc)));
+        }
+    }
+
+    return result;
+}
