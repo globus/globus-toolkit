@@ -10,12 +10,13 @@
 version="0.3"
 
 usage () {
-	echo $0: Usage:  $0 [-p package] [-t tag] [-n] [-h]
+	echo $0: Usage:  $0 [-p package] [-t tag] [-i dir [-r]] [-n] [-h] [-c]
 	echo
 	echo "With no arguments, checkout and build all of GT3."
 	echo "		$0 -p grim		Build package-list/grim"
 	echo "		$0 -t my_tag	Use \"-r my_tag\" in cvs commands"
 	echo "		$0 -i dir	Install into dir"
+	echo "		$0 -r		Make a release candidate.  Requires -i"
 	echo "		$0 -n 		Don't update the CVS checkout"
 	echo "		$0 -h		Print this help message"
 	echo "		$0 -c		Just build C bindings"
@@ -245,6 +246,18 @@ collate_packages() {
 	#Package it with the gt2 src bundle to make a distro
 	$GPT_LOCATION/sbin/gpt-bundle -bn=gt3-all-src -bv=$release -srcdir=package-output -all -exclude=gt3_hostinfo
 
+	if [ $release = 1 ]; then
+		mkdir -p release-candidate/gt3-alpha3-source-installer
+		mv gt3-all-src* release-candidate/gt3-alpha3-source-installer
+		cp fait_accompli/gt3_alpha2_src_bundle-r1_src.tar.gz release-candidate/gt3-alpha3-source-installer
+		cp fait_accompli/gpt-2.2.5-src.tar.gz release-candidate/gt3-alpha3-source-installer
+		cp fait_accompli/install-gt3-alpha3-src release-candidate/gt3-alpha3-source-installer
+		pushd release_candidate
+		tar czf gt3_alpha3_src_installer.tar.gz gt3-alpha3-source-installer
+		rm -fr gt3-alpha3-source-installer
+		popd
+	fi
+
 	# cp fait_accompli/* package-output
 
 }
@@ -262,6 +275,16 @@ install_bundle() {
 		# Do this before installing GT2 to avoid getting all those
 		# packages also.
 		$GPT_LOCATION/sbin/gpt-bundle -bn=gt3-all-bin -bv=$release -all -bindir=binaries
+
+		mkdir -p release-candidate/gt3-alpha3-binary-installer
+		mv gt3-all-bin* release-candidate/gt3-alpha3-binary-installer
+		cp fait_accompli/gt3_alpha2_bin_bundle-r1_bin.tar.gz release-candidate/gt3-alpha3-binary-installer
+		cp fait_accompli/gpt-2.2.5-src.tar.gz release-candidate/gt3-alpha3-binary-installer
+		cp fait_accompli/install-gt3-alpha3-bin release-candidate/gt3-alpha3-binary-installer
+		pushd release_candidate
+		tar czf gt3_alpha3_bin_installer.tar.gz gt3-alpha3-binary-installer
+		rm -fr gt3-alpha3-binary-installer
+		popd
 	fi
 
 	echo Installing GT2 dep bundle into $dir
@@ -272,19 +295,19 @@ install_bundle() {
 		pushd BUILD/core-0.3-src/core/impl/java/build/
 		tar czf gt3-core-alpha3.tar.gz ogsa-alpha-3/
 		popd
-		mv BUILD/core-0.3-src/core/impl/java/build/gt3-core-alpha3.tar.gz package-output
+		mv BUILD/core-0.3-src/core/impl/java/build/gt3-core-alpha3.tar.gz release_candidate
 
 		# This is gt3 core source.  Distribute by itself.
 		pushd ogsa-cvs/
 		tar czf gt3-core-src-alpha3.tar.gz ogsa
 		popd
-		mv ogsa-cvs/gt3-core-src-alpha3.tar.gz package-output
+		mv ogsa-cvs/gt3-core-src-alpha3.tar.gz release_candidate
 
 		# This is the gars bundle.  Distribute by itself,
 		# but it needs core installed first.
 		mkdir gars/
 		cp $dir/gars/* gars
-		tar czf package-output/gt3-alpha3-gars.tar.gz gars
+		tar czf release_candidate/gt3-alpha3-gars.tar.gz gars
 	fi
 
 }
