@@ -914,17 +914,18 @@ globus_l_gfs_file_dispatch_write(
             globus_priority_q_dequeue(&monitor->queue);
         if(buf_info)
         {
-            if(buf_info->offset /* + monitor->write_delta */ != 
-                monitor->file_offset)
+            if(buf_info->offset != monitor->file_offset)
             { 
-                monitor->file_offset = 
-                    buf_info->offset /* + monitor->write_delta */;
+                globus_off_t            seek_tmp;
+
+                monitor->file_offset = buf_info->offset;
+                seek_tmp = monitor->file_offset;
 
                 result = globus_xio_handle_cntl(
                     monitor->file_handle,
                     globus_l_gfs_file_driver,
                     GLOBUS_XIO_FILE_SEEK,
-                    &monitor->file_offset,
+                    &seek_tmp,
                     GLOBUS_XIO_FILE_SEEK_SET);
                 if(result != GLOBUS_SUCCESS)
                 {
@@ -1419,12 +1420,15 @@ globus_l_gfs_file_dispatch_read(
         {                                        
             if (monitor->file_offset != monitor->read_offset)
             {
+                globus_off_t            seek_tmp;
+                seek_tmp = monitor->read_offset;
+                
                 result = globus_xio_handle_cntl(
                     monitor->file_handle,
                     globus_l_gfs_file_driver,
                     GLOBUS_XIO_FILE_SEEK,
-                    &monitor->read_offset,
-                    SEEK_SET);
+                    &seek_tmp,
+                    GLOBUS_XIO_FILE_SEEK_SET);
             
                 if(result != GLOBUS_SUCCESS)
                 {
