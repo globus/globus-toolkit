@@ -10,25 +10,6 @@ typedef void
 (*globus_i_gfs_server_close_cb_t)(
     void *                              user_arg);
 
-typedef struct
-{
-    globus_xio_handle_t             xio_handle;
-    char *                          remote_contact;
-    char *                          rnfr_pathname;
-    int                             transfer_id;
-    globus_gridftp_server_control_op_t op;
-
-    globus_i_gfs_server_close_cb_t  close_func;
-    void *                          close_arg;
-    
-    /* XXX: is this a good place ? */
-    void *                          user_data_handle;
-    globus_i_gfs_acl_handle_t       acl_handle;
-    int                             session_id;
-
-    globus_gridftp_server_control_t server_handle;
-} globus_i_gfs_server_instance_t;
-
 typedef struct globus_i_gfs_monitor_s
 {
     globus_bool_t                       done;

@@ -52,7 +52,6 @@ typedef struct
 
 typedef struct globus_l_gfs_data_operation_s
 {
-    globus_i_gfs_server_instance_t *    instance;
     globus_l_gfs_data_state_t           state;
     globus_mutex_t                      mutex;
     globus_l_gfs_data_handle_t *        data_handle;
