@@ -10,6 +10,7 @@
  */
 #endif
 
+#include "globus_common.h"
 #include "proxycertinfo.h"
 #include "globus_gsi_callback_constants.h"
 #include "globus_i_gsi_callback.h"
