@@ -320,8 +320,7 @@ get_storage_locations(const char *username,
     
     creds_path[0] = '\0';
    
-    if (!strcmp (credname, "DEFAULT_CREDENTIAL_NAME!@#$%^&*()")) // if its the default credential, 
-								 // don't include the default string in filename
+    if (!credname)
     {
 	 
     	if (concatenate_strings(creds_path, creds_path_len, storage_dir,
@@ -1179,30 +1178,30 @@ int read_from_directory (struct myproxy_creds *creds, myproxy_response_t *respon
 	index ++;
 	info_ptr = realloc (info_ptr, index * sizeof(myproxy_info_t));
 	
-	if (!strncmp (tmp_creds.credname, MYPROXY_DEFAULT_CREDENTIAL_NAME, strlen(MYPROXY_DEFAULT_CREDENTIAL_NAME)))
-		info_ptr[index-1].credname = strdup (MYPROXY_NO_NAME_STRING);
-	else
+	if (tmp_creds.credname)
 		info_ptr[index-1].credname = strdup (tmp_creds.credname);
+	else 
+		info_ptr[index-1].credname = NULL;
 	
-	if (tmp_creds.creddesc == NULL)
-		info_ptr[index-1].creddesc = strdup (MYPROXY_NO_DESCRIPTION_STRING);
-	else
+	if (tmp_creds.creddesc)
 		info_ptr[index-1].creddesc = strdup (tmp_creds.creddesc);
+	else
+		info_ptr[index-1].creddesc = NULL;
 	
 	info_ptr[index-1].cred_owner[0] = '\0';
 	strcpy (info_ptr[index-1].cred_owner, tmp_creds.owner_name);
 	info_ptr[index-1].cred_start_time = tmp_time;
 	info_ptr[index-1].cred_end_time = end_time;
 	// Add retriever and renewer strings
-	if (tmp_creds.retrievers == NULL)
-		info_ptr[index-1].retriever_str = strdup (MYPROXY_NO_RETRIEVER_STRING);
-	else
+	if (tmp_creds.retrievers)
 		info_ptr[index-1].retriever_str = tmp_creds.retrievers;
-
-	if (tmp_creds.renewers == NULL)
-		info_ptr[index-1].renewer_str = strdup (MYPROXY_NO_RENEWER_STRING);
 	else
+		info_ptr[index-1].retriever_str = NULL;
+
+	if (tmp_creds.renewers)
 		info_ptr[index-1].renewer_str = strdup (tmp_creds.renewers);
+	else
+		info_ptr[index-1].renewer_str = NULL;
 
     } /* end for */
 
