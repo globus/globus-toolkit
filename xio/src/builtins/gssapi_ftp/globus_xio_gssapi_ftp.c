@@ -371,6 +371,13 @@ globus_l_xio_gssapi_ftp_handle_destroy(
             &handle->gssapi_context,
             GLOBUS_NULL);
     }
+    if(handle->delegated_cred_handle != GSS_C_NO_CONTEXT)
+    {
+        gss_delete_sec_context(
+            &min_stat,
+            &handle->delegated_cred_handle,
+            GLOBUS_NULL);
+    }
     if(handle->auth_gssapi_subject != NULL)
     {
         globus_free(handle->auth_gssapi_subject);
