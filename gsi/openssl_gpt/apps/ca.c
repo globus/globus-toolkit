@@ -82,7 +82,7 @@
 #    else
 #      include <unixlib.h>
 #    endif
-#  elif !defined(VXWORKS)
+#  else
 #    include <sys/file.h>
 #  endif
 #endif
