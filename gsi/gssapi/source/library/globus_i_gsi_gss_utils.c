@@ -416,40 +416,18 @@ globus_i_gsi_gss_create_and_fill_context(
      */
     if (!(context->req_flags & GSS_C_CONF_FLAG))
     {
-        int                             num_ciphers;
-        int                             cipher_index;
-        SSL_CIPHER *                    cipher = NULL;
-
-        num_ciphers = 
-            (context->cred_handle->ssl_context->method->num_ciphers)();
-        for (cipher_index = 0; cipher_index < num_ciphers; cipher_index++)
+        if(!SSL_set_cipher_list(context->gss_ssl,
+                                "eNULL:ALL:!ADH:RC4+RSA:+SSLv2"))
         {
-            cipher = 
-                (context->cred_handle->ssl_context->
-                 method->get_cipher)(cipher_index);
-
-#define MY_NULL_MASK 0x130021L
-
-            if (cipher && 
-                ((cipher->algorithms & MY_NULL_MASK) == MY_NULL_MASK))
-            {
-                sk_SSL_CIPHER_push(
-                    context->cred_handle->ssl_context->cipher_list, cipher);
-                sk_SSL_CIPHER_push(
-                    context->cred_handle->ssl_context->cipher_list_by_id, 
-                    cipher);
-
-                if(GLOBUS_I_GSI_GSSAPI_DEBUG(3))
-                {
-                    char                buff[256];
-                    SSL_CIPHER_description(cipher, buff, 256);
-                    fprintf(globus_i_gsi_gssapi_debug_fstream,
-                            "Adding cipher: %s", buff);
-                }
-            }
+            GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
+                minor_status,
+                GLOBUS_GSI_GSSAPI_ERROR_WITH_OPENSSL,
+                ("Couldn't set the cipher cert order in the SSL object"));
+            major_status = GSS_S_FAILURE;
+            goto free_cert_dir;   
         }
     }
-
+    
     GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
         3, (globus_i_gsi_gssapi_debug_fstream,
             "SSL is at %p\n", context->gss_ssl));
@@ -909,7 +887,9 @@ globus_i_gsi_gss_handshake(
     }
 
     if (!GSS_ERROR(major_status)) {
-        if (rc > 0) {
+        if (rc > 0)
+        {
+            SSL_CIPHER *                current_cipher;
             major_status = GSS_S_COMPLETE; 
 
             /*
@@ -919,9 +899,11 @@ globus_i_gsi_gss_handshake(
              * flag. See the s3_lib.c for list of ciphers. 
              * This could be changed to SSL_MEDIUM or SSL_HIGH 
              * if a site wants higher protection. 
-             */            
-            if ((context_handle->gss_ssl->session->cipher->algo_strength
-                 & SSL_STRONG_MASK) >= SSL_LOW) 
+             */
+
+            current_cipher = SSL_get_current_cipher(context_handle->gss_ssl);
+            
+            if ((current_cipher->algo_strength & SSL_STRONG_MASK) >= SSL_LOW) 
             {
                 context_handle->ret_flags |= GSS_C_CONF_FLAG;
             }
