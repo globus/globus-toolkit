@@ -2,6 +2,7 @@
 
 #include "globus_common.h"
 #include "globus_i_callback.h"
+#include "globus_thread_pool.h"
 
 #define GLOBUS_CALLBACK_POLLING_THREADS 1
 #define GLOBUS_L_CALLBACK_INFO_BLOCK_SIZE 256
@@ -236,6 +237,12 @@ globus_l_callback_activate()
         return rc;
     }
     
+    rc = globus_module_activate(GLOBUS_THREAD_POOL_MODULE);
+    if(rc != GLOBUS_SUCCESS)
+    {
+	return rc;
+    }
+    
     GlobusTimeReltimeSet(
         globus_l_callback_own_thread_period,
         0,
@@ -309,9 +316,7 @@ globus_l_callback_activate()
     /* create pollers for the global space */
     for(i = 0; i < globus_l_callback_max_polling_threads; i++)
     {
-        rc = globus_thread_create(
-            GLOBUS_NULL,
-            GLOBUS_NULL,
+        rc = globus_i_thread_start(
             globus_l_callback_thread_poll,
             &globus_l_callback_global_space);
         globus_assert(rc == 0);
@@ -324,6 +329,7 @@ static
 int
 globus_l_callback_deactivate()
 {
+    int                                 rc;
     globus_list_t *                     tmp_list;
     globus_l_callback_space_t *         i_space;
     
@@ -383,7 +389,13 @@ globus_l_callback_deactivate()
     
     globus_cond_destroy(&globus_l_callback_thread_cond);
     globus_mutex_destroy(&globus_l_callback_thread_lock);
-
+    
+    rc = globus_module_deactivate(GLOBUS_THREAD_POOL_MODULE);
+    if(rc != GLOBUS_SUCCESS)
+    {
+	return rc;
+    }
+    
     return globus_module_deactivate(GLOBUS_THREAD_MODULE);
 }
 
@@ -983,9 +995,7 @@ globus_callback_space_init(
                     int                         rc;
                     
                     globus_l_callback_thread_count++;
-                    rc = globus_thread_create(
-                        GLOBUS_NULL,
-                        GLOBUS_NULL,
+                    rc = globus_i_thread_start(
                         globus_l_callback_thread_poll,
                         i_space);
                     globus_assert(rc == 0);
@@ -1329,9 +1339,7 @@ globus_l_callback_blocked_cb(
                         callback_info->my_space->thread_count++;
                         globus_l_callback_thread_count++;
                         
-                        rc = globus_thread_create(
-                            GLOBUS_NULL,
-                            GLOBUS_NULL,
+                        rc = globus_i_thread_start(
                             globus_l_callback_thread_poll,
                             callback_info->my_space);
                         globus_assert(rc == 0);
@@ -1834,9 +1842,7 @@ globus_l_callback_thread_poll(
                         int             rc;
 
                         globus_l_callback_thread_count++;
-                        rc = globus_thread_create(
-                            GLOBUS_NULL,
-                            GLOBUS_NULL,
+                        rc = globus_i_thread_start(
                             globus_l_callback_thread_callback,
                             callback_info);
                         globus_assert(rc == 0);
