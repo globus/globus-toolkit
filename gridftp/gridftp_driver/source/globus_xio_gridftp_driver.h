@@ -56,7 +56,7 @@ typedef enum
 
     GLOBUS_XIO_GRIDFTP_SET_CONTROL_PROTECTION,
 
-    GLOBUS_XIO_GRIDFTP_GET_CONTROL_PROTECTION,
+    GLOBUS_XIO_GRIDFTP_GET_CONTROL_PROTECTION
 
 } globus_xio_gridftp_cmd_t;	
 
@@ -70,7 +70,7 @@ typedef enum globus_i_xio_gridftp_state_s
     GLOBUS_XIO_GRIDFTP_IO_DONE,
     GLOBUS_XIO_GRIDFTP_ABORT_PENDING,
     GLOBUS_XIO_GRIDFTP_ABORT_PENDING_IO_PENDING,
-    GLOBUS_XIO_GRIDFTP_ABORT_PENDING_CLOSING,
+    GLOBUS_XIO_GRIDFTP_ABORT_PENDING_CLOSING
 
 } globus_i_xio_gridftp_state_t;
 
@@ -110,113 +110,10 @@ typedef enum globus_l_xio_gridftp_protection_e
 } globus_l_xio_gridftp_protection_t;
 
 
-#define GlobusXIOGridftpHandleError()                                       \
-    globus_error_put(                                                       \
-        globus_error_construct_error(                                       \
-            GlobusXIOMyModule(gridftp),                                     \
-            GLOBUS_NULL,                                                    \
-            GLOBUS_XIO_GRIDFTP_HANDLE_ERROR,                                \
-            __FILE__,                                                       \
-            _xio_name,                                                      \
-            __LINE__,                                                       \
-            "Handle creation error"))
-
-#define GlobusXIOGridftpOpenError(str)                                      \
-    globus_error_put(                                                       \
-        globus_error_construct_error(                                       \
-            GlobusXIOMyModule(gridftp),                                     \
-            GLOBUS_NULL,                                                    \
-            GLOBUS_XIO_GRIDFTP_OPEN_ERROR,                                  \
-            __FILE__,                                                       \
-            _xio_name,                                                      \
-            __LINE__,                                                       \
-            "Open error: %s",                                               \
-            str))
-
-#define GlobusXIOGridftpIOError(str) 	                                    \
-    globus_error_put(                                                       \
-        globus_error_construct_error(                                       \
-            GlobusXIOMyModule(gridftp),                                     \
-            GLOBUS_NULL,                                                    \
-            GLOBUS_XIO_GRIDFTP_IO_ERROR, 	                            \
-            __FILE__,                                                       \
-            _xio_name,                                                      \
-            __LINE__,                                                       \
-            "IO error: %s",						    \
-	    str))
-
-#define GlobusXIOGridftpSeekError()                                         \
-    globus_error_put(                                                       \
-        globus_error_construct_error(                                       \
-            GlobusXIOMyModule(gridftp),                                     \
-            GLOBUS_NULL,                                                    \
-            GLOBUS_XIO_GRIDFTP_SEEK_ERROR,                                  \
-            __FILE__,                                                       \
-            _xio_name,                                                      \
-            __LINE__,                                                       \
-            "Seek error: operation is outstanding"))
-
-#define GlobusXIOGridftpOutstandingReadError()                              \
-    globus_error_put(                                                       \
-        globus_error_construct_error(                                       \
-            GlobusXIOMyModule(gridftp),                                     \
-            GLOBUS_NULL,                                                    \
-            GLOBUS_XIO_GRIDFTP_OUTSTANDING_READ_ERROR,                      \
-            __FILE__,                                                       \
-            _xio_name,                                                      \
-            __LINE__,                                                       \
-            "Read is outstanding"))
-
-#define GlobusXIOGridftpOutstandingWriteError()                             \
-    globus_error_put(                                                       \
-        globus_error_construct_error(                                       \
-            GlobusXIOMyModule(gridftp),                                     \
-            GLOBUS_NULL,                                                    \
-            GLOBUS_XIO_GRIDFTP_OUTSTANDING_WRITE_ERROR,                     \
-            __FILE__,                                                       \
-            _xio_name,                                                      \
-            __LINE__,                                                       \
-            "Write is outstanding"))
-
-#define GlobusXIOGridftpPendingReadError()                                  \
-    globus_error_put(                                                       \
-        globus_error_construct_error(                                       \
-            GlobusXIOMyModule(gridftp),                                     \
-            GLOBUS_NULL,                                                    \
-            GLOBUS_XIO_GRIDFTP_PENDING_READ_ERROR,                          \
-            __FILE__,                                                       \
-            _xio_name,                                                      \
-            __LINE__,                                                       \
-            "Read pending"))
-
-#define GlobusXIOGridftpPendingWriteError()                                 \
-    globus_error_put(                                                       \
-        globus_error_construct_error(                                       \
-            GlobusXIOMyModule(gridftp),                                     \
-            GLOBUS_NULL,                                                    \
-            GLOBUS_XIO_GRIDFTP_PENDING_WRITE_ERROR,                         \
-            __FILE__,                                                       \
-            _xio_name,                                                      \
-            __LINE__,                                                       \
-            "Write pending"))
-
-#define GlobusXIOGridftpOutstandingPartialXferError()                       \
-    globus_error_put(                                                       \
-        globus_error_construct_error(                                       \
-            GlobusXIOMyModule(gridftp),                                     \
-            GLOBUS_NULL,                                                    \
-            GLOBUS_XIO_GRIDFTP_OUTSTANDING_PARTIAL_XFER_ERROR,              \
-            __FILE__,                                                       \
-            _xio_name,                                                      \
-            __LINE__,                                                       \
-            "A Partial Xfer is outstanding"))
-
 enum
 {
 
     GLOBUS_XIO_GRIDFTP_HANDLE_ERROR, 
-    GLOBUS_XIO_GRIDFTP_OPEN_ERROR, 
-    GLOBUS_XIO_GRIDFTP_IO_ERROR, 
     GLOBUS_XIO_GRIDFTP_SEEK_ERROR,                                  
     GLOBUS_XIO_GRIDFTP_OUTSTANDING_READ_ERROR,                      
     GLOBUS_XIO_GRIDFTP_OUTSTANDING_WRITE_ERROR,
