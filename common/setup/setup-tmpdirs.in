@@ -29,9 +29,13 @@ dnl system.  It's prefered to be a local file system for security needs.
 AC_ARG_WITH(secure_tmpdir,
         [  --with-secure-tmpdir=SECDIR   local temporary files in SECDIR [LDIR]],
         [secure_tmpdir="$withval"],
-        [secure_tmpdir='${local_tmpdir}'])
+        [secure_tmpdir="${GLOBUS_LOCATION}/tmp"])
 AC_SUBST(secure_tmpdir)
 
+if test ! -d "${secure_tmpdir}" ; then
+        mkdir "${secure_tmpdir}"
+        chmod 0755 "${secure_tmpdir}"
+fi
 
 AC_OUTPUT(
 	globus-script-initializer
