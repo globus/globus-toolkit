@@ -85,6 +85,15 @@ RCSID("$OpenBSD: sshd.c,v 1.276 2003/08/28 12:54:34 markus Exp $");
 #include "monitor_wrap.h"
 #include "monitor_fdpass.h"
 
+#ifdef GSSAPI
+#include "ssh-gss.h"
+#endif
+
+#ifdef GSSAPI
+#include <openssl/md5.h>
+#include "bufaux.h"
+#endif /* GSSAPI */
+
 #ifdef LIBWRAP
 #include <tcpd.h>
 #include <syslog.h>
@@ -1000,10 +1009,13 @@ main(int ac, char **av)
 		logit("Disabling protocol version 1. Could not load host key");
 		options.protocol &= ~SSH_PROTO_1;
 	}
+#ifndef GSSAPI
+	/* The GSSAPI key exchange can run without a host key */
 	if ((options.protocol & SSH_PROTO_2) && !sensitive_data.have_ssh2_key) {
 		logit("Disabling protocol version 2. Could not load host key");
 		options.protocol &= ~SSH_PROTO_2;
 	}
+#endif
 	if (!(options.protocol & (SSH_PROTO_1|SSH_PROTO_2))) {
 		logit("sshd: no hostkeys available -- exiting.");
 		exit(1);
@@ -1462,6 +1474,13 @@ main(int ac, char **av)
 		alarm(options.login_grace_time);
 
 	sshd_exchange_identification(sock_in, sock_out);
+#if defined(AFS_KRB5)
+	/* If machine has AFS, set process authentication group. */
+	if (k_hasafs()) {
+		k_setpag();
+		k_unlog();
+	}
+#endif /* AFS || AFS_KRB5 */
 
 	packet_set_nonblocking();
 
@@ -1626,6 +1645,10 @@ do_ssh1_kex(void)
 		auth_mask |= 1 << SSH_AUTH_RHOSTS_RSA;
 	if (options.rsa_authentication)
 		auth_mask |= 1 << SSH_AUTH_RSA;
+#ifdef GSSAPI
+	if (options.gss_authentication)
+		auth_mask |= 1 << SSH_AUTH_GSSAPI;
+#endif
 	if (options.challenge_response_authentication == 1)
 		auth_mask |= 1 << SSH_AUTH_TIS;
 	if (options.password_authentication)
@@ -1719,6 +1742,49 @@ do_ssh1_kex(void)
 		for (i = 0; i < 16; i++)
 			session_id[i] = session_key[i] ^ session_key[i + 16];
 	}
+
+#ifdef GSSAPI
+  /*
+   * Before we destroy the host and server keys, hash them so we can
+   * send the hash over to the client via a secure channel so that it
+   * can verify them.
+   */
+  {
+    MD5_CTX md5context;
+    Buffer buf;
+    unsigned char *data;
+    unsigned int data_len;
+    extern unsigned char ssh1_key_digest[16];   /* in auth2-gss.c */
+
+
+    debug("Calculating MD5 hash of server and host keys...");
+
+    /* Write all the keys to a temporary buffer */
+    buffer_init(&buf);
+
+    /* Server key */
+    buffer_put_bignum(&buf, sensitive_data.server_key->rsa->e);
+    buffer_put_bignum(&buf, sensitive_data.server_key->rsa->n);
+
+    /* Host key */
+    buffer_put_bignum(&buf, sensitive_data.ssh1_host_key->rsa->e);
+    buffer_put_bignum(&buf, sensitive_data.ssh1_host_key->rsa->n);
+
+    /* Get the resulting data */
+    data = (unsigned char *) buffer_ptr(&buf);
+    data_len = buffer_len(&buf);
+
+    /* And hash it */
+    MD5_Init(&md5context);
+    MD5_Update(&md5context, data, data_len);
+    MD5_Final(ssh1_key_digest, &md5context);
+
+    /* Clean up */
+    buffer_clear(&buf);
+    buffer_free(&buf);
+  }
+#endif /* GSSAPI */
+
 	/* Destroy the private and public keys. No longer. */
 	destroy_sensitive_data();
 
@@ -1769,10 +1835,52 @@ do_ssh2_kex(void)
 	}
 	myproposal[PROPOSAL_SERVER_HOST_KEY_ALGS] = list_hostkey_types();
 
+#ifdef GSSAPI
+	{ 
+	char *orig;
+	char *gss = NULL;
+	char *newstr = NULL;
+       	orig = myproposal[PROPOSAL_KEX_ALGS];
+
+	/* If we don't have a host key, then all of the algorithms
+	 * currently in myproposal are useless */
+	if (strlen(myproposal[PROPOSAL_SERVER_HOST_KEY_ALGS])==0)
+		orig= NULL;
+		
+        if (options.gss_keyex)
+        	gss = ssh_gssapi_server_mechanisms();
+        else
+        	gss = NULL;
+        
+	if (gss && orig) {
+		int len = strlen(orig) + strlen(gss) +2;
+		newstr=xmalloc(len);
+		snprintf(newstr,len,"%s,%s",gss,orig);
+	} else if (gss) {
+		newstr=gss;
+	} else if (orig) {
+		newstr=orig;
+	}
+        /* If we've got GSSAPI mechanisms, then we've also got the 'null'
+	   host key algorithm, but we're not allowed to advertise it, unless
+	   its the only host key algorithm we're supporting */
+	if (gss && (strlen(myproposal[PROPOSAL_SERVER_HOST_KEY_ALGS])) == 0) {
+	  	myproposal[PROPOSAL_SERVER_HOST_KEY_ALGS]="null";
+	}
+	if (newstr)
+		myproposal[PROPOSAL_KEX_ALGS]=newstr;
+	else
+		fatal("No supported key exchange algorithms");
+        }
+#endif
+
 	/* start key exchange */
 	kex = kex_setup(myproposal);
 	kex->kex[KEX_DH_GRP1_SHA1] = kexdh_server;
 	kex->kex[KEX_DH_GEX_SHA1] = kexgex_server;
+#ifdef GSSAPI
+	kex->kex[KEX_GSS_GRP1_SHA1] = kexgss_server;
+#endif
 	kex->server = 1;
 	kex->client_version_string=client_version_string;
 	kex->server_version_string=server_version_string;
