@@ -174,6 +174,7 @@ do                                                                      \
     }                                                                   \
     _w = strdup(_buf);                                                  \
     _buf += strlen(_buf) + 1;                                           \
+    _len -= strlen(_buf) + 1;                                           \
 } while(0)
 
 /*** XXX  this will eventually determine if the data node is part of a
@@ -361,8 +362,8 @@ globus_gfs_ipc_open(
     globus_hashtable_init(
         &ipc->call_table,
         256,
-        globus_hashtable_string_hash,
-        globus_hashtable_string_keyeq);
+        globus_hashtable_voidp_hash,
+        globus_hashtable_voidp_keyeq);
     globus_mutex_init(&ipc->mutex, NULL);
 
     /* if local fake the callback */
@@ -466,8 +467,8 @@ globus_gfs_ipc_handle_create(
     globus_hashtable_init(
         &ipc->call_table,
         256,
-        globus_hashtable_string_hash,
-        globus_hashtable_string_keyeq);
+        globus_hashtable_voidp_hash,
+        globus_hashtable_voidp_keyeq);
     globus_mutex_init(&ipc->mutex, NULL);
 
     read_buf = globus_malloc(GFS_IPC_HEADER_SIZE);
