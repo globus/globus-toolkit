@@ -14,6 +14,7 @@ sbin_PROGRAMS= \
 globus_gatekeeper_SOURCES = \
 	globus_gatekeeper.c \
 	unicos.c \
+	globus_gatekeeper_utils.h \
 	globus_gatekeeper_utils.c
 globus_gatekeeper_LDFLAGS = $(GPT_LDFLAGS)
 
