@@ -19,21 +19,21 @@
 #include <string.h>
 #include <assert.h>
 
-#define BINARY_NAME "myproxy-arq"
+#define BINARY_NAME "myproxy-admin-query"
 #define SECONDS_PER_HOUR 3600
 
 static char usage[] = \
 "\n"\
 "Admin Repository Query Tool\n"\
 "\n"\
-" Syntax:  "  BINARY_NAME "[-usage|-help] [-version]\n"\
+" Syntax:  "  BINARY_NAME " [-usage|-help] [-version]\n"\
 "\n"\
 "    Options\n"\
 "    -h | --help                	Displays usage\n"\
 "    -u | --usage                             \n"\
 "						\n"\
 "    -l | --username <name>		Username of credentials (optional)\n"\
-"    -t | --time_left <hours>		Time left in hours (optional)\n"\
+"    -t | --time_left <hours>		Min. time left in hours (optional)\n"\
 "    -v | --verbose             	Display debugging messages\n"\
 "    -V | --version             	Displays version\n"\
 "    -s | --storage <directory> 	Specifies the credential storage directory\n"
@@ -82,7 +82,7 @@ main(int argc, char *argv[])
 	cred.username = strdup (username);
 
     if (time_left)
-	cred.end_time = time_left;
+	cred.end_time = time_left+time(0);
 
     if (myproxy_admin_retrieve_all(&cred) < 0) {
         myproxy_log_verror();
