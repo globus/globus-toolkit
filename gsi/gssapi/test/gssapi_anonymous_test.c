@@ -180,6 +180,16 @@ int main()
                                 (gss_buffer_t) &output_name,
                                 NULL);
 
+    if(maj_stat != GSS_S_COMPLETE)
+    {
+        globus_gss_assist_display_status_str(&error_str,
+                                             NULL,
+                                             maj_stat,
+                                             min_stat,
+                                             0);
+        printf("\nLINE %d ERROR: %s\n\n", __LINE__, error_str);
+        exit(1);
+    }
 
     printf("%s:%d: Received subject name: %s\n",
            __FILE__,

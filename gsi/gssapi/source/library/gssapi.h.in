@@ -167,7 +167,7 @@ typedef struct gss_channel_bindings_struct
  * GSS_C_GLOBUS_SSL_COMPATIBLE
  * input - The other is not using GSSAPI, but 
  * 		 real SSL, so no delegation, etc. 
- * GSS_C_GLOBUS_LIMIED_DELEG_PROXY_FLAG
+ * GSS_C_GLOBUS_LIMITED_DELEG_PROXY_FLAG
  * input -  delegates a limited proxy
  * output - limited proxy received via delegation
  * GSS_C_GLOBUS_LIMITED_PROXY_FLAG

@@ -47,7 +47,7 @@ int main()
     delegated_cred = GSS_C_NO_CREDENTIAL;
     accept_maj_stat = GSS_S_CONTINUE_NEEDED;
     ret_flags = 0;
-
+    req_flags |= GSS_C_GLOBUS_SSL_COMPATIBLE;
 
     oid_buffer.value = malloc(EXT_SIZE);
     oid_buffer.length = EXT_SIZE;
@@ -229,8 +229,47 @@ int main()
         exit(1);
     }
 
+    maj_stat = gss_wrap(&min_stat,
+                        init_context,
+                        0,
+                        GSS_C_QOP_DEFAULT,
+                        &send_tok,
+                        NULL,
+                        &recv_tok);
+                        
+    
+    if(maj_stat != GSS_S_COMPLETE)
+    {
+        globus_gss_assist_display_status_str(&error_str,
+                                             NULL,
+                                             maj_stat,
+                                             min_stat,
+                                             0);
+        printf("\nLINE %d ERROR: %s\n\n", __LINE__, error_str);
+        exit(1);
+    }
+    
     while(1)
     {
+        maj_stat = gss_unwrap(&min_stat,
+                              accept_context,
+                              &recv_tok,
+                              &send_tok,
+                              NULL,
+                              NULL);
+        
+    
+        if(maj_stat != GSS_S_COMPLETE)
+        {
+            globus_gss_assist_display_status_str(&error_str,
+                                                 NULL,
+                                                 maj_stat,
+                                                 min_stat,
+                                                 0);
+            printf("\nLINE %d ERROR: %s\n\n", __LINE__, error_str);
+            exit(1);
+        }
+
         accept_maj_stat=gss_accept_delegation(&min_stat,
                                               accept_context,
                                               GSS_C_NO_OID_SET,
@@ -259,6 +298,46 @@ int main()
             break;
         }
 
+
+        maj_stat = gss_wrap(&min_stat,
+                            accept_context,
+                            0,
+                            GSS_C_QOP_DEFAULT,
+                            &recv_tok,
+                            NULL,
+                            &send_tok);
+                        
+    
+        if(maj_stat != GSS_S_COMPLETE)
+        {
+            globus_gss_assist_display_status_str(&error_str,
+                                                 NULL,
+                                                 maj_stat,
+                                                 min_stat,
+                                                 0);
+            printf("\nLINE %d ERROR: %s\n\n", __LINE__, error_str);
+            exit(1);
+        }
+
+        maj_stat = gss_unwrap(&min_stat,
+                              init_context,
+                              &send_tok,
+                              &recv_tok,
+                              NULL,
+                              NULL);
+        
+    
+        if(maj_stat != GSS_S_COMPLETE)
+        {
+            globus_gss_assist_display_status_str(&error_str,
+                                                 NULL,
+                                                 maj_stat,
+                                                 min_stat,
+                                                 0);
+            printf("\nLINE %d ERROR: %s\n\n", __LINE__, error_str);
+            exit(1);
+        }
+
         init_maj_stat = gss_init_delegation(&min_stat,
                                             init_context,
                                             cred_handle,
@@ -277,6 +356,26 @@ int main()
             globus_gss_assist_display_status_str(&error_str,
                                                  NULL,
                                                  init_maj_stat,
+                                                 min_stat,
+                                                 0);
+            printf("\nLINE %d ERROR: %s\n\n", __LINE__, error_str);
+            exit(1);
+        }
+
+        maj_stat = gss_wrap(&min_stat,
+                            init_context,
+                            0,
+                            GSS_C_QOP_DEFAULT,
+                            &send_tok,
+                            NULL,
+                            &recv_tok);
+        
+        
+        if(maj_stat != GSS_S_COMPLETE)
+        {
+            globus_gss_assist_display_status_str(&error_str,
+                                                 NULL,
+                                                 maj_stat,
                                                  min_stat,
                                                  0);
             printf("\nLINE %d ERROR: %s\n\n", __LINE__, error_str);

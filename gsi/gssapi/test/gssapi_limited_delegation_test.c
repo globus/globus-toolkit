@@ -19,13 +19,11 @@ int main()
     OM_uint32                           time_rec;
     gss_buffer_desc                     send_tok;
     gss_buffer_desc                     recv_tok;
+    gss_buffer_desc                     output_name;
     gss_buffer_desc *                   token_ptr;
-    gss_buffer_desc                     oid_buffer;
-    gss_buffer_set_desc                 oid_buffers;
-    gss_buffer_set_t                    inquire_buffers;
     gss_OID                             mech_type;
-    gss_OID_set_desc                    oid_set;
     gss_name_t                          target_name;
+    gss_name_t                          source_name;
     gss_ctx_id_t                        init_context;
     gss_ctx_id_t                        accept_context;
     gss_ctx_id_desc *                   init_context_handle;
@@ -35,7 +33,6 @@ int main()
     gss_cred_id_t                       imported_cred;
     gss_cred_id_t                       cred_handle;
     char *                              error_str;
-    char *                              buf; 
 
     /* Initialize variables */
     
@@ -47,21 +44,9 @@ int main()
     delegated_cred = GSS_C_NO_CREDENTIAL;
     accept_maj_stat = GSS_S_CONTINUE_NEEDED;
     ret_flags = 0;
+    req_flags |= GSS_C_GLOBUS_LIMITED_DELEG_PROXY_FLAG;
 
 
-    oid_buffer.value = malloc(EXT_SIZE);
-    oid_buffer.length = EXT_SIZE;
-
-    buf = (char *) oid_buffer.value;
-    
-    memset(buf,'A',EXT_SIZE);
-    buf[EXT_SIZE-1]='\0';
-    
-    oid_buffers.count = 1;
-    oid_buffers.elements = &oid_buffer;
-    oid_set.count = 1;
-    oid_set.elements = gss_restrictions_extension;
-    
     /* acquire the credential */
 
     maj_stat = gss_acquire_cred(&min_stat,
@@ -209,8 +194,8 @@ int main()
                                         init_context,
                                         cred_handle,
                                         GSS_C_NO_OID,
-                                        &oid_set,
-                                        &oid_buffers,
+                                        GSS_C_NO_OID_SET,
+                                        GSS_C_NO_BUFFER_SET,
                                         token_ptr,
                                         req_flags,
                                         0,
@@ -263,8 +248,8 @@ int main()
                                             init_context,
                                             cred_handle,
                                             GSS_C_NO_OID,
-                                            &oid_set,
-                                            &oid_buffers,
+                                            GSS_C_NO_OID_SET,
+                                            GSS_C_NO_BUFFER_SET,
                                             &recv_tok,
                                             req_flags,
                                             0,
@@ -334,53 +319,6 @@ int main()
            __FILE__,
            __LINE__);
 
-    free(oid_buffer.value);
-    
-    oid_buffer.value = (void *) &oid_set;
-    oid_buffer.length = 1;
-
-
-    /* Tell the GSS that we will handle restriction extensions */
-    /* This is a post GT 2.0 feature */
-    
-    maj_stat = gss_set_sec_context_option(
-        &min_stat,
-        &del_init_context,
-        (gss_OID) GSS_APPLICATION_WILL_HANDLE_EXTENSIONS,
-        &oid_buffer);
-    
-
-    if(maj_stat != GSS_S_COMPLETE)
-    {
-        globus_gss_assist_display_status_str(&error_str,
-                                             NULL,
-                                             maj_stat,
-                                             min_stat,
-                                             0);
-        printf("\nLINE %d ERROR: %s\n\n", __LINE__, error_str);
-        exit(1);
-    }
-    
-
-    maj_stat = gss_set_sec_context_option(
-        &min_stat,
-        &del_accept_context,
-        (gss_OID) GSS_APPLICATION_WILL_HANDLE_EXTENSIONS,
-        &oid_buffer);
-    
-
-    if(maj_stat != GSS_S_COMPLETE)
-    {
-        globus_gss_assist_display_status_str(&error_str,
-                                             NULL,
-                                             maj_stat,
-                                             min_stat,
-                                             0);
-        printf("\nLINE %d ERROR: %s\n\n", __LINE__, error_str);
-        exit(1);
-    }
-
-
     /* set up another security context using the delegated credential */
     
     init_maj_stat = gss_init_sec_context(&min_stat,
@@ -419,7 +357,7 @@ int main()
                                                imported_cred,
                                                &send_tok, 
                                                GSS_C_NO_CHANNEL_BINDINGS,
-                                               &target_name,
+                                               GSS_C_NO_NAME,
                                                &mech_type,
                                                &recv_tok,
                                                &ret_flags,
@@ -477,33 +415,21 @@ int main()
            __FILE__,
            __LINE__);
 
+
+    printf("%s:%d: Received subject name: %s\n",
+           __FILE__,
+           __LINE__,
+           X509_NAME_oneline(
+               X509_NAME_dup(
+                   X509_get_subject_name(
+                       ((gss_cred_id_desc *)imported_cred)->pcd->ucert)),NULL,0));
+    
+
     /* Extract and print the restrictions extension from the security
      * context.
      * This is a post GT 2.0 feature.
      */
     
-    maj_stat = gss_inquire_sec_context_by_oid(&min_stat,
-                                              del_accept_context,
-                                              gss_restrictions_extension,
-                                              &inquire_buffers);
-
-    
-    if(maj_stat != GSS_S_COMPLETE)
-    {
-        globus_gss_assist_display_status_str(&error_str,
-                                             NULL,
-                                             init_maj_stat,
-                                             min_stat,
-                                             0);
-        printf("\nLINE %d ERROR: %s\n\n", __LINE__, error_str);
-        exit(1);
-    }
-    
-    printf("%s:%d: Security context contains restriction extension %s\n",
-           __FILE__,
-           __LINE__,
-           (char *) inquire_buffers->elements[0].value);
-
     exit(0);    
 }
 
