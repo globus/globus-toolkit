@@ -33,16 +33,18 @@ typedef struct globus_xio_driver_queue_entry_s
 
 typedef struct globus_xio_driver_queue_handle_s
 {
-    globus_bool_t                       outstanding_read;
-    globus_bool_t                       outstanding_write;
+    int                                 read_at_once;
+    int                                 write_at_once;
+    int                                 outstanding_read;
+    int                                 outstanding_write;
     globus_fifo_t                       read_q;
     globus_fifo_t                       write_q;
     globus_mutex_t                      mutex;
 } globus_xio_driver_queue_handle_t;
 
 
-globus_xio_driver_queue_handle_t *
-globus_l_xiod_q_handle_create()
+static globus_xio_driver_queue_handle_t *
+globus_l_xio_q_handle_create()
 {
     globus_xio_driver_queue_handle_t *  handle;
 
@@ -52,14 +54,16 @@ globus_l_xiod_q_handle_create()
     globus_fifo_init(&handle->write_q);
     globus_mutex_init(&handle->mutex, NULL);
 
-    handle->outstanding_read = GLOBUS_FALSE;
-    handle->outstanding_write = GLOBUS_FALSE;
+    handle->outstanding_read = 0;
+    handle->outstanding_write = 0;
+    handle->read_at_once = 1;
+    handle->write_at_once = 1;
 
     return handle;
 }
 
-void
-globus_l_xiod_q_handle_destroy(
+static void
+globus_l_xio_q_handle_destroy(
     globus_xio_driver_queue_handle_t *  handle)
 {
     globus_fifo_destroy(&handle->read_q);
@@ -83,7 +87,7 @@ globus_l_xio_queue_open_cb(
     globus_xio_driver_finished_open(handle, op, result);
     if(result != GLOBUS_SUCCESS)
     {
-        globus_l_xiod_q_handle_destroy(handle);
+        globus_l_xio_q_handle_destroy(handle);
         handle = NULL;
     }
 }   
@@ -99,7 +103,7 @@ globus_l_xio_queue_open(
     globus_result_t                     res;
     globus_xio_driver_queue_handle_t *  handle;
 
-    handle = globus_l_xiod_q_handle_create();
+    handle = globus_l_xio_q_handle_create();
 
     res = globus_xio_driver_pass_open(op, contact_info,
         globus_l_xio_queue_open_cb, handle);
@@ -119,7 +123,7 @@ globus_l_xio_queue_close(
 
     handle = (globus_xio_driver_queue_handle_t *) driver_specific_handle;
 
-    globus_l_xiod_q_handle_destroy(handle);
+    globus_l_xio_q_handle_destroy(handle);
 
     res = globus_xio_driver_pass_close(op, NULL, NULL);
 
@@ -150,7 +154,7 @@ globus_l_xio_queue_read_cb(
         {
             if(globus_fifo_empty(&handle->read_q))
             {
-                handle->outstanding_read = GLOBUS_FALSE;
+                handle->outstanding_read--;
                 done = GLOBUS_TRUE;
                 /* must be after the wempty check */
                 globus_xio_driver_finished_read(op, res, nbytes);
@@ -206,7 +210,21 @@ globus_l_xio_queue_read(
 
     globus_mutex_lock(&handle->mutex);
     {
-        if(handle->outstanding_read)
+        if(handle->outstanding_read < handle->read_at_once)
+        {
+            res = globus_xio_driver_pass_read(
+                op, 
+                (globus_xio_iovec_t *)iovec, 
+                iovec_count, 
+                wait_for,
+                globus_l_xio_queue_read_cb, 
+                handle);
+            if(res == GLOBUS_SUCCESS)
+            {
+                handle->outstanding_read++;
+            }
+        }
+        else
         {
             entry = globus_malloc(sizeof(globus_xio_driver_queue_entry_t));
             if(entry == NULL)
@@ -221,17 +239,6 @@ globus_l_xio_queue_read(
                 entry->op = op;
                 globus_fifo_enqueue(&handle->read_q, entry);
             }
-        }
-        else
-        {
-            handle->outstanding_read = GLOBUS_TRUE;
-            res = globus_xio_driver_pass_read(
-                op, 
-                (globus_xio_iovec_t *)iovec, 
-                iovec_count, 
-                wait_for,
-                globus_l_xio_queue_read_cb, 
-                handle);
         }
     }
     globus_mutex_unlock(&handle->mutex);
@@ -258,12 +265,13 @@ globus_l_xio_queue_write_cb(
 
     globus_mutex_lock(&handle->mutex);
     {
+        /* loop for error cases, if the pass fails go through them all */
         res = result;
         while(!done)
         {
             if(globus_fifo_empty(&handle->write_q))
             {
-                handle->outstanding_write = GLOBUS_FALSE;
+                handle->outstanding_write--;
                 done = GLOBUS_TRUE;
                 globus_xio_driver_finished_write(op, res, nbytes);
             }
@@ -273,6 +281,7 @@ globus_l_xio_queue_write_cb(
                     globus_fifo_dequeue(&handle->write_q);
                 globus_assert(entry != NULL);
 
+                /* finish the current one and pass the next */
                 globus_xio_driver_finished_write(op, res, nbytes);
                 res = globus_xio_driver_pass_write(
                     entry->op, 
@@ -315,7 +324,21 @@ globus_l_xio_queue_write(
 
     globus_mutex_lock(&handle->mutex);
     {
-        if(handle->outstanding_write)
+        if(handle->outstanding_write < handle->write_at_once)
+        {
+            res = globus_xio_driver_pass_write(
+                op, 
+                (globus_xio_iovec_t *)iovec, 
+                iovec_count, 
+                wait_for,
+                globus_l_xio_queue_write_cb,
+                handle);
+            if(res == GLOBUS_SUCCESS)
+            {
+                handle->outstanding_write++;
+            }
+        }
+        else
         {
             entry = globus_malloc(sizeof(globus_xio_driver_queue_entry_t));
             if(entry == NULL)
@@ -330,16 +353,6 @@ globus_l_xio_queue_write(
                 entry->op = op;
                 globus_fifo_enqueue(&handle->write_q, entry);
             }
-        }
-        else
-        {
-            handle->outstanding_write = GLOBUS_TRUE;
-            res = globus_xio_driver_pass_write(
-                op, 
-                (globus_xio_iovec_t *)iovec, 
-                iovec_count, 
-                wait_for,
-                globus_l_xio_queue_write_cb, handle);
         }
     }
     globus_mutex_unlock(&handle->mutex);
