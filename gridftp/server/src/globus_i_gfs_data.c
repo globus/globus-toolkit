@@ -196,6 +196,27 @@ globus_l_gfs_data_start_abort(
 
 static
 void
+globus_l_gfs_data_end_transfer_kickout(
+    void *                              user_arg);
+
+static
+void
+globus_l_gfs_data_write_eof_cb(
+    void *                              user_arg,
+    globus_ftp_control_handle_t *       handle,
+    globus_object_t *                   error,
+    globus_byte_t *                     buffer,
+    globus_size_t                       length,
+    globus_off_t                        offset,
+    globus_bool_t                       eof);
+
+static
+void
+globus_l_gfs_data_end_read_kickout(
+    void *                              user_arg);
+    
+static
+void
 globus_l_gfs_blocking_dispatch_kickout(
     void *                              user_arg)
 {
@@ -728,6 +749,7 @@ globus_l_gfs_data_operation_destroy(
     {
         globus_free(op->eof_count);
     }
+    memset(op, -1, sizeof(globus_l_gfs_data_operation_t));
     globus_free(op);
 }
 
@@ -2266,6 +2288,61 @@ error_op:
  **********************************************************************/
 static
 void
+globus_l_gfs_data_finish_connected(
+    globus_l_gfs_data_operation_t *     op)
+{
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    if(op->data_handle->is_mine)
+    {
+        if(op->writing)
+        {
+            if(op->node_ndx != 0 || 
+                op->node_count == 1 || 
+                op->eof_ready)
+            {
+                result = globus_ftp_control_data_write(
+                    &op->data_handle->data_channel,
+                    "",
+                    0,
+                    0,
+                    GLOBUS_TRUE,
+                    globus_l_gfs_data_write_eof_cb,
+                    op);
+                if(result != GLOBUS_SUCCESS)
+                {
+                    globus_i_gfs_log_result(
+                        "write_eof error", result);
+                    op->cached_res = result;
+                    globus_callback_register_oneshot(
+                        NULL,
+                        NULL,
+                        globus_l_gfs_data_end_transfer_kickout,
+                        op);
+                }
+            }
+        }
+        else
+        {
+            globus_callback_register_oneshot(
+                NULL,
+                NULL,
+                globus_l_gfs_data_end_read_kickout,
+                op);
+        }
+    }
+    else
+    {
+        globus_callback_register_oneshot(
+            NULL,
+            NULL,
+            globus_l_gfs_data_end_transfer_kickout,
+            op);
+    }
+}                        
+
+
+static
+void
 globus_l_gfs_data_begin_cb(
     void *                              callback_arg,
     struct globus_ftp_control_handle_s * handle,
@@ -2275,6 +2352,7 @@ globus_l_gfs_data_begin_cb(
 {
     globus_bool_t                       destroy_op = GLOBUS_FALSE;
     globus_bool_t                       connect_event = GLOBUS_FALSE;
+    globus_bool_t                       finish = GLOBUS_FALSE;
     globus_gfs_ipc_event_reply_t *      event_reply;
     globus_l_gfs_data_operation_t *     op;
 
@@ -2285,7 +2363,6 @@ globus_l_gfs_data_begin_cb(
         switch(op->state)
         {
             case GLOBUS_L_GFS_DATA_CONNECTING:
-                op->ref--;
                 op->stripe_connections_pending--;
                 globus_assert(op->ref > 0);
 
@@ -2298,10 +2375,27 @@ globus_l_gfs_data_begin_cb(
                 }
                 if(!op->stripe_connections_pending)
                 {
+                    op->ref--;
                     /* everything is well, send the begin event */
                     op->state = GLOBUS_L_GFS_DATA_CONNECTED;
                     connect_event = GLOBUS_TRUE;
                 }
+                break;
+            /* this happens when a finished comes right after a begin,
+                usually because 0 bytes were written.  we need to send
+                the transfer_connected event and then finish. */
+            case GLOBUS_L_GFS_DATA_FINISH:
+                op->stripe_connections_pending--;
+                if(!op->stripe_connections_pending)
+                {
+                    op->ref--;
+                    /* everything is well, send the begin event */
+                    connect_event = GLOBUS_TRUE;
+                    finish = GLOBUS_TRUE;
+                }
+
+                globus_assert(op->ref > 0);
+                    
                 break;
 
             /* this happens when a transfer is aborted before a connection
@@ -2309,11 +2403,9 @@ globus_l_gfs_data_begin_cb(
                 depending on how quickly the abort process happens.  */
             case GLOBUS_L_GFS_DATA_ABORTING:
             case GLOBUS_L_GFS_DATA_ABORT_CLOSING:
-            case GLOBUS_L_GFS_DATA_FINISH:
                 op->ref--;
                 globus_assert(op->ref > 0);
                 break;
-
                 /* we need to dec the reference count and clean up if needed.
                 also we ignore the error value here, it is likely canceled */
             case GLOBUS_L_GFS_DATA_COMPLETING:
@@ -2356,7 +2448,12 @@ globus_l_gfs_data_begin_cb(
         }
         globus_free(event_reply);
     }
-    else if(destroy_op)
+    if(finish)
+    {
+        globus_l_gfs_data_finish_connected(op);
+    }        
+    
+    if(destroy_op)
     {
         /* pass the complete event */
         if(op->session_handle->dsi->trev_func &&
@@ -2656,6 +2753,8 @@ globus_l_gfs_data_write_eof_cb(
             callback after a finsihed_transfer() from the user.  we 
             could still get events or disconnects, but the abort process
             does not touch the data_handle->state */    
+        globus_i_gfs_log_result(
+            "write_eof_cb error", result);
         globus_l_gfs_data_cb_error(op->data_handle);
         op->cached_res = globus_error_put(globus_object_copy(error));
         end = GLOBUS_TRUE;
@@ -2744,6 +2843,7 @@ globus_l_gfs_data_send_eof(
     {
         if(op->state == GLOBUS_L_GFS_DATA_FINISH)
         {
+            op->eof_ready = GLOBUS_TRUE;
             result = globus_ftp_control_data_write(
                 &op->data_handle->data_channel,
                 "",
@@ -2962,6 +3062,8 @@ globus_l_gfs_data_force_close(
                 if(result != GLOBUS_SUCCESS)
                 {
                     op->data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_CLOSED;
+                    globus_i_gfs_log_result(
+                        "force_close", result);
                     globus_callback_register_oneshot(
                         NULL,
                         NULL,
@@ -2988,6 +3090,8 @@ globus_l_gfs_data_force_close(
         {
             case GLOBUS_L_GFS_DATA_HANDLE_INUSE:
                 op->data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_CLOSED;
+                globus_i_gfs_log_result(
+                    "force_close", result);
                 globus_callback_register_oneshot(
                     NULL,
                     NULL,
@@ -3610,7 +3714,7 @@ globus_gridftp_server_begin_transfer(
                     /* for the begin callback on success */
                     if(op->writing && op->data_handle->is_mine)
                     {
-                        op->ref += op->stripe_count;
+                        op->ref ++;
                         op->stripe_connections_pending = 
                             op->stripe_count;
                     }
@@ -3728,9 +3832,21 @@ globus_gridftp_server_finished_transfer(
         {
             /* this is the normal case */
             case GLOBUS_L_GFS_DATA_CONNECTED:
-            /* we allow finishing in connecting state with no error since
-            it likely means a correct zero byte transfer.  errors on the 
-            connect will still be caught if the write eof here fails */
+                if(result != GLOBUS_SUCCESS)
+                {
+                    op->cached_res = result;
+                    globus_l_gfs_data_force_close(op);
+                    goto err_close;
+                }
+                globus_l_gfs_data_finish_connected(op);                  
+                break;
+
+            /* finishing in connecting state with no error likely means 
+                a zero byte transfer.  the finish will be kicked off in
+                the connect_cb when it comes, here we just let it fall
+                through and change state to finished
+                XXX think we need another state here, what if we get
+                an abort while waiting for connect_cb but we are finished */
             case GLOBUS_L_GFS_DATA_CONNECTING:
                 if(result != GLOBUS_SUCCESS)
                 {
@@ -3738,59 +3854,7 @@ globus_gridftp_server_finished_transfer(
                     globus_l_gfs_data_force_close(op);
                     goto err_close;
                 }
-                if(op->data_handle->is_mine)
-                {
-                    if(op->writing)
-                    {
-                        if(op->node_ndx != 0 || 
-                            op->node_count == 1 || 
-                            op->eof_ready)
-                        {
-                            result = globus_ftp_control_data_write(
-                                &op->data_handle->data_channel,
-                                "",
-                                0,
-                                0,
-                                GLOBUS_TRUE,
-                                globus_l_gfs_data_write_eof_cb,
-                                op);
-                            if(result != GLOBUS_SUCCESS)
-                            {
-                                globus_i_gfs_log_result(
-                                    "write_eof error", result);
-                                op->cached_res = result;
-                                globus_callback_register_oneshot(
-                                    NULL,
-                                    NULL,
-                                    globus_l_gfs_data_end_transfer_kickout,
-                                    op);
-                            }
-                        }
-                    }
-                    else
-                    {
-                        globus_callback_register_oneshot(
-                            NULL,
-                            NULL,
-                            globus_l_gfs_data_end_read_kickout,
-                            op);
-                    }
-                }
-                else
-                {
-                    if(result != GLOBUS_SUCCESS)
-                    {
-                        op->cached_res = result;
-                    }
-                    globus_callback_register_oneshot(
-                        NULL,
-                        NULL,
-                        globus_l_gfs_data_end_transfer_kickout,
-                        op);
-                }                        
-                    
                 break;
-
             case GLOBUS_L_GFS_DATA_REQUESTING:
             case GLOBUS_L_GFS_DATA_ABORTING:
                 if(result != GLOBUS_SUCCESS)

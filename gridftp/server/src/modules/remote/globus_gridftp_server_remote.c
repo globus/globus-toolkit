@@ -22,6 +22,10 @@ typedef struct globus_l_gfs_remote_ipc_bounce_s
     int                                 partial_eof_counts;
     globus_bool_t                       recv_pending;
     int                                 nodes_requesting;
+    int                                 node_count;
+    int                                 finished;
+    int                                 final_eof;
+    int                                 cached_result;
 } globus_l_gfs_remote_ipc_bounce_t;
 
 typedef struct globus_l_gfs_remote_node_info_s
@@ -338,6 +342,10 @@ globus_l_gfs_ipc_transfer_cb(
     bounce_info = (globus_l_gfs_remote_ipc_bounce_t *)  user_arg;
     
     bounce_info->nodes_pending--;
+    if(reply->result != 0)
+    {
+        bounce_info->cached_result = reply->result;
+    }
     if(!bounce_info->nodes_pending && !bounce_info->nodes_requesting)
     {
         globus_gfs_finished_info_t *    finished_info;
@@ -351,6 +359,15 @@ globus_l_gfs_ipc_transfer_cb(
         finished_info->msg = reply->msg;
         finished_info->result = reply->result;
         
+        if(bounce_info->final_eof==0 && bounce_info->node_count > 1)
+        {
+            globus_libc_printf("**finishing transfer before final_eof!\n");
+            if(bounce_info->cached_result != GLOBUS_SUCCESS)
+            {
+                printf("with error!!\n");
+            }
+            bounce_info->finished = GLOBUS_TRUE;
+        }
         globus_gridftp_server_operation_finished(
             bounce_info->op,
             finished_info->result,
@@ -451,7 +468,7 @@ globus_l_gfs_ipc_event_cb(
             }
             bounce_info->partial_eof_counts++;
             if(bounce_info->partial_eof_counts + 1 == 
-                globus_list_size(bounce_info->node_list))
+                bounce_info->node_count && !bounce_info->finished)
             {
                 memset(&event_info, '\0', sizeof(globus_gfs_event_info_t));
                 event_info.type = GLOBUS_GFS_EVENT_FINAL_EOF_COUNT;
@@ -461,6 +478,7 @@ globus_l_gfs_ipc_event_cb(
                     master_node->ipc_handle,
                     master_node->transfer_id,
                     &event_info);
+                bounce_info->final_eof++;
             }   
             break;
         default:
@@ -666,6 +684,7 @@ globus_l_gfs_remote_list(
     bounce_info->event_pending = 1;
     bounce_info->begin_event_pending = 1;
     bounce_info->nodes_pending = 1;
+    bounce_info->node_count = 1;
     
     result = globus_gfs_ipc_request_list(
         node_info->ipc_handle,
@@ -775,6 +794,7 @@ globus_l_gfs_remote_recv(
         bounce_info->recv_pending = GLOBUS_TRUE;
     }
     bounce_info->nodes_requesting = node_count;
+    bounce_info->node_count = node_count;
 
             
     node_info = (globus_l_gfs_remote_node_info_t *) 
@@ -840,6 +860,7 @@ globus_l_gfs_remote_send(
         globus_calloc(1, node_count * sizeof(int) + 1);
 
     bounce_info->nodes_requesting = node_count;
+    bounce_info->node_count = node_count;
         
     for(list = bounce_info->node_list;
         !globus_list_empty(list);
