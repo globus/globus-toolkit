@@ -29,6 +29,16 @@ BUNDLE gt4-c-ws-core
         globus_xio_buffer
         globus_c_wsrf_providers
         globus_notification_consumer
+        globus_c_wsrf_core_test_interop_bindings
+
+BUNDLE gt4-c-deps-cgen
+        globus_c_wsrf_cgen
+        globus_c_wsrf_core_bindings
+        globus_c_wsrf_sample_counter_bindings
+        globus_c_wsrf_sample_counter_bindings
+        globus_c_gram_client_bindings
+        globus_c_delegation_client_bindings
+        globus_c_wsrf_core_test_interop_bindings
 
 BUNDLE gt4-mds
         globus_wsrf_mds_aggregator

@@ -92,6 +92,9 @@ globus_globusrun_ws                         ws-gram/client/c/source gpt
 globus_c_gram_client_bindings               ws-gram/client/c/bindings tar
 globus_c_delegation_client_bindings         ws-delegation/client/c/bindings tar
 
+globus_c_wsrf_core_test_interop_bindings    wsrf/c/core/tests/interop/source/
+globus_c_wsrf_core_test_interop_client_test wsrf/c/core/tests/interop/test
+
 globus_wsrf_cas_client_java                 ws-cas/client/java/source
 globus_wsrf_cas_service_java                ws-cas/service/java/source
 globus_wsrf_cas_service_unit_test           ws-cas/service/java/test/unit
