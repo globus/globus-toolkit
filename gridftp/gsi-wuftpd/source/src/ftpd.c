@@ -332,6 +332,7 @@ int log_commands = 0;
 int log_security = 0;
 int syslogmsg = 0;
 static int wtmp_logging = 1;
+static int debug_no_fork = 0;
 
 #ifdef SECUREOSF
 #define SecureWare		/* Does this mean it works for all SecureWare? */
@@ -703,9 +704,9 @@ int i = 0;
 #endif /* DAEMON */
 
 #ifndef DAEMON
-    while ((c = getopt(argc, argv, ":aAvdlLiIoP:qQr:t:T:u:wVWX")) != -1) {
+    while ((c = getopt(argc, argv, ":aAvdlLiIoP:qQr:t:T:u:wVWX1")) != -1) {
 #else /* DAEMON */
-    while ((c = getopt(argc, argv, ":aAvdlLiIop:P:qQr:sSt:T:u:VwWX")) != -1) {
+    while ((c = getopt(argc, argv, ":aAvdlLiIop:P:qQr:sSt:T:u:VwWX1")) != -1) {
 #endif /* DAEMON */
 	switch (c) {
 
@@ -827,6 +828,10 @@ int i = 0;
 
 	case ':':
 	    syslog(LOG_ERR, "option -%c requires an argument", optopt);
+	    break;
+
+	case '1':
+	    debug_no_fork = 1;
 	    break;
 
 	default:
@@ -974,11 +979,16 @@ int i = 0;
     sigaddset(&block_sigmask, SIGVTALRM);
 #endif
 #endif
+    if(! debug_no_fork)
+    {
 #ifdef SIGPROF
     (void) signal(SIGPROF, randomsig);
 #ifdef NEED_SIGFIX
     sigaddset(&block_sigmask, SIGPROF);
 #endif
+    ;
+    }
+    
 #endif
 #ifdef SIGUSR1
     (void) signal(SIGUSR1, randomsig);
@@ -6575,7 +6585,14 @@ void dologout(int status)
     g_end();
 #endif
 
-    _exit(status);
+    if(status >= 0)
+    {
+        exit(status);
+    }
+    else
+    {
+	_exit(status);
+    }
 }
 
 SIGNAL_TYPE myoob(int sig)
@@ -7708,8 +7725,12 @@ void do_daemon(int argc, char **argv, char **envp)
 	if (keepalive)
 	    (void) setsockopt(msgsock, SOL_SOCKET, SO_KEEPALIVE, (char *) &one, sizeof(one));
 
-	/* Fork off a handler */
-	pid = fork();
+	if (debug_no_fork) {
+		pid = 0;
+	} else {
+		/* Fork off a handler */
+		pid = fork();
+	}
 	if (pid < 0) {
 	    syslog(LOG_ERR, "failed to fork: %m");
 	    sleep(1);
