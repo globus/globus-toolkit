@@ -11,7 +11,7 @@ Scripts= \
 	globus-user-env.sh \
 	globus-user-env.csh
 
-etc_DATA=$(Scripts)
+sysconf_DATA=$(Scripts)
 EXTRA_DIST=$(Scripts)
 
 include $(top_srcdir)/globus_automake_post
