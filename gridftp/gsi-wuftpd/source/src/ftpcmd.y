@@ -212,7 +212,7 @@ extern int port_allowed(const char *remoteaddr);
     APPE    MLFL    MAIL    MSND    MSOM    MSAM
     MRSQ    MRCP    ALLO    REST    RNFR    RNTO
     ABOR    DELE    CWD     LIST    NLST    SITE
-    STAT    HELP    NOOP    MKD     RMD     PWD
+    STAT_CMD    HELP    NOOP    MKD     RMD     PWD
     CDUP    STOU    SMNT    SYST    SIZE    MDTM
     FAULT
 
@@ -888,9 +888,9 @@ cmd: USER SP username CRLF
 	    if ($4 != NULL)
 		free($4);
 	}
-    | STAT check_login SP pathname CRLF
+    | STAT_CMD check_login SP pathname CRLF
 	=	{
-	    if(exit_at == STAT)
+	    if(exit_at == STAT_CMD)
 	    {
 		dologout(0);
 	    }
@@ -901,9 +901,9 @@ cmd: USER SP username CRLF
 	    if ($4 != NULL)
 		free($4);
 	}
-    | STAT check_login CRLF
+    | STAT_CMD check_login CRLF
 	=	{
-	    if(exit_at == STAT)
+	    if(exit_at == STAT_CMD)
 	    {
 		dologout(0);
 	    }
@@ -2294,7 +2294,7 @@ struct tab cmdtab[] =
     {"NLST", NLST, OSTR, 1, "[ <sp> path-name ]"},
     {"SITE", SITE, SITECMD, 1, "site-cmd [ <sp> arguments ]"},
     {"SYST", SYST, ARGS, 1, "(get type of operating system)"},
-    {"STAT", STAT, OSTR, 1, "[ <sp> path-name ]"},
+    {"STAT", STAT_CMD, OSTR, 1, "[ <sp> path-name ]"},
     {"HELP", HELP, OSTR, 1, "[ <sp> <string> ]"},
     {"NOOP", NOOP, ARGS, 1, ""},
     {"MKD", MKD, STR1, 1, "<sp> path-name"},
