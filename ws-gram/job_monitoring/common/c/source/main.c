@@ -69,6 +69,20 @@ main(int argc, char *argv[])
         goto deactivate_error;
     }
 
+    if (timestamp != 0)
+    {
+        result = globus_scheduler_event_generator_set_timestamp(timestamp);
+
+        if (result != GLOBUS_SUCCESS)
+        {
+            fprintf(stderr,
+                    "Error setting timestamp: %s\n",
+                    globus_object_printable_to_string(
+                            globus_error_peek(result)));
+            goto deactivate_error;
+        }
+    }
+
     if (module == NULL)
     {
         fprintf(stderr, "Missing module name [-s parameter]\n");
@@ -81,20 +95,6 @@ main(int argc, char *argv[])
 
         if (result != GLOBUS_SUCCESS)
         {
-            goto deactivate_error;
-        }
-    }
-
-    if (timestamp != 0)
-    {
-        result = globus_scheduler_event_generator_set_timestamp(timestamp);
-
-        if (result != GLOBUS_SUCCESS)
-        {
-            fprintf(stderr,
-                    "Error setting timestamp: %s\n",
-                    globus_object_printable_to_string(
-                            globus_error_peek(result)));
             goto deactivate_error;
         }
     }

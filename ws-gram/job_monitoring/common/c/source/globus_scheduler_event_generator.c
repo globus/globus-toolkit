@@ -17,7 +17,8 @@ globus_l_seg_deactivate(void);
 
 static
 globus_result_t
-globus_l_seg_register_write(void);
+globus_l_seg_register_write(
+    globus_byte_t *                     buf);
 
 static
 globus_result_t
@@ -38,6 +39,17 @@ globus_l_xio_read_eof_callback(
     globus_xio_data_descriptor_t        data_desc,
     void *                              user_arg);
 
+static
+void
+globus_l_seg_writev_callback(
+    globus_xio_handle_t                 handle,
+    globus_result_t                     result,
+    globus_xio_iovec_t *                iovec,
+    int                                 count,
+    globus_size_t                       nbytes,
+    globus_xio_data_descriptor_t        data_desc,
+    void *                              user_arg);
+
 globus_module_descriptor_t globus_i_scheduler_event_generator_module =
 {
     "globus_scheduler_event_generator",
@@ -50,7 +62,6 @@ globus_module_descriptor_t globus_i_scheduler_event_generator_module =
 };
 
 static globus_mutex_t                   globus_l_seg_mutex;
-static globus_fifo_t                    globus_l_seg_buffers;
 static globus_xio_handle_t              globus_l_seg_output_handle;
 static globus_xio_handle_t              globus_l_seg_input_handle;
 static globus_xio_stack_t               globus_l_seg_file_stack;
@@ -62,6 +73,8 @@ static time_t                           globus_l_seg_timestamp;
 static globus_scheduler_event_generator_fault_handler_t
                                         globus_l_seg_fault_handler;
 static void *                           globus_l_seg_fault_arg;
+static globus_fifo_t                    globus_l_seg_buffers;
+static globus_bool_t                    globus_l_seg_write_registered;
 
 static
 int
@@ -81,6 +94,7 @@ globus_l_seg_activate(void)
     globus_l_seg_timestamp = 0;
     globus_l_seg_fault_handler = NULL;
     globus_l_seg_fault_arg = NULL;
+    globus_l_seg_write_registered = GLOBUS_FALSE;
 
     rc = lt_dlinit();
     if (rc != 0)
@@ -265,8 +279,10 @@ globus_l_seg_deactivate(void)
     char *                              buffer;
 
 
+    globus_mutex_lock(&globus_l_seg_mutex);
     globus_l_seg_fault_handler = NULL;
     globus_l_seg_fault_arg = NULL;
+    globus_mutex_unlock(&globus_l_seg_mutex);
 
     globus_xio_close(globus_l_seg_input_handle, NULL);
     globus_xio_close(globus_l_seg_output_handle, NULL);
@@ -323,7 +339,6 @@ globus_scheduler_event(
     char *                              buf;
     va_list                             ap;
     int                                 length;
-    globus_bool_t                       empty;
 
     if (format == NULL)
     {
@@ -343,7 +358,7 @@ globus_scheduler_event(
         goto error;
     }
 
-    buf = globus_libc_malloc(length);
+    buf = globus_libc_malloc(length+1);
     if (buf == NULL)
     {
         result = GLOBUS_SEG_ERROR_OUT_OF_MEMORY;
@@ -355,18 +370,7 @@ globus_scheduler_event(
     vsprintf(buf, format, ap);
     va_end(ap);
 
-    globus_mutex_lock(&globus_l_seg_mutex);
-
-    empty = globus_fifo_empty(&globus_l_seg_buffers);
-    globus_fifo_enqueue(&globus_l_seg_buffers, buf);
-
-    if (empty)
-    {
-        /* no current write in progress, so register one */
-        result = globus_l_seg_register_write();
-    }
-
-    globus_mutex_unlock(&globus_l_seg_mutex);
+    return globus_l_seg_register_write(buf);
 
 error:
     return result;
@@ -508,8 +512,16 @@ globus_scheduler_event_generator_load_module(
     const char *                        module_name)
 {
     globus_result_t                     result;
+    int                                 rc;
+    char *                              timestamp_str[64];
     const char *                        symbol_name
             = "globus_scheduler_event_module_ptr";
+
+    if (globus_l_seg_timestamp != 0)
+    {
+        sprintf(timestamp_str, "%lu", globus_l_seg_timestamp);
+        globus_module_setenv("GLOBUS_SEG_TIMESTAMP", timestamp_str);
+    }
 
     globus_mutex_lock(&globus_l_seg_mutex);
     if (globus_l_seg_scheduler_handle != NULL)
@@ -537,7 +549,16 @@ globus_scheduler_event_generator_load_module(
         goto dlclose_error;
     }
 
-    globus_module_activate(globus_l_seg_scheduler_module);
+    rc = globus_module_activate(globus_l_seg_scheduler_module);
+
+    if (rc != 0)
+    {
+        result = GLOBUS_SEG_ERROR_INVALID_MODULE(
+                module_name,
+                "activation failed");
+
+        goto dlclose_error;
+    }
 
     globus_mutex_unlock(&globus_l_seg_mutex);
 
@@ -546,6 +567,7 @@ globus_scheduler_event_generator_load_module(
 dlclose_error:
     lt_dlclose(globus_l_seg_scheduler_handle);
     globus_l_seg_scheduler_handle = NULL;
+    globus_l_seg_scheduler_module = NULL;
 unlock_error:
     globus_mutex_unlock(&globus_l_seg_mutex);
     return result;
@@ -612,7 +634,7 @@ globus_l_scheduler_event_state_change(
     }
 
     return globus_scheduler_event(
-            "001;%lu;%s;%d;%d",
+            "001;%lu;%s;%d;%d\n",
             timestamp,
             jobid,
             state,
@@ -656,7 +678,120 @@ globus_l_xio_read_eof_callback(
 
 static
 globus_result_t
-globus_l_seg_register_write(void)
+globus_l_seg_register_write(
+    globus_byte_t *                     buf)
 {
-    return GLOBUS_SEG_ERROR_NULL;
+    globus_result_t                     result;
+    size_t                              cnt;
+    globus_xio_iovec_t *                iov;
+    size_t                              nbytes=0;
+    globus_scheduler_event_generator_fault_handler_t
+                                        handler;
+    void *                              arg;
+    int                                 i;
+
+    globus_mutex_lock(&globus_l_seg_mutex);
+
+    if (buf)
+    {
+        globus_fifo_enqueue(&globus_l_seg_buffers, buf);
+    }
+
+    cnt = globus_fifo_size(&globus_l_seg_buffers);
+    if ((!globus_l_seg_write_registered) && cnt > 0)
+    {
+
+        iov = globus_libc_calloc(cnt, sizeof(globus_xio_iovec_t));
+        if (iov == NULL)
+        {
+            result = GLOBUS_SEG_ERROR_OUT_OF_MEMORY;
+
+            goto call_fault_handler;
+        }
+
+        for (i = 0; i < cnt; i++)
+        {
+            iov[i].iov_base = globus_fifo_dequeue(&globus_l_seg_buffers);
+            iov[i].iov_len = strlen((char *)iov[i].iov_base);
+            nbytes += iov[i].iov_len;
+        }
+
+        result = globus_xio_register_writev(
+                globus_l_seg_output_handle,
+                iov,
+                cnt,
+                nbytes,
+                NULL,
+                globus_l_seg_writev_callback,
+                NULL);
+
+        if (result != GLOBUS_SUCCESS)
+        {
+            goto call_fault_handler;
+        }
+        globus_l_seg_write_registered = GLOBUS_TRUE;
+    }
+
+    globus_mutex_unlock(&globus_l_seg_mutex);
+
+    return GLOBUS_SUCCESS;
+
+call_fault_handler:
+    if (globus_l_seg_fault_handler)
+    {
+        handler = globus_l_seg_fault_handler;
+        arg = globus_l_seg_fault_arg;
+
+        globus_mutex_unlock(&globus_l_seg_mutex);
+        (*handler)(arg, result);
+    }
+    return result;
 }
+/* globus_l_seg_register_write() */
+
+static
+void
+globus_l_seg_writev_callback(
+    globus_xio_handle_t                 handle,
+    globus_result_t                     result,
+    globus_xio_iovec_t *                iovec,
+    int                                 count,
+    globus_size_t                       nbytes,
+    globus_xio_data_descriptor_t        data_desc,
+    void *                              user_arg)
+{
+    int                                 i;
+    globus_scheduler_event_generator_fault_handler_t
+                                        handler = NULL;
+    void *                              arg;
+    globus_bool_t                       reregister_write;
+
+    for (i = 0; i < count; i++)
+    {
+        globus_libc_free(iovec[i].iov_base);
+    }
+    globus_libc_free(iovec);
+
+    globus_mutex_lock(&globus_l_seg_mutex);
+    globus_l_seg_write_registered = GLOBUS_FALSE;
+
+    if (result != GLOBUS_SUCCESS)
+    {
+        handler = globus_l_seg_fault_handler;
+        arg = globus_l_seg_fault_arg;
+    }
+    else if (!globus_fifo_empty(&globus_l_seg_buffers))
+    {
+        reregister_write = GLOBUS_TRUE;
+    }
+    globus_mutex_unlock(&globus_l_seg_mutex);
+    if (handler)
+    {
+        (*handler)(arg, result);
+    }
+    if (reregister_write)
+    {
+        globus_l_seg_register_write(NULL);
+    }
+}
+/* globus_l_seg_writev_callback() */
