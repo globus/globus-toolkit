@@ -26,13 +26,13 @@ globus_scheduler_event_generator_fork_test       ws-gram/job_monitoring/fork/c/t
 globus_scheduler_event_generator_condor       ws-gram/job_monitoring/condor/c/source gpt
 globus_scheduler_event_generator_condor_setup       ws-gram/job_monitoring/condor/c/setup gpt
 globus_scheduler_event_generator_condor_test       ws-gram/job_monitoring/condor/c/test gpt
-globus_scheduler_event_generator_pbs       ws-gram/job_monitoring/pbs/c/source gpt
-globus_scheduler_event_generator_pbs_setup       ws-gram/job_monitoring/pbs/c/setup gpt
-globus_scheduler_event_generator_pbs_test       ws-gram/job_monitoring/pbs/c/test gpt
-globus_scheduler_event_generator_lsf       ws-gram/job_monitoring/lsf/c/source gpt
-globus_scheduler_event_generator_lsf_setup       ws-gram/job_monitoring/lsf/c/setup gpt
-globus_scheduler_event_generator_lsf_test       ws-gram/job_monitoring/lsf/c/test gpt
-globus_wsrf_gram_job_monitoring_common_java_source ws-gram/job_monitoring/common/java/source
+globus_scheduler_event_generator_pbs        ws-gram/job_monitoring/pbs/c/source gpt
+globus_scheduler_event_generator_pbs_setup  ws-gram/job_monitoring/pbs/c/setup gpt
+globus_scheduler_event_generator_pbs_test   ws-gram/job_monitoring/pbs/c/test gpt
+globus_scheduler_event_generator_lsf        ws-gram/job_monitoring/lsf/c/source gpt
+globus_scheduler_event_generator_lsf_setup  ws-gram/job_monitoring/lsf/c/setup gpt
+globus_scheduler_event_generator_lsf_test   ws-gram/job_monitoring/lsf/c/test gpt
+globus_wsrf_gram_job_monitoring_common_java ws-gram/job_monitoring/common/java/source
 globus_fork_starter                         ws-gram/job_management/fork/c/source  gpt
 globus_wsrf_mds_aggregator		    ws-mds/aggregator/source
 globus_wsrf_mds_index                       ws-mds/index/source
