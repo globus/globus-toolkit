@@ -531,7 +531,7 @@ globus_ftp_control_connect(
         globus_io_attr_set_tcp_nodelay(&handle->cc_handle.io_attr, 
                                        GLOBUS_TRUE);
         rc=globus_io_tcp_register_connect(
-            host,
+            handle->cc_handle.server.h_name,
             port,
             &handle->cc_handle.io_attr,
             globus_l_ftp_control_connect_cb,
