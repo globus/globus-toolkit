@@ -151,6 +151,7 @@ if ( not $noupdates )
     # Need autotools for gt2 or gt3
     if ($cvs_build_hash{'gt2'} eq 1 or
 	$cvs_build_hash{'gt3'} eq 1 or
+	$cvs_build_hash{'gt4'} eq 1 or
 	$cvs_build_hash{'cbindings'} eq 1)
     {
 	if ( $cvs_build_hash{'autotools'} ne 1)
@@ -226,7 +227,7 @@ sub generate_dependency_tree()
 
     if ( not defined(@cvs_build_list) )
     {
-	@cvs_build_list = ("autotools", "gt2", "gt3", "cbindings");
+	@cvs_build_list = ("autotools", "gt2", "gt3", "gt4", "cbindings");
     }
 
     foreach my $tree (@cvs_build_list)
@@ -260,6 +261,19 @@ sub generate_dependency_tree()
 	    print GRAPH "}";
 	    close GRAPH;
         }
+	
+	# To interact well with installs, need to make
+	# a new bundle that contains everything that was
+	# pulled in via --deps, so that GPT may sort them
+	# for us.  Otherwise we install in the wrong order.
+        push @{$bundle_list{"custom-deps"}}, $flavor;
+        push @{$bundle_list{"custom-deps"}}, "";  # No flags
+        for my $pk (keys %package_build_hash)
+        {
+           push @{$bundle_list{"custom-deps"}}, $pk;
+        }
+
+	@bundle_build_list = ( "custom-deps" );
     }
 }
 
@@ -640,6 +654,7 @@ sub build_prerequisites()
     if ( $cvs_build_hash{'autotools'} eq 1 or
 	 $cvs_build_hash{'gt2'} eq 1 or
 	 $cvs_build_hash{'gt3'} eq 1 or
+	 $cvs_build_hash{'gt4'} eq 1 or
 	 $cvs_build_hash{'cbindings'})
     {
 	install_gt2_autotools() if $autotools;
@@ -647,6 +662,7 @@ sub build_prerequisites()
 
     if ( $cvs_build_hash{'gt2'} eq 1 or 
 	 $cvs_build_hash{'gt3'} eq 1 or
+	 $cvs_build_hash{'gt4'} eq 1 or
 	 $cvs_build_hash{'cbindings'} eq 1)
     {
 	install_globus_core();
@@ -955,6 +971,10 @@ sub cvs_checkout_package
     my $tree = package_tree($package);
     my $subdir = $package_list{$package}[1];
 
+    if (! defined($tree)) {
+        die "ERROR: There was a dependency on package $package which I know nothing about.\n";
+    }
+
     print "Checking out $subdir from $tree.\n";
     cvs_checkout_subdir($tree, $subdir);
 }
@@ -1100,7 +1120,7 @@ sub package_source_gpt()
     
     if ( ! -d $subdir )
     {
-	print "$subdir does not exist, skipping\n";
+	die "$subdir does not exist, for package $package in tree $tree\n";
     } else {
 	#This causes GPT not to worry about whether dependencies
 	#have been installed while doing configure/make dist.
@@ -1238,7 +1258,7 @@ sub package_source_tar()
     
     if ( ! -d $subdir )
     {
-	print "$subdir does not exist, skipping\n";
+	print "$subdir does not exist for package $package.\n";
     } else {
 	print "Creating source directory for $package\n";
 	log_system("rm -fr $destdir", "$pkglog/$package");
@@ -1254,15 +1274,18 @@ sub package_source_tar()
 	    log_system("cp $destdir/pkgdata/pkg_data_src.gpt $destdir/pkgdata/pkg_data_src.gpt.in",
 		       "$pkglog/$package");
 	    paranoia "Metadata copy failed for $package.";
-	    if ( -e "$destdir/pkgdata/filelist" )
+	    if (!( -e "$destdir/filelist" ))
 	    {
-		log_system("cp $destdir/pkgdata/filelist $destdir", "$pkglog/$package");
-		paranoia "Filelist copy failed for $package.";
-            } else {
-		print "\tPartially cool.  Still got filelist from package-list.\n";
-		log_system("cp $top_dir/package-list/$package/filelist 	$destdir/", "$pkglog/$package");
-		paranoia "Filelist copy from package-list failed for $package.";
-	    }
+	      if ( -e "$destdir/pkgdata/filelist" )
+	      {
+	  	  log_system("cp $destdir/pkgdata/filelist $destdir", "$pkglog/$package");
+		  paranoia "Filelist copy failed for $package.";
+              } else {
+		  print "\tPartially cool.  Still got filelist from package-list.\n";
+		  log_system("cp $top_dir/package-list/$package/filelist 	$destdir/", "$pkglog/$package");
+		  paranoia "Filelist copy from package-list failed for $package.";
+	      }
+            }
 	} else {
 	    log_system("mkdir -p $destdir/pkgdata/", "$pkglog/$package");
 	    paranoia "mkdir failed during $package.";

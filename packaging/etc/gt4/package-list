@@ -1,17 +1,24 @@
-globus_wsrf_gram_service-java-source        ws-gram/service/java/source 
+globus_wsrf_rft_service_source              ws-transfer/reliable/service/java/source
+globus_wsrf_rft_common_java_source          ws-transfer/reliable/common/java/source
+globus_wsrf_rft_common_schema               ws-transfer/reliable/common/schema
+globus_wsrf_gram_service_java_source        ws-gram/service/java/source 
 
-globus_wsrf_gram_utils-java-source          ws-gram/utils/java/source                       
+globus_wsrf_gram_utils_java_source          ws-gram/utils/java/source                       
 
-globus_wsrf_gram_common-java-source         ws-gram/common/java/source                      
+globus_wsrf_gram_common_java_source         ws-gram/common/java/source                      
 
-globus_wsrf_gram_common-schema              ws-gram/common/schema                           
+globus_wsrf_gram_common_schema              ws-gram/common/schema                           
 
-globus_wsrf_gram_client-java-source         ws-gram/client/java/source    
+globus_wsrf_gram_client_java_source         ws-gram/client/java/source    
 globus_scheduler_event_generator_fork       ws-gram/job_monitoring/fork/c/source gpt
 globus_scheduler_event_generator_fork_setup ws-gram/job_monitoring/fork/c/setup gpt
 globus_scheduler_event_generator            ws-gram/job_monitoring/common/c/source gpt
 globus_wsrf_gram_job_monitoring_common_java_source ws-gram/job_monitoring/common/java/source
 globus_fork_starter                         ws-gram/job_management/fork/c/source  gpt
+globus_wsrf_job_management_fork_setup       ws-gram/job_management/fork/setup  gpt
+globus_wsrf_mds_index                       ws-mds/index/source
+globus_wsrf_mds_ganglia                     ws-mds/ganglia/source
+globus_wsrf_servicegroup                    ws-mds/servicegroup/source
 globus_ws_core_schema                       wsrf/schema
 globus_java_ws_core_common                  wsrf/java/common/source
 globus_java_ws_core_tools                   wsrf/java/tools/source

@@ -1,0 +1,100 @@
+Immediate:
+----------
+5) test suite
+    single local 
+        non-daemon
+        daemon
+        detached
+        inetd
+    single remote data-node 
+        non-daemon
+        daemon
+        detached
+        inetd 
+7) merge branch to trunk and verify nothing broke
+8) update doc to reflect striping info and current issues/limitations
+
+
+file not trunc on striped puts, since they all look like partials, also
+    truncating on pasv stor... who truncates, and have to deal with
+    data coming before the 150 response
+
+fix up error in data.c and dsi, or make use result_t over ipc temporarily
+
+make abort go
+
+clean up memory and locking in data.c
+
+clean up rest of stuff from pre-dsi change (old attrs that just copy to new
+    info structs, etc)
+
+think if broadcast would be quick enough, and do correct connection 
+    count stuff if not (for eofs)
+
+add symlink_target to stat buffer, server-lib stuff to display it in mlsx
+
+add security to ipc
+
+update doc to reflect striping info and current issues/limitations
+
+check if threaded works (and fix if easy) so we can at least list it as a known issue
+
+verify test suite on following instances:
+    single local non-daemon, daemon, detached and inetd
+    single remote and data-node non-daemon, daemon, detached and inetd 
+    4 stripe remote in same modes (general success here, not expected to pass everything)
+                 
+check what version this should be, and change package name 
+
+merge branch to trunk and verify nothing broke
+
+
+
+
+**OLD ALPHA STUFF:
+
+MUST HAVE
+--------------------------------------------------------------
+SERVER:
+-instrument logging in server
+-implement abort_cb on server side
+-verify data destroy working on server end (and no leaks!)
+-call control_disconnected() when needed
+-server mem management... i know there are some leaks with attrs and now with instance for event stuff
+-mimic wu cmdline opt names when applicable i.e. -S -p etc etc (important now so people don't start using opts that we will drop)
+-verify inetd is prepped right
+
+LIB:
+-verify feat list
+
+BOTH:
+-add proper return vals/messages for error situations
+-verify reply codes
+-recheck exit/quit/abort states (after server abort/exit stuff is good)
+
+--------------------------------------------------------------
+
+OTHER: (non-code)
+update gridftp-server-stable-branch tag
+
+
+
+
+if time, desire, etc etc:
+--------------------------------------------------------------
+SERVER:
+-make forking/daemon mode better (maybe leave this out for now)
+-define logging classes in config
+-produce netlogger output (based on event timer i guess?... -Z option in wu)
+-global config opts can be non-overridable, or forced to a range
+-think about config val checking/verification
+-sync(2) before each transfer stat update (by option only, unless it doesn't affect perf)
+-make sure server will work with tcpd
+
+LIB:
+-additional functionality for STAT (959 says transfer stats and other shit)
+-additional command to get server version
+
+--------------------------------------------------------------
+
+

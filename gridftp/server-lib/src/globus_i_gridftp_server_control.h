@@ -94,6 +94,7 @@ typedef void
     char *                                  path,
     globus_gridftp_server_control_stat_t *  stat_info,
     int                                     stat_count,
+    uid_t                                   uid,
     void *                                  user_arg);
 
 typedef void
@@ -152,6 +153,8 @@ typedef struct globus_i_gsc_event_data_s
 
     globus_gridftp_server_control_event_cb_t user_cb;
     void *                                  user_arg;
+
+    globus_off_t *                          stripe_total;
 } globus_i_gsc_event_data_t;
 
 typedef struct globus_i_gsc_handle_opts_s
@@ -253,6 +256,7 @@ typedef struct globus_i_gsc_op_s
     globus_bool_t                           transfer_started;
 
     globus_range_list_t                     range_list;;
+    globus_range_list_t                     perf_range_list;;
     globus_i_gsc_event_data_t               event;
 
     globus_bool_t                           aborted;
@@ -314,7 +318,6 @@ typedef struct globus_i_gsc_server_handle_s
     char *                              username;
     char *                              pw;
     char *                              subject;
-    uid_t                               uid;
     char                                dcau;
     char *                              dcau_subject;
     char                                prot;
@@ -323,6 +326,7 @@ typedef struct globus_i_gsc_server_handle_s
     char *                              post_auth_banner;
     char *                              pre_auth_banner;
 
+    gss_ctx_id_t                        context;
     gss_cred_id_t                       cred;
     gss_cred_id_t                       del_cred;
     globus_gridftp_server_control_security_type_t   security_type;
@@ -336,6 +340,7 @@ typedef struct globus_i_gsc_server_handle_s
     char *                              modes;
     char *                              types;
     int                                 stripe_count;
+    char *				lang;
 
     globus_off_t                        allocated_bytes;
 
@@ -434,6 +439,7 @@ globus_i_gsc_passive(
     globus_i_gsc_op_t *                 op,
     int                                 max,
     int                                 net_prt,
+    const char *                        pathname,
     globus_i_gsc_passive_cb_t           cb,
     void *                              user_arg);
 
@@ -493,15 +499,16 @@ globus_i_gsc_nlst_line(
 
 char *
 globus_i_gsc_mlsx_line_single(
-    const char *                        mlsx_fact_string,
+    const char *                        mlsx_fact_str,
     int                                 uid,
     globus_gridftp_server_control_stat_t *  stat_info);
 
 char *
 globus_i_gsc_mlsx_line(
-    globus_i_gsc_server_handle_t *      server_handle,
     globus_gridftp_server_control_stat_t *  stat_info,
-    int                                 stat_count);
+    int                                 stat_count,
+    const char *                        mlsx_fact_string,
+    uid_t                               uid);
 
 char *
 globus_i_gsc_string_to_959(

@@ -3,14 +3,24 @@
 
 #include "globus_gridftp_server.h"
 #include "globus_ftp_control.h"
+#include "globus_i_gfs_acl.h"
+
+void
+globus_i_gfs_server_closed();
 
 typedef struct
 {
     globus_xio_handle_t             xio_handle;
     char *                          remote_contact;
     char *                          rnfr_pathname;
-    globus_gridftp_server_operation_t op;
-    
+    int                             transfer_id;
+    globus_gridftp_server_control_op_t op;
+
+    /* XXX: is this a good place ? */
+    void *                          user_data_handle;
+    globus_i_gfs_acl_handle_t       acl_handle;
+    int                             session_id;
+
     union
     {
         struct
@@ -51,21 +61,11 @@ typedef struct
             
 } globus_i_gfs_op_attr_t;
 
-typedef enum
-{
-    GLOBUS_I_GFS_CMD_MKD,
-    GLOBUS_I_GFS_CMD_RMD,
-    GLOBUS_I_GFS_CMD_DELE,
-    GLOBUS_I_GFS_CMD_RNTO,
-    GLOBUS_I_GFS_CMD_RNFR,
-    GLOBUS_I_GFS_CMD_CKSM,
-    GLOBUS_I_GFS_CMD_SITE_CHMOD
-} globus_i_gfs_command_t;
 
 
 typedef struct
 {
-    globus_i_gfs_command_t              command;
+    globus_gfs_command_type_t           command;
     char *                              pathname;
 
     globus_off_t                        cksm_offset;
@@ -85,36 +85,35 @@ typedef struct
     globus_mutex_t                      lock;
     globus_i_gfs_data_attr_t            attr;
     globus_ftp_control_handle_t         data_channel;
-    globus_bool_t                       closed;
-    int                                 ref;
 } globus_i_gfs_data_handle_t;
 
-typedef struct
+typedef struct globus_i_gfs_monitor_s
 {
-    void * nothing;    
-} globus_i_gfs_ipc_handle_t;
+    globus_bool_t                       done;
+    globus_cond_t                       cond;
+    globus_mutex_t                      mutex;
+} globus_i_gfs_monitor_t;
 
-/* !! if this changes, code will have to corrected as all 3 types here are
- * upcasted/downcasted at will
- */
-typedef union
-{
-    globus_i_gfs_data_handle_t          data;
-    globus_i_gfs_ipc_handle_t           ipc;
-} globus_i_gfs_ipc_data_handle_t;
+void
+globus_i_gfs_monitor_init(
+    globus_i_gfs_monitor_t *            monitor);
 
-typedef enum
-{
-    GLOBUS_I_GFS_EVENT_TRANSFER_BEGIN,
-    GLOBUS_I_GFS_EVENT_UPDATE_BYTES,
-    GLOBUS_I_GFS_EVENT_DISCONNECTED
-} globus_i_gfs_event_t;
+void
+globus_i_gfs_monitor_destroy(
+    globus_i_gfs_monitor_t *            monitor);
+
+void
+globus_i_gfs_monitor_wait(
+    globus_i_gfs_monitor_t *            monitor);
+
+void
+globus_i_gfs_monitor_signal(
+    globus_i_gfs_monitor_t *            monitor);
 
 #include "globus_i_gfs_log.h"
 #include "globus_i_gfs_control.h"
 #include "globus_i_gfs_ipc.h"
 #include "globus_i_gfs_data.h"
-#include "globus_i_gfs_acl.h"
 #include "globus_i_gfs_config.h"
 
 #endif
