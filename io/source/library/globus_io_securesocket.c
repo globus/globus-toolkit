@@ -289,7 +289,7 @@ globus_i_io_securesocket_register_accept(
     OM_uint32                   maj_stat;
     OM_uint32                   min_stat;
     globus_object_t *               err;
-    globus_result_t                 result;
+    globus_result_t                 rc;
     
     info = (globus_i_io_callback_info_t *)
         globus_malloc(sizeof(globus_i_io_callback_info_t));
@@ -1632,6 +1632,7 @@ globus_l_io_secure_read_callback(
     }
     if(secure_read_info->nbytes_read >= secure_read_info->wait_for_nbytes)
     {
+        globus_i_io_end_operation(handle, GLOBUS_I_IO_READ_OPERATION);
         /* callback now */
         globus_i_io_mutex_unlock();
         secure_read_info->callback(secure_read_info->arg,
@@ -1668,6 +1669,8 @@ globus_l_io_secure_read_callback(
     return;
 
 error_exit:
+    globus_i_io_end_operation(handle, GLOBUS_I_IO_READ_OPERATION);
+    
     globus_i_io_mutex_unlock();
 
     secure_read_info->callback(secure_read_info->arg,
@@ -1810,32 +1813,31 @@ globus_i_io_securesocket_register_read(
          * copied enough data from the buffer, otherwise, we just need
          * to kick out an event from the handle_events loop
          */
-        rc = globus_i_io_register_operation(
+        rc = globus_i_io_start_operation(
             handle,
-            globus_l_io_secure_read_callback,
-            secure_read_info,
-            globus_i_io_default_destructor,
-            num_read >= wait_for_nbytes
-                ? GLOBUS_FALSE
-                : GLOBUS_TRUE,
             GLOBUS_I_IO_READ_OPERATION);
+    
+        if(rc == GLOBUS_SUCCESS)
+        {
+            rc = globus_i_io_register_operation(
+                handle,
+                globus_l_io_secure_read_callback,
+                secure_read_info,
+                globus_i_io_default_destructor,
+                num_read >= wait_for_nbytes
+                    ? GLOBUS_FALSE
+                    : GLOBUS_TRUE,
+                GLOBUS_I_IO_READ_OPERATION);
+            
+            if(rc != GLOBUS_SUCCESS)
+            {
+                globus_i_io_end_operation(handle, GLOBUS_I_IO_READ_OPERATION);
+            }
+        }
             
         if(rc != GLOBUS_SUCCESS)
         {
             err = globus_error_get(rc);
-            /* we need to callback here, since we may have
-             * partially completed the read, by using the
-             * data in the queue
-             */
-
-            globus_i_io_mutex_unlock();
-            callback(callback_arg,
-                     handle,
-                     globus_error_put(err),
-                     buf,
-                     num_read);
-            globus_i_io_mutex_lock();
-
             globus_free(secure_read_info);
 
             goto error_exit;
@@ -2576,7 +2578,7 @@ error_exit:
             (int) init_info->min_stat,
             0);
     }
-    `
+    
     callback_info->callback(callback_info->callback_arg,
                             handle,
                             globus_error_put(err));
