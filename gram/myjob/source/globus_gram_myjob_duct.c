@@ -98,7 +98,13 @@ s_myjob_init ()
 				  NULL,
 				  NULL);
 
-  if (err) return GLOBUS_GRAM_MYJOB_ERROR_COMM_FAILURE;
+  if (err) {
+    globus_fifo_destroy (&s_incoming_msgs);
+    nexus_cond_destroy (&s_cond);
+    nexus_mutex_destroy (&s_mutex);
+
+    return GLOBUS_GRAM_MYJOB_ERROR_COMM_FAILURE;
+  }
   else return GLOBUS_SUCCESS;
 }
 
@@ -204,6 +210,8 @@ s_myjob_deactivate ()
 
   rc = GLOBUS_SUCCESS;
 
+  s_myjob_done ();
+
   if ( globus_module_deactivate (GLOBUS_DUCT_RUNTIME_MODULE) != GLOBUS_SUCCESS)
     rc = GLOBUS_FAILURE;
 
@@ -213,8 +221,6 @@ s_myjob_deactivate ()
   if ( globus_module_deactivate (GLOBUS_COMMON_MODULE) != GLOBUS_SUCCESS )
     rc = GLOBUS_FAILURE;
 
-  s_myjob_done ();
-
   return rc;
 }
 
@@ -222,16 +228,24 @@ s_myjob_deactivate ()
 int
 globus_gram_myjob_deactivate ()
 {
-  s_myjob_reset ();
+  if ( s_myjob_module_enabled != 0 ) {
+    s_myjob_reset ();
 
-  return GLOBUS_SUCCESS;
+    return GLOBUS_SUCCESS;
+  }
+  else {
+    return GLOBUS_GRAM_MYJOB_ERROR_NOT_INITIALIZED;
+  }
 }
 
 
 void 
 globus_gram_myjob_atexit ()
 {
-  s_myjob_deactivate ();
+  if ( s_myjob_module_enabled != 0 ) {
+    s_myjob_deactivate ();
+    s_myjob_module_enabled = 0;
+  }
 }
 
 globus_module_descriptor_t              globus_i_gram_myjob_module =
