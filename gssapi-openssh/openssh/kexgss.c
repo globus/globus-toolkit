@@ -305,9 +305,9 @@ kexgss_server(Kex *kex)
 
 	ssh_gssapi_build_ctx(&ctxt);
         if (ssh_gssapi_id_kex(&ctxt,kex->name))
-		fatal("Unknown gssapi mechanism");
+		packet_disconnect("Unknown gssapi mechanism");
         if (ssh_gssapi_acquire_cred(&ctxt))
-        	fatal("Unable to acquire credentials for the server");
+        	packet_disconnect("Unable to acquire credentials for the server");
                                                                                                                                 
 	do {
 		debug("Wait SSH2_MSG_GSSAPI_INIT");
@@ -315,7 +315,7 @@ kexgss_server(Kex *kex)
 		switch(type) {
 		case SSH2_MSG_KEXGSS_INIT:
 			if (dh_client_pub!=NULL) 
-				fatal("Received KEXGSS_INIT after initialising");
+				packet_disconnect("Received KEXGSS_INIT after initialising");
 			recv_tok.value=packet_get_string(&recv_tok.length);
 
 		        dh_client_pub = BN_new();
@@ -328,7 +328,7 @@ kexgss_server(Kex *kex)
 			break;
 		case SSH2_MSG_KEXGSS_CONTINUE:
 			if (dh_client_pub == NULL)
-				fatal("Received KEXGSS_CONTINUE without initialising");
+				packet_disconnect("Received KEXGSS_CONTINUE without initialising");
 			recv_tok.value=packet_get_string(&recv_tok.length);
 			break;
 		default:
@@ -342,7 +342,7 @@ kexgss_server(Kex *kex)
 
 #ifdef GSS_C_GLOBUS_LIMITED_PROXY_FLAG
                 if (ret_flags & GSS_C_GLOBUS_LIMITED_PROXY_FLAG) {
-                        fatal("Limited proxy is not allowed.");
+                        packet_disconnect("Limited proxy is not allowed in gssapi key exchange.");
                 }
 #endif
 		
@@ -356,16 +356,21 @@ kexgss_server(Kex *kex)
 		}
 	} while (maj_status & GSS_S_CONTINUE_NEEDED);
 
-	if (GSS_ERROR(maj_status))
-		fatal("gss_accept_context died");
-	
+	if (GSS_ERROR(maj_status)) {
+		ssh_gssapi_send_error(maj_status,min_status);
+		packet_disconnect("gssapi key exchange handshake failed");
+	}
+
 	debug("gss_complete");
-	if (!(ret_flags & GSS_C_MUTUAL_FLAG))
-		fatal("mutual authentication flag wasn't set");
+	if (!(ret_flags & GSS_C_MUTUAL_FLAG)) {
+		ssh_gssapi_send_error(maj_status,min_status);
+		packet_disconnect("gssapi mutual authentication failed");
+	}
 		
-	if (!(ret_flags & GSS_C_INTEG_FLAG))
-		fatal("Integrity flag wasn't set");
-		
+	if (!(ret_flags & GSS_C_INTEG_FLAG)) {
+		ssh_gssapi_send_error(maj_status,min_status);
+		packet_disconnect("gssapi channel integrity not established");
+	}		
 	
 	dh = dh_new_group1();
 	dh_gen_key(dh, kex->we_need * 8);
@@ -408,8 +413,8 @@ kexgss_server(Kex *kex)
 			       GSS_C_QOP_DEFAULT,
 			       &gssbuf,
 			       &msg_tok))) {
-		ssh_gssapi_error(maj_status,min_status);
-		fatal("Couldn't get MIC");
+		ssh_gssapi_send_error(maj_status,min_status);
+		packet_disconnect("Couldn't get MIC");
 	}	
 			      
 	packet_start(SSH2_MSG_KEXGSS_COMPLETE);
@@ -430,7 +435,7 @@ kexgss_server(Kex *kex)
 	if (ssh_gssapi_getclient(&ctxt,&gssapi_client_type, 
 				       &gssapi_client_name, 
 				       &gssapi_client_creds)) {
-		fatal("Couldn't convert client name");
+		packet_disconnect("Couldn't convert client name");
 	}
 	
 	gss_release_buffer(&min_status, &send_tok);	

@@ -241,8 +241,9 @@ int ssh_gssapi_id_kex(Gssctxt *ctx, char *name) {
 
 
 /* All this effort to report an error ... */
-void
-ssh_gssapi_error(OM_uint32 major_status,OM_uint32 minor_status) {
+static void
+ssh_gssapi_error_ex(OM_uint32 major_status,OM_uint32 minor_status,
+		    int send_packet) {
 	OM_uint32 lmaj, lmin;
         gss_buffer_desc msg;
         OM_uint32 ctx;
@@ -256,6 +257,7 @@ ssh_gssapi_error(OM_uint32 major_status,OM_uint32 minor_status) {
         				  &ctx, &msg);
         	if (lmaj == GSS_S_COMPLETE) {
         	    	debug((char *)msg.value);
+			if (send_packet) packet_send_debug((char *)msg.value);
         	    	(void) gss_release_buffer(&lmin, &msg);
         	}
         } while (ctx!=0);	   
@@ -268,10 +270,24 @@ ssh_gssapi_error(OM_uint32 major_status,OM_uint32 minor_status) {
         				  &ctx, &msg);
         	if (lmaj == GSS_S_COMPLETE) {
         	    	debug((char *)msg.value);
+			if (send_packet) packet_send_debug((char *)msg.value);
         	    	(void) gss_release_buffer(&lmin, &msg);
         	}
         } while (ctx!=0);
 }
+
+void
+ssh_gssapi_error(OM_uint32 major_status,OM_uint32 minor_status) {
+    ssh_gssapi_error_ex(major_status, minor_status, 0);
+}
+
+void
+ssh_gssapi_send_error(OM_uint32 major_status,OM_uint32 minor_status) {
+    ssh_gssapi_error_ex(major_status, minor_status, 1);
+}
+
+
+
 
 /* Initialise our GSSAPI context. We use this opaque structure to contain all
  * of the data which both the client and server need to persist across
@@ -374,7 +390,7 @@ OM_uint32 ssh_gssapi_accept_ctx(Gssctxt *ctx,gss_buffer_desc *recv_tok,
 					  NULL,
 					  &ctx->client_creds);
 	if (GSS_ERROR(maj_status)) {
-		ssh_gssapi_error(maj_status,min_status);
+		ssh_gssapi_send_error(maj_status,min_status);
 	}
 	
 	if (ctx->client_creds) {
