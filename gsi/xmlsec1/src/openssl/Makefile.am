@@ -11,9 +11,8 @@ INCLUDES = \
 	-I$(top_srcdir)/include \
         -I$(GLOBUS_LOCATION)/include/libxml25 \
 	$(XMLSEC_DEFINES) \
-	$(OPENSSL_CFLAGS) \
 	$(LIBXSLT_CFLAGS) \
-	$(LIBXML_CFLAGS) \
+        $(LIBXML_CFLAGS) \
 	$(NULL)
 
 lib_LTLIBRARIES = \
