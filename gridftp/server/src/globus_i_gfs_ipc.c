@@ -315,6 +315,7 @@ globus_l_gfs_ipc_open_kickout(
     {
         switch(ipc->state)
         {
+            case GLOBUS_GFS_IPC_STATE_GETTING:
             case GLOBUS_GFS_IPC_STATE_OPENING:
                 ipc->state = GLOBUS_GFS_IPC_STATE_IN_CB;
                 break;
