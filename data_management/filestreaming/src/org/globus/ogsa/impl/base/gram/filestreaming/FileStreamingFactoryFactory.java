@@ -3,19 +3,32 @@ package org.globus.ogsa.impl.base.gram.filestreaming;
 import java.rmi.RemoteException;
 
 import org.globus.ogsa.base.gram.filestreaming.FileStreamingType;
-import org.globus.ogsa.impl.core.factory.SecureFactoryServiceSkeleton;
+import org.globus.ogsa.impl.core.factory.FactoryServiceSkeleton;
+import org.globus.ogsa.impl.core.factory.FactoryDelegationSkeleton;
+import org.globus.ogsa.GridContext;
 import org.globus.ogsa.GridServiceException;
+import org.globus.ogsa.ServiceProperties;
 import org.globus.ogsa.utils.AnyHelper;
 
 import org.gridforum.ogsa.CreationType;
 import org.gridforum.ogsa.ExtensibilityType;
 
 public class FileStreamingFactoryFactory 
-    extends SecureFactoryServiceSkeleton {
+    extends FactoryServiceSkeleton {
+
+   public FileStreamingFactoryFactory() {
+       super ("File Streaming Factory Factory");
+   }
+
+   public void preCreate(ServiceProperties factory) throws GridServiceException {
+   }
+
+   public void postPersistentCreate(GridContext context) throws GridServiceException {
+       setProperty(ServiceProperties.FACTORY, this);
+       this.factorySkeleton = new FactoryDelegationSkeleton();
+       this.factorySkeleton.setBase(this);
+   }
     
-    public FileStreamingFactoryFactory() {
-        super ("File Streaming Factory Factory");
-    }
     public Object createServiceObject(CreationType creation)
             throws GridServiceException {
         ExtensibilityType extension = creation.getServiceParameters();
