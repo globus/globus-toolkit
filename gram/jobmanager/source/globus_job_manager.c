@@ -93,6 +93,9 @@ globus_l_job_manager_duct_environment(int count,
 				      char **newvar,
 				      char **newval);
 
+static int 
+graml_rsl_add(char * attribute_name, 
+              char * attribute_value);
 /******************************************************************************
                        Define variables for external use
 ******************************************************************************/
