@@ -318,9 +318,9 @@ sub copyPRNGFile
     my($mode, $uid, $gid);
     my($data);
 
-    if ( isPresent("/dev/random") && !isForced() )
+    if ( isPresent("$sysconfdir/ssh_prng_cmds") && !isForced() )
     {
-        printf("/dev/random found and not forced.  Not installing ssh_prng_cmds...\n");
+        printf("ssh_prng_cmds found and not forced.  Not installing ssh_prng_cmds...\n");
         return;
     }
 
