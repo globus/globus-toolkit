@@ -188,6 +188,8 @@ globus_module_activate(
                 
                 if(ret_val != GLOBUS_SUCCESS)
                 {
+                    parent_key = parent_key_save;
+                    
                     globus_l_module_decrement(module_descriptor, parent_key);
                 }
                 else
@@ -213,9 +215,9 @@ globus_module_activate(
                         }
                     }
 #                   endif
+                    
+                    parent_key = parent_key_save;
                 }
-                
-		parent_key = parent_key_save;
 	    }
 	}
     }
