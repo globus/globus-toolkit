@@ -75,6 +75,9 @@ BUNDLE gt4-rft
         globus_wsrf_rft_common_java
         globus_wsrf_rft_common_schema
 
+BUNDLE gt4-rft-test
+        globus_wsrf_rft_test
+
 BUNDLE gt4-gram
         globus_c_delegation_client_bindings
         globus_c_delegation_client_util
