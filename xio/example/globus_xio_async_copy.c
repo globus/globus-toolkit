@@ -496,7 +496,7 @@ main(
         {
             dest_cs = argv[++i];
         }
-        else if(strcmp(argv[i], "-s") == 0 && i + 1 < argc)
+        else if(strcmp(argv[i], "-s") == 0)
         {
             source_is_server = GLOBUS_TRUE;
         }
