@@ -66,7 +66,7 @@ globus_l_gram_request_validate(globus_gram_jobmanager_request_t * request);
 ******************************************************************************/
 #define MAXARGS 256
 
-#ifndef TARGET_ARCH_LINUX
+#if ( !(defined TARGET_ARCH_LINUX) && !(defined TARGET_ARCH_FREEBSD) )
     extern char * sys_errlist[];
 #endif
 
