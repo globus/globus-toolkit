@@ -44,9 +44,8 @@ static char usage[] = \
 "       -u | --usage                             \n"\
 "                                               \n"\
 "       -v | --verbose             Display debugging messages\n"\
-"       -v | --version             Displays version\n"\
-"       -d | --debug               Turns on debugging\n"\
-"       -D | --debug_level <level> Sets debug level (0,1,2)\n"
+"       -V | --version             Displays version\n"\
+"       -d | --debug               Run in debug mode (don't fork)\n"\
 "       -c | --config              Specifies configuration file to use\n"\
 "       -p | --port <portnumber>   Specifies the port to run on\n"\
 "       -s | --storage <directory> Specifies the credential storage directory\n"\
@@ -55,7 +54,6 @@ static char usage[] = \
 struct option long_options[] =
 {
     {"debug",            no_argument, NULL, 'd'},
-    {"debug_level",required_argument, NULL, 'D'},
     {"help",             no_argument, NULL, 'h'},
     {"port",       required_argument, NULL, 'p'},
     {"config",     required_argument, NULL, 'c'},       
