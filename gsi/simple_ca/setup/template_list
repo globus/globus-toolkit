@@ -9,10 +9,6 @@ configure
 config.guess
 config.sub
 aclocal.m4
-globus_automake_post
-globus_automake_pre
-globus_automake_post_top
-globus_automake_pre_top
 bootstrap
 install-sh
 mkinstalldirs
@@ -25,7 +21,4 @@ grid-security-config.in.tmpl
 grid-cert-request-config.in.tmpl
 Makefile.am.tmpl
 Makefile.in.tmpl
-pkgdata/pkg_data_src.gpt.in.tmpl
-pkgdata/Makefile.am
-pkgdata/Makefile.in
 grid-default-ca

@@ -16,6 +16,10 @@ fi
 
 . ${GLOBUS_LOCATION}/libexec/globus-bootstrap.sh
 
+# this is only for development - doesn't need to be run
+# for every install
+tar cvf - -C template `cat template_list` | gzip -c > globus_simple_ca_setup_template.tar.gz
+
 chmod 755 setup-simple-ca
 
 exit 0

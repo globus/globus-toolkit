@@ -139,9 +139,9 @@ while [ -z "${got_subject}" ]; do
 	echo -n "Enter a unique subject name for this CA: "
 	read casubject
 	echo
-	if [ ! -z "${subject}" ]; then
-	    GSI_CA_NAME=`${GLOBUS_SH_SED-sed} -e "s/cn=\([^,]*\),.*/\1/"`
-	    GSI_CA_BASE_DN=`${GLOBUS_SH_SED-sed} -e "s/cn=[^,]*,\(.*\)/\1/"`
+	if [ ! -z "${casubject}" ]; then
+	    GSI_CA_NAME=`echo ${casubject} | ${GLOBUS_SH_SED-sed} -e "s/cn=\([^,]*\),.*/\1/"`
+	    GSI_CA_BASE_DN=`echo ${casubject} | ${GLOBUS_SH_SED-sed} -e "s/cn=[^,]*,\(.*\)/\1/"`
 	    if [ -z "${GSI_CA_NAME}" ] || [ -z "${GSI_CA_BASE_DN}" ]; then
 		echo 
 		echo "The subject: ${casubject} is not a valid subject name"
