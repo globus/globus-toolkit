@@ -6,7 +6,8 @@
 typedef enum {
   AUTHORIZETYPE_NULL = 0,
   AUTHORIZETYPE_PASSWD,
-  AUTHORIZETYPE_CERT
+  AUTHORIZETYPE_CERT,
+  AUTHORIZETYPE_SASL
 } author_method_t;
 
 /* client/server authorization data */

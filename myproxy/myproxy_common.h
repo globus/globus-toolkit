@@ -52,4 +52,13 @@
 #include "verror.h"
 #include "vparse.h"
 
+// The following headers are for SASL
+
+#include <netinet/in.h>
+#include <sasl.h>
+#include <saslutil.h>
+#include "config.h"
+
+#define SASL_BUFFER_SIZE 20480
+
 #endif /* __MYPROXY_COMMON_H */
