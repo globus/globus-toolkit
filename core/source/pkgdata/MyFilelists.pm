@@ -36,6 +36,16 @@ sub pgm_files {
   return $list;
 }
 
+sub pgm_static_files {
+  my $self = shift;
+  $self->{'filelist'}->noflavor_files();
+  $self->{'filelist'}->extract_programs();
+  $self->{'filelist'}->add_package_metadata_files('pgm_static');
+  my $list = $self->{'filelist'}->get_list();
+  $self->{'filelist'}->reset();
+  return $list;
+}
+
 sub rtl_files {
   my $self = shift;
   my $result = [];
