@@ -232,7 +232,7 @@ do                                                                          \
  *        The driver obtains a driver_handle by calling 
  *        globus_xio_driver_open().
  *        When the open operation completes (it callback is called) the 
- *        driver then has a driver_hadnle.  The driver_handle 
+ *        driver then has a driver_handle.  The driver_handle 
  *        allows the user to do some
  *        complex things that will be described later.
  *
@@ -557,9 +557,9 @@ typedef globus_result_t
  *  Accept a server connection
  *
  *  The driver developer should implement this function if their driver 
- *  handles server operations.  Once the accept operation complets the
- *  connection is esstablished.  The user still has an opertunity to
- *  open the target or destroy it.  The can query the target for 
+ *  handles server operations.  Once the accept operation completes, the
+ *  connection is established.  The user still has an opertunity to
+ *  open the target or destroy it.  They can query the target for 
  *  additional information on which to base a decision to open upon.
  *
  *  @param driver_server
@@ -571,7 +571,7 @@ typedef globus_result_t
  *         Ths parameter may be NULL.
  *
  *  @param target_op
- *         The reuqested operation.  When the driver is finished acepting
+ *         The requested operation.  When the driver is finished acepting
  *         the server connection it uses this structure to signal globus_xio 
  *         that it has completed the operation.  This op can be used to pass
  *         client_init or pass_accept.
@@ -738,7 +738,7 @@ typedef globus_result_t
  *  @ingroup driver_pgm
  *
  *  This is called when a user requests to close a handle.  The driver 
- *  implemntor should clean up all resources connected to there driver handle
+ *  implementor should clean up all resources connected to there driver handle
  *  when this function is called.
  *
  *  @param driver_handle
@@ -766,7 +766,7 @@ typedef globus_result_t
  *         parameter points to the contact string.
  *    
  *  @param op
- *         The reuqested operation.  When the driver is finished opening
+ *         The requested operation.  When the driver is finished opening
  *         the handle it uses this structure to signal globus_xio that it
  *         has completed the operation requested.  It does this by calling
  *         globus_xio_driver_finished_open()
@@ -794,8 +794,8 @@ typedef globus_result_t
  *  @ingroup driver_pgm
  *
  *  This function will pass an open request down the driver stack.
- *  Upon completion of the open operation globus_xio will call the callback 
- *  function.  At which point the handle structure will be intialized
+ *  Upon completion of the open operation globus_xio will call the @a cb 
+ *  function,  at which point the handle structure will be intialized
  *  and available for use.
  *
  *  As soon as the function returns the handle is valid for creating 
@@ -932,7 +932,7 @@ typedef globus_result_t
  *         requesting a close operation.
  * 
  *  @param op
- *         The reuqested operation.  When the driver is finished closing
+ *         The requested operation.  When the driver is finished closing
  *         the handle it uses this structure to signal globus_xio that it
  *         has completed the operation requested.  It does this by calling
  *         globus_xio_driver_finished_operation()
