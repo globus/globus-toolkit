@@ -47,7 +47,7 @@ if($action != 0)
     my $action_comment = "removing";
     print "Un-setting up $type gram reporter in MDS\n";
     print "----------------------------------------\n";
-    system("rm -f $globusdir/libexec/globus-script-condor-queue");
+    system("rm -f $globusdir/libexec/globus-script-${type}-queue");
 }
 else
 {
@@ -55,12 +55,13 @@ else
     my $action_comment = "adding";
     print "Setting up $type gram reporter in MDS\n";
     print "----------------------------------------\n";
-    print `./find-condor-reporter-tools --cache-file=/dev/null`;
+    print `./find-${type}-reporter-tools --cache-file=/dev/null`;
     if($? != 0)
     {
-        print STDERR "Error locating Condor commands, aborting!\n";
+        print STDERR "Error locating ${type} commands, aborting!\n";
         exit 2;
     }
+    system("chmod 755 $globusdir/libexec/globus-script-${type}-queue");
 }
 
 # un/setup reporter entries in MDS
