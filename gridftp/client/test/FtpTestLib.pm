@@ -1,11 +1,20 @@
 #! /usr/bin/perl
 
 package FtpTestLib;
+require Exporter;
+@ISA = qw(Exporter);
+
+@EXPORT = qw( setup_remote_source 
+            setup_local_source 
+            setup_remote_dest 
+            source_is_remote 
+            clean_remote_file 
+            get_remote_file 
+            compare_local_files );            # symbols to export by default
 
 BEGIN { push(@INC, $ENV{GLOBUS_LOCATION} . '/lib/perl'); }
 
 my $self = {};
-
 use strict;
 
 use POSIX;
@@ -13,7 +22,6 @@ use Carp;
 use Sys::Hostname;
 use Data::Dumper;
 use File::Copy;
-
 use Cwd;
 
 # These are globus test support modules.
@@ -118,33 +126,175 @@ sub compare_local_files($$)
 
     if(-B $a or -B $b)
     {
-	$diffs = `perl -pe 's/\\[restart plugin\\].*\\n//' < $b | cmp '$a' -`;
+	$diffs = `sed -e 's/\\[restart plugin\\].*\$//' $b | cmp '$a' - | sed -e 's/^/# /'`;
     }
     else
     {
-        $diffs = `perl -pe 's/\\[restart plugin\\].*\\n//' < $b | diff '$a' -`;
+        $diffs = `sed -e 's/\\[restart plugin\\].*\$//' $b | diff '$a' - | sed -e 's/^/# /'`;
     }
 
-    if($? != 0)
+    if($diffs ne '')
     {
-        "\n#Differences between $a and output." .
-        join("\n#", split(/\n/, $diffs));
+        $diffs = "\n# Differences between $a and $b.\n" . $diffs;
+    }
+    
+    return $diffs;
+}
+
+=pod
+
+=item Testing with remote servers
+
+The following env vars can be used to allow testing against remote servers. 
+(parens denote defaults) all paths must be absolute.
+
+FTP_TEST_SOURCE_HOST (localhost)
+
+FTP_TEST_SOURCE_USER (current user)# used with ssh for staging
+
+FTP_TEST_DEST_HOST (localhost)
+
+FTP_TEST_DEST_USER (current user)  # used with ssh for staging
+
+FTP_TEST_SOURCE_FILE (/etc/group)  # used for get-like tests and 3pt
+
+FTP_TEST_SOURCE_BIGFILE (/bin/sh)  # used by the extended-get test
+
+FTP_TEST_DEST_FILE (some tmpname)  # used for put-like tests and 3pt
+
+
+FTP_TEST_LOCAL_FILE (/etc/group)   # used as the local source for put-like tests
+
+FTP_TEST_LOCAL_BIGFILE (/bin/sh)   # used as the local source by the extended-put test
+
+=cut
+
+#my ($source_host, $source_file, $local_copy) = setup_remote_source($big = 0);
+sub setup_remote_source(;$)
+{
+    my $source_host;
+    my $source_file;
+    my $local_copy;
+    my $use_big_file = shift;
+    
+    $source_host = ($ENV{FTP_TEST_SOURCE_HOST} or 'localhost');
+    if($use_big_file)
+    {
+        $source_file = ($ENV{FTP_TEST_SOURCE_BIGFILE} or '/bin/sh');
     }
     else
     {
-        "";
+        $source_file = ($ENV{FTP_TEST_SOURCE_FILE} or '/etc/group');
+    }
+    
+    $local_copy = get_remote_file($source_host, $source_file, 1);
+    
+    return ($source_host, $source_file, $local_copy);
+}
+
+#my ($local_copy) = setup_local_source($big = 0);
+sub setup_local_source(;$)
+{
+    my $local_copy;
+    my $use_big_file = shift;
+    
+    if($use_big_file)
+    {
+        $local_copy = ($ENV{FTP_TEST_LOCAL_BIGFILE} or '/bin/sh');
+    }
+    else
+    {
+        $local_copy = ($ENV{FTP_TEST_LOCAL_FILE} or '/etc/group');
+    }
+    
+    return ($local_copy);
+}
+
+#my ($dest_host, $dest_file) = setup_remote_dest();
+sub setup_remote_dest()
+{
+    my $dest_host;
+    my $dest_file;
+    
+    $dest_host = ($ENV{FTP_TEST_DEST_HOST} or 'localhost');
+    $dest_file = ($ENV{FTP_TEST_DEST_FILE} or POSIX::tmpnam());
+
+    return ($dest_host, $dest_file);
+}
+
+#bool = source_is_remote()
+sub source_is_remote()
+{
+    return ($ENV{FTP_TEST_SOURCE_HOST} and !($ENV{FTP_TEST_SOURCE_HOST} =~ m/localhost/))
+}
+
+#void clean_remote_file($host, $file);
+sub clean_remote_file($$)
+{
+    my $host = shift;
+    my $file = shift;
+    
+    if($host =~ m/localhost/)
+    {
+        system("rm -f $file") == 0 or die "rm failed";
+    }
+    else
+    {
+        my $user;
+
+        if($ENV{FTP_TEST_DEST_USER})
+        {
+            $user = "$ENV{FTP_TEST_DEST_USER}\@";
+        }
+        else
+        {
+            $user = '';
+        }
+        
+        system("ssh -q $user$host 'rm -f $file'") == 0 or die "ssh failed";
     }
 }
 
-sub stage_source_url()
+#my $local_copy = get_remote_file($host, $file, $use_source_user = 0);
+sub get_remote_file($$;$)
 {
-    my $test_url = "gsiftp://localhost/etc/group";
+    my $host = shift;
+    my $file = shift;
+    my $user = shift;
+    my $dest = POSIX::tmpnam();
+    
+    push(@{$self->{staged_files}}, $dest);
+    
+    if($host =~ m/localhost/)
+    {
+        system("cp $file $dest") == 0 or die "cp failed";
+    }
+    else
+    {
+        my $user;
 
-    my $local_copy = POSIX::tmpnam();
+        if($user)
+        {
+            $user = $ENV{FTP_TEST_SOURCE_USER};
+        }
+        else
+        {
+            $user = $ENV{FTP_TEST_DEST_USER};
+        }
+        
+        if($user)
+        {
+            $user .= '@';
+        }
+        else
+        {
+            $user = '';
+        }
+        
+        system("scp -B $user$host:$file $dest") == 0 or die "scp failed";
+    }
 
-    copy("/etc/group", $local_copy);
-
-    ($test_url, $local_copy);
+    return $dest;
 }
 
 sub ftp_commands()
@@ -161,6 +311,11 @@ sub ftp_commands()
 
 sub END
 {
+    if(exists($self->{staged_files}))
+    {
+        unlink(@{$self->{staged_files}});
+    }
+    
     if(exists($self->{host_db}))
     {
         delete $self->{host_db};

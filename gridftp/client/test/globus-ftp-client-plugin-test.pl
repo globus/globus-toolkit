@@ -9,8 +9,9 @@ Tests to exercise the plugin management of the client library.
 use strict;
 use POSIX;
 use Test;
+use FtpTestLib;
 
-my $test_exec = $ENV{GLOBUS_LOCATION} . '/test/' . 'globus-ftp-client-plugin-test';
+my $test_exec = './globus-ftp-client-plugin-test';
 my @tests;
 
 my $gpath = $ENV{GLOBUS_LOCATION};
@@ -48,11 +49,21 @@ sub go
 
 push(@tests, "go();");
 
-# Now that the tests are defined, set up the Test to deal with them.
-plan tests => scalar(@tests);
-
-# And run them all.
-foreach (@tests)
+if(@ARGV)
 {
-    eval "&$_";
+    plan tests => scalar(@ARGV);
+
+    foreach (@ARGV)
+    {
+        eval "&$tests[$_-1]";
+    }
+}
+else
+{
+    plan tests => scalar(@tests);
+
+    foreach (@tests)
+    {
+        eval "&$_";
+    }
 }

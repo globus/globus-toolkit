@@ -216,14 +216,6 @@ test_parse_args(int argc,
 	    exit(0);
 	}
     }
-    if((*src) == GLOBUS_NULL)
-    {
-	(*src) = "gsiftp://localhost/etc/group";
-    }
-    if((*dst) == GLOBUS_NULL)
-    {
-	(*dst) = "gsiftp://localhost/tmp/etc_group";
-    }
     
     subject = globus_libc_getenv("GLOBUS_FTP_CLIENT_TEST_SUBJECT");
     if(subject)
