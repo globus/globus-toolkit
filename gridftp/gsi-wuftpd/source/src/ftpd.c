@@ -963,6 +963,11 @@ int main(int argc, char **argv, char **envp)
     virtual_banner[0] = '\0';
 #endif
 
+#ifdef GSSAPI
+    gssapi_setup_environment();
+#endif /* GSSAPI */
+
+
     setup_paths();
     access_init();
 
@@ -7096,10 +7101,6 @@ void do_daemon(int argc, char **argv, char **envp)
 	/* junk stderr */
 	(void) freopen(_PATH_DEVNULL, "w", stderr);
     }
-
-#if GSSAPI
-    gssapi_setup_environment();
-#endif /* GSSAPI */
 
     if (RootDirectory != NULL) {
 	if ((chroot(RootDirectory) < 0)
