@@ -1,4 +1,4 @@
-#! @PERL@
+#! perl
 
 =pod
 
