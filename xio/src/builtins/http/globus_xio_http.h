@@ -30,18 +30,18 @@ EXTERN_C_BEGIN
  * @ref globus_xio_server_register_accept().
  *
  * If the handle is created with
- * @ref globus_xio_server_register_accept(), the
- * @ref globus_xio_register_open() call will read the first HTTP request
- * from the client. Request-related metadata for the request will be
- * passed to the client via the #globus_xio_http_request_ready_callback_t.
- * After that callback has been called, the application may proceed to
- * read or write data associated with the HTTP request.
+ * @ref globus_xio_server_register_accept(), then an HTTP service handle
+ * will be created when @ref globus_xio_register_open() is called. The XIO
+ * application must call one of the functions in the @ref globus_xio_read()
+ * family to receive the HTTP request metadata. This metadata will be returned
+ * in the data descriptor associated with that first read: the application
+ * should use the GLOBUS_XIO_HTTP_GET_REQUEST descriptor cntl to extract
+ * this metadata.
  *
  * If the handle is created with @ref globus_xio_handle_create(), then
- * the XIO handle will implement the client-side of the HTTP protocol
- * and send the HTTP request to the HTTP server indicated by the
- * contact_string passed to @ref globus_xio_register_open(). HTTP
- * request headers, version and method may be chosen by setting attributes.
+ * an HTTP client handle will be created when
+ * @ref globus_xio_register_open() is called. HTTP request headers, version and
+ * method may be chosen by setting attributes.
  */
 
 /**
@@ -49,15 +49,17 @@ EXTERN_C_BEGIN
  * @ingroup http_driver
  *
  * The HTTP driver behaves similar to the underlying transport driver
- * with respect to reads and writes. Note that any data framing will
- * be ignored with respect to the waitforbytes when reading or writing.
+ * with respect to reads and writes with the exception that metadata must
+ * be passed to the handle via open attributes on the client side and will
+ * be received as data descriptors as part of the first request read or
+ * response read.
  */
 
 /**
  * @defgroup http_driver_server Server
  * @ingroup http_driver
  *
- * @ref globus_xio_server_create() causes a new transport-specific
+ * The @ref globus_xio_server_create() causes a new transport-specific
  * listener socket to be created to handle new HTTP connections.
  * @ref globus_xio_server_register_accept() will accept a new
  * connection for processing. @ref globus_xio_server_register_close()
@@ -65,12 +67,12 @@ EXTERN_C_BEGIN
  * and calls close on the listener.
  *
  * Multiple HTTP requests may be read in sequence from an HTTP
- * server. Each of these will cause the
- * #globus_xio_http_request_ready_callback_t associated with the
- * handle to be invoked. Only one request will be in process at
- * once--the previous request must have sent or received and EOF
- * (whichever is applicable to the request type) before subsequent
- * invocations of the #globus_xio_http_request_ready_callback_t.
+ * server. After each request is processed and the response is sent (either by
+ * writing the entire entity body as specified by the Content-Length header or 
+ * by using the GLOBUS_XIO_HTTP_HANDLE_SET_END_OF_ENTITY handle cntl), the next
+ * read will contain the metadata related to the next operation.
+ * Only one request will be in process at once--the previous request must have
+ * sent or received and EOF (whichever is applicable to the request type).
  */
 
 /**
@@ -97,7 +99,6 @@ EXTERN_C_BEGIN
  *      attr, globus_result_t, globus_xio_attr_cntl, attr, driver)
  * GlobusVarArgDefine(
  *      handle, globus_result_t, globus_xio_handle_cntl, handle, driver)
- * GlobusVarArgDefine(
  * GlobusVarArgDefine(
  *      dd, globus_result_t, globus_xio_data_descriptor_cntl, dd, driver)
  */
@@ -320,6 +321,16 @@ typedef enum
     /* const char *                     header_name,
      * const char *                     header_value */
     GLOBUS_XIO_HTTP_ATTR_SET_REQUEST_HEADER,
+    /** GlobusVarArgEnum(attr)
+     * Delay writing HTTP request until first data write.
+     *
+     * If this attribute is present when opening an HTTP handle, the HTTP
+     * request will not be sent immediately upon opening the handle. Instead,
+     * it will be delayed until the first data write is done. This allows
+     * other HTTP headers to be sent after the handle is opened.
+     * 
+     * This attribute cntl takes no arguments.
+     */
     GLOBUS_XIO_HTTP_ATTR_DELAY_WRITE_HEADER,
     /** GlobusVarArgEnum(dd)
      * Get HTTP Request Information.
