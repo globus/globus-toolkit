@@ -153,11 +153,16 @@ install_gt2_source() {
 		echo "Updating GT2 CVS checkout."
 		# FIND GT2 EQUIV. cvs stat ogsa-cvs/ogsa/impl/java/build.xml | grep Tag
 		cd gt2-cvs
-		for f in *; do
-			cd $f
-			cvs -z3 -qq up 
-			cd ..
-		done
+		if [ $update = 1 ]; then
+			for f in *; do
+				cd $f
+				cvs -z3 -qq up 
+				cd ..
+			done
+		else
+			echo Skipping CVS update
+			echo
+		fi
 	fi
 	# You are now still in gt2-cvs
 
@@ -171,6 +176,7 @@ install_gt2_source() {
 	else
 		cd side_tools
         	./cvs-build -noupdates -builddir=.. -installdir=$GLOBUS_LOCATION -everything $flavor
+		cd ..
 	fi
 
 	cd .. 
@@ -190,11 +196,12 @@ install_cdeps() {
 	unset GPT_LOCATION
 
 	./cvs-build-ogsa --force gcc32dbg
-	cd binary_packages
+	
+	export GPT_LOCATION=$OGPT
+	cd bin_packages
 	$GPT_LOCATION/sbin/gpt-bundle -bindir=. -output=ogsa_cbindings_bin_bundle.tar.gz `cat packaging_list | xargs`
 	cd ../source_packages
 	$GPT_LOCATION/sbin/gpt-bundle -srdir=. -output=ogsa_cbindings_src_bundle.tar.gz `cat packaging_list | xargs`
-	export GPT_LOCATION=$OGPT
 	popd
 
 	mkdir -p package-output
@@ -336,7 +343,8 @@ collate_packages() {
 
 install_bundle() {
 	echo Installing into $dir
-	$GPT_LOCATION/sbin/gpt-build --installdir=$dir gt3-all-src-1-src_bundle.tar.gz gcc32dbg
+	echo from GPT_LOCATION=$GPT_LOCATION
+	$GPT_LOCATION/sbin/gpt-build --installdir=$dir gt3-all-src-1.0-src_bundle.tar.gz gcc32dbg
 
 	if [ $release = 1 ]; then
 		echo Collecting GT3 binaries from $dir
@@ -346,7 +354,7 @@ install_bundle() {
 		# Package it with the gt2 binary bundle to make a distro
 		# Do this before installing GT2 to avoid getting all those
 		# packages also.
-		$GPT_LOCATION/sbin/gpt-bundle -bn=gt3-all-bin -bv=1 -all -bindir=binaries
+		$nPT_LOCATION/sbin/gpt-bundle -bn=gt3-all-bin -bv=1 -all -bindir=binaries
 
 		mkdir -p release-candidate/gt3-alpha3-binary-installer
 		mv gt3-all-bin* release-candidate/gt3-alpha3-binary-installer
@@ -475,7 +483,7 @@ install_gt2_source `pwd`/gt2-installation
 
 echo Building C-dependent packages
 install_cdeps
-# dir_iter package-list-cdeps
+dir_iter package-list-cdeps
 
 collate_packages
 
