@@ -183,7 +183,7 @@ globus_l_callback_requeue(
  *
  * When called, this function will requeue a periodic callback iff .
  * globus_thread_blocking_will_block/globus_cond_wait was called on that
- * callbacks 'space'
+ * callbacks 'space' or if that callback belongs to the global space
  */
 
 static
@@ -200,7 +200,8 @@ globus_l_callback_blocked_cb(
 
         callback_info = globus_l_callback_restart_info->callback_info;
 
-        if(callback_info->my_space->handle == space)
+        if(callback_info->my_space->handle == GLOBUS_CALLBACK_GLOBAL_SPACE ||
+            callback_info->my_space->handle == space)
         {
             if(callback_info->is_periodic)
             {
@@ -297,28 +298,20 @@ static
 int
 globus_l_callback_deactivate()
 {
-    globus_l_callback_info_t *          callback_info;
-    globus_priority_q_t *               queue;
-
-    queue = &globus_l_callback_global_space.queue;
-
-    while(!globus_priority_q_empty(queue))
-    {
-        callback_info = (globus_l_callback_info_t *)
-            globus_priority_q_dequeue(queue);
-
-        globus_memory_push_node(
-            &globus_l_callback_callback_info_memory, callback_info);
-    }
-
     globus_thread_blocking_callback_pop(GLOBUS_NULL);
     
-    globus_handle_table_destroy(&globus_l_callback_space_table);
+    globus_priority_q_destroy(&globus_l_callback_global_space.queue);
+    
+    /* any handles left here will be destroyed by destructor.
+     * important that globus_l_callback_handle_table be destroyed
+     * BEFORE globus_l_callback_space_table since destructor for the former
+     * accesses the latter
+     */
     globus_handle_table_destroy(&globus_l_callback_handle_table);
-
-    globus_memory_destroy(&globus_l_callback_callback_space_memory);
+    globus_handle_table_destroy(&globus_l_callback_space_table);
+    
     globus_memory_destroy(&globus_l_callback_callback_info_memory);
-    globus_priority_q_destroy(queue);
+    globus_memory_destroy(&globus_l_callback_callback_space_memory);
     
     return globus_module_deactivate(GLOBUS_THREAD_MODULE);
 }
@@ -1195,13 +1188,10 @@ globus_callback_space_poll(
 
             callback_info->running_count++;
 
-            /* if user 'changes' something, done will be true */
             callback_info->callback_func(
                 &time_now, restart_info.timeout, callback_info->callback_args);
 
             callback_info->running_count--;
-
-            done = restart_info.signaled;
 
             /* a periodic that was canceled has is_periodic == false */
             if(!callback_info->is_periodic &&
@@ -1222,6 +1212,8 @@ globus_callback_space_poll(
             {
                 globus_l_callback_requeue(callback_info);
             }
+            
+            done = restart_info.signaled;
         }
         else
         {
