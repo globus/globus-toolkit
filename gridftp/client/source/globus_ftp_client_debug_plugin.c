@@ -170,7 +170,7 @@ globus_l_ftp_client_debug_plugin_machine_list(
 
 static
 void
-globus_l_ftp_client_debug_plugin_modification_time(
+globus_l_ftp_client_debug_plugin_mlst(
     globus_ftp_client_plugin_t *		plugin,
     void * 					plugin_specific,
     globus_ftp_client_handle_t *		handle,
@@ -677,7 +677,7 @@ globus_l_ftp_client_debug_plugin_mlst(
 	    d->text ? ": " : "",
 	    url);
 }
-/* globus_l_ftp_client_debug_plugin_machine_list() */
+/* globus_l_ftp_client_debug_plugin_mlst() */
 
 static
 void

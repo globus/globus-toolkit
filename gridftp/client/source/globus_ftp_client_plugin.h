@@ -1104,6 +1104,11 @@ globus_ftp_client_plugin_set_list_func(
     globus_ftp_client_plugin_list_t		list_func);
 
 globus_result_t
+globus_ftp_client_plugin_set_mlst_func(
+    globus_ftp_client_plugin_t *		plugin,
+    globus_ftp_client_plugin_mlst_t		mlst_func);
+
+globus_result_t
 globus_ftp_client_plugin_set_get_func(
     globus_ftp_client_plugin_t *		plugin,
     globus_ftp_client_plugin_get_t		get_func);
