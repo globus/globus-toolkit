@@ -4,7 +4,7 @@
 # the hostname command.  But is returns the FQN
 # in all cases.
 
-PROGRAM_NAME=`@ECHO@ $0 | sed -e 's|.*/||g'`
+PROGRAM_NAME=`@ECHO@ $0 | @SED@ -e 's|.*/||g'`
 PROGRAM_VERSION=`@ECHO@ '$Revision$' | @CUT@ -d' ' -f2`
 
 
