@@ -806,11 +806,9 @@ globus_l_xio_gsi_is_ssl_token(
     GlobusXIOName(globus_l_xio_gsi_is_ssl_token);
     GlobusXIOGSIDebugInternalEnter();
 
-    if((t[0] >= 20 &&
-        t[0] <= 26 &&
-        (t[1] == 3 && (t[2] == 0 || t[2] == 1) ||
-         t[1] == 2 && t[2] == 0)) ||
-       ((t[0] & 0x80) && t[2] == 1))
+    if(t[0] >= 20 &&
+       t[0] <= 26 &&
+       t[1] == 3 && (t[2] == 0 || t[2] == 1))
     {
         /* it's a SSL token */
         *length = (t[3] << 8) | t[4];
