@@ -212,7 +212,7 @@ main(
 #endif
 
     ERR_load_prxyerr_strings(0);
-    SSLeay_add_ssl_algorithms();
+    SSLeay_add_all_algorithms();
 
     EVP_set_pw_prompt("Enter GRID pass phrase:");
 
@@ -427,7 +427,11 @@ main(
     }
     else
     {
-        if(pkcs12_load_credential(pcd,certfile,NULL))
+        char                            password[50];
+
+        EVP_read_pw_string(password, 50, NULL, 0);
+
+        if(pkcs12_load_credential(pcd,certfile,password))
         {
             goto err;
         }
@@ -441,7 +445,9 @@ main(
         free(s);
     }
     
-    if (strncmp("SC:",certfile,3) && !strcmp(certfile, keyfile)) 
+    if (strncmp("SC:",certfile,3)
+        && !strstr(filename, ".p12")
+        && !strcmp(certfile, keyfile)) 
     {
         if (pcd->cert_chain == NULL)
             pcd->cert_chain = sk_X509_new_null();
