@@ -55,12 +55,12 @@ globus_gfs_signal_init()
 #   endif
 #   ifdef SIGSEGV
     {
-        signal(SIGSEGV, globus_l_gfs_bad_signal_handler);
+        //signal(SIGSEGV, globus_l_gfs_bad_signal_handler);
     }
 #   endif
 #   ifdef SIGABRT
     {
-        signal(SIGABRT, globus_l_gfs_bad_signal_handler);
+        //signal(SIGABRT, globus_l_gfs_bad_signal_handler);
     }
 #   endif
 #   ifdef SIGBUS
