@@ -3,11 +3,6 @@ This is the current list of things outstanding for the 4.0 release.
 XX denotes unlikely that this will be in 4.0
 
 auth:
-** allow authentication to multiple usernames
-    if user :globus_mapping: pick default gridmapping (globus_gss_assist_gridmap)
-    if user bob do globus_gss_assist_userok on that user/dn combo
--- we need to authorize to cas (globus_gss_assist_map_and_authorize?), how does
-    this affect above?
 XX authz instrumentation
 -- password file / plaintext password authentication
 

@@ -25,6 +25,7 @@ typedef struct
 
 static const globus_l_gfs_config_option_t option_list[] = 
 { 
+ {"pw_file", "pw_file", NULL, "--password-file", "-pf", GLOBUS_L_GFS_CONFIG_STRING, 0, NULL},
  {"max_connections", "max_connections", NULL, "-max-connections", "-mc", GLOBUS_L_GFS_CONFIG_INT, 0},
  {"port", "port", "GLOBUS_GRIDFTP_SERVER_PORT", "-port", "-p", GLOBUS_L_GFS_CONFIG_INT, 0},
  {"daemon", "daemon", NULL, "-daemon", "-s", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE},

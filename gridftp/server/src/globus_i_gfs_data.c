@@ -2,9 +2,13 @@
 #include "globus_i_gridftp_server.h"
 /* provides local_extensions */
 #include "extensions.h"
+#include <unistd.h>
+#include <openssl/des.h>
 
+#define USER_NAME_MAX   64
 #define FTP_SERVICE_NAME "file"
 
+struct passwd *                         globus_l_gfs_data_pwent = NULL;
 static globus_gfs_storage_iface_t *     globus_l_gfs_dsi = NULL;
 globus_extension_registry_t             globus_i_gfs_dsi_registry;
 globus_extension_handle_t               globus_i_gfs_active_dsi_handle;
@@ -399,6 +403,7 @@ static
 void
 globus_l_gfs_data_authorize(
     globus_l_gfs_data_operation_t *     op,
+    const gss_ctx_id_t                  context,
     globus_gfs_session_info_t *         session_info)
 {
     int                                 rc;
@@ -407,18 +412,56 @@ globus_l_gfs_data_authorize(
     char *                              pw_file;
     char *                              usr;
     char *                              grp;
+    char *                              pw_hash;
+    char                                authz_usr[USER_NAME_MAX];
     struct passwd *                     pwent;
     struct group *                      grent = NULL;
     GlobusGFSName(globus_l_gfs_data_authorize);
 
+    pw_file = (char *)globus_i_gfs_config_string("pw_file");
     /* if there is a del cred we are using gsi, look it up in the gridmap */
     if(session_info->del_cred != NULL)
     {
-        rc = globus_gss_assist_gridmap((char *) session_info->subject, &usr);
-        if(rc != 0)
+        if(context != NULL)
         {
-            res = GlobusGFSErrorParameter("gridmap");
-            goto pwent_error;
+            if(strcmp(":globus-mapping:", session_info->username) == 0)
+            {
+                usr = NULL;
+            }
+            else
+            {
+                usr = session_info->username;
+            }
+            res = globus_gss_assist_map_and_authorize(
+                context,
+                FTP_SERVICE_NAME,
+                usr,
+                authz_usr,
+                USER_NAME_MAX);
+            if(res != GLOBUS_SUCCESS)
+            {
+                goto pwent_error;
+            }
+            usr = authz_usr;
+        }
+        else
+        {
+            if(strcmp(":globus-mapping:", session_info->username) == 0)
+            {
+                rc = globus_gss_assist_gridmap(
+                    (char *) session_info->subject, &usr);
+            }
+            else
+            {
+                rc = globus_gss_assist_userok(
+                    session_info->subject, session_info->username);
+                usr = session_info->username;
+            }
+            if(rc != 0)
+            {
+                res = GlobusGFSErrorParameter("gridmap");
+                goto pwent_error;
+            }
         }
         pwent = getpwnam(usr);
         if(pwent == NULL)
@@ -489,10 +532,10 @@ globus_l_gfs_data_authorize(
         pwent->pw_name = "anonymous";
         grent->gr_name = "anonymous";
     }
-    else if(globus_i_gfs_config_bool("allow_clear_text"))
+    else if(pw_file != NULL)
     {
-        pw_file = (char *)globus_i_gfs_config_string("pw_file");
-        if(pw_file != NULL)
+        /* if we have not yet looked it up for this user */
+        if(globus_l_gfs_data_pwent == NULL)
         {
             FILE * pw = fopen(pw_file, "r");
             if(pw == NULL)
@@ -500,25 +543,44 @@ globus_l_gfs_data_authorize(
                 res = GlobusGFSErrorParameter("pw file");
                 goto pwent_error;
             }
-            pwent = fgetpwent(pw);
-            fclose(pw);
+
+            do
+            {
+                pwent = fgetpwent(pw);
+            }
+            while(pwent != NULL && 
+                strcmp(pwent->pw_name, session_info->username) != 0);
+
             if(pwent == NULL)
             {
                 res = GlobusGFSErrorParameter("pwent");
                 goto pwent_error;
             }
-            grent = getgrgid(pwent->pw_gid);
-            if(grent == NULL)
-            {
-                res = GlobusGFSErrorParameter("grent");
-                goto pwent_error;
-            }
+            fclose(pw);
         }
         else
         {
-            res = GlobusGFSErrorParameter("auth");
+            /* if already looked up (and setuid()) use global value */
+            pwent = globus_l_gfs_data_pwent;
+            if(strcmp(pwent->pw_name, session_info->username) != 0)
+            {
+                res = GlobusGFSErrorParameter("username");
+                goto pwent_error;
+            }
+        }
+        grent = getgrgid(pwent->pw_gid);
+        if(grent == NULL)
+        {
+            res = GlobusGFSErrorParameter("grent");
             goto pwent_error;
         }
+        pw_hash = DES_crypt(session_info->password, pwent->pw_passwd);
+        if(strcmp(pw_hash, pwent->pw_passwd) != 0)
+        {
+            res = GlobusGFSErrorParameter("passwords");
+            goto pwent_error;
+        }
+        gid = pwent->pw_gid;
     }
     else
     {
@@ -526,6 +588,7 @@ globus_l_gfs_data_authorize(
         goto pwent_error;
     }
 
+    globus_l_gfs_data_pwent = pwent;
     /* change process ids */
     rc = setgid(gid);
     if(rc != 0)
@@ -3269,7 +3332,7 @@ globus_i_gfs_data_session_start(
     op->user_arg = user_arg;
     op->info_struct = session_info;
 
-    globus_l_gfs_data_authorize(op, session_info);
+    globus_l_gfs_data_authorize(op, context, session_info);
 }
 
 void
