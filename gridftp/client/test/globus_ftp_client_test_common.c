@@ -223,8 +223,6 @@ test_parse_args(int argc,
     subject = globus_libc_getenv("GLOBUS_FTP_CLIENT_TEST_SUBJECT");
     if(subject)
     {
-        subject = globus_libc_strdup(subject);
-    
         globus_ftp_client_operationattr_set_authorization(
             operation_attr,
             GSS_C_NO_CREDENTIAL,

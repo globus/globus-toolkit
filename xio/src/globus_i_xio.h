@@ -5,7 +5,6 @@
 #include "globus_xio_driver.h"
 #include "globus_common.h"
 #include "globus_xio_util.h"
-#include "config.h"
 
 #define GLOBUS_XIO_ATTR_ARRAY_BASE_SIZE             16
 #define GLOBUS_XIO_HANDLE_DEFAULT_OPERATION_COUNT   4

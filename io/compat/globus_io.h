@@ -6,6 +6,8 @@
 #include "globus_xio_file_driver.h"
 #include "globus_xio_gsi.h"
 
+#define GLOBUS_IO_OVER_XIO 1
+
 EXTERN_C_BEGIN
 
 #define GLOBUS_IO_MODULE (&globus_l_io_module)

@@ -1,4 +1,5 @@
 
+#include "config.h"
 #include "globus_common.h"
 #include "globus_xio_system.h"
 #include "globus_xio_driver.h"

@@ -82,6 +82,7 @@ int main(int argc, char **argv)
 		    &dst);
 
     globus_ftp_client_handle_init(&handle,  &handle_attr);
+    globus_ftp_client_handleattr_destroy(&handle_attr);
     globus_ftp_client_handle_cache_url_state(&handle,
 	                                     src);
     for (i = 0; i < 2; i++)
@@ -113,7 +114,8 @@ int main(int argc, char **argv)
 	}
 	globus_mutex_unlock(&lock);
     }
-
+    
+    globus_ftp_client_operationattr_destroy(&attr);
     globus_ftp_client_handle_destroy(&handle);
     globus_module_deactivate_all();
 

@@ -313,8 +313,14 @@ int globus_open(
     int                    fd)
 {
     globus_result_t        res;
+    int                    my_fd = fd;
+  
+/* xio does not close coverted fds */
+#ifndef GLOBUS_IO_OVER_XIO
+    my_fd = dup(fd);
+#endif
 
-    res = globus_io_file_posix_convert(dup(fd),
+    res = globus_io_file_posix_convert(my_fd,
 				       GLOBUS_NULL,
 				       handle);
 

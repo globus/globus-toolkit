@@ -1343,6 +1343,8 @@ globus_i_ftp_client_data_flush(
 	globus_libc_free(data);
     }
     
+    globus_fifo_destroy(&tmp);
+    
     globus_i_ftp_client_debug_printf(1, 
         (stderr, "globus_i_ftp_client_data_flush() exiting\n"));
 }
