@@ -15,6 +15,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include "globus_common.h"
 
 char *mapping_getcwd(char *path, size_t size);
 
@@ -116,7 +117,9 @@ mlsd(
     const char *                        path)
 {
     char                                abs_path[MAXPATHLEN];
+    char *                              gl;
     DIR *                               dir;
+    char *                              cmd;
     
     get_abs_path(path, abs_path, sizeof(abs_path));
     
@@ -133,7 +136,20 @@ mlsd(
         snprintf(
             params, sizeof(params), "%s %s", abs_path, get_mlsx_options());
         params[sizeof(params) - 1] = 0;
-    
-        retrieve("ftpmlsd %s", params, -1, -1);
+        
+        globus_location(&gl);
+        if(gl)
+        {
+            snprintf(abs_path, sizeof(abs_path), "%s/ftpmlsd %%s", gl);
+            abs_path[sizeof(abs_path) - 1] = 0;
+            cmd = abs_path;
+            free(gl);
+        }
+        else
+        {
+            cmd = "ftpmlsd %s";
+        }
+        
+        retrieve(cmd, params, -1, -1);
     }
 }
