@@ -2560,8 +2560,7 @@ globus_i_gsc_list(
         user_cb(
             op, 
             op->server_handle->data_object->user_handle,
-            op->path,
-            op->mask);
+            op->path);
     }
     else
     {
@@ -2570,6 +2569,7 @@ globus_i_gsc_list(
 
     return GLOBUS_SUCCESS;
 }
+
 globus_result_t
 globus_i_gsc_send(
     globus_i_gsc_op_t *                     op,
@@ -2626,6 +2626,8 @@ globus_i_gsc_send(
     }
     op->transfer_cb = transfer_cb;
     op->user_arg = user_arg;
+    op->restart_marker = op->server_handle->restart_marker;
+    op->server_handle->restart_marker = NULL;
 
     if(user_cb != NULL)
     {
@@ -2634,7 +2636,8 @@ globus_i_gsc_send(
             op->server_handle->data_object->user_handle,
             op->path,
             op->mod_name,
-            op->mod_parms);
+            op->mod_parms,
+            op->restart_marker);
     }
     else
     {
@@ -2700,6 +2703,8 @@ globus_i_gsc_recv(
     }
     op->transfer_cb = transfer_cb;
     op->user_arg = user_arg;
+    op->restart_marker = op->server_handle->restart_marker;
+    op->server_handle->restart_marker = NULL;
 
     if(user_cb != NULL)
     {
@@ -2708,7 +2713,8 @@ globus_i_gsc_recv(
             op->server_handle->data_object->user_handle,
             op->path,
             op->mod_name,
-            op->mod_parms);
+            op->mod_parms,
+            op->restart_marker);
     }
     else
     {

@@ -1816,6 +1816,7 @@ globus_l_gsc_cmd_stor_retr(
     int                                     argc,
     void *                                  user_arg)
 {
+    int                                     sc;
     globus_result_t                         res;
     char *                                  path = NULL;
     char *                                  mod_name = NULL;
@@ -1882,30 +1883,75 @@ globus_l_gsc_cmd_stor_retr(
             globus_gsc_959_finished_command(op, "500 command failed.\r\n");
             return;
         }
-        mod_name = globus_libc_strdup(cmd_a[1]);
-        if(mod_name == NULL)
+        if(strcmp(cmd_a[1], "P") == 0 || strcmp(cmd_a[1], "A") == 0)
         {
-            globus_free(wrapper);
-            globus_i_gsc_command_panic(op);
-            return;
+            if(*cmd_a[1] == 'P')
+            {
+                sc = sscanf(cmd_a[2], "%*d-%*d");
+                if(sc != 2)
+                {
+                    globus_free(wrapper);
+                    globus_gsc_959_finished_command(
+                        op, "500 command failed.\r\n");
+                    return;
+                }
+            }
+            else
+            {
+                sc = sscanf(cmd_a[2], "%*d");
+                if(sc != 1)
+                {
+                    globus_free(wrapper);
+                    globus_gsc_959_finished_command(
+                        op, "500 command failed.\r\n");
+                    return;
+                }
+            }
+            tmp_ptr = cmd_a[2];
+            while((isspace(*tmp_ptr) || isdigit(*tmp_ptr)) && *tmp_ptr != '\0')
+            {
+                tmp_ptr++;
+            }
+            if(*tmp_ptr == '\0')
+            {
+                globus_free(wrapper);
+                globus_gsc_959_finished_command(op, "500 command failed.\r\n");
+                return;
+            }
+            path = globus_libc_strdup(tmp_ptr);
+            mod_name = globus_libc_strdup(cmd_a[1]);
+            mod_parm = globus_libc_strdup(cmd_a[2]);
+            tmp_ptr = strstr(mod_parm, path);
+            globus_assert(tmp_ptr != NULL);
+            *tmp_ptr = '\0';
         }
-
-        tmp_ptr = strstr(mod_name, "=\"");
-        if(tmp_ptr == NULL)
+        else
         {
-            globus_free(mod_name);
-            globus_free(wrapper);
-            globus_gsc_959_finished_command(op, "500 command failed.\r\n");
-            return;
+            mod_name = globus_libc_strdup(cmd_a[1]);
+            if(mod_name == NULL)
+            {
+                globus_free(wrapper);
+                globus_i_gsc_command_panic(op);
+                return;
+            }
+
+            tmp_ptr = strstr(mod_name, "=\"");
+            if(tmp_ptr == NULL)
+            {
+                globus_free(mod_name);
+                globus_free(wrapper);
+                globus_gsc_959_finished_command(op, "500 command failed.\r\n");
+                return;
+            }
+
+            *tmp_ptr = '\0';
+            tmp_ptr += 2;
+            mod_parm = globus_libc_strdup(tmp_ptr);
+            tmp_ptr = strchr(mod_parm, '\"');
+            *tmp_ptr = '\0';
+
+            path = globus_libc_strdup(cmd_a[2]);
         }
-
-        *tmp_ptr = '\0';
-        tmp_ptr += 2;
-        mod_parm = globus_libc_strdup(tmp_ptr);
-        tmp_ptr = strchr(mod_parm, '\"');
-        *tmp_ptr = '\0';
-
-        path = globus_libc_strdup(cmd_a[2]);
     }
     /* all list stuff is here */
     else

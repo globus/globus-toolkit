@@ -216,6 +216,12 @@ typedef enum globus_i_gsc_op_type_e
     GLOBUS_L_GSC_OP_TYPE_MLSD
 } globus_i_gsc_op_type_t;
 
+typedef struct globus_i_gsc_restart_s
+{
+    globus_off_t                            offset;
+    globus_off_t                            length;
+} globus_i_gsc_restart_t;
+
 typedef struct globus_i_gsc_op_s
 {
     globus_i_gsc_op_type_t                  type;
@@ -264,6 +270,8 @@ typedef struct globus_i_gsc_op_s
     char *                                  mod_parms;
     globus_gridftp_server_control_transfer_cb_t user_data_cb;
     globus_bool_t                           transfer_started;
+
+    globus_i_gsc_restart_t *                restart_marker;
 
     void *                                  user_arg;
 } globus_i_gsc_op_t;
@@ -355,6 +363,8 @@ typedef struct globus_i_gsc_server_handle_s
      *  user function pointers
      */
     void *                                  user_arg;
+
+    globus_i_gsc_restart_t *                restart_marker;
 
     /* transfer functions */
     globus_hashtable_t                              send_cb_table;
