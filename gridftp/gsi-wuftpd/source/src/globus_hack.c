@@ -2383,7 +2383,7 @@ setup_volumetable()
     }
 
     ctr = 0;
-    g_mountPts = malloc(sizeof(char *) * 32);
+    g_mountPts = malloc(sizeof(char *) * max_mpt_ptrs);
     fp = popen("mount | awk '{print $3}'", "r");
     while(fgets(buf, 80, fp)) 
     {
@@ -2391,7 +2391,7 @@ setup_volumetable()
         if(ctr >= max_mpt_ptrs)
         {
             max_mpt_ptrs *= 2;
-            g_mountPts = realloc(g_mountPts, max_mpt_ptrs);
+            g_mountPts = realloc(g_mountPts, sizeof(char *) * max_mpt_ptrs);
         }
         g_mountPts[ctr] = strdup(buf);
         ctr++;
