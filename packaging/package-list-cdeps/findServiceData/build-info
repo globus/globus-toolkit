@@ -1,3 +1,0 @@
-name=findServiceData
-subdir=ogsa_client/findServiceData/
-build="custom"
