@@ -249,7 +249,7 @@ Southern California. All Rights Reserved.
     <delete dir="${build.dir}"/>
   </target>
 
-
+  
 <target name="deployFileStreaming" depends="gar">
        <copy todir="${ogsacore.javadir}/lib" file="${build.lib}/${package.dir}.gar"/>
        <ant antfile="${ogsacore.javadir}/build-packages.xml" target="deployClientServerGar" dir="${ogsacore.javadir}">
@@ -257,6 +257,8 @@ Southern California. All Rights Reserved.
          <reference refid="classpath" torefid="classpath"/>
        </ant>
    </target>
+
+ <target name="deployGar" depends="deployFileStreaming"/>
 
 
  </project>
