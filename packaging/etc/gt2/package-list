@@ -67,7 +67,6 @@ globus_gsi_callback		gsi/callback/source
 globus_gsi_cert_utils		gsi/cert_utils/source
 globus_gsi_credential		gsi/credential/source
 globus_gsi_openssl_error	gsi/openssl_error/source
-globus_gsi_openssl_error_test	gsi/openssl_error/test
 globus_gsi_proxy_core		gsi/proxy/proxy_core/source
 globus_gsi_proxy_ssl		gsi/proxy/proxy_ssl/source
 globus_gsi_sysconfig		gsi/sysconfig/source
