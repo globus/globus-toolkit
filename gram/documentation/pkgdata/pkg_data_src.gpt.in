@@ -13,7 +13,7 @@
     <With_Flavors build="no" />
 
     <Source_Dependencies Type="doc_runtime" >
-      <Dependency Name="globus_gram_protocol" Package="doc" > <Version > <Simple_Version Major="2" /> </Version> </Dependency>
+      <Dependency Name="globus_gram_protocol" Package="doc" > <Version > <Simple_Version Major="3" /> </Version> </Dependency>
       <Dependency Name="globus_gram_client" Package="doc" > <Version > <Simple_Version Major="3" /> </Version> </Dependency>
       <Dependency Name="globus_gram_job_manager" Package="doc" > <Version > <Simple_Version Major="3" /> </Version> </Dependency>
     </Source_Dependencies>
