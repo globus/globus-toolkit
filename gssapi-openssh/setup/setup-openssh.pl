@@ -33,11 +33,13 @@ print "$myname: Configuring gsi-openssh package\n";
 # Set up path prefixes for use in the path translations
 #
 
-$prefix = $globusdir;
-$exec_prefix = "$prefix";
-$bindir = "$exec_prefix/bin";
-$libexecdir = "$exec_prefix/libexec";
-$sysconfdir = "$prefix/etc";
+$prefix = ${globusdir};
+$exec_prefix = "${prefix}";
+$bindir = "${exec_prefix}/bin";
+$mandir = "${prefix}/man";
+$mansubdir = "man";
+$libexecdir = "${exec_prefix}/libexec";
+$sysconfdir = "${prefix}/etc";
 $piddir = "/var/run";
 $xauth_path = "/usr/bin/X11/xauth";
 
@@ -68,49 +70,52 @@ sub fixpaths
     #
 
     @files = (
-        "ssh_config",
-        "sshd_config",
-        "moduli",
-        "scp.1",
-        "ssh-add.1",
-        "ssh-agent.1",
-        "ssh-keygen.1",
-        "ssh-keyscan.1",
-        "ssh.1",
-        "sshd.8",
-        "sftp-server.8",
-        "sftp.1",
+        "${sysconfdir}/ssh_config",
+        "${sysconfdir}/sshd_config",
+        "${sysconfdir}/moduli",
+        "${mandir}/${mansubdir}1/scp.1",
+        "${mandir}/${mansubdir}1/ssh-add.1",
+        "${mandir}/${mansubdir}1/ssh-agent.1",
+        "${mandir}/${mansubdir}1/ssh-keygen.1",
+        "${mandir}/${mansubdir}1/ssh-keyscan.1",
+        "${mandir}/${mansubdir}1/ssh.1",
+        "${mandir}/${mansubdir}8/sshd.8",
+        "${mandir}/${mansubdir}8/sftp-server.8",
+        "${mandir}/${mansubdir}1/sftp.1",
         );
 
     print "\nTranslating strings in config/man files..\n";
     for $f (@files)
     {
         $f =~ /(.*\/)*(.*)$/;
-        $g = "$f.out";
+        $g = "$f.tmp";
 
-        open(IN, "<$f") || die ("$0: input file $f missing!\n");
-
-        if ( -e $g )
+        $result = system("cp $f $g");
+        if ($result != 0)
         {
-            print "$g already exists, skipping.\n";
+            die "Failed to copy $f to $g!\n";
         }
-        else
-        {
-            open(OUT, ">$g") || die ("$0: unable to open output file $g!\n");
 
-            while (<IN>)
+        open(IN, "<$g") || die ("$0: input file $g missing!\n");
+        open(OUT, ">$f") || die ("$0: unable to open output file $f!\n");
+
+        while (<IN>)
+        {
+            for $s (keys(%def))
             {
-                for $s (keys(%def))
-                {
-                    s#$s#$def{$s}#;
-                } # for $s
-                print OUT "$_";
-            } # while <IN>
+                s#$s#$def{$s}#;
+            } # for $s
+            print OUT "$_";
+        } # while <IN>
 
-            close(OUT);
-        }
-
+        close(OUT);
         close(IN);
+
+        $result = system("rm $g");
+        if ($result != 0)
+        {
+            die "Failed to remove $g\n";
+        }
     } # for $f
 
     return 0;
