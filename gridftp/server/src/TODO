@@ -2,9 +2,6 @@ This is the current list of things outstanding for the 4.0 release.
 ** denotes must happen before feature freeze
 XX denotes unlikely that this will be in 4.0
 
-auth:
-** authz instrumentation (frontend only)
-
 protocol:
 -- correct FEAT response?
 -- reply codes - verify.

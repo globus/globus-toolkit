@@ -2851,6 +2851,8 @@ globus_l_gfs_ipc_unpack_stat(
 
     GFSDecodeChar(buffer, len, ch);
     stat_info->file_only = (globus_bool_t) ch;
+    GFSDecodeChar(buffer, len, ch);
+    stat_info->internal = (globus_bool_t) ch;
     GFSDecodeString(buffer, len, stat_info->pathname);
 
     return stat_info;
@@ -5308,6 +5310,8 @@ globus_gfs_ipc_request_stat(
             /* pack body */
             GFSEncodeChar(
                 buffer, ipc->buffer_size, ptr, stat_info->file_only);
+            GFSEncodeChar(
+                buffer, ipc->buffer_size, ptr, stat_info->internal);
             GFSEncodeString(
                 buffer, ipc->buffer_size, ptr, stat_info->pathname);
 

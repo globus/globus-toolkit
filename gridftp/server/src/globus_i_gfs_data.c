@@ -970,13 +970,21 @@ globus_i_gfs_data_request_stat(
     op->info_struct = stat_info;
     op->type = GLOBUS_L_GFS_DATA_INFO_TYPE_STAT;
 
-    rc = globus_gfs_acl_authorize(
-        &session_handle->acl_handle,
-        "lookup",
-        stat_info->pathname,
-        &res,
-        globus_l_gfs_authorize_cb,
-        op);
+    if(stat_info->internal)
+    {
+        res = GLOBUS_SUCCESS;
+        rc = GLOBUS_GFS_ACL_COMPLETE;
+    }
+    else
+    {
+        rc = globus_gfs_acl_authorize(
+            &session_handle->acl_handle,
+            "lookup",
+            stat_info->pathname,
+            &res,
+            globus_l_gfs_authorize_cb,
+            op);
+    }
     if(rc == GLOBUS_GFS_ACL_COMPLETE)
     {
         /* this should possibly be a one shot */
@@ -1110,6 +1118,7 @@ globus_i_gfs_data_request_command(
             break;
 
         case GLOBUS_GFS_CMD_RNTO:
+            action = "write";
             break;
 
         case GLOBUS_GFS_CMD_RMD:
@@ -2197,6 +2206,7 @@ globus_i_gfs_data_request_recv(
 
     stat_info->pathname = recv_info->pathname;
     stat_info->file_only = GLOBUS_FALSE;
+    stat_info->internal = GLOBUS_TRUE;
 
     op->info_struct = recv_info;
     op->stat_wrapper = stat_info;

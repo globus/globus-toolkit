@@ -87,9 +87,6 @@ globus_gfs_acl_cas_authorize(
     return GLOBUS_GFS_ACL_WOULD_BLOCK;
 
   err:
-
-*out_res = GLOBUS_SUCCESS;
-
     return GLOBUS_GFS_ACL_COMPLETE;
 }
 

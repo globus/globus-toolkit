@@ -367,6 +367,8 @@ typedef struct globus_gfs_stat_info_s
 {
     /** if pathname is a directory, should stat report its info or its contents */
     globus_bool_t                       file_only;
+    /** this stat is requested internally -- bypasses authorization checks */
+    globus_bool_t                       internal;
     /** pathname to stat */
     char *                              pathname;
 } globus_gfs_stat_info_t;
