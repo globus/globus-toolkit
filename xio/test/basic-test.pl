@@ -33,7 +33,7 @@ push(@drivers, "-D test_bounce_transform -D debug -D test_bounce_transform");
 sub basic_tests
 {
     my $inline_finish="-i";
-    my $delay=1000;
+    my $delay="-d 1000";
 
     for(my $i = 0; $i < 2; $i++)
     {

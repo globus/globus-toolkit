@@ -54,6 +54,7 @@ globus_i_xio_timer_destroy(
     globus_i_xio_timer_t *                          timer)
 {
     globus_result_t                                 res;
+    globus_bool_t                                   active;
 
     globus_mutex_lock(&timer->mutex);
     {
@@ -63,8 +64,9 @@ globus_i_xio_timer_destroy(
                 timer->periodic_handle,
                 globus_l_xio_timer_unregister_cb,
                 (void *)timer,
-                NULL);
-        if(res != GLOBUS_SUCCESS)
+                &active);
+        globus_assert(res == GLOBUS_SUCCESS);
+//        if(active)
         {
             while(timer->running)
             {

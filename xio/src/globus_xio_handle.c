@@ -21,8 +21,13 @@ do                                                                          \
     globus_i_xio_handle_t *                         _h;                     \
                                                                             \
     _h = (_in_h);                                                           \
-    globus_list_remove(&globus_l_outstanding_handles_list,                  \
-        globus_list_search(globus_l_outstanding_handles_list, _h));         \
+    globus_mutex_lock(&globus_l_mutex);                                     \
+    {                                                                       \
+        globus_list_remove(&globus_l_outstanding_handles_list,              \
+            globus_list_search(globus_l_outstanding_handles_list, _h));     \
+        globus_cond_signal(&globus_l_cond);                                 \
+    }                                                                       \
+    globus_mutex_unlock(&globus_l_mutex);                                   \
     globus_assert(_h->ref == 0);                                            \
     globus_mutex_destroy(&_h->mutex);                                       \
     globus_free(_h);                                                        \

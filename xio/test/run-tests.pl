@@ -15,9 +15,9 @@ unlink("test_results.txt");
 
 @tests = qw(
             basic-test.pl
+            close-barrier-test.pl
             failure-test.pl
             read-barrier-test.pl
-            close-barrier-test.pl
             timeout-test.pl
             random-test.pl
             server-test.pl
