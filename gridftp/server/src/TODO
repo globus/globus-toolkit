@@ -55,3 +55,7 @@ known bugs:
     int on the server side, but server-lib gives it to us as a size_t (as
     it probably should), which is a different size on most 64 bit platforms.
     
+
+
+
+ability to send 500 go away to control channel before server-lib has control
