@@ -77,15 +77,15 @@
 .in
 .IP
 ..
-.TH ncftp 1 NcFTP Software
+.TH gsincftp 1 NcFTP Software
 .SH NAME
-ncftp - Browser program for the File Transfer Protocol
+gsincftp - Browser program for the File Transfer Protocol with support for RFC 2228 Security Extensions
 .SH "SYNOPSIS"
 .PP
-.B ncftp
+.B gsincftp
 .RI [ "host" ]
 .PP
-.B ncftp
+.B gsincftp
 .RI [ "ftp://host.name/directory/" ]
 .\"-------
 .SH "DESCRIPTION"
@@ -93,7 +93,7 @@ ncftp - Browser program for the File Transfer Protocol
 .PP
 The
 purpose of
-.I ncftp
+.I gsincftp
 is to provide a powerful and flexible interface to the
 Internet standard
 .IR "File Transfer Protocol" .
@@ -103,7 +103,7 @@ program that comes with the system.
 .PP
 Although the program appears to be rather spartan,
 you'll find that
-.I ncftp
+.I gsincftp
 has a wealth of valuable performance and usage features.
 The program was designed with an emphasis on usability,
 and it does as much as it can for you automatically so you can do what
@@ -117,18 +117,18 @@ working with firewalls and proxies,
 downloading entire directory trees, etc., etc.
 .PP
 The
-.I ncftp
+.I gsincftp
 distribution comes with the useful utility programs
-.IR ncftpget "(1)"
+.IR gsincftpget "(1)"
 and
-.IR ncftpput "(1)"
+.IR gsincftpput "(1)"
 which were designed to do command-line FTP.
 In particular, they are very handy for shell scripts.
 This version of
-.I ncftp
+.I gsincftp
 no longer does command-line FTP, since
 the main
-.I ncftp
+.I gsincftp
 program is more of a browser-type program.
 .\"-------
 .SS "INTRODUCTION TO THE COMMAND SHELL"
@@ -225,7 +225,7 @@ settings for later.
 You can use the
 .IR bookmark
 command to save an entry into your
-$HOME/.ncftp/bookmarks
+$HOME/.gsincftp/bookmarks
 file.  When you use the
 .I bookmark
 command, you also specify a bookmark name, so the next time instead of
@@ -269,7 +269,7 @@ you can use
 to ensure that both the remote system and local system translate
 accordingly.
 The default transfer type that
-.I ncftp
+.I gsincftp
 uses is not ASCII, but straight binary.
 .\"-------
 .IP "bgget and bgput"
@@ -288,7 +288,7 @@ your UNIX host the daemon should still do your transfers.
 The daemon will also automatically continue to retry the transfers
 until they finish.
 To tell when background jobs have finished, you have to examine the
-.I $HOME/.ncftp/batchlog
+.I $HOME/.gsincftp/batchlog
 file, or run the
 .I jobs
 command from within 
@@ -309,10 +309,10 @@ bgget \-@ 19971106030000 /pub/idstuff/quake/q2_100\.zip
 .IP bgstart
 .\"-------
 This command tells
-.I ncftp
+.I gsincftp
 to immediately start the background transfers you've requested, which
 simply runs a copy of the
-.I ncftpbatch
+.I gsincftpbatch
 program which is responsible for the background jobs.
 Normally the program will start the background job as soon as you close
 the current site, open a new site, or quit the program.
@@ -321,9 +321,9 @@ dialup links that starting the transfers would slow things to a crawl,
 making it difficult to browse the remote system.
 An added bonus of starting the background job when you close the site
 is that
-.I ncftp
+.I gsincftp
 can pass off that open connection to the
-.I ncftpbatch
+.I gsincftpbatch
 program.
 That is nice when the site is always busy, so that the background job
 doesn't have to wait and get re-logged on to do its job.
@@ -340,13 +340,13 @@ Saves the current session settings for later use.
 This is useful to save the remote system and remote working directory
 so you can quickly resume where you left off some other time.
 The bookmark data is stored in your
-.I $HOME/.ncftp/bookmarks
+.I $HOME/.gsincftp/bookmarks
 file.
 .\"-------
 .IP bookmarks
 .\"-------
 Lists the contents of your
-.I $HOME/.ncftp/bookmarks
+.I $HOME/.gsincftp/bookmarks
 file in a human-readable format.
 You can use this command to recall the bookmark name of a previously
 saved bookmark, so that you can use the
@@ -422,9 +422,9 @@ to turn debugging mode on.
 Then you could see all messages between the program and the remote
 server, and things that are only printed in debugging mode.
 However, this information is also available in the
-.I $HOME/.ncftp/trace
+.I $HOME/.gsincftp/trace
 file, which is created each time you run
-.IR ncftp "."
+.IR gsincftp "."
 If you need to report a bug, send a
 .I trace
 file if you can.
@@ -512,7 +512,7 @@ Views the list of currently executing
 .I NcFTP
 background tasks.
 This actually just runs 
-.I ncftpbatch \-l
+.I gsincftpbatch \-l
 for you.
 .\"-------
 .IP lcd
@@ -632,17 +632,17 @@ would try to act like
 would on
 .IR UNIX "."
 .IP
-.I ncftp
+.I gsincftp
 has a powerful built-in system for dealing with directory listings.
 It tries to cache each one, so if you list the same directory, odds
 are it will display instantly.
 Behind the scenes,
-.I ncftp
+.I gsincftp
 always tries a long listing, and then reformats it as it needs to.
 So even if your first listing of a directory was a regular ``ls''
 which displayed the files in columns, your next listing could be
 ``ls\ \-lrt'' and
-.I ncftp
+.I gsincftp
 would still use the cached directory listing to quickly display the
 information for you!
 .\"-------
@@ -656,7 +656,7 @@ do that.
 .\"-------
 Establishes an FTP control connection to a remote host.
 By default,
-.I ncftp
+.I gsincftp
 logs in anonymously to the remote host.
 You may want to use a specific user account when you log in,
 so you can use the ``\-u'' flag to specify which user.
@@ -803,7 +803,7 @@ directory, so be careful.
 .\"-------
 This lets you configure some program variables, which are saved
 between runs in the
-.I $HOME/.ncftp/prefs
+.I $HOME/.gsincftp/prefs
 file.
 The basic syntax is:
 .Xs
@@ -837,7 +837,7 @@ These ``site'' commands vary of course, such as:
 site chmod 644 README
 .Xe
 Actually,
-.IR ncftp "'s " chmod
+.IR gsincftp "'s " chmod
 command really does the above.
 .IP
 Try doing one of these to see what the remote server supports, if any:
@@ -891,22 +891,6 @@ courtesy to the site administrator.
 If you change this, be aware that some sites require (i.e. they
 check for) valid E-mail addresses.
 .\"-------
-.IP "auto\-resume"
-.\"-------
-.I NcFTP
-3 now prompts the user by default when you try to download
-a file that already exists locally, or upload a file that
-already exists remotely.
-Older versions of the program automatically guessed whether to overwrite
-the existing file or attempt to resume where it left off,
-but sometimes the program would guess wrong.
-If you would prefer that the program always guess which
-action to take, set this variable to
-.IR yes ","
-otherwise, leave it set to
-.I "no"
-and the program will prompt you for which action to take.
-.\"-------
 .IP "autosave\-bookmark\-changes"
 .\"-------
 With the advent of version 3 of
@@ -946,7 +930,7 @@ You can choose to not use a timeout at all by setting this to -1.
 .IP "control\-timeout"
 .\"-------
 This is the timer used when
-.I ncftp
+.I gsincftp
 sends an FTP command over the control connection to the remote server.
 If the server hasn't replied in that many seconds, it considers the session
 lost.
@@ -954,7 +938,7 @@ lost.
 .IP "logsize"
 .\"-------
 This is controls how large the transfer log
-($HOME/.ncftp/log) can grow to, in kilobytes.
+($HOME/.gsincftp/log) can grow to, in kilobytes.
 The default is 200, for 200kB;
 if you don't want a log, set this to 0.
 .\"-------
@@ -967,11 +951,11 @@ by default.
 .IP "passive"
 .\"-------
 This controls
-.IR "ncftp" "'s"
+.IR "gsincftp" "'s"
 behavior for data connections, and can be set to one of
 .IR on ", " off ", or the default, " optional "."
 When passive mode is on,
-.I ncftp
+.I gsincftp
 uses the
 FTP command primitive
 .I PASV
@@ -982,7 +966,7 @@ which has the server establish data connections to the client.
 The default setting for this variable,
 .IR optional ","
 allows
-.I ncftp
+.I gsincftp
 to choose whichever method it deems necessary.
 .\"-------
 .IP "progress-meter"
@@ -990,14 +974,6 @@ to choose whichever method it deems necessary.
 You can change how the program reports file transfer status.
 Select from meter
 .IR 2 ", " 1 ", or " 0 "."
-.\"-------
-.IP "redial\-delay"
-.\"-------
-When a host is busy or unavailable, the program waits
-this number of seconds before trying again.
-The smallest you can set this is to 10 seconds --
-so if you were planning on being inconsiderate,
-think again.
 .\"-------
 .IP "save\-passwords"
 .\"-------
@@ -1007,7 +983,7 @@ the program will save passwords along with the bookmarks you save.
 While this makes non-anonymous logins more convenient, this can
 be very dangerous since your account information is now sitting
 in the
-$HOME/.ncftp/bookmarks
+$HOME/.gsincftp/bookmarks
 file.
 The passwords aren't in clear text, but it is still trivial to
 decode them if someone wants to make a modest effort.
@@ -1019,6 +995,21 @@ you can try setting this variable to the number of bytes to
 set the TCP/IP socket buffer to.  This option won't be of
 much use unless the remote server also supports large window
 sizes and is pre-configured with them enabled.
+.\"-------
+.IP "protection-level"
+.\"-------
+If you are using the GSIFTP protocol, then you can set this variable to
+the desired protection level for FTP data connections. The protection level
+can be one of "Clear", "Authenticated", "Safe", or "Private".
+.IP ""
+The Clear protection level indicates that the data channel
+will carry the raw data of the file transfer, with no security
+applied.  The Authenticated protection level indicates that the data
+channel will be authenticated using the GSSAPI, but after that it
+will carry the raw data of the file transfer, with no further security
+applied.  The Safe protection level indicates that the data will
+be integrity protected.  The Private protection level indicates that the
+data will be integrity and confidentiality protected.
 .\"-------
 .IP "xfer\-timeout"
 .\"-------
@@ -1034,11 +1025,11 @@ between your machine and the Internet, and that you cannot reach
 external hosts.
 .PP
 The answer may be as simple as setting
-.I ncftp
+.I gsincftp
 to use
 .I passive
 mode only, which you can do from a
-.I ncftp
+.I gsincftp
 command prompt like this:
 .Ds
 set passive yes
@@ -1054,10 +1045,10 @@ Of course, you now may have problems with sites whose
 primitive FTP servers do not support passive mode.
 .PP
 Otherwise, if you know you need to have
-.I ncftp
+.I gsincftp
 communicate directly with a firewall or proxy, you can try
 editing the separate
-.I $HOME/\.ncftp/firewall
+.I $HOME/\.gsincftp/firewall
 configuration file.
 This file is created automatically the first time you run the
 program, and contains all the information you need to get
@@ -1067,32 +1058,32 @@ The basics of this process are configuring a firewall (proxy)
 host to go through, a user account and password for authentication
 on the firewall, and which type of firewall method to use.
 You can also setup an exclusion list, so that
-.I ncftp
+.I gsincftp
 does not use the firewall for hosts on the local network.
 .\"-------
 .SH "FILES"
 .\"-------
-.IP $HOME/\.ncftp/batchlog
+.IP $HOME/\.gsincftp/batchlog
 Information for background data transfer processes.
-.IP $HOME/\.ncftp/bookmarks
+.IP $HOME/\.gsincftp/bookmarks
 Saves bookmark and host information.
-.IP $HOME/\.ncftp/firewall
+.IP $HOME/\.gsincftp/firewall
 Firewall access configuration file.
-.IP $HOME/\.ncftp/prefs
+.IP $HOME/\.gsincftp/prefs
 Program preferences.
-.IP $HOME/\.ncftp/spool/
+.IP $HOME/\.gsincftp/spool/
 Directory where background jobs are stored in the form of
 spool configuration files.
-.IP $HOME/\.ncftp/trace
+.IP $HOME/\.gsincftp/trace
 Debugging output for entire program run.
-.IP $HOME/\.ncftp/v3init
+.IP $HOME/\.gsincftp/v3init
 Used to tell if this version of the program has run before.
 .\"-------
 .SH "ENVIRONMENT"
 .\"-------
 .IP PATH
 User's search path, used to find the
-.I ncftpbatch
+.I gsincftpbatch
 program, pager, and some other system utilities.
 .IP PAGER
 Program to use to view text files one page at a time.
@@ -1104,13 +1095,13 @@ line-editing, etc.
 The pager program will also take advantage of this setting.
 .IP HOME
 By default, the program writes its configuration data in a
-.I "\.ncftp"
+.I "\.gsincftp"
 subdirectory of the
 .I HOME
 directory.
 .IP NCFTPDIR
 If set, the program will use this directory instead of
-.IR "$HOME/.ncftp" "."
+.IR "$HOME/.gsincftp" "."
 This variable is optional except for those users whose home directory is
 the root directory.
 .IP COLUMNS
@@ -1135,6 +1126,14 @@ FTP.
 Directory caching and recursive downloads depend on
 .IR UNIX "\-like"
 behavior of the remote host.
+.PP
+"Safe" and "Private" protection levels are not yet implemented.
+.\"-------
+.SH "CHANGES FROM STANDARD NCFTP"
+.\"-------
+.PP
+This distribution uses the SSL GSSAPI bindings for authentication by default,
+instead of the standard cleartext password handling.
 .\"-------
 .SH "AUTHOR"
 .\"-------
@@ -1144,9 +1143,9 @@ Mike Gleason, NcFTP Software (mgleason@ncftp.com).
 .SH "SEE ALSO"
 .\"-------
 .PP
-.IR ncftpput (1),
-.IR ncftpget (1),
-.IR ncftpbatch (1),
+.IR gsincftpput (1),
+.IR gsincftpget (1),
+.IR gsincftpbatch (1),
 .IR ftp (1),
 .IR rcp (1),
 .IR tftp (1).

@@ -47,6 +47,7 @@ find . -depth -follow -type f | sed '
 /\.ilk$/d
 /\.res$/d
 /\.opt$/d
+/\.plg$/d
 /\.obj$/d
 /\.exe$/d
 /\.zip$/d
@@ -59,6 +60,8 @@ find . -depth -follow -type f | sed '
 /\.bin$/d
 /\/bin/d
 /\/core$/d
+/\/^[Rr]elease$/d
+/\/^[Dd]ebug$/d
 /\/sio\/.*\//d
 /shit/d
 /\/upload/d

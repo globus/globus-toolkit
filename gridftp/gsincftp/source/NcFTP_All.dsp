@@ -39,6 +39,7 @@ MTL=midl.exe
 # PROP Output_Dir "Release"
 # PROP Intermediate_Dir "Release"
 # PROP Target_Dir ""
+# ADD MTL /I "\gsi.run\include" /D "HAVE_GSSAPI"
 
 !ELSEIF  "$(CFG)" == "NcFTP_All - Win32 Debug"
 
@@ -52,6 +53,7 @@ MTL=midl.exe
 # PROP Output_Dir "Debug"
 # PROP Intermediate_Dir "Debug"
 # PROP Target_Dir ""
+# ADD MTL /I "\gsi.run\include" /D "HAVE_GSSAPI"
 
 !ENDIF 
 

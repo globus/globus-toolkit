@@ -1,7 +1,10 @@
 /* bookmark.c 
  *
- * Copyright (c) 1992-1999 by Mike Gleason.
+ * Copyright (c) 1992-2000 by Mike Gleason.
  * All rights reserved.
+ *
+ * Modified Feb 22, 2000 by JWB
+ * Changed default port to be 2811 for GSSAPI
  * 
  */
 
@@ -51,7 +54,11 @@ BookmarkToURL(BookmarkPtr bmp, char *url, size_t urlsize)
 		(void) Strncat(url, "@", urlsize);
 	}
 	(void) Strncat(url, bmp->name, urlsize);
+#if HAVE_GSSAPI
+	if (bmp->port != 2811) {
+#else
 	if (bmp->port != 21) {
+#endif
 		(void) sprintf(pbuf, ":%u", (unsigned int) bmp->port);
 		(void) Strncat(url, pbuf, urlsize);
 	}

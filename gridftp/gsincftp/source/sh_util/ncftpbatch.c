@@ -1,6 +1,6 @@
 /* ncftpbatch.c
  * 
- * Copyright (c) 1992-1999 by Mike Gleason, NCEMRSoft.
+ * Copyright (c) 1999-2000 Mike Gleason, NCEMRSoft.
  * All rights reserved.
  * 
  */
@@ -581,6 +581,8 @@ PrePrintItem(void)
 			(void) STRNCPY(gRUser, tok2);
 		} else if (strcmp(tok1, "pass") == 0) {
 			(void) STRNCPY(gRPass, tok2);
+		} else if (strcmp(tok1, "anon-pass") == 0) {
+			(void) STRNCPY(gLib.defaultAnonPassword, tok2);
 		} else if (strcmp(tok1, "xtype") == 0) {
 			gXtype = tok2[0];
 		} else if (strcmp(tok1, "recursive") == 0) {
@@ -714,6 +716,8 @@ DoItem(int iType)
 			(void) STRNCPY(gRUser, tok2);
 		} else if (strcmp(tok1, "pass") == 0) {
 			(void) STRNCPY(gRPass, tok2);
+		} else if (strcmp(tok1, "anon-pass") == 0) {
+			(void) STRNCPY(gLib.defaultAnonPassword, tok2);
 		} else if (strcmp(tok1, "xtype") == 0) {
 			gXtype = tok2[0];
 		} else if (strcmp(tok1, "recursive") == 0) {
@@ -886,7 +890,8 @@ DoItem(int iType)
 			(void) FTPCloseHost(&gConn);
 			return (-1);	/* Try again next time. */
 		}
-		(void) FTPCmd(&gConn, "CLNT NcFTPBatch %.5s %s", gVersion + 11, gOS);
+		if (gConn.hasCLNT != kCommandNotAvailable)
+			(void) FTPCmd(&gConn, "CLNT NcFTPBatch %.5s %s", gVersion + 11, gOS);
 
 		if (FTPChdir(&gConn, gRDir) < 0) {
 			Log(1, "Could not remote cd to %s.\n", gRDir);

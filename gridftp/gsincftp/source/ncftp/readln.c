@@ -1,6 +1,6 @@
 /* rdline.c
  *
- * Copyright (c) 1992-1999 by Mike Gleason.
+ * Copyright (c) 1992-2000 by Mike Gleason.
  * All rights reserved.
  * 
  */
@@ -38,6 +38,55 @@ extern char gVersion[];
 extern int gNumBookmarks;
 extern BookmarkPtr gBookmarkTable;
 extern int gScreenColumns;
+extern int gIsTTYr;
+extern int gUid;
+
+
+
+
+void
+GetScreenColumns(void)
+{
+#if defined(WIN32) || defined(_WINDOWS)
+	/* don't do this on Windows */
+#else
+#ifdef BINDIR
+	char ncftpbookmarks[256];
+	FILE *infp;
+	vsigproc_t osigpipe;
+	int columns;
+
+	/* Don't run things as root unless really necessary. */
+	if (gUid == 0)
+		return;
+
+	STRNCPY(ncftpbookmarks, BINDIR);
+	STRNCAT(ncftpbookmarks, "/");
+	STRNCAT(ncftpbookmarks, "ncftpbookmarks");
+
+	if (access(ncftpbookmarks, X_OK) < 0)
+		return;
+
+	STRNCAT(ncftpbookmarks, " --dimensions-terse");
+
+	infp = popen(ncftpbookmarks, "r");
+	if (infp == NULL)
+		return;
+
+	osigpipe = (vsigproc_t) NcSignal(SIGPIPE, SIG_IGN);
+	(void) NcSignal(SIGPIPE, (sigproc_t) osigpipe);
+
+	columns = 0;
+	(void) fscanf(infp, "%d", &columns);
+	(void) pclose(infp);
+
+	if ((columns > 0) && (columns < GL_BUF_SIZE))
+		gScreenColumns = columns;
+#endif	/* BINDIR */
+#endif	/* Windows */
+}	/* GetScreenColumns */
+
+
 
 /* For a few selected terminal types, we'll print in boldface, etc.
  * This isn't too important, though.
@@ -532,7 +581,19 @@ InitReadline(void)
 char *
 Readline(char *prompt)
 {
-	char *linecopy, *line = getline(prompt);
+	char *linecopy, *line, *cp;
+	char lbuf[256];
+
+	if (gIsTTYr) {
+		line = getline(prompt);
+	} else {
+		line = fgets(lbuf, sizeof(lbuf) - 1, stdin);
+		if (line != NULL) {
+			cp = line + strlen(line) - 1;
+			if (*cp == '\n')
+				*cp = '\0';
+		}
+	}
 
 	if (line != NULL) {
 		if (line[0] == '\0')

@@ -1,25 +1,70 @@
-***********************************
-* This is a beta version of NcFTP *
-***********************************
+Change Log:
+===========
 
-Thank you for helping test the program.  At this point I am interested in
-feedback from experienced users.  If you're a newbie to UNIX and/or NcFTP,
-please use version 2.4.3.
+3.0.0, 2000-03-19:
 
-I'd like to hear if there are any problems, relating from outright crashes
-down to problems you may have building and installing the program.  I want
-to have any problems nailed down before going un-Beta.
++ New "redial-delay" preference setting, so you can easily set it and
+  forget it rather than doing "-r 30" on each open.
 
-New betas will be uploaded without notice, so keep checking for the latest
-beta version.
++ NcFTP's "file exists" prompt now includes options to apply the same
+  action to all files in the batch.  This should alleviate concerns by
+  users who didn't want to babysit NcFTP through a large batch of files
+  which exist locally.
 
-Thank you!
-Mike Gleason
-ncftp@ncftp.com
++ Work around Y2K bug in old wu-ftpd servers.
 
++ Work around broken Novell 5.00 ftp servers.
 
-Beta Change Log:
-===============
++ Fixed a getline problem where entering a character with the high-bit
+  set would cause NcFTP to exit.
+
++ NcFTP now no longer complains when you redirect a file into it as stdin.
+
++ NcFTP's getline now recognizes alternate escape sequences for the arrow
+  keys.
+
++ NcFTP now allows a user to cancel an mget at the "file exists" prompt.
+
++ Continue redialing if the server returns a bad user reply, since
+  some servers do their "too many users logged in check" at that time.
+
++ Try harder to display remote connect banner.
+
++ Fixed bug in remote mkdir which would fail if the subdirectory was in
+  the root directory.
+
++ A few small memory leaks plugged.
+
++ Try to remove extraneous slashes from paths when possible, since Win32
+  doesn't like them.
+
++ Win32 version tries harder to sleep the actual number of seconds
+  requested even if means busy waiting, since Sleep() may return
+  immediately if the system has nothing else to do.
+
++ Win32 version now checks for a HOME or NCFTPDIR environment variable.
+
++ Win32 version of ncftpbookmarks no longer locks up when trying to
+  send a bookmark back to NcFTP.
+
++ The firewall password no longer echoes to the screen on the Win32 version.
+
++ NcFTP tries harder to get the actual screen width so that getline
+  can use the whole line for input.  ncftpbookmarks has to be built
+  and installed where NcFTP can find it for this ugly hack to work.
+
++ NcFTP now sends your anonymous password to batch jobs, rather than
+  having NcFTPBatch compute a default value.
+
++ Shell utilities now default to PASV-then-PORT mode like NcFTP does,
+  rather than use PORT only.
+
++ NcFTPGet and Put are now better about reporting a server error,
+  rather than simply printing the worthless "could not start data
+  transfer" message.
+
++ Getline now handles emacs ^W sequence.
+
 
 Beta21, 1999-10-03:
 
@@ -32,7 +77,7 @@ Beta21, 1999-10-03:
 + NcFTP 3 is now covered by the Artistic License.  See the LICENSE.txt
   file for details.
 
-+ The "prefs" file is now called "prefs.v3" for better coexistence with
++ The "prefs" file is now called "prefs_v3" for better coexistence with
   NcFTP 2.
 
 

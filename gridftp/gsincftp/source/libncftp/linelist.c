@@ -1,6 +1,6 @@
 /* linelist.c
  *
- * Copyright (c) 1996 Mike Gleason, NCEMRSoft.
+ * Copyright (c) 1996-2000 Mike Gleason, NCEMRSoft.
  * All rights reserved.
  *
  */

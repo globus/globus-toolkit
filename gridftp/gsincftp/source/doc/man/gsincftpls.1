@@ -1,9 +1,9 @@
-.TH ncftpls 1 NcFTP Software
+.TH gsincftpls 1 NcFTP Software
 .SH NAME
-ncftpls - Internet file transfer program for scripts
+gsincftpls - Internet file transfer program for scripts
 .SH "SYNOPSIS"
 .PP
-.B ncftpls
+.B gsincftpls
 .RI [ "options" ]
 .I "ftp://url.style/host/path/name/"
 .\"-------
@@ -48,13 +48,8 @@ Timeout after
 .I XX
 seconds.
 .TP 8
-.B -E
-Use regular (PORT) data connections.
-.TP 8
 .B -F
 Use passive (PASV) data connections.
-The default is to use passive, but to fallback to
-regular if the passive connection fails or times out.
 .TP 8
 .BI "-r " "XX"
 Redial a maximum of 
@@ -66,7 +61,7 @@ times until connected to the remote FTP server.
 .PP
 The
 purpose of
-.I ncftpls
+.I gsincftpls
 is to do remote directory listings using
 the File Transfer Protocol without entering an interactive shell.
 This lets you write shell scripts or other unattended
@@ -80,7 +75,7 @@ flag, to print one file per line:
 .RS 4
 .br
 .sp
-$ ncftpls -1 ftp://ftp.ncftp.com/pub/ncftp/
+$ gsincftpls -1 ftp://ftp.probe.net/pub/ncftp/
 .RE
 .PP
 You can also do a remote "ls\ \-l", by using "ncftpls\ \-l".
@@ -92,20 +87,20 @@ do this:
 .RS 4
 .br
 .sp
-$ ncftpls -x "-lrt" ftp://ftp.ncftp.com/pub/ncftp/
+$ gsincftpls -x "-lrt" ftp://ftp.probe.net/pub/ncftp/
 .RE
 .PP
 By default the program tries to open the remote host
 and login anonymously, but you can specify a username
 and password information like you can with
-.I ncftpget
+.I gsincftpget
 or
-.IR ncftpput "."
+.IR gsincftpput "."
 .\"-------
 .SH "DIAGNOSTICS"
 .\"-------
 .PP
-.I ncftpls
+.I gsincftpls
 returns the following exit values:
 .TP 8
 0
@@ -144,6 +139,12 @@ Library initialization failed.
 11
 Session initialization failed.
 .\"-------
+.SH "CHANGES FROM STANDARD NCFTPLS"
+.\"-------
+.PP
+This distribution uses the SSL GSSAPI bindings for authentication by default,
+instead of the standard cleartext password handling.
+.\"-------
 .SH "AUTHOR"
 .\"-------
 .PP
@@ -152,9 +153,9 @@ Mike Gleason, NcFTP Software (mgleason@ncftp.com).
 .SH "SEE ALSO"
 .\"-------
 .PP
-.IR ncftpput (1),
-.IR ncftpget(1),
-.IR ncftp (1),
+.IR gsincftpput (1),
+.IR gsincftpget(1),
+.IR gsincftp (1),
 .IR ftp (1),
 .IR rcp (1),
 .IR tftp (1).

@@ -1,6 +1,6 @@
 /* readln.h
  *
- * Copyright (c) 1992-1999 by Mike Gleason.
+ * Copyright (c) 1992-2000 by Mike Gleason.
  * All rights reserved.
  * 
  */
@@ -12,6 +12,7 @@
 #endif
 
 /* readln.c */
+void GetScreenColumns(void);
 void InitTermcap(void);
 void InitReadline(void);
 void ReCacheBookmarks(void);

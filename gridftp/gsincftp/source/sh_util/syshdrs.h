@@ -46,7 +46,7 @@
 #	include <assert.h>
 #	define strcasecmp stricmp
 #	define strncasecmp strnicmp
-#	define sleep(a) Sleep(a * 1000)
+#	define sleep WinSleep
 #	ifndef S_ISREG
 #		define S_ISREG(m)      (((m) & _S_IFMT) == _S_IFREG)
 #		define S_ISDIR(m)      (((m) & _S_IFMT) == _S_IFDIR)

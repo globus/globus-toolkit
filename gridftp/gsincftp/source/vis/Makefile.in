@@ -27,8 +27,8 @@ DPROGS=@VIS_DPROGS@
 all: $(DPROGS)
 	-@echo 'Done making NcFTP full-screen utilities.'
 
-../bin/ncftpbookmarks@EXEEXT@: bmed.c wgets.@OBJEXT@ wutil.@OBJEXT@ pref.@OBJEXT@ preffw.@OBJEXT@ util.@OBJEXT@ bookmark.@OBJEXT@ version.@OBJEXT@ bmed.h wgets.h syshdrs.h ../libncftp/libncftp.a
-	$(CC) $(CFLAGS) $(DEFS) $(CPPFLAGS) bmed.c wgets.@OBJEXT@ wutil.@OBJEXT@ pref.@OBJEXT@ preffw.@OBJEXT@ util.@OBJEXT@ bookmark.@OBJEXT@ version.@OBJEXT@ -o ../bin/ncftpbookmarks@EXEEXT@ $(LDFLAGS) -lncftp -lStrn -lsio $(LIBS) $(STRIPFLAG)
+../bin/gsincftpbookmarks@EXEEXT@: bmed.c wgets.@OBJEXT@ wutil.@OBJEXT@ pref.@OBJEXT@ preffw.@OBJEXT@ util.@OBJEXT@ bookmark.@OBJEXT@ version.@OBJEXT@ bmed.h wgets.h syshdrs.h ../libncftp/libncftp.a
+	$(CC) $(CFLAGS) $(DEFS) $(CPPFLAGS) bmed.c wgets.@OBJEXT@ wutil.@OBJEXT@ pref.@OBJEXT@ preffw.@OBJEXT@ util.@OBJEXT@ bookmark.@OBJEXT@ version.@OBJEXT@ -o ../bin/gsincftpbookmarks@EXEEXT@ $(LDFLAGS) -lncftp -lStrn -lsio $(LIBS) $(STRIPFLAG)
 
 bookmark.@OBJEXT@: ../ncftp/bookmark.c ../ncftp/bookmark.h syshdrs.h
 	$(CC) $(CFLAGS) $(DEFS) $(CPPFLAGS) ../ncftp/bookmark.c -c

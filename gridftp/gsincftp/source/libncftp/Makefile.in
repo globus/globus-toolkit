@@ -4,7 +4,7 @@
 #
 #-----------------------------------------------------------------------------
 PKGNAME=libncftp
-VERSION=3.0b1
+VERSION=3.0.0
 PREFIX=@prefix@
 
 CC=@CC@
@@ -21,9 +21,9 @@ LIBSOS=libncftp.so
 # Any -D definitions:
 DEFS=@DEFS@@NDEFS@
 
-CFILES=open.c cmds.c util.c rcmd.c ftp.c io.c errno.c linelist.c glob.c
-OBJS=open.o cmds.o util.o rcmd.o ftp.o io.o errno.o linelist.o glob.o
-SOBJS=open.so cmds.so util.so rcmd.so ftp.so io.so errno.so linelist.so glob.so
+CFILES=open.c cmds.c util.c rcmd.c ftp.c io.c errno.c linelist.c glob.c radix.c
+OBJS=open.o cmds.o util.o rcmd.o ftp.o io.o errno.o linelist.o glob.o radix.o
+SOBJS=open.so cmds.so util.so rcmd.so ftp.so io.so errno.so linelist.so glob.so radix.so
 
 # LIBSET=@LIBSET@
 LIBSET=$(LIB)
@@ -32,13 +32,14 @@ SHELL=/bin/sh
 .SUFFIXES: .c .o .so
 
 all: $(LIBSET)
-	( cd ../sio ; make )
-	( cd ../Strn ; make )
-	-[ -d ./samples/minincftp ] && cd ./samples/minincftp && make
-	-[ -d ./samples/monkey ] && cd ./samples/monkey && make
-	-[ -d ./samples/ncftpget ] && cd ./samples/ncftpget && make
-	-[ -d ./samples/ncftpls ] && cd ./samples/ncftpls && make
-	-[ -d ./samples/ncftpput ] && cd ./samples/ncftpput && make
+	( cd ../sio ; $(MAKE) )
+	( cd ../Strn ; $(MAKE) )
+	-[ -d ./samples/minincftp ] && cd ./samples/minincftp && $(MAKE)
+	-[ -d ./samples/monkey ] && cd ./samples/monkey && $(MAKE)
+	-[ -d ./samples/ncftpget ] && cd ./samples/ncftpget && $(MAKE)
+	-[ -d ./samples/ncftpls ] && cd ./samples/ncftpls && $(MAKE)
+	-[ -d ./samples/ncftpput ] && cd ./samples/ncftpput && $(MAKE)
+	-[ -d ./samples/ncftpsyncput ] && cd ./samples/ncftpsyncput && $(MAKE)
 	@echo 'Done.'
 
 $(LIB): $(OBJS)
@@ -70,7 +71,7 @@ install: $(LIB)
 	-chmod a+r $(LIB) $(PREFIX)/lib/$(LIB) $(PREFIX)/include/ncftp.h $(PREFIX)/include/ncftp_errno.h
 
 install_samples:
-	( cd ./samples ; make install )
+	( cd ./samples ; $(MAKE) install )
 
 .c.o:
 	$(CC) $(CFLAGS) $(DEFS) $(CPPFLAGS) $< -c
@@ -88,16 +89,17 @@ TMPDIR=/tmp
 STGZFILE=libncftp-$(VERSION)-src.tar.gz
 
 gz sgz: $(PACKAGE)
+	-@/bin/rm -rf $(TMPDIR)/TAR
 	-@mkdir $(TMPDIR)/TAR
 	-@mkdir $(TMPDIR)/TAR/$(TARDIR)
 	-@chmod ga+r $(PACKAGE)
-	( cd .. ; find ./libncftp/ -depth -type f -print | cut -c3- | grep -v '.o$$' | grep -v '.so$$' | grep -v 'core$$' | grep -v 'Makefile$$' | grep -v 'config.log$$' | grep -v 'config.h$$' | grep -v 'config.cache$$' | grep -v 'config.status$$' | grep -v '.a$$' | grep -v '.lib$$' | grep -v '.ncb$$' | grep -v '.opt$$' | grep -v '.zip$$' | grep -v '.gz$$' | grep -v '.swp$$' | grep -v '.tar$$' | cpio -pdm $(TMPDIR)/TAR/$(TARDIR) )
-	( cd .. ; find ./sio/ -depth -type f -print | cut -c3- | grep -v '.o$$' | grep -v '.so$$' | grep -v 'core$$' | grep -v 'Makefile$$' | grep -v 'config.log$$' | grep -v 'config.h$$' | grep -v 'config.cache$$' | grep -v 'config.status$$' | grep -v '.a$$' | grep -v '.lib$$' | grep -v '.ncb$$' | grep -v '.opt$$' | grep -v '.zip$$' | grep -v '.gz$$' | grep -v '.swp$$' | grep -v '.tar$$' | cpio -pdm $(TMPDIR)/TAR/$(TARDIR) )
-	( cd .. ; find ./Strn/ -depth -type f -print | cut -c3- | grep -v '.o$$' | grep -v '.so$$' | grep -v 'core$$' | grep -v 'Makefile$$' | grep -v 'config.log$$' | grep -v 'config.h$$' | grep -v 'config.cache$$' | grep -v 'config.status$$' | grep -v '.a$$' | grep -v '.lib$$' | grep -v '.ncb$$' | grep -v '.opt$$' | grep -v '.zip$$' | grep -v '.gz$$' | grep -v '.swp$$' | grep -v '.tar$$' | cpio -pdm $(TMPDIR)/TAR/$(TARDIR) )
-	( cd /tmp/TAR ; tar cvf - $(TARDIR) | gzip -c > $(STGZFILE) )
-	cp /tmp/TAR/$(STGZFILE) .
+	( cd .. ; find ./libncftp/ -depth -follow -type f -print | cut -c3- | grep -v '.o$$' | grep -v '.so$$' | grep -v 'core$$' | grep -v 'Makefile$$' | grep -v 'config.log$$' | grep -v 'config.h$$' | grep -v 'config.cache$$' | grep -v 'config.status$$' | grep -v '.a$$' | grep -v '.lib$$' | grep -v '.ncb$$' | grep -v '.opt$$' | grep -v '.zip$$' | grep -v '.gz$$' | grep -v '.swp$$' | grep -v '.tar$$' | cpio -pdmL $(TMPDIR)/TAR/$(TARDIR) )
+	( cd .. ; find ./sio/ -depth -follow -type f -print | cut -c3- | grep -v '.o$$' | grep -v '.so$$' | grep -v 'core$$' | grep -v 'Makefile$$' | grep -v 'config.log$$' | grep -v 'config.h$$' | grep -v 'config.cache$$' | grep -v 'config.status$$' | grep -v '.a$$' | grep -v '.lib$$' | grep -v '.ncb$$' | grep -v '.opt$$' | grep -v '.zip$$' | grep -v '.gz$$' | grep -v '.swp$$' | grep -v '.tar$$' | cpio -pdmL $(TMPDIR)/TAR/$(TARDIR) )
+	( cd .. ; find ./Strn/ -depth -follow -type f -print | cut -c3- | grep -v '.o$$' | grep -v '.so$$' | grep -v 'core$$' | grep -v 'Makefile$$' | grep -v 'config.log$$' | grep -v 'config.h$$' | grep -v 'config.cache$$' | grep -v 'config.status$$' | grep -v '.a$$' | grep -v '.lib$$' | grep -v '.ncb$$' | grep -v '.opt$$' | grep -v '.zip$$' | grep -v '.gz$$' | grep -v '.swp$$' | grep -v '.tar$$' | cpio -pdmL $(TMPDIR)/TAR/$(TARDIR) )
+	( cd $(TMPDIR)/TAR ; tar cvf - $(TARDIR) | gzip -c > $(STGZFILE) )
+	cp $(TMPDIR)/TAR/$(STGZFILE) .
 	-@chmod 644 $(STGZFILE)
-	-@rm -rf /tmp/TAR
+	-@/bin/rm -rf $(TMPDIR)/TAR
 	-@ls -l $(STGZFILE)
 @Z31@
 
@@ -105,13 +107,14 @@ gz sgz: $(PACKAGE)
 
 clean:
 	-/bin/rm -f $(OBJS) $(SOBJS) core $(LIB) $(LIBSO) $(LIBSOS)
-	-[ -d ./samples/minincftp ] && cd ./samples/minincftp && make clean
-	-[ -d ./samples/monkey ] && cd ./samples/monkey && make clean
-	-[ -d ./samples/ncftpget ] && cd ./samples/ncftpget && make clean
-	-[ -d ./samples/ncftpls ] && cd ./samples/ncftpls && make clean
-	-[ -d ./samples/ncftpput ] && cd ./samples/ncftpput && make clean
-	( sleep 2 ; cd ../sio ; make clean )
-	( sleep 2 ; cd ../Strn ; make clean )
+	-[ -d ./samples/minincftp ] && cd ./samples/minincftp && $(MAKE) clean
+	-[ -d ./samples/monkey ] && cd ./samples/monkey && $(MAKE) clean
+	-[ -d ./samples/ncftpget ] && cd ./samples/ncftpget && $(MAKE) clean
+	-[ -d ./samples/ncftpls ] && cd ./samples/ncftpls && $(MAKE) clean
+	-[ -d ./samples/ncftpput ] && cd ./samples/ncftpput && $(MAKE) clean
+	-[ -d ./samples/ncftpsyncput ] && cd ./samples/ncftpsyncput && $(MAKE) clean
+	( sleep 2 ; cd ../sio ; $(MAKE) clean )
+	( sleep 2 ; cd ../Strn ; $(MAKE) clean )
 
 ### Dependencies #############################################################
 
@@ -144,3 +147,6 @@ linelist.so: linelist.c syshdrs.h ncftp.h ncftp_errno.h util.h
 
 glob.o: glob.c syshdrs.h ncftp.h ncftp_errno.h util.h
 glob.so: glob.c syshdrs.h ncftp.h ncftp_errno.h util.h
+
+radix.o: radix.c 
+radix.so: radix.c

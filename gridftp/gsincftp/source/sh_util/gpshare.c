@@ -1,5 +1,8 @@
 /* gpshare.c
  *
+ * Copyright (c) 1996-2000 Mike Gleason, NCEMRSoft.
+ * All rights reserved.
+ *
  * Shared routines for ncftpget and ncftpput.
  */
 

@@ -1,8 +1,10 @@
 /* util.c
  *
- * Copyright (c) 1992-1999 by Mike Gleason.
+ * Copyright (c) 1992-2000 by Mike Gleason.
  * All rights reserved.
  * 
+ * Modified Feb 22, 2000 by JWB
+ * Changed default port # to be 2811 (gsiftp service)
  */
 
 #include "syshdrs.h"
@@ -404,7 +406,12 @@ FileToURL(char *url, size_t urlsize, const char *const fn, const char *const rcw
 		(void) Strncat(url, "@", urlsize);
 	}
 	(void) Strncat(url, hname, urlsize);
-	if ((port != 21) && (port != 0)) {
+#if HAVE_GSSAPI
+	if ((port != 2811) && (port != 0))
+#else
+	if ((port != 21) && (port != 0))
+#endif
+	{
 		(void) sprintf(pbuf, ":%u", (unsigned int) port);
 		(void) Strncat(url, pbuf, urlsize);
 	}
@@ -557,12 +564,18 @@ InitOurDirectory(void)
 	}
 
 	if (gOurInstallationPath[0] != '\0') {
-		STRNCPY(gOurDirectoryPath, gOurInstallationPath);
-		if (gUser[0] == '\0') {
-			STRNCAT(gOurDirectoryPath, "\\Users\\default");
+		if ((cp = getenv("NCFTPDIR")) != NULL) {
+			(void) STRNCPY(gOurDirectoryPath, cp);
+		} else if ((cp = getenv("HOME")) != NULL) {
+			(void) STRNCPY(gOurDirectoryPath, cp);
 		} else {
-			STRNCAT(gOurDirectoryPath, "\\Users\\");
-			STRNCAT(gOurDirectoryPath, gUser);
+			STRNCPY(gOurDirectoryPath, gOurInstallationPath);
+			if (gUser[0] == '\0') {
+				STRNCAT(gOurDirectoryPath, "\\Users\\default");
+			} else {
+				STRNCAT(gOurDirectoryPath, "\\Users\\");
+				STRNCAT(gOurDirectoryPath, gUser);
+			}
 		}
 		rc = MkDirs(gOurDirectoryPath, 00755);
 	}
@@ -885,23 +898,6 @@ GetHostByName(char *const volatile dst, size_t dsize, const char *const hn, int 
 	*dst = '\0';
 	return (-1);
 }	/* GetHostByName */
-
-
-
-
-void
-StrRemoveTrailingSlashes(char *dst)
-{
-	char *cp;
-
-	cp = strrchr(dst, '/');
-	if ((cp == NULL) || (cp[1] != '\0'))
-		return;
-
-	/* Note: Do not destroy a path of "/" */
-	while ((cp > dst) && (*cp == '/'))
-		*cp-- = '\0';
-}	/* StrRemoveTrailingSlashes */
 
 
 

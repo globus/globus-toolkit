@@ -21,6 +21,8 @@ libncftp/io.c
 libncftp/Readme.txt
 libncftp/config.h.in
 libncftp/dos2unix.sh
+libncftp/mksrczip.bat
+libncftp/radix.c
 Strn/Strn.dsp
 Strn/Strn.dsw
 Strn/Strn.h
@@ -56,6 +58,11 @@ sh_util/rc.rc
 sh_util/ncftp.ico
 sh_util/resource.h
 configure.in
+doc/man/gsincftp.1
+doc/man/gsincftpbatch.1
+doc/man/gsincftpget.1
+doc/man/gsincftpput.1
+doc/man/gsincftpls.1
 doc/man/ncftp.1
 doc/man/ncftpbatch.1
 doc/man/ncftpget.1
@@ -75,7 +82,6 @@ config.h.in
 README
 WHATSNEW-3.0
 READLINE-README
-BETA-README
 vis/Makefile.in
 vis/syshdrs.h
 vis/bmed.c
@@ -199,4 +205,6 @@ win/bmed/BookmarkProperties.cpp
 NcFTP_All.dsp
 NcFTP_All.dsw
 Makefile.bin
+CHANGELOG
 LICENSE.txt
+TODO

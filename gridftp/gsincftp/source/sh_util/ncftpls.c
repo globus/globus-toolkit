@@ -1,5 +1,8 @@
 /* ncftpls.c
  *
+ * Copyright (c) 1999-2000 Mike Gleason, NCEMRSoft.
+ * All rights reserved.
+ *
  * A non-interactive utility to list directories on a remote FTP server.
  * Very useful in shell scripts!
  */
@@ -64,7 +67,8 @@ Usage(void)
 	(void) fprintf(fp, "\
   -t XX  Timeout after XX seconds.\n\
   -f XX  Read the file XX for user and password information.\n\
-  -F     Use passive (PASV) data connections.\n\
+  -E     Use regular (PORT) data connections.\n\
+  -F     Use passive (PASV) data connections (default).\n\
   -r XX  Redial XX times until connected.\n");
 	(void) fprintf(fp, "\nExamples:\n\
   ncftpls ftp://ftp.wustl.edu/pub/\n\
@@ -172,6 +176,10 @@ main(int argc, char **argv)
 		exit(kExitInitConnInfoFailed);
 	}
 
+	fi.dataPortMode = kFallBackToSendPortMode;
+	LoadFirewallPrefs(0);
+	if (gFwDataPortMode >= 0)
+		fi.dataPortMode = gFwDataPortMode;
 	fi.debugLog = NULL;
 	fi.errLog = stderr;
 	fi.xferTimeout = 60 * 60;
@@ -184,7 +192,7 @@ main(int argc, char **argv)
 	SetLsFlags(lsflag, sizeof(lsflag), &longMode, "-CF");
 	es = kExitSuccess;
 
-	while ((c = getopt(argc, argv, "1lx:P:u:p:e:d:t:r:f:F")) > 0) switch(c) {
+	while ((c = getopt(argc, argv, "1lx:P:u:p:e:d:t:r:f:EF")) > 0) switch(c) {
 		case 'P':
 			fi.port = atoi(optarg);	
 			break;
@@ -223,11 +231,11 @@ main(int argc, char **argv)
 		case 'f':
 			ReadConfigFile(optarg, &fi);
 			break;
+		case 'E':
+			fi.dataPortMode = kSendPortMode;
+			break;
 		case 'F':
-			if (fi.dataPortMode == kPassiveMode)
-				fi.dataPortMode = kSendPortMode;
-			else
-				fi.dataPortMode = kPassiveMode;
+			fi.dataPortMode = kPassiveMode;
 			break;
 		case 'l':
 			SetLsFlags(lsflag, sizeof(lsflag), &longMode, "-l");
@@ -245,7 +253,6 @@ main(int argc, char **argv)
 		Usage();
 
 	InitOurDirectory();
-	LoadFirewallPrefs(0);
 
 	startfi = fi;
 	memset(&savedfi, 0, sizeof(savedfi));
@@ -275,7 +282,7 @@ main(int argc, char **argv)
 			
 			/* This host is currently open, so keep using it. */
 			if (FTPChdir(&fi, rootcwd) < 0) {
-				(void) fprintf(stderr, "ncftpls: cannot chdir to %s: %s.\n", rootcwd, FTPStrError(fi.errNo));
+				FTPPerror(&fi, fi.errNo, kErrCWDFailed, "ncftpls: Could not chdir to", rootcwd);
 				es = kExitChdirFailed;
 				DisposeWinsock(0);
 				exit((int) es);
@@ -314,10 +321,13 @@ main(int argc, char **argv)
 				DisposeWinsock(0);
 				exit((int) es);
 			}
+
+			if (fi.hasCLNT != kCommandNotAvailable)
+				(void) FTPCmd(&fi, "CLNT NcFTPLs %.5s %s", gVersion + 11, gOS);
 			
 			errstr = "could not get current remote working directory from remote host";
 			if (FTPGetCWD(&fi, rootcwd, sizeof(rootcwd)) < 0) {
-				(void) fprintf(stderr, "ncftpls: cannot pwd: %s.\n", FTPStrError(fi.errNo));
+				FTPPerror(&fi, fi.errNo, kErrPWDFailed, "ncftpls", errstr);
 				es = kExitChdirFailed;
 				DisposeWinsock(0);
 				exit((int) es);
@@ -328,7 +338,7 @@ main(int argc, char **argv)
 		es = kExitChdirTimedOut;
 		for (lp = cdlist.first; lp != NULL; lp = lp->next) {
 			if (FTPChdir(&fi, lp->line) != 0) {
-				(void) fprintf(stderr, "ncftpls: cannot chdir to %s: %s.\n", lp->line, FTPStrError(fi.errNo));
+				FTPPerror(&fi, fi.errNo, kErrCWDFailed, "ncftpls: Could not chdir to", lp->line);
 				es = kExitChdirFailed;
 				DisposeWinsock(0);
 				exit((int) es);

@@ -280,4 +280,11 @@ CPPFLAGS=`echo "$CPPFLAGS" | sed 's/^ *//;s/ *$//;s/  */ /g'`
 CFLAGS=`echo "$CFLAGS" | sed 's/^ *//;s/ *$//;s/  */ /g'`
 DEFS=`echo "$DEFS" | sed 's/^ *//;s/ *$//;s/  */ /g'`
 
-AC_OUTPUT([Makefile ../Strn/Makefile ../sio/Makefile samples/minincftp/Makefile samples/monkey/Makefile samples/ncftpget/Makefile samples/ncftpls/Makefile samples/ncftpput/Makefile samples/simpleget/Makefile $binonly])
+samples=''
+for sample in minincftp monkey ncftpget ncftpput ncftpls simpleget ncftpsyncput ; do
+	if test -f samples/$sample/Makefile.in ; then
+		samples="$samples samples/$sample/Makefile"
+	fi
+done
+
+AC_OUTPUT([Makefile ../Strn/Makefile ../sio/Makefile $samples $binonly])

@@ -41,7 +41,7 @@ RSC=rc.exe
 # PROP Intermediate_Dir "Release"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /YX /FD /c
-# ADD CPP /nologo /W4 /GX /O2 /Ob1 /I "..\Strn" /I "..\sio" /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /YX /FD /c
+# ADD CPP /nologo /W4 /GX /O2 /I "..\Strn" /I "..\sio" /I "\gsi.rin\include" /D "NDEBUG" /D "WIN32" /D "_MBCS" /D "_LIB" /D "HAVE_GSSAPI" /YX /FD /c
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
 # ADD RSC /l 0x409 /d "NDEBUG"
 BSC32=bscmake.exe
@@ -64,7 +64,7 @@ LIB32=link.exe -lib
 # PROP Intermediate_Dir "Debug"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /YX /FD /GZ /c
-# ADD CPP /nologo /W3 /Gm /GX /ZI /Od /I "..\Strn" /I "..\sio" /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /YX /FD /GZ /c
+# ADD CPP /nologo /W3 /Gm /GX /ZI /Od /I "..\Strn" /I "..\sio" /I "\gsi.run\include" /D "_DEBUG" /D "WIN32" /D "_MBCS" /D "_LIB" /D "HAVE_GSSAPI" /YX /FD /GZ /c
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
 # ADD RSC /l 0x409 /d "_DEBUG"
 BSC32=bscmake.exe
@@ -86,6 +86,10 @@ LIB32=link.exe -lib
 # Begin Source File
 
 SOURCE=.\cmds.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\display.c
 # End Source File
 # Begin Source File
 
@@ -117,6 +121,10 @@ SOURCE=.\open.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\radix.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\rcmd.c
 # End Source File
 # Begin Source File
@@ -134,6 +142,10 @@ SOURCE=.\util2.cpp
 # Begin Source File
 
 SOURCE=.\ftp.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\globus_gss_assist.h
 # End Source File
 # Begin Source File
 

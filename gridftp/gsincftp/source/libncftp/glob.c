@@ -1,6 +1,6 @@
 /* glob.c
  *
- * Copyright (c) 1996 Mike Gleason, NCEMRSoft.
+ * Copyright (c) 1996-2000 Mike Gleason, NCEMRSoft.
  * All rights reserved.
  *
  */
@@ -1198,11 +1198,15 @@ Traverse(FTPCIPtr cip, char *fullpath, struct stat *st, char *relpath, FileInfoL
 			Traverse(cip, fullpath, st, relpath, filp);
 #ifdef S_ISLNK
 		} else if (S_ISLNK(m)) {
-			/*
 			fi.type = 'l';
-			fi.rlinkto = (linkto[0] == '\0') ? NULL : StrDup(linkto);
-			*/
-			(void) AddFileInfo(filp, &fi);
+			fi.rlinkto = calloc(128, 1);
+			if (fi.rlinkto != NULL) {
+				if (readlink(fullpath, fi.rlinkto, 127) < 0) {
+					free(fi.rlinkto);
+				} else {
+					(void) AddFileInfo(filp, &fi);
+				}
+			}
 #endif	/* S_ISLNK */
 		}
 	}
@@ -1219,7 +1223,7 @@ Traverse(FTPCIPtr cip, char *fullpath, struct stat *st, char *relpath, FileInfoL
 
 
 int
-FTPLocalRecursiveFileList(FTPCIPtr cip, LineListPtr fileList, FileInfoListPtr files)
+FTPLocalRecursiveFileList2(FTPCIPtr cip, LineListPtr fileList, FileInfoListPtr files, int erelative)
 {
 	LinePtr filePtr, nextFilePtr;
 #if defined(WIN32) || defined(_WINDOWS)
@@ -1242,7 +1246,7 @@ FTPLocalRecursiveFileList(FTPCIPtr cip, LineListPtr fileList, FileInfoListPtr fi
 		nextFilePtr = filePtr->next;
 
 		(void) STRNCPY(fullpath, filePtr->line);	/* initialize fullpath */
-		if ((strcmp(filePtr->line, ".") == 0) || (filePtr->line[0] == '\0'))
+		if ((erelative != 0) || (strcmp(filePtr->line, ".") == 0) || (filePtr->line[0] == '\0'))
 			(void) STRNCPY(relpath, "");
 		else if ((cp = StrRFindLocalPathDelim(filePtr->line)) == NULL)
 			(void) STRNCPY(relpath, filePtr->line);
@@ -1272,6 +1276,14 @@ FTPLocalRecursiveFileList(FTPCIPtr cip, LineListPtr fileList, FileInfoListPtr fi
 	return (kNoErr);
 }	/* FTPLocalRecursiveFileList */
 
+
+
+
+int
+FTPLocalRecursiveFileList(FTPCIPtr cip, LineListPtr fileList, FileInfoListPtr files)
+{
+	return (FTPLocalRecursiveFileList2(cip, fileList, files, 0));
+}	/* FTPLocalRecursiveFileList */
 
 
 

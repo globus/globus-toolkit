@@ -1,6 +1,6 @@
 /* main.c
  *
- * Copyright (c) 1992-1999 by Mike Gleason.
+ * Copyright (c) 1992-2000 by Mike Gleason.
  * All rights reserved.
  * 
  */
@@ -30,7 +30,7 @@
 #endif
 
 int gStartupUrlParameterGiven = 0;
-int gIsTTY;
+int gIsTTY, gIsTTYr;
 int gScreenColumns;
 
 FTPLibraryInfo gLib;
@@ -56,7 +56,7 @@ extern char gFirewallExceptionList[];
 extern char gCopyright[], gVersion[];
 extern unsigned int gFirewallPort;
 extern int gConnTimeout, gXferTimeout, gCtrlTimeout;
-extern int gDataPortMode;
+extern int gDataPortMode, gRedialDelay;
 extern int gDebug;
 extern int gNumProgramRuns;
 extern int gSOBufsize;
@@ -124,6 +124,8 @@ InitConnectionInfo(void)
 	gUnprocessedJobs = 0;
 	gPrevRemoteCWD[0] = '\0';
 	gConn.dataSocketRBufSize = gConn.dataSocketSBufSize = gSOBufsize;
+	if (gRedialDelay >= 10)
+		gConn.redialDelay = gRedialDelay;
 }	/* InitConnectionInfo */
 
 
@@ -265,8 +267,10 @@ PreInit(void)
 #endif
 #if defined(WIN32) || defined(_WINDOWS)
 	gIsTTY = 1;
+	gIsTTYr = 1;
 #else
 	gIsTTY = ((isatty(2) != 0) && (getppid() > 1)) ? 1 : 0;
+	gIsTTYr = ((isatty(0) != 0) && (getppid() > 1)) ? 1 : 0;
 #endif
 	InitUserInfo();
 	result = FTPInitLibrary(&gLib);
@@ -306,6 +310,22 @@ PreInit(void)
 				gScreenColumns = 80;
 		}
 	}
+#else
+	/* This is a brutal hack where we've hacked a
+	 * special command line option into ncftp_bookmarks
+	 * (which is linked with curses) so that it computes
+	 * the screen size and prints it to stdout.
+	 *
+	 * This next function runs ncftp_bookmarks and gets
+	 * that information.  The reason we do this is that
+	 * we may or may not have a sane installation of
+	 * curses/termcap, and we don't want to increase
+	 * NcFTP's complexity by the curses junk just to
+	 * get the screen size.  Instead, we delegate this
+	 * to ncftp_bookmarks which already deals with the
+	 * ugliness of curses.
+	 */
+	GetScreenColumns();
 #endif
 
 }	/* PreInit */

@@ -88,8 +88,12 @@ to the remote FTP server. </DD>
 <DD>Do (do not) try to resume transfers. The default
 is to <I>not</I> try to resume (-Z). </DD>
 
+<DT><B>-E</B> </DT>
+<DD>Use regular (PORT) data connections. </DD>
+
 <DT><B>-F</B> </DT>
-<DD>Use passive (PASV) data connections. </DD>
+<DD>Use passive (PASV) data connections.&nbsp; The default is to use passive, but to fallback to
+  regular if the passive connection fails or times out. </DD>
 
 <DT><B>-DD</B> </DT>
 <DD>Delete
@@ -132,7 +136,7 @@ You may use the
 <B>-f</B> option instead to specify a file with the account information. However,
 this is still not secure because anyone who has read access to the information
 file can see the account information. Nevertheless, if you choose to use
-the <B>-f</B> option the file should look something like this: <blockquote><pre>host Bozo.probe.net
+the <B>-f</B> option the file should look something like this: <blockquote><pre>host sphygmomanometer.ncftp.com
 user gleason
 pass mypasswd</pre>
 </blockquote>
@@ -150,7 +154,7 @@ you could use the <B>-a</B> flag which would use ASCII transfer mode so that the
 file created on the Windows machine would be in its native text format
 instead of the UNIX text format. <P>
 You can upload an entire directory tree
-of files by using the <B>-R</B> flag. Example: <blockquote><pre>$ ncftpput -R ftp.probe.net /incoming /tmp/stuff</pre>
+of files by using the <B>-R</B> flag. Example: <blockquote><pre>$ ncftpput -R pikachu.nintendo.co.jp /incoming /tmp/stuff</pre>
 </blockquote>
 This would create a /incoming/stuff hierarchy on the remote host. <P>
 The <B>-T</B>
@@ -161,16 +165,17 @@ until your file is finished. These options are also useful when a remote
 process on the remote host polls a specific filename, and you don't want
 that process to see that file until you know the file is finished sending.
 Here is an example that uploads to the file /pub/incoming/README, using
-the filename /pub/incoming/README.tmp as a temporary filename: <blockquote><pre>$ ncftpput -S .tmp Bozo.probe.net /pub/incoming /a/README</pre>
+the filename /pub/incoming/README.tmp as a temporary filename: <blockquote><pre>$ ncftpput -S .tmp bowser.nintendo.co.jp /pub/incoming /a/README</pre>
  </blockquote>
 <P>
 A neat way to pipe the output
 from any local command into a remote file is to use the <B>-c</B> option, which
 denotes that you're using <I>stdin</I> as input. The following example shows how
-to make a backup and store it on a remote machine: <blockquote><pre>$ tar cf / | ncftpput -c Bozo.probe.net /usr/local/backup.tar</pre>
+to make a backup and store it on a remote machine: <blockquote><pre>$ tar cf / | ncftpput -c sonic.sega.co.jp /usr/local/backup.tar</pre>
  </blockquote>
  
 <H2>Diagnostics</H2>
+<blockquote>
  <P>
 <I>ncftpput</I> returns the following
 exit values: 
@@ -182,13 +187,19 @@ change failed. </LI><LI>Directory change failed - timed out. </LI><LI>Malformed 
 initialization failed.  </LI>
 </OL>
 
+</blockquote>
+
 <H2>Author</H2>
+<blockquote>
  <P>
 Mike
 Gleason, NcFTP Software (<a href="mailto:mgleason@ncftp.com">mgleason@ncftp.com</a>).  
+</blockquote>
 <H2>See Also</H2>
+<blockquote>
  <P>
 <I>ncftpput(1)</I>, <I>ncftpget(1),</I>
 <I>ncftp(1)</I>, <I>ftp(1)</I>, <I>rcp(1)</I>, <I>tftp(1)</I>. <P>
 <I>LibNcFTP</I>  (<a href="http://www.ncftp.com/libncftp/">http://www.ncftp.com/libncftp/</a>).
+</blockquote>
 </BODY></HTML>

@@ -1962,3 +1962,159 @@ AC_SUBST(OS)
 AC_SUBST(host)
 AC_SUBST(SYS)
 ])
+
+dnl
+dnl
+dnl
+AC_DEFUN(wi_LIB_GSSAPI, [
+	AC_ARG_WITH(gssapi-dir, [  --with-gssapi-dir=<DIR>  Specify install directory for GSSAPI package],
+			globus_install_dir=$withval, globus_install_dir="none")
+	echo "here2"
+	AC_MSG_CHECKING(for Globus/GSI installation directory)
+	if test "$globus_install_dir" = "none" -o -z "$globus_install_dir"; then
+		if test -n "$GLOBUS_INSTALL_PATH" ; then
+			globus_install_dir=$GLOBUS_INSTALL_PATH
+		elif test -d /usr/local/globus ; then
+			globus_install_dir="/usr/local/globus"
+		elif test -d /usr/local/gsi ; then
+			globus_install_dir="/usr/local/gsi"
+		else
+			AC_MSG_ERROR(not found)
+                fi
+        fi
+
+	AC_MSG_RESULT("$globus_install_dir")
+
+dnl Find the GLOBUS/GSI development directory
+	AC_MSG_CHECKING(for Globus/GSI development directory)
+
+	if test -d ${globus_install_dir}/lib; then
+		# Looks like a flat directory structure from configure/make
+		# and not globus-install or gsi-install
+		globus_dev_dir=$globus_install_dir
+	else
+		# Assume a true globus installation with architecture
+		# directories and run globus-development-path to find
+		# the development directory
+
+		# Make sure GLOBUS_INSTALL_PATH matches user-specified path
+		GLOBUS_INSTALL_PATH=$globus_install_dir
+		export GLOBUS_INSTALL_PATH
+
+		dev_path_program=${globus_install_dir}/bin/globus-development-path
+		if test ! -x ${dev_path_program}; then
+			AC_MSG_ERROR(Cannot find Globus/GSI installation directory: program ${dev_path_program} does not exist or is not executable)
+		fi
+
+		globus_dev_dir=`${dev_path_program}`
+
+		if test -z "$globus_dev_dir" -o "X$globus_dev_dir" = "X<not found>" ; then
+			AC_MSG_ERROR(Cannot find Globus/GSI development directory)
+                fi
+
+		if test ! -d "$globus_dev_dir" ; then
+			AC_MSG_ERROR(Cannot find Globus/GSI development directory: $globus_dev_dir does not exist)
+		fi
+        fi
+	AC_MSG_RESULT($globus_dev_dir)
+
+	incdir="${globus_dev_dir}/include";
+
+	AC_MSG_CHECKING([for gssapi directories])
+	echo "";
+	if test -r $incdir ; then
+		case "$CPPFLAGS" in
+			*${incdir}*)
+			# echo "   + already had $incdir" 1>&6
+			;;
+		*)
+			if test "$CPPFLAGS" = "" ; then
+				CPPFLAGS="-I$incdir"
+			else
+				CPPFLAGS="$CPPFLAGS -I$incdir"
+			fi
+			echo "   + found $incdir" 1>&6
+			;;
+		esac
+	fi
+
+	libdir="${globus_dev_dir}/lib"
+
+	if test -r $libdir ; then
+		case "$LDFLAGS" in
+			*${libdir}*)
+				# echo "   + already had $libdir" 1>&6
+				;;
+			*)
+				if test "$LDFLAGS" = "" ; then
+					LDFLAGS="-L$libdir"
+				else
+					LDFLAGS="$LDFLAGS -L$libdir"
+				fi
+				echo "   + found $libdir" 1>&6
+				;;
+		esac
+	fi
+	LIBS="$LIBS -lglobus_gss_assist -lglobus_gss -lglobus_gaa"
+])
+
+AC_DEFUN(wi_LIB_SSL, [
+	AC_ARG_WITH(ssl-dir, [  --with-ssl-dir=<DIR>     Specify install directory for the SSL package],
+			ssl_dir=$withval, ssl_dir="none")
+	AC_MSG_CHECKING(for SSL installation directory)
+
+	if test -z "$ssl_dir" -o "$ssl_dir" = "none" -o ! -d "$ssl_dir"; then
+		if test -d /usr/local/ssl; then
+			ssl_dir=/usr/local/ssl
+		else
+			tools_path=`${globus_install_dir}/bin/globus-tools-path`/bin
+			if test -z "$tools_path" -o "X$tools_path" = "X<not found>" ; then
+				AC_MSG_ERROR(Cannot find SSL)
+			fi
+			ssl_dir=`${tools_path}/globus-sh-exec -e 'echo $GLOBUS_SSL_PATH'`
+			if test $? != 0; then
+				AC_MSG_ERROR(Cannot find SSL)
+			fi
+                fi
+	fi
+	
+	AC_MSG_RESULT("$ssl_dir")
+	incdir="${ssl_dir}/include";
+
+	AC_MSG_CHECKING([for gssapi directories])
+	echo "";
+	if test -r $incdir ; then
+		case "$CPPFLAGS" in
+			*${incdir}*)
+			# echo "   + already had $incdir" 1>&6
+			;;
+		*)
+			if test "$CPPFLAGS" = "" ; then
+				CPPFLAGS="-I$incdir"
+			else
+				CPPFLAGS="$CPPFLAGS -I$incdir"
+			fi
+			echo "   + found $incdir" 1>&6
+			;;
+		esac
+	fi
+
+	libdir="${ssl_dir}/lib"
+
+	if test -r $libdir ; then
+		case "$LDFLAGS" in
+			*${libdir}*)
+				# echo "   + already had $libdir" 1>&6
+				;;
+			*)
+				if test "$LDFLAGS" = "" ; then
+					LDFLAGS="-L$libdir"
+				else
+					LDFLAGS="$LDFLAGS -L$libdir"
+				fi
+				echo "   + found $libdir" 1>&6
+				;;
+		esac
+	fi
+	LIBS="$LIBS -lssl -lcrypto"
+])

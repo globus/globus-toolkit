@@ -112,6 +112,31 @@ SConnect(int sfd, const struct sockaddr_in *const addr, int tlen)
 		}
 	}
 
+#ifdef SO_ERROR
+	/* After  select  indicates writability, use getsockopt(2) to
+	 * read the SO_ERROR option at level  SOL_SOCKET  to  determine
+	 * whether connect  completed  successfully (SO_ERROR is zero).
+	 * (from linux connect man page)
+	 */
+
+	forever {
+		int optval;
+		int optlen = sizeof(optval);
+
+		result = getsockopt(sfd, SOL_SOCKET, SO_ERROR, &optval, &optlen);
+		if (result == 0) {
+			if (optval == 0) {
+				return 0;
+			} else {
+				errno = optval;
+				return -1;
+			}
+		} else if (errno != EINTR) {
+			return -1;
+		}
+	 }
+#endif
+
 	/* Supposedly once the select() returns with a writable
 	 * descriptor, it is connected and we don't need to
 	 * recall connect().  When select() returns an exception,

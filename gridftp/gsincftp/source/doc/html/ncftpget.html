@@ -67,8 +67,12 @@ them. </DD>
 <DD>Do (do not) try to resume transfers. The default is to try to resume
 (-z). </DD>
 
+<DT><B>-E</B> </DT>
+<DD>Use regular (PORT) data connections. </DD>
+
 <DT><B>-F</B> </DT>
-<DD>Use passive (PASV) data connections. </DD>
+<DD>Use passive (PASV) data connections.&nbsp; The default is to use passive, but to fallback to
+  regular if the passive connection fails or times out. </DD>
 
 <DT><B>-DD</B> </DT>
 <DD>Delete remote file after successfully
@@ -76,6 +80,14 @@ downloading it. </DD>
 
 <DT><B>-R</B> </DT>
 <DD>Recursive mode; copy whole directory trees. </DD>
+
+<DT><B>-T</B> </DT>
+<DD>Do not use automatic on-the-fly TAR mode for downloading whole directory trees.&nbsp;
+  The program uses TAR whenever possible since this usually preserves symbolic links
+  and file permissions. TAR mode can also result in faster transfers for directories containing many
+  small files, since a single data connection can be used rather than an FTP
+  data connection for each small file. The downside to using TAR is that it forces downloading of the whole directory,
+  even if you had previously downloaded a portion of it earlier, so you may want to use this option if you want to resume downloading of a directory. </DD>
 
 <DT><B>-r </B><I>XX</I> </DT>
 <DD>Redial
@@ -104,7 +116,7 @@ One particularly useful feature of this program is that you
 can give it a <I>uniform</I> resource locator as the only argument and the program
 will download that file. You can then copy and paste from your web browser
 or newsreader and use that URL. Example: <blockquote><pre>$ cd /tmp
-$ ncftpget ftp://ftp.probe.net/pub/ncftp/ncftp.tar.Z
+$ ncftpget ftp://ftp.ncftp.com/pub/ncftp/ncftp.tar.Z
 $ zcat ncftp.tar.Z | tar xf -</pre>
 </blockquote>
 <P>
@@ -122,7 +134,7 @@ You may use the <B>-f</B> option instead to specify a file with
 the account information. However, this is still not secure because anyone
 who has read access to the information file can see the account information.
 Nevertheless, if you choose to use the <B>-f</B> option the file should look something
-like this: <blockquote><pre>host Bozo.probe.net
+like this: <blockquote><pre>host sphygmomanometer.ncftp.com
 user gleason
 pass mypasswd</pre>
 </blockquote>
@@ -134,25 +146,20 @@ The <B>-d</B> option is very useful when you are trying to diagnose why a
 file transfer is failing. It prints out the entire FTP conversation to the
 file you specify, so you can get an idea of what went wrong.   If you specify
 the special name <I>stdout</I> as the name of the debugging output file, the output
-will instead print to the screen.  Example: <blockquote><pre>$ ncftpget -d stdout ftp.probe.net . /pub/ncftp/README
-220: ftp.probe.net FTP server ready.
-Connected to ftp.probe.net.
+will instead print to the screen.  Example: <blockquote><pre>$ ncftpget -d stdout bowser.nintendo.co.jp . /pub/ncftp/README
+220: FTP server ready.
+Connected to bowser.nintendo.co.jp.
 Cmd: USER anonymous
 331: Guest login ok, send your complete e-mail address as password.
 Cmd: PASS xxxxxxxx
 230: Welcome!
-Logged in to ftp.probe.net as anonymous.
+Logged in to bowser.nintendo.co.jp as anonymous.
 Cmd: TYPE I
 200: Type set to I.
-Cmd: SIZE /pub/ncftp/README
-550: /pub/ncftp/README: not a plain file.
-Cmd: MDTM /pub/ncftp/README
-550: /pub/ncftp/README: No such file or directory.
-Cmd: PORT 192,168,1,17,6,76
+Cmd: PORT 192,168,9,37,6,76
 200: PORT command successful.
-Cmd: RETR /pub/ncftp/README
-550: /pub/ncftp/README: No such file OR directory.
-ncftpget: file retrieval error: could not start data transfer.
+Cmd: RETR /pub/README
+550: /pub/README: File in use.
 Cmd: QUIT
 221: Goodbye.</pre>
 </blockquote>
@@ -165,10 +172,11 @@ be in the UNIX text format instead of the MS-DOS text format. <P>
 You can retrieve
 an entire directory tree of files by using the <B>-R</B> flag. However, this will
 work only if the remote FTP server is a UNIX server, or emulates UNIX's
-list output. Example: <blockquote><pre>$ ncftpget -R ftp.probe.net /tmp /pub/ncftp</pre>
+list output. Example: <blockquote><pre>$ ncftpget -R ftp.ncftp.com /tmp /pub/ncftp</pre>
 </blockquote>
 <p>This would create a /tmp/ncftp hierarchy.</p>
 <H2>Diagnostics</H2>
+<blockquote>
  <P>
 <I>ncftpget</I> returns
 the following exit values: 
@@ -180,13 +188,19 @@ URL. </LI><LI>Usage error. </LI><LI>Error in login configuration file. </LI><LI>
 failed. </LI><LI>Session initialization failed.  </LI>
 </OL>
 
+</blockquote>
+
 <H2>Author</H2>
+<blockquote>
  <P>
 Mike
 Gleason, NcFTP Software (<a href="mailto:mgleason@ncftp.com">mgleason@ncftp.com</a>).  
+</blockquote>
 <H2>See Also</H2>
+<blockquote>
  <P>
 <I>ncftpput(1)</I>, <I>ncftpget(1),</I>
 <I>ncftp(1)</I>, <I>ftp(1)</I>, <I>rcp(1)</I>, <I>tftp(1)</I>. <P>
 <I>LibNcFTP</I>  (<a href="http://www.ncftp.com/libncftp/">http://www.ncftp.com/libncftp/</a>).
+</blockquote>
 </BODY></HTML>

@@ -315,3 +315,36 @@ InitWindows(void)
 
 	return (0);
 }	/* InitWindows */
+
+
+
+int
+PrintDimensions(int shortMode)
+{
+	int maxy = 0, maxx = 0;
+	char buf[128];
+
+	initscr();
+	if (stdscr == NULL)
+		return (-1);
+	getmaxyx(stdscr, maxy, maxx);
+	endwin();
+	if ((maxx > 0) && (maxy > 0)) {
+		memset(buf, 0, sizeof(buf));
+#ifdef HAVE_SNPRINTF
+		(void) snprintf(
+			buf,
+			sizeof(buf) - 1,
+#else
+		(void) sprintf(
+			buf,
+#endif
+			(shortMode != 0) ? "%d %d\n" : "COLUMNS=%d\nLINES=%d\nexport COLUMNS\nexport LINES\n",
+			maxx,
+			maxy
+		);
+		(void) write(1, buf, strlen(buf));
+		return (0);
+	}
+	return (-1);
+}	/* PrintDimensions */

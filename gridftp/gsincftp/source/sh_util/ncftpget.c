@@ -1,5 +1,8 @@
 /* ncftpget.c
  *
+ * Copyright (c) 1996-2000 Mike Gleason, NCEMRSoft.
+ * All rights reserved.
+ *
  * A non-interactive utility to grab files from a remote FTP server.
  * Very useful in shell scripts!
  */
@@ -66,7 +69,8 @@ Usage(void)
   -A     Append to local files, instead of overwriting them.\n");
 	(void) fprintf(fp, "\
   -z/-Z  Do (do not) not try to resume downloads (default: -z).\n\
-  -F     Use passive (PASV) data connections.\n\
+  -E     Use regular (PORT) data connections.\n\
+  -F     Use passive (PASV) data connections (default).\n\
   -DD    Delete remote file after successfully downloading it.\n\
   -b     Run in background (submit job to \"ncftpbatch\").\n\
   -B XX  Try setting the SO_RCVBUF size to XX.\n\
@@ -131,7 +135,7 @@ Copy(FTPCIPtr cip, char *dstdir, const char ** volatile files, int rflag, int xt
 			break;
 		result = FTPGetFiles3(cip, file, dstdir, rflag, kGlobYes, xtype, resumeflag, appendflag, deleteflag, tarflag, NoConfirmResumeDownloadProc, 0);
 		if (result != 0) {
-			(void) fprintf(stderr, "ncftpget: file retrieval error: %s.\n", FTPStrError(result));
+			FTPPerror(cip, result, kErrCouldNotStartDataTransfer, "ncftpget", file);
 			rc = result;
 		}
 	}
@@ -159,6 +163,7 @@ main(int argc, char **argv)
 	char url[256];
 	char urlfile[128];
 	char urldir[256];
+	char dstdir2[256];
 	int urlxtype;
 	LineList cdlist;
 	LinePtr lp;
@@ -183,6 +188,8 @@ main(int argc, char **argv)
 		exit(kExitInitConnInfoFailed);
 	}
 
+	fi.dataPortMode = kPassiveMode;
+	LoadFirewallPrefs(0);
 	if (gFwDataPortMode >= 0)
 		fi.dataPortMode = gFwDataPortMode;
 	fi.debugLog = NULL;
@@ -196,7 +203,7 @@ main(int argc, char **argv)
 	urlfile[0] = '\0';
 	InitLineList(&cdlist);
 
-	while ((c = getopt(argc, argv, "P:u:j:p:e:d:t:aRTr:vVf:ADzZFbB:")) > 0) switch(c) {
+	while ((c = getopt(argc, argv, "P:u:j:p:e:d:t:aRTr:vVf:ADzZEFbB:")) > 0) switch(c) {
 		case 'P':
 			fi.port = atoi(optarg);	
 			break;
@@ -266,11 +273,11 @@ main(int argc, char **argv)
 		case 'Z':
 			resumeflag = kResumeNo;
 			break;
+		case 'E':
+			fi.dataPortMode = kSendPortMode;
+			break;
 		case 'F':
-			if (fi.dataPortMode == kPassiveMode)
-				fi.dataPortMode = kSendPortMode;
-			else
-				fi.dataPortMode = kPassiveMode;
+			fi.dataPortMode = kPassiveMode;
 			break;
 		case 'b':
 			batchmode++;
@@ -285,7 +292,6 @@ main(int argc, char **argv)
 		Usage();
 
 	InitUserInfo();
-	LoadFirewallPrefs(0);
 
 	if (progmeters != 0)
 		fi.progress = PrStatBar;
@@ -302,6 +308,8 @@ main(int argc, char **argv)
 				Usage();
 			(void) STRNCPY(fi.host, argv[optind]);
 			dstdir = argv[optind + 1];
+			dstdir = STRNCPY(dstdir2, dstdir);
+			StrRemoveTrailingLocalPathDelim(dstdir);
 			flist = (const char ** volatile) argv + optind + 2;
 		} else {
 			/* URL okay */
@@ -318,6 +326,8 @@ main(int argc, char **argv)
 		if (optind > argc - 2)
 			Usage();
 		dstdir = argv[optind + 0];
+		dstdir = STRNCPY(dstdir2, dstdir);
+		StrRemoveTrailingLocalPathDelim(dstdir);
 		flist = (const char ** volatile) argv + optind + 1;
 	}
 
@@ -428,14 +438,15 @@ main(int argc, char **argv)
 		DisposeWinsock(0);
 		exit((int) es);
 	}
-	(void) FTPCmd(&fi, "CLNT NcFTPGet %.5s %s", gVersion + 11, gOS);
+	if (fi.hasCLNT != kCommandNotAvailable)
+		(void) FTPCmd(&fi, "CLNT NcFTPGet %.5s %s", gVersion + 11, gOS);
 	if (flist == NULL) {
 		/* URL mode */
 		errstr = "could not change directory on remote host";
 		es = kExitChdirTimedOut;
 		for (lp = cdlist.first; lp != NULL; lp = lp->next) {
-			if (FTPChdir(&fi, lp->line) != 0) {
-				(void) fprintf(stderr, "ncftpget: cannot chdir to %s: %s.\n", lp->line, FTPStrError(fi.errNo));
+			if ((rc = FTPChdir(&fi, lp->line)) != 0) {
+				FTPPerror(&fi, rc, kErrCWDFailed, "Could not chdir to", lp->line);
 				es = kExitChdirFailed;
 				DisposeWinsock(0);
 				exit((int) es);
@@ -445,8 +456,8 @@ main(int argc, char **argv)
 		errstr = "could not read file from remote host";
 		es = kExitXferTimedOut;
 		(void) signal(SIGINT, Abort);
-		if (FTPGetFiles3(&fi, urlfile, ".", rflag, kGlobYes, xtype, resumeflag, appendflag, deleteflag, tarflag, NoConfirmResumeDownloadProc, 0) < 0) {
-			(void) fprintf(stderr, "ncftpget: file retrieval error: %s.\n", FTPStrError(fi.errNo));
+		if ((rc = FTPGetFiles3(&fi, urlfile, ".", rflag, kGlobYes, xtype, resumeflag, appendflag, deleteflag, tarflag, NoConfirmResumeDownloadProc, 0)) < 0) {
+			FTPPerror(&fi, rc, kErrCouldNotStartDataTransfer, "ncftpget", NULL);
 			es = kExitXferFailed;
 		} else {
 			es = kExitSuccess;

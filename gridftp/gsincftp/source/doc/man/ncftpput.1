@@ -100,8 +100,13 @@ The default is to
 .I not
 try to resume (\-Z).
 .TP 8
+.B -E
+Use regular (PORT) data connections.
+.TP 8
 .B -F
 Use passive (PASV) data connections.
+The default is to use passive, but to fallback to
+regular if the passive connection fails or times out.
 .TP 8
 .B -DD
 Delete local file after successfully uploading it.
@@ -169,11 +174,11 @@ Nevertheless, if you choose to use the
 option the file should look something like this:
 .RS
 .sp
-host Bozo.probe.net
+host sphygmomanometer.ncftp.com
 .br
 user gleason
 .br
-pass mypasswd
+pass mypassword
 .br
 .sp
 .RE
@@ -208,7 +213,7 @@ flag.
 Example:
 .RS 4
 .sp
-$ ncftpput -R ftp.probe.net /incoming /tmp/stuff
+$ ncftpput -R pikachu.nintendo.co.jp /incoming /tmp/stuff
 .br
 .sp
 .RE
@@ -237,7 +242,7 @@ Here is an example that uploads to the file
 filename:
 .RS 4
 .sp
-$ ncftpput -S \.tmp Bozo\.probe\.net /pub/incoming /a/README
+$ ncftpput -S \.tmp bowser\.nintendo\.co\.jp /pub/incoming /a/README
 .RE
 .PP
 A neat way to pipe the output from any local command into
@@ -250,7 +255,7 @@ The following example shows how to make a backup and store
 it on a remote machine:
 .RS 4
 .sp
-$ tar cf / | ncftpput -c Bozo\.probe\.net /usr/local/backup.tar
+$ tar cf / | ncftpput -c sonic\.sega\.co\.jp /usr/local/backup.tar
 .RE
 .\"-------
 .SH "DIAGNOSTICS"

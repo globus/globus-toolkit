@@ -1,6 +1,6 @@
 /* io.c
  *
- * Copyright (c) 1996 Mike Gleason, NCEMRSoft.
+ * Copyright (c) 1996-2000 Mike Gleason, NCEMRSoft.
  * All rights reserved.
  *
  */
@@ -735,6 +735,13 @@ FTPPutOneF(
 			zaction = (*resumeProc)(file, (longest_int) st.st_size, st.st_mtime, &dstfile, startPoint, mdtm, &startPoint);
 		}
 
+		if (zaction == kConfirmResumeProcSaidCancel) {
+			/* User wants to cancel this file and any
+			 * remaining in batch.
+			 */
+			cip->errNo = kErrUserCanceled;
+			return (cip->errNo);
+		}
 
 		if (zaction == kConfirmResumeProcSaidBestGuess) {
 			if ((mdtm != kModTimeUnknown) && (st.st_mtime > (mdtm + 1))) {
@@ -803,6 +810,16 @@ FTPPutOneF(
 			(void) FTPCmd(cip, "SITE SBUFSIZ %lu", (unsigned long) cip->dataSocketSBufSize);
 		if (cip->hasSBUFSZ == kCommandAvailable)
 			(void) FTPCmd(cip, "SITE SBUFSZ %lu", (unsigned long) cip->dataSocketSBufSize);
+		if (cip->hasBUFSIZE == kCommandAvailable)
+			(void) FTPCmd(cip, "SITE BUFSIZE %lu", (unsigned long) cip->dataSocketSBufSize);
+#if HAVE_GSSAPI
+		/* The gsiftp server has the RBUFSZ command but not the
+		** SBUFSZ one. It uses RBUFSZ for both send and receive buffer
+		** sizes
+		*/
+		if (cip->hasSBUFSZ != kCommandAvailable && cip->hasRBUFSZ == kCommandAvailable)
+			(void) FTPCmd(cip, "SITE RBUFSZ %lu", (unsigned long) cip->dataSocketSBufSize);
+#endif
 	}
 
 #ifdef NO_SIGNALS
@@ -1227,7 +1244,7 @@ int
 FTPPutFiles3(
 	const FTPCIPtr cip,
 	const char *const pattern,
-	const char *const dstdir,
+	const char *const dstdir1,
 	const int recurse,
 	const int doGlob,
 	const int xtype,
@@ -1244,12 +1261,21 @@ FTPPutFiles3(
 	FileInfoPtr filePtr;
 	int batchResult;
 	int result;
+	const char *dstdir;
+	char dstdir2[512];
 
 	gUnused = reserved;
 	if (cip == NULL)
 		return (kErrBadParameter);
 	if (strcmp(cip->magic, kLibraryMagic))
 		return (kErrBadMagic);
+
+	if (dstdir1 == NULL) {
+		dstdir = NULL;
+	} else {
+		dstdir = STRNCPY(dstdir2, dstdir1);
+		StrRemoveTrailingLocalPathDelim(dstdir2);
+	}
 
 	(void) FTPLocalGlob(cip, &globList, pattern, doGlob);
 	if (recurse == kRecursiveYes) {
@@ -1289,6 +1315,7 @@ FTPPutFiles3(
 		}
 		if (filePtr->type == 'd') {
 			/* mkdir */
+			StrRemoveTrailingLocalPathDelim(filePtr->rname);
 			result = FTPMkdir(cip, filePtr->rname, kRecursiveNo);
 			if (result != kNoErr)
 				batchResult = result;
@@ -1308,6 +1335,8 @@ FTPPutFiles3(
 				if ((result != kNoErr) && (result != kErrLocalFileNewer) && (result != kErrRemoteFileNewer) && (result != kErrLocalSameAsRemote))
 					batchResult = result;
 			}
+			if (result == kErrUserCanceled)
+				cip->cancelXfer = 1;
 			if (cip->cancelXfer > 0)
 				break;
 		} else {
@@ -1319,6 +1348,8 @@ FTPPutFiles3(
 				if ((result != kNoErr) && (result != kErrLocalFileNewer) && (result != kErrRemoteFileNewer) && (result != kErrLocalSameAsRemote))
 					batchResult = result;
 			}
+			if (result == kErrUserCanceled)
+				cip->cancelXfer = 1;
 			if (cip->cancelXfer > 0)
 				break;
 		}
@@ -1908,7 +1939,13 @@ FTPGetOneF(
 			zaction = kConfirmResumeProcSaidOverwrite;
 		}
 
-		if (zaction == kConfirmResumeProcSaidSkip) {
+		if (zaction == kConfirmResumeProcSaidCancel) {
+			/* User wants to cancel this file and any
+			 * remaining in batch.
+			 */
+			cip->errNo = kErrUserCanceled;
+			return (cip->errNo);
+		} else if (zaction == kConfirmResumeProcSaidSkip) {
 			/* Nothing done, but not an error. */
 			if (deleteflag == kDeleteYes)
 				(void) FTPDelete(cip, file, kRecursiveNo, kGlobNo);
@@ -1972,6 +2009,8 @@ FTPGetOneF(
 			(void) FTPCmd(cip, "SITE RBUFSIZ %lu", (unsigned long) cip->dataSocketRBufSize);
 		if (cip->hasRBUFSZ == kCommandAvailable)
 			(void) FTPCmd(cip, "SITE RBUFSZ %lu", (unsigned long) cip->dataSocketRBufSize);
+		if (cip->hasBUFSIZE == kCommandAvailable)
+			(void) FTPCmd(cip, "SITE BUFSIZE %lu", (unsigned long) cip->dataSocketSBufSize);
 	}
 
 #ifdef NO_SIGNALS
@@ -2349,8 +2388,8 @@ FTPGetOneFile3(
 int
 FTPGetFiles3(
 	const FTPCIPtr cip,
-	const char *pattern,
-	const char *const dstdir,
+	const char *pattern1,
+	const char *const dstdir1,
 	const int recurse,
 	int doGlob,
 	const int xtype,
@@ -2369,6 +2408,10 @@ FTPGetFiles3(
 	int result;
 	char *ldir;
 	char *cp;
+	const char *dstdir;
+	char dstdir2[512];
+	const char *pattern;
+	char pattern2[256];
 	char c;
 	int recurse1;
 
@@ -2377,8 +2420,17 @@ FTPGetFiles3(
 		return (kErrBadParameter);
 	if (strcmp(cip->magic, kLibraryMagic))
 		return (kErrBadMagic);
-	if (pattern == NULL)
+	if (pattern1 == NULL)
 		return (kErrBadParameter);
+
+	if (dstdir1 == NULL) {
+		dstdir = NULL;
+	} else {
+		dstdir = STRNCPY(dstdir2, dstdir1);
+		StrRemoveTrailingLocalPathDelim(dstdir2);
+	}
+	pattern = STRNCPY(pattern2, pattern1);
+	StrRemoveTrailingSlashes(pattern2);
 
 	if (pattern[0] == '\0') {
 		if (recurse == kRecursiveNo)
@@ -2458,23 +2510,32 @@ FTPGetFiles3(
 					if ((result != kNoErr) && (result != kErrLocalFileNewer) && (result != kErrRemoteFileNewer) && (result != kErrLocalSameAsRemote))
 						batchResult = result;
 				}
+				if (result == kErrUserCanceled)
+					cip->cancelXfer = 1;
 				if (cip->cancelXfer > 0)
 					break;
 			} else {
 				ldir = filePtr->lname;
-				cp = strrchr(ldir, '/');
-				if (cp == NULL)
-					cp = strrchr(ldir, '\\');
+				cp = StrRFindLocalPathDelim(ldir);
 				if (cp != NULL) {
-					c = *cp;
-					*cp = '\0';
-					if (MkDirs(ldir, 00777) < 0) {
-						Error(cip, kDoPerror, "Could not create local directory %s\n", ldir);
-						batchResult = kErrGeneric;
-						*cp = c;
-						continue;
+					while (cp > ldir) {
+						if (! IsLocalPathDelim(*cp)) {
+							++cp;
+							break;
+						}
+						--cp;
 					}
-					*cp = c;
+					if (cp > ldir) {
+						c = *cp;
+						*cp = '\0';
+						if (MkDirs(ldir, 00777) < 0) {
+							Error(cip, kDoPerror, "Could not create local directory \"%s\"\n", ldir);
+							batchResult = kErrGeneric;
+							*cp = c;
+							continue;
+						}
+						*cp = c;
+					}
 				}
 				result = FTPGetOneF(cip, filePtr->rname, filePtr->lname, xtype, -1, filePtr->size, filePtr->mdtm, resumeflag, appendflag, deleteflag, resumeProc);
 
@@ -2485,6 +2546,8 @@ FTPGetFiles3(
 					if ((result != kNoErr) && (result != kErrLocalFileNewer) && (result != kErrRemoteFileNewer) && (result != kErrLocalSameAsRemote))
 						batchResult = result;
 				}
+				if (result == kErrUserCanceled)
+					cip->cancelXfer = 1;
 				if (cip->cancelXfer > 0)
 					break;
 			}

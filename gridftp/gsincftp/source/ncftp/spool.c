@@ -1,6 +1,6 @@
 /* spool.c
  *
- * Copyright (c) 1992-1999 by Mike Gleason.
+ * Copyright (c) 1992-2000 by Mike Gleason.
  * All rights reserved.
  * 
  */
@@ -20,6 +20,7 @@ int gUnprocessedJobs = 0;
 int gJobs = 0;
 int gHaveSpool = -1;
 
+extern FTPLibraryInfo gLib;
 extern char gOurDirectoryPath[], gOurInstallationPath[];
 extern void CloseControlConnection(const FTPCIPtr);
 
@@ -217,6 +218,9 @@ SpoolX(
 		(void) memcpy(pass, kPasswordMagic, kPasswordMagicLen);
 		ToBase64(pass + kPasswordMagicLen, passclear, strlen(passclear), 1);
 		if (fprintf(fp, "pass=%s\n", pass) < 0)
+			goto err;
+	} else if ((strcmp(user, "anonymous") == 0) && (gLib.defaultAnonPassword[0] != '\0')) {
+		if (fprintf(fp, "anon-pass=%s\n", gLib.defaultAnonPassword) < 0)
 			goto err;
 	}
 	if (fprintf(fp, "xtype=%c\n", xtype) < 0)

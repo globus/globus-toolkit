@@ -1279,6 +1279,22 @@ main(int argc, const char **argv)
 		exit(7);
 	}
 	if (argc > 1) {
+		/* The following hack is used by NcFTP
+		 * to get the number of columns without
+		 * having to link with curses/termcap.
+		 * This simplifies things since the
+		 * system may or may not have a good
+		 * curses implementation, and we don't
+		 * want to complicate NcFTP itself with
+		 * that.
+		 */
+		if (strcmp(argv[1], "--dimensions") == 0) {
+			result = PrintDimensions(0);
+			exit((result == 0) ? 0 : 1);
+		} else if (strcmp(argv[1], "--dimensions-terse") == 0) {
+			result = PrintDimensions(1);
+			exit((result == 0) ? 0 : 1);
+		}
 		/* Requested that we were run from ncftp. */
 		gStandAlone = 0;
 		if (argv[1][0] == '/')

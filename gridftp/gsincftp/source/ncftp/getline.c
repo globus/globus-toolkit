@@ -319,11 +319,13 @@ gl_getc(void)
 #endif
 
 #ifdef __unix__
+    ch = '\0';
     while ((c = read(0, &ch, 1)) == -1) {
 	if (errno != EINTR)
 	    break;
     }
-    c = (ch <= 0)? -1 : ch;
+    if (c != (-1))
+	    c = (int) ch;
 #endif	/* __unix__ */
 #ifdef MSDOS
     c = _bios_keybrd(_NKEYBRD_READ);
@@ -415,6 +417,7 @@ gl_getcx(int tlen)
 				/* Read key code */
 				c = (int) _getch();
 				c = pc_keymap(c);
+				break;
 			}
 		}
 		(void) SleepEx((DWORD) (tlen * 100), FALSE);
@@ -497,6 +500,59 @@ gl_cleanup(void)
 #endif
 }
 
+
+static void
+gl_check_inputrc_for_vi(void)
+{
+	FILE *fp;
+	char path[256];
+
+	/* If the user has a ~/.inputrc file,
+	 * check it to see if it has a line like
+	 * "set editing-mode vi".  If it does,
+	 * we know that the user wants vi
+	 * emulation rather than emacs.  If the
+	 * file doesn't exist, it's no big
+	 * deal since we can also check the
+	 * $EDITOR environment variable.
+	 */
+	gl_set_home_dir(NULL);
+	if (gl_home_dir == NULL)
+		return;
+
+#ifdef HAVE_SNPRINTF
+	snprintf(path, sizeof(path), "%s/%s", gl_home_dir, ".inputrc");
+#else
+	if (sizeof(path) >= (strlen(gl_home_dir) + strlen("/.inputrc")))
+		return;
+
+	sprintf(path, "%s%s", gl_home_dir, "/.inputrc");
+#endif
+
+	fp = fopen(
+		path,
+#if defined(__windows__) || defined(MSDOS)
+		"rt"
+#else
+		"r"
+#endif
+	);
+
+	if (fp == NULL)
+		return;
+
+	while (fgets(path, sizeof(path) - 1, fp) != NULL) {
+		if ((strstr(path, "editing-mode") != NULL) && (strstr(path, "vi") != NULL)) {
+			gl_vi_preferred = 1;
+			break;
+		}
+	}
+
+	(void) fclose(fp);
+}	/* gl_check_inputrc_for_vi */
+
+
+
 void
 gl_setwidth(int w)
 {
@@ -508,7 +564,10 @@ gl_setwidth(int w)
     } else {
 	gl_error("\n*** Error: minimum screen width is 21\n");
     }
-}
+}	/* gl_setwidth */
+
+
+
 
 char *
 getline(char *prompt)
@@ -535,6 +594,8 @@ getline(char *prompt)
 		cp = (char *) getenv("EDITOR");
 		if (cp != NULL)
 			gl_vi_preferred = (strstr(cp, "vi") != NULL);
+		if (gl_vi_preferred == 0)
+			gl_check_inputrc_for_vi();
 	}
 
     gl_init();	
@@ -549,9 +610,9 @@ getline(char *prompt)
 	FlushConsoleInputBuffer(GetStdHandle(STD_INPUT_HANDLE));
 #endif
 
-    while ((c = gl_getc()) >= 0) {
+    while ((c = gl_getc()) != (-1)) {
 	gl_extent = 0;  	/* reset to full extent */
-	if (isprint(c)) {
+	if ((isprint(c) != 0) || ((c & 0x80) != 0)) {
 	    if (gl_vi_mode > 0) {
 	    	/* "vi" emulation -- far from perfect,
 		 * but reasonably functional.
@@ -771,11 +832,14 @@ vi_break:
 		break;
               case '\025': gl_kill(0);				/* ^U */
 		break;
+              case '\027': gl_killword(-1);			/* ^W */
+		break;
 	      case '\031': gl_yank();				/* ^Y */
 		break;
 	      case '\033':				/* ansi arrow keys */
 		c = gl_getcx(3);
-		if (c == '[') {
+		if ((c == '[') || (c == 'O')) {
+ansi:
 		    switch(c = gl_getc()) {
 		      case 'A':             			/* up */
 		        strcpy(gl_buf, hist_prev());
@@ -789,10 +853,15 @@ vi_break:
 	                    gl_in_hook(gl_buf);
 		        gl_fixup(gl_prompt, 0, GL_BUF_SIZE);
 		        break;
-		      case 'C': gl_fixup(gl_prompt, -1, gl_pos+1); /* right */
+		      case 'C':
+		        gl_fixup(gl_prompt, -1, gl_pos+1); /* right */
 		        break;
-		      case 'D': gl_fixup(gl_prompt, -1, gl_pos-1); /* left */
+		      case 'D':
+		        gl_fixup(gl_prompt, -1, gl_pos-1); /* left */
 		        break;
+		      case '0':
+		      case '1':
+		        goto ansi;
 		      default: gl_beep();         /* who knows */
 		        break;
 		    }
@@ -800,7 +869,7 @@ vi_break:
 		    gl_word(1);
 		} else if ((gl_vi_preferred == 0) && ((c == 'b') || (c == 'B'))) {
 		    gl_word(-1);
-		} else {
+		} else if (c != (-1)) {
 			/* enter vi command mode */
 			if (gl_vi_mode == 0) {
 				gl_vi_mode = 1;
@@ -809,8 +878,10 @@ vi_break:
 				memset(vi_countbuf, 0, sizeof(vi_countbuf));
 				if (gl_pos > 0)
 					gl_fixup(gl_prompt, -2, gl_pos-1);	/* left 1 char */
-				/* Don't bother if the line is empty. */
-				if (gl_cnt > 0) {
+				/* Don't bother if the line is empty and we don't
+				 * know for sure if the user wants vi mode.
+				 */
+				if ((gl_cnt > 0) || (gl_vi_preferred == 1)) {
 					/* We still have to use the char read! */
 					goto vi;
 				}
@@ -1001,7 +1072,7 @@ gl_killword(int direction)
 	    pos++;
 	while (isspace(gl_buf[pos]) && pos < gl_cnt)
 	    pos++;
-    } else {				/* backword */
+    } else {				/* backward */
 	if (pos > 0)
 	    pos--;
 	while (isspace(gl_buf[pos]) && pos > 0)

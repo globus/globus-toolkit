@@ -1,6 +1,6 @@
 /* ls.c
  *
- * Copyright (c) 1992-1999 by Mike Gleason.
+ * Copyright (c) 1992-2000 by Mike Gleason.
  * All rights reserved.
  * 
  */
@@ -140,6 +140,10 @@ LsCacheAdd(const char *const itempath, FileInfoListPtr files)
 {
 	char *cp;
 	int j;
+
+	/* Never cache empty listings in case of errors */
+	if (files->nFileInfos == 0)
+		return;
 
 	j = LsCacheLookup(itempath);
 	if (j >= 0) {

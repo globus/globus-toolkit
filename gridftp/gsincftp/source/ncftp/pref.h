@@ -1,6 +1,6 @@
 /* pref.h
  *
- * Copyright (c) 1992-1999 by Mike Gleason.
+ * Copyright (c) 1992-2000 by Mike Gleason.
  * All rights reserved.
  * 
  */
@@ -48,10 +48,14 @@ void SetOneTimeMessages(int t, const char *const val, FILE *const);
 void SetPager(int, const char *const, FILE *const);
 void SetPassive(int, const char *const, FILE *const);
 void SetProgressMeter(int, const char *const, FILE *const);
+void SetRedialDelay(int t, const char *const val, FILE *const fp);
 void SetSavePasswords(int, const char *const, FILE *const);
 void SetSOBufsize(int t, const char *const val, FILE *const fp);
 void SetXferTimeout(int, const char *const, FILE *const);
 void SetXtTitle(int, const char *const, FILE *const);
+#if HAVE_GSSAPI
+void SetProtectionLevel(int, const char *const, FILE *const);
+#endif
 void Set(const char *const, const char *const);
 void LoadPrefs(void);
 void InitPrefs(void);

@@ -1,8 +1,10 @@
 /* cmds.c
  *
- * Copyright (c) 1992-1999 by Mike Gleason.
+ * Copyright (c) 1992-2000 by Mike Gleason.
  * All rights reserved.
  * 
+ * Modified Feb 22, 2000 by JWB
+ * Fixed potential coredump by initializing linelist in RmtHelpCmd
  */
 
 #include "syshdrs.h"
@@ -45,6 +47,11 @@ int gUnusedArg;
 /* Used temporarily, but put it here because it's big. */
 FTPConnectionInfo gTmpURLConn;
 
+/* If the user doesn't want to be prompted for a batch of files,
+ * they can tell us to answer this answer for each item in the batch.
+ */
+int gResumeAnswerAll;
+
 extern FTPLibraryInfo gLib;
 extern FTPConnectionInfo gConn;
 extern char gOurDirectoryPath[];
@@ -63,7 +70,7 @@ extern char gFirewallPass[32];
 extern char gFirewallExceptionList[];
 extern char gPager[], gHome[], gShell[];
 extern char gOS[];
-extern int gAutoResume;
+extern int gAutoResume, gRedialDelay;
 extern int gAutoSaveChangesToExistingBookmarks;
 extern Bookmark gBm;
 extern int gLoadedBm, gConfirmClose, gSavePasswords, gScreenColumns;
@@ -656,6 +663,9 @@ NcFTPConfirmResumeDownloadProc(
 	char tstr[80], ans[32];
 	static char newname[128];	/* arrggh... static. */
 
+	if (gResumeAnswerAll != kConfirmResumeProcNotUsed)
+		return (gResumeAnswerAll);
+
 	if (gAutoResume != 0)
 		return (kConfirmResumeProcSaidBestGuess);
 
@@ -722,10 +732,20 @@ NcFTPConfirmResumeDownloadProc(
 		(void) printf("\t[O]verwrite?");
 		if ((gConn.hasREST == kCommandAvailable) && (remotesize != kSizeUnknown) && (remotesize > localsize))
 			printf("  [R]esume?");
-		printf("  [A]ppend to?  [S]kip?  [N]ew Name?  > ");
+		printf("  [A]ppend to?  [S]kip?  [N]ew Name?\n");
+		(void) printf("\t[O!]verwrite all?");
+		if ((gConn.hasREST == kCommandAvailable) && (remotesize != kSizeUnknown) && (remotesize > localsize))
+			printf("  [R!]esume all?");
+		printf("  [S!]kip all?  [C]ancel  > ");
 		fflush(stdin);
 		(void) fgets(ans, sizeof(ans) - 1, stdin);
 		switch ((int) ans[0]) {
+			case 'c':
+			case 'C':
+				ans[0] = 'C';
+				ans[1] = '\0';
+				zaction = kConfirmResumeProcSaidCancel;
+				break;
 			case 'o':
 			case 'O':
 				ans[0] = 'O';
@@ -761,11 +781,13 @@ NcFTPConfirmResumeDownloadProc(
 			case 'n':
 			case 'N':
 				ans[0] = 'N';
+				ans[1] = '\0';
 				zaction = kConfirmResumeProcSaidOverwrite;
 				break;
 			case 'a':
 			case 'A':
 				ans[0] = 'A';
+				ans[1] = '\0';
 				zaction = kConfirmResumeProcSaidAppend;
 				break;
 			case 'g':
@@ -795,6 +817,8 @@ NcFTPConfirmResumeDownloadProc(
 		}
 	}
 
+	if (ans[1] == '!')
+		gResumeAnswerAll = zaction;
 	return (zaction);
 }	/* NcFTPConfirmResumeDownloadProc */
 
@@ -823,6 +847,7 @@ GetCmd(const int argc, const char **const argv, const CommandPtr cmdp, const Arg
 	ConfirmResumeDownloadProc confirmProc;
 
 	confirmProc = NcFTPConfirmResumeDownloadProc;
+	gResumeAnswerAll = kConfirmResumeProcNotUsed;	/* Ask at least once each time */
 	ARGSUSED(gUnusedArg);
 	GetoptReset();
 	while ((opt = Getopt(argc, argv, "aAzfrRTD")) >= 0) switch (opt) {
@@ -2133,16 +2158,23 @@ Open(void)
 				(void) STRNCAT(prompt, gConn.firewallHost);
 				(void) STRNCAT(prompt, ": ");
 
-#ifdef HAVE_GETPASSPHRASE
+#if defined(WIN32) || defined(_WINDOWS)
+				(void) gl_win_getpass(prompt, gConn.firewallPass, sizeof(gConn.firewallPass));
+#elif defined(HAVE_GETPASSPHRASE)
 				password = getpassphrase(prompt);
-#else	/* HAVE_GETPASSPHRASE */
-				password = GetPass(prompt);
-#endif	/* HAVE_GETPASSPHRASE */
 				if (password != NULL) {
 					(void) STRNCPY(gConn.firewallPass, password);
 					/* Avoid cleartext password in memory. */
 					(void) memset(password, 0, strlen(gConn.firewallPass));
 				}
+#else	/* HAVE_GETPASSPHRASE */
+				password = GetPass(prompt);
+				if (password != NULL) {
+					(void) STRNCPY(gConn.firewallPass, password);
+					/* Avoid cleartext password in memory. */
+					(void) memset(password, 0, strlen(gConn.firewallPass));
+				}
+#endif	/* HAVE_GETPASSPHRASE */
 				break;
 		}
 	}
@@ -2203,7 +2235,8 @@ Open(void)
 		}
 
 		/* Identify the FTP client type to the server.  Most don't understand this yet. */
-		(void) FTPCmd(&gConn, "CLNT NcFTP %.5s %s", gVersion + 11, gOS);
+		if (gConn.hasCLNT != kCommandNotAvailable)
+			(void) FTPCmd(&gConn, "CLNT NcFTP %.5s %s", gVersion + 11, gOS);
 		return (0);
 	} else {
 		FTPPerror(&gConn, result, 0, "Could not open host", gConn.host);
@@ -2376,16 +2409,23 @@ OpenCmd(const int argc, const char **const argv, const CommandPtr cmdp, const Ar
 		(void) STRNCAT(prompt, gConn.host);
 		(void) STRNCAT(prompt, ": ");
 
-#ifdef HAVE_GETPASSPHRASE
+#if defined(WIN32) || defined(_WINDOWS)
+		(void) gl_win_getpass(prompt, gConn.user, sizeof(gConn.user));
+#elif defined(HAVE_GETPASSPHRASE)
 		password = getpassphrase(prompt);
-#else	/* HAVE_GETPASSPHRASE */
-		password = GetPass(prompt);
-#endif	/* HAVE_GETPASSPHRASE */
 		if (password != NULL) {
 			(void) STRNCPY(gConn.user, password);
 			/* Avoid cleartext password in memory. */
 			(void) memset(password, 0, strlen(gConn.user));
 		}
+#else	/* HAVE_GETPASSPHRASE */
+		password = GetPass(prompt);
+		if (password != NULL) {
+			(void) STRNCPY(gConn.user, password);
+			/* Avoid cleartext password in memory. */
+			(void) memset(password, 0, strlen(gConn.user));
+		}
+#endif	/* HAVE_GETPASSPHRASE */
 	}
 
 	rc = Open();
@@ -2496,6 +2536,9 @@ NcFTPConfirmResumeUploadProc(
 	char tstr[80], ans[32];
 	static char newname[128];	/* arrggh... static. */
 
+	if (gResumeAnswerAll != kConfirmResumeProcNotUsed)
+		return (gResumeAnswerAll);
+
 	if (gAutoResume != 0)
 		return (kConfirmResumeProcSaidBestGuess);
 
@@ -2585,9 +2628,19 @@ NcFTPConfirmResumeUploadProc(
 		(void) printf("\t[O]verwrite?");
 		if ((gConn.hasREST == kCommandAvailable) && (remotesize < localsize))
 			printf("  [R]esume?");
-		printf("  [A]ppend to?  [S]kip?  [N]ew Name?  > ");
+		printf("  [A]ppend to?  [S]kip?  [N]ew Name?\n");
+		(void) printf("\t[O!]verwrite all?");
+		if ((gConn.hasREST == kCommandAvailable) && (remotesize < localsize))
+			printf("  [R!]esume all?");
+		printf("  [S!]kip all?  [C]ancel  > ");
 		(void) fgets(ans, sizeof(ans) - 1, stdin);
 		switch ((int) ans[0]) {
+			case 'c':
+			case 'C':
+				ans[0] = 'C';
+				ans[1] = '\0';
+				zaction = kConfirmResumeProcSaidCancel;
+				break;
 			case 'o':
 			case 'O':
 				ans[0] = 'O';
@@ -2623,11 +2676,13 @@ NcFTPConfirmResumeUploadProc(
 			case 'n':
 			case 'N':
 				ans[0] = 'N';
+				ans[1] = '\0';
 				zaction = kConfirmResumeProcSaidOverwrite;
 				break;
 			case 'a':
 			case 'A':
 				ans[0] = 'A';
+				ans[1] = '\0';
 				zaction = kConfirmResumeProcSaidAppend;
 				break;
 			case 'g':
@@ -2657,6 +2712,8 @@ NcFTPConfirmResumeUploadProc(
 		}
 	}
 
+	if (ans[1] == '!')
+		gResumeAnswerAll = zaction;
 	return (zaction);
 }	/* NcFTPConfirmResumeUploadProc */
 
@@ -2684,6 +2741,7 @@ PutCmd(const int argc, const char **const argv, const CommandPtr cmdp, const Arg
 	ConfirmResumeUploadProc confirmProc;
 
 	confirmProc = NcFTPConfirmResumeUploadProc;
+	gResumeAnswerAll = kConfirmResumeProcNotUsed;	/* Ask at least once each time */
 	ARGSUSED(gUnusedArg);
 	GetoptReset();
 	while ((opt = Getopt(argc, argv, "AafZzrRD")) >= 0) switch (opt) {
@@ -2910,6 +2968,8 @@ RmtHelpCmd(const int argc, const char **const argv, const CommandPtr cmdp, const
 	int i, result;
 	LineList ll;
 	LinePtr lp;
+
+	InitLineList(&ll);
 
 	ARGSUSED(gUnusedArg);
 	if (argc == 1) {

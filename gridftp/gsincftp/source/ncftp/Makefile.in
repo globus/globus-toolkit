@@ -24,14 +24,14 @@ DEFS=-Dncftp $(BETA) -DBINDIR=\"$(BINDIR)\" @DEFS@
 
 OBJS=cmds.@OBJEXT@ cmdlist.@OBJEXT@ getopt.@OBJEXT@ ls.@OBJEXT@ main.@OBJEXT@ version.@OBJEXT@ shell.@OBJEXT@ util.@OBJEXT@ readln.@OBJEXT@ progress.@OBJEXT@ bookmark.@OBJEXT@ pref.@OBJEXT@ preffw.@OBJEXT@ trace.@OBJEXT@ spool.@OBJEXT@ log.@OBJEXT@ getline.@OBJEXT@
 
-DPROGS=../bin/ncftp@EXEEXT@
+DPROGS=../bin/gsincftp@EXEEXT@
 
 all: $(DPROGS)
 	-@echo 'Done making NcFTP.'
 
-../bin/ncftp@EXEEXT@: $(OBJS) ../libncftp/libncftp.a
+../bin/gsincftp@EXEEXT@: $(OBJS) ../libncftp/libncftp.a
 @Z30@
-	$(CC) $(CFLAGS) $(DEFS) $(CPPFLAGS) $(OBJS) -o ../bin/ncftp@EXEEXT@ $(LDFLAGS) -lncftp -lStrn -lsio $(LIBS) $(STRIPFLAG)
+	$(CC) $(CFLAGS) $(DEFS) $(CPPFLAGS) $(OBJS) -o ../bin/gsincftp@EXEEXT@ $(LDFLAGS) -lncftp -lStrn -lsio $(LIBS) $(STRIPFLAG)
 
 clean:
 	/bin/rm -f $(DPROGS) $(OBJS)
@@ -53,7 +53,7 @@ PACKAGE=Makefile.in  bookmark.c   bookmark.h   cmdlist.c \
 	getline.h
 
 TMPDIR=/tmp
-TARDIR=ncftp
+TARDIR=gsincftp
 
 tarcp:
 	-@mkdir -p $(TMPDIR)/TAR/$(TARDIR)

@@ -1,11 +1,36 @@
 /* open.c
  *
- * Copyright (c) 1996 Mike Gleason, NCEMRSoft.
+ * Copyright (c) 1996-2000 Mike Gleason, NCEMRSoft.
  * All rights reserved.
  *
+ * Modified Mar 31, 2000 by JWB
+ * Don't use the doAuth variable when GSSAPI is not defined
+ *
+ * Modified Feb 22, 2000 by JWB
+ * Added GSSAPI calls / states to the authentication state machine
+ * Force FTPQueryFeatures to run HELP SITE even if FEAT fails with an
+ * unknown FTP server type.
+ * Changed default port to be 2811 (gsiftp service)
+ *
+ * Modified June 7, 2000 by JWB
+ * Parse gsiftp:// URLs with a different default port than ftp:// URLs
  */
 
 #include "syshdrs.h"
+
+#ifdef HAVE_GSSAPI
+#ifdef WIN32
+/*
+ * For some reason we get a memory fault trying to read this value 
+ * from the DLL, so include it here for now.
+ */
+static gss_OID_desc oids[] = {
+   {10, "\052\206\110\206\367\022\001\002\001\004"},
+};
+
+gss_OID GSS_C_NT_HOSTBASED_SERVICE = oids+0;
+#endif
+#endif
 
 static void
 FTPDeallocateHost(const FTPCIPtr cip)
@@ -109,6 +134,23 @@ FTPLoginHost(const FTPCIPtr cip)
 	int fwloggedin;
 	int firstTime;
 	char cwd[512];
+#if HAVE_GSSAPI
+	int i;
+	char realhostname[128];
+	struct hostent *hp;
+	OM_uint32 maj_stat, min_stat;
+	gss_name_t target_name = GSS_C_NO_NAME;
+	gss_buffer_desc send_tok, recv_tok, *token_ptr;
+	char stbuf[128+5];
+	struct gss_channel_bindings_struct chan;
+	gss_OID name_type;
+	OM_uint32 req_flags = 0;
+	char *gssapi_mech = NULL;
+	gss_qop_t qop_state;
+	int conf_state;
+	char * service_name[] = {"ftp", "host", NULL};
+	char **service_ptr = service_name+1; /* ftp@hostname doesn't seem to work */
+#endif
 
 	if (cip == NULL)
 		return (kErrBadParameter);
@@ -150,6 +192,11 @@ FTPLoginHost(const FTPCIPtr cip)
 
 		if (firstTime != 0) {
 			rp->code = 220;
+#if HAVE_GSSAPI
+			if (cip->port != 21) {
+				cip->doAuth = 1;
+			}
+#endif
 			firstTime = 0;
 		} else if (result < 0) {
 			goto done;
@@ -157,8 +204,20 @@ FTPLoginHost(const FTPCIPtr cip)
 
 		switch (rp->code) {
 			case 220:	/* Welcome, ready for new user. */
+#if HAVE_GSSAPI
+				if ((cip->doAuth) && !cip->authenticated) {
+					ReInitResponse(cip, rp),
+					result = RCmd(cip, rp, "AUTH GSSAPI");
+				} else
+#endif
 				if ((cip->firewallType == kFirewallNotInUse) || (fwloggedin != 0)) {
 					ReInitResponse(cip, rp);
+#if HAVE_GSSAPI
+					if ((cip->doAuth) && cip->authenticated && strcmp(cip->user, "anonymous") == 0)
+						result = RCmd(cip, rp, "USER :globus-mapping:");
+					else
+
+#endif
 					result = RCmd(cip, rp, "USER %s", cip->user);
 				} else if (cip->firewallType == kFirewallUserAtSite) {
 					ReInitResponse(cip, rp);
@@ -215,6 +274,13 @@ FTPLoginHost(const FTPCIPtr cip)
 				goto done;
 				
 			case 331:	/* 331 User name okay, need password. */
+#if HAVE_GSSAPI
+				if(cip->doAuth && cip->authenticated && cip->pass[0] == '\0' &&
+					(strcmp(cip->user, ":globus-mapping:") == 0 || strcmp(cip->user, "anonymous") == 0)) {
+					strcpy(cip->pass, "dummy");
+				}
+
+#endif
 				if ((cip->firewallType == kFirewallNotInUse) || (fwloggedin != 0)) {
 					if ((cip->pass[0] == '\0') && (cip->passphraseProc != NoGetPassphraseProc))
 						(*cip->passphraseProc)(cip, &rp->msg, cip->pass, sizeof(cip->pass));
@@ -241,7 +307,162 @@ FTPLoginHost(const FTPCIPtr cip)
 				}
 				sentpass++;
 				break;
+#if HAVE_GSSAPI
+			case 334:	/* Using authentication type GSSAPI; ADAT must follow */
+          				chan.initiator_addrtype = GSS_C_AF_INET; /* OM_uint32  */
+          				chan.initiator_address.length = 4;
+          				chan.initiator_address.value = &cip->ourCtlAddr.sin_addr.s_addr;
+          				chan.acceptor_addrtype = GSS_C_AF_INET; /* OM_uint32 */
+          				chan.acceptor_address.length = 4;
+          				chan.acceptor_address.value = &cip->servCtlAddr.sin_addr.s_addr;
+          				chan.application_data.length = 0;
+          				chan.application_data.value = 0;
 
+					/*
+					 *  Look up actual host name, from connection IP.
+					 */
+#					if defined(INADDR_LOOPBACK)
+					if (ntohl(cip->servCtlAddr.sin_addr.s_addr) == INADDR_LOOPBACK) {
+					    gethostname(realhostname, sizeof(realhostname));
+					    hp = gethostbyname(realhostname);
+
+					    if (hp)
+							strncpy(realhostname, hp->h_name, sizeof(realhostname));
+					} else
+#					endif
+					{
+						hp = gethostbyaddr((char *) &cip->servCtlAddr.sin_addr, 4, AF_INET);
+						if (hp)
+							strncpy(realhostname, hp->h_name, sizeof(realhostname));
+						else
+							strncpy(realhostname, cip->actualHost, sizeof(realhostname));
+					}
+					/*
+					 * To work around the GSI GSSAPI library being case sensitive
+					 * convert the hostname to lower case as noone seems to
+					 * request uppercase name certificates.
+					 */
+					{
+						int i;
+
+						for (i=0; realhostname[i] && (i < sizeof(realhostname)) ; i++) {
+							realhostname[i] = tolower(realhostname[i]);
+						}
+					}
+					/* ftp@hostname first, the host@hostname */
+					/* the V5 GSSAPI binding canonicalizes this for us... */
+					sprintf(stbuf, "%s@%s", *service_ptr, realhostname);
+					service_ptr++;
+
+					name_type = GSS_C_NT_HOSTBASED_SERVICE;
+
+					/* Do mutual authentication */
+					req_flags |= GSS_C_MUTUAL_FLAG;
+
+					/* Do limited delegation */
+					req_flags |= GSS_C_MUTUAL_FLAG;
+					req_flags |= GSS_C_GLOBUS_LIMITED_DELEG_PROXY_FLAG;
+
+					send_tok.value = stbuf;
+					send_tok.length = strlen(stbuf) + 1;
+					maj_stat = gss_import_name(&min_stat, &send_tok, name_type, &target_name);
+					if(maj_stat != GSS_S_COMPLETE) {
+						goto unknown;
+					}
+					token_ptr = GSS_C_NO_BUFFER;
+					cip->connectionContext = GSS_C_NO_CONTEXT;
+
+			case 235:	/* authentication completed */
+			case 335:	/* ADAT continue */
+
+					/* Decode response LineList into gss buffer */
+					if(rp->code == 235 || rp->code == 335) {
+						char * in_buf;
+						char * out_buf;
+						int len = 0;
+						char * p;
+
+						in_buf = rp->msg.first->line;
+						len = strlen(in_buf);
+
+						out_buf = malloc((len + 1) * 6 / 8 + 1);
+						radix_encode(in_buf + strlen("ADAT="), out_buf, &len, 1);
+
+						recv_tok.value = out_buf;
+						recv_tok.length = len;
+						token_ptr = &recv_tok;
+					}
+					maj_stat = gss_init_sec_context(&min_stat, GSS_C_NO_CREDENTIAL,
+									&cip->connectionContext,
+									target_name,
+									GSS_C_NULL_OID,
+									req_flags,
+									0,
+									&chan,
+									token_ptr,
+									NULL,
+									&send_tok,
+									NULL,
+									NULL);
+					if(token_ptr != GSS_C_NO_BUFFER) {
+						gss_release_buffer(&min_stat, token_ptr);
+					}
+
+					if(maj_stat != GSS_S_COMPLETE && maj_stat != GSS_S_CONTINUE_NEEDED) {
+						char * str;
+
+						ReInitResponse(cip,rp);
+						rp->code = 535;
+						rp->codeType = 5;
+						globus_gss_assist_display_status_str(&str, "Authentication Failure: ", maj_stat, min_stat, 0);
+						(void) AddLine(&rp->msg, str);
+						free(str);
+
+						if((*service_ptr) != NULL) {
+							/* Try again with the next service name prefix */
+							DisposeLineListContents(&rp->msg);
+							rp->code = 220;
+							if(target_name != GSS_C_NO_NAME) {
+								gss_release_name(&min_stat, &target_name);
+								target_name = GSS_C_NO_NAME;
+							}
+
+							break;
+						}
+						
+						goto done;
+					}
+					if(send_tok.length != 0) {
+						int len = send_tok.length;
+						int kerror;
+
+						char * out_buf = malloc(send_tok.length * 8 / 6 + 4);
+
+						kerror = radix_encode(send_tok.value, out_buf, &len, 0);
+						if(kerror) {
+							goto unknown;
+						}
+						ReInitResponse(cip, rp);
+						result = RCmd(cip, rp, "ADAT %s", out_buf);
+						free(out_buf);
+						gss_release_buffer(&min_stat, &send_tok);
+					}
+					if(maj_stat == GSS_S_COMPLETE)
+					{
+						cip->authenticated = 1;
+						rp->code = 220;
+					}
+					break;
+			case 232:	/* 232 User logged in, authorized by security data exchange. */
+				if(cip->doAuth && cip->authenticated) {
+					if(cip->serverType == kServerTypeWuFTPd) {
+						rp->code = 230;
+					} else {
+						rp->code = 331;
+					}
+				}
+				break;
+#endif
 			case 332:	/* 332 Need account for login. */
 			case 532: 	/* 532 Need account for storing files. */
 				if ((cip->firewallType == kFirewallNotInUse) || (fwloggedin != 0)) {
@@ -257,14 +478,32 @@ FTPLoginHost(const FTPCIPtr cip)
 				break;
 
 			case 530:	/* Not logged in. */
+#if HAVE_GSSAPI
+				if(cip->doAuth && !cip->authenticated) {
+					if(sentpass == 0) {
+						cip->doAuth = 0;
+						rp->code = 220;
+						break;
+					}
+				} 
+#endif
 				result = (sentpass != 0) ? kErrBadRemoteUserOrPassword : kErrBadRemoteUser;
 				goto done;
+#if HAVE_GSSAPI
+			case 533:	/* Command protection level denied for policy reasons. */
+			case 534: 	/* Request denied for policy reasons. */
+			case 535: 	/* Failed security check (hash, sequence, etc). */
+			case 536: 	/* Requested PROT level not supported by mechanism. */
+			case 537: 	/* Command protection level not supported by security mechanism. */
+#endif
 
 			case 501:	/* Syntax error in parameters or arguments. */
 			case 503:	/* Bad sequence of commands. */
 			case 550:	/* Can't set guest privileges. */
+			case 431: 	/* Need some unavailable resource to process security. */
 				goto done;
 				
+
 			default:
 			unknown:
 				if (rp->msg.first == NULL) {
@@ -294,7 +533,9 @@ okay:
 		free(cip->startingWorkingDirectory);
 		cip->startingWorkingDirectory = NULL;
 	}
-	if (FTPGetCWD(cip, cwd, sizeof(cwd)) == kNoErr) {
+	if ((cip->doNotGetStartingWorkingDirectory == 0) &&
+		(FTPGetCWD(cip, cwd, sizeof(cwd)) == kNoErr))
+	{
 		cip->startingWorkingDirectory = StrDup(cwd);
 	}
 
@@ -308,6 +549,11 @@ okay:
 
 	if (result < 0)
 		cip->errNo = result;
+#if HAVE_GSSAPI
+	if(target_name != GSS_C_NO_NAME) {
+		gss_release_name(&min_stat, &target_name);
+	}
+#endif
 	return result;
 
 done:
@@ -319,6 +565,11 @@ done2:
 		(void) memset(cip->pass, '*', strlen(cip->pass));
 	if (result < 0)
 		cip->errNo = result;
+#if HAVE_GSSAPI
+	if(target_name != GSS_C_NO_NAME) {
+		gss_release_name(&min_stat, &target_name);
+	}
+#endif
 	return result;
 }	/* FTPLoginHost */
 
@@ -380,6 +631,23 @@ FTPQueryFeatures(const FTPCIPtr cip)
 	if (strcmp(cip->magic, kLibraryMagic))
 		return (kErrBadMagic);
 
+	if (cip->serverType == kServerTypeNetWareFTP) {
+		/* NetWare 5.00 server freaks out when
+		 * you give it a command it doesn't
+		 * recognize, so cheat here and return.
+		 */
+		cip->hasPASV = kCommandAvailable;
+		cip->hasSIZE = kCommandNotAvailable;
+		cip->hasMDTM = kCommandNotAvailable;
+		cip->hasREST = kCommandNotAvailable;
+		cip->NLSTfileParamWorks = kCommandAvailable;
+		cip->hasUTIME = kCommandNotAvailable;
+		cip->hasCLNT = kCommandNotAvailable;
+		cip->hasMLST = kCommandNotAvailable;
+		cip->hasMLSD = kCommandNotAvailable;
+		return (kNoErr);
+	}
+
 	rp = InitResponse();
 	if (rp == NULL) {
 		cip->errNo = kErrMallocFailed;
@@ -418,6 +686,7 @@ FTPQueryFeatures(const FTPCIPtr cip)
 			 */
 			cip->hasMLST = kCommandNotAvailable;
 			cip->hasMLSD = kCommandNotAvailable;
+			result = 0;
 		} else {
 			result = kNoErr;
 			cip->hasFEAT = kCommandAvailable;
@@ -478,6 +747,8 @@ FTPQueryFeatures(const FTPCIPtr cip)
 						cip->hasSBUFSIZ = kCommandAvailable;
 					if (strstr(cp, "SBUFSZ") != NULL)
 						cip->hasSBUFSZ = kCommandAvailable;
+					if (strstr(cp, "BUFSIZE") != NULL)
+						cip->hasBUFSIZE = kCommandAvailable;
 				}
 			}
 		}
@@ -628,6 +899,7 @@ FTPDecodeURL(
 	char *tok;
 	char subdir[128];
 	char *semi;
+	int default_port = 0;
 
 	InitLineList(cdlist);
 	*fn = '\0';
@@ -644,8 +916,22 @@ FTPDecodeURL(
 			return (kMalformedURL);	/* missing closing > */
 		*cp = '\0';
 		cp = url + 11;
+		default_port = 21;
 	} else if (strncasecmp(url, "ftp://", 6) == 0) {
 		cp = url + 6;
+		default_port = 21;
+	} else if (strncasecmp(url, "<URL:gsiftp://", 14) == 0) {
+		cp = url + strlen(url) - 1;
+		if(*cp != '>')
+			return (kMalformedURL); /* missing closing > */
+		*cp = '\0';
+		cp = url + 14;
+		default_port = 2811;
+		cip->doAuth = 1;
+	} else if (strncasecmp(url, "gsiftp://", 9) == 0) {
+		cp = url + 9;
+		default_port = 2811;
+		cip->doAuth = 1;
 	} else {
 		return (-1);		/* not a RFC 1738 URL */
 	}
@@ -656,8 +942,26 @@ FTPDecodeURL(
 			return (kMalformedURL);	/* missing closing > */
 		*cp = '\0';
 		cp = url + 11;
+		default_port = 21;
 	} else if (strncmp(url, "ftp://", 6) == 0) {
 		cp = url + 6;
+		default_port = 21;
+	} else if (strncmp(url, "<URL:gsiftp://", 14) == 0) {
+		cp = url + strlen(url) - 1;
+		if(*cp != '>')
+			return (kMalformedURL); /* missing closing > */
+		*cp = '\0';
+		cp = url + 14;
+		default_port = 2811;
+#if HAVE_GSSAPI
+		cip->doAuth = 1;
+#endif
+	} else if (strncmp(url, "gsiftp://", 9) == 0) {
+		cp = url + 9;
+		default_port = 2811;
+#if HAVE_GSSAPI
+		cip->doAuth = 1;
+#endif
 	} else {
 		return (-1);		/* not a RFC 1738 URL */
 	}
@@ -703,6 +1007,7 @@ FTPDecodeURL(
 	cp = strchr(h2start, ':');
 	if (cp == NULL) {
 		/* whole thing is the host then */
+		cip->port = default_port;
 		URLCopyToken(cip->host, sizeof(cip->host), h2start, (size_t) (hend - h2start));
 	} else if (strchr(cp + 1, ':') != NULL) {
 		/* Too many colons */
@@ -710,6 +1015,7 @@ FTPDecodeURL(
 	} else {
 		URLCopyToken(cip->host, sizeof(cip->host), h2start, (size_t) (cp - h2start));
 		URLCopyToken(portstr, sizeof(portstr), cp + 1, (size_t) (hend - (cp + 1)));
+		port = default_port;
 		port = atoi(portstr);
 		if (port > 0)
 			cip->port = port;
@@ -833,7 +1139,12 @@ FTPOpenHost(const FTPCIPtr cip)
 			/* Close and try again. */
 			(void) FTPCloseHost(cip);
 
-			if ((result == kErrBadRemoteUserOrPassword) || (result == kErrBadRemoteUser)) {
+			/* Originally we also stopped retyring if
+			 * we got kErrBadRemoteUser and non-anonymous,
+			 * but some FTP servers apparently do their
+			 * max user check after the username is sent.
+			 */
+			if (result == kErrBadRemoteUserOrPassword /* || (result == kErrBadRemoteUser) */) {
 				if (strcmp(cip->user, "anonymous") != 0) {
 					/* Non-anonymous login was denied, and
 					 * retrying is not going to help.
@@ -841,7 +1152,7 @@ FTPOpenHost(const FTPCIPtr cip)
 					break;
 				}
 			}
-		} else if ((result != kErrConnectRetryableErr) && (result != kErrConnectRefused)) {
+		} else if ((result != kErrConnectRetryableErr) && (result != kErrConnectRefused) && (result != kErrRemoteHostClosedConnection)) {
 			/* Irrecoverable error, so don't bother redialing.
 			 * The error message should have already been printed
 			 * from OpenControlConnection().
@@ -915,7 +1226,7 @@ FTPOpenHostNoLogin(const FTPCIPtr cip)
 			/* Not logging in... */
 			if (result == kNoErr)
 				break;
-		} else if ((result != kErrConnectRetryableErr) && (result != kErrConnectRefused)) {
+		} else if ((result != kErrConnectRetryableErr) && (result != kErrConnectRefused) && (result != kErrRemoteHostClosedConnection)) {
 			/* Irrecoverable error, so don't bother redialing.
 			 * The error message should have already been printed
 			 * from OpenControlConnection().
@@ -1061,7 +1372,11 @@ FTPInitLibrary(const FTPLIPtr lip)
 		return (kErrBadParameter);
 
 	(void) memset(lip, 0, sizeof(FTPLibraryInfo));
+#ifdef HAVE_GSSAPI
+	if ((ftp = getservbyname("gsiftp", "tcp")) == NULL)
+#else
 	if ((ftp = getservbyname("ftp", "tcp")) == NULL)
+#endif
 		lip->defaultPort = (unsigned int) kDefaultFTPPort;
 	else
 		lip->defaultPort = (unsigned int) ntohs(ftp->s_port);

@@ -1,5 +1,8 @@
 /* ncftpput.c
  *
+ * Copyright (c) 1996-2000 Mike Gleason, NCEMRSoft.
+ * All rights reserved.
+ *
  * A simple, non-interactive utility to send files to a remote FTP server.
  * Very useful in shell scripts!
  */
@@ -76,7 +79,8 @@ Usage(void)
   -S XX  Upload into temporary files suffixed by XX.\n\
   -DD    Delete local file after successfully uploading it.\n\
   -b     Run in background (submit job to \"ncftpbatch\").\n\
-  -F     Use passive (PASV) data connections.\n\
+  -E     Use regular (PORT) data connections.\n\
+  -F     Use passive (PASV) data connections (default).\n\
   -y     Try using \"SITE UTIME\" to preserve timestamps on remote host.\n\
   -B XX  Try setting the SO_SNDBUF size to XX.\n\
   -r XX  Redial XX times until connected.\n\
@@ -140,7 +144,7 @@ Copy(FTPCIPtr cip, char *dstdir, char **files, int rflag, int xtype, int appendf
 #endif
 			xtype, appendflag, tmppfx, tmpsfx, resumeflag, deleteflag, NoConfirmResumeUploadProc, 0);
 		if (result != 0) {
-			(void) fprintf(stderr, "ncftpput: file send error: %s.\n", FTPStrError(result));
+			FTPPerror(cip, result, kErrCouldNotStartDataTransfer, "ncftpput", file);
 			rc = result;
 		}
 	}
@@ -193,6 +197,8 @@ main(int argc, char **argv)
 		exit(kExitInitConnInfoFailed);
 	}
 
+	fi.dataPortMode = kFallBackToSendPortMode;
+	LoadFirewallPrefs(0);
 	if (gFwDataPortMode >= 0)
 		fi.dataPortMode = gFwDataPortMode;
 	fi.xferTimeout = 60 * 60;
@@ -203,7 +209,7 @@ main(int argc, char **argv)
 	(void) STRNCPY(fi.user, "anonymous");
 	progmeters = GetDefaultProgressMeterSetting();
 
-	while ((c = getopt(argc, argv, "P:u:j:p:e:d:U:t:mar:RvVf:AT:S:FcyZzDbB:")) > 0) switch(c) {
+	while ((c = getopt(argc, argv, "P:u:j:p:e:d:U:t:mar:RvVf:AT:S:EFcyZzDbB:")) > 0) switch(c) {
 		case 'P':
 			fi.port = atoi(optarg);	
 			break;
@@ -277,11 +283,11 @@ main(int argc, char **argv)
 		case 'S':
 			tmpsfx = optarg;
 			break;
+		case 'E':
+			fi.dataPortMode = kSendPortMode;
+			break;
 		case 'F':
-			if (fi.dataPortMode == kPassiveMode)
-				fi.dataPortMode = kSendPortMode;
-			else
-				fi.dataPortMode = kPassiveMode;
+			fi.dataPortMode = kPassiveMode;
 			break;
 		case 'c':
 			ftpcat = 1;
@@ -330,7 +336,6 @@ main(int argc, char **argv)
 	}
 
 	InitUserInfo();
-	LoadFirewallPrefs(0);
 
 	if (strcmp(fi.user, "anonymous") && strcmp(fi.user, "ftp")) {
 		if (fi.pass[0] == '\0') {
@@ -410,17 +415,19 @@ main(int argc, char **argv)
 		DisposeWinsock(0);
 		exit((int) es);
 	}
+	if (fi.hasCLNT != kCommandNotAvailable)
+		(void) FTPCmd(&fi, "CLNT NcFTPPut %.5s %s", gVersion + 11, gOS);
 	if (Umask != NULL) {
 		errstr = "could not set umask on remote host";
 		result = FTPUmask(&fi, Umask);
 		if (result != 0)
-			(void) fprintf(stderr, "ncftpput: umask failed: %s.\n", FTPStrError(result));
+			FTPPerror(&fi, result, kErrUmaskFailed, "ncftpput", "could not set umask");
 	}
 	if (wantMkdir != 0) {
 		errstr = "could not mkdir on remote host";
-		result = FTPMkdir(&fi, dstdir, kRecursiveYes);
+		result = FTPMkdir2(&fi, dstdir, kRecursiveYes, fi.startingWorkingDirectory);
 		if (result != 0)
-			(void) fprintf(stderr, "ncftpput: mkdir failed: %s.\n", FTPStrError(result));
+			FTPPerror(&fi, result, kErrMKDFailed, "ncftpput: Could not create directory", dstdir);
 	}
 	if (result >= 0) {
 		errstr = "could not write to file on remote host";
@@ -432,6 +439,7 @@ main(int argc, char **argv)
 			else
 				es = kExitSuccess;
 		} else {
+			fi.progress = (FTPProgressMeterProc) 0;
 			if (FTPPutOneFile2(&fi, NULL, argv[optind + 1], xtype, STDIN_FILENO, appendflag, tmppfx, tmpsfx) < 0)
 				es = kExitXferFailed;
 			else

@@ -1,6 +1,6 @@
 /* syshdrs.h
  *
- * Copyright (c) 1996 Mike Gleason, NCEMRSoft.
+ * Copyright (c) 1996-2000 Mike Gleason, NCEMRSoft.
  * All rights reserved.
  *
  */
@@ -30,7 +30,7 @@
 #	include <fcntl.h>
 #	define strcasecmp stricmp
 #	define strncasecmp strnicmp
-#	define sleep(a) Sleep(a * 1000)
+#	define sleep WinSleep
 #	ifndef S_ISREG
 #		define S_ISREG(m)      (((m) & _S_IFMT) == _S_IFREG)
 #		define S_ISDIR(m)      (((m) & _S_IFMT) == _S_IFDIR)
@@ -72,6 +72,7 @@
 #endif
 
 #include <netinet/in.h>
+#include <netinet/tcp.h>
 #include <arpa/inet.h>
 #include <arpa/telnet.h>
 #include <netdb.h>

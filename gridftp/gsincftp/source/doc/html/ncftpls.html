@@ -49,8 +49,12 @@ of the default FTP service port (21). </DD>
 <DT><B>-t </B><I>XX</I> </DT>
 <DD>Timeout after <I>XX</I> seconds. </DD>
 
+<DT><B>-E</B> </DT>
+<DD>Use regular (PORT) data connections. </DD>
+
 <DT><B>-F</B> </DT>
-<DD>Use passive (PASV) data connections. </DD>
+<DD>Use passive (PASV) data connections.&nbsp; The default is to use passive, but to fallback to
+  regular if the passive connection fails or times out. </DD>
 
 <DT><B>-r </B><I>XX</I>
 </DT>
@@ -69,20 +73,22 @@ do FTP. <P>
 The default behavior is to print the directory listing in columnized
 format (i.e. ls&nbsp;-CF), but that is not very useful for scripting. This example
 uses the <B>-1</B> flag, to print one file per line: <blockquote>
-<pre>$ ncftpls -1 ftp://ftp.probe.net/pub/ncftp/</pre>
+<pre>$ ncftpls -1 ftp://ftp.ncftp.com/pub/ncftp/</pre>
  </blockquote>
 <P>
 You can also do a remote "ls&nbsp;-l",
 by using "ncftpls&nbsp;-l". If you want to try other flags, you have to use them
 with the <B>-x</B> flag. For example, if you wanted to do a remote "ls&nbsp;-lrt", you
 could do this: <blockquote>
-<pre>$ ncftpls -x &quot;-lrt&quot; ftp://ftp.probe.net/pub/ncftp/</pre>
+<pre>$ ncftpls -x &quot;-lrt&quot; ftp://ftp.ncftp.com/pub/ncftp/</pre>
  </blockquote>
 <P>
 By default the program tries
 to open the remote host and login anonymously, but you can specify a username
 and password information like you can with <I>ncftpget</I> or <I>ncftpput</I>.  
 <H2>Diagnostics</H2>
+
+<blockquote>
 
 <P>
 <I>ncftpls</I> returns the following exit values: 
@@ -94,13 +100,19 @@ remote host. </LI><LI>Could not connect to remote host - timed out. </LI><LI>Tra
 </LI><LI>Library initialization failed. </LI><LI>Session initialization failed.  </LI>
 </OL>
 
+</blockquote>
+
 <H2>Author</H2>
+<blockquote>
  <P>
 Mike
 Gleason, NcFTP Software (<a href="mailto:mgleason@ncftp.com">mgleason@ncftp.com</a>).  
+</blockquote>
 <H2>See Also</H2>
+<blockquote>
  <P>
 <I><I>ncftpput</I>(1)</I>, <I><I>ncftpget(1)</I>,</I>
 <I><I>ncftp</I>(1)</I>, <I><I>ftp</I>(1)</I>, <I><I>rcp</I>(1)</I>, <I><I>tftp</I>(1)</I>. <P>
 <I>LibNcFTP</I>  (<a href="http://www.ncftp.com/libncftp/">http://www.ncftp.com/libncftp/</a>).
+</blockquote>
 </BODY></HTML>

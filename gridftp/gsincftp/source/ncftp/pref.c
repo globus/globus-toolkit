@@ -1,6 +1,6 @@
 /* pref.c
  *
- * Copyright (c) 1992-1999 by Mike Gleason.
+ * Copyright (c) 1992-2000 by Mike Gleason.
  * All rights reserved.
  * 
  */
@@ -39,6 +39,11 @@ int gAutoSaveChangesToExistingBookmarks;
 int gSavePasswords;
 
 int gMaySetXtermTitle;
+
+int gProtectionLevel;
+
+/* Number of seconds between connection attempts. */
+int gRedialDelay;
 
 /* Some messages we only want to bug the user about once, ever. */
 char gOneTimeMessagesSeen[256];
@@ -80,11 +85,15 @@ PrefOpt gPrefOpts[] = {
 	{ "pager",				SetPager, 1 },
 	{ "passive",				SetPassive, 1 },
 	{ "progress-meter",			SetProgressMeter, 1 },
+	{ "redial-delay",			SetRedialDelay, 1 },
 	{ "remote-msgs", 			PREFOBSELETE },
 	{ "restore-lcwd", 			PREFOBSELETE },
 	{ "save-passwords",			SetSavePasswords, 1 },
 	{ "show-trailing-space",		PREFOBSELETE },
 	{ "show-status-in-xterm-titlebar",	SetXtTitle, 1 },
+#if HAVE_GSSAPI
+	{ "protection-level",			SetProtectionLevel, 1},
+#endif
 #ifdef SO_RCVBUF
 	{ "so-bufsize",				SetSOBufsize, 1 },
 #endif
@@ -288,6 +297,24 @@ SetProgressMeter(int t, const char *const val, FILE *const fp)
 
 
 void
+SetRedialDelay(int t, const char *const val, FILE *const fp)
+{
+	int i;
+
+	gUnused = t;
+	if (fp != NULL) {
+		(void) fprintf(fp, "%d", gRedialDelay);
+	} else {
+		i = atoi(val);
+		if (i < 10)
+			i = 10;
+		gRedialDelay = atoi(val);
+	}
+}	/* SetRedialDelay */
+
+
+
+void
 SetSavePasswords(int t, const char *const val, FILE *const fp)
 {
 	gUnused = t;
@@ -346,6 +373,36 @@ SetXtTitle(int t, const char *const val, FILE *const fp)
 	}
 }	/* SetXtTitle */
 
+
+#if HAVE_GSSAPI
+void
+SetProtectionLevel(int t, const char *const val, FILE *const fp)
+{
+	gUnused = t;
+	if (fp != NULL) {
+		char * protectionString = "Clear";
+
+		if(toupper(gProtectionLevel) == kProtectionLevelClear)
+			protectionString = "Clear";
+		else if(toupper(gProtectionLevel) == kProtectionLevelSafe)
+			protectionString = "Safe";
+		else if(toupper(gProtectionLevel) == kProtectionLevelPrivate)
+			protectionString = "Private";
+		else if(toupper(gProtectionLevel) == kProtectionLevelAuthenticated)
+			protectionString = "Authenticated";
+		(void) fprintf(fp, "%s", protectionString);
+	} else {
+		if(toupper(val[0]) == kProtectionLevelClear)
+			gProtectionLevel = kProtectionLevelClear;
+		else if(toupper(val[0]) == kProtectionLevelSafe)
+			gProtectionLevel = kProtectionLevelSafe;
+		else if(toupper(val[0]) == kProtectionLevelPrivate)
+			gProtectionLevel = kProtectionLevelPrivate;
+		else if(toupper(val[0]) == kProtectionLevelAuthenticated)
+			gProtectionLevel = kProtectionLevelAuthenticated;
+	}
+}	/* SetProtectionLevel */
+#endif
 
 
 
@@ -526,11 +583,13 @@ InitPrefs(void)
 	gConnTimeout = 20;
 	gCtrlTimeout = 135;
 	gDataPortMode = kFallBackToSendPortMode;
+	gConn.dataPortMode = gDataPortMode;
 	gAutoResume = 0;
 	gSOBufsize = 0;
 	gMaxLogSize = 10240;
 	gConfirmClose = 1;
 	gAutoSaveChangesToExistingBookmarks = 0;
+	gRedialDelay = kDefaultRedialDelay;
 
 #if (defined(WIN32) || defined(_WINDOWS)) && defined(_CONSOLE)
 	gMaySetXtermTitle = 1;
@@ -538,6 +597,9 @@ InitPrefs(void)
 	gMaySetXtermTitle = 0;
 #endif
 
+#if HAVE_GSSAPI
+	gProtectionLevel = 'C';
+#endif
 	gSavePasswords = -1;
 #ifdef ncftp
 	gProgressMeter = PrStatBar;

@@ -1,8 +1,12 @@
 /* rcmd.c
  *
- * Copyright (c) 1996 Mike Gleason, NCEMRSoft.
+ * Copyright (c) 1996-2000 Mike Gleason, NCEMRSoft.
  * All rights reserved.
  *
+ * Modified Feb 22, 2000 by JWB
+ * Modified GetTelnetString to not truncate telnet lines.
+ * Modified GetResponse to not truncate lines, and to unwrap encoded
+ * responses.
  */
 
 #include "syshdrs.h"
@@ -182,7 +186,7 @@ GetTelnetString(const FTPCIPtr cip, char *str, size_t siz, FILE *cin, FILE *cout
 		goto done;
 	}
 
-	for (n = (size_t)0, eofError = 0; ; ) {
+	for (n = (size_t)0, eofError = 0; n<siz; ) {
 		c = fgetc(cin);
 checkChar:
 		if (c == EOF) {
@@ -196,6 +200,8 @@ eof:
 			c = fgetc(cin);
 			if (c == '\n') {
 				/* Had \r\n, so done. */
+				*cp++ = c;
+				n++;
 				goto done;
 			} else if (c == EOF) {
 				goto eof;
@@ -271,7 +277,6 @@ addChar:
 			}
 		}
 	}
-
 done:
 	*cp = '\0';
 	return (eofError);
@@ -293,7 +298,10 @@ GetResponse(const FTPCIPtr cip, ResponsePtr rp)
 	str16 code;
 	char *cp;
 	int continuation;
+	int gotNewline = 0;
 	volatile FTPCIPtr vcip;
+	size_t bufferedAmt = 0;
+	LineList lineBuffer;
 #ifdef NO_SIGNALS
 	int result;
 #else	/* NO_SIGNALS */
@@ -361,8 +369,6 @@ GetResponse(const FTPCIPtr cip, ResponsePtr rp)
 		return (cip->errNo);
 	}
 
-	if (str[result - 1] == '\n')
-		str[result - 1] = '\0';
 
 #else	/* NO_SIGNALS */
 	/* Get the first line of the response. */
@@ -381,7 +387,13 @@ GetResponse(const FTPCIPtr cip, ResponsePtr rp)
 			return(cip->errNo);
 		}
 	}
+	result = strlen(str);
 #endif	/* NO_SIGNALS */
+
+	if (str[result - 1] == '\n') {
+		gotNewline = 1;
+		str[result - 1] = '\0';
+	}
 
 	if (!isdigit((int) *cp)) {
 		Error(cip, kDontPerror, "Invalid reply: \"%s\"\n", cp);
@@ -398,13 +410,20 @@ GetResponse(const FTPCIPtr cip, ResponsePtr rp)
 	*cp++ = '\0';
 	(void) STRNCPY(code, str);
 	rp->code = atoi(code);
-	(void) AddLine(&rp->msg, cp);
+	InitLineList(&lineBuffer);
+	if(gotNewline) {
+		(void) AddLine(&rp->msg, cp);
+	} else {
+		(void) AddLine(&lineBuffer, cp);
+		bufferedAmt = strlen(cp);
+	}
 	if (eofError < 0) {
 		/* Read reply, but EOF was there also. */
 		rp->hadEof = 1;
 	}
 	
-	while (continuation) {
+	while (continuation || !gotNewline) {
+		gotNewline = 0;
 
 #ifdef NO_SIGNALS
 		result = SReadline(&cip->ctrlSrl, str, sizeof(str) - 1);
@@ -413,6 +432,7 @@ GetResponse(const FTPCIPtr cip, ResponsePtr rp)
 			Error(cip, kDontPerror, "Could not read reply from control connection -- timed out.\n");
 			FTPShutdownHost(vcip);
 			cip->errNo = kErrControlTimedOut;
+			DisposeLineListContents(&lineBuffer);
 			return (cip->errNo);
 		} else if (result == 0) {
 			/* eof */
@@ -422,17 +442,17 @@ GetResponse(const FTPCIPtr cip, ResponsePtr rp)
 				Error(cip, kDontPerror, "Remote host has closed the connection.\n");
 			FTPShutdownHost(vcip);
 			cip->errNo = kErrRemoteHostClosedConnection;
+			DisposeLineListContents(&lineBuffer);
 			return (cip->errNo);
 		} else if (result < 0) {
 			/* error */
 			Error(cip, kDoPerror, "Could not read reply from control connection");
 			FTPShutdownHost(vcip);
 			cip->errNo = kErrInvalidReplyFromServer;
+			DisposeLineListContents(&lineBuffer);
 			return (cip->errNo);
 		}
 
-		if (str[result - 1] == '\n')
-			str[result - 1] = '\0';
 #else	/* NO_SIGNALS */
 		eofError = GetTelnetString(cip, str, sizeof(str), cip->cin, cip->cout);
 		if (eofError < 0) {
@@ -440,16 +460,46 @@ GetResponse(const FTPCIPtr cip, ResponsePtr rp)
 			rp->hadEof = 1;
 			continuation = 0;
 		}
+		result = strlen(str);
 #endif	/* NO_SIGNALS */
-		cp = str;
-		if (strncmp(code, cp, SZ(3)) == 0) {
-			cp += 3;
-			if (*cp == ' ')
-				continuation = 0;
-			++cp;
+
+		if (str[result - 1] == '\n') {
+			char *completeLine;
+			LinePtr p;
+
+			str[result - 1] = '\0';
+			completeLine = malloc(bufferedAmt + result + 1);
+
+			completeLine[0] = '\0';
+
+			for(p = lineBuffer.first; p != NULL ; p=p->next) {
+				strcat(completeLine, p->line);
+			}
+			strcat(completeLine,str);
+
+			cp = completeLine;
+
+			if (strncmp(code, cp, SZ(3)) == 0) {
+				cp += 3;
+				if (*cp == ' ')
+					continuation = 0;
+				++cp;
+
+			}
+			(void) AddLine(&rp->msg, cp);
+
+			free(completeLine);
+			DisposeLineListContents(&lineBuffer);
+			bufferedAmt = 0;
+
+			gotNewline = 1;
+		} else {
+			cp = str;
+			(void) AddLine(&lineBuffer, cp);
+			bufferedAmt += strlen(cp);
 		}
-		(void) AddLine(&rp->msg, cp);
 	}
+	DisposeLineListContents(&lineBuffer);
 
 	if (rp->code == 421) {
 		/*
@@ -470,6 +520,118 @@ GetResponse(const FTPCIPtr cip, ResponsePtr rp)
 #ifndef NO_SIGNALS
 	(void) signal(SIGPIPE, osigpipe);
 #endif
+
+#if HAVE_GSSAPI
+	/* Unwrap responses */
+	if(rp->code == 631 || rp->code == 632 || rp->code == 633) {
+		LinePtr lp;
+		char * p, *psave, *q;
+		int offset;
+
+		p = q = psave = NULL;
+		bufferedAmt = 0;
+
+		for(lp = rp->msg.first; lp != NULL; lp = lp->next) {
+			gss_buffer_desc wrapped_token, unwrapped_token;
+			char * out_buf;
+			int len = 0;
+			int conf_state;
+			gss_qop_t qop_state;
+			OM_uint32 maj_stat, min_stat;
+
+			len = strlen(lp->line) + 1;
+
+			out_buf = malloc((len + 3) * 6 / 8);
+
+			/* Decode token */
+			radix_encode(lp->line, out_buf, &len, 1);
+
+			/* Unwrap token */
+			wrapped_token.value = out_buf;
+			wrapped_token.length = len;
+
+			maj_stat = gss_unwrap(&min_stat, cip->connectionContext,
+						&wrapped_token, &unwrapped_token,
+						&conf_state, &qop_state);
+
+			if(maj_stat != GSS_S_COMPLETE) {
+				free(out_buf);
+
+				rp->code = 535;
+				rp->codeType = 5;
+
+				if(p) {
+					free(p);
+				}
+				DisposeLineListContents(&rp->msg);
+
+				/* returning no err, but with a response code that
+				 * the caller should deal with
+				 */
+				return (kNoErr);
+			}
+
+			/* Add it to the buffer */
+			if(p == NULL) {
+				p = malloc(unwrapped_token.length + 1);
+				strcpy(p, unwrapped_token.value);
+				bufferedAmt += unwrapped_token.length;
+			} else {
+				p = realloc(p, bufferedAmt + unwrapped_token.length);
+				strcat(p, unwrapped_token.value);
+				bufferedAmt += unwrapped_token.length;
+			}
+
+			free(out_buf);
+			gss_release_buffer(&min_stat, &unwrapped_token);
+		}
+
+		/* Now the p buffer contains then response from the server.
+		 * Separate this into "\r\n"-deliminated lines (stripping \r\n)
+		 * and put them in the response msg list
+		 */
+		DisposeLineListContents(&rp->msg);
+		psave=p;
+
+		
+		memcpy(code, p, 3);
+
+		rp->code = atoi(p);
+		rp->codeType = *p - '0';
+
+		while(isdigit(*p)) {
+			p++;
+		}
+		p++;
+		q = p;
+
+		while(*p != '\0') {
+			if((*p) == '\r') {
+				*p = '\0';
+				p++;
+			} else if((*p) == '\n') {
+				*p = '\0';
+				AddLine(&rp->msg, q);
+				p++;
+				if(p != 0 && strlen(p) > 4) {
+					if(strncmp(code, p, SZ(3)) == 0) {
+						p+=4;
+					}
+				}
+				q = p;
+			} else {
+				p++;
+			}
+		}
+		if(p != q && strlen(q)) {
+			AddLine(&rp->msg, q);
+		}
+		if(psave) {
+			free(psave);
+		}
+	}
+
+#endif
 	return (kNoErr);
 }	/* GetResponse */
 
@@ -484,25 +646,93 @@ GetResponse(const FTPCIPtr cip, ResponsePtr rp)
 static int
 SendCommand(const FTPCIPtr cip, const char *cmdspec, va_list ap)
 {
-	longstring command;
+	char * command = NULL;
 	int result;
+	int len;
 
 	if (cip->ctrlSocketW != kClosedFileDescriptor) {
-#ifdef HAVE_VSNPRINTF
-		(void) vsnprintf(command, sizeof(command) - 1, cmdspec, ap);
-		command[sizeof(command) - 1] = '\0';
-#else
-		(void) vsprintf(command, cmdspec, ap);
+		FILE * nullfile;
+		nullfile = fopen("/dev/null", "wb");
+#ifdef WIN32
+		if(!nullfile)
+			nullfile = fopen("NUL:","wb");
 #endif
+		if(nullfile) {
+			len = vfprintf(nullfile, cmdspec, ap);
+			fclose(nullfile);
+		} else {
+			len = sizeof(longstring);
+		}
+		command = malloc(len+3);
+		vsprintf(command, cmdspec, ap);
+
 		if ((strncmp(command, "PASS", SZ(4)) != 0) || ((strcmp(cip->user, "anonymous") == 0) && (cip->firewallType == kFirewallNotInUse)))
 			PrintF(cip, "Cmd: %s\n", command);
 		else
 			PrintF(cip, "Cmd: %s\n", "PASS xxxxxxxx");
-		(void) STRNCAT(command, "\r\n");	/* Use TELNET end-of-line. */
+		(void) strcat(command, "\r\n");	/* Use TELNET end-of-line. */
 		cip->lastFTPCmdResultStr[0] = '\0';
 		cip->lastFTPCmdResultNum = -1;
+#if HAVE_GSSAPI
+		if(cip->doAuth && cip->authenticated) {
+			char * wrapped;
+			gss_buffer_desc in_buf, out_buf;
+			OM_uint32 maj_stat, min_stat;
+			int conf_state;
+			int kerror;
 
+			/* Strip off '\r\n', since we're encoding this request */
+			*(strrchr(command, '\r')) = '\0';
+			in_buf.value = command;
+			in_buf.length = strlen(command) + 1;
+
+			maj_stat = gss_wrap(&min_stat, cip->connectionContext,
+						(cip->protectionLevel == kProtectionLevelPrivate),
+						GSS_C_QOP_DEFAULT,
+						&in_buf, &conf_state,
+						&out_buf);
+			if(maj_stat != GSS_S_COMPLETE) {
+				cip->errNo = kErrSocketWriteFailed;
+				free(command);
+				return(cip->errNo);
+			}
+
+			wrapped = malloc((out_buf.length + 3) * 8 / 6 + 3);
+			if (kerror = radix_encode(out_buf.value, wrapped, &out_buf.length, 0)) {
+				fprintf(stderr,"Couldn't base 64 encode command (%s)\n", radix_error(kerror));
+				cip->errNo = kErrSocketWriteFailed;
+				free(wrapped);
+				free(command);
+				return(cip->errNo);
+			}
+			if(cip->protectionLevel == kProtectionLevelPrivate) {
+				result = SWrite(cip->ctrlSocketW, "ENC ", 4, (int) cip->ctrlTimeout, 0);
+			} else {
+				result = SWrite(cip->ctrlSocketW, "MIC ", 4, (int) cip->ctrlTimeout, 0);
+			}
+			if (result < 0) {
+				cip->errNo = kErrSocketWriteFailed;
+				Error(cip, kDoPerror, "Could not write to control stream.\n");
+				free(wrapped);
+				free(command);
+				return (cip->errNo);
+			}
+			result = SWrite(cip->ctrlSocketW, wrapped, strlen(wrapped), (int) cip->ctrlTimeout, 0);
+			if (result < 0) {
+				cip->errNo = kErrSocketWriteFailed;
+				Error(cip, kDoPerror, "Could not write to control stream.\n");
+				free(wrapped);
+				free(command);
+				return (cip->errNo);
+			}
+			result = SWrite(cip->ctrlSocketW, "\r\n", 2, (int) cip->ctrlTimeout, 0);
+			gss_release_buffer(&min_stat,&out_buf);
+			free(wrapped);
+		} else
+#endif
 		result = SWrite(cip->ctrlSocketW, command, strlen(command), (int) cip->ctrlTimeout, 0);
+
+		free(command);
 
 		if (result < 0) {
 			cip->errNo = kErrSocketWriteFailed;
@@ -519,29 +749,79 @@ SendCommand(const FTPCIPtr cip, const char *cmdspec, va_list ap)
 static int
 SendCommand(const FTPCIPtr cip, const char *cmdspec, va_list ap)
 {
-	longstring command;
+	char * command;
 	int result;
 	volatile FTPCIPtr vcip;
 	volatile FTPSigProc osigpipe;
 	int sj;
 
 	if (cip->cout != NULL) {
-#ifdef HAVE_VSNPRINTF
-		(void) vsnprintf(command, sizeof(command) - 1, cmdspec, ap);
-		command[sizeof(command) - 1] = '\0';
-#else
-		(void) vsprintf(command, cmdspec, ap);
+		FILE * nullfile;
+		nullfile = fopen("/dev/null", "wb");
+#ifdef WIN32
+		if (!nullfile)
+			nullfile = fopen("NUL:","wb");
 #endif
+		if(nullfile) {
+			len = vfprintf(nullfile, cmdspec, ap);
+			fclose(nullfile);
+		} else {
+			len = sizeof(longstring);
+		}
+		command = malloc(len+3);
+		vsprintf(command, cmdspec, ap);
+
 		if ((strncmp(command, "PASS", SZ(4)) != 0) || ((strcmp(cip->user, "anonymous") == 0) && (cip->firewallType == kFirewallNotInUse)))
 			PrintF(cip, "Cmd: %s\n", command);
 		else
 			PrintF(cip, "Cmd: %s\n", "PASS xxxxxxxx");
-		(void) STRNCAT(command, "\r\n");	/* Use TELNET end-of-line. */
+		(void) strcat(command, "\r\n");	/* Use TELNET end-of-line. */
 		cip->lastFTPCmdResultStr[0] = '\0';
 		cip->lastFTPCmdResultNum = -1;
 
 		osigpipe = (volatile FTPSigProc) signal(SIGPIPE, BrokenCtrl);
 		vcip = cip;
+
+#if HAVE_GSSAPI
+		if(cip->doAuth && cip->authenticated) {
+			char * wrapped;
+			gss_buffer_desc in_buf, out_buf;
+			OM_uint32 maj_stat, min_stat;
+			int conf_state;
+			int kerror;
+
+			/* Strip off '\r\n', since we're encoding this request */
+			*(strrchr(command, '\r')) = '\0';
+			in_buf.value = command;
+			in_buf.length = strlen(command) + 1;
+
+			maj_stat = gss_wrap(&min_stat, cip->connectionContext,
+						(cip->protectionLevel == kProtectionLevelPrivate),
+						GSS_C_QOP_DEFAULT,
+						&in_buf, &conf_state,
+						&out_buf);
+			if(maj_stat != GSS_S_COMPLETE) {
+				cip->errNo = kErrSocketWriteFailed;
+				free(command);
+				return(cip->errNo);
+			}
+
+			wrapped = malloc((out_buf.length + 3) * 8 / 6 + 10);
+			if (kerror = radix_encode(out_buf.value, wrapped, &out_buf.length, 0)) {
+				cip->errNo = kErrSocketWriteFailed;
+				free(wrapped);
+				free(command);
+				return(cip->errNo);
+			}
+			if(cip->protectionLevel == kProtectionLevelPrivate) {
+				snprintf(command, "ENC %s\r\n", wrapped);
+			} else {
+				snprintf(command, "MIC %s\r\n", wrapped);
+			}
+			gss_release_buffer(&min_stat,&out_buf);
+			free(wrapped);
+		}
+#endif
 
 #ifdef HAVE_SIGSETJMP
 		sj = sigsetjmp(gBrokenCtrlJmp, 1);
@@ -555,12 +835,15 @@ SendCommand(const FTPCIPtr cip, const char *cmdspec, va_list ap)
 			if (vcip->eofOkay == 0) {
 				Error(cip, kDontPerror, "Remote host has closed the connection.\n");
 				vcip->errNo = kErrRemoteHostClosedConnection;
+				free(command);
 				return(vcip->errNo);
 			}
+			free(command);
 			return (kNoErr);
 		}
 
 		result = fputs(command, cip->cout);
+		free(command);
 		if (result < 0) {
 			(void) signal(SIGPIPE, osigpipe);
 			cip->errNo = kErrSocketWriteFailed;

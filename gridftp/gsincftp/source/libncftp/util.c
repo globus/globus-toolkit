@@ -1,8 +1,10 @@
 /* util.c
  *
- * Copyright (c) 1996 Mike Gleason, NCEMRSoft.
+ * Copyright (c) 1996-2000 Mike Gleason, NCEMRSoft.
  * All rights reserved.
  *
+ * Modified 2/22/2000 by JWB
+ * Added TCP_RFC1323 support for AIX
  */
 
 #include "syshdrs.h"
@@ -12,6 +14,25 @@
 extern void GetSpecialDir(char *dst, size_t size, int whichDir);
 #endif
 
+
+#if !defined(HAVE_VSNPRINTF) || !defined(HAVE_SNPRINTF)
+static
+int GetStringLength(const char *format, va_list ap)
+{
+	FILE * nullfd;
+	int len;
+
+	nullfd = fopen("/dev/null", "w");
+#ifdef WIN32
+	if (!nullfd)
+		nullfd = fopen("NUL:","w");
+#endif
+	len = vfprintf(nullfd, format, ap);
+	fclose(nullfd);
+
+	return len;
+}
+#endif	/* !defined(HAVE_VSNPRINTF) || !defined(HAVE_SNPRINTF) */
 
 static void *
 Realloc(void *ptr, size_t siz)
@@ -341,6 +362,8 @@ PrintF(const FTPCIPtr cip, const char *const fmt, ...)
 {
 	va_list ap;
 	char buf[256];
+	char * tmp;
+	int length;
 
 	va_start(ap, fmt);
 	if (cip->debugLog != NULL) {
@@ -352,7 +375,18 @@ PrintF(const FTPCIPtr cip, const char *const fmt, ...)
 		(void) vsnprintf(buf, sizeof(buf) - 1, fmt, ap);
 		buf[sizeof(buf) - 1] = '\0';
 #else
-		(void) vsprintf(buf, fmt, ap);
+		length = GetStringLength(fmt, ap);
+		if(length > sizeof(buf)) {
+			tmp = malloc(length + 1);
+
+			(void) vsprintf(tmp, fmt, ap);
+			memcpy(buf, tmp, sizeof(buf) - 1);
+			buf[sizeof(buf) - 1] = '\0';
+
+			free(tmp);
+		} else {
+			(void) vsprintf(buf, fmt, ap);
+		}
 #endif
 		(*cip->debugLogProc)(cip, buf);
 	}
@@ -373,6 +407,8 @@ Error(const FTPCIPtr cip, const int pError, const char *const fmt, ...)
 	char buf[256];
 	int endsinperiod;
 	int endsinnewline;
+	int length;
+	char * tmp;
 #ifndef HAVE_STRERROR
 	char errnostr[16];
 #endif
@@ -383,7 +419,12 @@ Error(const FTPCIPtr cip, const int pError, const char *const fmt, ...)
 	vsnprintf(buf, sizeof(buf) - 1, fmt, ap);
 	buf[sizeof(buf) - 1] = '\0';
 #else
-	(void) vsprintf(buf, fmt, ap);
+	length = GetStringLength(fmt, ap);
+	tmp = malloc(length + 1);
+
+	(void) vsprintf(tmp, fmt, ap);
+	memcpy(buf, tmp, sizeof(buf)-1);
+	buf[sizeof(buf) - 1] = '\0';
 #endif
 	va_end(ap);
 
@@ -492,6 +533,11 @@ time_t UnMDTMDate(char *dstr)
 	time_t mt, now;
 	time_t result = kModTimeUnknown;
 
+	if (strncmp(dstr, "19100", 5) == 0) {
+		/* Server Y2K bug! */
+		return (result);
+	}
+
 	(void) time(&now);
 	t = localtime(&now);
 
@@ -571,6 +617,14 @@ SetSockBufSize(int sockfd, size_t rsize, size_t ssize)
 	int opt;
 	int optsize;
 
+#ifdef TCP_RFC1323
+	/* This is an AIX-specific socket option to do RFC1323 large windows */
+	if (ssize > 0 || rsize > 0) {
+		opt = 1;
+		optsize = sizeof(opt);
+		rc = setsockopt(sockfd, IPPROTO_TCP, TCP_RFC1323, &opt, optsize);
+	}
+#endif
 	if (ssize > 0) {
 		opt = (int) ssize;
 		optsize = sizeof(opt);
@@ -613,6 +667,43 @@ Scramble(unsigned char *dst, size_t dsize, unsigned char *src, char *key)
 
 
 #if defined(WIN32) || defined(_WINDOWS)
+void WinSleep(unsigned int seconds)
+{
+	DWORD now, deadline;
+	DWORD milliseconds = seconds * 1000;
+
+	if (milliseconds > 0) {
+		now = GetTickCount();
+		deadline = now + milliseconds;
+		if (now < deadline) {
+			/* Typical case */
+			do {
+				milliseconds = deadline - now;
+				Sleep(milliseconds);
+				now = GetTickCount();
+			} while (now < deadline);
+		} else {
+			/* Overflow case */
+			deadline = now - 1;
+			milliseconds -= (0xFFFFFFFF - now);
+			do {
+				Sleep(0xFFFFFFFF - now);
+				now = GetTickCount();
+			} while (now > deadline);
+			/* Counter has now wrapped around */
+			deadline = now + milliseconds;
+			do {
+				milliseconds = deadline - now;
+				Sleep(milliseconds);
+				now = GetTickCount();
+			} while (now < deadline);
+		}
+	}
+}	/* WinSleep */
+
+
+
+
 char *
 StrFindLocalPathDelim(const char *src) /* TODO: optimize */
 {
@@ -655,6 +746,23 @@ StrRFindLocalPathDelim(const char *src)	/* TODO: optimize */
 
 
 
+
+void
+StrRemoveTrailingLocalPathDelim(char *dst)
+{
+	char *cp;
+
+	cp = StrRFindLocalPathDelim(dst);
+	if ((cp == NULL) || (cp[1] != '\0'))
+		return;
+
+	/* Note: Do not destroy a path of "/" */
+	while ((cp > dst) && (IsLocalPathDelim(*cp)))
+		*cp-- = '\0';
+}	/* StrRemoveTrailingLocalPathDelim */
+
+
+
 void
 TVFSPathToLocalPath(char *dst)
 {
@@ -692,6 +800,23 @@ LocalPathToTVFSPath(char *dst)
 	}
 }	/* LocalPathToTVFSPath */
 #endif		/* WINDOWS */
+
+
+
+
+void
+StrRemoveTrailingSlashes(char *dst)
+{
+	char *cp;
+
+	cp = strrchr(dst, '/');
+	if ((cp == NULL) || (cp[1] != '\0'))
+		return;
+
+	/* Note: Do not destroy a path of "/" */
+	while ((cp > dst) && (*cp == '/'))
+		*cp-- = '\0';
+}	/* StrRemoveTrailingSlashes */
 
 
 

@@ -1,6 +1,6 @@
 /* errno.c
  *
- * Copyright (c) 1996 Mike Gleason, NCEMRSoft.
+ * Copyright (c) 1996-2000 Mike Gleason, NCEMRSoft.
  * All rights reserved.
  *
  */
@@ -101,8 +101,9 @@ static const char *gErrList[kErrLast - kErrFirst + 2] = {
 	"item exists, but cannot tell if it is a file or directory",	/* -190 */
 	"not a directory",						/* -191 */
 	"directory recursion limit reached",				/* -192 */
-	"timed out while waiting for server response",		/* -193 */
-	"data transfer timed out",							/* -194 */
+	"timed out while waiting for server response",			/* -193 */
+	"data transfer timed out",					/* -194 */
+	"canceled by user",						/* -195 */
 	NULL,								
 };
 

@@ -1,18 +1,19 @@
-.TH ncftpget 1 NcFTP Software
+.TH gsincftpget 1 NcFTP Software
 .SH NAME
-ncftpget - Internet file transfer program for scripts
+ncftpget - Internet file transfer program for scripts with support for RFC 2228
+Security Extensions
 .SH "SYNOPSIS"
 .PP
-.B ncftpget
+.B gsincftpget
 .RI [ "options" ]
 .I "remote-host" "local-directory" "remote-files..."
 .PP
-.B ncftpget
+.B gsincftpget
 -f login.cfg
 .RI [ "options" ]
 .I "local-directory" "remote-files..."
 .PP
-.B ncftpget
+.B gsincftpget
 .RI [ "options" ]
 .I "ftp://url.style/host/path/name"
 .\"-------
@@ -70,31 +71,14 @@ Append to local files, instead of overwriting them.
 Do (do not) try to resume transfers.
 The default is to try to resume (\-z).
 .TP 8
-.B -E
-Use regular (PORT) data connections.
-.TP 8
 .B -F
 Use passive (PASV) data connections.
-The default is to use passive, but to fallback to
-regular if the passive connection fails or times out.
 .TP 8
 .B -DD
 Delete remote file after successfully downloading it.
 .TP 8
 .B -R
 Recursive mode; copy whole directory trees.
-.TP 8
-.B -T
-Do not use automatic on-the-fly TAR mode for downloading whole directory trees.
-.I ncftpget
-uses TAR whenever possible since this usually preserves symbolic links
-and file permissions.
-TAR mode can also result in faster transfers for directories containing many
-small files, since a single data connection can be used rather than an FTP
-data connection for each small file.
-The downside to using TAR is that it forces downloading of the whole directory,
-even if you had previously downloaded a portion of it earlier, so you may
-want to use this option if you want to resume downloading of a directory.
 .TP 8
 .BI "-r " "XX"
 Redial a maximum of 
@@ -103,7 +87,7 @@ times until connected to the remote FTP server.
 .TP 8
 .B -b
 Run in background (by submitting a job to
-.IR ncftpbatch ")."
+.IR gsincftpbatch ")."
 .TP 8
 .BI "-B " "XX"
 Try setting the TCP/IP socket buffer size to
@@ -115,7 +99,7 @@ bytes.
 .PP
 The
 purpose of
-.I ncftpget
+.I gsincftpget
 is to do file transfers from the command-line
 without entering an interactive shell.
 This lets you write shell scripts or other unattended
@@ -123,7 +107,7 @@ processes that can do FTP.
 It is also useful for advanced users who
 want to retrieve files from the shell command line without
 entering an interactive FTP program such as
-.IR ncftp "."
+.IR gsincftp "."
 .PP
 One particularly useful feature of this program is that
 you can give it a
@@ -137,7 +121,7 @@ Example:
 .sp
 $ cd /tmp
 .br
-$ ncftpget ftp://ftp.ncftp.com/pub/ncftp/ncftp.tar.Z
+$ gsincftpget ftp://ftp.probe.net/pub/ncftp/ncftp.tar.Z
 .br
 $ zcat ncftp.tar.Z | tar xf -
 .br
@@ -178,7 +162,7 @@ Nevertheless, if you choose to use the
 option the file should look something like this:
 .RS 4
 .sp
-host sphygmomanometer.ncftp.com
+host Bozo.probe.net
 .br
 user gleason
 .br
@@ -202,11 +186,11 @@ as the name of the debugging output file, the output
 will instead print to the screen.  Example:
 .RS 4
 .sp
-$ ncftpget -d stdout bowser.nintendo.co.jp . /pub/README
+$ gsincftpget -d stdout ftp.probe.net . /pub/ncftp/README
 .br
-220: FTP server ready.
+220: ftp.probe.net FTP server ready.
 .br
-Connected to bowser.nintendo.co.jp.
+Connected to ftp.probe.net.
 .br
 Cmd: USER anonymous
 .br
@@ -216,19 +200,29 @@ Cmd: PASS xxxxxxxx
 .br
 230: Welcome!
 .br
-Logged in to bowser.nintendo.co.jp as anonymous.
+Logged in to ftp.probe.net as anonymous.
 .br
 Cmd: TYPE I
 .br
 200: Type set to I.
 .br
-Cmd: PORT 192,168,9,37,6,76
+Cmd: SIZE /pub/ncftp/README
+.br
+550: /pub/ncftp/README: not a plain file.
+.br
+Cmd: MDTM /pub/ncftp/README
+.br
+550: /pub/ncftp/README: No such file or directory.
+.br
+Cmd: PORT 192,168,1,17,6,76
 .br
 200: PORT command successful.
 .br
-Cmd: RETR /pub/README
+Cmd: RETR /pub/ncftp/README
 .br
-550: /pub/README: File in use.
+550: /pub/ncftp/README: No such file OR directory.
+.br
+gsincftpget: file retrieval error: could not start data transfer.
 .br
 Cmd: QUIT
 .br
@@ -254,7 +248,7 @@ is a UNIX server, or emulates UNIX's list output.
 Example:
 .RS 4
 .sp
-$ ncftpget -R ftp.ncftp.com /tmp /pub/ncftp
+$ gsincftpget -R ftp.probe.net /tmp /pub/ncftp
 .br
 .sp
 .RE
@@ -263,7 +257,7 @@ This would create a /tmp/ncftp hierarchy.
 .SH "DIAGNOSTICS"
 .\"-------
 .PP
-.I ncftpget
+.I gsincftpget
 returns the following exit values:
 .TP 8
 0
@@ -302,6 +296,12 @@ Library initialization failed.
 11
 Session initialization failed.
 .\"-------
+.SH "CHANGES FROM STANDARD NCFTPGET"
+.\"-------
+.PP
+This distribution uses the SSL GSSAPI bindings for authentication by 
+default, instead of the standard cleartext password handling.
+.\"-------
 .SH "AUTHOR"
 .\"-------
 .PP
@@ -310,8 +310,8 @@ Mike Gleason, NcFTP Software (mgleason@ncftp.com).
 .SH "SEE ALSO"
 .\"-------
 .PP
-.IR ncftpput (1),
-.IR ncftp (1),
+.IR gsincftpput (1),
+.IR gsincftp (1),
 .IR ftp (1),
 .IR rcp (1),
 .IR tftp (1).

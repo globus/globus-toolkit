@@ -1,8 +1,10 @@
 /* util.h
  *
- * Copyright (c) 1992-1999 by Mike Gleason.
+ * Copyright (c) 1992-2000 by Mike Gleason.
  * All rights reserved.
  * 
+ * Modified Feb 22, 2000 by JWB
+ * Changed default directory name for config files to be .gsincftp
  */
 
 typedef int (*qsort_proc_t)(const void *, const void *);
@@ -42,7 +44,11 @@ typedef volatile sigproc_t vsigproc_t;
 #	define F_OK 0
 #endif
 
+#if HAVE_GSSAPI
+#define kOurDirectoryName	".gsincftp"
+#else
 #define kOurDirectoryName	".ncftp"
+#endif
 
 #define kPasswordMagic "*encoded*"
 #define kPasswordMagicLen 9
@@ -73,7 +79,6 @@ int StrToBool(const char *const);
 void AbsoluteToRelative(char *const, const size_t, const char *const, const char *const, const size_t);
 int GetHostByName(char *const volatile, size_t, const char *const, int);
 time_t UnDate(char *dstr);
-void StrRemoveTrailingSlashes(char *);
 int DecodeDirectoryURL(const FTPCIPtr, char *, LineListPtr, char *, size_t);
 char *OurInstallationPath(char *const dst, const size_t siz, const char *const fname);
 #if defined(WIN32) || defined(_WINDOWS)

@@ -4,8 +4,8 @@
 #
 #-----------------------------------------------------------------------------
 
-VER=3.0beta21
-BETA=-DBETA=21
+VER=3.0.0
+#BETA=-DBETA=21
 CC=@CC@
 CFLAGS=@CFLAGS@
 #CC=gcc
@@ -24,12 +24,11 @@ all:
 	( cd Strn ; $(MAKE) "CC=$(CC)" "CFLAGS=$(CFLAGS)" )
 	( cd libncftp ; $(MAKE) "CC=$(CC)" "CFLAGS=$(CFLAGS)" )
 	-mkdir bin 2>/dev/null
-	( cd ncftp ; $(MAKE) "CC=$(CC)" "CFLAGS=$(CFLAGS)" "STRIPFLAG=$(STRIPFLAG)" "BETA=$(BETA)" )
+	( cd ncftp ; $(MAKE) "CC=$(CC)" "CFLAGS=$(CFLAGS)" "STRIPFLAG=$(STRIPFLAG)" )
 	( cd sh_util ; $(MAKE) "CC=$(CC)" "CFLAGS=$(CFLAGS)" "STRIPFLAG=$(STRIPFLAG)" )
 	( cd vis ; $(MAKE) "CC=$(CC)" "CFLAGS=$(CFLAGS)" "STRIPFLAG=$(STRIPFLAG)" )
 	-@echo 'Done.'
 	-@echo
-	-@echo '** This is a beta version of NcFTP **'
 	-@echo '** Please report any problems to ncftp@ncftp.com **'
 
 install:
@@ -38,22 +37,22 @@ install:
 	( cd vis ; $(MAKE) "CC=$(CC)" "CFLAGS=$(CFLAGS)" )
 	-mkdir "$(prefix)" "$(BINDIR)" "$(mandir)" "$(mandir)/man1" 2>/dev/null
 	-@echo '..... Installing the manual pages .....'
-	$(INSTALL_DATA) doc/man/ncftp.1 "$(mandir)/man1/ncftp.1"
-	$(INSTALL_DATA) doc/man/ncftpget.1 "$(mandir)/man1/ncftpget.1"
-	$(INSTALL_DATA) doc/man/ncftpput.1 "$(mandir)/man1/ncftpput.1"
-	$(INSTALL_DATA) doc/man/ncftpbatch.1 "$(mandir)/man1/ncftpbatch.1"
-	$(INSTALL_DATA) doc/man/ncftpls.1 "$(mandir)/man1/ncftpls.1"
-	-@/bin/ls -l "$(mandir)/man1/ncftp.1" "$(mandir)/man1/ncftpget.1" "$(mandir)/man1/ncftpput.1" "$(mandir)/man1/ncftpbatch.1" "$(mandir)/man1/ncftpls.1"
+	$(INSTALL_DATA) doc/man/gsincftp.1 "$(mandir)/man1/gsincftp.1"
+	$(INSTALL_DATA) doc/man/gsincftpget.1 "$(mandir)/man1/gsincftpget.1"
+	$(INSTALL_DATA) doc/man/gsincftpput.1 "$(mandir)/man1/gsincftpput.1"
+	$(INSTALL_DATA) doc/man/gsincftpbatch.1 "$(mandir)/man1/gsincftpbatch.1"
+	$(INSTALL_DATA) doc/man/gsincftpls.1 "$(mandir)/man1/gsincftpls.1"
+	-@/bin/ls -l "$(mandir)/man1/gsincftp.1" "$(mandir)/man1/gsincftpget.1" "$(mandir)/man1/gsincftpput.1" "$(mandir)/man1/gsincftpbatch.1" "$(mandir)/man1/gsincftpls.1"
 	-@echo '..... Installing the programs .....'
-	$(INSTALL_PROGRAM) bin/ncftp@EXEEXT@ "$(BINDIR)/ncftp@EXEEXT@"
-	$(INSTALL_PROGRAM) bin/ncftpget@EXEEXT@ "$(BINDIR)/ncftpget@EXEEXT@"
-	$(INSTALL_PROGRAM) bin/ncftpput@EXEEXT@ "$(BINDIR)/ncftpput@EXEEXT@"
-	$(INSTALL_PROGRAM) bin/ncftpls@EXEEXT@ "$(BINDIR)/ncftpls@EXEEXT@"
-	$(INSTALL_PROGRAM) bin/ncftpbatch@EXEEXT@ "$(BINDIR)/ncftpbatch@EXEEXT@"
-	-@/bin/ls -l "$(BINDIR)/ncftp@EXEEXT@" "$(BINDIR)/ncftpget@EXEEXT@" "$(BINDIR)/ncftpput@EXEEXT@" "$(BINDIR)/ncftpls@EXEEXT@" "$(BINDIR)/ncftpbatch@EXEEXT@"
+	$(INSTALL_PROGRAM) bin/gsincftp@EXEEXT@ "$(BINDIR)/gsincftp@EXEEXT@"
+	$(INSTALL_PROGRAM) bin/gsincftpget@EXEEXT@ "$(BINDIR)/gsincftpget@EXEEXT@"
+	$(INSTALL_PROGRAM) bin/gsincftpput@EXEEXT@ "$(BINDIR)/gsincftpput@EXEEXT@"
+	$(INSTALL_PROGRAM) bin/gsincftpls@EXEEXT@ "$(BINDIR)/gsincftpls@EXEEXT@"
+	$(INSTALL_PROGRAM) bin/gsincftpbatch@EXEEXT@ "$(BINDIR)/gsincftpbatch@EXEEXT@"
+	-@/bin/ls -l "$(BINDIR)/gsincftp@EXEEXT@" "$(BINDIR)/gsincftpget@EXEEXT@" "$(BINDIR)/gsincftpput@EXEEXT@" "$(BINDIR)/gsincftpls@EXEEXT@" "$(BINDIR)/gsincftpbatch@EXEEXT@"
 	-@echo "(The following will fail if you didn't build the curses-based programs.)"
-	$(INSTALL_PROGRAM) bin/ncftpbookmarks "$(BINDIR)/ncftpbookmarks"
-	-@/bin/ls -l "$(BINDIR)/ncftpbookmarks"
+	$(INSTALL_PROGRAM) bin/gsincftpbookmarks "$(BINDIR)/gsincftpbookmarks"
+	-@/bin/ls -l "$(BINDIR)/gsincftpbookmarks"
 	-@echo 'Done installing NcFTP.'
 
 clean:
@@ -79,10 +78,10 @@ dtar:
 	-@mkdir $(TMPDIR)/TAR/$(TARDIR)
 	cp Makefile.bin $(TMPDIR)/TAR/$(TARDIR)/Makefile
 	chmod 644 $(TMPDIR)/TAR/$(TARDIR)/Makefile
+	cp CHANGELOG $(TMPDIR)/TAR/$(TARDIR)/CHANGELOG
+	chmod 644 $(TMPDIR)/TAR/$(TARDIR)/CHANGELOG
 	cp WHATSNEW-3.0 $(TMPDIR)/TAR/$(TARDIR)/WHATSNEW-3.0
 	chmod 644 $(TMPDIR)/TAR/$(TARDIR)/WHATSNEW-3.0
-	cp BETA-README $(TMPDIR)/TAR/$(TARDIR)/BETA-README
-	chmod 644 $(TMPDIR)/TAR/$(TARDIR)/BETA-README
 	cp FIREWALL-PROXY-README $(TMPDIR)/TAR/$(TARDIR)/FIREWALL-PROXY-README
 	chmod 644 $(TMPDIR)/TAR/$(TARDIR)/FIREWALL-PROXY-README
 	cp READLINE-README $(TMPDIR)/TAR/$(TARDIR)/READLINE-README
@@ -119,12 +118,12 @@ dgz: dtar
 	-@/bin/ls -l $(DTGZFILE)
 
 udgz: dgz
-	./sh/upload.sh 'ncftp/3.0BETA/binaries' $(DTGZFILE)
+	./sh/upload.sh 'ncftp/binaries' $(DTGZFILE)
 	-rm $(DTGZFILE)
 
 sgz:
 	./sh/mksrctar.sh $(TARDIR) $(STGZFILE)
 
 usgz: sgz
-	./sh/upload.sh 'ncftp/3.0BETA' $(STGZFILE)
+	./sh/upload.sh 'ncftp' $(STGZFILE)
 	-rm $(STGZFILE)

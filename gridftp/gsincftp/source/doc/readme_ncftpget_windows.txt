@@ -6,6 +6,5 @@ the command line which vary with each use.
 
 The installer places the NcFTP directory in your
 PATH, so you should be able to just type
-"ncftpget.exe" at a prompt to see the usage.
-Since there aren't any Windows-centric doc files
-yet, this is the best way to see how to use them.
+"ncftpget.exe" at a prompt to see the usage, or
+consult the HTML manual pages.

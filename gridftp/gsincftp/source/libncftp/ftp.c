@@ -1,6 +1,6 @@
 /* ftp.c
  *
- * Copyright (c) 1996 Mike Gleason, NCEMRSoft.
+ * Copyright (c) 1996-2000 Mike Gleason, NCEMRSoft.
  * All rights reserved.
  *
  */
@@ -25,7 +25,7 @@ static jmp_buf gCancelConnectJmp;
 
 
 #ifndef lint
-static char gCopyright[] = "@(#) LibNcFTP Copyright 1995-1999, by Mike Gleason.  All rights reserved.";
+static char gCopyright[] = "@(#) LibNcFTP Copyright 1995-2000, by Mike Gleason.  All rights reserved.";
 #endif
 
 #ifdef HAVE_LIBSOCKS5
@@ -732,7 +732,7 @@ OpenControlConnection(const FTPCIPtr cip, char *host, unsigned int port)
 	}
 
 	result = GetResponse(cip, rp);
-	if (result < 0) {
+	if ((result < 0) && (rp->msg.first == NULL)) {
 		goto fatal;
 	}
 	if (rp->msg.first != NULL) {
@@ -755,6 +755,9 @@ OpenControlConnection(const FTPCIPtr cip, char *host, unsigned int port)
 		} else if (strstr(firstLine, "Microsoft FTP Service") != NULL) {
 			cip->serverType = kServerTypeMicrosoftFTP;
 			srvr = "Microsoft FTP Service";
+		} else if (strstr(firstLine, "(NetWare ") != NULL) {
+			cip->serverType = kServerTypeNetWareFTP;
+			srvr = "NetWare FTP Service";
 		} else if (STRNEQ("WFTPD", firstLine, 5)) {
 			cip->serverType = kServerTypeWFTPD;
 			srvr = "WFTPD";
@@ -779,7 +782,7 @@ OpenControlConnection(const FTPCIPtr cip, char *host, unsigned int port)
 			PrintF(cip, "Remote server is running %s.\n", srvr);
 
 		/* Do the application's connect message callback, if present. */
-		if (cip->onConnectMsgProc != 0)
+		if ((cip->onConnectMsgProc != 0) && (rp->codeType < 4))
 			(*cip->onConnectMsgProc)(cip, rp);
 	}
 
@@ -794,6 +797,8 @@ OpenControlConnection(const FTPCIPtr cip, char *host, unsigned int port)
 		cip->errNo = kErrConnectRetryableErr;
 		goto fatal;
 	}
+	if (result < 0)		/* Some other error occurred during connect message */
+		goto fatal;
 	cip->connected = 1;
 	DoneWithResponse(cip, rp);
 	return (kNoErr);
