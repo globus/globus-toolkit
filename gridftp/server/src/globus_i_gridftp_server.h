@@ -3,13 +3,16 @@
 
 #include "globus_gridftp_server.h"
 #include "globus_ftp_control.h"
-#include "globus_i_gfs_ipc.h"
+
+typedef struct globus_i_gfs_ipc_handle_s * globus_gfs_ipc_handle_t;
 
 typedef struct
 {
     globus_xio_handle_t             xio_handle;
     char *                          remote_contact;
     char *                          rnfr_pathname;
+    globus_gfs_ipc_handle_t         ipc_handle;
+    
     globus_gridftp_server_operation_t op;
     
     union
@@ -113,8 +116,10 @@ typedef enum
 
 #include "globus_i_gfs_log.h"
 #include "globus_i_gfs_control.h"
+#include "globus_i_gfs_ipc.h"
 #include "globus_i_gfs_data.h"
 #include "globus_i_gfs_acl.h"
 #include "globus_i_gfs_config.h"
+#include "globus_i_gfs_ipc.h"
 
 #endif

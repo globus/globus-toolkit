@@ -51,7 +51,7 @@ typedef void
     int                                 cs_count,
     void *                              user_arg);
 
-
+#if 0
 
 globus_result_t
 globus_i_gfs_data_resource_request(
@@ -117,6 +117,8 @@ globus_i_gfs_data_active_request(
     globus_i_gfs_data_active_cb_t       callback,
     void *                              user_arg);
 
+#endif
+
 void
 globus_i_gfs_data_handle_destroy(
     globus_i_gfs_data_handle_t *        data_handle);
@@ -125,5 +127,7 @@ void
 globus_i_gfs_data_transfer_event(
     globus_i_gfs_server_instance_t *    instance,
     int                                 event_type);
+
+
 
 #endif
