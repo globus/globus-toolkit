@@ -124,7 +124,6 @@ extends GridServiceImpl {
         
         this.transferRequest = transferRequest;
         this.globalRFTOptionsType = transferRequest.getRftOptions();
-        System.out.println("global: " + this.globalRFTOptionsType.getSourceSubjectName() + " " + this.globalRFTOptionsType.getDestinationSubjectName());
         
         if ( transferRequest == null ) {
             logger.debug( "transfer request is null" );
