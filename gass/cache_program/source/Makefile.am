@@ -35,6 +35,8 @@ INCLUDES += $(GPT_INCLUDES)
 bin_SCRIPTS = \
 	globus-gass-cache \
 	globus-gass-cache-destroy
+libexec_SCRIPTS = \
+	globus-gass-cache-util.pl
 libexec_PROGRAMS = \
 	globus-gass-cache-util
 
@@ -57,6 +59,7 @@ globus_gass_cache_util_LDFLAGS = $(GPT_LDFLAGS)
 globus_gass_cache_util_LDADD = $(GPT_PGM_LINKS)
 
 EXTRA_DIST = globus-gass-cache \
+	     globus-gass-cache-util.pl \
 	     globus-gass-cache-destroy \
 	     version.h.in
 
