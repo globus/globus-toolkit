@@ -1,13 +1,23 @@
 #! /bin/sh
 
+recho() {
+
+    if [ "$1" == "-n" ]; then
+	echo -n "$2" 1>&2
+    else
+	echo $1 1>&2
+    fi
+}
+
 ############################################################
 # main code section
 ############################################################
 if test -z "${GLOBUS_LOCATION}"; then
-    echo ""
-    echo "ERROR: Please set GLOBUS_LOCATION to the Globus installation directory before"
-    echo "running this script"
-    echo ""
+    recho ""
+    recho "ERROR: Please set GLOBUS_LOCATION to the" 
+    recho "Globus installation directory before"
+    recho "running this script"
+    recho ""
     exit 1
 fi
 
@@ -17,12 +27,55 @@ globus_source ${libexecdir}/globus-sh-tools.sh
 GRID_CA_DIR=${HOME}/.globus/simpleCA/
 
 if [ ! -f ${GRID_CA_DIR}/cacert.pem ]; then
-    echo 
-    echo "No simple CA directory found.  Run setup-simple-ca before"
-    echo "signing certificates"
+    recho ""
+    recho "No simple CA directory found.  Run setup-simple-ca before"
+    recho "signing certificates."
+    recho ""
     exit 1
 fi
 
+PROGRAM_NAME=`echo $0 | ${GLOBUS_SH_SED-sed} 's|.*/||g'`
+
+short_usage="$PROGRAM_NAME [-help] [ options ...]"
+
+long_usage () {
+    ${GLOBUS_SH_CAT-cat} >&2 <<EOF
+
+${short_usage}
+
+  Expects a certificate request as input from stdin, and prints
+  the signed certificate to stdout.
+
+  Options:
+    -force           : Sign a certificate request with subject that
+		       matches an already signed certificate.
+EOF
+}
+
+. $libexecdir/globus-args-parser-header
+
+readCommandLine() {
+
+    while [ ! -z "$1" ] 
+    do
+	case $1 in
+	    -\?|-h|-help|-usage)
+		long_usage
+		exit 0
+		;;
+	    -force)
+		force_sign="true"
+	        shift;
+		;;
+            *)
+		globus_args_unrecognized_options "$1"
+		;;
+	esac
+    done
+}
+
+readCommandLine "$@"
+	    
 grid_ca_conf=${GRID_CA_DIR}/grid-ca-ssl.conf
 openssl_cmd=${GLOBUS_LOCATION}/bin/openssl
 
@@ -34,31 +87,108 @@ while read INPUT_REQ ; do
 	echo "${INPUT_REQ}" >> ${TMP_REQ_FILE}
 done
 
+recho ""
+recho -n "Enter password for the CA key: "
+read -s password 0<&2
+recho ""
+
 tmp_input_file=${GLOBUS_SH_TMP-/tmp/}/tmp_input.$$
 echo "y
 y
 " > $tmp_input_file
 
 tmp_output=${GLOBUS_SH_TMP-/tmp/}/tmp_output.$$
-${openssl_cmd} ca -config ${grid_ca_conf} -in ${TMP_REQ_FILE} -out ${TMP_CERT_FILE} < $tmp_input_file > $tmp_output
+${openssl_cmd} ca -config ${grid_ca_conf} -key "${password}" \
+                  -in ${TMP_REQ_FILE} -out ${TMP_CERT_FILE} \
+                  < $tmp_input_file 2> $tmp_output 
+
+SIGNED_SERIAL=`cat ${tmp_output} | ${GLOBUS_SH_GREP-grep} "Serial Number" | \
+               ${GLOBUS_SH_SED-sed} -e "s/Serial Number ://"`
+
+no_config_file=`${GLOBUS_SH_GREP-grep} "error loading the config file" ${tmp_output}`
+if [ ! -z "${no_config_file}" ]; then
+
+    recho ""
+    recho "ERROR: No CA config file found."
+    recho "the simple CA setup package must be installed."
+    recho ""
+    exit 1
+fi
+
+wrong_password=`${GLOBUS_SH_GREP-grep} "unable to load CA private key" ${tmp_output}`
+if [ ! -z "${wrong_password}" ]; then
+    
+    recho ""
+    recho "ERROR: Incorrect password for CA key."
+    recho ""
+    exit 1
+fi
+
+already_signed=`${GLOBUS_SH_GREP-grep} "ERROR:There is already a certificate" \
+                                       ${tmp_output}`
+
+if [ ! -z "${already_signed}" ]; then
+
+    SIGNED_EXP_DATE=`cat ${tmp_output} | ${GLOBUS_SH_GREP-grep} "Expires on" | \
+                     ${GLOBUS_SH_SED-sed} -e "s|Expires on[^:]*:\(.\{6\}\).*|\1|"`
+
+    export TZ "GMT"
+    CURRENT_DATE=`date +%y%m%d`
+
+    recho ${SIGNED_EXP_DATE}
+    recho ${CURRENT_DATE}
+    
+    if [ ${SIGNED_EXP_DATE} -lt ${CURRENT_DATE} ] || [ ! -z "${force_sign}" ]; then
+
+	recho ""
+	recho "Revoking previous certificate"
+
+	tmp_revoke_output=${GLOBUS_SH_TMP-/tmp/}/tmp_revoke_out.$$
+
+        ${openssl_cmd} ca -config ${grid_ca_conf} -key "${password}" \
+                          -revoke ${GRID_CA_DIR}/newcerts/${SIGNED_SERIAL}.pem \
+                          < $tmp_input_file 2> ${tmp_revoke_output}
+	
+        ${GLOBUS_SH_RM-rm} -f ${tmp_revoke_output}
+
+	recho "Signing new certificate"
+
+        ${openssl_cmd} ca -config ${grid_ca_conf} -key "${password}" \
+	                  -in ${TMP_REQ_FILE} -out ${TMP_CERT_FILE} \
+                          < $tmp_input_file 2> $tmp_output
+
+    else
+        recho ""
+	recho "========== ERROR MESSAGES FROM OPENSSL =========="
+	cat ${tmp_output} 1>&2
+	recho "================================================="
+	recho 
+	recho "There is already a valid certificate that matches this subject at:"
+	recho
+	recho "${GRID_CA_DIR}/newcerts/${SIGNED_SERIAL}.pem"
+	recho
+	recho "You can use the -force option to overwrite"
+	recho "this certificate and create a new one."
+	recho ""
+
+	${GLOBUS_SH_RM-rm} -f ${tmp_input_file}
+	${GLOBUS_SH_RM-rm} -f ${tmp_output}
+
+	exit 1
+    fi
+
+fi
+
+NEW_SERIAL=`${openssl_cmd} x509 -in ${TMP_CERT_FILE} -noout -serial | ${GLOBUS_SH_SED-sed} -e "s|serial=||"`
+
+recho ""
+recho "The new signed certificate is at: ${GRID_CA_DIR}/newcerts/${NEW_SERIAL}.pem"
+recho ""
 
 ${GLOBUS_SH_RM-rm} -f ${tmp_input_file}
 ${GLOBUS_SH_RM-rm} -f ${tmp_output}
 
-
-TMP_SUBJECT=`${openssl_cmd} x509 -in ${TMP_CERT_FILE} -noout -subject`
-TMP_SUBJECT=`echo ${TMP_SUBJECT} | ${GLOBUS_SH_SED-sed} -e "s|^.*CN=||"`
-
-HASH=`${openssl_cmd} x509 -in ${TMP_CERT_FILE} -noout -hash`
-SUBJECT=`echo ${TMP_SUBJECT} | ${GLOBUS_SH_SED-sed} -e "s|[ ]|_|g"`
-
-CERT_REQ_FILE=${GRID_CA_DIR}/certs/cert_req.pem.${SUBJECT}_${HASH}
-CERT_FILE=${GRID_CA_DIR}/certs/cert.pem.${SUBJECT}_${HASH}
-
-${GLOBUS_SH_CP-cp} ${TMP_REQ_FILE}   ${CERT_REQ_FILE}
-${GLOBUS_SH_CP-cp} ${TMP_CERT_FILE}  ${CERT_FILE}
+cat ${TMP_CERT_FILE}
 
 ${GLOBUS_SH_RM-rm} -f ${TMP_REQ_FILE} ${TMP_CERT_FILE}
 
-${GLOBUS_SH_CLEAR-clear}
-cat ${CERT_FILE}
