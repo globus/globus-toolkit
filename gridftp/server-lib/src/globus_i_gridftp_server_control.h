@@ -189,6 +189,18 @@ typedef void
     globus_result_t                         result,
     void *                                  user_arg);
 
+typedef void
+(*globus_i_gsc_transfer_cb_t)(
+    struct globus_i_gsc_op_s *              op,
+    globus_result_t                         result,
+    void *                                  user_arg);
+
+typedef void
+(*globus_i_gsc_event_cb_t)(
+    struct globus_i_gsc_op_s *              op,
+    globus_result_t                         result,
+    void *                                  user_arg);
+
 typedef struct globus_i_gsc_data_s
 {
     void *                                  user_arg;
@@ -447,6 +459,26 @@ globus_i_gsc_port(
     int                                     stripe_count,
     int                                     net_prt,
     globus_i_gsc_port_cb_t                  cb,
+    void *                                  user_arg);
+
+globus_result_t
+globus_i_gsc_send(
+    globus_i_gsc_op_t *                     op,
+    const char *                            path,
+    const char *                            mod_name,
+    const char *                            mod_parms,
+    globus_i_gsc_transfer_cb_t              data_cb,
+    globus_i_gsc_event_cb_t                 event_cb,
+    void *                                  user_arg);
+
+globus_result_t
+globus_i_gsc_recv(
+    globus_i_gsc_op_t *                     op,
+    const char *                            path,
+    const char *                            mod_name,
+    const char *                            mod_parms,
+    globus_i_gsc_transfer_cb_t              data_cb,
+    globus_i_gsc_event_cb_t                 event_cb,
     void *                                  user_arg);
 
 void
