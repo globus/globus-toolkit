@@ -195,13 +195,16 @@ parseSAMLassertion(char *saml_assertion, int verify_signature) {
   
   /* COMPAT: Do not generate nodes for formatting spaces */
   LIBXML_TEST_VERSION
-    xmlKeepBlanksDefault(0);
+/*    xmlKeepBlanksDefault(0); */
 
   
   /*
    * build an XML tree from a saml file;
    */
   xmlInitParser();
+  xmlLoadExtDtdDefaultValue = XML_DETECT_IDS | XML_COMPLETE_ATTRS;
+  xmlSubstituteEntitiesDefault(1);
+
   doc = xmlParseMemory(saml_assertion, strlen(saml_assertion));
   if (doc == NULL) return(NULL);
 

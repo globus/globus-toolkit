@@ -62,10 +62,6 @@ gaa_simple_read_saml(gaa_ptr		      gaa,
     return(GAA_STATUS(GAA_S_INVALID_ARG, 0));
   }
 
-  f = fopen("/tmp/assertion", "w");
-  fprintf(f, "%s", saml_assertion);
-  fclose(f);
-
   Assertion = parseSAMLassertion(saml_assertion, 1);
 
   if (!Assertion) {

@@ -32,5 +32,10 @@ libglobus_gaa_simple___GLOBUS_FLAVOR_NAME__la_LIBADD = $(GPT_LIB_LINKS)
 
 libglobus_gaa_simple___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDADD) -lxmlsec1-openssl
 
+xml_sig_test_SOURCES = xml_sig_test.c xml_sig.c
+xml_sig_test_LDFLAGS = $(GPT_LDFLAGS)
+xml_sig_test_LDADD = $(GPT_PGM_LINKS) -lxmlsec1-openssl
+test_PROGRAMS=xml_sig_test
+
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top
