@@ -43,8 +43,6 @@ GSS_CALLCONV gss_release_name(
 
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
-    minor_status = (OM_uint32 *) GLOBUS_SUCCESS;
-
     if (name == NULL || *name == NULL || *name == GSS_C_NO_NAME)
     {
         goto exit;
