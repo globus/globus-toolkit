@@ -145,7 +145,6 @@ attributetype ( 1.3.6.1.4.1.3536.2.6.2.7.2.1.0.5
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.44
  )
 
-
 attributetype ( 1.3.6.1.4.1.3536.2.6.2.7.2.1.0.6
     NAME 'Mds-Gram-Job-schedulerSpecific'
     DESC 'job status'
@@ -155,6 +154,105 @@ attributetype ( 1.3.6.1.4.1.3536.2.6.2.7.2.1.0.6
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.44
  )
 
+attributetype ( 1.3.6.1.4.1.3536.2.6.2.7.2.1.0.7
+    NAME 'Mds-Gram-Job-count'
+    DESC 'node count'
+    EQUALITY caseIgnoreMatch
+    ORDERING caseIgnoreOrderingMatch
+    SUBSTR caseIgnoreSubstringsMatch
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.44
+ )
+
+attributetype ( 1.3.6.1.4.1.3536.2.6.2.7.2.1.0.8
+    NAME 'Mds-Gram-Job-serverName'
+    DESC 'local server name'
+    EQUALITY caseIgnoreMatch
+    ORDERING caseIgnoreOrderingMatch
+    SUBSTR caseIgnoreSubstringsMatch
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.44
+ )
+
+attributetype ( 1.3.6.1.4.1.3536.2.6.2.7.2.1.0.9
+    NAME 'Mds-Gram-Job-startTime'
+    DESC 'job start time'
+    EQUALITY caseIgnoreMatch
+    ORDERING caseIgnoreOrderingMatch
+    SUBSTR caseIgnoreSubstringsMatch
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.44
+ )
+
+attributetype ( 1.3.6.1.4.1.3536.2.6.2.7.2.1.0.10
+    NAME 'Mds-Gram-Job-finishTime'
+    DESC 'job finish time'
+    EQUALITY caseIgnoreMatch
+    ORDERING caseIgnoreOrderingMatch
+    SUBSTR caseIgnoreSubstringsMatch
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.44
+ )
+
+attributetype ( 1.3.6.1.4.1.3536.2.6.2.7.2.1.0.11
+    NAME 'Mds-Gram-Job-wallTime'
+    DESC 'job wall time'
+    EQUALITY caseIgnoreMatch
+    ORDERING caseIgnoreOrderingMatch
+    SUBSTR caseIgnoreSubstringsMatch
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.44
+ )
+
+
+attributetype ( 1.3.6.1.4.1.3536.2.6.2.7.2.1.0.12
+    NAME 'Mds-Gram-Job-queuedTime'
+    DESC 'job queued time'
+    EQUALITY caseIgnoreMatch
+    ORDERING caseIgnoreOrderingMatch
+    SUBSTR caseIgnoreSubstringsMatch
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.44
+ )
+
+attributetype ( 1.3.6.1.4.1.3536.2.6.2.7.2.1.0.13
+    NAME 'Mds-Gram-Job-comment'
+    DESC 'job comment from scheduler'
+    EQUALITY caseIgnoreMatch
+    ORDERING caseIgnoreOrderingMatch
+    SUBSTR caseIgnoreSubstringsMatch
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.44
+ )
+
+attributetype ( 1.3.6.1.4.1.3536.2.6.2.7.2.1.0.14
+    NAME 'Mds-Gram-Job-priority'
+    DESC 'job priority'
+    EQUALITY caseIgnoreMatch
+    ORDERING caseIgnoreOrderingMatch
+    SUBSTR caseIgnoreSubstringsMatch
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.44
+ )
+
+attributetype ( 1.3.6.1.4.1.3536.2.6.2.7.2.1.0.15
+    NAME 'Mds-Gram-Job-elapsedTime'
+    DESC 'job elapsed time'
+    EQUALITY caseIgnoreMatch
+    ORDERING caseIgnoreOrderingMatch
+    SUBSTR caseIgnoreSubstringsMatch
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.44
+ )
+
+attributetype ( 1.3.6.1.4.1.3536.2.6.2.7.2.1.0.16
+    NAME 'Mds-Gram-Job-requestedMemory'
+    DESC 'job requested memory'
+    EQUALITY caseIgnoreMatch
+    ORDERING caseIgnoreOrderingMatch
+    SUBSTR caseIgnoreSubstringsMatch
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.44
+ )
+
+attributetype ( 1.3.6.1.4.1.3536.2.6.2.7.2.1.0.17
+    NAME 'Mds-Gram-Job-requestedTime'
+    DESC 'job requested time'
+    EQUALITY caseIgnoreMatch
+    ORDERING caseIgnoreOrderingMatch
+    SUBSTR caseIgnoreSubstringsMatch
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.44
+ )
 
 attributetype ( 1.3.6.1.4.1.3536.2.6.2.7.2.1.1.0.1
     NAME 'Mds-Gram-Job-Queue-maxtime'
@@ -215,7 +313,6 @@ attributetype ( 1.3.6.1.4.1.3536.2.6.2.7.2.1.1.0.6
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.44
  )
 
-
 attributetype ( 1.3.6.1.4.1.3536.2.6.2.7.2.1.1.0.7
     NAME 'Mds-Gram-Job-Queue-status'
     DESC 'status'
@@ -255,7 +352,6 @@ attributetype ( 1.3.6.1.4.1.3536.2.6.2.7.2.1.1.0.10
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.44
  )
 
-
 attributetype ( 1.3.6.1.4.1.3536.2.6.2.7.2.1.1.0.11
     NAME 'Mds-Gram-Job-Queue-schedulerSpecific'
     DESC 'schedulerSpecific'
@@ -278,9 +374,8 @@ objectclass ( 1.3.6.1.4.1.3536.2.6.2.7.2.1
     NAME 'MdsGramJob'
     SUP 'Mds'
     AUXILIARY
-    MUST ( Mds-Gram-Job-localOwner $ Mds-Gram-Job-globalOwner $ Mds-Gram-Job-localId $ Mds-Gram-Job-globalId $ Mds-Gram-Job-status $ Mds-Gram-Job-schedulerSpecific )
+    MUST ( Mds-Gram-Job-localOwner $ Mds-Gram-Job-globalOwner $ Mds-Gram-Job-localId $ Mds-Gram-Job-globalId $ Mds-Gram-Job-status $ Mds-Gram-Job-schedulerSpecific $ Mds-Gram-Job-count $ Mds-Gram-Job-serverName $ Mds-Gram-Job-startTime $ Mds-Gram-Job-finishTime $ Mds-Gram-Job-wallTime $ Mds-Gram-Job-queuedTime $ Mds-Gram-Job-comment $ Mds-Gram-Job-priority $ Mds-Gram-Job-elapsedTime $ Mds-Gram-Job-requestedMemory $ Mds-Gram-Job-requestedTime )
  )
-
 
 objectclass ( 1.3.6.1.4.1.3536.2.6.2.7.2
     NAME 'MdsGram'

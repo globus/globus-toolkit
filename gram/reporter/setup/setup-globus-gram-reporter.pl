@@ -23,7 +23,7 @@ sub pod2usage {
 
 if ( $selected_jm_type eq "" )
 {
-   $selected_jm_type='fork';
+   $selected_jm_type='pbs';
 }
 
 if ( ! grep {$_ eq $selected_jm_type} @all_jm_types)

@@ -60,16 +60,22 @@ typedef struct globus_l_gram_scheduler_entry_s
     char * local_job_id;
     char * global_job_id;
     char * local_user_name;
+    char * local_job_name;
     char * global_user_name;
     int count;
     char * status;
-    unsigned long start_time;
-    unsigned long finish_time;
+    char * server_name;  /* added by slang */
+    char * start_time;
+    char * finish_time;
+    char * queued_time;  /* added by slang */
+    char * wall_time;    /* added by slang */
     unsigned long elapsed_time;
+    int priority;               /* added by slang */
     int requested_memory;
     int requested_time;
     char * schedulerspecific;
     char * specification;
+    char * comment;
 } globus_gram_scheduler_entry_t;
 
 

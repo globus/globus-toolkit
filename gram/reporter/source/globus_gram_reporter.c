@@ -475,6 +475,9 @@ globus_l_gram_write_gram_cldif_file(globus_l_gram_conf_values_t * vals,
                 fprintf(vals->cldif_fp, "creatorsName: NULL\n");
             }
         
+            fprintf(vals->cldif_fp, "Mds-Gram-Job-count: %d\n",
+                    q_entry_node->count);                   
+
             if (q_entry_node->specification)
                 fprintf(vals->cldif_fp, "Mds-Gram-Job-specification: %s\n",
                     q_entry_node->specification);
@@ -486,6 +489,33 @@ globus_l_gram_write_gram_cldif_file(globus_l_gram_conf_values_t * vals,
             else
                 fprintf(vals->cldif_fp, "Mds-Gram-Job-status: NULL\n");
 
+            fprintf(vals->cldif_fp, "Mds-Gram-Job-serverName: %s\n",
+                    q_entry_node->server_name ? q_entry_node->server_name : "NULL");
+            
+            fprintf(vals->cldif_fp, "Mds-Gram-Job-startTime: %s\n",
+                    q_entry_node->start_time ? q_entry_node->start_time : "NULL");
+
+            fprintf(vals->cldif_fp, "Mds-Gram-Job-finishTime: %s\n",
+                    q_entry_node->finish_time ? q_entry_node->finish_time : "NULL");
+
+            fprintf(vals->cldif_fp, "Mds-Gram-Job-queuedTime: %s\n",
+                    q_entry_node->queued_time ? q_entry_node->queued_time : "NULL");
+
+            fprintf(vals->cldif_fp, "Mds-Gram-Job-wallTime: %s\n",
+                    q_entry_node->wall_time ? q_entry_node->wall_time : "NULL");
+
+            fprintf(vals->cldif_fp, "Mds-Gram-Job-elapsedTime: %d\n", 
+                    q_entry_node->elapsed_time);
+
+            fprintf(vals->cldif_fp, "Mds-Gram-Job-priority: %d\n",
+                    q_entry_node->priority);
+
+            fprintf(vals->cldif_fp, "Mds-Gram-Job-requestedMemory: %d\n",
+                    q_entry_node->requested_memory);
+
+            fprintf(vals->cldif_fp, "Mds-Gram-Job-requestedTime: %d\n",
+                    q_entry_node->requested_time);
+
 /*
  *          fprintf(vals->cldif_fp, "start time: %lu\n",
  *                  q_entry_node->start_time);
@@ -496,6 +526,9 @@ globus_l_gram_write_gram_cldif_file(globus_l_gram_conf_values_t * vals,
                     q_entry_node->schedulerspecific);
             else
                 fprintf(vals->cldif_fp, "Mds-Gram-Job-schedulerSpecific: NULL\n");
+
+            fprintf(vals->cldif_fp, "Mds-Gram-Job-comment: %s\n",
+                    q_entry_node->comment ? q_entry_node->comment : "NULL");
 
     if (vals->valid_from)
     {

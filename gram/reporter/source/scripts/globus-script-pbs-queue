@@ -47,11 +47,12 @@ globus_source ${libexecdir}/globus-gram-job-manager-tools.sh
 
 
 # programs used in this script located by autoconf:
-uptime=${GLOBUS_SH_UPTIME-uptime}
-qstat=${GLOBUS_GRAM_JOB_MANAGER_QSTAT-qstat}
-grep=${GLOBUS_SH_GREP-grep}                                 
-awk=${GLOBUS_SH_AWK-awk}
-wc=${GLOBUS_SH_WC-wc}
+uptime=${GLOBUS_SH_UPTIME:-uptime}
+qstat=${GLOBUS_GRAM_JOB_MANAGER_QSTAT:-qstat}
+grep=${GLOBUS_SH_GREP:-grep}                                 
+awk=${GLOBUS_SH_AWK:-awk}
+wc=${GLOBUS_SH_WC:-wc}
+sed=${GLOBUS_SH_SED:-sed}
 ########
 
 tmp_file="${local_tmpdir}/globus_tmp_file.$$"
@@ -116,6 +117,8 @@ GetNodeCount() {
     # PBS_NODESIZE variable to match your site's info
     PBS_NODESIZE=1
 
+    echo "GLOBUS_GRAM_JOB_MANAGER_QSTAT: ${GLOBUS_GRAM_JOB_MANAGER_QSTAT}"
+    echo "RUNNING: ${qstat} -a"
 
     eval `${qstat} -a | ${awk} '
     BEGIN {
@@ -194,14 +197,60 @@ OutputJobEntry() {
      echo "GRAM_SCRIPT_QE:localjobid ${localjobid}"
      echo "GRAM_SCRIPT_QE:localusername ${localusername}"
      echo "GRAM_SCRIPT_QE:localjobname ${localjobname}"
+     echo "GRAM_SCRIPT_QE:walltime ${walltime}"            # added by slang
+     echo "GRAM_SCRIPT_QE:queuedtime ${queuedtime}"
+     echo "GRAM_SCRIPT_QE:priority ${priority}"            # added by slang
      echo "GRAM_SCRIPT_QE:count ${count}"
-     echo "GRAM_SCRIPT_QE:requesteddmemory ${reqdmemory}"
+     echo "GRAM_SCRIPT_QE:requestedmemory ${reqdmemory}"
      echo "GRAM_SCRIPT_QE:requestedtime ${reqdtime}"
      echo "GRAM_SCRIPT_QE:elapsedtime ${elapsedtime}"
      echo "GRAM_SCRIPT_QE:status ${status}"
+     echo "GRAM_SCRIPT_QE:servername ${servername}"        # added by slang
+     echo "GRAM_SCRIPT_QE:starttime ${starttime}"          # added by slang 
+     echo "GRAM_SCRIPT_QE:finishtime ${finishtime}"        # added by slang
+     echo "GRAM_SCRIPT_QE:schedulerspecific ${schedulerspecific}"  # added by slang
+     echo "GRAM_SCRIPT_QE:comment ${comment}"  # added by slang
      echo "GRAM_SCRIPT_QE:endqueueentry"
 } 
 
+
+GetField() {
+    
+     echo `echo $1 | ${GLOBUS_SH_SED:-sed} -e "s|^[ ]*\(.*\)[ ]*=.*|\1|"`
+}
+
+GetValue() {
+     echo `echo $1 | ${GLOBUS_SH_SED:-sed} -e "s|^.*=[ ]*\(.*\)|\1|"`
+}
+
+GetOtherInfo() {
+
+    while read jobentry ; do
+    set -- ${jobentry}
+    if [ "$3" != "$queueName" ] ; then
+         continue
+       else
+         localjobname=$4
+         reqdnodes=$6
+         reqdtasks=$7
+         reqdmemory=$8
+         if [ "$reqdmemory" = "--" ]; then
+             reqdmemory="unknown"
+         fi
+         reqdtime=$9
+         shift
+         shift
+         elapsedtime=`echo "$9" | awk -F: '{print 60 * $1 + $2}'`
+         count=$reqdnodes
+         if [ -z "$count" -o "$count" = "--" ]; then
+             if [ -z $reqdtasks ]; then
+          count="0"
+             fi
+             count=$reqdtasks
+         fi
+       fi
+    done
+}
 
 ####################################################
 # 
@@ -217,8 +266,7 @@ GetNodeCount
 
 
 # Collect job information into file for later processing
-${qstat} -a > "${tmp_file}"
-
+${qstat} -f > "${tmp_file}"
 
 # Collect queue information 
 msgfound="false"
@@ -314,45 +362,103 @@ ${qstat} -q | while read entry ; do
     shift
     OutputQueueEntry
 
-
-# obtain  information about jobs in this queue 
-    while read jobentry ; do
-    set -- ${jobentry}
-    if [ "$3" != "$queueName" ] ; then
-         continue
-       else
-         localjobid=$1
-         localusername=$2
-         localjobname=$4
-         reqdnodes=$6
-         reqdtasks=$7
-         reqdmemory=$8
-         if [ $reqdmemory = "--" ]; then
-             reqdmemory="unknown"
-         fi
-         reqdtime=$9
-         shift
-         status=$9
-         if [ $status = "R" ]; then
-             status="running"
-         fi
-         if [ $status = "Q" ]; then
-             status="queued"
-         fi
-         shift
-         elapsedtime=`echo "$9" | awk -F: '{print 60 * $1 + $2}'`
-         count=$reqdnodes
-         if [ -z $count -o $count = "--" ]; then
-             if [ -z $reqdtasks ]; then
-          count="0"
-             fi
-             count=$reqdtasks
-         fi
-         OutputJobEntry
-       fi
-
-    done < "${tmp_file}"
-
 done
+
+# job entry gathering for other info - Sam Lang 3.12.02
+schedulerspecific=""
+localjobid=""
+walltime="`date`";
+while read entry_line ; do
+        
+    sed_ret=`echo $entry_line | sed -e "s|.*Job Id:[ ]*\([^ ]*\)[ ]*|\1|"`
+    if [ "$sed_ret" != "$entry_line" ]; then
+            
+        if [ ! -z "$localjobid" ]; then
+            eval "$qstat -a $localjobid" | GetOtherInfo;
+            OutputJobEntry
+        fi
+
+        localjobid="$sed_ret"
+        continue;
+
+    elif [ -z "`echo $entry_line | sed -e "s|.*=.*||"`" ]; then
+
+#        schedulerspecific=$schedulerspecific"##$entry_line"
+
+        field=`GetField "$entry_line"`;
+        value=`GetValue "$entry_line"`;
+            
+        case "$field" in
+
+            Job_Name)
+                localjobname="$value"
+                ;;
+
+            Job_Owner)
+                localusername="$value"
+                ;;
+
+            job_state)
+                case "$value" in
+                    
+                    R)
+                        status="running"
+                        ;;
+                    Q)
+                        status="queued"
+                        ;;
+                    E)
+                        status="exited"
+                        ;;
+                    *)
+                        status="unknown"
+                        ;;
+                 esac
+                 ;;
+                 
+            queue)
+                queueName="$value"
+                ;;
+
+            server)
+                servername="$value"
+                ;;
+
+            Error_Path)
+                ;;
+
+            Priority)
+                priority="$value"
+                ;;
+
+            mtime)
+                if [ ! -z "$status" ]; then
+                    if [ "$status" == "running" ]; then
+                        starttime="$value"
+                    elif [ "$status" == "exited" ]; then
+                        finishtime="$value"
+                    fi
+                fi
+
+                ;;
+
+            qtime)
+                queuedtime="$value"
+                ;;
+
+            etime)
+                ;;
+            *)
+                ;;
+         esac
+    fi
+
+
+done < ${tmp_file}
+
+if [ ! -z "$localjobid" ]; then
+    eval "$qstat -a $localjobid" | GetOtherInfo;
+fi
+OutputJobEntry
 
 rm ${tmp_file}

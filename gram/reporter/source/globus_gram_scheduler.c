@@ -81,13 +81,18 @@ globus_i_gram_q_entry_init(globus_gram_scheduler_entry_t * q_entry_node)
     q_entry_node->global_user_name = GLOBUS_NULL;
     q_entry_node->count = 0;
     q_entry_node->status = GLOBUS_NULL;
-    q_entry_node->start_time = 0;
-    q_entry_node->finish_time = 0;
+    q_entry_node->server_name = GLOBUS_NULL;
+    q_entry_node->start_time = GLOBUS_NULL;
+    q_entry_node->finish_time = GLOBUS_NULL;
+    q_entry_node->queued_time = GLOBUS_NULL;
+    q_entry_node->wall_time = GLOBUS_NULL;
     q_entry_node->elapsed_time = 0;
+    q_entry_node->priority = 0;
     q_entry_node->requested_memory = 0;
     q_entry_node->requested_time = 0;
     q_entry_node->schedulerspecific = GLOBUS_NULL;
     q_entry_node->specification = GLOBUS_NULL;
+    q_entry_node->comment = GLOBUS_NULL;
     return;
 
 } /* globus_i_gram_q_entry_init() */
@@ -215,6 +220,9 @@ globus_l_gram_load_q_entry_field(globus_gram_scheduler_entry_t * q_entry_node,
     else if ( strcasecmp(field_name, "localusername") == 0 )
         q_entry_node->local_user_name=(char *) globus_libc_strdup(field_value);
 
+    else if ( strcasecmp(field_name, "localjobname") == 0 )
+        q_entry_node->local_job_name=(char *) globus_libc_strdup(field_value);
+
     else if ( strcasecmp(field_name, "count") == 0 )
         if (field_value)
             q_entry_node->count = atoi(field_value);
@@ -224,17 +232,28 @@ globus_l_gram_load_q_entry_field(globus_gram_scheduler_entry_t * q_entry_node,
     else if ( strcasecmp(field_name, "status") == 0 )
         q_entry_node->status = (char *) globus_libc_strdup(field_value);
 
+    /* added by slang */
+    else if ( strcasecmp(field_name, "servername") == 0 )
+        q_entry_node->server_name = (char *) globus_libc_strdup(field_value);
+
     else if ( strcasecmp(field_name, "starttime") == 0 )
-        if (field_value)
-            q_entry_node->start_time = atoi(field_value);
-        else
-            q_entry_node->start_time = 0;
+        q_entry_node->start_time = globus_libc_strdup(field_value);
 
     else if ( strcasecmp(field_name, "finishtime") == 0 )
+        q_entry_node->finish_time = globus_libc_strdup(field_value);
+
+    else if ( strcasecmp(field_name, "walltime") == 0 )
+        q_entry_node->wall_time = globus_libc_strdup(field_value);
+
+    /* added by slang */
+    else if ( strcasecmp(field_name, "queuedtime") == 0 )
+        q_entry_node->queued_time = globus_libc_strdup(field_value);
+
+    else if ( strcasecmp(field_name, "priority") == 0 )
         if (field_value)
-            q_entry_node->finish_time = atoi(field_value);
+            q_entry_node->priority = atoi(field_value);
         else
-            q_entry_node->finish_time = 0;
+            q_entry_node->priority = 0;
 
     else if ( strcasecmp(field_name, "elapsedtime") == 0 )
         if (field_value)
@@ -256,6 +275,9 @@ globus_l_gram_load_q_entry_field(globus_gram_scheduler_entry_t * q_entry_node,
 
     else if ( strcasecmp(field_name, "schedulerspecific") == 0 )
        q_entry_node->schedulerspecific=(char *) globus_libc_strdup(field_value);
+
+    else if ( strcasecmp(field_name, "comment") == 0 )
+        q_entry_node->comment = (char *) globus_libc_strdup(field_value);
 
     else
     {
@@ -282,9 +304,9 @@ int globus_gram_scheduler_queue_list_get( char * script_cmd,
                                           globus_list_t ** q_list )
 {
     FILE *fp;
-    char buf[500];
-    char q_line[500];
-    char q_entry[500];
+    char buf[2000];
+    char q_line[2000];
+    char q_entry[2000];
     globus_gram_scheduler_t *  q_node = GLOBUS_NULL;
     globus_gram_scheduler_entry_t *  q_entry_node = GLOBUS_NULL;
     char * field_name = GLOBUS_NULL;
@@ -338,7 +360,6 @@ int globus_gram_scheduler_queue_list_get( char * script_cmd,
         else if (strncmp(buf, "GRAM_SCRIPT_QE:", 15) == 0)
         {
             strcpy(q_entry, &buf[15]);
-
             field_name = (char *) strtok(q_entry, " ");
             if ( strcasecmp(field_name, "startqueueentry") == 0 )
             {
@@ -424,9 +445,16 @@ int globus_gram_scheduler_queue_list_free( globus_list_t * q_list )
             globus_libc_free(q_entry_node->global_user_name);
             globus_libc_free(q_entry_node->local_job_id);
             globus_libc_free(q_entry_node->local_user_name);
+            globus_libc_free(q_entry_node->local_job_name);
             globus_libc_free(q_entry_node->specification);
             globus_libc_free(q_entry_node->status);
+            globus_libc_free(q_entry_node->server_name);
+            globus_libc_free(q_entry_node->start_time);
+            globus_libc_free(q_entry_node->finish_time);
+            globus_libc_free(q_entry_node->queued_time);
+            globus_libc_free(q_entry_node->wall_time);
             globus_libc_free(q_entry_node->schedulerspecific);
+            globus_libc_free(q_entry_node->comment);
             globus_libc_free(q_entry_node);
         }
         globus_libc_free(q_node);
