@@ -224,6 +224,71 @@ globus_range_list_insert(
 }
 
 int
+globus_range_list_remove(
+    globus_range_list_t                 range_list,
+    globus_off_t                        offset,
+    globus_off_t                        length)
+{
+    globus_l_range_ent_t *              prev;
+    globus_l_range_ent_t *              ent;
+    globus_l_range_ent_t *              next;
+    globus_size_t                       end_offset;
+    globus_size_t                       ent_end;
+    globus_bool_t                       done = GLOBUS_FALSE;
+
+    end_offset = offset + length;
+    prev = NULL;
+    ent = range_list->head;
+    while(ent != NULL && !done)
+    {
+        next = ent->next;
+        ent_end = ent->offset + ent->length;
+        
+        /* this range is all foul, remove it */
+        if(ent->offset >= offset && ent_end <= end_offset)
+        {
+            if(prev == NULL)
+            {
+                range_list->head = next;
+            }
+            else
+            {
+                prev->next = next;
+            }
+            range_list->size--;
+            globus_free(ent);
+        }
+        /* this range starts fair and extends foul, adjust length */
+        else if(ent->offset < offset && 
+            ent_end < end_offset && ent_end > offset)
+        {   
+            ent->length = offset - end_offset;
+            prev = ent;
+        }
+        /* this range starts foul and extends fair, adjust offset */
+        else if(ent->offset > offset && ent->offset < end_offset &&
+            ent_end > end_offset)
+        {
+            ent->offset = end_offset;
+            prev = ent;
+            done = GLOBUS_TRUE;
+        }
+        /* this range is all fair */
+        else
+        {
+            if(ent->offset > end_offset)
+            {
+                done = GLOBUS_TRUE;
+            }
+            prev = ent;
+        }
+        ent = next;
+    }
+
+    return GLOBUS_SUCCESS;
+}
+
+int
 globus_range_list_size(
     globus_range_list_t                 range_list)
 {

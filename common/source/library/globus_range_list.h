@@ -39,6 +39,12 @@ globus_range_list_insert(
     globus_off_t                        length);
 
 int
+globus_range_list_remove(
+    globus_range_list_t                 range_list,
+    globus_off_t                        offset,
+    globus_off_t                        length);
+
+int
 globus_range_list_size(
     globus_range_list_t                 range_list);
 
