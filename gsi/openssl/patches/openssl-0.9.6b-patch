@@ -225,7 +225,7 @@ diff -u -r -P openssl-0.9.6b/Makefile.org openssl-0.9.6b-patched/Makefile.org
 +	set -x; libs="-L. ${SHLIBDEPS}" ; \
 +	for i in ${SHLIBDIRS}; do \
 +		lib=lib$${i}.so.${SHLIB_MAJOR}.${SHLIB_MINOR} ; \
-+		${CC} $(CFLAG) -o $$lib -Wl,-soname -Wl,$$lib -all lib$${i}.a -notall $$libs ${EXLIBS} -lc ; \
++		${CC} $(CFLAG) -o $$lib -Wl,-soname -Wl,$$lib -all lib$${i}.a -noall $$libs ${EXLIBS} -lc ; \
 +	libs="$$libs -l$$i"; \
 +	done
 +do_aix-gcc-shared:
