@@ -1389,6 +1389,17 @@ globus_l_gfs_data_destroy_cb(
 
     }
     globus_mutex_unlock(&session_handle->mutex);
+
+    if(free_session)
+    {
+        if(session_handle->dsi != globus_l_gfs_dsi)
+        {
+            globus_extension_release(session_handle->dsi_handle);
+        }
+        globus_handle_table_destroy(&session_handle->handle_table);
+        globus_i_gfs_acl_destroy(&session_handle->acl_handle);
+        globus_free(session_handle);
+    }
 }
 
 /* 
@@ -3611,6 +3622,8 @@ globus_i_gfs_data_session_stop(
             {
                 globus_extension_release(session_handle->dsi_handle);
             }
+            globus_handle_table_destroy(&session_handle->handle_table);
+            globus_i_gfs_acl_destroy(&session_handle->acl_handle);
             globus_free(session_handle);
         }
     }

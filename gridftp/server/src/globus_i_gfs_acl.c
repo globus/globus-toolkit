@@ -236,6 +236,7 @@ void
 globus_i_gfs_acl_destroy(
     struct globus_i_gfs_acl_handle_s *  acl_handle)
 {
+    int                                 ctr;
     globus_l_gfs_acl_request_t *        acl_request;
 
     while(!globus_list_empty(acl_handle->module_list))
@@ -281,6 +282,13 @@ globus_i_gfs_acl_destroy(
     if(acl_handle->given_pw)
     {
         globus_free(acl_handle->given_pw);
+    }
+    if(acl_handle->grpent.gr_mem)
+    {
+        for(ctr = 0; acl_handle->grpent.gr_mem[ctr] != NULL; ctr++)
+        {
+            globus_free(acl_handle->grpent.gr_mem[ctr]);
+        }
     }
 }
 
