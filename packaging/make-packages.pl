@@ -357,15 +357,21 @@ sub generate_build_list()
        install_gt2_autotools();
        print "Final package build list:\n";
 
-       foreach my $bun ( @bundle_build_list )
+       foreach my $bun ( @user_bundles )
        {
             my ($flavor, $flag, @packs) = @{$bundle_list{$bun}};
+            my $suffix = " ";
             print "$bun: ";
+            if ( $flavor =~ /thr/ )
+            {
+                 $suffix = "-thr ";
+            }
+
             foreach my $pack ( @package_build_list )
             {
                  if ( grep /^$pack$/, @packs )
                  {
-                     print "$pack ";
+                     print "$pack$suffix";
                  }
             }
             print "\n";
@@ -374,13 +380,17 @@ sub generate_build_list()
        foreach my $pack ( @package_build_list )
        {
             print "$pack:\n";
-            print "\t\$\{GPT_LOCATION\}/sbin/gpt-build -srcdir=" . $package_list{$pack}[1] . " $flavor\n";
+            print "\t\$\{GPT_LOCATION\}/sbin/gpt-build -srcdir=" . $package_list{$pack}[1] . " \${FLAVOR}\n";
+            print "${pack}-thr:\n";
+            print "\t\$\{GPT_LOCATION\}/sbin/gpt-build -srcdir=" . $package_list{$pack}[1] . " \${FLAVOR}\${THR}\n";
             my ($tree, $subdir, $custom) = ($package_list{$pack}[0],
                                             $package_list{$pack}[1],
                                             $package_list{$pack}[2]);
 
-            package_source_bootstrap($pack, $subdir, $tree);
+            #package_source_bootstrap($pack, $subdir, $tree);
        }
+
+       print "postinstall:\n\t\${GPT_LOCATION}/sbin/gpt-postinstall\n";
     }
 }
 
