@@ -36,7 +36,7 @@ case $1 in
 
 'stop')
     pid=`$PS | grep myproxy-server | grep -v grep | awk '{print $1}'`
-    if [ -n $pid ]; then 
+    if [ -n "$pid" ]; then 
         echo "Shutting down MyProxy"
         kill -TERM $pid
     else
