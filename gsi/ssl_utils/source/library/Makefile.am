@@ -14,7 +14,7 @@ flavorinclude_HEADERS= \
 
 lib_LTLIBRARIES = libglobus_ssl_utils_$(GLOBUS_FLAVOR_NAME).la
 
-INCLUDES = $(GPT_INCLUDES) -I $(top_srcdir)/library/oldgaa -I ./oldgaa
+INCLUDES = $(GPT_INCLUDES) -I$(top_srcdir)/library/oldgaa -I./oldgaa
 
 #AM_CFLAGS = -DDEBUG
 
