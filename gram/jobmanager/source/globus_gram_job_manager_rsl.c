@@ -234,6 +234,9 @@ globus_gram_job_manager_rsl_add_substitutions_to_symbol_table(
     globus_list_t *			pair;
     globus_rsl_value_t *		variable;
     globus_rsl_value_t *		value;
+    char *				variable_string;
+    char *				value_string;
+    int					rc;
 
     if(!globus_rsl_is_boolean_and(request->rsl))
     {
@@ -267,28 +270,41 @@ globus_gram_job_manager_rsl_add_substitutions_to_symbol_table(
 
 	    if(!globus_rsl_value_is_sequence(substitution_value))
 	    {
-		return GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
+		return GLOBUS_GRAM_PROTOCOL_ERROR_RSL_EVALUATION_FAILED;
 	    }
 	    pair = globus_rsl_value_sequence_get_value_list(substitution_value);
 
 	    if(globus_list_size(pair) != 2)
 	    {
-		return GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
+		return GLOBUS_GRAM_PROTOCOL_ERROR_RSL_EVALUATION_FAILED;
 	    }
 	    variable = globus_list_first(pair);
 	    value = globus_list_first(globus_list_rest(pair));
 
-	    if((!globus_rsl_value_is_literal(variable)) ||
-	       (!globus_rsl_value_is_literal(value)))
+	    rc = globus_gram_job_manager_rsl_evaluate_value(
+		    request,
+		    variable,
+		    &variable_string);
+
+	    if(rc != GLOBUS_SUCCESS || variable_string == NULL)
 	    {
-		return GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
+		return GLOBUS_GRAM_PROTOCOL_ERROR_RSL_EVALUATION_FAILED;
 	    }
+
+	    rc = globus_gram_job_manager_rsl_evaluate_value(
+		    request,
+		    value,
+		    &value_string);
+
+	    if(rc != GLOBUS_SUCCESS || value_string == NULL)
+	    {
+		return GLOBUS_GRAM_PROTOCOL_ERROR_RSL_EVALUATION_FAILED;
+	    }
+
 	    globus_symboltable_insert(
 		    &request->symbol_table,
-		    globus_libc_strdup(
-			globus_rsl_value_literal_get_string(variable)),
-		    globus_libc_strdup(
-			globus_rsl_value_literal_get_string(value)));
+		    variable_string,
+		    value_string);
 	}
     }
     return GLOBUS_SUCCESS;
