@@ -142,10 +142,9 @@ Section B
     If multiple credentials support is enabled, the following lines will be present :
     CRED_NAME=<credential name>
     CRED_DESC=<credential description>
-    FORCE_CREDENTIAL_OVERWRITE=<0/1>
 
-    Credential name is a required argument while credential description is optional. 
-    Depending on whether or not the '-f' switch is specified FORCE_CREDENTIAL_OVERWRITE is 0 or 1.
+    Credential name is a required argument while credential
+    description is optional.
 
  4) MyProxyServer will then respond with either a OK or an ERROR message.
     See Section A.6 for details.

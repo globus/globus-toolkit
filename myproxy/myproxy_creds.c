@@ -755,7 +755,7 @@ read_data_file(struct myproxy_creds *creds,
  */
 
 int
-myproxy_creds_store(const struct myproxy_creds *creds, int overwrite)
+myproxy_creds_store(const struct myproxy_creds *creds)
 {
     char creds_path[MAXPATHLEN] = "";
     char data_path[MAXPATHLEN] = "";
@@ -768,34 +768,28 @@ myproxy_creds_store(const struct myproxy_creds *creds, int overwrite)
         (creds->username == NULL) ||
         (creds->passphrase == NULL) ||
         (creds->owner_name == NULL) ||
-        (creds->location == NULL))
-    {
+        (creds->location == NULL)) {
         verror_put_errno(EINVAL);
 	goto error;
     }
 
     if (get_storage_locations(creds->username,
                               creds_path, sizeof(creds_path),
-                              data_path, sizeof(data_path), creds->credname) == -1)
-    {
+                              data_path, sizeof(data_path),
+			      creds->credname) == -1) {
         goto error;
     }
 
-    if (stat (data_path, &buf) == -1 || overwrite)  {
-	/* info about credential */
-    	if (write_data_file(creds, data_path, data_file_mode) == -1) {
-	    verror_put_string ("Error writing data file");
-	    goto clean_up;
-    	}
+    /* info about credential */
+    if (write_data_file(creds, data_path, data_file_mode) == -1) {
+	verror_put_string ("Error writing data file");
+	goto clean_up;
+    }
 
-	/* credential */
-    	if (copy_file(creds->location, creds_path, creds_file_mode) == -1) {
-	    verror_put_string ("Error writing credential file");
-	    goto clean_up;
-    	}
-    } else {
-	verror_put_string("Credential exists.  Overwrite with myproxy-init -force or remove with myproxy-destroy first.");
-	goto error;
+    /* credential */
+    if (copy_file(creds->location, creds_path, creds_file_mode) == -1) {
+	verror_put_string ("Error writing credential file");
+	goto clean_up;
     }
 	
     /* Success */

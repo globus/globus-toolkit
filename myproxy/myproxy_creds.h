@@ -42,12 +42,9 @@ typedef struct myproxy_creds myproxy_creds_t;
  * the myproxy_creds structure.  The passphrase in the myproxy_creds
  * structure will be crypt()'ed before it is written.
  *
- * If overwrite is 0, existing credentials will not be overwritten.
- *
  * Returns -1 on error, 0 on success.
  */
-int myproxy_creds_store(const struct myproxy_creds *creds,
-			int overwrite);
+int myproxy_creds_store(const struct myproxy_creds *creds);
 
 /*
  * myproxy_creds_retrieve()
