@@ -520,6 +520,18 @@ globus_ftp_client_chmod(
     void *					callback_arg);
 
 globus_result_t
+globus_ftp_client_cksm(
+    globus_ftp_client_handle_t *		handle,
+    const char *				url,
+    globus_ftp_client_operationattr_t *		attr,
+    char *					cksm,
+    globus_off_t                                offset,
+    globus_off_t                                length,
+    const char *				algorithm,
+    globus_ftp_client_complete_callback_t	complete_callback,
+    void *					callback_arg);
+
+globus_result_t
 globus_ftp_client_delete(
     globus_ftp_client_handle_t *		handle,
     const char *				url,
@@ -702,18 +714,6 @@ globus_ftp_client_size(
     const char *				url,
     globus_ftp_client_operationattr_t *		attr,
     globus_off_t *				size,
-    globus_ftp_client_complete_callback_t	complete_callback,
-    void *					callback_arg);
-
-globus_result_t
-globus_ftp_client_cksm(
-    globus_ftp_client_handle_t *		handle,
-    const char *				url,
-    globus_ftp_client_operationattr_t *		attr,
-    char *					cksm,
-    globus_off_t                                offset,
-    globus_off_t                                length,
-    char *                                      algorithm,
     globus_ftp_client_complete_callback_t	complete_callback,
     void *					callback_arg);
 

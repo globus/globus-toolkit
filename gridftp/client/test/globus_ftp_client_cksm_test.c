@@ -42,35 +42,66 @@ int main(int argc,
     globus_byte_t				buffer[SIZE];
     globus_size_t				buffer_length = sizeof(buffer);
     globus_result_t				result;
-    char * 				cksm;
+    char *				        cksm;
     char *					src;
     char *					dst;
-
+    
+    char *                                      alg = "MD5";
+    globus_off_t                                offset = 0;
+    globus_off_t                                length = -1;
+    int                                         c;
+    extern char *                               optarg;
+    extern int                                  optind;
+    cksm = malloc(33);
+    
     globus_module_activate(GLOBUS_FTP_CLIENT_MODULE);
     globus_ftp_client_handleattr_init(&handle_attr);
     globus_ftp_client_operationattr_init(&attr);
    
-   cksm=malloc(sizeof(char)*SIZE); 
     test_parse_args(argc, 
 		    argv,
 		    &handle_attr,
 		    &attr,
 		    &src,
 		    &dst);
+    optind = 1;
+    
+    while((c = getopt(argc, argv, "O:L:A:")) != -1)
+    {
+	switch(c)
+	{
+	  case 'O':
+	    sscanf(optarg, "%"GLOBUS_OFF_T_FORMAT, &offset);
+	    break;	    
+	  case 'L':
+	    sscanf(optarg, "%"GLOBUS_OFF_T_FORMAT, &length);
+	    break;	    
+	  case 'A':
+	    alg = optarg;
+	    break;
+	}
+    }	
 
+    
+    
+    
     globus_mutex_init(&lock, GLOBUS_NULL);
     globus_cond_init(&cond, GLOBUS_NULL);
 
     globus_ftp_client_handle_init(&handle, &handle_attr);
 
+    
     done = GLOBUS_FALSE;
     printf("initial value of cksm is %s\n", cksm);
     result = globus_ftp_client_cksm(&handle,
 				   src,
 				   &attr,
 				   cksm,
+				   offset,
+				   length,
+				   alg,
 				   done_cb,
-				   0);
+				   GLOBUS_NULL);
     if(result != GLOBUS_SUCCESS)
     {
 	printf("screwed!\n");

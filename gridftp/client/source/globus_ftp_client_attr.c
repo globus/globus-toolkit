@@ -337,7 +337,7 @@ globus_ftp_client_handleattr_add_cached_url(
 
     return globus_i_ftp_client_cache_add(&i_attr->url_cache, 
 		    			 url,
-					 &i_attr->rfc1738_url);
+					 i_attr->rfc1738_url);
 }
 /* globus_ftp_client_handleattr_add_cached_url() */
 
@@ -362,7 +362,7 @@ globus_ftp_client_handleattr_remove_cached_url(
 
     return globus_i_ftp_client_cache_remove(&i_attr->url_cache,
 		   			    url,
-					    &i_attr->rfc1738_url);
+					    i_attr->rfc1738_url);
 }
 /* globus_ftp_client_handleattr_remove_cached_url() */
 /*@}*/

@@ -27,6 +27,7 @@ test_parse_args(int argc,
 {
     int c;
     extern char * optarg;
+    extern int opterr;
     globus_reltime_t timeout;
     globus_ftp_client_plugin_t *plugin;
     globus_ftp_control_dcau_t dcau;
@@ -35,15 +36,15 @@ test_parse_args(int argc,
     int max_retries;
     long interval;
     long deadline;
-    char * p;
     char * subject;
 
     *src = GLOBUS_NULL;
     *dst = GLOBUS_NULL;
 
     setvbuf(stdout, 0, _IONBF, 0);
-
-    while((c = getopt(argc, argv, "f:a:ps:d:r:zMTc:t:i")) != -1)
+    
+    opterr = 0;
+    while((c = getopt(argc, argv, "-f:a:ps:d:r:zMTc:t:i")) != -1)
     {
 	switch(c)
 	{
@@ -212,8 +213,10 @@ test_parse_args(int argc,
 			GLOBUS_FTP_CONTROL_PROTECTION_SAFE);
 	    break;
 	case '?':
-	    globus_module_deactivate_all();
-	    exit(0);
+        /*  globus_module_deactivate_all();
+	    exit(0); 
+	*/
+	    break;
 	}
     }
     

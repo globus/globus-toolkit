@@ -86,6 +86,11 @@ typedef struct
     /** file mode for chmod calls **/
     int                                         chmod_file_mode;
 
+    /** parameters for checksum calls **/
+    globus_off_t                                checksum_offset;
+    globus_off_t                                checksum_length;
+    const char *                                checksum_alg;
+
     globus_bool_t                               abort_pending;
 }
 globus_l_ftp_client_restart_plugin_t;
@@ -110,6 +115,19 @@ globus_l_ftp_client_restart_plugin_chmod(
     globus_ftp_client_handle_t *		handle,
     const char *				url,
     int                                         mode,
+    const globus_ftp_client_operationattr_t *	attr,
+    globus_bool_t 				restart);
+
+static
+void
+globus_l_ftp_client_restart_plugin_cksm(
+    globus_ftp_client_plugin_t *		plugin,
+    void * 					plugin_specific,
+    globus_ftp_client_handle_t *		handle,
+    const char *				url,
+    globus_off_t				offset,
+    globus_off_t				length,
+    const char *				algorithm,
     const globus_ftp_client_operationattr_t *	attr,
     globus_bool_t 				restart);
 
@@ -411,6 +429,34 @@ globus_l_ftp_client_restart_plugin_chmod(
 
 }
 /* globus_l_ftp_client_restart_plugin_chmod() */
+
+static
+void
+globus_l_ftp_client_restart_plugin_cksm(
+    globus_ftp_client_plugin_t *		plugin,
+    void *					plugin_specific,
+    globus_ftp_client_handle_t *		handle,
+    const char *				url,
+    globus_off_t				offset,
+    globus_off_t				length,
+    const char *				algorithm,
+    const globus_ftp_client_operationattr_t *	attr,
+    globus_bool_t 				restart)
+{
+    globus_l_ftp_client_restart_plugin_t *	d;
+
+    d = (globus_l_ftp_client_restart_plugin_t *) plugin_specific;
+
+    globus_l_ftp_client_restart_plugin_genericify(d);
+    d->operation = GLOBUS_FTP_CLIENT_CKSM;
+    d->source_url = globus_libc_strdup(url);
+    d->checksum_offset=offset;
+    d->checksum_length=length;
+    d->checksum_alg=algorithm;
+    globus_ftp_client_operationattr_copy(&d->source_attr,attr);
+
+}
+/* globus_l_ftp_client_restart_plugin_cksm() */
 
 static
 void
@@ -759,6 +805,17 @@ globus_l_ftp_client_restart_plugin_fault(
 		    &when);
 	    break;
 
+	case GLOBUS_FTP_CLIENT_CKSM:
+	    globus_ftp_client_plugin_restart_cksm(
+		    handle,
+		    d->source_url,
+		    d->checksum_offset,
+		    d->checksum_length,
+		    d->checksum_alg,
+		    &d->source_attr,
+		    &when);
+	    break;
+
 	case GLOBUS_FTP_CLIENT_DELETE:
 	    globus_ftp_client_plugin_restart_delete(
 		    handle,
@@ -988,6 +1045,7 @@ globus_ftp_client_restart_plugin_init(
     GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin, copy);
     GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin, destroy);
     GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin, chmod);
+    GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin, cksm);
     GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin, delete);
     GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin, modification_time);
     GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin, size);

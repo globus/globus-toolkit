@@ -553,8 +553,13 @@ typedef struct globus_i_ftp_client_handle_t
     /** Thread safety */
     globus_mutex_t                              mutex;
 
-    /** Checksum pointer**/
+    /** cksm pointer**/
     char * 					checksum;
+    
+    /** checksum parameters **/
+    globus_off_t                                checksum_offset;
+    globus_off_t                                checksum_length;
+    char *                                      checksum_alg;
 
     /** User pointer
      * @see globus_ftp_client_handle_set_user_pointer(),
@@ -881,6 +886,15 @@ globus_i_ftp_client_plugin_notify_chmod(
     globus_i_ftp_client_operationattr_t *	attr);
 
 void
+globus_i_ftp_client_plugin_notify_cksm(
+    globus_i_ftp_client_handle_t *		handle,
+    const char *				url,
+    globus_off_t                                offset,
+    globus_off_t                                length,
+    const char *                                algorithm,
+    globus_i_ftp_client_operationattr_t *	attr);
+
+void
 globus_i_ftp_client_plugin_notify_delete(
     globus_i_ftp_client_handle_t *		handle,
     const char *				url,
@@ -942,12 +956,6 @@ globus_i_ftp_client_plugin_notify_modification_time(
 
 void
 globus_i_ftp_client_plugin_notify_size(
-    globus_i_ftp_client_handle_t *		handle,
-    const char *				url,
-    globus_i_ftp_client_operationattr_t *	attr);
-
-void
-globus_i_ftp_client_plugin_notify_cksm(
     globus_i_ftp_client_handle_t *		handle,
     const char *				url,
     globus_i_ftp_client_operationattr_t *	attr);

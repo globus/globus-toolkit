@@ -70,6 +70,7 @@ test_PROGRAMS= \
 	globus-ftp-client-bad-buffer-test \
 	globus-ftp-client-cache-all-test \
 	globus-ftp-client-create-destroy-test \
+	globus-ftp-client-cksm-test \
 	globus-ftp-client-chmod-test \
 	globus-ftp-client-delete-test \
 	globus-ftp-client-exist-test \
@@ -177,6 +178,9 @@ globus_ftp_client_read_all_test_LDFLAGS = $(GPT_LDFLAGS)
 
 globus_ftp_client_chmod_test_SOURCES = globus_ftp_client_chmod_test.c $(LibHeaders)
 globus_ftp_client_chmod_test_LDFLAGS = $(GPT_LDFLAGS)
+
+globus_ftp_client_cksm_test_SOURCES = globus_ftp_client_cksm_test.c $(LibHeaders)
+globus_ftp_client_cksm_test_LDFLAGS = $(GPT_LDFLAGS)
 
 globus_ftp_client_delete_test_SOURCES = globus_ftp_client_delete_test.c $(LibHeaders)
 globus_ftp_client_delete_test_LDFLAGS = $(GPT_LDFLAGS)

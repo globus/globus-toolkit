@@ -1028,7 +1028,6 @@ globus_ftp_client_mlst(
     void *					callback_arg)
 {
     globus_object_t *				err;
-    globus_result_t                             result;
     globus_bool_t				registered;
     globus_i_ftp_client_handle_t *		handle;
     static char * myname = "globus_ftp_client_mlst";
@@ -1575,7 +1574,6 @@ globus_ftp_client_chmod(
     void *					callback_arg)
 {
     globus_object_t *				err;
-    int                                         rc;
     globus_bool_t				registered;
     globus_i_ftp_client_handle_t *		handle;
     static char * myname = "globus_ftp_client_chmod";
@@ -3439,7 +3437,6 @@ globus_ftp_client_modification_time(
     void *					callback_arg)
 {
     globus_object_t *				err;
-    globus_result_t                             result;
     globus_bool_t				registered;
     globus_i_ftp_client_handle_t *		handle;
     static char * myname = "globus_ftp_client_modification_time";
@@ -3690,7 +3687,6 @@ globus_ftp_client_size(
     void *					callback_arg)
 {
     globus_object_t *				err;
-    globus_result_t                             result;
     globus_bool_t				registered;
     globus_i_ftp_client_handle_t *		handle;
     static char * myname = "globus_ftp_client_size";
@@ -3910,10 +3906,6 @@ abort:
  *	  The URL to list. The URL may be an ftp or gsiftp URL.
  * @param attr
  *	  Attributes for this file transfer.
- * @param size
- *        A pointer to a globus_off_t to be filled with the total size of the
- *        file, if it exists. Otherwise, the value pointed to by it
- *        is undefined.
  * @param complete_callback
  *        Callback to be invoked once the size check is completed.
  * @param callback_arg
@@ -3938,12 +3930,11 @@ globus_ftp_client_cksm(
     char *					cksm,
     globus_off_t				offset,
     globus_off_t				length,
-    char *					algorithm,
+    const char *				algorithm,
     globus_ftp_client_complete_callback_t	complete_callback,
     void *					callback_arg)
 {
     globus_object_t *				err;
-    globus_result_t                             result;
     globus_bool_t				registered;
     globus_i_ftp_client_handle_t *		handle;
     static char * myname = "globus_ftp_client_cksm";
@@ -4001,6 +3992,9 @@ globus_ftp_client_cksm(
     handle->callback_arg = callback_arg;
     handle->source_url = globus_libc_strdup(url);
     handle->checksum = cksm;
+    handle->checksum_length = length;
+    handle->checksum_offset = offset;
+    handle->checksum_alg = globus_libc_strdup(algorithm);
 
     if(handle->source_url == GLOBUS_NULL)
     {
@@ -4022,6 +4016,9 @@ globus_ftp_client_cksm(
     /* Notify plugins that the CKSM is happening */
     globus_i_ftp_client_plugin_notify_cksm(handle,
 					   handle->source_url,
+					   handle->checksum_offset,
+					   handle->checksum_length,
+					   handle->checksum_alg,
 					   handle->source->attr);
 
     /* 
@@ -4092,6 +4089,10 @@ reset_handle_exit:
     handle->callback = GLOBUS_NULL;
     handle->callback_arg = GLOBUS_NULL;
     handle->checksum = GLOBUS_NULL;
+    handle->checksum_length = -1;
+    handle->checksum_offset = 0;
+    handle->checksum_alg = GLOBUS_NULL;
+
     
     /* Release the lock */
 unlock_exit:
@@ -4137,6 +4138,7 @@ abort:
 }
 /* globus_ftp_client_cksm() */
 /*@}*/
+
 /**
  *
  * @name Abort

@@ -399,6 +399,7 @@ globus_i_ftp_target_state_to_string(
     static const char * mode                    = "MODE";
     static const char * setup_size              = "SETUP_SIZE";
     static const char * size                    = "SIZE";
+    static const char * setup_cksm              = "SETUP_CKSM";
     static const char * cksm                    = "CKSM";
     static const char * setup_dcau              = "SETUP_DCAU";
     static const char * dcau                    = "DCAU";
@@ -495,6 +496,9 @@ globus_i_ftp_target_state_to_string(
             break;
         case GLOBUS_FTP_CLIENT_TARGET_SIZE:
             return size;
+            break;
+        case GLOBUS_FTP_CLIENT_TARGET_SETUP_CKSM:
+            return setup_cksm;
             break;
         case GLOBUS_FTP_CLIENT_TARGET_CKSM:
             return cksm;

@@ -185,6 +185,11 @@ globus_ftp_client_handle_init(
     i_handle->modification_time_pointer = GLOBUS_NULL;
     i_handle->mlst_buffer_pointer = GLOBUS_NULL;
     i_handle->mlst_buffer_length_pointer = GLOBUS_NULL;
+    i_handle->chmod_file_mode = 0;
+    i_handle->checksum_alg = GLOBUS_NULL;
+    i_handle->checksum_offset = 0;
+    i_handle->checksum_length = -1;
+    i_handle->checksum = GLOBUS_NULL;
     
     globus_i_ftp_client_handle_unlock(i_handle);
 
@@ -324,7 +329,7 @@ globus_ftp_client_handle_cache_url_state(
 
     result = globus_i_ftp_client_cache_add(&i_handle->attr.url_cache,
 					   url,
-					   &i_handle->attr.rfc1738_url);
+					   i_handle->attr.rfc1738_url);
 
     globus_i_ftp_client_handle_unlock(i_handle);
 
@@ -373,7 +378,7 @@ globus_ftp_client_handle_flush_url_state(
 
     result = globus_i_ftp_client_cache_remove(&i_handle->attr.url_cache,
 					      url,
-					      &i_handle->attr.rfc1738_url);
+					      i_handle->attr.rfc1738_url);
     globus_i_ftp_client_handle_unlock(i_handle);
 
     return result;
@@ -739,7 +744,6 @@ globus_l_ftp_client_target_new(
     globus_result_t				result;
     globus_object_t *				err;
     globus_ftp_control_dcau_t			dcau;
-    int						i;
     
     globus_i_ftp_client_debug_printf(1, 
         (stderr, "globus_l_ftp_client_target_new() entering\n"));
@@ -1171,7 +1175,7 @@ globus_i_ftp_client_target_find(
     {
 	globus_i_ftp_client_cache_add(&handle->attr.url_cache,
 				      url,
-				      &handle->attr.rfc1738_url);
+				      handle->attr.rfc1738_url);
     }
     if((*target) == GLOBUS_NULL)
     {
@@ -1670,7 +1674,6 @@ globus_i_ftp_client_cache_remove(
     globus_i_ftp_client_cache_entry_t *		cache_entry;
     globus_l_ftp_client_target_search_t         searcher;
 
-    globus_i_ftp_client_operationattr_t *	attr;
     static char * myname = "globus_i_ftp_client_cache_remove";
 
     if(url == GLOBUS_NULL)

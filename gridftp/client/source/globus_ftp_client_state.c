@@ -96,6 +96,12 @@ globus_l_ftp_client_parse_mdtm(
 
 static
 void
+globus_l_ftp_client_parse_cksm(
+    globus_i_ftp_client_handle_t *              client_handle,
+    globus_ftp_control_response_t *             response);
+
+static
+void
 globus_l_ftp_client_parse_mlst(
     globus_i_ftp_client_handle_t *		client_handle,
     globus_ftp_control_response_t *		response);
@@ -261,7 +267,7 @@ redo:
 		    target->url.scheme_type==GLOBUS_URL_SCHEME_GSIFTP,
 		    globus_i_ftp_client_response_callback,
 		    user_arg);
-
+                                                        
 	    if(result != GLOBUS_SUCCESS)
 	    {
 		/*
@@ -689,8 +695,10 @@ redo:
             client_handle,
             target->url_string,
             target->mask,  
-            "CKSM %s %s" CRLF,
-	    "md5",
+            "CKSM %s %" GLOBUS_OFF_T_FORMAT " %" GLOBUS_OFF_T_FORMAT " %s" CRLF,
+	    client_handle->checksum_alg,
+	    client_handle->checksum_offset,
+	    client_handle->checksum_length,
             pathname);
 
 	if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
@@ -707,10 +715,12 @@ redo:
 
         result = globus_ftp_control_send_command(
             target->control_handle,
-            "CKSM %s %s" CRLF,
+            "CKSM %s %" GLOBUS_OFF_T_FORMAT " %" GLOBUS_OFF_T_FORMAT " %s" CRLF,
             globus_i_ftp_client_response_callback,
             target,
-	    "md5",
+	    client_handle->checksum_alg,
+	    client_handle->checksum_offset,
+	    client_handle->checksum_length,
             pathname);
 
         if(result != GLOBUS_SUCCESS)
@@ -2279,12 +2289,15 @@ redo:
     {
         globus_url_t                    dest_url;
 	globus_bool_t			rfc1738_url;
+	globus_ftp_client_handleattr_t  handle_attr;
+	
+	handle_attr = &client_handle->attr;
 
 	target->state = GLOBUS_FTP_CLIENT_TARGET_NEED_COMPLETE;
 
 	target->mask = GLOBUS_FTP_CLIENT_CMD_MASK_FILE_ACTIONS;
 
-	result = globus_ftp_client_handleattr_get_rfc1738_url(&(client_handle->attr),
+	result = globus_ftp_client_handleattr_get_rfc1738_url(&handle_attr,
 						     &rfc1738_url);
 	if(result != GLOBUS_SUCCESS)
 	{
@@ -3014,6 +3027,7 @@ redo:
 		    if(client_handle->op != GLOBUS_FTP_CLIENT_MDTM &&
 		       client_handle->op != GLOBUS_FTP_CLIENT_SIZE &&
 		       client_handle->op != GLOBUS_FTP_CLIENT_FEAT &&
+		       client_handle->op != GLOBUS_FTP_CLIENT_CKSM &&
 		       client_handle->op != GLOBUS_FTP_CLIENT_MLST)
 		    {
 			client_handle->state =
@@ -4114,8 +4128,7 @@ globus_l_ftp_client_parse_cksm(
 {
     char *                                      p;
     int                                         rc;
-    int                                         i;
-    static char * myname = "globus_l_ftp_client_parse_mdtm";
+    static char * myname = "globus_l_ftp_client_parse_cksm";
 
     if(response->code != 213)
     {
@@ -4128,7 +4141,6 @@ globus_l_ftp_client_parse_cksm(
     p += 4;
 
     rc=sscanf(p, "%s", client_handle->checksum);
-
 
 }
 
