@@ -31,6 +31,7 @@ import org.globus.ogsa.GridContext;
 import org.globus.ogsa.GridServiceException;
 import org.globus.ogsa.impl.core.notification.NotificationSourceDelegationSkeleton;
 import org.globus.ogsa.impl.core.notification.SecureNotificationServiceSkeleton;
+import org.globus.ogsa.impl.security.authentication.Constants;
 import org.globus.ogsa.impl.security.authentication.SecContext;
 import org.globus.ogsa.ServiceProperties;
 import org.globus.ogsa.repository.ServiceNode;
@@ -104,21 +105,11 @@ public class FileStreamingImpl extends SecureNotificationServiceSkeleton
         destinationURLServiceData.setValue(destURLElement);
         this.serviceData.add(destinationURLServiceData);
     }
-    public void startStreaming() throws RemoteException {
-        MessageContext ctx = MessageContext.getCurrentContext ();
+
+    public void startStreaming(GSSCredential credential)
+            throws RemoteException {
         File outputFile = new File(localPath);
-        SecContext secContext = (SecContext)ctx.getProperty (
-        org.globus.ogsa.impl.security.authentication.Constants.CONTEXT);
-        if (secContext == null) {
-            throw new RemoteException("Service must be accessed securely.");
-        }
-        GSSCredential cred = this.secContextSkeleton.getCredential();
-        if (cred == null) {
-            // this should never happen since an instance cannot be created
-            // without delegation.
-            throw new RemoteException("Delegation not performed.");
-        }
-        _proxy = cred;
+        _proxy = credential;
         out = openUrl(destinationURL);
 
         if(_outputFollower == null) {
@@ -133,11 +124,42 @@ public class FileStreamingImpl extends SecureNotificationServiceSkeleton
             throw new RemoteException("Error in Streaming");
         }
     }
+
+    public void startStreaming() throws RemoteException {
+        MessageContext ctx = MessageContext.getCurrentContext ();
+        SecContext secContext = (SecContext)ctx.getProperty (
+        org.globus.ogsa.impl.security.authentication.Constants.CONTEXT);
+        if (secContext == null) {
+            throw new RemoteException("Service must be accessed securely.");
+        }
+        GSSCredential cred = this.secContextSkeleton.getCredential();
+        if (cred == null) {
+            // this should never happen since an instance cannot be created
+            // without delegation.
+            throw new RemoteException("Delegation not performed.");
+        }
+
+        startStreaming(cred);
+    }
     
+    /* Close your eyes now */
+    public void postCreate(GSSCredential credential, CallBackInterface callback)
+            throws GridServiceException {
+        setNotifyProps(credential, Constants.SIGNATURE);
+
+        try {
+            this.managedJobImpl = callback;
+            this.managedJobImpl.register(this);
+
+            startStreaming(credential);
+        } catch (Exception e) {
+            throw new GridServiceException("Error in fake postCreate", e);
+        }
+    }
+    /* Ok to reopen eyes */
+
     public void postCreate(GridContext context) throws GridServiceException {
         super.postCreate(context);
-        ServiceProperties factoryProperties = (ServiceProperties)getProperty(
-                ServiceProperties.FACTORY);
         GSSCredential credential = transferCredential(context);
         setNotifyProps(credential, context.getProperty (org.globus.ogsa.impl.security.authentication.Constants.MSG_SEC_TYPE));
        
@@ -223,12 +245,10 @@ public class FileStreamingImpl extends SecureNotificationServiceSkeleton
     public void preDestroy() {
         try {
             out.close();
+            managedJobImpl = null;
             logger.debug("File Streaming instance is destroyed");
         }catch(java.io.IOException ioe) {
             logger.error("Error in destroying the File Streaming Instance",ioe);
         }
     }
-} 
-                                                                                                                                    
-        
-        
+}

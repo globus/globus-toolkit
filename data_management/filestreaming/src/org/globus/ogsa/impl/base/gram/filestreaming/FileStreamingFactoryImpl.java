@@ -249,7 +249,6 @@ public class FileStreamingFactoryImpl extends SecureFactoryServiceSkeleton
         return retval;
     }
 
-
     public Object createServiceObject(CreationType creation)
             throws GridServiceException {
         extension = creation.getServiceParameters();
