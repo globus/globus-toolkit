@@ -122,10 +122,10 @@ myproxy_init_delegation(myproxy_socket_attrs_t *attrs, const char *delegfile, co
     return -1;
 
   if (GSI_SOCKET_delegation_init_ext(attrs->gsi_socket, 
-				     delegfile /* delegation file */,
-				     0         /* flags */,
-				     lifetime  /* lifetime */,
-				     NULL      /* restrictions */) == GSI_SOCKET_ERROR) {
+				     delegfile,  /* delegation file */
+				     0,          /* flags */
+				     0,     /* lifetime */
+				     NULL        /* restrictions */) == GSI_SOCKET_ERROR) {
     
     GSI_SOCKET_get_error_string(attrs->gsi_socket, error_string,
 				sizeof(error_string));
