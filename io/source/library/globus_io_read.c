@@ -727,24 +727,25 @@ globus_i_io_register_read(
 #ifdef TARGET_ARCH_WIN32
 	// post the initial read
 	returnCode= globus_i_io_windows_read( handle, buf, max_nbytes, 1 );
-	if ( returnCode == -1 ) // fatal error occurred
+	if ( returnCode == -1 ) // potentially fatal error occurred
 	{
+		if ( handle->type == GLOBUS_IO_HANDLE_TYPE_FILE &&
+		 errno == GLOBUS_WIN_EOF ) 
+		{
+			// post a fake packet to trigger the callback
+			returnCode= globus_i_io_windows_post_completion( 
+			 handle, WinIoReading );
+			if ( returnCode == 0 )
+				return GLOBUS_SUCCESS;
+		}
+		// yep- definitely a fatal error
 		// unregister the read operation
 		// this call will not only unregister the operation,
 		// but it will also destroy the read_info object
 		// and end the operation as well
-        globus_i_io_unregister_operation( handle, GLOBUS_TRUE, 
+		globus_i_io_unregister_operation( handle, GLOBUS_TRUE, 
 			GLOBUS_I_IO_READ_OPERATION);
 
-		// Check for end of file condition if the handle is 
-		// encapsulating a file
-		if ( handle->type == GLOBUS_IO_HANDLE_TYPE_FILE && 
-		 errno == GLOBUS_WIN_EOF )
-			err= globus_io_error_construct_eof(
-					GLOBUS_IO_MODULE,
-					GLOBUS_NULL,
-					handle);
-		else
 			err = globus_io_error_construct_system_failure(
 				GLOBUS_IO_MODULE,
 				GLOBUS_NULL,
@@ -949,7 +950,7 @@ globus_l_io_read_callback(
 				if( result == GLOBUS_SUCCESS)
 				{
 					// post another read
-					rc= globus_i_io_winsock_read( handle, 
+					rc= globus_i_io_windows_read( handle, 
 						read_info->buf + read_info->nbytes_read,
 						read_info->max_nbytes - read_info->nbytes_read, 1 );
 					if ( rc == -1 ) // a fatal error occurred
@@ -958,11 +959,22 @@ globus_l_io_read_callback(
 						globus_i_io_unregister_operation( handle, GLOBUS_FALSE, 
 							GLOBUS_I_IO_READ_OPERATION);
 
-						err = globus_io_error_construct_system_failure(
-							GLOBUS_IO_MODULE,
-							GLOBUS_NULL,
-							handle,
-							errno );
+						// Check for end of file condition if the handle is 
+						// encapsulating a file
+						if ( handle->type == GLOBUS_IO_HANDLE_TYPE_FILE 
+						 && errno == GLOBUS_WIN_EOF )
+						{
+							err= globus_io_error_construct_eof(
+									GLOBUS_IO_MODULE,
+									GLOBUS_NULL,
+									handle);
+						}
+						else
+							err = globus_io_error_construct_system_failure(
+								GLOBUS_IO_MODULE,
+								GLOBUS_NULL,
+								handle,
+								errno );
 
 						globus_i_io_mutex_unlock();
 						goto error_exit;

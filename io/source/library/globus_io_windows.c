@@ -17,7 +17,6 @@
 
 HANDLE completionPort;
 
-
 /* globus_i_io_windows_init_io_operation()
 *
 *	This function will initialize certain members of a
@@ -131,7 +130,7 @@ int globus_i_io_windows_file_read( globus_io_handle_t * handle,
 		if ( error != ERROR_IO_PENDING )
 		{
 			// TESTING!!!
-			//fprintf( stderr, "error occurred (Windows error is %d)\n", error );
+			//fprintf( stderr, "globus_i_io_windows_file_read: error occurred (Windows error is %d)\n", error );
 			// END TESTING
 			return -1;
 		}
@@ -670,6 +669,10 @@ int globus_i_io_windows_get_last_error( void )
 {
 	int winError;
 	winError= GetLastError();
+	// TESTING!!!
+	//if ( winError != WAIT_TIMEOUT && winError != ERROR_IO_PENDING )
+		//fprintf( stderr, "ERROR: GetLastError() returned %d\n", winError );
+	// END TESTING
 	globus_i_io_windows_set_errno( winError );
 	return winError;
 }

@@ -19,7 +19,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(GLOBUS_LOCATION)\include&quot;;&quot;$(GLOBUS_LOCATION)\include\nonthreaded&quot;"
+				AdditionalIncludeDirectories="&quot;$(GLOBUS_LOCATION)\include&quot;;&quot;$(GLOBUS_LOCATION)\include\threaded&quot;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"
@@ -34,7 +34,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="ws2_32.lib libeay32.lib ssleay32.lib globus_common_win32dbg.lib globus_oldgaa.lib globus_sslutils.lib globus_opensslmodule.lib globus_gssapi.lib globus_gss_assist.lib globus_io_win32dbg.lib"
+				AdditionalDependencies="ws2_32.lib mswsock.lib libeay32.lib ssleay32.lib globus_common_win32dbgthr.lib globus_oldgaa.lib globus_sslutils.lib globus_opensslmodule.lib globus_gssapi.lib globus_gss_assist.lib globus_io_win32dbgthr.lib"
 				OutputFile="$(OutDir)/FileTest.exe"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="$(GLOBUS_LOCATION)\lib"

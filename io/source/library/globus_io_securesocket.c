@@ -1640,17 +1640,11 @@ globus_l_io_secure_read_callback(
 		{
 			if ( buffer->mysteryUpdateRead != NULL )
 			{
-				// TESTING!!!
-				//fprintf( stderr, "updating mysteryUpdateRead...\n" );
-				// END TESTING
 				*(buffer->mysteryUpdateRead)+= 
 				 handle->winIoOperation_read.numberOfBytesProcessed;
 			}
 			if ( buffer->mysteryUpdateToRead != NULL )
 			{
-				// TESTING!!!
-				//fprintf( stderr, "updating mysteryUpdateToRead...\n" );
-				// END TESTING
 				*(buffer->mysteryUpdateToRead)-= 
 				 handle->winIoOperation_read.numberOfBytesProcessed;
 			}
@@ -2756,17 +2750,11 @@ globus_l_io_read_auth_token(
 	{
 		if ( init_info->input_token.mysteryUpdateRead != NULL )
 		{
-			// TESTING!!!
-			//fprintf( stderr, "updating mysteryUpdateRead...\n" );
-			// END TESTING
 			*(init_info->input_token.mysteryUpdateRead)+= 
 			  handle->winIoOperation_read.numberOfBytesProcessed;
 		}
 		if ( init_info->input_token.mysteryUpdateToRead != NULL )
 		{
-			// TESTING!!!
-			//fprintf( stderr, "updating mysteryUpdateToRead...\n" );
-			// END TESTING
 			*(init_info->input_token.mysteryUpdateToRead)-= 
 			  handle->winIoOperation_read.numberOfBytesProcessed;
 		}

@@ -160,14 +160,14 @@ int globus_i_io_winsock_read( globus_io_handle_t * handle, char * buffer,
 			if ( error != WSA_IO_PENDING )
 			{
 				// TESTING!!!
-				//fprintf( stderr, "error occurred (errno is %d)\n", errno );
+				//fprintf( stderr, "error occurred (error is %d)\n", error );
 				// END TESTING
 				return -1;
 			}
-			// TESTING!!!
-			//fprintf( stderr, "pending\n" );
-			// END TESTING
 		}
+		// TESTING!!!
+		//fprintf( stderr, "pending\n" );
+		// END TESTING
 	}
 	else // synchronous
 	{
@@ -185,9 +185,10 @@ int globus_i_io_winsock_read( globus_io_handle_t * handle, char * buffer,
 
 		if ( rc == SOCKET_ERROR )
 		{
-			globus_i_io_winsock_get_last_error();
+			int error;
+			error= globus_i_io_winsock_get_last_error();
 			// TESTING!!!
-			//fprintf( stderr, "error occurred (errno is %d)\n", errno );
+			//fprintf( stderr, "error occurred (error is %d)\n", error );
 			// END TESTING
 			return -1;
 		}
@@ -370,6 +371,9 @@ int globus_i_io_winsock_accept( globus_io_handle_t * listenerHandle )
 
 			return error;
 		}
+		// TESTING!!!
+		//fprintf( stderr, "AcceptEx() posted\n" );
+		// END TESTING
 	}
 
 	return 0;
@@ -392,8 +396,8 @@ int globus_i_io_winsock_store_addresses( globus_io_handle_t * handle,
 	{
 		int error= globus_i_io_winsock_get_last_error();
 		// TESTING!!!
-		fprintf( stderr, "cannot update adddres info, error is %d\n",
-			error );
+		//fprintf( stderr, "cannot update adddres info, error is %d\n",
+			//error );
 		// END TESTING
 		return error;
 	}

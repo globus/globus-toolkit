@@ -1,11 +1,11 @@
 #include "globus_io.h"
 #ifndef TARGET_ARCH_WIN32
 #include <fcntl.h>
-#else
-#include "globus_io_windows.h"
+//#else
+//#include "globus_io_windows.h"
+#endif
 // forward declaration
 void usage( char * executableName );
-#endif
 
 /*
  * Function:	main

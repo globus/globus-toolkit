@@ -672,7 +672,7 @@ globus_io_tcp_create_listener(
     {
 #else
     if(listen( (SOCKET)handle->io_handle,
-	      (backlog < 0 ? SOMAXCONN : backlog)) == SOCKET_ERROR )
+		(backlog < 0 ? SOMAXCONN : backlog)) == SOCKET_ERROR )
     {
 		globus_i_io_winsock_get_last_error();
 #endif /*TARGET_ARCH_WIN32 */
@@ -1024,8 +1024,12 @@ globus_io_tcp_register_accept(
 	}
     }
 #else
+	// store the newly-accepted socket into it's own Globus handle
 	new_handle->io_handle= (HANDLE)
 	 listener_handle->winIoOperation_structure.acceptedSocket;
+	// reset the listener's handle
+	listener_handle->winIoOperation_structure.acceptedSocket= 
+	 INVALID_SOCKET;
 	globus_i_io_winsock_store_addresses( new_handle, listener_handle );
 #endif
 

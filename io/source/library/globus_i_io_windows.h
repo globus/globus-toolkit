@@ -69,10 +69,12 @@ int globus_i_io_windows_seek( globus_io_handle_t * handle,
 	LARGE_INTEGER numberOfBytes, DWORD startingPoint,
 	LARGE_INTEGER * newPosition );
 
+/*
 globus_result_t globus_io_file_windows_convert(
 	HANDLE file_handle,
     globus_io_attr_t * attr,
     globus_io_handle_t * handle );
+*/
 
 void globus_i_io_windows_close( globus_io_handle_t * handle );
 

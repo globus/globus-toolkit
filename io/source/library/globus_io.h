@@ -1348,6 +1348,12 @@ globus_io_file_posix_convert(
     int fd,
     globus_io_attr_t * attr,
     globus_io_handle_t * handle);
+#else
+globus_result_t 
+globus_io_file_windows_convert(
+	HANDLE file_handle,
+    globus_io_attr_t * attr,
+    globus_io_handle_t * handle );
 #endif /* TARGET_ARCH_WIN32 */
 #endif
 
