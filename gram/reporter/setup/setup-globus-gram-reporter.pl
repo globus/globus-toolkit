@@ -50,7 +50,7 @@ else
 {
    # insert line in the slapd_conf file
 
-   open(INFO, "+<./$slapd_conf");
+   open(INFO, "<$slapd_conf");
    open(TMPFILE, ">./$tmp_slapd_conf");
 
    while ($line = <INFO>)
@@ -95,7 +95,7 @@ if ( ! $? )
 else
 {
    print "appending gram reporter entry to $ldif_conf\n";
-   open(LDIFFILE, ">>./$ldif_conf");
+   open(LDIFFILE, ">>$ldif_conf");
 
    print LDIFFILE "\n# The following lines for fork entry added by setup-globus-gram-reporter\n";
    print LDIFFILE "# generate gram reporter fork info every 30 seconds\n";
