@@ -1,4 +1,4 @@
-.TH myproxy-admin-query 1 "2003-4-29" "NCSA" "MyProxy"
+.TH myproxy-admin-query 1 "2003-4-30" "NCSA" "MyProxy"
 .SH NAME
 myproxy-admin-query \- query MyProxy repository contents
 .SH SYNOPSIS
@@ -11,6 +11,7 @@ The
 .B myproxy-admin-query
 command displays information about the credentials stored in the
 MyProxy repository.
+It can also be used to remove credentials from the repository.
 It accesses the repository directly and must be run on the machine
 where the
 .BR myproxy-server (8)
@@ -33,8 +34,17 @@ Displays version information and exits.
 Return information on credentials for a single username.  By default,
 the command returns information on all credentials for all usernames.
 .TP
-.BI -t " hours, " --time_left " hours"
+.BI -k " name, " --credname " name"
+Return information on credentials with the specified name.
+.TP
+.BI -e " hours, " --expiring_in " hours"
 Return information on credentials with remaining lifetime less than the
+specified number of hours.  For example, 
+.BI -e " 0"
+will return all expired credentials.
+.TP
+.BI -t " hours, " --time_left " hours"
+Return information on credentials with remaining lifetime greater than the
 specified number of hours.
 .TP
 .BI -s " dir, " --storage " dir"
@@ -42,26 +52,14 @@ Specifies the location of the credential storage directory.
 The directory must be accessible only by the user running the 
 .B myproxy-server
 process for security reasons.  Default: /var/myproxy or $GLOBUS_LOCATION/var/myproxy
+.TP
+.B -r, --remove
+Remove the credentials matching the query from the repository.
+For example, 
+.I myproxy-admin-query -e 0 -r
+will remove all expired credentials from the repository.
 .SH "EXIT STATUS"
 0 on success, >0 on error
-.SH ENVIRONMENT
-.TP
-.B MYPROXY_SERVER
-Specifies the hostname where the
-.BR myproxy-server (8)
-is running.  This environment variable can be used in place of the 
-.B -s
-option.
-.B MYPROXY_SERVER_DN
-Specifies the distinguished name (DN) of the 
-.BR myproxy-server (8).
-All MyProxy client programs authenticate the server's identity.
-By default, MyProxy servers run with host credentials, so the MyProxy
-client programs expect the server to have a distinguished name of the
-form "host/<fqhn>" (where <fqhn> is the fully-qualified hostname of
-the server).  If the server is running with some other DN, you can set
-this environment variable to tell the MyProxy clients to accept the
-alternative DN.
 .SH AUTHORS
 Jim Basney,
 Shiva Shankar Chetan,
