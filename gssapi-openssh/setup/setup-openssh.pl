@@ -24,7 +24,7 @@ $gptpath = $ENV{GPT_LOCATION};
 $gpath = $ENV{GLOBUS_LOCATION};
 if (!defined($gpath))
 {
-    die "GLOBUS_LOCATION needs to be set before running this script"
+    exitDie "GLOBUS_LOCATION needs to be set before running this script"
 }
 
 #
@@ -651,7 +651,8 @@ sub makeConfDir
             return;
         }
 
-        die("${sysconfdir} already exists and is not a directory!\n");
+        print("${sysconfdir} already exists and is not a directory!\n");
+        exit;
     }
 
     print "Could not find ${sysconfdir} directory... creating.\n";
@@ -1046,7 +1047,7 @@ sub readFile
     my($filename) = @_;
     my($data);
 
-    open(IN, "$filename") || die "Can't open '$filename': $!";
+    open(IN, "$filename") || exitDie "Can't open '$filename': $!";
     $/ = undef;
     $data = <IN>;
     $/ = "\n";
@@ -1071,7 +1072,7 @@ sub writeFile
 
     if ( !defined($filename) || (length($filename) lt 1) )
     {
-        die "Filename is undefined";
+        exitDie "Filename is undefined";
     }
 
     #
@@ -1107,8 +1108,22 @@ sub action
 
     if (($result or $?) and $command !~ m!patch!)
     {
-        die "ERROR: Unable to execute command: $!\n";
+        exitDie "ERROR: Unable to execute command: $!\n";
     }
+}
+
+### exitDie( $error )
+#
+# a horribly named method meant to look like die but only exit, thereby not causing
+# gpt-postinstall to croak.
+#
+
+sub exitDie
+{
+    my($error) = @_;
+
+    print $error;
+    exit;
 }
 
 ### query_boolean( $query_text, $default )
