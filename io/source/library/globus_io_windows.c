@@ -130,7 +130,7 @@ int globus_i_io_windows_file_read( globus_io_handle_t * handle,
 		if ( error != ERROR_IO_PENDING )
 		{
 			// TESTING!!!
-			fprintf( stderr, "globus_i_io_windows_file_read: error occurred (Windows error is %d)\n", error );
+			//fprintf( stderr, "globus_i_io_windows_file_read: error occurred (Windows error is %d)\n", error );
 			// END TESTING
 			return -1;
 		}

@@ -2651,9 +2651,6 @@ globus_l_io_handle_events(
 			error= globus_i_io_windows_get_last_error();
 			if ( errno == GLOBUS_WIN_EOF )
 			{
-				// TESTING!!!
-				fprintf( stderr, "globus_l_io_handle_events().1: setting eof\n" );
-				// END TESTING
 				err = globus_io_error_construct_eof(
 						GLOBUS_IO_MODULE,
 						GLOBUS_NULL,
@@ -2906,9 +2903,6 @@ globus_l_io_handle_events(
 						== 1 && handle->type != 
 						GLOBUS_IO_HANDLE_TYPE_FILE )
 					{
-						// TESTING!!!
-						fprintf( stderr, "globus_l_io_handle_events().2: setting eof\n" );
-						// END TESTING
 						err = globus_io_error_construct_eof(
 								GLOBUS_IO_MODULE,
 								GLOBUS_NULL,
