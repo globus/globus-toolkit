@@ -25,6 +25,7 @@ push(@drivers, "");
 push(@drivers, "-D debug");
 push(@drivers, "-D bounce");
 push(@drivers, "-D debug -D bounce -D debug");
+push(@drivers, "-D debug -D null -D verify");
 
 sub basic_tests
 {

@@ -1,10 +1,10 @@
-deactivation
 driver ops
 doc updates
 better driver detection and per driver config
-server will block
-contact tring details
+contact string details
 
-tests
------
-try read after read eof delivered
+finish deactivation
+deactivation tests
+
+start thinking about finishing with a different context
+cache driver
