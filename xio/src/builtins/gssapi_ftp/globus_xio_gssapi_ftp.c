@@ -4,9 +4,9 @@
 #include "globus_common.h"
 #include "globus_error_string.h"
 #include "globus_xio_gssapi_ftp.h"
-#include <globus_error_openssl.h>
-#include <globus_gss_assist.h>
-#include <gssapi.h>
+#include "globus_error_openssl.h"
+#include "globus_gss_assist.h"
+#include "gssapi.h"
 #include <string.h>
 
 #define REPLY_530_BAD_MESSAGE "530 Please login with USER and PASS.\r\n"
