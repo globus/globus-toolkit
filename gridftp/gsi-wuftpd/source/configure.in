@@ -262,7 +262,7 @@ AC_CHECK_FUNCS(dirfd fchdir flock ftw getcwd getdtablesize pstat lstat \
   vprintf snprintf regexec regex fgetspent usercmp getusershell setuid vsnprintf \
   snprintf strcasestr strdup strerror strsep strstr syslog glob strcasecmp \
   strncasecmp sigprocmask quotactl getrlimit sysconf setsid memmove \
-  strtoul)
+  strtoul vfork)
 AC_CHECK_FUNCS(seteuid setreuid setresuid, break)
 AC_CHECK_FUNCS(setegid setregid setresgid, break)
 

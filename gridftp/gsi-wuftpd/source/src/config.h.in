@@ -201,6 +201,12 @@
 
 #undef USE_PAM
 
+#undef HAVE_VFORK
+
+#ifndef HAVE_VFORK
+#define vfork() fork()
+#endif /* !HAVE_VFORK */
+
 /*
  * Define to enable FTP Security Extensions RFC 2228 (Needed for GSSAPI)
  */

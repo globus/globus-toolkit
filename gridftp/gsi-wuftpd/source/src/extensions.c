@@ -192,7 +192,12 @@ int show_fullinfo;
 #define GR_GID_FORMAT "d"
 #endif
 
+#if 0
+/*
+ * I don't think this is needed and breaks under IRIX 6.5 - vwelch 7/13/00
+ */
 int snprintf(char *str, size_t count, const char *fmt,...);
+#endif /* 0 */
 
 int check_newer(char *path, struct stat *st, int flag)
 {

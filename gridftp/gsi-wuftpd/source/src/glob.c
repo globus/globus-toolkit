@@ -45,6 +45,16 @@
 
 #include "proto.h"
 
+/*
+ * Under IRIX 6.5 NCARGS is not defined. On other boxes I see it
+ * defined to ARG_MAX which is defined under IRIX in <limits.h>.
+ *     - vwelch 7/13/00
+ */
+#if !defined(NCARGS)
+#include <limits.h>
+#define NCARGS ARG_MAX
+#endif /* !NCARGS */
+
 #define	QUOTE 0200
 #define	TRIM 0177
 #define	eq(a,b)		(strcmp(a, b)==0)
