@@ -123,7 +123,7 @@ globus_l_gass_add_and_get(
 static
 globus_bool_t
 globus_l_gass_file_append_callback(
-    globus_time_t		time_can_block,
+    globus_abstime_t *          time_stop,
     void *			callback_arg);
 
 static
@@ -154,6 +154,8 @@ globus_l_gass_file_activate(void)
 {
     char *				tag;
     int					i;
+    globus_reltime_t                    delay_time;
+    globus_reltime_t                    period_time;
     
     globus_module_activate(GLOBUS_GASS_TRANSFER_ASSIST_MODULE);
     globus_module_activate(GLOBUS_GASS_CACHE_MODULE);
@@ -178,11 +180,13 @@ globus_l_gass_file_activate(void)
     }
 
     globus_fifo_init(&globus_l_gass_file_append_fifo);
-    
+
+    GlobusTimeReltimeSet(delay_time, 0, 0);    
+    GlobusTimeReltimeSet(period_time, 2, 0);    
     globus_callback_register_periodic(
 	&globus_l_gass_file_append_callback_handle,
-	(globus_time_t) 0,
-	(globus_time_t) 2 * 1000000,
+	&delay_time,
+	&period_time,
 	globus_l_gass_file_append_callback,
 	GLOBUS_NULL,
 	GLOBUS_NULL,
@@ -960,7 +964,7 @@ globus_l_gass_add_and_trunc(
 static
 globus_bool_t
 globus_l_gass_file_append_callback(
-    globus_time_t		time_can_block,
+    globus_abstime_t *          time_stop,
     void *			callback_arg)
 {
     globus_fifo_t		processed;
@@ -990,8 +994,8 @@ globus_l_gass_file_append_callback(
 	globus_fifo_enqueue(&processed,
 			    (void *) cur);
     }
-    while(!globus_fifo_empty(&globus_l_gass_file_append_fifo) &&
-	  globus_callback_get_timeout() > 0);
+    while(!globus_fifo_empty(&globus_l_gass_file_append_fifo)  && 
+	  !globus_callback_has_time_expired());
 
     while(!globus_fifo_empty(&processed))
     {

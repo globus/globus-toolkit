@@ -18,7 +18,7 @@ CVS Information:
 static
 globus_bool_t
 globus_l_gass_transfer_callback_close_callback(
-    globus_time_t				time_can_block,
+    globus_abstime_t *                          time_stop,
     void *					arg);
 
 /* Server Interface */
@@ -121,6 +121,7 @@ globus_i_gass_transfer_close_listener(
     void *					user_arg)
 {
     int						rc = GLOBUS_SUCCESS;
+    globus_reltime_t                            delay_time;
 
     switch(l->status)
     {
@@ -139,9 +140,10 @@ globus_i_gass_transfer_close_listener(
 	l->close_callback = callback;
 	l->close_callback_arg = user_arg;
 
+        GlobusTimeReltimeSet(delay_time, 0, 0);
 	globus_callback_register_oneshot(
 	    GLOBUS_NULL /* callback handle */,
-	    (globus_time_t) 0,
+	    &delay_time,
 	    globus_l_gass_transfer_callback_close_callback,
 	    (void *) listener,
 	    GLOBUS_NULL /* wakeup func */,
@@ -684,7 +686,7 @@ globus_gass_transfer_deny(
 static
 globus_bool_t
 globus_l_gass_transfer_callback_close_callback(
-    globus_time_t				time_can_block,
+    globus_abstime_t *                          time_stop,
     void *					arg)
 {
     globus_gass_transfer_listener_t 		listener;

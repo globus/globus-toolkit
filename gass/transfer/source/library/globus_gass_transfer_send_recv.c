@@ -32,7 +32,7 @@ globus_l_gass_transfer_size_check(
 static
 globus_bool_t
 globus_l_gass_transfer_drain_callbacks(
-    globus_time_t				time_can_block,
+    globus_abstime_t *                          time_stop,
     void *					arg);
 /*
  * Function: globus_gass_transfer_send_bytes()
@@ -271,7 +271,8 @@ globus_i_gass_transfer_fail(
     void *					callback_arg)
 {
     int						rc = GLOBUS_SUCCESS;
-    
+    globus_reltime_t                            delay_time; 
+
     switch(req->status)
     {
       case GLOBUS_GASS_TRANSFER_REQUEST_ACTING:
@@ -295,9 +296,10 @@ globus_i_gass_transfer_fail(
 	/* Drain queue of pending data requests,
 	 * call fail callback, and destroy the request
 	 */
+        GlobusTimeReltimeSet(delay_time, 0, 0);
 	globus_callback_register_oneshot(
 	    GLOBUS_NULL /* callback_handle */,
-	    (globus_time_t) 0,
+	    &delay_time,
 	    globus_l_gass_transfer_drain_callbacks,
 	    (void *) request,
 	    GLOBUS_NULL,
@@ -598,7 +600,7 @@ globus_i_gass_transfer_recv_dispatcher(
 static
 globus_bool_t
 globus_l_gass_transfer_drain_callbacks(
-    globus_time_t				time_can_block,
+    globus_abstime_t *                          time_stop,
     void *					arg)
 {
     globus_gass_transfer_request_t		request;

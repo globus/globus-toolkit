@@ -185,7 +185,7 @@ globus_l_gram_user_proxy_relocate();
 
 static globus_bool_t
 globus_l_gram_status_file_cleanup(
-    globus_time_t			time_can_block,
+    globus_abstime_t *                  time_stop,
     void *				callback_arg);
 
 static int
@@ -199,7 +199,13 @@ globus_l_gram_conf_values_init(globus_l_gram_conf_values_t * conf);
 static
 globus_bool_t
 globus_l_gram_jm_check_files(
-    globus_time_t			time_can_block,
+    globus_abstime_t *         		time_stop,
+    void *				callback_arg);
+
+static
+globus_bool_t
+globus_l_gram_jm_check_status(
+    globus_abstime_t *			time_stop,
     void *				callback_arg);
 
 void
@@ -1531,6 +1537,9 @@ int main(int argc,
 
     if (!jm_request_failed)
     {
+        globus_reltime_t          delay_time;
+        globus_reltime_t          period_time;
+
         if (request->poll_frequency == 0)
         {
             request->poll_frequency = GRAM_JOB_MANAGER_POLL_FREQUENCY;
@@ -1539,19 +1548,20 @@ int main(int argc,
         grami_fprintf( request->jobmanager_log_fp,
               "JM: poll frequency = %d\n", request->poll_frequency);
 
+        GlobusTimeReltimeSet(delay_time, 0, 0);
+        GlobusTimeReltimeSet(period_time, GRAM_JOB_MANAGER_STAT_FREQUENCY, 0);
 	globus_callback_register_periodic(&stat_cleanup_poll_handle,
-					  (globus_time_t) 0,
-					  (globus_time_t)
-					      GRAM_JOB_MANAGER_STAT_FREQUENCY *
-					      1000000,
+					  &delay_time,
+					  &period_time,
 					  globus_l_gram_status_file_cleanup,
 					  (void *) job_status_dir,
 					  GLOBUS_NULL,
 					  GLOBUS_NULL);
 
+        GlobusTimeReltimeSet(period_time, 2, 0);
 	globus_callback_register_periodic(&gass_poll_handle,
-					  (globus_time_t) 0,
-					  (globus_time_t) 2 * 1000000,
+					  &delay_time,
+					  &period_time,
 					  globus_l_gram_jm_check_files,
 					  (void *) request,
 					  GLOBUS_NULL,
@@ -3037,7 +3047,7 @@ Returns:
 ******************************************************************************/
 static globus_bool_t
 globus_l_gram_status_file_cleanup(
-    globus_time_t			time_can_block,
+    globus_abstime_t *         		time_stop,
     void *				callback_arg)
 {
     DIR *            status_dir;
@@ -3070,7 +3080,8 @@ globus_l_gram_status_file_cleanup(
     now = (unsigned long) time(NULL);
 
     for(globus_libc_readdir_r(status_dir, &dir_entry);
-        dir_entry != GLOBUS_NULL && globus_callback_get_timeout() > 0;
+        dir_entry != GLOBUS_NULL && 
+        globus_callback_has_time_expired() > 0;
         globus_libc_readdir_r(status_dir, &dir_entry))
     {
         if (strstr(dir_entry->d_name, logname_string) != NULL)
@@ -3753,7 +3764,7 @@ int globus_l_gram_client_contact_list_free(globus_list_t *contact_list)
 static
 globus_bool_t
 globus_l_gram_jm_check_files(
-    globus_time_t			time_can_block,
+    globus_abstime_t *      		time_stop,
     void *				callback_arg)
 {
     globus_gram_jobmanager_request_t *  request;

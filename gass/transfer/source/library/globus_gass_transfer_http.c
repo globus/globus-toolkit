@@ -195,6 +195,7 @@ globus_l_gass_transfer_http_send(
 {
     globus_result_t				result;
     globus_gass_transfer_http_request_proto_t *		new_proto;
+    globus_reltime_t                                    delay_time;
 
     globus_l_gass_transfer_http_lock();
     new_proto = (globus_gass_transfer_http_request_proto_t *) proto;
@@ -288,9 +289,10 @@ globus_l_gass_transfer_http_send(
     /* Registration failed, close up handle and signal failure to GASS */
     globus_l_gass_transfer_http_register_close(new_proto);
 
+    GlobusTimeReltimeSet(delay_time, 0, 0);
     globus_callback_register_oneshot(
 	GLOBUS_NULL /* callback handle */,
-	(globus_time_t) 0,
+	&delay_time,
 	globus_l_gass_transfer_http_callback_send_callback,
 	(void *) new_proto,
 	GLOBUS_NULL /* wakeup func */,
@@ -321,6 +323,7 @@ globus_l_gass_transfer_http_receive(
     globus_size_t				wait_for_length)
 {
     globus_gass_transfer_http_request_proto_t *		new_proto;
+    globus_reltime_t                                    delay_time;
 
     globus_l_gass_transfer_http_lock();
     new_proto = (globus_gass_transfer_http_request_proto_t *) proto;
@@ -338,9 +341,10 @@ globus_l_gass_transfer_http_receive(
     new_proto->user_waitlen = wait_for_length;
     new_proto->oneshot_registered = GLOBUS_TRUE;
 
+    GlobusTimeReltimeSet(delay_time, 0, 0);
     globus_callback_register_oneshot(
 	GLOBUS_NULL /* callback handle */,
-	(globus_time_t) 0,
+	&delay_time,
 	globus_l_gass_transfer_http_callback_read_buffered_callback,
 	(void *) new_proto,
 	GLOBUS_NULL /* wakeup func */,
@@ -1233,6 +1237,7 @@ globus_l_gass_transfer_http_listen(
 {
     globus_gass_transfer_http_listener_proto_t *new_proto;
     globus_result_t				result;
+    globus_reltime_t                            delay_time;
 
     new_proto = (globus_gass_transfer_http_listener_proto_t *) proto;
 
@@ -1245,9 +1250,10 @@ globus_l_gass_transfer_http_listen(
 
     if(result != GLOBUS_SUCCESS)
     {
+        GlobusTimeReltimeSet(delay_time, 0, 0);
 	globus_callback_register_oneshot(
 	    GLOBUS_NULL /* callback handle */,
-	    (globus_time_t) 0,
+	    &delay_time,
 	    globus_l_gass_transfer_http_callback_listen_callback,
 	    (void *) new_proto,
 	    GLOBUS_NULL /* wakeup func */,
@@ -1585,6 +1591,7 @@ globus_l_gass_transfer_http_request_authorize(
     globus_size_t				authorize_count=0;
     globus_size_t				offset;
     globus_size_t				length;
+    globus_reltime_t                            delay_time;
 
     globus_l_gass_transfer_http_lock();
     proto = (globus_gass_transfer_http_request_proto_t *) rproto;
@@ -1673,10 +1680,11 @@ globus_l_gass_transfer_http_request_authorize(
     else
     {
 	proto->state = GLOBUS_GASS_TRANSFER_HTTP_STATE_IDLE;
-
+  
+        GlobusTimeReltimeSet(delay_time, 0, 0);
 	globus_callback_register_oneshot(
 	    GLOBUS_NULL /* callback handle */,
-	    (globus_time_t) 0,
+	    &delay_time,
 	    globus_l_gass_transfer_http_callback_ready_callback,
 	    (void *) proto,
 	    GLOBUS_NULL /* wakeup func */,
@@ -1844,6 +1852,7 @@ globus_l_gass_transfer_http_new_request(
     int						sndbuf;
     int						rcvbuf;
     int						nodelay;
+    globus_reltime_t                            delay_time;
 
     switch(globus_gass_transfer_request_get_type(request))
     {
@@ -2156,9 +2165,11 @@ globus_l_gass_transfer_http_new_request(
   proto_error:
     globus_free(proto);
   error_exit:
+  
+    GlobusTimeReltimeSet(delay_time, 0, 0);
     globus_callback_register_oneshot(
 	GLOBUS_NULL /* callback handle */,
-	(globus_time_t) 0,
+	&delay_time,
 	globus_l_gass_transfer_http_callback_denied,
 	(void *) request,
 	GLOBUS_NULL /* wakeup func */,
@@ -3589,7 +3600,7 @@ globus_l_gass_transfer_http_request_callback(
 static
 globus_bool_t
 globus_l_gass_transfer_http_callback_send_callback(
-    globus_time_t				time_can_block,
+    globus_abstime_t *                          time_stop,
     void *					arg)
 {
     globus_gass_transfer_http_request_proto_t *		proto;
@@ -3608,7 +3619,7 @@ globus_l_gass_transfer_http_callback_send_callback(
 static
 globus_bool_t
 globus_l_gass_transfer_http_callback_ready_callback(
-    globus_time_t				time_can_block,
+    globus_abstime_t *                          time_stop,
     void *					arg)
 {
     globus_gass_transfer_http_request_proto_t *	proto;
@@ -3624,7 +3635,7 @@ globus_l_gass_transfer_http_callback_ready_callback(
 static
 globus_bool_t
 globus_l_gass_transfer_http_callback_read_buffered_callback(
-    globus_time_t				time_can_block,
+    globus_abstime_t *                          time_stop,
     void *					arg)
 {
     globus_gass_transfer_http_request_proto_t *	proto;
@@ -3652,7 +3663,7 @@ globus_l_gass_transfer_http_callback_read_buffered_callback(
 static
 globus_bool_t
 globus_l_gass_transfer_http_callback_listen_callback(
-    globus_time_t				time_can_block,
+    globus_abstime_t *                          time_stop,
     void *					arg)
 {
     globus_gass_transfer_http_listener_proto_t *proto;
@@ -5826,7 +5837,7 @@ globus_l_gass_transfer_http_extract_referral(
 static
 globus_bool_t
 globus_l_gass_transfer_http_callback_denied(
-    globus_time_t				time_can_block,
+    globus_abstime_t *                          time_stop,
     void *					arg)
 {
     globus_gass_transfer_request_t		request;
