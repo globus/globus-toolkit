@@ -107,4 +107,5 @@ gs -a \
 ws -a \
 	ws-gram\
 	ws-mds\
+	ws-transfer\
 	wsrf
