@@ -3,25 +3,23 @@ README		myproxy
 ======
 
  1. Overview
- 2. License and Support
- 3. Installation
- 4. More Information on Globus/GSI
- 5. Authors
+ 2. Myproxy Programs
+ 3. License and Support
+ 4. Installation
+ 5. More Information on Globus/GSI
+ 6. Authors
 
 
 1. Overview
 -----------
 
-This is Myproxy v0.1b1. It's intended used is to act as a delegation
-channel between users and services that don't support the Globus
-delegation mechanism, mainly web browsers and web servers or portals.
+Myproxy v0.1b1 provides a server and client-side utilities to store and retrieve delegated X509 certificates via the Globus Security Infrastructure (GSI). Services that do not support GSI, including web browsers, can retrieve user credentials from a myproxy-server via a user generated passphrase.
 
-Myproxy works by have a server, myproxy-server, that runs on a secured
-host, probably not the web server but a secured machine specifically
-set up for the task.
+The myproxy-server uses the GSI to perform mutual authentication between clients and web portals. It should be installed on a secured host separate from the web server. The myproxy-server saves the credentials in the case the system should go down. A configuration file is used to store information about which portals and users can access the myproxy-server.
 
 The user uses myproxy-init to delegate credentials to myproxy-server,
-along with a username and pass phrase to authenticate retrieval.
+along with a username and pass phrase to authenticate credential 
+retrieval from a web server.
 
 Then at a later time when the user connects to the web portal they
 provide the username and pass phrase to the portal. The portal then
@@ -33,10 +31,14 @@ of the users credentials to the portal for use.
 The user may destroy their credentials stored with myproxy-server
 at any time using myproxy-destroy.
 
-All of the myproxy programs support the -usage argument to provide
-information about their execution options.
+2. Myproxy Programs
+-------------------
 
-2. License and Support
+Please see myproxy.html for running the various myproxy programs and 
+command line arguments.
+
+
+3. License and Support
 ----------------------
 
 All rights to myproxy are held by the authors, the National Center
@@ -59,20 +61,20 @@ implied.
 You are encouraged to send bug reports and enhancements to the authors,
 but there is no guarantee of any support.
 
-3. Installation
+4. Installation
 ---------------
 
 Please see INSTALL for directions on compiling MyProxy.
 
 
-4. More information on Globus/GSI
+5. More information on Globus/GSI
 ---------------------------------
 
 Information on GSI and Globus can be found at:
 http://www.globus.org/security/v1.1 
 http://www.globus.org.
 
-5. Authors
+6. Authors
 ----------
 Jason Novotny <novotny@ncsa.uiuc.edu>
 Von Welch <vwelch@ncsa.uiuc.edu>
