@@ -1,4 +1,5 @@
 aggregator		information_services/aggregator
+cas			cas
 core			ogsa
 mds-db			information_services/db
 dbgs			playground/java/database

@@ -1,4 +1,5 @@
 BUNDLE gt3-all-src
+	cas
 	servicegroup
 	rips
 	index
