@@ -28,7 +28,8 @@ Sources = \
 	export_cred.c \
 	release_buffer.c \
 	gssapi_working.c \
-	gssapi.h
+	gssapi.h \
+	gssapi_ssleay.h	
 
 include_HEADERS= \
 	gssapi.h
