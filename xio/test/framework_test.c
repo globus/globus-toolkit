@@ -34,15 +34,6 @@ test_res(
     }
 }
 
-void
-open_cb(
-    globus_xio_handle_t                         handle,
-    globus_result_t                             result,
-    void *                                      user_arg)
-{
-
-}
-
 
 void
 close_cb(
@@ -56,6 +47,22 @@ close_cb(
         globus_cond_signal(&globus_l_cond);
     }
     globus_mutex_unlock(&globus_l_mutex);
+}
+
+void
+open_cb(
+    globus_xio_handle_t                         handle,
+    globus_result_t                             result,
+    void *                                      user_arg)
+{
+    globus_result_t                             res;
+
+    res = globus_xio_register_close(
+            handle,
+            NULL,
+            close_cb,
+            user_arg);
+    test_res(res, __LINE__);
 }
 
 
