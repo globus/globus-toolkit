@@ -1282,7 +1282,7 @@ globus_l_globusrun_gramrun(char * request_string,
 	int tmp1, tmp2;
 	send_commit = GLOBUS_TRUE;
 	err = globus_gram_client_job_signal(job_contact,
-					GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_COMMIT,
+				GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_COMMIT_REQUEST,
 					    "commit",
 					    &tmp1,
 					    &tmp2);
@@ -1353,7 +1353,7 @@ globus_l_globusrun_gramrun(char * request_string,
     {
 	int tmp1, tmp2;
 	err = globus_gram_client_job_signal(job_contact,
-					GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_COMMIT,
+				GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_COMMIT_END,
 					    "commit",
 					    &tmp1,
 					    &tmp2);
