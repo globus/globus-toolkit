@@ -242,9 +242,12 @@ collate_packages() {
 		tar czf package-output/$f.tar.gz $f
 	done
 
-	#This is our gt3 src bundle.
-	#Package it with the gt2 src bundle to make a distro
-	$GPT_LOCATION/sbin/gpt-bundle -bn=gt3-all-src -bv=$release -srcdir=package-output -all -exclude=gt3_hostinfo
+	# This is our gt3 src bundle.
+	# Package it with the gt2 src bundle to make a distro
+	# - hostinfo require bootstrap, currently working around with fait_accompli
+	rm package-output/hostinfo-0.3-src.tar.gz
+	cp fait_accompli/gt3_hostinfo_src.tar.gz package-output
+	$GPT_LOCATION/sbin/gpt-bundle -bn=gt3-all-src -bv=$release -srcdir=package-output -all
 
 	if [ $release = 1 ]; then
 		mkdir -p release-candidate/gt3-alpha3-source-installer
@@ -252,6 +255,7 @@ collate_packages() {
 		cp fait_accompli/gt3_alpha2_src_bundle-r1_src.tar.gz release-candidate/gt3-alpha3-source-installer
 		cp fait_accompli/gpt-2.2.5-src.tar.gz release-candidate/gt3-alpha3-source-installer
 		cp fait_accompli/install-gt3-alpha3-src release-candidate/gt3-alpha3-source-installer
+		cp fait_accompli/OGSI.NET.zip release-candidate/gt3-alpha3-source-installer
 		pushd release_candidate
 		tar czf gt3_alpha3_src_installer.tar.gz gt3-alpha3-source-installer
 		rm -fr gt3-alpha3-source-installer
@@ -280,6 +284,8 @@ install_bundle() {
 		mv gt3-all-bin* release-candidate/gt3-alpha3-binary-installer
 		cp fait_accompli/gt3_alpha2_bin_bundle-r1_bin.tar.gz release-candidate/gt3-alpha3-binary-installer
 		cp fait_accompli/gpt-2.2.5-src.tar.gz release-candidate/gt3-alpha3-binary-installer
+		cp fait_accompli/OGSI.NET.zip release-candidate/gt3-alpha3-binary-installer
+		cp fait_accompli/globus-rls-server-1.1-i686-pc-linux-gnu-bin.tar.gz release-candidate/gt3-alpha3-binary-installer
 		cp fait_accompli/install-gt3-alpha3-bin release-candidate/gt3-alpha3-binary-installer
 		pushd release_candidate
 		tar czf gt3_alpha3_bin_installer.tar.gz gt3-alpha3-binary-installer
