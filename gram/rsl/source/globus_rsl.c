@@ -1263,6 +1263,55 @@ globus_rsl_value_list_param_get(globus_list_t * ast_node_list,
     return(0);
 }
 
+globus_list_t *
+globus_rsl_param_get_values(
+    globus_rsl_t *			ast_node,
+    char *				param)
+{
+    globus_rsl_t * tmp_rsl_ptr;
+    globus_list_t * tmp_rsl_list;
+    globus_list_t * tmp_value_list;
+    globus_list_t * values;
+
+    if (globus_rsl_is_boolean(ast_node))
+    {
+        tmp_rsl_list = globus_rsl_boolean_get_operand_list(ast_node);
+
+        while (! globus_list_empty(tmp_rsl_list))
+        {
+            tmp_rsl_ptr = (globus_rsl_t *) globus_list_first
+                 (tmp_rsl_list);
+
+	    values = globus_rsl_param_get_values(tmp_rsl_ptr, param);
+
+	    if(values)
+	    {
+		return values;
+	    }
+
+            tmp_rsl_list = globus_list_rest(tmp_rsl_list);
+        }
+    }
+    else if (globus_rsl_is_relation(ast_node))
+    {
+        if (!globus_rsl_is_relation_attribute_equal(ast_node, param))
+        {
+            return(0);
+        }
+
+        return globus_rsl_value_sequence_get_value_list(
+                         globus_rsl_relation_get_value_sequence(ast_node));
+
+    }
+    else
+    {
+        return GLOBUS_NULL;
+    }
+
+    return GLOBUS_NULL;
+}
+/* globus_rsl_param_get_values() */
+
 int
 globus_rsl_param_get(globus_rsl_t * ast_node,
                      int param_type,

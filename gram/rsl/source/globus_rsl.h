@@ -385,6 +385,10 @@ globus_rsl_param_get(globus_rsl_t * ast_node,
                      char * param,
                      char *** values);
 
+globus_list_t *
+globus_rsl_param_get_values(globus_rsl_t * ast_node,
+			    char * param);
+
 globus_rsl_t *
 globus_rsl_parse(char * rsl_spec);
 
