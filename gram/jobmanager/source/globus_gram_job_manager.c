@@ -1606,6 +1606,12 @@ globus_l_gram_request_validate(globus_gram_jobmanager_request_t * req)
         return(GLOBUS_FAILURE);
     }
 
+    if (req->count < 1)
+    {
+        req->failure_code = GLOBUS_GRAM_CLIENT_ERROR_INVALID_COUNT;
+        return(GLOBUS_FAILURE);
+    }
+
     if (req->jobtype != GLOBUS_GRAM_JOBMANAGER_JOBTYPE_MPI &&
         req->jobtype != GLOBUS_GRAM_JOBMANAGER_JOBTYPE_SINGLE &&
         req->jobtype != GLOBUS_GRAM_JOBMANAGER_JOBTYPE_MULTIPLE &&
@@ -1631,6 +1637,7 @@ globus_l_gram_request_validate(globus_gram_jobmanager_request_t * req)
          (strcmp(req->jobmanager_type, "prun") != 0) &&
          (strcmp(req->jobmanager_type, "loadleveler") != 0) &&
          (strcmp(req->jobmanager_type, "lsf") != 0) &&
+         (strcmp(req->jobmanager_type, "maui") != 0) &&
          (strcmp(req->jobmanager_type, "pbs") != 0) &&
          (strcmp(req->jobmanager_type, "easymcs") != 0))
     {
