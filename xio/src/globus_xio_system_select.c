@@ -1529,10 +1529,7 @@ globus_l_xio_system_handle_read(
 
             if(new_fd < 0)
             {
-                if(errno != EAGAIN && errno != EWOULDBLOCK)
-                {
-                    result = GlobusXIOErrorSystemError("accept", errno);
-                }
+                result = GlobusXIOErrorSystemError("accept", errno);
             }
             else
             {
@@ -1547,7 +1544,6 @@ globus_l_xio_system_handle_read(
                 else
                 {
                     *read_info->sop.non_data.out_fd = new_fd;
-                    read_info->nbytes = 1;
                 }
             }
         }
@@ -1642,7 +1638,8 @@ globus_l_xio_system_handle_read(
         return GLOBUS_FALSE;
         break;
     }
-
+    
+    /* always true for accept operations */
     if(read_info->nbytes >= read_info->waitforbytes ||
         result != GLOBUS_SUCCESS)
     {
@@ -1869,7 +1866,6 @@ globus_l_xio_system_poll(
         globus_bool_t                   time_left_is_infinity;
         int                             num;
         int                             nready;
-        int                             select_errno;
         int                             fd;
 
         time_left_is_zero = GLOBUS_FALSE;
@@ -1908,7 +1904,6 @@ globus_l_xio_system_poll(
             globus_l_xio_system_ready_writes,
             GLOBUS_NULL,
             (time_left_is_infinity ? GLOBUS_NULL : &time_left));
-        select_errno = errno;
 
         globus_mutex_lock(&globus_l_xio_system_cancel_mutex);
         {
@@ -1928,10 +1923,26 @@ globus_l_xio_system_poll(
                     nready--;
                 }
             }
-            else if(nready == 0 || select_errno != EINTR)
+            else if(nready == 0)
             {
                 time_left_is_zero = GLOBUS_TRUE;
+            }
+            else
+            {
+                /**
+                 * can't really do anything about errors (most likely EINTR)
+                 * so, set ready fds to known state in case there are things
+                 * to be canceled
+                 */
                 nready = 0;
+                memset(
+                    globus_l_xio_system_ready_reads,
+                    0,
+                    globus_l_xio_system_fd_allocsize);
+                memset(
+                    globus_l_xio_system_ready_writes,
+                    0,
+                    globus_l_xio_system_fd_allocsize);
             }
 
             while(!globus_list_empty(globus_l_xio_system_canceled_reads))
@@ -2188,17 +2199,9 @@ globus_xio_system_register_accept(
 {
     globus_result_t                     result;
     globus_l_operation_info_t *         op_info;
-    int                                 rc;
     GlobusXIOName(globus_xio_system_register_accept);
 
     GlobusXIOSystemDebugEnterFD(listener_fd);
-    
-    GlobusIXIOSystemAddNonBlocking(listener_fd, rc);
-    if(rc < 0)
-    {
-        result = GlobusXIOErrorSystemError("fcntl", errno);
-        goto error_nonblocking;
-    }
     
     GlobusIXIOSystemAllocOperation(op_info);
     if(!op_info)
@@ -2214,7 +2217,6 @@ globus_xio_system_register_accept(
     op_info->user_arg = user_arg;
     op_info->sop.non_data.callback = callback;
     op_info->sop.non_data.out_fd = out_fd;
-    op_info->waitforbytes = 1;
 
     result = globus_l_xio_system_register_read(listener_fd, op_info);
 
@@ -2232,7 +2234,6 @@ error_register:
     GlobusIXIOSystemFreeOperation(op_info);
 
 error_op_info:
-error_nonblocking:
     GlobusXIOSystemDebugExitWithErrorFD(listener_fd);
     return result;
 }
