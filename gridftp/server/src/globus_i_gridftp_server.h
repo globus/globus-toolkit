@@ -1,6 +1,7 @@
 #ifndef GLOBUS_I_GRIDFTP_SERVER_H
 #define GLOBUS_I_GRIDFTP_SERVER_H
 
+#include "config.h"
 #include "globus_gridftp_server.h"
 #include "globus_ftp_control.h"
 #include "globus_i_gfs_acl.h"
@@ -40,6 +41,7 @@ void
 globus_i_gfs_control_init();
 
 extern globus_gfs_acl_module_t          globus_gfs_acl_cas_module;
+extern globus_gfs_acl_module_t          globus_gfs_acl_test_module;
 
 #include "globus_i_gfs_log.h"
 #include "globus_i_gfs_control.h"

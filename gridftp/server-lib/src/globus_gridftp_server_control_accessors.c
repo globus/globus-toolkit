@@ -48,6 +48,29 @@ globus_gridftp_server_control_get_buffer_size(
 }
 
 globus_result_t
+globus_gridftp_server_control_get_layout(
+    globus_gridftp_server_control_op_t      op,
+    globus_gsc_layout_t *                   layout_type,
+    int *                                   block_size)
+{
+    GlobusGridFTPServerName(globus_gridftp_server_control_get_layout);
+
+    if(op == NULL)
+    {
+        return GlobusGridFTPServerErrorParameter("op");
+    }
+
+    globus_mutex_lock(&op->server_handle->mutex);
+    {
+        *layout_type = op->server_handle->opts.layout;
+        *block_size = op->server_handle->opts.block_size;
+    }
+    globus_mutex_unlock(&op->server_handle->mutex);
+
+    return GLOBUS_SUCCESS;
+}
+
+globus_result_t
 globus_gridftp_server_control_get_parallelism(
     globus_gridftp_server_control_op_t      op,
     int *                                   out_parallelism)
@@ -151,6 +174,32 @@ globus_gridftp_server_control_get_cwd(
 
     return GLOBUS_SUCCESS;
 }
+
+globus_result_t
+globus_gridftp_server_control_set_cwd(
+    globus_gridftp_server_control_t         server,
+    const char *                            cwd_string)
+{
+    GlobusGridFTPServerName(globus_gridftp_server_control_get_cwd);
+
+    if(server == NULL)
+    {
+        return GlobusGridFTPServerErrorParameter("server");
+    }
+
+    globus_mutex_lock(&server->mutex);
+    {
+        if(server->cwd)
+        {
+            globus_free(server->cwd);
+        }
+        server->cwd = strdup(cwd_string);
+    }
+    globus_mutex_unlock(&server->mutex);
+
+    return GLOBUS_SUCCESS;
+}
+
 
 globus_result_t
 globus_gridftp_server_control_get_data_auth(

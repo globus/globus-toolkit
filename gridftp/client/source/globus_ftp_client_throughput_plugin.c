@@ -399,6 +399,9 @@ throughput_plugin_user_copy_cb(
     new_info->per_stripe_cb     = old_info->per_stripe_cb;
     new_info->total_cb          = old_info->total_cb;
     new_info->complete_cb       = old_info->complete_cb;
+    
+    new_info->copy_cb           = old_info->copy_cb;
+    new_info->destroy_cb        = old_info->destroy_cb;
 
     new_info->prev_times        = GLOBUS_NULL;
     new_info->cur_times         = GLOBUS_NULL;

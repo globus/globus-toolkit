@@ -300,13 +300,19 @@ globus_fifo_move(
 
 globus_list_t *
 globus_fifo_convert_to_list(
-	globus_fifo_t *										fifo )
+	globus_fifo_t *    fifo )
 {
-    struct globus_fifo_s *                          s_fifo;
+    struct globus_fifo_s *              s_fifo;
+    globus_list_t *                     list;
     
     assert(fifo != GLOBUS_NULL);
     s_fifo = *fifo;
     assert(s_fifo != GLOBUS_NULL);
 
-	return s_fifo->head;
+    list = s_fifo->head;
+    s_fifo->head = GLOBUS_NULL;
+    s_fifo->tail = GLOBUS_NULL;
+    s_fifo->size = 0;
+    
+    return list;
 }

@@ -26,6 +26,7 @@ Sources = \
 	globus_i_gfs_log.h 		\
 	globus_i_gfs_config.c 		\
 	globus_i_gfs_config.h 		\
+	globus_i_gfs_acl_test.c     \
 	globus_i_gfs_acl.c 		\
 	globus_i_gfs_acl.h 		\
 	globus_i_gfs_data.c 		\

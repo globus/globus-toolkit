@@ -29,7 +29,7 @@ BUNDLE gt3-extras
 	gssapi_error
 	globus_gsi_credential
 	globus_gsi_sysconfig
-	globus_proxy_wrapper
+	globus_proxy_utils
 	gt3_hostinfo
 
 BUNDLE mmjfs

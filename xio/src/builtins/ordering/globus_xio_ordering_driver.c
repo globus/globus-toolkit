@@ -659,8 +659,9 @@ globus_l_xio_ordering_copy(
 			iovec[user_req->index].iov_len - user_req->offset, 
 			buffer->nbytes - buffer->offset);
             memcpy(
-               iovec[user_req->index].iov_base + user_req->offset, 
-               buffer->iovec[0].iov_base + buffer->offset, 
+               (globus_byte_t *) 
+                   iovec[user_req->index].iov_base + user_req->offset, 
+               (globus_byte_t *) buffer->iovec[0].iov_base + buffer->offset, 
                len);
             if (user_req->offset + len == iovec[user_req->index].iov_len)
             {
@@ -1412,7 +1413,7 @@ globus_l_xio_ordering_attr_cntl(
 	    break;
         case GLOBUS_XIO_ORDERING_GET_BUF_SIZE:
 	{
-	    globus_bool_t * out_buf_size;
+	    globus_size_t * out_buf_size;
 	    out_buf_size = va_arg(ap, globus_size_t *);
 	    *out_buf_size = attr->buf_size;
 	    break;

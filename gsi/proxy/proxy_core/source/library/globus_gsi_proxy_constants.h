@@ -45,8 +45,10 @@ typedef enum
     GLOBUS_GSI_PROXY_ERROR_SETTING_HANDLE_TYPE = 15,
     /** Invalid function parameter */
     GLOBUS_GSI_PROXY_INVALID_PARAMETER = 16,
+    /** A error occured while signing the proxy certificate */
+    GLOBUS_GSI_PROXY_ERROR_SIGNING = 17,
     /** Last marker - never used */
-    GLOBUS_GSI_PROXY_ERROR_LAST = 17
+    GLOBUS_GSI_PROXY_ERROR_LAST = 18
 } globus_gsi_proxy_error_t;
 
 #endif

@@ -1,7 +1,6 @@
 #include "globus_xio.h"
 #include "globus_gridftp_server_control.h"
 #include "globus_i_gridftp_server.h"
-#include <grp.h>
 
 typedef struct
 {
@@ -257,7 +256,7 @@ globus_l_gfs_auth_session_cb(
 
     auth_info = (globus_l_gfs_auth_info_t *) user_arg;
 
-    auth_info->instance->session_arg = reply->session_arg;
+    auth_info->instance->session_arg = reply->info.session.session_arg;
     if(reply->result != GLOBUS_SUCCESS)
     {
         tmp_str = globus_error_print_friendly(
@@ -271,9 +270,17 @@ globus_l_gfs_auth_session_cb(
     }
     else
     {
+        if(reply->info.session.home_dir != NULL && 
+            globus_i_gfs_config_bool("chdir_on_login"))
+        {
+            globus_gridftp_server_control_set_cwd(
+                auth_info->instance->server_handle,
+                reply->info.session.home_dir);
+        }
+        
         globus_gridftp_server_control_finished_auth(
             auth_info->control_op,
-            auth_info->session_info->username,
+            reply->info.session.username,
             GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS,
             NULL);
     }
@@ -330,6 +337,10 @@ globus_l_gfs_request_auth(
     if(session_info->username == NULL)
     {
         goto del_error;
+    }
+    if(strcmp(session_info->username, GLOBUS_MAPPING_STRING) == 0)
+    {
+        session_info->map_user = GLOBUS_TRUE;
     }
     if(pw != NULL)
     {
@@ -401,9 +412,11 @@ globus_l_gfs_data_stat_cb(
         tmp_str = globus_error_print_friendly(globus_error_peek(reply->result));
         globus_gridftp_server_control_finished_resource(
             op,
-            reply->info.stat.stat_array,
-            reply->info.stat.stat_count,
-            reply->info.stat.uid,
+            NULL,
+            0,
+            0,
+            0,
+            NULL,
             GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_ACTION_FAILED,
             tmp_str);
         globus_free(tmp_str);
@@ -415,6 +428,8 @@ globus_l_gfs_data_stat_cb(
             reply->info.stat.stat_array,
             reply->info.stat.stat_count,
             reply->info.stat.uid,
+            reply->info.stat.gid_count,
+            reply->info.stat.gid_array,
             GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS,
             GLOBUS_NULL);
     }
@@ -786,6 +801,32 @@ error:
     return;
 }
 
+static
+int
+globus_l_gfs_get_event_mask(
+    int                                 in_event_mask)
+{
+    int                                 out_event_mask = 0;
+    
+    if(in_event_mask & GLOBUS_GFS_EVENT_BYTES_RECVD)
+    {
+        out_event_mask |= GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_PERF;
+    }
+    if(in_event_mask & GLOBUS_GFS_EVENT_RANGES_RECVD)
+    {
+        out_event_mask |= GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_RESTART;
+    }
+    if(in_event_mask & GLOBUS_GFS_EVENT_TRANSFER_ABORT)
+    {
+        out_event_mask |= GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_ABORT;
+    }
+    if(in_event_mask & GLOBUS_GFS_EVENT_TRANSFER_COMPLETE)
+    {
+        out_event_mask |= 
+            GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_TRANSFER_COMPLETE;
+    }
+    return out_event_mask;
+}
 
 static
 void
@@ -796,6 +837,7 @@ globus_l_gfs_data_event_cb(
     globus_result_t                     result = GLOBUS_SUCCESS;
     globus_gridftp_server_control_op_t  op;
     globus_l_gfs_request_info_t *       request;
+    int                                 event_mask;
     GlobusGFSName(globus_l_gfs_data_event_cb);
 
     request = (globus_l_gfs_request_info_t *) user_arg;
@@ -806,11 +848,10 @@ globus_l_gfs_data_event_cb(
             request->event_arg = reply->event_arg;
             
             request->transfer_events = GLOBUS_TRUE;
+            event_mask = globus_l_gfs_get_event_mask(reply->event_mask);
             result = globus_gridftp_server_control_events_enable(
                 op,
-                GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_PERF |
-                GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_RESTART |
-                GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_ABORT,
+                event_mask,
                 globus_l_gfs_request_transfer_event,
                 request);
             if(result != GLOBUS_SUCCESS)
@@ -1231,9 +1272,42 @@ globus_l_gfs_get_data_info(
         NULL);
     globus_assert(result == GLOBUS_SUCCESS);
 
+    result = globus_gridftp_server_control_get_layout(                                       
+        op,
+        (globus_gsc_layout_t *) &data_info->stripe_layout,
+        &data_info->stripe_blocksize);
+    globus_assert(result == GLOBUS_SUCCESS);
+    
+    if(data_info->stripe_blocksize == 0 || 
+        globus_i_gfs_config_bool("stripe_blocksize_locked"))
+    {
+        data_info->stripe_blocksize = 
+            globus_i_gfs_config_int("stripe_blocksize");
+    }
+    if(globus_i_gfs_config_int("stripe_layout_locked"))
+    {
+        data_info->stripe_layout = 
+            globus_i_gfs_config_int("stripe_layout");
+    }
+    else
+    {        
+        switch(data_info->stripe_layout)
+        {
+            case GLOBUS_GSC_LAYOUT_TYPE_PARTITIONED:
+                data_info->stripe_layout = GLOBUS_GFS_LAYOUT_PARTITIONED;
+                break;
+            case GLOBUS_GSC_LAYOUT_TYPE_BLOCKED:
+                data_info->stripe_layout = GLOBUS_GFS_LAYOUT_BLOCKED;
+                break;
+            case GLOBUS_GSC_LAYOUT_TYPE_NONE:
+            default:
+                data_info->stripe_layout = 
+                    globus_i_gfs_config_int("stripe_layout");
+                break;
+        }
+    }
+    
     data_info->blocksize = globus_i_gfs_config_int("blocksize");
-    data_info->stripe_blocksize =
-        globus_i_gfs_config_int("stripe_blocksize") * data_info->blocksize;
 
 }
 
@@ -1437,17 +1511,17 @@ globus_l_gfs_control_log(
     switch(type)
     {
       case GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_REPLY:
-        log_type = GLOBUS_I_GFS_LOG_CONTROL;
+        log_type = GLOBUS_I_GFS_LOG_DUMP;
         globus_i_gfs_log_message(log_type, "%s: [SERVER]: %s",
             instance->remote_contact, message);
         break;
       case GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_ERROR:
-        log_type = GLOBUS_I_GFS_LOG_ERR;
+        log_type = GLOBUS_I_GFS_LOG_WARN;
         globus_i_gfs_log_message(log_type, "%s: [CLIENT ERROR]: %s",
             instance->remote_contact, message);
          break;
       default:
-        log_type = GLOBUS_I_GFS_LOG_CONTROL;
+        log_type = GLOBUS_I_GFS_LOG_DUMP;
         globus_i_gfs_log_message(log_type, "%s: [CLIENT]: %s",
             instance->remote_contact, message);
          break;
@@ -1636,7 +1710,7 @@ globus_i_gfs_control_start(
         goto error_attr_setup;
     }
 
-    idle_timeout = globus_i_gfs_config_int("idle_timeout");
+    idle_timeout = globus_i_gfs_config_int("control_idle_timeout");
     if(idle_timeout)
     {
         result = globus_gridftp_server_control_attr_set_idle_time(

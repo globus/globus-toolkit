@@ -36,7 +36,6 @@ globus_gsi_cert_utils,\
 globus_openssl_module,\
 globus_gsi_proxy_ssl,\
 globus_gsi_openssl_error,\
-globus_proxy_wrapper,\
 globus_openssl,\
 globus_gcs_b38b4d8c_setup
 

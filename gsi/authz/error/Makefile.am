@@ -21,7 +21,7 @@ lib_LTLIBRARIES = libglobus_gsi_authz_callout_error_$(GLOBUS_FLAVOR_NAME).la
 
 libglobus_gsi_authz_callout_error___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
 
-libglobus_gsi_authz_callout_error___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS) -module $(GPT_LDADD)
+libglobus_gsi_authz_callout_error___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS)
 
 libglobus_gsi_authz_callout_error___GLOBUS_FLAVOR_NAME__la_LIBADD = $(GPT_LIB_LINKS)
 

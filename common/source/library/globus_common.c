@@ -38,19 +38,6 @@ globus_l_common_activate(void);
 static int
 globus_l_common_deactivate(void);
 
-static char *
-globus_l_common_i18n_echo_string(
-	       	char * locale, 
-		char * resource_name, 
-		char * key);
-
-static char *
-globus_l_common_i18n_get_string_by_module(
-		char * locale,
-		globus_module_descriptor_t * module,
-		char * key);
-
-
 globus_module_descriptor_t		globus_i_common_module =
 {
     "globus_common",
@@ -61,9 +48,16 @@ globus_module_descriptor_t		globus_i_common_module =
     &local_version
 };
 
-
-globus_extension_registry_t      i18n_registry;
-get_string_by_key_t              globus_common_i18n_get_string_by_key;
+typedef
+char *
+(*get_l_string_by_key_t)(
+    const char *                        locale,
+    const char *                        resource_name,
+    const char *                        key);
+                       
+globus_extension_registry_t             i18n_registry;
+static get_l_string_by_key_t            globus_l_common_i18n_get_string_by_key;
+static globus_extension_handle_t        i18n_handle;
 
 /******************************************************************************
 		   globus_common module activation functions
@@ -72,7 +66,7 @@ get_string_by_key_t              globus_common_i18n_get_string_by_key;
 static int
 globus_l_common_activate(void)
 {
-	globus_extension_handle_t           handle;
+	char * 		env;
 #ifdef TARGET_ARCH_WIN32
 	int rc;
 	WORD wVersionRequested;
@@ -84,7 +78,7 @@ globus_l_common_activate(void)
 	if ( rc != 0 ) /* error- Winsock not available */
 		return GLOBUS_FAILURE;
 #endif
-
+    
     if(globus_module_activate(GLOBUS_ERROR_MODULE) != GLOBUS_SUCCESS)
     {
         goto error_error;
@@ -104,23 +98,29 @@ globus_l_common_activate(void)
     {
 	goto error_extension;
     }
-
-    if(globus_extension_activate("globus_i18n") != GLOBUS_SUCCESS)
+    
+    globus_l_common_i18n_get_string_by_key = NULL;
+    i18n_handle = NULL;
+    /*Check for GLOBUS_I18N==NO to see if we should load i18n lib*/
+    env = globus_libc_getenv("GLOBUS_I18N");
+    if(env != GLOBUS_NULL && strncmp(env, "NO", 2) != 0)
     {
-	globus_common_i18n_get_string_by_key = globus_l_common_i18n_echo_string;
-    }
-    else
-    {
-        globus_common_i18n_get_string_by_key = globus_extension_lookup(
-		    		&handle, &i18n_registry, "get_string_by_key");
-        if(!globus_common_i18n_get_string_by_key)
+        if(globus_extension_activate("globus_i18n") != GLOBUS_SUCCESS)
         {
-            /* too lazy to check the rc from globus_extension_activate */
-            printf("globus_i18n library did not load. "
-            "Set the GLOBUS_EXTENSION_DEBUG env for more info\n");
-            return 0;
-	}
-        globus_extension_release(handle);
+            fprintf(stderr, "globus_i18n library did not load. "
+                "Set the GLOBUS_EXTENSION_DEBUG env for more info\n");
+        }
+        else
+        {
+            globus_l_common_i18n_get_string_by_key =
+                globus_extension_lookup(
+                    &i18n_handle, &i18n_registry, "get_string_by_key");
+            if(!globus_l_common_i18n_get_string_by_key)
+            {
+                fprintf(stderr, "globus_i18n library does not have "
+                    "get_string_by_key\n");
+            }
+        }
     }
 
     return GLOBUS_SUCCESS;
@@ -139,6 +139,10 @@ error_error:
 static int
 globus_l_common_deactivate(void)
 {
+    if(i18n_handle)
+    {
+        globus_extension_release(i18n_handle);
+    }
     globus_module_deactivate(GLOBUS_EXTENSION_MODULE);
     globus_module_deactivate(GLOBUS_THREAD_MODULE);
     globus_module_deactivate(GLOBUS_CALLBACK_MODULE);
@@ -152,40 +156,36 @@ globus_l_common_deactivate(void)
     return GLOBUS_SUCCESS;
 }
 
-static char *
-globus_l_common_i18n_echo_string(
-	       		char * locale,
-		       	char * resource_name,
-		       	char * key) 
+char *
+globus_common_i18n_get_string(
+    globus_module_descriptor_t *        module,
+    const char *                        key)
 {
-    return key;
-}
-
-static char *
-globus_l_common_i18n_get_string_by_module(
-		char * locale,
-		globus_module_descriptor_t * module,
-		char * key)
-{
-    if (module != GLOBUS_NULL && 
-        globus_common_i18n_get_string_by_key != GLOBUS_NULL)
+    if(globus_l_common_i18n_get_string_by_key != NULL &&
+        module != NULL)
     {
-	return globus_common_i18n_get_string_by_key(
-	    locale, module->module_name, key);
+	return globus_l_common_i18n_get_string_by_key(
+            NULL, module->module_name, key);
     }
     else
     {
-        return key;
+        return (char *) key;
     }
 }
 
 char *
-globus_common_i18n_get_string(
-		globus_module_descriptor_t * module,
-		char * key)
+globus_common_i18n_get_string_by_key(
+    const char *                        locale,
+    const char *                        resource_name,
+    const char *                        key)
 {
-    return globus_l_common_i18n_get_string_by_module(NULL, module, key);
+    if(globus_l_common_i18n_get_string_by_key)
+    {
+        return globus_l_common_i18n_get_string_by_key(
+            locale, resource_name, key);
+    }
+    else
+    {
+        return (char *) key;
+    }
 }
-
-
-

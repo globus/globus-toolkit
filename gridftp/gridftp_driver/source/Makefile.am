@@ -17,7 +17,7 @@ libglobus_xio_gridftp_driver___GLOBUS_FLAVOR_NAME__la_LIBADD = \
 libglobus_xio_gridftp_driver___GLOBUS_FLAVOR_NAME__la_SOURCES = \
 	globus_xio_gridftp_driver.c
 libglobus_xio_gridftp_driver___GLOBUS_FLAVOR_NAME__la_LDFLAGS = \
-	@GPT_LDFLAGS@ -module -rpath $(GLOBUS_LOCATION)
+	@GPT_LDFLAGS@ -module -rpath $(GLOBUS_LOCATION)/lib
 
 EXTRA_DIST = version.h.in
 

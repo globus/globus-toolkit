@@ -167,7 +167,7 @@ typedef enum
     GLOBUS_XIO_UDT_SET_WND_SIZE,
 
     /* int *                            window_size_out */
-    GLOBUS_XIO_UDT_GET_WND_SIZE,
+    GLOBUS_XIO_UDT_GET_WND_SIZE
 
 } globus_xio_udt_cmd_t;
 

@@ -18,7 +18,6 @@ static globus_xio_attr_t                globus_l_gfs_xio_attr;
 static globus_bool_t                    globus_l_gfs_exit = GLOBUS_FALSE;
 static globus_bool_t                    globus_l_gfs_sigint_caught = GLOBUS_FALSE;
 
-
 static
 globus_result_t
 globus_l_gfs_open_new_server(
@@ -120,11 +119,6 @@ globus_l_gfs_sighup(
         "Done reloading config.\n");           
 }
 
-/* now have an open channel (when we get here, we hand off to the
- * control or data server code)
- * XXX all thats left for process management is to setuid iff this is an inetd
- * instance (or spawned from this daemon code)
- */
 static
 void 
 globus_l_gfs_sigchld(
@@ -189,7 +183,7 @@ globus_l_gfs_signal_init()
 
 #   ifdef SIGKILL
     {
-        //signal(SIGKILL, globus_l_gfs_bad_signal_handler);
+    /* XXX    //signal(SIGKILL, globus_l_gfs_bad_signal_handler); */
     }
 #   endif
 #   ifdef SIGSEGV
@@ -224,7 +218,7 @@ globus_l_gfs_signal_init()
 #   endif
 #   ifdef SIGPIPE
     {
-        //signal(SIGPIPE, globus_l_gfs_bad_signal_handler);
+ /* XXX       //signal(SIGPIPE, globus_l_gfs_bad_signal_handler); */
     }
 #   endif
 #   ifdef SIGEMT
@@ -247,7 +241,7 @@ globus_l_gfs_signal_init()
 #   endif
 #   ifdef SIGSTOP
     {
-        //signal(SIGSTOP, globus_l_gfs_bad_signal_handler);
+ /* XXX       //signal(SIGSTOP, globus_l_gfs_bad_signal_handler); */
     }
 
 #   endif
@@ -319,7 +313,14 @@ globus_l_gfs_spawn_child(
             if(strcmp(prog_argv[i], "-S") != 0 &&
                 strcmp(prog_argv[i], "-s") != 0)
             {
-                new_argv[j++] = prog_argv[i];
+                if(strcmp(prog_argv[i], "-p") == 0)
+                {
+                    i++;
+                }
+                else
+                {   
+                    new_argv[j++] = prog_argv[i];
+                }
             }
         }
         new_argv[j++] = "-i";
@@ -451,12 +452,35 @@ globus_l_gfs_new_server_cb(
         result = globus_xio_handle_cntl(
             handle,
             globus_l_gfs_tcp_driver,
+            GLOBUS_XIO_TCP_GET_REMOTE_NUMERIC_CONTACT,
+            &remote_contact);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error;
+        }
+        if(!globus_i_gfs_config_allow_addr(remote_contact))
+        {
+            globus_i_gfs_log_message(
+                GLOBUS_I_GFS_LOG_WARN,
+                "Connection disallowed by configuration from: %s\n", 
+                remote_contact);
+            goto error;
+        }
+        globus_free(remote_contact);       
+        result = globus_xio_handle_cntl(
+            handle,
+            globus_l_gfs_tcp_driver,
             GLOBUS_XIO_TCP_GET_REMOTE_CONTACT,
             &remote_contact);
         if(result != GLOBUS_SUCCESS)
         {
             goto error;
         }
+        
+        globus_i_gfs_log_message(
+            GLOBUS_I_GFS_LOG_INFO,
+            "New connection from: %s\n", remote_contact);
+
         result = globus_xio_handle_cntl(
             handle,
             globus_l_gfs_tcp_driver,
@@ -466,9 +490,6 @@ globus_l_gfs_new_server_cb(
         {
             goto error2;
         }
-        globus_i_gfs_log_message(
-            GLOBUS_I_GFS_LOG_INFO,
-            "New connection from: %s\n", remote_contact);
 
         result = globus_xio_handle_cntl(
             handle,
@@ -483,7 +504,12 @@ globus_l_gfs_new_server_cb(
         if(globus_i_gfs_config_bool("data_node"))
         {
             result = globus_i_gfs_data_node_start(
-                handle, system_handle, remote_contact, local_contact);
+                handle, 
+                system_handle, 
+                remote_contact, 
+                local_contact, 
+                globus_l_gfs_server_closed, 
+                NULL);
         }
         else
         {        
@@ -774,7 +800,7 @@ globus_l_gfs_be_daemon(void)
         goto attr_error;
     }
 
-    if(!globus_i_gfs_config_bool("no_chdir"))
+    if(globus_i_gfs_config_bool("chdir"))
     {
         char *                          chdir_to;
         chdir_to = globus_i_gfs_config_string("chdir_to");
@@ -853,6 +879,7 @@ main(
 {
     pid_t                               pid;
     int                                 rc = 0;
+    char *                              config;
     globus_result_t                     result;
 
     /* activte globus stuff */    
@@ -875,12 +902,12 @@ main(
     globus_cond_init(&globus_l_gfs_cond, GLOBUS_NULL);
     
     globus_l_gfs_open_count = 0;
-    globus_l_gfs_max_open_count = globus_i_gfs_config_int("max_connections");
+    globus_l_gfs_max_open_count = globus_i_gfs_config_int("connections_max");
     globus_l_gfs_exit = globus_i_gfs_config_int("bad_signal_exit");
     globus_l_gfs_xio_server = NULL;
 
     /* if all the want is version info print and exit */
-    if(globus_i_gfs_config_bool("usage"))
+    if(globus_i_gfs_config_bool("help"))
     {
         globus_i_gfs_config_display_usage();
         rc = 0;
@@ -931,7 +958,7 @@ main(
             freopen("/dev/null", "w+", stdin);
             freopen("/dev/null", "w+", stdout);
             freopen("/dev/null", "w+", stderr);
-            if(!globus_i_gfs_config_bool("no_chdir"))
+            if(globus_i_gfs_config_bool("chdir"))
             {
                 char *                  chdir_to;
                 chdir_to = globus_i_gfs_config_string("chdir_to");
@@ -949,6 +976,10 @@ main(
     if(globus_i_gfs_config_bool("cas"))
     {
         globus_gfs_acl_add_module(&globus_gfs_acl_cas_module);
+    }
+    if(globus_i_gfs_config_string("test_acl"))
+    {
+        globus_gfs_acl_add_module(&globus_gfs_acl_test_module);
     }
     globus_mutex_lock(&globus_l_gfs_mutex);
     {
@@ -972,14 +1003,27 @@ main(
             rc = 0;
             goto error_lock;
         }
+        config = globus_i_gfs_config_string("loaded_config");
         if(globus_i_gfs_config_bool("inetd"))
         {
             freopen("/dev/null", "w+", stdout);
             freopen("/dev/null", "w+", stderr);
+            if(config)
+            {
+                globus_i_gfs_log_message(
+                    GLOBUS_I_GFS_LOG_INFO, 
+                    "Configuration read from %s\n", config);
+            }
             result = globus_l_gfs_convert_inetd_handle();
         }
         else
         {
+            if(config)
+            {
+                globus_i_gfs_log_message(
+                    GLOBUS_I_GFS_LOG_INFO,
+                    "Configuration read from %s\n", config);
+            }            
             result = globus_l_gfs_be_daemon();
         }
         if(result != GLOBUS_SUCCESS)

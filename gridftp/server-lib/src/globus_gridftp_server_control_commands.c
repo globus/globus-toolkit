@@ -1297,7 +1297,6 @@ globus_l_gsc_cmd_opts(
 {
     globus_bool_t                           done = GLOBUS_FALSE;
     int                                     tmp_i;
-    char                                    tmp_s[1024];
     char *                                  msg;
     char *                                  tmp_ptr;
     globus_i_gsc_handle_opts_t *            opts;
@@ -1321,27 +1320,81 @@ globus_l_gsc_cmd_opts(
         tmp_ptr = cmd_a[2];
 
         done = GLOBUS_FALSE;
-        while(*tmp_ptr != '\0')
+        while(!done && *tmp_ptr != '\0')
         {
+            while(*tmp_ptr == ' ') tmp_ptr++;
+
             msg = _FSMSL("200 OPTS Command Successful.\r\n");
-            if(sscanf(tmp_ptr, "Parallelism=%d,%*d,%*d;", &tmp_i) == 1)
+            if(strncmp(tmp_ptr, "StripeLayout=", sizeof("StripeLayout=")-1) == 0)
             {
-                opts->parallelism = tmp_i;
+                tmp_ptr += sizeof("StripeLayout=")-1;
+                if(strncmp(
+                    tmp_ptr, "Partitioned;", sizeof("Partitioned;")-1) == 0)
+                {
+                    opts->layout = GLOBUS_GSC_LAYOUT_TYPE_PARTITIONED;
+                }
+                else if(strncmp(tmp_ptr, "Blocked;", sizeof("Blocked;")-1) == 0)
+                {
+                    opts->layout = GLOBUS_GSC_LAYOUT_TYPE_BLOCKED;
+                }
+                else
+                {
+                    msg = _FSMSL("500 OPTS failed.\r\n");
+                    done = GLOBUS_TRUE;
+                }
             }
-            else if(sscanf(tmp_ptr, "PacketSize=%d;", &tmp_i) == 1)
+            else if(
+                strncmp(tmp_ptr, "Parallelism=", sizeof("Parallelism=")-1) == 0)
             {
-                opts->packet_size = tmp_i;
+                tmp_ptr += sizeof("Parallelism=")-1;
+                if(sscanf(tmp_ptr, "%d,%*d,%*d;", &tmp_i) == 1)
+                {
+                    opts->parallelism = tmp_i;
+                }
+                else
+                {
+                    msg = _FSMSL("500 OPTS failed.\r\n");
+                    done = GLOBUS_TRUE;
+                }
             }
-            else if(sscanf(tmp_ptr, "WindowSize=%d;", &tmp_i) == 1)
+            else if(
+                strncmp(tmp_ptr, "PacketSize=", sizeof("PacketSize=")-1) == 0)
             {
-                opts->send_buf = tmp_i;
+                if(sscanf(tmp_ptr, "%d;", &tmp_i) == 1)
+                {
+                    opts->packet_size = tmp_i;
+                }
+                else
+                {
+                    msg = _FSMSL("500 OPTS failed.\r\n");
+                    done = GLOBUS_TRUE;
+                }
             }
-            else if(sscanf(tmp_ptr, "StripeLayout=%s;", tmp_s) == 1)
+            else if(
+                strncmp(tmp_ptr, "WindowSize=", sizeof("WindowSize")-1) == 0)
             {
-                /* XXX can't scan for strings like that */
+                if(sscanf(tmp_ptr, "%d;", &tmp_i) == 1)
+                {
+                    opts->send_buf = tmp_i;
+                }
+                else
+                {
+                    msg = _FSMSL("500 OPTS failed.\r\n");
+                    done = GLOBUS_TRUE;
+                }
             }
-            else if(sscanf(tmp_ptr, "BlockSize=%d;", &tmp_i) == 1)
+            else if(
+                strncmp(tmp_ptr, "BlockSize=", sizeof("BlockSize")-1) == 0)
             {
+                if(sscanf(tmp_ptr, "BlockSize=%d;", &tmp_i) == 1)
+                {
+                    opts->block_size = tmp_i;
+                }
+                else
+                {
+                    msg = _FSMSL("500 OPTS failed.\r\n");
+                    done = GLOBUS_TRUE;
+                }
             }
             else
             {

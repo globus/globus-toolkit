@@ -89,7 +89,7 @@ globus_l_uuid_get_mac(
     if(ioctl(sock, SIOCGARP, &req) < 0)
     {
         close(sock);
-        return GLOBUS_FAILURE
+        return GLOBUS_FAILURE;
     }
     
     memcpy(mac, req.arp_ha.sa_data, 6);
@@ -202,9 +202,15 @@ globus_uuid_create(
         GlobusTimeAbstimeGetCurrent(current_time);
         if(globus_abstime_cmp(&current_time, &globus_l_uuid_last_time) <= 0)
         {
-            /* either we're generating these too fast or someone changed
-             * clock on us, get new sequence number */
-            globus_l_uuid_sequence = ((uint16_t) rand() & 0x3fff) | 0x8000;
+            sequence = globus_l_uuid_sequence;
+            do
+            {
+                /* either we're generating these too fast or someone changed
+                 * clock on us, get new sequence number */
+                globus_l_uuid_sequence = ((uint16_t) rand() & 0x3fff) | 0x8000;
+            } while(globus_l_uuid_sequence == sequence);
+            memcpy(&globus_l_uuid_last_time,
+                &current_time, sizeof(current_time));
         }
         sequence = globus_l_uuid_sequence;
     }
@@ -255,6 +261,12 @@ globus_uuid_import(
     int                                 i;
     uint16_t                            hilow;
     char                                buf[3];
+    
+    /* skip leading uuid:, if it exists */
+    if(strncmp("uuid:", str, 5) == 0)
+    {
+        str += 5;
+    }
     
     /**
      * 1b4e28ba-2fa1-11d2-883f-b9a761bde3fb

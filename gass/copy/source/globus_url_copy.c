@@ -71,6 +71,7 @@ typedef struct
     int                                 restart_retries;
     int                                 restart_interval;
     int                                 restart_timeout;
+    int                                 stripe_bs;
     globus_bool_t			striped;
     globus_bool_t			rfc1738;
     globus_off_t			partial_offset;
@@ -304,6 +305,11 @@ const char * long_usage =
 "       defaults the full file.\n"
 "  -stripe\n"
 "       enable striped transfers on supported servers\n"
+"  -striped-block-size | -sbs\n"
+"       set layout mode and blocksize for striped transfers\n"
+"       If not set, server defaults will be used.\n"
+"       If set to 0, Partitioned mode will be used.\n"
+"       If set to >0, Blocked mode will be used, with this as the blocksize.\n"
 "  -ipv6\n"
 "       use ipv6 when available (EXPERIMENTAL)\n"
 "\n";
@@ -383,6 +389,7 @@ enum
     arg_rfc1738,
     arg_fast,
     arg_ipv6,
+    arg_stripe_bs,
     arg_striped,
     arg_num = arg_striped
 };
@@ -424,6 +431,7 @@ flagdef(arg_fast, "-fast", "-fast-data-channels");
 flagdef(arg_ipv6, "-ipv6","-IPv6");
 
 oneargdef(arg_f, "-f", "-filename", GLOBUS_NULL, GLOBUS_NULL);
+oneargdef(arg_stripe_bs, "-sbs", "-striped-block-size", test_integer, GLOBUS_NULL);
 oneargdef(arg_bs, "-bs", "-block-size", test_integer, GLOBUS_NULL);
 oneargdef(arg_tcp_bs, "-tcp-bs", "-tcp-buffer-size", test_integer, GLOBUS_NULL);
 oneargdef(arg_p, "-p", "-parallel", test_integer, GLOBUS_NULL);
@@ -470,6 +478,7 @@ static globus_args_option_descriptor_t args_options[arg_num];
     setupopt(arg_rfc1738);      	\
     setupopt(arg_fast);	                \
     setupopt(arg_ipv6);         	\
+    setupopt(arg_stripe_bs);         	\
     setupopt(arg_striped);
 
 static globus_bool_t globus_l_globus_url_copy_ctrlc = GLOBUS_FALSE;
@@ -1321,6 +1330,7 @@ globus_l_guc_parse_arguments(
     guc_info->restart_retries = 5;
     guc_info->restart_interval = 0;
     guc_info->restart_timeout = 0;
+    guc_info->stripe_bs = -1;
     guc_info->striped = GLOBUS_FALSE;
     guc_info->partial_offset = -1;
     guc_info->partial_length = -1;
@@ -1442,6 +1452,9 @@ globus_l_guc_parse_arguments(
         case arg_rfc1738:
             guc_info->rfc1738 = GLOBUS_TRUE;
             break;
+	case arg_stripe_bs:
+	    guc_info->stripe_bs = atoi(instance->values[0]);
+	    break;
 	case arg_striped:
 	    guc_info->striped = GLOBUS_TRUE;
 	    break;
@@ -2067,15 +2080,27 @@ globus_l_guc_gass_attr_init(
 
 	if (guc_info->striped)
 	{
-                layout.mode = GLOBUS_FTP_CONTROL_STRIPING_PARTITIONED;
-                layout.partitioned.size = 1024*1024;
-
-        globus_ftp_client_operationattr_set_mode(
-                    ftp_attr,
-                    GLOBUS_FTP_CONTROL_MODE_EXTENDED_BLOCK);
-
-        globus_ftp_client_operationattr_set_striped(ftp_attr, GLOBUS_TRUE);    
-                globus_ftp_client_operationattr_set_layout(ftp_attr, &layout);
+	    memset(&layout, '\0', sizeof(globus_ftp_control_layout_t));
+            switch(guc_info->stripe_bs)
+            {
+                case -1:
+                    layout.mode = 
+                        GLOBUS_FTP_CONTROL_STRIPING_NONE;
+                    break;
+                case 0:
+                    layout.mode = 
+                        GLOBUS_FTP_CONTROL_STRIPING_PARTITIONED;
+                    break;
+                default:
+                    layout.mode = 
+                        GLOBUS_FTP_CONTROL_STRIPING_BLOCKED_ROUND_ROBIN;
+                    layout.round_robin.block_size = guc_info->stripe_bs;
+            }
+            globus_ftp_client_operationattr_set_mode(
+                        ftp_attr,
+                        GLOBUS_FTP_CONTROL_MODE_EXTENDED_BLOCK);
+            globus_ftp_client_operationattr_set_striped(ftp_attr, GLOBUS_TRUE);    
+            globus_ftp_client_operationattr_set_layout(ftp_attr, &layout);
 	}
 
 	if (guc_info->ipv6)

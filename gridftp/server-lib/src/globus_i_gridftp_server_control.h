@@ -182,6 +182,8 @@ typedef struct globus_i_gsc_handle_opts_s
     globus_bool_t                           passive_only;
     int                                     perf_frequency;
     int                                     restart_frequency;
+    globus_gsc_layout_t                     layout;
+    int                                     block_size;
 } globus_i_gsc_handle_opts_t;
 
 typedef struct globus_i_gsc_module_func_s
@@ -242,9 +244,10 @@ typedef struct globus_i_gsc_op_s
     globus_gridftp_server_control_stat_t *  stat_info;
     int                                     stat_count;
 
-    uid_t                                   uid;
-
     /* stuff for resource */
+    int                                     uid;
+    int                                     gid_count;
+    int *                                   gid_array;
     char *                                  path;
     globus_gridftp_server_control_resource_mask_t mask;
 
@@ -309,7 +312,7 @@ typedef enum globus_l_gsc_state_e
     GLOBUS_L_GSC_STATE_ABORTING,
     GLOBUS_L_GSC_STATE_ABORTING_STOPPING,
     GLOBUS_L_GSC_STATE_STOPPING,
-    GLOBUS_L_GSC_STATE_STOPPED,
+    GLOBUS_L_GSC_STATE_STOPPED
 } globus_l_gsc_state_t;
 
 /* the server handle */

@@ -51,6 +51,11 @@
                     <Simple_Version Major="0" />
                 </Version>
             </Dependency>
+            <Dependency Name="globus_authz_callout_error" >
+                <Version >
+                    <Simple_Version Major="0" />
+                </Version>
+            </Dependency>
             <Dependency Name="gaa_plugin" >
                 <Version >
                     <Simple_Version Major="1" />

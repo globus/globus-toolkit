@@ -485,7 +485,8 @@ globus_l_gsc_read_cb(
                 /*  parse out the command name */
                 command_name = (char *) globus_malloc(len + 1);
                 for(ctr = 0, tmp_ptr = buffer; 
-                    *tmp_ptr != ' ' && *tmp_ptr != '\r'; 
+                    *tmp_ptr != ' ' && *tmp_ptr != '\r' 
+                    && *tmp_ptr != '\n' && ctr < len;
                     tmp_ptr++, ctr++)
                 {
                     command_name[ctr] = toupper(*tmp_ptr);
@@ -726,7 +727,7 @@ globus_i_gsc_terminate(
             globus_l_gsc_flush_reads(
                 server_handle,
                 _FSMSL("421 Service not available, closing control connection.\r\n"));
-//            res = globus_l_gsc_final_reply(server_handle, msg);
+/* XXX     res = globus_l_gsc_final_reply(server_handle, msg); */
             globus_xio_handle_cancel_operations(
                 server_handle->xio_handle,
                 GLOBUS_XIO_CANCEL_READ);
@@ -2277,6 +2278,8 @@ globus_gridftp_server_control_start(
     server_handle->opts.packet_size = 0;
     server_handle->opts.delayed_passive = GLOBUS_FALSE;
     server_handle->opts.passive_only = GLOBUS_FALSE;
+    server_handle->opts.layout = 0;
+    server_handle->opts.block_size = 0;
 
     /* default state */
     server_handle->modes = globus_libc_strdup(i_attr->modes);
@@ -3905,6 +3908,7 @@ globus_gridftp_server_control_finished_auth(
             }
             op->server_handle->username = strdup(username);
         }
+        
         op->response_type = response_code;
         if(op->response_type == GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS)
         {
@@ -3930,9 +3934,11 @@ globus_gridftp_server_control_finished_resource(
     globus_gridftp_server_control_op_t  op,
     globus_gridftp_server_control_stat_t *  stat_info_array,
     int                                 stat_count,
-    uid_t                               uid,
+    int                                 uid,
+    int                                 gid_count,
+    int *                               gid_array,
     globus_gridftp_server_control_response_t response_code,
-    const char *                            msg)
+    const char *                        msg)
 {
     int                                 ctr;
     globus_result_t                     res = GLOBUS_SUCCESS;
@@ -3956,11 +3962,25 @@ globus_gridftp_server_control_finished_resource(
             globus_malloc(sizeof(globus_gridftp_server_control_stat_t) *
                 stat_count);
         op->stat_count = stat_count;
-        op->uid = uid;
         for(ctr = 0; ctr < op->stat_count; ctr++)
         {
             globus_i_gsc_stat_cp(
                 &op->stat_info[ctr], &stat_info_array[ctr]);
+        }
+        op->uid = uid;
+        
+        /* added gid stuff here, doesn't get pushed all the way through to
+            the cwd or mlsd funcs yet, but that is all internal api so easy
+            to change. */
+        op->gid_count = gid_count;
+        if(gid_count != 0 && gid_array != NULL)
+        {
+            op->gid_array = (int *) 
+                globus_malloc(gid_count * sizeof(int));
+            memcpy(
+                op->gid_array, 
+                gid_array, 
+                gid_count * sizeof(int));
         }
     }
     else

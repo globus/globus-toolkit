@@ -332,7 +332,7 @@ globus_l_gsc_send_restart(
     globus_range_list_destroy(op->perf_range_list);
     op->perf_range_list = new_range_list;
 
-    size = globus_range_list_size(new_range_list);
+    size = globus_range_list_size(range_list);
     if(size < 1)
     {
         /* sending 0-0 is useless, and it causes a problem with our client
@@ -344,7 +344,7 @@ globus_l_gsc_send_restart(
         msg = globus_common_create_string("111 Range Marker");
         for(ctr = 0; ctr < size; ctr++)
         {
-            globus_range_list_at(new_range_list, ctr, &offset, &length);
+            globus_range_list_at(range_list, ctr, &offset, &length);
     
             tmp_msg = globus_common_create_string("%s%c%"
                 GLOBUS_OFF_T_FORMAT"-%"GLOBUS_OFF_T_FORMAT,
