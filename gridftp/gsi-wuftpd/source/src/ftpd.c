@@ -225,6 +225,12 @@ int gssapi_authentication_required = 1;
  */
 #define GLOBUS_AUTHORIZATION_PERMISSION_DENIED_SYSLOG_LEVEL     LOG_NOTICE
 
+/*
+ * Buffer for returning error strings from ftp_authorization routines.
+ * The number 256 is arbitraty.
+ */
+char ftp_authorization_error_buffer[256];
+
 #endif /* GLOBUS_AUTHORIZATION */
 
 #ifdef FTP_SECURITY_EXTENSIONS
@@ -658,7 +664,7 @@ int i = 0;
 #endif
 
 #ifdef GLOBUS_AUTHORIZATION
-    char *globus_authorization_config_file = NULL;
+    char *globus_authorization_config_file = NULL /* Use Default */;
 #endif /* GLOBUS_AUTHORIZATION */
 
 #ifdef AUX
@@ -1061,9 +1067,13 @@ int i = 0;
     gssapi_setup_environment();
 
 #ifdef GLOBUS_AUTHORIZATION
-    if (!ftp_authorization_initialize(globus_authorization_config_file))
+    if (!ftp_authorization_initialize(globus_authorization_config_file,
+                                      ftp_authorization_error_buffer,
+                                      sizeof(ftp_authorization_error_buffer)))
     {
-        syslog(LOG_ERR,"Could not initialize ftp authorization code");
+        syslog(LOG_ERR,
+               "Could not initialize ftp authorization code: %s",
+               ftp_authorization_error_buffer);
         exit(1);
     } 
 #endif /* GLOBUS_AUTHORIZATION */
@@ -1917,14 +1927,21 @@ void user(char *name)
     }	
 
 #ifdef GLOBUS_AUTHORIZATION
-    if (!ftp_authorization_initialize_sc(gssapi_get_gss_ctx_id_t()))
+    if (!ftp_authorization_initialize_sc(gssapi_get_gss_ctx_id_t(),
+                                         ftp_authorization_error_buffer,
+                                         sizeof(ftp_authorization_error_buffer)))
     {
-        syslog(LOG_NOTICE, "Error initializing gss security context for authorization");
+        syslog(LOG_NOTICE,
+               "Error initializing gss security context for authorization: %s",
+               ftp_authorization_error_buffer);
+
         /*
-         * Could probably reply with something better hear, but what
+         * Could probably reply with something better here, but what
          * escapes me at the moment.
          */
-        reply(530, "Error initializing gss security context for authorization");
+        reply(530,
+              "Error initializing gss security context for authorization: %s",
+              ftp_authorization_error_buffer);
         return;
     }
 #endif /* GLOBUS_AUTHORIZATION */
@@ -6288,7 +6305,7 @@ void delete(char *name)
             reply(GLOBUS_AUTHORIZATION_PERMISSION_DENIED_REPLY_CODE,
                   "%s: Permission denied by proxy credential ('delete')",
                   name);       
-            syslog(GLOBUS_AUTHORIZATION_PERMISSION_DENIED_SYSLOG_LEVEL_NOTICE,
+            syslog(GLOBUS_AUTHORIZATION_PERMISSION_DENIED_SYSLOG_LEVEL,
                    "%s of %s tried to delete directory %s",
                    pw->pw_name, remoteident, realname);        
             return;

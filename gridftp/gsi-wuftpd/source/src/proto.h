@@ -134,10 +134,14 @@ ftp_check_authorization(char * object,
                         char * action);
 
 int 
-ftp_authorization_initialize();
+ftp_authorization_initialize(char *             cffile,
+                             char *             errstr,
+                             int                errstr_len);
 
 int 
-ftp_authorization_initialize_sc(gss_ctx_id_t ctx);
+ftp_authorization_initialize_sc(gss_ctx_id_t    ctx,
+                                char *          errstr,
+                                int             errstr_len);
 
 void 
 ftp_authorization_cleanup(void);
