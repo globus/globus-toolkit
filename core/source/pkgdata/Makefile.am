@@ -44,5 +44,7 @@ $(FILELIST_FILES): sort_filelist
 sort_filelist: all_filelists
 	perl -I . $(GLOBUS_INSTALL_PATH)/sbin/gpt_sort_filelist  --flavor=$(GLOBUS_FLAVOR_NAME) --master=./master.filelist
 
+EXTRA_DIST = MyFilelists.pm
+
 include $(top_srcdir)/aclocal/automake_rules
 
