@@ -961,6 +961,15 @@ GSS_CALLCONV GSS_FUNC(gss_get_group)
      gss_buffer_set_t *,                /* group */
      gss_OID_set *);                    /* group_types */
 
+GSS_MAKE_TYPEDEF
+OM_uint32
+GSS_CALLCONV GSS_FUNC(gss_cred_sign)
+   (OM_uint32 *,                        /* minor-status */
+    gss_cred_id_t,                      /* credential */
+    gss_buffer_t,                       /* input_token */
+    gss_buffer_t);                      /* output_token */
+
+
 extern const gss_OID_desc * const GSS_DISALLOW_ENCRYPTION;
 extern const gss_OID_desc * const GSS_PROTECTION_FAIL_ON_CONTEXT_EXPIRATION;
 extern const gss_OID_desc * const GSS_APPLICATION_WILL_HANDLE_EXTENSIONS;

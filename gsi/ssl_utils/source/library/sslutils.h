@@ -539,6 +539,13 @@ globus_ssl_utils_setup_ssl_ctx(
     STACK_OF(X509) *                    cert_chain,
     int *                               num_null_enc_ciphers);
 
+
+int
+globus_ssl_utils_sign(
+    ASN1_OCTET_STRING *                 data,
+    ASN1_BIT_STRING **                  signature,
+    EVP_PKEY *                          private_key);
+
 EXTERN_C_END
 
 #endif /* _SSLUTILS_H */

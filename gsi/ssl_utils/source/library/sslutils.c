@@ -5138,6 +5138,35 @@ err:
     return status;
 }
 
+
+int
+globus_ssl_utils_sign(
+    ASN1_OCTET_STRING *                 data,
+    ASN1_BIT_STRING **                  signature,
+    EVP_PKEY *                          private_key)
+{
+    int                                 result;
+    
+    *signature = ASN1_BIT_STRING_new();
+    
+    result = ASN1_sign((int (*)())i2d_ASN1_OCTET_STRING,
+                       NULL,
+                       NULL,
+                       *signature,
+                       (char *) data,
+                       private_key,
+                       EVP_sha1());
+    if(result <= 0)
+    {
+        ASN1_BIT_STRING_free(*signature);
+        *signature = NULL;
+    }
+
+    return result;
+}
+
+
+
 /* Thought I'd need the below, but didn't. Might come in handy some
  * day -Sam
  */
