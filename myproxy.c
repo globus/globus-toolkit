@@ -995,7 +995,10 @@ myproxy_deserialize_response(myproxy_response_t *response,
 
     assert(data != NULL); 
 
-    response->authorization_data = NULL;
+    if (response->authorization_data) {
+	free(response->authorization_data);
+	response->authorization_data = NULL;
+    }
 
     len = convert_message(data, datalen,
 			  MYPROXY_VERSION_STRING,
@@ -1439,6 +1442,74 @@ myproxy_recv_response(myproxy_socket_attrs_t *attrs,
             break;
     }
     return 0;
+}
+
+int myproxy_handle_authorization(myproxy_socket_attrs_t *attrs,
+				 myproxy_response_t *server_response,
+				 myproxy_request_t *client_request,
+				 char *certfile,
+				 int  use_kerberos)
+{
+   myproxy_proto_response_type_t response_type;
+   authorization_data_t *d; 
+   /* just pointer into server_response->authorization_data, no memory is 
+      allocated for this pointer */
+   int return_status = -1;
+   char *buffer = NULL;
+   int bufferlen;
+
+   response_type = server_response->response_type;
+   if (response_type == MYPROXY_AUTHORIZATION_RESPONSE) {
+       if (certfile != NULL)
+	   d = authorization_create_response(
+	           server_response->authorization_data,
+		   AUTHORIZETYPE_CERT, certfile, strlen(certfile) + 1);
+#if defined(HAVE_LIBSASL2)
+       else if (use_kerberos > 0) {
+	   d = authorization_create_response(
+		   server_response->authorization_data,
+		   AUTHORIZETYPE_SASL, "", 1);
+       }
+#endif
+       else 
+	   d = authorization_create_response(
+		   server_response->authorization_data,
+		   AUTHORIZETYPE_PASSWD,
+		   client_request->passphrase,
+		   strlen(client_request->passphrase) + 1);
+       if (d == NULL) {
+	   verror_put_string("Cannot create authorization response");
+	   goto end;
+       }
+
+       buffer = malloc(d->client_data_len + sizeof(int));
+       if (!buffer) {
+	   verror_put_string("malloc() failed");
+	   goto end;
+       }
+       (*buffer) = d->method;
+       bufferlen = d->client_data_len + sizeof(int);
+
+       memcpy(buffer + sizeof(int), d->client_data, d->client_data_len);
+
+       /* Send the authorization data to the server */
+       if (myproxy_send(attrs, buffer, bufferlen) < 0) {
+	   goto end;
+       }
+	 
+#if defined(HAVE_LIBSASL2)
+       if (use_kerberos > 0) {
+	   if (auth_sasl_negotiate_client(attrs, client_request) < 0)
+	       goto end;
+       }
+#endif
+   }
+
+   return_status = 0;
+end:
+   if (buffer) free(buffer);
+
+   return return_status;
 }
 
 void
