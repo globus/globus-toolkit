@@ -23,11 +23,11 @@
 
     <Source_Dependencies Type="compile" >
     
-        <Dependency Name="core" Package="pgm"> 
+        <Dependency Name="globus_java_ws_core" Package="pgm"> 
             <Version>
                 <Simple_Version Major="0"/>
             </Version>
-        </Dependency>    
+        </Dependency> 
         
         <Dependency Name="gram-common-java-source" Package="pgm">
             <Version>
