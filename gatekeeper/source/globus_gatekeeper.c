@@ -646,7 +646,15 @@ main(int xargc,
 
 	if (gatekeeper_test)
 	{
-		fprintf(stderr,"Testing gatekeeper as uid=%d\n",getuid());
+		fprintf(stderr,"Testing gatekeeper\n");
+		if (getuid()) 
+		{
+			fprintf(stderr,"Local user id (uid)      : %d\n",getuid());
+		}
+		else
+		{
+			fprintf(stderr,"Local user id (uid)      : root\n");
+		}
 		run_from_inetd = 0;
 		foreground = 1;
 	}
@@ -693,7 +701,7 @@ main(int xargc,
 
     if (logging_startup() != 0)
     {
-        exit(-1);
+        failure("Logging startup failure");
     }
 
     notice4(LOG_INFO, "%s pid=%d starting at %s",
@@ -746,8 +754,9 @@ main(int xargc,
 
 	if (gatekeeper_test) 
 	{
-		fprintf(stderr,"Globusid=%s\n",get_globusid());
-		fprintf(stderr,"Gatekeeper test complete\n");
+		fprintf(stderr,"Gatekeeper subject name  : \"%s\"\n",
+				get_globusid());
+		fprintf(stderr,"Gatekeeper test complete : Success!\n");
 		exit(0);
 	}
 
@@ -1527,6 +1536,10 @@ failure(char * s)
     {
 	globus_gss_assist_token_send_fd(fdout, s, strlen(s)+1);
     }
+	if (gatekeeper_test)
+	{
+		fprintf(stderr,"Gatekeeper test complete : Failure!\n");
+	}
     exit(1);
 } /* failure() */
 
