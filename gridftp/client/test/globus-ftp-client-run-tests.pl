@@ -116,13 +116,17 @@ sub setup_server()
     chomp($subject);
     
     $ENV{GRIDMAP}="gridmap";
-    
-    if( 0 != system("grid-mapfile-add-entry -dn \"$subject\" -ln `whoami` -f $ENV{GRIDMAP} >/dev/null 2>&1") / 256)
+
+    if( ! -f $ENV{GRIDMAP} )
     {
-        print "Unable to create gridmap file\n";
-        exit 1;
+        if( 0 != system("grid-mapfile-add-entry -dn \"$subject\" -ln `whoami` -f $ENV{GRIDMAP} >/dev/null 2>&1") / 256)
+        {
+   
+            print "Unable to create gridmap file\n";
+            exit 1;
+        }
     }
-    
+
     $server_pid = open(SERVER, "$server_prog $server_args |");
      
     if($server_pid == -1)
