@@ -1873,8 +1873,6 @@ globus_l_io_handle_events(
     globus_i_io_debug_printf(5,
         (stderr, "%s(): entering\n", myname));
 
-    globus_l_io_fd_table_modified = GLOBUS_FALSE;
-    
     if (globus_reltime_cmp(time_left, &globus_i_reltime_zero) == 0)
     {
         time_left_is_zero = GLOBUS_TRUE;
@@ -1931,6 +1929,7 @@ globus_l_io_handle_events(
 	    if(!time_left_is_zero)
 	    {
 	        GlobusTimeReltimeCopy(*time_left, globus_i_reltime_zero);
+	        time_left_is_zero = GLOBUS_TRUE;
             }
             handled_something = GLOBUS_TRUE;
 	}
@@ -1958,6 +1957,7 @@ globus_l_io_handle_events(
             if(!time_left_is_zero)
 	    {
 	        GlobusTimeReltimeCopy(*time_left, globus_i_reltime_zero);
+	        time_left_is_zero = GLOBUS_TRUE;
             }
             handled_something = GLOBUS_TRUE;
 	}
@@ -1973,6 +1973,8 @@ globus_l_io_handle_events(
 	 * do not know where in the struct it will be located
 	 * because of endian differences
 	 */
+	globus_l_io_fd_table_modified = GLOBUS_FALSE;
+	
 	n_fdcopy = (globus_l_io_highest_fd+63)/8;
 	memcpy(globus_l_io_active_read_fds, globus_l_io_read_fds, n_fdcopy);
 	memcpy(globus_l_io_active_write_fds, globus_l_io_write_fds, n_fdcopy);
@@ -1983,6 +1985,7 @@ globus_l_io_handle_events(
 	    if(!time_left_is_zero)
 	    {
 	        GlobusTimeReltimeCopy(*time_left, globus_i_reltime_zero);
+	        time_left_is_zero = GLOBUS_TRUE;
             }
 	}
 #       endif
