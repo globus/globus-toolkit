@@ -1444,6 +1444,25 @@ myproxy_recv_response(myproxy_socket_attrs_t *attrs,
     return 0;
 }
 
+int myproxy_recv_response_ex(myproxy_socket_attrs_t *socket_attrs,
+			     myproxy_response_t *server_response,
+			     myproxy_request_t *client_request)
+{
+    do {
+	if (myproxy_recv_response(socket_attrs, server_response) != 0) {
+	    return -1;
+	}
+	if (server_response->response_type == MYPROXY_AUTHORIZATION_RESPONSE) {
+	    if (myproxy_handle_authorization(socket_attrs, server_response,
+					     client_request) != 0) {
+		return -1;
+	    }
+	}
+    } while (server_response->response_type == MYPROXY_AUTHORIZATION_RESPONSE);
+
+    return 0;
+}
+
 int myproxy_handle_authorization(myproxy_socket_attrs_t *attrs,
 				 myproxy_response_t *server_response,
 				 myproxy_request_t *client_request)
