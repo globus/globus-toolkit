@@ -22,8 +22,8 @@
 #include <sys/ioctl.h>
 #include <sys/socket.h>
 #include <sys/wait.h> 
+#include <netinet/in.h>	/* Might be needed before <arpa/inet.h> */
 #include <arpa/inet.h> 
-#include <netinet/in.h>
 #include <unistd.h>
 #include <netdb.h> 
 #include <errno.h>
