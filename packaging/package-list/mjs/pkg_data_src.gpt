@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE gpt_package_metadata SYSTEM "package.dtd">
 
-<gpt_package_metadata Format_Version="0.01" Name="mmjfs">
+<gpt_package_metadata Format_Version="0.01" Name="mjs">
 
   <Aging_Version Age="0" Major="0" Minor="2" />
-  <Description> GT3 GRAM </Description>
+  <Description> GT3 Managed Job Service </Description>
   <Functional_Group >Execution</Functional_Group>
   <Version_Stability Release="alpha" />
 
@@ -22,15 +22,19 @@
     <Version_Label>0.0.2</Version_Label>
 
     <Source_Dependencies Type="compile" >
-      <Dependency Name="aggregator"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
       <Dependency Name="core"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
-      <Dependency Name="gram"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
+      <Dependency Name="filestreaming"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
+      <Dependency Name="grim"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
+      <Dependency Name="providers"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
     </Source_Dependencies>
 
     <Build_Instructions>
 
 	    <Build_Step> ant -Dogsa.root=INSTALLDIR_GPTMACRO</Build_Step>
-	    <Build_Step> ant deployGar -Dogsa.root=INSTALLDIR_GPTMACRO</Build_Step>
+	    <Build_Step> mkdir -p INSTALLDIR_GPTMACRO/gars/ </Build_Step>
+	    <Build_Step> cp build/lib/mjs.gar INSTALLDIR_GPTMACRO/gars/ </Build_Step>
+	    <Build_Step> ant -f INSTALLDIR_GPTMACRO/build.xml deploy -Dgar.name=INSTALLDIR_GPTMACRO/gars/mjs.gar </Build_Step>
+	    <Build_Step> cp test.xml INSTALLDIR_GPTMACRO/etc/ </Build_Step>
 
     </Build_Instructions>
 
