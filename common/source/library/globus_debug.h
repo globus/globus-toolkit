@@ -3,19 +3,8 @@
 #define GLOBUS_DEBUG_H
 
 
-#include "globus_common.h"
+#include "globus_common_include.h"
 
-#include <stdio.h>
-
-#ifndef EXTERN_C_BEGIN
-#ifdef __cplusplus
-#define EXTERN_C_BEGIN extern "C" {
-#define EXTERN_C_END }
-#else
-#define EXTERN_C_BEGIN
-#define EXTERN_C_END
-#endif
-#endif
  
 EXTERN_C_BEGIN
  
@@ -61,4 +50,6 @@ EXTERN_C_END
 
 
 #endif /* GLOBUS_DEBUG_H */
+
+
 

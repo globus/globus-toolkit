@@ -60,14 +60,14 @@ static char *  LONG_USAGE = \
     { \
 	fprintf(stderr, SHORT_USAGE_FORMAT \
 		"%s", \
-		program, \
+		program ? program : "(null)", \
 		LONG_USAGE); \
 	exit(0); \
     }
 
 #   define args_error_message(errmsg) \
     { \
-	fprintf(stderr, "ERROR: %s\n", errmsg); \
+	fprintf(stderr, "ERROR: %s\n", errmsg ? errmsg : "(null)"); \
         args_show_short_help(); \
 	exit(1); \
     }
@@ -198,7 +198,7 @@ int main(
         globus_libc_fprintf(
             stderr,
             "\nERROR: Proxy file: %s doesn't exist or has bad permissions\n", 
-            default_full_file);
+            default_full_file ? default_full_file : "(null)");
         GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
     }
 
@@ -253,7 +253,7 @@ globus_i_gsi_proxy_utils_clear_and_remove(
         = "Destroyed by globus_proxy_destroy\r\n";
 
     if (flag)
-	fprintf(stderr, "Would remove %s\n", filename);
+	fprintf(stderr, "Would remove %s\n", filename ? filename : "(null)");
     else
     {
 	f = open(filename, O_RDWR);
@@ -295,7 +295,8 @@ globus_i_gsi_proxy_utils_print_error(
         char *                          error_string = NULL;
         globus_libc_fprintf(stderr,
                             "\n%s:%d:",
-                            filename, line);
+                            filename ? filename : "(null)", 
+                            line);
         error_string = globus_error_print_chain(error_obj);
         globus_libc_fprintf(stderr, "%s\n", error_string);
         if(error_string)

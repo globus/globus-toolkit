@@ -1,18 +1,27 @@
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 
-#include "globus_common.h"
+#include "globus_module.h"
+#include "globus_callback.h"
 #include "globus_i_callback.h"
+#include "globus_priority_q.h"
+#include "globus_handle_table.h"
+#include "globus_thread_common.h"
+#include "globus_libc.h"
 
 #define GLOBUS_L_CALLBACK_INFO_BLOCK_SIZE 32
 #define GLOBUS_L_CALLBACK_SPACE_BLOCK_SIZE 16
 
-static
-int
-globus_l_callback_activate();
+#ifdef TARGET_ARCH_WIN32
+#define pause() Sleep(1000);
+#endif
 
 static
 int
-globus_l_callback_deactivate();
+globus_l_callback_activate(void);
+
+static
+int
+globus_l_callback_deactivate(void);
 
 #include "version.h"
 

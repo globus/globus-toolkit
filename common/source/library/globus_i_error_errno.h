@@ -8,20 +8,11 @@
  * $Date $
  */
 
-#include "globus_common.h"
+#include "globus_common_include.h"
 
 #ifndef GLOBUS_I_INCLUDE_ERRNO_ERROR_H
 #define GLOBUS_I_INCLUDE_ERRNO_ERROR_H
 
-#ifndef EXTERN_C_BEGIN
-#ifdef __cplusplus
-#define EXTERN_C_BEGIN extern "C" {
-#define EXTERN_C_END }
-#else
-#define EXTERN_C_BEGIN
-#define EXTERN_C_END
-#endif
-#endif
 
 EXTERN_C_BEGIN
 

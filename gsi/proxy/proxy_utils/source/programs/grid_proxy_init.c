@@ -22,7 +22,7 @@
 #define GLOBUS_GSI_PROXY_GENERIC_POLICY_LN  "Generic Policy Object"
 
 #define SHORT_USAGE_FORMAT \
-"\nSyntax: %s [-help][-pwstdin][-limited][-hours H] ...\n"
+"\nSyntax: %s [-help][-pwstdin][-limited][-valid H:M] ...\n"
 
 static int quiet = 0;
 static int debug = 0;
@@ -39,6 +39,7 @@ static char *  LONG_USAGE = \
 "    -limited                  Creates a limited proxy\n" \
 "    -valid H:M                Proxy is valid for H hours and M " \
                                "minutes (default:12:00)\n" \
+"    -hours H                  Deprecated support of hours option\n" \
 "    -bits  B                  Number of bits in key {512|1024|2048|4096}\n" \
 "\n" \
 "    -cert     <certfile>      Non-standard location of user certificate\n" \
@@ -158,15 +159,19 @@ main(
     BIO *                               pem_proxy_bio = NULL;
     time_t                              goodtill;
     time_t                              lifetime;
+/*
     char *                              restriction_buf = NULL;
     size_t                              restriction_buf_len = 0;
     char *                              restriction_filename = NULL;
     char *                              policy_language = NULL;
     int                                 policy_NID;
+*/
     int                                 (*pw_cb)() = NULL;
+/*
     char *                              trusted_subgroup = NULL;
     char *                              untrusted_subgroup = NULL;
     char *                              subgroup = NULL;
+*/
     int                                 return_value = 0;
     
     if(globus_module_activate(GLOBUS_GSI_PROXY_MODULE) != (int)GLOBUS_SUCCESS)
@@ -271,7 +276,14 @@ main(
                     "be in the range 0-60");
             }
             valid = (hours * 60) + minutes;
-
+        }
+        else if(strcmp(argp, "-hours") == 0)
+        {
+            int                           hours;
+            args_verify_next(arg_index, argp, "integer argument missing");
+            hours = atoi(argv[arg_index + 1]);
+            valid = hours * 60;
+            arg_index++;
         }
         else if(strcmp(argp, "-bits") == 0)
         {
@@ -305,6 +317,7 @@ main(
         {
             pw_cb = globus_i_gsi_proxy_utils_pwstdin_callback;
         }
+/*
         else if(strcmp(argp, "-policy") == 0)
         {
             args_verify_next(arg_index, argp, 
@@ -343,6 +356,7 @@ main(
             untrusted_subgroup = argv[++arg_index];
             proxy_type = GLOBUS_RESTRICTED_PROXY;
         }
+*/
         else
         {
             args_error(arg_index, argp, "unrecognized option");
@@ -509,6 +523,11 @@ main(
                 proxy_out_filename);
             GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
         }
+
+        if(proxy_out_filename)
+        {
+            free(proxy_out_filename);
+        }
         
         proxy_out_filename = proxy_absolute_path;
 
@@ -531,13 +550,7 @@ main(
             }
             GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
         }
-        
-        if(proxy_absolute_path)
-        {
-            free(proxy_absolute_path);
-            proxy_absolute_path = NULL;
-        }
-        
+                
         result = GLOBUS_GSI_SYSCONFIG_FILE_EXISTS(temp_dir, &file_status);
         if(result != GLOBUS_SUCCESS ||
            file_status != GLOBUS_FILE_DIR)
@@ -726,6 +739,7 @@ main(
     }
 
     /* add restrictions now */
+/** PROXY RESTRICTIONS/GROUPS DISABLED CURRENTLY
     if(restriction_filename)
     {
         int                             restriction_buf_size = 0;
@@ -744,7 +758,7 @@ main(
         {
             restriction_buf_size += 512;
             
-            /* First time through this is a essentially a malloc() */
+            * First time through this is a essentially a malloc() *
             restriction_buf = realloc(restriction_buf,
                                       restriction_buf_size);
 
@@ -760,13 +774,13 @@ main(
                 fread(&restriction_buf[restriction_buf_len], 1, 
                       512, restriction_fp);
 
-            /*
+            *
              * If we read 512 bytes then restriction_buf_len and
              * restriction_buf_size will be equal and there is
              * probably more to read. Even if there isn't more
              * to read, no harm is done, we just allocate 512
              * bytes we don't end up using.
-             */
+             *
         }
         while (restriction_buf_len == restriction_buf_size);
         
@@ -820,6 +834,7 @@ main(
             GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
         }
     }
+** PROXY RESTRICTIONS/GROUPS currently DISABLED **/
 
     if (!quiet)
     {

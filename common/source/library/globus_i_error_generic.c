@@ -10,7 +10,9 @@
 
 
 #include "globus_i_error_generic.h"
-#include <string.h>
+#include "globus_libc.h"
+#include "globus_object.h"
+#include "globus_error.h"
 
 /**
  * @name Copy Error Data

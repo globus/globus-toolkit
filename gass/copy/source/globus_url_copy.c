@@ -75,8 +75,10 @@ globus_l_globus_url_copy_signal_wakeup(
 #define globus_l_globus_url_copy_remove_cancel_poll()
 #endif
 
+#ifndef TARGET_ARCH_WIN32
 static int
 globus_l_globus_url_copy_signal(int signum, RETSIGTYPE (*func)(int));
+#endif
 
 static
 void
@@ -531,18 +533,18 @@ main(int argc, char **argv)
     /* Verify that the source and destination are valid URLs */
     if (strcmp(sourceURL,"-"))
     {
-	if (globus_url_parse(sourceURL, &source_url)
-            != GLOBUS_SUCCESS)
-	{
-            globus_url_copy_l_args_error_fmt(
-	        "can not parse sourceURL \"%s\"\n", sourceURL);
-	}
+		if (globus_url_parse(sourceURL, &source_url)
+				!= GLOBUS_SUCCESS)
+		{
+				globus_url_copy_l_args_error_fmt(
+				"can not parse sourceURL \"%s\"\n", sourceURL);
+		}
         if (globus_gass_copy_get_url_mode(sourceURL, &source_url_mode)
             != GLOBUS_SUCCESS)
-	{
-            globus_url_copy_l_args_error_fmt(
-	        "failed to determine mode for sourceURL \"%s\"\n", sourceURL);
-	}
+		{
+			globus_url_copy_l_args_error_fmt(
+			"failed to determine mode for sourceURL \"%s\"\n", sourceURL);
+		}
 
         if (source_url_mode == GLOBUS_GASS_COPY_URL_MODE_FTP)
         {
@@ -558,39 +560,39 @@ main(int argc, char **argv)
 							       &tcp_buffer);
             }
 
-	    if (num_streams >= 1)
-	    {
-		globus_ftp_client_operationattr_set_mode(
-		    source_ftp_attr,
-		    GLOBUS_FTP_CONTROL_MODE_EXTENDED_BLOCK);
-		parallelism.mode = GLOBUS_FTP_CONTROL_PARALLELISM_FIXED;
-		parallelism.fixed.size = num_streams;
-		globus_ftp_client_operationattr_set_parallelism(
-		    source_ftp_attr,
-		    &parallelism);
-	    }
+			if (num_streams >= 1)
+			{
+				globus_ftp_client_operationattr_set_mode(
+					source_ftp_attr,
+					GLOBUS_FTP_CONTROL_MODE_EXTENDED_BLOCK);
+				parallelism.mode = GLOBUS_FTP_CONTROL_PARALLELISM_FIXED;
+				parallelism.fixed.size = num_streams;
+				globus_ftp_client_operationattr_set_parallelism(
+					source_ftp_attr,
+					&parallelism);
+			}
 
-            if (source_subject  ||
-                source_url.user ||
-                source_url.password)
-            {
-                globus_ftp_client_operationattr_set_authorization(
-		    source_ftp_attr,
-		    GSS_C_NO_CREDENTIAL,
-		    source_url.user,
-		    source_url.password,
-		    NULL,
-		    source_subject);
-            }
+			if (source_subject  ||
+				source_url.user ||
+				source_url.password)
+			{
+				globus_ftp_client_operationattr_set_authorization(
+					source_ftp_attr,
+					GSS_C_NO_CREDENTIAL,
+					source_url.user,
+					source_url.password,
+					NULL,
+					source_subject);
+	        }
 
-	    if (no_dcau)
-	    {
-                dcau.mode = GLOBUS_FTP_CONTROL_DCAU_NONE;
-		globus_ftp_client_operationattr_set_dcau(source_ftp_attr,
-							  &dcau);
-	    }
+			if (no_dcau)
+			{
+					dcau.mode = GLOBUS_FTP_CONTROL_DCAU_NONE;
+					globus_ftp_client_operationattr_set_dcau(source_ftp_attr,
+								&dcau);
+			}
 
-            globus_gass_copy_attr_set_ftp(&source_gass_copy_attr,
+	        globus_gass_copy_attr_set_ftp(&source_gass_copy_attr,
                                           source_ftp_attr);
         }
         else if (source_url_mode == GLOBUS_GASS_COPY_URL_MODE_GASS)
@@ -626,6 +628,7 @@ main(int argc, char **argv)
         }
     }
     else
+#ifndef TARGET_ARCH_WIN32
     {
         source_io_handle =(globus_io_handle_t *)
             globus_libc_malloc(sizeof(globus_io_handle_t));
@@ -635,6 +638,13 @@ main(int argc, char **argv)
                                      GLOBUS_NULL,
                                      source_io_handle);
     }
+#else
+    {
+        fprintf(stderr, "Error: On Windows, the source URL cannot be stdin\n" );
+        globus_module_deactivate_all();
+        exit(1);
+    }
+#endif
 
     if (strcmp(destURL,"-"))
     {
@@ -731,6 +741,7 @@ main(int argc, char **argv)
         }
     }
     else
+#ifndef TARGET_ARCH_WIN32
     {
         dest_io_handle =(globus_io_handle_t *)
             globus_libc_malloc(sizeof(globus_io_handle_t));
@@ -740,14 +751,24 @@ main(int argc, char **argv)
                                      GLOBUS_NULL,
                                      dest_io_handle);
     }
+#else
+    {
+        fprintf(stderr, "Error: On Windows, the destination URL cannot be stdout\n" );
+        globus_module_deactivate_all();
+        exit(1);
+    }
+#endif
 
     if (source_io_handle && dest_io_handle)
     {
         globus_url_copy_l_args_error("The sourceURL cannot be stdin and the destURL be stdout");
     }
 
+#ifndef TARGET_ARCH_WIN32
     globus_l_globus_url_copy_signal(SIGINT,
                               globus_l_globus_url_copy_sigint_handler);
+#endif
+
 #   if defined(BUILD_LITE)
     {
         globus_reltime_t          delay_time;
@@ -950,8 +971,10 @@ globus_l_globus_url_copy_sigint_handler(int dummy)
 {
     globus_l_globus_url_copy_ctrlc = GLOBUS_TRUE;
 
+#ifndef TARGET_ARCH_WIN32
     /* don't trap any more signals */
     globus_l_globus_url_copy_signal(SIGINT, SIG_DFL);
+#endif
 
 } /* globus_l_globus_url_copy_sigint_handler() */
 
@@ -980,6 +1003,7 @@ Description:
 Parameters:
 Returns:
 ******************************************************************************/
+#ifndef TARGET_ARCH_WIN32
 static int
 globus_l_globus_url_copy_signal(int signum, RETSIGTYPE (*func)(int))
 {
@@ -992,6 +1016,7 @@ globus_l_globus_url_copy_signal(int signum, RETSIGTYPE (*func)(int))
 
     return sigaction(signum, &act, GLOBUS_NULL);
 } /* globus_l_globus_url_copy_signal() */
+#endif
 
 /******************************************************************************
 Function: globus_l_gass_copy_performance_cb()

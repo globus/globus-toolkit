@@ -13,6 +13,11 @@ use vars qw(@tests);
 	     globus-common-url-test.pl
 	     globus-common-error-stg-test.pl
 	     globus-common-hash-test.pl
+	     globus-common-fifo-test.pl
+	     globus-common-strptime-test.pl
+	     globus-common-handle-table-test.pl
+	     globus-common-libcsetenv-test.pl
+	     globus-common-list-test.pl
 	     );
 
 runtests(@tests);

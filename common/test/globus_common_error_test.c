@@ -76,21 +76,25 @@ int main ()
 
   globus_module_activate (GLOBUS_COMMON_MODULE);
 
-  for (i=0; i<=MAX_ERROR_NUM; i++) {
+  for (i=0; i<=MAX_ERROR_NUM; i++) 
+  {
     globus_result_t result;
 
     result = throw_error (i);
   }
 
-  for (i=0; i<=MAX_ERROR_NUM; i++) {
+  for (i=0; i<=MAX_ERROR_NUM; i++) 
+  {
     globus_result_t result;
 
     result = throw_error (i);
 
-    if (result==GLOBUS_SUCCESS) {
+    if (result==GLOBUS_SUCCESS) 
+	{
       fprintf (stdout, "result %d: GLOBUS_SUCCESS\n", i);
     }
-    else {
+    else 
+	{
       char * string;
       globus_object_t * error, *error2;
       const globus_object_type_t * type;
@@ -101,8 +105,9 @@ int main ()
 /*       fprintf (stdout, "result %d (%ld) A: %x \"%s\"\n", i, (int) result, (long) (void *) error, (string ? string : "")); */
       globus_free (string);
 
-      for (j=0; j<=MAX_ERROR_NUM; j++) {
-	type = switch_type (j);
+      for (j=0; j<=MAX_ERROR_NUM; j++) 
+	  {
+		type = switch_type (j);
 /* 	fprintf (stdout, "result %d A: %s type %d\n", */
 /* 		 i,  */
 /* 		 (globus_object_type_match (globus_object_get_type(error), type) == GLOBUS_TRUE  */
@@ -120,25 +125,28 @@ int main ()
 /*       fprintf (stdout, "result %d (%ld) B: has grandparent type %x\n", i, (int) result, */
 /* 	       (long) (void *) globus_object_type_get_parent_type (globus_object_type_get_parent_type (globus_object_get_type(error2)))); */
       globus_free (string);
-      for (j=0; j<7; j++) {
-	type = switch_type (j);
-/* 	fprintf (stdout, "result %d B: %s type %d\n", */
-/* 		 i,  */
-/* 		 (globus_object_type_match (globus_object_get_type(error2), type) == GLOBUS_TRUE  */
-/* 		  ? "matches" : "does not match") */
-/* 		 , j); */
+      for (j=0; j<7; j++) 
+	  {
+		type = switch_type (j);
+		/* 	fprintf (stdout, "result %d B: %s type %d\n", */
+		/* 		 i,  */
+		/* 		 (globus_object_type_match (globus_object_get_type(error2), type) == GLOBUS_TRUE  */
+		/* 		  ? "matches" : "does not match") */
+		/* 		 , j); */
       }
-      globus_object_free (error); error = NULL;
+      globus_object_free (error); 
+	  error = NULL;
 
       error = globus_error_get (result);
       string = globus_object_printable_to_string (error);
 /*       fprintf (stdout, "result %d (%ld) C: %x \"%s\"\n", i, (int) result, (long) (void *) error, (string ? string : "")); */
       globus_free (string);
-      globus_object_free (error); error = NULL;
+      globus_object_free (error); 
+	  error = NULL;
 
 /*       fprintf (stdout , "\n\n"); */
-   }
-  }
+	} /* end else*/
+  } /* end for */
 
   globus_module_deactivate (GLOBUS_COMMON_MODULE);
 

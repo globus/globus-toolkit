@@ -35,178 +35,24 @@ EXTERN_C_BEGIN
 			       Type definitions
 ******************************************************************************/
 
-typedef unsigned char	     globus_byte_t;
-typedef int		     globus_bool_t;
-
 #ifndef SWIG
 
 EXTERN_C_END
 /******************************************************************************
 		      Include globus_common header files
 ******************************************************************************/
-#include "globus_config.h"
-
-#ifndef GLOBUS_USE_SOLARIS_THREADS
-#undef GLOBUS_USE_SOLARIS_THREADS
-#endif
-#ifndef GLOBUS_USE_PTHREADS
-#undef GLOBUS_USE_PTHREADS
-#endif
-#ifndef GLOBUS_USE_SPROC
-#undef GLOBUS_USE_SPROC
-#endif
-#ifndef GLOBUS_USE_NO_THREADS
-#undef GLOBUS_USE_NO_THREADS
-#endif
-#ifndef GLOBUS_USE_EXTERNAL_THREADS
-#undef GLOBUS_USE_EXTERNAL_THREADS
-#endif
-#ifndef GLOBUS_GLOBUS_TIMESPEC_EXISTS
-#undef GLOBUS_GLOBUS_TIMESPEC_EXISTS
-#endif
-#ifndef HAVE_DIRENT_H
-#undef HAVE_DIRENT_H
-#endif
-#ifndef HAVE_FCNTL_H
-#undef HAVE_FCNTL_H
-#endif
-#ifndef HAVE_MEMMOVE
-#undef HAVE_MEMMOVE
-#endif
-
-#ifndef HAVE_NETDB_H
-#undef HAVE_NETDB_H
-#endif
-
-#ifndef HAVE_STDARG_H
-#undef  HAVE_STDARG_H
-#endif
-
-#ifndef HAVE_STRUCT_IOVEC
-#undef HAVE_STRUCT_IOVEC
-#endif
-
-#ifndef HAVE_SYS_SIGNAL_H
-#undef HAVE_SYS_SIGNAL_H
-#endif
-
-#ifndef HAVE_SYS_TYPES_H
-#undef HAVE_SYS_TYPES_H
-#endif
-
-#ifndef HAVE_SYS_UIO_H
-#undef HAVE_SYS_UIO_H
-#endif
-
-#ifndef HAVE_UNISTD_H
-#undef HAVE_UNISTD_H
-#endif
-
-#ifndef HAVE_WRITEV
-#undef HAVE_WRITEV
-#endif
-
-/* Define as the return type of signal handlers (int or void).  */
-#ifndef RETSIGTYPE
-#undef RETSIGTYPE
-#endif
-
-#ifndef MAXPATHLEN
-#undef MAXPATHLEN
-#endif
-
-#ifndef IOV_MAX
-#undef IOV_MAX
-#endif
-
-#ifndef TIME_WITH_SYS_TIME
-#undef TIME_WITH_SYS_TIME
-#endif
-
-#ifndef USE_MACROS
-#undef USE_MACROS
-#endif
-
-#ifndef HAVE_SYS_FILE_H
-#undef HAVE_SYS_FILE_H
-#endif
-
-#ifndef HAVE_INTTYPES_H
-#undef HAVE_INTTYPES_H
-#endif
-
-#ifdef SIZEOF_SHORT
-#undef SIZEOF_SHORT
-#endif
-
-#ifdef SIZEOF_INT
-#undef SIZEOF_INT
-#endif
-
-#ifdef SIZEOF_LONG
-#undef SIZEOF_LONG
-#endif
-
-/* Number of bits in a file offset, on hosts where this is settable. */
-#ifndef _FILE_OFFSET_BITS
-#undef _FILE_OFFSET_BITS
-#endif
-
-/* Define to make fseeko etc. visible, on some hosts. */
-#ifndef _LARGEFILE_SOURCE 
-#undef _LARGEFILE_SOURCE 
-#endif
-
-/* Define for large files, on AIX-style hosts. */
-#ifndef _LARGE_FILES
-#undef _LARGE_FILES
-#endif
-
-#ifndef GLOBUS_OFF_T
-#undef GLOBUS_OFF_T
-#endif
-
-#ifndef GLOBUS_OFF_T_FORMAT
-#undef GLOBUS_OFF_T_FORMAT
-#endif
-
-typedef GLOBUS_OFF_T globus_off_t;
-
-#include "globus_release.h"
+#include "globus_common_include.h"
 #include "globus_module.h"
 #include "globus_url.h"
 #include "globus_list.h"
 #include "globus_hashtable.h"
 #include "globus_fifo.h"
-#include "globus_cfifo.h"
 #include "globus_symboltable.h"
 #include "globus_object.h"
 #include "globus_object_hierarchy.h"
 #include "globus_error.h"
 #include "globus_error_hierarchy.h"
-#include "globus_error_generic.h"
-#include "globus_error_errno.h"
-
-#ifdef GLOBUS_USE_PTHREADS
-#include "globus_thread_pthreads.h"
-#endif
-
-#ifdef GLOBUS_USE_SOLARIS_THREADS
-#include "globus_thread_solaristhreads.h"
-#endif
-
-#ifdef GLOBUS_USE_EXTERNAL_THREADS
-#include "globus_thread_external.h"
-#endif
-
-#ifdef GLOBUS_USE_SPROC
-#include "globus_thread_sproc.h"
-#endif
-
-#ifdef GLOBUS_USE_NO_THREADS
-#include "globus_thread_none.h"
-#endif
-
+#include GLOBUS_THREAD_INCLUDE
 #include "globus_time.h"
 #include "globus_thread_pool.h"
 #include "globus_handle_table.h"
@@ -221,6 +67,8 @@ typedef GLOBUS_OFF_T globus_off_t;
 #include "globus_strptime.h"
 #include "globus_thread_common.h" 
 #include "globus_thread_rw_mutex.h"
+#include "globus_error_errno.h"
+#include "globus_error_generic.h"
 
 #ifndef HAVE_ALLOCA_H
 #undef HAVE_ALLOCA_H
@@ -289,54 +137,6 @@ typedef struct globus_barrier_s
 #define GLOBUS_FAILURE  1
 
 #ifndef SWIG
-/******************************************************************************
-				 Define macros
-******************************************************************************/
-
-/*
- * Various macro definitions for assertion checking
- */
-
-#if 0
-void globus_dump_stack();
-#define GLOBUS_DUMP_STACK() globus_dump_stack()
-#else
-#define GLOBUS_DUMP_STACK()
-#endif
-
-#if defined(BUILD_DEBUG)
-#   define globus_assert(assertion)					\
-    do {								\
-        if (!(assertion))						\
-        {								\
-            fprintf(stderr, "Assertion " #assertion			\
-		    " failed in file %s at line %d\n",			\
-		    __FILE__, __LINE__);				\
-	                                                \
-	    GLOBUS_DUMP_STACK(); \
-	    abort();							\
-         }								\
-    } while(0)
-
-#   define globus_assert_string(assertion, string)			\
-    do {								\
-    	if (!(assertion))						\
-    	{								\
-    	    fprintf(stderr, "Assertion " #assertion			\
-		    " failed in file %s at line %d: %s",		\
-		    __FILE__, __LINE__, string);			\
-		GLOBUS_DUMP_STACK(); \
-	    abort();							\
-    	}								\
-    } while(0)
-#else /* BUILD_DEBUG */
-#   define globus_assert(assertion)
-#   define globus_assert_string(assertion, string)
-#endif /* BUILD_DEBUG */
-
-#define GLOBUS_MAX(V1,V2) (((V1) > (V2)) ? (V1) : (V2))
-#define GLOBUS_MIN(V1,V2) (((V1) < (V2)) ? (V1) : (V2))
-
  
 /******************************************************************************
 			  Module activation structure

@@ -215,13 +215,16 @@ globus_error_openssl_create_error_string(
 
     len = globus_libc_vprintf_length(format,ap);
 
+    va_end(ap);
+
     len++;
 
     if((error_string = malloc(len)) == NULL)
     {
-        va_end(ap);
         return NULL;
     }
+
+    va_start(ap, format);
     
     globus_libc_vsnprintf(error_string,
                           len,

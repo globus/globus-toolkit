@@ -18,6 +18,10 @@
 
 static char *rcsid = "$Id$";
 
+/**
+ * @name Inquire Sec Context by Oid
+ */
+/* @{ */
 OM_uint32
 GSS_CALLCONV gss_inquire_sec_context_by_oid(
     OM_uint32 *                         minor_status,

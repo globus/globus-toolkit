@@ -16,6 +16,10 @@ static char *rcsid = "$Id$";
 #include <string.h>
 
 /**
+ * @name Display Status
+ */
+/*@{*/
+/**
  * Calls the SSLeay error print routines to produce a printable
  * message. This may need some work, as the SSLeay error messages 
  * are more of a trace, and my not be the best for the user. 

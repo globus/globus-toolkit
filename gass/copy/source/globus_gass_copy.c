@@ -2600,7 +2600,11 @@ globus_l_gass_copy_io_setup_get(
 	result = globus_io_file_open(
 	    parsed_url.url_path,
 	    GLOBUS_IO_FILE_RDONLY,
-	    GLOBUS_IO_FILE_IRUSR,
+#ifndef TARGET_ARCH_WIN32
+		GLOBUS_IO_FILE_IRUSR,
+#else
+		0,
+#endif
 	    state->source.attr->io,
 	    state->source.data.io.handle);
 
@@ -2662,9 +2666,13 @@ globus_l_gass_copy_io_setup_put(
         result = globus_io_file_open(
 	    parsed_url.url_path,
 	    (GLOBUS_IO_FILE_WRONLY|GLOBUS_IO_FILE_CREAT|GLOBUS_IO_FILE_TRUNC),
+#ifndef TARGET_ARCH_WIN32
 	    (GLOBUS_IO_FILE_IRUSR|GLOBUS_IO_FILE_IWUSR|
 	        GLOBUS_IO_FILE_IRGRP|GLOBUS_IO_FILE_IWGRP|
 	        GLOBUS_IO_FILE_IROTH|GLOBUS_IO_FILE_IWOTH),
+#else
+		0,
+#endif
 	    state->dest.attr->io,
 	    state->dest.data.io.handle);
 
@@ -3020,30 +3028,30 @@ globus_l_gass_copy_generic_read_callback(
     }
     globus_mutex_unlock(&(state->source.mutex));
     
+    /* push the write */
+    buffer_entry = (globus_i_gass_copy_buffer_t *)
+        globus_libc_malloc(sizeof(globus_i_gass_copy_buffer_t));
+    
+    if(buffer_entry == GLOBUS_NULL)
+    {
+        /* out of memory error */
+        err = globus_error_construct_string(
+    	GLOBUS_GASS_COPY_MODULE,
+    	GLOBUS_NULL,
+    	"[%s]: failed to malloc a buffer structure successfully",
+    	myname);
+        globus_i_gass_copy_set_error(handle, err);
+    
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
+        globus_libc_fprintf(stderr,
+                "generic_read_callback(): malloc failed\n");
+#endif
+        globus_gass_copy_cancel(handle, NULL, NULL);
+        return;
+    } /* if(buffer_entry == GLOBUS_NULL) */
+    
     if(push_write)
     {
-        /* push the write */
-        buffer_entry = (globus_i_gass_copy_buffer_t *)
-            globus_libc_malloc(sizeof(globus_i_gass_copy_buffer_t));
-        
-        if(buffer_entry == GLOBUS_NULL)
-        {
-            /* out of memory error */
-            err = globus_error_construct_string(
-        	GLOBUS_GASS_COPY_MODULE,
-        	GLOBUS_NULL,
-        	"[%s]: failed to malloc a buffer structure successfully",
-        	myname);
-            globus_i_gass_copy_set_error(handle, err);
-        
-#ifdef GLOBUS_I_GASS_COPY_DEBUG
-            globus_libc_fprintf(stderr,
-                    "generic_read_callback(): malloc failed\n");
-#endif
-            globus_gass_copy_cancel(handle, NULL, NULL);
-            return;
-        } /* if(buffer_entry == GLOBUS_NULL) */
-        
         buffer_entry->bytes  = bytes;
         buffer_entry->nbytes = nbytes;
         buffer_entry->offset = offset;
@@ -3055,6 +3063,15 @@ globus_l_gass_copy_generic_read_callback(
             globus_fifo_enqueue( &(state->dest.queue), buffer_entry);
         }
         globus_mutex_unlock(&(state->dest.mutex));
+    }
+    else
+    {
+        buffer_entry->bytes  = bytes;
+        globus_mutex_lock(&(state->source.mutex));
+        {
+            globus_fifo_enqueue(&state->source.queue, buffer_entry);
+        }
+        globus_mutex_unlock(&(state->source.mutex));
     }
     
     /* start the next write if there isn't already one outstanding */
@@ -3093,7 +3110,7 @@ globus_l_gass_copy_ftp_read_callback(
     globus_gass_copy_state_t * state
         = copy_handle->state;
 
-    globus_bool_t last_data;
+    globus_bool_t last_data= GLOBUS_FALSE;
 
 #ifdef GLOBUS_I_GASS_COPY_DEBUG
     globus_libc_fprintf(stderr,

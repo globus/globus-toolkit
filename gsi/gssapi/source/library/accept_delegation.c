@@ -18,6 +18,10 @@ static char *rcsid = "$Id$";
 #ifdef _HAVE_GSI_EXTENDED_GSSAPI
 
 /**
+ * @name Accept Delegation
+ */
+/*@{*/
+/**
  * Accept a delegated credential.
  *
  * This functions drives the accepting side of the credential

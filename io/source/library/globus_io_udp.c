@@ -447,7 +447,7 @@ globus_io_udp_bind(
         found_port = GLOBUS_FALSE;
         bzero((char*) &my_addr, sizeof(my_addr));
         my_addr.sin_family = AF_INET;
-        my_addr.sin_addr.s_addr = htonl((unsigned long)udp_attr->interface);
+        my_addr.sin_addr.s_addr = htonl((unsigned long)udp_attr->interface_addr);
         my_addr.sin_port = htons(myport);
 
         if(bind(handle->fd,
@@ -913,7 +913,7 @@ globus_l_io_setup_udp_socket(
 				            errno));
 	}
 
-        imr.imr_interface.s_addr = (unsigned long)udp_attr->interface;
+        imr.imr_interface.s_addr = (unsigned long)udp_attr->interface_addr;
 	if(setsockopt(handle->fd, 
 		      IPPROTO_IP, 
 		      IP_ADD_MEMBERSHIP,

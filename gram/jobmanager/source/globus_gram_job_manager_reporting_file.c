@@ -54,8 +54,13 @@ globus_gram_job_manager_reporting_file_create(
 	    request,
 	    "JM: in globus_gram_job_manager_reporting_file_create()\n");
 
-    if(!request->publish_jobs)
+    if ((!request->publish_jobs) ||
+        (request->job_reporting_file == NULL))
     {
+        globus_gram_job_manager_request_log(
+	   request,
+	   "JM: not reporting job information\n");
+
 	return GLOBUS_SUCCESS;
     }
 
@@ -116,11 +121,12 @@ globus_gram_job_manager_reporting_file_create(
     }
     else
     {
-	fprintf(status_fp, "%s\n%s\n%s\n%s\n",
-		status_str,
-		request->rsl_spec,
-		request->job_contact,
-		request->globus_id);
+        fprintf(status_fp, "%s\n%s\n%s\n%s\n%s\n",
+                status_str,
+                request->rsl_spec,
+                request->job_contact,
+                request->job_id,
+                request->globus_id);
     }
     fclose(status_fp);
 
@@ -134,7 +140,7 @@ globus_gram_job_manager_reporting_file_remove(
 {
     globus_gram_job_manager_request_log(
 	    request,
-	    "JM: in globus_gram_job_manager_reporting_file_create()\n");
+	    "JM: in globus_gram_job_manager_reporting_file_remove()\n");
 
     if(request->job_reporting_file == NULL)
     {

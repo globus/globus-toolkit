@@ -31,6 +31,16 @@
  * standard POSIX open() function. The attr argument contains other
  * handle attributes to be associated with the handle or GLOBUS_NULL to
  * indicate default attributes. This is a blocking operation.
+ * NOTE: Windows does not support all of the available POSIX options, it
+ * supports only the following options:
+ * O_RDONLY
+ * O_WRONLY
+ * O_RDWR
+ * O_APPEND
+ * O_CREAT
+ * O_TRUNC
+ * O_EXCL
+ * 
  *
  * @param path The path to the file to open.
  * @param flags The flags argument consists of a bitwise-or of the
@@ -114,6 +124,7 @@ globus_io_file_open(
 #   endif
     globus_i_io_mutex_lock();
     {
+#ifndef TARGET_ARCH_WIN32
 	do
 	{
 	    fd = open(path, flags | O_NDELAY, mode);
@@ -136,6 +147,37 @@ globus_io_file_open(
 	    handle->state = GLOBUS_IO_HANDLE_STATE_CONNECTED;
 	}
 	handle->fd = fd;
+#else
+	if ( globus_i_io_windows_file_open( handle, path, flags, NULL ) )
+	{
+		rc = globus_error_put(
+				globus_io_error_construct_system_failure(
+				GLOBUS_IO_MODULE,
+				GLOBUS_NULL,
+				handle,
+				errno));
+		handle->state = GLOBUS_IO_HANDLE_STATE_INVALID;
+	}
+	else
+	{
+		handle->state = GLOBUS_IO_HANDLE_STATE_CONNECTED;
+		// initialize the WinIoOperation structs
+		globus_i_io_windows_init_io_operations( handle );
+		/* associate the new file with the completion port */
+		if ( CreateIoCompletionPort( handle->io_handle,
+			completionPort, (ULONG_PTR)handle, 0 ) == NULL )
+		{
+			rc= globus_error_put(
+					globus_io_error_construct_system_failure(
+					GLOBUS_IO_MODULE,
+					GLOBUS_NULL,
+					handle,
+					globus_i_io_windows_get_last_error() ) );
+		
+			globus_i_io_windows_close( handle );
+		}
+	}
+#endif /* TARGET_ARCH_WIN32 */
     }
     globus_i_io_mutex_unlock();
 
@@ -179,8 +221,10 @@ globus_io_file_seek(
     static char *                       myname=
 	                                "globus_io_file_seek";
     globus_object_t *			err;
+#ifdef TARGET_ARCH_WIN32
+	LARGE_INTEGER numberOfBytes;
+#endif
     
-
     if(handle == GLOBUS_NULL)
     {
         return globus_error_put(
@@ -205,10 +249,16 @@ globus_io_file_seek(
 	goto error_exit;
     }
 
+#ifndef TARGET_ARCH_WIN32
     rc = lseek(handle->fd,
 	       offset,
 	       whence);
     if (rc != -1)
+#else
+	numberOfBytes.QuadPart= offset;
+	rc= globus_i_io_windows_seek( handle, numberOfBytes, whence, NULL );
+    if ( rc == 0 )
+#endif
     {
 	return GLOBUS_SUCCESS;
     }
@@ -248,6 +298,7 @@ globus_io_file_seek(
  * The handle was equal to GLOBUS_NULL.
  * @ingroup file
  */
+#ifndef TARGET_ARCH_WIN32
 globus_result_t
 globus_io_file_posix_convert(
     int					fd,
@@ -296,6 +347,7 @@ globus_io_file_posix_convert(
 #   endif
     return GLOBUS_SUCCESS;
 }
+#endif /* TARGET_ARCH_WIN32 */
 
 /**
  * @name File Attributes

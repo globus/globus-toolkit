@@ -12,22 +12,16 @@ CVS Information:
 /******************************************************************************
 			     Include header files
 ******************************************************************************/
-#include "config.h"
-#include "globus_common.h"
+#include "globus_common_include.h"
 #include "globus_thread_common.h"
 #include "globus_i_thread.h"
 #include "version.h"
-
-#if HAVE_STRING_H
-#include <string.h>
-#endif
-
-#if HAVE_SIGNAL_H
-#include <signal.h>
-#endif
+#include "globus_libc.h"
+#include "globus_callback.h"
+#include "globus_libc.h"
+#include "globus_print.h"
 
 #define THREAD_STACK_INIT_SIZE 32
-
 
 typedef struct globus_l_thread_stack_node_s
 {
@@ -55,7 +49,12 @@ globus_l_thread_common_deactivate(void);
 static void 
 globus_l_thread_blocking_callback_destroy(void* p);
 
+#if !defined(TARGET_ARCH_WIN32) || defined(BUILD_LITE)
 static globus_thread_key_t              l_thread_stack_key  = GLOBUS_NULL;
+#else
+static globus_thread_key_t              l_thread_stack_key  =
+{ 0, NULL }; // is this type of initialization necessary for Windows???
+#endif
 static globus_bool_t                    globus_l_mod_active = GLOBUS_FALSE;
 
 globus_module_descriptor_t              globus_i_thread_common_module =
@@ -382,6 +381,14 @@ globus_l_thread_blocking_callback_destroy(void* p)
                                  (void *)GLOBUS_NULL);
 }
 
+/* This function contains non-portable code and won't compile
+ * directly on Windows.
+ *
+ * Michael Lebman
+ * 5-28-02
+ */
+#ifndef TARGET_ARCH_WIN32
+
 void thread_print(char * s, ...)
 {
     char tmp[1023];
@@ -411,6 +418,13 @@ void thread_print(char * s, ...)
    
     fflush(stdin);
 }
+
+#endif
+
+/*
+ *  not found in win32
+ */
+#ifndef TARGET_ARCH_WIN32
 
 int
 globus_i_thread_ignore_sigpipe(void)
@@ -447,3 +461,7 @@ globus_i_thread_ignore_sigpipe(void)
     }
 }
 /* globus_i_thread_ignore_sigpipe() */
+
+#endif
+
+

@@ -7,6 +7,7 @@
 
 use Getopt::Long;
 use English;
+use File::Path;
 
 my $globusdir = $ENV{GLOBUS_LOCATION};
 
@@ -66,16 +67,6 @@ else
 $ENV{GRID_SECURITY_DIR} = "$target_dir";
 $ENV{TRUSTED_CA_DIR}    = "$trusted_certs_dir";
 
-if( ! -d $target_dir ) 
-{
-    system("mkdir $target_dir");
-}
-
-if( ! -d $trusted_certs_dir ) 
-{
-    system("mkdir $trusted_certs_dir");
-}
-
 
 my $myname = "setup-gsi";
 
@@ -91,26 +82,41 @@ if ( -d $target_dir )
   {
     die "Don't have write permissions on $target_dir. Aborting.";
   }
-
 } 
 else 
 {
 
   print "Making $target_dir...\n";
 
-  $result = system("mkdir $target_dir");
+  $result = mkpath("$target_dir",1,0755);
 
-  if ($result != 0) 
+  if ($result == 0) 
   {
     die "Failed to create $target_dir. Aborting.";
   }
 
-  $result = system("chmod 755 $target_dir");
+}
 
-  if ($result != 0) 
-  {
-    die "Failed to set permissions on $target_dir. Aborting.";
-  }
+#
+# Create trusted certificate directory if not present
+#
+if ( -d $trusted_certs_dir ) 
+{
+    if ( ! -w $trusted_certs_dir ) 
+    {
+        die "Don't have write permissions on $trusted_certs_dir. Aborting.";
+    }
+} 
+else 
+{
+    print "Making trusted certs directory: $trusted_certs_dir\n";
+    
+    $result = mkpath("$trusted_certs_dir",1,0755);
+    
+    if ($result == 0) 
+    {
+        die "Failed to create $trusted_certs_dir. Aborting.";
+    }
 }
 
 #
@@ -144,28 +150,6 @@ $result = system("$setupdir/grid-security-config");
 if ($result != 0) 
 {
   die "Error running grid-security-config. Aborting.";
-}
-
-#
-# Create trusted certificate directory if not present
-#
-if ( ! -d $trusted_certs_dir ) 
-{
-  print "Making trusted certs directory: $trusted_certs_dir\n";
-
-  $result = system("mkdir $trusted_certs_dir");
-
-  if ($result != 0) 
-  {
-    die "Failed to create $trusted_certs_dir. Aborting.";
-  }
-
-  $result = system("chmod 755 $trusted_certs_dir");
-
-  if ($result != 0) 
-  {
-    die "Failed to set permissions on $trusted_certs_dir. Aborting.";
-  }
 }
 
 

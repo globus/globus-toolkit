@@ -781,7 +781,7 @@ abort:
  *
  * This function starts a "NLST" transfer from an FTP server. If
  * this function returns GLOBUS_SUCCESS, then the user may immediately
- * begin calling globus_ftp_client_read() to retrieve the data
+ * begin calling globus_ftp_client_register_read() to retrieve the data
  * associated with this listing.
  *
  * When all of the data associated with the listing is retrieved, and all 
@@ -1072,7 +1072,7 @@ abort:
  *
  * This function starts a "LIST" transfer from an FTP server. If
  * this function returns GLOBUS_SUCCESS, then the user may immediately
- * begin calling globus_ftp_client_read() to retrieve the data
+ * begin calling globus_ftp_client_register_read() to retrieve the data
  * associated with this listing.
  *
  * When all of the data associated with the listing is retrieved, and all 
@@ -1642,7 +1642,7 @@ abort:
  *
  * This function starts a "get" file transfer from an FTP server. If
  * this function returns GLOBUS_SUCCESS, then the user may immediately
- * begin calling globus_ftp_client_read() to retrieve the data
+ * begin calling globus_ftp_client_register_read() to retrieve the data
  * associated with this URL.
  *
  * When all of the data associated with this URL is retrieved, and all 
@@ -1711,7 +1711,7 @@ globus_ftp_client_get(
  *
  * This function starts a "get" file transfer from an FTP server. If
  * this function returns GLOBUS_SUCCESS, then the user may immediately
- * begin calling globus_ftp_client_read() to retrieve the data
+ * begin calling globus_ftp_client_register_read() to retrieve the data
  * associated with this URL.
  *
  * When all of the data associated with this URL is retrieved, and all 
@@ -1800,7 +1800,7 @@ globus_ftp_client_partial_get(
  *
  * This function starts a "get" file transfer from an FTP server. If
  * this function returns GLOBUS_SUCCESS, then the user may immediately
- * begin calling globus_ftp_client_read() to retrieve the data
+ * begin calling globus_ftp_client_register_read() to retrieve the data
  * associated with this URL.
  *
  * When all of the data associated with this URL is retrieved, and all 
@@ -2173,7 +2173,7 @@ abort:
  *
  * This function starts a "put" file transfer to an FTP server. If
  * this function returns GLOBUS_SUCCESS, then the user may immediately
- * begin calling globus_ftp_client_write() to send the data
+ * begin calling globus_ftp_client_register_write() to send the data
  * associated with this URL.
  *
  * When all of the data associated with this URL is sent, and all 
@@ -2232,7 +2232,7 @@ globus_ftp_client_put(
  *
  * This function starts a "put" file transfer to an FTP server. If
  * this function returns GLOBUS_SUCCESS, then the user may immediately
- * begin calling globus_ftp_client_write() to send the data
+ * begin calling globus_ftp_client_register_write() to send the data
  * associated with this URL.
  *
  * When all of the data associated with this URL is sent, and all 
@@ -2301,7 +2301,7 @@ globus_ftp_client_partial_put(
  *
  * This function starts a "put" file transfer to an FTP server. If
  * this function returns GLOBUS_SUCCESS, then the user may immediately
- * begin calling globus_ftp_client_write() to send the data
+ * begin calling globus_ftp_client_register_write() to send the data
  * associated with this URL.
  *
  * When all of the data associated with this URL is sent, and all 

@@ -1,20 +1,8 @@
 #ifndef GLOBUS_ARGS_H
 #define GLOBUS_ARGS_H
 
-
-#ifndef EXTERN_C_BEGIN
-#ifdef __cplusplus
-#define EXTERN_C_BEGIN extern "C" {
-#define EXTERN_C_END }
-#else
-#define EXTERN_C_BEGIN
-#define EXTERN_C_END
-#endif
-#endif
-
-EXTERN_C_BEGIN
-
-#include "globus_common.h"
+#include "globus_module.h"
+#include "globus_list.h"
 
 /*  globus_args.h : a Globus-style argument option parser
 
@@ -206,3 +194,5 @@ globus_validate_filename( char *    value,
 EXTERN_C_END
 
 #endif /* ifndef GLOBUS_ARGS_H */
+
+

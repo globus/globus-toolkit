@@ -20,6 +20,7 @@
  */
 
 #include "globus_common.h"
+#ifndef TARGET_ARCH_WIN32
 #include "config.h"
 
 #include <sys/types.h>
@@ -34,6 +35,8 @@
 #endif
 
 #include <netdb.h>
+#endif /* TARGET_ARCH_WIN32 */
+
 #include <stdlib.h>
 
 #ifdef HAVE_SYS_SELECT_H
@@ -50,6 +53,11 @@
 
 #include "globus_io.h"
 
+#ifdef TARGET_ARCH_WIN32
+#define ssize_t long
+#include "globus_i_io_windows.h"
+#include "globus_i_io_winsock.h"
+#endif /* TARGET_ARCH_WIN32 */
 
 /*
  *  NETLOGGER
@@ -281,6 +289,12 @@ globus_i_io_register_operation(
     void *                              callback_arg,
     globus_io_destructor_t              arg_destructor,
     globus_bool_t                       needs_select,
+    globus_i_io_operation_type_t        op);
+
+globus_result_t
+globus_i_io_unregister_operation(
+    globus_io_handle_t *                handle,
+    globus_bool_t                       call_destructor,
     globus_i_io_operation_type_t        op);
 
 globus_result_t

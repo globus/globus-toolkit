@@ -45,6 +45,12 @@
                     <Simple_Version Major="3"/>
                 </Version>
             </Dependency>            
+
+            <Dependency Name="globus_gram_client_tools_test" Package="data">
+                <Version>
+                    <Simple_Version Major="0"/>
+                </Version>
+            </Dependency>            
         </Source_Dependencies>
 
         <Source_Setup_Dependency PkgType="pgm">

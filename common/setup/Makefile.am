@@ -2,21 +2,28 @@ include $(top_srcdir)/globus_automake_pre
 include $(top_srcdir)/globus_automake_pre_top
 
 setup_SCRIPTS = \
-	setup-common-sh-scripts \
+	findshelltools \
+	setup-tmpdirs \
 	setup-globus-common \
 	setup-globus-common.pl
 
 setup_DATA = \
-	globus-hostname.in
+        globus-script-initializer.in \
+        globus-sh-tools-vars.sh.in \
+        Paths.in 
 
 SUBDIRS = pkgdata
 
 EXTRA_DIST = \
-	setup-common-sh-scripts \
-	setup-common-sh-scripts.in \
+	findshelltools \
+	findshelltools.in \
+	setup-tmpdirs \
+	setup-tmpdirs.in \
+        globus-script-initializer.in \
+        globus-sh-tools-vars.sh.in \
+        Paths.in \
 	setup-globus-common \
-	setup-globus-common.pl \
-	globus-hostname.in
+	setup-globus-common.pl
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

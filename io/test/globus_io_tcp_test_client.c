@@ -1,6 +1,11 @@
 #include "globus_io.h"
+#include <string.h>
 
 int test1(int argc, char **argv);
+
+#ifdef TARGET_ARCH_WIN32
+#include "getoptWin.h"
+#endif
 
 typedef struct
 {
@@ -83,6 +88,24 @@ main(int argc, char **argv)
 }
 /* main() */
 
+globus_bool_t
+auth_callback(
+    void *				arg,
+    globus_io_handle_t *		handle,
+    globus_result_t			result,
+    char *				identity,
+    gss_ctx_id_t *			context_handle)
+{
+    if(strcmp((char *) arg,identity))
+    {
+	return GLOBUS_FALSE;
+    }
+    else
+    {
+	return GLOBUS_TRUE;
+    }
+}
+
 int
 test1(int argc, char **argv)
 {
@@ -124,7 +147,11 @@ test1(int argc, char **argv)
     globus_io_attr_set_tcp_restrict_port(
 	&attr,
 	GLOBUS_FALSE);
-    while (( c = getopt(argc, argv, "abrHi:vgsch:p:I:dD")) != EOF)
+#ifndef TARGET_ARCH_WIN32
+    while (( c = getopt(argc, argv, "abrHi:vgsch:p:I:dDz:")) != EOF)
+#else
+    while (( c = getoptWin(argc, argv, "rHi:gsch:p:I:dDz:")) != EOF)
+#endif
     {
 	switch(c)
 	{
@@ -178,6 +205,25 @@ test1(int argc, char **argv)
 	    result = globus_io_attr_set_secure_channel_mode(
 		&attr,
 		GLOBUS_IO_SECURE_CHANNEL_MODE_CLEAR);
+            if(result != GLOBUS_SUCCESS)
+            {
+                err = globus_error_get(result);
+                errstring = globus_object_printable_to_string(err);
+                globus_libc_printf("test 1 setting io attribute failed: %s\n",
+                                   errstring);
+                rc = -1;
+                goto exit;
+            }
+	    break;
+          case 'z':
+            result = globus_io_secure_authorization_data_set_callback(
+                &auth_data,
+                auth_callback,
+                optarg);
+            result = globus_io_attr_set_secure_authorization_mode(
+		&attr,
+		GLOBUS_IO_SECURE_AUTHORIZATION_MODE_CALLBACK,
+                &auth_data);
             if(result != GLOBUS_SUCCESS)
             {
                 err = globus_error_get(result);
@@ -279,14 +325,14 @@ test1(int argc, char **argv)
 	  default:
 	    printf("unknown flag -%c\n",(char) c);
 	    globus_io_tcpattr_destroy(&attr);
-	    return;
+	    return -1;
 	}
     }
     if(host == GLOBUS_NULL || port == 0)
     {
 	printf("please specify -h host and -p port\n");
 	globus_io_tcpattr_destroy(&attr);
-	return;
+	return -1;
     }
 
     result = globus_io_tcp_connect(

@@ -117,6 +117,16 @@ typedef struct globus_l_gsi_cred_handle_attrs_s *
  * Credential handles.
  */
 
+/**
+ * @defgroup globus_gsi_cred_operation Credential Operations
+ *
+ * Read/Write a GSI Credential Handle.
+ *
+ * This section defines operations to read and write GSI
+ * Credential handles.
+ */
+
+
 #ifndef DOXYGEN
 
 #include <globus_error_generic.h>

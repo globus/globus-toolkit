@@ -5,7 +5,21 @@ dnl are defined. We'll just use the standard interfaces in a LITE environment,
 dnl and copy things into the user buffers as neccessary.
 
 AC_DEFUN(CHECK_REENTRANT_FUNCS,[
-if test $GLOBUS_THREADS != "none"; then
+
+case "$host_os" in
+    osf[5-9].*)
+        check_gethostbyaddr_r=no
+        check_gethostbyname_r=no
+        ;;
+    *)
+        check_gethostbyaddr_r=yes
+        check_gethostbyname_r=yes
+        ;;
+esac
+
+
+if test $GLOBUS_THREADS != "none" -a ${check_gethostbyaddr_r} = "yes" ; then
+
 AC_CHECK_FUNCS(gethostbyaddr_r, [
 	AC_MSG_CHECKING(number of arguments to gethostbyaddr_r)
 	globus_gethostbyaddr_args=no
@@ -68,7 +82,7 @@ fi
 
 AC_CHECK_FUNCS(gethostbyname)
 
-if test $GLOBUS_THREADS != "none"; then
+if test $GLOBUS_THREADS != "none" -a ${check_gethostbyname_r} = "yes" ; then
 AC_CHECK_FUNCS(gethostbyname_r, [
          AC_MSG_CHECKING(number of arguments to gethostbyname_r)
 	 globus_gethostbyname_args=no

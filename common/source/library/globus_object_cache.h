@@ -2,22 +2,12 @@
 #ifndef GLOBUS_OBJECT_CACHE_H
 #define GLOBUS_OBJECT_CACHE_H
 
-
-#include "globus_common.h"
+#include "globus_common_include.h"
+#include "globus_fifo.h"
 #include "globus_list.h"
 #include "globus_hashtable.h"
 
 #include "globus_object.h"
-
-#ifndef EXTERN_C_BEGIN
-#ifdef __cplusplus
-#define EXTERN_C_BEGIN extern "C" {
-#define EXTERN_C_END }
-#else
-#define EXTERN_C_BEGIN
-#define EXTERN_C_END
-#endif
-#endif
  
 EXTERN_C_BEGIN
 
@@ -74,5 +64,7 @@ globus_object_cache_list (globus_object_cache_t * cache);
 EXTERN_C_END
 
 #endif /* GLOBUS_OBJECT_CACHE_H */
+
+
 
 

@@ -113,11 +113,11 @@ sub submit
 
     $script_url = "$tag/pbs_job_script.$$"; 
     system("$cache_pgm -add -t $tag -n $script_url file:/dev/null");
-    $pbs_job_script_name = `$cache_pgm -query $script_url`;
+    $pbs_job_script_name = `$cache_pgm -query -t $tag $script_url`;
     chomp($pbs_job_script_name);
     if($pbs_job_script_name eq "")
     {
-	return GLOBUS_GRAM_PROTOCOL_ERROR_TEMP_SCRIPT_FILE_FAILED();
+	return Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED();
     }
 
     $pbs_job_script = new IO::File($pbs_job_script_name, '>');
@@ -318,11 +318,11 @@ EOF
 
         $cmd_script_url = "$tag/pbs_cmd_script.$$";
 	system("$cache_pgm -add -t $tag -n $cmd_script_url file:/dev/null");
-	$cmd_script_name = `$cache_pgm -q $cmd_script_url`;
+	$cmd_script_name = `$cache_pgm -q -t $tag $cmd_script_url`;
 	chomp($cmd_script_name);
 	if($cmd_script_name eq "")
 	{
-	    return GLOBUS_GRAM_PROTOCOL_ERROR_TEMP_SCRIPT_FILE_FAILED();
+            return Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED();
 	}
 	$cmd_script = new IO::File($cmd_script_name, '>');
 	$cmd_script->print("#!/bin/sh\n");
@@ -363,9 +363,6 @@ EOF
 
     if($? == 0)
     {
-        # truncate off the domain name
-	$job_id =~ s/([^\.]*).([^\.]*)\..*/$1.$2/;
-
 	#system("$cache_pgm -cleanup-url $script_url");
 
 	return {JOB_ID => $job_id,
@@ -387,10 +384,10 @@ sub poll
     $self->log("polling job $job_id");
 
     # Get first line matching job id
-    $_ = (grep(/$job_id/, `qstat $job_id 2>/dev/null`))[0];
+    $_ = (grep(/job_state/, `$qstat -f $job_id 2>/dev/null`))[0];
 
-    # Get 4th field (status)
-    $_ = (split(/\s+/))[4];
+    # Get 3rd field (after = )
+    $_ = (split(/\s+/))[3];
 
     if(/Q|W|T/)
     {

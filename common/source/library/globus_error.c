@@ -1,8 +1,12 @@
-#include "config.h"
-#include "globus_common.h"
+#include "globus_common_include.h"
 #include "globus_object_cache.h"
+#include "globus_error.h"
+#include "globus_error_hierarchy.h"
+#include "globus_libc.h"
+#include "globus_module.h"
 #include "version.h"
 #include <string.h>
+
 
 /**********************************************************************
  * Error Types
@@ -259,7 +263,7 @@ static globus_mutex_t        s_result_to_object_mutex;
 static int  s_error_cache_initialized = 0;
 static globus_bool_t globus_i_error_output = GLOBUS_FALSE;
 
-static int s_error_cache_init ()
+static int s_error_cache_init (void)
 {
     char *                              tmp_string;
     
@@ -277,7 +281,7 @@ static int s_error_cache_init ()
   return GLOBUS_SUCCESS;
 }
 
-static int s_error_cache_destroy ()
+static int s_error_cache_destroy (void)
 {
   globus_object_cache_destroy (&s_result_to_object_mapper);
   globus_mutex_destroy (&s_result_to_object_mutex);
@@ -522,6 +526,8 @@ globus_result_signal_fault (globus_module_descriptor_t * source,
 			    globus_result_t              fault);
 
 #endif /* 0 */
+
+
 
 
 

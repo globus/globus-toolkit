@@ -1276,7 +1276,6 @@ globus_l_gram_job_manager_output_destination_flush(
     unsigned char *			buffer)
 {
     ssize_t				read_amt;
-    globus_size_t			buffer_size;
     globus_off_t			size;
     int					fd;
     globus_result_t			result;
@@ -1308,8 +1307,8 @@ globus_l_gram_job_manager_output_destination_flush(
 	{
 	    if(buffer == NULL)
 	    {
-		buffer_size = GLOBUS_GRAM_JOB_MANAGER_OUTPUT_BUFFER_SIZE;
-		buffer = globus_libc_malloc(buffer_size);
+		buffer = globus_libc_malloc(
+                    GLOBUS_GRAM_JOB_MANAGER_OUTPUT_BUFFER_SIZE);
 	    }
 
 	    do
@@ -1317,7 +1316,7 @@ globus_l_gram_job_manager_output_destination_flush(
 		read_amt = globus_libc_read(
 				fd,
 				buffer,
-				buffer_size);
+				GLOBUS_GRAM_JOB_MANAGER_OUTPUT_BUFFER_SIZE);
 	    }
 	    while(read_amt < 0 && (errno == EAGAIN || errno == EINTR));
 
@@ -1397,7 +1396,6 @@ globus_l_gram_job_manager_output_destination_flush(
 	    }
 	    destination->position += read_amt;
 	    buffer = NULL;
-	    buffer_size = 0;
 	}
     }
 

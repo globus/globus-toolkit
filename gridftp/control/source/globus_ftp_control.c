@@ -9,9 +9,11 @@
 
 #include "globus_ftp_control.h"
 #include "globus_i_ftp_control.h"
+#ifndef TARGET_ARCH_WIN32
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#endif
 #include "version.h"
 
 #undef GLOBUS_FAILURE

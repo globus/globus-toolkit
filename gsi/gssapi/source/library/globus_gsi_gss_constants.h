@@ -145,6 +145,7 @@ typedef enum
     GSS_CONFIDENTIALITY = 1,
     GSS_INTEGRITY_ONLY = 0
 } gss_conf_state_t;
+/* @} */
 
 #define GSS_SSL_MESSAGE_DIGEST_PADDING  12
 #define GSS_SSL3_WRITE_SEQUENCE_SIZE    8

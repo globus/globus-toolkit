@@ -1713,6 +1713,7 @@ globus_gram_job_manager_state_machine(
 		GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_DONE;
 	    globus_cond_signal(&request->cond);
 	    globus_gram_job_manager_reporting_file_stop_cleaner(request);
+            globus_gram_job_manager_reporting_file_remove(request);
 	    event_registered = GLOBUS_TRUE;
 	}
 	else
@@ -1894,6 +1895,7 @@ globus_gram_job_manager_state_machine(
 	{
 	    globus_cond_signal(&request->cond);
 	    globus_gram_job_manager_reporting_file_stop_cleaner(request);
+            globus_gram_job_manager_reporting_file_remove(request);
 	    event_registered = GLOBUS_TRUE;
 	}
 
@@ -1935,6 +1937,7 @@ globus_gram_job_manager_state_machine(
 
 	globus_cond_signal(&request->cond);
 	globus_gram_job_manager_reporting_file_stop_cleaner(request);
+        globus_gram_job_manager_reporting_file_remove(request);
 	event_registered = GLOBUS_TRUE;
 	break;
 
@@ -1952,6 +1955,7 @@ globus_gram_job_manager_state_machine(
 	}
 	globus_cond_signal(&request->cond);
 	globus_gram_job_manager_reporting_file_stop_cleaner(request);
+        globus_gram_job_manager_reporting_file_remove(request);
 	event_registered = GLOBUS_TRUE;
 	break;
 
@@ -1966,6 +1970,7 @@ globus_gram_job_manager_state_machine(
 	globus_l_gram_job_manager_reply(request);
 	globus_cond_signal(&request->cond);
 	globus_gram_job_manager_reporting_file_stop_cleaner(request);
+        globus_gram_job_manager_reporting_file_remove(request);
 	break;
 
       case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_CLOSE_OUTPUT:

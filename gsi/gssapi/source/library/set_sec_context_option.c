@@ -217,5 +217,6 @@ gss_set_sec_context_option(
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;
 }
+/* @} */
 
 #endif /* _HAVE_GSI_EXTENDED_GSSAPI */

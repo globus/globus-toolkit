@@ -1,7 +1,6 @@
-#include "config.h"
-#include "globus_common.h"
 #include "globus_error_string.h"
-#include <string.h>
+#include "globus_libc.h"
+#include "globus_error.h"
 
 /**
  * Allocate and initialize an error of type GLOBUS_ERROR_TYPE_STRING
@@ -54,17 +53,15 @@ globus_error_initialize_string(
     const char *			fmt,
     va_list				ap)
 {
-    char * instance_data;
-    static FILE * f = NULL;
-    int len;
+    char *                              instance_data;
+    int                                 len;
+    va_list				ap_copy;
 
+    globus_libc_va_copy(ap_copy,ap);
+    len = globus_libc_vprintf_length(fmt,ap_copy) + 1;
+    va_end(ap_copy);
+    
     globus_libc_lock();
-    if(f == NULL)
-    {
-	f = fopen("/dev/null", "w");
-    }
-
-    len = vfprintf(f, fmt, ap) + 1;
 
     instance_data = malloc(len);
 
@@ -111,4 +108,6 @@ const globus_object_type_t GLOBUS_ERROR_TYPE_STRING_DEFINITION
 	globus_l_error_string_copy,
 	globus_l_error_string_free,
 	globus_l_error_string_printable);
+
+
 

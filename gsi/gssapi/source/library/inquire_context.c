@@ -48,6 +48,8 @@ GSS_CALLCONV gss_inquire_context(
 {
     OM_uint32                           major_status = GSS_S_COMPLETE;
     OM_uint32                           local_minor_status;
+    gss_name_t *			local_name;
+    gss_name_t *			peer_name;
     globus_result_t                     local_result;
     gss_ctx_id_desc *                   context = 
         (gss_ctx_id_desc *)context_handle_P;
@@ -67,49 +69,56 @@ GSS_CALLCONV gss_inquire_context(
 
     /* lock the context mutex */
     globus_mutex_lock(&context->mutex);
-    
-    if (src_name_P)
+
+    local_name = context->locally_initiated ? src_name_P : targ_name_P;
+    peer_name  = context->locally_initiated ? targ_name_P : src_name_P;
+
+    if(local_name)
     {
-        major_status = globus_i_gsi_gss_copy_name_to_name(
-            &local_minor_status,
-            (gss_name_desc **)src_name_P,
-            context->cred_handle->globusid);
-        if(GSS_ERROR(major_status))
-        {
-            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
-                minor_status, local_minor_status,
-                GLOBUS_GSI_GSSAPI_ERROR_BAD_NAME);
-            goto exit;
-        }
-        else
-        {
-            *src_name_P = NULL;
+	if(context->cred_handle && 
+	   context->cred_handle->globusid)
+	{
+	    major_status = globus_i_gsi_gss_copy_name_to_name(
+		&local_minor_status,
+		(gss_name_desc **) local_name,
+		context->cred_handle->globusid);
+	    if(GSS_ERROR(major_status))
+	    {
+		GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+		    minor_status, local_minor_status,
+		    GLOBUS_GSI_GSSAPI_ERROR_BAD_NAME);
+		goto exit;
+	    }
+	}
+	else
+	{
+	    *local_name = NULL;
+	}
+    }
+
+    if(peer_name)
+    {
+	if(context->peer_cred_handle && 
+	   context->peer_cred_handle->globusid)
+	{
+	    major_status = globus_i_gsi_gss_copy_name_to_name(
+		&local_minor_status,
+		(gss_name_desc **) peer_name,
+		context->peer_cred_handle->globusid);
+	    if(GSS_ERROR(major_status))
+	    {
+		GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+		    minor_status, local_minor_status,
+		    GLOBUS_GSI_GSSAPI_ERROR_BAD_NAME);
+		goto exit;
+	    }
+	}
+	else
+	{
+	    *peer_name = NULL;
         }
     }
-        
-    if (targ_name_P)
-    {
-        
-        if(context->cred_handle && context->cred_handle->globusid)
-        {
-            major_status = globus_i_gsi_gss_copy_name_to_name(
-                &local_minor_status,
-                (gss_name_desc **)targ_name_P,
-                context->cred_handle->globusid);
-            if (GSS_ERROR(major_status))
-            {
-                GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
-                    minor_status, local_minor_status,
-                    GLOBUS_GSI_GSSAPI_ERROR_BAD_NAME);
-                goto exit;
-            }
-        }
-        else
-        {
-            *targ_name_P = NULL;
-        }
-    }
-        
+
     if (lifetime_rec)
     {
         local_result = globus_gsi_cred_get_lifetime(

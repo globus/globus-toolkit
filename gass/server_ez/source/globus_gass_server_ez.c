@@ -24,8 +24,10 @@ CVS Information:
 #include <sys/stat.h>
 #include <errno.h>
 #include <sys/types.h>
+#ifndef TARGET_ARCH_WIN32
 #include <unistd.h>
 #include <pwd.h>
+#endif
 #include <ctype.h>
 #include "version.h"
 

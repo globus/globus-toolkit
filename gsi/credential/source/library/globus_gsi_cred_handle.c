@@ -110,6 +110,19 @@ globus_result_t globus_gsi_cred_handle_init(
 /* globus_gsi_cred_handle_init */
 /* @} */
 
+/**
+ * Copy Handle
+ * @ingroup globus_gsi_cred_handle
+ */
+/* @{ */
+/**
+ * Copies a credential handle.
+ *
+ * @param a
+ *        The handle to be copied
+ * @param b
+ *        The destination of the copy
+ */
 globus_result_t globus_gsi_cred_handle_copy(
     globus_gsi_cred_handle_t            a,
     globus_gsi_cred_handle_t *          b)
@@ -201,6 +214,7 @@ globus_result_t globus_gsi_cred_handle_copy(
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
 }
+/* @} */
         
 globus_result_t globus_gsi_cred_get_handle_attrs(
     globus_gsi_cred_handle_t            handle,
@@ -246,7 +260,6 @@ globus_result_t globus_gsi_cred_get_handle_attrs(
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
 }
-/* @} */
 
 globus_result_t globus_gsi_cred_get_goodtill(
     globus_gsi_cred_handle_t            cred_handle,
@@ -277,7 +290,7 @@ globus_result_t globus_gsi_cred_get_goodtill(
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
 }
-/* @} */
+
 
 globus_result_t globus_gsi_cred_get_lifetime(
     globus_gsi_cred_handle_t            cred_handle,
@@ -315,7 +328,6 @@ globus_result_t globus_gsi_cred_get_lifetime(
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
 }
-/* @} */
 
 /**
  * Destroy Credential Handle
@@ -528,6 +540,7 @@ globus_result_t globus_gsi_cred_set_key(
     return result;
 }    
 /* @} */
+
 /**
  * Set Cert Chain
  * @ingroup globus_gsi_cred_handle

@@ -1028,6 +1028,11 @@ globus_l_gram_job_manager_rsl_match(
     char *				attribute = arg;
     char *				test;
 
+    if(!globus_rsl_is_relation(relation))
+    {
+        return GLOBUS_FALSE;
+    }
+
     test = globus_rsl_relation_get_attribute(relation);
 
     return (strcmp(test, attribute)==0);

@@ -206,7 +206,7 @@ typedef struct gss_channel_bindings_struct
  */
 
 /**
- * @defgroup globus_gsi_gss_requested_context_flags
+ * @defgroup globus_gsi_gss_requested_context_flags GSS Req Flags
  *
  * These macros set the REQUESTED type of context - these should
  * be set (or not) in the context's req_flags (or
@@ -249,7 +249,7 @@ typedef struct gss_channel_bindings_struct
 /* @} */
  
 /**
- * @defgroup globus_gsi_gss_returned_context_flags
+ * @defgroup globus_gsi_gss_returned_context_flags GSS Ret Flags
  *
  * These macros set the RETURNED context type - these will be
  * be set (or not) in the context's ret_flags

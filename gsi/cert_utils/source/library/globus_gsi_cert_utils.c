@@ -635,12 +635,17 @@ globus_gsi_cert_utils_v_create_string(
 {
     int                                 len;
     char *                              new_string = NULL;
+    va_list                             ap_copy;
     static char *                       _function_name_ =
         "globus_i_gsi_cert_utils_v_create_string";
 
     GLOBUS_I_GSI_CERT_UTILS_DEBUG_ENTER;
+
+    globus_libc_va_copy(ap_copy,ap);
     
-    len = globus_libc_vprintf_length(format,ap);
+    len = globus_libc_vprintf_length(format,ap_copy);
+
+    va_end(ap_copy);
 
     len++;
 

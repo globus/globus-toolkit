@@ -1286,6 +1286,7 @@ globus_l_globusrun_gramrun(char * request_string,
     monitor.done = GLOBUS_FALSE;
     monitor.failure_code = 0;
     monitor.verbose=verbose;
+    monitor.job_state = 0;
     globus_mutex_init(&monitor.mutex, GLOBUS_NULL);
     globus_cond_init(&monitor.cond, GLOBUS_NULL);
 
@@ -1304,27 +1305,24 @@ globus_l_globusrun_gramrun(char * request_string,
 #       endif
     }
 
-    if(!(options & (GLOBUSRUN_ARG_DRYRUN|GLOBUSRUN_ARG_BATCH)))
+    err = globus_gram_client_callback_allow(
+        globus_l_globusrun_gram_callback_func,
+        (void *) &monitor,
+        &callback_contact);
+
+    if(err != GLOBUS_SUCCESS)
     {
-	err = globus_gram_client_callback_allow(
-	    globus_l_globusrun_gram_callback_func,
-	    (void *) &monitor,
-	    &callback_contact);
+        globus_libc_fprintf(stderr,
+                            "Initializing GRAM Callback failed because %s (errorcode %d)\n",
+                            globus_gram_protocol_error_string(err),
+                            err);
 
-	if(err != GLOBUS_SUCCESS)
-	{
-	    globus_libc_fprintf(stderr,
-				"Initializing GRAM Callback failed because %s (errorcode %d)\n",
-				globus_gram_protocol_error_string(err),
-				err);
-
-	    goto hard_exit;
-	}
-	else if(verbose)
-	{
-	    globus_libc_printf("globus_gram_client_callback_allow "
-			       "successful\n");
-	}
+        goto hard_exit;
+    }
+    else if(verbose)
+    {
+        globus_libc_printf("globus_gram_client_callback_allow "
+                           "successful\n");
     }
 
     err = globus_gram_client_job_request(rm_contact,
@@ -1384,10 +1382,17 @@ globus_l_globusrun_gramrun(char * request_string,
     if  (options & GLOBUSRUN_ARG_BATCH)
     {
 	globus_libc_printf("%s\n",job_contact);
-	goto hard_exit;
     }
 
     globus_mutex_lock(&monitor.mutex);
+
+    if((options & GLOBUSRUN_ARG_BATCH) &&
+       (monitor.job_state != 0 &&
+        monitor.job_state != GLOBUS_GRAM_PROTOCOL_JOB_STATE_UNSUBMITTED &&
+        monitor.job_state != GLOBUS_GRAM_PROTOCOL_JOB_STATE_STAGE_IN))
+    {
+        monitor.done = GLOBUS_TRUE;
+    }
 
     while(!monitor.done)
     {
@@ -1402,6 +1407,13 @@ globus_l_globusrun_gramrun(char * request_string,
 	    globus_gram_client_job_cancel(job_contact);
 	    globus_l_globusrun_ctrlc_handled = GLOBUS_TRUE;
 	}
+        if((options & GLOBUSRUN_ARG_BATCH) &&
+           (monitor.job_state != 0 &&
+            monitor.job_state != GLOBUS_GRAM_PROTOCOL_JOB_STATE_UNSUBMITTED &&
+            monitor.job_state != GLOBUS_GRAM_PROTOCOL_JOB_STATE_STAGE_IN))
+        {
+            monitor.done = GLOBUS_TRUE;
+        }
     }
     globus_mutex_unlock(&monitor.mutex);
 
