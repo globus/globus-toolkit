@@ -549,6 +549,7 @@ globus_gfs_ipc_handle_release(
 
 globus_result_t
 globus_gfs_ipc_handle_get(
+    int *                               handle_count,
     const char *                        user_id,
     const char *                        pathname,
     globus_gfs_ipc_iface_t *            iface,

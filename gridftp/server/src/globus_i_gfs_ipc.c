@@ -3716,6 +3716,7 @@ globus_gfs_ipc_handle_get_by_contact(
 
 globus_result_t
 globus_gfs_ipc_handle_get(
+    int *                               handle_count,
     const char *                        user_id,
     const char *                        pathname,
     globus_gfs_ipc_iface_t *            iface,
@@ -3724,35 +3725,58 @@ globus_gfs_ipc_handle_get(
     globus_gfs_ipc_error_callback_t     error_cb,
     void *                              error_user_arg)
 {
-    char **                             cs;
+    int                                 ndx;
+    int                                 ctr;
+    int                                 count;
+    globus_i_gfs_community_t *          community;
     int                                 cs_count;
     globus_result_t                     res;
+    globus_bool_t                       done = GLOBUS_FALSE;
     GlobusGFSName(globus_gfs_handle_get);
 
     globus_mutex_lock(&globus_l_ipc_mutex);
     {
-        res = globus_l_gfs_community_get_nodes(
-            pathname, user_id, &cs, &cs_count);
-        if(res != GLOBUS_SUCCESS)
+        community = globus_l_gfs_ipc_find_community(pathname);
+
+        if(*handle_count == 0)
         {
-            goto err;
+            count = community->cs_count;
         }
-        if(cs_count < 1)
+        else
         {
-            res = GlobusGFSErrorMemory("no contacts");
-            goto err;
+            count = *handle_count;
         }
 
-        res = globus_l_gfs_ipc_handle_get(
-            user_id, (const char *) cs[0], 
-            iface, cb, user_arg, error_cb, error_user_arg);
-        if(res != GLOBUS_SUCCESS)
+        ndx = 0;
+        for(ctr = 0; ctr < cs_count && !done; ctr++)
         {
-            goto err;
+            if(ctr == community->cs_count)
+            {
+                ndx = 0;
+            }
+            res = globus_l_gfs_ipc_handle_get(
+                user_id, 
+                (const char *) community->cs[ndx],
+                iface, 
+                cb,
+                user_arg,
+                error_cb,
+                error_user_arg);
+            if(res != GLOBUS_SUCCESS)
+            {
+                /* some may call this cheating */
+                done = GLOBUS_TRUE;
+                if(ctr == 0)
+                {
+                    goto err;
+                }
+            }
+            ndx++;
         }
     }
     globus_mutex_unlock(&globus_l_ipc_mutex);
 
+    *handle_count = count;
     return GLOBUS_SUCCESS;
 
   err:
