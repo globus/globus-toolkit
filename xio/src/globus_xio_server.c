@@ -1,6 +1,5 @@
 #include "globus_i_xio.h"
 
-
 #define GlobusXIODriverPassServerAccept(res, target, server, cb, user_arg)  \
 do                                                                          \
 {                                                                           \
@@ -22,9 +21,9 @@ do                                                                          \
     {                                                                       \
         _my_ndx = _server->ndx;                                             \
         _op->progress = GLOBUS_TRUE;                                        \
-        _server->driver_entry[_my_ndx].cb = cb;                             \
-        _server->driver_entry[_my_ndx].user_arg = user_arg;                 \
-        _server->driver_entry[_my_ndx].in_register = GLOBUS_TRUE;           \
+        _server->entry[_my_ndx].cb = cb;                                    \
+        _server->entry[_my_ndx].user_arg = user_arg;                        \
+        _server->entry[_my_ndx].in_register = GLOBUS_TRUE;                  \
         _server->ndx++;                                                     \
         while(_server->context[_server->ndx]->driver->server_accept_func    \
                     == NULL &&                                              \
@@ -32,12 +31,12 @@ do                                                                          \
         {                                                                   \
             _server->ndx++;                                                 \
         }                                                                   \
-        _entry = _server->driver_entry[_server->ndx];                       \
+        _entry = _server->entry[_server->ndx];                              \
         res = _entry->driver->server_accept_func(                           \
                     _entry->server_handle,                                  \
                     _entry->server_attr,                                    \
                     server);                                                \
-        _server->driver_entry[_my_ndx].in_register = GLOBUS_FALSE;          \
+        _server->entry[_my_ndx].in_register = GLOBUS_FALSE;                 \
     }                                                                       \
 }
 
@@ -124,6 +123,11 @@ globus_i_xio_server_accept_callback(
         {
             globus_free(xio_server->target);
         }
+        else
+        {
+            /* set target type to server */
+            xio_server->target->type = GLOBUS_XIO_TARGET_TYPE_SERVER;
+        }
     }
     globus_mutex_unlock(&xio_server->mutex);
 
@@ -178,16 +182,16 @@ globus_xio_server_init(
             !globus_list_empty(list);
             list = globus_list_rest(list))
         {
-            xio_server->driver_ent[ctr].driver = (globus_i_xio_driver_t *)
+            xio_server->entry[ctr].driver = (globus_i_xio_driver_t *)
                 globus_list_first(list);
 
             server_attr = globus_i_xio_attr_get_ds(
                             server_attr,
-                            xio_server->driver_ent[ctr].driver);
+                            xio_server->entry[ctr].driver);
 
             /* call the driver init function */
-            res = xio_server->driver_ent[ctr].driver->server_init_func(
-                    &xio_server->driver_ent[ctr].server_handle,
+            res = xio_server->entry[ctr].driver->server_init_func(
+                    &xio_server->entry[ctr].server_handle,
                     server_attr);
 
             ctr++;
@@ -205,9 +209,51 @@ globus_xio_server_cntl(
     int                                         cmd,
     ...)
 {
+    globus_bool_t                               found = GLOBUS_FALSE;
+    int                                         ctr;
+    globus_result_t                             res = GLOBUS_SUCCESS;
+    va_list                                     ap;
+
     if(server == NULL)
     {
+        return GlobusXIOErrorBadParameter();
     }
+
+    xio_server = server;
+
+    globus_mutex_lock(&stack->mutex);
+    {
+        if(driver == NULL)
+        {
+            /* do general things */
+        }
+        else
+        {
+            for(ctr = 0; 
+                !found && ctr < server->stack_size; 
+                ctr++)
+            {
+                if(server->entry[ctr].driver == driver)
+                {
+                    found = GLOBUS_TRUE;
+
+                    va_start(ap, cmd);
+                    res = server->entry[ctr].driver->server_cntl_func(
+                            server->entry[ctr].server_handle,
+                            cmd,
+                            ap);
+                    va_end(ap);
+                }
+            }
+            if(!found)
+            {
+                res = DriverNotFOund();
+            }
+        }
+    }
+    globus_mutex_unlock(&stack->lock);
+
+    return res;
 }
 
 globus_result_t
@@ -252,11 +298,12 @@ globus_xio_server_register_accept(
                     !globus_list_empty(list);
                     list = globus_list_rest(list))
                 {
-                    xio_server->driver_entry[ctr].server_attr = 
+                    xio_server->entry[ctr].server_attr = 
                         globus_i_xio_attr_get_ds(
-                            xio_server->driver_entry[ctr].driver);
+                            xio_server->entry[ctr].driver);
                     ctr++;
                 }
+                l_target->type = GLOBUS_XIO_TARGET_TYPE_NONE;
                 xio_server->target = l_target;
 
                 xio_server->ndx = 0;
@@ -326,8 +373,8 @@ globus_xio_server_destroy(
             for(ctr = 0; ctr < xio_server->stack_size; ctr++)
             {
                 /* possible to lose a driver res, but you know.. so what? */
-                tmp_res = xio_server->driver_ent[ctr].driver(
-                        xio_server->driver_ent[ctr].server_handle);
+                tmp_res = xio_server->entry[ctr].driver(
+                        xio_server->entry[ctr].server_handle);
                 if(tmp_res != GLOBUS_SUCCESS)
                 {
                     res = ADriverFailedToCompletelyDestroy();
