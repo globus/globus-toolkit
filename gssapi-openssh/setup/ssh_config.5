@@ -44,7 +44,7 @@
 .Sh SYNOPSIS
 .Bl -tag -width Ds -compact
 .It Pa $HOME/.ssh/config
-.It Pa /etc/ssh/ssh_config
+.It Pa $GLOBUS_LOCATION/etc/ssh/ssh_config
 .El
 .Sh DESCRIPTION
 .Nm ssh
@@ -55,7 +55,7 @@ feature-specific user configuration file(s) (see below),
 user's configuration file
 .Pq Pa $HOME/.ssh/config ,
 and system-wide configuration file
-.Pq Pa /etc/ssh/ssh_config .
+.Pq Pa $GLOBUS_LOCATION/etc/ssh/ssh_config .
 For compatibility with other
 .Nm
 versions, the following feature-specific user configuration files
@@ -304,7 +304,7 @@ The default is
 .It Cm GlobalKnownHostsFile
 Specifies a file to use for the global
 host key database instead of
-.Pa /etc/ssh/ssh_known_hosts .
+.Pa $GLOBUS_LOCATION/etc/ssh/ssh_known_hosts .
 .It Cm GssapiAuthentication
 Specifies whether authentication based on GSSAPI may be used, either using
 the result of a successful key exchange, or using GSSAPI user
@@ -564,7 +564,7 @@ will never automatically add host keys to the
 file, and refuses to connect to hosts whose host key has changed.
 This provides maximum protection against trojan horse attacks,
 however, can be annoying when the
-.Pa /etc/ssh/ssh_known_hosts
+.Pa $GLOBUS_LOCATION/etc/ssh/ssh_known_hosts
 file is poorly maintained, or connections to new hosts are
 frequently made.
 This option forces the user to manually
@@ -632,7 +632,7 @@ client.
 This file does not usually contain any sensitive information,
 but the recommended permissions are read/write for the user, and not
 accessible by others.
-.It Pa /etc/ssh/ssh_config
+.It Pa $GLOBUS_LOCATION/etc/ssh/ssh_config
 Systemwide configuration file.
 This file provides defaults for those
 values that are not specified in the user's configuration file, and

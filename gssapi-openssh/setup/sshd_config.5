@@ -43,12 +43,12 @@
 .Nd OpenSSH SSH daemon configuration file
 .Sh SYNOPSIS
 .Bl -tag -width Ds -compact
-.It Pa /etc/ssh/sshd_config
+.It Pa $GLOBUS_LOCATION/etc/ssh/sshd_config
 .El
 .Sh DESCRIPTION
 .Nm sshd
 reads configuration data from
-.Pa /etc/ssh/sshd_config
+.Pa $GLOBUS_LOCATION/etc/ssh/sshd_config
 (or the file specified with
 .Fl f
 on the command line).
@@ -253,11 +253,11 @@ The default is
 Specifies a file containing a private host key
 used by SSH.
 The default is
-.Pa /etc/ssh/ssh_host_key
+.Pa $GLOBUS_LOCATION/etc/ssh/ssh_host_key
 for protocol version 1, and
-.Pa /etc/ssh/ssh_host_rsa_key
+.Pa $GLOBUS_LOCATION/etc/ssh/ssh_host_rsa_key
 and
-.Pa /etc/ssh/ssh_host_dsa_key
+.Pa $GLOBUS_LOCATION/etc/ssh/ssh_host_dsa_key
 for protocol version 2.
 Note that
 .Nm sshd
@@ -282,7 +282,7 @@ or
 .Pp
 .Pa /etc/hosts.equiv
 and
-.Pa /etc/shosts.equiv
+.Pa $GLOBUS_LOCATION/etc/ssh/shosts.equiv
 are still used.
 The default is
 .Dq yes .
@@ -708,7 +708,7 @@ Time format examples:
 .El
 .Sh FILES
 .Bl -tag -width Ds
-.It Pa /etc/ssh/sshd_config
+.It Pa $GLOBUS_LOCATION/etc/ssh/sshd_config
 Contains configuration data for
 .Nm sshd .
 This file should be writable by root only, but it is recommended
