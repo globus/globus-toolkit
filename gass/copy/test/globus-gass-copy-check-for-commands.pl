@@ -24,6 +24,10 @@ sub check_for_commands
     
     my @commands = 
         qw(
+           grid-cert-info
+           grid-cert-renew
+           grid-cert-request
+           grid-change-pass-phrase
            grid-proxy-init
            globus-hostname
            globus-url-copy
