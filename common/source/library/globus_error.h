@@ -7,6 +7,8 @@
 
 #include "globus_object.h"
 
+#include <inttypes.h>
+
 #ifndef EXTERN_C_BEGIN
 #ifdef __cplusplus
 #define EXTERN_C_BEGIN extern "C" {
