@@ -18,6 +18,8 @@ BUNDLE globus-resource-management-server
 	globus_openssl_module
 	globus_rsl_assist
 	globus_gsi_cert_utils
+	globus_simple_ca
+        globus_simple_ca_setup
 	globus_gsi_sysconfig
 	globus_gsi_callback
 	globus_gsi_credential
@@ -60,6 +62,8 @@ BUNDLE globus-resource-management-sdk
 	globus_openssl_module
 	globus_rsl_assist
 	globus_gsi_cert_utils
+	globus_simple_ca
+        globus_simple_ca_setup
 	globus_gsi_sysconfig
 	globus_gsi_callback
 	globus_gsi_credential
@@ -102,6 +106,8 @@ BUNDLE globus-resource-management-client
 	globus_openssl_module
 	globus_rsl_assist
 	globus_gsi_cert_utils
+	globus_simple_ca
+        globus_simple_ca_setup
 	globus_gsi_sysconfig
 	globus_gsi_callback
 	globus_gsi_credential
@@ -135,6 +141,8 @@ BUNDLE globus-data-management-server
 	globus_gsi_proxy_ssl
 	globus_openssl_module
 	globus_gsi_cert_utils
+	globus_simple_ca
+        globus_simple_ca_setup
 	globus_gsi_sysconfig
 	globus_gsi_callback
 	globus_gsi_credential
@@ -175,6 +183,8 @@ BUNDLE globus-data-management-sdk
 	globus_gsi_proxy_ssl
 	globus_openssl_module
 	globus_gsi_cert_utils
+	globus_simple_ca
+        globus_simple_ca_setup
 	globus_gsi_sysconfig
 	globus_gsi_callback
 	globus_gsi_credential
@@ -203,6 +213,8 @@ BUNDLE globus-data-management-client
 	globus_gsi_proxy_ssl
 	globus_openssl_module
 	globus_gsi_cert_utils
+	globus_simple_ca
+        globus_simple_ca_setup
 	globus_gsi_sysconfig
 	globus_gsi_callback
 	globus_gsi_credential
@@ -236,6 +248,8 @@ BUNDLE globus-information-services-server THREADED
 	globus_openldap
 	globus_openssl_module
 	globus_gsi_cert_utils
+	globus_simple_ca
+        globus_simple_ca_setup
 	globus_gsi_sysconfig
 	globus_gsi_callback
 	globus_gsi_credential
@@ -261,6 +275,8 @@ BUNDLE globus-information-services-sdk THREADED
 	globus_openldap
 	globus_openssl_module
 	globus_gsi_cert_utils
+	globus_simple_ca
+        globus_simple_ca_setup
 	globus_gsi_sysconfig
 	globus_gsi_callback
 	globus_gsi_credential
@@ -290,6 +306,8 @@ BUNDLE globus-information-services-client THREADED
 	globus_openldap
 	globus_openssl_module
 	globus_gsi_cert_utils
+	globus_simple_ca
+        globus_simple_ca_setup
 	globus_gsi_sysconfig
 	globus_gsi_callback
 	globus_gsi_credential
@@ -333,6 +351,8 @@ BUNDLE globus-gsi
 	globus_gsi_callback
 	globus_gsi_sysconfig
 	globus_gsi_cert_utils
+	globus_simple_ca
+        globus_simple_ca_setup
 	globus_openssl_module
 	globus_gsi_proxy_ssl
 	globus_gsi_openssl_error
@@ -344,3 +364,4 @@ BUNDLE globus-gsi
 	globus_common_setup
 	globus_common
 	globus_core
+	gssapi_error
