@@ -29,13 +29,61 @@
 /* SSLeay 0.9.0 */
 #define PEM_CALLBACK(A,B)  A
 
+#define STACK_OF(A) STACK
+
+#define sk_X509_NAME_ENTRY_num  sk_num
+#define sk_X509_NAME_ENTRY_value  sk_value
+
+#define sk_SSL_CIPHER_num  sk_num
+#define sk_SSL_CIPHER_value  sk_value
+#define sk_SSL_CIPHER_insert  sk_insert
+#define sk_SSL_CIPHER_delete  sk_delete
+
+#define sk_X509_EXTENSION_num sk_num
+#define sk_X509_EXTENSION_value sk_value
+#define sk_X509_EXTENSION_push sk_push
+#define sk_X509_EXTENSION_new_null sk_new_null
+#define sk_X509_EXTENSION_pop_free sk_pop_free
+
+#define sk_X509_REVOKED_num sk_num
+#define sk_X509_REVOKED_value sk_value
+
 #endif /* ! SSLEAY_VERSION_NUMBER > 0x0903 */
 
+/**********************************************************************
+ *
+ * Constants
+ *
+ */
+#define PROXY_EXTENSION			"proxy"
+#define LIMITED_PROXY_EXTENSION		"limited proxy"
+
+#define PROXY_DEFAULT_LIFETIME		24 * 60 * 60 /* seconds */
+
+/* Amount of clock skew to allow for when generating certificates */
+#define PROXY_CLOCK_SKEW_ALLOWANCE	60 * 5 /* seconds */
+
+#define PROXY_DEFAULT_VERSION		2L /* == v3 */
+
+/**********************************************************************
+ *
+ * Internal data structures
+ *
+ */
 struct _ssl_credentials
 {
     X509		*certificate;
     EVP_PKEY		*private_key;
     STACK		*certificate_chain;
+};
+
+struct _ssl_proxy_restrictions
+{
+    /* 0 = unrestricted, 1 = limited */
+    int			limited_proxy;
+
+    /* Proxy lifetime in seconds, 0 means default, -1 means maximum */
+    long		lifetime;
 };
 
 /**********************************************************************
@@ -178,18 +226,30 @@ ssl_get_key_size(X509				*certificate)
 /*
  * ssl_get_proxy_name()
  *
- * Given a certificate, return the name of the proxy certificate
+ * Given a certificate, and the restrictions associated with the
+ * proxy we are generating return the name of the proxy certificate
  * that would be generated from the certificate. If no certificate
  * is supplied, a blank name is used.
  *
  * Returns 0 on success, -1 on error.
  */
 static X509_NAME *
-ssl_get_proxy_name(X509				*certificate)
+ssl_get_proxy_name(X509				*certificate,
+		   SSL_PROXY_RESTRICTIONS	*restrictions)
 {
     X509_NAME			*name = NULL;
     X509_NAME_ENTRY		*name_entry =NULL;
-
+    unsigned char		*proxy_name_extension = PROXY_EXTENSION;
+    
+    if (restrictions != NULL)
+    {
+	/* Handle restrictions */
+	if (restrictions->limited_proxy == 1)
+	{
+	    proxy_name_extension = LIMITED_PROXY_EXTENSION;
+	}
+    }
+    
     if (certificate != NULL)
     {
 	name = X509_NAME_dup(X509_get_subject_name(certificate));
@@ -216,7 +276,7 @@ ssl_get_proxy_name(X509				*certificate)
     name_entry = X509_NAME_ENTRY_create_by_NID(NULL,
 					       NID_commonName,
 					       V_ASN1_APP_CHOOSE,
-					       (unsigned char *)"proxy",
+					       proxy_name_extension,
 					       -1);
     
     if (name_entry == NULL)
@@ -303,6 +363,133 @@ ssl_pass_phrase_callback(char			*buffer,
     return strlen(buffer);
 }
 
+
+/*
+ * ssl_proxy_cert_to_buffer()
+ *
+ * Given a proxy certificate and the credentials used to make the proxy
+ * certificate, dump the certificate allong with it's certificate chain
+ * to a buffer suitable for shipping over the network.
+ *
+ * Returns 0 on success, -1 on error.
+ */
+static int
+ssl_proxy_cert_to_buffer(SSL_CREDENTIALS	*creds,
+			 X509			*proxy_certificate,
+			 unsigned char		**buffer,
+			 int			*buffer_length)
+{
+    BIO			*bio;
+    unsigned char	number_of_certs;
+    int			index;
+    unsigned char	*tmp_buffer = NULL;
+    int			tmp_buffer_size;
+    int			return_status = -1;
+    
+    assert(creds != NULL);
+    assert(proxy_certificate != NULL);
+    assert(buffer != NULL);
+    assert(buffer_length != NULL);
+    
+    bio = BIO_new(BIO_s_mem());
+    
+    if (bio == NULL)
+    {
+	verror_put_string("Failed dumping proxy certificate to buffer (BIO_new() failed)");
+	ssl_error_to_verror();
+	goto error;
+    }
+
+    /*
+     * Determine the number of certificates we are going to write to
+     * to the buffer. We add two - one for the signer's certificate
+     * and one for the proxy certificate.
+     */
+    number_of_certs = sk_num(creds->certificate_chain) + 2;
+
+    if (BIO_write(bio, &number_of_certs, sizeof(number_of_certs)) == 0)
+    {
+	verror_put_string("Failed dumping proxy certificate to buffer (BIO_write() failed)");
+	ssl_error_to_verror();
+	goto error;
+    }
+
+    /*
+     * Now write out proxy certificate, followed by the signing certificate
+     * and then the signing certificate's chain.
+     */
+    if (i2d_X509_bio(bio, proxy_certificate) == 0)
+    {
+	verror_put_string("Failed dumping proxy certificate to buffer (write of proxy cert failed)");
+	ssl_error_to_verror();
+	goto error;
+    }
+
+    if (i2d_X509_bio(bio, creds->certificate) == 0)
+    {
+	verror_put_string("Failed dumping proxy certificate to buffer (write of signing cert failed)");
+	ssl_error_to_verror();
+	goto error;
+    }
+
+    for (index = 0; index < sk_num(creds->certificate_chain); index++)
+    {
+	X509		*cert;
+	
+	cert = (X509 *) sk_value(creds->certificate_chain, index);
+	
+	if (i2d_X509_bio(bio, creds->certificate) == 0)
+	{
+	    verror_put_string("Failed dumping proxy certificate to buffer (write of cert chain failed)");
+	    ssl_error_to_verror();
+	    goto error;
+	}
+    }
+
+    /* Now dump bio's contents to buffer */
+
+    tmp_buffer_size = BIO_pending(bio);
+    
+    tmp_buffer = malloc(tmp_buffer_size);
+    
+    if (tmp_buffer == NULL)
+    {
+	verror_put_string("Failed dumping X509 request to buffer (malloc() failed)");
+	verror_put_errno(errno);
+	goto error;
+    }
+    
+    if (BIO_read(bio, tmp_buffer, tmp_buffer_size) == 0)
+    {
+	verror_put_string("Failed dumping proxy to buffer (BIO_read() failed)");
+	ssl_error_to_verror();
+	goto error;
+    }
+    
+    /* Success */
+    *buffer = tmp_buffer;
+    *buffer_length = tmp_buffer_size;
+    return_status = 0;
+    
+  error:
+    if (bio != NULL)
+    {
+	BIO_free(bio);
+    }
+    
+    if (return_status == -1)
+    {
+	if (tmp_buffer != NULL)
+	{
+	    free(tmp_buffer);
+	}
+    }
+    
+    return return_status;
+}
+	     
+	     
+	
 /*
  * ssl_x509_request_to_buffer()
  *
@@ -315,10 +502,10 @@ ssl_x509_request_to_buffer(X509_REQ		*request,
 			   unsigned char	**buffer,
 			   int			*buffer_length)
 {
-    char *tmp_buffer = NULL;
-    int tmp_buffer_size;
-    int return_status = -1;
-    BIO *bio = NULL;
+    char			*tmp_buffer = NULL;
+    int				tmp_buffer_size;
+    int				return_status = -1;
+    BIO				*bio = NULL;
     
     assert(request != NULL);
     assert(buffer != NULL);
@@ -332,6 +519,7 @@ ssl_x509_request_to_buffer(X509_REQ		*request,
 	ssl_error_to_verror();
 	goto error;
     }
+
     
     if (i2d_X509_REQ_bio(bio, request) == 0)
     {
@@ -380,51 +568,179 @@ ssl_x509_request_to_buffer(X509_REQ		*request,
     return return_status;
 }
 
+/*
+ * ssl_x509_request_from_buffer()
+ *
+ * Parse a buffer as generated by ssl_x509_request_to_buffer() and
+ * return the X509_REQ object.
+ *
+ * Returns 0 on success, -1 on error.
+ */
+static int
+ssl_x509_request_from_buffer(unsigned char	*buffer,
+			     int		buffer_length,
+			     X509_REQ		**p_request)
+{
+    X509_REQ			*request = NULL;
+    BIO				*bio = NULL;
+    int				return_status = -1;
     
+    assert(buffer != NULL);
+    assert(p_request != NULL);
     
+    bio = BIO_new(BIO_s_mem());
+
+    if (bio == NULL)
+    {
+	verror_put_string("Failed unpacking X509 request from buffer (BIO_new() failed)");
+	ssl_error_to_verror();
+	goto error;
+    }
+
+    if (BIO_write(bio, buffer, buffer_length) == -1)
+    {
+	verror_put_string("Failed unpacking X509 request from buffer (BIO_write() failed)");
+	ssl_error_to_verror();
+	goto error;
+    }
+    
+    request = d2i_X509_REQ_bio(bio, NULL /* make new req */);
+    
+    if (request == NULL)
+    {
+	verror_put_string("Failed unpacking X509 request from buffer");
+	ssl_error_to_verror();
+	goto error;
+    }
+
+    /* Success */
+    *p_request = request;
+    return_status = 0;
+
+  error:
+    if (bio)
+    {
+	BIO_free(bio);
+    }
+    
+    if (return_status == -1)
+    {
+	if (request)
+	{
+	    X509_REQ_free(request);
+	}
+    }
+    
+    return return_status;
+}
+
+/*
+ * ssl_x509_request_verify()
+ *
+ * Check the X509_REQUEST object and make sure it's properly formed
+ * and signed. Note that this does not look at the name.
+ *
+ * Returns 0 on success, -1 on error.
+ */
+static int
+ssl_x509_request_verify(X509_REQ		*request)
+{
+    int				return_status = -1;
+    EVP_PKEY			*request_public_key = NULL;
+    int				verify_result;
+    
+    assert(request != NULL);
+    
+    /* Make sure all the data appears to be present */
+    if ((request->req_info == NULL) ||
+	(request->req_info->pubkey == NULL) ||
+	(request->req_info->pubkey->public_key == NULL) ||
+	(request->req_info->pubkey->public_key->data == NULL))
+    {
+	verror_put_string("X509 request missing data");
+	goto error;
+    }
+
+    /* Check signature on request */
+    request_public_key = X509_REQ_get_pubkey(request);
+    
+    if (request_public_key == NULL)
+    {
+	verror_put_string("Error getting public key from X509 request");
+	ssl_error_to_verror();
+	goto error;
+    }
+    
+    verify_result = X509_REQ_verify(request, request_public_key);
+    
+    if (verify_result < 0)
+    {
+	verror_put_string("Error verifying X509 request");
+	ssl_error_to_verror();
+	goto error;
+    }
+    
+    if (verify_result == 0)
+    {
+	verror_put_string("Bad signature on request");
+	ssl_error_to_verror();
+	goto error;
+    }
+    
+    /* Success */
+    return_status = 0;
+    
+  error:
+    return return_status;
+}
+
     
 /**********************************************************************
  *
- * API Functions
+ * These are fairly major internal functions that rely on a lot
+ * of the internal function above.
  *
  */
 
 
-void
-ssl_destroy_credentials(SSL_CREDENTIALS		*creds)
+/*
+ * ssl_generate_cert_request()
+ *
+ * Generate a certificate request.
+ *
+ * p_creds is filled in with a pointer to the start of the new
+ * credentials.
+ *
+ * p_request is filled in with a pointer to the new request.
+ *
+ * requested_bits is the number of bits to used for the keys
+ * of the new certificate. May be zero in which case a default
+ * of 512 is used.
+ *
+ * callback is a function to be called back during the RSA key
+ * generation. See SSLeay's doc/rsa.doc RSA_generate_key()
+ * function for details.
+ *
+ * Returns 0 on success, -1 on error.
+ */
+static int
+ssl_generate_cert_request(SSL_CREDENTIALS	**p_creds,
+			  X509_REQ		**p_request,
+			  X509_NAME		*requested_name,
+			  int			requested_bits,
+			  void			(*callback)(int,int,char *))
 {
-    ssl_init();
-    
-    if (creds != NULL)
-    {
-	ssl_free_credentials_contents(creds);
-	
-	free(creds);
-    }
-}
-
-int
-ssl_generate_proxy_request(SSL_CREDENTIALS	**new_creds,
-			   unsigned char	**buffer,
-			   int			*buffer_length,
-			   int			requested_bits,
-			   void			(*callback)(int,int,char *))
-{
-    SSL_CREDENTIALS		*creds = NULL;
-    int				new_key_bits;
     const int			default_key_size = 512;	/* bits */
-    RSA				*rsa = NULL;
-    X509_REQ			*request = NULL;
+    SSL_CREDENTIALS		*creds = NULL;
     X509_NAME			*name = NULL;
     int				return_status = -1;
     EVP_PKEY			*key = NULL;
+    RSA				*rsa = NULL;
+    X509_REQ			*request = NULL;
     
-    ssl_init();
-    
-    assert(new_creds != NULL);
-    assert(buffer != NULL);
-    assert(buffer_length != NULL);
-
+    assert(p_creds != NULL);
+    assert(p_request != NULL);
+ 
     /* Make new credentials structure to hold new certificate */
     creds = ssl_new_credentials();
     
@@ -434,18 +750,13 @@ ssl_generate_proxy_request(SSL_CREDENTIALS	**new_creds,
     }
     
     /* How many bits do we want the new key to be? */
-    if (requested_bits != 0)
+    if (requested_bits == 0)
     {
-	new_key_bits = requested_bits;
+	requested_bits = default_key_size;
     }
-    else
-    {
-	/* Default */
-	new_key_bits = default_key_size;
-    }
-    
-    /* Generate key for request */
-    rsa = RSA_generate_key(new_key_bits,
+
+     /* Generate key for request */
+    rsa = RSA_generate_key(requested_bits,
 			   RSA_F4 /* public exponent */,
 			   callback,
 			   NULL /* callback argument */);
@@ -478,7 +789,68 @@ ssl_generate_proxy_request(SSL_CREDENTIALS	**new_creds,
     /*
      * Just use an empty name and let signer fill in the correct name.
      */
-    name = X509_NAME_new();
+    if (requested_name != NULL)
+    {
+	name = X509_NAME_dup(requested_name);
+
+	if (name == NULL)
+	{
+	    verror_put_string("Error generating new proxy request (duping name)");
+	    ssl_error_to_verror();
+	    goto error;
+	}
+    }
+    else
+    {
+	X509_NAME_ENTRY			*name_entry = NULL;
+
+	/*
+	 * We have no name to go on, however we can't just use an empty
+	 * name as this causes d2i_X509_REQ_bio() to fail if we ever
+	 * take this req and turn it into a buffer and then convert
+	 * it back. I'm guessing this means that a req with an empty
+	 * is probably illegal.
+	 *
+	 * So for now we will just create a bogus name to use. The
+	 * idea is that whomever signs this certificate will put in
+	 * whatever name they want anyways.
+	 */
+	name = X509_NAME_new();
+
+	if (name == NULL)
+	{
+	    verror_put_string("Error generating new proxy request (generating name)");
+	    ssl_error_to_verror();
+	    goto error;
+	}
+
+	/* "certreq" is the bogus name I picked arbitratily */
+	name_entry = X509_NAME_ENTRY_create_by_NID(NULL /* make new entry */,
+						   NID_commonName,
+						   V_ASN1_APP_CHOOSE,
+						   (unsigned char *) "certreq",
+						   -1 /* use strlen() */);
+	
+	if (name_entry == NULL)
+	{
+	    verror_put_string("Error generating new proxy request (generating empty name)");
+	    ssl_error_to_verror();
+	    goto error;
+	}
+
+	if (X509_NAME_add_entry(name, name_entry,
+				X509_NAME_entry_count(name),
+				0 /* create new set */) == 0)
+	{
+	   X509_NAME_ENTRY_free(name_entry);
+	   verror_put_string("Error generating new proxy request (adding name entry)");
+	   ssl_error_to_verror();
+	   goto error;
+	}
+
+	X509_NAME_ENTRY_free(name_entry);
+	
+    }
     
     if (name == NULL)
     {
@@ -516,47 +888,253 @@ ssl_generate_proxy_request(SSL_CREDENTIALS	**new_creds,
 	ssl_error_to_verror();
 	goto error;
     }
-    
-    /* Request successfully generated, now dump to buffer */
-    if (ssl_x509_request_to_buffer(request,
-				   buffer,
-				   buffer_length) == -1)
+
+    if (X509_REQ_sign(request, key, EVP_md5()) == 0)
     {
+	verror_put_string("Error generating new proxy request (signing request)");
+	ssl_error_to_verror();
 	goto error;
     }
     
     /* Success */
-    return_status = 0;
-
-    *new_creds = creds;
+    *p_creds = creds;
     creds = NULL;
+    
+    *p_request = request;
+    request = NULL;
+
+    return_status = 0;
+    
 
   error:
     if (name != NULL)
     {
 	X509_NAME_free(name);
     }
-    
-    if (key != NULL)
-    {
-	EVP_PKEY_free(key);
-    }
 
-    if (request != NULL)
-    {
-	X509_REQ_free(request);
-    }
-    
     if (return_status == -1)
     {
+    
+	if (key != NULL)
+	{
+	    EVP_PKEY_free(key);
+	}
+    
+	if (request != NULL)
+	{
+	    X509_REQ_free(request);
+	}
+
 	if (rsa != NULL)
 	{
 	    RSA_free(rsa);
+	}
+
+	if (creds != NULL)
+	{
+	    ssl_destroy_credentials(creds);
 	}
     }
     
     return return_status;
 }
+
+
+/*
+ * ssl_generate_proxy_certificate()
+ *
+ * Given the credentials and a certificate request, generate a proxy
+ * certificate. ssl_x509_request_verify() is used to check the request.
+ *
+ * restrictions, if non-NULL, will be applied.
+ *
+ * Returns 0 on succes, -1 on error.
+ */
+static int
+ssl_generate_proxy_certificate(SSL_CREDENTIALS		*creds,
+			       X509_REQ			*request,
+			       SSL_PROXY_RESTRICTIONS	*restrictions,
+			       X509			**p_proxy_cert)
+{
+    long			lifetime = PROXY_DEFAULT_LIFETIME;
+    X509_NAME			*proxy_name = NULL;
+    X509			*proxy_certificate = NULL;
+    int				serial_number;
+    int				return_status = -1;
+    
+    assert(creds != NULL);
+    assert(request != NULL);
+    assert(p_proxy_cert != NULL);
+    
+    if (ssl_x509_request_verify(request) == -1)
+    {
+	goto error;
+    }
+
+    if (restrictions != NULL)
+    {
+	/* Parse restrictions */
+	if (restrictions->lifetime != 0)
+	{
+	    lifetime = restrictions->lifetime;
+	}
+    }
+
+    /* Make the certificate we will turn into the proxy */
+    proxy_certificate = X509_new();
+    
+    if (proxy_certificate == NULL)
+    {
+	verror_put_string("Error generating proxy certificate (X509_new() failed)");
+	ssl_error_to_verror();
+	goto error;
+    }
+    
+    /* Generate the name the proxy certificate will have */
+    proxy_name = ssl_get_proxy_name(creds->certificate, restrictions);
+    
+    if (proxy_name == NULL)
+    {
+	goto error;
+    }
+
+    if (X509_set_subject_name(proxy_certificate, proxy_name) == 0)
+    {
+	verror_put_string("Error generating proxy_certificate (error setting name)");
+	ssl_error_to_verror();
+	goto error;
+    }
+    
+    if (X509_set_issuer_name(proxy_certificate,
+			     X509_get_subject_name(creds->certificate)) == 0)
+    {
+	verror_put_string("Error generating proxy_certificate (error setting issuer name)");
+	ssl_error_to_verror();
+	goto error;
+    }
+
+    /* Assign proxy same serial number as user certificate */
+    serial_number = ASN1_INTEGER_get(X509_get_serialNumber(creds->certificate));
+    
+    if (X509_set_version(proxy_certificate, serial_number) == 0)
+    {
+	verror_put_string("Error generating proxy_certificate (setting serial number)");
+	ssl_error_to_verror();
+	goto error;
+    }
+    
+    /* Allow for clock skew */
+    X509_gmtime_adj(X509_get_notBefore(proxy_certificate),
+		    -(PROXY_CLOCK_SKEW_ALLOWANCE));
+
+    /* Set expiration time */
+    if (lifetime == -1L)
+    {
+	ASN1_UTCTIME		*user_cert_expires;
+	
+	/*
+	 * Maximum lifetime requested, so set to the lifetime of the
+	 * signing certificate.
+	 */
+	user_cert_expires = X509_get_notAfter(creds->certificate);
+	
+	X509_set_notAfter(proxy_certificate, user_cert_expires);
+	}
+    else
+    {
+	/* Set to requested lifetime */
+	X509_gmtime_adj(X509_get_notAfter(proxy_certificate), lifetime);
+    }
+
+    /* Copy public key from request to certificate */
+    if (X509_set_pubkey(proxy_certificate, X509_REQ_get_pubkey(request)) == 0)
+    {
+	verror_put_string("Error generating proxy_certificate (setting public key)");
+	ssl_error_to_verror();
+	goto error;
+    }	
+
+    /* Set the certificate version */
+    if (X509_set_version(proxy_certificate, PROXY_DEFAULT_VERSION) == 0)
+    {
+	verror_put_string("Error generating proxy_certificate (setting version)");
+	ssl_error_to_verror();
+	goto error;
+    }	
+    
+    /* Clear any extensions on certificate */
+    if (proxy_certificate->cert_info->extensions != NULL)
+    {
+	sk_X509_EXTENSION_pop_free(proxy_certificate->cert_info->extensions,
+				   X509_EXTENSION_free);
+    }
+ 
+    /*
+     * This is were we would add any extensions
+     */
+
+#ifndef NO_DSA
+    {
+	EVP_PKEY *pktmp = NULL;
+	
+	/* DEE? not sure what this is doing, I think
+	 * it is adding from the key to be used to sign to the 
+	 * new certificate any info DSA may need
+	 */
+	pktmp = X509_get_pubkey(proxy_certificate);
+
+	if (EVP_PKEY_missing_parameters(pktmp) &&
+	    !EVP_PKEY_missing_parameters(creds->private_key))
+	{
+	    EVP_PKEY_copy_parameters(pktmp, creds->private_key);
+	}
+    }
+#endif
+
+    if (X509_sign(proxy_certificate, creds->private_key, EVP_md5()) == 0)
+    {
+	verror_put_string("Error generating proxy_certificate (signing certificate)");
+	ssl_error_to_verror();
+	goto error;
+    }	
+    
+    /* Success */
+    *p_proxy_cert = proxy_certificate;
+
+    return_status = 0;
+    
+  error:
+    if (proxy_name != NULL)
+    {
+	X509_NAME_free(proxy_name);
+    }
+    
+    return return_status;
+}
+
+    
+    
+    
+/**********************************************************************
+ *
+ * API Functions
+ *
+ */
+
+
+void
+ssl_destroy_credentials(SSL_CREDENTIALS		*creds)
+{
+    ssl_init();
+    
+    if (creds != NULL)
+    {
+	ssl_free_credentials_contents(creds);
+	
+	free(creds);
+    }
+}
+
 
 	
 		     
@@ -845,7 +1423,143 @@ ssl_new_credentials()
     return creds;
 }
 
+
+int
+ssl_proxy_request_init(SSL_CREDENTIALS		**new_creds,
+		       unsigned char		**buffer,
+		       int			*buffer_length,
+		       int			requested_bits,
+		       void			(*callback)(int,int,char *))
+{
+    SSL_CREDENTIALS		*creds = NULL;
+    X509_REQ			*request = NULL;
+    int				return_status = -1;
+
     
+    ssl_init();
+    
+    assert(new_creds != NULL);
+    assert(buffer != NULL);
+    assert(buffer_length != NULL);
+
+    /* Generate the request */
+    if (ssl_generate_cert_request(&creds,
+				  &request,
+				  NULL /* no name */,
+				  requested_bits,
+				  callback) == -1)
+    {
+	goto error;
+    }
+    
+    /* Request successfully generated, now dump to buffer */
+    if (ssl_x509_request_to_buffer(request,
+				   buffer,
+				   buffer_length) == -1)
+    {
+	goto error;
+    }
+
+    /* START DEBUG */
+    {
+	X509_REQ	*tmp_request;
+	
+	if (ssl_x509_request_from_buffer(*buffer, *buffer_length,
+					 &tmp_request) == -1)
+	{
+	    goto error;
+	}
+    }
+    /* END DEBUG */
+
+    /* Success */
+    return_status = 0;
+
+    *new_creds = creds;
+    creds = NULL;
+
+  error:
+    if (request != NULL)
+    {
+	X509_REQ_free(request);
+    }
+    
+    if (return_status == -1)
+    {
+	if (creds != NULL)
+	{
+	    ssl_destroy_credentials(creds);
+	}
+    }
+    
+    return return_status;
+}
+
+
+int
+ssl_proxy_request_sign(SSL_CREDENTIALS		*creds,
+		       SSL_PROXY_RESTRICTIONS	*restrictions,
+		       unsigned char		*request_buffer,
+		       int			request_buffer_length,
+		       unsigned char		**proxy_buffer,
+		       int			*proxy_buffer_length)
+{
+    X509_REQ			*request = NULL;
+    X509			*proxy_certificate;
+    int				return_status = -1;
+    
+    assert(creds != NULL);
+    assert(creds->certificate);
+    assert(creds->private_key);
+    assert(request_buffer != NULL);
+    assert(proxy_buffer != NULL);
+    assert(proxy_buffer_length != NULL);
+    
+    /* Get the request for the buffer */
+    if (ssl_x509_request_from_buffer(request_buffer,
+				     request_buffer_length,
+				     &request) == -1)
+    {
+	goto error;
+    }
+    
+    /* Verify request and make certificate */
+    if (ssl_generate_proxy_certificate(creds,
+				       request,
+				       restrictions,
+				       &proxy_certificate) == -1)
+    {
+	goto error;
+    }
+
+    /* Now dump certificate and cert chain to buffer */
+    if (ssl_proxy_cert_to_buffer(creds,
+				 proxy_certificate,
+				 proxy_buffer,
+				 proxy_buffer_length) == -1)
+    {
+	goto error;
+    }
+    
+    /* Success */
+    return_status = 0;
+
+  error:
+    if (request != NULL)
+    {
+	X509_REQ_free(request);
+    }
+    
+    if (proxy_certificate != NULL)
+    {
+	X509_free(proxy_certificate);
+    }
+    
+    return return_status;
+}
+
+    
+      
 	
 	    
 	    
