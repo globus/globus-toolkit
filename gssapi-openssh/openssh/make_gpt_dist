@@ -1,11 +1,12 @@
 #!/usr/bin/env perl
 
 #
-# the default source directory name should be 'gsi-openssh'.  Change at will to
-# suit your needs.
+# the default source directory and source package is 'gsi-openssh'.  Change
+# at will to suit your needs.
 #
 
-$srcdirname = "gsi-openssh";
+$srcdir = "gsi-openssh";
+$srcpkg = "gsi-openssh";
 
 #
 # uncomment when we're more mature
@@ -41,24 +42,38 @@ $srcdirname = "gsi-openssh";
 #}
 
 #
-# test to make sure we're okay to create/use the $srcdirname directories.
+# test to make sure we're okay to
+#   o create/use the $srcdir directories
+#   o create the source package
 #
 
-if ( (!defined($srcdirname)) || length($srcdirname) le 0 )
+if ( (!defined($srcdir)) || length($srcdir) le 0 )
 {
-    printf("\$srcdirname must be defined to a usable value!\n");
+    printf("\$srcdir must be defined to a usable value!\n");
     die;
 }
 
-if ( -e "../$srcdirname" )
+if ( -e "../$srcdir" )
 {
-    printf("found '$srcdirname' in parent directory... please remove before continuing\n");
+    printf("found existing '../$srcdir'... please remove before continuing\n");
     die;
 }
 
-if ( -e "./$srcdirname" )
+if ( -e "./$srcdir" )
 {
-    printf("found '$srcdirname' in current directory... please remove before continuing\n");
+    printf("found existing './$srcdir'... please remove before continuing\n");
+    die;
+}
+
+if ( -e "./$srcpkg.tar" )
+{
+    printf("found existing './$srcpkg.tar'... please remove before continuing\n");
+    die;
+}
+
+if ( -e "./$srcpkg.tar.gz" )
+{
+    printf("found existing './$srcpkg.tar.gz'... please remove before continuing\n");
     die;
 }
 
@@ -68,11 +83,11 @@ if ( -e "./$srcdirname" )
 #
 
 printf("copying files into source directory...\n");
-system("mkdir ../$srcdirname")==0 or die "Unable to create ../$srcdirname: $?";
-system("cp -rf * ../$srcdirname")==0 or die "Unable to copy . into ../$srcdirname: $?";
-system("mv ../$srcdirname ./$srcdirname")==0 or die "Unable to move $srcdirname from ../ to ./: $?";
+system("mkdir ../$srcdir")==0 or die "Unable to create ../$srcdir: $?";
+system("cp -rf * ../$srcdir")==0 or die "Unable to copy . into ../$srcdir: $?";
+system("mv ../$srcdir ./$srcdir")==0 or die "Unable to move $srcdir from ../ to ./: $?";
 
-chdir("./$srcdirname");
+chdir("./$srcdir");
 
 #
 # remove any 'unnecessary' files from the source directory.
@@ -99,12 +114,12 @@ chdir("../");
 # create the source package from the source directory.
 #
 
-printf("creating source tarball 'gsi-openssh.tar.gz'...\n");
-system("tar -cf gsi-openssh.tar ./$srcdirname")==0 or die "Unable to create gsi-openssh.tar: $?";
-system("gzip -f gsi-openssh.tar")==0 or die "Unable to gzip gsi-openssh.tar: $?";
+printf("creating source tarball '$srcpkg.tar.gz'...\n");
+system("tar -cf ./$srcpkg.tar ./$srcdir")==0 or die "Unable to create $srcpkg.tar: $?";
+system("gzip -f ./$srcpkg.tar")==0 or die "Unable to gzip $srcpkg.tar: $?";
 
 printf("cleaning up after myself...\n");
-system("rm -rf ./$srcdirname")==0 or die "Unable to remove ./$srcdirname: $?";
+system("rm -rf ./$srcdir")==0 or die "Unable to remove ./$srcdir: $?";
 
 #
 # done.
