@@ -9,6 +9,7 @@
 #include "gnu_getopt.h"
 #include "version.h"
 #include "verror.h"
+#include "myproxy_read_pass.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -55,6 +56,8 @@ void init_arguments(int argc, char *argv[],
                     myproxy_socket_attrs_t *attrs, myproxy_request_t *request);
 int  read_passphrase(char *passphrase, const int passlen,
                      const int min, const int max);
+int grid_proxy_init(int hours, const char *proxyfile);
+int grid_proxy_destroy(const char *proxyfile);
 
 int
 main(int argc, char *argv[]) 

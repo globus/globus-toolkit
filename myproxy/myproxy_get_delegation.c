@@ -8,6 +8,7 @@
 #include "gnu_getopt.h"
 #include "version.h"
 #include "verror.h"
+#include "myproxy_read_pass.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -17,6 +18,7 @@
 #include <fcntl.h> 
 #include <assert.h>
 #include <errno.h>
+#include <unistd.h>
 
 static char usage[] = \
 "\n"
@@ -81,7 +83,6 @@ char *outputfile = NULL;
 int
 main(int argc, char *argv[]) 
 {    
-    int rc;
     int noerr = 1;
     char *pshost;
     char request_buffer[1024];
@@ -350,7 +351,6 @@ copy_file(const char *source,
     int src_flags = O_RDONLY;
     int dst_flags = O_WRONLY | O_CREAT;
     char buffer[2048];
-    struct stat statbuf;
     int bytes_read;
     int return_code = -1;
     
