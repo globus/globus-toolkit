@@ -411,9 +411,15 @@ globus_gass_fopen(char *filename,
 
     if(fd >= 0)
     {
-	globus_l_gass_file_table[fd]->fp = fdopen(fd, type);
-
-	return globus_l_gass_file_table[fd]->fp;
+        if(globus_l_gass_file_table[fd] != GLOBUS_NULL)
+        {
+	    globus_l_gass_file_table[fd]->fp = fdopen(fd, type);
+	    return globus_l_gass_file_table[fd]->fp;
+        }
+	else
+	{
+	    return fdopen(fd, type);
+	}
     }
     else
     {
