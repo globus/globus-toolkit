@@ -67,38 +67,6 @@ static int add_attribute(STACK_OF(X509_ATTRIBUTE) **sk, int nid, int atrtype,
 			 void *value);
 static ASN1_TYPE *get_attribute(STACK_OF(X509_ATTRIBUTE) *sk, int nid);
 
-static int PKCS7_type_is_other(PKCS7* p7)
-	{
-	int isOther=1;
-	
-	int nid=OBJ_obj2nid(p7->type);
-
-	switch( nid )
-		{
-	case NID_pkcs7_data:
-	case NID_pkcs7_signed:
-	case NID_pkcs7_enveloped:
-	case NID_pkcs7_signedAndEnveloped:
-	case NID_pkcs7_digest:
-	case NID_pkcs7_encrypted:
-		isOther=0;
-		break;
-	default:
-		isOther=1;
-		}
-
-	return isOther;
-
-	}
-
-static int PKCS7_type_is_octet_string(PKCS7* p7)
-	{
-	if ( 0==PKCS7_type_is_other(p7) )
-		return 0;
-
-	return (V_ASN1_OCTET_STRING==p7->d.other->type) ? 1 : 0;
-	}
-
 BIO *PKCS7_dataInit(PKCS7 *p7, BIO *bio)
 	{
 	int i,j;
@@ -254,20 +222,13 @@ BIO *PKCS7_dataInit(PKCS7 *p7, BIO *bio)
 		if (p7->detached)
 			bio=BIO_new(BIO_s_null());
 		else {
-			if (PKCS7_type_is_signed(p7) ) { 
-				if ( PKCS7_type_is_data(p7->d.sign->contents)) {
-					ASN1_OCTET_STRING *os;
-					os=p7->d.sign->contents->d.data;
-					if (os->length > 0)
-						bio = BIO_new_mem_buf(os->data, os->length);
-				}
-				else if ( PKCS7_type_is_octet_string(p7->d.sign->contents) ) {
-					ASN1_OCTET_STRING *os;
-					os=p7->d.sign->contents->d.other->value.octet_string;
-					if (os->length > 0)
-						bio = BIO_new_mem_buf(os->data, os->length);
-				}
-			}
+			if (PKCS7_type_is_signed(p7) &&
+				PKCS7_type_is_data(p7->d.sign->contents)) {
+				ASN1_OCTET_STRING *os;
+				os=p7->d.sign->contents->d.data;
+				if (os->length > 0) bio = 
+					BIO_new_mem_buf(os->data, os->length);
+			} 
 			if(bio == NULL) {
 				bio=BIO_new(BIO_s_mem());
 				BIO_set_mem_eof_return(bio,0);
@@ -621,7 +582,7 @@ int PKCS7_dataFinal(PKCS7 *p7, BIO *bio)
 				x=i2d_ASN1_SET_OF_X509_ATTRIBUTE(sk,NULL,
 					   i2d_X509_ATTRIBUTE,
 					   V_ASN1_SET,V_ASN1_UNIVERSAL,IS_SET);
-				if (!(pp=(unsigned char *)OPENSSL_malloc(x))) goto err;
+				pp=(unsigned char *)OPENSSL_malloc(x);
 				p=pp;
 				i2d_ASN1_SET_OF_X509_ATTRIBUTE(sk,&p,
 				           i2d_X509_ATTRIBUTE,
@@ -817,7 +778,7 @@ for (ii=0; ii<md_len; ii++) printf("%02X",md_dat[ii]); printf(" calc\n");
 		 */
 		i=i2d_ASN1_SET_OF_X509_ATTRIBUTE(sk,NULL,i2d_X509_ATTRIBUTE,
 			V_ASN1_SET,V_ASN1_UNIVERSAL, IS_SEQUENCE);
-		if (!(pp=OPENSSL_malloc(i))) goto err;
+		pp=OPENSSL_malloc(i);
 		p=pp;
 		i2d_ASN1_SET_OF_X509_ATTRIBUTE(sk,&p,i2d_X509_ATTRIBUTE,
 			V_ASN1_SET,V_ASN1_UNIVERSAL, IS_SEQUENCE);

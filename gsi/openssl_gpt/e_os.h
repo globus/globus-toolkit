@@ -82,12 +82,6 @@ extern "C" {
 #define DEVRANDOM "/dev/urandom"
 #endif
 
-#if defined(VXWORKS)
-#  define NO_SYS_PARAM_H
-#  define NO_CHMOD
-#  define NO_SYSLOG
-#endif
-  
 #if defined(__MWERKS__) && defined(macintosh)
 # if macintosh==1
 #  ifndef MAC_OS_GUSI_SOURCE
@@ -114,11 +108,11 @@ extern "C" {
 #  define MS_STATIC
 #endif
 
-#if defined(_WIN32) && !defined(WIN32) && !defined(__CYGWIN32__) && !defined(_UWIN)
+#if defined(_WIN32) && !defined(WIN32) && !defined(__CYGWIN32__)
 #  define WIN32
 #endif
 
-#if (defined(WIN32) || defined(WIN16)) && !defined(__CYGWIN32__) && !defined(_UWIN)
+#if (defined(WIN32) || defined(WIN16)) && !defined(__CYGWIN32__)
 #  ifndef WINDOWS
 #    define WINDOWS
 #  endif
@@ -142,8 +136,7 @@ extern "C" {
 #define clear_sys_error()	errno=0
 #endif
 
-#if defined(WINDOWS) && !defined(__CYGWIN32__)  && !defined(_UWIN)
-
+#if defined(WINDOWS) && !defined(__CYGWIN32__)
 #define get_last_socket_error()	WSAGetLastError()
 #define clear_socket_error()	WSASetLastError(0)
 #define readsocket(s,b,n)	recv((s),(b),(n),0)
@@ -155,13 +148,6 @@ extern "C" {
 #define closesocket(s)		MacSocket_close(s)
 #define readsocket(s,b,n)	MacSocket_recv((s),(b),(n),true)
 #define writesocket(s,b,n)	MacSocket_send((s),(b),(n))
-#elif defined(VMS)
-#define get_last_socket_error() errno
-#define clear_socket_error()    errno=0
-#define ioctlsocket(a,b,c)      ioctl(a,b,c)
-#define closesocket(s)          close(s)
-#define readsocket(s,b,n)       recv((s),(b),(n),0)
-#define writesocket(s,b,n)      send((s),(b),(n),0)
 #else
 #define get_last_socket_error()	errno
 #define clear_socket_error()	errno=0
@@ -184,7 +170,7 @@ extern "C" {
 #  define NO_FP_API
 #endif
 
-#if (defined(WINDOWS) || defined(MSDOS)) && !defined(__CYGWIN32__) && !defined(_UWIN)
+#if (defined(WINDOWS) || defined(MSDOS)) && !defined(__CYGWIN32__)
 
 #  ifndef S_IFDIR
 #    define S_IFDIR	_S_IFDIR
@@ -362,9 +348,7 @@ extern HINSTANCE _hInstance;
 #    ifndef NO_SYS_PARAM_H
 #      include <sys/param.h>
 #    endif
-#    ifdef VXWORKS
-#      include <time.h> 
-#    elif !defined(MPE)
+#    ifndef MPE
 #      include <sys/time.h> /* Needed under linux for FD_XXX */
 #    endif
 

@@ -211,7 +211,7 @@ ascii2ebcdic(void *dest, const void *srce, size_t count)
 }
 
 #else /*CHARSET_EBCDIC*/
-#if defined(PEDANTIC) || defined(VMS) || defined(__VMS) || defined(_DARWIN)
+#if defined(PEDANTIC) || defined(VMS) || defined(__VMS)
 static void *dummy=&dummy;
 #endif
 #endif

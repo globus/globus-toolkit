@@ -116,7 +116,6 @@
 #include <openssl/buffer.h>
 #include <openssl/objects.h>
 #include <openssl/evp.h>
-#include "cryptlib.h"
 
 static SSL_METHOD *ssl2_get_client_method(int ver);
 static int get_server_finished(SSL *s);
@@ -518,7 +517,6 @@ static int get_server_hello(SSL *s)
 		}
 		
 	s->s2->conn_id_length=s->s2->tmp.conn_id_length;
-	die(s->s2->conn_id_length <= sizeof s->s2->conn_id);
 	memcpy(s->s2->conn_id,p,s->s2->tmp.conn_id_length);
 	return(1);
 	}
@@ -620,7 +618,6 @@ static int client_master_key(SSL *s)
 		/* make key_arg data */
 		i=EVP_CIPHER_iv_length(c);
 		sess->key_arg_length=i;
-		die(i <= SSL_MAX_KEY_ARG_LENGTH);
 		if (i > 0) RAND_pseudo_bytes(sess->key_arg,i);
 
 		/* make a master key */
@@ -628,7 +625,6 @@ static int client_master_key(SSL *s)
 		sess->master_key_length=i;
 		if (i > 0)
 			{
-			die(i <= sizeof sess->master_key);
 			if (RAND_bytes(sess->master_key,i) <= 0)
 				{
 				ssl2_return_error(s,SSL2_PE_UNDEFINED_ERROR);
@@ -672,7 +668,6 @@ static int client_master_key(SSL *s)
 		d+=enc;
 		karg=sess->key_arg_length;	
 		s2n(karg,p); /* key arg size */
-		die(karg <= sizeof sess->key_arg);
 		memcpy(d,sess->key_arg,(unsigned int)karg);
 		d+=karg;
 
@@ -693,7 +688,6 @@ static int client_finished(SSL *s)
 		{
 		p=(unsigned char *)s->init_buf->data;
 		*(p++)=SSL2_MT_CLIENT_FINISHED;
-		die(s->s2->conn_id_length <= sizeof s->s2->conn_id);
 		memcpy(p,s->s2->conn_id,(unsigned int)s->s2->conn_id_length);
 
 		s->state=SSL2_ST_SEND_CLIENT_FINISHED_B;
@@ -950,8 +944,6 @@ static int get_server_finished(SSL *s)
 		{
 		if (!(s->options & SSL_OP_MICROSOFT_SESS_ID_BUG))
 			{
-			die(s->session->session_id_length
-			    <= sizeof s->session->session_id);
 			if (memcmp(buf,s->session->session_id,
 				(unsigned int)s->session->session_id_length) != 0)
 				{

@@ -82,7 +82,7 @@
 #    else
 #      include <unixlib.h>
 #    endif
-#  elif !defined(VXWORKS)
+#  else
 #    include <sys/file.h>
 #  endif
 #endif
@@ -1108,7 +1108,7 @@ bad:
 			}
 		if ((crldays == 0) && (crlhours == 0))
 			{
-			BIO_printf(bio_err,"cannot lookup how long until the next CRL is issued\n");
+			BIO_printf(bio_err,"cannot lookup how long until the next CRL is issuer\n");
 			goto err;
 			}
 

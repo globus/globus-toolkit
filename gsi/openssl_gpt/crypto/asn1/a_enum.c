@@ -205,18 +205,7 @@ ASN1_ENUMERATED *BN_to_ASN1_ENUMERATED(BIGNUM *bn, ASN1_ENUMERATED *ai)
 	else ret->type=V_ASN1_ENUMERATED;
 	j=BN_num_bits(bn);
 	len=((j == 0)?0:((j/8)+1));
-	if (ret->length < len+4)
-		{
-		unsigned char *new_data=
-			OPENSSL_realloc(ret->data, len+4);
-		if (!new_data)
-			{
-			ASN1err(ASN1_F_BN_TO_ASN1_INTEGER,ERR_R_MALLOC_FAILURE);
-			goto err;
-			}
-		ret->data=new_data;
-		}
-
+	ret->data=(unsigned char *)OPENSSL_malloc(len+4);
 	ret->length=BN_bn2bin(bn,ret->data);
 	return(ret);
 err:

@@ -60,7 +60,6 @@
 #include <openssl/lhash.h>
 #include <openssl/rand.h>
 #include "ssl_locl.h"
-#include "cryptlib.h"
 
 static void SSL_SESSION_list_remove(SSL_CTX *ctx, SSL_SESSION *s);
 static void SSL_SESSION_list_add(SSL_CTX *ctx,SSL_SESSION *s);
@@ -200,7 +199,6 @@ int ssl_get_new_session(SSL *s, int session)
 		ss->session_id_length=0;
 		}
 
-	die(s->sid_ctx_length <= sizeof ss->sid_ctx);
 	memcpy(ss->sid_ctx,s->sid_ctx,s->sid_ctx_length);
 	ss->sid_ctx_length=s->sid_ctx_length;
 	s->session=ss;
@@ -425,10 +423,10 @@ static int remove_session_lock(SSL_CTX *ctx, SSL_SESSION *c, int lck)
 	if ((c != NULL) && (c->session_id_length != 0))
 		{
 		if(lck) CRYPTO_w_lock(CRYPTO_LOCK_SSL_CTX);
-		if ((r = (SSL_SESSION *)lh_retrieve(ctx->sessions,c)) == c)
+		r=(SSL_SESSION *)lh_delete(ctx->sessions,c);
+		if (r != NULL)
 			{
 			ret=1;
-			r=(SSL_SESSION *)lh_delete(ctx->sessions,c);
 			SSL_SESSION_list_remove(ctx,c);
 			}
 
