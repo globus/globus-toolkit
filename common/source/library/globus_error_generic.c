@@ -853,6 +853,11 @@ globus_error_print_friendly(
     char *                              verbose;
     globus_bool_t                       verbose_allowed = GLOBUS_TRUE;
     
+    if(!error)
+    {
+        return NULL;
+    }
+    
     if(globus_i_error_verbose)
     {
         int *                           in_progress;
