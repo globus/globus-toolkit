@@ -102,8 +102,8 @@ CVS Information:
 #define SERVICE_ARGS_MAX 100
 /* offsets in the service command line after tokenize */
 /* note the one before the path gets overlaid */
-#define SERVICE_USER_INDEX 0
-#define SERVICE_OPTIONS_INDEX 1
+#define SERVICE_OPTIONS_INDEX 0
+#define SERVICE_USER_INDEX 1
 #define SERVICE_PATH_INDEX 2
 #define SERVICE_ARG0_INDEX 3
 #define SERVICE_ARG1_INDEX 4
@@ -1267,7 +1267,7 @@ static void doit()
 		{
 			service_line = (char *)malloc(BUFSIZ);
 			sprintf(service_line,
-			"- local_cred,stderr_log %s jobmanager -conf ${JM_CONF_PATH}",
+			"local_cred,stderr_log - %s jobmanager -conf ${JM_CONF_PATH}",
 					job_manager_exe);
 			notice(LOG_INFO,
 			   "grid_services not found, using default for jobmanager");
