@@ -81,15 +81,21 @@ int X509_SIG_print(
 {
     int                                 ret,
                                         tmpret;
-    if(ret = BIO_printf(bp, "Signing Algorithm: %s\n", 
-                        signature->algor->algorithm->ln) < 0)
-    {
-        return ret;
-    }
-    if(tmpret = ASN1_STRING_print(bp, (ASN1_STRING *) signature->digest) < 0)
-    {
-        return tmpret;
-    }
+    BIO *                               b64;
+
+    b64 = BIO_new(BIO_f_base64());
+
+    ret = BIO_printf(bp, "Signing Algorithm: %d, %s, %s\n", 
+                     OBJ_obj2nid(signature->algor->algorithm),
+                     signature->algor->algorithm->sn,
+                     signature->algor->algorithm->ln);
+    if(ret < 0) { return ret; }
+    
+    bp = BIO_push(b64, bp);
+    tmpret = ASN1_STRING_print(bp, (ASN1_STRING *) signature->digest);
+    if(tmpret < 0) { return tmpret; }
+    BIO_flush(bp);
+    BIO_pop(bp);
     return (tmpret + ret);
 }
 
@@ -107,11 +113,19 @@ int X509_SIG_print_fp(
     X509_SIG *                          signature) {
 
     int                                 ret;
-    BIO * bp = BIO_new(BIO_s_file());
+    BIO *                               bp;
+    BIO *                               b64; 
     
+    bp = BIO_new(BIO_s_file());
+    b64 = BIO_new(BIO_f_base64());
+
     BIO_set_fp(bp, fp, BIO_NOCLOSE);
+    bp = BIO_push(b64, bp);
+
     ret = X509_SIG_print(bp, signature);
+
     BIO_free(bp);
+    BIO_free(b64);
 
     return (ret);
 }

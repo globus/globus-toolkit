@@ -112,6 +112,15 @@ int PROXYGROUP_cmp(
     return 0;
 }
 
+/**
+ * prints the PROXYGROUP struct in a readable format
+ * using a BIO stream
+ *
+ * @param bp the BIO * field to print to - see openssl docs for more info
+ * @param group the PROXYGROUP to print
+ *
+ * @return the length of bytes printed, -1 or -2 if an error
+ */
 int PROXYGROUP_print(
     BIO *                               bp,
     PROXYGROUP *                        group)
@@ -133,6 +142,15 @@ int PROXYGROUP_print(
     return (ret + tmpret);
 }
 
+/**
+ * prints the PROXYGROUP struct in a readable format
+ * using a FILE * stream
+ *
+ * @param fp the file stream to print to
+ * @param group the PROXYGROUP structure to print
+ *
+ * @return the number of bytes printed, -1 or -2 if an error
+ */ 
 int PROXYGROUP_print_fp(
     FILE *                              fp,
     PROXYGROUP *                        group)
@@ -147,6 +165,15 @@ int PROXYGROUP_print_fp(
     return (ret);
 }
 
+/**
+ * Sets the name of the group a proxy cert is in
+ *
+ * @param group the PROXYGROUP to set the name of
+ * @param group_name the name to set it to
+ * @param length the length of the name (in bytes)
+ *
+ * @return 1 on success, 0 on error
+ */
 int PROXYGROUP_set_name(
     PROXYGROUP *                        group,
     char *                              group_name,
@@ -159,6 +186,14 @@ int PROXYGROUP_set_name(
     return 0;
 }
 
+/**
+ * Gets the name of the PROXYGROUP
+ *
+ * @param group the PROXYGROUP to get the name of
+ * @param length the length of the name (will be set)
+ * 
+ * @return the name
+ */
 char * PROXYGROUP_get_name(
     PROXYGROUP *                        group,
     long *                              length)
@@ -167,6 +202,15 @@ char * PROXYGROUP_get_name(
     return group->group_name->data;
 }
 
+/**
+ * Sets the value of the PROXYGROUP's attached field to 
+ * true or false.  
+ *
+ * @param group the PROXYGROUP to set the attached_group field of
+ * @param attached the value to set it to
+ *
+ * @return 1 on success, 0 on error
+ */ 
 int PROXYGROUP_set_attached(
     PROXYGROUP *                        group,
     ASN1_BOOLEAN                        attached)
@@ -175,12 +219,28 @@ int PROXYGROUP_set_attached(
     return 1;
 }
 
+/**
+ * Gets the attached setting of a PROXYGROUP
+ *
+ * @param group the PROXYGROUP to get the attached field of
+ *
+ * @return the attached value
+ */
 ASN1_BOOLEAN * PROXYGROUP_get_attached(
     PROXYGROUP *                        group)
 {
     return group->attached_group;
 }
 
+/**
+ * Converts the PROXYGROUP struct from internal
+ * form to its DER encoded form
+ *
+ * @param a the PROXYGROUP to convert
+ * @param pp the resulting byte array of DER encoding
+ *
+ * @return the number of bytes of the DER encoded string
+ */
 int i2d_PROXYGROUP(
     PROXYGROUP *                        a,
     unsigned char **                    pp)
@@ -198,6 +258,16 @@ int i2d_PROXYGROUP(
     M_ASN1_I2D_finish();
 }
 
+/**
+ * Converts a PROXYGROUP struct from its DER encoded
+ * form to its internal (data structure) form
+ *
+ * @param a the resulting PROXYGROUP struct in internal form
+ * @param pp the DER encoded string of a PROXYGROUP (hopefully)
+ * @param length the length of pp
+ *
+ * @return the resulting PROXYGROUP struct
+ */ 
 PROXYGROUP * d2i_PROXYGROUP(
     PROXYGROUP **                       a,
     unsigned char **                    pp,

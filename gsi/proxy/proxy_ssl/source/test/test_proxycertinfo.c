@@ -4,6 +4,8 @@
 #include <proxyrestriction.h>
 #include <proxygroup.h>
 
+#include <openssl/pem.h>
+
 void usage();
 
 int main(int argc, char * argv[]) 
@@ -13,16 +15,17 @@ int main(int argc, char * argv[])
     char * plstring;
     char * pllang;
     char * filename;
-    char * issuer;
+    char * x509file;
 
     FILE * instream;
-    FILE * issuerfile;
+    FILE * x509stream;
 
     PROXYRESTRICTION * rst;
     PROXYGROUP * grp;
     PROXYCERTINFO * pcinfo;
     PROXYCERTINFO * pc2;
     ASN1_OBJECT * pol_lang;
+    X509 * my_x509;
     X509_SIG * signature;
 
     int ispc, haspclength, hasgroup, hasrestriction, hasissuer,
@@ -75,7 +78,7 @@ int main(int argc, char * argv[])
 	    else if(!strcmp(argv[ind], "-issuer"))
 	    {
 		ind++;
-		issuer = argv[ind];
+		x509file = argv[ind];
 		hasissuer = 1;
 		ind++;
                 continue;
@@ -142,20 +145,22 @@ int main(int argc, char * argv[])
         
 	if(hasissuer)
 	{
-	    signature = X509_SIG_new();
-	    issuerfile = fopen(issuer, "r");
-	    ASN1_d2i_fp((char *(*)()) X509_SIG_new, 
-			(char *(*)()) d2i_X509_SIG, 
-			issuerfile, 
-			(unsigned char **) &signature);
+            my_x509 = X509_new();
+            x509stream = fopen(x509file, "r");
+            PEM_read_X509(x509stream, 
+                          (char **) & my_x509,
+                          NULL, NULL);
+
+            /* stupid X509 struct doesn't even contain */
+            /* an X509_SIG - instead, its got an X509_ALGOR */
+            /* and an ASN1_BIT_STRING */
+            signature = X509_SIG_new();
+            signature->algor = my_x509->sig_alg;
+            signature->digest = (ASN1_OCTET_STRING *) my_x509->signature;
 	    PROXYCERTINFO_set_issuer_signature(pcinfo, signature);
 	}
 
 	PROXYCERTINFO_print_fp(stderr, pcinfo);
-
-        pc2 = PROXYCERTINFO_dup(pcinfo); 
-        
-        PROXYCERTINFO_print_fp(stderr, pc2);
 
 	if(!ASN1_i2d_fp(i2d_PROXYCERTINFO, stdout, (unsigned char *)pcinfo))
 	{
@@ -183,8 +188,9 @@ void usage()
     fprintf(stderr, "      adds a restriction to the proxy\n");
     fprintf(stderr, "      and sets the policy language and\n");
     fprintf(stderr, "      and policy string\n\n");
-    fprintf(stderr, "  -issuer  <signature file>\n");
-    fprintf(stderr, "      adds an issuer signature to the proxy\n\n");
+    fprintf(stderr, "  -issuer  <x509 cert file>\n");
+    fprintf(stderr, "      adds an issuer signature to the proxy\n");
+    fprintf(stderr, "      the file must be a valid PEM formatted signed cert\n");
     fprintf(stderr, "  -in  <proxycertfile>\n");
     fprintf(stderr, "      takes a DER encoded proxy cert and prints\n");
     fprintf(stderr, "      it out to stderr.  This flag causes all other\n");

@@ -63,10 +63,10 @@ extern "C" {
 struct PROXYCERTINFO_st
 {
     ASN1_BOOLEAN *                      pC;                       
-    ASN1_INTEGER *                      path_length;
-    PROXYRESTRICTION *                  restriction;
-    PROXYGROUP *                        group;
-    X509_SIG *                          issuer_signature;
+    ASN1_INTEGER *                      path_length;       /* [ OPTIONAL ] */
+    PROXYRESTRICTION *                  restriction;       /* [ OPTIONAL ] */
+    PROXYGROUP *                        group;             /* [ OPTIONAL ] */
+    X509_SIG *                          issuer_signature;  /* [ OPTIONAL ] */
 };
 
 typedef struct PROXYCERTINFO_st PROXYCERTINFO;
