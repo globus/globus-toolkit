@@ -38,9 +38,10 @@ report:
 EXTRA_DIST = \
 	globus_openssl_post \
 	globus_openssl_pre \
-	LICENSE \
 	CHANGES \
-	CHANGES.gpt
+	CHANGES.gpt \
+	LICENSE
+
 
 
 links: $(opensslinclude_HEADERS)
