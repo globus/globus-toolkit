@@ -197,10 +197,8 @@ main(
     time_t                              time_diff;
     time_t                              time_after_proxy;
     ASN1_UTCTIME *                      asn1_time = NULL;
-#ifdef CLASS_ADD
-    void *                              class_add_buf = NULL;
-    size_t                              class_add_buf_len = 0;
-#endif
+    void *                              restriction_buf = NULL;
+    size_t                              restriction_buf_len = 0;
     int                                 (*pw_cb)() = NULL;
 
     
@@ -359,14 +357,12 @@ main(
             if (i+1 >= argc)
                 args_error(i,argp,"smartcard PIN is missing");
         }
-#ifdef CLASS_ADD
-        else if (strcmp(argp,"-classadd")==0)
+        else if (strcmp(argp,"-restriction")==0)
         {
-            args_verify_next(i,argp,"classadd string missing");
-            class_add_buf = (void *)argv[++i];
-            class_add_buf_len = strlen(class_add_buf) +1;
+            args_verify_next(i,argp,"restriction string missing");
+            restriction_buf = (void *)argv[++i];
+            restriction_buf_len = strlen(restriction_buf) +1;
         }
-#endif
         else
             args_error(i,argp,"unrecognized option");
     }
@@ -480,18 +476,22 @@ main(
         fflush(stdout);
     }
 
-    if (proxy_create_local(pcd, outfile, hours, bits, limit_proxy,
+    if (proxy_create_local(pcd,
+                           outfile,
+                           hours,
+                           bits,
+                           limit_proxy,
                            (int (*)(void)) kpcallback,
-#ifdef CLASS_ADD
-                           class_add_buf, class_add_buf_len
-#else
-                           NULL, 0
-#endif
-            ))
+                           restriction_buf,
+                           restriction_buf_len))
+    {
         goto err;
+    }
         
     if (!quiet)
+    {
         printf(" Done\n");
+    }
 
     /*
      * test if expired, or the proxy will not be good for expected
