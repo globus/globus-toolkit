@@ -82,7 +82,7 @@ int main(int argc, char * argv[])
         init_cred,
         &init_context,
         NULL,
-        GSS_C_MUTUAL_FLAG,
+        GSS_C_MUTUAL_FLAG|GSS_C_DELEG_FLAG,
         &ret_flags,
         &token_status,
         globus_gss_assist_token_get_fd,

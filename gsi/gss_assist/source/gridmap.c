@@ -880,8 +880,7 @@ globus_i_gss_assist_gridmap_parse_line(
     line += strspn(line, WHITESPACE_CHARS);
 
     /* Parse list of unix user ID seperated by USERID_SEP_CHARS */
-    while ((*line != NUL) &&
-	   (strchr(WHITESPACE_CHARS, *line) == NULL))
+    while (*line != NUL)
     {
 	int					userid_len;
 
@@ -933,18 +932,8 @@ globus_i_gss_assist_gridmap_parse_line(
 	userids[num_userids] = NULL;
 
 	line += userid_len;
-
-	/* If we're on a seperator character, skip over it */
-	if (strchr(USERID_SEP_CHARS, *line) != NULL)
-        {
-	    line++;
-        }
+        line += strspn(line, USERID_TERMINATOR_CHARS);
     }
-
-    /*
-     * There might be more stuff on the line, but we're ignoring
-     * it for now.
-     */
 
     /* Ok, build our gridmap_line_t structure */
     gline_tmp = malloc(sizeof(*gline_tmp));
