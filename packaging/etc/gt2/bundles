@@ -148,6 +148,7 @@ BUNDLE globus-data-management-server
 	globus_gridftp_server
 	globus_gridftp_server_control
         globus_libxml2
+        globus_libxml25
 	globus_libxslt
         globus_xmlsec1
         gaa_util

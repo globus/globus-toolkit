@@ -1,4 +1,5 @@
 globus_libxml2				ogsa-c/tools/libxml2			
+globus_libxml25				ogsa-c/tools/libxml25
 globus_libxslt				ogsa-c/tools/libxslt
 globus_xmlsec				ogsa-c/tools/xmlsec
 globus_xmlsec1				ogsa-c/tools/xmlsec1
