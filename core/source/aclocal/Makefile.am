@@ -3,6 +3,7 @@ aclocaldir = $(GLOBUS_LOCATION)/share/globus_aclocal
 
 aclocal_DATA = globus_package.m4 \
 	acnetworking.m4 \
+	acdoxygen.m4 \
 	automake_targets \
 	automake_top_rules \
 	automake_rules \
