@@ -168,17 +168,25 @@ static globus_xio_driver_t              globus_l_gsc_telnet_driver;
 static globus_xio_driver_t              globus_l_gsc_queue_driver;
 
 GlobusDebugDefine(GLOBUS_GRIDFTP_SERVER_CONTROL);
+GlobusXIODeclareModule(gssapi_ftp);
 
 static int
 globus_l_gsc_activate()
 {
     int                                 rc = 0;
     globus_result_t                     res;
-
+        
     rc = globus_module_activate(GLOBUS_XIO_MODULE);
     if(rc != 0)
     {
         return rc;
+    }
+
+    rc = globus_extension_register_builtin(
+        GlobusXIOExtensionName(gssapi_ftp), GlobusXIOMyModule(gssapi_ftp));
+    if(rc != 0)
+    {
+        return GLOBUS_FAILURE;
     }
 
     res = globus_xio_driver_load("gssapi_ftp", &globus_l_gsc_gssapi_ftp_driver);
@@ -221,7 +229,7 @@ globus_l_gsc_deactivate()
     globus_xio_driver_unload(globus_l_gsc_tcp_driver);
     globus_xio_driver_unload(globus_l_gsc_telnet_driver);
     globus_xio_driver_unload(globus_l_gsc_gssapi_ftp_driver);
-
+    globus_extension_unregister_builtin(GlobusXIOExtensionName(gssapi_ftp));
     rc = globus_module_deactivate(GLOBUS_XIO_MODULE);
 
     return rc;
