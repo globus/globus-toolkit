@@ -162,6 +162,7 @@ static int      foreground;
 static int      krb5flag;
 static int      run_from_inetd;
 static char *   gatekeeperhome = NULL;
+static char *   jm_conf_path = NULL;
 static char *   libexecdir = GLOBUS_LIBEXECDIR;
 static char *   job_manager_exe = NULL;
 static char *   globusmap = "globusmap";
@@ -174,7 +175,6 @@ static char *   x509_cert_file = NULL;
 static char *   x509_user_proxy = NULL;
 static char *   x509_user_cert = NULL;
 static char *   x509_user_key = NULL;
-static char *   nickname = NULL;
 static char **  jmargp;
 static int      jmargc;
 static int      ok_to_send_errmsg = 0;
@@ -473,18 +473,8 @@ main(int xargc,
         argc = newargc + 1;
     }
 
-    jmargc = 0; /* no extra args for job mnager */
-
     for (i = 1; i < argc; i++)
     {
-        if (strcmp(argv[i], "-jmargs") == 0)
-        {
-            /* rest of the args are for the job manager stop scaning */
-            i++;
-            jmargp = &argv[i];
-            jmargc = argc - i; 
-            break;
-        }
         if (strcmp(argv[i], "-d") == 0)
         {
             debug = 1;
@@ -519,10 +509,10 @@ main(int xargc,
             libexecdir = argv[i+1];
             i++;
         }
-        else if ((strcmp(argv[i], "-nickname") == 0)
-                && (i + 1 < argc))
+        else if ((strcmp(argv[i], "-jmconf") == 0)
+                 && (i + 1 < argc))
         {
-            nickname = argv[i+1];
+            jm_conf_path =  argv[i+1];
             i++;
         }
         else if ((strcmp(argv[i], "-jm") == 0)
@@ -1137,6 +1127,20 @@ static void doit()
         failure("ERROR: gatekeeper misconfigured");
     }
 
+    if (!jm_conf_path)
+    {
+        notice(LOG_ERR, "ERROR: globus job manager configuration file is not "
+                        "defined via -jmconf argument.");
+        failure("ERROR: gatekeeper misconfigured");
+    }
+
+    if (stat(jm_conf_path, &statbuf) != 0)
+    {
+        notice2(LOG_ERR, "ERROR: Cannot stat globus job manager configuration "
+                         "file %s.", jm_conf_path);
+        failure("ERROR: gatekeeper misconfigured");
+    }
+
     /* client will check version # sent here with it's own.  If they match
      * then the client will continue and send the additional data destined
      * for the job manager.
@@ -1210,8 +1214,8 @@ static void doit()
 
     gram_k5_path = genfilename( gatekeeperhome, libexecdir, GRAM_K5_EXE);
 
-    /* need k5 jm -h x -e x (jmargs) null == 7+ jmargc */
-    args = (char **) malloc((9 + jmargc) * sizeof(char *));
+    /* need k5 jm -jmconf x null == 5 */
+    args = (char **) malloc((5) * sizeof(char *));
     if (args == NULL)
 	failure("Cannot get storage for args"); 
 
@@ -1228,26 +1232,11 @@ static void doit()
 
     *argp++ = job_manager_path;
 	
-    if ( gatekeeperhome )
+    if ( jm_conf_path )
     {
-	*argp++ = "-home";
-	*argp++ = gatekeeperhome;
+	*argp++ = "-conf";
+	*argp++ = jm_conf_path;
     }
-
-    if (libexecdir)
-    {
-	*argp++ = "-e";
-	*argp++ = libexecdir;
-    }
-
-    if (nickname)
-    {
-	*argp++ = "-nickname";
-	*argp++ = nickname;
-    }
-
-    for(i = 0; i < jmargc; i++)
-	*argp++ = *jmargp++;
 
     *argp++ = NULL;
 
@@ -1280,7 +1269,7 @@ static void doit()
 	failure2("fcntl F_SETFD failed: %s", sys_errlist[errno]);
     }
 
-    grami_setenv("GLOBUSID",client_name,1);
+    grami_setenv("GLOBUS_ID",client_name,1);
 
     /*
      * Become the appropriate user
