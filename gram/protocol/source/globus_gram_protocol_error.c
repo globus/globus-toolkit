@@ -117,7 +117,29 @@ globus_l_gram_client_error_strings[GLOBUS_GRAM_CLIENT_ERROR_LAST] =
 /* 106 */     "the job manager is misconfigured, a scheduler script has invalid permissions",
 /* 107 */     "the job manager failed to signal the job",
 /* 108 */     "the job manager did not recognize/support the signal type",
-/* 109 */     "the job manager failed to get the job id from the local scheduler"
+/* 109 */     "the job manager failed to get the job id from the local scheduler",
+/* 110 */     "the job manager is waiting for a commit signal",
+/* 111 */     "the job manager timed out while waiting for a commit signal",
+/* 112 */     "the provided RSL 'save_state' parameter is invalid",
+/* 113 */     "the provided RSL 'restart' parameter is invalid",
+/* 114 */     "the provided RSL 'two_phase' parameter is invalid",
+/* 115 */     "the RSL 'two_phase' value is not zero or greater",
+/* 116 */     "the provided RSL 'stdout_position' parameter is invalid",
+/* 117 */     "the RSL 'stdout_position' value is not zero or greater",
+/* 118 */     "the provided RSL 'stderr_position' parameter is invalid",
+/* 119 */     "the RSL 'stderr_position' value is not zero or greater",
+/* 120 */     "the job manager restart attempt failed",
+/* 121 */     "the job state file doesn't exist",
+/* 122 */     "could not read the job state file",
+/* 123 */     "could not write the job state file",
+/* 124 */     "old job manager is still alive",
+/* 125 */     "job manager state file TTL expired",
+/* 126 */     "it is unknown if the job was submitted",
+/* 127 */     "the provided RSL 'remote_io_url' parameter is invalid",
+/* 128 */     "could not write the remote io url file",
+/* 129 */     "the standard output/error size is different",
+/* 130 */     "the job manager was sent a stop signal (job is still running)",
+/* 131 */     "the user proxy expired (job is still running)"
 };
 
 static char *

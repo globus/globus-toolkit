@@ -79,6 +79,12 @@ EXTERN_C_BEGIN
 #define GLOBUS_GRAM_CLIENT_MAX_MEMORY_PARAM               "maxmemory"
 #define GLOBUS_GRAM_CLIENT_START_TIME_PARAM               "starttime"
 #define GLOBUS_GRAM_CLIENT_RESERVATION_HANDLE_PARAM       "reservationhandle"
+#define GLOBUS_GRAM_CLIENT_STDOUT_POSITION_PARAM          "stdoutposition"
+#define GLOBUS_GRAM_CLIENT_STDERR_POSITION_PARAM          "stderrposition"
+#define GLOBUS_GRAM_CLIENT_SAVE_STATE_PARAM               "savestate"
+#define GLOBUS_GRAM_CLIENT_RESTART_PARAM                  "restart"
+#define GLOBUS_GRAM_CLIENT_TWO_PHASE_COMMIT_PARAM         "twophase"
+#define GLOBUS_GRAM_CLIENT_REMOTE_IO_URL_PARAM            "remoteiourl"
 
 /*
  *  Job Default Constants
@@ -111,7 +117,12 @@ typedef enum
     GLOBUS_GRAM_CLIENT_JOB_SIGNAL_CANCEL   = 1,
     GLOBUS_GRAM_CLIENT_JOB_SIGNAL_SUSPEND  = 2,
     GLOBUS_GRAM_CLIENT_JOB_SIGNAL_RESUME   = 3,
-    GLOBUS_GRAM_CLIENT_JOB_SIGNAL_PRIORITY = 4
+    GLOBUS_GRAM_CLIENT_JOB_SIGNAL_PRIORITY = 4,
+    GLOBUS_GRAM_CLIENT_JOB_SIGNAL_COMMIT   = 5,
+    GLOBUS_GRAM_CLIENT_JOB_SIGNAL_COMMIT_EXTEND = 6,
+    GLOBUS_GRAM_CLIENT_JOB_SIGNAL_STDIO_UPDATE = 7,
+    GLOBUS_GRAM_CLIENT_JOB_SIGNAL_STDIO_SIZE = 8,
+    GLOBUS_GRAM_CLIENT_JOB_SIGNAL_STOP_MANAGER = 9
 } globus_gram_client_job_signal_t;
 
 /******************************************************************************

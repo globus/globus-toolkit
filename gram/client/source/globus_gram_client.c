@@ -560,7 +560,8 @@ globus_gram_client_job_request(char *           gatekeeper_contact,
 	    rc = result_status;
 	    if ( job_contact )
 	    {
-		(*job_contact) = ((result_status==GLOBUS_SUCCESS) 
+		(*job_contact) = ((result_status==GLOBUS_SUCCESS ||
+		    result_status==GLOBUS_GRAM_CLIENT_ERROR_WAITING_FOR_COMMIT)
 				  ? globus_libc_strdup(result_contact)
 				  : NULL);
 	    }
@@ -688,9 +689,9 @@ globus_l_gram_client_to_jobmanager_http_failed:
     }
     else
     {
-        if (*failure_code != GLOBUS_SUCCESS)
+	if (*failure_code != GLOBUS_SUCCESS)
 	{
-	   rc = *failure_code;
+	    rc = *failure_code;
 	}
     }
 
@@ -754,19 +755,30 @@ globus_gram_client_job_signal(char * job_contact,
 
     GLOBUS_L_CHECK_IF_INITIALIZED;
 
-    /* 'signal' = 6, allow 10-digit integer, 2 spaces and null  */
-    request = (char *) globus_libc_malloc( 
-	                  strlen(signal_arg)
-			  + 6 + 10 + 2 + 1 );
+    if (signal_arg != NULL)
+    {
+	/* 'signal' = 6, allow 10-digit integer, 2 spaces and null  */
+	request = (char *) globus_libc_malloc( strlen(signal_arg)
+					       + 6 + 10 + 2 + 1 );
 
-    globus_libc_sprintf(request,
-			"signal %d %s",
-                        signal,
-			signal_arg);
+	globus_libc_sprintf(request,
+			    "signal %d %s",
+			    signal,
+			    signal_arg);
+    }
+    else
+    {
+	/* 'signal' = 6, allow 10-digit integer, 1 space and null  */
+	request = (char *) globus_libc_malloc( 6 + 10 + 1 + 1 );
+
+	globus_libc_sprintf(request,
+			    "signal %d",
+			    signal);
+    }
 
     rc = globus_l_gram_client_to_jobmanager( job_contact,
 					     request,
-					     &job_status,
+					     job_status,
 					     failure_code );
 
     globus_libc_free(request);

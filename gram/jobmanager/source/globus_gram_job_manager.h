@@ -74,6 +74,10 @@ typedef struct
                           * This value is filled in when the request is done
                           */
 
+ char * uniq_id;         /* Unique id for this job that will be consistent
+                          * across jobmanager restarts/recoveries.
+                          */
+
  unsigned int poll_frequency;  /* How often should a check of the job status
                                 * and output files be done.
                                 */
@@ -174,6 +178,27 @@ typedef struct
                                * if a priority change maybe something like
                                * high, medium, low...
                                */
+
+ int two_phase_commit;     /* non-zero if request should be confirmed in a
+                            * 2-phase format. the value is how many seconds
+                            * to wait before timing out.
+                            */
+
+ globus_bool_t save_state;    /* GLOBUS_TRUE if a state should be kept for
+                               * restartability/recoverability
+                               */
+
+ char * jm_restart;       /* if we're restarting from a dead job manager,
+                           * this will specify the old job contact
+                           */
+
+ int stdout_position;     /* the position to start resending stdout from
+                           * for remote stdout on a restart
+                           */
+
+ int stderr_position;     /* the position to start resending stderr from
+                           * for remote stderr on a restart
+                           */
 
  /* Other opaque fields may be added here */
 

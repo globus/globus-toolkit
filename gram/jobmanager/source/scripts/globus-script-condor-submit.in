@@ -19,6 +19,8 @@ grep=${GLOBUS_SH_GREP-grep}
 cat=${GLOBUS_SH_CAT-cat}
 awk=${GLOBUS_SH_AWK-awk}
 rm=${GLOBUS_SH_RM-rm}
+cut=${GLOBUS_SH_CUT-cut}
+sed=${GLOBUS_SH_SED-sed}
 ################################################
 
 arg_file=$1
@@ -102,6 +104,7 @@ createScript () {
     echo ""
     echo "Universe       = ${condor_universe}"
     echo ""
+    echo "Notification   = Never"
     eval echo "Executable     = ${grami_program}"
     if [ ${grami_min_memory} -ne 0 ] ; then
        echo "Requirements   = OpSys == \"${grami_condor_os}\""\
@@ -133,6 +136,7 @@ createScript () {
        eval echo "Output = ${grami_stdout}"
        eval echo "Error = ${grami_stderr}"
     fi
+    echo "Log = ${grami_condor_ulog}"
     echo ""
     echo "queue ${grami_count}"
     echo ""
@@ -186,6 +190,8 @@ fi
 
 $DEBUG_ECHO "JM_SCRIPT: condor environment = "\
                 "${new_grami_env}" >> $grami_logfile
+
+grami_condor_ulog=${tmpdir}/condor_log.${grami_uniq_id}
 
 condor_file=${local_tmpdir}/condor_script.description.$$
 createScript >$condor_file

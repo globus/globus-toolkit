@@ -6,6 +6,13 @@
 
 condor_rm=${GLOBUS_SH_CONDOR_RM-condor_rm}
 awk=${GLOBUS_SH_AWK-awk}
+cut=${GLOBUS_SH_CUT-cut}
+expr=${GLOBUS_SH_EXPR-expr}
+grep=${GLOBUS_SH_GREP-grep}
+rm=${GLOBUS_SH_RM-rm}
+sort=${GLOBUS_SH_SORT-sort}
+uniq=${GLOBUS_SH_UNIQ-uniq}
+wc=${GLOBUS_SH_WC-wc}
 
 arg_file=$1
 # check for the argument file if it does not exist
@@ -25,6 +32,8 @@ else
     DEBUG_ECHO=echo
 fi
 
+grami_condor_ulog=${tmpdir}/condor_log.${grami_uniq_id}
+
 $DEBUG_ECHO "JM_SCRIPT: in gram_script_condor_rm" >> $grami_logfile
 
 $DEBUG_ECHO "JM_SCRIPT: executing condor_rm command with job id "\
@@ -39,5 +48,18 @@ if [ "${status}" = "Deleted ${grami_job_id}" ] ; then
 else
     echo GRAM_SCRIPT_ERROR:$GLOBUS_GRAM_CLIENT_ERROR_JOB_CANCEL_FAILED
 fi
+
+count=0
+
+while [ $count -lt 15 ] ; do
+    status=`${grep} -e '^005' -e '^013' ${grami_condor_ulog} | ${grep} -e ' ('${grami_job_id} | ${cut} -d' ' -f1,2 | ${sort} | ${uniq} | ${wc} -l`
+    if [ $status -ge ${grami_count} ] ; then
+       break
+    fi
+    count=`${expr} $count + 1`
+    ${sleep} 1
+done
+
+${rm} ${grami_condor_ulog}
 
 $DEBUG_ECHO "JM_SCRIPT: exiting gram_script_condor_rm" >> $grami_logfile
