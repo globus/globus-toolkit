@@ -1,15 +1,47 @@
 #!/bin/sh
 
+#
+# Inspired by Keith Thompson <kst@sdsc.edu>'s wrapper
+# http://bugzilla.globus.org/bugzilla/attachment.cgi?id=299&action=view
+#
+
+
+ARGS=''
+
 if test "X${GT_PROXY_MODE}" = "Xold" ; then
-    if echo $@ | egrep -e '^-new' -e '\ -new' > /dev/null 2>&1 ; then
-        ARGS=`echo $@ | sed -e 's/\ -new//g' -e 's/^-new//g'`
-        grid-proxy-init-bin $ARGS
-    else
-        grid-proxy-init-bin -old $@
-    fi
+    STYLE='old'
 else
-    ARGS=`echo $@ | sed -e 's/\ -new//g' -e 's/^-new//g'`
+    STYLE='new'
+fi
+
+for ARG in "$@" ; do
+    case "$ARG" in
+	-help)
+            if test "X${GT_PROXY_MODE}" = "Xold" ; then
+                grid-proxy-init-bin -help 2>&1 | \
+                    sed -e '/-old/s/$/ (default)/' \
+		        -e '/-old/a\    -new                      Creates a new-style globus proxy' 1>&2
+            else
+                grid-proxy-init-bin -help 2>&1 | \
+                    sed -e '/-old/a\    -new                      Creates a new-style globus proxy (default)' 1>&2
+            fi
+	    exit 0
+	    ;;
+	-old)
+	    STYLE=old
+	    ;;
+	-new)
+	    STYLE=new
+	    ;;
+	*)
+	    ARGS="$ARGS $ARG"
+	    ;;
+    esac
+done
+
+if [ $STYLE = 'old' ] ; then
+    grid-proxy-init-bin -old $ARGS
+else
     grid-proxy-init-bin $ARGS
 fi
 
-exit $?
