@@ -1305,7 +1305,10 @@ globus_l_gass_cache_lock_file(
 			
 		    {
 			/* the file has not been accessed for long,
-			   lets break the lock */
+			 *
+			 * BREAK THE LOCK !!!!!!!!
+			 *
+			 */
 			/*
 			  CACHE_TRACE2("Lock on %s too old: I BREAK IT !!\n",
 			  file_to_be_locked);
@@ -1314,7 +1317,8 @@ globus_l_gass_cache_lock_file(
 			{
 			    if (errno != EINTR && errno != ENOENT )
 			    {
-				CACHE_TRACE2("Could not remove lock file %s",temp_file);
+				CACHE_TRACE2("Could not remove lock file %s",
+					     temp_file);
 				return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_DEL_LOCK);
 			    }
 			    if (errno == ENOENT )
@@ -1334,7 +1338,8 @@ globus_l_gass_cache_lock_file(
 				break;
 			    }
 			}
-			return_code=GLOBUS_GASS_CACHE_ERROR_LOCK_TIME_OUT;
+			return_code=GLOBUS_GASS_CACHE_ERROR_LOCK_TIME_OUT
+			    ;
 		    }
 		    
 		    lock_tout=0;
@@ -1562,7 +1567,7 @@ globus_l_gass_cache_lock_open(
 		{
 		    globus_l_gass_cache_unlock_close(
 			cache_handle,
-			GLOBUS_L_GASS_CACHE_ABORT);
+			GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
 		    return(rc);
 		}
 		/* write the number of entry, 0 */
@@ -1573,7 +1578,7 @@ globus_l_gass_cache_lock_open(
 		{
 		    globus_l_gass_cache_unlock_close(
 			cache_handle,
-			GLOBUS_L_GASS_CACHE_ABORT);
+			GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
 		    return(rc);
 		}
 		lseek(cache_handle->state_file_fd, 0,SEEK_SET);
@@ -1588,7 +1593,7 @@ globus_l_gass_cache_lock_open(
 		CACHE_TRACE("Error reading  state file");
 		globus_l_gass_cache_unlock_close(
 		    cache_handle,
-		    GLOBUS_L_GASS_CACHE_ABORT);
+		    GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
 		return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_READ);
 	    }
 	}
@@ -1608,7 +1613,7 @@ globus_l_gass_cache_lock_open(
 		{
 		    globus_l_gass_cache_unlock_close(
 			cache_handle,
-			GLOBUS_L_GASS_CACHE_ABORT);
+			GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
 		    return(GLOBUS_GASS_CACHE_ERROR_STATE_F_CORRUPT);
 		}
 		
@@ -1617,7 +1622,7 @@ globus_l_gass_cache_lock_open(
 		{
 		    globus_l_gass_cache_unlock_close(
 			cache_handle,
-			GLOBUS_L_GASS_CACHE_ABORT);
+			GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
 		    return(GLOBUS_GASS_CACHE_ERROR_INVALID_VERSION);
 		}
 		
@@ -1644,7 +1649,7 @@ globus_l_gass_cache_lock_open(
 		"Could not open/create the temporary state file");
 	    globus_l_gass_cache_unlock_close(
 		cache_handle,
-		GLOBUS_L_GASS_CACHE_ABORT);
+		GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
 	    return(GLOBUS_GASS_CACHE_ERROR_OPEN_STATE);
 	}
     }
@@ -1706,7 +1711,7 @@ globus_l_gass_cache_unlock_close(
 	    if ( rc!= GLOBUS_SUCCESS )
 	    {
 		globus_l_gass_cache_unlock_close(cache_handle,
-						 GLOBUS_L_GASS_CACHE_ABORT);
+						 GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
 		return(rc);
 	    }
     }
@@ -2086,14 +2091,14 @@ globus_gass_cache_open(char                *cache_directory_path,
     if (rc != GLOBUS_SUCCESS)
     {
 	globus_l_gass_cache_unlock_close(cache_handle,
-					 GLOBUS_L_GASS_CACHE_ABORT);
+					 GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
 	/* mark this handle as not opened */
 	cache_handle->init=&globus_l_gass_cache_is_not_init;
 	
 	return(rc);
     }
     return(globus_l_gass_cache_unlock_close(cache_handle,
-					    GLOBUS_L_GASS_CACHE_ABORT));
+					    GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT));
     
 }
 /*  globus_gass_cache_open() */
@@ -2255,7 +2260,7 @@ globus_gass_cache_add(
        if (rc != GLOBUS_SUCCESS)
        {
 	   globus_l_gass_cache_unlock_close(cache_handle,
-					    GLOBUS_L_GASS_CACHE_ABORT);
+					    GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
 	   return(rc);
        }
        
@@ -2266,7 +2271,7 @@ globus_gass_cache_add(
 	   if (create == GLOBUS_FALSE)
 	   {
 	       globus_l_gass_cache_unlock_close(cache_handle,
-						GLOBUS_L_GASS_CACHE_ABORT);
+						GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
 	       return(GLOBUS_GASS_CACHE_URL_NOT_FOUND);
        }
 	   
@@ -2291,7 +2296,7 @@ globus_gass_cache_add(
 	   {
 	       CACHE_TRACE("Could not create new data file");
 	       globus_l_gass_cache_unlock_close(cache_handle, 
-                                                GLOBUS_L_GASS_CACHE_ABORT);
+                                                GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
 	       return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_CREATE_DATA_F);
 	   }
            close(tmp_fd);
@@ -2304,7 +2309,7 @@ globus_gass_cache_add(
 	   {
 	       CACHE_TRACE("Could not create new data filei lock");
 	       globus_l_gass_cache_unlock_close(cache_handle,
-                                                GLOBUS_L_GASS_CACHE_ABORT);
+                                                GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
 	       return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_CREATE_DATA_F);
 	   }
            close(tmp_fd);
@@ -2317,7 +2322,7 @@ globus_gass_cache_add(
 	   {
 	       CACHE_TRACE("No more memory");
 	       globus_l_gass_cache_unlock_close(cache_handle,
-						GLOBUS_L_GASS_CACHE_ABORT);
+						GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
 	       return(GLOBUS_GASS_CACHE_ERROR_NO_MEMORY);
 	   }
 	   
@@ -2327,7 +2332,7 @@ globus_gass_cache_add(
 	   {
 	       CACHE_TRACE("No more memory");
 	       globus_l_gass_cache_unlock_close(cache_handle,
-						GLOBUS_L_GASS_CACHE_ABORT);
+						GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
 	       return(GLOBUS_GASS_CACHE_ERROR_NO_MEMORY);
 	   }
 	   strcpy(new_entry_pt->url,url);
@@ -2339,7 +2344,7 @@ globus_gass_cache_add(
 	   {
 	       CACHE_TRACE("No more memory");
 	       globus_l_gass_cache_unlock_close(cache_handle,
-						GLOBUS_L_GASS_CACHE_ABORT);
+						GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
 	       return(GLOBUS_GASS_CACHE_ERROR_NO_MEMORY);
 	   }
 	   strcpy(new_entry_pt->filename,*local_filename);
@@ -2359,7 +2364,7 @@ globus_gass_cache_add(
 	       globus_l_gass_cache_entry_free(&new_entry_pt,
 					      GLOBUS_TRUE);
 	       globus_l_gass_cache_unlock_close(cache_handle,
-						GLOBUS_L_GASS_CACHE_ABORT);
+						GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
 	       return(GLOBUS_GASS_CACHE_ERROR_NO_MEMORY);
 	   }
 	   strcpy( new_entry_pt->lock_tag, tag);
@@ -2381,7 +2386,7 @@ globus_gass_cache_add(
 	       globus_l_gass_cache_entry_free(&new_entry_pt,
 					      GLOBUS_TRUE);
 	       globus_l_gass_cache_unlock_close(cache_handle,
-						GLOBUS_L_GASS_CACHE_ABORT);
+						GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
 	       return(GLOBUS_GASS_CACHE_ERROR_NO_MEMORY);
 	   }
 	   
@@ -2392,7 +2397,7 @@ globus_gass_cache_add(
 	       globus_l_gass_cache_entry_free(&new_entry_pt,
 					      GLOBUS_TRUE);
 	       globus_l_gass_cache_unlock_close(cache_handle,
-						GLOBUS_L_GASS_CACHE_ABORT);
+						GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
 	       return(GLOBUS_GASS_CACHE_ERROR_NO_MEMORY);
 	   }
 	   strcpy( (*(new_entry_pt->tags)).tag,tag);
@@ -2408,7 +2413,7 @@ globus_gass_cache_add(
 	   if (rc != GLOBUS_SUCCESS)
 	   {
 	       globus_l_gass_cache_unlock_close(cache_handle,
-						GLOBUS_L_GASS_CACHE_ABORT);
+						GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
 	       return(rc);
 	   }
 	   rc = globus_l_gass_cache_unlock_close(cache_handle,
@@ -2445,7 +2450,7 @@ globus_gass_cache_add(
 		   GLOBUS_L_GASS_CACHE_LG(
 		       "State file and bloking file are not coherent");
 		   globus_l_gass_cache_unlock_close(cache_handle,
-						    GLOBUS_L_GASS_CACHE_ABORT);
+						    GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
 		   return(GLOBUS_GASS_CACHE_ERROR_STATE_F_CORRUPT);
 		   
 	       }
@@ -2455,7 +2460,7 @@ globus_gass_cache_add(
 	       if (rc != GLOBUS_SUCCESS)
 	       {
 		   globus_l_gass_cache_unlock_close(cache_handle,
-						    GLOBUS_L_GASS_CACHE_ABORT);
+						    GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
 		   return(rc);
 	       }
 	       rc = globus_l_gass_cache_unlock_close(
@@ -2521,7 +2526,7 @@ globus_gass_cache_add(
 		       CACHE_TRACE("No more memory");
 		       globus_l_gass_cache_unlock_close(
 			   cache_handle,
-			   GLOBUS_L_GASS_CACHE_ABORT);
+			   GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
 		       
 		       return(GLOBUS_GASS_CACHE_ERROR_NO_MEMORY);
 		   }
@@ -2539,7 +2544,7 @@ globus_gass_cache_add(
 		   globus_l_gass_cache_entry_free(&entry_found_pt,
 						  GLOBUS_TRUE);
 		   globus_l_gass_cache_unlock_close(cache_handle,
-						    GLOBUS_L_GASS_CACHE_ABORT);
+						    GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
 		   return(GLOBUS_GASS_CACHE_ERROR_NO_MEMORY);
 	       }
 	       strcpy( entry_found_pt->lock_tag, tag);
@@ -2559,7 +2564,7 @@ globus_gass_cache_add(
 	       if (rc != GLOBUS_SUCCESS)
 	       {
 		   globus_l_gass_cache_unlock_close(cache_handle,
-						    GLOBUS_L_GASS_CACHE_ABORT);
+						    GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
 		   return(rc);
 	       }
 	       
@@ -2570,7 +2575,7 @@ globus_gass_cache_add(
 	       {
 		   CACHE_TRACE("Could not create new data file lock");
 		   globus_l_gass_cache_unlock_close(cache_handle,
-                                                    GLOBUS_L_GASS_CACHE_ABORT);
+                                                    GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
 		   return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_CREATE_DATA_F);
 	       }
                close(tmp_fd);
@@ -2645,7 +2650,7 @@ globus_gass_cache_add_done(
     if (rc != GLOBUS_SUCCESS)
     {
 	globus_l_gass_cache_unlock_close(cache_handle,
-					 GLOBUS_L_GASS_CACHE_ABORT);
+					 GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
 	return(rc);
     }
     
@@ -2654,7 +2659,7 @@ globus_gass_cache_add_done(
 	GLOBUS_L_GASS_CACHE_LG("Function globus_gass_cache_add_done() "
 			       "called with URL not in cache state file");
 	globus_l_gass_cache_unlock_close(cache_handle,
-					 GLOBUS_L_GASS_CACHE_ABORT);
+					 GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
 	return(GLOBUS_GASS_CACHE_ERROR_URL_NOT_FOUND);
     }
     else
@@ -2664,7 +2669,7 @@ globus_gass_cache_add_done(
 	{
 	    GLOBUS_L_GASS_CACHE_LG("Cache file already Done");
 	    globus_l_gass_cache_unlock_close(cache_handle,
-					     GLOBUS_L_GASS_CACHE_ABORT);
+					     GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
 	    return(GLOBUS_GASS_CACHE_ERROR_ALREADY_DONE);
 	}
 	if (tag == GLOBUS_NULL)
@@ -2676,7 +2681,7 @@ globus_gass_cache_add_done(
 	    /* wrong tag */
 	    GLOBUS_L_GASS_CACHE_LG("Function globus_gass_cache_add_done() called with wrong tag");
 	   globus_l_gass_cache_unlock_close(cache_handle,
-					    GLOBUS_L_GASS_CACHE_ABORT);
+					    GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
 	   return(GLOBUS_GASS_CACHE_ERROR_WRONG_TAG);
 	}
 	
@@ -2700,7 +2705,7 @@ globus_gass_cache_add_done(
 	if (rc != GLOBUS_SUCCESS)
 	{
 	    globus_l_gass_cache_unlock_close(cache_handle,
-					     GLOBUS_L_GASS_CACHE_ABORT);
+					     GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
 	    return(rc);
 	}
 	
@@ -2709,7 +2714,7 @@ globus_gass_cache_add_done(
 	{
 	    CACHE_TRACE("Could not delete data file lock");
 	    globus_l_gass_cache_unlock_close(cache_handle,
-					     GLOBUS_L_GASS_CACHE_ABORT);
+					     GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
 	    return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_DEL_LOCK);
 	}
 	
@@ -2789,7 +2794,7 @@ globus_gass_cache_delete_start(globus_gass_cache_t *cache_handle,
        if (rc != GLOBUS_SUCCESS)
        {
 	   globus_l_gass_cache_unlock_close(cache_handle,
-					    GLOBUS_L_GASS_CACHE_ABORT);
+					    GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
 	   return(rc);
        }
        
@@ -2799,7 +2804,7 @@ globus_gass_cache_delete_start(globus_gass_cache_t *cache_handle,
 				  "globus_gass_cache_delete_start() "
 				  "called with URL not in cache state file");
 	   globus_l_gass_cache_unlock_close(cache_handle,
-					    GLOBUS_L_GASS_CACHE_ABORT);
+					    GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
 	   return(GLOBUS_GASS_CACHE_ERROR_URL_NOT_FOUND);
        }
        else
@@ -2819,7 +2824,7 @@ globus_gass_cache_delete_start(globus_gass_cache_t *cache_handle,
 	       if (rc != GLOBUS_SUCCESS)
 	       {
 		   globus_l_gass_cache_unlock_close(cache_handle,
-						    GLOBUS_L_GASS_CACHE_ABORT);
+						    GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
 		   return(rc);
 	       }
 	       rc = globus_l_gass_cache_unlock_close(cache_handle,
@@ -2851,7 +2856,7 @@ globus_gass_cache_delete_start(globus_gass_cache_t *cache_handle,
 		   GLOBUS_L_GASS_CACHE_LG("State file and bloking file "
 					  "are not coherent");
 		   globus_l_gass_cache_unlock_close(cache_handle,
-						    GLOBUS_L_GASS_CACHE_ABORT);
+						    GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
 		   return(GLOBUS_GASS_CACHE_ERROR_STATE_F_CORRUPT);
 		
 	       }
@@ -2861,7 +2866,7 @@ globus_gass_cache_delete_start(globus_gass_cache_t *cache_handle,
 	       if (rc != GLOBUS_SUCCESS)
 	       {
 		   globus_l_gass_cache_unlock_close(cache_handle,
-						    GLOBUS_L_GASS_CACHE_ABORT);
+						    GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
 		   return(rc);
 	       }
 	       rc = globus_l_gass_cache_unlock_close(
@@ -2907,7 +2912,7 @@ globus_gass_cache_delete_start(globus_gass_cache_t *cache_handle,
 					  "globus_gass_cache_delete_start() "
 					  "called with unknown tag");
 		   globus_l_gass_cache_unlock_close(cache_handle,
-						    GLOBUS_L_GASS_CACHE_ABORT);
+						    GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
 		   return( GLOBUS_GASS_CACHE_ERROR_WRONG_TAG);
 	       } /* tag not found */
 	       
@@ -2919,7 +2924,7 @@ globus_gass_cache_delete_start(globus_gass_cache_t *cache_handle,
 		   globus_l_gass_cache_entry_free(&entry_found_pt,
 						  GLOBUS_TRUE);
 		   globus_l_gass_cache_unlock_close(cache_handle,
-						    GLOBUS_L_GASS_CACHE_ABORT);
+						    GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
 		   return(GLOBUS_GASS_CACHE_ERROR_NO_MEMORY);
 	       }
 	       strcpy( entry_found_pt->lock_tag, tag);
@@ -2938,7 +2943,7 @@ globus_gass_cache_delete_start(globus_gass_cache_t *cache_handle,
 	       if (rc != GLOBUS_SUCCESS)
 	       {
 		   globus_l_gass_cache_unlock_close(cache_handle,
-						    GLOBUS_L_GASS_CACHE_ABORT);
+						    GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
 		   return(rc);
 	       }
 	       
@@ -2948,7 +2953,7 @@ globus_gass_cache_delete_start(globus_gass_cache_t *cache_handle,
 	       {
 		   CACHE_TRACE("Could not create new data file lock");
 		   globus_l_gass_cache_unlock_close(cache_handle,
-						    GLOBUS_L_GASS_CACHE_ABORT);
+						    GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
 		   return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_CREATE_DATA_F);
 	       }   
                close(tmp_fd);
@@ -3050,7 +3055,7 @@ globus_gass_cache_delete(
        if (rc != GLOBUS_SUCCESS)
        {
 	   globus_l_gass_cache_unlock_close(cache_handle,
-					    GLOBUS_L_GASS_CACHE_ABORT);
+					    GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
 	   return(rc);
        }
     
@@ -3059,7 +3064,7 @@ globus_gass_cache_delete(
 	   GLOBUS_L_GASS_CACHE_LG("Function globus_gass_cache_delete() "
 				  "called with  URL not in cache state file");
 	   globus_l_gass_cache_unlock_close(cache_handle,
-					    GLOBUS_L_GASS_CACHE_ABORT);
+					    GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
 	   return(GLOBUS_GASS_CACHE_ERROR_URL_NOT_FOUND);
        }
     
@@ -3079,7 +3084,7 @@ globus_gass_cache_delete(
 	   if (rc != GLOBUS_SUCCESS)
 	   {
 	       globus_l_gass_cache_unlock_close(cache_handle,
-						GLOBUS_L_GASS_CACHE_ABORT);
+						GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
 	       return(rc);
 	   }
 	   rc = globus_l_gass_cache_unlock_close(cache_handle,
@@ -3118,7 +3123,7 @@ globus_gass_cache_delete(
 		   GLOBUS_L_GASS_CACHE_LG("State file and blocking file "
 					  "are not coherent");
 		   globus_l_gass_cache_unlock_close(cache_handle,
-						    GLOBUS_L_GASS_CACHE_ABORT);
+						    GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
 		   return(GLOBUS_GASS_CACHE_ERROR_STATE_F_CORRUPT);
 		
 	       }
@@ -3128,7 +3133,7 @@ globus_gass_cache_delete(
 	       if (rc != GLOBUS_SUCCESS)
 	       {
 		   globus_l_gass_cache_unlock_close(cache_handle,
-						    GLOBUS_L_GASS_CACHE_ABORT);
+						    GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
 		   return(rc);
 	       }
 	       rc = globus_l_gass_cache_unlock_close(cache_handle,
@@ -3169,7 +3174,7 @@ globus_gass_cache_delete(
 	   GLOBUS_L_GASS_CACHE_LG("Function globus_gass_cache_delete() "
 				  "called with unknown tag");
 	   globus_l_gass_cache_unlock_close(cache_handle,
-					    GLOBUS_L_GASS_CACHE_ABORT);
+					    GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
 	   return( GLOBUS_GASS_CACHE_ERROR_WRONG_TAG);
        } /* tag not found */
     
@@ -3192,7 +3197,7 @@ globus_gass_cache_delete(
 	   {
 	       CACHE_TRACE("Could not delete data file lock");
 	       globus_l_gass_cache_unlock_close(cache_handle,
-						GLOBUS_L_GASS_CACHE_ABORT);
+						GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
 	       return(GLOBUS_GASS_CACHE_ERROR_CAN_NOT_DEL_LOCK);
 	   }
        }
@@ -3216,7 +3221,7 @@ globus_gass_cache_delete(
 	   if (rc != GLOBUS_SUCCESS)
 	   {
 	       globus_l_gass_cache_unlock_close(cache_handle,
-						GLOBUS_L_GASS_CACHE_ABORT);
+						GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
 	       return(rc);
 	   }
        }
@@ -3316,7 +3321,7 @@ globus_gass_cache_cleanup_tag(
    if (rc != GLOBUS_SUCCESS)
    {
        globus_l_gass_cache_unlock_close(cache_handle,
-					GLOBUS_L_GASS_CACHE_ABORT);
+					GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
        return(rc);
    }
 
@@ -3324,7 +3329,7 @@ globus_gass_cache_cleanup_tag(
    {
        GLOBUS_L_GASS_CACHE_LG("Function globus_gass_cache_cleanup_tag() called with  URL not in cache state file");
        globus_l_gass_cache_unlock_close(cache_handle,
-					GLOBUS_L_GASS_CACHE_ABORT);
+					GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
        return(GLOBUS_GASS_CACHE_ERROR_URL_NOT_FOUND);
    }
    /* URL found */
@@ -3383,7 +3388,7 @@ globus_gass_cache_cleanup_tag(
        if (rc != GLOBUS_SUCCESS)
        {
 	   globus_l_gass_cache_unlock_close(cache_handle,
-					    GLOBUS_L_GASS_CACHE_ABORT);
+					    GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
 	   return(rc);
        } 
    }
@@ -3458,7 +3463,7 @@ globus_gass_cache_cleanup_file(
     if (rc != GLOBUS_SUCCESS)
     {
 	globus_l_gass_cache_unlock_close(cache_handle,
-					 GLOBUS_L_GASS_CACHE_ABORT);
+					 GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
 	return(rc);
     }
     
@@ -3467,7 +3472,7 @@ globus_gass_cache_cleanup_file(
 	GLOBUS_L_GASS_CACHE_LG("Function globus_gass_cache_cleanup_file() "
 			       "called with  URL not in cache state file");
 	globus_l_gass_cache_unlock_close(cache_handle,
-					 GLOBUS_L_GASS_CACHE_ABORT);
+					 GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
 	return(GLOBUS_GASS_CACHE_ERROR_URL_NOT_FOUND);
     }
     /* URL found */
@@ -3575,13 +3580,13 @@ globus_gass_cache_list(
 	*entries = NULL;
 	*size = 0;
 	return(globus_l_gass_cache_unlock_close(cache_handle,
-						GLOBUS_L_GASS_CACHE_ABORT));
+						GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT));
     }
     if (entry_separator[0] != '*')
     {
 	CACHE_TRACE("Error reading state file");
 	globus_l_gass_cache_unlock_close(cache_handle,
-					 GLOBUS_L_GASS_CACHE_ABORT);
+					 GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
 	return(GLOBUS_GASS_CACHE_ERROR_STATE_F_CORRUPT);
     }
     while ( read(cache_handle->state_file_fd,
@@ -3591,7 +3596,7 @@ globus_gass_cache_list(
 	{
 	    CACHE_TRACE("Error reading state file");
 	    globus_l_gass_cache_unlock_close(cache_handle,
-					     GLOBUS_L_GASS_CACHE_ABORT);
+					     GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
 	    return(GLOBUS_GASS_CACHE_ERROR_STATE_F_CORRUPT);
 	}
     }
@@ -3603,7 +3608,7 @@ globus_gass_cache_list(
 	/* No entries, job finished */
 	*entries =GLOBUS_NULL;
 	return(globus_l_gass_cache_unlock_close(cache_handle,
-						GLOBUS_L_GASS_CACHE_ABORT));
+						GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT));
     }
     
     *entries = (globus_gass_cache_entry_t *)
@@ -3612,7 +3617,7 @@ globus_gass_cache_list(
     {
 	CACHE_TRACE("No more memory");
 	globus_l_gass_cache_unlock_close(cache_handle,
-					 GLOBUS_L_GASS_CACHE_ABORT);
+					 GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
 	return(GLOBUS_GASS_CACHE_ERROR_NO_MEMORY);
     }
 
@@ -3635,7 +3640,7 @@ globus_gass_cache_list(
 		    CACHE_TRACE("Error reading state file");
 		    globus_l_gass_cache_unlock_close(
 			cache_handle,
-			GLOBUS_L_GASS_CACHE_ABORT);
+			GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
 		    return(GLOBUS_GASS_CACHE_ERROR_STATE_F_CORRUPT);
 		}
 	}
@@ -3643,7 +3648,7 @@ globus_gass_cache_list(
 	{
 	    CACHE_TRACE("Error reading state file");
 	    globus_l_gass_cache_unlock_close(cache_handle,
-					     GLOBUS_L_GASS_CACHE_ABORT);
+					     GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
 	    return(GLOBUS_GASS_CACHE_ERROR_STATE_F_CORRUPT);
 	}
 	entry_pt =  *entries+i;
@@ -3652,7 +3657,7 @@ globus_gass_cache_list(
 	if (rc != GLOBUS_SUCCESS)
 	{
 	    globus_l_gass_cache_unlock_close(cache_handle,
-					     GLOBUS_L_GASS_CACHE_ABORT);
+					     GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
 	    return (rc);
 	}
     }
@@ -3663,7 +3668,7 @@ globus_gass_cache_list(
     /* I do not free the memory allocated by each read: the user must */
     /* call gass-cache_list_free() */
     rc = globus_l_gass_cache_unlock_close(cache_handle,
-					  GLOBUS_L_GASS_CACHE_ABORT);
+					  GLOBUS_L_GASS_CACHE_DO_NOT_COMMIT);
     /* and return */
     return(rc);
 
