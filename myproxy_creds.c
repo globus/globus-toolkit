@@ -683,7 +683,6 @@ myproxy_creds_retrieve(struct myproxy_creds *creds)
     char data_path[MAXPATHLEN];
     struct myproxy_creds retrieved_creds;
     int return_code = -1;
-    int authorization_ok = 0;
         char *tmp1=NULL;
     
     if ((creds == NULL) ||
@@ -705,29 +704,10 @@ myproxy_creds_retrieve(struct myproxy_creds *creds)
 
     if (read_data_file(&retrieved_creds, data_path) == -1)
     {
+	verror_put_string("can't read credentials");
         goto error;
     }
 
-    /*
-     * Check pass phrase
-         * support for crypt() added btemko /6/16/00
-         * Please, don't try to free tmp1 - crypt() uses one 
-         * static string space, a la getenv()
-     */
-    if ((retrieved_creds.pass_phrase != NULL) &&
-        (creds->pass_phrase != NULL) && (tmp1=(char *)crypt(creds->pass_phrase, 
-&retrieved_creds.owner_name[strlen(retrieved_creds.owner_name)-3]))!=NULL &&
-        (strcmp(retrieved_creds.pass_phrase, tmp1) == 0))
-    {
-        authorization_ok = 1;
-    }
-    
-    if (authorization_ok == 0)
-    {
-        verror_put_string("bad pass phrase");
-        goto error;
-    }
-    
     /* Copy creds */
     if (creds->owner_name != NULL)
        free(creds->owner_name);
@@ -896,7 +876,6 @@ myproxy_creds_delete(const struct myproxy_creds *creds)
     char data_path[MAXPATHLEN];
     struct myproxy_creds tmp_creds;
     int return_code = -1;
-    int authorization_ok = 0;
         char *tmp1=NULL;
     
     if ((creds == NULL) ||
@@ -918,35 +897,6 @@ myproxy_creds_delete(const struct myproxy_creds *creds)
         goto error;
     }
     
-    /*
-     * Either the pass phrase needs to match or the
-     * owner name needs to match.
-         * support for crypt() added btemko /6/16/00
-         * Please, don't try to free tmp1 - crypt() uses one 
-         * static string space, a la getenv()
-     */
-    if ((tmp_creds.pass_phrase != NULL) &&
-        (creds->pass_phrase != NULL) && (tmp1=(char 
-*)crypt(tmp_creds.pass_phrase, 
-&creds->owner_name[strlen(creds->owner_name)-3]))!=NULL &&
-        (strcmp(tmp1, creds->pass_phrase) == 0))
-    {
-        authorization_ok = 1;
-    }
-    
-    if ((tmp_creds.owner_name != NULL) &&
-        (creds->owner_name != NULL) &&
-        (strcmp(tmp_creds.owner_name, creds->owner_name) == 0))
-    {
-        authorization_ok = 1;
-    }
-
-    if (authorization_ok == 0)
-    {
-        verror_put_string("authorization failed");
-        goto error;
-    }
-
     if (unlink(creds_path) == -1)
     {
         verror_put_errno(errno);
