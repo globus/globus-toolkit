@@ -369,6 +369,8 @@ int main(int argc, char **argv)
     if ((pcd = proxy_cred_desc_new()) == NULL)
 	goto err;
 
+    pcd->type = CRED_TYPE_PERMANENT;
+
     if ( proxy_get_filenames(0,
 			     &certcafile,
 			     &certdir,
