@@ -1,6 +1,7 @@
 #include "gaa.h"
 #include "globus_auth.h"
 #include "globus_auth_error.h"
+#include "gaa_gss_generic.h"
 #include <string.h>
 #include <ctype.h>
 
@@ -29,6 +30,11 @@ static cas_policy
 static char *
 globus_l_authorization_parse_policy_header_line(char * string,
 						struct parsed_line *pline);
+
+static globus_auth_result_t
+globus_l_authorization_handle_set_gss_param(
+    globus_authorization_handle_t handle,
+    gaa_gss_generic_param_t gss_param);
 
 /** globus_authorization_handle_init()
  *
@@ -145,7 +151,7 @@ globus_authorization_handle_init(
     }
     
     (*handle)->gaa_sc = 0;
-    (*handle)->gss_context = 0;
+    (*handle)->gss_param = 0;
     (*handle)->policy_source = 0;
     
 #ifdef DEBUG
@@ -244,6 +250,47 @@ globus_authorization_handle_destroy(
     return GLOBUS_SUCCESS;
 }
 
+static gaa_gss_generic_param_t
+globus_l_gss_param_from_ctx(gss_ctx_id_t context)
+{
+	gaa_gss_generic_param_s * gss_param = 0;
+	if ((gss_param = (gaa_gss_generic_param_s *)malloc(sizeof(gaa_gss_generic_param_s))) == 0)
+		return(0);
+	gss_param->type = GAA_GSS_GENERIC_CTX;
+	gss_param->param.ctx = context;
+	return(gss_param);
+}
+
+static gaa_gss_generic_param_t
+globus_l_gss_param_from_cred(gss_cred_id_t cred)
+{
+   gaa_gss_generic_param_s * gss_param = 0;
+   if ((gss_param = (gaa_gss_generic_param_s *)malloc(sizeof(gaa_gss_generic_param_s))) == 0)
+       return(0);
+   gss_param->type = GAA_GSS_GENERIC_CRED;
+   gss_param->param.cred = cred;
+   return(gss_param);
+}
+
+static OM_uint32
+globus_l_inquire_gss_param_by_oid(OM_uint32 *			minor_status,
+				  const gaa_gss_generic_param_t	gss_param,
+				  const gss_OID			desired_object,
+				  gss_buffer_set_t *		data_set)
+{
+    if (gss_param->type == GAA_GSS_GENERIC_CTX)
+        return(gss_inquire_sec_context_by_oid(minor_status,
+					      gss_param->param.ctx,
+					      desired_object,
+					      data_set));
+    else if (gss_param->type == GAA_GSS_GENERIC_CRED)
+        return(gss_inquire_cred_by_oid(minor_status,
+				       gss_param->param.cred,
+				       desired_object,
+				       data_set));
+    else
+        return(GSS_S_FAILURE);
+}
 
 /** globus_authorization_handle_set_gss_ctx()
  *
@@ -265,12 +312,56 @@ globus_authorization_handle_destroy(
  *         an internal error (in GAA) occurred
  * 
  */
- 
 
 globus_auth_result_t
 globus_authorization_handle_set_gss_ctx(
     globus_authorization_handle_t handle,
     gss_ctx_id_t context)
+{
+    gaa_gss_generic_param_t gss_param = 0;
+    if ((gss_param = globus_l_gss_param_from_ctx(context)) == 0)
+	return(globus_result_set(GLOBUS_AUTH_BAD_GSS_SEC_CONTEXT,
+				 "bad gss context"));
+    return(globus_l_authorization_handle_set_gss_param(handle, gss_param));
+} 
+
+/** globus_authorization_handle_set_gss_cred()
+ *
+ * Gets credentials from the GSS security context and adds it to the 
+ * authorization handle
+ *
+ * @param handle
+ *        input authorization handle
+ * @param cred
+ *        input GSS security credential
+ *
+ * @retval GLOBUS_SUCCESS
+ *         success
+ * @retval GLOBUS_AUTH_BAD_HANDLE
+ *         null authorization handle passed
+ * @retval GLOBUS_AUTH_BAD_GSS_SEC_CONTEXT
+ *         null credential passed
+ * @retval GLOBUS_AUTH_INTERNAL_GAA_ERROR
+ *         an internal error (in GAA) occurred
+ * 
+ */
+
+globus_auth_result_t
+globus_authorization_handle_set_gss_cred(
+    globus_authorization_handle_t handle,
+    gss_cred_id_t cred)
+{
+    gaa_gss_generic_param_t gss_param = 0;
+    if ((gss_param = globus_l_gss_param_from_cred(cred)) == 0)
+	return(globus_result_set(GLOBUS_AUTH_BAD_GSS_SEC_CONTEXT,
+				 "bad gss cred"));
+    return(globus_l_authorization_handle_set_gss_param(handle, gss_param));
+} 
+
+static globus_auth_result_t
+globus_l_authorization_handle_set_gss_param(
+    globus_authorization_handle_t handle,
+    gaa_gss_generic_param_t gss_param)
 {
     gaa_cred_ptr            cred = NULL;
     gaa_status              status;
@@ -291,11 +382,11 @@ globus_authorization_handle_set_gss_ctx(
                )); 
     }
     
-    if(!context) 
+    if(!gss_param) 
     {
         return(globus_result_set(
                    GLOBUS_AUTH_BAD_GSS_SEC_CONTEXT,
-                   "null security context : globus_authorization_handle_set_gss_ctx"
+                   "null security context : globus_authorization_handle_set_gss_param"
                )); 
     }
     
@@ -323,7 +414,7 @@ globus_authorization_handle_set_gss_ctx(
         handle->gaa_sc,
         &cred,
         "gss",     /*mech_type*/
-        context,       /*raw credentials*/
+        gss_param,       /*raw credentials*/
         GAA_IDENTITY, /*cred_type*/
         1,  /* Does it make sense to evaluate it here?*/
         &status);
@@ -346,12 +437,12 @@ globus_authorization_handle_set_gss_ctx(
                    gaacore_majstat_str(status),
                    gaa_get_err()));
     }
-    handle->gss_context = context; 
+    handle->gss_param = gss_param; 
     handle->audit_identity = cred->principal->value;
     handle->authorization_identity = cred->principal->value;
-    maj_stat = gss_inquire_sec_context_by_oid( 
+    maj_stat = globus_l_inquire_gss_param_by_oid( 
         &min_stat,
-        context,
+        gss_param,
         (gss_OID) gss_cas_policy_extension,
         &policy_extension);
     
@@ -376,7 +467,7 @@ globus_authorization_handle_set_gss_ctx(
 	    goto end;
 	}
 	    
-	if ((maj_stat = gss_policy_verify(&min_stat, context,
+	if ((maj_stat = gss_policy_verify(&min_stat, 0,
 					 (gss_buffer_t)policy_extension->elements,
 					 &policy_buf,
 					 &signer_identity)) != GSS_S_COMPLETE)
@@ -525,7 +616,9 @@ globus_authorization_handle_get_gss_ctx(
                )); 
     }
 
-    if(!handle->gss_context) 
+    if(!handle->gss_param ||
+       (handle->gss_param->type != GAA_GSS_GENERIC_CTX) ||
+       (handle->gss_param->param.ctx == 0))
     {
         return(globus_result_set(
                    GLOBUS_AUTH_BAD_GSS_SEC_CONTEXT,
@@ -533,7 +626,7 @@ globus_authorization_handle_get_gss_ctx(
                )); 
     }
     
-    *context = (handle->gss_context);  /* or get this out of the gaa_sc? */
+    *context = (handle->gss_param->param.ctx);  /* or get this out of the gaa_sc? */
     return GLOBUS_SUCCESS;
 }
 
@@ -568,18 +661,34 @@ globus_authorization_handle_get_local_identity(
     gss_name_t          name_subject;
     char               *char_subject;
     gss_buffer_desc     subject_desc_buf;
-    
-    gss_inquire_context(
-        handle->gss_context,
-        &minor_status,
-        &name_subject,
-        NULL,
-        NULL,
-        NULL,
-        NULL,                                       
-        NULL,
-        NULL);
 
+    if (handle == 0 || (handle->gss_param == 0))
+	return(globus_result_set(GLOBUS_AUTH_BAD_HANDLE,
+				 "bad auth handle"));
+
+    if (handle->gss_param->type == GAA_GSS_GENERIC_CTX)
+    {
+	gss_inquire_context(
+	    &minor_status,
+	    handle->gss_param->param.ctx,
+	    &name_subject,
+	    NULL,
+	    NULL,
+	    NULL,
+	    NULL,                                       
+	    NULL,
+	    NULL);
+    }
+    else if (handle->gss_param->type == GAA_GSS_GENERIC_CRED)
+    {
+	gss_inquire_cred(
+	    &minor_status,
+	    handle->gss_param->param.cred,
+	    &name_subject,
+	    NULL,
+	    NULL,
+	    NULL);
+    }
     major_status = gss_export_name(&minor_status,name_subject,
                                    &subject_desc_buf);
 
@@ -672,6 +781,18 @@ globus_authorization_eval(
                    gaacore_majstat_str(status),
                    gaa_get_err()));
     }
+
+#ifdef GAA_DEBUG
+    {
+        char buffer[8192];
+        
+        /* Requires gaa debug library to be linked in */
+
+        gaadebug_policy_string(handle->gaa, buffer, sizeof(buffer), handle->policy);
+
+        fprintf(stderr, "%s\n", buffer);
+    }
+#endif /* GAA_DEBUG */
 
     /*Build the requested right*/
     right_list = gaa_new_req_rightlist();
