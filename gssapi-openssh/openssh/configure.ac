@@ -537,7 +537,6 @@ if test "x$gsi_path" != "xno" ; then
 
 		AC_MSG_RESULT($globus_flavor_type)
 		GSI_LIBS="${gsi_path}/lib/libglobus_gss_assist_${globus_flavor_type}.a ${gsi_path}/lib/libglobus_gssapi_gsi_${globus_flavor_type}.a"
-		GSI_LIBS="-lglobus_gss_assist_${globus_flavor_type} -lglobus_gssapi_gsi_${globus_flavor_type}"
 		GSI_CFLAGS="-I${GLOBUS_FLAVOR_TYPE_INCL_DIR}"
 	fi
 
@@ -2110,6 +2109,8 @@ main()
 		[ user_path="/usr/bin:/bin:/usr/sbin:/sbin" ],
 		[ user_path="/usr/bin:/bin:/usr/sbin:/sbin" ]
 	)
+	fi ]
+)
 if test "$USES_LOGIN_CONF" != "yes" ; then
 	AC_DEFINE_UNQUOTED(USER_PATH, "$user_path")
 	AC_SUBST(user_path)
@@ -2182,15 +2183,9 @@ AC_ARG_ENABLE(suid-ssh,
   no)
        AC_MSG_RESULT(no)
        SSHMODE=0755
-       # SSHMODE=0711
-       # ^- this is the old mode setting.  is there a good reason for this?  as a regular
-       #      user, i can't load libraries with 711 perms when i'm not the owner
        ;;
   *)   AC_MSG_RESULT(yes)
        SSHMODE=4755
-       # SSHMODE=4711
-       # ^- this is the old mode setting.  is there a good reason for this?  as a regular
-       #      user, i can't load libraries with 4711 perms when i'm not the owner
        ;;
   esac ],
   AC_MSG_RESULT(yes)
