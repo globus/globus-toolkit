@@ -1219,6 +1219,35 @@ myproxy_creds_delete(const struct myproxy_creds *creds)
     return return_code;
 }
 
+int
+myproxy_creds_info(struct myproxy_creds *creds)
+{
+    char creds_path[MAXPATHLEN];
+    char data_path[MAXPATHLEN];
+    struct myproxy_creds tmp_creds;
+    int return_code = -1;
+    time_t end_time;
+
+    if ((creds == NULL) || (creds->user_name == NULL)) {
+       verror_put_errno(EINVAL);
+       return -1;
+    }
+
+    if (get_storage_locations(creds->user_name,
+	                      creds_path, sizeof(creds_path),
+			      data_path, sizeof(data_path)) == -1) {
+       goto error;
+    }
+
+    if (ssl_get_times(creds_path, &creds->start_time, &creds->end_time) != 0)
+       goto error;
+
+    return_code = 0;
+
+error:
+    return return_code;
+}
+
 void myproxy_creds_free_contents(struct myproxy_creds *creds)
 {
     if (creds == NULL)

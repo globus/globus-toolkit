@@ -125,7 +125,7 @@ http://www.globus.org/security/v1.1/etc_grid_security.html
 
 After installing the server with 'make install' or 'make
 server-install' you should, under the installation
-prefix (/usr/local/myproxy-server by default), find the following
+prefix (/usr/local by default), find the following
 directories:
 
 sbin	This is where the myproxy-server binary is located.
@@ -140,7 +140,10 @@ To run the daemon, run the binary '<prefix>/sbin/myproxy-server'.
 The program will start up and background itself. It accepts
 connections on TCP port 7512, forking off a seperate child
 to handle each incoming connection. It logs information via
-the syslog service under the daemon facility.
+the syslog service under the daemon facility.  A sample SysV-style
+boot script for MyProxy is provided, named etc.init.d.myproxy.  To
+install on Linux, copy the file to /etc/rc.d/init.d/myproxy and run
+'chkconfig --add myproxy'.
 
 To run the myproxy server out of inetd, you need to do the 
 following as root:
@@ -211,7 +214,7 @@ There will be an example myproxy-server.config file installed
 for you to start with.
 
 Lines in the configuration file use limited regular expressions
-so that you can match classes of users easy. The limited
+so that you can match classes of users easily. The limited
 regular expressions support the shell-stype characters '*' and
 '?', where '*' matches any number of characters and '?' matches
 any single character.
@@ -232,47 +235,64 @@ accepted_credentials <DN regex>
 authorized_retrievers <DN regex>
 
 	Each of these lines allows the server administrator to set
-	server-wide policies for authorized retrievers. If the client DN 
-	does not match the given limited regex the client is not allowed to
-	retrieve the credentials previously stored by a client. 
-	In addition to the server-wide policy, myproxy also provides support
-	for per-user policy. The user can specify the regex DN of the allowed
-	retrievers of the credential. The retrieval client DN must also match
-	the user specified regex. In order to retrieve credentials the client 
-        also needs to know the name and pass phrase provided by the client 
-        when the credentials were stored. Any number of these lines may appear.         For backwards compatibility, these lines can also start with 
-        allowed_services instead of authorized_retrievers.
+	server-wide policies for authorized retrievers. If the client
+	DN does not match the given limited regex the client is not
+	allowed to retrieve the credentials previously stored by a
+	client.  In addition to the server-wide policy, myproxy also
+	provides support for per-credential policy. The user can
+	specify the regex DN of the allowed retrievers of the
+	credential when uploading the credential. The retrieval client
+	DN must also match the user specified regex. In order to
+	retrieve credentials the client also needs to know the name
+	and pass phrase provided by the client when the credentials
+	were stored. Any number of these lines may appear.  For
+	backwards compatibility, these lines can also start with
+	allowed_services instead of authorized_retrievers.
 
 default_retrievers <DN regex>
 
-	Each of these lines allows the server administrator to set server-wide
-	default policies. The regex specifies the clients who can access the 
- 	credentials. The default retriever policy is enforced if a credential 
-	does not have a specified per-user policy. This is enforced in addition 
-	to the server-wide policy specified by the authorized_retrievers line. 
-	Any number of these lines may be present.
+	Each of these lines allows the server administrator to set
+	server-wide default policies. The regex specifies the clients
+	who can access the credentials. The default retriever policy
+	is enforced if a per-credential policy is not specified on
+	upload.  In other words, the client can override this policy
+	for a credential on upload.  The per-credential policy is
+	enforced in addition to the server-wide policy specified by
+	the authorized_retrievers line (which clients can not
+	override).  Any number of these lines may be present.  For
+	backwards compatibility, if no default_retrievers line is
+	specified, the default policy is "*", which allows any client
+	to pass the per-credential policy check.  (The client must
+	still pass the authorized_retrievers check.)
 
 authorized_renewers <DN regex>
 
 	Each of these lines allows the server administrator to set
-	server-wide policies for authorized renewers. If the client DN 
-	does not match the given limited regex the client is not allowed to
-	renew the credentials previously stored by a client. 
-	In addition to the server-wide policy, myproxy also provides support
-	for per-user policy. The user can specify the regex DN of the allowed
-	renewers of the credential. The renewal client DN must also match
-	the user specified regex. In this case, the client must also already
-	have a credential with a DN matching the DN of the credentials to be 
-	retrieved, to be used in a second authorization step.
+	server-wide policies for authorized renewers. If the client DN
+	does not match the given limited regex the client is not
+	allowed to renew the credentials previously stored by a
+	client.  In addition to the server-wide policy, myproxy also
+	provides support for per-credential policy. The user can
+	specify the regex DN of the allowed renewers of the credential
+	on upload. The renewal client DN must match both this regex
+	and the user specified regex. In this case, the client must
+	also already have a credential with a DN matching the DN of
+	the credentials to be retrieved, to be used in a second
+	authorization step.
 
 default_renewers <DN regex>
 
-	Each of these lines allows the server administrator to set server-wide
-	default renewer policies. The regex specifies the clients who can 
-	renew the credentials. The default renewer policy is enforced if 
-	a credential does not have a per-user policy. This is enforced 
-	in addition to the server-wide policy specified by the 
-	authorized_renewers line. Any number of these lines may appear.
+	Each of these lines allows the server administrator to set
+	server-wide default renewer policies. The regex specifies the
+	clients who can renew the credentials. The default renewer
+	policy is enforced if a per-credential policy is not specified
+	on upload. This is enforced in addition to the server-wide
+	policy specified by the authorized_renewers line. Any number
+	of these lines may appear.  For backwards compatibility, if no
+	default_renewers line is specified, the default policy is "*",
+	which allows any client to pass the per-credential policy
+	check.  (The client must still pass the authorized_renewers
+	check.)
 
 6. Using myproxy-get-delegation from a trusted service
 ---------------------------------

@@ -6,6 +6,8 @@
 #ifndef __MYPROXY_CREDS_H
 #define __MYPROXY_CREDS_H
 
+#include <time.h>
+
 #define REGULAR_EXP 1
 #define MATCH_CN_ONLY 0
 
@@ -20,6 +22,8 @@ struct myproxy_creds {
     int renewer_expr_type;
     int lifetime;
     void *restrictions;
+    time_t start_time;
+    time_t end_time;
 };
 
 typedef struct myproxy_creds myproxy_creds_t;

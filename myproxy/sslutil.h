@@ -191,6 +191,9 @@ proxy_get_base_name(X509_NAME *subject);
 int
 proxy_password_callback_no_prompt(char *buffer, int size, int w);
 
+time_t
+ASN1_UTCTIME_mktime(ASN1_UTCTIME *ctm);
+
 #if SSLEAY_VERSION_NUMBER >=  0x0090600fL
    int
    proxy_check_issued(X509_STORE_CTX *ctx,

@@ -28,7 +28,7 @@ static char usage[] = \
 "       -h | --help                       Displays usage\n"
 "       -u | --usage                                    \n"
 "                                                      \n"
-"	-D | --debug_level	<level>	  Sets debug level (0,1,2)\n"
+"       -D | --debug_level     <level>    Sets debug level (0,1,2)\n"
 "       -v | --version                    Displays version\n"
 "       -l | --username        <username> Username for the delegated proxy\n"
 "       -c | --cred_lifetime   <hours>    Lifetime of delegated proxy on\n" 
@@ -36,13 +36,19 @@ static char usage[] = \
 "       -t | --proxy_lifetime  <hours>    Lifetime of proxies delegated by\n" 
 "                                         server (default 2 hours)\n"
 "       -s | --pshost          <hostname> Hostname of the myproxy-server\n"
-"					  Can also set MYPROXY_SERVER env. var.\n"
-"	-a | --allow_anonymous_retrievers Allow anonymous users to retrieve credentials\n"
-"	-A | --allow_anonymous_renewers   Allow anonymous users to renew credentials\n"
-"	-r | --retrievable_by      <dn>   Distinguished name list of allowed retrievers\n"
-"	-R | --renewable_by       <dn>    Distinguished name list of allowed renewers\n"
-"	-x | --regex_dn_match		  Set expression type to regular expression\n"
-"	-X | --match_cn_only		  Set expression type to common name\n"
+"                                         Can also set MYPROXY_SERVER env. var.\n"
+"       -a | --allow_anonymous_retrievers Allow credentials to be retrieved\n"
+"                                         with just username/passphrase\n"
+"       -A | --allow_anonymous_renewers   Allow credentials to be renewed by\n"
+"                                         any client (not recommended)\n"
+"       -r | --retrievable_by  <dn>       Allow specified entity to retrieve\n"
+"                                         credential\n"
+"       -R | --renewable_by    <dn>       Allow specified entity to renew\n"
+"                                         credential\n"
+"       -x | --regex_dn_match             Set regular expression matching mode\n"
+"                                         for following policy options\n"
+"       -X | --match_cn_only              Set CN matching mode (default)\n"
+"                                         for following policy options\n"
 "       -p | --psport          <port #>   Port of the myproxy-server\n"
 "       -n | --no_passphrase              Disable passphrase authentication\n"
 "       -d | --dn_as_username             Use the proxy certificate subject\n"
@@ -114,7 +120,6 @@ main(int argc, char *argv[])
     myproxy_debug_set_level (1);
     myproxy_log_use_stream (stderr);
 
-    myproxy_log (0,5, "WELCOME");    
     socket_attrs = malloc(sizeof(*socket_attrs));
     memset(socket_attrs, 0, sizeof(*socket_attrs));
 

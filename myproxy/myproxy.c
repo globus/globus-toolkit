@@ -89,6 +89,7 @@ parse_auth_data(char *buffer, authorization_data_t ***auth_data);
 #define STRING_TO_INT_ERROR		-1
 #define STRING_TO_INT_NONNUMERIC	0
 
+
 static int debug_level = DBG_IN;   //debugging level
 /**********************************************************************
  *
@@ -649,6 +650,7 @@ myproxy_serialize_response(const myproxy_response_t *response,
     int totlen = 0;
     const char *response_string;
     authorization_data_t **p;
+    char date[64];
     
     assert(data != NULL);
     assert(response != NULL);
@@ -697,6 +699,34 @@ myproxy_serialize_response(const myproxy_response_t *response,
 	  p++;
        }
 
+    if (response->cred_start_time) {
+       snprintf(date, sizeof(date), "%lu", response->cred_start_time);
+       len = concatenate_strings(data, datalen, MYPROXY_START_TIME_STRING,
+	                         date, "\n", NULL);
+       if (len < 0)
+	  return -1;
+
+       totlen += len;
+    }
+
+    if (response->cred_end_time) {
+       snprintf(date, sizeof(date), "%lu", response->cred_end_time);
+       len = concatenate_strings(data, datalen, MYPROXY_END_TIME_STRING,
+	                         date, "\n", NULL);
+       if (len < 0)
+	  return -1;
+
+       totlen += len;
+    }
+
+    if (response->cred_owner) {
+       len = concatenate_strings(data, datalen, MYPROXY_CRED_OWNER_STRING,
+	                         response->cred_owner, "\n", NULL);
+       if (len < 0)
+	  return -1;
+       totlen += len;
+    }
+
     return totlen+1;
 }
 
@@ -709,6 +739,7 @@ myproxy_deserialize_response(myproxy_response_t *response,
     char version_str[128];
     char response_str[128];
     char authorization_data[4096];
+    int value;
 
     assert(data != NULL); 
       
@@ -768,6 +799,47 @@ myproxy_deserialize_response(myproxy_response_t *response,
 	  verror_prepend_string("Error parsing authorization data from server response");
 	  return -1;
        }
+
+    len = convert_message(data, datalen,
+	                  MYPROXY_START_TIME_STRING,
+			  CONVERT_MESSAGE_DEFAULT_FLAGS,
+			  response_str, sizeof(response_str));
+    if (len > 0) {
+       switch(string_to_int(response_str, &value)) {
+	  case STRING_TO_INT_SUCCESS:
+	     response->cred_start_time = value;
+	     break;
+	  case STRING_TO_INT_NONNUMERIC:
+	     verror_put_string("Non-numeric characters in CRED_START_TIME \"%s\"",
+		               response_str);
+	     return -1;
+	  case STRING_TO_INT_ERROR:
+	     return -1;
+       }
+    }
+
+    len = convert_message(data, datalen,
+	                  MYPROXY_END_TIME_STRING,
+			  CONVERT_MESSAGE_DEFAULT_FLAGS,
+			  response_str, sizeof(response_str));
+    if (len > 0) {
+       switch(string_to_int(response_str, &value)) {
+	  case STRING_TO_INT_SUCCESS:
+	     response->cred_end_time = value;
+	     break;
+	  case STRING_TO_INT_NONNUMERIC:
+	     verror_put_string("Non-numeric characters in CRED_END_TIME \"%s\"",
+		               response_str);
+	     return -1;
+	  case STRING_TO_INT_ERROR:
+	     return -1;
+       }
+    }
+
+    len = convert_message(data, datalen,
+	                  MYPROXY_CRED_OWNER_STRING,
+			  CONVERT_MESSAGE_DEFAULT_FLAGS,
+			  response->cred_owner, sizeof(response->cred_owner));
 
     /* Success */
     return 0;
