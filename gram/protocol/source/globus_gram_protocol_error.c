@@ -181,7 +181,9 @@ globus_l_gram_protocol_error_strings[GLOBUS_GRAM_PROTOCOL_ERROR_LAST] =
 /* 162 */     "the authorization system denied the request",
 /* 163 */     "the authorization system reported a failure",
 /* 164 */     "the authorization system denied the request - invalid job id",
-/* 165 */     "the authorization system denied the request - not authorized to run the specified executable"
+/* 165 */     "the authorization system denied the request - not authorized to run the specified executable",
+/* 166 */     "the provided RSL 'user_name' parameter is invalid.",
+/* 167 */     "the job is not running in the account named by the 'user_name' parameter."
 };
 
 static char *
