@@ -2,6 +2,7 @@
 
 	* myproxy_destroy.c (main): Bug fix - use created proxy file for
 	authentication and not default proxy.
+	(main): Bug fix - passphrase was not being correctly read.
 
 2000-10-09  Von Welch  <vwelch@ncsa.uiuc.edu>
 
