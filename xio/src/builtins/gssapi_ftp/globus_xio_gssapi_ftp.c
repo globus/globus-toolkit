@@ -2496,8 +2496,8 @@ globus_l_xio_gssapi_ftp_read(
         {
             if(handle->banner != NULL)
             {
-                iovec->iov_base = handle->banner;
-                iovec->iov_len = handle->banner_length;
+                handle->read_iov->iov_base = handle->banner;
+                handle->read_iov->iov_len = handle->banner_length;
                 globus_xio_driver_finished_read(
                     op, GLOBUS_SUCCESS, handle->banner_length);
                 handle->banner = NULL;
