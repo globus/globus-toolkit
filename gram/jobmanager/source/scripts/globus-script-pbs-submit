@@ -213,7 +213,9 @@ fi
 echo "#PBS -o $grami_stdout" >> $PBS_JOB_SCRIPT
 echo "#PBS -e $grami_stderr" >> $PBS_JOB_SCRIPT
 echo "#PBS -l ncpus=$grami_count" >> $PBS_JOB_SCRIPT
-#echo "#PBS -l nodes=$grami_count" >> $PBS_JOB_SCRIPT
+
+# Uncomment the next line if your pbs allows node count specification
+#echo "#PBS -l nodes=$grami_host_count" >> $PBS_JOB_SCRIPT
 
 # Check for environment variables
 
