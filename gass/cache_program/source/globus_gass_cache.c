@@ -110,6 +110,10 @@ static globus_bool_t  globus_l_cache_monitor_done = GLOBUS_FALSE;
 "                     mdshost, mdsport and mdsbasedn let you overwrite the\n"\
 "                     default information necessary to contact the MDS ldap\n"\
 "                     server.\n"\
+"    -T <mds ldap server timeout in seconds>\n"\
+"    -mdstimeout <mds ldap server timeout in seconds\n"\
+"		      mdstimeout or T let you override the default timeout\n"\
+"		      to contact the MDS ldap server.\n"\
 "    -r resource    - The resource argument specifies that the cache\n"\
 "                     operation will be performed on a remote cache. The\n"\
 "                     resource string can be either a resource manager name\n"\
@@ -224,6 +228,19 @@ main(int argc, char **argv)
 		return -1;
 	    }
 	    
+	}
+	else if ( strcmp(argv[arg],"-T") == 0 || strcmp(argv[arg],"-mdstimeout") == 0 )
+	{
+	    err = globus_libc_setenv("GLOBUS_MDS_TIMEOUT",
+				     (char *) argv[++arg],1);
+	    if (err != GLOBUS_SUCCESS)
+	    {
+		globus_libc_fprintf(
+		    stderr,
+		    "Error setting environment variable GLOBUS_MDS_TIMEOUT\n");
+		globus_module_deactivate(GLOBUS_COMMON_MODULE);
+		return -1;
+	    }
 	}
 	else if ( strcmp(argv[arg],"-mdsport") == 0 )
 	{
@@ -382,7 +399,7 @@ globus_l_cache_get_rm_contact(char *resource)
     search_string=malloc(strlen(resource)+5);
 
     globus_libc_sprintf(search_string, "cn=%s", resource);
-    
+g    
     if(ldap_search_s(ldap_server,
 		     base_dn,
 		     LDAP_SCOPE_SUBTREE,
