@@ -257,7 +257,7 @@ main(int argc, char *argv[])
 
     /* Delete proxy file */
     if (grid_proxy_destroy(proxyfile) != 0) {
-        fprintf(stderr, "Program grid_proxy_destroy failed\n");
+        fprintf(stderr, "Failed to remove temporary proxy credential.\n");
 	goto cleanup;
     }
     cleanup_user_proxy = 0;
@@ -437,21 +437,53 @@ grid_proxy_init(int seconds, const char *proxyfile) {
 
 /* grid_proxy_destroy()
  *
- * Uses the system() call to run grid-proxy-destroy to create a user proxy
+ * Fill the proxy file with zeros and unlink.
  *
- * returns grid-proxy-destroy status 0 if OK, -1 on error
+ * returns 0 if OK, -1 on error
  */
 int
-grid_proxy_destroy(const char *proxyfile) {
-  
-    int rc;
-    char command[128];
-
+grid_proxy_destroy(const char *proxyfile)
+{
+    FILE *fp;
+    long offset, i;
+    char zero = '\0';
+    
     assert(proxyfile != NULL);
 
-    sprintf(command, "grid-proxy-destroy %s", proxyfile);
-    rc = system(command);
+    fp = fopen(proxyfile, "r+");
+    if (!fp) {
+	perror("fopen");
+	return -1;
+    }
+    if (fseek(fp, 0L, SEEK_END) < 0) {
+	perror("fseek");
+	fclose(fp);
+	return -1;
+    }
+    offset = ftell(fp);
+    if (offset < 0) {
+	perror("ftell");
+	fclose(fp);
+	return -1;
+    }
+    if (fseek(fp, 0L, SEEK_SET) < 0) {
+	perror("fseek");
+	fclose(fp);
+	return -1;
+    }
+    for (i=0; i < offset; i++) {
+	if (fwrite(&zero, 1, 1, fp) != 1) {
+	    perror("fwrite");
+	    fclose(fp);
+	    return -1;
+	}
+    }
+    fclose(fp);
+    if (unlink(proxyfile) < 0) {
+	perror("unlink");
+	return -1;
+    }
 
-    return rc;
+    return 0;
 }
 
