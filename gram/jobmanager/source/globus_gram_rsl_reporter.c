@@ -107,17 +107,18 @@ main(int argc, char *argv[])
 	                  globus_l_oneline_usage, globus_l_long_usage,
 		          &options_found, NULL);
 
+    if(rc < 0)
+    {
+        rc = (rc == GLOBUS_FAILURE) ? 1 : 0;
+	goto scan_args_failed;
+    }
+    
     rc = globus_gram_job_manager_request_init(&request);
     if(rc != GLOBUS_SUCCESS)
     {
 	goto request_init_failed;
     }
-
-    if(rc < 0)
-    {
-	goto scan_args_failed;
-    }
-
+    
     tmp = options_found;
     while(!globus_list_empty(tmp))
     {
