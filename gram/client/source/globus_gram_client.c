@@ -505,6 +505,19 @@ globus_l_gram_client_authenticate(char * gatekeeper_url,
 
 
 /******************************************************************************
+Function:	globus_gram_client_version()
+Description:
+Parameters:
+Returns:
+******************************************************************************/
+int 
+globus_gram_client_version(void)
+{
+    return(GLOBUS_GRAM_PROTOCOL_VERSION);
+
+} /* globus_gram_client_version() */
+
+/******************************************************************************
 Function:	globus_gram_client_ping()
 Description:
 Parameters:

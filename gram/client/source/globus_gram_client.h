@@ -214,6 +214,9 @@ globus_gram_client_job_request(char * resource_manager_contact,
 			       const char * callback_contact,
 			       char ** job_contact);
 
+extern int
+globus_gram_client_version(void);
+
 extern int 
 globus_gram_client_ping(char * resource_manager_contact);
 
