@@ -1,4 +1,4 @@
-#define OUTSTANDING_READ_COUNT                      4
+#define OUTSTANDING_READ_COUNT                      1
 
 #include <setjmp.h>
 #include "config.h"
@@ -815,6 +815,7 @@ g_receive_data(
         alarm(timeout_data);
 
         monitor.count = 0;
+        monitor.done = GLOBUS_FALSE;
         monitor.fd = filefd;
         /* TODO: serval outstanding reads at once */
         for(ctr = 0; ctr < OUTSTANDING_READ_COUNT; ctr++)
@@ -866,7 +867,7 @@ g_receive_data(
         }
 #       endif
 
-        return (0);
+        goto clean_exit;
 
     case TYPE_E:
         reply(553, "TYPE E not implemented.");
@@ -911,6 +912,25 @@ g_receive_data(
     transflag = 0;
     perror_reply(452, "Error writing file");
     return (-1);
+
+  clean_exit:
+
+    monitor.done = GLOBUS_FALSE;
+    res = globus_ftp_control_data_force_close(
+              handle,
+              data_close_callback,
+              (void*)&monitor);
+    globus_mutex_lock(&monitor.mutex);
+    {   
+        while(!monitor.done)
+        {
+            globus_cond_wait(&monitor.cond, &monitor.mutex);
+        }
+    }
+    globus_mutex_unlock(&monitor.mutex);
+
+    wu_monitor_destroy(&monitor);
+    return (0);
 }
 
 void
@@ -994,7 +1014,7 @@ data_read_callback(
                       buffer,
                       buffer_size,
                       data_read_callback,
-                      (void *)&monitor);
+                      (void *)monitor);
             if(res != GLOBUS_SUCCESS)
             {
                 globus_free(buffer);
