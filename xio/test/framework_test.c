@@ -235,7 +235,6 @@ framework_main(
     int                                     rc;
     globus_xio_stack_t                      stack;
     globus_xio_handle_t                     handle;
-    globus_xio_driver_t                     driver;
     globus_xio_target_t                     target;
     globus_xio_attr_t                       attr;
     globus_result_t                         res;

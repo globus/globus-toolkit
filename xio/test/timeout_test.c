@@ -7,7 +7,7 @@ static globus_mutex_t                   globus_l_mutex;
 static globus_cond_t                    globus_l_cond;
 static globus_bool_t                    globus_l_closed = GLOBUS_FALSE;
 
-#define USEC_THRESHHOLD  10000000
+#define USEC_THRESHHOLD  4000000
 
 static globus_bool_t
 timeout_cb(
@@ -186,7 +186,7 @@ timeout_main(
         return 1;
     }
 
-    GlobusTimeReltimeSet(delay, secs / 10, usecs / 10);
+    GlobusTimeReltimeSet(delay, secs / 4, usecs / 4);
     /* set up timeouts */
     if(strcmp(argv[opt_offset], "O") == 0)
     {
