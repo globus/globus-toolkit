@@ -29,7 +29,7 @@
     <Build_Environment >
       <cflags >@GPT_PKG_CFLAGS@</cflags>
       <external_includes >@GPT_EXTERNAL_INCLUDES@</external_includes>
-      <pkg_libs > </pkg_libs>
+      <pkg_libs >-lglobus_scheduler_event_generator</pkg_libs>
       <external_libs >@GPT_EXTERNAL_LIBS@</external_libs>
     </Build_Environment>
 
