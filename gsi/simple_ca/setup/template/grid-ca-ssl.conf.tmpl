@@ -61,6 +61,7 @@ emailAddress		= optional
 default_bits		= 1024
 default_keyfile 	= privkey.pem
 distinguished_name	= req_distinguished_name
+x509_extensions         = v3_ca
 req_extensions          = v3_req
 
 [ req_distinguished_name ]
@@ -85,6 +86,19 @@ commonName_max			= 64
 
 # END CONFIG
 
+[ v3_ca ]
+basicConstraints                = critical,CA:true
+subjectKeyIdentifier            = hash
+nsCertType                      = sslCA,emailCA,objCA
+
 [ v3_req ]
-nsCertType                      = objsign,email,server,client
-basicConstraints                = critical,CA:false
+nsCertType                      = sslCA,emailCA,objCA
+
+[ x509v3_extensions ]
+nsCertType			= objsign,email,server,client
+
+
+
+
+
+

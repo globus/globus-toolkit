@@ -322,10 +322,12 @@ generate_ca_certificate() {
 
 . ${grid_security_conf_template}
 
+ca_ssl_conf_template=${tmp_ca_setup_dir}/grid-ca-ssl.conf.tmpl
+
 tmp_ca_conf=${GLOBUS_SH_TMP-/tmp/}/tmp_ssl.conf.1.$$
 
 ${GLOBUS_SH_SED-sed} -e "1,/BEGIN CONFIG/p" -e d \
-		     < $ssl_conf_template > $tmp_ca_conf
+		     < $ca_ssl_conf_template > $tmp_ca_conf
 
 ${GLOBUS_SH_SED-sed} -e "s|^dir\([^=]*\)=.*$|dir\1= ${GRID_CA_DIR}|" \
 		     < $tmp_ca_conf > $grid_ca_conf
@@ -333,12 +335,12 @@ ${GLOBUS_SH_SED-sed} -e "s|^dir\([^=]*\)=.*$|dir\1= ${GRID_CA_DIR}|" \
 ${GLOBUS_SH_RM-rm} -f ${tmp_ca_conf}
 
 ldap_dn_to_ssl_dn "${GSI_CA_BASE_DN}" >> $grid_ca_conf
-${GLOBUS_SH_SED-sed} -e "/END CONFIG/,\$p" -e d < $ssl_conf_template >> $grid_ca_conf
+${GLOBUS_SH_SED-sed} -e "/END CONFIG/,\$p" -e d < $ca_ssl_conf_template >> $grid_ca_conf
 
 CA_REQ_INPUT=${GLOBUS_SH_TMP-/tmp}/tmp_openssl_input.conf.1.$$
 create_input_file "${GSI_CA_NAME}" "${grid_ca_conf}" > ${CA_REQ_INPUT}
 
-#run CA.sh to create CA certificate and set up the directories
+# create CA certificate request
 ${openssl_cmd} req -config "${grid_ca_conf}" -x509 -days ${CA_CERT_DAYS} \
                    -newkey rsa:1024 -keyout ${CA_KEY_FILE} \
                    -out ${CA_CERT_FILE} < ${CA_REQ_INPUT} 
@@ -390,7 +392,7 @@ certificates from this CA.
 To install this package, run:
 
 \$GLOBUS_LOCATION/sbin/globus-build -install-only \\
-    ${CA_UTILS_PACKAGE}
+${GRID_CA_DIR}/${CA_UTILS_PACKAGE}
 
 CA setup complete.
 
@@ -469,7 +471,7 @@ ${GLOBUS_SH_CHMOD-chmod} 0700 configure
 ./configure
 make dist
 
-CA_UTILS_PACKAGE=globus_simple_ca_${CA_CERT_HASH}_setup-0.1.tar.gz
+CA_UTILS_PACKAGE=globus_simple_ca_${CA_CERT_HASH}_setup-0.3.tar.gz
 
 if [ ! -f ${tmp_ca_setup_dir}/${CA_UTILS_PACKAGE} ]; then
     echo ""
@@ -481,7 +483,7 @@ fi
 # versions of this generated package should not be changed ever
 ${GLOBUS_SH_CP-cp} ${tmp_ca_setup_dir}/${CA_UTILS_PACKAGE} ${GRID_CA_DIR}/${CA_UTILS_PACKAGE}
 
-#${GLOBUS_SH_RM-rm} -rf ${tmp_ca_setup_dir}
+${GLOBUS_SH_RM-rm} -rf ${tmp_ca_setup_dir}
 
 echo "done."
 echo

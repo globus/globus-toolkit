@@ -4,6 +4,7 @@ setup-ssl-utils.pl
 setup-ssl-utils-sh-scripts.in
 setup-ssl-utils-sh-scripts
 globus-ssl.conf.tmpl
+grid-ca-ssl.conf.tmpl
 configure.in
 configure
 config.guess
