@@ -1,18 +1,22 @@
 #!/bin/bash
 
-# This script iterates over files in the subdirectory package-list
-# Each file should define name, subdir, and build.
-# The script will cd to subdir and execute the list of build commands
+# This script iterates over directories in the subdirectory package-list
+# and package-list-cdeps.
+# Each directory should have a build-info and a pkg_data_src.gpt
+# build-info should contain "name=" and "subdir=".
+# make_source_package will create a GPT package containing subdir
+# with the metadata in pkg_data_src.gpt
 
-# If the result is a single gar, the file can also define "gar".
-# Otherwise, it should perform appropriate processing in build.  The
-# destination directory is available to the build commands as
-# \$destdir
-
-# Call with a package name to build a specific package.
-#	E.g., ./make-packages grim
-# Call with a CVS tag to build that tag.
-#	E.g., ./make-packages alpha2
+usage () {
+	echo $0: Usage:  $0 [-p package] [-t tag] [-n] [-h]
+	echo
+	echo "With no arguments, checkout and build all of GT3."
+	echo "		$0 -p grim		Build package-list/grim"
+	echo "		$0 -t my_tag	Use \"-r my_tag\" in cvs commands"
+	echo "		$0 -n 		Don't update the CVS checkout"
+	echo "		$0 -h		Print this help message"
+	echo
+}
 
 setup_environment() {
 	#If user already has a JAVA_HOME, use it
@@ -30,7 +34,6 @@ setup_environment() {
 		fi
 	fi
 
-	export OGSA_HOME=`pwd`/gt3-core/core
 }
 
 # If we're on an MCS machine, just checkout from filesystem.
@@ -57,11 +60,15 @@ checkout_cvs() {
 		echo Making fresh CVS checkout
 		mkdir ogsa-cvs
 		cd ogsa-cvs
-		cvs co all $cvs_opts
+		cvs co $cvs_opts all 
 	else
-		echo Updating CVS checkout
+		echo "Updating CVS checkout, ignoring tag (if any)"
 		cd ogsa-cvs
-		cvs -z3 -qq up all $cvs_opts
+		for f in *; do
+			cd $f
+			cvs -z3 -qq up 
+			cd ..
+		done
 	fi
 	cd ..
 
@@ -77,6 +84,7 @@ install_gpt() {
 		echo Delete gpt-2.2.5 to force rebuild
 		export GPT_LOCATION=`pwd`/gpt-2.2.5
 	else
+		echo Installing gpt-2.2.5
 		tar xzf fait_accompli/gpt-2.2.5-src.tar.gz
 		cd gpt-2.2.5
 		export GPT_LOCATION=`pwd`
@@ -92,6 +100,28 @@ install_gt2() {
 	$GPT_LOCATION/sbin/gpt-install fait_accompli/gt3_alpha_bin_bundle.tar.gz
 	$GPT_LOCATION/sbin/gpt-postinstall
 	echo
+}
+
+install_cdeps() {
+	CVSROOT=/home/globdev/CVS/globus-packages
+	export CVSROOT
+
+	pushd ogsa-cvs/ogsa-c/build_tools
+	cvs -d$CVSROOT co side_tools/build-autotools
+	./side_tools/build-autotools
+	export PATH=$PWD/autotools/bin:$PATH
+	export GLOBUS_LOCATION=$PWD/gt2-installation
+	./cvs-build-ogsa -force gcc32dbg
+	cd binary_packages
+	$GPT_LOCATION/sbin/gpt-bundle -bindir=. -output=ogsa_cbindings_bin_bundle.tar.gz `cat packaging_list | xargs`
+	cd ../source_packages
+	$GPT_LOCATION/sbin/gpt-bundle -srdir=. -output=ogsa_cbindings_src_bundle.tar.gz `cat packaging_list | xargs`
+
+	popd
+
+	mkdir -p package-output
+	cp ogsa-cvs/ogsa-c/ogsa_cbindings_*_bundle.tar.gz package-output
+
 }
 
 # Go to subdir, run the build script.
@@ -193,22 +223,58 @@ collate_packages() {
 	done
 
 	cp fait_accompli/* package-output
-	cp install-alpha package-output
+	cp install-alpha2-src package-output
 }
 
 
+read_args() {
+	tag=""
+	update=1
+	package=""
+
+	while [ x$1 != "x" ]; do
+		if [ $1 = "-t" ]; then
+			export tag=$2;
+			shift; shift;
+		elif [ $1 = "-n" ]; then
+			update=-1;
+			shift;
+		elif [ $1 = "-p" ]; then
+			package=$2;
+			shift; shift;
+		elif [ $1 = "-h" ]; then
+			usage
+			exit
+		fi
+	done
+
+	export tag update package;
+}
+
+
+# main
+
+read_args "$@"
+
 #The one-package case.
-if [ x$1 != "x" && -d package-list/$1 ]; then
+if [ x$package != "x" ]; then
 	setup_environment
-	source package-list/$1/build-info
+	if [ $update = 1 ]; then
+		checkout_cvs
+	fi
+	source package-list/$package/build-info
 	make_source_package
+	tar czf package-output/gt3-${package}-src.tar.gz gt3-${package}-src
 	# make_binary_package
 	exit
 fi
 
 setup_environment
 install_gpt
-checkout_cvs $1
+
+if [ $update = 1 ]; then
+	checkout_cvs $tag
+fi
 
 #This is the poor man's dependency code ...
 
@@ -216,9 +282,11 @@ echo Building Java-only packages
 dir_iter package-list
 echo
 
-install_gt2
+# install_gt2
+
 
 echo Building C-dependent packages
+install_cdeps
 dir_iter package-list-cdeps
 
 collate_packages
