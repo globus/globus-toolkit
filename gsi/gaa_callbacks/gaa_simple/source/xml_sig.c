@@ -21,6 +21,8 @@ gaa_status
 gaa_simple_i_verify_xml_sig(xmlDocPtr doc)
 {
     char errbuf[2048];
+    char *id = 0;
+
     if (! gaa_simple_i_xml_sig_ok(doc, errbuf, sizeof(errbuf))) {
 	gaa_set_callback_err(errbuf);
 	return(GAA_S_POLICY_PARSING_FAILURE);
@@ -132,6 +134,7 @@ gaa_simple_i_xml_sig_ok(xmlDocPtr doc, char *errbuf, int errbuflen)
 	goto end;
     }
 
+
  end:
 
     if(dsigCtx) {
@@ -161,6 +164,154 @@ gaa_simple_i_xml_sig_ok(xmlDocPtr doc, char *errbuf, int errbuflen)
     /* End of boilerplate xmlsec shutdown code */
 
     return(retval);
+}
+
+gaa_status
+gaa_simple_i_find_signer(xmlDocPtr doc, char **signer, char *errbuf, int errbuflen)
+{
+    xmlNodePtr 		signode = 0;
+    xmlNodePtr 		x509node = 0;
+    xmlNodePtr 		x509textnode = 0;
+    xmlNodePtr 		kinode = 0;
+    xmlChar *		x509text;
+    X509 *     		x509cert;
+    BIO *       	bp;
+    char *		certbuf = 0;
+    gaa_status		status = GAA_S_SUCCESS;
+
+    if (doc == 0 || signer == 0) {
+	snprintf(errbuf, errbuflen, "Null xml document or signer pointer");
+	return(GAA_S_INTERNAL_ERR);
+    }
+
+    /* Boilerplate xmlsec startup code */
+#ifndef XMLSEC_NO_XSLT
+    xmlIndentTreeOutput = 1; 
+#endif /* XMLSEC_NO_XSLT */
+
+/* Init xmlsec library */
+    if(xmlSecInit() < 0) {
+	snprintf(errbuf, errbuflen, "Error: xmlsec initialization failed.\n");
+	return(GAA_S_INTERNAL_ERR);
+    }
+
+    /* Check loaded library version */
+    if(xmlSecCheckVersion() != 1) {
+	snprintf(errbuf, errbuflen, "Error: loaded xmlsec library version is not compatible.\n");
+	status = GAA_S_INTERNAL_ERR;
+	goto end;
+    }    
+
+    /* Load default crypto engine if we are supporting dynamic
+     * loading for xmlsec-crypto libraries. Use the crypto library
+     * name ("openssl", "nss", etc.) to load corresponding 
+     * xmlsec-crypto library.
+     */
+#ifdef XMLSEC_CRYPTO_DYNAMIC_LOADING
+    if(xmlSecCryptoDLLoadLibrary(BAD_CAST "openssl") < 0) {
+	snprintf(errbuf, errbuflen, "Error: unable to load default xmlsec-crypto library. Make sure\n"
+			"that you have it installed and check shared libraries path\n"
+			"(LD_LIBRARY_PATH) envornment variable.\n");
+	status = GAA_S_INTERNAL_ERR;
+	goto end;
+    }
+#endif /* XMLSEC_CRYPTO_DYNAMIC_LOADING */
+
+    /* Init crypto library */
+    if(xmlSecCryptoAppInit(NULL) < 0) {
+	snprintf(errbuf, errbuflen, "Error: xmlsec-crypto-app initialization failed.\n");
+	status = GAA_S_INTERNAL_ERR;
+	goto end;
+    }
+
+    /* Init xmlsec-crypto library */
+    if(xmlSecCryptoInit() < 0) {
+	snprintf(errbuf, errbuflen, "Error: xmlsec-crypto initialization failed.\n");
+	status = GAA_S_INTERNAL_ERR;
+	goto end;
+    }
+
+    /* End of boilerplate xmlsec startup code */
+
+
+  /* find signature node */
+    signode = xmlSecFindNode(xmlDocGetRootElement(doc),
+			     xmlSecNodeSignature,
+			     xmlSecDSigNs);
+    if(signode == NULL) {
+	snprintf(errbuf, errbuflen, "Error: xml signature node not found");
+	status = GAA_S_POLICY_PARSING_FAILURE;
+	goto end;
+    }
+
+    kinode = xmlSecFindNode(signode,
+			    xmlSecNodeKeyInfo,
+			    xmlSecDSigNs);
+    if(kinode == NULL) {
+	snprintf(errbuf, errbuflen, "Error: xml keyinfo node not found");
+	status = GAA_S_POLICY_PARSING_FAILURE;
+	goto end;
+    }
+
+    x509node = xmlSecFindNode(kinode,
+			      xmlSecNodeX509Certificate,
+			      xmlSecDSigNs);
+    if(x509node == NULL) {
+	snprintf(errbuf, errbuflen, "Error: x509 cert node not found");
+	status = GAA_S_POLICY_PARSING_FAILURE;
+	goto end;
+    }
+
+    for (x509textnode = x509node->children; x509textnode; x509textnode = x509textnode->next)
+    {
+	if (x509textnode->type == XML_TEXT_NODE)
+	    break;
+    }
+
+    if(x509textnode == NULL) {
+	snprintf(errbuf, errbuflen, "Error: no text in x509 cert node");
+	status = GAA_S_POLICY_PARSING_FAILURE;
+	goto end;
+    }
+
+    x509text = x509textnode->content;
+
+    if ((certbuf = globus_libc_malloc(strlen(x509text) + 80)) == 0)
+    {	
+	snprintf(errbuf, errbuflen, "Malloc failed");
+	status = GAA_S_SYSTEM_ERR;
+	goto end;
+    }
+    sprintf(certbuf,
+	    "-----BEGIN CERTIFICATE-----%s-----END CERTIFICATE-----\n",
+	    x509text);
+
+    bp = BIO_new(BIO_s_mem());
+    BIO_puts(bp, certbuf);
+    x509cert = PEM_read_bio_X509(bp, NULL, 0, NULL);
+    *signer = strdup(x509cert->name);
+
+ end:    
+    /* Boilerplate xmlsec shutdown code */
+    
+    /* Shutdown xmlsec-crypto library */
+    xmlSecCryptoShutdown();
+    
+    /* Shutdown crypto library */
+    xmlSecCryptoAppShutdown();
+    
+    /* Shutdown xmlsec library */
+    xmlSecShutdown();
+
+    /* Shutdown libxslt/libxml */
+#ifndef XMLSEC_NO_XSLT
+    xsltCleanupGlobals();            
+#endif /* XMLSEC_NO_XSLT */
+    xmlCleanupParser();	
+
+    /* End of boilerplate xmlsec shutdown code */
+
+    return(status);
 }
 
 #ifdef TESTING_ONLY

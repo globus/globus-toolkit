@@ -409,3 +409,52 @@ gaa_simple_l_add_ads_rights (gaa_ptr 		gaa,
     return(status);
 }
     
+gaa_status
+gaa_simple_get_saml_signer_identity(gaa_ptr		*gaa,
+				    char **		identity_ptr,
+				    void *		params)
+{
+    char *			saml_assertion = 0;
+    void *			policy_params = 0;
+    gaa_status			status = GAA_S_SUCCESS;
+    char			errbuf[1024];
+    xmlDocPtr			doc;
+    
+    if (gaa == 0 || identity_ptr == 0 || params == 0)  {
+	gaa_set_callback_err("gaa_simple_get_saml_signer_identity: called with null gaa or identity pointer or params");
+	return(GAA_S_INVALID_ARG);
+    }
+
+    *identity_ptr = 0;
+
+    xmlInitParser();
+    xmlLoadExtDtdDefaultValue = XML_DETECT_IDS | XML_COMPLETE_ATTRS;
+    xmlSubstituteEntitiesDefault(1);
+
+    if ((saml_assertion = *(char **)params) == 0)  {
+	goto end;
+    }
+
+    doc = xmlParseMemory(saml_assertion, strlen(saml_assertion));
+
+    status = gaa_simple_i_find_signer(doc,
+				      identity_ptr,
+				      errbuf,
+				      sizeof(errbuf));
+
+    if (status != GAA_S_SUCCESS)
+    {
+	gaa_set_callback_err(errbuf);
+    }
+
+ end:
+
+    if (doc)
+	xmlFreeDoc(doc);
+    
+    /* Clean up everything else before quitting. */
+    xmlCleanupParser();
+ 
+    return(status);
+
+}

@@ -30,6 +30,8 @@ process_msg(gaa_ptr gaa, gaa_sc_ptr *sc, char *inbuf, char *outbuf, int outbsize
 	    process_clear(sc);
 	else if (strcasecmp(what, "pull") == 0)
 	    process_pull(gaa, *sc, outbuf, outbsize);
+	else if (strcasecmp(what, "get_authz_id") == 0)
+	    process_get_authz_id(gaa, outbuf, outbsize);
 #ifdef notdef
 	else if (strcasecmp(what, "verify_xml_sig") == 0)
 	    process_saml_verify_xml_sig(inbuf, outbuf, outbsize);
@@ -281,6 +283,20 @@ init_sc(gaa_ptr gaa, gaa_sc_ptr *sc, void *context)
     if (gaa_add_cred(gaa, *sc, cred) != GAA_S_SUCCESS)
 	return(-1);
     return(0);
+}
+
+gaa_status
+process_get_authz_id(gaa_ptr gaa, char *outbuf, int outbsize)
+{
+    gaa_status status;
+    char *idbuf = 0;
+
+    status = gaa_x_get_authorization_identity(gaa, &idbuf);
+    if (idbuf == 0)
+	strncpy(outbuf, "(null)\n", outbsize);
+    else
+	snprintf(outbuf, outbsize, "%s\n", idbuf);
+    return(status);
 }
 
 #ifdef notdef

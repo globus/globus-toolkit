@@ -237,6 +237,7 @@ process_gaa(char *gaa_config_file, gss_ctx_id_t ctx)
     gaa_status				status;
     char *				assertion = 0;
     void *				getpolicy_param;
+    void *				authz_id_param;
     char				buf[1024];
     char				rbuf[8196];
     gaa_sc_ptr 				sc = 0;
@@ -287,6 +288,15 @@ process_gaa(char *gaa_config_file, gss_ctx_id_t ctx)
 
     if (getpolicy_param)
 	*((char **)getpolicy_param) = assertion;
+
+    if ((status = gaa_x_get_get_authorization_identity_param(gaa, &authz_id_param)) != GAA_S_SUCCESS) {
+	printf("note: authz identity callback not configured");
+    }
+    else
+    {
+	if (authz_id_param)
+	    *((char **)authz_id_param) = strdup(assertion);
+    }
 
     gaa_gss_param.type = GAA_GSS_GENERIC_CTX;
     gaa_gss_param.param.ctx = ctx;

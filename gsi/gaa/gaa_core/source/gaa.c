@@ -8,11 +8,11 @@
  */
 /** @defgroup gaa_internal "internal gaa routines"
  */
-static
+static int
 gaa_l_order_mechinfo(void *d1, void *d2);
 
-static
-gaaint_mechinfo *gaa_l_find_mechinfo(gaa_ptr gaa, gaa_string_data mech_type);
+static gaaint_mechinfo *
+gaa_l_find_mechinfo(gaa_ptr gaa, gaa_string_data mech_type);
 
 static gaa_status
 gaa_l_new_cond_eval_entry(gaaint_cond_eval_entry **ce, char *type,
@@ -22,7 +22,7 @@ gaa_l_new_cond_eval_entry(gaaint_cond_eval_entry **ce, char *type,
 static void
 gaa_l_free_cond_eval_entry(gaaint_cond_eval_entry *ce);
 
-static
+static int
 gaa_l_order_cond_eval_entry(gaaint_cond_eval_entry *c1,
 			    gaaint_cond_eval_entry *c2);
 
@@ -35,7 +35,7 @@ gaa_l_free_gaaint_cond(gaaint_cond *c);
 static void
 gaa_l_free_gaaint_request_right(gaaint_request_right *i);
 
-static
+static int
 gaa_l_order_authinfo(gaaint_authinfo *a1, gaaint_authinfo *a2);
 
 static gaa_status
@@ -90,25 +90,25 @@ gaa_l_new_option(gaa_request_option **opt, char *type, char *authority,
 static void
 gaa_l_free_request_option(gaa_request_option *option);
 
-static
+static int
 gaa_l_checkdiff_sec_attrb(gaa_sec_attrb *a1, gaa_sec_attrb *a2);
 
-static
+static int
 gaa_l_checkdiff_id_info(gaa_identity_info *i1, gaa_identity_info *i2);
 
-static
+static int
 gaa_l_checkdiff_conditions(gaa_condition *c1, gaa_condition *c2);
 
-static
+static int
 gaa_l_checkdiff_condlists(gaa_list_ptr l1, gaa_list_ptr l2);
 
-static
+static int
 gaa_l_checkdiff_attr_info(gaa_attribute_info *a1, gaa_attribute_info *a2);
 
-static
+static int
 gaa_l_checkdiff_authr_info(gaa_authr_info *a1, gaa_authr_info *a2);
 
-static
+static int
 gaa_l_checkdiff_creds(void *c1, void *c2);
 
 /** gaa_new_condition()
@@ -467,6 +467,7 @@ gaa_new_gaa(gaa_ptr *gaa)
     (*gaa)->getpolicy = 0;
     (*gaa)->matchrights = 0;
     (*gaa)->cond_callbacks = 0;
+    (*gaa)->authorization_identity_callback = 0;
     if (((*gaa)->mechinfo =
 	 gaa_i_new_sorted_list(gaa_l_order_mechinfo,
 				 (gaa_freefunc)gaa_l_free_mechinfo)) == 0)
@@ -613,8 +614,6 @@ gaa_new_sec_attrb(gaa_sec_attrb **	a,
 		  gaa_string_data	authority,
 		  gaa_string_data	value)
 {
-    gaa_status				status = GAA_S_SUCCESS;
-
     if (a == 0)
     {
 	gaacore_set_err("gaa_new_sec_attrb: called with null sec_attrb");
@@ -742,7 +741,6 @@ gaa_new_cred(gaa_ptr			gaa,
 {
     gaa_status				status = GAA_S_SUCCESS;
     gaa_status				es;
-    gaaint_mechinfo *			mechinfo;
 
     if (gaa == 0 || cred == 0 || mech_type == 0)
     {
@@ -895,7 +893,6 @@ gaa_add_cred(gaa_ptr	gaa,
 	     gaaint_sc *sc,
 	     gaa_cred *	cred)
 {
-    gaa_status	status = GAA_S_SUCCESS;
 
     if (sc == 0 || cred == 0)
     {
@@ -947,6 +944,16 @@ gaa_l_free_getpolicy_callback(gaaint_getpolicy_callback *getp)
     if (getp->param && getp->free)
 	getp->free(getp->param);
     free(getp);
+}
+
+static void
+gaa_l_x_free_authorization_identity_callback(gaaint_x_get_authorization_identity_callback *gc)
+{
+    if (gc == 0)
+	return;
+    if (gc->param && gc->free)
+	gc->free(gc->param);
+    free(gc);
 }
 
 #ifdef DOCUMENT_INTERNAL_FUNCTIONS
@@ -1059,6 +1066,53 @@ gaa_l_new_matchrights_callback(gaaint_matchrights_callback **m,
     return(status);
 }
 
+#ifdef DOCUMENT_INTERNAL_FUNCTIONS
+/** gaa_l_x_new_get_authorization_identity_callback()
+ *
+ *  @ingroup gaa_c_static
+ *  
+ *  Create a gaaint_x_get_authorization_identity_callback structure and fill it with
+ *  appropriate values.  Called by gaa_x_set_authorization_identity_callback().
+ *
+ *  @param ap
+ *         output structure to create
+ *  @param func
+ *         input callback function
+ *  @param param
+ *         input callback parameter (to always be passed to func)
+ *  @param freefunc
+ *         input freefunc (to be called to free param when
+ *         ap is freed).
+ *
+ *  @retval GAA_S_SUCCESS
+ *          success
+ * 
+ *  @note
+ *  A structure created with this function should be freed using
+ *  gaa_l_free_getpolicy_callback().  This will happen automatically
+ *  if this structure is part of a gaa structure freed with gaa_free_gaa().
+ */
+#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
+static gaa_status
+gaa_l_x_new_get_authorization_identity_callback(gaaint_x_get_authorization_identity_callback **gp,
+			     gaa_x_get_authorization_identity_func		 func,
+			     void *			 param,
+			     gaa_freefunc		 freefunc)
+{
+    gaa_status status = GAA_S_SUCCESS;
+
+    if (gp == 0)
+	return(GAA_STATUS(GAA_S_INTERNAL_ERR, 0));
+    if ((*gp =
+	 (gaaint_x_get_authorization_identity_callback *)malloc(sizeof(gaaint_x_get_authorization_identity_callback))) == 0)
+	return(GAA_STATUS(GAA_S_SYSTEM_ERR, 0));    
+    (*gp)->func = func;
+    (*gp)->param = param;
+    (*gp)->free = freefunc;
+    return(status);
+}
+
+
 /** gaa_set_getpolicy_callback()
  *
  *  @ingroup gaa
@@ -1087,7 +1141,6 @@ gaa_set_getpolicy_callback(gaa_ptr	      gaa,
 			   void *	      param,
 			   gaa_freefunc	      freefunc)
 {
-    gaa_status status = GAA_S_SUCCESS;
 
     if (gaa == 0 || func == 0)
     {
@@ -1095,6 +1148,40 @@ gaa_set_getpolicy_callback(gaa_ptr	      gaa,
 	return(GAA_STATUS(GAA_S_INVALID_ARG, 0));
     }
     return(gaa_l_new_getpolicy_callback(&gaa->getpolicy, func, param, freefunc));
+}
+
+/** gaa_x_set_get_authorization_identity_callback()
+ *
+ *  @ingroup gaa
+ *
+ *  Set the get_authorization_identity callback
+ *
+ *  @param gaa
+ *         input/output gaa pointer
+ *  @param func
+ *         input get_authorization_identity function
+ *  @param param
+ *         input getpolicy parameter (to be passed to func whenever it's called).
+ *  @param freefunc
+ *         input function to be used to free param when the gaa pointer is freed.
+ *
+ *  @retval GAA_S_SUCCESS
+ *          success
+ *  @retval GAA_S_INVALID_ARG
+ *          gaa or func is null
+ */
+gaa_status
+gaa_x_set_get_authorization_identity_callback(gaa_ptr	      gaa,
+			   gaa_x_get_authorization_identity_func func,
+			   void *	      param,
+			   gaa_freefunc	      freefunc)
+{
+    if (gaa == 0 || func == 0)
+    {
+	gaacore_set_err("gaa_x_set_get_authorization_identity_callback: called with null gaa or func");
+	return(GAA_STATUS(GAA_S_INVALID_ARG, 0));
+    }
+    return(gaa_l_x_new_get_authorization_identity_callback(&gaa->authorization_identity_callback, func, param, freefunc));
 }
 
 /** gaa_set_matchrights_callback()
@@ -1125,7 +1212,6 @@ gaa_set_matchrights_callback(gaa_ptr	          gaa,
 			     void *		  param,
 			     gaa_freefunc	  freefunc)
 {
-    gaa_status status = GAA_S_SUCCESS;
     if (gaa == 0 || func == 0)
     {
 	gaacore_set_err("gaa_set_matchrights_callback: called with null gaa or func");
@@ -1176,6 +1262,7 @@ gaa_free_gaa(gaa_ptr gaa)
     gaa_l_free_matchrights_callback(gaa->matchrights);
     gaa_list_free(gaa->cond_callbacks);
     gaa_list_free(gaa->authinfo);
+    gaa_l_x_free_authorization_identity_callback(gaa->authorization_identity_callback);
     free(gaa);
 }
 
@@ -1285,7 +1372,7 @@ gaa_l_free_mechinfo(gaaint_mechinfo *minfo)
  *         input mechinfo to compare
  */
 #endif /* DOCUMENT_INTERNAL_FUNCTIONS */
-static
+static int
 gaa_l_order_mechinfo(void *d1,
 		     void *d2)
 {
@@ -1841,7 +1928,7 @@ gaa_l_free_cond_eval_entry(gaaint_cond_eval_entry *ce)
  *         input entry to compare
  */
 #endif /* DOCUMENT_INTERNAL_FUNCTIONS */
-static
+static int
 gaa_l_order_cond_eval_entry(gaaint_cond_eval_entry *c1,
 			    gaaint_cond_eval_entry *c2)
 {
@@ -1996,7 +2083,6 @@ gaa_getcreds(gaa_ptr			gaa,
     if (slist)
 	status = gaa_i_list_merge(*credlist, slist);
 
- end:
     if (status != GAA_S_SUCCESS)
     {
 	gaa_list_free(*credlist);
@@ -2037,7 +2123,7 @@ gaa_l_free_gaaint_cond(gaaint_cond *c)
  *         input entry to compare
  */
 #endif /* DOCUMENT_INTERNAL_FUNCTIONS */
-static
+static int
 gaa_l_order_authinfo(gaaint_authinfo *a1, gaaint_authinfo *a2)
 {
     if (a1 && ! a2)
@@ -2304,6 +2390,8 @@ gaa_free_cred(gaa_cred *cred)
     case GAA_ATTRIBUTES:
 	gaa_free_attribute_info(cred->info.attr_info);
 	break;
+    default:
+	;
     }
     free(cred);
 }
@@ -2613,7 +2701,7 @@ gaa_policy_rightval_string(gaa_ptr gaa, char *authority, void *val, char *buf, i
  *          conditions are different
  */
 #endif /* DOCUMENT_INTERNAL_FUNCTIONS */
-static
+static int
 gaa_l_checkdiff_conditions(gaa_condition *c1,
 			   gaa_condition *c2)
 {
@@ -2661,7 +2749,7 @@ gaa_l_checkdiff_conditions(gaa_condition *c1,
  *          credentials are different
  */
 #endif /* DOCUMENT_INTERNAL_FUNCTIONS */
-static
+static int
 gaa_l_checkdiff_creds(void *cred1,
 		      void *cred2)
 {
@@ -2722,12 +2810,10 @@ gaa_l_checkdiff_creds(void *cred1,
  *          structures are different
  */
 #endif /* DOCUMENT_INTERNAL_FUNCTIONS */
-static
+static int
 gaa_l_checkdiff_id_info(gaa_identity_info *i1,
 			gaa_identity_info *i2)
 {
-    int status;
-
     if ((i1 && ! i2) || (i2 && ! i1))
 	return(1);
     if (! i1 && ! i2)
@@ -2755,7 +2841,7 @@ gaa_l_checkdiff_id_info(gaa_identity_info *i1,
  *          structures are different
  */
 #endif /* DOCUMENT_INTERNAL_FUNCTIONS */
-static
+static int
 gaa_l_checkdiff_sec_attrb(gaa_sec_attrb *a1,
 			  gaa_sec_attrb *a2)
 {
@@ -2804,7 +2890,7 @@ gaa_l_checkdiff_sec_attrb(gaa_sec_attrb *a1,
  *  In this implementation, this function always returns 1.
  */
 #endif /* DOCUMENT_INTERNAL_FUNCTIONS */
-static
+static int
 gaa_l_checkdiff_authr_info(gaa_authr_info *a1, gaa_authr_info *a2)
 {
     return(1);
@@ -2829,7 +2915,7 @@ gaa_l_checkdiff_authr_info(gaa_authr_info *a1, gaa_authr_info *a2)
  *          structures are different
  */
 #endif /* DOCUMENT_INTERNAL_FUNCTIONS */
-static
+static int
 gaa_l_checkdiff_attr_info(gaa_attribute_info *a1,
 			  gaa_attribute_info *a2)
 {
@@ -2882,7 +2968,7 @@ gaa_l_checkdiff_attr_info(gaa_attribute_info *a1,
  *          lists are different
  */
 #endif /* DOCUMENT_INTERNAL_FUNCTIONS */
-static
+static int
 gaa_l_checkdiff_condlists(gaa_list_ptr l1,
 			  gaa_list_ptr l2)
 {
@@ -2952,4 +3038,52 @@ gaa_x_get_getpolicy_param(gaa_ptr gaa, void **param)
 	return(GAA_S_INVALID_ARG);
     *param = gaa->getpolicy->param;
     return(GAA_S_SUCCESS);
+}
+
+extern gaa_status
+gaa_x_get_get_authorization_identity_param(gaa_ptr gaa, void **param)
+{
+    if (gaa == 0 || gaa->authorization_identity_callback == 0)
+	return(GAA_S_INVALID_ARG);
+    *param = gaa->authorization_identity_callback->param;
+    return(GAA_S_SUCCESS);
+}
+
+
+/**
+ * gaa_x_get_authorization_identity
+ *
+ * This is a hack and should go away.  The problem is that some applications
+ * need to do a setuid() outside of GAA.
+ *
+ * @param gaa
+ *        input -- the gaa pointer to inspect
+ * @param identity_ptr
+ *        output  -- the presumed external identity.  This will be malloc'd
+ *        and should be freed by the caller.
+ *
+ *  @retval GAA_S_SUCCESS
+ *          success
+ *  @retval GAA_S_INVALID_ARG
+ *          gaa or identity_ptr is null
+ */
+
+extern gaa_status
+gaa_x_get_authorization_identity(gaa_ptr gaa, char **identity_ptr)
+{
+    if (gaa == 0 || identity_ptr == 0)
+	return(GAA_S_INVALID_ARG);
+    *identity_ptr = 0;
+    if (gaa->authorization_identity_callback == 0)
+    {
+	return(GAA_S_SUCCESS);
+    }
+    if (gaa->authorization_identity_callback->func == 0)
+    {
+	return(GAA_S_SUCCESS);
+    }
+    return(gaa->authorization_identity_callback->func(
+	       gaa,
+	       identity_ptr,
+	       gaa->authorization_identity_callback->param));
 }
