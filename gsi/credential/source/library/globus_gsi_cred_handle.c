@@ -1753,10 +1753,32 @@ globus_gsi_cred_verify_cert_chain(
                  
         if(!X509_verify_cert(store_context))
         {
+            globus_result_t             callback_error;
+            globus_result_t             local_result;
+
             GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
                 result,
                 GLOBUS_GSI_CRED_ERROR_VERIFYING_NEW_PROXY,
                 ("Failed to verify new proxy certificate"));
+
+            local_result = globus_gsi_callback_get_error(callback_data,
+                                                         &callback_error);
+            if(local_result != GLOBUS_SUCCESS)
+            {
+                GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
+                    local_result,
+                    GLOBUS_GSI_CRED_ERROR_VERIFYING_NEW_PROXY);
+                goto exit;
+            }
+            else
+            {
+                local_result = callback_error;
+            }
+            
+            result = globus_i_gsi_cred_error_join_chains_result(
+                result,
+                local_result);
+
             goto exit;
         }
 
