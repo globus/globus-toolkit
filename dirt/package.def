@@ -185,3 +185,4 @@ globus_rendezvous ws-gram/client/c/rendezvous/source dirt.sh
 globus_rendezvous_test ws-gram/client/c/rendezvous/test dirt.sh
 globus_usage usage/c/sender/source dirt.sh
 globus_java_container_admin_tools wsrf/java/containerTools/source dirt.sh
+globus_xio_bidi_driver xio/drivers/bidi/source dirt.sh
