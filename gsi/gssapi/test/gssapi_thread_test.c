@@ -7,6 +7,7 @@
 
 
 #define NUM_CLIENTS 32
+#define ITERATIONS 10
 
 struct thread_arg
 {
@@ -14,6 +15,11 @@ struct thread_arg
     int                                 fd;
     struct sockaddr_un *                address;
 };
+
+
+static int                              thread_count = 0;
+static globus_mutex_t                   mutex;
+static globus_cond_t                    done;
 
 void *
 server_func(
@@ -37,6 +43,14 @@ main()
     globus_module_activate(GLOBUS_COMMON_MODULE);
     globus_module_activate(GLOBUS_GSI_GSSAPI_MODULE);
 
+    /* initialize global mutex */
+
+    globus_mutex_init(&mutex, NULL);
+
+    /* and the condition variable */
+
+    globus_cond_init(&done, NULL);
+    
     /* acquire credentials */
 
     credential = globus_gsi_gssapi_test_acquire_credential();
@@ -73,12 +87,18 @@ main()
 
 	arg->credential = credential;
 	
+        globus_mutex_lock(&mutex);
+        {
+            thread_count++;
+        }
+        globus_mutex_unlock(&mutex);
+
 	globus_thread_create(&thread_handle,NULL,client_func,(void *) arg);
     }
     
     /* accept connections */
 
-    while(1)
+    for(i=0;i<NUM_CLIENTS*ITERATIONS;i++)
     {
 	accept_fd = accept(listen_fd,NULL,0);
 
@@ -93,9 +113,35 @@ main()
 
 	arg->credential = credential;
 
+        globus_mutex_lock(&mutex);
+        {
+            thread_count++;
+        }
+        globus_mutex_unlock(&mutex);
+                
 	globus_thread_create(&thread_handle,NULL,server_func,(void *) arg);
     } 
 
+    /* wait for last thread to terminate */
+    
+    globus_mutex_lock(&mutex);
+    {
+        while(thread_count != 0)
+        {
+            globus_cond_wait(&done, &mutex);
+        }
+    }
+    globus_mutex_unlock(&mutex);
+
+
+    /* destroy global mutex */
+
+    globus_mutex_destroy(&mutex);
+
+    /* and the condition variable */
+
+    globus_cond_destroy(&done);
+    
     /* close the listener */
 
     close(listen_fd);
@@ -110,6 +156,8 @@ main()
     
     globus_module_deactivate(GLOBUS_COMMON_MODULE);
     globus_module_deactivate(GLOBUS_GSI_GSSAPI_MODULE);
+
+    exit(0);
 }
 
 
@@ -146,7 +194,17 @@ server_func(
 				   user_id,
 				   &delegated_cred);
 
-    globus_thread_exit(NULL);
+    globus_mutex_lock(&mutex);
+    {
+        thread_count--;
+        
+        if(!thread_count)
+        {
+            globus_cond_signal(&done);
+        }
+    }
+    globus_mutex_unlock(&mutex);
+
 
     return NULL;
 }
@@ -163,11 +221,12 @@ client_func(
     gss_cred_id_t                       delegated_cred = GSS_C_NO_CREDENTIAL;
     int                                 connect_fd;
     int                                 result;
+    int                                 i;
     
     thread_args = (struct thread_arg *) arg;
 
 
-    while(1)
+    for(i=0;i<ITERATIONS;i++)
     {
 	connect_fd = socket(AF_LOCAL, SOCK_STREAM, 0);
 
@@ -206,8 +265,17 @@ client_func(
 
 
     free(thread_args);
-    
-    globus_thread_exit(NULL);
 
+    globus_mutex_lock(&mutex);
+    {
+        thread_count--;
+        
+        if(!thread_count)
+        {
+            globus_cond_signal(&done);
+        }
+    }
+    globus_mutex_unlock(&mutex);
+    
     return NULL;
 }

@@ -459,9 +459,9 @@ init_sec_context(
 	    {
 		major_status =
 		    GSS_S_DEFECTIVE_TOKEN|GSS_S_CALL_INACCESSIBLE_WRITE;
-		gss_release_buffer(&minor_status,
-				   &output_token);
 	    }
+            gss_release_buffer(&minor_status,
+                               &output_token);
 	}
 	
 	if (GSS_ERROR(major_status))
