@@ -81,11 +81,6 @@ int
 globus_l_gram_job_manager_query_stop_manager(
     globus_gram_jobmanager_request_t *	request);
 
-static
-globus_bool_t
-globus_l_gram_job_manager_authorize_self(
-    gss_ctx_id_t                        context);
-
 
 void
 globus_gram_job_manager_query_callback(
@@ -174,7 +169,7 @@ globus_gram_job_manager_query_callback(
 
     /* add authz callout here */
 
-    rc = GLOBUS_GRAM_PROTOCOL_ERROR_AUTHORIZATION;
+    rc = GLOBUS_GRAM_PROTOCOL_ERROR_AUTHORIZATION_SYSTEM_FAILURE;
     
     result = GLOBUS_GSI_SYSCONFIG_GET_AUTHZ_CONF_FILENAME(&filename);
 
@@ -196,7 +191,7 @@ globus_gram_job_manager_query_callback(
         {
             globus_object_free(error);
             /* do regular authz here */
-            if(globus_l_gram_job_manager_authorize_self(context)
+            if(globus_gram_protocol_authorize_self(context)
                == GLOBUS_FALSE)
             {
                 goto unpack_failed;
@@ -249,7 +244,7 @@ globus_gram_job_manager_query_callback(
             {
                 globus_object_free(error);
                 /* do regular authz here */
-                if(globus_l_gram_job_manager_authorize_self(context)
+                if(globus_gram_protocol_authorize_self(context)
                    == GLOBUS_FALSE)
                 {
                     goto unpack_failed;
@@ -257,6 +252,7 @@ globus_gram_job_manager_query_callback(
             }
             else
             {
+                rc = GLOBUS_GRAM_PROTOCOL_ERROR_AUTHORIZATION_DENIED;
                 globus_object_free(error);
                 goto unpack_failed;
             }
@@ -1053,54 +1049,3 @@ globus_gram_job_manager_query_delegation_callback(
 }
 /* globus_l_gram_job_manager_delegation_callback() */
 
-static
-globus_bool_t
-globus_l_gram_job_manager_authorize_self(
-    gss_ctx_id_t                        context)
-{
-    OM_uint32                           major_status;
-    OM_uint32                           minor_status;
-    gss_name_t                          source_name;
-    gss_name_t                          target_name;
-    int                                 equal;
-    globus_bool_t                       result = GLOBUS_FALSE;
-    
-    major_status = gss_inquire_context(&minor_status,
-                                       context,
-                                       &source_name,
-                                       &target_name,
-                                       NULL,
-                                       NULL,
-                                       NULL,
-                                       NULL,
-                                       NULL);
-    if(GSS_ERROR(major_status))
-    {
-        goto exit;
-    }
-
-    major_status = gss_compare_name(&minor_status,
-                                    source_name,
-                                    target_name,
-                                    &equal);
-    if(GSS_ERROR(major_status))
-    {
-        goto free_names;
-    }
-
-    if(equal)
-    {
-        result = GLOBUS_TRUE;
-    }
-    
- free_names:
-    gss_release_name(&minor_status,
-                     &source_name);
-    gss_release_name(&minor_status,
-                     &target_name);
- exit:
-
-    return result;
-    
-}
-/* globus_l_gram_job_manager_authorize_self */

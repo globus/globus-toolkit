@@ -742,7 +742,7 @@ globus_gram_job_manager_state_machine(
 
         /* call authz callout here */
 
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_AUTHORIZATION;
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_AUTHORIZATION_SYSTEM_FAILURE;
 
             
         result = GLOBUS_GSI_SYSCONFIG_GET_AUTHZ_CONF_FILENAME(&filename);
@@ -819,7 +819,8 @@ globus_gram_job_manager_state_machine(
                 else
                 {
                     globus_object_free(error);
-                    request->failure_code = rc;
+                    request->failure_code =
+                        GLOBUS_GRAM_PROTOCOL_ERROR_AUTHORIZATION_DENIED;
                     request->jobmanager_state =
                         GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
                     break;
