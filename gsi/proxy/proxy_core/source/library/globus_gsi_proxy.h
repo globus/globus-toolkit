@@ -225,6 +225,10 @@ globus_gsi_proxy_handle_get_clock_skew_allowable(
     globus_gsi_proxy_handle_t           handle,
     int *                               skew);
 
+globus_result_t
+globus_gsi_proxy_handle_get_key_gen_callback(
+    globus_gsi_proxy_handle_t           handle,
+    void                                (**callback)(int, int, void *));
 
 #endif
 
@@ -341,6 +345,16 @@ globus_result_t
 globus_gsi_proxy_handle_attrs_get_clock_skew_allowable(
     globus_gsi_proxy_handle_attrs_t     handle,
     int *                               skew);
+
+globus_result_t
+globus_gsi_proxy_handle_attrs_get_key_gen_callback(
+    globus_gsi_proxy_handle_attrs_t     handle,
+    void                                (**callback)(int,  int, void *));
+
+globus_result_t
+globus_gsi_proxy_handle_attrs_set_key_gen_callback(
+    globus_gsi_proxy_handle_attrs_t     handle,
+    void                                (*callback)(int,  int, void *));
 
 #endif
 

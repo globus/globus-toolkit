@@ -159,6 +159,11 @@ typedef struct globus_l_gsi_proxy_handle_attrs_s
      * adjusts the validity time of the proxy cert.
      */
     int                                 clock_skew;
+    /**
+     * The callback for the creation of the public/private key
+     * pair.
+     */
+    void (*key_gen_callback)(int, int, void *);
 
 } globus_i_gsi_proxy_handle_attrs_t;
 
@@ -183,7 +188,6 @@ typedef struct globus_l_gsi_proxy_handle_s
     globus_gsi_proxy_handle_attrs_t     attrs;
     /** Flag for whether the proxy is limited or not */
     globus_bool_t                       is_limited;
-
     /** The proxy cert info extension used in the operations */
     PROXYCERTINFO *                     proxy_cert_info;    
 
@@ -193,10 +197,8 @@ typedef struct globus_l_gsi_proxy_handle_s
 /* used for printing the status of a private key generating algorithm */
 void 
 globus_i_gsi_proxy_create_private_key_cb(
-    BIO *                               output);
-
-void 
-globus_i_gsi_proxy_create_private_key_cb(
+    int                                 num1,
+    int                                 num2,
     BIO *                               output);
 
 globus_result_t

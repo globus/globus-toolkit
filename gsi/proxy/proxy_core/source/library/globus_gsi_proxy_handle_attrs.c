@@ -83,6 +83,7 @@ globus_gsi_proxy_handle_attrs_init(
     attrs->signing_algorithm = DEFAULT_SIGNING_ALGORITHM;
     attrs->time_valid = DEFAULT_TIME_VALID;
     attrs->clock_skew = DEFAULT_CLOCK_SKEW;
+    attrs->key_gen_callback = NULL;
     
     result = GLOBUS_SUCCESS;
    
@@ -568,6 +569,101 @@ globus_gsi_proxy_handle_attrs_get_clock_skew_allowable(
 };
 /* @} */
 
+/**
+ * @name Get Key Gen Callback 
+ */
+/* @{ */
+/**
+ * Get the public/private key generation callback that provides status
+ * during the generation of the keys
+ * 
+ * @ingroup globus_gsi_proxy_handle
+ *
+ * @param handle_attrs
+ *        The handle_attrs to get the callback from
+ * @param callback
+ *        The callback from the handle attributes
+ *
+ * @return
+ *        GLOBUS_SUCCESS if the handle_attrs is valid, otherwise an error
+ *        is returned
+ */
+globus_result_t
+globus_gsi_proxy_handle_attrs_get_key_gen_callback(
+    globus_gsi_proxy_handle_attrs_t     handle_attrs,
+    void                                (**callback)(int, int, void *))
+{
+    globus_result_t                     result;
+    static char *                       _function_name_ =
+        "globus_gsi_proxy_handle_attrs_get_clock_skew_allowable";
+
+    GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
+
+    if(handle_attrs == NULL)
+    {
+        result = GLOBUS_GSI_PROXY_ERROR_RESULT(
+            GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE_ATTRS,
+            ("NULL handle attributes passed to function: %s",
+             _function_name_));
+        goto exit;
+    }
+    *callback = handle_attrs->key_gen_callback;
+    result = GLOBUS_SUCCESS;
+
+ exit:
+    
+    GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
+    return result;
+};
+/* @} */
+
+/**
+ * @name Set Key Gen Callback 
+ */
+/* @{ */
+/**
+ * Set the public/private key generation callback that provides status
+ * during the generation of the keys
+ * 
+ * @ingroup globus_gsi_proxy_handle
+ *
+ * @param handle_attrs
+ *        The handle_attrs to get the callback from
+ * @param callback
+ *        The callback from the handle attributes
+ *
+ * @return
+ *        GLOBUS_SUCCESS if the handle_attrs is valid, otherwise an error
+ *        is returned
+ */
+globus_result_t
+globus_gsi_proxy_handle_attrs_set_key_gen_callback(
+    globus_gsi_proxy_handle_attrs_t     handle_attrs,
+    void                                (*callback)(int, int, void *))
+{
+    globus_result_t                     result;
+    static char *                       _function_name_ =
+        "globus_gsi_proxy_handle_attrs_set_clock_skew_allowable";
+
+    GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
+
+    if(handle_attrs == NULL)
+    {
+        result = GLOBUS_GSI_PROXY_ERROR_RESULT(
+            GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE_ATTRS,
+            ("NULL handle attributes passed to function: %s",
+             _function_name_));
+        goto exit;
+    }
+    handle_attrs->key_gen_callback = callback;
+    result = GLOBUS_SUCCESS;
+
+ exit:
+    
+    GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
+    return result;
+};
+/* @} */
 
 /**
  * @name Copy Attributes

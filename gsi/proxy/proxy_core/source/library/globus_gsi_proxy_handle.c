@@ -956,3 +956,44 @@ globus_gsi_proxy_handle_get_clock_skew_allowable(
     return result;
 }
 /* @} */
+
+/**
+ * @name Get Callback for Creating Keys
+ */
+/* @{ */
+/**
+ * Get the callback for creating the public/private key pair
+ *
+ * @param handle
+ *        The proxy handle to get the callback from
+ * @param callback
+ *        The callback to set
+ *
+ * @result
+ *        GLOBUS_SUCCESS or an error object identifier
+ */
+globus_result_t
+globus_gsi_proxy_handle_get_key_gen_callback(
+    globus_gsi_proxy_handle_t           handle,
+    void                                (**callback)(int, int, void *))
+{
+    globus_result_t                     result;
+    static char *                       _function_name_ =
+        "globus_gsi_proxy_handle_get_key_gen_callback";
+
+    GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
+
+    result = globus_gsi_proxy_handle_attrs_get_key_gen_callback(
+        handle->attrs,
+        callback);
+    if(result != GLOBUS_SUCCESS)
+    {
+        result = GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
+            result,
+            GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE_ATTRS);
+    }
+
+    GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
+    return result;
+} 
+/* @} */        
