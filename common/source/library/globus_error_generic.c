@@ -180,6 +180,8 @@ globus_error_initialize_error(
     if(short_desc_format != NULL)
     {
         size = globus_libc_vprintf_length(short_desc_format,ap);
+
+        size++;
         
         if ((instance_data->short_desc = malloc (size)) == NULL)
         {
@@ -409,6 +411,8 @@ globus_error_set_short_desc(
 
     size = globus_libc_vprintf_length(short_desc_format,ap);
 
+    size++;
+
     if ((*instance_short_desc = malloc (size)) == NULL)
     {
         va_end(ap);
@@ -491,6 +495,8 @@ globus_error_set_long_desc(
     va_start(ap, long_desc_format);
 
     size = globus_libc_vprintf_length(long_desc_format,ap);
+
+    size++;
 
     if ((*instance_long_desc = malloc (size)) == NULL)
     {

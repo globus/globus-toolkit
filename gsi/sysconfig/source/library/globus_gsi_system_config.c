@@ -37,7 +37,7 @@
 
 #ifndef DEFAULT_RANDOM_FILE
 #ifndef WIN32
-#define DEFAULT_RANDOM_FILE             "/etc/entropy"
+#define DEFAULT_RANDOM_FILE             "/tmp"
 #else
 #define DEFAULT_RANDOM_FILE             UNDEFINED_VALUE
 #endif
@@ -143,7 +143,8 @@ globus_l_gsi_sysconfig_activate(void)
     int                                 result = (int) GLOBUS_SUCCESS;
     const char *                              random_file = NULL;
     char *                              egd_path = NULL;
-    clock_t                             cputime;
+    clock_t                             uptime;
+    struct tms                          proc_times;
     char                                buffer[200];
     char *                              tmp_string;
     static char *                       _function_name_ =
@@ -185,8 +186,6 @@ globus_l_gsi_sysconfig_activate(void)
      * (path names)
      */
 
-    clock();
-
     random_file = RAND_file_name(buffer, 200);
     if(random_file)
     {
@@ -208,12 +207,15 @@ globus_l_gsi_sysconfig_activate(void)
          * filename - provides platform independence
          */
         GLOBUS_GSI_SYSCONFIG_FILE_EXISTS(DEFAULT_RANDOM_FILE, &status);
+
+        /* probably overestimating the entropy in the below */
+        
+        uptime = times(&proc_times);
+        
+        RAND_add((void *) &uptime, sizeof(clock_t), 2);
+        RAND_add((void *) &proc_times, sizeof(struct tms), 8);
     }
 
-    cputime = clock();
-
-    /*  #warning  RAND_add((void *) cputime, sizeof(cputime), 2); */
-    
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_FPRINTF(
         2, (globus_i_gsi_sysconfig_debug_fstream,
             "RAND_status = %d", RAND_status()));
@@ -2400,6 +2402,8 @@ globus_gsi_sysconfig_get_user_id_string_unix(
     
     len = globus_libc_printf_length("%d",uid);
 
+    len++;
+
     if((*user_id_string = malloc(len)) == NULL)
     {
         result = GLOBUS_GSI_SYSTEM_CONFIG_MALLOC_ERROR;
@@ -2490,6 +2494,8 @@ globus_gsi_sysconfig_get_proc_id_string_unix(
     pid = getpid();
     
     len = globus_libc_printf_length("%d",pid);
+
+    len++;
 
     if((*proc_id_string = malloc(len)) == NULL)
     {

@@ -618,6 +618,8 @@ globus_gsi_cert_utils_v_create_string(
     
     len = globus_libc_vprintf_length(format,ap);
 
+    len++;
+
     if((new_string = malloc(len)) == NULL)
     {
         return NULL;

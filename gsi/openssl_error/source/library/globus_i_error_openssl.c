@@ -215,6 +215,8 @@ globus_error_openssl_create_error_string(
 
     len = globus_libc_vprintf_length(format,ap);
 
+    len++;
+
     if((error_string = malloc(len)) == NULL)
     {
         va_end(ap);
