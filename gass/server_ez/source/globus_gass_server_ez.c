@@ -571,14 +571,19 @@ globus_l_gass_server_ez_register_accept_callback(
             globus_url_parse(url,
                              &parsed_url);
 
+	    /* Expand ~ and ~user prefix if enaabled in options */
+            rc = globus_l_gass_server_ez_tilde_expand(s->options,
+                                              parsed_url.url_path,
+                                              &path);
+
    	    if((s->options & GLOBUS_GASS_SERVER_EZ_READ_ENABLE) == 0UL)
     	    {
 		goto deny;
     	    }
 	   
-	    if(stat(parsed_url.url_path, &statstruct)==0)
+	    if(stat(path, &statstruct)==0)
 	    {
-                rc = globus_libc_open(parsed_url.url_path, flags, 0600);
+                rc = globus_libc_open(path, flags, 0600);
 		fstat(rc, &statstruct);
 		globus_url_destroy(&parsed_url);
 	    }
