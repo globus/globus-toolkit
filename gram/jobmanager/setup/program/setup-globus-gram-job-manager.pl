@@ -20,6 +20,8 @@ my $globusdir = $ENV{GLOBUS_LOCATION};
 my $setupdir = "$globusdir/setup/globus/";
 my $jm_conf = "$globusdir/etc/globus-job-manager.conf";
 my $jm_service = "$globusdir/etc/grid-services/jobmanager";
+my $hostname = `$globusdir/bin/globus-hostname`;
+my $cg_results = `$globusdir/sbin/config.guess`;
 my $need_print = 1;
 
 if ( ! -f "$jm_conf" )
@@ -35,8 +37,17 @@ if ( ! -f "$jm_conf" )
 
       $need_print=0;
 
+      chomp($hostname);
+      chomp($cg_results);
+      ($cpu, $manuf, $os) = split(/-/, $cg_results);
+
       print CONF "-home $globusdir\n";
       print CONF "-e $globusdir/libexec\n";
+      print CONF "-globus-gatekeeper-host $hostname\n";
+      print CONF "-globus-host-cputype $cpu\n";
+      print CONF "-globus-host-manufacturer $manuf\n";
+      print CONF "-globus-host-osname $os\n";
+      print CONF "-globus-host-osversion \n";
       print CONF "-save-logfile on_errors\n";
       close(CONF);
       print "Done\n";
