@@ -67,6 +67,11 @@ globus_gsc_pmod_959_get_help(
     globus_gsc_pmod_959_handle_t            handle,
     const char *                            command_name);
 
+void
+globus_gsc_959_panic(
+    globus_gsc_pmod_959_op_t                op,
+    globus_result_t                         res);
+
 extern globus_i_gridftp_server_control_pmod_t       globus_i_gsc_959_proto_mod;
 
 #endif

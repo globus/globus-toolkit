@@ -58,6 +58,20 @@ typedef void
     int                                             stat_count,
     void *                                          user_arg);
 
+typedef void
+(*globus_gridftp_server_control_pmod_passive_callback_t)(
+    globus_gridftp_server_control_t                 server,
+    globus_result_t                                 res,
+    const char  **                                  cs,
+    int                                             cs_count,
+    void *                                          user_arg);
+
+typedef void
+(*globus_gridftp_server_control_pmod_port_callback_t)(
+    globus_gridftp_server_control_t                 server,
+    globus_result_t                                 res,
+    void *                                          user_arg);
+
 /*
  *  TODO:
  *
@@ -97,7 +111,24 @@ globus_gridftp_server_control_pmod_stat(
     globus_gridftp_server_control_t                 server,
     const char *                                    path,
     globus_gridftp_server_control_resource_mask_t   mask,
-    globus_gridftp_server_control_pmod_stat_callback_t   cb,
+    globus_gridftp_server_control_pmod_stat_callback_t cb,
+    void *                                          user_arg);
+
+globus_result_t
+globus_gridftp_server_control_pmod_passive(
+    globus_gridftp_server_control_t                 server,
+    int                                             max,
+    int                                             net_prt,
+    globus_gridftp_server_control_pmod_passive_callback_t cb,
+    void *                                          user_arg);
+
+globus_result_t
+globus_gridftp_server_control_pmod_port(
+    globus_gridftp_server_control_t                 server,
+    const char **                                   cs,
+    int                                             cs_count,
+    int                                             net_prt,
+    globus_gridftp_server_control_pmod_port_callback_t cb,
     void *                                          user_arg);
 
 globus_result_t

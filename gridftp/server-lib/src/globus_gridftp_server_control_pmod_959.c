@@ -354,6 +354,26 @@ globus_l_gsc_959_panic(
 }
 
 void
+globus_gsc_959_panic(
+    globus_gsc_pmod_959_op_t                op,
+    globus_result_t                         res)
+{
+    globus_l_gsc_959_read_ent_t *           read_ent;
+    globus_l_gsc_959_handle_t *             handle;
+
+    read_ent = (globus_l_gsc_959_read_ent_t *) op;
+    handle = read_ent->handle;
+
+    globus_mutex_lock(&handle->mutex);
+    {
+        globus_gsc_pmod_959_finished_op(
+            op, "421 Service not available, closing control connection.\r\n");
+        globus_l_gsc_959_panic(handle, res);
+    }
+    globus_mutex_unlock(&handle->mutex);
+}
+
+void
 globus_l_gsc_959_command_kickout(
     void *                                  user_arg)
 {
