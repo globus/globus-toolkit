@@ -134,11 +134,21 @@ main(int argc, char *argv[])
 
     /* Set context defaults */
     server_context->run_as_daemon = 1;
-    server_context->config_file = default_config_file;
     
     if (init_arguments(argc, argv, socket_attrs, server_context) < 0) {
         fprintf(stderr, usage);
         exit(1);
+    }
+
+    if (server_context->config_file == NULL)
+    {
+	server_context->config_file = strdup(default_config_file);
+
+	if (server_context->config_file == NULL)
+	{
+	    perror("strdup()");
+	    exit(1);
+	}
     }
 
     /* Read my configuration */
