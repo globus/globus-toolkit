@@ -702,6 +702,9 @@ globus_ftp_client_restart_plugin_init(
 	GlobusTimeAbstimeCopy(d->deadline, globus_i_abstime_zero);
     }
 
+    d->dest_url = GLOBUS_NULL;
+    d->source_url = GLOBUS_NULL;
+
     GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin, copy);
     GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin, destroy);
     GLOBUS_FTP_CLIENT_RESTART_PLUGIN_SET_FUNC(plugin, delete);
@@ -783,7 +786,7 @@ globus_l_ftp_client_restart_plugin_genericify(
     }
     if(d->dest_url)
     {
-	globus_libc_free(d->source_url);
+	globus_libc_free(d->dest_url);
     }
     globus_ftp_client_operationattr_destroy(&d->source_attr);
     globus_ftp_client_operationattr_destroy(&d->dest_attr);

@@ -1182,7 +1182,7 @@ redo:
 
 		    goto notify_fault;
 		}
-		else
+		else if(tmp_subj)
 		{
 		    globus_libc_free(tmp_subj);
 		}

@@ -171,6 +171,7 @@ perf_plugin_response_cb(
     ps = (perf_plugin_info_t *) plugin_specific;
 
     if(ps->marker_cb &&
+        !error &&
         ftp_response &&
         ftp_response->response_buffer &&
         ftp_response->code == 112 &&

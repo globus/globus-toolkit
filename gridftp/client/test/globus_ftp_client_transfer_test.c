@@ -22,7 +22,7 @@ done_cb(
     char * tmpstr;
 
     if(err) { tmpstr = globus_object_printable_to_string(err);
-	      fprintf(stderr, "done with error %s\n", tmpstr); 
+	      fprintf(stderr, "done with error %s\n", tmpstr);
 	      globus_libc_free(tmpstr);
               error = GLOBUS_TRUE; }
 
@@ -30,7 +30,7 @@ done_cb(
     done = GLOBUS_TRUE;
     globus_cond_signal(&cond);
     globus_mutex_unlock(&lock);
-       
+
 }
 
 int main(int argc, char **argv)
@@ -71,7 +71,7 @@ int main(int argc, char **argv)
     {
 	globus_object_t * err;
 	char * tmpstr;
-	err = globus_error_get(err);
+	err = globus_error_get(result);
 	tmpstr = globus_object_printable_to_string(err);
 	fprintf(stderr, "Error: %s", tmpstr);
 	globus_object_free(err);

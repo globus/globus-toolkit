@@ -93,7 +93,7 @@ globus_ftp_client_handle_init(
 		"[%s] Cannot initialize NULL handle at %s\n",
 		GLOBUS_FTP_CLIENT_MODULE->module_name,
 		myname));
-					  
+
     }
 
     i_handle = globus_libc_malloc(sizeof(globus_i_ftp_client_handle_t));
@@ -123,7 +123,7 @@ globus_ftp_client_handle_init(
 		      GLOBUS_NULL);
     globus_i_ftp_client_handle_lock(i_handle);
 
-    strcpy(i_handle->magic, 
+    strcpy(i_handle->magic,
 	   GLOBUS_FTP_CLIENT_MAGIC_STRING);
 
     i_handle->source = GLOBUS_NULL;
@@ -241,7 +241,7 @@ globus_ftp_client_handle_destroy(
 	globus_url_destroy(&cache_entry->url);
 	globus_libc_free(cache_entry);
     }
-    
+
     globus_list_free(i_handle->attr.url_cache);
 
     if(i_handle->eret_alg_str != GLOBUS_NULL)
@@ -687,7 +687,7 @@ error:
  * plugins, and will not be used during any subsequent operations processed
  * with this handle.
  *
- * This function can remove plugins which were added at 
+ * This function can remove plugins which were added at
  * @ref globus_ftp_client_handle_init() "handle initialization time"
  * or by calling globus_ftp_client_handle_add_plugin().
  *
@@ -827,7 +827,7 @@ error:
  *        The handle that this target will be associated with.
  * @param url
  *        The URL that this target is going to be used for.
- * @param attr 
+ * @param attr
  *        The attributes to be used when processing the URL.
  *
  * @retval This function returns a pointer to a newly initialized
@@ -865,7 +865,7 @@ globus_l_ftp_client_target_new(
         handle->attr.nl_handle,
         handle->attr.nl_ftp,
         handle->attr.nl_io);
-    
+
     if(result)
     {
 	goto free_control_handle;
@@ -891,7 +891,7 @@ globus_l_ftp_client_target_new(
     /*
      * Setup default setttings on the control handle values. We'll
      * adjust these to match the desired attributes after we've made
-     * the connection. 
+     * the connection.
      */
     target->type = GLOBUS_FTP_CONTROL_TYPE_ASCII;
     target->dcau.mode = GLOBUS_FTP_CONTROL_DCAU_NONE;
@@ -953,7 +953,7 @@ globus_l_ftp_client_target_new(
 	    goto destroy_attr;
 	}
 
-	result = 
+	result =
 	    globus_ftp_client_operationattr_get_authorization(
 		&target->attr,
 		&target->auth_info.credential_handle,
@@ -1001,7 +1001,7 @@ globus_l_ftp_client_target_new(
 	    goto destroy_attr;
 	}
     }
-    
+
     /* Set the state of the new handle to the disconnected state */
     target->state = GLOBUS_FTP_CLIENT_TARGET_START;
     target->mask = GLOBUS_FTP_CLIENT_CMD_MASK_NONE;
@@ -1064,7 +1064,7 @@ globus_l_ftp_client_target_delete(
 						globus_l_ftp_client_quit_callback,
 						target);
     }
-	
+
     if(target->url_string)
     {
 	globus_libc_free(target->url_string);
@@ -1106,13 +1106,13 @@ globus_l_ftp_client_target_delete(
 void
 globus_i_ftp_client_target_release(
     globus_i_ftp_client_handle_t *		handle,
-    globus_i_ftp_client_target_t *		target) 
+    globus_i_ftp_client_target_t *		target)
 {
     globus_i_ftp_client_cache_entry_t *		cache_entry;
     globus_list_t *				node;
     globus_l_ftp_client_target_search_t         searcher;
 
-    /* 
+    /*
      * Remove the target mapping from the client handle's active
      * targets
      */
@@ -1146,7 +1146,7 @@ globus_i_ftp_client_target_release(
 	if(node)
 	{
 	    cache_entry = (globus_i_ftp_client_cache_entry_t *) node->datum;
-	    
+
 	    if(cache_entry->target == GLOBUS_NULL)
 	    {
 		cache_entry->target = target;
@@ -1244,7 +1244,7 @@ globus_i_ftp_client_target_find(
 	/*
 	 * Didn't find a cached connection, so we will create a new
 	 * target
-	 */	
+	 */
 	(*target) = globus_l_ftp_client_target_new(handle,
 						   url,
 						   attr);
@@ -1272,6 +1272,10 @@ globus_i_ftp_client_target_find(
 		goto free_target;
 	    }
 	}
+	if((*target)->url_string)
+        {
+    	    globus_libc_free((*target)->url_string);
+        }
 	(*target)->url_string = globus_libc_strdup(url);
 	if(!(*target)->url_string)
 	{
@@ -1291,9 +1295,9 @@ globus_i_ftp_client_target_find(
 	{
 	    goto free_target;
 	}
-	
+
     }
-    
+
     if((*target) == GLOBUS_NULL)
     {
 	err = globus_error_construct_string(
@@ -1365,8 +1369,8 @@ globus_l_ftp_client_url_parse(
 	return err;
     }
 
-    /* 
-     * Make sure that the URL is of a proper type (ftp or gsiftp) 
+    /*
+     * Make sure that the URL is of a proper type (ftp or gsiftp)
      * and make  that the port number is valid.
      */
     if(url->scheme_type == GLOBUS_URL_SCHEME_FTP)
@@ -1375,7 +1379,7 @@ globus_l_ftp_client_url_parse(
 	{
 	    url->port = 21;	/* IANA-defined FTP control port */
 	}
-    } 
+    }
     else if(url->scheme_type == GLOBUS_URL_SCHEME_GSIFTP)
     {
 	if(url->port == 0)
@@ -1428,12 +1432,12 @@ globus_l_ftp_client_quit_callback(
 {
     globus_result_t				result;
     globus_i_ftp_client_target_t *		target;
- 
+
     target = (globus_i_ftp_client_target_t * ) callback_arg;
 
     if(error != GLOBUS_SUCCESS)
     {
-	result = globus_ftp_control_force_close(handle, 
+	result = globus_ftp_control_force_close(handle,
 						globus_l_ftp_client_quit_callback,
 						callback_arg);
 	if(result != GLOBUS_SUCCESS)
@@ -1672,7 +1676,7 @@ globus_i_ftp_client_cache_add(
     searcher.attr = GLOBUS_NULL;
     searcher.want_empty = GLOBUS_TRUE;
 
-    list_node = 
+    list_node =
 	globus_list_search_pred(*cache,
 				globus_l_ftp_client_compare_canonically,
 				&searcher);
@@ -1703,7 +1707,7 @@ globus_i_ftp_client_cache_add(
 
  free_error:
     globus_url_destroy(&parsed_url);
-    
+
  error:
     return globus_error_put(err);
 }
@@ -1713,7 +1717,7 @@ globus_i_ftp_client_cache_add(
  * Remove a URL from a cache list.
  *
  * This function is used to remove a URL from an attribute or handle's URL
- * cache. 
+ * cache.
  *
  * @param cache
  *        A pointer to the URL cache.
