@@ -618,8 +618,9 @@ globus_gram_job_manager_state_machine(
 		    request,
 		    GLOBUS_GRAM_PROTOCOL_RESTART_PARAM);
 
+	    /* is this still necessary? */
 	    globus_gram_job_manager_reporting_file_set(request);
- //           globus_gram_job_manager_history_file_set(request);
+	    /* globus_gram_job_manager_history_file_set(request); */
 	    globus_gram_job_manager_state_file_set(request);
 
 	    /* Attempt to read the job state file */
@@ -1285,10 +1286,12 @@ globus_gram_job_manager_state_machine(
 	    globus_gram_job_manager_reporting_file_create(request);
 	}
 
-	/*The request->job_history_status is used to save the last job status that is stored in
-          history file. If it is different with request->status, we have to write
-          history file. */
-        if(request->unsent_status_change && (request->job_history_status != request->status))
+	/* The request->job_history_status is used to save the last job status
+	 * that is stored in history file. If it is different with
+	 * request->status, we have to write history file.
+	 */ 
+        if(request->unsent_status_change &&
+		(request->job_history_status != request->status))
         {
 	    globus_gram_job_manager_history_file_create(request);
             request->job_history_status = request->status;
@@ -1853,8 +1856,18 @@ globus_gram_job_manager_state_machine(
 	break;
 
       case GLOBUS_GRAM_JOB_MANAGER_STATE_STOP:
+	/* This state is reached when the job manager decides to stop
+	 * between the time the job request reply is sent and the 
+	 * job manager has noticed stop or failed
+	 */
 	request->jobmanager_state =
 	    GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_CLOSE_OUTPUT;
+
+	if(request->job_history_status != request->status)
+	{
+            globus_gram_job_manager_history_file_create(request);
+	    request->job_history_status = request->status;
+	}
 
 	rc = globus_gram_job_manager_output_close(request);
 	if(rc == GLOBUS_SUCCESS)
@@ -1864,14 +1877,12 @@ globus_gram_job_manager_state_machine(
 	break;
 
       case GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_CLOSE_OUTPUT:
-	/* Send the job manager stopped or proxy expired failure callback */
+	/*
+	 * Send the job manager stopped or proxy expired failure callback.
+	 * This callback is delayed until after the close output is completed,
+	 * so that clients won't exit before the output is sent.
+	 */
 	request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
-
-	if(request->job_history_status != request->status)
-	{
-            globus_gram_job_manager_history_file_create(request);
-	    request->job_history_status = request->status;
-	}
 
 	globus_gram_job_manager_contact_state_callback(request);
 
