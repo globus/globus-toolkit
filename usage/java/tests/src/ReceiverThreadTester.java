@@ -174,6 +174,17 @@ public class ReceiverThreadTester extends TestCase {
 	
     }
 
+
+    public void testEvilPackets() {
+
+	/*The following is the actual binary data captured from two packets which caused the parser to fail.  What ho!  These are both RFT packets.*/
+
+	byte[] evilData1 = new byte[] {5, 0, 1, 0, 62, 120, 7, -114, 2, 1, 0, 0, 4, -128, 9, 72, -116, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,-90, 102, 7, -114, 2, 1, 0, 0, 63, 120, 7, -114, 2, 1, 0, 0, 24,  42, 106, 10, 2, 0, 0, 0, -115, 97, 1,0, 0, 0, 0, 0};
+
+	byte[] evilData2 = new byte[] {5, 0, 1, 0, 71, -91, 7, -114, 2, 1, 0, 0, 4, -128, 9, 72, -78, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 127, -96, 7, -114, 2, 1, 0, 0, 73, -91, 7, -114, 2, 1,0, 0, 97, 123, 124, 30, 0, 0, 0, 0, -24, -49, 0, 0, 0, 0, 0, 0};
+
+	
+    }
     /*	    inData = new byte[1400];
 	    inPack = new DatagramPacket(inData, inData.length);
 

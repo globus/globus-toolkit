@@ -106,15 +106,19 @@ public class RFTUsageMonitorPacket extends IPTimeMonitorPacket {
     public PreparedStatement toSQL(Connection con, String tablename) throws SQLException{
 
 	PreparedStatement ps;
-	ps = con.prepareStatement("INSERT INTO "+tablename+" (request_type, number_of_files, number_of_bytes, number_of_resources, creation_time, factory_start_time) VALUES(?, ?, ?, ?, ?, ?);");
+	ps = con.prepareStatement("INSERT INTO "+tablename+" (component_code, version_code, send_time, ip_address, request_type, number_of_files, number_of_bytes, number_of_resources, creation_time, factory_start_time) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?);");
 
-	
-	ps.setByte(1, this.requestType);
-	ps.setLong(2, this.numberOfFiles);
-	ps.setLong(3, this.numberOfBytes);
-	ps.setLong(4, this.numberOfResources);
-	ps.setLong(5, this.resourceCreationTime.getTime());
-	ps.setLong(6, this.factoryStartTime.getTime());
+	ps.setShort(1, this.getComponentCode());
+	ps.setShort(2, this.getPacketVersion());
+	ps.setTimestamp(3, new Timestamp(this.getTimestamp()));
+	ps.setString(4, this.getHostIP().toString());
+
+	ps.setByte(5, this.requestType);
+	ps.setLong(6, this.numberOfFiles);
+	ps.setLong(7, this.numberOfBytes);
+	ps.setLong(8, this.numberOfResources);
+	ps.setLong(9, this.resourceCreationTime.getTime());
+	ps.setLong(10, this.factoryStartTime.getTime());
 
 	return ps;
     }
