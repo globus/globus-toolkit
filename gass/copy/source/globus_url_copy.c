@@ -378,7 +378,7 @@ main(int argc, char **argv)
             {
                 tcp_buffer = globus_libc_malloc
                                (sizeof(globus_ftp_control_tcpbuffer_t));
-                tcp_buffer->mode = GLOBUS_GSIFTP_CONTROL_TCPBUFFER_FIXED;
+                tcp_buffer->mode = GLOBUS_FTP_CONTROL_TCPBUFFER_FIXED;
                 tcp_buffer->fixed.size = tcp_buffer_size;
                 globus_ftp_client_attr_set_tcp_buffer(source_ftp_attr,
                                                       tcp_buffer);
@@ -468,7 +468,7 @@ main(int argc, char **argv)
                 {
                     tcp_buffer = globus_libc_malloc
                                (sizeof(globus_ftp_control_tcpbuffer_t));
-                    tcp_buffer->mode = GLOBUS_GSIFTP_CONTROL_TCPBUFFER_FIXED;
+                    tcp_buffer->mode = GLOBUS_FTP_CONTROL_TCPBUFFER_FIXED;
                     tcp_buffer->fixed.size = tcp_buffer_size;
                 }
                 globus_ftp_client_attr_set_tcp_buffer(dest_ftp_attr,
