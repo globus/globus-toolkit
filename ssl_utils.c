@@ -1365,6 +1365,7 @@ ssl_proxy_delegation_sign(SSL_CREDENTIALS		*creds,
     /* done with proxy_handle_attrs now */
     globus_gsi_proxy_handle_attrs_destroy(proxy_handle_attrs);
 
+#if defined(GLOBUS_GSI_CERT_UTILS_IS_GSI_3_PROXY)
     /* clear default cert info so we use cert info in proxy request */
     local_result = globus_gsi_proxy_handle_set_proxy_cert_info(proxy_handle,
 							       NULL);
@@ -1373,6 +1374,7 @@ ssl_proxy_delegation_sign(SSL_CREDENTIALS		*creds,
 		       "globus_gsi_proxy_handle_set_proxy_cert_info() failed");
 	goto error;
     }
+#endif
 
     /* get proxy request */
     bio = BIO_new(BIO_s_mem());
