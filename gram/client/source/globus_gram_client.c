@@ -257,6 +257,7 @@ globus_l_gram_client_parse_gatekeeper_contact( char *    contact_string,
     char *                dn;
     char *                service;
     unsigned short        iport;
+    int			  portlen=0;
 
     /*
      *  the gatekeeper contact format: [https://]<host>:<port>[/<service>]:<dn>
@@ -275,11 +276,11 @@ globus_l_gram_client_parse_gatekeeper_contact( char *    contact_string,
 	    *port++ = '\0';
 	    if ((dn = strchr(port, ':'))) 
 		*dn++ = '\0';
+	    iport = (unsigned short) atoi(port);
     
 	    if (! (service = strchr(port,'/')))
 		service = "/jobmanager";        /* yes, including the slash */
 
-	    *service++ = '\0';   /* must delimit port and service, fix later */
 	}
 	else
 	    port = "754";
@@ -291,14 +292,15 @@ globus_l_gram_client_parse_gatekeeper_contact( char *    contact_string,
     }
     
     *gatekeeper_url = globus_libc_malloc(strlen(host) +
-					 strlen(port) + 
+					 5 + 
 					 strlen("https://:/"));
 
-    globus_libc_sprintf(*gatekeeper_url, "https://%s:%s/", host, port);    
+    globus_libc_sprintf(*gatekeeper_url, "https://%s:%d/",
+			host,
+			(int) iport);    
     /* 
      * done with the port, can now put the slash back
      */
-    *(--service) = '/';
     *gatekeeper_service = strdup(service);
     *gatekeeper_dn = strdup(dn);
     globus_libc_free(duplicate);
