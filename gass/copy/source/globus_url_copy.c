@@ -566,6 +566,8 @@ main(int argc, char **argv)
 
     if (result != GLOBUS_SUCCESS)
     {
+        fprintf(stderr, "error: %s\n",
+                globus_object_printable_to_string(globus_error_get(result)));
         globus_mutex_destroy(&monitor.mutex);
         globus_cond_destroy(&monitor.cond);
         exit(1);
