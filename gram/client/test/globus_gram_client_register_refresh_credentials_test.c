@@ -99,6 +99,7 @@ int main(int argc, char *argv[])
 	rc = globus_gram_client_register_job_refresh_credentials(
 		job_contact,
 		GSS_C_NO_CREDENTIAL,
+		GLOBUS_GRAM_CLIENT_NO_ATTR,
 		nonblocking_callback,
 		&monitor);
 

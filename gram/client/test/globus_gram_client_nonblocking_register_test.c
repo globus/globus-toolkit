@@ -86,6 +86,7 @@ test1()
 	    GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED|
 	    GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE,
 	    callback_contact,
+	    GLOBUS_GRAM_CLIENT_NO_ATTR,
 	    nonblocking_callback,
 	    GLOBUS_NULL);
 
@@ -199,6 +200,7 @@ test2()
 	    GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED|
 	    GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE,
 	    callback_contact[1],
+	    GLOBUS_GRAM_CLIENT_NO_ATTR,
 	    nonblocking_callback,
 	    GLOBUS_NULL);
 
@@ -215,6 +217,7 @@ test2()
 	    GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED|
 	    GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE,
 	    callback_contact[2],
+	    GLOBUS_GRAM_CLIENT_NO_ATTR,
 	    nonblocking_callback,
 	    GLOBUS_NULL);
 
@@ -317,6 +320,7 @@ test3()
     rc = globus_gram_client_register_job_callback_unregistration(
 	    job_contact,
 	    bad_callback_contact,
+	    GLOBUS_GRAM_CLIENT_NO_ATTR,
 	    nonblocking_callback,
 	    GLOBUS_NULL);
 

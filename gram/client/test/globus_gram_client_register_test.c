@@ -73,6 +73,7 @@ int main(int argc, char ** argv)
 	                 GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE|
 	                 GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED,
 		         callback_contact,
+			 GLOBUS_GRAM_CLIENT_NO_ATTR,
 		         nonblocking_callback_func,
 			 &Monitor);
 
