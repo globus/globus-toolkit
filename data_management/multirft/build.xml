@@ -15,7 +15,7 @@ Southern California. All Rights Reserved.
   <property file="build.properties"/>
 
   <!-- Set properties -->
-  <property name="ogsa.root" value="../../ogsa/impl/java"/>
+  <property name="ogsa.root" value="${user.home}/integrationTest/gt3"/>
   <property file="${ogsa.root}/ogsa.properties"/>
 
   <property name="schema.origin" value="${ogsa.root}/schema"/>
@@ -53,10 +53,7 @@ Southern California. All Rights Reserved.
       <srcfiles dir="${src.dir}" includes="**/*.java" />
     </uptodate>
     <available property="stubs.present" file="${stubs.dir}" type="dir"/>
-    <ant antfile="${ogsa.root}/${build.services}" target="mergePackageMapping">
-        <property name="mapping.file" value="./NStoPkg.properties.multirft"/>
-    </ant>
-  </target>
+     </target>
 
   <!-- Set claspath -->
   <path id="classpath">
@@ -101,6 +98,10 @@ Southern California. All Rights Reserved.
 
   <!-- Generate Stubs -->
   <target name="stubs" unless="stubs.present" depends="bindings"> 
+    <ant antfile="${ogsa.root}/${build.services}" target="mergePackageMapping">
+        <property name="mapping.file" value="./NStoPkg.properties.multirft"/>
+    </ant>
+
    <ant antfile="${ogsa.root}/${build.services}" target="generateStubsNS">
    
     <property name="schema.file.dir" value="${multirft.schema.dir}"/>
@@ -204,12 +205,8 @@ Southern California. All Rights Reserved.
 
   <!-- Clean bindings and stubs -->
   <target name="cleanStubs">
-    <delete includeEmptyDirs="true" quiet="true">
-     <fileset dir="${schema.dir}">
-        <exclude name="base/multirft/multirft_port_type.gwsdl"/>
-        <exclude name="base/multirft/multirft_types.wsdl"/>
-     </fileset>
-   </delete>
+   <delete file="${schema.dir}/${multirft.schema.dir}/"/>
+   
    <delete dir="${stubs.dir}"/>
   </target>
 
