@@ -15,7 +15,7 @@ LINK		=	$(CC)
 
 INSTALL		=	$(srcdir)/install-sh
 
-# All of these values come fromthe makefile_header sourced above
+# All of these values come from the makefile_header sourced above
 GLOBUS_CFLAGS	=	$(INSTALL_INCLUDE) $(GLOBUS_INCLUDES) $(BASE_CFLAGS)
 
 DEFS		=	@DEFS@
