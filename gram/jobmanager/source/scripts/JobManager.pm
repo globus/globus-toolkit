@@ -15,33 +15,54 @@ use Globus::Core::Paths;
 use IO::File;
 use File::Path;
 
+package Globus::GRAM::JobManager;
+
 =head1 NAME
 
 Globus::GRAM::JobManager - Base class for all Job Manager scripts
 
 =head1 SYNOPSIS
 
-$manager = new Globus::GRAM::JobManager($job_description);
+ $manager = new Globus::GRAM::JobManager($job_description);
 
-$manager->log("Starting new operation");
-$manager->submit();
+ $manager->log("Starting new operation");
+ $hashref = $manager->submit();
+ $hashref = $manager->poll();
+ $hashref = $manager->cancel();
+ $hashref = $manager->signal();
+ $hashref = $manager->make_scratchdir();
+ $hashref = $manager->remove_scratchdir();
+ $hashref = $manager->rewrite_urls();
+ $hashref = $manager->stage_in();
+ $hashref = $manager->stage_out();
 
 =head1 DESCRIPTION
 
-The Globus::GRAM::JobManager module implements the default behavior
-for a Job Manager scheduler interface.
+The Globus::GRAM::JobManager module implements the base behavior
+for a Job Manager script interface. Scheduler-specific job manager
+scripts must inherit from this module in order to be used by the job
+manager.
+
+=head2 Methods
+
+=over 4
+
+=item $manager = Globus::GRAM::JobManager->new($JobDescription)
+
+Each Globus::GRAM::JobManager object is created by calling the constructor
+with a single argument, a Globus::GRAM::JobDescription object containing
+the information about the job request which the script will be modifying.
+Modules which subclass Globus::GRAM::JobManager MUST call the super-class's
+constructor, as in this code fragment:
+
+     my $proto = shift;
+     my $class = ref($proto) || $proto;
+     my $self = $class->SUPER::new(@_);
+
+     bless $self, $class;
 
 =cut
 
-package Globus::GRAM::JobManager;
-
-=head2 $manager = new Globus::GRAM::JobManager(I<$JobDescription>)
-
-Constructor for the Globus::GRAM::JobManager. This constructor expects
-to be passed a parameter consisting of a reference to a
-Globus::GRAM::JobDescription.
-
-=cut
 sub new
 {
     my $class = shift;
@@ -59,11 +80,10 @@ sub new
     bless $self, $class;
 }
 
-=head2 $manager->log(I<$string>)
+=item $manager->log($string)
 
-Log a message to the job manager log file. This is intended for use by
-subclasses of the JobManager class. A newline will be appended to the
-log message.
+Log a message to the job manager log file. The message is preceded by
+a timestamp.
 
 =cut
 
@@ -79,6 +99,18 @@ sub log
     return;
 }
 
+=item $manager->respond($hashref)
+
+Send a response to the job manager program. The response hashref consists
+of a hash of (variable, value) pairs, which will be returned to the job
+manager. This only needs to be called when the script wants to send a partial
+response while processing one of the scheduler interface methods (for example,
+to indicate that a file has been staged). 
+
+The valid keys for a response are defined in the RESPONSES section.
+
+=cut
+
 sub respond
 {
     my $self = shift;
@@ -92,7 +124,7 @@ sub respond
     }
 }
 
-=head2 $manager->submit()
+=item $manager->submit()
 
 Submit a job request to the scheduler. The default implementation returns
 with the Globus::GRAM::Error::UNIMPLEMENTED error. Scheduler specific
@@ -102,6 +134,9 @@ scheduler.
 A scheduler which implements this method should return a hash reference
 containing the values JOB_STATE and JOB_ID if the job request is
 successful; otherwise a Globus::GRAM::Error value should be returned.
+The job state values are defined in the Globus::GRAM::JobState module. The
+job parameters are defined in $self->{JobDescription}.
+
 For example:
 
     return {JOB_STATE => Globus::GRAM::JobState::PENDING,
@@ -117,7 +152,7 @@ sub submit
     return Globus::GRAM::Error::UNIMPLEMENTED;
 }
 
-=head2 $manager->poll()
+=item $manager->poll()
 
 Poll a job's status. The default implementation returns
 with the Globus::GRAM::Error::UNIMPLEMENTED error. Scheduler specific
@@ -125,7 +160,8 @@ subclasses should reimplement this method to poll the
 scheduler.
 
 A scheduler which implements this method should return a hash reference
-containing job_state.
+containing the JOB_STATE value. The job's ID can be accessed by calling the
+$self->{JobDescription}->jobid() method.
 
 =cut
 
@@ -137,12 +173,16 @@ sub poll
     return Globus::GRAM::Error::UNIMPLEMENTED;
 }
 
-=head2 cancel
+=item $manager->cancel()
 
-Remove a job. The default implementation returns
+Cancel a job. The default implementation returns
 with the Globus::GRAM::Error::UNIMPLEMENTED error. Scheduler specific
 subclasses should reimplement this method to remove the job
 from the scheduler.
+
+A scheduler which implements this method should return a hash reference
+containing the JOB_STATE value. The job's ID can be accessed by calling the
+$self->{JobDescription}->jobid() method.
 
 =cut
 
@@ -154,13 +194,18 @@ sub cancel
     return Globus::GRAM::Error::UNIMPLEMENTED;
 }
 
-=head2 signal
+=item $manager->signal()
 
 Signal a job. The default implementation returns
 with the Globus::GRAM::Error::UNIMPLEMENTED error. Scheduler specific
 subclasses should reimplement this method to remove the job
-from the scheduler. This method is passed a parameter containin the
-signal number, as well as the signal-specific parameters.
+from the scheduler. The JobManager module can determine the job's ID,
+the signal number, and the (optional) signal arguments from the
+Job Description by calling it's job_id(), signal(), and and signal_arg()
+methods, respectively.
+
+Depending on the signal, it may be appropriate for the JobManager object
+to return a hash reference containing a JOB_STATE update.
 
 =cut
 
@@ -171,6 +216,19 @@ sub signal
     $self->log("Job Manager Script does not implement 'signal'\n");
     return Globus::GRAM::Error::UNIMPLEMENTED;
 }
+
+=item $manager->make_scratchdir()
+
+Create a scratch directory for a job. The scratch directory location
+is based on the JobDescription's scratch_dir_base() and scratch_dir() methods.
+
+If the scratch_dir() value is a relative path, then a directory will be
+created as a subdirectory of scratch_dir_base()/scratch_dir(), otherwise,
+it will be created as a subdirectory of scratch_dir().  This method will
+return a hash reference containing mapping SCRATCH_DIR to the absolute
+path of newly created scratch directory if successful. 
+
+=cut
 
 sub make_scratchdir
 {
@@ -208,7 +266,7 @@ sub make_scratchdir
 
     if(! -w $scratch_prefix)
     {
-	return Globus::GRAM::Error::BAD_DIRECTORY;
+	return Globus::GRAM::Error::INVALID_SCRATCH;
     }
 
     while(!$created)
@@ -245,6 +303,13 @@ sub make_scratchdir
     return {SCRATCH_DIR => $dirname};
 }
 
+=item $manager->make_scratchdir()
+
+Delete a job's scratch directory. All files and subdirectories of the
+JobDescription's scratch_directory() will be deleted.
+
+=cut
+
 sub remove_scratchdir
 {
     my $self = shift;
@@ -262,11 +327,17 @@ sub remove_scratchdir
     return {};
 }
 
+=item $manager->make_scratchdir()
+
+Delete some job-related files. All files listed in the JobDescription's
+file_cleanup() array will be deleted.
+
+=cut
+
 sub file_cleanup
 {
     my $self = shift;
     my $description = $self->{JobDescription};
-    my $scratch_directory;
     my $count;
 
     $self->log(
@@ -279,18 +350,18 @@ sub file_cleanup
 	}
 	$self->log("Removing $_");
 
-        if(-d $_)
-	{
-	    $count = File::Path::rmtree($scratch_directory);
-	}
-	else
-	{
-	    unlink($_);
-	}
+	unlink($_);
     }
 
     return {};
 }
+
+=item $manager->rewrite_urls()
+
+Looks up URLs listed in the JobDescription's stdin() and executable(), and
+replaces them with paths to locally cached copies.
+
+=cut
 
 sub rewrite_urls
 {
@@ -314,6 +385,23 @@ sub rewrite_urls
     }
     return 0;
 }
+
+
+=item $manager->stage_in()
+
+Stage input files need for the job from remote storage. The files to
+be staged are defined by the array of [URL, path] pairs in
+the job description's file_stage_in() and file_stage_in_shared() methods.
+The Globus::GRAM::JobManager module provides an implementation of this
+functionality using the globus-url-copy and globus-gass-cache programs.
+Files which are staged in are not automatically removed when the job
+terminates.
+
+This function returns intermediate responses using the
+Globus::GRAM::JobManager::response() method to let the job manager know when
+each individual file has been staged.
+
+=cut
 
 sub stage_in
 {
@@ -386,14 +474,23 @@ sub stage_in
     return {};
 }
 
+=item $manager->stage_out()
+
+Stage output files generated by this job to remote storage. The files to
+be staged are defined by the array of [URL, destination] pairs in
+the job description's file_stage_out() method. The Globus::GRAM::JobManager
+module provides an implementation of this functionality using the
+globus-url-copy program.  Files which are staged out are not removed by this
+method.
+
+=cut
+
 sub stage_out
 {
     my $self = shift;
     my $description = $self->{JobDescription};
-    my $cache_pgm = "$Globus::Core::Paths::bindir/globus-gass-cache";
     my $url_copy = "$Globus::Core::Paths::bindir/globus-url-copy";
     my $tag = $ENV{GLOBUS_GRAM_JOB_CONTACT};
-    my ($remote, $local, $cached);
 
     foreach ($description->file_stage_out())
     {
@@ -417,3 +514,53 @@ sub stage_out
     return {};
 }
 1;
+
+=back
+
+=head1 RESPONSES
+
+When returning from a job interface method, or when sending an intermediate
+response via the I<response>() method, the following hash keys are valid:
+
+=over 4
+
+=item * JOB_STATE
+
+An integer job state value. These are enumerated in the Globus::GRAM::JobState
+module.
+
+=item * ERROR
+
+An integer error code. These are enumerated in the Globus::GRAM::Error module.
+
+=item * JOB_ID
+
+A string containing a job identifier, which can be used to poll, cancel, or
+signal a job in progress. This response should only be returned by the
+I<submit> method.
+
+=item * SCRATCH_DIR
+
+A string containing the path to a newly-created scratch directory. This
+response should only be returned by the I<make_scratchdir> method.
+
+=item * STAGED_IN
+
+A string containing the (URL, path) pair for a file which has now been staged
+in. This response should only be returned by the I<stage_in> method.
+
+=item * STAGED_IN_SHARED
+
+A string containing the (URL, path) pair for a file which has now been staged
+in and symlinked from the cache. This response should only be returned by the
+I<stage_in_shared> method.
+
+=item * STAGED_OUT
+
+A string containing the (path, URL) pair for a file which has now been staged
+out by the script. This response should only be returned by the
+I<stage_out> method.
+
+=back
+
+=cut
