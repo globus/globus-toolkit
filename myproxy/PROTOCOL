@@ -22,8 +22,8 @@ Basic Tenants:
  5) By default the MyProxy server will listen on port 7512 unless
     otherwise specified. [NOTE - the port number choice is arbitrary.]
  
- 6) MyProxy server always replies to the requests with either a OK or
-    an ERROR message.
+ 6) MyProxy server always replies to the requests with either a OK,
+    ERROR, or AUTHORIZATION message:
 
     An OK message will simply contain:
  
@@ -46,7 +46,6 @@ Basic Tenants:
     After sending an ERROR response myproxy-server will close the
     connection and no more data should be sent in either direction.
 
-    Update for version 0.3:
     If the client sends an empty passphrase, the server can also reply
     with a MYPROXY_AUTHORIZATION_RESPONSE message:
 
@@ -99,6 +98,9 @@ Basic Tenants:
     and the rest of the chain. The last certificate sent should be the user 
     certificate signed by the CA. The CA certificate does not have to be
     included.
+
+ 8) For protocol extensibility, clients and servers are expected to
+    ignore lines in messages that they don't understand.
  
  ====
 
@@ -111,7 +113,7 @@ Section B
  MyProxyServer process and storing a proxy for later retrieval.
  
  1) MyProxyInit will make a connection to the MyProxyServer at the
-    host and port as specified by it's configuration or the user.
+    host and port as specified by its configuration or the user.
  
  2) MyProxyInit will initiate the GSSAPI context setup loop, with
     MyProxyServer accepting. See Section A.1. 
@@ -129,6 +131,8 @@ Section B
 
     RETRIEVER=<retriever_dn>
     RENEWER=<renewer_dn>
+    CRED_NAME=<credential name>
+    CRED_DESC=<credential description>
 
     The intent of the VERSION string is to allow the server to know
     if it is dealing with an outdated or newer client.
@@ -137,14 +141,11 @@ Section B
     user to be used for retrieval by the portal. <lifetime> is the
     ASCII representation of the lifetime of the proxy to be delegated
     to the portal, in seconds. <retriever_dn> and <renewer_dn> are strings 
-    specifying the retriever DN and renewer DN respectively.
-
-    If multiple credentials support is enabled, the following lines will be present :
-    CRED_NAME=<credential name>
-    CRED_DESC=<credential description>
-
-    Credential name is a required argument while credential
-    description is optional.
+    specifying the retriever and renewer policy regular expressions.
+    <credential name> assigns a name to the credential, allowing
+    multiple credentials to be stored for a given username.
+    <credential description> can provide additional descriptive text
+    to be displayed in MyProxyInfo requests, for example.
 
  4) MyProxyServer will then respond with either a OK or an ERROR message.
     See Section A.6 for details.
@@ -180,7 +181,7 @@ Section C
  a MyProxyServer process and retrieving a proxy for use.
  
  1) MyProxyGet makes a connection to the MyProxyServer as
-    indicated by it's configuration or arguments.
+    indicated by its configuration or arguments.
  
  2) MyProxyGet will initiate the GSSAPI context setup loop, with
     MyProxyServer accepting. See Section A.1. 
@@ -192,6 +193,7 @@ Section C
     COMMAND=0
     USERNAME=<username>
     PASSPHRASE=<pass phrase>
+    LIFETIME=<requested lifetime>
 
     The message can also contain an optional string :
     CRED_NAME=<credential name>
@@ -202,8 +204,8 @@ Section C
     <username> and <pass phrase> are the strings supplied by the
     user to the portal to be used for retrieval by the portal.
 
- 4) MyProxyServer will then respond with either a OK or an ERROR message.
-    See Section A.6 for details.
+ 4) MyProxyServer will then respond with either a OK, ERROR, or
+    AUTHORIZATION message.  See Section A.6 for details.
  
  5) Next, the server will delegate the user credential to the client.
     The MyProxyGet will generate a public/private key pair and send
@@ -232,7 +234,7 @@ Section D
  a MyProxyServer process and removing a proxy.
  
  1) MyProxyDestroy makes a connection to the MyProxyServer as
-    indicated by it's configuration or arguments.
+    indicated by its configuration or arguments.
  
  2) MyProxyDestroy will initiate the GSSAPI context setup loop, with
     MyProxyServer accepting. See section A.1. 
@@ -269,7 +271,7 @@ Section E
  The following illustrates a MyProxyInfo process connecting to a
  MyProxyServer process and queries information about a proxy.
 
- 1) MyProxyInfo makes a connection to the MyProxyServer as indicated by it's
+ 1) MyProxyInfo makes a connection to the MyProxyServer as indicated by its
     configuration or arguments.
 
  2) MyProxyInfo will initiate the GSSAPI context setup loop, with
@@ -292,20 +294,21 @@ Section E
     See section A.6 for details. If the response is OK it will also contain 
     the following strings:
     
-    CRED_DESC=<credential description>    // These provide info about default credential 
-    CRED_START_TIME=<start_time>
-    CRED_END_TIME=<end_time>
-    CRED_OWNER=<subject_name>
-    CRED_RETRIEVER=<retriever regex>
-    CRED_RENEWER=<renewer regex>
+    CRED_NAME=<credential name>		        // optional
+    CRED_DESC=<credential description>		// optional
+    CRED_START_TIME=<start_time>		// required
+    CRED_END_TIME=<end_time>			// required
+    CRED_OWNER=<subject_name>			// required
+    CRED_RETRIEVER=<retriever regex>		// optional
+    CRED_RENEWER=<renewer regex>		// optional
     
-    ADDL_CREDS=cred1,cred2,....,credn    	// These provide info about additional 
-    CRED_cred1_DESC=<credential description>    // credentials (if any)
-    CRED_cred1_START_TIME=<start_time>   
-    CRED_cred1_END_TIME=<end time>
-    CRED_cred1_OWNER=<subject name>
-    CRED_cred1_RETRIEVER=<retriever regex>
-    CRED_cred1_RENEWER=<renewer regex>
+    ADDL_CREDS=cred1,cred2,....,credn    	// If multiple creds are stored
+    CRED_cred1_DESC=<credential description>	// optional
+    CRED_cred1_START_TIME=<start_time>		// required
+    CRED_cred1_END_TIME=<end time>		// required
+    CRED_cred1_OWNER=<subject name>		// required
+    CRED_cred1_RETRIEVER=<retriever regex>	// optional
+    CRED_cred1_RENEWER=<renewer regex>		// optional
     ....
 
     The time strings carry information on lifetime of the proxy in a
@@ -314,7 +317,3 @@ Section E
     contains DN of the proxy's owner.
 
  5) At this point, both sides should close the connection.
-    
- 
- 
-
