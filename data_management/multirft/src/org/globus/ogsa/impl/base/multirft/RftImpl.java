@@ -470,8 +470,9 @@ public class RftImpl
      * 
      * @throws Exception DOCUMENT ME!
      */
-    public void preDestroy()
-                    throws Exception {
+    public void preDestroy(GridContext context) 
+    throws GridServiceException {
+        super.preDestroy(context);
         logger.debug("RFT instance destroyed");
     }
 
