@@ -76,40 +76,53 @@ BUNDLE gt4-rft
         globus_wsrf_rft_common_schema
 
 BUNDLE gt4-gram
-        globus_user_env
-        globus_scheduler_event_generator
-        globus_fork_starter
-        globus_scheduler_event_generator_fork
-        globus_scheduler_event_generator_fork_setup
-        globus_gram_job_manager_setup_fork
-        globus_wsrf_gram_job_monitoring_common_java
-        globus_wsrf_rendezvous_common_schema
-        globus_wsrf_rendezvous_common_java
-        globus_wsrf_rendezvous_service_java
-        globus_wsrf_gram_common_schema
-        globus_wsrf_gram_common_java
-        globus_wsrf_gram_utils_java
-        globus_wsrf_gram_service_java
-        globus_wsrf_gram_service_java_setup_common
-        globus_wsrf_gram_service_java_setup_multi
-        globus_wsrf_gram_service_java_setup_fork
-        globus_wsrf_gram_client_java
-        globus_gram_local_proxy_tool
-        globus_gridmap_and_execute
-        globus_scheduler_provider_setup_fork
         globus_c_delegation_client_bindings
         globus_c_delegation_client_util
         globus_c_gram_client_bindings
         globus_c_rendezvous_client_bindings
         globus_c_ws_messaging
+        globus_c_ws_security
+        globus_c_wsdl_parser
         globus_c_wsrf_cgen
         globus_c_wsrf_core_bindings
         globus_c_wsrf_core_tools
+        globus_c_wsrf_providers
+        globus_c_wsrf_resource
+        globus_fork_starter
+        globus_globusrun_ws
+        globus_gram_job_manager_setup_fork
+        globus_gram_local_proxy_tool
+        globus_gridmap_and_execute
         globus_handler_debug
         globus_handler_ws_addressing
+        globus_java_ws_core_common
+        globus_java_ws_core_tools
+        globus_js
         globus_notification_consumer
-        globus_globusrun_ws
-                                
+        globus_scheduler_event_generator
+        globus_scheduler_event_generator_fork
+        globus_scheduler_event_generator_fork_setup
+        globus_scheduler_provider_setup_fork
+        globus_user_env
+        globus_ws_core_schema
+        globus_wsrf_delegation_common
+        globus_wsrf_gram_client_java
+        globus_wsrf_gram_common_java
+        globus_wsrf_gram_common_schema
+        globus_wsrf_gram_job_monitoring_common_java
+        globus_wsrf_gram_service_java
+        globus_wsrf_gram_service_java_setup_common
+        globus_wsrf_gram_service_java_setup_fork
+        globus_wsrf_gram_service_java_setup_multi
+        globus_wsrf_gram_utils_java
+        globus_wsrf_mds_usefulrp_schema
+        globus_wsrf_rendezvous_common_java
+        globus_wsrf_rendezvous_common_schema
+        globus_wsrf_rendezvous_service_java
+        globus_wsrf_rft_common_schema
+        globus_xio
+        globus_xio_buffer
+
 BUNDLE gt4-gram-pbs
         globus_wsrf_gram_service_java_setup_pbs
         globus_scheduler_event_generator_pbs
