@@ -2,8 +2,8 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="7.00"
-	Name="DebugLib"
-	ProjectGUID="{B86A42AE-F88A-4C25-A584-B96C744E4B16}"
+	Name="GRAMProtocolLib"
+	ProjectGUID="{AE7CD395-2725-400A-89DB-2DC426DC1357}"
 	Keyword="Win32Proj">
 	<Platforms>
 		<Platform
@@ -19,10 +19,10 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(GLOBUS_LOCATION)\include&quot;;&quot;$(GLOBUS_LOCATION)\include\nonthreaded&quot;;&quot;$(SolutionDir)&quot;"
+				AdditionalIncludeDirectories="&quot;$(GLOBUS_LOCATION)\include&quot;;&quot;$(GLOBUS_LOCATION)\include\nonthreaded&quot;;&quot;$(SolutionDir)&quot;;&quot;$(ProjectDir)&quot;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_LIB"
 				MinimalRebuild="TRUE"
-				BasicRuntimeChecks="3"
+				BasicRuntimeChecks="0"
 				RuntimeLibrary="2"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
@@ -33,7 +33,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)/globus_gram_client_win32dbg.lib"/>
+				OutputFile="$(OutDir)/libglobus_gram_protocol_win32dbg.lib"/>
 			<Tool
 				Name="VCMIDLTool"/>
 			<Tool
@@ -109,7 +109,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)/globus_gram_client_win32dbgthr.lib"/>
+				OutputFile="$(OutDir)/globus_gram_protocol_win32dbgthr.lib"/>
 			<Tool
 				Name="VCMIDLTool"/>
 			<Tool
@@ -131,14 +131,29 @@
 			Name="Source Files"
 			Filter="cpp;c;cxx;def;odl;idl;hpj;bat;asm">
 			<File
-				RelativePath="..\globus_gram_client.c">
+				RelativePath="..\globus_gram_protocol.c">
+			</File>
+			<File
+				RelativePath="..\globus_gram_protocol_error.c">
+			</File>
+			<File
+				RelativePath="..\globus_gram_protocol_frame.c">
+			</File>
+			<File
+				RelativePath="..\globus_gram_protocol_io.c">
+			</File>
+			<File
+				RelativePath="..\globus_gram_protocol_pack.c">
 			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl;inc">
 			<File
-				RelativePath="..\globus_gram_client.h">
+				RelativePath="..\globus_gram_protocol.h">
+			</File>
+			<File
+				RelativePath="..\globus_i_gram_protocol.h">
 			</File>
 		</Filter>
 	</Files>
