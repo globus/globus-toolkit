@@ -38,6 +38,9 @@ typedef struct _gram_job_manager_monitor_t
     volatile nexus_bool_t  done;
 } gram_job_manager_monitor_t;
 
+/* Only poll once every GRAM_JOB_MANAGER_POLL_FREQUENCY seconds */
+#define GRAM_JOB_MANAGER_POLL_FREQUENCY 10
+
 /******************************************************************************
                           Module specific prototypes
 ******************************************************************************/
@@ -371,6 +374,7 @@ main(int argc,
 
     if (job_status == 0)
     {
+	int skip_poll = GRAM_JOB_MANAGER_POLL_FREQUENCY;
         while (!job_manager_monitor.done)
         {
             /*
@@ -380,7 +384,11 @@ main(int argc,
 	    nexus_usleep(1000000);
     	    nexus_fd_handle_events(NEXUS_FD_POLL_NONBLOCKING_ALL, 
                                    &message_handled);
-	    grami_jm_poll(); 
+	    if (--skip_poll <= 0)
+	    {
+		grami_jm_poll();
+		skip_poll = GRAM_JOB_MANAGER_POLL_FREQUENCY;
+	    }
         } /* endwhile */
 /*
         nexus_mutex_unlock(&job_manager_monitor.mutex);
