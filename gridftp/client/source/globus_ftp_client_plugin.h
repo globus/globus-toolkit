@@ -38,6 +38,8 @@
 
 #include "globus_ftp_client.h"
 
+EXTERN_C_BEGIN
+
 /**
  * Command Mask.
  * @ingroup globus_ftp_client_plugins
@@ -1042,5 +1044,7 @@ globus_result_t
 globus_ftp_client_plugin_set_complete_func(
     globus_ftp_client_plugin_t *		plugin,
     globus_ftp_client_plugin_complete_t		complete_func);
+
+EXTERN_C_END
 
 #endif /* GLOBUS_INCLUDE_FTP_CLIENT_PLUGIN_H */
