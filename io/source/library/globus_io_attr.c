@@ -196,6 +196,111 @@ globus_i_io_attr_activate(void)
     globus_l_io_fileattr_default.file_type = GLOBUS_IO_FILE_TYPE_BINARY;
 }
 
+
+/**
+ * globus_io_attr_set_callback_space
+ *
+ * Use this to associate a callback space with a globus_io_handle_t.  When
+ * a space is associated with a globus io handle, all callbacks that are 
+ * delivered on that handle are only delivered to the supplied callback space;
+ *
+ * The defualt is for callbacks to go to the 'global' space, 
+ * GLOBUS_CALLBACK_GLOBAL_SPACE
+ *
+ * @param attr
+ *        attr to associate space with
+ *
+ * @param space
+ *        a callback space handle, previously initialized with
+ *        globus_callback_space_init
+ *
+ * @return
+ *        - Error on invalid space or null attr
+ *        - GLOBUS_SUCCESS
+ */
+
+globus_result_t 
+globus_io_attr_set_callback_space( 
+    globus_io_attr_t *                  attr, 
+    globus_callback_space_t             space)
+{
+    static char *                            myname =
+        "globus_io_attr_set_callback_space";
+    
+    if(!attr)
+    {
+        return globus_error_put(
+            globus_io_error_construct_null_parameter(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                "attr",
+                1,
+                myname));
+    }
+    
+    if(!globus_callback_space_is_valid(space)) 
+    {
+        return globus_error_put(
+           globus_error_construct_string(
+               GLOBUS_IO_MODULE,
+               GLOBUS_NULL,
+               "[%s] Callback space is not valid.",
+               myname));
+    }
+    
+    attr->space = space;
+    
+    return GLOBUS_SUCCESS;
+}
+
+/**
+ * globus_io_attr_get_callback_space
+ *
+ * Use this to get the callback space associated with a globus_io_attr_t. 
+ *
+ * @param attr
+ *        attr to associate space with
+ *
+ * @param space
+ *        storage for a callback space handle, result will be stored here
+ *
+ * @return
+ *        - Error on null attrs
+ *        - GLOBUS_SUCCESS
+ */
+
+globus_result_t 
+globus_io_attr_get_callback_space( 
+    globus_io_attr_t *                  attr, 
+    globus_callback_space_t *           space)
+{
+    if(!attr)
+    {
+        return globus_error_put(
+            globus_io_error_construct_null_parameter(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                "attr",
+                1,
+                myname));
+    }
+    
+    if(!space)
+    {
+        return globus_error_put(
+            globus_io_error_construct_null_parameter(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                "space",
+                2,
+                myname));
+    }
+    
+    *space = attr->space;
+    
+    return GLOBUS_SUCCESS;
+}
+
 /****************************************************************
  *                      NETLOGGER
  *                      ---------
@@ -5332,6 +5437,8 @@ globus_i_io_copy_socketattr_to_handle(
 	       &handle->socket_attr,
 	       instance);
 	
+	handle->space = attr->space;
+	
 	return GLOBUS_SUCCESS;
     }
     else
@@ -5404,7 +5511,8 @@ globus_i_io_copy_securesocketattr_to_handle(
 	    globus_i_io_securesocket_copy_attr(
 		&handle->securesocket_attr,
 		instance);
-
+            handle->space = attr->space;
+            
 	    return GLOBUS_SUCCESS;
 	}
     }
@@ -5488,6 +5596,8 @@ globus_i_io_copy_tcpattr_to_handle(
             memcpy(&handle->tcp_attr.interface[0],
                    &instance->interface[0],
                    16);
+	    
+	    handle->space = attr->space;
 	    return GLOBUS_SUCCESS;
 	}
     }
@@ -5574,7 +5684,9 @@ globus_i_io_copy_udpattr_to_handle(
 	    handle->udp_attr.address = instance->address;
 	    handle->udp_attr.interface = instance->interface;
 	    handle->udp_attr.restrict_port = instance->restrict_port;
-
+            
+            handle->space = attr->space;
+            
 	    return GLOBUS_SUCCESS;
 	}
     }
@@ -5644,6 +5756,8 @@ globus_i_io_copy_fileattr_to_handle(
 		globus_object_get_local_instance_data(attr->attr);
 
 	    handle->file_attr.file_type = instance->file_type;
+	    handle->space = attr->space;
+	    
 	    return GLOBUS_SUCCESS;
 	}
     }
@@ -5683,6 +5797,8 @@ globus_i_io_securesocket_get_attr(
     globus_i_io_securesocket_copy_attr(
 	instance,
 	&handle->securesocket_attr);
+    
+    attr->space = handle->space;
     
     return GLOBUS_SUCCESS;
 }
