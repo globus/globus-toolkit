@@ -4932,7 +4932,10 @@ globus_gridftp_server_get_read_range(
             if(op->partial_offset > 0)
             {
                 tmp_off += op->partial_offset;
-                tmp_write = 0 - op->partial_offset;
+                if(op->data_handle->info.mode == 'E')
+                {
+                    tmp_write = 0 - op->partial_offset;
+                }
             }
         }
         else
@@ -4950,7 +4953,8 @@ globus_gridftp_server_get_read_range(
     {
         *length = tmp_len;
     }
-
+    op->write_delta = tmp_write;
+    
     GlobusGFSDebugExit();
 }
 
