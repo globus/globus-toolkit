@@ -1,4 +1,4 @@
-#define OUTSTANDING_READ_COUNT                      1
+#define OUTSTANDING_READ_COUNT                      4
 
 #include <setjmp.h>
 #include "config.h"
