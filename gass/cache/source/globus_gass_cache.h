@@ -66,6 +66,10 @@ Codes returned by globus_gass_cache module
 #if !defined(FILENAME_MAX) && defined(MAXPATHLEN)
 #   define FILENAME_MAX MAXPATHLEN
 #endif
+#if !defined(FILENAME_MAX) && defined(PATH_MAX)
+#   define FILENAME_MAX PATH_MAX
+#endif
+
 /******************************************************************************
 Other definitions
 ******************************************************************************/
