@@ -16,6 +16,7 @@ typedef enum globus_l_gfs_ipc_state_s
     GLOBUS_GFS_IPC_STATE_OPENING,
     GLOBUS_GFS_IPC_STATE_OPEN,
     GLOBUS_GFS_IPC_STATE_GETTING,
+    GLOBUS_GFS_IPC_STATE_IN_CB,
     GLOBUS_GFS_IPC_STATE_IN_USE,
     GLOBUS_GFS_IPC_STATE_ERROR,
     GLOBUS_GFS_IPC_STATE_CLOSING,
@@ -309,59 +310,41 @@ globus_l_gfs_ipc_open_kickout(
     globus_i_gfs_ipc_handle_t *         ipc;
 
     ipc = (globus_i_gfs_ipc_handle_t *) user_arg;
-    
-    ipc->state = GLOBUS_GFS_IPC_STATE_IN_USE;
-    
+
+    globus_mutex_lock(&globus_l_ipc_mutex);
+    {
+        switch(ipc->state)
+        {
+            case GLOBUS_GFS_IPC_STATE_OPENING:
+                ipc->state = GLOBUS_GFS_IPC_STATE_IN_CB;
+                break;
+
+            default:
+                break;
+        }
+    }
+    globus_mutex_unlock(&globus_l_ipc_mutex);
+
     if(ipc->open_cb != NULL)
     {
         ipc->open_cb(ipc, GLOBUS_SUCCESS, ipc->open_arg);
     }
+
     globus_mutex_lock(&globus_l_ipc_mutex);
-    {
-        globus_l_ipc_handle_count++;
-    }
-    globus_mutex_unlock(&globus_l_ipc_mutex);
-}
-
-static void
-globus_l_gfs_ipc_get_kickout(
-    void *                              user_arg)
-{
-    globus_i_gfs_ipc_handle_t *         ipc;
-    globus_gfs_ipc_error_callback_t     error_cb = NULL;
-
-    ipc = (globus_i_gfs_ipc_handle_t *) user_arg;
-
-
-    globus_mutex_lock(&ipc->mutex);
     {
         switch(ipc->state)
         {
-            case GLOBUS_GFS_IPC_STATE_GETTING:
+            case GLOBUS_GFS_IPC_STATE_IN_CB:
                 ipc->state = GLOBUS_GFS_IPC_STATE_IN_USE;
-                break;
-
-            case GLOBUS_GFS_IPC_STATE_ERROR:
-                error_cb = ipc->error_cb;
                 break;
 
             default:
                 globus_assert(0 && "memory corruption?");
                 break;
         }
+        globus_l_ipc_handle_count++;
     }
-    globus_mutex_unlock(&ipc->mutex);
-
-    if(ipc->open_cb != NULL)
-    {
-        ipc->open_cb(ipc, GLOBUS_SUCCESS, ipc->open_arg);
-    }
-
-    if(error_cb != NULL)
-    {
-        error_cb(ipc, ipc->cached_res, ipc->error_arg);
-    }
-
+    globus_mutex_unlock(&globus_l_ipc_mutex);
 }
 
 static void
@@ -377,6 +360,7 @@ globus_l_gfs_ipc_error_kickout(
         {
             /* need to delay error callback until after the get callback
                 is delivered */
+            case GLOBUS_GFS_IPC_STATE_IN_CB:
             case GLOBUS_GFS_IPC_STATE_GETTING:
                 ipc->cached_res = res;
                 ipc->state = GLOBUS_GFS_IPC_STATE_ERROR;
@@ -420,49 +404,68 @@ globus_l_gfs_ipc_open_cb(
     globus_result_t                     result,
     void *                              user_arg)
 {
+    globus_gfs_ipc_error_callback_t     error_cb = NULL;
     globus_result_t                     res;
     globus_i_gfs_ipc_handle_t *         ipc;
     globus_byte_t *                     new_buf;
 
     ipc = (globus_i_gfs_ipc_handle_t *) user_arg;
 
-    if(result == GLOBUS_SUCCESS)
+    globus_mutex_lock(&globus_l_ipc_mutex);
     {
-        ipc->state = GLOBUS_GFS_IPC_STATE_OPEN;
-        
-        new_buf = globus_malloc(GFS_IPC_HEADER_SIZE);
-        res = globus_xio_register_read(
-            ipc->xio_handle,
-            new_buf,
-            GFS_IPC_HEADER_SIZE,
-            GFS_IPC_HEADER_SIZE,
-            NULL,
-            globus_l_gfs_ipc_read_header_cb,
-            ipc);
-        if(res != GLOBUS_SUCCESS)
+        switch(ipc->state)
         {
-            globus_free(new_buf);
-            result = res;
+            case GLOBUS_GFS_IPC_STATE_OPENING:
+                ipc->state = GLOBUS_GFS_IPC_STATE_IN_CB;
+                break;
+
+            default:
+                break;
         }
     }
-    
+    globus_mutex_unlock(&globus_l_ipc_mutex);
+
     if(ipc->open_cb != NULL)
     {
-        ipc->state = GLOBUS_GFS_IPC_STATE_IN_USE;
         ipc->open_cb(ipc, result, ipc->open_arg);
     }
 
-    if(result != GLOBUS_SUCCESS)
+    globus_mutex_lock(&globus_l_ipc_mutex);
     {
-        globus_l_gfs_ipc_close(ipc);
-    }
-    else
-    {
-        globus_mutex_lock(&globus_l_ipc_mutex);
+        if(ipc->state != GLOBUS_GFS_IPC_STATE_ERROR &&
+            result == GLOBUS_SUCCESS)
         {
-            globus_l_ipc_handle_count++;
+            new_buf = globus_malloc(GFS_IPC_HEADER_SIZE);
+            res = globus_xio_register_read(
+                ipc->xio_handle,
+                new_buf,
+                GFS_IPC_HEADER_SIZE,
+                GFS_IPC_HEADER_SIZE,
+                NULL,
+                globus_l_gfs_ipc_read_header_cb,
+                ipc);
+            if(res != GLOBUS_SUCCESS)
+            {
+                globus_free(new_buf);
+                ipc->state = GLOBUS_GFS_IPC_STATE_ERROR;
+                error_cb = ipc->error_cb;
+            }
+            else
+            {
+                globus_l_ipc_handle_count++;
+            }
         }
-        globus_mutex_unlock(&globus_l_ipc_mutex);
+        else
+        {
+            ipc->state = GLOBUS_GFS_IPC_STATE_ERROR;
+            error_cb = ipc->error_cb;
+        }
+    }
+    globus_mutex_unlock(&globus_l_ipc_mutex);
+
+    if(error_cb != NULL)
+    {
+        error_cb(ipc, res, ipc->error_arg);
     }
 }
 
@@ -1605,7 +1608,6 @@ globus_l_gfs_ipc_read_header_cb(
                     goto lock_err;
                 }
                 request->type = type;
-                assert(request->id == id);
                 break;
                 
             case GLOBUS_GFS_OP_EVENT_REPLY:
@@ -2155,7 +2157,9 @@ globus_gfs_ipc_set_user(
 
     globus_mutex_lock(&ipc->mutex);
     {
-        if(ipc->state != GLOBUS_GFS_IPC_STATE_IN_USE)
+        if(ipc->state != GLOBUS_GFS_IPC_STATE_IN_USE &&
+            ipc->state != GLOBUS_GFS_IPC_STATE_GETTING &&
+            ipc->state != GLOBUS_GFS_IPC_STATE_OPENING)
         {
             res = GlobusGFSErrorParameter("ipc");
             goto err;
@@ -2229,7 +2233,9 @@ globus_gfs_ipc_set_user_buffer(
     ipc = (globus_i_gfs_ipc_handle_t *) ipc_handle;
     globus_mutex_lock(&ipc->mutex);
     {
-        if(ipc->state != GLOBUS_GFS_IPC_STATE_IN_USE)
+        if(ipc->state != GLOBUS_GFS_IPC_STATE_IN_USE &&
+            ipc->state != GLOBUS_GFS_IPC_STATE_GETTING &&
+            ipc->state != GLOBUS_GFS_IPC_STATE_OPENING)
         {
             res = GlobusGFSErrorParameter("ipc");
             goto err;
@@ -2306,7 +2312,9 @@ globus_gfs_ipc_set_cred(
     ipc = (globus_i_gfs_ipc_handle_t *) ipc_handle;
     globus_mutex_lock(&ipc->mutex);
     {
-        if(ipc->state != GLOBUS_GFS_IPC_STATE_IN_USE)
+        if(ipc->state != GLOBUS_GFS_IPC_STATE_IN_USE &&
+            ipc->state != GLOBUS_GFS_IPC_STATE_GETTING &&
+            ipc->state != GLOBUS_GFS_IPC_STATE_OPENING)
         {
             res = GlobusGFSErrorParameter("ipc");
             goto err;
@@ -2513,7 +2521,9 @@ globus_gfs_ipc_request_recv(
     ipc = (globus_i_gfs_ipc_handle_t *) ipc_handle;
     globus_mutex_lock(&ipc->mutex);
     {
-        if(ipc->state != GLOBUS_GFS_IPC_STATE_IN_USE)
+        if(ipc->state != GLOBUS_GFS_IPC_STATE_IN_USE &&
+            ipc->state != GLOBUS_GFS_IPC_STATE_GETTING &&
+            ipc->state != GLOBUS_GFS_IPC_STATE_OPENING)
         {
             res = GlobusGFSErrorParameter("ipc");
             goto err;
@@ -2583,7 +2593,9 @@ globus_gfs_ipc_request_send(
     ipc = (globus_i_gfs_ipc_handle_t *) ipc_handle;
     globus_mutex_lock(&ipc->mutex);
     {
-        if(ipc->state != GLOBUS_GFS_IPC_STATE_IN_USE)
+        if(ipc->state != GLOBUS_GFS_IPC_STATE_IN_USE &&
+            ipc->state != GLOBUS_GFS_IPC_STATE_GETTING &&
+            ipc->state != GLOBUS_GFS_IPC_STATE_OPENING)
         {
             res = GlobusGFSErrorParameter("ipc");
             goto err;
@@ -2646,7 +2658,9 @@ globus_gfs_ipc_request_list(
     ipc = (globus_i_gfs_ipc_handle_t *) ipc_handle;
     globus_mutex_lock(&ipc->mutex);
     {
-        if(ipc->state != GLOBUS_GFS_IPC_STATE_IN_USE)
+        if(ipc->state != GLOBUS_GFS_IPC_STATE_IN_USE &&
+            ipc->state != GLOBUS_GFS_IPC_STATE_GETTING &&
+            ipc->state != GLOBUS_GFS_IPC_STATE_OPENING)
         {
             res = GlobusGFSErrorParameter("ipc");
             goto err;
@@ -2717,7 +2731,9 @@ globus_gfs_ipc_request_command(
     /* XXX parameter checlking */
     globus_mutex_lock(&ipc->mutex);
     {
-        if(ipc->state != GLOBUS_GFS_IPC_STATE_IN_USE)
+        if(ipc->state != GLOBUS_GFS_IPC_STATE_IN_USE &&
+            ipc->state != GLOBUS_GFS_IPC_STATE_GETTING &&
+            ipc->state != GLOBUS_GFS_IPC_STATE_OPENING)
         {
             res = GlobusGFSErrorParameter("ipc");
             goto err;
@@ -2977,7 +2993,9 @@ globus_gfs_ipc_request_active_data(
     /* XXX parameter checlking */
     globus_mutex_lock(&ipc->mutex);
     {
-        if(ipc->state != GLOBUS_GFS_IPC_STATE_IN_USE)
+        if(ipc->state != GLOBUS_GFS_IPC_STATE_IN_USE &&
+            ipc->state != GLOBUS_GFS_IPC_STATE_GETTING &&
+            ipc->state != GLOBUS_GFS_IPC_STATE_OPENING)
         {
             res = GlobusGFSErrorParameter("ipc");
             goto err;
@@ -3058,7 +3076,9 @@ globus_gfs_ipc_request_passive_data(
     /* XXX parameter checlking */
     globus_mutex_lock(&ipc->mutex);
     {
-        if(ipc->state != GLOBUS_GFS_IPC_STATE_IN_USE)
+        if(ipc->state != GLOBUS_GFS_IPC_STATE_IN_USE &&
+            ipc->state != GLOBUS_GFS_IPC_STATE_GETTING &&
+            ipc->state != GLOBUS_GFS_IPC_STATE_OPENING)
         {
             res = GlobusGFSErrorParameter("ipc");
             goto err;
@@ -3139,7 +3159,9 @@ globus_gfs_ipc_request_stat(
     ipc = ipc_handle;
     globus_mutex_lock(&ipc->mutex);
     {
-        if(ipc->state != GLOBUS_GFS_IPC_STATE_IN_USE)
+        if(ipc->state != GLOBUS_GFS_IPC_STATE_IN_USE &&
+            ipc->state != GLOBUS_GFS_IPC_STATE_GETTING &&
+            ipc->state != GLOBUS_GFS_IPC_STATE_OPENING)
         {
             res = GlobusGFSErrorParameter("ipc");
             goto err;
@@ -3250,7 +3272,9 @@ globus_gfs_ipc_request_data_destroy(
 
     globus_mutex_lock(&ipc->mutex);
     {
-        if(ipc->state != GLOBUS_GFS_IPC_STATE_IN_USE)
+        if(ipc->state != GLOBUS_GFS_IPC_STATE_IN_USE &&
+            ipc->state != GLOBUS_GFS_IPC_STATE_GETTING &&
+            ipc->state != GLOBUS_GFS_IPC_STATE_OPENING)
         {
             res = GlobusGFSErrorParameter("ipc");
             goto err;
@@ -3506,7 +3530,7 @@ globus_l_gfs_ipc_handle_get(
         res = globus_callback_register_oneshot(
             NULL,
             NULL,
-            globus_l_gfs_ipc_get_kickout,
+            globus_l_gfs_ipc_open_kickout,
             ipc);
         if(res != GLOBUS_SUCCESS)
         {
@@ -3534,7 +3558,9 @@ globus_gfs_ipc_handle_release(
 
     globus_mutex_lock(&globus_l_ipc_mutex);
     {
-        if(ipc_handle->state != GLOBUS_GFS_IPC_STATE_IN_USE)
+        if(ipc_handle->state != GLOBUS_GFS_IPC_STATE_IN_USE &&
+            ipc_handle->state != GLOBUS_GFS_IPC_STATE_GETTING &&
+            ipc_handle->state != GLOBUS_GFS_IPC_STATE_OPENING)
         {
             res = GlobusGFSErrorParameter("ipc_handle");
             goto err;
@@ -3592,70 +3618,6 @@ globus_l_gfs_ipc_find_community(
     }
 
     return found;
-}
-
-globus_result_t
-globus_l_gfs_community_get_nodes(
-    const char *                        pathname,
-    const char *                        user_id,
-    char ***                            contact_strings,
-    int *                               count)
-{
-    globus_i_gfs_community_t *          community;
-    char **                             cs;
-    globus_list_t *                     list;
-    int *                               size_a;
-    int                                 ctr;
-    char *                              hast_str;
-    globus_result_t                     res;
-
-    community = globus_l_gfs_ipc_find_community(pathname);
-
-    /* now order the contact strings best we can */
-    cs = (char **) globus_malloc(sizeof(char *) * community->cs_count);
-    if(cs == NULL)
-    {
-        goto err;
-    }
-    size_a = (int *) globus_malloc(sizeof(int) * community->cs_count);
-    if(size_a == NULL)
-    {
-        goto err;
-    }
-
-    for(ctr = 0; ctr < community->cs_count; ctr++)
-    {
-        hast_str = globus_common_create_string(
-            "%s::%s", 
-            user_id, community->cs[ctr]);
-        if(hast_str == NULL)
-        {
-            goto err;
-        }
-
-        list = (globus_list_t *) globus_hashtable_lookup(
-            &globus_l_ipc_handle_table, hast_str);
-        size_a[ctr] = globus_list_size(list);
-        cs[ctr] = community->cs[ctr];
-    }
-
-    /* sort */
-
-    /* clean up */
-    globus_free(size_a);
-    if(contact_strings != NULL)
-    {
-        *contact_strings = cs;
-    }
-    if(count != NULL)
-    {
-        *count = community->cs_count;
-    }
-    return GLOBUS_SUCCESS;
-
-  err:
-
-    return res;
 }
 
 globus_result_t
@@ -3731,7 +3693,7 @@ globus_gfs_ipc_handle_get(
         }
 
         ndx = 0;
-        for(ctr = 0; ctr < count && !done; ctr++)
+        for(ctr = 0; ctr < cs_count && !done; ctr++)
         {
             if(ctr == community->cs_count)
             {
