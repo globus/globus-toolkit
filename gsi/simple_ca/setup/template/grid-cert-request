@@ -128,7 +128,7 @@ if [ "${nondefaultca}" == "true" ]; then
     done
     
     echo
-    echo -n "Enter the index number of the CA to set as the default: "
+    echo -n "Enter the index number of the CA you want to sign your cert request: "
     read CA_CHOSEN_INDEX
     
     if [ $[ 0 < ${CA_CHOSEN_INDEX} ] == 0 ] ||
@@ -154,6 +154,8 @@ SSL_CONFIG=${trusted_certs_dir}/globus-user-ssl.conf.${CA_HASH}
 SSL_USER_CONFIG=${trusted_certs_dir}/globus-user-ssl.conf.${CA_HASH}
 SSL_HOST_CONFIG=${trusted_certs_dir}/globus-host-ssl.conf.${CA_HASH}
 security_conf=${trusted_certs_dir}/grid-security.conf.${CA_HASH}
+
+. ${security_conf}
 
 }
 
@@ -242,7 +244,6 @@ readCommandLine () {
          ;;
      -ca)
 	 if [ ! -z "$2" ] && [ -z "`echo $2 | ${GLOBUS_SH_SED-sed} -e "s|[^-]*||g"`" ]; then
-	    echo "nondefaultca=$2"
 	    nondefaultca=$2
 	    shift
 	 else
@@ -739,7 +740,6 @@ emitDirections () {
 # MAIN
 ###########################################################
 
-readCommandLine "$@"
 
 if [ -z "$security_conf" ]; then
     security_conf=${secconfdir}/grid-security.conf
@@ -747,6 +747,8 @@ fi
 
 # See if we can proceed
 . ${security_conf}
+
+readCommandLine "$@"
 
 
 # Set the actual file names
