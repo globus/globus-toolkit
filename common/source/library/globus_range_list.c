@@ -118,8 +118,7 @@ globus_range_list_insert(
             done = GLOBUS_TRUE;
         }
         /* if it is merging */
-        else if(
-            (end_offset >= ent->offset && offset <= ent_end))
+        else if(end_offset >= ent->offset || offset <= ent_end)
         {
             if(offset < ent->offset)
             {
