@@ -153,13 +153,12 @@ unpack_failed:
 void
 globus_gram_job_manager_query_reply(
     globus_gram_jobmanager_request_t *	request,
-    globus_gram_job_manager_query_t *	query,
-    int					failure_code)
+    globus_gram_job_manager_query_t *	query)
 {
     globus_l_gram_job_manager_query_reply(request,
 	                                  query->handle,
 					  request->status,
-					  failure_code);
+					  query->failure_code);
     if(query->signal_arg)
     {
 	globus_libc_free(query->signal_arg);
@@ -189,8 +188,7 @@ globus_l_gram_job_manager_query_reply(
 	rc = globus_gram_protocol_pack_status_reply(
 	    status,
 	    rc,
-	    (request->status == GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED &&
-		rc == GLOBUS_SUCCESS) ? request->failure_code : 0,
+	    failure_code,
 	    &reply,
 	    &replysize );
     }

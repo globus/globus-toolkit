@@ -38,6 +38,7 @@ typedef struct globus_l_gram_job_manager_output_info_t
     globus_bool_t			close_flag;
     int					pending_opens;
     int					pending_closes;
+    int					open_failure_code;
 }
 globus_l_gram_job_manager_output_info_t;
 
@@ -208,6 +209,25 @@ globus_l_gram_job_manager_output_ftp_close_callback(
 
 static
 void
+globus_l_gram_job_manager_output_file_close(
+    globus_gram_jobmanager_request_t *	request,
+    globus_l_gram_job_manager_output_destination_t *
+    					destination);
+static
+void
+globus_l_gram_job_manager_output_gass_close(
+    globus_gram_jobmanager_request_t *	request,
+    globus_l_gram_job_manager_output_destination_t *
+    					destination);
+
+static
+void
+globus_l_gram_job_manager_output_ftp_close(
+    globus_gram_jobmanager_request_t *	request,
+    globus_l_gram_job_manager_output_destination_t *
+    					destination);
+static
+void
 globus_l_gram_job_manager_output_close_done(
     globus_gram_jobmanager_request_t *	request,
     globus_l_gram_job_manager_output_destination_t *
@@ -233,6 +253,7 @@ globus_gram_job_manager_output_init(
     request->output->pending_opens = 0;
     request->output->pending_closes = 0;
     request->output->close_flag = GLOBUS_FALSE;
+    request->output->open_failure_code = 0;
 
     return GLOBUS_SUCCESS;
 }
@@ -1567,7 +1588,9 @@ globus_l_gram_job_manager_output_destination_close(
 	}
 	else
 	{
-	    /* Fire oneshot to call close callback, I guess */
+	    globus_l_gram_job_manager_output_file_close(
+		    request,
+		    destination);
 	}
 	break;
 
@@ -1586,7 +1609,9 @@ globus_l_gram_job_manager_output_destination_close(
 	}
 	else
 	{
-	    /* Fire oneshot to call close callback, I guess */
+	    globus_l_gram_job_manager_output_gass_close(
+		    request,
+		    destination);
 	}
 	break;
 
@@ -1607,7 +1632,7 @@ globus_l_gram_job_manager_output_destination_close(
 	}
 	else
 	{
-	    /* Fire oneshot to call close callback, I guess */
+	    globus_l_gram_job_manager_output_ftp_close(request, destination);
 	}
 	break;
 
@@ -1636,6 +1661,8 @@ globus_l_gram_job_manager_gass_open_callback(
     int					rc;
     globus_bool_t			event_registered;
     char *				new_url;
+    globus_gram_job_manager_query_t *
+					query;
 
     request = arg;
 
@@ -1647,7 +1674,7 @@ globus_l_gram_job_manager_gass_open_callback(
     switch(status)
     {
 	case GLOBUS_GASS_TRANSFER_REQUEST_PENDING:
-	    destination->state = GLOBUS_GRAM_JOB_MANAGER_DESTINATION_VALID;
+	  destination->state = GLOBUS_GRAM_JOB_MANAGER_DESTINATION_VALID;
 	  destination->possible_write_count = 2;
 	  break;
 
@@ -1678,6 +1705,19 @@ globus_l_gram_job_manager_gass_open_callback(
 	  globus_gass_transfer_referral_destroy(&referral);
 	  break;
 
+	case GLOBUS_GASS_TRANSFER_REQUEST_DENIED:
+	  destination->state = GLOBUS_GRAM_JOB_MANAGER_DESTINATION_INVALID;
+	  if(destination->which == GLOBUS_GRAM_JOB_MANAGER_OUTPUT_STDOUT)
+	  {
+	      request->output->open_failure_code =
+		  GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_STDOUT;
+	  }
+	  else
+	  {
+	      request->output->open_failure_code =
+		  GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_STDERR;
+	  }
+	  break;
 	case GLOBUS_GASS_TRANSFER_REQUEST_INVALID:
 	case GLOBUS_GASS_TRANSFER_REQUEST_FAILED:
 	case GLOBUS_GASS_TRANSFER_REQUEST_DONE:
@@ -1692,6 +1732,21 @@ globus_l_gram_job_manager_gass_open_callback(
 	    GLOBUS_GRAM_JOB_MANAGER_STATE_STDIO_UPDATE_OPEN) &&
        request->output->pending_opens == 0)
     {
+	if(request->jobmanager_state ==
+	    GLOBUS_GRAM_JOB_MANAGER_STATE_OPEN_OUTPUT &&
+	    request->output->open_failure_code != GLOBUS_SUCCESS)
+	{
+	    request->failure_code = request->output->open_failure_code;
+	    request->jobmanager_state =
+		GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
+	}
+	else if(request->jobmanager_state ==
+		GLOBUS_GRAM_JOB_MANAGER_STATE_STDIO_UPDATE_OPEN &&
+		request->output->open_failure_code != GLOBUS_SUCCESS)
+	{
+	    query = globus_fifo_peek(&request->pending_queries);
+	    query->failure_code = request->output->open_failure_code;
+	}
 	do
 	{
 	    event_registered = globus_gram_job_manager_state_machine(request);
@@ -1819,6 +1874,20 @@ globus_l_gram_job_manager_file_close_callback(
     globus_io_handle_get_user_pointer(
 	    handle,
 	    (void **) &destination);
+
+    globus_l_gram_job_manager_output_file_close(request, destination);
+
+    globus_mutex_unlock(&request->mutex);
+}
+/* globus_l_gram_job_manager_file_close_callback() */
+
+static
+void
+globus_l_gram_job_manager_output_file_close(
+    globus_gram_jobmanager_request_t *	request,
+    globus_l_gram_job_manager_output_destination_t *
+    					destination)
+{
     globus_assert(destination->callback_count == 0);
 
     if(destination->type == GLOBUS_GRAM_JOB_MANAGER_OUTPUT_CACHE)
@@ -1832,10 +1901,8 @@ globus_l_gram_job_manager_file_close_callback(
     }
     destination->state = GLOBUS_GRAM_JOB_MANAGER_DESTINATION_INVALID;
     globus_l_gram_job_manager_output_close_done(request, destination);
-
-    globus_mutex_unlock(&request->mutex);
 }
-/* globus_l_gram_job_manager_file_close_callback() */
+/* globus_l_gram_job_manager_output_file_close() */
 
 static
 void
@@ -1855,16 +1922,27 @@ globus_l_gram_job_manager_output_gass_close_callback(
     globus_mutex_lock(&request->mutex);
     destination = globus_gass_transfer_request_get_user_pointer(gass_request);
     destination->callback_count--;
-    globus_assert(destination->callback_count == 0);
-
-    globus_gass_transfer_request_destroy(gass_request);
-
-    destination->state = GLOBUS_GRAM_JOB_MANAGER_DESTINATION_INVALID;
-    globus_l_gram_job_manager_output_close_done(request, destination);
+    globus_l_gram_job_manager_output_gass_close(request, destination);
 
     globus_mutex_unlock(&request->mutex);
 }
 /* globus_l_gram_job_manager_output_gass_close_callback() */
+
+static
+void
+globus_l_gram_job_manager_output_gass_close(
+    globus_gram_jobmanager_request_t *	request,
+    globus_l_gram_job_manager_output_destination_t *
+    					destination)
+{
+    globus_assert(destination->callback_count == 0);
+
+    globus_gass_transfer_request_destroy(destination->handle.gass);
+
+    destination->state = GLOBUS_GRAM_JOB_MANAGER_DESTINATION_INVALID;
+    globus_l_gram_job_manager_output_close_done(request, destination);
+}
+/* globus_l_gram_job_manager_output_gass_close() */
 
 static
 void
@@ -1907,15 +1985,27 @@ globus_l_gram_job_manager_output_ftp_close_callback(
 	    handle,
 	    (void *) &destination);
 
-    globus_assert(destination->callback_count == 0);
-    globus_ftp_client_handle_destroy(handle);
-
-    destination->state = GLOBUS_GRAM_JOB_MANAGER_DESTINATION_INVALID;
-    globus_l_gram_job_manager_output_close_done(request, destination);
+    globus_l_gram_job_manager_output_ftp_close(request, destination);
 
     globus_mutex_unlock(&request->mutex);
 }
 /* globus_l_gram_job_manager_output_ftp_close_callback() */
+
+static
+void
+globus_l_gram_job_manager_output_ftp_close(
+    globus_gram_jobmanager_request_t *	request,
+    globus_l_gram_job_manager_output_destination_t *
+    					destination)
+{
+    globus_assert(destination->callback_count == 0);
+    globus_ftp_client_handle_destroy(&destination->handle.ftp);
+
+    destination->state = GLOBUS_GRAM_JOB_MANAGER_DESTINATION_INVALID;
+    globus_l_gram_job_manager_output_close_done(request, destination);
+
+}
+/* globus_l_gram_job_manager_output_ftp_close() */
 
 static
 void

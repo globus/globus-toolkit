@@ -1235,8 +1235,9 @@ globus_gram_job_manager_state_machine(
 	else
 	{
 	    globus_fifo_dequeue(&request->pending_queries);
+	    query->failure_code = rc;
 
-	    globus_gram_job_manager_query_reply(request, query, rc);
+	    globus_gram_job_manager_query_reply(request, query);
 
 	    if(globus_fifo_empty(&request->pending_queries))
 	    {
@@ -1251,8 +1252,7 @@ globus_gram_job_manager_state_machine(
 
 	globus_gram_job_manager_query_reply(
 		request,
-		query,
-		GLOBUS_SUCCESS);
+		query);
 
 	if(globus_fifo_empty(&request->pending_queries) &&
 	   request->unsent_status_change)
@@ -1296,7 +1296,6 @@ globus_gram_job_manager_state_machine(
 	request->jobmanager_state =
 	    GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2;
 	break;
-
 
       case GLOBUS_GRAM_JOB_MANAGER_STATE_STAGE_OUT:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED:

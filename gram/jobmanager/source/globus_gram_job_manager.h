@@ -541,8 +541,7 @@ globus_gram_job_manager_query_callback(
 void
 globus_gram_job_manager_query_reply(
     globus_gram_jobmanager_request_t *	request,
-    globus_gram_job_manager_query_t *	query,
-    int					failure_code);
+    globus_gram_job_manager_query_t *	query);
 
 /* globus_gram_job_manager_staging.c */
 int
