@@ -102,15 +102,13 @@ main(int argc, char *argv[])
 
     /* Set up client socket attributes */
     if (myproxy_init_client(socket_attrs) < 0) {
-        fprintf(stderr, "%s\n",
-                verror_get_string());
+	verror_print_error(stderr);
         return 1;
     }
 
     /* Authenticate client to server */
     if (myproxy_authenticate_init(socket_attrs, NULL /* Default proxy */) < 0) {
-        fprintf(stderr, "%s\n",
-                verror_get_string());
+	verror_print_error(stderr);
         return 1;
     }
     if (client_request->username == NULL) { /* set default username */
@@ -135,21 +133,20 @@ main(int argc, char *argv[])
                                            request_buffer, sizeof(request_buffer));
 
     if (requestlen < 0) {
-        fprintf(stderr, "Error: %s", verror_get_string());
+	verror_print_error(stderr);
         exit(1);
     }
 
     /* Send request to the myproxy-server */
     if (myproxy_send(socket_attrs, request_buffer, requestlen) < 0) {
-        fprintf(stderr, "%s,\n",
-                verror_get_string());
+	verror_print_error(stderr);
         return 1;
     }
 
     /* Receive a response from the server */
     if (myproxy_recv_response_ex(socket_attrs, server_response,
 				 client_request) < 0) {
-        fprintf(stderr, "%s\n",verror_get_string());
+	verror_print_error(stderr);
         exit(1);
     }
 
