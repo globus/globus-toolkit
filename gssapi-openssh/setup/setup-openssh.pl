@@ -36,18 +36,6 @@ use Cwd;
 use Cwd 'abs_path';
 
 #
-# modify the ld library path for when we call ssh executables
-#
-
-$oldldpath = $ENV{LD_LIBRARY_PATH};
-$newldpath = "$gpath/lib";
-if (length($oldldpath) > 0)
-{
-    $newldpath .= ":$oldldpath";
-}
-$ENV{LD_LIBRARY_PATH} = "$newldpath";
-
-#
 # i'm including this because other perl scripts in the gpt setup directories
 # do so
 #
@@ -1083,7 +1071,7 @@ sub action
 
     debug1("$command\n");
 
-    my $result = system("LD_LIBRARY_PATH=\"$gpath/lib:\$LD_LIBRARY_PATH\"; $command >/dev/null 2>&1");
+    my $result = system("$command >/dev/null 2>&1");
 
     if (($result or $?) and $command !~ m!patch!)
     {
