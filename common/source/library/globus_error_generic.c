@@ -164,6 +164,7 @@ globus_error_initialize_error(
 {
     globus_l_error_data_t *             instance_data;
     int                                 size;
+    va_list                             ap_copy;
     
     instance_data = (globus_l_error_data_t *)
         malloc(sizeof(globus_l_error_data_t));
@@ -179,13 +180,14 @@ globus_error_initialize_error(
 
     if(short_desc_format != NULL)
     {
+        globus_libc_va_copy(ap_copy,ap);
         size = globus_libc_vprintf_length(short_desc_format,ap);
+        va_end(ap_copy);
 
         size++;
         
         if ((instance_data->short_desc = malloc (size)) == NULL)
         {
-            va_end(ap);
             return NULL;
         }
         
@@ -411,14 +413,17 @@ globus_error_set_short_desc(
 
     size = globus_libc_vprintf_length(short_desc_format,ap);
 
+    va_end(ap);
+    
     size++;
 
     if ((*instance_short_desc = malloc (size)) == NULL)
     {
-        va_end(ap);
         return;
     }
 
+    va_start(ap, short_desc_format);
+    
     globus_libc_vsnprintf(*instance_short_desc,
                           size,
                           short_desc_format,
@@ -496,13 +501,16 @@ globus_error_set_long_desc(
 
     size = globus_libc_vprintf_length(long_desc_format,ap);
 
+    va_end(ap);
+
     size++;
 
     if ((*instance_long_desc = malloc (size)) == NULL)
     {
-        va_end(ap);
         return;
     }
+
+    va_start(ap, long_desc_format);
 
     globus_libc_vsnprintf(*instance_long_desc,
                           size,
