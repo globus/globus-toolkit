@@ -55,6 +55,9 @@ RCSID("$OpenBSD: auth2.c,v 1.85 2002/02/24 19:14:59 markus Exp $");
 
 #ifdef GSSAPI
 #include "ssh-gss.h"
+#ifdef GSI
+#include "globus_gss_assist.h"
+#endif
 #endif
 
 /* import */
