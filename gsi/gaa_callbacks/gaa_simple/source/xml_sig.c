@@ -150,7 +150,11 @@ gaa_simple_i_xml_sig_ok(xmlDocPtr doc, char *errbuf, int errbuflen)
     xmlSecCryptoShutdown();
     
     /* Shutdown crypto library */
-    xmlSecCryptoAppShutdown();
+    /*
+     * XXX -- xmlSecCryptoAppShutdown shuts down openssl, which breaks
+     * much of GSI.  Find a better way to deal with this.
+     */
+    /* xmlSecCryptoAppShutdown(); */
     
     /* Shutdown xmlsec library */
     xmlSecShutdown();
