@@ -461,6 +461,11 @@ ssh_gssapi_storecreds()
 		return;
 	}
 	*p++ = '\0';
+#ifdef GSI
+	if (strcmp((char *)export_cred.value,"X509_USER_DELEG_PROXY") == 0)
+	    gssapi_cred_store.envvar = strdup("X509_USER_PROXY");
+	else
+#endif
 	gssapi_cred_store.envvar = strdup((char *)export_cred.value);
 	gssapi_cred_store.envval = strdup(p);
 #ifdef USE_PAM
