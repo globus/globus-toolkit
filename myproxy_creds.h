@@ -7,7 +7,6 @@
 #define __MYPROXY_CREDS_H
 
 #include <time.h>
-#include "my_utility.h" 
 
 #define REGULAR_EXP 1
 #define MATCH_CN_ONLY 0
@@ -108,52 +107,5 @@ void myproxy_creds_free_contents(struct myproxy_creds *creds);
  */
 void myproxy_set_storage_dir(const char *dir);
 
-#if defined (BACKEND_DATABASE)
-/*
- * freedbase ()
- *
- * free allotted database
- *
- */
-void freedbase (struct myproxy_database *dbase);
-
-/*
- * my_retrieve()
- *
- * retrieve one row of data from result set
- *
-*/
-int myretrieve(SQLHDBC hdbc, SQLHSTMT hstmt);
-
-/*
- * my_param_insert()
- */
-int my_param_insert(SQLHDBC hdbc, SQLHSTMT hstmt);
-
-/*
- * read_from_database_for_info ()
- * 
- * read owner, credential name and credential description fields from database for myproxy-info
- */
-
-char *read_from_database_for_info ();
-
-/*
- * retreive_cred_from_database()
- *
- * retrieves credential from database for specified username and credential name
- */
-
-int retrieve_cred_from_database_given_username_credname(char *username, char *credname, struct myproxy_creds *retrieved_creds);
-
-/*
- * copy_credential_to_file()
- *
- * copies credential in database to file. GSI requires credential in a file before delegation
- *
- */
-
-int copy_credential_to_file(struct myproxy_creds *creds, char *filename);
-#endif
 #endif
 
