@@ -2745,20 +2745,20 @@ redo:
 	    }
 	    break;
 	}
-	else if(response->response_class == GLOBUS_FTP_POSITIVE_COMPLETION_REPLY)
-	{
-	    target->state = GLOBUS_FTP_CLIENT_TARGET_NEED_LAST_BLOCK;
-	}
-	else
-	{
-	    /* any other response must be a transient error such as 
-	     * 426 data timeout
-	     */
-            client_handle->err = 
-                GLOBUS_I_FTP_CLIENT_ERROR_RESPONSE(response);
-	    
-	    target->state = GLOBUS_FTP_CLIENT_TARGET_NEED_LAST_BLOCK;
-	}
+        else
+        {
+            if(response->response_class != GLOBUS_FTP_POSITIVE_COMPLETION_REPLY
+                && client_handle->err == GLOBUS_SUCCESS)
+            {
+                /* any other response must be a transient error such as 
+                 * 426 data timeout
+                 */
+                client_handle->err = 
+                    GLOBUS_I_FTP_CLIENT_ERROR_RESPONSE(response);
+            }
+            
+            target->state = GLOBUS_FTP_CLIENT_TARGET_NEED_LAST_BLOCK;
+        }
 	
 	break;
 
