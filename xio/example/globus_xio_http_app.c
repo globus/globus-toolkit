@@ -57,6 +57,7 @@ main(
     globus_xio_http_string_pair_t*			length;
     int					    nbytes;
 
+    memset(buffer, 0, SIZE);
     rc = globus_module_activate(GLOBUS_XIO_MODULE);
     globus_assert(rc == GLOBUS_SUCCESS);
 
@@ -130,6 +131,7 @@ main(
             test_res(res); 
             length = (globus_xio_http_string_pair_t*)globus_hashtable_lookup(hashtable, "Accept");
             printf("Accepts: %s\n", length->value);
+            buffer[0] = '\0';
 
             nbytes = SIZE;
             res = globus_xio_read(
@@ -139,6 +141,21 @@ main(
                                   0,
                                   &nbytes,
                                   NULL);
+
+            printf("read: %d\n", nbytes);
+            printf("bytes: %s\n", buffer);
+
+            nbytes = SIZE;
+            res = globus_xio_read(
+                                  xio_handle,
+                                  buffer,
+                                  sizeof(buffer),
+                                  0,
+                                  &nbytes,
+                                  NULL);
+
+            printf("read: %d\n", nbytes);
+            printf("bytes: %s\n", buffer);
 
             fp = fopen("sample.html", "r");
             res = globus_xio_handle_cntl(
