@@ -68,9 +68,9 @@ AC_OBJEXT
 AC_EXEEXT
 
 if test "X$GCC" = "Xyes"; then
-	AUTOMAKE_OPTS = ""
+	AUTOMAKE_OPTS=""
 else
-	AUTOMAKE_OPTS = "no-dependencies"
+	AUTOMAKE_OPTS="no-dependencies"
 fi
 
 AC_SUBST(AUTOMAKE_OPTS)
