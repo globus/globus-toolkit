@@ -58,7 +58,7 @@
             (_func),                                                        \
             (_alloc)))
 
-#define GlobusLXIOAllocOperation(_op_info)                                  \
+#define GlobusIXIOSystemAllocOperation(_op_info)                            \
     do                                                                      \
     {                                                                       \
         globus_l_operation_info_t *     _l_op_info;                         \
@@ -72,10 +72,10 @@
         (_op_info) = _l_op_info;                                            \
     } while(0)
 
-#define GlobusLXIOFreeOperation(_op_info)                                   \
+#define GlobusIXIOSystemFreeOperation(_op_info)                             \
     (globus_memory_push_node(&globus_l_op_info_memory, (_op_info)))
 
-#define GlobusLXIOAllocIovec(_count, _iovec)                                \
+#define GlobusIXIOSystemAllocIovec(_count, _iovec)                          \
     do                                                                      \
     {                                                                       \
         if((_count) < 10)                                                   \
@@ -90,7 +90,7 @@
         }                                                                   \
     } while(0)
 
-#define GlobusLXIOFreeIovec(_count, _iovec)                                 \
+#define GlobusIXIOSystemFreeIovec(_count, _iovec)                           \
     do                                                                      \
     {                                                                       \
         if((_count) < 10)                                                   \
@@ -103,7 +103,7 @@
         }                                                                   \
     } while(0)
 
-#define GlobusLXIOAllocMsghdr(_msghdr)                                      \
+#define GlobusIXIOSystemAllocMsghdr(_msghdr)                                \
     do                                                                      \
     {                                                                       \
         struct msghdr *                 _l_msghdr;                          \
@@ -117,10 +117,10 @@
         (_msghdr) = _l_msghdr;                                              \
     } while(0)
 
-#define GlobusLXIOFreeMsghdr(_msghdr)                                       \
+#define GlobusIXIOSystemFreeMsghdr(_msghdr)                                 \
     (globus_memory_push_node(&globus_l_msghdr_memory, (_msghdr)))
 
-#define GlobusLXIOTransferIovec(_iovec, _xiovec, _iovc)                     \
+#define GlobusIXIOSystemTransferIovec(_iovec, _xiovec, _iovc)               \
     do                                                                      \
     {                                                                       \
         int                             i;                                  \
@@ -132,7 +132,7 @@
         }                                                                   \
     } while(0)
 
-#define GlobusLXIOCloseFd(_fd)                                              \
+#define GlobusIXIOSystemCloseFd(_fd)                                        \
     do                                                                      \
     {                                                                       \
         int                             _rc;                                \
@@ -145,7 +145,7 @@
         (_fd) = -1;                                                         \
     } while(0)
 
-#define GlobusLXIOAddNonBlocking(_fd, _rc)                                  \
+#define GlobusIXIOSystemAddNonBlocking(_fd, _rc)                            \
     do                                                                      \
     {                                                                       \
         int                         _l_fd;                                  \
@@ -164,7 +164,7 @@
         }                                                                   \
     } while(0)
 
-#define GlobusLXIORemoveNonBlocking(_fd, _rc)                               \
+#define GlobusIXIOSystemRemoveNonBlocking(_fd, _rc)                         \
     do                                                                      \
     {                                                                       \
         int                         _l_fd;                                  \
@@ -183,7 +183,7 @@
         }                                                                   \
     } while(0)
 
-#define GlobusLAdjustIovec(_iov, _iovc, _nbytes)                            \
+#define GlobusIXIOSystemAdjustIovec(_iov, _iovc, _nbytes)                   \
     do                                                                      \
     {                                                                       \
         globus_ssize_t                  _n;                                 \
