@@ -32,20 +32,29 @@ while (<FILE>) {
         }
     }
 }
-print "Thread\t\tcreateService\tstart\tcomplete\n";
-my @keys = keys(%createServiceTimings);
+print "<html><body>\n";
+print "<table border=1>\n";
+print "<th> Thread </th> <th> createService </th> <th> start </th> "
+      . "<th> complete\n";
+my @unsortedKeys = keys(%createServiceTimings);
+my @keys = sort { (my $da = $a) =~ s/Thread-//;
+                  $da =~ s/main/-1/;
+                  (my $db = $b) =~ s/Thread-//;
+                  $db =~ s/main/-1/;
+                  scalar($da) <=> scalar($db) }
+                  @unsortedKeys;
 foreach my $key (@keys) {
     my $createServiceTiming = $createServiceTimings{$key};
     my $startTiming = $startTimings{$key};
     my $completeTiming = $completeTimings{$key};
-    print   $key . "\t";
-    if ($key eq "main") { print "\t"; }
-    print $createServiceTiming . "\t\t" . $startTiming;
+    print "<tr> <td>" . $key . "</td> <td>"
+          .  $createServiceTiming . "</td> <td>" . $startTiming;
     if ($completeTiming ne "") {
-        print "\t" . $completeTiming;
+        print "</td> <td>" . $completeTiming;
     } else {
-        print "\t" . $completeTimings{"main"};
+        print "</td> <td>" . $completeTimings{"main"};
     }
-    print "\n";
+    print "</td> </tr>\n";
 }
 close FILE;
+print "</table>\n</body></html>\n";
