@@ -9,6 +9,8 @@ Bug reports, suggestions, flames, etc. to jdicarlo@mcs.anl.gov.
 Compiling and running:
 *******************************************
 
+This should be compatible with Java 1.3 and up.  If you find any incompatibility with Java 1.3, it is a bug -- please tell me about it!
+
 The main() functions in ExampleGFTPSender.java and in ReceiverExample.java
 show how a program would use the other classes.
 
@@ -40,15 +42,22 @@ How to Add your own Packet Formats:
    setter methods; see GFTPMonitorPacket for an example.
 
    It's important to override these functions:
-         void packCustomFields(ByteBuffer buf);	
-         void unpackCustomFields(ByteBuffer buf);
+         void packCustomFields(CustomByteBuffer buf);	
+         void unpackCustomFields(CustomByteBuffer buf);
 
-   packCustomFields should write all the custom fields of your packet into the
-   ByteBuffer; unpackCustomFields should read them out again in the same
-   order.  These are always called for you by the functions that send and
-   receive packets.  If you are subclassing another packet, you should start
-   your packCustomFields with a call to super.packCustomFields(buf); and the
-   same for unpackCustomFields.
+   packCustomFields should write all the custom fields of your packet
+   into the CustomByteBuffer; unpackCustomFields should read them out
+   again in the same order.  This can be accomplished with the
+   CustomByteBuffer.get() and CustomByteBuffer.put() methods and their
+   variants; see CustomByteBuffer.java.
+
+   Note that packCustomFields() and unpackCustomFields() are always
+   called for you by the functions that send and receive packets; you
+   do not have to invoke them yourself.  If you are subclassing
+   another packet, you must preserve the superclass's data by starting
+   your packCustomFields with a call to super.packCustomFields(buf),
+   and starting your unpackCustomFields with a call to
+   super.unpackCustomFields(buf).
 
 
 2. Write a class that implements PacketHandler
@@ -109,11 +118,7 @@ Known Issues / To-do list:
 2.  Sending to multiple recievers -- I think it works, but this has not yet
     been tested.
 
-3.  The use of ByteBuffer internally is probably not the most efficient in
-    either time or space.  Fortunately, I can fix this without having to
-    change any of the interfaces.
-
-4.  SQL assumptions -- this has been tested with MySQL but nothing else;
+3.  SQL assumptions -- this has been tested with MySQL but nothing else;
     probably needs some modification to be portable to other databases.  Also,
     the program expects that an SQL database is already up and running and has
     a table of the appropriate schema.  (See SQL SCHEMA).
