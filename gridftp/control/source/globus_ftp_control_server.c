@@ -3497,6 +3497,11 @@ globus_i_ftp_control_server_activate(void)
                             "HELP",
                             &entries[42]);
 
+    entries[43].code = GLOBUS_FTP_CONTROL_COMMAND_LANG;
+    entries[43].parse_func = globus_l_ftp_control_parse_string_arg;
+    globus_hashtable_insert(&globus_l_ftp_control_parse_table,
+                            "LANG",
+                            &entries[43]);
     return GLOBUS_SUCCESS;
 }
 

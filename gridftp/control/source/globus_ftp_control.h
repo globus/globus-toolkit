@@ -389,6 +389,7 @@ typedef enum globus_ftp_control_command_code_e
     GLOBUS_FTP_CONTROL_COMMAND_APPE,
     GLOBUS_FTP_CONTROL_COMMAND_RNFR,
     GLOBUS_FTP_CONTROL_COMMAND_RNTO,
+    GLOBUS_FTP_CONTROL_COMMAND_LANG,
     GLOBUS_FTP_CONTROL_COMMAND_UNKNOWN
 } globus_ftp_control_command_code_t;
 
