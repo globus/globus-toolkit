@@ -113,31 +113,29 @@ GSS_CALLCONV gss_compare_name(
     if ((name1 == NULL && name2 == NULL) ||
         (name1 == GSS_C_NO_NAME && name2 == GSS_C_NO_NAME))
     {
-        *name_equal = 1 ;
-        return GSS_S_COMPLETE ;
+        *name_equal = 1;
+        return GSS_S_COMPLETE;
     }
     
     if (name1 == NULL || name2 == NULL ||
         (name1 == GSS_C_NO_NAME || name2 == GSS_C_NO_NAME))
     {
-        *name_equal = 0 ;
-        return GSS_S_COMPLETE ;
+        *name_equal = 0;
+        return GSS_S_COMPLETE;
     }
     
     if(name1->x509n == NULL && name2->x509n == NULL &&
        g_OID_equal(name1->name_oid,GSS_C_NT_ANONYMOUS) &&
        g_OID_equal(name2->name_oid,GSS_C_NT_ANONYMOUS))
     {
-        *name_equal = 1 ;
-        return GSS_S_COMPLETE ;
+        *name_equal = 1;
+        return GSS_S_COMPLETE;
     }
         
     if (name1->x509n == NULL || name2->x509n == NULL)
     {
-        *name_equal = 0 ;
-        GSSerr(GSSERR_F_COMPARE_NAME, GSSERR_R_BAD_ARGUMENT);
-        *minor_status = gsi_generate_minor_status();
-        return GSS_S_BAD_NAME ;
+        *name_equal = 0;
+        return GSS_S_COMPLETE;
     }
 #ifdef DEBUG
     {
