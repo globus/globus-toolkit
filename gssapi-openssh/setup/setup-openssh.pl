@@ -317,15 +317,15 @@ sub writeFile
     close(OUT);
 }
 
-print "---------------------------------------------------------------\n";
+print "---------------------------------------------------------------------\n";
 print "Hi, I'm the setup script for the gsi_openssh package!  There\n";
 print "are some last minute details that I've got to set straight\n";
 print "in the sshd config file, along with generating the ssh keys\n";
 print "for this machine (if it doesn't already have them).\n";
 print "\n";
 print "If I find a pair of host keys in /etc/ssh, I will copy them into\n";
-print "$gpath/etc/ssh.  If they aren't present, I will generate them\n";
-print "for you.\n";
+print "\$GLOBUS_LOCATION/etc/ssh.  If they aren't present, I will generate\n";
+print "them for you.\n";
 print "\n";
 
 $response = query_boolean("Do you wish to continue with the setup package?","y");
@@ -347,22 +347,26 @@ my $metadata = new Grid::GPT::Setup(package_name => "gsi_openssh_setup");
 
 $metadata->finish();
 
-print "\n";
+print "---------------------------------------------------------------------\n";
 print "$myname: Finished configuring package 'gsi_openssh'.\n";
 print "\n";
-print "I see that you have your GLOBUS_LOCATION environmental variable\n";
-print "set to:\n";
-print "  $gpath\n";
+print "Additional Notes:\n";
 print "\n";
-print "Remember to keep this variable set (correctly) when you want\n";
-print "to use the executables that came with this package.\n";
+print "  o I see that you have your GLOBUS_LOCATION environmental variable\n";
+print "    set to:\n";
 print "\n";
-print "Additionally, you may need to set LD_LIBRARY_PATH to point to\n";
-print "the location in which your globus libraries reside.  For example:\n";
+print "    \t\"$gpath\"\n";
 print "\n";
-print "  export LD_LIBRARY_PATH=\"$gpath/lib\"\n";
+print "    Remember to keep this variable set (correctly) when you want to\n";
+print "    use the executables that came with this package.\n";
 print "\n";
-print "---------------------------------------------------------------\n";
+print "  o You may need to set LD_LIBRARY_PATH to point to the location in\n";
+print "    which your globus libraries reside.  For example:\n";
+print "\n";
+print "    \t\$ LD_LIBRARY_PATH=\"$gpath/lib:\$LD_LIBRARY_PATH\"; \\\n";
+print "    \t     export LD_LIBRARY_PATH\n";
+print "\n";
+print "---------------------------------------------------------------------\n";
 
 #
 # Just need a minimal action() subroutine for now..
