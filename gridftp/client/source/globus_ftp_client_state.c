@@ -3497,9 +3497,26 @@ globus_l_ftp_client_connection_error(
 	       other_target->state == GLOBUS_FTP_CLIENT_TARGET_SETUP_CONNECTION)
 	    {
 		
-		/* We're done with this client_handle operation. */
-		globus_i_ftp_client_transfer_complete(client_handle);
-		
+		/*
+		 * Kill the current target---the other one is idle
+		 */
+		result = globus_ftp_control_force_close(
+		    target->control_handle,
+		    globus_i_ftp_client_force_close_callback,
+		    target);
+
+		if(result != GLOBUS_SUCCESS)
+		{
+		    /* Shoot, that didn't work. Fake it. */
+		    globus_i_ftp_client_handle_unlock(client_handle);
+
+		    globus_i_ftp_client_force_close_callback(
+			target,
+			target->control_handle,
+			GLOBUS_SUCCESS /* don't care */,
+			GLOBUS_NULL);
+		}
+
 		return;
 	    }
 	    else
@@ -3526,8 +3543,30 @@ globus_l_ftp_client_connection_error(
 			GLOBUS_SUCCESS /* don't care */,
 			GLOBUS_NULL);
 
-		    return;
+		    globus_i_ftp_client_handle_lock(client_handle);
 		}
+
+		/*
+		 * Kill the current target---the other one is idle now.
+		 */
+		result = globus_ftp_control_force_close(
+		    target->control_handle,
+		    globus_i_ftp_client_force_close_callback,
+		    target);
+
+		if(result != GLOBUS_SUCCESS)
+		{
+		    /* Shoot, that didn't work. Fake it. */
+		    globus_i_ftp_client_handle_unlock(client_handle);
+
+		    globus_i_ftp_client_force_close_callback(
+			target,
+			target->control_handle,
+			GLOBUS_SUCCESS /* don't care */,
+			GLOBUS_NULL);
+		}
+
+		return;
 	    }
 	}
     }
