@@ -157,6 +157,9 @@ gaasimple_parse_restrictions(gaa_ptr		gaa,
 
     /*remove leading and trailing white spaces from input object*/
     object = cleanup(in_object);
+#ifdef DEBUG
+    fprintf(stderr, "Checking for object: %s\n", object);
+#endif /* DEBUG */    
     line = NULL;
     open = 0;
     while(*restrictions != '\0')
@@ -179,8 +182,8 @@ gaasimple_parse_restrictions(gaa_ptr		gaa,
         token = cleanup(line);
         
 #ifdef DEBUG
-        /*fprintf(stderr,"Processing: <%s>\n",token);*/
-#endif
+        fprintf(stderr,"Processing: <%s>\n",token);
+#endif /* DEBUG */
         if(*token == '{') {
             if(open) {
                 /*we have encountered an opening brace before this*/
@@ -236,36 +239,53 @@ gaasimple_parse_restrictions(gaa_ptr		gaa,
                 /*remove leading white chars from object name*/
                 clean_obj_name = cleanup(object_name);
                 
-		        if (strncmp(clean_obj_name, urlbase, urlbase_len) == 0)
-		        {   /* object name in policy file is url-encoded*/
-		            clean_obj_name += urlbase_len;
+                if (strncmp(clean_obj_name, urlbase, urlbase_len) == 0)
+                {   /* object name in policy file is url-encoded*/
+                    clean_obj_name += urlbase_len;
                 }
-		        /*Strip off trailing /'s before compare 
-		          Assumes that object name is an absolute path,
-		          ie the first char is a '/' */
-		        for(len = strlen(object)-1; 
-			        (len > 0) && (object[len] == '/'); len--);
-		        object[len+1] = 0;
+                /*Strip off trailing /'s before compare 
+                  Assumes that object name is an absolute path,
+                  ie the first char is a '/' */
+                for(len = strlen(object)-1; 
+                    (len > 0) && (object[len] == '/'); len--);
+                object[len+1] = 0;
                 
-		        for(len = strlen(clean_obj_name)-1; 
-			        (len > 0) && (clean_obj_name[len] == '/'); len--);
-		        clean_obj_name[len+1] = 0;
-                
-		        /*Object names in policy file may end in *, which indicates subtrees*/
-		        if(clean_obj_name[len] == '*'){
-			        if(clean_obj_name[len-1] == '/') {
-			            /*add a '/' to the input object*/
-			            object[strlen(object)+1] = '\0';
-			            object[strlen(object)]   = '/';
-			        }
-			        /* compare the two values upto but not
-			        including the *.  */
-			        if(!strncmp(clean_obj_name,object,len)) 
-			            found_obj = 1;
-		        }
-		        else
-			    if(!strcmp(clean_obj_name, object))
-			        found_obj = 1;
+                for(len = strlen(clean_obj_name)-1; 
+                    (len > 0) && (clean_obj_name[len] == '/'); len--);
+                clean_obj_name[len+1] = 0;
+
+#ifdef DEBUG                
+                fprintf(stderr, "Clean object name: %s\n", clean_obj_name);
+#endif /* DEBUG */
+                        
+                /*Object names in policy file may end in *, which indicates subtrees*/
+                if(clean_obj_name[len] == '*')
+                {
+                    if(clean_obj_name[len-1] == '/')
+                    {
+                        /*add a '/' to the input object*/
+                        object[strlen(object)+1] = '\0';
+                        object[strlen(object)]   = '/';
+                    }
+                    /* compare the two values upto but not
+                       including the *.  */
+                    if(!strncmp(clean_obj_name,object,len))
+                    {
+                        found_obj = 1;
+                    }
+                }
+                else
+                {
+                    if(!strcmp(clean_obj_name, object))
+                    {
+                        found_obj = 1;
+                    }
+                }
+#ifdef DEBUG
+                fprintf(stderr, "Object \"%s\" %s match\n",
+                        clean_obj_name,
+                        (found_obj ? "does" : "does not"));
+#endif /* DEBUG */                
             }
             else if(!strcasecmp(lval,"SERVICE_TYPE"))
             {
@@ -289,15 +309,30 @@ gaasimple_parse_restrictions(gaa_ptr		gaa,
                     service_action[MAX_WORD_LEN-1] = 0;
                     clean_service_action = cleanup(service_action);
 
+                    
                     /*Add a policy right*/
-                    if ((status =
-			            gaa_l_add_file_policy_right(gaa,
-						     &right,
-						     pos_access_right,
-						     clean_service_type,
-						     clean_service_action,
-						     *policy)) != GAA_S_SUCCESS)
+                    status =
+                        gaa_l_add_file_policy_right(gaa,
+                                                    &right,
+                                                    pos_access_right,
+                                                    clean_service_type,
+                                                    clean_service_action,
+                                                    *policy);
+
+                    if (status != GAA_S_SUCCESS)
+                    {
+#ifdef DEBUG
+                        fprintf(stderr, "Error adding right\n");
+#endif /* DEBUG */                        
                         return(status);
+                    }
+
+#ifdef DEBUG
+                    fprintf(stderr,
+                            "Added right: object=%s, service_type=%s, action=%s\n",
+                            object, clean_service_type, clean_service_action);
+#endif /* DEBUG */                    
+
                     policycount++;
                 }/*end if found_obj*/
             }/*end else*/
