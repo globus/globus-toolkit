@@ -2,6 +2,12 @@
 CLEAN UP DOC
 
 --------------------
+need auto reset eof state
+ - once eof-received, queue all reads on eof until first eof is delivered
+ - any subsequent reads get enqueued in a pending queue
+ - once all outstanding eofs have been delivered, then reset the state and
+   dispatch new reads
+ 
 - driver load func cant use var args. need a special load for that
 - driver init interface needs to have a 'command' which is zero by default
 - need set_accepted() for user api
