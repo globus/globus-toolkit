@@ -608,7 +608,7 @@ globus_l_xio_gridftp_open(
     if (!contact_info->resource || !contact_info->host || 
         !contact_info->scheme)
     {
-        result = GlobusXIOErrorParameter(contact_info);
+        result = GlobusXIOErrorParameter("contact_string");
         goto error_contact_info;
     }
     result = globus_l_xio_gridftp_handle_create(
