@@ -52,6 +52,15 @@
 /*
  *  NETLOGGER
  */
+/*
+ *  If this is a Netlogger aware build, include the logging headers
+ */
+#if defined(GLOBUS_BUILD_WITH_NETLOGGER)
+#include "NetLogger.h"
+#else
+typedef void NLhandle;
+#endif
+
 
 #define GLOBUS_IO_NL_EVENT_START_READ     "GIO_READ_START"
 #define GLOBUS_IO_NL_EVENT_END_READ       "GIO_READ_END"

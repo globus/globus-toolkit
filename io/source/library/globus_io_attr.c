@@ -669,7 +669,7 @@ globus_netlogger_write(
 globus_result_t
 globus_netlogger_handle_init(
     globus_netlogger_handle_t *              nl_handle,
-    NLhandle *                               handle)
+    void *                                   handle)
 {
     struct globus_netlogger_handle_s *       s_nl_handle;
     static char *                            myname=
@@ -705,7 +705,7 @@ globus_netlogger_handle_init(
     s_nl_handle->nl_handle = GLOBUS_NULL;
     s_nl_handle->nl_event_str = GLOBUS_NULL;
     s_nl_handle->desc = GLOBUS_NULL;
-    s_nl_handle->nl_handle = handle;
+    s_nl_handle->nl_handle = (NLhandle *)handle;
 
     return GLOBUS_SUCCESS;
 }
@@ -713,7 +713,7 @@ globus_netlogger_handle_init(
 globus_result_t
 globus_netlogger_get_nlhandle(
     globus_netlogger_handle_t *              nl_handle,
-    NLhandle **                              handle)
+    void **                                  handle)
 {
     struct globus_netlogger_handle_s *       s_nl_handle;
     static char *                            myname=
@@ -754,7 +754,7 @@ globus_netlogger_get_nlhandle(
     }
 
     s_nl_handle = *nl_handle;
-    *handle = s_nl_handle->nl_handle;
+    *handle = (void *)s_nl_handle->nl_handle;
 
     return GLOBUS_SUCCESS;
 }

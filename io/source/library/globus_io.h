@@ -45,19 +45,6 @@ EXTERN_C_BEGIN
 #endif
 
 
-#if 0
-#define GLOBUS_BUILD_WITH_NETLOGGER 1
-#endif
-
-/*
- *  If this is a Netlogger aware build, include the logging headers
- */
-#if defined(GLOBUS_BUILD_WITH_NETLOGGER)
-#include "NetLogger.h"
-#else
-typedef void NLhandle;
-#endif
-
 struct globus_netlogger_handle_s;
 typedef struct globus_netlogger_handle_s *  globus_netlogger_handle_t;
 
@@ -1366,7 +1353,7 @@ globus_netlogger_write(
 globus_result_t
 globus_netlogger_handle_init(
     globus_netlogger_handle_t *       nl_handle,
-    NLhandle *                        handle);
+    void *                            handle);
 
 globus_result_t
 globus_netlogger_handle_destroy(
@@ -1375,7 +1362,7 @@ globus_netlogger_handle_destroy(
 globus_result_t
 globus_netlogger_get_nlhandle(
     globus_netlogger_handle_t *       nl_handle,
-    NLhandle **                       handle);
+    void **                           handle);
 
 /* NETLOGGER handle */
 
