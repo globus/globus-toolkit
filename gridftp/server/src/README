@@ -68,16 +68,24 @@ Remote data-node and striped configuration:
 
 Note: the frontend and data-nodes can each be run in any of the above modes.
 
+The data node will currently perform all operations as the user it is started
+as (i.e. it does not setuid).  For this reason it is not recommended to run
+the data node as root.
+
 frontend: 
 globus-gridftp-server <args> -r <host:port>[,<host:port>,...]
 
 data-node:
 globus-gridftp-server <args> -dn
 
-The data node will currently perform all operations as the user it is started
-as (i.e. it does not setuid).  For this reason it is not recommended to run
-the data node as root.
+The -p <port> option used on the data-node is the port that you would use
+in the -r option of the front end.
+for example:
+machineB> globus-gridftp-server -p 6000 -dn
+machineC> globus-gridftp-server -p 7000 -dn
+machineA> globus-gridftp-server -p 5000 -r machineB:6000,machineC:7000
 
+The client then would of course only connect to machineA:5000.
 
 -- globus-url-copy now includes a -stripe option that should be used when
 striped transfers are desired.
