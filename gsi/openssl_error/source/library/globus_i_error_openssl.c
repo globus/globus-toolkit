@@ -190,7 +190,10 @@ globus_i_openssl_error_handle_destroy(
 
     GLOBUS_I_GSI_OPENSSL_ERROR_DEBUG_ENTER;
 
-    free(handle);
+    if(handle != NULL)
+    { 
+        free(handle);
+    }
 
     GLOBUS_I_GSI_OPENSSL_ERROR_DEBUG_EXIT;
 }
