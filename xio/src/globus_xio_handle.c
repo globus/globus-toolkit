@@ -2617,7 +2617,7 @@ globus_xio_handle_cntl(
     int                                 cmd,
     ...)
 {
-    globus_result_t                     res;
+    globus_result_t                     res = GLOBUS_SUCCESS;
     va_list                             ap;
     globus_i_xio_context_t *            context;
     globus_xio_timeout_callback_t       timeout_cb;
