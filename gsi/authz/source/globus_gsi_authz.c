@@ -14,8 +14,8 @@
 static int globus_l_gsi_authz_activate(void);
 static int globus_l_gsi_authz_deactivate(void);
 
-static int      globus_i_gsi_authz_debug_level   = 0;
-static FILE *   globus_i_gsi_authz_debug_fstream = NULL;
+int globus_i_gsi_authz_debug_level = 0;
+FILE * globus_i_gsi_authz_debug_fstream = NULL;
 
 /**
  * Module descriptor static initializer.
