@@ -120,8 +120,12 @@ globus_l_descriptor_string(char *fmt, char *s1, char *s2, char *s3)
  *  conflicted with the Windows implementation.
  *    Michael Lebman 2-8-02
  */
-/*			(unsigned long) globus_thread_self(), */
+
+#ifndef TARGET_ARCH_WIN32
+			(unsigned long) globus_thread_self(),
+#else
 			(unsigned long) globus_thread_get_threadID_as_long(),
+#endif
 			(unsigned long) globus_libc_getpid(),
 			(s1 ? ": " : ""),
 			(s1 ? s1 : ""),
