@@ -48,20 +48,21 @@ if [ -x ${libexecdir}/globus-libc-hostname ]; then
     # make sure command ran successfully
     if [ ! $? = 0 ]
     then
-       FULLNAME=`@SYS_HOSTNAME@`
+       FULLNAME=`@GLOBUS_SH_HOSTNAME@`
     fi
 else
-    FULLNAME=`@SYS_HOSTNAME@`
+    FULLNAME=`@GLOBUS_SH_HOSTNAME@`
 fi
-    BASENAME=`@SYS_HOSTNAME@ | ${GLOBUS_SH_CUT-cut} -d. -f1`
+    BASENAME=`@GLOBUS_SH_HOSTNAME@ | ${GLOBUS_SH_CUT-cut} -d. -f1`
  
 if [ "X$FULLNAME" = "X$BASENAME" ] ; then
-# Its not fully qualified
+    # Its not fully qualified
     GLOBUS_HOSTNAME="${BASENAME}.${LOCALDOMAIN}"
 else
     GLOBUS_HOSTNAME="$FULLNAME"
 fi
 
 GLOBUS_HOSTNAME="`echo $GLOBUS_HOSTNAME | ${GLOBUS_SH_TR-tr} 'A-Z' 'a-z'`"
+
 echo $GLOBUS_HOSTNAME
 export GLOBUS_HOSTNAME
