@@ -32,9 +32,9 @@ static char usage[] = \
 "    -l | --username <username> Username for the delegated proxy\n"\
 "    -s | --pshost   <hostname> Hostname of the myproxy-server\n"\
 "    -p | --psport   #          Port of the myproxy-server\n"
-"	-d | --dn_as_username             Use the proxy certificate subject\n"
-"                                         (DN) as the default username\n"
-"                                         of the LOGNAME env. var.\n"
+"    -d | --dn_as_username      Use the proxy certificate subject\n"
+"                               (DN) as the default username,\n"
+"                               instead of the LOGNAME env. var.\n"
 "\n";
 
 struct option long_options[] =
