@@ -14,6 +14,11 @@
     </Source_Dependencies>
 
     <Source_Dependencies Type="pgm_link" >
+	        <Dependency Name="globus_test">
+	          <Version>
+	              <Simple_Version Major="0"/>
+	          </Version>
+	    </Dependency>
     </Source_Dependencies>
 
     <Source_Dependencies Type="pgm_runtime" >
