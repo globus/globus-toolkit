@@ -36,6 +36,7 @@ dnl
 dnl Check the environment
 dnl
 dnl AC_PROG_CC
+echo="echo"
 AM_PROG_LIBTOOL
 AC_PROG_INSTALL
 AC_ARG_PROGRAM
@@ -220,6 +221,9 @@ dnl ==========================================================================
 dnl See if we can find a crypto library
 dnl ==========================================================================
 XMLSEC_CRYPTO=""
+dnl we don't actually need to discover openssl--we are link dependent on 
+dnl the package
+XMLSEC_CRYPTO="openssl"
 XMLSEC_CRYPTO_LIST=""
 XMLSEC_CRYPTO_DISABLED_LIST=""
 XMLSEC_CRYPTO_LIB=""

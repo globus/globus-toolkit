@@ -11,9 +11,9 @@ Source: ftp://ftp.aleksey.com/pub/xmlsec/releases/globus_xmlsec1-%{version}.tar.
 BuildRoot: %{_tmppath}/globus_xmlsec1-%{version}-root
 URL: http://www.aleksey.com/xmlsec
 Requires: libxml2 >= @LIBXML_MIN_VERSION@
-Requires: libxslt >= 1.0.20
+Requires: libxslt >= @LIBXSLT_MIN_VERSION@
 BuildRequires: libxml2-devel >= @LIBXML_MIN_VERSION@
-BuildRequires: libxslt-devel >= 1.0.20
+BuildRequires: libxslt-devel >= @LIBXSLT_MIN_VERSION@
 Prefix: %{_prefix}
 Docdir: %{_docdir}
 
@@ -27,7 +27,7 @@ Summary: Libraries, includes, etc. to develop applications with XML Digital Sign
 Group: Development/Libraries 
 Requires: xmlsec1 = %{version}
 Requires: libxml2-devel >= @LIBXML_MIN_VERSION@
-Requires: libxslt-devel >= 1.0.20
+Requires: libxslt-devel >= @LIBXSLT_MIN_VERSION@
 Requires: openssl-devel >= 0.9.6
 Requires: zlib-devel 
 
@@ -40,7 +40,7 @@ Summary: OpenSSL crypto plugin for XML Security Library
 Group: Development/Libraries 
 Requires: xmlsec1 = %{version}
 Requires: libxml2 >= @LIBXML_MIN_VERSION@
-Requires: libxslt >= 1.0.20
+Requires: libxslt >= @LIBXSLT_MIN_VERSION@
 Requires: openssl >= 0.9.6
 BuildRequires: openssl-devel >= 0.9.6
 
@@ -55,7 +55,7 @@ Requires: xmlsec1 = %{version}
 Requires: xmlsec1-devel = %{version}
 Requires: xmlsec1-openssl = %{version}
 Requires: libxml2-devel >= @LIBXML_MIN_VERSION@
-Requires: libxslt-devel >= 1.0.20
+Requires: libxslt-devel >= @LIBXSLT_MIN_VERSION@
 Requires: openssl >= 0.9.6
 Requires: openssl-devel >= 0.9.6
 
@@ -67,7 +67,7 @@ Summary: NSS crypto plugin for XML Security Library
 Group: Development/Libraries 
 Requires: xmlsec1 = %{version}
 Requires: libxml2 >= @LIBXML_MIN_VERSION@
-Requires: libxslt >= 1.0.20
+Requires: libxslt >= @LIBXSLT_MIN_VERSION@
 Requires: mozilla-nss >= 1.4
 BuildRequires: mozilla-nss-devel >= 1.4
 
@@ -82,7 +82,7 @@ Requires: xmlsec1 = %{version}
 Requires: xmlsec1-devel = %{version}
 Requires: xmlsec1-nss = %{version}
 Requires: libxml2-devel >= @LIBXML_MIN_VERSION@
-Requires: libxslt-devel >= 1.0.20
+Requires: libxslt-devel >= @LIBXSLT_MIN_VERSION@
 Requires: mozilla-nss-devel >= 1.4
 
 %description nss-devel
