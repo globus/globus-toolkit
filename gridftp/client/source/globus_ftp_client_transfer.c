@@ -3857,13 +3857,7 @@ globus_ftp_client_abort(
     case GLOBUS_FTP_CLIENT_HANDLE_SOURCE_NLST:
     case GLOBUS_FTP_CLIENT_HANDLE_SOURCE_RETR_OR_ERET:
     case GLOBUS_FTP_CLIENT_HANDLE_THIRD_PARTY_TRANSFER:
-	if(handle->op == GLOBUS_FTP_CLIENT_GET    ||
-	   handle->op == GLOBUS_FTP_CLIENT_DELETE ||
-	   handle->op == GLOBUS_FTP_CLIENT_MKDIR  ||
-	   handle->op == GLOBUS_FTP_CLIENT_RMDIR  ||
-	   handle->op == GLOBUS_FTP_CLIENT_MOVE   ||
-	   handle->op == GLOBUS_FTP_CLIENT_NLST   ||
-	   handle->op == GLOBUS_FTP_CLIENT_LIST)
+	if(handle->op != GLOBUS_FTP_CLIENT_TRANSFER)
 	{
 	    result = globus_ftp_control_force_close(
 		handle->source->control_handle,
@@ -3885,8 +3879,6 @@ globus_ftp_client_abort(
 	}
 	else
 	{
-	    globus_assert(handle->op == GLOBUS_FTP_CLIENT_TRANSFER);
-
 	    result = globus_ftp_control_force_close(
 		handle->source->control_handle,
 		globus_i_ftp_client_force_close_callback,
