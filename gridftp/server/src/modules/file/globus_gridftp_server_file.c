@@ -1549,7 +1549,7 @@ static
 int
 globus_l_gfs_file_deactivate(void);
 
-static globus_gfs_storage_iface_t       globus_gfs_file_dsi_iface = 
+static globus_gfs_storage_iface_t       globus_l_gfs_file_dsi_iface = 
 {
     NULL, /* globus_l_gfs_file_init, */
     NULL, /* globus_l_gfs_file_destroy, */

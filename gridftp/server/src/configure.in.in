@@ -24,7 +24,7 @@ delim=
 if test "X$modules" != "X" ; then
   echo
   for module in $modules ; do
-    if test -f builtins/$builtin/Makefile.in ; then
+    if test -f modules/$module/Makefile.in ; then
       MODULE_DIRS="$MODULE_DIRS $module"
       lib_name="modules/${module}/libglobus_gridftp_server_${module}_${GLOBUS_FLAVOR_NAME}.la"
       MODULE_LIBS="$MODULE_LIBS $lib_name"
