@@ -2258,39 +2258,22 @@ globus_libc_strtok(
 char *
 globus_libc_strdup(const char * string)
 {
-    static globus_mutex_t   strdup_mutex;
-    static int              initialized = GLOBUS_FALSE;
     char *                  ns;
-    int                     i, l;
-
-    globus_libc_lock();
-    if (!initialized)
-    {
-	globus_mutex_init(&strdup_mutex, (globus_mutexattr_t *) GLOBUS_NULL);
-	initialized = GLOBUS_TRUE;
-    }
-    globus_libc_unlock();
-
-    globus_mutex_lock(&strdup_mutex);
+    int                     l;
 
     ns = GLOBUS_NULL;
 
-    if (string)
+    if(string)
     {
-	l = strlen (string);
+	l = strlen(string);
 
-	ns = globus_malloc (sizeof(char *) * (l + 1));
-
-	if (ns)
+	ns = globus_malloc(sizeof(char) * (l + 1));
+	if(ns)
 	{
-	    for (i=0; i<l; i++)
-		ns[i] = string[i];
-
-	    ns[l] = '\0';
+	    memcpy(ns, string, l + 1);
 	}
     }
 
-    globus_mutex_unlock(&strdup_mutex);
     return ns;
 }
 /* globus_libc_strdup */
