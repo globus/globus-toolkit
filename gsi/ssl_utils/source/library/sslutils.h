@@ -2,15 +2,15 @@
 sslutils.h:
 
 Description:
-	This header file used internally by the gssapi_ssleay
-	routines
+        This header file used internally by the gssapi_ssleay
+        routines
 
 CVS Information:
 
-	$Source$
-	$Date$
-	$Revision$
-	$Author$
+        $Source$
+        $Date$
+        $Revision$
+        $Author$
 
 **********************************************************************/
 
@@ -107,22 +107,22 @@ EXTERN_C_BEGIN
 #define X509_USER_PROXY_FILE    "x509up_u"
 
 /* This is added after the CA name hash to make the policy filename */
-#define SIGNING_POLICY_FILE_EXTENSION	".signing_policy"
+#define SIGNING_POLICY_FILE_EXTENSION   ".signing_policy"
 
 #ifdef WIN32
 #define GSI_REGISTRY_DIR "software\\Globus\\GSI"
-#define X509_DEFAULT_CERT_DIR  	".globus\\certificates"
-#define X509_DEFAULT_USER_CERT	".globus\\usercert.pem"
-#define X509_DEFAULT_USER_KEY 	".globus\\userkey.pem"
-#define X509_INSTALLED_CERT_DIR	"share\\certificates"
+#define X509_DEFAULT_CERT_DIR   ".globus\\certificates"
+#define X509_DEFAULT_USER_CERT  ".globus\\usercert.pem"
+#define X509_DEFAULT_USER_KEY   ".globus\\userkey.pem"
+#define X509_INSTALLED_CERT_DIR "share\\certificates"
 #define X509_INSTALLED_HOST_CERT_DIR "NEEDS_TO_BE_DETERMINED"
 #define X509_DEFAULT_HOST_CERT  "NEEDS_TO_BE_DETERMINED"
 #define X509_DEFAULT_HOST_KEY   "NEEDS_TO_BE_DETERMINED"
 #else
-#define X509_DEFAULT_CERT_DIR  	".globus/certificates"
-#define X509_DEFAULT_USER_CERT	".globus/usercert.pem"
-#define X509_DEFAULT_USER_KEY 	".globus/userkey.pem"
-#define X509_INSTALLED_CERT_DIR	"share/certificates"
+#define X509_DEFAULT_CERT_DIR   ".globus/certificates"
+#define X509_DEFAULT_USER_CERT  ".globus/usercert.pem"
+#define X509_DEFAULT_USER_KEY   ".globus/userkey.pem"
+#define X509_INSTALLED_CERT_DIR "share/certificates"
 #define X509_INSTALLED_HOST_CERT_DIR "/etc/grid-security/certificates"
 #define X509_DEFAULT_HOST_CERT  "/etc/grid-security/hostcert.pem"
 #define X509_DEFAULT_HOST_KEY   "/etc/grid-security/hostkey.pem"
@@ -140,12 +140,12 @@ EXTERN_C_BEGIN
  * PVD_STORE_EX_DATA_IDX
  */
 
-#define PVD_SSL_EX_DATA_IDX 	5
-#define PVD_STORE_EX_DATA_IDX 	6
+#define PVD_SSL_EX_DATA_IDX     5
+#define PVD_STORE_EX_DATA_IDX   6
 
 
-#define PVD_MAGIC_NUMBER	22222
-#define PVXD_MAGIC_NUMBER	33333
+#define PVD_MAGIC_NUMBER        22222
+#define PVXD_MAGIC_NUMBER       33333
 /*
  * Use the SSLeay error facility with the ERR_LIB_USER
  */
@@ -156,7 +156,7 @@ EXTERN_C_BEGIN
  * SSLeay 0.9.0 added the error_data feature. We may be running
  * with 0.8.1 which does not have it, if so, define a dummy
  * ERR_add_error_data and ERR_get_error_line_data
-	
+        
 */
 
 #if SSLEAY_VERSION_NUMBER < 0x0900
@@ -266,8 +266,8 @@ typedef struct proxy_cred_desc_struct
     char *                              certdir;
     char *                              certfile;
     int                                 num_null_enc_ciphers;
-    int                  	        type; /*  for gsi err messages */
-    int 			        owner; /* for gsi error messages */
+    int                                 type; /*  for gsi err messages */
+    int                                 owner; /* for gsi error messages */
 } proxy_cred_desc;
 
 /* proxy_verify_ctx_desc - common to all verifys */
@@ -275,7 +275,7 @@ typedef struct proxy_cred_desc_struct
 typedef struct proxy_verify_ctx_desc_struct {
     int                                 magicnum ;  
     char *                              certdir; 
-    time_t			        goodtill;
+    time_t                              goodtill;
 } proxy_verify_ctx_desc ;
 
 /* proxy_verify_desc - allows for recursive verifys with delegation */
@@ -283,15 +283,15 @@ typedef struct proxy_verify_ctx_desc_struct {
 typedef struct proxy_verify_desc_struct proxy_verify_desc;
 
 struct proxy_verify_desc_struct {
-    int				        magicnum;
+    int                                 magicnum;
     proxy_verify_desc *                 previous;
     proxy_verify_ctx_desc *             pvxd;
-    int				        flags;
+    int                                 flags;
     X509_STORE_CTX *                    cert_store;
-    int				        recursive_depth;
-    int				        proxy_depth;
-    int				        cert_depth;
-    int				        limited_proxy;
+    int                                 recursive_depth;
+    int                                 proxy_depth;
+    int                                 cert_depth;
+    int                                 limited_proxy;
     STACK_OF(X509) *                    cert_chain; /*  X509 */
 };
 

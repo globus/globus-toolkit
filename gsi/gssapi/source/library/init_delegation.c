@@ -38,9 +38,10 @@ GSS_CALLCONV gss_init_delegation(
     gss_cred_id_desc *                  cred;
     X509_REQ *                          reqp = NULL;
     X509 *                              ncert = NULL;
+    X509 *                              cert = NULL;
     X509_EXTENSION *                    ex = NULL;
     STACK_OF(X509_EXTENSION) *          extensions = NULL;
-
+    int                                 i;
     
 #ifdef DEBUG
     fprintf(stderr, "init_delegation:\n") ;
@@ -50,7 +51,7 @@ GSS_CALLCONV gss_init_delegation(
     output_token->length = 0;
     time_req = GSS_C_INDEFINITE;
     context = (gss_ctx_id_desc *) context_handle;
-    cred = (gss_cred_id desc *) cred_handle;
+    cred = (gss_cred_id_desc *) cred_handle;
 
     /* input parameter checking needs to go here */
 
@@ -106,7 +107,7 @@ GSS_CALLCONV gss_init_delegation(
         }
 
         /* TODO add the restrictions here */
-
+/*
         if ()
         {
             if ((ex = proxy_extension_restriction_create()) 
@@ -125,7 +126,7 @@ GSS_CALLCONV gss_init_delegation(
                 return major_status;
             }
         }
-        
+*/        
         proxy_sign_ext(0,
                        cred->pcd->ucert,
                        cred->pcd->upkey,
@@ -155,9 +156,9 @@ GSS_CALLCONV gss_init_delegation(
         
         i2d_integer_bio(context->gs_sslbio,
                         sk_X509_num(cred->pcd->cert_chain) + 1);
-        for(i=sk_X509_num(cert_chain)-1;i>=0;i--)
+        for(i=sk_X509_num(cred->pcd->cert_chain)-1;i>=0;i--)
         {
-            cert = sk_X509_value(cert_chain,i);
+            cert = sk_X509_value(cred->pcd->cert_chain,i);
             
             /*
              * add additional certs, but not our cert, or the 

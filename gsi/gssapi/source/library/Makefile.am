@@ -2,6 +2,7 @@ include $(top_srcdir)/globus_automake_pre
 
 Sources = \
 	accept_sec_context.c \
+	accept_delegation.c \
 	acquire_cred.c \
 	compare_name.c \
 	delete_sec_context.c \
@@ -16,6 +17,7 @@ Sources = \
 	import_name.c \
 	import_sec_context.c \
 	init_sec_context.c \
+	init_delegation.c \
 	inquire_cred.c \
 	inquire_context.c \
 	oid_functions.c \

@@ -231,7 +231,8 @@ typedef enum
 {
     GS_DELEGATION_START,
     GS_DELEGATION_DONE,
-    
+    GS_DELEGATION_COMPLETE_CRED,
+    GS_DELEGATION_SIGN_CERT,
 } gs_delegation_state_t;
 
 typedef struct gss_name_desc_struct {
