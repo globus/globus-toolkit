@@ -690,6 +690,7 @@ globus_ftp_control_command_copy(
     case GLOBUS_FTP_CONTROL_COMMAND_APPE:
     case GLOBUS_FTP_CONTROL_COMMAND_RNFR:
     case GLOBUS_FTP_CONTROL_COMMAND_RNTO:
+    case GLOBUS_FTP_CONTROL_COMMAND_REST:
 
         dest->noop.string_arg = GLOBUS_NULL;
         
@@ -752,9 +753,6 @@ globus_ftp_control_command_copy(
     case GLOBUS_FTP_CONTROL_COMMAND_ALLO:
         dest->allo.size=src->allo.size;
         dest->allo.record_size=src->allo.record_size;
-        break;
-    case GLOBUS_FTP_CONTROL_COMMAND_REST:
-        /* needs to be filled in */
         break;
     default:
         return globus_error_put(
