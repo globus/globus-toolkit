@@ -141,11 +141,11 @@ else
 
       ($cpu, $manuf, $junk) = split(/-/, $cg_results);
 
-      print CONF "-home $globusdir\n";
+      print CONF "-home \"$globusdir\"\n";
       print CONF "-e $globusdir/libexec\n";
       print CONF "-globus-gatekeeper-host $hostname\n";
       print CONF "-globus-gatekeeper-port $port\n";
-      print CONF "-globus-gatekeeper-subject $subject\n";
+      print CONF "-globus-gatekeeper-subject \"$subject\"\n";
       print CONF "-globus-host-cputype $cpu\n";
       print CONF "-globus-host-manufacturer $manuf\n";
       print CONF "-globus-host-osname $os_name\n";
