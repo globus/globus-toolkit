@@ -142,15 +142,6 @@ input_gssapi_token(int type, u_int32_t plen, void *ctxt)
         					 &send_tok, NULL));
         packet_check_eom();
         
-        if (GSS_ERROR(maj_status)) {
-                /* Failure <sniff> */
-		ssh_gssapi_send_error(gssctxt->oid,maj_status,min_status);
-                authctxt->postponed = 0;
-		dispatch_set(SSH_MSG_AUTH_GSSAPI_TOKEN, NULL);
-                dispatch_set(SSH2_MSG_USERAUTH_GSSAPI_TOKEN, NULL);
-                userauth_finish(authctxt, 0, "gssapi");
-        }
-                        
         if (send_tok.length != 0) {
                 /* Send a packet back to the client */
 		if (!compat20)
@@ -163,6 +154,19 @@ input_gssapi_token(int type, u_int32_t plen, void *ctxt)
                 gss_release_buffer(&min_status, &send_tok);        
         }
         
+        if (GSS_ERROR(maj_status)) {
+                /* Failure <sniff> */
+		if (gssctxt) {	/* may be NULL under privsep */
+		    ssh_gssapi_send_error(gssctxt->oid,maj_status,min_status);
+		} else {
+		    ssh_gssapi_send_error(GSS_C_NO_OID,maj_status,min_status);
+		}
+                authctxt->postponed = 0;
+		dispatch_set(SSH_MSG_AUTH_GSSAPI_TOKEN, NULL);
+                dispatch_set(SSH2_MSG_USERAUTH_GSSAPI_TOKEN, NULL);
+                userauth_finish(authctxt, 0, "gssapi");
+        }
+                        
         if (maj_status == GSS_S_COMPLETE) {
 		dispatch_set(SSH_MSG_AUTH_GSSAPI_TOKEN, NULL);
                 dispatch_set(SSH2_MSG_USERAUTH_GSSAPI_TOKEN,NULL);

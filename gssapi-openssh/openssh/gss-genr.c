@@ -110,7 +110,7 @@ ssh_gssapi_mechanisms(int server,char *host) {
 
 	if (datafellows & SSH_OLD_GSSAPI) return NULL;
 	
-	gss_indicate_mechs(&min_status, &supported);
+	PRIVSEP(gss_indicate_mechs(&min_status, &supported));
 	
 	buffer_init(&buf);	
 
@@ -169,7 +169,7 @@ void ssh_gssapi_supported_oids(gss_OID_set *oidset) {
 	gss_OID_set supported;
 	
 	gss_create_empty_oid_set(&min_status,oidset);
-	gss_indicate_mechs(&min_status, &supported);
+	PRIVSEP(gss_indicate_mechs(&min_status, &supported));
 
 	while (supported_mechs[i].name!=NULL) {
 		if ((maj_status=gss_test_oid_set_member(&min_status,
@@ -260,10 +260,10 @@ ssh_gssapi_error_ex(gss_OID mech, OM_uint32 major_status,
         ctx = 0;
 	/* The GSSAPI error */
         do {
-        	lmaj = gss_display_status(&lmin, major_status,
-        				  GSS_C_GSS_CODE,
-        				  mech,
-        				  &ctx, &msg);
+        	lmaj = PRIVSEP(gss_display_status(&lmin, major_status,
+						  GSS_C_GSS_CODE,
+						  mech,
+						  &ctx, &msg));
         	if (lmaj == GSS_S_COMPLETE) {
         	    	debug((char *)msg.value);
 			if (send_packet) packet_send_debug((char *)msg.value);
@@ -273,10 +273,10 @@ ssh_gssapi_error_ex(gss_OID mech, OM_uint32 major_status,
 
         /* The mechanism specific error */
         do {
-        	lmaj = gss_display_status(&lmin, minor_status,
-        				  GSS_C_MECH_CODE,
-        				  mech,
-        				  &ctx, &msg);
+        	lmaj = PRIVSEP(gss_display_status(&lmin, minor_status,
+						  GSS_C_MECH_CODE,
+						  mech,
+						  &ctx, &msg));
         	if (lmaj == GSS_S_COMPLETE) {
         	    	debug((char *)msg.value);
 			if (send_packet) packet_send_debug((char *)msg.value);
@@ -320,7 +320,9 @@ ssh_gssapi_build_ctx(Gssctxt **ctx)
 void
 ssh_gssapi_delete_ctx(Gssctxt **ctx)
 {
+#if !defined(MECHGLUE)
 	OM_uint32 ms;
+#endif
 	
 	/* Return if there's no context */
 	if ((*ctx)==NULL)
@@ -396,6 +398,7 @@ OM_uint32 ssh_gssapi_accept_ctx(Gssctxt *ctx,gss_buffer_desc *recv_tok,
 				gss_buffer_desc *send_tok, OM_uint32 *flags) 
 {
 	OM_uint32 maj_status, min_status;
+	gss_OID mech;
 	
 	maj_status=gss_accept_sec_context(&min_status,
 					  &ctx->context,
@@ -403,7 +406,7 @@ OM_uint32 ssh_gssapi_accept_ctx(Gssctxt *ctx,gss_buffer_desc *recv_tok,
 					  recv_tok,
 					  GSS_C_NO_CHANNEL_BINDINGS,
 					  &ctx->client,
-					  &ctx->oid,
+					  &mech, /* read-only pointer */
 					  send_tok,
 					  flags,
 					  NULL,
@@ -507,7 +510,7 @@ ssh_gssapi_acquire_cred(Gssctxt *ctx) {
 				    &ctx->creds,
 				    NULL,
 				    NULL))) {
-		ssh_gssapi_error(GSS_C_NO_OID,maj_status,min_status);
+	    ssh_gssapi_error(ctx->oid,maj_status,min_status);
 	}
 				
 	gss_release_oid_set(&min_status, &oidset);
@@ -525,7 +528,7 @@ ssh_gssapi_getclient(Gssctxt *ctx, enum ssh_gss_id *type,
 	
 	*type=ssh_gssapi_get_ctype(ctx);
 	if ((maj_status=gss_display_name(&min_status,ctx->client,name,NULL))) {
-		ssh_gssapi_error(GSS_C_NO_OID,maj_status,min_status);
+		ssh_gssapi_error(ctx->oid,maj_status,min_status);
 	}
 	
 	/* This is icky. There appears to be no way to copy this structure,

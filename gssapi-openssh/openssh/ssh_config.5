@@ -311,6 +311,11 @@ the result of a successful key exchange, or using GSSAPI user
 authentication.
 The default is 
 .Dq yes .
+.It Cm GssapiKeyExchange
+Specifies whether key exchange based on GSSAPI may be used. When using
+GSSAPI key exchange the server need not have a host key.
+The default is
+.Dq yes .
 .It Cm GssapiDelegateCredentials
 Specifies whether GSSAPI credentials will be delegated (forwarded) to
 the server.
