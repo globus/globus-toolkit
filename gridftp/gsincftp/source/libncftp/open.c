@@ -437,6 +437,8 @@ FTPLoginHost(const FTPCIPtr cip)
 							break;
 						}
 						
+						result = kErrLoginFailed;
+
 						goto done;
 					}
 					if(send_tok.length != 0) {
