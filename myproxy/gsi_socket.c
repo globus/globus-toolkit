@@ -1730,6 +1730,11 @@ int GSI_SOCKET_delegation_init_ext(GSI_SOCKET *self,
     {
 	ssl_credentials_destroy(creds);
     }
+
+    if (proxy_restrictions != NULL)
+    {
+	ssl_proxy_restrictions_destroy(proxy_restrictions);
+    }
     
     return return_value;
 }
