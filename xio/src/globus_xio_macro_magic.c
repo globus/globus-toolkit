@@ -45,7 +45,8 @@ globus_xio_driver_pass_open_DEBUG(
     else
     {
         _my_context = &_context->entry[_op->ndx];
-        _my_context->state = GLOBUS_XIO_CONTEXT_STATE_OPENING;
+        GlobusXIOContextStateChange(_my_context,
+            GLOBUS_XIO_CONTEXT_STATE_OPENING);
         _my_context->outstanding_operations++;
         _prev_ndx = _op->ndx;
 
@@ -159,18 +160,20 @@ globus_xio_driver_finished_open_DEBUG(
         case GLOBUS_XIO_CONTEXT_STATE_OPENING:
             if(_res == GLOBUS_SUCCESS)
             {
-                _my_context->state = GLOBUS_XIO_CONTEXT_STATE_OPEN;
+                GlobusXIOContextStateChange(_my_context,
+                    GLOBUS_XIO_CONTEXT_STATE_OPEN);
             }
             else
             {
-                _my_context->state = GLOBUS_XIO_CONTEXT_STATE_OPEN_FAILED;
+                GlobusXIOContextStateChange(_my_context,
+                    GLOBUS_XIO_CONTEXT_STATE_OPEN_FAILED);
             }
             break;
 
         /* if user has already called close */
         case GLOBUS_XIO_CONTEXT_STATE_CLOSING:
-            _my_context->state =
-                GLOBUS_XIO_CONTEXT_STATE_OPENING_AND_CLOSING;
+                GlobusXIOContextStateChange(_my_context,
+                    GLOBUS_XIO_CONTEXT_STATE_OPENING_AND_CLOSING);
             break;
 
         default:
@@ -230,12 +233,14 @@ globus_xio_driver_open_deliver_DEBUG(
         {
             /* open failed and user didn't try and close */
             case GLOBUS_XIO_CONTEXT_STATE_OPEN_FAILED:
-                _my_context->state = GLOBUS_XIO_CONTEXT_STATE_CLOSED;
+                GlobusXIOContextStateChange(_my_context,
+                    GLOBUS_XIO_CONTEXT_STATE_CLOSED);
                 break;
 
             /* this happens when the open fails and the user calls close */
             case GLOBUS_XIO_CONTEXT_STATE_OPENING_AND_CLOSING:
-                _my_context->state = GLOBUS_XIO_CONTEXT_STATE_CLOSED;
+                GlobusXIOContextStateChange(_my_context,
+                    GLOBUS_XIO_CONTEXT_STATE_CLOSED);
                 _close_kickout = GLOBUS_TRUE;
                 _close_op = _my_context->close_op;
                 if(_close_op != NULL)
@@ -361,22 +366,23 @@ globus_xio_driver_pass_close_DEBUG(
             {
                 case GLOBUS_XIO_CONTEXT_STATE_OPEN:
                 case GLOBUS_XIO_CONTEXT_STATE_OPENING:
-                    _my_context->state = GLOBUS_XIO_CONTEXT_STATE_CLOSING;
+                    GlobusXIOContextStateChange(_my_context,
+                        GLOBUS_XIO_CONTEXT_STATE_CLOSING);
                     break;
 
                 case GLOBUS_XIO_CONTEXT_STATE_EOF_RECEIVED:
-                    _my_context->state =
-                        GLOBUS_XIO_CONTEXT_STATE_EOF_RECEIVED_AND_CLOSING;
+                    GlobusXIOContextStateChange(_my_context,
+                        GLOBUS_XIO_CONTEXT_STATE_EOF_RECEIVED_AND_CLOSING);
                     break;
 
                 case GLOBUS_XIO_CONTEXT_STATE_EOF_DELIVERED:
-                    _my_context->state =
-                        GLOBUS_XIO_CONTEXT_STATE_EOF_DELIVERED_AND_CLOSING;
+                    GlobusXIOContextStateChange(_my_context,
+                        GLOBUS_XIO_CONTEXT_STATE_EOF_DELIVERED_AND_CLOSING);
                     break;
 
                 case GLOBUS_XIO_CONTEXT_STATE_OPEN_FAILED:
-                    _my_context->state =
-                        GLOBUS_XIO_CONTEXT_STATE_OPENING_AND_CLOSING;
+                    GlobusXIOContextStateChange(_my_context,
+                        GLOBUS_XIO_CONTEXT_STATE_OPENING_AND_CLOSING);
                     break;
 
                 default:
@@ -410,7 +416,8 @@ globus_xio_driver_pass_close_DEBUG(
     }
     if(_res != GLOBUS_SUCCESS)
     {
-        _my_context->state = GLOBUS_XIO_CONTEXT_STATE_CLOSED;
+        GlobusXIOContextStateChange(_my_context,
+            GLOBUS_XIO_CONTEXT_STATE_CLOSED);
     }
     GlobusXIODebugSetOut(_out_res, _res);
     GlobusXIODebugInternalExit();
@@ -442,7 +449,8 @@ globus_xio_driver_finished_close_DEBUG(
     _my_context = &_context->entry[_my_op->prev_ndx];
 
     /* don't need to lock because barrier makes contntion not possible */
-    _my_context->state = GLOBUS_XIO_CONTEXT_STATE_CLOSED;
+    GlobusXIOContextStateChange(_my_context,
+        GLOBUS_XIO_CONTEXT_STATE_CLOSED);
 
     globus_assert(_op->ndx >= 0); /* otherwise we are not in bad memory */
     _op->cached_res = _res;
@@ -890,13 +898,13 @@ globus_xio_driver_finished_read_DEBUG(
             switch(_my_context->state)
             {
                 case GLOBUS_XIO_CONTEXT_STATE_OPEN:
-                    _my_context->state =
-                        GLOBUS_XIO_CONTEXT_STATE_EOF_RECEIVED;
+                    GlobusXIOContextStateChange(_my_context,
+                        GLOBUS_XIO_CONTEXT_STATE_EOF_RECEIVED);
                     break;
 
                 case GLOBUS_XIO_CONTEXT_STATE_CLOSING:
-                    _my_context->state =
-                        GLOBUS_XIO_CONTEXT_STATE_EOF_RECEIVED_AND_CLOSING;
+                    GlobusXIOContextStateChange(_my_context,
+                        GLOBUS_XIO_CONTEXT_STATE_EOF_RECEIVED_AND_CLOSING);
                     break;
 
                 case GLOBUS_XIO_CONTEXT_STATE_EOF_RECEIVED_AND_CLOSING:
@@ -1002,14 +1010,14 @@ globus_xio_driver_read_deliver_DEBUG(
             {
                 case GLOBUS_XIO_CONTEXT_STATE_EOF_RECEIVED:
                     _purge = GLOBUS_TRUE;
-                    _my_context->state =
-                        GLOBUS_XIO_CONTEXT_STATE_EOF_DELIVERED;
+                    GlobusXIOContextStateChange(_my_context,
+                        GLOBUS_XIO_CONTEXT_STATE_EOF_DELIVERED);
                     break;
 
                 case GLOBUS_XIO_CONTEXT_STATE_EOF_RECEIVED_AND_CLOSING:
                     _purge = GLOBUS_TRUE;
-                    _my_context->state =
-                        GLOBUS_XIO_CONTEXT_STATE_EOF_DELIVERED_AND_CLOSING;
+                    GlobusXIOContextStateChange(_my_context,
+                        GLOBUS_XIO_CONTEXT_STATE_EOF_DELIVERED_AND_CLOSING);
                     break;
 
                 case GLOBUS_XIO_CONTEXT_STATE_EOF_DELIVERED_AND_CLOSING:

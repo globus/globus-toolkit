@@ -55,6 +55,24 @@ do                                                                          \
    _l_op->state = _new;                                                     \
 } while(0)
 
+#define GlobusXIOContextStateChange(_c, _new)                               \
+do                                                                          \
+{                                                                           \
+    globus_i_xio_context_entry_t *                      _l_context;         \
+                                                                            \
+    _l_context = (_c);                                                      \
+    GlobusXIODebugPrintf(                                                   \
+        GLOBUS_XIO_DEBUG_STATE,                                             \
+        ("[%s:%d] Context state change:\n"                                  \
+         "    From:%s\n"                                                    \
+         "    to:  %s\n",                                                   \
+            _xio_name,                                                      \
+            __LINE__,                                                       \
+            globus_i_xio_context_state_name_table[_l_context->state],       \
+            globus_i_xio_context_state_name_table[_new]));                  \
+   _l_context->state = _new;                                                \
+} while(0)
+
 #define GlobusXIODebugEnter()                                               \
     GlobusXIODebugPrintf(                                                   \
         GLOBUS_XIO_DEBUG_TRACE,                                             \
@@ -115,6 +133,8 @@ do                                                                          \
  *                 state and type enumerations
  *                 ---------------------------
  **************************************************************************/
+
+extern char * globus_i_xio_context_state_name_table[];
 
 typedef enum globus_i_xio_context_state_e
 {
@@ -182,9 +202,7 @@ struct globus_i_xio_target_s;
 
 typedef struct globus_i_xio_monitor_s
 {
-    globus_mutex_t                          mutex;
-    globus_cond_t                           cond;
-    globus_bool_t                           count;
+    int                                     count;
 } globus_i_xio_monitor_t;
 
 void
@@ -270,7 +288,6 @@ typedef struct globus_i_xio_server_s
 typedef struct globus_i_xio_handle_s
 {
     globus_i_xio_monitor_t *                sd_monitor;
-    globus_bool_t                           shutting_down;
 
     globus_list_t *                         cb_list;
     globus_mutex_t                          cancel_mutex;

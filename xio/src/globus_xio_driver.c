@@ -164,6 +164,16 @@ globus_i_xio_handle_destroy(
     {
         globus_list_remove(&globus_l_outstanding_handles_list,
             globus_list_search(globus_l_outstanding_handles_list, handle));
+        if(handle->sd_monitor != NULL)
+        {
+            GlobusXIODebugPrintf(
+                GLOBUS_XIO_DEBUG_INFO,
+                ("[globus_i_xio_handle_dec] :: signalling handle unload.\n"));
+
+            handle->sd_monitor->count--;
+            handle->sd_monitor = NULL;
+            globus_cond_signal(&globus_l_cond);
+        }
     }
     globus_mutex_unlock(&globus_l_mutex);
 
@@ -224,23 +234,6 @@ globus_i_xio_handle_dec(
             {
                 globus_panic(GLOBUS_XIO_MODULE, res, "failed to unregister");
             }
-        }
-        if(handle->shutting_down)
-        {
-            globus_assert(handle->sd_monitor != NULL);
-
-            GlobusXIODebugPrintf(
-                GLOBUS_XIO_DEBUG_INFO,
-                ("[globus_i_xio_handle_dec] :: signalling handle unload.\n"));
-
-            globus_mutex_lock(&handle->sd_monitor->mutex);
-            {
-                handle->sd_monitor->count--;
-                globus_cond_signal(&handle->sd_monitor->cond);
-                handle->shutting_down = GLOBUS_FALSE;
-            }
-            globus_mutex_unlock(&handle->sd_monitor->mutex);
-            handle->sd_monitor = NULL;
         }
     }
 

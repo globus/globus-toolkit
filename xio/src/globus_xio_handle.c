@@ -86,6 +86,21 @@ char * globus_i_xio_op_state_name_table[] =
     "GLOBUS_XIO_OP_STATE_FINISH_WAITING",
     "GLOBUS_XIO_OP_STATE_FINISHED",
 };
+
+char * globus_i_xio_context_state_name_table[] =
+{
+    "GLOBUS_XIO_CONTEXT_STATE_OPENING",
+    "GLOBUS_XIO_CONTEXT_STATE_OPEN",
+    "GLOBUS_XIO_CONTEXT_STATE_OPEN_FAILED",
+    "GLOBUS_XIO_CONTEXT_STATE_EOF_RECEIVED",
+    "GLOBUS_XIO_CONTEXT_STATE_EOF_DELIVERED",
+    "GLOBUS_XIO_CONTEXT_STATE_EOF_RECEIVED_AND_CLOSING",
+    "GLOBUS_XIO_CONTEXT_STATE_EOF_DELIVERED_AND_CLOSING",
+    "GLOBUS_XIO_CONTEXT_STATE_CLOSING",
+    "GLOBUS_XIO_CONTEXT_STATE_OPENING_AND_CLOSING""",
+    "GLOBUS_XIO_CONTEXT_STATE_CLOSED",
+};
+
                                                                                 
 globus_i_xio_timer_t                        globus_l_xio_timeout_timer;
 globus_list_t *                             globus_l_outstanding_handles_list
@@ -116,8 +131,6 @@ void
 globus_i_xio_monitor_init(
     globus_i_xio_monitor_t *                monitor)
 {
-    globus_mutex_init(&monitor->mutex, NULL);
-    globus_cond_init(&monitor->cond, NULL);
     monitor->count = 0;
 }
 
@@ -125,8 +138,6 @@ void
 globus_i_xio_monitor_destroy(
     globus_i_xio_monitor_t *                monitor)
 {
-    globus_mutex_destroy(&monitor->mutex);
-    globus_cond_destroy(&monitor->cond);
 }
 
 void
@@ -280,7 +291,7 @@ globus_i_xio_close_handles(
             /* recursive mutex */
             globus_mutex_lock(&handle->context->mutex);
             {
-                if(!handle->shutting_down)
+                if(!handle->sd_monitor != NULL)
                 {
                     found = GLOBUS_FALSE;
                     for(ctr = 0; 
@@ -297,10 +308,8 @@ globus_i_xio_close_handles(
                                 ("[globus_i_xio_close_handles] : will wait on handle @0x%x state=%d\n", 
                                     handle, handle->state));
 
-                            globus_assert(handle->sd_monitor == NULL);
                             found = GLOBUS_TRUE;
 
-                            handle->shutting_down = GLOBUS_TRUE;
                             handle->sd_monitor = &monitor;
                             monitor.count++;
                             if(handle->state 
@@ -330,11 +339,7 @@ globus_i_xio_close_handles(
             globus_mutex_unlock(&handle->context->mutex);
         }
         globus_list_free(tmp_list);
-    }
-    globus_mutex_unlock(&globus_l_mutex);
 
-    globus_mutex_lock(&monitor.mutex);
-    {
         for(list = c_handles; 
             !globus_list_empty(list); 
             list = globus_list_rest(list))
@@ -346,10 +351,10 @@ globus_i_xio_close_handles(
         }
         while(monitor.count != 0)
         {
-            globus_cond_wait(&monitor.cond, &monitor.mutex);
+            globus_cond_wait(&globus_l_cond, &globus_l_mutex);
         }
     }
-    globus_mutex_unlock(&monitor.mutex);
+    globus_mutex_unlock(&globus_l_mutex);
 
     globus_i_xio_monitor_destroy(&monitor);
 
@@ -440,6 +445,7 @@ globus_l_xio_activate()
 static int
 globus_l_xio_deactivate()
 {
+    int                                     rc;
     GlobusXIOName(globus_l_xio_deactivate);
 
     GlobusXIODebugInternalEnter();
@@ -452,8 +458,10 @@ globus_l_xio_deactivate()
 
     GlobusDebugDestroy(GLOBUS_XIO);
     
-    return globus_module_deactivate(GLOBUS_COMMON_MODULE);
+    rc = globus_module_deactivate(GLOBUS_COMMON_MODULE);
     GlobusXIODebugInternalExit();
+
+    return rc;
 }
 
 globus_module_descriptor_t                  globus_i_xio_module =
@@ -1805,7 +1813,6 @@ globus_xio_register_open(
     handle->space = space;
     globus_callback_space_reference(space);
 
-
     handle->target = target;
     /* set entries in structures */
     for(ctr = 0; ctr < context->stack_size; ctr++)
@@ -1826,7 +1833,7 @@ globus_xio_register_open(
     res = globus_l_xio_register_open(op);
     if(res != GLOBUS_SUCCESS)
     {
-        return res;
+        goto reg_err;
     }
 
     *user_handle = handle;
@@ -1854,6 +1861,8 @@ globus_xio_register_open(
     {
         globus_i_xio_context_destroy(context);
     }
+
+  reg_err:
 
     GlobusXIODebugExitWithError();
 
@@ -2218,7 +2227,7 @@ globus_xio_register_close(
 
     globus_mutex_lock(&handle->context->mutex);
     {
-        if(handle->shutting_down)
+        if(handle->sd_monitor != NULL)
         {
             res = GlobusXIOErrorUnloaded();
         }
@@ -2602,12 +2611,12 @@ globus_xio_open(
     }
     globus_mutex_unlock(&info->mutex);
 
+    globus_i_xio_blocking_destroy(info);
     if(info->res != GLOBUS_SUCCESS)
     {
         res = info->res;
         goto register_err;
     }
-    globus_i_xio_blocking_destroy(info);
 
     *user_handle = handle;
 
@@ -2618,10 +2627,6 @@ globus_xio_open(
     /*
      * error handling 
      */
-  register_err:
-    globus_i_xio_blocking_destroy(info);
-    return res;
-
   info_alloc_error:
     {
         globus_bool_t           destroy_handle;
@@ -2637,6 +2642,7 @@ globus_xio_open(
     globus_i_xio_context_destroy(context);
     *user_handle = NULL;
 
+  register_err:
   param_err:
     GlobusXIODebugExitWithError();
 
@@ -3168,7 +3174,7 @@ globus_xio_close(
 
     globus_mutex_lock(&handle->context->mutex);
     {
-        if(handle->shutting_down)
+        if(handle->sd_monitor != NULL)
         {
             res = GlobusXIOErrorUnloaded();
         }
