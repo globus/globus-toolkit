@@ -1619,6 +1619,7 @@ globus_l_gass_copy_target_populate(
 	target->attr = attr;
 	target->data.io.free_handle = GLOBUS_TRUE;
 	target->data.io.seekable = GLOBUS_TRUE;
+	target->data.io.handle = GLOBUS_NULL;
 	target->n_simultaneous = 1;
 
 	break;
@@ -1746,7 +1747,10 @@ globus_l_gass_copy_target_destroy(
     case GLOBUS_GASS_COPY_URL_MODE_IO:
 	if(target->data.io.free_handle == GLOBUS_TRUE)
 	{
-	    globus_libc_free((target->data.io.handle));
+	    if(target->data.io.handle)
+	    {
+	        globus_libc_free((target->data.io.handle));
+	    }
 	    globus_libc_free((target->url));
 
 	}
