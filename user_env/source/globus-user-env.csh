@@ -38,8 +38,9 @@ setenv PATH "$GLOBUS_LOCATION/bin:$GLOBUS_LOCATION/sbin:$PATH";
 set DELIM
 if ( "X$MANPATH" != "X" ) then
     set DELIM=:
+    setenv MANPATH "$GLOBUS_LOCATION/man$DELIM$MANPATH"
 endif
-setenv MANPATH "$GLOBUS_LOCATION/man$DELIM$MANPATH"
+
 
 set DELIM=
 if ( "X$LD_LIBRARY_PATH" != "X" ) then
