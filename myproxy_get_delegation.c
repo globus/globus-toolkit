@@ -120,16 +120,24 @@ main(int argc, char *argv[])
 	}
     }
 
-    if (dn_as_username && creds_to_authorization) {
+    if (dn_as_username) {
 	if (client_request->username) {
 	    free(client_request->username);
 	    client_request->username = NULL;
 	}
-	if (ssl_get_base_subject_file(creds_to_authorization,
-		                     &client_request->username)) {
-	  fprintf(stderr, "Cannot get subject name from your certificate %s\n",
-		  creds_to_authorization);
-	  return 1;
+	if (creds_to_authorization) {
+	    if (ssl_get_base_subject_file(creds_to_authorization,
+					  &client_request->username)) {
+		fprintf(stderr, "Cannot get subject name from %s\n",
+			creds_to_authorization);
+		return 1;
+	    }
+	} else {
+            if (ssl_get_base_subject_file(NULL, &client_request->username)) {
+                fprintf(stderr,
+                        "Cannot get subject name from your certificate\n");
+                return 1;
+            }
 	}
     }
 
