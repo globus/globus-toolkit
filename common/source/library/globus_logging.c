@@ -2,7 +2,7 @@
 #include <globus_common.h>
 #include <syslog.h>
 
-#define GLOBUS_L_LOGGING_OUTSTANDING_LINES  32
+#define GLOBUS_L_LOGGING_MAX_MESSAGE  2048
 
 #ifdef __GNUC__
 #define GlobusLoggingName(func) static const char * _globus_logging_name __attribute__((__unused__)) = #func
@@ -40,7 +40,6 @@ typedef struct globus_l_logging_handle_s
 {
     globus_mutex_t                      mutex;
     int                                 type_mask;
-    int                                 max_log_line;
     globus_size_t                       buffer_length;
     globus_size_t                       used_length;
     void *                              user_arg;
@@ -114,14 +113,13 @@ globus_result_t
 globus_logging_init(
     globus_logging_handle_t *           out_handle,
     globus_reltime_t *                  flush_period,
-    int                                 max_log_line,
+    int                                 buffer_length,
     int                                 log_type,   
     globus_logging_module_t *           module,
     void *                              user_arg)
 {
     globus_result_t                     res;
     globus_l_logging_handle_t *         handle;
-    globus_size_t                       buffer_length;
     GlobusLoggingName(globus_logging_init);
 
     if(out_handle == NULL)
@@ -129,9 +127,9 @@ globus_logging_init(
         res = GlobusLoggingErrorParameter("out_handle");
         goto err;
     }
-    if(max_log_line < 0)
+    if(buffer_length < 0)
     {
-        res = GlobusLoggingErrorParameter("max_mem_buffer");
+        res = GlobusLoggingErrorParameter("buffer_length");
         goto err;
     }
     if(module == NULL || module->write_func == NULL)
@@ -139,8 +137,6 @@ globus_logging_init(
         res = GlobusLoggingErrorParameter("module");
         goto err;
     }
-
-    buffer_length = max_log_line * GLOBUS_L_LOGGING_OUTSTANDING_LINES;
 
     handle = (globus_l_logging_handle_t *)
         globus_malloc(sizeof(globus_l_logging_handle_t) + buffer_length - 1);
@@ -160,7 +156,6 @@ globus_logging_init(
     globus_mutex_init(&handle->mutex, NULL);
     handle->type_mask = log_type;
     handle->buffer_length = buffer_length;
-    handle->max_log_line = max_log_line;
     handle->used_length = 0;
     handle->user_arg = user_arg;
 
@@ -225,7 +220,7 @@ globus_logging_vwrite(
         if(type & handle->type_mask)
         {
             remain = handle->buffer_length - handle->used_length;
-            if(remain < handle->max_log_line)
+            if(remain < GLOBUS_L_LOGGING_MAX_MESSAGE)
             {
                 globus_l_logging_flush(handle);
                 remain = handle->buffer_length;

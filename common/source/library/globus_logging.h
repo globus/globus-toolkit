@@ -46,7 +46,7 @@ globus_result_t
 globus_logging_init(
     globus_logging_handle_t *           out_handle,
     globus_reltime_t *                  flush_period,
-    int                                 max_log_line,
+    int                                 buffer_length,
     int                                 log_type,
     globus_logging_module_t *           module,
     void *                              user_arg);

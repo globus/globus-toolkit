@@ -22,7 +22,7 @@ main(
     res = globus_logging_init(
         &log_handle,
         NULL,
-        80,
+        1024,
         255,
         &globus_logging_stdio_module,
         stdout);
@@ -47,7 +47,7 @@ main(
     res = globus_logging_init(
         &log_handle,
         &delay,
-        80,
+        1024,
         255,
         &globus_logging_stdio_module,
         stdout);
