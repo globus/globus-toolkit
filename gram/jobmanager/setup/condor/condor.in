@@ -30,9 +30,18 @@ sub new
     my $proto = shift;
     my $class = ref($proto) || $proto;
     my $self = $class->SUPER::new(@_);
+    my $log_dir;
 
-    $self->{condor_logfile} = $Globus::Core::Paths::tmpdir
-                            . "/gram_condor_log."
+    if(! exists($ENV{GLOBUS_SPOOL_DIR}))
+    {
+        $log_dir = $Globus::Core::Paths::tmpdir;
+    }
+    else
+    {
+        $log_dir = $ENV{GLOBUS_SPOOL_DIR};
+    }
+
+    $self->{condor_logfile} = "$log_dir/gram_condor_log."
 			    . $self->{JobDescription}->uniq_id();
     
     bless $self, $class;
