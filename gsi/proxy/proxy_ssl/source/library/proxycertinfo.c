@@ -538,7 +538,6 @@ STACK_OF(CONF_VALUE) * i2v_PROXYCERTINFO(
 {
     int                                 len = 128;
     char                                tmp_string[128];
-    X509_SIG *                          sig = NULL;
     
     if(!ext)
     {
