@@ -461,7 +461,7 @@ main(int xargc,
      * Parse the command line arguments
      */
     /* 
-     * But first see if the first parameter is a -c filename
+     * But first see if the first parameter is a -c or -conf filename
      * which has the real parameter list. This is needed
      * since the parameters are getting long, and inetd/wrapper
      * may have a problem.  Will assume there are at most 52 
@@ -469,7 +469,7 @@ main(int xargc,
      */
 
     /* But before that, check if there is a -test option
-     * after the -c file. This will test the gatekeeper
+     * after the -c or -conf file. This will test the gatekeeper
      * -test can also be in the options file 
      * this will run in forground, and not inetd
      */
@@ -480,7 +480,10 @@ main(int xargc,
         argc--;
     }
 
-    if (argc == 3 && !strcmp(argv[1],"-c"))
+    if ( argc == 3 &&
+         (!strcmp(argv[1],"-c") ||
+          !strcmp(argv[1],"-conf"))
+       )
     {
         char ** newargv;
         char * newbuf; 	
@@ -665,7 +668,7 @@ main(int xargc,
             fprintf(stderr, "Unknown argument %s\n", argv[i]);
             fprintf(stderr, "Usage: %s %s %s %s %s %s %s %s %s %s\n ",
                     argv[0], 
-                    "{-c parmfile [-test]} | {[-d] [-inetd | -f] [-p port] ",
+                    "{-conf parmfile [-test]} | {[-d] [-inetd | -f] [-p port] ",
                     "[-home path] [-l logfile] [-e path] ",
 					"[-grid_services file] ",
                     "[-globusid globusid] [-gridmap file] [-globuspwd file]",
