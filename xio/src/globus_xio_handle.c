@@ -178,6 +178,40 @@ globus_l_xio_oneshot_wrapper_cb(
     globus_free(space_info);
 }
 
+static void
+globus_l_xio_cancel_data_ops(
+    globus_i_xio_handle_t *                 handle)
+{
+    globus_list_t *                         list;
+    globus_i_xio_op_t *                     tmp_op;
+    GlobusXIOName(globus_l_xio_cancel_data_ops);
+
+    GlobusXIODebugInternalEnter();
+
+    for(list = handle->read_op_list;
+        !globus_list_empty(list);
+        list = globus_list_rest(list))
+    {
+        tmp_op = (globus_i_xio_op_t *) globus_list_first(list);
+        GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE,
+            ("[%s] : canceling read op @ 0x%x\n", 
+            _xio_name, tmp_op));
+        globus_i_xio_operation_cancel(tmp_op, -1);
+    }
+
+    for(list = handle->write_op_list;
+        !globus_list_empty(list);
+        list = globus_list_rest(list))
+    {
+        tmp_op = (globus_i_xio_op_t *) globus_list_first(list);
+        GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE,
+            ("[%s] : canceling write op @ 0x%x\n", 
+            _xio_name, tmp_op));
+        globus_i_xio_operation_cancel(tmp_op, -1);
+    }
+    GlobusXIODebugInternalExit();
+}
+
 static
 globus_result_t
 globus_l_xio_hande_pre_close(
@@ -191,63 +225,9 @@ globus_l_xio_hande_pre_close(
     globus_bool_t                           destroy_handle;
     globus_i_xio_op_t *                     op;
     globus_result_t                         res = GLOBUS_SUCCESS;
-    globus_list_t *                         list;
-    globus_i_xio_op_t *                     tmp_op;
     GlobusXIOName(globus_l_xio_hande_pre_close);
 
     GlobusXIODebugInternalEnter();
-    /* 
-     *  if the user requests a cancel kill all open ops
-     *  if they didn't the close will not happen until all ops finish 
-     */
-    /* all canceling is done with cancel op locked */
-    globus_mutex_lock(&handle->context->cancel_mutex);
-    {
-        /* if open is outstanding there cannot be a read or write */
-        if(handle->open_op != NULL)
-        {
-            GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE,
-                ("[%s] : canceling open op @ 0x%x\n", 
-                _xio_name, handle->open_op));
-            /* we delay the pass close until the open callback */
-            globus_i_xio_operation_cancel(handle->open_op, -1);
-
-            /* this next line is strange.  what happens is this,
-               typically, if open comes back with a failure we
-               clean up the handle right after the open callback is
-               called.  However if it is an error due to a close
-               being called then we can't destroy because we have 
-               a close callback to call.  we up the refrence count here
-               to force this.
-            */
-            handle->ref++;
-        }
-        else
-        {
-            for(list = handle->read_op_list;
-                !globus_list_empty(list);
-                list = globus_list_rest(list))
-            {
-                tmp_op = (globus_i_xio_op_t *) globus_list_first(list);
-                GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE,
-                    ("[%s] : canceling read op @ 0x%x\n", 
-                    _xio_name, tmp_op));
-                globus_i_xio_operation_cancel(tmp_op, -1);
-            }
-    
-            for(list = handle->write_op_list;
-                !globus_list_empty(list);
-                list = globus_list_rest(list))
-            {
-                tmp_op = (globus_i_xio_op_t *) globus_list_first(list);
-                GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE,
-                    ("[%s] : canceling write op @ 0x%x\n", 
-                    _xio_name, tmp_op));
-                globus_i_xio_operation_cancel(tmp_op, -1);
-            }
-        }
-    }
-    globus_mutex_unlock(&handle->context->cancel_mutex);
 
     GlobusXIOOperationCreate(op, handle->context);
     if(op == NULL)
@@ -258,16 +238,61 @@ globus_l_xio_hande_pre_close(
 
     switch(handle->state)
     {
+        /* if opening, cancel the open */
         case GLOBUS_XIO_HANDLE_STATE_OPENING:
-        case GLOBUS_XIO_HANDLE_STATE_OPENING_FAILED:
+            globus_assert(handle->open_op != NULL);
+
+            globus_mutex_lock(&handle->context->cancel_mutex);
+            {
+                GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE,
+                    ("[%s] : canceling open op @ 0x%x\n", 
+                    _xio_name, handle->open_op));
+                /* we delay the pass close until the open callback */
+                globus_i_xio_operation_cancel(handle->open_op, -1);
+
+                /* cancel any data ops */
+                globus_l_xio_cancel_data_ops(handle);
+            }
+            globus_mutex_unlock(&handle->context->cancel_mutex);
 
             GlobusXIOHandleStateChange(handle,
                 GLOBUS_XIO_HANDLE_STATE_OPENING_AND_CLOSING);
+            /* this next line is strange.  what happens is this:
+                typically, if open comes back with a failure we
+                clean up the handle right after the open callback, 
+                this gives the semantics that if an open fails the
+                handle is no good (makes it so one doesn't have to 
+                call closed if the open failed).  However we also
+                let the user call close before the open callback returns.
+                So now if a user calls close before the open callback
+                returns and the open calback fails there is confusion
+                as to when the handle is cleaned up.  The correct
+                semantics are once the close callback returns (which is
+                guarenteed to be after the open callback returns).
+                To get this behavior we up the reference count here.
+            */
+            handle->ref++;
+            break;
+
+        case GLOBUS_XIO_HANDLE_STATE_OPENING_FAILED:
+            GlobusXIOHandleStateChange(handle,
+                GLOBUS_XIO_HANDLE_STATE_OPENING_AND_CLOSING);
+
+            /* same reason as described above */
+            handle->ref++;
+
             break;
 
         case GLOBUS_XIO_HANDLE_STATE_OPEN:
             GlobusXIOHandleStateChange(handle,
                 GLOBUS_XIO_HANDLE_STATE_CLOSING);
+
+            /* cancel any data ops */
+            globus_mutex_lock(&handle->context->cancel_mutex);
+            {
+                globus_l_xio_cancel_data_ops(handle);
+            }
+            globus_mutex_unlock(&handle->context->cancel_mutex);
             break;
 
         case GLOBUS_XIO_HANDLE_STATE_OPENING_AND_CLOSING:
@@ -617,7 +642,6 @@ globus_l_xio_open_close_callback(
                     GlobusXIOHandleStateChange(handle,
                         GLOBUS_XIO_HANDLE_STATE_OPEN);
                 }
-                handle->open_op = NULL;
                 break;
 
             case GLOBUS_XIO_HANDLE_STATE_OPENING_FAILED:
@@ -733,6 +757,7 @@ globus_l_xio_open_close_callback_kickout(
                 break;
 
             case GLOBUS_XIO_HANDLE_STATE_OPENING_FAILED:
+                handle->open_op = NULL;
                 globus_assert(op->type == GLOBUS_XIO_OPERATION_TYPE_OPEN);
 
                 GlobusXIOHandleStateChange(handle,
@@ -757,6 +782,7 @@ globus_l_xio_open_close_callback_kickout(
                     GLOBUS_XIO_HANDLE_STATE_CLOSING);
 
                 /* start the close */
+                handle->open_op = NULL;
                 start_close = GLOBUS_TRUE;
                 close_op = handle->close_op;
                 break;
