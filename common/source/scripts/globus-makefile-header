@@ -298,7 +298,7 @@ sub getBuildEnvLines
             # if copy does NOT match an uppercase letter followed by a _ then another uppercase letter 
             # skip PERL, 'cause it's defined in sh-tools too
 
-            if ( ( $copy !~ /([A-Z]+)_([A-Z]+)/ ) && ( $copy !~ /^PERL/ ) && ( $copy !~ /^#/ ) )
+            if ( ( $copy !~ /^([A-Z]+)_([A-Z]+)/ ) && ( $copy !~ /^PERL/ ) && ( $copy !~ /^#/ ) )
             {
                 push(@$header, "GLOBUS_" . $copy);
             }
