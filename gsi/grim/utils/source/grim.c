@@ -177,6 +177,7 @@ main(
 
     /*
      *  verify that setuid bit is set
+     */
     if(getuid() == geteuid())
     {
         / * log to stderr since we do not know the intended log file yet * /
@@ -184,7 +185,6 @@ main(
                         "simply use their own proxy.\n");
         return 1;
     }
-     */
 
     /***** BEGIN PRIVLEDGES *****/
     /*
