@@ -874,6 +874,9 @@ main(
         else
         {
             setsid();
+            freopen("/dev/null", "w+", stdin);
+            freopen("/dev/null", "w+", stdout);
+            freopen("/dev/null", "w+", stderr);
             chdir("/");
         }
     }
@@ -931,6 +934,8 @@ main(
         }
         if(globus_i_gfs_config_bool("inetd"))
         {
+            freopen("/dev/null", "w+", stdout);
+            freopen("/dev/null", "w+", stderr);
             result = globus_l_gfs_convert_inetd_handle();
         }
         else
