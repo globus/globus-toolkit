@@ -111,6 +111,7 @@
 
 #ifndef HEADER_SSL_LOCL_H
 #define HEADER_SSL_LOCL_H
+#undef CERT
 #include <stdlib.h>
 #include <time.h>
 #include <string.h>
