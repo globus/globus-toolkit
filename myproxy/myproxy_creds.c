@@ -297,12 +297,7 @@ get_storage_locations(const char *username,
     assert(creds_path != NULL);
     assert(data_path != NULL);
 
-    if (storage_dir == NULL) {
-	verror_put_string("Credential storage directory undefined");
-	goto error;
-    }
-    
-    if (check_storage_directory(storage_dir) == -1)
+    if (check_storage_directory() == -1)
     {
         goto error;
     }
