@@ -56,6 +56,7 @@
 
 #include "globus_ftp_client.h"
 #include "globus_ftp_client_plugin.h"
+#include "globus_ftp_client_throughput_plugin.h"
 #include "NetLogger.h"
 
 #ifndef EXTERN_C_BEGIN
@@ -94,6 +95,15 @@ globus_ftp_client_throughput_nl_plugin_init_with_handle(
 globus_result_t
 globus_ftp_client_throughput_nl_plugin_destroy(
     globus_ftp_client_plugin_t *			plugin);
+
+globus_result_t
+globus_ftp_client_throughput_nl_plugin_set_callbacks(
+    globus_ftp_client_plugin_t *                        plugin,
+    globus_ftp_client_throughput_plugin_begin_cb_t      begin_cb,
+    globus_ftp_client_throughput_plugin_stripe_cb_t     per_stripe_cb,
+    globus_ftp_client_throughput_plugin_total_cb_t      total_cb,
+    globus_ftp_client_throughput_plugin_complete_cb_t   complete_cb,
+    void *                                              user_specific);
 
 EXTERN_C_END
 

@@ -9,7 +9,6 @@
  */
 
 #include "globus_ftp_client_throughput_nl_plugin.h"
-#include "globus_ftp_client_throughput_plugin.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -44,6 +43,12 @@ globus_l_ftp_client_throughput_nl_plugin_deactivate(void)
 
 typedef struct throughput_nl_plugin_info_s
 {
+    globus_ftp_client_throughput_plugin_begin_cb_t      begin_cb;
+    globus_ftp_client_throughput_plugin_stripe_cb_t     per_stripe_cb;
+    globus_ftp_client_throughput_plugin_total_cb_t      total_cb;
+    globus_ftp_client_throughput_plugin_complete_cb_t   complete_cb;
+    void *                                              user_specific;
+
     char *                                          opaque_string;
     char *                                          source_url;
     char *                                          dest_url;
@@ -77,6 +82,15 @@ void throughput_plugin_begin_cb(
         "URL.SOURCE=%s URL.DEST=%s",
         (info->source_url) ? info->source_url : "",
         (info->dest_url) ? info->dest_url : "");
+
+    if(info->begin_cb)
+    {
+        info->begin_cb(
+            info->user_specific,
+            handle,
+            source_url,
+            dest_url);
+    }
 }
 
 static
@@ -102,6 +116,17 @@ void throughput_plugin_stripe_cb(
         bytes,
         instantaneous_throughput,
         avg_throughput);
+
+    if(info->per_stripe_cb)
+    {
+        info->per_stripe_cb(
+            info->user_specific,
+            handle,
+            stripe_ndx,
+            bytes,
+            instantaneous_throughput,
+            avg_throughput);
+    }
 }
 
 static
@@ -125,6 +150,16 @@ void throughput_plugin_total_cb(
         bytes,
         instantaneous_throughput,
         avg_throughput);
+
+    if(info->total_cb)
+    {
+        info->total_cb(
+            info->user_specific,
+            handle,
+            bytes,
+            instantaneous_throughput,
+            avg_throughput);
+    }
 }
 
 static
@@ -153,6 +188,14 @@ void throughput_plugin_complete_cb(
         info->opaque_string,
         "SUCCESS=%d",
         (success) ? 1 : 0);
+
+    if(info->complete_cb)
+    {
+        info->complete_cb(
+            info->user_specific,
+            handle,
+            success);
+    }
 }
 
 static
@@ -235,21 +278,10 @@ globus_ftp_client_throughput_nl_plugin_init(
     const char *                                        prog_name,
     const char *                                        opaque_string)
 {
-    throughput_nl_plugin_info_t *                       info;
     globus_result_t                                     result;
     NLhandle *                                          nl_handle;
     static char *                                       myname =
         "globus_ftp_client_throughput_nl_plugin_init";
-
-    if(plugin == GLOBUS_NULL)
-    {
-        return globus_error_put(globus_error_construct_string(
-                GLOBUS_FTP_CLIENT_MODULE,
-                GLOBUS_NULL,
-                "[%s] NULL plugin at %s\n",
-                GLOBUS_FTP_CLIENT_MODULE->module_name,
-                myname));
-    }
 
     if(nl_url)
     {
@@ -270,54 +302,17 @@ globus_ftp_client_throughput_nl_plugin_init(
                                  myname));
     }
 
-    info = (throughput_nl_plugin_info_t *)
-        globus_malloc(sizeof(throughput_nl_plugin_info_t));
-
-    if(info == GLOBUS_NULL)
-    {
-        NetLoggerClose(nl_handle);
-        return globus_error_put(globus_error_construct_string(
-                                GLOBUS_FTP_CLIENT_MODULE,
-                                GLOBUS_NULL,
-                                "[%s] Out of memory at %s\n",
-                                 GLOBUS_FTP_CLIENT_MODULE->module_name,
-                                 myname));
-    }
-
-    result = globus_ftp_client_throughput_plugin_init(
+    result = globus_ftp_client_throughput_nl_plugin_init_with_handle(
         plugin,
-        throughput_plugin_begin_cb,
-        throughput_plugin_stripe_cb,
-        throughput_plugin_total_cb,
-        throughput_plugin_complete_cb,
-        info);
+        nl_handle,
+        opaque_string);
 
     if(result != GLOBUS_SUCCESS)
     {
         NetLoggerClose(nl_handle);
-        globus_free(info);
-        return result;
     }
 
-    globus_ftp_client_throughput_plugin_set_copy_destroy(
-        plugin,
-        throughput_plugin_user_copy_cb,
-        throughput_plugin_user_destroy_cb);
-
-    if(opaque_string)
-    {
-        info->opaque_string = globus_libc_strdup(opaque_string);
-    }
-    else
-    {
-        info->opaque_string = GLOBUS_NULL;
-    }
-    info->source_url = GLOBUS_NULL;
-    info->dest_url = GLOBUS_NULL;
-    info->nl_handle = nl_handle;
-    info->destroy_handle = GLOBUS_TRUE;
-
-    return GLOBUS_SUCCESS;
+    return result;
 }
 
 /**
@@ -416,10 +411,16 @@ globus_ftp_client_throughput_nl_plugin_init_with_handle(
     {
         info->opaque_string = GLOBUS_NULL;
     }
-    info->source_url = GLOBUS_NULL;
-    info->dest_url = GLOBUS_NULL;
-    info->nl_handle = nl_handle;
+    info->source_url    = GLOBUS_NULL;
+    info->dest_url      = GLOBUS_NULL;
+    info->nl_handle     = nl_handle;
     info->destroy_handle = GLOBUS_FALSE;
+
+    info->begin_cb      = GLOBUS_NULL;
+    info->per_stripe_cb = GLOBUS_NULL;
+    info->total_cb      = GLOBUS_NULL;
+    info->complete_cb   = GLOBUS_NULL;
+    info->user_specific = GLOBUS_NULL;
 
     return GLOBUS_SUCCESS;
 }
@@ -476,4 +477,80 @@ globus_ftp_client_throughput_nl_plugin_destroy(
     globus_free(info);
 
     return globus_ftp_client_throughput_plugin_destroy(plugin);
+}
+
+
+/**
+ * Receive throughput callbacks
+ *
+ * You can still get the automatic netlogging of throughput along with
+ * receiving the same throughput callbacks that the throughput plugin
+ * provides by using this function to set these callbacks.  Note that
+ * the callbacks are defined the same as in the throughput plugin
+ *
+ * @param begin_cb
+ *        the callback to be called upon the start of a transfer
+ *
+ * @param per_stripe_cb
+ *        the callback to be called every time updated throughput info is
+ *        available for a given stripe
+ *
+ * @param total_cb
+ *        the callback to be called every time updated throughput info is
+ *        available for any stripe
+ *
+ * @param complete_cb
+ *        the callback to be called to indicate transfer completion
+ *
+ * @param user_specific
+ *        a pointer to some user specific data that will be provided to
+ *        all callbacks
+ *
+ * @return
+ *        - Error on NULL or invalid plugin
+ *        - GLOBUS_SUCCESS
+ *
+ * @see globus_ftp_client_throughput_plugin
+ */
+
+globus_result_t
+globus_ftp_client_throughput_nl_plugin_set_callbacks(
+    globus_ftp_client_plugin_t *                        plugin,
+    globus_ftp_client_throughput_plugin_begin_cb_t      begin_cb,
+    globus_ftp_client_throughput_plugin_stripe_cb_t     per_stripe_cb,
+    globus_ftp_client_throughput_plugin_total_cb_t      total_cb,
+    globus_ftp_client_throughput_plugin_complete_cb_t   complete_cb,
+    void *                                              user_specific)
+{
+    globus_result_t                                     result;
+    throughput_nl_plugin_info_t *                       info;
+    static char *                                       myname =
+        "globus_ftp_client_throughput_nl_plugin_set_callbacks";
+
+    if(plugin == GLOBUS_NULL)
+    {
+        return globus_error_put(globus_error_construct_string(
+                GLOBUS_FTP_CLIENT_MODULE,
+                GLOBUS_NULL,
+                "[%s] NULL plugin at %s\n",
+                GLOBUS_FTP_CLIENT_MODULE->module_name,
+                myname));
+    }
+
+    result = globus_ftp_client_throughput_plugin_get_user_specific(
+              plugin,
+              (void **) &info);
+
+    if(result != GLOBUS_SUCCESS)
+    {
+        return result;
+    }
+
+    info->begin_cb      = begin_cb;
+    info->per_stripe_cb = per_stripe_cb;
+    info->total_cb      = total_cb;
+    info->complete_cb   = complete_cb;
+    info->user_specific = user_specific;
+
+    return GLOBUS_SUCCESS;
 }
