@@ -73,7 +73,9 @@ GSS_CALLCONV gss_inquire_cred(
     gss_cred_usage_t *                  cred_usage,
     gss_OID_set *                       mechanisms) 
 {
-    OM_uint32                           major_status = 0;
+    OM_uint32                           major_status = GSS_S_COMPLETE;
+    OM_uint32                           local_major_status;
+    OM_uint32                           local_minor_status;
     gss_cred_id_desc *                  cred_handle =
         (gss_cred_id_desc *)cred_handle_P;
     char *                              filename = NULL;
@@ -85,77 +87,96 @@ GSS_CALLCONV gss_inquire_cred(
 
     if (cred_handle == GSS_C_NO_CREDENTIAL)
     {
-        major_status = GSS_S_NO_CRED;
+        local_major_status = gss_acquire_cred(
+            &local_minor_status,
+            NULL,
+            GSS_C_INDEFINITE,
+            GSS_C_NO_OID_SET,
+            GSS_C_BOTH,
+            &cred_handle,
+            NULL,
+            NULL);
+
+        if(local_major_status != GSS_S_COMPLETE)
+        {
+            *minor_status = gsi_generate_minor_status();
+            major_status = GSS_S_NO_CRED;
+        }
     }
-    else
+
+    if (mechanisms != NULL)
     {
-        if (mechanisms != NULL)
+        *mechanisms = GSS_C_NO_OID_SET;
+    }
+    
+    if (cred_usage != NULL)
+    {
+        *cred_usage = cred_handle->cred_usage;
+    }
+    
+    
+    if (lifetime != NULL)
+    {
+        time_t                time_after;
+        time_t                time_now;
+        ASN1_UTCTIME *        asn1_time = NULL;
+        
+        asn1_time = ASN1_UTCTIME_new();
+        X509_gmtime_adj(asn1_time,0);
+        time_now = ASN1_UTCTIME_mktime(asn1_time);
+        time_after = ASN1_UTCTIME_mktime(
+            X509_get_notAfter(cred_handle->pcd->ucert));
+        *lifetime = (OM_uint32) time_after - time_now;
+        ASN1_UTCTIME_free(asn1_time);
+    }
+    
+    if (name != NULL)
+    {
+        if (*minor_status == 0xdee0)
         {
-            *mechanisms = GSS_C_NO_OID_SET;
-        }
-
-        if (cred_usage != NULL)
-        {
-            *cred_usage = cred_handle->cred_usage;
-        }
-
-
-        if (lifetime != NULL)
-        {
-            time_t                time_after;
-            time_t                time_now;
-            ASN1_UTCTIME *        asn1_time = NULL;
-            
-            asn1_time = ASN1_UTCTIME_new();
-            X509_gmtime_adj(asn1_time,0);
-            time_now = ASN1_UTCTIME_mktime(asn1_time);
-            time_after = ASN1_UTCTIME_mktime(
-                X509_get_notAfter(cred_handle->pcd->ucert));
-            *lifetime = (OM_uint32) time_after - time_now;
-            ASN1_UTCTIME_free(asn1_time);
-        }
-
-        if (name != NULL)
-        {
-            if (*minor_status == 0xdee0)
+            *minor_status = 0;
+            rc = proxy_marshal_tmp(cred_handle->pcd->ucert,
+                                   cred_handle->pcd->upkey,
+                                   NULL,
+                                   cred_handle->pcd->cert_chain,
+                                   &filename);
+            if(rc)
             {
-                *minor_status = 0;
-                rc = proxy_marshal_tmp(cred_handle->pcd->ucert,
-                                       cred_handle->pcd->upkey,
-                                       NULL,
-                                       cred_handle->pcd->cert_chain,
-                                       &filename);
-                if (rc)
+                major_status = GSS_S_FAILURE;
+                *minor_status = gsi_generate_minor_status();
+                if (filename)
                 {
-                    major_status = GSS_S_FAILURE;
-                    *minor_status = gsi_generate_minor_status();
-                    if (filename)
-                    {
-                        free(filename);
-                    }
-                }
-                else
-                {
-                    *name = filename;
-                    *minor_status = 0xdee1;
-                    /* DEE passback the char string */
-                    /* non standard, but then there is no standard */
+                    free(filename);
                 }
             }
             else
             {
-                major_status =
-                    gss_copy_name_to_name((gss_name_desc **)name,
-                                          cred_handle->globusid);
-
-                if (GSS_ERROR(major_status))
-                {
-                    *minor_status = gsi_generate_minor_status();
-                }
+                *name = filename;
+                *minor_status = 0xdee1;
+                /* DEE passback the char string */
+                /* non standard, but then there is no standard */
+            }
+        }
+        else
+        {
+            major_status =
+                gss_copy_name_to_name((gss_name_desc **)name,
+                                      cred_handle->globusid);
+            
+            if (GSS_ERROR(major_status))
+            {
+                *minor_status = gsi_generate_minor_status();
             }
         }
     }
     
 err:
+    
+    if(cred_handle_P == GSS_C_NO_CREDENTIAL &&
+       cred_handle != GSS_C_NO_CREDENTIAL)
+    {
+        gss_release_cred(&local_minor_status, &cred_handle);
+    }
+    
     return major_status;
 }

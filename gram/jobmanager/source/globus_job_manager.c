@@ -303,6 +303,13 @@ static
 int
 globus_l_jobmanager_fault_callback(void *user_arg, int fault_code);
 
+static int
+globus_l_gram_write_history_file_gen(char * request_string,
+                              char * job_history_file,
+                              char * globus_id,
+                              char * job_id,
+                              int status);
+
 /******************************************************************************
                        Define variables for external use
 ******************************************************************************/
@@ -424,11 +431,14 @@ int main(int argc,
     int                    save_logfile_on_errors_flag = 0;
     int                    krbflag = 0;
     int                    tmp_status;
+    int			   job_history_status;
     int                    publish_jobs_flag = 0;
     char                   *rsl_spec = GLOBUS_NULL; /* Must free! */
     char                   tmp_buffer[256];
     char                   job_reporting_file[512];
     char *                 job_reporting_dir = GLOBUS_NULL;
+    char                   job_history_file[512];
+    char *                 job_history_dir = GLOBUS_NULL;
     char *                 home_dir = NULL;
     char *                 client_contact_str = GLOBUS_NULL;
     char *                 my_url_base;
@@ -555,6 +565,7 @@ int main(int argc,
     GRAM_LOCK;
 
     *job_reporting_file = '\0';
+    *job_history_file = '\0';
 
     /* if -conf is passed then get the arguments from the file
      * specified
@@ -666,6 +677,11 @@ int main(int argc,
         {
 	    job_reporting_dir = globus_libc_strdup(argv[i+1]); i++;
         }
+        else if ((strcmp(argv[i], "-history") == 0)
+                 && (i + 1 < argc))
+        {
+            job_history_dir = globus_libc_strdup(argv[i+1]); i++;
+        }
         else if (strcmp(argv[i], "-publish-jobs") == 0)
         {
             /* NOP */ ;
@@ -773,7 +789,8 @@ int main(int argc,
                     "\t-e libexec dir\n"
                     "\t-condor-arch arch, i.e. SUN4x\n"
                     "\t-condor-os os, i.e. SOLARIS26\n"
-                    "\t-job-reporting-dir\n"
+                    "\t-job-reporting-dir job-reporting-dir\n"
+		    "\t-history job-history-dir\n"
                     "\t-save-logfile [ always | on_errors ]\n"
                     "\t-globus-tcp-port-range <min port #>,<max port #>\n"
                     "\n"
@@ -2234,6 +2251,31 @@ int main(int argc,
 	}
 
 
+       /* if we are saving the job history file, then setup the necessary variables */
+       if (job_history_dir)
+       {
+           if ((final_rsl_spec = globus_rsl_unparse(rsl_tree)) == GLOBUS_NULL)
+                final_rsl_spec = (char *) globus_libc_strdup("RSL UNKNOWN");
+
+           sprintf( job_history_file,
+                     "%s/history.%s-%s_%s",
+                     job_history_dir,
+                     my_host,
+                     conf.type,
+                     request->uniq_id );
+
+           globus_jobmanager_log( request->jobmanager_log_fp,
+                 "JM: job_history_file = %s\n", job_history_file);
+
+           globus_l_gram_write_history_file(final_rsl_spec,
+                                          job_history_file,
+                                          graml_env_globus_id,
+                                          request->job_id,
+                                          request->status);
+           job_history_status = request->status;
+        }
+
+
         /* if we are publishing jobs, then setup the necessary variables */
         if (job_reporting_dir)
         {
@@ -2336,6 +2378,16 @@ int main(int argc,
 			request->status=GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
 		    }
 
+		    if(job_history_dir)
+		    {
+                        globus_l_gram_write_history_file(final_rsl_spec,
+                                                      job_history_file,
+                                                      graml_env_globus_id,
+                                                      request->job_id,
+                                                      request->status);
+                        job_history_status = request->status;
+		    }
+
 		    if ((request->status ==
 			 GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE) ||
 			(request->status ==
@@ -2367,6 +2419,24 @@ int main(int argc,
 		}
 	    }
         } /* endwhile */
+
+        /*If a job is canceled, it will change jm_done to GLOBUS_TRUE. 
+          And the main() never enters last while loop that calls request_check(). 
+          But we still need to write the history file at this case. 
+          
+          The job_history_status is used to save the last job status that is stored in
+          history file. If it is different with request->status, we have to write 
+          history file. */
+ 
+        if((job_history_dir) && (job_history_status != request->status))
+        {
+            globus_l_gram_write_history_file(final_rsl_spec,
+                                             job_history_file,
+                                             graml_env_globus_id,
+                                             request->job_id,
+                                             request->status);
+            job_history_status = request->status;
+        }
 
 	while (!graml_jm_can_exit)
 	{
@@ -6252,4 +6322,86 @@ globus_l_jobmanager_fault_callback(void *user_arg, int fault_code)
 
     return 0;
 } /* globus_l_jobmanager_fault_callback() */
+
+/******************************************************************************
+Function:       globus_l_gram_write_history_file()
+Description:
+Parameters:
+Returns:
+******************************************************************************/
+static int
+globus_l_gram_write_history_file(char * request_string,
+                              char * job_history_file,
+                              char * globus_id,
+                              char * job_id,
+                              int status)
+{
+    FILE *       history_fp;
+    char         status_str[64];
+    struct stat  statbuf;
+    unsigned long timestamp;
+
+    globus_jobmanager_log( graml_log_fp,
+                           "JM: in globus_l_gram_write_history_file\n");
+
+    timestamp = time(0);
+
+    switch(status)
+    {
+        case GLOBUS_GRAM_PROTOCOL_JOB_STATE_PENDING:
+            strcpy(status_str, "PENDING   ");
+            break;
+        case GLOBUS_GRAM_PROTOCOL_JOB_STATE_ACTIVE:
+            strcpy(status_str, "ACTIVE    ");
+            break;
+        case GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED:
+            strcpy(status_str, "FAILED    ");
+            break;
+        case GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE:
+            strcpy(status_str, "DONE      ");
+            break;
+        case GLOBUS_GRAM_PROTOCOL_JOB_STATE_SUSPENDED:
+            strcpy(status_str, "SUSPENDED ");
+            break;
+        default:
+            strcpy(status_str, "UNKNOWN   ");
+    }
+
+    if (stat(job_history_file, &statbuf) == 0)
+    {
+        /* the file exists, so just append a line which has the  
+         * job status and timestamp
+         */
+        if ((history_fp = fopen(job_history_file, "a+")) == NULL)
+        {
+            globus_jobmanager_log( graml_log_fp,
+                 "JM: Failed opening job history file %s\n",
+                 job_history_file);
+            return(1);
+        }
+        fprintf(history_fp, "%s\t%10d\n", status_str,timestamp);
+    }
+    else
+    {
+        if ((history_fp = fopen(job_history_file, "w")) == NULL)
+        {
+           globus_jobmanager_log(graml_log_fp,
+               "JM: Failed opening job history file %s\n",
+               job_history_file);
+           return(1);
+        }
+        else
+        {
+            fprintf(history_fp, "%s\n", request_string);
+            fprintf(history_fp, "%s\n", graml_job_contact);
+            fprintf(history_fp, "%s\n", job_id);
+            fprintf(history_fp, "%s\n", globus_id);
+            fprintf(history_fp, "%s\t%10d\n", status_str,timestamp);
+        }
+    }
+
+    fclose(history_fp);
+
+    return(0);
+} /* globus_l_gram_write_history_file() */
 

@@ -17,6 +17,16 @@ globus_source ${GLOBUS_LOCATION}/libexec/globus-sh-tools.sh
 
 PROGRAM_NAME=`echo $0 |${GLOBUS_SH_SED-sed} 's|.*/||g'`
 
+PROGRAM_VERSION=`echo '$Revision$'| ${GLOBUS_SH_SED-sed} -e 's|\\$||g' -e 's|Revision: \(.*\)|\1|'`
+
+VERSION="@VERSION@"
+
+PACKAGE="@PACKAGE@"
+
+DIRT_TIMESTAMP="@DIRT_TIMESTAMP@"
+
+DIRT_BRANCH_ID="@DIRT_BRANCH_ID@"
+
 short_usage="$PROGRAM_NAME [-help] -dn <DN> -ln <local name> [-d] [-f file]"
 
 long_usage() {
@@ -29,8 +39,8 @@ ${short_usage}
     Options:
       -help, -usage           Displays help
       -version                Displays version
-      -dn <DN>                Distuingished Name (DN) to add
-      -ln <local name>        Local Login Name (LN) to map DN to
+      -dn <DN>                Distuingished Name (DN) to delete
+      -ln <local name>        Local Login Name (LN) to delete
       -dryrun, -d             Shows what would be done but will not
                               delete the entry
       -mapfile file, -f file  Path of gridmap file to be used
@@ -38,7 +48,7 @@ ${short_usage}
 EOF
 }
 
-globus_source $libexecdir/globus-args-parser-header
+globus_source $libexecdir/globus-args-parser-header $@
 
 ##############################################
 Cleanup()
@@ -69,7 +79,8 @@ fi
 
 # Main Logic
 
-GRID_MAP_FILE=${sysconfdir}/grid-mapfile
+secconfdir="/etc/grid-security"
+GRID_MAP_FILE=${secconfdir}/grid-mapfile
 GRID_MAP_FILE_COPY=${tmpdir}/mapfile.copy.$$
 NEW_GRID_MAP_FILE=${tmpdir}/new_mapfile.$$
 CONSISTANCY_CHECK=${tmpdir}/consistancy_check.$$
