@@ -214,7 +214,7 @@ globus_hashtable_copy(
     return GLOBUS_SUCCESS;
 
 error_alloc:
-    globus_hashtable_destroy(dest_itable);
+    globus_hashtable_destroy(dest_table);
     
 error_init:
     *dest_table = GLOBUS_NULL;

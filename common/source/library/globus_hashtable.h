@@ -31,6 +31,17 @@ typedef int
     void *                              key2);
 
 /**
+ * datum copy func
+ */
+typedef void
+(*globus_hashtable_copy_func_t)(
+    void **                             dest_key,
+    void **                             dest_datum,
+    void *                              src_key,
+    void *                              src_datum);
+
+
+/**
  * Destructor callback for use with globus_hashtable_destroy_all
  */
 typedef void
@@ -50,6 +61,17 @@ globus_hashtable_init(
     globus_hashtable_hash_func_t        hash_func,
     globus_hashtable_keyeq_func_t       keyeq_func);
 
+/**
+ * Initialize dest_table and copy src_table into it. copy_func is called for
+ * each datum in src_table. if copy_func is null, dest will contain same
+ * values as src.  does not duplicate ordering of entries in src_table.
+ */
+int
+globus_hashtable_copy(
+    globus_hashtable_t *                dest_table,
+    globus_hashtable_t *                src_table,
+    globus_hashtable_copy_func_t        copy_func);
+    
 /**
  * Lookup datum associated with key.  NULL if not found
  */
