@@ -38,7 +38,8 @@ CVS Information:
 #endif
 
 #ifdef GSS_AUTHENTICATION
-#include "grami_ggg.h"
+#include "globus_gss_assist.h"
+#include <gssapi.h>
 #endif
 
 /******************************************************************************
@@ -119,13 +120,6 @@ globus_l_start_time_callback_handler(globus_nexus_endpoint_t * endpoint,
                                   globus_nexus_buffer_t * buffer,
                                   globus_bool_t is_non_threaded);
 
-#ifdef GSS_AUTHENTICATION
-static int
-grami_ggg_get_token_nexus(void * arg, void ** bufp, size_t * sizep);
-
-static int 
-grami_ggg_send_token_nexus( void * arg,  void * buf, size_t size);
-#endif
 /******************************************************************************
                        Define module specific variables
 ******************************************************************************/
@@ -177,101 +171,12 @@ static int		globus_l_is_initialized = 0;
     assert (!err); \
 }
 
-/******************************************************************************
-Function:	grami_ggg_get_token_nexus()
-Description:
-Parameters:
-Returns:
-******************************************************************************/
-static int
-grami_ggg_get_token_nexus(void * arg, void ** bufp, size_t * sizep)
-{
-    unsigned char int_buf[4];
-    int           size;
-    void *        cp;
-    int           err = 0;
-    int *         fd = (int *)arg;
-	
-    if (_nx_read_blocking(*fd, int_buf, 4))
-    {
-        fprintf(stderr,
-        "grami_ggg_get_token_nexus(): reading token length\n");
-        return -1;
-    }
-
-    size = (  ( ((unsigned int) int_buf[0]) << 24)
-            | ( ((unsigned int) int_buf[1]) << 16)
-            | ( ((unsigned int) int_buf[2]) << 8)
-            |   ((unsigned int) int_buf[3]) );
-
-    grami_fprintf(globus_l_print_fp, "READ token size %d %8.8x\n", size, size);
-
-    if (size > 1<<24 || size < 0) 
-    {
-        size = 80;
-        err = 1;
-    }
-
-    cp = (char *) globus_malloc(size);
-    if (!cp) 
-    {
-        return -1;
-    }
-
-    if (_nx_read_blocking(*fd, (char *) cp, size))
-    {
-        fprintf(stderr,
-            "grami_ggg_get_token_nexus(): reading token\n");
-        return -2;
-    } 
-
-    if (err)
-    {
-        fprintf (stderr," bad token  %c%c%c%c%s\n",
-        int_buf[0], int_buf[1], int_buf[2], int_buf[3], cp);
-        return (-3);
-    }
-    *bufp = cp;
-    *sizep = size;
-
-    return 0;
-}
-
-/******************************************************************************
-Function:	grami_ggg_send_token_nexus()
-Description:
-Parameters:
-Returns:
-******************************************************************************/
-static int
-grami_ggg_send_token_nexus( void *arg,  void *buf, size_t size)
-{
-    unsigned char  int_buf[4];
-    int *          fd = (int *) arg;
-
-    int_buf[0] =  size >> 24;
-    int_buf[1] =  size >> 16;
-    int_buf[2] =  size >>  8;
-    int_buf[3] =  size;
-
-    if (_nx_write_blocking(*fd, int_buf, 4)) 
-    {
-        fprintf(stderr,
-        "grami_ggg_send_token_nexus(): sending token length");
-        return -1;
-    }
-
-    grami_fprintf(globus_l_print_fp, "WRITE token %d\n", size);
-
-    if (_nx_write_blocking(*fd, (char *) buf, size))
-    {
-        fprintf(stderr,
-        "grami_ggg_send_token_nexus: sending token length");
-        return -2;
-    }
-    return 0;
-}
-
+#ifdef GSS_AUTHENTICATION
+/*
+ * GSSAPI - credential handle for this process
+ */
+static gss_cred_id_t credential_handle = GSS_C_NO_CREDENTIAL;
+#endif
 
 /******************************************************************************
 Function:	globus_i_gram_client_activate()
@@ -285,6 +190,8 @@ globus_i_gram_client_activate(void)
 {
     int rc;
     int i;
+    OM_uint32 major_status;
+    OM_uint32 minor_status;
 
     /*
      * Initialize nexus
@@ -312,11 +219,32 @@ globus_i_gram_client_activate(void)
     
     globus_l_print_fp = NULL;
 
-    /* get the initial security credential for the client */ 
-    /* Do it once up front incase it prompts or fails     */
+    /*
+     * Get the GSSAPI security credential for this process.
+     * we save it in static storage, since it is only
+     * done once and can be shared by many threads.
+     * with some GSSAPI implementations a prompt to the user
+     * may be done from this routine.
+     *
+     * we will use the assist version of acquire_cred
+     */
 
-    rc = grami_ggg_init_first();
-    return (rc);
+    major_status = globus_gss_assist_acquire_cred(&minor_status,
+                        GSS_C_INITIATE,
+                        &credential_handle);
+
+    if (major_status != GSS_S_COMPLETE)
+    {
+        globus_gss_assist_display_status(stderr,
+                "gram_init failure:",
+                major_status,
+                minor_status,
+                0);
+
+        return GRAM_ERROR_AUTHORIZATION; /* need better return code */
+    }
+
+    return 0;
 
 } /* globus_i_gram_client_activate() */
 
@@ -339,6 +267,19 @@ globus_i_gram_client_deactivate(void)
     else
     {
 	int err;
+
+ 	/*
+     * GSSAPI - cleanup of the credential
+     * don't really care about returned status
+     */
+
+    if (credential_handle != GSS_C_NO_CREDENTIAL) 
+	{
+        OM_uint32 minor_status;
+        gss_release_cred(&minor_status,
+                         &credential_handle);
+    }
+
 	err = globus_mutex_destroy(&globus_l_mutex);
 	assert (!err);
 	globus_l_is_initialized = 0;
@@ -405,6 +346,13 @@ globus_gram_client_job_request(char * gatekeeper_url,
     globus_nexus_endpoint_t      reply_ep;
     globus_nexus_startpoint_t    reply_sp;
     globus_l_job_request_monitor_t  job_request_monitor;
+    /* GSSAPI assist variables */
+    OM_uint32                    major_status = 0;
+    OM_uint32                    minor_status = 0;
+    int                          token_status = 0;
+    OM_uint32                    ret_flags = 0;
+    gss_ctx_id_t                 context_handle = GSS_C_NO_CONTEXT;
+
 
     grami_fprintf(globus_l_print_fp, "in globus_gram_client_job_request()\n");
 
@@ -538,31 +486,65 @@ globus_gram_client_job_request(char * gatekeeper_url,
 
     /* Do gss authentication here */
 #ifdef GSS_AUTHENTICATION
-    /* For now will will use the hostname as the globusid of the 
-     * gatekeeper to which we whish to authenticate. Later theis will
-     * need to be supplied. 
-     * DEE 8/11/97
+    /*
+     * Now that TCP connection established, use the connection
+     * to do the GSSAPI authentication to the gatekeeper
+     * we will use the assist functions.
+     * Since this is user to the gatekeeper, we want delegation
+     * if possible. We specify the services we would like,
+     * mutual authentication, delegation.
+     * We might also want sequence, and integraty.
      */
 
+
     grami_fprintf(globus_l_print_fp,
-		  "Starting authentication to %s\n", gatekeeper_host);
+		  "Starting authentication to %s\n", gatekeeper_princ);
 
-    rc =  grami_ggg_init(gatekeeper_princ,
-			 grami_ggg_get_token_nexus,
-			 (void *) &gatekeeper_fd,
-			 grami_ggg_send_token_nexus,
-			 (void *) &gatekeeper_fd);
+    major_status = globus_gss_assist_init_sec_context(&minor_status,
+                    credential_handle,
+                    &context_handle,
+                    gatekeeper_princ,
+                    GSS_C_DELEG_FLAG|GSS_C_MUTUAL_FLAG,
+                    &ret_flags,
+                    &token_status,
+                    globus_gss_assist_token_get_nexus,
+                    (void *) &gatekeeper_fd,
+                    globus_gss_assist_token_send_nexus,
+                    (void *) &gatekeeper_fd);
 
-    if (rc != 0)
+    if (major_status != GSS_S_COMPLETE)
     {
-	fprintf(stderr, 
-		"GSS authentication failed. rc = %8.8x\n", rc);
-	globus_nexus_fd_close(gatekeeper_fd);
-	GLOBUS_L_UNLOCK;
-	return (GLOBUS_GRAM_CLIENT_ERROR_AUTHORIZATION);
+        globus_gss_assist_display_status(stderr,
+                    "GSS Authentication failure:globus_gram_client\n ",
+                     major_status,
+                     minor_status,
+                     token_status);
+
+
+		globus_nexus_fd_close(gatekeeper_fd);
+		GLOBUS_L_UNLOCK;
+		return (GLOBUS_GRAM_CLIENT_ERROR_AUTHORIZATION);
     }
 
-    if (grami_ggg_get_token_nexus((void *) &gatekeeper_fd,
+    /* We still have the GSSAPI context setup and could use
+     * some of the other routines, such as get_mic, verify_mic
+     * at this point. But in this client we don't.
+     * But we need to do the gss_delete_sec_context
+     * sometime before returning from this module.
+     */
+
+     gss_delete_sec_context(&minor_status,
+            &context_handle,
+            GSS_C_NO_BUFFER);
+
+    /*
+     * Use the token_get routine to read a final status
+     * message from the gatekeeper after the GSSAPI
+     * authentication has completed. This is done
+     * since authorization is done outside of GSSAPI.
+     */
+
+    if (globus_gss_assist_token_get_nexus((void *) &gatekeeper_fd,
 				  (void **) &auth_msg_buf, &auth_msg_buf_size))
     {
 	fprintf(stderr, "Authoirization message not received");
@@ -580,6 +562,7 @@ globus_gram_client_job_request(char * gatekeeper_url,
 
     grami_fprintf(globus_l_print_fp,
 		  "Authentication/authorization complete\n");
+
 #else
     grami_fprintf(globus_l_print_fp,
 		  "WARNING: No authentication performed\n");
