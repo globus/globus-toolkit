@@ -71,34 +71,10 @@ globus_gass_server_ez_shutdown(globus_gass_transfer_listener_t listener);
 /******************************************************************************
  *                    Module Definition
  *****************************************************************************/
-extern int
-globus_l_gass_server_ez_activate(void);
 
-extern int
-globus_l_gass_server_ez_deactivate(void);
+extern globus_module_descriptor_t globus_i_gass_server_ez_module;
 
-static globus_module_descriptor_t globus_l_gass_server_ez_module =
-{
-    "globus_gass_server_ez",
-    globus_l_gass_server_ez_activate,
-    globus_l_gass_server_ez_deactivate,
-    GLOBUS_NULL
-};
-
-#define GLOBUS_L_GASS_SERVER_EZ_MODULE (&globus_l_gass_server_ez_module)
-#define GLOBUS_GASS_SERVER_EZ_MODULE (&globus_l_gass_server_ez_module)
-
-/*#define GLOBUS_GASS_SERVER_EZ_MODULE (&globus_gass_server_ez_module)
-
-static globus_module_descriptor_t globus_gass_server_ez_module =
-{
-    "globus_gass_server_ez",
-    GLOBUS_NULL,
-    GLOBUS_NULL,
-    GLOBUS_NULL
-};*/
-
-
+#define GLOBUS_GASS_SERVER_EZ_MODULE (&globus_i_gass_server_ez_module)
 
 EXTERN_C_END
 

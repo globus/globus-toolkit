@@ -46,11 +46,9 @@ typedef struct globus_l_gass_server_ez_s
 typedef struct globus_gass_server_ez_request_s
 {
     int fd;
-    unsigned long timestamp;
     globus_byte_t *line_buffer;
     unsigned long line_buffer_used;
     unsigned long line_buffer_length;
-    globus_bool_t special;
     globus_bool_t linebuffer;
     unsigned short port;
 } globus_gass_server_ez_request_t;
@@ -58,23 +56,21 @@ typedef struct globus_gass_server_ez_request_s
 /******************************************************************************
                           Module specific variables
 ******************************************************************************/
-#define GLOBUS_L_GASS_SERVER_EZ_MAX_LISTENERS 65536
-static globus_l_gass_server_ez_t *globus_l_gass_servers[GLOBUS_L_GASS_SERVER_EZ_MAX_LISTENERS];
 
-static globus_hashtable_t globus_i_gass_server_ez_listeners;
+static globus_hashtable_t globus_l_gass_server_ez_listeners;
 
 static globus_mutex_t globus_l_gass_server_ez_mutex;
 
 /******************************************************************************
                           Module definition
 ******************************************************************************/
-/*static int
+static int
 globus_l_gass_server_ez_activate(void);
 
 static int
 globus_l_gass_server_ez_deactivate(void);
 
-static globus_module_descriptor_t globus_l_gass_server_ez_module =
+globus_module_descriptor_t globus_i_gass_server_ez_module =
 {
     "globus_gass_server_ez",
     globus_l_gass_server_ez_activate,
@@ -82,9 +78,7 @@ static globus_module_descriptor_t globus_l_gass_server_ez_module =
     GLOBUS_NULL
 };
 
-#define GLOBUS_L_GASS_SERVER_EZ_MODULE (&globus_l_gass_server_ez_module)
-#define GLOBUS_GASS_SERVER_EZ_MODULE (&globus_l_gass_server_ez_module)
-*/
+
 /******************************************************************************
                           Module specific prototypes
 ******************************************************************************/
@@ -209,7 +203,7 @@ globus_gass_server_ez_init(globus_gass_transfer_listener_t * listener,
     server->listener=*listener;
     server->reqattr=reqattr;
 
-    globus_hashtable_insert(&globus_i_gass_server_ez_listeners,
+    globus_hashtable_insert(&globus_l_gass_server_ez_listeners,
 			    (void *)*listener,
 			    server);
 
@@ -276,32 +270,17 @@ globus_gass_server_ez_put_memory_done(void * arg,
     int status;
     const int buffer_length=1024;
     
-    /* This callback handles line-buffered put requests. Whenever this
-     * is called request->outstanding should be '0', because we only
-     * feed one buffer into the globus_gass_server library at a time
+    /* This callback handles line-buffered put requests. 
      */    
-    /*r = (globus_gass_server_ez_request_t *) request->user_pointer;*/
+
     r = (globus_gass_server_ez_request_t *)arg;
-
-/*    outstanding = request->outstanding;
-    status = request->status; */
-
-    outstanding=0;	/*don't know if this is right, but... */
 
     status=globus_gass_transfer_request_get_status(request);
     lastnl = 0UL;
 
-    if(r==GLOBUS_NULL)
-    {
-	r=(globus_gass_server_ez_request_t *)globus_malloc(sizeof(globus_gass_server_ez_request_t));
-	r->line_buffer=globus_malloc(80);
-	r->line_buffer_used= 0UL;
-	r->line_buffer_length = 80UL;
-	r->linebuffer = GLOBUS_TRUE;
-    }
 
     /* find last \n in the buffer, since we are line-buffering */
-    max_length=buffer_length;
+    max_length=receive_length;
     for(x = max_length; x > 0UL; x--)
     {
 	if(buffer[x-1] == '\n')
@@ -311,7 +290,7 @@ globus_gass_server_ez_put_memory_done(void * arg,
 	}
     }
     
-    if(status == GLOBUS_GASS_REQUEST_PENDING)
+    if(status == GLOBUS_GASS_TRANSFER_REQUEST_PENDING && !last_data)
     {
 	/* data arrived, and more will be available, so write up until
 	 * the last \n we've received and save the rest
@@ -366,9 +345,6 @@ globus_gass_server_ez_put_memory_done(void * arg,
     }
     else
     {
-	struct stat s;
-
-	s.st_mtime = (time_t) 0;
 	
 	if(r->line_buffer != GLOBUS_NULL &&
 	   r->line_buffer_used != 0UL)
@@ -384,33 +360,25 @@ globus_gass_server_ez_put_memory_done(void * arg,
 				receive_length);
 	}
 
-	/* This should _always_ be the case */
-	if(outstanding == 0)
-	{
-	    fstat(r->fd, &s);
 	    
-	    if(r->special == GLOBUS_FALSE)
-	    {
-		globus_libc_close(r->fd);
-	    }
-	    r->timestamp = (unsigned long) s.st_mtime;
+	if(r->fd!=fileno(stdout) && r->fd!=fileno(stderr))
+	{
+  	    globus_libc_close(r->fd);
+	}
 
-	    if(buffer != GLOBUS_NULL)
-	    {
-		globus_free(buffer);
-		/*globus_gass_server_put_request_memory_free(request,
-							   buffer);*/
-	    }
+	if(buffer != GLOBUS_NULL)
+	{
+	    globus_free(buffer);
+	}  
 
-	    globus_gass_transfer_request_destroy(request);
+	globus_gass_transfer_request_destroy(request);
 		
 
-	    if(r->linebuffer)
-	    {
-		globus_free(r->line_buffer);
-	    }
-	    globus_free(r);
-	}
+	if(r->linebuffer)
+	{
+	    globus_free(r->line_buffer);
+	} 
+	globus_free(r);
     }
 } /* globus_l_gass_server_ez_put_memory_done() */
 
@@ -421,8 +389,9 @@ globus_l_gass_server_ez_close_callback(
 {
     int rc;
 
-	
-	/* should be cleaning up things related to the listener here*/ 
+	/* should be cleaning up things related to the listener here
+	 * get rid of server struct stuff (hashtable) etc.
+	*/ 
 
 }
 
@@ -469,9 +438,9 @@ globus_l_gass_server_ez_register_accept_callback(
     globus_size_t total_length;
     struct stat	statstruct;
     globus_byte_t * buf;
-    globus_size_t amt;
+    int amt;
     int reason;
-    int flags;
+    int flags=0;
 
     
     subjectname=globus_gass_transfer_request_get_subject(request);
@@ -493,7 +462,7 @@ globus_l_gass_server_ez_register_accept_callback(
 
     /* lookup our options */
     s=(globus_l_gass_server_ez_t *)globus_hashtable_lookup(
-                                &globus_i_gass_server_ez_listeners,
+                                &globus_l_gass_server_ez_listeners,
                                 listener);
 
 
@@ -625,8 +594,9 @@ globus_l_gass_server_ez_register_accept_callback(
                                             GLOBUS_FALSE,
                                             globus_l_gass_server_ez_get_callback,
                                             (void *) rc);
+	default:
 	deny:
-	  globus_gass_transfer_deny(request, 418, "Im a Teapot");
+	  globus_gass_transfer_deny(request, 400, "Client Error");
 	  globus_gass_transfer_request_destroy(request);
 
 	}
@@ -662,11 +632,9 @@ globus_l_gass_server_ez_get_callback(
     globus_size_t amt;
 
     fd=(int) arg;
-        amt = globus_libc_read(fd, bytes, len);
-        if(last_data)
-        {
-            goto finish_up;
-        }
+    if(!last_data)
+    {
+	amt = globus_libc_read(fd, bytes, len);
         if(amt == 0)
         {
             globus_gass_transfer_send_bytes(request,
@@ -686,8 +654,8 @@ globus_l_gass_server_ez_get_callback(
                                             arg);
         }
         return;
+    }
 
-  finish_up:
     if((fd!=fileno(stdout))&&(fd!=fileno(stderr)))
     {
         close(fd);
@@ -718,28 +686,20 @@ globus_l_gass_server_ez_put_callback(
     globus_size_t amt;
 
     fd = (int) arg;
-    switch(globus_gass_transfer_request_get_type(request))
-    {
-      case GLOBUS_GASS_TRANSFER_REQUEST_TYPE_APPEND:
-      case GLOBUS_GASS_TRANSFER_REQUEST_TYPE_PUT:
-        fd = (int) arg;
 
-        globus_libc_write(fd, bytes, len);
-        if(last_data)
-        {
-            goto finish_up;
-        }
+    globus_libc_write(fd, bytes, len);
+    if(!last_data)
+    {
         globus_gass_transfer_receive_bytes(request,
                                            bytes,
                                            1024,
                                            1,
                                            globus_l_gass_server_ez_put_callback,
                                            arg);
-        return ;
-
+    return ;
     }
-      finish_up:
-    if((fd!=fileno(stdout))&&(fd!=fileno(stderr)))
+
+    if((fd!=fileno(stdout)) && (fd!=fileno(stderr)))
     {
         close(fd);
     }
@@ -845,28 +805,29 @@ Parameters:
 
 Returns: 
 ******************************************************************************/
-int
+static int
 globus_l_gass_server_ez_activate(void)
 {
     int rc;
     int i;
 
    
-    globus_module_activate(GLOBUS_COMMON_MODULE); 
+    rc = globus_module_activate(GLOBUS_COMMON_MODULE); 
+    if(rc != GLOBUS_SUCCESS)
+    {
+        return rc;
+    }
+	
     rc = globus_module_activate(GLOBUS_GASS_TRANSFER_MODULE);
     if(rc != GLOBUS_SUCCESS)
     {
 	return rc;
     }
 
-    for(i = 0; i < GLOBUS_L_GASS_SERVER_EZ_MAX_LISTENERS; i++)
-    {
-	globus_l_gass_servers[i] = GLOBUS_NULL;
-    }
     globus_mutex_init(&globus_l_gass_server_ez_mutex,
 		      GLOBUS_NULL);
 
-    globus_hashtable_init(&globus_i_gass_server_ez_listeners,
+    globus_hashtable_init(&globus_l_gass_server_ez_listeners,
                           16,
                           globus_hashtable_int_hash,
                           globus_hashtable_int_keyeq);
@@ -883,7 +844,7 @@ Parameters:
 
 Returns: 
 ******************************************************************************/
-int
+static int
 globus_l_gass_server_ez_deactivate(void)
 {
     int rc;
@@ -891,10 +852,10 @@ globus_l_gass_server_ez_deactivate(void)
     
     globus_mutex_destroy(&globus_l_gass_server_ez_mutex);
 
-    globus_hashtable_destroy(&globus_i_gass_server_ez_listeners);
-    
     rc = globus_module_deactivate(GLOBUS_GASS_TRANSFER_MODULE);
-    globus_module_deactivate(GLOBUS_COMMON_MODULE);
+    globus_hashtable_destroy(&globus_l_gass_server_ez_listeners);
+
+    rc|=globus_module_deactivate(GLOBUS_COMMON_MODULE);
 
     return rc;
 } /* globus_l_gass_server_ez_deactivate() */
