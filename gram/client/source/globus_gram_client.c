@@ -61,7 +61,7 @@ typedef struct
     globus_l_gram_client_callback_type_t
 					type;
     volatile globus_bool_t		done;
-    volatile int			errorcode;
+    int					errorcode;
 
     /* For job request only */
     char *				contact;
@@ -150,6 +150,11 @@ int
 globus_l_gram_client_monitor_destroy(
     globus_l_gram_client_monitor_t *	monitor);
 
+int
+globus_i_gram_client_deactivate(void);
+
+int
+globus_i_gram_client_activate(void);
 /******************************************************************************
                        Define module specific variables
 ******************************************************************************/
@@ -648,15 +653,38 @@ globus_gram_client_register_job_request(
 }
 /* globus_gram_client_register_job_request() */
 
-/******************************************************************************
-Function:	globus_gram_client_job_request()
-Description:
-Parameters:
-Returns:
-******************************************************************************/
+/**
+ * Request a job be started.
+ * @ingroup globus_gram_client_job_functions
+ *
+ * Request access to interactive resources at the current time. A job request
+ * is atomic: either all of the requested processes are created, or none are
+ * created. 
+ *
+ * @param resource_manager_contact
+ *        A NULL-terminated character string containing a
+ *        @link globus_gram_resource_manager_contact GRAM contact@endlink.
+ * @param description
+ *        An RSL description of the requested job. A GRAM RSL consists of
+ *        a conjunction of
+ *        @link globus_gram_rsl_parameters RSL parameters @endlink.
+ * @param job_state_mask
+ *         0, a bitwise OR of the GLOBUS_GRAM_PROTOCOL_JOB_STATE_* states, or
+ *         GLOBUS_GRAM_PROTOCOL_JOB_STATE_ALL.
+ * @param callback_contact
+ *        The URL which will receive all messages about the job.
+ * @param job_contact
+ *        In a successful case, this is set to a unique identifier for each job.
+ *
+ * @return
+ * This function returns GLOBUS_SUCCESS if successful,
+ * otherwise one of the GLOBUS_GRAM_PROTOCOL_ERROR values is returned.
+ *
+ * @see @ref globus_gram_resource_manager_contact
+ */
 int 
 globus_gram_client_job_request(
-    char *				gatekeeper_contact,
+    char *				resource_manager_contact,
     const char *			description,
     const int				job_state_mask,
     const char *			callback_url,
@@ -672,7 +700,7 @@ globus_gram_client_job_request(
 
     globus_l_gram_client_monitor_init(&monitor);
 
-    rc = globus_l_gram_client_job_request(gatekeeper_contact,
+    rc = globus_l_gram_client_job_request(resource_manager_contact,
 	                                  description,
 					  job_state_mask,
 					  callback_url,
@@ -703,24 +731,6 @@ globus_gram_client_job_request(
     return rc;
 }
 /* globus_gram_client_job_request() */
-
-
-/******************************************************************************
-Function:	globus_gram_client_job_check()
-Description:
-Parameters:
-Returns:
-******************************************************************************/
-int 
-globus_gram_client_job_check(char * gatekeeper_url,
-               const char * description,
-               float required_confidence,
-               globus_gram_client_time_t * estimate,
-               globus_gram_client_time_t * interval_size)
-{
-    return(0);
-} /* globus_gram_client_job_check() */
-
 
 /**
  * Error code translation.
