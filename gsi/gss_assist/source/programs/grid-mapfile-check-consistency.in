@@ -95,6 +95,7 @@ else
     fi
 fi
 
+RC=0
 
     # Check for duplicate entries
 
@@ -102,6 +103,7 @@ duplicates=`${GLOBUS_SH_CAT-cat} $GRID_MAP_FILE | ${GLOBUS_SH_SORT-sort} | ${GLO
 if [ -n "$duplicates" ] ; then
     echo "The following entry(s) is/are duplicated"
     echo "$duplicates"
+    RC=1
 fi
 
 
@@ -122,6 +124,7 @@ do
         if [ -z "$term_check" ]; then
             echo "The following entry is missing a closing double quote"
             echo "$line"
+            RC=1
         fi
 
         dn=`echo $line | cut -f2 -d\"`
@@ -140,6 +143,7 @@ do
     if [ -n "$remaining_line" ]; then
       echo "The following entry has extra text at the end and may be malformed"
       echo "$line"
+      RC=1
     fi
 
     # Check for DN / LN pairs
@@ -155,6 +159,7 @@ do
     then
         echo "The following entry is missing a O= or CN= field"
         echo "$line"
+        RC=1
     fi
 
 
@@ -166,10 +171,11 @@ do
             echo "The following entry contains an invalid login name"
             echo "$line"
             echo "The login name not found is: $name"
+            RC=1
         fi                
     done
 
 done < $GRID_MAP_FILE
 
-exit 0
+exit $RC
 
