@@ -704,11 +704,11 @@ globus_l_xio_read_write_callback_kickout(
  *  will come back up via the normal routes with an error.
  */
 globus_result_t
-globus_l_xio_operation_cancel(
+globus_i_xio_operation_cancel(
     globus_i_xio_op_t *                     op)
 {
     globus_bool_t                           tmp_rc;
-    GlobusXIOName(globus_l_xio_operation_cancel);
+    GlobusXIOName(globus_i_xio_operation_cancel);
 
     GlobusXIODebugInternalEnter();
 
@@ -1301,7 +1301,7 @@ globus_l_xio_register_close(
             if(handle->open_op != NULL)
             {
                 /* we delay the pass close until the open callback */
-                globus_l_xio_operation_cancel(handle->open_op);
+                globus_i_xio_operation_cancel(handle->open_op);
 
                 /* this next line is strange.  what happens is this,
                    typically read if open comes back with a failure we
@@ -1320,7 +1320,7 @@ globus_l_xio_register_close(
                     list = globus_list_rest(list))
                 {
                     tmp_op = (globus_i_xio_op_t *) globus_list_first(list);
-                    globus_l_xio_operation_cancel(tmp_op);
+                    globus_i_xio_operation_cancel(tmp_op);
                 }
     
                 for(list = handle->write_op_list;
@@ -1328,7 +1328,7 @@ globus_l_xio_register_close(
                     list = globus_list_rest(list))
                 {
                     tmp_op = (globus_i_xio_op_t *) globus_list_first(list);
-                    globus_l_xio_operation_cancel(tmp_op);
+                    globus_i_xio_operation_cancel(tmp_op);
                 }
             }
         }
@@ -1445,7 +1445,7 @@ globus_l_xio_handle_cancel_operations(
             }
             else
             {
-                res = globus_l_xio_operation_cancel(xio_handle->open_op);
+                res = globus_i_xio_operation_cancel(xio_handle->open_op);
             }
         }
         if(mask & GLOBUS_XIO_CANCEL_CLOSE)
@@ -1456,7 +1456,7 @@ globus_l_xio_handle_cancel_operations(
             }
             else
             {
-                res = globus_l_xio_operation_cancel(xio_handle->close_op);
+                res = globus_i_xio_operation_cancel(xio_handle->close_op);
             }
         }
         if(mask & GLOBUS_XIO_CANCEL_READ)
@@ -1474,7 +1474,7 @@ globus_l_xio_handle_cancel_operations(
                 {
                     tmp_op = (globus_i_xio_op_t *) 
                                 globus_list_first(list);
-                    res = globus_l_xio_operation_cancel(tmp_op);
+                    res = globus_i_xio_operation_cancel(tmp_op);
                 }
             }
         }
@@ -1492,7 +1492,7 @@ globus_l_xio_handle_cancel_operations(
                 {
                     tmp_op = (globus_i_xio_op_t *)  
                                 globus_list_first(list);
-                    res = globus_l_xio_operation_cancel(tmp_op);
+                    res = globus_i_xio_operation_cancel(tmp_op);
                 }
             }
         }

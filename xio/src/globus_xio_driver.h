@@ -125,8 +125,35 @@ do                                                                          \
 #define GlobusXIOOperationGetContext(_in_op)                                \
     &((_in_op)->_op_context->entry[(_in_op)->ndx - 1])
 
-#define GlobusXIOOperationGetDataDescriptor(_in_op)                         \
-    ((_in_op)->entry[(_in_op)->ndx - 1].dd)
+#define GlobusXIOOperationGetDataDescriptor(_out_dd, _in_op, _force_create) \
+{                                                                           \
+    if((_in_op)->entry[(_in_op)->ndx - 1].dd != NULL)                       \
+    {                                                                       \
+        _out_dd = (_in_op)->entry[(_in_op)->ndx - 1].dd;                    \
+    }                                                                       \
+    else if((_in_op)->user_dd != NULL || _force_create)                     \
+    {                                                                       \
+        globus_i_xio_driver_t *                     _dd_driver;             \
+        globus_result_t                             _res;                   \
+                                                                            \
+        _dd_driver =                                                        \
+            (_in_op)->_op_context->entry[(_in_op)->ndx - 1].driver;         \
+                                                                            \
+        _res = _dd_driver->attr_init_func(&(_out_dd));                      \
+        if(_res != GLOBUS_SUCCESS)                                          \
+        {                                                                   \
+            _out_dd = NULL;                                                 \
+        }                                                                   \
+        else                                                                \
+        {                                                                   \
+            (_in_op)->entry[(_in_op)->ndx - 1].dd = (_out_dd);              \
+        }                                                                   \
+    }                                                                       \
+    else                                                                    \
+    {                                                                       \
+        _out_dd = NULL;                                                     \
+    }                                                                       \
+}
 
 #define GlobusXIOOperationSetDataDescriptor(_in_op, _in_dd)                 \
     ((_in_op)->entry[(_in_op)->ndx - 1].dd) = (_in_dd)
@@ -772,6 +799,10 @@ void
 globus_xio_driver_operation_destroy(
     globus_xio_operation_t                  operation);
 
+globus_result_t
+globus_xio_driver_operation_cancel(
+    globus_xio_operation_t                  operation);
+
 /**
  *  Driver API  Get Context
  *  @ingroup driver_api_grp
@@ -1238,73 +1269,6 @@ globus_xio_driver_finished_from_previous(
  *    The interface function globus_xio_driver_data_descriptor_free() is
  *    used for this.
  */
-
-/**
- *  @defgroup driver_dd_interface_grp Data Descriptor
- *
- *  The set of interface functions that the driver author must implement 
- *  to create a driver.
- */
-/**
- *  @ingroup driver_dd_interface_grp
- *
- *  Create a driver data descriptor.
- *
- *  @param out_dd
- *         Prior to returning from this function this out parameter should
- *         be intialized.  The value will be threaded through to future
- *         interface funstions relating to the data descriptor.
- */
-typedef globus_result_t
-(*globus_xio_driver_data_descriptor_init_t)(
-    void **                                 out_dd);
-
-/**
- *  @ingroup driver_dd_interface_grp
- *
- *  Copy a data descriptor
- *
- *  @param dst
- *         Prior to returning this value should be inilaized to a copy 
- *         of src.
- *
- *  @param src
- *         The data descriptor to be copied. 
- */
-typedef globus_result_t
-(*globus_xio_driver_driver_data_descriptor_copy_t)(
-    void **                                 dst,
-    void *                                  src);
- 
-/**
- *  @ingroup driver_dd_interface_grp
- * 
- *  Destroy a data desriptor.
- *
- *  @param driver_dd
- *         The data descriptor to be destroyed.
- */
-typedef globus_result_t
-(*globus_xio_driver_driver_data_descriptor_destroy_t)(
-    void *                                  driver_dd);
- 
-/**
- *  @ingroup driver_dd_interface_grp
- *
- *  Manipulate the data descriptor in a driver defined way.
- *
- *  @param driver_dd
- *         The driver specific data descriptor to be manipulated.
- *
- *  @param cmd
- *         and integer describing how to modify the data descriptor.  The
- *         var args will be determined by this value.
- */
-typedef globus_result_t
-(*globus_xio_driver_driver_data_descriptor_cntl_t)(
-    void *                                  driver_dd,
-    int                                     cmd,
-    va_list                                 ap);
 
 globus_result_t
 globus_xio_driver_init(

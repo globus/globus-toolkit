@@ -646,6 +646,10 @@ void
 globus_i_xio_close_handles(
     globus_xio_driver_t                     driver);
 
+globus_result_t
+globus_i_xio_operation_cancel(
+    globus_i_xio_op_t *                     op);
+
 
 extern globus_i_xio_timer_t                 globus_l_xio_timeout_timer;
 extern globus_list_t *                      globus_l_outstanding_handles_list;

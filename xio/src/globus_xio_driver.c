@@ -1000,6 +1000,41 @@ globus_xio_driver_operation_create(
     return res;
 }
 
+globus_result_t
+globus_xio_driver_operation_cancel(
+    globus_xio_operation_t                  operation)
+{
+    globus_result_t                         res;
+    globus_i_xio_handle_t *                 handle;
+    globus_i_xio_op_t *                     op;
+    GlobusXIOName(globus_xio_driver_operation_cancel);
+
+    GlobusXIODebugEnter();
+
+    op = (globus_i_xio_op_t *) operation;
+    if(op == NULL)
+    {
+        res = GlobusXIOErrorParameter("op");
+        goto err;
+    }
+
+    handle = op->_op_handle;
+
+    globus_mutex_lock(&handle->cancel_mutex);
+    {
+        res = globus_i_xio_operation_cancel(op);
+    }
+    globus_mutex_unlock(&handle->cancel_mutex);
+
+    GlobusXIODebugExit();
+    return GLOBUS_SUCCESS;
+
+  err:
+
+    GlobusXIODebugExitWithError();
+    return res;
+}
+
 /***************************************************************************
  *                      driver setup functions
  *                      ----------------------
