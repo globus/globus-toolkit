@@ -1948,7 +1948,6 @@ proxy_verify_callback(int ok, X509_STORE_CTX * ctx)
 #endif /* #ifndef NO_OLDGAA_API */
 
 
-		free(ca_policy_file_path);
 		free(subject_name);
 		free(issuer_name);
 
