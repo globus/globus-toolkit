@@ -62,6 +62,9 @@
 #define GRIM_STRING_MAX             512
 
 #define GRIM_ASSERTION_FORMAT_VERSION "1"
+#define GRIM_OID                      "1.3.6.1.4.1.3536.1.1.1.7"
+#define GRIM_SN                       "GRIMPOLICY"
+#define GRIM_LN                       "GRIM Policy Language"
 
 /*
  *  globals:
@@ -75,7 +78,7 @@
 static globus_bool_t                            g_quiet = GLOBUS_FALSE;
 static FILE *                                   g_logfile = NULL;
 static char *                                   g_username = NULL;
-
+static int                                      grim_NID;
 /************************************************************************
  *                     function signatures
  ***********************************************************************/
@@ -216,7 +219,7 @@ main(
     /* dont restrict the proxy */
     char                                    user_cert_filename[GRIM_STRING_MAX];
     char                                    user_key_filename[GRIM_STRING_MAX];
-    char *                                  proxy_out_filename;
+    char *                                  proxy_out_filename = NULL;
     char                                    ca_cert_dir[GRIM_STRING_MAX];
     char                                    port_type_filename[GRIM_STRING_MAX];
     globus_gsi_cred_handle_t                cred_handle;
@@ -226,6 +229,8 @@ main(
     char **                                 port_types;
     int                                     dn_count;
     FILE *                                  port_type_fptr;
+
+    grim_NID = OBJ_create(GRIM_OID, GRIM_SN, GRIM_LN);
 
     /***** BEGIN PRIVLEDGES *****/
     /*
@@ -869,6 +874,9 @@ grim_write_proxy(
     tmp_s2 = malloc(strlen(subject) + strlen(tmp_s1) + 1);
     sprintf(tmp_s2, "%s%s", subject, tmp_s1);
 
+    /*
+     *  build the serialized assertion string
+     */
     assertion = grim_build_assertion(
                     tmp_s2,
                     g_username,
@@ -880,18 +888,6 @@ grim_write_proxy(
         return 1;
     }
 
-    res = globus_gsi_proxy_handle_set_policy(
-              proxy_handle,
-              assertion,
-              strlen(assertion),
-              888888);
-    if(res != GLOBUS_SUCCESS)
-    {
-        grim_write_log("ERROR could not set the assertion.\n");
-        free(assertion);
-        return 1;
-    }
- 
     /*
      *  initialize the handle
      */
@@ -902,6 +898,24 @@ grim_write_proxy(
         return 1;
     }
 
+    /*
+     *  set the policy in the cert
+     */
+    res = globus_gsi_proxy_handle_set_policy(
+              proxy_handle,
+              assertion,
+              strlen(assertion),
+              grim_NID);
+    if(res != GLOBUS_SUCCESS)
+    {
+        grim_write_log("ERROR could not set the assertion.\n");
+        free(assertion);
+        return 1;
+    }
+ 
+    /*
+     *  create signed proxy
+     */
     res = globus_gsi_proxy_create_signed(
               proxy_handle,
               cred_handle,
@@ -1299,11 +1313,12 @@ grim_parse_conf_file(
     return rc;
 }
 
-#define GrowString(b, new, offset)                      \
+#define GrowString(b, len, new, offset)                 \
 {                                                       \
-    if(sizeof(b) <= strlen(new) + offset)               \
+    if(len <= strlen(new) + offset)                     \
     {                                                   \
-        b = globus_realloc(b, sizeof(b) * 2);           \
+        len *= 2;                                       \
+        b = globus_realloc(b, len);                     \
     }                                                   \
     strcpy(&b[offset], new);                            \
     offset += strlen(new);                              \
@@ -1329,40 +1344,43 @@ grim_build_assertion(
     globus_libc_gethostname(hostname, MAXHOSTNAMELEN);
     buffer = globus_malloc(sizeof(char) * buffer_size);
 
-    GrowString(buffer, "<GrimAssertion>\n", buffer_ndx);
-    GrowString(buffer, "    <Version>", buffer_ndx);
-    GrowString(buffer, GRIM_ASSERTION_FORMAT_VERSION, buffer_ndx);
-    GrowString(buffer, "    </Version>\n", buffer_ndx);
-    GrowString(buffer, "    <ServiceGridId Format=\"#X509SubjectName\">", 
-                        buffer_ndx);
-    GrowString(buffer, subject, buffer_ndx);
-    GrowString(buffer, "</ServerGridId>\n", buffer_ndx);
-    GrowString(buffer, "    <ServiceLocalId Format=\"#UnixAccountName\" \n", 
+    GrowString(buffer, buffer_size, "<GrimAssertion>\n", buffer_ndx);
+    GrowString(buffer, buffer_size, "    <Version>", buffer_ndx);
+    GrowString(buffer, buffer_size, GRIM_ASSERTION_FORMAT_VERSION, buffer_ndx);
+    GrowString(buffer, buffer_size, "    </Version>\n", buffer_ndx);
+    GrowString(buffer, buffer_size, 
+        "    <ServiceGridId Format=\"#X509SubjectName\">", 
         buffer_ndx);
-    GrowString(buffer, "        NameQualifier=\"", buffer_ndx);
-    GrowString(buffer, hostname, buffer_ndx);
-    GrowString(buffer, "\">", buffer_ndx);
-    GrowString(buffer, username, buffer_ndx);
-    GrowString(buffer, "</ServiceLocalId>\n", buffer_ndx);
+    GrowString(buffer, buffer_size, subject, buffer_ndx);
+    GrowString(buffer, buffer_size, "</ServerGridId>\n", buffer_ndx);
+    GrowString(buffer, buffer_size, 
+        "    <ServiceLocalId Format=\"#UnixAccountName\" \n", 
+        buffer_ndx);
+    GrowString(buffer, buffer_size, "        NameQualifier=\"", buffer_ndx);
+    GrowString(buffer, buffer_size, hostname, buffer_ndx);
+    GrowString(buffer, buffer_size, "\">", buffer_ndx);
+    GrowString(buffer, buffer_size, username, buffer_ndx);
+    GrowString(buffer, buffer_size, "</ServiceLocalId>\n", buffer_ndx);
 
     /* add all mapped dns */
     for(ctr = 0; dna[ctr] != NULL; ctr++)
     {
-        GrowString(buffer, "<authorizedClientId Format=\"#X509SubjectName\">",
+        GrowString(buffer, buffer_size, 
+            "<authorizedClientId Format=\"#X509SubjectName\">",
             buffer_ndx);
-        GrowString(buffer, dna[ctr], buffer_ndx);
-        GrowString(buffer, "</AuthorizedClientId>\n", buffer_ndx);
+        GrowString(buffer, buffer_size, dna[ctr], buffer_ndx);
+        GrowString(buffer, buffer_size, "</AuthorizedClientId>\n", buffer_ndx);
     }
 
     /* add in port_types */
     for(ctr = 0; port_types[ctr] != NULL; ctr++)
     {
-        GrowString(buffer, "<authorizedPortType>", buffer_ndx);
-        GrowString(buffer, port_types[ctr], buffer_ndx);
-        GrowString(buffer, "</authorizedPortType>\n", buffer_ndx);
+        GrowString(buffer, buffer_size, "<authorizedPortType>", buffer_ndx);
+        GrowString(buffer, buffer_size, port_types[ctr], buffer_ndx);
+        GrowString(buffer, buffer_size, "</authorizedPortType>\n", buffer_ndx);
     }
 
-    GrowString(buffer, "</GRIMAssertion>\n", buffer_ndx);
+    GrowString(buffer, buffer_size, "</GRIMAssertion>\n", buffer_ndx);
 
     return buffer;
 }
