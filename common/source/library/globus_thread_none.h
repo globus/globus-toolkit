@@ -128,7 +128,7 @@ typedef int globus_thread_once_t;
 
 #define globus_macro_condattr_setspace(A, S) \
     ((globus_callback_reference_space((S)) \
-     ? 1
+     ? 1 \
      : globus_callback_space_destroy(*(A)), (*(A) = (S)), 0))
 
 #define globus_macro_condattr_getspace(A, S) \
