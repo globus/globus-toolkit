@@ -1044,13 +1044,14 @@ char * get_gss_our_name()
     return NULL;
   }
 
-  maj_stat = gss_export_name(&min_stat,
-                             pname,
-                             tmpnamed);
+  maj_stat = gss_display_name(&min_stat,
+	                      pname,
+			      tmpnamed,
+			      NULL);
   if (maj_stat != GSS_S_COMPLETE) {
-    return NULL;
+     return NULL;
   }
-  debug("gss_export_name finsished");
+  debug("gss_display_name finsished");
   retname = (char *)malloc(tmpname.length + 1);
   if (!retname) {
     return NULL;
