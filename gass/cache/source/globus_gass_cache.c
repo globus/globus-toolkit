@@ -55,12 +55,14 @@ CVS Information:
 #include "globus_i_gass_cache.h"
 #include "globus_gass_cache.h"
 
-/* UNICOS has four quota errno values: EQUSR, EQGRP, EQACT, EOFQUOTA */
-/* #define EQUSR           60      /* User file/inode quota limit reached  */
-/* #define EQGRP           61      /* Group file/inode quota limit reached */
-/* #define EQACT           62      /* Account file/inode quota limit reached */
-/* #define EOFQUOTA        363     /* File offline, retrieval would 
-                                    exceed disk space quota */
+/*
+ * UNICOS has four quota errno values: EQUSR, EQGRP, EQACT, EOFQUOTA
+ * #define EQUSR           60      (User file/inode quota limit reached)
+ * #define EQGRP           61      (Group file/inode quota limit reached)
+ * #define EQACT           62      (Account file/inode quota limit reached)
+ * #define EOFQUOTA        363     (File offline, retrieval would 
+ *                                  exceed disk space quota)
+ */
 #ifdef EDQUOT
 #define IS_QUOTA_ERROR(err) ((err) == EDQUOT)
 #elif defined(EQUSR) && defined(EQGRP) && defined(EQACT) && defined(EOFQUOTA)
