@@ -185,29 +185,36 @@ globus_module_activate(
 		parent_key = module_descriptor->activation_func;
 		
 		ret_val = module_descriptor->activation_func();
-
+                
+                if(ret_val != GLOBUS_SUCCESS)
+                {
+                    globus_l_module_decrement(module_descriptor, parent_key);
+                }
+                else
+                {
 		/*
 		 * Set up the exit handler
 		 */
-#               if defined(HAVE_ATEXIT) || defined(HAVE_ONEXIT)
-		{
-		    if(module_descriptor->atexit_func != GLOBUS_NULL)
-		    {
-			/* only call the atexit function once */
-			if(!globus_list_search(
-			    globus_l_module_atexit_funcs,
-			    (void *) module_descriptor->atexit_func))
-			{
-			    globus_list_insert(
-				&globus_l_module_atexit_funcs,
-				(void *) module_descriptor->atexit_func);
-
-			    atexit(module_descriptor->atexit_func);
-			}
-		    }
-		}
-#               endif
-
+#                   if defined(HAVE_ATEXIT) || defined(HAVE_ONEXIT)
+                    {
+                        if(module_descriptor->atexit_func != GLOBUS_NULL)
+                        {
+                            /* only call the atexit function once */
+                            if(!globus_list_search(
+                                globus_l_module_atexit_funcs,
+                                (void *) module_descriptor->atexit_func))
+                            {
+                                globus_list_insert(
+                                    &globus_l_module_atexit_funcs,
+                                    (void *) module_descriptor->atexit_func);
+    
+                                atexit(module_descriptor->atexit_func);
+                            }
+                        }
+                    }
+#                   endif
+                }
+                
 		parent_key = parent_key_save;
 	    }
 	}
