@@ -1,5 +1,3 @@
 #!/usr/bin/env perl
 
-exit system('./globus-ftp-client-run-tests.pl -runserver');
-
-exit 0;
+exit (0 != system('./globus-ftp-client-run-tests.pl -runserver'));

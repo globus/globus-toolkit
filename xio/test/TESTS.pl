@@ -1,3 +1,3 @@
 #!/usr/bin/env perl
 
-exit system('./run-all-tests.pl');
+exit (0 != system('./run-all-tests.pl'));
