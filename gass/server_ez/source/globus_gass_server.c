@@ -185,17 +185,6 @@ int main(int argc, char **argv)
 
 
     /*
-     *    Check for GLOBUS_INSTALL_PATH
-     *    if it is not set, the credential check won't work.
-     */
-
-    if ((env=globus_libc_getenv("GLOBUS_INSTALL_PATH"))==GLOBUS_NULL)
-    {
-	fprintf(stderr, "GLOBUS_INSTALL_PATH must be set for the server to run\n");
-	return GLOBUS_FAILURE;
-    }
-
-    /*
      *    Check for credentials, if not there, give warning.
      */
 
