@@ -82,39 +82,16 @@ GSS_CALLCONV gss_wrap_size_limit(
         max = req_output_size - overhead;
         *max_input_size = max;
 
-        goto exit;
     }
-    else if (conf_req_flag == 0)
+    else 
     {
         overhead = SSL3_RT_MAX_PACKET_SIZE - SSL3_RT_MAX_PLAIN_LENGTH;
-        
-        if (req_output_size > SSL3_RT_MAX_PACKET_SIZE)
-        {
-            max = SSL3_RT_MAX_PACKET_SIZE - overhead;
-        }
-        else
-        {
-            max = req_output_size - overhead;
-        }
+
+        max = req_output_size -
+            (req_output_size / SSL3_RT_MAX_PACKET_SIZE + 1) * overhead;
+
         *max_input_size = max;
         
-        goto exit;
-    }
-    else
-    {
-        overhead = SSL3_RT_MAX_PACKET_SIZE - SSL3_RT_MAX_PLAIN_LENGTH;
-        
-        if (req_output_size > SSL3_RT_MAX_PACKET_SIZE)
-        {
-            max = SSL3_RT_MAX_PACKET_SIZE - overhead;
-        }
-        else
-        {
-            max = req_output_size - overhead;
-        }
-        *max_input_size = max;
-        
-        goto exit;
     }
 
  exit:

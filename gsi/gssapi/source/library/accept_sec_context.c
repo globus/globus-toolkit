@@ -75,9 +75,10 @@ GSS_CALLCONV gss_accept_sec_context(
     {
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,
-            GLOBUS_GSI_GSSAPI_ERROR_WITH_GSS_CONTEXT,
+            GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
             ("Parameter context_handle_P passed to function: %s is NULL",
              _function_name_));
+        major_status = GSS_S_FAILURE;
         goto exit;
     }
 
@@ -415,6 +416,8 @@ GSS_CALLCONV gss_accept_sec_context(
                     GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
                         minor_status, local_minor_status,
                         GLOBUS_GSI_GSSAPI_ERROR_WITH_DELEGATION);
+                    context->gss_state = GSS_CON_ST_DONE;
+                    major_status = GSS_S_FAILURE;
                     break;
                 }            
             }
@@ -426,6 +429,8 @@ GSS_CALLCONV gss_accept_sec_context(
                     GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
                         minor_status, local_result,
                         GLOBUS_GSI_GSSAPI_ERROR_WITH_DELEGATION);
+                    context->gss_state = GSS_CON_ST_DONE;
+                    major_status = GSS_S_FAILURE;
                     break;
                 }
             }
