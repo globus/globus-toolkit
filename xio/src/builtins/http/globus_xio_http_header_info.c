@@ -108,9 +108,8 @@ globus_i_xio_http_header_info_copy(
     }
 
     dest->content_length = src->content_length;
-    dest->content_length_set = src->content_length_set;
     dest->transfer_encoding = src->transfer_encoding;
-    dest->connection_close = src->connection_close;
+    dest->flags = src->flags;
 
     return result;
 
@@ -162,7 +161,7 @@ globus_i_xio_http_header_info_set_header(
 
             goto error_exit;
         }
-        headers->content_length_set = GLOBUS_TRUE;
+        headers->flags |= GLOBUS_I_XIO_HTTP_HEADER_CONTENT_LENGTH_SET;
     }
     else if (strcmp(header_name, "Transfer-Encoding") == 0)
     {
@@ -187,11 +186,11 @@ globus_i_xio_http_header_info_set_header(
     {
         if (strcmp(header_value, "close") == 0)
         {
-            headers->connection_close = GLOBUS_TRUE;
+            headers->flags |= GLOBUS_I_XIO_HTTP_HEADER_CONNECTION_CLOSE;
         }
         else if (strcmp(header_value, "keep-alive") == 0)
         {
-            headers->connection_close = GLOBUS_FALSE;
+            headers->flags &= ~GLOBUS_I_XIO_HTTP_HEADER_CONNECTION_CLOSE;
         }
         else
         {

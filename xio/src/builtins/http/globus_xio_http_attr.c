@@ -47,12 +47,19 @@ globus_i_xio_http_attr_init(
     {
         goto free_attr_exit;
     }
-    attr->request_callback = NULL;
-    attr->request_callback_arg = NULL;
+    res = globus_i_xio_http_response_init(&attr->response);
+
+    if (res != GLOBUS_SUCCESS)
+    {
+        goto free_request_exit;
+    }
+    attr->delay_write_header = GLOBUS_FALSE;
 
     *out_attr = attr;
     return GLOBUS_SUCCESS;
 
+free_request_exit:
+    globus_i_xio_http_request_destroy(&attr->request);
 free_attr_exit:
     globus_libc_free(attr);
 error_exit:
@@ -97,6 +104,13 @@ globus_i_xio_http_attr_cntl(
     globus_xio_http_version_t           in_http_version;
     char *                              in_header_name;
     char *                              in_header_value;
+    char **                             out_method;
+    char **                             out_uri;
+    globus_xio_http_version_t *         out_http_version;
+    globus_hashtable_t *                out_headers;
+    int *                               out_status_code;
+    char **                             out_reason_phrase;
+
     GlobusXIOName(globus_i_xio_http_attr_cntl);
 
     switch (cmd)
@@ -159,25 +173,56 @@ globus_i_xio_http_attr_cntl(
                     in_header_value);
             break;
 
-        case GLOBUS_XIO_HTTP_ATTR_SET_REQUEST_CALLBACK:
-            attr->request_callback  = va_arg(
-                    ap,
-                    globus_xio_http_request_ready_callback_t);
-            attr->request_callback_arg = va_arg(ap, void *);
-            break;
-
-        case GLOBUS_XIO_HTTP_ATTR_SET_RESPONSE_CALLBACK:
-            attr->request.callback = va_arg(
-                    ap,
-                    globus_xio_http_response_ready_callback_t);
-            attr->request.callback_arg = va_arg(ap, void *);
-            break;
-
         case GLOBUS_XIO_HTTP_ATTR_DELAY_WRITE_HEADER:
-        
-            attr->request.delay_write_header = 1;
+            attr->delay_write_header = 1;
             break;
 
+        case GLOBUS_XIO_HTTP_GET_REQUEST:
+            out_method = va_arg(ap, char **);
+            out_uri = va_arg(ap, char **);
+            out_http_version = va_arg(ap, globus_xio_http_version_t *);
+            out_headers = va_arg(ap, globus_hashtable_t *);
+
+            if (out_method != NULL)
+            {
+                *out_method = attr->request.method;
+            }
+            if (out_uri != NULL)
+            {
+                *out_uri = attr->request.uri;
+            }
+            if (out_http_version != NULL)
+            {
+                *out_http_version = attr->request.http_version;
+            }
+            if (out_headers != NULL)
+            {
+                *out_headers = attr->request.headers.headers;
+            }
+            break;
+        case GLOBUS_XIO_HTTP_GET_RESPONSE:
+            out_status_code = va_arg(ap, int *);
+            out_reason_phrase = va_arg(ap, char **);
+            out_http_version = va_arg(ap, globus_xio_http_version_t *);
+            out_headers = va_arg(ap, globus_hashtable_t *);
+
+            if (out_status_code != NULL)
+            {
+                *out_status_code = attr->response.status_code;
+            }
+            if (out_reason_phrase != NULL)
+            {
+                *out_reason_phrase = attr->response.reason_phrase;
+            }
+            if (out_http_version != NULL)
+            {
+                *out_http_version = attr->response.http_version;
+            }
+            if (out_headers != NULL)
+            {
+                *out_headers = attr->response.headers.headers;
+            }
+            break;
         default:
             res = GlobusXIOErrorParameter("cmd");
     }
@@ -242,13 +287,20 @@ globus_i_xio_http_attr_copy(
     }
 
     /* Copy response attrs */
-    http_dst->request_callback = http_src->request_callback;
-    http_dst->request_callback_arg = http_src->request_callback_arg;
+    result = globus_i_xio_http_response_copy(
+            &http_dst->response,
+            &http_src->response);
+    if (result != GLOBUS_SUCCESS)
+    {
+        goto free_http_dst_request_exit;
+    }
+    http_dst->delay_write_header = http_src->delay_write_header;
 
     *dst = http_dst;
 
     return GLOBUS_SUCCESS;
-
+free_http_dst_request_exit:
+    globus_i_xio_http_request_destroy(&http_dst->request);
 free_http_dst_exit:
     globus_libc_free(http_dst);
 error_exit:
@@ -279,6 +331,7 @@ globus_i_xio_http_attr_destroy(
     GlobusXIOName(globus_i_xio_http_attr_destroy);
 
     globus_i_xio_http_request_destroy(&attr->request);
+    globus_i_xio_http_response_destroy(&attr->response);
     globus_libc_free(attr);
 
     return GLOBUS_SUCCESS;

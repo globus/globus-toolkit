@@ -28,12 +28,6 @@ globus_l_xio_http_client_parse_response(
     globus_i_xio_http_handle_t *        http_handle,
     globus_bool_t *                     done);
 
-static
-void
-globus_l_xio_http_client_call_ready_callback(
-    globus_i_xio_http_handle_t *        http_handle,
-    globus_result_t                     result);
-
 /**
  * Client-side connection open callback
  * @ingroup globus_i_xio_http_client
@@ -73,7 +67,7 @@ globus_i_xio_http_client_open_callback(
         goto error_exit;
     }
 
-    if(http_handle->request_info.delay_write_header)
+    if(http_handle->delay_write_header)
     {
         globus_xio_driver_finished_open(
             http_handle,
@@ -82,6 +76,10 @@ globus_i_xio_http_client_open_callback(
     }
     else
     {
+        globus_assert(http_handle->send_state ==
+                            GLOBUS_XIO_HTTP_PRE_REQUEST_LINE);
+
+        http_handle->send_state = GLOBUS_XIO_HTTP_REQUEST_LINE;
         result = globus_i_xio_http_client_write_request(op, http_handle);
 
         if (result != GLOBUS_SUCCESS)
@@ -213,10 +211,14 @@ globus_i_xio_http_client_write_request(
      * the GLOBUS_XIO_HTTP_HANDLE_SET_END_OF_ENTITY handle command to signal
      * this.
      */
-    if (! http_handle->request_info.headers.entity_needed)
+    if (! GLOBUS_I_XIO_HTTP_HEADER_IS_ENTITY_NEEDED(
+                &http_handle->request_info.headers))
     {
-        http_handle->request_info.headers.entity_needed =
-            globus_i_xio_http_method_requires_entity(str);
+        if (globus_i_xio_http_method_requires_entity(str))
+        {
+            http_handle->request_info.headers.flags |=
+                GLOBUS_I_XIO_HTTP_HEADER_ENTITY_NEEDED;
+        }
     }
 
     GLOBUS_XIO_HTTP_COPY_BLOB(&iovecs, str, strlen(str), free_iovecs_exit);
@@ -285,13 +287,15 @@ globus_i_xio_http_client_write_request(
                 2,
                 free_iovecs_exit);
     }
-    if (http_handle->request_info.headers.entity_needed)
+    if (GLOBUS_I_XIO_HTTP_HEADER_IS_ENTITY_NEEDED(
+            &http_handle->request_info.headers))
     {
         if ((http_handle->request_info.http_version ==
                 GLOBUS_XIO_HTTP_VERSION_1_0) || 
                 ((http_handle->request_info.headers.transfer_encoding ==
                     GLOBUS_XIO_HTTP_TRANSFER_ENCODING_IDENTITY) &&
-                    http_handle->request_info.headers.content_length_set))
+                    GLOBUS_I_XIO_HTTP_HEADER_IS_CONTENT_LENGTH_SET(
+                        &http_handle->request_info.headers)))
         {
             if (http_handle->request_info.http_version !=
                     GLOBUS_XIO_HTTP_VERSION_1_0)
@@ -330,6 +334,15 @@ globus_i_xio_http_client_write_request(
                     28,
                     free_iovecs_exit);
         }
+    }
+    if (GLOBUS_I_XIO_HTTP_HEADER_IS_CONNECTION_CLOSE(
+                &http_handle->request_info.headers))
+    {
+        GLOBUS_XIO_HTTP_COPY_BLOB(&iovecs,
+                "Connection: close\r\n",
+                19,
+                free_iovecs_exit);
+
     }
 
     GLOBUS_XIO_HTTP_COPY_BLOB(&iovecs,
@@ -446,7 +459,7 @@ globus_l_xio_http_client_write_request_callback(
 
     /* Synthesize read operation for response */
     result = globus_xio_driver_operation_create(
-            &http_handle->response_info.read_operation,
+            &http_handle->response_read_operation,
             http_handle->handle);
 
     if (result != GLOBUS_SUCCESS)
@@ -487,7 +500,8 @@ globus_l_xio_http_client_write_request_callback(
 
     http_handle->parse_state = GLOBUS_XIO_HTTP_STATUS_LINE;
 
-    if (!http_handle->request_info.headers.entity_needed)
+    if (!GLOBUS_I_XIO_HTTP_HEADER_IS_ENTITY_NEEDED(
+                &http_handle->request_info.headers))
     {
         http_handle->send_state = GLOBUS_XIO_HTTP_EOF;
     }
@@ -502,7 +516,7 @@ globus_l_xio_http_client_write_request_callback(
     }
 
     result = globus_xio_driver_pass_read(
-            http_handle->response_info.read_operation,
+            http_handle->response_read_operation,
             &http_handle->read_buffer,
             1,
             1,
@@ -514,19 +528,22 @@ globus_l_xio_http_client_write_request_callback(
         goto free_read_buffer_exit;
     }
 
-    globus_mutex_unlock(&http_handle->mutex);
-
-    if(http_handle->request_info.delay_write_header)
+    if(http_handle->delay_write_header)
     {
-        http_handle->request_info.delay_write_header = 0;
+        http_handle->delay_write_header = 0;
+
+        globus_mutex_unlock(&http_handle->mutex);
+
         globus_i_xio_http_write(
             http_handle,
-            http_handle->request_info.first_write_iovec,
-            http_handle->request_info.first_write_iovec_count,
+            http_handle->first_write_iovec,
+            http_handle->first_write_iovec_count,
             op);
     }
     else
     {
+        globus_mutex_unlock(&http_handle->mutex);
+
         globus_xio_driver_finished_open(
             http_handle,
             op,
@@ -537,16 +554,16 @@ globus_l_xio_http_client_write_request_callback(
 
 destroy_op_exit:
     globus_xio_driver_operation_destroy(
-            http_handle->response_info.read_operation);
-    http_handle->response_info.read_operation = NULL;
+            http_handle->response_read_operation);
+    http_handle->response_read_operation = NULL;
 free_read_buffer_exit:
     globus_libc_free(http_handle->read_buffer.iov_base);
     http_handle->read_buffer.iov_len = 0;
 error_exit:
-    globus_mutex_unlock(&http_handle->mutex);
 
-    if(http_handle->request_info.delay_write_header)
+    if(http_handle->delay_write_header)
     {
+        globus_mutex_unlock(&http_handle->mutex);
         globus_xio_driver_finished_write(
             op,
             result,
@@ -554,6 +571,7 @@ error_exit:
     }
     else
     {
+        globus_mutex_unlock(&http_handle->mutex);
         globus_xio_driver_finished_open(
             http_handle,
             op,
@@ -597,6 +615,8 @@ globus_l_xio_http_client_read_response_callback(
     globus_bool_t                       eof = GLOBUS_FALSE;
     globus_bool_t                       done;
     globus_bool_t                       finish_read = GLOBUS_FALSE;
+    globus_bool_t                       registered_again = GLOBUS_FALSE;
+    globus_i_xio_http_attr_t *          descriptor;
     GlobusXIOName(globus_l_xio_http_client_read_response_callback);
 
     globus_mutex_lock(&http_handle->mutex);
@@ -623,21 +643,42 @@ globus_l_xio_http_client_read_response_callback(
     }
 
     /* If user registered a read before we finished parsing, we'll
-     * have to handle it after we call the ready callback
+     * have to handle it now.
      */
     if (http_handle->read_operation.operation != NULL)
     {
-        if (result == GLOBUS_SUCCESS)
+        /* Set metadata on this read to contain the response info */
+        descriptor = globus_xio_operation_get_data_descriptor(
+                http_handle->read_operation.operation,
+                GLOBUS_TRUE);
+        if (descriptor == NULL)
         {
-            result = globus_i_xio_http_parse_residue(http_handle);
-        }
+            result = GlobusXIOErrorMemory("descriptor");
 
-        if (http_handle->read_operation.wait_for <= 0
+            goto error_exit;
+        }
+        globus_i_xio_http_response_destroy(&descriptor->response);
+        result = globus_i_xio_http_response_copy(
+                &descriptor->response,
+                &http_handle->response_info);
+
+        if (result != GLOBUS_SUCCESS)
+        {
+            goto error_exit;
+        }
+        http_handle->read_response = GLOBUS_TRUE;
+
+        result = globus_i_xio_http_parse_residue(
+                http_handle,
+                &registered_again);
+
+        if ((http_handle->read_operation.wait_for <= 0 && !registered_again)
                 || result != GLOBUS_SUCCESS)
         {
             if (http_handle->response_info.headers.transfer_encoding !=
                     GLOBUS_XIO_HTTP_TRANSFER_ENCODING_CHUNKED &&
-                    http_handle->response_info.headers.content_length_set &&
+                    GLOBUS_I_XIO_HTTP_HEADER_IS_CONTENT_LENGTH_SET(
+                        &http_handle->response_info.headers) &&
                     http_handle->response_info.headers.content_length == 0)
             {
                 /* Synthesize EOF if we've read all of the entity content */
@@ -662,7 +703,6 @@ globus_l_xio_http_client_read_response_callback(
     }
 
     globus_mutex_unlock(&http_handle->mutex);
-    globus_l_xio_http_client_call_ready_callback(http_handle, result);
 
     if (finish_read)
     {
@@ -686,7 +726,7 @@ reregister_read:
     }
 
     result = globus_xio_driver_pass_read(
-            http_handle->response_info.read_operation,
+            http_handle->response_read_operation,
             &http_handle->read_iovec,
             1,
             1,
@@ -719,8 +759,20 @@ error_exit:
 
         finish_read = GLOBUS_TRUE;
     }
+    descriptor = globus_xio_operation_get_data_descriptor(op, GLOBUS_TRUE);
+    if (descriptor == NULL)
+    {
+        result = GlobusXIOErrorMemory("descriptor");
+    }
+    else
+    {
+        globus_i_xio_http_response_destroy(&descriptor->response);
+        result = globus_i_xio_http_response_copy(
+                &descriptor->response,
+                &http_handle->response_info);
+    }
+
     globus_mutex_unlock(&http_handle->mutex);
-    globus_l_xio_http_client_call_ready_callback(http_handle, result);
 
     if (finish_read)
     {
@@ -859,35 +911,3 @@ error_exit:
     return result;
 }
 /* globus_i_xio_http_client_parse_response() */
-
-/**
- * Call the response ready callback associated with a handle.
- * @ingroup globus_i_xio_http_client
- *
- * @param http_handle
- *     Handle which is done parsing the response.
- * @param result
- *     Result to pass to the user.
- *
- * @return void
- */
-static
-void
-globus_l_xio_http_client_call_ready_callback(
-    globus_i_xio_http_handle_t *        http_handle,
-    globus_result_t                     result)
-{
-    if (http_handle->request_info.callback == NULL)
-    {
-        /* User is missing out */
-        return;
-    }
-    http_handle->request_info.callback(
-            http_handle->request_info.callback_arg,
-            result,
-            http_handle->response_info.status_code,
-            http_handle->response_info.reason_phrase,
-            http_handle->response_info.http_version,
-            http_handle->response_info.headers.headers);
-}
-/* globus_l_xio_http_client_call_ready_callback() */

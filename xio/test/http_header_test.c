@@ -56,15 +56,6 @@ globus_l_xio_test_server_request_callback(
     globus_xio_http_version_t           http_version,
     globus_hashtable_t                  headers);
 
-static 
-void
-globus_l_xio_test_client_response_callback(
-    void *                              user_arg,
-    globus_result_t                     result,
-    int                                 status_code,
-    const char *                        reason_phrase,
-    globus_xio_http_version_t           version,
-    globus_hashtable_t                  headers);
 
 static
 int
@@ -134,6 +125,11 @@ client_main(
     int                                 rc;
     globus_xio_handle_t                 handle;
     globus_result_t                     result;
+    int                                 status_code;
+    char *                              reason_phrase;
+    globus_xio_data_descriptor_t        descriptor;
+    char                                buffer[0];
+    globus_hashtable_t                  headers;
 
     rc = globus_mutex_init(&mutex, NULL);
     if (rc != 0)
@@ -167,9 +163,7 @@ client_main(
             "HEAD",
             GLOBUS_XIO_HTTP_VERSION_UNSET,
             test_headers,
-            test_headers_length,
-            globus_l_xio_test_client_response_callback,
-            NULL);
+            test_headers_length);
 
     if (result != GLOBUS_SUCCESS)
     {
@@ -177,18 +171,62 @@ client_main(
         goto destroy_cond_exit;
     }
 
-    globus_mutex_lock(&mutex);
-    while (!done)
+    /* READ RESPONSE */
+    result = globus_xio_data_descriptor_init(&descriptor, handle);
+    if (result != GLOBUS_SUCCESS)
     {
-        globus_cond_wait(&cond, &mutex);
+        rc = 51;
+
+        goto close_exit;
     }
 
+    result = globus_xio_read(
+            handle,
+            buffer, 
+            0,
+            0,
+            NULL,
+            descriptor);
+
+    if (result != GLOBUS_SUCCESS)
+    {
+        rc = 52;
+
+        goto close_exit;
+    }
+
+    result = globus_xio_data_descriptor_cntl(
+        descriptor,
+        http_driver,
+        GLOBUS_XIO_HTTP_GET_RESPONSE,
+        &status_code,
+        &reason_phrase,
+        NULL,
+        &headers);
+
+    if (result != GLOBUS_SUCCESS || status_code < 200 || status_code > 299)
+    {
+        fprintf(stderr, "HEAD failed with \"%03d %s\"\n",
+                status_code,
+                reason_phrase);
+        rc = 53;
+
+        goto close_exit;
+    }
+
+    
+    if (!headers_match(headers))
+    {
+        rc = 54;
+
+        goto close_exit;
+    }
+close_exit:
     globus_xio_close(handle, NULL);
 
-    if (done == 1)
+    if (rc == 0)
     {
         fprintf(stdout, "Success\n");
-        rc = 0;
     }
     else
     {
@@ -375,33 +413,6 @@ globus_l_xio_test_server_request_callback(
     return;
 }
 /* globus_l_xio_test_server_request_callback() */
-
-static 
-void
-globus_l_xio_test_client_response_callback(
-    void *                              user_arg,
-    globus_result_t                     result,
-    int                                 status_code,
-    const char *                        reason_phrase,
-    globus_xio_http_version_t           version,
-    globus_hashtable_t                  headers)
-{
-    globus_mutex_lock(&mutex);
-    if (status_code == 200 && headers_match(headers))
-    {
-        done = 1;
-    }
-    else
-    {
-        fprintf(stderr,
-                "Invalid response: %d %s\n", status_code, reason_phrase);
-
-        done = -1;
-    }
-    globus_cond_signal(&cond);
-    globus_mutex_unlock(&mutex);
-}
-/* globus_l_xio_test_client_response_callback() */
 
 static
 globus_bool_t
