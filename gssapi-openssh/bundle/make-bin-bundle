@@ -43,7 +43,7 @@ if [ ! -e output/$NAME ]; then
     if [ "x$WORK_SCRIPTCREATED" != "x" ]; then
         rm -rf work/
     fi
-else; then
+else
     echo "Please remove output/$NAME before running this script."
     exit;
 fi
