@@ -89,6 +89,21 @@ my_strncpy(char					*destination,
 }
 
 char *
+my_snprintf(const char *format, ...)
+{
+    char *string = NULL;
+    va_list ap;
+    
+    va_start(ap, format);
+    
+    string = my_vsnprintf(format, ap);
+    
+    va_end(ap);
+    
+    return string;
+}
+
+char *
 my_vsnprintf(const char				*format,
 	     va_list				ap)
 {

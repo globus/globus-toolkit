@@ -52,6 +52,14 @@ my_strncpy(char					*destination,
 	   size_t				destination_length);
 
 /*
+ * my_snprintf()
+ *
+ * A wrapper around my_vnsprintf() for a variable number of arguments.
+ */
+char *
+my_snprintf(const char				*format, ...);
+	     
+/*
  * my_vsnprintf()
  *
  * A wrapper around vsnprintf(). For systems without vsnprintf() we just
