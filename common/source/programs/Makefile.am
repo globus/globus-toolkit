@@ -4,7 +4,7 @@ bin_SCRIPTS = globus-sh-exec
 sbin_SCRIPTS = globus-update-doxygen-index
 libexec_PROGRAMS = globus-libc-hostname globus-is-local-user
 
-EXTRA_DIST = $(sbin_SCRIPTS) $(bin_SCRIPTS)
+EXTRA_DIST = $(sbin_SCRIPTS) globus-sh-exec.in
 
 INCLUDES = -I$(top_srcdir)/library $(GPT_INCLUDES) 
 

@@ -66,6 +66,7 @@ AC_OUTPUT(
 	pkgdata/pkg_data_src.gpt
 	library/Makefile
 	programs/Makefile
+	programs/globus-sh-exec
 	config/Makefile
 	doxygen/Makefile
 	doxygen/Doxyfile 
