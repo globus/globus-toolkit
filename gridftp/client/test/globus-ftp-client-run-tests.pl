@@ -48,7 +48,7 @@ if(0 != system("./globus-ftp-client-get-test -s gsiftp://$source_host$source_fil
 }
 if(0 != system("./globus-ftp-client-put-test -d gsiftp://$dest_host$dest_file < $local_copy2 > /dev/null 2>&1") / 256)
 {
-    print "Sanity check of source ($local_copy2) to dest (gsiftp://$dest_host$dest_file) failed.\n";
+    print "Sanity check of local source ($local_copy2) to dest (gsiftp://$dest_host$dest_file) failed.\n";
     clean_remote_file($dest_host, $dest_file);
     exit 1;
 }

@@ -291,7 +291,7 @@ sub get_remote_file($$;$)
             $user = '';
         }
         
-        system("scp -B $user$host:$file $dest") == 0 or die "scp failed";
+        system("scp -q -B $user$host:$file $dest") == 0 or die "scp failed";
     }
 
     return $dest;
