@@ -34,16 +34,16 @@ INCLUDES += $(GPT_INCLUDES)
 
 # Scripts contains all of the scripts in this directory
 Scripts= \
-	globus_common_args_test.pl \
-	globus_common_poll_test.pl \
-	globus_common_error_stg_test.pl \
-	globus_common_thread_test.pl \
-	globus_common_error_test.pl \
-	globus_common_timedwait_test.pl \
-	globus_common_hash_test.pl \
-	globus_common_url_test.pl \
-	globus_common_mem_test.pl \
-	globus_common_module_test.pl \
+	globus-common-args-test.pl \
+	globus-common-poll-test.pl \
+	globus-common-error-stg-test.pl \
+	globus-common-thread-test.pl \
+	globus-common-error-test.pl \
+	globus-common-timedwait-test.pl \
+	globus-common-hash-test.pl \
+	globus-common-url-test.pl \
+	globus-common-mem-test.pl \
+	globus-common-module-test.pl \
 	run-common-tests.pl
 
 Data= \
