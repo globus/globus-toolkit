@@ -129,8 +129,10 @@ while(defined($_ = <STDIN>) && !m/^Log Message:$/)
 # (those that contain '-') so we need to match symbols to a branch rev
 # and query on the numeric revision
 my %tag_version;
+my $save_rlog;
 
 $_ = `rlog -h $rcsfile 2>&1`;
+$save_rlog = $_;
 if(s/.*symbolic names:\s*(.*)keyword substitution:.*/$1/s)
 {
     %tag_version = split(/[ \t\n:]+/);
@@ -167,7 +169,7 @@ if(s/.*symbolic names:\s*(.*)keyword substitution:.*/$1/s)
                 # branch
                 
                 # any other output is erroneous
-                die("DiRT Error: couldn't parse rlog output");
+                die("DiRT Error: couldn't parse rlog output\n$save_rlog");
             }
         }
         else
@@ -179,7 +181,7 @@ if(s/.*symbolic names:\s*(.*)keyword substitution:.*/$1/s)
 }
 else
 {
-    die("DiRT Error: couldn't parse rlog output");
+    die("DiRT Error: couldn't parse rlog output\n$save_rlog");
 }
 
 my $count = scalar(keys(%tags));
@@ -287,3 +289,4 @@ if($remove_lock)
 }
 
 exit(0);
+
