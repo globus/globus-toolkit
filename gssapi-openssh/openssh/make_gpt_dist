@@ -16,7 +16,7 @@
 #
 
 $srcdirname = "gsi_openssh";
-$srcpkgname = "gsi_openssh-3.1p1";
+$srcpkgname = "gsi_openssh-3.1p1-src";
 
 #
 # uncomment when we're more mature
