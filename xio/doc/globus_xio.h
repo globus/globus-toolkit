@@ -27,7 +27,6 @@
  *  - @ref stack_setup
  *  - @ref target_setup
  *  - @ref handle_setup
- *  - @ref muttable_attrs
  *  - @ref timeouts
  *  - @ref dd_user
  *  - @ref signal_user
@@ -199,13 +198,23 @@
  *  @ingroup GLOBUS_XIO_API
  *  Lookup a driver structure.
  *
- *  A driver structure is a static pointer that has a globally uniques 
- *  string asociated with it.  This may cause a search in .so
- *  Initialize a handle target with a given attribute set.
+ *  This function gets a pointer to the driver structure associated with the
+ *  given string.  The string is globally unique to the driver according to
+ *  the globus_xio driving naming convention.  If the driver is in a 
+ *  dynamically linked library the first time this funciton is called with
+ *  any given string it will cause the library to be loaded.
+ *
+ *  @param driver
+ *         an out parameter.  Upon return from this function this will
+ *         point to the driver structure.
+ *
+ *  @param driver_lookup_string
+ *         The string that uniquely identifies the requested driver 
+ *         according to the globus_xio driver naming convention.
  */
 
 globus_result_t
-globus_xio_load_driver(
+globus_xio_get_driver(
     globus_xio_driver_t *                       driver,
     const char *                                driver_lookup_string);
 
@@ -233,6 +242,7 @@ globus_xio_load_driver(
  */
 
 /**
+ *  @ingroup GLOBUS_XIO_API
  *  Intialize a globus xio attribute.
  *
  *  @param attr
@@ -246,6 +256,7 @@ globus_xio_attr_init(
     globus_xio_attr_t *                         attr);
 
 /**
+ *  @ingroup GLOBUS_XIO_API
  *  Manipulate the values associated in the attr.
  *
  *  This function provides a means to access the attr structure.  What
@@ -259,6 +270,16 @@ globus_xio_attr_init(
  *  below:
  *
  *
+ *  @param attr
+ *         The attribute structure to be intialized.
+ *
+ *  @param driver
+ *         If this is a driver specific attribute this should point to the
+ *         driver in which the user is interested.
+ *
+ *  @param cmd
+ *         An integer describing what function to preform.
+ *
  *  TODO: define the values.
  *  .  
  */
@@ -270,6 +291,7 @@ globus_xio_attr_cntl(
     ...);
 
 /**
+ *  @ingroup GLOBUS_XIO_API
  *  Clean up resources associated with an attribute.
  *
  *  @param attr
@@ -286,7 +308,16 @@ globus_xio_attr_destroy(
  */
 
 /**
+ *  @ingroup GLOBUS_XIO_API
  *  Initialize a stack object 
+ *
+ *  @param stack
+ *         An out parameter.  Upon return from this function this will point
+ *         to the initalzed stack adt.
+ *
+ *  @param stack_atttr
+ *         Attributes describing how to initialize the stack attr.  This 
+ *         may be NULL
  */
 globus_result_t
 globus_xio_stack_init(
@@ -294,10 +325,22 @@ globus_xio_stack_init(
     globus_xio_attr_t                           stack_attr);
 
 /**
+ *  @ingroup GLOBUS_XIO_API
  *  Push a driver onto a stack.
  *
  *  No attrs are associated with a driver. The stack represents the
  *  ordered lists of transform drivers and 1 transport driver.
+ *
+ *  @param stack 
+ *         The stack adt onto which the driver will be pushed.
+ *
+ *  @param driver
+ *         The driver to be pushed onto the stack.
+ *
+ *  @param driver_attr
+ *         Attributes describing the drivers setup on this particular
+ *         stack object.
+ *  
  */
 globus_result_t
 globus_xio_stack_push_driver(
@@ -306,14 +349,34 @@ globus_xio_stack_push_driver(
     globus_xio_attr_t                           driver_attr);
 
 /**
+ *  @ingroup GLOBUS_XIO_API
  *  Destroy a stack object.
+ *
+ *  Clean up all resources associated with the given stack object.
+ * 
+ *  @param stack
+ *         The stack to clean.
  */
 globus_result_t
 globus_xio_stack_destroy(
     globus_xio_stack_t                          stack);
 
 /**
- *  server 
+ *  @ingroup GLOBUS_XIO_API
+ *  Initialize a server adt.
+ *
+ *  Iniotialize a server structure according to the given stack and 
+ *  attributes.
+ *
+ *  @param server.
+ *         An out parameter.  Upon completion of this funciton this 
+ *         will point to an intialized server adt.
+ *
+ *  @param server_attr
+ *         Attributes describing how to initialize the server object.
+ *
+ *  @param stack
+ *         The stack adt describing the order of drivers that will be used.
  */
 globus_result_t
 globus_xio_server_init(
@@ -322,8 +385,24 @@ globus_xio_server_init(
     globus_xio_stack_t                          stack);
 
 /**
- *  This is used to get the contact string 
+ *  @ingroup GLOBUS_XIO_API
+ *  Perform a get or set on a server object.
  *
+ *  This funciton allows the user to query a server object or to set mutable
+ *  attributes upon this server object.
+ *
+ *  @param server
+ *         The server object to perform the given command upon.
+ *
+ *  @param driver
+ *         If NULL this opeeration is performed in a general globus_xio way,
+ *         if not it is performed as a driver specific attribute.
+ *
+ *  @param cmd
+ *         The function to perform.
+ *
+ *         GLOBUS_XIO_SERVER_GET_CONTACT_STIRNG
+ * 
  *  TODO: define all possible values for cmd
  */
 globus_result_t
@@ -334,7 +413,23 @@ globus_xio_server_cntl(
     ...);
 
 /**
- * in tcp driver case this is an accept
+ *  @ingroup GLOBUS_XIO_API
+ *  Accept a connection request from a server.
+ *
+ *  This function is called when the user wishes to accept a connection
+ *  from the server.  Once a connection is accepted the target parameter 
+ *  is initialized and it can be queried for information such as IP address
+ *  from which the connection was made, etc.
+ *
+ *  @param out_traget
+ *         an out parameter.  Upon completion of this function this will
+ *         point to an initialized target.
+ *
+ *  @param target_attr
+ *         Attributes describing how to initialize the target.
+ *
+ *  @param server
+ *         The server object from which the target is accepted.
  */
 globus_result_t
 globus_xio_server_accept(
@@ -342,6 +437,34 @@ globus_xio_server_accept(
     globus_xio_attr_t                           target_attr,
     globus_xio_server_t                         server);
 
+/**
+ *  @ingroup GLOBUS_XIO_API
+ *  Register accept a connection request from a server.
+ *
+ *  This function is called when the user wishes to accept a connection
+ *  from the server in an asychronous manner.  Once a connection is accepted 
+ *  the callback is called and the target parameter is initialized.
+ *  It then can be queried for information such as IP address
+ *  from which the connection was made, etc.
+ *
+ *  @param out_traget
+ *         an out parameter.  Once the callback is called this will point
+ *         to an initialized target.
+ *
+ *  @param target_attr
+ *         Attributes describing how to initialize the target.
+ *
+ *  @param server
+ *         The server object from which the target is accepted.
+ *
+ *  @param cb
+ *         A [pointer to the callback functio nthat will be called once
+ *         a target has ben accepted from the server.
+ *
+ *  @param user_arg
+ *         An opaque pointer to user defined memory.  This pointer will be
+ *         threaded through to the callback function.
+ */
 globus_result_t
 globus_xio_server_register_accept(
     globus_xio_target_t *                       out_target,
@@ -350,12 +473,40 @@ globus_xio_server_register_accept(
     globus_xio_callback_t                       cb,
     void *                                      user_arg);
 
+/**
+ *  @ingroup GLOBUS_XIO_API
+ *  Destroy a server ADT
+ *
+ *  Clean up all memory and other resources associated with a server ADT.
+ *
+ *  @param server
+ *         The server to be destroyed.
+ */
 globus_result_t
 globus_xio_server_destroy(
     globus_xio_server_t                         server);
 
 /**
- *  client init
+ *  @ingroup GLOBUS_XIO_API
+ *  Intialize a traget for use with a client open.
+ *
+ *  This function will initialize a target.  A target intialized with 
+ *  this function will be opened in a client manner.  To user a target
+ *  in a server manner see globus_xio_server_accept().
+ *
+ *  @param target
+ *         an out parameter.  Upon completion of this function this will
+ *         point to an initialized target.
+ *
+ *  @param target_attr
+ *         attributes describbing how to initialize the target.
+ *
+ *  @param contact-string
+ *         The contact string to initialize this client target with.
+ *
+ *  @param stack
+ *         The stack adt describing the order of drivers that will be used.
+ *         
  */
 globus_result_t
 globus_xio_target_init(
@@ -365,7 +516,21 @@ globus_xio_target_init(
     globus_xio_stack_t                          stack);
 
 /**
- *  Query the target for info/
+ *  @ingroup GLOBUS_XIO_API
+ *  Perform a get or set on a target object.
+ *
+ *  This funciton allows the user to query a target object or to set mutable
+ *  attributes upon this server object.
+ *
+ *  @param target
+ *         The target object to perform the given command upon.
+ *
+ *  @param driver
+ *         If NULL this opeeration is performed in a general globus_xio way,
+ *         if not it is performed as a driver specific attribute.
+ *
+ *  @param cmd
+ *         The function to perform.
  *
  *  TODO: list all the values for cmd
  */
@@ -377,8 +542,17 @@ globus_xio_target_cntl(
     ...);
 
 /**
+ *  @ingroup GLOBUS_XIO_API
+ *  Destroy a target
+ *
+ *  This function cleans up all resources associated with a target
+ *  ADT.
+ * 
  *  This only needs to be called if the target object is not passed
  *  to globus_xio_open. 
+ *
+ *  @param target
+ *         The target to be destroyed.
  */
 globus_result_t
 globus_xio_target_destroy(
@@ -387,15 +561,6 @@ globus_xio_target_destroy(
 /******************************************************************
  *                      handle construction
  *****************************************************************/
-
-enum globus_xio_handle_attr_cmd_t
-{
-    GLOBUS_XIO_HANDLE_ATTR_OPEN_TIMEOUT,
-    GLOBUS_XIO_HANDLE_ATTR_READ_TIMEOUT,
-    GLOBUS_XIO_HANDLE_ATTR_WRITE_TIMEOUT,
-    GLOBUS_XIO_HANDLE_ATTR_CLOSE_TIMEOUT,
-    GLOBUS_XIO_HANDLE_ATTR_ALL_TIMEOUT,
-};
 
 /******************************************************************
  *                      setting timeout values
@@ -465,6 +630,9 @@ globus_xio_data_descriptor_init(
 /**
  *  @ingroup GLOBUS_XIO_API
  *  clean up a data descriptor.
+ *
+ *  @param data_desc
+ *         The data descriptor to be destroyed.
  */
 globus_result_t
 globus_xio_data_descriptor_destroy(
@@ -472,6 +640,20 @@ globus_xio_data_descriptor_destroy(
 
 /**
  *  @ingroup GLOBUS_XIO_API
+ *
+ *  Perform a set or a get of mutable attributes on the data descriptor.
+ *
+ *  @param data_desripotr
+ *         The ADT to be queried or altered.
+ *
+ *  @param driver
+ *         If NULL this opeeration is performed in a general globus_xio way,
+ *         if not it is performed as a driver specific attribute.
+ *
+ *  @param cmd
+ *         The function to perform.
+ *
+ *   TODO: list of possible commands
  */
 globus_result_t
 globus_xio_data_descriptor_cntl(
@@ -520,7 +702,22 @@ typedef void (*globus_xio_data_callback_t)(
  *  on a handle.  The operation performed depends on the value of cmd.
  *  Possible values are:
  *
+ *  @param handle
+ *         THe handle to be queried or altered
+ *
+ *  @param driver
+ *         If NULL this opeeration is performed in a general globus_xio way,
+ *         if not it is performed as a driver specific attribute.
+ *
+ *  @param cmd
+ *         The function to perform.
+ * 
  *  TODO: list possible values.
+ *  GLOBUS_XIO_HANDLE_ATTR_OPEN_TIMEOUT
+ *  GLOBUS_XIO_HANDLE_ATTR_READ_TIMEOUT
+ *  GLOBUS_XIO_HANDLE_ATTR_WRITE_TIMEOUT
+ *  GLOBUS_XIO_HANDLE_ATTR_CLOSE_TIMEOUT
+ *  GLOBUS_XIO_HANDLE_ATTR_ALL_TIMEOUT
  */
 globus_result_t
 globus_xio_handle_cntl(
@@ -534,11 +731,31 @@ globus_xio_handle_cntl(
  *  @ingroup GLOBUS_XIO_API
  *
  * Creates an open handle based on the state contained in the given
- * factory.
+ * traget and attribute.
  * 
  * No operation can be preformed on a handle until it is opened.  If 
  * an already open handle used the information contaned in that handle
- * will be destoyed.
+ * will be destoyed.  Upon completion of this function the target passed
+ * in will be destroyed.
+ *
+ * @param handle
+ *        An out parameter.  Upon succesful completion of this funciton
+ *        this will point to an initialized handle.
+ *
+ * @param attr
+ *        Attributes describing how to open a handle.
+ *
+ * @param target
+ *        A target ADT describing what globus_xio is to open.  Upon
+ *        completion of this function this ADT will be destroyed.
+ *
+ * @param cb
+ *        A callback function that will be called when the open operation
+ *        has completed.
+ *
+ * @param user_arg
+ *        An opaque arguement provided by the user that will be threaded 
+ *        through to the callback for  the users interpritation.
  */ 
 globus_result_t
 globus_xio_register_open(
@@ -547,6 +764,16 @@ globus_xio_register_open(
     globus_xio_target_t                         target,
     globus_xio_callback_t                       cb,
     void *                                      user_arg);
+
+/**
+ *  The blocking form of globus_xio_register_open.
+ */
+globus_result_t
+globus_xio_open(
+    globus_xio_handle_t *                       handle,
+    globus_xio_attr_t                           attr,
+    globus_xio_target_t                         target);
+
 
 /**
  * Read data from a handle
