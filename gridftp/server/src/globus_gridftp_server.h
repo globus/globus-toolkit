@@ -202,7 +202,10 @@ typedef struct globus_gfs_event_info_s
     globus_off_t                        recvd_bytes;
     /** ranges of bytes received for current transfer */
     globus_range_list_t                 recvd_ranges;
+    /** unique key of session that event is related to */
     int                                 session_id;
+    /** unique key of data handle that event is related to */    
+    int                                 data_handle_id;
 } globus_gfs_event_info_t;
 
 /*

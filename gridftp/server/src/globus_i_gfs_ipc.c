@@ -986,6 +986,7 @@ globus_l_gfs_ipc_unpack_event_reply(
             break;
             
         case GLOBUS_GFS_EVENT_DISCONNECTED:
+            GFSDecodeUInt32(buffer, len, reply->data_handle_id);
             break;
             
         case GLOBUS_GFS_EVENT_BYTES_RECVD:
@@ -2115,6 +2116,8 @@ globus_gfs_ipc_reply_event(
                     break;
                     
                 case GLOBUS_GFS_EVENT_DISCONNECTED:
+                    GFSEncodeUInt32(
+                        buffer, ipc->buffer_size, ptr, reply->data_handle_id);
                     break;
                     
                 case GLOBUS_GFS_EVENT_BYTES_RECVD:

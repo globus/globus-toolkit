@@ -1337,6 +1337,7 @@ globus_l_gfs_data_write_eof_cb(
 
     event_reply->type = GLOBUS_GFS_EVENT_DISCONNECTED;
     event_reply->id = op->id;
+    event_reply->data_handle_id = (int) op->data_handle;
     if(op->event_callback != NULL)
     {
         op->event_callback(
@@ -2028,6 +2029,7 @@ globus_gridftp_server_finished_transfer(
                 globus_calloc(1, sizeof(globus_gfs_ipc_event_reply_t));
          
             event_reply->id = op->id;
+            event_reply->data_handle_id = (int) op->data_handle;
             
             /* XXX mode s only */         
             event_reply->type = GLOBUS_GFS_EVENT_DISCONNECTED;        
@@ -2079,6 +2081,7 @@ globus_gridftp_server_finished_transfer(
 
         event_reply->type = GLOBUS_GFS_EVENT_DISCONNECTED;
         event_reply->id = op->id;
+        event_reply->data_handle_id = (int) op->data_handle;
         if(op->event_callback != NULL)
         {
             op->event_callback(

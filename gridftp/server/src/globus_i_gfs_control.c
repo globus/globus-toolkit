@@ -758,9 +758,8 @@ globus_l_gfs_data_event_cb(
         globus_gridftp_server_control_get_mode(op, &mode);
         if(mode != 'E')
         {
-/*            globus_gridftp_server_control_disconnected(
-                instance->server_handle, data);
-*/
+            globus_gridftp_server_control_disconnected(
+                instance->server_handle, (void *) reply->data_handle_id);
         }
         break;
 
