@@ -11,6 +11,7 @@
 
 #include <string.h>		/* strstr(), strncmp() */
 #include <ctype.h>		/* isupper() */
+#include <time.h>
 #include "globus_i_ftp_client.h"
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
@@ -85,6 +86,12 @@ globus_l_ftp_client_data_force_close_callback(
     void *					callback_arg,
     globus_ftp_control_handle_t *		control_handle,
     globus_object_t *				error);
+
+static
+void
+globus_l_ftp_client_parse_mdtm(
+    globus_i_ftp_client_handle_t *		client_handle,
+    globus_ftp_control_response_t *		response);
 
 typedef struct 
 {
@@ -545,14 +552,36 @@ redo:
 		    target == client_handle->dest &&
 		    target->attr->resume_third_party &&
 		    target->mode == GLOBUS_FTP_CONTROL_MODE_STREAM)
+		   ||
+                   (client_handle->op == GLOBUS_FTP_CLIENT_SIZE)
 	       )
 	   )
 	  )
 	{
+	    if(client_handle->op == GLOBUS_FTP_CLIENT_SIZE)
+	    {
+		result = globus_error_construct_string(
+		    GLOBUS_FTP_CLIENT_MODULE,
+		    GLOBUS_NULL,
+		    "[%s] FTP server does not support SIZE\n",
+		    GLOBUS_FTP_CLIENT_MODULE->module_name,
+		    response->response_buffer,
+		    myname);
+
+		goto result_fault;
+
+	    }
 	    goto skip_size;
 	}
 	
-	target->state = GLOBUS_FTP_CLIENT_TARGET_SIZE;
+	if(client_handle->op == GLOBUS_FTP_CLIENT_SIZE)
+	{
+	    target->state = GLOBUS_FTP_CLIENT_TARGET_NEED_COMPLETE;
+	}
+	else
+	{
+	    target->state = GLOBUS_FTP_CLIENT_TARGET_SIZE;
+	}
 
 	target->mask = GLOBUS_FTP_CLIENT_CMD_MASK_INFORMATION;
 
@@ -1252,6 +1281,10 @@ redo:
 	else if(client_handle->op == GLOBUS_FTP_CLIENT_MOVE)
 	{
 	    target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_RNFR;
+	}
+	else if(client_handle->op == GLOBUS_FTP_CLIENT_MDTM)
+	{
+	    target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_MDTM;
 	}
 	else if(client_handle->op == GLOBUS_FTP_CLIENT_LIST ||
 		client_handle->op == GLOBUS_FTP_CLIENT_NLST)
@@ -2019,6 +2052,41 @@ redo:
 	}
 	break;
     
+    case GLOBUS_FTP_CLIENT_TARGET_SETUP_MDTM:
+
+	target->state = GLOBUS_FTP_CLIENT_TARGET_NEED_COMPLETE;
+	
+	target->mask = GLOBUS_FTP_CLIENT_CMD_MASK_FILE_ACTIONS;
+	
+	globus_i_ftp_client_plugin_notify_command(
+	    client_handle,
+	    &target->url,
+	    target->mask,
+	    "MDTM");
+	
+	if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
+	   client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART)
+	{
+	    break;
+	}
+	
+	globus_assert(client_handle->state == 
+		      GLOBUS_FTP_CLIENT_HANDLE_SOURCE_SETUP_CONNECTION);
+	
+	result = 
+	    globus_ftp_control_send_command(
+		handle,
+		"MDTM %s" CRLF,
+		globus_i_ftp_client_response_callback,
+		user_arg,
+		target->url.url_path);
+	
+	if(result != GLOBUS_SUCCESS)
+	{
+	    goto result_fault;
+	}
+	break;
+	
     case GLOBUS_FTP_CLIENT_TARGET_SETUP_GET:
 	globus_assert(
 	    client_handle->state ==
@@ -2558,8 +2626,25 @@ redo:
 			    response->response_buffer,
 			    myname);
 		    }
-		    client_handle->state =
-			GLOBUS_FTP_CLIENT_HANDLE_FAILURE;
+		    if(client_handle->op != GLOBUS_FTP_CLIENT_MDTM &&
+		       client_handle->op != GLOBUS_FTP_CLIENT_SIZE)
+		    {
+			client_handle->state =
+			    GLOBUS_FTP_CLIENT_HANDLE_FAILURE;
+		    }
+		}
+		if(client_handle->op == GLOBUS_FTP_CLIENT_MDTM &&
+		   response->code == 213)
+		{
+		    globus_l_ftp_client_parse_mdtm(client_handle,
+			                           response);
+		}
+		else if(client_handle->op == GLOBUS_FTP_CLIENT_SIZE &&
+			response->code == 213)
+		{
+		    globus_libc_scan_off_t(response->response_buffer+4,
+					   client_handle->size_pointer,
+					   GLOBUS_NULL);
 		}
 	    }
 	}
@@ -3415,6 +3500,118 @@ globus_l_ftp_client_parse_restart_marker(
     }
 }
 /* globus_l_ftp_client_parse_restart_marker() */
+
+static
+void
+globus_l_ftp_client_parse_mdtm(
+    globus_i_ftp_client_handle_t *		client_handle,
+    globus_ftp_control_response_t *		response)
+{
+    globus_off_t				offset, end;
+    char *					p;
+    globus_result_t 				res;
+    struct tm					tm;
+    time_t					t;
+    double					fraction;
+    unsigned long				nsec = 0UL;
+    int 					rc;
+    globus_object_t *				err;
+    int						i;
+    static char * myname = "globus_l_ftp_client_parse_mdtm";
+
+    if(response->code != 213)
+    {
+	return;
+    }
+    p = (char *) response->response_buffer;
+
+    /* skip 213 <SP> */
+    p += 4;
+    while(!isdigit(*p)) p++;
+
+    if(strlen(p) < 14)
+	goto error_exit;
+
+    for(i = 0; i < 14; i++)
+    {
+	if(!isdigit(*(p+i)))
+	    goto error_exit;
+    }
+    memset(&tm, '\0', sizeof(struct tm));
+
+    /* 4 digit year */
+    rc = sscanf(p, "%04d", &tm.tm_year);
+    if(rc != 1)
+    {
+	goto error_exit;
+    }
+    tm.tm_year -= 1900;
+    p += 4;
+
+    /* 2 digit month [01-12] */
+    rc = sscanf(p, "%02d", &tm.tm_mon);
+    if(rc != 1)
+    {
+	goto error_exit;
+    }
+    tm.tm_mon--;
+    p += 2;
+
+    /* 2 digit day/month [01-31] */
+    rc = sscanf(p, "%02d", &tm.tm_mday);
+    if(rc != 1)
+    {
+	goto error_exit;
+    }
+    p += 2;
+    
+    /* 2 digit hour [00-23] */
+    rc = sscanf(p, "%02d", &tm.tm_hour);
+    if(rc != 1)
+    {
+	goto error_exit;
+    }
+    p += 2;
+
+    /* 2 digit minute [00-59] */
+    rc = sscanf(p, "%02d", &tm.tm_min);
+    if(rc != 1)
+    {
+	goto error_exit;
+    }
+    p += 2;
+
+    /* 2 digit second [00-60] */
+    rc = sscanf(p, "%02d", &tm.tm_sec);
+    if(rc != 1)
+    {
+	goto error_exit;
+    }
+    p += 2;
+
+    if(*p == '.')
+    {
+	sscanf(p, "%f", &fraction);
+	nsec = fraction * 1000000000;
+    }
+    t = mktime(&tm);
+
+    client_handle->modification_time_pointer->tv_sec = t;
+    client_handle->modification_time_pointer->tv_nsec = nsec;
+
+    return;
+
+error_exit:
+    if(client_handle->err == GLOBUS_SUCCESS)
+    {
+	client_handle->err = globus_error_construct_string(
+		GLOBUS_FTP_CLIENT_MODULE,
+		GLOBUS_NULL,
+		"[%s] Invalid modification time response from server at %s\n",
+		GLOBUS_FTP_CLIENT_MODULE->module_name,
+		myname);
+    }
+}
 
 static
 globus_bool_t

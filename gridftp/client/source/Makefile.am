@@ -22,6 +22,7 @@ Sources= \
 	globus_ftp_client_attr.c \
 	globus_ftp_client.c \
 	globus_ftp_client_data.c \
+	globus_ftp_client_exists.c \
 	globus_ftp_client_debug_plugin.c \
 	globus_ftp_client_handle.c \
 	globus_ftp_client_plugin.c \
@@ -48,23 +49,8 @@ include_HEADERS= \
 # a list of libtool libraries that are to be installed in $prefix/lib
 lib_LTLIBRARIES = libglobus_ftp_client_$(GLOBUS_FLAVOR_NAME).la
 
-# _SOURCES is an automake macro which contains
-# a list of sources needed to compile the library.
 libglobus_ftp_client___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
-
-# _LDFLAGS is an automake macro which contains
-# directives to the linker add before the list of objects and libraries.
-# 
-# GPT_LDFLAGS is a macro that contains the linker directives GPT generated 
-# from the dependent packages
 libglobus_ftp_client___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS)
-
-# _LIBADD is an automake macro which contains
-# directives to the linker added after the list of objects.  
-# LIBADD is specific for linking libraries
-# 
-# GPT_LIB_LINKS is a macro that contains the linker directives GPT generated 
-# from the dependent packages
 libglobus_ftp_client___GLOBUS_FLAVOR_NAME__la_LIBADD = $(GPT_LIB_LINKS)
 
 include $(top_srcdir)/globus_automake_post

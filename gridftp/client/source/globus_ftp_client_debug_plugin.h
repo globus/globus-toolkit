@@ -58,6 +58,11 @@ globus_ftp_client_debug_plugin_set_stream(
     FILE *					stream);
 
 globus_result_t
+globus_ftp_client_debug_plugin_set_text(
+    globus_ftp_client_plugin_t *		plugin,
+    const char *				text);
+
+globus_result_t
 globus_ftp_client_debug_plugin_destroy(
     globus_ftp_client_plugin_t *		plugin);
 

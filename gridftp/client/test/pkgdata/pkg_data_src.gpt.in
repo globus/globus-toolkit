@@ -55,12 +55,6 @@
 </Version>
 </Dependency>
 </Source_Dependencies>
-<Source_Dependencies Type="pgm_runtime" >
-<Dependency Name="globus_testing" Package="data" >
-<Version >
-</Version>
-</Dependency>
-</Source_Dependencies>
 <Build_Environment >
 <cflags >@GPT_CFLAGS@</cflags>
 <external_includes >@GPT_EXTERNAL_INCLUDES@</external_includes>

@@ -147,7 +147,7 @@ globus_ftp_client_restart_marker_t;
  * globus_ftp_client_handle_destroy(), globus_ftp_client_handleattr_t
  */
 typedef struct globus_i_ftp_client_handle_t * globus_ftp_client_handle_t;
-typedef struct globus_ftp_client_plugin_s globus_ftp_client_plugin_t;
+typedef struct globus_i_ftp_client_plugin_t * globus_ftp_client_plugin_t;
 
 /**
  * Operation complete callback.
@@ -515,7 +515,6 @@ globus_ftp_client_partial_third_party_transfer(
     globus_ftp_client_complete_callback_t	complete_callback,
     void *					callback_arg);
 
-/*** added by bresnaha ****/
 globus_result_t
 globus_ftp_client_extended_get(
     globus_ftp_client_handle_t *                handle,
@@ -548,11 +547,36 @@ globus_ftp_client_extended_third_party_transfer(
     globus_ftp_client_restart_marker_t *        restart,
     globus_ftp_client_complete_callback_t       complete_callback,
     void *                                      callback_arg);
-/**** end add by bresnaha ****/
 
 globus_result_t
 globus_ftp_client_abort(
     globus_ftp_client_handle_t *		handle);
+
+globus_result_t
+globus_ftp_client_modification_time(
+    globus_ftp_client_handle_t *		handle,
+    const char *				url,
+    globus_ftp_client_operationattr_t *		attr,
+    globus_abstime_t *				modification_time,
+    globus_ftp_client_complete_callback_t	complete_callback,
+    void *					callback_arg);
+
+globus_result_t
+globus_ftp_client_size(
+    globus_ftp_client_handle_t *		handle,
+    const char *				url,
+    globus_ftp_client_operationattr_t *		attr,
+    globus_off_t *				size,
+    globus_ftp_client_complete_callback_t	complete_callback,
+    void *					callback_arg);
+
+globus_result_t
+globus_ftp_client_exists(
+    globus_ftp_client_handle_t *		handle,
+    const char *				url,
+    globus_ftp_client_operationattr_t *		attr,
+    globus_ftp_client_complete_callback_t	complete_callback,
+    void *					callback_arg);
 #endif
 
 /**

@@ -56,12 +56,14 @@ test_PROGRAMS= \
 	globus-ftp-client-cache-all-test \
 	globus-ftp-client-create-destroy-test \
 	globus-ftp-client-delete-test \
+	globus-ftp-client-exist-test \
 	globus-ftp-client-extended-get-test \
 	globus-ftp-client-extended-get-caching-test \
 	globus-ftp-client-extended-put-test \
 	globus-ftp-client-extended-transfer-test \
 	globus-ftp-client-lingering-get-test \
 	globus-ftp-client-mkdir-test \
+	globus-ftp-client-modification-time-test \
 	globus-ftp-client-move-test \
 	globus-ftp-client-multiget-test \
 	globus-ftp-client-multiple-bad-buffer-test \
@@ -72,6 +74,7 @@ test_PROGRAMS= \
 	globus-ftp-client-partial-transfer-test \
 	globus-ftp-client-read-all-test \
 	globus-ftp-client-rmdir-test \
+	globus-ftp-client-size-test \
 	globus-ftp-client-get-test \
 	globus-ftp-client-caching-get-test \
 	globus-ftp-client-put-test \
@@ -165,6 +168,15 @@ globus_ftp_client_ascii_verbose_list_test_LDFLAGS = $(GPT_test_LDFLAGS)
 
 globus_ftp_client_cache_all_test_SOURCES = globus_ftp_client_cache_all_test.c $(LibHeaders)
 globus_ftp_client_cache_all_test_LDFLAGS = $(GPT_test_LDFLAGS)
+
+globus_ftp_client_exist_test_SOURCES = globus_ftp_client_exist_test.c $(LibHeaders)
+globus_ftp_client_exist_test_LDFLAGS = $(GPT_test_LDFLAGS)
+
+globus_ftp_client_modification_time_test_SOURCES = globus_ftp_client_modification_time_test.c $(LibHeaders)
+globus_ftp_client_modification_time_test_LDFLAGS = $(GPT_test_LDFLAGS)
+
+globus_ftp_client_size_test_SOURCES = globus_ftp_client_size_test.c $(LibHeaders)
+globus_ftp_client_size_test_LDFLAGS = $(GPT_test_LDFLAGS)
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

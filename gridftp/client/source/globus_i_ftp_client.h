@@ -196,7 +196,9 @@ typedef enum
     GLOBUS_FTP_CLIENT_NLST,
     GLOBUS_FTP_CLIENT_GET,
     GLOBUS_FTP_CLIENT_PUT,
-    GLOBUS_FTP_CLIENT_TRANSFER
+    GLOBUS_FTP_CLIENT_TRANSFER,
+    GLOBUS_FTP_CLIENT_MDTM,
+    GLOBUS_FTP_CLIENT_SIZE
 }
 globus_i_ftp_client_operation_t;
 
@@ -253,10 +255,12 @@ typedef enum
     GLOBUS_FTP_CLIENT_TARGET_SETUP_RMDIR,
     GLOBUS_FTP_CLIENT_TARGET_SETUP_RNFR,
     GLOBUS_FTP_CLIENT_TARGET_SETUP_RNTO,
+    GLOBUS_FTP_CLIENT_TARGET_SETUP_MDTM,
     GLOBUS_FTP_CLIENT_TARGET_LIST,
     GLOBUS_FTP_CLIENT_TARGET_NLST,
     GLOBUS_FTP_CLIENT_TARGET_RETR,
     GLOBUS_FTP_CLIENT_TARGET_STOR,
+    GLOBUS_FTP_CLIENT_TARGET_MDTM,
     GLOBUS_FTP_CLIENT_TARGET_READY_FOR_DATA,
     GLOBUS_FTP_CLIENT_TARGET_NEED_LAST_BLOCK,
     GLOBUS_FTP_CLIENT_TARGET_NEED_EMPTY_QUEUE,
@@ -410,6 +414,12 @@ typedef struct globus_i_ftp_client_handle_t
     globus_off_t                                base_offset;
     globus_off_t                                read_all_biggest_offset;
 
+    /** Pointer to user's modification time buffer */
+    globus_abstime_t *				modification_time_pointer;
+
+    /** Pointer to user's size buffer */
+    globus_off_t *				size_pointer;
+
     globus_mutex_t                              mutex;
 
     void *                                      user_pointer;
@@ -506,6 +516,88 @@ typedef struct globus_i_ftp_client_restart_s
     globus_callback_handle_t			callback_handle;
 }
 globus_i_ftp_client_restart_t;
+
+/**
+ * @struct globus_ftp_client_plugin_t
+ * Plugin.
+ * @ingroup globus_ftp_client_plugins
+ *
+ * Each plugin implementation should define a method for initializing
+ * one of these structures. Plugins may be implemented as either a
+ * static function table, or a specialized plugin with plugin-specific 
+ * attributes.
+ *
+ * Each plugin function may be either GLOBUS_NULL, or a valid function 
+ * pointer. If the function is GLOBUS_NULL, then the plugin will not
+ * be notified when the corresponding event happens.
+ */
+typedef struct globus_i_ftp_client_plugin_t
+{
+    /** 
+     * Plugin name.
+     *
+     * The plugin name is used by the FTP Client library to detect
+     * multiple instances of the same plugin being associated with
+     * a #globus_ftp_client_handleattr_t or #globus_ftp_client_handle_t.
+     * 
+     * Each plugin type should have a unique plugin name, which must
+     * be a NULL-terminated string of arbitrary length.
+     */
+    char *					plugin_name;
+
+    /**
+     * The value the user/plugin implementation passed into the plugin
+     * handling parts of the API.
+     */
+    globus_ftp_client_plugin_t *		plugin;
+
+    /**
+     * Plugin function pointers.
+     */
+    globus_ftp_client_plugin_copy_t		copy_func;
+    /**
+     * Plugin function pointers.
+     */
+    globus_ftp_client_plugin_destroy_t		destroy_func; 
+
+    globus_ftp_client_plugin_delete_t		delete_func;
+    globus_ftp_client_plugin_mkdir_t		mkdir_func;
+    globus_ftp_client_plugin_rmdir_t		rmdir_func;
+    globus_ftp_client_plugin_move_t		move_func;
+    globus_ftp_client_plugin_verbose_list_t     verbose_list_func;
+    globus_ftp_client_plugin_list_t		list_func;
+    globus_ftp_client_plugin_get_t		get_func;
+    globus_ftp_client_plugin_put_t		put_func;
+    globus_ftp_client_plugin_third_party_transfer_t
+						third_party_transfer_func;
+
+    globus_ftp_client_plugin_modification_time_t
+						modification_time_func;
+    globus_ftp_client_plugin_size_t		size_func;
+    globus_ftp_client_plugin_abort_t		abort_func;
+    globus_ftp_client_plugin_connect_t		connect_func;
+    globus_ftp_client_plugin_authenticate_t	authenticate_func;
+    globus_ftp_client_plugin_read_t		read_func;
+    globus_ftp_client_plugin_write_t		write_func;
+    globus_ftp_client_plugin_data_t		data_func;
+
+    globus_ftp_client_plugin_command_t		command_func;
+    globus_ftp_client_plugin_response_t		response_func;
+    globus_ftp_client_plugin_fault_t		fault_func;
+    globus_ftp_client_plugin_complete_t		complete_func;
+
+    /** 
+     * Command Mask
+     *
+     * The bits set in this mask determine which command responses the plugin
+     * is interested in. The command_mask should be a bitwise-or of
+     * the values in the globus_ftp_client_plugin_command_mask_t enumeration.
+     */
+    globus_ftp_client_plugin_command_mask_t	command_mask;
+
+    /** This pointer is reserved for plugin-specific data */
+    void *					plugin_specific;
+} globus_i_ftp_client_plugin_t;
 
 #ifndef DOXYGEN
 /* globus_ftp_client_attr.c */
@@ -657,6 +749,18 @@ globus_i_ftp_client_plugin_notify_transfer(
     const char *				dest_url,
     globus_i_ftp_client_operationattr_t *	dest_attr,
     const globus_ftp_client_restart_marker_t *	restart);
+
+void
+globus_i_ftp_client_plugin_notify_modification_time(
+    globus_i_ftp_client_handle_t *		handle,
+    const char *				url,
+    globus_i_ftp_client_operationattr_t *	attr);
+
+void
+globus_i_ftp_client_plugin_notify_size(
+    globus_i_ftp_client_handle_t *		handle,
+    const char *				url,
+    globus_i_ftp_client_operationattr_t *	attr);
 
 void
 globus_i_ftp_client_plugin_notify_restart(

@@ -14,16 +14,18 @@
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 #define PLUGIN_SUPPORTS_OP(op,plugin) \
-	   (((op) == GLOBUS_FTP_CLIENT_GET && (plugin)->get_func) \
-	    || ((op) == GLOBUS_FTP_CLIENT_PUT && (plugin)->put_func) \
-	    || ((op) == GLOBUS_FTP_CLIENT_TRANSFER && \
-                (plugin)->transfer_func) \
-            || ((op) == GLOBUS_FTP_CLIENT_LIST && (plugin)->list_func) \
-            || ((op) == GLOBUS_FTP_CLIENT_NLST && (plugin)->vlist_func) \
-            || ((op) == GLOBUS_FTP_CLIENT_DELETE && (plugin)->delete_func) \
-            || ((op) == GLOBUS_FTP_CLIENT_MKDIR && (plugin)->mkdir_func) \
-            || ((op) == GLOBUS_FTP_CLIENT_RMDIR && (plugin)->rmdir_func) \
-            || ((op) == GLOBUS_FTP_CLIENT_MOVE && (plugin)->move_func))
+   (((op) == GLOBUS_FTP_CLIENT_GET && (plugin)->get_func) \
+    || ((op) == GLOBUS_FTP_CLIENT_PUT && (plugin)->put_func) \
+    || ((op) == GLOBUS_FTP_CLIENT_TRANSFER && \
+	(plugin)->third_party_transfer_func) \
+    || ((op) == GLOBUS_FTP_CLIENT_LIST && (plugin)->list_func) \
+    || ((op) == GLOBUS_FTP_CLIENT_NLST && (plugin)->verbose_list_func) \
+    || ((op) == GLOBUS_FTP_CLIENT_DELETE && (plugin)->delete_func) \
+    || ((op) == GLOBUS_FTP_CLIENT_MKDIR && (plugin)->mkdir_func) \
+    || ((op) == GLOBUS_FTP_CLIENT_RMDIR && (plugin)->rmdir_func) \
+    || ((op) == GLOBUS_FTP_CLIENT_MOVE && (plugin)->move_func) \
+    || ((op) == GLOBUS_FTP_CLIENT_MDTM && (plugin)->modification_time_func) \
+    || ((op) == GLOBUS_FTP_CLIENT_SIZE && (plugin)->size_func))
 #endif
 
 
@@ -690,7 +692,395 @@ globus_ftp_client_plugin_restart_transfer(
 }
 /* globus_ftp_client_plugin_restart_transfer() */
 
+/**
+ * Abort a transfer operation.
+ * @ingroup globus_ftp_client_plugins
+ *
+ * This function will cause the currently executing transfer operation 
+ * to be aborted. When this happens, all plugins will be notified by
+ * their abort callbacks. Once those are processed, the complete
+ * callback will be called for all plugins, and then for the user's
+ * callback.
+ *
+ * The complete callback will indicate that the transfer did not
+ * complete successfully.
+ *
+ * @param handle
+ *        The handle which is associated with the transfer.
+ */
+globus_result_t
+globus_ftp_client_plugin_abort(
+    globus_ftp_client_handle_t *		handle)
+{
+    return globus_ftp_client_abort(handle);
+}
+/* globus_ftp_client_plugin_abort() */
 
+/**
+ * Add data channels to an existing put transfer.
+ * @ingroup globus_ftp_client_plugins
+ *
+ * This function will cause the currently executing transfer operation 
+ * to have additional data channels acquired if the attribute set
+ * allows it.
+ *
+ * @param handle
+ *        The handle which is associated with the transfer.
+ * @param num_channels
+ *        The number of channels to add to the transfer.
+ * @param stripe
+ *        The stripe number to have the channels added to.
+ *
+ * @note Do the plugins need to be notified when this happens?
+ */
+globus_result_t
+globus_ftp_client_plugin_add_data_channels(
+    globus_ftp_client_handle_t *		handle,
+    unsigned int				num_channels,
+    unsigned int				stripe)
+{
+    globus_result_t				result;
+    globus_object_t *				err;
+    globus_i_ftp_client_handle_t *		i_handle;
+    static char *				myname = "globus_ftp_client_plugin_add_data_channels";
+
+    i_handle = *handle;
+    globus_i_ftp_client_handle_lock(i_handle);
+    
+    if(i_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
+       i_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART ||
+       i_handle->state == GLOBUS_FTP_CLIENT_HANDLE_FAILURE)
+    {
+	err = globus_error_construct_string(
+	    GLOBUS_FTP_CLIENT_MODULE,
+	    GLOBUS_NULL,
+	    "[%s] Handle not transferring data\n",
+	    GLOBUS_FTP_CLIENT_MODULE->module_name,
+	    myname);
+
+	goto err_exit;
+    }
+
+    if(i_handle->op != GLOBUS_FTP_CLIENT_PUT)
+    {
+	err = globus_error_construct_string(
+	    GLOBUS_FTP_CLIENT_MODULE,
+	    GLOBUS_NULL,
+	    "[%s] Cannot add data channels for 3rd party transfer\n",
+	    GLOBUS_FTP_CLIENT_MODULE->module_name,
+	    myname);
+	goto err_exit;
+    }
+    else
+    {
+	result = globus_ftp_control_data_add_channels(
+	    i_handle->dest->control_handle,
+	    num_channels,
+	    stripe);
+
+	goto result_exit;
+    }
+
+ err_exit:
+    result = globus_error_put(err);
+    globus_i_ftp_client_handle_unlock(i_handle);
+
+ result_exit:
+    return result;
+}
+/* globus_ftp_client_plugin_add_data_channels() */
+
+/**
+ * Remove data channels from an existing put transfer.
+ * @ingroup globus_ftp_client_plugins
+ *
+ * This function will cause the currently executing transfer operation 
+ * to have data channels removed,  if the attribute set
+ * allows it.
+ *
+ * @param handle
+ *        The handle which is associated with the transfer.
+ * @param num_channels
+ *        The number of channels to remove from the transfer.
+ * @param stripe
+ *        The stripe number to have the channels removed from.
+ *
+ * @note Do the plugins need to be notified when this happens?
+ */
+globus_result_t
+globus_ftp_client_plugin_remove_data_channels(
+    globus_ftp_client_handle_t *		handle,
+    unsigned int				num_channels,
+    unsigned int				stripe)
+{
+    globus_result_t				result;
+    globus_object_t *				err;
+    globus_i_ftp_client_handle_t *		i_handle;
+    static char *				myname = "globus_ftp_client_plugin_remove_data_channels";
+
+    globus_i_ftp_client_handle_lock(i_handle);
+    
+    if(i_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
+       i_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART ||
+       i_handle->state == GLOBUS_FTP_CLIENT_HANDLE_FAILURE)
+    {
+	err = globus_error_construct_string(
+	    GLOBUS_FTP_CLIENT_MODULE,
+	    GLOBUS_NULL,
+	    "[%s] Handle not transferring data\n",
+	    GLOBUS_FTP_CLIENT_MODULE->module_name,
+	    myname);
+
+	goto err_exit;
+    }
+
+    if(i_handle->op != GLOBUS_FTP_CLIENT_PUT)
+    {
+	err = globus_error_construct_string(
+	    GLOBUS_FTP_CLIENT_MODULE,
+	    GLOBUS_NULL,
+	    "[%s] Cannot remove data channels for 3rd party transfer\n",
+	    GLOBUS_FTP_CLIENT_MODULE->module_name,
+	    myname);
+	goto err_exit;
+    }
+    else
+    {
+	result = globus_ftp_control_data_remove_channels(
+	    i_handle->source->control_handle,
+	    num_channels,
+	    stripe);
+
+	goto result_exit;
+    }
+
+ err_exit:
+    result = globus_error_put(err);
+
+result_exit:
+    globus_i_ftp_client_handle_unlock(i_handle);
+
+    return result;
+}
+/* globus_ftp_client_plugin_remove_data_channels() */
+
+globus_result_t
+globus_ftp_client_plugin_init(
+    globus_ftp_client_plugin_t *		plugin,
+    const char *				plugin_name,
+    globus_ftp_client_plugin_command_mask_t	command_mask,
+    void *					plugin_specific)
+{
+    globus_i_ftp_client_plugin_t *		i_plugin;
+    globus_object_t *				err;
+    static char * myname = "globus_ftp_client_plugin_init";
+
+    if(plugin == GLOBUS_NULL)
+    {
+	err = globus_error_construct_string(
+	    GLOBUS_FTP_CLIENT_MODULE,
+	    GLOBUS_NULL,
+	    "[%s] NULL plugin at %s\n",
+	    GLOBUS_FTP_CLIENT_MODULE->module_name,
+	    myname);
+
+	goto error_exit;
+    }
+    if(plugin_name == GLOBUS_NULL)
+    {
+	err = globus_error_construct_string(
+	    GLOBUS_FTP_CLIENT_MODULE,
+	    GLOBUS_NULL,
+	    "[%s] NULL plugin_name at %s\n",
+	    GLOBUS_FTP_CLIENT_MODULE->module_name,
+	    myname);
+
+	goto nullify_exit;
+    }
+
+    i_plugin = globus_libc_calloc(1, sizeof(globus_i_ftp_client_plugin_t));
+
+    if(i_plugin == GLOBUS_NULL)
+    {
+	err = globus_error_construct_string(
+		GLOBUS_FTP_CLIENT_MODULE,
+		GLOBUS_NULL,
+		"[%s] Could not allocate internal data structure at %s\n",
+		GLOBUS_FTP_CLIENT_MODULE->module_name,
+		myname);
+	goto free_exit;
+    }
+    i_plugin->plugin_name = globus_libc_strdup(plugin_name);
+    if(i_plugin->plugin_name == GLOBUS_NULL)
+    {
+	goto free_exit;
+    }
+    i_plugin->command_mask = command_mask;
+    i_plugin->plugin_specific = plugin_specific;
+    i_plugin->plugin = plugin;
+
+    *plugin = i_plugin;
+    return GLOBUS_SUCCESS;
+
+free_exit:
+    globus_libc_free(i_plugin);
+
+nullify_exit:
+    *plugin = GLOBUS_NULL;
+
+error_exit:
+    return globus_error_put(err);
+}
+/* globus_ftp_client_plugin_init() */
+
+globus_result_t
+globus_ftp_client_plugin_destroy(
+    globus_ftp_client_plugin_t *		plugin)
+{
+    globus_object_t *				err;
+    static char * myname = "globus_ftp_client_plugin_destroy";
+
+    if(plugin == GLOBUS_NULL)
+    {
+	err = globus_error_construct_string(
+	    GLOBUS_FTP_CLIENT_MODULE,
+	    GLOBUS_NULL,
+	    "[%s] NULL plugin at %s\n",
+	    GLOBUS_FTP_CLIENT_MODULE->module_name,
+	    myname);
+
+	goto error_exit;
+    }
+    if(*plugin == GLOBUS_NULL)
+    {
+	return GLOBUS_SUCCESS;
+    }
+    if((*plugin)->plugin_name)
+    {
+	globus_libc_free((*plugin)->plugin_name);
+    }
+    globus_libc_free((*plugin));
+    *plugin = GLOBUS_NULL;
+
+    return GLOBUS_SUCCESS;
+
+error_exit:
+    return globus_error_put(err);
+}
+/* globus_ftp_client_plugin_destroy() */
+
+globus_result_t
+globus_ftp_client_plugin_get_plugin_specific(
+    globus_ftp_client_plugin_t *		plugin,
+    void **					plugin_specific)
+{
+    globus_i_ftp_client_plugin_t *		i_plugin;
+    globus_object_t *				err;
+    static char * myname = "globus_ftp_client_plugin_get_plugin_specific";
+
+    if(plugin == GLOBUS_NULL)
+    {
+	err = globus_error_construct_string(
+	    GLOBUS_FTP_CLIENT_MODULE,
+	    GLOBUS_NULL,
+	    "[%s] NULL plugin at %s\n",
+	    GLOBUS_FTP_CLIENT_MODULE->module_name,
+	    myname);
+
+	goto error_exit;
+    }
+    i_plugin = *plugin;
+    if(i_plugin == GLOBUS_NULL)
+    {
+	err = globus_error_construct_string(
+	    GLOBUS_FTP_CLIENT_MODULE,
+	    GLOBUS_NULL,
+	    "[%s] Invalid plugin at %s\n",
+	    GLOBUS_FTP_CLIENT_MODULE->module_name,
+	    myname);
+
+	goto error_exit;
+    }
+    *plugin_specific = i_plugin->plugin_specific;
+    return GLOBUS_SUCCESS;
+
+error_exit:
+    return globus_error_put(err);
+}
+/* globus_ftp_client_plugin_get_plugin_specific() */
+
+/* @{ */
+/** @name Plugin Accessor Functions */
+#define GLOBUS_FTP_CLIENT_PLUGIN_SET_FUNC(type) \
+globus_result_t \
+globus_ftp_client_plugin_set_##type##_func(\
+    globus_ftp_client_plugin_t *		plugin, \
+    globus_ftp_client_plugin_##type##_t		type) \
+{ \
+    globus_i_ftp_client_plugin_t *		i_plugin; \
+    globus_object_t *				err; \
+    static char * myname = "globus_ftp_client_plugin_set_" #type "_func"; \
+    if(plugin == GLOBUS_NULL) \
+    { \
+	err = globus_error_construct_string( \
+	    GLOBUS_FTP_CLIENT_MODULE, \
+	    GLOBUS_NULL, \
+	    "[%s] NULL plugin at %s\n", \
+	    GLOBUS_FTP_CLIENT_MODULE->module_name, \
+	    myname); \
+ \
+	goto error_exit; \
+    } \
+    i_plugin = *plugin; \
+    if(i_plugin == GLOBUS_NULL) \
+    { \
+	err = globus_error_construct_string( \
+	    GLOBUS_FTP_CLIENT_MODULE, \
+	    GLOBUS_NULL, \
+	    "[%s] Invalid plugin at %s\n", \
+	    GLOBUS_FTP_CLIENT_MODULE->module_name, \
+	    myname); \
+ \
+	goto error_exit; \
+    } \
+    i_plugin->type##_func = type; \
+ \
+    return GLOBUS_SUCCESS; \
+ \
+error_exit: \
+    return globus_error_put(err); \
+}
+
+GLOBUS_FTP_CLIENT_PLUGIN_SET_FUNC(copy)
+GLOBUS_FTP_CLIENT_PLUGIN_SET_FUNC(destroy)
+GLOBUS_FTP_CLIENT_PLUGIN_SET_FUNC(delete)
+GLOBUS_FTP_CLIENT_PLUGIN_SET_FUNC(mkdir)
+GLOBUS_FTP_CLIENT_PLUGIN_SET_FUNC(rmdir)
+GLOBUS_FTP_CLIENT_PLUGIN_SET_FUNC(move)
+GLOBUS_FTP_CLIENT_PLUGIN_SET_FUNC(verbose_list)
+GLOBUS_FTP_CLIENT_PLUGIN_SET_FUNC(list)
+GLOBUS_FTP_CLIENT_PLUGIN_SET_FUNC(get)
+GLOBUS_FTP_CLIENT_PLUGIN_SET_FUNC(put)
+GLOBUS_FTP_CLIENT_PLUGIN_SET_FUNC(third_party_transfer)
+GLOBUS_FTP_CLIENT_PLUGIN_SET_FUNC(modification_time)
+GLOBUS_FTP_CLIENT_PLUGIN_SET_FUNC(size)
+GLOBUS_FTP_CLIENT_PLUGIN_SET_FUNC(abort)
+GLOBUS_FTP_CLIENT_PLUGIN_SET_FUNC(connect)
+GLOBUS_FTP_CLIENT_PLUGIN_SET_FUNC(authenticate)
+GLOBUS_FTP_CLIENT_PLUGIN_SET_FUNC(read)
+GLOBUS_FTP_CLIENT_PLUGIN_SET_FUNC(write)
+GLOBUS_FTP_CLIENT_PLUGIN_SET_FUNC(data)
+GLOBUS_FTP_CLIENT_PLUGIN_SET_FUNC(command)
+GLOBUS_FTP_CLIENT_PLUGIN_SET_FUNC(response)
+GLOBUS_FTP_CLIENT_PLUGIN_SET_FUNC(fault)
+GLOBUS_FTP_CLIENT_PLUGIN_SET_FUNC(complete)
+/* @} */
+
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/*--------------------------------------------------------------------------
+ * Local/Internal Functions.
+ *--------------------------------------------------------------------------
+ */
 /**
  * Restart an existing operation.
  * @ingroup globus_ftp_client_plugins
@@ -946,183 +1336,6 @@ error_exit:
 }
 /* globus_ftp_client_plugin_restart_operation() */
 
-/**
- * Abort a transfer operation.
- * @ingroup globus_ftp_client_plugins
- *
- * This function will cause the currently executing transfer operation 
- * to be aborted. When this happens, all plugins will be notified by
- * their abort callbacks. Once those are processed, the complete
- * callback will be called for all plugins, and then for the user's
- * callback.
- *
- * The complete callback will indicate that the transfer did not
- * complete successfully.
- *
- * @param handle
- *        The handle which is associated with the transfer.
- */
-globus_result_t
-globus_ftp_client_plugin_abort(
-    globus_ftp_client_handle_t *		handle)
-{
-    return globus_ftp_client_abort(handle);
-}
-/* globus_ftp_client_plugin_abort() */
-
-/**
- * Add data channels to an existing put transfer.
- * @ingroup globus_ftp_client_plugins
- *
- * This function will cause the currently executing transfer operation 
- * to have additional data channels acquired if the attribute set
- * allows it.
- *
- * @param handle
- *        The handle which is associated with the transfer.
- * @param num_channels
- *        The number of channels to add to the transfer.
- * @param stripe
- *        The stripe number to have the channels added to.
- *
- * @note Do the plugins need to be notified when this happens?
- */
-globus_result_t
-globus_ftp_client_plugin_add_data_channels(
-    globus_ftp_client_handle_t *		handle,
-    unsigned int				num_channels,
-    unsigned int				stripe)
-{
-    globus_result_t				result;
-    globus_object_t *				err;
-    globus_i_ftp_client_handle_t *		i_handle;
-    static char *				myname = "globus_ftp_client_plugin_add_data_channels";
-
-    i_handle = *handle;
-    globus_i_ftp_client_handle_lock(i_handle);
-    
-    if(i_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
-       i_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART ||
-       i_handle->state == GLOBUS_FTP_CLIENT_HANDLE_FAILURE)
-    {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Handle not transferring data\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
-
-	goto err_exit;
-    }
-
-    if(i_handle->op != GLOBUS_FTP_CLIENT_PUT)
-    {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Cannot add data channels for 3rd party transfer\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
-	goto err_exit;
-    }
-    else
-    {
-	result = globus_ftp_control_data_add_channels(
-	    i_handle->dest->control_handle,
-	    num_channels,
-	    stripe);
-
-	goto result_exit;
-    }
-
- err_exit:
-    result = globus_error_put(err);
-    globus_i_ftp_client_handle_unlock(i_handle);
-
- result_exit:
-    return result;
-}
-/* globus_ftp_client_plugin_add_data_channels() */
-
-/**
- * Remove data channels from an existing put transfer.
- * @ingroup globus_ftp_client_plugins
- *
- * This function will cause the currently executing transfer operation 
- * to have data channels removed,  if the attribute set
- * allows it.
- *
- * @param handle
- *        The handle which is associated with the transfer.
- * @param num_channels
- *        The number of channels to remove from the transfer.
- * @param stripe
- *        The stripe number to have the channels removed from.
- *
- * @note Do the plugins need to be notified when this happens?
- */
-globus_result_t
-globus_ftp_client_plugin_remove_data_channels(
-    globus_ftp_client_handle_t *		handle,
-    unsigned int				num_channels,
-    unsigned int				stripe)
-{
-    globus_result_t				result;
-    globus_object_t *				err;
-    globus_i_ftp_client_handle_t *		i_handle;
-    static char *				myname = "globus_ftp_client_plugin_remove_data_channels";
-
-    globus_i_ftp_client_handle_lock(i_handle);
-    
-    if(i_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
-       i_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART ||
-       i_handle->state == GLOBUS_FTP_CLIENT_HANDLE_FAILURE)
-    {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Handle not transferring data\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
-
-	goto err_exit;
-    }
-
-    if(i_handle->op != GLOBUS_FTP_CLIENT_PUT)
-    {
-	err = globus_error_construct_string(
-	    GLOBUS_FTP_CLIENT_MODULE,
-	    GLOBUS_NULL,
-	    "[%s] Cannot remove data channels for 3rd party transfer\n",
-	    GLOBUS_FTP_CLIENT_MODULE->module_name,
-	    myname);
-	goto err_exit;
-    }
-    else
-    {
-	result = globus_ftp_control_data_remove_channels(
-	    i_handle->source->control_handle,
-	    num_channels,
-	    stripe);
-
-	goto result_exit;
-    }
-
- err_exit:
-    result = globus_error_put(err);
-
-result_exit:
-    globus_i_ftp_client_handle_unlock(i_handle);
-
-    return result;
-}
-/* globus_ftp_client_plugin_remove_data_channels() */
-
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
-/*--------------------------------------------------------------------------
- * Local/Internal Functions.
- *--------------------------------------------------------------------------
- */
 /*@{*/
 /**
  * Plugin notification functions
@@ -1140,7 +1353,7 @@ globus_i_ftp_client_plugin_notify_delete(
     const char *				url,
     globus_i_ftp_client_operationattr_t *	attr)
 {
-    globus_ftp_client_plugin_t *		plugin;
+    globus_i_ftp_client_plugin_t *		plugin;
     globus_list_t *				tmp;
     globus_bool_t				unlocked = GLOBUS_FALSE;
 
@@ -1149,7 +1362,7 @@ globus_i_ftp_client_plugin_notify_delete(
     tmp = handle->attr.plugins;
     while(!globus_list_empty(tmp))
     {
-	plugin = (globus_ftp_client_plugin_t *) globus_list_first(tmp);
+	plugin = (globus_i_ftp_client_plugin_t *) globus_list_first(tmp);
 	tmp = globus_list_rest(tmp);
 	
 	if(plugin->delete_func)
@@ -1159,7 +1372,8 @@ globus_i_ftp_client_plugin_notify_delete(
 		globus_i_ftp_client_handle_unlock(handle);
 		unlocked = GLOBUS_TRUE;
 	    }
-	    (plugin->delete_func)(plugin,
+	    (plugin->delete_func)(plugin->plugin,
+				  plugin->plugin_specific,
 				  handle->handle,
 				  url,
 				  &attr,
@@ -1191,7 +1405,7 @@ globus_i_ftp_client_plugin_notify_mkdir(
     const char *				url,
     globus_i_ftp_client_operationattr_t *	attr)
 {
-    globus_ftp_client_plugin_t *		plugin;
+    globus_i_ftp_client_plugin_t *		plugin;
     globus_list_t *				tmp;
     globus_bool_t				unlocked = GLOBUS_FALSE;
 
@@ -1200,7 +1414,7 @@ globus_i_ftp_client_plugin_notify_mkdir(
     tmp = handle->attr.plugins;
     while(!globus_list_empty(tmp))
     {
-	plugin = (globus_ftp_client_plugin_t *) globus_list_first(tmp);
+	plugin = (globus_i_ftp_client_plugin_t *) globus_list_first(tmp);
 	tmp = globus_list_rest(tmp);
 
 	if(plugin->mkdir_func)
@@ -1210,7 +1424,8 @@ globus_i_ftp_client_plugin_notify_mkdir(
 		globus_i_ftp_client_handle_unlock(handle);
 		unlocked = GLOBUS_TRUE;
 	    }
-	    (plugin->mkdir_func)(plugin,
+	    (plugin->mkdir_func)(plugin->plugin,
+				 plugin->plugin_specific,
 				 handle->handle,
 				 url,
 				 &attr,
@@ -1243,7 +1458,7 @@ globus_i_ftp_client_plugin_notify_rmdir(
     const char *				url,
     globus_i_ftp_client_operationattr_t *	attr)
 {
-    globus_ftp_client_plugin_t *		plugin;
+    globus_i_ftp_client_plugin_t *		plugin;
     globus_list_t *				tmp;
     globus_bool_t				unlocked = GLOBUS_FALSE;
 
@@ -1252,7 +1467,7 @@ globus_i_ftp_client_plugin_notify_rmdir(
     tmp = handle->attr.plugins;
     while(!globus_list_empty(tmp))
     {
-	plugin = (globus_ftp_client_plugin_t *) globus_list_first(tmp);
+	plugin = (globus_i_ftp_client_plugin_t *) globus_list_first(tmp);
 	tmp = globus_list_rest(tmp);
 
 	if(plugin->rmdir_func)
@@ -1262,7 +1477,8 @@ globus_i_ftp_client_plugin_notify_rmdir(
 		globus_i_ftp_client_handle_unlock(handle);
 		unlocked = GLOBUS_TRUE;
 	    }
-	    (plugin->rmdir_func)(plugin,
+	    (plugin->rmdir_func)(plugin->plugin,
+				 plugin->plugin_specific,
 				 handle->handle,
 				 url,
 				 &attr,
@@ -1295,7 +1511,7 @@ globus_i_ftp_client_plugin_notify_move(
     const char *				dest_url,
     globus_i_ftp_client_operationattr_t *	attr)
 {
-    globus_ftp_client_plugin_t *		plugin;
+    globus_i_ftp_client_plugin_t *		plugin;
     globus_list_t *				tmp;
     globus_bool_t				unlocked = GLOBUS_FALSE;
 
@@ -1304,7 +1520,7 @@ globus_i_ftp_client_plugin_notify_move(
     tmp = handle->attr.plugins;
     while(!globus_list_empty(tmp))
     {
-	plugin = (globus_ftp_client_plugin_t *) globus_list_first(tmp);
+	plugin = (globus_i_ftp_client_plugin_t *) globus_list_first(tmp);
 	tmp = globus_list_rest(tmp);
 	if(plugin->move_func)
 	{
@@ -1313,7 +1529,8 @@ globus_i_ftp_client_plugin_notify_move(
 		globus_i_ftp_client_handle_unlock(handle);
 		unlocked = GLOBUS_TRUE;
 	    }
-	    (plugin->move_func)(plugin,
+	    (plugin->move_func)(plugin->plugin,
+				plugin->plugin_specific,
 				handle->handle,
 				source_url,
 				dest_url,
@@ -1347,7 +1564,7 @@ globus_i_ftp_client_plugin_notify_verbose_list(
     const char *				url,
     globus_i_ftp_client_operationattr_t *	attr)
 {
-    globus_ftp_client_plugin_t *		plugin;
+    globus_i_ftp_client_plugin_t *		plugin;
     globus_list_t *				tmp;
     globus_bool_t				unlocked = GLOBUS_FALSE;
 
@@ -1356,20 +1573,21 @@ globus_i_ftp_client_plugin_notify_verbose_list(
     tmp = handle->attr.plugins;
     while(!globus_list_empty(tmp))
     {
-	plugin = (globus_ftp_client_plugin_t *) globus_list_first(tmp);
+	plugin = (globus_i_ftp_client_plugin_t *) globus_list_first(tmp);
 	tmp = globus_list_rest(tmp);
-	if(plugin->vlist_func)
+	if(plugin->verbose_list_func)
 	{
 	    if(!unlocked)
 	    {
 		globus_i_ftp_client_handle_unlock(handle);
 		unlocked = GLOBUS_TRUE;
 	    }
-	    (plugin->vlist_func)(plugin,
-				 handle->handle,
-				 url,
-				 &attr,
-				 GLOBUS_FALSE);
+	    (plugin->verbose_list_func)(plugin->plugin,
+					plugin->plugin_specific,
+					handle->handle,
+					url,
+					&attr,
+					GLOBUS_FALSE);
 	}
     }
     if(unlocked)
@@ -1397,7 +1615,7 @@ globus_i_ftp_client_plugin_notify_list(
     const char *				url,
     globus_i_ftp_client_operationattr_t *	attr)
 {
-    globus_ftp_client_plugin_t *		plugin;
+    globus_i_ftp_client_plugin_t *		plugin;
     globus_list_t *				tmp;
     globus_bool_t				unlocked = GLOBUS_FALSE;
 
@@ -1406,7 +1624,7 @@ globus_i_ftp_client_plugin_notify_list(
     tmp = handle->attr.plugins;
     while(!globus_list_empty(tmp))
     {
-	plugin = (globus_ftp_client_plugin_t *) globus_list_first(tmp);
+	plugin = (globus_i_ftp_client_plugin_t *) globus_list_first(tmp);
 	tmp = globus_list_rest(tmp);
 
 	if(plugin->list_func)
@@ -1416,7 +1634,8 @@ globus_i_ftp_client_plugin_notify_list(
 		globus_i_ftp_client_handle_unlock(handle);
 		unlocked = GLOBUS_TRUE;
 	    }
-	    (plugin->list_func)(plugin,
+	    (plugin->list_func)(plugin->plugin,
+				plugin->plugin_specific,
 				handle->handle,
 				url,
 				&attr,
@@ -1451,7 +1670,7 @@ globus_i_ftp_client_plugin_notify_get(
     globus_i_ftp_client_operationattr_t *	attr,
     const globus_ftp_client_restart_marker_t *	restart)
 {
-    globus_ftp_client_plugin_t *		plugin;
+    globus_i_ftp_client_plugin_t *		plugin;
     globus_list_t *				tmp;
     globus_bool_t				unlocked = GLOBUS_FALSE;
 
@@ -1460,7 +1679,7 @@ globus_i_ftp_client_plugin_notify_get(
     tmp = handle->attr.plugins;
     while(!globus_list_empty(tmp))
     {
-	plugin = (globus_ftp_client_plugin_t *) globus_list_first(tmp);
+	plugin = (globus_i_ftp_client_plugin_t *) globus_list_first(tmp);
 	tmp = globus_list_rest(tmp);
 
 	if(plugin->get_func)
@@ -1470,7 +1689,8 @@ globus_i_ftp_client_plugin_notify_get(
 		globus_i_ftp_client_handle_unlock(handle);
 		unlocked = GLOBUS_TRUE;
 	    }
-	    (plugin->get_func)(plugin,
+	    (plugin->get_func)(plugin->plugin,
+			       plugin->plugin_specific,
 			       handle->handle,
 			       url,
 			       &attr,
@@ -1505,7 +1725,7 @@ globus_i_ftp_client_plugin_notify_put(
     globus_i_ftp_client_operationattr_t *	attr,
     const globus_ftp_client_restart_marker_t *	restart)
 {
-    globus_ftp_client_plugin_t *		plugin;
+    globus_i_ftp_client_plugin_t *		plugin;
     globus_list_t *				tmp;
     globus_bool_t				unlocked = GLOBUS_FALSE;
 
@@ -1515,7 +1735,7 @@ globus_i_ftp_client_plugin_notify_put(
     tmp = handle->attr.plugins;
     while(!globus_list_empty(tmp))
     {
-	plugin = (globus_ftp_client_plugin_t *) globus_list_first(tmp);
+	plugin = (globus_i_ftp_client_plugin_t *) globus_list_first(tmp);
 	tmp = globus_list_rest(tmp);
 
 	if(plugin->put_func)
@@ -1525,7 +1745,8 @@ globus_i_ftp_client_plugin_notify_put(
 		globus_i_ftp_client_handle_unlock(handle);
 		unlocked = GLOBUS_TRUE;
 	    }
-	    (plugin->put_func)(plugin,
+	    (plugin->put_func)(plugin->plugin,
+			       plugin->plugin_specific,
 			       handle->handle,
 			       url,
 			       &attr,
@@ -1561,7 +1782,7 @@ globus_i_ftp_client_plugin_notify_transfer(
     globus_i_ftp_client_operationattr_t *	dest_attr,
     const globus_ftp_client_restart_marker_t *	restart)
 {
-    globus_ftp_client_plugin_t *		plugin;
+    globus_i_ftp_client_plugin_t *		plugin;
     globus_list_t *				tmp;
     globus_bool_t				unlocked = GLOBUS_FALSE;
 
@@ -1571,23 +1792,130 @@ globus_i_ftp_client_plugin_notify_transfer(
     tmp = handle->attr.plugins;
     while(!globus_list_empty(tmp))
     {
-	plugin = (globus_ftp_client_plugin_t *) globus_list_first(tmp);
+	plugin = (globus_i_ftp_client_plugin_t *) globus_list_first(tmp);
 	tmp = globus_list_rest(tmp);
 
-	if(plugin->transfer_func)
+	if(plugin->third_party_transfer_func)
 	{
 	    if(!unlocked)
 	    {
 		globus_i_ftp_client_handle_unlock(handle);
 		unlocked = GLOBUS_TRUE;
 	    }
-	    (plugin->transfer_func)(plugin,
-				    handle->handle,
-				    source_url,
-				    &source_attr,
-				    dest_url,
-				    &dest_attr,
-				    GLOBUS_FALSE);
+	    (plugin->third_party_transfer_func)(plugin->plugin,
+				                plugin->plugin_specific,
+				                handle->handle,
+				                source_url,
+				                &source_attr,
+				                dest_url,
+				                &dest_attr,
+				                GLOBUS_FALSE);
+	}
+    }
+    if(unlocked)
+    {
+	globus_i_ftp_client_handle_lock(handle);
+    }
+
+    handle->notify_in_progress--;
+    if(handle->notify_restart)
+    {
+	handle->notify_restart = GLOBUS_FALSE;
+
+	globus_i_ftp_client_plugin_notify_restart(handle);
+    }
+    if(handle->notify_abort)
+    {
+	handle->notify_abort = GLOBUS_FALSE;
+
+	globus_i_ftp_client_plugin_notify_abort(handle);
+    }
+}
+
+void
+globus_i_ftp_client_plugin_notify_modification_time(
+    globus_i_ftp_client_handle_t *		handle,
+    const char *				url,
+    globus_i_ftp_client_operationattr_t *	attr)
+{
+    globus_i_ftp_client_plugin_t *		plugin;
+    globus_list_t *				tmp;
+    globus_bool_t				unlocked = GLOBUS_FALSE;
+
+    handle->notify_in_progress++;
+
+    tmp = handle->attr.plugins;
+    while(!globus_list_empty(tmp))
+    {
+	plugin = (globus_i_ftp_client_plugin_t *) globus_list_first(tmp);
+	tmp = globus_list_rest(tmp);
+
+	if(plugin->modification_time_func)
+	{
+	    if(!unlocked)
+	    {
+		globus_i_ftp_client_handle_unlock(handle);
+		unlocked = GLOBUS_TRUE;
+	    }
+	    (plugin->modification_time_func)(plugin->plugin,
+				             plugin->plugin_specific,
+				             handle->handle,
+				             url,
+				             &attr,
+				             GLOBUS_FALSE);
+	}
+    }
+    if(unlocked)
+    {
+	globus_i_ftp_client_handle_lock(handle);
+    }
+
+    handle->notify_in_progress--;
+    if(handle->notify_restart)
+    {
+	handle->notify_restart = GLOBUS_FALSE;
+
+	globus_i_ftp_client_plugin_notify_restart(handle);
+    }
+    if(handle->notify_abort)
+    {
+	handle->notify_abort = GLOBUS_FALSE;
+
+	globus_i_ftp_client_plugin_notify_abort(handle);
+    }
+}
+
+void
+globus_i_ftp_client_plugin_notify_size(
+    globus_i_ftp_client_handle_t *		handle,
+    const char *				url,
+    globus_i_ftp_client_operationattr_t *	attr)
+{
+    globus_i_ftp_client_plugin_t *		plugin;
+    globus_list_t *				tmp;
+    globus_bool_t				unlocked = GLOBUS_FALSE;
+
+    handle->notify_in_progress++;
+
+    tmp = handle->attr.plugins;
+    while(!globus_list_empty(tmp))
+    {
+	plugin = (globus_i_ftp_client_plugin_t *) globus_list_first(tmp);
+	tmp = globus_list_rest(tmp);
+
+	if(plugin->size_func)
+	{
+	    if(!unlocked)
+	    {
+		globus_i_ftp_client_handle_unlock(handle);
+		unlocked = GLOBUS_TRUE;
+	    }
+	    (plugin->size_func)(plugin->plugin,
+				plugin->plugin_specific,
+				handle->handle,
+				url,
+				&attr,
+				GLOBUS_FALSE);
 	}
     }
     if(unlocked)
@@ -1615,7 +1943,7 @@ globus_i_ftp_client_plugin_notify_connect(
     globus_i_ftp_client_handle_t *		handle,
     const globus_url_t *			url)
 {
-    globus_ftp_client_plugin_t *		plugin;
+    globus_i_ftp_client_plugin_t *		plugin;
     globus_list_t *				tmp;
     globus_bool_t				unlocked = GLOBUS_FALSE;
 
@@ -1624,7 +1952,7 @@ globus_i_ftp_client_plugin_notify_connect(
     tmp = handle->attr.plugins;
     while(!globus_list_empty(tmp))
     {
-	plugin = (globus_ftp_client_plugin_t *) globus_list_first(tmp);
+	plugin = (globus_i_ftp_client_plugin_t *) globus_list_first(tmp);
 	tmp = globus_list_rest(tmp);
 	
 	if(plugin->move_func)
@@ -1639,7 +1967,8 @@ globus_i_ftp_client_plugin_notify_connect(
 		    globus_i_ftp_client_handle_unlock(handle);
 		    unlocked = GLOBUS_TRUE;
 		}
-		(plugin->connect_func)(plugin,
+		(plugin->connect_func)(plugin->plugin,
+				       plugin->plugin_specific,
 				       handle->handle,
 				       url);
 	    }
@@ -1672,7 +2001,7 @@ globus_i_ftp_client_plugin_notify_authenticate(
     const globus_url_t *			url,
     const globus_ftp_control_auth_info_t *	auth_info)
 {
-    globus_ftp_client_plugin_t *		plugin;
+    globus_i_ftp_client_plugin_t *		plugin;
     globus_list_t *				tmp;
     globus_bool_t				unlocked = GLOBUS_FALSE;
     
@@ -1681,10 +2010,10 @@ globus_i_ftp_client_plugin_notify_authenticate(
     tmp = handle->attr.plugins;
     while(!globus_list_empty(tmp))
     {
-	plugin = (globus_ftp_client_plugin_t *) globus_list_first(tmp);
+	plugin = (globus_i_ftp_client_plugin_t *) globus_list_first(tmp);
 	tmp = globus_list_rest(tmp);
 
-	if(plugin->auth_func &&
+	if(plugin->authenticate_func &&
 	   PLUGIN_SUPPORTS_OP(handle->op, plugin) &&
 	   (plugin->command_mask &
 	    GLOBUS_FTP_CLIENT_CMD_MASK_CONTROL_ESTABLISHMENT))
@@ -1694,10 +2023,11 @@ globus_i_ftp_client_plugin_notify_authenticate(
 		globus_i_ftp_client_handle_unlock(handle);
 		unlocked = GLOBUS_TRUE;
 	    }
-	    (plugin->auth_func)(plugin,
-				handle->handle,
-				url,
-				auth_info);
+	    (plugin->authenticate_func)(plugin->plugin,
+					plugin->plugin_specific,
+				        handle->handle,
+				        url,
+				        auth_info);
 	}
     }
     if(unlocked)
@@ -1726,7 +2056,7 @@ globus_i_ftp_client_plugin_notify_read(
     const globus_byte_t *			buffer,
     globus_size_t				buffer_length)
 {
-    globus_ftp_client_plugin_t *		plugin;
+    globus_i_ftp_client_plugin_t *		plugin;
     globus_list_t *				tmp;
     globus_bool_t				unlocked = GLOBUS_FALSE;
     
@@ -1736,7 +2066,7 @@ globus_i_ftp_client_plugin_notify_read(
     tmp = handle->attr.plugins;
     while(!globus_list_empty(tmp))
     {
-	plugin = (globus_ftp_client_plugin_t *) globus_list_first(tmp);
+	plugin = (globus_i_ftp_client_plugin_t *) globus_list_first(tmp);
 	tmp = globus_list_rest(tmp);
 
 	if(plugin->read_func &&
@@ -1747,7 +2077,8 @@ globus_i_ftp_client_plugin_notify_read(
 		globus_i_ftp_client_handle_unlock(handle);
 		unlocked = GLOBUS_TRUE;
 	    }
-	    (plugin->read_func)(plugin,
+	    (plugin->read_func)(plugin->plugin,
+				plugin->plugin_specific,
 				handle->handle,
 				buffer,
 				buffer_length);
@@ -1782,7 +2113,7 @@ globus_i_ftp_client_plugin_notify_write(
     globus_off_t				offset,
     globus_bool_t				eof)
 {
-    globus_ftp_client_plugin_t *		plugin;
+    globus_i_ftp_client_plugin_t *		plugin;
     globus_list_t *				tmp;
     globus_bool_t				unlocked = GLOBUS_FALSE;
     
@@ -1791,7 +2122,7 @@ globus_i_ftp_client_plugin_notify_write(
     tmp = handle->attr.plugins;
     while(!globus_list_empty(tmp))
     {
-	plugin = (globus_ftp_client_plugin_t *) globus_list_first(tmp);
+	plugin = (globus_i_ftp_client_plugin_t *) globus_list_first(tmp);
 	tmp = globus_list_rest(tmp);
 
 	if(plugin->write_func &&
@@ -1802,7 +2133,8 @@ globus_i_ftp_client_plugin_notify_write(
 		globus_i_ftp_client_handle_unlock(handle);
 		unlocked = GLOBUS_TRUE;
 	    }
-	    (plugin->write_func)(plugin,
+	    (plugin->write_func)(plugin->plugin,
+				 plugin->plugin_specific,
 				 handle->handle,
 				 buffer,
 				 buffer_length,
@@ -1838,7 +2170,7 @@ globus_i_ftp_client_plugin_notify_command(
     globus_ftp_client_plugin_command_mask_t	command_mask,
     const char *				command_name)
 {
-    globus_ftp_client_plugin_t *		plugin;
+    globus_i_ftp_client_plugin_t *		plugin;
     globus_list_t *				tmp;
     globus_bool_t				unlocked = GLOBUS_FALSE;
 
@@ -1847,7 +2179,7 @@ globus_i_ftp_client_plugin_notify_command(
     tmp = handle->attr.plugins;
     while(!globus_list_empty(tmp))
     {
-	plugin = (globus_ftp_client_plugin_t *) globus_list_first(tmp);
+	plugin = (globus_i_ftp_client_plugin_t *) globus_list_first(tmp);
 	tmp = globus_list_rest(tmp);
 
 	if(plugin->command_func &&
@@ -1859,7 +2191,8 @@ globus_i_ftp_client_plugin_notify_command(
 		globus_i_ftp_client_handle_unlock(handle);
 		unlocked = GLOBUS_TRUE;
 	    }
-	    (plugin->command_func)(plugin,
+	    (plugin->command_func)(plugin->plugin,
+				   plugin->plugin_specific,
 				   handle->handle,
 				   url,
 				   command_name);
@@ -1894,7 +2227,7 @@ globus_i_ftp_client_plugin_notify_response(
     globus_object_t *				error,
     const globus_ftp_control_response_t *	ftp_response)
 {
-    globus_ftp_client_plugin_t *		plugin;
+    globus_i_ftp_client_plugin_t *		plugin;
     globus_list_t *				tmp;
     globus_bool_t				unlocked = GLOBUS_FALSE;
     
@@ -1904,7 +2237,7 @@ globus_i_ftp_client_plugin_notify_response(
     tmp = handle->attr.plugins;
     while(!globus_list_empty(tmp))
     {
-	plugin = (globus_ftp_client_plugin_t *) globus_list_first(tmp);
+	plugin = (globus_i_ftp_client_plugin_t *) globus_list_first(tmp);
 	tmp = globus_list_rest(tmp);
 
 	if(plugin->response_func &&
@@ -1916,7 +2249,8 @@ globus_i_ftp_client_plugin_notify_response(
 		globus_i_ftp_client_handle_unlock(handle);
 		unlocked = GLOBUS_TRUE;
 	    }
-	    (plugin->response_func)(plugin,
+	    (plugin->response_func)(plugin->plugin,
+				    plugin->plugin_specific,
 				    handle->handle,
 				    url,
 				    error,
@@ -1950,7 +2284,7 @@ globus_i_ftp_client_plugin_notify_fault(
     const globus_url_t *			url,
     globus_object_t *				error)
 {
-    globus_ftp_client_plugin_t *		plugin;
+    globus_i_ftp_client_plugin_t *		plugin;
     globus_list_t *				tmp;
     globus_bool_t				unlocked = GLOBUS_FALSE;
     
@@ -1959,7 +2293,7 @@ globus_i_ftp_client_plugin_notify_fault(
     tmp = handle->attr.plugins;
     while(!globus_list_empty(tmp))
     {
-	plugin = (globus_ftp_client_plugin_t *) globus_list_first(tmp);
+	plugin = (globus_i_ftp_client_plugin_t *) globus_list_first(tmp);
 	tmp = globus_list_rest(tmp);
 
 	if(plugin->fault_func &&
@@ -1970,7 +2304,8 @@ globus_i_ftp_client_plugin_notify_fault(
 		globus_i_ftp_client_handle_unlock(handle);
 		unlocked = GLOBUS_TRUE;
 	    }
-	    (plugin->fault_func)(plugin,
+	    (plugin->fault_func)(plugin->plugin,
+				 plugin->plugin_specific,
 				 handle->handle,
 				 url,
 				 error);
@@ -2001,7 +2336,7 @@ void
 globus_i_ftp_client_plugin_notify_complete(
     globus_i_ftp_client_handle_t *		handle)
 {
-    globus_ftp_client_plugin_t *		plugin;
+    globus_i_ftp_client_plugin_t *		plugin;
     globus_list_t *				tmp;
     globus_bool_t				unlocked = GLOBUS_FALSE;
     
@@ -2010,7 +2345,7 @@ globus_i_ftp_client_plugin_notify_complete(
     tmp = handle->attr.plugins;
     while(!globus_list_empty(tmp))
     {
-	plugin = (globus_ftp_client_plugin_t *) globus_list_first(tmp);
+	plugin = (globus_i_ftp_client_plugin_t *) globus_list_first(tmp);
 	tmp = globus_list_rest(tmp);
 
 	if(plugin->complete_func &&
@@ -2021,7 +2356,8 @@ globus_i_ftp_client_plugin_notify_complete(
 		globus_i_ftp_client_handle_unlock(handle);
 		unlocked = GLOBUS_TRUE;
 	    }
-	    (plugin->complete_func)(plugin,
+	    (plugin->complete_func)(plugin->plugin,
+				    plugin->plugin_specific,
 				    handle->handle);
 	}
     }
@@ -2055,7 +2391,7 @@ globus_i_ftp_client_plugin_notify_data(
     globus_off_t				offset,
     globus_bool_t				eof)
 {
-    globus_ftp_client_plugin_t *		plugin;
+    globus_i_ftp_client_plugin_t *		plugin;
     globus_list_t *				tmp;
     globus_bool_t				unlocked = GLOBUS_FALSE;
     
@@ -2064,7 +2400,7 @@ globus_i_ftp_client_plugin_notify_data(
     tmp = handle->attr.plugins;
     while(!globus_list_empty(tmp))
     {
-	plugin = (globus_ftp_client_plugin_t *) globus_list_first(tmp);
+	plugin = (globus_i_ftp_client_plugin_t *) globus_list_first(tmp);
 	tmp = globus_list_rest(tmp);
 
 	if(plugin->data_func &&
@@ -2075,7 +2411,8 @@ globus_i_ftp_client_plugin_notify_data(
 		globus_i_ftp_client_handle_unlock(handle);
 		unlocked = GLOBUS_TRUE;
 	    }
-	    (plugin->data_func)(plugin,
+	    (plugin->data_func)(plugin->plugin,
+				plugin->plugin_specific,
 				handle->handle,
 				error,
 				buffer,
@@ -2109,7 +2446,7 @@ void
 globus_i_ftp_client_plugin_notify_abort(
     globus_i_ftp_client_handle_t *		handle)
 {
-    globus_ftp_client_plugin_t *		plugin;
+    globus_i_ftp_client_plugin_t *		plugin;
     globus_list_t *				tmp;
     globus_bool_t				unlocked = GLOBUS_FALSE;
 
@@ -2125,7 +2462,7 @@ globus_i_ftp_client_plugin_notify_abort(
     tmp = handle->attr.plugins;
     while(!globus_list_empty(tmp))
     {
-	plugin = (globus_ftp_client_plugin_t *) globus_list_first(tmp);
+	plugin = (globus_i_ftp_client_plugin_t *) globus_list_first(tmp);
 	tmp = globus_list_rest(tmp);
 
 	if(plugin->abort_func &&
@@ -2137,7 +2474,8 @@ globus_i_ftp_client_plugin_notify_abort(
 		unlocked = GLOBUS_TRUE;
 	    }
 
-	    (plugin->abort_func)(plugin,
+	    (plugin->abort_func)(plugin->plugin,
+				 plugin->plugin_specific,
 				 handle->handle);
 	}
     }
@@ -2160,7 +2498,7 @@ void
 globus_i_ftp_client_plugin_notify_restart(
     globus_i_ftp_client_handle_t *		handle)
 {
-    globus_ftp_client_plugin_t *		plugin;
+    globus_i_ftp_client_plugin_t *		plugin;
     globus_list_t *				tmp;
     globus_bool_t				unlocked = GLOBUS_FALSE;
 
@@ -2175,7 +2513,7 @@ globus_i_ftp_client_plugin_notify_restart(
     tmp = handle->attr.plugins;
     while(!globus_list_empty(tmp))
     {
-	plugin = (globus_ftp_client_plugin_t *) globus_list_first(tmp);
+	plugin = (globus_i_ftp_client_plugin_t *) globus_list_first(tmp);
 	tmp = globus_list_rest(tmp);
 
 	if(PLUGIN_SUPPORTS_OP(handle->op, plugin))
@@ -2187,7 +2525,8 @@ globus_i_ftp_client_plugin_notify_restart(
 	    }
 	    if(handle->op == GLOBUS_FTP_CLIENT_GET)
 	    {
-		(plugin->get_func)(plugin,
+		(plugin->get_func)(plugin->plugin,
+				   plugin->plugin_specific,
 				   handle->handle,
 				   handle->restart_info->source_url,
 				   &handle->restart_info->source_attr,
@@ -2195,15 +2534,17 @@ globus_i_ftp_client_plugin_notify_restart(
 	    }
 	    else if(handle->op == GLOBUS_FTP_CLIENT_LIST)
 	    {
-		(plugin->vlist_func)(plugin,
-				     handle->handle,
-				     handle->restart_info->source_url,
-				     &handle->restart_info->source_attr,
-				     GLOBUS_TRUE);
+		(plugin->verbose_list_func)(plugin->plugin,
+					    plugin->plugin_specific,
+				            handle->handle,
+				            handle->restart_info->source_url,
+				            &handle->restart_info->source_attr,
+				            GLOBUS_TRUE);
 	    }
 	    else if(handle->op == GLOBUS_FTP_CLIENT_NLST)
 	    {
-		(plugin->list_func)(plugin,
+		(plugin->list_func)(plugin->plugin,
+				    plugin->plugin_specific,
 				    handle->handle,
 				    handle->restart_info->source_url,
 				    &handle->restart_info->source_attr,
@@ -2211,7 +2552,8 @@ globus_i_ftp_client_plugin_notify_restart(
 	    }
 	    else if(handle->op == GLOBUS_FTP_CLIENT_DELETE)
 	    {
-		(plugin->delete_func)(plugin,
+		(plugin->delete_func)(plugin->plugin,
+				      plugin->plugin_specific,
 				      handle->handle,
 				      handle->restart_info->source_url,
 				      &handle->restart_info->source_attr,
@@ -2219,7 +2561,8 @@ globus_i_ftp_client_plugin_notify_restart(
 	    }
 	    else if(handle->op == GLOBUS_FTP_CLIENT_MKDIR)
 	    {
-		(plugin->mkdir_func)(plugin,
+		(plugin->mkdir_func)(plugin->plugin,
+				     plugin->plugin_specific,
 				     handle->handle,
 				     handle->restart_info->source_url,
 				     &handle->restart_info->source_attr,
@@ -2227,7 +2570,8 @@ globus_i_ftp_client_plugin_notify_restart(
 	    }
 	    else if(handle->op == GLOBUS_FTP_CLIENT_RMDIR)
 	    {
-		(plugin->rmdir_func)(plugin,
+		(plugin->rmdir_func)(plugin->plugin,
+				     plugin->plugin_specific,
 				     handle->handle,
 				     handle->restart_info->source_url,
 				     &handle->restart_info->source_attr,
@@ -2235,7 +2579,8 @@ globus_i_ftp_client_plugin_notify_restart(
 	    }
 	    else if(handle->op == GLOBUS_FTP_CLIENT_MOVE)
 	    {
-		(plugin->move_func)(plugin,
+		(plugin->move_func)(plugin->plugin,
+				    plugin->plugin_specific,
 				    handle->handle,
 				    handle->restart_info->source_url,
 				    handle->restart_info->dest_url,
@@ -2244,7 +2589,8 @@ globus_i_ftp_client_plugin_notify_restart(
 	    }
 	    else if (handle->op == GLOBUS_FTP_CLIENT_PUT)
 	    {
-		(plugin->put_func)(plugin,
+		(plugin->put_func)(plugin->plugin,
+				   plugin->plugin_specific,
 				   handle->handle,
 				   handle->restart_info->dest_url,
 				   &handle->restart_info->dest_attr,
@@ -2252,13 +2598,15 @@ globus_i_ftp_client_plugin_notify_restart(
 	    }
 	    else
 	    {
-		(plugin->transfer_func)(plugin,
-					handle->handle,
-					handle->restart_info->source_url,
-					&handle->restart_info->source_attr,
-					handle->restart_info->dest_url,
-					&handle->restart_info->dest_attr,
-					GLOBUS_TRUE);
+		(plugin->third_party_transfer_func)(
+				   plugin->plugin,
+				   plugin->plugin_specific,
+				   handle->handle,
+				   handle->restart_info->source_url,
+				   &handle->restart_info->source_attr,
+				   handle->restart_info->dest_url,
+				   &handle->restart_info->dest_attr,
+				   GLOBUS_TRUE);
 	    }
 	}
     }
