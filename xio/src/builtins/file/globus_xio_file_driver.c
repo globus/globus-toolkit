@@ -626,7 +626,7 @@ globus_l_xio_file_cntl(
     return GLOBUS_SUCCESS;
 }
 
-globus_xio_driver_t
+globus_result_t
 globus_l_xio_file_create_driver(
     globus_xio_driver_t *                   out_driver)
 {

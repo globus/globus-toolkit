@@ -2149,32 +2149,50 @@ error_sockopt:
     return result;
 }
 
-static struct globus_i_xio_driver_s     globus_l_xio_tcp_info =
+globus_result_t
+globus_l_xio_tcp_create_driver(
+    globus_xio_driver_t *                   out_driver)
 {
-    /*
-     *  main io interface functions
-     */
-    GLOBUS_NULL,                        /* transform_open_func */
-    globus_l_xio_tcp_open,              /* transport_open_func */
-    globus_l_xio_tcp_close,             /* close_func          */
-    globus_l_xio_tcp_read,              /* read_func           */
-    globus_l_xio_tcp_write,             /* write_func          */
-    globus_l_xio_tcp_cntl,              /* handle_cntl_func    */
+    globus_xio_driver_t                     driver;
+    globus_result_t                         res;
 
-    globus_l_xio_tcp_target_init,       /* target_init_func    */
-    globus_l_xio_tcp_target_cntl,       /* target_cntl_func    */
-    globus_l_xio_tcp_target_destroy,    /* target_destroy_finc */
+    res = globus_xio_driver_init(&driver, NULL);
+    if(res != GLOBUS_SUCCESS)
+    {
+        return res;
+    }
 
-    globus_l_xio_tcp_server_init,       /* server_init_func    */
-    globus_l_xio_tcp_server_accept,     /* server_accept_func  */
-    globus_l_xio_tcp_server_destroy,    /* server_destroy_func */
-    globus_l_xio_tcp_server_cntl,       /* server_cntl_func    */
+    globus_xio_driver_set_transport(
+        driver,
+        globus_l_xio_tcp_open,
+        globus_l_xio_tcp_close,
+        globus_l_xio_tcp_read,
+        globus_l_xio_tcp_write,
+        globus_l_xio_tcp_cntl);
 
-    /*
-     *  driver attr functions.  All or none may be NULL
-     */
-    globus_l_xio_tcp_attr_init,         /* attr_init_func      */
-    globus_l_xio_tcp_attr_copy,         /* attr_copy_func      */
-    globus_l_xio_tcp_attr_cntl,         /* attr_cntl_func      */
-    globus_l_xio_tcp_attr_destroy       /* attr_destroy_func   */
-};
+    globus_xio_driver_set_client(
+        driver,
+        globus_l_xio_tcp_target_init,
+        globus_l_xio_tcp_target_cntl,
+        globus_l_xio_tcp_target_destroy);
+
+    globus_xio_driver_set_server(
+        driver,
+        globus_l_xio_tcp_server_init,
+        globus_l_xio_tcp_server_accept,
+        globus_l_xio_tcp_server_destroy,
+        globus_l_xio_tcp_server_cntl,
+        globus_l_xio_tcp_target_destroy);
+
+    globus_xio_driver_set_attr(
+        driver,
+        globus_l_xio_tcp_attr_init,
+        globus_l_xio_tcp_attr_copy,
+        globus_l_xio_tcp_attr_cntl,
+        globus_l_xio_tcp_attr_destroy);
+
+    *out_driver = driver;
+
+    return GLOBUS_SUCCESS;
+}
+
