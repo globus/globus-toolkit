@@ -38,6 +38,7 @@ BUNDLE gt4-mds
         globus_wsrf_mds_usefulrp_schema
         globus_wsrf_servicegroup
         globus_wsrf_mds_archive
+        globus_wsrf_mds_hawkeye
 
 BUNDLE gt4-mds-test
         globus_wsrf_mds_index_test
@@ -87,6 +88,7 @@ BUNDLE gt4-gram-condor
         globus_scheduler_event_generator_condor_setup                
         globus_gram_job_manager_setup_condor
         globus_scheduler_provider_setup_condor
+        globus_wsrf_mds_hawkeye
 
 BUNDLE gt4-gram-lsf
         globus_wsrf_gram_service_java_setup_lsf                
