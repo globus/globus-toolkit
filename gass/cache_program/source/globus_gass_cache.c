@@ -547,6 +547,7 @@ globus_l_cache_remote_op( globus_l_cache_op_t op,
 	globus_module_deactivate(GLOBUS_GRAM_CLIENT_MODULE);
 	exit(1);
     }
+    globus_module_activate(GLOBUS_GASS_SERVER_EZ_MODULE);
     
     rc = globus_gass_server_ez_init(&listener,
                                     attr,
@@ -564,6 +565,8 @@ globus_l_cache_remote_op( globus_l_cache_op_t op,
 	globus_module_deactivate(GLOBUS_GRAM_CLIENT_MODULE);
 	exit(1);
     }
+
+    server_url=globus_gass_transfer_listener_get_base_url(listener);
 
     globus_libc_sprintf(
 	spec,
@@ -601,8 +604,9 @@ globus_l_cache_remote_op( globus_l_cache_op_t op,
 			 &globus_l_cache_monitor_mutex);
     }
     globus_mutex_unlock(&globus_l_cache_monitor_mutex);
-    globus_module_deactivate(GLOBUS_GRAM_CLIENT_MODULE);
     globus_gass_server_ez_shutdown(listener);
+    globus_module_deactivate(GLOBUS_GASS_SERVER_EZ_MODULE);
+    globus_module_deactivate(GLOBUS_GRAM_CLIENT_MODULE);
 } /* globus_l_cache_remote_op() */
 
 /******************************************************************************
