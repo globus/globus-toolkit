@@ -126,7 +126,7 @@ globus_extension_registry_set_hashing(
  * You MUST call globus_extension_release() when you are done using
  * the data.  the lookup() and release() calls handle the reference counting
  * that prevents an extension from being unloaded while things it provides are
- * being used.
+ * being used.  Do NOT call release() until you are done accessing the data from * the lookup() call.
  * 
  * release() could potentially block as a result of module deactivation and
  * unloading.  ensuring that globus_extension_deactivate() is not called with
