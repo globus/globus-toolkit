@@ -28,7 +28,7 @@
 #include <stdio.h>
 
 void print_copyright(void);
-extern char version[];
+extern char *version;
 
 char *Copyright = "\n\
   Copyright (c) 1999,2000 WU-FTPD Development Group.\n\

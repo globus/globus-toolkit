@@ -211,6 +211,8 @@ int main(int argc, char **argv)
     int c;
 
     FILE *tfp;
+   
+    gsi_wuftp_get_version();
 
     opterr = 0;
     create = 0;
