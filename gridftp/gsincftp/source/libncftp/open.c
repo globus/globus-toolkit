@@ -388,8 +388,6 @@ FTPLoginHost(const FTPCIPtr cip)
 						char * out_buf;
 						int len = 0;
 						char * p;
-						printf("Decoding %s\n",
-						       rp->msg.first->line);
 
 						in_buf = rp->msg.first->line;
 						len = strlen(in_buf);
