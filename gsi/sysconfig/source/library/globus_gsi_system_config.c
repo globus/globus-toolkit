@@ -80,6 +80,9 @@
 #define X509_LOCAL_CERT_DIR             ".globus"
 #define DEFAULT_GRIDMAP                 "SLANG: NEEDS TO BE DETERMINED"
 #define LOCAL_GRIDMAP                   "SLANG: NEEDS TO BE DETERMINED"
+#define DEFAULT_AUTHZ_FILE              "Sam: TBD"
+#define INSTALLED_AUTHZ_FILE            "Sam: TBD"
+#define LOCAL_AUTHZ_FILE                "Sam: TBD"
 #else
 #define FILE_SEPERATOR                  "/"
 #define X509_DEFAULT_USER_CERT          ".globus/usercert.pem"
@@ -94,6 +97,9 @@
 #define DEFAULT_GRIDMAP                 "/etc/grid-security/grid-mapfile"
 #define INSTALLED_GRIDMAP               "etc/grid-mapfile"
 #define LOCAL_GRIDMAP                   ".gridmap"
+#define DEFAULT_AUTHZ_FILE              "/etc/grid-security/gsi-authz.conf"
+#define INSTALLED_AUTHZ_FILE            "etc/gsi-authz.conf"
+#define LOCAL_AUTHZ_FILE                ".gsi-authz.conf"
 #endif
 
 #define X509_HOST_PREFIX                "host"
@@ -4807,6 +4813,22 @@ globus_gsi_sysconfig_get_ca_cert_files_unix(
 }
 /* @} */
 
+/**
+ * @name UNIX - Remove all proxies owned by current uid
+ * @ingroup globus_gsi_sysconfig_unix
+ */
+/* @{ */
+/**
+ * Removes all proxies (ie. all delegated and grid-proxy-init generated
+ * proxies) found in the secure tmp directory that are owned by the
+ * current user.
+ *
+ * @param default_filename
+ *        The filename of the default proxy
+ * @return
+ *        GLOBUS_SUCCESS if no error occurred, otherwise an error object ID
+ *        is returned
+ */ 
 globus_result_t
 globus_gsi_sysconfig_remove_all_owned_files_unix(
     char *                              default_filename)
@@ -4817,7 +4839,7 @@ globus_gsi_sysconfig_remove_all_owned_files_unix(
     DIR *                               secure_tmp_dir = NULL;
     struct dirent *                     dir_entry = NULL;
     static char *                       _function_name_ =
-        "globus_gsi_sysconfig_remove_all_proxy_files_unix";
+        "globus_gsi_sysconfig_remove_all_owned_files_unix";
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_ENTER;
 
     secure_tmp_dir = globus_libc_opendir(DEFAULT_SECURE_TMP_DIR);
@@ -4904,10 +4926,22 @@ globus_gsi_sysconfig_remove_all_owned_files_unix(
 }
 /* @} */
 
+
 /**
- * @name 
- * @ingroup
+ * @name UNIX - Check if the current user is root
+ * @ingroup globus_gsi_sysconfig_unix
  */
+/* @{ */
+/**
+ * Checks whether the current user is root.
+ *
+ * @param is_superuser
+ *        1 if the user is the superuser
+ *        0 if not
+ * @return
+ *        GLOBUS_SUCCESS if no error occurred, otherwise an error object ID
+ *        is returned
+ */ 
 globus_result_t
 globus_gsi_sysconfig_is_superuser_unix(
     int *                               is_superuser)
@@ -4930,6 +4964,20 @@ globus_gsi_sysconfig_is_superuser_unix(
 }
 /* @} */
 
+/**
+ * @name UNIX - Get the path and file name of the grid map file
+ * @ingroup globus_gsi_sysconfig_unix
+ */
+/* @{ */
+/**
+ * Get the path and file name of the grid map file.
+ *
+ * @param filename
+ *        Contains the location of the grid map file upon successful return
+ * @return
+ *        GLOBUS_SUCCESS if no error occurred, otherwise an error object ID
+ *        is returned
+ */ 
 globus_result_t
 globus_gsi_sysconfig_get_gridmap_filename_unix(
     char **                             filename)
@@ -5016,6 +5064,182 @@ globus_gsi_sysconfig_get_gridmap_filename_unix(
     if(home_dir != NULL)
     {
         free(home_dir);
+    }
+    
+    GLOBUS_I_GSI_SYSCONFIG_DEBUG_EXIT;
+    return result;
+}
+/* @} */
+
+/**
+ * @name UNIX - Get the path and file name of the authorization callback
+ * configuration file 
+ * @ingroup globus_gsi_sysconfig_unix
+ */
+/* @{ */
+/**
+ * Get the path and file name of the authorization callback
+ * configuration file 
+ *
+ * @param filename
+ *        Contains the location of the authorization callback configuration
+ *        file upon successful return 
+ * @return
+ *        GLOBUS_SUCCESS if no error occurred, otherwise an error object ID
+ *        is returned
+ */ 
+globus_result_t
+globus_gsi_sysconfig_get_authz_conf_filename_unix(
+    char **                             filename)
+{
+    char *                              home_dir = NULL;
+    char *                              authz_env = NULL;
+    char *                              authz_filename = NULL;
+    globus_gsi_statcheck_t              status;
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    static char *                       _function_name_ =
+        "globus_gsi_sysconfig_get_authz_conf_filename_unix";
+    GLOBUS_I_GSI_SYSCONFIG_DEBUG_ENTER;
+
+    if((authz_env = (char *) getenv("GSI_AUTHZ_CONF"))   != NULL)
+    {
+        authz_filename = globus_gsi_cert_utils_create_string(
+            "%s",
+            authz_env);
+        if(!authz_filename)
+        {
+            GLOBUS_GSI_SYSTEM_CONFIG_MALLOC_ERROR;
+            goto exit;
+        }
+    }
+    
+    if(!authz_filename)
+    {
+        if(getuid() == 0)
+        {
+            /* being run as root */
+            
+            authz_filename = globus_gsi_cert_utils_create_string(
+                "%s",
+                DEFAULT_AUTHZ_FILE);
+            if(!authz_filename)
+            {
+                GLOBUS_GSI_SYSTEM_CONFIG_MALLOC_ERROR;
+                goto exit;
+            }
+        }
+        else
+        {
+            result = GLOBUS_GSI_SYSCONFIG_GET_HOME_DIR(&home_dir, &status);
+            if(result != GLOBUS_SUCCESS)
+            {
+                GLOBUS_GSI_SYSCONFIG_ERROR_CHAIN_RESULT(
+                    result,
+                    GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_AUTHZ_FILENAME);
+                goto exit;
+            }
+            
+            if(home_dir && status == GLOBUS_FILE_DIR)
+            {
+                authz_filename = globus_gsi_cert_utils_create_string(
+                    "%s%s%s",
+                    home_dir,
+                    FILE_SEPERATOR,
+                    LOCAL_AUTHZ_FILE);
+                if(!authz_filename)
+                {
+                    GLOBUS_GSI_SYSTEM_CONFIG_MALLOC_ERROR;
+                    goto exit;
+                }
+            }
+        }
+    }
+
+    if(!authz_filename)
+    {
+        GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_AUTHZ_FILENAME,
+            ("A valid authz file could not be found."));
+        goto exit;
+    }
+
+    result = globus_gsi_sysconfig_check_certfile_unix(
+        authz_filename,
+        &status);
+
+    if(result != GLOBUS_SUCCESS)
+    {
+        GLOBUS_GSI_SYSCONFIG_ERROR_CHAIN_RESULT(
+            result,
+            GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_AUTHZ_FILENAME);
+        goto exit;
+    }
+
+    /* work around file check result idiocy */
+    
+    switch(status)
+    {
+      case GLOBUS_FILE_NOT_OWNED:
+      case GLOBUS_FILE_ZERO_LENGTH:
+      case GLOBUS_FILE_VALID:
+        break;
+      case GLOBUS_FILE_INVALID:
+        GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_SYSCONFIG_ERROR_FILE_NOT_REGULAR,
+            ("%s is not a valid authorization callout config file",
+             authz_filename));
+        GLOBUS_GSI_SYSCONFIG_ERROR_CHAIN_RESULT(
+            result,
+            GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_AUTHZ_FILENAME);
+        goto exit;
+      case GLOBUS_FILE_DOES_NOT_EXIST:
+        GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_SYSCONFIG_ERROR_FILE_DOES_NOT_EXIST,
+            ("%s is not a valid authorization callout config file",
+             authz_filename));
+        GLOBUS_GSI_SYSCONFIG_ERROR_CHAIN_RESULT(
+            result,
+            GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_AUTHZ_FILENAME);
+        goto exit;
+      case GLOBUS_FILE_BAD_PERMISSIONS:
+        GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_SYSCONFIG_ERROR_FILE_BAD_PERMISSIONS,
+            ("%s is not a valid authorization callout config file",
+             authz_filename));
+        GLOBUS_GSI_SYSCONFIG_ERROR_CHAIN_RESULT(
+            result,
+            GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_AUTHZ_FILENAME);
+        goto exit;
+      case GLOBUS_FILE_DIR:
+        GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_SYSCONFIG_ERROR_FILE_IS_DIR,
+            ("%s is not a valid authorization callout config file",
+             authz_filename));
+        GLOBUS_GSI_SYSCONFIG_ERROR_CHAIN_RESULT(
+            result,
+            GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_AUTHZ_FILENAME);
+        goto exit;
+    }
+    
+    *filename = authz_filename;
+
+    authz_filename = NULL;
+
+ exit:
+
+    if(home_dir != NULL)
+    {
+        free(home_dir);
+    }
+
+    if(authz_filename != NULL)
+    {
+        free(authz_filename);
     }
     
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_EXIT;

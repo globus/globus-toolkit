@@ -37,7 +37,14 @@ globus_l_gsi_sysconfig_error_strings[GLOBUS_GSI_SYSCONFIG_ERROR_LAST] =
 /* 14 */  "Error checking superuser status",
 /* 15 */  "Error setting file permissions",
 /* 16 */  "Error getting signing policy file"
-/* 17 */  "Error getting password entry for current user"
+/* 17 */  "Error getting password entry for current user",
+/* 18 */  "Could not find a valid authorization callback config file",
+/* 19 */  "Not a regular file",
+/* 20 */  "File does not exist",
+/* 21 */  "File has bad permissions",
+/* 22 */  "File is not owned by current user",
+/* 23 */  "File is a directory",
+/* 24 */  "File has zero length"
 };
 /* @} */
 
