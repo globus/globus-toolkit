@@ -150,7 +150,7 @@ globus_grim_get_default_configuration_filename(
  *  Assertion parsing
  */
 
-/**
+/*
  *
  */
 globus_result_t
@@ -180,7 +180,7 @@ globus_grim_assertion_init(
     return GLOBUS_SUCCESS;
 }
 
-/**
+/*
  *
  */
 globus_result_t
@@ -192,7 +192,7 @@ globus_grim_assertion_init_from_buffer(
     return GLOBUS_SUCCESS;
 }
     
-/**
+/*
  *
  */
 globus_result_t
@@ -219,7 +219,7 @@ globus_grim_assertion_serialize(
     return res;
 }
  
-/**
+/*
  *
  */
 globus_result_t
@@ -245,7 +245,7 @@ globus_grim_assertion_destroy(
     return GLOBUS_SUCCESS;
 }
     
-/**
+/*
  *
  */
 globus_result_t
@@ -270,7 +270,7 @@ globus_grim_assertion_get_subject(
     return GLOBUS_SUCCESS;
 }
 
-/**
+/*
  *
  */
 globus_result_t
@@ -295,7 +295,7 @@ globus_grim_assertion_get_username(
     return GLOBUS_SUCCESS;
 }
 
-/**
+/*
  *
  */
 globus_result_t
@@ -321,7 +321,7 @@ globus_grim_assertion_get_dn_array(
     return GLOBUS_SUCCESS;
 }
 
-/**
+/*
  *
  */
 globus_result_t
@@ -363,7 +363,7 @@ globus_grim_assertion_set_dn_array(
     return GLOBUS_SUCCESS;
 }
 
-/**
+/*
  *
  */
 globus_result_t
@@ -389,7 +389,7 @@ globus_grim_assertion_get_port_types_array(
     return GLOBUS_SUCCESS;
 }
 
-/**
+/*
  *
  */
 globus_result_t
@@ -461,7 +461,7 @@ globus_grim_assertion_set_port_types_array(
     _info = (struct globus_l_grim_conf_info_s *) config;                    \
 }
 
-/**
+/*
  *
  */
 globus_result_t
@@ -488,7 +488,7 @@ globus_grim_config_init(
     return GLOBUS_SUCCESS;
 }
 
-/**
+/*
  *
  */
 globus_result_t
@@ -515,7 +515,7 @@ globus_grim_config_load_from_file(
     return res;
 }
 
-/**
+/*
  *
  */
 globus_result_t
@@ -535,7 +535,7 @@ globus_grim_config_destroy(
     return GLOBUS_SUCCESS;
 }
 
-/**
+/*
  *
  */
 globus_result_t
@@ -560,7 +560,7 @@ globus_grim_config_get_max_time(
     return GLOBUS_SUCCESS;
 }
 
-/**
+/*
  *
  */
 globus_result_t
@@ -576,7 +576,7 @@ globus_grim_config_set_max_time(
     return GLOBUS_SUCCESS;
 }
 
-/**
+/*
  *
  */
 globus_result_t
@@ -601,7 +601,7 @@ globus_grim_config_get_default_time(
     return GLOBUS_SUCCESS;
 }
 
-/**
+/*
  *
  */
 globus_result_t
@@ -617,7 +617,7 @@ globus_grim_config_set_default_time(
     return GLOBUS_SUCCESS;
 }
 
-/**
+/*
  *
  */
 globus_result_t
@@ -642,7 +642,7 @@ globus_grim_config_get_key_bits(
     return GLOBUS_SUCCESS;
 }
 
-/**
+/*
  *
  */
 globus_result_t
@@ -658,7 +658,7 @@ globus_grim_config_set_key_bits(
     return GLOBUS_SUCCESS;
 }
 
-/**
+/*
  *
  */
 globus_result_t
@@ -683,7 +683,7 @@ globus_grim_config_get_ca_cert_dir(
     return GLOBUS_SUCCESS;
 }
 
-/**
+/*
  *
  */
 globus_result_t
@@ -700,7 +700,7 @@ globus_grim_config_set_ca_cert_dir(
     return GLOBUS_SUCCESS;
 }
 
-/**
+/*
  *
  */
 globus_result_t
@@ -725,7 +725,7 @@ globus_grim_config_get_cert_filename(
     return GLOBUS_SUCCESS;
 }
 
-/**
+/*
  *
  */
 globus_result_t
@@ -742,7 +742,7 @@ globus_grim_config_set_cert_filename(
     return GLOBUS_SUCCESS;
 }
 
-/**
+/*
  *
  */
 globus_result_t
@@ -767,7 +767,7 @@ globus_grim_config_get_key_filename(
     return GLOBUS_SUCCESS;
 }
 
-/**
+/*
  *
  */
 globus_result_t
@@ -784,7 +784,7 @@ globus_grim_config_set_key_filename(
     return GLOBUS_SUCCESS;
 }
 
-/**
+/*
  *
  */
 globus_result_t
@@ -800,7 +800,7 @@ globus_grim_config_get_gridmap_filename(
     return GLOBUS_SUCCESS;
 }
 
-/**
+/*
  *
  */
 globus_result_t
@@ -817,7 +817,7 @@ globus_grim_config_set_gridmap_filename(
     return GLOBUS_SUCCESS;
 }
 
-/**
+/*
  *
  */
 globus_result_t
@@ -833,7 +833,7 @@ globus_grim_config_get_port_type_filename(
     return GLOBUS_SUCCESS;
 }
 
-/**
+/*
  *
  */
 globus_result_t
@@ -851,7 +851,7 @@ globus_grim_config_set_port_type_filename(
 }
 
 
-/**
+/*
  *  
  */
 globus_result_t
@@ -872,7 +872,7 @@ globus_grim_devel_get_NID(
     return GLOBUS_SUCCESS;
 }
 
-/**
+/*
  *  
  */
 globus_result_t
@@ -910,7 +910,7 @@ globus_grim_devel_port_type_file_parse(
     return res;
 }
 
-/**
+/*
  *  
  */
 globus_result_t
@@ -946,7 +946,7 @@ globus_grim_devel_get_all_port_types(
     return res;
 }
 
-/**
+/*
  *  
  */
 globus_result_t

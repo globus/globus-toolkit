@@ -46,7 +46,22 @@ globus_grim_get_default_configuration_filename(
     char **                                 conf_filename);
 
 /**
+ *  Initialize an assertion type.
  *
+ *  This function initializes an assertion data type.  All
+ *  attributes except subject and username receive default values, because
+ *  subject and username are required to have a valid assertion.
+ *
+ *  @param assertion
+ *         An out parameter.  Upon return this will contain the initialized
+ *         assertion.
+ * 
+ *  @param subject
+ *         The value to fill the ServiceGridId portion of the assertion.
+ *
+ *  @param username
+ *         The local user name to be associated with the ServiceLocalId
+ *         portion of the assertion.
  */
 globus_result_t
 globus_grim_assertion_init(
@@ -55,7 +70,20 @@ globus_grim_assertion_init(
     char *                                  username);
 
 /**
+ *  Initialize an assertion type from a buffer.
  *
+ *  This function will parse an assertion and use the values contained
+ *  in it to initialize an assertion structure.
+ *
+ *  @param assertion
+ *         An out parameter.  Upon return this will contain the initialized
+ *         assertion.
+ *
+ *  @param buffer
+ *         A memory buffer containing the entire assertion xml assertion.
+ *
+ *  @param buffer_length
+ *         The length of the above buffer.
  */
 globus_result_t
 globus_grim_assertion_init_from_buffer(
@@ -64,7 +92,18 @@ globus_grim_assertion_init_from_buffer(
     int                                     buffer_length);
 
 /**
+ *  Convert an assertion object into serializable xml.
  *
+ *  This will convert the assertion object into a memory buffer
+ *  that can be written to the proxy file.
+ *
+ *  @param assertion
+ *         The assertion object that the user wishes to serialize.
+ *
+ *  @param out_assertion_string
+ *         An out parameter.  Upon return from this function this
+ *         will point to a memory buffer containing the serialzed assertion.
+ *         The user will need to free this buffer when they are finished.
  */
 globus_result_t
 globus_grim_assertion_serialize(
@@ -72,14 +111,31 @@ globus_grim_assertion_serialize(
     char **                                 out_assertion_string);
 
 /**
+ *  Destroy an assertion object.
  *
+ *  This will clean up an assertion object and all memory associated with
+ *  it.
+ *
+ *  @param assertion
+ *         The assertion object ot destroy.
  */
 globus_result_t
 globus_grim_assertion_destroy(
     globus_grim_assertion_t                 assertion);
 
 /**
+ *  Get the subject.
  *
+ *  This function returns the subject associated with the assertion to
+ *  the user.
+ *
+ *  @param assertion
+ *         The assertion object containing the subject of interest.
+ *
+ *  @param subject
+ *         An out parameter.  Upon completion of this function it will 
+ *         point to the subject.  The user should not free or alter this
+ *         memory.
  */
 globus_result_t
 globus_grim_assertion_get_subject(
@@ -87,6 +143,17 @@ globus_grim_assertion_get_subject(
     char **                                 subject);
 
 /**
+ *  Get the username
+ *
+ *  This function gets the username associated with the assertion for
+ *  the user.
+ *
+ *  @param assertion
+ *         The assertion object containing the username of interest.
+ *
+ *  @param username
+ *         An out parameter.  Upon completion of this function it will 
+ *         point to the username.  The user should not free this.
  *
  */
 globus_result_t
@@ -95,7 +162,17 @@ globus_grim_assertion_get_username(
     char **                                 username);
 
 /**
+ *  Get the dn array.
  *
+ *  This function returns the dn array contained in the assertion.
+ *
+ *  @param assertion
+ *         The assertion object that contains the dn_array.
+ * 
+ *  @param dn_array
+ *         An out parameter.  Upon compleition of this function this
+ *         will point to an array of dns.  The user should not free or 
+ *         alter this memory.
  */
 globus_result_t
 globus_grim_assertion_get_dn_array(
@@ -103,7 +180,17 @@ globus_grim_assertion_get_dn_array(
     char ***                                dn_array);
 
 /**
+ *  Set the dn array.
  *
+ *  This function associates a NULL terminated array of dns with
+ *  the assertion object.  This will disassociate any previously
+ *  set dn_array.
+ *
+ *  @param assertion
+ *         The assertion object on which the dn_array will be set.
+ *
+ *  @param dn_array
+ *         The dn_array to set.
  */
 globus_result_t
 globus_grim_assertion_set_dn_array(
@@ -111,7 +198,17 @@ globus_grim_assertion_set_dn_array(
     char **                                 dn_array);
 
 /**
+ *  Get the port_types array.
  *
+ *  This function returns the port types array contained in the assertion.
+ *
+ *  @param assertion
+ *         The assertion object that contains the port types array.
+ *
+ *  @param port_types_array
+ *         An out parameter.  Upon compleition of this function this
+ *         will point to an array of port types.  The user should not free or
+ *         alter this memory.
  */
 globus_result_t
 globus_grim_assertion_get_port_types_array(
@@ -119,7 +216,17 @@ globus_grim_assertion_get_port_types_array(
     char ***                                port_types_array);
 
 /**
+ *  Set the port type array.
  *
+ *  This function associates a NULL terminated array of port types with
+ *  the assertion object.  This will disassociate any previously
+ *  set port type array.
+ *
+ *  @param assertion
+ *         The assertion object on which the port type array will be set.
+ *
+ *  @param port_types_array
+ *         The port_types_array to set.
  */
 globus_result_t
 globus_grim_assertion_set_port_types_array(
@@ -127,21 +234,40 @@ globus_grim_assertion_set_port_types_array(
     char **                                 port_types_array);
 
 /**
+ *  Initialize a configure data type.
  *
+ *  This will initialize the configure structure with default values.
+ *  
+ *  @param config
+ *         An out parameter.  Upon return from this function it will point
+ *         to the intialized config data type.
  */
 globus_result_t
 globus_grim_config_init(
     globus_grim_config_t *                  config);
 
 /**
+ *  Destroy a config data type
  *
+ *  This will clean up all resources associated with a config data type.
+ * 
+ *  @param config
+ *         The data type to be destroyed.
  */
 globus_result_t
 globus_grim_config_destroy(
     globus_grim_config_t                    config);
 
 /**
+ *  Load From File
  *
+ *  Load the attributes for the config data type from the given file.
+ *
+ *  @param config
+ *         The data type whos attributes will be set from the file.
+ *
+ *  @param fptr
+ *         An open FILE pointer for a configuration file.
  */
 globus_result_t
 globus_grim_config_load_from_file(
@@ -149,7 +275,17 @@ globus_grim_config_load_from_file(
     FILE *                                  fptr);
 
 /**
+ *  Get Max Time
  *
+ *  Get the maximum amount of time a proxy may be valid.
+ *
+ *  @param config
+ *         The config data type to be queried.
+ *
+ *  @param max_time
+ *         An out paramter.  Upon Completion of this function it will 
+ *         point to a integer representing the maximum number of hours
+ *         associated with the config data type.
  */
 globus_result_t
 globus_grim_config_get_max_time(
@@ -157,7 +293,15 @@ globus_grim_config_get_max_time(
     int *                                   max_time);
 
 /**
+ *  Set Max Time
  *
+ *  Set the maximum amount of time a proxy may be valid.
+ *
+ *  @param config
+ *         The config data type to be queried.
+ *
+ *  @param max_time
+ *         The maximun amount of time in hours that a proxy may be valid.
  */
 globus_result_t
 globus_grim_config_set_max_time(
@@ -165,7 +309,17 @@ globus_grim_config_set_max_time(
     int                                     max_time);
 
 /**
+ *  Get Default Time
  *
+ *  Get the default amount of time a proxy may be valid.
+ *
+ *  @param config
+ *         The config data type to be queried.
+ *
+ *  @param default_time
+ *         An out paramter.  Upon Completion of this function it will 
+ *         point to a integer representing the default number of hours
+ *         associated with the config data type.
  */
 globus_result_t
 globus_grim_config_get_default_time(
@@ -173,7 +327,15 @@ globus_grim_config_get_default_time(
     int *                                   default_time);
 
 /**
+ *  Set Default Time
  *
+ *  Set the default amount of time a proxy may be valid.
+ *
+ *  @param config
+ *         The config data type to be queried.
+ *
+ *  @param deault_time
+ *         The default amount of time in hours that a proxy may be valid.
  */
 globus_result_t
 globus_grim_config_set_default_time(
@@ -181,7 +343,16 @@ globus_grim_config_set_default_time(
     int                                     default_time);
 
 /**
+ *  Get Key Bits
  *
+ *  Get the number of bits to be used in the key creation.
+ *
+ *  @param config
+ *         The config data type to be queried.
+ *
+ *  @param key_bits
+ *         An out paramter.  Upon Completion of this function it will 
+ *         point to a integer representing the length in bits of the key.
  */
 globus_result_t
 globus_grim_config_get_key_bits(
@@ -189,7 +360,15 @@ globus_grim_config_get_key_bits(
     int *                                   key_bits);
 
 /**
+ *  Set Key Bits
  *
+ *  Set the number of bits in the key.
+ *
+ *  @param config
+ *         The config data type to be queried.
+ *
+ *  @param key_bits.
+ *         The number of bits to be used in the key.
  */
 globus_result_t
 globus_grim_config_set_key_bits(
@@ -197,7 +376,16 @@ globus_grim_config_set_key_bits(
     int                                     key_bits);
 
 /**
+ *  Get the ca certificate directory
  *
+ *  Get the path to the ca certificate directory.
+ *
+ *  @param config
+ *         The config data type to be queried.
+ *
+ *  @param ca_cert_dir
+ *         An out paramter.  Upon Completion of this function it will 
+ *         point to a string containing the path to the ca cert dir.
  */
 globus_result_t
 globus_grim_config_get_ca_cert_dir(
@@ -205,7 +393,15 @@ globus_grim_config_get_ca_cert_dir(
     char **                                 ca_cert_dir);
 
 /**
+ *  Set the ca cert dir
  *
+ *  Set the directory path pf the ca certificate.
+ *
+ *  @param config
+ *         The config data type to be queried.
+ *  
+ *  @param ca_cert_dir
+ *         The path to the ca certicates.
  */
 globus_result_t
 globus_grim_config_set_ca_cert_dir(
@@ -213,7 +409,16 @@ globus_grim_config_set_ca_cert_dir(
     char *                                  ca_cert_dir);
 
 /**
+ *  Get the certificate filename
+ *  
+ *  Get the path to the certificate
+ *  
+ *  @param config
+ *         The config data type to be queried.
  *
+ *  @param cert_filename
+ *         An out paramter.  Upon Completion of this function it will
+ *         point to a string containing the path to the certificate.
  */
 globus_result_t
 globus_grim_config_get_cert_filename(
@@ -221,7 +426,15 @@ globus_grim_config_get_cert_filename(
     char **                                 cert_filename);
 
 /**
+ *  Set the cert filename
  *
+ *  Set the path to the cert filename
+ *
+ *  @param config
+ *         The config data type to be queried.
+ * 
+ *  @param cert_filename
+ *         The path to the certificate.
  */
 globus_result_t
 globus_grim_config_set_cert_filename(
@@ -229,7 +442,16 @@ globus_grim_config_set_cert_filename(
     char *                                  cert_filename);
 
 /**
+ *  Get the key filename
+ * 
+ *  Get the path to the key
+ * 
+ *  @param config
+ *         The config data type to be queried.
  *
+ *  @param key_filename
+ *         An out paramter.  Upon Completion of this function it will
+ *         point to a string containing the path to the key.
  */
 globus_result_t
 globus_grim_config_get_key_filename(
@@ -237,7 +459,15 @@ globus_grim_config_get_key_filename(
     char **                                 key_filename);
 
 /**
+ *  Set the key filename
  *
+ *  Set the path to the key filename
+ *
+ *  @param config
+ *         The config data type to be queried.
+ *
+ *  @param key_filename
+ *         The path to the key.
  */
 globus_result_t
 globus_grim_config_set_key_filename(
@@ -245,7 +475,16 @@ globus_grim_config_set_key_filename(
     char *                                  key_filename);
 
 /**
+ *  Get the gridmap filename
+ * 
+ *  Get the path to the certificate
+ * 
+ *  @param config
+ *         The config data type to be queried.
  *
+ *  @param gridmap_filename
+ *         An out paramter.  Upon Completion of this function it will
+ *         point to a string containing the path to the gridmap file.
  */
 globus_result_t
 globus_grim_config_get_gridmap_filename(
@@ -253,7 +492,15 @@ globus_grim_config_get_gridmap_filename(
     char **                                 gridmap_filename);
 
 /**
+ *  Set the gridmap filename.
  *
+ *  Set the path to the gridmap filename
+ *
+ *  @param config
+ *         The config data type to be queried.
+ *
+ *  @param gridmap_filename
+ *         The path to the gridmap file.
  */
 globus_result_t
 globus_grim_config_set_gridmap_filename(
@@ -261,7 +508,16 @@ globus_grim_config_set_gridmap_filename(
     char *                                  gridmap_filename);
 
 /**
+ *  Get the port type filename
+ * 
+ *  Get the path to the port type file.
+ * 
+ *  @param config
+ *         The config data type to be queried.
  *
+ *  @param max_time
+ *         An out paramter.  Upon Completion of this function it will
+ *         point to a string containing the path to the port type file.
  */
 globus_result_t
 globus_grim_config_get_port_type_filename(
@@ -269,7 +525,15 @@ globus_grim_config_get_port_type_filename(
     char **                                 port_type_filename);
 
 /**
+ *  Set the port type filename.
  *
+ *  Set the path to the port type filename
+ *
+ *  @param config
+ *         The config data type to be queried.
+ *
+ *  @param port_type_filename
+ *         The path to the port type file.    
  */
 globus_result_t
 globus_grim_config_set_port_type_filename(
@@ -277,14 +541,39 @@ globus_grim_config_set_port_type_filename(
     char *                                  port_type_filename);
 
 /**
- *  
+ *  Get the NID for this assertion type.
+ *
+ *  Gives the user the nid for the grim assertion.  This can then be used
+ *  to set a policy.
+ *
+ *  @param nid
+ *         A out parameter.  Uppon completion it will point to an integer
+ *         representing the nid.
  */
 globus_result_t
 globus_grim_devel_get_NID(
     int *                                   nid);
 
 /**
- *  
+ *  Parse the port type file
+ * 
+ *  parse the port type file for all port types associated with the
+ *  give user and groups.
+ *
+ *  @param fptr
+ *         A file pointer of the open port type file.
+ * 
+ *  @param username
+ *         The user name for which to look up port types.  If this
+ *         is null port types associated with any user will be returned.
+ *
+ *  @param groups
+ *         a null termintaed array of group names for which port_types
+ *         will be looked up.
+ * 
+ *  @param port_types
+ *         An out parameter.  Upon completion of this function this will
+ *         point to a null terminated array.  
  */
 globus_result_t
 globus_grim_devel_port_type_file_parse(
@@ -294,7 +583,18 @@ globus_grim_devel_port_type_file_parse(
     char ***                                port_types);
 
 /**
- *  
+ *  Parse a port type file
+ *
+ *  parse the port type file for all port types independent of what 
+ *  users and groups are associated.
+ *
+ *  @param fptr
+ *         A file pointer of the open port type file.
+ * 
+ *  @param port_types
+ *         An out parameter.  Upon completion of this function this will
+ *         point to a null terminated array.  
+ *
  */
 globus_result_t
 globus_grim_devel_get_all_port_types(
@@ -302,7 +602,18 @@ globus_grim_devel_get_all_port_types(
     char ***                                port_types);
 
 /**
- *  
+ *  Parse a port type file
+ *
+ *  parse the port type file for all port types assocaited with the
+ *  current user (getuid()) and the groups to which that user belongs.
+ *
+ *  @param fptr
+ *         A file pointer of the open port type file.
+ *
+ *  @param port_types
+ *         An out parameter.  Upon completion of this function this will
+ *         point to a null terminated array.
+ *
  */
 globus_result_t
 globus_grim_devel_port_type_file_parse_uid(
