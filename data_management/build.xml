@@ -18,11 +18,6 @@ Southern California. All Rights Reserved.
 <project default="all" basedir=".">
 
 
-<!-- This should be the only place where we reference outside of 
-     our own playground/gram directory.
-     This means that should be able to move the whole playground/gramskres 
-     directory around with only this property needing to be changed.
--->
   <!-- Give user a chance to override without editing this file
        (and without typing -D each time it compiles it) -->
 
@@ -43,7 +38,6 @@ Southern California. All Rights Reserved.
   <property name="build.javadocs" value="${build.dir}/javadocs"/>
   <property name="build.services" value="${ogsa.root}/build-services.xml"/>
   <property name="test-reports.dir" value="test-reports"/>
-  <property name="jobManager.properties" value="jmDatabase.properties"/>
   <property name="etc.dir" value="etc"/>
 
   <property name="filestreaming.dir" value="./filestreaming"/>

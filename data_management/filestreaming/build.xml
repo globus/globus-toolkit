@@ -242,6 +242,11 @@ Southern California. All Rights Reserved.
 
   <target name="cleanAll" depends="clean">
     <delete dir="${stubs.dir}"/>
+    <delete includeEmptyDirs="true">
+      <fileset dir="${schema.dir}">
+        <exclude name="base/gram/file_streaming*"/>
+      </fileset>
+    </delete>
   </target>
 
   <target name="deployGar" depends="gar">
