@@ -99,8 +99,7 @@ globus_gridftp_server_LDFLAGS = $(GPT_LDFLAGS)
 # from the dependent packages
 globus_gridftp_server_LDADD = \
 	$(GPT_PGM_LINKS) \
-	$(MODULE_LIBS) \
-	$(COMMAND_LIBS)
+	$(MODULE_LIBS)
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

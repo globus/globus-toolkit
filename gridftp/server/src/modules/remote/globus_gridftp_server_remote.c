@@ -1,5 +1,6 @@
 #include "globus_gridftp_server.h"
 #include "globus_i_gfs_ipc.h"
+#include "version.h"
 
 typedef struct globus_l_gfs_remote_handle_s
 {
@@ -874,7 +875,7 @@ globus_l_gfs_remote_set_cred(
 }
 
 
-
+static
 globus_result_t
 globus_l_gfs_remote_init(
     const char *                        user_id,
@@ -882,6 +883,7 @@ globus_l_gfs_remote_init(
 {
     globus_result_t                     result = GLOBUS_SUCCESS;
     globus_l_gfs_remote_handle_t *      my_handle;
+    GlobusGFSName(globus_l_gfs_remote_init);
     
     my_handle = (globus_l_gfs_remote_handle_t *) 
         globus_calloc(1, sizeof(globus_l_gfs_remote_handle_t));
@@ -893,15 +895,23 @@ globus_l_gfs_remote_init(
     
     return result;
 }
-                                                                                
+
+static
 void
 globus_l_gfs_remote_destory(
     void *                              user_arg)
 {
 }
 
+static
+int
+globus_l_gfs_remote_activate(void);
 
-globus_gfs_storage_iface_t              globus_gfs_remote_dsi_iface = 
+static
+int
+globus_l_gfs_remote_deactivate(void);
+
+static globus_gfs_storage_iface_t       globus_l_gfs_remote_dsi_iface = 
 {
     globus_l_gfs_remote_init,
     globus_l_gfs_remote_destory,
@@ -917,4 +927,49 @@ globus_gfs_storage_iface_t              globus_gfs_remote_dsi_iface =
     globus_l_gfs_remote_set_cred
 };
 
+GlobusExtensionDefineModule(globus_gridftp_server_remote) =
+{
+    "globus_gridftp_remote",
+    globus_l_gfs_remote_activate,
+    globus_l_gfs_remote_deactivate,
+    GLOBUS_NULL,
+    GLOBUS_NULL,
+    &local_version
+};
 
+static
+int
+globus_l_gfs_remote_activate(void)
+{
+    int                                 rc;
+    
+    GlobusGFSName(globus_l_gfs_remote_activate);
+    
+    rc = globus_module_activate(GLOBUS_COMMON_MODULE);
+    if(rc != GLOBUS_SUCCESS)
+    {
+        return rc;
+    }
+    
+    globus_extension_registry_add(
+        GLOBUS_GFS_DSI_REGISTRY,
+        "remote",
+        GlobusExtensionMyModule(globus_gridftp_server_remote),
+        &globus_l_gfs_remote_dsi_iface);
+    
+    return GLOBUS_SUCCESS;
+}
+
+static
+int
+globus_l_gfs_remote_deactivate(void)
+{
+    GlobusGFSName(globus_l_gfs_remote_deactivate);
+    
+    globus_extension_registry_remove(
+        GLOBUS_GFS_DSI_REGISTRY, "remote");
+        
+    globus_module_deactivate(GLOBUS_COMMON_MODULE);
+    
+    return GLOBUS_SUCCESS;
+}
