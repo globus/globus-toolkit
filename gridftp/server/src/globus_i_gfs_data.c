@@ -2526,13 +2526,13 @@ globus_i_gfs_data_session_start(
             result = GlobusGFSErrorWrapFailed("gss_import_cred", min_stat);
             goto error_import;
         }
-/*        maj_stat = gss_release_buffer(&min_stat, buffer);
+        maj_stat = gss_release_buffer(&min_stat, &buffer);
         if(maj_stat != GSS_S_COMPLETE)
         {
             result = GlobusGFSErrorWrapFailed("gss_release_buffer", min_stat);
             goto error_import;
         }
-  */      
+        
     }
     
     op->session_handle = session_handle;
@@ -2578,7 +2578,7 @@ globus_i_gfs_data_session_start(
     return;
 
 error_import:
-    gss_release_buffer(&min_stat, buffer);
+    gss_release_buffer(&min_stat, &buffer);
 error_cred:
 error_hook:
 
