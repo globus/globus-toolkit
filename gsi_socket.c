@@ -351,6 +351,49 @@ mysetenv(const char *var,
 #endif /* !HAVE_SETENV */
 }
 
+static void
+myunsetenv(const char *var)
+{
+#ifdef HAVE_UNSETENV
+    unsetenv(var);
+
+    return;
+    
+#else /* !HAVE_UNSETENV */
+    extern char **environ;
+    char **p1 = environ;	/* New array list */
+    char **p2 = environ;	/* Current array list */
+    int len = strlen(var);
+
+    assert(var != NULL);
+    
+    /*
+     * Walk through current environ array (p2) copying each pointer
+     * to new environ array (p1) unless the pointer is to the item
+     * we want to delete. Copy happens in place.
+     */
+    while (*p2) {
+	if ((strncmp(*p2, var, len) == 0) &&
+	    ((*p2)[len] == '=')) {
+	    /*
+	     * *p2 points at item to be deleted, just skip over it
+	     */
+	    p2++;
+	} else {
+	    /*
+	     * *p2 points at item we want to save, so copy it
+	     */
+	    *p1 = *p2;
+	    p1++;
+	    p2++;
+	}
+    }
+
+    /* And make sure new array is NULL terminated */
+    *p1 = NULL;
+#endif /* HAVE_UNSETENV */
+}
+
 /*
  * GSI_SOCKET_set_error_from_verror()
  *
@@ -604,6 +647,8 @@ GSI_SOCKET_use_creds(GSI_SOCKET *self,
     }
     else
     {
+	myunsetenv("X509_USER_CERT");
+	myunsetenv("X509_USER_KEY");
         return_code = (mysetenv("X509_USER_PROXY", creds, 1) == -1) ? GSI_SOCKET_ERROR : GSI_SOCKET_SUCCESS;
     }
 

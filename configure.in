@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 
-AC_REVISION($Revision: 1.36 $)
+AC_REVISION($Revision: 1.37 $)
 AC_INIT(Makefile.am)
 
 GLOBUS_INIT
@@ -56,6 +56,10 @@ dnl
 dnl Check for setenv()
 dnl
 AC_CHECK_FUNCS(setenv)
+dnl
+dnl Check for unsetenv()
+dnl
+AC_CHECK_FUNCS(unsetenv)
 dnl
 dnl Check to see if we need "netlibs" (specifically, libnsl and libsocket)
 dnl
