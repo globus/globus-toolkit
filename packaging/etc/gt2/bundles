@@ -517,6 +517,7 @@ BUNDLE gt2-threaded THREADED
 	globus_openssl_module
 	globus_proxy_utils
 	globus_proxy_wrapper
+	globus_rsl
 	globus_sasl_gssapi_gsi
 	globus_user_env
         globus_xio
