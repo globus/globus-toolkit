@@ -141,12 +141,12 @@ ssl_error_to_verror()
 }
 
 /*
- * ssl_free_cert_chain()
+ * ssl_cert_chain_free()
  *
  * Free the given certificate chain and all it contents.
  */
 static void
-ssl_free_cert_chain(STACK			*cert_chain)
+ssl_cert_chain_free(STACK			*cert_chain)
 {
     if (cert_chain != NULL)
     {
@@ -155,13 +155,13 @@ ssl_free_cert_chain(STACK			*cert_chain)
 }
 
 /*
- * ssl_free_credentials_contents()
+ * ssl_credentials_free_contents()
  *
  * Free all the contents of the given credentials without freeing
  * the credentials structure itself.
  */
 static void
-ssl_free_credentials_contents(SSL_CREDENTIALS	*creds)
+ssl_credentials_free_contents(SSL_CREDENTIALS	*creds)
 {
     if (creds != NULL)
     {
@@ -177,54 +177,14 @@ ssl_free_credentials_contents(SSL_CREDENTIALS	*creds)
 	
 	if (creds->certificate_chain != NULL)
 	{
-	    ssl_free_cert_chain(creds->certificate_chain);
+	    ssl_cert_chain_free(creds->certificate_chain);
 	}
     }
 }
 
 
 /*
- * ssl_get_key_size()
- *
- * Given a certificate return the size of the key for the certificate
- * in bits.
- *
- * Returns -1 on error.
- */
-static int
-ssl_get_key_size(X509				*certificate)
-{
-    EVP_PKEY		*key;
-    int			key_size = -1;
-    
-    assert(certificate != NULL);
-	
-    key = X509_get_pubkey(certificate);
-	
-    if (key == NULL)
-    {
-	verror_put_string("Error reading current certificate to make proxy request");
-	ssl_error_to_verror();
-	goto error;
-    }
-	
-    if (key->type != EVP_PKEY_RSA)
-    {
-	verror_put_string("Current certificate wrong key type making proxy request");
-	goto error;
-    }
-	
-    /* Success. Convert from bytes to bits */
-    key_size = EVP_PKEY_size(key) * 8;
-
-  error:
-    return key_size;
-}
-
-   
-    
-/*
- * ssl_get_proxy_name()
+ * ssl_proxy_generate_name()
  *
  * Given a certificate, and the restrictions associated with the
  * proxy we are generating return the name of the proxy certificate
@@ -234,8 +194,8 @@ ssl_get_key_size(X509				*certificate)
  * Returns 0 on success, -1 on error.
  */
 static X509_NAME *
-ssl_get_proxy_name(X509				*certificate,
-		   SSL_PROXY_RESTRICTIONS	*restrictions)
+ssl_proxy_generate_name(X509				*certificate,
+			SSL_PROXY_RESTRICTIONS		*restrictions)
 {
     X509_NAME			*name = NULL;
     X509_NAME_ENTRY		*name_entry =NULL;
@@ -312,19 +272,21 @@ ssl_get_proxy_name(X509				*certificate,
 
 
 /*
- * ssl_init()
+ * my_init()
  *
- * Initialize the SSL libraries. Should be called first. Can be called
- * multiple times.
+ * Do any needed initialization for these routines.
+ * Should be called first. Can be called multiple times.
  */
 static void
-ssl_init()
+my_init()
 {
-    static int ssl_inited = 0;
+    static int my_inited = 0;
     
-    if (ssl_inited == 0)
+    if (my_inited == 0)
     {
-	ssl_inited = 1;
+	my_inited = 1;
+
+	/* Initialize the ssleay libraries */
 
 	SSL_load_error_strings();
 
@@ -334,13 +296,13 @@ ssl_init()
 
 	
 /*
- * ssl_pass_phrase_callback()
+ * my_pass_phrase_callback()
  *
  * Callback from PEM_read_PrivateKey() in ssl_load_user_key()
  * to return the passphrase stored in _ssl_pass_phrase.
  */
 static int
-ssl_pass_phrase_callback(char			*buffer,
+my_pass_phrase_callback(char			*buffer,
 			 int			buffer_len,
 			 int			verify /* Ignored */)
 {
@@ -495,7 +457,7 @@ ssl_proxy_cert_from_buffer(SSL_CREDENTIALS	*creds,
 	
 	if (cert_chain != NULL)
 	{
-	    ssl_free_cert_chain(cert_chain);
+	    ssl_cert_chain_free(cert_chain);
 	}
     }
 
@@ -844,7 +806,7 @@ ssl_x509_request_verify(X509_REQ		*request)
 
 
 /*
- * ssl_generate_cert_request()
+ * ssl_x509_request_generate()
  *
  * Generate a certificate request.
  *
@@ -864,7 +826,7 @@ ssl_x509_request_verify(X509_REQ		*request)
  * Returns 0 on success, -1 on error.
  */
 static int
-ssl_generate_cert_request(SSL_CREDENTIALS	**p_creds,
+ssl_x509_request_generate(SSL_CREDENTIALS	**p_creds,
 			  X509_REQ		**p_request,
 			  X509_NAME		*requested_name,
 			  int			requested_bits,
@@ -882,7 +844,7 @@ ssl_generate_cert_request(SSL_CREDENTIALS	**p_creds,
     assert(p_request != NULL);
  
     /* Make new credentials structure to hold new certificate */
-    creds = ssl_new_credentials();
+    creds = ssl_credentials_new();
     
     if (creds == NULL)
     {
@@ -1072,7 +1034,7 @@ ssl_generate_cert_request(SSL_CREDENTIALS	**p_creds,
 
 	if (creds != NULL)
 	{
-	    ssl_destroy_credentials(creds);
+	    ssl_credentials_destroy(creds);
 	}
     }
     
@@ -1081,7 +1043,7 @@ ssl_generate_cert_request(SSL_CREDENTIALS	**p_creds,
 
 
 /*
- * ssl_generate_proxy_certificate()
+ * ssl_proxy_request_sign()
  *
  * Given the credentials and a certificate request, generate a proxy
  * certificate. ssl_x509_request_verify() is used to check the request.
@@ -1091,10 +1053,10 @@ ssl_generate_cert_request(SSL_CREDENTIALS	**p_creds,
  * Returns 0 on succes, -1 on error.
  */
 static int
-ssl_generate_proxy_certificate(SSL_CREDENTIALS		*creds,
-			       X509_REQ			*request,
-			       SSL_PROXY_RESTRICTIONS	*restrictions,
-			       X509			**p_proxy_cert)
+ssl_proxy_request_sign(SSL_CREDENTIALS		*creds,
+		       X509_REQ			*request,
+		       SSL_PROXY_RESTRICTIONS	*restrictions,
+		       X509			**p_proxy_cert)
 {
     long			lifetime = PROXY_DEFAULT_LIFETIME;
     X509_NAME			*proxy_name = NULL;
@@ -1131,7 +1093,7 @@ ssl_generate_proxy_certificate(SSL_CREDENTIALS		*creds,
     }
     
     /* Generate the name the proxy certificate will have */
-    proxy_name = ssl_get_proxy_name(creds->certificate, restrictions);
+    proxy_name = ssl_proxy_generate_name(creds->certificate, restrictions);
     
     if (proxy_name == NULL)
     {
@@ -1273,13 +1235,13 @@ ssl_generate_proxy_certificate(SSL_CREDENTIALS		*creds,
 
 
 void
-ssl_destroy_credentials(SSL_CREDENTIALS		*creds)
+ssl_credentials_destroy(SSL_CREDENTIALS		*creds)
 {
-    ssl_init();
+    my_init();
     
     if (creds != NULL)
     {
-	ssl_free_credentials_contents(creds);
+	ssl_credentials_free_contents(creds);
 	
 	free(creds);
     }
@@ -1290,8 +1252,8 @@ ssl_destroy_credentials(SSL_CREDENTIALS		*creds)
 		     
 		     
 int
-ssl_load_certificate(SSL_CREDENTIALS		*creds,
-		     const char			*path)
+ssl_certificate_load_from_file(SSL_CREDENTIALS	*creds,
+			       const char	*path)
 {
     FILE		*cert_file = NULL;
     X509		*cert = NULL;
@@ -1300,7 +1262,7 @@ ssl_load_certificate(SSL_CREDENTIALS		*creds,
     assert(creds != NULL);
     assert(path != NULL);
 
-    ssl_init();
+    my_init();
     
     cert_file = fopen(path, "r");
     
@@ -1338,9 +1300,9 @@ ssl_load_certificate(SSL_CREDENTIALS		*creds,
 }
 
 int
-ssl_load_private_key(SSL_CREDENTIALS		*creds,
-		     const char			*path,
-		     const char			*pass_phrase)
+ssl_private_key_load_from_file(SSL_CREDENTIALS	*creds,
+			       const char	*path,
+			       const char	*pass_phrase)
 {
     FILE		*key_file = NULL;
     EVP_PKEY		*key = NULL;
@@ -1349,7 +1311,7 @@ ssl_load_private_key(SSL_CREDENTIALS		*creds,
     assert(creds != NULL);
     assert(path != NULL);
     
-    ssl_init();
+    my_init();
     
     /* 
      * Put pass phrase where the callback function can find it.
@@ -1366,7 +1328,7 @@ ssl_load_private_key(SSL_CREDENTIALS		*creds,
     }
 
     if (PEM_read_PrivateKey(key_file, &(key),
-			    PEM_CALLBACK(ssl_pass_phrase_callback,
+			    PEM_CALLBACK(my_pass_phrase_callback,
 					 NULL)) == NULL)
     {
 	unsigned long error;
@@ -1407,9 +1369,9 @@ ssl_load_private_key(SSL_CREDENTIALS		*creds,
 }
 
 int
-ssl_load_proxy(SSL_CREDENTIALS			*creds,
-	       const char			*path,
-	       const char			*pass_phrase)
+ssl_proxy_load_from_file(SSL_CREDENTIALS	*creds,
+			 const char		*path,
+			 const char		*pass_phrase)
 {
     FILE		*proxy_file = NULL;
     X509		*cert = NULL;
@@ -1450,7 +1412,7 @@ ssl_load_proxy(SSL_CREDENTIALS			*creds,
 
     /* Read proxy private key */
     if (PEM_read_PrivateKey(proxy_file, &(key),
-			    PEM_CALLBACK(ssl_pass_phrase_callback,
+			    PEM_CALLBACK(my_pass_phrase_callback,
 					 NULL)) == NULL)
     {
 	unsigned long error;
@@ -1515,7 +1477,7 @@ ssl_load_proxy(SSL_CREDENTIALS			*creds,
      * Ok, everything has been successfully read, now store it into
      * creds, removing any existing contents.
      */
-    ssl_free_credentials_contents(creds);
+    ssl_credentials_free_contents(creds);
     
     creds->private_key = key;
     creds->certificate = cert;
@@ -1544,7 +1506,7 @@ ssl_load_proxy(SSL_CREDENTIALS			*creds,
 	
 	if (cert_chain)
 	{
-	    ssl_free_cert_chain(cert_chain);
+	    ssl_cert_chain_free(cert_chain);
 	}
     }
 
@@ -1553,7 +1515,7 @@ ssl_load_proxy(SSL_CREDENTIALS			*creds,
 
 
 SSL_CREDENTIALS *
-ssl_new_credentials()
+ssl_credentials_new()
 {
     SSL_CREDENTIALS *creds = NULL;
     
@@ -1575,25 +1537,25 @@ ssl_new_credentials()
 
 
 int
-ssl_proxy_request_init(SSL_CREDENTIALS		**new_creds,
-		       unsigned char		**buffer,
-		       int			*buffer_length,
-		       int			requested_bits,
-		       void			(*callback)(int,int,char *))
+ssl_proxy_buffer_init(SSL_CREDENTIALS		**new_creds,
+		      unsigned char		**buffer,
+		      int			*buffer_length,
+		      int			requested_bits,
+		      void			(*callback)(int,int,char *))
 {
     SSL_CREDENTIALS		*creds = NULL;
     X509_REQ			*request = NULL;
     int				return_status = -1;
 
     
-    ssl_init();
+    my_init();
     
     assert(new_creds != NULL);
     assert(buffer != NULL);
     assert(buffer_length != NULL);
 
     /* Generate the request */
-    if (ssl_generate_cert_request(&creds,
+    if (ssl_x509_request_generate(&creds,
 				  &request,
 				  NULL /* no name */,
 				  requested_bits,
@@ -1638,7 +1600,7 @@ ssl_proxy_request_init(SSL_CREDENTIALS		**new_creds,
     {
 	if (creds != NULL)
 	{
-	    ssl_destroy_credentials(creds);
+	    ssl_credentials_destroy(creds);
 	}
     }
     
@@ -1647,9 +1609,9 @@ ssl_proxy_request_init(SSL_CREDENTIALS		**new_creds,
 
 
 int
-ssl_proxy_request_finalize(SSL_CREDENTIALS	*creds,
-			   unsigned char	*buffer,
-			   int			buffer_length)
+ssl_proxy_buffer_finalize(SSL_CREDENTIALS	*creds,
+			  unsigned char	*buffer,
+			  int			buffer_length)
 {
     int return_status = -1;
     
@@ -1671,12 +1633,12 @@ ssl_proxy_request_finalize(SSL_CREDENTIALS	*creds,
 }
 
 int
-ssl_proxy_request_sign(SSL_CREDENTIALS		*creds,
-		       SSL_PROXY_RESTRICTIONS	*restrictions,
-		       unsigned char		*request_buffer,
-		       int			request_buffer_length,
-		       unsigned char		**proxy_buffer,
-		       int			*proxy_buffer_length)
+ssl_proxy_buffer_sign(SSL_CREDENTIALS		*creds,
+		      SSL_PROXY_RESTRICTIONS	*restrictions,
+		      unsigned char		*request_buffer,
+		      int			request_buffer_length,
+		      unsigned char		**proxy_buffer,
+		      int			*proxy_buffer_length)
 {
     X509_REQ			*request = NULL;
     X509			*proxy_certificate = NULL;
@@ -1698,10 +1660,10 @@ ssl_proxy_request_sign(SSL_CREDENTIALS		*creds,
     }
     
     /* Verify request and make certificate */
-    if (ssl_generate_proxy_certificate(creds,
-				       request,
-				       restrictions,
-				       &proxy_certificate) == -1)
+    if (ssl_proxy_request_sign(creds,
+			       request,
+			       restrictions,
+			       &proxy_certificate) == -1)
     {
 	goto error;
     }
