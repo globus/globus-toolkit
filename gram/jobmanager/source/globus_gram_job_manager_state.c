@@ -1758,7 +1758,7 @@ globus_gram_job_manager_state_machine(
 	else if(query->type == GLOBUS_GRAM_JOB_MANAGER_PROXY_REFRESH)
 	{
             if (request->jobmanager_state ==
-                    GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2)
+                    GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY1)
             {
                 request->jobmanager_state =
                     GLOBUS_GRAM_JOB_MANAGER_STATE_PROXY_REFRESH;
@@ -1986,6 +1986,18 @@ globus_gram_job_manager_state_machine(
 	}
 	save_status = request->status;
 	save_jobmanager_state = request->jobmanager_state;
+
+        /* Reply to any outstanding queries */
+	while (!globus_fifo_empty(&request->pending_queries))
+	{
+            query = globus_fifo_dequeue(&request->pending_queries);
+
+	    query->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_JOB_QUERY_DENIAL;
+            /* Frees the query */
+            globus_gram_job_manager_query_reply(
+                    request,
+                    query);
+	}
 
 	rc = globus_gram_job_manager_output_close(request);
 
