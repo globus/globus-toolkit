@@ -310,12 +310,18 @@ install-files: scard-install
 gpt-install-files:
 	$(srcdir)/mkinstalldirs $(DESTDIR)$(bindir)
 	$(srcdir)/mkinstalldirs $(DESTDIR)$(sbindir)
-	$(srcdir)/mkinstalldirs $(DESTDIR)$(mandir)
 	$(srcdir)/mkinstalldirs $(DESTDIR)$(datadir)
-	$(srcdir)/mkinstalldirs $(DESTDIR)$(mandir)/$(mansubdir)1
-	$(srcdir)/mkinstalldirs $(DESTDIR)$(mandir)/$(mansubdir)5
-	$(srcdir)/mkinstalldirs $(DESTDIR)$(mandir)/$(mansubdir)8
 	$(srcdir)/mkinstalldirs $(DESTDIR)$(libexecdir)
+	docdir=man; \
+	$(srcdir)/mkinstalldirs $(DESTDIR)$(mandir); \
+	$(srcdir)/mkinstalldirs $(DESTDIR)$(mandir)/$${docdir}1; \
+	$(srcdir)/mkinstalldirs $(DESTDIR)$(mandir)/$${docdir}5; \
+	$(srcdir)/mkinstalldirs $(DESTDIR)$(mandir)/$${docdir}8
+	docdir=cat; \
+	$(srcdir)/mkinstalldirs $(DESTDIR)$(mandir); \
+	$(srcdir)/mkinstalldirs $(DESTDIR)$(mandir)/$${docdir}1; \
+	$(srcdir)/mkinstalldirs $(DESTDIR)$(mandir)/$${docdir}5; \
+	$(srcdir)/mkinstalldirs $(DESTDIR)$(mandir)/$${docdir}8
 	$(INSTALL) -m 0755 -s ssh $(DESTDIR)$(bindir)/ssh
 	$(INSTALL) -m 0755 -s scp $(DESTDIR)$(bindir)/scp
 	$(INSTALL) -m 0755 -s ssh-add $(DESTDIR)$(bindir)/ssh-add
@@ -333,46 +339,50 @@ gpt-install-files:
 	ln -s ./ssh$(EXEEXT) $(DESTDIR)$(bindir)/gsissh
 	-rm -f $(DESTDIR)$(bindir)/gsiscp
 	ln -s ./scp$(EXEEXT) $(DESTDIR)$(bindir)/gsiscp
-	mansubdir=man
-	$(INSTALL) -m 644 $(mansubdir)/ssh.1 $(DESTDIR)$(mandir)/$(mansubdir)1/ssh.1
-	$(INSTALL) -m 644 $(mansubdir)/scp.1 $(DESTDIR)$(mandir)/$(mansubdir)1/scp.1
-	$(INSTALL) -m 644 $(mansubdir)/ssh-add.1 $(DESTDIR)$(mandir)/$(mansubdir)1/ssh-add.1
-	$(INSTALL) -m 644 $(mansubdir)/ssh-agent.1 $(DESTDIR)$(mandir)/$(mansubdir)1/ssh-agent.1
-	$(INSTALL) -m 644 $(mansubdir)/ssh-keygen.1 $(DESTDIR)$(mandir)/$(mansubdir)1/ssh-keygen.1
-	$(INSTALL) -m 644 $(mansubdir)/ssh-keyscan.1 $(DESTDIR)$(mandir)/$(mansubdir)1/ssh-keyscan.1
-	$(INSTALL) -m 644 $(mansubdir)/sshd_config.5 $(DESTDIR)$(mandir)/$(mansubdir)5/sshd_config.5
-	$(INSTALL) -m 644 $(mansubdir)/ssh_config.5 $(DESTDIR)$(mandir)/$(mansubdir)5/ssh_config.5
-	$(INSTALL) -m 644 $(mansubdir)/sshd.8 $(DESTDIR)$(mandir)/$(mansubdir)8/sshd.8
-	$(INSTALL) -m 644 $(mansubdir)/ssh-rand-helper.8 $(DESTDIR)$(mandir)/$(mansubdir)8/ssh-rand-helper.8
-	@NO_SFTP@$(INSTALL) -m 644 $(mansubdir)/sftp.1 $(DESTDIR)$(mandir)/$(mansubdir)1/sftp.1
-	@NO_SFTP@$(INSTALL) -m 644 $(mansubdir)/sftp-server.8 $(DESTDIR)$(mandir)/$(mansubdir)8/sftp-server.8
-	$(INSTALL) -m 644 $(mansubdir)/ssh-keysign.8 $(DESTDIR)$(mandir)/$(mansubdir)8/ssh-keysign.8
-	-rm -f $(DESTDIR)$(mandir)/$(mansubdir)1/slogin.1
-	ln -s ./ssh.1 $(DESTDIR)$(mandir)/$(mansubdir)1/slogin.1
-	-rm -f $(DESTDIR)$(mandir)/$(mansubdir)1/gsissh.1
-	ln -s ./ssh.1 $(DESTDIR)$(mandir)/$(mansubdir)1/gsissh.1
-	-rm -f $(DESTDIR)$(mandir)/$(mansubdir)1/gsiscp.1
-	ln -s ./scp.1 $(DESTDIR)$(mandir)/$(mansubdir)1/gsiscp.1
-	mansubdir=cat
-	$(INSTALL) -m 644 $(mansubdir)/ssh.1 $(DESTDIR)$(mandir)/$(mansubdir)1/ssh.1
-	$(INSTALL) -m 644 $(mansubdir)/scp.1 $(DESTDIR)$(mandir)/$(mansubdir)1/scp.1
-	$(INSTALL) -m 644 $(mansubdir)/ssh-add.1 $(DESTDIR)$(mandir)/$(mansubdir)1/ssh-add.1
-	$(INSTALL) -m 644 $(mansubdir)/ssh-agent.1 $(DESTDIR)$(mandir)/$(mansubdir)1/ssh-agent.1
-	$(INSTALL) -m 644 $(mansubdir)/ssh-keygen.1 $(DESTDIR)$(mandir)/$(mansubdir)1/ssh-keygen.1
-	$(INSTALL) -m 644 $(mansubdir)/ssh-keyscan.1 $(DESTDIR)$(mandir)/$(mansubdir)1/ssh-keyscan.1
-	$(INSTALL) -m 644 $(mansubdir)/sshd_config.5 $(DESTDIR)$(mandir)/$(mansubdir)5/sshd_config.5
-	$(INSTALL) -m 644 $(mansubdir)/ssh_config.5 $(DESTDIR)$(mandir)/$(mansubdir)5/ssh_config.5
-	$(INSTALL) -m 644 $(mansubdir)/sshd.8 $(DESTDIR)$(mandir)/$(mansubdir)8/sshd.8
-	$(INSTALL) -m 644 $(mansubdir)/ssh-rand-helper.8 $(DESTDIR)$(mandir)/$(mansubdir)8/ssh-rand-helper.8
-	@NO_SFTP@$(INSTALL) -m 644 $(mansubdir)/sftp.1 $(DESTDIR)$(mandir)/$(mansubdir)1/sftp.1
-	@NO_SFTP@$(INSTALL) -m 644 $(mansubdir)/sftp-server.8 $(DESTDIR)$(mandir)/$(mansubdir)8/sftp-server.8
-	$(INSTALL) -m 644 $(mansubdir)/ssh-keysign.8 $(DESTDIR)$(mandir)/$(mansubdir)8/ssh-keysign.8
-	-rm -f $(DESTDIR)$(mandir)/$(mansubdir)1/slogin.1
-	ln -s ./ssh.1 $(DESTDIR)$(mandir)/$(mansubdir)1/slogin.1
-	-rm -f $(DESTDIR)$(mandir)/$(mansubdir)1/gsissh.1
-	ln -s ./ssh.1 $(DESTDIR)$(mandir)/$(mansubdir)1/gsissh.1
-	-rm -f $(DESTDIR)$(mandir)/$(mansubdir)1/gsiscp.1
-	ln -s ./scp.1 $(DESTDIR)$(mandir)/$(mansubdir)1/gsiscp.1
+	# start man
+	docdir=man; \
+	$(INSTALL) -m 644 $${docdir}/ssh.1 $(DESTDIR)$(mandir)/$${docdir}1/ssh.1; \
+	$(INSTALL) -m 644 $${docdir}/scp.1 $(DESTDIR)$(mandir)/$${docdir}1/scp.1; \
+	$(INSTALL) -m 644 $${docdir}/ssh-add.1 $(DESTDIR)$(mandir)/$${docdir}1/ssh-add.1; \
+	$(INSTALL) -m 644 $${docdir}/ssh-agent.1 $(DESTDIR)$(mandir)/$${docdir}1/ssh-agent.1; \
+	$(INSTALL) -m 644 $${docdir}/ssh-keygen.1 $(DESTDIR)$(mandir)/$${docdir}1/ssh-keygen.1; \
+	$(INSTALL) -m 644 $${docdir}/ssh-keyscan.1 $(DESTDIR)$(mandir)/$${docdir}1/ssh-keyscan.1; \
+	$(INSTALL) -m 644 $${docdir}/sshd_config.5 $(DESTDIR)$(mandir)/$${docdir}5/sshd_config.5; \
+	$(INSTALL) -m 644 $${docdir}/ssh_config.5 $(DESTDIR)$(mandir)/$${docdir}5/ssh_config.5; \
+	$(INSTALL) -m 644 $${docdir}/sshd.8 $(DESTDIR)$(mandir)/$${docdir}8/sshd.8; \
+	$(INSTALL) -m 644 $${docdir}/ssh-rand-helper.8 $(DESTDIR)$(mandir)/$${docdir}8/ssh-rand-helper.8; \
+	@NO_SFTP@$(INSTALL) -m 644 $${docdir}/sftp.1 $(DESTDIR)$(mandir)/$${docdir}1/sftp.1; \
+	@NO_SFTP@$(INSTALL) -m 644 $${docdir}/sftp-server.8 $(DESTDIR)$(mandir)/$${docdir}8/sftp-server.8; \
+	$(INSTALL) -m 644 $${docdir}/ssh-keysign.8 $(DESTDIR)$(mandir)/$${docdir}8/ssh-keysign.8; \
+	-rm -f $(DESTDIR)$(mandir)/$${docdir}1/slogin.1; \
+	ln -s ./ssh.1 $(DESTDIR)$(mandir)/$${docdir}1/slogin.1; \
+	-rm -f $(DESTDIR)$(mandir)/$${docdir}1/gsissh.1; \
+	ln -s ./ssh.1 $(DESTDIR)$(mandir)/$${docdir}1/gsissh.1; \
+	-rm -f $(DESTDIR)$(mandir)/$${docdir}1/gsiscp.1; \
+	ln -s ./scp.1 $(DESTDIR)$(mandir)/$${docdir}1/gsiscp.1;
+	# end man
+	# start cat
+	docdir=cat; \
+	$(INSTALL) -m 644 $${docdir}/ssh.1 $(DESTDIR)$(mandir)/$${docdir}1/ssh.1; \
+	$(INSTALL) -m 644 $${docdir}/scp.1 $(DESTDIR)$(mandir)/$${docdir}1/scp.1; \
+	$(INSTALL) -m 644 $${docdir}/ssh-add.1 $(DESTDIR)$(mandir)/$${docdir}1/ssh-add.1; \
+	$(INSTALL) -m 644 $${docdir}/ssh-agent.1 $(DESTDIR)$(mandir)/$${docdir}1/ssh-agent.1; \
+	$(INSTALL) -m 644 $${docdir}/ssh-keygen.1 $(DESTDIR)$(mandir)/$${docdir}1/ssh-keygen.1; \
+	$(INSTALL) -m 644 $${docdir}/ssh-keyscan.1 $(DESTDIR)$(mandir)/$${docdir}1/ssh-keyscan.1; \
+	$(INSTALL) -m 644 $${docdir}/sshd_config.5 $(DESTDIR)$(mandir)/$${docdir}5/sshd_config.5; \
+	$(INSTALL) -m 644 $${docdir}/ssh_config.5 $(DESTDIR)$(mandir)/$${docdir}5/ssh_config.5; \
+	$(INSTALL) -m 644 $${docdir}/sshd.8 $(DESTDIR)$(mandir)/$${docdir}8/sshd.8; \
+	$(INSTALL) -m 644 $${docdir}/ssh-rand-helper.8 $(DESTDIR)$(mandir)/$${docdir}8/ssh-rand-helper.8; \
+	@NO_SFTP@$(INSTALL) -m 644 $${docdir}/sftp.1 $(DESTDIR)$(mandir)/$${docdir}1/sftp.1; \
+	@NO_SFTP@$(INSTALL) -m 644 $${docdir}/sftp-server.8 $(DESTDIR)$(mandir)/$${docdir}8/sftp-server.8; \
+	$(INSTALL) -m 644 $${docdir}/ssh-keysign.8 $(DESTDIR)$(mandir)/$${docdir}8/ssh-keysign.8; \
+	-rm -f $(DESTDIR)$(mandir)/$${docdir}1/slogin.1; \
+	ln -s ./ssh.1 $(DESTDIR)$(mandir)/$${docdir}1/slogin.1; \
+	-rm -f $(DESTDIR)$(mandir)/$${docdir}1/gsissh.1; \
+	ln -s ./ssh.1 $(DESTDIR)$(mandir)/$${docdir}1/gsissh.1; \
+	-rm -f $(DESTDIR)$(mandir)/$${docdir}1/gsiscp.1; \
+	ln -s ./scp.1 $(DESTDIR)$(mandir)/$${docdir}1/gsiscp.1;
+	# end cat
 	if [ ! -d $(DESTDIR)$(docdir) ]; then \
 		$(srcdir)/mkinstalldirs $(DESTDIR)$(docdir); \
 	fi
