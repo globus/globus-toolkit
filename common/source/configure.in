@@ -20,10 +20,6 @@ if test "x$NO_FLAVOR" = "x"; then
 LAC_THREADS
 fi
 
-dnl Check for large file support before doing any other probes, it may
-dnl change prototypes for some functions.
-AC_SYS_LARGEFILE
-
 AC_TYPE_SIGNAL
 
 CHECK_FOR_TCPFASTACK
