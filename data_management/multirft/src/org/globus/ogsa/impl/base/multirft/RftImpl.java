@@ -35,7 +35,6 @@ import org.globus.ogsa.ServiceData;
 import org.globus.ogsa.ServiceProperties;
 import org.globus.ogsa.base.multirft.FileTransferJobStatusType;
 
-//import org.gridforum.ogsi.ServiceLocatorType;
 import org.globus.ogsa.base.multirft.FileTransferProgressType;
 import org.globus.ogsa.base.multirft.FileTransferRestartMarker;
 import org.globus.ogsa.base.multirft.FileTransferStatusElement;
@@ -166,6 +165,7 @@ public class RftImpl
                 TransferJob transferJob = new TransferJob(transfers[temp], 
                                                           TransferJob.STATUS_PENDING, 
                                                           0);
+                processURLs(transferJob);
                 TransferThread transferThread = new TransferThread(transferJob);
                 transferThread.start();
                 activeTransferThreads.add(transferThread);
@@ -219,7 +219,31 @@ public class RftImpl
     private void notifyUpdate() {
         logger.debug("Notifying Update");
     }
-
+    
+    public TransferJob processURLs(TransferJob transferJob) {
+        logger.debug("checking to see if destination URL is a directory");
+        String destinationURL = transferJob.getDestinationUrl();
+        String sourceURL = transferJob.getSourceUrl();
+        
+        if((destinationURL.endsWith("/")) && !(sourceURL.endsWith("/"))) {
+            logger.debug("The destinationURL : " + destinationURL + 
+            " appears to be a directory");
+            String fileName = extractFileName(sourceURL);
+            destinationURL = destinationURL + fileName;
+            transferJob.setDestinationUrl(destinationURL);
+            try {
+                dbAdapter.update(transferJob);
+            } catch(RftDBException rdb) {
+                logger.debug("Error processing urls");
+            }
+            //change the destUrl by appending filename to it
+        }
+        return transferJob;
+    }
+    
+    public String extractFileName(String sourceURL) {
+      return sourceURL.substring(sourceURL.lastIndexOf("/")+1);
+    }
     /**
      * DOCUMENT ME!
      * 

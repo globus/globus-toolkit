@@ -230,6 +230,12 @@ public class TransferDbAdapter {
         }
     }
 
+    public TransferType updateDestinationUrl(TransferType transfer) {
+        String sourceUrl = transfer.getSourceUrl();
+        String fileName= sourceUrl.substring(sourceUrl.lastIndexOf("/")+1); 
+        transfer.setDestinationUrl(transfer.getDestinationUrl()+fileName);
+        return transfer;
+    }
     public int storeTransfers(int requestId, 
                               TransferRequestType transferRequest)
                        throws RftDBException {
@@ -245,6 +251,9 @@ public class TransferDbAdapter {
 
                 Statement st = c.createStatement();
                 TransferType transfer = transfers[i];
+                if((transfer.getDestinationUrl().endsWith("/")) && !(transfer.getSourceUrl().endsWith("/"))) {
+                    transfer = updateDestinationUrl(transfer);
+                }
                 StringBuffer query = new StringBuffer(5000);
                 query.append(
                         "INSERT INTO transfer(request_id,source_url,dest_url,")

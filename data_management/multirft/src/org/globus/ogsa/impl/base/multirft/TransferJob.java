@@ -43,28 +43,7 @@ public class TransferJob {
      //   processURLs();
     }
 
-    public void processURLs() {
-        logger.debug("checking to see if destination URL is a directory");
-        String destinationURL = this.transfer.getDestinationUrl();
-        String sourceURL = this.transfer.getSourceUrl();
-        
-        if((destinationURL.endsWith("/")) && !(sourceURL.endsWith("/"))) {
-            logger.debug("The destinationURL : " + destinationURL + 
-            " appears to be a directory");
-            String fileName = extractFileName(sourceURL);
-            destinationURL = destinationURL + fileName;
-            this.transfer.setDestinationUrl(destinationURL);
-            try {
-                dbAdapter.update(this);
-            } catch(RftDBException rdb) {
-                logger.debug("Error processing urls");
-            }
-            //change the destUrl by appending filename to it
-        }
-    }
-    public String extractFileName(String sourceURL) {
-      return sourceURL.substring(sourceURL.lastIndexOf("/")+1);
-    }
+   
     public TransferType getTransfer() {
 
         return this.transfer;
