@@ -303,7 +303,7 @@ globus_l_xio_handle_pre_close(
         case GLOBUS_XIO_HANDLE_STATE_OPENING:
             globus_assert(handle->open_op != NULL);
 
-            if(!attr->no_cancel)
+            if(attr == NULL || !attr->no_cancel)
             {
                 globus_mutex_lock(&handle->context->cancel_mutex);
                 {
