@@ -158,6 +158,7 @@ typedef struct
      * NETLOGGER
      */
     globus_netlogger_handle_t *         nl_handle;
+    globus_callback_space_t             space;
 
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 } globus_io_attr_t;
@@ -874,7 +875,7 @@ struct globus_io_handle_s
     globus_io_handle_type_t			type;
 
     /* some handle state information */
-    volatile globus_io_handle_state_t		state;
+    globus_io_handle_state_t		        state;
     void *					user_pointer;
 
     /* 
@@ -882,6 +883,8 @@ struct globus_io_handle_s
      */
     char *                                      nl_event_id;
     globus_netlogger_handle_t *                 nl_handle;
+    
+    globus_callback_space_t                     space;
 
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 };
@@ -1317,6 +1320,16 @@ globus_io_file_posix_convert(
  * The API functions in this section deal with the setting and
  * querying of attribute values.
  */
+
+globus_result_t 
+globus_io_attr_set_callback_space( 
+    globus_io_attr_t *                  attr, 
+    globus_callback_space_t             space);
+
+globus_result_t 
+globus_io_attr_get_callback_space( 
+    globus_io_attr_t *                  attr, 
+    globus_callback_space_t *           space);
 
 /*
  *  NETLOGGER STUFF
