@@ -178,9 +178,7 @@ typedef void
 (*globus_gridftp_server_control_auth_cb_t)(
     globus_gridftp_server_control_op_t      op,
     const char *                            user_name,
-    const char *                            pw,
-    gss_cred_id_t                           cred,
-    gss_cred_id_t                           del_cred);
+    const char *                            pw);
 
 /**
  *  globus_gridftp_server_control_finished_auth()
@@ -192,7 +190,9 @@ globus_result_t
 globus_gridftp_server_control_finished_auth(
     globus_gridftp_server_control_op_t      op,
     globus_result_t                         res,
-    uid_t                                   uid);
+    uid_t                                   uid,
+    gss_cred_id_t                           cred,
+    gss_cred_id_t                           del_cred);
 
 /**
  *  mask type.

@@ -286,8 +286,6 @@ typedef struct globus_i_gsc_op_s
     globus_bool_t                           authenticated;
     char *                                  username;
     char *                                  password;
-    gss_cred_id_t                           cred;
-    gss_cred_id_t                           del_cred;
     globus_i_gsc_auth_cb_t                  auth_cb;
     globus_i_gsc_resource_cb_t              stat_cb;
     globus_i_gsc_transfer_cb_t              list_cb;
@@ -369,8 +367,6 @@ typedef struct globus_i_gsc_server_handle_s
 
     char *                                  username;
     char *                                  pw;
-    gss_cred_id_t                           cred;
-    gss_cred_id_t                           del_cred;
     uid_t                                   uid;
     char                                    dcau;
     char                                    prot;
@@ -378,6 +374,9 @@ typedef struct globus_i_gsc_server_handle_s
 
     char *                                  post_auth_banner;
     char *                                  pre_auth_banner;
+
+    gss_cred_id_t                           cred;
+    gss_cred_id_t                           del_cred;
 
     /*
      *  state information  
@@ -440,9 +439,7 @@ globus_i_gsc_authenticate(
     globus_i_gsc_op_t *                     op,
     const char *                            user,
     const char *                            pass,
-    gss_cred_id_t                           cred,
-    gss_cred_id_t                           del_cred,
-    globus_i_gsc_auth_cb_t            cb,
+    globus_i_gsc_auth_cb_t                  cb,
     void *                                  user_arg);
 
 globus_result_t

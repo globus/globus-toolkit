@@ -825,8 +825,6 @@ globus_l_gsc_cmd_pass(
             op,
             op->server_handle->username,
             cmd_a[1],
-            op->server_handle->cred,
-            op->server_handle->del_cred,
             globus_l_gsc_auth_cb,
             NULL);
         if(res != GLOBUS_SUCCESS)

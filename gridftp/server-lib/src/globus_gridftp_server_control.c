@@ -8,7 +8,6 @@
 #include <version.h>
 
 #define GLOBUS_L_GSC_DEFAULT_220   "220 GridFTP Server.\r\n"
-#define GLOBUS_XIO_CLOSE_NO_CANCEL 34433
 
 /*
  *  This File
@@ -612,7 +611,7 @@ globus_l_gsc_final_reply_cb(
 
                 globus_xio_attr_init(&close_attr);
                 globus_xio_attr_cntl(
-                    close_attr, NULL, GLOBUS_XIO_CLOSE_NO_CANCEL);
+                    close_attr, NULL, GLOBUS_XIO_ATTR_CLOSE_NO_CANCEL);
                 res = globus_xio_register_close(
                     server_handle->xio_handle,
                     close_attr,
@@ -1222,7 +1221,7 @@ globus_l_gsc_finished_op(
     {
         globus_xio_attr_init(&close_attr);
         globus_xio_attr_cntl(
-            close_attr, NULL, GLOBUS_XIO_CLOSE_NO_CANCEL);
+            close_attr, NULL, GLOBUS_XIO_ATTR_CLOSE_NO_CANCEL);
         res = globus_xio_register_close(
             server_handle->xio_handle,
             close_attr,
@@ -1640,6 +1639,9 @@ globus_i_gsc_terminate(
             else
             {
                 server_handle->state = GLOBUS_L_GSC_STATE_STOPPING;
+                globus_xio_handle_cancel_operations(
+                    server_handle->xio_handle,
+                    GLOBUS_XIO_CANCEL_READ);
             }
             close = GLOBUS_FALSE;
             break;
@@ -1667,7 +1669,7 @@ globus_i_gsc_terminate(
     {
         globus_xio_attr_init(&close_attr);
         globus_xio_attr_cntl(
-            close_attr, NULL, GLOBUS_XIO_CLOSE_NO_CANCEL);
+            close_attr, NULL, GLOBUS_XIO_ATTR_CLOSE_NO_CANCEL);
         res = globus_xio_register_close(
             server_handle->xio_handle,
             close_attr,
@@ -2406,8 +2408,6 @@ globus_i_gsc_authenticate(
     globus_i_gsc_op_t *                     op,
     const char *                            user,
     const char *                            pass,
-    gss_cred_id_t                           cred,
-    gss_cred_id_t                           del_cred,
     globus_i_gsc_auth_cb_t                  cb,
     void *                                  user_arg)
 {
@@ -2431,8 +2431,6 @@ globus_i_gsc_authenticate(
     {
         op->password = globus_libc_strdup(pass);
     }
-    op->cred = cred;
-    op->del_cred = del_cred;
 
     /* call out to user */
     if(op->server_handle->funcs.auth_cb != NULL)
@@ -2440,9 +2438,7 @@ globus_i_gsc_authenticate(
         op->server_handle->funcs.auth_cb(
             op,
             op->username,
-            op->password,
-            op->cred,
-            op->del_cred);
+            op->password);
     }
     /* just always authenticate... so just call the callback */
     else
@@ -2863,7 +2859,9 @@ globus_result_t
 globus_gridftp_server_control_finished_auth(
     globus_i_gsc_op_t *                     op,
     globus_result_t                         res,
-    uid_t                                   uid)
+    uid_t                                   uid,
+    gss_cred_id_t                           cred,
+    gss_cred_id_t                           del_cred)
 {
     GlobusGridFTPServerName(globus_gridftp_server_control_finished_auth);
 
@@ -2882,6 +2880,8 @@ globus_gridftp_server_control_finished_auth(
         {
             op->server_handle->authenticated = GLOBUS_TRUE;
             op->server_handle->uid = uid;
+            op->server_handle->cred = cred;
+            op->server_handle->del_cred = del_cred;
         }
         op->res = res;
         if(op->auth_cb != NULL)
