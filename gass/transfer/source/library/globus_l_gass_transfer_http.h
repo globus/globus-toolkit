@@ -63,8 +63,10 @@ static globus_mutex_t globus_l_gass_transfer_http_mutex;
 static globus_cond_t globus_l_gass_transfer_http_cond;
 
 #define globus_l_gass_transfer_http_lock() \
-	globus_mutex_lock(&globus_l_gass_transfer_http_mutex)
+	globus_mutex_lock(&globus_l_gass_transfer_http_mutex)/*,*/ \
+	/*printf("locked mutex at %s: %d\n", __FILE__, __LINE__)*/
 #define globus_l_gass_transfer_http_unlock() \
+	/*printf("unlocking mutex at %s: %d\n", __FILE__, __LINE__), */\
 	globus_mutex_unlock(&globus_l_gass_transfer_http_mutex)
 #define globus_l_gass_transfer_http_wait() \
 	globus_cond_wait(&globus_l_gass_transfer_http_cond, \

@@ -113,30 +113,20 @@ globus_gass_transfer_create_listener(
 }
 /* globus_gass_transfer_create_listener() */
 
-
 int
-globus_gass_transfer_close_listener(
+globus_i_gass_transfer_close_listener(
     globus_gass_transfer_listener_t		listener,
+    globus_gass_transfer_listener_struct_t *	l,
     globus_gass_transfer_close_callback_t 	callback,
     void *					user_arg)
 {
-    globus_gass_transfer_listener_struct_t *	l;
-    int						rc;
+    int						rc = GLOBUS_SUCCESS;
 
-    globus_i_gass_transfer_lock();
-    l = globus_handle_table_lookup(&globus_i_gass_transfer_listener_handles,
-				   listener);
-
-    if(l == GLOBUS_NULL)
-    {
-	rc =  GLOBUS_GASS_ERROR_INVALID_USE;
-	goto error_exit;
-    }
     switch(l->status)
     {
       case GLOBUS_GASS_TRANSFER_LISTENER_INVALID:
 	rc = GLOBUS_GASS_ERROR_INVALID_USE;
-	goto error_exit;
+	break;
 
       case GLOBUS_GASS_TRANSFER_LISTENER_STARTING:
       case GLOBUS_GASS_TRANSFER_LISTENER_READY:
@@ -182,15 +172,39 @@ globus_gass_transfer_close_listener(
       case GLOBUS_GASS_TRANSFER_LISTENER_CLOSING2:
       case GLOBUS_GASS_TRANSFER_LISTENER_CLOSED:
 	rc = GLOBUS_GASS_ERROR_DONE;
-	goto error_exit;
+	break;
     }
+
+    return rc;
+}
+
+int
+globus_gass_transfer_close_listener(
+    globus_gass_transfer_listener_t		listener,
+    globus_gass_transfer_close_callback_t 	callback,
+    void *					user_arg)
+{
+    globus_gass_transfer_listener_struct_t *	l;
+    int						rc;
+
+    globus_i_gass_transfer_lock();
+    l = globus_handle_table_lookup(&globus_i_gass_transfer_listener_handles,
+				   listener);
+
+    if(l == GLOBUS_NULL)
+    {
+	rc =  GLOBUS_GASS_ERROR_INVALID_USE;
+	goto finish;
+    }
+
+    rc = globus_i_gass_transfer_close_listener(
+	listener,
+	l,
+	callback,
+	user_arg);
     
+ finish:
     globus_i_gass_transfer_unlock();
-    return GLOBUS_SUCCESS;
-
-  error_exit:
-    globus_i_gass_transfer_unlock();
-
     return rc;
 }
 /* globus_gass_transfer_close_listener() */
@@ -704,6 +718,8 @@ globus_i_gass_transfer_listener_destroy(
 
 	globus_list_remove(&globus_i_gass_transfer_listeners,
 			   tmp);
+	globus_cond_signal(&globus_i_gass_transfer_shutdown_cond);
+	
 	if(l->base_url)
 	{
 	    globus_free(l->base_url);

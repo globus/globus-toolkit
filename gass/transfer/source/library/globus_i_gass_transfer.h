@@ -175,6 +175,13 @@ extern globus_mutex_t globus_i_gass_transfer_mutex;
 #define globus_i_gass_transfer_unlock()	\
 	globus_mutex_unlock(&globus_i_gass_transfer_mutex)
 
+int
+globus_i_gass_transfer_close_listener(
+    globus_gass_transfer_listener_t		listener,
+    globus_gass_transfer_listener_struct_t *	l,
+    globus_gass_transfer_close_callback_t 	callback,
+    void *					user_arg);
+
 void
 globus_i_gass_transfer_deactivate_callback(
     void *					user_arg,

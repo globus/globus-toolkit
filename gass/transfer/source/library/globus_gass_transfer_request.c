@@ -454,6 +454,9 @@ globus_i_gass_transfer_request_destroy(
 	tmp = globus_list_search(globus_i_gass_transfer_requests,
 				 (void *) request);
 	
+#if DEBUG_GASS_TRANSFER
+	printf("removing from list\n");
+#endif
 	globus_list_remove(&globus_i_gass_transfer_requests,
 			   tmp);
 
@@ -515,6 +518,7 @@ globus_gass_transfer_request_destroy(
     if(req->status != GLOBUS_GASS_TRANSFER_REQUEST_FAILED &&
        req->status != GLOBUS_GASS_TRANSFER_REQUEST_DONE &&
        req->status != GLOBUS_GASS_TRANSFER_REQUEST_FINISHING &&
+       req->status != GLOBUS_GASS_TRANSFER_REQUEST_FAILING &&
        req->status != GLOBUS_GASS_TRANSFER_REQUEST_REFERRED &&
        req->status != GLOBUS_GASS_TRANSFER_REQUEST_ACTING_TO_FAILING &&
        req->status != GLOBUS_GASS_TRANSFER_REQUEST_DENIED)

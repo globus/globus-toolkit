@@ -109,7 +109,7 @@ globus_gass_transfer_get(
 	globus_cond_wait(&monitor.cond,
 			 &monitor.mutex);
     }
-    globus_mutex_lock(&monitor.mutex);
+    globus_mutex_unlock(&monitor.mutex);
     globus_mutex_destroy(&monitor.mutex);
     globus_cond_destroy(&monitor.cond);
 
@@ -203,7 +203,7 @@ globus_gass_transfer_put(
 	globus_cond_wait(&monitor.cond,
 			 &monitor.mutex);
     }
-    globus_mutex_lock(&monitor.mutex);
+    globus_mutex_unlock(&monitor.mutex);
     globus_mutex_destroy(&monitor.mutex);
     globus_cond_destroy(&monitor.cond);
 
@@ -299,7 +299,7 @@ globus_gass_transfer_append(
 	globus_cond_wait(&monitor.cond,
 			 &monitor.mutex);
     }
-    globus_mutex_lock(&monitor.mutex);
+    globus_mutex_unlock(&monitor.mutex);
     globus_mutex_destroy(&monitor.mutex);
     globus_cond_destroy(&monitor.cond);
 
@@ -374,6 +374,7 @@ globus_l_gass_transfer_monitor_callback(
     globus_mutex_lock(&monitor->mutex);
 
     monitor->rc = GLOBUS_SUCCESS;
+    monitor->done = GLOBUS_TRUE;
 
     globus_cond_signal(&monitor->cond);
     globus_mutex_unlock(&monitor->mutex);

@@ -45,7 +45,6 @@ int
 globus_l_gass_transfer_activate(void)
 {
     globus_module_activate(GLOBUS_COMMON_MODULE);
-    globus_module_activate(GLOBUS_IO_MODULE);
 
     globus_hashtable_init(&globus_i_gass_transfer_protocols,
 			  16,
@@ -80,6 +79,10 @@ globus_l_gass_transfer_deactivate(void)
     globus_i_gass_transfer_lock();
     globus_i_gass_transfer_deactivating = GLOBUS_TRUE;
     
+#if DEBUG_GASS_TRANSFER
+    printf("Entering globus_l_gass_transfer_deactivate()\n");
+#endif
+    
     rest = globus_i_gass_transfer_requests;
     
     while(!globus_list_empty(rest))
@@ -97,6 +100,9 @@ globus_l_gass_transfer_deactivate(void)
 	    &globus_i_gass_transfer_request_handles,
 	    tmp);
 	
+#if DEBUG_GASS_TRANSFER
+	printf("failing: %s\n", req->url);
+#endif
 	rc = globus_i_gass_transfer_fail(
 	    tmp,
 	    req,
@@ -104,8 +110,36 @@ globus_l_gass_transfer_deactivate(void)
 	    GLOBUS_NULL);
     }
 
-    while(!globus_list_empty(globus_i_gass_transfer_requests))
+    rest = globus_i_gass_transfer_listeners;
+
+    while(!globus_list_empty(rest))
     {
+	globus_gass_transfer_listener_t 	tmp;
+	globus_gass_transfer_listener_struct_t *l;
+	int					rc;
+
+	tmp = (globus_gass_transfer_listener_t)
+	    globus_list_first(rest);
+
+	rest = globus_list_rest(rest);
+
+	l = globus_handle_table_lookup(
+	    &globus_i_gass_transfer_listener_handles,
+	    tmp);
+	
+	rc = globus_i_gass_transfer_close_listener(
+	    tmp,
+	    l,
+	    globus_i_gass_transfer_deactivate_callback,
+	    GLOBUS_NULL);
+    }
+    
+    while((!globus_list_empty(globus_i_gass_transfer_requests)) ||
+	  (!globus_list_empty(globus_i_gass_transfer_listeners)))
+    {
+#if DEBUG_GASS_TRANSFER
+	printf("waiting for requests\n");
+#endif
 	globus_cond_wait(&globus_i_gass_transfer_shutdown_cond,
 			 &globus_i_gass_transfer_mutex);	 
     }
@@ -130,8 +164,12 @@ globus_l_gass_transfer_deactivate(void)
     globus_mutex_destroy(&globus_i_gass_transfer_mutex);
 #endif
 
-    globus_module_deactivate(GLOBUS_IO_MODULE);
     globus_module_deactivate(GLOBUS_COMMON_MODULE);
+
+#if DEBUG_GASS_TRANSFER
+    printf("Exiting globus_l_gass_transfer_deactivate()\n");
+#endif
+
     return GLOBUS_SUCCESS;
 }
 /* globus_l_gass_transfer_deactivate() */

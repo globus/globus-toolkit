@@ -231,9 +231,8 @@ globus_l_gass_transfer_operation_complete(
 	globus_i_gass_transfer_unlock();
 	fail_callback(callback_arg,
 		      request);
-	globus_i_gass_transfer_lock();
+	return;
 
-	break;
       case GLOBUS_GASS_TRANSFER_REQUEST_PENDING:
       case GLOBUS_GASS_TRANSFER_REQUEST_FAILING:
       case GLOBUS_GASS_TRANSFER_REQUEST_FAILED:
