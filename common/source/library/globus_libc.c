@@ -717,7 +717,9 @@ globus_l_libc_vsnprintf(char *s, size_t n, const char *format, va_list ap)
     int rc;
     int save_errno;
 
+    globus_libc_unlock();
     rc = globus_libc_vprintf_length( format, ap );
+    globus_libc_lock();
 
     if ( rc < 0 )
     {
