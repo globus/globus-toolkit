@@ -4010,16 +4010,19 @@ globus_l_jm_http_query_send_reply:
     if (rc == GLOBUS_SUCCESS)
     {
 	msgsize = (globus_size_t) strlen(reply)+1;
-	rc = globus_gram_http_frame( (globus_byte_t *) reply,
-				     msgsize,
-				     &httpbuf,
-				     &bufsize );
+	rc = globus_gram_http_frame_response( 200,
+					      (globus_byte_t *) reply,
+					      msgsize,
+					      &httpbuf,
+					      &bufsize );
     }
     if (rc!=GLOBUS_SUCCESS)
     {
-	globus_gram_http_frame_error( rc,
-				      &httpbuf,
-				      &bufsize );
+	globus_gram_http_frame_response( 400,
+					 GLOBUS_NULL,
+					 0,
+					 &httpbuf,
+					 &bufsize );
     }
     if (GLOBUS_SUCCESS != globus_io_register_write(
 	                         handle,     
