@@ -589,7 +589,6 @@ globus_gram_http_client_callback( void *                 arg,
     char *                                 url;
     int                                    job_status;
     int                                    failure_code;
-    int                                    version;
     int                                    rc;
 
     verbose(notice("client_callback : listener %d is done\n", handle->fd));
@@ -1487,7 +1486,6 @@ globus_gram_http_pack_job_request(
     globus_byte_t **        query,
     globus_size_t *         querysize )
 {
-    int          rc;
     int          len;
 
     *query = my_malloc( globus_byte_t,
@@ -1897,7 +1895,7 @@ globus_gram_http_unpack_status_update_message(
 
 static
 char *
-globus_l_gram_http_lookup_reason(code)
+globus_l_gram_http_lookup_reason(int code)
 {
     char * reason = GLOBUS_NULL;
     

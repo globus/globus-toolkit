@@ -47,12 +47,6 @@ CVS Information:
 /******************************************************************************
                           Module specific prototypes
 ******************************************************************************/
-static int 
-globus_l_gram_client_authenticate(
-    char *                                 gatekeeper_url,
-    globus_io_secure_delegation_mode_t     delegation_mode,
-    globus_io_handle_t *                   gatekeeper_handle );
-
 
 static int
 globus_l_gram_client_parse_gatekeeper_contact( char *    contact_string,
@@ -95,8 +89,6 @@ int
 globus_i_gram_client_activate(void)
 {
     int rc;
-    OM_uint32 major_status;
-    OM_uint32 minor_status;
     
     rc = globus_module_activate(GLOBUS_POLL_MODULE);
     if (rc != GLOBUS_SUCCESS)
@@ -206,7 +198,6 @@ globus_l_gram_client_parse_gatekeeper_contact( char *    contact_string,
     char *                dn;
     char *                service;
     unsigned short        iport;
-    int			  portlen=0;
 
     /*
      *  the gatekeeper contact format: [https://]<host>:<port>[/<service>]:<dn>
@@ -423,7 +414,6 @@ globus_gram_client_job_request(char *           gatekeeper_contact,
 			       char **          job_contact)
 {
     int                          rc;
-    int                          version;
     globus_byte_t *              query = GLOBUS_NULL;
     globus_byte_t *              reply = GLOBUS_NULL;
     globus_size_t                querysize; 

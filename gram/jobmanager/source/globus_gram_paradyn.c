@@ -57,7 +57,6 @@ Returns:        1 if it successfully
 int
 grami_paradyn_rewrite_params(globus_gram_jobmanager_request_t * params)
 {
-    char tmp_string[GLOBUS_GRAM_CLIENT_PARAM_SIZE*4];
     char paradyn_port[GLOBUS_GRAM_CLIENT_PARAM_SIZE];
     char paradyn_host[GLOBUS_GRAM_CLIENT_PARAM_SIZE];
     char paradynd_type[GLOBUS_GRAM_CLIENT_PARAM_SIZE];

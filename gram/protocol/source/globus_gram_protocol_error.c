@@ -84,7 +84,7 @@ globus_l_gram_client_error_strings[GLOBUS_GRAM_CLIENT_ERROR_LAST] =
 /*  73 */     "the job manager failed to open stdout",
 /*  74 */     "the job manager failed to open stderr",
 /*  75 */     "the cache file could not be opened in order to relocate the user proxy",  /* NEEDS EDITING */
-/*  76 */     "the job manager failed to open the cache",  /* NEEDS EDITING */
+/*  76 */     "cannot access cache files in ~/.globus/.gass_cache, check permissions, quota, and disk space",
 /*  77 */     "the job manager failed to insert the contact in the client contact list",
 /*  78 */     "the contact was not found in the job manager's client contact list",
 /*  79 */     "connecting to the job manager failed.  Possible reasons: job terminated, invalid job contact, network problems, ...",
@@ -104,8 +104,8 @@ globus_l_gram_client_error_strings[GLOBUS_GRAM_CLIENT_ERROR_LAST] =
 /*  93 */     "the gatekeeper failed to find the requested service",
 /*  94 */     "the jobmanager does not accept any new requests (shutting down)",
 /*  95 */     "the client failed to close the listener associated with the callback URL",
-/*  96 */     "the gatekeeper contact cannot be parsed"
-/*  97 */     "the job manager could not find the 'poe' command"
+/*  96 */     "the gatekeeper contact cannot be parsed",
+/*  97 */     "the job manager could not find the 'poe' command",
 /*  98 */     "the job manager could not find the 'mpirun' command",
 /*  99 */     "the provided RSL 'start_time' parameter is invalid"
 };

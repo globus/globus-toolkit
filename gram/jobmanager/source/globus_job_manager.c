@@ -202,12 +202,6 @@ globus_l_gram_jm_check_files(
     globus_time_t			time_can_block,
     void *				callback_arg);
 
-static
-globus_bool_t
-globus_l_gram_jm_check_status(
-    globus_time_t			time_can_block,
-    void *				callback_arg);
-
 void
 globus_l_jm_http_query_callback( void *                arg,
 				 globus_io_handle_t *  handle,
@@ -256,7 +250,6 @@ static int              globus_l_gram_stderr_fd=-1;
 globus_list_t *  globus_l_gram_client_contacts = GLOBUS_NULL;
 
 static int                         graml_my_count;
-static nexus_endpointattr_t        graml_EpAttr;
 static nexus_endpoint_t            graml_GlobalEndpoint;
 static globus_mutex_t              graml_api_mutex;
 static globus_cond_t               graml_api_cond;
@@ -306,14 +299,9 @@ int main(int argc,
     int                    i;
     int                    x;
     int                    tag_index;
-    int                    size;
     int                    rc;
-    int                    len;
     int                    length;
-    int                    count;
-    int                    gram_version;
     int                    job_state_mask;
-    int                    format;
     int                    print_debug_flag = 0;
     int                    krbflag = 0;
     int                    tmp_status;
@@ -362,7 +350,6 @@ int main(int argc,
     char				tmp_version[64];
 #endif
 	
-    char *				jrbuf;
     size_t				jrbuf_size;
 
     /* 
@@ -921,16 +908,10 @@ int main(int argc,
 		request->jobmanager_log_fp,
 		"JM: ERROR: globus gram protocol version mismatch!\n");
 	    grami_fprintf( request->jobmanager_log_fp,
-			   "JM: gram client version      = %d\n",
-			   gram_version);
-	    grami_fprintf( request->jobmanager_log_fp,
 			   "JM: gram protocol version = %d\n",
 			   GLOBUS_GRAM_PROTOCOL_VERSION);
 	    fprintf( stderr,
 		     "ERROR: globus gram protocol version mismatch!\n");
-	    fprintf( stderr,
-		     "gram client version      = %d\n",
-		     gram_version);
 	    fprintf( stderr, 
 		     "gram job manager version = %d\n",
 		     GLOBUS_GRAM_PROTOCOL_VERSION);
@@ -1876,7 +1857,6 @@ static void
 globus_l_gram_client_callback(int status, int failure_code)
 {
     int                                 rc;
-    int                                 count;
     globus_byte_t *                     message;
     globus_size_t                       msgsize;
     globus_list_t *                     tmp_list;

@@ -364,9 +364,9 @@ Returns:
 int 
 globus_l_gram_request_fork(globus_gram_jobmanager_request_t * request)
 {
-    int  i;
+    unsigned int  i;
     int  rc;
-    int  processes_requested;
+    unsigned int  processes_requested;
     char ** new_args;
     char tmp_arg[50];
     char * tmp_hostfilename = NULL;
@@ -502,7 +502,7 @@ globus_l_gram_request_fork(globus_gram_jobmanager_request_t * request)
             strcpy((new_args)[i], "-procs");
 
 	    ++i;
-            sprintf(tmp_arg,"%d", request->count);
+            sprintf(tmp_arg,"%u", request->count);
             (new_args)[i] = (char *) globus_libc_malloc (sizeof(char *) * 
                                                  strlen(tmp_arg) +1);
             strcpy((new_args)[i], tmp_arg);
@@ -541,7 +541,7 @@ globus_l_gram_request_fork(globus_gram_jobmanager_request_t * request)
 	    (new_args)[0] = (char *) globus_libc_malloc (sizeof(char *) * 4);
 	    strcpy((new_args)[0], "-np");
 	    
-	    sprintf(tmp_arg,"%d", request->count);
+	    sprintf(tmp_arg,"%u", request->count);
 	    (new_args)[1] = (char *) globus_libc_malloc 
 		(sizeof(char *) * strlen(tmp_arg) +1);
 	    strcpy((new_args)[1], tmp_arg);
@@ -719,18 +719,18 @@ globus_l_gram_request_shell(globus_gram_jobmanager_request_t * request)
     }
 
     fprintf(script_arg_fp,"grami_env='%s'\n", new_param);
-    fprintf(script_arg_fp,"grami_count='%d'\n", request->count);
+    fprintf(script_arg_fp,"grami_count='%u'\n", request->count);
 
     globus_l_gram_param_prepare(request->my_stdin, new_param);
     fprintf(script_arg_fp,"grami_stdin='%s'\n", new_param);
     fprintf(script_arg_fp,"grami_stdout='%s'\n", stdout_filename);
     fprintf(script_arg_fp,"grami_stderr='%s'\n", stderr_filename);
-    fprintf(script_arg_fp,"grami_max_time='%d'\n", request->max_time);
+    fprintf(script_arg_fp,"grami_max_time='%lu'\n", request->max_time);
     globus_l_gram_param_prepare(request->start_time, new_param);
     fprintf(script_arg_fp,"grami_start_time='%s'\n", new_param);
-    fprintf(script_arg_fp,"grami_min_memory='%d'\n", request->min_memory);
-    fprintf(script_arg_fp,"grami_max_memory='%d'\n", request->max_memory);
-    fprintf(script_arg_fp,"grami_host_count='%d'\n", request->host_count);
+    fprintf(script_arg_fp,"grami_min_memory='%lu'\n", request->min_memory);
+    fprintf(script_arg_fp,"grami_max_memory='%lu'\n", request->max_memory);
+    fprintf(script_arg_fp,"grami_host_count='%u'\n", request->host_count);
     fprintf(script_arg_fp,"grami_job_type='%d'\n", request->job_type);
     globus_l_gram_param_prepare(request->queue, new_param);
     fprintf(script_arg_fp,"grami_queue='%s'\n", new_param);
