@@ -10,6 +10,9 @@
 #define MYPROXY_SERVER_DIR	"/usr/local/myproxy-server"
 #endif /* !MYPROXY_SERVER_DIR */ 
 
+/* Minimum pass phrase length */
+#define MIN_PASS_PHRASE_LEN		6
+
 extern int errno;
 
 typedef struct 

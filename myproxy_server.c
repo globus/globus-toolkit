@@ -316,6 +316,36 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
 				   "Invalid version number received.\n");
     }
 
+    /* Check client username and pass pharse */
+    if ((client_request->username == NULL) ||
+	(strlen(client_request->username) == 0)) 
+    {
+	myproxy_log("client %s Invalid username (%s) received",
+		    client_name,
+		    (client_request->username == NULL ? "<NULL>" :
+		     client_request->username));
+	respond_with_error_and_die(attrs,
+				   "Invalid username received.\n");
+    }
+
+    if ((client_request->passphrase == NULL) ||
+	(strlen(client_request->passphrase) == 0)) 
+    {
+	myproxy_log("client %s Invalid pass phrase received",
+		    client_name);
+	respond_with_error_and_die(attrs,
+				   "Invalid pass phrase received.\n");
+    }
+
+    /* XXX Put real pass word policy here */
+    if (strlen(client_request->passphrase) < MIN_PASS_PHRASE_LEN)
+    {
+	myproxy_log("client %s Pass phrase too short",
+		    client_name);
+	respond_with_error_and_die(attrs,
+				   "Pass phrase too short.\n");
+    }
+	
     /* Fill in credential structure = owner, user, passphrase, proxy location */
     client_creds->owner_name  = strdup(client_name);
     client_creds->user_name   = strdup(client_request->username);
