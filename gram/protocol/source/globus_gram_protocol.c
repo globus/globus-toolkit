@@ -151,6 +151,7 @@ globus_gram_protocol_setup_attr(globus_io_attr_t *  attr)
 
     /* acquire mutex */
     if ( (res = globus_io_tcpattr_init(attr))
+         || (res = globus_io_attr_set_socket_keepalive(attr, GLOBUS_TRUE))
 	 || (res = globus_io_secure_authorization_data_initialize(
 	                &auth_data))
 	 || (res = globus_io_attr_set_secure_authentication_mode(

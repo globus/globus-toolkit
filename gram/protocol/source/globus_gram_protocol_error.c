@@ -174,7 +174,9 @@ globus_l_gram_protocol_error_strings[GLOBUS_GRAM_PROTOCOL_ERROR_LAST] =
 /* 155 */     "the job manager could not stage out a file",
 /* 156 */     "the job contact string does not match any which the job manager is handling",
 /* 157 */     "proxy delegation failed",
-/* 158 */     "the job manager could not lock the state lock file"
+/* 158 */     "the job manager could not lock the state lock file",
+/* 159 */     "an invalid globus_io_clientattr_t was used.",
+/* 160 */     "an null parameter was passed to the gram library"
 };
 
 static char *
