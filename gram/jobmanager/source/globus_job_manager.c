@@ -330,10 +330,15 @@ main(int argc,
     {
         grami_fprintf( grami_log_fp, 
                        "ERROR: unable to get PATH from the environment.\n");
+        my_env_path = NULL;
     }
-    my_env_path = (char *) globus_malloc(sizeof(char *) * 
+    else
+    {
+        my_env_path = (char *) globus_malloc(sizeof(char *) * 
                                             strlen(tmp_env_var) + 1);
-    strcpy(my_env_path, tmp_env_var);
+        strcpy(my_env_path, tmp_env_var);
+        grami_fprintf( grami_log_fp, "JM: PATH = %s\n", my_env_path);
+    }
 
     grami_fprintf( grami_log_fp, "JM: PATH = %s\n", my_env_path);
 
@@ -342,12 +347,15 @@ main(int argc,
     {
         grami_fprintf( grami_log_fp, 
                        "ERROR: unable to get USER from the environment.\n");
+        my_env_user = NULL;
     }
-    my_env_user = (char *) globus_malloc(sizeof(char *) * 
+    else
+    {
+        my_env_user = (char *) globus_malloc(sizeof(char *) * 
                                             strlen(tmp_env_var) + 1);
-    strcpy(my_env_user, tmp_env_var);
-
-    grami_fprintf( grami_log_fp, "JM: USER = %s\n", my_env_user);
+        strcpy(my_env_user, tmp_env_var);
+        grami_fprintf( grami_log_fp, "JM: USER = %s\n", my_env_user);
+    }
 
     if (jm_home_dir)
     {
@@ -509,8 +517,10 @@ main(int argc,
      */
     description_tree = globus_rsl_parse(description);
 
-    printf("\n------------  after parse  ---------------\n\n");
-    globus_rsl_print_recursive(description_tree);
+    /* 
+        printf("\n------------  after parse  ---------------\n\n");
+        globus_rsl_print_recursive(description_tree);
+    */
 
     my_globus_prefix = (char *) globus_malloc(sizeof(char *) * 
                                             strlen(GLOBUS_PREFIX) + 1);
@@ -529,24 +539,33 @@ main(int argc,
     globus_symboltable_insert(symbol_table,
                             (void *) "HOME",
                             (void *) graml_env_home);
-    globus_symboltable_insert(symbol_table,
-                            (void *) "PATH",
-                            (void *) my_env_path);
-    globus_symboltable_insert(symbol_table,
-                            (void *) "USER",
-                            (void *) my_env_user);
+    if (my_env_path)
+    {
+        globus_symboltable_insert(symbol_table,
+                                 (void *) "PATH",
+                                 (void *) my_env_path);
+    }
+    if (my_env_user)
+    {
+        globus_symboltable_insert(symbol_table,
+                                (void *) "USER",
+                                (void *) my_env_user);
+    }
     globus_symboltable_insert(symbol_table,
 			    (void *) "GLOBUS_PREFIX",
 			    (void *) my_globus_prefix);
     
     if (globus_rsl_eval(description_tree, symbol_table) != 0)
     {
-        job_status = 22;
+        job_status = GLOBUS_GRAM_CLIENT_ERROR_RSL_EVALUATION_FAILED;
     }
     else
     {
-        printf("\n------------  after eval  ---------------\n\n");
-        globus_rsl_print_recursive(description_tree);
+        /* 
+            printf("\n------------  after eval  ---------------\n\n");
+            globus_rsl_print_recursive(description_tree);
+        */
+
         /*
          * Start the job.  If successful reply with graml_job_contact else
          * send error status.
