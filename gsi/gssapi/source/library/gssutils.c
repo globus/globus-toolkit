@@ -245,11 +245,16 @@ gss_create_and_fill_context(
     if (cred_usage == GSS_C_ACCEPT)
     {
         SSL_set_ssl_method(context->gs_ssl,SSLv23_method());
-        SSL_set_options(context->gs_ssl,SSL_OP_NO_SSLv2|SSL_OP_NO_TLSv1);
+        SSL_set_options(context->gs_ssl,
+                        SSL_OP_NO_SSLv2 |
+                        SSL_OP_NO_TLSv1 |
+                        SSL_OP_DONT_INSERT_EMPTY_FRAGMENTS);
     }
     else
     {
         SSL_set_ssl_method(context->gs_ssl,SSLv3_method());
+        SSL_set_options(context->gs_ssl,
+                        SSL_OP_DONT_INSERT_EMPTY_FRAGMENTS);
     }
 
     SSL_set_ex_data(context->gs_ssl, PVD_SSL_EX_DATA_IDX, 
