@@ -122,8 +122,8 @@ extern int                              globus_i_gsi_authz_gaa_callout_debug_lev
 #define GLOBUS_I_GSI_AUTHZ_GAA_CALLOUT_DEBUG_FPRINTF5(_LEVEL_, _ONE_, _TWO_, _THREE_, _FOUR_, _FIVE_) {}
 #define GLOBUS_I_GSI_AUTHZ_GAA_CALLOUT_DEBUG_PRINT(_LEVEL_, _MESSAGE_) {}
 #define GLOBUS_I_GSI_AUTHZ_GAA_CALLOUT_DEBUG_PRINT_OBJECT(_LEVEL_, _OBJ_NAME_, _OBJ_) {}
-#define GLOBUS_I_GSI_AUTHZ_GAA_CALLBACK_DEBUG_ENTER {}
-#define GLOBUS_I_GSI_AUTHZ_GAA_CALLBACK_DEBUG_EXIT {}
+#define GLOBUS_I_GSI_AUTHZ_GAA_CALLOUT_DEBUG_ENTER {}
+#define GLOBUS_I_GSI_AUTHZ_GAA_CALLOUT_DEBUG_EXIT {}
 #endif
 
 typedef struct globus_i_gsi_authz_handle_s
