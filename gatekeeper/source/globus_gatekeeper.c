@@ -1487,7 +1487,7 @@ static void doit()
 #if defined(__hpux)
 	    if (setresuid(job_manager_uid, job_manager_uid, -1) != 0)
 		failure2("cannot setresuid: %s", sys_errlist[errno]);
-#elif defined(TARGET_ARCH_SOLARIS)
+#elif ( defined(TARGET_ARCH_SOLARIS) || defined(TARGET_ARCH_BSD) )
 	    if (setuid(job_manager_uid) != 0)
 		failure2("cannot setuid: %s", sys_errlist[errno]);
 #else
