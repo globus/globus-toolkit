@@ -1166,9 +1166,6 @@ do_setup_env(Session *s, const char *shell)
 		 * needed for loading shared libraries. So the path better
 		 * remains intact here.
 		 */
-		if (getenv("LD_LIBRARY_PATH"))
-			child_set_env(&env, &envsize, "LD_LIBRARY_PATH",
-				      getenv("LD_LIBRARY_PATH"));
 #  ifdef HAVE_ETC_DEFAULT_LOGIN
 		read_etc_default_login(&env, &envsize, pw->pw_uid);
 		path = child_get_env(env, "PATH");
@@ -1190,6 +1187,23 @@ do_setup_env(Session *s, const char *shell)
 	}
 	if (getenv("TZ"))
 		child_set_env(&env, &envsize, "TZ", getenv("TZ"));
+
+#ifdef GSI /* GSI shared libs typically installed in non-system locations. */
+	{
+		char *cp;
+
+		if ((cp = getenv("LD_LIBRARY_PATH")) != NULL)
+			child_set_env(&env, &envsize, "LD_LIBRARY_PATH", cp);
+		if ((cp = getenv("LIBPATH")) != NULL)
+			child_set_env(&env, &envsize, "LIBPATH", cp);
+		if ((cp = getenv("SHLIB_PATH")) != NULL)
+			child_set_env(&env, &envsize, "SHLIB_PATH", cp);
+		if ((cp = getenv("LD_LIBRARYN32_PATH")) != NULL)
+			child_set_env(&env, &envsize, "LD_LIBRARYN32_PATH",cp);
+		if ((cp = getenv("LD_LIBRARY64_PATH")) != NULL)
+			child_set_env(&env, &envsize, "LD_LIBRARY64_PATH",cp);
+	}
+#endif
 
 	/* Set custom environment options from RSA authentication. */
 	if (!options.use_login) {
