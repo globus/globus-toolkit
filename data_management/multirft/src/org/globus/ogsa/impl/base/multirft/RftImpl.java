@@ -371,7 +371,7 @@ extends GridServiceImpl {
             
             if ( ( tempStatus == TransferJob.STATUS_ACTIVE ) ||
             ( tempStatus == TransferJob.STATUS_PENDING ) ||
-            ( tempStatus == TransferJob.STATUS_PENDING ) ) {
+            ( tempStatus == TransferJob.STATUS_EXPANDING ) ) {
                 
                 TransferThread transferThread = new TransferThread(
                 transferJob );
@@ -831,7 +831,6 @@ extends GridServiceImpl {
                             }
                         }
                         int tempConc = 0;
-                        
                         TransferJob newTransferJob1 = 
                             dbAdapter.getTransferJob(requestId);
                         if ( newTransferJob1 == null ) {
@@ -842,12 +841,20 @@ extends GridServiceImpl {
                                 logger.error("Error closing connections",ioe);
                             } 
                         } else {
-                            transferThread = 
-                                new TransferThread( newTransferJob1 );
-                            transferThread.start();
-                            newTransferJob1.
-                                setStatus( TransferJob.STATUS_ACTIVE );
-                            statusChanged( newTransferJob1 );
+                            while (numberActive < concurrency) {
+                                TransferJob tempTransferJob2 = 
+                                dbAdapter.getTransferJob(requestId);
+                                if ( tempTransferJob2 != null) {
+                                    TransferThread transferThread2 = 
+                                        new TransferThread( tempTransferJob2 );
+                                    transferThread2.start();
+                                    tempTransferJob2.
+                                        setStatus( TransferJob.STATUS_ACTIVE );
+                                    statusChanged( tempTransferJob2 );
+                                } else {
+                                    logger.debug("Done");
+                                }
+                            }
                         }
                         
                     }
