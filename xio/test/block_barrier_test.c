@@ -11,7 +11,7 @@ static globus_bool_t                    globus_l_closed = GLOBUS_FALSE;
 static globus_bool_t                    globus_l_closed2 = GLOBUS_FALSE;
 
 #define OP_COUNT                            8
-#define SLEEP_TIME                          10000
+#define SLEEP_TIME                          5000
 
 static void
 close_cb(
@@ -44,7 +44,7 @@ data_cb(
         if(globus_l_closed)
         {
             failed_exit("the close callback occurred prior to all data"
-                        "callbacks returning");
+                        " callbacks returning");
         }
         if(!globus_l_close_called)
         {

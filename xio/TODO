@@ -10,3 +10,4 @@ need clean method of getting contact string
 
 system code needs to handle EBADF and find offending fd and cancel op
 
+po canceled by driver then op bounces down bug
