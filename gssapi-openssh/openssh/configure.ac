@@ -2139,21 +2139,6 @@ AC_ARG_WITH(superuser-path,
 			AC_DEFINE_UNQUOTED(SUPERUSER_PATH, "$withval")
 			superuser_path=$withval
 		fi
-	fi ]
-)
-if test "$USES_LOGIN_CONF" != "yes" ; then
-	AC_DEFINE_UNQUOTED(USER_PATH, "$user_path")
-	AC_SUBST(user_path)
-fi
-
-# Set superuser path separately to user path
-AC_ARG_WITH(superuser-path,
-	[  --with-superuser-path=  Specify different path for super-user],
-	[
-		if test "x$withval" != "xno" ; then
-			AC_DEFINE_UNQUOTED(SUPERUSER_PATH, "$withval")
-			superuser_path=$withval
-		fi
 	]
 )
 
