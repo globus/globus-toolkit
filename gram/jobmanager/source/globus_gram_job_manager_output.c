@@ -33,7 +33,7 @@ globus_l_gram_job_manager_output_destination_t;
  */
 static
 int
-globus_l_gram_job_manager_output_get_urls(
+globus_l_gram_job_manager_output_insert_urls(
     globus_gram_jobmanager_request_t *	request,
     globus_list_t *			value_list,
     globus_list_t **			destinations,
@@ -116,6 +116,8 @@ globus_i_gram_job_manager_output_set_urls(
     int					rc;
     globus_list_t *			tmp_list;
     globus_list_t **			destinations;
+    globus_l_gram_job_manager_output_destination_t *
+					destination;
 
     if(strcmp(type, GLOBUS_GRAM_PROTOCOL_STDOUT_PARAM) == 0)
     {
@@ -130,8 +132,28 @@ globus_i_gram_job_manager_output_set_urls(
 	return GLOBUS_FAILURE;
     }
 
+    /*
+     * If this is called for a restart RSL, and we have
+     * stdout (or stderr) in the new RSL, we will throw away the destinations
+     * in the original RSL---the same effect as a stdio_update signal.
+     */
+    if(request->jm_restart && url_list != NULL)
+    {
+	while(!globus_list_empty(*destinations))
+	{
+	    destination = globus_list_remove(destinations, *destinations);
+
+	    globus_libc_free(destination->url);
+	    if(destination->tag)
+	    {
+		globus_libc_free(destination->tag);
+	    }
+	    globus_libc_free(destination);
+	}
+    }
+
     /* Get URL strings from url_list */
-    rc = globus_l_gram_job_manager_output_get_urls(
+    rc = globus_l_gram_job_manager_output_insert_urls(
 	    request,
 	    url_list,
 	    destinations,
@@ -518,6 +540,121 @@ globus_l_gram_job_manager_output_poll(
 }
 /* globus_i_gram_job_manager_output_poll() */
 
+int
+globus_i_gram_job_manager_output_write_state(
+    globus_gram_jobmanager_request_t *	request,
+    FILE *				fp)
+{
+    globus_list_t *			tmp_list;
+    globus_l_gram_job_manager_output_info_t *
+					info;
+    globus_l_gram_job_manager_output_destination_t *
+					dest;
+
+    info = request->output;
+
+    fprintf(fp, "%d\n", globus_list_size(info->stdout_destinations));
+    tmp_list = info->stdout_destinations;
+    while(!globus_list_empty(tmp_list))
+    {
+	dest = globus_list_first(tmp_list);
+	tmp_list = globus_list_rest(tmp_list);
+
+	fprintf(fp,
+		"%s\n%s\n%"GLOBUS_OFF_T_FORMAT"\n",
+		dest->url,
+		dest->tag ? dest->tag : "",
+		dest->position);
+    }
+
+    fprintf(fp, "%d\n", globus_list_size(info->stderr_destinations));
+    tmp_list = info->stderr_destinations;
+    while(!globus_list_empty(tmp_list))
+    {
+	dest = globus_list_first(tmp_list);
+	tmp_list = globus_list_rest(tmp_list);
+
+	fprintf(fp,
+		"%s\n%s\n%"GLOBUS_OFF_T_FORMAT"\n",
+		dest->url,
+		dest->tag ? dest->tag : "",
+		dest->position);
+    }
+    return 0;
+}
+/* globus_i_gram_job_manager_output_write_state() */
+
+int
+globus_i_gram_job_manager_output_read_state(
+    globus_gram_jobmanager_request_t *	request,
+    FILE *				fp)
+{
+    globus_l_gram_job_manager_output_destination_t *
+					destination;
+    int					count;
+    int					i;
+    char *				buffer;
+    globus_size_t			bufsize;
+
+    buffer = request->output->buffer;
+    bufsize = sizeof(request->output->buffer);
+
+    fscanf(fp, "%d\n", &count);
+
+    for(i = 0; i < count; i++)
+    {
+	destination = globus_libc_malloc(
+		sizeof(globus_l_gram_job_manager_output_destination_t));
+
+	fgets(buffer, bufsize, fp);
+	destination->url = globus_libc_strdup(buffer); 
+
+	fgets(buffer, bufsize, fp);
+	if(strlen(buffer) != 0)
+	{
+	    destination->tag = globus_libc_strdup(buffer);
+	}
+	else
+	{
+	    destination->tag = NULL;
+	}
+	fscanf(fp, "%"GLOBUS_OFF_T_FORMAT"\n", &destination->position);
+	destination->fd = -1;
+
+	/* This will insert the destinations in the reverse order of
+	 * the RSL. When we process the RSL, it'll be reversed in the
+	 * set_urls function above.
+	 */
+	globus_list_insert(&request->output->stdout_destinations, destination);
+    }
+
+    fscanf(fp, "%d\n", &count);
+    for(i = 0; i < count; i++)
+    {
+	destination = globus_libc_malloc(
+		sizeof(globus_l_gram_job_manager_output_destination_t));
+
+	fgets(buffer, bufsize, fp);
+	destination->url = globus_libc_strdup(buffer); 
+
+	fgets(buffer, bufsize, fp);
+	if(strlen(buffer) != 0)
+	{
+	    destination->tag = globus_libc_strdup(buffer);
+	}
+	else
+	{
+	    destination->tag = NULL;
+	}
+	fscanf(fp, "%"GLOBUS_OFF_T_FORMAT"\n", &destination->position);
+	destination->fd = -1;
+
+	globus_list_insert(&request->output->stderr_destinations, destination);
+    }
+    return 0;
+}
+/* globus_i_gram_job_manager_output_read_state() */
+
 /**
  * Create destination structures for stdout and stderr values.
  *
@@ -544,7 +681,7 @@ globus_l_gram_job_manager_output_poll(
  */
 static
 int
-globus_l_gram_job_manager_output_get_urls(
+globus_l_gram_job_manager_output_insert_urls(
     globus_gram_jobmanager_request_t *	request,
     globus_list_t *			value_list,
     globus_list_t **			destinations,
@@ -561,6 +698,11 @@ globus_l_gram_job_manager_output_get_urls(
 	request->jobmanager_log_fp,
 	"JMI: Getting RSL output value%s\n",
 	recursive ? " recursively" : "");
+
+    if(value_list == NULL)
+    {
+	return GLOBUS_SUCCESS;
+    }
 
     value = globus_list_first(value_list);
     if(globus_rsl_value_is_literal(value))
@@ -608,7 +750,7 @@ globus_l_gram_job_manager_output_get_urls(
 	    value = globus_list_first(value_list);
 	    value_list = globus_list_rest(value_list);
 
-	    rc = globus_l_gram_job_manager_output_get_urls(
+	    rc = globus_l_gram_job_manager_output_insert_urls(
 		    request,
 		    globus_rsl_value_sequence_get_value_list(value),
 		    destinations,
@@ -626,7 +768,7 @@ globus_l_gram_job_manager_output_get_urls(
 	return GLOBUS_FAILURE;
     }
 }
-/* globus_l_gram_job_manager_output_get_urls() */
+/* globus_l_gram_job_manager_output_insert_urls() */
 
 
 /**
@@ -762,3 +904,4 @@ globus_l_gram_job_manager_output_destination_flush(
     }
     return GLOBUS_SUCCESS;
 }
+/* globus_l_gram_job_manager_output_destination_flush() */

@@ -206,9 +206,6 @@ globus_l_gram_update_state_file(
     int                                 failure_code);
 
 int
-globus_l_gram_update_state_file_io();
-
-int
 globus_l_gram_read_state_file(
     globus_gram_jobmanager_request_t *  request,
     char **                             rsl);
@@ -239,6 +236,12 @@ globus_l_gram_job_manager_create_remote_io_file(
     globus_gram_jobmanager_request_t *	request,
     char *				remote_io_url,
     char *				cache_tag);
+
+static
+int
+globus_l_gram_job_manager_rsl_match(
+    void *				datum,
+    void *				arg);
 
 static
 globus_rsl_t *
@@ -365,10 +368,10 @@ int main(int argc,
     gss_ctx_id_t	                context_handle = GSS_C_NO_CONTEXT;
     size_t				jrbuf_size;
     int					args_fd=0;
-    char *				x509_cert_dir;
-    char *				globus_loc;
-    char *				tcp_port_range;
-    char *				scratch_dir_base;
+    char *				x509_cert_dir = NULL;
+    char *				globus_loc = NULL;
+    char *				tcp_port_range = NULL;
+    char *				scratch_dir_base = NULL;
 
     /*
      * Stdin and stdout point at socket to client
@@ -1229,23 +1232,8 @@ int main(int argc,
 	if (rc == GLOBUS_SUCCESS)
 	{
 	    rsl_tree = globus_rsl_parse( orig_rsl );
-	    request->rsl = rsl_tree;
-
-	    rc = globus_gram_job_manager_validate_rsl(
-		    request,
-		    GLOBUS_GRAM_VALIDATE_JOB_SUBMIT);
-
-	    /*
-	     * Eval again, as some default parameters may have to be
-	     * RSL-substituted
-	     */
-	    rc = globus_rsl_eval(rsl_tree, symbol_table);
-
 	    free(orig_rsl);
-	}
 
-	if (rc == GLOBUS_SUCCESS)
-	{
 	    request->rsl = restart_rsl_tree;
 
 	    rc = globus_gram_job_manager_validate_rsl(
@@ -2133,7 +2121,8 @@ Description:
 Parameters:
 Returns:
 ******************************************************************************/
-static void
+static
+void
 globus_l_gram_client_callback(int status, int failure_code)
 {
     int                                 rc;
@@ -2403,7 +2392,8 @@ globus_l_gram_rsl_env_add(
  * In this function, we look through the job request RSL to find attributes
  * which we need to process in the job manager program (not in the scripts).
  */
-static int
+static
+int
 globus_l_gram_request_fill(
     globus_rsl_t *			rsl_tree,
     globus_gram_jobmanager_request_t *	request)
@@ -2412,8 +2402,17 @@ globus_l_gram_request_fill(
     char **				tmp_param;
     char *				gram_myjob;
     char *				ptr;
+    int					i;
     int					count;
     int					rc;
+    globus_list_t *			node;
+    globus_list_t **			operand_ref;
+    char *				removable_params[] = {
+	GLOBUS_GRAM_PROTOCOL_STDOUT_PARAM,
+	GLOBUS_GRAM_PROTOCOL_STDOUT_POSITION_PARAM,
+	GLOBUS_GRAM_PROTOCOL_STDERR_PARAM,
+	GLOBUS_GRAM_PROTOCOL_STDERR_POSITION_PARAM,
+	NULL };
 
     if (rsl_tree == NULL)
     {
@@ -2464,6 +2463,22 @@ globus_l_gram_request_fill(
 	return GLOBUS_FAILURE;
     }
 
+    /*
+     * Remove stdout and stderr from RSL---it's stored in the request
+     * structure for easier modification when stdio_update or restart happens,
+     * and as we send data to the various stdout destinations.
+     */
+    operand_ref = globus_rsl_boolean_get_operand_list_ref(request->rsl);
+    for(i = 0; removable_params[i] != NULL; i++)
+    {
+	node = globus_list_search_pred(*operand_ref,
+				       globus_l_gram_job_manager_rsl_match,
+				       removable_params[i]);
+	if(node)
+	{
+	    globus_rsl_free_recursive(globus_list_remove(operand_ref, node));
+	}
+    }
     /**********************************
      *  GET COUNT PARAM
      */
@@ -2629,7 +2644,8 @@ globus_l_gram_request_fill(
 
     return(GLOBUS_SUCCESS);
 
-} /* globus_l_gram_request_fill() */
+}
+/* globus_l_gram_request_fill() */
 
 /**
  * Generate an absolute pathname.
@@ -3718,6 +3734,8 @@ globus_l_gram_write_state_file(
     fprintf( fp, "%s\n", rsl );
     fprintf( fp, "%s\n", request->cache_tag );
 
+    globus_i_gram_job_manager_output_write_state(request, fp);
+
     fclose( fp );
 
     rc = rename( tmp_file, graml_job_state_file );
@@ -3818,69 +3836,6 @@ globus_l_gram_update_state_file( int status, int failure_code )
 }
 
 int
-globus_l_gram_update_state_file_io()
-{
-    int rc = GLOBUS_SUCCESS;
-    FILE *new_fp;
-    FILE *old_fp;
-    char tmp_file[1024];
-    char buffer[8192];
-
-    strcpy( tmp_file, graml_job_state_file );
-    strcat( tmp_file, ".tmp" );
-
-    /*
-     * We want the file update to be "atomic", so create a new temp file,
-     * copy over the file contents we're not changing, write the new io
-     * information, close both files, then rename the new file on top of
-     * the old one. The rename is the atomic update action.
-     */
-    old_fp = fopen( graml_job_state_file, "r" );
-    if ( old_fp == NULL )
-    {
-	globus_jobmanager_log(graml_log_fp, "JM: Failed to open state file %s\n",
-		      graml_job_state_file);
-	return GLOBUS_FAILURE;
-    }
-
-    new_fp = fopen( tmp_file, "w" );
-    if ( new_fp == NULL )
-    {
-	fclose(old_fp);
-	globus_jobmanager_log(graml_log_fp, "JM: Failed to open state file %s\n",
-		      tmp_file);
-	return GLOBUS_FAILURE;
-    }
-
-    /* Copy the information we're not changing from the old state file */
-    /* Make sure this is kept in sync with globus_l_gram_write_state_file */
-    fscanf( old_fp, "%[^\n]%*c", buffer );	/* status */
-    fprintf( new_fp, "%s\n", buffer );
-    fscanf( old_fp, "%[^\n]%*c", buffer );	/* failure code */
-    fprintf( new_fp, "%s\n", buffer );
-    fscanf( old_fp, "%[^\n]%*c", buffer );	/* ttl */
-    fprintf( new_fp, "%s\n", buffer );
-    fscanf( old_fp, "%[^\n]%*c", buffer );	/* job id */
-    fprintf( new_fp, "%s\n", buffer );
-    fscanf( old_fp, "%[^\n]%*c", buffer );	/* rsl */
-    fprintf( new_fp, "%s\n", buffer );
-    fscanf( old_fp, "%[^\n]%*c", buffer );	/* gass cache tag */
-    fprintf( new_fp, "%s\n", buffer );
-
-    fclose( old_fp );
-    fclose( new_fp );
-
-    rc = rename( tmp_file, graml_job_state_file );
-    if (rc != 0)
-    {
-	globus_jobmanager_log(graml_log_fp, "JM: Failed to rename state file\n");
-	rc = GLOBUS_FAILURE;
-    }
-
-    return rc;
-}
-
-int
 globus_l_gram_read_state_file( globus_gram_jobmanager_request_t *request,
 			       char **rsl )
 {
@@ -3968,6 +3923,8 @@ globus_l_gram_read_state_file( globus_gram_jobmanager_request_t *request,
     *rsl = strdup( buffer );
     fscanf( fp, "%[^\n]%*c", buffer );
     request->cache_tag = strdup( buffer );
+
+    globus_i_gram_job_manager_output_read_state(request, fp);
 
     fclose( fp );
 

@@ -182,11 +182,13 @@ read_scheduler_validation_failed:
 		    "attribute = '%s'\n"
 		    "description = '%s'\n"
 		    "required_when = '%d'\n"
+		    "default_when = '%d'\n"
 		    "default_values = '%s'\n"
 		    "enumerated_values = '%s'\n\n",
 		    record->attribute,
 		    record->description ? record->description : "",
-		    record->required,
+		    record->required_when,
+		    record->default_when,
 		    record->default_value ? record->default_value : "",
 		    record->enumerated_values ? record->enumerated_values : "");
 	}
@@ -473,6 +475,21 @@ globus_l_gram_job_manager_read_validation_file(
 	    globus_libc_free(value);
 	    value = GLOBUS_NULL;
 	}
+	else if(strcasecmp(attribute, "defaultwhen") == 0)
+	{
+	    tmp->default_when = 0;
+
+	    if(strstr(value, "GLOBUS_GRAM_JOB_SUBMIT"))
+	    {
+		tmp->default_when |= GLOBUS_GRAM_VALIDATE_JOB_SUBMIT;
+	    }
+	    if(strstr(value, "GLOBUS_GRAM_JOB_MANAGER_RESTART") == 0)
+	    {
+		tmp->default_when |= GLOBUS_GRAM_VALIDATE_JOB_MANAGER_RESTART;
+	    }
+	    globus_libc_free(value);
+	    value = GLOBUS_NULL;
+	}
 	else if(strcasecmp(attribute, "validwhen") == 0)
 	{
 	    tmp->valid_when = 0;
@@ -699,7 +716,7 @@ globus_l_gram_job_manager_check_rsl_attributes(
  *
  * Inserts default values to RSL when an RSL parameter is not defined
  * in it. After this is complete, it checks that all RSL parameters
- * with the "required" flag set are present in the RSL tree.
+ * with the "required_when" flag set are present in the RSL tree.
  *
  * @param request
  *        Request which contains the RSL tree to validate.
@@ -731,7 +748,7 @@ globus_l_gram_job_manager_insert_default_rsl(
 	record = globus_list_first(validation_records);
 	validation_records = globus_list_rest(validation_records);
 
-	if(record->default_value && (record->valid_when&when))
+	if(record->default_value && (record->default_when&when))
 	{
 	    if(!globus_l_gram_job_manager_attribute_exists(
 			*attributes,

@@ -290,7 +290,6 @@ typedef struct
      * used other than for debugging the parser.
      */
     char *				description;
-    globus_bool_t			required;
     /**
      * Default value of the parameter to be inserted in the RSL
      * if the parameter is not present.
@@ -309,6 +308,14 @@ typedef struct
      * when, if ever, this RSL parameter is required.
      */
     int					required_when;
+
+    /**
+     * Bitwise or of values of the
+     * globus_i_gram_job_manager_validation_when_t values, indicated
+     * when, if ever, this RSL parameter's default value should be
+     * inserted into the RSL.
+     */
+    int					default_when;
     /**
      * Bitwise or of values of the
      * globus_i_gram_job_manager_validation_when_t values, indicated
@@ -465,6 +472,18 @@ extern
 int
 globus_i_gram_job_manager_output_close(
     globus_gram_jobmanager_request_t *	request);
+
+extern
+int
+globus_i_gram_job_manager_output_write_state(
+    globus_gram_jobmanager_request_t *	request,
+    FILE *				fp);
+
+extern
+int
+globus_i_gram_job_manager_output_read_state(
+    globus_gram_jobmanager_request_t *	request,
+    FILE *				fp);
 
 EXTERN_C_END
 

@@ -5,6 +5,7 @@ Description: "Specifies the path of the directory the jobmanager will use as
               the default directory for the requested job."
 Default: $(HOME)
 ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
+DefaultWhen: GLOBUS_GRAM_JOB_SUBMIT
 
 Attribute: executable
 Description: "The name of the executable file to run on the remote machine.
@@ -26,6 +27,7 @@ Description: "The name of the file to be used as standard input for the
 	      executing the job and removed after the job has terminated."
 Default: "/dev/null"
 ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
+DefaultWhen: GLOBUS_GRAM_JOB_SUBMIT
 
 Attribute: stdout
 Description: "The name of the remote file to store the standard output from
@@ -34,6 +36,7 @@ Description: "The name of the remote file to store the standard output from
 	      job."
 Default: "/dev/null"
 ValidWhen: GLOBUS_GRAM_JOB_SUBMIT GLOBUS_GRAM_JOB_MANAGER_RESTART
+DefaultWhen: GLOBUS_GRAM_JOB_SUBMIT 
 
 Attribute: stderr
 Description: "The name of the remote file to store the standard error from
@@ -42,11 +45,13 @@ Description: "The name of the remote file to store the standard error from
 	      job."
 Default: "/dev/null"
 ValidWhen: GLOBUS_GRAM_JOB_SUBMIT GLOBUS_GRAM_JOB_MANAGER_RESTART
+DefaultWhen: GLOBUS_GRAM_JOB_SUBMIT 
 
 Attribute: count
 Description: "The number of executions of the executable."
 Default: 1
 ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
+DefaultWhen: GLOBUS_GRAM_JOB_SUBMIT
 
 Attribute: environment
 Description: "The environment variables that will be defined for the
@@ -89,6 +94,7 @@ Description: "This specifies how the jobmanager should start the job.
 Values: single multiple mpi condor
 Default: multiple
 ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
+DefaultWhen: GLOBUS_GRAM_JOB_SUBMIT
 
 Attribute: grammyjob
 Description: "This specifies how the gram myjob interface will behave in the 
@@ -100,6 +106,7 @@ Description: "This specifies how the gram myjob interface will behave in the
 Values: collective independent
 Default: collective
 ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
+DefaultWhen: GLOBUS_GRAM_JOB_SUBMIT
 
 Attribute: queue
 Description: "Target the job to a queue (class) name as defined by the
@@ -123,6 +130,7 @@ Description: "If dryrun = yes then the jobmanager will not submit the job for
 Default: no
 Values: yes no
 ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
+DefaultWhen: GLOBUS_GRAM_JOB_SUBMIT
 
 Attribute: minmemory
 Description: "Specify the minumum amount of memory required for this job.
@@ -213,11 +221,9 @@ ValidWhen: GLOBUS_GRAM_JOB_MANAGER_RESTART
 Attribute: stdoutposition
 Description: "Specifies where in the file remote output streaming should be
               restarted from."
-Default: 0
 ValidWhen: GLOBUS_GRAM_JOB_MANAGER_RESTART
 
 Attribute: stderrposition
 Description: "Specifies where in the file remote standard error streaming
               should be restarted from."
-Default: 0
 ValidWhen: GLOBUS_GRAM_JOB_MANAGER_RESTART
