@@ -172,6 +172,8 @@ extern int		globus_cond_timedwait_rel( globus_cond_t *cv,
 					 long milliseconds );
 extern int		globus_cond_signal(globus_cond_t *cond);
 extern int		globus_cond_broadcast(globus_cond_t *cond);
+extern int      globus_thread_cancel(globus_thread_t thread);
+
 
 
 /******************************************************************************
