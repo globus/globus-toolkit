@@ -20,8 +20,10 @@ Globus::GRAM::JobDescription - GRAM Job Description
 
     $description = new Globus::GRAM::JobDescription($filename);
     $executable = $description->executable();
-    $description->add('jobid', $job_id);
+    $description->add($new_attribute, $new_value);
     $description->save();
+    $description->save($filename);
+    $description->print_recursive($file_handle);
 
 =head1 DESCRIPTION
 
@@ -84,16 +86,16 @@ sub new
     return $self;
 }
 
-=item $description->I<add>('name', I<$value [, $value]>);
+=item $description->I<add>('name', I<$value>);
 
 Add a parameter to a job description. The parameter will be normalized
 internally so that the access methods described below will work with
 this new parameter. As an example,
 
-    @description->add('job_id', $jobid)
+    @description->add('new_attribute', $new_value)
 
-will create a new paremeter in the JobDescription, which can be accessed
-by calling the I<$description->job_id>() method.
+will create a new attribute in the JobDescription, which can be accessed
+by calling the I<$description->new_attribute>() method.
 
 =cut
 
@@ -109,10 +111,11 @@ sub add
     $self->{$attr} = [$value];
 }
 
-=item $description->I<save>()
+=item $description->I<save>([$filename])
 
 Save the JobDescription, including any added parameters, to the file
-passed to the constructor.
+named by $filename if present, or replacing the file used in constructing
+the object.
 
 =cut
 
@@ -141,6 +144,13 @@ sub save
 
     return 0;
 }
+
+=item $description->I<print_recursive>($file_handle)
+
+Write the value of the job description object to the file handle
+specified in the argument list.
+
+=cut
 
 sub print_recursive
 {
@@ -189,24 +199,37 @@ For any parameter defined in the JobDescription can be accessed by calling
 the method named by the parameter. The method names are automatically created
 when the JobDescription is created, and may be invoked with arbitrary
 SillyCaps or underscores. That is, the parameter gram_myjob may be accessed
-by the GramMyJob, grammyjob, or gram_my_job method names (and others). In
-contrast to the description of how JobDescription objects are constructed
-above, the return from a parameter method will be a scalar value if only
-one value exists in the array. For example, using the description of
-executable in the previous section, the method call
+by the GramMyJob, grammyjob, or gram_my_job method names (and others).
 
-    $description->executable()
+If the attributes does not in this object, then undef will be returned.
 
-would return the scalar '/bin/echo', and not the array [ '/bin/echo' ].
+In a list context, this returns the list of values associated
+with an attribute.
 
-Also, arrays will be cast to lists in their return, so the method call
+In a scalar context, if the attribute's value consist of a single literal,
+then that literal will be returned, otherwise undef will be returned.
 
-    $description->arguments()
+For example, from a JobDescription called $d constructed from a
+description file containing
 
-would return the list ( 'hello', 'world' ) and not the array
-[ 'hello', 'world' ].
+    {
+	executable => [ '/bin/echo' ],
+	arguments  => [ 'hello', 'world' ]
+    }
 
-An undefined or empty parameter invocation will return I<undef>.
+The following will hold:
+
+    $executable = $d->executable()    # '/bin/echo'
+    $arguments = $d->arguments()      # undef
+    @executable = $d->executable()    # ('/bin/echo')
+    @arguments = $d->arguments()      # ('hello', 'world')
+    $not_present = $d->not_present()  # undef
+    @not_present = $d->not_present()  # ()
+
+To test for existence of a value:
+
+    @not_present = $d->not_present()
+    print "Not defined\n" if(!defined($not_present[0]));
 
 =cut
 

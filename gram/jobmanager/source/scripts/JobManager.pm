@@ -153,10 +153,13 @@ subclasses should reimplement this method to submit the job to the
 scheduler.
 
 A scheduler which implements this method should return a hash reference
-containing the values JOB_STATE and JOB_ID if the job request is
-successful; otherwise a Globus::GRAM::Error value should be returned.
+containing a scheduler-specific job identifier as the value of the hash's
+JOB_ID key, and optionally, the a GRAM job state as the value of the hash's
+JOB_STATE key if the job submission was successful;
+otherwise a Globus::GRAM::Error value should be returned.
 The job state values are defined in the Globus::GRAM::JobState module. The
-job parameters are defined in $self->{JobDescription}.
+job parameters (as found in the job rsl) are defined in
+Globus::GRAM::Jobdescription object in $self->{JobDescription}.
 
 For example:
 
