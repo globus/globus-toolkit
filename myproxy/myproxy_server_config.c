@@ -502,29 +502,19 @@ myproxy_server_config_read(myproxy_server_context_t *context)
 int
 myproxy_server_check_policy_list(const char **dn_list, const char *client_name)
 {
-    int return_code = -1;
-    
     if ((dn_list == NULL) || (client_name == NULL)) {
 	return 0;
     }
 
-    return_code = is_name_in_list(dn_list, client_name);
-
-  error:
-    return return_code;
+    return is_name_in_list(dn_list, client_name);
 }
 
 int
 myproxy_server_check_policy(const char *dn_regex, const char *client_name)
 {
-    int return_code = -1;
-    
     if ((dn_regex == NULL) || (client_name == NULL)) {
 	return 0;
     }
 
-    return_code = regex_compare(dn_regex, client_name);
-
-  error:
-    return return_code;
+    return regex_compare(dn_regex, client_name);
 }
