@@ -752,7 +752,7 @@ globus_l_gram_protocol_listen_callback(
         goto free_io_handle_exit;
     }    
 
-    if(globus_i_gram_protocol_setup_accept_attr(&accept_attrs, connection))
+    if(globus_l_gram_protocol_setup_accept_attr(&accept_attrs, connection))
     {
         goto free_attrs_exit;
     }
