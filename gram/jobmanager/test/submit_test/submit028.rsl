@@ -1,3 +1,0 @@
-&(executable = /bin/true)
- (arguments = $(SCRATCH_DIRECTORY) )
- (scratch_dir = . )
