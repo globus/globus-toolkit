@@ -231,7 +231,8 @@ globus_l_xio_http_open(
         if (http_handle->request_info.http_version
                 == GLOBUS_XIO_HTTP_VERSION_1_0)
         {
-            if (!http_handle->request_info.headers.content_length_set)
+            if (!http_handle->request_info.headers.content_length_set &&
+                !http_handle->request_info.delay_write_header)
             {
                 result = GlobusXIOHttpErrorInvalidHeader(
                         "Content-Length",
@@ -1175,6 +1176,21 @@ globus_i_xio_http_write(
     if (http_handle->target_info.is_client)
     {
         headers = &http_handle->request_info.headers;
+
+        if(http_handle->request_info.delay_write_header)
+        {
+            http_handle->request_info.first_write_iovec = iovec;
+            http_handle->request_info.first_write_iovec_count = iovec_count;
+
+            result = globus_i_xio_http_client_write_request(
+                op,
+                http_handle);
+            if(result != GLOBUS_SUCCESS)
+            {
+                return result;
+            }
+            return result;
+        }
     }
     else
     {

@@ -278,6 +278,8 @@ globus_i_xio_http_handle_cntl(
     int                                 cmd,
     va_list                             ap)
 {
+    char *                              in_header_name;
+    char *                              in_header_value;
     globus_result_t                     result = GLOBUS_SUCCESS;
     globus_i_xio_http_handle_t *        http_handle = handle;
     char *                              in_str;
@@ -390,6 +392,28 @@ globus_i_xio_http_handle_cntl(
             result = globus_i_xio_http_set_end_of_entity(http_handle);
 
             break;
+
+        case GLOBUS_XIO_HTTP_HANDLE_SET_REQUEST_HEADER:
+            in_header_name = va_arg(ap, char *);
+            if (in_header_name == NULL)
+            {
+                result = GlobusXIOErrorParameter("name");
+                break;
+            }
+
+            in_header_value = va_arg(ap, char *);
+            if (in_header_value == NULL)
+            {
+                result = GlobusXIOErrorParameter("value");
+                break;
+            }
+
+            result = globus_i_xio_http_header_info_set_header(
+                    &http_handle->request_info.headers,
+                    in_header_name,
+                    in_header_value);
+            break;
+
         default:
             result = GlobusXIOErrorParameter("cmd");
             break;

@@ -230,7 +230,8 @@ typedef enum
      * command MUST be called on the server side of an HTTP request connection
      * when the HTTP method was OPTIONS, GET, POST, or TRACE.
      */
-    GLOBUS_XIO_HTTP_HANDLE_SET_END_OF_ENTITY
+    GLOBUS_XIO_HTTP_HANDLE_SET_END_OF_ENTITY,
+    GLOBUS_XIO_HTTP_HANDLE_SET_REQUEST_HEADER
 }
 globus_xio_http_handle_cmd_t;
 
@@ -366,7 +367,8 @@ typedef enum
      */
     /* globus_xio_http_response_ready_callback_t callback,
        void * callback_arg */
-    GLOBUS_XIO_HTTP_ATTR_SET_RESPONSE_CALLBACK
+    GLOBUS_XIO_HTTP_ATTR_SET_RESPONSE_CALLBACK,
+    GLOBUS_XIO_HTTP_ATTR_DELAY_WRITE_HEADER
 }
 globus_xio_http_attr_cmd_t;
 

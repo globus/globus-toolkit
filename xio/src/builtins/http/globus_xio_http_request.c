@@ -123,6 +123,7 @@ globus_i_xio_http_request_copy(
     }
 
     dest->http_version = src->http_version;
+    dest->delay_write_header = src->delay_write_header;
 
     res = globus_i_xio_http_header_info_copy(
             &dest->headers,
