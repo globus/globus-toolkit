@@ -33,7 +33,7 @@
       setup-globus-gram-reporter-condor
     </Post_Install_Program>
 
-    <Setup Name="globus_gram_reporter_setup_condor" >
+    <Setup Name="globus_gram_reporter_setup" >
       <Aging_Version Age="0" Major="2" Minor="0" />
     </Setup>
 
