@@ -21,6 +21,7 @@ typedef enum
 {
     GLOBUS_GFS_IPC_TYPE_FINAL_REPLY,
     GLOBUS_GFS_IPC_TYPE_INTERMEDIATE_REPLY,
+    GLOBUS_GFS_IPC_TYPE_AUTH,
     GLOBUS_GFS_IPC_TYPE_RECV,
     GLOBUS_GFS_IPC_TYPE_SEND,
     GLOBUS_GFS_IPC_TYPE_LIST,
@@ -69,9 +70,10 @@ typedef struct globus_gfs_ipc_resource_reply_s
 typedef struct globus_i_gfs_ipc_reply_s
 {
     /* what command is being replied to */
+    int                                 type;
     int                                 id;
-    int                                 reply_code;
-    char *                              reply_msg;
+    int                                 code;
+    char *                              msg;
     globus_result_t                     result;
     
     /* prolly a different struct for event stuff */
@@ -125,19 +127,6 @@ typedef void
     globus_gfs_ipc_handle_t             ipc_handle,
     globus_result_t                     result,
     void *                              user_arg);
-
-
-
-/* callback and id relation */
-typedef struct globus_gfs_ipc_request_s
-{
-    globus_gfs_ipc_handle_t             ipc_handle;
-    globus_gfs_ipc_request_type_t       type;
-    int                                 id;
-    globus_gfs_ipc_callback_t           cb;
-    globus_gfs_ipc_callback_t           event_cb;
-    void *                              user_arg;
-} globus_gfs_ipc_request_t;
 
 globus_result_t
 globus_gfs_ipc_reply_finished(
@@ -199,6 +188,10 @@ typedef struct globus_gfs_data_state_s
     char                                type;
     int                                 tcp_bufsize;
     globus_size_t                       blocksize;
+
+    int                                 min;
+    int                                 max;
+    int                                 best;
         
     globus_ftp_control_protection_t     prot;
     globus_ftp_control_dcau_t           dcau;

@@ -133,6 +133,7 @@ globus_i_gfs_server_closed();
 typedef enum
 {
     GLOBUS_GFS_ERROR_MEMORY,
+    GLOBUS_GFS_ERROR_PARAMETER,
     GLOBUS_GFS_ERROR_SYSTEM_ERROR,
     GLOBUS_GFS_ERROR_WRAPPED,
     GLOBUS_GFS_ERROR_DATA,
@@ -148,6 +149,8 @@ typedef enum
 #define GlobusGFSErrorMemory(mem_name)                                      \
     globus_error_put(GlobusGFSErrorObjMemory(mem_name))                               
 
+#define GlobusGFSErrorParameter(mem_name)                                   \
+    globus_error_put(GlobusGFSErrorObjParameter(mem_name))                               
 #define GlobusGFSErrorObjMemory(mem_name)                                   \
     globus_error_construct_error(                                           \
         GLOBUS_NULL,                                                        \
@@ -158,6 +161,17 @@ typedef enum
         __LINE__,                                                           \
         "Memory allocation failed on %s",                                   \
         (mem_name))                               
+                                                                            
+#define GlobusGFSErrorObjParameter(param_name)                              \
+    globus_error_construct_error(                                           \
+        GLOBUS_NULL,                                                        \
+        GLOBUS_NULL,                                                        \
+        GLOBUS_GFS_ERROR_PARAMETER,                                         \
+        __FILE__,                                                           \
+        _gfs_name,                                                          \
+        __LINE__,                                                           \
+        "user a bad parameter %s",                                          \
+        (param_name))                               
                                                                             
 #define GlobusGFSErrorSystemError(system_func, _errno)                      \
     globus_error_put(                                                       \
