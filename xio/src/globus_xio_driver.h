@@ -200,7 +200,7 @@ typedef globus_result_t
  *  The driver is resonsible for providing documentation to the user on
  *  all the possible values that cmd can be.
  *
- *  @param attr
+ *  @param driver_attr
  *         The driver specific attr, created by globus_xio_driver_attr_init_t.
  *
  *  @param cmd
@@ -212,7 +212,7 @@ typedef globus_result_t
  */
 typedef globus_result_t
 (*globus_xio_driver_attr_cntl_t)(
-    void *                                      attr,
+    void *                                      driver_attr,
     int                                         cmd,
     va_list                                     ap);
 
@@ -237,7 +237,7 @@ typedef globus_result_t
  */
 typedef globus_result_t
 (*globus_xio_driver_attr_destroy_t)(
-    void *                                      attr);
+    void *                                      driver_attr);
 
 /**
  *  @ingroup driver_interface_grp
@@ -252,7 +252,7 @@ typedef globus_result_t
  *         should point to user defined memory that will serve as a 
  *         handle to this server object.
  *
- *  @param server_attr
+ *  @param driver_attr
  *         A server attr if the user specified any driver specific 
  *         attributes.  This may be NULL.
  *
@@ -265,7 +265,7 @@ typedef globus_result_t
 typedef globus_result_t
 (*globus_xio_driver_server_init_t)(
     void **                                     out_server,
-    void *                                      server_attr);
+    void *                                      driver_attr);
 
 /**
  *  @ingroup driver_interface_grp
@@ -277,18 +277,18 @@ typedef globus_result_t
  *  open the target or destroy it.  The can query the target for 
  *  additional information on which to base a decision to open upon.
  *
+ *  @param driver_server
+ *         The server object from which the target connection will be 
+ *         accepted.
+ *
+ *  @param driver_attr
+ *         If a driver specific attribute was set this will point to it.
+ *         Ths parameter may be NULL.
+ *
  *  @param out_target
  *         When the operation completes the driver should point this 
  *         out parameter to an area of memory that will be used as a 
  *         handle to this target.
- *
- *  @param target_attr
- *         If a driver specific attribute was set this will point to it.
- *         Ths parameter may be NULL.
- *
- *  @param server
- *         The server object from which the target connection will be 
- *         accepted.
  *
  *  @param op
  *         The reuqested operation.  When the driver is finished acepting
@@ -297,9 +297,9 @@ typedef globus_result_t
  */
 typedef globus_result_t
 (*globus_xio_driver_server_accept_t)(
+    void *                                      driver_server,
+    void *                                      driver_attr,
     void **                                     out_target,
-    void *                                      target_attr,
-    void *                                      server,
     globus_xio_driver_operation_t               op);
 
 /**
@@ -309,7 +309,7 @@ typedef globus_result_t
  *  This function allows a user to request information from a driver
  *  specific server handle.
  *
- *  @param server
+ *  @param driver_server
  *         the server handle.
  *
  *  @param cmd
@@ -321,7 +321,7 @@ typedef globus_result_t
  */
 typedef globus_result_t
 (*globus_xio_driver_server_cntl_t)(
-    void *                                      server,
+    void *                                      driver_server,
     int                                         cmd,
     va_list                                     ap);
 
@@ -338,7 +338,7 @@ typedef globus_result_t
  */
 typedef globus_result_t
 (*globus_xio_driver_server_destroy_t)(
-    void *                                      server);
+    void *                                      driver_server);
 
 /**
  *  @ingroup driver_interface_grp
@@ -353,7 +353,7 @@ typedef globus_result_t
  *         point to a area of memory that will serve as a handle to the
  *         target.
  *
- *  @param target_attr
+ *  @param driver_attr
  *         If the user added any driver specific attributes for this 
  *         operation this will point to a driver specific operation.
  *
@@ -369,7 +369,7 @@ typedef globus_result_t
 typedef globus_result_t
 (*globus_xio_driver_target_init_t)(
     void **                                     out_target,
-    void *                                      target_attr,
+    void *                                      driver_attr,
     const char *                                contact_string);
 
 /**
@@ -379,12 +379,12 @@ typedef globus_result_t
  *  The driver should clean up all resources associated with the target
  *  when this function is called.
  *
- *  @param target
+ *  @param driver_target
  *         The target to be destroyed.
  */
 typedef globus_result_t
 (*globus_xio_driver_target_destroy_t)(
-    void *                                      target);
+    void *                                      driver_target);
 
 
 /**********************************************************************
@@ -404,7 +404,7 @@ typedef globus_result_t
  *          this pointwe to some memory and then reference pass in back.
  *          Futrue interface funstion calls will be passed this value.
  *
- *  @param driver_handle_attr
+ *  @param driver_attr
  *         A attribute describing how to open.  This points to a piece of 
  *         memory created by the globus_xio_driver_driver_attr_init_t
  *         interface funstion.
@@ -433,8 +433,8 @@ typedef globus_result_t
 typedef globus_result_t
 (*globus_xio_driver_transform_open_t)(
     void **                                     driver_handle,
-    void *                                      driver_handle_attr,
-    void *                                      target,
+    void *                                      driver_attr,
+    void *                                      driver_target,
     globus_xio_driver_operation_t               op);
 
 /**
@@ -443,8 +443,8 @@ typedef globus_result_t
 typedef globus_result_t
 (*globus_xio_driver_transport_open_t)(
     void **                                     driver_handle,
-    void *                                      driver_handle_attr,
-    void *                                      target,
+    void *                                      driver_attr,
+    void *                                      driver_target,
     globus_xio_driver_context_t                 context,
     globus_xio_driver_operation_t               op);
 
@@ -1090,19 +1090,19 @@ typedef globus_result_t
  * 
  *  Destroy a data desriptor.
  *
- *  @param dd
+ *  @param driver_dd
  *         The data descriptor to be destroyed.
  */
 typedef globus_result_t
 (*globus_xio_driver_driver_data_descriptor_destroy_t)(
-    void *                                      dd);
+    void *                                      driver_dd);
  
 /**
  *  @ingroup driver_dd_interface_grp
  *
  *  Manipulate the data descriptor in a driver defined way.
  *
- *  @param dd
+ *  @param driver_dd
  *         The driver specific data descriptor to be manipulated.
  *
  *  @param cmd
@@ -1111,7 +1111,7 @@ typedef globus_result_t
  */
 typedef globus_result_t
 (*globus_xio_driver_driver_data_descriptor_cntl_t)(
-    void *                                      dd,
+    void *                                      driver_dd,
     int                                         cmd,
     va_list                                     ap);
  

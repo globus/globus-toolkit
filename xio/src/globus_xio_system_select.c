@@ -420,7 +420,6 @@ globus_xio_system_register_connect(
     int                                 rc;
     globus_result_t                     result;
     globus_l_operation_info_t *         op_info;
-    int                                 len;
 
     GlobusIXIOSystemAddNonBlocking(fd, rc);
     if(rc < 0)
@@ -430,9 +429,9 @@ globus_xio_system_register_connect(
         goto error_nonblocking;
     }
     
-    GlobusLibcSizeofSockaddr(*addr, len);
     done = GLOBUS_FALSE;
-    while(!done && connect(fd, (const struct sockaddr *) addr, len) < 0)
+    while(!done && connect(
+        fd, (const struct sockaddr *) addr, sizeof(globus_sockaddr_t)) < 0)
     {
         switch(errno)
         {
@@ -616,7 +615,7 @@ globus_xio_system_register_read_ex(
     int                                 u_iovc,
     globus_size_t                       waitforbytes,
     int                                 flags,
-    const globus_sockaddr_t *           from,
+    const globus_sockaddr_t *           u_from,
     globus_xio_system_data_callback_t   callback,
     void *                              user_arg)
 {
@@ -624,7 +623,8 @@ globus_xio_system_register_read_ex(
     globus_l_operation_info_t *         op_info;
     struct iovec *                      iov;
     struct msghdr *                     msghdr;
-
+    globus_sockaddr_t *                 from;
+    
     if(!flags && !from)
     {
         return globus_xio_system_register_read(
@@ -638,7 +638,23 @@ globus_xio_system_register_read_ex(
             "globus_xio_system_register_read_ex", "op_info");
         goto error_op_info;
     }
-        
+    
+    if(u_from)
+    {
+        from = (globus_sockaddr_t *) globus_malloc(sizeof(globus_sockaddr_t));
+        if(!from)
+        {
+            GLOBUS_L_XIO_SYSTEM_CONSTRUCT_MEMORY_ALLOC(
+                "globus_xio_system_register_read_ex", "from");
+            goto error_from;
+        }
+        GlobusLibcSockaddrCopy(*from, *u_from, sizeof(globus_sockaddr_t));
+    }
+    else
+    {
+        from = GLOBUS_NULL;
+    }
+
     if(u_iovc == 1)
     {
         if(from)
@@ -677,11 +693,8 @@ globus_xio_system_register_read_ex(
         
         if(from)
         {
-            int                         len;
-            
-            GlobusLibcSizeofSockaddr(*from, len);
             msghdr->msg_name = from;
-            msghdr->msg_namelen = len;
+            msghdr->msg_namelen = sizeof(globus_sockaddr_t);
         }
         
         msghdr->msg_iov = iov;
@@ -719,6 +732,12 @@ error_msghdr:
     }
 
 error_iovec:
+    if(from)
+    {
+        globus_free(from);
+    }
+    
+error_from:
     GlobusIXIOSystemFreeOperation(op_info);
     
 error_op_info:
@@ -805,7 +824,7 @@ globus_xio_system_register_write_ex(
     const globus_xio_iovec_t *          u_iov,
     int                                 u_iovc,
     int                                 flags,
-    const globus_sockaddr_t *           to,
+    const globus_sockaddr_t *           u_to,
     globus_xio_system_data_callback_t   callback,
     void *                              user_arg)
 {
@@ -813,6 +832,7 @@ globus_xio_system_register_write_ex(
     globus_l_operation_info_t *         op_info;
     struct iovec *                      iov;
     struct msghdr *                     msghdr;
+    globus_sockaddr_t *                 to;
     
     if(!flags && !to)
     {
@@ -826,6 +846,22 @@ globus_xio_system_register_write_ex(
         result = GLOBUS_L_XIO_SYSTEM_CONSTRUCT_MEMORY_ALLOC(
             "globus_xio_system_register_write_ex", "op_info");
         goto error_op_info;
+    }
+    
+    if(u_to)
+    {
+        to = (globus_sockaddr_t *) globus_malloc(sizeof(globus_sockaddr_t));
+        if(!to)
+        {
+            GLOBUS_L_XIO_SYSTEM_CONSTRUCT_MEMORY_ALLOC(
+                "globus_xio_system_register_read_ex", "to");
+            goto error_to;
+        }
+        GlobusLibcSockaddrCopy(*to, *u_to, sizeof(globus_sockaddr_t));
+    }
+    else
+    {
+        to = GLOBUS_NULL;
     }
 
     if(u_iovc == 1)
@@ -866,11 +902,8 @@ globus_xio_system_register_write_ex(
         
         if(to)
         {
-            int                         len;
-            
-            GlobusLibcSizeofSockaddr(*to, len);
             msghdr->msg_name = to;
-            msghdr->msg_namelen = len;
+            msghdr->msg_namelen = sizeof(globus_sockaddr_t);
         }
 
         msghdr->msg_iov = iov;
@@ -907,6 +940,12 @@ error_msghdr:
     }
 
 error_iovec:    
+    if(to)
+    {
+        globus_free(to);
+    }
+    
+error_to:
     GlobusIXIOSystemFreeOperation(op_info);
     
 error_op_info:
@@ -1273,6 +1312,10 @@ globus_l_xio_system_kickout(
         {
           case GLOBUS_L_OPERATION_RECVMSG:
           case GLOBUS_L_OPERATION_SENDMSG:
+            if(op_info->_op_msg.msghdr.msg_name)
+            {
+                globus_free(op_info->_op_msg.msghdr.msg_name);
+            }
             GlobusIXIOSystemFreeMsghdr(op_info->_op_msg.msghdr);
 
             /* fall through */
@@ -1282,7 +1325,12 @@ globus_l_xio_system_kickout(
                 op_info->_op_iovecCom.start_iovc,
                 op_info->_op_iovecCom.start_iov);
             break;
-
+          
+          case GLOBUS_L_OPERATION_RECVFROM:
+          case GLOBUS_L_OPERATION_SENDTO:
+            globus_free(op_info->_op_single.ex.addr);
+            break;
+            
           default:
             break;
         }
@@ -1337,12 +1385,13 @@ globus_l_xio_system_handle_read(
     globus_l_operation_info_t *         read_info;
     globus_ssize_t                      nbytes;
     globus_result_t                     result;
-    int                                 len;
 
     nbytes = 0;
     handled_it = GLOBUS_FALSE;
     read_info = globus_l_xio_system_read_operations[fd];
     result = GLOBUS_SUCCESS;
+    
+    GlobusXIOOperationRefreshTimeout(read_info->op);
     
     if(read_info->state == GLOBUS_L_OPERATION_CANCELED)
     {
@@ -1350,7 +1399,6 @@ globus_l_xio_system_handle_read(
             "globus_l_xio_system_handle_read");
         goto error_canceled;
     }
-    GlobusXIOOperationRefreshTimeout(read_info->op);
     
     switch(read_info->type)
     {
@@ -1412,15 +1460,6 @@ globus_l_xio_system_handle_read(
         break;
 
       case GLOBUS_L_OPERATION_RECVFROM:
-        if(read_info->_op_single.ex.addr)
-        {
-            GlobusLibcSizeofSockaddr(*read_info->_op_single.ex.addr, len);
-        }
-        else
-        {
-            len = 0;
-        }
-        
         do
         {
             nbytes = recvfrom(
@@ -1429,7 +1468,7 @@ globus_l_xio_system_handle_read(
                 read_info->_op_single.bufsize,
                 read_info->_op_single.ex.flags,
                 (const struct sockaddr *) read_info->_op_single.ex.addr,
-                len);
+                sizeof(globus_sockaddr_t));
         } while(nbytes < 0 && errno == EINTR);
 
         if(nbytes > 0)
@@ -1515,7 +1554,6 @@ globus_l_xio_system_handle_write(
     globus_ssize_t                      nbytes;
     globus_result_t                     result;
     int                                 work_remaining;
-    int                                 len;
 
     nbytes = 0;
     work_remaining = 1;
@@ -1523,13 +1561,14 @@ globus_l_xio_system_handle_write(
     result = GLOBUS_SUCCESS;
     write_info = globus_l_xio_system_write_operations[fd];
     
+    GlobusXIOOperationRefreshTimeout(write_info->op);
+    
     if(write_info->state == GLOBUS_L_OPERATION_CANCELED)
     {
         result = GLOBUS_I_XIO_SYSTEM_CONSTRUCT_OPERATION_CANCELED(
             "globus_l_xio_system_handle_write");
         goto error_canceled;
     }
-    GlobusXIOOperationRefreshTimeout(write_info->op);
     
     switch(write_info->type)
     {
@@ -1657,15 +1696,6 @@ globus_l_xio_system_handle_write(
         break;
 
       case GLOBUS_L_OPERATION_SENDTO:
-        if(write_info->_op_single.ex.addr)
-        {
-            GlobusLibcSizeofSockaddr(*write_info->_op_single.ex.addr, len);
-        }
-        else
-        {
-            len = 0;
-        }
-        
         do
         {
             nbytes = sendto(
@@ -1674,7 +1704,7 @@ globus_l_xio_system_handle_write(
                 write_info->_op_single.bufsize,
                 write_info->_op_single.ex.flags,
                 (const struct sockaddr *) write_info->_op_single.ex.addr,
-                len);
+                sizeof(globus_sockaddr_t));
         } while(nbytes < 0 && errno == EINTR);
 
         if(nbytes > 0)

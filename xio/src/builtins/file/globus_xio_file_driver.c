@@ -61,14 +61,14 @@ typedef struct
 
 static
 int
-globus_l_xio_system_activate(void)
+globus_l_xio_file_activate(void)
 {
     return globus_module_activate(GLOBUS_XIO_SYSTEM_MODULE);
 }
 
 static
 int
-globus_l_xio_system_deactivate(void)
+globus_l_xio_file_deactivate(void)
 {
     return globus_module_deactivate(GLOBUS_XIO_SYSTEM_MODULE);
 }
@@ -140,11 +140,11 @@ globus_l_xio_file_attr_cntl(
         break;
     
       case GLOBUS_XIO_FILE_SET_HANDLE:
-        attr->handle = va_arg(ap, int);
+        attr->handle = va_arg(ap, globus_xio_system_handle_t);
         break;
         
       case GLOBUS_XIO_FILE_GET_HANDLE:
-        out_handle = va_arg(ap, out_handle *);
+        out_handle = va_arg(ap, globus_xio_system_handle_t *);
         *out_handle = attr->handle;
         break;
 

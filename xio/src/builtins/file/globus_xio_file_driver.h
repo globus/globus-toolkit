@@ -11,10 +11,12 @@
 
 typedef enum
 {
+    /* handle attrs */
     GLOBUS_XIO_FILE_SET_MODE,
     GLOBUS_XIO_FILE_GET_MODE,
     GLOBUS_XIO_FILE_SET_FLAGS,
     GLOBUS_XIO_FILE_GET_FLAGS,
+    /* target attrs */
     GLOBUS_XIO_FILE_SET_HANDLE,
     GLOBUS_XIO_FILE_GET_HANDLE
 } globus_xio_file_attr_cmd_t;
