@@ -242,6 +242,12 @@ globus_gass_copy_handle_destroy(
             return result;
 
         result = globus_ftp_client_handle_destroy(&handle->ftp_dest_handle);
+
+	if(handle->err != GLOBUS_NULL)
+             globus_libc_free(handle->err);
+
+        handle->err = GLOBUS_NULL;
+
         return result;   
     }
     else
