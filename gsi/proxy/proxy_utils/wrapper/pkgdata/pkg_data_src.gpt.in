@@ -13,7 +13,7 @@
     <With_Flavors build="no" />
 
     <Source_Dependencies Type="pgm_runtime" >
-	    <Dependency Name="globus_proxy_utils">
+	    <Dependency Name="globus_proxy_utils" Package="pgm">
 		    <Version>
 			    <Simple_Version Major="0"></Simple_Version>
 	    	    </Version>
