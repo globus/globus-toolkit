@@ -9,6 +9,7 @@ INCLUDES = \
 	-DPACKAGE=\"@PACKAGE@\" \
 	-I$(top_srcdir) \
 	-I$(top_srcdir)/include \
+        -I$(GLOBUS_LOCATION)/include/libxml25 \
 	$(XMLSEC_DEFINES) \
 	$(OPENSSL_CFLAGS) \
 	$(LIBXSLT_CFLAGS) \
@@ -37,10 +38,10 @@ libxmlsec1_openssl___GLOBUS_FLAVOR_NAME__la_SOURCES =\
 	$(NULL)
 
 libxmlsec1_openssl___GLOBUS_FLAVOR_NAME__la_LIBADD = \
-	$(GPT_LIB_LINKS) \
+	@GPT_LIB_LINKS@ \
 	$(OPENSSL_LIBS) \
 	$(LIBXSLT_LIBS) \
-	$(LIBXML_LIBS) \
+#	$(LIBXML_LIBS) \
 	$(NULL)
 
 

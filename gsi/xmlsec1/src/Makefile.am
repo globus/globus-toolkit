@@ -10,6 +10,7 @@ INCLUDES = \
 	-DGLOBUS_FLAVOR_NAME=\"@GLOBUS_FLAVOR_NAME@\" \
 	-I$(top_srcdir) \
 	-I$(top_srcdir)/include \
+	-I$(GLOBUS_LOCATION)/include/libxml25 \
 	$(XMLSEC_DEFINES) \
 	$(LIBXSLT_CFLAGS) \
 	$(LIBXML_CFLAGS) \
@@ -61,9 +62,9 @@ libxmlsec1___GLOBUS_FLAVOR_NAME__la_SOURCES = \
 	$(NULL)
 
 libxmlsec1___GLOBUS_FLAVOR_NAME__la_LIBADD = \
-	@GPT_LIB_LINKS@
+	@GPT_LIB_LINKS@ \
 	$(LIBXSLT_LIBS) \
-##	$(LIBXML_LIBS) \
+#	$(LIBXML_LIBS) \
 	$(XMLSEC_DL_LIBS) \
 	$(NULL)
         
