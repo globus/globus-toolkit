@@ -178,9 +178,9 @@ grami_ggg_k5_globuskmap( char * globusid, char ** command)
 	      }
 	    }
 	  }
-	  close(fd);
-	  return(-1); /* not found */	
-    }
+	}
+	close(fd);
+	return(-1); /* not found */	
   }
   return(-2);   /* open failed */
 }
