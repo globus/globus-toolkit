@@ -11,6 +11,7 @@ my $contact;
 my $jmtype="-jmtype fork";
 
 @tests = qw(
+    globus-gram-job-manager-stdio-test.pl
     globus-gram-job-manager-submit-test.pl
     globus-gram-job-manager-failure-test.pl
 );

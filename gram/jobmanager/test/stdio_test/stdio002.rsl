@@ -1,0 +1,4 @@
+&(executable	=	/bin/echo)
+ (arguments	=	hello)
+ (stdout	=	( $(GLOBUSRUN_GASS_URL) # $(TEST_STDOUT) # ".001" ) )
+ (stderr	=	( $(GLOBUSRUN_GASS_URL) # $(TEST_STDERR) # ".001" ) )

@@ -1,7 +1,8 @@
 #! /usr/bin/env perl
 
-use Globus::GRAM::Error;
+use Globus::Core::Paths;
 use IO::File;
+use Sys::Hostname;
 use Test;
 use File::Path;
 use File::Compare;
@@ -10,20 +11,10 @@ my (@tests, @todo) = ();
 my $contact = $ENV{CONTACT_STRING};
 my $testtmp = &make_tmpdir();
 my $testdatadir = "$ENV{GLOBUS_LOCATION}/share/@PACKAGE@";
+my $gridftp_server_installed = &check_gridftp;
 
 my @test_cases=qw(
-    submit001 submit002 submit003 submit004 submit005
-    submit006 submit007 submit008 submit009 submit010
-    submit011 submit012 submit013 submit014 submit015
-    submit016 submit017 submit018 submit019 submit020
-    submit021 submit022 submit023 submit024 submit025
-    submit026 submit027 submit028 submit029 submit030
-    submit031 submit032 submit033 submit034 submit035
-    submit036 submit037 submit038 submit039 submit040
-    submit041 submit042 submit043 submit044
-);
-
-my @todo_cases=qw(
+    stdio001 stdio002 stdio003
 );
 
 sub test_rsl
@@ -32,43 +23,68 @@ sub test_rsl
     my $additional_rsl = shift;
     my $testrsl = "$testname.rsl";
     my $additionalrslfile = "$testtmp/$testname.rsl";
-    my $testout = "$testtmp/$testname.out";
-    my $testerr = "$testtmp/$testname.err";
     my $test_rsl_fp = new IO::File("$testdatadir/$testrsl", '<');
     my $out_rsl_fp = new IO::File($additionalrslfile, '>');
+    my $rsl_list;
 
-    while(<$test_rsl_fp>)
-    {
-	$out_rsl_fp->print($_);
-    }
+    $rsl_list = join('', <$test_rsl_fp>);
+    $rsl_list =~ s/&//;
     $test_rsl_fp->close();
 
-    if($additional_rsl ne "")
+    $out_rsl_fp->print('&');
+
+    # need to put the RSL substitutions in the additional RSL
+    # before the main RSL clauses
+    if($additional_rsl ne '')
     {
-	$out_rsl_fp->print($additional_rsl);
+	$out_rsl_fp->print($additional_rsl . "\n");
     }
+    $out_rsl_fp->print($rsl_list);
+    
     $out_rsl_fp->close();
 
+    system("globusrun -s -r \"$contact\" -f $additionalrslfile");
 
-    system("globusrun -s -r \"$contact\" -f $additionalrslfile >$testout 2>$testerr");
+    $rc = $? >> 8;
 
-    $rc = $? >> 8 ||
-          File::Compare::compare("$testdatadir/$testname.out", $testout) ||
-	  File::Compare::compare("$testdatadir/$testname.err", $testerr);
+    if($rc != 0)
+    {
+	foreach(glob("$testdatadir/$testname.out.*"),
+		glob("$testdatadir/$testname.err.*"))
+	{
+	    my $compare_filename;
+
+	    if($_ =~ m/\.out\.[0-9]+$/)
+	    {
+		$compare_filename = "$testdatadir/$testname.out";
+	    }
+	    elsif($_ =~ m/\.err\.[0-9]+$/)
+	    {
+		$compare_filename = "$testdatadir/$testname.err";
+	    }
+	    if(File::Compare::compare($_, "$compare_filename") != 0)
+	    {
+		$rc = "comparison of $_ failed";
+		last;
+	    }
+	}
+    }
 
     ok("$testname:$additional_rsl:$rc", "$testname:$additional_rsl:0");
 }
 
 foreach(@test_cases)
 {
-    push(@tests, "test_rsl(\"$_\", \"\")");
-    push(@tests, "test_rsl(\"$_\", \"(save_state = yes)\")");
-    push(@tests, "test_rsl(\"$_\", \"(two_phase = 10)\")");
-}
-foreach(@todo_cases)
-{
-    push(@tests, "test_cases(\"$_\", \"\")");
-    push(@todo, scalar(@tests));
+    my $testtmprsl = "(rsl_substitution = "
+                   . "   (TEST_STDOUT \\\"$testtmp/$_.out\\\")"
+                   . "   (TEST_STDERR \\\"$testtmp/$_.err\\\")"
+		   . "   (TEST_HOST \\\"". hostname . "\\\")"
+	           . ")";
+    push(@tests, "test_rsl(\"$_\", \"$testtmprsl\")");
+    if(! $gridftp_server_installed)
+    {
+	push(@todo, scalar(@tests));
+    }
 }
 
 if(@ARGV)
@@ -125,6 +141,23 @@ sub make_tmpdir
 	}
     }
     return $tmpname;
+}
+
+sub check_gridftp
+{
+    my $query_handle;
+    my @query_output;
+
+    $query_handle = new IO::File(
+	$Globus::Core::Paths::sbindir
+	. '/gpt_query '
+	. 'globus_gridftp_server|');
+
+    $query_output = grep(/^globus_gridftp_server-.*_pgm(_static)??/,
+                         <$query_handle>);
+    $query_handle->close();
+
+    return ($query_output > 0);
 }
 
 END

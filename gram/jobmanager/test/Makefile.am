@@ -1,7 +1,7 @@
 include $(top_srcdir)/globus_automake_pre
 include $(top_srcdir)/globus_automake_pre_top
 
-SUBDIRS = pkgdata submit_test failure_test
+SUBDIRS = pkgdata submit_test stdio_test failure_test
 
 pkgtestdir = $(GLOBUS_LOCATION)/test/$(PACKAGE)
 

@@ -1,0 +1,5 @@
+&(executable	=	/bin/echo)
+ (arguments	=	hello)
+ (stdout	=	"gsiftp://" # $(TEST_HOST) # "/%2F" # $(TEST_STDOUT) # ".001")
+ (stderr	=	"gsiftp://" # $(TEST_HOST) # "/%2F" # $(TEST_STDOUT) # ".001")
+                        
