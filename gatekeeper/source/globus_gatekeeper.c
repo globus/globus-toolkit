@@ -1105,8 +1105,7 @@ static void doit()
     {
         notice(LOG_ERR, "ERROR: globus job manager is not defined via"
                         " -jm argument.");
-        failure("ERROR: gatekeeper misconfigured."
-                "  Globus site administration assistance required");
+        failure("ERROR: gatekeeper misconfigured");
     }
 
     job_manager_path = genfilename(gatekeeperhome, libexecdir, job_manager_exe);
@@ -1114,16 +1113,14 @@ static void doit()
     {
         notice2(LOG_ERR, "ERROR: Cannot stat globus job manager %s.",
                           job_manager_path);
-        failure("ERROR: gatekeeper misconfigured."
-                "  Globus site administration assistance required");
+        failure("ERROR: gatekeeper misconfigured");
     }
 
     if (!(statbuf.st_mode & 0111))
     {
         notice2(LOG_ERR, "ERROR: Cannot execute globus job manager %s.",
                           job_manager_path);
-        failure("ERROR: gatekeeper misconfigured."
-                "  Globus site administration assistance required");
+        failure("ERROR: gatekeeper misconfigured");
     }
 
     if (ok_to_send_errmsg)
