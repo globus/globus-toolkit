@@ -272,13 +272,30 @@ main(
                     "specified minutes must "
                     "be in the range 0-60");
             }
+            /* error on overflow */
+            
+            if(hours > (((time_t)(~0U>>1))/60-1))
+            {
+                args_error(
+                    arg_index, argp,
+                    "hours * 60 + minutes must be less than INT_MAX");
+            }
+            
             valid = (hours * 60) + minutes;
+
         }
         else if(strcmp(argp, "-hours") == 0)
         {
             int                           hours;
             args_verify_next(arg_index, argp, "integer argument missing");
             hours = atoi(argv[arg_index + 1]);
+            /* error on overflow */
+            if(hours > ((time_t)(~0U>>1))/60)
+            {
+                args_error(
+                    arg_index, argp,
+                    "hours * 60 must be less than INT_MAX");
+            }
             valid = hours * 60;
             arg_index++;
         }
