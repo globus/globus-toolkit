@@ -514,7 +514,8 @@ userauth_gssapi(Authctxt *authctxt)
 	authctxt->methoddata=(void *)gssctxt;
 		
 	packet_start(SSH2_MSG_USERAUTH_REQUEST);
-	packet_put_cstring(authctxt->server_user);
+        if(options.implicit) packet_put_cstring("");
+        else packet_put_cstring(authctxt->server_user);
 	packet_put_cstring(authctxt->service);
         packet_put_cstring(authctxt->method->name);
 

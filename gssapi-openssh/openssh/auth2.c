@@ -193,6 +193,28 @@ input_userauth_request(int type, u_int32_t seq, void *ctxt)
 	user = packet_get_string(NULL);
 	service = packet_get_string(NULL);
 	method = packet_get_string(NULL);
+
+        if(strcmp(method,"external-keyx") == 0 && strcmp(user,"") == 0) {
+                char *gridmapped_name = NULL;
+                struct passwd *pw = NULL;
+
+                gssapi_setup_env();
+                if(globus_gss_assist_gridmap(gssapi_client_name.value,
+                                     &gridmapped_name) == 0) {
+                        user = gridmapped_name;
+                        debug("I gridmapped and got %s", user);
+                        pw = getpwnam(user);
+                        if (pw && allowed_user(pw)) {
+                                authctxt->user = user;
+                                authctxt->pw = pwcopy(pw);
+                                authctxt->valid = 1;
+                        }
+                } else {
+                debug("I gridmapped and got null, reverting to %s", authctxt->user);
+                user = authctxt->user;
+                }
+        }
+
 	debug("userauth-request for user %s service %s method %s", user, service, method);
 	debug("attempt %d failures %d", authctxt->attempt, authctxt->failures);
 
