@@ -478,3 +478,14 @@ globus_i_gfs_ipc_data_destroy(
 {
     globus_i_gfs_data_handle_destroy(&data_handle->data);
 }
+
+void
+globus_i_gfs_ipc_kickoff_event(
+    globus_i_gfs_server_instance_t *    instance,
+    int                                 event_type)
+{
+    globus_i_gfs_data_kickoff_event(instance, event_type);
+    
+    return;
+}
+

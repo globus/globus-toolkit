@@ -9,6 +9,7 @@ typedef struct
     globus_xio_handle_t             xio_handle;
     char *                          remote_contact;
     char *                          rnfr_pathname;
+    globus_gridftp_server_operation_t op;
     
     union
     {
@@ -44,7 +45,7 @@ typedef struct
     /* XXX this shouldn't be passed from control->data*/
     globus_gridftp_server_control_op_t  control_op;
 
-    globus_gridftp_server_control_restart_t restart_marker;
+    globus_range_list_t                 range_list;
     globus_off_t                        partial_offset;
     globus_off_t                        partial_length;
             

@@ -20,7 +20,7 @@ globus_l_gfs_op_attr_init(
     
     attr->partial_offset = 0;
     attr->partial_length = -1;
-    attr->restart_marker = GLOBUS_NULL;
+    attr->range_list = GLOBUS_NULL;
     
     *u_attr = attr;
     return GLOBUS_SUCCESS;
@@ -43,7 +43,7 @@ globus_i_gfs_op_attr_copy(
 {
     out_attr->partial_offset = in_attr->partial_offset;
     out_attr->partial_length = in_attr->partial_length;
-    out_attr->restart_marker = in_attr->restart_marker;
+    out_attr->range_list = in_attr->range_list;
 }
 
 
@@ -187,6 +187,14 @@ globus_l_gfs_resource_request(
     globus_i_gfs_server_instance_t *    instance;
     GlobusGFSName(globus_l_gfs_resource_request);
     
+    instance = (globus_i_gfs_server_instance_t *)
+        globus_calloc(1, sizeof(globus_i_gfs_server_instance_t));
+    if(!instance)
+    {
+        result = GlobusGFSErrorMemory("instance");
+        goto error_malloc;
+    }    
+
     result = globus_i_gfs_ipc_resource_request(
         instance,
         path,
@@ -203,7 +211,7 @@ globus_l_gfs_resource_request(
     }
     
     return;
-
+error_malloc:
 error_ipc:     
     globus_gridftp_server_control_finished_resource(
         op, result, GLOBUS_NULL, 0);
@@ -385,6 +393,23 @@ error_ipc:
 
 static
 void
+globus_l_gfs_kickoff_event(
+    globus_gridftp_server_control_op_t      op,
+    int                                     event_type,
+    void *                                  user_arg)
+{
+    globus_i_gfs_server_instance_t *        instance;
+    
+    instance = (globus_i_gfs_server_instance_t *) user_arg;
+    
+    globus_i_gfs_ipc_kickoff_event(instance, event_type);
+    
+    return;
+}
+
+
+static
+void
 globus_l_gfs_ipc_event_cb(
     globus_i_gfs_server_instance_t *    instance,
     globus_i_gfs_event_t                type,
@@ -401,7 +426,9 @@ globus_l_gfs_ipc_event_cb(
         globus_gridftp_server_control_begin_transfer(
             op,
             GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_PERF | 
-            GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_RESTART);
+            GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_RESTART,
+            globus_l_gfs_kickoff_event,
+            instance);
         break;
       
       case GLOBUS_I_GFS_EVENT_DISCONNECTED:
@@ -436,16 +463,25 @@ globus_l_gfs_send_request(
     const char *                        local_target,
     const char *                        mod_name,
     const char *                        mod_parms,
-    globus_gridftp_server_control_restart_t restart_marker)
+    globus_off_t                        offset,
+    globus_range_list_t                 range_list)
 {
     globus_result_t                     result;
     globus_i_gfs_server_instance_t *    instance;
-    globus_i_gfs_op_attr_t *    op_attr;            
+    globus_i_gfs_op_attr_t *            op_attr;            
     globus_i_gfs_ipc_data_handle_t *    data;
     int                                 args;
     GlobusGFSName(globus_l_gfs_send_request);
     
     data = (globus_i_gfs_ipc_data_handle_t *) data_handle;
+    
+    instance = (globus_i_gfs_server_instance_t *)
+        globus_calloc(1, sizeof(globus_i_gfs_server_instance_t));
+    if(!instance)
+    {
+        result = GlobusGFSErrorMemory("instance");
+        goto error_malloc;
+    }    
 
     result = globus_l_gfs_op_attr_init(&op_attr);
     if(result != GLOBUS_SUCCESS)
@@ -466,7 +502,7 @@ globus_l_gfs_send_request(
         globus_assert(args == 2);
     } 
     
-    op_attr->restart_marker = restart_marker;
+    op_attr->range_list = range_list;
     
     result = globus_i_gfs_ipc_send_request(
         instance,
@@ -487,6 +523,7 @@ globus_l_gfs_send_request(
     
     return;
 
+error_malloc:
 error_ipc:
     globus_i_gfs_op_attr_destroy(op_attr);
 error_attr:
@@ -501,7 +538,8 @@ globus_l_gfs_recv_request(
     const char *                        local_target,
     const char *                        mod_name,
     const char *                        mod_parms,
-    globus_gridftp_server_control_restart_t restart_marker)
+    globus_off_t                        offset,
+    globus_range_list_t                 range_list)
 {
     globus_result_t                     result;
     globus_i_gfs_server_instance_t *    instance;
@@ -512,6 +550,14 @@ globus_l_gfs_recv_request(
     
     data = (globus_i_gfs_ipc_data_handle_t *) data_handle;
     
+    instance = (globus_i_gfs_server_instance_t *)
+        globus_calloc(1, sizeof(globus_i_gfs_server_instance_t));
+    if(!instance)
+    {
+        result = GlobusGFSErrorMemory("instance");
+        goto error_malloc;
+    }
+
     result = globus_l_gfs_op_attr_init(&op_attr);
     if(result != GLOBUS_SUCCESS)
     {
@@ -530,7 +576,7 @@ globus_l_gfs_recv_request(
         globus_assert(args == 1);
     }            
 
-    op_attr->restart_marker = restart_marker;
+    op_attr->range_list = range_list;
     op_attr->control_op = op;
 
     result = globus_i_gfs_ipc_recv_request(
@@ -552,6 +598,7 @@ globus_l_gfs_recv_request(
     
     return;
     
+error_malloc:    
 error_ipc:
     globus_i_gfs_op_attr_destroy(op_attr);
 error_attr:
@@ -894,7 +941,7 @@ globus_i_gfs_control_start(
     GlobusGFSName(globus_i_gfs_control_start);
     
     instance = (globus_i_gfs_server_instance_t *)
-        globus_malloc(sizeof(globus_i_gfs_server_instance_t));
+        globus_calloc(1, sizeof(globus_i_gfs_server_instance_t));
     if(!instance)
     {
         result = GlobusGFSErrorMemory("instance");

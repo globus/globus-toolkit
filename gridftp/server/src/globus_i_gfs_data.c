@@ -32,6 +32,9 @@ typedef struct globus_l_gfs_data_operation_s
     globus_i_gfs_op_attr_t *            op_attr;
     globus_i_gfs_cmd_attr_t *           cmd_attr;
     
+    globus_off_t                        recvd_bytes[1];
+    globus_range_list_t                 recvd_ranges;
+    
     globus_i_gfs_data_command_cb_t      command_callback;
     globus_i_gfs_data_resource_cb_t     resource_callback;
     globus_i_gfs_data_transfer_cb_t     transfer_callback;
@@ -60,7 +63,7 @@ globus_l_gfs_data_operation_init(
     GlobusGFSName(globus_l_gfs_operation_init);
     
     op = (globus_l_gfs_data_operation_t *) 
-        globus_malloc(sizeof(globus_l_gfs_data_operation_t));
+        globus_calloc(1, sizeof(globus_l_gfs_data_operation_t));
     if(!op)
     {
         result = GlobusGFSErrorMemory("op");
@@ -68,8 +71,12 @@ globus_l_gfs_data_operation_init(
     }
     
     op->instance = instance;
+    instance->op = op;
     globus_mutex_init(&op->lock, GLOBUS_NULL);
     op->op_attr = GLOBUS_NULL;
+    op->recvd_ranges = GLOBUS_NULL;
+    globus_range_list_init(&op->recvd_ranges);
+    op->recvd_bytes[0] = 0;
     
     *u_op = op;
     return GLOBUS_SUCCESS;
@@ -86,6 +93,10 @@ globus_l_gfs_data_operation_destroy(
     if(op->op_attr)
     {
        /* globus_i_gfs_op_attr_destroy(op->op_attr); */
+    }
+    if(op->recvd_ranges)
+    {
+        globus_range_list_destroy(op->recvd_ranges);
     }
     globus_mutex_destroy(&op->lock);
     globus_free(op);
@@ -249,7 +260,7 @@ globus_gridftp_server_finished_resource(
         bounce_info = (globus_l_gfs_data_resource_bounce_t *)
             globus_malloc(
                 sizeof(globus_l_gfs_data_resource_bounce_t) + 
-                (sizeof(globus_gridftp_server_stat_t) * (stat_count - 1)));
+                sizeof(globus_gridftp_server_stat_t) * stat_count);
         if(!bounce_info)
         {
             result = GlobusGFSErrorMemory("bounce_info");
@@ -1494,11 +1505,10 @@ globus_gridftp_server_update_bytes_written(
 {
     GlobusGFSName(globus_gridftp_server_update_bytes_written);
 
-    globus_gridftp_server_control_update_bytes(
-       op->op_attr->control_op,
-       stripe_ndx,
-       offset,
-       length);
+    op->recvd_bytes[stripe_ndx] += length;
+    globus_range_list_insert(op->recvd_ranges, offset, length);
+
+    return;
 }
 
 void
@@ -1541,21 +1551,26 @@ globus_gridftp_server_get_partial_offset(
 
 
 void
-globus_gridftp_server_get_restart_offset(
+globus_gridftp_server_get_next_range(
     globus_gridftp_server_operation_t   op,
     globus_off_t *                      offset,
-    globus_off_t *                      length)
+    globus_off_t *                      length,
+    globus_off_t *                      dest_offset)
 {
     GlobusGFSName(globus_gridftp_server_get_restart_offset);
-    globus_off_t                        tmp_off;
-    globus_off_t                        tmp_len;
+    globus_off_t                        tmp_off = 0;
+    globus_off_t                        tmp_len = -1;
     int                                 rc;
     
-    rc = globus_gridftp_server_control_restart_get(
-        op->op_attr->restart_marker,
-        &tmp_off,
-        &tmp_len);
-
+    if(globus_range_list_size(op->op_attr->range_list))
+    {
+        rc = globus_range_list_at(
+            op->op_attr->range_list,
+            0,
+            &tmp_off,
+            &tmp_len);
+    }
+    
     if(offset)
     {
         if(!rc)
@@ -1564,12 +1579,59 @@ globus_gridftp_server_get_restart_offset(
         }
         else
         {
-             *offset = -1;
+             *offset = 0;
         }
     }
     
     if(length)
     {
-        *length = tmp_len;
+        if(!rc)
+        {
+             *length = tmp_len;
+        }
+        else
+        {
+             *length = -1;
+        }
     }
+
+    if(dest_offset)
+    {
+        if(!rc)
+        {
+             *dest_offset = tmp_off;
+        }
+        else
+        {
+             *dest_offset = 0;
+        }
+    }
+    
+    return; 
 }
+
+void
+globus_i_gfs_data_kickoff_event(
+    globus_i_gfs_server_instance_t *    instance,
+    int                                 event_type)
+{
+    switch(event_type)
+    {
+      case GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_PERF:
+        globus_gridftp_server_control_event_send_perf(
+           instance->op->op_attr->control_op,
+           0,
+           instance->op->recvd_bytes[0]);
+        break;
+      case GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_RESTART:
+        globus_gridftp_server_control_event_send_restart(
+           instance->op->op_attr->control_op,
+           instance->op->recvd_ranges);
+        break;
+        
+      default:
+        break;
+    }   
+       
+}
+

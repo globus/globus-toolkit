@@ -191,11 +191,16 @@ globus_l_gfs_sigchld(
         printf("SIGCHLD handled but waitpid has error: %d\n", errno);
     }    
 
-    if (WIFEXITED(child_status))
+    if(WIFEXITED(child_status))
     {
         child_rc = WEXITSTATUS(child_status);
         printf("Child process %d ended with rc = %d\n", child_pid, child_rc);
     }
+    else if(WIFSIGNALED(child_status))
+    {
+        printf("Child process %d killed by signal %d\n", 
+            child_pid, WTERMSIG(child_rc));
+    }        
 }
 
 
@@ -223,8 +228,9 @@ globus_l_gfs_server_accept_cb(
             if(globus_l_gfs_xio_server)
             {
                 globus_xio_server_close(globus_l_gfs_xio_server);
+                globus_l_gfs_xio_server = GLOBUS_NULL;
             }
-
+            
             result = globus_l_gfs_open_new_server(handle);
             globus_l_gfs_check_log_and_die(result);
 
