@@ -293,9 +293,6 @@ globus_gram_job_manager_state_machine(
                                 (void *) "HOME",
                                 (void *) request->home);
 
-        globus_symboltable_insert(&request->symbol_table,
-                                (void *) "GLOBUS_GRAM_JOB_CONTACT",
-                                (void *) request->job_contact);
         if (request->logname)
             globus_symboltable_insert(&request->symbol_table,
                                 (void *) "LOGNAME",
@@ -331,6 +328,35 @@ globus_gram_job_manager_state_machine(
 		GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
 	    break;
 	}
+	
+	/* Need to do this before unique id is set */
+	rc = globus_gram_job_manager_rsl_eval_one_attribute(
+		request,
+		GLOBUS_GRAM_PROTOCOL_RESTART_PARAM,
+		&request->jm_restart);
+
+	if(rc != GLOBUS_SUCCESS)
+	{
+	    request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
+	    request->jobmanager_state =
+		GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
+	    break;
+	}
+
+	/* This sets request->job_contact and request->uniq_id */
+	rc = globus_l_gram_job_manager_set_unique_id(request);
+
+	if(rc != GLOBUS_SUCCESS)
+	{
+	    request->failure_code = rc;
+	    request->jobmanager_state =
+		GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
+	    break;
+	}
+        globus_symboltable_insert(&request->symbol_table,
+                                (void *) "GLOBUS_GRAM_JOB_CONTACT",
+                                (void *) request->job_contact);
+
 	if(request->scratch_dir_base)
 	{
 	    globus_l_gram_job_manager_state_eval_scratch_dir_base(request);
@@ -366,37 +392,32 @@ globus_gram_job_manager_state_machine(
 		                    &request->cache_handle);
 	if(rc != GLOBUS_SUCCESS)
 	{
-	    request->failure_code = rc;
+	    if(request->cache_location)
+	    {
+		request->failure_code =
+		    GLOBUS_GRAM_PROTOCOL_ERROR_RSL_CACHE;
+	    }
+	    else
+	    {
+		request->failure_code =
+		    GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_CACHE;
+	    }
 	    request->jobmanager_state = 
 	        GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
 	    break;
 	}
-	
-	/* Need to do this before unique id is set */
-	rc = globus_gram_job_manager_rsl_eval_one_attribute(
-		request,
-		GLOBUS_GRAM_PROTOCOL_RESTART_PARAM,
-		&request->jm_restart);
-
-	if(rc != GLOBUS_SUCCESS)
+	if(request->cache_location)
 	{
-	    request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
-	    request->jobmanager_state =
-		GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
-	    break;
+	    globus_gram_job_manager_rsl_env_add(
+		request->rsl,
+		"GLOBUS_GASS_CACHE_DEFAULT",
+		request->cache_location);
+
+	    globus_libc_setenv(
+		"GLOBUS_GASS_CACHE_DEFAULT",
+		request->cache_location,
+		GLOBUS_TRUE);
 	}
-
-	/* This sets request->job_contact and request->uniq_id */
-	rc = globus_l_gram_job_manager_set_unique_id(request);
-
-	if(rc != GLOBUS_SUCCESS)
-	{
-	    request->failure_code = rc;
-	    request->jobmanager_state =
-		GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
-	    break;
-	}
-
 	globus_gram_job_manager_reporting_file_set(request);
 
 	globus_libc_setenv("GLOBUS_GRAM_JOB_CONTACT",
@@ -640,20 +661,36 @@ globus_gram_job_manager_state_machine(
 	    break;
 	}
 	
+	request->jobmanager_state =
+	    GLOBUS_GRAM_JOB_MANAGER_STATE_REMOTE_IO_FILE_CREATE;
+
 	if(request->remote_io_url)
 	{
-	    rc = globus_gram_job_manager_remote_io_file_create(request);
+	    rc = globus_gram_job_manager_script_remote_io_file_create(request);
 
-	    if(rc != GLOBUS_SUCCESS)
+	    if(rc == GLOBUS_SUCCESS)
+	    {
+		event_registered = GLOBUS_TRUE;
+	    }
+	    else
 	    {
 		request->failure_code = rc;
 		request->jobmanager_state =
 		    GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
-		break;
 	    }
-		
 	}
+	break;
 
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_REMOTE_IO_FILE_CREATE:
+	if(request->remote_io_url != NULL &&
+	   request->remote_io_url_file == NULL)
+	{
+	    request->failure_code = 
+		GLOBUS_GRAM_PROTOCOL_ERROR_RSL_REMOTE_IO_URL;
+	    request->jobmanager_state = 
+		GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
+	    break;
+	}
 	/*
 	 * Append some values from the configuration file to the
 	 * job's environment
@@ -727,23 +764,39 @@ globus_gram_job_manager_state_machine(
 	break;
 
       case GLOBUS_GRAM_JOB_MANAGER_STATE_OPEN_OUTPUT:
+	request->jobmanager_state =
+	    GLOBUS_GRAM_JOB_MANAGER_STATE_PROXY_RELOCATE;
+
         if((!request->kerberos) &&
 	    request->response_context != GSS_C_NO_CONTEXT &&
 	    globus_gram_job_manager_gsi_used(request))
 	{
 	    globus_gram_job_manager_request_log(request,
 				  "JM: GSSAPI type is GSI\n");
-	    request->x509_user_proxy =
-		globus_gram_job_manager_gsi_proxy_relocate(request);
-	    if(!request->x509_user_proxy)
+
+	    rc = globus_gram_job_manager_script_proxy_relocate(request);
+
+	    if(rc == GLOBUS_SUCCESS)
 	    {
-		request->failure_code = 
-		    GLOBUS_GRAM_PROTOCOL_ERROR_USER_PROXY_NOT_FOUND;
-		request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
-		request->jobmanager_state =
-		    GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
-		break;
+		event_registered = GLOBUS_TRUE;
 	    }
+	    else
+	    {
+		request->jobmanager_state = 
+		    GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
+		request->failure_code = rc;
+	    }
+	}
+	break;
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_PROXY_RELOCATE:
+	if(request->x509_user_proxy)
+	{
+	    /*
+	     * The proxy timeout callback is registered to happen shortly
+	     * (5 minutes) before the job manager's proxy will expire. We
+	     * do this to save state and exit the job manager so another
+	     * can be restarted in it's place.
+	     */
 	    globus_gram_job_manager_request_log(request,
 	                          "JM: Relocated Proxy to %s\n",
 				  request->x509_user_proxy);
@@ -755,16 +808,6 @@ globus_gram_job_manager_state_machine(
 	        request->rsl,
 		"X509_USER_PROXY",
 		request->x509_user_proxy);
-	}
-
-	if(request->x509_user_proxy)
-	{
-	    /*
-	     * The proxy timeout callback is registered to happen shortly
-	     * (5 minutes) before the job manager's proxy will expire. We
-	     * do this to save state and exit the job manager so another
-	     * can be restarted in it's place.
-	     */
 	    rc = globus_gram_job_manager_register_proxy_timeout(request);
 	}
 
@@ -1321,16 +1364,47 @@ globus_gram_job_manager_state_machine(
       case GLOBUS_GRAM_JOB_MANAGER_STATE_SCRATCH_CLEAN_UP:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_SCRATCH_CLEAN_UP:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_SCRATCH_CLEAN_UP:
-	globus_gram_job_manager_clean_cache(request);
-
 	if(request->jobmanager_state ==
 		GLOBUS_GRAM_JOB_MANAGER_STATE_SCRATCH_CLEAN_UP)
+	{
+	    request->jobmanager_state =
+		GLOBUS_GRAM_JOB_MANAGER_STATE_CACHE_CLEAN_UP;
+	}
+	else if(request->jobmanager_state ==
+		GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_SCRATCH_CLEAN_UP)
+	{
+	    request->jobmanager_state =
+		GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_CACHE_CLEAN_UP;
+	}
+	else
+	{
+	    request->jobmanager_state =
+		GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_CACHE_CLEAN_UP;
+	}
+	rc = globus_gram_job_manager_script_cache_cleanup(request);
+
+	if(rc == GLOBUS_SUCCESS)
+	{
+	    event_registered = GLOBUS_TRUE;
+	}
+	else if(request->jobmanager_state == 
+		GLOBUS_GRAM_JOB_MANAGER_STATE_CACHE_CLEAN_UP)
+	{
+	    request->jobmanager_state =
+		GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_CACHE_CLEAN_UP;
+	}
+	break;
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_CACHE_CLEAN_UP:
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_CACHE_CLEAN_UP:
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_CACHE_CLEAN_UP:
+	if(request->jobmanager_state ==
+		GLOBUS_GRAM_JOB_MANAGER_STATE_CACHE_CLEAN_UP)
 	{
 	    request->jobmanager_state =
 		GLOBUS_GRAM_JOB_MANAGER_STATE_DONE;
 	}
 	else if(request->jobmanager_state ==
-		GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_SCRATCH_CLEAN_UP)
+		GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_CACHE_CLEAN_UP)
 	{
 	    request->jobmanager_state =
 		GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_RESPONSE;
@@ -1870,6 +1944,7 @@ globus_l_gram_job_manager_state_string(
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_PRE_MAKE_SCRATCHDIR)
 	STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_READ_STATE_FILE)
 	STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_MAKE_SCRATCHDIR)
+        STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_REMOTE_IO_FILE_CREATE)
 	STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE)
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_COMMITTED)
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_STAGE_IN)
@@ -1877,18 +1952,21 @@ globus_l_gram_job_manager_state_string(
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_POLL1)
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_POLL2)
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_OPEN_OUTPUT)
+        STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_PROXY_RELOCATE)
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_CLOSE_OUTPUT)
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_STAGE_OUT)
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_END)
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_END_COMMITTED)
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_FILE_CLEAN_UP)
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_SCRATCH_CLEAN_UP)
+        STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_CACHE_CLEAN_UP)
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_DONE)
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED)
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_CLOSE_OUTPUT)
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_PRE_FILE_CLEAN_UP)
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_FILE_CLEAN_UP)
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_SCRATCH_CLEAN_UP)
+        STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_CACHE_CLEAN_UP)
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_RESPONSE)
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED)
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_CLOSE_OUTPUT)
@@ -1896,6 +1974,7 @@ globus_l_gram_job_manager_state_string(
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE_COMMITTED)
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_FILE_CLEAN_UP)
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_SCRATCH_CLEAN_UP)
+        STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_CACHE_CLEAN_UP)
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_DONE)
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_STOP)
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_CLOSE_OUTPUT)

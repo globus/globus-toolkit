@@ -17,12 +17,10 @@ validation_DATA = globus-gram-job-manager.rvf
 libglobus_gram_job_manager___GLOBUS_FLAVOR_NAME__la_SOURCES = \
 	globus_gram_job_manager.h \
 	globus_gram_job_manager_validation.h \
-	globus_gram_job_manager_cleanup.c \
 	globus_gram_job_manager_contact.c \
 	globus_gram_job_manager_gsi.c \
 	globus_gram_job_manager_output.c \
 	globus_gram_job_manager_query.c \
-	globus_gram_job_manager_remote_io_file.c \
 	globus_gram_job_manager_reporting_file.c \
 	globus_gram_job_manager_request.c \
 	globus_gram_job_manager_rsl.c \

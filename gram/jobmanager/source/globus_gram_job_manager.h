@@ -35,7 +35,9 @@ typedef enum
     GLOBUS_GRAM_JOB_MANAGER_STATE_READ_STATE_FILE,
     GLOBUS_GRAM_JOB_MANAGER_STATE_PRE_MAKE_SCRATCHDIR,
     GLOBUS_GRAM_JOB_MANAGER_STATE_MAKE_SCRATCHDIR,
+    GLOBUS_GRAM_JOB_MANAGER_STATE_REMOTE_IO_FILE_CREATE,
     GLOBUS_GRAM_JOB_MANAGER_STATE_OPEN_OUTPUT,
+    GLOBUS_GRAM_JOB_MANAGER_STATE_PROXY_RELOCATE,
     GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE,
     GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_COMMIT_EXTEND,
     GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_COMMITTED,
@@ -50,12 +52,14 @@ typedef enum
     GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_END_COMMITTED,
     GLOBUS_GRAM_JOB_MANAGER_STATE_FILE_CLEAN_UP,
     GLOBUS_GRAM_JOB_MANAGER_STATE_SCRATCH_CLEAN_UP,
+    GLOBUS_GRAM_JOB_MANAGER_STATE_CACHE_CLEAN_UP,
     GLOBUS_GRAM_JOB_MANAGER_STATE_DONE,
     GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED,
     GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_CLOSE_OUTPUT,
     GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_PRE_FILE_CLEAN_UP,
     GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_FILE_CLEAN_UP,
     GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_SCRATCH_CLEAN_UP,
+    GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_CACHE_CLEAN_UP,
     GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_RESPONSE,
     GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED,
     GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_CLOSE_OUTPUT,
@@ -64,6 +68,7 @@ typedef enum
     GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE_COMMITTED,
     GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_FILE_CLEAN_UP,
     GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_SCRATCH_CLEAN_UP,
+    GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_CACHE_CLEAN_UP,
     GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_DONE,
     GLOBUS_GRAM_JOB_MANAGER_STATE_STOP,
     GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_CLOSE_OUTPUT,
@@ -388,12 +393,6 @@ globus_gram_job_manager_request_log(
     const char *			format,
     ...);
 
-/* globus_gram_job_manager_remote_io_file.c */
-
-int
-globus_gram_job_manager_remote_io_file_create(
-    globus_gram_jobmanager_request_t *	request);
-
 /* globus_gram_job_manager_reporting_file.c */
 int
 globus_gram_job_manager_reporting_file_set(
@@ -523,10 +522,6 @@ globus_gram_job_manager_import_sec_context(
 
 globus_bool_t
 globus_gram_job_manager_gsi_used(
-    globus_gram_jobmanager_request_t *	request);
-
-char *
-globus_gram_job_manager_gsi_proxy_relocate(
     globus_gram_jobmanager_request_t *	request);
 
 int
@@ -680,9 +675,16 @@ globus_gram_job_manager_script_cancel(
     globus_gram_jobmanager_request_t *	request,
     globus_gram_job_manager_query_t *	query);
 
-/* globus_gram_job_manager_cleanup.c */
 int
-globus_gram_job_manager_clean_cache(
+globus_gram_job_manager_script_cache_cleanup(
+    globus_gram_jobmanager_request_t *	request);
+
+int 
+globus_gram_job_manager_script_remote_io_file_create(
+    globus_gram_jobmanager_request_t *	request);
+
+int 
+globus_gram_job_manager_script_proxy_relocate(
     globus_gram_jobmanager_request_t *	request);
 
 EXTERN_C_END

@@ -15,6 +15,7 @@ use Globus::Core::Paths;
 use POSIX;
 use IO::File;
 use File::Path;
+use File::Copy;
 
 package Globus::GRAM::JobManager;
 
@@ -39,6 +40,7 @@ Globus::GRAM::JobManager - Base class for all Job Manager scripts
  $hashref = $manager->stage_out();
  $hashref = $manager->cache_cleanup();
  $hashref = $manager->remote_io_file_create();
+ $hashref = $manager->proxy_relocate();
 
 =head1 DESCRIPTION
 
@@ -584,6 +586,58 @@ sub remote_io_file_create
     }
 
     return { REMOTE_IO_FILE => $result };
+}
+
+=item $manager->proxy_relocate()
+
+Relocate the delegated proxy into the GASS cache.
+
+=cut
+
+sub proxy_relocate
+{
+    my $self = shift;
+    my $description = $self->{JobDescription};
+    my $cache_pgm = "$Globus::Core::Paths::bindir/globus-gass-cache";
+    my $tag = $description->cache_tag() or $ENV{GLOBUS_GRAM_JOB_CONTACT};
+    my $filename = "${tag}x509_user_proxy";
+    my $fh;
+    my $path = $ENV{X509_USER_PROXY};
+    my $local_name;
+    my $mode = 0600;
+
+    if($path eq "")
+    {
+	return {};
+    }
+
+    chomp($local_name = `$cache_pgm -query $filename 2>/dev/null`);
+    if($local_name ne "")
+    {
+	# Already have a proxy in cache, need to replace it
+	copy($path, $local_name);
+    }
+    else
+    {
+	system("$cache_pgm -add -t $tag -n $filename file:$path >/dev/null");
+    }
+
+    if($? != 0)
+    {
+	return Globus::GRAM::Error::OPENING_CACHE_USER_PROXY;
+    }
+
+    chomp($local_name = `$cache_pgm -query $filename`);
+
+    if($? != 0 || $local_name eq "")
+    {
+	return Globus::GRAM::Error::OPENING_CACHE_USER_PROXY;
+    }
+
+    unlink($path);
+    chmod $mode, $local_name;
+
+    return { X509_USER_PROXY => $local_name };
 }
 
 1;

@@ -101,154 +101,6 @@ globus_gram_job_manager_gsi_used(
 }
 /* globus_l_gram_job_manager_gsi_used() */
 
-char *
-globus_gram_job_manager_gsi_proxy_relocate(
-    globus_gram_jobmanager_request_t *	request)
-{
-    int					rc;
-    int					proxy_fd, new_proxy_fd;
-    char				buf[512];
-    char *				user_proxy_path;
-    char *				cache_user_proxy_filename;
-    char *				unique_file_name;
-    unsigned long			timestamp;
-
-    globus_gram_job_manager_request_log( request,
-          "JM: Relocating user proxy file to the gass cache\n");
-
-    user_proxy_path = (char *) getenv("X509_USER_PROXY");
-    if (!user_proxy_path)
-    {
-        return(GLOBUS_NULL);
-    }
-
-    unique_file_name = globus_libc_malloc(strlen(request->cache_tag) +
-                                    strlen("x509_user_proxy") + 2);
-
-    globus_libc_sprintf(unique_file_name,
-                        "%s/%s",
-                        request->cache_tag,
-                        "x509_user_proxy");
-
-    rc = globus_gass_cache_add(&request->cache_handle,
-                               unique_file_name,
-                               request->cache_tag,
-                               GLOBUS_TRUE,
-                               &timestamp,
-                               &cache_user_proxy_filename);
-
-    if ( rc == GLOBUS_GASS_CACHE_ADD_EXISTS ||
-         rc == GLOBUS_GASS_CACHE_ADD_NEW )
-    {
-
-	char *tmp_file_name =
-	    globus_libc_malloc(strlen(cache_user_proxy_filename)+5);
-
-	sprintf(tmp_file_name, "%s.tmp", cache_user_proxy_filename);
-
-        if ((proxy_fd = open(user_proxy_path, O_RDONLY)) < 0)
-        {
-            globus_gram_job_manager_request_log( request,
-                "JM: Unable to open (source) user proxy file %s\n",
-                user_proxy_path);
-            globus_libc_free(unique_file_name);
-	    globus_libc_free(tmp_file_name);
-            request->failure_code =
-		GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_USER_PROXY;
-            return(GLOBUS_NULL);
-        }
-
-        if ((new_proxy_fd = open(tmp_file_name,
-                                 O_CREAT|O_WRONLY|O_TRUNC,
-				 0600)) < 0)
-        {
-            globus_gram_job_manager_request_log( request,
-                "JM: Unable to open temp cache file for the user proxy %s\n",
-                tmp_file_name);
-            globus_libc_free(unique_file_name);
-	    globus_libc_free(tmp_file_name);
-            request->failure_code =
-                  GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_CACHE_USER_PROXY;
-            return(GLOBUS_NULL);
-        }
-
-        globus_gram_job_manager_request_log( request,
-                "JM: Copying user proxy file from --> %s\n",
-                user_proxy_path);
-        globus_gram_job_manager_request_log( request,
-                "JM:                         to   --> %s\n",
-                cache_user_proxy_filename);
-
-        while((rc = read(proxy_fd, buf, sizeof(buf))) > 0)
-        {
-             write(new_proxy_fd, buf, rc);
-        }
-
-        close(proxy_fd);
-        close(new_proxy_fd);
-
-	chmod(cache_user_proxy_filename, 0600);
-
-	if (rename( tmp_file_name, cache_user_proxy_filename ) < 0)
-	{
-	    globus_gram_job_manager_request_log( request,
-		    "JM: Unable rename temp cache file for user proxy %s\n",
-		    cache_user_proxy_filename);
-	    globus_libc_free(unique_file_name);
-	    globus_libc_free(tmp_file_name);
-	    request->failure_code =
-		GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_CACHE_USER_PROXY;
-	    return(GLOBUS_NULL);
-	}
-
-	chmod(cache_user_proxy_filename, 0400);
-
-	globus_libc_free(tmp_file_name);
-
-        rc = globus_gass_cache_add_done(&request->cache_handle,
-                                        unique_file_name,
-                                        request->cache_tag,
-                                        timestamp);
-        if(rc != GLOBUS_SUCCESS)
-        {
-	    globus_gram_job_manager_request_log(
-		    request,
-		    "JM: globus_gass_cache_add_done failed for user proxy file --> %s\n",
-		    user_proxy_path);
-
-            if (remove(user_proxy_path) != 0)
-            {
-                globus_gram_job_manager_request_log( request,
-                  "JM: Cannot remove user proxy file %s\n",user_proxy_path);
-            }
-            globus_libc_free(unique_file_name);
-            return(GLOBUS_NULL);
-        }
-    }
-    else
-    {
-	globus_gram_job_manager_request_log( request,
-		       "JM: Cannot get a cache entry for user proxy file %s : %s\n",
-		       unique_file_name, globus_gass_cache_error_string(rc));
-        if (remove(user_proxy_path) != 0)
-        {
-            globus_gram_job_manager_request_log( request,
-                "JM: Cannot remove user proxy file %s\n",user_proxy_path);
-        }
-        globus_libc_free(unique_file_name);
-        return(GLOBUS_NULL);
-    }
-
-    if (remove(user_proxy_path) != 0)
-    {
-        globus_gram_job_manager_request_log( request,
-            "JM: Cannot remove user proxy file %s\n",user_proxy_path);
-    }
-
-    return(cache_user_proxy_filename);
-}
-/* globus_gram_job_manager_gsi_proxy_relocate() */
-
 /**
  * Register function to be called before proxy expires
  *
@@ -346,7 +198,9 @@ globus_l_gram_job_manager_proxy_expiration(
       case GLOBUS_GRAM_JOB_MANAGER_STATE_READ_STATE_FILE:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_PRE_MAKE_SCRATCHDIR:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_MAKE_SCRATCHDIR:
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_REMOTE_IO_FILE_CREATE:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_OPEN_OUTPUT:
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_PROXY_RELOCATE:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_COMMIT_EXTEND:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_COMMITTED:
@@ -447,12 +301,26 @@ globus_l_gram_job_manager_proxy_expiration(
 	}
 	break;
 
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_CACHE_CLEAN_UP:
+        if(request->save_state)
+	{
+	    request->jobmanager_state =
+		GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_CLOSE_OUTPUT;
+	}
+	else 
+	{
+	    request->jobmanager_state =
+		GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_CACHE_CLEAN_UP;
+	}
+	break;
+
       case GLOBUS_GRAM_JOB_MANAGER_STATE_DONE:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_CLOSE_OUTPUT:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_PRE_FILE_CLEAN_UP:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_FILE_CLEAN_UP:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_SCRATCH_CLEAN_UP:
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_CACHE_CLEAN_UP:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED_RESPONSE:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_CLOSE_OUTPUT:
@@ -461,6 +329,7 @@ globus_l_gram_job_manager_proxy_expiration(
       case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE_COMMITTED:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_FILE_CLEAN_UP:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_SCRATCH_CLEAN_UP:
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_CACHE_CLEAN_UP:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_DONE:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_STOP:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_CLOSE_OUTPUT:
