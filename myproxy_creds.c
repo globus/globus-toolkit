@@ -8,13 +8,13 @@
 
 #include "myproxy.h"
 #include "myproxy_creds.h"
+#include "myproxy_log.h"
 
 #include "myproxy_server.h"
 
 #include "verror.h"
 #include "string_funcs.h"
-
-#include "sslutil.h"
+#include "ssl_utils.h"
 
 #include <stdio.h>
 #include <errno.h>
@@ -570,7 +570,6 @@ read_data_file(struct myproxy_creds *creds,
     int done = 0;
     int line_number = 0;
     int return_code = -1;
-    int num_recs,i;
 
     assert(creds != NULL);
     assert(datafile_path != NULL);
@@ -843,7 +842,6 @@ myproxy_creds_retrieve(struct myproxy_creds *creds)
     char data_path[MAXPATHLEN];
     struct myproxy_creds retrieved_creds = {0}; /* initialize with 0s */
     int return_code = -1;
-    char *tmp1=NULL;
     
     if ((creds == NULL) ||
         (creds->username == NULL) ||
@@ -1052,7 +1050,6 @@ myproxy_creds_delete(const struct myproxy_creds *creds)
     char data_path[MAXPATHLEN];
     struct myproxy_creds tmp_creds = {0}; /* initialize with 0s */
     int return_code = -1;
-        char *tmp1=NULL;
     
     if ((creds == NULL) ||
         (creds->username == NULL))
@@ -1133,7 +1130,7 @@ int read_from_directory (struct myproxy_creds *creds, myproxy_response_t *respon
     for (i = 0; i < count; i ++)
     {
 	char fullpath[MAXPATHLEN];
-	char *creds_path, *p, dstr[50];
+	char *p;
 	time_t tmp_time, end_time;
 
 	fullpath[0] = '\0';
@@ -1208,7 +1205,6 @@ myproxy_creds_info(struct myproxy_creds *creds, myproxy_response_t *response)
     char creds_path[MAXPATHLEN];
     char data_path[MAXPATHLEN];
     int return_code = -1;
-    time_t end_time;
 
     if ((creds == NULL) || (creds->username == NULL)) {
        verror_put_errno(EINVAL);
