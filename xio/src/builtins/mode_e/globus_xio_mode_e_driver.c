@@ -1050,6 +1050,7 @@ globus_l_xio_mode_e_server_destroy(
     --handle->ref_count;
     if (handle->ref_count == 0)
     {
+        globus_mutex_unlock(&handle->mutex);    
         globus_l_xio_mode_e_handle_destroy(handle);
     }
     else
@@ -1102,6 +1103,7 @@ globus_l_xio_mode_e_link_destroy(
     --handle->ref_count;
     if (handle->ref_count == 0)
     {
+        globus_mutex_unlock(&handle->mutex);    
         globus_l_xio_mode_e_handle_destroy(handle);
     }
     else
@@ -1512,6 +1514,7 @@ error:
     globus_xio_attr_destroy(handle->attr->xio_attr);
     if (--handle->ref_count == 0)
     {
+        globus_mutex_unlock(&handle->mutex);    
         globus_l_xio_mode_e_handle_destroy(handle);
     }
     else
@@ -1688,6 +1691,7 @@ globus_l_xio_mode_e_server_open_cb(
 error:
     if (--handle->ref_count == 0)
     {
+        globus_mutex_unlock(&handle->mutex);    
         globus_l_xio_mode_e_handle_destroy(handle);
     }
     else
@@ -1870,13 +1874,13 @@ error_register_open:
 error_operation_canceled:
     globus_mutex_unlock(&handle->mutex);
     globus_xio_operation_disable_cancel(op);
-error_cancel_enable:
-    globus_memory_push_node(&handle->requestor_memory, (void*)requestor);
-error_hashtable_init:
     if (destroy)
     {
         globus_l_xio_mode_e_handle_destroy(handle);
     }
+error_cancel_enable:
+    globus_memory_push_node(&handle->requestor_memory, (void*)requestor);
+error_hashtable_init:
     GlobusXIOModeEDebugExitWithError();
     return result;
 }
