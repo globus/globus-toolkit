@@ -282,8 +282,12 @@ for file in gridmap services.conf gatekeeper.conf jobmanager.conf gatekeeper.log
 done
 
 subject=`${bindir}/grid-proxy-info -subject|sed 's!/CN=proxy!!g'`
-user=`${GLOBUS_SH_WHOAMI-whoami}`
 
+if test -z "${GLOBUS_SH_WHOAMI}"; then
+    user=$USER
+else
+    user=`${GLOBUS_SH_WHOAMI}`
+fi
     ${GLOBUS_SH_CAT-cat} > ${scratch}/gridmap <<EOF
 "${subject}" ${user}
 EOF
