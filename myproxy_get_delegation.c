@@ -69,7 +69,7 @@ static int copy_file(const char *source,
 		     const mode_t mode);
 
 /* location of delegated proxy */
-char *outputfile;
+char *outputfile = NULL;
 
 int
 main(int argc, char *argv[]) 
