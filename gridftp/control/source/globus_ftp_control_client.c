@@ -1164,12 +1164,12 @@ globus_l_ftp_control_end_of_reply(
                 return -1;
             }
             
-            response->response_length++;
-            response->response_buffer_size= response->response_length;
-            
             memmove(&response->response_buffer[found + 1],
                     &response->response_buffer[found],
                     response->response_length-found);
+
+            response->response_length++;
+            response->response_buffer_size = response->response_length;
         }
 
         /* get the ftp response code */
