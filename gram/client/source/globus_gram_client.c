@@ -242,17 +242,31 @@ Parameters:
 Returns:
 ******************************************************************************/
 int 
-gram_init(int argc, char ** argv)
+gram_init(int * argc, char *** argv)
 {
     int rc;
     int i;
 
     /*
+     * Initialize nexus
+     */
+    rc = nexus_init(argc,
+		    argv,
+		    "NEXUS_ARGS",
+		    "nx",
+		    NULL);
+    
+    if (rc != NEXUS_SUCCESS && rc != NEXUS_ERROR_ALREADY_INITIALIZED)
+    {
+	return(rc);
+    }
+		    
+    /*
      * Parse the command line arguments
      */
-    for (i = 1; i < argc; i++)
+    for (i = 1; i < *argc; i++)
     {
-        if (strcmp(argv[i], "-debug") == 0)
+        if (strcmp((*argv)[i], "-debug") == 0)
         {
             print_flag = 1;
             notice("debug messages will be printed.");
@@ -277,9 +291,10 @@ Description:
 Parameters:
 Returns:
 ******************************************************************************/
+int
 gram_shutdown()
 {
-    return (0);
+    return (nexus_shutdown());
 }
 
 /******************************************************************************

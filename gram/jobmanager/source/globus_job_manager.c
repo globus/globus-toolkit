@@ -149,7 +149,6 @@ main(int argc,
     nexus_byte_t           bformat;
     nexus_byte_t           buffer[GRAM_MAX_MSG_SIZE];
     nexus_buffer_t         reply_buffer;
-    nexus_node_t *         nodes;
     nexus_startpoint_t     reply_sp;
     gram_specification_t * description_tree;
 
@@ -176,18 +175,17 @@ main(int argc,
     fprintf(log_fp,"-------------------------------------------------\n");
     fprintf(log_fp,"entering gram_job_manager\n");
 
-    nexus_init(&argc,
-                &argv,
-               "NEXUS_ARGS", /* conf info env variable          */
-               "nx",         /* package designator              */
-               NULL,         /* package args init callback func */
-               NULL,         /* usage message callback func     */
-               NULL,         /* new process params func         */
-               NULL,         /* module list                     */
-               &nodes,
-               &n_nodes);
+    rc = nexus_init(&argc,
+		    &argv,
+		    "NEXUS_ARGS", /* conf info env variable          */
+		    "nx",         /* package designator              */
+		    NULL);        /* additional modules              */
 
-    nexus_start_nonblocking();
+    if (rc != NEXUS_SUCCESS)
+    {
+	fprintf(stderr, "nexus_init() failed with rc=%d\n", rc);
+	exit(1);
+    }
 
     *test_dat_file = '\0';
 
@@ -373,7 +371,7 @@ main(int argc,
 
     fprintf(log_fp,"exiting gram_job_request \n");
 
-    nexus_shutdown_nonexiting();
+    nexus_shutdown();
 
     return(0);
 
