@@ -903,6 +903,17 @@ main(int argc,
             graml_job_id = (char *) globus_libc_malloc (sizeof(char *) * 8);
             strcpy(graml_job_id, "UNKNOWN");
         }
+        nexus_send_rsr(&reply_buffer,
+                       &reply_sp,
+                       GLOBUS_I_GRAM_CLIENT_REPLY_HANDLER_ID,
+                       NEXUS_TRUE,
+                       NEXUS_FALSE);
+
+        nexus_startpoint_destroy(&reply_sp);
+
+        /* send callback with the status */
+        globus_l_gram_client_callback(request->status, request->failure_code);
+
     }
     else
     {
@@ -910,23 +921,20 @@ main(int argc,
 	nexus_buffer_init(&reply_buffer, size, 0);
         nexus_put_int(&reply_buffer, &GLOBUS_GRAM_PROTOCOL_VERSION, 1);
         nexus_put_int(&reply_buffer, &request->failure_code, 1);
+
+        nexus_send_rsr(&reply_buffer,
+                       &reply_sp,
+                       GLOBUS_I_GRAM_CLIENT_REPLY_HANDLER_ID,
+                       NEXUS_TRUE,
+                       NEXUS_FALSE);
+
+        nexus_startpoint_destroy(&reply_sp);
+
     }
  
-    nexus_send_rsr(&reply_buffer,
-                   &reply_sp,
-                   GLOBUS_I_GRAM_CLIENT_REPLY_HANDLER_ID,
-                   NEXUS_TRUE,
-                   NEXUS_FALSE);
-
-    nexus_startpoint_destroy(&reply_sp);
-
-    /* send callback with the status
-     */
-    globus_l_gram_client_callback(request->status, request->failure_code);
-
     GRAM_UNLOCK;
 
-    if (rc == 0)
+    if (rc == GLOBUS_SUCCESS)
     {
         if (request->poll_frequency == 0)
         {
@@ -1024,7 +1032,7 @@ main(int argc,
     grami_fprintf( request->jobmanager_log_fp, "JM: Cleaning GASS cache\n");
 
     rc = globus_gass_cache_open(NULL, &cache_handle);
-    if(rc == GLOBUS_SUCCESS)
+    if (rc == GLOBUS_SUCCESS)
     {
 	rc = globus_gass_cache_list(&cache_handle,
 				    &cache_entries,
@@ -1049,6 +1057,7 @@ main(int argc,
     }
 
     grami_fprintf( request->jobmanager_log_fp, "JM: freeing RSL.\n");
+
     if (graml_rsl_tree)
         globus_rsl_free_recursive(graml_rsl_tree);
 
