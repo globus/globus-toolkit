@@ -171,6 +171,7 @@ static gss_ctx_id_t  context_handle    = GSS_C_NO_CONTEXT;
 #define FAILED_AUTHENTICATION       5
 #define FAILED_PING                 6
 
+#undef MIN
 #define MIN(a,b) ((a) < (b) ? (a) : (b))
 
 static char     tmpbuf[1024];
