@@ -681,6 +681,15 @@ globus_l_gfs_data_handle_init(
                 "globus_ftp_control_local_parallelism", result);
             goto error_control;
         }
+
+        result = globus_ftp_control_local_send_eof(
+            &handle->data_channel, GLOBUS_FALSE);
+        if(result != GLOBUS_SUCCESS)
+        {
+            result = GlobusGFSErrorWrapFailed(
+                "globus_ftp_control_local_send_eof", result);
+            goto error_control;
+        }
     }
 
     result = globus_ftp_control_local_dcau(
@@ -1081,13 +1090,8 @@ globus_i_gfs_data_request_active(
         }
         else
         {
-//            layout.mode = GLOBUS_FTP_CONTROL_STRIPING_PARTITIONED;
-//            layout.partitioned.size = data_info->blocksize;
-
             result = globus_ftp_control_local_spor(
                 &handle->data_channel, addresses, data_info->cs_count);
-//            result = globus_ftp_control_local_layout(
-//                &handle->data_channel, &layout, 0);
         }
         if(result != GLOBUS_SUCCESS)
         {
@@ -1096,15 +1100,6 @@ globus_i_gfs_data_request_active(
             goto error_control;
         }
         
-        result = globus_ftp_control_local_send_eof(
-            &handle->data_channel, GLOBUS_FALSE);
-        if(result != GLOBUS_SUCCESS)
-        {
-            result = GlobusGFSErrorWrapFailed(
-                "globus_ftp_control_local_send_eof", result);
-            goto error_control;
-        }
-
         bounce_info = (globus_l_gfs_data_active_bounce_t *)
             globus_malloc(sizeof(globus_l_gfs_data_active_bounce_t));
         if(!bounce_info)
@@ -2210,8 +2205,6 @@ globus_l_gfs_data_transfer_event_kickout(
 {
     globus_l_gfs_data_trev_bounce_t *   bounce_info;
     globus_gfs_ipc_event_reply_t *      event_reply;
-    globus_off_t                        tmp_off;
-    globus_off_t                        tmp_len;
     GlobusGFSName(globus_l_gfs_data_transfer_event_kickout);
 
     bounce_info = (globus_l_gfs_data_trev_bounce_t *) user_arg;
@@ -2253,20 +2246,12 @@ globus_l_gfs_data_transfer_event_kickout(
         if(bounce_info->event_type == 
             GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_RESTART)
         {
-//            globus_range_list_remove(
-//                bounce_info->op->recvd_ranges, 0, GLOBUS_RANGE_LIST_MAX);
+            globus_range_list_remove(
+                bounce_info->op->recvd_ranges, 0, GLOBUS_RANGE_LIST_MAX);
             if(globus_range_list_size(bounce_info->op->recvd_ranges))
             {
                globus_i_gfs_log_message(
                     GLOBUS_I_GFS_LOG_ERR, "range remove borken");
-                while(globus_range_list_size(bounce_info->op->range_list))           
-                {                                                                   
-                    globus_range_list_remove_at(                                    
-                        bounce_info->op->range_list,                                
-                        0,                                                          
-                        &tmp_off,                                                   
-                        &tmp_len);                                                  
-                }                    
             }
         }
     }
