@@ -135,8 +135,14 @@ public class RFTClient {
 
             TransferRequestType transferRequest = new TransferRequestType();
             transferRequest.setTransferArray(transfers1);
-            transferRequest.setConcurrency(Integer.valueOf(
-                (String)requestData.elementAt(6)).intValue());
+            int concurrency = Integer.valueOf(
+                (String)requestData.elementAt(6)).intValue();
+            if(concurrency>transfers1.length) {
+                System.out.println("Concurrency should be less than the number of transfers in the request");
+                System.exit(0);
+            }
+
+            transferRequest.setConcurrency(concurrency);
 
             TransferRequestElement requestElement = new TransferRequestElement();
             requestElement.setTransferRequest(transferRequest);
