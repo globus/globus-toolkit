@@ -70,7 +70,6 @@ typedef struct globus_l_gram_conf_values_s
     char *    type;
     char *    condor_arch;
     char *    condor_os;
-    char *    home_dir;
     char *    rdn;
     char *    host_dn;
     char *    org_dn;
@@ -97,11 +96,6 @@ typedef struct globus_l_gram_conf_values_s
  * GRAM_JOB_MANAGER_STAT_FREQUENCY seconds
  */
 #define GRAM_JOB_MANAGER_STAT_FREQUENCY 60
-
-/* remove old status files after no activity for
- * GRAM_JOB_MANAGER_STATUS_FILE_SECONDS
- */
-#define GRAM_JOB_MANAGER_STATUS_FILE_SECONDS 600
 
 /******************************************************************************
                           Module specific prototypes
@@ -281,7 +275,7 @@ static int              globus_l_gram_stderr_fd=-1;
 
 globus_list_t *  globus_l_gram_client_contacts = GLOBUS_NULL;
 
-static char *                      graml_jm_status_dir = NULL;
+static char *                      graml_jm_status_dir = GLOBUS_NULL;
 static int                         graml_my_count;
 static nexus_endpointattr_t        graml_EpAttr;
 static nexus_endpoint_t            graml_GlobalEndpoint;
@@ -335,6 +329,7 @@ main(int argc,
     char                   read_rsl_file[256];
     char                   write_rsl_file[256];
     char                   tmp_buffer[256];
+    char *                 home_dir = NULL;
     char *                 tmp_ptr;
     char *                 client_contact_str;
     char *                 my_host;
@@ -444,6 +439,7 @@ main(int argc,
 
     *read_rsl_file = '\0';
     *write_rsl_file = '\0';
+    *graml_job_status_file = '\0';
 
     /* if -conf is passed then get the arguments from the file
      * specified
@@ -520,7 +516,7 @@ main(int argc,
         else if ((strcmp(argv[i], "-home") == 0)
                  && (i + 1 < argc))
         {
-            conf.home_dir = argv[i+1]; i++;
+            home_dir = argv[i+1]; i++;
         }
         else if ((strcmp(argv[i], "-type") == 0)
                  && (i + 1 < argc))
@@ -618,22 +614,32 @@ main(int argc,
         {
             GRAM_UNLOCK;
             fprintf(stderr, "Unknown argument %s\n", argv[i]);
-            fprintf(stderr,"Usage: %s %s %s %s %s %s %s %s %s %s %s %s %s %s\n",
-                    argv[0],
-                    "[-home deploy home dir ] [-e libexe dir]",
-                    "[-d debug print] [-t test dat file]",
-                    "[-type resource manager type] [-globus_org_dn dn]",
-                    "[-rdn job manager's rdn] [-globus_host_dn dn]",
-                    "[-globus_gatekeeper_host host]",
-                    "[-globus_gatekeeper_port port]",
-                    "[-globus_gatekeeper_subject subject]",
-                    "[-globus_host_manufacturer manufacturer]",
-                    "[-globus_host_cputype cputype]",
-                    "[-globus_host_osname osname]",
-                    "[-globus_host_osversion osversion ]",
-		    "[-globus_install_path dir]"
-		    "<-condor_arch arch> <-condor_os os>"
-                   );
+            fprintf(stderr, "\n");
+            fprintf(stderr, "Usage: %s\n", argv[0]);
+            fprintf(stderr, "\n");
+            fprintf(stderr, "Required Arguments:\n");
+            fprintf(stderr, "\t-type jobmanager type, i.e. fork, lsf ...\n");
+            fprintf(stderr, "\t-rdn relative domain name\n");
+            fprintf(stderr, "\t-globus_org_dn organization's domain name\n");
+            fprintf(stderr, "\t-globus_host_dn host domain name\n");
+            fprintf(stderr, "\t-globus_host_manufacturer manufacturer\n");
+            fprintf(stderr, "\t-globus_host_cputype cputype\n");
+            fprintf(stderr, "\t-globus_host_osname osname\n");
+            fprintf(stderr, "\t-globus_host_osversion osversion\n");
+            fprintf(stderr, "\t-globus_gatekeeper_host host\n");
+            fprintf(stderr, "\t-globus_gatekeeper_port port\n");
+            fprintf(stderr, "\t-globus_gatekeeper_subject subject\n");
+            fprintf(stderr, "\nNon-required Arguments:\n");
+            fprintf(stderr, "\t-home deploy dir\n");
+            fprintf(stderr, "\t-e libexec dir\n");
+            fprintf(stderr, "\t-e globus_install_path dir\n");
+            fprintf(stderr, "\t-e condor_arch arch, i.e. SUN4x\n");
+            fprintf(stderr, "\t-e condor_os os, i.e. SOLARIS26\n");
+            fprintf(stderr, "\t-d write a log file in the users home dir\n");
+            fprintf(stderr, "\n");
+            fprintf(stderr, "Note: if type=condor then\n");
+            fprintf(stderr, "      -condor_os & -condor_arch are required.\n");
+            fprintf(stderr, "\n");
             exit(1);
         }
     }
@@ -653,6 +659,13 @@ main(int argc,
          */
         fprintf(stderr, "ERROR: unable to get HOME from the environment.\n");
         exit(1);
+    }
+
+    if (! conf.rdn)
+    {
+        grami_fprintf( request->jobmanager_log_fp,
+            "JM: -rdn parameter required\n");
+        return(GLOBUS_GRAM_CLIENT_ERROR_GATEKEEPER_MISCONFIGURED);
     }
 
     if (print_debug_flag)
@@ -751,24 +764,22 @@ main(int argc,
      * Getting the paths to the (relocatable) deploy and install trees.
      */
 
-    grami_fprintf( request->jobmanager_log_fp,
-	   "JM: home = %s\n", (conf.home_dir) ? (conf.home_dir) : "NULL" );
-    if (conf.home_dir)
-	conf.deploy_path = globus_libc_strdup(conf.home_dir);
+    if (home_dir)
+        conf.deploy_path = globus_libc_strdup(home_dir);
     else
     {
-	error = globus_common_deploy_path(&conf.deploy_path);
-	if (error != GLOBUS_SUCCESS)
-	{
-	    grami_fprintf( request->jobmanager_log_fp,
-			   "JM: globus_common_deploy_path failed \n");
-	    return(GLOBUS_GRAM_CLIENT_ERROR_GATEKEEPER_MISCONFIGURED);
-	}
+        error = globus_common_deploy_path(&conf.deploy_path);
+        if (error != GLOBUS_SUCCESS)
+        {
+            grami_fprintf( request->jobmanager_log_fp,
+                "JM: globus_common_deploy_path failed \n");
+            return(GLOBUS_GRAM_CLIENT_ERROR_GATEKEEPER_MISCONFIGURED);
+        }
     }
 
     grami_fprintf( request->jobmanager_log_fp,
-		   "JM: GLOBUS_DEPLOY_PATH = %s\n",
-		   (conf.deploy_path) ? (conf.deploy_path) : "NULL");
+        "JM: GLOBUS_DEPLOY_PATH = %s\n",
+        (conf.deploy_path) ? (conf.deploy_path) : "NULL");
     conf.num_env_adds++;
 
     if (!conf.install_path)
@@ -815,26 +826,15 @@ main(int argc,
     }
     conf.num_env_adds++;
 
-    if (conf.home_dir)
+    if (libexecdir)
     {
-        graml_jm_status_dir = globus_l_gram_genfilename(conf.home_dir,
-                                                        "tmp",
-                                                        NULL);
-        if (libexecdir)
-        {
-            request->jobmanager_libexecdir = 
-                globus_l_gram_genfilename(conf.home_dir, libexecdir, NULL);
-        }
-        else
-        {
-            request->jobmanager_libexecdir = 
-                globus_l_gram_genfilename(conf.home_dir, "libexec", NULL);
-        }
+        request->jobmanager_libexecdir = 
+            globus_l_gram_genfilename(conf.deploy_path, libexecdir, NULL);
     }
     else
     {
-        /* in this case a status file will not be written */
-        graml_jm_status_dir = NULL;
+        request->jobmanager_libexecdir = 
+            globus_l_gram_genfilename(conf.deploy_path, "libexec", NULL);
     }
 
     grami_fprintf( request->jobmanager_log_fp,
@@ -1495,8 +1495,12 @@ main(int argc,
 
         globus_nexus_startpoint_destroy(&reply_sp);
 
-        if (graml_jm_status_dir)
+        /* if we are publishing jobs, then setup the necessary variables */
+        if (graml_publish_jobs_flag)
         {
+            graml_jm_status_dir = globus_l_gram_genfilename(conf.deploy_path,
+                                                                "tmp",
+                                                                 NULL);
             sprintf(graml_job_status_file, "%s/%s_%s.%s",
                                            graml_jm_status_dir,
                                            conf.rdn,
@@ -1504,11 +1508,7 @@ main(int argc,
                                            request->job_id );
 
             grami_fprintf( request->jobmanager_log_fp,
-                  "JM: graml_job_status_file = %s\n", graml_job_status_file);
-        }
-        else
-        {
-            graml_job_status_file[0] = '\0';
+                 "JM: graml_job_status_file = %s\n", graml_job_status_file);
         }
 
         /* send callback with the status */
@@ -1797,7 +1797,6 @@ globus_l_gram_conf_values_init( globus_l_gram_conf_values_t * conf )
     conf->type              = GLOBUS_NULL;
     conf->condor_arch       = GLOBUS_NULL;
     conf->condor_os         = GLOBUS_NULL;
-    conf->home_dir          = GLOBUS_NULL;
     conf->rdn               = GLOBUS_NULL;
     conf->host_dn           = GLOBUS_NULL;
     conf->org_dn            = GLOBUS_NULL;
