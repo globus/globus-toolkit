@@ -14,7 +14,7 @@ fi
 #
 # Sample script to generate a certificate request which can be sent 
 # to the Globus CA, who will sign it. This script uses the 
-# ssleay.globus.conf. 
+# globus-ssl.conf file.
 #
 # When generating a certificate request and private key for a 
 # globus gatekeeper daemon, use the -nopw option, so the
@@ -46,14 +46,12 @@ EOF
 
 . $libexecdir/globus-args-parser-header
 
-gssapi_authentication=@GSSAPI_TYPE@
-
 #SSL related needs
 PATH=${GLOBUS_LOCATION}/bin:${PATH}
 SSL_EXEC="${GLOBUS_LOCATION}/bin/openssl"
-SSL_CONFIG="${sysconfdir}/globus-user-ssleay.conf"
-SSL_USER_CONFIG="${sysconfdir}/globus-user-ssleay.conf"
-SSL_HOST_CONFIG="${sysconfdir}/globus-host-ssleay.conf"
+SSL_CONFIG="${sysconfdir}/globus-user-ssl.conf"
+SSL_USER_CONFIG="${sysconfdir}/globus-user-ssl.conf"
+SSL_HOST_CONFIG="${sysconfdir}/globus-host-ssl.conf"
 
 
 # TEMP FILES

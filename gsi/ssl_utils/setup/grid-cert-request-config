@@ -10,18 +10,18 @@ fi
 
 . ${GLOBUS_LOCATION}/libexec/globus-script-initializer
 
-# create a globus-ssleay.conf file with the proper o's and ou's
+# create a globus-ssl.conf file with the proper o's and ou's
 
 
-ssleay_conf=$sysconfdir/globus-ssleay.conf
-ssleay_user_conf=$sysconfdir/globus-user-ssleay.conf
-ssleay_host_conf=$sysconfdir/globus-host-ssleay.conf
+ssl_conf=$sysconfdir/globus-ssl.conf
+ssl_user_conf=$sysconfdir/globus-user-ssl.conf
+ssl_host_conf=$sysconfdir/globus-host-ssl.conf
 
-tmp_ssleay_conf=$tmpdir/globus-ssleay.conf
+tmp_ssl_conf=$tmpdir/globus-ssl.conf
 security_conf=$sysconfdir/grid-security.conf
 
-${GLOBUS_SH_SED-sed} -e "1,/BEGIN CONFIG/p" -e d < $ssleay_conf > $tmp_ssleay_conf.1.$$
-${GLOBUS_SH_SED-sed} -e "/END CONFIG/,\$p" -e d < $ssleay_conf > $tmp_ssleay_conf.3.$$
+${GLOBUS_SH_SED-sed} -e "1,/BEGIN CONFIG/p" -e d < $ssl_conf > $tmp_ssl_conf.1.$$
+${GLOBUS_SH_SED-sed} -e "/END CONFIG/,\$p" -e d < $ssl_conf > $tmp_ssl_conf.3.$$
 
 if test \! -r ${security_conf} ; then
     echo "Cannot read ${security_conf}"
@@ -81,16 +81,16 @@ END {
 '
 }
 
-${GLOBUS_SH_CAT-cat} ${tmp_ssleay_conf}.1.$$ > $ssleay_user_conf
-${GLOBUS_SH_CAT-cat} ${tmp_ssleay_conf}.1.$$ > $ssleay_host_conf
+${GLOBUS_SH_CAT-cat} ${tmp_ssl_conf}.1.$$ > $ssl_user_conf
+${GLOBUS_SH_CAT-cat} ${tmp_ssl_conf}.1.$$ > $ssl_host_conf
 
-ldap_dn_to_ssl_dn "$GSI_USER_BASE_DN" >> $ssleay_user_conf
-ldap_dn_to_ssl_dn "$GSI_HOST_BASE_DN" >> $ssleay_host_conf
+ldap_dn_to_ssl_dn "$GSI_USER_BASE_DN" >> $ssl_user_conf
+ldap_dn_to_ssl_dn "$GSI_HOST_BASE_DN" >> $ssl_host_conf
 
-${GLOBUS_SH_CAT-cat} ${tmp_ssleay_conf}.3.$$ >> $ssleay_user_conf
-${GLOBUS_SH_CAT-cat} ${tmp_ssleay_conf}.3.$$ >> $ssleay_host_conf
+${GLOBUS_SH_CAT-cat} ${tmp_ssl_conf}.3.$$ >> $ssl_user_conf
+${GLOBUS_SH_CAT-cat} ${tmp_ssl_conf}.3.$$ >> $ssl_host_conf
 
-${GLOBUS_SH_RM-rm} -f ${tmp_ssleay_conf}.1.$$ ${tmp_ssleay_conf}.3.$$
+${GLOBUS_SH_RM-rm} -f ${tmp_ssl_conf}.1.$$ ${tmp_ssl_conf}.3.$$
 
-${GLOBUS_SH_CHMOD-chmod} 644 ${ssleay_user_conf}
-${GLOBUS_SH_CHMOD-chmod} 644 ${ssleay_host_conf}
+${GLOBUS_SH_CHMOD-chmod} 644 ${ssl_user_conf}
+${GLOBUS_SH_CHMOD-chmod} 644 ${ssl_host_conf}
