@@ -38,6 +38,7 @@ main(
     globus_module_activate(GLOBUS_XIO_MODULE);
     globus_xio_stack_init(&stack, NULL);
 
+    res = globus_xio_driver_load("tcp", &tcp_driver);
     test_res(res, __LINE__);
     res = globus_xio_stack_push_driver(stack, tcp_driver);
     test_res(res, __LINE__);
