@@ -32,9 +32,10 @@ long_usage () {
 
 ${short_usage}
 
-   Changes the passphrase that protects the private key. If the -file
-   argument is not given, the default location of the file containing
-   the private key is assumed:
+   Changes the passphrase that protects the private key. Note that
+   this command will work even if the original key is not password
+   protected. If the -file argument is not given, the default location
+   of the file containing the private key is assumed:
 
      -- The location pointed to by X509_USER_KEY
      -- If X509_USER_KEY not set, $HOME/.globus/userkey.pem
