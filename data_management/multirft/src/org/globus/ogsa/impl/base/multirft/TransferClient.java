@@ -80,6 +80,7 @@ public class TransferClient {
     String subjectName;
     TransferDbOptions dbOptions;
     FileSystemUtil fileSystemUtil;
+    static int counter =0;
     private static Logger logger = Logger.getLogger(TransferClient.class.getName());
 
     public TransferClient() {
@@ -256,12 +257,14 @@ public class TransferClient {
             setTransferParams(destinationHost, this.credential);
             setTransferParams(sourceHost, this.credential);
             //this.fileSystemUtil.makeDirectory("/sandbox/madduri/tmp");
+            counter++;
+            logger.debug("This is transfer # " + counter);
             if (this.sourcePath.endsWith("/")) {
                 logger.debug("Source url contains a directory");
                 logger.debug("More processing needs to be done");
+                this.status = 6;
                 URLExpander urlExpander = new URLExpander(this.sourceHost,this.destinationHost,sourcePath,destinationPath);
                 urlExpander.start();
-                this.status = 2;
         }else {
             size = sourceHost.getSize(sourcePath);    
             markerListener = new MyMarkerListener(dbOptions, transferProgress, 
@@ -275,6 +278,7 @@ public class TransferClient {
                                                   gridFTPPerfMarkerElement);
             markerListener.setTransferId(transferid);
             logger.debug("Transfer Id in TransferClient : " + transferid);
+            
         }
         } catch (MalformedURLException mue) {
             status = 2;

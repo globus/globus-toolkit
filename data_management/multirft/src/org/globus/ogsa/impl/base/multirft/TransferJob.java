@@ -55,6 +55,8 @@ public class TransferJob {
      *  Description of the Field
      */
     public final static int STATUS_CANCELLED = 5;
+    
+    public final static int STATUS_EXPANDING = 6;
 
     static Log logger =
             LogFactory.getLog(TransferJob.class.getName());

@@ -173,6 +173,7 @@ public class RftImpl
             String path = TransferClient.saveCredential(cred);
             Util.setFilePermissions(path, 600);
             dbAdapter.storeProxyLocation(requestId, path);
+            int transferCount = dbAdapter.getTransferCount();
 
             int temp = 0;
 
@@ -181,6 +182,7 @@ public class RftImpl
                 TransferJob transferJob = new TransferJob(transfers[temp],
                         TransferJob.STATUS_PENDING,
                         0);
+                transferJob.setTransferId(transferCount);
                 processURLs(transferJob);
                 TransferThread transferThread = new TransferThread(transferJob);
                 transferThread.start();
@@ -411,7 +413,8 @@ public class RftImpl
                     int tempStatus = transferJob.getStatus();
 
                     if ((tempStatus == TransferJob.STATUS_ACTIVE) ||
-                            (tempStatus == TransferJob.STATUS_PENDING)) {
+                            (tempStatus == TransferJob.STATUS_PENDING) || 
+                            (tempStatus == TransferJob.STATUS_PENDING) ) {
 
                         TransferThread transferThread = new TransferThread(
                                 transferJob);
@@ -689,6 +692,8 @@ public class RftImpl
                                 gridFTPPerfMarkerSD,
                                 gridFTPPerfMarkerSDE,
                                 rftOptions);
+                      transferJob.setStatus(TransferJob.STATUS_ACTIVE);
+                      dbAdapter.update(transferJob);
                     } else {
                         logger.debug("Reusing TransferClient from the pool");
                         transferClient.setSourceURL(transferJob.getSourceUrl());
@@ -724,8 +729,13 @@ public class RftImpl
                     transferClient.setRestartMarker(restartMarker);
 
                 }
-
+                logger.debug("Transfer client should be 6 here : " + transferClient.getStatus());
                 if (transferClient != null) {
+                    if(transferClient.getStatus() ==6) {
+                        transferClient.setStatus(TransferJob.STATUS_EXPANDING);
+                        transferJob.setStatus(TransferJob.STATUS_EXPANDING);
+                    } 
+                else {
                     transferClient.setStatus(TransferJob.STATUS_ACTIVE);
                     transferClient.setParallelStreams(rftOptions.getParallelStreams());
                     transferClient.setTcpBufferSize(rftOptions.getTcpBufferSize());
@@ -770,6 +780,7 @@ public class RftImpl
                         this.status = TransferJob.STATUS_RETRYING;
                         statusChanged(transferJob);
                     }
+                   }
                 } else {
                     transferJob.setStatus(TransferJob.STATUS_FAILED);
                     this.status = TransferJob.STATUS_FAILED;
@@ -784,7 +795,7 @@ public class RftImpl
                         requestId);
 
                 if (newTransferJob != null) {
-                    logger.debug("starting a new transfer");
+                    logger.debug("starting a new transfer " + newTransferJob.getTransferId()+ "  "+ newTransferJob.getStatus());
                     transferThread = new TransferThread(newTransferJob);
                     transferThread.start();
                     newTransferJob.setStatus(TransferJob.STATUS_ACTIVE);

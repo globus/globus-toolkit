@@ -236,6 +236,30 @@ public class TransferDbAdapter {
         transfer.setDestinationUrl(transfer.getDestinationUrl()+fileName);
         return transfer;
     }
+    public int getTransferCount() throws RftDBException {
+        Connection c = getDBConnection();
+        int transferCount = 0;
+
+        try {
+
+            Statement st = c.createStatement();
+            ResultSet rs = st.executeQuery(
+                                   "select count(*) from transfer"); 
+
+            while (rs != null && rs.next()) {
+                transferCount = rs.getInt(1);
+            }
+        } catch (SQLException e) {
+            logger.error("error in retrieving transferCount" + e.toString(), e);
+            returnDBConnection(c);
+            throw new RftDBException("error in retreiving transferCount for request "); 
+        }
+
+        returnDBConnection(c);
+        logger.debug("TransferCount : " + transferCount);
+
+        return transferCount;
+    }
     public int storeTransfers(int requestId, 
                               TransferRequestType transferRequest)
                        throws RftDBException {
@@ -573,7 +597,8 @@ public class TransferDbAdapter {
         Connection c = getDBConnection();
 
         try {
-            logger.debug("In transfer dbAdapter update " + transferJob.getTransferId() + " " + transferJob.getDestinationUrl());
+            logger.debug("In transfer dbAdapter update " + 
+            transferJob.getTransferId() + " " + transferJob.getStatus());
             Statement st = c.createStatement();
             int update = st.executeUpdate(
                                  "UPDATE transfer SET status= " + 

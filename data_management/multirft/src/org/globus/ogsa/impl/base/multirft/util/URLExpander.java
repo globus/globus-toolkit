@@ -11,6 +11,7 @@ import org.apache.log4j.Logger;
 
 import org.globus.ftp.GridFTPClient;
 import org.globus.ftp.GridFTPSession;
+import org.globus.ftp.HostPort;
 import org.globus.ftp.MlsxEntry;
 
 /**
@@ -38,7 +39,7 @@ public class URLExpander extends Thread {
      * @param  transferJob          transferJob
      * @exception  RemoteException
      */
-    public URLExpander(GridFTPClient sourceHost,GridFTPClient destinationHost, String destinationPath, String sourcePath)
+    public URLExpander(GridFTPClient sourceHost,GridFTPClient destinationHost, String sourcePath, String destinationPath)
              throws RemoteException {
         try {
             this.sourceHost = sourceHost;
@@ -55,6 +56,12 @@ public class URLExpander extends Thread {
 
     public Vector doMlsd(String sourcePath) 
     throws Exception {
+        //this.sourceHost.setType(GridFTPSession.TYPE_ASCII);
+        logger.debug("Source Path : " + sourcePath);
+        HostPort hp = this.sourceHost.setLocalPassive();
+		this.sourceHost.setActive(hp);
+        /*this.sourceHost.setType(GridFTPSession.TYPE_IMAGE);
+        this.sourceHost.setMode(GridFTPSession.MODE_EBLOCK);*/
         this.sourceHost.changeDir(sourcePath);
         return this.sourceHost.mlsd();
     }
@@ -68,10 +75,14 @@ public class URLExpander extends Thread {
             Vector v = doMlsd(this.sourcePath);
             while(!v.isEmpty()) {
                 MlsxEntry f = (MlsxEntry)v.remove(0);
+                logger.debug(f.toString());
                 if(f.get(f.TYPE).equals(f.TYPE_DIR)) {
                     // We have a directory here call this method again
                     // After creating that directory
+                    logger.debug("The directory name: " + f.get(MlsxEntry.TYPE_DIR));
                     fileSystemUtil.makeDirectory(f.get("dir"));
+                } else if (f.get(f.TYPE).equals(f.TYPE_FILE)) {
+                    logger.debug("This is a file : " + f.getFileName());
                 }
             }
         } catch(Exception e) {
