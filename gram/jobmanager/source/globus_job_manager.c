@@ -1907,7 +1907,7 @@ globus_l_gram_client_callback(int status, int failure_code)
                 "JM: sending callback of status %d to %s.\n", status,
                 client_contact_node->contact);
 
-            rc = globus_gram_http_post( client_contact_node->contact,
+            rc = globus_l_gram_http_post( client_contact_node->contact,
 					GLOBUS_NULL,        /* default attr */
 					message,
 					strlen((char *)message)+1,
