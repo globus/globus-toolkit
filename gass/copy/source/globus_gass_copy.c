@@ -1510,7 +1510,7 @@ globus_l_gass_copy_wait_for_ftp_callbacks(
 	globus_mutex_unlock(&(source_monitor->mutex));
     }
 
-    if(handle->state->dest.mode == GLOBUS_GASS_COPY_URL_MODE_FTP)
+    if(handle->state && handle->state->dest.mode == GLOBUS_GASS_COPY_URL_MODE_FTP)
     {
 #ifdef GLOBUS_I_GASS_COPY_DEBUG
 	globus_libc_fprintf(stderr, "wait_for_ftp_callback(): waiting on dest\n");
@@ -1811,6 +1811,11 @@ globus_result_t
 globus_l_gass_copy_state_free(
     globus_gass_copy_state_t * state)
 {
+    if(!state)
+    {
+        return GLOBUS_SUCCESS;
+    }
+
 #ifdef GLOBUS_I_GASS_COPY_DEBUG
     globus_libc_fprintf(stderr, "globus_l_gass_copy_state_free(): freeing up the state\n");
 #endif
