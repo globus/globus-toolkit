@@ -55,7 +55,11 @@ globus_xio_driver_pass_open_DEBUG(
               _driver->transform_open_func == NULL);
 
         /* hold a ref for this driver */
-        _context->ref++;
+        if(_out_context != NULL)
+        {
+            GlobusXIODebugSetOut(_out_context, _my_context);
+            _context->ref++;
+        }
 
         _op->entry[_prev_ndx].next_ndx = _op->ndx;
         _op->entry[_prev_ndx].type = GLOBUS_XIO_OPERATION_TYPE_OPEN;
@@ -112,7 +116,6 @@ globus_xio_driver_pass_open_DEBUG(
             globus_i_xio_handle_destroy(_handle);
         }
 
-        GlobusXIODebugSetOut(_out_context, _my_context);
         GlobusXIODebugSetOut(_out_res, _res);
     }
     GlobusXIODebugInternalExit();
