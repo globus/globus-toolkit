@@ -128,6 +128,7 @@ int
 globus_l_extension_activate(void)
 {
     static globus_bool_t                initialized = GLOBUS_FALSE;
+    char *                              tmp;
     GlobusFuncName(globus_l_extension_activate);
     
     if(!initialized)
@@ -165,7 +166,9 @@ globus_l_extension_activate(void)
         globus_rmutex_init(&globus_l_extension_mutex, NULL);
         globus_thread_key_create(&globus_l_extension_owner_key, NULL);
         
-        globus_location(&globus_l_globus_location);
+        globus_location(&tmp);
+        globus_l_globus_location = globus_common_create_string("%s/lib", tmp);
+        globus_free(tmp);
         
         initialized = GLOBUS_TRUE;
         GlobusExtensionDebugExit();
