@@ -1,5 +1,4 @@
 include $(top_srcdir)/globus_automake_pre
-include $(top_srcdir)/globus_automake_pre_top
 
 Sources= \
     globus_gridftp_server_file.c
@@ -13,4 +12,3 @@ libglobus_gridftp_server_file___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS)
 libglobus_gridftp_server_file___GLOBUS_FLAVOR_NAME__la_LIBADD = $(GPT_LIB_LINKS)
 
 include $(top_srcdir)/globus_automake_post
-include $(top_srcdir)/globus_automake_post_top

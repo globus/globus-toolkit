@@ -1,4 +1,4 @@
-include $(top_srcdir)/globus_automake_pre_top
+include $(top_srcdir)/globus_automake_pre
 
 SUBDIRS=\
     $(XIO_BUILTIN_DIRS)
