@@ -87,6 +87,8 @@ BUNDLE gt4-rft
         globus_database_common
         globus_wsrf_servicegroup
         globus_wsrf_servicegroup_schema
+        globus_wsrf_mds_usefulrp
+        globus_wsrf_mds_usefulrp_schema
 
 BUNDLE gt4-rft-test
         globus_wsrf_rft_test
@@ -204,6 +206,8 @@ BUNDLE gt4-cas
         globus_database_common
         globus_wsrf_servicegroup
         globus_wsrf_servicegroup_schema
+        globus_wsrf_mds_usefulrp
+        globus_wsrf_mds_usefulrp_schema
 
 
 BUNDLE gt4-delegation
