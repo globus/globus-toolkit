@@ -86,7 +86,8 @@ g_send_data(
 int
 g_receive_data(
     globus_ftp_control_handle_t *                   handle,
-    FILE *                                          outstr);
+    FILE *                                          outstr,
+    int                                             offset);
 
 void
 g_passive();

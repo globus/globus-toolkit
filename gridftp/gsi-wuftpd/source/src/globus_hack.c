@@ -32,6 +32,8 @@ typedef struct globus_i_wu_montor_s
     globus_bool_t              abort;
     int                        count;
     int                        fd;
+
+    int                        offset;
 } globus_i_wu_montor_t;
 
 /*
@@ -116,6 +118,7 @@ wu_monitor_reset(
     mon->timed_out = GLOBUS_FALSE;
     mon->abort = GLOBUS_FALSE;
     mon->count = 0;
+    mon->offset = -1;
     mon->fd = -1;
 }
 
@@ -662,7 +665,8 @@ data_write_callback(
 int 
 g_receive_data(
     globus_ftp_control_handle_t *            handle,
-    FILE *                                   outstr)
+    FILE *                                   outstr,
+    int                                      offset)
 {
     register int                             c;
     int                                      cnt = 0;
@@ -686,6 +690,7 @@ g_receive_data(
     int i = 1;
 
     wu_monitor_reset(&g_monitor);
+    g_monitor.offset = offset;
 
     res = globus_ftp_control_data_connect_read(
               handle,
@@ -874,6 +879,11 @@ data_read_callback(
 
         if(length > 0)
         {
+            if(monitor->offset > 0)
+            {
+                offset = offset + monitor->offset;
+            }
+
             lseek(monitor->fd, offset, SEEK_SET);
             write(monitor->fd, buffer, length);
             byte_count += length;
