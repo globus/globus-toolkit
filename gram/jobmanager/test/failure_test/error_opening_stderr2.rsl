@@ -1,4 +1,0 @@
-(* GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_STDERR *)
-&(executable=/bin/true)
- (stdout=/dev/null)
- (stderr=/no/such/file)

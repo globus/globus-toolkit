@@ -1,5 +1,6 @@
 
 #include "globus_i_gsi_cert_utils.h"
+#include "globus_openssl.h"
 #include <openssl/asn1.h>
 #include <openssl/x509.h>
 #include "version.h"
@@ -66,6 +67,8 @@ globus_l_gsi_cert_utils_activate(void)
 
     GLOBUS_I_GSI_CERT_UTILS_DEBUG_ENTER;
 
+    result = globus_module_activate(GLOBUS_OPENSSL_MODULE);
+    
     result = globus_module_activate(GLOBUS_GSI_OPENSSL_ERROR_MODULE);
 
     GLOBUS_I_GSI_CERT_UTILS_DEBUG_EXIT;
@@ -89,6 +92,8 @@ globus_l_gsi_cert_utils_deactivate(void)
     GLOBUS_I_GSI_CERT_UTILS_DEBUG_ENTER;
 
     result = globus_module_deactivate(GLOBUS_GSI_OPENSSL_ERROR_MODULE);
+
+    result = globus_module_deactivate(GLOBUS_OPENSSL_MODULE);
 
     GLOBUS_I_GSI_CERT_UTILS_DEBUG_EXIT;
 

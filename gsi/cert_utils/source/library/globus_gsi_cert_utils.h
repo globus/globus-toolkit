@@ -76,7 +76,6 @@ globus_module_descriptor_t              globus_i_gsi_cert_utils_module;
 
 #include <openssl/x509.h>
 #include <openssl/asn1.h>
-#include <globus_common.h>
 #include "globus_error_openssl.h"
 #include "globus_gsi_cert_utils_constants.h"
 
