@@ -833,7 +833,9 @@ globus_l_xio_register_readv(
             res = GlobusXIOErrorInvalidState(handle->state);
             goto bad_state_err;
         }
-        /* this is a bit ugly */
+        /* this is a bit ugly 
+           handle doesn't maitain this state and Pass asserts for efficieny.
+           so wee need to check it here to be nice to the user */
         if(handle->context->entry[0].state != GLOBUS_XIO_HANDLE_STATE_OPEN &&
            handle->context->entry[0].state != 
             GLOBUS_XIO_HANDLE_STATE_EOF_RECEIVED)

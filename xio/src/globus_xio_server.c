@@ -137,6 +137,7 @@ globus_l_xio_server_accept_kickout(
     /* lock up and do some clean up */
     globus_mutex_lock(&xio_server->mutex);
     {
+        xio_server->op = NULL;
         globus_assert(xio_op->state == GLOBUS_XIO_OP_STATE_FINISH_WAITING);
 
         switch(xio_server->state)
@@ -1052,6 +1053,19 @@ globus_xio_server_register_close(
         }
         else
         {
+           /* the callback is called locked.  within it the driver is
+                allowed limited functionality.  by calling this locked
+                can more efficiently pass the operation down the stack */
+            if(xio_server->op != NULL)
+            {
+                xio_server->op->canceled = GLOBUS_TRUE;
+                if(xio_server->op->cancel_cb)
+                {
+                    xio_server->op->cancel_cb(xio_server->op,
+                        xio_server->op->cancel_arg);
+                }            
+            }
+
             xio_server->cb = cb;
             xio_server->user_arg = user_arg;
             switch(xio_server->state)

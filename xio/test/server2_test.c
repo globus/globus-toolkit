@@ -61,7 +61,6 @@ accept_cb(
 {
     globus_xio_target_t *                       t;
 
-    test_res(GLOBUS_XIO_TEST_FAIL_FINISH_ACCEPT, result, __LINE__);
     t = (globus_xio_target_t *) user_arg;
 
     if(globus_l_closed)
