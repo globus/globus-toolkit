@@ -4,6 +4,7 @@ include $(top_srcdir)/globus_automake_pre_top
 SUBDIRS = pkgdata doxygen
 
 setup_SCRIPTS = \
+    globus-script-fork-queue \
     setup-globus-gram-reporter-fork \
     setup-globus-gram-reporter-fork.pl
 
