@@ -123,6 +123,11 @@ globus_l_start_time_callback_handler(globus_nexus_endpoint_t * endpoint,
                                   globus_nexus_buffer_t * buffer,
                                   globus_bool_t is_non_threaded);
 
+static int 
+globus_l_gram_client_authenticate(char * gatekeeper_url,
+                                  int gss_flags,
+                                  int * gatekeeper_fd);
+
 /******************************************************************************
                        Define module specific variables
 ******************************************************************************/
@@ -320,6 +325,192 @@ globus_gram_client_debug(void)
 
 
 /******************************************************************************
+Function:	globus_l_gram_client_authenticate()
+Description:
+Parameters:
+Returns:
+******************************************************************************/
+int 
+globus_l_gram_client_authenticate(char * gatekeeper_url,
+                                  int gss_flags,
+                                  int * gatekeeper_fd)
+{
+    int                          rc;
+    char *                       gatekeeper_host;
+    char *                       gatekeeper_princ;
+    unsigned short               gatekeeper_port = 0;
+    char *                       auth_msg_buf;
+    size_t                       auth_msg_buf_size;
+    /* GSSAPI assist variables */
+    OM_uint32                    major_status = 0;
+    OM_uint32                    minor_status = 0;
+    int                          token_status = 0;
+    OM_uint32                    ret_flags = 0;
+    gss_ctx_id_t                 context_handle = GSS_C_NO_CONTEXT;
+    char *cp, *sp, *qp;
+
+
+    GLOBUS_L_LOCK;
+
+    grami_fprintf(globus_l_print_fp,"in globus_l_gram_client_authenticate()\n");
+
+    if ((cp = strdup(gatekeeper_url)))
+    {
+        gatekeeper_host = gatekeeper_princ = cp;
+        if ((sp = strchr(cp,':')))
+        {
+            *sp++ = '\0';
+            if ((qp = strchr(sp, ':')))
+            {
+                *qp++ = '\0';
+                gatekeeper_princ = qp;
+            }
+            gatekeeper_port = atoi(sp);
+        }
+        else
+        {
+            gatekeeper_port = 754;
+        }
+    } 
+    else
+    {
+        fprintf(stderr,"strdup failed for gatekeeper_url");
+        GLOBUS_L_UNLOCK;
+        return(1);
+    }
+
+    /* Connecting to the gatekeeper.
+     */
+
+    grami_fprintf(globus_l_print_fp, "Connecting to %s:%d:%s\n",
+		  gatekeeper_host, gatekeeper_port, gatekeeper_princ);
+
+    rc = globus_nexus_fd_connect(gatekeeper_host,
+				 gatekeeper_port,
+				 gatekeeper_fd);
+    if (rc != 0)
+    {
+        fprintf(stderr, " globus_nexus_fd_connect failed.  rc = %d\n", rc);
+	GLOBUS_L_UNLOCK;
+        return (GLOBUS_GRAM_CLIENT_ERROR_CONNECTION_FAILED);
+    }
+
+#ifdef GSS_AUTHENTICATION
+    /*
+     * Now that TCP connection established, use the connection
+     * to do the GSSAPI authentication to the gatekeeper
+     * we will use the assist functions.
+     * Since this is user to the gatekeeper, we want delegation
+     * if possible. We specify the services we would like,
+     * mutual authentication, delegation.
+     * We might also want sequence, and integraty.
+     */
+
+
+    grami_fprintf(globus_l_print_fp,
+		  "Starting authentication to %s\n", gatekeeper_princ);
+
+    major_status = globus_gss_assist_init_sec_context(&minor_status,
+                    credential_handle,
+                    &context_handle,
+                    gatekeeper_princ,
+                    gss_flags,
+                    &ret_flags,
+                    &token_status,
+                    globus_gss_assist_token_get_nexus,
+                    (void *) gatekeeper_fd,
+                    globus_gss_assist_token_send_nexus,
+                    (void *) gatekeeper_fd);
+
+    if (major_status != GSS_S_COMPLETE)
+    {
+        globus_gss_assist_display_status(stderr,
+                    "GSS Authentication failure:globus_gram_client\n ",
+                     major_status,
+                     minor_status,
+                     token_status);
+
+
+		globus_nexus_fd_close(*gatekeeper_fd);
+		GLOBUS_L_UNLOCK;
+		return (GLOBUS_GRAM_CLIENT_ERROR_AUTHORIZATION);
+    }
+
+    /* We still have the GSSAPI context setup and could use
+     * some of the other routines, such as get_mic, verify_mic
+     * at this point. But in this client we don't.
+     * But we need to do the gss_delete_sec_context
+     * sometime before returning from this module.
+     */
+
+     gss_delete_sec_context(&minor_status,
+            &context_handle,
+            GSS_C_NO_BUFFER);
+
+    /*
+     * Use the token_get routine to read a final status
+     * message from the gatekeeper after the GSSAPI
+     * authentication has completed. This is done
+     * since authorization is done outside of GSSAPI.
+     */
+
+    if (globus_gss_assist_token_get_nexus((void *) gatekeeper_fd,
+				  (void **) &auth_msg_buf, &auth_msg_buf_size))
+    {
+	fprintf(stderr, "Authoirization message not received");
+	GLOBUS_L_UNLOCK;
+	return (GLOBUS_GRAM_CLIENT_ERROR_AUTHORIZATION);
+    }
+
+    if (auth_msg_buf_size > 1 )
+    {
+	fprintf(stderr, auth_msg_buf);
+	globus_nexus_fd_close(*gatekeeper_fd);
+	GLOBUS_L_UNLOCK;
+	return (GLOBUS_GRAM_CLIENT_ERROR_AUTHORIZATION);
+    }
+
+    grami_fprintf(globus_l_print_fp,
+		  "Authentication/authorization complete\n");
+
+#else
+    grami_fprintf(globus_l_print_fp,
+		  "WARNING: No authentication performed\n");
+#endif /* GSS_AUTHENTICATION */
+
+    GLOBUS_L_UNLOCK;
+    return(0);
+
+} /* globus_l_gram_client_authenticate() */
+
+
+/******************************************************************************
+Function:	globus_gram_client_ping()
+Description:
+Parameters:
+Returns:
+******************************************************************************/
+int 
+globus_gram_client_ping(char * gatekeeper_url)
+{
+    int rc;
+    int gatekeeper_fd;
+
+    if ((rc = globus_l_gram_client_authenticate(gatekeeper_url,
+                                                GSS_C_MUTUAL_FLAG,
+                                                &gatekeeper_fd)) != 0)
+    {
+        return(rc);
+    }
+
+    globus_nexus_fd_close(gatekeeper_fd);
+
+    return(0);
+
+} /* globus_gram_client_ping() */
+
+
+/******************************************************************************
 Function:	globus_gram_client_job_request()
 Description:
 Parameters:
@@ -332,33 +523,40 @@ globus_gram_client_job_request(char * gatekeeper_url,
 			       const char * callback_url,
 			       char ** job_contact)
 {
-    int                          size;
-    int                          contact_msg_size;
-    int                          count;
-    int                          rc;
-    int                          gatekeeper_fd;
-    char *                       gatekeeper_host;
-    char *                       gatekeeper_princ;
-    unsigned short               gatekeeper_port = 0;
-    char *                       auth_msg_buf;
-    size_t                       auth_msg_buf_size;
-    globus_byte_t                type;
-    globus_byte_t *              contact_msg_buffer;
-    globus_byte_t *              tmp_buffer;
-    globus_nexus_endpointattr_t  reply_epattr;
-    globus_nexus_endpoint_t      reply_ep;
-    globus_nexus_startpoint_t    reply_sp;
+    int                             size;
+    int                             contact_msg_size;
+    int                             count;
+    int                             rc;
+    int                             gatekeeper_fd;
+    globus_byte_t                   type;
+    globus_byte_t *                 contact_msg_buffer;
+    globus_byte_t *                 tmp_buffer;
+    globus_nexus_endpointattr_t     reply_epattr;
+    globus_nexus_endpoint_t         reply_ep;
+    globus_nexus_startpoint_t       reply_sp;
     globus_l_job_request_monitor_t  job_request_monitor;
-    /* GSSAPI assist variables */
-    OM_uint32                    major_status = 0;
-    OM_uint32                    minor_status = 0;
-    int                          token_status = 0;
-    OM_uint32                    ret_flags = 0;
-    gss_ctx_id_t                 context_handle = GSS_C_NO_CONTEXT;
-    int                          gss_flags;
 
 
     grami_fprintf(globus_l_print_fp, "in globus_gram_client_job_request()\n");
+
+    if (strlen(description) <= 0)
+    {
+        return(GLOBUS_GRAM_CLIENT_ERROR_ZERO_LENGTH_RSL);
+    }
+
+    /*
+    * we will use the assist functions.
+    * Since this is user to the gatekeeper, we want delegation
+    * if possible. We specify the services we would like,
+    * mutual authentication, delegation.
+    * We might also want sequence, and integraty.
+    */
+    if ((rc = globus_l_gram_client_authenticate(gatekeeper_url,
+                                      GSS_C_DELEG_FLAG|GSS_C_MUTUAL_FLAG,
+                                      &gatekeeper_fd)) != 0)
+    {
+        return(rc);
+    }
 
     GLOBUS_L_LOCK;
 
@@ -386,9 +584,6 @@ globus_gram_client_job_request(char * gatekeeper_url,
         size += globus_nexus_sizeof_char(strlen(callback_url));
     }
     size += globus_nexus_sizeof_startpoint(&reply_sp, 1);
-
-    grami_fprintf(globus_l_print_fp,
-		  "test 1 globus_gram_client_job_request()\n");
 
     if (size >= GLOBUS_GRAM_CLIENT_MAX_MSG_SIZE)
     {
@@ -440,198 +635,38 @@ globus_gram_client_job_request(char * gatekeeper_url,
 
     globus_nexus_user_put_startpoint_transfer(&tmp_buffer, &reply_sp, 1);
 
-    grami_fprintf(globus_l_print_fp,
-		  "test 2 globus_gram_client_job_request()\n");
+    rc = globus_nexus_fd_register_for_write(gatekeeper_fd,
+                                           (char *) contact_msg_buffer,
+                                           contact_msg_size,
+                                           globus_l_write_callback,
+                                           globus_l_write_error_callback,
+                                           (void *) &job_request_monitor);
 
-    {
-        char *cp, *sp, *qp;
-
-        if ((cp = strdup(gatekeeper_url)))
-        {
-            gatekeeper_host = gatekeeper_princ = cp;
-            if ((sp = strchr(cp,':')))
-            {
-                *sp++ = '\0';
-                if ((qp = strchr(sp, ':')))
-                {
-                    *qp++ = '\0';
-                    gatekeeper_princ = qp;
-                }
-                gatekeeper_port = atoi(sp);
-            }
-            else
-            {
-                gatekeeper_port = 754;
-            }
-        } 
-        else
-        {
-            fprintf(stderr,"strdup failed for gatekeeper_url");
-            GLOBUS_L_UNLOCK;
-            return(1);
-        }
-    }
-
-    /* Connecting to the gatekeeper.
-     */
-
-    grami_fprintf(globus_l_print_fp, "Connecting to %s:%d:%s\n",
-		  gatekeeper_host, gatekeeper_port, gatekeeper_princ);
-
-    rc = globus_nexus_fd_connect(gatekeeper_host,
-				 gatekeeper_port,
-				 &gatekeeper_fd);
     if (rc != 0)
     {
-        fprintf(stderr, " globus_nexus_fd_connect failed.  rc = %d\n", rc);
-	GLOBUS_L_UNLOCK;
-        return (GLOBUS_GRAM_CLIENT_ERROR_CONNECTION_FAILED);
+        fprintf(stderr, "globus_nexus_fd_register_for_write failed\n");
+        globus_nexus_fd_close(gatekeeper_fd);
+        GLOBUS_L_UNLOCK;
+        return (GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED);
     }
 
-    /* Do gss authentication here */
-#ifdef GSS_AUTHENTICATION
-    /*
-     * Now that TCP connection established, use the connection
-     * to do the GSSAPI authentication to the gatekeeper
-     * we will use the assist functions.
-     * Since this is user to the gatekeeper, we want delegation
-     * if possible. We specify the services we would like,
-     * mutual authentication, delegation.
-     * We might also want sequence, and integraty.
-     */
-
-
-    grami_fprintf(globus_l_print_fp,
-		  "Starting authentication to %s\n", gatekeeper_princ);
-
-    if (strlen(description) > 0)
+    globus_mutex_lock(&job_request_monitor.mutex);
+    while (!job_request_monitor.done)
     {
-        gss_flags = GSS_C_DELEG_FLAG|GSS_C_MUTUAL_FLAG;
+         globus_cond_wait(&job_request_monitor.cond,
+                   &job_request_monitor.mutex);
     }
-    else
+    globus_mutex_unlock(&job_request_monitor.mutex);
+
+    globus_mutex_destroy(&job_request_monitor.mutex);
+    globus_cond_destroy(&job_request_monitor.cond);
+
+    if (job_request_monitor.job_status == 0)
     {
-        /* if we are doing a ping then do not have the gatekeeper do
-         * any delegation work.
-         */
-        gss_flags = GSS_C_MUTUAL_FLAG;
-    }
+        * job_contact = (char *) 
+           globus_malloc(strlen(job_request_monitor.job_contact_str) + 1);
 
-    major_status = globus_gss_assist_init_sec_context(&minor_status,
-                    credential_handle,
-                    &context_handle,
-                    gatekeeper_princ,
-                    gss_flags,
-                    &ret_flags,
-                    &token_status,
-                    globus_gss_assist_token_get_nexus,
-                    (void *) &gatekeeper_fd,
-                    globus_gss_assist_token_send_nexus,
-                    (void *) &gatekeeper_fd);
-
-    if (major_status != GSS_S_COMPLETE)
-    {
-        globus_gss_assist_display_status(stderr,
-                    "GSS Authentication failure:globus_gram_client\n ",
-                     major_status,
-                     minor_status,
-                     token_status);
-
-
-		globus_nexus_fd_close(gatekeeper_fd);
-		GLOBUS_L_UNLOCK;
-		return (GLOBUS_GRAM_CLIENT_ERROR_AUTHORIZATION);
-    }
-
-    /* We still have the GSSAPI context setup and could use
-     * some of the other routines, such as get_mic, verify_mic
-     * at this point. But in this client we don't.
-     * But we need to do the gss_delete_sec_context
-     * sometime before returning from this module.
-     */
-
-     gss_delete_sec_context(&minor_status,
-            &context_handle,
-            GSS_C_NO_BUFFER);
-
-    /*
-     * Use the token_get routine to read a final status
-     * message from the gatekeeper after the GSSAPI
-     * authentication has completed. This is done
-     * since authorization is done outside of GSSAPI.
-     */
-
-    if (globus_gss_assist_token_get_nexus((void *) &gatekeeper_fd,
-				  (void **) &auth_msg_buf, &auth_msg_buf_size))
-    {
-	fprintf(stderr, "Authoirization message not received");
-	GLOBUS_L_UNLOCK;
-	return (GLOBUS_GRAM_CLIENT_ERROR_AUTHORIZATION);
-    }
-
-    if (auth_msg_buf_size > 1 )
-    {
-	fprintf(stderr, auth_msg_buf);
-	globus_nexus_fd_close(gatekeeper_fd);
-	GLOBUS_L_UNLOCK;
-	return (GLOBUS_GRAM_CLIENT_ERROR_AUTHORIZATION);
-    }
-
-    grami_fprintf(globus_l_print_fp,
-		  "Authentication/authorization complete\n");
-
-#else
-    grami_fprintf(globus_l_print_fp,
-		  "WARNING: No authentication performed\n");
-#endif /* GSS_AUTHENTICATION */
-
-    if (strlen(description) > 0)
-    {
-        rc = globus_nexus_fd_register_for_write(gatekeeper_fd,
-					    (char *) contact_msg_buffer,
-					    contact_msg_size,
-					    globus_l_write_callback,
-					    globus_l_write_error_callback,
-					    (void *) &job_request_monitor);
-        if (rc != 0)
-        {
-            fprintf(stderr, "globus_nexus_fd_register_for_write failed\n");
-            globus_nexus_fd_close(gatekeeper_fd);
-            GLOBUS_L_UNLOCK;
-            return (GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED);
-        }
-
-        grami_fprintf(globus_l_print_fp,
-           "test 3 globus_gram_client_job_request()\n");
-
-        globus_mutex_lock(&job_request_monitor.mutex);
-        while (!job_request_monitor.done)
-        {
-             globus_cond_wait(&job_request_monitor.cond,
-	                      &job_request_monitor.mutex);
-        }
-        globus_mutex_unlock(&job_request_monitor.mutex);
-
-        globus_mutex_destroy(&job_request_monitor.mutex);
-        globus_cond_destroy(&job_request_monitor.cond);
-
-        grami_fprintf(globus_l_print_fp,
-            "test 4 globus_gram_client_job_request()\n");
-
-        if (job_request_monitor.job_status == 0)
-        {
-            * job_contact = (char *) 
-               globus_malloc(strlen(job_request_monitor.job_contact_str) + 1);
-
-            strcpy(* job_contact, job_request_monitor.job_contact_str);
-        }
-    }
-    else
-    {
-        /* no RSL specification??? Assume we are running a gatekeeper ping!! */
-        *job_contact = (char *) globus_malloc(2);
-        strcpy(*job_contact, "");
-        job_request_monitor.job_status = 
-                                   GLOBUS_GRAM_CLIENT_PING_SUCCESSFUL;
+        strcpy(* job_contact, job_request_monitor.job_contact_str);
     }
 
     globus_free(contact_msg_buffer);
