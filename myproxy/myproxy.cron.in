@@ -1,29 +1,11 @@
 #!/bin/sh
 
-# The Myproxy cron script deletes users proxies that have expired
-GLOBUS_INSTALL_PATH=@GSI_INSTALL_PATH@
-export GLOBUS_INSTALL_PATH
-MYPROXY_SERVER_DIR=@prefix@/myproxy-server
+# The MyProxy cron script deletes users proxies that have expired.
 
-globus_tool_path=`${GLOBUS_INSTALL_PATH}/bin/globus-tools-path`
-grid_proxy_info=${globus_tool_path}/bin/grid-proxy-info
+# Set GLOBUS_LOCATION as appropriate for your installation.
+GLOBUS_LOCATION="/usr/local/globus"
+export GLOBUS_LOCATION
 
-cert_store="${MYPROXY_SERVER_DIR}/store"
+. ${GLOBUS_LOCATION}/libexec/globus-script-initializer
 
-for i in ${cert_store}/*.creds; do
-    file=`echo $i | sed 's/.creds//'`
-    # timeleft is in seconds
-    timeleft=`${grid_proxy_info} -f $i -timeleft 2>/dev/null`
-    echo $timeleft
-    if [ "$timeleft" = "-1" ]; then
-	echo "deleting proxy $i"
-	rm -f ${file}.creds
-	rm -f ${file}.data
-    fi
-done
-
-
-
-    
-
-
+exec myproxy-admin-query -e 0 -r
