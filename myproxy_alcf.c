@@ -5,28 +5,7 @@
  *
  */
 
-#include "myproxy.h"
-#include "myproxy_read_pass.h"
-#include "myproxy_log.h"
-#include "gnu_getopt.h"
-#include "gsi_socket.h"
-#include "ssl_utils.h"
-#include "verror.h"
-#include "string_funcs.h"
-#include "myproxy_creds.h"
-
-#include <string.h>
-#include <assert.h>
-#include <stdlib.h>
-#include <netinet/in.h>
-#include <sys/socket.h>
-#include <errno.h>
-#include <netdb.h>
-#include <unistd.h>
-#include <ctype.h>
-
-#include <gssapi.h>
-#include <globus_gss_assist.h>
+#include "myproxy_common.h"	/* all needed headers included here */
 
 #define MYPROXY_DEFAULT_PROXY  "/tmp/myproxy-proxy"
 #define	SECONDS_PER_HOUR (60 * 60)
