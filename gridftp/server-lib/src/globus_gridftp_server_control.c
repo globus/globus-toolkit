@@ -3294,35 +3294,56 @@ globus_gridftp_server_control_restart_get(
     globus_off_t *                          length)
 {
     int                                     size;
+    int                                     ndx;
     globus_l_gsc_restart_ent_t *            ent;
 
     if(restart->offset_a == NULL)
     {
-        size = globus_priority_q_size(&restart->q);
+        size = globus_priority_q_size(&restart->q) + 1;
         restart->offset_a = (globus_off_t *) 
             globus_malloc(sizeof(globus_off_t) * size);
         restart->length_a = (globus_off_t *) 
             globus_malloc(sizeof(globus_off_t) * size);
 
-        while(!globus_priority_q_empty(&restart->q))
+        if(size == 1)
         {
-            ent = (globus_l_gsc_restart_ent_t *)
-                globus_priority_q_dequeue(&restart->q);
-
-            restart->offset_a[restart->size] = ent->offset + ent->length;
+            restart->offset_a[0] = 0;
+            restart->length_a[0] = -1;
+        }
+        else
+        {
+            ndx = 0;
             ent = (globus_l_gsc_restart_ent_t *)
                 globus_priority_q_first(&restart->q);
-            if(ent != NULL)
+            if(ent->offset != 0)
             {
-                restart->length_a[restart->size] = 
-                    ent->offset - restart->offset_a[restart->size];
+                restart->offset_a[ndx] = 0;
+                restart->length_a[ndx] = ent->offset;
+                ndx++;
             }
-            else
+            while(globus_priority_q_size(&restart->q) != 1)
             {
-                restart->length_a[restart->size] = -1;
+                ent = (globus_l_gsc_restart_ent_t *)
+                    globus_priority_q_dequeue(&restart->q);
+                restart->offset_a[ndx] = ent->offset + ent->length;
+                globus_free(ent);
+
+                ent = (globus_l_gsc_restart_ent_t *)
+                    globus_priority_q_first(&restart->q);
+                restart->length_a[ndx] = ent->offset - restart->offset_a[ndx];
+                ndx++;
             }
-            restart->size++;
+            ent = (globus_l_gsc_restart_ent_t *)
+                    globus_priority_q_dequeue(&restart->q);
+
+            restart->offset_a[ndx] = ent->offset + ent->length;
+            restart->length_a[ndx] = -1;
+            ndx++;
+
+            globus_free(ent);
+
         }
+        restart->size = size;
     }
 
     if(restart->ndx >= restart->size)
