@@ -552,6 +552,8 @@ globus_gass_copy_get_url_mode(
 	*mode = GLOBUS_GASS_COPY_URL_MODE_UNSUPPORTED;
     }
 
+    globus_url_destroy(&url_info);
+
     return GLOBUS_SUCCESS;
 } /* globus_l_gass_copy_get_url_mode() */
 
@@ -888,6 +890,10 @@ globus_l_gass_copy_target_populate(
     /* initialize the target mutex */
     globus_mutex_init(&(target->mutex), GLOBUS_NULL);
 
+#if defined(GLOBUS_I_GASS_COPY_TIMING)
+    target->n_bytes_in_period = 0;
+#endif
+
     target->n_pending = 0;
     target->n_bytes_transfered = 0;
     target->n_complete = 0;
@@ -1150,6 +1156,8 @@ globus_l_gass_copy_state_free(
     /* free up the state */
   
     globus_libc_free(state);
+
+    return GLOBUS_SUCCESS;
  
 } /* globus_l_gass_copy_state_free() */
 
@@ -1932,6 +1940,7 @@ globus_l_gass_copy_io_setup_get(
                     "io_setup_get(): FAILURE opening %s\n",parsed_url.url_path);
 #endif
 	}
+        globus_url_destroy(&parsed_url);
     }
     else
     {
@@ -1943,6 +1952,7 @@ globus_l_gass_copy_io_setup_get(
     }
 
     return result;
+
 } /* globus_l_gass_copy_io_setup_get() */
 
 globus_result_t
@@ -1993,6 +2003,8 @@ globus_l_gass_copy_io_setup_put(
                     "io_setup_put(): FAILURE opening %s\n",parsed_url.url_path);
 #endif
 	}
+
+        globus_url_destroy(&parsed_url);
     }
     else
     {
@@ -2504,7 +2516,6 @@ globus_l_gass_copy_io_read_callback(
 #endif
 	if(last_data)
 	{ /* this was the last read.  set READ_COMPLETE */
-	    int rc;
 	    globus_mutex_lock(&(state->source.mutex));
 	    {
 		state->source.status = GLOBUS_I_GASS_COPY_TARGET_DONE;
@@ -2678,9 +2689,7 @@ globus_l_gass_copy_write_from_queue(
     globus_gass_copy_state_t * state = handle->state;
     globus_i_gass_copy_buffer_t *  buffer_entry;
     globus_result_t result = GLOBUS_SUCCESS;
-    globus_object_t * err;
     globus_bool_t do_the_write = GLOBUS_FALSE;
-    static char * myname="globus_l_gass_copy_write_from_queue";
   
 #ifdef GLOBUS_I_GASS_COPY_DEBUG
     fprintf(stderr, "globus_l_gass_copy_write_from_queue(): called\n");
@@ -2897,8 +2906,6 @@ globus_l_gass_copy_ftp_write_callback(
     globus_gass_copy_state_t * state
         = copy_handle->state;
 
-    globus_bool_t last_data;
-
 #ifdef GLOBUS_I_GASS_COPY_DEBUG
     fprintf(stderr, "ftp_write_callback():  has been called, nbytes: %d\n",
             nbytes);
@@ -2906,7 +2913,6 @@ globus_l_gass_copy_ftp_write_callback(
 
     if(error == GLOBUS_SUCCESS) /* no error occured */
     {
-	last_data = eof;
 	if(eof)
 	{    
 	    globus_mutex_lock(&(state->dest.mutex));
@@ -2977,7 +2983,6 @@ globus_l_gass_copy_gass_write_callback(
     { /* all is well */
 	if(last_data)
 	{ /* this was the last write. set WRITE_COMPLETE and free the request */
-	    int rc;
 #ifdef GLOBUS_I_GASS_COPY_DEBUG
 	    fprintf(stderr, "gass_write_callback(): THIS WAS THE LAST WRITE\n");
 #endif
@@ -4040,6 +4045,9 @@ globus_gass_copy_cache_url_state(
 		url);
 	    return globus_error_put(err);
 	}
+
+        globus_url_destroy(&url_info);
+
     }
     else
     { /* handle == GLOBUS_NULL */
@@ -4050,7 +4058,7 @@ globus_gass_copy_cache_url_state(
 	    myname);
 	return globus_error_put(err);
     }
-    
+
     return result;
 
 } /* globus_gass_copy_cache_url_state() */
@@ -4102,6 +4110,9 @@ globus_gass_copy_flush_url_state(
 		url);
 	    return globus_error_put(err);
 	}
+
+        globus_url_destroy(&url_info);
+
     }
     else
     { /* handle == GLOBUS_NULL */
@@ -4112,7 +4123,6 @@ globus_gass_copy_flush_url_state(
 	    myname);
 	return globus_error_put(err);
     }
-    
     return result;
 } /* globus_gass_copy_flush_url_state() */
 
@@ -4230,7 +4240,7 @@ globus_gass_copy_cancel(
 	    return globus_error_put(err);
 	}
 
-	if(handle->status = GLOBUS_GASS_COPY_STATUS_FAILURE)
+	if(handle->status == GLOBUS_GASS_COPY_STATUS_FAILURE)
 	{
 	    err = globus_error_construct_string(
 		GLOBUS_GASS_COPY_MODULE,
