@@ -609,6 +609,12 @@ globus_l_gfs_ipc_unpack_reply(
 
         case GLOBUS_GFS_IPC_TYPE_RESOURCE:
             GFSDecodeUInt32(buffer, len, reply->info.resource.stat_count);
+            reply->info.resource.stat_info = (globus_gridftp_server_stat_t *)
+                globus_calloc(sizeof(globus_gridftp_server_stat_t), 1);
+            if(reply->info.resource.stat_info == NULL)
+            {
+                goto decode_err;
+            }
             for(ctr = 0; ctr < reply->info.resource.stat_count; ctr++)
             {
                 GFSDecodeUInt32(
@@ -677,7 +683,14 @@ globus_l_gfs_ipc_unpack_reply(
     return reply;
 
   decode_err:
-    globus_free(reply);
+    if(reply != NULL)
+    {
+        if(reply->info.resource.stat_info != NULL)
+        {
+            globus_free(reply->info.resource.stat_info);
+        }
+        globus_free(reply);
+    }
                                                                                 
     return NULL;
 }
@@ -938,10 +951,7 @@ globus_l_gfs_ipc_read_body_cb(
                 res = GlobusGFSErrorIPC();
                 goto err;
             }
-            request = (globus_gfs_ipc_request_t *) 
-                globus_hashtable_remove(
-                &ipc->call_table,
-                (void *)reply->id);
+            reply->id = request->id;
             if(request == NULL)
             {
                 goto err;
@@ -2194,6 +2204,7 @@ globus_l_gfs_ipc_pack_data(
     globus_result_t                     res;
     int                                 ctr;
 
+    id = (int) request;
     /* pack the header */
     buffer = globus_malloc(ipc->buffer_size);
     ptr = buffer;
@@ -2429,7 +2440,7 @@ globus_gfs_ipc_request_resource(
             ptr = buffer;
             GFSEncodeChar(
                 buffer, ipc->buffer_size, ptr, GLOBUS_GFS_IPC_TYPE_RESOURCE);
-            GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, id);
+            GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, request->id);
             size_ptr = ptr;
             GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, -1);
 
