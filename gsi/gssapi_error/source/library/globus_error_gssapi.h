@@ -98,6 +98,10 @@ globus_error_gssapi_set_major_status(
     globus_object_t *                   error,
     const OM_uint32                     major_status);
 
+OM_uint32
+globus_error_gssapi_get_minor_status(
+    globus_object_t *                   error);
+
 #endif
 
 /**

@@ -95,28 +95,51 @@ globus_error_initialize_gssapi_error(
 {
     globus_l_gssapi_error_data_t *      instance_data;
     globus_object_t *                   minor_obj;
+    gss_OID_set                         actual_mechs;
+    OM_uint32                           local_minor_status;
+    extern gss_OID                      gss_mech_globus_gssapi_openssl;
     
     instance_data = (globus_l_gssapi_error_data_t *)
         malloc(sizeof(globus_l_gssapi_error_data_t));
 
     instance_data->major_status = major_status;
+    instance_data->minor_status = minor_status;
+    instance_data->is_globus_gsi = GLOBUS_FALSE;
     
-    minor_obj = globus_error_get((globus_result_t) minor_status);
-    if(!minor_obj)
+    if(gss_indicate_mechs(
+        &local_minor_status, &actual_mechs) == GSS_S_COMPLETE)
     {
-        minor_obj = base_cause;
-    }
-    else if(base_cause)
-    {
-        minor_obj = globus_error_initialize_base(
-            minor_obj, globus_error_get_source(base_cause), base_cause);
+        int                             boolean;
+        
+        if(gss_test_oid_set_member(
+            &local_minor_status,
+            gss_mech_globus_gssapi_openssl,
+            actual_mechs,
+            &boolean) == GSS_S_COMPLETE && boolean)
+        {
+            instance_data->is_globus_gsi = GLOBUS_TRUE;
+        }
+        
+        gss_release_oid_set(&local_minor_status, &actual_mechs);
     }
     
-    globus_object_set_local_instance_data(error, (void *) instance_data);
-
-    return globus_error_initialize_base(error,
-                                        base_source,
-                                        minor_obj);
+    if(instance_data->is_globus_gsi)
+    {
+        minor_obj = globus_error_get((globus_result_t) minor_status);
+        if(!base_cause)
+        {
+            base_cause = minor_obj;
+        }
+        else if(minor_obj)
+        {
+            base_cause = globus_error_initialize_base(
+                minor_obj, globus_error_get_source(base_cause), base_cause);
+        }
+    }
+        
+    globus_object_set_local_instance_data(error, instance_data);
+    
+    return globus_error_initialize_base(error, base_source, base_cause);
 }/* globus_error_initialize_gssapi_error() */
 /*@}*/
 
@@ -165,6 +188,44 @@ globus_error_gssapi_set_major_status(
     ((globus_l_gssapi_error_data_t *)
      globus_object_get_local_instance_data(error))->major_status = major_status;
 }/* globus_error_gssapi_set_major_status */
+/*@}*/
+
+/**
+ * @name Get Minor Status
+ */
+/*@{*/
+/**
+ * Retrieve the minor status from a gssapi error object.
+ * @ingroup globus_gssapi_error_accessor  
+ *
+ * @param error
+ *        The error from which to retrieve the major status
+ * @return
+ *        The minor status stored in the object
+ */
+OM_uint32
+globus_error_gssapi_get_minor_status(
+    globus_object_t *                   error)
+{
+    globus_l_gssapi_error_data_t *      data;
+    
+    data = (globus_l_gssapi_error_data_t *)
+        globus_object_get_local_instance_data(error);
+    if(data)
+    {
+        if(data->is_globus_gsi)
+        {
+            return (OM_uint32) globus_error_put(
+                globus_object_copy(globus_error_get_cause(error)));
+        }
+        else
+        {
+            return data->minor_status;
+        }
+    }
+    
+    return 0;
+}
 /*@}*/
 
 /**

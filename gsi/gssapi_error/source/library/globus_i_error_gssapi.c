@@ -34,11 +34,22 @@ globus_l_error_copy_gssapi(
     void *                              src,
     void **                             dst)
 {
+    globus_l_gssapi_error_data_t *      copy;
+    globus_l_gssapi_error_data_t *      data;
+    
     if(src == NULL || dst == NULL) return;
-    (*dst) = (void *) malloc(sizeof(globus_l_gssapi_error_data_t));
-    ((globus_l_gssapi_error_data_t *) *dst)->major_status =
-        ((globus_l_gssapi_error_data_t *) src)->major_status;
-    return;
+    
+    data = (globus_l_gssapi_error_data_t *) src;
+    copy = (globus_l_gssapi_error_data_t *)
+        globus_malloc(sizeof(globus_l_gssapi_error_data_t));
+    if(copy)
+    {
+        copy->major_status = data->major_status;
+        copy->minor_status = data->minor_status;
+        copy->is_globus_gsi = data->is_globus_gsi;
+    }
+    
+    *dst = copy;
 }/* globus_l_error_copy_gssapi */
 /*@}*/
 
@@ -83,7 +94,6 @@ char *
 globus_l_error_gssapi_printable(
     globus_object_t *                   error)
 {
-    OM_uint32	                        major_status;
     OM_uint32	                        minor_status;
     OM_uint32                           message_context;
     gss_buffer_desc                     status_string_desc 
@@ -92,61 +102,63 @@ globus_l_error_gssapi_printable(
     char *                              msg = NULL;
     char *                              tmp;
     int                                 len = 0;
+    globus_l_gssapi_error_data_t *      data;
     
-    major_status = ((globus_l_gssapi_error_data_t *)
-         globus_object_get_local_instance_data(error))->major_status;
-         
-    message_context = 0;
-    do
+    data = (globus_l_gssapi_error_data_t *)
+         globus_object_get_local_instance_data(error);
+    
+    if(data->is_globus_gsi)
     {
-        if(gss_display_status(&minor_status,
-                               major_status,
-                               GSS_C_GSS_CODE,
-                               GSS_C_NO_OID,
-                               &message_context,
-                               status_string) == GSS_S_COMPLETE)
+        message_context = 0;
+        do
         {
-            if(status_string->length)
+            if(gss_display_status(&minor_status,
+                                   data->major_status,
+                                   GSS_C_GSS_CODE,
+                                   GSS_C_NO_OID,
+                                   &message_context,
+                                   status_string) == GSS_S_COMPLETE)
             {
-                if(msg)
-                {
-                    tmp = globus_realloc(
-                        msg, sizeof(char) * (len + status_string->length + 1));
-                }
-                else
-                {
-                    tmp = globus_malloc(
-                        sizeof(char) * (status_string->length + 1));
-                }
-                if(tmp)
-                {
-                    memcpy(
-                        tmp + len,
-                        status_string->value,
-                        status_string->length);
-                }
-                else
+                if(status_string->length)
                 {
                     if(msg)
                     {
-                        free(msg);
+                        tmp = globus_realloc(
+                            msg,
+                            sizeof(char) * (len + status_string->length + 1));
                     }
-                    return NULL;
+                    else
+                    {
+                        tmp = globus_malloc(
+                            sizeof(char) * (status_string->length + 1));
+                    }
+                    if(tmp)
+                    {
+                        memcpy(
+                            tmp + len,
+                            status_string->value,
+                            status_string->length);
+                        msg = tmp;
+                        len += status_string->length;
+                    }
                 }
-                msg = tmp;
-                len += status_string->length;
+                gss_release_buffer(&minor_status, status_string);
             }
-            gss_release_buffer(&minor_status, status_string);
-        }
-    } while(message_context != 0);
-    
-    if(msg)
-    {
-        if(msg[len - 1] == '\n')
+        } while(message_context != 0);
+        
+        if(msg)
         {
-            len--;
+            if(msg[len - 1] == '\n')
+            {
+                len--;
+            }
+            msg[len] = '\0';
         }
-        msg[len] = '\0';
+    }
+    else
+    {
+        globus_gss_assist_display_status_str(
+            &msg, NULL, data->major_status, data->minor_status, 0);
     }
     
     return msg;
