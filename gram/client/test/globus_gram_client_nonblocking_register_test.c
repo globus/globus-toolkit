@@ -72,13 +72,13 @@ test1()
 	goto destroy_callback_contact;
     }
     
-    rc = globus_gram_client_job_callback_register(
+    rc = globus_gram_client_register_job_callback_registration(
 	    job_contact,
 	    GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED|
 	    GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE,
 	    callback_contact,
-	    &monitor.state,
-	    &monitor.errorcode);
+	    gram_state_callback,
+	    GLOBUS_NULL);
 
     if(rc != GLOBUS_SUCCESS)
     {
@@ -185,13 +185,13 @@ test2()
 	goto destroy_callback_contact1;
     }
     
-    rc = globus_gram_client_job_callback_register(
+    rc = globus_gram_client_register_job_callback_registration(
 	    job_contact,
 	    GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED|
 	    GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE,
 	    callback_contact[1],
-	    &monitor.state,
-	    &monitor.errorcode);
+	    gram_state_callback,
+	    GLOBUS_NULL);
 
     if(rc != GLOBUS_SUCCESS)
     {
@@ -201,13 +201,13 @@ test2()
 
 	goto destroy_callback_contact2;
     }
-    rc = globus_gram_client_job_callback_register(
+    rc = globus_gram_client_register_job_callback_registration(
 	    job_contact,
 	    GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED|
 	    GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE,
 	    callback_contact[2],
-	    &monitor.state,
-	    &monitor.errorcode);
+	    gram_state_callback,
+	    GLOBUS_NULL);
 
     if(rc != GLOBUS_SUCCESS)
     {
@@ -307,11 +307,11 @@ test3()
 	goto destroy_bad_callback_contact;
     }
     
-    rc = globus_gram_client_job_callback_unregister(
+    rc = globus_gram_client_register_job_callback_unregistration(
 	    job_contact,
 	    bad_callback_contact,
-	    &bad_status,
-	    &bad_failure_code);
+	    gram_state_callback,
+	    GLOBUS_NULL);
 
     while(monitor.state != GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED &&
 	  monitor.state != GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE)
@@ -412,6 +412,7 @@ gram_state_callback(
     monitor_t *				monitor;
 
     monitor = arg;
+    if(!monitor) return;
 
     globus_mutex_lock(&monitor->mutex);
     monitor->state = state;

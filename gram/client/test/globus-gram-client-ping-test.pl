@@ -52,10 +52,8 @@ sub ping_test
         ok($errors, 'success');
     }
 }
-## Test #1: ping the gatekeeper started for this test.
 push(@tests, "ping_test('$ENV{CONTACT_STRING}', 0);");
-## Test #2: ping the gatekeeper started for this test with a bogus contact.
-push(@tests, "ping_test('$ENV{CONTACT_STRING}X', 10);");
+push(@tests, "ping_test('$ENV{CONTACT_STRING}X', 7);");
 
 # Now that the tests are defined, set up the Test to deal with them.
 plan tests => scalar(@tests), todo => \@todo;
