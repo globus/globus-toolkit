@@ -77,6 +77,7 @@ grd_arch=`echo $grd_dir | $sed 's|.*/||'`
 #remove the next 2 subdir (e.g. <bin>/<arch>) leaving the grd_root
 grd_dir=`echo $grd_dir | $sed 's|/[^/][^/]*$||'`
 GRD_ROOT=`echo $grd_dir | $sed 's|/[^/][^/]*$||'`
+. $GRD_ROOT/default/common/settings.sh
 
 #        The following several lines of code can be used to perform 2
 #        additional error checks prior to job submission. The first check is
@@ -336,7 +337,6 @@ $DEBUG_ECHO "JM_SCRIPT: before settings.sh" >> $grami_logfile
 $DEBUG_ECHO "JM_SCRIPT: PATH=$PATH" >> $grami_logfile
 
 echo ". $GRD_ROOT/default/common/settings.sh" >> $GRD_JOB_SCRIPT
-. $GRD_ROOT/default/common/settings.sh
 
 $DEBUG_ECHO "JM_SCRIPT: after settings.sh" >> $grami_logfile
 $DEBUG_ECHO "JM_SCRIPT: PATH=$PATH" >> $grami_logfile
