@@ -591,6 +591,7 @@ globus_i_io_securesocket_register_connect_callback(
     return;
 
   error_exit:
+    globus_i_io_close(handle);
     globus_i_io_mutex_unlock();
     info->callback(info->callback_arg,
 		   handle,
@@ -1710,6 +1711,8 @@ globus_l_io_init_sec_context(
 	(int) init_info->maj_stat,
 	(int) init_info->min_stat,
 	0);
+
+    globus_i_io_close(handle);
 
     globus_i_io_mutex_unlock();
     init_info->callback(init_info->callback_arg,

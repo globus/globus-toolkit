@@ -423,7 +423,7 @@ globus_io_tcp_connect(
  * @param port The TCP port that the socket will listen for
  * connections on. If the port number is 0, then an arbitrary TCP port
  * will be selected.  If this is true, and the restrict_port attribute
- * is set to TRUE (the default) and the GLOBUS_IO_TCP_PORT_RANGE
+ * is set to TRUE (the default) and the GLOBUS_TCP_PORT_RANGE
  * environment variable was set when Globus I/O was initialized, then
  * the port will be selected from that range. Otherwise, any port number
  * may be chosen.
@@ -1525,6 +1525,58 @@ globus_io_tcp_posix_convert(
     return GLOBUS_SUCCESS;
 }
 /* globus_io_tcp_posix_convert() */
+
+/**
+ * Convert a POSIX-style socket file descriptor to a Globus I/O handle.
+ *
+ * @param socket
+ *        The socket descriptor to be used with Globus I/O. The
+ *        socket descriptor should not be used once this function
+ *        returns. 
+ * @param attributes
+ *        The attributes which will be applied to the socket when possible. Not
+ *        all attributes can be applied to a socket after it has been
+ *        connected.
+ * @param handle
+ *        The new handle which can be used to refer to this socket listener.
+ *        All subsequent I/O on this socket should be done using the Globus I/O
+ *        interface with this handle.
+ *
+ * @return
+ * This function returns GLOBUS_SUCCESS if successful, or a globus_result_t
+ * indicating the error that occurred.
+ * @retval GLOBUS_IO_ERROR_TYPE_NULL_PARAMETER
+ * The handle was equal to GLOBUS_NULL.
+ *
+ * @bug The "attributes" parameter is currently ignored.
+ * @ingroup tcp
+ */
+globus_result_t
+globus_io_tcp_posix_convert_listener(
+    int					socket,
+    globus_io_attr_t *			attributes,
+    globus_io_handle_t *		handle)
+{
+    static char *			myname="globus_io_tcp_posix_convert_listener";
+
+    if(handle == GLOBUS_NULL)
+    {
+	return globus_error_put(
+	    globus_io_error_construct_null_parameter(
+	        GLOBUS_IO_MODULE,
+	        GLOBUS_NULL,
+	        "handle",
+	        3,
+	        myname));
+    }
+    globus_i_io_initialize_handle(handle,
+                                  GLOBUS_IO_HANDLE_TYPE_TCP_CONNECTED);
+    handle->fd = socket;
+    handle->state = GLOBUS_IO_HANDLE_STATE_LISTENING;
+
+    return GLOBUS_SUCCESS;
+}
+/* globus_io_tcp_posix_convert_listener() */
 
 /**
  * Asynchronous wait until a client connection is pending.

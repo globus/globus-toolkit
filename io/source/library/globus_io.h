@@ -1022,6 +1022,12 @@ globus_io_tcp_posix_convert(
     globus_io_attr_t *			attributes,
     globus_io_handle_t *		handle);
 
+globus_result_t
+globus_io_tcp_posix_convert_listener(
+    int					socket,
+    globus_io_attr_t *			attributes,
+    globus_io_handle_t *		handle);
+
 /* attribute methods */
 globus_result_t
 globus_io_fileattr_init(

@@ -1023,7 +1023,7 @@ globus_io_attr_get_file_type(
  * @ingroup attr
  *
  * This attribute is used to determine whether or not to use the 
- * GLOBUS_IO_TCP_PORT_RANGE environment variable to choose an anonymous
+ * GLOBUS_TCP_PORT_RANGE environment variable to choose an anonymous
  * port for a TCP listener handle. This attribute may not be applied to
  * an existing TCP handle.
  *
@@ -4769,7 +4769,7 @@ globus_l_io_udpattr_upcast(
  * @ingroup attr
  *
  * This attribute is used to determine whether or not to use the 
- * GLOBUS_IO_UDP_PORT_RANGE environment variable to choose an anonymous
+ * GLOBUS_UDP_PORT_RANGE environment variable to choose an anonymous
  * port for a UDP handle. This attribute may not be re-applied to
  * an existing UDP handle.
  *
