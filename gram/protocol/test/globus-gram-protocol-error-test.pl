@@ -5,7 +5,7 @@ use strict;
 use POSIX;
 use Test;
 
-my $test_exec = $ENV{GLOBUS_LOCATION} . '/test/' . 'globus-gram-protocol-error-test';
+my $test_exec = 'globus-gram-protocol-error-test';
 
 my $gpath = $ENV{GLOBUS_LOCATION};
 
