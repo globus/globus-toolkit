@@ -55,6 +55,62 @@ globus_l_gsc_cmd_noop(
     globus_i_gsc_finished_command(op, "200 NOOP command successful.\r\n");
 }
 
+static void
+globus_l_gsc_cmd_mdtm_cb(
+    globus_i_gsc_op_t *                     op,
+    globus_result_t                         result,
+    char *                                  path,
+    globus_gridftp_server_control_stat_t *  stat_info,
+    int                                     stat_count,
+    void *                                  user_arg)
+{
+    struct tm *                             tm;
+    char *                                  msg;
+    GlobusGridFTPServerName(globus_l_gsc_cmd_mdtm_cb);
+
+    if(result != GLOBUS_SUCCESS)
+    {
+        msg = globus_libc_strdup("500 Command failed\r\n");
+    }
+    else
+    {
+        tm = gmtime(&stat_info[0].mtime);
+        msg =  globus_common_create_string(
+            "213 %4d%2d%2d%2d%2d%2d\r\n",
+            tm->tm_year, tm->tm_mon, tm->tm_mday, 
+            tm->tm_hour, tm->tm_min, tm->tm_sec);
+    }
+
+    globus_i_gsc_finished_command(op, msg);
+    if(stat_info != NULL)
+    {
+        globus_free(stat_info);
+    }
+    globus_free(msg);
+}
+
+static void
+globus_l_gsc_cmd_mdtm(
+    globus_i_gsc_op_t *                     op,
+    const char *                            full_command,
+    char **                                 cmd_a,
+    int                                     argc,
+    void *                                  user_arg)
+{
+    globus_result_t                         res;
+
+    res = globus_i_gsc_resource_query(
+            op,
+            cmd_a[1],
+            GLOBUS_GRIDFTP_SERVER_CONTROL_RESOURCE_FILE_ONLY,
+            globus_l_gsc_cmd_mdtm_cb,
+            NULL);
+    if(res != GLOBUS_SUCCESS)
+    {
+        globus_i_gsc_finished_command(op, "500 Command not supported.\r\n");
+    }
+}
+
 /*
  *  mode
  */
@@ -326,7 +382,15 @@ globus_l_gsc_cmd_stat_cb(
     }
     else
     {
-        tmp_ptr = globus_i_gsc_list_line(stat_info, stat_count);
+        if((int)user_arg == 0)
+        {
+            tmp_ptr = globus_i_gsc_list_line(stat_info, stat_count);
+        }
+        else
+        {
+            tmp_ptr = globus_i_gsc_mlsx_line(
+                op->server_handle, stat_info, stat_count);
+        }
         msg =  globus_common_create_string(
             "213-status of %s\r\n%s213 End of Status\r\n", 
             op->path, tmp_ptr);
@@ -373,7 +437,7 @@ globus_l_gsc_cmd_stat(
                 cmd_a[1],
                 mask,
                 globus_l_gsc_cmd_stat_cb,
-                NULL);
+                user_arg);
         if(res != GLOBUS_SUCCESS)
         {
             globus_i_gsc_finished_command(op, "500 Command not supported.\r\n");
@@ -1642,6 +1706,7 @@ globus_l_gsc_cmd_transfer(
 
         case GLOBUS_L_GSC_OP_TYPE_NLST:
         case GLOBUS_L_GSC_OP_TYPE_LIST:
+        case GLOBUS_L_GSC_OP_TYPE_MLSD:
             res = globus_i_gsc_list(
                 wrapper->op,
                 wrapper->path,
@@ -1704,6 +1769,10 @@ globus_l_gsc_cmd_stor_retr(
     else if(strcmp(cmd_a[0], "NLST") == 0)
     {
         wrapper->type = GLOBUS_L_GSC_OP_TYPE_NLST;
+    }
+    else if(strcmp(cmd_a[0], "NLSD") == 0)
+    {
+        wrapper->type = GLOBUS_L_GSC_OP_TYPE_MLSD;
     }
     else
     {
@@ -1883,13 +1952,13 @@ globus_i_gsc_add_commands(
 
     globus_i_gsc_command_add(
         server_handle,
-        "NLST", 
-        globus_l_gsc_cmd_stor_retr,
+        "MDTM", 
+        globus_l_gsc_cmd_mdtm,
         GLOBUS_GSC_COMMAND_PRE_AUTH | 
             GLOBUS_GSC_COMMAND_POST_AUTH,
-        1,
         2,
-        "214 Syntax: NLST [<sp> <filename>]\r\n",
+        2,
+        "214 Syntax: MDTM <sp> <filename>\r\n",
         NULL);
 
     globus_i_gsc_command_add(
@@ -1901,6 +1970,39 @@ globus_i_gsc_add_commands(
         2,
         "214 Syntax: MODE <sp> mode-code\r\n",
         NULL);
+
+    globus_i_gsc_command_add(
+        server_handle,
+        "NLST", 
+        globus_l_gsc_cmd_stor_retr,
+        GLOBUS_GSC_COMMAND_PRE_AUTH | 
+            GLOBUS_GSC_COMMAND_POST_AUTH,
+        1,
+        2,
+        "214 Syntax: NLST [<sp> <filename>]\r\n",
+        NULL);
+
+    globus_i_gsc_command_add(
+        server_handle,
+        "MLSD",
+        globus_l_gsc_cmd_stor_retr,
+        GLOBUS_GSC_COMMAND_PRE_AUTH | 
+            GLOBUS_GSC_COMMAND_POST_AUTH,
+        1,
+        2,
+        "214 Syntax: MLSD [<sp> <filename>]\r\n",
+        NULL);
+
+    globus_i_gsc_command_add(
+        server_handle,
+        "MLST",
+        globus_l_gsc_cmd_stat,
+        GLOBUS_GSC_COMMAND_PRE_AUTH | 
+            GLOBUS_GSC_COMMAND_POST_AUTH,
+        1,
+        2,
+        "214 Syntax: MLST [<sp> <filename>]\r\n",
+        (void *)1);
 
     globus_i_gsc_command_add(
         server_handle,
@@ -1950,7 +2052,7 @@ globus_i_gsc_add_commands(
         GLOBUS_GSC_COMMAND_POST_AUTH,
         2,
         2,
-        "214 Syntax: PWD (returns current working directory)\r\n",
+        "214 Syntax: PORT <port>\r\n",
         NULL);
 
     globus_i_gsc_command_add(
@@ -1960,7 +2062,7 @@ globus_i_gsc_add_commands(
         GLOBUS_GSC_COMMAND_POST_AUTH,
         2,
         2,
-        "214 Syntax: PWD (returns current working directory)\r\n",
+        "214 Syntax: EPRT <sp> <port>\r\n",
         NULL);
 
     globus_i_gsc_command_add(
@@ -1970,7 +2072,7 @@ globus_i_gsc_add_commands(
         GLOBUS_GSC_COMMAND_POST_AUTH,
         2,
         2,
-        "214 Syntax: PWD (returns current working directory)\r\n",
+        "214 Syntax: SPOR <sp> <port list>\r\n",
         NULL);
 
     globus_i_gsc_command_add(
@@ -2052,7 +2154,7 @@ globus_i_gsc_add_commands(
         1,
         2,
         "214 Syntax: STAT [<sp> pathname]\r\n",
-        NULL);
+        0);
 
     globus_i_gsc_command_add(
         server_handle,
@@ -2093,12 +2195,4 @@ globus_i_gsc_add_commands(
         2,
         "214 Syntax: USER <sp> username\r\n",
         NULL);
-
-/*
-    LIST
-    NLST
-    MLSD
-    MLST
-    MDTM
-*/
 }

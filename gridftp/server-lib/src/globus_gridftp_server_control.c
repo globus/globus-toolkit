@@ -1907,6 +1907,195 @@ globus_i_gsc_nlst_line(
     return buf;
 }
 
+char *
+globus_i_gsc_mlsx_line(
+    globus_i_gsc_server_handle_t *          server_handle,
+    globus_gridftp_server_control_stat_t *  stat_info,
+    int                                     stat_count)
+{
+    char *                                  out_buf;
+    char *                                  tmp_ptr;
+    char *                                  fact;
+    char *                                  dir_ptr;
+    int                                     buf_len;
+    int                                     ctr;
+    struct tm *                             tm;
+    int                                     is_readable = 0;
+    int                                     is_writable = 0;
+    int                                     is_executable = 0;
+
+
+    buf_len = 80 * stat_count;
+    out_buf = globus_malloc(buf_len);
+
+    tmp_ptr = out_buf;
+    for(ctr = 0; ctr < stat_count; ctr++)
+    {
+        if(tmp_ptr - out_buf + 64 > buf_len)
+        {
+            buf_len *= 2;
+            out_buf = globus_realloc(out_buf, buf_len);
+        }
+        for(fact = server_handle->mlsx_fact_str; *fact != '\0'; fact++)
+        {
+            is_readable = 0;
+            is_writable = 0;
+            is_executable = 0;
+
+            switch(*fact)
+            {
+                case GLOBUS_GSC_MLSX_FACT_TYPE:
+                    if(S_ISREG(stat_info[ctr].mode))
+                    {
+                        sprintf(tmp_ptr, "Type=file;"); 
+                    }
+                    else if(S_ISDIR(stat_info[ctr].mode))
+                    {
+                        dir_ptr = strchr(stat_info[ctr].name, '/');
+                        if(dir_ptr == NULL)
+                        {
+                            dir_ptr = stat_info[ctr].name;
+                        }
+
+                        if(strcmp(dir_ptr, "..") == 0)
+                        {
+                            sprintf(tmp_ptr, "Type=pdir;");
+                        }
+                        else if(strcmp(dir_ptr, ".") == 0)
+                        {
+                            sprintf(tmp_ptr, "Type=cdir;");
+                        }
+                        else
+                        {
+                            sprintf(tmp_ptr, "Type=dir;");
+                        }
+                    }
+                    else if(S_ISCHR(stat_info[ctr].mode))
+                    {
+                        sprintf(tmp_ptr, "Type=OS.unix=chr;"); 
+                    }
+                    else if(S_ISBLK(stat_info[ctr].mode))
+                    {
+                        sprintf(tmp_ptr, "Type=OS.unix=blk;"); 
+                    }
+                    else
+                    {
+                        sprintf(tmp_ptr, "Type=OS.unix=other;"); 
+                    }
+                    break;
+
+                case GLOBUS_GSC_MLSX_FACT_MODIFY:
+                    tm = gmtime(&stat_info[ctr].mtime);
+                    sprintf(tmp_ptr, "Modify=%4d%2d%2d%2d%2d%2d\r\n",
+                        tm->tm_year, tm->tm_mon, tm->tm_mday,
+                        tm->tm_hour, tm->tm_min, tm->tm_sec);
+                    break;
+
+                case GLOBUS_GSC_MLSX_FACT_CHARSET:
+                    sprintf(tmp_ptr, "Charset=UTF-8;");
+                    break;
+
+                case GLOBUS_GSC_MLSX_FACT_SIZE:
+                    sprintf(tmp_ptr, "Size=%llu;", 
+                        (unsigned long long) stat_info[ctr].size);
+                    break;
+
+                case GLOBUS_GSC_MLSX_FACT_PERM:
+                    if(server_handle->uid == stat_info[ctr].uid)
+                    {
+                        if(stat_info[ctr].mode & S_IRUSR)
+                        {
+                            is_readable = 1;
+                        }
+                        if(stat_info[ctr].mode & S_IWUSR)
+                        {
+                            is_writable = 1;
+                        }
+                        if(stat_info[ctr].mode & S_IXUSR)
+                        {
+                            is_executable = 1;
+                        }
+                    }
+                    if(server_handle->uid == stat_info[ctr].gid)
+                    {
+                        if(stat_info[ctr].mode & S_IRGRP)
+                        {
+                            is_readable = 1;
+                        }
+                        if(stat_info[ctr].mode & S_IWGRP)
+                        {
+                            is_writable = 1;
+                        }
+                        if(stat_info[ctr].mode & S_IXGRP)
+                        {
+                            is_executable = 1;
+                        }
+                    }
+                    if(stat_info[ctr].mode & S_IROTH)
+                    {
+                        is_readable = 1;
+                    }
+                    if(stat_info[ctr].mode & S_IWOTH)
+                    {
+                        is_writable = 1;
+                    }
+                    if(stat_info[ctr].mode & S_IXOTH)
+                    {
+                        is_executable = 1;
+                    }
+
+                    if(is_writable && S_ISREG(stat_info[ctr].mode))
+                    {
+                        *(tmp_ptr++) = 'a';
+                        *(tmp_ptr++) = 'w';
+                    }
+
+                    if(is_writable && is_executable && 
+                        S_ISDIR(stat_info[ctr].mode))
+                    {
+                        *(tmp_ptr++) = 'c';
+                        *(tmp_ptr++) = 'f';
+                        *(tmp_ptr++) = 'm';
+                        *(tmp_ptr++) = 'p';
+                    }
+                    if(is_executable && S_ISDIR(stat_info[ctr].mode))
+                    {
+                        *(tmp_ptr++) = 'e';
+                    }
+                    if(is_readable && is_executable && 
+                        S_ISDIR(stat_info[ctr].mode))
+                    {
+                        *(tmp_ptr++) = 'l';
+                    }
+                    if(is_readable && S_ISREG(stat_info[ctr].mode))
+                    {
+                        *(tmp_ptr++) = 'r';
+                    }
+                    *tmp_ptr = ';';
+
+                    break;
+
+                case GLOBUS_GSC_MLSX_FACT_UNIXMODE:
+                    sprintf(tmp_ptr, "UNIX.mode=%04o;", 
+                        (unsigned) (stat_info[ctr].mode & 07777));
+                    break;
+
+                case GLOBUS_GSC_MLSX_FACT_UNIQUE:
+                    sprintf(tmp_ptr, "Unique=%lx-%lx;", 
+                        (unsigned long) stat_info[ctr].dev,
+                        (unsigned long) stat_info[ctr].ino);
+                    break;
+
+                default:
+                    globus_assert(0 && "not a valid fact");
+                    break;
+            }
+            tmp_ptr += strlen(tmp_ptr);
+        }
+    }
+    return out_buf;
+}
+
 /*
  *  turn a stat struct into a string
  */
@@ -2512,6 +2701,7 @@ globus_l_gsc_internal_cb_kickout(
         case GLOBUS_L_GSC_OP_TYPE_RECV:
         case GLOBUS_L_GSC_OP_TYPE_LIST:
         case GLOBUS_L_GSC_OP_TYPE_NLST:
+        case GLOBUS_L_GSC_OP_TYPE_MLSD:
             op->transfer_cb(
                 op,
                 op->res,
@@ -2754,7 +2944,8 @@ globus_gridftp_server_control_begin_transfer(
     if(op->type != GLOBUS_L_GSC_OP_TYPE_SEND &&
         op->type != GLOBUS_L_GSC_OP_TYPE_RECV &&
         op->type != GLOBUS_L_GSC_OP_TYPE_LIST &&
-        op->type != GLOBUS_L_GSC_OP_TYPE_NLST)
+        op->type != GLOBUS_L_GSC_OP_TYPE_NLST &&
+        op->type != GLOBUS_L_GSC_OP_TYPE_MLSD) 
     {
         return GlobusGridFTPServerErrorParameter("op");
     }
@@ -2779,7 +2970,8 @@ globus_gridftp_server_control_finished_transfer(
     if(op->type != GLOBUS_L_GSC_OP_TYPE_SEND &&
         op->type != GLOBUS_L_GSC_OP_TYPE_RECV &&
         op->type != GLOBUS_L_GSC_OP_TYPE_LIST &&
-        op->type != GLOBUS_L_GSC_OP_TYPE_NLST)
+        op->type != GLOBUS_L_GSC_OP_TYPE_NLST &&
+        op->type != GLOBUS_L_GSC_OP_TYPE_MLSD) 
     {
         return GlobusGridFTPServerErrorParameter("op");
     }
@@ -2850,6 +3042,11 @@ globus_gridftp_server_control_list_buffer_malloc(
 
         case GLOBUS_L_GSC_OP_TYPE_NLST:
             return globus_i_gsc_nlst_line(stat_info_array, stat_count);
+            break;
+
+        case GLOBUS_L_GSC_OP_TYPE_MLSD:
+            return globus_i_gsc_mlsx_line(op->server_handle,
+                        stat_info_array, stat_count);
             break;
 
         default:

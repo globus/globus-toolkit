@@ -117,6 +117,8 @@ typedef struct globus_gridftp_server_control_stat_s
     globus_time_t                           atime;
     globus_time_t                           ctime;
     globus_time_t                           mtime;
+    int                                     dev;
+    int                                     ino;
 } globus_gridftp_server_control_stat_t;
 
 /**

@@ -150,6 +150,17 @@ typedef enum globus_i_gsc_error_type_e
     GLOBUS_GRIDFTP_SERVER_CONTROL_MALFORMED_COMMAND
 } globus_i_gsc_error_type_t;
 
+typedef enum globus_i_gsc_mlsx_fact_e
+{
+    GLOBUS_GSC_MLSX_FACT_TYPE = 'T',
+    GLOBUS_GSC_MLSX_FACT_MODIFY = 'M',
+    GLOBUS_GSC_MLSX_FACT_CHARSET = 'C',
+    GLOBUS_GSC_MLSX_FACT_SIZE = 'S',
+    GLOBUS_GSC_MLSX_FACT_PERM = 'P',
+    GLOBUS_GSC_MLSX_FACT_UNIXMODE = 'U',
+    GLOBUS_GSC_MLSX_FACT_UNIQUE = 'Q'
+} globus_i_gsc_mlsx_fact_t;
+
 typedef void
 (*globus_gsc_command_cb_t)(
     struct globus_i_gsc_op_s *              op,
@@ -216,7 +227,7 @@ typedef enum globus_i_gsc_op_type_e
     GLOBUS_L_GSC_OP_TYPE_DESTROY,
     GLOBUS_L_GSC_OP_TYPE_LIST,
     GLOBUS_L_GSC_OP_TYPE_NLST,
-    GLOBUS_L_GSC_OP_TYPE_MLST
+    GLOBUS_L_GSC_OP_TYPE_MLSD
 } globus_i_gsc_op_type_t;
 
 typedef struct globus_i_gsc_op_s
@@ -396,6 +407,7 @@ typedef struct globus_i_gsc_server_handle_s
 
     globus_result_t                         cached_res;
 
+    char *                                  mlsx_fact_str;
     /* 
      *  read.c members 
      */
