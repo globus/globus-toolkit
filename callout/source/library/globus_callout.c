@@ -289,7 +289,6 @@ globus_callout_read_config(
     char *                              pound;
     int                                 index;
     int                                 rc;
-    int                                 i;
     globus_result_t                     result;
     globus_i_callout_data_t *           datum = NULL;
     globus_i_callout_data_t *           existing_datum;
@@ -377,7 +376,7 @@ globus_callout_read_config(
             goto error_exit;
         }
         
-        datum->type = malloc(strlen(type) + 1);
+        datum->type = strdup(type);
 
         if(datum->type == NULL)
         {
@@ -385,13 +384,6 @@ globus_callout_read_config(
             goto error_exit;
         }
 
-        for(i = 0;i < strlen(type);i++)
-        {
-            datum->type[i] = tolower(type[i]);
-        }
-
-        datum->type[i] = '\0';
-        
         if((rc = globus_hashtable_insert(&handle->symbol_htable,
                                          datum->type,
                                          datum)) == -1)
