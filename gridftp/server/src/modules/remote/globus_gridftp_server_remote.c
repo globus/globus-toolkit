@@ -336,8 +336,8 @@ globus_l_gfs_ipc_passive_cb(
             }
 
             /* XXX handle case where cs_count from a single node > 1 */
-            finished_info.info.data.contact_strings[ndx] =
-                globus_libc_strdup(node_info->cs);
+            finished_info.info.data.contact_strings[ndx] = node_info->cs;
+            node_info->cs = NULL;
         
             if(node_info->info && node_info->info_needs_free)
             {
@@ -353,6 +353,12 @@ globus_l_gfs_ipc_passive_cb(
             bounce_info->op,
             finished_info.result,
             &finished_info);
+        
+        for(ndx = 0; ndx < finished_info.info.data.cs_count; ndx++)
+        {
+            globus_free((void *) finished_info.info.data.contact_strings[ndx]);
+        }
+        globus_free(finished_info.info.data.contact_strings);
             
         globus_free(bounce_info);
     }
@@ -484,6 +490,10 @@ globus_l_gfs_ipc_transfer_cb(
                     node_info->info = NULL;
                     node_info->info_needs_free = GLOBUS_FALSE;
                 }
+            }
+            if(bounce_info->eof_count != NULL)
+            {
+                globus_free(bounce_info->eof_count);
             }
             globus_free(bounce_info);
         }
@@ -1213,10 +1223,8 @@ globus_l_gfs_remote_data_destroy(
         node_info->data_arg = NULL;
         node_info->stripe_count = 0;
     }
-   
-    /* can't free this until we are sure that transfer_complete is done 
-    globus_free(node_handle); */
     node_handle->node_list = NULL;
+    globus_free(node_handle);
                         
     return;
 }
@@ -1280,6 +1288,10 @@ globus_l_gfs_remote_trev(
             }
             node_info->event_arg = NULL;
             node_info->event_mask = 0;
+        }
+        if(bounce_info->eof_count != NULL)
+        {
+            globus_free(bounce_info->eof_count);
         }
         globus_free(bounce_info);
     }
@@ -1394,6 +1406,10 @@ globus_l_gfs_remote_session_end(
         {
             globus_i_gfs_log_result(
                 "ERROR: remote_data_destroy: handle_release", result);
+        }
+        if(node_info->info && node_info->info_needs_free)
+        {
+            globus_free(node_info->info);
         }
         globus_free(node_info);
     }                              
