@@ -17,6 +17,8 @@ globus_l_gfs_acl_next(
 {
     int                                 rc = GLOBUS_GFS_ACL_COMPLETE;
     globus_l_gfs_acl_request_t *        acl_request;
+    GlobusGFSName(globus_l_gfs_acl_next);
+    GlobusGFSDebugEnter();
 
     *out_res = GLOBUS_SUCCESS;
 
@@ -55,6 +57,7 @@ globus_l_gfs_acl_next(
         }
     } 
 
+    GlobusGFSDebugExit();
     return rc;
 }
 
@@ -64,6 +67,8 @@ globus_l_gfs_acl_kickout(
 {
     int                                 rc;
     globus_i_gfs_acl_handle_t *         acl_handle;
+    GlobusGFSName(globus_l_gfs_acl_kickout);
+    GlobusGFSDebugEnter();
 
     acl_handle = (globus_i_gfs_acl_handle_t *) user_arg;
 
@@ -86,6 +91,8 @@ globus_l_gfs_acl_kickout(
                 acl_handle->cached_res);
         }
     }
+    
+    GlobusGFSDebugExit();
 }
 
 int
@@ -105,6 +112,8 @@ globus_i_gfs_acl_init(
     globus_list_t *                     list;
     int                                 rc;
     int                                 ctr;
+    GlobusGFSName(globus_i_gfs_acl_init);
+    GlobusGFSDebugEnter();
 
     memset(acl_handle, '\0', sizeof(struct globus_i_gfs_acl_handle_s));
     acl_handle->type = GLOBUS_L_GFS_ACL_TYPE_INIT;
@@ -226,12 +235,14 @@ globus_i_gfs_acl_init(
 
     rc = globus_l_gfs_acl_next(acl_handle, out_res);
 
+    GlobusGFSDebugExit();
     return rc;
 
 alloc_error:
 err:
     globus_i_gfs_acl_destroy(acl_handle);
 
+    GlobusGFSDebugExitWithError();
     return -1;
 }
 
@@ -241,6 +252,8 @@ globus_i_gfs_acl_destroy(
 {
     int                                 ctr;
     globus_l_gfs_acl_request_t *        acl_request;
+    GlobusGFSName(globus_i_gfs_acl_destroy);
+    GlobusGFSDebugEnter();
 
     while(!globus_list_empty(acl_handle->module_list))
     {
@@ -298,6 +311,8 @@ globus_i_gfs_acl_destroy(
     {
         globus_free(acl_handle->auth_object);
     }
+
+    GlobusGFSDebugExit();
 }
 
 int
@@ -310,6 +325,8 @@ globus_gfs_acl_authorize(
     void *                              user_arg)
 {
     int                                 rc;
+    GlobusGFSName(globus_gfs_acl_authorize);
+    GlobusGFSDebugEnter();
 
     acl_handle->type = GLOBUS_L_GFS_ACL_TYPE_AUTHORIZE;
     acl_handle->cb = cb;
@@ -336,9 +353,11 @@ globus_gfs_acl_authorize(
     acl_handle->current_list = globus_list_copy(acl_handle->module_list);
     rc = globus_l_gfs_acl_next(acl_handle, out_res);
 
+    GlobusGFSDebugExit();
     return rc;
 
   err:
+    GlobusGFSDebugExitWithError();
     return -1;
 }
 
@@ -347,6 +366,9 @@ globus_gfs_acl_authorized_finished(
     globus_i_gfs_acl_handle_t *         acl_handle,
     globus_result_t                     result)
 {
+    GlobusGFSName(globus_gfs_acl_authorized_finished);
+    GlobusGFSDebugEnter();
+
     acl_handle->cached_res = result;
 
     globus_callback_register_oneshot(
@@ -354,11 +376,18 @@ globus_gfs_acl_authorized_finished(
         NULL,
         globus_l_gfs_acl_kickout,
         acl_handle);
+
+    GlobusGFSDebugExit();
 }
 
 void
 globus_gfs_acl_add_module(
     globus_gfs_acl_module_t *           module)
 {
+    GlobusGFSName(globus_gfs_acl_add_module);
+    GlobusGFSDebugEnter();
+
     globus_list_insert(&globus_l_acl_module_list, module);
+
+    GlobusGFSDebugExit();
 }

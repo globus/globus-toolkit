@@ -28,6 +28,7 @@ globus_gfs_acl_test_init(
 {
     char *                              fail_str;
     GlobusGFSName(globus_gfs_acl_test_init);
+    GlobusGFSDebugEnter();
 
     fail_str = globus_i_gfs_config_string("test_acl");
     if(fail_str != NULL && (strstr(fail_str, "ALL") || 
@@ -42,10 +43,12 @@ globus_gfs_acl_test_init(
     if(strstr(fail_str, "BLOCK"))
     {
         globus_gfs_acl_authorized_finished(acl_handle, *out_res);
+        GlobusGFSDebugExit();
         return GLOBUS_GFS_ACL_WOULD_BLOCK;
     }
     else
     {
+        GlobusGFSDebugExitWithError();
         return GLOBUS_GFS_ACL_COMPLETE;
     }
 }
@@ -61,6 +64,7 @@ globus_gfs_acl_test_authorize(
 {
     char *                              fail_str;
     GlobusGFSName(globus_gfs_acl_test_authorize);
+    GlobusGFSDebugEnter();
 
     fail_str = globus_i_gfs_config_string("test_acl");
     if(fail_str != NULL && (strstr(fail_str, "ALL") || 
@@ -76,10 +80,12 @@ globus_gfs_acl_test_authorize(
     if(strstr(fail_str, "BLOCK"))
     {
         globus_gfs_acl_authorized_finished(acl_handle, *out_res);
+        GlobusGFSDebugExit();
         return GLOBUS_GFS_ACL_WOULD_BLOCK;
     }
     else
     {
+        GlobusGFSDebugExitWithError();
         return GLOBUS_GFS_ACL_COMPLETE;
     }
 }
@@ -89,6 +95,10 @@ static void
 globus_gfs_acl_test_destroy(
     void *                              out_handle)
 {
+    GlobusGFSName(globus_gfs_acl_test_destroy);
+    GlobusGFSDebugEnter();
+
+    GlobusGFSDebugExit();
 }
 
 globus_gfs_acl_module_t                 globus_gfs_acl_test_module = 
