@@ -1084,8 +1084,10 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self)
 	    self->error_string =
 		my_snprintf("Server authentication failed.\n"
 			    "Expected target subject name=\"%s\"\n"
-			    "Target returned subject name=\"%s\"",
-			    server_name, cn);
+			    "Target returned subject name=\"%s\"\n"
+			    "If target name is acceptable, set MYPROXY_SERVER_DN environment variable\n"
+			    "to \"%s\" and try again.",
+			    server_name, cn, cn);
 	    return GSI_SOCKET_ERROR;
 	}
 
