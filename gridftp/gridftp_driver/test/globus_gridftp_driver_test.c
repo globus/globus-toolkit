@@ -162,6 +162,11 @@ main(
         int                             nbytes;
         int i, x, j = 0;
         fp = fopen(filename, "r");
+        if (fp == NULL)
+        {
+            fprintf(stderr, "ERROR: file could not be open\n");
+            globus_assert(0);
+        }
         while(!feof(fp))
         {
             for (i = 0; i< CHUNK_SIZE + 1; i++)
@@ -193,6 +198,11 @@ main(
         int                             nbytes;
         int                             i, j = 0;
         fp = fopen(filename, "w");
+        if (fp == NULL)
+        {
+            fprintf(stderr, "ERROR: file could not be open\n");
+            globus_assert(0);
+        }
         while(1)
         {
             for (i=0; i<CHUNK_SIZE; i++)
@@ -204,9 +214,9 @@ main(
                 sizeof(buffer),
                 &nbytes,
                 NULL);
+            fputs(buffer, fp);
             if (res == GLOBUS_SUCCESS)
             {
-                fputs(buffer, fp);
                 if (seek)
                 {
                     j += 2*nbytes;
