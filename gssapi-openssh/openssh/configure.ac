@@ -709,10 +709,10 @@ if test "x$gsi_path" != "xno" ; then
 	
 	if test -x ${gsi_path}/bin/globus-makefile-header ; then
 		GSI_LDFLAGS="-L${gsi_path}/lib"
-		GSI_LIBS=`${gsi_path}/bin/globus-makefile-header -flavor=${globus_flavor_type} globus_gss_assist | perl -n -e 'if (/GLOBUS_PKG_LIBS = (.*)/){print $1;}'`
+		GSI_LIBS=`${gsi_path}/bin/globus-makefile-header --flavor=${globus_flavor_type} globus_gss_assist | perl -n -e 'if (/GLOBUS_PKG_LIBS = (.*)/){print $1;}'`
 	elif test -x ${gsi_path}/sbin/globus-makefile-header ; then
 		GSI_LDFLAGS="-L${gsi_path}/lib"
-		GSI_LIBS=`${gsi_path}/sbin/globus-makefile-header -flavor=${globus_flavor_type} globus_gss_assist | perl -n -e 'if (/GLOBUS_PKG_LIBS = (.*)/){print $1;}'`
+		GSI_LIBS=`${gsi_path}/sbin/globus-makefile-header --flavor=${globus_flavor_type} globus_gss_assist | perl -n -e 'if (/GLOBUS_PKG_LIBS = (.*)/){print $1;}'`
 	else
 		AC_MSG_ERROR(Cannot find globus-makefile-header: Globus installation is incomplete)
 	fi
