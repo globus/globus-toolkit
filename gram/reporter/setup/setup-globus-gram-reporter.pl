@@ -152,7 +152,7 @@ else
    print LDIFFILE "type: exec\n";
    print LDIFFILE "path: $globusdir/libexec\n";
    print LDIFFILE "base: globus-gram-reporter\n";
-   print LDIFFILE "args: -conf $globusdir/etc/globus-job-manager.conf -type $selected_jm_type -rdn $rdn -dmdn Mds-Host-hn=${hostname},Mds-Vo-name=local,o=grid\n";
+   print LDIFFILE "args: -home $globusdir -conf $globusdir/etc/globus-job-manager.conf -type $selected_jm_type -rdn $rdn -dmdn Mds-Host-hn=${hostname},Mds-Vo-name=local,o=grid\n";
    print LDIFFILE "cachetime: 30\n";
    print LDIFFILE "timelimit: 20\n";
    print LDIFFILE "sizelimit: 20\n";
