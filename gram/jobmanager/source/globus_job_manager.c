@@ -2420,7 +2420,7 @@ globus_l_gram_status_file_cleanup(void)
         return;
     }
  
-    status_dir = opendir(graml_jm_status_dir);
+    status_dir = globus_libc_opendir(graml_jm_status_dir);
     if(status_dir == GLOBUS_NULL)
     {
         grami_fprintf( graml_log_fp, 
