@@ -44,6 +44,10 @@ EXTERN_C_BEGIN
 #include "globus_gss_assist.h"
 #endif
 
+#ifdef USE_ONLY_STANDARD_GSSAPI
+#include "globus_gss_ext_compat.h"
+#endif
+
 
 struct globus_netlogger_handle_s;
 typedef struct globus_netlogger_handle_s *  globus_netlogger_handle_t;

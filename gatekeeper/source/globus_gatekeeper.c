@@ -60,6 +60,10 @@ CVS Information:
 #include "globus_gss_assist.h"
 #include "gssapi.h"
 
+#ifdef USE_ONLY_STANDARD_GSSAPI
+#include "globus_gss_ext_compat.h"
+#endif
+
 #if defined(TARGET_ARCH_SOLARIS)
 #include <termios.h>
 #endif
@@ -1267,7 +1271,7 @@ static void doit()
         (gss_OID) GSS_APPLICATION_WILL_HANDLE_EXTENSIONS,
         &option_token);
 
-    if (major_status != GSS_S_COMPLETE)
+    if (major_status != GSS_S_COMPLETE && major_status != GSS_S_EXT_COMPAT)
     {
         if (logging_usrlog) 
         {
