@@ -848,6 +848,19 @@ my_ssl_init(int verify, int peer_has_proxy)
 }
 #endif
 
+static int
+my_memccmp(unsigned char *s1, unsigned char *s2, unsigned int n)
+{
+    int i;
+
+    for (i=0; i < n; i++, s1++, s2++) {
+	if (toupper(*s1) != toupper(*s2)) {
+	    return 1;
+	}
+    }
+    return 0;
+}
+
 int
 GSI_SOCKET_authentication_init(GSI_SOCKET *self)
 {
@@ -974,11 +987,13 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self)
     }
 	
 #if defined(SUPPORT_SSL_ANONYMOUS_AUTH)
+	/* Written with reference to compare_name.c in Globus GSSAPI
+	   library. */
     peer = SSL_get_peer_certificate(self->ssl);
     if (peer != NULL) {
-        X509_NAME_ENTRY *ne = NULL;
 	X509_NAME * subject = NULL;
-	char cn[1024];
+	char cn[1024], *ce1, *ce2;
+	int le1, le2, name_equal = 0;;
 
 	subject = X509_get_subject_name(peer);
 	if (X509_NAME_get_text_by_NID(subject, NID_commonName, cn, sizeof(cn))<= 0) {
@@ -986,7 +1001,51 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self)
 	   return GSI_SOCKET_ERROR;
 	}
 
-	if (strcmp(cn, server_name)) {
+	ce1 = cn;
+	le1 = strlen(ce1);
+	if (le1 > 5 && !my_memccmp(ce1, (unsigned char *)"host/", 5)) {
+	    ce1 += 5;
+	    le1 -= 5;
+	}
+	ce2 = server_name;
+	le2 = strlen(ce2);
+	if (le2 > 5 && !my_memccmp(ce2, (unsigned char *)"host/", 5)) {
+	    ce2 += 5;
+	    le2 -= 5;
+	}
+	if (le1 == le2 && !my_memccmp(ce1,ce2,le1)) {
+	    name_equal = 1;
+	} else {
+	    while (le1 > 0 && le2 > 0 && 
+		   toupper(*ce1) == toupper(*ce2)) {
+		le1--;
+		le2--;
+		ce1++;
+		ce2++;
+	    }
+	    if (le1 >0 && le2 > 0) {
+		if ( *ce1 == '.' && *ce2 == '-' ) {
+		    while( le2 > 0  && *ce2 != '.') {
+			le2--;
+			ce2++;
+		    }
+		    if (le1 == le2 && !my_memccmp(ce1,ce2,le1)) {
+			name_equal = 1;
+		    }
+		} else 
+		    if (*ce2 == '.' && *ce1 == '-') {
+			while(le1 > 0 && *ce1 != '.') { 
+			    le1--;
+			    ce1++; 
+			}
+			if (le1 == le2 && !my_memccmp(ce1,ce2,le1)) {
+			    name_equal = 1;
+			}
+		    }
+	    }
+	}
+	
+	if (!name_equal) {
 	    self->error_string =
 		my_snprintf("Server authentication failed.\n"
 			    "Expected target subject name=\"%s\"\n"
