@@ -10,6 +10,7 @@ static globus_bool_t                    globus_l_gfs_terminated = GLOBUS_FALSE;
 static int                              globus_l_gfs_open_count = 0;
 static globus_xio_driver_t              globus_l_gfs_tcp_driver = GLOBUS_NULL;
 static globus_xio_driver_t              globus_l_gfs_ftp_cmd_driver = GLOBUS_NULL;
+static globus_xio_driver_t              globus_l_gfs_gssapi_ftp_driver = GLOBUS_NULL;
 static globus_xio_server_t              globus_l_gfs_xio_server = GLOBUS_NULL;
 static globus_bool_t                    globus_l_gfs_xio_server_accepting;
 static globus_xio_attr_t                globus_l_gfs_xio_attr;
@@ -137,6 +138,9 @@ globus_l_gfs_prepare_stack(
     globus_l_gfs_check_log_and_die(result);
     
     result = globus_xio_stack_push_driver(*stack, globus_l_gfs_tcp_driver);
+    globus_l_gfs_check_log_and_die(result);
+
+    result = globus_xio_stack_push_driver(*stack, globus_l_gfs_gssapi_ftp_driver);
     globus_l_gfs_check_log_and_die(result);
     
     if(!globus_i_gfs_config_bool("data_node"))
@@ -340,7 +344,11 @@ globus_l_gfs_file_activate();
     
     result = globus_xio_driver_load("tcp", &globus_l_gfs_tcp_driver);
     globus_l_gfs_check_log_and_die(result);
+
     result = globus_xio_driver_load("ftp_cmd", &globus_l_gfs_ftp_cmd_driver);
+    globus_l_gfs_check_log_and_die(result);
+
+    result = globus_xio_driver_load("gssapi_ftp", &globus_l_gfs_gssapi_ftp_driver);
     globus_l_gfs_check_log_and_die(result);
     
     result = globus_xio_attr_init(&globus_l_gfs_xio_attr);
@@ -381,6 +389,7 @@ globus_l_gfs_file_activate();
     
     globus_xio_attr_destroy(globus_l_gfs_xio_attr);
     globus_xio_driver_unload(globus_l_gfs_ftp_cmd_driver);
+    globus_xio_driver_unload(globus_l_gfs_gssapi_ftp_driver);
     globus_xio_driver_unload(globus_l_gfs_tcp_driver);
     globus_i_gfs_log_close();
     
