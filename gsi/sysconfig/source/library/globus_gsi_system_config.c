@@ -3408,10 +3408,10 @@ globus_gsi_sysconfig_get_cert_dir_unix(
              "found in any of the following locations: \n"
              "1) env. var. X509_CERT_DIR=%s\n"
              "2) %s\n3) %s\n4) %s\n",
-             env_cert_dir,
-             local_cert_dir,
-             installed_cert_dir,
-             default_cert_dir));
+             env_cert_dir ? env_cert_dir : "NULL",
+             local_cert_dir ? local_cert_dir : "NULL",
+             installed_cert_dir ? installed_cert_dir : "NULL",
+             default_cert_dir ? default_cert_dir : "NULL"));
 
         goto error_exit;
     }
@@ -3683,9 +3683,9 @@ globus_gsi_sysconfig_get_user_cert_filename_unix(
             ("The user cert could not be found in: \n"
              "1) env. var. X509_USER_CERT=%s\n"
              "2) %s\n3) %s\n\n",
-             env_user_cert,
-             default_user_cert,
-             default_pkcs12_user_cred));
+             env_user_cert ? env_user_cert : "NULL",
+             default_user_cert ? default_user_cert : "NULL",
+             default_pkcs12_user_cred ? default_pkcs12_user_cred : "NULL"));
         *user_cert = "NULL_USER_CERT";
         goto done;
     }
@@ -3698,9 +3698,9 @@ globus_gsi_sysconfig_get_user_cert_filename_unix(
             ("The user key could not be found in:\n,"
              "1) env. var. X509_USER_KEY=%s\n"
              "2) %s\n3) %s\n\n",
-             env_user_key,
-             default_user_key,
-             default_pkcs12_user_cred));
+             env_user_key ? env_user_key : "NULL",
+             default_user_key ? default_user_key : "NULL",
+             default_pkcs12_user_cred ? default_pkcs12_user_cred : "NULL"));
         *user_key = "NULL_USER_KEY";
         goto done;
     }
@@ -4069,14 +4069,14 @@ globus_gsi_sysconfig_get_host_cert_filename_unix(
              "The host key could not be found in:\n"
              "1) env. var. X509_USER_KEY=%s\n"
              "2) %s\n3) %s\n4) %s\n",
-             env_host_cert,
-             default_host_cert,
-             installed_host_cert,
-             local_host_cert,
-             env_host_key,
-             default_host_key,
-             installed_host_key,
-             local_host_key));
+             env_host_cert ? env_host_cert : "NULL",
+             default_host_cert ? default_host_cert : "NULL",
+             installed_host_cert ? installed_host_cert : "NULL",
+             local_host_cert ? local_host_cert : "NULL",
+             env_host_key ? env_host_key : "NULL",
+             default_host_key ? default_host_key : "NULL",
+             installed_host_key ? installed_host_key : "NULL",
+             local_host_key ? local_host_key : "NULL"));
         
         goto done;
     }
@@ -4508,14 +4508,14 @@ globus_gsi_sysconfig_get_service_cert_filename_unix(
              "The service key could not be found in:\n"
              "1) env. var. X509_USER_KEY=%s\n"
              "2) %s\n3) %s\n4) %s\n",
-             env_service_cert,
-             default_service_cert,
-             installed_service_cert,
-             local_service_cert,
-             env_service_key,
-             default_service_key,
-             installed_service_key,
-             local_service_key));
+             env_service_cert ? env_service_cert : "NULL",
+             default_service_cert ? default_service_cert : "NULL",
+             installed_service_cert ? installed_service_cert : "NULL",
+             local_service_cert ? local_service_cert : "NULL",
+             env_service_key ? env_service_key : "NULL",
+             default_service_key ? default_service_key : "NULL",
+             installed_service_key ? installed_service_key : "NULL",
+             local_service_key ? local_service_key : "NULL"));
 
         goto done;
     }
@@ -4698,7 +4698,7 @@ globus_gsi_sysconfig_get_proxy_filename_unix(
              "2) %s\n",
              (proxy_file_type == GLOBUS_PROXY_FILE_INPUT) ? "" : " writing",
              env_user_proxy ? env_user_proxy : "NULL",
-             default_user_proxy));
+             default_user_proxy ? default_user_proxy : "NULL"));
         
         goto done;
     }
@@ -4987,8 +4987,10 @@ globus_gsi_sysconfig_remove_all_owned_files_unix(
                             write(f, msg, 64);
                             rec--;
                         }
-                        if (left) 
- write(f, msg, left);
+                        if (left)
+                        { 
+                            write(f, msg, left);
+                        }
                     }
                     close(f);
                 }
