@@ -373,7 +373,6 @@ public class TransferDbAdapter {
             while ( rs != null && rs.next() ) {
                 transferCount = rs.getInt( 1 );
             }
-            System.out.println("transferCount: " +transferCount);
         } catch ( SQLException e ) {
             logger.error( "error in retrieving transferCount" + e.toString(), e );
             returnDBConnection( c );

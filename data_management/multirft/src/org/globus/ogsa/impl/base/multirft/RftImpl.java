@@ -155,11 +155,9 @@ extends GridServiceImpl {
             Util.setFilePermissions( path, 600 );
             dbAdapter.storeProxyLocation( requestId, path );
             this.proxyLocation = path;
-            System.out.println("transfercount : " + this.transferCount);
             int temp = 0;
             Vector initialTransfers = dbAdapter.getTransferJob( requestId,
                 concurrency );
-            System.out.println("size : " + initialTransfers.size());
             if (initialTransfers.size() > 0 ) {
                 for(int i=0;i<initialTransfers.size();i++) {
                     TransferJob transferJob = (TransferJob) 
@@ -688,7 +686,7 @@ extends GridServiceImpl {
                         transferJob.setStatus( TransferJob.STATUS_ACTIVE );
                         dbAdapter.update( transferJob );
                     } else {
-                        System.out.println( "Reusing TransferClient from the pool" );
+                        logger.debug( "Reusing TransferClient from the pool" );
                         transferClient.setSourceURL( transferJob.getSourceUrl() );
                         transferClient.setDestinationURL
                             ( transferJob.getDestinationUrl() );

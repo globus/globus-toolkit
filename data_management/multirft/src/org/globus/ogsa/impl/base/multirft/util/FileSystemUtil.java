@@ -34,7 +34,6 @@ public class FileSystemUtil {
                 this.gridFTPClient.makeDir(dir);
             
         } catch(ServerException e) {
-            System.out.println("Error Code : " + ((UnexpectedReplyCodeException)(e.getRootCause())).getReply().getCode());
             //throw new RemoteException("Exception while making directories"+e.getMessage());
         }       
     }
