@@ -34,7 +34,7 @@ ca_list() {
         TEMP_HASH=`echo ${cert} | ${GLOBUS_SH_SED-sed} -e  "s|.*/\([^/]*\)\.0|\1|"`
         eval "CA_HASH${index}=$TEMP_HASH"
         eval "echo \"$index) \${CA_HASH${index}} -  \${CA_SUBJECT${index}}\""
-        index=$[ $index + 1 ]
+        index=`expr $index + 1`
     done
 
     show_default
@@ -55,8 +55,7 @@ interactive() {
         read CA_CHOSEN_INDEX
     done
     
-    if [ $[ 0 < ${CA_CHOSEN_INDEX} ] == 0 ] ||
-       [ $[ $index > ${CA_CHOSEN_INDEX} ] == 0 ]; then
+    if [ 1 -gt ${CA_CHOSEN_INDEX} ] || [ $index -le ${CA_CHOSEN_INDEX} ]; then
         echo "${CA_CHOSEN_INDEX} is not a valid index!"
         exit 1
     fi
@@ -153,7 +152,7 @@ fi
 
 trusted_certs_dir=$secconfdir/certificates/
 
-if [ $secconfdir -eq "${GLOBUS_LOCATION}/etc/" ]; then
+if [ $secconfdir = "${GLOBUS_LOCATION}/etc/" ]; then
     trusted_certs_dir=${GLOBUS_LOCATION}/share/certificates/
 fi
 

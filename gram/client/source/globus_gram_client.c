@@ -2405,9 +2405,10 @@ globus_l_gram_client_callback(
     int					job_status;
     int					failure_code;
     int					rc;
+    gss_ctx_id_t                        context;
 
     info = arg;
-
+    
     rc = errorcode;
 
     if (rc != GLOBUS_SUCCESS || nbytes <= 0)
@@ -2417,12 +2418,28 @@ globus_l_gram_client_callback(
     }
     else
     {
-        rc = globus_gram_protocol_unpack_status_update_message(
-            buf,
-            nbytes,
-            &url,
-            &job_status,
-            &failure_code);
+        if(globus_gram_protocol_get_sec_context(handle,
+                                                &context))
+        {
+            job_status   = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
+            failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_AUTHORIZATION;
+        }
+        else if(context != GSS_C_NO_CONTEXT &&
+                globus_gram_protocol_authorize_self(context)
+                == GLOBUS_FALSE)
+        {
+            job_status   = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
+            failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_AUTHORIZATION;
+        }
+        else
+        { 
+            rc = globus_gram_protocol_unpack_status_update_message(
+                buf,
+                nbytes,
+                &url,
+                &job_status,
+                &failure_code);
+        }
     }
 
     rc = globus_gram_protocol_reply(handle,

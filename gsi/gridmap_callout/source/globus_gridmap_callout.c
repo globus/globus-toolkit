@@ -45,16 +45,21 @@
  *        passed parameter though the variable argument list facility. The
  *        actual arguments that are passed are:
  *
- *        - The GSS Security context established during service invocation
+ *        - The GSS Security context established during service
+ *          invocation. This parameter is of type gss_ctx_id_t.
  *        - The name of the service being invoced. This parameter should be
  *          passed as a NUL terminated string. If no service string is
- *          available a value of NULL should be passed in its stead.
+ *          available a value of NULL should be passed in its stead. This
+ *          parameter is of type char *
  *        - A NUL terminated string indicating the desired local identity. If
  *          no identity is desired NULL may be passed. In this case the first
- *          local identity that is found will be returned.
+ *          local identity that is found will be returned. This parameter is of
+ *          type char *.
  *        - A pointer to a buffer. This buffer will contain the mapped (local)
- *          identity (NUL terminated string) upon successful return.
- *        - The length of the above mentioned buffer.
+ *          identity (NUL terminated string) upon successful return. This
+ *          parameter is of type char *.
+ *        - The length of the above mentioned buffer. This parameter is of type
+ *          unsigned int.
  *
  * @return
  *        GLOBUS_SUCCESS upon success
@@ -77,6 +82,8 @@ globus_gridmap_callout(
     OM_uint32                           minor_status;
     int                                 rc;
     int                                 initiator;
+    FILE *                              debug_file;
+
     
     context = va_arg(ap, gss_ctx_id_t);
     service = va_arg(ap, char *);
@@ -140,6 +147,14 @@ globus_gridmap_callout(
         gss_release_name(&minor_status, &peer);
         goto error;
     }
+
+    gss_release_name(&minor_status, &peer);
+
+    debug_file = fopen("gridmap_debug.txt","w");
+
+    fprintf(debug_file,
+            "Authorizing for service %s\n",
+            service == NULL ? "NULL" : service);
     
     if(desired_identity == NULL)
     {
@@ -152,6 +167,8 @@ globus_gridmap_callout(
                 result,
                 GLOBUS_GRIDMAP_CALLOUT_LOOKUP_FAILED,
                 ("Could not map %s\n", peer_name_buffer.value));
+            gss_release_buffer(&minor_status, &peer_name_buffer);
+            goto error;
         }
 
         if(strlen(local_identity) + 1 > buffer_length)
@@ -162,6 +179,14 @@ globus_gridmap_callout(
                 ("Local identity length: %d Buffer length: %d\n",
                  strlen(local_identity), buffer_length));
         }
+        else
+        {
+            strcpy(identity_buffer, local_identity);
+            fprintf(debug_file, "Mapped %s to %s",
+                    peer_name_buffer.value, identity_buffer);
+            fclose(debug_file);
+        }
+        free(local_identity);           
     }
     else
     {
@@ -175,14 +200,21 @@ globus_gridmap_callout(
                 ("Could not map %s to %s\n",
                  peer_name_buffer.value,
                  desired_identity));
+            fprintf(debug_file, "Failed to map %s to %s",
+                    peer_name_buffer.value, desired_identity);
         }
+        else
+        { 
+            fprintf(debug_file, "Mapped %s to %s",
+                    peer_name_buffer.value, desired_identity);
+        }
+        fclose(debug_file);
     }
 
-    gss_release_name(&minor_status, &peer);
-    gss_release_buffer(&minor_status, &peer_name_buffer.value);
+    gss_release_buffer(&minor_status, &peer_name_buffer);
 
  error:
-
+    
     globus_module_deactivate(GLOBUS_GSI_GSSAPI_MODULE);
     globus_module_deactivate(GLOBUS_GSI_GSS_ASSIST_MODULE);
     

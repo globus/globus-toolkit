@@ -80,6 +80,7 @@ globus_gram_job_manager_request_init(
     globus_mutex_init(&r->mutex, GLOBUS_NULL);
     globus_cond_init(&r->cond, GLOBUS_NULL);
     r->extra_envvars = GLOBUS_NULL;
+    r->response_context = GSS_C_NO_CONTEXT;
     
     return(GLOBUS_SUCCESS);
 
@@ -101,6 +102,7 @@ int
 globus_gram_job_manager_request_destroy(
     globus_gram_jobmanager_request_t *	request)
 {
+    OM_uint32                           minor_status;
     if (!request)
         return(GLOBUS_FAILURE);
 
@@ -135,6 +137,11 @@ globus_gram_job_manager_request_destroy(
 	globus_libc_free(request->job_state_lock_file);
     if (request->extra_envvars)
         globus_libc_free(request->extra_envvars);
+    if (request->response_context == GSS_C_NO_CONTEXT)
+        gss_delete_sec_context(&minor_status,
+                               &request->response_context,
+                               NULL);
+
     globus_libc_free(request);
 
     return(GLOBUS_SUCCESS);

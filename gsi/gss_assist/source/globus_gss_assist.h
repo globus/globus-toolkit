@@ -352,6 +352,15 @@ globus_gss_assist_lookup_all_globusid(
     char **                                     dns[],
     int *                                       dn_count);
 
+globus_result_t
+globus_gss_assist_map_and_authorize(
+    gss_ctx_id_t                        context,
+    char *                              service,
+    char *                              desired_identity,
+    char *                              identity_buffer,
+    unsigned int                        identity_buffer_length);
+
+
 
 #define GlobusGssAssistFreeDNArray(dn_a)                    \
 {                                                           \

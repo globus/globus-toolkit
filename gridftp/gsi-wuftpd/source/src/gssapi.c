@@ -353,24 +353,33 @@ gssapi_check_authorization(char *gssapi_name, char *account)
 
 #if defined(GSSAPI_GLOBUS) || defined(GRIDMAP_WITH_KRB5)
 	int retval = -1;	/* 0 == authorized */
+        char * identity_buffer[256];
+        globus_result_t result;
+        globus_object_t * error;
+        char * error_string;
 
-
-	if (debug)
-	    syslog(LOG_DEBUG,
-		   "Checking to see if Globus name <%s> is authorized to"
-		   " access account %s",
-		   gssapi_name, account);
-		       
-	
+        
 	/*
 	 *  Check mapping between client name and local name
 	 */
-	if (globus_gss_assist_userok(gssapi_name, account) == 0) {
+
+        result = globus_gss_assist_map_and_authorize(gssapi_get_gss_ctx_id_t(),
+                                                     "gridftp",
+                                                     account,
+                                                     identity_buffer,
+                                                     256);
+        
+	if (result == GLOBUS_SUCCESS) {
 	    /* Success */
 	    retval = 0;
 	} else {
-	    if (debug)
-		syslog(LOG_INFO, "globus_gss_assist_userok() failed");
+            error = globus_error_get(result);
+            error_string = globus_error_print_chain(error);
+            syslog(LOG_INFO,
+                   "globus_gss_assist_map_and_authorize() failed: %s",
+                   error_string);
+            globus_object_free(error);
+            free(error_string);
 	}
 
 	return retval;
@@ -1089,15 +1098,25 @@ gssapi_reply_error(code, maj_stat, min_stat, s)
 char *globus_local_name(globus_id)
      char *globus_id;
 {
-    char *mapped_name;
+    char * identity_buffer[256];
+    globus_result_t result;
 
     if (globus_id == NULL)
 	return NULL;
 
-    if (globus_gss_assist_gridmap(globus_id, &mapped_name) != 0)
-	mapped_name = NULL;
-
-    return mapped_name;
+    result = globus_gss_assist_map_and_authorize(gssapi_get_gss_ctx_id_t(),
+                                                 "gridftp",
+                                                 NULL,
+                                                 identity_buffer,
+                                                 256);
+    if(result != GLOBUS_SUCCESS)
+    { 
+        return NULL;
+    }
+    else
+    {
+        return strdup(identity_buffer);
+    }
 }
 #endif /* GSSAPI_GLOBUS */
 
@@ -1183,8 +1202,6 @@ gssapi_unsetenv(const char *var)
 #endif /* HAVE_UNSETENV */
 }
 
-
-#ifdef GLOBUS_AUTHORIZATION
 /*
  * gssapi_get_gss_ctx_id_t()
  * 
@@ -1200,6 +1217,5 @@ gssapi_get_gss_ctx_id_t(void)
 {
     return gcontext;
 }
-#endif /* GLOBUS_AUTHORIZATION */
 
 #endif /* GSSAPI */

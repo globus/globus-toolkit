@@ -126,6 +126,8 @@ extern FILE *                           globus_i_gsi_gss_assist_debug_fstream;
                                                         NULL, \
                                                         _LONG_DESC_)
 
+
+
 extern char *                        globus_l_gsi_gss_assist_error_strings[];
 
 globus_result_t

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<deployment name="defaultClientConfig" 
+            xmlns="http://xml.apache.org/axis/wsdd/" 
+            xmlns:java="http://xml.apache.org/axis/wsdd/providers/java"
+            xmlns:multirft-port-type="http://multirft.base.ogsa.globus.org" 
+            xmlns:multirft-types="http://multirft.base.ogsa.globus.org/rft_types" 
+            xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+
+ <!-- RFT Mappings-->
+
+ </deployment>
+                                    

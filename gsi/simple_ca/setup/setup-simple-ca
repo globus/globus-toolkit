@@ -610,11 +610,28 @@ cd ${tmp_ca_setup_dir}
 #${GLOBUS_SH_CHMOD-chmod} 0700 bootstrap
 ${GLOBUS_SH_CHMOD-chmod} 0700 configure
 
+CA_UTILS_PACKAGE_DIR=globus_simple_ca_${CA_CERT_HASH}_setup-0.13
+CA_UTILS_PACKAGE=$CA_UTILS_PACKAGE_DIR.tar.gz
+
 #./bootstrap
 ./configure
-make dist
+make distdir
+${GLOBUS_SH_CHMOD-chmod} -R a+r ${CA_UTILS_PACKAGE_DIR}
+${GLOBUS_SH_TAR-tar} cvf $CA_UTILS_PACKAGE_DIR.tar $CA_UTILS_PACKAGE_DIR
+if test $? -ne 0; then 
+	echo ""
+	echo "SETUP FAILED: Could not create tarball of setup package."
+	echo ""
+	exit 1;
+fi
 
-CA_UTILS_PACKAGE=globus_simple_ca_${CA_CERT_HASH}_setup-0.12.tar.gz
+${GLOBUS_SH_GZIP-gzip} -f9 $CA_UTILS_PACKAGE_DIR.tar
+if test $? -ne 0; then
+	echo ""
+	echo "SETUP FAILED: Could not create gzip of setup package."
+	echo ""
+	exit 1;
+fi
 
 if test ! -f ${tmp_ca_setup_dir}/${CA_UTILS_PACKAGE}; then
     echo ""

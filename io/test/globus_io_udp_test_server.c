@@ -14,7 +14,7 @@ globus_l_udp_test_receive_callback(
     globus_result_t                   result,
     globus_byte_t *                   buf,
     globus_size_t                     nbytes,
-    char *                            host,
+    const char *                      host,
     unsigned short                    port);
 
 static int                   mc_count = 1;
@@ -34,8 +34,6 @@ static globus_mutex_t        globus_l_io_udp_mutex;
 int
 main(int argc, char **argv)
 {
-    int					rc;
-    
     globus_module_activate(GLOBUS_IO_MODULE);
 
     test1(argc, argv);			/* secure server*/
@@ -52,9 +50,6 @@ test1(int argc, char **argv)
     globus_io_handle_t			handle;
     globus_io_attr_t			attr;
     globus_byte_t  			buf[BUF_SIZE];
-    char *                              from_host;
-    unsigned short                      from_port;
-    globus_size_t			from_bytes;
     char *                              mc_host = GLOBUS_NULL;
     unsigned short                      mc_port = 0;
     globus_bool_t                       mc_enabled = GLOBUS_FALSE;
@@ -163,10 +158,10 @@ globus_l_udp_test_receive_callback(
     globus_result_t                   result,
     globus_byte_t *                   buf,
     globus_size_t                     nbytes,
-    char *                            host,
+    const char *                      host,
     unsigned short                    port)
 {
-    static int                       count = 0;
+    static char *                   msg = "123\0 567";
     static char *                    myname = "globus_l_udp_test_receive_callback";
     
     msgs_received++;
@@ -181,10 +176,21 @@ globus_l_udp_test_receive_callback(
     {
         if(msgs_received >= mc_count)
         {
+            globus_libc_printf("%s() sending: %s\n", myname, msg);
+            result = globus_io_udp_sendto(
+               handle,
+               (globus_byte_t *)msg,
+               0,
+               9,
+               (char *)host,
+               port,
+               &nbytes);
+            assert(result == GLOBUS_SUCCESS);
+
             globus_cond_signal(&globus_l_io_udp_cond);
-	}
-	else
-	{
+	    }
+	    else
+	    {
             result = globus_io_udp_register_recvfrom(
 	                  handle,
                           buf,
@@ -196,7 +202,6 @@ globus_l_udp_test_receive_callback(
         }
     }
     globus_mutex_unlock(&globus_l_io_udp_mutex);
-
 
     globus_libc_printf("%s() : end\n", myname);
 }

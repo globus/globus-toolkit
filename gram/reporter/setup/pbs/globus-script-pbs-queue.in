@@ -49,7 +49,7 @@ uptime=${GLOBUS_SH_UPTIME-uptime}
 grep=${GLOBUS_SH_GREP-grep}                                 
 awk=${GLOBUS_SH_AWK-awk}
 wc=${GLOBUS_SH_WC-wc}
-cut=$GLOBUS_SH_CUT-cut}
+cut=${GLOBUS_SH_CUT-cut}
 ########
 
 tmp_file="${local_tmpdir}/globus_tmp_file.$$"
