@@ -907,6 +907,12 @@ globus_gram_job_manager_state_machine(
 		request->unsent_status_change = GLOBUS_FALSE;
 	    }
 
+	    if(!globus_fifo_empty(&request->pending_queries))
+	    {
+		request->jobmanager_state =
+		    GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY1;
+		break;
+	    }
 	    request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_POLL2;
 
 	    /* Register next poll of job state */
@@ -947,7 +953,73 @@ globus_gram_job_manager_state_machine(
 	 */
 	query = globus_fifo_peek(&request->pending_queries);
 
-	if(query->type == GLOBUS_GRAM_JOB_MANAGER_SIGNAL)
+	if(query->type == GLOBUS_GRAM_JOB_MANAGER_SIGNAL &&
+	   query->signal == GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_STDIO_UPDATE)
+	{
+	    query->rsl = globus_rsl_parse(query->signal_arg);
+	    if(!query->rsl)
+	    {
+		query->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
+	        request->jobmanager_state = 
+		    GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2;
+		break;
+	    }
+	    rc = globus_rsl_assist_attributes_canonicalize(query->rsl);
+	    if(rc != GLOBUS_SUCCESS)
+	    {
+		query->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
+	        request->jobmanager_state = 
+		    GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2;
+		break;
+	    }
+	    original_rsl = request->rsl;
+	    request->rsl = query->rsl;
+	    rc = globus_gram_job_manager_validate_rsl(
+		    request,
+		    GLOBUS_GRAM_VALIDATE_STDIO_UPDATE);
+	    if(rc != GLOBUS_SUCCESS)
+	    {
+		query->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
+	        request->jobmanager_state = 
+		    GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2;
+		request->rsl = original_rsl;
+		break;
+	    }
+	    rc = globus_rsl_eval(request->rsl, &request->symbol_table);
+	    if(rc != GLOBUS_SUCCESS)
+	    {
+		query->failure_code =
+		    GLOBUS_GRAM_PROTOCOL_ERROR_RSL_EVALUATION_FAILED;
+		request->jobmanager_state =
+		    GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2;
+		request->rsl = original_rsl;
+		break;
+	    }
+
+	    request->rsl = globus_gram_job_manager_rsl_merge(
+		original_rsl,
+		query->rsl);
+
+	    if(request->rsl == GLOBUS_NULL)
+	    {
+		request->rsl = original_rsl;
+		query->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
+	        request->jobmanager_state = 
+		    GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2;
+		break;
+	    }
+
+	    request->jobmanager_state =
+		GLOBUS_GRAM_JOB_MANAGER_STATE_STDIO_UPDATE_CLOSE;
+
+	    rc = globus_gram_job_manager_output_close(request);
+	    if(rc == GLOBUS_SUCCESS)
+	    {
+		event_registered = GLOBUS_TRUE;
+	    }
+	    break;
+	}
+	else if(query->type == GLOBUS_GRAM_JOB_MANAGER_SIGNAL)
 	{
 	    rc = globus_gram_job_manager_script_signal(
 		    request,
@@ -1007,6 +1079,32 @@ globus_gram_job_manager_state_machine(
 	}
 	break;
     
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_STDIO_UPDATE_CLOSE:
+	request->jobmanager_state =
+	    GLOBUS_GRAM_JOB_MANAGER_STATE_STDIO_UPDATE_OPEN;
+	rc = globus_gram_job_manager_rsl_request_fill(request);
+	if(rc != GLOBUS_SUCCESS)
+	{
+	    query->failure_code = rc;
+	    break;
+	}
+	rc = globus_gram_job_manager_output_open(request);
+	if(rc == GLOBUS_SUCCESS)
+	{
+	    event_registered = GLOBUS_TRUE;
+	}
+	else
+	{
+	    query->failure_code = rc;
+	}
+	break;
+
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_STDIO_UPDATE_OPEN:
+	request->jobmanager_state =
+	    GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2;
+	break;
+
+
       case GLOBUS_GRAM_JOB_MANAGER_STATE_STAGE_OUT:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED:
@@ -1706,6 +1804,9 @@ globus_l_gram_job_manager_state_string(
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE_COMMIT_EXTEND)
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY1)
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2)
+        STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_STDIO_UPDATE_CLOSE)
+        STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_STDIO_UPDATE_OPEN)
+
 	/* Don't put a default case here. */
     }
     return "UNKNOWN";

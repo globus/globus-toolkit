@@ -11,8 +11,12 @@
  * $Author$
  */
 
-#define GLOBUS_GRAM_VALIDATE_JOB_SUBMIT_STRING "GLOBUS_GRAM_JOB_SUBMIT"
-#define GLOBUS_GRAM_VALIDATE_JOB_MANAGER_RESTART_STRING "GLOBUS_GRAM_JOB_MANAGER_RESTART"
+#define GLOBUS_GRAM_VALIDATE_JOB_SUBMIT_STRING \
+        "GLOBUS_GRAM_JOB_SUBMIT"
+#define GLOBUS_GRAM_VALIDATE_JOB_MANAGER_RESTART_STRING \
+	"GLOBUS_GRAM_JOB_MANAGER_RESTART"
+#define GLOBUS_GRAM_VALIDATE_STDIO_UPDATE_STRING \
+	"GLOBUS_GRAM_JOB_MANAGER_STDIO_UPDATE"
 
 #include "globus_common.h"
 #include "globus_gram_job_manager.h"
@@ -476,6 +480,10 @@ globus_l_gram_job_manager_read_validation_file(
 	    {
 		tmp->required_when |= GLOBUS_GRAM_VALIDATE_JOB_MANAGER_RESTART;
 	    }
+	    if(strstr(value, GLOBUS_GRAM_VALIDATE_STDIO_UPDATE_STRING))
+	    {
+		tmp->required_when |= GLOBUS_GRAM_VALIDATE_STDIO_UPDATE;
+	    }
 	    globus_libc_free(value);
 	    value = GLOBUS_NULL;
 	}
@@ -491,6 +499,10 @@ globus_l_gram_job_manager_read_validation_file(
 	    {
 		tmp->default_when |= GLOBUS_GRAM_VALIDATE_JOB_MANAGER_RESTART;
 	    }
+	    if(strstr(value, GLOBUS_GRAM_VALIDATE_STDIO_UPDATE_STRING))
+	    {
+		tmp->default_when |= GLOBUS_GRAM_VALIDATE_STDIO_UPDATE;
+	    }
 	    globus_libc_free(value);
 	    value = GLOBUS_NULL;
 	}
@@ -505,6 +517,10 @@ globus_l_gram_job_manager_read_validation_file(
 	    if(strstr(value, GLOBUS_GRAM_VALIDATE_JOB_MANAGER_RESTART_STRING))
 	    {
 		tmp->valid_when |= GLOBUS_GRAM_VALIDATE_JOB_MANAGER_RESTART;
+	    }
+	    if(strstr(value, GLOBUS_GRAM_VALIDATE_STDIO_UPDATE_STRING))
+	    {
+		tmp->valid_when |= GLOBUS_GRAM_VALIDATE_STDIO_UPDATE;
 	    }
 	    globus_libc_free(value);
 	    value = GLOBUS_NULL;

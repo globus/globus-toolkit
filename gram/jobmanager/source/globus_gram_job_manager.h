@@ -69,7 +69,9 @@ typedef enum
     GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_CLOSE_OUTPUT,
     GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_DONE,
     GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY1,
-    GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2
+    GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2,
+    GLOBUS_GRAM_JOB_MANAGER_STATE_STDIO_UPDATE_CLOSE,
+    GLOBUS_GRAM_JOB_MANAGER_STATE_STDIO_UPDATE_OPEN
 }
 globus_gram_jobmanager_state_t;
 
@@ -126,6 +128,15 @@ typedef struct
      * the documentation on signals in the globus_gram_protocol library.
      */
     char *				signal_arg;
+    /**
+     * Query-specific RSL tree 
+     *
+     * If the query is a stdio update signal, then the arg is an RSL
+     * string which may contain replacement values for
+     * stdout, stderr, stdout_position, stderr_position, and remoteio_url.
+     * This will be merged with the request's tree as the signal is handled.
+     */
+    globus_rsl_t *			rsl;
 
     globus_gram_protocol_error_t	failure_code;
 }
@@ -380,7 +391,8 @@ globus_gram_job_manager_request_log(
 typedef enum
 {
     GLOBUS_GRAM_VALIDATE_JOB_SUBMIT = 1,
-    GLOBUS_GRAM_VALIDATE_JOB_MANAGER_RESTART = 2
+    GLOBUS_GRAM_VALIDATE_JOB_MANAGER_RESTART = 2,
+    GLOBUS_GRAM_VALIDATE_STDIO_UPDATE = 4
 }
 globus_gram_job_manager_validation_when_t;
 

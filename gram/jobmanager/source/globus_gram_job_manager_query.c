@@ -62,8 +62,7 @@ globus_l_gram_job_manager_query_reply(
 static
 globus_bool_t
 globus_gram_job_manager_query_valid(
-    globus_gram_jobmanager_request_t *	request,
-    globus_gram_job_manager_query_t *	query);
+    globus_gram_jobmanager_request_t *	request);
 
 void
 globus_gram_job_manager_query_callback(
@@ -370,6 +369,7 @@ globus_l_gram_job_manager_signal(
     case GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_SUSPEND:
     case GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_RESUME:
     case GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_PRIORITY:
+    case GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_STDIO_UPDATE:
 	if(!after_signal || strlen(after_signal) == 0)
 	{
 	    rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
@@ -382,7 +382,7 @@ globus_l_gram_job_manager_signal(
 	query->signal = signal;
 	query->signal_arg = globus_libc_strdup(after_signal);
 
-	if(!globus_gram_job_manager_query_valid(request, query))
+	if(!globus_gram_job_manager_query_valid(request))
 	{
 	    rc = GLOBUS_GRAM_PROTOCOL_ERROR_JOB_QUERY_DENIAL;
 	    break;
@@ -499,22 +499,7 @@ globus_l_gram_job_manager_signal(
 	    request->commit_extend += atoi(after_signal);
 	}
 	break;
-#if 0
-    case GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_STDIO_UPDATE:
-	if (done)
-	{
-	    rc = GLOBUS_GRAM_PROTOCOL_ERROR_JOB_QUERY_DENIAL;
-	}
-	else if (after_signal && (strlen(after_signal) > 0))
-	{
-	    /* handle stdio update */
-	}
-	else
-	{
-	    rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
-	}
-	break;
-#endif
+
     case GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_STDIO_SIZE:
 	if (after_signal &&
 		sscanf(after_signal, "%"GLOBUS_OFF_T_FORMAT" %"GLOBUS_OFF_T_FORMAT,
@@ -631,8 +616,7 @@ globus_l_gram_job_manager_can_cancel(
 static
 globus_bool_t
 globus_gram_job_manager_query_valid(
-    globus_gram_jobmanager_request_t *	request,
-    globus_gram_job_manager_query_t *	query)
+    globus_gram_jobmanager_request_t *	request)
 {
     switch(
 	    (request->restart_state != GLOBUS_GRAM_JOB_MANAGER_STATE_START)

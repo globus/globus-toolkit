@@ -356,6 +356,8 @@ globus_l_gram_job_manager_proxy_expiration(
       case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL2:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY1:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2:
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_STDIO_UPDATE_CLOSE:
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_STDIO_UPDATE_OPEN:
         if(request->save_state)
         {
 	    request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_STOP;

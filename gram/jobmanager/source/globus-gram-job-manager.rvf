@@ -35,7 +35,7 @@ Description: "The name of the remote file to store the standard output from
 	      the job is transferred dynamically during the execution of the
 	      job."
 Default: "/dev/null"
-ValidWhen: GLOBUS_GRAM_JOB_SUBMIT GLOBUS_GRAM_JOB_MANAGER_RESTART
+ValidWhen: GLOBUS_GRAM_JOB_SUBMIT GLOBUS_GRAM_JOB_MANAGER_RESTART GLOBUS_GRAM_JOB_MANAGER_STDIO_UPDATE
 DefaultWhen: GLOBUS_GRAM_JOB_SUBMIT 
 
 Attribute: stderr
@@ -44,7 +44,7 @@ Description: "The name of the remote file to store the standard error from
 	      the job is transferred dynamically during the execution of the
 	      job."
 Default: "/dev/null"
-ValidWhen: GLOBUS_GRAM_JOB_SUBMIT GLOBUS_GRAM_JOB_MANAGER_RESTART
+ValidWhen: GLOBUS_GRAM_JOB_SUBMIT GLOBUS_GRAM_JOB_MANAGER_RESTART GLOBUS_GRAM_JOB_MANAGER_STDIO_UPDATE
 DefaultWhen: GLOBUS_GRAM_JOB_SUBMIT 
 
 Attribute: count
@@ -185,7 +185,7 @@ Description: "Writes the given value (a URL base string) to a file, and adds
 	      file's contents. This is intended for jobs that want to access
 	      files via GASS, but the URL of the GASS server has changed due
 	      to a GASS server restart."
-ValidWhen: GLOBUS_GRAM_JOB_SUBMIT GLOBUS_GRAM_JOB_MANAGER_RESTART
+ValidWhen: GLOBUS_GRAM_JOB_SUBMIT GLOBUS_GRAM_JOB_MANAGER_RESTART GLOBUS_GRAM_JOB_MANAGER_STDIO_UPDATE
 
 Attribute: scratchdir
 Description: "Specifies the location to create a scratch subdirectory in.
@@ -221,12 +221,12 @@ ValidWhen: GLOBUS_GRAM_JOB_MANAGER_RESTART
 Attribute: stdoutposition
 Description: "Specifies where in the file remote output streaming should be
               restarted from."
-ValidWhen: GLOBUS_GRAM_JOB_MANAGER_RESTART
+ValidWhen: GLOBUS_GRAM_JOB_MANAGER_RESTART GLOBUS_GRAM_JOB_MANAGER_STDIO_UPDATE
 
 Attribute: stderrposition
 Description: "Specifies where in the file remote standard error streaming
               should be restarted from."
-ValidWhen: GLOBUS_GRAM_JOB_MANAGER_RESTART
+ValidWhen: GLOBUS_GRAM_JOB_MANAGER_RESTART GLOBUS_GRAM_JOB_MANAGER_STDIO_UPDATE
 
 Attribute: filestagein
 Description: "Specifies a list of (\"remote URL\" \"local file\") pairs which
