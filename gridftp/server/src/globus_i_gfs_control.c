@@ -94,6 +94,7 @@ globus_l_gfs_request_abort(
         GLOBUS_I_GFS_LOG_ERR,
         "Aborting \n");
 
+    instance->transfer_id = (int)op;
     globus_i_gfs_data_request_transfer_event(
         NULL, 
         instance->session_id,
