@@ -215,7 +215,7 @@ globus_l_pbs_module_activate(void)
     }
     result = globus_common_get_attribute_from_config_file(
             NULL,
-            "etc/globus_scheduler_event_generator_pbs.conf",
+            "etc/globus-pbs.conf",
             "log_path",
             &logfile_state->log_dir);
     if (result != GLOBUS_SUCCESS)
@@ -860,10 +860,14 @@ globus_l_pbs_parse_events(
             }
             if (strstr(fields[5], "Job Queued") == fields[5])
             {
+                SEG_PBS_DEBUG(SEG_PBS_DEBUG_TRACE,
+                        ("job %s pending\n", fields[4]));
                 rc = globus_scheduler_event_pending(stamp, fields[4]);
             }
             else if (strstr(fields[5], "Job Run") == fields[5])
             {
+                SEG_PBS_DEBUG(SEG_PBS_DEBUG_TRACE,
+                        ("job %s active\n", fields[4]));
                 rc = globus_scheduler_event_active(stamp, fields[4]);
             }
             else if (strstr(fields[5], "Exit_status") == fields[5])
@@ -874,9 +878,17 @@ globus_l_pbs_parse_events(
                 {
                     break;
                 }
+                SEG_PBS_DEBUG(SEG_PBS_DEBUG_TRACE,
+                        ("job %s done\n", fields[4]));
                 rc = globus_scheduler_event_done(stamp,
                         fields[4],
                         exit_status);
+            }
+            else if (strstr(fields[5], "Job deleted") == fields[5])
+            {
+                SEG_PBS_DEBUG(SEG_PBS_DEBUG_TRACE,
+                    ("job %s failed\n", fields[4]));
+                rc = globus_scheduler_event_failed(stamp, fields[4], 0);
             }
             break;
         }
