@@ -1,6 +1,6 @@
 diff -r -u openssl-0.9.6b/Configure openssl-0.9.6b-patched/Configure
 --- openssl-0.9.6b/Configure	Mon Jul  9 09:08:37 2001
-+++ openssl-0.9.6b-patched/Configure	Thu Oct 11 11:59:17 2001
++++ openssl-0.9.6b-patched/Configure	Fri Oct 12 17:00:47 2001
 @@ -187,7 +187,7 @@
  # './Configure irix-[g]cc' manually.
  # -mips4 flag is added by ./config when appropriate.
@@ -28,6 +28,30 @@ diff -r -u openssl-0.9.6b/Configure openssl-0.9.6b-patched/Configure
  "aix43-gcc",  "gcc:-O3 -DAIX -DB_ENDIAN::(unknown)::BN_LLONG RC4_CHAR::::::::::dlfcn:",
  
  #
+@@ -789,6 +795,22 @@
+ my $shlib_version_history = "unknown";
+ my $shlib_major = "unknown";
+ my $shlib_minor = "unknown";
++
++# Check to see if gcc's linker is actually using gnu's linker.
++if ($cc eq 'gcc') {
++  my $ld = `$cc -print-prog-name=ld`;
++  my $result = `$ld -v 2>&1`;
++  if ($result =~ m!(?:GNU)|(?:with BFD)!) {
++    $shared_target = 'gcc-shared';
++  } else {
++    my $cctarget = $target;
++    $cctarget =~ s!-gcc!-cc!;
++    my ( $duncc, $duncflags, $dununistd, $dunthread_cflag, $dunlflags, $dunbn_ops, $dunbn_obj, $dundes_obj, $dunbf_obj,$dunmd5_obj,$dunsha1_obj, $duncast_obj, $dunrc4_obj,$dunrmd160_obj, $dunrc5_obj, $dundso_scheme, $dunshared_target, $dunshared_cflag, $dunshared_extension, $dunranlib)=
++       split(/\s*:\s*/,$table{$cctarget} . ":" x 30 , -1);
++    
++    $shared_target = $dunshared_target;
++  }
++}
+ 
+ open(IN,'<crypto/opensslv.h') || die "unable to read opensslv.h:$!\n";
+ while (<IN>)
+Only in openssl-0.9.6b-patched/: Configure~
 diff -r -u openssl-0.9.6b/Makefile openssl-0.9.6b-patched/Makefile
 --- openssl-0.9.6b/Makefile	Mon Jul  9 09:59:47 2001
 +++ openssl-0.9.6b-patched/Makefile	Thu Oct 11 14:36:32 2001
@@ -285,7 +309,7 @@ Only in openssl-0.9.6b-patched/: Makefile.ssl~
 Only in openssl-0.9.6b-patched/: Makefile~
 diff -r -u openssl-0.9.6b/config openssl-0.9.6b-patched/config
 --- openssl-0.9.6b/config	Fri Mar 30 09:49:08 2001
-+++ openssl-0.9.6b-patched/config	Thu Oct 11 11:54:39 2001
++++ openssl-0.9.6b-patched/config	Fri Oct 12 11:45:01 2001
 @@ -318,9 +318,11 @@
  case "$i" in 
  -d*) PREFIX="debug-";;
@@ -309,19 +333,29 @@ diff -r -u openssl-0.9.6b/config openssl-0.9.6b-patched/config
  # figure out if gcc is available and if so we use it otherwise
  # we fallback to whatever cc does on the system
  GCCVER=`(gcc --version) 2>/dev/null`
-@@ -380,6 +386,24 @@
+@@ -380,6 +386,34 @@
  GCCVER=${GCCVER:-0}
  CCVER=${CCVER:-0}
  
 +else
 +# CC has been specified need to figure out gcc version
 +
-+GCCVER=`(gcc --version) 2>/dev/null`
++GCCVER=`($CC --version) 2>/dev/null`
 +if [ "$GCCVER" != "" ]; then
++    CC=gcc
 +  # then strip off whatever prefix Cygnus prepends the number with...
 +  GCCVER=`echo $GCCVER | sed 's/^[a-z]*\-//'`
 +  # peak single digit before and after first dot, e.g. 2.95.1 gives 29
 +  GCCVER=`echo $GCCVER | sed 's/\([0-9]\)\.\([0-9]\).*/\1\2/'`
++
++else
++    CCNAME=`echo $CC | sed 's,\(.*\)/\([^/]*\)$,\2,'`
++    if [ "x$CCNAME" = "x" ]; then
++        echo "ERROR: compiler $CC not recognized" >&2
++        exit 1
++    else
++        CC=$CCNAME
++    fi
 +fi
 +
 +CCVER=${CCVER:-0}
@@ -334,7 +368,7 @@ diff -r -u openssl-0.9.6b/config openssl-0.9.6b-patched/config
  # read the output of the embedded GuessOS 
  read GUESSOS
  
-@@ -419,7 +443,11 @@
+@@ -419,7 +453,11 @@
          else
                  options="$options -mips3"
          fi
@@ -347,7 +381,7 @@ diff -r -u openssl-0.9.6b/config openssl-0.9.6b-patched/config
  	;;
    alpha-*-linux2)
          ISA=`awk '/cpu model/{print$4}' /proc/cpuinfo`
-@@ -463,10 +491,9 @@
+@@ -463,10 +501,9 @@
    sun4u*-*-solaris2)
  	ISA64=`(isalist) 2>/dev/null | grep sparcv9`
  	if [ "$ISA64" != "" -a "$CC" = "cc" -a $CCVER -ge 50 ]; then
@@ -361,6 +395,7 @@ diff -r -u openssl-0.9.6b/config openssl-0.9.6b-patched/config
  	fi
  	OUT="solaris-sparcv9-$CC" ;;
    sun4m-*-solaris2)	OUT="solaris-sparcv8-$CC" ;;
+Only in openssl-0.9.6b-patched/: config~
 diff -r -u openssl-0.9.6b/crypto/asn1/a_d2i_fp.c openssl-0.9.6b-patched/crypto/asn1/a_d2i_fp.c
 --- openssl-0.9.6b/crypto/asn1/a_d2i_fp.c	Fri Apr 23 17:08:07 1999
 +++ openssl-0.9.6b-patched/crypto/asn1/a_d2i_fp.c	Thu Oct 11 11:54:39 2001
