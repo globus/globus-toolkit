@@ -12,11 +12,17 @@ Sources= \
     globus_xio_http_rfc2616.c \
     globus_xio_http_server.c \
     globus_xio_http_target.c \
-    globus_xio_http_transform.c
+    globus_xio_http_transform.c \
+    globus_i_xio_http_responses.h \
+    globus_i_xio_http.h \
+    globus_xio_http.h
 
 flavorinclude_HEADERS = \
     globus_xio_http.h
 
+noinst_HEADERS = \
+    globus_i_xio_http.h \
+    globus_i_xio_http_responses.h
 
 noinst_LTLIBRARIES = libglobus_xio_http_driver_$(GLOBUS_FLAVOR_NAME).la 
 
