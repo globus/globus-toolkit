@@ -26,6 +26,9 @@ GSI-OpenSSH 3.1 Major changes
         'gssapi-with-mic' authentication method.  Compatibility with
         the older 'gssapi' authentication method is retained.
 
+      * Updated GPT packaging for Globus Toolkit 3.2 beta
+        compatibility.
+
    Bugs fixed
 
       * Fixed bug in GSI code for handling case when PAM support is
