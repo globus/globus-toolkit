@@ -1,6 +1,7 @@
 #include "globus_io.h"
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 int test1(int argc, char **argv);
 
@@ -77,7 +78,7 @@ int
 main(int argc, char **argv)
 {
     int					rc;
-    
+
     globus_module_activate(GLOBUS_COMMON_MODULE);
     globus_module_activate(GLOBUS_IO_MODULE);
 
@@ -125,8 +126,6 @@ test1(int argc, char **argv)
     globus_byte_t *			large_buf=GLOBUS_NULL;
     globus_size_t			large_buf_size;
     int					c;
-    extern char *			optarg;
-    extern int				optind;
     char *				errstring = GLOBUS_NULL;
     int                                 host[4];
     int                                 rc = 0;
@@ -275,7 +274,8 @@ test1(int argc, char **argv)
             }
 	    break;
 	  case 'i':
-            result = globus_io_secure_authorization_data_set_identity(&auth_data,
+            result = globus_io_secure_authorization_data_set_identity(
+                &auth_data,
                 optarg);
             result = globus_io_attr_set_secure_authorization_mode(
 		&attr,

@@ -3688,6 +3688,10 @@ globus_io_secure_authorization_data_set_identity(
         { 
             name_type = GSS_C_NT_HOSTBASED_SERVICE;
         }
+        else if(!strncmp("<anonymous>",identity, 11))
+        {
+            name_type = GSS_C_NT_ANONYMOUS;
+        }
         
         major_status = gss_import_name(&minor_status,
                                        &name_buffer,
