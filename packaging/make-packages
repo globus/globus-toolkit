@@ -105,6 +105,22 @@ install_gpt() {
 	echo
 }
 
+install_gpt3() {
+	if [ -d gpt-3.0rc1 ]; then
+		echo Skipping GPT installation.
+		echo Delete gpt-3.0rc1 to force rebuild
+		export GPT_LOCATION=`pwd`/gpt-3.0rc1
+	else
+		echo Installing gpt-3.0rc1
+		tar xzf fait_accompli/gpt-3.0rc1-src.tar.gz
+		cd gpt-3.0rc1
+		export GPT_LOCATION=`pwd`
+		./build_gpt
+		cd ..
+	fi
+	echo
+}
+
 install_gt2() {
 	export GLOBUS_LOCATION=$1
 	echo Installing custom GT2 bundle
@@ -284,6 +300,7 @@ dir_iter() {
 }
 
 collate_packages() {
+	
 	if [ ! -d package-output ]; then
 		mkdir package-output
 	fi
@@ -298,7 +315,7 @@ collate_packages() {
         rm package-output/hostinfo-0.3-src.tar.gz
         cp fait_accompli/gt3_hostinfo-0.3_src.tar.gz package-output
 
-	$GPT_LOCATION/sbin/gpt-bundle -bn=gt3-all-src -bv=1 -srcdir=package-output -all
+	$GPT_LOCATION/sbin/gpt-bundle -bn=gt3-all-src -bv=1.0 -srcdir=package-output -all
 
 	if [ $release = 1 ]; then
 		mkdir -p release-candidate/gt3-alpha3-source-installer
@@ -436,7 +453,7 @@ if [ x$package != "x" ]; then
 fi
 
 setup_environment
-install_gpt
+install_gpt3
 
 if [ $update = 1 ]; then
 	checkout_cvs $tag
