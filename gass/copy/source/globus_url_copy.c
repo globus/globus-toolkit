@@ -20,6 +20,7 @@ CVS Information:
 #include <stdio.h>
 #include <fcntl.h>
 #include <string.h>
+#include <signal.h>
 
 #include "globus_gass_copy.h"
 
@@ -327,6 +328,7 @@ main(int argc, char **argv)
     globus_mutex_init(&monitor.mutex, GLOBUS_NULL);
     globus_cond_init(&monitor.cond, GLOBUS_NULL);
     monitor.done = GLOBUS_FALSE;
+    monitor.use_err = GLOBUS_FALSE;
 
     globus_gass_copy_handle_init(&gass_copy_handle);
     globus_gass_copy_attr_init(&source_gass_copy_attr);
