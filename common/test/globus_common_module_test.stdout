@@ -1,6 +1,0 @@
-Testing the globus_module module
-All main tests SUCCESSFUL.
-Running atexit tests (there should be three more lines of output):
-atexit test 1 successful
-atexit test 2 successful
-atexit test 3 successful
