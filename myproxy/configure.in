@@ -57,6 +57,10 @@ dnl Check for setenv()
 dnl
 AC_CHECK_FUNCS(setenv)
 dnl
+dnl Check for unsetenv()
+dnl
+AC_CHECK_FUNCS(unsetenv)
+dnl
 dnl Check to see if we need "netlibs" (specifically, libnsl and libsocket)
 dnl
 uname=`(uname) 2>/dev/null`
