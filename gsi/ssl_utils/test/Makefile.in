@@ -47,7 +47,8 @@ gss-client.$(OFILE):	$(SRC_DIR_THIS)/gss-client.c
 	$(CC) $(MY_CFLAGS) -c $(SRC_DIR_THIS)/gss-client.c
 
 gss-assist-client.$(OFILE):	$(SRC_DIR_THIS)/gss-assist-client.c
-	$(CC) $(MY_CFLAGS) -c $(SRC_DIR_THIS)/gss-assist-client.c
+	$(CC) $(MY_CFLAGS) $(GLOBUS_NEXUS_CLFAGS) \
+		-c $(SRC_DIR_THIS)/gss-assist-client.c
 
 gss-misc.$(OFILE):	$(SRC_DIR_THIS)/gss-misc.c
 	$(CC) $(MY_CFLAGS) -c $(SRC_DIR_THIS)/gss-misc.c
