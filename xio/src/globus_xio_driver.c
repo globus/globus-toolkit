@@ -172,6 +172,12 @@ globus_i_xio_handle_destroy(
             handle->sd_monitor = NULL;
             globus_cond_signal(&globus_l_cond);
         }
+        else
+        {
+            globus_list_remove(&globus_l_outstanding_handles_list,
+                globus_list_search(globus_l_outstanding_handles_list, handle));
+        }
+
     }
     globus_mutex_unlock(&globus_l_mutex);
 
@@ -208,13 +214,6 @@ globus_i_xio_handle_dec(
         ("[globus_i_xio_handle_dec] :: handle ref at %d.\n", handle->ref));
     if(handle->ref == 0)
     {
-        globus_mutex_lock(&globus_l_mutex);
-        {
-            globus_list_remove(&globus_l_outstanding_handles_list,
-                globus_list_search(globus_l_outstanding_handles_list, handle));
-        }
-        globus_mutex_unlock(&globus_l_mutex);
-
         GlobusXIODebugPrintf(
             GLOBUS_XIO_DEBUG_INFO,
             ("[globus_i_xio_handle_dec] :: handle ref at 0.\n"));
@@ -765,7 +764,7 @@ globus_i_xio_context_destroy(
 
     GlobusXIODebugPrintf(
         GLOBUS_XIO_DEBUG_INFO_VERBOSE, 
-        ("  context @ 0x%x: ref=%d size=%d", 
+        ("  context @ 0x%x: ref=%d size=%d\n", 
             xio_context, xio_context->ref, xio_context->stack_size));
 
     globus_mutex_destroy(&xio_context->mutex);

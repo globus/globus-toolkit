@@ -272,74 +272,72 @@ globus_i_xio_close_handles(
 
     globus_i_xio_monitor_init(&monitor);
 
-    /*
-     *  take a snap shot of the list of handles.  If a new one is
-     *  added after the lock is released, well... that means that 
-     *  the user unloaded the driver yet still tried to use it.
-     */
     globus_mutex_lock(&globus_l_mutex);
     {
         tmp_list = globus_list_copy(globus_l_outstanding_handles_list);
-    }
-    globus_mutex_unlock(&globus_l_mutex);
-
-    for(list = tmp_list;
-        !globus_list_empty(list);
-        list = globus_list_rest(list))
-    {
-        handle = (globus_xio_handle_t) globus_list_first(list);
-
-        /* recursive mutex */
-        globus_mutex_lock(&handle->context->mutex);
+        for(list = tmp_list;
+            !globus_list_empty(list);
+            list = globus_list_rest(list))
         {
-            if(handle->sd_monitor != NULL)
+            handle = (globus_xio_handle_t) globus_list_first(list);
+
+            globus_mutex_lock(&handle->context->mutex);
             {
-                found = GLOBUS_FALSE;
-                for(ctr = 0; 
-                    ctr < handle->context->stack_size && !found; 
-                    ctr++)
+                if(handle->sd_monitor != NULL)
                 {
-                    /* cancel on al handles */
-                    if((driver == NULL || 
-                        handle->context->entry[ctr].driver == driver) &&
-                        handle->state != GLOBUS_XIO_HANDLE_STATE_CLOSED)
+                    found = GLOBUS_FALSE;
+                    for(ctr = 0; 
+                        ctr < handle->context->stack_size && !found; 
+                        ctr++)
                     {
-                        GlobusXIODebugPrintf(
-                            GLOBUS_XIO_DEBUG_INFO, 
-                            ("[globus_i_xio_close_handles] : will wait on handle @0x%x state=%d\n", 
+                        /* cancel on al handles */
+                        if((driver == NULL || 
+                            handle->context->entry[ctr].driver == driver) &&
+                            handle->state != GLOBUS_XIO_HANDLE_STATE_CLOSED)
+                        {
+                            GlobusXIODebugPrintf(
+                                GLOBUS_XIO_DEBUG_INFO, 
+                                ("[globus_i_xio_close_handles] : will wait on handle @0x%x state=%d\n", 
                                 handle, handle->state));
 
-                        found = GLOBUS_TRUE;
+                            found = GLOBUS_TRUE;
 
-                        handle->sd_monitor = &monitor;
-                        monitor.count++;
-                        if(handle->state 
-                            != GLOBUS_XIO_HANDLE_STATE_CLOSING &&
-                           handle->state 
-                            != GLOBUS_XIO_HANDLE_STATE_OPENING_AND_CLOSING)
-                        {
-                            res = globus_l_xio_hande_pre_close(
-                                handle, NULL, NULL, NULL);
-                            globus_assert(res == GLOBUS_SUCCESS);
+                            /* remove from the main list */
+                            globus_list_remove(
+                                &globus_l_outstanding_handles_list,
+                                globus_list_search(
+                                    globus_l_outstanding_handles_list, handle));
 
-                            if(handle->state
-                            != GLOBUS_XIO_HANDLE_STATE_OPENING_AND_CLOSING)
+                            handle->sd_monitor = &monitor;
+                            monitor.count++;
+                            if(handle->state 
+                                != GLOBUS_XIO_HANDLE_STATE_CLOSING &&
+                               handle->state 
+                                != GLOBUS_XIO_HANDLE_STATE_OPENING_AND_CLOSING)
                             {
-                                globus_list_insert(&c_handles, handle);
-                                GlobusXIODebugPrintf(
-                                    GLOBUS_XIO_DEBUG_INFO, 
-                                    ("[globus_i_xio_close_handles] : "
-                                    "registersing close on handle @0x%x\n", 
-                                        handle));
-                            }
+                                res = globus_l_xio_hande_pre_close(
+                                    handle, NULL, NULL, NULL);
+                                globus_assert(res == GLOBUS_SUCCESS);
+
+                                if(handle->state
+                                != GLOBUS_XIO_HANDLE_STATE_OPENING_AND_CLOSING)
+                                {
+                                    globus_list_insert(&c_handles, handle);
+                                        GlobusXIODebugPrintf(
+                                            GLOBUS_XIO_DEBUG_INFO, 
+                                        ("[globus_i_xio_close_handles] : "
+                                        "registersing close on handle @0x%x\n", 
+                                            handle));
+                                }
+                           }
                         }
                     }
                 }
             }
+            globus_mutex_unlock(&handle->context->mutex);
         }
-        globus_mutex_unlock(&handle->context->mutex);
     }
-    globus_list_free(tmp_list);
+    globus_mutex_unlock(&globus_l_mutex);
 
     for(list = c_handles; 
         !globus_list_empty(list); 
@@ -464,7 +462,7 @@ globus_l_xio_deactivate()
 
     GlobusXIODebugInternalExit();
 
-    GlobusDebugDestroy(GLOBUS_XIO);
+//    GlobusDebugDestroy(GLOBUS_XIO);
     
     return rc;
 }
