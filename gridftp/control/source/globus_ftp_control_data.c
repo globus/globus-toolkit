@@ -7605,8 +7605,6 @@ globus_l_ftp_eb_listen_callback(
 
     globus_mutex_lock(&dc_handle->mutex);
     {
-        assert(dc_handle->mode == GLOBUS_FTP_CONTROL_MODE_EXTENDED_BLOCK);
-
         /*
          *  if in closing state the result should say the callback 
          *  was canceled via a call to close so we do not need to close it

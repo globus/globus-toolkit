@@ -143,6 +143,7 @@ globus_ftp_control_handle_init(
     
     globus_ftp_control_auth_info_init(&(handle->cc_handle.auth_info),
 				      GSS_C_NO_CREDENTIAL,
+				      GLOBUS_FALSE,
 				      GLOBUS_NULL,
 				      GLOBUS_NULL,
 				      GLOBUS_NULL,
@@ -2460,9 +2461,13 @@ globus_l_ftp_control_send_cmd_cb(
 	    
 	    token_ptr=GSS_C_NO_BUFFER;
 	    
+	    if(handle->cc_handle.auth_info.encrypt)
+	    {
+		handle->cc_handle.auth_info.req_flags |= GSS_C_CONF_FLAG;
+	    }
+
 	    /* initialize security context 
 	     */
-
 	    maj_stat = gss_init_sec_context(&min_stat,
 					    handle->cc_handle.auth_info.credential_handle,
 					    &(handle->cc_handle.auth_info.
@@ -2704,7 +2709,7 @@ globus_l_ftp_control_send_cmd_cb(
 	    gss_wrap_size_limit(
 		    &min_stat,
 		    &handle->cc_handle.auth_info.auth_gssapi_context,
-		    0,
+		    1,
 		    GSS_C_QOP_DEFAULT,
 		    1<<30,
 		    &max_input_size[1]);
@@ -3272,6 +3277,7 @@ globus_i_ftp_control_auth_info_init(
     dest->req_flags = 0;
     dest->target_name = GSS_C_NO_NAME;
     dest->authenticated = GLOBUS_FALSE;
+    dest->encrypt = src->encrypt;
     
     return GLOBUS_SUCCESS;
 }
@@ -3289,6 +3295,9 @@ globus_i_ftp_control_auth_info_init(
  * @param credential_handle
  *        The credential to use for authentication. This may be
  *        GSS_C_NO_CREDENTIAL to use the user's default credential.
+ * @param encrypt
+ *        Boolean whether or not to encrypt the control channel for this
+ *        handle.
  * @param user
  *        The user name
  * @param password
@@ -3308,6 +3317,7 @@ globus_result_t
 globus_ftp_control_auth_info_init(
     globus_ftp_control_auth_info_t *       auth_info,
     gss_cred_id_t		           credential_handle,
+    globus_bool_t			   encrypt,
     char *                                 user,
     char *                                 password,
     char *                                 account,
@@ -3375,6 +3385,7 @@ globus_ftp_control_auth_info_init(
     auth_info->authenticated = GLOBUS_FALSE;
     auth_info->locally_acquired_credential = GLOBUS_FALSE;
     auth_info->delegated_credential_handle = GSS_C_NO_CREDENTIAL;
+    auth_info->encrypt = encrypt;
 
     return GLOBUS_SUCCESS;
 }

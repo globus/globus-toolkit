@@ -1598,6 +1598,10 @@ globus_l_ftp_control_auth_read_cb(
 		    goto error_cmd_destroy;
 		}
 
+		if(cc_handle->auth_info.encrypt)
+		{
+		    ret_flags |= GSS_C_CONF_FLAG;
+		}
 		maj_stat=gss_accept_sec_context(
 		    &min_stat,
 		    /* context_handle */

@@ -403,6 +403,7 @@ typedef struct globus_ftp_control_auth_info_s
     char *					password;
     char *					account;
     gss_cred_id_t  				delegated_credential_handle;
+    globus_bool_t				encrypt;
 }
 globus_ftp_control_auth_info_t;
 
@@ -1170,6 +1171,7 @@ globus_result_t
 globus_ftp_control_auth_info_init(
     globus_ftp_control_auth_info_t *       auth_info,
     gss_cred_id_t			   credential_handle,
+    globus_bool_t			   encrypt,
     char *                                 user,
     char *                                 password,
     char *                                 account,
