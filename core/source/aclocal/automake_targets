@@ -1,5 +1,8 @@
 ## Special globus installation directories
 
+testdir = $(GLOBUS_LOCATION)/test
+## test = [ DATA,PROGRAMS,SCRIPTS ]
+
 scriptsysconfdir = $(GLOBUS_LOCATION)/etc
 ## scriptsysconf = [ PROGRAMS,SCRIPTS ]
 
