@@ -25,14 +25,28 @@ CVS Information:
 #endif
 
 #include <stdio.h>
+#include <fcntl.h>
+
 #include "globus_gass_common.h"
 
 EXTERN_C_BEGIN
 
-int globus_gass_open(char *file, int oflags, ...);
-FILE *globus_gass_fopen(char *file, char *mode);
-int globus_gass_close(int fd);
-int globus_gass_fclose(FILE *f);
+int
+globus_gass_open(
+    char *				file,
+    int					oflags,
+    ...);
+
+FILE *
+globus_gass_fopen(
+    char *				file,
+    char *				mode);
+int
+globus_gass_close(
+    int					fd);
+int
+globus_gass_fclose(
+    FILE *				f);
 
 /******************************************************************************
  *                    Module Definition

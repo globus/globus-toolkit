@@ -22,8 +22,8 @@ CVS Information:
 #include <string.h>
 
 #include "globus_gram_client.h"
+#include "globus_gass_transfer_assist.h"
 #include "globus_gass_server_ez.h"
-#include "globus_gass_client.h"
 #include "globus_gass_cache.h"
 #include "globus_rsl_assist.h"
 #include "globus_i_rsl_assist.h"
@@ -531,7 +531,7 @@ globus_l_cache_remote_op( globus_l_cache_op_t op,
     char *           server_url;
     unsigned short   port                = 0;
     int              rc;
-    globus_gass_transfer_listener_t * listener;
+    globus_gass_transfer_listener_t  listener;
     globus_gass_transfer_listenerattr_t * attr;
     char * scheme;
     globus_gass_transfer_requestattr_t * reqattr;
@@ -630,9 +630,15 @@ globus_l_cache_local_op( globus_l_cache_op_t op,
     int                          j;
     int                          size             = 0;
     
-    
-    globus_module_activate(GLOBUS_GASS_CLIENT_MODULE);
+    rc = globus_module_activate(GLOBUS_GASS_TRANSFER_ASSIST_MODULE);
 
+    if(rc != GLOBUS_SUCCESS)
+    {
+	globus_libc_printf("Error %d activating GASS transfer library\n",
+			   rc);
+	return;
+    }
+    
     rc = globus_gass_cache_open(GLOBUS_NULL, &cache_handle);
     if(rc != GLOBUS_SUCCESS)
     {
@@ -664,27 +670,42 @@ globus_l_cache_local_op( globus_l_cache_op_t op,
 	}
 	else if(rc == GLOBUS_GASS_CACHE_ADD_NEW)
 	{
-	    int fd = globus_libc_open(local_filename, O_WRONLY|O_TRUNC);
+	    globus_gass_transfer_request_t 	request;
+	    rc = globus_gass_transfer_assist_get_file_from_url(
+		&request,
+		GLOBUS_NULL,
+		url,
+		local_filename,
+		GLOBUS_NULL,
+		GLOBUS_TRUE);
 
-	    globus_gass_client_get_fd(url,
-			              GLOBUS_NULL,
-			              fd,
-			              GLOBUS_GASS_LENGTH_UNKNOWN,
-			              &timestamp,
-			              GLOBUS_NULL,
-			              GLOBUS_NULL);
-	    close(fd);
-	    rc = globus_gass_cache_add_done(&cache_handle,
-				            name,
-				            tag,
-				            timestamp);
-	    if(rc != GLOBUS_SUCCESS)
+	    if(rc != GLOBUS_SUCCESS ||
+	       globus_gass_transfer_request_get_status(request) !=
+	       GLOBUS_GASS_TRANSFER_REQUEST_DONE)
 	    {
-	        globus_libc_fprintf(
-		    stderr,
-		    "Unable to unlock cache entry because %s\n",
-		    globus_gass_cache_error_string(rc));
+		printf("Error transferring %s\n",
+		       url);
+
+		globus_gass_transfer_request_destroy(request);
+		rc = globus_gass_cache_delete(&cache_handle,
+					      url,
+					      tag,
+					      timestamp,
+					      GLOBUS_TRUE);
 	    }
+	    else
+	    {
+		rc = globus_gass_cache_add_done(&cache_handle,
+						name,
+						tag,
+						timestamp);
+	    }
+            if(rc != GLOBUS_SUCCESS)
+            {
+                globus_libc_printf("Could not unlock cache entry because %s\n",
+                                   globus_gass_cache_error_string(rc));
+            }
+		
 	}
 	else
 	{

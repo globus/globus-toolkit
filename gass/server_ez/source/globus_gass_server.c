@@ -292,7 +292,7 @@ int main(int argc, char **argv)
     if(rc != GLOBUS_SUCCESS)
     {
 	globus_gass_transfer_listenerattr_get_port(attr,
-					    	   port);
+					    	   &port);
 	if(port == 0)
 	{
 	    globus_libc_printf("Error: Cannot listen on port\n");

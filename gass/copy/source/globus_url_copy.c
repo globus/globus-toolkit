@@ -176,7 +176,7 @@ main(int argc, char **argv)
 	{
 	    globus_libc_fprintf(
 		stderr,
-		"%s: Error opening sourceUR %s: error code: %d\n",
+		"%s: Error opening sourceURL %s: error code: %d\n",
 		argv[0],
 		sourceURL,
 		errno);

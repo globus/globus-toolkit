@@ -18,9 +18,6 @@ CVS Information:
 #include "globus_common.h"
 #include "globus_gass_server_ez.h"
 #include "globus_gass_transfer.h"
-/*
-#include "globus_i_gass_common.h"
-*/
 
 #include <stdio.h>
 #include <fcntl.h>
