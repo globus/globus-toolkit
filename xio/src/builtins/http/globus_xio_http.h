@@ -98,6 +98,8 @@ EXTERN_C_BEGIN
  * GlobusVarArgDefine(
  *      handle, globus_result_t, globus_xio_handle_cntl, handle, driver)
  * GlobusVarArgDefine(
+ * GlobusVarArgDefine(
+ *      dd, globus_result_t, globus_xio_data_descriptor_cntl, dd, driver)
  */
 
 /**
@@ -236,7 +238,7 @@ typedef enum
 globus_xio_http_handle_cmd_t;
 
 /**
- * HTTP driver specific attribute cntls
+ * HTTP driver specific attribute and data descriptor cntls
  * @ingroup http_driver_cntls
  */
 typedef enum
@@ -318,57 +320,66 @@ typedef enum
     /* const char *                     header_name,
      * const char *                     header_value */
     GLOBUS_XIO_HTTP_ATTR_SET_REQUEST_HEADER,
-    /** GlobusVarArgEnum(attr)
-     * Set a function to be called when the HTTP request headers have
-     * been read.
-     * @ingroup http_driver_cntls
+    GLOBUS_XIO_HTTP_ATTR_DELAY_WRITE_HEADER,
+    /** GlobusVarArgEnum(dd)
+     * Get HTTP Request Information.
      *
-     * @param callback
-     *        Function to be called once all of the HTTP request headers
-     *        have been read.
-     * @param callback_arg
-     *        User-specified parameter to the callback.
+     * Returns in the passed parameters values concerning the HTTP request. Any
+     * of the parameters may be NULL if the application is not interested in
+     * that part of the information.
      *
-     * The caller must pass in a
-     * #globus_xio_http_request_ready_callback_t function
-     * pointer. This function will be called once all of the HTTP 
-     * request headers have been read by the server.
-     *
-     * This attribute is ignored when opening the client side of an HTTP
-     * connection.
-     * 
-     * If this attribute is not set, then there is no way to know
-     * what the HTTP request is for when the XIO handle is opened.
+     * @param method
+     *      Pointer to be set to the HTTP request method (typically
+     *      GET, PUT, or POST). The caller must not access this value
+     *      outside of the lifetime of the data descriptor nor free it.
+     * @param uri
+     *      Pointer to be set to the requested HTTP path. The caller must
+     *      not access this value outside of the lifetime of the data
+     *      descriptor nor free it.
+     * @param http_version
+     *      Pointer to be set to the HTTP version used for this request.
+     * @param headers
+     *      Pointer to be set to point to a hashtable of
+     *      globus_xio_http_header_t values, keyed by the HTTP header names.
+     *      The caller must not access this value outside of the lifetime of
+     *      the data descriptor nor free it or any values in it.
      */
-    /* globus_xio_htp_request_ready_callback_t callback, 
-       void *  callback_arg */
-    GLOBUS_XIO_HTTP_ATTR_SET_REQUEST_CALLBACK,
-    /** GlobusVarArgEnum(attr)
-     * Set a function to be called when the HTTP response headers have
-     * been read.
-     * @ingroup http_driver_cntls
+    /* char **                          method,
+       char **                          uri,
+       globus_xio_http_version_t *      http_version,
+       globus_hashtable_t *             headers */
+    GLOBUS_XIO_HTTP_GET_REQUEST,
+    /** GlobusVarArgEnum(dd)
+     * Get HTTP Response Information
      *
-     * @param callback
-     *        Funciton to be called once all of the HTTP response headers
-     *        have been read.
-     * @param callback_arg
-     *        User-specified parameter to the callback.
+     * Returns in the passed parameters values concerning the HTTP response.
+     * Any of the parameters may be NULL if the application is not interested
+     * in that part of the information.
      *
-     * The caller must pass in a
-     * #globus_xio_http_response_ready_callback_t function
-     * pointer. This function will be called once all of the HTTP 
-     * response headers have been read by the client.
-     *
-     * This attribute is ignored when opening the server side of an HTTP
-     * connection.
-     *
-     * If this attribute is not set, then there is no way to know
-     * whether the HTTP request was successfull.
+     * @param status_code
+     *      Pointer to be set to the HTTP response status code (such as 404),
+     *      as per RFC 2616. The caller must not access this value outside of
+     *      the lifetime of the data descriptor nor free it or any values in
+     *      it.
+     * @param reason_phrase
+     *      Pointer to be set to the HTTP response reason phrase (such as Not
+     *      Found). The caller must not access this value outside of
+     *      the lifetime of the data descriptor nor free it or any values in
+     *      it.
+     * @param http_version
+     *      Pointer to be set to the HTTP version used for this request.
+     * @param headers
+     *      Pointer to be set to point to a hashtable of
+     *      globus_xio_http_header_t values, keyed by the HTTP header names.
+     *      The caller must not access this value outside of the lifetime of
+     *      the data descriptor nor free it or any values in it.
      */
-    /* globus_xio_http_response_ready_callback_t callback,
-       void * callback_arg */
-    GLOBUS_XIO_HTTP_ATTR_SET_RESPONSE_CALLBACK,
-    GLOBUS_XIO_HTTP_ATTR_DELAY_WRITE_HEADER
+    /* int *                            status_code,
+       char **                          reason_phrase,
+       globus_xio_http_version_t *      version,
+       globus_hashtable_t *             headers */
+    GLOBUS_XIO_HTTP_GET_RESPONSE
+
 }
 globus_xio_http_attr_cmd_t;
 
@@ -419,74 +430,6 @@ typedef enum
     GLOBUS_XIO_HTTP_VERSION_1_1
 }
 globus_xio_http_version_t;
-
-/**
- * Callback type for indicating that the HTTP request is available.
- * @ingroup http_driver
- *
- * @param user_arg
- *        Pointer to user data.
- * @param result
- *        The result of parsing the request line and headers. If this is
- *        not GLOBUS_SUCCESS, then the status_code and reason_phrase will
- *        be NULL, and attempts to read the response will fail.
- * @param method
- *        The HTTP method (GET, PUT, POST, etc), requested by the client
- *        for the specified URI.
- * @param uri
- *        URI path that the client is requesting the method to be acted upon.
- * @param version
- *        The HTTP version used in the response.
- * @param headers
- *        A hashtable of HTTP headers associated with this request. The
- *        keys to this hashtable will be <code>char *</code>header names, and
- *        the values in the table will be #globus_xio_http_header_t structure
- *        pointers. Applications which access values from this table must make
- *        local copies if they want them to be valid after this callback
- *        returns.
- * @see GLOBUS_XIO_HTTP_ATTR_SET_REQUEST_CALLBACK
- */
-typedef void (*globus_xio_http_request_ready_callback_t) (
-    void *                              user_arg,
-    globus_result_t                     result,
-    const char *                        method,
-    const char *                        uri,
-    globus_xio_http_version_t           version,
-    globus_hashtable_t                  headers);
-
-/**
- * Callback type for indicating that the HTTP response is available.
- * @ingroup http_driver
- *
- * @param user_arg
- *        Pointer to user data.
- * @param result
- *        The result of parsing the response line and headers. If this is
- *        not GLOBUS_SUCCESS, then the status_code and reason_phrase will
- *        be NULL, and attempts to read the response will fail.
- * @param status_code
- *        The HTTP status code (in the range 100-599), indicating how
- *        the request was handled by the server.
- * @param reason_phrase
- *        Text string containing the reason for the response.
- * @param version
- *        The HTTP version used in the response.
- * @param headers
- *        A hashtable of HTTP headers associated with this response. The
- *        keys to this hashtable will be <code>char *</code>header names, and
- *        the values in the table will be #globus_xio_http_header_t structure
- *        pointers. Applications which access values from this table must make
- *        local copies if they want them to be valid after this callback
- *        returns.
- * @see GLOBUS_XIO_HTTP_ATTR_SET_RESPONSE_CALLBACK
- */
-typedef void (*globus_xio_http_response_ready_callback_t) (
-    void *                              user_arg,
-    globus_result_t                     result,
-    int                                 status_code,
-    const char *                        reason_phrase,
-    globus_xio_http_version_t           version,
-    globus_hashtable_t                  headers);
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 EXTERN_C_END

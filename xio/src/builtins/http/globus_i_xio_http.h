@@ -19,6 +19,7 @@ globus_i_xio_http_transfer_encoding_t;
 
 typedef enum
 {
+    GLOBUS_XIO_HTTP_PRE_REQUEST_LINE,
     GLOBUS_XIO_HTTP_REQUEST_LINE,
     GLOBUS_XIO_HTTP_STATUS_LINE,
     GLOBUS_XIO_HTTP_HEADERS,
@@ -208,26 +209,9 @@ typedef struct
      */
     globus_xio_http_version_t           http_version;
     /**
-     * Response Callback Function
-     *
-     * Function to be called when the response is returned from the HTTP
-     * server.
-     */
-    globus_xio_http_response_ready_callback_t
-                                        callback;
-    /**
-     * Callback function argument.
-     */
-    void *                              callback_arg;
-
-    /**
      * Information about headers associated with this request
      */
     globus_i_xio_http_header_info_t     headers;
-
-    int                                 delay_write_header;
-    const globus_xio_iovec_t *          first_write_iovec;
-    int                                 first_write_iovec_count;
 }
 globus_i_xio_http_request_t;
 
@@ -260,23 +244,6 @@ typedef struct
      * GLOBUS_XIO_HTTP_VERSION_1_1 will be used.
      */
     globus_xio_http_version_t           http_version;
-    /**
-     * Request Callback Function
-     *
-     * Function to be called when the request is parsed by the HTTP driver.
-     */
-    globus_xio_http_request_ready_callback_t
-                                        callback;
-    /**
-     * Callback function argument.
-     */
-    void *                              callback_arg;
-
-    /**
-     * Read operation to process response.
-     */
-    globus_xio_operation_t              read_operation;
-
     /**
      * Information about headers associated with this request
      */
@@ -344,6 +311,18 @@ typedef struct
      * Remaining-to-be-read chunk.
      */
     globus_size_t                       read_chunk_left;
+    /** Flag indicating whether to delay writing request lines until first
+     * data write is done instead of at open time.
+     */
+    globus_bool_t                       delay_write_header;
+    /** If delaying write for the client, this will contain the
+     * first data set to write
+     */
+    const globus_xio_iovec_t *          first_write_iovec;
+    /**
+     * Number of iovecs in the first_write_iovec array.
+     */
+    int                                 first_write_iovec_count;
     /**
      * Current state of the HTTP parser for reading data.
      */
@@ -352,6 +331,13 @@ typedef struct
      * Current state of the HTTP parser for writing data.
      */
     globus_i_xio_http_parse_state_t     send_state;
+    /**
+     * Read operation to process response on the client side. This
+     * operation is created when the request write is first registered
+     * so that if an error occurs we can cut things off.
+     */
+    globus_xio_operation_t              response_read_operation;
+
     
     globus_i_xio_http_operation_info_t  read_operation;
     globus_i_xio_http_operation_info_t  write_operation;
@@ -370,16 +356,17 @@ globus_i_xio_http_handle_t;
 
 /**
  * XIO Attributes for HTTP
+ * This structure is used as both the attributes to open and the data
+ * descriptors returned from various read or write operations.
  */
 typedef struct
 {
     /* attrs for client side */
     globus_i_xio_http_request_t         request;
+    globus_bool_t                       delay_write_header;
 
     /* only one attr for server side for now*/
-    globus_xio_http_request_ready_callback_t
-                                        request_callback;
-    void *                              request_callback_arg;
+    globus_i_xio_http_response_t        response;
 }
 globus_i_xio_http_attr_t;
 
@@ -573,6 +560,12 @@ globus_i_xio_http_response_init(
     globus_i_xio_http_response_t *      response);
 
 extern
+globus_result_t
+globus_i_xio_http_response_copy(
+    globus_i_xio_http_response_t *      dest,
+    const globus_i_xio_http_response_t *src);
+
+extern
 void
 globus_i_xio_http_response_destroy(
     globus_i_xio_http_response_t *      response);
@@ -649,15 +642,16 @@ globus_i_xio_http_read(
 extern
 globus_result_t
 globus_i_xio_http_write(
-    void *                                  handle,
-    const globus_xio_iovec_t *              iovec,
-    int                                     iovec_count,
-    globus_xio_operation_t                  op);
+    void *                              handle,
+    const globus_xio_iovec_t *          iovec,
+    int                                 iovec_count,
+    globus_xio_operation_t              op);
 
 extern
 globus_result_t
 globus_i_xio_http_parse_residue(
-    globus_i_xio_http_handle_t *        handle);
+    globus_i_xio_http_handle_t *        handle,
+    globus_bool_t *                     registered_again);
 
 extern
 globus_result_t

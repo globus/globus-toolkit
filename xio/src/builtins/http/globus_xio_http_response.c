@@ -123,10 +123,6 @@ globus_i_xio_http_response_copy(
         goto free_reason_phrase_exit;
     }
 
-    dest->callback = src->callback;
-    dest->callback_arg = src->callback_arg;
-    dest->read_operation = src->read_operation;
-
     return res;
 
 free_reason_phrase_exit:

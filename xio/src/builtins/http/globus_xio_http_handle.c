@@ -64,11 +64,11 @@ globus_i_xio_http_handle_init(
     if (target->is_client)
     {
         http_handle->parse_state = GLOBUS_XIO_HTTP_STATUS_LINE;
-        http_handle->send_state = GLOBUS_XIO_HTTP_REQUEST_LINE;
+        http_handle->send_state = GLOBUS_XIO_HTTP_PRE_REQUEST_LINE;
     }
     else
     {
-        http_handle->parse_state = GLOBUS_XIO_HTTP_REQUEST_LINE;
+        http_handle->parse_state = GLOBUS_XIO_HTTP_PRE_REQUEST_LINE;
         http_handle->send_state = GLOBUS_XIO_HTTP_STATUS_LINE;
     }
 
@@ -82,11 +82,6 @@ globus_i_xio_http_handle_init(
     {
         goto free_request_exit;
     }
-    if (attr != NULL)
-    {
-        http_handle->response_info.callback = attr->request_callback;
-        http_handle->response_info.callback_arg = attr->request_callback_arg;
-    }
 
     result = globus_i_xio_http_target_copy(&http_handle->target_info, target);
     if (result != GLOBUS_SUCCESS)
@@ -98,6 +93,7 @@ globus_i_xio_http_handle_init(
     http_handle->read_buffer.iov_base = NULL;
     http_handle->read_buffer.iov_len = 0;
     http_handle->close_operation = NULL;
+    http_handle->response_read_operation = NULL;
     http_handle->read_operation.iov = NULL;
     http_handle->read_operation.iovcnt = 0;
     http_handle->read_operation.operation = NULL;
@@ -146,7 +142,7 @@ globus_i_xio_http_handle_reinit(
 
     if (http_target && http_target->is_client)
     {
-        http_handle->send_state = GLOBUS_XIO_HTTP_REQUEST_LINE;
+        http_handle->send_state = GLOBUS_XIO_HTTP_PRE_REQUEST_LINE;
     }
     else
     {
@@ -163,12 +159,6 @@ globus_i_xio_http_handle_reinit(
     if (result != GLOBUS_SUCCESS)
     {
         goto free_request_exit;
-    }
-    if (http_attr != NULL)
-    {
-        http_handle->response_info.callback = http_attr->request_callback;
-        http_handle->response_info.callback_arg
-            = http_attr->request_callback_arg;
     }
 
     globus_i_xio_http_target_destroy_internal(&http_handle->target_info);
@@ -512,14 +502,6 @@ globus_l_xio_http_write_eof_callback(
     if (http_handle->close_operation != NULL)
     {
         result = globus_i_xio_http_close_internal(http_handle);
-    }
-    else if ((! http_handle->target_info.is_client) &&
-             (! GLOBUS_I_XIO_HTTP_HEADER_IS_CONNECTION_CLOSE(
-                    &http_handle->response_info.headers)) &&
-             (  http_handle->response_info.http_version ==
-                    GLOBUS_XIO_HTTP_VERSION_1_1))
-    {
-        globus_i_xio_http_server_read_next_request(http_handle);
     }
 
     globus_mutex_unlock(&http_handle->mutex);

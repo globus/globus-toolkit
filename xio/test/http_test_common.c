@@ -43,12 +43,13 @@ http_l_test_server_close_callback(
 static
 void
 http_l_test_server_request_callback(
-    void *                              user_arg,
+    globus_xio_handle_t                 handle,
     globus_result_t                     result,
-    const char *                        method,
-    const char *                        uri,
-    globus_xio_http_version_t           http_version,
-    globus_hashtable_t                  headers);
+    globus_byte_t *                     buffer,
+    globus_size_t                       len,
+    globus_size_t                       nbytes,
+    globus_xio_data_descriptor_t        data_desc,
+    void *                              user_arg);
 
 int
 http_test_initialize(
@@ -461,7 +462,6 @@ http_l_test_server_accept_callback(
     void *                              user_arg)
 {
     http_test_server_t *                test_server = user_arg;
-    globus_xio_attr_t                   attr;
 
     globus_mutex_lock(&test_server->mutex);
     if (result != GLOBUS_SUCCESS)
@@ -469,46 +469,14 @@ http_l_test_server_accept_callback(
         goto error_exit;
     }
 
-    result = globus_xio_attr_init(&attr);
-    if (result != GLOBUS_SUCCESS)
-    {
-        goto error_exit;
-    }
-
-    result = globus_xio_attr_cntl(
-            attr,
-            test_server->http_driver,
-            GLOBUS_XIO_HTTP_ATTR_SET_REQUEST_CALLBACK,
-            http_l_test_server_request_callback,
-            test_server);
-    if (result != GLOBUS_SUCCESS)
-    {
-        goto destroy_attr_exit;
-    }
-
-    /* 
-    result = globus_xio_attr_cntl(
-            attr,
-            test_server->tcp_driver,
-            GLOBUS_XIO_TCP_SET_LINGER,
-            GLOBUS_TRUE,
-            1200);
-    if (result != GLOBUS_SUCCESS)
-    {
-        goto destroy_attr_exit;
-    }
-    */
-    
     test_server->handle = handle;
     result = globus_xio_register_open(
             test_server->handle,
             NULL,
-            attr,
+            NULL,
             http_l_test_server_open_callback,
             test_server);
 
-destroy_attr_exit:
-    globus_xio_attr_destroy(attr);
 error_exit:
     if (result != GLOBUS_SUCCESS)
     {
@@ -527,44 +495,69 @@ http_l_test_server_open_callback(
     globus_result_t                     result,
     void *                              user_arg)
 {
-    /* Processing is done in the request callback */
+    http_test_server_t *                test_server = user_arg;
+    static char                         buffer[0];
+
+    result = globus_xio_register_read(
+            handle,
+            buffer,
+            0,
+            0,
+            NULL,
+            http_l_test_server_request_callback,
+            test_server);
 }
 /* http_l_test_server_open_callback() */
 
 static
 void
 http_l_test_server_request_callback(
-    void *                              user_arg,
+    globus_xio_handle_t                 handle,
     globus_result_t                     result,
-    const char *                        method,
-    const char *                        uri,
-    globus_xio_http_version_t           http_version,
-    globus_hashtable_t                  headers)
+    globus_byte_t *                     buffer,
+    globus_size_t                       len,
+    globus_size_t                       nbytes,
+    globus_xio_data_descriptor_t        data_desc,
+    void *                              user_arg)
 {
     http_test_server_t *                test_server = user_arg;
     http_test_uri_handler_t *           uri_handler;
-    
+    char *                              method;
+    char *                              uri;
+    globus_xio_http_version_t           http_version;
+    globus_hashtable_t                  headers;
+
     globus_mutex_lock(&test_server->mutex);
 
     if (result == GLOBUS_SUCCESS)
     {
-        uri_handler = globus_hashtable_lookup(
-                &test_server->uri_handlers,
-                (void*) uri);
-
-        if (uri_handler != NULL)
+        result = globus_xio_data_descriptor_cntl(
+                data_desc,
+                test_server->http_driver,
+                GLOBUS_XIO_HTTP_GET_REQUEST,
+                &method,
+                &uri,
+                &http_version,
+                &headers);
+        if (result == GLOBUS_SUCCESS)
         {
-            globus_mutex_unlock(&test_server->mutex);
+            uri_handler = globus_hashtable_lookup(
+                    &test_server->uri_handlers,
+                    (void*) uri);
 
-            (*uri_handler->callback)(
-                uri_handler->arg,
-                result,
-                method,
-                uri,
-                http_version,
-                headers);
+            if (uri_handler != NULL)
+            {
+                globus_mutex_unlock(&test_server->mutex);
 
-            return;
+                (*uri_handler->callback)(
+                    uri_handler->arg,
+                    result,
+                    method,
+                    uri,
+                    http_version,
+                    headers);
+                return;
+            }
         }
     }
     globus_xio_register_close(
@@ -664,6 +657,7 @@ http_test_client_request(
         }
     }
 
+    /*
     result = globus_xio_attr_cntl(
             attr,
             http_driver,
@@ -676,7 +670,6 @@ http_test_client_request(
         goto destroy_attr_exit;
     }
 
-    /*
     result = globus_xio_attr_cntl(
             attr,
             tcp_driver,
