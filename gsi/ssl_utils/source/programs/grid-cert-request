@@ -108,7 +108,17 @@ security_conf=${secconfdir}/grid-security.conf
 # See if we can proceed
 . ${security_conf}
 
-
+# if their domain is localdomain, we don't
+# let them generate a cert request
+if [ "${_domain}" = "localdomain" ]; then
+    echo
+    echo "ERROR: your domain name is currently set to: ${_domain}."
+    echo "       You need to configure your system so that your"
+    echo "       domain is a fully qualified domain based"
+    echo "       on your network configuration."
+    echo
+    exit 1
+fi
 
 ## Other cleanup routines.
 
@@ -426,7 +436,7 @@ getUserCN () {
      fi
    fi
 
-   if [ -z "${_common_name}" ] ;  then
+   if [ -z "${_common_name}" ] || [ "${_common_name}" = "(null)" ];  then
       ${GLOBUS_SH_PRINTF-printf} "Enter your name, e.g., John Smith: " 1>&2
       read _common_name
    fi
@@ -673,6 +683,7 @@ emitDirections () {
 
 readCommandLine "$@"
 
+. 
 # Set the actual file names
 
 #Make these absolute file names if thy are not
