@@ -512,17 +512,7 @@ if test "x$gsi_path" != "xno" ; then
 	globus_install_dir=$gsi_path
 
 	if test "x$globus_install_dir" = "xyes" ; then
-		if test -n "$GLOBUS_INSTALL_PATH" ; then
-			globus_install_dir=$GLOBUS_INSTALL_PATH
-		elif test -n "$GSI_INSTALL_PATH" ; then
-			globus_install_dir=$GSI_INSTALL_PATH
-		elif test -d /usr/local/globus ; then
-			globus_install_dir="/usr/local/globus"
-		elif test -d /usr/local/gsi ; then
-			globus_install_dir="/usr/local/gsi"
-		else
-			AC_MSG_ERROR(Cannot find Globus/GSI installation directory)
-		fi	
+                AC_MSG_ERROR(Cannot find Globus/GSI installation directory -- a path must be specified!)
 	fi
 	AC_MSG_RESULT($globus_install_dir)
 
@@ -552,7 +542,7 @@ if test "x$gsi_path" != "xno" ; then
 		globus_dev_dir=`${dev_path_program}`
 
 		if test -z "$globus_dev_dir" -o "X$globus_dev_dir" = "X<not found>" ; then
-				AC_MSG_ERROR(Cannot find Globus/GSI development directory)
+			AC_MSG_ERROR(Cannot find Globus/GSI development directory)
 		fi
 
 		if test ! -d "$globus_dev_dir" ; then
@@ -577,8 +567,7 @@ if test "x$gsi_path" != "xno" ; then
                 fi
 
 		AC_MSG_RESULT($globus_flavor_type)
-		GSI_LIBS="-lglobus_gss_assist_${globus_flavor_type} -lglobus_gssapi_gsi_${globus_flavor_type}"
-		GSI_LDFLAGS="-L${globus_dev_dir}/lib"
+		GSI_LIBS="${gsi_path}/lib/libglobus_gss_assist_${globus_flavor_type}.a ${gsi_path}/lib/libglobus_gssapi_gsi_${globus_flavor_type}.a"
 		GSI_CFLAGS="-I${GLOBUS_FLAVOR_TYPE_INCL_DIR}"
 	fi
 
