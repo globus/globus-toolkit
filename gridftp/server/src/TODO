@@ -57,4 +57,11 @@ known bugs:
     not free until user calls release or close, and just error out of any other
     calls that attempt to use the handle.
 -- commands belong in server-lib
+
+-- need to make sure ints in various places are change to size_t if they
+    need to be, and on passing size_t's over ipc need to do some smarts
+    to treat it as 4 or 8 bytes... possible probs if sizes differ on front
+    and back?  This is specifically a problem with tcp_bs, we treat it as an
+    int on the server side, but server-lib gives it to us as a size_t (as
+    it probably should), which is a different size on most 64 bit platforms.
     
