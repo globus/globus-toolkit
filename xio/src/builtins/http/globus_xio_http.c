@@ -82,7 +82,6 @@ static l_http_info_t *
 l_http_create_new_info()
 {
     l_http_info_t *                         info;
-    globus_xio_http_string_pair_t* string_pair;
 
     info = (l_http_info_t *) globus_malloc(sizeof(l_http_info_t));
     info->iovec.iov_base = 0;
@@ -284,9 +283,9 @@ globus_l_xio_http_parse_header( l_http_info_t * info)
                     current_location = line_end + 2;
                 }  
         }
-    if(strlen(current_location) > 0)
+    if(strlen(current_location) > 2)
         {
-            info->remainder = globus_libc_strdup(current_location);
+            info->remainder = globus_libc_strdup(current_location+2);
         }
     return GLOBUS_SUCCESS;        
 }
@@ -296,7 +295,7 @@ globus_l_xio_http_parse_header( l_http_info_t * info)
  *  read
  */
 static void
-globus_l_xio_http_read_cb(
+globus_l_xio_http_open_read_cb(
     globus_xio_operation_t              op,
     globus_result_t                     result,
     globus_size_t                       nbytes,
@@ -304,7 +303,7 @@ globus_l_xio_http_read_cb(
 {
     int parse_result;
 
-    GlobusXIOName(globus_l_xio_http_read_cb);
+    GlobusXIOName(globus_l_xio_http_open_read_cb);
 
     globus_xio_driver_handle_t          driver_handle;
     l_http_info_t *info = (l_http_info_t *)user_arg;
@@ -316,9 +315,9 @@ globus_l_xio_http_read_cb(
         info->iovec.iov_len = 2048;
         info->iovec.iov_base = info->buffer + info->buffer_offset;
         result = globus_xio_driver_pass_read(op, &(info->iovec), 1, 1,
-                                globus_l_xio_http_read_cb, info);
+                                globus_l_xio_http_open_read_cb, info);
         break;
-    case GLOBUS_XIO_HTTP_PARSE_FAILED:  //error parsing header
+    case GLOBUS_XIO_HTTP_PARSE_FAILED:  //error parsing header        
         result = GlobusXIOHttpParseError();
         globus_xio_driver_finished_open(driver_handle, info, op, result);
         break;
@@ -339,11 +338,25 @@ globus_l_xio_http_read(
 {
     globus_result_t                     res;
     globus_size_t                       wait_for;
-
+    l_http_info_t                       *info = (l_http_info_t *)driver_specific_handle;
     wait_for = GlobusXIOOperationGetWaitFor(op);
+    
+    if(info->remainder) 
+        {
+            printf("Remainder: %s\n", info->remainder);
+            printf("Remainder: %s\n", iovec->iov_base);
+            iovec->iov_len = strlen(info->remainder);
+            memcpy(iovec->iov_base, info->remainder, strlen(info->remainder));
+            free(info->remainder);
+            info->remainder = 0;
+            printf("Remainder: %s\n", iovec->iov_base);
+            res = GLOBUS_SUCCESS;
+            globus_xio_driver_finished_read(op, res, iovec->iov_len);
+            return res;
+        }
 
     res = globus_xio_driver_pass_read(op, (void*)iovec, iovec_count, wait_for,
-        NULL, NULL);
+                                      NULL, NULL);
 
     return res;
 }
@@ -372,7 +385,7 @@ globus_l_xio_http_open_cb(
     handle->iovec.iov_len = 2048;
     handle->iovec.iov_base = handle->buffer + handle->buffer_offset;
     result = globus_xio_driver_pass_read(op, &(handle->iovec), 1, 5, 
-                            globus_l_xio_http_read_cb, handle);
+                            globus_l_xio_http_open_read_cb, handle);
 }
 
 static
