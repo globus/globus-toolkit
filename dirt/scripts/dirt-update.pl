@@ -163,11 +163,12 @@ if(s/.*symbolic names:\s*(.*)keyword substitution:.*/$1/s)
                     delete($tags{$tag});
                 }
             }
-            elsif(!m/no side branches present/)
+            elsif(!m/no side branches present/ && 
+                !m/revision $tag_version{$tag} absent/)
             {
-                # if output specifies 'no side branches present'
-                # we keep it, this will just be the first update on that
-                # branch
+                # if output specifies 'no side branches present' or 
+                # 'revision 1.4.4 absent' we keep it, this will just be the
+                # first update on that branch
                 
                 # any other output is erroneous
                 die("DiRT Error: couldn't parse rlog output\n$save_rlog");
