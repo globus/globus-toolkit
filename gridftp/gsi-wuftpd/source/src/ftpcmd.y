@@ -636,11 +636,16 @@ cmd: USER SP username CRLF
 	}
     | ERET check_login SP eret_mode SP pathname CRLF
 	=	{
+#ifdef USE_GLOBUS_DATA_CODE
 	    if (log_commands)
-		syslog(
+	        syslog(
 		    LOG_INFO,
 		    "ERET %c %" GLOBUS_OFF_T_FORMAT " %" GLOBUS_OFF_T_FORMAT " %s",
-		    $4.mode,$4.offset, $4.length, CHECKNULL($6));
+		    $4.mode,
+		    $4.offset,
+		    $4.length,
+		    CHECKNULL($6));
+#endif
 	    if ($2 && $6 != NULL && !restrict_check($6)) {
 		retrieve_is_data = 1;
 		retrieve((char *) NULL, $6, $4.offset, $4.length);
@@ -650,6 +655,7 @@ cmd: USER SP username CRLF
 	}
     | ESTO check_login SP esto_mode SP pathname CRLF
         =	{
+#ifdef USE_GLOBUS_DATA_CODE
 	    if (log_commands)
 		syslog(
 		    LOG_INFO,
@@ -657,6 +663,7 @@ cmd: USER SP username CRLF
 		    $4.mode,
 		    $4.offset,
 		    CHECKNULL($6));
+#endif
 	    if ($2 && $6 != NULL && !restrict_check($6))
 		store($6, "r+", 0, (int) $4.offset);
 	    if ($6 != NULL)
