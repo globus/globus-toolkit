@@ -148,10 +148,15 @@ AC_SUBST(wstests, $wstests)
 AC_PATH_PROG(JAVAC_PATH, javac)
 if test "x$JAVAC_PATH" = "x"; then
     AC_MSG_WARN(A Java compiler is needed for some parts of the toolkit) 
-    AC_MSG_WARN(If you know you will not need one, this message can be ignored)
+    AC_MSG_WARN(This message can be ignored if you are only building the C parts of the toolkit)
 else
-    if test "$JAVAC_PATH" != "$JAVA_HOME/bin/javac"; then
-        AC_MSG_WARN(the javac in your path is not from your \$JAVA_HOME environment)
+    if test "x$JAVA_HOME" = "x"; then
+        AC_MSG_WARN(JAVA_HOME is not set) 
+        AC_MSG_WARN(Most Java versions will not work correctly without JAVA_HOME set)
+    else
+        if test "$JAVAC_PATH" != "$JAVA_HOME/bin/javac"; then
+            AC_MSG_WARN(the javac in your path is not from your \$JAVA_HOME environment)
+        fi
     fi
 fi
 
