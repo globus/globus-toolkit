@@ -1,6 +1,6 @@
 diff -r -u openssl-0.9.6c/Configure openssl-0.9.6c-patched/Configure
 --- openssl-0.9.6c/Configure	Thu Dec  6 07:11:39 2001
-+++ openssl-0.9.6c-patched/Configure	Tue Jan  8 21:53:13 2002
++++ openssl-0.9.6c-patched/Configure	Thu Jan 31 18:27:55 2002
 @@ -329,8 +329,8 @@
  # The intel boxes :-), It would be worth seeing if bsdi-gcc can use the
  # bn86-elf.o file file since it is hand tweaked assembler.
@@ -58,7 +58,7 @@ diff -r -u openssl-0.9.6c/Configure openssl-0.9.6c-patched/Configure
  while (<IN>)
 diff -r -u openssl-0.9.6c/Makefile openssl-0.9.6c-patched/Makefile
 --- openssl-0.9.6c/Makefile	Thu Dec 20 20:54:43 2001
-+++ openssl-0.9.6c-patched/Makefile	Tue Jan  8 21:53:13 2002
++++ openssl-0.9.6c-patched/Makefile	Thu Jan 31 18:27:55 2002
 @@ -233,20 +233,21 @@
  		if [ -n "$(SHARED_LIBS_LINK_EXTS)" ]; then \
  			tmp="$(SHARED_LIBS_LINK_EXTS)"; \
@@ -126,7 +126,7 @@ diff -r -u openssl-0.9.6c/Makefile openssl-0.9.6c-patched/Makefile
  	fi
 diff -r -u openssl-0.9.6c/Makefile.org openssl-0.9.6c-patched/Makefile.org
 --- openssl-0.9.6c/Makefile.org	Wed Nov 14 04:44:11 2001
-+++ openssl-0.9.6c-patched/Makefile.org	Tue Jan  8 21:54:11 2002
++++ openssl-0.9.6c-patched/Makefile.org	Thu Jan 31 18:27:55 2002
 @@ -231,33 +231,42 @@
  		if [ -n "$(SHARED_LIBS_LINK_EXTS)" ]; then \
  			tmp="$(SHARED_LIBS_LINK_EXTS)"; \
@@ -231,7 +231,7 @@ diff -r -u openssl-0.9.6c/Makefile.org openssl-0.9.6c-patched/Makefile.org
  	libs="$$libs -l$$i"; \
 diff -r -u openssl-0.9.6c/Makefile.ssl openssl-0.9.6c-patched/Makefile.ssl
 --- openssl-0.9.6c/Makefile.ssl	Thu Dec 20 20:54:43 2001
-+++ openssl-0.9.6c-patched/Makefile.ssl	Tue Jan  8 21:53:13 2002
++++ openssl-0.9.6c-patched/Makefile.ssl	Thu Jan 31 18:27:55 2002
 @@ -233,20 +233,21 @@
  		if [ -n "$(SHARED_LIBS_LINK_EXTS)" ]; then \
  			tmp="$(SHARED_LIBS_LINK_EXTS)"; \
@@ -312,7 +312,7 @@ diff -r -u openssl-0.9.6c/Makefile.ssl openssl-0.9.6c-patched/Makefile.ssl
  	fi
 diff -r -u openssl-0.9.6c/config openssl-0.9.6c-patched/config
 --- openssl-0.9.6c/config	Wed Dec 19 13:37:41 2001
-+++ openssl-0.9.6c-patched/config	Tue Jan  8 21:53:13 2002
++++ openssl-0.9.6c-patched/config	Thu Jan 31 18:28:36 2002
 @@ -349,9 +349,11 @@
  case "$i" in 
  -d*) PREFIX="debug-";;
@@ -352,7 +352,7 @@ diff -r -u openssl-0.9.6c/config openssl-0.9.6c-patched/config
 +
 +    # Older vesions of AIX return the man page for unknown options
 +    # We check this with a word count.
-+    AIXChk=`($CC --version | wc -c) 2>/dev/null`
++    AIXChk=`($CC --version 2>&1 | wc -c) 2>/dev/null`
 +
 +    GCCVER=`($CC --version) 2>/dev/null`
 +    if [ "$GCCVER" != ""  -a $AIXChk -lt 100 ]; then
@@ -431,7 +431,7 @@ diff -r -u openssl-0.9.6c/config openssl-0.9.6c-patched/config
    sun4m-*-solaris2)	OUT="solaris-sparcv8-$CC" ;;
 diff -r -u openssl-0.9.6c/crypto/asn1/a_d2i_fp.c openssl-0.9.6c-patched/crypto/asn1/a_d2i_fp.c
 --- openssl-0.9.6c/crypto/asn1/a_d2i_fp.c	Fri Apr 23 17:08:07 1999
-+++ openssl-0.9.6c-patched/crypto/asn1/a_d2i_fp.c	Tue Jan  8 21:53:13 2002
++++ openssl-0.9.6c-patched/crypto/asn1/a_d2i_fp.c	Thu Jan 31 18:27:55 2002
 @@ -169,13 +169,17 @@
  					ASN1err(ASN1_F_ASN1_D2I_BIO,ERR_R_MALLOC_FAILURE);
  					goto err;
