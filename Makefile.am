@@ -31,8 +31,7 @@ LibSources= \
 	string_funcs.c \
 	string_funcs.h \
 	verror.c \
-	verror.h \
-	version.h
+	verror.h
 
 ServerSources= \
 	myproxy_creds.c \
