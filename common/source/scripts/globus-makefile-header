@@ -1,417 +1,544 @@
-#!/usr/bin/env perl
+#!/usr/bin/env perl 
 
-#use strict;
-use Getopt::Long;
+use strict;
 
-use Cwd;
-use Data::Dumper;
-#********************* subroutine section ***********************
+#
+# dig the globus and gpt paths out of the user's environment variables
+#
 
-sub pod2usage;
+my $gpt_path = $ENV{GPT_LOCATION};
+my $globus_path = $ENV{GLOBUS_LOCATION};
+my $gpath;
 
-#sub pod2usage informs the user if the -flavor or -link command is not present
-
-#****************************************************************
-
-my $flavor;
-my $link="static";
-my $gpt=$ENV{GPT_LOCATION};
-my $gpath = $ENV{GPT_LOCATION};
-if (!defined($gpath))
+if ( !defined($gpt_path) && !defined($globus_path) )
 {
-	  $gpath = $ENV{GLOBUS_LOCATION};
-	   
-  }
-  if (!defined($gpath))
-  {
-	     die "GPT_LOCATION or GLOBUS_LOCATION needs to be set before running this script"
-     }
-      
-     @INC = (@INC, "$gpath/lib/perl");
+    die("GPT_LOCATION or GLOBUS_LOCATION needs to be set before running this script");
+}
 
-require Grid::GPT::Dependencies;
-require Grid::GPT::DepOrdering;
-require Grid::GPT::Package;
-require Grid::GPT::Version;  
-my $cflagslist;
-my $includeslist;
-my $libslist;
-my $pkglibslist;
-my $pgm_linkslist;
-my $lib_linkslist;
-
-if(!defined($gpt))
+if ( defined($gpt_path) )
 {
-  $gpt=$ENV{GLOBUS_LOCATION};
-}
-if(!defined($gpt))
-{
-  die "GPT_LOCATION or GLOBUS_LOCATION needs to be set before running this script\n";
-}
-
-my $globus=$ENV{GLOBUS_LOCATION};
-
-if(!defined($globus))
-{
-  die "GLOBUS_LOCATION needs to be set before running this script\n";
-}
-
-my %hash;
-my $temp;
-
-GetOptions( '-flavor=s' => \$flavor, '-link=s' => \$link, '-help' => \$help) 
-or pod2usage(1);
-if (defined $help){
-	pod2usage(0);
-}
-
-if (!defined $flavor){
-	pod2usage(1);
-}
-if (@ARGV[0] eq ""){
-	pod2usage(1);
-}
-
-#$flavor is the globus flavor configuration variable... it is needed
-#for the globus-build-env-<flavor>, and for the call of the correct gpt_build_config
-
-#Section One
-
-my @temp_header=undef();
-
-my $fakepkg= new Grid::GPT::Package;
-	$fakepkg->{'Name'}="Makefile_Header";
-	$fakepkg->{'Flavor'}=$flavor;
-	$fakepkg->{'Type'}="src";
-	$fakepkg->{'Package_Type'}="src";
-	$fakepkg->{'Source_Dependencies'}={};	
-	my $holder=$fakepkg->{'Source_Dependencies'};
-	my $versionobj= new Grid::GPT::Version;
-	$versionobj->{'type'}="range";
-	$versionobj->{'upper_major'}=1000;
-	$versionobj->{'lower_major'}=0;
-	@versionarray=($versionobj);
-	$holder->{'compile'}={};
-	foreach my $dep (@ARGV){
-		foreach my $foo ('compile', 'pgm_link', 'lib_link'){
-			$holder->{$foo}->{$dep}=new Grid::GPT::SourceDependency;
-			$holder->{$foo}->{$dep}->{'versions'}=\@versionarray; 
-			$holder->{$foo}->{$dep}->{'name'}=$dep;
-			}
-		}
-
-	assemble_link_lines($fakepkg, $flavor, $link);
-	  
-push @temp_header,  "GLOBUS_CFLAGS=\"$cflagslist\"\n";
-push @temp_header,  "GLOBUS_INCLUDES=\" -I$ENV{GLOBUS_LOCATION}/include/$flavor $includeslist\"\n";
-push @temp_header, "GLOBUS_LIBS=\"$libslist\"\n";
-push @temp_header, "GLOBUS_LDFLAGS=\" -L$ENV{GLOBUS_LOCATION}/lib\n";
-push @temp_header, "GLOBUS_PKG_LIBS=\"$pkglibslist\"\n";
-push @temp_header, "GLOBUS_LIBTOOL=$globus/sbin/libtool-$flavor\n";
-
-open(IN, "$globus/libexec/globus-build-env-$flavor.sh") || die "Cannot open GLOBUS_LOCATION/libexec/globus-build-env-$flavor.sh\n";
-
-while(<IN>)
-{ 
-  if(m!\S!)                           #if not whitespace
-  { 
-    my $copy=$_;
-
-    if($copy !~ m!^GLOBUS_!) #if copy does NOT begin with GLOBUS_
+    $gpath = $gpt_path;
+    if ( ! -d $gpath )
     {
-      if (!($copy =~ m/^PERL/ )){  #skip PERL, 'cause it's defined in sh-tools too
-         push @temp_header, "GLOBUS_".$copy;            #prepend GLOBUS_ to the lines of globus-build-env-$flavor.sh
-      }
-    }else{
-	   push @temp_header, $copy;
+        die("$gpath doesn't exist!\n");
     }
-  }   
 }
 
-#END of Section one:  prepending GLOBUS_
-close (IN);
-open(IN, "$globus/libexec/globus-sh-tools-vars.sh") || die "Cannot open GLOBUS_LOCATION/libexec/globus-sh-tools-vars.sh\n";
-while(<IN>) 
+if ( !defined($gpath) && defined($globus_path) )
 {
-	if(m!\S!)  
-	{
-		#if(! m!([A-Z]+)_([A-Z]+)!)
-	  {
-		push @temp_header, $_;
-	  }
-  	}
+    $gpath = $globus_path;
+    if ( ! -d $gpath )
+    {
+        die("$gpath doesn't exist!\n");
+    }
 }
-close (IN);
-
-#Section Two
-#creating a hash table 
 
 
-foreach my $i (@temp_header)
+use Getopt::Long;
+use Cwd;
+
+#
+# do GPT version checking
+#
+
+my($environment);
+@INC = ("$gpath/lib/perl", @INC);
+
+if ( defined eval "require Grid::GPT::V1::Package" )
 {
-  my @restofstring;
-  my $copy1;
-  ($copy1, @restofstring) = split( "=", $i);
+    $environment = "gpt2";
+}
+else
+{
+    $environment = "gpt1";
+}
+
+#
+# argument specification
+#
+
+my($flavor, $static, $link, @pkgs, $help, $verbose);
+
+GetOptions(
+            'flavor=s' => \$flavor,
+            'static' => \$static,
+            'link=s' => \$link, # deprecated feature
+            'pkg=s' => \@pkgs,
+            'help|?' => \$help,
+          ) or pod2usage(1);
+
+if ( defined($link) && !defined($static) )
+{
+    if ($link eq "static")
+    {
+        $static = 1;
+    }
+}
+
+my($args);
+
+if ( defined($help) )
+{
+    pod2usage(0);
+}
+
+if ( !defined($flavor) )
+{
+    pod2usage(1);
+}
+
+if ( defined(@ARGV) && ($ARGV[0] ne "") )
+{
+    push(@pkgs, @ARGV);
+}
+@pkgs = buildMultiArg(@pkgs);
+
+if ($environment eq "gpt1")
+{
+    my($argstring, $pkgstr);
+
+    $argstring = "-flavor=$flavor ";
+
+    if ($static)
+    {
+        $argstring .= "-static ";
+    }
+
+    $pkgstr = join(/ /, @pkgs);
+    if (length($pkgstr) > 0)
+    {
+        $argstring .= "$pkgstr ";
+    }
+
+    action("$globus_path/bin/globus-makefile-header.gpt1 $argstring");
+
+    exit;
+}
+
+if ( grep(/^ANY$/, @pkgs) )
+{
+    @pkgs = ("ANY");
+}
+
+if ( !defined(@pkgs) || (scalar(@pkgs) == 0) )
+{
+    @pkgs = ("ANY");
+}
+
+$args = {};
+$args->{flavor} = $flavor;
+$args->{static} = $static;
+$args->{pkgs} = \@pkgs;
+
+#
+# finish require'ing our include files
+#
+
+require Grid::GPT::Installation;
+require Grid::GPT::SetupInstallation;
+require Grid::GPT::PkgSet;
+require Grid::GPT::BuildLine;
+
+#
+# begin actual globus-makefile-header gpt 2.0-based code
+#
+
+my($common_error) = "(Hint: This error is most commonly caused when no packages of the specified flavor type are installed..)";
+
+#
+# get to work
+#
+
+main($args);
+
+exit;
+
+#
+# subroutines
+#
+
+### main( $args )
+#
+# driver function
+#
+
+sub main
+{
+    my($args) = @_;
+    my($header, $hash);
+    $header = [];
+
+    getDevLines($header, $args);
+    getBuildEnvLines($header);
+    getBuildShellTools($header);
+    $hash = buildEnvHash($header);
+    displayHash($hash);
+
+    exit(0);
+}
+
+### buildMultiArg( @exclude )
+#
+# given a multiargument list, format it
+#
+
+sub buildMultiArg
+{
+    my (@in_arr) = @_;
+    my (@out_arr);
+
+    @out_arr = split(/,/, join(',', @in_arr));
+
+    return @out_arr;
+}
+
+### getDevLines( $header, $args )
+#
+# append a globus location's build information to our header array
+#
+
+sub getDevLines
+{
+    my($header, $args) = @_;
+    my($installation, $liblines);
+    my($cflagslist, $includeslist, $libslist, $pkglibslist);
+
+    #
+    # pull out the command-line arguments
+    #
+
+    my($flavor, $static, $pkgs);
+    $flavor = $args->{flavor};
+    $static = $args->{static};
+    $pkgs = $args->{pkgs};
+
+    #
+    # point our installation object at our globus location
+    #
+
+    $installation = new Grid::GPT::Installation(pkgdir => "$globus_path/etc/globus_packages");
+    $installation->set_depenv('Build');
+
+    #
+    # grab a set of packages that match what we are asked to find
+    #
+
+    my $libpkgs = $installation->query_pkgset(pkgnames => $pkgs, flavor => $flavor);
+    my $testpkgs = $libpkgs->{pkgs};
+    if (!@$testpkgs)
+    {
+        printf("No packages were found that matched your query!\n");
+        exit(1);
+    }
+    my $libenvs = $libpkgs->get_sorted_buildenvs();
+    $liblines = Grid::GPT::BuildLine::create_buildlines($libenvs);
+
+    #
+    # pull out the build information
+    #
+
+    $cflagslist = $liblines->{'cflags'};
+    $includeslist = $liblines->{'includes'};
+    $libslist = $liblines->{'libs'};
+    $pkglibslist = $liblines->{'pkglibs'};
+
+    if ( defined($static) )
+    {
+        $pkglibslist = Grid::GPT::BuildLine::convert_static_libs($pkglibslist, $flavor);
+        $libslist = Grid::GPT::BuildLine::convert_static_libs($libslist, $flavor);
+    }
+
+    #
+    # format our output for beauty's sake
+    #
+
+    $cflagslist =~ s:\s+: :g;
+    $cflagslist =~ s:^\s|\s$::g;
+
+    $includeslist =~ s:\s+: :g;
+    $includeslist =~ s:^\s|\s$::g;
+
+    $libslist =~ s:\s+: :g;
+    $libslist =~ s:^\s|\s$::g;
+
+    $pkglibslist =~ s:\s+: :g;
+    $pkglibslist =~ s:^\s|\s$::g;
+
+    #
+    # push all of our entries onto our header array
+    #
+
+    push(@$header, "GLOBUS_CFLAGS=\"$cflagslist\"");
+    push(@$header, "GLOBUS_INCLUDES=\"-I${globus_path}/include/$flavor $includeslist\"");
+    push(@$header, "GLOBUS_LIBS=\"$libslist\"");
+    push(@$header, "GLOBUS_LDFLAGS=\"-L${globus_path}/lib\"");
+    push(@$header, "GLOBUS_PKG_LIBS=\"$pkglibslist\"");
+    push(@$header, "GLOBUS_LIBTOOL=\"$globus_path/sbin/libtool-$flavor\"");
+}
+
+### getBuildEnvLines( $header )
+#
+# grab all of the data in globus-build-env-<flavor>, prepend GLOBUS_ to each entry, and
+# add to our header
+#
+
+sub getBuildEnvLines
+{
+    my($header) = @_;
+    my($copy);
+
+    open(IN, "$globus_path/libexec/globus-build-env-$flavor.sh") || die "Cannot open $globus_path/libexec/globus-build-env-$flavor.sh!\n$common_error\n";
+
+    while (<IN>)
+    { 
+        if ( /\S/ ) #if not whitespace
+        { 
+            my $copy=$_;
+
+            # if copy does NOT match an uppercase letter followed by a _ then another uppercase letter 
+            # skip PERL, 'cause it's defined in sh-tools too
+
+            if ( ( $copy !~ /([A-Z]+)_([A-Z]+)/ ) && ( $copy !~ /^PERL/ ) && ( $copy !~ /^#/ ) )
+            {
+                push(@$header, "GLOBUS_" . $copy);
+            }
+        }
+    }   
+
+    close(IN);
+}
+
+### getBuildShellTools( $header )
+#
+# grab all of the defines from $GL/libexec/globus-sh-tools.sh
+#
+
+sub getBuildShellTools
+{
+    my($header) = @_;
+    my($copy);
+
+    open(IN, "$globus_path/libexec/globus-sh-tools-vars.sh") || die "Cannot open $globus_path/libexec/globus-sh-tools-vars.sh!\n$common_error\n";
+
+    while (<IN>) 
+    {
+        if ( /\S/ )
+        {
+            $copy = $_;
+
+            if ( $copy !~ /^#/ )
+            {
+                push(@$header, $copy);
+            }
+        }
+    }
+
+    close(IN);
+}
+
+### buildEnvHash( $header )
+#
+# from an array of k/v pairs, build a proper hash of those tuples.
+#
+
+sub buildEnvHash
+{
+    my($header) = @_;
+    my($hash, $container, $ordering);
+    my($key, $value, @restofstring);
+    my($temp);
+
+    $hash = {};
+    $hash->{container} = {};
+    $hash->{ordering} = [];
+
+    foreach my $i (@$header)
+    {
+        $container = $hash->{container};
+        $ordering = $hash->{ordering};
+
+        ($key, @restofstring) = split(/=/, $i);
   
-  my $copy2= join("=", @restofstring);
-  $copy2 =~ s/\n//g;		      #removes linefeeds
-  if (!($copy1 =~ m/^#/)&&($copy1 =~ m/\S/)){
-  if($copy2 =~ m!\S!)                 #checks to see if $copy2 is a non-whitespace character
-  { #open outer
-    $temp= $hash{$copy1};
-    if(defined $temp)                 #this adds the value of $temp to the front of $2 it is
-    { #open inner                     #useful in the case that $hash{$copy1} has already
-      $hash{$copy1} = $temp . " ".$copy2; #received a useful value that we dont want to lose  
-    } #close inner
-    else
-    { #else inner
-      $hash{$copy1}=$copy2;           #this is the case that $copy2 is a non-whitespace character
-    } #close inner else               #and $hash{$copy1} has yet to be defined
-  } #close outer
-  else
-  { #open outer else
-    if(!(exists $hash{$copy1}))       #this is the special case when $copy2
-    {                                 #is equal to a whitespace character
-      $hash{$copy1}="\n";              #without this exception, it is possible
-    }                                 #to lose some of the necessary hash elements 
-  }
-  } #end if !$copy1
+        if ( $key =~ m/\S/ )
+        {
+            #
+            # we shouldn't have any comments in our hash anyway, but just in case
+            #
+
+            if ( $key =~ m/^#/ )
+            {
+                next;
+            }
+
+            if ( !grep(/^$key$/, @$ordering) )
+            {
+                push(@$ordering, $key);
+            }
+
+            #
+            # create a value from the rest of the string info
+            #
+
+            $value = join("=", @restofstring);
+            $value = stripHashValue($value);
+
+            #
+            # first match when $value contains something meaningful.  handle the degenerate case
+            # next.
+            #
+
+            if ( $value =~ m/\S/ )
+            {
+                $temp = $container->{$key};
+                if ( defined($temp) )
+                {
+                    $container->{$key} = $temp . " " . $value;
+                }
+                else
+                {
+                    $container->{$key} = $value;
+                }
+            }
+            else
+            {
+                if ( !defined($container->{$key}) )
+                {
+                    $container->{$key} = "";
+                }
+            }
+        }
+    }
+
+    return $hash;
 }
 
-#END of Section Two: creating hash
+### stripHashValue( $value )
+#
+# strip from $value all extraneous information
+#
 
-
-#Section Three
-#displaying hash in a useful format
-#this will be stored in header_file
-
-my @temp_file="";
-
-for my $Loop (sort keys %hash)       #for loop to store the %hash in a sorted order by it's keys
+sub stripHashValue
 {
-  push @temp_file, "$Loop = $hash{$Loop}\n";  #if they want the '=' sign between the GLOBUS_stuff and the stuff removed, do it here
-}
-@temp_header="";
-foreach my $i (@temp_file)
-{				     #file ./temp_file.  the file w/o the blank lines is stored
-  if($i=~m!\S!)                          #in ./temp_header
-  {
-	  #print OUT $_;
-        push @temp_header, $i;
-  }
+    my($value) = @_;
+
+    $value =~ s:\s+: :g;
+    $value =~ s:\n+::g;
+    $value =~ s:"::g;
+    $value =~ s:^\s|\s$::g;
+
+    return $value;
 }
 
-#remove all "'s from the file.  this is needed because there
-foreach my $i (@temp_header)
-{                                     #are unneccessary "'s througout the file.
-  $i=~s!"!!g;                           #the "'s are replaced with nothing.
-}
- 
+### formatHashValue( $value )
+#
+# properly format $value for use in our hash
+#
 
-foreach my $i (@temp_header) 
-{                             
-  $i=~m!([^=]+)=([^=]+)!;            # the $_ is split on the =.  i 
-  my $copy1=$1;                      #assign each side to a variable, and add a " to the beginning of $2.
-  my $copy2=$2;                  #then both are printed to header_file.
-  $copy1 =~ s/cross_compiling/CROSS_COMPILING/;
-  $copy2 =~ s/\$GLOBUS_FLAVOR_NAME/$flavor/g;
-  $copy2 =~ s/\s+/ /g;
-  $copy2 =~ s/^\s//; 
-  $copy2 =~ s/\s$//;
+sub formatHashValue
+{
+    my($value) = @_;
 
-  if (defined $copy1){		#eliminate any lines without lvalues
-	  #print  "$copy1 = $copy2\n";
-	  $i =~ s/cross_compiling/CROSS_COMPILING/;
-	  $i =~ s/\$GLOBUS_FLAVOR_NAME/$flavor/g;
-	  $i =~ s/\s+/ /g;
-	  $i =~ s/^\s//;
-	  $i =~ s/\s$//;
-	  print "$i\n";
-  }
+#    $value =~ s:(.*):"\1":;
+
+    return $value;
 }
 
-print  "\n";  #special case
-		#the last line was missing the trailing " so i added it manually
+### displayHash( $hash )
+#
+# pretty print our hash tree
+#
 
-#END of displayihng hash
+sub displayHash
+{
+    my($hash) = @_;
+    my($container, $ordering);
+    my($key, $value);
 
+    $container = $hash->{container};
+    $ordering = $hash->{ordering};
 
+    for my $key (@$ordering)
+    {
+        $value = $container->{$key};
 
+        #
+        # we'll assume that $value is already stripped of extraneous info
+        #
 
+        $value = stripHashValue($value);
+        $value = formatHashValue($value);
 
+        $key =~ s/cross_compiling/CROSS_COMPILING/;
+        $value =~ s/\$GLOBUS_FLAVOR_NAME/$flavor/g;
 
+        printf("$key = $value\n");
+    }
 
-#******************************** subroutine definitions *********************************
+    printf("\n");
+}
+
+### pod2usage( )
+#
+# our stub usage function in place of Pod::Usage
+#
 
 sub pod2usage
 {
-
-  my $ex=shift;
-  print "Usage: Please specify a build flavor: -flavor=<flavorname>\n";
-  print "	and one or more package names on which you depend, e.g.\n";
-  print "\n             globus-makefile-header -flavor=gcc32dbg globus_io\n\n";
-  print "	You can also specify whether you will be linking\n";
-  print "	shared or static, with -link=[shared|static], but this\n";
-  print "	will only affect which dependencies are checked when it\n";
-  print "	examines your GLOBUS_LOCATION--the output is the same\n";
-  exit $ex;
-
+    my $ex=shift;
+    print "Usage: Please specify a build flavor: --flavor=<flavorname>\n";
+    print "\tand one or more package names on which you depend, e.g.\n";
+    print "\n             globus-makefile-header --flavor=gcc32dbg globus_io\n\n";
+    print "\tIf you are linking statically, you can append the --static flag\n";
+    print "\tto get a proper list of dependencies.  Otherwise, the dependencies\n";
+    print "\twill be printed in shared form.\n";
+    exit $ex;
 }
 
-sub assemble_link_lines
+### inform( $content, $override )
+#
+# inform the user of an event
+#
+
+sub inform
 {
+    my ($content, $override) = @_;
 
-
-my $prefix = $globus;
-
-my $srcfile;
-my $pkg =shift;
-my $flavor =shift;
-my $linktype = shift;
-my @deps = @_;
-
-my $verbose = 0;
-my ($help, $man);
-
-#print Dumper $pkg;
-#print Dumper @deps;
-
-
-	my $dependencies=new Grid::GPT::Dependencies;
-	my @missing=undef();
-	#	foreach my $package (@deps)
-	#{
-	#my $pkg = new Grid::GPT::Package;
-	#	$pkg->read_metadata_file($package);
-        	@missing=(@missing,$dependencies->get_dependencies($pkg, "build",$flavor,$linktype, "silent"));
-		#}
-#print "missing is: \n";
-#print Dumper @missing;
-        if (defined @missing[1]){
-                #we got a return value, so some dependency was missing
-
-                foreach my $i (@missing){
-						#print DEBUG "Packages not found:";
-                        #print DEBUG " ", $i, ",";
-						print DEBUG "Packages not found:";
-                        print DEBUG " ", $i, ",";   
-                }
-                print #DEBUG "\n";
-				print "\n";
-
-				print STDERR "ERROR: Dependent package(s) @missing not found\n";
-				exit(1);
-        }else{
-				#we're good on dependencies, let's find our interesting values
-
-#first let's dependency order the list:
-my @deporderlist;
-for my $package (@{$dependencies->{packagelist}}){
-	        push @deporderlist, $$package;
-	}
-	 
-	my @results=Grid::GPT::DepOrdering->dep_ordering(@deporderlist);
-
-#foreach my $dep (@{$dependencies->{packagelist}}) {
-foreach my $dep (@results){
-	my $cflags;
-	my $includes;
-	my $libs;
-	my $pkglibs;
-
-#print "linktype equals $linktype \n";
-	my $build_env = $$dep->{'Build_Environment'};
-
-	($cflags, $includes, $libs, $pkglibs) = ($$dep->{'cflags'}, 
-					    $$dep->{'external_includes'}, 
-					    $$dep->{'external_libs'}, 
-					    $$dep->{'pkg_libs'} );
-
-	if (ref($cflags) eq "HASH"){
-		$cflags=undef();
-	}
-	if (ref($includes) eq "HASH"){
-		$includes=undef();
-	}
-	if (ref($libs) eq "HASH"){
-		$libs=undef();
-	}
-	if (ref($pkglibs) eq "HASH"){
-		$pkglibs=undef();
-	}
-
-
-	if (defined $dependencies->compile->{$$dep->Name."_".$$dep->Package_Type} or 
-		defined	$dependencies->Compile->{$$dep->Name."_".$$dep->Package_Type} or 
-		defined $dependencies->Runtime_Link->{$$dep->Name."_".$$dep->Package_Type} or
-		defined $dependencies->Build_Link->{$$dep->Name."_".$$dep->Package_Type } or 
-		defined$dependencies->lib_link->{$$dep->Name."_".$$dep->Package_Type} or 
-		defined $dependencies->pgm_link->{$$dep->Name."_".$$dep->Package_Type} 
-		 ){
-
-
-		if ($$dep->Package_Type eq 'dev'){
-#print "GREP2: we're looking at a dev dependency\n";
-#print $$dep->Name."_".$$dep->Package_Type."\n";
-			$includeslist .= " ".$includes;  
-			$libslist .= " ".$libs;
-			$pkglibslist .= " ".$pkglibs;
- 	if(defined$dependencies->pgm_link->{$$dep->Name."_".$$dep->Package_Type} or
-		defined$dependencies->pgm_link->{$$dep->Name."_"."rtl"}) {
-            $pgm_linkslist .= " ".$pkglibs;
-	} 
-	if(defined$dependencies->lib_link->{$$dep->Name."_".$$dep->Package_Type} or
-		defined$dependencies->lib_link->{$$dep->Name."_"."rtl"}){
-            $lib_linkslist .= " ".$pkglibs;
+    if ( $verbose or defined($override) )
+    {
+        print "$content\n";
     }
-#print "BARBAR $pkglibs\n";
-#print Dumper $$dep;
-
-			if ($linktype eq 'static'){
-				$cflagslist .= " ".$cflags;
-			}
-		}
-#		if(defined$dependencies->pgm_link->{$$dep->Name."_".$$dep->Package_Type}) {
-#			$pgm_linkslist .= " ".$pkglibs;
-#	}
-#		if(defined$dependencies->lib_link->{$$dep->Name."_".$$dep->Package_Type}){
-#			$lib_linkslist .= "$$dep->{Name} $$dep->{Package_Type}  ".$pkglibs;
-#print "FOOFOO $pkglibs\n";
- #   }                               
-
-		if ($$dep->Package_Type eq 'rtl'){
-        	if ($linktype eq 'shared'){
-            	$cflagslist .= " ".$cflags;
-            	$pkglibslist .= " ".$pkglibs;
-#print "FEEFEE $pkglibs\n";
-#print Dumper $$dep;
-        	}
-    	}  
-		if ($$dep->Package_Type eq 'virtual'){
-		#we'd better save the flags from this just in case--I'm not entirely
-		#comfortable with this though--I think virtual packages should have
-		#substantially the same metadata as regular packages (e.g. no "virtual"
-		#type --EBB
-#print "here we are in the virtual package land. $includes $libs $pkglibs
-#$cflags\n";		
-#print Dumper $$dep;
-		 $includeslist .= " ".$includes;
-         $libslist .= " ".$libs;
-         $pkglibslist .= " ".$pkglibs;
-		 $cflagslist .= " ".$cflags;
-		}
-
-	}
-}
 }
 
+### action( $command, $dir )
+#
+# perform some command and inform the user
+#
 
-#print "GREPPER: cflags= $cflagslist, includes= $includeslist, libs=$libslist,
-#pkglibs= $pkglibslist\n";
-#print "Printing pgm_link keys: \n";
-#print keys %{$dependencies->{pgm_link}};
-#print "\n Printing lib_link keys: \n";
-#print keys %{$dependencies->{lib_link}};
-#print "\n";
+sub action
+{
+    my ($command, $dir) = @_;
+    my $pwd;
+    if (defined $dir) {
+        $pwd = cwd();
+        inform("[ Changing to $dir ]");
+        chdir($dir);
+    }
 
+    # Log the step
+    inform($command);
+
+    # Perform the step
+    my $result = system("$command 2>&1");
+
+    if ($result or $?)
+    {
+        # results are bad print them out.
+        die("ERROR: Command failed\n");
+    }
+
+    if (defined $dir)
+    {
+        inform("[ Changing to $pwd ]");
+        chdir($pwd);
+    }
 }
