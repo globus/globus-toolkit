@@ -110,7 +110,9 @@ line_parse_callback(void *context_arg,
 
     directive = tokens[0];
     
-    if (strcmp(directive, "allowed_clients") == 0)
+    /* allowed_clients is the old name for accepted_credentials */
+    if ((strcmp(directive, "allowed_clients") == 0) ||
+	(strcmp(directive, "accepted_credentials") == 0))
     {
 	int index = 1; /* Skip directive */
 	
@@ -118,11 +120,11 @@ line_parse_callback(void *context_arg,
 	
 	while(tokens[index] != NULL)
 	{
-	    context->authorized_client_dns =
-		add_entry(context->authorized_client_dns,
+	    context->accepted_credential_dns =
+		add_entry(context->accepted_credential_dns,
 			  tokens[index]);
 	    
-	    if (context->authorized_client_dns == NULL)
+	    if (context->accepted_credential_dns == NULL)
 	    {
 		goto error;
 	    }
@@ -131,7 +133,9 @@ line_parse_callback(void *context_arg,
 	}
     }
 
-    if (strcmp(directive, "allowed_services") == 0)
+    /* allowed_services is the old name for authorized_retrievers */
+    if ((strcmp(directive, "allowed_services") == 0) ||
+	(strcmp(directive, "authorized_retrievers") == 0))
     {
 	int index = 1; /* Skip directive */
 	
@@ -139,11 +143,32 @@ line_parse_callback(void *context_arg,
 	
 	while(tokens[index] != NULL)
 	{
-	    context->authorized_service_dns =
-		add_entry(context->authorized_service_dns,
+	    context->authorized_retriever_dns =
+		add_entry(context->authorized_retriever_dns,
 			  tokens[index]);
 	    
-	    if (context->authorized_service_dns == NULL)
+	    if (context->authorized_retriever_dns == NULL)
+	    {
+		goto error;
+	    }
+
+	    index++;
+	}
+    }
+    
+    if (strcmp(directive, "authorized_renewers") == 0)
+    {
+	int index = 1; /* Skip directive */
+	
+	matched = 1;
+	
+	while(tokens[index] != NULL)
+	{
+	    context->authorized_renewer_dns =
+		add_entry(context->authorized_renewer_dns,
+			  tokens[index]);
+	    
+	    if (context->authorized_renewer_dns == NULL)
 	    {
 		goto error;
 	    }
@@ -381,8 +406,9 @@ myproxy_server_config_read(myproxy_server_context_t *context)
 	goto error;
     }
     
-    context->authorized_client_dns = NULL;
-    context->authorized_service_dns = NULL;
+    context->accepted_credential_dns = NULL;
+    context->authorized_retriever_dns = NULL;
+    context->authorized_renewer_dns = NULL;
     
     /* Clear any outstanding error */
     verror_clear();
@@ -419,8 +445,8 @@ myproxy_server_config_read(myproxy_server_context_t *context)
 
 
 int
-myproxy_server_check_client(myproxy_server_context_t *context,
-			    const char *client_name)
+myproxy_server_check_cred(myproxy_server_context_t *context,
+			  const char *client_name)
 {
     int return_code = -1;
     
@@ -432,7 +458,7 @@ myproxy_server_check_client(myproxy_server_context_t *context,
     }
 
     /* Why is this cast needed? */
-    return_code = is_name_in_list((const char **) context->authorized_client_dns,
+    return_code = is_name_in_list((const char **) context->accepted_credential_dns,
 				  client_name);
 
   error:
@@ -440,7 +466,28 @@ myproxy_server_check_client(myproxy_server_context_t *context,
 }
 
 int
-myproxy_server_check_service(myproxy_server_context_t *context,
+myproxy_server_check_retriever(myproxy_server_context_t *context,
+			       const char *service_name)
+{
+    int return_code = -1;
+    
+    if ((context == NULL) ||
+	(service_name == NULL))
+    {
+	verror_put_errno(EINVAL);
+	goto error;
+    }
+
+    /* Why is this cast needed? */
+    return_code = is_name_in_list((const char **) context->authorized_retriever_dns,
+				  service_name);
+
+  error:
+    return return_code;
+}
+
+int
+myproxy_server_check_renewer(myproxy_server_context_t *context,
 			     const char *service_name)
 {
     int return_code = -1;
@@ -453,10 +500,9 @@ myproxy_server_check_service(myproxy_server_context_t *context,
     }
 
     /* Why is this cast needed? */
-    return_code = is_name_in_list((const char **) context->authorized_service_dns,
+    return_code = is_name_in_list((const char **) context->authorized_renewer_dns,
 				  service_name);
 
   error:
     return return_code;
 }
-
