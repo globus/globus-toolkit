@@ -2854,6 +2854,7 @@ redo:
 		    else
 		    {
 		        client_handle->err = error;
+		        error = GLOBUS_NULL;
 		    }
 
 		    if(client_handle->state == 
