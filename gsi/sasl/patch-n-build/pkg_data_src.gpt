@@ -5,7 +5,7 @@
   <Aging_Version Age="0" Major="0" Minor="2" />
   <Description> Globus binary package for sasl </Description>
   <Functional_Group >Security</Functional_Group>
-  <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@"/>
+  <Version_Stability Release="Experimental" />
 
   <src_pkg >
 
