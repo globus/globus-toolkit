@@ -37,7 +37,8 @@ import org.globus.exec.generated.StateEnumeration;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-public class JobStateMonitor {
+public class JobStateMonitor
+{
     private static Log logger = LogFactory.getLog(JobStateMonitor.class);
 
     /** Reference to the SEG-monitoring thread. */
@@ -99,7 +100,7 @@ public class JobStateMonitor {
     private java.util.Date lastEventTimestamp;
 
     /**
-     * Construct a new JobStateMonitor.
+     * Construct a new JobStateMonitor with a non-daemon SEG.
      *
      * The new JobStateMonitor will not begin the Scheduler Event Generator
      * automatically.  Services which create a JobStateMonitor may register
@@ -123,23 +124,71 @@ public class JobStateMonitor {
      *     checkpoint timestamp.
      */
     public JobStateMonitor(
-            java.io.File segPath,
-            String userName,
-            String schedulerName,
-            JobStateChangeListener listener,
-            JobStateRecoveryListener recoveryListener)
+        java.io.File                        segPath,
+        String                              userName,
+        String                              schedulerName,
+        JobStateChangeListener              listener,
+        JobStateRecoveryListener            recoveryListener)
+    {
+        this(segPath,
+             userName,
+             schedulerName,
+             listener,
+             recoveryListener,
+             false);
+    }
+
+    /**
+     * Construct a new JobStateMonitor.
+     *
+     * The new JobStateMonitor will not begin the Scheduler Event Generator
+     * automatically.  Services which create a JobStateMonitor may register
+     * any number of job ID mappings before calling start() to start
+     * the SEG.
+     *
+     * @param segPath
+     *     Path to the SEG executable.
+     * @param userName
+     *     User name that the SEG should run as (via sudo(8)).
+     *     (Currently ignored).
+     * @param schedulerName
+     *     Name of the scheduler SEG module to use.
+     * @param listener
+     *     Reference to the JobStateChangeListener which will be notified
+     *     when notifications relating to Job ID which has a mapping
+     *     registered to it.
+     * @param recoveryListener
+     *     Reference to a JobStateRecoveryListener which will be notified
+     *     periodically when the JobStateMonitor wants to update its recovery
+     *     checkpoint timestamp.
+     * @param segDaemon
+     *     Indicates whether to make the SEG a daemon thread or not
+     */
+    public JobStateMonitor(
+        java.io.File                        segPath,
+        String                              userName,
+        String                              schedulerName,
+        JobStateChangeListener              listener,
+        JobStateRecoveryListener            recoveryListener,
+        boolean                             segDaemon)
     {
         logger.debug("Constructing JobStateMonitor");
 
         this.listener = listener;
         this.recoveryListener = recoveryListener;
         this.mapping = new java.util.HashMap();
-        this.cachedEvents = new java.util.TreeSet(SchedulerEvent.getComparator());
+        this.cachedEvents
+            = new java.util.TreeSet(SchedulerEvent.getComparator());
         this.cacheFlushTask = null;
         this.recoveryTask = null;
 
-        this.seg = new SchedulerEventGenerator(segPath, userName,
-                schedulerName, this);
+        this.seg = new SchedulerEventGenerator(
+            segPath,
+            userName,
+            schedulerName,
+            this);
+        logger.debug("Setting SEG daemon status to " + segDaemon);
+        this.seg.setDaemon(segDaemon);
     }
 
     /**
@@ -209,8 +258,8 @@ public class JobStateMonitor {
             logger.debug("starting seg with timestamp " + timestamp.toString());
         }
 
-        seg.start(timestamp);
-        lastEventTimestamp = timestamp;
+        this.seg.start(timestamp);
+        this.lastEventTimestamp = timestamp;
 
         if (cacheFlushTask == null) {
             logger.debug("creating flush task");
@@ -255,7 +304,9 @@ public class JobStateMonitor {
 
         while (!done) {
             try {
+                logger.debug("joining SEG thread");
                 seg.join();
+                logger.debug("done");
                 done = true;
             } catch (InterruptedException ie) {
             }
@@ -476,6 +527,22 @@ public class JobStateMonitor {
 
                 dispatchEvent(resourceKey, e);
             }
+        }
+    }
+    
+    private class ShutdownHook extends Thread
+    {
+        JobStateMonitor jsm;
+        public ShutdownHook(JobStateMonitor jsm)
+        {
+            this.jsm = jsm;
+        }
+
+        public void run()
+        {
+            logger.debug("stopping JSM");
+            this.stop();
+            logger.debug("JSM stopped");
         }
     }
 }

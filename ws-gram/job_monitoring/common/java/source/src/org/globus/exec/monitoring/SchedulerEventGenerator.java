@@ -273,10 +273,14 @@ class SchedulerEventGenerator extends Thread {
         if (shutdownCalled) {
             return;
         } else {
+            logger.debug("cleaning process");
             cleanProcess();
+            logger.debug("setting shutdownCalled");
             shutdownCalled = true;
             /* Wake up throttler if we were waiting in it */
+            logger.debug("notifying");
             notify();
+            logger.debug("done");
         }
     }
     
