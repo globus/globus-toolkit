@@ -2577,7 +2577,7 @@ globus_l_gram_protocol_setup_accept_attr(
     res = globus_io_attr_set_secure_authorization_mode(
                 attr,
                 GLOBUS_IO_SECURE_AUTHORIZATION_MODE_CALLBACK,
-                &auth_data)
+                &auth_data);
 
     if (res != GLOBUS_SUCCESS)
     {
