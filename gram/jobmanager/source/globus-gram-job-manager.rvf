@@ -133,13 +133,19 @@ ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
 DefaultWhen: GLOBUS_GRAM_JOB_SUBMIT
 
 Attribute: min_memory
-Description: "Specify the minumum amount of memory required for this job.
-	      Units are in Megabytes."
+Description: "Explicitly set the minimum amount of memory for a single execution
+              of the executable. The units is in Megabytes. The value will go
+	      through an atoi() conversion in order to get an integer. If the
+	      GRAM scheduler cannot set minMemory, then an error will be
+	      returned."
 ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
 
 Attribute: max_memory
-Description: "Specify the maximum amount of memory required for this job.
-	      Units are in Megabytes."
+Description: "Explicitly set the maximum amount of memory for a single execution
+              of the executable. The units is in Megabytes. The value will go
+	      through an atoi() conversion in order to get an integer. If the
+	      GRAM scheduler cannot set maxMemory, then an error will be
+	      returned."
 ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
 
 Attribute: save_state
