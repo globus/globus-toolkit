@@ -239,14 +239,7 @@ globus_i_gram_client_deactivate(void);
 
 #define GLOBUS_GRAM_CLIENT_MODULE (&globus_gram_client_module)
 
-static globus_module_descriptor_t	globus_gram_client_module =
-{
-    "globus_gram_client",
-    globus_i_gram_client_activate,
-    globus_i_gram_client_deactivate,
-    GLOBUS_NULL
-};
-
+extern globus_module_descriptor_t	globus_gram_client_module;
 
 /******************************************************************************
  * Backward compatibility

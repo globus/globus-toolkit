@@ -129,6 +129,13 @@ grami_ggg_send_token_nexus( void * arg,  void * buf, size_t size);
 /******************************************************************************
                        Define module specific variables
 ******************************************************************************/
+globus_module_descriptor_t globus_gram_client_module = {
+    "globus_gram_client",
+    globus_i_gram_client_activate,
+    globus_i_gram_client_deactivate,
+    GLOBUS_NULL
+};
+
 static globus_nexus_handler_t globus_l_job_request_reply_handler_table[] =
 {
     {GLOBUS_NEXUS_HANDLER_TYPE_NON_THREADED,
