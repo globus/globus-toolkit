@@ -71,8 +71,8 @@ GSS_CALLCONV gss_accept_sec_context(
     *minor_status = (OM_uint32) GLOBUS_SUCCESS;
     output_token->length = 0;
 
-    context = *context_handle_P;
-
+    context = context_handle_P ? *context_handle_P : GSS_C_NO_CONTEXT;
+    
     /* module activation if not already done by calling
      * globus_module_activate
      */
