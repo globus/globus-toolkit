@@ -35,24 +35,23 @@ known issues:
 -- ipc failure while the handle is owned by the dsi destroys the handle. should
     not free until user calls release or close, and just error out of any other
     calls that attempt to use the handle. (verify fixed?)
--- passing size_t's over ipc as ints... will be a problem on 64 bit systems 
-    where int isn't big enough.  not likely to be a problem in practice
-    since the args we store in size_t (buffer sizes, etc) should never be
-    too large for an int...
--- problem with preauth timeout    
 -- there may be an issue with group permissions -- not sure if it results
     in any problems.
--- closing connections reports an xio error when the connection was closed
-    normally.  possibly an xio/cancel problem.
--- ipc connections with security enabled (default) aren't being cached
-    correctly, results in IPC ERRORs as the client closes.
 -- detach check is before config file is read, so detach in config file
     doesn't work.  also possible other issues with config checks at 
     fork/exec time when using only config file.
 -- server exec name discovery fails when there is not a valid $GL. -exec
     flag works around this, but not ideal.
--- parsing problem if module params have a space
 
+** NOTE **
+-- passing size_t's over ipc as ints... will be a problem on 64 bit systems 
+    where int isn't big enough.  not likely to be a problem in practice
+    since the args we store in size_t (buffer sizes, etc) should never be
+    too large for an int...
+JB: i think this is ok.  size_ts are being sent as uint32 but they are
+    safely being converted to UInt32s first.  There is a certainly a
+    potiential for overflow, however i think the size_ts we are sending
+    should not exceed 4GB.
 
 
 future:

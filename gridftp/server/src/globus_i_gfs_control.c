@@ -353,11 +353,11 @@ globus_l_gfs_done_cb(
         char *                          tmp_str;
 
         tmp_str = globus_error_print_friendly(globus_error_peek(result));
-        /* XXX find out why we get (false) error here 
+        /* XXX find out why we get (false) error here  */
         globus_i_gfs_log_message(
-            GLOBUS_I_GFS_LOG_INFO,
+            GLOBUS_I_GFS_LOG_WARN,
             "Control connection closed with error: %s\n",
-             tmp_str); */
+             tmp_str); 
         globus_free(tmp_str);
     }
     

@@ -174,6 +174,7 @@ typedef struct globus_i_gfs_ipc_handle_s
     char *                              user_id;
 
     globus_l_gfs_ipc_connection_t       connection_info;
+    globus_byte_t                       byte;
 } globus_i_gfs_ipc_handle_t;
 
 static
@@ -4736,9 +4737,9 @@ globus_l_gfs_ipc_stop_write_cb(
             on every driver we might want to use */
         result = globus_xio_register_read(
             ipc->xio_handle,
-            buffer, /* bogus parmeter */
-            0,
-            0,
+            &ipc->byte, /* bogus parmeter */
+            1,
+            1,
             NULL,
             globus_l_gfs_ipc_read_request_fault_cb,
             ipc);
