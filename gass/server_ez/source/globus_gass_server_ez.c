@@ -575,10 +575,20 @@ globus_l_gass_server_ez_register_accept_callback(
     	    {
 		goto deny;
     	    }
-	    
-            rc = globus_libc_open(parsed_url.url_path, flags, 0600);
-            globus_url_destroy(&parsed_url);
-            fstat(rc, &statstruct);
+	   
+	    if(stat(parsed_url.url_path, &statstruct)==0)
+	    {
+                rc = globus_libc_open(parsed_url.url_path, flags, 0600);
+		fstat(rc, &statstruct);
+		globus_url_destroy(&parsed_url);
+	    }
+	    else
+	    {
+		globus_gass_transfer_deny(request, 404, "File Not Found");
+		globus_gass_transfer_request_destroy(request);
+                globus_url_destroy(&parsed_url);
+		goto reregister:
+	    }
 
             buf = globus_malloc(1024);
             amt = read(rc, buf, 1024);
