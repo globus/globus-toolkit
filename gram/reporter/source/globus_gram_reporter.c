@@ -937,7 +937,6 @@ globus_l_gram_get_conf_values(globus_l_gram_conf_values_t * vals)
     int  pfd;
     struct timeval time;
     time_t curr_time;
-    struct tm tm;
     struct tm * tm_ptr = NULL;
     char tmp_date_str[128];
     char date_fmt[] = "%a %b %d %T GMT %Y";
@@ -1146,12 +1145,10 @@ int main (int argc, char **argv)
 {
     globus_list_t *  q_list = NULL;
     char script_cmd[512];
-    char lastupdate_map_file[512];
     globus_l_gram_conf_values_t conf_values;
     int show_conf_data = 0;
     int i;
     char * t;
-    int fd;
     int rc;
     
     /* Initialize modules that I use */
