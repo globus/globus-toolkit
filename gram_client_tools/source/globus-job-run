@@ -192,7 +192,7 @@ normalize_filename()
    # note we must loop for all series forms "/././" because
    # the patterns overlap and only half match in each iteration
    #
-   while echo $file | ${GLOBUS_SH_GREP-grep} '/./' > /dev/null 2>&1
+   while echo $file | ${GLOBUS_SH_GREP-grep} '/\./' > /dev/null 2>&1
    do
       # this goes faster when we inline a couple iterations
       # into one sed command
@@ -203,7 +203,7 @@ normalize_filename()
    # reduce all '/../' expressions
    #    root is its own parent
    #    foo/bar/../ is foo iff bar!=..
-   while echo $file | ${GLOBUS_SH_FGREP-fgrep} '/../' > /dev/null 2>&1
+   while echo $file | ${GLOBUS_SH_FGREP-fgrep} '/\.\./' > /dev/null 2>&1
    do
       file=`echo $file | ${GLOBUS_SH_SED-sed} -e 's:^/\.\./:/:g' \
                              -e 's:/[^./][^/]*/\.\./:/:g' \
