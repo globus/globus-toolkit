@@ -827,6 +827,7 @@ globus_l_gass_copy_read_from_queue(
 #ifdef GLOBUS_GASS_COPY_DEBUG
     printf("read_from_queue(): returning\n");
 #endif
+   
 } /* globus_l_gass_copy_read_from_queue() */
 
 
@@ -1223,13 +1224,29 @@ globus_l_gass_copy_ftp_transfer_callback(
     globus_gass_copy_handle_t * copy_handle
 	= (globus_gass_copy_handle_t *) user_arg;
 
+#ifdef GLOBUS_GASS_COPY_DEBUG
+    printf("ftp_transfer_callback(): called\n");
+#endif
+
+    if(error != GLOBUS_SUCCESS)
+    {
+	/* do some error handling */
+#ifdef GLOBUS_GASS_COPY_DEBUG
+    printf("ftp_transfer_callback(): !GLOBUS_SUCESS, error= %d\n", error);
+    }
+    else
+    {
+	printf("ftp_transfer_callback(): GLOBUS_SUCCESS\n");
+#endif
+    }
+    
     globus_l_gass_copy_state_free(copy_handle->state);
       copy_handle->state = GLOBUS_NULL;
 
 #ifdef GLOBUS_GASS_COPY_DEBUG
       if(copy_handle->state == GLOBUS_NULL)
 	printf("copy_handle->state == GLOBUS_NULL\n");
-      printf("globus_l_gass_copy_ftp_transfer_callback(): about to call user callback\n");
+      printf("ftp_transfer_callback(): about to call user callback\n");
 #endif 
       copy_handle->user_callback(
 	       copy_handle->callback_arg,
@@ -1564,7 +1581,10 @@ globus_l_gass_copy_write_from_queue(
      */
     if(state->dest.status == GLOBUS_I_GASS_COPY_TARGET_READY)
     {
-
+#ifdef GLOBUS_GASS_COPY_DEBUG
+    printf("write_from_queue(): dest.status == TARGET_READY, n_pending= %d,  n_simultaneous= %d\n", state->dest.n_pending, state->dest.n_simultaneous);
+#endif
+  
       /*  FIXX --
        *  this needs to be a while loop, so that ftp can take advantage of
        *  multiple channels
@@ -1629,21 +1649,37 @@ globus_l_gass_copy_register_write(
     globus_gass_copy_handle_t * handle,
     globus_i_gass_copy_buffer_t * buffer_entry)
 {
+    globus_result_t rc;
     globus_gass_copy_state_t * state = handle->state;
     switch (state->dest.mode)
     {
       case GLOBUS_I_GASS_COPY_TARGET_MODE_FTP:
 	/* check the offset to see if its what we are expecting */
-	  
-	globus_ftp_client_register_write(
-	    state->dest.data.ftp.handle,
+#ifdef GLOBUS_GASS_COPY_DEBUG
+	printf("register_write():  calling globus_ftp_client_register_write()\n");
+	printf("                            nbytes= %d, offset= %d, last_data= %d\n", buffer_entry->nbytes,
+	    buffer_entry->offset,
+	    buffer_entry->last_data);
+#endif	  
+	rc = globus_ftp_client_register_write(
+	    &(handle->ftp_handle),
 	    buffer_entry->bytes,
 	    buffer_entry->nbytes,
 	    buffer_entry->offset,
 	    buffer_entry->last_data,
 	    globus_l_gass_copy_ftp_write_callback,
 	    (void *) handle);
-	    
+	if(rc != GLOBUS_SUCCESS)
+	{
+	    /* do some error handling */
+#ifdef GLOBUS_GASS_COPY_DEBUG
+	    printf("register_write(): globus_ftp_client_register_write() returned: %d\n", rc);
+	}
+	else
+	{
+	    printf("register_write(): globus_ftp_client_register_write() returned: GLOBUS_SUCCESS\n");
+#endif
+	}
 	  break;
 
       case GLOBUS_I_GASS_COPY_TARGET_MODE_GASS:
@@ -1700,6 +1736,11 @@ globus_l_gass_copy_ftp_write_callback(
         = copy_handle->state;
 
     globus_bool_t last_data;
+
+#ifdef GLOBUS_GASS_COPY_DEBUG
+	printf("ftp_write_callback():  has been called, nbytes: %d\n", nbytes);
+#endif
+	
     last_data = eof;
     if(eof)
     {    
@@ -1941,6 +1982,7 @@ globus_gass_copy_register_url_to_url(
     globus_gass_copy_callback_t callback_func,
     void * callback_arg)
 {
+    globus_result_t rc;
     globus_gass_copy_state_t * state;
     globus_i_gass_copy_url_scheme_t source_url_scheme;
     globus_i_gass_copy_url_scheme_t dest_url_scheme;
@@ -1998,7 +2040,7 @@ globus_gass_copy_register_url_to_url(
 #ifdef GLOBUS_GASS_COPY_DEBUG
         printf("calling globus_ftp_client_third_party_transfer()\n");
 #endif
-        globus_ftp_client_third_party_transfer(
+        rc = globus_ftp_client_third_party_transfer(
 	    &(handle->ftp_handle),
 	    source_url,
 	    state->source.attr.ftp_attr,
@@ -2007,7 +2049,18 @@ globus_gass_copy_register_url_to_url(
 	    GLOBUS_NULL,
 	    globus_l_gass_copy_ftp_transfer_callback,
 	    (void *) handle);
-	    
+
+	if (rc != GLOBUS_SUCCESS)
+	{
+	    /* do some error handling */
+#ifdef GLOBUS_GASS_COPY_DEBUG
+	    printf("third_party_transfer() was not GLOBUS_SUCCESS! it returned %d\n", rc);
+	}
+	else
+	{
+	    printf("third_party_transfer() returned GLOBUS_SUCCESS\n", rc);
+#endif
+	}
     }
     else
     {
