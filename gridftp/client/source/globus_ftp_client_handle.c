@@ -273,6 +273,7 @@ globus_ftp_client_handle_destroy(
     globus_hashtable_destroy(&i_handle->active_blocks);
     globus_i_ftp_client_handle_unlock(i_handle);
     globus_mutex_destroy(&i_handle->mutex);
+    globus_i_ftp_client_handleattr_destroy(&i_handle->attr);
 
     globus_libc_free(i_handle);
 

@@ -80,17 +80,31 @@ globus_result_t
 globus_ftp_client_handleattr_destroy(
     globus_ftp_client_handleattr_t *		attr)
 {
-    globus_i_ftp_client_plugin_t *		plugin;
     globus_i_ftp_client_handleattr_t *		i_attr;
-
     GlobusFuncName(globus_ftp_client_handleattr_destroy);
 
-    if(attr == GLOBUS_NULL)
+    if(attr == GLOBUS_NULL || *attr == GLOBUS_NULL)
     {
 	return globus_error_put(
 		GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("attr"));
     }
-    i_attr = *(globus_i_ftp_client_handleattr_t **) attr;
+    
+    i_attr = *attr;
+    *attr = GLOBUS_NULL;
+    
+    globus_i_ftp_client_handleattr_destroy(i_attr);
+    globus_libc_free(i_attr);
+    return GLOBUS_SUCCESS;
+}
+/* globus_ftp_client_handleattr_destroy() */
+/*@}*/
+
+void
+globus_i_ftp_client_handleattr_destroy(
+    globus_i_ftp_client_handleattr_t *		i_attr)
+{
+    globus_i_ftp_client_plugin_t *		plugin;
+    GlobusFuncName(globus_i_ftp_client_handleattr_destroy);
 
     globus_i_ftp_client_cache_destroy(&i_attr->url_cache);
 
@@ -101,13 +115,7 @@ globus_ftp_client_handleattr_destroy(
 	plugin->destroy_func(plugin->plugin,
 			     plugin->plugin_specific);
     }
-    globus_libc_free(i_attr);
-    (*attr) = GLOBUS_NULL;
-
-    return GLOBUS_SUCCESS;
 }
-/* globus_ftp_client_handleattr_destroy() */
-/*@}*/
 
 /**
  * @name Copy
