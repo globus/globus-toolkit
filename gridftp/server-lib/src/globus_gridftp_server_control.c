@@ -1711,6 +1711,10 @@ globus_gridftp_server_control_destroy(
     {
         globus_free(server_handle->username);
     }
+    if(server_handle->dcau_subject != NULL)
+    {
+        globus_free(server_handle->dcau_subject);
+    }
     for(list = server_handle->feature_list;
         !globus_list_empty(list);
         list = globus_list_rest(list))

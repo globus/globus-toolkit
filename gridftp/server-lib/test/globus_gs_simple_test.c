@@ -158,7 +158,7 @@ transfer(
     globus_gridftp_server_control_restart_t restart)
 {
     globus_gridftp_server_control_begin_transfer(op, 0);
-    globus_gridftp_server_control_finished_transfer(op, GLOBUS_SUCCESS);
+    globus_gridftp_server_control_finished_transfer(op, globus_error_put(GLOBUS_ERROR_NO_INFO));
 }
 
 

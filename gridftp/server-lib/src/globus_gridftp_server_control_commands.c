@@ -100,12 +100,35 @@ globus_l_gsc_cmd_dcau(
     switch(*tmp_ptr)
     {
         case 'S':
+            if(argc < 3)
+            {
+                globus_gsc_959_finished_command(
+                    op, "504 DCAU S expected subject.\r\n");
+            }
+            else
+            {
+                op->server_handle->dcau = *tmp_ptr;
+                if(op->server_handle->dcau_subject != NULL)
+                {
+                    globus_free(op->server_handle->dcau_subject);
+                }
+                op->server_handle->dcau_subject = strdup(cmd_a[2]);
+                globus_gsc_959_finished_command(op, "200 DCAU S.\r\n");
+            }
+            break;
         case 'N':
         case 'A':
-            msg = globus_common_create_string("200 DCAU %c.\r\n", *tmp_ptr);
-            op->server_handle->dcau = *tmp_ptr;
-            globus_gsc_959_finished_command(op, msg);
-            globus_free(msg);
+            if(argc != 2)
+            {
+                globus_gsc_959_finished_command(op, "504 Bad DCAU mode.\r\n");
+            }
+            else
+            {
+                msg = globus_common_create_string("200 DCAU %c.\r\n", *tmp_ptr);
+                op->server_handle->dcau = *tmp_ptr;
+                globus_gsc_959_finished_command(op, msg);
+                globus_free(msg);
+            }
             break;
 
         default:
@@ -2241,7 +2264,7 @@ globus_i_gsc_add_commands(
         globus_l_gsc_cmd_dcau,
         GLOBUS_GSC_COMMAND_POST_AUTH,
         2,
-        2,
+        3,
         "214 Syntax: DCAU <S,N,A>\r\n",
         NULL);
 

@@ -30,8 +30,11 @@ globus_gridftp_server_control_get_buffer_size(
     globus_size_t *                         out_recv_bs,
     globus_size_t *                         out_send_bs)
 {
+    GlobusGridFTPServerName(globus_gridftp_server_control_get_buffer_size);
+
     if(op == NULL)
     {
+        return GlobusGridFTPServerErrorParameter("op");
     }
 
     globus_mutex_lock(&op->server_handle->mutex);
@@ -49,8 +52,11 @@ globus_gridftp_server_control_get_parallelism(
     globus_gridftp_server_control_op_t      op,
     int *                                   out_parallelism)
 {
+    GlobusGridFTPServerName(globus_gridftp_server_control_get_parallelism);
+
     if(op == NULL)
     {
+        return GlobusGridFTPServerErrorParameter("op");
     }
 
     globus_mutex_lock(&op->server_handle->mutex);
@@ -67,8 +73,11 @@ globus_gridftp_server_control_get_mode(
     globus_gridftp_server_control_op_t      op,
     char *                                  out_mode)
 {
+    GlobusGridFTPServerName(globus_gridftp_server_control_get_mode);
+
     if(op == NULL)
     {
+        return GlobusGridFTPServerErrorParameter("op");
     }
 
     globus_mutex_lock(&op->server_handle->mutex);
@@ -85,8 +94,11 @@ globus_gridftp_server_control_get_type(
     globus_gridftp_server_control_op_t      op,
     char *                                  out_type)
 {
+    GlobusGridFTPServerName(globus_gridftp_server_control_get_type);
+
     if(op == NULL)
     {
+        return GlobusGridFTPServerErrorParameter("op");
     }
 
     globus_mutex_lock(&op->server_handle->mutex);
@@ -103,8 +115,11 @@ globus_gridftp_server_control_get_list_type(
     globus_gridftp_server_control_op_t      op,
     int *                                   out_type)
 {
+    GlobusGridFTPServerName(globus_gridftp_server_control_get_list_type);
+
     if(op == NULL)
     {
+        return GlobusGridFTPServerErrorParameter("op");
     }
 
     globus_mutex_lock(&op->server_handle->mutex);
@@ -121,8 +136,11 @@ globus_gridftp_server_control_get_cwd(
     globus_gridftp_server_control_t         server,
     char **                                 cwd_string)
 {
+    GlobusGridFTPServerName(globus_gridftp_server_control_get_cwd);
+
     if(server == NULL)
     {
+        return GlobusGridFTPServerErrorParameter("server");
     }
 
     globus_mutex_lock(&server->mutex);
@@ -142,15 +160,25 @@ globus_gridftp_server_control_get_data_auth(
     char *                                  prot,
     gss_cred_id_t *                         del_cred)
 {
+    GlobusGridFTPServerName(globus_gridftp_server_control_get_data_auth);
+
     if(op == NULL)
     {
+        return GlobusGridFTPServerErrorParameter("op");
     }
 
     globus_mutex_lock(&op->server_handle->mutex);
     {
         if(subject != NULL)
         {
-            *subject = globus_libc_strdup(op->server_handle->subject);
+            if(op->server_handle->dcau_subject != NULL)
+            {
+                *subject = globus_libc_strdup(op->server_handle->dcau_subject);
+            }
+            else
+            {
+                *subject = NULL;
+            }
         }
         if(dcau != NULL)
         {

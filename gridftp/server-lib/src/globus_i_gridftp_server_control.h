@@ -380,6 +380,7 @@ typedef struct globus_i_gsc_server_handle_s
     char *                                  subject;
     uid_t                                   uid;
     char                                    dcau;
+    char *                                  dcau_subject;
     char                                    prot;
     globus_bool_t                           authenticated;
 
