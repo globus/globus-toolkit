@@ -659,12 +659,6 @@ case $GPT_LINKTYPE in
 	static)
 
 		case ${host}--$1 in
-    		*solaris2*)
-		    STATIC_FLAGS="-Bstatic -Bdynamic $LIBS  -Bstatic -z nodefs"
-		    LIBS=""
-		    AC_SUBST(STATIC_FLAGS)
-		    AC_SUBST(LIBS)
-		    ;;
     		*)
 		    STATIC_FLAGS="-all-static"
 		    AC_SUBST(STATIC_FLAGS)

@@ -994,8 +994,6 @@ AC_DEFINE_UNQUOTED(SIGNAL_TYPE, void)
 LIBS="$LIBS -lsupport"
 
 
-dnl STATIC_FLAGS="-Bstatic -Bdynamic $LIBS  -Bstatic -z nodefs"
-dnl LIBS=""
 LAC_STATIC_FLAGS
 
 AC_SUBST(LIBS)
