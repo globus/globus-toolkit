@@ -70,7 +70,7 @@
 
 # GSSAPI options
 #GSSAPIAuthentication yes
-#GSSAPICleanupCreds yes
+#GSSAPICleanupCredentials yes
 
 # Set this to 'yes' to enable PAM authentication (via challenge-response)
 # and session processing. Depending on your PAM configuration, this may
