@@ -17,7 +17,7 @@
  * to its internal structure and vice-versa.
  */
 
-#include "proxyrestriction.h"
+#include "proxypolicy.h"
 
 #include <openssl/asn1.h>
 #include <openssl/x509.h>
@@ -72,26 +72,17 @@ EXTERN_C_BEGIN
  * directly is not a good idea.
  *
  * 
- * @param pC a boolean value, it indicates whether or not the 
- * certificate is a proxy certificate: if the certificate is a proxy 
- * certificate, the pC field MUST be TRUE; otherwise, the pC field MUST 
- * be FALSE.
  * @param path_length an optional field in the ANS.1 DER encoding, 
  * it specifies the maximum depth of the path of Proxy Certificates 
  * that can be signed by this End Entity Certificate or Proxy Certificate.
- * @param restriction an optional field in the ANS.1 DER encoding,
- * specifies restrictions on the use of this certificate.  If the 
- * certificate is not a Proxy Certificate (i.e, if the pC field is 
- * FALSE), then the restriction field will not be present.
- * @param group defines which group the proxy is to be in
- * @param issuer_signature holds the signature of the certificate
- * that signed this proxy certificate (issued it)
+ * @param policy a non-optional field in the ANS.1 DER encoding,
+ * specifies policies on the use of this certificate.
  */
 struct PROXYCERTINFO_st
 {
     ASN1_INTEGER *                      version;
     ASN1_INTEGER *                      path_length;       /* [ OPTIONAL ] */
-    PROXYRESTRICTION *                  restriction;       /* [ OPTIONAL ] */
+    PROXYPOLICY *                       policy;
 };
 
 typedef struct PROXYCERTINFO_st PROXYCERTINFO;
@@ -141,11 +132,11 @@ int PROXYCERTINFO_set_version(
 long PROXYCERTINFO_get_version(
     PROXYCERTINFO *                     cert_info);
 
-int PROXYCERTINFO_set_restriction(
+int PROXYCERTINFO_set_policy(
     PROXYCERTINFO *                     cert_info,
-    PROXYRESTRICTION *                  restriction);
+    PROXYPOLICY *                       policy);
 
-PROXYRESTRICTION * PROXYCERTINFO_get_restriction(
+PROXYPOLICY * PROXYCERTINFO_get_policy(
     PROXYCERTINFO *                     cert_info);
 
 int PROXYCERTINFO_set_path_length(

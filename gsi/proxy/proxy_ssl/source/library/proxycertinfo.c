@@ -72,7 +72,7 @@ PROXYCERTINFO * PROXYCERTINFO_new()
     ret->version          = ASN1_INTEGER_new();
     ASN1_INTEGER_set(ret->version, 1);  /* current first version of protocol */
     ret->path_length      = NULL;
-    ret->restriction      = PROXYRESTRICTION_new();
+    ret->policy           = PROXYPOLICY_new();
     return (ret);
     M_ASN1_New_Error(ASN1_F_PROXYCERTINFO_NEW);
 }
@@ -97,7 +97,7 @@ void PROXYCERTINFO_free(
     if(cert_info == NULL) return;
     ASN1_INTEGER_free(cert_info->version);
     ASN1_INTEGER_free(cert_info->path_length);
-    PROXYRESTRICTION_free(cert_info->restriction);
+    PROXYPOLICY_free(cert_info->policy);
     OPENSSL_free(cert_info);
 }
 /* PROXYCERTINFO_free */
@@ -151,7 +151,7 @@ int PROXYCERTINFO_cmp(
 {
     if(ASN1_INTEGER_cmp(a->version, b->version) && 
        ASN1_INTEGER_cmp(a->path_length, b->path_length) &&
-       PROXYRESTRICTION_cmp(a->restriction, b->restriction))
+       PROXYPOLICY_cmp(a->policy, b->policy))
     {
         return 1;
     }
@@ -278,67 +278,67 @@ long PROXYCERTINFO_get_version(
 
 
 /**
- * @name Set the Restriction Field
+ * @name Set the Policy Field
  */
 /* @{ */
 /**
  * @ingroup proxycertinfo
  *
- * Sets the restriction on the PROXYCERTINFO
+ * Sets the policy on the PROXYCERTINFO
  * Since this is an optional field in the
  * ASN1 encoding, this variable can be set
  * to NULL through this function - which
  * means that when the PROXYCERTINFO is encoded
- * the restriction won't be included.
+ * the policy won't be included.
  *
  * @param cert_info the PROXYCERTINFO object
- * to set the restriction of
- * @param restriction the PROXYRESTRICTION
+ * to set the policy of
+ * @param policy the PROXYPOLICY
  * to set it to
  *
  * @return 1 if success, 0 if error
  */
-int PROXYCERTINFO_set_restriction(
+int PROXYCERTINFO_set_policy(
     PROXYCERTINFO *                     cert_info,
-    PROXYRESTRICTION *                  restriction)
+    PROXYPOLICY *                       policy)
 {
-    PROXYRESTRICTION_free(cert_info->restriction);
-    if(restriction != NULL)
+    PROXYPOLICY_free(cert_info->policy);
+    if(policy != NULL)
     {
-        cert_info->restriction = PROXYRESTRICTION_dup(restriction);
+        cert_info->policy = PROXYPOLICY_dup(policy);
     }
     else
     {
-        cert_info->restriction = NULL;
+        cert_info->policy = NULL;
     }
     return 1;
 }
-/* PROXYCERTINFO_set_restriction() */
+/* PROXYCERTINFO_set_policy() */
 /* @} */
 
 /**
- * @name Get the Restriction Field 
+ * @name Get the Policy Field 
  */
 /* @{ */
 /**
  * @ingroup proxycertinfo
  * 
- * Gets the restriction on the PROXYCERTINFO
+ * Gets the policy on the PROXYCERTINFO
  * 
- * @param cert_info the PROXYCERTINFO to get the restriction of
+ * @param cert_info the PROXYCERTINFO to get the policy of
  *
- * @return the PROXYRESTRICTION of the PROXYCERTINFO
+ * @return the PROXYPOLICY of the PROXYCERTINFO
  */
-PROXYRESTRICTION * PROXYCERTINFO_get_restriction(
+PROXYPOLICY * PROXYCERTINFO_get_policy(
     PROXYCERTINFO *                     cert_info)
 {
     if(cert_info)
     {
-        return cert_info->restriction;
+        return cert_info->policy;
     }
     return NULL;
 }
-/* PROXYCERTINFO_get_restriction() */
+/* PROXYCERTINFO_get_policy() */
 /* @} */
 
 
@@ -453,15 +453,15 @@ int i2d_PROXYCERTINFO(
 
     M_ASN1_I2D_len(cert_info->version, i2d_ASN1_INTEGER);
 
-    M_ASN1_I2D_len(cert_info->restriction,      
-                   i2d_PROXYRESTRICTION);
+    M_ASN1_I2D_len(cert_info->policy,      
+                   i2d_PROXYPOLICY);
 
     M_ASN1_I2D_len_EXP_opt(cert_info->path_length,      
                            i2d_ASN1_INTEGER,
                            1, v1);
     M_ASN1_I2D_seq_total();
     M_ASN1_I2D_put(cert_info->version, i2d_ASN1_INTEGER);
-    M_ASN1_I2D_put(cert_info->restriction, i2d_PROXYRESTRICTION);
+    M_ASN1_I2D_put(cert_info->policy, i2d_PROXYPOLICY);
     M_ASN1_I2D_put_EXP_opt(cert_info->path_length, i2d_ASN1_INTEGER, 1, v1);
     M_ASN1_I2D_finish();
 }
@@ -497,7 +497,7 @@ PROXYCERTINFO * d2i_PROXYCERTINFO(
 
     M_ASN1_D2I_get(ret->version, d2i_ASN1_INTEGER);
     
-    M_ASN1_D2I_get(ret->restriction,d2i_PROXYRESTRICTION);
+    M_ASN1_D2I_get(ret->policy,d2i_PROXYPOLICY);
 
     M_ASN1_D2I_get_EXP_opt(ret->path_length, 
                            d2i_ASN1_INTEGER, 
@@ -558,10 +558,10 @@ STACK_OF(CONF_VALUE) * i2v_PROXYCERTINFO(
         X509V3_add_value("Path Length", tmp_string, &extlist);
     }
 
-    if(PROXYCERTINFO_get_restriction(ext))
+    if(PROXYCERTINFO_get_policy(ext))
     {
-        i2v_PROXYRESTRICTION(PROXYRESTRICTION_x509v3_ext_meth(),
-                             PROXYCERTINFO_get_restriction(ext),
+        i2v_PROXYPOLICY(PROXYPOLICY_x509v3_ext_meth(),
+                             PROXYCERTINFO_get_policy(ext),
                              extlist);
     }
 

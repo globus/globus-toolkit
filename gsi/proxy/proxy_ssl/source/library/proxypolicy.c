@@ -4,7 +4,7 @@
 #include <openssl/asn1_mac.h>
 #include <openssl/objects.h>
 
-#include "proxyrestriction.h"
+#include "proxypolicy.h"
 #include "globus_openssl.h"
 
 /**
@@ -12,28 +12,28 @@
  */
 /* @{ */
 /**
- * @ingroup proxyrestriction
+ * @ingroup proxypolicy
  *  
  * Creates an ASN1_METHOD structure, which contains
- * pointers to routines that convert any PROXYRESTRICTION
+ * pointers to routines that convert any PROXYPOLICY
  * structure to its associated ASN1 DER encoded form
  * and vice-versa.
  *
  * @return the ASN1_METHOD object
  */
 
-ASN1_METHOD * PROXYRESTRICTION_asn1_meth()
+ASN1_METHOD * PROXYPOLICY_asn1_meth()
 {
-    static ASN1_METHOD proxyrestriction_asn1_meth =
+    static ASN1_METHOD proxypolicy_asn1_meth =
     {
-        (int (*)())   i2d_PROXYRESTRICTION,
-        (char *(*)()) d2i_PROXYRESTRICTION,
-        (char *(*)()) PROXYRESTRICTION_new,
-        (void (*)())  PROXYRESTRICTION_free
+        (int (*)())   i2d_PROXYPOLICY,
+        (char *(*)()) d2i_PROXYPOLICY,
+        (char *(*)()) PROXYPOLICY_new,
+        (void (*)())  PROXYPOLICY_free
     };
-    return (&proxyrestriction_asn1_meth);
+    return (&proxypolicy_asn1_meth);
 }
-/* PROXYRESTRICTION_asn1_meth() */
+/* PROXYPOLICY_asn1_meth() */
 /* @} */
 
 /**
@@ -41,26 +41,26 @@ ASN1_METHOD * PROXYRESTRICTION_asn1_meth()
  */
 /* @{ */
 /**
- * @ingroup proxyrestriction
+ * @ingroup proxypolicy
  *
- * Allocates and initializes a new PROXYRESTRICTION structure.
+ * Allocates and initializes a new PROXYPOLICY structure.
  *
- * @return pointer to the new PROXYRESTRICTION
+ * @return pointer to the new PROXYPOLICY
  */
-PROXYRESTRICTION * PROXYRESTRICTION_new()
+PROXYPOLICY * PROXYPOLICY_new()
 {
     ASN1_CTX                            c;
-    PROXYRESTRICTION *                  ret;
+    PROXYPOLICY *                       ret;
 
     ret = NULL;
 
-    M_ASN1_New_Malloc(ret, PROXYRESTRICTION);
+    M_ASN1_New_Malloc(ret, PROXYPOLICY);
     ret->policy_language = OBJ_nid2obj(OBJ_sn2nid(IMPERSONATION_PROXY_SN));
     ret->policy = NULL;
     return (ret);
-    M_ASN1_New_Error(ASN1_F_PROXYRESTRICTION_NEW);
+    M_ASN1_New_Error(ASN1_F_PROXYPOLICY_NEW);
 }
-/* PROXYRESTRICTION_new() */
+/* PROXYPOLICY_new() */
 /* @} */
 
 
@@ -69,21 +69,21 @@ PROXYRESTRICTION * PROXYRESTRICTION_new()
  */
 /* @{ */
 /**
- * @ingroup proxyrestriction
+ * @ingroup proxypolicy
  *
- * Frees a PROXYRESTRICTION
+ * Frees a PROXYPOLICY
  *
- * @param restriction the proxy restriction to free
+ * @param policy the proxy policy to free
  */
-void PROXYRESTRICTION_free(
-    PROXYRESTRICTION *                  restriction)
+void PROXYPOLICY_free(
+    PROXYPOLICY *                       policy)
 {
-    if(restriction == NULL) return;
-    ASN1_OBJECT_free(restriction->policy_language);
-    M_ASN1_OCTET_STRING_free(restriction->policy);
-    OPENSSL_free(restriction);
+    if(policy == NULL) return;
+    ASN1_OBJECT_free(policy->policy_language);
+    M_ASN1_OCTET_STRING_free(policy->policy);
+    OPENSSL_free(policy);
 }
-/* PROXYRESTRICTION_free() */
+/* PROXYPOLICY_free() */
 /* @} */
 
 
@@ -92,25 +92,25 @@ void PROXYRESTRICTION_free(
  */
 /* @{ */
 /**
- * @ingroup proxyrestriction
+ * @ingroup proxypolicy
  * 
- * Makes a copy of the proxyrestriction - this function
- * allocates space for a new PROXYRESTRICTION, so the
- * returned PROXYRESTRICTION must be freed when
+ * Makes a copy of the proxypolicy - this function
+ * allocates space for a new PROXYPOLICY, so the
+ * returned PROXYPOLICY must be freed when
  * its no longer needed
  *
- * @param restriction the proxy restriction to copy
+ * @param policy the proxy policy to copy
  *
- * @return the new PROXYRESTRICTION
+ * @return the new PROXYPOLICY
  */
-PROXYRESTRICTION * PROXYRESTRICTION_dup(
-    PROXYRESTRICTION *                  restriction)
+PROXYPOLICY * PROXYPOLICY_dup(
+    PROXYPOLICY *                       policy)
 {
-    return ((PROXYRESTRICTION *) ASN1_dup((int (*)())i2d_PROXYRESTRICTION,
-                                          (char *(*)())d2i_PROXYRESTRICTION,
-                                          (char *)restriction));
+    return ((PROXYPOLICY *) ASN1_dup((int (*)())i2d_PROXYPOLICY,
+                                     (char *(*)())d2i_PROXYPOLICY,
+                                     (char *)policy));
 }
-/* PROXYRESTRICTION_dup() */
+/* PROXYPOLICY_dup() */
 /* @} */
 
 
@@ -119,17 +119,17 @@ PROXYRESTRICTION * PROXYRESTRICTION_dup(
  */
 /* @{ */
 /**
- * @ingroup proxyrestriction
+ * @ingroup proxypolicy
  *
- * Compares two PROXYRESTRICTION structs for equality
+ * Compares two PROXYPOLICY structs for equality
  * This function first compares the policy language numeric
  * id's, if they're equal, it then compares the two policies.
  *
  * @return 1 if equal, 0 if not
  */
-int PROXYRESTRICTION_cmp(
-    const PROXYRESTRICTION *            a,
-    const PROXYRESTRICTION *            b)
+int PROXYPOLICY_cmp(
+    const PROXYPOLICY *                 a,
+    const PROXYPOLICY *                 b)
 {
     
     if((a->policy_language->nid == b->policy_language->nid) &&
@@ -147,27 +147,27 @@ int PROXYRESTRICTION_cmp(
  */
 /* @{ */
 /**
- * @ingroup proxyrestriction
+ * @ingroup proxypolicy
  *
- * Prints the PROXYRESTRICTION struct using the BIO stream
+ * Prints the PROXYPOLICY struct using the BIO stream
  *
  * @param bp the BIO stream to print to
- * @param restriction the PROXYRESTRICTION to print
+ * @param policy the PROXYPOLICY to print
  *
  * @return 1 on success, 0 on error
  */
-int PROXYRESTRICTION_print(
+int PROXYPOLICY_print(
     BIO *                               bp,
-    PROXYRESTRICTION *                  restriction)
+    PROXYPOLICY *                       policy)
 {
     STACK_OF(CONF_VALUE) *              values = NULL;
 
-    values = i2v_PROXYRESTRICTION(PROXYRESTRICTION_x509v3_ext_meth(),
-                                  restriction,
-                                  values);
+    values = i2v_PROXYPOLICY(PROXYPOLICY_x509v3_ext_meth(),
+                             policy,
+                             values);
     
     X509V3_EXT_val_prn(bp, values, 0, 1);
-
+    
     sk_CONF_VALUE_pop_free(values, X509V3_conf_free);
     return 1;
 }
@@ -179,24 +179,24 @@ int PROXYRESTRICTION_print(
  */
 /* @{ */
 /**
- * @ingroup proxyrestriction
+ * @ingroup proxypolicy
  *
- * Prints the PROXYRESTRICTION to the file stream FILE*
+ * Prints the PROXYPOLICY to the file stream FILE*
  *
  * @param fp the FILE* stream to print to
- * @param restriction the PROXYRESTRICTION to print
+ * @param policy the PROXYPOLICY to print
  *
  * @return number of bytes printed, -2 or -1 on error
  */
-int PROXYRESTRICTION_print_fp(
+int PROXYPOLICY_print_fp(
     FILE *                              fp,
-    PROXYRESTRICTION *                  restriction)
+    PROXYPOLICY *                       policy)
 {
     int                                 ret;
 
     BIO * bp = BIO_new(BIO_s_file());    
     BIO_set_fp(bp, fp, BIO_NOCLOSE);
-    ret = PROXYRESTRICTION_print(bp, restriction);
+    ret = PROXYPOLICY_print(bp, policy);
     BIO_free(bp);
 
     return (ret);
@@ -209,23 +209,23 @@ int PROXYRESTRICTION_print_fp(
  */
 /* @{ */
 /**
- * @ingroup proxyrestriction
+ * @ingroup proxypolicy
  *
- * Sets the policy language of the PROXYRESTRICTION
+ * Sets the policy language of the PROXYPOLICY
  *
- * @param restriction the PROXYRESTRICTION to set the policy language of
+ * @param policy the PROXYPOLICY to set the policy language of
  * @param policy_language the policy language to set it to
  *
  * @return 1 on success, 0 on error
  */
-int PROXYRESTRICTION_set_policy_language(
-    PROXYRESTRICTION *                  restriction,
+int PROXYPOLICY_set_policy_language(
+    PROXYPOLICY *                       policy,
     ASN1_OBJECT *                       policy_language)
 {
     if(policy_language != NULL) 
     {
-        ASN1_OBJECT_free(restriction->policy_language);
-        restriction->policy_language = OBJ_dup(policy_language);
+        ASN1_OBJECT_free(policy->policy_language);
+        policy->policy_language = OBJ_dup(policy_language);
         return 1;
     }
     return 0;
@@ -237,19 +237,19 @@ int PROXYRESTRICTION_set_policy_language(
  */
 /* @{ */
 /**
- * @ingroup proxyrestriction
+ * @ingroup proxypolicy
  * 
- * Gets the policy language of the PROXYRESTRICTION
+ * Gets the policy language of the PROXYPOLICY
  *
- * @param restriction the proxy restriction to get the policy language
+ * @param policy the proxy policy to get the policy language
  * of
  * 
  * @return the policy language as an ASN1_OBJECT
  */    
-ASN1_OBJECT * PROXYRESTRICTION_get_policy_language(
-    PROXYRESTRICTION *                  restriction)
+ASN1_OBJECT * PROXYPOLICY_get_policy_language(
+    PROXYPOLICY *                       policy)
 {
-    return restriction->policy_language;
+    return policy->policy_language;
 }
 /* @} */
 
@@ -258,18 +258,18 @@ ASN1_OBJECT * PROXYRESTRICTION_get_policy_language(
  */
 /* @{ */
 /**
- * @ingroup proxyrestriction
+ * @ingroup proxypolicy
  *
- * Sets the policy of the PROXYRESTRICTION
+ * Sets the policy of the PROXYPOLICY
  *
- * @param restriction the proxy restriction to set the policy of
+ * @param policy the proxy policy to set the policy of
  * @param policy the policy to set it to
  * @param length the lenght of the policy
  *
  * @return 1 on success, 0 on error
  */
-int PROXYRESTRICTION_set_policy(
-    PROXYRESTRICTION *                  restriction,
+int PROXYPOLICY_set_policy(
+    PROXYPOLICY *                       proxypolicy,
     unsigned char *                     policy,
     int                                 length)
 {
@@ -278,7 +278,7 @@ int PROXYRESTRICTION_set_policy(
         unsigned char *                 copy = malloc(length);
         memcpy(copy, policy, length);
 
-        ASN1_OCTET_STRING_set(restriction->policy, copy, length);
+        ASN1_OCTET_STRING_set(proxypolicy->policy, copy, length);
         return 1;
     }
     return 0;
@@ -291,28 +291,28 @@ int PROXYRESTRICTION_set_policy(
  */
 /* @{ */
 /**
- * @ingroup proxyrestriction
+ * @ingroup proxypolicy
  *
- * Gets the policy of a PROXYRESTRICTION
+ * Gets the policy of a PROXYPOLICY
  *
- * @param restriction the PROXYRESTRICTION to get the policy of
+ * @param policy the PROXYPOLICY to get the policy of
  * @param length the length of the returned policy - this value
  *        gets set by this function
  *
  * @return the policy
  */
-unsigned char * PROXYRESTRICTION_get_policy(
-    PROXYRESTRICTION *                  restriction,
+unsigned char * PROXYPOLICY_get_policy(
+    PROXYPOLICY *                       policy,
     int *                               length)
 {
-    (*length) = restriction->policy->length;
-    if(*length > 0 && restriction->policy->data)
+    (*length) = policy->policy->length;
+    if(*length > 0 && policy->policy->data)
     {
         unsigned char *                 copy = malloc(*length);
-        memcpy(copy, restriction->policy->data, *length);
+        memcpy(copy, policy->policy->data, *length);
         return copy;
     }
-
+    
     return NULL;
 }
 /* @} */
@@ -323,18 +323,18 @@ unsigned char * PROXYRESTRICTION_get_policy(
  */
 /* @{ */
 /**
- * @ingroup proxyrestriction
+ * @ingroup proxypolicy
  *
- * Converts a PROXYRESTRICTION from its internal structure
+ * Converts a PROXYPOLICY from its internal structure
  * to a DER encoded form
  *
- * @param a the PROXYRESTRICTION to convert
+ * @param a the PROXYPOLICY to convert
  * @param pp the buffer to put the DER encoding in
  *
  * @return the length of the DER encoding in bytes
  */
-int i2d_PROXYRESTRICTION(
-    PROXYRESTRICTION *                  a,
+int i2d_PROXYPOLICY(
+    PROXYPOLICY *                       a,
     unsigned char **                    pp)
 {
     int                                 v1 = 0;
@@ -360,59 +360,59 @@ int i2d_PROXYRESTRICTION(
  */
 /* @{ */
 /**
- * @ingroup proxyrestriction
+ * @ingroup proxypolicy
  *
- * Converts the PROXYRESTRICTION from its DER encoded form
- * to an internal PROXYRESTRICTION structure
+ * Converts the PROXYPOLICY from its DER encoded form
+ * to an internal PROXYPOLICY structure
  *
- * @param a the PROXYRESTRICTION struct to set
- * @param pp the DER encoding to get the PROXYRESTRICTION from
+ * @param a the PROXYPOLICY struct to set
+ * @param pp the DER encoding to get the PROXYPOLICY from
  * @param length the length of the DER encoding
  * 
- * @return the resulting PROXYRESTRICTION in its internal structure
+ * @return the resulting PROXYPOLICY in its internal structure
  * form - this variable has been allocated using _new routines, 
  * so it needs to be freed once its no longer used
  */
-PROXYRESTRICTION * d2i_PROXYRESTRICTION(
-    PROXYRESTRICTION **                 a,
+PROXYPOLICY * d2i_PROXYPOLICY(
+    PROXYPOLICY **                      a,
     unsigned char **                    pp,
     long                                length)
 {
-    M_ASN1_D2I_vars(a, PROXYRESTRICTION *, PROXYRESTRICTION_new);
+    M_ASN1_D2I_vars(a, PROXYPOLICY *, PROXYPOLICY_new);
     
     M_ASN1_D2I_Init();
     M_ASN1_D2I_start_sequence();
     M_ASN1_D2I_get(ret->policy_language, d2i_ASN1_OBJECT);
     M_ASN1_D2I_get(ret->policy, d2i_ASN1_OCTET_STRING);
     M_ASN1_D2I_Finish(a, 
-                      PROXYRESTRICTION_free, 
-                      ASN1_F_D2I_PROXYRESTRICTION);
+                      PROXYPOLICY_free, 
+                      ASN1_F_D2I_PROXYPOLICY);
 }
 /* @} */
 
 
-X509V3_EXT_METHOD * PROXYRESTRICTION_x509v3_ext_meth()
+X509V3_EXT_METHOD * PROXYPOLICY_x509v3_ext_meth()
 {
-    static X509V3_EXT_METHOD proxyrestriction_x509v3_ext_meth =
+    static X509V3_EXT_METHOD proxypolicy_x509v3_ext_meth =
     {
         -1,
         X509V3_EXT_MULTILINE,
-        (X509V3_EXT_NEW) PROXYRESTRICTION_new,
-        (X509V3_EXT_FREE) PROXYRESTRICTION_free,
-        (X509V3_EXT_D2I) d2i_PROXYRESTRICTION,
-        (X509V3_EXT_I2D) i2d_PROXYRESTRICTION,
+        (X509V3_EXT_NEW) PROXYPOLICY_new,
+        (X509V3_EXT_FREE) PROXYPOLICY_free,
+        (X509V3_EXT_D2I) d2i_PROXYPOLICY,
+        (X509V3_EXT_I2D) i2d_PROXYPOLICY,
         NULL, NULL,
-        (X509V3_EXT_I2V) i2v_PROXYRESTRICTION,
+        (X509V3_EXT_I2V) i2v_PROXYPOLICY,
         NULL,
         NULL, NULL,
         NULL
     };
-    return (&proxyrestriction_x509v3_ext_meth);
+    return (&proxypolicy_x509v3_ext_meth);
 }
 
-STACK_OF(CONF_VALUE) * i2v_PROXYRESTRICTION(
+STACK_OF(CONF_VALUE) * i2v_PROXYPOLICY(
     struct v3_ext_method *              method,
-    PROXYRESTRICTION *                  ext,
+    PROXYPOLICY *                       ext,
     STACK_OF(CONF_VALUE) *              extlist)
 {
     char *                              policy = NULL;
@@ -422,9 +422,9 @@ STACK_OF(CONF_VALUE) * i2v_PROXYRESTRICTION(
     int                                 nid;
     int                                 policy_length;
 
-    X509V3_add_value("Proxy Restriction:", NULL, &extlist);
+    X509V3_add_value("Proxy Policy:", NULL, &extlist);
 
-    nid = OBJ_obj2nid(PROXYRESTRICTION_get_policy_language(ext));
+    nid = OBJ_obj2nid(PROXYPOLICY_get_policy_language(ext));
 
     if(nid != NID_undef)
     {
@@ -435,14 +435,14 @@ STACK_OF(CONF_VALUE) * i2v_PROXYRESTRICTION(
         policy_lang[0] = ' ';
         i2t_ASN1_OBJECT(&policy_lang[1],
                         127,
-                        PROXYRESTRICTION_get_policy_language(ext));
+                        PROXYPOLICY_get_policy_language(ext));
     }
     
     X509V3_add_value("    Policy Language", 
                      policy_lang,
                      &extlist);
     
-    policy = PROXYRESTRICTION_get_policy(ext, &policy_length);
+    policy = PROXYPOLICY_get_policy(ext, &policy_length);
     
     if(!policy)
     {
@@ -477,6 +477,6 @@ STACK_OF(CONF_VALUE) * i2v_PROXYRESTRICTION(
         
         free(policy);
     }
-
+    
     return extlist;
 }
