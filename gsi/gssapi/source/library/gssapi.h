@@ -37,7 +37,6 @@
  * Include stddef.h to get size_t defined.
  */
 #include <stddef.h>
-#include <inttypes.h>
 
 #ifndef EXTERN_C_BEGIN
 #ifdef __cplusplus
