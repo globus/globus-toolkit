@@ -21,8 +21,10 @@ delim=
 if test "X$builtins" != "X" ; then
   echo
   for builtin in $builtins ; do
-    builtin_makefiles="$builtin_makefiles builtins/$builtin/Makefile"
-    echo "Including driver: $builtin"
+    if test -f builtins/$builtin/Makefile.am ; then
+      builtin_makefiles="$builtin_makefiles builtins/$builtin/Makefile"
+      echo "Including driver: $builtin"
+    fi
   done
 else
   echo "none found"
