@@ -22,6 +22,7 @@
 
     <Source_Dependencies Type="pgm_link" >
       <Dependency Name="globus_openssl"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
+      <Dependency Name="globus_ssl_utils"><Version><Simple_Version Major="2"></Simple_Version></Version></Dependency>
     </Source_Dependencies>
 
     <Source_Dependencies Type="lib_link" >
@@ -30,6 +31,7 @@
 
     <Source_Setup_Dependency PkgType="rtl">
       <Setup_Dependency Name="trusted_ca_setup"> <Version > <Simple_Version Major="2" /> </Version> </Setup_Dependency>
+      <Setup_Dependency Name="globus_common_setup"> <Version > <Simple_Version Major="2" /> </Version> </Setup_Dependency>
     </Source_Setup_Dependency>
 
     <With_Flavors build="yes" />
