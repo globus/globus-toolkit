@@ -46,3 +46,17 @@ CREATE TABLE rft_packets(
     factory_start_time BIGINT,
     PRIMARY KEY (id)
 );
+
+CREATE TABLE gftp_summaries(
+    id SERIAL,
+    start_time BIGINT NOT NULL,
+    end_time BIGINT NOT NULL,
+    label VARCHAR(32), 
+    num_transfers BIGINT,
+    total_bytes BIGINT,
+    num_hosts INT,
+    avg_size BIGINT,
+    avg_time BIGINT,
+    avg_speed BIGINT,
+    PRIMARY KEY (id)
+);
