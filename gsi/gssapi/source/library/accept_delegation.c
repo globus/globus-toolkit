@@ -44,16 +44,16 @@ GSS_CALLCONV gss_accept_delegation(
     fprintf(stderr, "accept_delegation:\n") ;
 #endif /* DEBUG */
     
-    *minor_status = 0;
-    output_token->length = 0;
-    context = (gss_ctx_id_desc *) context_handle;
-
     /* parameter checking goes here */
 
     if(minor_status == NULL)
     {
         GSSerr(GSSERR_F_ACCEPT_DELEGATION,GSSERR_R_IMPEXP_BAD_PARMS);
-        *minor_status = GSSERR_R_IMPEXP_BAD_PARMS;
+        /*
+         * Can't actually set minor_status here, but if we did, it
+         * would look like:
+         * *minor_status = GSSERR_R_IMPEXP_BAD_PARMS;
+         */
         major_status = GSS_S_FAILURE;
         goto err;
     }
@@ -108,6 +108,10 @@ GSS_CALLCONV gss_accept_delegation(
         major_status = GSS_S_FAILURE;
         goto err;
     }
+
+    *minor_status = 0;
+    output_token->length = 0;
+    context = (gss_ctx_id_desc *) context_handle;
     
     major_status = gs_put_token(minor_status,context,input_token);
 
