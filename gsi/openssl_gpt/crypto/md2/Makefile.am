@@ -13,7 +13,7 @@ opensslinclude_HEADERS= \
 
 noinst_LTLIBRARIES = libmd2_$(GLOBUS_FLAVOR_NAME).la
 
-INCLUDES = $(GPT_INCLUDES) -I$(top_srcdir)/include -I.. 
+INCLUDES = -I$(top_srcdir)/include $(GPT_INCLUDES)
 
 libmd2___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
 
