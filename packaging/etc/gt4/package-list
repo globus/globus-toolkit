@@ -133,9 +133,9 @@ globus_wsrf_delegation_common               ws-delegation/common/schema
 globus_wsrf_delegation_stubs_java           ws-delegation/common/java/source
 
 globus_wsrf_mds_webmds                      ws-mds/webmds/webmds/source
-globus_wsrf_mds_webmds_file_source          ws-mds/webmds/xmlSources/file 
-globus_wsrf_mds_webmds_xml_dom_source       ws-mds/webmds/xmlSources/xmlDomNode 
-globus_wsrf_mds_webmds_resource_property_source  ws-mds/webmds/xmlSources/resourceProperties 
+globus_wsrf_mds_webmds_file_source          ws-mds/webmds/xmlSources/file/source
+globus_wsrf_mds_webmds_xml_dom_source       ws-mds/webmds/xmlSources/xmlDomNode/source 
+globus_wsrf_mds_webmds_resource_property_source  ws-mds/webmds/xmlSources/resourceProperties/source
 
 globus_rendezvous                           ws-gram/client/c/rendezvous/source gpt
 globus_rendezvous_test                      ws-gram/client/c/rendezvous/test gpt
