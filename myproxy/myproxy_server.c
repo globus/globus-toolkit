@@ -154,7 +154,7 @@ main(int argc, char *argv[])
     /* Read my configuration */
     if (myproxy_server_config_read(server_context) == -1)
     {
-	fprintf(stderr, "%s\n", verror_get_string());
+	fprintf(stderr, "%s %s\n", verror_get_string(), verror_strerror());
 	exit(1);
     }
 
