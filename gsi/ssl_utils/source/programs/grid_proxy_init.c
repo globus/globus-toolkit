@@ -443,14 +443,6 @@ main(
                           "Enter GRID pass phrase for this identity:");
     }
 
-    if (!quiet)
-    {
-        char *s = NULL;
-        s = X509_NAME_oneline(X509_get_subject_name(pcd->ucert),NULL,0);
-        printf("Your identity: %s\n", s);
-        free(s);
-    }
-    
     if(strrchr(certfile,'/'))
     {
         filename = strrchr(certfile,'/') + 1;
@@ -465,6 +457,14 @@ main(
         if (proxy_load_user_cert(pcd, certfile, pw_cb, NULL))
             goto err;
 
+        if (!quiet)
+        {
+            char *s = NULL;
+            s = X509_NAME_oneline(X509_get_subject_name(pcd->ucert),NULL,0);
+            printf("Your identity: %s\n", s);
+            free(s);
+        }
+        
         if (!strncmp(keyfile,"SC:",3))
             EVP_set_pw_prompt("Enter card pin:");
         
@@ -480,6 +480,14 @@ main(
         if(pkcs12_load_credential(pcd,certfile,password))
         {
             goto err;
+        }
+
+        if (!quiet)
+        {
+            char *s = NULL;
+            s = X509_NAME_oneline(X509_get_subject_name(pcd->ucert),NULL,0);
+            printf("Your identity: %s\n", s);
+            free(s);
         }
     }
 
