@@ -93,9 +93,14 @@ char *get_tmp_path_win32(void);
 #define DEFAULT_AUTHZ_FILE              "\\etc\\grid-security\\gsi-authz.conf"
 #define INSTALLED_AUTHZ_FILE            "etc\\gsi-authz.conf"
 #define LOCAL_AUTHZ_FILE                "gsi-authz.conf"
-#define DEFAULT_GAA_FILE              "\\etc\\grid-security\\gsi-gaa.conf"
-#define INSTALLED_GAA_FILE            "etc\\gsi-gaa.conf"
-#define LOCAL_GAA_FILE                "gsi-gaa.conf"
+#define DEFAULT_AUTHZ_LIB_FILE_BASE	"gsi-authz_lib"
+#define DEFAULT_AUTHZ_LIB_FILE_DIR         "\\etc\\grid-security\\"
+#define DEFAULT_AUTHZ_LIB_FILE_EXTENSION ".conf"
+#define HOME_AUTHZ_LIB_FILE_BASE	".gsi-authz_lib"
+#define INSTALLED_AUTHZ_LIB_DIR         "etc\\"
+#define DEFAULT_GAA_FILE                "\\etc\\grid-security\\gsi-gaa.conf"
+#define INSTALLED_GAA_FILE              "etc\\gsi-gaa.conf"
+#define LOCAL_GAA_FILE                  "gsi-gaa.conf"
 
 #else
 #define FILE_SEPERATOR                  "/"
@@ -114,6 +119,11 @@ char *get_tmp_path_win32(void);
 #define DEFAULT_AUTHZ_FILE              "/etc/grid-security/gsi-authz.conf"
 #define INSTALLED_AUTHZ_FILE            "etc/gsi-authz.conf"
 #define LOCAL_AUTHZ_FILE                ".gsi-authz.conf"
+#define DEFAULT_AUTHZ_LIB_FILE_BASE	"gsi-authz_lib"
+#define DEFAULT_AUTHZ_LIB_FILE_DIR      "/etc/grid-security/"
+#define DEFAULT_AUTHZ_LIB_FILE_EXTENSION ".conf"
+#define INSTALLED_AUTHZ_LIB_DIR         "etc/"
+#define HOME_AUTHZ_LIB_FILE_BASE	".gsi-authz_lib"
 #define DEFAULT_GAA_FILE                "/etc/grid-security/gsi-gaa.conf"
 #define INSTALLED_GAA_FILE              "etc/gsi-gaa.conf"
 #define LOCAL_GAA_FILE                  ".gsi-gaa.conf"
@@ -2987,6 +2997,7 @@ globus_gsi_sysconfig_get_gridmap_filename_win32(
 }
 /* @} */
 
+
 /**
  * @name Win32 - Get the path and file name of the grid map file
  * @ingroup globus_gsi_sysconfig_win32
@@ -3161,6 +3172,195 @@ globus_gsi_sysconfig_get_authz_conf_filename_win32(
     if(authz_filename != NULL)
     {
         free(authz_filename);
+    }
+    
+    GLOBUS_I_GSI_SYSCONFIG_DEBUG_EXIT;
+    return result;
+}
+/* @} */
+
+/**
+ * @name Win32 - Get the path and file name of the grid map file
+ * @ingroup globus_gsi_sysconfig_win32
+ */
+/* @{ */
+/**
+ * Get the path and file name of the authorization callback library
+ * configuration file 
+ *
+ * @param filename
+ *        Contains the location of the authorization callback library
+ *        configuration file upon successful return
+ * @return
+ *        GLOBUS_SUCCESS if no error occurred, otherwise an error object ID
+ *        is returned
+ */
+globus_result_t
+globus_gsi_sysconfig_get_authz_lib_conf_filename_win32(
+    char **                             filename)
+{
+    char *                              home_dir = NULL;
+    char *                              authz_lib_env = NULL;
+    char *                              authz_lib_filename = NULL;
+    char *                              globus_location = NULL;
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    static char *                       _function_name_ =
+        "globus_gsi_sysconfig_get_authz_lib_conf_filename_win32";
+        
+    GLOBUS_I_GSI_SYSCONFIG_DEBUG_ENTER;
+
+    if((authz_lib_env = (char *) getenv("GSI_AUTHZ_LIB_CONF"))   != NULL)
+    {
+        authz_lib_filename = globus_common_create_string(
+            "%s",
+            authz_lib_env);
+        if(!authz_lib_filename)
+        {
+            GLOBUS_GSI_SYSTEM_CONFIG_MALLOC_ERROR;
+            goto exit;
+        }
+
+	result = GLOBUS_GSI_SYSCONFIG_FILE_EXISTS(
+            authz_lib_filename);
+
+        if(result != GLOBUS_SUCCESS)
+        {
+            GLOBUS_GSI_SYSCONFIG_ERROR_CHAIN_RESULT(
+                result,
+                GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_AUTHZ_LIB_FILENAME);
+            goto exit;
+        }
+    }
+    else
+    { 
+        authz_lib_filename = globus_common_create_string(
+            "%s%s_%s%s",
+	    DEFAULT_AUTHZ_LIB_FILE_DIR,
+	    DEFAULT_AUTHZ_LIB_FILE_BASE,
+	    flavor,
+            DEFAULT_AUTHZ_LIB_FILE_EXTENSION);
+        if(!authz_lib_filename)
+        {
+            GLOBUS_GSI_SYSTEM_CONFIG_MALLOC_ERROR;
+            goto exit;
+        }
+
+	result = GLOBUS_GSI_SYSCONFIG_FILE_EXISTS(
+            authz_lib_filename);
+
+        if(result != GLOBUS_SUCCESS)
+        {
+            if(!GLOBUS_GSI_SYSCONFIG_FILE_DOES_NOT_EXIST(result))
+            {
+                free(authz_lib_filename);
+                authz_lib_filename = NULL;
+            }
+            else
+            { 
+                GLOBUS_GSI_SYSCONFIG_ERROR_CHAIN_RESULT(
+                    result,
+                    GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_AUTHZ_LIB_FILENAME);
+                goto exit;
+            }
+        }
+
+        if(authz_lib_filename == NULL)
+        {
+            globus_location = getenv("GLOBUS_LOCATION");
+            
+            if(globus_location)
+            {
+                authz_lib_filename = globus_common_create_string(
+                    "%s%s%s%s_%s%s",
+                    globus_location,
+                    FILE_SEPERATOR,
+		    INSTALLED_AUTHZ_LIB_DIR,
+		    DEFAULT_AUTHZ_LIB_FILE_BASE,
+		    flavor,
+		    DEFAULT_AUTHZ_LIB_FILE_EXTENSION);
+                if(!authz_lib_filename)
+                {
+                    GLOBUS_GSI_SYSTEM_CONFIG_MALLOC_ERROR;
+                    goto exit;
+                }
+                
+		result = GLOBUS_GSI_SYSCONFIG_FILE_EXISTS(
+                    authz_lib_filename);
+                
+                if(result != GLOBUS_SUCCESS)
+                {
+                    if(!GLOBUS_GSI_SYSCONFIG_FILE_DOES_NOT_EXIST(result))
+                    {
+                        free(authz_lib_filename);
+                        authz_lib_filename = NULL;
+                    }
+                    else
+                    { 
+                        GLOBUS_GSI_SYSCONFIG_ERROR_CHAIN_RESULT(
+                            result,
+                            GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_AUTHZ_LIB_FILENAME);
+                        goto exit;
+                    }
+                }
+            }
+        }
+
+        if(authz_lib_filename == NULL)
+        {
+            result = GLOBUS_GSI_SYSCONFIG_GET_HOME_DIR(&home_dir);
+            
+            if(result == GLOBUS_SUCCESS)
+            {
+                authz_lib_filename = globus_common_create_string(
+                    "%s%s%s_%s%s",
+                    home_dir,
+                    FILE_SEPERATOR,
+                    HOME_AUTHZ_LIB_FILE_BASE,
+		    flavor,
+		    DEFAULT_AUTHZ_LIB_FILE_EXTENSION);
+                if(!authz_lib_filename)
+                {
+                    GLOBUS_GSI_SYSTEM_CONFIG_MALLOC_ERROR;
+                    goto exit;
+                }
+                result = GLOBUS_GSI_SYSCONFIG_CHECK_CERTFILE(
+                    authz_lib_filename);
+                
+                if(result != GLOBUS_SUCCESS)
+                {
+                    free(authz_lib_filename);
+                    authz_lib_filename = NULL;
+                    
+                    GLOBUS_GSI_SYSCONFIG_ERROR_CHAIN_RESULT(
+                        result,
+                        GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_AUTHZ_LIB_FILENAME);
+                    goto exit;
+                }
+                
+            }
+            else
+            {
+                GLOBUS_GSI_SYSCONFIG_ERROR_CHAIN_RESULT(
+                    result,
+                    GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_AUTHZ_LIB_FILENAME);
+                goto exit;
+            }
+        }
+    }
+
+    *filename = authz_lib_filename;
+    authz_lib_filename = NULL;
+
+ exit:
+
+    if(home_dir != NULL)
+    {
+        free(home_dir);
+    }
+
+    if(authz_lib_filename != NULL)
+    {
+        free(authz_lib_filename);
     }
     
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_EXIT;
@@ -6500,6 +6700,194 @@ globus_gsi_sysconfig_get_authz_conf_filename_unix(
 }
 /* @} */
 
+/**
+ * @name UNIX - Get the path and file name of the authorization callback configuration file 
+ * @ingroup globus_gsi_sysconfig_unix
+ */
+/* @{ */
+/**
+ * Get the path and file name of the authorization callback
+ * configuration file 
+ *
+ * @param filename
+ *        Contains the location of the authorization callback configuration
+ *        file upon successful return 
+ * @return
+ *        GLOBUS_SUCCESS if no error occurred, otherwise an error object ID
+ *        is returned
+ */ 
+globus_result_t
+globus_gsi_sysconfig_get_authz_lib_conf_filename_unix(
+    char **                             filename)
+{
+    char *                              home_dir = NULL;
+    char *                              authz_lib_env = NULL;
+    char *                              authz_lib_filename = NULL;
+    char *                              globus_location = NULL;
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    static char *                       _function_name_ =
+        "globus_gsi_sysconfig_get_authz_lib_conf_filename_unix";
+    GLOBUS_I_GSI_SYSCONFIG_DEBUG_ENTER;
+
+    if((authz_lib_env = (char *) getenv("GSI_AUTHZ_LIB_CONF"))   != NULL)
+    {
+        authz_lib_filename = globus_common_create_string(
+            "%s",
+            authz_lib_env);
+        if(!authz_lib_filename)
+        {
+            GLOBUS_GSI_SYSTEM_CONFIG_MALLOC_ERROR;
+            goto exit;
+        }
+
+        result = GLOBUS_GSI_SYSCONFIG_FILE_EXISTS(
+            authz_lib_filename);
+
+        if(result != GLOBUS_SUCCESS)
+        {
+            GLOBUS_GSI_SYSCONFIG_ERROR_CHAIN_RESULT(
+                result,
+                GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_AUTHZ_LIB_FILENAME);
+            goto exit;
+        }
+    }
+    else
+    { 
+        authz_lib_filename = globus_common_create_string(
+            "%s%s_%s%s",
+	    DEFAULT_AUTHZ_LIB_FILE_DIR,
+	    DEFAULT_AUTHZ_LIB_FILE_BASE,
+	    flavor,
+            DEFAULT_AUTHZ_LIB_FILE_EXTENSION);
+        if(!authz_lib_filename)
+        {
+            GLOBUS_GSI_SYSTEM_CONFIG_MALLOC_ERROR;
+            goto exit;
+        }
+
+        result = GLOBUS_GSI_SYSCONFIG_FILE_EXISTS(
+            authz_lib_filename);
+
+        if(result != GLOBUS_SUCCESS)
+        {
+            if(!GLOBUS_GSI_SYSCONFIG_FILE_DOES_NOT_EXIST(result))
+            {
+                free(authz_lib_filename);
+                authz_lib_filename = NULL;
+            }
+            else
+            { 
+                GLOBUS_GSI_SYSCONFIG_ERROR_CHAIN_RESULT(
+                    result,
+                    GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_AUTHZ_LIB_FILENAME);
+                goto exit;
+            }
+        }
+
+        if(authz_lib_filename == NULL)
+        {
+            globus_location = getenv("GLOBUS_LOCATION");
+            
+            if(globus_location)
+            {
+                authz_lib_filename = globus_common_create_string(
+                    "%s%s%s%s_%s%s",
+                    globus_location,
+                    FILE_SEPERATOR,
+		    INSTALLED_AUTHZ_LIB_DIR,
+		    DEFAULT_AUTHZ_LIB_FILE_BASE,
+		    flavor,
+		    DEFAULT_AUTHZ_LIB_FILE_EXTENSION);
+                if(!authz_lib_filename)
+                {
+                    GLOBUS_GSI_SYSTEM_CONFIG_MALLOC_ERROR;
+                    goto exit;
+                }
+
+		result = GLOBUS_GSI_SYSCONFIG_FILE_EXISTS(                
+                    authz_lib_filename);
+                
+                if(result != GLOBUS_SUCCESS)
+                {
+                    if(!GLOBUS_GSI_SYSCONFIG_FILE_DOES_NOT_EXIST(result))
+                    {
+                        free(authz_lib_filename);
+                        authz_lib_filename = NULL;
+                    }
+                    else
+                    { 
+                        GLOBUS_GSI_SYSCONFIG_ERROR_CHAIN_RESULT(
+                            result,
+                            GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_AUTHZ_LIB_FILENAME);
+                        goto exit;
+                    }
+                }
+            }
+        }
+
+        if(authz_lib_filename == NULL)
+        {
+            result = GLOBUS_GSI_SYSCONFIG_GET_HOME_DIR(&home_dir);
+            
+            if(result == GLOBUS_SUCCESS)
+            {
+                authz_lib_filename = globus_common_create_string(
+                    "%s%s%s_%s%s",
+                    home_dir,
+                    FILE_SEPERATOR,
+                    HOME_AUTHZ_LIB_FILE_BASE,
+		    flavor,
+		    DEFAULT_AUTHZ_LIB_FILE_EXTENSION);
+                if(!authz_lib_filename)
+                {
+                    GLOBUS_GSI_SYSTEM_CONFIG_MALLOC_ERROR;
+                    goto exit;
+                }
+                result = globus_gsi_sysconfig_check_certfile_unix(
+                    authz_lib_filename);
+                
+                if(result != GLOBUS_SUCCESS)
+                {
+                    free(authz_lib_filename);
+                    authz_lib_filename = NULL;
+                    
+                    GLOBUS_GSI_SYSCONFIG_ERROR_CHAIN_RESULT(
+                        result,
+                        GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_AUTHZ_LIB_FILENAME);
+                    goto exit;
+                }
+                
+            }
+            else
+            {
+                GLOBUS_GSI_SYSCONFIG_ERROR_CHAIN_RESULT(
+                    result,
+                    GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_AUTHZ_LIB_FILENAME);
+                goto exit;
+            }
+        }
+    }
+
+    *filename = authz_lib_filename;
+    authz_lib_filename = NULL;
+
+ exit:
+
+    if(home_dir != NULL)
+    {
+        free(home_dir);
+    }
+
+    if(authz_lib_filename != NULL)
+    {
+        free(authz_lib_filename);
+    }
+    
+    GLOBUS_I_GSI_SYSCONFIG_DEBUG_EXIT;
+    return result;
+}
+/* @} */
+
 
 /**
  * @name UNIX - Get the path and file name of the authorization callback configuration file 
@@ -6540,7 +6928,7 @@ globus_gsi_sysconfig_get_gaa_conf_filename_unix(
             goto exit;
         }
 
-        result = globus_gsi_sysconfig_check_certfile_unix(
+	result = GLOBUS_GSI_SYSCONFIG_FILE_EXISTS(
             gaa_filename);
 
         if(result != GLOBUS_SUCCESS)
@@ -6562,7 +6950,7 @@ globus_gsi_sysconfig_get_gaa_conf_filename_unix(
             goto exit;
         }
 
-        result = globus_gsi_sysconfig_check_certfile_unix(
+	result = GLOBUS_GSI_SYSCONFIG_FILE_EXISTS(
             gaa_filename);
 
         if(result != GLOBUS_SUCCESS)
@@ -6598,7 +6986,7 @@ globus_gsi_sysconfig_get_gaa_conf_filename_unix(
                     goto exit;
                 }
                 
-                result = globus_gsi_sysconfig_check_certfile_unix(
+		result = GLOBUS_GSI_SYSCONFIG_FILE_EXISTS(
                     gaa_filename);
                 
                 if(result != GLOBUS_SUCCESS)

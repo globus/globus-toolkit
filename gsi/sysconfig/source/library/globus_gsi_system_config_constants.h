@@ -78,10 +78,12 @@ typedef enum
     GLOBUS_GSI_SYSCONFIG_ERROR_FILE_HAS_LINKS = 26,
     /** File has changed in the meantime */
     GLOBUS_GSI_SYSCONFIG_ERROR_FILE_HAS_CHANGED = 27,
-    /** Failed to locate the authorization callout configuration file */
-    GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_GAA_FILENAME = 28,
+    /** Failed to locate the authorization callout library configuration file */
+    GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_AUTHZ_LIB_FILENAME = 28,
+    /** Failed to locate the gaa configuration file */
+    GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_GAA_FILENAME = 29,
     /** Last marker - never used */
-    GLOBUS_GSI_SYSCONFIG_ERROR_LAST = 29
+    GLOBUS_GSI_SYSCONFIG_ERROR_LAST = 30
 }
 globus_gsi_sysconfig_error_t;
 
