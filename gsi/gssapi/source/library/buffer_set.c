@@ -131,7 +131,7 @@ GSS_CALLCONV gss_add_buffer_set_member(
     int                                 new_count;
     gss_buffer_t                        new_elements;
     gss_buffer_set_t                    set;
-    OM_uint32                           major_status;
+    OM_uint32                           major_status = GSS_S_COMPLETE;
     static char *                       _function_name_ =
         "gss_add_buffer_set_member";
 
@@ -184,17 +184,13 @@ GSS_CALLCONV gss_add_buffer_set_member(
            member_buffer->length);
 
     new_elements[set->count].length = member_buffer->length;
-            
+
     set->count = new_count;
+
+    free(set->elements);
     set->elements = new_elements;
 
-
  exit:
-
-    if (set->elements != NULL)
-    {
-        free(set->elements);
-    }
 
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;
