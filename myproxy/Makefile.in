@@ -20,7 +20,9 @@ GLOBUS_CFLAGS	=	$(INSTALL_INCLUDE) $(GLOBUS_INCLUDES) $(BASE_CFLAGS)
 
 DEFS		=	@DEFS@
 CFLAGS		=	-g $(DEFS) $(GLOBUS_CFLAGS) $(GLOBUS_GSSAPI_CFLAGS) \
-			-DMYPROXY_SERVER_DIR="\"$(MYPROXY_SERVER_DIR)\""
+		-DMYPROXY_SERVER_ETC_DIR="\"$(MYPROXY_SERVER_ETC_DIR)\""\
+		-DMYPROXY_SERVER_STORE_DIR="\"$(MYPROXY_SERVER_STORE_DIR)\""
+LDFLAGS		=	-Wl,-rpath -Wl,@GLOBUS_LIB_DIR@
 
 GSI_SOCKET_CFLAGS	=	-DGSI_SOCKET_SSLEAY $(CFLAGS)
 
@@ -40,7 +42,7 @@ LIB_OBJS	= myproxy.o gsi_socket.o gnu_getopt.o gnu_getopt_long.o \
 			gsi_proxy.o myproxy_authorization.o myproxy_log.o 
 INIT_OBJS	= myproxy_init.o $(MYPROXY_LIB)
 DESTROY_OBJS	= myproxy_destroy.o $(MYPROXY_LIB)
-INFO_OBJS       = myproxy_info.o $(MYPROXY_LIB)
+INFO_OBJS	= myproxy_info.o $(MYPROXY_LIB)
 GET_OBJS	= myproxy_get_delegation.o $(MYPROXY_LIB)
 SERVER_OBJS	= myproxy_server.o myproxy_creds.o \
 			vparse.o myproxy_server_config.o \
@@ -84,11 +86,6 @@ myproxy-info: $(INFO_OBJS)
 		-o $@ $(INFO_OBJS) $(GLOBUS_PKG_LIBS) \
 		$(GLOBUS_GSSAPI_LIBS) $(SYSLIBS)
 
-myproxy-info: $(INFO_OBJS)
-	$(LINK) $(LDFLAGS) $(GLOBUS_LDFLAGS) $(GLOBUS_GSSAPI_LDFLAGS) \
-		-o $@ $(INFO_OBJS) $(GLOBUS_PKG_LIBS) \
-		$(GLOBUS_GSSAPI_LIBS) $(SYSLIBS)
-
 myproxy-get-delegation: $(GET_OBJS)
 	$(LINK) $(LDFLAGS) $(GLOBUS_LDFLAGS) $(GLOBUS_GSSAPI_LDFLAGS) \
 		-o $@ $(GET_OBJS) $(GLOBUS_PKG_LIBS) \
@@ -118,17 +115,17 @@ etags:
 
 clean:
 	rm -f *.o *~
-	rm -f $(SERVER_PROGS) $(CLIENT_PROGS) $(TOOL_PROGS) $(TEST_PROGS)
+	rm -f $(SERVER_PROGS) $(CLIENT_PROGS) $(TOOL_PROGS) $(TEST_PROGS) $(MYPROXY_LIB)
 
 distclean:	clean
-	rm -f Makefile config.cache config.log config.status
+	rm -f Makefile config.cache config.log config.status myproxy.cron
 
 install:	server-install client-install tools-install library-install
 
 server-install:	$(SERVER_PROGS)
 	@for prog in $(SERVER_PROGS) ; do \
 	  echo Installing $${prog} in $(MYPROXY_SERVER_DIR)/sbin ; \
-	  $(INSTALL) -m 755 $${prog} $(MYPROXY_SERVER_DIR)/sbin/$${prog} ;\
+	  $(INSTALL) -m 755 -c $${prog} $(MYPROXY_SERVER_DIR)/sbin/$${prog} ;\
 	done
 	@if test ! -f $(MYPROXY_SERVER_ETC_DIR)/myproxy-server.config ; then \
 	  echo Copying base server configuration file to $(MYPROXY_SERVER_ETC_DIR)/myproxy-server.config ;\
@@ -146,19 +143,24 @@ server-install:	$(SERVER_PROGS)
 client-install: $(CLIENT_PROGS)
 	@for prog in $(CLIENT_PROGS) ; do \
 	  echo Installing $${prog} in $(MYPROXY_CLIENT_DIR)/bin ; \
-	  $(INSTALL) -m 755 $${prog} $(MYPROXY_CLIENT_DIR)/bin/$${prog} ;	\
+	  $(INSTALL) -m 755 -c $${prog} $(MYPROXY_CLIENT_DIR)/bin/$${prog} ;	\
 	done
 
 tools-install: $(TOOL_PROGS)
 	@for prog in $(TOOL_PROGS) ; do \
 	  echo Installing $${prog} in $(MYPROXY_TOOLS_DIR)/bin ; \
-	  $(INSTALL) -m 755 $${prog} $(MYPROXY_TOOLS_DIR)/bin/$${prog} ;	\
+	  $(INSTALL) -m 755 -c $${prog} $(MYPROXY_TOOLS_DIR)/bin/$${prog} ;	\
 	done
 
 library-install: $(MYPROXY_LIB)
 	echo Installing $(MYPROXY_LIB) in $(MYPROXY_TOOLS_DIR)/lib
-	$(INSTALL) -m 755 $(MYPROXY_LIB) $(MYPROXY_TOOLS_DIR)/lib/libmyproxy.a
+	$(INSTALL) -m 755 -c $(MYPROXY_LIB) $(MYPROXY_TOOLS_DIR)/lib/libmyproxy.a
 	echo Installing headers in $(MYPROXY_TOOLS_DIR)/include
+	@if test ! -d $(MYPROXY_TOOLS_DIR)/include ; then \
+	  echo Creating directory $(MYPROXY_TOOLS_DIR)/include ;\
+	  $(INSTALL) -m 755 -d $(MYPROXY_TOOLS_DIR)/include ;\
+	fi
+
 	@for header in $(MYPROXY_HEADERS); do \
-	  $(INSTALL) -m 755 $${header} $(MYPROXY_TOOLS_DIR)/include; \
+	  $(INSTALL) -m 755 -c $${header} $(MYPROXY_TOOLS_DIR)/include; \
 	done
