@@ -25,7 +25,7 @@ AC_ARG_WITH(flavor,
 
 AC_ARG_ENABLE(doxygen,
 changequote(<<, >>)dnl	
-<<--enable-doxygen[=PATH]	use Doxygen to generate documentation>>,
+<<  --enable-doxygen[=PATH]	use Doxygen to generate documentation>>,
 changequote([, ])dnl
 [
 	if test "$enableval" = "yes"; then
@@ -38,12 +38,23 @@ changequote([, ])dnl
 		DOXYGEN="$enableval"
 		AC_SUBST(DOXYGEN)
 	fi
-	DOXYFILE="Doxyfile"
-	AC_SUBST(DOXYFILE) 
 ],
 [
 	DOXYGEN=""
 	AC_SUBST(DOXYGEN)
+])
+
+
+AC_ARG_ENABLE(internal-doc,
+[  --enable-internal-doc	Generate Doxygen documentation for internal 
+				functions. Requires --enable-doxygen.],
+[
+	DOXYFILE="Doxyfile-internal"
+	AC_SUBST(DOXYFILE) 
+],
+[
+	DOXYFILE="Doxyfile"
+	AC_SUBST(DOXYFILE)
 ])
 
 
