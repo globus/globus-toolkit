@@ -21,9 +21,7 @@ typedef struct
   char **default_retriever_dns;/* List of DNs we'll delegate to */
   char **authorized_renewer_dns; /* List of DNs that can renew creds */
   char **default_renewer_dns; /* List of DNs that can renew creds */
-#if defined (MULTICRED_FEATURE)
   char *dbase_name;	 	/* Credential Storage database name */
-#endif
 } myproxy_server_context_t;
 
 

@@ -38,9 +38,7 @@ static char usage[] = \
 "    -d | --dn_as_username      Use the proxy certificate subject\n"
 "                               (DN) as the default username,\n"
 "                               instead of the LOGNAME env. var.\n"
-#if defined (MULTICRED_FEATURE)
 "    -k | --credname <name>	Specifies credential name.\n"
-#endif
 "\n";
 
 struct option long_options[] =
@@ -53,17 +51,11 @@ struct option long_options[] =
     {"verbose",          no_argument, NULL, 'v'},
     {"version",          no_argument, NULL, 'V'},
     {"dn_as_username",   no_argument, NULL, 'd'},
-#if defined (MULTICRED_FEATURE)
     {"credname",   required_argument, NULL, 'k'},
-#endif
     {0, 0, 0, 0}
 };
 
-#if defined (MULTICRED_FEATURE)
 static char short_options[] = "hus:p:l:vVdk:";
-#else
-static char short_options[] = "hus:p:l:vVd";
-#endif 
 
 static char version[] =
 "myproxy-destroy version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
@@ -251,11 +243,9 @@ init_arguments(int argc,
             fprintf(stderr, version);
             exit(1);
             break;
-#if defined (MULTICRED_FEATURE)
 	case 'k':	/*credential name*/
 	    request->credname = strdup (gnu_optarg);
 	    break;
-#endif 
 	case 'd':   /* use the certificate subject (DN) as the default
 		       username instead of LOGNAME */
 	    dn_as_username = 1;

@@ -875,12 +875,7 @@ myproxy_creds_retrieve(struct myproxy_creds *creds)
 
     creds->lifetime = retrieved_creds.lifetime;
    
-#if defined (MULTICRED_FEATURE) 
     if ((creds->owner_name == NULL)) 
-#else
-    if ((creds->owner_name == NULL) ||
-        (creds->location == NULL))
-#endif
     {
         goto error;
     }
@@ -1198,7 +1193,6 @@ int read_from_directory (struct myproxy_creds *creds, myproxy_response_t *respon
 	return -1;
 }
 
-#if defined (MULTICRED_FEATURE)
 int
 myproxy_creds_info(struct myproxy_creds *creds, myproxy_response_t *response)
 {
@@ -1221,36 +1215,6 @@ myproxy_creds_info(struct myproxy_creds *creds, myproxy_response_t *response)
 error:
     return return_code;
 }
-#else
-int
-myproxy_creds_info(struct myproxy_creds *creds)
-{
-    char creds_path[MAXPATHLEN];
-    char data_path[MAXPATHLEN];
-    struct myproxy_creds tmp_creds = {0}; /* initialize with 0s */
-    int return_code = -1;
-    time_t end_time;
-
-    if ((creds == NULL) || (creds->username == NULL)) {
-       verror_put_errno(EINVAL);
-       return -1;
-    }
-
-    if (get_storage_locations(creds->username,
-	                      creds_path, sizeof(creds_path),
-			      data_path, sizeof(data_path)) == -1) {
-       goto error;
-    }
-
-    if (ssl_get_times(creds_path, &creds->start_time, &creds->end_time) != 0)
-       goto error;
-
-    return_code = 0;
-
-error:
-    return return_code;
-}
-#endif 
 
 void myproxy_creds_free_contents(struct myproxy_creds *creds)
 {
