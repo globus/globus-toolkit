@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#! perl
 #
 # setup-openssh.pl
 #
@@ -9,8 +9,6 @@
 # Send comments/fixes/suggestions to:
 # Chase Phillips <cphillip@ncsa.uiuc.edu>
 #
-
-printf("setup-openssh.pl: Configuring gsi-openssh package\n");
 
 #
 # Get user's GPT_LOCATION since we may be installing this using a new(er)
@@ -78,6 +76,73 @@ my $keyfiles = {
                  "rsa1" => "ssh_host_key",
                };
 
+print "$myname: Configuring package 'gsi_openssh'...\n";
+print "---------------------------------------------------------------------\n";
+print "Hi, I'm the setup script for the gsi_openssh package!  There\n";
+print "are some last minute details that I've got to set straight\n";
+print "in the sshd config file, along with generating the ssh keys\n";
+print "for this machine (if it doesn't already have them).\n";
+print "\n";
+print "If I find a pair of host keys in /etc/ssh, I will copy them into\n";
+print "\$GLOBUS_LOCATION/etc/ssh.  If they aren't present, I will generate\n";
+print "them for you.\n";
+print "\n";
+
+$response = query_boolean("Do you wish to continue with the setup package?","y");
+if ($response eq "n")
+{
+    print "\n";
+    print "Exiting gsi_openssh setup.\n";
+
+    exit 0;
+}
+
+print "\n";
+
+makeConfDir();
+$keyhash = determineKeys();
+runKeyGen($keyhash->{gen});
+copyKeyFiles($keyhash->{copy});
+fixpaths();
+copyConfigFiles();
+alterFiles();
+
+my $metadata = new Grid::GPT::Setup(package_name => "gsi_openssh_setup");
+
+$metadata->finish();
+
+print "\n";
+print "Additional Notes:\n";
+print "\n";
+print "  o I see that you have your GLOBUS_LOCATION environmental variable\n";
+print "    set to:\n";
+print "\n";
+print "    \t\"$gpath\"\n";
+print "\n";
+print "    Remember to keep this variable set (correctly) when you want to\n";
+print "    use the executables that came with this package.\n";
+print "\n";
+print "    After that you may run, e.g.:\n";
+print "\n";
+print "    \t\$ . \$GLOBUS_LOCATION/etc/globus-user-env.sh\n";
+print "\n";
+print "    to prepare your environment for running the gsi_openssh\n";
+print "    executables.\n";
+print "---------------------------------------------------------------------\n";
+print "$myname: Finished configuring package 'gsi_openssh'.\n";
+
+exit;
+
+#
+# subroutines
+#
+
+### copyKeyFiles( $copylist )
+#
+# given an array of keys to copy, copy both the key and its public variant into
+# the gsi-openssh configuration directory.
+#
+
 sub copyKeyFiles
 {
     my($copylist) = @_;
@@ -103,6 +168,12 @@ sub copyKeyFiles
     }
 }
 
+### isReadable( $file )
+#
+# given a file, return true if that file both exists and is readable by the
+# effective user id.  return false otherwise.
+#
+
 sub isReadable
 {
     my($file) = @_;
@@ -116,6 +187,11 @@ sub isReadable
         return 0;
     }
 }
+
+### isPresent( $file )
+#
+# given a file, return true if that file exists.  return false otherwise.
+#
 
 sub isPresent
 {
@@ -153,6 +229,13 @@ sub makeConfDir
 
     return;
 }
+
+### determineKeys( )
+#
+# based on a set of key types, triage them to determine if for each key type, that
+# key type should be copied from the main ssh configuration directory, or if it
+# should be generated using ssh-keygen.
+#
 
 sub determineKeys
 {
@@ -226,6 +309,12 @@ sub determineKeys
 
     return $keyhash;
 }
+
+### runKeyGen( $gen_keys )
+#
+# given a set of key types, generate private and public keys for that key type and
+# place them in the gsi-openssh configuration directory.
+#
 
 sub runKeyGen
 {
@@ -345,6 +434,12 @@ sub copyConfigFiles
     action("cp $setupdir/moduli $sysconfdir/moduli");
 }
 
+### alterFileGlobusLocation( $in, $out )
+#
+# parse the input file, substituting in place the value of GLOBUS_LOCATION, and
+# write the result to the output file.
+#
+
 sub alterFileGlobusLocation
 {
     my ($in, $out) = @_;
@@ -360,6 +455,12 @@ sub alterFileGlobusLocation
         }
     }
 }
+
+### alterFiles( )
+#
+# the main alteration function, which doesn't do much (other than have GLOBUS_LOCATION
+# replaced in the sshd startup/shutdown script).
+#
 
 sub alterFiles
 {
@@ -417,61 +518,6 @@ sub writeFile
     print OUT "$fileinput";
     close(OUT);
 }
-
-print "---------------------------------------------------------------------\n";
-print "Hi, I'm the setup script for the gsi_openssh package!  There\n";
-print "are some last minute details that I've got to set straight\n";
-print "in the sshd config file, along with generating the ssh keys\n";
-print "for this machine (if it doesn't already have them).\n";
-print "\n";
-print "If I find a pair of host keys in /etc/ssh, I will copy them into\n";
-print "\$GLOBUS_LOCATION/etc/ssh.  If they aren't present, I will generate\n";
-print "them for you.\n";
-print "\n";
-
-$response = query_boolean("Do you wish to continue with the setup package?","y");
-if ($response eq "n")
-{
-    print "\n";
-    print "Exiting gsi_openssh setup.\n";
-
-    exit 0;
-}
-
-print "\n";
-
-makeConfDir();
-$keyhash = determineKeys();
-runKeyGen($keyhash->{gen});
-copyKeyFiles($keyhash->{copy});
-fixpaths();
-copyConfigFiles();
-alterFiles();
-
-my $metadata = new Grid::GPT::Setup(package_name => "gsi_openssh_setup");
-
-$metadata->finish();
-
-print "\n";
-print "Additional Notes:\n";
-print "\n";
-print "  o I see that you have your GLOBUS_LOCATION environmental variable\n";
-print "    set to:\n";
-print "\n";
-print "    \t\"$gpath\"\n";
-print "\n";
-print "    Remember to keep this variable set (correctly) when you want to\n";
-print "    use the executables that came with this package.\n";
-print "\n";
-print "    After that you may run, e.g.:\n";
-print "\n";
-print "    \t\$ . \$GLOBUS_LOCATION/etc/globus-user-env.sh\n";
-print "\n";
-print "    to prepare your environment for running the gsi_openssh\n";
-print "    executables.\n";
-print "\n";
-print "---------------------------------------------------------------------\n";
-print "$myname: Finished configuring package 'gsi_openssh'.\n";
 
 #
 # Just need a minimal action() subroutine for now..
