@@ -69,6 +69,7 @@ globus_proxy_ssl                gsi/proxy/proxy_ssl/source      dirt.sh
 globus_proxy_ssl_test           gsi/proxy/proxy_ssl/test        dirt.sh
 globus_proxy_core               gsi/proxy/proxy_core/source     dirt.sh
 globus_proxy_utils              gsi/proxy/proxy_utils/source    dirt.sh
+globus_proxy_wrapper            gsi/proxy/proxy_utils/wrapper   dirt.sh
 globus_cert_utils               gsi/cert_utils/source           dirt.sh
 globus_gsi_credential           gsi/credential/source           dirt.sh
 globus_gsi_callback             gsi/callback/source             dirt.sh
