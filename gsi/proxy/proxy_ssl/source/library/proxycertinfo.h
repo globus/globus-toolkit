@@ -17,9 +17,7 @@
  * to its internal structure and vice-versa.
  */
 
-#include "signature.h"
 #include "proxyrestriction.h"
-#include "proxygroup.h"
 
 #include <openssl/asn1.h>
 #include <openssl/x509.h>
@@ -92,11 +90,8 @@ EXTERN_C_BEGIN
 struct PROXYCERTINFO_st
 {
     ASN1_INTEGER *                      version;
-    ASN1_BOOLEAN *                      pC;                       
     ASN1_INTEGER *                      path_length;       /* [ OPTIONAL ] */
     PROXYRESTRICTION *                  restriction;       /* [ OPTIONAL ] */
-    PROXYGROUP *                        group;             /* [ OPTIONAL ] */
-    X509_SIG *                          issuer_signature;  /* [ OPTIONAL ] */
 };
 
 typedef struct PROXYCERTINFO_st PROXYCERTINFO;
@@ -139,25 +134,11 @@ int PROXYCERTINFO_print_fp(
     FILE *                              fp,
     PROXYCERTINFO *                     cert_info);
 
-int PROXYCERTINFO_set_group(
-    PROXYCERTINFO *                     cert_info,
-    PROXYGROUP *                        group);
-
-ASN1_BOOLEAN * PROXYCERTINFO_get_pC(
-    PROXYCERTINFO *                     cert_info);
-
-int PROXYCERTINFO_set_pC(
-    PROXYCERTINFO *                     cert_info,
-    ASN1_BOOLEAN                        pC);
-
 int PROXYCERTINFO_set_version(
     PROXYCERTINFO *                     cert_info,
     long                                version);
 
 long PROXYCERTINFO_get_version(
-    PROXYCERTINFO *                     cert_info);
-
-PROXYGROUP * PROXYCERTINFO_get_group(
     PROXYCERTINFO *                     cert_info);
 
 int PROXYCERTINFO_set_restriction(
@@ -172,13 +153,6 @@ int PROXYCERTINFO_set_path_length(
     long                                path_length);
 
 long PROXYCERTINFO_get_path_length(
-    PROXYCERTINFO *                     cert_info);
-
-int PROXYCERTINFO_set_issuer_signature(
-    PROXYCERTINFO *                     cert_info,
-    X509_SIG *                          signature);
-
-X509_SIG * PROXYCERTINFO_get_issuer_signature(
     PROXYCERTINFO *                     cert_info);
 
 int i2d_PROXYCERTINFO(

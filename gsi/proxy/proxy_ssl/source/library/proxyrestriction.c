@@ -422,8 +422,17 @@ STACK_OF(CONF_VALUE) * i2v_PROXYRESTRICTION(
 
     nid = OBJ_obj2nid(PROXYRESTRICTION_get_policy_language(ext));
 
-    BIO_snprintf(policy_lang, 128, " %s", 
-                 (nid != NID_undef) ? OBJ_nid2ln(nid) : "UNKNOWN");
+    if(nid != NID_undef)
+    {
+        BIO_snprintf(policy_lang, 128, " %s", OBJ_nid2ln(nid));
+    }
+    else
+    {
+        policy_lang[0] = ' ';
+        i2t_ASN1_OBJECT(&policy_lang[1],
+                        127,
+                        PROXYRESTRICTION_get_policy_language(ext));
+    }
     
     X509V3_add_value("    Policy Language", 
                      policy_lang,

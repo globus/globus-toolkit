@@ -351,7 +351,7 @@ globus_gss_assist_token_send_fd_ex(
 
     GLOBUS_I_GSI_GSS_ASSIST_DEBUG_FPRINTF(
         3, (globus_i_gsi_gss_assist_debug_fstream,
-            "send_token: flags: %d length: %d\n",
+            "send_token: flags: %d length: %u\n",
             ex->flags, size));
 
     if (!(size > 5 && header[0] <= 26 && header[0] >= 20

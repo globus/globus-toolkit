@@ -1125,7 +1125,6 @@ globus_result_t globus_gsi_cred_read_cert(
     BIO *                               cert_bio = NULL;
     globus_result_t                     result;
     int                                 i = 0;
-    STACK_OF(X509) *                    tmp_cert_chain = NULL;
     static char *                       _function_name_ =
         "globus_gsi_cred_read_cert";
 
@@ -1157,7 +1156,7 @@ globus_result_t globus_gsi_cred_read_cert(
         handle->cert = NULL;
     }
 
-    if(!PEM_read_bio_X509(cert_bio, & handle->cert, NULL, NULL))
+    if(!PEM_read_bio_X509(cert_bio, &handle->cert, NULL, NULL))
     {
         GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
             result,
@@ -1169,10 +1168,9 @@ globus_result_t globus_gsi_cred_read_cert(
     if(handle->cert_chain != NULL)
     {
         sk_X509_pop_free(handle->cert_chain, X509_free);
-        handle->cert_chain = NULL;
     }
     
-    if((tmp_cert_chain = sk_X509_new_null()) == NULL)
+    if((handle->cert_chain = sk_X509_new_null()) == NULL)
     {
         GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
             result,
@@ -1189,7 +1187,7 @@ globus_result_t globus_gsi_cred_read_cert(
             break;
         }
 
-        if(!sk_X509_insert(tmp_cert_chain, tmp_cert, i))
+        if(!sk_X509_insert(handle->cert_chain, tmp_cert, i))
         {
             X509_free(tmp_cert);
             GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
@@ -1201,20 +1199,6 @@ globus_result_t globus_gsi_cred_read_cert(
         }
         ++i;
     }
-
-    if(sk_X509_num(tmp_cert_chain) > 0)
-    {
-        result = globus_gsi_cred_set_cert_chain(handle, tmp_cert_chain);
-        if(result != GLOBUS_SUCCESS)
-        {
-            GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
-                result,
-                GLOBUS_GSI_CRED_ERROR_WITH_CRED);
-            goto exit;
-        }
-    }
-
-    sk_X509_pop_free(tmp_cert_chain, X509_free);
     
     result = globus_i_gsi_cred_goodtill(handle, &(handle->goodtill));
 
@@ -1631,16 +1615,16 @@ globus_result_t globus_gsi_cred_write_proxy(
 }    
 
 globus_result_t
-globus_gsi_cred_check_proxy(
-    globus_gsi_cred_handle_t               handle,
-    globus_gsi_cert_utils_proxy_type_t *   type)
+globus_gsi_cred_get_cert_type(
+    globus_gsi_cred_handle_t            handle,
+    globus_gsi_cert_utils_cert_type_t * type)
 {
     globus_result_t                     result;
     static char *                       _function_name_ =
         "globus_gsi_cred_check_proxy";
     GLOBUS_I_GSI_CRED_DEBUG_ENTER;
     
-    result = globus_gsi_cert_utils_check_proxy_name(handle->cert, type);
+    result = globus_gsi_cert_utils_get_cert_type(handle->cert, type);
     if(result != GLOBUS_SUCCESS)
     {
         GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
@@ -1682,10 +1666,10 @@ globus_i_gsi_cred_get_proxycertinfo(
     X509 *                              cert,
     PROXYCERTINFO **                    proxycertinfo)
 {
-    globus_result_t                     result;
+    globus_result_t                     result = GLOBUS_SUCCESS;
     int                                 pci_NID;
     X509_EXTENSION *                    pci_extension = NULL;
-    ASN1_OCTET_STRING *                 ext_data;
+    ASN1_OCTET_STRING *                 ext_data = NULL;
     int                                 extension_loc;
     static char *                       _function_name_ =
         "globus_i_gsi_cred_get_proxycertinfo";
@@ -1730,7 +1714,7 @@ globus_i_gsi_cred_get_proxycertinfo(
             GLOBUS_GSI_CRED_ERROR_WITH_CRED,
             ("Can't find PROXYCERTINFO extension in X509 cert at "
              "expected location: %d in extension stack", extension_loc));
-        goto free_ext;
+        goto exit;
     }
 
     if((ext_data = X509_EXTENSION_get_data(pci_extension)) == NULL)
@@ -1740,12 +1724,12 @@ globus_i_gsi_cred_get_proxycertinfo(
             GLOBUS_GSI_CRED_ERROR_WITH_CRED,
             ("Can't get DER encoded extension "
              "data from X509 extension object"));
-        goto free_ext_data;
+        goto exit;
     }
 
     if((d2i_PROXYCERTINFO(
         proxycertinfo,
-        & ext_data->data,
+        &ext_data->data,
         ext_data->length)) == NULL)
     {
         GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
@@ -1753,19 +1737,16 @@ globus_i_gsi_cred_get_proxycertinfo(
             GLOBUS_GSI_CRED_ERROR_WITH_CRED,
             ("Can't convert DER encoded PROXYCERTINFO "
              "extension to internal form"));
-        goto free_pci;
+        goto exit;
     }
-
-    result = GLOBUS_SUCCESS;
-
- free_pci:
-    PROXYCERTINFO_free(*proxycertinfo);
- free_ext_data:
-    ASN1_OCTET_STRING_free(ext_data);
- free_ext:
-    X509_EXTENSION_free(pci_extension);
+    
  exit:
-
+    
+    if(ext_data != NULL)
+    { 
+        ASN1_OCTET_STRING_free(ext_data);
+    }
+    
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
 }

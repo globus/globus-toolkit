@@ -99,11 +99,11 @@ $SIG{'QUIT'} = 'sig_handler';
 $SIG{'KILL'} = 'sig_handler';
 
 
-push(@tests, "basic_func(1, \"-pc 1 -path 10 -group GROUPNAME 1 -rest POLICYLANGUAGE POLICY\");");
-push(@tests, "basic_func(2, \"-pc 1 -path 10 -group GROUPNAME 0\");");
-push(@tests, "basic_func(3, \"-pc 0 -path 0 -rest POLICYLANGUAGE POLICY -version 10\");");
-push(@tests, "basic_func(4, \"-pc 0 -group GROUPNAME 1 -rest POLICYLANGUAGE POLICY\");");
-push(@tests, "basic_func(5, \"-pc 1 -out test_pci5.der\");");
+push(@tests, "basic_func(1, \"-path 10 -rest POLICYLANGUAGE POLICY\");");
+push(@tests, "basic_func(2, \"-path 10\");");
+push(@tests, "basic_func(3, \"-path 0 -rest POLICYLANGUAGE POLICY -version 10\");");
+push(@tests, "basic_func(4, \"-rest POLICYLANGUAGE POLICY\");");
+push(@tests, "basic_func(5, \"-out test_pci5.der\");");
 
 
 # Now that the tests are defined, set up the Test to deal with them.

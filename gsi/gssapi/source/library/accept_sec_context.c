@@ -62,7 +62,7 @@ GSS_CALLCONV gss_accept_sec_context(
     OM_uint32                           nreq_flags = 0;
     char                                dbuf[1];
     STACK_OF(X509) *                    cert_chain = NULL;
-    globus_gsi_cert_utils_proxy_type_t  proxy_type;
+    globus_gsi_cert_utils_cert_type_t   cert_type;
 
     static char *                       _function_name_ =
         "gss_accept_sec_context";
@@ -245,9 +245,9 @@ GSS_CALLCONV gss_accept_sec_context(
                 }
             }
                         
-            local_result = globus_gsi_callback_get_proxy_type(
+            local_result = globus_gsi_callback_get_cert_type(
                 context->callback_data,
-                &proxy_type);
+                &cert_type);
 
             if(local_result != GLOBUS_SUCCESS)
             {
@@ -259,7 +259,7 @@ GSS_CALLCONV gss_accept_sec_context(
                 break;
             }
 
-            if (proxy_type == GLOBUS_LIMITED_PROXY)
+            if (cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_LIMITED_PROXY)
             {
                 context->ret_flags |= GSS_C_GLOBUS_RECEIVED_LIMITED_PROXY_FLAG;
                 /*
@@ -374,7 +374,7 @@ GSS_CALLCONV gss_accept_sec_context(
                 major_status = GSS_S_FAILURE;
                 break;
             }
-            
+
             local_result = globus_gsi_cred_set_cert_chain(
                 delegated_cred,
                 cert_chain);

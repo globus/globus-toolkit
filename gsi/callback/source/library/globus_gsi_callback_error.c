@@ -36,7 +36,8 @@ globus_l_gsi_callback_error_strings[GLOBUS_GSI_CALLBACK_ERROR_LAST] =
 /* 13 */  "System error",
 /* 14 */  "Error in the certificate chain",
 /* 15 */  "Error with callback data index",
-
+/* 16 */  "Proxy path length exceeded",
+/* 17 */  "Found incompatible proxy types in certificate chain"
 };
 
 /* ERROR FUNCTIONS */
