@@ -276,6 +276,7 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
     /* Authenticate server to client and get DN of client */
     if (myproxy_authenticate_accept(attrs, client_name, sizeof(client_name)) < 0) {
 	/* Client_name may not be set on error so don't use it. */
+	myproxy_log_verror();
 	respond_with_error_and_die(attrs, "authentication failed");
     }
 
@@ -285,12 +286,14 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
     /* Receive client request */
     requestlen = myproxy_recv(attrs, client_buffer, sizeof(client_buffer));
     if (requestlen < 0) {
+        myproxy_log_verror();
 	respond_with_error_and_die(attrs, "Error in myproxy_recv_response()");
     }
    
     /* Deserialize client request */
     if (myproxy_deserialize_request(client_buffer, requestlen, 
                                     client_request) < 0) {
+	myproxy_log_verror();
         respond_with_error_and_die(attrs,
 				   "error in myproxy_deserialize_request()");
     }
