@@ -218,13 +218,11 @@ globus_l_xio_http_parse_header( l_http_info_t * info)
         //and the version of http we're speaking
         info->http_standard = globus_libc_strdup(uri_end+1);
         current_location = strstr(uri_end, "\r\n") + 2;
-        printf("uri: %s, http: %s\n", info->uri, info->http_standard);
     }
 
     //process the rest of the recv_headers
     while( strstr(current_location, "\r\n") != current_location )
         {
-            printf("%s\n", current_location);
             //check if we have an unterminated line
             if( !strstr(current_location, "\r\n" ) )
             {
@@ -244,7 +242,6 @@ globus_l_xio_http_parse_header( l_http_info_t * info)
                 {
                     key = strndup(current_location, colon_loc - current_location);
                     value = strndup(colon_loc, line_end - colon_loc);
-                    printf("key: %s, value: %s\n", key, value);
                     globus_hashtable_insert(&info->recv_headers, key, value);
                     current_location = line_end + 2;
                 } 
@@ -274,7 +271,6 @@ globus_l_xio_http_read_cb(
     globus_xio_context_t                    context;
     l_http_info_t *info = (l_http_info_t *)user_arg;
     context = GlobusXIOOperationGetContext(op);
-    printf("nbytes: %d\n", nbytes);
 
     parse_result = globus_l_xio_http_parse_header(info);
     switch(parse_result) {
