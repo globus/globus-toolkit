@@ -224,6 +224,7 @@ main(int argc, char **argv)
 
 	__progname = ssh_get_progname(argv[0]);
 	init_pathnames();
+	ssh_program = _PATH_SSH_PROGRAM;
 
 	args.list = NULL;
 	addargs(&args, "ssh");		/* overwritten with ssh_program */
