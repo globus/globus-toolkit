@@ -1089,6 +1089,7 @@ globus_i_gfs_data_request_stat(
     return;
 
 error_op:
+    globus_l_gfs_authorize_cb(stat_info->pathname, op, result);
     GlobusGFSDebugExitWithError();
 }
 
@@ -1267,6 +1268,7 @@ globus_i_gfs_data_request_command(
     return;
 
 error_op:
+    globus_l_gfs_authorize_cb(op->pathname, op, result);
     GlobusGFSDebugExitWithError();
 }
 
@@ -2373,7 +2375,7 @@ globus_i_gfs_data_request_recv(
 error_module:
 error_op:
 error_handle:
-/* XXX need to reply with error here */
+    globus_gridftp_server_finished_transfer(op, result);
     GlobusGFSDebugExitWithError();
 }
 
@@ -2475,7 +2477,7 @@ globus_i_gfs_data_request_send(
 error_module:
 error_op:
 error_handle:
-/* XXX need to reply with error here */
+    globus_gridftp_server_finished_transfer(op, result);
     GlobusGFSDebugExitWithError();
 }
 
@@ -2674,6 +2676,7 @@ globus_i_gfs_data_request_list(
 
 error_handle:
 error_op:
+    globus_gridftp_server_finished_transfer(data_op, result);
     GlobusGFSDebugExitWithError();
 }
 

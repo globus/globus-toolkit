@@ -23,12 +23,9 @@ logging:
 -- specify log format by configuration
 -- syslog module for globus_logging
 
-general:
--- instrument any remaining configuration options and limits
+Pre-Auth Timeout
 
-threads:
--- quick test that stuff works -- not really looking for 100% right now
--- walk through locks
+GID and MLST need to wotk correctly.
 
 cleanup:
 -- verify test suite
@@ -41,27 +38,15 @@ ipc security options - doc well, make sure it works the way we expect
 need some spec compliant support for partitioned layout
     current stripeblocksize impl is basically spec compliant RR
 
-
-------------------------Private message from Roland------------------------
-assert( i wanna know when this happens)
-data:3585
-control:766
-control_events.c:249
---------------------------------end message--------------------------------
 -----------------------------------------------------------------------
 known bugs:
--- not calling _finish() in data.c for some request funcs that fail before
-    the dsi call. 
--- reply_msg has a mixed means of neing freed in globus_l_gsc_finished_op()
-    or by the caller.  look at lines server_control.c:930, and then
-    995.
 -- force_close after transfer_complete when an error is passed to 
    finished_transfer().
 -- error out of option parsing properly
 -- ipc failure while the handle is owned by the dsi destroys the handle. should
     not free until user calls release or close, and just error out of any other
     calls that attempt to use the handle.
--- commands belong in server-lib
+XX commands belong in server-lib
 
 -- need to make sure ints in various places are change to size_t if they
     need to be, and on passing size_t's over ipc need to do some smarts

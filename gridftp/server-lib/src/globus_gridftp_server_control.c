@@ -903,7 +903,7 @@ globus_l_gsc_finished_op(
             if(reply_msg == NULL && op->cmd_list == NULL)
             {
                 server_handle->outstanding_op = NULL;
-                reply_msg = _FSMSL("500 Command not supported.\r\n");
+                reply_msg = strdup(_FSMSL("500 Command not supported.\r\n"));
             }
             if(reply_msg == NULL)
             {
@@ -929,7 +929,7 @@ globus_l_gsc_finished_op(
             globus_i_gsc_op_destroy(op);
             if(reply_msg == NULL)
             {
-                reply_msg = _FSMSL("426 Command Aborted.\r\n");
+                reply_msg = strdup(_FSMSL("426 Command Aborted.\r\n"));
             }
 
             server_handle->abort_cnt = globus_fifo_size(&server_handle->read_q);
@@ -944,14 +944,14 @@ globus_l_gsc_finished_op(
             }
             res = globus_l_gsc_flush_reads(
                     server_handle,
-                    _FSMSL("426 Command Aborted.\r\n"));
+                    strdup(_FSMSL("426 Command Aborted.\r\n")));
             if(res != GLOBUS_SUCCESS)
             {
                 goto err;
             }
             res = globus_l_gsc_final_reply(
                     server_handle,
-                    _FSMSL("226 Abort successful\r\n"));
+                    strdup(_FSMSL("226 Abort successful\r\n")));
             if(res != GLOBUS_SUCCESS)
             {
                 goto err;
@@ -961,10 +961,14 @@ globus_l_gsc_finished_op(
         case GLOBUS_L_GSC_STATE_ABORTING_STOPPING:
             res = globus_l_gsc_final_reply(
                     server_handle,
-                    "421 Server terminated\r\n");
+                    strdup("421 Server terminated\r\n"));
             if(res != GLOBUS_SUCCESS)
             {
                 goto err;
+            }
+            if(reply_msg != NULL)
+            {
+                globus_free(reply_msg);
             }
             server_handle->outstanding_op = NULL;
             GlobusGSCHandleStateChange(
@@ -973,6 +977,10 @@ globus_l_gsc_finished_op(
             break;
 
         case GLOBUS_L_GSC_STATE_STOPPING:
+            if(reply_msg != NULL)
+            {
+                globus_free(reply_msg);
+            }
             server_handle->outstanding_op = NULL;
             globus_i_gsc_op_destroy(op);
             server_handle->ref--;
@@ -2021,12 +2029,7 @@ globus_l_gsc_final_reply(
 
     globus_assert(globus_fifo_empty(&server_handle->reply_q));
 
-    tmp_ptr = globus_libc_strdup(message);
-    if(tmp_ptr == NULL)
-    {
-        res = GlobusGridFTPServerControlErrorSytem();
-        goto err;
-    }
+    tmp_ptr = message;
 
     globus_i_gsc_log(
         server_handle, message, GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_REPLY);
@@ -2050,6 +2053,7 @@ globus_l_gsc_final_reply(
 
   err:
 
+    globus_free(message);
     GlobusGridFTPServerDebugInternalExitWithError();
     return res;
 }
@@ -2663,6 +2667,7 @@ globus_gsc_959_finished_command(
     globus_i_gsc_op_t *                 op,
     char *                              reply_msg)
 {
+    char *                              msg = NULL;
     globus_i_gsc_server_handle_t *      server_handle;
     globus_l_gsc_reply_ent_t *          reply_ent;
     GlobusGridFTPServerName(globus_gsc_finished_op);
@@ -2671,13 +2676,20 @@ globus_gsc_959_finished_command(
 
     server_handle = op->server_handle;
 
+    if(reply_msg != NULL)
+    {
+        msg = strdup(reply_msg);
+        if(msg == NULL)
+        {
+        }
+    }
     globus_mutex_lock(&server_handle->mutex);
     {
         if(server_handle->reply_outstanding)
         {
             reply_ent = (globus_l_gsc_reply_ent_t *)
                 globus_malloc(sizeof(globus_l_gsc_reply_ent_t));
-            reply_ent->msg = globus_libc_strdup(reply_msg);
+            reply_ent->msg = msg;
             reply_ent->op = op;
             reply_ent->final = GLOBUS_TRUE;
 
@@ -2685,7 +2697,7 @@ globus_gsc_959_finished_command(
         }
         else
         {
-            globus_l_gsc_finished_op(op, reply_msg);
+            globus_l_gsc_finished_op(op, msg);
         }
     }
     globus_mutex_unlock(&server_handle->mutex);
