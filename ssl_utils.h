@@ -7,6 +7,7 @@
 #define _SSL_UTILS_H
 
 #include "sslutil.h"
+#include <time.h>
 
 struct _ssl_credentials;
 typedef struct _ssl_credentials SSL_CREDENTIALS;
@@ -299,6 +300,12 @@ int ssl_verify(unsigned char *data, int length, SSL_CREDENTIALS *creds,
  * Returns SSL_SUCCESS or SSL_ERROR
  */
 int ssl_verify_gsi_chain(SSL_CREDENTIALS *chain, X509 **peer);
- 
+
+
+/*
+ * ssl_get_times
+ *
+ */
+int ssl_get_times(const char *proxyfile, time_t *not_before, time_t *not_after);
 
 #endif /* _SSL_UTILS_H */

@@ -9,6 +9,25 @@ AC_ARG_WITH(myproxy-server-path,
 AC_MSG_RESULT($MYPROXY_SERVER_DIR)
 AC_SUBST(MYPROXY_SERVER_DIR)
 
+
+AC_MSG_CHECKING(for myproxy-server config directory)
+MYPROXY_SERVER_ETC_DIR=${MYPROXY_SERVER_DIR}/etc
+AC_ARG_WITH(myproxy-server-etc-path,
+	[  --with-myproxy-server-etc-path=PATH  Specify myproxy-server config prefix],
+	MYPROXY_SERVER_ETC_DIR=$withval)
+AC_MSG_RESULT($MYPROXY_SERVER_ETC_DIR);
+AC_SUBST(MYPROXY_SERVER_ETC_DIR)
+
+
+AC_MSG_CHECKING(for myproxy-server storage directory)
+MYPROXY_SERVER_STORE_DIR=${MYPROXY_SERVER_DIR}/store
+AC_ARG_WITH(myproxy-server-store-path,
+	[  --with-myproxy-server-store-path=PATH  Specify myproxy-server storage directory],
+	MYPROXY_SERVER_STORE_DIR=$withval)
+AC_MSG_RESULT($MYPROXY_SERVER_STORE_DIR)
+AC_SUBST(MYPROXY_SERVER_STORE_DIR)
+
+
 AC_MSG_CHECKING(for myproxy tools install prefix)
 dnl The default:
 MYPROXY_TOOLS_DIR="\$(prefix)"
