@@ -43,16 +43,12 @@ myproxy-server: $(SERVER_OBJS)
 		-o $@ $^ $(GLOBUS_GSSAPI_LIBS)
 
 myproxy.o: myproxy.c myproxy.h
-	$(CC) $(GSI_SOCKET_CFLAGS) -c $<
 
 myproxy_creds.o: myproxy_creds.c myproxy_creds.h
-	$(CC) -c $<
 
 gnu_getopt.o: gnu_getopt.c
-	$(CC) -c $<
 
 gnu_getopt_long.o: gnu_getopt_long.c
-	$(CC) -c $<
 
 clean:
 	rm -f *.o *~
