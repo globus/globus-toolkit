@@ -739,6 +739,12 @@ globus_result_t globus_gsi_cred_read(
             key = NULL;
         }
             
+        if(service_name)
+        {
+            free(service_name);
+            service_name = NULL;
+        }
+            
         result_index++;
     } while(++index);
     
