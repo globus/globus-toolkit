@@ -4,24 +4,7 @@
  * See gsi_socket.h for documentation.
  */
 
-#include "gsi_socket.h"
-#include "ssl_utils.h"
-#include "verror.h"
-#include "string_funcs.h"
-#include "myproxy_log.h"
-
-#include <string.h>
-#include <assert.h>
-#include <stdlib.h>
-#include <netinet/in.h>
-#include <sys/socket.h>
-#include <errno.h>
-#include <netdb.h>
-#include <unistd.h>
-#include <ctype.h>
-
-#include <gssapi.h>
-#include <globus_gss_assist.h>
+#include "myproxy_common.h"
 
 struct _gsi_socket 
 {
