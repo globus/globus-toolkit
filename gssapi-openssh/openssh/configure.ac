@@ -320,46 +320,6 @@ AC_ARG_WITH(libs,
 	]	
 )
 
-AC_ARG_WITH(pcre,
-	[  --with-pcre[[=PATH]]      Override built in regex library with pcre
-                            (optionally in PATH)],
-	[
-		case "$withval" in
-		no) ;;
-		*)
-			if test "x$withval" != "xyes"; then
-				if test -d "$withval/lib"; then
-					if test -n "${need_dash_r}"; then
-						LDFLAGS="-L${withval}/lib -R${withval}/lib ${LDFLAGS}"
-					else
-						LDFLAGS="-L${withval}/lib ${LDFLAGS}"
-					fi
-				else
-					if test -n "${need_dash_r}"; then
-						LDFLAGS="-L${withval} -R${withval} ${LDFLAGS}"
-					else
-						LDFLAGS="-L${withval} ${LDFLAGS}"
-					fi
-				fi
-				if test -d "$withval/include"; then
-					CPPFLAGS="-I${withval}/include ${CPPFLAGS}"
-				else
-					CPPFLAGS="-I${withval} ${CPPFLAGS}"
-				fi
-			fi
-
-			AC_CHECK_HEADER(pcreposix.h,
-				AC_CHECK_LIB(pcre, pcre_info,[
-					AC_DEFINE(HAVE_LIBPCRE)
-					LIBS="$LIBS -lpcreposix -lpcre"
-					no_comp_check=yes],
-					AC_MSG_ERROR([*** unable to locate pcre library ***])),
-				AC_MSG_ERROR([*** unable to locate pcreposix.h include file ***]))
-			;;
-		esac
-	]	
-)
-
 # Checks for header files.
 AC_CHECK_HEADERS(bstring.h crypt.h endian.h floatingpoint.h \
 	getopt.h glob.h lastlog.h limits.h login.h \
