@@ -144,9 +144,6 @@ then
   fi
 fi
 
-AC_ARG_ENABLE(globus-data,[  --disable-globus-data    don't use globus data code],
-	[ globus_data=$enableval ], [ globus_data=no ])
-
 AC_ARG_ENABLE(new-cd,    [  --disable-new-cd        new-cd causes \"cd ~\" to return to chroot-relative dir],
 	[ newcd=$enableval ], [ newcd=yes ])
 AC_ARG_ENABLE(chmod,	 [  --enable-chmod          allow ftp users to set SETUID/SETGID/STICKY bits],
@@ -207,12 +204,16 @@ AC_ARG_WITH(backlog,	 [  --with-backlog=x        number of incoming processes to
 	[ backlog=$withval ], [ backlog=100 ])
 
 LIBS=""
+INCLUDE_GLOBUS_MAKEFILE_HEADER=""
 
 dnl Macro from aclocal.m4
 GSSAPI_CONFIG   
+
 AC_SUBST(GSSAPI_LIBS)
 AC_SUBST(GSSAPI_LDFLAGS)
 AC_SUBST(GSSAPI_CFLAGS)
+
+GLOBUS_DATA_CONFIG
 
 if test "$gssapi_type" != "none"; then
 	AC_DEFINE(FTP_SECURITY_EXTENSIONS)
@@ -913,10 +914,6 @@ if test $ac_cv_header_opie_h = no; then
     AC_MSG_WARN(You don\'t have OPIE libraries, or you\'re using an incompatible implementation. OPIE support disabled.)
     opie=no
   fi
-fi
-
-if test $globus_data = yes; then
-	AC_DEFINE(USE_GLOBUS_DATA_CODE)
 fi
 
 if test $opie = yes; then

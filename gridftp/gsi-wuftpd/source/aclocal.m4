@@ -70,96 +70,51 @@ if test "$gssapi_type" != "none" ; then
 fi
 
 if test "$gssapi_type" = "globus" ; then
-
 	# Globus GSSAPI configuration
 	AC_DEFINE(GSSAPI_GLOBUS)
 
 	# Find GLOBUS/GSI installation Directory
-	AC_MSG_CHECKING(for Globus/GSI installation directory)
+	CHECK_GLOBUS_DEVELOPMENT_PATH(true)
 
-	globus_install_dir=$gssapi_dir
+        if test "$globus_install_dir" != "$globus_dev_dir"; then
+            GSSAPI_LIBS='$(INSTALL_LIBDIR) $(GLOBUS_GSSAPI_LIBS)'
+            GSSAPI_LDFLAGS='$(GLOBUS_GSSAPI_LDFLAGS)'
+            GSSAPI_CFLAGS='$(INSTALL_INCLUDE) $(GLOBUS_GSSAPI_CFLAGS)'
+        else
+            GSSAPI_LIBS="-lglobus_gss_assist -lglobus_gss -lglobus_gaa"
+            GSSAPI_LDFLAGS="-L${globus_dev_dir}/lib"
+            GSSAPI_CFLAGS="-I${globus_dev_dir}/include"
 
-	if test "$globus_install_dir" = "none" ; then
-		if test -n "$GLOBUS_INSTALL_PATH" ; then
-			globus_install_dir=$GLOBUS_INSTALL_PATH
-		elif test -d /usr/local/globus ; then
-			globus_install_dir="/usr/local/globus"
-		elif test -d /usr/local/gsi ; then
-			globus_install_dir="/usr/local/gsi"
-		else
-			AC_MSG_ERROR(Cannot find Globus/GSI installation directory)
-		fi	
-	fi
-	AC_MSG_RESULT($globus_install_dir)
+            dnl Find SSLeay installation directory
+            GSSAPI_LIBS="$GSSAPI_LIBS -lssl"
 
-	# Find GLOBUS/GSI development directory
-	AC_MSG_CHECKING(for Globus/GSI development directory)
+            dnl Find SSLeay installation directory
+            GSSAPI_LIBS="$GSSAPI_LIBS -lssl"
 
-	if test -d ${globus_install_dir}/lib ; then
-		# Looks like a flat directory structure from configure/make and not
-		# globus-install or gsi-install
-		globus_dev_dir=$globus_install_dir
-
-	else
-		# Assume a true globus installation with architecture
-		# directories and run globus-development-path to find
-		# the development directory
-
-		# Make sure GLOBUS_INSTALL_PATH is set
-		if test -z "$GLOBUS_INSTALL_PATH" ; then
-			GLOBUS_INSTALL_PATH=$globus_install_dir
-			export GLOBUS_INSTALL_PATH
-		fi
-
-		dev_path_program=${globus_install_dir}/bin/globus-development-path
-
-		if test ! -x ${dev_path_program} ; then
-			AC_MSG_ERROR(Cannot find Globus/GSI installation directory: program ${dev_path_program} does not exist or is not executable)
-		fi
-
-		globus_dev_dir=`${dev_path_program}`
-
-		if test -z "$globus_dev_dir" -o "X$globus_dev_dir" = "X<not found>" ; then
-				AC_MSG_ERROR(Cannot find Globus/GSI development directory)
-		fi
-
-		if test ! -d "$globus_dev_dir" ; then
-			AC_MSG_ERROR(Cannot find Globus/GSI development directory: $globus_dev_dir does not exist)
-		fi
-	fi
-	AC_MSG_RESULT($globus_dev_dir)
-
-	GSSAPI_LIBS="-lglobus_gss_assist -lglobus_gss -lglobus_gaa"
-	GSSAPI_LDFLAGS="-L${globus_dev_dir}/lib"
-	GSSAPI_CFLAGS="-I${globus_dev_dir}/include"
-
-	dnl Find SSLeay installation directory
-	GSSAPI_LIBS="$GSSAPI_LIBS -lssl"
-
-	dnl XXX Should be able to figure this out from Globus/GSI install dir
-  AC_MSG_CHECKING(for ssleay directory)
-  AC_ARG_WITH(ssl-dir,
-     [  --with-ssl-dir=<DIR>  Root directory for ssleay stuff],
-     ssleay_dir=$withval,
-     ssleay_dir="/usr/local/ssl"
-  )
-	if test ! -d ${ssleay_dir} ; then
+            dnl XXX Should be able to figure this out from Globus/GSI install dir
+            AC_MSG_CHECKING(for ssleay directory)
+            AC_ARG_WITH(ssl-dir,
+                    [  --with-ssl-dir=<DIR>  Root directory for ssleay stuff],
+                    ssleay_dir=$withval,
+                    ssleay_dir="/usr/local/ssl")
+	    if test ! -d ${ssleay_dir} ; then
 		AC_MSG_ERROR(Cannot find SSLeay installation directory)
-	fi
-  AC_MSG_RESULT($ssleay_dir)
+	    fi
 
-  if test "$ssleay_dir" != "none" ; then
-    GSSAPI_LDFLAGS="-L${ssleay_dir}/lib $GSSAPI_LDFLAGS"
-    GSSAPI_CFLAGS="-I${ssleay_dir}/include $GSSAPI_CFLAGS"
+            AC_MSG_RESULT($ssleay_dir)
+
+            if test "$ssleay_dir" != "none" ; then
+                GSSAPI_LDFLAGS="-L${ssleay_dir}/lib $GSSAPI_LDFLAGS"
+                GSSAPI_CFLAGS="-I${ssleay_dir}/include $GSSAPI_CFLAGS"
 		# Specify full path to ssleay's libcrypto so we don't conflict
 		# with Keberos libcrypto.a
 		GSSAPI_LIBS="$GSSAPI_LIBS ${ssleay_dir}/lib/libcrypto.a"
-	else
+	    else
 		GSSAPI_LIBS="$GSSAPI_LIBS -lcrypto}"
-  fi
+            fi
+        fi
 
-  # End Globus/GSI section
-
+       # End Globus/GSI section
 elif test "$gssapi_type" = "krb5" ; then
 
 	# Kerberos 5 GSSAPI configuration
@@ -206,6 +161,7 @@ fi
 AC_SUBST(GSSAPI_LIBS)
 AC_SUBST(GSSAPI_LDFLAGS)
 AC_SUBST(GSSAPI_CFLAGS)
+AC_SUBST(INCLUDE_GLOBUS_MAKEFILE_HEADER)
 
 if test "$gssapi_type" != "none" ; then
   dnl Check for the existance of specific GSSAPI routines.
@@ -342,3 +298,91 @@ AC_DEFUN(CHECK_SETJMP,[
   ]
  )
 ])dnl CHECK_SETJMP
+
+dnl CHECK_GLOBUS_DEVELOPMENT_PATH([true|false])
+dnl if $1 is true, then an installation which did not do
+dnl globus-install is ok. Otherwise, fail in that case.
+AC_DEFUN(CHECK_GLOBUS_DEVELOPMENT_PATH,[dnl
+
+    AC_MSG_CHECKING(for Globus/GSI installation directory)
+
+    globus_install_dir=$gssapi_dir
+
+    if test x"$globus_install_dir" = x"none" -o x"$globus_install_dir" = x""; then
+	if test -n "$GLOBUS_INSTALL_PATH" ; then
+		globus_install_dir=$GLOBUS_INSTALL_PATH
+	elif test -d /usr/local/globus ; then
+		globus_install_dir="/usr/local/globus"
+	elif test -d /usr/local/gsi ; then
+		globus_install_dir="/usr/local/gsi"
+	else
+		AC_MSG_ERROR(Cannot find Globus/GSI installation directory)
+	fi	
+    fi
+    AC_MSG_RESULT($globus_install_dir)
+
+    dnl Find GLOBUS/GSI development directory
+    AC_MSG_CHECKING(for Globus/GSI development directory)
+
+    if test -d ${globus_install_dir}/lib ; then
+        # Looks like a flat directory structure from configure/make and not
+        # globus-install or gsi-install
+	if test x"$1" = x"true"; then
+	    globus_dev_dir=$globus_install_dir
+	else
+	    AC_MSG_ERROR(Globus/GSI not properly installed. Use globus-install or gsi-install)
+	fi
+    else
+	# Assume a true globus installation with architecture
+	# directories and run globus-development-path to find
+	# the development directory
+
+	# Make sure GLOBUS_INSTALL_PATH is set
+	if test -z "$GLOBUS_INSTALL_PATH" ; then
+		GLOBUS_INSTALL_PATH=$globus_install_dir
+		export GLOBUS_INSTALL_PATH
+	fi
+
+	dev_path_program=${globus_install_dir}/bin/globus-development-path
+
+	if test ! -x ${dev_path_program} ; then
+		AC_MSG_ERROR(Cannot find Globus/GSI installation directory: program ${dev_path_program} does not exist or is not executable)
+	fi
+
+	globus_dev_dir=`${dev_path_program}`
+	if test -z "$globus_dev_dir" -o "X$globus_dev_dir" = "X<not found>" ; then
+			AC_MSG_ERROR(Cannot find Globus/GSI development directory)
+	fi
+
+	if test ! -d "$globus_dev_dir" ; then
+		AC_MSG_ERROR(Cannot find Globus/GSI development directory: $globus_dev_dir does not exist)
+	fi
+    fi
+    AC_MSG_RESULT($globus_dev_dir)
+
+    if test "$globus_install_dir" != "$globus_dev_dir"; then
+        INCLUDE_GLOBUS_MAKEFILE_HEADER="include $globus_dev_dir/etc/makefile_header"
+    fi
+
+])dnl CHECK_GLOBUS_DEVELOPMENT_PATH
+
+AC_DEFUN(GLOBUS_DATA_CONFIG,[
+AC_ARG_ENABLE(globus-data, [  --enable-globus-data    use globus data code],
+	[ globus_data=$enableval ], [ globus_data=no ])
+
+GLOBUS_DATA_CFLAGS=""
+GLOBUS_DATA_LDFLAGS=""
+GLOBUS_DATA_LIBS=""
+
+if test $globus_data = yes; then
+	AC_DEFINE(USE_GLOBUS_DATA_CODE)
+	CHECK_GLOBUS_DEVELOPMENT_PATH(false)
+	GLOBUS_DATA_CFLAGS='$(INSTALL_INCLUDE) $(GLOBUS_FTP_CONTROL_CFLAGS)'
+	GLOBUS_DATA_LDFLAGS='$(GLOBUS_FTP_CONTROL_LDFLAGS)'
+	GLOBUS_DATA_LIBS='$(INSTALL_LIBDIR) $(GLOBUS_FTP_CONTROL_LIBS)'
+fi
+
+AC_SUBST(GLOBUS_DATA_CFLAGS)
+AC_SUBST(GLOBUS_DATA_LDFLAGS)
+AC_SUBST(GLOBUS_DATA_LIBS)
+])

@@ -32,30 +32,31 @@ VPATH = @srcdir@
 #
 
 CC=@CC@
+
+@INCLUDE_GLOBUS_MAKEFILE_HEADER@
  
+GLOBUS_DATA_CFLAGS=@GLOBUS_DATA_CFLAGS@
+GLOBUS_DATA_LDFLAGS=@GLOBUS_DATA_LDFLAGS@
+GLOBUS_DATA_LIBS=@GLOBUS_DATA_LIBS@
 #WNOERROR=-Werror
 #WARNINGS=$(WNOERROR) -Wall -Wpointer-arith -Wcast-align -Wstrict-prototypes -Wmissing-prototypes 
 
-GLOBUS_CONTROL_FTP_DATA_CFLAGS=@GLOBUS_CONTROL_FTP_DATA_CFLAGS@
-GLOBUS_CONTROL_FTP_DATA_LDFLAGS=@GLOBUS_CONTROL_FTP_DATA_LDFLAGS@
-GLOBUS_CONTROL_FTP_DATA_LIBS=@GLOBUS_CONTROL_FTP_DATA_LIBS@
-
 CFLAGS=$(WARNINGS)                          \
        @CFLAGS@                             \
-       $(GLOBUS_CONTROL_FTP_DATA_CFLAGS)    \
        @GSSAPI_CFLAGS@                      \
-       @AFS_CFLAGS@
+       @AFS_CFLAGS@                         \
+       $(GLOBUS_DATA_CFLAGS)
 LDFLAGS=@LDFLAGS@                           \
-        $(GLOBUS_CONTROL_FTP_DATA_LDFLAGS)  \
         @GSSAPI_LDFLAGS@                    \
-        @AFS_LDFLAGS@
+        @AFS_LDFLAGS@                       \
+        $(GLOBUS_DATA_LDFLAGS)
 YACC=@YACC@
 LIBS=@LIBS@                                 \
-     $(GLOBUS_CONTROL_FTP_DATA_LIBS)        \
      @GSSAPI_LDFLAGS@                       \
      @GSSAPI_LIBS@                          \
      @AFS_LDFLAGS@                          \
-     @AFS_LIBS@
+     @AFS_LIBS@                             \
+     $(GLOBUS_DATA_LIBS)
 
 UTIL_SRC  = COPYRIGHT.c vers.c
 UTIL_OBJS = COPYRIGHT.o vers.o
