@@ -29,6 +29,7 @@ CVS Information:
 #include <sys/param.h>
 #include <sys/time.h>
 #include <globus_nexus.h>
+#include <globus_io.h>
 #include "globus_i_gram_version.h"
 #include "globus_gram_client.h"
 #include "grami_fprintf.h"
@@ -168,8 +169,8 @@ globus_l_start_time_callback_handler(globus_nexus_endpoint_t * endpoint,
 static int 
 globus_l_gram_client_authenticate(char * gatekeeper_url,
                                   int gss_flags,
-                                  int * gatekeeper_fd,
-								  gss_ctx_id_t * pcontext_handle);
+                                  globus_io_handle_t * gatekeeper_handle,
+				  gss_ctx_id_t * pcontext_handle);
 
 /******************************************************************************
                        Define module specific variables
@@ -392,16 +393,18 @@ Parameters:
 Returns:
 ******************************************************************************/
 static int 
-globus_l_gram_client_authenticate(char * gatekeeper_url,
-                                  int gss_flags,
-                                  int * gatekeeper_fd,
-								  gss_ctx_id_t * pcontext_handle)
+globus_l_gram_client_authenticate(
+    char *                           gatekeeper_url,
+    int                              gss_flags,
+    globus_io_handle_t *             gatekeeper_handle,
+    gss_ctx_id_t *                   pcontext_handle)
 {
+    globus_io_attr_t             tcp_attr;
     int                          rc;
     int                          tmp_version;
     char *                       gatekeeper_host;
     char *                       gatekeeper_princ;
-	char * 						 gatekeeper_service = "jobmanager";
+    char * 			 gatekeeper_service = "jobmanager";
     unsigned short               gatekeeper_port = 0;
     char *                       auth_msg_buf;
     size_t                       auth_msg_buf_size;
@@ -453,14 +456,22 @@ globus_l_gram_client_authenticate(char * gatekeeper_url,
     grami_fprintf(globus_l_print_fp, "Connecting to %s:%d/%s:%s\n",
 		  gatekeeper_host, gatekeeper_port, 
 		  gatekeeper_service, gatekeeper_princ);
-
+/*
     rc = globus_nexus_fd_connect(gatekeeper_host,
 				 gatekeeper_port,
 				 gatekeeper_fd);
-    if (rc != 0)
+    if (rc != 0
+*/
+    globus_io_tcpattr_init(&tcp_attr);
+    if(
+       globus_io_tcp_connect(
+            gatekeeper_host,
+	    gatekeeper_port,
+	    &tcp_attr,
+	    gatekeeper_handle) != GLOBUS_SUCCESS)
     {
         grami_fprintf(globus_l_print_fp,
-              " globus_nexus_fd_connect failed.  rc = %d\n", rc);
+              " globus_io_tcp_connect failed.\n");
 		free(gatekeeper_host);
 	GLOBUS_L_UNLOCK;
         return (GLOBUS_GRAM_CLIENT_ERROR_CONNECTION_FAILED);
@@ -489,9 +500,9 @@ globus_l_gram_client_authenticate(char * gatekeeper_url,
                     &ret_flags,
                     &token_status,
                     globus_gss_assist_token_get_nexus,
-                    (void *) gatekeeper_fd,
+                    (void *) (gatekeeper_handle),
                     globus_gss_assist_token_send_nexus,
-                    (void *) gatekeeper_fd);
+                    (void *) (gatekeeper_handle));
 
     if (major_status != GSS_S_COMPLETE)
     {
@@ -504,7 +515,7 @@ globus_l_gram_client_authenticate(char * gatekeeper_url,
 		gss_delete_sec_context(&minor_status,
 							   pcontext_handle,
 							   GSS_C_NO_BUFFER);
-        globus_nexus_fd_close(*gatekeeper_fd);
+        globus_io_close(gatekeeper_handle);
 		free(gatekeeper_host);
         GLOBUS_L_UNLOCK;
         return (GLOBUS_GRAM_CLIENT_ERROR_AUTHORIZATION);
@@ -525,7 +536,7 @@ globus_l_gram_client_authenticate(char * gatekeeper_url,
 				&auth_msg_buf_size,
 				&token_status,
 				globus_gss_assist_token_get_nexus,
-				(void *)gatekeeper_fd,
+				(void *)(gatekeeper_handle),
 				globus_l_print_fp) != GSS_S_COMPLETE)
     {
         grami_fprintf(globus_l_print_fp,
@@ -545,7 +556,7 @@ globus_l_gram_client_authenticate(char * gatekeeper_url,
 		gss_delete_sec_context(&minor_status,
 						   pcontext_handle,
 						   GSS_C_NO_BUFFER);
-		globus_nexus_fd_close(*gatekeeper_fd);
+		globus_io_close(gatekeeper_handle);
 		free(gatekeeper_host);
 		GLOBUS_L_UNLOCK;
 
@@ -583,7 +594,7 @@ globus_l_gram_client_authenticate(char * gatekeeper_url,
 					strlen(gatekeeper_service)+1,
 					&token_status,
 					globus_gss_assist_token_send_nexus,
-                    (void *) gatekeeper_fd,
+                                       (void *) (gatekeeper_handle),
 					globus_l_print_fp) != GSS_S_COMPLETE)
     {
 		grami_fprintf(globus_l_print_fp,
@@ -591,7 +602,7 @@ globus_l_gram_client_authenticate(char * gatekeeper_url,
 		gss_delete_sec_context(&minor_status,
 							   pcontext_handle,
 							   GSS_C_NO_BUFFER);
-		globus_nexus_fd_close(*gatekeeper_fd);
+		globus_io_close(gatekeeper_handle);
 		free(gatekeeper_host);
 		GLOBUS_L_UNLOCK;
 		return (GLOBUS_GRAM_CLIENT_ERROR_AUTHORIZATION);
@@ -609,7 +620,7 @@ globus_l_gram_client_authenticate(char * gatekeeper_url,
 				&auth_msg_buf_size,
 				&token_status,
 				globus_gss_assist_token_get_nexus,
-				(void *)gatekeeper_fd,
+				(void *)(gatekeeper_handle),
 				globus_l_print_fp) != GSS_S_COMPLETE)
     {
         grami_fprintf(globus_l_print_fp,
@@ -629,7 +640,7 @@ globus_l_gram_client_authenticate(char * gatekeeper_url,
 		gss_delete_sec_context(&minor_status,
 							   pcontext_handle,
 							   GSS_C_NO_BUFFER);
-		globus_nexus_fd_close(*gatekeeper_fd);
+		globus_io_close(gatekeeper_handle);
 		free(gatekeeper_host);
 		GLOBUS_L_UNLOCK;
 		return (GLOBUS_GRAM_CLIENT_ERROR_AUTHORIZATION);
@@ -678,27 +689,29 @@ Returns:
 int 
 globus_gram_client_ping(char * gatekeeper_url)
 {
-    int rc;
-    int gatekeeper_fd;
+    int                  rc;
+    globus_io_handle_t   gatekeeper_handle;
+
+
 	gss_ctx_id_t  context_handle = GSS_C_NO_CONTEXT;
 	OM_uint32     minor_status = 0;
 
     if ((rc = globus_l_gram_client_authenticate(gatekeeper_url,
 #ifdef GSS_C_GLOBUS_LIMITED_PROXY_FLAG
-									GSS_C_GLOBUS_LIMITED_PROXY_FLAG |
+			            GSS_C_GLOBUS_LIMITED_PROXY_FLAG |
 #endif
                                     GSS_C_MUTUAL_FLAG,
-                                    &gatekeeper_fd,
-									&context_handle)) != 0)
+                                    &gatekeeper_handle,
+                                    &context_handle)) != 0)
     {
         if (rc != GLOBUS_GRAM_CLIENT_ERROR_VERSION_MISMATCH)
             return(rc);
     }
 	
 	gss_delete_sec_context(&minor_status,
-						   &context_handle,
-						   GSS_C_NO_BUFFER);
-    globus_nexus_fd_close(gatekeeper_fd);
+			       &context_handle,
+			       GSS_C_NO_BUFFER);
+    globus_io_close(&gatekeeper_handle);
 
     return(0);
 
@@ -722,7 +735,7 @@ globus_gram_client_job_request(char * gatekeeper_url,
     int                             contact_msg_size;
     int                             count;
     int                             rc;
-    int                             gatekeeper_fd;
+    globus_io_handle_t              gatekeeper_handle;
     globus_byte_t                   type;
     globus_byte_t *                 contact_msg_buffer;
     globus_byte_t *                 tmp_buffer;
@@ -757,14 +770,15 @@ globus_gram_client_job_request(char * gatekeeper_url,
     * We also only want to authenticate to real gatekeepers
     * not to limited proxy gatekeepers too. 
     */
-    if ((rc = globus_l_gram_client_authenticate(gatekeeper_url,
+    if ((rc = globus_l_gram_client_authenticate(
+		  gatekeeper_url,
 #ifdef GSS_C_GLOBUS_LIMITED_PROXY_FLAG
-       GSS_C_GLOBUS_LIMITED_PROXY_FLAG |
-       GSS_C_GLOBUS_LIMITED_DELEG_PROXY_FLAG |
+                  GSS_C_GLOBUS_LIMITED_PROXY_FLAG |
+                  GSS_C_GLOBUS_LIMITED_DELEG_PROXY_FLAG |
 #endif
-       GSS_C_DELEG_FLAG|GSS_C_MUTUAL_FLAG,
-       &gatekeeper_fd,
-	   &context_handle)) != 0)
+                  GSS_C_DELEG_FLAG|GSS_C_MUTUAL_FLAG,
+                  &gatekeeper_handle,
+	          &context_handle)) != 0)
     {
         return(rc);
     }
@@ -843,13 +857,13 @@ globus_gram_client_job_request(char * gatekeeper_url,
 					size,
 					&token_status,
 					globus_gss_assist_token_send_nexus,
-                    (void *)  &gatekeeper_fd,
+                                        (void *)  &gatekeeper_handle,
 					globus_l_print_fp) != GSS_S_COMPLETE)
     {
 		gss_delete_sec_context(&minor_status,
 							   &context_handle,
 							   GSS_C_NO_BUFFER);
-        globus_nexus_fd_close(gatekeeper_fd);
+        globus_io_close(&gatekeeper_handle);
         GLOBUS_L_UNLOCK;
         return (GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED);
     }
@@ -877,7 +891,7 @@ globus_gram_client_job_request(char * gatekeeper_url,
 	gss_delete_sec_context(&minor_status,
 						   &context_handle,
 						   GSS_C_NO_BUFFER);
-    globus_nexus_fd_close(gatekeeper_fd);
+    globus_io_close(&gatekeeper_handle);
     GLOBUS_L_UNLOCK;
     return(job_request_monitor.job_status);
 
