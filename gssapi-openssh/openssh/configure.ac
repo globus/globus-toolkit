@@ -477,6 +477,41 @@ int main(void){struct dirent d;return(sizeof(d.d_name)<=sizeof(char));}
 	]
 )
 
+# Check whether the user wants GSSAPI mechglue support
+AC_ARG_WITH(mechglue,
+	[  --with-mechglue=PATH    Enable GSI/Globus authentication support],
+	[
+		AC_MSG_CHECKING(for mechglue library)
+		mechglue_path=${withval}
+		CPPFLAGS="$CPPFLAGS -I${mechglue_path}"
+		LDFLAGS="$LDFLAGS -L${mechglue_path}"
+		if test ! -z "$need_dash_r" ; then
+		    LDFLAGS="$LDFLAGS -R${KRB5ROOT}"
+		fi
+		AC_CHECK_LIB(dl, dlopen, , )
+		if test $ac_cv_lib_dl_dlopen = yes; then
+		   LDFLAGS="$LDFLAGS -ldl"
+		fi
+		if test ! -z "$blibpath" ; then
+		    blibpath="$blibpath:${KRB5ROOT}"
+		fi
+		AC_DEFINE(GSSAPI)
+		AC_DEFINE(MECHGLUE)
+		LIBS="$LIBS -lgssapi"
+		GSSAPI="mechglue"
+
+		AC_CHECK_LIB(gssapi,gss_init_sec_context)
+		if test "$ac_cv_lib_gssapi_gss_init_sec_context" != yes; then
+		    AC_MSG_ERROR("Can't find libgssapi")
+		fi
+		AC_CHECK_HEADER(gssapi.h)
+		if test "$ac_cv_header_gssapi_h" != yes; then
+		    AC_MSG_ERROR(Can't find gssapi.h)
+		fi
+	]
+)
+
+
 # Check whether the user wants GSI (Globus) support
 gsi_path="no"
 AC_ARG_WITH(gsi,
@@ -504,8 +539,15 @@ AC_ARG_WITH(globus-flavor,
 
 if test "x$gsi_path" != "xno" ; then
 	# Globus GSSAPI configuration
-	AC_DEFINE(GSSAPI)
 	AC_DEFINE(GSI)
+
+	if test "$GSSAPI" -a "$GSSAPI" != "mechglue"; then
+		AC_MSG_ERROR([Previously configured GSSAPI library conflicts with Globus/GSI.])
+	fi
+	if test -z "$GSSAPI"; then
+		AC_DEFINE(GSSAPI)
+		GSSAPI="GSI"
+	fi
 
 	# Find GLOBUS/GSI installation Directory
 	AC_MSG_CHECKING(for Globus/GSI installation directory)
@@ -556,9 +598,13 @@ if test "x$gsi_path" != "xno" ; then
 	AC_MSG_CHECKING(for Globus flavor type)
 
         if test "x$globus_flavor_type" = "xno" ; then
-		GSI_LIBS="-lglobus_gss_assist -lglobus_gss -lglobus_gaa"
+		if test "$GSSAPI" = "mechglue"; then
+			GSI_LIBS="-lglobus_gss_assist -lglobus_gaa"
+		else
+			GSI_LIBS="-lglobus_gss_assist -lglobus_gss -lglobus_gaa"
+		fi
 		GSI_LDFLAGS="-L${globus_dev_dir}/lib"
-		GSI_CFLAGS="-I${globus_dev_dir}/include"
+		GSI_CPPFLAGS="-I${globus_dev_dir}/include"
 		AC_MSG_RESULT(none)
 	else
                 GLOBUS_FLAVOR_TYPE_INCL_DIR="${globus_dev_dir}/include/${globus_flavor_type}"
@@ -568,13 +614,17 @@ if test "x$gsi_path" != "xno" ; then
                 fi
 
 		AC_MSG_RESULT($globus_flavor_type)
-		GSI_LIBS="${gsi_path}/lib/libglobus_gss_assist_${globus_flavor_type}.a ${gsi_path}/lib/libglobus_gssapi_gsi_${globus_flavor_type}.a"
-		GSI_CFLAGS="-I${GLOBUS_FLAVOR_TYPE_INCL_DIR}"
+		if test "$GSSAPI" = "mechglue"; then
+			GSI_LIBS="${gsi_path}/lib/libglobus_gss_assist_${globus_flavor_type}.a"
+		else
+			GSI_LIBS="${gsi_path}/lib/libglobus_gss_assist_${globus_flavor_type}.a ${gsi_path}/lib/libglobus_gssapi_gsi_${globus_flavor_type}.a"
+		fi
+		GSI_CPPFLAGS="-I${GLOBUS_FLAVOR_TYPE_INCL_DIR}"
 	fi
 
 	LIBS="$LIBS $GSI_LIBS"
 	LDFLAGS="$LDFLAGS $GSI_LDFLAGS"
-	CFLAGS="$CFLAGS $GSI_CFLAGS"
+	CPPFLAGS="$CPPFLAGS $GSI_CPPFLAGS"
 	INSTALL_GSISSH="yes"
 else
 	INSTALL_GSISSH=""
@@ -1848,6 +1898,10 @@ AC_ARG_WITH(kerberos5,
                         fi
                         AC_CHECK_LIB(resolv, dn_expand, , )
 
+			# If we're using some other GSSAPI
+			if test "$GSSAPI" -a "$GSSAPI" != "mechglue"; then
+				AC_MSG_ERROR([$GSSAPI GSSAPI library conflicts with Kerberos support.  Use mechglue instead.])
+			fi
 			AC_CHECK_LIB(gssapi,gss_init_sec_context,
 				[ AC_DEFINE(GSSAPI)
 				  K5LIBS="-lgssapi $K5LIBS" ],
@@ -1858,7 +1912,7 @@ AC_ARG_WITH(kerberos5,
 					$K5LIBS)
 				],
 				$K5LIBS)
-			
+		
 			AC_CHECK_HEADER(gssapi.h, ,
 				[ unset ac_cv_header_gssapi_h
 				  CPPFLAGS="$CPPFLAGS -I${KRB5ROOT}/include/gssapi" 
@@ -1868,10 +1922,22 @@ AC_ARG_WITH(kerberos5,
 				]
 			)
 
+			AC_CHECK_LIB(gssapi, gss_krb5_copy_ccache, ,
+				[ K5LIBS="-lgssapi_krb5 $K5LIBS"
+				  AC_CHECK_LIB(gssapi_krb5, gss_krb5_copy_ccache, ,
+					AC_MSG_WARN([Cannot find gss_krb5_copy_ccache -- build may fail]),
+					$K5LIBS)
+				],
+				$K5LIBS)
+
 			oldCPP="$CPPFLAGS"
 			CPPFLAGS="$CPPFLAGS -I${KRB5ROOT}/include/gssapi"
 			AC_CHECK_HEADER(gssapi_krb5.h, ,
 					[ CPPFLAGS="$oldCPP" ])
+
+			if test -z "$GSSAPI"; then
+				GSSAPI="KRB5";
+			fi
 
                         KRB5=yes
                 fi
