@@ -1853,7 +1853,7 @@ globus_xio_handle_cntl(
             if(driver == context->entry[ctr].driver)
             {
                 res = context->entry[ctr].driver->handle_cntl_func(
-                        &context->entry[ctr].driver_handle,
+                        context->entry[ctr].driver_handle,
                         cmd,
                         ap);
                 if(res != GLOBUS_SUCCESS)
