@@ -35,7 +35,7 @@
       setup-globus-job-manager-callout
     </Post_Install_Program>
 
-    <Setup Name="globus_gram_job_manager_callout_setup" >
+    <Setup Name="globus_gram_job_manager_setup_callout" >
       <Aging_Version Age="0" Major="1" Minor="0" />
     </Setup>
 
