@@ -23,6 +23,32 @@ AC_ARG_WITH(flavor,
 	]
 )
 
+AC_ARG_ENABLE(doxygen,
+changequote(<<, >>)dnl	
+<<--enable-doxygen[=PATH]	use Doxygen to generate documentation>>,
+changequote([, ])dnl
+[
+	if test "$enableval" = "yes"; then
+		AC_PATH_PROG(DOXYGEN,
+			doxygen,
+			[
+				AC_MSG_ERROR(Doxygen installation not found)
+			])
+	else
+		DOXYGEN="$enableval"
+		AC_SUBST(DOXYGEN)
+	fi
+	DOXYFILE="Doxyfile"
+	AC_SUBST(DOXYFILE) 
+],
+[
+	DOXYGEN=""
+	AC_SUBST(DOXYGEN)
+])
+
+
+
+
 AM_CONDITIONAL(WITHOUT_FLAVORS, test "$NO_FLAVOR" = "yes")
 AC_SUBST(GLOBUS_FLAVOR_NAME)
 
@@ -175,7 +201,6 @@ AC_DEFUN(LAC_DOXYGEN,dnl
     AC_SUBST(lac_doxygen_examples)
     AC_SUBST(lac_doxygen_predefines)
 ])
-
 
 
 
