@@ -567,6 +567,7 @@ globus_result_t globus_gsi_cred_read(
           
                 if(results[result_index] != GLOBUS_SUCCESS)
                 {
+                    service_name = NULL;
                     GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
                         results[result_index],
                         GLOBUS_GSI_CRED_ERROR_READING_SERVICE_CRED);
