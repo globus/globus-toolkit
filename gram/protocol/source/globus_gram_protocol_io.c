@@ -1802,12 +1802,6 @@ globus_l_gram_protocol_reply(
 
     /* lookup up connection using handle as key */
     globus_mutex_lock(&globus_i_gram_protocol_mutex);
-    if(globus_i_gram_protocol_shutdown_called)
-    {
-	rc = GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_REQUEST;
-
-	goto error_exit;
-    }
     list = globus_i_gram_protocol_connections;
     while(list != GLOBUS_NULL)
     {
