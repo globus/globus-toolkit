@@ -61,7 +61,7 @@
  */
 /**
  * @defgroup gsi_driver_errors Error Types
- * @ingroup gsi_driver_types
+ * @ingroup gsi_driver
  * 
  * The GSI driver uses mostly GSSAPI calls, so it generally just wraps the
  * underlying GSSAPI errors or uses generic xio errors.
@@ -107,8 +107,8 @@ typedef enum
      *      The credential to set. The credential structure
      *      needs to remain valid for the lifetime of any xio datastructure it
      *      is used by. 
-     * @note If this is called with the handle_cntl, there must be no outstanding
-     *       operations on the handle.
+     * @note If this is called with the handle_cntl, there must be no
+     *       outstanding operations on the handle.
      */
     /* gss_cred_id_t                    credential */
     GLOBUS_XIO_GSI_SET_CREDENTIAL,
@@ -211,14 +211,14 @@ typedef enum
      * @note Changing the ssl compatibility mode changes the req_flags and the
      * wrapping mode     
      */
-    /* globus_bool_t                    ssl_mode*/
+    /* globus_bool_t                    anon_mode*/
     GLOBUS_XIO_GSI_SET_ANON,
 
     /** GlobusVarArgEnum(attr)
      * Set the wrapping mode
      * @ingroup gsi_driver_cntls
      *
-     * Sets the wrapping mode. This mode determines whether tokens will be
+     * This mode determines whether tokens will be
      * wrapped with a Globus IO style header or not.
      * 
      * @param wrap_mode
@@ -231,7 +231,7 @@ typedef enum
      * Get the wrapping mode
      * @ingroup gsi_driver_cntls
      *
-     * Gets the current wrapping mode. This mode determines whether tokens will
+     * This mode determines whether tokens will
      * be wrapped with a Globus IO style header or not.
      * 
      * @param wrap_mode
@@ -244,7 +244,7 @@ typedef enum
      * Set the read buffer size
      * @ingroup gsi_driver_cntls
      *
-     * Sets the size of the read buffer. The read buffer is used for buffering
+     * The read buffer is used for buffering
      * wrapped data, is initialized with a default size of 128K and scaled
      * dynamically to always be able to fit whole tokens.
      * 
@@ -258,7 +258,7 @@ typedef enum
      * Get the read buffer size
      * @ingroup gsi_driver_cntls
      *
-     * Gets the size of the read buffer. The read buffer is used for buffering
+     * The read buffer is used for buffering
      * wrapped data, is initialized with a default size of 128K and scaled
      * dynamically to always be able to fit whole tokens.
      * 
@@ -441,7 +441,7 @@ typedef enum
      * Force the server mode setting.
      * @ingroup gsi_driver_cntls
      *
-     * This explicitly sets the directionality of the context establishment and
+     * This explicitly sets the directionality of context establishment and
      * delegation. 
      *
      * @param server_mode
