@@ -4871,6 +4871,19 @@ globus_gridftp_server_get_block_size(
     GlobusGFSDebugExit();
 }
 
+void
+globus_gridftp_server_get_process_uid(
+    globus_gfs_operation_t              op,
+    uid_t *                             uid)
+{
+    GlobusGFSName(globus_gridftp_server_get_process_uid);
+    GlobusGFSDebugEnter();
+
+    *uid = op->session_handle->uid;
+
+    GlobusGFSDebugExit();
+}
+
 
 /* this is used to translate the restart and partial offset/lengths into
     a sets of ranges to transfer... storage interface shouldn't know about
