@@ -602,36 +602,6 @@ globus_l_xio_tcp_attr_destroy(
 
 static
 globus_result_t
-globus_l_xio_tcp_apply_bind_attrs(
-    const globus_l_attr_t *             attr,
-    int                                 fd)
-{
-    globus_result_t                     result;
-    int                                 int_one = 1;
-    GlobusXIOName(globus_l_xio_tcp_apply_bind_attrs);
-    
-    if(attr->resuseaddr &&
-       setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &int_one, sizeof(int_one)) < 0)
-    {
-        result = GlobusXIOErrorSystemError("setsockopt", errno);
-        goto error_sockopt;
-    }
-    
-    /* all handles created by me are closed on exec */
-    if(fcntl(fd, F_SETFD, FD_CLOEXEC) < 0)
-    {
-        result = GlobusXIOErrorSystemError("fcntl", errno);
-        goto error_sockopt;
-    }
-    
-    return GLOBUS_SUCCESS;
-
-error_sockopt:
-    return result;
-}
-
-static
-globus_result_t
 globus_l_xio_tcp_apply_handle_attrs(
     const globus_l_attr_t *             attr,
     int                                 fd,
@@ -641,22 +611,20 @@ globus_l_xio_tcp_apply_handle_attrs(
     int                                 int_one = 1;
     GlobusXIOName(globus_l_xio_tcp_apply_handle_attrs);
     
+    /* all handles created by me are closed on exec */
+    if(fcntl(fd, F_SETFD, FD_CLOEXEC) < 0)
+    {
+        result = GlobusXIOErrorSystemError("fcntl", errno);
+        goto error_sockopt;
+    }
+        
     if(do_bind_attrs)
     {
-        result = globus_l_xio_tcp_apply_bind_attrs(attr, fd);
-        if(result != GLOBUS_SUCCESS)
+        if(attr->resuseaddr &&
+            setsockopt(
+                fd, SOL_SOCKET, SO_REUSEADDR, &int_one, sizeof(int_one)) < 0)
         {
-            result = GlobusXIOErrorWrapFailed(
-                "globus_l_xio_tcp_apply_bind_attrs", result);
-            goto error_bind_attrs;
-        }
-    }
-    else
-    {
-        /* all handles created by me are closed on exec */
-        if(fcntl(fd, F_SETFD, FD_CLOEXEC) < 0)
-        {
-            result = GlobusXIOErrorSystemError("fcntl", errno);
+            result = GlobusXIOErrorSystemError("setsockopt", errno);
             goto error_sockopt;
         }
     }
@@ -731,7 +699,6 @@ globus_l_xio_tcp_apply_handle_attrs(
     return GLOBUS_SUCCESS;
 
 error_sockopt:
-error_bind_attrs:
     return result;
 }
 
@@ -1057,11 +1024,12 @@ globus_l_xio_tcp_create_listener(
                 continue;
             }
             
-            result = globus_l_xio_tcp_apply_bind_attrs(attr, fd);
+            result = globus_l_xio_tcp_apply_handle_attrs(
+                attr, fd, GLOBUS_TRUE);
             if(result != GLOBUS_SUCCESS)
             {
                 result = GlobusXIOErrorWrapFailed(
-                    "globus_l_xio_tcp_apply_bind_attrs", result);
+                    "globus_l_xio_tcp_apply_handle_attrs", result);
                 GlobusIXIOTcpCloseFd(fd);
                 continue;
             }
@@ -1161,7 +1129,8 @@ globus_l_xio_tcp_server_init(
     }
     else
     {
-        /* use specified handle */ 
+        /* use specified handle */
+        /* XXX should i apply other attrs here? */
         server->listener_handle = attr->handle;
     }
     
@@ -1653,6 +1622,7 @@ globus_l_xio_tcp_connect(
     char *                              port;
     GlobusXIOName(globus_l_xio_tcp_connect);
     
+    /* XXXX need to define/parse out ipv6 addr... [] */
     host = globus_libc_strdup(contact_string);
     if(!host)
     {
