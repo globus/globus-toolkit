@@ -30,6 +30,27 @@ GLOBUS_FINALIZE
 
 LAC_DOXYGEN(["../library"])
 
+
+NETLOGGER_INCLUDES=
+NETLOGGER_LIBS=
+
+AC_ARG_WITH(netlogger,
+	[  --with-netlogger=PATH		build target with netlogger],
+	[
+        netlogger_prefix="$withval"
+        AC_DEFINE(GLOBUS_BUILD_WITH_NETLOGGER)
+        ])
+
+if test "x$netlogger_prefix" != "x"; then
+
+        NETLOGGER_INCLUDES="-I$netlogger_prefix/include"
+        NETLOGGER_LIBS="-L$netlogger_prefix/lib -lnetlogger"
+fi
+
+AC_SUBST(NETLOGGER_INCLUDES)
+AC_SUBST(NETLOGGER_LIBS)
+
+
 AC_OUTPUT(
 	Makefile
 	pkgdata/Makefile
