@@ -1202,7 +1202,8 @@ globus_gram_http_post( char *                         url,
 {
     globus_gram_http_read_t *       status;
 
-    initialize_monitor(monitor);
+    if (monitor)
+	initialize_monitor(monitor);
     globus_gram_http_initialize_read_t(
 	&status,
 	GLOBUS_NULL,              /* userfunc   */
@@ -1230,7 +1231,8 @@ globus_gram_http_post_and_get( char *                         url,
 {
     globus_gram_http_read_t *       status;
 
-    initialize_monitor(monitor);
+    if (monitor)
+	initialize_monitor(monitor);
     globus_gram_http_initialize_read_t(
 	&status,
 	(void *)globus_l_gram_http_get_callback,    /* userfunc   */
