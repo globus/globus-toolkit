@@ -146,3 +146,4 @@ gaa_simple_test                 gsi/gaa_callbacks/gaa_simple/test dirt.sh
 globus_xsd_type                 chosting/schema/xsd/source      dirt.sh
 globus_gridftp_driver		gridftp/gridftp_driver/source	dirt.sh
 globus_gridftp_driver_test	gridftp/gridftp_driver/test	dirt.sh
+globus_scheduler_event_generator ws-gram/job_monitoring/common/c/source dirt.sh
