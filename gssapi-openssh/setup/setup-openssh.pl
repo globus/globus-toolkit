@@ -349,7 +349,7 @@ print "\n";
 
 $response = query_boolean("Do you wish to continue with the setup package?","y");
 
-if ($response ne "y")
+if ($response eq "n")
 {
     print "\n";
     print "Okay.. exiting gsi_openssh setup.\n";
@@ -420,11 +420,24 @@ sub query_boolean
     $foo = <STDIN>;
     ($bar) = split //, $foo;
 
-    if ($bar ne $nondefault)
+    if ( grep(/\s/, $bar) )
     {
+        # this is debatable.  all whitespace means 'default'
+
+        $bar = $default;
+    }
+    elsif ($bar ne $default)
+    {
+        # everything else means 'nondefault'.
+
+        $bar = $nondefault;
+    }
+    else
+    {
+        # extraneous step.  to get here, $bar should be eq to $default anyway.
+
         $bar = $default;
     }
 
     return $bar;
 }
-
