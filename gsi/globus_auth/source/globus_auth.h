@@ -12,6 +12,10 @@
 #include "gssapi.h"
 #include "gaa_simple.h"
 
+#ifdef USE_ONLY_STANDARD_GSSAPI
+#include "globus_gss_ext_compat.h"
+#endif
+
 extern
 const gss_OID_desc * const gss_mech_globus_gssapi_ssleay;
  
