@@ -101,7 +101,9 @@ test_PROGRAMS= \
 	globus-ftp-client-put-test \
 	globus-ftp-client-transfer-test \
 	globus-ftp-client-caching-transfer-test \
-	globus-ftp-client-user-auth-test
+	globus-ftp-client-user-auth-test \
+    globus-ftp-client-restart-marker-test
+    
 
 INCLUDES += $(GPT_INCLUDES)
 LDADD = libglobus_ftp_client_test_$(GLOBUS_FLAVOR_NAME).la $(GPT_PGM_LINKS)
@@ -171,6 +173,9 @@ globus_ftp_client_extended_get_caching_test_LDFLAGS = $(GPT_LDFLAGS)
 
 globus_ftp_client_read_all_test_SOURCES = globus_ftp_client_read_all_test.c $(LibHeaders)
 globus_ftp_client_read_all_test_LDFLAGS = $(GPT_LDFLAGS)
+
+globus_ftp_client_restart_marker_test_SOURCES = globus_ftp_client_restart_marker_test.c $(LibHeaders)
+globus_ftp_client_restart_marker_test_LDFLAGS = $(GPT_LDFLAGS)
 
 globus_ftp_client_chmod_test_SOURCES = globus_ftp_client_chmod_test.c $(LibHeaders)
 globus_ftp_client_chmod_test_LDFLAGS = $(GPT_LDFLAGS)
