@@ -1,10 +1,10 @@
  /**
  * @file globus_gass_copy.h
  *
- * @brief Globus GASS copy API 
+ * @brief Globus GASS Copy API 
  *
  *
- * The globus GASS copy library is motivated by the desire to provide a
+ * The Globus GASS Copy library is motivated by the desire to provide a
  * uniform interface to transfer files specified by different protocols.
  *
  * The goals in doing this are to:
@@ -19,7 +19,7 @@
  *
  *   - Provide a simple and portable way to implement file transfers.
  * 
- * Any program that uses Globus GASS copy functions must include
+ * Any program that uses Globus GASS Copy functions must include
  * "globus_gass_copy.h".
  *
  */
@@ -49,8 +49,8 @@ EXTERN_C_BEGIN
 
 /** Module descriptor
  *
- * Globus GASS copy uses standard Globus module activation and deactivation.
- * Before any Globus GASS copy functions are called, the following function
+ * Globus GASS Copy uses standard Globus module activation and deactivation.
+ * Before any Globus GASS Copy functions are called, the following function
  * must be called:
  *
  * @code
@@ -58,30 +58,26 @@ EXTERN_C_BEGIN
  * @endcode
  *
  *
- * This function returns GLOBUS_SUCCESS if Globus GASS copy was successfully
+ * This function returns GLOBUS_SUCCESS if Globus GASS Copy was successfully
  * initialized, and you are therefore allowed to subsequently call
- * Globus GASS copy functions.  Otherwise, an error code is returned, and
- * Globus GASS copy functions should not be subsequently called. This
+ * Globus GASS Copy functions.  Otherwise, an error code is returned, and
+ * Globus GASS Copy functions should not be subsequently called. This
  * function may be called multiple times.
  *
- * To deactivate Globus GASS copy, the following function must be called:
+ * To deactivate Globus GASS Copy, the following function must be called:
  *
  * @code
  *    globus_module_deactivate(GLOBUS_GASS_COPY_MODULE)
  * @endcode
  *
- * This function should be called once for each time Globus GASS copy was
+ * This function should be called once for each time Globus GASS Copy was
  * activated.
  *
  */
-extern int
-globus_i_gass_copy_activate(void);
+#define GLOBUS_GASS_COPY_MODULE (&globus_i_gass_copy_module)
 
-extern int
-globus_i_gass_copy_deactivate(void);
-
-#define GLOBUS_GASS_COPY_MODULE (&globus_gass_copy_module)
-extern globus_module_descriptor_t        globus_gass_copy_module;
+extern
+globus_module_descriptor_t        globus_i_gass_copy_module;
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 
@@ -103,13 +99,14 @@ typedef enum
 {
     GLOBUS_GASS_COPY_STATUS_FAILURE = -1,
     GLOBUS_GASS_COPY_STATUS_NONE,
+    GLOBUS_GASS_COPY_STATUS_PENDING,
     GLOBUS_GASS_COPY_STATUS_INITIAL,
     GLOBUS_GASS_COPY_STATUS_SOURCE_READY,
     GLOBUS_GASS_COPY_STATUS_TRANSFER_IN_PROGRESS,
     GLOBUS_GASS_COPY_STATUS_READ_COMPLETE,
     GLOBUS_GASS_COPY_STATUS_WRITE_COMPLETE,
-    GLOBUS_GASS_COPY_STATUS_CANCEL,
     GLOBUS_GASS_COPY_STATUS_DONE,
+    GLOBUS_GASS_COPY_STATUS_CANCEL,
 } globus_gass_copy_status_t;
 
 /**
@@ -185,7 +182,7 @@ struct globus_gass_copy_handle_s
 };
 
 /**
- * GASS copy attribute structure.  Contains any/all attributes that are
+ * GASS Copy attribute structure.  Contains any/all attributes that are
  * required to perform the supported transfer methods (ftp, gass, io).
  */
 typedef struct globus_gass_copy_attr_s
@@ -214,7 +211,7 @@ typedef struct globus_gass_copy_attr_s
 
 
 
-/** initialization and destruction of GASS copy handle */
+/** initialization and destruction of GASS Copy handle */
 globus_result_t
 globus_gass_copy_handle_init(
     globus_gass_copy_handle_t * handle);
@@ -346,7 +343,7 @@ globus_gass_copy_flush_url_state(
     char * url);
 
 /**
- *  get/set user pointers from/to GASS copy handles
+ *  get/set user pointers from/to GASS Copy handles
  */
 globus_result_t
 globus_gass_copy_set_user_pointer(

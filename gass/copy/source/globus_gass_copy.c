@@ -1,12 +1,19 @@
 /**
  * @file globus_gass_copy.c
  *
- * Globus GASS copy library
+ * Globus GASS Copy library
  *
  * @see See the detailed description in globus_gass_copy.h
  */
 
 #include "globus_gass_copy.h"
+
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+
+static int globus_l_gass_copy_activate(void);
+
+static int globus_l_gass_copy_deactivate(void);
+
 
 #define GLOBUS_I_GASS_COPY_DEBUG
 
@@ -25,7 +32,7 @@
     } \
 }
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+
 #include "globus_i_gass_copy.h"
 
 
@@ -54,11 +61,11 @@
                        Define module specific variables
 ******************************************************************************/
 
-globus_module_descriptor_t globus_gass_copy_module = 
+globus_module_descriptor_t globus_i_gass_copy_module = 
 {
-    "gass_copy_client",
-    globus_i_gass_copy_activate,
-    globus_i_gass_copy_deactivate,
+    "globus_gass_copy",
+    globus_l_gass_copy_activate,
+    globus_l_gass_copy_deactivate,
     GLOBUS_NULL
 };
 
@@ -66,8 +73,9 @@ globus_module_descriptor_t globus_gass_copy_module =
 ****************************************
   module activation
 ******************************************/
+static
 int
-globus_i_gass_copy_activate(void)
+globus_l_gass_copy_activate(void)
 {
     int rc;
     
@@ -89,13 +97,14 @@ globus_i_gass_copy_activate(void)
     }
 
     return 0;
-} /* globus_i_gass_copy_activate() */
+} /* globus_l_gass_copy_activate() */
 
 /*****************************************
   module deactivation
 ******************************************/
+static
 int
-globus_i_gass_copy_deactivate(void)
+globus_l_gass_copy_deactivate(void)
 {
     int rc;
     /*
@@ -155,7 +164,7 @@ globus_l_gass_copy_monitor_callback(
  ************************************************************/
 
 /**
- * Initialize a GASS copy handle
+ * Initialize a GASS Copy handle
  *
  * A globus_gass_copy_handle must be initialized before any transfers may be associated with it.  This function
  * initializes a  globus_gass_copy_handle to be used for doing transfers, this includes initializing a globus_ftp_client_handle which will be
@@ -215,7 +224,7 @@ globus_gass_copy_handle_init(
 }
 
 /**
- *  Destroy a GASS copy handle
+ *  Destroy a GASS Copy handle
  *
  * Destroy a  gass_copy_handle, which was initialized using  globus_gass_copy_handle_init(), that will no longer be used for doing
  * transfers.  Once the handle is detroyed, no further transfers should be associated with it.
@@ -226,7 +235,7 @@ globus_gass_copy_handle_init(
  *  @return
  *       This function returns GLOBUS_SUCCESS if successful, or a globus_result_t indicating the error that occurred.
  *
- * @see globus_gass_copy_handle_init(), globus_ftp_client_hande_destroy()
+ * @see globus_gass_copy_handle_init(), globus_ftp_client_handle_destroy()
  */
 globus_result_t
 globus_gass_copy_handle_destroy(
@@ -311,7 +320,7 @@ globus_gass_copy_set_buffer_length(
  *  @return
  *       This function returns GLOBUS_SUCCESS if successful, or a globus_result_t indicating the error that occurred.
  *
- * @see globus_gass_copy_attr_set_ftp(), globus_gass_copy_attr_set_gass(), globus_gass_copy_attr_set_io().
+ * @see globus_gass_copy_attr_set_ftp(), globus_gass_copy_attr_set_gass(), globus_gass_copy_attr_set_io(), globus_gass_copy_get_url_mode().
  */
 globus_result_t
 globus_gass_copy_attr_init(
@@ -349,7 +358,7 @@ globus_gass_copy_attr_init(
  *@param ftp_attr
  *      The ftp/gsiftp attributes to be used
  *
- * @see globus_gass_copy_attr_init(), globus_gass_copy_attr_set_gass(), globus_gass_copy_attr_set_io(), globus_ftp_client_attr_*
+ * @see globus_gass_copy_attr_init(), globus_gass_copy_attr_set_gass(), globus_gass_copy_attr_set_io(), globus_gass_copy_get_url_mode(), globus_ftp_client_attr_*
  */
 globus_result_t
 globus_gass_copy_attr_set_ftp(
@@ -390,7 +399,7 @@ globus_gass_copy_attr_set_ftp(
  *  @return
  *       This function returns GLOBUS_SUCCESS if successful, or a globus_result_t indicating the error that occurred.
  *
- * @see globus_gass_copy_attr_init(), globus_gass_copy_attr_set_gass(), globus_gass_copy_attr_set_ftp(), globus_io_attr_*
+ * @see globus_gass_copy_attr_init(), globus_gass_copy_attr_set_gass(), globus_gass_copy_attr_set_ftp(), globus_gass_copy_get_url_mode(), globus_io_attr_*
  */
 globus_result_t
 globus_gass_copy_attr_set_io(
@@ -430,7 +439,7 @@ globus_gass_copy_attr_set_io(
  *  @return
  *       This function returns GLOBUS_SUCCESS if successful, or a globus_result_t indicating the error that occurred.
  *
- * @see globus_gass_copy_attr_init(), globus_gass_copy_attr_set_io(), globus_gass_copy_attr_set_ftp(),
+ * @see globus_gass_copy_attr_init(), globus_gass_copy_attr_set_io(), globus_gass_copy_attr_set_ftp(), globus_gass_copy_get_url_mode(),
  *         globus_gass_transfer_requestattr_*
  */
 globus_result_t
@@ -455,6 +464,73 @@ globus_gass_copy_attr_set_gass(
 	return globus_error_put(err);
     }
 }
+
+
+
+/**
+ * Classify the URL schema into the transfer method that will be used to do
+ * the actual tranfer.
+ *
+ * This function enables the user to determine what protocol will be used to transfer data to/from a particular url.
+ * This information can then be used to specify the appropriate attributes when initiating a transfer.
+ *
+ * @param url
+ *        The URL for schema checking
+ * @param mode
+ *        the filled in schema type of the URL param
+ *
+ *  @return
+ *       This function returns GLOBUS_SUCCESS if successful, or a globus_result_t indicating the error that occurred.
+ *
+ * @see globus_gass_copy_attr_init(), globus_gass_copy_attr_set_io(), globus_gass_copy_attr_set_ftp(), globus_gass_copy_set_gass()
+ */
+globus_result_t
+globus_gass_copy_get_url_mode(
+    char * url,
+    globus_gass_copy_url_mode_t * mode)
+{
+    globus_url_t url_info;
+    int rc;
+    globus_object_t * err;
+    static char * myname="globus_gass_copy_get_url_mode";
+
+    if ((rc = globus_url_parse(url, &url_info)) != GLOBUS_SUCCESS)
+    {
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
+	fprintf(stderr, "copy_url_mode(): globus_url_parse returned !GLOBUS_SUCCESS for url: %s\n", url);
+#endif
+	err = globus_error_construct_string(
+	    GLOBUS_GASS_COPY_MODULE,
+	    GLOBUS_NULL,
+	    "[%s]: globus_url_parse returned error code: %d for url: %s",
+	    myname,
+	    rc,
+	    url);
+	
+	return globus_error_put(err);
+    }
+   
+    if ( (url_info.scheme_type == GLOBUS_URL_SCHEME_FTP) ||
+	 (url_info.scheme_type == GLOBUS_URL_SCHEME_GSIFTP) )
+    {
+	*mode = GLOBUS_GASS_COPY_URL_MODE_FTP;
+    }
+    else if ( (url_info.scheme_type == GLOBUS_URL_SCHEME_HTTP) ||
+              (url_info.scheme_type == GLOBUS_URL_SCHEME_HTTPS) )
+    {
+	*mode = GLOBUS_GASS_COPY_URL_MODE_GASS;
+    }
+    else if ( (url_info.scheme_type == GLOBUS_URL_SCHEME_FILE))
+    {
+	*mode = GLOBUS_GASS_COPY_URL_MODE_IO;
+    }
+    else
+    {
+	*mode = GLOBUS_GASS_COPY_URL_MODE_UNSUPPORTED;
+    }
+
+    return GLOBUS_SUCCESS;
+} /* globus_l_gass_copy_get_url_mode() */
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 void
@@ -592,7 +668,24 @@ globus_l_gass_copy_generic_cancel(globus_i_gass_copy_cancel_t * cancel_info);
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 /**
- * Get the status of the current transfer
+ * Get the status of the current transfer.
+ *
+ * Get the status of the last transfer to be initiated using the given handle.
+ *
+ * @param handle
+ *      A globus_gass_copy_handle
+ *@param status
+ *      Will be one of the following:
+ *     - GLOBUS_GASS_COPY_STATUS_NONE   (No transfers have been initiated using this handle.)
+    GLOBUS_GASS_COPY_STATUS_PENDING  (A transfer is currently being set up.)
+    GLOBUS_GASS_COPY_STATUS_TRANSFER_IN_PROGRESS (There is currently a transfer in progress.)
+    GLOBUS_GASS_COPY_STATUS_DONE (The last transfer initiated using this handle was completed successfully.)
+    GLOBUS_GASS_COPY_STATUS_CANCEL (The last transfer initiated using this handle was canceled by the user before completing.)
+    GLOBUS_GASS_COPY_STATUS_FAILURE (The last transfer initiated using this handle failed.)
+ *         
+ *@return
+ *       This function returns GLOBUS_SUCCESS if successful, or a globus_result_t indicating the error that occurred.
+ *
  */
 globus_result_t
 globus_gass_copy_get_status(
@@ -603,7 +696,30 @@ globus_gass_copy_get_status(
     static char * myname="globus_gass_copy_get_status";
     if(handle != GLOBUS_NULL)
     {
-	*status = handle->status;
+	switch(handle->status)
+	{
+	case GLOBUS_GASS_COPY_STATUS_FAILURE:
+	    *status = GLOBUS_GASS_COPY_STATUS_FAILURE;
+	    break;
+	case GLOBUS_GASS_COPY_STATUS_NONE:
+	    *status = GLOBUS_GASS_COPY_STATUS_NONE;
+	    break;
+	case GLOBUS_GASS_COPY_STATUS_INITIAL:
+	case GLOBUS_GASS_COPY_STATUS_SOURCE_READY:
+	    *status = GLOBUS_GASS_COPY_STATUS_PENDING;
+	    break;
+	case GLOBUS_GASS_COPY_STATUS_TRANSFER_IN_PROGRESS:
+	case GLOBUS_GASS_COPY_STATUS_READ_COMPLETE:
+	case GLOBUS_GASS_COPY_STATUS_WRITE_COMPLETE:
+	    *status = GLOBUS_GASS_COPY_STATUS_TRANSFER_IN_PROGRESS;
+	    break;
+	case GLOBUS_GASS_COPY_STATUS_DONE:
+	    *status = GLOBUS_GASS_COPY_STATUS_DONE;
+	    break;
+	case GLOBUS_GASS_COPY_STATUS_CANCEL:
+	    *status = GLOBUS_GASS_COPY_STATUS_CANCEL;
+	    break;
+	}
 	return GLOBUS_SUCCESS;
     }
     else
@@ -620,69 +736,6 @@ globus_gass_copy_get_status(
 
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
-
-/**
- * Classify the URL schema into the transfer method that will be used to do
- * the actual tranfer.
- *
- * @param url
- *        The URL for schema checking
- * @param type
- *        the filled in schema type of the URL param
- *
- * @return
- *         This function returns GLOBUS_SUCCESS or a result pointing to an
- *         object of one of the the following error types:
- * @retval GLOBUS_URL_ERROR_*
- *         one of the GLOBUS_URL_ERROR_ values
- */
-globus_result_t
-globus_gass_copy_get_url_mode(
-    char * url,
-    globus_gass_copy_url_mode_t * mode)
-{
-    globus_url_t url_info;
-    int rc;
-    globus_object_t * err;
-    static char * myname="globus_gass_copy_get_url_mode";
-
-    if ((rc = globus_url_parse(url, &url_info)) != GLOBUS_SUCCESS)
-    {
-#ifdef GLOBUS_I_GASS_COPY_DEBUG
-	fprintf(stderr, "copy_url_mode(): globus_url_parse returned !GLOBUS_SUCCESS for url: %s\n", url);
-#endif
-	err = globus_error_construct_string(
-	    GLOBUS_GASS_COPY_MODULE,
-	    GLOBUS_NULL,
-	    "[%s]: globus_url_parse returned error code: %d for url: %s",
-	    myname,
-	    rc,
-	    url);
-	
-	return globus_error_put(err);
-    }
-   
-    if ( (url_info.scheme_type == GLOBUS_URL_SCHEME_FTP) ||
-	 (url_info.scheme_type == GLOBUS_URL_SCHEME_GSIFTP) )
-    {
-	*mode = GLOBUS_GASS_COPY_URL_MODE_FTP;
-    }
-    else if ( (url_info.scheme_type == GLOBUS_URL_SCHEME_HTTP) ||
-              (url_info.scheme_type == GLOBUS_URL_SCHEME_HTTPS) )
-    {
-	*mode = GLOBUS_GASS_COPY_URL_MODE_GASS;
-    }
-    else if ( (url_info.scheme_type == GLOBUS_URL_SCHEME_FILE))
-    {
-	*mode = GLOBUS_GASS_COPY_URL_MODE_IO;
-    }
-    else
-    {
-	*mode = GLOBUS_GASS_COPY_URL_MODE_UNSUPPORTED;
-    }
-
-    return GLOBUS_SUCCESS;
-} /* globus_l_gass_copy_get_url_mode() */
 
 /* if either source or detination are ftp urls, wait for their callbacks to be called before
    cleaning up and calling the user callback
@@ -3942,19 +3995,59 @@ globus_gass_copy_cancel(
      globus_i_gass_copy_cancel_t * source_cancel_info = GLOBUS_NULL;
      globus_i_gass_copy_cancel_t * dest_cancel_info = GLOBUS_NULL;
      globus_result_t result;
+     globus_object_t * err;
+     static char * myname="globus_gass_copy_cancel";
 
 #ifdef GLOBUS_I_GASS_COPY_DEBUG
 	fprintf(stderr, "starting globus_gass_copy_cancel()\n");
 #endif
 
-    if (! handle->state )
+    if (handle->status == GLOBUS_GASS_COPY_STATUS_NONE)
     {
-        return GLOBUS_SUCCESS;
+	err = globus_error_construct_string(
+		 GLOBUS_GASS_COPY_MODULE,
+		 GLOBUS_NULL,
+		 "[%s]: No transfers have been initiated using this handle",
+		 myname);
+	    
+        return globus_error_put(err);
     }
 
+    if (handle->status == GLOBUS_GASS_COPY_STATUS_DONE)
+    {
+	err = globus_error_construct_string(
+		 GLOBUS_GASS_COPY_MODULE,
+		 GLOBUS_NULL,
+		 "[%s]: The last transfer has already completed.",
+		 myname);
+	       
+        return globus_error_put(err);
+    }
+
+    
     if (handle->state->cancel == GLOBUS_I_GASS_COPY_CANCEL_CALLED)
     {
-        return GLOBUS_SUCCESS;
+	if(handle->status == GLOBUS_GASS_COPY_STATUS_CANCEL)
+	{
+	    err = globus_error_construct_string(
+		GLOBUS_GASS_COPY_MODULE,
+		GLOBUS_NULL,
+		"[%s]: The last transfer has already been cancled.",
+		myname);
+	  
+	    return globus_error_put(err);
+	}
+
+	if(handle->status = GLOBUS_GASS_COPY_STATUS_FAILURE)
+	{
+	    err = globus_error_construct_string(
+		GLOBUS_GASS_COPY_MODULE,
+		GLOBUS_NULL,
+		"[%s]: A failure has already been detected in the last transfer.",
+		myname);
+	       
+	    return globus_error_put(err);
+	}
     }
 
     handle->state->cancel = GLOBUS_I_GASS_COPY_CANCEL_CALLED;
