@@ -208,11 +208,14 @@ mrproper: distclean
 catman-do:
 	mkdir -p ./cat/
 	mkdir -p ./man/
+	mkdir -p ./mdoc/
 	@for f in $(MANPAGES_IN) ; do \
-		echo -n "$$f -> cat.." ; \
-		nroff -mandoc $$f | cat -v | sed -e 's/.\^H//g' > ./cat/$$f ; \
+		echo -n "$$f -> mdoc.." ; \
+		$(DISTFIXPATHSCMD) $$f > ./mdoc/$$f ; \
+		echo -n "cat.." ; \
+		nroff -mandoc ./mdoc/$$f | cat -v | sed -e 's/.\^H//g' > ./cat/$$f ; \
 		echo -n "man.." ; \
-		$(DISTFIXPATHSCMD) $$f | $(DISTPERL) ./mdoc2man.pl > ./man/$$f ; \
+		$(DISTPERL) ./mdoc2man.pl < ./mdoc/$$f > ./man/$$f ; \
 		echo "done." ; \
 	done
 
