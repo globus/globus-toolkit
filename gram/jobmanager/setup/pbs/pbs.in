@@ -85,10 +85,10 @@ sub submit
 	$cpu_time = $description->max_cpu_time();
 	$self->log("   using maxcputime of $cpu_time");
     }
-    elsif(defined($description->max_time()))
+    elsif(! $cluster && defined($description->max_time()))
     {
-	$cpu_time = $description->max_time();
-	$self->log("   using maxtime of $cpu_time");
+        $cpu_time = $description->max_time();
+        $self->log("   using maxtime of $cpu_time");
     }
     else
     {
@@ -101,6 +101,11 @@ sub submit
     {
 	$wall_time = $description->max_wall_time();
 	$self->log("   using maxwalltime of $wall_time");
+    }
+    elsif($cluster && defined($description->max_time()))
+    {
+       $wall_time = $description->max_time();
+       $self->log("   using maxtime of $wall_time");
     }
     else
     {
@@ -152,7 +157,7 @@ EOF
 
     if($description->queue() ne '')
     {
-	$pbs_job_script->print("#PBS -q $description->queue()\n");
+        $pbs_job_script->print("#PBS -q ". $description->queue() . "\n");
     }
     if($description->project() ne '')
     {
@@ -192,7 +197,6 @@ EOF
     }
     $pbs_job_script->print("#PBS -o " . $description->stdout() . "\n");
     $pbs_job_script->print("#PBS -e " . $description->stderr() . "\n");
-    $pbs_job_script->print("#PBS -l ncpus=" . $description->count() . "\n");
 
     if($description->host_count() != 0)
     {
