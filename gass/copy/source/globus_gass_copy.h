@@ -17,6 +17,10 @@
  * Any program that uses Globus GASS Copy functions must include
  * "globus_gass_copy.h".
  *
+ * @htmlonly
+ * <a href="main.html" target="_top">View documentation without frames</a><br>
+ * <a href="index.html" target="_top">View documentation with frames</a><br>
+ * @endhtmlonly
  */
 
 #include "globus_gass_transfer.h"
