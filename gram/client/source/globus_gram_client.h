@@ -131,8 +131,8 @@ CVS Information:
 	@GLOBUS_GRAM_CLIENT_ERROR_BAD_RSL_ENVIRONMENT@
 #define GLOBUS_GRAM_CLIENT_ERROR_DRYRUN \
 	@GLOBUS_GRAM_CLIENT_ERROR_DRYRUN@
-#define GLOBUS_GRAM_CLIENT_PING_SUCCESSFUL \
-	@GLOBUS_GRAM_CLIENT_PING_SUCCESSFUL@
+#define GLOBUS_GRAM_CLIENT_ERROR_ZERO_LENGTH_RSL \
+	@GLOBUS_GRAM_CLIENT_ERROR_ZERO_LENGTH_RSL@
 
 /* Add new GLOBUS_GRAM_CLIENT_ERROR code here */
 /* don't forget to update GLOBUS_GRAM_CLIENT_error.c also !! */
@@ -199,6 +199,9 @@ globus_gram_client_job_request(char * resource_manager_contact,
 			       const int job_state_mask,
 			       const char * callback_contact,
 			       char ** job_contact);
+
+extern int 
+globus_gram_client_ping(char * resource_manager_contact);
 
 extern int 
 globus_gram_client_job_check(char * resource_manager_contact,
