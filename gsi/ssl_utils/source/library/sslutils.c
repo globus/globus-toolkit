@@ -850,11 +850,15 @@ proxy_genreq(
         
         if (upkey->type != EVP_PKEY_RSA)
         {
+            EVP_PKEY_free(upkey);
             PRXYerr(PRXYERR_F_PROXY_GENREQ,PRXYERR_R_PROCESS_PROXY_KEY);
             goto err;
         }
         
         rbits = 8 * EVP_PKEY_size(upkey);
+
+        EVP_PKEY_free(upkey);
+
     }
     else
     {
@@ -1151,6 +1155,8 @@ proxy_sign_ext(
 
     i = X509_REQ_verify(req,new_public_key);
 
+    EVP_PKEY_free(new_public_key);
+
     if (i < 0)
     {
         PRXYerr(PRXYERR_F_PROXY_SIGN_EXT,PRXYERR_R_SIG_VERIFY);
@@ -1319,6 +1325,9 @@ proxy_sign_ext(
     {
         EVP_PKEY_copy_parameters(tmp_public_key,user_private_key);
     }
+
+    EVP_PKEY_free(tmp_public_key);
+    
 #endif
 
     if (!X509_sign(*new_cert,user_private_key,method))
@@ -2009,6 +2018,7 @@ proxy_verify_callback(
     STACK_OF(X509_EXTENSION) *          extensions;
     X509_EXTENSION *                    ex;
     ASN1_OBJECT *                       extension_obj;
+    EVP_PKEY *                          tmp_public_key;
     int                                 nid;
     char *                              s = NULL;
     SSL *                               ssl = NULL;
@@ -2250,8 +2260,20 @@ proxy_verify_callback(
 #endif
             /* verify the signature on this CRL */
 
-            if (X509_CRL_verify(crl,
-                                X509_get_pubkey(ctx->current_cert)) <= 0)
+            if((tmp_public_key = X509_get_pubkey(ctx->current_cert))
+               == NULL)
+            {
+                PRXYerr(PRXYERR_F_VERIFY_CB,PRXYERR_R_CRL_SIGNATURE_FAILURE);
+                ERR_set_continue_needed();
+                ctx->error = X509_V_ERR_CRL_SIGNATURE_FAILURE;
+                goto fail_verify;
+            }
+
+            i = X509_CRL_verify(crl,tmp_public_key);
+
+            EVP_PKEY_free(tmp_public_key);
+
+            if (i <= 0)
             {
                 PRXYerr(PRXYERR_F_VERIFY_CB,PRXYERR_R_CRL_SIGNATURE_FAILURE);
                 ERR_set_continue_needed();
@@ -3874,6 +3896,7 @@ proxy_load_user_key(
                     }
                 }
             }
+            EVP_PKEY_free(ucertpkey);
         }
         else
         {

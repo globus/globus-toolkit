@@ -1,5 +1,5 @@
 AC_REVISION($Revision$)
-AC_INIT(globus-sh-tools.sh.in)
+AC_INIT(globus-sh-tools-vars.sh.in)
 
 # checking for the GLOBUS_LOCATION
 
@@ -229,6 +229,6 @@ AC_PATH_PROG(GLOBUS_SH_PRESERVE, preserve)
 AC_PATH_PROG(GLOBUS_SH_PRUN, prun)
 AC_PATH_PROG(GLOBUS_SH_PS, ps)
 
-AC_OUTPUT(globus-sh-tools.sh
+AC_OUTPUT(globus-sh-tools-vars.sh
 	  globus-makefile-header
 	)

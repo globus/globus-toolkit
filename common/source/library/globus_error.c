@@ -237,7 +237,7 @@ globus_error_construct_base (globus_module_descriptor_t * source_module,
  **********************************************************************/
 
 static globus_object_cache_t s_result_to_object_mapper;
-static unsigned long         s_next_available_result_count;
+static uint32_t              s_next_available_result_count;
 static globus_mutex_t        s_result_to_object_mutex;
 
 static int  s_error_cache_initialized = 0;
