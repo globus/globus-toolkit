@@ -2,7 +2,9 @@
 #define GLOBUS_I_GFS_IPC_H
 
 typedef struct globus_i_gfs_ipc_handle_s * globus_gfs_ipc_handle_t;
-typedef struct globus_i_gfs_ipc_reply_s    globus_gfs_ipc_reply_t;
+typedef struct globus_i_gfs_ipc_reply_s *  globus_gfs_ipc_reply_t;
+typedef struct globus_i_gfs_ipc_iface_s *  globus_gfs_ipc_iface_t;
+
 
 /*
  *  callbacks
@@ -10,10 +12,11 @@ typedef struct globus_i_gfs_ipc_reply_s    globus_gfs_ipc_reply_t;
  *  all functions have the same callback, they examine the
  *  globus_gfs_ipc_reply_t() structure for their specific info
  */
+ 
 typedef void
 (*globus_gfs_ipc_callback_t)(
     globus_gfs_ipc_handle_t             ipc_handle,
-    globus_gfs_ipc_reply_t *            reply,
+    globus_gfs_ipc_reply_t              reply,
     void *                              user_arg);
 
 typedef void
@@ -75,7 +78,8 @@ struct globus_i_gfs_ipc_reply_s
         globus_gfs_ipc_resource_reply_t resource_reply;
     } reply_type;
 
-};
+} globus_gfs_i_ipc_reply_t;
+
 
 /* callback and id relation */
 typedef struct globus_gfs_ipc_call_entry_s
@@ -158,6 +162,7 @@ typedef struct globus_gfs_resource_state_s
         (tells me to return info on dir contents or dir itself) */
     globus_gridftp_server_control_resource_mask_t mask;
 } globus_gfs_resource_state_t;
+
 /*
  *  interface to the function that gets called on the remote side when
  *  globus_gfs_ipc_set_state() is called
@@ -313,7 +318,7 @@ globus_gfs_ipc_list(
     globus_gfs_ipc_callback_t           event_cb,
     void *                              user_arg);
 
-typedef struct globus_gfs_ipc_iface_s
+typedef struct globus_i_gfs_ipc_iface_s
 {
     globus_gfs_ipc_iface_state_t        state_func;
     globus_gfs_ipc_iface_recv_t         recv_func;
@@ -324,7 +329,20 @@ typedef struct globus_gfs_ipc_iface_s
     globus_gfs_ipc_iface_data_destroy_t data_destory_func;
     globus_gfs_ipc_iface_resource_t     resource_func;
     globus_gfs_ipc_iface_list_t         list_func;
-} globus_gfs_ipc_iface_t;
+} globus_i_gfs_ipc_iface_t;
+
+typedef struct globus_i_gfs_ipc_handle_s
+{
+    globus_xio_handle_t                 xio_handle;
+
+    globus_hashtable_t                  call_table;
+    globus_gfs_ipc_iface_t              iface;
+    
+    globus_bool_t                       writing;
+    globus_fifo_t                       write_q;
+    
+    globus_mutex_t                      mutex;
+} globus_i_gfs_ipc_handle_t;
 
 globus_result_t
 globus_gfs_ipc_open(

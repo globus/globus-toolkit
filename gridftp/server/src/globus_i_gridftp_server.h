@@ -90,13 +90,18 @@ typedef struct
     int                                 ref;
 } globus_i_gfs_data_handle_t;
 
+typedef struct
+{
+    void * nothing;    
+} globus_i_gfs_oldipc_handle_t;
+
 /* !! if this changes, code will have to corrected as all 3 types here are
  * upcasted/downcasted at will
  */
 typedef union
 {
     globus_i_gfs_data_handle_t          data;
-    globus_gfs_ipc_handle_t             ipc;
+    globus_i_gfs_oldipc_handle_t        ipc;
 } globus_i_gfs_ipc_data_handle_t;
 
 typedef enum

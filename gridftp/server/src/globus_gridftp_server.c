@@ -22,6 +22,12 @@ static
 void
 globus_l_gfs_terminate_server(
     globus_bool_t                       immediately);
+
+static
+globus_result_t
+globus_l_gfs_open_new_server(
+    globus_xio_handle_t                 handle);
+
         
 static
 globus_result_t
@@ -44,7 +50,10 @@ globus_l_gfs_sigchld(
 
     child_pid = waitpid(-1, &child_status, WNOHANG);
     
-/*    if(child_pid < 0)
+/*  
+    int                                 child_rc;
+
+    if(child_pid < 0)
     {
         globus_i_gfs_log_message(
             GLOBUS_I_GFS_LOG_ERR, 
@@ -80,10 +89,9 @@ globus_l_gfs_spawn_child(
 {
     globus_result_t                     result;
     pid_t                               child_pid;
+    struct sigaction                    act;
+    struct sigaction                    oldact;
     GlobusGFSName(globus_l_gfs_spawn_child);
-
-    struct sigaction                act;
-    struct sigaction                oldact;
     
     signal(SIGPIPE, SIG_IGN);
     
@@ -105,6 +113,9 @@ globus_l_gfs_spawn_child(
         globus_l_gfs_terminate_server(GLOBUS_TRUE);
         
 #if 0
+    globus_xio_system_handle_t          socket_handle;
+    globus_result_t                     result;
+    int                                 rc;
         result = globus_xio_handle_cntl(
             handle,
             globus_l_gfs_tcp_driver,
