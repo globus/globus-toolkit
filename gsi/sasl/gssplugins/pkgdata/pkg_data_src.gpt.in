@@ -34,7 +34,7 @@
         </Build_Step>
 
         <Build_Step>
-            CONFIGENV_GPTMACRO ./configure --with-name=GSI CONFIGOPTS_GPTMACRO FLAVOR_CONFIGOPTS_GPTMACRO
+            CONFIGENV_GPTMACRO ./configure --with-name=GSI --with-flavor=FLAVOR_GPTMACRO CONFIGOPTS_GPTMACRO FLAVOR_CONFIGOPTS_GPTMACRO
         </Build_Step>
 
         <Build_Step>
