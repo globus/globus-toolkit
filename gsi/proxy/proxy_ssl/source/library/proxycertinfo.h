@@ -1,4 +1,7 @@
 
+#warning need to add debugging code for all proxy_ssl code
+#warning need to re-examine errors - when they are getting called - proxycertinfo library, etc.
+
 #ifndef HEADER_PROXYCERTINFO_H
 #define HEADER_PROXYCERTINFO_H
 
@@ -98,6 +101,17 @@ typedef struct PROXYCERTINFO_st PROXYCERTINFO;
 DECLARE_STACK_OF(PROXYCERTINFO)
 DECLARE_ASN1_SET_OF(PROXYCERTINFO)
 
+/* macros */
+
+#define d2i_PROXYCERTINFO_bio(bp, pci) \
+    (PROXYCERTINFO *) ASN1_d2i_bio((char *(*)()) PROXYCERTINFO_new, \
+    (char *(*)()) d2i_PROXYCERTINFO, \
+    (bp), (unsigned char **) pci)
+
+#define i2d_PROXYCERTINFO_bio(bp, pci) \
+                ASN1_i2d_bio(i2d_PROXYCERTINFO, bp, \
+		(unsigned char *)pci)
+
 /* functions */
     
 ASN1_METHOD * PROXYCERTINFO_asn1_meth();
@@ -165,6 +179,7 @@ PROXYCERTINFO * d2i_PROXYCERTINFO(
     PROXYCERTINFO **                    cert_info,
     unsigned char **                    a,
     long                                length);
+
 
 EXTERN_C_END
 
