@@ -46,7 +46,7 @@ Southern California. All Rights Reserved.
   <property name="package.dir" value="filestreaming"/>
   <property name="build.packages" value="build-packages.xml"/>
   <property name="test-reports.dir" value="test-reports"/>
-  <property name="nsmap.file" value="NStoPkg.properties"/>
+  <property name="mapping.file" value="NStoPkg_FSS.properties"/>
   
   
   <!-- properties added for filestreaming -->
@@ -123,11 +123,12 @@ Southern California. All Rights Reserved.
    </ant>
   </target>
 
+  <!-- this is neccesary since the core version only works from core dir -->
+  <!--
   <target name="mergePackageMapping">
     <delete file="${build.schema}/${nsmap.file}"/>
     <copy file="${nsmap.file}" toFile="${build.schema}/${nsmap.file}.tmp"/>
 
-    <!-- this is neccesary since the core version only works from core dir -->
     <ant antfile="${ogsa.root}/${build.services}" target="mergePackageMapping">
         <property name="mapping.file" value="${ogsa.root}/${nsmap.file}"/>
         <property name="nsmap.file" value="${nsmap.file}.tmp"/>
@@ -137,12 +138,16 @@ Southern California. All Rights Reserved.
     <move file="${build.schema}/${nsmap.file}.tmp"
           toFile="${build.schema}/${nsmap.file}"/>
   </target>
+  -->
 
   <!-- =================================================================== -->
   <!-- Generate stubs from the WSDLs                                       -->
   <!-- =================================================================== -->
   <target name="stubs" unless="stubs.present" depends="generateWSDL">
-    <ant target="mergePackageMapping"/>
+    <!--<ant target="mergePackageMapping"/>-->
+    <ant antfile="${ogsa.root}/${build.services}" target="mergePackageMapping">
+        <property name="mapping.file" value="${mapping.file}"/>
+    </ant>
 
     <ant antfile="${ogsa.root}/${build.services}" target="generateStubsNS">
         <property name="build.schema" value="${schema.dir}"/>
