@@ -24,7 +24,6 @@ blocking_dd_main(
     globus_size_t                           buffer_len;
     globus_size_t                           nbytes;
     globus_xio_data_descriptor_t            dd;
-    int                                     opt_offset;
 
     globus_l_closed = GLOBUS_FALSE;
 
@@ -37,10 +36,7 @@ blocking_dd_main(
     res = globus_xio_stack_init(&stack, NULL);
     test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
 
-    opt_offset = parse_parameters(argc, argv, stack, attr);
-    if(opt_offset == argc)
-    {
-    }
+    parse_parameters(argc, argv, stack, attr);
 
     globus_mutex_init(&globus_l_mutex, NULL);
     globus_cond_init(&globus_l_cond, NULL);

@@ -1,5 +1,7 @@
 #include "globus_i_xio.h"
 
+#define GLOBUS_L_XIO_TIMER_MAX_POLL 60 /* seconds */
+
 typedef struct globus_i_xio_timer_entry_s
 {
     void *                              datum;
@@ -103,6 +105,7 @@ globus_i_xio_timer_register_timeout(
 {
     globus_i_xio_timer_entry_t *        entry;
     globus_result_t                     res;
+    globus_reltime_t                    poll_time;
     GlobusXIOName(globus_i_xio_timer_register_timeout);
 
     GlobusXIODebugInternalEnter();
@@ -112,15 +115,23 @@ globus_i_xio_timer_register_timeout(
     entry->progress_ptr = progress_ptr;
     entry->timer_cb = timeout_cb;
     GlobusTimeReltimeCopy(entry->rel_timeout, *timeout);
+    GlobusTimeReltimeCopy(poll_time, entry->rel_timeout);
+    
+    /* limit poll time */
+    if(poll_time.tv_sec > GLOBUS_L_XIO_TIMER_MAX_POLL)
+    {
+        GlobusTimeReltimeSet(poll_time, GLOBUS_L_XIO_TIMER_MAX_POLL, 0);
+    }
+    
+    /* expire immediately to force setting of progress flag */
     GlobusTimeAbstimeGetCurrent(entry->abs_timeout);
-    GlobusTimeAbstimeInc(entry->abs_timeout, *timeout);
 
     globus_mutex_lock(&timer->mutex);
     {
         if(!timer->running || 
-            globus_reltime_cmp(&entry->rel_timeout, &timer->minimal_delay) < 0)
+            globus_reltime_cmp(&poll_time, &timer->minimal_delay) < 0)
         {
-            GlobusTimeReltimeCopy(timer->minimal_delay, entry->rel_timeout);
+            GlobusTimeReltimeCopy(timer->minimal_delay, poll_time);
             res = globus_callback_adjust_period(
                     timer->periodic_handle,
                     &timer->minimal_delay);
@@ -137,6 +148,7 @@ globus_i_xio_timer_register_timeout(
             }
             timer->running = GLOBUS_TRUE;
         }
+        *entry->progress_ptr = GLOBUS_TRUE;
         globus_list_insert(&timer->op_list, entry);
     }
     globus_mutex_unlock(&timer->mutex);
@@ -199,7 +211,6 @@ globus_i_xio_timer_poller_callback(
     globus_i_xio_timer_t  *             timer;
     globus_list_t *                     list;
     globus_abstime_t                    now;
-    globus_reltime_t                    tmp_rel;
     globus_i_xio_timer_entry_t *        entry;
     globus_list_t *                     call_list = NULL;
     globus_list_t *                     tmp_list = NULL;
@@ -220,7 +231,7 @@ globus_i_xio_timer_poller_callback(
             entry = (globus_i_xio_timer_entry_t *) globus_list_first(list);
 
             /* time has expired */
-            if(globus_abstime_cmp(&now, &entry->abs_timeout) > 0)
+            if(globus_abstime_cmp(&now, &entry->abs_timeout) >= 0)
             {
                 /* if progress was made up the expiration point and flip
                  * the progress flag 
@@ -236,9 +247,10 @@ globus_i_xio_timer_poller_callback(
                     globus_list_remove(&timer->op_list,
                         globus_list_search(timer->op_list, entry));
                 }
-                GlobusTimeReltimeDiff(tmp_rel, entry->rel_timeout,
-                                      timer->minimal_delay);
-                GlobusTimeAbstimeInc(entry->abs_timeout, tmp_rel);
+                
+                GlobusTimeAbstimeCopy(entry->abs_timeout, now);
+                GlobusTimeAbstimeInc(
+                    entry->abs_timeout, entry->rel_timeout);
             }
         }
     }

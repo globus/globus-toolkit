@@ -185,12 +185,7 @@ cancel_main(
     res = globus_xio_stack_init(&stack, NULL);
     test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
 
-    opt_offset = parse_parameters(argc, argv, stack, attr);
-    if(opt_offset == argc)
-    {
-        fprintf(stderr, "ERROR: please specify O | D | C.\n");
-        return 1;
-    }
+    parse_parameters(argc, argv, stack, attr);
 
     GlobusTimeReltimeGet(globus_l_test_info.delay, secs, usecs);
 
@@ -212,10 +207,10 @@ cancel_main(
             "whatever",
             attr,
             open_cb,
-            argv[opt_offset]);
+            argv[argc-1]);
     test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
 
-    if(strcmp(argv[opt_offset], "O") == 0)
+    if(strcmp(argv[argc-1], "O") == 0)
     {
         res = globus_xio_handle_cancel_operations(
                 handle,

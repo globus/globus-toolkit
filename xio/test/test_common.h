@@ -47,7 +47,7 @@ test_res(
     int                                     line,
     char *                                  filename);
 
-int
+void
 parse_parameters(
     int                                     argc,
     char **                                 argv,

@@ -1,4 +1,3 @@
-#include <unistd.h>
 #include "globus_common.h"
 #include "globus_hashtable.h"
 #include "globus_xio_bounce.h"
@@ -84,7 +83,7 @@ test_res(
     }
 }
 
-int
+void
 parse_parameters(
     int                                     argc,
     char **                                 argv,
@@ -118,11 +117,8 @@ parse_parameters(
 
     globus_list_insert(&globus_l_driver_list, globus_l_base_driver);
 
-    optind = 0;
     /* parse the parameters */
     globus_l_test_info.server = GLOBUS_FALSE;
-    argc--;
-    argv++;
     while((c = getopt(argc, argv, "siF:d:c:R:W:r:w:b:D:X:")) != -1)
     {
         switch(c)
@@ -249,8 +245,6 @@ parse_parameters(
                 seed);
         test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
     }
-
-    return optind+1;
 }
 
 int
