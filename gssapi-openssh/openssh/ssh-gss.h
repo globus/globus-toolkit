@@ -139,10 +139,6 @@ void ssh_gssapi_cleanup_creds(void *ignored);
 void ssh_gssapi_storecreds(void);
 char *ssh_gssapi_server_mechanisms();
 
-#ifdef GSI
-int gsi_gridmap(char *subject_name, char **mapped_name);
-#endif
-
 #ifdef MECHGLUE
 gss_cred_id_t __gss_get_mechanism_cred
    (gss_cred_id_t,	/* union_cred */

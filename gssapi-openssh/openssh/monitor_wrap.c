@@ -1233,32 +1233,3 @@ mm_ssh_gssapi_localname(char **lname)
         return(0);
 }	
 #endif /* GSSAPI */
-
-#ifdef GSI
-int mm_gsi_gridmap(char *subject_name, char **lname)
-{
-        Buffer m;
-
-	buffer_init(&m);
-	buffer_put_cstring(&m, subject_name);
-        mm_request_send(pmonitor->m_recvfd, MONITOR_REQ_GSIGRIDMAP, &m);
-
-        mm_request_receive_expect(pmonitor->m_recvfd, MONITOR_ANS_GSIGRIDMAP,
-                                  &m);
-
-	*lname = buffer_get_string(&m, NULL);
-
-        buffer_free(&m);
-	if (lname[0] == '\0') {
-	    debug3("%s: gssapi identity %s mapping failed", __func__,
-		   subject_name);
-	} else {
-	    debug3("%s: gssapi identity %s mapped to %s", __func__,
-		   subject_name, *lname);
-	}
-	
-        return(0);
-    
-}
-
-#endif /* GSI */

@@ -343,16 +343,18 @@ the result of a successful key exchange, or using GSSAPI user
 authentication.
 The default is 
 .Dq yes .
+Note that this option applies to protocol version 2 only.
 .It Cm GSSAPIKeyExchange
 Specifies whether key exchange based on GSSAPI may be used. When using
 GSSAPI key exchange the server need not have a host key.
 The default is
 .Dq yes .
+Note that this option applies to protocol version 2 only.
 .It Cm GSSAPIDelegateCredentials
-Specifies whether GSSAPI credentials will be delegated (forwarded) to
-the server.
+Forward (delegate) credentials to the server.
 The default is
 .Dq yes .
+Note that this option applies to protocol version 2 only.
 .It Cm HostbasedAuthentication
 Specifies whether to try rhosts based authentication with public key
 authentication.

@@ -26,7 +26,6 @@
 RCSID("$OpenBSD: auth2.c,v 1.102 2003/08/26 09:58:43 markus Exp $");
 
 #include "ssh2.h"
-#include "ssh1.h"
 #include "xmalloc.h"
 #include "packet.h"
 #include "log.h"
@@ -288,9 +287,6 @@ userauth_finish(Authctxt *authctxt, int authenticated, char *method)
 #endif /* _UNICOS */
 
 	/* Log before sending the reply */
-	if (!compat20)
-	auth_log(authctxt, authenticated, method, " ssh1");
-	else
 	auth_log(authctxt, authenticated, method, " ssh2");
 
 	if (authctxt->postponed)
@@ -300,26 +296,14 @@ userauth_finish(Authctxt *authctxt, int authenticated, char *method)
 	if (authenticated == 1) {
 		/* turn off userauth */
 		dispatch_set(SSH2_MSG_USERAUTH_REQUEST, &dispatch_protocol_ignore);
-		if (compat20) {
 		packet_start(SSH2_MSG_USERAUTH_SUCCESS);
 		packet_send();
 		packet_write_wait();
-		}
 		/* now we can break out */
 		authctxt->success = 1;
 	} else {
 		if (authctxt->failures++ > AUTH_FAIL_MAX)
 			packet_disconnect(AUTH_FAIL_MSG, authctxt->user);
-		if (!compat20) {
-		/*
-		 * Break out of the dispatch loop now and go back to
-	         * SSH1 code.  We need to set the 'success' flag to
-	         * break out of the loop.  Set the 'postponed' flag to
-	         * tell the SSH1 code that authentication failed.  The
-	         * SSH1 code will handle sending SSH_SMSG_FAILURE.
-		*/
-		authctxt->success = authctxt->postponed = 1;
-		} else {
 		methods = authmethods_get();
 		packet_start(SSH2_MSG_USERAUTH_FAILURE);
 		packet_put_cstring(methods);
@@ -327,7 +311,6 @@ userauth_finish(Authctxt *authctxt, int authenticated, char *method)
 		packet_send();
 		packet_write_wait();
 		xfree(methods);
-		}
 	}
 }
 

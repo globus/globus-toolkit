@@ -436,19 +436,6 @@ ssh_gssapi_server_ctx(Gssctxt **ctx, gss_OID oid) {
 OM_uint32
 ssh_gssapi_sign(Gssctxt *ctx, gss_buffer_desc *buffer, gss_buffer_desc *hash) {
 	
-	/* ssh1 needs to exchange the hash of the keys */
-	/* will us this hash to return it */
-	if (!compat20) {
-		if ((ctx->major=gss_wrap(&ctx->minor,ctx->context,
-					 0,
-					 GSS_C_QOP_DEFAULT,
-					 buffer,
-					 NULL,
-					 hash)))
-		    ssh_gssapi_error(ctx);
-	}
-	else
-
 	if ((ctx->major=gss_get_mic(&ctx->minor,ctx->context,
 				    GSS_C_QOP_DEFAULT, buffer, hash))) {
 		ssh_gssapi_error(ctx);

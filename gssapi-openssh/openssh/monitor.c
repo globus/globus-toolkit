@@ -146,10 +146,6 @@ int mm_answer_gss_indicate_mechs(int, Buffer *);
 int mm_answer_gss_localname(int, Buffer *);
 #endif
 
-#ifdef GSI
-int mm_answer_gsi_gridmap(int, Buffer *);
-#endif
-
 static Authctxt *authctxt;
 static BIGNUM *ssh1_challenge = NULL;	/* used for ssh1 rsa auth */
 
@@ -255,9 +251,6 @@ struct mon_table mon_dispatch_proto15[] = {
     {MONITOR_REQ_GSSUSEROK, MON_AUTH, mm_answer_gss_userok},
     {MONITOR_REQ_GSSMECHS, MON_ISAUTH, mm_answer_gss_indicate_mechs},
 #endif
-#ifdef GSI
-    {MONITOR_REQ_GSIGRIDMAP, MON_PERMIT, mm_answer_gsi_gridmap},
-#endif
 #ifdef USE_PAM
     {MONITOR_REQ_PAM_START, MON_ISAUTH, mm_answer_pam_start},
     {MONITOR_REQ_PAM_ACCOUNT, 0, mm_answer_pam_account},
@@ -270,12 +263,6 @@ struct mon_table mon_dispatch_proto15[] = {
 };
 
 struct mon_table mon_dispatch_postauth15[] = {
-#ifdef GSSAPI
-    {MONITOR_REQ_GSSSETUP, 0, mm_answer_gss_setup_ctx},
-    {MONITOR_REQ_GSSSTEP, 0, mm_answer_gss_accept_ctx},
-    {MONITOR_REQ_GSSSIGN, 0, mm_answer_gss_sign},
-    {MONITOR_REQ_GSSMECHS, 0, mm_answer_gss_indicate_mechs},
-#endif
     {MONITOR_REQ_PTY, MON_ONCE, mm_answer_pty},
     {MONITOR_REQ_PTYCLEANUP, MON_ONCE, mm_answer_pty_cleanup},
     {MONITOR_REQ_TERM, 0, mm_answer_term},
@@ -337,13 +324,6 @@ monitor_child_preauth(struct monitor *pmonitor)
 		mon_dispatch = mon_dispatch_proto15;
 
 		monitor_permit(mon_dispatch, MONITOR_REQ_SESSKEY, 1);
-#ifdef GSSAPI		
-		monitor_permit(mon_dispatch, MONITOR_REQ_GSSMECHS, 1);
-		monitor_permit(mon_dispatch, MONITOR_REQ_GSSERR, 1);
-#endif
-#ifdef GSI
-		monitor_permit(mon_dispatch, MONITOR_REQ_GSIGRIDMAP, 1);
-#endif
 	}
 
 	authctxt = authctxt_new();
@@ -1801,33 +1781,6 @@ monitor_reinit(struct monitor *mon)
 	mon->m_recvfd = pair[0];
 	mon->m_sendfd = pair[1];
 }
-
-#ifdef GSI
-
-int
-mm_answer_gsi_gridmap(int socket, Buffer *m) {
-    char *subject, *name;
-
-    subject = buffer_get_string(m, NULL);
-    
-    gsi_gridmap(subject, &name);
-
-    buffer_clear(m);
-    if (name) {
-	buffer_put_cstring(m, name);
-	debug3("%s: sending result %s", __func__, name);
-	xfree(name);
-    } else {
-	buffer_put_cstring(m, "");
-	debug3("%s: sending result \"\"", __func__);
-    }
-
-    mm_request_send(socket, MONITOR_ANS_GSIGRIDMAP, m);
-
-    return(0);
-}
-
-#endif /* GSI */
 
 #ifdef GSSAPI
 int

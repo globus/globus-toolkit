@@ -87,10 +87,6 @@ char *mm_ssh_gssapi_last_error(Gssctxt *ctxt, OM_uint32 *maj, OM_uint32 *min);
 
 #endif
 
-#ifdef GSI
-int mm_gsi_gridmap(char *subject_name, char **mapped_name);
-#endif
-
 void mm_terminate(void);
 int mm_pty_allocate(int *, int *, char *, int);
 void mm_session_pty_cleanup2(void *);
