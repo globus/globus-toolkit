@@ -1,0 +1,10 @@
+
+are these correct (inglobus_common_include.h.win)
+  #define MAXPATHLEN                  128
+  #define MAXHOSTNAMELEN              128
+
+  #define SIZEOF_INT 4
+  #define SIZEOF_LONG 4
+
+
+
