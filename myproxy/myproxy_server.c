@@ -5,6 +5,7 @@
  */
 
 #include "myproxy.h"
+#include "myproxy_server.h"
 #include "myproxy_creds.h"
 #include "gnu_getopt.h"
 #include "version.h"
@@ -44,15 +45,6 @@ static char short_options[] = "uc:p:v";
 
 static char version[] =
 "myproxy-server version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
-
-
-typedef struct 
-{
-  char  *config_file;            /* configuration file */     
-  char **authorized_client_dns;  /* List of clients that can be serviced */      
-  char **authorized_service_dns; /* List of services will will delegate to */
-} myproxy_server_context_t;
-
 
 /* Function declarations */
 int init_arguments(int argc, 
