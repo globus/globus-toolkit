@@ -937,9 +937,9 @@ main(int argc,
     if (rc == GLOBUS_SUCCESS)
     {
         grami_fprintf( request->jobmanager_log_fp,
-              "JM: opening stdout stderr fds\n");
+              "JM: opening stdout fd\n");
 
-        /* open "real" stdout and stderr descriptors
+        /* open "real" stdout descriptor
          */
         globus_l_gram_stdout_fd = globus_gass_open(request->my_stdout,
                                            O_WRONLY|O_APPEND|O_CREAT,
@@ -948,18 +948,138 @@ main(int argc,
         {
             request->failure_code = GLOBUS_GRAM_CLIENT_ERROR_OPENING_STDOUT;
             rc = GLOBUS_FAILURE;
+	    grami_fprintf( request->jobmanager_log_fp,
+			   "JM: error opening outfile \n");
         }
-        else
-        {
-            globus_l_gram_stderr_fd = globus_gass_open(request->my_stderr,
-                                  O_WRONLY|O_APPEND|O_CREAT,
-                                  0777);
-            if (globus_l_gram_stderr_fd < 0)
-            {
-                request->failure_code = GLOBUS_GRAM_CLIENT_ERROR_OPENING_STDERR;
-                rc = GLOBUS_FAILURE;
-            }
-        }
+	else
+	{
+	    if (request->my_stdout_tag != GLOBUS_NULL)
+	    {
+		char * filename;
+		ulong timestamp;
+		/* try to add the specific tag to the cache entry */
+		/* will prevent automatic deletion of the stdout  */
+		/* when the job finish; usefull for "batch jobs"  */
+		/* Use the option Do Not Create: I want to add it */
+		/* to the cache only if I have an x-gass-cache URL*/
+		/* (in which case the globus_open(stdout) has     */
+		/* previously created this cache entry.           */
+		rc = globus_gass_cache_add(&globus_l_cache_handle,
+					   request->my_stdout,
+					   request->my_stdout_tag,
+					   GLOBUS_FALSE,           
+					   &timestamp,
+					   &filename);
+		if(rc == GLOBUS_GASS_CACHE_ADD_EXISTS)
+		{
+		    rc = globus_gass_cache_add_done(&globus_l_cache_handle,
+					       request->my_stdout,
+					       request->my_stdout_tag,
+					       timestamp);
+		    if (rc != GLOBUS_SUCCESS)
+		    {
+			request->failure_code =
+			    GLOBUS_GRAM_CLIENT_ERROR_OPENING_STDOUT;
+			grami_fprintf( request->jobmanager_log_fp,
+				       "JM: error add done stdout tag \n");
+		    }
+		    else
+		    {
+			globus_free(filename);
+			rc = GLOBUS_SUCCESS;
+		    }
+		}
+		else
+		{
+		    if (rc != GLOBUS_GASS_CACHE_URL_NOT_FOUND)
+		    {
+			request->failure_code =
+			    GLOBUS_GRAM_CLIENT_ERROR_OPENING_STDOUT;
+			rc = GLOBUS_FAILURE;
+			grami_fprintf( request->jobmanager_log_fp,
+				       "JM: error adding stdout tag \n");
+		    }
+		    else
+		    {
+			rc = GLOBUS_SUCCESS;
+		    }
+		}
+		
+	    }
+	}
+
+    }
+
+    if (rc == GLOBUS_SUCCESS)
+    {
+        grami_fprintf( request->jobmanager_log_fp,
+              "JM: opening stderr fd\n");
+
+        /* open "real" stderr descriptor
+         */
+	globus_l_gram_stderr_fd = globus_gass_open(request->my_stderr,
+						   O_WRONLY|O_APPEND|O_CREAT,
+						   0777);
+	if (globus_l_gram_stderr_fd < 0)
+	{
+	    request->failure_code = GLOBUS_GRAM_CLIENT_ERROR_OPENING_STDERR;
+	    rc = GLOBUS_FAILURE;
+	}	
+	else
+	{
+	    if (request->my_stderr_tag != GLOBUS_NULL)
+	    {
+		char * filename;
+		ulong timestamp;
+		/* try to add the specific tag to the cache entry */
+		/* will prevent automatic deletion of the stderr  */
+		/* when the job finish; usefull for "batch jobs"  */
+		/* Use the option Do Not Create: I want to add it */
+		/* to the cache only if I have an x-gass-cache URL*/
+		/* (in which case the globus_open(stderr) has     */
+		/* previously created this cache entry.           */
+		rc = globus_gass_cache_add(&globus_l_cache_handle,
+					   request->my_stderr,
+					   request->my_stderr_tag,
+					   GLOBUS_FALSE,           
+					   &timestamp,
+					   &filename);
+		if(rc == GLOBUS_GASS_CACHE_ADD_EXISTS)
+		{
+		    rc = globus_gass_cache_add_done(&globus_l_cache_handle,
+					       request->my_stderr,
+					       request->my_stderr_tag,
+					       timestamp);
+		    if (rc != GLOBUS_SUCCESS)
+		    {
+			request->failure_code =
+			    GLOBUS_GRAM_CLIENT_ERROR_OPENING_STDERR;
+			grami_fprintf( request->jobmanager_log_fp,
+				       "JM: error add done stderr tag \n");
+		    }
+		    else
+		    {
+			globus_free(filename);
+			rc = GLOBUS_SUCCESS;
+		    }
+		}
+		else
+		{
+		    if (rc != GLOBUS_GASS_CACHE_URL_NOT_FOUND)
+		    {
+			request->failure_code =
+			    GLOBUS_GRAM_CLIENT_ERROR_OPENING_STDERR;
+			rc = GLOBUS_FAILURE;
+			grami_fprintf( request->jobmanager_log_fp,
+				       "JM: error adding stderr tag \n");
+		    }
+		    else
+		    {
+			rc = GLOBUS_SUCCESS;
+		    }
+		}
+	    }
+	}
     }
 
     if (rc == GLOBUS_SUCCESS)
@@ -1808,7 +1928,7 @@ globus_l_gram_request_fill(globus_rsl_t * rsl_tree,
      *  GET STDOUT PARAM
      */
     if (globus_rsl_param_get(rsl_tree,
-                             GLOBUS_RSL_PARAM_SINGLE_LITERAL,
+			     GLOBUS_RSL_PARAM_MULTI_LITERAL,
                              GLOBUS_GRAM_CLIENT_STDOUT_PARAM,
 		             &tmp_param) != 0)
     {
@@ -1817,15 +1937,33 @@ globus_l_gram_request_fill(globus_rsl_t * rsl_tree,
     }
 
     if (tmp_param[0])
+    {
         req->my_stdout = tmp_param[0];
+    }
     else
+    {
         req->my_stdout = GLOBUS_GRAM_CLIENT_DEFAULT_STDOUT;
+    }
+    if (tmp_param[1])
+    {
+        req->my_stdout_tag = tmp_param[1];
+    }
+    else
+    {
+	req->my_stdout_tag = GLOBUS_NULL;
+    }
+    if (tmp_param[2])
+    {
+	/* error: stdout can be of the form URL or URL TAG only */
+        req->failure_code = GLOBUS_GRAM_CLIENT_ERROR_RSL_STDOUT;
+        return(GLOBUS_FAILURE);	
+    }  	 
 
     /********************************** 
      *  GET STDERR PARAM
      */
     if (globus_rsl_param_get(rsl_tree,
-                             GLOBUS_RSL_PARAM_SINGLE_LITERAL,
+			     GLOBUS_RSL_PARAM_MULTI_LITERAL,
                              GLOBUS_GRAM_CLIENT_STDERR_PARAM,
 		             &tmp_param) != 0)
     {
@@ -1834,10 +1972,28 @@ globus_l_gram_request_fill(globus_rsl_t * rsl_tree,
     }
 
     if (tmp_param[0])
+    {
         req->my_stderr = tmp_param[0];
+    }
     else
+    {
         req->my_stderr = GLOBUS_GRAM_CLIENT_DEFAULT_STDERR;
-
+    }
+    if (tmp_param[1])
+    {
+        req->my_stderr_tag = tmp_param[1];
+    }
+    else
+    {
+	req->my_stderr_tag = GLOBUS_NULL;
+    }
+    if (tmp_param[2])
+    {
+	/* error: stdout can be of the form URL or URL TAG only */
+        req->failure_code = GLOBUS_GRAM_CLIENT_ERROR_RSL_STDERR;
+        return(GLOBUS_FAILURE);	
+    }  	 
+    
     /********************************** 
      *  GET COUNT PARAM
      */
