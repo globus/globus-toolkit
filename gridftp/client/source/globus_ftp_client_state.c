@@ -1481,16 +1481,6 @@ redo:
 	{
 	    target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_MDTM;
 	}
-#if 0
-	else if(client_handle->op == GLOBUS_FTP_CLIENT_LIST ||
-        client_handle->op == GLOBUS_FTP_CLIENT_NLST ||
-		client_handle->op == GLOBUS_FTP_CLIENT_MLSD)
-	{
-	    globus_assert(client_handle->state ==
-			  GLOBUS_FTP_CLIENT_HANDLE_SOURCE_SETUP_CONNECTION);
-	    target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_PORT;
-	}
-#endif
 	/* Prefer PASV data connections for most operations */
 	else if(client_handle->state ==
 		GLOBUS_FTP_CLIENT_HANDLE_DEST_SETUP_CONNECTION ||
