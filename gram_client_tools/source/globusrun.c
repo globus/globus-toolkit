@@ -500,7 +500,7 @@ static int arg_f_mode = O_RDONLY;
 
 	globusrun_i_args_init();
 
-	if ( 0 > globus_args_scan( &argc,
+	if ( 0 > (err = globus_args_scan( &argc,
 				   &argv,
 				   arg_num,
 				   args_options,
@@ -509,10 +509,10 @@ static int arg_f_mode = O_RDONLY;
 				   oneline_usage,
 				   long_usage,
 				   &options_found,
-				   GLOBUS_NULL   ) )  /* error on argument line */
+				   GLOBUS_NULL   )) )  /* error on argument line */
 	{
 	    globus_module_deactivate_all();
-	    exit(-1);
+	    exit(err == GLOBUS_FAILURE ? 1 : 0);
 	}
 
 	/* maximum one unflagged argument should remain: the RSL string */
