@@ -79,8 +79,8 @@
 #define kLibraryMagic "LibNcFTP 3.0.6G"
 
 #ifndef longest_int
-#define longest_int long long
-#define longest_uint unsigned long long
+#define longest_int long
+#define longest_uint unsigned long
 #endif
 
 #ifndef forever

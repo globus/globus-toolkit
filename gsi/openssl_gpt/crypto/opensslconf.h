@@ -6,6 +6,13 @@
 #   define OPENSSL_UNISTD <unistd.h>
 #endif
 
+#ifdef HEADER_CRYPTLIB_H
+#   ifndef OPENSSLDIR
+#       define OPENSSLDIR "/home/mbletzin/work/INSTALL"
+#   endif
+#endif
+
+
 #ifdef HEADER_BN_H
 #   ifndef SIXTY_FOUR_BIT_LONG
 /* #       undef SIXTY_FOUR_BIT_LONG */
@@ -19,14 +26,17 @@
 #   ifndef BN_LLONG
 #       define BN_LLONG 1
 #   endif
+#   ifndef BN_DIV2W
+/* #       undef BN_DIV2W */
+#   endif
 #endif
 
 #ifdef HEADER_DES_LOCL_H
 #   ifndef DES_PTR
-/* #       undef DES_PTR */
-#   endif 
-#   ifndef DES_RISC1 
-/* #       undef DES_RISC1 */
+#       define DES_PTR 1
+#   endif
+#   ifndef DES_RISC1
+#       define DES_RISC1 1
 #   endif
 #   ifndef DES_RISC2
 /* #       undef DES_RISC2 */
@@ -34,6 +44,9 @@
 #   ifndef DES_UNROLL
 #       define DES_UNROLL 1
 #   endif
+#endif
+
+#ifdef HEADER_DES_H
 #   ifndef DES_LONG
 #       define DES_LONG unsigned long
 #   endif
@@ -41,22 +54,22 @@
 
 #ifdef HEADER_BF_LOCL_H
 #   ifndef BF_PTR
-#       define BF_PTR 1
+/* #       undef BF_PTR */
 #   endif
 #endif
 
 #ifdef HEADER_RC4_H
 #   ifndef RC4_CHUNK
-#       define RC4_CHUNK unsigned long
+/* #       undef RC4_CHUNK */
 #   endif
 #   ifndef RC4_INT
-#       define RC4_INT unsigned char
+#       define RC4_INT unsigned int
 #   endif
 #endif
 
 #ifdef HEADER_RC4_LOCL_H
 #   ifndef RC4_INDEX
-/* #       undef RC4_INDEX */
+#       define RC4_INDEX 1
 #   endif
 #endif
 

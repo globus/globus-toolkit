@@ -18,10 +18,16 @@
       </Dependency>
     </Source_Dependencies>
 
+    <Source_Dependencies Type="pgm_link">
+      <Dependency Name="globus_openssl">
+        <Version><Simple_Version Major="0"></Simple_Version></Version>
+      </Dependency>
+    </Source_Dependencies>
+
     <With_Flavors build="yes" />
 
     <Build_Environment>
-      <cflags>@GPT_CFLAGS@</cflags>
+      <cflags>@GPT_PKG_CFLAGS@</cflags>
       <external_includes>@GPT_EXTERNAL_INCLUDES@</external_includes>
       <external_libs>@GPT_EXTERNAL_LIBS@</external_libs>
       <pkg_libs>-lssl -lcrypto</pkg_libs>
