@@ -279,6 +279,11 @@ gssapi_remove_delegation()
     return(0);
 }
 
+
+#ifdef GLOBUS_AUTHORIZATION
+extern char * ftp_authz_identity();
+#endif
+
 /*
  * gssapi_identity()
  *
@@ -303,9 +308,9 @@ gssapi_identity()
 	return(identity);
     }
 
-#endif /* GLOBUS_AUTHORIZATION */
-
+#else
     return (char *)client_name.value;
+#endif /* GLOBUS_AUTHORIZATION */
 }
 
 /*
