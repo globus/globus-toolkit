@@ -33,7 +33,7 @@ divert(0)dnl
 undivert(0)
 
 AC_CONFIG_HEADER(config.h src/config.h)
-AC_PREFIX_DEFAULT(/usr)
+AC_PREFIX_DEFAULT(${GLOBUS_LOCATION:-/usr})
 AC_CANONICAL_SYSTEM
 AC_PROG_CC
 AC_ISC_POSIX
