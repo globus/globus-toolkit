@@ -32,10 +32,10 @@ static void
 make_len_header(int len,
 		char len_header[4])
 {
-    len_header[0] = (len >> 24) && 0xFF;
-    len_header[1] = (len >> 16) && 0xFF;
-    len_header[2] = (len >> 8) && 0xFF;
-    len_header[3] = len && 0xFF;
+    len_header[0] = (len >> 24) & 0xFF;
+    len_header[1] = (len >> 16) & 0xFF;
+    len_header[2] = (len >> 8) & 0xFF;
+    len_header[3] = len & 0xFF;
 }
 
 /*
@@ -189,9 +189,11 @@ int
 GSIPACKET_add_string(GSIPACKET *packet,
 		     char *string)
 {
-    return GSIPACKET_add_data(packet,
-			      string,
-			      (string == NULL ? 0 : strlen(string)));
+    int string_len;
+    
+    string_len = (string == NULL ? 0 : strlen(string) + 1 /* for NUL */);
+    
+    return GSIPACKET_add_data(packet, string, string_len);
 }
 
 
@@ -290,7 +292,7 @@ GSIPACKET_get_strings(GSIPACKET *packet)
     
     if ((packet == NULL) ||
 	(packet->data == NULL) ||
-	(packet->datalen = 0))
+	(packet->datalen == 0))
     {
 	return NULL;
     }
@@ -299,13 +301,16 @@ GSIPACKET_get_strings(GSIPACKET *packet)
     {
 	char *tmp_ptr;
 	
+	/* Make sure strings array is large enough to hold
+	 * this string and NUL terminator.
+	 */
 	if (strings_index <= strings_size)
 	{
 	    /* Expand strings array */
 	    char **new_strings;
 	    
 	    strings_size += 5;	/* Arbitraty amount */
-	    new_strings = realloc(strings, strings_size);
+	    new_strings = realloc(strings, strings_size * sizeof(char *));
 	    if (new_strings == NULL)
 	    {
 		goto error;
@@ -316,13 +321,15 @@ GSIPACKET_get_strings(GSIPACKET *packet)
 	tmp_ptr = &(packet->data[data_index]);
 	strings[strings_index] = tmp_ptr;
 	strings_index++;
-	data_index += strlen(tmp_ptr) + 1;
+    
+	/* Terminate array */
+	strings[strings_index] = NULL;
+
+	/* And skip over string in data */
+	data_index += strlen(tmp_ptr) + 1 /* for NUL */;
     }
     
-    /* Terminate array */
-    strings[strings_index] = NULL;
-    
-    return strings;
+    return strings;	/* May be NULL if no data */
     
   error:
     if (strings)
