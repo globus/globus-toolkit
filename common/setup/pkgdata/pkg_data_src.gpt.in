@@ -12,7 +12,7 @@
 
     <src_pkg>
 
-	    <Source_Dependencies Type="compile">
+        <Source_Dependencies Type="compile">
 	        <Dependency Name="globus_core"> 
                 <Version>
                     <Simple_Version Major="2"/>
@@ -29,6 +29,7 @@
             <Dependency Name="globus_common" Package="pgm"> 
                 <Version>
                     <Simple_Version Major="3"/>
+                </Version>
             </Dependency>
         </Source_Dependencies>
 
