@@ -74,8 +74,6 @@ globus_ftp_client_test_perf_plugin_init(
         perf_plugin_begin_cb,
         perf_plugin_marker_cb,
         perf_plugin_complete_cb,
-        GLOBUS_NULL,
-        GLOBUS_NULL,
         GLOBUS_NULL);
 }
 
