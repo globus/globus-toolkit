@@ -755,7 +755,7 @@ sub cvs_checkout_generic ()
 	    $cvsopts = "";
 	}
 
-	log_system("cvs -d $cvsroot co $cvsopts $module",
+	log_system("cvs -d $cvsroot co -P $cvsopts $module",
 		   "$cvs_logs/" . $tree . ".log");
 
 	if ( $? ne 0 )
