@@ -1211,23 +1211,39 @@ globus_l_gsc_pmod_959_cmd_site(
     void *                                  user_arg)
 {
     globus_l_gsc_pmod_959_cmd_handle_t *    cmd_handle;
+    char *                                  save;
     char *                                  site_type = NULL;
+    char *                                  site_args;
     char *                                  msg = NULL;
     int                                     tmp_i;
-    int                                     sc;
     GlobusGridFTPServerName(globus_l_gsc_pmod_959_cmd_site);
 
     cmd_handle = (globus_l_gsc_pmod_959_cmd_handle_t *) user_arg;
 
-    site_type = (char *) globus_malloc(strlen(full_command));
+    site_type = globus_libc_strdup(full_command);
+    save = site_type;
     if(site_type == NULL)
     {
         goto err;
     }
 
     msg = "200 Site Command Successful.\r\n";
-    sc = sscanf(full_command, "%*s %s %d", site_type, &tmp_i);
-    if(sc != 2)
+    
+    /* skip SITE command */
+    for(; isalnum(*site_type); site_type++);
+    for(; isspace(*site_type); site_type++);
+    /* skip site type */
+    for(site_args = site_type; isalnum(*site_args); site_args++);
+    if(*site_args)
+    {
+        *site_args = 0;
+        site_args++;
+        for(; isspace(*site_args); site_args++);
+    }
+    
+    tmp_i = atoi(site_args);
+    
+    if(!*site_type)
     {
         msg = "500 Invalid Command.\r\n";
     }
@@ -1263,18 +1279,13 @@ globus_l_gsc_pmod_959_cmd_site(
     }
     else if(strcmp(site_type, "HELP") == 0)
     {
-        void *                              tmp_ptr;
-
-        tmp_ptr = strstr(full_command, "HELP");
-        globus_assert(tmp_ptr != NULL);
-        tmp_ptr += 5;
-
         globus_l_gsc_pmod_959_cmd_help(
             op,
             server,
             "HELP",
-            tmp_ptr,
+            full_command + (site_type - save),
             user_arg);
+        msg = NULL;
     }
     else
     {
@@ -1285,9 +1296,16 @@ globus_l_gsc_pmod_959_cmd_site(
     {
         globus_gsc_pmod_959_finished_op(op, msg);
     }
+    
+    globus_free(save);
     return;
 
   err:
+    if(save)
+    {
+        globus_free(save);
+    }
+    
     globus_gsc_959_panic(op, GlobusGridFTPServerErrorMemory("message"));
 }
 
