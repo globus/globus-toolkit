@@ -177,7 +177,7 @@ kexgss_client(Kex *kex)
 				min_status=packet_get_int();
 				msg=packet_get_string(NULL);
 				lang=packet_get_string(NULL);
-				fprintf(stderr,"GSSAPI Error: \n%s",msg);
+				fatal("GSSAPI Key Exchange Error: \n%s",msg);
 			default:
 				packet_disconnect("Protocol error: didn't expect packet type %d",
 		    		type);
