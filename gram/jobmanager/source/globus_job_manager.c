@@ -3990,6 +3990,8 @@ globus_l_jm_http_query_callback( void *               arg,
     int                                  status;
     int                                  rc;
     globus_bool_t                        done;
+    char *                               after_signal;
+    globus_gram_client_job_signal_t      signal;
 
 
     GRAM_LOCK;
@@ -4053,6 +4055,39 @@ globus_l_jm_http_query_callback( void *               arg,
 	GRAM_LOCK;
 	status = request->status;
 	GRAM_UNLOCK;
+    }
+    else if (strcmp(query,"signal")==0)
+    {
+	if (sscanf(rest,"%d", &request->signal) != 1)
+	    rc = GLOBUS_GRAM_CLIENT_ERROR_HTTP_UNPACK_FAILED;
+	else
+        {
+            after_signal = strchr(rest,' ');
+            if (after_signal)
+                *after_signal++ = '\0';
+
+            if (after_signal && (strlen(after_signal) > 0))
+            {
+                request->signal_arg = globus_libc_strdup(after_signal);
+
+                GRAM_LOCK;
+                rc = globus_jobmanager_request_signal(request);
+                GRAM_UNLOCK;
+
+                if (rc != GLOBUS_SUCCESS)
+                {
+                    rc = GLOBUS_GRAM_CLIENT_ERROR_SIGNALING_JOB;
+                }
+                else
+                {
+                    status = request->status;
+                }
+            }
+            else
+            {
+                rc = GLOBUS_GRAM_CLIENT_ERROR_HTTP_UNPACK_FAILED;
+            }
+	}
     }
     else if (strcmp(query,"register")==0)
     {
@@ -4177,6 +4212,3 @@ globus_l_jm_http_query_send_reply:
     graml_jm_can_exit = GLOBUS_TRUE;
     GRAM_UNLOCK;
 }
-    
-
-
