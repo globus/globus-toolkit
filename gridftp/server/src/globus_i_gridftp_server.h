@@ -14,6 +14,9 @@ typedef struct
     char *                          rnfr_pathname;
     int                             transfer_id;
     globus_gridftp_server_control_op_t op;
+
+    /* XXX: is this a good place ? */
+    void *                          user_data_handle;
     
     union
     {

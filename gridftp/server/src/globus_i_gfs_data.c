@@ -219,6 +219,7 @@ globus_l_gfs_data_operation_destroy(
     
 globus_result_t
 globus_i_gfs_data_request_stat(
+    void *                              user_handle,
     globus_gfs_ipc_handle_t             ipc_handle,
     int                                 id,
     globus_gfs_stat_info_t *       stat_info,
@@ -535,6 +536,7 @@ error_alloc:
     
 globus_result_t
 globus_i_gfs_data_request_command(
+    void *                              user_handle,
     globus_gfs_ipc_handle_t             ipc_handle,
     int                                 id,
     globus_gfs_command_info_t *        cmd_info,
@@ -880,6 +882,7 @@ globus_l_gfs_data_passive_kickout(
 
 globus_result_t
 globus_i_gfs_data_request_passive(
+    void *                              user_handle,
     globus_gfs_ipc_handle_t             ipc_handle,
     int                                 id,
     globus_gfs_data_info_t *           data_info,
@@ -1047,6 +1050,7 @@ globus_l_gfs_data_active_kickout(
 
 globus_result_t
 globus_i_gfs_data_request_active(
+    void *                              user_handle,
     globus_gfs_ipc_handle_t             ipc_handle,
     int                                 id,
     globus_gfs_data_info_t *           data_info,
@@ -1197,6 +1201,7 @@ error_op:
     
 globus_result_t
 globus_i_gfs_data_request_recv(
+    void *                              user_handle,
     globus_gfs_ipc_handle_t             ipc_handle,
     int                                 id,
     globus_gfs_transfer_info_t *        recv_info,
@@ -1207,7 +1212,6 @@ globus_i_gfs_data_request_recv(
     globus_l_gfs_data_operation_t *     op;
     globus_result_t                     result;
     globus_i_gfs_data_handle_t *        data_handle;
-    int                                 i;
     GlobusGFSName(globus_i_gfs_data_recv_request);
 
     data_handle = (globus_i_gfs_data_handle_t *)
@@ -1277,6 +1281,7 @@ error_handle:
     
 globus_result_t
 globus_i_gfs_data_request_send(
+    void *                              user_handle,
     globus_gfs_ipc_handle_t             ipc_handle,
     int                                 id,
     globus_gfs_transfer_info_t *       send_info,
@@ -1435,6 +1440,7 @@ error:
 
 globus_result_t
 globus_i_gfs_data_request_list(
+    void *                              user_handle,
     globus_gfs_ipc_handle_t             ipc_handle,
     int                                 id,
     globus_gfs_transfer_info_t *       list_info,
@@ -2309,6 +2315,7 @@ globus_l_gfs_data_transfer_event_kickout(
 
 void
 globus_i_gfs_data_request_transfer_event(
+    void *                              user_handle,
     globus_gfs_ipc_handle_t             ipc_handle,
     int                                 transfer_id,
     int                                 event_type)
@@ -2406,4 +2413,17 @@ globus_i_gfs_data_node_start(
     return res;
 }
 
+void
+globus_i_gfs_data_session_start(
+    void **                             user_handle,
+    globus_gfs_ipc_handle_t             ipc_handle,
+    const char *                        user_dn)
+{
+}
 
+void
+globus_i_gfs_data_session_stop(
+    void *                              user_handle,
+    globus_gfs_ipc_handle_t             ipc_handle)
+{
+}

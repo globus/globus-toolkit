@@ -427,6 +427,7 @@ globus_l_gfs_request_stat(
 
 
     result = globus_i_gfs_data_request_stat(
+        instance->user_data_handle,
         NULL,
         0,
         stat_info,
@@ -620,6 +621,7 @@ globus_l_gfs_request_command(
     command_info->rnfr_pathname = cmd_attr.rnfr_pathname; 
     
     result = globus_i_gfs_data_request_command(
+        instance->user_data_handle,
         NULL,
         0,
         command_info,
@@ -653,6 +655,7 @@ globus_l_gfs_request_transfer_event(
     instance = (globus_i_gfs_server_instance_t *) user_arg;
     
     globus_i_gfs_data_request_transfer_event(
+        instance->user_data_handle,
         NULL, instance->transfer_id, event_type);
     
     return;
@@ -808,6 +811,7 @@ globus_l_gfs_request_send(
     instance->op = op;
     
     result = globus_i_gfs_data_request_send(
+        instance->user_data_handle,
         NULL,
         0,
         send_info,
@@ -897,6 +901,7 @@ globus_l_gfs_request_recv(
     instance->op = op;
 
     result = globus_i_gfs_data_request_recv(
+        instance->user_data_handle,
         NULL,
         0,
         recv_info,
@@ -960,6 +965,7 @@ globus_l_gfs_request_list(
     instance->op = op;
     
     result = globus_i_gfs_data_request_list(
+        instance->user_data_handle,
         NULL,
         0,
         list_info,
@@ -1113,6 +1119,7 @@ globus_l_gfs_request_passive_data(
         data_info->max_cs = max;
         
     result = globus_i_gfs_data_request_passive(
+        instance->user_data_handle,
         NULL,
         0,
         data_info,
@@ -1211,6 +1218,7 @@ globus_l_gfs_request_active_data(
     data_info->cs_count = cs_count;
     
     result = globus_i_gfs_data_request_active(
+        instance->user_data_handle,
         NULL,
         0,
         data_info,
