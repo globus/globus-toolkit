@@ -621,7 +621,7 @@ globus_l_gfs_ipc_error_close_kickout(
 
     ipc = (globus_i_gfs_ipc_handle_t *) user_arg;
 
-    if(ipc->error_cb)
+    if(ipc->state == GLOBUS_GFS_IPC_STATE_IN_USE && ipc->error_cb)
     {
         ipc->error_cb(ipc, ipc->cached_res, ipc->error_arg);
     }
