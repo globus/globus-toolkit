@@ -342,6 +342,7 @@ globus_l_rsl_assist_simple_query_ldap(
 {
     LDAP *			ldap_server;
     int				port;
+    char*                       port_str;
     char *			base_dn=GLOBUS_MDS_ROOT_DN;
     char *			server;
     LDAPMessage *		reply;
@@ -352,9 +353,9 @@ globus_l_rsl_assist_simple_query_ldap(
     
     *job_contact_list = GLOBUS_NULL;
 
-    if ((port=globus_libc_getenv("GLOBUS_MDS_PORT")) == GLOBUS_NULL)
+    if ((port_str=globus_libc_getenv("GLOBUS_MDS_PORT")) == GLOBUS_NULL)
     {
-	port=atoi(GLOBUS_MDS_PORT);
+	port=atoi(port_str);
     }
     if ((server=globus_libc_getenv("GLOBUS_MDS_HOST")) == GLOBUS_NULL)
     {
