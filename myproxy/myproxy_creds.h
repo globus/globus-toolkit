@@ -52,7 +52,7 @@ int myproxy_creds_store(const struct myproxy_creds *creds);
  * Retrieve the credentials associated with the username and
  * credential name in the given myproxy_creds structure.
  * Note: No checking on the passphrase or owner name is done.
- * Note: The passphrase in the myproxy_creds structure is crypt()'ed.
+ * Note: The passphrase returned in the myproxy_creds structure is crypt()'ed.
  *
  * Returns -1 on error, 0 on success.  */
 int myproxy_creds_retrieve(struct myproxy_creds *creds);
@@ -66,7 +66,7 @@ int myproxy_creds_retrieve(struct myproxy_creds *creds);
  * a linked-list using the next field in the given myproxy_creds
  * structure.  The default credential (i.e., with no credname) will be
  * first in the list, if one exists.
- * Note: The passphrase in the myproxy_creds structure is crypt()'ed.
+ * Note: The passphrase returned in the myproxy_creds structure is crypt()'ed.
  *
  * Returns -1 on error, 0 on success.
  */
