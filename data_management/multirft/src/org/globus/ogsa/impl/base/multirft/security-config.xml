@@ -1,6 +1,5 @@
 <securityConfig xmlns="http://www.globus.org">
- <method name="multirft:start" 
-         xmlns:multirft="http://multirft.base.ogsa.globus.org">
+ <method name="start"> 
    <run-as>
      <caller-identity/>
    </run-as>
