@@ -27,14 +27,18 @@ usage () {
 	echo "$0 -b		Install GT2 binaries, not source."
 	echo "$0 -v		Pass -verbose to gpt-build."
 	echo "$0 -f		Pass -force to gpt-build."
+	echo "$0 -pbs		Install GT2 pbs scripts"
 	echo
 }
 
 setup_environment() {
 	#If user already has a JAVA_HOME, use it
 	if [ x"$JAVA_HOME" = "x" ]; then
+		# 1.4.1 preferred for xindice
+		if [ -e /usr/java/j2sdk1.4.1_02/ ]; then
+			export JAVA_HOME=/usr/java/j2sdk1.4.1_02/
 		# For MCS machines
-		if [ -e /home/dsl/javapkgs/java-env-setup.sh ]; then
+		elif [ -e /home/dsl/javapkgs/java-env-setup.sh ]; then
 			source /home/dsl/javapkgs/java-env-setup.sh
 		# ruly and mayed
 		elif [ -d /usr/java/jdk1.3.1_07 ]; then
@@ -49,8 +53,31 @@ setup_environment() {
 		fi
 	fi
 
-	echo Using JAVA_HOME of $JAVA_HOME
+	for f in logs BUILD package-output; do
+		cleanup_dir $f
+	done
+
 	mkdir -p logs
+	report_environment
+}
+
+cleanup_dir () {
+	if [ -d $1 ]; then
+		echo "Cleaning up old builds by moving $1 to $1.old"
+		if [ -d $1.old ]; then
+			rm -fr $1.old
+		fi
+		mv $1 $1.old
+	fi
+}
+
+report_environment() {
+	echo
+	echo You are using $0 from:
+	cvs stat $0 | grep Tag
+	echo Using JAVA_HOME of $JAVA_HOME
+	type ant
+	echo
 }
 
 # checkout_cvs_generic cvsdir checkoutdir module [ tag ] 
@@ -151,6 +178,7 @@ build_gt2_autotools() {
 	export PATH=$PWD/autotools/bin:$PATH
 
 	cd ..
+	echo
 }
 
 
@@ -187,9 +215,14 @@ install_gpt3() {
 
 install_gt2_binary() {
 	echo Installing custom GT2 bundle
-	$GPT_LOCATION/sbin/gpt-install fait_accompli/gt2_deps_gt3_beta-2.4_bin.tar.gz
+	$GPT_LOCATION/sbin/gpt-install fait_accompli/gt2_deps_gt3_final-2.4-i686-pc-linux-gnu-bin.tar.gz
 	$GPT_LOCATION/sbin/gpt-postinstall
 	echo
+
+	echo Installing libxml2 for the sake of globus_grim
+	pushd ogsa-cvs/ogsa-c/build_tools
+	./cvs-build-ogsa --force libxml gcc32dbg
+	popd
 }
 
 install_gt2_source() {
@@ -216,20 +249,15 @@ install_gt2_source() {
 
 # Our GLOBUS_LOCATION was set when we installed GT2
 # and we built autotools separately and put it on our path already.
-# Need to unset gpt location - it's 2.x version, and there's a 1.x version in
-# $GLOBUS_LOCATION.  This freaks cvs-build-ogsa out.
+# cvs-build-ogsa seems happy with modern GPT versions now, so I
+# removed code to unset GPT_LOCATION.
 
 install_cdeps() {
 		
 	pushd ogsa-cvs/ogsa-c/build_tools
 
-	OGPT=$GPT_LOCATION
-	unset GPT_LOCATION
-
-	# $GPT_LOCATION/sbin/gpt-build -nosrc gcc32dbg
 	./cvs-build-ogsa ${verbose} --force gcc32dbg
 	
-	export GPT_LOCATION=$OGPT
 	cd bin_packages
 	$GPT_LOCATION/sbin/gpt-bundle -all -bindir=. -output=ogsa_cbindings_bin_bundle.tar.gz
 	cd ../source_packages
@@ -249,6 +277,12 @@ make_source_package() {
 		echo Logging to logs/${name}.log
 		pwd
 		$1/custom-build ogsa-cvs/$subdir $GPT_LOCATION $GLOBUS_LOCATION gcc32dbg > logs/${name}.log 2>&1
+		if [ x$output != "x" ]; then
+			mkdir -p package-output/cdeps
+			echo cp ogsa-cvs/$subdir/$output package-output/cdeps
+			cp ogsa-cvs/$subdir/$output package-output/cdeps
+		fi
+
 		echo
 		return;
 	fi
@@ -310,23 +344,24 @@ make_source_package() {
 
 #Cleanup env for next iteration.
 unset_env() {
-	unset name subdir build gar;
+	unset name subdir build gar output;
 }
 
 #iter_generic dir
 #dir should contain a file called build-info
 iter_generic() {
-	if [ -e $1/build-info ]; then
-		if [ x$force = "x" ]; then
-			if [ -e $1/IGNORE ]; then
-				echo "$1/IGNORE exists, skipping $1"
-			fi
-		else
-			if [ -e $1/IGNORE ]; then
-				echo "$1/IGNORE exists, but -force is set.  Forcing anyway."
-			fi
+	if [ x$force = "x" ]; then
+		if [ -e $1/IGNORE ]; then
+			echo "$1/IGNORE exists, skipping $1";
+			return;
 		fi
+	fi
 
+	if [ -e $1/IGNORE ]; then
+		echo "$1/IGNORE exists, but -force is set.  Forcing anyway."
+	fi
+
+	if [ -e $1/build-info ]; then
 		source $1/build-info
 		make_source_package $1
 		unset_env
@@ -373,16 +408,23 @@ collate_packages() {
 	$GPT_LOCATION/sbin/gpt-bundle -bn=gt3-all-src -bv=1.0 -srcdir=package-output -all
 
 	if [ $release = 1 ]; then
-		mkdir -p release-candidate/gt3-alpha3-source-installer
-		cp gt3-all-src* release-candidate/gt3-alpha3-source-installer
-		cp fait_accompli/gt3_alpha2_src_bundle-r1_src.tar.gz release-candidate/gt3-alpha3-source-installer
-		cp fait_accompli/gpt-2.2.9-src.tar.gz release-candidate/gt3-alpha3-source-installer
-		cp fait_accompli/install-gt3-alpha3-src release-candidate/gt3-alpha3-source-installer
-		cp fait_accompli/OGSI.NET.zip release-candidate/gt3-alpha3-source-installer
-		pushd release-candidate
-		tar czf gt3_alpha3_src_installer.tar.gz gt3-alpha3-source-installer
-		rm -fr gt3-alpha3-source-installer
-		popd
+		releasedir=release-candidate/gt3-beta-rc2-installer
+		mkdir -p $releasedir
+		cp gt3-all-src* $releasedir
+		cp fait_accompli/install-gt3-beta $releasedir
+
+		if [ -f /mcs/ftp.globus.org/pub/gt2/2.4/2.4.0/bundles/bin/globus-all-2.4.0-i686-pc-linux-gnu-bin.tar.gz ]; then
+			cp /mcs/ftp.globus.org/pub/gt2/2.4/2.4.0/bundles/bin/globus-all-2.4.0-i686-pc-linux-gnu-bin.tar.gz $releasedir
+		else
+			echo You will need to copy globus-all-2.4.0-i686-pc-linux-gnu-bin.tar.gz to $releasedir by hand.
+			echo /mcs/ftp.globus.org/pub/gt2/2.4/2.4.0/bundles/bin/globus-all-2.4.0-i686-pc-linux-gnu-bin.tar.gz
+			echo did not exist.
+		fi
+
+		cp fait_accompli/gpt-2.2.9-src.tar.gz $releasedir
+		cp fait_accompli/OGSI.NET.zip $releasedir
+		cp fait_accompli/globus_proxy_wrapper-1.0.tar.gz $releasedir
+
 	fi
 
 }
@@ -393,52 +435,37 @@ install_bundle() {
 	$GPT_LOCATION/sbin/gpt-build ${verbose} ${force} gt3-all-src-1.0-src_bundle.tar.gz gcc32dbg
 
 	if [ $release = 1 ]; then
+		# Still needs more work to get binaries right.
+
 		echo Collecting GT3 binaries from $dir
-		# This is now broken, since I install GT2 first.  Need to use an
-		# explicit packaging_list for this.
-		$GPT_LOCATION/sbin/gpt-pkg --installdir=$dir -all
+		echo $GPT_LOCATION/sbin/gpt-pkg --installdir=$dir `cat fait_accompli/gt3_packaging_list`
 
 		# This is our gt3 binary bundle
 		# Package it with the gt2 binary bundle to make a distro
 		# Do this before installing GT2 to avoid getting all those
 		# packages also.
-		$GPT_LOCATION/sbin/gpt-bundle -bn=gt3-all-bin -bv=1 -all -bindir=binaries
-
-		mkdir -p release-candidate/gt3-alpha3-binary-installer
-		mv gt3-all-bin* release-candidate/gt3-alpha3-binary-installer
-		cp fait_accompli/gt3_alpha2_bin_bundle-r1_bin.tar.gz release-candidate/gt3-alpha3-binary-installer
-		cp fait_accompli/gpt-2.2.9-src.tar.gz release-candidate/gt3-alpha3-binary-installer
-		cp fait_accompli/install-gt3-alpha3-bin release-candidate/gt3-alpha3-binary-installer
-		cp fait_accompli/OGSI.NET.zip release-candidate/gt3-alpha3-binary-installer
-		cp fait_accompli/globus-rls-server-1.1-i686-pc-linux-gnu-bin.tar.gz release-candidate/gt3-alpha3-binary-installer
-		pushd release-candidate
-		tar czf gt3_alpha3_bin_installer.tar.gz gt3-alpha3-binary-installer
-		rm -fr gt3-alpha3-binary-installer
-		popd
+		echo $GPT_LOCATION/sbin/gpt-bundle -bn=gt3-all-bin -bv=1 -all -bindir=binaries
 	fi
 
-	# Now redundant
-	# echo Installing GT2 dep bundle into $dir
-	# install_gt2_binary $dir
 
 	if [ $release = 1 ]; then
 		# This is gt3 core binary.  Distribute by itself.
 		pushd BUILD/core-0.3-src/core/impl/java/build/
-		tar czf gt3-core-alpha3.tar.gz ogsa-alpha-3/
+		tar czf gt3-beta-rc2-core.tar.gz ogsa-beta/
 		popd
-		mv BUILD/core-0.3-src/core/impl/java/build/gt3-core-alpha3.tar.gz release-candidate
+		mv BUILD/core-0.3-src/core/impl/java/build/gt3-beta-rc2-core.tar.gz release-candidate
 
 		# This is gt3 core source.  Distribute by itself.
 		pushd ogsa-cvs/
-		tar czf gt3-core-src-alpha3.tar.gz ogsa
+		tar czf gt3-beta-rc2-core-src.tar.gz ogsa
 		popd
-		mv ogsa-cvs/gt3-core-src-alpha3.tar.gz release-candidate
+		mv ogsa-cvs/gt3-beta-rc2-core-src.tar.gz release-candidate
 
 		# This is the gars bundle.  Distribute by itself,
 		# but it needs core installed first.
 		mkdir gars/
 		cp $dir/gars/* gars
-		tar czf release-candidate/gt3-alpha3-gars.tar.gz gars
+		tar czf release-candidate/gt3-beta-rc2-gars.tar.gz gars
 	fi
 
 }
@@ -459,11 +486,15 @@ read_args() {
 	installbin=0
 	verbose=""
 	force=""
+	pbs=-1
 
 	while [ x$1 != "x" ]; do
 		if [ $1 = "-t" ]; then
 			export tag=$2;
 			shift; shift;
+		elif [ $1 = "-pbs" ]; then
+			export pbs=1;
+			shift; 
 		elif [ $1 = "-t2" ]; then
 			export gt2tag=$2;
 			shift; shift;
@@ -580,9 +611,27 @@ if [ $buildc = 1 ]; then
 		install_gt2_source
 	fi
 
+	if [ $pbs = 1 ]; then
+		echo PBS requested.  Installing pbs jobmanager
+		echo and running gpt-postinstall.
+		$GPT_LOCATION/sbin/gpt-build fait_accompli/globus_gram_job_manager_setup_pbs-1.5.tar.gz
+		$GPT_LOCATION/sbin/gpt-postinstall
+	fi
+
 	echo Building C-dependent packages
 	install_cdeps
 	dir_iter package-list-cdeps
+fi
+
+if [ $release = 1 ]; then
+	tar xzf fait_accompli/gt2_deps_gt3_beta-2.4-2_bin.tar.gz gssapi_error-2.1-i686-pc-linux-gnu-gcc32dbg-rtl.tar.gz gssapi_error-2.1-i686-pc-linux-gnu-gcc32dbg-dev.tar.gz
+	mv gssapi_error-2.1-i686-pc-linux-gnu-gcc32dbg-rtl.tar.gz gssapi_error-2.1-i686-pc-linux-gnu-gcc32dbg-dev.tar.gz release-candidate/gt3-beta-rc2-installer
+	cp package-output/cdeps/* release-candidate/gt3-beta-rc2-installer
+	cp package-output/*cbindings* release-candidate/gt3-beta-rc2-installer
+	pushd release-candidate
+	tar czf gt3-beta-rc2-installer.tar.gz gt3-beta-rc2-installer
+	rm -fr gt3-beta-rc2-installer
+	popd
 fi
 
 echo Running gpt-postinstall, just in case.

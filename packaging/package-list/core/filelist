@@ -1592,7 +1592,6 @@
 ./docs/api/org/globus/ogsa/repository/class-use/ServiceLoaderException.html
 ./docs/api/org/globus/ogsa/repository/class-use/ServiceActivator.html
 ./docs/api/org/globus/ogsa/repository/class-use/ServiceActivationException.html
-./docs/api/org/globus/ogsa/repository/class-use/SimpleFileLoader.html
 ./docs/api/org/globus/ogsa/repository/class-use/ServiceActivatorHolder.html
 ./docs/api/org/globus/ogsa/repository/class-use/ServiceListener.html
 ./docs/api/org/globus/ogsa/repository/class-use/ServiceLoader.html
@@ -1607,7 +1606,6 @@
 ./docs/api/org/globus/ogsa/repository/package-summary.html
 ./docs/api/org/globus/ogsa/repository/package-use.html
 ./docs/api/org/globus/ogsa/repository/package-tree.html
-./docs/api/org/globus/ogsa/repository/SimpleFileLoader.html
 ./docs/api/org/globus/ogsa/repository/package-frame.html
 ./docs/api/org/globus/ogsa/config/package-frame.html
 ./docs/api/org/globus/ogsa/config/package-summary.html
@@ -2112,7 +2110,6 @@
 ./guide/tools.properties
 ./guide/build-tools-usage.xml
 ./lib/xmlParserAPIs.jar
-./lib/jaas.jar
 ./lib/log4j-core.jar
 ./lib/jaxp.jar
 ./lib/cog-axis.jar
@@ -2141,7 +2138,6 @@
 ./LICENSE
 ./licenses/puretls.LICENSE
 ./licenses/cryptix.LICENSE
-./licenses/jaas.LICENSE
 ./licenses/saaj.LICENSE
 ./licenses/wsdl4j.LICENSE
 ./licenses/servlet.LICENSE
@@ -2413,7 +2409,6 @@
 ./tomcat/common/lib/saaj.jar
 ./tomcat/common/lib/xalan.jar
 ./tomcat/common/lib/jaxp.jar
-./tomcat/common/lib/jaas.jar
 ./tomcat/server/lib/cog-tomcat.jar
 ./uhe-server-config.wsdd
 ./webapps/ogsa/index.html
@@ -2421,7 +2416,6 @@
 ./webapps/ogsa/WEB-INF/lib/wsdl4j.jar
 ./webapps/ogsa/WEB-INF/lib/ogsa.jar
 ./webapps/ogsa/WEB-INF/lib/cog-axis.jar
-./webapps/ogsa/WEB-INF/lib/xmlParserAPIs.jar
 ./webapps/ogsa/WEB-INF/lib/axis.jar
 ./webapps/ogsa/WEB-INF/lib/xercesImpl.jar
 ./webapps/ogsa/WEB-INF/lib/ogsa-samples.jar
@@ -2436,4 +2430,3 @@
 ./webapps/ogsa/WEB-INF/samples-config.wsdd
 ./webapps/ogsa/WEB-INF/core-client-config.wsdd
 ./webapps/ogsa/WEB-INF/ogsilogging.properties
-./webapps/ogsa/WEB-INF/ogsilogging_parms.properties
