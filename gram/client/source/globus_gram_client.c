@@ -118,6 +118,7 @@ globus_i_gram_client_activate(void)
     }
     
     globus_l_print_fp = NULL;
+    /* globus_gram_client_debug(); */
 
     return 0;
 } /* globus_i_gram_client_activate() */
@@ -683,6 +684,13 @@ globus_l_gram_client_to_jobmanager_http_failed:
         {
             *failure_code = rc;
         }
+    }
+    else
+    {
+        if (*failure_code != GLOBUS_SUCCESS)
+	{
+	   rc = *failure_code;
+	}
     }
 
     globus_libc_free(query);
