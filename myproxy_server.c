@@ -146,6 +146,11 @@ main(int argc, char *argv[])
 	} else {
 	    char *conf, *GL;
 	    GL = getenv("GLOBUS_LOCATION");
+	    if (!GL) {
+		fprintf(stderr, "$GLOBUS_LOCATION undefined.  "
+			"myproxy-server.config not found.\n");
+		exit(1);
+	    }
 	    conf = (char *)malloc(strlen(GL)+strlen(default_config_file)+1);
 	    if (!conf) {
 		perror("malloc()");
