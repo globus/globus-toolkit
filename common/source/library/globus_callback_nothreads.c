@@ -13,12 +13,16 @@ static
 int
 globus_l_callback_deactivate();
 
+#include "version.h"
+
 globus_module_descriptor_t              globus_i_callback_module =
 {
     "globus_callback_nonthreaded",
     globus_l_callback_activate,
     globus_l_callback_deactivate,
-    GLOBUS_NULL
+    GLOBUS_NULL,
+    GLOBUS_NULL,
+    &local_version
 };
 
 typedef struct

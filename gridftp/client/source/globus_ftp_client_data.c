@@ -523,8 +523,8 @@ globus_i_ftp_client_data_cmp(
     globus_off_t *				offset1;
     globus_off_t *				offset2;
 
-    offset1 = * ((globus_off_t **) priority_1);
-    offset2 = * ((globus_off_t **) priority_2);
+    offset1 = (globus_off_t *) priority_1;
+    offset2 = (globus_off_t *) priority_2;
 
     return ((*offset1) > (*offset2));
 }

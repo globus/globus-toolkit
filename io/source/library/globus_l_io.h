@@ -127,14 +127,6 @@ extern unsigned short                   globus_i_io_udp_used_port_max;
 
 extern int                              globus_i_io_skip_poll_frequency;
 
-#if defined(BUILD_LITE)
-#   define globus_i_io_mutex_lock()
-#   define globus_i_io_mutex_unlock()
-#   define globus_l_io_mutex_acquired() (GLOBUS_TRUE)
-#   define globus_l_io_cond_signal()
-#   define globus_l_io_cond_wait()
-#else  /* defined(BUILD_LITE) */
-
 #   define globus_l_io_mutex_acquired() ((globus_i_io_mutex_cnt > 0)	\
 				       ? GLOBUS_TRUE			\
 				       : GLOBUS_FALSE)
@@ -170,7 +162,7 @@ extern int                              globus_i_io_skip_poll_frequency;
         globus_i_io_cond_cnt--;					\
         globus_i_io_mutex_cnt++;				\
     }
-#endif /* (else) defined(BUILD_LITE) */
+
 extern int globus_i_io_debug_level;
 
 #ifdef BUILD_DEBUG
