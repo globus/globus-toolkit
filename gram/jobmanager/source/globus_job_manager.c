@@ -1890,7 +1890,7 @@ globus_l_gram_client_callback(int status, int failure_code)
         client_contact_node = (globus_l_gram_client_contact_t *)
              globus_list_first(tmp_list);
 
-        if (status & client_contact_node->job_state_mask &&
+        if ((status & client_contact_node->job_state_mask) &&
             client_contact_node->failed_count < 4)
         {
             grami_fprintf( graml_log_fp,
@@ -1913,9 +1913,9 @@ globus_l_gram_client_callback(int status, int failure_code)
 			       "JM: callback failed, rc = %d\n", rc );
                 client_contact_node->failed_count++;
 	    }
-
-            tmp_list = globus_list_rest (tmp_list);
         }
+
+        tmp_list = globus_list_rest (tmp_list);
     }
 
     /* this is safe, as the post() has copied the message to another buffer
