@@ -101,102 +101,13 @@ myproxy_socket_attrs_t *socket_attrs,
     /* move delegfile to outputfile if specified */
     if (outfile != NULL) {
         if (copy_file(delegfile, outfile, 0600) < 0) {
-		fprintf(stderr, "Error creating file: %s\n",
-		outfile);
-		return(1);
+	    fprintf(stderr, "Error creating file: %s\n", outfile);
+	    return(1);
 	}
-	unlink(delegfile);
-	strcpy(delegfile, outfile);
+	ssl_proxy_file_destroy(delegfile);
     }
 
     return(0);
-}
-
-/*
- * copy_file()
- *
- * Copy source to destination, creating destination if necessary
- * Set permissions on destination to given mode.
- *
- * Returns 0 on success, -1 on error. 
- */
-static int
-copy_file(const char *source,
-	  const char *dest,
-	  const mode_t mode)
-{
-    int src_fd = -1;
-    int dst_fd = -1;
-    int src_flags = O_RDONLY;
-    int dst_flags = O_WRONLY | O_CREAT;
-    char buffer[2048];
-    int bytes_read;
-    int return_code = -1;
-    
-    assert(source != NULL);
-    assert(dest != NULL);
-    
-    src_fd = open(source, src_flags);
-    
-    if (src_fd == -1)
-    {
-	verror_put_errno(errno);
-	verror_put_string("opening %s for reading", source);
-	goto error;
-    }
-     
-    dst_fd = open(dest, dst_flags, mode);
-    
-    if (dst_fd == -1)
-    {
-	verror_put_errno(errno);
-	verror_put_string("opening %s for writing", dest);
-	goto error;
-    }
-    
-    do 
-    {
-	bytes_read = read(src_fd, buffer, sizeof(buffer));
-	
-	if (bytes_read == -1)
-	{
-	    verror_put_errno(errno);
-	    verror_put_string("reading %s", source);
-	    goto error;
-	}
-
-	if (bytes_read != 0)
-	{
-	    if (write(dst_fd, buffer, bytes_read) == -1)
-	    {
-		verror_put_errno(errno);
-		verror_put_string("writing %s", dest);
-		goto error;
-	    }
-	}
-    }
-    while (bytes_read > 0);
-    
-    /* Success */
-    return_code = 0;
-	
-  error:
-    if (src_fd != -1)
-    {
-	close(src_fd);
-    }
-    
-    if (dst_fd != -1)
-    {
-	close(dst_fd);
-
-	if (return_code == -1)
-	{
-	    unlink(dest);
-	}
-    }
-    
-    return return_code;
 }
 
 static int
