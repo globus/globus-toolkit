@@ -60,9 +60,8 @@ int main(int argc, char * argv[])
     }
     else
     {
-/*	 ToDo: This call is not defined in common\globus_libc.c for Win32 
-           Do we need to add this to coommon?
-*/
+	/* ToDo: This call is not defined in common\globus_libc.c for Win32  */
+    /*       Do we need to add this to Common?                           */
 	#if !defined(TARGET_ARCH_WIN32)
 	rc = globus_libc_getpwnam_r( argv[1],
 				     &pwd,
@@ -71,11 +70,11 @@ int main(int argc, char * argv[])
 				     &result );
 	#else
 	globus_libc_fprintf(stderr,
-			    "NOTE: globus_libc_getpwnam_r not supported on Windowsn\n");
+			    "NOTE: globus_libc_getpwnam_r not supported on Windows\n");
 	/* leave return code as undisturbed from previous tests */
 	#endif
-	/* ~ToDo
-	 */
+	// ~ToDo
+
 	if (rc == GLOBUS_SUCCESS)
 	    exit_code = 0;
     }
