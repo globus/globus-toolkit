@@ -458,12 +458,12 @@ globus_gridftp_server_control_get_banner(
 
 globus_result_t
 globus_gridftp_server_control_get_mode(
-    globus_gridftp_server_control_t                 server,
+    globus_gridftp_server_control_operation_t       op,
     char *                                          out_mode);
 
 globus_result_t
 globus_gridftp_server_control_get_type(
-    globus_gridftp_server_control_t                 server,
+    globus_gridftp_server_control_operation_t       op,
     char *                                          ou_type);
 
 globus_result_t

@@ -589,18 +589,23 @@ globus_gridftp_server_control_get_banner(
 
 globus_result_t
 globus_gridftp_server_control_get_mode(
-    globus_gridftp_server_control_t                 server,
+    globus_gridftp_server_control_operation_t       op,
     char *                                          mode)
 {
     globus_result_t                                 res;
     globus_i_gsc_server_t *                         i_server;
+    globus_i_gsc_op_t *                             i_op;
     GlobusGridFTPServerName(globus_gridftp_server_control_get_mode);
 
-    i_server = (globus_i_gsc_server_t *) server;
-
-    if(server == NULL)
+    i_op = (globus_i_gsc_op_t *) op;
+    if(i_op == NULL)
     {
-        return GlobusGridFTPServerErrorParameter("server");
+        return GlobusGridFTPServerErrorParameter("op");
+    }
+    i_server = i_op->server;
+    if(i_server == NULL)
+    {
+        return GlobusGridFTPServerErrorParameter("op");
     }
     if(mode == NULL)
     {
@@ -633,18 +638,23 @@ globus_gridftp_server_control_get_mode(
 
 globus_result_t
 globus_gridftp_server_control_get_type(
-    globus_gridftp_server_control_t                 server,
+    globus_gridftp_server_control_operation_t       op,
     char *                                          type)
 {
     globus_i_gsc_server_t *                         i_server;
+    globus_i_gsc_op_t *                             i_op;
     globus_result_t                                 res;
     GlobusGridFTPServerName(globus_gridftp_server_control_get_type);
 
-    i_server = (globus_i_gsc_server_t *) server;
-
-    if(server == NULL)
+    i_op = (globus_i_gsc_op_t *) op;
+    if(i_op == NULL)
     {
-        return GlobusGridFTPServerErrorParameter("server");
+        return GlobusGridFTPServerErrorParameter("op");
+    }
+    i_server = i_op->server;
+    if(i_server == NULL)
+    {
+        return GlobusGridFTPServerErrorParameter("op");
     }
     if(type == NULL)
     {
