@@ -19,14 +19,16 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(GLOBUS_LOCATION)\include&quot;;&quot;$(GLOBUS_LOCATION)\include\nonthreaded&quot;;&quot;$(SolutionDir)&quot;"
+				AdditionalIncludeDirectories="\include;\include\nonthreaded;&quot;$(SolutionDir)&quot;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_LIB"
 				MinimalRebuild="TRUE"
+				ExceptionHandling="FALSE"
 				BasicRuntimeChecks="0"
 				RuntimeLibrary="2"
+				BufferSecurityCheck="FALSE"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
-				Detect64BitPortabilityProblems="TRUE"
+				Detect64BitPortabilityProblems="FALSE"
 				DebugInformationFormat="0"
 				CompileAs="0"/>
 			<Tool
@@ -38,8 +40,8 @@
 				Name="VCMIDLTool"/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				Description="copying $(OutDir)\$(TargetFileName) to &quot;$(GLOBUS_LOCATION)\lib\&quot;"
-				CommandLine="copy $(OutDir)\$(TargetFileName) \lib\*.*"/>
+				Description="copy $(OutDir)\$(TargetName).lib \lib\*.*"
+				CommandLine="copy $(OutDir)\$(TargetName).lib \lib\*.*"/>
 			<Tool
 				Name="VCPreBuildEventTool"/>
 			<Tool
