@@ -1,4 +1,5 @@
 1 #include "globus_i_xio.h"
+1 #include "globus_xio_util.h"
 
 /************************************************************************
  *                              open 
@@ -40,6 +41,8 @@
                                                                             \
     if(_op->canceled)                                                       \
     {                                                                       \
+        GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE,                 \
+            ("[%s] :Operation canceled\n", _xio_name));                     \
         _res = GlobusXIOErrorCanceled();                                    \
     }                                                                       \
     else                                                                    \
@@ -346,6 +349,8 @@
                                                                             \
     if(_op->canceled && _op->type != GLOBUS_XIO_OPERATION_TYPE_OPEN)        \
     {                                                                       \
+        GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE,                 \
+            ("[%s] :Operation canceled\n", _xio_name));                     \
         _res = GlobusXIOErrorCanceled();                                    \
     }                                                                       \
     else                                                                    \
@@ -529,6 +534,8 @@
         _my_context->state == GLOBUS_XIO_CONTEXT_STATE_EOF_DELIVERED);      \
     if(_op->canceled)                                                       \
     {                                                                       \
+        GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE,                 \
+            ("[%s] :Operation canceled\n", _xio_name));                     \
         _res = GlobusXIOErrorCanceled();                                    \
     }                                                                       \
     else                                                                    \
@@ -788,6 +795,8 @@
         _my_context->state == GLOBUS_XIO_CONTEXT_STATE_EOF_RECEIVED);       \
     if(_op->canceled)                                                       \
     {                                                                       \
+        GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE,                 \
+            ("[%s] :Operation canceled\n", _xio_name));                     \
         _res = GlobusXIOErrorCanceled();                                    \
     }                                                                       \
     else if(_my_context->state == GLOBUS_XIO_CONTEXT_STATE_EOF_RECEIVED)    \
@@ -1135,6 +1144,8 @@
                                                                             \
     if(_op->canceled)                                                       \
     {                                                                       \
+        GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE,                 \
+            ("[%s] :Operation canceled\n", _xio_name));                     \
         _res = GlobusXIOErrorCanceled();                                    \
     }                                                                       \
     else                                                                    \

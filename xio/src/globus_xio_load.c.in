@@ -113,6 +113,7 @@ globus_xio_driver_load(
         goto error_load;
     }
     
+    globus_module_activate(GLOBUS_XIO_MODULE);
     va_start(ap, out_driver);
     result = hook->load(out_driver, ap);
     va_end(ap);
@@ -168,6 +169,7 @@ globus_xio_driver_unload(
 
     globus_i_xio_close_handles(driver);
     hook->unload(driver);
+    globus_module_deactivate(GLOBUS_XIO_MODULE);
     
     globus_mutex_lock(&globus_l_xio_load_lock);
     {

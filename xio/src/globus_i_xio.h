@@ -19,6 +19,42 @@ GlobusDebugDeclare(GLOBUS_XIO);
 #define GlobusXIODebugPrintf(level, message)                                \
     GlobusDebugPrintf(GLOBUS_XIO, level, message)
 
+#define GlobusXIOHandleStateChange(_h, _new)                                \
+do                                                                          \
+{                                                                           \
+    globus_i_xio_handle_t *                             _l_h;               \
+                                                                            \
+    _l_h = (_h);                                                            \
+    GlobusXIODebugPrintf(                                                   \
+        GLOBUS_XIO_DEBUG_STATE,                                             \
+        ("[%s:%d] Handle state change:\n"                                   \
+         "    From:%s\n"                                                    \
+         "    to:  %s\n",                                                   \
+            _xio_name,                                                      \
+            __LINE__,                                                       \
+            globus_i_xio_handle_state_name_table[_l_h->state],              \
+            globus_i_xio_handle_state_name_table[_new]));                   \
+   _l_h->state = _new;                                                      \
+} while(0)
+
+#define GlobusXIOOpStateChange(_op, _new)                                   \
+do                                                                          \
+{                                                                           \
+    globus_i_xio_op_t *                                 _l_op;              \
+                                                                            \
+    _l_op = (_op);                                                          \
+    GlobusXIODebugPrintf(                                                   \
+        GLOBUS_XIO_DEBUG_STATE,                                             \
+        ("[%s:%d] Op state change:\n"                                       \
+         "    From:%s\n"                                                    \
+         "    to:  %s\n",                                                   \
+            _xio_name,                                                      \
+            __LINE__,                                                       \
+            globus_i_xio_op_state_name_table[_l_op->state],                 \
+            globus_i_xio_op_state_name_table[_new]));                       \
+   _l_op->state = _new;                                                     \
+} while(0)
+
 #define GlobusXIODebugEnter()                                               \
     GlobusXIODebugPrintf(                                                   \
         GLOBUS_XIO_DEBUG_TRACE,                                             \
@@ -94,13 +130,19 @@ typedef enum globus_i_xio_context_state_e
     GLOBUS_XIO_CONTEXT_STATE_CLOSED,
 } globus_i_xio_context_state_t;
 
+extern char * globus_i_xio_handle_state_name_table[];
+
 typedef enum globus_i_xio_handle_state_e
 {
     GLOBUS_XIO_HANDLE_STATE_OPENING,
+    GLOBUS_XIO_HANDLE_STATE_OPENING_FAILED,
+    GLOBUS_XIO_HANDLE_STATE_OPENING_AND_CLOSING,
     GLOBUS_XIO_HANDLE_STATE_OPEN,
     GLOBUS_XIO_HANDLE_STATE_CLOSING,
     GLOBUS_XIO_HANDLE_STATE_CLOSED,
 } globus_i_xio_handle_state_t;
+
+extern char * globus_i_xio_op_state_name_table[];
 
 typedef enum globus_i_xio_op_state_e
 {

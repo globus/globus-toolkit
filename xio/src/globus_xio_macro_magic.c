@@ -1,4 +1,5 @@
 #include "globus_i_xio.h"
+#include "globus_xio_util.h"
 
 /************************************************************************
  *                              open
@@ -37,6 +38,8 @@ globus_xio_driver_pass_open_DEBUG(
 
     if(_op->canceled)
     {
+        GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE,
+            ("[%s] :Operation canceled\n", _xio_name));
         _res = GlobusXIOErrorCanceled();
     }
     else
@@ -332,6 +335,8 @@ globus_xio_driver_pass_close_DEBUG(
 
     if(_op->canceled && _op->type != GLOBUS_XIO_OPERATION_TYPE_OPEN)
     {
+        GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE,
+            ("[%s] :Operation canceled\n", _xio_name));
         _res = GlobusXIOErrorCanceled();
     }
     else
@@ -507,6 +512,8 @@ globus_xio_driver_pass_write_DEBUG(
         _my_context->state == GLOBUS_XIO_CONTEXT_STATE_EOF_DELIVERED);
     if(_op->canceled)
     {
+        GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE,
+            ("[%s] :Operation canceled\n", _xio_name));
         _res = GlobusXIOErrorCanceled();
     }
     else
@@ -756,6 +763,8 @@ globus_xio_driver_pass_read_DEBUG(
         _my_context->state == GLOBUS_XIO_CONTEXT_STATE_EOF_RECEIVED);
     if(_op->canceled)
     {
+        GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE,
+            ("[%s] :Operation canceled\n", _xio_name));
         _res = GlobusXIOErrorCanceled();
     }
     else if(_my_context->state == GLOBUS_XIO_CONTEXT_STATE_EOF_RECEIVED)
@@ -1093,6 +1102,8 @@ globus_xio_driver_pass_accept_DEBUG(
 
     if(_op->canceled)
     {
+        GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE,
+            ("[%s] :Operation canceled\n", _xio_name));
         _res = GlobusXIOErrorCanceled();
     }
     else
