@@ -34,6 +34,7 @@ globus_scheduler_event_generator_lsf_setup  ws-gram/job_monitoring/lsf/c/setup g
 globus_scheduler_event_generator_lsf_test   ws-gram/job_monitoring/lsf/c/test gpt
 globus_wsrf_gram_job_monitoring_common_java ws-gram/job_monitoring/common/java/source
 globus_fork_starter                         ws-gram/job_management/fork/c/source  gpt
+globus_gram_local_proxy_tool                ws-gram/service/proxy-tool/source  gpt
 globus_scheduler_provider_setup_pbs	ws-gram/discovery/providers/setup/pbs gpt
 globus_scheduler_provider_setup_fork	ws-gram/discovery/providers/setup/fork gpt
 globus_scheduler_provider_setup_lsf	ws-gram/discovery/providers/setup/lsf gpt
