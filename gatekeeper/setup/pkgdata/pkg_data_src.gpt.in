@@ -10,7 +10,7 @@
 
   <Description >Globus Gatekeeper Setup</Description>
   <Functional_Group >ResourceManagement</Functional_Group>
-  <Version_Stability Release="Beta" />
+  <Version_Stability Release="Beta2" />
 
   <src_pkg >
 

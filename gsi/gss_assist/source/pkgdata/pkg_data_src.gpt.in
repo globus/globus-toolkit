@@ -6,7 +6,7 @@
   <Aging_Version Major="2" Minor="0" Age="0"/>
   <Description >GSSAPI Assist library</Description>
   <Functional_Group >Security</Functional_Group>
-  <Version_Stability Release="alpha" />
+  <Version_Stability Release="Beta2" />
 
   <src_pkg>
 

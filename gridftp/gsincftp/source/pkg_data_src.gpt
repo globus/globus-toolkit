@@ -5,7 +5,7 @@
 
   <Aging_Version Age="0" Major="0" Minor="2" />
   <Description>Globus binary package for gsincftp</Description>
-  <Version_Stability Release="alpha"/>
+  <Version_Stability Release="Beta2"/>
 
   <src_pkg >
 
