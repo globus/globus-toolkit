@@ -1419,6 +1419,9 @@ globus_l_gass_cache_lock_file(
 	
 	if  ( file_stat.st_nlink != 2)
 	{
+#ifdef __CYGWIN
+            break;
+#endif
 	    /* we manage to create the file, but it is not a hard link
 	       to the uniq_file, for some wird reasons. let try again */
 	    while (unlink(lock_file) != 0 )
