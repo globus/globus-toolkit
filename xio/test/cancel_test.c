@@ -10,29 +10,20 @@ static globus_bool_t                    globus_l_closed = GLOBUS_FALSE;
 #define USEC_THRESHHOLD  300000
 
 static globus_bool_t
-result_is_timeout(
+result_is_cancel(
     globus_result_t                             res)
 {
     if(res == GLOBUS_SUCCESS ||
         !globus_error_match(
             globus_error_peek(res),
             GLOBUS_XIO_MODULE,
-            GLOBUS_XIO_ERROR_TIMEDOUT))
+            GLOBUS_XIO_ERROR_CANCELED))
     {
         return GLOBUS_FALSE;
     }
 
     return GLOBUS_TRUE;
 }
-
-static globus_bool_t
-timeout_cb(
-    globus_xio_handle_t                         handle,
-    globus_xio_operation_type_t                 type)
-{
-    return GLOBUS_TRUE;
-}
-
 
 static void
 close_cb(
@@ -45,9 +36,9 @@ close_cb(
     timeout_type = (char *) user_arg;
     if(strcmp(timeout_type, "C") == 0)
     {
-        if(!result_is_timeout(result))
+        if(!result_is_cancel(result))
         {
-            failed_exit("Read/Write did not timeout.");
+            failed_exit("Read/Write was not canceled.");
         }
     }
 
@@ -75,9 +66,9 @@ data_cb(
     timeout_type = (char *) user_arg;
     if(strcmp(timeout_type, "D") == 0)
     {
-        if(!result_is_timeout(result))
+        if(!result_is_cancel(result))
         {
-            failed_exit("Read/Write did not timeout.");
+            failed_exit("Read/Write was not canceled.");
         }
     }
 
@@ -89,6 +80,24 @@ data_cb(
                 close_cb,
                 user_arg);
         test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+        if(strcmp(timeout_type, "C") == 0)
+        {
+            globus_xio_attr_t               attr_cancel;
+
+            res = globus_xio_attr_init(&attr_cancel);
+            test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+
+            res = globus_xio_attr_cntl(attr_cancel, NULL,
+                    GLOBUS_XIO_ATTR_SET_CANCEL_CLOSE, GLOBUS_TRUE);
+
+            res = globus_xio_handle_cancel_operations(
+                    handle,
+                    attr_cancel);
+            test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+
+            res = globus_xio_attr_destroy(attr_cancel);
+            test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+        }
     }
     globus_mutex_unlock(&globus_l_mutex);
 }
@@ -110,9 +119,9 @@ open_cb(
     timeout_type = (char *) user_arg;
     if(strcmp(timeout_type, "O") == 0)
     {
-        if(!result_is_timeout(result))
+        if(!result_is_cancel(result))
         {
-            failed_exit("Open did not timeout.");
+            failed_exit("Open was not canceled.");
         }
         else
         {
@@ -149,11 +158,31 @@ open_cb(
                     user_arg);
         }
         test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+        if(strcmp(timeout_type, "D") == 0)
+        {
+            globus_xio_attr_t               attr_cancel;
+
+            res = globus_xio_attr_init(&attr_cancel);
+            test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+
+            res = globus_xio_attr_cntl(attr_cancel, NULL,
+                    GLOBUS_XIO_ATTR_SET_CANCEL_READ, GLOBUS_TRUE);
+            res = globus_xio_attr_cntl(attr_cancel, NULL,
+                    GLOBUS_XIO_ATTR_SET_CANCEL_WRITE, GLOBUS_TRUE);
+
+            res = globus_xio_handle_cancel_operations(
+                    handle,
+                    attr_cancel);
+            test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+
+            res = globus_xio_attr_destroy(attr_cancel);
+            test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+        }
     }
 }
 
 int
-timeout_main(
+cancel_main(
     int                                     argc,
     char **                                 argv)
 {
@@ -166,7 +195,6 @@ timeout_main(
     int                                     opt_offset;
     int                                     secs;
     int                                     usecs;
-    globus_reltime_t                        delay;
 
     globus_l_closed = GLOBUS_FALSE;
 
@@ -195,40 +223,6 @@ timeout_main(
         return 1;
     }
 
-    GlobusTimeReltimeSet(delay, secs / 3, usecs / 3);
-    /* set up timeouts */
-    if(strcmp(argv[opt_offset], "O") == 0)
-    {
-        res = globus_xio_attr_cntl(attr, NULL, 
-                    GLOBUS_XIO_ATTR_SET_TIMEOUT_OPEN,
-                    timeout_cb,
-                    &delay);
-    }
-    else if(strcmp(argv[opt_offset], "D") == 0)
-    {
-        res = globus_xio_attr_cntl(attr, NULL,
-                    GLOBUS_XIO_ATTR_SET_TIMEOUT_READ,
-                    timeout_cb,
-                    &delay);
-        res = globus_xio_attr_cntl(attr, NULL, 
-                    GLOBUS_XIO_ATTR_SET_TIMEOUT_WRITE,
-                    timeout_cb,
-                    &delay);
-    }
-    else if(strcmp(argv[opt_offset], "C") == 0)
-    {
-        res = globus_xio_attr_cntl(attr, NULL, 
-                    GLOBUS_XIO_ATTR_SET_TIMEOUT_CLOSE,
-                    timeout_cb,
-                    &delay);
-    }
-    else
-    {
-        fprintf(stderr, "ERROR: No timeout registered.\n");
-        return 1;
-    }
-    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
-
     globus_mutex_init(&globus_l_mutex, NULL);
     globus_cond_init(&globus_l_cond, NULL);
 
@@ -242,6 +236,25 @@ timeout_main(
             open_cb,
             argv[opt_offset]);
     test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+
+    if(strcmp(argv[opt_offset], "O") == 0)
+    {
+        globus_xio_attr_t                   attr_cancel;
+
+        res = globus_xio_attr_init(&attr_cancel);
+        test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+
+        res = globus_xio_attr_cntl(attr_cancel, NULL, 
+                GLOBUS_XIO_ATTR_SET_CANCEL_OPEN, GLOBUS_TRUE);
+
+        res = globus_xio_handle_cancel_operations(
+                handle,
+                attr_cancel);
+        test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+
+        res = globus_xio_attr_destroy(attr_cancel);
+        test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+    }
 
     globus_mutex_lock(&globus_l_mutex);
     {

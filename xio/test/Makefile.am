@@ -9,6 +9,7 @@ Sources=                                \
 	framework_test.c                    \
 	timeout_test.c                      \
     close_barrier_test.c                \
+    cancel_test.c                       \
     read_barrier_test.c
 
 INCLUDES += $(GPT_INCLUDES)

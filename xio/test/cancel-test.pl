@@ -15,46 +15,40 @@ if(@ARGV == 1)
 my @tests;
 my @todo;
 my $test_exec="./framework_test";
-
 my $inline_finish;
-my $buffer_size=2048;
-my $test_name="framework";
+my $test_name="cancel";
+
 
 #setup different driver combinations
 my @drivers;
 push(@drivers, "");
 push(@drivers, "-D debug");
+push(@drivers, "-D bounce");
+push(@drivers, "-D debug -D bounce");
+push(@drivers, "-D debug -D bounce -D debug");
 
-my @failures;
-push(@failures, "-F 1");
-push(@failures, "-F 2");
-push(@failures, "-F 5");
-push(@failures, "-F 6");
-push(@failures, "-F 7");
-push(@failures, "-F 8");
-push(@failures, "-F 9");
-push(@failures, "-F 10");
+my @cancel_position;
+push(@cancel_position, "O");
+push(@cancel_position, "D");
+push(@cancel_position, "C");
 
-sub failure_tests
+sub basic_tests
 {
     my $inline_finish="-i";
 
-    for(my $i = 0; $i < 2; $i++)
-    {
         foreach(@drivers)
         {
             my $d=$_;
-            foreach(@failures)
+            foreach(@cancel_position)
             {
-                my $f=$_;
-                push(@tests, "$test_name $f -w 1 -r 1 -s $inline_finish $d");
+                my $t=$_;
+                push(@tests, "$test_name -d 300000 -w 1 -r 0 $d $t");
+                push(@tests, "$test_name -d 300000 -w 0 -r 1 $d $t");
             }
         }
-        $inline_finish="";
-    }
 }
 
-&failure_tests();
+&basic_tests();
 if($type == 1)
 {
     foreach(@tests)
@@ -64,11 +58,11 @@ if($type == 1)
 }
 else
 {
-    plan tests => scalar(@tests), todo => \@todo;
     my $cnt=0;
+    plan tests => scalar(@tests), todo => \@todo;
     foreach(@tests)
     {
-        my $test_str="fail_test.$cnt";
+        my $test_str="$test_name.$cnt";
         &run_test("$test_exec $_", $test_str);
         $cnt++;
     }

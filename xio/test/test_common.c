@@ -1,4 +1,5 @@
 #include "test_common.h"
+#include "globus_hashtable.h"
 #include "globus_common.h"
 
 typedef  int
@@ -352,6 +353,11 @@ main(
         &globus_l_test_hash, 
         "timeout",
         timeout_main);
+    globus_hashtable_insert(
+        &globus_l_test_hash, 
+        "cancel",
+        timeout_main);
+
 
     for(ctr = 1; ctr < argc && !done; ctr++)
     {
@@ -427,6 +433,7 @@ main(
     globus_hashtable_remove(&globus_l_test_hash, "close_barrier");
     globus_hashtable_remove(&globus_l_test_hash, "framework");
     globus_hashtable_remove(&globus_l_test_hash, "timeout");
+    globus_hashtable_remove(&globus_l_test_hash, "cancel");
     globus_hashtable_destroy(&globus_l_test_hash);
 
     globus_module_deactivate(GLOBUS_COMMON_MODULE);

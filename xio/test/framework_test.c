@@ -8,24 +8,10 @@ static globus_cond_t                        globus_l_cond;
 static globus_bool_t                        globus_l_closed = GLOBUS_FALSE;
 static globus_bool_t                        globus_l_accepted = GLOBUS_FALSE;
 
-void
-print_help()
-{
-    fprintf(stderr, "test <options> \n");
-    fprintf(stderr, "--------------------------------------\n");
-    fprintf(stderr, "options:\n");
-    fprintf(stderr, "    F <failure point> : set failure point\n");
-    fprintf(stderr, "    i                 : set inline finish\n");
-    fprintf(stderr, "    d                 : delay before finish\n");
-    fprintf(stderr, "    s                 : buffer chunk size\n");
-
-    exit(1);
-}
-
 static void
 accept_cb(
+    globus_xio_server_t                         server,
     globus_xio_target_t                         target,
-    globus_xio_operation_t                      op,
     globus_result_t                             result,
     void *                                      user_arg)
 {
@@ -320,6 +306,12 @@ framework_main(
 
     globus_xio_attr_destroy(attr);
     globus_xio_stack_destroy(stack);
+
+    if(globus_l_test_info.server)
+    {
+        res = globus_xio_server_destroy(server);
+        test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+    }
 
     test_common_end();
 

@@ -67,7 +67,7 @@ else
     plan tests => scalar(@tests), todo => \@todo;
     foreach(@tests)
     {
-        my $test_str="$test_name.$cnt";
+        my $test_str="verify.$cnt";
         &run_test("$test_exec $_", $test_str);
         $cnt++;
     }

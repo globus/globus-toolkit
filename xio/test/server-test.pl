@@ -25,7 +25,7 @@ push(@drivers, "-D debug");
 push(@drivers, "-D bounce");
 push(@drivers, "-D debug -D bounce");
 push(@drivers, "-D bounce -D debug");
-push(@drivers, "-D debug -D bounce -D debug");
+push(@drivers, "-D debug -D bounce -D verify");
 push(@drivers, "-D bounce -D debug -D bounce");
 
 my $test_name="framework";
@@ -63,7 +63,7 @@ else
     plan tests => scalar(@tests), todo => \@todo;
     foreach(@tests)
     {
-        my $test_str="$test_name.$cnt";
+        my $test_str="server.$cnt";
         &run_test("$test_exec $_", $test_str);
         $cnt++;
     }
