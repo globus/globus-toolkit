@@ -762,7 +762,6 @@ myproxy_creds_store(const struct myproxy_creds *creds)
     mode_t data_file_mode = FILE_MODE;
     mode_t creds_file_mode = FILE_MODE;
     int return_code = -1;
-    struct stat buf;
    
     if ((creds == NULL) ||
         (creds->username == NULL) ||
