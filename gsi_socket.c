@@ -1034,7 +1034,6 @@ int GSI_SOCKET_delegation_init_ext(GSI_SOCKET *self,
      * None of these are currently supported.
      */
     if ((flags != 0) ||
-	(lifetime != 0) ||
 	(restrictions != NULL))
     {
 	self->error_number = EINVAL;
