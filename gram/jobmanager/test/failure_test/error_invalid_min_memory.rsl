@@ -1,3 +1,0 @@
-(* GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_MIN_MEMORY *)
-&(executable=/bin/true)
- (min_memory=-1)
