@@ -44,41 +44,25 @@ typedef struct
 int myproxy_server_config_read(myproxy_server_context_t *context);
 
 /*
- * myproxy_server_check_cred()
+ * myproxy_server_check_policy_list()
  *
- * Check to see if the given client is authorized to store credentials
- * with the server based on the previously read context.
+ * Check to see if the given client matches an entry the dn_list.
  *
- * Returns 1 if the client is authorized, 0 if unauthorized,
+ * Returns 1 if match found, 0 if no match found,
  * -1 on error, setting verror.
  */
-int myproxy_server_check_cred(myproxy_server_context_t *context,
-			      const char *client_name);
-/*
- * myproxy_server_check_retriever()
- *
- * Check to see if the given client is authorized to retrieve
- * credentials stored with the server based on the previously read
- * context.
- *
- * Returns 1 if the client is authorized, 0 if unauthorized,
- * -1 on error, setting verror.
- */
-int myproxy_server_check_retriever(myproxy_server_context_t *context,
-				   const char *service_name);
+int myproxy_server_check_policy_list(const char **dn_list,
+				     const char *client_name);
 
 /*
- * myproxy_server_check_renewer()
+ * myproxy_server_check_policy()
  *
- * Check to see if the given client is authorized to renew
- * existing credentials based on the previously read context.
+ * Check to see if the given client matches the dn_regex.
  *
- * Returns 1 if the client is authorized, 0 if unauthorized,
+ * Returns 1 if match found, 0 if no match found,
  * -1 on error, setting verror.
  */
-int myproxy_server_check_renewer(myproxy_server_context_t *context,
-				 const char *service_name);
-
-
+int myproxy_server_check_policy(const char *dn_regex,
+				const char *client_name);
 
 #endif /* !__MYPROXY_SERVER_H */
