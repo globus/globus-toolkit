@@ -7,9 +7,8 @@
 use strict;
 use POSIX;
 use Test;
-use FtpTestLib;
 
-my $test_exec = './globus-ftp-client-user-auth-test';
+my $test_exec = $ENV{GLOBUS_LOCATION} . '/test/' . 'globus-ftp-client-user-auth-test';
 my @tests;
 my @todo;
 
@@ -21,8 +20,6 @@ if (!defined($gpath))
 }
 
 @INC = (@INC, "$gpath/lib/perl");
-
-my ($source_host, $source_file, $local_copy) = setup_remote_source();
 
 # Test #1. User specifies the correct authorization information.
 # Success if program returns 0, files compare,
@@ -43,33 +40,29 @@ sub correct_auth
         $hostname = `hostname`;
     }
     chomp($hostname);
-    
-    my $command = "$test_exec -s gsiftp://$source_host$source_file -A 'host\@$hostname' >$tmpname 2>/dev/null";
-    $rc = system($command) / 256;
+    $rc = system("$test_exec -A 'host\@$hostname' >$tmpname 2>/dev/null") / 256;
     if($rc != 0)
     {
-        $errors .= "\n# Test exited with $rc. ";
+        $errors .= "Test exited with $rc. ";
     }
     if(-r 'core')
     {
         $errors .= "\n# Core file generated.";
     }
-    
-    my $diffs = `diff $local_copy $tmpname | sed -e 's/^/# /'`;
-        
+    my $diffs = `diff /etc/group $tmpname | sed -e 's/^/# /'`;
+	
     if($? != 0)
     {
-        $errors .= "\n# Differences between /etc/group and output.";
-        $errors .= "$diffs";
+	$errors .= "\n# Differences between /etc/group and output.";
+	$errors .= "$diffs";
     }
-    
+
     if($errors eq "")
     {
         ok('success', 'success');
     }
     else
     {
-        $errors = "\n# Test failed\n# $command\n# " . $errors;
         ok($errors, 'success');
     }
     unlink($tmpname);
@@ -85,11 +78,10 @@ sub incorrect_auth
     my ($hostname) = ("googly_goodness");
     unlink('core', $tmpname);
 
-    my $command = "$test_exec -s gsiftp://$source_host$source_file -A 'host\@$hostname' >$tmpname 2>/dev/null";
-    $rc = system($command) / 256;
+    $rc = system("$test_exec -A 'host\@$hostname' >$tmpname 2>/dev/null") / 256;
     if($rc != 1)
     {
-        $errors .= "\n# Test exited with $rc. ";
+        $errors .= "Test exited with $rc. ";
     }
     if(-r 'core')
     {
@@ -101,28 +93,17 @@ sub incorrect_auth
     }
     else
     {
-        $errors = "\n# Test failed\n# $command\n# " . $errors;
         ok($errors, 'success');
     }
     unlink($tmpname);
 }
 push(@tests, "incorrect_auth");
 
-if(@ARGV)
-{
-    plan tests => scalar(@ARGV);
+# Now that the tests are defined, set up the Test to deal with them.
+plan tests => scalar(@tests), todo => \@todo;
 
-    foreach (@ARGV)
-    {
-        eval "&$tests[$_-1]";
-    }
-}
-else
+# And run them all.
+foreach (@tests)
 {
-    plan tests => scalar(@tests), todo => \@todo;
-
-    foreach (@tests)
-    {
-        eval "&$_";
-    }
+    eval "&$_";
 }

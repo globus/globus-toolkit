@@ -9,9 +9,8 @@ Tests to exercise the existence checking of the client library.
 use strict;
 use POSIX;
 use Test;
-use FtpTestLib;
 
-my $test_exec = './globus-ftp-client-exist-test';
+my $test_exec = $ENV{GLOBUS_LOCATION} . '/test/' . 'globus-ftp-client-exist-test';
 my @tests;
 
 my $gpath = $ENV{GLOBUS_LOCATION};
@@ -25,18 +24,18 @@ if (!defined($gpath))
 
 sub check_existence
 {
+    my $tmpname = POSIX::tmpnam();
     my ($errors,$rc) = ("",0);
     my ($old_proxy);
     my $src_url = shift;
     my $existence_rc = shift;
 
-    unlink('core');
+    unlink('core', $tmpname);
 
-    my $command = "$test_exec -s $src_url >/dev/null 2>&1";
-    $rc = system($command) / 256;
+    $rc = system("$test_exec -s $src_url 2>/dev/null") / 256;
     if($rc != $existence_rc)
     {
-        $errors .= "\n# Test exited with $rc. ";
+        $errors .= "Test exited with $rc. ";
     }
     if(-r 'core')
     {
@@ -49,17 +48,10 @@ sub check_existence
     }
     else
     {
-        $errors = "\n# Test failed\n# $command\n# " . $errors;
         ok($errors, 'success');
     }
+    unlink($tmpname);
 }
-
-if(source_is_remote())
-{
-    print "using remote source, skipping check_existence()\n";
-}
-else
-{
 my $emptydir = POSIX::tmpnam();
 
 mkdir $emptydir, 0755;
@@ -71,24 +63,12 @@ foreach('/etc/group', '/', '/etc', '/no-such-file', $emptydir)
     push(@tests, "check_existence('gsiftp://localhost$_', $exists_rc);");
 }
 
-if(@ARGV)
+# Now that the tests are defined, set up the Test to deal with them.
+plan tests => scalar(@tests);
+
+# And run them all.
+foreach (@tests)
 {
-    plan tests => scalar(@ARGV);
-
-    foreach (@ARGV)
-    {
-        eval "&$tests[$_-1]";
-    }
+    eval "&$_";
 }
-else
-{
-    plan tests => scalar(@tests);
-
-    foreach (@tests)
-    {
-        eval "&$_";
-    }
-}
-
 rmdir $emptydir
-}

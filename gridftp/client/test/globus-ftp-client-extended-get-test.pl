@@ -7,9 +7,9 @@
 use strict;
 use POSIX;
 use Test;
-use FtpTestLib;
 
-my $test_exec = './globus-ftp-client-extended-get-test';
+my $test_exec = $ENV{GLOBUS_LOCATION} . '/test/' . 'globus-ftp-client-extended-get-test';
+my $testfile = '/bin/sh';
 my @tests;
 my @todo;
 
@@ -22,11 +22,9 @@ if (!defined($gpath))
 
 @INC = (@INC, "$gpath/lib/perl");
 
-my ($source_host, $testfile, $local_copy) = setup_remote_source(1);
-
 my $handle = new FileHandle;
 
-open($handle, "<$local_copy");
+open($handle, "<$testfile");
 my $test_data=join('', <$handle>);
 close($handle);
 my $num_bytes=length($test_data);
@@ -44,11 +42,10 @@ sub basic_func
 
     unlink('core', $tmpname);
 
-    my $command = "$test_exec -P $parallelism -s gsiftp://$source_host$testfile >$tmpname 2>/dev/null";
-    $rc = system($command) / 256;
+    $rc = system("$test_exec -P $parallelism -s gsiftp://localhost$testfile >$tmpname 2>/dev/null") / 256;
     if($rc != 0)
     {
-        $errors .= "\n# Test exited with $rc. ";
+        $errors .= "Test exited with $rc. ";
     }
     if(-r 'core')
     {
@@ -69,7 +66,6 @@ sub basic_func
     }
     else
     {
-        $errors = "\n# Test failed\n# $command\n# " . $errors;
         ok($errors, 'success');
     }
     unlink($tmpname);
@@ -83,12 +79,12 @@ for(my $par = 1; $par <= 10; $par++)
 # Success if program returns 1 and no core file is generated.
 sub bad_url
 {
+    my $tmpname = POSIX::tmpnam();
     my ($errors,$rc) = ("",0);
 
-    unlink('core');
+    unlink('core', $tmpname);
 
-    my $command = "$test_exec -s gsiftp://$source_host/no-such-file-here >/dev/null  2>/dev/null";
-    $rc = system($command) / 256;
+    $rc = system("$test_exec -s 'gsiftp://localhost/no-such-file-here' >/dev/null 2>/dev/null") / 256;
     if($rc != 1)
     {
         $errors .= "\n# Test exited with $rc.";
@@ -107,9 +103,9 @@ sub bad_url
     }
     else
     {
-        $errors = "\n# Test failed\n# $command\n# " . $errors;
         ok($errors, 'success');
     }
+    unlink($tmpname);
 }
 push(@tests, "bad_url");
 
@@ -119,14 +115,14 @@ push(@tests, "bad_url");
 # all abort points. (we could use a stronger measure of success here)
 sub abort_test
 {
+    my $tmpname = POSIX::tmpnam();
     my ($errors,$rc) = ("", 0);
     my ($abort_point) = shift;
     my ($par) = shift;
 
-    unlink('core');
+    unlink('core', $tmpname);
 
-    my $command = "$test_exec -P $par -a $abort_point -s gsiftp://$source_host$testfile >/dev/null 2>/dev/null";
-    $rc = system($command) / 256;
+    $rc = system("$test_exec -P $par -a $abort_point -s gsiftp://localhost$testfile >/dev/null 2>/dev/null") / 256;
     if(-r 'core')
     {
         my $core_str = $test_exec."_abort_".$abort_point."_P_".$par.".core";
@@ -141,9 +137,9 @@ sub abort_test
     }
     else
     {
-        $errors = "\n# Test failed\n# $command\n# " . $errors;
         ok($errors, 'success');
     }
+    unlink($tmpname);
 }
 
 for(my $i = 1; $i <= 41; $i++)
@@ -168,11 +164,10 @@ sub restart_test
 
     unlink('core', $tmpname);
 
-    my $command = "$test_exec -P $par -r $restart_point -s gsiftp://$source_host$testfile >$tmpname 2>/dev/null";
-    $rc = system($command) / 256;
+    $rc = system("$test_exec -P $par -r $restart_point -s gsiftp://localhost$testfile > $tmpname 2>/dev/null") / 256;
     if($rc != 0)
     {
-        $errors .= "\n# Test exited with $rc. ";
+        $errors .= "Test exited with $rc. ";
     }
     if(-r 'core')
     {
@@ -195,8 +190,7 @@ sub restart_test
     }
     else
     {
-        $errors = "\n# Test failed\n# $command\n# " . $errors;
-        ok($errors, 'success');
+        ok("\n# $test_exec -r $restart_point -s gsiftp://localhost$testfile\n#$errors", 'success');
     }
     unlink($tmpname);
 }
@@ -223,11 +217,10 @@ sub perf_test
 
     unlink('core');
 
-    my $command = "$test_exec -s gsiftp://$source_host$testfile -M >$tmpname 2>/dev/null";
-    $rc = system($command) / 256;
+    $rc = system("$test_exec -s gsiftp://localhost$testfile -M >$tmpname 2>/dev/null") / 256;
     if($rc != 0)
     {
-        $errors .= "\n# Test exited with $rc. ";
+        $errors .= "Test exited with $rc. ";
     }
     if(-r 'core')
     {
@@ -240,8 +233,7 @@ sub perf_test
     }
     else
     {
-        $errors = "\n# Test failed\n# $command\n# " . $errors;
-        ok($errors, 'success');
+        ok("\n# $test_exec -M -s gsiftp://localhost$testfile\n#$errors", 'success');
     }
     unlink($tmpname);
 }
@@ -262,11 +254,10 @@ sub throughput_test
 
     unlink('core');
 
-    my $command = "$test_exec -s gsiftp://$source_host$testfile -T >$tmpname 2>/dev/null";
-    $rc = system($command) / 256;
+    $rc = system("$test_exec -s gsiftp://localhost$testfile -T >$tmpname 2>/dev/null") / 256;
     if($rc != 0)
     {
-        $errors .= "\n# Test exited with $rc. ";
+        $errors .= "Test exited with $rc. ";
     }
     if(-r 'core')
     {
@@ -279,31 +270,20 @@ sub throughput_test
     }
     else
     {
-        $errors = "\n# Test failed\n# $command\n# " . $errors;
-        ok($errors, 'success');
+        ok("\n# $test_exec -s gsiftp://localhost$testfile -T\n#$errors", 'success');
     }
     unlink($tmpname);
 }
 
 push(@tests, "throughput_test();");
 
-if(@ARGV)
-{
-    plan tests => scalar(@ARGV);
+# Now that the tests are defined, set up the Test to deal with them.
+plan tests => scalar(@tests), todo => \@todo;
 
-    foreach (@ARGV)
-    {
-        eval "&$tests[$_-1]";
-    }
-}
-else
+# And run them all.
+foreach (@tests)
 {
-    plan tests => scalar(@tests), todo => \@todo;
-
-    foreach (@tests)
-    {
-        eval "&$_";
-    }
+    eval "&$_";
 }
 
 sub compare_data

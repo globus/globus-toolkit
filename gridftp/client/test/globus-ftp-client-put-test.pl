@@ -11,7 +11,7 @@ use POSIX;
 use Test;
 use FtpTestLib;
 
-my $test_exec = './globus-ftp-client-put-test';
+my $test_exec = $ENV{GLOBUS_LOCATION} . '/test/' . 'globus-ftp-client-put-test';
 my @tests;
 my @todo;
 
@@ -45,36 +45,36 @@ files compare.
 =back
 
 =cut
-
-my ($dest_host, $dest_file) = setup_remote_dest();
-my ($local_copy) = setup_local_source();
-
 sub basic_func
 {
     my ($use_proxy) = (shift);
+    my $tmpname = POSIX::tmpnam();
     my ($errors,$rc) = ("",0);
 
-    unlink('core');
-    
+    unlink('core', $tmpname);
+
     if($use_proxy == 0)
     {
         FtpTestLib::push_proxy('/dev/null');
     }
-    my $command = "$test_exec -d gsiftp://$dest_host$dest_file < $local_copy >/dev/null 2>&1";
-    $rc = system($command) / 256;
+    $rc = system("$test_exec -d 'gsiftp://localhost$tmpname' < /etc/group >/dev/null 2>&1") / 256;
     if(($use_proxy && $rc != 0) || (!$use_proxy && $rc == 0))
     {
-        $errors .= "\n# Test exited with $rc. ";
+        $errors .= "Test exited with $rc. ";
     }
     if(-r 'core')
     {
         $errors .= "\n# Core file generated.";
     }
-    if($use_proxy && $errors eq '')
+    if($use_proxy)
     {
-        my ($output) = get_remote_file($dest_host, $dest_file);
-        $errors .= compare_local_files($local_copy, $output);
-        unlink($output);
+    	my $diffs = `diff /etc/group $tmpname 2>&1 | sed -e 's/^/# /'`;
+
+	if($diffs ne "")
+	{
+	    $errors .= "\n# Differences between /etc/group and output.";
+	    $errors .= "$diffs";
+	}
     }
 
     if($errors eq "")
@@ -83,15 +83,13 @@ sub basic_func
     }
     else
     {
-        $errors = "\n# Test failed\n# $command\n# " . $errors;
         ok($errors, 'success');
     }
+    unlink($tmpname);
     if($use_proxy == 0)
     {
         FtpTestLib::pop_proxy();
     }
-    
-    clean_remote_file($dest_host, $dest_file);
 }
 push(@tests, "basic_func" . "(0);"); #Use invalid proxy
 push(@tests, "basic_func" . "(1);"); #Use proxy
@@ -115,12 +113,12 @@ and no core file is generated.
 =cut
 sub bad_url
 {
+    my $tmpname = POSIX::tmpnam();
     my ($errors,$rc) = ("",0);
 
-    unlink('core');
+    unlink('core', $tmpname);
 
-    my $command = "$test_exec -d gsiftp://$dest_host/no/such/file/here < $local_copy >/dev/null 2>&1";
-    $rc = system($command) / 256;
+    $rc = system("$test_exec -d 'gsiftp://localhost/no/such/file/here' < /etc/group >/dev/null 2>/dev/null") / 256;
     if($rc != 1)
     {
         $errors .= "\n# Test exited with $rc.";
@@ -136,9 +134,9 @@ sub bad_url
     }
     else
     {
-        $errors = "\n# Test failed\n# $command\n# " . $errors;
         ok($errors, 'success');
     }
+    unlink($tmpname);
 }
 push(@tests, "bad_url");
 
@@ -154,13 +152,13 @@ a stronger measure of success here.)
 =cut
 sub abort_test
 {
+    my $tmpname = POSIX::tmpnam();
     my ($errors,$rc) = ("", 0);
     my ($abort_point) = shift;
 
-    unlink('core');
+    unlink('core', $tmpname);
 
-    my $command = "$test_exec -a $abort_point -d gsiftp://$dest_host$dest_file < $local_copy >/dev/null 2>&1";
-    $rc = system($command) / 256;
+    $rc = system("$test_exec -a $abort_point -d 'gsiftp://localhost/$tmpname' </etc/group >/dev/null 2>/dev/null") / 256;
     if(-r 'core')
     {
         $errors .= "\n# Core file generated.";
@@ -172,11 +170,9 @@ sub abort_test
     }
     else
     {
-        $errors = "\n# Test failed\n# $command\n# " . $errors;
         ok($errors, 'success');
     }
-    
-    clean_remote_file($dest_host, $dest_file);
+    unlink($tmpname);
 }
 for(my $i = 1; $i <= 41; $i++)
 {
@@ -192,27 +188,26 @@ program returns 0, files compare, and no core file is generated.
 =cut
 sub restart_test
 {
+    my $tmpname = POSIX::tmpnam();
     my ($errors,$rc) = ("",0);
     my ($restart_point) = shift;
 
-    unlink('core');
+    unlink('core', $tmpname);
 
-    my $command = "$test_exec -r $restart_point -d gsiftp://$dest_host$dest_file < $local_copy >/dev/null 2>&1";
-    $rc = system($command) / 256;
+    $rc = system("$test_exec -r $restart_point -d 'gsiftp://localhost/$tmpname' < /etc/group >/dev/null 2>&1") / 256;
     if($rc != 0)
     {
-        $errors .= "\n# Test exited with $rc. ";
+        $errors .= "Test exited with $rc. ";
     }
     if(-r 'core')
     {
         $errors .= "\n# Core file generated.";
     }
-    
-    if($errors eq "")
+    my $diffs = `diff -u /etc/group $tmpname 2>&1 | sed -e 's/^/#/'`;
+    if($diffs ne "")
     {
-        my ($output) = get_remote_file($dest_host, $dest_file);
-        $errors .= compare_local_files($local_copy, $output);
-        unlink($output);
+        $errors .= "\n# Differences between /etc/group and output.";
+	$errors .= "$diffs"
     }
 
     if($errors eq "")
@@ -221,11 +216,9 @@ sub restart_test
     }
     else
     {
-        $errors = "\n# Test failed\n# $command\n# " . $errors;
-        ok($errors, 'success');
+        ok("\n# $test_exec -r $restart_point\n#$errors", 'success');
     }
-    
-    clean_remote_file($dest_host, $dest_file);
+    unlink($tmpname);
 }
 for(my $i = 1; $i <= 41; $i++)
 {
@@ -261,16 +254,17 @@ DCAU with subject authorization with an invalid subject.
 =cut
 sub dcau_test
 {
+    my $tmpname = POSIX::tmpnam();
     my ($errors,$rc) = ("",0);
     my ($dcau, $desired_rc) = @_;
 
     unlink('core');
 
-    my $command = "$test_exec -c $dcau -d gsiftp://$dest_host$dest_file < $local_copy >/dev/null 2>&1";
-    $rc = system($command) / 256;
+    $rc = system("$test_exec -c $dcau -d 'gsiftp://localhost$tmpname' < /etc/group >/dev/null 2>&1") / 256;
+
     if($rc != $desired_rc)
     {
-	$errors .= "\n# Test exited with $rc. ";
+	$errors .= "Test exited with $rc. ";
     }
 
     if(-r 'core')
@@ -280,9 +274,13 @@ sub dcau_test
 
     if($errors eq "" && $desired_rc == 0)
     {
-	my ($output) = get_remote_file($dest_host, $dest_file);
-        $errors .= compare_local_files($local_copy, $output);
-        unlink($output);
+	my $diffs = `diff /etc/group $tmpname 2>&1 | sed -e 's/^/# /'`;
+
+	if($diffs ne "")
+	{
+	    $errors .= "\n# Differences between /etc/group and output.";
+	    $errors .= "$diffs";
+	}
     }
 
     if($errors eq "")
@@ -291,11 +289,9 @@ sub dcau_test
     }
     else
     {
-        $errors = "\n# Test failed\n# $command\n# " . $errors;
         ok($errors, 'success');
     }
-    
-    clean_remote_file($dest_host, $dest_file);
+    unlink($tmpname);
 }
 
 chomp(my $subject = `grid-cert-info -subject`);
@@ -329,16 +325,17 @@ PROT with private protection
 =cut
 sub prot_test
 {
+    my $tmpname = POSIX::tmpnam();
     my ($errors,$rc) = ("",0);
     my ($prot, $desired_rc) = @_;
 
     unlink('core');
 
-    my $command = "$test_exec -c self -t $prot -d gsiftp://$dest_host$dest_file < $local_copy >/dev/null 2>&1";
-    $rc = system($command) / 256;
+    $rc = system("$test_exec -c self -t $prot -d 'gsiftp://localhost$tmpname' < /etc/group >/dev/null 2>&1") / 256;
+
     if($rc != $desired_rc)
     {
-	$errors .= "\n# Test exited with $rc. ";
+	$errors .= "Test exited with $rc. ";
     }
 
     if(-r 'core')
@@ -348,9 +345,13 @@ sub prot_test
 
     if($errors eq "" && $desired_rc == 0)
     {
-	my ($output) = get_remote_file($dest_host, $dest_file);
-        $errors .= compare_local_files($local_copy, $output);
-        unlink($output);
+	my $diffs = `diff /etc/group $tmpname 2>&1 | sed -e 's/^/# /'`;
+
+	if($diffs ne "")
+	{
+	    $errors .= "\n# Differences between /etc/group and output.";
+	    $errors .= "$diffs";
+	}
     }
 
     if($errors eq "")
@@ -359,11 +360,9 @@ sub prot_test
     }
     else
     {
-        $errors = "\n# Test failed\n# $command\n# " . $errors;
         ok($errors, 'success');
     }
-    
-    clean_remote_file($dest_host, $dest_file);
+    unlink($tmpname);
 }
 
 push(@tests, "prot_test('clear', 0);");
@@ -379,15 +378,15 @@ Do a simple put of /etc/group, enabling perf_plugin
 =cut
 sub perf_test
 {
+    my $tmpname = POSIX::tmpnam();
     my ($errors,$rc) = ("",0);
 
     unlink('core');
 
-    my $command = "$test_exec -d gsiftp://$dest_host$dest_file -M < $local_copy >/dev/null 2>&1";
-    $rc = system($command) / 256;
+    $rc = system("$test_exec -d 'gsiftp://localhost$tmpname' -M < /etc/group >/dev/null 2>&1") / 256;
     if($rc != 0)
     {
-        $errors .= "\n# Test exited with $rc. ";
+        $errors .= "Test exited with $rc. ";
     }
     if(-r 'core')
     {
@@ -400,11 +399,9 @@ sub perf_test
     }
     else
     {
-        $errors = "\n# Test failed\n# $command\n# " . $errors;
-        ok($errors, 'success');
+        ok("\n# $test_exec -M\n#$errors", 'success');
     }
-    
-    clean_remote_file($dest_host, $dest_file);
+    unlink($tmpname);
 }
 
 push(@tests, "perf_test();");
@@ -418,15 +415,15 @@ Do a simple put of /etc/group, enabling throughput_plugin
 =cut
 sub throughput_test
 {
+    my $tmpname = POSIX::tmpnam();
     my ($errors,$rc) = ("",0);
 
     unlink('core');
 
-    my $command = "$test_exec -d gsiftp://$dest_host$dest_file -M -T < $local_copy >/dev/null 2>&1";
-    $rc = system($command) / 256;
+    $rc = system("$test_exec -d 'gsiftp://localhost$tmpname' -M -T < /etc/group >/dev/null 2>&1") / 256;
     if($rc != 0)
     {
-        $errors .= "\n# Test exited with $rc. ";
+        $errors .= "Test exited with $rc. ";
     }
     if(-r 'core')
     {
@@ -439,11 +436,9 @@ sub throughput_test
     }
     else
     {
-        $errors = "\n# Test failed\n# $command\n# " . $errors;
-        ok($errors, 'success');
+        ok("\n# $test_exec -T\n#$errors", 'success');
     }
-    
-    clean_remote_file($dest_host, $dest_file);
+    unlink($tmpname);
 }
 
 push(@tests, "throughput_test();");
@@ -458,6 +453,7 @@ the default restart plugin to cope with them.
 =cut
 sub restart_plugin_test
 {
+    my $tmpname = POSIX::tmpnam();
     my ($errors,$rc) = ("",0);
     my $other_args;
 
@@ -470,36 +466,27 @@ sub restart_plugin_test
 	$other_args = "";
     }
 
-    my $command = "$test_exec -d gsiftp://$dest_host$dest_file -f 0,0,0,0 $other_args < $local_copy >/dev/null 2>&1";
-    $rc = system($command) / 256;
+    $rc = system("$test_exec -d 'gsiftp://localhost$tmpname' -f 0,0,0,0 $other_args < /etc/group >/dev/null 2>&1") / 256;
     if($rc != 0)
     {
-        $errors .= "\n# Test exited with $rc. ";
+        $errors .= "Test exited with $rc. ";
     }
     if(-r 'core')
     {
         $errors .= "\n# Core file generated.";
     }
-    
-    if($errors eq "")
-    {
-        my ($output) = get_remote_file($dest_host, $dest_file);
-        $errors .= compare_local_files($local_copy, $output);
-        unlink($output);
-    }
-    
+    $errors .= FtpTestLib::compare_local_files('/etc/group', $tmpname);
+
     if($errors eq "")
     {
         ok('success', 'success');
     }
     else
     {
-        $errors = "\n# Test failed\n# $command\n# " . $errors;
         ok($errors, 'success');
     }
-    
-    delete $ENV{GLOBUS_FTP_CLIENT_FAULT_MODE};
-    clean_remote_file($dest_host, $dest_file);
+        delete $ENV{GLOBUS_FTP_CLIENT_FAULT_MODE};
+    unlink($tmpname);
 }
 foreach (&FtpTestLib::ftp_commands())
 {
@@ -509,21 +496,13 @@ push(@tests, "restart_plugin_test('PROT', '-c self -t safe')");
 push(@tests, "restart_plugin_test('DCAU', '-c self -t safe')");
 push(@tests, "restart_plugin_test('PBSZ', '-c self -t safe')");
 
-if(@ARGV)
-{
-    plan tests => scalar(@ARGV);
 
-    foreach (@ARGV)
-    {
-        eval "&$tests[$_-1]";
-    }
-}
-else
-{
-    plan tests => scalar(@tests), todo => \@todo;
 
-    foreach (@tests)
-    {
-        eval "&$_";
-    }
+# Now that the tests are defined, set up the Test to deal with them.
+plan tests => scalar(@tests), todo => \@todo;
+
+# And run them all.
+foreach (@tests)
+{
+    eval "&$_";
 }
