@@ -230,6 +230,12 @@ static char * graml_env_logname = NULL;           /* all */
 static char * graml_env_home = NULL;              /* all */
 static char * graml_env_tz = NULL;                /* all */
 
+static char * graml_env_deploy_path = GLOBUS_NULL;
+static char * graml_env_install_path = GLOBUS_NULL;
+static char * graml_env_services_path = GLOBUS_NULL;
+static char * graml_env_tools_path = GLOBUS_NULL;
+
+
 /*
  * other GRAM local variables 
  */
@@ -315,7 +321,6 @@ main(int argc,
     FILE *                 args_fp;
     globus_byte_t          type;
     globus_byte_t *        ptr;
-    globus_byte_t          bformat;
     globus_byte_t                       buffer[GLOBUS_GRAM_CLIENT_MAX_MSG_SIZE];
     globus_nexus_buffer_t               reply_buffer;
     globus_nexus_startpoint_t           reply_sp;
@@ -331,11 +336,19 @@ main(int argc,
     char *                              jm_globus_host_osname = NULL;
     char *                              jm_globus_host_osversion = NULL;
     globus_gram_jobmanager_request_t *  request;
-    char *                              tmp_unparse_str = NULL;
     globus_bool_t                       jm_request_failed = GLOBUS_FALSE;
     globus_l_gram_client_contact_t *    client_contact_node;
 
+    globus_result_t                     error;
+
     /* Initialize modules that I use */
+    rc = globus_module_activate(GLOBUS_COMMON_MODULE);
+    if (rc != GLOBUS_SUCCESS)
+    {
+	fprintf(stderr, "common module activation failed with rc=%d\n", rc);
+	exit(1);
+    }
+
     rc = globus_module_activate(GLOBUS_NEXUS_MODULE);
     if (rc != GLOBUS_SUCCESS)
     {
@@ -511,11 +524,17 @@ main(int argc,
             jm_globus_host_osversion = strdup(argv[i+1]);
             i++;
         }
+        else if ((strcmp(argv[i], "-globus_install_path") == 0)
+                 && (i + 1 < argc))
+        {
+            graml_env_install_path = strdup(argv[i+1]);
+            i++;
+        }
         else
         {
             GRAM_UNLOCK;
             fprintf(stderr, "Unknown argument %s\n", argv[i]);
-            fprintf(stderr, "Usage: %s %s %s %s %s %s %s %s %s %s\n",
+            fprintf(stderr, "Usage: %s %s %s %s %s %s %s %s %s %s %s\n",
                     argv[0],
                     "[-home deploy home dir ] [-e lib exe dir]",
                     "[-d debug print] [-s save files]",
@@ -525,7 +544,8 @@ main(int argc,
                     "[-globus_host_manufacturer manufacturer]",
                     "[-globus_host_cputype cputype]",
                     "[-globus_host_osname osname]",
-                    "[-globus_host_osversion osversion ] [-t test dat file]"
+                    "[-globus_host_osversion osversion ] [-t test dat file]",
+		    "[-globus_install_path dir]"
                    );
             exit(1);
         }
@@ -621,6 +641,50 @@ main(int argc,
     graml_env_krb5ccname     = globus_l_gram_getenv_var("KRB5CCNAME", NULL);
     graml_env_nlspath        = globus_l_gram_getenv_var("NLSPATH", NULL);
     graml_env_tz             = globus_l_gram_getenv_var("TZ", NULL);
+
+    /*
+     * Getting the paths to the (relocatable) deploy and install trees.
+     */
+
+    grami_fprintf( request->jobmanager_log_fp,
+		   "JM: home = %s\n", (jm_home_dir) ? (jm_home_dir) : "NULL" );
+    if (jm_home_dir)
+	graml_env_deploy_path = strdup(jm_home_dir);
+    else
+    {
+	error = globus_common_deploy_path(&graml_env_deploy_path);
+	globus_assert(!error);
+    }
+
+    grami_fprintf( request->jobmanager_log_fp,
+		   "JM: GLOBUS_DEPLOY_PATH = %s\n",
+		   (graml_env_deploy_path) ? (graml_env_deploy_path) : "NULL");
+
+    if (!graml_env_install_path)
+    {
+	error = globus_common_install_path_from_config_file(
+	    graml_env_deploy_path,
+	    &graml_env_install_path );
+	globus_assert(!error);
+    }
+
+    grami_fprintf( request->jobmanager_log_fp,
+		   "JM: GLOBUS_INSTALL_PATH = %s\n",
+		   (graml_env_deploy_path) ? (graml_env_deploy_path) : "NULL");
+
+    globus_libc_setenv("GLOBUS_INSTALL_PATH",
+		       graml_env_install_path,
+		       GLOBUS_TRUE);
+
+    globus_libc_setenv("GLOBUS_DEPLOY_PATH",
+		       graml_env_deploy_path,
+		       GLOBUS_TRUE);
+
+    error = globus_common_tools_path( &graml_env_tools_path );
+    globus_assert(!error);
+
+    error = globus_common_services_path( &graml_env_services_path );
+    globus_assert(!error);
 
     if (jm_home_dir)
     {
@@ -883,29 +947,42 @@ main(int argc,
             globus_symboltable_insert(symbol_table,
                                 (void *) "GLOBUS_HOST_OSVERSION",
                                 (void *) jm_globus_host_osversion);
-        if (jm_home_dir)
+        if (graml_env_deploy_path)
+	{
             globus_symboltable_insert(symbol_table,
                                 (void *) "GLOBUS_DEPLOY_PREFIX",
-                                (void *) jm_home_dir);
-
-        if (strlen(GLOBUS_PREFIX) != 0)
-        {
+                                (void *) graml_env_deploy_path);
             globus_symboltable_insert(symbol_table,
-                                (void *) "GLOBUS_PREFIX",
-                                (void *) strdup(GLOBUS_PREFIX));
-        }
-        if (strlen(GLOBUS_TOOLS_PREFIX) != 0)
-        {
+                                (void *) "GLOBUS_DEPLOY_PATH",
+                                (void *) graml_env_deploy_path);
+	}
+        if (graml_env_install_path)
+	{
+            globus_symboltable_insert(symbol_table,
+                                (void *) "GLOBUS_INSTALL_PREFIX",
+                                (void *) graml_env_install_path);
+            globus_symboltable_insert(symbol_table,
+                                (void *) "GLOBUS_INSTALL_PATH",
+                                (void *) graml_env_install_path);
+	}
+        if (graml_env_tools_path)
+	{
             globus_symboltable_insert(symbol_table,
                                 (void *) "GLOBUS_TOOLS_PREFIX",
-                                (void *) strdup(GLOBUS_TOOLS_PREFIX));
-        }
-        if (strlen(GLOBUS_SERVICES_PREFIX) != 0)
-        {
+                                (void *) graml_env_tools_path);
+            globus_symboltable_insert(symbol_table,
+                                (void *) "GLOBUS_TOOLS_PATH",
+                                (void *) graml_env_tools_path);
+	}
+        if (graml_env_services_path)
+	{
             globus_symboltable_insert(symbol_table,
                                 (void *) "GLOBUS_SERVICES_PREFIX",
-                                (void *) strdup(GLOBUS_SERVICES_PREFIX));
-        }
+                                (void *) graml_env_services_path);
+            globus_symboltable_insert(symbol_table,
+                                (void *) "GLOBUS_SERVICES_PATH",
+                                (void *) graml_env_services_path);
+	}
     
         if (globus_rsl_eval(rsl_tree, symbol_table) != 0)
         {
@@ -1435,6 +1512,13 @@ main(int argc,
     if (rc != GLOBUS_SUCCESS)
     {
 	fprintf(stderr, "nexus deactivation failed with rc=%d\n", rc);
+	exit(1);
+    }
+
+    rc = globus_module_deactivate(GLOBUS_COMMON_MODULE);
+    if (rc != GLOBUS_SUCCESS)
+    {
+	fprintf(stderr, "common deactivation failed with rc=%d\n", rc);
 	exit(1);
     }
 
@@ -2250,6 +2334,66 @@ globus_l_gram_request_fill(globus_rsl_t * rsl_tree,
     req->environment[x] = graml_job_contact;
     ++x;
     req->environment[x] = GLOBUS_NULL;
+
+
+    /*
+     * add the globus install/deploy paths to the environment.
+     */
+    {
+        #define  NUM_ENV_VARS_TO_FILL 2
+	int      i,y;
+	char *   fill_env[NUM_ENV_VARS_TO_FILL*2];
+
+	fill_env[0] = "GLOBUS_INSTALL_PATH";
+	fill_env[1] = graml_env_install_path;
+	fill_env[2] = "GLOBUS_DEPLOY_PATH";
+	fill_env[3] = graml_env_deploy_path;
+
+	/* in case we change our minds... */
+#if 0	
+	fill_env[4] = "GLOBUS_TOOLS_PATH";
+	fill_env[5] = graml_env_tools_path;
+	fill_env[6] = "GLOBUS_SERVICES_PATH";
+	fill_env[7] = graml_env_services_path;
+#endif
+
+	for (x=0; req->environment[x]; x++)
+	{
+	    if (x%2 == 0)
+	    {
+		for (i=0; i<NUM_ENV_VARS_TO_FILL; i++)
+		{
+		    if (fill_env[i*2] 
+			&& !strcmp(req->environment[x],fill_env[i*2]))
+			fill_env[i*2] = GLOBUS_NULL;
+		}
+	    }
+	}
+
+	y = 0;
+	for (i=0; i<NUM_ENV_VARS_TO_FILL; i++)
+	    if (fill_env[i*2]) y++;
+
+	if (y > 0)
+	{
+	    req->environment = (char **)
+		globus_libc_realloc(req->environment,
+				    (x+y*2+1) * sizeof(char *));
+	    
+	    for (i=0; i<NUM_ENV_VARS_TO_FILL; i++)
+	    {
+		if (fill_env[i*2])
+		{
+		    req->environment[x] = strdup(fill_env[i*2]);
+		    ++x;
+		    req->environment[x] = strdup(fill_env[i*2+1]);
+		    ++x;
+		}
+	    }
+	    
+	    req->environment[x] = GLOBUS_NULL;
+	}
+    }
 
     /*
      * Check for X509 variables and add them to the environment that is
