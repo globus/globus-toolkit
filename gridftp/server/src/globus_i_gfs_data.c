@@ -196,11 +196,6 @@ globus_l_gfs_data_start_abort(
 
 static
 void
-globus_l_gfs_data_end_transfer_kickout(
-    void *                              user_arg);
-
-static
-void
 globus_l_gfs_data_write_eof_cb(
     void *                              user_arg,
     globus_ftp_control_handle_t *       handle,
