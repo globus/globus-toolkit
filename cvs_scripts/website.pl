@@ -25,6 +25,7 @@ if ( ! -d $webroot )
 }
 
 ($subdir, @files) = split(/ /,$ARGV[0]);
+$newdir = $subdir;
 
 print "subdir is \"$subdir\"\n" if $verbose;
 # Make sure loginfo is setup correctly
@@ -50,10 +51,10 @@ if ( ! -d $fulldir )
 {
    chdir $webroot;
    print "Adding new subdirectory $subdir\n" if $verbose;
-   system("echo cvs co -dP ./$subdir") if $verbose;
-   system("cvs co -dP ./$subdir");
-   system("echo chgrp -R $cvsgrp $subdir") if $verbose;
-   system("chgrp -R $cvsgrp $subdir");
+   system("echo cvs co -d $newdir") if $verbose;
+   system("cvs co -d $newdir");
+   system("echo chgrp -R $cvsgrp ./$subdir") if $verbose;
+   system("chgrp -R $cvsgrp ./$subdir");
 } else {
    chdir $fulldir;
    foreach my $f (@files) {
