@@ -351,7 +351,7 @@ globus_gridftp_server_control_event_send_perf(
     {
         return GlobusGridFTPServerErrorParameter("op");
     }
-    if(stripe_ndx < 0);
+    if(stripe_ndx < 0)
     {
         return GlobusGridFTPServerErrorParameter("stripe_ndx");
     }

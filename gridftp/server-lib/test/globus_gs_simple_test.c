@@ -147,6 +147,11 @@ event_cb(
     int                                     event_type,
     void *                                  user_arg)
 {
+    static globus_size_t                    nbytes = 0;
+
+    nbytes += 1048576;
+
+    globus_gridftp_server_control_event_send_perf(op, 0, nbytes);
 }
 
 static void
