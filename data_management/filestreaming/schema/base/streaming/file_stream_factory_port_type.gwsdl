@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions name="FileStreamFactory"
+             targetNamespace="http://www.globus.org/namespaces/base/streaming"
+             xmlns:tns="http://www.globus.org/namespaces/base/streaming"
+             xmlns:gwsdl="http://www.gridforum.org/namespaces/2003/03/gridWSDLExtensions"
+             xmlns:ogsi="http://www.gridforum.org/namespaces/2003/03/OGSI"
+             xmlns:sd="http://www.gridforum.org/namespaces/2003/03/serviceData"
+             xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+             xmlns="http://schemas.xmlsoap.org/wsdl/">
+
+<import location="../../ogsi/ogsi.gwsdl"
+        namespace="http://www.gridforum.org/namespaces/2003/03/OGSI"/>
+
+<gwsdl:portType name="FileStreamFactoryPortType" extends="ogsi:Factory">
+
+    <sd:serviceData name="fileStreamHandles"
+                    type="ogsi:HandleType"
+                    minOccurs="0"
+                    maxOccurs="unbounded"
+                    mutability="mutable"
+                    modifiable="false"
+                    nillable="true">
+        <documentation>
+            A list of this factory's instance handles.
+        </documentation>
+    </sd:serviceData>
+
+    <!--
+    <sd:serviceData name="destinationURLs"
+                    type="xsd:string"
+                    minOccurs="0"
+                    maxOccurs="unbounded"
+                    mutability="mutable">
+    </sd:serviceData>
+    -->
+
+</portType>
+
+</definitions>

@@ -123,7 +123,7 @@ Southern California. All Rights Reserved.
     RESULTING FROM EXERCISE OF THIS LICENSE AGREEMENT OR THE USE OF
     THE SOFTWARE.
 */
-package org.globus.ogsa.impl.base.gram.filestreaming;
+package org.globus.ogsa.impl.base.filestreaming;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -132,10 +132,10 @@ import java.rmi.RemoteException;
 
 import javax.xml.namespace.QName;
 
-import org.globus.ogsa.base.gram.filestreaming.DestinationURLElement;
-import org.globus.ogsa.base.gram.filestreaming.FileStreamingOptionsType;
-import org.globus.ogsa.base.gram.filestreaming.FileStreamingType;
-import org.globus.ogsa.base.gram.filestreaming.FileStreamingPortType;
+import org.globus.ogsa.base.filestreaming.DestinationURLElement;
+import org.globus.ogsa.base.filestreaming.FileStreamAttributes;
+import org.globus.ogsa.base.filestreaming.FileStreamFactoryAttributes;
+import org.globus.ogsa.base.filestreaming.FileStreamPortType;
 import org.globus.ogsa.impl.core.factory.SecureFactoryServiceSkeleton;
 import org.globus.ogsa.impl.core.service.ServiceSkeleton;
 import org.globus.ogsa.impl.core.service.QueryHelper;
@@ -159,48 +159,45 @@ import org.gridforum.ogsa.ServiceTerminationReferenceType;
 
 import java.util.Vector;
 
-public class FileStreamingFactoryImpl extends SecureFactoryServiceSkeleton
-        implements ServiceDataValueCallback {
+public class FileStreamFactoryImpl extends SecureFactoryServiceSkeleton
+                                   implements ServiceDataValueCallback {
     private static Log logger
-        = LogFactory.getLog(FileStreamingFactoryImpl.class);
+        = LogFactory.getLog(FileStreamFactoryImpl.class);
 
-    static private final String LOCAL_PATH = "localPath";
-    private FileStreamingType  fileStreamingAttributes;
-    private String localPath;
-    protected ExtensibilityType extension;
-    private static final String DEST_URLS_SDE_NAME = "DestinationURLs";
-    private static final String FILE_STREAMING_HANDLES_SDE_NAME
-            = "FileStreamingHandles";
-    private static final QName FILE_STREAMING_HANDLES_SDE_QNAME
-            = new QName(FILE_STREAMING_HANDLES_SDE_NAME); 
-    private ServiceData fileStreamingHandles;
+    private FileStreamFactoryAttributes fileStreamFactoryAttributes;
+    /*
+    private static final String DEST_URLS_SDE_NAME = "destinationURLs";
+    private ServiceData fileStreamHandles;
+    */
+    private static final String FILE_STREAM_HANDLES_SDE_NAME
+            = "fileStreamHandles";
 
-    public FileStreamingFactoryImpl() {
-        super ("File Streaming Factory Service");
+    public FileStreamFactoryImpl() {
+        super ("File Stream Factory Service");
 
-        this.localPath = (String) getPersistentProperty(LOCAL_PATH);
         this.secContextSkeleton.setGrimPolicyHandler(
                 new IgnoreProxyPolicyHandler());
     }
 
-    public FileStreamingFactoryImpl(FileStreamingType fileStreamingAttributes)
+    public FileStreamFactoryImpl(
+            FileStreamFactoryAttributes fileStreamFactoryAttributes)
             throws RemoteException {
-        super ("File Streaming Factory Service");
+        super ("File Stream Factory Service");
         this.secContextSkeleton.setGrimPolicyHandler(
                 new IgnoreProxyPolicyHandler());
 
-        this.localPath = fileStreamingAttributes.getPath();
-        this.fileStreamingAttributes = fileStreamingAttributes;
-        fileStreamingHandles = this.serviceData.create(
-                FILE_STREAMING_HANDLES_SDE_NAME);
-        fileStreamingHandles.setCallback(this);
-        this.serviceData.add(fileStreamingHandles);
+        this.fileStreamFactoryAttributes = fileStreamFactoryAttributes;
+        fileStreamHandles = this.serviceData.create(
+                FILE_STREAM_HANDLES_SDE_NAME);
+        fileStreamHandles.setCallback(this);
+        this.serviceData.add(fileStreamHandles);
 
         try {
-            setPersistentProperty(LOCAL_PATH, this.localPath);
+            String factoryAttributes
+                = this.fileStreamFactoryAttributes.getPath();
             flush();
         } catch (ServicePropertiesException spe) {
-            throw new RemoteException("Error storing persistent properties",
+            throw new RemoteException("problem storing persistent properties",
                     spe);
         }
     }
@@ -224,42 +221,40 @@ public class FileStreamingFactoryImpl extends SecureFactoryServiceSkeleton
         return destURLs;
     }
 
+    /*
     private void updateDestinationURLs(String[] destURLs)
             throws GridServiceException {
 
-        DestinationURLElement[] destURLElements
-            = new DestinationURLElement[destURLs.length];
-        for (int index=0; index<destURLs.length; index++) {
-            destURLElements[index].setDestinationURL(destURLs[index]);
-        }
-
         ServiceData destinationURLsServiceData =
             this.serviceData.create(DEST_URLS_SDE_NAME);
-        destinationURLsServiceData.setValue(destURLElements);
+        for (int index=0; index<destURLs.length; index++) {
+            destinationURLsServiceData.addValue(destURLs[index]);
+        }
         this.serviceData.add(destinationURLsServiceData);
     }
+    */
 
     public ServiceTerminationReferenceType createService(CreationType creation)
             throws RemoteException, ServiceAlreadyExistsFault,
             GridServiceFault {
         ServiceTerminationReferenceType retval = super.createService(creation);
 
-        fileStreamingHandles.notifyChange();
+        fileStreamHandles.notifyChange();
 
         return retval;
     }
 
     public Object createServiceObject(CreationType creation)
             throws GridServiceException {
-        extension = creation.getServiceParameters();
+        ExtensibilityType extension = creation.getServiceParameters();
         Object obj = AnyHelper.getAny(extension);
-        if(!(obj instanceof FileStreamingOptionsType)) {
+        if(!(obj instanceof FileStreamAttributes)) {
             throw new GridServiceException(
                     "Invalid type for ServiceParameters");
         }
-        FileStreamingOptionsType options = (FileStreamingOptionsType) obj;
-        FileStreamingPortType serviceInstance
-            = new FileStreamingImpl(fileStreamingAttributes, options);
+        FileStreamAttributes options = (FileStreamAttributes) obj;
+        FileStreamPortType serviceInstance
+            = new FileStreamImpl(this.fileStreamFactoryAttributes, options);
 
         /*
         String destinationURL = options.getDestinationURL();
@@ -288,7 +283,7 @@ public class FileStreamingFactoryImpl extends SecureFactoryServiceSkeleton
 
     public void notifyDestroy(String path) {
         super.notifyDestroy(path);
-        fileStreamingHandles.notifyChange();
+        fileStreamHandles.notifyChange();
 
         /*
         //Obtain the index into the list of instances of the dying instance
@@ -341,15 +336,15 @@ public class FileStreamingFactoryImpl extends SecureFactoryServiceSkeleton
     public Object [] generateServiceDataValues(QName qname) {
         logger.debug("generating service data for " + qname.toString());
 
-        if (qname.equals(FILE_STREAMING_HANDLES_SDE_QNAME)) {
-            return getFileStreamingHandlesDataValues();
+        if (qname.localPart.equals(FILE_STREAM_HANDLES_QNAME)) {
+            return getFileStreamHandlesDataValues();
         } else {
             return null;
         }
 
     }
 
-    protected Object [] getFileStreamingHandlesDataValues() {
+    protected Object [] getFileStreamHandlesDataValues() {
         Object [] handles;
         String myHandle = (String) getProperty(ServiceProperties.HANDLE);
 

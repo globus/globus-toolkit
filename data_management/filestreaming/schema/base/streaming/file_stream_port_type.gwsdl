@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions name="FileStream"
+             targetNamespace="http://www.globus.org/namespaces/base/streaming"
+             xmlns:tns="http://www.globus.org/namespaces/base/streaming"
+             xmlns:gwsdl="http://www.gridforum.org/namespaces/2003/03/gridWSDLExtensions"
+             xmlns:ogsi="http://www.gridforum.org/namespaces/2003/03/OGSI"
+             xmlns:gsi="http://ogsa.globus.org/security/authentication"
+             xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+             xmlns="http://schemas.xmlsoap.org/wsdl/">
+
+<import location="../../ogsi/ogsi.gwsdl"
+        namespace="http://www.gridforum.org/namespaces/2003/03/OGSI"/>
+
+<types>
+    <xsd:schema targetNamespace="http://www.globus.org/namespaces/base/streaming"
+                xmlns:tns="http://www.globus.org/namespaces/base/streaming"
+                xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+                
+        <xsd:element name="start">
+            <xsd:complexType/>
+            </xsd:element>
+        <xsd:element name="startResponse">
+            <xsd:complexType/>
+        </xsd:element>
+                
+        <xsd:element name="stop">
+            <xsd:complexType/>
+        </xsd:element>
+        <xsd:element name="stopResponse">
+            <xsd:complexType/>
+        </xsd:element>
+
+        <xsd:complexType name="FileStreamAttributes">
+            <xsd:sequence>
+                <xsd:element name="destinationURL" type="xsd:string"/>
+                <xsd:element name="offset" type="xsd:int"/>
+            </xsd:sequence>
+        </xsd:complexType>
+
+        <xsd:complexType name="FileStreamFactoryAttributes">
+            <xsd:sequence>
+                <xsd:element name="path" type="xsd:string"/>
+            </xsd:sequence>
+        </xsd:complexType>
+        <xsd:element name="FileStreamFactoryAttributesWrapper">
+            <xsd:complexType name="FileStreamFactoryAttributes">
+                <xsd:sequence>
+                    <xsd:element name="fileStreamFactoryAttributes"
+                                 type="tns:FileStreamFactoryAttributes"/>
+                </xsd:sequence>
+            </xsd:complexType>
+        </xsd:element>
+    </schema>
+</types>
+
+<message name="startInputMessage">
+    <part name="parameters" element="tns:start"/>
+</message>
+<message name="startOutputMessage">
+    <part name="parameters" element="tns:startResponse"/>
+</message>
+
+<message name="stopInputMessage">
+    <part name="parameters" element="tns:stop"/>
+</message>
+<message name="stopOutputMessage">
+    <part name="parameters" element="tns:stopResponse"/>
+</message>
+
+<gwsdl:portType name="FileStreamPortType">
+    <operation name="start">
+        <input message="tns:startInputMessage"/>
+        <output message="tns:startOutputMessage"/>
+    </operation>
+    <operation name="stop">
+        <input message="tns:stopInputMessage"/>
+        <output message="tns:stopOutputMessage"/>
+    </operation>
+
+    <sd:serviceData name="destinationURL"
+                    type="xsd:string"
+                    minOccurs="1"
+                    maxOccurs="1"
+                    mutability="mutable"
+                    nillable="false">
+        <documentation>
+            The URL of the stream destination.
+        </documentation>
+    </sd:serviceDataDescription>
+
+</gwsdl:portType>
+
+</definitions>
+
+
+  

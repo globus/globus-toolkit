@@ -94,86 +94,49 @@ Southern California. All Rights Reserved.
 
   </target>
 
-  <!-- =================================================================== -->
-  <!-- Generate Service and Binding wsdls from port type wsdls             -->
-  <!-- =================================================================== -->
-  <target name="generateWSDLs" unless="stubs.present" depends="setenv">
-    <delete dir="./src/org/globus/ogsa/base"/>
-
+  <target name="copySchemaDir">
     <copy toDir="${schema.dir}">
         <fileset dir="${schema.origin}" casesensitive="yes"/>
     </copy>
     <copy file="${schema.origin}/${nsmap.file}" toDir="./"/>
- 
+  </target>
 
-    <echo message="Generating schema for file_streaming_factory"/>
-    <java classname="org.globus.ogsa.tools.wsdl.GenerateBinding" dir="${schema.dir}/base/gram" fork="yes"
-          classpathref="classpath" failonerror="true">
-      <arg value="file_streaming_factory_port_type.wsdl"/>
-      <arg value="file_streaming_factory"/>
-      <arg value="http"/>
-    </java>
-    <java classname="org.globus.ogsa.tools.wsdl.DecorateWSDL" dir="${schema.dir}/base/gram" fork="yes"
-          classpathref="classpath" failonerror="true">
-      <arg value="../../core/factory/factory_bindings.wsdl"/>
-      <arg value="file_streaming_factory_service.wsdl"/>
-    </java>
-    <java classname="org.globus.ogsa.tools.wsdl.DecorateWSDL" dir="${schema.dir}/base/gram" fork="yes"
-          classpathref="classpath" failonerror="true">
-      <arg value="../../core/service/grid_service_bindings.wsdl"/>
-      <arg value="file_streaming_factory_service.wsdl"/>
-    </java>
-    <java classname="org.globus.ogsa.tools.wsdl.DecorateWSDL" dir="${schema.dir}/base/gram" fork="yes"
-          classpathref="classpath" failonerror="true">
-      <arg value="../../core/notification/notification_source_bindings.wsdl"/>
-      <arg value="file_streaming_factory_service.wsdl"/>
-    </java>
-    <java classname="org.globus.ogsa.tools.wsdl.DecorateSDD" dir="${schema.dir}/base/gram" fork="yes"
-          classpathref="classpath" failonerror="true">
-      <arg value="../../core/types/inspection.wsdl"/>
-      <arg value="file_streaming_factory_service.wsdl"/>
-    </java>
-    <java classname="org.globus.ogsa.tools.wsdl.DecorateWSDL" dir="${schema.dir}/base/gram" fork="yes"
-          classpathref="classpath" failonerror="true">
-      <arg value="../../security/authentication/gss_secure_conversation_bindings.wsdl"/>
-      <arg value="file_streaming_factory_service.wsdl"/>
-    </java>
+
+  <!-- =================================================================== -->
+  <!-- Generate Service and Binding wsdls from port type wsdls             -->
+  <!-- =================================================================== -->
+  <target name="generateWSDL" depends="setenv">
+   <antcall target="copySchemaDir"/>
+   <ant antfile="${ogsa.root}/${build.services}" target="GWSDL2WSDL">
+    <property name="build.schema.dir" value="${cas.schema.dir}"/>
+    <property name="wsdl.root" value="cas_port_type"/>
+   </ant>
+   <ant antfile="${ogsa.root}/${build.services}" target="generateBinding">
+    <property name="binding.root" value="cas"/>
+    <property name="build.schema.dir" value="${cas.schema.dir}"/>
+    <property name="porttype.wsdl" value="cas_port_type.wsdl"/>
+   </ant>
+   <ant antfile="${ogsa.root}/${build.services}" target="GWSDL2WSDL">
+    <property name="build.schema.dir" value="${cas.schema.dir}"/>
+    <property name="wsdl.root" value="cas_port_type"/>
+   </ant>
+   <ant antfile="${ogsa.root}/${build.services}" target="generateBinding">
+    <property name="binding.root" value="cas"/>
+    <property name="build.schema.dir" value="${cas.schema.dir}"/>
+    <property name="porttype.wsdl" value="cas_port_type.wsdl"/>
+   </ant>
   </target>
 
   <!-- =================================================================== -->
-  <!-- Generate Stubs from schemas                                         -->
+  <!-- Generate stubs from the WSDLs                                       -->
   <!-- =================================================================== -->
-  <target name="stubs" unless="stubs.present" depends="generateWSDLs">
-
- 
-    <echo message=" Generating stubs from ./schema/base/gram/file_streaming_factory_service.wsdl" />
-    <java classname="org.globus.ogsa.tools.wsdl.GSDL2Java" dir="./schema/base/gram" fork="yes"
-        classpathref="classpath" failonerror="true">
-       <sysproperty key="java.protocol.handler.pkgs" 
-                 value="org.globus.net.protocol" />
-      <arg value="-o"/>  
-      <arg value="../../../src"/>  
-      <arg value="-Nhttp://www.gridforum.org/namespaces/2002/10/gridServices=org.gridforum.ogsa"/>
-      <arg value="-Nhttp://www.globus.org/namespaces/filestreaming/file_streaming_factory_port_type=org.globus.ogsa.base.gram.filestreaming"/>
-      <arg value="file_streaming_factory_service.wsdl"/>
-    </java>
-
-    <echo message=" Generating stubs from ./schema/base/gram/file_streaming_service.wsdl" />
-    <java classname="org.globus.ogsa.tools.wsdl.GSDL2Java" dir="./schema/base/gram" fork="yes"
-        classpathref="classpath" failonerror="true">
-       <sysproperty key="java.protocol.handler.pkgs" 
-                 value="org.globus.net.protocol" />
-      <arg value="-o"/>  
-      <arg value="../../../src"/>  
-      <arg value="-Nhttp://www.gridforum.org/namespaces/2002/10/gridServices=org.gridforum.ogsa"/>
-      <arg value="-Nhttp://www.globus.org/namespaces/filestreaming/file_streaming_bindings=org.globus.ogsa.base.gram.filestreaming"/>
-      <arg value="-Nhttp://www.globus.org/namespaces/filestreaming/file_streaming_port_type=org.globus.ogsa.base.gram.filestreaming"/>
-      <arg value="-Nhttp://www.globus.org/namespaces/filestreaming/file_streaming=org.globus.ogsa.base.gram.filestreaming"/>
-      <arg value="-Nhttp://www.globus.org/namespaces/filestreaming/file_streaming_types=org.globus.ogsa.base.gram.filestreaming"/>
-      <arg value="file_streaming_service.wsdl"/>
-    </java>
-    
-   
+  <target name="stubs" unless="stubs.present" depends="generateWSDL">
+   <ant antfile="${ogsa.root}/${build.services}" target="generateStubs">
+    <property name="schema.file.dir" value="${cas.schema.dir}"/>
+    <property name="schema.file" value="cas_service.wsdl"/>
+    <!-- Command run from within schema dir -->
+    <property name="stubs.dest" value="../src"/>
+   </ant>
   </target>
 
   <!-- =================================================================== -->
@@ -223,8 +186,8 @@ Southern California. All Rights Reserved.
     <ant antfile="${ogsa.root}/${build.packages}" target="makeGar">
       <property name="gar.name" value="${build.lib}/${package.dir}.gar"/>
       <property name="garlib.dir" value="${build.lib}"/>
-      <property name="garserverdeployment.file" value="${package.dir}-server-config.wsdd"/>
-      <property name="garclientdeployment.file" value="${package.dir}-client-config.wsdd"/>
+      <property name="garserverdeployment.file" value="server-config.wsdd"/>
+      <property name="garclientdeployment.file" value="client-config.wsdd"/>
       <property name="garschema.origin" value="./schema/base/gram"/>
       <property name="garschema.path" value="base/gram"/>
     </ant>

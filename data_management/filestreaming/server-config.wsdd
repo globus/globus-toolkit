@@ -3,10 +3,10 @@
     name="defaultServerConfig"
     xmlns="http://xml.apache.org/axis/wsdd/"
     xmlns:java="http://xml.apache.org/axis/wsdd/providers/java"
-    xmlns:file-streaming-types="http://www.globus.org/namespaces/filestreaming/file_streaming_types">
+    xmlns:fs-types="http://www.globus.org/namespaces/base/filestreaming">
     <service name="ogsa/gram/FileStreamingFactoryFactoryService" provider="Handler" style="wrapped">
         <parameter name="allowedMethods" value="*"/>
-        <parameter name="className" value="org.globus.ogsa.impl.base.gram.filestreaming.FileStreamingFactoryFactory"/>
+        <parameter name="className" value="org.globus.ogsa.impl.base.filestreaming.FileStreamFactoryFactory"/>
         <parameter name="persistent" value="true"/>
         <parameter name="instanceLifecycle" value="persistent"/>
         <parameter name="schemaPath" value="schema/core/factory/secure_factory_service.wsdl"/>
@@ -14,6 +14,7 @@
         <parameter name="handlerClass" value="org.globus.ogsa.handlers.RPCURIProvider"/>
     </service>
     
+    <!--
     <typeMapping
         qname="file-streaming-types:FileStreamingType"
         languageSpecificType="java:org.globus.ogsa.base.gram.filestreaming.FileStreamingType"
@@ -26,6 +27,7 @@
         serializer="org.apache.axis.encoding.ser.BeanSerializerFactory"
         deserializer="org.apache.axis.encoding.ser.BeanDeserializerFactory"
         encodingStyle="" />
+        -->
 
 </deployment>
 
