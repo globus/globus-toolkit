@@ -544,10 +544,18 @@ init_arguments(int argc, char *argv[],
         case 'd':
             debug = 1;
             break;
-        default: /* ignore unknown */ 
-            arg_error = -1;
-            break;	
+        default:        /* print usage and exit */ 
+            fprintf(stderr, usage);
+	    exit(1);
+            break;
         }
+    }
+
+    if (gnu_optind != argc) {
+	fprintf(stderr, "%s: invalid option -- %s\n", argv[0],
+		argv[gnu_optind]);
+	fprintf(stderr, usage);
+	exit(1);
     }
 
     return arg_error;

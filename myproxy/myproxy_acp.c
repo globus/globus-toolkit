@@ -147,5 +147,12 @@ init_arguments(int argc, char *argv[])
         }
     }
 
+    if (gnu_optind != argc) {
+	fprintf(stderr, "%s: invalid option -- %s\n", argv[0],
+		argv[gnu_optind]);
+	fprintf(stderr, usage);
+	exit(1);
+    }
+
     return;
 }
