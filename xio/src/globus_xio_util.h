@@ -236,6 +236,30 @@
         }                                                                   \
     } while(0)
 
+#define GlobusXIOUtilIovTotalLength(                                        \
+    out_len, iov, iovc)                                                     \
+    do                                                                      \
+    {                                                                       \
+        int                             _i;                                 \
+        out_len = 0;                                                        \
+        for(_i = 0; _i < iovc; _i++)                                        \
+        {                                                                   \
+            out_len += iov[_i].iov_len;                                     \
+        }                                                                   \
+    } while(0)
+
+#define GlobusXIOUtilIovSerialize(                                          \
+    out_buf, iov, iovc)                                                     \
+    do                                                                      \
+    {                                                                       \
+        int                             _i;                                 \
+        int                             _ndx = 0;                           \
+        for(_i = 0; _i < iovc; _i++)                                        \
+        {                                                                   \
+            memcpy(&(out_buf)[_ndx], (iov)[_i].iov_base, (iov)[_i].iov_len);\
+            _ndx += (iov)[_i].iov_len;                                      \
+        }                                                                   \
+    } while(0)
 
 globus_bool_t
 globus_xio_error_is_eof(
