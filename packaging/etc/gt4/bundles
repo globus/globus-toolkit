@@ -97,6 +97,7 @@ BUNDLE gt4-gram
         globus_gram_local_proxy_tool
         globus_gridmap_and_execute
         globus_scheduler_provider_setup_fork
+        globus_globusrun_ws
                                 
 BUNDLE gt4-gram-pbs
         globus_wsrf_gram_service_java_setup_pbs
