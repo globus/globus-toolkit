@@ -7,9 +7,9 @@
 #include <sys/file.h>
 
 #define TIME_DELAY_112  5
-/*
+
 #define PROXY_BACKEND   1
-*/
+
 extern int                                      TCPwindowsize;
 extern globus_ftp_control_layout_t		g_layout;
 extern globus_ftp_control_parallelism_t		g_parallelism;
@@ -26,14 +26,13 @@ extern globus_ftp_control_dcau_t                g_dcau;
 
 static globus_bool_t                            g_send_perf_update;
 static globus_bool_t                            g_send_range;
-static int                                      g_window_size;
 
 globus_bool_t g_eof_receive = GLOBUS_FALSE;
 
 #ifdef BUFFER_SIZE
 static globus_size_t                            g_blksize = BUFFER_SIZE;
 #else
-static globus_size_t                            g_blksize = BUFSIZ;
+static globus_size_t                            g_blksize = 65536;
 #endif
 
 /*
@@ -42,6 +41,7 @@ static globus_size_t                            g_blksize = BUFSIZ;
 static struct timeval                           g_transfer_start_time;
 static struct timeval                           g_transfer_end_time;
 static int                                      g_perf_log_file_fd = -1;
+static int                                      g_tcp_buffer_size = 0;
 static char *                                   g_perf_progname = NULL;
 static char                                     g_perf_hostname[256];
 static char                                     g_perf_dest_str[256];
@@ -355,44 +355,87 @@ globus_write(
 #if defined(PROXY_BACKEND)
 
 #include "globus_time.h"
-#include "NetLogger.h"
 
-static NLhandle *                       g_log_nl_handle;
+static globus_bool_t                    g_log_active = GLOBUS_FALSE;
 static globus_netlogger_handle_t        g_log_globus_nl_handle;
 
 static globus_off_t                     g_log_total_nbytes;
 static globus_abstime_t                 g_log_last_time;
 
-static long                             g_log_min_msec = 1000;
+static long                             g_log_min_msec = 2000;
 static int                              g_log_stripe_ndx = 0;
 
 void
-create_netlogger_connection(
-    char *                              progname)
+create_netlogger_connection()
 {
     char                                buf[32];
+    char *                              stripe_ndx_str;
+    char *                              netlogger_delay;
+    globus_result_t                     res;
 
-    g_log_nl_handle = NetLoggerOpen(g_perf_progname, NULL, NL_ENV);
+    stripe_ndx_str = globus_libc_getenv("GLOBUS_STRIPE_NDX");
+    if(stripe_ndx_str != NULL)
+    {
+        g_log_stripe_ndx = atoi(stripe_ndx_str);
+    }  
+    netlogger_delay = globus_libc_getenv("GLOBUS_NETLOGGER_DELAY");
+    if(netlogger_delay != NULL)
+    {
+        g_log_min_msec = atoi(netlogger_delay);
+    }  
+
     sprintf(buf, "%d", getpid());
-    globus_netlogger_handle_init(
-        &g_log_globus_nl_handle,
-        g_log_nl_handle,
-        g_perf_hostname,
-        g_perf_progname,
-        "BACKEND");
+    res = globus_netlogger_handle_init(
+              &g_log_globus_nl_handle,
+              g_perf_hostname,
+              g_perf_progname,
+              "BACKEND");
+    if(res == GLOBUS_SUCCESS)
+    {
+        g_log_active = GLOBUS_TRUE;
+    }
+}
+
+void
+close_netlogger_connection()
+{
+    if(!g_log_active)
+    {
+        return;
+    }
+    globus_netlogger_handle_destroy(&g_log_globus_nl_handle);
 }
 
 void
 log_start_transfer()
 {
-    int i = 0;
-    while(i)
-    {
-        usleep(1);
-    }
+    char                                buf[128];
+    char                                id[32];
+    globus_result_t                     res;
 
+    if(!g_log_active)
+    {
+        return;
+    }
     g_log_total_nbytes = 0;
     GlobusTimeAbstimeGetCurrent(g_log_last_time);
+
+    sprintf(id, "GPFTPD%d", g_log_stripe_ndx);
+    sprintf(buf, 
+        "GSID=BackendProxy-%d BE.ID=%d",
+        g_log_stripe_ndx, 
+        (int)getpid());
+    res = globus_netlogger_write(
+              &g_log_globus_nl_handle,
+              "GPFTPD_START",
+              id,
+              1,
+              buf);
+    if(res != GLOBUS_SUCCESS)
+    {
+        close_netlogger_connection();
+        create_netlogger_connection();
+    }
 }
 
 /*
@@ -405,7 +448,6 @@ log_throughput(
 {
     globus_abstime_t                    time_now;
     globus_reltime_t                    time_diff;
-    double                              throughput;
     long                                usec;
     long                                msec;
     long                                sec;
@@ -414,7 +456,12 @@ log_throughput(
     char *                              event_str;
     char *                              last_str = "GPFTPD_LAST";
     char *                              data_str = "GPFTPD_DATA";
+    globus_result_t                     res;
 
+    if(!g_log_active)
+    {
+        return;
+    }
     GlobusTimeAbstimeGetCurrent(time_now);
     GlobusTimeAbstimeDiff(time_diff, time_now, g_log_last_time);
 
@@ -424,7 +471,7 @@ log_throughput(
      * if enough time has expired
      */
     msec = (usec / 1000) + (sec * 1000);
-    if(msec < g_log_min_msec || last)
+    if(msec < g_log_min_msec && !last)
     {
         return;
     }
@@ -437,18 +484,25 @@ log_throughput(
         event_str = data_str;
     }
 
-    throughput = (float)g_log_total_nbytes / (float)sec;
     sprintf(id, "GPFTPD%d", g_log_stripe_ndx);
-    sprintf(buf, "GSID=BackendProxy-%d THROUGPUT=%d BE.ID=%d", 
-        g_log_stripe_ndx, 
-        (long)throughput,
-        getpid());
-    globus_netlogger_write(
-        &g_log_globus_nl_handle,
-        event_str,
-        id,
-        1,
-        buf);
+    sprintf(buf, 
+        "GSID=BackendProxy-%d FTP_NBYTES=%"GLOBUS_OFF_T_FORMAT
+        " BE.ID=%d FTP_MS=%ld", 
+        (int)g_log_stripe_ndx, 
+        g_log_total_nbytes,
+        (int)getpid(),
+        (long)msec);
+    res = globus_netlogger_write(
+              &g_log_globus_nl_handle,
+              event_str,
+              id,
+              1,
+              buf);
+    if(res != GLOBUS_SUCCESS)
+    {
+        close_netlogger_connection();
+        create_netlogger_connection();
+    }
 
     /* update values for next call */
     g_log_total_nbytes = 0;
@@ -457,12 +511,19 @@ log_throughput(
 
 #else /* PROXYBACKEND */
 
-#define create_netlogger_connection(p)
+#define create_netlogger_connection()
+#define close_netlogger_connection()
 #define log_throughput(n, l)
 #define log_start_transfer()
 
 #endif /* PROXYBACKEND */
 
+void
+g_set_blksize(
+    globus_size_t                      size)
+{
+    g_blksize = size;
+}
 
 
 int
@@ -564,7 +625,11 @@ g_start(
     globus_reltime_t                  delay_time;
     globus_reltime_t                  period_time;
     globus_result_t		      res;
-
+int i = 0;
+while(i)
+{
+usleep(1);
+}
 DEBUG_OPEN();
 G_ENTER();
 
@@ -586,13 +651,13 @@ G_ENTER();
     rc = globus_module_activate(GLOBUS_FTP_CONTROL_MODULE);
     assert(rc == GLOBUS_SUCCESS);
 
+    /* added for SC01 ProxyServer demo */
+    create_netlogger_connection();
+
     wu_monitor_init(&g_monitor);
     g_monitor.handle = &g_data_handle;
 
     globus_ftp_control_handle_init(&g_data_handle);
-
-    /* added for SC01 ProxyServer demo */
-    create_netlogger_connection(argv[0]);
 
     g_dcau.mode = GLOBUS_FTP_CONTROL_DCAU_SELF;
     res = globus_ftp_control_local_dcau(
@@ -670,6 +735,9 @@ g_end()
     }
 
     wu_monitor_destroy(&monitor);
+
+    /* added for SC01 ProxyServer demo */
+    close_netlogger_connection();
 
     globus_ftp_control_handle_destroy(&g_data_handle);
     globus_module_deactivate(GLOBUS_FTP_CONTROL_MODULE);
@@ -1302,10 +1370,12 @@ g_send_data(
     G_File_Close(&g_monitor.io_handle, 0);
 
     globus_i_wu_free_ranges(&g_restarts);
+
     return (0);
   bail1:
     G_File_Close(&g_monitor.io_handle, 0);
     globus_i_wu_free_ranges(&g_restarts);
+
     return (1);
 
   clean_exit:
@@ -1313,6 +1383,7 @@ g_send_data(
     G_File_Close(&g_monitor.io_handle, 0);
 
     G_EXIT();
+
     return (1);
 }
 
@@ -1387,7 +1458,10 @@ data_write_callback(
     monitor = (globus_i_wu_monitor_t *)callback_arg;
 
     /* added for SC01 ProxyServer demo */
-    log_throughput(length, eof);
+    if(!error)
+    {
+        log_throughput(length, eof);
+    }
 
     globus_mutex_lock(&monitor->mutex);
     {
@@ -1406,7 +1480,7 @@ data_write_callback(
             &g_perf_end_tv,
             &g_perf_address,
             g_blksize,
-            TCPwindowsize,
+            g_tcp_buffer_size,
             monitor->fname,
             monitor->all_transferred,
             226,
@@ -1443,11 +1517,9 @@ g_receive_data(
     globus_reltime_t			     five_seconds;
     char                                     error_buf[1024];
     int                                      tmp_i;
-#ifdef BUFFER_SIZE
-    size_t                                   buffer_size = BUFFER_SIZE;
-#else
-    size_t                                   buffer_size = BUFSIZ;
-#endif
+    size_t                                   buffer_size;
+
+    buffer_size = g_blksize;
 
     G_ENTER();
     error_buf[0] = '\0';
@@ -1469,6 +1541,8 @@ g_receive_data(
 	goto data_err;
     }
 
+    /* added for SC01 proxy server demo */				 
+    log_start_transfer();
 
     res = globus_ftp_control_data_connect_read(
               handle,
@@ -1573,9 +1647,6 @@ g_receive_data(
 	    GLOBUS_NULL,
 	    GLOBUS_NULL);
 
-	/* added for SC01 proxy server demo */				 
-        log_start_transfer();
-
         globus_l_wu_perf_update(&g_monitor);
         g_monitor.callback_count = 0; 
         for(ctr = 0; ctr < data_connection_count; ctr++)
@@ -1599,8 +1670,7 @@ g_receive_data(
             if(res != GLOBUS_SUCCESS)
             {
                 globus_free(buf);
-                sprintf(error_buf, "data_read() failed: %s", 
-                    globus_object_printable_to_string(globus_error_get(res)));
+                sprintf(error_buf, "data_read() failed");
                 goto data_err;
             }
             g_monitor.callback_count++;
@@ -1712,6 +1782,7 @@ g_receive_data(
     bail:
     G_File_Close(&g_monitor.io_handle, 0);
     globus_i_wu_free_ranges(&g_restarts);
+
     return (-1);
 
   clean_exit:
@@ -1787,7 +1858,7 @@ data_read_callback(
     globus_off_t                                offset,
     globus_bool_t                               eof)
 {
-    globus_i_wu_monitor_t *                      monitor;
+    globus_i_wu_monitor_t *                     monitor;
     globus_result_t                             res;
     int                                         ret;
 #ifdef BUFFER_SIZE
@@ -1801,8 +1872,10 @@ data_read_callback(
     globus_mutex_lock(&monitor->mutex);
     {
         /* added for SC01 ProxyServer demo */
-        log_throughput(length, eof);
-
+        if(!error)
+        {
+            log_throughput(length, eof);
+        }
         if(error != GLOBUS_NULL)
         {
             monitor->count++;
@@ -1870,7 +1943,7 @@ data_read_callback(
                     &g_perf_end_tv,
                     &g_perf_address,
                     g_blksize,
-                    TCPwindowsize,
+                    g_tcp_buffer_size,
                     monitor->fname,
                     monitor->all_transferred,
                     226,
@@ -2097,7 +2170,8 @@ globus_l_wu_perf_update(
 {
     unsigned int 			num_channels;
     globus_ftp_control_handle_t *	handle;
-    time_t				t;
+    int                                 tenth;
+    struct timeval                      tv;
 
     if(!g_send_restart_info)
     {
@@ -2105,18 +2179,19 @@ globus_l_wu_perf_update(
     }
     handle = monitor->handle;
 
-    t = time(NULL);
+    gettimeofday(&tv, GLOBUS_NULL);
+    tenth = tv.tv_usec / 100000;
 	
     G_EXIT();	
     lreply(112, "Perf Marker");
-    lreply(0, " Timestamp: %ld", (long) t);
+    lreply(0, " Timestamp: %ld.%1d", (long) tv.tv_sec, tenth);
     lreply(0, " Stripe Index: 0");
     lreply(0, " Total Stripe Count: 1");
     lreply(0, " Stripe Bytes Transferred: %" GLOBUS_OFF_T_FORMAT, 
 	    monitor->all_transferred);
     reply(112, "End");
 
-    monitor->last_perf_update = t;
+    monitor->last_perf_update = tv.tv_sec;
 
     return GLOBUS_TRUE;
 }
@@ -2157,7 +2232,7 @@ g_seek(
 void
 g_set_tcp_buffer(int size)
 {
-    globus_ftp_control_tcpbuffer_t tcpbuffer;
+    globus_ftp_control_tcpbuffer_t           tcpbuffer;
 
     if(size != 0)
     {
@@ -2280,6 +2355,7 @@ g_write_to_log_file(
     struct tm *                             start_tm_time;
     struct tm *                             end_tm_time;
     char                                    out_buf[512];
+    char                                    user_buf[32];
     int                                     stream_count; 
     int                                     stripe_count; 
     globus_result_t                         res;
@@ -2287,6 +2363,12 @@ g_write_to_log_file(
     int                                     tmp_i;
     int                                     ndx;
     char                                    volume[80];
+    char                                    cwd[124];
+    char                                    l_fname[124];
+    uid_t                                   user_id;
+    struct passwd *                         pw_ent;
+    int                                     win_size;
+    int                                     opt_dir;
 
     /* if fd is -1 we are not logging */
     if(g_perf_log_file_fd == -1)
@@ -2308,6 +2390,22 @@ g_write_to_log_file(
         return;
     }
 
+    pw_ent = getpwuid(geteuid());
+    if(pw_ent != NULL)
+    {
+        sprintf(user_buf, "USER=%s", pw_ent->pw_name);
+    }
+    else
+    {
+        user_buf[0] = '\0';
+    }
+
+    getcwd(cwd, 124);
+    if(fname[0] != '/')
+    {
+        sprintf(l_fname, "%s/%s", cwd, fname);
+        fname = l_fname;
+    }
     get_volume(fname, volume);
 
     res = globus_ftp_control_get_stripe_count(
@@ -2334,12 +2432,34 @@ g_write_to_log_file(
         stream_count += tmp_i;
     }
 
+    if(buffer_size == 0)
+    {
+        int                            sock;
+
+        if(strcmp(type, "RETR") == 0 || strcmp(type, "ERET") == 0)
+        {
+            opt_dir = SO_SNDBUF;
+            sock = STDOUT_FILENO;
+        }
+        else
+        {
+            opt_dir = SO_RCVBUF;
+            sock = STDIN_FILENO;
+        }
+        getsockopt(sock, SOL_SOCKET, opt_dir, &win_size, sizeof(win_size));
+    }
+    else
+    {
+        win_size = buffer_size;
+    }
+
     sprintf(out_buf, 
         "DATE=%d%d%d%d%d%d.%d "
         "HOST=%s "
         "PROG=%s "
         "NL.EVNT=FTP_INFO "
         "START=%d%d%d%d%d%d.%d "
+        "%s "
         "FILE=%s "
         "BUFFER=%ld "
         "BLOCK=%ld "
@@ -2369,8 +2489,9 @@ g_write_to_log_file(
         start_tm_time->tm_sec,
         start_gtd_time->tv_usec,
         /* other args */
+        user_buf,
         fname,
-        buffer_size,
+        win_size,
         blksize,
         nbytes,
         volume,
