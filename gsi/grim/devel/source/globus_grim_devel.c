@@ -49,6 +49,11 @@ globus_l_grim_parse_conf_file(
     struct globus_l_grim_conf_info_s *      info,
     FILE *                                  fptr);
  
+globus_result_t
+globus_l_grim_build_assertion(
+    struct globus_l_grim_assertion_s *      info,
+    char **                                 out_string);
+
 static int globus_l_grim_devel_activate(void);
 static int globus_l_grim_devel_deactivate(void);
 
@@ -76,8 +81,20 @@ globus_module_descriptor_t globus_i_grim_devel_module =
  *              external api functions
  ************************************************************************/
 
+#define GlobusLGrimSetGetAssertionEnter(assertion, info)                    \
+{                                                                           \
+    if(assertion == NULL)                                                   \
+    {                                                                       \
+    }                                                                       \
+    info = (struct globus_l_grim_conf_info_s *) assertion;                  \
+}
+
 /*
  *  Assertion parsing
+ */
+
+/**
+ *
  */
 globus_result_t
 globus_grim_assertion_init(
@@ -89,10 +106,21 @@ globus_grim_assertion_init(
 
     ass = (struct globus_l_grim_assertion_s *)
                 globus_malloc(sizeof(struct globus_l_grim_assertion_s *));
+    if(ass == NULL)
+    {
+    }
+    ass->subject = strdup(subject);
+    ass->username = strdup(username);
+    ass->dn_array = NULL;
+    ass->port_types_array = NULL;
+    assertion = ass;
 
-    ass = (struct globus_l_grim_assertion_ *) assertion;
+    return GLOBUS_SUCCESS;
 }
 
+/**
+ *
+ */
 globus_result_t
 globus_grim_assertion_init_from_buffer(
     globus_grim_assertion_t *               assertion,
@@ -101,24 +129,73 @@ globus_grim_assertion_init_from_buffer(
 {
 }
     
+/**
+ *
+ */
 globus_result_t
 globus_grim_assertion_serialize(
     globus_grim_assertion_t                 assertion,
     char **                                 out_assertion_string)
 {
+    globus_result_t                         res;
+    struct globus_l_grim_assertion_s *      info;
+
+    GlobusLGrimSetGetAssertionEnter(assertion, info);
+
+    if(out_assertion_string == NULL)
+    {
+    }
+
+    res = globus_l_grim_build_assertion(info, out_assertion_string);
+
+    return res;
 }
  
+/**
+ *
+ */
 globus_result_t
 globus_grim_assertion_destroy(
     globus_grim_assertion_t                 assertion)
 {
+    globus_result_t                         res;
+    struct globus_l_grim_assertion_s *      info;
+
+    GlobusLGrimSetGetAssertionEnter(assertion, info);
+
+    free(info->subject);
+    free(info->username);
+    if(info->dn_array != NULL)
+    {
+	GlobusGrimFreeNullArray(info->dn_array);
+    }
+    if(info->port_types_array)
+    {
+	GlobusGrimFreeNullArray(info->port_types_array);
+    }
+    globus_free(info);
+
+    return GLOBUS_SUCCESS;
 }
     
+/**
+ *
+ */
 globus_result_t
 globus_grim_assertion_get_subject(
     globus_grim_assertion_t                 assertion,
     char **                                 subject)
 {
+    struct globus_l_grim_assertion_s *      info;
+
+    GlobusLGrimSetGetAssertionEnter(assertion, info);
+    if(subject == NULL)
+    {
+    }
+
+    *subject = info->subject;
+
+    return GLOBUS_SUCCESS;
 }
 
 globus_result_t
@@ -126,34 +203,91 @@ globus_grim_assertion_get_username(
     globus_grim_assertion_t                 assertion,
     char **                                 username)
 {
+    struct globus_l_grim_assertion_s *      info;
+
+    GlobusLGrimSetGetAssertionEnter(assertion, info);
+    if(username == NULL)
+    {
+    }
+    *username = info->username;
+
+    return GLOBUS_SUCCESS;
 }
 
+/**
+ *
+ */
 globus_result_t
 globus_grim_assertion_get_dn_array(
     globus_grim_assertion_t                 assertion,
     char ***                                dn_array)
 {
+    struct globus_l_grim_assertion_s *      info;
+
+    GlobusLGrimSetGetAssertionEnter(assertion, info);
+
+    if(dn_array == NULL)
+    {
+    }
+
+    *dn_array = info->dn_array;
+
+    return GLOBUS_SUCCESS;
 }
 
+/**
+ *
+ */
 globus_result_t
 globus_grim_assertion_set_dn_array(
     globus_grim_assertion_t                 assertion,
     char **                                 dn_array)
 {
+    struct globus_l_grim_assertion_s *      info;
+
+    GlobusLGrimSetGetAssertionEnter(assertion, info);
+
+    info->dn_array = dn_array;
+
+    return GLOBUS_SUCCESS;
 }
 
+/**
+ *
+ */
 globus_result_t
 globus_grim_assertion_get_port_types_array(
     globus_grim_assertion_t                 assertion,
     char ***                                port_types_array)
 {
+    struct globus_l_grim_assertion_s *      info;
+
+    GlobusLGrimSetGetAssertionEnter(assertion, info);
+
+    if(port_types_array == NULL)
+    {
+    }
+
+    *port_types_array = info->port_types_array;
+
+    return GLOBUS_SUCCESS;
 }
 
+/**
+ *
+ */
 globus_result_t
 globus_grim_assertion_set_port_types_array(
     globus_grim_assertion_t                 assertion,
     char **                                 port_types_array)
 {
+    struct globus_l_grim_assertion_s *      info;
+
+    GlobusLGrimSetGetAssertionEnter(assertion, info);
+
+    info->port_types_array = port_types_array;
+
+    return GLOBUS_SUCCESS;
 }
 
 
@@ -938,18 +1072,25 @@ globus_l_grim_parse_conf_file(
 }
 
 
-char *
-grim_build_assertion(
-    char *                                  subject,
-    char *                                  username,
-    char **                                 dna,
-    char **                                 port_types)
+globus_result_t
+globus_l_grim_build_assertion(
+    struct globus_l_grim_assertion_s *      info,
+    char **                                 out_string)
 {
     char *                                  buffer;
     int                                     ctr;
     int                                     buffer_size = 1024;
     int                                     buffer_ndx = 0;
     char                                    hostname[MAXHOSTNAMELEN];
+    char *                                  subject;
+    char *                                  username;
+    char **                                 dna;
+    char **                                 port_types;
+
+    subject = info->subject;
+    username = info->username;
+    dna = info->dn_array;
+    port_types = info->port_types_array;
 
     globus_libc_gethostname(hostname, MAXHOSTNAMELEN);
     buffer = globus_malloc(sizeof(char) * buffer_size);
@@ -992,6 +1133,8 @@ grim_build_assertion(
 
     GrowString(buffer, buffer_size, "</GRIMAssertion>\n", buffer_ndx);
 
-    return buffer;
+    *out_string = buffer;
+
+    return GLOBUS_SUCCESS;
 }
 
