@@ -114,160 +114,51 @@ globus_result_t globus_gsi_cred_handle_init(
 /* globus_gsi_cred_handle_init */
 /* @} */
 
-/**
- * @name Init SSL Context
- * @ingroup globus_gsi_cred_handle
- */
-/* @{ */
-/**
- * Initialize the SSL Context for use in the SSL authentication mechanism.
- * The ssl context held by the handle is used to generate SSL objects
- * for the SSL handshake.  Initializing the SSL context consists of
- * setting the method to be used (SSLv3), setting the callback to perform
- * certificate verification, and finding the appropriate issuing CA's of
- * the certs used for authentication.
- *
- * @param cred_handle
- *        The credential handle containing the SSL_CTX to be initialized
- * 
- * @return
- *        GLOBUS_SUCCESS or an error object id
- */
-globus_result_t
-globus_gsi_cred_handle_init_ssl_context(
-    globus_gsi_cred_handle_t            cred_handle)
+globus_result_t globus_gsi_cred_get_handle_attrs(
+    globus_gsi_cred_handle_t            handle,
+    globus_gsi_cred_handle_attrs_t *    attrs)
 {
-    globus_fifo_t                       ca_cert_file_list;
-    BIO *                               ca_cert_bio = NULL;
-    char *                              ca_filename = NULL;
-    X509 *                              ca_cert = NULL;
-    char *                              cert_dir;
     globus_result_t                     result;
     static char *                       _function_name_ =
-        "globus_gsi_cred_handle_init_ssl_context";
+        "globus_gsi_cred_get_handle_attrs";
 
     GLOBUS_I_GSI_CRED_DEBUG_ENTER;
 
-    if(cred_handle == NULL)
+    if(handle == NULL)
     {
         GLOBUS_GSI_CRED_ERROR_RESULT(
-            result, GLOBUS_GSI_CRED_ERROR_WITH_CRED,
-            ("Null credential handle passed to function: %s",
+            result,
+            GLOBUS_GSI_CRED_ERROR_WITH_CRED,
+            ("NULL cred handle parameter passed to function: %s",
              _function_name_));
         goto exit;
     }
 
-    cred_handle->ssl_context = SSL_CTX_new(SSLv3_method());
-    if(cred_handle->ssl_context == NULL)
+    if(attrs == NULL)
     {
-        GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
-            result, 
-            GLOBUS_GSI_CRED_ERROR_WITH_SSL_CTX,
-            ("Can't initialize the SSL_CTX"));
-        goto exit;
-    }
-            
-    SSL_CTX_set_cert_verify_callback(cred_handle->ssl_context,
-                                     globus_gsi_callback_handshake_callback,
-                                     NULL);
-
-    SSL_CTX_sess_set_cache_size(cred_handle->ssl_context, 5);
-
-    if(cred_handle->attrs->ca_cert_dir)
-    {
-        cert_dir = cred_handle->attrs->ca_cert_dir;
-    }
-    else
-    {
-        result = GLOBUS_GSI_SYSCONFIG_GET_CERT_DIR(&cert_dir);
-        if(result != GLOBUS_SUCCESS)
-        {
-            GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
-                result,
-                GLOBUS_GSI_CRED_ERROR_WITH_CRED);
-            goto exit;
-        }
-    }
-
-    if(!SSL_CTX_load_verify_locations(cred_handle->ssl_context,
-                                      NULL,
-                                      cert_dir))
-    {
-        GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
+        GLOBUS_GSI_CRED_ERROR_RESULT(
             result,
-            GLOBUS_GSI_CRED_ERROR_WITH_SSL_CTX,
-            ("\n       x509_cert_dir=", (cert_dir) ? cert_dir : "NONE"));
+            GLOBUS_GSI_CRED_ERROR_WITH_CRED,
+            ("NULL cred handle attrs parameter passed to function: %s",
+             _function_name_));
         goto exit;
     }
 
-    /* Set the verify callback to test our proxy 
-     * policies. 
-     */
-    SSL_CTX_set_verify(cred_handle->ssl_context, SSL_VERIFY_PEER,
-                       globus_gsi_callback_handshake_callback);
-
-    /*
-     * for now we will accept any purpose, as Globus does
-     * not have any restrictions such as this is an SSL client
-     * or SSL server. Globus certificates are not required
-     * to have these fields set today.
-     */
-    SSL_CTX_set_purpose(cred_handle->ssl_context, X509_PURPOSE_ANY);
-
-    globus_fifo_init(&ca_cert_file_list);
-
-    result = GLOBUS_GSI_SYSCONFIG_GET_CA_CERT_FILES(cert_dir, 
-                                                    &ca_cert_file_list);
+    result = globus_gsi_cred_handle_attrs_copy(handle->attrs, attrs);
     if(result != GLOBUS_SUCCESS)
     {
         GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
             result,
-            GLOBUS_GSI_CRED_ERROR_WITH_SSL_CTX);
+            GLOBUS_GSI_CRED_ERROR_WITH_CRED);
         goto exit;
     }
-    
-    while((ca_filename = (char *) globus_fifo_dequeue(&ca_cert_file_list))
-           != NULL)
-    {
-        
-        ca_cert_bio = BIO_new_file(ca_filename, "r");
-        if(ca_cert_bio == NULL)
-        {
-            GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
-                result,
-                GLOBUS_GSI_CRED_ERROR_WITH_SSL_CTX,
-                ("Couldn't open bio for reading on file: %s", ca_filename));
-            goto exit;
-        }
-                
-        if (PEM_read_bio_X509(ca_cert_bio, &ca_cert, NULL, NULL) == NULL)
-        {
-            GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
-                result,
-                GLOBUS_GSI_CRED_ERROR_WITH_SSL_CTX,
-                ("Couldn't read PEM formatted X509 cert from file: %s",
-                 ca_filename));
-            goto exit;
-        }
-
-        globus_libc_free(ca_filename);
-        ca_filename = NULL;
-        BIO_free(ca_cert_bio);
-        ca_cert_bio = NULL;
-
-        SSL_CTX_add_client_CA(cred_handle->ssl_context, ca_cert);
-
-        X509_free(ca_cert);
-        ca_cert = NULL;
-    }
-
-    globus_fifo_destroy(&ca_cert_file_list);
 
  exit:
 
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
 }
+/* @} */
 
 globus_result_t globus_gsi_cred_get_goodtill(
     globus_gsi_cred_handle_t            cred_handle,
@@ -870,100 +761,6 @@ globus_result_t globus_gsi_cred_get_cert_chain(
 }
 /* @} */
 
-/**
- * Get SSL Context
- * @ingroup globus_gsi_cred_handle
- */
-/* @{ */
-/**
- * Get the ssl context structure SSL_CTX from the
- * credential handle
- *
- * @param handle
- *        The credential handle containing the ssl context to get
- * @param ssl_ctx
- *        The resulting ssl context
- *
- * @return
- *        GLOBUS_SUCCESS unless an error occurred, in which case 
- *        a globus error object identifier is returned
- */
-globus_result_t
-globus_gsi_cred_get_ssl_context(
-    globus_gsi_cred_handle_t            handle,
-    SSL_CTX **                          ssl_ctx)
-{
-    globus_result_t                     result;
-    static char *                       _function_name_ =
-        "globus_gsi_cred_get_ssl_context";
-    
-    GLOBUS_I_GSI_CRED_DEBUG_ENTER;
-
-    if(handle == NULL || ssl_ctx == NULL)
-    {
-        GLOBUS_GSI_CRED_ERROR_RESULT(
-            result,
-            GLOBUS_GSI_CRED_ERROR_WITH_CRED,
-            ("NULL cred handle passed to function: %s", _function_name_));
-        goto exit;
-    }
-
-    *ssl_ctx = handle->ssl_context;
-
-    result = GLOBUS_SUCCESS;
-
- exit:
-
-    GLOBUS_I_GSI_CRED_DEBUG_EXIT;
-    return result;
-}
-/* @} */
-
-
-/**
- * Set SSL Context
- * @ingroup globus_gsi_cred_handle
- */
-/* @{ */
-/**
- * Set the SSL Context structure in the credential handle
- * 
- * @param handle
- *        The handle containing the SSL Context to set
- * @param ssl_ctx
- *        The SSL Context to set the handle's context to
- * @return
- *        GLOBUS_SUCCESS or a globus error object identifier
- */
-globus_result_t
-globus_gsi_cred_set_ssl_context(
-    globus_gsi_cred_handle_t            handle,
-    SSL_CTX *                           ssl_ctx)
-{
-    globus_result_t                     result;
-    static char *                       _function_name_ =
-        "globus_gsi_cred_set_ssl_context";
-    
-    GLOBUS_I_GSI_CRED_DEBUG_ENTER;
-
-    if(handle == NULL)
-    {
-        GLOBUS_GSI_CRED_ERROR_RESULT(
-            result,
-            GLOBUS_GSI_CRED_ERROR_WITH_CRED,
-            ("NULL cred handle passed to function: %s", _function_name_));
-        goto exit;
-    }
-
-    handle->ssl_context = ssl_ctx;
-
-    result = GLOBUS_SUCCESS;
-
- exit:
-
-    GLOBUS_I_GSI_CRED_DEBUG_EXIT;
-    return result;
-}
 /**
  * Get Cred Cert X509 Subject Name object
  * @ingroup globus_gsi_cred_handle
@@ -1677,6 +1474,7 @@ globus_gsi_cred_verify_proxy_cert_chain(
     X509_STORE_CTX *                    store_context = NULL;
     X509_LOOKUP *                       lookup = NULL;
     int                                 chain_index, store_index;
+    int                                 callback_data_index;
     globus_result_t                     result = GLOBUS_SUCCESS;
     static char *                       _function_name_ =
         "globus_gsi_callback_verify_proxy_cert_chain";
@@ -1750,9 +1548,12 @@ globus_gsi_cred_verify_proxy_cert_chain(
         /* override the check_issued with our version */
         store_context->check_issued = globus_gsi_callback_check_issued;
 
+        globus_gsi_callback_get_X509_STORE_callback_data_index(
+            &callback_data_index);
+
         X509_STORE_CTX_set_ex_data(
             store_context,
-            globus_gsi_callback_get_X509_STORE_callback_data_index(), 
+            callback_data_index, 
             (void *)callback_data);
                  
         if(!X509_verify_cert(store_context))

@@ -10,9 +10,6 @@ Sources = \
 	export_name.c \
 	export_sec_context.c \
 	get_mic.c \
-	gsserr.c \
-	gssutils.c \
-	gssutils.h \
 	import_name.c \
 	import_sec_context.c \
 	init_sec_context.c \
@@ -27,8 +24,13 @@ Sources = \
 	release_buffer.c \
 	gssapi_working.c \
 	gssapi.h \
-	gssapi_ssleay.h \
-	$(Sources_GSS_EXTENSIONS)
+	gssapi_openssl.h \
+	globus_i_gsi_gss_utils.h \
+        globus_i_gsi_gss_utils.c \
+        globus_gsi_gss_constants.h \
+        globus_gsi_gss_error.c \
+	$(Sources_GSS_EXTENSIONS) \
+	$(Sources_OPENSSL_INTERNALS)
 
 Sources_GSS_EXTENSIONS = \
 	module.c \
@@ -39,12 +41,14 @@ Sources_GSS_EXTENSIONS = \
 	inquire_cred_by_oid.c \
 	inquire_sec_context_by_oid.c \
 	buffer_set.c \
-	set_sec_context_option.c \
-	set_group.c \
-	get_group.c
+	set_sec_context_option.c
+
+Sources_OPENSSL_INTERNALS = \
+	ssl_locl.h
 
 flavorinclude_HEADERS = \
-	gssapi.h
+	gssapi.h \
+	globus_gsi_gss_constants.h
 
 #AM_CFLAGS = -DDEBUG
 
@@ -58,7 +62,3 @@ libglobus_gssapi_gsi___GLOBUS_FLAVOR_NAME__la_LIBADD = $(GPT_LIB_LINKS)
 libglobus_gssapi_gsi___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS)
 
 include $(top_srcdir)/globus_automake_post
-
-
-
-

@@ -1,11 +1,25 @@
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/**
+ * @file compare_name.c
+ * Globus GSI GSS-API gss_compare_name
+ * @author Sam Meder, Sam Lang
+ *
+ * $RCSfile$
+ * $Revision$
+ * $Date$
+ */
+#endif
+
 static char *rcsid = "$Id$";
 
-#include "gssapi_ssleay.h"
-#include "gssutils.h"
+#include "gssapi_openssl.h"
+#include "globus_i_gsi_gss_utils.h"
+
 #include <ctype.h>
 #include <string.h>
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+
 /**
  * @name Local Compare Group
  * @ingroup globus_l_gsi_gssapi
@@ -179,6 +193,9 @@ gss_l_compare_group(
 }
 /* @} */
 
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
+
+
 /**
  * @name Compare Name
  * @ingroup globus_gsi_gssapi
@@ -211,7 +228,7 @@ GSS_CALLCONV gss_compare_name(
     unsigned char *                     ce1;
     unsigned char *                     ce2;
     int                                 index;
-    int                                 jindex;
+    int                                 common_name_NID;
     const gss_name_desc*                name1 = (gss_name_desc*) name1_P;
     const gss_name_desc*                name2 = (gss_name_desc*) name2_P;
     OM_uint32                           major_status;
@@ -222,19 +239,19 @@ GSS_CALLCONV gss_compare_name(
 
     *minor_status = (OM_uint32) GLOBUS_FAILURE;
     major_status = GSS_S_COMPLETE;
-    *name_equal = 0; /* set not equal */
+    *name_equal = GSS_NAMES_NOT_EQUAL;
 
     if ((name1 == NULL && name2 == NULL) ||
         (name1 == GSS_C_NO_NAME && name2 == GSS_C_NO_NAME))
     {
-        *name_equal = 1;
+        *name_equal = GSS_NAMES_EQUAL;
         goto exit;
     }
     
     if (name1 == NULL || name2 == NULL ||
         (name1 == GSS_C_NO_NAME || name2 == GSS_C_NO_NAME))
     {
-        *name_equal = 0;
+        *name_equal = GSS_NAMES_NOT_EQUAL;
         major_status = GSS_S_COMPLETE;
         goto exit;
     }
@@ -243,13 +260,13 @@ GSS_CALLCONV gss_compare_name(
        g_OID_equal(name1->name_oid,GSS_C_NT_ANONYMOUS) &&
        g_OID_equal(name2->name_oid,GSS_C_NT_ANONYMOUS))
     {
-        *name_equal = 1;
+        *name_equal = GSS_NAMES_EQUAL;
         goto exit;
     }
         
     if (name1->x509n == NULL || name2->x509n == NULL)
     {
-        *name_equal = 0;
+        *name_equal = GSS_NAMES_NOT_EQUAL;
         goto exit;
     }
 
@@ -260,19 +277,19 @@ GSS_CALLCONV gss_compare_name(
         GLOBUS_I_GSI_GSSAPI_DEBUG_PRINT(2, "Comparing names:\n");
         subject = X509_NAME_oneline(name1->x509n, NULL, 0);
         GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
-            2, (globus_i_gsi_gssapi_debug_fstream, "%s\n"));
-        globus_libc_free(s);
+            2, (globus_i_gsi_gssapi_debug_fstream, "%s\n", subject));
+        globus_libc_free(subject);
         subject = X509_NAME_oneline(name2->x509n, NULL, 0);
         GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
-            2, (globus_i_gsi_gssapi_debug_fstream, "%s\n"));
-        globus_libc_free(s);
+            2, (globus_i_gsi_gssapi_debug_fstream, "%s\n", subject));
+        globus_libc_free(subject);
     }
 
     /* compare group membership */
 
     if(!gss_l_compare_group(name1,name2))
     {
-        *name_equal = 0;
+        *name_equal = GSS_NAMES_NOT_EQUAL;
         major_status = GSS_S_COMPLETE;
     }
     
@@ -305,11 +322,11 @@ GSS_CALLCONV gss_compare_name(
 
         ne1 = NULL;
         ne2 = NULL;
-        j = OBJ_txt2nid("CN");
+        common_name_NID = OBJ_txt2nid("CN");
         for (index = 0; index < X509_NAME_entry_count(name1->x509n); index++)
         {
-            ne1 = X509_NAME_ENTRY_get_entry(name1->x509n, index);
-            if (OBJ_obj2nid(ne1->object) == j)
+            ne1 = X509_NAME_get_entry(name1->x509n, index);
+            if (OBJ_obj2nid(ne1->object) == common_name_NID)
             {
                 le1 = ne1->value->length;
                 ce1 = ne1->value->data;
@@ -330,8 +347,8 @@ GSS_CALLCONV gss_compare_name(
         }
         for (index = 0; index < X509_NAME_entry_count(name2->x509n); index++)
         {
-            ne2 = X509_NAME_ENTRY_get_entry(name2->x509n, index);
-            if (OBJ_obj2nid(ne2->object) == j)
+            ne2 = X509_NAME_get_entry(name2->x509n, index);
+            if (OBJ_obj2nid(ne2->object) == common_name_NID)
             {
                 le2 = ne2->value->length;
                 ce2 = ne2->value->data;
@@ -355,7 +372,7 @@ GSS_CALLCONV gss_compare_name(
         {
             if (le1 == le2 && !strncasecmp(ce1,ce2,le1))
             {
-                *name_equal = 1;
+                *name_equal = GSS_NAMES_EQUAL;
             }
             else
             {
@@ -378,7 +395,7 @@ GSS_CALLCONV gss_compare_name(
                         }
                         if (le1 == le2 && !strncasecmp(ce1, ce2, le1))
                         {
-                            *name_equal = 1;
+                            *name_equal = GSS_NAMES_EQUAL;
                         }
                                                 
                     }
@@ -393,7 +410,7 @@ GSS_CALLCONV gss_compare_name(
                             }
                             if (le1 == le2 && !strncasecmp(ce1, ce2, le1))
                             {
-                                *name_equal = 1;
+                                *name_equal = GSS_NAMES_EQUAL;
                             }
                         }
                     }
@@ -405,7 +422,7 @@ GSS_CALLCONV gss_compare_name(
     {    
         if (!X509_NAME_cmp(name1->x509n, name2->x509n))
         {
-            *name_equal = 1;
+            *name_equal = GSS_NAMES_EQUAL;
         }
     }
 
@@ -419,6 +436,4 @@ GSS_CALLCONV gss_compare_name(
 } 
 /* gss_compare_name */
 /* @} */
-
-#error STATUS: ready to compile
 

@@ -872,6 +872,29 @@ globus_result_t globus_gsi_cred_write_proxy(
     return result;
 }    
 
+globus_result_t
+globus_gsi_cred_check_proxy(
+    globus_gsi_cred_handle_t               handle,
+    globus_gsi_cert_utils_proxy_type_t *   type)
+{
+    globus_result_t                     result;
+    static char *                       _function_name_ =
+        "globus_gsi_cred_check_proxy";
+    GLOBUS_I_GSI_CRED_DEBUG_ENTER;
+    
+    result = globus_gsi_cert_utils_check_proxy_name(handle->cert, type);
+    if(result != GLOBUS_SUCCESS)
+    {
+        GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
+            result,
+            GLOBUS_GSI_CRED_ERROR_WITH_CRED_CERT);
+    }
+
+    GLOBUS_I_GSI_CRED_DEBUG_EXIT;
+    return result;
+}
+
+
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 
 /**
@@ -986,75 +1009,5 @@ globus_i_gsi_cred_get_proxycertinfo(
     return result;
 }
 /* @} */
-
-char *
-globus_i_gsi_cred_create_string(
-    const char *                        format,
-    ...)
-{
-    va_list                             ap;
-    char *                              new_string;
-    static char *                       _function_name_ =
-        "globus_i_gsi_cred_create_string";
-    
-    GLOBUS_I_GSI_CRED_DEBUG_ENTER;
-
-    globus_libc_lock();
-    
-    va_start(ap, format);
-
-    new_string = globus_i_gsi_cred_v_create_string(format, ap);
-
-    va_end(ap);
-
-    globus_libc_unlock();
-
-    GLOBUS_I_GSI_CRED_DEBUG_EXIT;
-    return new_string;
-}
-
-char *
-globus_i_gsi_cred_v_create_string(
-    const char *                        format,
-    va_list                             ap)
-{
-    int                                 length;
-    int                                 len = 128;
-    char *                              new_string = NULL;
-    static char *                       _function_name_ =
-        "globus_i_gsi_cred_v_create_string";
-
-    GLOBUS_I_GSI_CRED_DEBUG_ENTER;
-    if((new_string = globus_malloc(len)) == NULL)
-    {
-        return NULL;
-    }
-
-    while(1)
-    {
-        length = vsnprintf(new_string, len, format, ap);
-        if(length > -1 && length < len)
-        {
-            break;
-        }
-
-        if(length > -1)
-        {
-            len = length + 1;
-        }
-        else
-        {
-            len *= 2;
-        }
-
-        if((new_string = realloc(new_string, len)) == NULL)
-        {
-            return NULL;
-        }
-    }
-    
-    GLOBUS_I_GSI_CRED_DEBUG_EXIT;
-    return new_string;
-}
 
 #endif

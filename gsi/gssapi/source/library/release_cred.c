@@ -12,6 +12,7 @@
 static char *rcsid = "$Id$";
 
 #include "gssapi_openssl.h"
+#include "globus_i_gsi_gss_utils.h"
 
 /**
  * @name GSS Release Cred
@@ -42,7 +43,6 @@ GSS_CALLCONV gss_release_cred(
 
     static char *                       _function_name_ =
         "gss_release_cred";
-
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
     *minor_status = (OM_uint32) GLOBUS_SUCCESS;
@@ -61,13 +61,17 @@ GSS_CALLCONV gss_release_cred(
 
     globus_gsi_cred_handle_destroy((*cred_handle)->cred_handle);
 
+    if((*cred_handle)->ssl_context)
+    {
+        SSL_CTX_free((*cred_handle)->ssl_context);
+    }
+
     free(*cred_handle);
     *cred_handle = GSS_C_NO_CREDENTIAL;
 
  exit:
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return GSS_S_COMPLETE;
-
 } 
 /* gss_release_cred */
 /* @} */

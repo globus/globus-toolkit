@@ -12,8 +12,8 @@
 static char *rcsid = "$Id$";
 
 #include "gssapi.h"
-#include "gssutils.h"
-#include "gssapi_ssleay.h"
+#include "globus_i_gsi_gss_utils.h"
+#include "gssapi_openssl.h"
 #include <string.h>
 
 #define GSS_I_ANON_NAME "<anonymous>"
@@ -55,11 +55,11 @@ gss_display_name(
          !g_OID_equal(input_name->name_oid,
                       GSS_C_NT_ANONYMOUS)) ||
         !(output_name)) {
-        *minor_status = gsi_generate_minor_status();
-        GLOBUS_GSI_GSSAPI_ERROR_RESULT(
-            minor_status, 
-            GLOBUS_GSI_GSSAPI_ERROR_INVALID_NAME);
         major_status = GSS_S_FAILURE;
+        GLOBUS_GSI_GSSAPI_ERROR_RESULT(
+            minor_status, major_status, 
+            GLOBUS_GSI_GSSAPI_ERROR_BAD_NAME,
+            (NULL));
         goto exit;
     }
 
@@ -88,5 +88,3 @@ gss_display_name(
 } 
 /* gss_export_name */
 /* @} */
-
-#error STATUS: ready to compile

@@ -61,7 +61,8 @@ globus_gsi_proxy_handle_attrs_init(
 
     if(handle_attrs == NULL)
     {
-        result = GLOBUS_GSI_PROXY_ERROR_RESULT(
+        GLOBUS_GSI_PROXY_ERROR_RESULT(
+            result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE_ATTRS,
             ("NULL handle attributes passed to function: %s", 
              _function_name_));
@@ -304,7 +305,8 @@ globus_gsi_proxy_handle_attrs_set_signing_algorithm(
 
     if(handle_attrs == NULL)
     {
-        result = GLOBUS_GSI_PROXY_ERROR_RESULT(
+        GLOBUS_GSI_PROXY_ERROR_RESULT(
+            result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE_ATTRS,
             ("NULL handle attributes passed to function: %s", 
              _function_name_));
@@ -356,7 +358,8 @@ globus_gsi_proxy_handle_attrs_get_signing_algorithm(
 
     if(handle_attrs == NULL)
     {
-        result = GLOBUS_GSI_PROXY_ERROR_RESULT(
+        GLOBUS_GSI_PROXY_ERROR_RESULT(
+            result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE_ATTRS,
             ("NULL handle attributes passed to function: %s",
              _function_name_));
@@ -406,7 +409,8 @@ globus_gsi_proxy_handle_attrs_set_time_valid(
 
     if(handle_attrs == NULL)
     {
-        result = GLOBUS_GSI_PROXY_ERROR_RESULT(
+        GLOBUS_GSI_PROXY_ERROR_RESULT(
+            result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE_ATTRS,
             ("NULL handle attributes passed to function: %s", 
              _function_name_));
@@ -456,7 +460,8 @@ globus_gsi_proxy_handle_attrs_get_time_valid(
 
     if(handle_attrs == NULL)
     {
-        result = GLOBUS_GSI_PROXY_ERROR_RESULT(
+        GLOBUS_GSI_PROXY_ERROR_RESULT(
+            result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE_ATTRS,
             ("NULL handle attributes passed to function: %s",
              _function_name_));
@@ -505,7 +510,8 @@ globus_gsi_proxy_handle_attrs_set_clock_skew_allowable(
 
     if(handle_attrs == NULL)
     {
-        result = GLOBUS_GSI_PROXY_ERROR_RESULT(
+        GLOBUS_GSI_PROXY_ERROR_RESULT(
+            result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE_ATTRS,
             ("NULL handle attributes passed to function: %s",
              _function_name_));
@@ -553,7 +559,8 @@ globus_gsi_proxy_handle_attrs_get_clock_skew_allowable(
 
     if(handle_attrs == NULL)
     {
-        result = GLOBUS_GSI_PROXY_ERROR_RESULT(
+        GLOBUS_GSI_PROXY_ERROR_RESULT(
+            result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE_ATTRS,
             ("NULL handle attributes passed to function: %s",
              _function_name_));
@@ -601,7 +608,8 @@ globus_gsi_proxy_handle_attrs_get_key_gen_callback(
 
     if(handle_attrs == NULL)
     {
-        result = GLOBUS_GSI_PROXY_ERROR_RESULT(
+        GLOBUS_GSI_PROXY_ERROR_RESULT(
+            result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE_ATTRS,
             ("NULL handle attributes passed to function: %s",
              _function_name_));
@@ -649,7 +657,8 @@ globus_gsi_proxy_handle_attrs_set_key_gen_callback(
 
     if(handle_attrs == NULL)
     {
-        result = GLOBUS_GSI_PROXY_ERROR_RESULT(
+        GLOBUS_GSI_PROXY_ERROR_RESULT(
+            result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE_ATTRS,
             ("NULL handle attributes passed to function: %s",
              _function_name_));
@@ -693,7 +702,8 @@ globus_gsi_proxy_handle_attrs_copy(
 
     if(a == NULL)
     {
-        result = GLOBUS_GSI_PROXY_ERROR_RESULT(
+        GLOBUS_GSI_PROXY_ERROR_RESULT(
+            result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE_ATTRS,
             ("NULL handle attributes passed to function: %s",
              _function_name_));
@@ -701,7 +711,8 @@ globus_gsi_proxy_handle_attrs_copy(
     }
     if(b == NULL)
     {
-        result = GLOBUS_GSI_PROXY_ERROR_RESULT(
+        GLOBUS_GSI_PROXY_ERROR_RESULT(
+            result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE_ATTRS,
             ("NULL handle attributes passed to function: %s",
              _function_name_));
@@ -711,7 +722,7 @@ globus_gsi_proxy_handle_attrs_copy(
     result = globus_gsi_proxy_handle_attrs_init(b);
     if(result != GLOBUS_SUCCESS)
     {
-        result = GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
+        GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE_ATTRS);
         goto exit;

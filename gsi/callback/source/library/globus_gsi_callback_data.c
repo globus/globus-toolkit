@@ -15,8 +15,6 @@
 #include "globus_gsi_system_config.h"
 #include <openssl/x509.h>
 
-#error make all get/sets copy fields instead of just returning them
-
 globus_result_t
 globus_gsi_callback_data_init(
     globus_gsi_callback_data_t *        callback_data)
@@ -51,6 +49,8 @@ globus_gsi_callback_data_init(
 
     memset(*callback_data, (int) NULL, sizeof(globus_i_gsi_callback_data_t));
 
+    (*callback_data)->error = GLOBUS_SUCCESS;
+
  exit:
     GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
     return result;
@@ -71,12 +71,6 @@ globus_gsi_callback_data_destroy(
         sk_pop_free(callback_data->cert_chain, (void(*)(void *))X509_free);
     }
     
-    if(callback_data->peer_cert_chain)
-    {
-        sk_pop_free(callback_data->peer_cert_chain, 
-                    (void(*)(void *))X509_free);
-    }
-
     if(callback_data->cert_dir)
     {
         globus_libc_free(callback_data->cert_dir);
@@ -146,25 +140,8 @@ globus_gsi_callback_data_copy(
         }
     }
 
-    (*dest)->peer_cert_chain = sk_X509_dup(source->peer_cert_chain);
-
-    for(index = 0; index < sk_X509_num(source->peer_cert_chain); ++index)
-    {
-        if(!sk_X509_insert((*dest)->peer_cert_chain,
-                           sk_X509_value(source->cert_chain, index),
-                           index))
-        {
-            GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
-                result,
-                GLOBUS_GSI_CALLBACK_ERROR_CERT_CHAIN,
-                ("Couldn't copy peer cert chain from callback data"));
-            goto exit;
-        }
-    }
-
     (*dest)->multiple_limited_proxy_ok = source->multiple_limited_proxy_ok;
     (*dest)->cert_dir = strdup(source->cert_dir);
-    (*dest)->goodtill = source->goodtill;
     (*dest)->extension_cb = source->extension_cb;
 
     /* just copy the pointer location - these get created
@@ -472,103 +449,6 @@ globus_gsi_callback_set_cert_chain(
 }
 
 globus_result_t
-globus_gsi_callback_get_peer_cert_chain(
-    globus_gsi_callback_data_t          callback_data,
-    STACK_OF(X509) **                   peer_cert_chain)
-{
-    int                                 index;
-    globus_result_t                     result = GLOBUS_SUCCESS;
-    static char *                       _function_name_ =
-        "globus_gsi_callback_get_peer_cert_chain";
-    GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
- 
-    if(!callback_data)
-    {
-        GLOBUS_GSI_CALLBACK_ERROR_RESULT(
-            result,
-            GLOBUS_GSI_CALLBACK_ERROR_CALLBACK_DATA,
-            ("NULL parameter callback_data passed to function: %s",
-             _function_name_));
-        goto exit;
-    }
-
-    if(!peer_cert_chain)
-    {
-        GLOBUS_GSI_CALLBACK_ERROR_RESULT(
-            result,
-            GLOBUS_GSI_CALLBACK_ERROR_CALLBACK_DATA,
-            ("NULL parameter peer_cert_chain passed to function: %s",
-             _function_name_));
-        goto exit;
-    }
-
-    *peer_cert_chain = sk_X509_dup(callback_data->peer_cert_chain);
-
-    for(index = 0; index < sk_X509_num(callback_data->peer_cert_chain); 
-        ++index)
-    {
-        if(!sk_X509_insert(*peer_cert_chain,
-                           sk_X509_value(callback_data->peer_cert_chain, 
-                                         index),
-                           index))
-        {
-            GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
-                result,
-                GLOBUS_GSI_CALLBACK_ERROR_CALLBACK_DATA,
-                ("Couldn't copy cert chain in callback data"));
-            goto exit;
-        }
-    }
-
- exit:
-    GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
-    return result;
-}
-
-globus_result_t
-globus_gsi_callback_set_peer_cert_chain(
-    globus_gsi_callback_data_t          callback_data,
-    STACK_OF(X509)  *                   peer_cert_chain)
-{
-    int                                 index;
-    globus_result_t                     result = GLOBUS_SUCCESS;
-    static char *                       _function_name_ =
-        "globus_gsi_callback_set_peer_cert_chain";
-
-    GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
-
-    if(!callback_data)
-    {
-        GLOBUS_GSI_CALLBACK_ERROR_RESULT(
-            result,
-            GLOBUS_GSI_CALLBACK_ERROR_CALLBACK_DATA,
-            ("NULL parameter callback_data passed to function: %s",
-             _function_name_));
-        goto exit;
-    }
-
-    callback_data->peer_cert_chain = sk_X509_dup(peer_cert_chain);
-    
-    for(index = 0; index < sk_X509_num(peer_cert_chain); ++index)
-    {
-        if(!sk_X509_insert(callback_data->peer_cert_chain,
-                          sk_X509_value(peer_cert_chain, index),
-                          index))
-        {
-            GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
-                result,
-                GLOBUS_GSI_CALLBACK_ERROR_CALLBACK_DATA,
-                ("Couldn't set the cert chain in the callback_data"));
-            goto exit;
-        }
-    }
-
- exit:
-    GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
-    return result;
-}
-
-globus_result_t
 globus_gsi_callback_get_multiple_limited_proxy_ok(
     globus_gsi_callback_data_t          callback_data,
     int *                               multiple_limited_proxy_ok)
@@ -762,63 +642,6 @@ globus_gsi_callback_set_cert_dir(
     GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
     return result;
 }
-
-globus_result_t
-globus_gsi_callback_get_goodtill(
-    globus_gsi_callback_data_t          callback_data,
-    time_t *                            goodtill)
-{
-    globus_result_t                     result = GLOBUS_SUCCESS;
-    static char *                       _function_name_ =
-        "globus_gsi_callback_get_goodtill";
-    GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
- 
-    if(!callback_data)
-    {
-        GLOBUS_GSI_CALLBACK_ERROR_RESULT(
-            result,
-            GLOBUS_GSI_CALLBACK_ERROR_CALLBACK_DATA,
-            ("NULL parameter callback_data passed to function: %s",
-             _function_name_));
-        goto exit;
-    }
-
-    *goodtill = callback_data->goodtill;
-
- exit:
-    GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
-    return result;
-}
-
-
-globus_result_t
-globus_gsi_callback_set_goodtill(
-    globus_gsi_callback_data_t          callback_data,
-    time_t                              goodtill)
-{
-    globus_result_t                     result = GLOBUS_SUCCESS;
-    static char *                       _function_name_ =
-        "globus_gsi_callback_set_goodtill";
-
-    GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
-
-    if(!callback_data)
-    {
-        GLOBUS_GSI_CALLBACK_ERROR_RESULT(
-            result,
-            GLOBUS_GSI_CALLBACK_ERROR_CALLBACK_DATA,
-            ("NULL parameter callback_data passed to function: %s",
-             _function_name_));
-        goto exit;
-    }
-
-    callback_data->goodtill = goodtill;
-
- exit:
-    GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
-    return result;
-}
-
 
 globus_result_t
 globus_gsi_callback_get_extension_cb(

@@ -274,7 +274,6 @@ globus_gsi_proxy_create_req(
 
     if(rsa_key == NULL)
     {
-        /* ERROR: RSA_generate_key errored */
         GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
             result,
             GLOBUS_GSI_PROXY_ERROR_WITH_PRIVATE_KEY, 
@@ -320,6 +319,10 @@ globus_gsi_proxy_create_req(
         goto free_extensions;
     }
 
+    GLOBUS_I_GSI_PROXY_DEBUG_PRINT(3, "****** START X509_REQ ******\n");
+    GLOBUS_I_GSI_PROXY_DEBUG_PRINT_OBJECT(3, X509_REQ, handle->req);
+    GLOBUS_I_GSI_PROXY_DEBUG_PRINT(3, "******  END X509_REQ  ******\n");
+
     /* write the PCI to the BIO */
     if(i2d_PROXYCERTINFO_bio(output_bio, handle->proxy_cert_info) == 0)
     {
@@ -331,9 +334,11 @@ globus_gsi_proxy_create_req(
         goto free_extensions;
     }
 
-    GLOBUS_I_GSI_PROXY_DEBUG_PRINT(3, "****** START X509_REQ ******\n");
-    GLOBUS_I_GSI_PROXY_DEBUG_PRINT_OBJECT(3, X509_REQ, handle->req);
-    GLOBUS_I_GSI_PROXY_DEBUG_PRINT(3, "******  END X509_REQ  ******\n");
+    GLOBUS_I_GSI_PROXY_DEBUG_PRINT(3, "****** START PROXYCERTINFO ******\n");
+    GLOBUS_I_GSI_PROXY_DEBUG_PRINT_OBJECT(3, 
+                                          PROXYCERTINFO, 
+                                          handle->proxy_cert_info);
+    GLOBUS_I_GSI_PROXY_DEBUG_PRINT(3, "******  END PROXYCERTINFO  ******\n");
 
     result = GLOBUS_SUCCESS;
 

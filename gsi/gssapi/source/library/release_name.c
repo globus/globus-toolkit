@@ -12,6 +12,7 @@
 static char *rcsid = "$Id$";
 
 #include "gssapi_openssl.h"
+#include "globus_i_gsi_gss_utils.h"
 
 /**
  * @name GSS Release Name

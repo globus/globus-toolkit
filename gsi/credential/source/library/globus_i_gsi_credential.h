@@ -33,11 +33,16 @@ extern FILE *                           globus_i_gsi_cred_debug_fstream;
         } \
     }
 
+
 #define GLOBUS_I_GSI_CRED_DEBUG_FNPRINTF(_LEVEL_, _MESSAGE_) \
     { \
         if (GLOBUS_I_GSI_CRED_DEBUG(_LEVEL_)) \
         { \
-           globus_libc_fprintf _MESSAGE_; \
+           char *                          _tmp_str_ = \
+               globus_gsi_cert_utils_create_nstring _MESSAGE_; \
+           globus_libc_fprintf(globus_i_gsi_cred_debug_fstream, \
+                               _tmp_str_); \
+           globus_libc_free(_tmp_str_); \
         } \
     }
 
@@ -81,7 +86,7 @@ extern FILE *                           globus_i_gsi_cred_debug_fstream;
 #define GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(_RESULT_, _ERRORTYPE_, _ERRSTR_) \
     {                                                                         \
         char *                          _tmp_str_ =                           \
-            globus_i_gsi_cred_create_string _ERRSTR_;                         \
+            globus_gsi_cert_utils_create_string _ERRSTR_;                     \
         _RESULT_ = globus_i_gsi_cred_openssl_error_result(_ERRORTYPE_,        \
                                                           __FILE__,           \
                                                           _function_name_,    \
@@ -93,7 +98,7 @@ extern FILE *                           globus_i_gsi_cred_debug_fstream;
 #define GLOBUS_GSI_CRED_ERROR_RESULT(_RESULT_, _ERRORTYPE_, _ERRSTR_) \
     {                                                                 \
         char *                          _tmp_str_ =                   \
-            globus_i_gsi_cred_create_string _ERRSTR_;                 \
+            globus_gsi_cert_utils_create_string _ERRSTR_;             \
         _RESULT_ = globus_i_gsi_cred_error_result(_ERRORTYPE_,        \
                                                   __FILE__,           \
                                                   _function_name_,    \
@@ -152,8 +157,6 @@ typedef struct globus_l_gsi_cred_handle_s
     STACK_OF(X509) *                    cert_chain;
     /** The immutable attributes of the credential handle */
     globus_gsi_cred_handle_attrs_t      attrs;
-    /** The ssl context used for this credential */
-    SSL_CTX *                           ssl_context;
     /** The amout of time the credential is valid for */
     time_t                              goodtill;
 } globus_i_gsi_cred_handle_t;
@@ -192,16 +195,6 @@ globus_i_gsi_cred_error_chain_result(
     const char *                        function_name,
     int                                 line_number,
     const char *                        long_desc);
-
-char *
-globus_i_gsi_cred_create_string(
-    const char *                        format,
-    ...);
-
-char *
-globus_i_gsi_cred_v_create_string(
-    const char *                        format,
-    va_list                             ap);
 
 EXTERN_C_END
 

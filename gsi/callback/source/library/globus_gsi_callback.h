@@ -73,11 +73,21 @@ typedef int (*globus_gsi_extension_callback_t)(
     globus_gsi_callback_data_t          callback_data,
     X509_EXTENSION *                    extension);
 
-int
-globus_gsi_callback_get_X509_STORE_callback_data_index();
+globus_result_t
+globus_gsi_callback_get_X509_STORE_callback_data_index(
+    int *                               index);
 
-int
-globus_gsi_callback_get_SSL_callback_data_index();
+globus_result_t
+globus_gsi_callback_set_X509_STORE_callback_data_index(
+    int                                 index);
+
+globus_result_t
+globus_gsi_callback_get_SSL_callback_data_index(
+    int *                               index);
+
+globus_result_t
+globus_gsi_callback_set_SSL_callback_data_index(
+    int                                 index);
 
 int
 globus_gsi_callback_create_proxy_callback(
@@ -93,6 +103,10 @@ int globus_gsi_callback_check_issued(
     X509_STORE_CTX *                    context,
     X509 *                              cert,
     X509 *                              issuer);
+
+int 
+globus_gsi_callback_X509_verify_cert(
+    X509_STORE_CTX *                    context);
 
 globus_result_t
 globus_gsi_callback_data_init(
@@ -160,16 +174,6 @@ globus_result_t
 globus_gsi_callback_set_cert_chain(
     globus_gsi_callback_data_t          callback_data,
     STACK_OF(X509) *                    cert_chain);
-
-globus_result_t
-globus_gsi_callback_get_peer_cert_chain(
-    globus_gsi_callback_data_t          callback_data,
-    STACK_OF(X509) **                   peer_cert_chain);
-
-globus_result_t
-globus_gsi_callback_set_peer_cert_chain(
-    globus_gsi_callback_data_t          callback_data,
-    STACK_OF(X509)  *                   peer_cert_chain);
 
 globus_result_t
 globus_gsi_callback_get_multiple_limited_proxy_ok(

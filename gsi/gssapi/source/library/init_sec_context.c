@@ -1,52 +1,22 @@
-/**********************************************************************
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/**
+ * @file init_sec_context.c
+ * @author Sam Lang, Sam Meder
+ * 
+ * $RCSfile$
+ * $Revision$
+ * $Date$
+ */
+#endif
 
-init_sec_context.c:
+static char *rcsid = "$Id$";
 
-Description:
-    GSSAPI routine to initiate the sending of a security context
-    See: <draft-ietf-cat-gssv2-cbind-04.txt>
-CVS Information:
-
-    $Source$
-    $Date$
-    $Revision$
-    $Author$
-
-**********************************************************************/
-
-static char *rcsid = "$Header$";
-
-/**********************************************************************
-                             Include header files
-**********************************************************************/
-
-#include "gssapi_ssleay.h"
-#include "gssutils.h"
+#include "gssapi_openssl.h"
+#include "globus_i_gsi_gss_utils.h"
 #include <string.h>
 #include "openssl/evp.h"
 
-/**********************************************************************
-                               Type definitions
-**********************************************************************/
-
-/**********************************************************************
-                          Module specific prototypes
-**********************************************************************/
-
-/**********************************************************************
-                       Define module specific variables
-**********************************************************************/
-
-/**********************************************************************
-Function: gss_init_sec_context
-
-Description:
-    Called by the client in a loop, it will return a token
-    to be sent to the accept_sec_context running in the server. 
-Parameters:
-
-Returns:
-**********************************************************************/
+#include "globus_gsi_cert_utils.h"
 
 OM_uint32 
 GSS_CALLCONV gss_init_sec_context(
@@ -66,24 +36,21 @@ GSS_CALLCONV gss_init_sec_context(
 {
 
     gss_ctx_id_desc *                   context = NULL;
-    OM_uint32                           major_status = 0;
-    OM_uint32                           local_minor_status = 0;
-    OM_uint32                           local_major_status = 0;
-    X509_REQ *                          reqp = NULL;
-    X509 *                              ncert = NULL;
-    X509 *                              current_cert = NULL;
+    OM_uint32                           major_status = GSS_S_COMPLETE;
+    OM_uint32                           local_minor_status;
+    globus_result_t                     local_result;
+    globus_result_t                     callback_error;
     int                                 rc;
     char                                cbuf[1];
-    time_t                              goodtill = 0;
-    int                                 cert_count = 0;
-    globus_proxy_type_t                 proxy_type = GLOBUS_FULL_PROXY;
+    int                                 limited_proxy;
+    globus_gsi_cert_utils_proxy_type_t  proxy_type = GLOBUS_FULL_PROXY;
 
     static char *                       _function_name_ = 
         "gss_init_sec_context";
 
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
-    *minor_status = 0;
+    *minor_status = (OM_uint32) GLOBUS_SUCCESS;
     output_token->length = 0;
 
     context = *context_handle_P;
@@ -98,28 +65,37 @@ GSS_CALLCONV gss_init_sec_context(
 
     if(req_flags & GSS_C_ANON_FLAG & GSS_C_DELEG_FLAG)
     {
-#error here
-        GSSerr(GSSERR_F_INIT_SEC,GSSERR_R_BAD_ARGUMENT);
         major_status = GSS_S_FAILURE;
+        GLOBUS_GSI_GSSAPI_ERROR_RESULT(
+            minor_status, major_status,
+            GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
+            ("Can't initialize a context to be both anonymous and "
+             "provide delegation"));
+        goto error_exit;
     }
     
     if ((context == (gss_ctx_id_t) GSS_C_NO_CONTEXT) ||
         !(context->ctx_flags & GSS_I_CTX_INITIALIZED))
     {
         GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
-            2, (stderr, "Creating context w/%s.\n",
+            2, (globus_i_gsi_gssapi_debug_fstream, 
+                "Creating context w/ %s.\n",
                 (initiator_cred_handle == GSS_C_NO_CREDENTIAL) ?
                 "GSS_C_NO_CREDENTIAL" :
                 "Credentials provided"));
 
-        major_status = gss_create_and_fill_context(&local_minor_status,
-                                                   &context,
-                                                   initiator_cred_handle,
-                                                   GSS_C_INITIATE,
-                                                   req_flags);
+        major_status = 
+            globus_i_gsi_gss_create_and_fill_context(&local_minor_status,
+                                                     &context,
+                                                     initiator_cred_handle,
+                                                     GSS_C_INITIATE,
+                                                     req_flags);
         if (GSS_ERROR(major_status))
         {
-#error here
+            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                minor_status, local_minor_status,
+                GLOBUS_GSI_GSSAPI_ERROR_WITH_GSS_CONTEXT);
+            goto error_exit;
         }
 
         *context_handle_P = context;
@@ -141,21 +117,21 @@ GSS_CALLCONV gss_init_sec_context(
     }
     else
     {
-        /*
-         * first time there is no input token, but after that
+        /* first time there is no input token, but after that
          * there will always be one
          */
-
     	major_status = globus_i_gsi_gss_put_token(&local_minor_status,
                                                   context, 
                                                   NULL, 
                                                   input_token);
-    	if (major_status != GSS_S_COMPLETE)
+    	if (GSS_ERROR(major_status))
         {
-#error here
+            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                minor_status, local_minor_status,
+                GLOBUS_GSI_GSSAPI_ERROR_TOKEN_FAIL);
+            goto error_exit;
         }
     }
-
 
     switch (context->gss_state)
     {
@@ -171,19 +147,56 @@ GSS_CALLCONV gss_init_sec_context(
             break;
         }
         /* if failed, may have SSL alert message too */
-        if (major_status != GSS_S_COMPLETE)
+        if (GSS_ERROR(major_status))
         {
+            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                minor_status, local_minor_status,
+                GLOBUS_GSI_GSSAPI_ERROR_HANDSHAKE);
             context->gss_state = GSS_CON_ST_DONE;
             break;
         } 
+
+        /* need to check callback data for error */
+        local_result = globus_gsi_callback_get_error(
+            context->callback_data,
+            &callback_error);
+        if(callback_error != GLOBUS_SUCCESS)
+        {
+            local_result = callback_error;
+        }
+
+        if(local_result != GLOBUS_SUCCESS)
+        {
+            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                minor_status, local_result,
+                GLOBUS_GSI_GSSAPI_ERROR_REMOTE_CERT_VERIFY_FAILED);
+            major_status = GSS_S_FAILURE;
+            goto exit;
+        }
+
         /* make sure we are talking to the correct server */
         major_status = globus_i_gsi_gss_retrieve_peer(&local_minor_status,
                                                       context,
                                                       GSS_C_INITIATE);
-        if (major_status != GSS_S_COMPLETE)
+        if (GSS_ERROR(major_status))
         {
+            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                minor_status, local_minor_status,
+                GLOBUS_GSI_GSSAPI_ERROR_WITH_GSS_CONTEXT);
             context->gss_state = GSS_CON_ST_DONE;
             break;
+        }
+
+        local_result = globus_gsi_callback_get_limited_proxy(
+            context->callback_data,
+            &limited_proxy);
+        if(local_result != GLOBUS_SUCCESS)
+        {
+            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                minor_status, local_minor_status,
+                GLOBUS_GSI_GSSAPI_ERROR_WITH_CALLBACK_DATA);
+            major_status = GSS_S_FAILURE;
+            goto error_exit;
         }
 
         /* 
@@ -192,11 +205,15 @@ GSS_CALLCONV gss_init_sec_context(
          * Caller tells us if it is not acceptable to 
          * use a limited proxy. 
          */
-        if ((context->req_flags & GSS_C_GLOBUS_LIMITED_PROXY_FLAG)
-            && context->callback_data.limited_proxy)
+        if ((context->req_flags & 
+             GSS_C_GLOBUS_DONT_ACCEPT_LIMITED_PROXY_FLAG)
+            && limited_proxy)
         {
-            GSSerr(GSSERR_F_INIT_SEC,GSSERR_R_PROXY_VIOLATION);
             major_status = GSS_S_UNAUTHORIZED;
+            GLOBUS_GSI_GSSAPI_ERROR_RESULT(
+                minor_status, major_status,
+                GLOBUS_GSI_GSSAPI_ERROR_PROXY_VIOLATION,
+                ("Expected limited proxy"));
             context->gss_state = GSS_CON_ST_DONE;
             break;
         }
@@ -204,20 +221,26 @@ GSS_CALLCONV gss_init_sec_context(
         /* this is the mutual authentication test */
         if (target_name != NULL)
         {
-            local_major_status = gss_compare_name(&local_minor_status,
-                                                  context->target_name,
-                                                  target_name,
-                                                  &rc);
-            if (local_major_status != GSS_S_COMPLETE)
+            major_status = 
+                gss_compare_name(&local_minor_status,
+                                 context->peer_cred_handle->globusid,
+                                 target_name,
+                                 &rc);
+            if (GSS_ERROR(major_status))
             {
-                *minor_status = local_minor_status;
-                major_status  = local_major_status;
+                GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                    minor_status, local_minor_status,
+                    GLOBUS_GSI_GSSAPI_ERROR_BAD_NAME);
                 context->gss_state = GSS_CON_ST_DONE;
                 break;
             }
-            else if( rc == 0)
+            else if(rc == GSS_NAMES_NOT_EQUAL)
             {
-#error here
+                GLOBUS_GSI_GSSAPI_ERROR_RESULT(
+                    minor_status, local_minor_status,
+                    GLOBUS_GSI_GSSAPI_ERROR_BAD_NAME,
+                    ("The target name in the context, and the target "
+                     "name passed to the function do not match"));
                 major_status = GSS_S_UNAUTHORIZED;
                 context->gss_state = GSS_CON_ST_DONE;
                 break;
@@ -229,9 +252,9 @@ GSS_CALLCONV gss_init_sec_context(
         context->ret_flags |= GSS_C_INTEG_FLAG
             | GSS_C_REPLAY_FLAG
             | GSS_C_SEQUENCE_FLAG;
-        if (context->pvd.limited_proxy)
+        if (limited_proxy)
         {
-            context->ret_flags |= GSS_C_GLOBUS_LIMITED_PROXY_FLAG;
+            context->ret_flags |= GSS_C_GLOBUS_RECEIVED_LIMITED_PROXY_FLAG;
         }
 
         /* 
@@ -260,46 +283,83 @@ GSS_CALLCONV gss_init_sec_context(
         }
 
     case(GSS_CON_ST_FLAGS):
+
         if (input_token->length > 0)
         {   
-            BIO_read(context->gss_sslbio,cbuf,1);
+            BIO_read(context->gss_sslbio, cbuf, 1);
         }
 
         /* send D if we want delegation, 0 otherwise */
         
         if (context->req_flags & GSS_C_DELEG_FLAG)
         {
-            BIO_write(context->gss_sslbio,"D",1); 
-            context->gss_state=GSS_CON_ST_REQ;
+            BIO_write(context->gss_sslbio, "D", 1); 
+            context->gss_state = GSS_CON_ST_REQ;
         }
         else
         {
-            BIO_write(context->gss_sslbio,"0",1);
-            context->gss_state=GSS_CON_ST_DONE;
+            BIO_write(context->gss_sslbio, "0", 1);
+            context->gss_state = GSS_CON_ST_DONE;
         } 
         break;
             
     case(GSS_CON_ST_REQ):
 
-        if((result = globus_gsi_proxy_inquire_req(
+        local_result = globus_gsi_proxy_inquire_req(
             context->proxy_handle,
-            context->gss_sslbio)) != GLOBUS_SUCCESS)
+            context->gss_sslbio);
+        if(local_result != GLOBUS_SUCCESS)
         {
-#error here
+            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                minor_status, local_result,
+                GLOBUS_GSI_GSSAPI_ERROR_PROXY_NOT_RECEIVED);
+            major_status = GSS_S_FAILURE;
+            context->gss_state = GSS_CON_ST_DONE;
+            goto error_exit;
+        }
+        
+        local_result = globus_gsi_cred_check_proxy_name(
+            context->cred_handle->cred_handle,
+            &proxy_type);
+        if(local_result != GLOBUS_SUCCESS)
+        {
+            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                minor_status, local_result,
+                GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_CREDENTIAL);
+            major_status = GSS_S_FAILURE;
+            context->gss_state = GSS_CON_ST_DONE;
+            goto error_exit;
         }
 
         if(proxy_type != GLOBUS_RESTRICTED_PROXY &&
-           context->req_flags & GSS_C_GLOBUS_LIMITED_DELEG_PROXY_FLAG)
+           context->req_flags & GSS_C_GLOBUS_DELEGATE_LIMITED_PROXY_FLAG)
         {
-            context->proxy_handle->is_limited = GLOBUS_TRUE;
+            local_result =
+                globus_gsi_proxy_handle_set_is_limited(context->proxy_handle,
+                                                       GLOBUS_TRUE);
+            if(local_result != GLOBUS_SUCCESS)
+            {
+                GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                    minor_status, local_result,
+                    GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_PROXY);
+                major_status = GSS_S_FAILURE;
+                context->gss_state = GSS_CON_ST_DONE;
+                goto exit;
+            }
         }
 
-        if((result = globus_gsi_proxy_sign_req(
+        local_result = globus_gsi_proxy_sign_req(
             context->proxy_handle,
             context->cred_handle->cred_handle,
-            context->gss_sslbio)) != GLOBUS_SUCCESS)
+            context->gss_sslbio);
+        if(local_result != GLOBUS_SUCCESS)
         {
-#error here
+            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                minor_status, local_result,
+                GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_PROXY);
+            major_status = GSS_S_FAILURE;
+            context->gss_state = GSS_CON_ST_DONE;
+            goto error_exit;
         }
 
         context->gss_state = GSS_CON_ST_DONE;
@@ -309,33 +369,24 @@ GSS_CALLCONV gss_init_sec_context(
     case(GSS_CON_ST_DONE): ;
     } /* end of switch for gss_con_st */
 
-    local_major_status = globus_i_gsi_gss_get_token(&local_minor_status,
+    major_status = globus_i_gsi_gss_get_token(&local_minor_status,
                                               context, 
                                               NULL, 
                                               output_token);
 
-    if(local_major_status != GSS_S_COMPLETE)
+    if(!GSS_ERROR(major_status))
     {
-#error here
+        GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+            minor_status, local_minor_status,
+            GLOBUS_GSI_GSSAPI_ERROR_TOKEN_FAIL);
+        major_status = GSS_S_FAILURE;
+        context->gss_state = GSS_CON_ST_DONE;
+        goto error_exit;
     }
 
     if (context->gss_state != GSS_CON_ST_DONE)
     {
-        major_status |=GSS_S_CONTINUE_NEEDED;
-    }
-    else if(major_status == GSS_S_COMPLETE)
-    {
-        if(result = globus_gsi_cred_goodtill(
-            context->cred_handle->cred_handle,
-            & context->goodtill) != GLOBUS_SUCCESS)
-        {
-#error error here
-        }
-        
-        if(context->goodtill > context->callback_data.goodtill)
-        {
-            context->goodtill = context->callback_data.goodtill;
-        }
+        major_status |= GSS_S_CONTINUE_NEEDED;
     }
        
     if (ret_flags != NULL)
@@ -343,16 +394,29 @@ GSS_CALLCONV gss_init_sec_context(
         *ret_flags = context->ret_flags;
     }
 
+    goto exit;
+
+ error_exit:
+
+    gss_delete_sec_context(&local_minor_status, 
+                           (gss_ctx_id_t *) &context,
+                           output_token);
+    GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+        minor_status, local_minor_status,
+        GLOBUS_GSI_GSSAPI_ERROR_WITH_GSS_CONTEXT);
+   
+ exit:
+
     GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
-        2, (stderr,
+        2, (globus_i_gsi_gssapi_debug_fstream,
             "init_sec_context:major_status:%08x"
             ":gss_state:%d req_flags=%08x:ret_flags=%08x\n",
-            major_status, context->gss_state,req_flags, context->ret_flags));
+            (unsigned int) major_status, 
+            context->gss_state,
+            (unsigned int) req_flags, 
+            (unsigned int) context->ret_flags));
 
+    GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;
 }
-
-
-
-
-
+/* @} */

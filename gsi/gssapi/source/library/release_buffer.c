@@ -7,11 +7,25 @@
  * $Revision$
  * $Date$
  */
+#endif
 
 static char *rcsid = "$Id$";
 
 #include "gssapi_openssl.h"
+#include "globus_i_gsi_gss_utils.h"
 
+/**
+ * @name Release Buffer
+ * @ingroup globus_gsi_gssapi
+ */
+/* @{ */
+/**
+ * 
+ * @param minor_status
+ * @param buffer
+ *
+ * @return
+ */
 OM_uint32 
 GSS_CALLCONV gss_release_buffer(
     OM_uint32 *                         minor_status,
@@ -19,7 +33,6 @@ GSS_CALLCONV gss_release_buffer(
 {
     static char *                       _function_name_ =
         "gss_release_buffer";
-
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
     *minor_status = (OM_uint32) GLOBUS_SUCCESS;

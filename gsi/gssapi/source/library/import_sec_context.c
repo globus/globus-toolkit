@@ -1,35 +1,25 @@
-
-/**********************************************************************
-
-import_sec_context.c:
-
-Description:
-	GSSAPI routine to import the security context
-	See: <draft-ietf-cat-gssv2-cbind-04.txt>
-
-CVS Information:
-
-    $Source$
-    $Date$
-    $Revision$
-    $Author$
-
-**********************************************************************/
-
-static char *rcsid = "$Header$";
-
-/**********************************************************************
-                             Include header files
-**********************************************************************/
-
-#include "gssapi_ssleay.h"
-#include "gssutils.h"
-#include <openssl/crypto.h>
-#include <string.h>
-#include <openssl/rand.h>
-#if SSLEAY_VERSION_NUMBER < 0x0090600fL
-#define OPENSSL_malloc Malloc
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/**
+ * @file import_sec_context.c
+ * @author Sam Lang, Sam Meder
+ * 
+ * $RCSfile$
+ * $Revision$
+ * $Date$
+ */
 #endif
+
+static char *rcsid = "$Id$";
+
+#include "gssapi_openssl.h"
+#include "globus_i_gsi_gss_utils.h"
+
+#include <openssl/crypto.h>
+#include <openssl/rand.h>
+#include <openssl/ssl2.h>
+#include "ssl_locl.h"
+#include <string.h>
+
 /*
  * inorder to define a number of low level ssl routines
  * we need to include non installed header
@@ -37,74 +27,56 @@ static char *rcsid = "$Header$";
  * We will define the four routines here. 
  */
 
-int ssl3_setup_buffers(SSL *s); 
-int ssl_init_wbio_buffer(SSL *s, int push);
-
-#if SSLEAY_VERSION_NUMBER >= 0x00904100L
-int ssl_cipher_get_evp(SSL_SESSION *s,const EVP_CIPHER **enc,
-                       const EVP_MD **md, SSL_COMP **comp);
-#else
-int ssl_cipher_get_evp(SSL_CIPHER *c, EVP_CIPHER **enc, EVP_MD **md);
-#endif
-
-void ssl3_cleanup_key_block(SSL *s);
-
-/**********************************************************************
-                               Type definitions
-**********************************************************************/
-
-/**********************************************************************
-                          Module specific prototypes
-**********************************************************************/
-
-/**********************************************************************
-                       Define module specific variables
-**********************************************************************/
-
-/**********************************************************************
-Function:   gss_import_sec_context()   
-
-Description:
-    get a sec context based on the input token. 
-
-Parameters:
-	
-Returns:
-**********************************************************************/
-
-
+/**
+ * @name Import Security Context
+ * @ingroup globus_gsi_gssapi
+ */
+/* @{ */
+/**
+ * GSSAPI routine to import the security context based
+ * on the input token.
+ * See: <draft-ietf-cat-gssv2-cbind-04.txt>
+ *
+ */
 OM_uint32 
 GSS_CALLCONV gss_import_sec_context(
     OM_uint32 *                         minor_status ,
     const gss_buffer_t                  interprocess_token,
     gss_ctx_id_t *                      context_handle_P) 
 {
-#ifdef WIN32
-    return GSS_S_UNAVAILABLE;
-#else
-    OM_uint32                           major_status = 0;
-    OM_uint32                           minor_status2 = 0;
+    OM_uint32                           major_status = GSS_S_COMPLETE;
+    OM_uint32                           local_minor_status = GSS_S_COMPLETE;
+    globus_result_t                     local_result;
     gss_ctx_id_desc *                   context = GSS_C_NO_CONTEXT;
-    SSL *                               s;
+    SSL *                               ssl_handle = NULL;
     SSL_SESSION *                       session = NULL;
     SSL_CIPHER *                        cipher;
-    STACK_OF(SSL_CIPHER) *              sk;
+    STACK_OF(SSL_CIPHER) *              ciphers;
     BIO *                               bp = NULL;
     X509 *                              peer_cert;
-    unsigned char *                     cp;
-    unsigned char                       ibuf[4];
-    long                                len;
+    unsigned char                       int_buffer[4];
+    long                                length;
     long                                version;
     gss_cred_usage_t                    cred_usage;
-    long                                cipher_id;
     long                                Time=time(NULL);
-    int                                 i;
+    int                                 index;
+    int                                 res;
+    int                                 ssl_result;
+    static char *                       _function_name_ =
+        "gss_import_sec_context";
+    GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
-#ifdef DEBUG
-    fprintf(stderr,"import_sec_context:\n");
-#endif /* DEBUG */
+    *minor_status = (OM_uint32) GLOBUS_SUCCESS;
 
-    *minor_status = 0;
+#ifdef WIN32
+        major_status = GSS_S_UNAVAILABLE;
+        GLOBUS_GSI_GSSAPI_ERROR_RESULT(
+            minor_status,
+            GLOBUS_GSI_GSSAPI_ERROR_UNSUPPORTED,
+            ("This function does not currently support the "
+             "Windows platform"));
+        goto exit;
+#endif
 
     /* module activation if not already done by calling
      * globus_module_activate
@@ -118,53 +90,50 @@ GSS_CALLCONV gss_import_sec_context(
         interprocess_token == GSS_C_NO_BUFFER || 
         context_handle_P == NULL)
     {
-        GSSerr(GSSERR_F_IMPORT_SEC, GSSERR_R_BAD_ARGUMENT);
-        *minor_status = gsi_generate_minor_status();
         major_status = GSS_S_DEFECTIVE_TOKEN;
-        goto err;
+        GLOBUS_GSI_GSSAPI_ERROR_RESULT(
+            minor_status, major_status,
+            GLOBUS_GSI_GSSAPI_ERROR_TOKEN_FAIL,
+            ("The inter-process token is not valid"));
+        goto exit;
     }
 
-    /*DEE should work for BOTH, for now do accept */
-    /*DEE need to check, and return err otherwise */
-
     /* Open mem bio for reading the session */
-
-
     if ((bp = BIO_new(BIO_s_mem())) == NULL)
     {
-        GSSerr(GSSERR_F_IMPORT_SEC,GSSERR_R_IMPEXP_BIO_SSL);
-        *minor_status = gsi_generate_minor_status();
+        GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
+            minor_status,
+            GLOBUS_GSI_GSSAPI_ERROR_IMPEXP_BIO_SSL,
+            ("Couldn't initialize BIO for importing context"));
         major_status = GSS_S_FAILURE;
-        goto err;
+        goto exit;
     }
         
     /* write the input token to the BIO so we can read it back */
+    BIO_write(bp, interprocess_token->value, interprocess_token->length);
 
-    BIO_write(bp,interprocess_token->value,
-              interprocess_token->length);
-
-    /* 
-     * get some of our gss specific info
-     */
-
-    BIO_read(bp,(char *)ibuf,4); /* get version */
-    cp = ibuf;
-    n2l(cp,version);
-    if (version > 1)
+    /* get some of our gss specific info */
+    /* get version */
+    BIO_read(bp, (char *) int_buffer, 4); 
+    N2L(int_buffer, version);
+    if (version > GLOBUS_I_GSI_GSSAPI_IMPL_VERSION)
     {
-        GSSerr(GSSERR_F_IMPORT_SEC,GSSERR_R_IMPEXP_BIO_SSL);
-        *minor_status = gsi_generate_minor_status();
         major_status = GSS_S_FAILURE;
-        goto err;
+        GLOBUS_GSI_GSSAPI_ERROR_RESULT(
+            minor_status, major_status,
+            GLOBUS_GSI_GSSAPI_ERROR_IMPEXP_BIO_SSL,
+            ("Trying to import version %d of a security context token "
+             "only version %d is supported by this implementation",
+             version, GLOBUS_I_GSI_GSSAPI_IMPL_VERSION));
+        goto exit;
     }
 
-    BIO_read(bp,(char *)ibuf,4); /* get cred_usage */
-    cp = ibuf;
-    n2l(cp,cred_usage);
-        
-#ifdef DEBUG
-    fprintf(stderr,"CredUsage=%d\n",cred_usage);
-#endif
+    BIO_read(bp, (char *) int_buffer, 4); /* get cred_usage */
+    N2L(int_buffer, cred_usage);
+
+    GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
+        2, (globus_i_gsi_gssapi_debug_fstream, "CredUsage=%d\n", cred_usage));
+
     /*
      * We know we are using SSLv3, and which ciphers
      * are available. We could get this from the 
@@ -172,16 +141,21 @@ GSS_CALLCONV gss_import_sec_context(
      */
 
     major_status =
-        gss_create_and_fill_context(&context,
-                                    GSS_C_NO_CREDENTIAL,
-                                    cred_usage,
-                                    0);
+        globus_i_gsi_gss_create_and_fill_context(&local_minor_status,
+                                                 &context,
+                                                 GSS_C_NO_CREDENTIAL,
+                                                 cred_usage,
+                                                 0);
 
     if (GSS_ERROR(major_status))
     {
-        *minor_status = gsi_generate_minor_status();
-        goto err;
+        GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+            minor_status, local_minor_status,
+            GLOBUS_GSI_GSSAPI_ERROR_WITH_GSS_CONTEXT);
+        goto exit;
     }
+
+    ssl_handle = context->gss_ssl;
 
     /*
      * We need to do what the s3_srvr.c ssl_accept would do
@@ -193,110 +167,128 @@ GSS_CALLCONV gss_import_sec_context(
      * know we have transfered the context to another process. 
      */ 
 
-    /* For simplicity and comparing to the SSLeay code use s */
-
-    s = context->gs_ssl;
-
-    RAND_add((unsigned char *)&Time,sizeof(Time),
+    RAND_add((unsigned char *) &Time, sizeof(Time),
              .5 /* .5 byte or 4 bits of entrophy */);
 
     ERR_clear_error();
 
-    if (!SSL_in_init(s) || SSL_in_before(s)) SSL_clear(s);
-    /* s->in_handshake = 1; */
-
-    /* Now part of the for loop in s3_srvr.c */
-    /* case SSL_ST_ACCEPT: */
-
-    /* we do this here, and later, since SSLeay-0.9.0 has a problem*/
-    if (!ssl3_setup_buffers(s))
+    if (!SSL_in_init(ssl_handle) || SSL_in_before(ssl_handle))
     {
-        GSSerr(GSSERR_F_IMPORT_SEC,GSSERR_R_IMPEXP_BIO_SSL);
-        *minor_status = gsi_generate_minor_status();
-        major_status = GSS_S_FAILURE;
-        goto err;
+        SSL_clear(ssl_handle);
     }
 
-    if (!ssl_init_wbio_buffer(s,0))
-    {  /* we don't push here! */
-        GSSerr(GSSERR_F_IMPORT_SEC,GSSERR_R_IMPEXP_BIO_SSL);
-        *minor_status = gsi_generate_minor_status();
+    /* we do this here, and later, since SSLeay-0.9.0 has a problem*/
+    res = ssl3_setup_buffers(ssl_handle);
+    if (!res)
+    {
+        GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
+            minor_status,
+            GLOBUS_GSI_GSSAPI_ERROR_IMPEXP_BIO_SSL,
+            ("Couldn't initialize buffers in SSL handle"));
         major_status = GSS_S_FAILURE;
-        goto err; 
+        goto exit;
+    }
+
+    res = ssl_init_wbio_buffer(ssl_handle, 0);
+    if (!res)
+    {  
+        GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
+            minor_status,
+            GLOBUS_GSI_GSSAPI_ERROR_IMPEXP_BIO_SSL,
+            ("Couldn't initialize write bio buffer in SSL handle"));
+        major_status = GSS_S_FAILURE;
+        goto exit; 
     } 
 
-    /* Read the session */
-
     session = SSL_SESSION_new();
-    session = d2i_SSL_SESSION_bio(bp,NULL);
+    session = d2i_SSL_SESSION_bio(bp, NULL);
 
     if (!session)
     {
-        GSSerr(GSSERR_F_IMPORT_SEC,GSSERR_R_IMPEXP_BIO_SSL);
-        *minor_status = gsi_generate_minor_status();
+        GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
+            minor_status,
+            GLOBUS_GSI_GSSAPI_ERROR_IMPEXP_BIO_SSL,
+            ("Couldn't initialize SSL_SESSION handle"));
         major_status = GSS_S_NO_CONTEXT;
-        goto err;
+        goto exit;
     }
         
     /* get number of peer certs  (version 1 has 0 or 1) */
+    BIO_read(bp, (char *) int_buffer, 4);
+    N2L(int_buffer, length);
 
-    BIO_read(bp,(char *)ibuf,4);
-    cp = ibuf;
-    n2l(cp,len);
-
-    if(len)
+    if(length > 0)
     {
-        context->pvd.cert_chain = sk_X509_new_null();
+        int                             index;
+        STACK_OF(X509) *                cert_chain = sk_X509_new_null();
 
-        for(i=1;i<len;i++)
+        /* import the peer's cert chain */
+        for(index = 1; index < length; index++)
         {
-            peer_cert = d2i_X509_bio(bp,NULL);
+            peer_cert = d2i_X509_bio(bp, NULL);
             
             if (!peer_cert)
             {
-                GSSerr(GSSERR_F_IMPORT_SEC,GSSERR_R_IMPEXP_BIO_SSL);
-                *minor_status = gsi_generate_minor_status();
                 major_status = GSS_S_NO_CONTEXT;
-                goto err;
+                GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
+                    minor_status, major_status,
+                    ("Couldn't read DER encoded peer cert from BIO"));
+                sk_X509_pop_free(cert_chain, X509_free);
+                goto exit;
             }
             
-            sk_X509_push(context->pvd.cert_chain, peer_cert);
-            context->pvd.cert_depth++;
+            sk_X509_push(cert_chain, peer_cert);
         }
 
-        peer_cert = d2i_X509_bio(bp,NULL);
+        local_result = 
+            globus_gsi_callback_set_cert_depth(context->callback_data,
+                                               length - 1);
+        if(local_result)
+        {
+            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                minor_status, local_result,
+                GLOBUS_GSI_GSSAPI_ERROR_WITH_CALLBACK_DATA);
+            major_status = GSS_S_FAILURE;
+            goto exit;
+        }
+
+        /* import the peer's cert */
+        peer_cert = d2i_X509_bio(bp, NULL);
 
         if (!peer_cert)
         {
-            GSSerr(GSSERR_F_IMPORT_SEC,GSSERR_R_IMPEXP_BIO_SSL);
-            *minor_status = gsi_generate_minor_status();
+            GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
+                minor_status,
+                GLOBUS_GSI_GSSAPI_ERROR_IMPORT_FAIL,
+                ("Couldn't read peer cert from the BIO while importing "
+                 "security context"));
             major_status = GSS_S_NO_CONTEXT;
-            goto err;
+            goto exit;
         }
 
         session->peer = peer_cert;
+        sk_X509_push(cert_chain, X509_dup(peer_cert));
 
-        sk_X509_push(context->pvd.cert_chain, X509_dup(peer_cert));
-
-        context->pvd.cert_depth++;
+        local_result = 
+            globus_gsi_callback_set_cert_chain(context->callback_data,
+                                               cert_chain);
+        if(local_result != GLOBUS_SUCCESS)
+        {
+            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                minor_status, local_result,
+                GLOBUS_GSI_GSSAPI_ERROR_WITH_CALLBACK_DATA);
+            major_status = GSS_S_FAILURE;
+            goto exit;
+        }
     }
 
-    /* need to set cipher from cipher_id in the session*/
-
-    sk = SSL_get_ciphers(s);
-    if ((session->cipher_id & 0xff000000) == 0x02000000)
-    {
-        cipher_id = session->cipher_id & 0xffffff;
-    }
-    else
-    {
-        cipher_id = session->cipher_id & 0xffff;
-    }
+    /* need to set cipher from cipher_id in the session */
+    ciphers = SSL_get_ciphers(ssl_handle);
 
     session->cipher = NULL;
-    for (i=0; i<sk_SSL_CIPHER_num(sk); i++)
+    for (index = 0; index < sk_SSL_CIPHER_num(ciphers); index++)
     {
-        cipher = sk_SSL_CIPHER_value(sk,i);
+        cipher = sk_SSL_CIPHER_value(ciphers, index);
         if (cipher->id == session->cipher_id)
         {
             session->cipher = cipher;
@@ -306,231 +298,62 @@ GSS_CALLCONV gss_import_sec_context(
     
     if (!(session->cipher))
     {
-        GSSerr(GSSERR_F_IMPORT_SEC,GSSERR_R_IMPEXP_NO_CIPHER);
-        *minor_status = gsi_generate_minor_status();
         major_status = GSS_S_NO_CONTEXT;
-        goto err;
+        GLOBUS_GSI_GSSAPI_ERROR_RESULT(
+            minor_status, major_status,
+            GLOBUS_GSI_GSSAPI_ERROR_IMPEXP_NO_CIPHER,
+            ("Attempt to set the session cipher failed"));
+        goto exit;
     }
 
-#ifdef DEBUG
-    SSL_SESSION_print_fp(stderr,session);
-#endif
+    GLOBUS_I_GSI_GSSAPI_DEBUG_PRINT_OBJECT(3, SSL_SESSION, session);
         
-    SSL_set_session(s,session);
+    SSL_set_session(ssl_handle, session);
         
-    if (!ssl3_setup_buffers(s))
+    ssl_result = ssl3_setup_buffers(ssl_handle);
+    if (!ssl_result)
     {
-        GSSerr(GSSERR_F_IMPORT_SEC,GSSERR_R_IMPEXP_BIO_SSL);
-        *minor_status = gsi_generate_minor_status();
+        GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
+            minor_status,
+            GLOBUS_GSI_GSSAPI_ERROR_IMPEXP_BIO_SSL,
+            ("Couldn't setup buffers in SSL handle"));
         major_status = GSS_S_FAILURE;
-        goto err;
+        goto exit;
     }
 
-    if (BIO_pending(bp) < 2*SSL3_RANDOM_SIZE)
+    major_status = globus_i_gsi_gss_retrieve_peer(&local_minor_status,
+                                                  context, cred_usage);
+    if(GSS_ERROR(major_status))
     {
-        GSSerr(GSSERR_F_IMPORT_SEC,GSSERR_R_IMPEXP_BIO_SSL);
-        *minor_status = gsi_generate_minor_status();
-        major_status = GSS_S_NO_CONTEXT;
-        goto err;
-    }
-    BIO_read(bp,(char*)&(s->s3->client_random[0]),SSL3_RANDOM_SIZE);
-    BIO_read(bp,(char*)&(s->s3->server_random[0]),SSL3_RANDOM_SIZE);        
-                
-
-#ifdef DEBUG
-    {
-        int j;
-        fprintf(stderr,"client_random=");
-        for (j=0; j<SSL3_RANDOM_SIZE; j++)
-        {
-            fprintf(stderr,"%02X",s->s3->client_random[j]);
-        }
-        fprintf(stderr,"\nserver_random =");
-        for (j=0; j<SSL3_RANDOM_SIZE; j++)
-        {
-            fprintf(stderr,"%02X",s->s3->server_random[j]);
-        }
-        fprintf(stderr,"\n");
-    }
-#endif
-    s->shutdown = 0;
-
-    s->s3->tmp.new_cipher =
-        s->session->cipher;
-        
-    /* read the tmp.key_block */
-        
-    if (BIO_pending(bp) < 4)
-    {
-        GSSerr(GSSERR_F_IMPORT_SEC,GSSERR_R_IMPEXP_BAD_LEN);
-        *minor_status = gsi_generate_minor_status();
-        major_status = GSS_S_NO_CONTEXT;
-        goto err;
-    }
-
-    BIO_read(bp,(char*)ibuf,4); /* get length */
-    cp = ibuf;
-    n2l(cp,len);
-
-    if (BIO_pending(bp) < len)
-    {
-        GSSerr(GSSERR_F_IMPORT_SEC,GSSERR_R_IMPEXP_BAD_LEN);
-        *minor_status = gsi_generate_minor_status();
-        major_status = GSS_S_NO_CONTEXT;
-        goto err;
-    }
-
-    if ((s->s3->tmp.key_block = (unsigned char *)OPENSSL_malloc (len)) == NULL)
-    {
-        GSSerr(GSSERR_F_IMPORT_SEC, GSSERR_R_OUT_OF_MEMORY);
-        *minor_status = gsi_generate_minor_status();
+        GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+            minor_status, local_minor_status,
+            GLOBUS_GSI_GSSAPI_ERROR_IMPEXP_BIO_SSL);
         major_status = GSS_S_FAILURE;
-        goto err;
-    }
-                
-    s->s3->tmp.key_block_length = len;
-    BIO_read(bp,(char*)s->s3->tmp.key_block,s->s3->tmp.key_block_length);
-
-#ifdef DEBUG
-    {
-        int j;
-        fprintf(stderr,"tmp.key_block_length=%d\ntmp.key_block=",
-                s->s3->tmp.key_block_length);
-        for (j=0; j<s->s3->tmp.key_block_length; j++)
-        {
-            fprintf(stderr,"%02X",s->s3->tmp.key_block[j]);
-        }
-        fprintf(stderr,"\n");
-    }
-#endif
-
-#if SSLEAY_VERSION_NUMBER >= 0x00904100L
-    if (!ssl_cipher_get_evp(s->session,
-                            &s->s3->tmp.new_sym_enc,
-                            &s->s3->tmp.new_hash,
-                            (SSL_COMP **) &s->s3->tmp.new_compression))
-    {
-#else
-    if (!ssl_cipher_get_evp(s->session->cipher,
-                            &s->s3->tmp.new_sym_enc,
-                            &s->s3->tmp.new_hash))
-    {
-#endif
-        GSSerr(GSSERR_F_IMPORT_SEC,GSSERR_R_IMPEXP_BIO_SSL);
-        *minor_status = GSSERR_R_IMPEXP_BIO_SSL;
-        major_status = GSS_S_FAILURE;
-        goto err;
+        goto exit;
     }
 
-    if (!s->method->ssl3_enc->change_cipher_state(
-            s,
-            SSL3_CHANGE_CIPHER_SERVER_WRITE))
-    {
-        GSSerr(GSSERR_F_IMPORT_SEC,GSSERR_R_IMPEXP_BIO_SSL);
-        *minor_status = GSSERR_R_IMPEXP_BIO_SSL;
-        major_status = GSS_S_FAILURE;
-        goto err;
-    }
-
-#if SSLEAY_VERSION_NUMBER >= 0x00904100L
-    if (!ssl_cipher_get_evp(s->session,
-                            &s->s3->tmp.new_sym_enc,
-                            &s->s3->tmp.new_hash,
-                            (SSL_COMP **) &s->s3->tmp.new_compression))
-    {
-#else
-    if (!ssl_cipher_get_evp(s->session->cipher,
-                            &s->s3->tmp.new_sym_enc,
-                            &s->s3->tmp.new_hash))
-    {
-#endif
-        GSSerr(GSSERR_F_IMPORT_SEC,GSSERR_R_IMPEXP_BIO_SSL);
-        *minor_status = GSSERR_R_IMPEXP_BIO_SSL;
-        major_status = GSS_S_FAILURE;
-        goto err;
-    }
-    
-    if (!s->method->ssl3_enc->change_cipher_state(
-            s,
-            SSL3_CHANGE_CIPHER_SERVER_READ))
-    {
-        GSSerr(GSSERR_F_IMPORT_SEC,GSSERR_R_IMPEXP_BIO_SSL);
-        *minor_status = GSSERR_R_IMPEXP_BIO_SSL;
-        major_status = GSS_S_FAILURE;
-        goto err;
-    }
-    
-    s->hit = 1;
-    
-    s->state = SSL_ST_OK;
-    ssl3_cleanup_key_block(s); /* will free the one we read */
-    
-    len = BIO_pending(bp);
-    if (len != 8 + 8 + EVP_MAX_IV_LENGTH + EVP_MAX_IV_LENGTH)
-    {
-        GSSerr(GSSERR_F_IMPORT_SEC,GSSERR_R_IMPEXP_BAD_LEN);
-        *minor_status = GSSERR_R_IMPEXP_BAD_LEN;
-        major_status = GSS_S_NO_CONTEXT;
-    }
-    
-    BIO_read(bp,(char*)&(s->s3->write_sequence[0]),8);
-    BIO_read(bp,(char*)&(s->s3->read_sequence[0]),8);
-    BIO_read(bp,(char*)&(s->enc_write_ctx->iv[0]),EVP_MAX_IV_LENGTH);
-    BIO_read(bp,(char*)&(s->enc_read_ctx->iv[0]),EVP_MAX_IV_LENGTH);
-    
-#ifdef DEBUG
-    {
-        int j;
-        fprintf(stderr,"write_sequence=");
-        for (j=0; j<8; j++)
-        {
-            fprintf(stderr,"%02X",s->s3->write_sequence[j]);
-        }
-        fprintf(stderr,"\nread_sequence =");
-        for (j=0; j<8; j++)
-        {
-            fprintf(stderr,"%02X",s->s3->read_sequence[j]);
-        }
-        fprintf(stderr,"\nwrite_iv=");
-        for (j=0; j<EVP_MAX_IV_LENGTH; j++)
-        {
-            fprintf(stderr,"%02X",s->enc_write_ctx->iv[j]);
-        }
-        fprintf(stderr,"\nread_iv =");
-        for (j=0; j<EVP_MAX_IV_LENGTH; j++)
-        {
-            fprintf(stderr,"%02X",s->enc_read_ctx->iv[j]);
-        }
-        fprintf(stderr,"\n");
-    }
-#endif
-
-    gs_retrieve_peer(context, cred_usage);
-    
-    s->new_session=0;
-    s->init_num=0;
-    
-    s->in_handshake = 0;
+    ssl_handle->new_session = 0;
+    ssl_handle->init_num = 0;
+    ssl_handle->in_handshake = 0;
     
     *context_handle_P = context;
     context = GSS_C_NO_CONTEXT;
-    major_status = GSS_S_COMPLETE;
 
-err:
-    BIO_free(bp);
-    if (context)
+exit:
+
+    if(bp)
     {
-        gss_delete_sec_context(&minor_status2,
-                               (gss_ctx_id_t *)&context,
+        BIO_free(bp);
+    }
+
+    if (context != GSS_C_NO_CONTEXT)
+    {
+        gss_delete_sec_context(&local_minor_status,
+                               (gss_ctx_id_t *) &context,
                                GSS_C_NO_BUFFER);
     }
 
-#ifdef DEBUG
-    fprintf(stderr,"import_sec_context:maj=%d,min=%d\n",
-            major_status,*minor_status);
-#endif
-    
+    GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;
-#endif /* WIN32 */
 }
-    
+/* @} */

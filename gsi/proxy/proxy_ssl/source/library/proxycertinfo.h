@@ -68,7 +68,7 @@ EXTERN_C_BEGIN
  *
  * @note NOTE: The API provides functions to manipulate
  * the fields of a PROXYCERTINFO.  Accessing the fields
- * directly will not work.
+ * directly is not a good idea.
  *
  * 
  * @param pC a boolean value, it indicates whether or not the 

@@ -4,7 +4,11 @@
 #include "globus_i_gsi_cert_utils.h"
 #include "version.h"
 
+#include <ctype.h>
+
 int globus_i_gsi_cert_utils_debug_level = 0;
+
+FILE * globus_i_gsi_cert_utils_debug_fstream;
 
 static int globus_l_gsi_cert_utils_activate(void);
 static int globus_l_gsi_cert_utils_deactivate(void);
@@ -309,10 +313,194 @@ globus_gsi_cert_utils_check_proxy_name(
 }
 /* @} */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/**
+ * @name Get X509 Name
+ * @ingroup globus_gsi_cert_utils
+ */
+/* @{ */
+/**
+ * Get the X509_NAME from a subject string.
+ * OpenSSL doesn't provide this function, primarily because
+ * its dangerous to use.  If you are getting an X509_NAME from
+ * just a string, its impossible to verify its integrity.
+ *
+ * @param subject_string
+ *        The subject in the format: "/O=Grid/OU=..."
+ * @param length
+ *        The length of the subject string
+ * @param x509_name
+ *        The resulting X509_NAME object
+ *
+ * @return
+ *        GLOBUS_SUCCESS unless an error occurred, in which case, 
+ *        a globus error object ID is returned
+ */
+globus_result_t
+globus_gsi_cert_utils_get_x509_name(
+    char *                              subject_string,
+    int                                 length,
+    X509_NAME *                         x509_name)
+{
+    globus_result_t                     result;
+    char *                              local_copy = NULL;
+    char *                              name_entry_str = NULL;
+    char *                              name_value_str = NULL;
+    char *                              index = NULL;
+    char *                              index2 = NULL;
+    char *                              uc_index = NULL;
+    X509_NAME_ENTRY *                   x509_name_entry = NULL;
+    int                                 nid;
+    int                                 res;
+    static char *                       _function_name_ =
+        "globus_gsi_cert_utils_get_x509_name";
+
+    GLOBUS_I_GSI_CERT_UTILS_DEBUG_ENTER;
+
+    local_copy = malloc(length + 1);
+    if(local_copy == NULL)
+    {
+        GLOBUS_GSI_CERT_UTILS_MALLOC_ERROR(result);
+        goto exit;
+    }
+
+    memcpy(local_copy, subject_string, length);
+    local_copy[length] = '\0';
+
+    index = local_copy;
+    if (*index == '/')
+    {
+        /* skip first / */
+        name_entry_str = index + 1;                 
+        while ((name_entry_str != NULL) && (*name_entry_str != '\0'))
+        {
+            /* point at name = */
+            index = strchr(name_entry_str,'=');
+            if (index == NULL)
+            {
+                GLOBUS_GSI_CERT_UTILS_ERROR_RESULT(
+                    result,
+                    GLOBUS_GSI_CERT_UTILS_ERROR_UNEXPECTED_FORMAT,
+                    ("The subject_string cannot be convert to an "
+                     "X509_NAME, unexpected format"));
+                goto exit;
+            }
+            /* terminate name string */
+            *index = '\0';           
+
+            name_value_str = index + 1;
+
+            /* find next =, then last / */
+            index = strchr(name_value_str, '=');   
+            if (index != NULL)
+            {
+                /* for now set = to \0 */
+                *index = '\0';	
+                    
+                /* find last / in  value */
+                index2 = strrchr(name_value_str, '/');   
+
+                /* reset = */
+                *index = '=';	
+
+                if (index2 != NULL)
+                {
+                    /* terminate value string */
+                    *index2 = '\0'; 
+                }
+            }
+
+            nid = OBJ_txt2nid(name_entry_str);
+            
+            if (nid == NID_undef)
+            {
+                /* 
+                 * not found, lets try upper case instead
+                 */
+                uc_index = name_entry_str;
+                while (*uc_index != '\0')
+                {
+                    *uc_index = toupper(*uc_index);
+                    uc_index++;
+                }
+
+                nid = OBJ_txt2nid(name_entry_str);
+                if (nid == NID_undef)
+                {
+                    GLOBUS_GSI_CERT_UTILS_ERROR_RESULT(
+                        result,
+                        GLOBUS_GSI_CERT_UTILS_ERROR_UNEXPECTED_FORMAT,
+                        ("The name entry: %s is not "
+                         "recognized as a valid OID", name_entry_str));
+                    goto exit;
+                }
+            }
+
+            x509_name_entry = X509_NAME_ENTRY_create_by_NID(
+                &x509_name_entry,
+                nid,
+                V_ASN1_APP_CHOOSE, 
+                (unsigned char *) name_value_str,
+                -1);
+
+            if (x509_name_entry == NULL)
+            {
+                GLOBUS_GSI_CERT_UTILS_ERROR_RESULT(
+                    result,
+                    GLOBUS_GSI_CERT_UTILS_ERROR_UNEXPECTED_FORMAT,
+                    ("Error with name entry: %s, with a value of: %s",
+                     name_entry_str, name_value_str));
+                goto exit;
+            }
+            
+            res = X509_NAME_add_entry(x509_name, x509_name_entry, 
+                                      X509_NAME_entry_count(x509_name), 0);
+            if (!res)
+            {
+                GLOBUS_GSI_CERT_UTILS_ERROR_RESULT(
+                    result,
+                    GLOBUS_GSI_CERT_UTILS_ERROR_UNEXPECTED_FORMAT,
+                    ("Couldn't add name entry to  X509_NAME object"));
+                goto exit;
+            }
+            
+            name_entry_str = index2 + 1;
+        }
+    }
+    else
+    {
+        GLOBUS_GSI_CERT_UTILS_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_CERT_UTILS_ERROR_UNEXPECTED_FORMAT,
+            ("The X509 name doesn't start with a /"));
+        goto exit;
+    }
+
+    GLOBUS_I_GSI_CERT_UTILS_DEBUG_PRINT(2, "ORIGINAL SUBJECT STRING: ");
+    GLOBUS_I_GSI_CERT_UTILS_DEBUG_FNPRINTF(2, (length, subject_string));
+    GLOBUS_I_GSI_CERT_UTILS_DEBUG_FPRINTF(
+        2, (globus_i_gsi_cert_utils_debug_fstream,
+            "\nGENERATED X509_NAME STRING: %s\n",
+            X509_NAME_oneline(x509_name, NULL, 0)));
+
+ exit:
+
+    if(x509_name_entry != NULL)
+    {
+        X509_NAME_ENTRY_free(x509_name_entry);
+    }
+
+    if(local_copy != NULL)
+    {
+        globus_libc_free(local_copy);
+    }
+
+    GLOBUS_I_GSI_CERT_UTILS_DEBUG_EXIT;
+    return result;
+}
+/* @} */
 
 char *
-globus_i_gsi_cert_utils_create_string(
+globus_gsi_cert_utils_create_string(
     const char *                        format,
     ...)
 {
@@ -327,7 +515,7 @@ globus_i_gsi_cert_utils_create_string(
     
     va_start(ap, format);
 
-    new_string = globus_i_gsi_cert_utils_v_create_string(format, ap);
+    new_string = globus_gsi_cert_utils_v_create_string(format, ap);
 
     va_end(ap);
 
@@ -338,7 +526,34 @@ globus_i_gsi_cert_utils_create_string(
 }
 
 char *
-globus_i_gsi_cert_utils_v_create_string(
+globus_gsi_cert_utils_create_nstring(
+    int                                 length,
+    const char *                        format,
+    ...)
+{
+    va_list                             ap;
+    char *                              new_string;
+    static char *                       _function_name_ =
+        "globus_i_gsi_cert_utils_create_nstring";
+    
+    GLOBUS_I_GSI_CERT_UTILS_DEBUG_ENTER;
+
+    globus_libc_lock();
+    
+    va_start(ap, format);
+
+    new_string = globus_gsi_cert_utils_v_create_nstring(length, format, ap);
+
+    va_end(ap);
+
+    globus_libc_unlock();
+
+    GLOBUS_I_GSI_CERT_UTILS_DEBUG_EXIT;
+    return new_string;
+}
+
+char *
+globus_gsi_cert_utils_v_create_string(
     const char *                        format,
     va_list                             ap)
 {
@@ -381,4 +596,24 @@ globus_i_gsi_cert_utils_v_create_string(
     return new_string;
 }
 
-#endif
+char *
+globus_gsi_cert_utils_v_create_nstring(
+    int                                 length,
+    const char *                        format,
+    va_list                             ap)
+{
+    char *                              new_string = NULL;
+    static char *                       _function_name_ =
+        "globus_i_gsi_cert_utils_v_create_string";
+
+    GLOBUS_I_GSI_CERT_UTILS_DEBUG_ENTER;
+    if((new_string = globus_malloc(length + 1)) == NULL)
+    {
+        return NULL;
+    }
+
+    length = vsnprintf(new_string, length + 1, format, ap);
+
+    GLOBUS_I_GSI_CERT_UTILS_DEBUG_EXIT;
+    return new_string;
+}

@@ -1,42 +1,20 @@
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/**
+ * @file oid_functions.c
+ * @author Sam Lang, Sam Meder
+ * 
+ * $RCSfile$
+ * $Revision$
+ * $Date$
+ */
+#endif
 
-/**********************************************************************
-
-oid_functions.c
-
-Description:
-
-	GSSAPI oid manipulation functions.
-
-CVS Information:
-
-	$Source$
-	$Date$
-	$Revision$
-	$Author$
-
-**********************************************************************/
-
-static char *rcsid = "$Header$";
-
-/**********************************************************************
-                             Include header files
-**********************************************************************/
+static char *rcsid = "$Id$";
 
 #include "gssapi.h"
-#include "gssapi_ssleay.h"
+#include "gssapi_openssl.h"
+#include "globus_i_gsi_gss_utils.h"
 #include <string.h>
-
-/**********************************************************************
-                               Type definitions
-**********************************************************************/
-
-/**********************************************************************
-                          Module specific prototypes
-**********************************************************************/
-
-/**********************************************************************
-                       Define module specific variables
-**********************************************************************/
 
 /* we define the oid values here which are required */
 
@@ -78,7 +56,7 @@ gss_OID gss_nt_machine_uid_name = &GSS_C_NT_MACHINE_UID_NAME_desc;
 gss_OID gss_nt_string_uid_name =  &GSS_C_NT_STRING_UID_NAME_desc;
 gss_OID gss_nt_service_name = 	  &GSS_C_NT_HOSTBASED_SERVICE_desc;
 
-/*
+/**
  * define the Globus object ids
  * This is regestered as a private enterprise
  * via IANA
@@ -101,43 +79,55 @@ static const gss_OID_desc gss_proxycertinfo_extension_oid =
 const gss_OID_desc * const gss_proxycertinfo_extension = 
                 &gss_proxycertinfo_extension_oid;
 
-/**********************************************************************
-Function:   gss_add_oid_set_member()
-
-Description:
-
-Adds an Object Identifier to an Object Identifier set. This routine is intended
-for use in conjunction with GSS_Create_empty_OID_set() when constructing a set
-of mechanism OIDs for input to GSS_Acquire_cred().
-
-Returns:
-
-GSS_S_COMPLETE indicates successful completion 
-GSS_S_FAILURE indicates that the operation failed 
-
-**********************************************************************/
+/**
+ * @name Add OID Set Member
+ * @ingroup globus_gsi_gssapi
+ */
+/* @{ */
+/**
+ * 
+ * Adds an Object Identifier to an Object Identifier set. 
+ * This routine is intended for use in conjunction with 
+ * GSS_Create_empty_OID_set() when constructing a set
+ * of mechanism OIDs for input to GSS_Acquire_cred().
+ *
+ * @param minor_status
+ * @param member_oid
+ * @param oid_set
+ *
+ * @return
+ *         GSS_S_COMPLETE indicates successful completion 
+ *         GSS_S_FAILURE indicates that the operation failed 
+ *
+ */
 
 OM_uint32
 GSS_CALLCONV gss_add_oid_set_member(
-    OM_uint32 *                         minor_status ,
-    const gss_OID                       member_oid ,
+    OM_uint32 *                         minor_status,
+    const gss_OID                       member_oid,
     gss_OID_set *                       oid_set)
 {
     int                                 new_count;
     gss_OID                             new_elements;
     gss_OID_set                         set;
-        
+    OM_uint32                           major_status = GSS_S_COMPLETE;
+    static char *                       _function_name_ = 
+        "gss_add_oid_set_member";
+    GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
+
     /* Sanity check */
-    if ((minor_status == NULL) ||
-        (member_oid == NULL) ||
-        (oid_set == NULL))
+    if ((minor_status == NULL) || (member_oid == NULL) || (oid_set == NULL))
     {
-        GSSerr(GSSERR_F_ADD_OID_SET_MEMBER,
-               GSSERR_R_BAD_ARGUMENT);
-        *minor_status = gsi_generate_minor_status();
-        return GSS_S_FAILURE;
+        major_status = GSS_S_FAILURE;
+        GLOBUS_GSI_GSSAPI_ERROR_RESULT(
+            minor_status, major_status,
+            GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
+            ("Invalid argument passed to function"));
+        goto exit;
     }
         
+    *minor_status = (OM_uint32) GLOBUS_SUCCESS;
+
     set = *oid_set;
         
     new_count = set->count + 1;
@@ -145,204 +135,273 @@ GSS_CALLCONV gss_add_oid_set_member(
         
     if (new_elements == NULL)
     {
-        GSSerr(GSSERR_F_ADD_OID_SET_MEMBER,
-               GSSERR_R_OUT_OF_MEMORY);
-        *minor_status = gsi_generate_minor_status();
-        return GSS_S_FAILURE;
+        GLOBUS_GSI_GSSAPI_MALLOC_ERROR(minor_status);
+        major_status = GSS_S_FAILURE;
+        goto exit;
     }
         
     if (set->count > 0)
     {
         /* Copy existing oids */
-        memcpy(new_elements, set->elements,
-               sizeof(gss_OID_desc) * set->count);
+        memcpy(new_elements, set->elements, sizeof(gss_OID_desc) * set->count);
     }
         
     /* And append new oid */
-    memcpy(&new_elements[set->count],
-           member_oid,
-           sizeof(gss_OID_desc));
+    memcpy(&new_elements[set->count], member_oid, sizeof(gss_OID_desc));
         
-    if (set->elements != NULL)
+ exit:
+
+    if (set->elements)
     {
         free(set->elements);
     }
         
     set->count = new_count;
     set->elements = new_elements;
-        
-    return GSS_S_COMPLETE;
+
+    GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
+    return major_status;
 }
+/* @} */
 
-
-/**********************************************************************
-Function:   gss_create_empty_oid_set()
-
-Description:
-
-Creates an object identifier set containing no object identifiers,
-to which members may be subsequently added using the GSS_Add_OID_set_member()
-routine. These routines are intended to be used to construct sets of mechanism
-object identifiers, for input to GSS_Acquire_cred().
-
-
-Returns:
-
-GSS_S_COMPLETE indicates successful completion 
-GSS_S_FAILURE indicates that the operation failed 
-
-**********************************************************************/
-
+/**
+ * @name Create Empty OID Set
+ * @ingroup globus_gsi_gssapi
+ */
+/* @{ */
+/**
+ *
+ * Creates an object identifier set containing no object identifiers,
+ * to which members may be subsequently added 
+ * using the GSS_Add_OID_set_member()
+ * routine. These routines are intended to be 
+ * used to construct sets of mechanism
+ * object identifiers, for input to GSS_Acquire_cred().
+ *
+ * @param minor_status
+ * @param oid_set
+ *
+ * @return
+ *         GSS_S_COMPLETE indicates successful completion 
+ *         GSS_S_FAILURE indicates that the operation failed 
+ */
 OM_uint32
 GSS_CALLCONV gss_create_empty_oid_set(
-    OM_uint32 *                         minor_status ,
+    OM_uint32 *                         minor_status,
     gss_OID_set *                       oid_set)
 {
-    *minor_status = 0;
+    OM_uint32                           major_status = GSS_S_COMPLETE;
+    static char *                       _function_name_ =
+        "gss_create_empty_oid_set";
+    GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
     /* Sanity check */
-    if ((oid_set == NULL) ||
-        (minor_status == NULL))
+    if ((oid_set == NULL) || (minor_status == NULL))
     {
-        GSSerr(GSSERR_F_CREATE_EMPTY_OID_SET,
-               GSSERR_R_BAD_ARGUMENT);
-        *minor_status = gsi_generate_minor_status();
-        return GSS_S_FAILURE;
+        major_status = GSS_S_FAILURE;
+        GLOBUS_GSI_GSSAPI_ERROR_RESULT(
+            minor_status, major_status,
+            GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
+            ("Invalid argument passed to function"));
+        goto exit;
     }
 
-    *oid_set = (gss_OID_set_desc *)malloc(sizeof(gss_OID_set_desc));
+    *minor_status = (OM_uint32) GLOBUS_SUCCESS;
+
+    *oid_set = (gss_OID_set_desc *) malloc(sizeof(gss_OID_set_desc));
     if (!*oid_set)
     {
-        GSSerr(GSSERR_F_CREATE_EMPTY_OID_SET,
-               GSSERR_R_OUT_OF_MEMORY);
-        *minor_status = gsi_generate_minor_status();
-        return GSS_S_FAILURE;
+        GLOBUS_GSI_GSSAPI_MALLOC_ERROR(minor_status);
+        major_status = GSS_S_FAILURE;
+        goto exit;
     }
         
     (*oid_set)->count = 0;
     (*oid_set)->elements = NULL;
     
-    return GSS_S_COMPLETE;
+ exit:
+
+    GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
+    return major_status;
 }
 
 
-/**********************************************************************
-Function:   gss_indicate_mech()
-
-Description:
-	Passes back the mech set of available mechs.
-	We only have one for now. 
-
-Returns:
-**********************************************************************/
-
+/**
+ * @name Indicate Mechs
+ * @ingroup globus_gsi_gssapi
+ */
+/* @{ */
+/**
+ * Passes back the mech set of available mechs.
+ * We only have one for now. 
+ *
+ * @param minor_status
+ * @param mech_set
+ *
+ * @return
+ */
 OM_uint32 
 GSS_CALLCONV gss_indicate_mechs(
     OM_uint32 *                         minor_status,
     gss_OID_set *                       mech_set)
 {
+    OM_uint32                           major_status = GSS_S_COMPLETE;
+    OM_uint32                           local_minor_status;
     gss_OID_set_desc  *                 set;
+    static char *                       _function_name_ =
+        "gss_indicate_mechs";
+    GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
+
+    *minor_status = (OM_uint32) GLOBUS_SUCCESS;
     
-    *minor_status = 0;
-    
-    if (gss_create_empty_oid_set(minor_status, &set) == GSS_S_FAILURE)
+    major_status = gss_create_empty_oid_set(&local_minor_status, 
+                                            &set);
+    if (GSS_ERROR(major_status))
     {
-        return GSS_S_FAILURE;
+        GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+            minor_status, local_minor_status,
+            GLOBUS_GSI_GSSAPI_ERROR_BAD_MECH);
+        goto exit;
     }
     
-    if (gss_add_oid_set_member(minor_status, 
-                               gss_mech_globus_gssapi_openssl,
-                               &set) == GSS_S_FAILURE)
+    major_status = gss_add_oid_set_member(
+        &local_minor_status, 
+        (const gss_OID) gss_mech_globus_gssapi_openssl,
+        &set);
+    if (GSS_ERROR(major_status))
     {
-        OM_uint32       tmp_minor_status;
+        GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+            minor_status, local_minor_status,
+            GLOBUS_GSI_GSSAPI_ERROR_WITH_OID);
         
-        gss_release_oid_set(&tmp_minor_status, &set);
-        return GSS_S_FAILURE;
+        gss_release_oid_set(&local_minor_status, &set);
+        goto exit;
     }
     
     *mech_set = set;
+
+ exit:
+    GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
+    return major_status;
+}
+/* @} */
+
+/**
+ * @name Release OID Set
+ * @ingroup globus_gsi_gssapi
+ */
+/* @{ */
+/**
+ *
+ * Release the OID set. 
+ *
+ * @param minor_status
+ * @param mech_set
+ *
+ * @return
+ */
+OM_uint32 
+GSS_CALLCONV gss_release_oid_set(
+    OM_uint32 *                         minor_status,
+    gss_OID_set *                       mech_set)
+{
+    gss_OID_set                         set;
+    static char *                       _function_name_ =
+        "gss_release_oid_set";
+    GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
+
+    *minor_status = (OM_uint32) GLOBUS_SUCCESS;
+
+    set = *mech_set;
+
+    if (mech_set && set && set != GSS_C_NO_OID_SET) {
+        
+        if((*mech_set)->elements)
+        {
+            free((*mech_set)->elements);
+        }
+
+        free(*mech_set);
+        *mech_set = GSS_C_NO_OID_SET;
+    }
+
+    GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return GSS_S_COMPLETE;
 }
+/* @} */
 
-/**********************************************************************
-Function:   gss_release_oid_set()
-
-Description:
-	Release the OID set. 
-
-Returns:
-**********************************************************************/
+/**
+ * @name Test OID Set Member
+ * @ingroup globus_gsi_gssapi
+ */
+/* @{ */
+/**
+ * Interrogates an Object Identifier set to determine whether a
+ * specified Object Identifier is a member. This routine is
+ * intended to be used with OID sets returned by
+ * GSS_Indicate_mechs(), GSS_Acquire_cred(), and
+ * GSS_Inquire_cred(). 
+ *
+ * @param minor_status
+ * @param member
+ * @param set
+ * @param present
+ *
+ * @return
+ *         GSS_S_COMPLETE indicates successful completion 
+ *         GSS_S_FAILURE indicates that the operation failed 
+ */
 OM_uint32 
-GSS_CALLCONV gss_release_oid_set
-(OM_uint32 *              minor_status ,
- gss_OID_set *             mech_set
-)
+GSS_CALLCONV gss_test_oid_set_member(	
+    OM_uint32 *		                minor_status,
+    const gss_OID		        member,
+    const gss_OID_set	                set,
+    int *			        present)
 {
-#error this is broken - should free the elements as well
-	*minor_status = 0;
-	if (mech_set && *mech_set && *mech_set != GSS_C_NO_OID_SET) {
-		free(*mech_set);
-		*mech_set = GSS_C_NO_OID_SET;
-	}
-	return GSS_S_COMPLETE;
+    OM_uint32                           major_status = GSS_S_COMPLETE;
+    int			                index;
+    static char *                       _function_name_ =
+        "gss_test_oid_set_member";
+    GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
+    
+    /* Sanity check arguments */
+    if ((minor_status == NULL) ||
+        (member == NULL) ||
+        (member->elements == NULL) ||
+        (set == NULL) ||
+        (present == NULL))
+    {
+        major_status = GSS_S_FAILURE;
+        GLOBUS_GSI_GSSAPI_ERROR_RESULT(
+            minor_status, major_status,
+            GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
+            ("Invalid argument passed to function"));
+        goto exit;
+    }
+	
+    *minor_status = (OM_uint32) GLOBUS_SUCCESS;
+    *present = 0;
+
+    for (index = 0; index < set->count; index++)
+    {
+        /* Sanity check */
+        if (set->elements[index].elements == NULL)
+        {
+            continue;
+        }
+        
+        if ((set->elements[index].length == member->length) &&
+            (memcmp(set->elements[index].elements,
+                    member->elements,
+                    member->length) == 0))
+        {
+            *present = 1;
+            break;
+        }
+    }
+    
+ exit:
+    GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
+    return major_status;
 }
-/**********************************************************************
-Function:   gss_testoid_set_member()
-
-Description:
-	Interrogates an Object Identifier set to determine whether a
-	specified Object Identifier is a member. This routine is
-	intended to be used with OID sets returned by
-	GSS_Indicate_mechs(), GSS_Acquire_cred(), and
-	GSS_Inquire_cred(). 
-
-Returns:
-	GSS_S_COMPLETE indicates successful completion 
-	GSS_S_FAILURE indicates that the operation failed 
-	
-**********************************************************************/
-OM_uint32 
-GSS_CALLCONV gss_test_oid_set_member
-(	OM_uint32 *		minor_status,
-	const gss_OID		member,
-	const gss_OID_set	set,
-	int *			present)
-{
-	int			index;
-	
-	/* Sanity check arguments */
-	if ((minor_status == NULL) ||
-	    (member == NULL) ||
-	    (member->elements == NULL) ||
-	    (set == NULL) ||
-	    (present == NULL))
-	{
-            GSSerr(GSSERR_F_TEST_OID_SET_MEMBER,
-                   GSSERR_R_BAD_ARGUMENT);
-            *minor_status = gsi_generate_minor_status();
-            return GSS_S_FAILURE;
-	}
-	
-	*minor_status = 0;
-	*present = 0;
-
-	for (index = 0; index < set->count; index++)
-	{
-		/* Sanity check */
-		if (set->elements[index].elements == NULL)
-		{
-			continue;
-		}
-		
-		if ((set->elements[index].length == member->length) &&
-		    (memcmp(set->elements[index].elements,
-			    member->elements,
-			    member->length) == 0))
-		{
-			*present = 1;
-			break;
-		}
-	}
-	
-	return GSS_S_COMPLETE;
-}
+/* @} */

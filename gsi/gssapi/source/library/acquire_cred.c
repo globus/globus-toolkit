@@ -13,8 +13,9 @@
 static char *rcsid = "$Id$";
 
 #include "gssapi.h"
-#include "gssapi_ssleay.h"
-#include "gssutils.h"
+#include "gssapi_openssl.h"
+#include "globus_i_gsi_gss_utils.h"
+
 #include <stdlib.h>
 #include <sys/stat.h>
 
@@ -95,11 +96,11 @@ GSS_CALLCONV gss_acquire_cred(
     {
         major_status = gss_indicate_mechs(&local_minor_status,
                                           actual_mechs);
-        if (major_status != GSS_S_COMPLETE)
+        if (GSS_ERROR(major_status))
         {
             GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
                 minor_status, local_minor_status,
-                GLOBUS_GSI_GSSAPI_ERROR_WITH_MECHS);
+                GLOBUS_GSI_GSSAPI_ERROR_BAD_MECH);
             goto exit;
         }
     }
@@ -115,11 +116,11 @@ GSS_CALLCONV gss_acquire_cred(
         output_cred_handle_P,
         (const char *)desired_name_P);
 
-    if(major_status != GSS_S_COMPLETE)
+    if(GSS_ERROR(major_status))
     {
         GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
             minor_status, local_minor_status,
-            GLOBUS_GSI_GSSAPI_ERROR_WITH_CRED_HANDLE);
+            GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_CREDENTIAL);
         goto error;
     }
 
@@ -140,5 +141,3 @@ GSS_CALLCONV gss_acquire_cred(
     return major_status;
 }
 /* @} */
-
-#error STATUS: ready to compile

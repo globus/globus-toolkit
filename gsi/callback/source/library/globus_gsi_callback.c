@@ -31,34 +31,88 @@
 
 extern int globus_gsi_proxycertinfo_extension_NID;
 
-int globus_i_gsi_callback_SSL_callback_data_index;
-int globus_i_gsi_callback_X509_STORE_callback_data_index;
+static int globus_i_gsi_callback_SSL_callback_data_index = -1;
+static int globus_i_gsi_callback_X509_STORE_callback_data_index = -1;
 
-int
-globus_gsi_callback_get_X509_STORE_callback_data_index()
+globus_result_t
+globus_gsi_callback_get_X509_STORE_callback_data_index(
+    int *                               index)
 {
+    globus_result_t                     result = GLOBUS_SUCCESS;
     static char *                       _function_name_ =
         "globus_gsi_callback_get_X509_STORE_callback_data_index";
     
     GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
 
+    *index = globus_i_gsi_callback_X509_STORE_callback_data_index;
+
+    if(*index < 0)
+    {
+        GLOBUS_GSI_CALLBACK_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_CALLBACK_ERROR_WITH_CALLBACK_DATA_INDEX,
+            ("Callback data index is %d, probably has not been set yet",
+             *index));
+    }
+
     GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
-    return globus_i_gsi_callback_X509_STORE_callback_data_index;
+    return result;
 }
 
-int
-globus_gsi_callback_get_SSL_callback_data_index()
+globus_result_t
+globus_gsi_callback_set_X509_STORE_callback_data_index(
+    int                                 index)
 {
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    static char *                       _function_name_ =
+        "globus_gsi_callback_set_X509_STORE_callback_data_index";
+    GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
+
+    globus_i_gsi_callback_X509_STORE_callback_data_index = index;
+
+    GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
+    return result;
+}
+
+globus_result_t
+globus_gsi_callback_get_SSL_callback_data_index(
+    int *                               index)
+{
+    globus_result_t                     result;
     static char *                       _function_name_ =
         "globus_gsi_callback_get_SSL_callback_data_index";
     
     GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
 
+    *index = globus_i_gsi_callback_SSL_callback_data_index;
+
+    if(*index < 0)
+    {
+        GLOBUS_GSI_CALLBACK_ERROR_RESULT(
+            result, GLOBUS_GSI_CALLBACK_ERROR_WITH_CALLBACK_DATA_INDEX,
+            ("SSL callback data index is: %d.  Can't be < 0", *index));
+    }
+ 
     GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
-    return globus_i_gsi_callback_SSL_callback_data_index;
+    return result;
 }
 
-static int 
+globus_result_t
+globus_gsi_callback_set_SSL_callback_data_index(
+    int                                 index)
+{
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    static char *                       _function_name_ =
+        "globus_gsi_callback_set_SSL_callback_data_index";
+    GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
+
+    globus_i_gsi_callback_SSL_callback_data_index = index;
+
+    GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
+    return result;
+}
+
+int 
 globus_gsi_callback_X509_verify_cert(
     X509_STORE_CTX *                    context)
 {
@@ -199,7 +253,6 @@ globus_i_gsi_callback_cred_verify(
     globus_gsi_callback_data_t          callback_data,
     X509_STORE_CTX *                    x509_context)
 {
-    time_t                              goodtill;
     globus_result_t                     result = GLOBUS_SUCCESS;
     static char *                       _function_name_ = 
         "globus_i_gsi_callback_proxy_verify";
@@ -280,7 +333,7 @@ globus_i_gsi_callback_cred_verify(
          */
 #ifdef X509_V_ERR_CERT_REVOKED
         result = globus_i_gsi_callback_check_revoked(x509_context,
-                                                          callback_data);
+                                                     callback_data);
         if(result != GLOBUS_SUCCESS)
         {
             GLOBUS_GSI_CALLBACK_ERROR_CHAIN_RESULT(
@@ -301,26 +354,6 @@ globus_i_gsi_callback_cred_verify(
                 GLOBUS_GSI_CALLBACK_ERROR_VERIFY_CRED);
             goto exit;
         }        
-    }
-
-    /*
-     * We want to determine the minimum amount of time
-     * any certificate in the chain is good till
-     * Will be used for lifetime calculations
-     */
-    result = globus_gsi_cert_utils_make_time(
-        X509_get_notAfter(x509_context->current_cert),
-        &goodtill);
-    if(result != GLOBUS_SUCCESS)
-    {
-        GLOBUS_GSI_CALLBACK_ERROR_CHAIN_RESULT(
-            result,
-            GLOBUS_GSI_CALLBACK_ERROR_VERIFY_CRED);
-    }
-
-    if (callback_data->goodtill == 0 || goodtill < callback_data->goodtill)
-    {
-        callback_data->goodtill = goodtill;
     }
 
 #warning SLANG: not sure if this is still needed since it looks like the cert chain gets saved in the X509_STORE_CTX::chain
@@ -703,7 +736,7 @@ globus_i_gsi_callback_check_gaa_auth(
 #endif /* NO_OLDGAA_API */
 
     static char *                       _function_name_ =
-        "globus_i_gsi_callback_check_old_gaa_auth";
+        "globus_i_gsi_callback_check_gaa_auth";
 
     GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
     
@@ -1052,76 +1085,6 @@ int globus_gsi_callback_check_issued(
     
     GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
     return return_code;
-}
-
-char *
-globus_i_gsi_callback_create_string(
-    const char *                        format,
-    ...)
-{
-    va_list                             ap;
-    char *                              new_string;
-    static char *                       _function_name_ =
-        "globus_i_gsi_callback_create_string";
-    
-    GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
-
-    globus_libc_lock();
-    
-    va_start(ap, format);
-
-    new_string = globus_i_gsi_callback_v_create_string(format, ap);
-
-    va_end(ap);
-
-    globus_libc_unlock();
-
-    GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
-    return new_string;
-}
-
-char *
-globus_i_gsi_callback_v_create_string(
-    const char *                        format,
-    va_list                             ap)
-{
-    int                                 length;
-    int                                 len = 128;
-    char *                              new_string = NULL;
-    static char *                       _function_name_ =
-        "globus_i_gsi_callback_v_create_string";
-
-    GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
-    if((new_string = globus_malloc(len)) == NULL)
-    {
-        return NULL;
-    }
-
-    while(1)
-    {
-        length = vsnprintf(new_string, len, format, ap);
-        if(length > -1 && length < len)
-        {
-            break;
-        }
-
-        if(length > -1)
-        {
-            len = length + 1;
-        }
-        else
-        {
-            len *= 2;
-        }
-
-        if((new_string = realloc(new_string, len)) == NULL)
-        {
-            return NULL;
-        }
-    }
-    
-    GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
-    return new_string;
 }
 
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */

@@ -36,7 +36,11 @@ extern FILE *                           globus_i_gsi_cert_utils_debug_fstream;
     { \
         if (GLOBUS_I_GSI_CERT_UTILS_DEBUG(_LEVEL_)) \
         { \
-           globus_libc_fprintf _MESSAGE_; \
+           char *                          _tmp_str_ = \
+               globus_gsi_cert_utils_create_nstring _MESSAGE_; \
+           globus_libc_fprintf(globus_i_gsi_cert_utils_debug_fstream, \
+                               _tmp_str_); \
+           globus_libc_free(_tmp_str_); \
         } \
     }
 
@@ -82,11 +86,13 @@ extern FILE *                           globus_i_gsi_cert_utils_debug_fstream;
 
 /* ERROR MACROS */
 
+extern char *                    globus_l_gsi_cert_utils_error_strings[];
+
 #define GLOBUS_GSI_CERT_UTILS_OPENSSL_ERROR_RESULT(_RESULT_, \
                                                    _ERRORTYPE_, _ERRSTR_) \
     {                                                                         \
         char *                          _tmp_str_ =                           \
-            globus_i_gsi_cert_utils_create_string _ERRSTR_;                   \
+            globus_gsi_cert_utils_create_string _ERRSTR_;                   \
         _RESULT_ = globus_i_gsi_cert_utils_openssl_error_result(_ERRORTYPE_,  \
                                                           __FILE__,           \
                                                           _function_name_,    \
@@ -98,7 +104,7 @@ extern FILE *                           globus_i_gsi_cert_utils_debug_fstream;
 #define GLOBUS_GSI_CERT_UTILS_ERROR_RESULT(_RESULT_, _ERRORTYPE_, _ERRSTR_) \
     {                                                                       \
         char *                          _tmp_str_ =                         \
-            globus_i_gsi_cert_utils_create_string _ERRSTR_;                 \
+            globus_gsi_cert_utils_create_string _ERRSTR_;                 \
         _RESULT_ = globus_i_gsi_cert_utils_error_result(_ERRORTYPE_,        \
                                                   __FILE__,                 \
                                                   _function_name_,          \
@@ -115,9 +121,21 @@ extern FILE *                           globus_i_gsi_cert_utils_debug_fstream;
                                                         __LINE__,           \
                                                         NULL)
 
-extern char *                    globus_l_gsi_cert_utils_error_strings[];
-
-
+#define GLOBUS_GSI_CERT_UTILS_MALLOC_ERROR(_MIN_RESULT_)   \
+    {                                                      \
+        char *                          _tmp_str_ =        \
+        globus_l_gsi_cert_utils_error_strings[             \
+            GLOBUS_GSI_CERT_UTILS_ERROR_OUT_OF_MEMORY];    \
+        _MIN_RESULT_ = globus_error_put(                   \
+            globus_error_wrap_errno_error(                 \
+                GLOBUS_GSI_CERT_UTILS_MODULE,              \
+                errno,                                     \
+                GLOBUS_GSI_CERT_UTILS_ERROR_OUT_OF_MEMORY, \
+                "%s:%d: %s: %s",                           \
+                __FILE__, __LINE__, _function_name_,       \
+                _tmp_str_));                               \
+        globus_libc_free(_tmp_str_);                       \
+    }
 
 globus_result_t
 globus_i_gsi_cert_utils_openssl_error_result(
@@ -143,16 +161,6 @@ globus_i_gsi_cert_utils_error_chain_result(
     const char *                        function_name,
     int                                 line_number,
     const char *                        long_desc);
-
-char *
-globus_i_gsi_cert_utils_create_string(
-    const char *                        format,
-    ...);
-
-char *
-globus_i_gsi_cert_utils_v_create_string(
-    const char *                        format,
-    va_list                             ap);
 
 EXTERN_C_END
 

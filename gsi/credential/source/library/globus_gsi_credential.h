@@ -258,14 +258,6 @@ globus_result_t globus_gsi_cred_get_handle_attrs(
     globus_gsi_cred_handle_t            handle,
     globus_gsi_cred_handle_attrs_t *    handle_attrs);
 
-globus_result_t globus_gsi_cred_set_ssl_context(
-    globus_gsi_cred_handle_t            handle,
-    SSL_CTX *                           ssl_ctx);
-
-globus_result_t globus_gsi_cred_get_ssl_context(
-    globus_gsi_cred_handle_t            handle,
-    SSL_CTX **                          ssl_ctx);
-
 globus_result_t globus_gsi_cred_check_proxy_name(
     globus_gsi_cred_handle_t            handle,
     globus_gsi_cert_utils_proxy_type_t *      
@@ -279,6 +271,10 @@ globus_result_t globus_gsi_cred_get_goodtill(
     globus_gsi_cred_handle_t            handle,
     time_t *                            goodtill);
  
+globus_result_t globus_gsi_cred_get_check_proxy(
+    globus_gsi_cred_handle_t               handle,
+    globus_gsi_cert_utils_proxy_type_t *   type);
+
 globus_result_t globus_gsi_cred_handle_attrs_set_ca_cert_dir(
     globus_gsi_cred_handle_attrs_t      handle_attrs,
     char *                              ca_cert_dir);

@@ -201,7 +201,7 @@ globus_i_gsi_sysconfig_create_cert_dir_string(
 
     va_start(ap, format);
 
-    *cert_dir_value = globus_i_gsi_sysconfig_v_create_string(format, ap);
+    *cert_dir_value = globus_gsi_cert_utils_v_create_string(format, ap);
 
     if(*cert_dir_value == NULL)
     {
@@ -257,7 +257,7 @@ globus_i_gsi_sysconfig_create_cert_string(
 
     va_start(ap, format);
 
-    *cert_string_value = globus_i_gsi_sysconfig_v_create_string(format, ap);
+    *cert_string_value = globus_gsi_cert_utils_v_create_string(format, ap);
 
     if(*cert_string_value == NULL)
     {
@@ -312,7 +312,7 @@ globus_i_gsi_sysconfig_create_key_string(
 
     va_start(ap, format);
 
-    *key_string_value = globus_i_gsi_sysconfig_v_create_string(format, ap);
+    *key_string_value = globus_gsi_cert_utils_v_create_string(format, ap);
     
     if(*key_string_value == NULL)
     {
@@ -2402,76 +2402,6 @@ globus_i_gsi_sysconfig_get_proc_id_string_unix(
 }
 /* @} */
 
-char *
-globus_i_gsi_sysconfig_create_string(
-    const char *                        format,
-    ...)
-{
-    va_list                             ap;
-    char *                              new_string;
-    static char *                       _function_name_ =
-        "globus_i_gsi_sysconfig_create_string";
-    
-    GLOBUS_I_GSI_SYSCONFIG_DEBUG_ENTER;
-
-    globus_libc_lock();
-    
-    va_start(ap, format);
-
-    new_string = globus_i_gsi_sysconfig_v_create_string(format, ap);
-
-    va_end(ap);
-
-    globus_libc_unlock();
-
-    GLOBUS_I_GSI_SYSCONFIG_DEBUG_EXIT;
-    return new_string;
-}
-
-char *
-globus_i_gsi_sysconfig_v_create_string(
-    const char *                        format,
-    va_list                             ap)
-{
-    int                                 length;
-    int                                 len = 128;
-    char *                              new_string = NULL;
-    static char *                       _function_name_ =
-        "globus_i_gsi_sysconfig_v_create_string";
-
-    GLOBUS_I_GSI_SYSCONFIG_DEBUG_ENTER;
-    if((new_string = globus_malloc(len)) == NULL)
-    {
-        return NULL;
-    }
-
-    while(1)
-    {
-        length = vsnprintf(new_string, len, format, ap);
-        if(length > -1 && length < len)
-        {
-            break;
-        }
-
-        if(length > -1)
-        {
-            len = length + 1;
-        }
-        else
-        {
-            len *= 2;
-        }
-
-        if((new_string = realloc(new_string, len)) == NULL)
-        {
-            return NULL;
-        }
-    }
-    
-    GLOBUS_I_GSI_SYSCONFIG_DEBUG_EXIT;
-    return new_string;
-}
-
 #endif
 
 /**
@@ -3517,7 +3447,7 @@ globus_gsi_sysconfig_get_signing_policy_filename_unix(
 
     hash = X509_NAME_hash(ca_name);
 
-    signing_policy = globus_i_gsi_sysconfig_create_string(
+    signing_policy = globus_gsi_cert_utils_create_string(
         "%s%s%08lx%s", 
         cert_dir, FILE_SEPERATOR, hash, SIGNING_POLICY_FILE_EXTENSION);
     
@@ -3611,7 +3541,7 @@ globus_gsi_sysconfig_get_ca_cert_files_unix(
                    "0123456789") == (file_length - 9)))
         {
             full_filename_path = 
-                globus_i_gsi_sysconfig_create_string(
+                globus_gsi_cert_utils_create_string(
                     "%s%s%s", ca_cert_dir, FILE_SEPERATOR, tmp_entry->d_name);
             
             if(full_filename_path == NULL)
@@ -3739,4 +3669,4 @@ globus_gsi_sysconfig_get_unique_proxy_filename(
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_EXIT;
     return result;
 }
-
+/* @} */

@@ -50,7 +50,11 @@ extern FILE *                           globus_i_gsi_proxy_debug_fstream;
     { \
         if (GLOBUS_I_GSI_PROXY_DEBUG(_LEVEL_)) \
         { \
-           globus_libc_fprintf _MESSAGE_; \
+           char *                          _tmp_str_ = \
+               globus_gsi_cert_utils_create_nstring _MESSAGE_; \
+           globus_libc_fprintf(globus_i_gsi_cert_utils_debug_fstream, \
+                               _tmp_str_); \
+           globus_libc_free(_tmp_str_); \
         } \
     }
 

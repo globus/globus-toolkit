@@ -13,6 +13,7 @@
 #include "gssapi.h"
 #include "version.h"
 #include "globus_openssl.h"
+#include "globus_i_gsi_gss_utils.h"
 
 static int globus_l_gsi_gssapi_activate(void);
 static int globus_l_gsi_gssapi_deactivate(void);
@@ -23,7 +24,7 @@ static int globus_l_gsi_gssapi_deactivate(void);
  * Currently this isn't terribly well defined. The idea is that 0 is no
  * debugging output, and 9 is a whole lot.
  */
-int globus_i_gssapi_debug_level = 0;
+int globus_i_gsi_gssapi_debug_level = 0;
 
 /**
  * Module descriptor static initializer.
@@ -64,11 +65,11 @@ globus_l_gsi_gssapi_activate(void)
         tmp_string = globus_module_getenv("GLOBUS_GSSAPI_DEBUG_LEVEL");
         if(tmp_string != GLOBUS_NULL)
         {
-            globus_i_gssapi_debug_level = atoi(tmp_string);
+            globus_i_gsi_gssapi_debug_level = atoi(tmp_string);
         
-            if(globus_i_gssapi_debug_level < 0)
+            if(globus_i_gsi_gssapi_debug_level < 0)
             {
-                globus_i_gssapi_debug_level = 0;
+                globus_i_gsi_gssapi_debug_level = 0;
             }
         }
 

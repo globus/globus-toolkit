@@ -51,6 +51,7 @@ EXTERN_C_BEGIN
 #include <globus_error_generic.h>
 #include "globus_error_openssl.h"
 #include <openssl/evp.h>
+#include "proxycertinfo.h"
 #endif
 
 /**
@@ -160,6 +161,31 @@ globus_gsi_proxy_handle_copy(
     globus_gsi_proxy_handle_t *         b);
 
 globus_result_t
+globus_gsi_proxy_handle_get_req(
+    globus_gsi_proxy_handle_t           handle,
+    X509_REQ **                         req);
+
+globus_result_t
+globus_gsi_proxy_handle_set_req(
+    globus_gsi_proxy_handle_t           handle,
+    X509_REQ *                          req);
+
+globus_result_t
+globus_gsi_proxy_handle_get_private_key(
+    globus_gsi_proxy_handle_t           handle,
+    EVP_PKEY **                         proxy_key);
+
+globus_result_t
+globus_gsi_proxy_handle_set_private_key(
+    globus_gsi_proxy_handle_t           handle,
+    EVP_PKEY *                          proxy_key);
+
+globus_result_t
+globus_gsi_proxy_handle_set_is_limited(
+    globus_gsi_proxy_handle_t           handle,
+    globus_bool_t                       is_limited);
+
+globus_result_t
 globus_gsi_proxy_handle_set_policy(
     globus_gsi_proxy_handle_t           handle,
     unsigned char *                     policy,
@@ -198,6 +224,16 @@ globus_gsi_proxy_handle_get_pathlen(
 globus_result_t
 globus_gsi_proxy_handle_clear_cert_info(
     globus_gsi_proxy_handle_t           handle);
+
+globus_result_t
+globus_gsi_proxy_handle_get_proxy_cert_info(
+    globus_gsi_proxy_handle_t           handle,
+    PROXYCERTINFO **                    pci);
+
+globus_result_t
+globus_gsi_proxy_handle_set_proxy_cert_info(
+    globus_gsi_proxy_handle_t           handle,
+    PROXYCERTINFO *                     pci);
 
 globus_result_t
 globus_gsi_proxy_is_limited(

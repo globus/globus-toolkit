@@ -11,8 +11,10 @@
 
 static char *rcsid = "$Id$";
 
-#include "gssapi_ssleay.h"
-#include "gssutils.h"
+#include "globus_gsi_gss_constants.h"
+#include "globus_gsi_system_config.h"
+#include "gssapi_openssl.h"
+#include "globus_i_gsi_gss_utils.h"
 #include <string.h>
 
 /* Only build if we have the extended GSSAPI */
@@ -48,8 +50,9 @@ GSS_CALLCONV gss_export_cred(
 {
     OM_uint32                           major_status = GLOBUS_SUCCESS;
     BIO *                               bp = NULL;
-    gss_cred_id_desc *                  cred_desc;
-
+    gss_cred_id_desc *                  cred_desc = NULL;
+    globus_result_t                     local_result;
+    char *                              proxy_filename = NULL;
     static char *                       _function_name_ =
         "gss_export_cred";
 
@@ -62,12 +65,12 @@ GSS_CALLCONV gss_export_cred(
     if (export_buffer == NULL ||
         export_buffer == GSS_C_NO_BUFFER)
     {
+        major_status = GSS_S_FAILURE;
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
-            minor_status,
+            minor_status, major_status,
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
             ("NULL or emtpy export_buffer parameter passed to function: %s",
              _function_name_));
-        major_status = GSS_S_FAILURE;
         goto exit;
     }
 
@@ -76,35 +79,53 @@ GSS_CALLCONV gss_export_cred(
 
     if (cred_handle == NULL)
     { 
+        major_status = GSS_S_FAILURE;
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
-            minor_status,
+            minor_status, major_status,
             GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
             ("NULL or emtpy export_buffer parameter passed to function: %s",
              _function_name_));
-        major_status = GSS_S_FAILURE;
         goto exit;
     }
 
     if(desired_mech != NULL &&
        g_OID_equal(desired_mech, (gss_OID) gss_mech_globus_gssapi_openssl))
     {
-        GLOBUS_GSI_GSSAPI_ERROR_RESULT(
-            minor_status,
-            GLOBUS_GSI_GSSAPI_ERROR_BAD_MECH,
-            ("The desired mechanism for exporting this credential is not
-        GSSerr(GSSERR_F_EXPORT_CRED,GSSERR_R_BAD_MECH);
         major_status = GSS_S_BAD_MECH;
-        goto err;
+        GLOBUS_GSI_GSSAPI_ERROR_RESULT(
+            minor_status, major_status,
+            GLOBUS_GSI_GSSAPI_ERROR_BAD_MECH,
+            ("The desired mechanism of: %s, is not supported by this "
+             "GSS implementation", desired_mech->elements));
+        goto exit;
     }
 
-    if(option_req == 0)
+    if(option_req == GSS_IMPEXP_OPAQUE_FORM)
     {
+        /* When option_req is equal to EXPORT_OPAQUE_FORM (0), it exports
+         * an opaque buffer suitable for storage in memory or on  
+         * disk or passing to another process, which 
+         * can import the buffer with gss_import_cred().
+         */
         bp = BIO_new(BIO_s_mem());
-	
-        if((result = globus_gsi_cred_write(cred_desc->cred_handle,
-                                 bp)) != GLOBUS_SUCCESS)
+        if(bp == NULL)
         {
-#error add error
+            GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
+                minor_status,
+                GLOBUS_GSI_GSSAPI_ERROR_WITH_OPENSSL,
+                ("Couldn't initialize IO bio for exporting credential"));
+            major_status = GSS_S_FAILURE;
+            goto exit;
+        }
+
+	local_result = globus_gsi_cred_write(cred_desc->cred_handle, bp);
+        if(local_result != GLOBUS_SUCCESS)
+        {
+            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                minor_status, local_result,
+                GLOBUS_GSI_GSSAPI_ERROR_IMPEXP_BIO_SSL);
+            major_status = GSS_S_FAILURE;
+            goto exit;
         }            
 		
         export_buffer->length = BIO_pending(bp);
@@ -115,14 +136,12 @@ GSS_CALLCONV gss_export_cred(
             if (export_buffer->value == NULL)
             {
                 export_buffer->length = 0;
-#error do error here
-                GSSerr(GSSERR_F_EXPORT_CRED, GSSERR_R_OUT_OF_MEMORY);
-                goto err;
+                GLOBUS_GSI_GSSAPI_MALLOC_ERROR(minor_status);
+                major_status = GSS_S_FAILURE;
+                goto exit;
             }
 			
-            BIO_read(bp,
-                     export_buffer->value,
-                     export_buffer->length);
+            BIO_read(bp, export_buffer->value, export_buffer->length);
         }
         else
         {
@@ -131,41 +150,51 @@ GSS_CALLCONV gss_export_cred(
 
         major_status = GSS_S_COMPLETE;
     }
-    else if(option_req == 1)
+    else if(option_req == GSS_IMPEXP_MECH_SPECIFIC)
     {
-        if((result = 
-            GLOBUS_GSI_CRED_GET_UNIQUE_PROXY_FILENAME(& proxy_filename))
-           != GLOBUS_SUCCESS)
+        /* With option_req is equal to EXPORT_MECH_SPECIFIC (1), 
+         * it exports a buffer filled with mechanism-specific 
+         * information that the calling application can use 
+         * to pass the credentials to another process that 
+         * is not written to the GSS-API.
+         */
+        local_result = 
+            GLOBUS_GSI_SYSCONFIG_GET_UNIQUE_PROXY_FILENAME(&proxy_filename);
+        if(local_result != GLOBUS_SUCCESS)
         {
-#error error
+            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                minor_status, local_result,
+                GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_PROXY);
+            major_status = GSS_S_FAILURE;
+            goto exit;
         }
 
-        if((result = globus_gsi_cred_write_proxy(cred_desc->cred_handle,
-                                                 proxy_filename)) 
-           != GLOBUS_SUCCESS)
+        local_result = globus_gsi_cred_write_proxy(cred_desc->cred_handle,
+                                                   proxy_filename);
+        if(local_result != GLOBUS_SUCCESS)
         {
-#error error
+            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                minor_status, local_result,
+                GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_PROXY);
+            major_status = GSS_S_FAILURE;
+            goto exit;
         }                                       
 
-        export_buffer->length = strlen(X509_USER_PROXY) +
-            strlen(filename) + 2;
-        if((export_buffer->value = malloc(export_buffer->length)) == NULL)
-        {
-#error use errno here
-        }
-
-        snprintf(export_buffer->value, export_buffer->length, "%s=%s",
-                 X509_USER_PROXY, proxy_filename);
+        export_buffer->value = proxy_filename;
+        export_buffer->length = strlen(proxy_filename);
     }
     else
     {
-#error do error
-        GSSerr(GSSERR_F_EXPORT_CRED,GSSERR_R_BAD_ARGUMENT);
         major_status = GSS_S_FAILURE;
-        goto err;
+        GLOBUS_GSI_GSSAPI_ERROR_RESULT(
+            minor_status, major_status,
+            GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
+            ("Unrecognized option_req of: %d", option_req));
+        goto exit;
     }
 
-err:
+ exit:
+
     if (bp) 
     {
         BIO_free(bp);
@@ -174,4 +203,6 @@ err:
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;
 }
+/* @} */
+
 #endif /*  _HAVE_GSI_EXTENDED_GSSAPI */

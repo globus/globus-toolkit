@@ -1,10 +1,43 @@
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/**
+ * @file accept_sec_context.h
+ * Globus GSI GSS-API gss_accept_sec_context
+ * @author Sam Meder, Sam Lang
+ *
+ * $RCSfile$
+ * $Revision$
+ * $Date$
+ */
+#endif
 
 static char * rcsid = "$Id$";
 
-#include "gssapi_ssleay.h"
-#include "gssutils.h"
+#include "gssapi_openssl.h"
+#include "globus_i_gsi_gss_utils.h"
 #include <string.h>
 
+/**
+ * @name GSS Accept Security Context
+ * @ingroup globus_gsi_gssapi
+ */
+/* @{ */
+/**
+ * 
+ * @param minor_status
+ * @param context_handle_P
+ * @param acceptor_cred_handle
+ * @param input_token
+ * @param input_chan_bindings
+ * @param src_name_P
+ * @param mech_type
+ * @param output_token
+ * @param ret_flags
+ *        Also used as req_flags for other functions
+ * @param time_rec
+ * @param delegated_cred_handle_P
+ *
+ * @return
+ */
 OM_uint32
 GSS_CALLCONV gss_accept_sec_context(
     OM_uint32 *                         minor_status,
@@ -20,21 +53,21 @@ GSS_CALLCONV gss_accept_sec_context(
     gss_cred_id_t *                     delegated_cred_handle_P) 
 {
     gss_ctx_id_desc *                   context = NULL;
-    OM_uint32                           major_status = 0;
-    OM_uint32                           local_minor_status = 0;
+    OM_uint32                           major_status = GSS_S_COMPLETE;
+    OM_uint32                           local_minor_status;
+    OM_uint32                           local_major_status;
+    globus_result_t                     local_result;
+    globus_result_t                     callback_error;
     OM_uint32                           nreq_flags = 0;
-    int                                 rc;
     char                                dbuf[1];
-    X509 *                              current_cert = NULL;
-    time_t                              goodtill = 0;
-    int                                 cert_count = 0;
-    
+    STACK_OF(X509) *                    cert_chain = NULL;
+    int                                 limited_proxy;
+
     static char *                       _function_name_ =
         "gss_accept_sec_context";
-
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
-    *minor_status = 0;
+    *minor_status = (OM_uint32) GLOBUS_SUCCESS;
     output_token->length = 0;
 
     context = *context_handle_P;
@@ -42,7 +75,13 @@ GSS_CALLCONV gss_accept_sec_context(
     if(delegated_cred_handle_P == NULL && 
        !((*ret_flags) & GSS_C_GLOBUS_SSL_COMPATIBLE))
     {
-#error return error here
+        major_status = GSS_S_FAILURE;
+        GLOBUS_GSI_GSSAPI_ERROR_RESULT(
+            minor_status, major_status,
+            GLOBUS_GSI_GSSAPI_ERROR_WITH_DELEGATION,
+            ("NULL parameter for delegated cred handle to "
+             "be passed to function"));
+        goto exit;
     } 
 
     /* module activation if not already done by calling
@@ -71,8 +110,11 @@ GSS_CALLCONV gss_accept_sec_context(
 
         if (GSS_ERROR(major_status))
         {
-#error add error here
-            return major_status;                        
+            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                minor_status,
+                local_minor_status,
+                GLOBUS_GSI_GSSAPI_ERROR_WITH_GSS_CONTEXT);
+            goto exit;
         }
 
         *context_handle_P = context;
@@ -99,23 +141,22 @@ GSS_CALLCONV gss_accept_sec_context(
         }
     } /* end of first time */
 
-    /*
-     * put token data onto the SSL bio so it can be read
-     */
-
-    major_status = globus_i_gsi_gss_put_token(& local_minor_status,
+    /* put token data onto the SSL bio so it can be read */
+    major_status = globus_i_gsi_gss_put_token(&local_minor_status,
                                               context, NULL, input_token);
-    if (major_status != GSS_S_COMPLETE)
+    if (GSS_ERROR(major_status))
     {
-#error need error here
-        return major_status;
+        GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+            minor_status, local_minor_status,
+            GLOBUS_GSI_GSSAPI_ERROR_TOKEN_FAIL);
+        goto exit;
     }
 
     switch (context->gss_state)
     {
         case(GSS_CON_ST_HANDSHAKE):
             
-            major_status = globus_i_gsi_gss_handshake(& local_minor_status, 
+            major_status = globus_i_gsi_gss_handshake(&local_minor_status, 
                                                       context);
             
             if (major_status == GSS_S_CONTINUE_NEEDED)
@@ -123,26 +164,46 @@ GSS_CALLCONV gss_accept_sec_context(
                 break;
             }   
             
-            /* if failed, may have SSL alert message too */
-            
-            if (major_status != GSS_S_COMPLETE)
+            if (GSS_ERROR(major_status))
             {
-#error add minor status for error
+                GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                    minor_status, local_minor_status,
+                    GLOBUS_GSI_GSSAPI_ERROR_HANDSHAKE);
                 context->gss_state = GSS_CON_ST_DONE;
                 break; 
             }
-                        
-            major_status = globus_i_gsi_gss_retrieve_peer(& local_minor_status,
+
+            local_result = globus_gsi_callback_get_error(
+                context->callback_data,
+                &callback_error);
+            
+            if(callback_error != GLOBUS_SUCCESS)
+            {
+                local_result = callback_error;
+            }
+
+            if(local_result != GLOBUS_SUCCESS)
+            {
+                GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                    minor_status, local_result,
+                    GLOBUS_GSI_GSSAPI_ERROR_REMOTE_CERT_VERIFY_FAILED);
+                major_status = GSS_S_FAILURE;
+                goto exit;
+            }
+
+            major_status = globus_i_gsi_gss_retrieve_peer(&local_minor_status,
                                                           context,
                                                           GSS_C_ACCEPT);
-            if (major_status != GSS_S_COMPLETE)
+            if (GSS_ERROR(major_status))
             {
-#error add minor status
+                GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                    minor_status, local_minor_status,
+                    GLOBUS_GSI_GSSAPI_ERROR_BAD_NAME);
                 context->gss_state = GSS_CON_ST_DONE;
                 break;
             }
 
-            if(g_OID_equal(context->source_name->name_oid,
+            if(g_OID_equal(context->peer_cred_handle->globusid->name_oid,
                            GSS_C_NT_ANONYMOUS))
             {
                 context->ret_flags |= GSS_C_ANON_FLAG;
@@ -151,34 +212,51 @@ GSS_CALLCONV gss_accept_sec_context(
             if (src_name_P != NULL)
             {
                 major_status = globus_i_gsi_gss_copy_name_to_name(
-                    & local_minor_status,
+                    &local_minor_status,
                     (gss_name_desc **)src_name_P, 
-                    context->source_name);
+                    context->cred_handle->globusid);
 
-                if(major_status != GSS_S_COMPLETE)
+                if(GSS_ERROR(major_status))
                 {
-#error add minor status
+                    GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                        minor_status, local_minor_status,
+                        GLOBUS_GSI_GSSAPI_ERROR_BAD_NAME);
                     context->gss_state = GSS_CON_ST_DONE;
                     break;
                 }
             }
                         
-            if (context->callback_data.limited_proxy)
+            local_result = globus_gsi_callback_get_limited_proxy(
+                context->callback_data,
+                &limited_proxy);
+
+            if(local_result != GLOBUS_SUCCESS)
             {
-                context->ret_flags |= GSS_C_GLOBUS_LIMITED_PROXY_FLAG;
+                GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                    minor_status, local_result,
+                    GLOBUS_GSI_GSSAPI_ERROR_WITH_CALLBACK_DATA);
+                context->gss_state = GSS_CON_ST_DONE;
+                major_status = GSS_S_FAILURE;
+                break;
+            }
+
+            if (limited_proxy)
+            {
+                context->ret_flags |= GSS_C_GLOBUS_RECEIVED_LIMITED_PROXY_FLAG;
                 /*
                  * Are we willing to accept authentication 
                  * from a limited proxy? 
                  * Globus gatekeepers will say no
                  */
-
                 if (context->req_flags & 
-                    GSS_C_GLOBUS_LIMITED_PROXY_FLAG)
+                    GSS_C_GLOBUS_DONT_ACCEPT_LIMITED_PROXY_FLAG)
                 {
-#error add minor status to error
-                    GSSerr(GSSERR_F_ACCEPT_SEC,GSSERR_R_PROXY_VIOLATION);
-                    context->gss_state = GSS_CON_ST_DONE;
                     major_status = GSS_S_DEFECTIVE_CREDENTIAL;
+                    GLOBUS_GSI_GSSAPI_ERROR_RESULT(
+                        minor_status, major_status,
+                        GLOBUS_GSI_GSSAPI_ERROR_PROXY_VIOLATION,
+                        ("Function set to not accept limited proxies"));
+                    context->gss_state = GSS_CON_ST_DONE;
                     break;
                 }
                                 
@@ -187,15 +265,14 @@ GSS_CALLCONV gss_accept_sec_context(
             context->ret_flags |= GSS_C_MUTUAL_FLAG;
             context->ret_flags |= GSS_C_PROT_READY_FLAG;
             context->ret_flags |= GSS_C_INTEG_FLAG  
-                | GSS_C_TRANS_FLAG
-                | GSS_C_REPLAY_FLAG
-                | GSS_C_SEQUENCE_FLAG;
+                               |  GSS_C_TRANS_FLAG
+                               |  GSS_C_REPLAY_FLAG
+                               |  GSS_C_SEQUENCE_FLAG;
 
             /* 
              * IF we are talking to a real SSL client,
              * we dont want to do delegation, so we are done
              */
-            
             if (context->req_flags & GSS_C_GLOBUS_SSL_COMPATIBLE)
             {
                 context->gss_state = GSS_CON_ST_DONE;
@@ -207,26 +284,28 @@ GSS_CALLCONV gss_accept_sec_context(
              * the last token but dont have a token to send
              * we need to send a null So peek at what we might send
              */
-
             if (BIO_pending(context->gss_wbio) == 0)
             {
-                BIO_write(context->gss_sslbio,"\0",1);
+                BIO_write(context->gss_sslbio, "\0", 1);
             }
             context->gss_state = GSS_CON_ST_FLAGS;
             break;
 
         case(GSS_CON_ST_FLAGS):
         
-            BIO_read(context->gss_sslbio,dbuf,1);
+            BIO_read(context->gss_sslbio, dbuf, 1);
 
             if (*dbuf == 'D')
             {
-                if(result = globus_gsi_proxy_create_req(context->proxy_handle,
-                                                        context->gss_sslbio) 
-                   != GLOBUS_SUCCESS)
+                local_result = 
+                    globus_gsi_proxy_create_req(context->proxy_handle,
+                                                context->gss_sslbio);
+                if(local_result != GLOBUS_SUCCESS)
                 {
-#error  add error here
-                    context->gss_stat = GSS_CON_ST_DONE;
+                    GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                        minor_status, local_result,
+                        GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_PROXY);
+                    context->gss_state = GSS_CON_ST_DONE;
                     major_status = GSS_S_FAILURE;
                     break;
                 }                    
@@ -244,39 +323,45 @@ GSS_CALLCONV gss_accept_sec_context(
             *delegated_cred_handle_P = 
                 (gss_cred_id_t) globus_malloc(sizeof(gss_cred_id_desc));
             
-            if(result = globus_gsi_proxy_assemble_cred(
+            local_result = globus_gsi_proxy_assemble_cred(
                 context->proxy_handle,
-                (*delegated_cred_handle_P)->cred_handle,
-                context->gss_sslbio) != GLOBUS_SUCCESS)
+                &((gss_cred_id_desc *)(*delegated_cred_handle_P))->cred_handle,
+                context->gss_sslbio);
+            if(local_result != GLOBUS_SUCCESS)
             {
-#error add error
-                context->gss_stat = GSS_CON_ST_DONE;
+                GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                    minor_status, local_result,
+                    GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_PROXY);
+                context->gss_state = GSS_CON_ST_DONE;
                 major_status = GSS_S_FAILURE;
                 break;
             }
             
-            if(result = globus_gsi_cred_set_cert_chain(
-                (*delegated_cred_handle_P)->cred_handle,
-                context->callback_data.cert_chain) != GLOBUS_SUCCESS)
+            local_result = globus_gsi_callback_get_cert_chain(
+                context->callback_data,
+                &cert_chain);
+            if(local_result != GLOBUS_SUCCESS)
             {
-#error add error
-                context->gss_stat = GSS_CON_ST_DONE;
+                GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                    minor_status, local_result,
+                    GLOBUS_GSI_GSSAPI_ERROR_WITH_CALLBACK_DATA);
+                context->gss_state = GSS_CON_ST_DONE;
                 major_status = GSS_S_FAILURE;
                 break;
             }
-
-            /* DEE? until the gss_export_cred is written,
-             * If the user did not ask for the delegated cred handle
-             * we will write out the delegated proxy here
-             * on the server, the s3_srvr.c does not save the 
-             * peer cert chain. So our proxy_verify_callback 
-             * will. If this is fixed, then 
-             * we could use SSL_get_peer_cert_chain(context->gss_ssl) 
-             * Also need to set the ret_flag for 
-             * GSS_C_GLOBUS_LIMITED_DELEG_PROXY_FLAG
-             * The delegated cert, key and chain will be transfered 
-             * to the delegated cred. 
-             */            
+            
+            local_result = globus_gsi_cred_set_cert_chain(
+                ((gss_cred_id_desc *)(*delegated_cred_handle_P))->cred_handle,
+                cert_chain);
+            if(local_result != GLOBUS_SUCCESS)
+            {
+                GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                    minor_status, local_result,
+                    GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_CREDENTIAL);
+                context->gss_state = GSS_CON_ST_DONE;
+                major_status = GSS_S_FAILURE;
+                break;
+            }
 
             context->gss_state = GSS_CON_ST_DONE;
 
@@ -285,41 +370,26 @@ GSS_CALLCONV gss_accept_sec_context(
 
     } /* end of switch for gss_con_st */
 
-    /*
-     * Couple of notes about this gss_get_token() call:
-     *
-     * First don't mess with minor_status here as it may contain real info.
-     *
-     * Second, we want to go ahead and get an ouput token even if we previously
+    /* We want to go ahead and get an ouput token even if we previously
      * encountered an error since the output token may contain information
      * about the error (i.e. an SSL alert message) we want to send to the other
      * side.
      */
-    tmp_major_status = globus_i_gsi_gss_get_token(& local_minor_status, 
-                                                  context, NULL, output_token);
+    local_major_status = globus_i_gsi_gss_get_token(&local_minor_status, 
+                                              context, NULL, output_token);
 
-    if(tmp_major_status != GSS_S_COMPLETE)
+    if(GSS_ERROR(local_major_status))
     {
-#error error here
+        GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+            minor_status, local_minor_status,
+            GLOBUS_GSI_GSSAPI_ERROR_TOKEN_FAIL);
+        major_status = local_major_status;
+        goto exit;
     }
 
     if (context->gss_state != GSS_CON_ST_DONE)
     {
         major_status |= GSS_S_CONTINUE_NEEDED;
-    }
-    else if(major_status == GSS_S_COMPLETE)
-    {
-        if(result = globus_gsi_cred_goodtill(
-                        context->cred_handle->cred_handle,
-                        & context->goodtill) != GLOBUS_SUCCESS)
-        {
-#error error here
-        }
-
-        if(context->goodtill > context->callback_data.goodtill)
-        {
-            context->goodtill = context->callback_data.goodtill;
-        }
     }
 
     if (ret_flags != NULL)
@@ -328,12 +398,16 @@ GSS_CALLCONV gss_accept_sec_context(
     }
 
     GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
-        2, 
-        (stderr, 
-         "accept_sec_context:major_status:%08x:gss_state:%d:ret_flags=%08x\n",
-         major_status, context->gss_state, context->ret_flags));
+        2, (globus_i_gsi_gssapi_debug_fstream, 
+            "accept_sec_context:major_status:%08x"
+            ":gss_state:%d:ret_flags=%08x\n",
+            (unsigned int) major_status, 
+            context->gss_state, 
+            (unsigned int) context->ret_flags));
+
+ exit:
 
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
-
     return major_status;
 }
+/* @} */

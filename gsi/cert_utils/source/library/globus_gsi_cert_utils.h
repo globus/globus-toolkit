@@ -68,8 +68,8 @@ globus_module_descriptor_t              globus_i_gsi_cert_utils_module;
 /**
  * @defgroup globus_gsi_cert_utils Cert Utils Functions
  *
- * A set of utility functions for manipulating the OpenSSL X509 certificate
- * structure and its parameters.
+ * A generic set of utility functions for manipulating 
+ * OpenSSL objects, such as X509 certificates.
  */
 
 #ifndef DOXYGEN
@@ -88,6 +88,31 @@ globus_result_t globus_gsi_cert_utils_get_base_name(
 globus_result_t globus_gsi_cert_utils_check_proxy_name(
     X509 *                                 cert,
     globus_gsi_cert_utils_proxy_type_t *   type);
+
+globus_result_t globus_gsi_cert_utils_get_x509_name(
+    char *                              subject_string,
+    int                                 length,
+    X509_NAME *                         x509_name);
+
+char * globus_gsi_cert_utils_create_string(
+    const char *                        format,
+    ...);
+
+char * globus_gsi_cert_utils_create_nstring(
+    int                                 length,
+    const char *                        format,
+    ...);
+
+char *
+globus_gsi_cert_utils_v_create_string(
+    const char *                        format,
+    va_list                             ap);
+
+char *
+globus_gsi_cert_utils_v_create_nstring(
+    int                                 length,
+    const char *                        format,
+    va_list                             ap);
 
 #endif /* DOXYGEN */
 

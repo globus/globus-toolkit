@@ -12,7 +12,7 @@
 static char *rcsid = "$Id$";
 
 #include "gssapi_openssl.h"
-#include "globus_i_gsi_gssapi_utils.h"
+#include "globus_i_gsi_gss_utils.h"
 
 /**
  * @name GSS Delete Security Context
@@ -41,7 +41,7 @@ GSS_CALLCONV gss_delete_sec_context(
     OM_uint32                           local_minor_status;
     OM_uint32                           local_major_status;
     OM_uint32                           major_status = GSS_S_COMPLETE;
-    globus_result_t                     result;
+    globus_result_t                     local_result;
     static char *                       _function_name_ =
         "gss_delete_sec_context";
 
@@ -77,7 +77,7 @@ GSS_CALLCONV gss_delete_sec_context(
             NULL,
             output_token);
 
-        if(local_major_status != GSS_S_FAILURE)
+        if(GSS_ERROR(local_major_status))
         {
             GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
                 minor_status, local_minor_status,
@@ -106,24 +106,24 @@ GSS_CALLCONV gss_delete_sec_context(
     
     local_major_status = gss_release_cred(
         &local_minor_status,
-        (*context_handle)->peer_cred_handle);
-    if(local_major_status != GSS_S_COMPLETE)
+        (gss_cred_id_t *)&(*context_handle)->peer_cred_handle);
+    if(GSS_ERROR(local_major_status))
     {
         GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
             minor_status, local_minor_status,
-            GLOBUS_GSI_GSSAPI_ERROR_WITH_PEER_CRED_HANDLE);
+            GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_CREDENTIAL);
         major_status = GSS_S_FAILURE;
         goto exit;
     } 
        
     local_major_status = gss_release_cred(
         &local_minor_status,
-        (*context_handle)->cred_handle);
-    if(local_major_status != GSS_S_COMPLETE)
+        (gss_cred_id_t *) &(*context_handle)->cred_handle);
+    if(GSS_ERROR(local_major_status))
     {
         GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
             minor_status, local_minor_status,
-            GLOBUS_GSI_GSSAPI_ERROR_WITH_CRED_HANDLE);
+            GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_CREDENTIAL);
         major_status = GSS_S_FAILURE;
         goto exit;
     }
@@ -133,8 +133,8 @@ GSS_CALLCONV gss_delete_sec_context(
     if(local_result != GLOBUS_SUCCESS)
     {
         GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
-            minor_status, local_reslut,
-            GLOBUS_GSI_GSSAPI_ERROR_WITH_PROXYXX);
+            minor_status, local_result,
+            GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_PROXY);
         major_status = GSS_S_FAILURE;
         goto exit;
     }
@@ -151,14 +151,14 @@ GSS_CALLCONV gss_delete_sec_context(
 
     if ((*context_handle)->gss_rbio)
     {
-        BIO_free_all((*context_handle)->gs_rbio);
-        (*context_handle)->gs_rbio = NULL;
+        BIO_free_all((*context_handle)->gss_rbio);
+        (*context_handle)->gss_rbio = NULL;
     }
 
     if ((*context_handle)->gss_wbio)
     {
-        BIO_free_all((*context_handle)->gs_wbio);
-        (*context_handle)->gs_wbio = NULL;
+        BIO_free_all((*context_handle)->gss_wbio);
+        (*context_handle)->gss_wbio = NULL;
     }
 
     if ((*context_handle)->gss_ssl)
@@ -184,5 +184,3 @@ GSS_CALLCONV gss_delete_sec_context(
 } 
 /* gss_delete_sec_context */
 /* @} */
-
-#error STATUS: read to compile
