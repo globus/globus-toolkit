@@ -1,6 +1,7 @@
 #include "test_common.h"
 #include "globus_hashtable.h"
 #include "globus_common.h"
+#include "globus_xio_bounce.h"
 
 typedef  int
 (*main_func_t)(
@@ -420,6 +421,7 @@ main(
     if(activate)
     {
         rc = globus_module_activate(GLOBUS_XIO_MODULE);
+        rc = globus_module_activate(GLOBUS_XIO_TEST_DRIVER_BOUNCE_MODULE);
         globus_assert(rc == GLOBUS_SUCCESS);
     }
     if(file)

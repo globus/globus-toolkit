@@ -16,11 +16,9 @@
     ow->op = (_in_op);                                                  \
     ow->res = res;                                                      \
     ow->nbytes = nb;                                                    \
+    globus_mutex_init(&ow->mutex, NULL);                                \
+    ow->callback_out = GLOBUS_FALSE;                                    \
 }
-
-static globus_mutex_t                   globus_l_mutex;
-static globus_cond_t                    globus_l_cond;
-static globus_callback_space_t          globus_l_space;
 
 static int
 globus_l_xio_test_activate();
@@ -57,6 +55,8 @@ typedef struct globus_l_xio_test_op_wrapper_s
     globus_result_t                     res;
     globus_size_t                       nbytes;
     globus_callback_handle_t            callback_handle;
+    globus_bool_t                       callback_out;
+    globus_mutex_t                      mutex;
 } globus_l_xio_test_op_wrapper_t;
 
 
@@ -90,22 +90,30 @@ cancel_cb(
 
     ow->res = GlobusXIOErrorTimedout();
 
-    res = globus_callback_unregister(
-            ow->callback_handle,
-            NULL,
-            NULL,
-            &active);
-    globus_assert(res == GLOBUS_SUCCESS);
-    if(!active)
+    globus_mutex_lock(&ow->mutex);
     {
-        /* if we could stop it, register it for right now */
-        globus_callback_space_register_oneshot(
-            NULL,
-            NULL,
-            globus_l_xio_operation_kickout,
-            (void *) ow,
-            GLOBUS_CALLBACK_GLOBAL_SPACE);
+        if(ow->callback_out)
+        {
+            res = globus_callback_unregister(
+                ow->callback_handle,
+                NULL,
+                NULL,
+                &active);
+            globus_assert(res == GLOBUS_SUCCESS);
+            if(!active)
+            {
+                /* if we could stop it, register it for right now */
+                globus_callback_space_register_oneshot(
+                    NULL,
+                    NULL,
+                    globus_l_xio_operation_kickout,
+                    (void *) ow,
+                    GLOBUS_CALLBACK_GLOBAL_SPACE);
+            }
+            ow->callback_out = GLOBUS_FALSE;
+        }
     }
+    globus_mutex_unlock(&ow->mutex);
 }
 
 static void
@@ -322,7 +330,9 @@ globus_l_xio_operation_kickout(
 
         default:
             globus_assert(0);
-    }    
+    }
+
+    globus_mutex_destroy(&ow->mutex);
     globus_free(ow);
 }
 
@@ -388,23 +398,29 @@ globus_l_xio_test_accept(
 
         delay = &server->delay;
         GlobusXIODriverEnableCancel(accept_op, canceled, cancel_cb, ow);
-        if(canceled)
-        {
-            delay = NULL;
-            ow->res = GlobusXIOErrorCanceled();
-        }
-        else if(server->random)
-        {
-            test_get_delay_time(server, &end_time);
-            delay = &end_time;
-        }
 
-        globus_callback_space_register_oneshot(
-            &ow->callback_handle,
-            delay,
-            globus_l_xio_operation_kickout,
-            (void *) ow,
-            GLOBUS_CALLBACK_GLOBAL_SPACE);
+        globus_mutex_lock(&ow->mutex);
+        {
+            if(canceled)
+            {
+                delay = NULL;
+                ow->res = GlobusXIOErrorCanceled();
+            }
+            else if(server->random)
+            {
+                test_get_delay_time(server, &end_time);
+                delay = &end_time;
+            }
+
+            ow->callback_out = GLOBUS_TRUE;
+            globus_callback_space_register_oneshot(
+                &ow->callback_handle,
+                delay,
+                globus_l_xio_operation_kickout,
+                (void *) ow,
+                GLOBUS_CALLBACK_GLOBAL_SPACE);
+        }
+        globus_mutex_unlock(&ow->mutex);
     }
 
     return GLOBUS_SUCCESS;
@@ -497,6 +513,7 @@ globus_l_xio_test_open(
             delay = &end_time;
         }
 
+        ow->callback_out = GLOBUS_TRUE;
         globus_callback_space_register_oneshot(
             &ow->callback_handle,
             delay,
@@ -566,6 +583,7 @@ globus_l_xio_test_close(
             delay = &end_time;
         }
 
+        ow->callback_out = GLOBUS_TRUE;
         globus_callback_space_register_oneshot(
             &ow->callback_handle,
             delay,
@@ -660,6 +678,7 @@ globus_l_xio_test_read(
             test_get_delay_time(dh, &end_time);
             delay = &end_time;
         }
+        ow->callback_out = GLOBUS_TRUE;
         globus_callback_space_register_oneshot(
             &ow->callback_handle,
             delay,
@@ -743,6 +762,7 @@ globus_l_xio_test_write(
             test_get_delay_time(dh, &end_time);
             delay = &end_time;
         }
+        ow->callback_out = GLOBUS_TRUE;
         globus_callback_space_register_oneshot(
             &ow->callback_handle,
             delay,
@@ -828,19 +848,12 @@ globus_l_xio_test_activate(void)
 {
     int                                 rc;
     globus_l_xio_test_handle_t *        attr;
-    globus_condattr_t                   cond_attr;
 
     rc = globus_module_activate(GLOBUS_COMMON_MODULE);
     if(rc != GLOBUS_SUCCESS)
     {
         return rc;
     }
-
-    globus_callback_space_init(&globus_l_space, NULL);
-    globus_condattr_init(&cond_attr);
-    globus_condattr_setspace(&cond_attr, globus_l_space);
-    globus_cond_init(&globus_l_cond, &cond_attr);
-    globus_mutex_init(&globus_l_mutex, NULL);
 
     attr = &globus_l_default_attr;
 
@@ -858,7 +871,6 @@ static
 int
 globus_l_xio_test_deactivate(void)
 {
-    globus_callback_space_destroy(globus_l_space);
     return globus_module_deactivate(GLOBUS_COMMON_MODULE);
 }
 
