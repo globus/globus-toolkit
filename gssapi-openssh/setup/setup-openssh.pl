@@ -67,6 +67,7 @@ my $myname = "setup-openssh.pl";
 $prefix = ${globusdir};
 $exec_prefix = "${prefix}";
 $bindir = "${exec_prefix}/bin";
+$sbindir = "${exec_prefix}/sbin";
 $sysconfdir = "$prefix/etc/ssh";
 $localsshdir = "/etc/ssh";
 $setupdir = "$prefix/setup/gsi_openssh_setup";
@@ -311,7 +312,7 @@ sub alterFileGlobusLocation
 
 sub alterFiles
 {
-    alterFileGlobusLocation("$setupdir/SXXsshd.in", "$bindir/SXXsshd");
+    alterFileGlobusLocation("$setupdir/SXXsshd.in", "$sbindir/SXXsshd");
 }
 
 ### readFile( $filename )
