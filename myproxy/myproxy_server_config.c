@@ -45,7 +45,8 @@ add_entry(char **entries,
     int current_length = 0;
     char **new_entries;
     char *my_entry;
-
+    int new_size;
+    
     assert(entry != NULL);
     
     my_entry = strdup(entry);
@@ -62,9 +63,11 @@ add_entry(char **entries,
 	    current_length++;
 	}
     }
-    
-    new_entries = realloc(entries,
-			  current_length + 2 /* New pointer and NULL */);
+
+    /* Add enough for new pointer and NULL */
+    new_size = sizeof(char *) * (current_length + 2);
+
+    new_entries = realloc(entries, new_size);
     
     if (new_entries == NULL)
     {
