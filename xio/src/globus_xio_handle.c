@@ -1097,12 +1097,12 @@ globus_xio_register_open(
     int                                         ctr;
     GlobusXIOName(globus_xio_register_open);
 
-    if(handle == NULL)
+    if(user_handle == NULL)
     {
         res = GlobusXIOErrorParameter("handle");
         goto err;
     }
-    if(target == NULL)
+    if(user_target == NULL)
     {
         res = GlobusXIOErrorParameter(target);
         goto err;

@@ -911,6 +911,7 @@ globus_xio_target_init(
     /* initialize what we need of the target structure */
     xio_target->stack_size = stack_size;
 
+    target_attr = NULL;
     ndx = 0;
     for(list = stack->driver_stack;
     !globus_list_empty(list);
@@ -921,8 +922,11 @@ globus_xio_target_init(
 
         /* pull driver specific info out of target attr */
 
-        GlobusIXIOAttrGetDS(driver_attr, target_attr,                   \
-            xio_target->entry[ndx].driver);
+        if(target_attr != NULL)
+        {
+            GlobusIXIOAttrGetDS(driver_attr, target_attr,                   \
+                xio_target->entry[ndx].driver);
+        }
 
         res = xio_target->entry[ndx].driver->target_init_func(
             &xio_target->entry[ndx].target,

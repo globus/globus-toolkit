@@ -1,56 +1,10 @@
 #include "globus_common.h"
 #include "globus_i_xio.h"
+#include "globus_xio_pass.h"
 
 /*******************************************************************
  *                     internal functions
  ******************************************************************/
-
-#define GlobusIXIOAttrGetDS(ds, attr, driver)                               \
-do                                                                          \
-{                                                                           \
-    int                                         _ctr;                       \
-    globus_i_xio_attr_t *                       _attr;                      \
-    globus_xio_driver_t                         _driver;                    \
-    globus_i_xio_attr_ent_t *                   _entry;                     \
-    void *                                      _ds = NULL;                 \
-                                                                            \
-    _attr = (attr);                                                         \
-    _driver = (driver);                                                     \
-                                                                            \
-    _entry = _attr->entry;                                                  \
-    for(_ctr = 0; _ctr < _attr->ndx && _ds == NULL; _ctr++)                 \
-    {                                                                       \
-        if(_entry[_ctr].driver == driver)                                   \
-        {                                                                   \
-            _ds = entry[ctr].driver_data;                                   \
-        }                                                                   \
-    }                                                                       \
-    ds = _ds;                                                               \
-} while(0)
-
-#define GlobusIXIODDGetDS(ds, dd, driver)                                   \
-do                                                                          \
-{                                                                           \
-    int                                         _ctr;                       \
-    globus_i_xio_dd_t *                         _dd;                        \
-    globus_xio_driver_t                         _driver;                    \
-    globus_i_xio_attr_ent_t *                   _entry;                     \
-    void *                                      _ds = NULL;                 \
-                                                                            \
-    _dd = (dd);                                                             \
-    _driver = (driver);                                                     \
-                                                                            \
-    _entry = _dd->entry;                                                    \
-    for(_ctr = 0; _ctr < _dd->stack_size && _ds == NULL; _ctr++)            \
-    {                                                                       \
-        if(_entry[_ctr].driver == driver)                                   \
-        {                                                                   \
-            _ds = entry[ctr].driver_data;                                   \
-        }                                                                   \
-    }                                                                       \
-    ds = _ds;                                                               \
-} while(0)
-
 
 /*******************************************************************
  *                         api functions
@@ -81,6 +35,8 @@ globus_xio_attr_init(
     {
         return GlobusXIOErrorMemory("attr");
     }
+    memset(xio_attr, '\0', sizeof(globus_i_xio_attr_t));
+
     xio_attr->entry = (globus_i_xio_attr_ent_t *)
         globus_malloc(sizeof(globus_i_xio_attr_ent_t) *
             GLOBUS_XIO_ATTR_ARRAY_BASE_SIZE);
@@ -94,7 +50,6 @@ globus_xio_attr_init(
     /* zero it out */
     memset((xio_attr->entry), '\0', sizeof(globus_i_xio_attr_ent_t) *
         GLOBUS_XIO_ATTR_ARRAY_BASE_SIZE);
-    memset(xio_attr, '\0', sizeof(globus_i_xio_attr_t));
     xio_attr->max = GLOBUS_XIO_ATTR_ARRAY_BASE_SIZE;
     
     *attr = xio_attr;
@@ -127,7 +82,7 @@ globus_xio_attr_cntl(
 
     if(driver != NULL)
     {
-        //GlobusIXIOAttrGetDS(ds, attr, driver);
+        GlobusIXIOAttrGetDS(ds, attr, driver);
         if(ds == NULL)
         {
             res = driver->attr_init_func(&ds);
