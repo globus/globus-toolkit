@@ -19,7 +19,7 @@
 
     <Source_Dependencies Type="pgm_runtime" >
       <Dependency Name="globus_core" Package="pgm"> <Version><Simple_Version Major="2"></Simple_Version></Version> </Dependency>
-      <Dependency Name="globus_openssl" Package="pgm"> <Version><Simple_Version Major="2"></Simple_Version></Version> </Dependency>
+      <Dependency Name="globus_openssl" Package="pgm"> <Version><Simple_Version Major="0"></Simple_Version></Version> </Dependency>
     </Source_Dependencies>
 
     <Source_Dependencies Type="pgm_link" >
@@ -36,7 +36,7 @@
     </Source_Dependencies>
 
     <Source_Setup_Dependency PkgType="rtl">
-      <Setup_Dependency Name="trusted_ca_setup"> <Version > <Simple_Version Major="2" /> </Version> </Setup_Dependency>
+      <Setup_Dependency Name="trusted_ca_setup"> <Version > <Simple_Version Major="3" /> </Version> </Setup_Dependency>
       <Setup_Dependency Name="globus_common_setup"> <Version > <Simple_Version Major="2" /> </Version> </Setup_Dependency>
     </Source_Setup_Dependency>
 
