@@ -39,6 +39,11 @@ AC_ARG_WITH(flavor,
 	        echo "Warning: $withval ignored" >&2
         else
 		GLOBUS_FLAVOR_NAME=$withval
+                if test ! -f "$GLOBUS_LOCATION/etc/globus_core/flavor_$GLOBUS_FLAVOR_NAME.gpt"; then
+	                echo "ERROR: Flavor $GLOBUS_FLAVOR_NAME has not been installed" >&2
+	                exit 1
+                fi 
+
         fi
 		;;
 	esac
