@@ -9,9 +9,9 @@
  */
 #endif
 
-#include <stdlib.h>
 #include "globus_i_gss_assist.h"
 #include "version.h"
+#include <stdlib.h>
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 
