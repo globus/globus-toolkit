@@ -3,7 +3,7 @@
 # The MyProxy cron script deletes users proxies that have expired.
 
 # Set GLOBUS_LOCATION as appropriate for your installation.
-GLOBUS_LOCATION="/usr/local/globus"
+GLOBUS_LOCATION="/usr/grid"
 export GLOBUS_LOCATION
 
 . ${GLOBUS_LOCATION}/libexec/globus-script-initializer
