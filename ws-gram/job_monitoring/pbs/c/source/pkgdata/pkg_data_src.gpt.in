@@ -22,7 +22,14 @@
       <Dependency Name="globus_common" > <Version > <Simple_Version Major="3" /> </Version> </Dependency>
       <Dependency Name="globus_scheduler_event_generator" > <Version > <Simple_Version Major="0" /> </Version> </Dependency>
     </Source_Dependencies>
-    
+
+    <Source_Setup_Dependency PkgType="rtl">
+        <Setup_Dependency Name="globus_scheduler_event_generator_pbs_setup">
+            <Version>
+                <Simple_Version Major="0"/>
+            </Version>
+        </Setup_Dependency>
+    </Source_Setup_Dependency>
 
     <Build_Environment >
       <cflags >@GPT_PKG_CFLAGS@</cflags>

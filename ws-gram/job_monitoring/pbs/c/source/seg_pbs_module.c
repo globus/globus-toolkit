@@ -77,6 +77,11 @@ typedef struct
      * one
      */
     globus_bool_t                       old_log;
+
+    /**
+     * Path to the directory where the PBS server log files are located
+     */
+    char *                              log_dir;
 } globus_l_pbs_logfile_state_t;
 
 static const time_t                     SECS_IN_DAY = 60*60*24;
@@ -208,7 +213,17 @@ globus_l_pbs_module_activate(void)
             goto free_logfile_state_buffer_error;
         }
     }
-
+    result = globus_common_get_attribute_from_config_file(
+            NULL,
+            "etc/globus_scheduler_event_generator_pbs.conf",
+            "logdir",
+            &logfile_state->log_dir);
+    if (result != GLOBUS_SUCCESS)
+    {
+        SEG_PBS_DEBUG(SEG_PBS_DEBUG_WARN,
+                ("unable to find log file in configuration\n"));
+        goto free_logfile_state_buffer_error;
+    }
     /* Convert timestamp to filename */
     rc = globus_l_pbs_find_logfile(logfile_state);
 
@@ -247,7 +262,14 @@ globus_l_pbs_module_activate(void)
     return 0;
 
 free_logfile_state_path_error:
-    globus_libc_free(logfile_state->path);
+    if (logfile_state->path)
+    {
+        globus_libc_free(logfile_state->path);
+    }
+    if (logfile_state->log_dir)
+    {
+        globus_libc_free(logfile_state->log_dir);
+    }
 free_logfile_state_buffer_error:
     globus_libc_free(logfile_state->buffer);
 free_logfile_state_error:
@@ -467,8 +489,6 @@ globus_l_pbs_find_logfile(
     globus_bool_t                       user_timestamp = GLOBUS_TRUE;
     time_t                              now;
     time_t                              when;
-    char                                log_dir[] =
-                                            "/var/spool/pbs/server_logs";
     struct stat                         s;
     int                                 rc;
 
@@ -477,7 +497,7 @@ globus_l_pbs_find_logfile(
     if (state->path == NULL)
     {
         SEG_PBS_DEBUG(SEG_PBS_DEBUG_TRACE, ("allocating path\n"));
-        state->path = malloc(sizeof(log_dir) + 9);
+        state->path = malloc(strlen(state->log_dir) + 10);
 
         if (state->path == NULL)
         {
@@ -547,7 +567,7 @@ globus_l_pbs_find_logfile(
 
         rc = sprintf(state->path,
                 "%s/%4d%02d%02d",
-                log_dir,
+                state->log_dir,
                 tm_val.tm_year+1900,
                 tm_val.tm_mon+1,
                 tm_val.tm_mday);
