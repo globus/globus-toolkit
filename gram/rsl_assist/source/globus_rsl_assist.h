@@ -27,6 +27,8 @@
 
 #include "globus_common.h"
 #include "globus_rsl.h"
+#include "lber.h"
+#include "ldap.h"
 
 
 /*
@@ -63,6 +65,36 @@
  */
 globus_rsl_t *
 globus_rsl_assist_replace_manager_name(globus_rsl_t * rsl);
+
+
+/*
+ * Function: globus_rsl_assist_string_canonicalize()
+ *
+ * Canonizing a string in this implementation means to remove any
+ * underscores and moving all characters to lowercase.
+ *
+ * For example, the string contents "Max_Time" will be altered to be "maxtime".
+ *
+ * Returns: void
+ */
+void
+globus_rsl_assist_string_canonicalize(char * ptr);
+
+
+/*
+ * Function: globus_rsl_assist_attributes_canonicalize()
+ *
+ * Given an RSL tree (parsed RSL), walk the tree finding all attributes of
+ * RSL relations (i.e. (var=value) pairs) and canonicalize them by calling the
+ * ..._string_canonicalize function.
+ *
+ * Returns:
+ *     GLOBUS_SUCCESS or GLOBUS_FAILURE.  If GLOBUS_SUCCESS is returned then
+ * any and all attributes contained in the passed in RSL tree will have been
+ * canonicalized.
+ */
+int
+globus_rsl_assist_attributes_canonicalize(globus_rsl_t * rsl);
 
 
 #endif
