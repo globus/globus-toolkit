@@ -127,9 +127,9 @@ myproxy_authenticate_accept(myproxy_socket_attrs_t *attrs, char *client_name, co
 }
 
 int
-myproxy_init_delegation(myproxy_socket_attrs_t *attrs, const char *delegfile, const int lifetime)
+myproxy_init_delegation(myproxy_socket_attrs_t *attrs, const char *delegfile, const int lifetime_seconds)
 {
- 
+  
   char error_string[1024];
  
   if (attrs == NULL)
@@ -163,6 +163,7 @@ myproxy_accept_delegation(myproxy_socket_attrs_t *attrs, char *data, const int d
     verror_put_string("Error accepting delegating credentials: %s\n", error_string);
     return -1;
   }
+  
   return 0;
 }
 
@@ -198,7 +199,7 @@ myproxy_serialize_request(const myproxy_request_t *request, char *data, const in
 
     totlen += len;
     len = snprintf(&data[totlen], datalen - totlen, 
-                 "%s%d\n", MYPROXY_LIFETIME_STRING, 3600*request->hours);
+                 "%s%d\n", MYPROXY_LIFETIME_STRING, request->lifetime_seconds);
     if (len < 0)
       return -1;
     totlen += len;
@@ -258,7 +259,7 @@ myproxy_deserialize_request(const char *data, const int datalen,
     len = convert_message(data, MYPROXY_LIFETIME_STRING, 
                           lifetime_str, sizeof(lifetime_str));
     if (len > 0) {
-      request->hours = atoi(lifetime_str);
+      request->lifetime_seconds = atoi(lifetime_str);
     } else {
       return -1;
     }
