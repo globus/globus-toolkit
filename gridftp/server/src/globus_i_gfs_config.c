@@ -30,17 +30,16 @@ static const globus_l_gfs_config_option_t option_list[] =
  {"fork", "fork", NULL, "-fork", "-f", GLOBUS_L_GFS_CONFIG_BOOL, {0, NULL}},
  {"detach", "detach", NULL, "-detach", "-bg", GLOBUS_L_GFS_CONFIG_BOOL, {0, NULL}},
  {"inetd", "inetd", NULL, "-inetd", "-i", GLOBUS_L_GFS_CONFIG_BOOL, {0, NULL}},
- {"no_gssapi", "no_gssapi", NULL, "-no-gssapi", "-ng", GLOBUS_L_GFS_CONFIG_BOOL, {0, NULL}},
- {"allow_clear", "allow_clear", NULL, "-allow-clear", "-ac", GLOBUS_L_GFS_CONFIG_BOOL, {0, NULL}},
+ {"no_security", "no_security", NULL, "-no-security", "-ns", GLOBUS_L_GFS_CONFIG_BOOL, {0, NULL}},
+ {"allow_anonymous", "allow_anonymous", NULL, "-allow-anon", "-aa", GLOBUS_L_GFS_CONFIG_BOOL, {0, NULL}},
+ {"anonymous_user", "anonymous_user", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, {0, NULL}},
+ {"anonymous_group", "anonymous_group", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, {0, NULL}},
  {"data_node", "data_node", NULL, "-data-node", "-dn", GLOBUS_L_GFS_CONFIG_BOOL, {0, NULL}},
  {"terse_banner", "terse_banner", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_BOOL, {0, NULL}},
  {"banner", "banner", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, {0, NULL}},
  {"banner_file", "banner_file", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, {0, NULL}},
  {"login_msg", "login_msg", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, {0, NULL}},
  {"login_msg_file", "login_msg_file", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, {0, NULL}},
- {"anonymous_user", "anonymous_user", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, {0, NULL}},
- {"anonymous_group", "anonymous_group", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, {0, NULL}},
- {"allow_anonymous", "allow_anonymous", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_BOOL, {1, NULL}},
  {"connections_disabled", "connections_disabled", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_BOOL, {0, NULL}},
  {"tcp_port_range", "tcp_port_range", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, {0, NULL}},
  {"hostname", "hostname", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, {0, NULL}},
@@ -554,7 +553,6 @@ globus_i_gfs_config_init(
         globus_hashtable_string_hash,
         globus_hashtable_string_keyeq);
 
-    /* XXX read config filename from commandline */
     global_config_file = "/etc/grid-security/gridftp.conf";
     local_config_file = NULL;
 
@@ -572,13 +570,15 @@ globus_i_gfs_config_init(
         local_config_file = globus_common_create_string(
         "%s/etc/gridftp.conf", globus_libc_getenv("GLOBUS_LOCATION"));
     }
-            
+    
     globus_l_gfs_config_load_defaults();
     globus_l_gfs_config_load_config_file(global_config_file);
     globus_l_gfs_config_load_config_file(local_config_file);
     globus_l_gfs_config_load_config_env();
     globus_l_gfs_config_load_commandline(argc, argv);
     globus_l_gfs_config_misc();
+    
+    globus_free(local_config_file);
         
 }
 

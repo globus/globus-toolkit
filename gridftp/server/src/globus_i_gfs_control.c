@@ -1,6 +1,7 @@
 #include "globus_xio.h"
 #include "globus_gridftp_server_control.h"
 #include "globus_i_gridftp_server.h"
+#include <grp.h>
 
 globus_result_t
 globus_l_gfs_op_attr_init(
@@ -168,52 +169,127 @@ globus_l_gfs_auth_request(
     int                                 rc;
     char *                              local_name;
     struct passwd *                     pwent;
+    struct group *                      group;
+    char *                              anon_usr;
+    char *                              anon_grp;
+    uid_t                               current_uid;
+    gid_t                               gid;
+    char *                              err_msg = GLOBUS_NULL;
 
 /* XXX add error responses */
     result = GLOBUS_FAILURE;
+    
+    current_uid = getuid();
     
     if(secure_type == GLOBUS_GRIDFTP_SERVER_LIBRARY_GSSAPI)
     {
         rc = globus_gss_assist_gridmap((char *) subject, &local_name);
         if(rc != 0)
         {
-            goto error_gridmap;
+            err_msg = globus_common_create_string(
+                "No local mapping for Globus ID");
+            goto error;
         }
+
+        pwent = getpwnam(local_name);
+        if(pwent == NULL)
+        {
+            err_msg = globus_common_create_string(
+                "Local user %s not found", local_name);
+            globus_free(local_name);
+            goto error;
+        }
+        globus_free(local_name);
+
+        if(globus_i_gfs_config_bool("inetd") || globus_i_gfs_config_bool("fork"))
+        {
+            rc = setgid(pwent->pw_gid);
+            if(rc != 0)
+            {
+                err_msg = globus_common_create_string(
+                    "Could not set user or group");
+                goto error;
+            }
+            rc = setuid(pwent->pw_uid);
+            if(rc != 0)
+            {
+                err_msg = globus_common_create_string(
+                    "Could not set user or group");
+                goto error;
+            }
+        }        
     }
     else if(globus_i_gfs_config_bool("allow_anonymous"))
     {   
-        globus_gridftp_server_control_finished_auth(
-            op, 
-            getuid(), 
-            GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS, 
-            GLOBUS_NULL);
-        return;    
-    }
-    else
-    {
-        goto error_noauth;
-    }
-
-    pwent = getpwnam(local_name);
-    if(pwent == NULL)
-    {
-        goto error_getpwnam;
-    }
-    globus_free(local_name);
-
-    if(globus_i_gfs_config_bool("inetd") || globus_i_gfs_config_bool("fork"))
-    {
-        rc = setgid(pwent->pw_gid);
-        if(rc != 0)
+        if(current_uid != 0)
         {
-            goto error_setid;
+            globus_gridftp_server_control_finished_auth(
+                op, 
+                current_uid, 
+                GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS, 
+                GLOBUS_NULL);
+            return;    
         }
-        rc = setuid(pwent->pw_uid);
-        if(rc != 0)
+        else if(globus_i_gfs_config_bool("inetd") || globus_i_gfs_config_bool("fork"))
+        {            
+            anon_usr = globus_i_gfs_config_string("anonymous_user");
+            anon_grp = globus_i_gfs_config_string("anonymous_group");
+            if(anon_usr)
+            {   
+                pwent = getpwnam(anon_usr);
+                globus_free(anon_usr);
+                if(pwent == NULL)
+                {
+                    err_msg = globus_common_create_string(
+                        "Anonymous user not found");
+                    goto error;
+                }
+            }
+            else
+            {
+                err_msg = globus_common_create_string(
+                    "Anonymous user not found");
+                goto error;
+            }
+            if(anon_grp)
+            {
+                group = getgrnam(anon_grp);
+                globus_free(anon_grp);
+                if(group == NULL)
+                {
+                    err_msg = globus_common_create_string(
+                        "Anonymous group not found");
+                    goto error;
+                }
+                gid = group->gr_gid;
+            }
+            else
+            {
+                gid = pwent->pw_gid;
+            }
+
+            rc = setgid(gid);
+            if(rc != 0)
+            {
+               err_msg = globus_common_create_string(
+                    "Could not set anonymous user or group");
+                goto error;
+            }
+            rc = setuid(pwent->pw_uid);
+            if(rc != 0)
+            {
+               err_msg = globus_common_create_string(
+                    "Could not set anonymous user or group");
+                goto error;
+            }
+        }
+        else
         {
-            goto error_setid;
+           err_msg = globus_common_create_string(
+                "Invalid authentication method");
+            goto error;
         }
-    }        
+    }     
                       
     globus_gridftp_server_control_finished_auth(
         op, 
@@ -222,17 +298,13 @@ globus_l_gfs_auth_request(
         GLOBUS_NULL);
 
     return;
-   
-error_getpwnam:
-    globus_free(local_name);
-error_noauth:
-error_setid:
-error_gridmap:
+
+error:
     globus_gridftp_server_control_finished_auth(
         op, 
         0, 
         GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_ACTION_FAILED, 
-        GLOBUS_NULL);
+        err_msg);
 }
 
 static
@@ -1196,10 +1268,10 @@ globus_i_gfs_control_start(
 
     result = globus_gridftp_server_control_attr_set_security(
         attr, 
-        (globus_i_gfs_config_bool("no_gssapi")) ?
+        (globus_i_gfs_config_bool("no_security")) ?
         GLOBUS_GRIDFTP_SERVER_LIBRARY_NONE : 
         GLOBUS_GRIDFTP_SERVER_LIBRARY_GSSAPI |
-        ((globus_i_gfs_config_bool("allow_clear")) ?
+        ((globus_i_gfs_config_bool("allow_anonymous")) ?
         GLOBUS_GRIDFTP_SERVER_LIBRARY_NONE : 0));
     if(result != GLOBUS_SUCCESS)
     {
