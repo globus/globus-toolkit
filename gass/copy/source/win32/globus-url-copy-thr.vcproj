@@ -2,7 +2,7 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="7.00"
-	Name="globus-url-copy-thr"
+	Name="gass_globus-url-copy-thr"
 	ProjectGUID="{EF997ACF-99DC-4132-B0C0-9EF68190CAD9}"
 	Keyword="Win32Proj">
 	<Platforms>
@@ -34,7 +34,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="ws2_32.lib Mswsock.lib libeay32.lib ssleay32.lib globus_common_win32dbgthr.lib globus_oldgaa.lib globus_sslutils.lib globus_opensslmodule.lib globus_gssapi.lib globus_gss_assist.lib globus_io_win32dbgthr.lib globus_gridftp_control_win32dbgthr.lib globus_gridftp_client_win32dbgthr.lib globus_gass_transfer_win32dbgthr.lib globus_gass_copy_win32dbgthr.lib"
+				AdditionalDependencies="ws2_32.lib mswsock.lib libeay32.lib ssleay32.lib libglobus_common_win32dbg.lib libglobus_gass_copy_win32dbg.lib libglobus_gass_transfer_win32dbg.lib globus_io_win32dbg.lib libglobus_gssapi_gsi_win32dbg.lib libglobus_gss_assist_win32dbg.lib libglobus_gsi_cert_utils_win32dbg.lib libglobus_gsi_credential_win32dbg.lib libglobus_gsi_proxy_core_win32dbg.lib libglobus_gsi_callback_win32dbg.lib libglobus_gsi_sysconfig_win32dbg.lib libglobus_openssl_win32dbg.lib libglobus_openssl_error_Win32dbg.lib globus_sslutils.lib globus_gridftp_control_win32dbg.lib globus_gridftp_client_win32dbg.lib"
 				OutputFile="$(OutDir)/globus-url-copy-thr.exe"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="$(GLOBUS_LOCATION)\lib"

@@ -2,7 +2,7 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="7.00"
-	Name="gass_copy_DebugLibThr"
+	Name="gass_copy_LibThr"
 	ProjectGUID="{F1F57FA4-7575-4781-B2EB-DB5CB4713557}"
 	Keyword="Win32Proj">
 	<Platforms>
@@ -19,7 +19,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(GLOBUS_LOCATION)\include&quot;;&quot;$(GLOBUS_LOCATION)\include\threaded&quot;;&quot;$(SolutionDir)&quot;"
+				AdditionalIncludeDirectories="\core\source\win32\nonthreaded;&quot;$(GLOBUS_LOCATION)\include&quot;;&quot;$(GLOBUS_LOCATION)\include\threaded&quot;;&quot;$(SolutionDir)&quot;;\gsi\gssapi\source\WinProjects"
 				PreprocessorDefinitions="WIN32;_DEBUG;_LIB"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"
@@ -33,7 +33,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)/globus_gass_copy_win32dbgthr.lib"/>
+				OutputFile="$(OutDir)/libglobus_gass_copy_win32dbgthr.lib"/>
 			<Tool
 				Name="VCMIDLTool"/>
 			<Tool
