@@ -78,9 +78,11 @@ main(
     {
         res = globus_xio_readv(xio_handle, &readv, 1, 1, &len, NULL);
         test_res(res, __LINE__);
-
         fwrite(readv.iov_base, 1, readv.iov_len, stdout);
-        if(fgets(line, LINE_LEN, stdin) == NULL)
+        if(strncmp(readv.iov_base, "150", 3) == 0)
+        {
+        }
+        else if(fgets(line, LINE_LEN, stdin) == NULL)
         {
             done = GLOBUS_TRUE;
         }
@@ -94,7 +96,7 @@ main(
                 xio_handle, line, len, len, &nbytes, NULL);
             test_res(res, __LINE__);
         }
-        if(strcasecmp(line, "QUIT\n") == 0)
+        if(strncasecmp(line, "QUIT", 4) == 0)
         {
             done = 1;
         }

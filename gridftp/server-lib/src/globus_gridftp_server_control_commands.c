@@ -712,7 +712,7 @@ globus_l_gsc_cmd_quit(
 
     globus_gsc_959_finished_command(op, "221 Goodbye.\r\n");
 
-    globus_i_gsc_terminate(server_handle, 1);
+    globus_i_gsc_terminate(server_handle);
 }
 
 /*************************************************************************
@@ -1521,7 +1521,7 @@ globus_l_gsc_cmd_pasv(
     dp = op->server_handle->opts.delayed_passive;
     reply_flag = op->server_handle->opts.delayed_passive;
 
-    if(strcmp(cmd_a[0], "PASV") == 0)
+    if(strncmp(cmd_a[0], "PASV", 4) == 0)
     {
         wrapper->dc_parsing_alg = op->server_handle->opts.dc_parsing_alg;
         wrapper->max = op->server_handle->opts.pasv_max;
@@ -1530,7 +1530,7 @@ globus_l_gsc_cmd_pasv(
         wrapper->cmd_ndx = 1;
         wrapper->reply_code = 227;
     }
-    else if(strcmp(cmd_a[0], "EPSV") == 0 && argc == 2)
+    else if(strncmp(cmd_a[0], "EPSV", 4) == 0 && argc == 2)
     {
         wrapper->dc_parsing_alg = 1;
         msg = "229 Passive delayed.\r\n";

@@ -351,6 +351,8 @@ extern globus_hashtable_t               globus_i_gs_default_attr_command_hash;
  */
 typedef enum globus_l_gsc_state_e
 {
+    GLOBUS_L_GSC_STATE_NONE,
+    GLOBUS_L_GSC_STATE_OPENING,
     GLOBUS_L_GSC_STATE_OPEN,
     GLOBUS_L_GSC_STATE_PROCESSING,
     GLOBUS_L_GSC_STATE_ABORTING,
@@ -429,8 +431,7 @@ typedef struct globus_i_gsc_server_handle_s
 
 void
 globus_i_gsc_terminate(
-    globus_i_gsc_server_handle_t *          server_handle,
-    globus_bool_t                           nice);
+    globus_i_gsc_server_handle_t *          server_handle);
 
 char *
 globus_i_gsc_get_help(

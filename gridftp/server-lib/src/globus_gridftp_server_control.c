@@ -9,50 +9,7 @@
 
 #define GLOBUS_L_GSC_DEFAULT_220   "220 GridFTP Server.\r\n"
 
-/*
- *  This File
- *  ---------
- *  This file reads 959 commands off the wire and kicks out callbacks to 
- *  the individual commands.
- */
-
-/*
- *  reading
- *  -------
- *
- *  Commands are read and put into a queue.  Only 1 command is processed
- *  at a time.  That is commands are removed from the queue for processing
- *  only once the reply to the previous command is sent.  This allows the
- *  client to send commands while the previous command is outstanding,
- *  (potientially having the advanatage of hidding latency) while still
- *  maintaining command reply sementics.
- * 
- *  The ABOR command is an exception to this.  Abort should be preceded
- *  with some out of band messaging.  This protocol module reads all oob
- *  messages inline.  If a command is outstanging when an ABOR message 
- *  is received, the library function globus_i_gs_abort() is called
- *  to cancel it.  When the callback for _abort() which will cause the 
- *  outstanding command to end early.  When the abort callbcak returns
- *  all commands in the queue are replied to with "Aborted", and the 
- *  ABOR command is replied to with "Success"
- */
-
-/* 
- *  parsing commands
- *  ----------------
- *
- *  This protocol module insists that the xio stack used has a driver
- *  that can be put into "super mode" (gssapi_ftp driveri or ftp_cmd).
- *  This mode gaurentees that each read callback will contain a 
- *  complete command.
- *
- *  On activate a table of commands is built.  This table can be index
- *  by the command name string.  Each entry in the table contains an
- *  integer representation of the command type (for faster decisions)
- *  and a parse function.  
- */
-
-#define GlobusLRegisterDone(_h)                                      \
+#define GlobusLRegisterDone(_h)                                         \
 do                                                                      \
 {                                                                       \
     globus_result_t                         _res;                       \
@@ -208,6 +165,19 @@ static void
 globus_l_gsc_unreg_perf_marker(
     void *                                  user_arg);
 
+static globus_result_t
+globus_l_gsc_flush_reads(
+    globus_i_gsc_server_handle_t *          server_handle,
+    const char *                            reply_msg);
+
+static void
+globus_l_gsc_server_ref_check(
+    globus_i_gsc_server_handle_t *          server_handle);
+
+static void
+globus_l_gsc_command_callout(
+    void *                                  user_arg);
+
 /*************************************************************************
  *              globals
  *
@@ -333,26 +303,49 @@ globus_l_gsc_op_destroy(
     op->ref--;
     if(op->ref == 0)
     {
-        op->server_handle->ref--;
-        if(op->server_handle->ref == 0)
-        {
-            GlobusLRegisterDone(op->server_handle);
-        }
-        /* clearly leaking here */
         globus_free(op);
     }
 }
 
 /************************************************************************
- *                         callbacks
- *                         ---------
- *  Only function in this file where we need to lock.  The reason for
- *  this is it is the return from system land back to server-lib land. 
+ *                      state machine functions
+ *                      -----------------------
  *
  ***********************************************************************/
 
 /*
- *  since the xio stack gaurentees 1 command per callback
+ *  Read Callback
+ *  -------------
+ *  Every time a command comes in this function is called.  
+ *
+ *  Reads are continually posted and queued.  The reason for this is
+ *  the ABOR case.  Since an ABOR is read as oobinline we must have
+ *  a read posted while a command is being process.  This leads to
+ *  the possibility of commands other than ABOR being read while a 
+ *  preceding command is being processed, the solution to this is to
+ *  constantly read and queue all commands.
+ *
+ *  states
+ *      on error simply call terminate
+ *
+ *      OPEN : 
+ *          read and queue the command.  If the command is ABOR reply
+ *          imediatly and post another read, else start processing
+ *          the next command in the queue
+ *
+ *      PROCESSING : 
+ *          simply queue the command and post another read.  if the command
+ *          is ABOR, change to ABORTING STATE and call the users abort 
+ *          callback.
+ *
+ *      STOPPING/ABORTING_STOPPING:
+ *          happens when a command is successful read and this callback
+ *          is waiting for the lock just as the state is changed to stopping
+ *          in this case we decrement the reference count and check to
+ *          see if we are done.
+ *
+ *      ABORTING/STOPPED/OPENING: should never happen
+ *
  */
 static void
 globus_l_gsc_read_cb(
@@ -368,8 +361,7 @@ globus_l_gsc_read_cb(
     globus_i_gsc_server_handle_t *          server_handle;
     globus_list_t *                         cmd_list;
     globus_i_gsc_op_t *                     op;
-    /* largest know command is 4, but possible the user sent a huge one */
-    char *                                  command_name;
+    char *                                  command_name = NULL;
     int                                     sc;
     int                                     ctr;
     GlobusGridFTPServerName(globus_l_gsc_read_cb);
@@ -378,56 +370,23 @@ globus_l_gsc_read_cb(
 
     globus_mutex_lock(&server_handle->mutex);
     {
-        /*  terminate will be called twice because of the canceled read
-            this is safe, due to the state machine. */
         if(result != GLOBUS_SUCCESS)
         {
-            globus_i_gsc_terminate(server_handle, 0);
-            globus_mutex_unlock(&server_handle->mutex);
-            goto exit;
+            goto err;
         }
 
         switch(server_handle->state)
         {
-            /* OPEN: we will process this command */
+            /* OPEN: add command to the queue, it will be imediatly processed */
             case GLOBUS_L_GSC_STATE_OPEN:
-            /* PROCESSING we will add this command to a q */
+            /* PROCESSING process the head of the queue */
             case GLOBUS_L_GSC_STATE_PROCESSING:
                 /*  parse out the command name */
                 command_name = (char *) globus_malloc(len + 1);
                 sc = sscanf(buffer, "%s", command_name);
                 /* stack will make sure this never happens */
-                globus_assert(sc > 0);
-                /* convert to all upper for convience and such */
-                for(ctr = 0; command_name[ctr] != '\0'; ctr++)
+                if(sc != 1)
                 {
-                    command_name[ctr] = toupper(command_name[ctr]);
-                }
-
-                cmd_list = (globus_list_t *) globus_hashtable_lookup(
-                                &server_handle->cmd_table, command_name);
-                /*  This may be NULL, if so  we don't suport this command.
-                 *  Just to the q anyway, it will be dealt with later. */
-
-                /* if not an abort */
-                if(strcmp(command_name, "ABOR") != 0)
-                {
-                    op = globus_l_gsc_op_create(
-                        cmd_list, buffer, len, server_handle);
-                    if(op == NULL)
-                    {
-                        globus_i_gsc_terminate(server_handle, 0);
-                        globus_mutex_unlock(&server_handle->mutex);
-                        goto exit;
-                    }
-
-                    globus_fifo_enqueue(&server_handle->read_q, op);
-                    /* if no errors outstanding */
-                    if(server_handle->state == GLOBUS_L_GSC_STATE_OPEN)
-                    {
-                        globus_l_gsc_process_next_cmd(server_handle);
-                    }
-                    /* allow outstanding commands, just queue them up */
                     res = globus_xio_register_read(
                             xio_handle,
                             globus_l_gsc_fake_buffer,
@@ -438,80 +397,119 @@ globus_l_gsc_read_cb(
                             (void *) server_handle);
                     if(res != GLOBUS_SUCCESS)
                     {
-                        globus_i_gsc_terminate(server_handle, 0);
-                        globus_mutex_unlock(&server_handle->mutex);
-                        goto exit;
+                        goto err;
                     }
                 }
                 else
                 {
-                    /* if we are in the open state then there is no
-                       outstanding operation to cancel and we can just
-                       reply to the ABOR */
-                    if(server_handle->state == GLOBUS_L_GSC_STATE_OPEN)
+                   /* convert to all upper for convience and such */
+                    for(ctr = 0; command_name[ctr] != '\0'; ctr++)
                     {
-                        globus_assert(
-                            globus_fifo_empty(&server_handle->read_q));
+                        command_name[ctr] = toupper(command_name[ctr]);
+                    }
 
-                        server_handle->state = GLOBUS_L_GSC_STATE_PROCESSING;
-                        res = globus_l_gsc_final_reply(
-                                server_handle,
-                                "226 Abort successful\r\n");
+                    cmd_list = (globus_list_t *) globus_hashtable_lookup(
+                                &server_handle->cmd_table, command_name);
+                    /*  This may be NULL, if so  we don't suport this command.
+                     *  Just to the q anyway, it will be dealt with later. */
+
+                    /* if not an abort */
+                    if(strcmp(command_name, "ABOR") != 0)
+                    {
+                        op = globus_l_gsc_op_create(
+                            cmd_list, buffer, len, server_handle);
+                        if(op == NULL)
+                        {
+                            res = GlobusGridFTPServerErrorMemory("op");
+                            goto err;
+                        }
+
+                        globus_fifo_enqueue(&server_handle->read_q, op);
+                        /* if no errors outstanding */
+                        if(server_handle->state == GLOBUS_L_GSC_STATE_OPEN)
+                        {
+                            globus_l_gsc_process_next_cmd(server_handle);
+                        }
+                        /* allow outstanding commands, just queue them up */
+                        res = globus_xio_register_read(
+                                xio_handle,
+                                globus_l_gsc_fake_buffer,
+                                globus_l_gsc_fake_buffer_len,
+                                globus_l_gsc_fake_buffer_len,
+                                NULL,
+                                globus_l_gsc_read_cb,
+                                (void *) server_handle);
                         if(res != GLOBUS_SUCCESS)
                         {
-                            globus_i_gsc_terminate(server_handle, 0);
-                            globus_mutex_unlock(&server_handle->mutex);
-                            goto exit;
+                            goto err;
                         }
                     }
                     else
                     {
-                        server_handle->state = GLOBUS_L_GSC_STATE_ABORTING;
-                        /*
-                         *  cancel the outstanding command.  In its callback
-                         *  we flush the q and respond to the ABOR
-                         */
-                        globus_assert(server_handle->outstanding_op != NULL);
-
-                        /*
-                         *  noptify user that an abort is requested if they
-                         *  are interested in hearing about it.
-                         *  In any case  we will just wait for them to finish 
-                         *  to respond to the abort.  Their notification cb
-                         *  is simply a way to allow *them* to cancel what 
-                         *  they are doing 
-                         */
-                        if(server_handle->funcs.abort_cb != NULL)
+                        if(server_handle->state == GLOBUS_L_GSC_STATE_OPEN)
                         {
-                            server_handle->funcs.abort_cb(
-                                server_handle->outstanding_op,
-                                server_handle->abort_arg);
+                            server_handle->state=GLOBUS_L_GSC_STATE_PROCESSING;
+                            res = globus_l_gsc_final_reply(
+                                server_handle,
+                                "226 Abort successful\r\n");
+                            if(res != GLOBUS_SUCCESS)
+                            {
+                                goto err;
+                            }
+                            res = globus_xio_register_read(
+                                xio_handle,
+                                globus_l_gsc_fake_buffer,
+                                globus_l_gsc_fake_buffer_len,
+                                globus_l_gsc_fake_buffer_len,
+                                NULL,
+                                globus_l_gsc_read_cb,
+                                (void *) server_handle);
+                            if(res != GLOBUS_SUCCESS)
+                            {
+                                goto err;
+                            }
                         }
-                    }
-                    if(res != GLOBUS_SUCCESS)
-                    {
-                        globus_i_gsc_terminate(server_handle, 0);
-                        globus_mutex_unlock(&server_handle->mutex);
-                        goto exit;
+                        else
+                        {
+                            server_handle->ref--;
+                            server_handle->state = GLOBUS_L_GSC_STATE_ABORTING;
+                            /*
+                             *  cancel the outstanding command.  In its callback
+                             *  we flush the q and respond to the ABOR
+                             */
+                            globus_assert(server_handle->outstanding_op!=NULL);
+
+                            /*
+                             *  notify user that an abort is requested if they
+                             *  are interested in hearing about it.
+                             *  In any case  we will just wait for them to 
+                             *  finish 
+                             *  to respond to the abort.  Their notification cb
+                             *  is simply a way to allow *them* to cancel what 
+                             *  they are doing, this can be called locked
+                             */
+                            if(server_handle->funcs.abort_cb != NULL)
+                            {
+                                server_handle->funcs.abort_cb(
+                                    server_handle->outstanding_op,
+                                    server_handle->abort_arg);
+                            }
+                        }
                     }
                 }
 
                 globus_free(command_name);
                 break;
 
-            /* these only happen if result cam back an error, in which case
-                we will jump around this part */
             case GLOBUS_L_GSC_STATE_STOPPING:
+            case GLOBUS_L_GSC_STATE_ABORTING_STOPPING:
+                globus_free(buffer);
+                goto err;
                 break;
 
-            /* should never be in stopped state while a read is posted */
+            case GLOBUS_L_GSC_STATE_OPENING:
             case GLOBUS_L_GSC_STATE_STOPPED:
-            /* we should not be in these states with a read posted
-               ever.  When an abort is read we flush the queue and
-               do not post another read until we are back in the open
-               state */
             case GLOBUS_L_GSC_STATE_ABORTING:
-            case GLOBUS_L_GSC_STATE_ABORTING_STOPPING:
             default:
                 globus_assert(0 && "invalid state, likely memory curroption");
                 break;
@@ -519,15 +517,245 @@ globus_l_gsc_read_cb(
     }
     globus_mutex_unlock(&server_handle->mutex);
 
-  exit:
+    return;
+
+  err:
+    if(command_name != NULL)
+    {
+        globus_free(command_name);
+    }
+    server_handle->ref--;
+    globus_i_gsc_terminate(server_handle);
+    globus_l_gsc_server_ref_check(server_handle);
+    globus_mutex_unlock(&server_handle->mutex);
 
     return;
 }
 
 /*
- *  220 mesage write callback
+ *  stop the server
  *
- *  This only happens once at the begining of the handle life cycle.
+ *   This is called in a few places.  It is called when a user decideds
+ *   to terminate the conection via _stop(), when the command modules
+ *   panic (typically due to being out of memory) or when an error 
+ *   occurs on the client connection (typically due to it closing).
+ *
+ *   states:
+ * 
+ *   OPENING:
+ *      Noting has really been done yet, there is possibly an outstanding
+ *      open or an outstaning write.  cancel any open and write callbacks.
+ *      the termination process will continue when these callback return
+ *
+ *   OPEN:
+ *      There are no outstanidng commands so move to the stoping state,
+ *      cancel the command read that is posted.  When the canceled read 
+ *      returns the termination process will continue.  
+ *
+ *   PROCESSING:
+ *      A command is outstanding so move to the ABORTING_STOPPING state,
+ *      call the users abort callback.  When the finished op command returns
+ *      the termination process will continue.  
+ *      Flush any commands that have been read with an error.
+ *
+ *   ABORTING:
+ *      Move to the ABORTING STOPING state and dec the reference the server
+ *      has to itself.  when the command comes back it will finish the
+ *      termination process.
+ *
+ *  ABORTING_STOPPING/STOPPING:
+ *      Noting tobe done, it just means this function was called twice,
+ *      which can happen due to a user calling _stop() then a callback
+ *      returning with an error.
+ */
+void
+globus_i_gsc_terminate(
+    globus_i_gsc_server_handle_t *          server_handle)
+{
+    GlobusGridFTPServerName(globus_i_gsc_terminate);
+
+    switch(server_handle->state)
+    {
+        case GLOBUS_L_GSC_STATE_OPENING:
+            server_handle->state = GLOBUS_L_GSC_STATE_STOPPING;
+            globus_assert(server_handle->ref == 0);
+            globus_xio_handle_cancel_operations(
+                server_handle->xio_handle,
+                GLOBUS_XIO_CANCEL_OPEN | GLOBUS_XIO_CANCEL_WRITE);
+            break;
+
+        case GLOBUS_L_GSC_STATE_OPEN:
+            server_handle->state = GLOBUS_L_GSC_STATE_STOPPING;
+            /* ok to ignore result here */
+            globus_xio_handle_cancel_operations(
+                server_handle->xio_handle,
+                GLOBUS_XIO_CANCEL_READ);
+            break;
+
+        case GLOBUS_L_GSC_STATE_PROCESSING:
+            server_handle->state = GLOBUS_L_GSC_STATE_ABORTING_STOPPING;
+            globus_assert(server_handle->outstanding_op != NULL);
+
+            if(server_handle->funcs.abort_cb != NULL)
+            {
+                server_handle->funcs.abort_cb(
+                    server_handle->outstanding_op,
+                    server_handle->abort_arg);
+            }
+            /* ignore return code, we are stopping so it doesn' matter */
+            globus_l_gsc_flush_reads(
+                server_handle,
+                "421 Service not available, closing control connection.\r\n");
+            globus_xio_handle_cancel_operations(
+                server_handle->xio_handle,
+                GLOBUS_XIO_CANCEL_READ);
+            break;
+
+        case GLOBUS_L_GSC_STATE_ABORTING:
+            server_handle->state = GLOBUS_L_GSC_STATE_ABORTING_STOPPING;
+            break;
+
+        /* these two cases can only happen if the server is stopped twice:
+           ex: client quits, read callback returns with error, then user
+               quits before getting the done callback.  
+           In these cases there is nothing to be done. */
+        case GLOBUS_L_GSC_STATE_ABORTING_STOPPING:
+        case GLOBUS_L_GSC_STATE_STOPPING:
+            break;
+
+        case GLOBUS_L_GSC_STATE_STOPPED:
+        /* no other states */
+        default:
+            globus_assert(0);
+            break;
+    }
+}
+
+/*
+ *  this is ulmiately called when a command module finishes a command
+ *
+ *  states:
+ * 
+ *  PROCESSING:
+ *      if the command is finished (reply_msg != NULL), then send the final
+ *      reply else call the next in the chain.  The state will be changed
+ *      when the final reply returns.
+ * 
+ *  ABORTING:
+ *      flush the commands read q and send out the final abort message, if 
+ *      final reply is successful another read will be posted.
+ *
+ *  ABORTING_STOPPING:
+ *      move to the STOPPING state.  If reference is zero kickout done 
+ *      callback
+ *
+ *  STOPPING:
+ *      destroy th op, if the reference count is 0 close
+ *
+ *  OPENING/OPEN/STOPPED:
+ *      invalid
+ *
+ *  on any error decrement the reference and check for 0
+ */
+static void
+globus_l_gsc_finished_op(
+    globus_i_gsc_op_t *                     op,
+    char *                                  reply_msg)
+{
+    globus_i_gsc_server_handle_t *          server_handle;
+    globus_result_t                         res;
+    GlobusGridFTPServerName(globus_l_gsc_finished_op);
+
+    server_handle = op->server_handle;
+
+    globus_l_gsc_op_destroy(op);
+    switch(server_handle->state)
+    {
+        case GLOBUS_L_GSC_STATE_PROCESSING:
+            if(reply_msg == NULL && op->cmd_list == NULL)
+            {
+                reply_msg = "500 Command not supported\r\n";
+            }
+            if(reply_msg == NULL)
+            {
+                GlobusLGSCRegisterCmd(op);
+            }
+            else
+            {
+                res = globus_l_gsc_final_reply(
+                        server_handle,
+                        reply_msg);
+                if(res != GLOBUS_SUCCESS)
+                {
+                    goto err;
+                }
+            }
+            break;
+
+        case GLOBUS_L_GSC_STATE_ABORTING:
+
+            if(reply_msg == NULL)
+            {
+                reply_msg = "426 Command Aborted\r\n";
+            }
+
+            server_handle->abort_cnt = globus_fifo_size(&server_handle->read_q);
+            server_handle->abort_cnt += 2;
+
+            res = globus_l_gsc_final_reply(
+                    server_handle,
+                    reply_msg);
+            if(res != GLOBUS_SUCCESS)
+            {
+                goto err;
+            }
+            res = globus_l_gsc_flush_reads(
+                    server_handle,
+                    "426 Command Aborted\r\n");
+            if(res != GLOBUS_SUCCESS)
+            {
+                goto err;
+            }
+            res = globus_l_gsc_final_reply(
+                    server_handle,
+                    "226 Abort successful\r\n");
+            if(res != GLOBUS_SUCCESS)
+            {
+                goto err;
+            }
+            break;
+
+        case GLOBUS_L_GSC_STATE_ABORTING_STOPPING:
+            server_handle->state = GLOBUS_L_GSC_STATE_STOPPING;
+            server_handle->ref--;
+            break;
+
+        case GLOBUS_L_GSC_STATE_STOPPING:
+            server_handle->ref--;
+            break;
+
+        case GLOBUS_L_GSC_STATE_OPENING:
+        case GLOBUS_L_GSC_STATE_OPEN:
+        case GLOBUS_L_GSC_STATE_STOPPED:
+        default:
+            globus_assert(0);
+            break;
+    }
+    globus_l_gsc_server_ref_check(server_handle);
+
+    return;
+
+  err:
+    globus_i_gsc_terminate(server_handle);
+    server_handle->ref--;
+    globus_l_gsc_server_ref_check(server_handle);
+}
+
+/*
+ *  part of the opening sequence.  first the open is posted, then
+ *  the 220 is written before we move to the open start.  This callback
+ *  is called once the 220 is written and if succesful moves things
+ *  to the OPEN state.
  */
 static void 
 globus_l_gsc_220_write_cb(
@@ -541,26 +769,25 @@ globus_l_gsc_220_write_cb(
 {
     globus_result_t                         res;
     globus_i_gsc_server_handle_t *          server_handle;
+    globus_xio_attr_t                       close_attr;
     GlobusGridFTPServerName(globus_l_gsc_220_write_cb);
 
     GlobusGridFTPServerDebugEnter();
 
     server_handle = (globus_i_gsc_server_handle_t *) user_arg;
 
-    globus_free(buffer);
-
     globus_mutex_lock(&server_handle->mutex);
     {
         if(result != GLOBUS_SUCCESS)
         {
-            globus_i_gsc_terminate(server_handle, 0);
-            globus_mutex_unlock(&server_handle->mutex);
+            res = result;
             goto err;
         }
-
-        /*  post a read on the fake buffers
-         *  TODO:  deal with it if they are not using the right stack  */
-        res = globus_xio_register_read(
+        else
+        {
+            server_handle->state = GLOBUS_L_GSC_STATE_OPEN;
+            /*  post a read on the fake buffers */
+            res = globus_xio_register_read(
                 xio_handle,
                 globus_l_gsc_fake_buffer,
                 globus_l_gsc_fake_buffer_len,
@@ -568,11 +795,10 @@ globus_l_gsc_220_write_cb(
                 NULL,
                 globus_l_gsc_read_cb,
                 (void *) server_handle);
-        if(res != GLOBUS_SUCCESS)
-        {
-            globus_i_gsc_terminate(server_handle, 0);
-            globus_mutex_unlock(&server_handle->mutex);
-            goto err;
+            if(res != GLOBUS_SUCCESS)
+            {
+                goto err;
+            }
         }
     }
     globus_mutex_unlock(&server_handle->mutex);
@@ -581,7 +807,72 @@ globus_l_gsc_220_write_cb(
     return;
 
   err:
-    GlobusGridFTPServerDebugExitWithError();
+
+    globus_xio_attr_init(&close_attr);
+    server_handle->ref--;
+    res = globus_xio_register_close(
+        server_handle->xio_handle,
+        close_attr,
+        globus_l_gsc_close_cb,
+        server_handle);
+    globus_xio_attr_destroy(close_attr);
+    if(res != GLOBUS_SUCCESS)
+    {
+        GlobusLRegisterDone(server_handle);
+    }
+    globus_mutex_unlock(&server_handle->mutex);
+}
+
+/*
+ *  state:
+ *  pretty easy case, if it fails, kick out the done callback, if
+ *  it succeeds, register the 220 write, if the register fails, kickout
+ *  the done callback.
+ */
+static void
+globus_l_gsc_open_cb(
+    globus_xio_handle_t                 handle,
+    globus_result_t                     result,
+    void *                              user_arg)
+{
+    globus_result_t                     res;
+    globus_i_gsc_server_handle_t *      server_handle;
+    GlobusGridFTPServerName(globus_l_gsc_open_cb);
+
+    server_handle = (globus_i_gsc_server_handle_t *) user_arg;
+
+    globus_mutex_lock(&server_handle->mutex);
+    {
+        globus_assert(server_handle->state == GLOBUS_L_GSC_STATE_OPENING);
+
+        if(result != GLOBUS_SUCCESS)
+        {    
+            goto err;
+        }
+        else
+        {
+            res = globus_xio_register_write(
+                    server_handle->xio_handle,
+                    server_handle->pre_auth_banner,
+                    strlen(server_handle->pre_auth_banner),
+                    strlen(server_handle->pre_auth_banner),
+                    NULL,
+                    globus_l_gsc_220_write_cb,
+                    server_handle);
+            if(res != GLOBUS_SUCCESS)
+            {
+                goto err;
+            }
+        }
+    }
+    globus_mutex_unlock(&server_handle->mutex);
+
+    return;
+
+  err:
+    server_handle->ref--;
+    GlobusLRegisterDone(server_handle);
+    globus_mutex_unlock(&server_handle->mutex);
 }
 
 /*
@@ -597,7 +888,6 @@ globus_l_gsc_final_reply_cb(
     globus_xio_data_descriptor_t            data_desc,
     void *                                  user_arg)
 {
-    globus_xio_attr_t                       close_attr;
     globus_result_t                         res;
     globus_i_gsc_server_handle_t *          server_handle;
     GlobusGridFTPServerName(globus_l_final_reply_cb);
@@ -608,12 +898,12 @@ globus_l_gsc_final_reply_cb(
 
     globus_mutex_lock(&server_handle->mutex);
     {
+        server_handle->ref--;
         server_handle->reply_outstanding = GLOBUS_FALSE;
         if(result != GLOBUS_SUCCESS)
         {
-            globus_i_gsc_terminate(server_handle, 0);
-            globus_mutex_unlock(&server_handle->mutex);
-            return;
+            res = result;
+            goto err;
         }
 
         switch(server_handle->state)
@@ -641,7 +931,8 @@ globus_l_gsc_final_reply_cb(
                             (void *) server_handle);
                     if(res != GLOBUS_SUCCESS)
                     {
-                        globus_i_gsc_terminate(server_handle, 0);
+                        server_handle->ref--;
+                        globus_i_gsc_terminate(server_handle);
                     }
                 }
                 break;
@@ -654,19 +945,7 @@ globus_l_gsc_final_reply_cb(
             case GLOBUS_L_GSC_STATE_ABORTING_STOPPING:
             case GLOBUS_L_GSC_STATE_STOPPING:
 
-                globus_xio_attr_init(&close_attr);
-                globus_xio_attr_cntl(
-                    close_attr, NULL, GLOBUS_XIO_ATTR_CLOSE_NO_CANCEL);
-                res = globus_xio_register_close(
-                    server_handle->xio_handle,
-                    close_attr,
-                    globus_l_gsc_close_cb,
-                    server_handle);
-                globus_xio_attr_destroy(close_attr);
-                if(res != GLOBUS_SUCCESS)
-                {
-                    GlobusLRegisterDone(server_handle);
-                }
+                globus_l_gsc_server_ref_check(server_handle);
 
                 break;
 
@@ -681,6 +960,49 @@ globus_l_gsc_final_reply_cb(
         }
     }
     globus_mutex_unlock(&server_handle->mutex);
+
+    return;
+
+  err:
+
+    globus_i_gsc_terminate(server_handle);
+    globus_l_gsc_server_ref_check(server_handle);
+    globus_mutex_unlock(&server_handle->mutex);
+    return;
+}
+
+globus_result_t
+globus_gridftp_server_control_stop(
+    globus_gridftp_server_control_t         server)
+{
+    globus_i_gsc_server_handle_t *          server_handle;
+    globus_result_t                         res;
+    GlobusGridFTPServerName(globus_gridftp_server_control_stop);
+
+    if(server == NULL)
+    {
+        res = GlobusGridFTPServerErrorParameter("server");
+        goto err;
+    }
+    server_handle = (globus_i_gsc_server_handle_t *) server;
+
+    globus_mutex_lock(&server_handle->mutex);
+    {
+        if(server_handle->state != GLOBUS_L_GSC_STATE_OPEN)
+        {
+            globus_mutex_unlock(&server_handle->mutex);
+            res = GlobusGridFTPServerErrorParameter("server");
+            goto err;
+        }
+        globus_i_gsc_terminate(server_handle);
+    }
+    globus_mutex_unlock(&server_handle->mutex);
+
+    return GLOBUS_SUCCESS;
+
+  err:
+
+    return res;
 }
 
 static void 
@@ -706,7 +1028,7 @@ globus_l_gsc_intermediate_reply_cb(
     {
         if(result != GLOBUS_SUCCESS)
         {
-            globus_i_gsc_terminate(server_handle, 0);
+            globus_i_gsc_terminate(server_handle);
             globus_mutex_unlock(&server_handle->mutex);
             return;
         }
@@ -728,7 +1050,7 @@ globus_l_gsc_intermediate_reply_cb(
                 if(res != GLOBUS_SUCCESS)
                 {
                     server_handle->reply_outstanding = GLOBUS_FALSE;
-                    globus_i_gsc_terminate(server_handle, 0);
+                    globus_i_gsc_terminate(server_handle);
                     globus_free(reply_ent->msg);
                 }
             }
@@ -751,11 +1073,14 @@ globus_l_gsc_user_data_destroy_cb_kickout(
 
     data_object = (globus_i_gsc_data_t *) user_arg;
     server_handle = data_object->server_handle;
-
-    server_handle->funcs.data_destroy_cb(data_object->user_handle);
     globus_free(data_object);
 
-    globus_l_gsc_user_close_kickout(server_handle);
+    globus_mutex_lock(&server_handle->mutex);
+    {
+        server_handle->ref--;
+        globus_l_gsc_server_ref_check(server_handle);
+    }
+    globus_mutex_unlock(&server_handle->mutex);
 }
 
 static void
@@ -767,18 +1092,16 @@ globus_l_gsc_user_close_kickout(
 
     server_handle = (globus_i_gsc_server_handle_t *) user_arg;
 
-    globus_assert(server_handle->ref > 0);
+    globus_assert(server_handle->ref == 0);
 
     globus_mutex_lock(&server_handle->mutex);
     {
-        server_handle->ref--;
-        if(server_handle->ref == 0)
-        {
-            globus_assert(
-                server_handle->state == GLOBUS_L_GSC_STATE_ABORTING_STOPPING ||
-                server_handle->state == GLOBUS_L_GSC_STATE_STOPPING);
-            done_cb = server_handle->funcs.done_cb;
-        }
+        globus_assert(server_handle->ref == 0);
+        globus_assert(
+            server_handle->state == GLOBUS_L_GSC_STATE_ABORTING_STOPPING ||
+            server_handle->state == GLOBUS_L_GSC_STATE_STOPPING);
+        done_cb = server_handle->funcs.done_cb;
+        server_handle->state = GLOBUS_L_GSC_STATE_STOPPED;
     }
     globus_mutex_unlock(&server_handle->mutex);
 
@@ -923,6 +1246,7 @@ globus_l_gsc_flush_reads(
         tmp_res = globus_l_gsc_final_reply(server_handle, reply_msg);
         if(tmp_res != GLOBUS_SUCCESS)
         {
+            server_handle->ref--;
             res = tmp_res;
         }
     }
@@ -1100,7 +1424,6 @@ globus_l_gsc_command_callout(
             {
                 res = globus_l_gsc_final_reply(server_handle, msg);
                 done = GLOBUS_TRUE;
-                globus_l_gsc_op_destroy(op);
             }
             else
             {
@@ -1180,122 +1503,6 @@ globus_l_gsc_process_next_cmd(
     }
 
     GlobusGridFTPServerDebugExit();
-}
-
-/*
- *  seperated from the exteranally visible function to allow for only
- *  1 write at a time.
- */
-static void
-globus_l_gsc_finished_op(
-    globus_i_gsc_op_t *                     op,
-    char *                                  reply_msg)
-{
-    globus_xio_attr_t                       close_attr;
-    globus_i_gsc_server_handle_t *          server_handle;
-    globus_result_t                         res;
-    globus_bool_t                           stopping = GLOBUS_FALSE;
-    GlobusGridFTPServerName(globus_l_gsc_finished_op);
-
-    server_handle = op->server_handle;
-
-    switch(server_handle->state)
-    {
-        /* after receiving the servers reply to the abor we 
-           clear everything in the Q and respond */
-        case GLOBUS_L_GSC_STATE_ABORTING_STOPPING:
-        case GLOBUS_L_GSC_STATE_ABORTING:
-
-            /* if user considers this command incomplete it does not
-               matter, we are aborting anyway */
-            if(reply_msg == NULL)
-            {
-                reply_msg = "426 Command Aborted\r\n";
-            }
-
-            server_handle->abort_cnt = globus_fifo_size(&server_handle->read_q);
-            server_handle->abort_cnt += 2;
-
-            /* reply to the outstanding message */
-            res = globus_l_gsc_final_reply(
-                    server_handle,
-                    reply_msg);
-            if(res != GLOBUS_SUCCESS)
-            {
-                globus_i_gsc_terminate(server_handle, 0);
-                break;
-            }
-            res = globus_l_gsc_flush_reads(
-                    server_handle,
-                    "426 Command Aborted\r\n");
-            if(res != GLOBUS_SUCCESS)
-            {
-                globus_i_gsc_terminate(server_handle, 0);
-                break;
-            }
-            res = globus_l_gsc_final_reply(
-                    server_handle,
-                    "226 Abort successful\r\n");
-            if(res != GLOBUS_SUCCESS)
-            {
-                globus_i_gsc_terminate(server_handle, 0);
-                break;
-            }
-            break;
-
-        case GLOBUS_L_GSC_STATE_PROCESSING:
-
-            if(reply_msg == NULL && op->cmd_list == NULL)
-            {
-                reply_msg = "500 Command not supported\r\n";
-            }
-
-            if(reply_msg == NULL)
-            {
-                GlobusLGSCRegisterCmd(op);
-            }
-            else
-            {
-                res = globus_l_gsc_final_reply(
-                        server_handle,
-                        reply_msg);
-                if(res != GLOBUS_SUCCESS)
-                {
-                    globus_i_gsc_terminate(server_handle, 0);
-                }
-            }
-            break;
-
-        case GLOBUS_L_GSC_STATE_STOPPING:
-            stopping = GLOBUS_TRUE;
-            break;
-
-        case GLOBUS_L_GSC_STATE_OPEN:
-        case GLOBUS_L_GSC_STATE_STOPPED:
-        default:
-            globus_assert(0);
-            break;
-    }
-
-    if(stopping)
-    {
-        globus_xio_attr_init(&close_attr);
-        globus_xio_attr_cntl(
-            close_attr, NULL, GLOBUS_XIO_ATTR_CLOSE_NO_CANCEL);
-        res = globus_xio_register_close(
-            server_handle->xio_handle,
-            close_attr,
-            globus_l_gsc_close_cb,
-            server_handle);
-        globus_xio_attr_destroy(close_attr);
-        if(res != GLOBUS_SUCCESS)
-        {
-            GlobusLRegisterDone(server_handle);
-        }
-
-    }
-
-    globus_l_gsc_op_destroy(op);
 }
 
 static globus_result_t
@@ -1401,7 +1608,7 @@ globus_gridftp_server_control_init(
 
     globus_mutex_init(&server_handle->mutex, NULL);
 
-    server_handle->state = GLOBUS_L_GSC_STATE_OPEN;
+    server_handle->state = GLOBUS_L_GSC_STATE_NONE;
     server_handle->reply_outstanding = GLOBUS_FALSE;
     server_handle->pre_auth_banner = 
         globus_libc_strdup(GLOBUS_L_GSC_DEFAULT_220);
@@ -1507,7 +1714,7 @@ globus_gridftp_server_control_start(
     globus_mutex_lock(&server_handle->mutex);
     {
         if(server_handle->state != GLOBUS_L_GSC_STATE_STOPPED &&
-            server_handle->state != GLOBUS_L_GSC_STATE_OPEN)
+            server_handle->state != GLOBUS_L_GSC_STATE_NONE)
         {
             globus_mutex_unlock(&server_handle->mutex);
             res = GlobusGridFTPServerErrorParameter("server");
@@ -1596,17 +1803,9 @@ globus_gridftp_server_control_start(
             globus_mutex_unlock(&server_handle->mutex);
             goto err;
         }
-        res = globus_xio_open(server_handle->xio_handle, NULL, xio_attr);
-        if(res != GLOBUS_SUCCESS)
-        {
-            globus_mutex_unlock(&server_handle->mutex);
-            goto err;
-        }
 
         server_handle->security_type = i_attr->security;
         globus_xio_stack_destroy(xio_stack);
-        globus_xio_attr_destroy(xio_attr);
-                                                                                
         server_handle->ref = 1;
 
         server_handle->funcs.send_cb_table = i_attr->funcs.send_cb_table;
@@ -1680,16 +1879,17 @@ globus_gridftp_server_control_start(
 
         server_handle->user_arg = user_arg;
 
-        res = globus_xio_register_write(
-                server_handle->xio_handle,
-                server_handle->pre_auth_banner,
-                strlen(server_handle->pre_auth_banner),
-                strlen(server_handle->pre_auth_banner),
-                NULL, /* may need a DD here */
-                globus_l_gsc_220_write_cb,
-                server_handle);
+        server_handle->state = GLOBUS_L_GSC_STATE_OPENING;
+        res = globus_xio_register_open(
+            server_handle->xio_handle, 
+            NULL, 
+            xio_attr,
+            globus_l_gsc_open_cb,
+            server_handle);
+        globus_xio_attr_destroy(xio_attr);
         if(res != GLOBUS_SUCCESS)
         {
+            globus_mutex_unlock(&server_handle->mutex);
             goto err;
         }
     }
@@ -1711,117 +1911,50 @@ globus_i_gsc_command_panic(
     globus_i_gsc_op_t *                     op)
 {
     globus_result_t                         res;
+    GlobusGridFTPServerName(globus_i_gsc_command_panic);
 
-    if(op->server_handle->state != GLOBUS_L_GSC_STATE_PROCESSING)
+    globus_mutex_lock(&op->server_handle->mutex);
     {
+        if(op->server_handle->state != GLOBUS_L_GSC_STATE_PROCESSING)
+        {
+            res = GlobusGridFTPServerErrorParameter("op");
+            goto err;
+        }
 
-    }
-
-    globus_xio_handle_cancel_operations(
-        op->server_handle->xio_handle,
-        GLOBUS_XIO_CANCEL_READ);
-    globus_l_gsc_flush_reads(
-        op->server_handle,
-        "421 Service not available, closing control connection.\r\n");
-    op->server_handle->state = GLOBUS_L_GSC_STATE_STOPPING;
-
-    /* not much can be done about an error here, we are terminating 
-        anyway */
-    res = globus_l_gsc_final_reply(
+        globus_xio_handle_cancel_operations(
+            op->server_handle->xio_handle,
+            GLOBUS_XIO_CANCEL_READ);
+        globus_l_gsc_flush_reads(
             op->server_handle,
             "421 Service not available, closing control connection.\r\n");
+        op->server_handle->state = GLOBUS_L_GSC_STATE_STOPPING;
+
+        /* not much can be done about an error here, we are terminating 
+            anyway */
+        res = globus_l_gsc_final_reply(
+                op->server_handle,
+                "421 Service not available, closing control connection.\r\n");
+    }
+    globus_mutex_unlock(&op->server_handle->mutex);
 
     return GLOBUS_SUCCESS;
+
+  err:
+
+    globus_mutex_unlock(&op->server_handle->mutex);
+    return res;
 }
 
 
-/*
- *  terminate
- *  ---------
- *  This is called whenever an error occurs.  It attempts to nicely
- *  send a message to the user then changes to a stopping state.
- */
-void
-globus_i_gsc_terminate(
-    globus_i_gsc_server_handle_t *          server_handle,
-    globus_bool_t                           nice)
+static void
+globus_l_gsc_server_ref_check(
+    globus_i_gsc_server_handle_t *          server_handle)
 {
     globus_xio_attr_t                       close_attr;
-    globus_bool_t                           close = GLOBUS_TRUE;
     globus_result_t                         res;
-    GlobusGridFTPServerName(globus_i_gsc_terminate);
+    GlobusGridFTPServerName(globus_l_gsc_server_ref_check);
 
-    switch(server_handle->state)
-    {
-        /* if already stopping, just punt. this is likely to happen */
-        case GLOBUS_L_GSC_STATE_ABORTING_STOPPING:
-        case GLOBUS_L_GSC_STATE_STOPPING:
-            close = GLOBUS_FALSE;
-            break;
-
-        case GLOBUS_L_GSC_STATE_ABORTING:
-            server_handle->state = GLOBUS_L_GSC_STATE_ABORTING_STOPPING;
-            /* if aborting no read is posted, and there are no commands 
-               to flush */
-            break;
-
-        /*  Clear out whatever commands we have if we can */
-        case GLOBUS_L_GSC_STATE_PROCESSING:
-
-            if(!nice)
-            {
-                /* start abort process */
-                server_handle->state = GLOBUS_L_GSC_STATE_ABORTING_STOPPING;
-                /*
-                 *  cancel the outstanding command.  In its callback
-                 *  we flush the q and respond to the ABOR
-                 */
-                globus_assert(server_handle->outstanding_op != NULL);
-
-                if(server_handle->funcs.abort_cb != NULL)
-                {
-                    server_handle->funcs.abort_cb(
-                        server_handle->outstanding_op,
-                        server_handle->abort_arg);
-                }
-
-                globus_xio_handle_cancel_operations(
-                    server_handle->xio_handle,
-                    GLOBUS_XIO_CANCEL_READ);
-                globus_l_gsc_flush_reads(
-                    server_handle,
-                "421 Service not available, closing control connection.\r\n");
-            }
-            else
-            {
-                server_handle->state = GLOBUS_L_GSC_STATE_STOPPING;
-                globus_xio_handle_cancel_operations(
-                    server_handle->xio_handle,
-                    GLOBUS_XIO_CANCEL_READ);
-            }
-            close = GLOBUS_FALSE;
-            break;
-
-        /*
-         *  goto panic state and cancel the read
-         */
-        case GLOBUS_L_GSC_STATE_OPEN:
-            server_handle->state = GLOBUS_L_GSC_STATE_STOPPING;
-            globus_xio_handle_cancel_operations(
-                server_handle->xio_handle,
-                GLOBUS_XIO_CANCEL_READ);
-            /* no commands to flush */
-            break;
-
-        /* shouldn't do anything once we hit the stopped state */
-        case GLOBUS_L_GSC_STATE_STOPPED:
-        /* no other states */
-        default:
-            globus_assert(0);
-            break;
-    }
-
-    if(close)
+    if(server_handle->ref == 0)
     {
         if(server_handle->data_object != NULL)
         {
@@ -1850,40 +1983,6 @@ globus_i_gsc_terminate(
             GlobusLRegisterDone(server_handle);
         }
     }
-}
-
-globus_result_t
-globus_gridftp_server_control_stop(
-    globus_gridftp_server_control_t         server)
-{
-    globus_i_gsc_server_handle_t *          server_handle;
-    globus_result_t                         res;
-    GlobusGridFTPServerName(globus_gridftp_server_control_stop);
-
-    if(server == NULL)
-    {
-        res = GlobusGridFTPServerErrorParameter("server");
-        goto err;
-    }
-    server_handle = (globus_i_gsc_server_handle_t *) server;
-
-    globus_mutex_lock(&server_handle->mutex);
-    {
-        if(server_handle->state != GLOBUS_L_GSC_STATE_OPEN)
-        {
-            globus_mutex_unlock(&server_handle->mutex);
-            res = GlobusGridFTPServerErrorParameter("server");
-            goto err;
-        }
-        globus_i_gsc_terminate(server_handle, 0);
-    }
-    globus_mutex_unlock(&server_handle->mutex);
-
-    return GLOBUS_SUCCESS;
-
-  err:
-
-    return res;
 }
 
 void
@@ -1943,7 +2042,7 @@ globus_i_gsc_intermediate_reply(
         if(res != GLOBUS_SUCCESS)
         {
             server_handle->reply_outstanding = GLOBUS_FALSE;
-            globus_i_gsc_terminate(server_handle, 0);
+            globus_i_gsc_terminate(server_handle);
         }
     }
 
