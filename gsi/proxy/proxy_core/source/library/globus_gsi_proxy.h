@@ -1,3 +1,6 @@
+#ifndef GLOBUS_INCLUDE_GLOBUS_GSI_PROXY_H
+#define GLOBUS_INCLUDE_GLOBUS_GSI_PROXY_H
+
 /**
  * @anchor globus_gsi_proxy_api   
  * @mainpage Globus GSI Proxy API
@@ -29,8 +32,6 @@
  * @endhtmlonly
  */
 
-#ifndef GLOBUS_INCLUDE_GLOBUS_GSI_PROXY_H
-#define GLOBUS_INCLUDE_GLOBUS_GSI_PROXY_H
 
 #ifndef EXTERN_C_BEGIN
 #    ifdef __cplusplus
