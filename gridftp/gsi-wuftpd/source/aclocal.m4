@@ -115,7 +115,7 @@ if test "$gssapi_type" = "globus" ; then
 	if test -z "$GPT_LOCATION" ; then
 	    GPT_LOCATION=$GLOBUS_LOCATION
 	fi
-	${GPT_LOCATION}/sbin/gpt_build_config -src=pkg_data_src.gpt-gssapi \
+	${GPT_LOCATION}/sbin/gpt_build_config -src=pkg_data_src.gssapi \
 	                 -flavor=${globus_flavor} \
 			 -link $GPT_LINKTYPE > /dev/null
 	if test "$?" = "0"; then
