@@ -47,6 +47,15 @@ typedef struct {
 #if defined(AFS) || defined(KRB5)
 	int     kerberos_tgt_passing;	/* Try Kerberos TGT passing. */
 #endif
+
+#ifdef GSSAPI
+	int 	gss_authentication;
+	int	gss_deleg_creds;
+#ifdef GSI
+	int	gss_globus_deleg_limited_proxy;
+#endif /* GSI */
+#endif /* GSSAPI */
+
 #ifdef AFS
 	int     afs_token_passing;	/* Try AFS token passing. */
 #endif
@@ -77,6 +86,7 @@ typedef struct {
 	char   *host_key_alias;	/* hostname alias for .ssh/known_hosts */
 	char   *proxy_command;	/* Proxy command for connecting the host. */
 	char   *user;		/* User to log in as. */
+        int    implicit;
 	int     escape_char;	/* Escape character; -2 = none */
 
 	char   *system_hostfile;/* Path for /etc/ssh/ssh_known_hosts. */

@@ -38,6 +38,7 @@
 #include "dh.h"
 #include "ssh2.h"
 #include "ssh-gss.h"
+#include "monitor_wrap.h"
 
 /* This is now the same as the DH hash ... */
 
@@ -93,7 +94,7 @@ void
 kexgss_client(Kex *kex)
 {
 	gss_buffer_desc gssbuf,send_tok,recv_tok, msg_tok, *token_ptr;
-	Gssctxt ctxt;
+	Gssctxt *ctxt;
 	OM_uint32 maj_status, min_status, ret_flags;
 	unsigned int klen, kout;
 	DH *dh; 
@@ -108,10 +109,10 @@ kexgss_client(Kex *kex)
 	
 	/* Initialise our GSSAPI world */
 	ssh_gssapi_build_ctx(&ctxt);
-	if (ssh_gssapi_id_kex(&ctxt,kex->name)) {
+	if (ssh_gssapi_id_kex(ctxt,kex->name)==NULL) {
 		fatal("Couldn't identify host exchange");
 	}
-	if (ssh_gssapi_import_name(&ctxt,kex->host)) {
+	if (ssh_gssapi_import_name(ctxt,kex->host)) {
 		fatal("Couldn't import hostname ");
 	}
 	
@@ -132,7 +133,7 @@ kexgss_client(Kex *kex)
 	do {
 		debug("Calling gss_init_sec_context");
 		
-		maj_status=ssh_gssapi_init_ctx(&ctxt,
+		maj_status=ssh_gssapi_init_ctx(ctxt,
 					       kex->options.gss_deleg_creds,
 					       token_ptr,&send_tok,
 					       &ret_flags);
@@ -254,7 +255,7 @@ kexgss_client(Kex *kex)
         
         /* Verify that H matches the token we just got. */
                 if ((maj_status = gss_verify_mic(&min_status,
-        	       		         ctxt.context,
+        	       		         ctxt->context,
         	                         &gssbuf,
         	                         &msg_tok,
         	                         NULL))) {
@@ -292,7 +293,7 @@ kexgss_server(Kex *kex)
 
 	OM_uint32 ret_flags = 0;
 	gss_buffer_desc gssbuf,send_tok,recv_tok,msg_tok;
-	Gssctxt ctxt;
+	Gssctxt *ctxt = NULL;
         unsigned int klen, kout;
         unsigned char *kbuf;
         unsigned char *hash;
@@ -300,14 +301,20 @@ kexgss_server(Kex *kex)
         BIGNUM *shared_secret = NULL;
         BIGNUM *dh_client_pub = NULL;
 	int type =0;
+	gss_OID oid;
 	
 	/* Initialise GSSAPI */
 
-	ssh_gssapi_build_ctx(&ctxt);
-        if (ssh_gssapi_id_kex(&ctxt,kex->name))
-		packet_disconnect("Unknown gssapi mechanism");
-        if (ssh_gssapi_acquire_cred(&ctxt))
-        	packet_disconnect("Unable to acquire credentials for the server");
+	debug2("%s: Identifying %s",__func__,kex->name);
+	oid=ssh_gssapi_id_kex(ctxt,kex->name);
+	if (oid==NULL) {
+	   packet_disconnect("Unknown gssapi mechanism");
+	}
+	
+	debug2("%s: Acquiring credentials",__func__);
+	
+	if (GSS_ERROR(PRIVSEP(ssh_gssapi_server_ctx(&ctxt,oid))))
+	   packet_disconnect("Unable to acquire credentials for the server");
                                                                                                                                 
 	do {
 		debug("Wait SSH2_MSG_GSSAPI_INIT");
@@ -335,8 +342,9 @@ kexgss_server(Kex *kex)
 			packet_disconnect("Protocol error: didn't expect packet type %d",
 					   type);
 		}
-		maj_status=ssh_gssapi_accept_ctx(&ctxt,&recv_tok, &send_tok,
-						 &ret_flags);
+		
+		maj_status=PRIVSEP(ssh_gssapi_accept_ctx(ctxt,&recv_tok, 
+							 &send_tok, &ret_flags));
 
 		gss_release_buffer(&min_status,&recv_tok);
 
@@ -408,15 +416,11 @@ kexgss_server(Kex *kex)
 	gssbuf.value = hash;
 	gssbuf.length = 20; /* Hashlen appears to always be 20 */
 	
-	if ((maj_status=gss_get_mic(&min_status,
-			       ctxt.context,
-			       GSS_C_QOP_DEFAULT,
-			       &gssbuf,
-			       &msg_tok))) {
+	if (GSS_ERROR(PRIVSEP(ssh_gssapi_sign(ctxt,&gssbuf,&msg_tok)))) {
 		ssh_gssapi_send_error(maj_status,min_status);
 		packet_disconnect("Couldn't get MIC");
-	}	
-			      
+	}
+	
 	packet_start(SSH2_MSG_KEXGSS_COMPLETE);
 	packet_put_bignum2(dh->pub_key);
 	packet_put_string((char *)msg_tok.value,msg_tok.length);
@@ -430,16 +434,17 @@ kexgss_server(Kex *kex)
  	packet_send();
 	packet_write_wait();
 
-	/* Store the client name, and the delegated credentials for later
-	 * use */
-	if (ssh_gssapi_getclient(&ctxt,&gssapi_client_type, 
-				       &gssapi_client_name, 
-				       &gssapi_client_creds)) {
-		packet_disconnect("Couldn't convert client name");
-	}
-	
+        /* We used to store the client name and credentials here for later
+         * use. With privsep, its easier to do this as a by product of the
+         * call to accept_context, which stores delegated information when
+         * the context is complete */
+         
 	gss_release_buffer(&min_status, &send_tok);	
+
+	/* If we've got a context, delete it. It may be NULL if we've been
+	 * using privsep */
 	ssh_gssapi_delete_ctx(&ctxt);
+	
 	DH_free(dh);
 
 	kex_derive_keys(kex, hash, shared_secret);

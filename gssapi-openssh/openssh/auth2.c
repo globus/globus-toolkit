@@ -26,6 +26,7 @@
 RCSID("$OpenBSD: auth2.c,v 1.93 2002/05/31 11:35:15 markus Exp $");
 
 #include "ssh2.h"
+#include "ssh1.h"
 #include "xmalloc.h"
 #include "packet.h"
 #include "log.h"
@@ -35,6 +36,11 @@ RCSID("$OpenBSD: auth2.c,v 1.93 2002/05/31 11:35:15 markus Exp $");
 #include "dispatch.h"
 #include "pathnames.h"
 #include "monitor_wrap.h"
+#include "misc.h"
+
+#ifdef GSSAPI
+#include "ssh-gss.h"
+#endif
 
 /* import */
 extern ServerOptions options;
@@ -46,6 +52,10 @@ Authctxt *x_authctxt = NULL;
 /* methods */
 
 extern Authmethod method_none;
+#ifdef GSSAPI
+extern Authmethod method_external;
+extern Authmethod method_gssapi;
+#endif
 extern Authmethod method_pubkey;
 extern Authmethod method_passwd;
 extern Authmethod method_kbdint;
@@ -53,6 +63,10 @@ extern Authmethod method_hostbased;
 
 Authmethod *authmethods[] = {
 	&method_none,
+#ifdef GSSAPI
+	&method_external,
+	&method_gssapi,
+#endif
 	&method_pubkey,
 	&method_passwd,
 	&method_kbdint,
@@ -144,14 +158,44 @@ input_userauth_request(int type, u_int32_t seq, void *ctxt)
 	user = packet_get_string(NULL);
 	service = packet_get_string(NULL);
 	method = packet_get_string(NULL);
+
+#ifdef GSSAPI
+	if (strcmp(user, "") == 0) {
+	    char *lname = NULL;
+	    debug("gssapi received empty username");
+	    PRIVSEP(ssh_gssapi_localname(&lname));
+	    if (lname && lname[0] != '\0') {
+		xfree(user);
+		user = lname;
+		debug("gssapi successfully set username to %s", user);
+	    } else if (authctxt->valid) {
+		debug("failed to set username from gssapi context");
+		goto finish;
+	    }
+	}
+#endif
+
 	debug("userauth-request for user %s service %s method %s", user, service, method);
 	debug("attempt %d failures %d", authctxt->attempt, authctxt->failures);
 
 	if ((style = strchr(user, ':')) != NULL)
 		*style++ = 0;
 
-	if (authctxt->attempt++ == 0) {
+	if (!authctxt->user ||
+	    strcmp(user, authctxt->user) != 0) {
 		/* setup auth context */
+		if (authctxt->user) {
+		    xfree(authctxt->user);
+		    authctxt->user = NULL;
+		}
+		if (authctxt->service) {
+		    xfree(authctxt->service);
+		    authctxt->service = NULL;
+		}
+		if (authctxt->style) {
+		    xfree(authctxt->style);
+		    authctxt->style = NULL;
+		}
 		authctxt->pw = PRIVSEP(getpwnamallow(user));
 		if (authctxt->pw && strcmp(service, "ssh-connection")==0) {
 			authctxt->valid = 1;
@@ -160,6 +204,7 @@ input_userauth_request(int type, u_int32_t seq, void *ctxt)
 			PRIVSEP(start_pam(authctxt->pw->pw_name));
 #endif
 		} else {
+			authctxt->valid = 0;
 			log("input_userauth_request: illegal user %s", user);
 #ifdef USE_PAM
 			PRIVSEP(start_pam("NOUSER"));
@@ -172,14 +217,15 @@ input_userauth_request(int type, u_int32_t seq, void *ctxt)
 		authctxt->style = style ? xstrdup(style) : NULL;
 		if (use_privsep)
 			mm_inform_authserv(service, style);
-	} else if (strcmp(user, authctxt->user) != 0 ||
-	    strcmp(service, authctxt->service) != 0) {
-		packet_disconnect("Change of username or service not allowed: "
-		    "(%s,%s) -> (%s,%s)",
-		    authctxt->user, authctxt->service, user, service);
 	}
 	/* reset state */
 	auth2_challenge_stop(authctxt);
+
+#ifdef GSSAPI
+	dispatch_set(SSH2_MSG_USERAUTH_GSSAPI_TOKEN, NULL);
+	dispatch_set(SSH2_MSG_USERAUTH_GSSAPI_EXCHANGE_COMPLETE, NULL);
+#endif
+
 	authctxt->postponed = 0;
 
 	/* try to authenticate user */
@@ -188,6 +234,7 @@ input_userauth_request(int type, u_int32_t seq, void *ctxt)
 		debug2("input_userauth_request: try method %s", method);
 		authenticated =	m->userauth(authctxt);
 	}
+finish:
 	userauth_finish(authctxt, authenticated, method);
 
 	xfree(service);
@@ -216,6 +263,9 @@ userauth_finish(Authctxt *authctxt, int authenticated, char *method)
 #endif /* USE_PAM */
 
 	/* Log before sending the reply */
+	if (!compat20)
+	auth_log(authctxt, authenticated, method, " ssh1");
+	else
 	auth_log(authctxt, authenticated, method, " ssh2");
 
 	if (authctxt->postponed)
@@ -225,9 +275,11 @@ userauth_finish(Authctxt *authctxt, int authenticated, char *method)
 	if (authenticated == 1) {
 		/* turn off userauth */
 		dispatch_set(SSH2_MSG_USERAUTH_REQUEST, &dispatch_protocol_ignore);
+		if (compat20) {
 		packet_start(SSH2_MSG_USERAUTH_SUCCESS);
 		packet_send();
 		packet_write_wait();
+		}
 		/* now we can break out */
 		authctxt->success = 1;
 	} else {
@@ -240,6 +292,16 @@ userauth_finish(Authctxt *authctxt, int authenticated, char *method)
 #endif /* WITH_AIXAUTHENTICATE */
 			packet_disconnect(AUTH_FAIL_MSG, authctxt->user);
 		}
+		if (!compat20) {
+		/*
+		 * Break out of the dispatch loop now and go back to
+	         * SSH1 code.  We need to set the 'success' flag to
+	         * break out of the loop.  Set the 'postponed' flag to
+	         * tell the SSH1 code that authentication failed.  The
+	         * SSH1 code will handle sending SSH_SMSG_FAILURE.
+		*/
+		authctxt->success = authctxt->postponed = 1;
+		} else {
 		methods = authmethods_get();
 		packet_start(SSH2_MSG_USERAUTH_FAILURE);
 		packet_put_cstring(methods);
@@ -247,6 +309,7 @@ userauth_finish(Authctxt *authctxt, int authenticated, char *method)
 		packet_send();
 		packet_write_wait();
 		xfree(methods);
+		}
 	}
 }
 
