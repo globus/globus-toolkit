@@ -31,25 +31,35 @@ public class IPTimeMonitorPacket extends UsageMonitorPacket {
     protected InetAddress senderAddress;
 
     public void setDateTime(Date d) {
-        timeSent = d.getTime();
+        this.timeSent = d.getTime();
     }
-
+    
     public Date getDateTime() {
-        return new Date(timeSent);
+        return new Date(this.timeSent);
     }
 
-    public void setHostIP(InetAddress a) {
-        senderAddress = a;
+    public long getTimestamp() {
+        return this.timeSent;
     }
 
+    public void setTimestamp(long time) {
+        this.timeSent = time;
+    }
+    
+    public void setHostIP(InetAddress addr) {
+        this.senderAddress = addr;
+    }
+    
     public InetAddress getHostIP() {
-        return senderAddress;
+        return this.senderAddress;
     }
 
     public void packCustomFields(CustomByteBuffer buf) {
-        buf.putLong(timeSent);
+        super.packCustomFields(buf);
+
+        buf.putLong(this.timeSent);
         
-        byte[] addressByteArray = senderAddress.getAddress();
+        byte[] addressByteArray = this.senderAddress.getAddress();
         if (addressByteArray.length == 4) {
             log.debug("This outgoing packet is IPv4.");
             buf.put((byte)4);
@@ -62,6 +72,8 @@ public class IPTimeMonitorPacket extends UsageMonitorPacket {
     }
 
     public void unpackCustomFields(CustomByteBuffer buf) {
+        super.unpackCustomFields(buf);
+
         this.timeSent = buf.getLong();
         
         byte ipVersion = buf.get();

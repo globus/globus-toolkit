@@ -31,7 +31,7 @@ public class UsageMonitorPacket {
     private static Log log = 
         LogFactory.getLog(UsageMonitorPacket.class.getName());
     
-    public static final int DEFAULT_PORT = 3333;
+    public static final int DEFAULT_PORT = 4810;
     public static final int MAX_PACKET_SIZE = 1472; //bytes
     
     protected short componentCode;
@@ -45,7 +45,7 @@ public class UsageMonitorPacket {
         this.componentCode = c;
     }
     
-    public int getComponentCode() {
+    public short getComponentCode() {
         return this.componentCode;
     }
     
@@ -53,7 +53,7 @@ public class UsageMonitorPacket {
         this.packetVersion = v;
     }
     
-    public int getPacketVersion() {
+    public short getPacketVersion() {
         return this.packetVersion;
     }
     

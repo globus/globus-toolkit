@@ -18,6 +18,8 @@ import org.globus.usage.receiver.handlers.PacketHandler;
 public class Receiver {
     private static Log log = LogFactory.getLog(Receiver.class);
 
+    public static final int DEFAULT_PORT = 4810;
+
     RingBuffer theRing; /*receiver thread puts packets in here; handler
                           thread reads them out and pass them through the 
                           handlers.*/
