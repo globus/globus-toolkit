@@ -51,7 +51,7 @@ Southern California. All Rights Reserved.
   <property name="package.dir" value="reliabletransfer"/>
   <property name="build.packages" value="${ogsa.root}/build-packages.xml"/>
   <property name="etc.dir" value="./etc"/>
-  <property name="rft.nsmap.file" value="./etc"/>
+  <property name="nsmap.file" value="NStoPkg.properties"/>
 
   <!-- properties for testing -->
   <property name="test.report.dir" value="test-report"/>
@@ -160,22 +160,15 @@ Southern California. All Rights Reserved.
           <include name="**/*.jar"/>
       </fileset>
     </copy>
-    <ant antfile="${ogsa.root}/build-packages.xml" target="makeClientServerGar">
+    <ant antfile="${ogsa.root}/build-packages.xml" target="makeGar">
       <property name="gar.name" value="${build.lib}/${package.dir}.gar"/>
       <property name="garlib.dir" value="${build.lib}"/>
+      <property name="gardocs.dir" value="docs"/>
       <property name="garserverdeployment.file" value="${package.dir}-server-config.wsdd"/>
       <property name="garclientdeployment.file" value="${package.dir}-client-config.wsdd"/>
       <property name="garschema.origin" value="./schema/base/reliabletransfer"/>
       <property name="garschema.path" value="base/reliabletransfer"/>
     </ant>
-    <ant antfile="${ogsa.root}/build-packages.xml" target="addDocs">
-        <property name="docs.dir" value="docs"/>
-         <property name="gar.name" value="${build.lib}/${package.dir}.gar"/>      
-    </ant>
-    <ant antfile="${ogsa.root}/build-packages.xml" target="addEtc">
-        <property name="etc.dir" value="etc"/>
-         <property name="gar.name" value="${build.lib}/${package.dir}.gar"/>      
-    </ant>    
 
   </target>
 
@@ -184,9 +177,8 @@ Southern California. All Rights Reserved.
     
 
        <copy todir="${ogsa.root}/lib" file="${build.lib}/${package.dir}.gar"/>
-       <ant antfile="${ogsa.root}/build-packages.xml" target="deployClientServerGar" dir="${ogsa.root}">
-         <reference refid="classpath" torefid="classpath"/>
-         <property name="gar.name" value="${build.lib}/${package.dir}.gar"/>       
+       <ant antfile="build-packages.xml" target="deployGar" dir="${ogsa.root}">
+         <property name="gar.name" value="${build.lib}/${package.dir}.gar"/>
        </ant>
     </target>
 

@@ -221,7 +221,7 @@ Southern California. All Rights Reserved.
       </fileset>
     </copy>
     <replaceregexp file="${package.dir}-server-config.wsdd" match="GT3_LOCATION" replace="${ogsa.root}" byline="true"/>
-    <ant antfile="${ogsa.root}/${build.packages}" target="makeClientServerGar">
+    <ant antfile="${ogsa.root}/${build.packages}" target="makeGar">
       <property name="gar.name" value="${build.lib}/${package.dir}.gar"/>
       <property name="garlib.dir" value="${build.lib}"/>
       <property name="garserverdeployment.file" value="${package.dir}-server-config.wsdd"/>
@@ -252,7 +252,7 @@ Southern California. All Rights Reserved.
 
   <target name="deployGar" depends="gar">
        <copy todir="${ogsa.root}/lib" file="${build.lib}/${package.dir}.gar"/>
-       <ant antfile="${build.packages}" target="deployClientServerGar" dir="${ogsa.root}">
+       <ant antfile="${build.packages}" target="deployGar" dir="${ogsa.root}">
          <property name="gar.name" value="${build.lib}/${package.dir}.gar"/>       
          <reference refid="classpath" torefid="classpath"/>
        </ant>
